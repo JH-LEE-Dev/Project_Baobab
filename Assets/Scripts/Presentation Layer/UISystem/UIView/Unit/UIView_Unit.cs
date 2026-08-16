@@ -39,6 +39,7 @@ public class UIView_Unit : UIView
 
     private UI_InteractionUnit interactionUnit;
     private UI_SpeechBubble speechBubble;
+    private int lastInventoryFullFrame = -1;
 
     //private bool isInitialOpen = false;
 
@@ -324,21 +325,25 @@ public class UIView_Unit : UIView
 
     public void InventoryIsFull()
     {
-        int id = 1;
+        lastInventoryFullFrame = Time.frameCount;
+        int id = (int)ESpeechBubbleId.InventoryFull;
         SpeechBubblePlay(id, viewCtx.localizationManager.GetText(speechBubbleJsonId, id));
-        speechBubble.AddShownId(2);
+        speechBubble.AddShownId((int)ESpeechBubbleId.ItemCantAcquired);
     }
 
     public void ItemCantAcquired_Inventory()
     {
-        int id = 2;
+        if (Time.frameCount == lastInventoryFullFrame)
+            return;
+
+        int id = (int)ESpeechBubbleId.ItemCantAcquired;
         SpeechBubblePlay(id, viewCtx.localizationManager.GetText(speechBubbleJsonId, id));
-        speechBubble.AddShownId(1);
+        speechBubble.AddShownId((int)ESpeechBubbleId.InventoryFull);
     }
 
     private void AxeDurabilityEmpty()
     {
-        int id = 3;
+        int id = (int)ESpeechBubbleId.AxeDurabilityEmpty;
         SpeechBubblePlay(id, viewCtx.localizationManager.GetText(speechBubbleJsonId, id));
     }
 
@@ -346,7 +351,7 @@ public class UIView_Unit : UIView
     {
         if (null != speechBubble)
         {
-            speechBubble.RemoveShownId(3);
+            speechBubble.RemoveShownId((int)ESpeechBubbleId.AxeDurabilityEmpty);
         }
     }
 
@@ -378,8 +383,8 @@ public class UIView_Unit : UIView
     {
         if (null != speechBubble)
         {
-            speechBubble.RemoveShownId(1);
-            speechBubble.RemoveShownId(2);
+            speechBubble.RemoveShownId((int)ESpeechBubbleId.InventoryFull);
+            speechBubble.RemoveShownId((int)ESpeechBubbleId.ItemCantAcquired);
         }
     }
 

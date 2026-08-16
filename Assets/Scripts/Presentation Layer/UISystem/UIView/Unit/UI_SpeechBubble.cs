@@ -4,6 +4,17 @@ using TMPro;
 using System.Collections.Generic;
 using PresentationLayer.DOTweenAnimationSystem;
 
+/// <summary>
+/// 말풍선 고유 ID 정의 열거형 (로컬라이제이션 JSON ID 및 우선순위 매핑)
+/// </summary>
+public enum ESpeechBubbleId
+{
+    None = 0,
+    InventoryFull = 1,       // 인벤토리가 가득 찼습니다
+    ItemCantAcquired = 2,    // 다른 품목을 넣을 수 없습니다
+    AxeDurabilityEmpty = 3   // 도끼 내구도가 모두 소모되었습니다
+}
+
 public class UI_SpeechBubble : MonoBehaviour
 {
     // 외부 의존성
@@ -145,6 +156,10 @@ public class UI_SpeechBubble : MonoBehaviour
     public void Play(int _id, string _text, float _duration = 3f)
     {
         if (true == enableLock && false == shownIds.Add(_id))
+            return;
+
+        // 인벤토리 가득 참(ID 1)이 이미 표시 중일 때 하위 우선순위인 다른 품목 불가(ID 2)가 덮어쓰지 못하도록 방어
+        if (true == isPlaying && (int)ESpeechBubbleId.InventoryFull == currentId && (int)ESpeechBubbleId.ItemCantAcquired == _id)
             return;
 
         currentId = _id;
