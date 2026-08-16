@@ -103,6 +103,13 @@ public class InDungeonProductionManager : MonoBehaviour
         character.transform.position = characterRidePoint.position;
         Sound.Play(SoundID.OffroadClose, character.transform.position);
         character.bRide = true;
+
+        // 탑승과 동시에 캐릭터 GameObject가 비활성화되어 Character.Update()가 멈추므로, 매 프레임
+        // 갱신되던 피로도 기반 Cutoff(오디오 먹먹함/색수차)가 탑승 순간 값에 그대로 고정된 채
+        // ResultUI까지 이어진다. 죽지 않고 탑승했다면 더 이상 위험 상태가 아니므로 여기서 풀어준다.
+        Sound.SetFatigueRatio(1f);
+        PostProcessSettingsApplier.Instance?.UpdateLowStaminaChromaticAberration(1f);
+
         character.gameObject.SetActive(false);
         offroadVehicleObj.PlayShinyEffect();
 
