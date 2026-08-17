@@ -1923,6 +1923,7 @@ MonoBehaviour:
   paddingRight: 80
   minDistanceRatioX: 0.9
   minDistanceAbsoluteX: 120
+  minButtonGapX: 20
   subRegionBtnPrefab: {fileID: 0}
   maxPrewarmCount: 8
   appearAnimDuration: 0.15
@@ -1990,9 +1991,10 @@ MonoBehaviour:
   paddingTop: 30
   paddingBottom: 20
   paddingLeft: 50
-  paddingRight: 30
+  paddingRight: 20
   minDistanceRatioX: 0.9
   minDistanceAbsoluteX: 80
+  minButtonGapX: 20
   subRegionBtnPrefab: {fileID: 7517307680413845945, guid: 57557c005e0483a4dbaf64dda4250ca2, type: 3}
   maxPrewarmCount: 8
   appearAnimDuration: 0.15

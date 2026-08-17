@@ -40,6 +40,8 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     [SerializeField] private float minDistanceRatioX = 0.9f;
     [Tooltip("버튼 간 최소 보장 절대 거리 (프리팹의 Rect 넓이보다 실제 나무 이미지가 더 큰 경우를 대비한 절대 픽셀 값)")]
     [SerializeField] private float minDistanceAbsoluteX = 120f;
+    [Tooltip("버튼과 버튼 사이의 최소 물리적 여백 (최소 픽셀 간격)")]
+    [SerializeField] private float minButtonGapX = 20f;
 
     [Header("SubRegion Button Setup & Animation")]
     [Tooltip("기본 프리팹 (초기화 후 비활성화됨)")]
@@ -62,7 +64,6 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     private readonly List<HUD_PopupNav_SubRegionBtn> subRegionButtons = new List<HUD_PopupNav_SubRegionBtn>(16);
     private readonly List<HUD_PopupNav_SubRegionBtn> activeSubRegionButtons = new List<HUD_PopupNav_SubRegionBtn>(8);
 
-    private WaitForSeconds cachedSequenceWait;
     private Sequence currentAppearSequence;
     
     private MapType pendingMapType = MapType.None;
@@ -71,8 +72,9 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
     // Fixed GC allocs by making these class-level fields
     private readonly List<TreeVisualData> tempTreeVisualDatas = new List<TreeVisualData>(8);
-    private float[] cachedSafeDistances = new float[32];
-    private float[] cachedGaps = new float[32];
+    private readonly float[] cachedSafeDistances = new float[32];
+    private readonly float[] cachedGaps = new float[32];
+    private readonly Vector2[] cachedCalculatedPositions = new Vector2[32];
     
     private int completedDisappearCount;
     private Action cachedOnComplete;
@@ -113,8 +115,6 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
                 subRegionButtons.Add(_newBtn);
             }
         }
-        
-        cachedSequenceWait = new WaitForSeconds(appearSequenceDelay);
 
         if (null == cachedOnDisappearSequenceCompleteForToggle) cachedOnDisappearSequenceCompleteForToggle = OnDisappearSequenceCompleteForToggle;
         if (null == cachedOnAppearSequenceComplete) cachedOnAppearSequenceComplete = OnAppearSequenceComplete;
@@ -264,97 +264,184 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         }
 
         int _count = activeSubRegionButtons.Count;
-        float _usableWidth = container.rect.width - paddingLeft - paddingRight;
+        float _containerWidth = container.rect.width;
+        float _containerHeight = container.rect.height;
+        float _usableWidth = _containerWidth - paddingLeft - paddingRight;
 
-        CalculateTotalSpaceAndGaps(_count, _usableWidth);
-        PositionButtonsWithArchAndScatter(_count);
-    }
+        // Y축 상/하한선 계산 및 역전 방지 (패딩이 컨테이너보다 크더라도 최소 50px의 안전 높이 마진 확보)
+        float _topLimit = (_containerHeight * (1f - container.pivot.y)) - paddingTop;
+        float _bottomLimit = -(_containerHeight * container.pivot.y) + paddingBottom;
+        if (_bottomLimit >= _topLimit)
+        {
+            float _mid = (_bottomLimit + _topLimit) * 0.5f;
+            _bottomLimit = _mid - 25f;
+            _topLimit = _mid + 25f;
+        }
 
-    private void CalculateTotalSpaceAndGaps(int _count, float _usableWidth)
-    {
-        float _totalRequiredSpace = 0f;
+        float _verticalMid = (_bottomLimit + _topLimit) * 0.5f;
 
+        if (1 == _count)
+        {
+            RectTransform _singleBtnRect = activeSubRegionButtons[0].CachedRectTransform;
+            if (null != _singleBtnRect)
+            {
+                float _centerX = -(_containerWidth * container.pivot.x) + paddingLeft + (_usableWidth * 0.5f);
+                float _targetY = Mathf.Clamp(_verticalMid, _bottomLimit, _topLimit);
+                _singleBtnRect.anchoredPosition = new Vector2(Mathf.Round(_centerX), Mathf.Round(_targetY));
+            }
+            return;
+        }
+
+        // 1. 각 버튼의 시각적 너비 및 최소 요구 중심 간격 계산
+        float _minCenterSpan = 0f;
         for (int i = 0; i < _count; i++)
         {
             if (null != activeSubRegionButtons[i])
             {
-                float _btnWidth = activeSubRegionButtons[i].GetActualVisualWidth();
-                cachedSafeDistances[i] = Mathf.Round(Mathf.Max(_btnWidth * minDistanceRatioX, minDistanceAbsoluteX));
+                float _visualWidth = activeSubRegionButtons[i].GetActualVisualWidth();
+                cachedSafeDistances[i] = Mathf.Max(_visualWidth * minDistanceRatioX, _visualWidth, minDistanceAbsoluteX * 0.5f);
             }
             else
             {
-                cachedSafeDistances[i] = Mathf.Round(minDistanceAbsoluteX);
+                cachedSafeDistances[i] = minDistanceAbsoluteX * 0.5f;
             }
-            _totalRequiredSpace += cachedSafeDistances[i];
         }
-        
-        float _availableRandomSpace = _usableWidth - _totalRequiredSpace;
 
-        if (0f > _availableRandomSpace)
+        for (int i = 0; i < _count - 1; i++)
         {
-            _availableRandomSpace = 0f;
+            float _requiredCenterDist = (cachedSafeDistances[i] * 0.5f) + (cachedSafeDistances[i + 1] * 0.5f) + minButtonGapX;
+            _requiredCenterDist = Mathf.Max(_requiredCenterDist, minDistanceAbsoluteX);
+            _minCenterSpan += _requiredCenterDist;
         }
 
-        float _sumGaps = 0f;
-        for (int i = 0; i < _count + 1; i++)
+        float _btn0HalfWidth = cachedSafeDistances[0] * 0.5f;
+        float _btnLastHalfWidth = cachedSafeDistances[_count - 1] * 0.5f;
+        float _totalRequiredWidth = _btn0HalfWidth + _minCenterSpan + _btnLastHalfWidth;
+        float _availableExtraSpace = _usableWidth - _totalRequiredWidth;
+
+        // 2. X 좌표 슬롯 및 가변 여백 산출
+        float _baseLeftX = -(_containerWidth * container.pivot.x) + paddingLeft;
+
+        if (0f < _availableExtraSpace)
         {
-            cachedGaps[i] = UnityEngine.Random.Range(0.2f, 1.0f);
-            _sumGaps += cachedGaps[i];
-        }
+            // 여유 공간이 있을 때: 좌우 마진 및 버튼 간 추가 간격에 난수 가중치 분배
+            float _sumWeights = 0f;
+            for (int i = 0; i < _count + 1; i++)
+            {
+                cachedGaps[i] = UnityEngine.Random.Range(0.3f, 1.0f);
+                _sumWeights += cachedGaps[i];
+            }
 
-        for (int i = 0; i < _count + 1; i++)
+            for (int i = 0; i < _count + 1; i++)
+            {
+                cachedGaps[i] = (cachedGaps[i] / _sumWeights) * _availableExtraSpace;
+            }
+
+            float _currentCenterX = _baseLeftX + cachedGaps[0] + _btn0HalfWidth;
+            cachedCalculatedPositions[0].x = _currentCenterX;
+
+            for (int i = 0; i < _count - 1; i++)
+            {
+                float _baseCenterDist = (cachedSafeDistances[i] * 0.5f) + (cachedSafeDistances[i + 1] * 0.5f) + minButtonGapX;
+                _baseCenterDist = Mathf.Max(_baseCenterDist, minDistanceAbsoluteX);
+                _currentCenterX += _baseCenterDist + cachedGaps[i + 1];
+                cachedCalculatedPositions[i + 1].x = _currentCenterX;
+            }
+        }
+        else
         {
-            cachedGaps[i] = (cachedGaps[i] / _sumGaps) * _availableRandomSpace;
+            // 여유 공간이 좁을 때: usableWidth 내에서 버튼들을 균등 분할 배치하여 클리핑 방지
+            float _firstCenterX = _baseLeftX + _btn0HalfWidth;
+            float _lastCenterX = _baseLeftX + _usableWidth - _btnLastHalfWidth;
+
+            if (_firstCenterX > _lastCenterX)
+            {
+                _lastCenterX = _firstCenterX;
+            }
+
+            for (int i = 0; i < _count; i++)
+            {
+                float _t = (float)i / (_count - 1);
+                cachedCalculatedPositions[i].x = Mathf.Lerp(_firstCenterX, _lastCenterX, _t);
+            }
         }
-    }
 
-    private void PositionButtonsWithArchAndScatter(int _count)
-    {
-        float _containerWidth = container.rect.width;
-        float _containerHeight = container.rect.height;
-        float _currentLocalX = -(_containerWidth * container.pivot.x) + paddingLeft;
-        
-        bool _isUpDownUp = 0.5f < UnityEngine.Random.value;
+        // 3. Y 좌표 산출 (산 모양 Triangle vs 역삼각형 Inverted Triangle 높낮이 편차 보장)
+        float _maxHalfSpan = (_topLimit - _bottomLimit) * 0.5f;
+        float _heightDelta = Mathf.Clamp(Mathf.Max(archHeightY, randomScatterRangeY, 25f), 20f, Mathf.Max(20f, _maxHalfSpan * 0.85f));
+        bool _isTriangle = 0.5f < UnityEngine.Random.value; // 50% 산 모양, 50% 역삼각형
 
+        if (2 == _count)
+        {
+            // 2개 버튼: 대각선 배치 (한쪽 상단, 한쪽 하단)
+            float _sign0 = true == _isTriangle ? -1f : 1f;
+            float _sign1 = -_sign0;
+
+            cachedCalculatedPositions[0].y = _verticalMid + (_sign0 * _heightDelta) + UnityEngine.Random.Range(-3f, 3f);
+            cachedCalculatedPositions[1].y = _verticalMid + (_sign1 * _heightDelta) + UnityEngine.Random.Range(-3f, 3f);
+        }
+        else if (3 == _count)
+        {
+            // 3개 버튼: 산 모양(양쪽 아래, 가운데 위) vs 역삼각형(양쪽 위, 가운데 아래)
+            float _sidesSign = true == _isTriangle ? -1f : 1f;
+            float _centerSign = -_sidesSign;
+
+            cachedCalculatedPositions[0].y = _verticalMid + (_sidesSign * _heightDelta) + UnityEngine.Random.Range(-3f, 3f);
+            cachedCalculatedPositions[1].y = _verticalMid + (_centerSign * _heightDelta) + UnityEngine.Random.Range(-3f, 3f);
+            cachedCalculatedPositions[2].y = _verticalMid + (_sidesSign * _heightDelta) + UnityEngine.Random.Range(-3f, 3f);
+        }
+        else
+        {
+            // 4개 이상 버튼: 매크로 아치/역아치 곡률 + 지그재그 높낮이 교차
+            float _macroSign = true == _isTriangle ? 1f : -1f;
+
+            for (int i = 0; i < _count; i++)
+            {
+                float _t = (i / (float)(_count - 1)) * 2f - 1f;
+                float _macroOffset = _macroSign * _heightDelta * (1f - (2f * _t * _t));
+                float _stagger = (0 == i % 2 ? 1f : -1f) * (minRandomScatterY * 0.4f);
+                float _jitter = UnityEngine.Random.Range(-3f, 3f);
+
+                cachedCalculatedPositions[i].y = _verticalMid + _macroOffset + _stagger + _jitter;
+            }
+        }
+
+        // 1차 상하한 클램핑
+        for (int i = 0; i < _count; i++)
+        {
+            cachedCalculatedPositions[i].y = Mathf.Clamp(cachedCalculatedPositions[i].y, _bottomLimit, _topLimit);
+        }
+
+        // 4. 2D 거리 검증 및 이완(Relaxation) 패스
+        float _minSqDistance = minDistanceAbsoluteX * minDistanceAbsoluteX;
+        for (int i = 0; i < _count - 1; i++)
+        {
+            for (int j = i + 1; j < _count; j++)
+            {
+                Vector2 _delta = cachedCalculatedPositions[j] - cachedCalculatedPositions[i];
+                float _sqDist = _delta.sqrMagnitude;
+                if (_sqDist < _minSqDistance && 0.001f < _sqDist)
+                {
+                    float _dist = Mathf.Sqrt(_sqDist);
+                    float _overlap = (minDistanceAbsoluteX - _dist) * 0.5f;
+                    Vector2 _pushDir = _delta / _dist;
+
+                    cachedCalculatedPositions[i] -= _pushDir * _overlap;
+                    cachedCalculatedPositions[j] += _pushDir * _overlap;
+                }
+            }
+        }
+
+        // 5. 최종 좌표 클램핑 및 적용
         for (int i = 0; i < _count; i++)
         {
             RectTransform _btnRect = activeSubRegionButtons[i].CachedRectTransform;
             if (null == _btnRect) continue;
 
-            _currentLocalX += cachedGaps[i];
+            float _finalX = cachedCalculatedPositions[i].x;
+            float _finalY = Mathf.Clamp(cachedCalculatedPositions[i].y, _bottomLimit, _topLimit);
 
-            float _mySafeDistance = cachedSafeDistances[i];
-            float _targetX = _currentLocalX + (_mySafeDistance * 0.5f);
-
-            _currentLocalX += _mySafeDistance;
-
-            float t = (1 < _count) ? (i / (float)(_count - 1)) * 2f - 1f : 0f;
-            float _archOffset = archHeightY * (1f - (t * t));
-            
-            float _randomOffsetY = 0f;
-            if (preventStraightLine)
-            {
-                bool _goesUp = _isUpDownUp ? (0 == i % 2) : (0 != i % 2);
-                _randomOffsetY = UnityEngine.Random.Range(minRandomScatterY, randomScatterRangeY);
-                _randomOffsetY = _goesUp ? _randomOffsetY : -_randomOffsetY;
-            }
-            else
-            {
-                _randomOffsetY = UnityEngine.Random.Range(-randomScatterRangeY, randomScatterRangeY);
-            }
-            
-            float _targetY = baseOffsetY + _archOffset + _randomOffsetY;
-
-            float _maxY = (_containerHeight * (1f - container.pivot.y)) - paddingTop;
-            float _minY = -(_containerHeight * container.pivot.y) + paddingBottom;
-            
-            float _btnHalfHeight = _btnRect.rect.height * 0.5f;
-            _maxY -= _btnHalfHeight;
-            _minY += _btnHalfHeight;
-
-            _targetY = Mathf.Clamp(_targetY, _minY, _maxY);
-
-            _btnRect.anchoredPosition = new Vector2(Mathf.Round(_targetX), Mathf.Round(_targetY));
+            _btnRect.anchoredPosition = new Vector2(Mathf.Round(_finalX), Mathf.Round(_finalY));
         }
     }
 

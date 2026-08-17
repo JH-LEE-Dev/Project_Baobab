@@ -184,6 +184,20 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         return CachedRectTransform.rect.width;
     }
 
+    /// <summary>
+    /// 레이아웃 배치 시 사용될 실제 시각적 높이를 반환합니다.
+    /// 바인딩된 객체가 없다면 자신의 RectTransform 높이를 반환합니다.
+    /// </summary>
+    public float GetActualVisualHeight()
+    {
+        if (null != visualBoundsRef)
+        {
+            return visualBoundsRef.rect.height;
+        }
+        
+        return CachedRectTransform.rect.height;
+    }
+
     public void Initialize(HUD_PopupNav_Main _mainController, ForestEnvironmentInfo _info, LocalizationManager _localizationManager, ICursorBoxUI _cursorBoxUI, MapType _parentMapType, System.Collections.Generic.List<TreeVisualData> _visualDatas, int _appearSoundIndex = -1)
     {
         mainController = _mainController;
@@ -192,9 +206,9 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         parentMapType = _parentMapType;
         appearSoundIndex = _appearSoundIndex;
 
-        SetupTreeProps(_visualDatas, !_info.isUnlocked);
-        SetupLockState(!_info.isUnlocked);
-        SetupNewIndicator(_info.isNew, !_info.isUnlocked);
+        SetupTreeProps(_visualDatas, false == _info.isUnlocked);
+        SetupLockState(false == _info.isUnlocked);
+        SetupNewIndicator(_info.isNew, false == _info.isUnlocked);
         CollectVisualChildren();
         CacheDelegates();
 

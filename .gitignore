@@ -76,3 +76,6 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 GEMINI.md
 .geminiignore
+
+# Antigravity Agent Configuration & Rules
+.agents/
