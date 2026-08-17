@@ -211,6 +211,10 @@ public struct EnvironmentSaveData
 [Serializable]
 public class GameSaveData
 {
+    // 이 세이브를 만든 빌드(데모/정식). 값이 없는 예전 세이브는 Unknown(0)으로 역직렬화되며 데모로 간주된다.
+    // Clear()에서는 건드리지 않고, 저장 직전에 SaveManager가 항상 현재 빌드 값으로 덮어쓴다.
+    public SaveBuildVariant buildVariant;
+
     public SkillTreeSaveData skillTreeSaveData;
     public InventorySaveData inventorySaveData;
     public LogProcessingSaveData logProcessingSaveData;

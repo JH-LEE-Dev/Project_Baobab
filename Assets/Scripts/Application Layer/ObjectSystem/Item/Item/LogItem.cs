@@ -124,11 +124,8 @@ public class LogItem : Item, IStaticCollidable
     [SerializeField] private SpriteRenderer outlineStencilSR;
     [SerializeField] private SpriteRenderer outlineSR;
 
-    [Header("Outline Color By LogState")]
+    [Header("Outline Color")]
     [SerializeField] private Color normalOutlineColor = Color.white;
-    [SerializeField] private Color fascinatingOutlineColor = new Color(0f, 1f, 0f, 1f);
-    [SerializeField] private Color advancedOutlineColor = new Color(0f, 0f, 1f, 1f);
-    [SerializeField] private Color perfectOutlineColor = new Color(1f, 0.5f, 0f, 1f);
     private static readonly int OutlineColorPropertyID = Shader.PropertyToID("_OutlineColor");
 
     private ICharacter character;
@@ -145,14 +142,15 @@ public class LogItem : Item, IStaticCollidable
         character = _character;
         bDisableCustomSortable = _bDisableCustomSortable;
         logState = _logState;
-        ApplyOutlineColorForState(logState);
+        ApplyOutlineColor();
         treeType = _logItemTypeData.treeType;
         state = ItemMoveState.None;
         suckTarget = null;
         suckerChecker = null;
         customAcquirer = null;
         dynamicTarget = null;
-        sprite = _logItemTypeData.sprite;
+        // 원목 상태(황금/다이아/무지개)에 따라 다른 스프라이트로 드랍된다.
+        sprite = _logItemTypeData.GetSprite(_logState);
         durability = _logItemTypeData.durability;
         originalDurability = durability;
         elapsed = 0;
@@ -1201,7 +1199,7 @@ public class LogItem : Item, IStaticCollidable
     private void SetShaderFloating(bool _enable)
     {
         // GPU 인스턴싱(SRP Batcher) 유지를 위해 MaterialPropertyBlock 사용을 제거하고 셰이더 내부 연산으로 대체함
-        // outlineSR은 logState별 _OutlineColor를 인스턴스 프로퍼티 블록에 유지해야 하므로 여기서 초기화하지 않는다
+        // outlineSR은 _OutlineColor를 인스턴스 프로퍼티 블록에 유지해야 하므로 여기서 초기화하지 않는다
         // 샤이니 효과는 Dropped 상태이면서 logState가 Normal보다 높을 때만 노출되어야 하므로 인스턴스 프로퍼티 블록으로 제어한다
         bool shinyEnabled = _enable && logState > LogState.Normal;
 
@@ -1215,24 +1213,13 @@ public class LogItem : Item, IStaticCollidable
         if (outlineStencilSR != null) outlineStencilSR.SetPropertyBlock(null);
     }
 
-    private Color GetOutlineColorForState(LogState _state)
-    {
-        switch (_state)
-        {
-            case LogState.Fascinating: return fascinatingOutlineColor;
-            case LogState.Advanced: return advancedOutlineColor;
-            case LogState.Perfect: return perfectOutlineColor;
-            default: return normalOutlineColor;
-        }
-    }
-
-    private void ApplyOutlineColorForState(LogState _state)
+    private void ApplyOutlineColor()
     {
         if (outlineSR == null) return;
 
         if (mpb == null) mpb = new MaterialPropertyBlock();
         outlineSR.GetPropertyBlock(mpb);
-        mpb.SetColor(OutlineColorPropertyID, GetOutlineColorForState(_state));
+        mpb.SetColor(OutlineColorPropertyID, normalOutlineColor);
         outlineSR.SetPropertyBlock(mpb);
     }
 }

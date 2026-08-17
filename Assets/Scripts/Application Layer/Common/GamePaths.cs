@@ -12,6 +12,7 @@ public static class GamePaths
     private const string GAME_SAVE_FILE_NAME = "SaveData.dat";
     private const string GAME_SAVE_BACKUP_FILE_NAME = "SaveData.dat.bak";
     private const string GAME_SAVE_TEMP_FILE_NAME = "SaveData.dat.tmp";
+    private const string GAME_SAVE_FOREIGN_BACKUP_FILE_NAME = "SaveData.other-build.bak";
     private const string SETTINGS_FILE_NAME = "Settings.json";
     private const string KEY_BINDINGS_FILE_NAME = "KeyBindings.json";
 
@@ -45,6 +46,12 @@ public static class GamePaths
 
     /// <summary>원자적 쓰기용 임시 파일. GameSaveFile과 반드시 같은 폴더(SaveFolder)에 있어야 한다.</summary>
     public static string GameSaveTempFile => Path.Combine(SaveFolder, GAME_SAVE_TEMP_FILE_NAME);
+
+    /// <summary>
+    /// 다른 빌드 변형의 세이브를 덮어쓰기 직전에 보존해두는 파일. (데모 빌드가 정식 세이브를 만났을 때만 사용)
+    /// 게임이 자동으로 다시 읽지는 않으며, 사고 시 수동 복구용이다.
+    /// </summary>
+    public static string GameSaveForeignBackupFile => Path.Combine(SaveFolder, GAME_SAVE_FOREIGN_BACKUP_FILE_NAME);
 
     /// <summary>환경설정 (평문 JSON)</summary>
     public static string SettingsFile => Path.Combine(SaveFolder, SETTINGS_FILE_NAME);
