@@ -47,8 +47,20 @@ public class UI_EscapeMenu : MonoBehaviour
     [SerializeField] private int mainMenuTextId = 3;
     [SerializeField] private int exitTextId = 4;
 
+    [Header("Popup UI")]
+    [SerializeField] private UI_WarningPopup warningPopup;
+
+    [Header("Warning Popup Localization Keys")]
+    [SerializeField] private string exitWarningKey = "ExitGameWarning";
+    [SerializeField] private string mainMenuWarningKey = "MainMenuWarning";
+
     private LocalizationManager localizationManager;
     private Action cachedRefreshLocalizedTexts;
+    private Action cachedConfirmExit;
+    private Action cachedConfirmMainMenu;
+    private Action cachedOnMainMenuCloseProductionCompleted;
+    private Action cachedOnExitCloseProductionCompleted;
+    private Action cachedCancelWarningAndRestoreMenu;
 
     private Action onResumeCallback;
     private Action onOptionCallback;
@@ -99,15 +111,44 @@ public class UI_EscapeMenu : MonoBehaviour
         onOptionCallback = null;
         onMainMenuCallback = null;
         onExitCallback = null;
+
+        cachedConfirmExit = null;
+        cachedConfirmMainMenu = null;
+        cachedOnMainMenuCloseProductionCompleted = null;
+        cachedOnExitCloseProductionCompleted = null;
+        cachedCancelWarningAndRestoreMenu = null;
     }
 
-    public void Initialize(LocalizationManager _localizationManager, Action _onResume, Action _onOption, Action _onMainMenu, Action _onExit)
+    public void Initialize(
+        LocalizationManager _localizationManager,
+        Action _onResume,
+        Action _onOption,
+        Action _onMainMenu,
+        Action _onExit,
+        UI_WarningPopup _warningPopup = null)
     {
         localizationManager = _localizationManager;
         onResumeCallback = _onResume;
         onOptionCallback = _onOption;
         onMainMenuCallback = _onMainMenu;
         onExitCallback = _onExit;
+
+        if (null != _warningPopup)
+        {
+            warningPopup = _warningPopup;
+        }
+
+        if (null == warningPopup)
+        {
+            warningPopup = GetComponentInParent<UIView_ESC>()?.GetComponentInChildren<UI_WarningPopup>(true)
+                ?? GetComponentInChildren<UI_WarningPopup>(true);
+        }
+
+        cachedConfirmExit = ConfirmExit;
+        cachedConfirmMainMenu = ConfirmMainMenu;
+        cachedOnMainMenuCloseProductionCompleted = OnMainMenuCloseProductionCompleted;
+        cachedOnExitCloseProductionCompleted = OnExitCloseProductionCompleted;
+        cachedCancelWarningAndRestoreMenu = CancelWarningAndRestoreMenu;
 
         if (null != resumeButton) resumeButton.Initialize(OnResumeButtonClicked);
         if (null != optionButton) optionButton.Initialize(OnOptionButtonClicked);
@@ -239,6 +280,11 @@ public class UI_EscapeMenu : MonoBehaviour
         KillProductionSequences();
         isClosing = true;
         SetButtonsInteractable(false);
+
+        if (null != warningPopup && true == warningPopup.IsActive)
+        {
+            warningPopup.Hide();
+        }
 
         if (soundsEnabled)
             Sound.PlayUI(SoundID.ResultUIClose);
@@ -682,12 +728,79 @@ public class UI_EscapeMenu : MonoBehaviour
     private void OnMainMenuButtonClicked()
     {
         if (true == isClosing) return;
-        if (null != onMainMenuCallback) onMainMenuCallback.Invoke();
+
+        if (null != warningPopup && null != localizationManager)
+        {
+            PlayCloseProduction(cachedOnMainMenuCloseProductionCompleted);
+        }
+        else
+        {
+            ConfirmMainMenu();
+        }
     }
 
     private void OnExitButtonClicked()
     {
         if (true == isClosing) return;
-        if (null != onExitCallback) onExitCallback.Invoke();
+
+        if (null != warningPopup && null != localizationManager)
+        {
+            PlayCloseProduction(cachedOnExitCloseProductionCompleted);
+        }
+        else
+        {
+            ConfirmExit();
+        }
+    }
+
+    private void OnMainMenuCloseProductionCompleted()
+    {
+        if (null != warningPopup && null != localizationManager)
+        {
+            string _warningMsg = localizationManager.GetText(mainMenuWarningKey);
+            warningPopup.ShowWarning(
+                _warningMsg,
+                cachedConfirmMainMenu,
+                cachedCancelWarningAndRestoreMenu,
+                SoundID.ResultUIOpen,
+                SoundID.ResultUIClose,
+                SoundID.ResultUIHover);
+        }
+    }
+
+    private void OnExitCloseProductionCompleted()
+    {
+        if (null != warningPopup && null != localizationManager)
+        {
+            string _warningMsg = localizationManager.GetText(exitWarningKey);
+            warningPopup.ShowWarning(
+                _warningMsg,
+                cachedConfirmExit,
+                cachedCancelWarningAndRestoreMenu,
+                SoundID.ResultUIOpen,
+                SoundID.ResultUIClose,
+                SoundID.ResultUIHover);
+        }
+    }
+
+    private void CancelWarningAndRestoreMenu()
+    {
+        PlayOpenProduction();
+    }
+
+    private void ConfirmMainMenu()
+    {
+        if (null != onMainMenuCallback)
+        {
+            onMainMenuCallback.Invoke();
+        }
+    }
+
+    private void ConfirmExit()
+    {
+        if (null != onExitCallback)
+        {
+            onExitCallback.Invoke();
+        }
     }
 }
