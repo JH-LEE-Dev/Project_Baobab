@@ -162,10 +162,11 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private TweenCallback onNavImageDownStartedCallback;
     
     private UnityEngine.Events.UnityAction onBackgroundDimClickedAction;
+    private float demoNoticeClosedGraceTime = 0f;
 
-    public bool IsInputBlocked => isInputBlocked || isUnlockingProductionActive || isClosing || (null != demoNotice && demoNotice.IsDemoNoticeShowing);
+    public bool IsInputBlocked => isInputBlocked || isUnlockingProductionActive || isClosing || IsTransitioning || (null != demoNotice && demoNotice.IsDemoNoticeActive) || (Time.unscaledTime < demoNoticeClosedGraceTime);
     public bool IsUnlockingProductionActive => isUnlockingProductionActive;
-    public bool IsDemoNoticeShowing => null != demoNotice && demoNotice.IsDemoNoticeShowing;
+    public bool IsDemoNoticeShowing => null != demoNotice && demoNotice.IsDemoNoticeActive;
     public bool IsTransitioning { get; private set; }
     public bool IsDemoVersion { get => isDemoVersion; set => isDemoVersion = value; }
     public MapType MaxPlayableMapTypeInDemo { get => maxPlayableMapTypeInDemo; set => maxPlayableMapTypeInDemo = value; }
@@ -591,9 +592,12 @@ public class HUD_PopupNav_Main : MonoBehaviour
     // 내부 이벤트 핸들러
     private void OnBackgroundDimClicked()
     {
-        if (null != demoNotice && true == demoNotice.IsDemoNoticeShowing)
+        if (null != demoNotice && true == demoNotice.IsDemoNoticeActive)
         {
-            demoNotice.HideDemoNoticeOverlay();
+            if (false == demoNotice.IsHiding)
+            {
+                demoNotice.HideDemoNoticeOverlay();
+            }
             return;
         }
 
@@ -1126,16 +1130,36 @@ public class HUD_PopupNav_Main : MonoBehaviour
         }
     }
 
+    public void HandleDemoNoticeClosing()
+    {
+        // 데모 패널이 닫히기 시작할 때 대지역 버튼들을 부드럽게 언호버 및 선택 지역 상태로 복귀
+        MapType _targetMap = (MapType.None != currentSelectedMapType && false == IsDemoRestrictedMapType(currentSelectedMapType))
+            ? currentSelectedMapType
+            : maxPlayableMapTypeInDemo;
+
+        if (null != regionGroup)
+        {
+            regionGroup.SetSelectRegion(_targetMap, true);
+        }
+    }
+
     public void HandleDemoNoticeClosed()
     {
-        // 안전하게 현재 플레이 가능한 대지역으로 UI 복구
-        MapType _targetMap = (currentSelectedMapType != MapType.None && false == IsDemoRestrictedMapType(currentSelectedMapType))
+        demoNoticeClosedGraceTime = Time.unscaledTime + 0.15f;
+
+        // 안전하게 현재 플레이 가능한 대지역으로 UI 복구 및 마우스 호버 상태 재평가
+        MapType _targetMap = (MapType.None != currentSelectedMapType && false == IsDemoRestrictedMapType(currentSelectedMapType))
             ? currentSelectedMapType
             : maxPlayableMapTypeInDemo;
 
         if (null != regionGroup)
         {
             regionGroup.SetSelectRegion(_targetMap, false);
+            regionGroup.EvaluateAllHoverStates();
+        }
+        if (null != subRegionGroup)
+        {
+            subRegionGroup.EvaluateAllHoverStates();
         }
     }
 

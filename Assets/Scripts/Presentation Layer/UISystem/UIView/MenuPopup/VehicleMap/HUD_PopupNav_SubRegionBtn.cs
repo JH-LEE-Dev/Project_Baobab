@@ -362,6 +362,10 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         lockIconObj.transform.localScale = Vector3.one;
         lockIconObj.transform.localRotation = Quaternion.identity;
         lockIconObj.transform.localPosition = lockIconOriginalLocalPos;
+        if (null != lockIconImage)
+        {
+            lockIconImage.color = Color.white;
+        }
 
         Sequence _seq = DOTween.Sequence();
         
@@ -373,10 +377,11 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         if (null != lockIconImage)
         {
-            _seq.Join(lockIconImage.DOColor(lockClickColor, lockClickColorDuration * 0.5f));
-            _seq.Append(lockIconImage.DOColor(Color.white, lockClickColorDuration * 0.5f));
+            _seq.Join(lockIconImage.DOColor(lockClickColor, lockClickColorDuration * 0.5f).SetTarget(lockIconImage));
+            _seq.Append(lockIconImage.DOColor(Color.white, lockClickColorDuration * 0.5f).SetTarget(lockIconImage));
         }
         
+        _seq.SetTarget(this);
         lockIconTween = _seq;
     }
 

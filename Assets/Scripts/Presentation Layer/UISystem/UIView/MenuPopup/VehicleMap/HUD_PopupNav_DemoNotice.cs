@@ -63,9 +63,12 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     private LocalizationManager localizationManager;
     private UIDepthController depthController;
     private bool isDemoNoticeShowing = false;
+    private bool isHiding = false;
     private Tween demoNoticeTween;
 
     public bool IsDemoNoticeShowing => isDemoNoticeShowing;
+    public bool IsHiding => isHiding;
+    public bool IsDemoNoticeActive => (true == isDemoNoticeShowing || true == isHiding);
 
     // IUIDepthCloseable 구현: ESC로 뎁스 스택에서 닫힐 때 호출됩니다.
     public bool IsActive => isDemoNoticeShowing;
@@ -85,13 +88,13 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
 
     public void ShowDemoNoticeOverlay(MapType _restrictedMapType = MapType.None)
     {
-        if (null == demoNoticeOverlay)
+        if (null == demoNoticeOverlay || true == isDemoNoticeShowing || true == isHiding)
         {
-            Debug.LogWarning("[HUD_PopupNav_DemoNotice] Demo notice overlay is not assigned!");
             return;
         }
 
         isDemoNoticeShowing = true;
+        isHiding = false;
         demoNoticeOverlay.SetActive(true);
         Sound.PlayUI(SoundID.DemoEnd);
 
@@ -177,16 +180,28 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
 
     public void HideDemoNoticeOverlay()
     {
-        if (null == demoNoticeOverlay || false == demoNoticeOverlay.activeSelf || false == isDemoNoticeShowing)
+        if (null == demoNoticeOverlay || false == demoNoticeOverlay.activeSelf || false == isDemoNoticeShowing || true == isHiding)
         {
             return;
         }
 
+        isHiding = true;
+
         Sound.PlayUI(SoundID.NaviClose);
+
+        if (null != mainController)
+        {
+            mainController.HandleDemoNoticeClosing();
+        }
 
         if (null != demoContentCanvasGroup)
         {
             demoContentCanvasGroup.blocksRaycasts = false;
+        }
+
+        if (null != demoDimCanvasGroup)
+        {
+            demoDimCanvasGroup.blocksRaycasts = true;
         }
 
         if (null != demoNoticeTween && true == demoNoticeTween.IsActive())
@@ -228,6 +243,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
             demoNoticeOverlay.SetActive(false);
         }
         isDemoNoticeShowing = false;
+        isHiding = false;
 
         depthController?.UnregisterView(this);
 
@@ -261,6 +277,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
             demoDimCanvasGroup.blocksRaycasts = false;
         }
         isDemoNoticeShowing = false;
+        isHiding = false;
 
         // 네비게이션 팝업이 애니메이션 없이(다른 경로로) 강제로 닫힐 때도 호출되므로, 뎁스 스택에
         // 좀비 항목으로 남지 않도록 여기서도 해제한다.

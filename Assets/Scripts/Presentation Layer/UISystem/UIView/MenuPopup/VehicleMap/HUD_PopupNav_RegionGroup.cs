@@ -189,7 +189,7 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
     {
         for (int i = 0; i < regionButtons.Count; i++)
         {
-            if (null == regionButtons[i]) continue;
+            if (null == regionButtons[i] || false == regionButtons[i].gameObject.activeSelf) continue;
             regionButtons[i].SetSelectedState(_mapType == regionButtons[i].GetMapType(), _playClickAnim);
         }
     }
@@ -198,7 +198,7 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
     {
         for (int i = 0; i < regionButtons.Count; i++)
         {
-            if (null == regionButtons[i]) continue;
+            if (null == regionButtons[i] || false == regionButtons[i].gameObject.activeSelf) continue;
             if (_mapType == regionButtons[i].GetMapType())
             {
                 return regionButtons[i].transform;
@@ -236,7 +236,7 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
     {
         for (int i = 0; i < regionButtons.Count; i++)
         {
-            if (null == regionButtons[i]) continue;
+            if (null == regionButtons[i] || false == regionButtons[i].gameObject.activeSelf) continue;
             regionButtons[i].ForceStopHoverEffect();
         }
     }
