@@ -75,7 +75,7 @@ public class LootManager : MonoBehaviour
 
     private LootItem CreateLootItem()
     {
-        if (lootItemPrefab == null)
+        if (null == lootItemPrefab)
             return null;
 
         LootItem newItem = Instantiate(lootItemPrefab, transform);
@@ -83,6 +83,9 @@ public class LootManager : MonoBehaviour
         // 이벤트 바인딩 (생성 시 한 번만)
         newItem.lootItemAcquiredEvent -= OnLootItemAcquired;
         newItem.lootItemAcquiredEvent += OnLootItemAcquired;
+
+        // 첫 스폰 시 발생하는 셰이더 컴파일 지연(푸른색 박스 잔상)을 원천 방지하기 위한 사전 웜업
+        newItem.Prewarm();
 
         return newItem;
     }

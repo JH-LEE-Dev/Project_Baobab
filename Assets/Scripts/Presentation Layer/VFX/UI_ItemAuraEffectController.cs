@@ -12,6 +12,7 @@ public class UI_ItemAuraEffectController : MonoBehaviour
 {
     // 외부 의존성
     [SerializeField] private Image targetImage;
+    [SerializeField] private Material auraMaterialTemplate;
 
     // 설정 파라미터
     [Header("단발성 버스트 애니메이션")]
@@ -183,29 +184,47 @@ public class UI_ItemAuraEffectController : MonoBehaviour
     // ========================================================================
 
     /// <summary>
-    /// Image.material 접근 시 Unity가 자동으로 인스턴스 머티리얼을 생성합니다.
-    /// 이 메서드는 그 참조를 캐싱하여 반복 호출 비용을 줄입니다.
+    /// UGUI의 Image.material을 안전하게 인스턴스화하여 캐싱합니다.
+    /// 템플릿 머티리얼 또는 URP2D_ItemRadialAura 셰이더를 사용하여 UI/Default로 잘못 빠지는 현상을 원천 방지합니다.
     /// </summary>
     private void EnsureInstanceMaterial()
     {
         if (null == targetImage)
             targetImage = GetComponent<Image>();
 
-        if (null == targetImage || null == targetImage.material)
+        if (null == targetImage)
             return;
 
         if (null == instanceMaterial)
         {
-#if UNITY_EDITOR
-            if (false == Application.isPlaying)
+            // 1순위: 인스펙터에 지정된 템플릿 머티리얼이 있는 경우
+            if (null != auraMaterialTemplate)
             {
-                instanceMaterial = targetImage.material;
-                return;
+                instanceMaterial = new Material(auraMaterialTemplate);
             }
-#endif
-            // UGUI의 Image.material은 자동 인스턴스화되지 않으므로 런타임에서 직접 복제하여 사용합니다.
-            instanceMaterial = new Material(targetImage.material);
-            targetImage.material = instanceMaterial;
+            // 2순위: targetImage.material이 이미 올바른 URP2D_ItemRadialAura 셰이더를 사용하는 경우
+            else if (null != targetImage.material && null != targetImage.material.shader && true == targetImage.material.shader.name.Contains("URP2D_ItemRadialAura"))
+            {
+                instanceMaterial = new Material(targetImage.material);
+            }
+            // 3순위: 셰이더 검색을 통한 머티리얼 동적 생성 및 바인딩 (안전 Fallback)
+            else
+            {
+                Shader _shader = Shader.Find("Custom/VFX/URP2D_ItemRadialAura");
+                if (null != _shader)
+                {
+                    instanceMaterial = new Material(_shader);
+                }
+                else if (null != targetImage.material)
+                {
+                    instanceMaterial = new Material(targetImage.material);
+                }
+            }
+
+            if (null != instanceMaterial)
+            {
+                targetImage.material = instanceMaterial;
+            }
         }
     }
 
@@ -323,12 +342,29 @@ public class UI_ItemAuraEffectController : MonoBehaviour
 
         if (false == playOnAwake)
         {
-            ApplyIntensity(0f);
-            ApplyBurstProgress(0f);
-
-            if (null != targetImage)
-                targetImage.enabled = false;
+            Stop();
         }
+    }
+
+    private void OnEnable()
+    {
+        EnsureInstanceMaterial();
+        transform.localScale = maxScale;
+        ApplyAllSettings();
+
+        if (true == playOnAwake)
+        {
+            Play();
+        }
+        else
+        {
+            Stop();
+        }
+    }
+
+    private void OnDisable()
+    {
+        Stop();
     }
 
     private void Start()

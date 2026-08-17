@@ -173,13 +173,42 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 
     #endregion
 
+    public void HideImmediately()
+    {
+        depthController?.UnregisterView(this);
+        KillSequence();
+        HideCursor();
+        onConfirmAction = null;
+        onCancelAction = null;
+
+        if (null != popupCanvasGroup)
+        {
+            popupCanvasGroup.interactable = false;
+            popupCanvasGroup.blocksRaycasts = false;
+            popupCanvasGroup.alpha = 0f;
+        }
+
+        if (null != dimCanvasGroup)
+        {
+            dimCanvasGroup.alpha = 0f;
+        }
+
+        gameObject.SetActive(false);
+    }
+
     private void OnConfirmButtonClicked()
     {
         HideCursor();
 
-        if (null != onConfirmAction)
-            onConfirmAction();
-            
+        Action _confirm = onConfirmAction;
+        onConfirmAction = null;
+        onCancelAction = null;
+
+        if (null != _confirm)
+        {
+            _confirm.Invoke();
+        }
+
         PlayCloseProduction();
     }
 
@@ -187,9 +216,15 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     {
         HideCursor();
 
-        if (null != onCancelAction)
-            onCancelAction();
-            
+        Action _cancel = onCancelAction;
+        onConfirmAction = null;
+        onCancelAction = null;
+
+        if (null != _cancel)
+        {
+            _cancel.Invoke();
+        }
+
         PlayCloseProduction();
     }
 

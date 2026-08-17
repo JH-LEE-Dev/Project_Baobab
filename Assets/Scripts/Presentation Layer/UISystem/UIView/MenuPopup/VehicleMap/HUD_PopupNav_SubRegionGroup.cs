@@ -66,6 +66,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
     private Sequence currentAppearSequence;
     
+    private MapType currentDisplayedMapType = MapType.None;
     private MapType pendingMapType = MapType.None;
     private Transform pendingRegionTransform;
     private Action pendingOnComplete;
@@ -126,6 +127,12 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     {
         mapDataProvider = _provider;
         
+        if (_mapType == currentDisplayedMapType && 0 < activeSubRegionButtons.Count)
+        {
+            _onComplete?.Invoke();
+            return;
+        }
+
         if (0 < activeSubRegionButtons.Count)
         {
             pendingMapType = _mapType;
@@ -162,6 +169,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             return;
         }
 
+        currentDisplayedMapType = _mapType;
         activeSubRegionButtons.Clear();
         for (int i = 0; i < subRegionButtons.Count; i++)
         {
@@ -203,7 +211,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             }
         }
 
-        DistributeButtonsEvenly();
+        DistributeButtonsEvenly(_mapType);
 
         if (true == useDynamicAnchoring && null != _regionBtnTransform && null != container)
         {
@@ -256,7 +264,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         return _newBtn;
     }
 
-    private void DistributeButtonsEvenly()
+    private void DistributeButtonsEvenly(MapType _mapType)
     {
         if (null == container || 0 == activeSubRegionButtons.Count)
         {
@@ -268,6 +276,10 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         float _containerHeight = container.rect.height;
         float _usableWidth = _containerWidth - paddingLeft - paddingRight;
 
+        // 대지역별 고유 Seed 기반의 결정적(Deterministic) 레이아웃 산출기 초기화
+        int _seed = ((int)_mapType * 10007) + (_count * 389) + 48271;
+        System.Random _rng = new System.Random(_seed);
+
         // Y축 상/하한선 계산 및 역전 방지 (패딩이 컨테이너보다 크더라도 최소 50px의 안전 높이 마진 확보)
         float _topLimit = (_containerHeight * (1f - container.pivot.y)) - paddingTop;
         float _bottomLimit = -(_containerHeight * container.pivot.y) + paddingBottom;
@@ -278,7 +290,8 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             _topLimit = _mid + 25f;
         }
 
-        float _verticalMid = (_bottomLimit + _topLimit) * 0.5f;
+        float _verticalMid = ((_bottomLimit + _topLimit) * 0.5f) + baseOffsetY;
+        _verticalMid = Mathf.Clamp(_verticalMid, _bottomLimit + 10f, _topLimit - 10f);
 
         if (1 == _count)
         {
@@ -324,11 +337,11 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
         if (0f < _availableExtraSpace)
         {
-            // 여유 공간이 있을 때: 좌우 마진 및 버튼 간 추가 간격에 난수 가중치 분배
+            // 여유 공간이 있을 때: 좌우 마진 및 버튼 간 추가 간격에 결정적 난수 가중치 분배
             float _sumWeights = 0f;
             for (int i = 0; i < _count + 1; i++)
             {
-                cachedGaps[i] = UnityEngine.Random.Range(0.3f, 1.0f);
+                cachedGaps[i] = (float)(_rng.NextDouble() * 0.7 + 0.3);
                 _sumWeights += cachedGaps[i];
             }
 
@@ -366,43 +379,34 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             }
         }
 
-        // 3. Y 좌표 산출 (산 모양 Triangle vs 역삼각형 Inverted Triangle 높낮이 편차 보장)
+        // 3. Y 좌표 산출 (산 모양 Mountain / Arch 단일 형태로 고정)
         float _maxHalfSpan = (_topLimit - _bottomLimit) * 0.5f;
-        float _heightDelta = Mathf.Clamp(Mathf.Max(archHeightY, randomScatterRangeY, 25f), 20f, Mathf.Max(20f, _maxHalfSpan * 0.85f));
-        bool _isTriangle = 0.5f < UnityEngine.Random.value; // 50% 산 모양, 50% 역삼각형
+        float _baseDelta = true == preventStraightLine ? Mathf.Max(archHeightY, randomScatterRangeY, 25f) : 0f;
+        float _heightDelta = Mathf.Clamp(_baseDelta, 0f, Mathf.Max(0f, _maxHalfSpan * 0.85f));
 
         if (2 == _count)
         {
-            // 2개 버튼: 대각선 배치 (한쪽 상단, 한쪽 하단)
-            float _sign0 = true == _isTriangle ? -1f : 1f;
-            float _sign1 = -_sign0;
-
-            cachedCalculatedPositions[0].y = _verticalMid + (_sign0 * _heightDelta) + UnityEngine.Random.Range(-3f, 3f);
-            cachedCalculatedPositions[1].y = _verticalMid + (_sign1 * _heightDelta) + UnityEngine.Random.Range(-3f, 3f);
+            // 2개 버튼: 자연스러운 능선형 (좌측 하단 -> 우측 상단)
+            cachedCalculatedPositions[0].y = _verticalMid - (_heightDelta * 0.4f);
+            cachedCalculatedPositions[1].y = _verticalMid + (_heightDelta * 0.4f);
         }
         else if (3 == _count)
         {
-            // 3개 버튼: 산 모양(양쪽 아래, 가운데 위) vs 역삼각형(양쪽 위, 가운데 아래)
-            float _sidesSign = true == _isTriangle ? -1f : 1f;
-            float _centerSign = -_sidesSign;
-
-            cachedCalculatedPositions[0].y = _verticalMid + (_sidesSign * _heightDelta) + UnityEngine.Random.Range(-3f, 3f);
-            cachedCalculatedPositions[1].y = _verticalMid + (_centerSign * _heightDelta) + UnityEngine.Random.Range(-3f, 3f);
-            cachedCalculatedPositions[2].y = _verticalMid + (_sidesSign * _heightDelta) + UnityEngine.Random.Range(-3f, 3f);
+            // 3개 버튼: 완벽한 삼각 산 모양 (양쪽 아래, 중앙 정상)
+            cachedCalculatedPositions[0].y = _verticalMid - _heightDelta;
+            cachedCalculatedPositions[1].y = _verticalMid + _heightDelta;
+            cachedCalculatedPositions[2].y = _verticalMid - _heightDelta;
         }
         else
         {
-            // 4개 이상 버튼: 매크로 아치/역아치 곡률 + 지그재그 높낮이 교차
-            float _macroSign = true == _isTriangle ? 1f : -1f;
-
+            // 4개 이상 버튼: 산 모양 매크로 아치 (중앙 솟아오름)
             for (int i = 0; i < _count; i++)
             {
                 float _t = (i / (float)(_count - 1)) * 2f - 1f;
-                float _macroOffset = _macroSign * _heightDelta * (1f - (2f * _t * _t));
-                float _stagger = (0 == i % 2 ? 1f : -1f) * (minRandomScatterY * 0.4f);
-                float _jitter = UnityEngine.Random.Range(-3f, 3f);
+                float _macroOffset = _heightDelta * (1f - (_t * _t));
+                float _stagger = (0 == i % 2 ? 0.2f : -0.2f) * minRandomScatterY;
 
-                cachedCalculatedPositions[i].y = _verticalMid + _macroOffset + _stagger + _jitter;
+                cachedCalculatedPositions[i].y = (_verticalMid - (_heightDelta * 0.5f)) + _macroOffset + _stagger;
             }
         }
 
@@ -607,6 +611,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             }
         }
         activeSubRegionButtons.Clear();
+        currentDisplayedMapType = MapType.None;
         pendingMapType = MapType.None;
         pendingRegionTransform = null;
     }

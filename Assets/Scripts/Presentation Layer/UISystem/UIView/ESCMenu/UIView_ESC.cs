@@ -166,7 +166,7 @@ public class UIView_ESC : UIView
 
         if (null != warningPopup && true == warningPopup.IsActive)
         {
-            warningPopup.Hide();
+            warningPopup.HideImmediately();
         }
 
         if (null != escapeMenu && true == gameObject.activeInHierarchy)
@@ -182,6 +182,28 @@ public class UIView_ESC : UIView
         {
             OnCloseProductionFinished();
         }
+    }
+
+    public void HideImmediately()
+    {
+        isClosing = false;
+        isOpeningOption = false;
+
+        if (null != optionUI && true == optionUI.gameObject.activeInHierarchy)
+        {
+            optionUI.Hide();
+        }
+
+        if (null != warningPopup && true == warningPopup.IsActive)
+        {
+            warningPopup.HideImmediately();
+        }
+
+        base.Hide();
+        gameObject.SetActive(false);
+
+        if (null != escapeMenu)
+            escapeMenu.SetSoundsEnabled(false);
     }
 
     protected override void OnShow()
@@ -357,6 +379,8 @@ public class UIView_ESC : UIView
     {
         if (true == isClosing || true == isOpeningOption) return;
 
+        HideImmediately();
+
         if (null != GoToMainMenuButtonClickedEvent)
         {
             GoToMainMenuButtonClickedEvent.Invoke();
@@ -366,6 +390,8 @@ public class UIView_ESC : UIView
     public void OnExitButtonClicked()
     {
         if (true == isClosing || true == isOpeningOption) return;
+
+        HideImmediately();
 
         if (null != ExitButtonClickedEvent)
         {

@@ -142,6 +142,35 @@ public class LootItem : Item
         Sound.Play(SoundID.HookApear, _start, 0.5f);
     }
 
+    /// <summary>
+    /// 오브젝트 풀 생성 시점에 1회 호출되어 VFX 및 셰이더를 사전 웜업합니다.
+    /// 첫 스폰 시 발생하는 셰이더 컴파일 지연(푸른색 박스 잔상)을 원천 방지합니다.
+    /// </summary>
+    public void Prewarm()
+    {
+        if (null != vfxRoot)
+        {
+            vfxRoot.SetActive(true);
+            if (null != vfxBeam)
+            {
+                vfxBeam.gameObject.SetActive(true);
+                vfxBeam.Stop();
+            }
+            if (null != vfxOrbit)
+            {
+                vfxOrbit.gameObject.SetActive(true);
+                vfxOrbit.gameObject.SetActive(false);
+            }
+            vfxRoot.SetActive(false);
+        }
+
+        if (null != outlineObj)
+        {
+            outlineObj.SetActive(true);
+            outlineObj.SetActive(false);
+        }
+    }
+
     public override void ResetItem()
     {
         base.ResetItem();
@@ -151,25 +180,33 @@ public class LootItem : Item
         suckSpeed = 0f;
         transform.localScale = Vector3.one;
 
-        if (vfxRelayCoroutine != null)
+        if (null != vfxRelayCoroutine)
         {
             StopCoroutine(vfxRelayCoroutine);
             vfxRelayCoroutine = null;
         }
-        if (vfxRoot != null)
+
+        if (null != vfxBeam)
+            vfxBeam.Stop();
+
+        if (null != vfxOrbit)
+            vfxOrbit.gameObject.SetActive(false);
+
+        if (null != vfxRoot)
             vfxRoot.SetActive(false);
 
-        if (outlineObj != null)
+        if (null != outlineObj)
             outlineObj.SetActive(false);
-        if (outlineSR != null)
+
+        if (null != outlineSR)
             outlineSR.SetPropertyBlock(null);
     }
 
     private void PlayVFX()
     {
-        if (vfxRoot == null) return;
+        if (null == vfxRoot) return;
 
-        if (vfxRelayCoroutine != null)
+        if (null != vfxRelayCoroutine)
             StopCoroutine(vfxRelayCoroutine);
 
         vfxRelayCoroutine = StartCoroutine(VFXRelayRoutine());
@@ -185,21 +222,21 @@ public class LootItem : Item
         SyncVFXPosition();
         SyncVFXSortingOrder();
 
-        if (vfxOrbit != null)
+        if (null != vfxOrbit)
             vfxOrbit.gameObject.SetActive(false);
 
         float delay = 0f;
-        if (vfxBeam != null)
+        if (null != vfxBeam)
         {
             vfxBeam.gameObject.SetActive(true);
             vfxBeam.Play();
             delay = vfxBeam.BurstDuration * 0.5f;
         }
 
-        if (delay > 0f)
+        if (0f < delay)
             yield return new WaitForSeconds(delay);
 
-        if (vfxOrbit != null)
+        if (null != vfxOrbit)
             vfxOrbit.gameObject.SetActive(true);
 
         vfxRelayCoroutine = null;

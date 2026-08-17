@@ -449,7 +449,10 @@ public class GameplayUICoordinator
     private void GoToMainMenu()
     {
         // 카메라 상승 연출이 재생되는 동안 중복 클릭으로 재진입하지 못하도록 즉시 닫는다.
-        escUI.Hide();
+        if (null != escUI)
+        {
+            escUI.HideImmediately();
+        }
         inputManager.PauseMove(false);
 
         GoToMainMenuEvent?.Invoke();

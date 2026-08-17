@@ -699,6 +699,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     {
         if (null != lockIconObj)
         {
+            lockIconObj.transform.localPosition = lockIconOriginalLocalPos;
             if (null != lockIconImage)
             {
                 lockIconImage.enabled = false;

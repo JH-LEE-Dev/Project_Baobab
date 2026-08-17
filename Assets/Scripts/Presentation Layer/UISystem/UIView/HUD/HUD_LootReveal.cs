@@ -137,6 +137,20 @@ public class HUD_LootReveal : MonoBehaviour
             lootInitialY = lootItemRect.anchoredPosition.y;
         }
 
+        // UI 첫 오픈 시 셰이더 컴파일 지연 방지를 위한 사전 웜업
+        if (null != auraEffect)
+        {
+            auraEffect.gameObject.SetActive(true);
+            auraEffect.Stop();
+        }
+
+        if (null != bgDissolveImage && null == runtimeDissolveMat)
+        {
+            runtimeDissolveMat = new Material(bgDissolveImage.material);
+            bgDissolveImage.material = runtimeDissolveMat;
+            runtimeDissolveMat.SetFloat("_DissolveAmount", 0f);
+        }
+
         cachedOnHideFadeComplete = OnHideFadeComplete;
         cachedOnGridRevealUpdate = OnGridRevealUpdate;
 
@@ -195,6 +209,11 @@ public class HUD_LootReveal : MonoBehaviour
     
     private void OnDestroy()
     {
+        if (null != auraEffect)
+        {
+            auraEffect.Stop();
+        }
+
         if (null != childParticles)
         {
             foreach (var _p in childParticles)
@@ -228,6 +247,11 @@ public class HUD_LootReveal : MonoBehaviour
 
     public void Hide()
     {
+        if (null != auraEffect)
+        {
+            auraEffect.Stop();
+        }
+
         if (false == isShowing)
         {
             // 이미 닫혀있어도 호출자(UIView_ScreenModal)가 OnHideCompleted를 기다리고 있을 수 있으므로
@@ -268,6 +292,11 @@ public class HUD_LootReveal : MonoBehaviour
 
     private void ResetState()
     {
+        if (null != auraEffect)
+        {
+            auraEffect.Stop();
+        }
+
         if (null != rootCanvasGroup)
         {
             rootCanvasGroup.DOKill();

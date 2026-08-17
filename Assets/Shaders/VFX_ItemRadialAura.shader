@@ -48,6 +48,16 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
         [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Src Blend", Float) = 1.0
         [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Dst Blend", Float) = 1.0
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", Float) = 0.0
+
+        // --- UI Mask / Stencil Support ---
+        [HideInInspector] _StencilComp ("Stencil Comparison", Float) = 8
+        [HideInInspector] _Stencil ("Stencil ID", Float) = 0
+        [HideInInspector] _StencilOp ("Stencil Operation", Float) = 0
+        [HideInInspector] _StencilWriteMask ("Stencil Write Mask", Float) = 255
+        [HideInInspector] _StencilReadMask ("Stencil Read Mask", Float) = 255
+        [HideInInspector] _ColorMask ("Color Mask", Float) = 15
+        [HideInInspector] _ClipRect ("Clip Rect", Vector) = (-32767, -32767, 32767, 32767)
+        [HideInInspector] unity_GUIZTestMode ("GUI ZTest Mode", Float) = 4
     }
 
     SubShader
@@ -56,14 +66,25 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
         { 
             "RenderType"="Transparent" 
             "Queue"="Transparent" 
-            "RenderPipeline"="UniversalPipeline" 
             "IgnoreProjector"="True"
+            "PreviewType"="Plane"
+            "CanUseSpriteAtlas"="True"
         }
         
+        Stencil
+        {
+            Ref [_Stencil]
+            Comp [_StencilComp]
+            Pass [_StencilOp]
+            ReadMask [_StencilReadMask]
+            WriteMask [_StencilWriteMask]
+        }
+
         Blend [_SrcBlend] [_DstBlend]
         Cull [_Cull]
         ZWrite Off
-        ZTest LEqual
+        ZTest [unity_GUIZTestMode]
+        ColorMask [_ColorMask]
 
         Pass
         {
@@ -72,6 +93,7 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_instancing
+            #pragma multi_compile_local _ UNITY_UI_CLIP_RECT
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
@@ -120,6 +142,7 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                 float _CoreGlowRadius;
                 float _InnerRadius;
                 float _InnerFade;
+                float4 _ClipRect;
             CBUFFER_END
 
             // Procedural pseudo-random hash function
@@ -330,6 +353,11 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
 
                 // 10. 알파(Alpha) 출력 (부드러운 소멸 보장)
                 half finalAlpha = saturate(totalAura + coreGlow) * quadEdgeFade * input.color.a * _BeamColor.a;
+
+                #ifdef UNITY_UI_CLIP_RECT
+                float2 inside = step(_ClipRect.xy, input.positionHCS.xy) * step(input.positionHCS.xy, _ClipRect.zw);
+                finalAlpha *= inside.x * inside.y;
+                #endif
 
                 if (finalAlpha <= 0.0005)
                 {

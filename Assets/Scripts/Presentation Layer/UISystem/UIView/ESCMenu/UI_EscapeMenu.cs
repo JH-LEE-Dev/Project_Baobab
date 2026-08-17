@@ -790,6 +790,7 @@ public class UI_EscapeMenu : MonoBehaviour
 
     private void ConfirmMainMenu()
     {
+        isClosing = true;
         if (null != onMainMenuCallback)
         {
             onMainMenuCallback.Invoke();
@@ -798,6 +799,7 @@ public class UI_EscapeMenu : MonoBehaviour
 
     private void ConfirmExit()
     {
+        isClosing = true;
         if (null != onExitCallback)
         {
             onExitCallback.Invoke();

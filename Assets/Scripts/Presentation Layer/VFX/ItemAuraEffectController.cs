@@ -324,13 +324,29 @@ public class ItemAuraEffectController : MonoBehaviour
 
         if (false == playOnAwake)
         {
-            ApplyIntensity(0f);
-            ApplyBurstProgress(0f);
-            if (null != targetRenderer)
-            {
-                targetRenderer.enabled = false;
-            }
+            Stop();
         }
+    }
+
+    private void OnEnable()
+    {
+        EnsurePropertyBlock();
+        transform.localScale = maxScale;
+        ApplyAllSettings();
+
+        if (true == playOnAwake)
+        {
+            Play();
+        }
+        else
+        {
+            Stop();
+        }
+    }
+
+    private void OnDisable()
+    {
+        Stop();
     }
 
     private void Start()
