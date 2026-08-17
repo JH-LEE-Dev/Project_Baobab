@@ -179,8 +179,8 @@
         },
         {
             "id": 145,
-            "key": "FascinatingLogChance1_Name",
-            "kr": "희귀 원목 확률 I",
+            "key": "GoldTreeChance_Name",
+            "kr": "황금 나무",
             "en": "",
             "enumType": "",
             "enumValue": ""
@@ -324,7 +324,7 @@
         {
             "id": 180,
             "key": "TestNode_Name",
-            "kr": "테스트노드 입니다",
+            "kr": "테스트 노드",
             "en": "",
             "enumType": "",
             "enumValue": ""
@@ -1092,7 +1092,7 @@
         {
             "id": 9117,
             "key": "AbilityDescription_FascinatingLogChance",
-            "kr": "<COLOR=8bbeff>희귀 등급 원목</COLOR> 출현 비중이 <COLOR=54D86A>{0}%</COLOR> 증가합니다.\n[미구현]",
+            "kr": "<COLOR=8bbeff>황금 나무</COLOR>가 출현할 확률이 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "FascinatingLogChance"

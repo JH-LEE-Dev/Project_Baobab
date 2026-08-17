@@ -249,6 +249,10 @@ public enum SkillType
     ConstellationDamage1, // 별자리 데미지
     ConstellationAfterimage1, // 별자리 잔상
     ManifestationBrand1, // 발현 낙인
+
+    GoldTreeChance, // 황금 나무 확률
+    DiamondTreeChance,  // 다이아 나무 확률
+    RainbowTreeChance,  // 무지개 나무 확률
     
 
     TestNode,  // TestNode
