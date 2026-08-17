@@ -6,11 +6,11 @@ public class SC_AdvancedLogChance : SkillCommand
     public override void Execute(ICommandHandleSystem _system)
     {
         PrintDebug();
-        _system.logItemControllerCH.IncreaseDropProb(LogState.Advanced, amount);
+        _system.inDungeonObjManagerCH.IncreaseTreeGradeProb(TreeGrade.Advanced, amount);
     }
 
     public override void Undo(ICommandHandleSystem _system)
     {
-        _system.logItemControllerCH.IncreaseDropProb(LogState.Advanced, -amount);
+        _system.inDungeonObjManagerCH.IncreaseTreeGradeProb(TreeGrade.Advanced, -amount);
     }
 }

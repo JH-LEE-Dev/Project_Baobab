@@ -8,10 +8,12 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
     public event Action<Item> LogItemAcquiredEvent;
 
     // 외부 의존성
-    [SerializeField] private List<LogDropProbData> logProbDatas;
     [SerializeField] private LogItem logItemPrefab;
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
     [SerializeField] private List<LogDropCntData> logDropCntDatas;
+    // TreeGrade.Fascinating 이상인 나무는 종류(TreeType)와 무관하게 이 범위로 드랍 개수가 고정된다.
+    [SerializeField] private int highGradeDropCntMin = 4;
+    [SerializeField] private int highGradeDropCntMax = 7;
 
     // 내부 의존성
     private IObjectPool<LogItem> logPool;
@@ -337,12 +339,22 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
         }
 
         TreeData treeData = _treeObj.treeData;
-        LogDropProbData dropProbData = GetDropProbData(treeData.grade);
+        LogState logType = GetLogStateFromTreeGrade(treeData.grade);
 
-        if (dropProbData.probDatas == null || dropProbData.probDatas.Count == 0) return;
+        int minCnt, maxCnt;
+        if (treeData.grade >= TreeGrade.Fascinating)
+        {
+            minCnt = highGradeDropCntMin;
+            maxCnt = highGradeDropCntMax;
+        }
+        else
+        {
+            LogDropCntData dropCntData = GetDropCntData(treeData.type);
+            minCnt = dropCntData.minCnt;
+            maxCnt = dropCntData.maxCnt;
+        }
 
-        LogDropCntData dropCntData = GetDropCntData(treeData.type);
-        int spawnCount = Mathf.RoundToInt(UnityEngine.Random.Range(dropCntData.minCnt, dropCntData.maxCnt + 1) * _multiplier);
+        int spawnCount = Mathf.RoundToInt(UnityEngine.Random.Range(minCnt, maxCnt + 1) * _multiplier);
 
         if (UnityEngine.Random.value < jackPotChance)
         {
@@ -353,7 +365,6 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
 
         for (int i = 0; i < spawnCount; i++)
         {
-            LogState logType = GetRandomLogState(dropProbData);
             LogItem logItem = logPool.Get();
 
             logItem.transform.position = spawnPos;
@@ -398,18 +409,6 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
         if (measuredSize > 0f) tileWorldSize = measuredSize;
     }
 
-    private LogDropProbData GetDropProbData(TreeGrade _grade)
-    {
-        for (int i = 0; i < logProbDatas.Count; i++)
-        {
-            if (logProbDatas[i].treeGrade == _grade)
-            {
-                return logProbDatas[i];
-            }
-        }
-        return default;
-    }
-
     private LogDropCntData GetDropCntData(TreeType _type)
     {
         for (int i = 0; i < logDropCntDatas.Count; i++)
@@ -424,27 +423,16 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
         return new LogDropCntData { treeType = _type, minCnt = 2, maxCnt = 4 };
     }
 
-    private LogState GetRandomLogState(LogDropProbData _data)
+    private LogState GetLogStateFromTreeGrade(TreeGrade _grade)
     {
-        float totalProb = 0;
-        for (int i = 0; i < _data.probDatas.Count; i++)
+        switch (_grade)
         {
-            totalProb += _data.probDatas[i].probability;
+            case TreeGrade.Normal: return LogState.Normal;
+            case TreeGrade.Fascinating: return LogState.Fascinating;
+            case TreeGrade.Advanced: return LogState.Advanced;
+            case TreeGrade.Perfect: return LogState.Perfect;
+            default: return LogState.Normal;
         }
-
-        float randomVal = UnityEngine.Random.Range(0f, totalProb);
-        float currentProb = 0;
-
-        for (int i = 0; i < _data.probDatas.Count; i++)
-        {
-            currentProb += _data.probDatas[i].probability;
-            if (randomVal <= currentProb)
-            {
-                return _data.probDatas[i].type;
-            }
-        }
-
-        return _data.probDatas[0].type;
     }
 
     public void ReturnToPool(LogItem _item)
@@ -459,52 +447,6 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
             cullingGroup.onStateChanged = null;
             cullingGroup.Dispose();
             cullingGroup = null;
-        }
-    }
-
-    public void IncreaseDropProb(LogState _logState, float _amount)
-    {
-        if (logProbDatas == null) return;
-
-        for (int i = 0; i < logProbDatas.Count; i++)
-        {
-            List<LogProbData> probList = logProbDatas[i].probDatas;
-            if (probList == null) continue;
-
-            int targetIndex = -1;
-            float targetProb = 0f;
-
-            // 1. 대상 인덱스와 현재 확률 찾기
-            for (int j = 0; j < probList.Count; j++)
-            {
-                if (probList[j].type == _logState)
-                {
-                    targetIndex = j;
-                    targetProb = probList[j].probability;
-                    break;
-                }
-            }
-
-            if (targetIndex == -1) continue;
-
-            // 2. 더 높은 단계의 logState 중 더 높은 확률이 있는지 체크
-            bool skipAdd = false;
-            for (int j = 0; j < probList.Count; j++)
-            {
-                if (probList[j].type > _logState && probList[j].probability > targetProb)
-                {
-                    skipAdd = true;
-                    break;
-                }
-            }
-
-            // 3. 조건 만족 시 확률 증가
-            if (!skipAdd)
-            {
-                LogProbData probData = probList[targetIndex];
-                probData.probability += _amount;
-                probList[targetIndex] = probData;
-            }
         }
     }
 

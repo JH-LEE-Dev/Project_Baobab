@@ -16,5 +16,4 @@ public class DungeonValueDataBase : ScriptableObject
 public struct DungeonData
 {
     public MapType mapTypeType;
-    public List<TreeGradeProb> treeGradeProbs;
 }

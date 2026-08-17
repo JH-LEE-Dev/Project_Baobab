@@ -159,6 +159,14 @@ public class EHealthComponent : EComponent, IHealthComponent
         }
     }
 
+    // 나무 등급별 셰이더 단계 전환용: 실제로 죽이지 않고 체력만 100%로 되돌린다.
+    // currentSP/isShieldBroken은 건드리지 않는다 - 실드가 깨진 상태였다면 단계가 전환돼도 깨진 채로 유지되어야 한다.
+    public void ReviveFullHealth()
+    {
+        currentHealth = maxHealth;
+        prevHealth = maxHealth;
+    }
+
     public float GetMaxHealth()
     {
         return maxHealth;

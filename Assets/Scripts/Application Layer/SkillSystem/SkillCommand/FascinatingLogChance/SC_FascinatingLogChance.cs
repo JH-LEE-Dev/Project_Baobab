@@ -6,11 +6,11 @@ public class SC_FascinatingLogChance : SkillCommand
     public override void Execute(ICommandHandleSystem _system)
     {
         PrintDebug();
-        _system.logItemControllerCH.IncreaseDropProb(LogState.Fascinating, amount);
+        _system.inDungeonObjManagerCH.IncreaseTreeGradeProb(TreeGrade.Fascinating, amount);
     }
 
     public override void Undo(ICommandHandleSystem _system)
     {
-        _system.logItemControllerCH.IncreaseDropProb(LogState.Fascinating, -amount);
+        _system.inDungeonObjManagerCH.IncreaseTreeGradeProb(TreeGrade.Fascinating, -amount);
     }
 }

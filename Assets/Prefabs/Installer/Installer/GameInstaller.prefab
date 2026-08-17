@@ -440,37 +440,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bc6799e8e62537b4c8852d7d00721c7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LogItemController
-  logProbDatas:
-  - treeGrade: 1
-    probDatas:
-    - type: 2
-      probability: 100
-    - type: 3
-      probability: 0
-    - type: 4
-      probability: 0
-    - type: 5
-      probability: 0
-  - treeGrade: 2
-    probDatas:
-    - type: 2
-      probability: 20
-    - type: 3
-      probability: 80
-  - treeGrade: 3
-    probDatas:
-    - type: 4
-      probability: 80
-    - type: 3
-      probability: 15
-    - type: 2
-      probability: 5
-  - treeGrade: 4
-    probDatas:
-    - type: 5
-      probability: 30
-    - type: 2
-      probability: 100
   logItemPrefab: {fileID: 5360078145449572918, guid: 6767a4df1c674c5479f6bc03a6d92291, type: 3}
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
   logDropCntDatas:
@@ -510,6 +479,8 @@ MonoBehaviour:
   - treeType: 12
     minCnt: 4
     maxCnt: 5
+  highGradeDropCntMin: 4
+  highGradeDropCntMax: 7
   enableCulling: 0
   cullingUpdateInterval: 0.05
 --- !u!114 &597610330652353424
@@ -2997,14 +2968,21 @@ MonoBehaviour:
     hpMultiplier: 1
     dropMultiplier: 1
   - treeGrade: 2
-    hpMultiplier: 1.5
-    dropMultiplier: 2
+    hpMultiplier: 1
+    dropMultiplier: 1
   - treeGrade: 3
-    hpMultiplier: 3
-    dropMultiplier: 3
+    hpMultiplier: 1
+    dropMultiplier: 1
   - treeGrade: 4
-    hpMultiplier: 10
-    dropMultiplier: 5
+    hpMultiplier: 1
+    dropMultiplier: 1
+  treeGradeProbs:
+  - grade: 2
+    probability: 0
+  - grade: 3
+    probability: 0
+  - grade: 4
+    probability: 0
   currentTreeGenerationStrategy: {fileID: 0}
   mapTypeTreeGenerationDatas:
   - mapType: 2

@@ -162,6 +162,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField] private TreeVisualDataBase treeVisualDataBase;
     [SerializeField] private TreeStatDataBase treeStatDataBase;
     [SerializeField] private List<TreeGradeStatMultiplierData> treeGradeStatMultiplierDatas;
+    // 모든 스테이지 공용 TreeGrade 확률 (스테이지별 독립 테이블이 아님).
+    // Normal보다 높은 등급의 당첨 확률만 퍼센트(0~100)로 넣는다. Normal은 나머지 확률을 자동으로
+    // 가져가므로 항목을 두지 않는다. 스킬(IncreaseTreeGradeProb)이 여기에 값을 더한다.
+    [SerializeField] private List<TreeGradeProb> treeGradeProbs;
 
     [System.Serializable]
     public struct MapTypeTreeGenerationData
@@ -1137,19 +1141,37 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 }
             }
         }
-        else if (dungeonData.treeGradeProbs != null && dungeonData.treeGradeProbs.Count > 0)
+        else if (treeGradeProbs != null && treeGradeProbs.Count > 0)
         {
-            float rand = UnityEngine.Random.Range(0f, 1f);
-            float cumulative = 0f;
-            for (int i = 0; i < dungeonData.treeGradeProbs.Count; i++)
+            // treeGradeProbs에는 Normal보다 높은 등급의 당첨 확률만 퍼센트(0~100)로 담는다.
+            // Normal은 남은 확률(100 - 상위 등급 합)을 자동으로 가져가므로 별도 항목이 필요 없다.
+            // 이렇게 해야 스킬이 Fascinating에 +10을 더했을 때 정확히 10%가 된다.
+            float upperTotal = 0f;
+            for (int i = 0; i < treeGradeProbs.Count; i++)
             {
-                cumulative += dungeonData.treeGradeProbs[i].probability;
-                if (rand <= cumulative)
+                if (treeGradeProbs[i].grade <= TreeGrade.Normal) continue;
+                upperTotal += Mathf.Max(0f, treeGradeProbs[i].probability);
+            }
+
+            // 상위 등급 합이 100을 넘으면 Normal 몫은 사라지고 상위 등급끼리 비율대로 나눠 갖는다.
+            // 분모를 100으로 고정하면 뒤쪽 등급이 영영 뽑히지 않으므로 합계까지 넓힌다.
+            float denominator = Mathf.Max(100f, upperTotal);
+            float rand = UnityEngine.Random.Range(0f, denominator);
+            float cumulative = 0f;
+
+            for (int i = 0; i < treeGradeProbs.Count; i++)
+            {
+                if (treeGradeProbs[i].grade <= TreeGrade.Normal) continue;
+
+                // 확률 0인 등급이 뽑히지 않도록 '<'로 비교한다 ('<='면 rand가 정확히 0일 때 0% 등급이 당첨된다).
+                cumulative += Mathf.Max(0f, treeGradeProbs[i].probability);
+                if (rand < cumulative)
                 {
-                    grade = dungeonData.treeGradeProbs[i].grade;
+                    grade = treeGradeProbs[i].grade;
                     break;
                 }
             }
+            // 어느 구간에도 걸리지 않으면 초기값 Normal을 그대로 쓴다.
         }
 
         // 2. 스탯 계산 (배율 적용)
@@ -1880,6 +1902,33 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public void UnlockStarGaze(bool _boolean)
     {
         bStarGazeUnlocked = _boolean;
+    }
+
+    /// <summary>
+    /// 스킬이 특정 등급의 스폰 확률을 퍼센트(0~100) 단위로 가산한다.
+    /// 등급끼리 서로 경쟁하지 않고 각자 Normal의 몫에서 자기 지분을 떼어오므로,
+    /// 어떤 순서로 어떤 등급을 찍든 항상 그만큼 확률이 오른다.
+    /// </summary>
+    public void IncreaseTreeGradeProb(TreeGrade _grade, float _amount)
+    {
+        // Normal 이하는 나머지 확률로 자동 계산되는 몫이라 직접 올릴 대상이 아니다.
+        if (_grade <= TreeGrade.Normal) return;
+
+        if (treeGradeProbs == null) treeGradeProbs = new List<TreeGradeProb>();
+
+        for (int i = 0; i < treeGradeProbs.Count; i++)
+        {
+            if (treeGradeProbs[i].grade != _grade) continue;
+
+            // Undo(-amount)로 음수가 되면 누적 판정이 깨지므로 0 아래로는 내려가지 않게 막는다.
+            TreeGradeProb probData = treeGradeProbs[i];
+            probData.probability = Mathf.Max(0f, probData.probability + _amount);
+            treeGradeProbs[i] = probData;
+            return;
+        }
+
+        // 인스펙터에 해당 등급 항목이 없으면 스킬이 조용히 무효가 되므로 여기서 만들어 준다.
+        treeGradeProbs.Add(new TreeGradeProb(_grade, Mathf.Max(0f, _amount)));
     }
 
     private IEnumerator StarGazeRoutine()

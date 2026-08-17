@@ -14,20 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonValueDataBase
   dungeonDatas:
   - mapTypeType: 2
-    treeGradeProbs:
-    - grade: 1
-      probability: 100
     staminaDecAmount: 4
     staminaIncAmount: 0
   - mapTypeType: 3
-    treeGradeProbs:
-    - grade: 1
-      probability: 100
     staminaDecAmount: 4
     staminaIncAmount: 0
   - mapTypeType: 4
-    treeGradeProbs:
-    - grade: 1
-      probability: 100
     staminaDecAmount: 4
     staminaIncAmount: 0
