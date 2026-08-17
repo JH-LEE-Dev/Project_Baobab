@@ -1185,7 +1185,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                                 var typeData = logItemTypeDataBase.Get(logData.treeType);
                                 if (typeData != null)
                                 {
-                                    logData.sprite = typeData.sprite;
+                                    // 황금/다이아/무지개 원목은 상태별 스프라이트를 써야 한다.
+                                    logData.sprite = typeData.GetSprite(logData.logState);
                                 }
                             }
                         }
