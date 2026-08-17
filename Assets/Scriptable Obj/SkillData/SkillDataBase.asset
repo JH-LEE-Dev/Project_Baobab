@@ -660,6 +660,6 @@ MonoBehaviour:
     - skillCommandType: 29
       amountCurve:
         type: 3
-        baseValue: 100
+        baseValue: 50
         manualValues: []
     prerequisiteSkills: 

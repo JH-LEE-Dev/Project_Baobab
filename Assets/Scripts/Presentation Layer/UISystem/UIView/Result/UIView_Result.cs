@@ -9,6 +9,45 @@ using UnityEngine.UI;
 
 public class UIView_Result : UIView
 {
+    private readonly struct LogVariantKey : IEquatable<LogVariantKey>
+    {
+        public readonly TreeType treeType;
+        public readonly LogState logState;
+
+        public LogVariantKey(TreeType treeType, LogState logState)
+        {
+            this.treeType = treeType;
+            this.logState = logState;
+        }
+
+        public bool Equals(LogVariantKey other)
+        {
+            return treeType == other.treeType && logState == other.logState;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is LogVariantKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return ((int)treeType * 397) ^ (int)logState;
+        }
+    }
+
+    private readonly struct ResultLogCount
+    {
+        public readonly LogVariantKey key;
+        public readonly int count;
+
+        public ResultLogCount(LogVariantKey key, int count)
+        {
+            this.key = key;
+            this.count = count;
+        }
+    }
+
     private sealed class DisplayInventorySlot : IInventorySlot
     {
         public IItemData itemData { get; private set; }
@@ -59,7 +98,9 @@ public class UIView_Result : UIView
             changed |= previousCount != count;
             changed |= previousItemData != itemData;
 
-            logStateCounts[0].state = LogState.Normal;
+            logStateCounts[0].state = sourceItemData is LogItemData logItemData
+                ? logItemData.logState
+                : LogState.Normal;
             logStateCounts[0].count = count;
             HasChanged = changed;
         }
@@ -168,11 +209,11 @@ public class UIView_Result : UIView
     [SerializeField] private float resultCloseDuration = 0.3f;
     [SerializeField] private float resultCloseYOffset = -20f;
 
-    private int[] startOffroadLogCounts;
+    private Dictionary<LogVariantKey, int> startOffroadLogCounts;
     private DisplayInventorySlot[] startOffroadSlots;
     private DisplayInventorySlot[] currentOffroadSlots;
     private DisplayInventorySlot[] displayOffroadSlots;
-    private float[] treeDisplayProgress;
+    private readonly Dictionary<LogVariantKey, float> logDisplayProgress = new Dictionary<LogVariantKey, float>();
     private readonly List<UI_InventorySlot> containerSlots = new List<UI_InventorySlot>();
     private readonly List<Vector2> resultLogRowBasePositions = new List<Vector2>(2);
     private Sequence resultOpenSequence;
@@ -859,7 +900,7 @@ public class UIView_Result : UIView
             startOffroadSlots = CreateDisplaySlotArray(currentOffroadSlots.Length);
 
         displayOffroadSlots = CreateDisplaySlotArray(Mathf.Max(startOffroadSlots.Length, currentOffroadSlots.Length));
-        treeDisplayProgress = new float[(int)TreeType.Max];
+        logDisplayProgress.Clear();
 
         EnsureContainerSlotCount(displayOffroadSlots.Length);
         ApplyDisplayOffroadSlotsFromProgress(false);
@@ -895,22 +936,27 @@ public class UIView_Result : UIView
         {
             for (int slotIndex = 0; slotIndex < slotCount; slotIndex++)
                 displayCounts[slotIndex, treeIndex] = GetSlotTreeCount(startOffroadSlots, slotIndex, treeIndex);
+        }
 
-            int totalDeltaCount = GetTotalSlotTreeDeltaCount(treeIndex);
-            if (totalDeltaCount <= 0)
+        List<ResultLogCount> acquiredLogs = GetAcquiredLogCounts();
+        for (int logIndex = 0; logIndex < acquiredLogs.Count; logIndex++)
+        {
+            ResultLogCount acquiredLog = acquiredLogs[logIndex];
+            LogVariantKey key = acquiredLog.key;
+            if (acquiredLog.count <= 0)
                 continue;
 
-            float progress = treeDisplayProgress != null && treeIndex < treeDisplayProgress.Length ? treeDisplayProgress[treeIndex] : 0f;
-            int remainingAddCount = Mathf.FloorToInt((totalDeltaCount * Mathf.Clamp01(progress)) + 0.0001f);
+            float progress = logDisplayProgress.TryGetValue(key, out float value) ? value : 0f;
+            int remainingAddCount = Mathf.FloorToInt((acquiredLog.count * Mathf.Clamp01(progress)) + 0.0001f);
 
             for (int slotIndex = 0; slotIndex < slotCount && remainingAddCount > 0; slotIndex++)
             {
-                int startCount = GetSlotTreeCount(startOffroadSlots, slotIndex, treeIndex);
-                int currentCount = GetSlotTreeCount(currentOffroadSlots, slotIndex, treeIndex);
+                int startCount = GetSlotLogVariantCount(startOffroadSlots, slotIndex, key);
+                int currentCount = GetSlotLogVariantCount(currentOffroadSlots, slotIndex, key);
                 int slotDeltaCount = Mathf.Max(0, currentCount - startCount);
                 int addCount = Mathf.Min(slotDeltaCount, remainingAddCount);
 
-                displayCounts[slotIndex, treeIndex] += addCount;
+                displayCounts[slotIndex, (int)key.treeType] += addCount;
                 remainingAddCount -= addCount;
             }
         }
@@ -918,13 +964,9 @@ public class UIView_Result : UIView
         return displayCounts;
     }
 
-    private void SetTreeDisplayProgress(TreeType treeType, float progress)
+    private void SetLogDisplayProgress(LogVariantKey key, float progress)
     {
-        int treeIndex = (int)treeType;
-        if (treeDisplayProgress == null || treeIndex < 0 || treeIndex >= treeDisplayProgress.Length)
-            return;
-
-        treeDisplayProgress[treeIndex] = Mathf.Clamp01(progress);
+        logDisplayProgress[key] = Mathf.Clamp01(progress);
         ApplyDisplayOffroadSlotsFromProgress(true);
     }
 
@@ -959,7 +1001,9 @@ public class UIView_Result : UIView
     private Sequence CreateResultLogRowsProductionSequence()
     {
         Sequence sequence = DOTween.Sequence();
-        List<TreeTypeCount> acquiredLogs = GetAcquiredLogCounts();
+        List<ResultLogCount> acquiredLogs = GetAcquiredLogCounts();
+
+        EnsureResultLogRowCount(acquiredLogs.Count);
 
         if (acquiredLogs.Count <= 0)
             return sequence;
@@ -969,21 +1013,23 @@ public class UIView_Result : UIView
         for (int i = 0; i < acquiredLogs.Count && i < resultLogRows.Count; i++)
         {
             UI_ResultLogRow row = resultLogRows[i];
-            TreeTypeCount logCount = acquiredLogs[i];
+            ResultLogCount logCount = acquiredLogs[i];
 
             if (row == null || logCount.count <= 0)
                 continue;
 
             Vector2 targetPosition = GetResultLogRowTargetPosition(row, i, acquiredLogs.Count);
             float startTime = i * resultLogRowInterval;
-            sequence.Insert(startTime, CreateResultLogRowProductionSequence(row, logCount.treeType, logCount.count, targetPosition));
+            sequence.Insert(startTime, CreateResultLogRowProductionSequence(row, logCount, targetPosition));
         }
 
         return sequence;
     }
 
-    private Sequence CreateResultLogRowProductionSequence(UI_ResultLogRow row, TreeType treeType, int targetCount, Vector2 targetPosition)
+    private Sequence CreateResultLogRowProductionSequence(UI_ResultLogRow row, ResultLogCount logCount, Vector2 targetPosition)
     {
+        LogVariantKey key = logCount.key;
+        int targetCount = logCount.count;
         Sequence sequence = DOTween.Sequence();
         CanvasGroup rowCanvasGroup = GetOrAddCanvasGroup(row.transform as RectTransform);
         RectTransform rowRect = row.transform as RectTransform;
@@ -999,8 +1045,8 @@ public class UIView_Result : UIView
                 SetCanvasGroupRaycast(rowCanvasGroup, false);
             }
 
-            row.SetDataVisible(treeType, 1);
-            SetTreeDisplayProgress(treeType, targetCount <= 0 ? 1f : 1f / targetCount);
+            row.SetDataVisible(key.treeType, key.logState, 1);
+            SetLogDisplayProgress(key, targetCount <= 0 ? 1f : 1f / targetCount);
         });
 
         if (rowRect != null)
@@ -1021,8 +1067,8 @@ public class UIView_Result : UIView
                         return;
 
                     currentCount = value;
-                    row.SetDataVisible(treeType, currentCount);
-                    SetTreeDisplayProgress(treeType, targetCount <= 0 ? 1f : (float)currentCount / targetCount);
+                    row.SetDataVisible(key.treeType, key.logState, currentCount);
+                    SetLogDisplayProgress(key, targetCount <= 0 ? 1f : (float)currentCount / targetCount);
                 },
                 targetCount,
                 resultLogRowCountUpDuration)
@@ -1030,8 +1076,8 @@ public class UIView_Result : UIView
 
         sequence.OnComplete(() =>
         {
-            row.SetDataVisible(treeType, targetCount);
-            SetTreeDisplayProgress(treeType, 1f);
+            row.SetDataVisible(key.treeType, key.logState, targetCount);
+            SetLogDisplayProgress(key, 1f);
             SetCanvasGroupRaycast(rowCanvasGroup, false);
         });
 
@@ -1157,8 +1203,10 @@ public class UIView_Result : UIView
 
     private void RefreshAcquiredLogs()
     {
-        List<TreeTypeCount> acquiredLogs = GetAcquiredLogCounts();
+        List<ResultLogCount> acquiredLogs = GetAcquiredLogCounts();
         bool hasAcquiredLogs = 0 < acquiredLogs.Count;
+
+        EnsureResultLogRowCount(acquiredLogs.Count);
 
         if (emptyLogText != null)
             emptyLogText.gameObject.SetActive(!hasAcquiredLogs);
@@ -1171,7 +1219,8 @@ public class UIView_Result : UIView
 
             if (i < acquiredLogs.Count)
             {
-                row.SetData(acquiredLogs[i].treeType, acquiredLogs[i].count);
+                ResultLogCount logCount = acquiredLogs[i];
+                row.SetData(logCount.key.treeType, logCount.key.logState, logCount.count);
                 SetResultLogRowPosition(row, i, acquiredLogs.Count);
             }
             else
@@ -1191,24 +1240,57 @@ public class UIView_Result : UIView
         }
     }
 
-    private List<TreeTypeCount> GetAcquiredLogCounts()
+    private void EnsureResultLogRowCount(int count)
     {
-        int[] currentCounts = GetOffroadLogCounts();
-        List<TreeTypeCount> acquiredLogs = new List<TreeTypeCount>();
+        if (count <= resultLogRows.Count)
+            return;
 
-        for (int i = (int)TreeType.None + 1; i < (int)TreeType.Max; i++)
+        UI_ResultLogRow template = null;
+        for (int i = 0; i < resultLogRows.Count; i++)
         {
-            int startCount = startOffroadLogCounts != null && i < startOffroadLogCounts.Length ? startOffroadLogCounts[i] : 0;
-            int acquiredCount = currentCounts[i] - startCount;
-
-            if (0 >= acquiredCount)
-                continue;
-
-            acquiredLogs.Add(new TreeTypeCount
+            if (resultLogRows[i] != null)
             {
-                treeType = (TreeType)i,
-                count = acquiredCount
-            });
+                template = resultLogRows[i];
+                break;
+            }
+        }
+
+        if (template == null)
+            return;
+
+        Transform parent = resultLogRowPivot != null ? resultLogRowPivot : template.transform.parent;
+        float baseY = template.transform is RectTransform templateRect
+            ? templateRect.anchoredPosition.y
+            : 0f;
+
+        while (resultLogRows.Count < count)
+        {
+            UI_ResultLogRow row = Instantiate(template, parent);
+            row.name = $"{template.name}_{resultLogRows.Count}";
+            row.Initialize();
+            resultLogRows.Add(row);
+            resultLogRowBasePositions.Add(new Vector2(0f, baseY));
+        }
+    }
+
+    private List<ResultLogCount> GetAcquiredLogCounts()
+    {
+        Dictionary<LogVariantKey, int> currentCounts = GetOffroadLogCounts();
+        List<ResultLogCount> acquiredLogs = new List<ResultLogCount>();
+        Array logStates = Enum.GetValues(typeof(LogState));
+
+        for (int treeIndex = (int)TreeType.None + 1; treeIndex < (int)TreeType.Max; treeIndex++)
+        {
+            for (int stateIndex = 0; stateIndex < logStates.Length; stateIndex++)
+            {
+                LogVariantKey key = new LogVariantKey((TreeType)treeIndex, (LogState)logStates.GetValue(stateIndex));
+                int acquiredCount = GetLogVariantCount(currentCounts, key) - GetLogVariantCount(startOffroadLogCounts, key);
+
+                if (acquiredCount <= 0)
+                    continue;
+
+                acquiredLogs.Add(new ResultLogCount(key, acquiredCount));
+            }
         }
 
         return acquiredLogs;
@@ -1284,19 +1366,18 @@ public class UIView_Result : UIView
         return 0;
     }
 
-    private int GetTotalSlotTreeDeltaCount(int treeIndex)
+    private int GetSlotLogVariantCount(DisplayInventorySlot[] slots, int slotIndex, LogVariantKey key)
     {
-        int totalDeltaCount = 0;
-        int slotCount = Mathf.Max(startOffroadSlots != null ? startOffroadSlots.Length : 0, currentOffroadSlots != null ? currentOffroadSlots.Length : 0);
+        if (slots == null || slotIndex < 0 || slotIndex >= slots.Length)
+            return 0;
 
-        for (int slotIndex = 0; slotIndex < slotCount; slotIndex++)
-        {
-            int startCount = GetSlotTreeCount(startOffroadSlots, slotIndex, treeIndex);
-            int currentCount = GetSlotTreeCount(currentOffroadSlots, slotIndex, treeIndex);
-            totalDeltaCount += Mathf.Max(0, currentCount - startCount);
-        }
+        if (!(slots[slotIndex].itemData is LogItemData logItemData))
+            return 0;
 
-        return totalDeltaCount;
+        if (logItemData.treeType != key.treeType || logItemData.logState != key.logState)
+            return 0;
+
+        return GetSlotTreeCount(slots, slotIndex, (int)key.treeType);
     }
 
     private IItemData GetDisplaySlotItemData(int slotIndex, int[] counts)
@@ -1324,9 +1405,9 @@ public class UIView_Result : UIView
         return null;
     }
 
-    private int[] GetOffroadLogCounts()
+    private Dictionary<LogVariantKey, int> GetOffroadLogCounts()
     {
-        int[] counts = new int[(int)TreeType.Max];
+        Dictionary<LogVariantKey, int> counts = new Dictionary<LogVariantKey, int>();
 
         if (offroadContainer == null || offroadContainer.inventorySlots == null)
             return counts;
@@ -1337,21 +1418,23 @@ public class UIView_Result : UIView
         for (int i = 0; i < slotCount; i++)
         {
             IInventorySlot slot = slots[i];
-            if (slot == null || slot.treeTypeCounts == null)
+            if (slot == null || !(slot.itemData is LogItemData logItemData))
                 continue;
 
-            TreeTypeCount[] treeTypeCounts = slot.treeTypeCounts;
-            for (int j = 0; j < treeTypeCounts.Length; j++)
-            {
-                TreeType treeType = treeTypeCounts[j].treeType;
-                if (treeType <= TreeType.None || treeType >= TreeType.Max)
-                    continue;
+            TreeType treeType = logItemData.treeType;
+            if (treeType <= TreeType.None || treeType >= TreeType.Max)
+                continue;
 
-                counts[(int)treeType] += treeTypeCounts[j].count;
-            }
+            LogVariantKey key = new LogVariantKey(treeType, logItemData.logState);
+            counts[key] = GetLogVariantCount(counts, key) + Mathf.Max(0, slot.count);
         }
 
         return counts;
+    }
+
+    private static int GetLogVariantCount(Dictionary<LogVariantKey, int> counts, LogVariantKey key)
+    {
+        return counts != null && counts.TryGetValue(key, out int count) ? count : 0;
     }
 
     private void SetResultLogRowPosition(UI_ResultLogRow row, int index, int count)

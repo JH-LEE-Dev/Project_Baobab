@@ -54,17 +54,41 @@ MonoBehaviour:
   countFont: {fileID: 5306722254243090009}
   logSpriteMappings:
   - treeType: 1
+    logState: 2
     sprite: {fileID: 21300000, guid: 5acb479e00115ba47a061244bae4975a, type: 3}
+  - treeType: 1
+    logState: 3
+    sprite: {fileID: 255619017615497756, guid: cb544a56434823e46b87633aeaa23742, type: 3}
+  - treeType: 1
+    logState: 4
+    sprite: {fileID: -8392913350829800499, guid: 703420939016dfc48840a907d47db4ad, type: 3}
+  - treeType: 1
+    logState: 5
+    sprite: {fileID: -2423190055934179177, guid: 45921f056a9d8484394db0e9830b94b9, type: 3}
   - treeType: 2
+    logState: 2
     sprite: {fileID: 21300000, guid: ba6d5bf6c65ef6047b1f132029038cd5, type: 3}
+  - treeType: 2
+    logState: 3
+    sprite: {fileID: -5506589684529886816, guid: cb544a56434823e46b87633aeaa23742, type: 3}
+  - treeType: 2
+    logState: 4
+    sprite: {fileID: -7813168054259375207, guid: 703420939016dfc48840a907d47db4ad, type: 3}
+  - treeType: 2
+    logState: 5
+    sprite: {fileID: -5045177627484965680, guid: 45921f056a9d8484394db0e9830b94b9, type: 3}
   - treeType: 3
+    logState: 2
     sprite: {fileID: 21300000, guid: 578f2e4568b228f44b4543638a6afb12, type: 3}
-  - treeType: 4
-    sprite: {fileID: 21300000, guid: b63f7ce3222f9b04d96eecaae2f0ae2c, type: 3}
-  - treeType: 5
-    sprite: {fileID: 21300000, guid: 3cc6aa8a7e5568b41b5f8ab0fc15372a, type: 3}
-  - treeType: 6
-    sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
+  - treeType: 3
+    logState: 3
+    sprite: {fileID: 6364734748358394011, guid: cb544a56434823e46b87633aeaa23742, type: 3}
+  - treeType: 3
+    logState: 4
+    sprite: {fileID: 1122706200432952289, guid: 703420939016dfc48840a907d47db4ad, type: 3}
+  - treeType: 3
+    logState: 5
+    sprite: {fileID: -1248533044410394662, guid: 45921f056a9d8484394db0e9830b94b9, type: 3}
 --- !u!1 &1891985346121398742
 GameObject:
   m_ObjectHideFlags: 0
