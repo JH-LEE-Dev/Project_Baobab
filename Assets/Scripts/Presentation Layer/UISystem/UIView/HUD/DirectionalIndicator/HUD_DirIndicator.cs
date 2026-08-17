@@ -38,9 +38,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
         [SerializeField] private float idleSpeed = 5.0f;              // Idle 왕복 운동 주기 속도
         [SerializeField] private float idleAmplitude = 4.0f;          // Idle 왕복 운동 진폭 (픽셀)
 
-        [Header("Settings - OnScreen Target Tracking (1080p 기준)")]
-        [SerializeField] private float onScreenHoldDuration = 2.0f;   // 화면 진입 시 머무는 시간 (초)
-        [SerializeField] private float onScreenYOffset = 70.0f;       // 화면 내 차량 머리 위 Y 오프셋 (픽셀)
+        [Header("Settings - Vehicle Offscreen Bounding Margins (1080p 기준)")]
         [SerializeField] private float vehicleWidthMargin = 50.0f;    // 차량 좌우 반폭 마진 (완전 이탈 판정용, 픽셀)
         [SerializeField] private float vehicleTopMargin = 80.0f;      // 차량 상단 지붕 마진 (하단 이탈 시 지붕까지 완전 이탈 판정용, 픽셀)
         [SerializeField] private float vehicleBottomMargin = 20.0f;   // 차량 하단 바닥 마진 (상단 이탈 시 바퀴까지 완전 이탈 판정용, 픽셀)
@@ -163,7 +161,6 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
             float _scaledWidthMargin = vehicleWidthMargin * _resScale;
             float _scaledTopMargin = vehicleTopMargin * _resScale;
             float _scaledBottomMargin = vehicleBottomMargin * _resScale;
-            float _scaledYOffset = onScreenYOffset * _resScale;
             float _scaledIdleAmplitude = idleAmplitude * _resScale;
 
             // 2. 차량의 실제 3D 월드 좌표를 스크린 공간 좌표로 투영 (순수 Transform 위치 1:1 조준)

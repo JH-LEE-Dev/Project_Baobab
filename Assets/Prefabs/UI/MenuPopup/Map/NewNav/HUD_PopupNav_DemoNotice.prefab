@@ -51,7 +51,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HUD_PopupNav_DemoNotice
   steamWishlistUrl: https://google.com/
   discordCommunityUrl: https://discord.gg/JtaVpyUkU/
-  demoNoticeOverlay: {fileID: 0}
+  demoNoticeOverlay: {fileID: 1239516781622017439}
   demoDimCanvasGroup: {fileID: 3272230724093129031}
   demoBandTransform: {fileID: 7318809068908883743}
   demoContentCanvasGroup: {fileID: 2722717035475155476}
@@ -66,6 +66,10 @@ MonoBehaviour:
   panelScaleDuration: 0.3
   titleBandEase: 27
   titleBandOvershoot: 1
+  contentFadeOutDuration: 0.15
+  bandCloseDuration: 0.2
+  bandCloseEase: 26
+  dimCloseDuration: 0.2
 --- !u!1 &1259422849989136799
 GameObject:
   m_ObjectHideFlags: 0
@@ -265,7 +269,7 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1465745532725954540}
   m_Enabled: 1
-  m_Alpha: 0.98
+  m_Alpha: 1
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 1
@@ -557,7 +561,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -928,7 +932,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
