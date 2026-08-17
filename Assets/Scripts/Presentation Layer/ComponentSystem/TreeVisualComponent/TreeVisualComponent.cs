@@ -115,6 +115,11 @@ public class TreeVisualComponent : MonoBehaviour
     // 보석 머티리얼인지 판별하는 데 쓰는 프로퍼티
     private static readonly int GemColorID = Shader.PropertyToID("_GemColor");
 
+    // 바람 흔들림. 보석 나무는 흔들리지 않아야 하므로 개체별로 꺼야 한다.
+    private static readonly int EnableWindSwayID = Shader.PropertyToID("_EnableWindSway");
+    // 현재 이 나무에 sway가 켜져 있는지. 갓 생성된 렌더러는 오버라이드가 없어 머티리얼 기본값(켜짐)을 따르므로 true로 시작한다.
+    private bool bWindSwayEnabled = true;
+
     // Shield HDR
     private static readonly int HDRIntensityID = Shader.PropertyToID("_HDRIntensity");
     private MaterialPropertyBlock _mpb;
@@ -903,6 +908,8 @@ public class TreeVisualComponent : MonoBehaviour
         {
             if (topRenderer != null && defaultTopMaterial != null) topRenderer.sharedMaterial = defaultTopMaterial;
             if (bottomRenderer != null && defaultBottomMaterial != null) bottomRenderer.sharedMaterial = defaultBottomMaterial;
+            // 원본 머티리얼로 되돌린 뒤에 읽어야 그 머티리얼에 저장된 원래 sway 설정을 복원할 수 있다.
+            SetWindSwayEnabled(true);
             return;
         }
 
@@ -917,6 +924,56 @@ public class TreeVisualComponent : MonoBehaviour
         {
             bottomRenderer.sharedMaterial = materialSet.bottomMaterial;
         }
+
+        SetWindSwayEnabled(false);
+    }
+
+    /// <summary>
+    /// 이 나무의 모든 렌더러에 바람 흔들림을 켜거나 끈다.
+    ///
+    /// 셰이더의 ApplyWindSway가 _EnableWindSway &lt; 0.5일 때 정점을 변형하지 않고 원본 위치를 그대로
+    /// 반환하므로, 끄는 순간의 흔들린 자세가 남지 않고 sway 연산이 아예 없었던 정지 포즈로 그려진다.
+    ///
+    /// 본체/그림자/아웃라인/스텐실이 같은 sway 함수를 공유하므로 한꺼번에 꺼야 실루엣이 어긋나지 않는다.
+    /// </summary>
+    private void SetWindSwayEnabled(bool _enabled)
+    {
+        // 나무 스폰/반환마다 ResetTree가 복원을 호출하므로, 실제로 상태가 바뀔 때만 렌더러를 건드린다.
+        // (던전 하나에 나무가 수천 그루라 매번 전 렌더러를 순회하면 로드 시 부하가 커진다)
+        if (bWindSwayEnabled == _enabled) return;
+        bWindSwayEnabled = _enabled;
+
+        ApplyWindSwayToRenderer(topRenderer, _enabled);
+        ApplyWindSwayToRenderer(bottomRenderer, _enabled);
+        ApplyWindSwayToRenderer(topShieldRenderer, _enabled);
+        ApplyWindSwayToRenderer(bottomShieldRenderer, _enabled);
+        ApplyWindSwayToRenderer(topHighlightRenderer, _enabled);
+        ApplyWindSwayToRenderer(bottomHighlightRenderer, _enabled);
+        ApplyWindSwayToRenderer(topShadowRenderer, _enabled);
+        ApplyWindSwayToRenderer(bottomShadowRenderer, _enabled);
+        ApplyWindSwayToRenderer(topOutlineSR, _enabled);
+        ApplyWindSwayToRenderer(bottomOutlineSR, _enabled);
+        ApplyWindSwayToRenderer(topStencilOutlineSR, _enabled);
+        ApplyWindSwayToRenderer(bottomStencilOutlineSR, _enabled);
+        ApplyWindSwayToRenderer(constellationRenderer, _enabled);
+    }
+
+    private void ApplyWindSwayToRenderer(SpriteRenderer _renderer, bool _enabled)
+    {
+        if (_renderer == null) return;
+
+        // sway를 쓰지 않는 셰이더(물 위 반사 등)는 건너뛴다.
+        Material material = _renderer.sharedMaterial;
+        if (material == null || !material.HasProperty(EnableWindSwayID)) return;
+
+        // 되돌릴 때는 1로 고정하지 않고 머티리얼에 저장된 원래 값을 쓴다.
+        // 나무 종류나 렌더러에 따라 애초에 sway가 꺼져 있을 수 있기 때문이다.
+        float value = _enabled ? material.GetFloat(EnableWindSwayID) : 0f;
+
+        // GetPropertyBlock으로 기존 오버라이드(HDR 등)를 보존한 뒤 sway 값만 덮어쓴다.
+        _renderer.GetPropertyBlock(Mpb);
+        Mpb.SetFloat(EnableWindSwayID, value);
+        _renderer.SetPropertyBlock(Mpb);
     }
 
     /// <summary>
