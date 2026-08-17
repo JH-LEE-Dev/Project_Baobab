@@ -19,5 +19,5 @@ MonoBehaviour:
     gemType: 1
   - grade: 4
     gemType: 2
-  debugForceGemType: 1
+  debugForceGemType: 0
   debugGemType: 2

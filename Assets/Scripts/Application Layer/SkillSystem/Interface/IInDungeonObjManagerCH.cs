@@ -18,4 +18,5 @@ public interface IInDungeonObjManagerCH
     public void IncreaseConstellationHitCount(float _amount);
     public void IncreaseManifestationBrandBonus(float _amount);
     public void UnlockStarGaze(bool _boolean);
+    public void IncreaseTreeGradeProb(TreeGrade _grade, float _amount);
 }

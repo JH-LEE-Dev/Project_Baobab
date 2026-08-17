@@ -6,7 +6,7 @@ using TMPro;
 using DG.Tweening;
 using PresentationLayer.UISystem;
 
-public class HUD_PopupNav_DemoNotice : MonoBehaviour
+public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
 {
     [Header("External Links")]
     [Tooltip("Steam 상점 페이지 / 찜하기 URL")]
@@ -51,15 +51,21 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour
     // 내부 의존성 및 상태
     private HUD_PopupNav_Main mainController;
     private LocalizationManager localizationManager;
+    private UIDepthController depthController;
     private bool isDemoNoticeShowing = false;
     private Tween demoNoticeTween;
 
     public bool IsDemoNoticeShowing => isDemoNoticeShowing;
 
-    public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager)
+    // IUIDepthCloseable 구현: ESC로 뎁스 스택에서 닫힐 때 호출됩니다.
+    public bool IsActive => isDemoNoticeShowing;
+    public void Hide() => HideDemoNoticeOverlay();
+
+    public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager, UIDepthController _depthController = null)
     {
         mainController = _mainController;
         localizationManager = _localizationManager;
+        depthController = _depthController;
 
         ResetNotice();
     }
@@ -77,6 +83,8 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour
         isDemoNoticeShowing = true;
         demoNoticeOverlay.SetActive(true);
         Sound.PlayUI(SoundID.DemoEnd);
+
+        depthController?.RegisterView(this);
 
         // 배너 확장 연출 전 콘텐츠는 투명(Alpha 0) 상태로 대기 (레이아웃 크기는 정상 유지)
         SetContentAlpha(0f);
@@ -200,6 +208,8 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour
         }
         isDemoNoticeShowing = false;
 
+        depthController?.UnregisterView(this);
+
         // 메인 컨트롤러에 닫힘 알림 전달
         if (null != mainController)
         {
@@ -230,6 +240,10 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour
             demoDimCanvasGroup.blocksRaycasts = false;
         }
         isDemoNoticeShowing = false;
+
+        // 네비게이션 팝업이 애니메이션 없이(다른 경로로) 강제로 닫힐 때도 호출되므로, 뎁스 스택에
+        // 좀비 항목으로 남지 않도록 여기서도 해제한다.
+        depthController?.UnregisterView(this);
     }
 
     public void KillTweens()
@@ -243,6 +257,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour
 
     private void OnDestroy()
     {
+        depthController?.UnregisterView(this);
         KillTweens();
     }
 }

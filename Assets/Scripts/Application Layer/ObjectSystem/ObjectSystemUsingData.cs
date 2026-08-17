@@ -73,25 +73,11 @@ public enum ItemType
 
 
 [Serializable]
-public struct LogDropProbData
-{
-    public TreeGrade treeGrade;
-    public List<LogProbData> probDatas;
-}
-
-[Serializable]
 public struct LogDropCntData
 {
     public TreeType treeType;
     public int minCnt;
     public int maxCnt;
-}
-
-[Serializable]
-public struct LogProbData
-{
-    public LogState type;
-    public float probability;
 }
 
 public enum LootType

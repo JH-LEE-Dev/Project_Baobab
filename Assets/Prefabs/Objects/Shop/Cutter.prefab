@@ -765,6 +765,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
   isUIComponent: 0
+  initializeOnAwake: 1
   vfxPoolDataList:
   - vfxTag: CuttingEffect
     effectPrefab: {fileID: 7006864300503741061, guid: db00e3bf2f7c1cb4fbcfadd28a0e003e, type: 3}

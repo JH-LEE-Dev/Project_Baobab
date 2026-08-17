@@ -81,6 +81,11 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public bool bDead = false;
     bool ITreeObj.bDead => bDead;
 
+    // 나무 등급별 셰이더 회생 단계 (0: Normal, 1: Gold, 2: Diamond, 3: Rainbow).
+    // ResetTree에서 0으로 초기화되며, 등급이 허용하는 최대 단계까지는 HP가 0이 되어도 죽지 않고
+    // 회생하며 다음 단계로 전환된다. 최대 단계에서 다시 HP가 0이 되면 그때 실제로 죽는다.
+    private int currentGemStage = 0;
+
     // 여러 NPC가 같은 나무를 동시에 타겟팅하지 못하도록 하는 예약 플래그
     public bool bReserved { get; set; } = false;
 
@@ -298,6 +303,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public void ResetTree()
     {
         bDead = false;
+        currentGemStage = 0;
         bReserved = false;
         bLastHitByPlayer = true;
         SetStarMarked(false);
@@ -541,7 +547,39 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     private void TreeIsDead()
     {
+        int maxGemStage = GetMaxGemStage();
+        if (currentGemStage < maxGemStage)
+        {
+            currentGemStage++;
+            healthComponent.ReviveFullHealth();
+
+            if (treeVisualComponent != null)
+            {
+                treeVisualComponent.ApplyGemVisual(true, GemStageToVirtualGrade(currentGemStage));
+            }
+            return;
+        }
+
         bDead = true;
+    }
+
+    // 이 나무의 등급이 회생으로 도달할 수 있는 최대 셰이더 단계.
+    private int GetMaxGemStage()
+    {
+        return Mathf.Clamp((int)treeData.grade - (int)TreeGrade.Normal, 0, 3);
+    }
+
+    // 셰이더 단계를 ApplyGemVisual이 받는 등급 값으로 변환한다.
+    // (TreeGemColorDataBase의 등급->보석종류 매핑을 그대로 재사용: Fascinating=Gold, Advanced=Diamond, Perfect=Rainbow)
+    private TreeGrade GemStageToVirtualGrade(int _stage)
+    {
+        switch (_stage)
+        {
+            case 1: return TreeGrade.Fascinating;
+            case 2: return TreeGrade.Advanced;
+            case 3: return TreeGrade.Perfect;
+            default: return TreeGrade.None;
+        }
     }
 
     public Transform GetTransform()

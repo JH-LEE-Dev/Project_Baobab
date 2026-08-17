@@ -113,6 +113,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private IMapDataProvider mapDataProvider;
     private LocalizationManager localizationManager;
     private ICursorBoxUI cursorBoxUI;
+    private UIDepthController depthController;
     private Action onNavigationClosedCallback;
     private Action<MapType, ForestType> onConfirmMapSelectedCallback;
     private Tween delayedCallTween;
@@ -218,13 +219,14 @@ public class HUD_PopupNav_Main : MonoBehaviour
     }
 
     // 퍼블릭 초기화 및 제어 메서드
-    public void Initialize(IMapDataProvider _provider, LocalizationManager _localizer, ICursorBoxUI _cursorBoxUI, Action _onClose, Action<MapType, ForestType> _onConfirm)
+    public void Initialize(IMapDataProvider _provider, LocalizationManager _localizer, ICursorBoxUI _cursorBoxUI, Action _onClose, Action<MapType, ForestType> _onConfirm, UIDepthController _depthController = null)
     {
         mapDataProvider = _provider;
         localizationManager = _localizer;
         cursorBoxUI = _cursorBoxUI;
         onNavigationClosedCallback = _onClose;
         onConfirmMapSelectedCallback = _onConfirm;
+        depthController = _depthController;
 
         onAppearMidwayCallback = OnAppearMidway;
         onAppearCompleteCallback = OnAppearComplete;
@@ -248,7 +250,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
         if (null != demoNotice)
         {
-            demoNotice.Initialize(this, localizationManager);
+            demoNotice.Initialize(this, localizationManager, depthController);
         }
 
         if (null != subRegionFieldTransform)
