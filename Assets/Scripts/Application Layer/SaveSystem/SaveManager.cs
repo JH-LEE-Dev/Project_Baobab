@@ -29,6 +29,14 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
     // GC Alloc 최적화를 위한 캐싱된 세이브 데이터 객체
     private GameSaveData cachedSaveData = new GameSaveData();
 
+    // 이어하기 가능 여부(HasSaveData) 판정 캐시. 판정에 복호화+파싱이 필요해졌고 UI가 버튼 상태를
+    // 갱신할 때마다 여러 번 물어보므로, 세이브 파일이 그대로면 직전 결과를 재사용한다.
+    private string cachedSaveStateKey;
+    private bool bCachedHasUsableSave;
+
+    // 다른 변형(정식) 세이브 보존을 세션당 한 번만 시도하기 위한 플래그. (아래 PreserveForeignSaveOnce 참고)
+    private bool bForeignSavePreserveChecked;
+
     private void Awake()
     {
         bootstrap = GetComponent<BootStrap>();
@@ -130,9 +138,17 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         if (!SteamCloudSaveService.TryDownload(out byte[] cloudData)) return;
 
         // 손상된 클라우드 데이터가 멀쩡한 로컬 파일/백업을 덮어쓰지 않도록 반영 전 검증한다.
-        if (!TryParseSaveBytes(cloudData, out _))
+        if (!TryParseSaveBytes(cloudData, out GameSaveData cloudSaveData))
         {
             Debug.LogError("[SaveManager] Cloud save data is corrupted; keeping local copy.");
+            return;
+        }
+
+        // 데모/정식은 스팀 App ID가 달라 클라우드 저장소도 분리되지만, 개발용 App ID를 공유하거나
+        // 데모→정식 전환기에 잔여 데이터가 넘어오면 로컬 진행도를 덮어쓸 수 있으므로 여기서도 막는다.
+        if (!BuildInfo.IsSaveVariantCompatible(cloudSaveData.buildVariant))
+        {
+            Debug.LogWarning($"[SaveManager] Cloud save was created by another build variant ({cloudSaveData.buildVariant}); current build is {BuildInfo.Variant}. Keeping local copy.");
             return;
         }
 
@@ -167,7 +183,10 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
 
         // 기존 데이터 클리어 (리스트 등 재사용)
         cachedSaveData.Clear();
-        
+
+        // 0. 이 세이브를 만든 빌드를 각인한다. 정식 빌드는 데모 세이브를 이어받지 않고 그대로 덮어쓴다.
+        cachedSaveData.buildVariant = BuildInfo.Variant;
+
         // 1. 스킬 데이터 추출 (리스트 재사용)
         if (null != skillSystem && null != skillSystem.skillManager)
         {
@@ -244,7 +263,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         {
             // 로컬 쓰기가 실패했는데 클라우드에 업로드하면, 클라우드의 "최신" 스냅샷과 로컬 파일이 어긋난다.
             SteamCloudSaveService.Upload(encryptedData);
-            Debug.Log($"[SaveManager] Game Data Encrypted & Saved to: {GetSaveFilePath()} (Alloc-minimized)");
+            Debug.Log($"[SaveManager] Game Data Encrypted & Saved to: {GetSaveFilePath()} (variant={cachedSaveData.buildVariant}, Alloc-minimized)");
         }
         else
         {
@@ -252,17 +271,65 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         }
     }
 
-    // 메인 파일이 손상됐어도 백업이 살아있으면 이어하기가 가능하므로 둘 중 하나라도 있으면 true.
+    // 파일이 있어도 (1) 복호화/파싱이 안 되거나 (2) 다른 빌드 변형(데모↔정식)의 세이브면 이어하기가
+    // 불가능하므로 "세이브 없음"으로 취급한다. 메인이 못 쓰는 상태여도 백업이 살아있으면 이어하기가 가능하다.
+    // 정식 빌드에서 데모 세이브를 만나면 여기서 false가 되어 이어하기 버튼이 사라지고, 새 게임 저장이
+    // 그 파일을 그대로 덮어쓴다.
     public bool HasSaveData()
     {
-        return File.Exists(GetSaveFilePath()) || File.Exists(GamePaths.GameSaveBackupFile);
+        string stateKey = BuildSaveStateKey();
+        if (null != cachedSaveStateKey && stateKey == cachedSaveStateKey)
+        {
+            return bCachedHasUsableSave;
+        }
+
+        cachedSaveStateKey = stateKey;
+        bCachedHasUsableSave = TryLoadUsableSave(GetSaveFilePath(), out _, out _)
+                            || TryLoadUsableSave(GamePaths.GameSaveBackupFile, out _, out _);
+
+        return bCachedHasUsableSave;
+    }
+
+    // 세이브 파일들의 상태를 갱신 시각/크기로 요약한다. 저장/클라우드 반영/외부 삭제가 일어나면 값이 달라져
+    // HasSaveData 캐시가 자연히 무효화된다.
+    private string BuildSaveStateKey()
+    {
+        return $"{DescribeFileState(GetSaveFilePath())}|{DescribeFileState(GamePaths.GameSaveBackupFile)}";
+    }
+
+    private static string DescribeFileState(string _path)
+    {
+        FileInfo info = new FileInfo(_path);
+        if (false == info.Exists) return "-";
+
+        return $"{info.LastWriteTimeUtc.Ticks}:{info.Length}";
+    }
+
+    // 파일이 존재하고, 복호화/파싱까지 되고, 현재 빌드에서 이어서 플레이해도 되는 변형일 때만 true.
+    private bool TryLoadUsableSave(string _path, out GameSaveData _data, out byte[] _rawBytes)
+    {
+        _data = null;
+        _rawBytes = null;
+
+        if (false == File.Exists(_path)) return false;
+        if (!TryReadAndParse(_path, out GameSaveData data, out byte[] rawBytes)) return false;
+
+        if (!BuildInfo.IsSaveVariantCompatible(data.buildVariant))
+        {
+            Debug.LogWarning($"[SaveManager] '{_path}' was created by another build variant ({data.buildVariant}); current build is {BuildInfo.Variant}. Treating it as no save data (it will be overwritten by the next save).");
+            return false;
+        }
+
+        _data = data;
+        _rawBytes = rawBytes;
+        return true;
     }
 
     public void LoadGameData()
     {
         string path = GetSaveFilePath();
 
-        if (File.Exists(path) && TryReadAndParse(path, out GameSaveData saveData, out _))
+        if (TryLoadUsableSave(path, out GameSaveData saveData, out _))
         {
             ApplyLoadedData(saveData);
             Debug.Log($"[SaveManager] Game Data Decrypted & Loaded from: {path}");
@@ -270,24 +337,22 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         }
 
         string backupPath = GamePaths.GameSaveBackupFile;
-        if (!File.Exists(backupPath))
+
+        if (File.Exists(path))
         {
-            if (File.Exists(path))
+            Debug.LogWarning("[SaveManager] Main save file is unusable (corrupted or from another build variant). Trying backup...");
+        }
+
+        if (!TryLoadUsableSave(backupPath, out GameSaveData backupData, out byte[] backupBytes))
+        {
+            if (File.Exists(path) || File.Exists(backupPath))
             {
-                Debug.LogError("[SaveManager] Save file is corrupted and no backup exists. Load aborted.");
+                Debug.LogError("[SaveManager] No usable save file (corrupted, or created by another build variant). Load aborted.");
             }
             else
             {
                 Debug.LogWarning("[SaveManager] Save file not found.");
             }
-            return;
-        }
-
-        Debug.LogWarning("[SaveManager] Main save file is missing or corrupted. Trying backup...");
-
-        if (!TryReadAndParse(backupPath, out GameSaveData backupData, out byte[] backupBytes))
-        {
-            Debug.LogError("[SaveManager] Both main and backup save files are corrupted or unreadable. Load aborted.");
             return;
         }
 
@@ -298,6 +363,10 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         // 단, 손상된 메인이 남아 있는 채로 WriteSaveFileWithBackup을 부르면 File.Replace가
         // 그 손상본을 백업 자리로 밀어넣어 방금 복구에 성공한 백업을 덮어써버린다.
         // 먼저 지워서 File.Move 경로(백업 미변경)를 타게 한다.
+        // 이 경로에서는 파일이 지워진 뒤 WriteSaveFileWithBackup이 호출되므로, 그 안의 보존 로직이
+        // 원본을 못 보게 된다. 지우기 전에 먼저 보존을 시도한다.
+        PreserveForeignSaveOnce();
+
         if (!File.Exists(path) || TryDeleteFile(path))
         {
             WriteSaveFileWithBackup(backupBytes, "RecoverFromBackup");
@@ -423,6 +492,8 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
     // 실패 시 기존 main/backup 파일은 전혀 건드려지지 않은 상태로 남는다.
     private bool WriteSaveFileWithBackup(byte[] _data, string _context)
     {
+        PreserveForeignSaveOnce();
+
         string path = GetSaveFilePath();
         string tempPath = GamePaths.GameSaveTempFile;
         string backupPath = GamePaths.GameSaveBackupFile;
@@ -473,6 +544,35 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         }
 
         return false;
+    }
+
+    // 데모 빌드는 정식 빌드가 남긴 세이브를 덮어쓰기 직전에 한 번만 따로 복사해둔다.
+    // 데모와 정식은 저장 경로가 같으므로(문서\LumberBoy\SaveData.dat), 정식을 플레이하던 유저가
+    // PC에 남아있는 데모를 잠깐 켜기만 해도 진행도가 사라질 수 있기 때문이다.
+    // (반대 방향 - 정식이 데모 세이브를 덮어쓰는 것 - 은 의도된 동작이라 보존하지 않는다.
+    //  덮어쓰기 직전 상태는 File.Replace가 SaveData.dat.bak에 남긴다.)
+    // 첫 저장 이후에는 메인 파일이 우리 것이 되므로 세션당 한 번만 확인하면 충분하다.
+    private void PreserveForeignSaveOnce()
+    {
+        if (bForeignSavePreserveChecked) return;
+        bForeignSavePreserveChecked = true;
+
+        if (BuildInfo.IsFullRelease) return;
+
+        string path = GetSaveFilePath();
+        if (false == File.Exists(path)) return;
+        if (!TryReadAndParse(path, out GameSaveData existingData, out _)) return;
+        if (BuildInfo.IsSaveVariantCompatible(existingData.buildVariant)) return;
+
+        try
+        {
+            File.Copy(path, GamePaths.GameSaveForeignBackupFile, overwrite: true);
+            Debug.LogWarning($"[SaveManager] Preserved a {existingData.buildVariant} save to '{GamePaths.GameSaveForeignBackupFile}' before this demo build overwrites it.");
+        }
+        catch (Exception _e)
+        {
+            Debug.LogError($"[SaveManager] Failed to preserve the save from another build variant: {_e.Message}");
+        }
     }
 
     // // 프라이빗 암호화 로직
