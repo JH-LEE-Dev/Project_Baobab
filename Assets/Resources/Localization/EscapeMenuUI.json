@@ -32,6 +32,22 @@
       "en": "Quit Game",
       "enumType": "",
       "enumValue": ""
+    },
+    {
+      "id": 5,
+      "key": "ExitGameWarning",
+      "kr": "정말 게임을 나가시겠습니까?",
+      "en": "Are you sure you want to quit the game?",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 6,
+      "key": "MainMenuWarning",
+      "kr": "정말 메인 메뉴로 나가시겠습니까?",
+      "en": "Are you sure you want to return to the main menu?",
+      "enumType": "",
+      "enumValue": ""
     }
   ]
 }

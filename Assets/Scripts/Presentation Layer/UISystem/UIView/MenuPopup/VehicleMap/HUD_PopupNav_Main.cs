@@ -591,6 +591,12 @@ public class HUD_PopupNav_Main : MonoBehaviour
     // 내부 이벤트 핸들러
     private void OnBackgroundDimClicked()
     {
+        if (null != demoNotice && true == demoNotice.IsDemoNoticeShowing)
+        {
+            demoNotice.HideDemoNoticeOverlay();
+            return;
+        }
+
         if (true == IsInputBlocked)
         {
             return;

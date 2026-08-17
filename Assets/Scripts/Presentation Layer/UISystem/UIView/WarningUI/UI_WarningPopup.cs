@@ -35,6 +35,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     private SoundID closeSoundId = SoundID.None;
     private SoundID hoverSoundId = SoundID.None;
     private bool hasPlayedCloseSound;
+    private bool isInitialized = false;
 
     private Sequence productionSequence;
     private Vector2 originalRootAnchoredPosition;
@@ -58,20 +59,28 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 
     private void OnDestroy()
     {
+        isInitialized = false;
         depthController?.UnregisterView(this);
         KillSequence();
         HideCursor();
         onConfirmAction = null;
         onCancelAction = null;
         cursorBoxUI = null;
+        depthController = null;
     }
 
     public void Initialize(UIViewContext _ctx)
     {
+        if (true == isInitialized)
+        {
+            return;
+        }
+
         if (null != _ctx)
         {
             cursorBoxUI = _ctx.cursorBoxUI;
             depthController = _ctx.depthController;
+            isInitialized = true;
         }
     }
 

@@ -26,6 +26,7 @@ public class UIView_ESC : UIView
 
     [Header("Sub Views")]
     [SerializeField] private UI_Option optionUI; // 인스펙터 바인딩 지원
+    [SerializeField] private UI_WarningPopup warningPopup;
 
     [Header("Input Lock Settings")]
     [SerializeField, Tooltip("1. ESC 메뉴 패널 등장 연출 중 키보드 입력 Lock 여부")]
@@ -76,6 +77,11 @@ public class UIView_ESC : UIView
             {
                 optionUI = _instance.GetComponentInChildren<UI_Option>(true);
             }
+
+            if (null == warningPopup)
+            {
+                warningPopup = _instance.GetComponentInChildren<UI_WarningPopup>(true);
+            }
         }
 
         if (null == escapeMenu)
@@ -88,6 +94,16 @@ public class UIView_ESC : UIView
             optionUI = GetComponentInChildren<UI_Option>(true);
         }
 
+        if (null == warningPopup)
+        {
+            warningPopup = GetComponentInChildren<UI_WarningPopup>(true);
+        }
+
+        if (null != warningPopup)
+        {
+            warningPopup.Initialize(_ctx);
+        }
+
         if (null != escapeMenu)
         {
             escapeMenu.Initialize(
@@ -95,7 +111,8 @@ public class UIView_ESC : UIView
                 OnResumeButtonClicked,
                 OnOptionButtonClicked,
                 OnGoToMainMenuButtonClicked,
-                OnExitButtonClicked);
+                OnExitButtonClicked,
+                warningPopup);
         }
 
         if (null != optionUI)
@@ -145,6 +162,11 @@ public class UIView_ESC : UIView
         if (null != optionUI && true == optionUI.gameObject.activeInHierarchy)
         {
             optionUI.Hide();
+        }
+
+        if (null != warningPopup && true == warningPopup.IsActive)
+        {
+            warningPopup.Hide();
         }
 
         if (null != escapeMenu && true == gameObject.activeInHierarchy)

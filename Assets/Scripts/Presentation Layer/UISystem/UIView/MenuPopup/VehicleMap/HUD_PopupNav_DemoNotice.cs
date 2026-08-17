@@ -36,7 +36,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     [Tooltip("디스코드 외부 링크 버튼")]
     [SerializeField] private UI_ExternalLinkButton discordBtn;
 
-    [Header("Demo Notice Animation Settings")]
+    [Header("Demo Notice Animation Settings - Show")]
     [Tooltip("DimBG 알파 페이드 인 연출 시간")]
     [SerializeField] private float dimFadeDuration = 0.2f;
     [Tooltip("DimBG 알파 페이드 인 이즈(Ease)")]
@@ -47,6 +47,16 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     [SerializeField] private Ease titleBandEase = Ease.OutBack;
     [Tooltip("바운스(반동) 강도 (낮을수록 약함, 기본 1.0 / DOTween 기본 1.7)")]
     [SerializeField] private float titleBandOvershoot = 1.0f;
+
+    [Header("Demo Notice Animation Settings - Hide")]
+    [Tooltip("콘텐츠 페이드 아웃 연출 시간")]
+    [SerializeField] private float contentFadeOutDuration = 0.15f;
+    [Tooltip("밴드 축소 닫힘 연출 시간")]
+    [SerializeField] private float bandCloseDuration = 0.2f;
+    [Tooltip("밴드 축소 이즈(Ease)")]
+    [SerializeField] private Ease bandCloseEase = Ease.InBack;
+    [Tooltip("DimBG 페이드 아웃 연출 시간")]
+    [SerializeField] private float dimCloseDuration = 0.2f;
 
     // 내부 의존성 및 상태
     private HUD_PopupNav_Main mainController;
@@ -69,6 +79,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
 
         ResetNotice();
     }
+
 
 
 
@@ -166,12 +177,17 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
 
     public void HideDemoNoticeOverlay()
     {
-        if (null == demoNoticeOverlay || false == demoNoticeOverlay.activeSelf)
+        if (null == demoNoticeOverlay || false == demoNoticeOverlay.activeSelf || false == isDemoNoticeShowing)
         {
             return;
         }
 
-        SetContentAlpha(0f);
+        Sound.PlayUI(SoundID.NaviClose);
+
+        if (null != demoContentCanvasGroup)
+        {
+            demoContentCanvasGroup.blocksRaycasts = false;
+        }
 
         if (null != demoNoticeTween && true == demoNoticeTween.IsActive())
         {
@@ -181,14 +197,19 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
 
         Sequence _seq = DOTween.Sequence();
 
+        if (null != demoContentCanvasGroup)
+        {
+            _seq.Join(demoContentCanvasGroup.DOFade(0f, contentFadeOutDuration).SetEase(Ease.OutQuad));
+        }
+
         if (null != demoBandTransform)
         {
-            _seq.Join(demoBandTransform.DOScaleX(0f, 0.2f).SetEase(Ease.InBack));
+            _seq.Join(demoBandTransform.DOScaleX(0f, bandCloseDuration).SetEase(bandCloseEase));
         }
 
         if (null != demoDimCanvasGroup)
         {
-            _seq.Join(demoDimCanvasGroup.DOFade(0f, 0.2f).SetEase(Ease.Linear));
+            _seq.Join(demoDimCanvasGroup.DOFade(0f, dimCloseDuration).SetEase(Ease.Linear));
         }
 
         _seq.OnComplete(HandleHideAnimationComplete);
