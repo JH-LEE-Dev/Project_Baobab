@@ -44,6 +44,12 @@ public class GameplayUICoordinator
     // 짝이 되는 TreeDetectionCleared는 이 값이 true일 때만 전달해 on/off 호출이 항상 쌍을 이루게 한다.
     private bool bTreeDetectedNotified = false;
 
+    // bIsTutorialActive 여부와 무관하게, 원본 TreeDetectedSignal/TreeDetectionClearedSignal이
+    // 마지막으로 알려온 실제 감지 상태. 하차 직후처럼 튜토리얼이 아직 시작되기 전에 감지 신호가
+    // 와서 bTreeDetectedNotified로 전달되지 못하고 씹히는 경우를 대비해, 튜토리얼이 시작되는
+    // 순간(TutorialStepStarted) 이 값을 보고 놓친 알림을 한 번 따라잡는다.
+    private bool bTreeCurrentlyDetected = false;
+
     private MapType mapType;
     private ForestType forestType;
 
@@ -547,6 +553,8 @@ public class GameplayUICoordinator
     // 나무 감지는 UI에 알리지 않는다.
     private void TreeDetected(TreeDetectedSignal treeDetectedSignal)
     {
+        bTreeCurrentlyDetected = true;
+
         if (bIsTutorialActive == false)
             return;
 
@@ -556,6 +564,8 @@ public class GameplayUICoordinator
 
     private void TreeDetectionCleared(TreeDetectionClearedSignal treeDetectionClearedSignal)
     {
+        bTreeCurrentlyDetected = false;
+
         if (bTreeDetectedNotified == false)
             return;
 
@@ -770,6 +780,14 @@ public class GameplayUICoordinator
     private void TutorialStepStarted(TutorialStepStartedSignal _signal)
     {
         bIsTutorialActive = true;
+
+        // 튜토리얼이 시작되기 전(하차 직후 등)에 이미 TreeDetectedSignal이 와서 씹혔다면,
+        // 여기서 놓친 알림을 한 번 따라잡는다.
+        if (bTreeCurrentlyDetected && bTreeDetectedNotified == false)
+        {
+            bTreeDetectedNotified = true;
+            unitUI.TreeDetected();
+        }
 
         overUIPopupUI.TutorialStepStarted(_signal.step);
     }

@@ -254,12 +254,24 @@ public class UIView_WorldPopup : UIView
         ui_Cutter?.ResetCutter();
     }
 
-    public override void Refresh()
+    public override void Refresh() //저장 파일 로드할 때도 호출됨.
     {
         ResetLogCutterUI();
 
         ui_Storage?.Refresh();
         ui_CarStorage?.Refresh();
+        SnapTraderMoneyText();
+    }
+
+    // 세이브 로드 직후 반영 시에는 bTraderCoinAnim 설정과 무관하게 항상 스냅으로 갱신해야 한다.
+    // (LoadSaveData가 발행하는 ShopMoneyChangedEvent는 실제 골드 획득과 동일하게 취급되어 애니메이션이
+    // 걸릴 수 있으므로, Refresh()에서 이 값을 다시 스냅으로 덮어써 애니메이션/사운드가 재생되지 않게 한다.)
+    private void SnapTraderMoneyText()
+    {
+        if (null == shopNPC || null == ui_TraderCoin)
+            return;
+
+        ui_TraderCoin.SyncMoneyTextSilent(shopNPC.currentMoney);
     }
 
     private void ResetLogCutterUI()
