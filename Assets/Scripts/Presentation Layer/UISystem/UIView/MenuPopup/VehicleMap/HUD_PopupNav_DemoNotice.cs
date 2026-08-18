@@ -187,7 +187,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
 
         isHiding = true;
 
-        Sound.PlayUI(SoundID.NaviClose);
+        Sound.PlayUI(SoundID.ResultUIClose);
 
         if (null != mainController)
         {
