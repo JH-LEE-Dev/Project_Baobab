@@ -42,6 +42,22 @@ public class ItemAuraEffectController : MonoBehaviour
     [SerializeField, Range(0.04f, 0.35f), ShowIf("overrideRaySettings")] private float minBeamWidth = 0.04f;
     [SerializeField, Range(0.15f, 0.8f), ShowIf("overrideRaySettings")] private float maxBeamWidth = 0.4f;
 
+    [Header("색상 커스텀 오버라이드 (체크 시 머티리얼 색상 재정의)")]
+    [SerializeField] private bool overrideColors = false;
+    [SerializeField, ColorUsage(true, true), ShowIf("overrideColors")] private Color coreColor = new Color(3.5f, 3.2f, 2.0f, 1.0f);
+    [SerializeField, ColorUsage(true, true), ShowIf("overrideColors")] private Color beamColor = new Color(2.5f, 1.8f, 0.3f, 1.0f);
+    [SerializeField, ColorUsage(true, true), ShowIf("overrideColors")] private Color outerColor = new Color(1.2f, 0.5f, 0.05f, 1.0f);
+
+    [Header("프리즘 / 무지개 모드 (광선별 무지개 색상 분광 연출)")]
+    [SerializeField, Tooltip("체크 시 광선마다 고유한 무지개/프리즘 색상 분광 연출 적용")]
+    private bool enablePrismMode = false;
+    [SerializeField, Range(0f, 2f), ShowIf("enablePrismMode"), Tooltip("프리즘 채도/선명도")]
+    private float prismSaturation = 1.0f;
+    [SerializeField, Range(0f, 5f), ShowIf("enablePrismMode"), Tooltip("프리즘 색상 회전/시프트 속도 (0: 고정 무지개, >0: 회전 무지개)")]
+    private float prismSpeed = 0.5f;
+    [SerializeField, Range(0f, 1f), ShowIf("enablePrismMode"), Tooltip("프리즘 시작 색상 오프셋")]
+    private float prismHueOffset = 0.0f;
+
     [Header("디버그 및 테스트 GUI")]
     [SerializeField] private bool showOnScreenDebugGui = false;
 
@@ -180,19 +196,38 @@ public class ItemAuraEffectController : MonoBehaviour
     }
 
     /// <summary>
-    /// 실시간으로 오오라의 코어 및 빔 색상을 변경합니다.
+    /// 실시간으로 오오라의 코어, 빔, 외곽 글로우 색상을 변경합니다.
+    /// </summary>
+    public void SetColors(Color _coreColor, Color _beamColor, Color _outerColor)
+    {
+        overrideColors = true;
+        coreColor = _coreColor;
+        beamColor = _beamColor;
+        outerColor = _outerColor;
+        ApplyColorSettings();
+    }
+
+    /// <summary>
+    /// 실시간으로 오오라의 코어 및 빔 색상을 변경합니다 (기존 아우터 컬러 유지).
     /// </summary>
     public void SetColors(Color _coreColor, Color _beamColor)
     {
-        EnsurePropertyBlock();
+        overrideColors = true;
+        coreColor = _coreColor;
+        beamColor = _beamColor;
+        ApplyColorSettings();
+    }
 
-        if (null != targetRenderer)
-        {
-            targetRenderer.GetPropertyBlock(propertyBlock);
-            propertyBlock.SetColor(ItemAuraShaderHelper.CoreColorPropertyId, _coreColor);
-            propertyBlock.SetColor(ItemAuraShaderHelper.BeamColorPropertyId, _beamColor);
-            targetRenderer.SetPropertyBlock(propertyBlock);
-        }
+    /// <summary>
+    /// 실시간으로 광선별 프리즘(무지개) 분광 모드를 활성화 또는 비활성화합니다.
+    /// </summary>
+    public void SetPrismMode(bool _enable, float _saturation = 1.0f, float _speed = 0.5f, float _hueOffset = 0.0f)
+    {
+        enablePrismMode = _enable;
+        prismSaturation = _saturation;
+        prismSpeed = _speed;
+        prismHueOffset = _hueOffset;
+        ApplyPrismSettings();
     }
 
     // ========================================================================
@@ -229,6 +264,33 @@ public class ItemAuraEffectController : MonoBehaviour
             ItemAuraShaderHelper.ApplyRayOverrides(propertyBlock, rayCount, angleJitter, beamBlur, minBeamWidth, maxBeamWidth);
         }
 
+        if (true == overrideColors)
+        {
+            ItemAuraShaderHelper.ApplyColorSettings(propertyBlock, coreColor, beamColor, outerColor);
+        }
+
+        ItemAuraShaderHelper.ApplyPrismSettings(propertyBlock, enablePrismMode, prismSaturation, prismSpeed, prismHueOffset);
+
+        targetRenderer.SetPropertyBlock(propertyBlock);
+    }
+
+    private void ApplyColorSettings()
+    {
+        if (false == overrideColors || null == targetRenderer) return;
+
+        EnsurePropertyBlock();
+        targetRenderer.GetPropertyBlock(propertyBlock);
+        ItemAuraShaderHelper.ApplyColorSettings(propertyBlock, coreColor, beamColor, outerColor);
+        targetRenderer.SetPropertyBlock(propertyBlock);
+    }
+
+    private void ApplyPrismSettings()
+    {
+        if (null == targetRenderer) return;
+
+        EnsurePropertyBlock();
+        targetRenderer.GetPropertyBlock(propertyBlock);
+        ItemAuraShaderHelper.ApplyPrismSettings(propertyBlock, enablePrismMode, prismSaturation, prismSpeed, prismHueOffset);
         targetRenderer.SetPropertyBlock(propertyBlock);
     }
 

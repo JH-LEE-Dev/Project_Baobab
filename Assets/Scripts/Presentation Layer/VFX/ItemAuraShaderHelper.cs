@@ -20,6 +20,41 @@ public static class ItemAuraShaderHelper
     public static readonly int BeamMaxWidthPropertyId = Shader.PropertyToID("_BeamMaxWidth");
     public static readonly int CoreColorPropertyId = Shader.PropertyToID("_CoreColor");
     public static readonly int BeamColorPropertyId = Shader.PropertyToID("_BeamColor");
+    public static readonly int OuterColorPropertyId = Shader.PropertyToID("_OuterColor");
+    public static readonly int EnablePrismModePropertyId = Shader.PropertyToID("_EnablePrismMode");
+    public static readonly int PrismSaturationPropertyId = Shader.PropertyToID("_PrismSaturation");
+    public static readonly int PrismSpeedPropertyId = Shader.PropertyToID("_PrismSpeed");
+    public static readonly int PrismHueOffsetPropertyId = Shader.PropertyToID("_PrismHueOffset");
+
+    public static void ApplyColorSettings(MaterialPropertyBlock _block, Color _coreColor, Color _beamColor, Color _outerColor)
+    {
+        _block.SetColor(CoreColorPropertyId, _coreColor);
+        _block.SetColor(BeamColorPropertyId, _beamColor);
+        _block.SetColor(OuterColorPropertyId, _outerColor);
+    }
+
+    public static void ApplyColorSettings(Material _material, Color _coreColor, Color _beamColor, Color _outerColor)
+    {
+        _material.SetColor(CoreColorPropertyId, _coreColor);
+        _material.SetColor(BeamColorPropertyId, _beamColor);
+        _material.SetColor(OuterColorPropertyId, _outerColor);
+    }
+
+    public static void ApplyPrismSettings(MaterialPropertyBlock _block, bool _enablePrism, float _saturation, float _speed, float _hueOffset)
+    {
+        _block.SetFloat(EnablePrismModePropertyId, _enablePrism ? 1f : 0f);
+        _block.SetFloat(PrismSaturationPropertyId, _saturation);
+        _block.SetFloat(PrismSpeedPropertyId, _speed);
+        _block.SetFloat(PrismHueOffsetPropertyId, _hueOffset);
+    }
+
+    public static void ApplyPrismSettings(Material _material, bool _enablePrism, float _saturation, float _speed, float _hueOffset)
+    {
+        _material.SetFloat(EnablePrismModePropertyId, _enablePrism ? 1f : 0f);
+        _material.SetFloat(PrismSaturationPropertyId, _saturation);
+        _material.SetFloat(PrismSpeedPropertyId, _speed);
+        _material.SetFloat(PrismHueOffsetPropertyId, _hueOffset);
+    }
 
     public static void ApplyPixelSettings(MaterialPropertyBlock _block, bool _enablePixelStyle, float _pixelResolution, float _colorBandingSteps)
     {

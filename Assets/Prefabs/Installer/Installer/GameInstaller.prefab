@@ -1743,7 +1743,7 @@ GameObject:
   - component: {fileID: 6337500468537300409}
   - component: {fileID: 224444414779716708}
   m_Layer: 0
-  m_Name: EnvrionmentParticleSystem
+  m_Name: EnvironmentParticleSystem
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1777,6 +1777,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Project_Baobab.Presentation.EnvironmentSystem.ParallaxParticleSystem
   mapParticleMappings:
+  - mapType: 1
+    particlePrefab: {fileID: 7006864300503741061, guid: eecf1bf9970f49747936facdc1cea4d5, type: 3}
+    autoGenerateLayerCount: 3
+    autoWrapPadding: 2
+    minParallaxFactor: {x: -0.2, y: -0.2}
+    maxParallaxFactor: {x: -2, y: -2}
+    minParticleSizeMultiplier: 0.1
+    maxParticleSizeMultiplier: 0.3
+    minHDRIntensity: 1
+    maxHDRIntensity: 1
+    customEmissionRates:
+    - 8
+    - 4
+    - 1
   - mapType: 2
     particlePrefab: {fileID: 7006864300503741061, guid: eecf1bf9970f49747936facdc1cea4d5, type: 3}
     autoGenerateLayerCount: 3

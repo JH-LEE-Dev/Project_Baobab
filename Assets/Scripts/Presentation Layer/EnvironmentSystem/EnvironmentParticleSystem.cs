@@ -67,11 +67,11 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
 
         public void Initialize()
         {
-            if (isInitialized) return;
+            if (true == isInitialized) return;
             isInitialized = true;
 
             mainCamera = Camera.main;
-            if (mainCamera != null)
+            if (null != mainCamera)
             {
                 cameraTransform = mainCamera.transform;
                 previousCameraPosition = cameraTransform.position;
@@ -82,7 +82,7 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
             }
 
             // 예상 최대 용량 기반 List 초기화 (단편화 방지 최적화)
-            int expectedCapacity = mapParticleMappings != null ? mapParticleMappings.Count * 5 : 15;
+            int expectedCapacity = null != mapParticleMappings ? mapParticleMappings.Count * 5 : 15;
             layers = new List<ParallaxLayerSetting>(expectedCapacity);
             
             propertyBlock = new MaterialPropertyBlock();
@@ -97,10 +97,10 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
             for (int i = 0; i < layers.Count; i++)
             {
                 ParallaxLayerSetting layer = layers[i];
-                if (layer.targetParticleSystems == null || layer.targetParticleSystems.Length == 0) continue;
+                if (null == layer.targetParticleSystems || 0 == layer.targetParticleSystems.Length) continue;
 
-                // 타겟 맵이 아닐 경우, 또는 타겟이 타운(Town)일 경우 모든 파티클 강제 종료
-                if (_targetMapType == MapType.Town || layer.mapType != _targetMapType)
+                // 타겟 맵이 아닌 경우 모든 파티클 강제 종료 및 클리어 (숲 -> 마을 복귀 시 숲 파티클 정리, 마을 -> 숲 진입 시 마을 파티클 정리)
+                if (layer.mapType != _targetMapType)
                 {
                     // 루트만 멈춰도 자식까지 멈춤(withChildren = true)
                     layer.targetParticleSystems[0].Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -114,8 +114,8 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
 
             currentMapType = _targetMapType;
 
-            // None이거나 Town이면 추가 파티클을 생성하지 않고 종료
-            if (_targetMapType == MapType.None || _targetMapType == MapType.Town) return;
+            // None이면 추가 파티클을 생성하지 않고 종료
+            if (MapType.None == _targetMapType) return;
 
             // 타겟 맵의 매핑 데이터 찾기
             MapParticleMapping targetMapping = null;
@@ -128,7 +128,7 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
                 }
             }
 
-            if (targetMapping == null)
+            if (null == targetMapping)
             {
                 Debug.LogWarning($"[EnvironmentParticleSystem] MapType '{_targetMapType}'에 매핑된 프리팹 세팅이 없습니다.");
                 return;
@@ -137,9 +137,9 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
             // Update 최적화를 위해 현재 맵의 래핑 패딩값 캐싱
             currentWrapPadding = targetMapping.autoWrapPadding;
 
-            if (isAlreadyPooled) return;
+            if (true == isAlreadyPooled) return;
 
-            if (targetMapping.particlePrefab == null)
+            if (null == targetMapping.particlePrefab)
             {
                 Debug.LogWarning($"[EnvironmentParticleSystem] MapType '{_targetMapType}'의 파티클 프리팹이 비어있습니다.");
                 return;
@@ -153,7 +153,7 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
                 instance.name = $"{_targetMapType}_Layer_{i}";
                 instance.transform.localPosition = Vector3.zero;
 
-                float t = layerCount > 1 ? (float)i / (layerCount - 1) : 1f;
+                float t = 1 < layerCount ? (float)i / (layerCount - 1) : 1f;
                 Vector2 factor = Vector2.Lerp(targetMapping.minParallaxFactor, targetMapping.maxParallaxFactor, t);
                 float sizeMult = Mathf.Lerp(targetMapping.minParticleSizeMultiplier, targetMapping.maxParticleSizeMultiplier, t);
                 float hdrInt = Mathf.Lerp(targetMapping.minHDRIntensity, targetMapping.maxHDRIntensity, t);
@@ -180,12 +180,12 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
                     mainModule.startSizeMultiplier *= sizeMult;
 
                     var emissionModule = sys.emission;
-                    if (targetMapping.customEmissionRates != null && i < targetMapping.customEmissionRates.Count)
+                    if (null != targetMapping.customEmissionRates && i < targetMapping.customEmissionRates.Count)
                     {
                         emissionModule.rateOverTime = new ParticleSystem.MinMaxCurve(targetMapping.customEmissionRates[i]);
                     }
 
-                    if (mainModule.simulationSpace != ParticleSystemSimulationSpace.Local)
+                    if (ParticleSystemSimulationSpace.Local != mainModule.simulationSpace)
                     {
                         mainModule.simulationSpace = ParticleSystemSimulationSpace.Local;
                     }
@@ -196,7 +196,7 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
                 // Prewarm이나 PlayOnAwake 옵션으로 인해 크기/Emission 변경 전에 미리 쏟아진 파티클들 초기화 후 재시작
                 bool wasPlaying = instance.isPlaying;
                 instance.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                if (wasPlaying || instance.main.playOnAwake)
+                if (true == wasPlaying || true == instance.main.playOnAwake)
                 {
                     instance.Play(true);
                 }
@@ -226,10 +226,10 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
 
         private void LateUpdate()
         {
-            if (cameraTransform == null)
+            if (null == cameraTransform)
             {
                 mainCamera = Camera.main;
-                if (mainCamera != null)
+                if (null != mainCamera)
                 {
                     cameraTransform = mainCamera.transform;
                     previousCameraPosition = cameraTransform.position;
@@ -246,11 +246,11 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
 
             transform.position = new Vector3(currentCameraPos.x, currentCameraPos.y, transform.position.z);
 
-            if (currentMapType == MapType.None) return;
+            if (MapType.None == currentMapType) return;
 
             // 카메라 크기 및 래핑 바운드 계산을 for문 밖에서 1회만 수행하도록 최적화
             float camHeight = 0f;
-            if (mainCamera.orthographic)
+            if (true == mainCamera.orthographic)
             {
                 camHeight = mainCamera.orthographicSize * 2f;
             }
@@ -269,7 +269,7 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
                 ParallaxLayerSetting layer = layers[i];
 
                 if (layer.mapType != currentMapType) continue;
-                if (layer.targetParticleSystems == null || layer.particlesBuffers == null) continue;
+                if (null == layer.targetParticleSystems || null == layer.particlesBuffers) continue;
 
                 float moveRatioX = 1f - layer.parallaxFactor.x;
                 float moveRatioY = 1f - layer.parallaxFactor.y;
@@ -278,11 +278,11 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
                 for (int s = 0; s < layer.targetParticleSystems.Length; s++)
                 {
                     ParticleSystem ps = layer.targetParticleSystems[s];
-                    if (ps == null) continue;
+                    if (null == ps) continue;
 
                     ParticleSystem.Particle[] buffer = layer.particlesBuffers[s];
                     int aliveParticlesCount = ps.GetParticles(buffer);
-                    if (aliveParticlesCount == 0) continue;
+                    if (0 == aliveParticlesCount) continue;
 
                     for (int j = 0; j < aliveParticlesCount; j++)
                     {
@@ -300,14 +300,14 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
 
         private void OnDrawGizmosSelected()
         {
-            if (mainCamera == null)
+            if (null == mainCamera)
             {
                 mainCamera = Camera.main;
-                if (mainCamera == null) return;
+                if (null == mainCamera) return;
             }
 
             float camHeight = 0f;
-            if (mainCamera.orthographic)
+            if (true == mainCamera.orthographic)
             {
                 camHeight = mainCamera.orthographicSize * 2f;
             }
@@ -322,14 +322,14 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
             Vector3 currentWrapBounds = new Vector3(camWidth + currentWrapPadding, camHeight + currentWrapPadding, 0f);
 
             Gizmos.color = Color.cyan;
-            if (layers != null)
+            if (null != layers)
             {
                 for (int i = 0; i < layers.Count; i++)
                 {
                     ParallaxLayerSetting layer = layers[i];
-                    if (layer.targetParticleSystems != null && layer.targetParticleSystems.Length > 0 && layer.mapType == currentMapType)
+                    if (null != layer.targetParticleSystems && 0 < layer.targetParticleSystems.Length && layer.mapType == currentMapType)
                     {
-                        if (layer.targetParticleSystems[0] != null)
+                        if (null != layer.targetParticleSystems[0])
                         {
                             Gizmos.DrawWireCube(layer.targetParticleSystems[0].transform.position, currentWrapBounds);
                         }

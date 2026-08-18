@@ -11,6 +11,12 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
         _Intensity ("Overall Intensity Multiplier", Float) = 1.0
         _BloomMultiplier ("Bloom Intensity Multiplier", Range(0.5, 10.0)) = 1.5
 
+        [Header(Prism Rainbow Mode)]
+        _EnablePrismMode ("Enable Prism Rainbow Mode (1: ON, 0: OFF)", Float) = 0.0
+        _PrismSaturation ("Prism Color Saturation", Range(0.0, 2.0)) = 1.0
+        _PrismSpeed ("Prism Color Cycle Speed", Range(0.0, 5.0)) = 0.5
+        _PrismHueOffset ("Prism Starting Hue Offset", Range(0.0, 1.0)) = 0.0
+
         [Header(Pixel Perfect Settings)]
         _PixelateEnabled ("Enable Pixel Style (1: ON, 0: OFF)", Float) = 1.0
         _PixelResolution ("Pixel Grid Resolution (PPU)", Range(8.0, 128.0)) = 32.0
@@ -120,6 +126,10 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                 float4 _Center;
                 float _Intensity;
                 float _BloomMultiplier;
+                float _EnablePrismMode;
+                float _PrismSaturation;
+                float _PrismSpeed;
+                float _PrismHueOffset;
                 float _PixelateEnabled;
                 float _PixelResolution;
                 float _ColorBandingSteps;
@@ -152,6 +162,15 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                 p *= p + 33.33;
                 p *= p + p;
                 return frac(p);
+            }
+
+            // HSV Hue to RGB conversion (Prism Rainbow Dispersion)
+            half3 HueToRGB(float hue)
+            {
+                float r = abs(hue * 6.0 - 3.0) - 1.0;
+                float g = 2.0 - abs(hue * 6.0 - 2.0);
+                float b = 2.0 - abs(hue * 6.0 - 4.0);
+                return saturate(half3(r, g, b));
             }
 
             Varyings vert(Attributes input)
@@ -207,6 +226,7 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
 
                 // 5. 개별 부채꼴 광선 루프 연산
                 float totalRays = 0.0;
+                half3 accumulatedRaysColor = half3(0.0, 0.0, 0.0);
 
                 for (int k = 0; k < 32; ++k)
                 {
@@ -311,7 +331,32 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                         lifeEnvelope = lerp(1.0, flash, _FlickerAmount);
                     }
 
-                    totalRays += wedge * lifeEnvelope;
+                    float rayWeight = wedge * lifeEnvelope;
+
+                    // 광선별 색상 결정: 프리즘 모드 vs 기본 그라디언트 모드
+                    half3 thisRayColor;
+                    if (_EnablePrismMode > 0.5)
+                    {
+                        float hueProgress = (_EnableBurstMode > 0.5) ? (_BurstProgress * _PrismSpeed) : (_Time.y * _PrismSpeed);
+                        float hueT = frac((kF / (float)exactRayCount) + _PrismHueOffset + hueProgress);
+                        half3 rainbow = HueToRGB(hueT);
+
+                        // 1) 맑고 화사한 파스텔 톤으로 리프트 (원색의 지나친 채도 완화)
+                        half3 pastelRainbow = lerp(half3(1.0, 1.0, 1.0), rainbow, saturate(_PrismSaturation * 0.75));
+
+                        // 2) 빔 중심부는 밝고 영롱한 HDR 파스텔 광휘, 외곽은 투명하고 맑은 무지개 틴트
+                        float beamBrightness = max(_BeamColor.r, max(_BeamColor.g, _BeamColor.b));
+                        half3 beamRainbow = pastelRainbow * max(2.2, beamBrightness * 1.2) + half3(0.3, 0.3, 0.3);
+                        half3 outerRainbow = pastelRainbow * 1.3;
+                        thisRayColor = lerp(outerRainbow, beamRainbow, saturate(wedge * 1.2));
+                    }
+                    else
+                    {
+                        thisRayColor = lerp(_OuterColor.rgb, _BeamColor.rgb, saturate(wedge * 1.2));
+                    }
+
+                    accumulatedRaysColor += thisRayColor * rayWeight;
+                    totalRays += rayWeight;
                 }
 
                 // 6. 마스킹 및 단면 처리
@@ -347,9 +392,24 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                 totalAura *= quadEdgeFade;
 
                 // 9. HDR 컬러 합성 + Bloom 배율 증폭
-                half3 beamRgb = lerp(_OuterColor.rgb, _BeamColor.rgb, saturate(totalRays * 1.2));
+                half3 beamRgb = (totalRays > 0.0001) ? (accumulatedRaysColor / totalRays) : _BeamColor.rgb;
                 float totalIntensity = _Intensity * _BloomMultiplier;
-                half3 finalRgb = (beamRgb * totalAura + _CoreColor.rgb * coreGlow) * totalIntensity * input.color.rgb;
+
+                half3 finalCoreColor = _CoreColor.rgb;
+                if (_EnablePrismMode > 0.5)
+                {
+                    float hueProgress = (_EnableBurstMode > 0.5) ? (_BurstProgress * _PrismSpeed) : (_Time.y * _PrismSpeed);
+                    // 픽셀 각도 기반 360도 방사형 프리즘 스펙트럼 (Radial Rainbow Core Swirl)
+                    float coreHue = frac((pixelAngle / TWO_PI) + 0.5 + _PrismHueOffset + hueProgress);
+                    half3 coreRainbow = HueToRGB(coreHue);
+                    half3 pastelCoreRainbow = lerp(half3(1.0, 1.0, 1.0), coreRainbow, saturate(_PrismSaturation * 0.75));
+
+                    // 코어 정중앙은 눈부신 순백 광휘, 코어 둘레는 360도 회전하는 영롱한 파스텔 무지개 링
+                    half3 coreRainbowGlow = pastelCoreRainbow * 2.8;
+                    finalCoreColor = lerp(coreRainbowGlow, half3(3.5, 3.5, 3.5), saturate(coreFactor * 0.8));
+                }
+
+                half3 finalRgb = (beamRgb * totalAura + finalCoreColor * coreGlow) * totalIntensity * input.color.rgb;
 
                 // 10. 알파(Alpha) 출력 (부드러운 소멸 보장)
                 half finalAlpha = saturate(totalAura + coreGlow) * quadEdgeFade * input.color.a * _BeamColor.a;
