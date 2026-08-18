@@ -37,7 +37,7 @@
       "id": 105,
       "key": "VSync",
       "kr": "V-Sync",
-      "en": "V-Sync",
+      "en": "VSync",
       "enumType": "",
       "enumValue": ""
     },
@@ -85,7 +85,7 @@
       "id": 205,
       "key": "PauseOnUnfocus",
       "kr": "비활성화 중 게임 일시정지",
-      "en": "Pause On Unfocus",
+      "en": "Pause When Unfocused",
       "enumType": "",
       "enumValue": ""
     },
@@ -141,7 +141,7 @@
       "id": 212,
       "key": "BGMVolume",
       "kr": "배경음",
-      "en": "BGM Volume",
+      "en": "Music Volume",
       "enumType": "",
       "enumValue": ""
     },
@@ -149,7 +149,7 @@
       "id": 213,
       "key": "SFXVolume",
       "kr": "효과음",
-      "en": "SFX Volume",
+      "en": "Sound Effects Volume",
       "enumType": "",
       "enumValue": ""
     },
@@ -165,7 +165,7 @@
       "id": 302,
       "key": "tabSound",
       "kr": "사운드",
-      "en": "Sound",
+      "en": "Audio",
       "enumType": "",
       "enumValue": ""
     },
@@ -173,7 +173,7 @@
       "id": 303,
       "key": "tabGraphic",
       "kr": "그래픽",
-      "en": "Graphic",
+      "en": "Graphics",
       "enumType": "",
       "enumValue": ""
     },
@@ -181,7 +181,7 @@
       "id": 304,
       "key": "tabControl",
       "kr": "컨트롤",
-      "en": "Control",
+      "en": "Controls",
       "enumType": "",
       "enumValue": ""
     },
@@ -253,7 +253,7 @@
       "id": 313,
       "key": "pressKeyPrompt",
       "kr": "변경할 키를 입력하세요.\n(ESC: 취소)",
-      "en": "Press any key to rebind.\n(ESC: Cancel)",
+      "en": "Press any key to rebind.\n(Esc: Cancel)",
       "enumType": "",
       "enumValue": ""
     },
@@ -261,7 +261,7 @@
       "id": 314,
       "key": "resetAllWarning",
       "kr": "모든 키 설정을 기본값으로 되돌리시겠습니까?",
-      "en": "Are you sure you want to reset all key bindings to default?",
+      "en": "Reset all key bindings to their defaults?",
       "enumType": "",
       "enumValue": ""
     },

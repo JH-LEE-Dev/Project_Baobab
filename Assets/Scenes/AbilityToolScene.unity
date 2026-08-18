@@ -1224,11 +1224,11 @@ MonoBehaviour:
   - skillType: 112
     sprite: {fileID: 21300000, guid: fcf1d2a586597a84eac0e232b2aa9c50, type: 3}
   - skillType: 113
-    sprite: {fileID: 274389767998965042, guid: 9f551a3f3eab2cc4487ab9768ae1d15a, type: 3}
+    sprite: {fileID: 21300000, guid: 9f551a3f3eab2cc4487ab9768ae1d15a, type: 3}
   - skillType: 114
-    sprite: {fileID: -7781206004220612196, guid: 577c7f4b159509b448d022b9730d94dd, type: 3}
+    sprite: {fileID: 21300000, guid: 577c7f4b159509b448d022b9730d94dd, type: 3}
   - skillType: 115
-    sprite: {fileID: -6143405962009628560, guid: f263456ecb78a244ba3dd574c1ada049, type: 3}
+    sprite: {fileID: 21300000, guid: f263456ecb78a244ba3dd574c1ada049, type: 3}
   levelBadgeBindings:
   - levelBadge: 1
     sprite: {fileID: 8086268826789988410, guid: 914ac703c90021144a8a7973a041eeff, type: 3}

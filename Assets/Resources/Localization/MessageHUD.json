@@ -21,7 +21,7 @@
       "id": 3,
       "key": "forestWideGreenForest1Title",
       "kr": "풀빛너른숲 I",
-      "en": "WideGreen Forest I",
+      "en": "Greenreach Forest I",
       "enumType": "ForestType",
       "enumValue": "WideGreenForest_1"
     },
@@ -29,7 +29,7 @@
       "id": 4,
       "key": "forestWideGreenForest2Title",
       "kr": "풀빛너른숲 II",
-      "en": "WideGreen Forest II",
+      "en": "Greenreach Forest II",
       "enumType": "ForestType",
       "enumValue": "WideGreenForest_2"
     },
@@ -37,7 +37,7 @@
       "id": 5,
       "key": "forestWideGreenForest3Title",
       "kr": "풀빛너른숲 III",
-      "en": "WideGreen Forest III",
+      "en": "Greenreach Forest III",
       "enumType": "ForestType",
       "enumValue": "WideGreenForest_3"
     },
@@ -45,7 +45,7 @@
       "id": 6,
       "key": "forestFluffySporeForest1Title",
       "kr": "몽글포자숲 I",
-      "en": "",
+      "en": "Puffspore Forest I",
       "enumType": "ForestType",
       "enumValue": "FluffySporeForest_1"
     },
@@ -53,7 +53,7 @@
       "id": 7,
       "key": "forestFluffySporeForest2Title",
       "kr": "몽글포자숲 II",
-      "en": "",
+      "en": "Puffspore Forest II",
       "enumType": "ForestType",
       "enumValue": "FluffySporeForest_2"
     },
@@ -61,7 +61,7 @@
       "id": 8,
       "key": "forestFluffySporeForest3Title",
       "kr": "몽글포자숲 III",
-      "en": "",
+      "en": "Puffspore Forest III",
       "enumType": "ForestType",
       "enumValue": "FluffySporeForest_3"
     },
@@ -69,7 +69,7 @@
       "id": 9,
       "key": "forestStarrootForest1Title",
       "kr": "별뿌리숲 I",
-      "en": "",
+      "en": "Starroot Forest I",
       "enumType": "ForestType",
       "enumValue": "StarrootForest_1"
     },
@@ -77,7 +77,7 @@
       "id": 10,
       "key": "forestStarrootForest2Title",
       "kr": "별뿌리숲 II",
-      "en": "",
+      "en": "Starroot Forest II",
       "enumType": "ForestType",
       "enumValue": "StarrootForest_2"
     },
@@ -85,7 +85,7 @@
       "id": 11,
       "key": "forestStarrootForest3Title",
       "kr": "별뿌리숲 III",
-      "en": "",
+      "en": "Starroot Forest III",
       "enumType": "ForestType",
       "enumValue": "StarrootForest_3"
     },
@@ -93,7 +93,7 @@
       "id": 12,
       "key": "forestMagmaForest1Title",
       "kr": "용암숲 I",
-      "en": "",
+      "en": "Magma Forest I",
       "enumType": "ForestType",
       "enumValue": "MagmaForest_1"
     },
@@ -101,7 +101,7 @@
       "id": 13,
       "key": "forestMagmaForest2Title",
       "kr": "용암숲 II",
-      "en": "",
+      "en": "Magma Forest II",
       "enumType": "ForestType",
       "enumValue": "MagmaForest_2"
     },
@@ -109,7 +109,7 @@
       "id": 14,
       "key": "forestMagmaForest3Title",
       "kr": "용암숲 III",
-      "en": "",
+      "en": "Magma Forest III",
       "enumType": "ForestType",
       "enumValue": "MagmaForest_3"
     },
@@ -125,7 +125,7 @@
       "id": 102,
       "key": "dungeonStateStage1Idle0SubText",
       "kr": "오늘은 날씨가 맑네요!",
-      "en": "A quiet breeze moves through the trees.",
+      "en": "The weather's lovely today!",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle0"
     },
@@ -133,7 +133,7 @@
       "id": 103,
       "key": "dungeonStateStage1Idle1SubText",
       "kr": "숲바람이 살랑살랑 불어요.",
-      "en": "The forest is calm for now.",
+      "en": "A gentle breeze is blowing through the forest.",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle1"
     },
@@ -141,7 +141,7 @@
       "id": 104,
       "key": "dungeonStateStage1Idle2SubText",
       "kr": "숲속 공기가 참 상쾌하네요!",
-      "en": "Something soft stirs beneath the leaves.",
+      "en": "The forest air feels so fresh!",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle2"
     },
@@ -149,7 +149,7 @@
       "id": 105,
       "key": "dungeonStateStage1Idle3SubText",
       "kr": "오늘도 평화로운 벌목의 하루!",
-      "en": "The path ahead feels strangely peaceful.",
+      "en": "Another peaceful day of logging!",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle3"
     },
@@ -157,7 +157,7 @@
       "id": 106,
       "key": "dungeonStateStage2Idle0SubText",
       "kr": "말랑한 숲향기가 코끝을 간질여요.",
-      "en": "",
+      "en": "The forest's sweet, earthy scent tickles my nose.",
       "enumType": "DungeonState",
       "enumValue": "Stage2_Idle0"
     },
@@ -165,7 +165,7 @@
       "id": 107,
       "key": "dungeonStateStage2Idle1SubText",
       "kr": "발밑에서 푹신한 기운이 느껴집니다.",
-      "en": "",
+      "en": "The ground feels springy underfoot.",
       "enumType": "DungeonState",
       "enumValue": "Stage2_Idle1"
     },
@@ -173,7 +173,7 @@
       "id": 108,
       "key": "dungeonStateStage2Idle2SubText",
       "kr": "몽글몽글 피어오르네요!",
-      "en": "",
+      "en": "Puffs of spores are drifting up everywhere!",
       "enumType": "DungeonState",
       "enumValue": "Stage2_Idle2"
     },
@@ -181,7 +181,7 @@
       "id": 109,
       "key": "dungeonStateStage3Idle0SubText",
       "kr": "나무뿌리 사이로 별빛이 스며들고 있네요.",
-      "en": "",
+      "en": "Starlight is filtering through the roots.",
       "enumType": "DungeonState",
       "enumValue": "Stage3_Idle0"
     },
@@ -189,7 +189,7 @@
       "id": 110,
       "key": "dungeonStateStage3Idle1SubText",
       "kr": "오늘은 별빛이 길을 밝혀주네요.",
-      "en": "",
+      "en": "The starlight is showing me the way today.",
       "enumType": "DungeonState",
       "enumValue": "Stage3_Idle1"
     },
@@ -197,7 +197,7 @@
       "id": 111,
       "key": "dungeonStateStage3Idle2SubText",
       "kr": "오늘 숲은 조금 신비로운 표정이에요.",
-      "en": "",
+      "en": "The forest feels a little mysterious today.",
       "enumType": "DungeonState",
       "enumValue": "Stage3_Idle2"
     },
@@ -205,7 +205,7 @@
       "id": 112,
       "key": "dungeonStateStage4Idle0SubText",
       "kr": "뜨거운 열기가 숲길 위로 아른거려요.",
-      "en": "",
+      "en": "Heat shimmers above the forest path.",
       "enumType": "DungeonState",
       "enumValue": "Stage4_Idle0"
     },
@@ -213,7 +213,7 @@
       "id": 113,
       "key": "dungeonStateStage4Idle1SubText",
       "kr": "발밑이 따끈하니 조심히 걸어야겠어요!",
-      "en": "",
+      "en": "The ground's warm. Better watch my step!",
       "enumType": "DungeonState",
       "enumValue": "Stage4_Idle1"
     },
@@ -221,7 +221,7 @@
       "id": 114,
       "key": "dungeonStateStage4Idle2SubText",
       "kr": "용암빛이 나무 그림자를 흔들고있어요.",
-      "en": "",
+      "en": "The lava glow makes the trees' shadows dance.",
       "enumType": "DungeonState",
       "enumValue": "Stage4_Idle2"
     }

@@ -5,7 +5,7 @@
       "id": 1,
       "key": "NewGame",
       "kr": "새 게임",
-      "en": "NewGame",
+      "en": "New Game",
       "enumType": "",
       "enumValue": ""
     },
@@ -13,7 +13,7 @@
       "id": 2,
       "key": "LoadGame",
       "kr": "이어하기",
-      "en": "LoadGame",
+      "en": "Continue",
       "enumType": "",
       "enumValue": ""
     },
@@ -37,7 +37,7 @@
       "id": 5,
       "key": "Exit",
       "kr": "종료하기",
-      "en": "Exit",
+      "en": "Quit",
       "enumType": "",
       "enumValue": ""
     },
@@ -53,7 +53,7 @@
       "id": 6,
       "key": "NewGameWarning",
       "kr": "이전 진행 상황이 모두 사라집니다.\n정말 새 게임을 시작하시겠습니까?",
-      "en": "All previous progress will be lost.\nStart a new game anyway?",
+      "en": "This will erase all existing progress.\nStart a new game anyway?",
       "enumType": "",
       "enumValue": ""
     }

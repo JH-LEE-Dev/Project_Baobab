@@ -5,7 +5,7 @@
       "id": 1,
       "key": "Information",
       "kr": "등장하는 나무 정보",
-      "en": "Tree Information",
+      "en": "Trees Found Here",
       "enumType": "MapType",
       "enumValue": "None"
     },
@@ -14,7 +14,7 @@
       "id": 2,
       "key": "mapName_1",
       "kr": "목적지 설정",
-      "en": "Choose Destination",
+      "en": "Select Destination",
       "enumType": "MapType",
       "enumValue": "None"
     },
@@ -22,7 +22,7 @@
       "id": 3,
       "key": "mapName_2",
       "kr": "풀빛너른숲",
-      "en": "WideGreen Forest",
+      "en": "Greenreach Forest",
       "enumType": "MapType",
       "enumValue": "WideGreenForest"
     },
@@ -30,7 +30,7 @@
       "id": 4,
       "key": "mapName_3",
       "kr": "몽글포자숲",
-      "en": "Fluffy Spore Forest",
+      "en": "Puffspore Forest",
       "enumType": "MapType",
       "enumValue": "FluffySporeForest"
     },

@@ -5,7 +5,7 @@
       "id": 1,
       "key": "Opening_Monologue_0",
       "kr": "음... 날씨 참 <color=#FFE082,#FFB74D><wave>좋다</wave></color>, 그쵸?\n오늘 같은 날엔 돗자리 펴고\n<color=#FFE082,#FFB74D><wave>소풍</wave></color>을 가야 하는데 말이죠.",
-      "en": "Hmm... The weather is so <color=#FFE082,#FFB74D><wave>nice</wave></color>, isn't it?\nOn a day like this, one really ought to\ngo on a <color=#FFE082,#FFB74D><wave>picnic</wave></color>.",
+      "en": "Hmm... The weather sure is <color=#FFE082,#FFB74D><wave>nice</wave></color>, isn't it?\nA day like this is perfect for laying out a blanket\nand having a <color=#FFE082,#FFB74D><wave>picnic</wave></color>.",
       "enumType": "",
       "enumValue": ""
     },
@@ -13,7 +13,7 @@
       "id": 2,
       "key": "Opening_Monologue_1",
       "kr": "그래서 지금 소풍을 왔어요.\n<color=#81C784,#4CAF50><b><wave>숲으로</wave></b></color>.",
-      "en": "So I came on a picnic right now.\n<color=#81C784,#4CAF50><b><wave>To the forest</wave></b></color>.",
+      "en": "So here I am, having a picnic.\n<color=#81C784,#4CAF50><b><wave>In the forest.</wave></b></color>",
       "enumType": "",
       "enumValue": ""
     },
@@ -21,7 +21,7 @@
       "id": 3,
       "key": "Opening_Monologue_2",
       "kr": "<color=#FF8A65><char_shake>...네?</char_shake></color> 말도 안 되는 소리 말고\n<color=#FFD54F>나무나 베라고요?</color>",
-      "en": "<color=#FF8A65><char_shake>...Huh?</char_shake></color> Stop talking nonsense and just\n<color=#FFD54F>chop trees?</color>",
+      "en": "<color=#FF8A65><char_shake>...What?</char_shake></color> You want me to quit talking and\n<color=#FFD54F>get back to chopping trees?</color>",
       "enumType": "",
       "enumValue": ""
     },
@@ -29,7 +29,7 @@
       "id": 4,
       "key": "Opening_Monologue_3",
       "kr": "에이... <color=#90CAF9><wave>매정하시네</wave></color>.\n<color=#CFD8DC>그러죠 뭐.</color>",
-      "en": "Aww... <color=#90CAF9><wave>So cold-hearted</wave></color>.\n<color=#CFD8DC>Alright then.</color>",
+      "en": "Aw... <color=#90CAF9><wave>That's cold</wave></color>.\n<color=#CFD8DC>Fine, fine.</color>",
       "enumType": "",
       "enumValue": ""
     }

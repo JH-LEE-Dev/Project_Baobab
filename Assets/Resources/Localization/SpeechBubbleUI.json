@@ -13,7 +13,7 @@
       "id": 2,
       "key": "ItemCantAcquired",
       "kr": "다른 아이템을 담을 수 없어.",
-      "en": "I can't carry any other items.",
+      "en": "I can't carry anything else.",
       "enumType": "",
       "enumValue": ""
     },

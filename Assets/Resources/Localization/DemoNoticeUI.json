@@ -5,13 +5,13 @@
       "id": 1,
       "key": "Title",
       "kr": "<COLOR=7EEDBE,EDD87E><Wave>데모 플레이 완료</Wave></COLOR>",
-      "en": "<COLOR=7EEDBE,EDD87E><Wave>Demo Version Completed</Wave></COLOR>"
+      "en": "<COLOR=7EEDBE,EDD87E><Wave>Demo Complete</Wave></COLOR>"
     },
     {
       "id": 2,
       "key": "Description",
       "kr": "럼버보이의 첫 발걸음을 함께해 주신 <COLOR=7EEDBE>탐험가 여러분</COLOR>께 진심으로 감사드립니다.\n여러분의 <COLOR=FFD700,FFA500><Wave>Steam 찜하기</Wave></COLOR>와 <COLOR=7289DA>디스코드 피드백</COLOR>은 개발팀에게 가장 큰 힘이 됩니다.\n지금 찜하기를 누르고 <COLOR=54D86A>정식 버전</COLOR>에서 모험을 이어가세요!",
-      "en": "Thank you so much to all <COLOR=7EEDBE>explorers</COLOR> who joined Lumber Boy on his very first steps.\nYour <COLOR=FFD700,FFA500><Wave>Steam Wishlist</Wave></COLOR> and <COLOR=7289DA>Discord feedback</COLOR> mean the world to our dev team.\nAdd to your Wishlist now and continue the adventure in the <COLOR=54D86A>full release</COLOR>!"
+      "en": "Thank you, <COLOR=7EEDBE>explorers</COLOR>, for joining Lumber Boy on his very first adventure.\nYour <COLOR=FFD700,FFA500><Wave>Steam wishlists</Wave></COLOR> and <COLOR=7289DA>feedback on Discord</COLOR> mean the world to our team.\nWishlist the game now and continue your adventure in the <COLOR=54D86A>full release</COLOR>!"
     }
   ]
 }

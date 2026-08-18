@@ -13,7 +13,7 @@
       "id": 2,
       "key": "FillOffroadContainer_Title",
       "kr": "마을로 가져갈 원목을 운반 상자에 넣으세요!",
-      "en": "Store logs into the transport container!",
+      "en": "Load the logs you're taking back to town into the cargo crate!",
       "enumType": "",
       "enumValue": ""
     },
@@ -21,7 +21,7 @@
       "id": 3,
       "key": "FillOffroadContainer_Desc",
       "kr": "넣지 않은 원목은 숲을 떠날 때 사라집니다.",
-      "en": "Logs not stored will disappear when leaving the forest.",
+      "en": "Any logs left behind will disappear when you leave the forest.",
       "enumType": "",
       "enumValue": ""
     },
@@ -29,7 +29,7 @@
       "id": 4,
       "key": "GoHomeBeforeExhausted_Title",
       "kr": "탈진하기 전에 마을로 돌아가세요!",
-      "en": "Return to town before exhaustion!",
+      "en": "Return to town before you run out of stamina!",
       "enumType": "",
       "enumValue": ""
     },
@@ -37,7 +37,7 @@
       "id": 5,
       "key": "PutItemsInLogContainer_Title",
       "kr": "가져온 원목을 제재소 원목 보관함에 넣으세요",
-      "en": "Put the collected logs into the sawmill log storage",
+      "en": "Put the logs you brought back into the sawmill's log bin",
       "enumType": "",
       "enumValue": ""
     },
@@ -45,7 +45,7 @@
       "id": 6,
       "key": "ReceiveMoney_Title",
       "kr": "정산된 금액을 받아가세요!",
-      "en": "Collect the settled money!",
+      "en": "Collect your earnings!",
       "enumType": "",
       "enumValue": ""
     },
@@ -53,7 +53,7 @@
       "id": 7,
       "key": "UpgradeAxe_Title",
       "kr": "도끼를 강화하세요.",
-      "en": "Upgrade your axe.",
+      "en": "Upgrade your axe",
       "enumType": "",
       "enumValue": ""
     },
@@ -61,7 +61,7 @@
       "id": 8,
       "key": "StartNewLogging_Title",
       "kr": "새로운 벌목을 시작하세요!",
-      "en": "Start a new logging trip!",
+      "en": "Set out on another logging trip!",
       "enumType": "",
       "enumValue": ""
     },
@@ -69,7 +69,7 @@
       "id": 9,
       "key": "UnlockNewRegion_Title",
       "kr": "새로운 지역 해금!!",
-      "en": "New Region Unlocked!!",
+      "en": "New region unlocked!",
       "enumType": "",
       "enumValue": ""
     }

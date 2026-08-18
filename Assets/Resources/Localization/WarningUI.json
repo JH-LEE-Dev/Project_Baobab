@@ -5,7 +5,7 @@
       "id": 1,
       "key": "mainText",
       "kr": "원정을 종료할까요?",
-      "en": "",
+      "en": "End the expedition?",
       "enumType": "",
       "enumValue": ""
     },
@@ -13,7 +13,7 @@
       "id": 2,
       "key": "subText",
       "kr": "<Color=E94A42>인벤토리에 있는 원목이 사라집니다.</Color>",
-      "en": "",
+      "en": "<Color=E94A42>Any logs in your inventory will be lost.</Color>",
       "enumType": "",
       "enumValue": ""
     }

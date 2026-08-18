@@ -5,7 +5,7 @@
       "id": 1,
       "key": "OakTree",
       "kr": "참나무",
-      "en": "OakTree",
+      "en": "Oak",
       "enumType": "TreeType",
       "enumValue": "OakTree"
     },
@@ -13,7 +13,7 @@
       "id": 2,
       "key": "PineTree",
       "kr": "소나무",
-      "en": "PineTree",
+      "en": "Pine",
       "enumType": "TreeType",
       "enumValue": "PineTree"
     },
@@ -21,7 +21,7 @@
       "id": 3,
       "key": "BirchTree",
       "kr": "자작나무",
-      "en": "BirchTree",
+      "en": "Birch",
       "enumType": "TreeType",
       "enumValue": "BirchTree"
     },
@@ -29,7 +29,7 @@
       "id": 4,
       "key": "SporepuffTree",
       "kr": "몽글포자나무",
-      "en": "SporepuffTree",
+      "en": "Puffspore",
       "enumType": "TreeType",
       "enumValue": "SporepuffTree"
     },
@@ -37,7 +37,7 @@
       "id": 5,
       "key": "FluffyMyceliumTree",
       "kr": "둥둥포자나무",
-      "en": "FluffyMyceliumTree",
+      "en": "Driftspore",
       "enumType": "TreeType",
       "enumValue": "FluffyMyceliumTree"
     },
@@ -45,7 +45,7 @@
       "id": 6,
       "key": "BellpineTree",
       "kr": "포자솜나무",
-      "en": "BellpineTree",
+      "en": "Cottonspore",
       "enumType": "TreeType",
       "enumValue": "BellpineTree"
     },
@@ -53,7 +53,7 @@
       "id": 7,
       "key": "StarrootTree",
       "kr": "별뿌리나무",
-      "en": "StarrootTree",
+      "en": "Starroot",
       "enumType": "TreeType",
       "enumValue": "StarrootTree"
     },
@@ -61,7 +61,7 @@
       "id": 8,
       "key": "MoonhaloTree",
       "kr": "달무리나무",
-      "en": "MoonhaloTree",
+      "en": "Moonhalo",
       "enumType": "TreeType",
       "enumValue": "MoonhaloTree"
     },
@@ -69,7 +69,7 @@
       "id": 9,
       "key": "GalaxygrainTree",
       "kr": "은하결나무",
-      "en": "GalaxygrainTree",
+      "en": "Nebulavein",
       "enumType": "TreeType",
       "enumValue": "GalaxygrainTree"
     },
@@ -77,7 +77,7 @@
       "id": 10,
       "key": "CinderTree",
       "kr": "잿불나무",
-      "en": "CinderTree",
+      "en": "Emberwood",
       "enumType": "TreeType",
       "enumValue": "CinderTree"
     },
@@ -85,7 +85,7 @@
       "id": 11,
       "key": "LavasapTree",
       "kr": "용암수액나무",
-      "en": "LavasapTree",
+      "en": "Lavasap",
       "enumType": "TreeType",
       "enumValue": "LavasapTree"
     },
@@ -93,7 +93,7 @@
       "id": 12,
       "key": "ObsidianTree",
       "kr": "흑요나무",
-      "en": "ObsidianTree",
+      "en": "Obsidian",
       "enumType": "TreeType",
       "enumValue": "ObsidianTree"
     }

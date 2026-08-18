@@ -61,7 +61,7 @@
       "id": 8,
       "key": "containerStateHeader",
       "kr": "운반 상자 상태",
-      "en": "Transport Crate Status",
+      "en": "Cargo Crate Status",
       "enumType": "",
       "enumValue": ""
     }
