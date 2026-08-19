@@ -84,6 +84,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     [SerializeField] private Transform shinyEffectPoint;
     [SerializeField] private ParticleSystem.MinMaxGradient effectColor;
     [SerializeField] private float goEffectInterval = 0.2f;
+    [SerializeField] private float boxJumpEffectYOffset = 0.3f;
+    [SerializeField] private float boxLandEffectYOffset = 0.3f;
 
     // 외부 의존성 및 컴포넌트
     private IEnvironmentProvider environmentProvider;
@@ -373,6 +375,11 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         offroadContainer.ContainerClosedEvent -= ContainerClosed;
         offroadContainer.ContainerClosedEvent += ContainerClosed;
 
+        offroadContainerVComponent.ContainerJumpStartEvent -= ContainerJumpStart;
+        offroadContainerVComponent.ContainerJumpStartEvent += ContainerJumpStart;
+        offroadContainerVComponent.ContainerLandedEvent -= ContainerLanded;
+        offroadContainerVComponent.ContainerLandedEvent += ContainerLanded;
+
         if (repairBox != null)
         {
             repairBox.RepairBoxInteractStateChangedEvent -= RepairBoxInteractStateChanged;
@@ -395,6 +402,9 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
         offroadContainer.ContainerOpenedEvent -= ContainerOpend;
         offroadContainer.ContainerClosedEvent -= ContainerClosed;
+
+        offroadContainerVComponent.ContainerJumpStartEvent -= ContainerJumpStart;
+        offroadContainerVComponent.ContainerLandedEvent -= ContainerLanded;
 
         if (repairBox != null)
         {
@@ -792,12 +802,20 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     private void OffroadPlayEffect(string _effectName, Transform _effectPoint)
     {
-        if (vfxComponent != null && _effectPoint != null)
+        if (_effectPoint != null)
         {
-            VFXPlaySettings settings = new VFXPlaySettings(_effectName, _effectPoint.position, _effectPoint.rotation, effectColor);
+            OffroadPlayEffect(_effectName, _effectPoint.position, _effectPoint.rotation);
+        }
+    }
+
+    private void OffroadPlayEffect(string _effectName, Vector3 _position, Quaternion _rotation, int? _sortingOrderOverride = null)
+    {
+        if (vfxComponent != null)
+        {
+            VFXPlaySettings settings = new VFXPlaySettings(_effectName, _position, _rotation, effectColor);
             settings.OverrideSorting = true;
             settings.SortingLayerName = "Objects";
-            settings.SortingOrder = baseSR.sortingOrder;
+            settings.SortingOrder = _sortingOrderOverride ?? baseSR.sortingOrder;
 
             ParticleSystem effect = vfxComponent.Play(settings);
         }
@@ -907,6 +925,29 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private void ContainerClosed()
     {
         offroadContainerVComponent.Close();
+    }
+
+    private void ContainerJumpStart(Vector3 _position)
+    {
+        Vector3 effectPos = _position + new Vector3(0, boxJumpEffectYOffset, 0);
+        OffroadPlayEffect("Box", effectPos, Quaternion.identity, BoxEffectSortingOrder(_position));
+    }
+
+    private void ContainerLanded(Vector3 _position)
+    {
+        Vector3 effectPos = _position + new Vector3(0, boxLandEffectYOffset, 0);
+        OffroadPlayEffect("Box", effectPos, Quaternion.identity, BoxEffectSortingOrder(_position));
+    }
+
+    // 착지 시 컨테이너가 차량 지붕 높이(currentHeight)만큼 정렬 순서가 앞으로 밀려 있어,
+    // baseSR 기준의 고정 정렬 순서로 재생하면 방금 안착한 컨테이너 스프라이트에 이펙트가 가려진다.
+    // 컨테이너의 CustomSortable과 동일한 규칙으로 정렬 순서를 계산하고 그보다 한 칸 앞에 그린다.
+    private int BoxEffectSortingOrder(Vector3 _position)
+    {
+        if (offroadContainerVComponent == null || offroadContainerVComponent.Sortable == null)
+            return baseSR.sortingOrder;
+
+        return offroadContainerVComponent.Sortable.ComputeSortingOrder(_position.y) + 1;
     }
 
     private void ContainerVisualOpened()

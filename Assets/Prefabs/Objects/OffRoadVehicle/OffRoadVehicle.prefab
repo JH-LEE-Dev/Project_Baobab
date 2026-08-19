@@ -2225,6 +2225,12 @@ MonoBehaviour:
     allowDynamicExpansion: 0
     maxPoolSize: 0
     uiParticleScale: 0
+  - vfxTag: Box
+    effectPrefab: {fileID: 666413043986464954, guid: 3780b2b04f12e0944a5736b7d0f30163, type: 3}
+    initialPoolSize: 2
+    allowDynamicExpansion: 0
+    maxPoolSize: 0
+    uiParticleScale: 0
 --- !u!114 &8898087584450869175
 MonoBehaviour:
   m_ObjectHideFlags: 0

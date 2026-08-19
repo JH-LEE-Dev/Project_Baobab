@@ -7,6 +7,8 @@ public class OffroadContainerVComponent : MonoBehaviour
 {
     public event Action ContainerOpenedEvent;
     public event Action ContainerClosedEvent;
+    public event Action<Vector3> ContainerJumpStartEvent;
+    public event Action<Vector3> ContainerLandedEvent;
 
     // 외부 의존성
     [SerializeField] private float roofHeight = 1.0f;
@@ -30,6 +32,8 @@ public class OffroadContainerVComponent : MonoBehaviour
     public readonly int bOpenHash = Animator.StringToHash("bOpen");
 
     public bool bActive = true;
+
+    public CustomSortable Sortable => customSortable;
 
     [SerializeField] private GameObject outlineStencilObj;
     [SerializeField] private GameObject outlineObj;
@@ -126,6 +130,7 @@ public class OffroadContainerVComponent : MonoBehaviour
         parentTransform.localScale = originalScale;
 
         // 3. 포물선 점프 단계
+        ContainerJumpStartEvent?.Invoke(parentTransform.position);
         Sound.Play(SoundID.BoxJumping, parentTransform.position);
         float jumpElapsed = 0f;
         Vector3 targetLandScaleForJump = originalJumpContainerScale * 0.5f; // 공중 이동 중 0.5배까지 스케일 축소
@@ -157,6 +162,7 @@ public class OffroadContainerVComponent : MonoBehaviour
         }
 
         // 4. 안착 단계
+        ContainerLandedEvent?.Invoke(_targetPos);
         Sound.Play(SoundID.BoxLanding, _targetPos);
         Sound.Play(SoundID.BoxLandingEx, _targetPos);
         parentTransform.position = _targetPos;
