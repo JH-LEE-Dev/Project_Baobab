@@ -14,6 +14,7 @@ using UnityEditor;
 public class AbilityHUD : MonoBehaviour
 {
     private const float DownTickMinimumInterval = 0.04f;
+    private const float LevelUpParticleReferencePixelsPerUnit = 32.0f;
     private enum EventSpriteEffectType
     {
         LevelUpSpark,
@@ -114,10 +115,20 @@ public class AbilityHUD : MonoBehaviour
     private bool playExperienceMotionAfterReset;
     private bool playFlowerDangleAfterReset;
     private ParticleSystem[] levelUpParticleSystems;
+    private bool deferCanvasSortingSettings;
 
     private void Awake()
     {
-        BindReferencesIfNeeded();
+        // Canvas 설정은 Awake 중에 적용하면 SendMessage 경고가 발생하므로 OnEnable로 미룬다.
+        deferCanvasSortingSettings = true;
+        try
+        {
+            BindReferencesIfNeeded();
+        }
+        finally
+        {
+            deferCanvasSortingSettings = false;
+        }
 
         SortSerializedSpriteEffectFrames();
 
@@ -154,8 +165,17 @@ public class AbilityHUD : MonoBehaviour
         currentExperience = Mathf.Clamp(currentExperience, 0, maxExperience);
         flowerStack = Mathf.Max(0, flowerStack);
 
-        BindReferencesIfNeeded();
-        RefreshOrSchedule();
+        // OnValidate 중 Canvas 설정을 건드리면 SendMessage 경고가 발생하므로 지연 적용한다.
+        deferCanvasSortingSettings = true;
+        try
+        {
+            BindReferencesIfNeeded();
+            RefreshOrSchedule();
+        }
+        finally
+        {
+            deferCanvasSortingSettings = false;
+        }
     }
 
     public void SetExperience(int _currentExperience)
@@ -1102,22 +1122,38 @@ public class AbilityHUD : MonoBehaviour
         SetLevelUpParticleRootsActive(false);
     }
 
+    private void ApplyCanvasSortingSettings()
+    {
+        if (deferCanvasSortingSettings)
+            return;
+
+        ApplyCanvasSortingSettings(abilityHUDCanvas, abilityHUDSortingOrder, false);
+        ApplyCanvasSortingSettings(levelUpParticleCanvas, levelUpParticleSortingOrder, true);
+    }
+
+    private void ApplyCanvasSortingSettings(Canvas _canvas, int _sortingOrder, bool _applyReferencePixelsPerUnit)
+    {
+        if (null == _canvas)
+            return;
+
+        // 같은 값을 다시 대입해도 Canvas가 갱신 메시지를 보내므로 달라진 값만 적용한다.
+        if (false == _canvas.overrideSorting)
+            _canvas.overrideSorting = true;
+
+        if (_canvas.sortingLayerName != levelUpParticleSortingLayer)
+            _canvas.sortingLayerName = levelUpParticleSortingLayer;
+
+        if (_canvas.sortingOrder != _sortingOrder)
+            _canvas.sortingOrder = _sortingOrder;
+
+        if (_applyReferencePixelsPerUnit &&
+            false == Mathf.Approximately(_canvas.referencePixelsPerUnit, LevelUpParticleReferencePixelsPerUnit))
+            _canvas.referencePixelsPerUnit = LevelUpParticleReferencePixelsPerUnit;
+    }
+
     private void CacheAndConfigureLevelUpParticleEffect()
     {
-        if (null != abilityHUDCanvas)
-        {
-            abilityHUDCanvas.overrideSorting = true;
-            abilityHUDCanvas.sortingLayerName = levelUpParticleSortingLayer;
-            abilityHUDCanvas.sortingOrder = abilityHUDSortingOrder;
-        }
-
-        if (null != levelUpParticleCanvas)
-        {
-            levelUpParticleCanvas.overrideSorting = true;
-            levelUpParticleCanvas.sortingLayerName = levelUpParticleSortingLayer;
-            levelUpParticleCanvas.sortingOrder = levelUpParticleSortingOrder;
-            levelUpParticleCanvas.referencePixelsPerUnit = 32.0f;
-        }
+        ApplyCanvasSortingSettings();
 
         List<ParticleSystem> _particleSystems = new List<ParticleSystem>(4);
         AddParticleSystems(levelUpParticleLeftRoot, _particleSystems);

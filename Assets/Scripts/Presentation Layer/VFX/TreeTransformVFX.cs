@@ -30,9 +30,16 @@ public class TreeTransformVFX : MonoBehaviour
     private float frameTimer;
     private int currentFrame;
 
+    // 프리팹 인스펙터에 설정된 크기/회전. 풀에서 재사용될 때 여기로 되돌린다.
+    // Vector3.one으로 되돌리면 프리팹에서 조정한 스케일이 매 재생마다 지워진다.
+    private Vector3 baseScale;
+    private Quaternion baseRotation;
+
     private void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
+        baseScale = transform.localScale;
+        baseRotation = transform.localRotation;
     }
 
     public void SetPool(IObjectPool<TreeTransformVFX> _pool)
@@ -51,9 +58,9 @@ public class TreeTransformVFX : MonoBehaviour
         currentFrame = 0;
         frameTimer = 0f;
 
-        // 풀에서 재사용되므로 이전 재생이 남긴 변형을 지운다.
-        transform.localScale = Vector3.one;
-        transform.localRotation = Quaternion.identity;
+        // 풀에서 재사용되므로 이전 재생이 남긴 변형을 지우되, 프리팹에서 설정한 크기/회전은 유지한다.
+        transform.localScale = baseScale;
+        transform.localRotation = baseRotation;
 
         spriteRenderer.sprite = frames[0];
         spriteRenderer.sortingLayerName = SortingLayerName;
