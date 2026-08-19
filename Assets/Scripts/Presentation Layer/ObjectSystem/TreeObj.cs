@@ -86,6 +86,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     // 회생하며 다음 단계로 전환된다. 최대 단계에서 다시 HP가 0이 되면 그때 실제로 죽는다.
     private int currentGemStage = 0;
 
+    // 지금 이 나무가 보석(황금/다이아/무지개)으로 변해 있는 상태인지.
+    // 전용 타격음/사망음 분기에 쓴다. 인스펙터 토글인 bIsGem(bGemVisual)과는 별개다.
+    public bool bIsGemStage => currentGemStage > 0;
+
     // 여러 NPC가 같은 나무를 동시에 타겟팅하지 못하도록 하는 예약 플래그
     public bool bReserved { get; set; } = false;
 
@@ -353,6 +357,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         // TreeDeadEvent가 중복 발생하지 않도록 false->true 전이 시점에만 이벤트를 발생시킨다.
         bool wasAlreadyDead = bDead;
 
+        // 이 타격이 보석 전환을 일으키면 DecreaseHealth 안에서 currentGemStage가 먼저 올라간다.
+        // 타격음은 "맞는 순간 보석이었는지"로 갈라져야 하므로 전환 전 상태를 미리 기억해 둔다.
+        bool wasGemBeforeHit = bIsGemStage;
+
         // 별표식 베기 - 별 표식을 가진 나무에게 배율 적용
         if (bStarMarked)
         {
@@ -367,7 +375,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             treeVisualComponent.PlayHitFlash();
         }
 
-        PlayHitSound();
+        PlayHitSound(wasGemBeforeHit);
 
         TreeGetHitEvent?.Invoke(this);
 
@@ -385,7 +393,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     // 도끼 타격음. 나무가 많이 닳을수록(HP가 낮을수록) Tree_Hit은 피치가 1.0 -> 1.3으로,
     // Pitch_Hit은 피치가 1.0 -> 1.6, 볼륨도 함께 1.0 -> 1.4로 올라가 타격감이 누적되는 느낌을 준다.
-    private void PlayHitSound()
+    //
+    // 보석 나무는 Pitch_Hit 자리에만 전용 사운드(Pitch_Hit_Mine)를 대신 재생한다.
+    // 피치/볼륨 계산과 함께 울리는 Tree_Hit은 일반 나무와 완전히 동일하게 유지한다.
+    private void PlayHitSound(bool _bGemTree)
     {
         float maxHealth = health.GetMaxHealth();
         float damageRatio = maxHealth > 0f ? Mathf.Clamp01(1f - health.GetCurrentHealth() / maxHealth) : 0f;
@@ -394,7 +405,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         float pitchHitVolume = Mathf.Lerp(1.0f, 1.4f, damageRatio);
 
         Sound.Play(SoundID.TreeHit, cachedTransform.position, 1f, true, treeHitPitch);
-        Sound.Play(SoundID.PitchHit, cachedTransform.position, pitchHitVolume, true, pitchHitPitch);
+
+        SoundID pitchHitSound = _bGemTree ? SoundID.PitchHitMine : SoundID.PitchHit;
+        Sound.Play(pitchHitSound, cachedTransform.position, pitchHitVolume, true, pitchHitPitch);
     }
 
     private void TryStartHeatTimer()
@@ -557,6 +570,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             {
                 treeVisualComponent.ApplyGemVisual(true, GemStageToVirtualGrade(currentGemStage));
             }
+
+            // 보석 나무로 변하는 순간의 전용 연출음.
+            Sound.Play(SoundID.TreeTransformation, cachedTransform.position);
             return;
         }
 

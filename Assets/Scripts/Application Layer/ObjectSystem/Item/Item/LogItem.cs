@@ -154,7 +154,8 @@ public class LogItem : Item, IStaticCollidable
         durability = _logItemTypeData.durability;
         originalDurability = durability;
         elapsed = 0;
-        timberSprite = _logItemTypeData.timberSprite;
+        // 제재목도 원목 상태(황금/다이아/무지개)에 따라 다른 스프라이트를 쓴다.
+        timberSprite = _logItemTypeData.GetTimberSprite(_logState);
         landingDampTime = landingDampDuration;
         color = _color;
 
@@ -455,12 +456,13 @@ public class LogItem : Item, IStaticCollidable
         SetShaderFloating(false);
     }
 
+    // 제재목 스프라이트는 이미 색이 입혀진 그림이라 색을 따로 입히지 않는다.
+    // (렌더러 색은 ResetItem이 복원해 둔 originalColor = 프리팹의 흰색을 그대로 쓴다)
     public void SetTimberSprite()
     {
         if (spriteRenderer != null)
         {
             spriteRenderer.sprite = timberSprite;
-            spriteRenderer.color = color;
         }
     }
 

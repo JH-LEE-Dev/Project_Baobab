@@ -961,7 +961,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
-        Sound.Play(SoundID.TreeDead, _treeObj.transform.position);
+        // 보석 나무는 Tree_Dead 자리에만 전용 사운드를 대신 재생한다. 함께 울리는 Prize2는 그대로 유지.
+        Sound.Play(_treeObj.bIsGemStage ? SoundID.TreeDeadMine : SoundID.TreeDead, _treeObj.transform.position);
         Sound.Play(SoundID.Prize2, _treeObj.transform.position);
 
         if (_treeObj.bStarMarked && _treeObj.treeVisualComponent != null && bConstellationManifestUnlocked)
