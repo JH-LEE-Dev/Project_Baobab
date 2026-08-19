@@ -12,6 +12,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     // 과열 강화된 ShockWave에 맞았을 때 발생. 실제 폭발 이펙트 생성은 InDungeonObjectManager가
     // 이 이벤트를 구독해서 처리한다(포자막 폭발과 동일한 신호 흐름).
     public event Action<TreeObj> TreeOverheatExplosionEvent;
+    // 보석 단계로 변한 순간 발생. VFX 생성은 InDungeonObjectManager가 이 이벤트를 받아 처리한다
+    // (나무가 풀로 반환되어도 연출이 끊기지 않도록 나무 바깥에서 재생한다).
+    public event Action<TreeObj> TreeGemTransformedEvent;
 
     [SerializeField] private Shadow topShadowObject;
     [SerializeField] private Shadow bottomShadowObject;
@@ -571,8 +574,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
                 treeVisualComponent.ApplyGemVisual(true, GemStageToVirtualGrade(currentGemStage));
             }
 
-            // 보석 나무로 변하는 순간의 전용 연출음.
+            // 보석 나무로 변하는 순간의 전용 연출음/이펙트.
             Sound.Play(SoundID.TreeTransformation, cachedTransform.position);
+            TreeGemTransformedEvent?.Invoke(this);
             return;
         }
 

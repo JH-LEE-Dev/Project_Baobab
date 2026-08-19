@@ -60,6 +60,16 @@ public class InDungeonVFXManager : MonoBehaviour
 
     private IObjectPool<FireExplosionVFX> fireExplosionVfxPool;
 
+    [Header("Tree Transform (보석 단계 변환)")]
+    [SerializeField] private TreeTransformVFX treeTransformVfxPrefab;
+    [SerializeField] private int treeTransformVfxPoolDefaultCapacity = 4;
+    [SerializeField] private int treeTransformVfxPoolMaxSize = 32;
+
+    // Top 루트가 실제 나무 꼭대기보다 약간 위라, 이펙트의 원 중심을 조금 내려 맞추기 위한 오프셋
+    [SerializeField] private float treeTransformVfxYOffset = -0.25f;
+
+    private IObjectPool<TreeTransformVFX> treeTransformVfxPool;
+
     public void Initialize()
     {
         if (vfxComponent != null)
@@ -116,6 +126,55 @@ public class InDungeonVFXManager : MonoBehaviour
                 maxSize: fireExplosionVfxPoolMaxSize
             );
         }
+
+        if (treeTransformVfxPool == null && treeTransformVfxPrefab != null)
+        {
+            treeTransformVfxPool = new ObjectPool<TreeTransformVFX>(
+                createFunc: CreateTreeTransformVfx,
+                actionOnGet: OnGetTreeTransformVfx,
+                actionOnRelease: OnReleaseTreeTransformVfx,
+                actionOnDestroy: OnDestroyTreeTransformVfx,
+                collectionCheck: true,
+                defaultCapacity: treeTransformVfxPoolDefaultCapacity,
+                maxSize: treeTransformVfxPoolMaxSize
+            );
+        }
+    }
+
+    /// <summary>
+    /// 나무가 보석 단계로 변할 때의 VFX를 재생합니다.
+    /// 스프라이트 피벗이 이펙트의 원 중심에 맞춰져 있어, 나무 Top 위치에 그대로 놓으면 정렬됩니다.
+    /// parent를 두지 않으므로 나무가 풀로 반환되어도 연출이 끊기지 않습니다.
+    /// </summary>
+    public void PlayTreeTransformVFX(TreeVisualComponent _visual, int _sortingOrderOffset = 100)
+    {
+        if (treeTransformVfxPool == null || _visual == null) return;
+
+        TreeTransformVFX instance = treeTransformVfxPool.Get();
+        instance.transform.position = _visual.GetTopRootPosition() + new Vector3(0f, treeTransformVfxYOffset, 0f);
+        instance.Play(_sortingOrderOffset);
+    }
+
+    private TreeTransformVFX CreateTreeTransformVfx()
+    {
+        TreeTransformVFX instance = Instantiate(treeTransformVfxPrefab, transform);
+        instance.SetPool(treeTransformVfxPool);
+        return instance;
+    }
+
+    private void OnGetTreeTransformVfx(TreeTransformVFX _instance)
+    {
+        _instance.gameObject.SetActive(true);
+    }
+
+    private void OnReleaseTreeTransformVfx(TreeTransformVFX _instance)
+    {
+        _instance.gameObject.SetActive(false);
+    }
+
+    private void OnDestroyTreeTransformVfx(TreeTransformVFX _instance)
+    {
+        if (_instance != null) Destroy(_instance.gameObject);
     }
 
     /// <summary>

@@ -66,7 +66,9 @@ public class UI_TreeCutter : MonoBehaviour
         if (null != slot)
         {
             if (null != _itemData)
-                slot.UpdateImage(_itemData.sprite, _itemData.color);
+                // 원목 스프라이트는 이미 색이 입혀진 그림이라 틴트를 걸지 않는다.
+                // (황금/다이아/무지개 원목에 나무 종류 색을 곱하면 색이 죽는다)
+                slot.UpdateImage(_itemData.sprite, Color.white);
             else
                 slot.ResetData();
         }

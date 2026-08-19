@@ -1211,6 +1211,19 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeHeatEmitEvent += OnTreeHeatEmit;
         _tree.TreeOverheatExplosionEvent -= OnTreeOverheatExplosion;
         _tree.TreeOverheatExplosionEvent += OnTreeOverheatExplosion;
+        _tree.TreeGemTransformedEvent -= OnTreeGemTransformed;
+        _tree.TreeGemTransformedEvent += OnTreeGemTransformed;
+    }
+
+    // 나무가 보석 단계(황금/다이아/무지개)로 변할 때마다 전용 이펙트를 재생한다.
+    // 변환 순간에도 "쓰러지는" 타격감을 주기 위해 사망 VFX를 함께 터뜨린다
+    // (실제로 죽는 것이 아니므로 드랍/킬 처리는 일어나지 않는다).
+    private void OnTreeGemTransformed(TreeObj _treeObj)
+    {
+        if (inDungeonVFXManager == null || _treeObj == null) return;
+
+        inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
+        inDungeonVFXManager.PlayTreeTransformVFX(_treeObj.treeVisualComponent);
     }
 
     private void OnReleaseTree(TreeObj _tree)
@@ -1255,6 +1268,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeShieldRecoveringEvent -= OnTreeShieldRecovering;
         _tree.TreeHeatEmitEvent -= OnTreeHeatEmit;
         _tree.TreeOverheatExplosionEvent -= OnTreeOverheatExplosion;
+        _tree.TreeGemTransformedEvent -= OnTreeGemTransformed;
         //_tree.transform.position = new Vector2(-10000f, -10000f);
         _tree.gameObject.SetActive(false);
     }

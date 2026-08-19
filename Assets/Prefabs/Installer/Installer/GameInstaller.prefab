@@ -1529,6 +1529,10 @@ MonoBehaviour:
   fireExplosionVfxPrefab: {fileID: 114000001, guid: 78c4367b9868445483fb67da0533cbaf, type: 3}
   fireExplosionVfxPoolDefaultCapacity: 200
   fireExplosionVfxPoolMaxSize: 500
+  treeTransformVfxPrefab: {fileID: 114000001, guid: 3e8d1b64f0a27c948b53da961ef4270c, type: 3}
+  treeTransformVfxPoolDefaultCapacity: 4
+  treeTransformVfxPoolMaxSize: 32
+  treeTransformVfxYOffset: -0.25
 --- !u!114 &777467232540049004
 MonoBehaviour:
   m_ObjectHideFlags: 0

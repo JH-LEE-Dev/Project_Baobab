@@ -893,12 +893,15 @@ MonoBehaviour:
   - gemType: 0
     topMaterial: {fileID: 2100000, guid: ea8b9ad3acf01f849bfc07eb90e2e940, type: 2}
     bottomMaterial: {fileID: 2100000, guid: faef243a81489394b83bb6f0dd7a5b74, type: 2}
+    onWaterMaterial: {fileID: 2100000, guid: c47a03e9b6d1584499e2f5a70b83cd16, type: 2}
   - gemType: 1
     topMaterial: {fileID: 2100000, guid: 2e6a91d4f37b58c4bb0d3e91a45c7f62, type: 2}
     bottomMaterial: {fileID: 2100000, guid: 9a3f57e2c1d84b649e72a05fd3b16c8e, type: 2}
+    onWaterMaterial: {fileID: 2100000, guid: 91f6de24a0c8b3746a5d17e9042bc835, type: 2}
   - gemType: 2
     topMaterial: {fileID: 2100000, guid: ec31107d757d58049bcf1baa6992ba7d, type: 2}
     bottomMaterial: {fileID: 2100000, guid: ab85434500f04d7429371ffad9e670d4, type: 2}
+    onWaterMaterial: {fileID: 2100000, guid: 2d8b71c5e93a4f649c0e6a1b58d37f02, type: 2}
   defaultGemType: 1
   treeGemColorDataBase: {fileID: 11400000, guid: 8e14b7c2905d3f649ab7e2c6180d54f3, type: 2}
   baseVisualObj: {fileID: 3309576156863803684}
@@ -908,6 +911,7 @@ MonoBehaviour:
   treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}
   defaultTopMaterial: {fileID: 2100000, guid: 03350fe11d393cf4fa9084102a0c40a2, type: 2}
   defaultBottomMaterial: {fileID: 2100000, guid: 78f5e76f68715f54686fd8f5fcf4e86a, type: 2}
+  defaultOnWaterMaterial: {fileID: 2100000, guid: ad51bb7729edf5b44bddc5652d3b6cef, type: 2}
 --- !u!114 &3142599335365549467
 MonoBehaviour:
   m_ObjectHideFlags: 0

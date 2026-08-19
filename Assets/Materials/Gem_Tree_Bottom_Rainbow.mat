@@ -54,7 +54,7 @@ Material:
     - _FormCenterY: 0.1
     - _GemAlpha: 0.85
     - _GemAmount: 1
-    - _HDRIntensity: 1
+    - _HDRIntensity: 1.15
     - _Iridescence: 0.65
     - _LightFollow: 1
     - _LightHeight: 0.5
@@ -65,7 +65,7 @@ Material:
     - _RainbowHueRange: 0.75
     - _RainbowSaturation: 0.6
     - _ShadeSteps: 6
-    - _SparkleBrightness: 1.2
+    - _SparkleBrightness: 1.6
     - _SparkleRatio: 0
     - _SparkleSize: 0.06
     - _SparkleSpeed: 2.5

@@ -13,6 +13,9 @@ public struct TreeGemMaterialSet
     public TreeGemType gemType;
     public Material topMaterial;
     public Material bottomMaterial;
+
+    [Tooltip("물 위 반사용. 물결 일렁임을 유지하면서 같은 보석 효과를 얹은 머티리얼(Custom/OnWaterObject-Gem).")]
+    public Material onWaterMaterial;
 }
 
 public class TreeVisualComponent : MonoBehaviour
@@ -120,6 +123,10 @@ public class TreeVisualComponent : MonoBehaviour
     // 현재 이 나무에 sway가 켜져 있는지. 갓 생성된 렌더러는 오버라이드가 없어 머티리얼 기본값(켜짐)을 따르므로 true로 시작한다.
     private bool bWindSwayEnabled = true;
 
+    // 보석 상태에서는 본체(top/bottom)만 보석 재질로 바뀌고 실드/하이라이트 스프라이트는 그리지 않는다.
+    // 실드의 게임플레이 상태(isShieldActive)와는 무관한 순수 표시 여부 플래그다.
+    private bool bGemActive = false;
+
     // Shield HDR
     private static readonly int HDRIntensityID = Shader.PropertyToID("_HDRIntensity");
     private MaterialPropertyBlock _mpb;
@@ -136,6 +143,8 @@ public class TreeVisualComponent : MonoBehaviour
     // 그래서 직렬화해서 리로드를 넘겨 살린다.
     [SerializeField, HideInInspector] private Material defaultTopMaterial;
     [SerializeField, HideInInspector] private Material defaultBottomMaterial;
+    // 물 위 반사도 본체와 같이 보석 재질로 갈아끼우므로 원본을 함께 보관한다.
+    [SerializeField, HideInInspector] private Material defaultOnWaterMaterial;
 
     // 별도 플래그를 들고 있으면 리로드 후 실제 머티리얼과 어긋날 수 있어, 현재 머티리얼에서 직접 판단한다.
     // 색을 바꾼 인스턴스 머티리얼도 보석으로 쳐야 하므로 참조 비교가 아니라 프로퍼티 유무로 본다.
@@ -430,14 +439,15 @@ public class TreeVisualComponent : MonoBehaviour
         if (topOnWaterSR != null) topOnWaterSR.gameObject.SetActive(true);
         if (bottomOnWaterSR != null) bottomOnWaterSR.gameObject.SetActive(true);
 
+        // 보석 상태에서는 실드/하이라이트를 그리지 않으므로 물 위 반사도 함께 숨긴다.
         if (topShieldOnWaterSR != null)
         {
-            topShieldOnWaterSR.gameObject.SetActive(isShieldActive && topShieldRenderer != null && topShieldRenderer.sprite != null);
+            topShieldOnWaterSR.gameObject.SetActive(!bGemActive && isShieldActive && topShieldRenderer != null && topShieldRenderer.sprite != null);
         }
 
         if (topHighlightOnWaterSR != null)
         {
-            topHighlightOnWaterSR.gameObject.SetActive(topHighlightRenderer != null && topHighlightRenderer.sprite != null);
+            topHighlightOnWaterSR.gameObject.SetActive(!bGemActive && topHighlightRenderer != null && topHighlightRenderer.sprite != null);
         }
 
         UpdateOnWaterSortingOrder();
@@ -465,24 +475,39 @@ public class TreeVisualComponent : MonoBehaviour
             bottomRenderer.sprite = defaultBottomSprite;
         }
 
+        // 보석 상태에서는 실드/하이라이트를 그리지 않는다 (본체만 보석으로 바뀐다).
+        bool bShowShield = isShieldActive && !bGemActive;
+        bool bShowHighlight = !bGemActive;
+
         if (topShieldRenderer != null)
         {
-            topShieldRenderer.gameObject.SetActive(isShieldActive && topShieldRenderer.sprite != null);
+            topShieldRenderer.gameObject.SetActive(bShowShield && topShieldRenderer.sprite != null);
         }
 
         if (bottomShieldRenderer != null)
         {
-            bottomShieldRenderer.gameObject.SetActive(isShieldActive && bottomShieldRenderer.sprite != null);
+            bottomShieldRenderer.gameObject.SetActive(bShowShield && bottomShieldRenderer.sprite != null);
+        }
+
+        // 하이라이트는 원래 ApplyVisual에서만 켜졌는데, 보석 전환 때 다시 판단해야 하므로 여기로 모은다.
+        if (topHighlightRenderer != null)
+        {
+            topHighlightRenderer.gameObject.SetActive(bShowHighlight && topHighlightRenderer.sprite != null);
+        }
+
+        if (bottomHighlightRenderer != null)
+        {
+            bottomHighlightRenderer.gameObject.SetActive(bShowHighlight && bottomHighlightRenderer.sprite != null);
         }
 
         if (topShieldOnWaterSR != null)
         {
-            topShieldOnWaterSR.gameObject.SetActive(isOnWaterActive && isShieldActive && topShieldRenderer != null && topShieldRenderer.sprite != null);
+            topShieldOnWaterSR.gameObject.SetActive(isOnWaterActive && bShowShield && topShieldRenderer != null && topShieldRenderer.sprite != null);
         }
 
         if (topHighlightOnWaterSR != null)
         {
-            topHighlightOnWaterSR.gameObject.SetActive(isOnWaterActive && topHighlightRenderer != null && topHighlightRenderer.sprite != null);
+            topHighlightOnWaterSR.gameObject.SetActive(isOnWaterActive && bShowHighlight && topHighlightRenderer != null && topHighlightRenderer.sprite != null);
         }
 
         SyncShadowSprite();
@@ -894,6 +919,11 @@ public class TreeVisualComponent : MonoBehaviour
         {
             defaultBottomMaterial = bottomRenderer.sharedMaterial;
         }
+
+        if (defaultOnWaterMaterial == null && topOnWaterSR != null && !IsGemMaterial(topOnWaterSR.sharedMaterial))
+        {
+            defaultOnWaterMaterial = topOnWaterSR.sharedMaterial;
+        }
     }
 
     /// <summary>
@@ -908,8 +938,12 @@ public class TreeVisualComponent : MonoBehaviour
         {
             if (topRenderer != null && defaultTopMaterial != null) topRenderer.sharedMaterial = defaultTopMaterial;
             if (bottomRenderer != null && defaultBottomMaterial != null) bottomRenderer.sharedMaterial = defaultBottomMaterial;
+            if (topOnWaterSR != null && defaultOnWaterMaterial != null) topOnWaterSR.sharedMaterial = defaultOnWaterMaterial;
             // 원본 머티리얼로 되돌린 뒤에 읽어야 그 머티리얼에 저장된 원래 sway 설정을 복원할 수 있다.
             SetWindSwayEnabled(true);
+
+            // 숨겨 뒀던 실드/하이라이트를 원래 조건대로 되살린다.
+            SetGemRenderState(false);
             return;
         }
 
@@ -925,7 +959,34 @@ public class TreeVisualComponent : MonoBehaviour
             bottomRenderer.sharedMaterial = materialSet.bottomMaterial;
         }
 
+        // 물 위 반사도 같은 보석 효과로 그린다. 전용 머티리얼이 없으면 기존 물 재질을 그대로 둔다.
+        if (topOnWaterSR != null && materialSet.onWaterMaterial != null)
+        {
+            topOnWaterSR.sharedMaterial = materialSet.onWaterMaterial;
+        }
+
         SetWindSwayEnabled(false);
+
+        // 본체만 보석으로 바꾸고 실드/하이라이트 스프라이트는 끈다.
+        SetGemRenderState(true);
+    }
+
+    /// <summary>
+    /// 보석 표시 상태를 바꾸고 실드/하이라이트 렌더러를 다시 판단한다.
+    ///
+    /// 상태가 실제로 바뀔 때만 갱신한다. ApplyGemVisual(false)는 나무가 스폰/반환될 때마다
+    /// ResetTree에서 호출되는데, 매번 전 렌더러를 훑으면 던전 로드(나무 최대 2500그루)에서
+    /// ApplyVisual이 이미 하는 일을 통째로 한 번 더 하는 셈이 된다.
+    /// 또 이 경로는 에디터 OnValidate에서도 불리므로, 불필요한 SetActive 호출을 줄여야
+    /// "SendMessage cannot be called during OnValidate" 경고가 새지 않는다.
+    /// </summary>
+    private void SetGemRenderState(bool _gemActive)
+    {
+        if (bGemActive == _gemActive) return;
+
+        bGemActive = _gemActive;
+        UpdateRendererSprites();
+        UpdateHDRStates();
     }
 
     /// <summary>
