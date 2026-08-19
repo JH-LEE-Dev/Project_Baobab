@@ -18,6 +18,8 @@ public enum SoundID
     SawmillCutterLoop = -213121976,
     HookApear = 1236307780,
     NewItemApear = 490385430,
+    LootUIShelfUp = 951060624,
+    LootUIShiny = 534103246,
     BoxClose = 532227752,
     BoxJumping = 844063308,
     BoxLanding = 993819465,

@@ -229,6 +229,7 @@ public class HUD_LootReveal : MonoBehaviour
         // 광클 락 해제: 완전히 켜져있는 상태라도 닫히는 중일 수 있으므로 무조건 초기화하고 다시 연출합니다.
         isShowing = true;
         gameObject.SetActive(true);
+        Sound.PlayUI(SoundID.ResultUIOpen);
 
         if (null != revealCoroutine)
         {
@@ -259,6 +260,8 @@ public class HUD_LootReveal : MonoBehaviour
             OnHideCompleted?.Invoke();
             return;
         }
+
+        Sound.PlayUI(SoundID.ResultUIClose);
 
         if (null != revealCoroutine)
         {
@@ -418,6 +421,7 @@ public class HUD_LootReveal : MonoBehaviour
         if (null == pillarRect)
             yield break;
 
+        Sound.PlayUI(SoundID.LootUIShelfUp);
         pillarRect.anchoredPosition = new Vector2(pillarRect.anchoredPosition.x, pillarStartY);
 
         Sequence _pillarSeq = DOTween.Sequence();
@@ -433,6 +437,7 @@ public class HUD_LootReveal : MonoBehaviour
         if (null != vfxComponent && false == string.IsNullOrEmpty(vfxTag))
         {
             Vector3 _pos = null != effectSpawnPoint ? effectSpawnPoint.position : transform.position;
+            Sound.PlayUI(SoundID.LootUIShiny);
             vfxComponent.Play(new VFXPlaySettings(vfxTag, _pos, Quaternion.identity));
         }
 
