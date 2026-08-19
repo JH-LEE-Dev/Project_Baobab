@@ -42,7 +42,6 @@ namespace PresentationLayer.UISystem.CustomNumber
         private MoneyType currentMoneyType = MoneyType.None;
         private long currentValue;
         private bool initialized;
-        private bool hasDisplayedValue;
         private RectTransform currencyIconRect;
         private RectTransform currencyFontRect;
         private Vector2 defaultIconPosition;
@@ -95,11 +94,12 @@ namespace PresentationLayer.UISystem.CustomNumber
         {
             InitializeIfNeeded();
 
-            if (hasDisplayedValue && currentValue == _value)
-                return;
-
+            // currentValue만 보고 조기 반환하면 안 된다: SetNumberAnimated()는 실제 연출이 끝나기 전에
+            // currentValue를 목표값으로 미리 당겨놓으므로, 애니메이션 도중 같은 목표값으로 SetNumber()를
+            // 불러 강제로 스냅시키려 해도(예: 세이브 로드 직후 재동기화) 여기서 조용히 씹혀 진행 중이던
+            // 트윈/사운드가 멈추지 않는다. 실제 판단은 currencyFontHUD.SetNumber()의 자체 가드
+            // (표시값 + 활성 트윈 여부까지 확인함)에 맡긴다.
             currentValue = _value;
-            hasDisplayedValue = true;
             currencyFontHUD?.SetNumber(currentValue);
         }
 
@@ -112,7 +112,6 @@ namespace PresentationLayer.UISystem.CustomNumber
 
             long _previousValue = currentValue;
             currentValue = _value;
-            hasDisplayedValue = true;
             currencyFontHUD?.SetNumberAnimated(currentValue, currentValue - _previousValue, _useAmountPivotB);
         }
 

@@ -65,6 +65,13 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     private int pendingBatchMoney = 0;
     private bool bAwaitingFirstArrival = false;
 
+    // 상호작용 키는 Input System 콜백(해당 프레임의 모든 Update()보다 먼저 실행됨)에서 바로 들어온다.
+    // 원목 가공 완료로 인한 InsertMoney()는 LogInBelt 등의 Update() 체인 안에서 일어나므로, 여기서
+    // money를 즉시 읽어버리면 "같은 프레임에 막 들어온 돈"을 못 잡고 상점에 남겨두는 경합이 생긴다.
+    // 그래서 키 입력은 요청 플래그만 세우고, 실제 수금은 그 프레임의 모든 Update()가 끝난 뒤인
+    // LateUpdate()에서 처리해 이 경합을 없앤다.
+    private bool bInteractRequested = false;
+
     [Header("Coin Pickup Sound")]
     [SerializeField, Min(0f)] private float coinGetCooldown = 0.04f;
     [SerializeField, Min(0f)] private float coinPitchResetDelay = 0.2f;
@@ -239,6 +246,21 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
     private void InteractKeyPressed()
     {
+        if (bCanInteract == false)
+            return;
+
+        bInteractRequested = true;
+    }
+
+    // InteractKeyPressed()에서 요청 플래그만 받아, 그 프레임의 InsertMoney()까지 전부 반영된
+    // 뒤(LateUpdate)에 실제 수금을 처리한다.
+    private void ProcessInteractRequest()
+    {
+        if (bInteractRequested == false)
+            return;
+
+        bInteractRequested = false;
+
         if (money == 0 || bCanInteract == false)
             return;
 
@@ -347,6 +369,8 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
     private void LateUpdate()
     {
+        ProcessInteractRequest();
+
         if (customSortable != null)
             customSortable.ManualLateUpdate();
     }

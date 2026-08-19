@@ -172,11 +172,16 @@ public class UI_Inventory : MonoBehaviour
         UpdateSlots(inventory.inventorySlots);
     }
 
-    public void Refresh()
+    public void Refresh() //저장 파일 로드할 때도 호출됨.
     {
         if (null != inventory)
-            UpdateSlots(inventory.inventorySlots);  
-    } 
+            UpdateSlots(inventory.inventorySlots);
+
+        // 세이브 로드로 money가 직접 대입되면 별도 이벤트가 없어 uiCoin이 갱신되지 않고 예전 값(주로 0)에
+        // 머무른다. 이 경우 이후 첫 실제 획득 시 SetNumberAnimated가 그 간극만큼 통째로 애니메이션을
+        // 재생해버리므로, 여기서 매번 스냅으로 최신값을 맞춰둔다.
+        CharactersMoneyChanged();
+    }
 
     private void UpdateSlots(IReadOnlyList<IInventorySlot> _items)
     {

@@ -451,6 +451,7 @@ public class LogInBelt : MonoBehaviour
                 {
                     newItem.transform.position = itemData.position;
                     newItem.durability = itemData.itemData.durability;
+                    newItem.UpdateSortingOrder();
                     activeItems.Add(new BeltItem(newItem, itemData.targetIndex));
                 }
             }
@@ -475,6 +476,7 @@ public class LogInBelt : MonoBehaviour
                 {
                     newItem.transform.position = dItemData.position;
                     newItem.durability = dItemData.itemData.durability;
+                    newItem.UpdateSortingOrder();
                     deactivatingItems.Add(new DeactivatingItem(newItem, dItemData.remainingTime));
                 }
             }

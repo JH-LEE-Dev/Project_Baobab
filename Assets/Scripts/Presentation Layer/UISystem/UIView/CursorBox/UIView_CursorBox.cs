@@ -116,6 +116,10 @@ public class UIView_CursorBox : UIView, ICursorBoxUI
 
         CacheReferences();
 
+        // Overlay Canvas 내에 다른 UI가 CursorBox보다 나중에 추가되면 형제 순서상 CursorBox를 덮어버릴 수 있으므로,
+        // 표시될 때마다 항상 최상단(마지막 형제)으로 끌어올린다.
+        transform.SetAsLastSibling();
+
         currentTarget = _target;
         currentSize = _size;
         currentOffset = _offset;
@@ -135,6 +139,8 @@ public class UIView_CursorBox : UIView, ICursorBoxUI
     public void ShowScreenPosition(Vector2 _screenPosition, Vector2 _size)
     {
         CacheReferences();
+
+        transform.SetAsLastSibling();
 
         isTrackingTarget = false;
         currentTarget = null;

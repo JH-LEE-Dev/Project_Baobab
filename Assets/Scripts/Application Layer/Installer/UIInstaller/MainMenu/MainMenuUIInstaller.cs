@@ -26,6 +26,13 @@ public class MainMenuUIInstaller : MonoBehaviour
     private Canvas canvas;
     private Canvas overlayCanvas;
 
+    // SetupUILayout()이 MainMenuReturned()마다 재호출되므로, 레이어 루트를 매번 새로 Instantiate하면
+    // 이전에 생성된 루트가 파괴되지 않고 고아 오브젝트로 계속 쌓인다. 이미 캐시된 UIView(CursorBox,
+    // MainMenu 등)는 Open<T>() 재호출 시 Initialize()가 다시 불리지 않아 새 루트로 재배치되지도 않으므로,
+    // 루트는 최초 1회만 생성하고 이후에는 재사용한다.
+    private Transform overlayRoot;
+    private Transform overlayCanvasOverlayRoot;
+
     public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager, LocalizationManager _localizeManager, IMainMenuSaveSystem _saveSystem)
     {
         bootStrapProvider = _bootStrapProvider;
@@ -131,15 +138,22 @@ public class MainMenuUIInstaller : MonoBehaviour
 
     private void SetupUILayout()
     {
-        Transform overlayRoot = Instantiate(canvasRootPrefab.overlayLayerRoot, canvas.transform);
-        //Transform popupLayerRoot = Instantiate(canvasRootPrefab.popupLayerRoot, canvas.transform);
-        //Transform screenLayerRoot = Instantiate(canvasRootPrefab.screenLayerRoot, canvas.transform);
-        //Transform tooltipLayerRoot = Instantiate(canvasRootPrefab.tooltipLayerRoot, canvas.transform);
+        // 최초 1회만 레이어 루트를 생성한다. canvas/overlayCanvas는 DontDestroyOnLoad로 계속 살아있으므로
+        // MainMenuReturned()에서 다시 호출되어도 새 루트를 만들 필요가 없다(만들면 이전 루트가 고아로 남는다).
+        if (null == overlayRoot)
+        {
+            overlayRoot = Instantiate(canvasRootPrefab.overlayLayerRoot, canvas.transform);
+            //Transform popupLayerRoot = Instantiate(canvasRootPrefab.popupLayerRoot, canvas.transform);
+            //Transform screenLayerRoot = Instantiate(canvasRootPrefab.screenLayerRoot, canvas.transform);
+            //Transform tooltipLayerRoot = Instantiate(canvasRootPrefab.tooltipLayerRoot, canvas.transform);
+            SetAnchorToCanvas(overlayRoot);
+        }
 
-        Transform overlayCanvasOverlayRoot = Instantiate(overlayCanvasRootPrefab.overlayLayerRoot, overlayCanvas.transform);
-
-        SetAnchorToCanvas(overlayRoot);
-        SetAnchorToCanvas(overlayCanvasOverlayRoot);
+        if (null == overlayCanvasOverlayRoot)
+        {
+            overlayCanvasOverlayRoot = Instantiate(overlayCanvasRootPrefab.overlayLayerRoot, overlayCanvas.transform);
+            SetAnchorToCanvas(overlayCanvasOverlayRoot);
+        }
         //SetAnchorToCanvas(popupLayerRoot);
 
         CanvasRoot tempRoot = new CanvasRoot();
