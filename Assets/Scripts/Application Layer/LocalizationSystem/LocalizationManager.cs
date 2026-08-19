@@ -110,12 +110,27 @@ public class LocalizationManager : MonoBehaviour
             if (entry.id == 0) continue;
 
             int compositeKey = GenerateKey(jsonId, entry.id);
-            masterTable[compositeKey] = (currentLanguage == Language.KR) ? entry.kr : entry.en;
+            masterTable[compositeKey] = ResolveText(entry);
 
             if (false == string.IsNullOrEmpty(entry.key))
             {
                 stringToKeyMap[entry.key] = compositeKey;
             }
+        }
+    }
+
+    /// <summary>
+    /// 현재 언어에 맞는 텍스트를 고른다. 중국어(간체/번체)는 아직 번역 데이터가 없는 항목이
+    /// 많으므로, 해당 필드가 비어 있으면 조용히 영어로 폴백한다.
+    /// </summary>
+    private string ResolveText(in LocalizationEntry _entry)
+    {
+        switch (currentLanguage)
+        {
+            case Language.KR: return _entry.kr;
+            case Language.ZH_HANS: return string.IsNullOrEmpty(_entry.zhHans) ? _entry.en : _entry.zhHans;
+            case Language.ZH_HANT: return string.IsNullOrEmpty(_entry.zhHant) ? _entry.en : _entry.zhHant;
+            default: return _entry.en;
         }
     }
 

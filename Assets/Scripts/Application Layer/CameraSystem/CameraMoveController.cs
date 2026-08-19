@@ -96,8 +96,14 @@ public class CameraMoveController : MonoBehaviour
 
         if (multiChannelPerlin != null)
         {
-            multiChannelPerlin.AmplitudeGain = _intensity;
-            startingIntensity = _intensity;
+            // 호출부는 항상 기준 강도(옵션 100% 기준)를 넘기고, 옵션에서 설정한 비율만큼
+            // 여기서 스케일링한다. 기본값이 SLIDER_MAX라 옵션을 건드리지 않은 유저에게는
+            // 기존과 동일한 강도가 그대로 적용된다.
+            float _scale = SettingsManager.Instance.Current.cameraShake / SettingsData.SLIDER_MAX;
+            float _scaledIntensity = _intensity * _scale;
+
+            multiChannelPerlin.AmplitudeGain = _scaledIntensity;
+            startingIntensity = _scaledIntensity;
             shakeTimerTotal = _time;
             shakeTimer = _time;
         }

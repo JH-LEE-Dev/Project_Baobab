@@ -561,7 +561,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     }
 
     /// <summary>
-    /// "분실물 보관함" 효과: 리타이어로 유실되기 직전, 유실 예정 원목의 20~30%를 오프로드 컨테이너로
+    /// "분실물 보관함" 효과: 리타이어로 유실되기 직전, 유실 예정 원목의 30%를 오프로드 컨테이너로
     /// 미리 빼낸다(연출 없이 즉시 커밋). 반드시 DropAllItem보다 먼저 호출해야 한다 - 여기서 미리 빼낸
     /// 만큼 슬롯 수량이 줄어든 상태로 DropAllItem이 나머지만 정상 유실 처리하게 된다. 1회성 효과이므로
     /// 호출 시점에 성공 여부와 무관하게 플래그를 소모한다.
@@ -589,7 +589,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
         if (totalLogsAtRisk <= 0) return 0;
 
-        int rescueTarget = Mathf.RoundToInt(totalLogsAtRisk * UnityEngine.Random.Range(0.2f, 0.3f));
+        int rescueTarget = Mathf.RoundToInt(totalLogsAtRisk * 0.3f);
         int rescuedCount = 0;
         bool containerFull = false;
 

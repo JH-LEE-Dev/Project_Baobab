@@ -58,9 +58,9 @@ public class SettingsManager : MonoBehaviour
     //
     // 언어를 추가하려면 이 배열만 늘려서는 안 되고 다음을 함께 손봐야 한다:
     //   1) SettingsData.SUPPORTED_LANGUAGE_COUNT
-    //   2) ApplyLanguageToLocalization의 Language 매핑 (현재 KR/EN 이분법이라 그 외는 모두 EN이 된다)
+    //   2) ApplyLanguageToLocalization의 Language 매핑 (매핑되지 않은 항목은 모두 EN이 된다)
     //   3) LocalizationManager가 읽는 로컬라이징 데이터
-    private static readonly string[] languageLabels = { "한국어", "English" };
+    private static readonly string[] languageLabels = { "한국어", "English", "简体中文", "繁體中文" };
     // 표기 문자열은 SettingsData의 해상도 목록에서 파생해 1회만 생성한다.
     // (손으로 관리하면 크기와 표기가 어긋날 수 있고, 컴파일러가 잡아주지 못한다)
     private static readonly string[] resolutionLabels = BuildResolutionLabels();
@@ -505,7 +505,13 @@ public class SettingsManager : MonoBehaviour
     {
         if (null == locManager) return;
 
-        Language _langToSet = (EOptionLanguage.Korean == current.language) ? Language.KR : Language.EN;
+        Language _langToSet = current.language switch
+        {
+            EOptionLanguage.Korean => Language.KR,
+            EOptionLanguage.ChineseSimplified => Language.ZH_HANS,
+            EOptionLanguage.ChineseTraditional => Language.ZH_HANT,
+            _ => Language.EN
+        };
         locManager.SetLanguage(_langToSet);
     }
 
