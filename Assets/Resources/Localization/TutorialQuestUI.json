@@ -20,8 +20,8 @@
     {
       "id": 3,
       "key": "FillOffroadContainer_Desc",
-      "kr": "넣지 않은 원목은 숲을 떠날 때 사라집니다.",
-      "en": "Any logs left behind will disappear when you leave the forest.",
+      "kr": "넣지 않은 원목은 숲을 떠날 때 사라집니다",
+      "en": "Any logs left behind will disappear when you leave the forest",
       "enumType": "",
       "enumValue": ""
     },
@@ -52,7 +52,7 @@
     {
       "id": 7,
       "key": "UpgradeAxe_Title",
-      "kr": "도끼를 강화하세요.",
+      "kr": "도끼를 강화하세요",
       "en": "Upgrade your axe",
       "enumType": "",
       "enumValue": ""

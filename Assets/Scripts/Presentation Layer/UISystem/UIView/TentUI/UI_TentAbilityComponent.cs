@@ -1474,6 +1474,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.BoomerangCritical:
             case SkillCommandType.ShieldExplosionResearch:
             case SkillCommandType.ConstellationManifestUnlock:
+            case SkillCommandType.FascinatingLogChance:
+            case SkillCommandType.AdvancedLogChance:
+            case SkillCommandType.PerfectLogChance:
+
                 return true;
             default:
                 return false;

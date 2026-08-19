@@ -1092,8 +1092,8 @@
         {
             "id": 9117,
             "key": "AbilityDescription_FascinatingLogChance",
-            "kr": "<COLOR=8bbeff>황금 나무</COLOR>가 출현할 확률이 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
-            "en": "Increases the chance of finding a <COLOR=8bbeff>Golden Tree</COLOR>\nby <COLOR=54D86A>{0}%</COLOR>.",
+            "kr": "<COLOR=8bbeff>황금 나무</COLOR>가 아주 가끔 등장합니다.",
+            "en": "A <COLOR=8bbeff>Golden Tree</COLOR> may appear on rare occasions.",
             "enumType": "SkillCommandType",
             "enumValue": "FascinatingLogChance"
         },
@@ -1132,7 +1132,7 @@
         {
             "id": 9122,
             "key": "AbilityDescription_WoodenTransportBox",
-            "kr": "<COLOR=8bbeff>이동식 원목 운반 상자</COLOR>의 공간을 <COLOR=54D86A>{0}칸</COLOR> 늘립니다.",
+            "kr": "<COLOR=8bbeff>원목 운반 상자</COLOR>의 공간을 <COLOR=54D86A>{0}칸</COLOR> 늘립니다.",
             "en": "Increases the number of slots in the <COLOR=8bbeff>cargo crate</COLOR>\nby <COLOR=54D86A>{0}</COLOR>.",
             "enumType": "SkillCommandType",
             "enumValue": "WoodenTransportBox"

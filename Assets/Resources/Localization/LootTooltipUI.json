@@ -4,8 +4,8 @@
     {
       "id": 1,
       "key": "foundbox",
-      "kr": "유실되는 원목이 있다면 유실되는 원목의 \n<color=#FFA500,#FF4500><b>20~30%</b></color> 비율 개수로 자동으로 원목 상자에 담긴다.",
-      "en": "If any logs would otherwise be lost,\n<color=#FFA500,#FF4500><b>20-30%</b></color> of them will automatically be moved to the cargo crate.",
+      "kr": "유실되는 원목의\n<color=#FFA500,#FF4500><b>30%</b></color>가 자동으로 원목 운반 상자에 담깁니다.",
+      "en": "<color=#FFA500,#FF4500><b>20-30%</b></color> of lost logs are automatically moved to the cargo crate.",
       "enumType": "",
       "enumValue": ""
     },
