@@ -6,6 +6,9 @@
       "key": "CutTree_Title",
       "kr": "나무를 벌목하세요",
       "en": "Chop down a tree",
+      "zhHans": "砍伐树木",
+      "zhHant": "砍伐樹木",
+      "ja": "木を1本伐採しよう",
       "enumType": "",
       "enumValue": ""
     },
@@ -14,6 +17,9 @@
       "key": "FillOffroadContainer_Title",
       "kr": "마을로 가져갈 원목을 운반 상자에 넣으세요!",
       "en": "Load the logs you're taking back to town into the cargo crate!",
+      "zhHans": "将要带回村庄的原木放入原木运输箱！",
+      "zhHant": "將要帶回村莊的原木放入原木運輸箱！",
+      "ja": "町へ持ち帰る丸太を丸太運搬箱に入れよう！",
       "enumType": "",
       "enumValue": ""
     },
@@ -22,6 +28,9 @@
       "key": "FillOffroadContainer_Desc",
       "kr": "넣지 않은 원목은 숲을 떠날 때 사라집니다",
       "en": "Any logs left behind will disappear when you leave the forest",
+      "zhHans": "未放入运输箱的原木将在离开森林时消失",
+      "zhHant": "未放入運輸箱的原木將在離開森林時消失",
+      "ja": "丸太運搬箱に入れなかった丸太は、森を離れると消えてしまいます",
       "enumType": "",
       "enumValue": ""
     },
@@ -30,6 +39,9 @@
       "key": "GoHomeBeforeExhausted_Title",
       "kr": "탈진하기 전에 마을로 돌아가세요!",
       "en": "Return to town before you run out of stamina!",
+      "zhHans": "请在精疲力竭前返回村庄！",
+      "zhHant": "請在精疲力竭前返回村莊！",
+      "ja": "スタミナが尽きる前に町へ戻ろう！",
       "enumType": "",
       "enumValue": ""
     },
@@ -38,6 +50,9 @@
       "key": "PutItemsInLogContainer_Title",
       "kr": "가져온 원목을 제재소 원목 보관함에 넣으세요",
       "en": "Put the logs you brought back into the sawmill's log bin",
+      "zhHans": "将带回来的原木放入锯木厂原木储存箱",
+      "zhHant": "將帶回來的原木放入鋸木廠原木儲存箱",
+      "ja": "持ち帰った丸太を製材所の丸太保管箱に入れよう",
       "enumType": "",
       "enumValue": ""
     },
@@ -46,6 +61,9 @@
       "key": "ReceiveMoney_Title",
       "kr": "정산된 금액을 받아가세요!",
       "en": "Collect your earnings!",
+      "zhHans": "领取结算后的金额！",
+      "zhHant": "領取結算後的金額！",
+      "ja": "売上金を受け取ろう！",
       "enumType": "",
       "enumValue": ""
     },
@@ -54,6 +72,9 @@
       "key": "UpgradeAxe_Title",
       "kr": "도끼를 강화하세요",
       "en": "Upgrade your axe",
+      "zhHans": "强化斧头。",
+      "zhHant": "強化斧頭。",
+      "ja": "斧を強化しよう",
       "enumType": "",
       "enumValue": ""
     },
@@ -62,14 +83,20 @@
       "key": "StartNewLogging_Title",
       "kr": "새로운 벌목을 시작하세요!",
       "en": "Set out on another logging trip!",
+      "zhHans": "开始新的伐木之旅！",
+      "zhHant": "開始新的伐木之旅！",
+      "ja": "次の伐採へ出発しよう！",
       "enumType": "",
       "enumValue": ""
     },
     {
       "id": 9,
       "key": "UnlockNewRegion_Title",
-      "kr": "새로운 지역 해금!!",
+      "kr": "새로운 지역 해금!",
       "en": "New region unlocked!",
+      "zhHans": "解锁新区域！",
+      "zhHant": "解鎖新區域！",
+      "ja": "新エリア解放！",
       "enumType": "",
       "enumValue": ""
     }

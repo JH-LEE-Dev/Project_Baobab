@@ -25,6 +25,8 @@ public static class ItemAuraShaderHelper
     public static readonly int PrismSaturationPropertyId = Shader.PropertyToID("_PrismSaturation");
     public static readonly int PrismSpeedPropertyId = Shader.PropertyToID("_PrismSpeed");
     public static readonly int PrismHueOffsetPropertyId = Shader.PropertyToID("_PrismHueOffset");
+    public static readonly int RandomSeedPropertyId = Shader.PropertyToID("_RandomSeed");
+    public static readonly int StartAngleOffsetPropertyId = Shader.PropertyToID("_StartAngleOffset");
 
     public static void ApplyColorSettings(MaterialPropertyBlock _block, Color _coreColor, Color _beamColor, Color _outerColor)
     {
@@ -38,6 +40,18 @@ public static class ItemAuraShaderHelper
         _material.SetColor(CoreColorPropertyId, _coreColor);
         _material.SetColor(BeamColorPropertyId, _beamColor);
         _material.SetColor(OuterColorPropertyId, _outerColor);
+    }
+
+    public static void ApplyRandomness(MaterialPropertyBlock _block, float _seed, float _startAngle)
+    {
+        _block.SetFloat(RandomSeedPropertyId, _seed);
+        _block.SetFloat(StartAngleOffsetPropertyId, _startAngle);
+    }
+
+    public static void ApplyRandomness(Material _material, float _seed, float _startAngle)
+    {
+        _material.SetFloat(RandomSeedPropertyId, _seed);
+        _material.SetFloat(StartAngleOffsetPropertyId, _startAngle);
     }
 
     public static void ApplyPrismSettings(MaterialPropertyBlock _block, bool _enablePrism, float _saturation, float _speed, float _hueOffset)

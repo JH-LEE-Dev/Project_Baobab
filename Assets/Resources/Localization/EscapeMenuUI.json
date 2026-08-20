@@ -6,6 +6,9 @@
       "key": "Resume",
       "kr": "계속하기",
       "en": "Resume",
+      "zhHans": "继续",
+      "zhHant": "繼續",
+      "ja": "ゲームに戻る",
       "enumType": "",
       "enumValue": ""
     },
@@ -14,6 +17,9 @@
       "key": "Option",
       "kr": "옵션",
       "en": "Options",
+      "zhHans": "选项",
+      "zhHant": "選項",
+      "ja": "オプション",
       "enumType": "",
       "enumValue": ""
     },
@@ -22,6 +28,9 @@
       "key": "MainMenu",
       "kr": "메인메뉴",
       "en": "Main Menu",
+      "zhHans": "主菜单",
+      "zhHant": "主菜單",
+      "ja": "メインメニュー",
       "enumType": "",
       "enumValue": ""
     },
@@ -30,6 +39,9 @@
       "key": "ExitGame",
       "kr": "게임종료",
       "en": "Quit Game",
+      "zhHans": "退出游戏",
+      "zhHant": "退出遊戲",
+      "ja": "ゲームを終了",
       "enumType": "",
       "enumValue": ""
     },
@@ -38,6 +50,9 @@
       "key": "ExitGameWarning",
       "kr": "정말 게임을 나가시겠습니까?",
       "en": "Are you sure you want to quit the game?",
+      "zhHans": "确定要退出游戏吗？",
+      "zhHant": "確定要退出遊戲嗎？",
+      "ja": "ゲームを終了しますか？",
       "enumType": "",
       "enumValue": ""
     },
@@ -46,6 +61,9 @@
       "key": "MainMenuWarning",
       "kr": "정말 메인 메뉴로 나가시겠습니까?",
       "en": "Are you sure you want to return to the main menu?",
+      "zhHans": "要返回主菜单吗？",
+      "zhHant": "要返回主菜單嗎？",
+      "ja": "メインメニューに戻りますか？",
       "enumType": "",
       "enumValue": ""
     }

@@ -59,13 +59,13 @@ public class ItemAuraOrbitController : MonoBehaviour
     [SerializeField] private Sprite satelliteSprite;
     [SerializeField, ColorUsage(true, true), Tooltip("위성 HDR 컬러 (Bloom 임계값 초과 발광)")]
     private Color satelliteColor = new Color(2.5f, 2.2f, 1.2f, 1f);
-    [SerializeField, Range(0.5f, 10.0f), Tooltip("위성 본체 Bloom 발광 증폭 배율")]
+    [SerializeField, Range(0.0f, 10.0f), Tooltip("위성 본체 Bloom 발광 증폭 배율")]
     private float satelliteBloomMultiplier = 1.5f;
     [SerializeField, Range(0.01f, 0.3f)] private float satelliteSize = 0.069f;
 
     [Header("트레일 렌더러 및 블룸(HDR)")]
     [SerializeField] private Material trailMaterial;
-    [SerializeField, Range(0.5f, 10.0f), Tooltip("트레일 궤적 Bloom 발광 증폭 배율")]
+    [SerializeField, Range(0.0f, 10.0f), Tooltip("트레일 궤적 Bloom 발광 증폭 배율")]
     private float trailBloomMultiplier = 1.5f;
     [SerializeField, Range(0.05f, 3.0f)] private float trailTime = 0.25f;
     [SerializeField, Range(0.005f, 0.2f)] private float trailStartWidth = 0.04f;
@@ -79,7 +79,7 @@ public class ItemAuraOrbitController : MonoBehaviour
     [SerializeField, ColorUsage(true, true), ShowIf("useCenterGlow"), Tooltip("중앙 원형 코어 컬러 (HDR)")]
     private Color centerGlowColor = new Color(2.5f, 2.2f, 1.2f, 1f);
     [SerializeField, Range(0.1f, 3.0f), ShowIf("useCenterGlow")] private float centerGlowScale = 1.0f;
-    [SerializeField, Range(0.5f, 10.0f), ShowIf("useCenterGlow"), Tooltip("중앙 원형 코어 Bloom 발광 증폭 배율")]
+    [SerializeField, Range(0.0f, 10.0f), ShowIf("useCenterGlow"), Tooltip("중앙 원형 코어 Bloom 발광 증폭 배율")]
     private float centerGlowBloomMultiplier = 1.5f;
 
     [Header("소팅 레이어 및 개별 오더 분리 설정")]
@@ -242,9 +242,9 @@ public class ItemAuraOrbitController : MonoBehaviour
 
     public void SetBloomMultipliers(float _satelliteBloom, float _trailBloom, float _centerGlowBloom)
     {
-        satelliteBloomMultiplier = Mathf.Max(0.1f, _satelliteBloom);
-        trailBloomMultiplier = Mathf.Max(0.1f, _trailBloom);
-        centerGlowBloomMultiplier = Mathf.Max(0.1f, _centerGlowBloom);
+        satelliteBloomMultiplier = Mathf.Max(0f, _satelliteBloom);
+        trailBloomMultiplier = Mathf.Max(0f, _trailBloom);
+        centerGlowBloomMultiplier = Mathf.Max(0f, _centerGlowBloom);
         UpdateBloomSettings();
     }
 

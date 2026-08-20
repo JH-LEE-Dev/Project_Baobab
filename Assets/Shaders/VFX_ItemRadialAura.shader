@@ -9,7 +9,7 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
         [HDR] _BeamColor ("Primary Beam Color", Color) = (2.5, 1.8, 0.3, 1.0)
         [HDR] _OuterColor ("Outer Glow Color", Color) = (1.2, 0.5, 0.05, 1.0)
         _Intensity ("Overall Intensity Multiplier", Float) = 1.0
-        _BloomMultiplier ("Bloom Intensity Multiplier", Range(0.5, 10.0)) = 1.5
+        _BloomMultiplier ("Bloom Intensity Multiplier", Range(0.0, 10.0)) = 1.5
 
         [Header(Prism Rainbow Mode)]
         _EnablePrismMode ("Enable Prism Rainbow Mode (1: ON, 0: OFF)", Float) = 0.0
@@ -32,6 +32,8 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
         [Header(Rotation and Dynamics)]
         _RotationSpeed ("Rotation Speed (-20 to 20)", Range(-20.0, 20.0)) = 1.2
         _SpeedVariation ("Per-Ray Speed Variation", Range(0.0, 1.0)) = 0.45
+        _StartAngleOffset ("Starting Angle Offset (0 to 360)", Range(0.0, 360.0)) = 0.0
+        _RandomSeed ("Random Instance Seed", Float) = 0.0
         _FlickerSpeed ("Shimmer Frequency Speed", Float) = 3.0
         _FlickerAmount ("Shimmer Flashing Depth", Range(0.0, 1.0)) = 0.4
 
@@ -140,6 +142,8 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                 float _BeamBlur;
                 float _RotationSpeed;
                 float _SpeedVariation;
+                float _StartAngleOffset;
+                float _RandomSeed;
                 float _FlickerSpeed;
                 float _FlickerAmount;
                 float _EnableBurstMode;
@@ -223,6 +227,7 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                 // 4. 정확한 광선 개수 및 각도 스텝
                 int exactRayCount = (int)clamp(floor(_RayCount + 0.5), 1.0, 32.0);
                 float sectorStep = TWO_PI / (float)exactRayCount;
+                float startAngleRad = _StartAngleOffset * (PI / 180.0);
 
                 // 5. 개별 부채꼴 광선 루프 연산
                 float totalRays = 0.0;
@@ -234,17 +239,17 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
 
                     float kF = (float)k;
 
-                    // 고유 해시 추출
-                    float hJitter = Hash11(kF * 17.77 + 5.19);
-                    float hSpeed  = Hash11(kF * 43.21 + 8.76);
-                    float hWidth  = Hash11(kF * 37.71 + 1.23);
-                    float hDelay  = Hash11(kF * 71.13 + 3.47);
-                    float hLife   = Hash11(kF * 93.31 + 4.81);
-                    float hReach  = Hash11(kF * 53.19 + 6.19);
+                    // 고유 해시 추출 (인스턴스 시드 적용)
+                    float hJitter = Hash11(kF * 17.77 + 5.19 + _RandomSeed * 31.41);
+                    float hSpeed  = Hash11(kF * 43.21 + 8.76 + _RandomSeed * 53.17);
+                    float hWidth  = Hash11(kF * 37.71 + 1.23 + _RandomSeed * 19.83);
+                    float hDelay  = Hash11(kF * 71.13 + 3.47 + _RandomSeed * 77.29);
+                    float hLife   = Hash11(kF * 93.31 + 4.81 + _RandomSeed * 91.13);
+                    float hReach  = Hash11(kF * 53.19 + 6.19 + _RandomSeed * 43.51);
 
-                    // 광선별 고유 생성 각도 (불규칙 지터)
+                    // 광선별 고유 생성 각도 (불규칙 지터 + 시작 각도 오프셋)
                     float jitter = (hJitter - 0.5) * _AngleJitter * sectorStep;
-                    float initialAngle = kF * sectorStep + jitter;
+                    float initialAngle = kF * sectorStep + jitter + startAngleRad;
 
                     // 광선별 개별 회전 속도 (유기적 편차)
                     float speedMult = lerp(1.0 - _SpeedVariation, 1.0 + _SpeedVariation, hSpeed);

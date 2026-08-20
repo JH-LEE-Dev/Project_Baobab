@@ -6,6 +6,9 @@
             "key": "AxeDamage1_Name",
             "kr": "도끼 데미지 I",
             "en": "Axe Damage I",
+            "zhHans": "斧头伤害 I",
+            "zhHant": "斧頭傷害 I",
+            "ja": "斧のダメージ I",
             "enumType": "",
             "enumValue": ""
         },
@@ -14,6 +17,9 @@
             "key": "AxeDurability1_Name",
             "kr": "도끼 내구도 I",
             "en": "Axe Durability I",
+            "zhHans": "斧头耐久度 I",
+            "zhHant": "斧頭耐久度 I",
+            "ja": "斧の耐久度 I",
             "enumType": "",
             "enumValue": ""
         },
@@ -22,6 +28,9 @@
             "key": "Stamina1_Name",
             "kr": "지구력 I",
             "en": "Endurance I",
+            "zhHans": "耐力 I",
+            "zhHant": "耐力 I",
+            "ja": "持久力 I",
             "enumType": "",
             "enumValue": ""
         },
@@ -30,6 +39,9 @@
             "key": "LogValue1_Name",
             "kr": "원목 가치 I",
             "en": "Log Value I",
+            "zhHans": "原木价值 I",
+            "zhHant": "原木價值 I",
+            "ja": "丸太の価値 I",
             "enumType": "",
             "enumValue": ""
         },
@@ -38,6 +50,9 @@
             "key": "MovementSpeed_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>이동속도 I</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Movement Speed I</Wave></COLOR>",
+            "zhHans": "<COLOR=7EEDBE,EDD87E><Wave>移动速度 I</Wave></COLOR>",
+            "zhHant": "<COLOR=7EEDBE,EDD87E><Wave>移動速度 I</Wave></COLOR>",
+            "ja": "<COLOR=7EEDBE,EDD87E><Wave>移動速度 I</Wave></COLOR>",
             "enumType": "",
             "enumValue": ""
         },
@@ -46,6 +61,9 @@
             "key": "Stamina2_Name",
             "kr": "지구력 II",
             "en": "Endurance II",
+            "zhHans": "耐力 II",
+            "zhHant": "耐力 II",
+            "ja": "持久力 II",
             "enumType": "",
             "enumValue": ""
         },
@@ -54,6 +72,9 @@
             "key": "FatigueMaxIncrease1_Name",
             "kr": "피로도 최대치 증가 I",
             "en": "Stamina Capacity I",
+            "zhHans": "疲劳度上限增加 I",
+            "zhHant": "疲勞度上限增加 I",
+            "ja": "スタミナ上限 I",
             "enumType": "",
             "enumValue": ""
         },
@@ -62,6 +83,9 @@
             "key": "FatigueMaxIncrease2_Name",
             "kr": "피로도 최대치 증가 II",
             "en": "Stamina Capacity II",
+            "zhHans": "疲劳度上限增加 II",
+            "zhHant": "疲勞度上限增加 II",
+            "ja": "スタミナ上限 II",
             "enumType": "",
             "enumValue": ""
         },
@@ -70,6 +94,9 @@
             "key": "FatigueMaxIncrease3_Name",
             "kr": "피로도 최대치 증가 III",
             "en": "Stamina Capacity III",
+            "zhHans": "疲劳度上限增加 III",
+            "zhHant": "疲勞度上限增加 III",
+            "ja": "スタミナ上限 III",
             "enumType": "",
             "enumValue": ""
         },
@@ -78,6 +105,9 @@
             "key": "SourceOfSpeed1_Name",
             "kr": "속도의 원천 I",
             "en": "Burst of Speed I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -86,6 +116,9 @@
             "key": "WideGreenForestOvergrowth_Name",
             "kr": "풀빛너른숲 과성장",
             "en": "Greenreach Forest Overgrowth",
+            "zhHans": "翠绿森林过度生长",
+            "zhHant": "翠綠森林過度生長",
+            "ja": "グリーンリーチの森の過成長",
             "enumType": "",
             "enumValue": ""
         },
@@ -94,6 +127,9 @@
             "key": "WoodenTransportBoxExpansion1_Name",
             "kr": "원목 운반 상자 확장 I",
             "en": "Cargo Crate Expansion I",
+            "zhHans": "原木运输箱扩容 I",
+            "zhHant": "原木運輸箱擴容 I",
+            "ja": "丸太運搬箱拡張 I",
             "enumType": "",
             "enumValue": ""
         },
@@ -102,6 +138,9 @@
             "key": "InventoryExpansion1_Name",
             "kr": "인벤토리 확장 I",
             "en": "Inventory Expansion I",
+            "zhHans": "背包扩容 I",
+            "zhHant": "背包擴容 I",
+            "ja": "バッグ拡張 I",
             "enumType": "",
             "enumValue": ""
         },
@@ -110,6 +149,9 @@
             "key": "WoodenTransportBoxExpansion2_Name",
             "kr": "원목 운반 상자 확장 II",
             "en": "Cargo Crate Expansion II",
+            "zhHans": "原木运输箱 II",
+            "zhHant": "原木運輸箱 II",
+            "ja": "丸太運搬箱拡張 II",
             "enumType": "",
             "enumValue": ""
         },
@@ -118,6 +160,9 @@
             "key": "LogCapacityIncrease1_Name",
             "kr": "원목 수납량 증가 I",
             "en": "Log Stack Size I",
+            "zhHans": "原木收纳量增加 I",
+            "zhHant": "原木收納量增加 I",
+            "ja": "丸太の収納上限 I",
             "enumType": "",
             "enumValue": ""
         },
@@ -126,6 +171,9 @@
             "key": "LogCapacityIncrease2_Name",
             "kr": "원목 수납량 증가 II",
             "en": "Log Stack Size II",
+            "zhHans": "原木收纳量增加 II",
+            "zhHant": "原木收納量增加 II",
+            "ja": "丸太の収納上限 II",
             "enumType": "",
             "enumValue": ""
         },
@@ -134,6 +182,9 @@
             "key": "SawmillLogStorageExpansion1_Name",
             "kr": "제재소 원목 보관함 확장 I",
             "en": "Sawmill Log Bin Expansion I",
+            "zhHans": "锯木厂原木储存箱扩容 I",
+            "zhHant": "鋸木廠原木儲存箱擴容 I",
+            "ja": "製材所の丸太保管箱拡張 I",
             "enumType": "",
             "enumValue": ""
         },
@@ -142,6 +193,9 @@
             "key": "LogProcessingSpeed1_Name",
             "kr": "원목 가공 속도 I",
             "en": "Log Processing Speed I",
+            "zhHans": "原木加工速度 I",
+            "zhHant": "原木加工速度 I",
+            "ja": "丸太の加工速度 I",
             "enumType": "",
             "enumValue": ""
         },
@@ -150,6 +204,9 @@
             "key": "SawmillLogStorageExpansion2_Name",
             "kr": "제재소 원목 보관함 확장 II",
             "en": "Sawmill Log Bin Expansion II",
+            "zhHans": "锯木厂原木储存箱扩容 II",
+            "zhHant": "鋸木廠原木儲存箱擴容 II",
+            "ja": "製材所の丸太保管箱拡張 II",
             "enumType": "",
             "enumValue": ""
         },
@@ -158,6 +215,9 @@
             "key": "PowerSupply_Name",
             "kr": "전력 공급",
             "en": "Power Supply",
+            "zhHans": "电力供应",
+            "zhHant": "電力供應",
+            "ja": "電力供給",
             "enumType": "",
             "enumValue": ""
         },
@@ -166,6 +226,9 @@
             "key": "LogProcessingSpeed2_Name",
             "kr": "원목 가공 속도 II",
             "en": "Log Processing Speed II",
+            "zhHans": "原木加工速度 II",
+            "zhHant": "原木加工速度 II",
+            "ja": "丸太の加工速度 II",
             "enumType": "",
             "enumValue": ""
         },
@@ -174,6 +237,9 @@
             "key": "BountifulTree1_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>아낌없이 주는 나무 I</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>The Giving Tree I</Wave></COLOR>",
+            "zhHans": "<COLOR=7EEDBE,EDD87E><Wave>慷慨之树 I</Wave></COLOR>",
+            "zhHant": "<COLOR=7EEDBE,EDD87E><Wave>慷慨之樹 I</Wave></COLOR>",
+            "ja": "<COLOR=7EEDBE,EDD87E><Wave>おおきな木 I</Wave></COLOR>",
             "enumType": "",
             "enumValue": ""
         },
@@ -182,6 +248,9 @@
             "key": "GoldTreeChance_Name",
             "kr": "황금 나무",
             "en": "Golden Tree",
+            "zhHans": "黄金树",
+            "zhHant": "黃金樹",
+            "ja": "黄金の木",
             "enumType": "",
             "enumValue": ""
         },
@@ -190,6 +259,9 @@
             "key": "PickupRange1_Name",
             "kr": "획득 범위 I",
             "en": "Pickup Range I",
+            "zhHans": "拾取范围 I",
+            "zhHant": "拾取范圍 I",
+            "ja": "アイテム回収範囲 I",
             "enumType": "",
             "enumValue": ""
         },
@@ -198,6 +270,9 @@
             "key": "LogValue2_Name",
             "kr": "원목 가치 II",
             "en": "Log Value II",
+            "zhHans": "原木价值 II",
+            "zhHant": "原木價值 II",
+            "ja": "丸太の価値 II",
             "enumType": "",
             "enumValue": ""
         },
@@ -206,6 +281,9 @@
             "key": "BountifulTree2_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>아낌없이 주는 나무 II</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>The Giving Tree II</Wave></COLOR>",
+            "zhHans": "<COLOR=7EEDBE,EDD87E><Wave>慷慨之树 II</Wave></COLOR>",
+            "zhHant": "<COLOR=7EEDBE,EDD87E><Wave>慷慨之樹 II</Wave></COLOR>",
+            "ja": "<COLOR=7EEDBE,EDD87E><Wave>おおきな木 II</Wave></COLOR>",
             "enumType": "",
             "enumValue": ""
         },
@@ -214,6 +292,9 @@
             "key": "Shockwave1_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파 I</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Shockwave I</Wave></COLOR>",
+            "zhHans": "<COLOR=7EEDBE,EDD87E><Wave>冲击波 I</Wave></COLOR>",
+            "zhHant": "<COLOR=7EEDBE,EDD87E><Wave>衝擊波 I</Wave></COLOR>",
+            "ja": "<COLOR=7EEDBE,EDD87E><Wave>衝撃波 I</Wave></COLOR>",
             "enumType": "",
             "enumValue": ""
         },
@@ -222,6 +303,9 @@
             "key": "AxeDamage2_Name",
             "kr": "도끼 데미지 II",
             "en": "Axe Damage II",
+            "zhHans": "斧头伤害 II",
+            "zhHant": "斧頭傷害 II",
+            "ja": "斧のダメージ II",
             "enumType": "",
             "enumValue": ""
         },
@@ -230,6 +314,9 @@
             "key": "AxeAttackSpeed1_Name",
             "kr": "도끼 공격 속도 I",
             "en": "Axe Attack Speed I",
+            "zhHans": "斧头攻击速度 I",
+            "zhHant": "斧頭攻擊速度 I",
+            "ja": "斧の攻撃速度 I",
             "enumType": "",
             "enumValue": ""
         },
@@ -238,6 +325,9 @@
             "key": "AxeDamage3_Name",
             "kr": "도끼 데미지 III",
             "en": "Axe Damage III",
+            "zhHans": "斧头伤害 III",
+            "zhHant": "斧頭傷害 III",
+            "ja": "斧のダメージ III",
             "enumType": "",
             "enumValue": ""
         },
@@ -246,6 +336,9 @@
             "key": "AxeCriticalChance1_Name",
             "kr": "도끼 치명타 확률 I",
             "en": "Axe Critical Chance I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -254,6 +347,9 @@
             "key": "ShockwaveDamage1_Name",
             "kr": "충격파 데미지 I",
             "en": "Shockwave Damage I",
+            "zhHans": "冲击波伤害 I",
+            "zhHant": "衝擊波傷害 I",
+            "ja": "衝撃波ダメージ I",
             "enumType": "",
             "enumValue": ""
         },
@@ -262,6 +358,9 @@
             "key": "ShockwaveRange1_Name",
             "kr": "충격파 범위 I",
             "en": "Shockwave Range I",
+            "zhHans": "冲击波范围 I",
+            "zhHant": "衝擊波範圍 I",
+            "ja": "衝撃波の範囲 I",
             "enumType": "",
             "enumValue": ""
         },
@@ -270,6 +369,9 @@
             "key": "AxeCriticalDamage1_Name",
             "kr": "도끼 치명타 데미지 I",
             "en": "Axe Critical Damage I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -278,6 +380,9 @@
             "key": "Shockwave2_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파 II</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Shockwave II</Wave></COLOR>",
+            "zhHans": "<COLOR=7EEDBE,EDD87E><Wave>冲击波 II</Wave></COLOR>",
+            "zhHant": "<COLOR=7EEDBE,EDD87E><Wave>衝擊波 II</Wave></COLOR>",
+            "ja": "<COLOR=7EEDBE,EDD87E><Wave>衝撃波 II</Wave></COLOR>",
             "enumType": "",
             "enumValue": ""
         },
@@ -286,6 +391,9 @@
             "key": "ShockwaveDamage2_Name",
             "kr": "충격파 데미지 II",
             "en": "Shockwave Damage II",
+            "zhHans": "冲击波伤害 II",
+            "zhHant": "衝擊波傷害 II",
+            "ja": "衝撃波ダメージ II",
             "enumType": "",
             "enumValue": ""
         },
@@ -294,6 +402,9 @@
             "key": "ShockwaveRange2_Name",
             "kr": "충격파 범위 II",
             "en": "Shockwave Range II",
+            "zhHans": "冲击波范围 II",
+            "zhHant": "衝擊波範圍 II",
+            "ja": "衝撃波の範囲 II",
             "enumType": "",
             "enumValue": ""
         },
@@ -302,6 +413,9 @@
             "key": "EfficientMovement1_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>효율적인 이동 I</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Efficient Movement I</Wave></COLOR>",
+            "zhHans": "<COLOR=7EEDBE,EDD87E><Wave>高效移动 I</Wave></COLOR>",
+            "zhHant": "<COLOR=7EEDBE,EDD87E><Wave>高效移動 I</Wave></COLOR>",
+            "ja": "<COLOR=7EEDBE,EDD87E><Wave>効率的な移動 I</Wave></COLOR>",
             "enumType": "",
             "enumValue": ""
         },
@@ -310,6 +424,9 @@
             "key": "SporeShieldRegenBlock1_Name",
             "kr": "포자막 회복 억제 I",
             "en": "Spore Shield Regen Reduction I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -318,6 +435,9 @@
             "key": "SteelAxe1_Name",
             "kr": "강철도끼 I",
             "en": "Steel Axe I",
+            "zhHans": "钢铁斧头 I",
+            "zhHant": "鋼鐵斧頭 I",
+            "ja": "鋼鉄の斧 I",
             "enumType": "",
             "enumValue": ""
         },
@@ -326,6 +446,9 @@
             "key": "TestNode_Name",
             "kr": "테스트 노드",
             "en": "Test Node",
+            "zhHans": "测试节点",
+            "zhHant": "測試節點",
+            "ja": "テストノード",
             "enumType": "",
             "enumValue": ""
         },
@@ -334,6 +457,9 @@
             "key": "ShockwaveDamage3_Name",
             "kr": "충격파 데미지 III",
             "en": "Shockwave Damage III",
+            "zhHans": "冲击波伤害 III",
+            "zhHant": "衝擊波傷害 III",
+            "ja": "衝撃波ダメージ III",
             "enumType": "",
             "enumValue": ""
         },
@@ -342,6 +468,9 @@
             "key": "ShockWaveEnforcement_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파 파동 강화</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Shockwave Amplification</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -350,6 +479,9 @@
             "key": "ShockWaveCritical_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파 치명타 적용</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Shockwave Criticals</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -358,6 +490,9 @@
             "key": "Shockwave3_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파 M</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Shockwave M</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -366,6 +501,9 @@
             "key": "ShockWaveMastery_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파 경지</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Shockwave Mastery</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -374,6 +512,9 @@
             "key": "ShockwaveRange3_Name",
             "kr": "충격파 범위 III",
             "en": "Shockwave Range III",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -382,6 +523,9 @@
             "key": "AxeDurability2_Name",
             "kr": "도끼 내구도 II",
             "en": "Axe Durability II",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -390,6 +534,9 @@
             "key": "SteelAxe2_Name",
             "kr": "강철 도끼 II",
             "en": "Steel Axe II",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -398,6 +545,9 @@
             "key": "AxeRange1_Name",
             "kr": "도끼 공격 범위 I",
             "en": "Axe Attack Range I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -406,6 +556,9 @@
             "key": "MultiAttack_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>도끼 다중 공격</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Multi-Tree Strike</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -414,6 +567,9 @@
             "key": "AxeDamage4_Name",
             "kr": "도끼 데미지 IV",
             "en": "Axe Damage IV",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -422,6 +578,9 @@
             "key": "AxeCriticalChance2_Name",
             "kr": "도끼 치명타 확률 II",
             "en": "Axe Critical Chance II",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -430,6 +589,9 @@
             "key": "AxeCriticalDamage2_Name",
             "kr": "도끼 치명타 데미지 II",
             "en": "Axe Critical Damage II",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -438,6 +600,9 @@
             "key": "Boomerang1_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 I</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Boomerang I</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -446,6 +611,9 @@
             "key": "BoomerangDamage1_Name",
             "kr": "부메랑 데미지 I",
             "en": "Boomerang Damage I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -454,6 +622,9 @@
             "key": "BoomerangRange1_Name",
             "kr": "부메랑 범위 I",
             "en": "Boomerang Range I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -462,6 +633,9 @@
             "key": "LogValue3_Name",
             "kr": "원목 가치 III",
             "en": "Log Value III",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -470,6 +644,9 @@
             "key": "BountifulTree3_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>아낌없이 주는 나무 III</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>The Giving Tree III</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -478,6 +655,9 @@
             "key": "FluffySporeForestOverGrowth_Name",
             "kr": "몽글포자숲 과성장",
             "en": "Puffspore Forest Overgrowth",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -486,6 +666,9 @@
             "key": "FascinatingLogChance2_Name",
             "kr": "희귀 원목 확률 II",
             "en": "Rare Log Chance II",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -494,6 +677,9 @@
             "key": "TreeVitamin1_Name",
             "kr": "나무 영양제 I",
             "en": "Tree Fertilizer I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -502,6 +688,9 @@
             "key": "LogProcessingSpeed3_Name",
             "kr": "원목 가공 속도 III",
             "en": "Log Processing Speed III",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -510,6 +699,9 @@
             "key": "ProcessLineExpand1_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>제재소 증설 I</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Sawmill Expansion I</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -518,6 +710,9 @@
             "key": "ConveyorSpeed1_Name",
             "kr": "레일 속도 I",
             "en": "Conveyor Speed I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -526,6 +721,9 @@
             "key": "ItemTransferSpeedUP1_Name",
             "kr": "숙련된 손놀림 I",
             "en": "Skilled Hands I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -534,6 +732,9 @@
             "key": "FatigueMaxIncrease4_Name",
             "kr": "피로도 최대치 증가 IV",
             "en": "Stamina Capacity IV",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -542,6 +743,9 @@
             "key": "SourceOfStamina1_Name",
             "kr": "체력의 원천 I",
             "en": "Second Wind I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -550,6 +754,9 @@
             "key": "SporeShieldCut1_Name",
             "kr": "포자 절단 I",
             "en": "Spore Shield Breaker I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -558,6 +765,9 @@
             "key": "SporeShieldRegenBlock2_Name",
             "kr": "포자 회복 억제 II",
             "en": "Spore Shield Regen Reduction II",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -566,6 +776,9 @@
             "key": "SporeShieldPenetration1_Name",
             "kr": "포자 관통력 I",
             "en": "Spore Shield Penetration I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -574,6 +787,9 @@
             "key": "SporeShieldCut2_Name",
             "kr": "포자 절단 II",
             "en": "Spore Shield Breaker II",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -582,6 +798,9 @@
             "key": "SporeShieldPenetration2_Name",
             "kr": "포자 관통력 II",
             "en": "Spore Shield Penetration II",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -590,6 +809,9 @@
             "key": "ShieldExplosionUnlock_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>포자막 폭발</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Spore Burst</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -598,6 +820,9 @@
             "key": "ShieldExplosionDamage1_Name",
             "kr": "포자막 폭발 증폭",
             "en": "Spore Burst Damage",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -606,6 +831,9 @@
             "key": "ShieldExplosionRange1_Name",
             "kr": "포자막 폭발 범위 I",
             "en": "Spore Burst Range I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -614,6 +842,9 @@
             "key": "LogProcessingSpeed4_Name",
             "kr": "원목 가공 속도 IV",
             "en": "Log Processing Speed IV",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -622,6 +853,9 @@
             "key": "SporeShieldCut3_Name",
             "kr": "포자 절단 M",
             "en": "Spore Shield Breaker M",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -630,6 +864,9 @@
             "key": "SporeShieldPenetration3_Name",
             "kr": "포자 관통력 M",
             "en": "Spore Shield Penetration M",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -638,6 +875,9 @@
             "key": "SporeShieldRegenBlock3_Name",
             "kr": "포자막 회복 억제 M",
             "en": "Spore Shield Regen Reduction M",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -646,6 +886,9 @@
             "key": "WeakPointHit1_Name",
             "kr": "약점 타격 I",
             "en": "Weak Point Strike I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -654,6 +897,9 @@
             "key": "BoomerangDamage2_Name",
             "kr": "부메랑 데미지 II",
             "en": "Boomerang Damage II",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -662,6 +908,9 @@
             "key": "BoomerangRange2_Name",
             "kr": "부메랑 범위 II",
             "en": "Boomerang Range II",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -670,6 +919,9 @@
             "key": "Boomerang2_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 II</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Boomerang II</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -678,6 +930,9 @@
             "key": "BoomerangCritical_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 치명타 적용</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Boomerang Criticals</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -686,6 +941,9 @@
             "key": "BoomerangAttackSpeed1_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 공격 속도 I</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Boomerang Attack Speed I</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -694,6 +952,9 @@
             "key": "FatigueMaxIncrease5_Name",
             "kr": "피로도 최대치 증가 V",
             "en": "Stamina Capacity V",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -702,6 +963,9 @@
             "key": "Stamina3_Name",
             "kr": "지구력 M",
             "en": "Endurance M",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -710,6 +974,9 @@
             "key": "StaminaRecover_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>휴식 M</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Rest M</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -718,6 +985,9 @@
             "key": "BoomerangDamage3_Name",
             "kr": "부메랑 데미지 III",
             "en": "Boomerang Damage III",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -726,6 +996,9 @@
             "key": "BoomerangRange3_Name",
             "kr": "부메랑 범위 III",
             "en": "Boomerang Range III",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -734,6 +1007,9 @@
             "key": "BoomerangDistance_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 비행거리 증가</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Boomerang Flight Distance</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -742,6 +1018,9 @@
             "key": "BoomerangCooldownReduction_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 쿨타임 감소</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Boomerang Cooldown Reduction</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -750,6 +1029,9 @@
             "key": "BoomerangAttackSpeed2_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 공격 속도 M</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Boomerang Attack Speed M</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -758,6 +1040,9 @@
             "key": "ShieldExplosionResearch_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>포자막 폭발</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Spore Burst</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -766,6 +1051,9 @@
             "key": "LogValue4_Name",
             "kr": "원목 가치 IV",
             "en": "Log Value IV",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -774,6 +1062,9 @@
             "key": "BountifulTree4_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>아낌없이 주는 나무 IV</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>The Giving Tree IV</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -782,6 +1073,9 @@
             "key": "StarrootForestOverGrowth_Name",
             "kr": "별뿌리숲 과성장",
             "en": "Starroot Forest Overgrowth",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -790,6 +1084,9 @@
             "key": "AxeDamage5_Name",
             "kr": "도끼 데미지 V",
             "en": "Axe Damage V",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -798,6 +1095,9 @@
             "key": "Boomerang3_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 M</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Boomerang M</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -806,6 +1106,9 @@
             "key": "AxeAttackSpeed2_Name",
             "kr": "도끼 공격 속도 II",
             "en": "Axe Attack Speed II",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -814,6 +1117,9 @@
             "key": "AttackRythm1_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>벌목 리듬 I</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Logging Rhythm I</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -822,6 +1128,9 @@
             "key": "AxeDurability3_Name",
             "kr": "도끼 내구도 III",
             "en": "Axe Durability III",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -830,6 +1139,9 @@
             "key": "SteelAxe3_Name",
             "kr": "강철 도끼 III",
             "en": "Steel Axe III",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -838,6 +1150,9 @@
             "key": "MovementSpeed2_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>이동속도 II</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Movement Speed II</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -846,6 +1161,9 @@
             "key": "EfficientMovement2_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>효율적인 이동 II</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Efficient Movement II</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -854,6 +1172,9 @@
             "key": "PickupRange2_Name",
             "kr": "획득 범위 II",
             "en": "Pickup Range II",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -862,6 +1183,9 @@
             "key": "ConstellationManifestUnlock_Name",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>별자리 발현</Wave></COLOR>",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Constellation Strike</Wave></COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -870,6 +1194,9 @@
             "key": "StarPathSpeedBoost1_Name",
             "kr": "별길 걸음 I",
             "en": "Starpath Stride I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -878,6 +1205,9 @@
             "key": "StarMarkDamage1_Name",
             "kr": "별표식 베기 I",
             "en": "Star Mark Slash I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -886,6 +1216,9 @@
             "key": "ConstellationDamage1_Name",
             "kr": "별자리 데미지 I",
             "en": "Constellation Strike Damage I",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -894,6 +1227,9 @@
             "key": "Common_Level",
             "kr": "레벨",
             "en": "Level",
+            "zhHans": "等级",
+            "zhHant": "等級",
+            "ja": "レベル",
             "enumType": "",
             "enumValue": ""
         },
@@ -902,6 +1238,9 @@
             "key": "Common_Free",
             "kr": "무료",
             "en": "Free",
+            "zhHans": "免费",
+            "zhHant": "免費",
+            "ja": "無料",
             "enumType": "",
             "enumValue": ""
         },
@@ -910,22 +1249,31 @@
             "key": "Common_MaxLevel",
             "kr": "최대 레벨",
             "en": "Max Level",
+            "zhHans": "最高等级",
+            "zhHant": "最高等級",
+            "ja": "最大レベル",
             "enumType": "",
             "enumValue": ""
         },
         {
             "id": 9003,
             "key": "Common_ToUnlock",
-            "kr": "능력 개방하기",
+            "kr": "특성 개방하기",
             "en": "Unlock Ability",
+            "zhHans": "解锁特性",
+            "zhHant": "解鎖特性",
+            "ja": "アビリティを解放",
             "enumType": "",
             "enumValue": ""
         },
         {
             "id": 9004,
             "key": "Common_UnlockComplete",
-            "kr": "능력 개방 완료",
+            "kr": "특성 개방 완료",
             "en": "Ability Unlocked",
+            "zhHans": "特性已解锁",
+            "zhHant": "特性已解鎖",
+            "ja": "アビリティ解放済み",
             "enumType": "",
             "enumValue": ""
         },
@@ -934,6 +1282,9 @@
             "key": "KeyGuide_AbilityUpgrade",
             "kr": "특성 업그레이드",
             "en": "Upgrade Ability",
+            "zhHans": "升级特性",
+            "zhHant": "升級特性",
+            "ja": "アビリティを強化",
             "enumType": "",
             "enumValue": ""
         },
@@ -942,6 +1293,9 @@
             "key": "KeyGuide_DragToMove",
             "kr": "드래그로 이동",
             "en": "Drag to Move",
+            "zhHans": "拖动移动",
+            "zhHant": "拖動移動",
+            "ja": "ドラッグで移動",
             "enumType": "",
             "enumValue": ""
         },
@@ -950,6 +1304,9 @@
             "key": "KeyGuide_Zoom",
             "kr": "확대 / 축소",
             "en": "Zoom In / Out",
+            "zhHans": "放大 / 缩小",
+            "zhHant": "放大 / 縮小",
+            "ja": "拡大 / 縮小",
             "enumType": "",
             "enumValue": ""
         },
@@ -958,14 +1315,20 @@
             "key": "AbilityDescription_InventoryExpansion",
             "kr": "<COLOR=8bbeff>인벤토리</COLOR> 공간을 <COLOR=54D86A>{0}칸</COLOR> 늘립니다.",
             "en": "Increases the number of slots in your <COLOR=8bbeff>inventory</COLOR>\nby <COLOR=54D86A>{0}</COLOR>.",
+            "zhHans": "<COLOR=8bbeff>背包</COLOR>容量增加<COLOR=54D86A>{0}格</COLOR>",
+            "zhHant": "<COLOR=8bbeff>背包</COLOR>容量增加<COLOR=54D86A>{0}格</COLOR>",
+            "ja": "<COLOR=8bbeff>バッグ</COLOR>のスロットを<COLOR=54D86A>{0}枠</COLOR>増やします。",
             "enumType": "SkillCommandType",
             "enumValue": "InventoryExpansion"
         },
         {
             "id": 9101,
             "key": "AbilityDescription_LogCapacityIncrease",
-            "kr": "원목의 <COLOR=8bbeff>한 칸당 수납량</COLOR>이 <COLOR=54D86A>{0}</COLOR> 증가합니다.",
+            "kr": "한 칸당 <COLOR=8bbeff>원목 수납량</COLOR>이 <COLOR=54D86A>{0}</COLOR> 증가합니다.",
             "en": "Increases the <COLOR=8bbeff>number of logs each slot can hold</COLOR>\nby <COLOR=54D86A>{0}</COLOR>.",
+            "zhHans": "每格可收纳的<COLOR=8bbeff>原木数量</COLOR>增加<COLOR=54D86A>{0}</COLOR>",
+            "zhHant": "每格可收納的<COLOR=8bbeff>原木數量</COLOR>增加<COLOR=54D86A>{0}</COLOR>",
+            "ja": "1枠に収納できる<COLOR=8bbeff>丸太の数</COLOR>が<COLOR=54D86A>{0}</COLOR>増加します。",
             "enumType": "SkillCommandType",
             "enumValue": "LogCapacityIncrease"
         },
@@ -974,6 +1337,9 @@
             "key": "AbilityDescription_SawmillLogStorageExpansion",
             "kr": "<COLOR=8bbeff>제재소 원목 보관함</COLOR>의 공간을 <COLOR=54D86A>{0}칸</COLOR> 늘립니다.",
             "en": "Increases the number of slots in the sawmill's\n<COLOR=8bbeff>log bin</COLOR> by <COLOR=54D86A>{0}</COLOR>.",
+            "zhHans": "<COLOR=8bbeff>锯木厂原木储存箱</COLOR>的容量增加<COLOR=54D86A>{0}格</COLOR>",
+            "zhHant": "<COLOR=8bbeff>鋸木廠原木儲存箱</COLOR>的容量增加<COLOR=54D86A>{0}格</COLOR>",
+            "ja": "<COLOR=8bbeff>製材所の丸太保管箱</COLOR>のスロットを\n<COLOR=54D86A>{0}枠</COLOR>増やします。",
             "enumType": "SkillCommandType",
             "enumValue": "SawmillLogStorageExpansion"
         },
@@ -982,6 +1348,9 @@
             "key": "AbilityDescription_LogProcessingSpeed",
             "kr": "<COLOR=8bbeff>원목 가공 속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=8bbeff>log processing speed</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "<COLOR=8bbeff>原木加工速度</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "zhHant": "<COLOR=8bbeff>原木加工速度</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "ja": "<COLOR=8bbeff>丸太の加工速度</COLOR>が<COLOR=54D86A>{0}%</COLOR>上昇します。",
             "enumType": "SkillCommandType",
             "enumValue": "LogProcessingSpeed"
         },
@@ -990,6 +1359,9 @@
             "key": "AbilityDescription_AxeDamage",
             "kr": "<COLOR=fca311>도끼 데미지</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=fca311>axe damage</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "<COLOR=fca311>斧头伤害</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "zhHant": "<COLOR=fca311>斧頭傷害</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "ja": "<COLOR=fca311>斧のダメージ</COLOR>が<COLOR=54D86A>{0}%</COLOR>上昇します。",
             "enumType": "SkillCommandType",
             "enumValue": "AxeDamage"
         },
@@ -998,6 +1370,9 @@
             "key": "AbilityDescription_LogValue",
             "kr": "<COLOR=8bbeff>원목 판매 가치</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases the <COLOR=8bbeff>value of all logs</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "<COLOR=8bbeff>原木售卖价值</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "zhHant": "<COLOR=8bbeff>原木售賣價值</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "ja": "すべての<COLOR=8bbeff>丸太の売却額</COLOR>が<COLOR=54D86A>{0}%</COLOR>上昇します。",
             "enumType": "SkillCommandType",
             "enumValue": "LogValue"
         },
@@ -1006,6 +1381,9 @@
             "key": "AbilityDescription_WideGreenForestOvergrowth",
             "kr": "풀빛너른숲의 <COLOR=8bbeff>나무 밀도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=8bbeff>tree density</COLOR> in Greenreach Forest\nby <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "翠绿森林的<COLOR=8bbeff>树木密度</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "zhHant": "翠綠森林的<COLOR=8bbeff>樹木密度</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "ja": "グリーンリーチの森の<COLOR=8bbeff>木の密度</COLOR>が\n<COLOR=54D86A>{0}%</COLOR>上昇します。",
             "enumType": "SkillCommandType",
             "enumValue": "WideGreenForestOvergrowth"
         },
@@ -1014,6 +1392,9 @@
             "key": "AbilityDescription_Stamina",
             "kr": "<COLOR=ff5d8f>피로도 소모량</COLOR>이 <COLOR=54D86A>{0}%</COLOR> 감소합니다.",
             "en": "Reduces <COLOR=ff5d8f>stamina drain</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "<COLOR=ff5d8f>疲劳度消耗量</COLOR>减少<COLOR=54D86A>{0}%</COLOR>",
+            "zhHant": "<COLOR=ff5d8f>疲勞度消耗量</COLOR>減少<COLOR=54D86A>{0}%</COLOR>",
+            "ja": "<COLOR=ff5d8f>スタミナ消費量</COLOR>が<COLOR=54D86A>{0}%</COLOR>減少します。",
             "enumType": "SkillCommandType",
             "enumValue": "Stamina"
         },
@@ -1022,6 +1403,9 @@
             "key": "AbilityDescription_StaminaMaxIncrease",
             "kr": "<COLOR=ff5d8f>피로도 최대치</COLOR>가 <COLOR=54D86A>{0}</COLOR> 증가합니다.",
             "en": "Increases <COLOR=ff5d8f>maximum stamina</COLOR> by <COLOR=54D86A>{0}</COLOR>.",
+            "zhHans": "<COLOR=ff5d8f>疲劳度上限</COLOR>增加<COLOR=54D86A>{0}</COLOR>",
+            "zhHant": "<COLOR=ff5d8f>疲勞度上限</COLOR>增加<COLOR=54D86A>{0}</COLOR>",
+            "ja": "<COLOR=ff5d8f>最大スタミナ</COLOR>が<COLOR=54D86A>{0}</COLOR>増加します。",
             "enumType": "SkillCommandType",
             "enumValue": "StaminaMaxIncrease"
         },
@@ -1030,6 +1414,9 @@
             "key": "AbilityDescription_ConveyorSpeed",
             "kr": "<COLOR=8bbeff>제재소 레일 속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=8bbeff>sawmill conveyor speed</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "ConveyorSpeed"
         },
@@ -1038,14 +1425,20 @@
             "key": "AbilityDescription_EfficientMovement",
             "kr": "벌목 행동 중 <COLOR=ff5d8f>이동속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=ff5d8f>movement speed</COLOR> by <COLOR=54D86A>{0}%</COLOR>\nwhile chopping trees.",
+            "zhHans": "伐木时<COLOR=ff5d8f>移动速度</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "zhHant": "伐木時<COLOR=ff5d8f>移動速度</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "ja": "伐採中の<COLOR=ff5d8f>移動速度</COLOR>が<COLOR=54D86A>{0}%</COLOR>上昇します。",
             "enumType": "SkillCommandType",
             "enumValue": "EfficientMovement"
         },
         {
             "id": 9111,
             "key": "AbilityDescription_Shockwave",
-            "kr": "도끼로 타격할 때,\n<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR>를 발생시킬 확률이 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "kr": "도끼로 타격할 때\n<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR>를 발생시킬 확률이 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases the chance for axe strikes\nto unleash a <COLOR=7EEDBE,EDD87E><Wave>Shockwave</Wave></COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "使用斧头攻击时\n<COLOR=7EEDBE,EDD87E><Wave>冲击波</Wave></COLOR>触发概率增加<COLOR=54D86A>{0}%</COLOR>",
+            "zhHant": "使用斧頭攻擊時\n<COLOR=7EEDBE,EDD87E><Wave>衝擊波</Wave></COLOR>觸發概率增加<COLOR=54D86A>{0}%</COLOR>",
+            "ja": "斧で攻撃したとき、\n<COLOR=7EEDBE,EDD87E><Wave>衝撃波</Wave></COLOR>の発生確率が<COLOR=54D86A>{0}%</COLOR>上昇します。",
             "enumType": "SkillCommandType",
             "enumValue": "Shockwave"
         },
@@ -1054,6 +1447,9 @@
             "key": "AbilityDescription_AxeRange",
             "kr": "<COLOR=fca311>도끼 공격 범위</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=fca311>axe attack range</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "AxeRange"
         },
@@ -1062,6 +1458,9 @@
             "key": "AbilityDescription_AxeDurability",
             "kr": "<COLOR=fca311>도끼 내구도</COLOR>가 <COLOR=54D86A>{0}</COLOR> 증가합니다.",
             "en": "Increases <COLOR=fca311>axe durability</COLOR> by <COLOR=54D86A>{0}</COLOR>.",
+            "zhHans": "<COLOR=fca311>斧头耐久度</COLOR>增加<COLOR=54D86A>{0}</COLOR>",
+            "zhHant": "<COLOR=fca311>斧頭耐久度</COLOR>增加<COLOR=54D86A>{0}</COLOR>",
+            "ja": "<COLOR=fca311>斧の耐久度</COLOR>が<COLOR=54D86A>{0}</COLOR>増加します。",
             "enumType": "SkillCommandType",
             "enumValue": "AxeDurability"
         },
@@ -1070,6 +1469,9 @@
             "key": "AbilityDescription_SteelAxe",
             "kr": "<COLOR=fca311>도끼 내구도</COLOR>가 닳지 않을 확률이 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Adds a <COLOR=54D86A>{0}%</COLOR> chance for axe strikes not to reduce\n<COLOR=fca311>axe durability</COLOR>.",
+            "zhHans": "<COLOR=fca311>斧头耐久度</COLOR>不消耗的概率增加<COLOR=54D86A>{0}%</COLOR>",
+            "zhHant": "<COLOR=fca311>斧頭耐久度</COLOR>不消耗的概率增加<COLOR=54D86A>{0}%</COLOR>",
+            "ja": "<COLOR=fca311>斧の耐久度</COLOR>を消費しない確率が\n<COLOR=54D86A>{0}%</COLOR>上昇します。",
             "enumType": "SkillCommandType",
             "enumValue": "SteelAxe"
         },
@@ -1078,6 +1480,9 @@
             "key": "AbilityDescription_PowerSupply",
             "kr": "원정을 떠나고 있을 때\n<COLOR=8bbeff>원목 가공 속도</COLOR>가 <COLOR=54D86A>{0}배</COLOR> 빨라집니다.",
             "en": "While you are away on an expedition,\n<COLOR=8bbeff>log processing speed</COLOR> is boosted to <COLOR=54D86A>{0}x</COLOR>.",
+            "zhHans": "远征期间\n<COLOR=8bbeff>原木加工速度</COLOR>提升至<COLOR=54D86A>{0}倍</COLOR>",
+            "zhHant": "遠征期間\n<COLOR=8bbeff>原木加工速度</COLOR>提升至<COLOR=54D86A>{0}倍</COLOR>",        
+            "ja": "遠征中、\n<COLOR=8bbeff>丸太の加工速度</COLOR>が<COLOR=54D86A>{0}倍</COLOR>になります。",
             "enumType": "SkillCommandType",
             "enumValue": "PowerSupply"
         },
@@ -1086,6 +1491,9 @@
             "key": "AbilityDescription_PickupRange",
             "kr": "<COLOR=8bbeff>아이템 획득 범위</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=8bbeff>item pickup range</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "<COLOR=8bbeff>物品拾取范围</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "zhHant": "<COLOR=8bbeff>物品拾取範圍</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "ja": "<COLOR=8bbeff>アイテム回収範囲</COLOR>が<COLOR=54D86A>{0}%</COLOR>広がります。",
             "enumType": "SkillCommandType",
             "enumValue": "PickupRange"
         },
@@ -1094,6 +1502,9 @@
             "key": "AbilityDescription_FascinatingLogChance",
             "kr": "<COLOR=8bbeff>황금 나무</COLOR>가 아주 가끔 등장합니다.",
             "en": "A <COLOR=8bbeff>Golden Tree</COLOR> may appear on rare occasions.",
+            "zhHans": "<COLOR=8bbeff>黄金树</COLOR>偶尔会出现",
+            "zhHant": "<COLOR=8bbeff>黃金樹</COLOR>偶爾會出現",
+            "ja": "<COLOR=8bbeff>黄金の木</COLOR>がごくまれに出現します。",
             "enumType": "SkillCommandType",
             "enumValue": "FascinatingLogChance"
         },
@@ -1102,6 +1513,9 @@
             "key": "AbilityDescription_MovementSpeed",
             "kr": "<COLOR=ff5d8f>이동속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=ff5d8f>movement speed</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "<COLOR=ff5d8f>移动速度</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "zhHant": "<COLOR=ff5d8f>移動速度</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "ja": "<COLOR=ff5d8f>移動速度</COLOR>が<COLOR=54D86A>{0}%</COLOR>上昇します。",
             "enumType": "SkillCommandType",
             "enumValue": "MovementSpeed"
         },
@@ -1110,6 +1524,9 @@
             "key": "AbilityDescription_ShockwaveDamage",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR> <COLOR=fca311>데미지</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=7EEDBE,EDD87E><Wave>Shockwave</Wave></COLOR> <COLOR=fca311>damage</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "<COLOR=7EEDBE,EDD87E><Wave>冲击波</Wave></COLOR><COLOR=fca311>伤害</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "zhHant": "<COLOR=7EEDBE,EDD87E><Wave>衝擊波</Wave></COLOR><COLOR=fca311>傷害</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "ja": "<COLOR=7EEDBE,EDD87E><Wave>衝撃波</Wave></COLOR>の<COLOR=fca311>ダメージ</COLOR>が<COLOR=54D86A>{0}%</COLOR>上昇します。",
             "enumType": "SkillCommandType",
             "enumValue": "ShockwaveDamage"
         },
@@ -1118,6 +1535,9 @@
             "key": "AbilityDescription_ShockwaveRange",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR> <COLOR=fca311>범위</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=7EEDBE,EDD87E><Wave>Shockwave</Wave></COLOR> <COLOR=fca311>range</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "<COLOR=7EEDBE,EDD87E><Wave>冲击波</Wave></COLOR><COLOR=fca311>范围</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "zhHant": "<COLOR=7EEDBE,EDD87E><Wave>衝擊波</Wave></COLOR><COLOR=fca311>範圍</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "ja": "<COLOR=7EEDBE,EDD87E><Wave>衝撃波</Wave></COLOR>の<COLOR=fca311>範囲</COLOR>が<COLOR=54D86A>{0}%</COLOR>拡大します。",
             "enumType": "SkillCommandType",
             "enumValue": "ShockwaveRange"
         },
@@ -1126,6 +1546,9 @@
             "key": "AbilityDescription_AxeAttackSpeed",
             "kr": "<COLOR=fca311>도끼 공격 속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=fca311>axe attack speed</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "<COLOR=fca311>斧头攻击速度</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "zhHant": "<COLOR=fca311>斧頭攻擊速度</COLOR>增加<COLOR=54D86A>{0}%</COLOR>",
+            "ja": "<COLOR=fca311>斧の攻撃速度</COLOR>が<COLOR=54D86A>{0}%</COLOR>上昇します。",
             "enumType": "SkillCommandType",
             "enumValue": "AxeAttackSpeed"
         },
@@ -1134,6 +1557,9 @@
             "key": "AbilityDescription_WoodenTransportBox",
             "kr": "<COLOR=8bbeff>원목 운반 상자</COLOR>의 공간을 <COLOR=54D86A>{0}칸</COLOR> 늘립니다.",
             "en": "Increases the number of slots in the <COLOR=8bbeff>cargo crate</COLOR>\nby <COLOR=54D86A>{0}</COLOR>.",
+            "zhHans": "<COLOR=8bbeff>原木运输箱</COLOR>的容量增加<COLOR=54D86A>{0}格</COLOR>",
+            "zhHant": "<COLOR=8bbeff>原木運輸箱</COLOR>的容量增加<COLOR=54D86A>{0}格</COLOR>",
+            "ja": "<COLOR=8bbeff>丸太運搬箱</COLOR>のスロットを\n<COLOR=54D86A>{0}枠</COLOR>増やします。",
             "enumType": "SkillCommandType",
             "enumValue": "WoodenTransportBox"
         },
@@ -1142,6 +1568,9 @@
             "key": "AbilityDescription_AxeCriticalChance",
             "kr": "<COLOR=fca311>도끼 치명타 확률</COLOR>이 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=fca311>axe critical chance</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "AxeCriticalChance"
         },
@@ -1150,6 +1579,9 @@
             "key": "AbilityDescription_AxeCriticalDamage",
             "kr": "<COLOR=fca311>도끼 치명타 데미지</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=fca311>axe critical damage</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "AxeCriticalDamage"
         },
@@ -1158,6 +1590,9 @@
             "key": "AbilityDescription_SourceOfSpeed",
             "kr": "나무를 벌목하면\n3초간 <COLOR=ff5d8f>이동속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "After chopping down a tree,\n<COLOR=ff5d8f>movement speed</COLOR> increases by <COLOR=54D86A>{0}%</COLOR> for 3 seconds.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "SourceOfSpeed"
         },
@@ -1166,6 +1601,9 @@
             "key": "AbilityDescription_SporeShieldRegenBlock",
             "kr": "포자막을 가진 나무들의\n<COLOR=ff5d8f>포자막 회복속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 감소합니다.",
             "en": "Reduces <COLOR=ff5d8f>Spore Shield regeneration</COLOR> on shielded trees\nby <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "SporeShieldRegenBlock"
         },
@@ -1174,6 +1612,9 @@
             "key": "AbilityDescription_ShockWaveEnforcement",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR> 발생지와 가까울수록,\n최대 <COLOR=54D86A>1.5배</COLOR> 데미지를 줍니다.",
             "en": "Targets closer to the source of a <COLOR=7EEDBE,EDD87E><Wave>Shockwave</Wave></COLOR>\ntake up to <COLOR=54D86A>1.5x</COLOR> damage.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShockWaveEnforcement"
         },
@@ -1182,6 +1623,9 @@
             "key": "AbilityDescription_ShockWaveCritical",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR>에 이제 치명타가 적용됩니다.",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Shockwaves</Wave></COLOR> can now deal critical hits.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShockWaveCritical"
         },
@@ -1190,6 +1634,9 @@
             "key": "AbilityDescription_ShockWaveMastery",
             "kr": "이제 나무를 직접 타격하지 않아도, <COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR>가 발생합니다.",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Shockwaves</Wave></COLOR> now trigger even when your axe\ndoes not hit a tree directly.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShockWaveMastery"
         },
@@ -1198,6 +1645,9 @@
             "key": "AbilityDescription_MultiAttack",
             "kr": "이제 <COLOR=fca311>도끼</COLOR>로\n여러 나무를 동시에 공격 할 수 있습니다.",
             "en": "Your <COLOR=fca311>axe</COLOR> can now hit multiple trees\nat once.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "MultiAttack"
         },
@@ -1206,6 +1656,9 @@
             "key": "AbilityDescription_Boomerang",
             "kr": "주변을 공격하는 <COLOR=7EEDBE,EDD87E><Wave>부메랑</Wave></COLOR>이\n<COLOR=54D86A>{0}개</COLOR> 추가됩니다.",
             "en": "Increases the number of <COLOR=7EEDBE,EDD87E><Wave>Boomerangs</Wave></COLOR> attacking\nnearby targets by <COLOR=54D86A>{0}</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "Boomerang"
         },
@@ -1214,6 +1667,9 @@
             "key": "AbilityDescription_BoomerangDamage",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑</Wave></COLOR> <COLOR=fca311>데미지</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=7EEDBE,EDD87E><Wave>Boomerang</Wave></COLOR> <COLOR=fca311>damage</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "BoomerangDamage"
         },
@@ -1222,6 +1678,9 @@
             "key": "AbilityDescription_BoomerangRange",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑</Wave></COLOR>의 <COLOR=fca311>범위</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=7EEDBE,EDD87E><Wave>Boomerang</Wave></COLOR> <COLOR=fca311>range</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "BoomerangRange"
         },
@@ -1230,6 +1689,9 @@
             "key": "AbilityDescription_FluffySporeForestOverGrowth",
             "kr": "몽글포자숲의 <COLOR=8bbeff>나무 밀도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=8bbeff>tree density</COLOR> in Puffspore Forest\nby <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "FluffySporeForestOverGrowth"
         },
@@ -1238,6 +1700,9 @@
             "key": "AbilityDescription_TreeVitamin",
             "kr": "나무의 <COLOR=8bbeff>성장 주기, 속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 빨라집니다.",
             "en": "Makes trees <COLOR=8bbeff>grow and regrow</COLOR> <COLOR=54D86A>{0}%</COLOR> faster.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "TreeVitamin"
         },
@@ -1246,6 +1711,9 @@
             "key": "AbilityDescription_ProcessLineExpand",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>제재소</Wave></COLOR>가 <COLOR=54D86A>{0}개</COLOR> 증가합니다.",
             "en": "Increases the number of <COLOR=7EEDBE,EDD87E><Wave>processing lines</Wave></COLOR>\nin the sawmill by <COLOR=54D86A>{0}</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "ProcessLineExpand"
         },
@@ -1254,6 +1722,9 @@
             "key": "AbilityDescription_LogProcessorSpeedUp",
             "kr": "<COLOR=8bbeff>미입력</COLOR>",
             "en": "<COLOR=8bbeff>Description unavailable.</COLOR>",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "LogProcessorSpeedUp"
         },
@@ -1262,6 +1733,9 @@
             "key": "AbilityDescription_SourceOfStamina",
             "kr": "나무를 벌목할 때마다, <COLOR=ff5d8f>피로도</COLOR>를 <COLOR=54D86A>{0}</COLOR> 회복합니다.",
             "en": "Restores <COLOR=54D86A>{0}</COLOR> <COLOR=ff5d8f>stamina</COLOR> each time\nyou chop down a tree.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "SourceOfStamina"
         },
@@ -1270,6 +1744,9 @@
             "key": "AbilityDescription_SporeShieldCut",
             "kr": "<COLOR=ff5d8f>포자막</COLOR> 추가 피해 배수가 <COLOR=54D86A>{0}</COLOR> 증가합니다.",
             "en": "Increases the damage multiplier against\n<COLOR=ff5d8f>Spore Shields</COLOR> by <COLOR=54D86A>{0}</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "SporeShieldCut"
         },
@@ -1278,6 +1755,9 @@
             "key": "AbilityDescription_SporeShieldPenetration",
             "kr": "<COLOR=ff5d8f>포자막</COLOR> 피해가\n체력에 추가로 적용되는 비율이 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases the percentage of <COLOR=ff5d8f>Spore Shield</COLOR> damage\nthat also applies to tree health by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "SporeShieldPenetration"
         },
@@ -1286,6 +1766,9 @@
             "key": "AbilityDescription_ItemTransferSpeedUP",
             "kr": "원목을 <COLOR=8bbeff>넣고 꺼내는 속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR>증가합니다.",
             "en": "Increases the speed of <COLOR=8bbeff>storing and retrieving logs</COLOR>\nby <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "ItemTransferSpeedUP"
         },
@@ -1294,6 +1777,9 @@
             "key": "AbilityDescription_ShieldExplosionUnlock",
             "kr": "<COLOR=ff5d8f>포자막</COLOR>을 제거하면\n주변 나무에게 데미지를 줍니다.",
             "en": "Destroying a <COLOR=ff5d8f>Spore Shield</COLOR> triggers a Spore Burst\nthat damages nearby trees.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShieldExplosionUnlock"
         },
@@ -1302,6 +1788,9 @@
             "key": "AbilityDescription_ShieldExplosionDamage",
             "kr": "<COLOR=ff5d8f>포자막 폭발</COLOR> 데미지가 <COLOR=54D86A>{0}%</COLOR>증가합니다.",
             "en": "Increases <COLOR=ff5d8f>Spore Burst</COLOR> damage by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShieldExplosionDamage"
         },
@@ -1310,6 +1799,9 @@
             "key": "AbilityDescription_ShieldExplosionRange",
             "kr": "<COLOR=ff5d8f>포자막 폭발</COLOR> 범위가 <COLOR=54D86A>{0}%</COLOR>증가합니다.",
             "en": "Increases <COLOR=ff5d8f>Spore Burst</COLOR> range by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShieldExplosionRange"
         },
@@ -1318,6 +1810,9 @@
             "key": "AbilityDescription_WeakPointHit",
             "kr": "체력이 <COLOR=fca311>50% 이하인 나무에게 주는 데미지</COLOR>가\n<COLOR=54D86A>{0}배</COLOR> 증가합니다.",
             "en": "Increases the <COLOR=fca311>damage multiplier against trees\nat 50% health or below</COLOR> by <COLOR=54D86A>{0}x</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "WeakPointHit"
         },
@@ -1326,6 +1821,9 @@
             "key": "AbilityDescription_BoomerangCritical",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑</Wave></COLOR>에 이제 치명타가 적용됩니다.",
             "en": "<COLOR=7EEDBE,EDD87E><Wave>Boomerangs</Wave></COLOR> can now deal critical hits.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "BoomerangCritical"
         },
@@ -1334,6 +1832,9 @@
             "key": "AbilityDescription_BoomerangAttackSpeed",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑</Wave></COLOR>의 공격 속도가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=7EEDBE,EDD87E><Wave>Boomerang</Wave></COLOR> attack speed by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "BoomerangAttackSpeed"
         },
@@ -1342,6 +1843,9 @@
             "key": "AbilityDescription_StaminaRecover",
             "kr": "<COLOR=ff5d8f>오프로드 차량</COLOR> 근처에 있을 때 <COLOR=54D86A>{0}피로도</COLOR>씩 지속 회복합니다.",
             "en": "Restores <COLOR=54D86A>{0} stamina</COLOR> over time while near\nthe <COLOR=ff5d8f>off-road vehicle</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "StaminaRecover"
         },
@@ -1350,6 +1854,9 @@
             "key": "AbilityDescription_BoomerangDistance",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑</Wave></COLOR>의 사정거리가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=7EEDBE,EDD87E><Wave>Boomerang</Wave></COLOR> flight distance by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "BoomerangDistance"
         },
@@ -1358,6 +1865,9 @@
             "key": "AbilityDescription_BoomerangCooldownReduction",
             "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑</Wave></COLOR>의 쿨타임이 <COLOR=54D86A>{0}%</COLOR> 감소합니다.",
             "en": "Reduces <COLOR=7EEDBE,EDD87E><Wave>Boomerang</Wave></COLOR> cooldown by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "BoomerangCooldownReduction"
         },
@@ -1366,6 +1876,9 @@
             "key": "AbilityDescription_ShieldExplosionResearch",
             "kr": "<COLOR=ff5d8f>몽글포자숲</COLOR>을 제외한 다른 숲에서도\n종종 <COLOR=54D86A>포자막 폭발</COLOR>이 발생합니다.",
             "en": "A <COLOR=54D86A>Spore Burst</COLOR> may occasionally occur in forests\nother than <COLOR=ff5d8f>Puffspore Forest</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShieldExplosionResearch"
         },
@@ -1374,6 +1887,9 @@
             "key": "AbilityDescription_StarrootForestOverGrowth",
             "kr": "별뿌리숲의 <COLOR=8bbeff>나무 밀도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Increases <COLOR=8bbeff>tree density</COLOR> in Starroot Forest\nby <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "StarrootForestOverGrowth"
         },
@@ -1382,6 +1898,9 @@
             "key": "AbilityDescription_AttackRythm",
             "kr": "타격할수록 중첩되는 <COLOR=fca311>공격속도 버프</COLOR>를 얻습니다.\n중첩되는 공격속도가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Each hit grants a stacking <COLOR=fca311>attack speed buff</COLOR>.\nIncreases the attack speed gained per stack by <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "AttackRythm"
         },
@@ -1390,6 +1909,9 @@
             "key": "AbilityDescription_ConstellationManifestUnlock",
             "kr": "별자리를 완성하면 <COLOR=ff5d8f>별자리가 발현</COLOR>됩니다.",
             "en": "Completing a constellation triggers\n<COLOR=ff5d8f>Constellation Strike</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "ConstellationManifestUnlock"
         },
@@ -1398,6 +1920,9 @@
             "key": "AbilityDescription_StarPathSpeedBoost",
             "kr": "<COLOR=ff5d8f>별 표식</COLOR>을 가진 나무를 벌목하면\n5초간 이동속도 배수가 <COLOR=54D86A>{0}배</COLOR> 증가합니다.",
             "en": "Chopping down a tree with a <COLOR=ff5d8f>Star Mark</COLOR>\nincreases your movement speed multiplier by\n<COLOR=54D86A>{0}x</COLOR> for 5 seconds.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "StarPathSpeedBoost"
         },
@@ -1406,6 +1931,9 @@
             "key": "AbilityDescription_StarMarkDamage",
             "kr": "<COLOR=ff5d8f>별 표식</COLOR>을 가진 나무에 대한 피해 배수가\n<COLOR=54D86A>{0}배</COLOR> 증가합니다.",
             "en": "Increases the damage multiplier against trees\nwith a <COLOR=ff5d8f>Star Mark</COLOR> by <COLOR=54D86A>{0}x</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "StarMarkDamage"
         },
@@ -1414,6 +1942,9 @@
             "key": "AbilityDescription_ConstellationDamage",
             "kr": "<COLOR=ff5d8f>별자리 발현</COLOR> 데미지가 <COLOR=54D86A>{0}% 증가합니다.",
             "en": "Increases <COLOR=ff5d8f>Constellation Strike</COLOR> damage\nby <COLOR=54D86A>{0}%</COLOR>.",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "ConstellationDamage"
         }

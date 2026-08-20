@@ -112,15 +112,15 @@ MonoBehaviour:
   enablePixelStyle: 0
   pixelResolution: 32
   colorBandingSteps: 4
-  bloomIntensity: 1.5
-  rotationSpeed: 0.6
+  bloomIntensity: 0.35
+  rotationSpeed: 0.75
   speedVariation: 0.2
   overrideRaySettings: 1
   rayCount: 8
   angleJitter: 0.4
   beamBlur: 0.35
   minBeamWidth: 0.04
-  maxBeamWidth: 0.5
+  maxBeamWidth: 0.35
   overrideColors: 0
   coreColor: {r: 3.5, g: 3.2, b: 2, a: 1}
   beamColor: {r: 2.5, g: 1.8, b: 0.3, a: 1}
@@ -129,4 +129,6 @@ MonoBehaviour:
   prismSaturation: 1
   prismSpeed: 0.5
   prismHueOffset: 0
+  randomizeOnPlay: 1
+  randomizeRotationDirection: 1
   showOnScreenDebugGui: 0

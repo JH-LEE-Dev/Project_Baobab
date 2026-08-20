@@ -102,6 +102,12 @@ public class UIView_MainMenu : UIView
             backgroundUI.Initialize();
         }
 
+        if (null != _ctx && null != _ctx.localizationManager)
+        {
+            _ctx.localizationManager.OnLanguageChanged -= OnChangedLanguage;
+            _ctx.localizationManager.OnLanguageChanged += OnChangedLanguage;
+        }
+
         if (null != optionUI)
         {
             optionUI.Initialize(_ctx);
@@ -117,6 +123,7 @@ public class UIView_MainMenu : UIView
 
     private void HandleLanguageOptionChanged(EOptionLanguage _lang)
     {
+        OnChangedLanguage();
         OnLanguageOptionChangedEvent?.Invoke(_lang);
     }
 
@@ -126,6 +133,11 @@ public class UIView_MainMenu : UIView
         LoadGameButtonClickedEvent = null;
         ExitButtonClickedEvent = null;
         OnLanguageOptionChangedEvent = null;
+
+        if (null != context && null != context.localizationManager)
+        {
+            context.localizationManager.OnLanguageChanged -= OnChangedLanguage;
+        }
         
         if (null != optionUI)
         {

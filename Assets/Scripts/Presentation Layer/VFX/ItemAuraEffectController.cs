@@ -27,7 +27,7 @@ public class ItemAuraEffectController : MonoBehaviour
     private float colorBandingSteps = 4f;
 
     [Header("블룸 및 HDR 발광 강도 (Bloom Intensity)")]
-    [SerializeField, Range(0.5f, 10f), Tooltip("URP Post Processing Bloom 발광 증폭 배율")]
+    [SerializeField, Range(0f, 10f), Tooltip("URP Post Processing Bloom 발광 증폭 배율")]
     private float bloomIntensity = 1.5f;
 
     [Header("회전 속도 제어 (-20.0 ~ 20.0 고속 스핀 지원)")]
@@ -58,6 +58,10 @@ public class ItemAuraEffectController : MonoBehaviour
     [SerializeField, Range(0f, 1f), ShowIf("enablePrismMode"), Tooltip("프리즘 시작 색상 오프셋")]
     private float prismHueOffset = 0.0f;
 
+    [Header("랜덤 시작 각도 및 인스턴스 불규칙성 (다중 인스턴스 동시 재생 시 다양성 부여)")]
+    [SerializeField, Tooltip("재생 시 고유 랜덤 시드 및 시작 각도 할당")] private bool randomizeOnPlay = true;
+    [SerializeField, Tooltip("재생 시 회전 방향을 랜덤으로 결정 (시계 / 반시계)")] private bool randomizeRotationDirection = true;
+
     [Header("디버그 및 테스트 GUI")]
     [SerializeField] private bool showOnScreenDebugGui = false;
 
@@ -65,6 +69,9 @@ public class ItemAuraEffectController : MonoBehaviour
     private MaterialPropertyBlock propertyBlock;
     private float elapsedTime = 0f;
     private bool isPlaying = false;
+    private float currentRandomSeed = 0f;
+    private float currentStartAngle = 0f;
+    private float currentRotationSpeed = 0.6f;
 
     /// <summary>
     /// 인스펙터에 세팅된 단발성 버스트의 재생 시간(수명)입니다.
@@ -83,6 +90,7 @@ public class ItemAuraEffectController : MonoBehaviour
     public void Initialize(Renderer _targetRenderer)
     {
         targetRenderer = _targetRenderer;
+        currentRotationSpeed = rotationSpeed;
         EnsurePropertyBlock();
         transform.localScale = maxScale;
         ApplyBurstProgress(0f);
@@ -101,6 +109,26 @@ public class ItemAuraEffectController : MonoBehaviour
         elapsedTime = 0f;
 
         transform.localScale = maxScale;
+
+        if (true == randomizeOnPlay)
+        {
+            currentRandomSeed = Random.Range(0.0f, 1000.0f);
+            currentStartAngle = Random.Range(0.0f, 360.0f);
+            if (true == randomizeRotationDirection)
+            {
+                currentRotationSpeed = rotationSpeed * (Random.value > 0.5f ? 1.0f : -1.0f);
+            }
+            else
+            {
+                currentRotationSpeed = rotationSpeed;
+            }
+        }
+        else
+        {
+            currentRandomSeed = 0f;
+            currentStartAngle = 0f;
+            currentRotationSpeed = rotationSpeed;
+        }
 
         if (null != targetRenderer)
         {
@@ -145,7 +173,7 @@ public class ItemAuraEffectController : MonoBehaviour
     /// </summary>
     public void SetBloomIntensity(float _intensity)
     {
-        bloomIntensity = Mathf.Max(0.1f, _intensity);
+        bloomIntensity = Mathf.Max(0f, _intensity);
         ApplyBloomSettings();
     }
 
@@ -268,8 +296,9 @@ public class ItemAuraEffectController : MonoBehaviour
         targetRenderer.GetPropertyBlock(propertyBlock);
 
         ItemAuraShaderHelper.ApplyPixelSettings(propertyBlock, enablePixelStyle, pixelResolution, colorBandingSteps);
+        ItemAuraShaderHelper.ApplyRandomness(propertyBlock, currentRandomSeed, currentStartAngle);
         propertyBlock.SetFloat(ItemAuraShaderHelper.BloomMultiplierPropertyId, bloomIntensity);
-        propertyBlock.SetFloat(ItemAuraShaderHelper.RotationSpeedPropertyId, rotationSpeed);
+        propertyBlock.SetFloat(ItemAuraShaderHelper.RotationSpeedPropertyId, currentRotationSpeed);
         propertyBlock.SetFloat(ItemAuraShaderHelper.SpeedVariationPropertyId, speedVariation);
 
         if (true == overrideRaySettings)
