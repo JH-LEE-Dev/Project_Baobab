@@ -130,6 +130,7 @@ public class LocalizationManager : MonoBehaviour
             case Language.KR: return _entry.kr;
             case Language.ZH_HANS: return string.IsNullOrEmpty(_entry.zhHans) ? _entry.en : _entry.zhHans;
             case Language.ZH_HANT: return string.IsNullOrEmpty(_entry.zhHant) ? _entry.en : _entry.zhHant;
+            case Language.JA: return string.IsNullOrEmpty(_entry.ja) ? _entry.en : _entry.ja;
             default: return _entry.en;
         }
     }
