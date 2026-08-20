@@ -9,6 +9,17 @@ public struct TreeVFXColorData
     public ParticleSystem.MinMaxGradient effectColor;
 }
 
+/// <summary>
+/// 원목 등급(LogState)별 절단 VFX 색.
+/// 보석 원목은 어느 나무에서 나왔든 등급 색(황금/다이아/무지개)으로 통일한다.
+/// </summary>
+[System.Serializable]
+public struct LogStateVFXColorData
+{
+    public LogState logState;
+    public ParticleSystem.MinMaxGradient effectColor;
+}
+
 public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 {
     public event Action CuttingDoneEvent;
@@ -26,6 +37,10 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     [Header("VFX Settings")]
     [SerializeField] private Transform effectTransform;
     [SerializeField] private List<TreeVFXColorData> treeVFXColorDatas;
+
+    [Tooltip("보석 등급 원목의 절단 VFX 색. 나무 종류보다 우선 적용된다. 비워 두면 나무 종류 색을 그대로 쓴다.")]
+    [SerializeField] private List<LogStateVFXColorData> logStateVFXColorDatas;
+
     private ParticleSystem.MinMaxGradient effectColor;
 
     // 내부 상태 및 컴포넌트 참조
@@ -424,7 +439,21 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
     private ParticleSystem.MinMaxGradient GetVFXColorForCurrentTree()
     {
-        if (cuttingItem != null && treeVFXColorDatas != null)
+        if (cuttingItem == null) return effectColor;
+
+        // 보석 등급 원목은 나무 종류와 무관하게 등급 색을 쓴다. 나무 종류 색보다 우선한다.
+        if (cuttingItem.logState > LogState.Normal && logStateVFXColorDatas != null)
+        {
+            for (int i = 0; i < logStateVFXColorDatas.Count; i++)
+            {
+                if (logStateVFXColorDatas[i].logState == cuttingItem.logState)
+                {
+                    return logStateVFXColorDatas[i].effectColor;
+                }
+            }
+        }
+
+        if (treeVFXColorDatas != null)
         {
             for (int i = 0; i < treeVFXColorDatas.Count; i++)
             {
@@ -434,6 +463,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
                 }
             }
         }
+
         return effectColor;
     }
 
