@@ -31,6 +31,13 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     [SerializeField] private Sprite rainbowHpBarSprite;
     [SerializeField] private Image hpFillImage;
 
+    [Header("Gem Tree Ghost Sprites")]
+    [SerializeField] private Sprite normalGhostBarSprite;
+    [SerializeField] private Sprite goldGhostBarSprite;
+    [SerializeField] private Sprite diamondGhostBarSprite;
+    [SerializeField] private Sprite rainbowGhostBarSprite;
+    [SerializeField] private Image hpGhostFillImage;
+
     [Header("Revival Animation Settings")]
     [SerializeField] private float revivalDuration = 0.35f;
     [SerializeField] private Ease revivalEase = Ease.OutCubic;
@@ -114,6 +121,9 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
 
         if (null == hpFillImage && null != progressSlider && null != progressSlider.fillRect)
             hpFillImage = progressSlider.fillRect.GetComponent<Image>();
+
+        if (null == hpGhostFillImage && null != ghostSlider && null != ghostSlider.fillRect)
+            hpGhostFillImage = ghostSlider.fillRect.GetComponent<Image>();
     }
 
     public void SetOwner(object _owner, float _initialHpRatio = 1.0f, float _initialShieldRatio = 0.0f, bool _useShield = false)
@@ -199,26 +209,34 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         if (null == hpFillImage && null != progressSlider && null != progressSlider.fillRect)
             hpFillImage = progressSlider.fillRect.GetComponent<Image>();
 
-        if (null == hpFillImage)
-            return;
+        if (null == hpGhostFillImage && null != ghostSlider && null != ghostSlider.fillRect)
+            hpGhostFillImage = ghostSlider.fillRect.GetComponent<Image>();
 
         switch (_gemStage)
         {
             case 1:
-                if (null != goldHpBarSprite)
+                if (null != hpFillImage && null != goldHpBarSprite)
                     hpFillImage.sprite = goldHpBarSprite;
+                if (null != hpGhostFillImage && null != goldGhostBarSprite)
+                    hpGhostFillImage.sprite = goldGhostBarSprite;
                 break;
             case 2:
-                if (null != diamondHpBarSprite)
+                if (null != hpFillImage && null != diamondHpBarSprite)
                     hpFillImage.sprite = diamondHpBarSprite;
+                if (null != hpGhostFillImage && null != diamondGhostBarSprite)
+                    hpGhostFillImage.sprite = diamondGhostBarSprite;
                 break;
             case 3:
-                if (null != rainbowHpBarSprite)
+                if (null != hpFillImage && null != rainbowHpBarSprite)
                     hpFillImage.sprite = rainbowHpBarSprite;
+                if (null != hpGhostFillImage && null != rainbowGhostBarSprite)
+                    hpGhostFillImage.sprite = rainbowGhostBarSprite;
                 break;
             default:
-                if (null != normalHpBarSprite)
+                if (null != hpFillImage && null != normalHpBarSprite)
                     hpFillImage.sprite = normalHpBarSprite;
+                if (null != hpGhostFillImage && null != normalGhostBarSprite)
+                    hpGhostFillImage.sprite = normalGhostBarSprite;
                 break;
         }
     }
@@ -585,6 +603,9 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
 
         if (null != hpFillImage && null != normalHpBarSprite)
             hpFillImage.sprite = normalHpBarSprite;
+
+        if (null != hpGhostFillImage && null != normalGhostBarSprite)
+            hpGhostFillImage.sprite = normalGhostBarSprite;
 
         if (null != hpGhostTween && true == hpGhostTween.IsActive())
         {
