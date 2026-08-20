@@ -16,6 +16,9 @@ public class InDungeonVFXManager : MonoBehaviour
     // top 기준 위치가 나무 꼭대기보다 한참 위에서 생성되는 것을 보정하기 위한 하향 오프셋 (인스펙터에서 조정 가능)
     [SerializeField] private float shieldBrokenVfxYOffset = -0.5f;
 
+    // 나무가 그려지는 정렬 레이어. 보석 임팩트 VFX를 나무와 같은 레이어에 명시적으로 올릴 때 쓴다.
+    private const string TreeSortingLayerName = "Objects";
+
     [Header("Constellation Ground Mark")]
     [SerializeField] private TreeStarMarkGroundAnimator treeStarMarkGroundPrefab;
     [SerializeField] private int treeStarMarkGroundPoolDefaultCapacity = 8;
@@ -452,6 +455,41 @@ public class InDungeonVFXManager : MonoBehaviour
             bottomColor.overrideChildrenColor,
             null
         ));
+    }
+
+    /// <summary>
+    /// 보석 단계 나무를 때렸을 때의 전용 임팩트 VFX를 재생합니다. 일반 피격 VFX와 함께 터집니다.
+    ///
+    /// 정렬: 나무의 모든 렌더러 중 가장 앞에 그려지는 하이라이트보다 한 단계 더 앞에 둡니다.
+    /// 나무 렌더러들은 body -> outline -> shield -> highlight 순으로 order가 쌓이므로,
+    /// top 기준으로 잡으면 아웃라인/실드에 가려집니다. 레이어도 나무와 같은 Objects로 명시합니다.
+    /// </summary>
+    public void PlayTreeGemHitVFX(TreeVisualComponent _visual, int _gemStage)
+    {
+        if (vfxComponent == null || _visual == null) return;
+
+        string tag = GetGemImpactTag(_gemStage);
+        if (string.IsNullOrEmpty(tag)) return;
+
+        vfxComponent.Play(new VFXPlaySettings(
+            tag,
+            _visual.GetTopRootPosition(),
+            _visual.GetTopRootRotation(),
+            TreeSortingLayerName,
+            _visual.GetTopHighlightSortingOrder() + 1,
+            null
+        ));
+    }
+
+    private static string GetGemImpactTag(int _gemStage)
+    {
+        switch (_gemStage)
+        {
+            case 1: return "RareImpact_Gold";
+            case 2: return "RareImpact_Diamond";
+            case 3: return "RareImpact_Rainbow";
+            default: return null;
+        }
     }
 
     /// <summary>

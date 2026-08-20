@@ -1557,6 +1557,24 @@ MonoBehaviour:
   isUIComponent: 0
   initializeOnAwake: 1
   vfxPoolDataList:
+  - vfxTag: RareImpact_Gold
+    effectPrefab: {fileID: 8973744905564535604, guid: 0c16556f4f9c3a340b9850bfc5daa941, type: 3}
+    initialPoolSize: 6
+    allowDynamicExpansion: 1
+    maxPoolSize: 24
+    uiParticleScale: 0
+  - vfxTag: RareImpact_Diamond
+    effectPrefab: {fileID: 7120908974588671765, guid: 8dfcb12833b0e08429ec324646040269, type: 3}
+    initialPoolSize: 6
+    allowDynamicExpansion: 1
+    maxPoolSize: 24
+    uiParticleScale: 0
+  - vfxTag: RareImpact_Rainbow
+    effectPrefab: {fileID: 2302416936151273040, guid: df404d29d8f6de244bdbde6bae4230b6, type: 3}
+    initialPoolSize: 6
+    allowDynamicExpansion: 1
+    maxPoolSize: 24
+    uiParticleScale: 0
   - vfxTag: TreeHitEffect_Top
     effectPrefab: {fileID: 7006864300503741061, guid: e471b86a20e7300478d33f5733d26505, type: 3}
     initialPoolSize: 20
