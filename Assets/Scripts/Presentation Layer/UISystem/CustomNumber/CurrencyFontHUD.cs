@@ -37,6 +37,23 @@ namespace PresentationLayer.UISystem.CustomNumber
             currentGlobalMapType = _mapType;
         }
 
+        // 하늘 카메라 연출(마을↔던전 전환) 동안 폰트 팝에 곱해지는 볼륨 배율.
+        // 3D 사운드는 거리 감쇠와 production3DVolumeFactor로 카메라가 멀어지면 알아서 죽지만,
+        // AudioManager.ApplySourceVolume()은 그 연출 계수를 spatialBlend > 0인 소스에만 적용한다
+        // (UI/2D 사운드까지 죽이면 연출 자체의 SkyUP/SkyDown/HUDDown이 같이 먹통이 되기 때문).
+        // 폰트 팝은 Sound.PlayUI로 나가는 2D 사운드라 그 혜택을 못 받으므로, 연출을 실제로 구동하는
+        // SkyCameraProductionManager가 카메라 높이에 맞춰 이 값을 직접 밀어준다.
+        //
+        // 기본값은 반드시 1f이어야 한다. 연출을 타지 않는 일반 플레이 구간(마을에 그냥 서 있을 때)이
+        // 이 값을 그대로 쓰기 때문이다. 같은 이유로 SkyCameraProductionManager는 연출을 건너뛰는
+        // 모든 예외 분기에서도 1f로 원복해, 사운드가 영영 무음으로 남지 않게 한다.
+        private static float skyProductionVolumeFactor = 1f;
+
+        public static void SetSkyProductionVolumeFactor(float _factor)
+        {
+            skyProductionVolumeFactor = Mathf.Clamp01(_factor);
+        }
+
         private static readonly ulong[] SuffixDivisors =
         {
             1000UL,
@@ -676,12 +693,19 @@ namespace PresentationLayer.UISystem.CustomNumber
             if (MapType.Town != currentGlobalMapType)
                 return;
 
+            // 카메라가 충분히 올라가 사실상 들리지 않는 구간에서는 재생 자체를 건너뛴다.
+            // 볼륨 0으로 재생하면 소리는 안 나면서 폴리포니 슬롯만 차지한다.
+            // (위 맵타입 게이트와 마찬가지로 lastFontPopPlayedTime을 갱신하기 전에 빠져나가므로,
+            //  연출이 끝나 볼륨이 돌아온 직후의 첫 팝이 쿨다운에 막히지 않는다)
+            if (skyProductionVolumeFactor <= 0.001f)
+                return;
+
             float _currentTime = Time.realtimeSinceStartup;
             if (_currentTime - lastFontPopPlayedTime < FontPopInterval)
                 return;
 
             lastFontPopPlayedTime = _currentTime;
-            Sound.PlayUI(SoundID.FontPop);
+            Sound.PlayUI(SoundID.FontPop, skyProductionVolumeFactor);
         }
 
         private void PlayGlyphColorTween(Color _motionColor)
