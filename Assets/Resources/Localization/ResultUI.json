@@ -6,6 +6,9 @@
       "key": "resultTitle",
       "kr": "<COLOR=7EEDBE,EDD87E><Wave>원정 완료</Wave></COLOR>",
       "en": "<COLOR=7EEDBE,EDD87E><Wave>Expedition Complete</Wave></COLOR>",
+      "zhHans": "<COLOR=7EEDBE,EDD87E><Wave>远征完成</Wave></COLOR>",
+      "zhHant": "<COLOR=7EEDBE,EDD87E><Wave>遠征完成</Wave></COLOR>",
+      "ja": "<COLOR=7EEDBE,EDD87E><Wave>遠征完了</Wave></COLOR>",
       "enumType": "",
       "enumValue": ""
     },
@@ -14,6 +17,9 @@
       "key": "treeKillCountZero",
       "kr": "<COLOR=FF833D>나무</COLOR>들이 오늘은 무사했습니다!",
       "en": "The <COLOR=FF833D>trees</COLOR> are safe... for today!",
+      "zhHans": "今天的<COLOR=FF833D>树木</COLOR>平安无事！",
+      "zhHant": "今天的<COLOR=FF833D>樹木</COLOR>平安無事！",
+      "ja": "今日のところは、<COLOR=FF833D>木</COLOR>も無事でした！",
       "enumType": "",
       "enumValue": ""
     },
@@ -22,6 +28,9 @@
       "key": "treeKillCountLow",
       "kr": "<COLOR=54D86A>{0}</COLOR>그루의 <COLOR=FF833D>나무</COLOR>를 벌목했습니다",
       "en": "Chopped down <COLOR=54D86A>{0}</COLOR> <COLOR=FF833D>trees</COLOR>",
+      "zhHans": "已砍伐<COLOR=54D86A>{0}</COLOR>棵<COLOR=FF833D>树木</COLOR>",
+      "zhHant": "已砍伐<COLOR=54D86A>{0}</COLOR>棵<COLOR=FF833D>樹木</COLOR>",
+      "ja": "<COLOR=FF833D>木</COLOR>を<COLOR=54D86A>{0}</COLOR>本伐採しました",
       "enumType": "",
       "enumValue": ""
     },
@@ -30,6 +39,9 @@
       "key": "treeKillCountMiddle",
       "kr": "<COLOR=58D7F2>{0}</COLOR>그루의 <COLOR=FF833D>나무</COLOR>를 벌목했습니다!",
       "en": "Chopped down <COLOR=58D7F2>{0}</COLOR> <COLOR=FF833D>trees</COLOR>!",
+      "zhHans": "已砍伐<COLOR=58D7F2>{0}</COLOR>棵<COLOR=FF833D>树木</COLOR>！",
+      "zhHant": "已砍伐<COLOR=58D7F2>{0}</COLOR>棵<COLOR=FF833D>樹木</COLOR>！",
+      "ja": "<COLOR=FF833D>木</COLOR>を<COLOR=58D7F2>{0}</COLOR>本伐採しました！",
       "enumType": "",
       "enumValue": ""
     },
@@ -38,6 +50,9 @@
       "key": "treeKillCountHigh",
       "kr": "<COLOR=7EEDBE,EDD87E>{0}</COLOR>그루의 <COLOR=FF833D>나무</COLOR>를 벌목했습니다!!",
       "en": "Chopped down <COLOR=7EEDBE,EDD87E>{0}</COLOR> <COLOR=FF833D>trees</COLOR>!!",
+      "zhHans": "已砍伐<COLOR=7EEDBE,EDD87E>{0}</COLOR>棵<COLOR=FF833D>树木</COLOR>！！",
+      "zhHant": "已砍伐<COLOR=7EEDBE,EDD87E>{0}</COLOR>棵<COLOR=FF833D>樹木</COLOR>！！",
+      "ja": "<COLOR=FF833D>木</COLOR>を<COLOR=7EEDBE,EDD87E>{0}</COLOR>本伐採しました！！",
       "enumType": "",
       "enumValue": ""
     },
@@ -46,6 +61,9 @@
       "key": "acquiredLogsHeader",
       "kr": "이번 원정에서 획득한 원목",
       "en": "Logs Collected This Expedition",
+      "zhHans": "本次远征获得的原木",
+      "zhHant": "本次遠征獲得的原木",
+      "ja": "今回の遠征で手に入れた丸太",
       "enumType": "",
       "enumValue": ""
     },
@@ -54,6 +72,9 @@
       "key": "emptyAcquiredLogs",
       "kr": "<COLOR=FF833D><Wave>없음</Wave></COLOR>",
       "en": "<COLOR=FF833D><Wave>None</Wave></COLOR>",
+      "zhHans": "<COLOR=FF833D><Wave>无</Wave></COLOR>",
+      "zhHant": "<COLOR=FF833D><Wave>無</Wave></COLOR>",
+      "ja": "<COLOR=FF833D><Wave>なし</Wave></COLOR>",
       "enumType": "",
       "enumValue": ""
     },
@@ -62,6 +83,9 @@
       "key": "containerStateHeader",
       "kr": "운반 상자 상태",
       "en": "Cargo Crate Status",
+      "zhHans": "原木运输箱状态",
+      "zhHant": "原木運輸箱狀態",
+      "ja": "丸太運搬箱の状態",
       "enumType": "",
       "enumValue": ""
     }

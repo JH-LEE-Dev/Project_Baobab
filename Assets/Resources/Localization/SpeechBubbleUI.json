@@ -6,6 +6,9 @@
       "key": "InventoryFull",
       "kr": "가방에 빈 자리가 없어",
       "en": "My bag is full.",
+      "zhHans": "背包没有空位",
+      "zhHant": "背包沒有空位",
+      "ja": "バッグに空きがない",
       "enumType": "",
       "enumValue": ""
     },
@@ -14,6 +17,9 @@
       "key": "ItemCantAcquired",
       "kr": "다른 아이템을 담을 수 없어",
       "en": "I can't carry anything else.",
+      "zhHans": "无法装入其他物品",
+      "zhHant": "無法裝入其他物品",
+      "ja": "これ以上は持てない",
       "enumType": "",
       "enumValue": ""
     },
@@ -22,6 +28,9 @@
       "key": "AxeDurabilityEmpty",
       "kr": "도끼가 <COLOR=FF0000><CHAR_SHAKE>부러졌어!</CHAR_SHAKE></COLOR>",
       "en": "My axe is <COLOR=FF0000><CHAR_SHAKE>broken!</CHAR_SHAKE></COLOR>",
+      "zhHans": "斧头<COLOR=FF0000><CHAR_SHAKE>坏掉了！</CHAR_SHAKE></COLOR>",
+      "zhHant": "斧頭<COLOR=FF0000><CHAR_SHAKE>壞掉了！</CHAR_SHAKE></COLOR>",
+      "ja": "斧が<COLOR=FF0000><CHAR_SHAKE>壊れた！</CHAR_SHAKE></COLOR>",
       "enumType": "",
       "enumValue": ""
     }

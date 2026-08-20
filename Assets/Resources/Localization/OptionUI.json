@@ -6,6 +6,9 @@
       "key": "Windowed",
       "kr": "창모드",
       "en": "Windowed",
+      "zhHans": "窗口化",
+      "zhHant": "視窗化",
+      "ja": "ウィンドウ",
       "enumType": "",
       "enumValue": ""
     },
@@ -14,6 +17,9 @@
       "key": "Fullscreen",
       "kr": "전체화면",
       "en": "Fullscreen",
+      "zhHans": "全屏",
+      "zhHant": "全螢幕",
+      "ja": "フルスクリーン",
       "enumType": "",
       "enumValue": ""
     },
@@ -22,6 +28,9 @@
       "key": "On",
       "kr": "켬",
       "en": "On",
+      "zhHans": "开启",
+      "zhHant": "開啟",
+      "ja": "オン",
       "enumType": "",
       "enumValue": ""
     },
@@ -30,6 +39,9 @@
       "key": "Off",
       "kr": "끔",
       "en": "Off",
+      "zhHans": "关闭",
+      "zhHant": "關閉",
+      "ja": "オフ",
       "enumType": "",
       "enumValue": ""
     },
@@ -38,6 +50,9 @@
       "key": "VSync",
       "kr": "V-Sync",
       "en": "VSync",
+      "zhHans": "垂直同步",
+      "zhHant": "垂直同步",
+      "ja": "垂直同期",
       "enumType": "",
       "enumValue": ""
     },
@@ -46,6 +61,9 @@
       "key": "Unlimited",
       "kr": "무제한",
       "en": "Unlimited",
+      "zhHans": "无限制",
+      "zhHant": "無限制",
+      "ja": "無制限",
       "enumType": "",
       "enumValue": ""
     },
@@ -54,6 +72,9 @@
       "key": "Language",
       "kr": "언어",
       "en": "Language",
+      "zhHans": "语言",
+      "zhHant": "語言",
+      "ja": "言語",
       "enumType": "",
       "enumValue": ""
     },
@@ -62,6 +83,9 @@
       "key": "Resolution",
       "kr": "해상도",
       "en": "Resolution",
+      "zhHans": "分辨率",
+      "zhHant": "解析度",
+      "ja": "解像度",
       "enumType": "",
       "enumValue": ""
     },
@@ -70,6 +94,9 @@
       "key": "WindowMode",
       "kr": "화면모드",
       "en": "Window Mode",
+      "zhHans": "显示模式",
+      "zhHant": "顯示模式",
+      "ja": "表示モード",
       "enumType": "",
       "enumValue": ""
     },
@@ -78,6 +105,9 @@
       "key": "FPS",
       "kr": "FPS",
       "en": "FPS",
+      "zhHans": "FPS",
+      "zhHant": "FPS",
+      "ja": "FPS",
       "enumType": "",
       "enumValue": ""
     },
@@ -86,6 +116,9 @@
       "key": "PauseOnUnfocus",
       "kr": "비활성화 중 게임 일시정지",
       "en": "Pause When Unfocused",
+      "zhHans": "失去焦点时暂停游戏",
+      "zhHant": "失去焦點時暫停遊戲",
+      "ja": "非アクティブ時に一時停止",
       "enumType": "",
       "enumValue": ""
     },
@@ -94,6 +127,9 @@
       "key": "CameraShake",
       "kr": "카메라 흔들림",
       "en": "Camera Shake",
+      "zhHans": "镜头晃动",
+      "zhHant": "鏡頭晃動",
+      "ja": "カメラの揺れ",
       "enumType": "",
       "enumValue": ""
     },
@@ -102,6 +138,9 @@
       "key": "CrosshairBrightness",
       "kr": "크로스헤어 밝기",
       "en": "Crosshair Brightness",
+      "zhHans": "准星亮度",
+      "zhHant": "準星亮度",
+      "ja": "照準の明るさ",
       "enumType": "",
       "enumValue": ""
     },
@@ -110,6 +149,9 @@
       "key": "ChromaticAberration",
       "kr": "색수차 효과",
       "en": "Chromatic Aberration",
+      "zhHans": "色差效果",
+      "zhHant": "色差效果",
+      "ja": "色収差",
       "enumType": "",
       "enumValue": ""
     },
@@ -118,6 +160,9 @@
       "key": "ScreenBrightness",
       "kr": "화면 명도",
       "en": "Screen Brightness",
+      "zhHans": "屏幕亮度",
+      "zhHant": "螢幕亮度",
+      "ja": "画面の明るさ",
       "enumType": "",
       "enumValue": ""
     },
@@ -126,6 +171,9 @@
       "key": "ScreenSaturation",
       "kr": "화면 채도",
       "en": "Screen Saturation",
+      "zhHans": "屏幕饱和度",
+      "zhHant": "螢幕飽和度",
+      "ja": "画面の彩度",
       "enumType": "",
       "enumValue": ""
     },
@@ -134,6 +182,9 @@
       "key": "MasterVolume",
       "kr": "마스터 볼륨",
       "en": "Master Volume",
+      "zhHans": "主音量",
+      "zhHant": "主音量",
+      "ja": "マスター音量",
       "enumType": "",
       "enumValue": ""
     },
@@ -142,6 +193,9 @@
       "key": "BGMVolume",
       "kr": "배경음",
       "en": "Music Volume",
+      "zhHans": "音乐音量",
+      "zhHant": "音樂音量",
+      "ja": "BGM音量",
       "enumType": "",
       "enumValue": ""
     },
@@ -150,6 +204,9 @@
       "key": "SFXVolume",
       "kr": "효과음",
       "en": "Sound Effects Volume",
+      "zhHans": "音效音量",
+      "zhHant": "音效音量",
+      "ja": "効果音音量",
       "enumType": "",
       "enumValue": ""
     },
@@ -158,6 +215,9 @@
       "key": "tabGameplay",
       "kr": "게임플레이",
       "en": "Gameplay",
+      "zhHans": "游戏玩法",
+      "zhHant": "遊戲玩法",
+      "ja": "ゲームプレイ",
       "enumType": "",
       "enumValue": ""
     },
@@ -166,6 +226,9 @@
       "key": "tabSound",
       "kr": "사운드",
       "en": "Audio",
+      "zhHans": "音频",
+      "zhHant": "音訊",
+      "ja": "サウンド",
       "enumType": "",
       "enumValue": ""
     },
@@ -174,6 +237,9 @@
       "key": "tabGraphic",
       "kr": "그래픽",
       "en": "Graphics",
+      "zhHans": "图像",
+      "zhHant": "畫面",
+      "ja": "グラフィック",
       "enumType": "",
       "enumValue": ""
     },
@@ -182,6 +248,9 @@
       "key": "tabControl",
       "kr": "컨트롤",
       "en": "Controls",
+      "zhHans": "控制",
+      "zhHant": "控制",
+      "ja": "操作",
       "enumType": "",
       "enumValue": ""
     },
@@ -190,6 +259,9 @@
       "key": "moveUp",
       "kr": "위로 이동",
       "en": "Move Up",
+      "zhHans": "向上移动",
+      "zhHant": "向上移動",
+      "ja": "上に移動",
       "enumType": "",
       "enumValue": ""
     },
@@ -198,6 +270,9 @@
       "key": "moveDown",
       "kr": "아래로 이동",
       "en": "Move Down",
+      "zhHans": "向下移动",
+      "zhHant": "向下移動",
+      "ja": "下に移動",
       "enumType": "",
       "enumValue": ""
     },
@@ -206,6 +281,9 @@
       "key": "moveLeft",
       "kr": "왼쪽 이동",
       "en": "Move Left",
+      "zhHans": "向左移动",
+      "zhHant": "向左移動",
+      "ja": "左に移動",
       "enumType": "",
       "enumValue": ""
     },
@@ -214,6 +292,9 @@
       "key": "moveRight",
       "kr": "오른쪽 이동",
       "en": "Move Right",
+      "zhHans": "向右移动",
+      "zhHant": "向右移動",
+      "ja": "右に移動",
       "enumType": "",
       "enumValue": ""
     },
@@ -222,6 +303,9 @@
       "key": "inventory",
       "kr": "인벤토리",
       "en": "Inventory",
+      "zhHans": "背包",
+      "zhHant": "背包",
+      "ja": "バッグ",
       "enumType": "",
       "enumValue": ""
     },
@@ -230,6 +314,9 @@
       "key": "interaction",
       "kr": "상호작용",
       "en": "Interact",
+      "zhHans": "互动",
+      "zhHant": "互動",
+      "ja": "インタラクト",
       "enumType": "",
       "enumValue": ""
     },
@@ -238,6 +325,9 @@
       "key": "attack",
       "kr": "공격",
       "en": "Attack",
+      "zhHans": "攻击",
+      "zhHant": "攻擊",
+      "ja": "攻撃",
       "enumType": "",
       "enumValue": ""
     },
@@ -246,6 +336,9 @@
       "key": "potionKey",
       "kr": "물약 사용",
       "en": "Use Potion",
+      "zhHans": "使用药水",
+      "zhHant": "使用藥水",
+      "ja": "ポーションを使う",
       "enumType": "",
       "enumValue": ""
     },
@@ -254,6 +347,9 @@
       "key": "pressKeyPrompt",
       "kr": "변경할 키를 입력하세요.\n(ESC: 취소)",
       "en": "Press any key to rebind.\n(Esc: Cancel)",
+      "zhHans": "请按下要绑定的按键。\n(ESC: 取消)",
+      "zhHant": "請按下要綁定的按鍵。\n(ESC:取消)",
+      "ja": "割り当てるキーを押してください。\n（ESC：キャンセル）",
       "enumType": "",
       "enumValue": ""
     },
@@ -262,6 +358,9 @@
       "key": "resetAllWarning",
       "kr": "모든 키 설정을 기본값으로 되돌리시겠습니까?",
       "en": "Reset all key bindings to their defaults?",
+      "zhHans": "确定要将所有按键设置恢复为默认值吗？",
+      "zhHant": "確定要將所有按鍵設定恢復為預設值嗎？",
+      "ja": "すべてのキー設定を初期状態に戻しますか？",
       "enumType": "",
       "enumValue": ""
     },
@@ -270,6 +369,9 @@
       "key": "close",
       "kr": "닫기",
       "en": "Close",
+      "zhHans": "关闭",
+      "zhHant": "關閉",
+      "ja": "閉じる",
       "enumType": "",
       "enumValue": ""
     },
@@ -278,6 +380,9 @@
       "key": "resetToDefault",
       "kr": "기본 값으로 초기화",
       "en": "Reset to Defaults",
+      "zhHans": "恢复默认设置",
+      "zhHant": "恢復預設設定",
+      "ja": "初期設定に戻す",
       "enumType": "",
       "enumValue": ""
     }

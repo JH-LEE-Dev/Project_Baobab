@@ -6,6 +6,9 @@
       "key": "Information",
       "kr": "등장하는 나무 정보",
       "en": "Trees Found Here",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "MapType",
       "enumValue": "None"
     },
@@ -15,6 +18,9 @@
       "key": "mapName_1",
       "kr": "목적지 설정",
       "en": "Select Destination",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "MapType",
       "enumValue": "None"
     },
@@ -23,6 +29,9 @@
       "key": "mapName_2",
       "kr": "풀빛너른숲",
       "en": "Greenreach Forest",
+      "zhHans": "翠绿森林",
+      "zhHant": "翠綠森林",
+      "ja": "グリーンリーチの森",
       "enumType": "MapType",
       "enumValue": "WideGreenForest"
     },
@@ -31,6 +40,9 @@
       "key": "mapName_3",
       "kr": "몽글포자숲",
       "en": "Puffspore Forest",
+      "zhHans": "绒孢森林",
+      "zhHant": "絨孢森林",
+      "ja": "パフスポアの森",
       "enumType": "MapType",
       "enumValue": "FluffySporeForest"
     },
@@ -39,6 +51,9 @@
       "key": "mapName_4",
       "kr": "별뿌리숲",
       "en": "Starroot Forest",
+      "zhHans": "晨星森林",
+      "zhHant": "晨星森林",
+      "ja": "スタールートの森",
       "enumType": "MapType",
       "enumValue": "StarrootForest"
     },
@@ -47,6 +62,9 @@
       "key": "mapName_5",
       "kr": "용암숲",
       "en": "Magma Forest",
+      "zhHans": "熔岩森林",
+      "zhHant": "熔岩森林",
+      "ja": "マグマの森",
       "enumType": "MapType",
       "enumValue": "MagmaForest"
     }

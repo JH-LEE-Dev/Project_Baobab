@@ -6,6 +6,9 @@
       "key": "mainText",
       "kr": "원정을 종료할까요?",
       "en": "End the expedition?",
+      "zhHans": "确定要结束远征吗？",
+      "zhHant": "確定要結束遠征嗎？",
+      "ja": "遠征を終了しますか？",
       "enumType": "",
       "enumValue": ""
     },
@@ -14,6 +17,9 @@
       "key": "subText",
       "kr": "<Color=E94A42>인벤토리에 있는 원목이 사라집니다.</Color>",
       "en": "<Color=E94A42>Any logs in your inventory will be lost.</Color>",
+      "zhHans": "<Color=E94A42>背包中的原木将会消失。</Color>",
+      "zhHant": "<Color=E94A42>背包中的原木將會消失。</Color>",
+      "ja": "<Color=E94A42>バッグ内の丸太は失われます。</Color>",
       "enumType": "",
       "enumValue": ""
     }
