@@ -1,0 +1,81 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: VFX_Gem_Rainbow
+  m_Shader: {fileID: 4800000, guid: b63a824c5ce26de458a4ee92d90b0e9c, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _AlphaTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MaskTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _DeepShade: 0.32
+    - _EnableExternalAlpha: 0
+    - _FacetRandomness: 0.55
+    - _FacetSize: 5.5
+    - _FacetVariation: 0.12
+    - _FlashAmount: 0
+    - _FlashStrength: 0.5
+    - _FlashThreshold: 0.9
+    - _FormBulge: 1.2
+    - _FormCenterY: 0.1
+    - _GemAlpha: 0.85
+    - _GemAmount: 1
+    - _HDRIntensity: 1.15
+    - _Iridescence: 0.65
+    - _LightFollow: 1
+    - _LightHeight: 0.5
+    - _LumaBias: 0.7
+    - _LumaInfluence: 0.4
+    - _RainbowAmount: 1
+    - _RainbowHueBase: 0.55
+    - _RainbowHueRange: 0.75
+    - _RainbowSaturation: 0.6
+    - _ShadeSteps: 6
+    - _SparkleBrightness: 1.6
+    - _SparkleRatio: 0
+    - _SparkleSize: 0.06
+    - _SparkleSpeed: 2.5
+    - _SpecStrength: 0.1
+    - _SweepSpeed: 0.8
+    - _Whiteness: 0.28
+    - _ZWrite: 0
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _GemColor: {r: 0.8075082, g: 0.8075082, b: 0.8075082, a: 1}
+    - _GemColorB: {r: 1.287618, g: 1.287618, b: 1.287618, a: 1}
+    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
