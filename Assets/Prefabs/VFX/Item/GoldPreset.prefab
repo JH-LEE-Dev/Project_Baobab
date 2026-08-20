@@ -112,8 +112,8 @@ MonoBehaviour:
   enablePixelStyle: 0
   pixelResolution: 32
   colorBandingSteps: 4
-  bloomIntensity: 1.5
-  rotationSpeed: 0.6
+  bloomIntensity: 0.7
+  rotationSpeed: 0.75
   speedVariation: 0.2
   overrideRaySettings: 1
   rayCount: 4
@@ -129,4 +129,6 @@ MonoBehaviour:
   prismSaturation: 1
   prismSpeed: 0.5
   prismHueOffset: 0
+  randomizeOnPlay: 1
+  randomizeRotationDirection: 1
   showOnScreenDebugGui: 0

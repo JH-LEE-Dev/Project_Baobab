@@ -32,10 +32,10 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     [SerializeField] private Image hpFillImage;
 
     [Header("Revival Animation Settings")]
-    [SerializeField] private float revivalDuration = 0.15f;
+    [SerializeField] private float revivalDuration = 0.35f;
     [SerializeField] private Ease revivalEase = Ease.OutCubic;
-    [SerializeField] private float revivalShakeDuration = 0.15f;
-    [SerializeField] private float revivalShakeStrength = 6.0f;
+    [SerializeField] private float revivalShakeDuration = 1.0f;
+    [SerializeField] private float revivalShakeStrength = 0.18f;
 
     // 내부 의존성
     private object owner;
@@ -46,6 +46,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     private Action<HUD_ShieldHPBar> onFinishCallback;
     private bool isHiding;
     private RectTransform rect;
+    private CanvasGroup rootCanvasGroup;
     private UnityAction onHideCompleteAction;
     private Tween hpGhostTween;
     private Tween shieldGhostTween;
@@ -62,8 +63,11 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     private Tween specialShakeTween;
     private Vector3 shakeOffset = Vector3.zero;
     private int currentGemStage = 0;
+    private int lastRevivalFrame = -1;
 
     public object Owner => owner;
+    public bool IsSpecialRecovering => isSpecialRecovering;
+    public int LastRevivalFrame => lastRevivalFrame;
 
 
     // 퍼블릭 초기화 및 제어 메서드
@@ -106,6 +110,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         isShieldFadedOut = true;
 
         rect = GetComponent<RectTransform>();
+        rootCanvasGroup = GetComponent<CanvasGroup>();
 
         if (null == hpFillImage && null != progressSlider && null != progressSlider.fillRect)
             hpFillImage = progressSlider.fillRect.GetComponent<Image>();
@@ -220,6 +225,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
 
     public void PlayTreeRevivalPresentation(int _gemStage, float _targetHpRatio = 1.0f)
     {
+        lastRevivalFrame = Time.frameCount;
         SetGradeByGemStage(_gemStage);
 
         if (null != specialRecoveryTween && true == specialRecoveryTween.IsActive())
@@ -242,6 +248,10 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             ghostSlider.value = 0.0f;
 
         isSpecialRecovering = true;
+
+        if (null != rootCanvasGroup)
+            rootCanvasGroup.alpha = 1.0f;
+
         RestartHideTimer();
 
         float _target = Mathf.Clamp01(_targetHpRatio);
@@ -269,9 +279,11 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         shakeOffset = Vector3.zero;
         specialShakeTween = DOVirtual.Float(0.0f, 1.0f, revivalShakeDuration, t =>
         {
-            float decay = 1.0f - t;
-            float wave = Mathf.Sin(t * Mathf.PI * 6.0f) * decay * decay;
-            shakeOffset.y = wave * revivalShakeStrength;
+            float decay = Mathf.Pow(1.0f - t, 2.5f);
+            float waveY = (Mathf.Sin(t * Mathf.PI * 36.0f) + Mathf.Sin(t * Mathf.PI * 72.0f) * 0.4f) * decay * revivalShakeStrength;
+            float waveX = (Mathf.Cos(t * Mathf.PI * 30.0f) + Mathf.Sin(t * Mathf.PI * 60.0f) * 0.4f) * decay * (revivalShakeStrength * 0.8f);
+            shakeOffset.x = waveX;
+            shakeOffset.y = waveY;
         })
         .SetEase(Ease.Linear)
         .OnComplete(() =>
@@ -301,13 +313,16 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             if (null != shieldGhostSlider && true == useShield)
                 shieldGhostSlider.gameObject.SetActive(true);
 
-            if (null != motionPlayer)
+            if (null != motionPlayer && false == isSpecialRecovering)
                 motionPlayer.Play("Show", bReset: true);
         }
     }
 
     public void UpdateValues(float _hpRatio, float _shieldRatio)
     {
+        if (Time.frameCount == lastRevivalFrame)
+            return;
+
         if (true == isSpecialRecovering)
         {
             if (_hpRatio < currentHpValue)

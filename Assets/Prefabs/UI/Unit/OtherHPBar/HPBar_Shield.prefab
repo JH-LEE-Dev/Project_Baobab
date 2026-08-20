@@ -1443,7 +1443,7 @@ MonoBehaviour:
   diamondHpBarSprite: {fileID: 21300000, guid: 00d636e12e0146b4d916abb22ac22403, type: 3}
   rainbowHpBarSprite: {fileID: 21300000, guid: 9c865741a16f0694cbe10178fd205a15, type: 3}
   hpFillImage: {fileID: 21211301574859493}
-  revivalDuration: 0.15
+  revivalDuration: 0.35
   revivalEase: 6
-  revivalShakeDuration: 0.15
-  revivalShakeStrength: 6
+  revivalShakeDuration: 1
+  revivalShakeStrength: 0.18

@@ -219,6 +219,9 @@ public class UIView_Unit : UIView
             if (_owner is ITreeObj _treeObj)
                 _bar.SetGradeByGemStage(_treeObj.gemStage);
 
+            if (Time.frameCount == _bar.LastRevivalFrame)
+                return;
+
             UpdateHPBarState(_bar, _health, _bDead, _tf, _yOffset);
         }
         else
