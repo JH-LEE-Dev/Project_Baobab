@@ -120,7 +120,7 @@ MonoBehaviour:
   angleJitter: 0.4
   beamBlur: 0.35
   minBeamWidth: 0.04
-  maxBeamWidth: 0.5
+  maxBeamWidth: 0.35
   overrideColors: 0
   coreColor: {r: 3.5, g: 3.2, b: 2, a: 1}
   beamColor: {r: 2.5, g: 1.8, b: 0.3, a: 1}

@@ -92,6 +92,29 @@ public class UIView_Unit : UIView
     {
         if (null == _treeObj)
             return;
+
+        if (false == activeHpBars.TryGetValue(_treeObj, out HUD_ShieldHPBar _bar))
+        {
+            _bar = GetHPBarFromPool();
+            if (null == _bar)
+                return;
+
+            float _maxHp = _treeObj.health.GetMaxHealth();
+            float _prevRatio = 0.0f < _maxHp ? Mathf.Clamp01(_treeObj.health.GetPrevHealth() / _maxHp) : 1.0f;
+            float _maxSp = _treeObj.health.GetMaxSP();
+            float _prevSpRatio = 0.0f < _maxSp ? Mathf.Clamp01(_treeObj.health.GetPrevSP() / _maxSp) : 0.0f;
+            bool _useShield = 0.0f < _maxSp;
+
+            _bar.SetOwner(_treeObj, _prevRatio, _prevSpRatio, _useShield);
+            activeHpBars.Add(_treeObj, _bar);
+        }
+
+        Transform _tf = _treeObj.GetTransform();
+        if (null != _tf)
+        {
+            _bar.Setup(_tf.gameObject, treesYOffset, hpBarShowDuration);
+            _bar.PlayTreeRevivalPresentation(_treeObj.gemStage, 1.0f);
+        }
     }
 
     public void AnimalGetHit(IAnimalObj _animalObj)
@@ -192,7 +215,12 @@ public class UIView_Unit : UIView
             return;
 
         if (true == activeHpBars.TryGetValue(_owner, out HUD_ShieldHPBar _bar))
+        {
+            if (_owner is ITreeObj _treeObj)
+                _bar.SetGradeByGemStage(_treeObj.gemStage);
+
             UpdateHPBarState(_bar, _health, _bDead, _tf, _yOffset);
+        }
         else
         {
             if (true == _bDead)
@@ -209,6 +237,10 @@ public class UIView_Unit : UIView
                 bool _useShield = 0.0f < _maxSp;
 
                 _newBar.SetOwner(_owner, _prevRatio, _prevSpRatio, _useShield);
+
+                if (_owner is ITreeObj _treeObj)
+                    _newBar.SetGradeByGemStage(_treeObj.gemStage);
+
                 activeHpBars.Add(_owner, _newBar);
                 UpdateHPBarState(_newBar, _health, _bDead, _tf, _yOffset);
             }

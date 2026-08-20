@@ -24,6 +24,19 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     [SerializeField] private bool resetDelayOnHit = false;
     [SerializeField] private float shieldFadeDuration = 0.3f;
 
+    [Header("Gem Tree Sprites")]
+    [SerializeField] private Sprite normalHpBarSprite;
+    [SerializeField] private Sprite goldHpBarSprite;
+    [SerializeField] private Sprite diamondHpBarSprite;
+    [SerializeField] private Sprite rainbowHpBarSprite;
+    [SerializeField] private Image hpFillImage;
+
+    [Header("Revival Animation Settings")]
+    [SerializeField] private float revivalDuration = 0.15f;
+    [SerializeField] private Ease revivalEase = Ease.OutCubic;
+    [SerializeField] private float revivalShakeDuration = 0.15f;
+    [SerializeField] private float revivalShakeStrength = 6.0f;
+
     // 내부 의존성
     private object owner;
     private GameObject targetObj;
@@ -43,6 +56,12 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     private bool useShield = false;
     private bool isShieldFadedOut = false;
     private Tween shieldFadeTween;
+
+    private bool isSpecialRecovering = false;
+    private Tween specialRecoveryTween;
+    private Tween specialShakeTween;
+    private Vector3 shakeOffset = Vector3.zero;
+    private int currentGemStage = 0;
 
     public object Owner => owner;
 
@@ -87,6 +106,9 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         isShieldFadedOut = true;
 
         rect = GetComponent<RectTransform>();
+
+        if (null == hpFillImage && null != progressSlider && null != progressSlider.fillRect)
+            hpFillImage = progressSlider.fillRect.GetComponent<Image>();
     }
 
     public void SetOwner(object _owner, float _initialHpRatio = 1.0f, float _initialShieldRatio = 0.0f, bool _useShield = false)
@@ -96,6 +118,21 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
 
         currentHpValue = _initialHpRatio;
         currentShieldValue = _initialShieldRatio;
+
+        if (null != specialRecoveryTween && true == specialRecoveryTween.IsActive())
+        {
+            specialRecoveryTween.Kill();
+            specialRecoveryTween = null;
+        }
+
+        if (null != specialShakeTween && true == specialShakeTween.IsActive())
+        {
+            specialShakeTween.Kill();
+            specialShakeTween = null;
+        }
+
+        shakeOffset = Vector3.zero;
+        isSpecialRecovering = false;
 
         if (null != progressSlider)
             progressSlider.value = _initialHpRatio;
@@ -150,6 +187,100 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         }
     }
 
+    public void SetGradeByGemStage(int _gemStage)
+    {
+        currentGemStage = _gemStage;
+
+        if (null == hpFillImage && null != progressSlider && null != progressSlider.fillRect)
+            hpFillImage = progressSlider.fillRect.GetComponent<Image>();
+
+        if (null == hpFillImage)
+            return;
+
+        switch (_gemStage)
+        {
+            case 1:
+                if (null != goldHpBarSprite)
+                    hpFillImage.sprite = goldHpBarSprite;
+                break;
+            case 2:
+                if (null != diamondHpBarSprite)
+                    hpFillImage.sprite = diamondHpBarSprite;
+                break;
+            case 3:
+                if (null != rainbowHpBarSprite)
+                    hpFillImage.sprite = rainbowHpBarSprite;
+                break;
+            default:
+                if (null != normalHpBarSprite)
+                    hpFillImage.sprite = normalHpBarSprite;
+                break;
+        }
+    }
+
+    public void PlayTreeRevivalPresentation(int _gemStage, float _targetHpRatio = 1.0f)
+    {
+        SetGradeByGemStage(_gemStage);
+
+        if (null != specialRecoveryTween && true == specialRecoveryTween.IsActive())
+        {
+            specialRecoveryTween.Kill();
+            specialRecoveryTween = null;
+        }
+
+        if (null != hpGhostTween && true == hpGhostTween.IsActive())
+        {
+            hpGhostTween.Kill();
+            hpGhostTween = null;
+        }
+
+        currentHpValue = 0.0f;
+        if (null != progressSlider)
+            progressSlider.value = 0.0f;
+
+        if (null != ghostSlider)
+            ghostSlider.value = 0.0f;
+
+        isSpecialRecovering = true;
+        RestartHideTimer();
+
+        float _target = Mathf.Clamp01(_targetHpRatio);
+        specialRecoveryTween = DOVirtual.Float(0.0f, _target, revivalDuration, val =>
+        {
+            currentHpValue = val;
+            if (null != progressSlider)
+                progressSlider.value = val;
+            if (null != ghostSlider)
+                ghostSlider.value = val;
+        })
+        .SetEase(revivalEase)
+        .OnComplete(() =>
+        {
+            isSpecialRecovering = false;
+            specialRecoveryTween = null;
+        });
+
+        if (null != specialShakeTween && true == specialShakeTween.IsActive())
+        {
+            specialShakeTween.Kill();
+            specialShakeTween = null;
+        }
+
+        shakeOffset = Vector3.zero;
+        specialShakeTween = DOVirtual.Float(0.0f, 1.0f, revivalShakeDuration, t =>
+        {
+            float decay = 1.0f - t;
+            float wave = Mathf.Sin(t * Mathf.PI * 6.0f) * decay * decay;
+            shakeOffset.y = wave * revivalShakeStrength;
+        })
+        .SetEase(Ease.Linear)
+        .OnComplete(() =>
+        {
+            shakeOffset = Vector3.zero;
+            specialShakeTween = null;
+        });
+    }
+
     public void Setup(GameObject _target, float _yOffset, float _duration)
     {
         targetObj = _target;
@@ -177,6 +308,23 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
 
     public void UpdateValues(float _hpRatio, float _shieldRatio)
     {
+        if (true == isSpecialRecovering)
+        {
+            if (_hpRatio < currentHpValue)
+            {
+                if (null != specialRecoveryTween && true == specialRecoveryTween.IsActive())
+                {
+                    specialRecoveryTween.Kill();
+                    specialRecoveryTween = null;
+                }
+                isSpecialRecovering = false;
+            }
+            else
+            {
+                return;
+            }
+        }
+
         float _prevHp = currentHpValue;
         float _prevShield = currentShieldValue;
 
@@ -404,6 +552,25 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
 
     public void OnDespawn()
     {
+        if (null != specialRecoveryTween && true == specialRecoveryTween.IsActive())
+        {
+            specialRecoveryTween.Kill();
+            specialRecoveryTween = null;
+        }
+
+        if (null != specialShakeTween && true == specialShakeTween.IsActive())
+        {
+            specialShakeTween.Kill();
+            specialShakeTween = null;
+        }
+
+        shakeOffset = Vector3.zero;
+        isSpecialRecovering = false;
+        currentGemStage = 0;
+
+        if (null != hpFillImage && null != normalHpBarSprite)
+            hpFillImage.sprite = normalHpBarSprite;
+
         if (null != hpGhostTween && true == hpGhostTween.IsActive())
         {
             hpGhostTween.Kill();
@@ -425,6 +592,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         if (null != hideDelayTween && true == hideDelayTween.IsActive())
         {
             hideDelayTween.Kill();
+            hideDelayTween = null;
         }
 
         if (null != shieldCanvasGroup)
@@ -454,6 +622,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
 
         Vector3 _pos = targetObj.transform.position;
         _pos.y += yOffset;
+        _pos += shakeOffset;
 
         rect.position = _pos;
     }
