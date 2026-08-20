@@ -39,6 +39,10 @@ public struct ItemSaveData
 
     // 실시간 상태 (벨트/커터 위 아이템용)
     public float durability;
+
+    // 커터를 통과해 제재목으로 가공된 상태인지. 없으면 로드 시 원목 외형으로 복원된다.
+    // 기존 세이브 파일에는 이 필드가 없어 false(원목)로 읽히는데, 가공 전 상태와 동일하므로 안전하다.
+    public bool bIsTimber;
 }
 
 [Serializable]

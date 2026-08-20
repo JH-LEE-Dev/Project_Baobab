@@ -58,6 +58,11 @@ public class LogItem : Item, IStaticCollidable
 
     private Sprite timberSprite;
 
+    // 커터를 통과해 제재목으로 가공된 상태인지. 세이브/로드로 외형을 복원하는 데 쓴다.
+    // (기존에는 스프라이트만 바꾸고 상태를 남기지 않아, 로드하면 원목 모습으로 되돌아갔다)
+    private bool bIsTimber = false;
+    public bool BIsTimber => bIsTimber;
+
     // 관리용 인덱스
     public int PoolIndex { get; set; } = -1;
     public int UpdateIndex { get; set; } = -1;
@@ -568,6 +573,9 @@ public class LogItem : Item, IStaticCollidable
             spriteRenderer.sortingLayerID = objectsSortingLayerID;
         }
 
+        // 풀 재사용 시 원목 스프라이트로 되돌아가므로 가공 상태도 함께 해제한다.
+        bIsTimber = false;
+
         if (sprite != null && spriteRenderer != null)
             spriteRenderer.sprite = sprite;
 
@@ -594,6 +602,8 @@ public class LogItem : Item, IStaticCollidable
     // (렌더러 색은 ResetItem이 복원해 둔 originalColor = 프리팹의 흰색을 그대로 쓴다)
     public void SetTimberSprite()
     {
+        bIsTimber = true;
+
         if (spriteRenderer != null)
         {
             spriteRenderer.sprite = timberSprite;

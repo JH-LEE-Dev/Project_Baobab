@@ -90,18 +90,26 @@ MonoBehaviour:
   groundStencilTile: {fileID: 11400000, guid: b3ac472f3137a764d884349e72c0fb05, type: 2}
   animatedObjPrefabs: []
   waterAnimatedObjPrefabs: []
+  waterAnimatedOtherTypeObjPrefabs: []
   grassStaticObjPrefabs:
   - {fileID: 5425288766945036917, guid: 3163e8b3171c55f4baad1c47a70d62e6, type: 3}
   - {fileID: 5425288766945036917, guid: 414f16ee9dec383479a0bcb93d814575, type: 3}
   sandStaticObjPrefabs: []
+  shorelineStaticObjPrefabs: []
+  shorelineAnimatedObjPrefabs: []
   bloomDecoHDRIntensity: 2.5
   bloomWaterDecoHDRIntensity: 4
   useWaterTileBloom: 0
   waterTileHDRIntensity: 1
   grassStaticObjDensity: 0.0045
   sandStaticObjDensity: 0.0045
+  shorelineStaticObjDensity: 0.0005
   animatedObjDensity: 0.0025
+  shorelineAnimatedObjDensity: 0.0025
   waterAnimatedObjDensity: 0.1
+  waterAnimatedOtherTypeObjDensity: 0
+  waterAnimatedObjSeaDensity: 0.01
+  waterAnimatedOtherTypeObjSeaDensity: 0
   waterDecoDensity: 0.7
   sandDecoDensity: 0.05
   groundDecoDensity: 0.01
@@ -111,3 +119,5 @@ MonoBehaviour:
   bloomGrassDecoDensity: 0.05
   useBloomWaterDecoDensity: 0
   bloomWaterDecoDensity: 0.8
+  waterHazardStaminaDrainPerSecond: 0
+  treeHeatStaminaDamage: 0

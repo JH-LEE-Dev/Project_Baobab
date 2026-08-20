@@ -73,16 +73,24 @@ MonoBehaviour:
   waterAnimatedObjPrefabs:
   - {fileID: 797919803063131645, guid: 05f484614a5929244adbe17e5b333ed3, type: 3}
   - {fileID: 6049851641271938233, guid: ef096698a58dbb448967cfa3437862a9, type: 3}
+  waterAnimatedOtherTypeObjPrefabs: []
   grassStaticObjPrefabs: []
   sandStaticObjPrefabs: []
+  shorelineStaticObjPrefabs: []
+  shorelineAnimatedObjPrefabs: []
   bloomDecoHDRIntensity: 1
   bloomWaterDecoHDRIntensity: 1
   useWaterTileBloom: 1
   waterTileHDRIntensity: 2.25
   grassStaticObjDensity: 0.0025
   sandStaticObjDensity: 0.0025
+  shorelineStaticObjDensity: 0.0005
   animatedObjDensity: 0.0025
+  shorelineAnimatedObjDensity: 0.0025
   waterAnimatedObjDensity: 0.1
+  waterAnimatedOtherTypeObjDensity: 0
+  waterAnimatedObjSeaDensity: 0.01
+  waterAnimatedOtherTypeObjSeaDensity: 0
   waterDecoDensity: 0
   sandDecoDensity: 0.05
   groundDecoDensity: 0.01
