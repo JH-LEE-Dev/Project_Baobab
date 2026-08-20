@@ -481,6 +481,15 @@ MonoBehaviour:
     maxCnt: 5
   highGradeDropCntMin: 4
   highGradeDropCntMax: 7
+  logStateAuraDatas:
+  - logState: 3
+    auraPrefab: {fileID: 5369747700770951006, guid: f2e753f545c8dd043ad37ef888ef4c3f, type: 3}
+  - logState: 4
+    auraPrefab: {fileID: 3283926341122803745, guid: 6aff2bb5a7a5fb0498f00515f0370f7c, type: 3}
+  - logState: 5
+    auraPrefab: {fileID: 5281492004658125304, guid: 0fce9d92e39f10b479a813a16a055501, type: 3}
+  auraPoolDefaultCapacity: 8
+  auraPoolMaxSize: 64
   enableCulling: 0
   cullingUpdateInterval: 0.05
 --- !u!114 &597610330652353424

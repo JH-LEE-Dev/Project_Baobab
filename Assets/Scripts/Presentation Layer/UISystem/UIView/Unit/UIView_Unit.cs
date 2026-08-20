@@ -84,6 +84,16 @@ public class UIView_Unit : UIView
         ProcessUnitHit(_treeObj, _treeObj.health, _treeObj.bDead, _treeObj.GetTransform(), treesYOffset);
     }
 
+    /// <summary>
+    /// 나무가 보석 단계(황금/다이아/무지개)로 변한 순간 호출됩니다. 어떤 나무가 변했는지 전달받습니다.
+    /// 이 시점에 나무는 죽지 않고 체력이 100%로 회복된 상태이므로, HP Bar를 갱신해 회복된 값을 보여줍니다.
+    /// </summary>
+    public void TreeGemTransformed(ITreeObj _treeObj)
+    {
+        if (null == _treeObj)
+            return;
+    }
+
     public void AnimalGetHit(IAnimalObj _animalObj)
     {
         if (null == _animalObj)

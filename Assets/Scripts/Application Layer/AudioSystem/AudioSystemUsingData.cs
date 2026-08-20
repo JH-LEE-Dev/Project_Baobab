@@ -42,6 +42,7 @@ public enum SoundID
     TreeSmallGrow = -2002985169,
     PitchHit = 2096610066,
     PitchHitMine = -451580312,
+    NiceItem = -600366764,
     TreeHit = -1641742776,
     Prize2 = 1137393812,
     AbilityAppear = -1997766864,

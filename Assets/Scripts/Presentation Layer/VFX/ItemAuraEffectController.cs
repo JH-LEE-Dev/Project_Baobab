@@ -196,6 +196,19 @@ public class ItemAuraEffectController : MonoBehaviour
     }
 
     /// <summary>
+    /// 정렬 레이어를 지정합니다.
+    /// 프리팹 기본값은 "Default" 레이어인데, 이 프로젝트는 Default를 정렬 레이어 목록 맨 뒤에만
+    /// 두고 있어 그대로 두면 다른 오브젝트에 전부 가려집니다. 붙는 대상과 같은 레이어로 맞춰야 합니다.
+    /// </summary>
+    public void SetSortingLayer(int _sortingLayerId)
+    {
+        if (null != targetRenderer)
+        {
+            targetRenderer.sortingLayerID = _sortingLayerId;
+        }
+    }
+
+    /// <summary>
     /// 실시간으로 오오라의 코어, 빔, 외곽 글로우 색상을 변경합니다.
     /// </summary>
     public void SetColors(Color _coreColor, Color _beamColor, Color _outerColor)

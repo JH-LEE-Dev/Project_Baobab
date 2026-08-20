@@ -19,6 +19,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public event Action<CarrotItem> CarrotItemAcquiredEvent;
     public event Action LostAndFoundBoxAcquiredEvent;
     public event Action<TreeObj> TreeGetHitEvent;
+    // 나무가 보석 단계로 변했을 때 발생. InDungeonSystem이 받아 신호로 발행한다.
+    public event Action<TreeObj> TreeGemTransformedEvent;
     public event Action<TreeObj> TreeShieldRecoveringEvent;
     public event Action<bool> NPCPauseRequestedEvent;
     public event Action FlyingItemPauseRequestedEvent;
@@ -1220,10 +1222,16 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // (실제로 죽는 것이 아니므로 드랍/킬 처리는 일어나지 않는다).
     private void OnTreeGemTransformed(TreeObj _treeObj)
     {
-        if (inDungeonVFXManager == null || _treeObj == null) return;
+        if (_treeObj == null) return;
 
-        inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
-        inDungeonVFXManager.PlayTreeTransformVFX(_treeObj.treeVisualComponent);
+        if (inDungeonVFXManager != null)
+        {
+            inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
+            inDungeonVFXManager.PlayTreeTransformVFX(_treeObj.treeVisualComponent);
+        }
+
+        // VFX 유무와 무관하게 외부(UI 등)에 어떤 나무가 변했는지 알린다.
+        TreeGemTransformedEvent?.Invoke(_treeObj);
     }
 
     private void OnReleaseTree(TreeObj _tree)

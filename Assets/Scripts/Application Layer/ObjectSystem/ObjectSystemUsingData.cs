@@ -80,6 +80,17 @@ public struct LogDropCntData
     public int maxCnt;
 }
 
+/// <summary>
+/// 보석 등급 원목이 드랍될 때 붙일 아우라 프리셋 매핑.
+/// 등급별로 색·스케일·프리즘 설정이 다른 프리팹을 그대로 쓴다.
+/// </summary>
+[Serializable]
+public struct LogStateAuraData
+{
+    public LogState logState;
+    public ItemAuraEffectController auraPrefab;
+}
+
 public enum LootType
 {
     None,
