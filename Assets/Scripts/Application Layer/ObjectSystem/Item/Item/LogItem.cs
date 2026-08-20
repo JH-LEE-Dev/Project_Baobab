@@ -137,7 +137,7 @@ public class LogItem : Item, IStaticCollidable
     private ILogItemAuraProvider auraProvider;
     private ItemAuraEffectController gemAura;
 
-    private string objectSortingLayerName = "Objects";
+    //private string objectSortingLayerName = "Objects";
 
     public void Initialize(LogItemTypeData _logItemTypeData, Color _color, LogState _logState, ICharacter _character, bool _bDisableCustomSortable = false)
     {
@@ -229,6 +229,55 @@ public class LogItem : Item, IStaticCollidable
     public void SetAuraProvider(ILogItemAuraProvider _auraProvider)
     {
         auraProvider = _auraProvider;
+    }
+
+    /// <summary>
+    /// Fascinating 등급 이상 원목의 반짝임 파티클을 재생한다.
+    /// 던전 착지뿐 아니라 마을 벨트에 안착했을 때(제재목 포함)도 같은 이펙트를 쓴다.
+    /// </summary>
+    /// <summary>
+    /// 외부(벨트 등)에서 원목을 직접 배치했을 때 반짝임을 붙인다.
+    /// 벨트는 Launch/Transfer를 쓰지 않고 위치만 옮기므로, 자동 재생 지점을 타지 않는다.
+    /// </summary>
+    public void PlayGemShiny()
+    {
+        PlayShinyEffect();
+    }
+
+    private void PlayShinyEffect()
+    {
+        if (vfxComponent == null || logState <= LogState.Normal) return;
+
+        // 이전 재생분이 남아 있으면 정리하고 새로 붙인다(전송 -> 안착 경로에서 중복 부착 방지).
+        if (particleEffect != null)
+        {
+            vfxComponent.Stop(particleEffect, false);
+            particleEffect = null;
+        }
+
+        particleEffect = vfxComponent.Play("Shiny", transform.position, transform.rotation, transform);
+        if (particleEffect == null) return;
+
+        particleEffect.transform.localScale = Vector3.one;
+        SyncParticleSorting();
+    }
+
+    /// <summary>
+    /// 반짝임 파티클을 원목 본체 바로 앞에 그린다.
+    /// 레이어를 "Objects"로 고정하지 않고 본체를 따라가게 해야, 벨트/컨테이너로 옮겨지며
+    /// FlyingItem 레이어로 전환됐을 때도 파티클이 함께 따라간다.
+    /// </summary>
+    private void SyncParticleSorting()
+    {
+        if (vfxComponent == null || particleEffect == null || spriteRenderer == null) return;
+
+        if (!particleEffect.transform.IsChildOf(transform))
+        {
+            particleEffect = null;
+            return;
+        }
+
+        vfxComponent.SetSortingSettings(particleEffect, spriteRenderer.sortingLayerName, spriteRenderer.sortingOrder + 1);
     }
 
     /// <summary>
@@ -584,17 +633,7 @@ public class LogItem : Item, IStaticCollidable
 
         SyncGemAura();
 
-        if (particleEffect != null)
-        {
-            if (particleEffect.transform.IsChildOf(transform))
-            {
-                vfxComponent.SetSortingSettings(particleEffect, objectSortingLayerName, spriteRenderer.sortingOrder + 1);
-            }
-            else
-            {
-                particleEffect = null;
-            }
-        }
+        SyncParticleSorting();
     }
 
     public void UpdateSortingOrder()
@@ -607,6 +646,7 @@ public class LogItem : Item, IStaticCollidable
         }
 
         SyncGemAura();
+        SyncParticleSorting();
     }
 
     private void UpdateLaunching(float _deltaTime)
@@ -813,11 +853,9 @@ public class LogItem : Item, IStaticCollidable
 
             state = ItemMoveState.Dropped;
             SetShaderFloating(true);
-            
-            if (vfxComponent != null && particleEffect != null)
-            {
-                vfxComponent.Stop(particleEffect, false);
-            }
+
+            // 벨트/컨테이너에 안착했을 때도 보석 등급이면 반짝임을 붙인다(제재목 포함).
+            PlayShinyEffect();
         }
     }
 
@@ -887,11 +925,9 @@ public class LogItem : Item, IStaticCollidable
 
             state = ItemMoveState.Dropped;
             SetShaderFloating(true);
-            
-            if (vfxComponent != null && particleEffect != null)
-            {
-                vfxComponent.Stop(particleEffect, false);
-            }
+
+            // 벨트/컨테이너에 안착했을 때도 보석 등급이면 반짝임을 붙인다(제재목 포함).
+            PlayShinyEffect();
         }
     }
 
@@ -974,11 +1010,9 @@ public class LogItem : Item, IStaticCollidable
 
             state = ItemMoveState.Dropped;
             SetShaderFloating(true);
-            
-            if (vfxComponent != null && particleEffect != null)
-            {
-                vfxComponent.Stop(particleEffect, false);
-            }
+
+            // 벨트/컨테이너에 안착했을 때도 보석 등급이면 반짝임을 붙인다(제재목 포함).
+            PlayShinyEffect();
         }
     }
 

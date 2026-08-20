@@ -366,6 +366,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         // 이 타격이 보석 전환을 일으키면 DecreaseHealth 안에서 currentGemStage가 먼저 올라간다.
         // 타격음은 "맞는 순간 보석이었는지"로 갈라져야 하므로 전환 전 상태를 미리 기억해 둔다.
         bool wasGemBeforeHit = bIsGemStage;
+        int gemStageBeforeHit = currentGemStage;
 
         // 별표식 베기 - 별 표식을 가진 나무에게 배율 적용
         if (bStarMarked)
@@ -381,7 +382,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             treeVisualComponent.PlayHitFlash();
         }
 
-        PlayHitSound(wasGemBeforeHit);
+        PlayHitSound(wasGemBeforeHit, gemStageBeforeHit);
 
         TreeGetHitEvent?.Invoke(this);
 
@@ -400,20 +401,44 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     // 도끼 타격음. 나무가 많이 닳을수록(HP가 낮을수록) Tree_Hit은 피치가 1.0 -> 1.3으로,
     // Pitch_Hit은 피치가 1.0 -> 1.6, 볼륨도 함께 1.0 -> 1.4로 올라가 타격감이 누적되는 느낌을 준다.
     //
-    // 보석 나무는 Pitch_Hit 자리에만 전용 사운드(Pitch_Hit_Mine)를 대신 재생한다.
-    // 피치/볼륨 계산과 함께 울리는 Tree_Hit은 일반 나무와 완전히 동일하게 유지한다.
-    private void PlayHitSound(bool _bGemTree)
+    // 보석 나무는 Pitch_Hit 자리에 전용 사운드(Pitch_Hit_Mine)를 대신 재생하며,
+    // 보석 단계에 따라 피치 범위가 1.0~2.0 구간으로 나뉘어 누적 상승한다 (1: 황금 1~1.33, 2: 다이아 1.33~1.66, 3: 프리즘 1.66~2.0).
+    // 피치/볼륨 계산과 함께 울리는 Tree_Hit은 일반 나무와 동일하게 유지한다.
+    private void PlayHitSound(bool _bGemTree, int _gemStage)
     {
         float maxHealth = health.GetMaxHealth();
         float damageRatio = maxHealth > 0f ? Mathf.Clamp01(1f - health.GetCurrentHealth() / maxHealth) : 0f;
         float treeHitPitch = Mathf.Lerp(1.0f, 1.3f, damageRatio);
-        float pitchHitPitch = Mathf.Lerp(1.0f, 1.6f, damageRatio);
         float pitchHitVolume = Mathf.Lerp(1.0f, 1.4f, damageRatio);
 
         Sound.Play(SoundID.TreeHit, cachedTransform.position, 1f, true, treeHitPitch);
 
-        SoundID pitchHitSound = _bGemTree ? SoundID.PitchHitMine : SoundID.PitchHit;
-        Sound.Play(pitchHitSound, cachedTransform.position, pitchHitVolume, true, pitchHitPitch);
+        if (true == _bGemTree)
+        {
+            float gemPitch;
+            switch (_gemStage)
+            {
+                case 1: // 황금 (Gold / Fascinating)
+                    gemPitch = Mathf.Lerp(1.0f, 1.33f, damageRatio);
+                    break;
+                case 2: // 다이아 (Diamond / Advanced)
+                    gemPitch = Mathf.Lerp(1.33f, 1.66f, damageRatio);
+                    break;
+                case 3: // 프리즘 (Rainbow / Perfect)
+                    gemPitch = Mathf.Lerp(1.66f, 2.0f, damageRatio);
+                    break;
+                default:
+                    gemPitch = Mathf.Lerp(1.0f, 2.0f, damageRatio);
+                    break;
+            }
+
+            Sound.Play(SoundID.PitchHitMine, cachedTransform.position, pitchHitVolume, true, gemPitch);
+        }
+        else
+        {
+            float pitchHitPitch = Mathf.Lerp(1.0f, 1.6f, damageRatio);
+            Sound.Play(SoundID.PitchHit, cachedTransform.position, pitchHitVolume, true, pitchHitPitch);
+        }
     }
 
     private void TryStartHeatTimer()

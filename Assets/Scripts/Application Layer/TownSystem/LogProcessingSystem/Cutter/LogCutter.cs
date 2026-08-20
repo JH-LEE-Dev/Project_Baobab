@@ -467,6 +467,29 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         return effectColor;
     }
 
+    // 역방향(날이 되돌아오는) 구간의 최대 지속 시간(초). 가공 시간이 길어져도 복귀는 이 시간을 넘지 않는다.
+    private const float MAX_REVERSE_DURATION = 1f;
+
+    // 기존 정:역 비율(2:1)
+    private const float DEFAULT_FORWARD_RATIO = 2f / 3f;
+
+    /// <summary>
+    /// 전체 가공 시간 중 정방향(날이 내려가며 자르는) 구간이 차지하는 비율.
+    /// 역방향 구간은 최대 MAX_REVERSE_DURATION초로 제한하고, 남는 시간은 전부 정방향에 배분한다.
+    /// 가공 시간이 짧아 기존 비율(1/3)이 이미 1초보다 짧으면 기존 비율을 그대로 유지한다.
+    /// </summary>
+    private float GetForwardPhaseRatio()
+    {
+        float speed = GetCurrentSpeed();
+        if (speed <= 0f || maxDurability <= 0f) return DEFAULT_FORWARD_RATIO;
+
+        float totalTime = maxDurability / speed;
+        if (totalTime <= 0f) return DEFAULT_FORWARD_RATIO;
+
+        float reverseTime = Mathf.Min(MAX_REVERSE_DURATION, totalTime * (1f - DEFAULT_FORWARD_RATIO));
+        return Mathf.Clamp(1f - (reverseTime / totalTime), 0.01f, 0.99f);
+    }
+
     private void UpdateAnimation(float _deltaTime)
     {
         if (cuttingAnimationSprites == null || cuttingAnimationSprites.Count == 0 || visualSpriteRenderer == null) return;
@@ -477,16 +500,19 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         {
             if (maxDurability > 0f)
             {
-                // durability와 관계없이 항상 가공 진행률에 맞춰 2:1 비율로 정/역방향 왕복 1회로 딱 맞춰 재생
+                // durability와 관계없이 항상 가공 진행률에 맞춰 정/역방향 왕복 1회로 딱 맞춰 재생.
+                // 단, 역방향(날 복귀) 구간은 최대 1초를 넘지 않고 남는 시간은 전부 정방향에 쓴다.
                 float progress = 1f - (cuttingItem.durability / maxDurability);
-                if (progress < (2f / 3f))
+                float forwardRatio = GetForwardPhaseRatio();
+
+                if (progress < forwardRatio)
                 {
-                    animProgress = progress * 1.5f;
+                    animProgress = progress / forwardRatio;
                     isReversing = false;
                 }
                 else
                 {
-                    animProgress = (1f - progress) * 3f;
+                    animProgress = (1f - progress) / (1f - forwardRatio);
                     isReversing = true;
                 }
             }

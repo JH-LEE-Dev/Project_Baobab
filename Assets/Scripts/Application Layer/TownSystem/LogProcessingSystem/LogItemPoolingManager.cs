@@ -10,11 +10,21 @@ public class LogItemPoolingManager : MonoBehaviour
     // 내부 의존성
     private IObjectPool<LogItem> logPool;
 
+    // 보석 등급 원목의 반짝임 파티클용. 같은 오브젝트의 VFXComponent를 쓴다(LogItemController와 동일 패턴).
+    // 없으면 null로 두고, 그 경우 원목은 파티클 없이 동작한다.
+    private VFXComponent vfxComponent;
+
     private bool bDisableCustomSortable = false;
 
     public void Initialize(bool _bDisableCustomSortable)
     {
         bDisableCustomSortable = _bDisableCustomSortable;
+
+        vfxComponent = GetComponent<VFXComponent>();
+        if (vfxComponent != null)
+        {
+            vfxComponent.Initialize();
+        }
 
         logPool = new ObjectPool<LogItem>(
             createFunc: CreateLogItem,
@@ -71,6 +81,7 @@ public class LogItemPoolingManager : MonoBehaviour
     {
         LogItem newItem = Instantiate(logItemPrefab, transform);
         newItem.IsDropItem(false);
+        newItem.SetVfxComponent(vfxComponent);
 
         return newItem;
     }

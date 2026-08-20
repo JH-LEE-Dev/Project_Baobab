@@ -871,6 +871,27 @@ MonoBehaviour:
     allowDynamicExpansion: 1
     maxPoolSize: 500
     uiParticleScale: 0
+--- !u!114 &8412903755061238470
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4086116617705099080}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 0
+  initializeOnAwake: 1
+  vfxPoolDataList:
+  - vfxTag: Shiny
+    effectPrefab: {fileID: 2164660391435094963, guid: f9a4dc6ca35113949aeb0810ad1e7927, type: 3}
+    initialPoolSize: 30
+    allowDynamicExpansion: 1
+    maxPoolSize: 200
+    uiParticleScale: 0
 --- !u!1 &3535782070355411120
 GameObject:
   m_ObjectHideFlags: 0
@@ -1319,6 +1340,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6764680450463960115}
   - component: {fileID: 1504211104636049429}
+  - component: {fileID: 8412903755061238470}
   m_Layer: 0
   m_Name: LogItemPoolingManager
   m_TagString: Untagged

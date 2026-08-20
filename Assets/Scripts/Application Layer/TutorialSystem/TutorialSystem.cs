@@ -27,6 +27,11 @@ public class TutorialSystem
     // 인벤토리가 비는 것만으로는 "컨테이너에 넣어서 비운 것"인지 구분할 수 없어(버리기 등) 함께 확인한다.
     private bool bContainerTransferStarted;
 
+    // FillOffroadContainer 스텝 동안 OffroadContainer에 이관된 아이템 누적 개수.
+    // 이 값이 아래 기준치(RequiredItemsForFillOffroadContainer)에 도달하면 해당 단계가 완료된다.
+    private int itemsTransferredToOffroadContainer;
+    private const int RequiredItemsForFillOffroadContainer = 2;
+
     // UpgradeAxe 완료 ~ 마지막 스텝(StartNewLogging) 시작 사이에 이미 마을 차량에 탑승했는지.
     // 차량 잠금은 UpgradeAxe 완료 즉시 풀리는 반면 마지막 스텝은 안내 UI 퇴장 연출이 끝나야 시작되므로,
     // 그 빈틈에 들어온 탑승을 놓치지 않기 위해 기억해둔다.
@@ -167,30 +172,31 @@ public class TutorialSystem
     // 이 시점엔 인벤토리가 아직 비어 있지 않으므로, 여기서 완료를 판정하면 영원히 완료되지 않는다.
     private void ItemTransferredToOffroadContainer(InventoryItemTransferToOffroadContainerSignal _signal)
     {
-        if (CanProcessTutorialLogic() == false)
+        if (false == CanProcessTutorialLogic())
             return;
 
-        if (bStepActive == false || currentStep != TutorialStep.FillOffroadContainer)
+        if (false == bStepActive || TutorialStep.FillOffroadContainer != currentStep)
             return;
 
         bContainerTransferStarted = true;
     }
 
     // 실제 완료 판정 지점. 아이템이 인벤토리에서 빠져나간 직후에 발행되는 신호라
-    // 여기서 확인해야 마지막 원목까지 넣은 상태를 정확히 잡아낼 수 있다.
+    // 여기서 이관 수량을 누적 확인해야 정확히 잡아낼 수 있다.
     private void ItemRemovedFromInventory(ItemRemovedFromInventorySignal _signal)
     {
-        if (CanProcessTutorialLogic() == false)
+        if (false == CanProcessTutorialLogic())
             return;
 
-        if (bStepActive == false || currentStep != TutorialStep.FillOffroadContainer)
+        if (false == bStepActive || TutorialStep.FillOffroadContainer != currentStep)
             return;
 
-        // 컨테이너에 한 번도 넣지 않았는데 인벤토리가 빈 경우(아이템 유실 등)는 완료로 치지 않는다.
-        if (bContainerTransferStarted == false)
+        // 컨테이너에 한 번도 넣지 않았는데 인벤토리가 빈 경우(아이템 유실 등)는 카운트하지 않는다.
+        if (false == bContainerTransferStarted)
             return;
 
-        if (characterInventory.currentItemCount > 0)
+        itemsTransferredToOffroadContainer++;
+        if (itemsTransferredToOffroadContainer < RequiredItemsForFillOffroadContainer)
             return;
 
         CompleteStep();

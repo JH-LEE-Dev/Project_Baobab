@@ -1333,15 +1333,17 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void OnTreeHit(TreeObj _treeObj)
     {
-        inDungeonVFXManager.PlayTreeHitVFX(_treeObj.treeVisualComponent);
-
-        // 보석 단계 나무는 전용 임팩트 이펙트를 함께 터뜨린다.
-        if (_treeObj.bIsGemStage)
+        // 보석 단계 나무는 전용 임팩트 이펙트만 단독 재생하고, 일반 나무는 기본 피격 이펙트를 재생한다.
+        if (true == _treeObj.bIsGemStage)
         {
             inDungeonVFXManager.PlayTreeGemHitVFX(_treeObj.treeVisualComponent, _treeObj.gemStage);
         }
+        else
+        {
+            inDungeonVFXManager.PlayTreeHitVFX(_treeObj.treeVisualComponent);
+        }
 
-        if (currentTreeGenerationStrategy != null)
+        if (null != currentTreeGenerationStrategy)
         {
             currentTreeGenerationStrategy.OnTreeGetHit(this, _treeObj);
         }

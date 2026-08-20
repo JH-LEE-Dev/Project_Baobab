@@ -458,7 +458,7 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 보석 단계 나무를 때렸을 때의 전용 임팩트 VFX를 재생합니다. 일반 피격 VFX와 함께 터집니다.
+    /// 보석 단계 나무를 때렸을 때의 전용 임팩트 VFX를 재생합니다. 일반 피격 VFX 대신 단독으로 터집니다.
     ///
     /// 정렬: 나무의 모든 렌더러 중 가장 앞에 그려지는 하이라이트보다 한 단계 더 앞에 둡니다.
     /// 나무 렌더러들은 body -> outline -> shield -> highlight 순으로 order가 쌓이므로,

@@ -35,6 +35,11 @@ public class LogInBelt : MonoBehaviour
         }
     }
 
+    // 벨트 위 원목의 정렬 높이. 원목은 벨트 타일 원점보다 위(벨트 상판)에 얹혀 보이므로, 정렬 기준이 되는
+    // 지면 Y를 이 값만큼 내려줘야 자기가 올라탄 벨트 타일보다 앞에 그려진다. 이 보정이 빠지면 원목이
+    // 레일에 가려진다. LogIn(신규 투입)과 LoadSaveData(세이브 복원) 두 경로가 반드시 같은 값을 써야 한다.
+    private const float LogOnBeltSortHeight = 0.425f;
+
     // 외부 의존성
     [SerializeField] private List<Transform> checkPoints = new List<Transform>(5);
     [SerializeField] private float beltSpeed = 0.1f;
@@ -138,7 +143,7 @@ public class LogInBelt : MonoBehaviour
 
         Sound.Play(SoundID.ConvayerPut, checkPoints[0].position, GetSoundVolume());
 
-        _item.SetHeight(0.425f);
+        _item.SetHeight(LogOnBeltSortHeight);
         // 아이템을 첫 번째 체크포인트 위치로 즉시 이동
         _item.transform.position = checkPoints[0].position;
 
@@ -151,6 +156,9 @@ public class LogInBelt : MonoBehaviour
         // 다음 목표 인덱스 설정 (체크포인트가 1개보다 많으면 1번부터, 아니면 0번 도달 처리 대기)
         int nextTarget = checkPoints.Count > 1 ? 1 : 0;
         activeItems.Add(new BeltItem(_item, nextTarget));
+
+        // 보석 등급이면 벨트 위에서도 반짝임을 붙인다(제재목 포함).
+        _item.PlayGemShiny();
 
         StartBelt();
     }
@@ -449,10 +457,12 @@ public class LogInBelt : MonoBehaviour
                 LogItem newItem = _poolingManager.GetLogItem(data);
                 if (newItem != null)
                 {
+                    newItem.SetHeight(LogOnBeltSortHeight);
                     newItem.transform.position = itemData.position;
                     newItem.durability = itemData.itemData.durability;
                     newItem.UpdateSortingOrder();
                     activeItems.Add(new BeltItem(newItem, itemData.targetIndex));
+                    newItem.PlayGemShiny();
                 }
             }
         }
@@ -474,6 +484,7 @@ public class LogInBelt : MonoBehaviour
                 LogItem newItem = _poolingManager.GetLogItem(data);
                 if (newItem != null)
                 {
+                    newItem.SetHeight(LogOnBeltSortHeight);
                     newItem.transform.position = dItemData.position;
                     newItem.durability = dItemData.itemData.durability;
                     newItem.UpdateSortingOrder();
