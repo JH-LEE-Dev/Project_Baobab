@@ -58,8 +58,6 @@ public class UI_EscapeMenu : MonoBehaviour
     private Action cachedRefreshLocalizedTexts;
     private Action cachedConfirmExit;
     private Action cachedConfirmMainMenu;
-    private Action cachedOnMainMenuCloseProductionCompleted;
-    private Action cachedOnExitCloseProductionCompleted;
     private Action cachedCancelWarningAndRestoreMenu;
 
     private Action onResumeCallback;
@@ -114,8 +112,6 @@ public class UI_EscapeMenu : MonoBehaviour
 
         cachedConfirmExit = null;
         cachedConfirmMainMenu = null;
-        cachedOnMainMenuCloseProductionCompleted = null;
-        cachedOnExitCloseProductionCompleted = null;
         cachedCancelWarningAndRestoreMenu = null;
     }
 
@@ -146,8 +142,6 @@ public class UI_EscapeMenu : MonoBehaviour
 
         cachedConfirmExit = ConfirmExit;
         cachedConfirmMainMenu = ConfirmMainMenu;
-        cachedOnMainMenuCloseProductionCompleted = OnMainMenuCloseProductionCompleted;
-        cachedOnExitCloseProductionCompleted = OnExitCloseProductionCompleted;
         cachedCancelWarningAndRestoreMenu = CancelWarningAndRestoreMenu;
 
         if (null != resumeButton) resumeButton.Initialize(OnResumeButtonClicked);
@@ -376,7 +370,7 @@ public class UI_EscapeMenu : MonoBehaviour
         for (int i = 0; i < _rects.Length; i++)
         {
             RectTransform _rect = _rects[i];
-            if (_rect == bgRoot || false == _rect.name.StartsWith("BG_", StringComparison.Ordinal))
+            if (bgRoot == _rect || false == _rect.name.StartsWith("BG_", StringComparison.Ordinal))
                 continue;
 
             Graphic _graphic = _rect.GetComponent<Graphic>();
@@ -731,7 +725,15 @@ public class UI_EscapeMenu : MonoBehaviour
 
         if (null != warningPopup && null != localizationManager)
         {
-            PlayCloseProduction(cachedOnMainMenuCloseProductionCompleted);
+            PlayCloseProduction(null);
+            string _warningMsg = localizationManager.GetText(mainMenuWarningKey);
+            warningPopup.ShowWarning(
+                _warningMsg,
+                cachedConfirmMainMenu,
+                cachedCancelWarningAndRestoreMenu,
+                SoundID.ResultUIOpen,
+                SoundID.ResultUIClose,
+                SoundID.ResultUIHover);
         }
         else
         {
@@ -745,33 +747,7 @@ public class UI_EscapeMenu : MonoBehaviour
 
         if (null != warningPopup && null != localizationManager)
         {
-            PlayCloseProduction(cachedOnExitCloseProductionCompleted);
-        }
-        else
-        {
-            ConfirmExit();
-        }
-    }
-
-    private void OnMainMenuCloseProductionCompleted()
-    {
-        if (null != warningPopup && null != localizationManager)
-        {
-            string _warningMsg = localizationManager.GetText(mainMenuWarningKey);
-            warningPopup.ShowWarning(
-                _warningMsg,
-                cachedConfirmMainMenu,
-                cachedCancelWarningAndRestoreMenu,
-                SoundID.ResultUIOpen,
-                SoundID.ResultUIClose,
-                SoundID.ResultUIHover);
-        }
-    }
-
-    private void OnExitCloseProductionCompleted()
-    {
-        if (null != warningPopup && null != localizationManager)
-        {
+            PlayCloseProduction(null);
             string _warningMsg = localizationManager.GetText(exitWarningKey);
             warningPopup.ShowWarning(
                 _warningMsg,
@@ -780,6 +756,10 @@ public class UI_EscapeMenu : MonoBehaviour
                 SoundID.ResultUIOpen,
                 SoundID.ResultUIClose,
                 SoundID.ResultUIHover);
+        }
+        else
+        {
+            ConfirmExit();
         }
     }
 

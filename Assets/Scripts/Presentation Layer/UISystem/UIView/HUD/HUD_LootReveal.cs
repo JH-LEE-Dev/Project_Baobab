@@ -99,7 +99,7 @@ public class HUD_LootReveal : MonoBehaviour
 
     // ─── Timing ───────────────────────────────────────────────────────────────
     [Header("── Timing ───────────────────────────────────────────────────────")]
-    [SerializeField] private float pillarStartDelay = 0.1f; // BG 조립 후 기둥 딜레이
+    [SerializeField] private float pillarStartDelay = 0f;   // BG 조립 후 기둥 딜레이 (0초 시 즉시 실행)
     [SerializeField] private float lootStartDelay = 0.1f;   // 기둥 안착 후 아이템 딜레이
     [SerializeField] private float textStartDelay = 0.05f;  // 아이템 등장 후 텍스트 딜레이
 
@@ -115,7 +115,7 @@ public class HUD_LootReveal : MonoBehaviour
     private TweenCallback cachedOnHideFadeComplete;
     private TweenCallback cachedOnGridRevealUpdate;
 
-    private WaitForSeconds cachedWait01f;
+    private WaitForSeconds cachedHalfGridRevealDelay;
     private WaitForSeconds cachedPillarDelay;
     private WaitForSeconds cachedLootDelay;
     private WaitForSeconds cachedTextDelay;
@@ -154,8 +154,15 @@ public class HUD_LootReveal : MonoBehaviour
         cachedOnHideFadeComplete = OnHideFadeComplete;
         cachedOnGridRevealUpdate = OnGridRevealUpdate;
 
-        cachedWait01f = new WaitForSeconds(0.1f);
-        cachedPillarDelay = new WaitForSeconds(pillarStartDelay);
+        if (0f < bgRevealDuration)
+        {
+            cachedHalfGridRevealDelay = new WaitForSeconds(bgRevealDuration * 0.5f);
+        }
+
+        if (0f < pillarStartDelay)
+        {
+            cachedPillarDelay = new WaitForSeconds(pillarStartDelay);
+        }
         cachedLootDelay = new WaitForSeconds(lootStartDelay);
         cachedTextDelay = new WaitForSeconds(textStartDelay);
         cachedDescSlideDelay = new WaitForSeconds(descSlideDelay);
@@ -375,39 +382,45 @@ public class HUD_LootReveal : MonoBehaviour
             rootCanvasGroup.DOFade(1f, 0.2f);
         }
 
-        yield return cachedWait01f;
+        StartGridReveal();
 
-        yield return StartCoroutine(PlayGridReveal());
+        if (null != cachedHalfGridRevealDelay)
+        {
+            yield return cachedHalfGridRevealDelay;
+        }
 
-        yield return cachedPillarDelay;
+        if (0f < pillarStartDelay && null != cachedPillarDelay)
+        {
+            yield return cachedPillarDelay;
+        }
 
+        // 기둥 상승과 텍스트 슬라이드를 동시에 시작
+        StartCoroutine(PlayTextSlide());
         yield return StartCoroutine(PlayPillarReveal());
 
-        yield return cachedLootDelay;
+        if (0f < lootStartDelay && null != cachedLootDelay)
+        {
+            yield return cachedLootDelay;
+        }
 
         PlayVFX();
         yield return StartCoroutine(PlayLootPop());
 
-        yield return cachedTextDelay;
-
-        yield return StartCoroutine(PlayTextSlide());
-
         OnRevealCompleted?.Invoke();
     }
 
-    private IEnumerator PlayGridReveal()
+    private void StartGridReveal()
     {
         if (null == bgDissolveImage || null == runtimeDissolveMat)
-            yield break;
+            return;
 
         runtimeDissolveMat.DOKill();
         runtimeDissolveMat.SetFloat("_DissolveAmount", 0f);
         
-        yield return runtimeDissolveMat.DOFloat(1f, "_DissolveAmount", bgRevealDuration)
+        runtimeDissolveMat.DOFloat(1f, "_DissolveAmount", bgRevealDuration)
             .SetEase(bgRevealEase)
             .SetUpdate(true) 
-            .OnUpdate(cachedOnGridRevealUpdate)
-            .WaitForCompletion();
+            .OnUpdate(cachedOnGridRevealUpdate);
     }
 
     private void OnGridRevealUpdate()

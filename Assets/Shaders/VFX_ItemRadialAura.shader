@@ -267,12 +267,12 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                     }
                     float currentRayAngle = initialAngle + rotDelta;
 
-                    // 픽셀 각도와의 최단 각도 거리 ([-PI, PI] 연속 계산)
-                    float angleDiff = fmod(pixelAngle - currentRayAngle + 3.0 * PI, TWO_PI) - PI;
+                    // 픽셀 각도와의 최단 각도 거리 (360도 연속 회전 및 음수 래핑 완벽 보장)
+                    float angleDiff = atan2(sin(pixelAngle - currentRayAngle), cos(pixelAngle - currentRayAngle));
                     float absAngleDiff = abs(angleDiff);
 
-                    // 동적 도달 거리 (버스트 초반에 픽셀이 뻗어나감)
-                    float baseReach = lerp(0.85, 1.2, hReach) * _OuterRadius;
+                    // 동적 도달 거리 (버스트 초반에 픽셀이 뻗어나감, 쿼드 밖 사각 잘림 방지를 위해 0.46 이내로 클램프)
+                    float baseReach = min(0.46, lerp(0.85, 1.15, hReach) * _OuterRadius);
                     float currentReach = baseReach * globalReachMultiplier;
                     float innerReach = currentReach * saturate(1.0 - _RadialSoftness);
 
@@ -388,13 +388,9 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
 
                 float coreGlow = coreFactor * coreLife;
 
-                // 8. 쿼드 외곽 가장자리 페이드
-                float edgeDistX = min(input.uv.x, 1.0 - input.uv.x);
-                float edgeDistY = min(input.uv.y, 1.0 - input.uv.y);
-                float quadEdgeFade = saturate(min(edgeDistX, edgeDistY) / max(0.001, _EdgeSoftness));
-                quadEdgeFade = smoothstep(0.0, 1.0, quadEdgeFade);
-
-                totalAura *= quadEdgeFade;
+                // 8. 쿼드 외곽 원형 페이드 (360도 회전 시 사각형 경계 깎임 방지를 위해 완벽한 원형으로 감쇄)
+                float circularEdgeFade = smoothstep(0.48, 0.40, radius);
+                totalAura *= circularEdgeFade;
 
                 // 9. HDR 컬러 합성 + Bloom 배율 증폭
                 half3 beamRgb = (totalRays > 0.0001) ? (accumulatedRaysColor / totalRays) : _BeamColor.rgb;
@@ -414,10 +410,10 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                     finalCoreColor = lerp(coreRainbowGlow, half3(3.5, 3.5, 3.5), saturate(coreFactor * 0.8));
                 }
 
-                half3 finalRgb = (beamRgb * totalAura + finalCoreColor * coreGlow) * totalIntensity * input.color.rgb;
+                half3 finalRgb = (beamRgb * totalAura + finalCoreColor * coreGlow * circularEdgeFade) * totalIntensity * input.color.rgb;
 
                 // 10. 알파(Alpha) 출력 (부드러운 소멸 보장)
-                half finalAlpha = saturate(totalAura + coreGlow) * quadEdgeFade * input.color.a * _BeamColor.a;
+                half finalAlpha = saturate(totalAura + coreGlow * circularEdgeFade) * input.color.a * _BeamColor.a;
 
                 #ifdef UNITY_UI_CLIP_RECT
                 float2 inside = step(_ClipRect.xy, input.positionHCS.xy) * step(input.positionHCS.xy, _ClipRect.zw);
