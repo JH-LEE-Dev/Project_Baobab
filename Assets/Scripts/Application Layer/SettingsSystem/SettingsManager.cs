@@ -60,7 +60,7 @@ public class SettingsManager : MonoBehaviour
     //   1) SettingsData.SUPPORTED_LANGUAGE_COUNT
     //   2) ApplyLanguageToLocalization의 Language 매핑 (매핑되지 않은 항목은 모두 EN이 된다)
     //   3) LocalizationManager가 읽는 로컬라이징 데이터
-    private static readonly string[] languageLabels = { "한국어", "English", "简体中文", "繁體中文" };
+    private static readonly string[] languageLabels = { "한국어", "English", "简体中文", "繁體中文", "日本語" };
     // 표기 문자열은 SettingsData의 해상도 목록에서 파생해 1회만 생성한다.
     // (손으로 관리하면 크기와 표기가 어긋날 수 있고, 컴파일러가 잡아주지 못한다)
     private static readonly string[] resolutionLabels = BuildResolutionLabels();
@@ -510,6 +510,7 @@ public class SettingsManager : MonoBehaviour
             EOptionLanguage.Korean => Language.KR,
             EOptionLanguage.ChineseSimplified => Language.ZH_HANS,
             EOptionLanguage.ChineseTraditional => Language.ZH_HANT,
+            EOptionLanguage.Japanese => Language.JA,
             _ => Language.EN
         };
         locManager.SetLanguage(_langToSet);

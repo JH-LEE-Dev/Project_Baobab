@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
-public class LogItemController : MonoBehaviour, ILogItemControllerCH
+public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAuraProvider
 {
     public event Action<Item> LogItemAcquiredEvent;
 
@@ -11,6 +11,14 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
     [SerializeField] private LogItem logItemPrefab;
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
     [SerializeField] private List<LogDropCntData> logDropCntDatas;
+
+    [Header("Gem Aura")]
+    [Tooltip("보석 등급 원목이 드랍될 때 붙는 아우라. LogState별로 프리셋 프리팹을 연결한다.")]
+    [SerializeField] private List<LogStateAuraData> logStateAuraDatas;
+    [SerializeField] private int auraPoolDefaultCapacity = 8;
+    [SerializeField] private int auraPoolMaxSize = 64;
+
+    private Dictionary<LogState, IObjectPool<ItemAuraEffectController>> auraPools;
     // TreeGrade.Fascinating 이상인 나무는 종류(TreeType)와 무관하게 이 범위로 드랍 개수가 고정된다.
     [SerializeField] private int highGradeDropCntMin = 4;
     [SerializeField] private int highGradeDropCntMax = 7;
@@ -54,6 +62,8 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
 
         vfxComponent = GetComponent<VFXComponent>();
         vfxComponent.Initialize();
+
+        BuildAuraPools();
 
         logPool = new ObjectPool<LogItem>(
             createFunc: CreateLogItem,
@@ -206,6 +216,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
         newItem.LogItemDeActivatedEvent += LogItemDeActivated;
 
         newItem.SetVfxComponent(vfxComponent);
+        newItem.SetAuraProvider(this);
 
         return newItem;
     }
@@ -253,6 +264,10 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
 
     private void OnReleaseLogItem(LogItem _item)
     {
+        // 빌려간 아우라를 여기서 바로 회수한다. ResetItem은 다음 획득 때 호출되므로,
+        // 그때까지 기다리면 풀에서 쉬고 있는 원목들이 아우라를 붙든 채로 남는다.
+        _item.ReleaseGemAura();
+
         // 최적화: 업데이트 리스트에서 제거
         UpdateItemVisibility(_item, false);
 
@@ -362,6 +377,13 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
         }
 
         Vector3 spawnPos = _treeObj.transform.position;
+
+        // 보석 등급 원목이 생성되는 순간의 전용 효과음.
+        // 원목 하나마다 재생하면 4~7개가 겹쳐 뭉개지므로 드랍 묶음당 한 번만 울린다.
+        if (logType > LogState.Normal && spawnCount > 0)
+        {
+            Sound.Play(SoundID.NiceItem, spawnPos);
+        }
 
         for (int i = 0; i < spawnCount; i++)
         {
@@ -487,5 +509,75 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
     public void IncreaseJackPotAmount(float _amount)
     {
         jackPotAmount = _amount;
+    }
+
+    // // 보석 아우라 (ILogItemAuraProvider)
+
+    private void BuildAuraPools()
+    {
+        if (auraPools != null) return;
+
+        auraPools = new Dictionary<LogState, IObjectPool<ItemAuraEffectController>>();
+        if (logStateAuraDatas == null) return;
+
+        for (int i = 0; i < logStateAuraDatas.Count; i++)
+        {
+            LogStateAuraData data = logStateAuraDatas[i];
+            if (data.auraPrefab == null || auraPools.ContainsKey(data.logState)) continue;
+
+            // 루프 변수를 그대로 캡처하면 모든 풀이 마지막 프리팹을 쓰게 되므로 지역 변수로 고정한다.
+            ItemAuraEffectController prefab = data.auraPrefab;
+
+            auraPools.Add(data.logState, new ObjectPool<ItemAuraEffectController>(
+                createFunc: () => Instantiate(prefab, transform),
+                actionOnGet: OnGetAura,
+                actionOnRelease: OnReleaseAura,
+                actionOnDestroy: OnDestroyAura,
+                collectionCheck: true,
+                defaultCapacity: auraPoolDefaultCapacity,
+                maxSize: auraPoolMaxSize
+            ));
+        }
+    }
+
+    public ItemAuraEffectController GetAura(LogState _logState)
+    {
+        if (auraPools != null && auraPools.TryGetValue(_logState, out IObjectPool<ItemAuraEffectController> pool))
+        {
+            return pool.Get();
+        }
+        return null;
+    }
+
+    public void ReleaseAura(LogState _logState, ItemAuraEffectController _aura)
+    {
+        if (_aura == null) return;
+
+        if (auraPools != null && auraPools.TryGetValue(_logState, out IObjectPool<ItemAuraEffectController> pool))
+        {
+            pool.Release(_aura);
+            return;
+        }
+
+        // 풀을 못 찾으면(설정 변경 등) 고아로 남기지 않도록 파기한다.
+        Destroy(_aura.gameObject);
+    }
+
+    private void OnGetAura(ItemAuraEffectController _aura)
+    {
+        _aura.gameObject.SetActive(true);
+    }
+
+    private void OnReleaseAura(ItemAuraEffectController _aura)
+    {
+        // 원목에 붙어 있던 것을 떼어내 컨트롤러 아래로 되돌린다. 원목이 비활성화돼도 아우라가 함께 사라지지 않게 한다.
+        _aura.transform.SetParent(transform, false);
+        _aura.transform.localPosition = Vector3.zero;
+        _aura.gameObject.SetActive(false);
+    }
+
+    private void OnDestroyAura(ItemAuraEffectController _aura)
+    {
+        if (_aura != null) Destroy(_aura.gameObject);
     }
 }

@@ -133,6 +133,10 @@ public class LogItem : Item, IStaticCollidable
     private ParticleSystem particleEffect;
     private VFXComponent vfxComponent;
 
+    // 보석 등급 원목에 붙는 아우라. 소유자(LogItemController)가 풀로 관리하며 여기서는 빌려 쓴다.
+    private ILogItemAuraProvider auraProvider;
+    private ItemAuraEffectController gemAura;
+
     private string objectSortingLayerName = "Objects";
 
     public void Initialize(LogItemTypeData _logItemTypeData, Color _color, LogState _logState, ICharacter _character, bool _bDisableCustomSortable = false)
@@ -222,6 +226,82 @@ public class LogItem : Item, IStaticCollidable
         vfxComponent = _vfxComponent;
     }
 
+    public void SetAuraProvider(ILogItemAuraProvider _auraProvider)
+    {
+        auraProvider = _auraProvider;
+    }
+
+    /// <summary>
+    /// 보석 등급(Normal 초과) 원목이 땅에 놓였을 때 등급별 아우라를 붙인다.
+    /// Shiny 파티클과 함께 재생되며, 흡입이 시작되거나 풀로 반환될 때 회수된다.
+    /// </summary>
+    private void PlayGemAura()
+    {
+        // 이미 붙어 있으면 중복 부착하지 않는다(착지 -> 흡입취소 -> 재착지 경로에서 새는 것을 막는다).
+        if (auraProvider == null || gemAura != null) return;
+        if (logState <= LogState.Normal) return;
+
+        gemAura = auraProvider.GetAura(logState);
+        if (gemAura == null) return;
+
+        Transform auraTransform = gemAura.transform;
+        auraTransform.SetParent(transform, false);
+        auraTransform.localPosition = Vector3.zero;
+
+        SyncGemAura();
+        gemAura.Play();
+    }
+
+    /// <summary>
+    /// 아우라를 원목 그림에 맞춰 따라가게 한다. 매 프레임 호출된다.
+    ///
+    /// 위치: 본체 transform은 지면 좌표를 선형 보간할 뿐이고(그림자가 그 자리에 있다),
+    /// 포물선 높이는 visualTransform.localPosition이 들고 있다. 아우라가 원목과 함께
+    /// 날아가려면 그 높이를 따라가야 한다. outlineObj도 같은 방식으로 맞춘다.
+    /// visualTransform에 직접 붙이지 않는 이유는 착지 스쿼시(비균등 스케일)까지 상속받아
+    /// 방사형 아우라가 타원으로 찌그러지기 때문이다.
+    ///
+    /// 정렬: 프리셋 프리팹은 Default 레이어(맨 뒤)라 맞추지 않으면 가려지고,
+    /// sortingOrder는 CustomSortable이 위치에 따라 매 프레임 다시 계산하므로 한 번만 설정하면 어긋난다.
+    /// </summary>
+    private void SyncGemAura()
+    {
+        if (gemAura == null) return;
+
+        if (visualTransform != null)
+        {
+            gemAura.transform.localPosition = visualTransform.localPosition;
+        }
+
+        if (spriteRenderer == null) return;
+
+        gemAura.SetSortingLayer(spriteRenderer.sortingLayerID);
+        // 원목 뒤에 그린다. 원목의 렌더러들이 order와 order-1(아웃라인 스텐실)을 이미 쓰고 있어,
+        // -1로 두면 스텐실과 순서가 같아져 그리기 순서가 불안정해지므로 한 칸 더 뒤로 뺀다.
+        gemAura.SetSortingOrder(spriteRenderer.sortingOrder - 2);
+    }
+
+    /// <summary>
+    /// 풀로 반환될 때 빌려온 아우라만 즉시 돌려준다.
+    /// ResetItem은 다음 획득 시점에 호출되므로, 그대로 두면 원목이 풀에서 쉬는 동안에도
+    /// 아우라가 대여 상태로 묶여 실제 동시 사용량보다 풀이 크게 잡힌다.
+    /// 아우라 외의 상태는 일절 건드리지 않는다.
+    /// </summary>
+    public void ReleaseGemAura()
+    {
+        StopGemAura();
+    }
+
+    private void StopGemAura()
+    {
+        if (gemAura == null) return;
+
+        gemAura.Stop();
+        // logState는 다음 Initialize 전까지 바뀌지 않으므로, 꺼낸 풀로 정확히 되돌아간다.
+        auraProvider?.ReleaseAura(logState, gemAura);
+        gemAura = null;
+    }
+
     public void SetParticleEffect(ParticleSystem _particleEffect)
     {
         particleEffect = _particleEffect;
@@ -288,6 +368,9 @@ public class LogItem : Item, IStaticCollidable
         {
             CollisionSystem.Instance?.Register(this, false);
         }
+
+        // 보석 등급 아우라는 착지가 아니라 생성(발사) 시점부터 붙어, 포물선 비행 내내 보인다.
+        PlayGemAura();
     }
 
     public void TransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, Vector3 _jitter, float _rotationSpeed = 0f)
@@ -394,6 +477,8 @@ public class LogItem : Item, IStaticCollidable
             particleEffect = null;    
         }
 
+        StopGemAura();
+
         state = ItemMoveState.None;
         suckTarget = null;
         suckerChecker = null;
@@ -497,6 +582,8 @@ public class LogItem : Item, IStaticCollidable
                 outlineStencilSR.sortingOrder = outlineSR.sortingOrder - 1;
         }
 
+        SyncGemAura();
+
         if (particleEffect != null)
         {
             if (particleEffect.transform.IsChildOf(transform))
@@ -518,6 +605,8 @@ public class LogItem : Item, IStaticCollidable
             if (outlineStencilSR != null && outlineSR != null)
                 outlineStencilSR.sortingOrder = outlineSR.sortingOrder - 1;
         }
+
+        SyncGemAura();
     }
 
     private void UpdateLaunching(float _deltaTime)
@@ -908,6 +997,8 @@ public class LogItem : Item, IStaticCollidable
                 if (particleEffect != null) particleEffect.transform.localScale = Vector3.one;
             }
 
+            PlayGemAura();
+
             return;
         }
 
@@ -1107,6 +1198,8 @@ public class LogItem : Item, IStaticCollidable
         {
             vfxComponent.Stop(particleEffect, false);
         }
+
+        StopGemAura();
 
         suckTarget = _target;
         suckSpeed = -5.0f; // 뒤로 튕기는 동작을 더 크게 하기 위해 초기 음수 속도 상향

@@ -54,6 +54,18 @@ public struct TreeGetHitSignal
     }
 }
 
+/// <summary>
+/// 나무가 보석 단계(황금/다이아/무지개)로 변한 순간 발행된다. 어떤 나무가 변했는지를 전달한다.
+/// </summary>
+public struct TreeGemTransformedSignal
+{
+    public TreeObj treeObj;
+    public TreeGemTransformedSignal(TreeObj _treeObj)
+    {
+        treeObj = _treeObj;
+    }
+}
+
 public struct TreeShieldRecoveringSignal
 {
     public TreeObj treeObj;

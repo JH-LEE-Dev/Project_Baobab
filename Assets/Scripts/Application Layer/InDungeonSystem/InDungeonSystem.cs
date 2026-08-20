@@ -166,6 +166,9 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.TreeGetHitEvent -= TreeGetHit;
         inDungeonObjectManager.TreeGetHitEvent += TreeGetHit;
 
+        inDungeonObjectManager.TreeGemTransformedEvent -= TreeGemTransformed;
+        inDungeonObjectManager.TreeGemTransformedEvent += TreeGemTransformed;
+
         inDungeonObjectManager.TreeShieldRecoveringEvent -= TreeShieldRecovering;
         inDungeonObjectManager.TreeShieldRecoveringEvent += TreeShieldRecovering;
 
@@ -235,6 +238,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.PortalActivatedEvent -= PortalActivated;
         inDungeonObjectManager.ItemAcquiredEvent -= ItemAcquired;
         inDungeonObjectManager.TreeGetHitEvent -= TreeGetHit;
+        inDungeonObjectManager.TreeGemTransformedEvent -= TreeGemTransformed;
         inDungeonObjectManager.TreeShieldRecoveringEvent -= TreeShieldRecovering;
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
@@ -391,6 +395,11 @@ public class InDungeonSystem : MonoBehaviour
     private void TreeGetHit(TreeObj _treeObj)
     {
         signalHub.Publish(new TreeGetHitSignal(_treeObj));
+    }
+
+    private void TreeGemTransformed(TreeObj _treeObj)
+    {
+        signalHub.Publish(new TreeGemTransformedSignal(_treeObj));
     }
 
     private void TreeShieldRecovering(TreeObj _treeObj)

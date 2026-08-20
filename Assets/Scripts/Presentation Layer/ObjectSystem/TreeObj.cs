@@ -89,6 +89,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     // 회생하며 다음 단계로 전환된다. 최대 단계에서 다시 HP가 0이 되면 그때 실제로 죽는다.
     private int currentGemStage = 0;
 
+    // 현재 보석 단계 (0 = 일반, 1 = 황금, 2 = 다이아, 3 = 무지개).
+    public int gemStage => currentGemStage;
+
     // 지금 이 나무가 보석(황금/다이아/무지개)으로 변해 있는 상태인지.
     // 전용 타격음/사망음 분기에 쓴다. 인스펙터 토글인 bIsGem(bGemVisual)과는 별개다.
     public bool bIsGemStage => currentGemStage > 0;
