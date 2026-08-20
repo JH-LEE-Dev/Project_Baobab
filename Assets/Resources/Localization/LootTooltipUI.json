@@ -5,7 +5,10 @@
       "id": 1,
       "key": "foundbox",
       "kr": "유실되는 원목의\n<color=#FFA500,#FF4500><b>30%</b></color>가 자동으로 원목 운반 상자에 담깁니다.",
-      "en": "<color=#FFA500,#FF4500><b>20-30%</b></color> of lost logs are automatically moved to the cargo crate.",
+      "en": "<color=#FFA500,#FF4500><b>30%</b></color> of lost logs are automatically moved to the cargo crate.",
+      "zhHans": "原本会损失的原木中，有<color=#FFA500,#FF4500><b>30%</b></color>会自动装入原木运输箱。",
+      "zhHant": "原本會損失的原木中，有<color=#FFA500,#FF4500><b>30%</b></color>會自動裝入原木運輸箱。",
+      "ja": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -14,6 +17,9 @@
       "key": "sporepotion",
       "kr": "숲 원정이 끝나고 <color=#32CD32,#7CFC00>3~5%</color> 랜덤으로 포자 포션이 채워진다.\n<color=#FFD700><b>[특수 키]</b></color>를 사용하여 포션을 마실 수 있고, 모아진 %만큼 피로도가 회복된다. <color=#FF6347>(최대 30%)</color>",
       "en": "The Spore Potion gains a random <color=#32CD32,#7CFC00>3-5%</color> charge after each forest expedition.\nPress the <color=#FFD700><b>[Special Key]</b></color> to drink it and restore that much stamina. <color=#FF6347>(Max: 30%)</color>",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -22,6 +28,9 @@
       "key": "starcompass",
       "kr": "별뿌리 숲에서 <color=#87CEEB,#00BFFF><b>별자리</b></color>, <color=#87CEEB,#00BFFF><b>별표식</b></color>을 볼 수 있게 된다.",
       "en": "Reveals <color=#87CEEB,#00BFFF><b>constellations</b></color> and <color=#87CEEB,#00BFFF><b>Star Marks</b></color> in Starroot Forest.",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -30,6 +39,9 @@
       "key": "name_lostandfoundbox",
       "kr": "<color=#E2C275,#FFF0BA>원목 보험 증서</color>",
       "en": "<color=#E2C275,#FFF0BA>Log Insurance Policy</color>",
+      "zhHans": "<color=#E2C275,#FFF0BA>原木保险凭证</color>",
+      "zhHant": "<color=#E2C275,#FFF0BA>原木保險憑證</color>",
+      "ja": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -38,6 +50,9 @@
       "key": "name_sporepotion",
       "kr": "<color=#85E275,#C7FFBA>포자 포션</color>",
       "en": "<color=#85E275,#C7FFBA>Spore Potion</color>",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -46,6 +61,9 @@
       "key": "name_starcompass",
       "kr": "<color=#75C6E2,#BAF0FF>별 나침반</color>",
       "en": "<color=#75C6E2,#BAF0FF>Star Compass</color>",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -54,6 +72,9 @@
       "key": "name_obsidiancharm",
       "kr": "<color=#C080FF,#E6C0FF>흑요석 부적</color>",
       "en": "<color=#C080FF,#E6C0FF>Obsidian Charm</color>",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "",
       "enumValue": ""
     }

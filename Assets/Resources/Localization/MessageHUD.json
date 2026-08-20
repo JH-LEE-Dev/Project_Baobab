@@ -6,6 +6,9 @@
       "key": "forestNoneTitle",
       "kr": "None",
       "en": "None",
+      "zhHans": "None",
+      "zhHant": "None",
+      "ja": "None",
       "enumType": "ForestType",
       "enumValue": "None"
     },
@@ -14,6 +17,9 @@
       "key": "forestInTownTitle",
       "kr": "None",
       "en": "None",
+      "zhHans": "None",
+      "zhHant": "None",
+      "ja": "None",
       "enumType": "ForestType",
       "enumValue": "InTown"
     },
@@ -22,6 +28,9 @@
       "key": "forestWideGreenForest1Title",
       "kr": "풀빛너른숲 I",
       "en": "Greenreach Forest I",
+      "zhHans": "翠绿森林 I",
+      "zhHant": "翠綠森林 I",
+      "ja": "",
       "enumType": "ForestType",
       "enumValue": "WideGreenForest_1"
     },
@@ -30,6 +39,9 @@
       "key": "forestWideGreenForest2Title",
       "kr": "풀빛너른숲 II",
       "en": "Greenreach Forest II",
+      "zhHans": "翠绿森林 II",
+      "zhHant": "翠綠森林 II",
+      "ja": "",
       "enumType": "ForestType",
       "enumValue": "WideGreenForest_2"
     },
@@ -38,6 +50,9 @@
       "key": "forestWideGreenForest3Title",
       "kr": "풀빛너른숲 III",
       "en": "Greenreach Forest III",
+      "zhHans": "翠绿森林 III",
+      "zhHant": "翠綠森林 III",
+      "ja": "",
       "enumType": "ForestType",
       "enumValue": "WideGreenForest_3"
     },
@@ -46,6 +61,9 @@
       "key": "forestFluffySporeForest1Title",
       "kr": "몽글포자숲 I",
       "en": "Puffspore Forest I",
+      "zhHans": "绒孢森林 I",
+      "zhHant": "絨孢森林 I",
+      "ja": "",
       "enumType": "ForestType",
       "enumValue": "FluffySporeForest_1"
     },
@@ -54,6 +72,9 @@
       "key": "forestFluffySporeForest2Title",
       "kr": "몽글포자숲 II",
       "en": "Puffspore Forest II",
+      "zhHans": "绒孢森林 II",
+      "zhHant": "絨孢森林 II",
+      "ja": "",
       "enumType": "ForestType",
       "enumValue": "FluffySporeForest_2"
     },
@@ -62,6 +83,9 @@
       "key": "forestFluffySporeForest3Title",
       "kr": "몽글포자숲 III",
       "en": "Puffspore Forest III",
+      "zhHans": "绒孢森林 III",
+      "zhHant": "絨孢森林 III",
+      "ja": "",
       "enumType": "ForestType",
       "enumValue": "FluffySporeForest_3"
     },
@@ -70,6 +94,9 @@
       "key": "forestStarrootForest1Title",
       "kr": "별뿌리숲 I",
       "en": "Starroot Forest I",
+      "zhHans": "晨星森林 I",
+      "zhHant": "晨星森林 I",
+      "ja": "",
       "enumType": "ForestType",
       "enumValue": "StarrootForest_1"
     },
@@ -78,6 +105,9 @@
       "key": "forestStarrootForest2Title",
       "kr": "별뿌리숲 II",
       "en": "Starroot Forest II",
+      "zhHans": "晨星森林 II",
+      "zhHant": "晨星森林 II",
+      "ja": "",
       "enumType": "ForestType",
       "enumValue": "StarrootForest_2"
     },
@@ -86,6 +116,9 @@
       "key": "forestStarrootForest3Title",
       "kr": "별뿌리숲 III",
       "en": "Starroot Forest III",
+      "zhHans": "晨星森林 III",
+      "zhHant": "晨星森林 III",
+      "ja": "",
       "enumType": "ForestType",
       "enumValue": "StarrootForest_3"
     },
@@ -94,6 +127,9 @@
       "key": "forestMagmaForest1Title",
       "kr": "용암숲 I",
       "en": "Magma Forest I",
+      "zhHans": "熔岩森林 I",
+      "zhHant": "熔岩森林 I",
+      "ja": "",
       "enumType": "ForestType",
       "enumValue": "MagmaForest_1"
     },
@@ -102,6 +138,9 @@
       "key": "forestMagmaForest2Title",
       "kr": "용암숲 II",
       "en": "Magma Forest II",
+      "zhHans": "熔岩森林 II",
+      "zhHant": "熔岩森林 II",
+      "ja": "",
       "enumType": "ForestType",
       "enumValue": "MagmaForest_2"
     },
@@ -110,6 +149,9 @@
       "key": "forestMagmaForest3Title",
       "kr": "용암숲 III",
       "en": "Magma Forest III",
+      "zhHans": "熔岩森林 III",
+      "zhHant": "熔岩森林 III",
+      "ja": "",
       "enumType": "ForestType",
       "enumValue": "MagmaForest_3"
     },
@@ -118,6 +160,9 @@
       "key": "dungeonStateNoneSubText",
       "kr": "None",
       "en": "None",
+      "zhHans": "None",
+      "zhHant": "None",
+      "ja": "",
       "enumType": "DungeonState",
       "enumValue": "None"
     },
@@ -126,6 +171,9 @@
       "key": "dungeonStateStage1Idle0SubText",
       "kr": "오늘은 날씨가 맑네요!",
       "en": "The weather's lovely today!",
+      "zhHans": "今天天气真好啊！",
+      "zhHant": "今天天氣真好啊！",
+      "ja": "",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle0"
     },
@@ -134,6 +182,9 @@
       "key": "dungeonStateStage1Idle1SubText",
       "kr": "숲바람이 살랑살랑 불어요.",
       "en": "A gentle breeze is blowing through the forest.",
+      "zhHans": "森林里微风轻轻吹拂。",
+      "zhHant": "森林裡微風輕輕吹拂。",
+      "ja": "",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle1"
     },
@@ -142,6 +193,9 @@
       "key": "dungeonStateStage1Idle2SubText",
       "kr": "숲속 공기가 참 상쾌하네요!",
       "en": "The forest air feels so fresh!",
+      "zhHans": "森林里的空气真清新啊！",
+      "zhHant": "森林裡的空氣真清新啊！",
+      "ja": "",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle2"
     },
@@ -150,6 +204,9 @@
       "key": "dungeonStateStage1Idle3SubText",
       "kr": "오늘도 평화로운 벌목의 하루!",
       "en": "Another peaceful day of logging!",
+      "zhHans": "今天也是和平伐木的一天！",
+      "zhHant": "今天也是和平伐木的一天！",
+      "ja": "",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle3"
     },
@@ -158,6 +215,9 @@
       "key": "dungeonStateStage2Idle0SubText",
       "kr": "말랑한 숲향기가 코끝을 간질여요.",
       "en": "The forest's sweet, earthy scent tickles my nose.",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "DungeonState",
       "enumValue": "Stage2_Idle0"
     },
@@ -166,6 +226,9 @@
       "key": "dungeonStateStage2Idle1SubText",
       "kr": "발밑에서 푹신한 기운이 느껴집니다.",
       "en": "The ground feels springy underfoot.",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "DungeonState",
       "enumValue": "Stage2_Idle1"
     },
@@ -174,6 +237,9 @@
       "key": "dungeonStateStage2Idle2SubText",
       "kr": "몽글몽글 피어오르네요!",
       "en": "Puffs of spores are drifting up everywhere!",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "DungeonState",
       "enumValue": "Stage2_Idle2"
     },
@@ -182,6 +248,9 @@
       "key": "dungeonStateStage3Idle0SubText",
       "kr": "나무뿌리 사이로 별빛이 스며들고 있네요.",
       "en": "Starlight is filtering through the roots.",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "DungeonState",
       "enumValue": "Stage3_Idle0"
     },
@@ -190,6 +259,9 @@
       "key": "dungeonStateStage3Idle1SubText",
       "kr": "오늘은 별빛이 길을 밝혀주네요.",
       "en": "The starlight is showing me the way today.",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "DungeonState",
       "enumValue": "Stage3_Idle1"
     },
@@ -198,6 +270,9 @@
       "key": "dungeonStateStage3Idle2SubText",
       "kr": "오늘 숲은 조금 신비로운 표정이에요.",
       "en": "The forest feels a little mysterious today.",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "DungeonState",
       "enumValue": "Stage3_Idle2"
     },
@@ -206,6 +281,9 @@
       "key": "dungeonStateStage4Idle0SubText",
       "kr": "뜨거운 열기가 숲길 위로 아른거려요.",
       "en": "Heat shimmers above the forest path.",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "DungeonState",
       "enumValue": "Stage4_Idle0"
     },
@@ -214,6 +292,9 @@
       "key": "dungeonStateStage4Idle1SubText",
       "kr": "발밑이 따끈하니 조심히 걸어야겠어요!",
       "en": "The ground's warm. Better watch my step!",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "DungeonState",
       "enumValue": "Stage4_Idle1"
     },
@@ -222,6 +303,9 @@
       "key": "dungeonStateStage4Idle2SubText",
       "kr": "용암빛이 나무 그림자를 흔들고있어요.",
       "en": "The lava glow makes the trees' shadows dance.",
+      "zhHans": "",
+      "zhHant": "",
+      "ja": "",
       "enumType": "DungeonState",
       "enumValue": "Stage4_Idle2"
     }
