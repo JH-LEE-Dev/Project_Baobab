@@ -149,13 +149,13 @@ public class InDungeonVFXManager : MonoBehaviour
     /// 스프라이트 피벗이 이펙트의 원 중심에 맞춰져 있어, 나무 Top 위치에 그대로 놓으면 정렬됩니다.
     /// parent를 두지 않으므로 나무가 풀로 반환되어도 연출이 끊기지 않습니다.
     /// </summary>
-    public void PlayTreeTransformVFX(TreeVisualComponent _visual, int _sortingOrderOffset = 100)
+    public void PlayTreeTransformVFX(TreeVisualComponent _visual, int _gemStage, int _sortingOrderOffset = 100)
     {
         if (treeTransformVfxPool == null || _visual == null) return;
 
         TreeTransformVFX instance = treeTransformVfxPool.Get();
         instance.transform.position = _visual.GetTopRootPosition() + new Vector3(0f, treeTransformVfxYOffset, 0f);
-        instance.Play(_sortingOrderOffset);
+        instance.Play(_sortingOrderOffset, _gemStage);
     }
 
     private TreeTransformVFX CreateTreeTransformVfx()
