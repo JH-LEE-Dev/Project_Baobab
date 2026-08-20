@@ -8,7 +8,7 @@
       "en": "My bag is full.",
       "zhHans": "背包没有空位",
       "zhHant": "背包沒有空位",
-      "ja": "",
+      "ja": "バッグに空きがない",
       "enumType": "",
       "enumValue": ""
     },
@@ -19,7 +19,7 @@
       "en": "I can't carry anything else.",
       "zhHans": "无法装入其他物品",
       "zhHant": "無法裝入其他物品",
-      "ja": "",
+      "ja": "これ以上は持てない",
       "enumType": "",
       "enumValue": ""
     },
@@ -30,7 +30,7 @@
       "en": "My axe is <COLOR=FF0000><CHAR_SHAKE>broken!</CHAR_SHAKE></COLOR>",
       "zhHans": "斧头<COLOR=FF0000><CHAR_SHAKE>坏掉了！</CHAR_SHAKE></COLOR>",
       "zhHant": "斧頭<COLOR=FF0000><CHAR_SHAKE>壞掉了！</CHAR_SHAKE></COLOR>",
-      "ja": "",
+      "ja": "斧が<COLOR=FF0000><CHAR_SHAKE>壊れた！</CHAR_SHAKE></COLOR>",
       "enumType": "",
       "enumValue": ""
     }

@@ -30,7 +30,7 @@
       "en": "Greenreach Forest I",
       "zhHans": "翠绿森林 I",
       "zhHant": "翠綠森林 I",
-      "ja": "",
+      "ja": "グリーンリーチの森 I",
       "enumType": "ForestType",
       "enumValue": "WideGreenForest_1"
     },
@@ -41,7 +41,7 @@
       "en": "Greenreach Forest II",
       "zhHans": "翠绿森林 II",
       "zhHant": "翠綠森林 II",
-      "ja": "",
+      "ja": "グリーンリーチの森 II",
       "enumType": "ForestType",
       "enumValue": "WideGreenForest_2"
     },
@@ -52,7 +52,7 @@
       "en": "Greenreach Forest III",
       "zhHans": "翠绿森林 III",
       "zhHant": "翠綠森林 III",
-      "ja": "",
+      "ja": "グリーンリーチの森 III",
       "enumType": "ForestType",
       "enumValue": "WideGreenForest_3"
     },
@@ -63,7 +63,7 @@
       "en": "Puffspore Forest I",
       "zhHans": "绒孢森林 I",
       "zhHant": "絨孢森林 I",
-      "ja": "",
+      "ja": "パフスポアの森 I",
       "enumType": "ForestType",
       "enumValue": "FluffySporeForest_1"
     },
@@ -74,7 +74,7 @@
       "en": "Puffspore Forest II",
       "zhHans": "绒孢森林 II",
       "zhHant": "絨孢森林 II",
-      "ja": "",
+      "ja": "パフスポアの森 II",
       "enumType": "ForestType",
       "enumValue": "FluffySporeForest_2"
     },
@@ -85,7 +85,7 @@
       "en": "Puffspore Forest III",
       "zhHans": "绒孢森林 III",
       "zhHant": "絨孢森林 III",
-      "ja": "",
+      "ja": "パフスポアの森 III",
       "enumType": "ForestType",
       "enumValue": "FluffySporeForest_3"
     },
@@ -96,7 +96,7 @@
       "en": "Starroot Forest I",
       "zhHans": "晨星森林 I",
       "zhHant": "晨星森林 I",
-      "ja": "",
+      "ja": "スタールートの森 I",
       "enumType": "ForestType",
       "enumValue": "StarrootForest_1"
     },
@@ -107,7 +107,7 @@
       "en": "Starroot Forest II",
       "zhHans": "晨星森林 II",
       "zhHant": "晨星森林 II",
-      "ja": "",
+      "ja": "スタールートの森 II",
       "enumType": "ForestType",
       "enumValue": "StarrootForest_2"
     },
@@ -118,7 +118,7 @@
       "en": "Starroot Forest III",
       "zhHans": "晨星森林 III",
       "zhHant": "晨星森林 III",
-      "ja": "",
+      "ja": "スタールートの森 III",
       "enumType": "ForestType",
       "enumValue": "StarrootForest_3"
     },
@@ -129,7 +129,7 @@
       "en": "Magma Forest I",
       "zhHans": "熔岩森林 I",
       "zhHant": "熔岩森林 I",
-      "ja": "",
+      "ja": "マグマの森 I",
       "enumType": "ForestType",
       "enumValue": "MagmaForest_1"
     },
@@ -140,7 +140,7 @@
       "en": "Magma Forest II",
       "zhHans": "熔岩森林 II",
       "zhHant": "熔岩森林 II",
-      "ja": "",
+      "ja": "マグマの森 II",
       "enumType": "ForestType",
       "enumValue": "MagmaForest_2"
     },
@@ -151,7 +151,7 @@
       "en": "Magma Forest III",
       "zhHans": "熔岩森林 III",
       "zhHant": "熔岩森林 III",
-      "ja": "",
+      "ja": "マグマの森 III",
       "enumType": "ForestType",
       "enumValue": "MagmaForest_3"
     },
@@ -173,7 +173,7 @@
       "en": "The weather's lovely today!",
       "zhHans": "今天天气真好啊！",
       "zhHant": "今天天氣真好啊！",
-      "ja": "",
+      "ja": "今日はいい天気ですね！",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle0"
     },
@@ -184,7 +184,7 @@
       "en": "A gentle breeze is blowing through the forest.",
       "zhHans": "森林里微风轻轻吹拂。",
       "zhHant": "森林裡微風輕輕吹拂。",
-      "ja": "",
+      "ja": "森をそよ風が吹き抜けています。",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle1"
     },
@@ -195,7 +195,7 @@
       "en": "The forest air feels so fresh!",
       "zhHans": "森林里的空气真清新啊！",
       "zhHant": "森林裡的空氣真清新啊！",
-      "ja": "",
+      "ja": "森の空気はとても爽やかですね！",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle2"
     },
@@ -206,7 +206,7 @@
       "en": "Another peaceful day of logging!",
       "zhHans": "今天也是和平伐木的一天！",
       "zhHant": "今天也是和平伐木的一天！",
-      "ja": "",
+      "ja": "今日も平和な伐採日和！",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle3"
     },

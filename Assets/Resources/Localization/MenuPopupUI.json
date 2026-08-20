@@ -31,7 +31,7 @@
       "en": "Greenreach Forest",
       "zhHans": "翠绿森林",
       "zhHant": "翠綠森林",
-      "ja": "",
+      "ja": "グリーンリーチの森",
       "enumType": "MapType",
       "enumValue": "WideGreenForest"
     },
@@ -42,7 +42,7 @@
       "en": "Puffspore Forest",
       "zhHans": "绒孢森林",
       "zhHant": "絨孢森林",
-      "ja": "",
+      "ja": "パフスポアの森",
       "enumType": "MapType",
       "enumValue": "FluffySporeForest"
     },
@@ -53,7 +53,7 @@
       "en": "Starroot Forest",
       "zhHans": "晨星森林",
       "zhHant": "晨星森林",
-      "ja": "",
+      "ja": "スタールートの森",
       "enumType": "MapType",
       "enumValue": "StarrootForest"
     },
@@ -64,7 +64,7 @@
       "en": "Magma Forest",
       "zhHans": "熔岩森林",
       "zhHant": "熔岩森林",
-      "ja": "",
+      "ja": "マグマの森",
       "enumType": "MapType",
       "enumValue": "MagmaForest"
     }

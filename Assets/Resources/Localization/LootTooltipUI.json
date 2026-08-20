@@ -8,7 +8,7 @@
       "en": "<color=#FFA500,#FF4500><b>30%</b></color> of lost logs are automatically moved to the cargo crate.",
       "zhHans": "原本会损失的原木中，有<color=#FFA500,#FF4500><b>30%</b></color>会自动装入原木运输箱。",
       "zhHant": "原本會損失的原木中，有<color=#FFA500,#FF4500><b>30%</b></color>會自動裝入原木運輸箱。",
-      "ja": "",
+      "ja": "失われるはずだった丸太のうち、<color=#FFA500,#FF4500><b>30%</b></color>が自動的に丸太運搬箱へ送られます。",
       "enumType": "",
       "enumValue": ""
     },
@@ -41,7 +41,7 @@
       "en": "<color=#E2C275,#FFF0BA>Log Insurance Policy</color>",
       "zhHans": "<color=#E2C275,#FFF0BA>原木保险凭证</color>",
       "zhHant": "<color=#E2C275,#FFF0BA>原木保險憑證</color>",
-      "ja": "",
+      "ja": "<color=#E2C275,#FFF0BA>丸太保険証券</color>",
       "enumType": "",
       "enumValue": ""
     },

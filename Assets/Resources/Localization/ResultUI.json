@@ -8,7 +8,7 @@
       "en": "<COLOR=7EEDBE,EDD87E><Wave>Expedition Complete</Wave></COLOR>",
       "zhHans": "<COLOR=7EEDBE,EDD87E><Wave>远征完成</Wave></COLOR>",
       "zhHant": "<COLOR=7EEDBE,EDD87E><Wave>遠征完成</Wave></COLOR>",
-      "ja": "",
+      "ja": "<COLOR=7EEDBE,EDD87E><Wave>遠征完了</Wave></COLOR>",
       "enumType": "",
       "enumValue": ""
     },
@@ -19,7 +19,7 @@
       "en": "The <COLOR=FF833D>trees</COLOR> are safe... for today!",
       "zhHans": "今天的<COLOR=FF833D>树木</COLOR>平安无事！",
       "zhHant": "今天的<COLOR=FF833D>樹木</COLOR>平安無事！",
-      "ja": "",
+      "ja": "今日のところは、<COLOR=FF833D>木</COLOR>も無事でした！",
       "enumType": "",
       "enumValue": ""
     },
@@ -30,7 +30,7 @@
       "en": "Chopped down <COLOR=54D86A>{0}</COLOR> <COLOR=FF833D>trees</COLOR>",
       "zhHans": "已砍伐<COLOR=54D86A>{0}</COLOR>棵<COLOR=FF833D>树木</COLOR>",
       "zhHant": "已砍伐<COLOR=54D86A>{0}</COLOR>棵<COLOR=FF833D>樹木</COLOR>",
-      "ja": "",
+      "ja": "<COLOR=FF833D>木</COLOR>を<COLOR=54D86A>{0}</COLOR>本伐採しました",
       "enumType": "",
       "enumValue": ""
     },
@@ -41,7 +41,7 @@
       "en": "Chopped down <COLOR=58D7F2>{0}</COLOR> <COLOR=FF833D>trees</COLOR>!",
       "zhHans": "已砍伐<COLOR=58D7F2>{0}</COLOR>棵<COLOR=FF833D>树木</COLOR>！",
       "zhHant": "已砍伐<COLOR=58D7F2>{0}</COLOR>棵<COLOR=FF833D>樹木</COLOR>！",
-      "ja": "",
+      "ja": "<COLOR=FF833D>木</COLOR>を<COLOR=58D7F2>{0}</COLOR>本伐採しました！",
       "enumType": "",
       "enumValue": ""
     },
@@ -52,7 +52,7 @@
       "en": "Chopped down <COLOR=7EEDBE,EDD87E>{0}</COLOR> <COLOR=FF833D>trees</COLOR>!!",
       "zhHans": "已砍伐<COLOR=7EEDBE,EDD87E>{0}</COLOR>棵<COLOR=FF833D>树木</COLOR>！！",
       "zhHant": "已砍伐<COLOR=7EEDBE,EDD87E>{0}</COLOR>棵<COLOR=FF833D>樹木</COLOR>！！",
-      "ja": "",
+      "ja": "<COLOR=FF833D>木</COLOR>を<COLOR=7EEDBE,EDD87E>{0}</COLOR>本伐採しました！！",
       "enumType": "",
       "enumValue": ""
     },
@@ -63,7 +63,7 @@
       "en": "Logs Collected This Expedition",
       "zhHans": "本次远征获得的原木",
       "zhHant": "本次遠征獲得的原木",
-      "ja": "",
+      "ja": "今回の遠征で手に入れた丸太",
       "enumType": "",
       "enumValue": ""
     },
@@ -74,7 +74,7 @@
       "en": "<COLOR=FF833D><Wave>None</Wave></COLOR>",
       "zhHans": "<COLOR=FF833D><Wave>无</Wave></COLOR>",
       "zhHant": "<COLOR=FF833D><Wave>無</Wave></COLOR>",
-      "ja": "",
+      "ja": "<COLOR=FF833D><Wave>なし</Wave></COLOR>",
       "enumType": "",
       "enumValue": ""
     },
@@ -85,7 +85,7 @@
       "en": "Cargo Crate Status",
       "zhHans": "原木运输箱状态",
       "zhHant": "原木運輸箱狀態",
-      "ja": "",
+      "ja": "丸太運搬箱の状態",
       "enumType": "",
       "enumValue": ""
     }

@@ -8,7 +8,7 @@
       "en": "Chop down a tree",
       "zhHans": "砍伐树木",
       "zhHant": "砍伐樹木",
-      "ja": "",
+      "ja": "木を1本伐採しよう",
       "enumType": "",
       "enumValue": ""
     },
@@ -19,7 +19,7 @@
       "en": "Load the logs you're taking back to town into the cargo crate!",
       "zhHans": "将要带回村庄的原木放入原木运输箱！",
       "zhHant": "將要帶回村莊的原木放入原木運輸箱！",
-      "ja": "",
+      "ja": "町へ持ち帰る丸太を丸太運搬箱に入れよう！",
       "enumType": "",
       "enumValue": ""
     },
@@ -30,7 +30,7 @@
       "en": "Any logs left behind will disappear when you leave the forest",
       "zhHans": "未放入运输箱的原木将在离开森林时消失",
       "zhHant": "未放入運輸箱的原木將在離開森林時消失",
-      "ja": "",
+      "ja": "丸太運搬箱に入れなかった丸太は、森を離れると消えてしまいます",
       "enumType": "",
       "enumValue": ""
     },
@@ -41,7 +41,7 @@
       "en": "Return to town before you run out of stamina!",
       "zhHans": "请在精疲力竭前返回村庄！",
       "zhHant": "請在精疲力竭前返回村莊！",
-      "ja": "",
+      "ja": "スタミナが尽きる前に町へ戻ろう！",
       "enumType": "",
       "enumValue": ""
     },
@@ -52,7 +52,7 @@
       "en": "Put the logs you brought back into the sawmill's log bin",
       "zhHans": "将带回来的原木放入锯木厂原木储存箱",
       "zhHant": "將帶回來的原木放入鋸木廠原木儲存箱",
-      "ja": "",
+      "ja": "持ち帰った丸太を製材所の丸太保管箱に入れよう",
       "enumType": "",
       "enumValue": ""
     },
@@ -63,7 +63,7 @@
       "en": "Collect your earnings!",
       "zhHans": "领取结算后的金额！",
       "zhHant": "領取結算後的金額！",
-      "ja": "",
+      "ja": "売上金を受け取ろう！",
       "enumType": "",
       "enumValue": ""
     },
@@ -74,7 +74,7 @@
       "en": "Upgrade your axe",
       "zhHans": "强化斧头。",
       "zhHant": "強化斧頭。",
-      "ja": "",
+      "ja": "斧を強化しよう",
       "enumType": "",
       "enumValue": ""
     },
@@ -85,7 +85,7 @@
       "en": "Set out on another logging trip!",
       "zhHans": "开始新的伐木之旅！",
       "zhHant": "開始新的伐木之旅！",
-      "ja": "",
+      "ja": "次の伐採へ出発しよう！",
       "enumType": "",
       "enumValue": ""
     },
@@ -96,7 +96,7 @@
       "en": "New region unlocked!",
       "zhHans": "解锁新区域！",
       "zhHant": "解鎖新區域！",
-      "ja": "",
+      "ja": "新エリア解放！",
       "enumType": "",
       "enumValue": ""
     }

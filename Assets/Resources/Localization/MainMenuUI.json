@@ -8,7 +8,7 @@
       "en": "New Game",
       "zhHans": "新游戏",
       "zhHant": "新遊戲",
-      "ja": "",
+      "ja": "ニューゲーム",
       "enumType": "",
       "enumValue": ""
     },
@@ -19,7 +19,7 @@
       "en": "Continue",
       "zhHans": "继续游戏",
       "zhHant": "繼續遊戲",
-      "ja": "",
+      "ja": "続きから",
       "enumType": "",
       "enumValue": ""
     },
@@ -30,7 +30,7 @@
       "en": "Options",
       "zhHans": "选项",
       "zhHant": "選項",
-      "ja": "",
+      "ja": "オプション",
       "enumType": "",
       "enumValue": ""
     },
@@ -41,7 +41,7 @@
       "en": "Credits",
       "zhHans": "制作人员名单",
       "zhHant": "製作人員名單",
-      "ja": "",
+      "ja": "クレジット",
       "enumType": "",
       "enumValue": ""
     },
@@ -52,7 +52,7 @@
       "en": "Quit",
       "zhHans": "退出游戏",
       "zhHant": "退出遊戲",
-      "ja": "",
+      "ja": "ゲームを終了",
       "enumType": "",
       "enumValue": ""
     },
@@ -63,7 +63,7 @@
       "en": "Press Any Key to Start",
       "zhHans": "按任意键开始",
       "zhHant": "按任意鍵開始",
-      "ja": "",
+      "ja": "何かキーを押してください",
       "enumType": "",
       "enumValue": ""
     },
@@ -74,7 +74,7 @@
       "en": "This will erase all existing progress.\nStart a new game anyway?",
       "zhHans": "之前的游戏进度将全部丢失。确定要开始新游戏吗？",
       "zhHant": "之前的遊戲進度將全部丟失。確定要開始新遊戲嗎？",
-      "ja": "",
+      "ja": "これまでの進行状況はすべて失われます。\nそれでもニューゲームを始めますか？",
       "enumType": "",
       "enumValue": ""
     }
