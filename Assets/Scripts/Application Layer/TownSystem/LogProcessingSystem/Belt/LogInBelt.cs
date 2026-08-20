@@ -403,7 +403,8 @@ public class LogInBelt : MonoBehaviour
                 treeType = item.item.treeType,
                 logState = item.item.logState,
                 durability = item.item.durability,
-                color = item.item.color // 컬러 저장
+                color = item.item.color, // 컬러 저장
+                bIsTimber = item.item.BIsTimber // 가공 여부 저장
             };
 
             _saveData.activeItems.Add(itemSaveData);
@@ -429,7 +430,8 @@ public class LogInBelt : MonoBehaviour
                 treeType = dItem.item.treeType,
                 logState = dItem.item.logState,
                 durability = dItem.item.durability,
-                color = dItem.item.color
+                color = dItem.item.color,
+                bIsTimber = dItem.item.BIsTimber // 가공 여부 저장
             };
 
             _saveData.deactivatingItems.Add(dSaveData);
@@ -462,6 +464,10 @@ public class LogInBelt : MonoBehaviour
                     newItem.durability = itemData.itemData.durability;
                     newItem.UpdateSortingOrder();
                     activeItems.Add(new BeltItem(newItem, itemData.targetIndex));
+
+                    // 가공이 끝난 제재목이면 외형을 되돌린다(스프라이트만 바뀌므로 별도 복원이 필요하다).
+                    if (itemData.itemData.bIsTimber) newItem.SetTimberSprite();
+
                     newItem.PlayGemShiny();
                 }
             }
@@ -489,6 +495,10 @@ public class LogInBelt : MonoBehaviour
                     newItem.durability = dItemData.itemData.durability;
                     newItem.UpdateSortingOrder();
                     deactivatingItems.Add(new DeactivatingItem(newItem, dItemData.remainingTime));
+
+                    if (dItemData.itemData.bIsTimber) newItem.SetTimberSprite();
+
+                    newItem.PlayGemShiny();
                 }
             }
         }
