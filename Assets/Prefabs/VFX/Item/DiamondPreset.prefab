@@ -112,7 +112,7 @@ MonoBehaviour:
   enablePixelStyle: 0
   pixelResolution: 32
   colorBandingSteps: 4
-  bloomIntensity: 0.7
+  bloomIntensity: 0.5
   rotationSpeed: 0.75
   speedVariation: 0.2
   overrideRaySettings: 1
@@ -122,9 +122,9 @@ MonoBehaviour:
   minBeamWidth: 0.04
   maxBeamWidth: 0.25
   overrideColors: 1
-  coreColor: {r: 1.4332141, g: 1.5639819, b: 4.4034986, a: 1}
-  beamColor: {r: 0.6061382, g: 0.9957981, b: 2.424553, a: 1}
-  outerColor: {r: 0.37999123, g: 0.7624557, b: 1.2393559, a: 1}
+  coreColor: {r: 0.8199905, g: 0.8948072, b: 2.5193913, a: 1}
+  beamColor: {r: 0.62984794, g: 1.0347497, b: 2.5193918, a: 1}
+  outerColor: {r: 0.45930454, g: 0.9215985, b: 1.4980392, a: 1}
   enablePrismMode: 0
   prismSaturation: 1
   prismSpeed: 0.5

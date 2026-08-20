@@ -28,6 +28,12 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     [SerializeField] private Color advancedColor = new Color(0.2f, 0.6f, 1.0f, 1.0f);
     [SerializeField] private Color perfectColor = new Color(1.0f, 0.85f, 0.0f, 1.0f);
 
+    [Header("Rainbow Effect Settings")]
+    [SerializeField] private bool useRainbowCycle = true;
+    [SerializeField] private float rainbowSpeed = 0.5f;
+    [SerializeField] private float rainbowSaturation = 0.85f;
+    [SerializeField] private float rainbowBrightness = 1.0f;
+
     public Action<UI_InventorySlot, IItemData, Vector2> enterSlot;
     public Action exitSlot;
     public Action<IInventorySlot> deleteItem;
@@ -39,6 +45,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private CurrencyFontHUD currencyFont;
     private int maxItemCntPerSlot = 99;
     private ShinyEffectComponent shinyEffectComponent;
+    private bool isRainbowActive = false;
+    private float currentRainbowHue = 0.0f;
 
     public IItemData ShowItemData => showItemData;
     public IInventorySlot InvSlotRef => invSlotRef;
@@ -155,6 +163,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null != invSlotRef)
             invSlotRef.SlotUpdatedEvent -= PlayItemInteraction;
 
+        isRainbowActive = false;
         UpdateImage(null, Color.white);
         SetEffectActive(false);
         SetShinyEffectActive(false);
@@ -251,8 +260,23 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             uiImage.raycastTarget = false;
     }
  
+    private void Update()
+    {
+        if (true == isRainbowActive && null != uiEffect)
+        {
+            currentRainbowHue = Mathf.Repeat(currentRainbowHue + Time.deltaTime * rainbowSpeed, 1.0f);
+            Color rainbowColor = Color.HSVToRGB(currentRainbowHue, rainbowSaturation, rainbowBrightness);
+            uiEffect.edgeColor = rainbowColor;
+        }
+    }
+
     public void SetEffectActive(bool _active)
     {
+        if (false == _active)
+        {
+            isRainbowActive = false;
+        }
+
         if (null != uiEffect)
         {
             uiEffect.gameObject.SetActive(_active);
@@ -269,6 +293,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
  
     public void SetEdgeColor(Color _color)
     {
+        isRainbowActive = false;
+
         if (null != uiEffect)
         {
             uiEffect.edgeMode = EdgeMode.Shiny;
@@ -276,7 +302,19 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         }
     }
 
-    private void UpdateRarityEffect(IItemData _itemData)
+    public void SetRainbowEdge(bool _active)
+    {
+        isRainbowActive = _active;
+
+        if (true == _active && null != uiEffect)
+        {
+            uiEffect.edgeMode = EdgeMode.Shiny;
+            Color rainbowColor = Color.HSVToRGB(currentRainbowHue, rainbowSaturation, rainbowBrightness);
+            uiEffect.edgeColor = rainbowColor;
+        }
+    }
+
+    public void UpdateRarityEffect(IItemData _itemData)
     {
         if (null == _itemData)
         {
@@ -302,7 +340,14 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
                     break;
                 case LogState.Perfect:
                     SetEffectActive(true);
-                    SetEdgeColor(perfectColor);
+                    if (true == useRainbowCycle)
+                    {
+                        SetRainbowEdge(true);
+                    }
+                    else
+                    {
+                        SetEdgeColor(perfectColor);
+                    }
                     SetShinyEffectActive(true);
                     break;
                 default:

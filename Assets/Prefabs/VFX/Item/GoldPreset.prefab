@@ -112,7 +112,7 @@ MonoBehaviour:
   enablePixelStyle: 0
   pixelResolution: 32
   colorBandingSteps: 4
-  bloomIntensity: 0.7
+  bloomIntensity: 0.6
   rotationSpeed: 0.75
   speedVariation: 0.2
   overrideRaySettings: 1

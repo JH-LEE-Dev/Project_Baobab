@@ -88,10 +88,11 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
         localizationManager = GetComponentInChildren<LocalizationManager>();
 
-        if (localizationManager != null)
+        if (null != localizationManager)
         {
             localizationManager.Initialize();
             LoadLocalizationData();
+            SettingsManager.Instance.Bind(localizationManager);
         }
 
         if (inputManager != null)
