@@ -75,8 +75,7 @@ MonoBehaviour:
   - {fileID: 6049851641271938233, guid: 54ac872e6f8957549b32f8e0f6248201, type: 3}
   - {fileID: 6158695759910253706, guid: 9d3500dd8baa2294ea0100f58bc905f3, type: 3}
   - {fileID: 6158695759910253706, guid: 9d3500dd8baa2294ea0100f58bc905f3, type: 3}
-  waterAnimatedOtherTypeObjPrefabs:
-  - {fileID: 6761461242732384596, guid: 5b6b548cf47a58e49bee2ad27941c66f, type: 3}
+  waterAnimatedOtherTypeObjPrefabs: []
   grassStaticObjPrefabs:
   - {fileID: 5425288766945036917, guid: 89dbc82bee51d2c44973784844018b54, type: 3}
   - {fileID: 563241788502290586, guid: ce53722f442ca18478b233a84a3cdfbb, type: 3}
@@ -97,7 +96,7 @@ MonoBehaviour:
   waterAnimatedObjDensity: 0.1
   waterAnimatedOtherTypeObjDensity: 0
   waterAnimatedObjSeaDensity: 0.01
-  waterAnimatedOtherTypeObjSeaDensity: 0.01
+  waterAnimatedOtherTypeObjSeaDensity: 0
   waterDecoDensity: 0
   sandDecoDensity: 0.05
   groundDecoDensity: 0.01
