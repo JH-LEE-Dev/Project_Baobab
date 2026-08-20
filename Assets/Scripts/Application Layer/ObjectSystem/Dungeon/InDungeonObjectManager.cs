@@ -1227,7 +1227,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (inDungeonVFXManager != null)
         {
             inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
-            inDungeonVFXManager.PlayTreeTransformVFX(_treeObj.treeVisualComponent);
+            inDungeonVFXManager.PlayTreeTransformVFX(_treeObj.treeVisualComponent, _treeObj.gemStage);
         }
 
         // VFX 유무와 무관하게 외부(UI 등)에 어떤 나무가 변했는지 알린다.
@@ -1334,6 +1334,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private void OnTreeHit(TreeObj _treeObj)
     {
         inDungeonVFXManager.PlayTreeHitVFX(_treeObj.treeVisualComponent);
+
+        // 보석 단계 나무는 전용 임팩트 이펙트를 함께 터뜨린다.
+        if (_treeObj.bIsGemStage)
+        {
+            inDungeonVFXManager.PlayTreeGemHitVFX(_treeObj.treeVisualComponent, _treeObj.gemStage);
+        }
 
         if (currentTreeGenerationStrategy != null)
         {

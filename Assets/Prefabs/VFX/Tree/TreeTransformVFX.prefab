@@ -118,4 +118,15 @@ MonoBehaviour:
   - {fileID: 1395528091762363757, guid: c601a64e125449b4fa3d999c3517954f, type: 3}
   - {fileID: -7020236546904153394, guid: c601a64e125449b4fa3d999c3517954f, type: 3}
   frameRate: 24
+  stageColors:
+  - gemStage: 1
+    color: {r: 2.3180466, g: 1.6689936, b: 0.50997025, a: 1}
+    cycleHue: 0
+  - gemStage: 2
+    color: {r: 0.78464717, g: 1.7262238, b: 4.237095, a: 1}
+    cycleHue: 0
+  - gemStage: 3
+    color: {r: 1.7309318, g: 1.1, b: 1.1, a: 1}
+    cycleHue: 1
+  hueCycleSpeed: 1.5
   hdrIntensity: 1.5
