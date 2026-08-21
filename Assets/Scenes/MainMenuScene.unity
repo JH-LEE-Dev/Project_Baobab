@@ -569,6 +569,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizationManager
   localizationMapping: {fileID: 11400000, guid: ab9a0a2deca3274408866aec7a10f999, type: 2}
+  fontTable: {fileID: 11400000, guid: 2e8f6b4d0c1a49f7b3d5e7a9c1b2d4f6, type: 2}
 --- !u!1 &760743919
 GameObject:
   m_ObjectHideFlags: 0
