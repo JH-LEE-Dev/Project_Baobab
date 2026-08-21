@@ -25,7 +25,7 @@ public static class LocKeys
         public const int powerSupplyName = 4194443;
         public const int logProcessingSpeed2Name = 4194445;
         public const int bountifulTree1Name = 4194447;
-        public const int fascinatingLogChance1Name = 4194449;
+        public const int goldTreeChanceName = 4194449;
         public const int pickupRange1Name = 4194451;
         public const int logValue2Name = 4194453;
         public const int bountifulTree2Name = 4194455;
@@ -199,6 +199,8 @@ public static class LocKeys
         public const int option = 27262978;
         public const int mainMenu = 27262979;
         public const int exitGame = 27262980;
+        public const int exitGameWarning = 27262981;
+        public const int mainMenuWarning = 27262982;
     }
 
     public static class InventoryUI
