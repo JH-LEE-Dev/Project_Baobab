@@ -119,9 +119,8 @@ public class UI_MainMenu : MonoBehaviour
             
             if (null != loadGameButton)
             {
-                // 세이브 데이터가 없으면 버튼 자체를 비활성화(숨김) 처리하고, 있으면 상호작용 가능 상태로 만듦
+                // 세이브 데이터가 없으면 버튼 자체를 비활성화(숨김) 처리
                 loadGameButton.gameObject.SetActive(_hasSaveData);
-                loadGameButton.SetInteractable(_hasSaveData);
             }
 
             UpdateButtonLayout();
@@ -190,7 +189,6 @@ public class UI_MainMenu : MonoBehaviour
                 if (_btn == loadGameButton)
                 {
                     _btn.gameObject.SetActive(_hasSaveData);
-                    _btn.SetInteractable(_hasSaveData);
                     continue;
                 }
 
@@ -198,7 +196,6 @@ public class UI_MainMenu : MonoBehaviour
                 {
                     _btn.gameObject.SetActive(true);
                 }
-                _btn.SetInteractable(true);
             }
         }
 

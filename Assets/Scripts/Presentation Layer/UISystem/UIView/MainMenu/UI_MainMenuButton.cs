@@ -78,11 +78,6 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     [SerializeField] private Ease disappearSuckEase = Ease.InCubic;
     [SerializeField] private Ease disappearShrinkEase = Ease.InBack;
 
-    [Header("Disabled Settings")]
-    [SerializeField] private bool isInteractable = true; 
-    [ColorUsage(true, true)] [SerializeField] private Color disabledDotColor = Color.gray;
-    [SerializeField] private Color disabledTextColor = Color.gray;
-
     // 내부 상태
     private Action onClickAction;
     private Action onPressedAction;
@@ -92,8 +87,6 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private TextMeshProUGUI targetTextComponent;
     private TextMeshProUGUI targetDotTextComponent;
     private UnityEngine.UI.Graphic dotGraphicComponent;
-    private Color originalDotColor = Color.white;
-    private Color originalTextColor = Color.white;
 
     // 캐싱된 UI 컴포넌트
     private RectTransform cachedRectTransform;
@@ -130,6 +123,8 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void Awake()
     {
+        EnsureTargetComponents();
+
         // 델리게이트 인스턴스 사전 생성 및 캐싱 (람다/클로저 제거)
         onAppearCompleteCallback = OnAppearComplete;
         onDisappearCompleteCallback = OnDisappearComplete;
@@ -198,8 +193,6 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void ResetAndPlayAppearInternal()
     {
-        SetInteractable(isInteractable); // 초기 컬러 갱신
-
         float _delay = appearManualDelay;
         if (true == autoStaggerBySiblingIndex)
         {
@@ -228,7 +221,6 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         {
             textOriginalPos = textTarget.anchoredPosition;
             targetTextComponent = textTarget.GetComponent<TextMeshProUGUI>();
-            if (null != targetTextComponent) originalTextColor = targetTextComponent.color;
         }
 
         if (null != dotTarget)
@@ -236,24 +228,6 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
             dotOriginalRot = dotTarget.localEulerAngles;
             if (null == dotGraphicComponent) dotGraphicComponent = dotTarget.GetComponentInChildren<UnityEngine.UI.Graphic>();
             if (null == targetDotTextComponent) targetDotTextComponent = dotTarget.GetComponentInChildren<TextMeshProUGUI>();
-            if (null != dotGraphicComponent) originalDotColor = dotGraphicComponent.color;
-        }
-    }
-
-    public void SetInteractable(bool _isInteractable)
-    {
-        EnsureTargetComponents();
-
-        isInteractable = _isInteractable;
-
-        if (null != targetTextComponent)
-        {
-            targetTextComponent.color = isInteractable ? originalTextColor : disabledTextColor;
-        }
-
-        if (null != dotGraphicComponent)
-        {
-            dotGraphicComponent.color = isInteractable ? originalDotColor : disabledDotColor;
         }
     }
 
@@ -467,12 +441,6 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         PlayClickShadowMotion();
 
-        if (false == isInteractable)
-        {
-            PlayDisabledClickMotion();
-            return;
-        }
-
         Sound.PlayUI(SoundID.MainClick);
         onPressedAction?.Invoke();
 
@@ -481,18 +449,8 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void PlayClickShadowMotion()
     {
-        Color targetShadowColor = isInteractable ? clickShadowColor : disabledClickShadowColor;
-        TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, targetShadowColor, clickShadowGlow, clickDuration, clickShadowEase);
-        TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, targetShadowColor, clickShadowGlow, clickDuration, clickShadowEase);
-    }
-
-    private void PlayDisabledClickMotion()
-    {
-        transform.DOKill();
-        transform.localScale = Vector3.one;
-        Sequence _disabledClickSeq = DOTween.Sequence();
-        _disabledClickSeq.Join(transform.DOPunchScale(clickPunchScale, clickDuration, clickVibrato, clickElasticity));
-        _disabledClickSeq.InsertCallback(clickDuration, onClickPunchCompleteCallback);
+        TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, clickShadowColor, clickShadowGlow, clickDuration, clickShadowEase);
+        TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, clickShadowColor, clickShadowGlow, clickDuration, clickShadowEase);
     }
 
     private void HandleClickSequence()
@@ -737,13 +695,6 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private void OnDisappearComplete() { gameObject.SetActive(false); }
     private void OnClickPunchComplete()
     {
-        if (false == isInteractable)
-        {
-            isClicked = false;
-            EvaluatePointerState();
-            return;
-        }
-
         if (true == isToggledButton)
         {
             PlayMaintainMotion();

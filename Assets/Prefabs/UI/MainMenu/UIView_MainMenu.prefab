@@ -36,7 +36,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -1, y: 12}
+  m_AnchoredPosition: {x: -12, y: 12}
   m_SizeDelta: {x: 32, y: 32}
   m_Pivot: {x: 1, y: 0}
 --- !u!222 &1015252666224670184
@@ -107,6 +107,7 @@ GameObject:
   - component: {fileID: 5013316767201409074}
   - component: {fileID: 5991195431232774398}
   - component: {fileID: 5826113157840366605}
+  - component: {fileID: 2674641880628059288}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -384,6 +385,18 @@ MonoBehaviour:
   m_DetailTexSpeed: {x: 0, y: 0}
   m_CustomRoot: {fileID: 0}
   m_Flip: 0
+--- !u!114 &2674641880628059288
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1545942750125184316}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
 --- !u!1 &2377220180090863902
 GameObject:
   m_ObjectHideFlags: 0
@@ -764,13 +777,162 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1971454348230411440, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7569987406557066835}
+    - targetCorrespondingSourceObject: {fileID: 9022537395858502249, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8719636983296776676}
+    - targetCorrespondingSourceObject: {fileID: 2520236218404064942, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4157903361729716056}
+    - targetCorrespondingSourceObject: {fileID: 3716198185421653909, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2151024581055389523}
+    - targetCorrespondingSourceObject: {fileID: 7527125365656256646, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2295934283505202989}
+    - targetCorrespondingSourceObject: {fileID: 1714873478696138929, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5888373462841537301}
+    - targetCorrespondingSourceObject: {fileID: 2872002854228734628, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1460370178611516874}
+    - targetCorrespondingSourceObject: {fileID: 5059363652738719053, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4922039286397112864}
+    - targetCorrespondingSourceObject: {fileID: 4305680746399961308, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1329163941652659409}
+    - targetCorrespondingSourceObject: {fileID: 756522547902201911, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4525508601945777523}
   m_SourcePrefab: {fileID: 100100000, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+--- !u!1 &238218040590324307 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 756522547902201911, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+  m_PrefabInstance: {fileID: 662564832808079972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4525508601945777523
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 238218040590324307}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
 --- !u!224 &1290886215125650852 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 1791237586274115520, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
   m_PrefabInstance: {fileID: 662564832808079972}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1327968689208514260 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1971454348230411440, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+  m_PrefabInstance: {fileID: 662564832808079972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7569987406557066835
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1327968689208514260}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+--- !u!1 &2233103046481210069 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1714873478696138929, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+  m_PrefabInstance: {fileID: 662564832808079972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5888373462841537301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2233103046481210069}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+--- !u!1 &3154853214625291466 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2520236218404064942, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+  m_PrefabInstance: {fileID: 662564832808079972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4157903361729716056
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3154853214625291466}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+--- !u!1 &3380655574399525056 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2872002854228734628, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+  m_PrefabInstance: {fileID: 662564832808079972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1460370178611516874
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3380655574399525056}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+--- !u!1 &3670784337191207608 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4305680746399961308, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+  m_PrefabInstance: {fileID: 662564832808079972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1329163941652659409
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3670784337191207608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+--- !u!1 &4225345923530839537 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3716198185421653909, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+  m_PrefabInstance: {fileID: 662564832808079972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2151024581055389523
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4225345923530839537}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
 --- !u!114 &4351891654826972354 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3842944130376517286, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
@@ -782,6 +944,57 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7c5321327a44a94aa49683f3678b362, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_MainMenu
+--- !u!1 &5694695470298992425 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5059363652738719053, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+  m_PrefabInstance: {fileID: 662564832808079972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4922039286397112864
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5694695470298992425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+--- !u!1 &7008832025527784162 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7527125365656256646, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+  m_PrefabInstance: {fileID: 662564832808079972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2295934283505202989
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7008832025527784162}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+--- !u!1 &8360821387910438925 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9022537395858502249, guid: 323645c365d430340bfb16e08f94f2f7, type: 3}
+  m_PrefabInstance: {fileID: 662564832808079972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8719636983296776676
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8360821387910438925}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
 --- !u!1001 &1238938176032016441
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2496,7 +2709,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 839913780063968852, guid: bd28f55901e93bd4aa5204630655ec49, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2531306087994410729}
   m_SourcePrefab: {fileID: 100100000, guid: bd28f55901e93bd4aa5204630655ec49, type: 3}
 --- !u!224 &2677981664697403524 stripped
 RectTransform:
@@ -2514,3 +2730,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3034ae3eb311a1d4bac62f5f2f6240e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_PressAnyKey
+--- !u!1 &8051162467811098721 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 839913780063968852, guid: bd28f55901e93bd4aa5204630655ec49, type: 3}
+  m_PrefabInstance: {fileID: 7213782237555039797}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2531306087994410729
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8051162467811098721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
