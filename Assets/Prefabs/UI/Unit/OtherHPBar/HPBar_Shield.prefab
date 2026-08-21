@@ -1443,6 +1443,11 @@ MonoBehaviour:
   diamondHpBarSprite: {fileID: 21300000, guid: 00d636e12e0146b4d916abb22ac22403, type: 3}
   rainbowHpBarSprite: {fileID: 21300000, guid: 9c865741a16f0694cbe10178fd205a15, type: 3}
   hpFillImage: {fileID: 21211301574859493}
+  normalGhostBarSprite: {fileID: 21300000, guid: 028b95a313f7b37408482ef0ecaad659, type: 3}
+  goldGhostBarSprite: {fileID: 21300000, guid: a7449693735dc4543a249d392d0851ed, type: 3}
+  diamondGhostBarSprite: {fileID: 21300000, guid: eb6beaf4ba528ab48aa853a2bf2e3d9f, type: 3}
+  rainbowGhostBarSprite: {fileID: 21300000, guid: caff10b8da8fb304c80f2ddc5669531b, type: 3}
+  hpGhostFillImage: {fileID: 9108030550675245789}
   revivalDuration: 0.35
   revivalEase: 6
   revivalShakeDuration: 1
