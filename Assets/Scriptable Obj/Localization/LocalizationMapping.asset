@@ -272,115 +272,115 @@ MonoBehaviour:
   - enumTypeName: ForestType
     enumValueName: None
     enumIntValue: 0
-    compositeKey: 8388609
+    compositeKey: 12582913
   - enumTypeName: ForestType
     enumValueName: InTown
     enumIntValue: 1
-    compositeKey: 8388610
+    compositeKey: 12582914
   - enumTypeName: ForestType
     enumValueName: WideGreenForest_1
     enumIntValue: 2
-    compositeKey: 8388611
+    compositeKey: 12582915
   - enumTypeName: ForestType
     enumValueName: WideGreenForest_2
     enumIntValue: 3
-    compositeKey: 8388612
+    compositeKey: 12582916
   - enumTypeName: ForestType
     enumValueName: WideGreenForest_3
     enumIntValue: 4
-    compositeKey: 8388613
+    compositeKey: 12582917
   - enumTypeName: ForestType
     enumValueName: FluffySporeForest_1
     enumIntValue: 5
-    compositeKey: 8388614
+    compositeKey: 12582918
   - enumTypeName: ForestType
     enumValueName: FluffySporeForest_2
     enumIntValue: 6
-    compositeKey: 8388615
+    compositeKey: 12582919
   - enumTypeName: ForestType
     enumValueName: FluffySporeForest_3
     enumIntValue: 7
-    compositeKey: 8388616
+    compositeKey: 12582920
   - enumTypeName: ForestType
     enumValueName: StarrootForest_1
     enumIntValue: 8
-    compositeKey: 8388617
+    compositeKey: 12582921
   - enumTypeName: ForestType
     enumValueName: StarrootForest_2
     enumIntValue: 9
-    compositeKey: 8388618
+    compositeKey: 12582922
   - enumTypeName: ForestType
     enumValueName: StarrootForest_3
     enumIntValue: 10
-    compositeKey: 8388619
+    compositeKey: 12582923
   - enumTypeName: ForestType
     enumValueName: MagmaForest_1
     enumIntValue: 11
-    compositeKey: 8388620
+    compositeKey: 12582924
   - enumTypeName: ForestType
     enumValueName: MagmaForest_2
     enumIntValue: 12
-    compositeKey: 8388621
+    compositeKey: 12582925
   - enumTypeName: ForestType
     enumValueName: MagmaForest_3
     enumIntValue: 13
-    compositeKey: 8388622
+    compositeKey: 12582926
   - enumTypeName: DungeonState
     enumValueName: None
     enumIntValue: 0
-    compositeKey: 8388709
+    compositeKey: 12583013
   - enumTypeName: DungeonState
     enumValueName: Stage1_Idle0
     enumIntValue: 1
-    compositeKey: 8388710
+    compositeKey: 12583014
   - enumTypeName: DungeonState
     enumValueName: Stage1_Idle1
     enumIntValue: 2
-    compositeKey: 8388711
+    compositeKey: 12583015
   - enumTypeName: DungeonState
     enumValueName: Stage1_Idle2
     enumIntValue: 3
-    compositeKey: 8388712
+    compositeKey: 12583016
   - enumTypeName: DungeonState
     enumValueName: Stage1_Idle3
     enumIntValue: 4
-    compositeKey: 8388713
+    compositeKey: 12583017
   - enumTypeName: DungeonState
     enumValueName: Stage2_Idle0
     enumIntValue: 5
-    compositeKey: 8388714
+    compositeKey: 12583018
   - enumTypeName: DungeonState
     enumValueName: Stage2_Idle1
     enumIntValue: 6
-    compositeKey: 8388715
+    compositeKey: 12583019
   - enumTypeName: DungeonState
     enumValueName: Stage2_Idle2
     enumIntValue: 7
-    compositeKey: 8388716
+    compositeKey: 12583020
   - enumTypeName: DungeonState
     enumValueName: Stage3_Idle0
     enumIntValue: 8
-    compositeKey: 8388717
+    compositeKey: 12583021
   - enumTypeName: DungeonState
     enumValueName: Stage3_Idle1
     enumIntValue: 9
-    compositeKey: 8388718
+    compositeKey: 12583022
   - enumTypeName: DungeonState
     enumValueName: Stage3_Idle2
     enumIntValue: 10
-    compositeKey: 8388719
+    compositeKey: 12583023
   - enumTypeName: DungeonState
     enumValueName: Stage4_Idle0
     enumIntValue: 11
-    compositeKey: 8388720
+    compositeKey: 12583024
   - enumTypeName: DungeonState
     enumValueName: Stage4_Idle1
     enumIntValue: 12
-    compositeKey: 8388721
+    compositeKey: 12583025
   - enumTypeName: DungeonState
     enumValueName: Stage4_Idle2
     enumIntValue: 13
-    compositeKey: 8388722
+    compositeKey: 12583026
   - enumTypeName: TreeType
     enumValueName: OakTree
     enumIntValue: 1
