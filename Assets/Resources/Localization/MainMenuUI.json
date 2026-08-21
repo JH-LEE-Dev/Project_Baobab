@@ -71,10 +71,21 @@
       "id": 6,
       "key": "NewGameWarning",
       "kr": "이전 진행 상황이 모두 사라집니다.\n정말 새 게임을 시작하시겠습니까?",
-      "en": "This will erase all existing progress.\nStart a new game anyway?",
+      "en": "All saved progress will be lost.\nStart a new game?",
       "zhHans": "之前的游戏进度将全部丢失。确定要开始新游戏吗？",
       "zhHant": "之前的遊戲進度將全部丟失。確定要開始新遊戲嗎？",
       "ja": "これまでの進行状況はすべて失われます。\nそれでもニューゲームを始めますか？",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 7,
+      "key": "DotText",
+      "kr": "◆",
+      "en": "◆",
+      "zhHans": "◆",
+      "zhHant": "◆",
+      "ja": "◆",
       "enumType": "",
       "enumValue": ""
     }

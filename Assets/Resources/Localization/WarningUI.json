@@ -1,4 +1,4 @@
-{
+﻿{
   "jsonId": 4,
   "entries": [
     {
@@ -16,7 +16,7 @@
       "id": 2,
       "key": "subText",
       "kr": "<Color=E94A42>인벤토리에 있는 원목이 사라집니다.</Color>",
-      "en": "<Color=E94A42>Any logs in your inventory will be lost.</Color>",
+      "en": "<Color=E94A42>Logs in your inventory will be lost.</Color>",
       "zhHans": "<Color=E94A42>背包中的原木将会消失。</Color>",
       "zhHant": "<Color=E94A42>背包中的原木將會消失。</Color>",
       "ja": "<Color=E94A42>バッグ内の丸太は失われます。</Color>",

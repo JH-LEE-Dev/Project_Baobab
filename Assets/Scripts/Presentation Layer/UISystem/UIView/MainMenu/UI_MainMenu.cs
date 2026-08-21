@@ -119,9 +119,8 @@ public class UI_MainMenu : MonoBehaviour
             
             if (null != loadGameButton)
             {
-                // 세이브 데이터가 없으면 버튼 자체를 비활성화(숨김) 처리하고, 있으면 상호작용 가능 상태로 만듦
+                // 세이브 데이터가 없으면 버튼 자체를 비활성화(숨김) 처리
                 loadGameButton.gameObject.SetActive(_hasSaveData);
-                loadGameButton.SetInteractable(_hasSaveData);
             }
 
             UpdateButtonLayout();
@@ -190,7 +189,6 @@ public class UI_MainMenu : MonoBehaviour
                 if (_btn == loadGameButton)
                 {
                     _btn.gameObject.SetActive(_hasSaveData);
-                    _btn.SetInteractable(_hasSaveData);
                     continue;
                 }
 
@@ -198,7 +196,6 @@ public class UI_MainMenu : MonoBehaviour
                 {
                     _btn.gameObject.SetActive(true);
                 }
-                _btn.SetInteractable(true);
             }
         }
 
@@ -221,29 +218,37 @@ public class UI_MainMenu : MonoBehaviour
         if (null == viewCtx || null == viewCtx.localizationManager)
             return;
 
+        string _dotText = viewCtx.localizationManager.GetText(mainMenuUIJsonId, 7);
+        if (true == string.IsNullOrEmpty(_dotText)) _dotText = "◆";
+
         if (null != newGameButton)
         {
             newGameButton.SetText(viewCtx.localizationManager.GetText(mainMenuUIJsonId, 1));
+            newGameButton.SetDotText(_dotText);
         }
         
         if (null != loadGameButton)
         {
             loadGameButton.SetText(viewCtx.localizationManager.GetText(mainMenuUIJsonId, 2));
+            loadGameButton.SetDotText(_dotText);
         }
         
         if (null != optionButton)
         {
             optionButton.SetText(viewCtx.localizationManager.GetText(mainMenuUIJsonId, 3));
+            optionButton.SetDotText(_dotText);
         }
         
         if (null != creditButton)
         {
             creditButton.SetText(viewCtx.localizationManager.GetText(mainMenuUIJsonId, 4));
+            creditButton.SetDotText(_dotText);
         }
 
         if (null != exitButton)
         {
             exitButton.SetText(viewCtx.localizationManager.GetText(mainMenuUIJsonId, 5));
+            exitButton.SetDotText(_dotText);
         }
     }
     

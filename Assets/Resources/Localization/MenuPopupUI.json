@@ -1,4 +1,4 @@
-{
+﻿{
   "jsonId": 1,
   "entries": [
     {
@@ -12,7 +12,6 @@
       "enumType": "MapType",
       "enumValue": "None"
     },
-
     {
       "id": 2,
       "key": "mapName_1",

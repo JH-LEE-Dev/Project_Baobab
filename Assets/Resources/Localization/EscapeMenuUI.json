@@ -1,4 +1,4 @@
-{
+﻿{
   "jsonId": 13,
   "entries": [
     {
@@ -49,7 +49,7 @@
       "id": 5,
       "key": "ExitGameWarning",
       "kr": "정말 게임을 나가시겠습니까?",
-      "en": "Are you sure you want to quit the game?",
+      "en": "Are you sure you want to quit?",
       "zhHans": "确定要退出游戏吗？",
       "zhHant": "確定要退出遊戲嗎？",
       "ja": "ゲームを終了しますか？",
@@ -60,7 +60,7 @@
       "id": 6,
       "key": "MainMenuWarning",
       "kr": "정말 메인 메뉴로 나가시겠습니까?",
-      "en": "Are you sure you want to return to the main menu?",
+      "en": "Return to the main menu?",
       "zhHans": "要返回主菜单吗？",
       "zhHant": "要返回主菜單嗎？",
       "ja": "メインメニューに戻りますか？",
