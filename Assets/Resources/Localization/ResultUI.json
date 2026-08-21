@@ -1,4 +1,4 @@
-{
+﻿{
   "jsonId": 3,
   "entries": [
     {
@@ -16,7 +16,7 @@
       "id": 2,
       "key": "treeKillCountZero",
       "kr": "<COLOR=FF833D>나무</COLOR>들이 오늘은 무사했습니다!",
-      "en": "The <COLOR=FF833D>trees</COLOR> are safe... for today!",
+      "en": "The <COLOR=FF833D>trees</COLOR> were spared today!",
       "zhHans": "今天的<COLOR=FF833D>树木</COLOR>平安无事！",
       "zhHant": "今天的<COLOR=FF833D>樹木</COLOR>平安無事！",
       "ja": "今日のところは、<COLOR=FF833D>木々</COLOR>も無事でした！",
@@ -27,7 +27,7 @@
       "id": 3,
       "key": "treeKillCountLow",
       "kr": "<COLOR=54D86A>{0}</COLOR>그루의 <COLOR=FF833D>나무</COLOR>를 벌목했습니다",
-      "en": "Chopped down <COLOR=54D86A>{0}</COLOR> <COLOR=FF833D>trees</COLOR>",
+      "en": "Chopped <COLOR=54D86A>{0}</COLOR> <COLOR=FF833D>trees</COLOR>",
       "zhHans": "已砍伐<COLOR=54D86A>{0}</COLOR>棵<COLOR=FF833D>树木</COLOR>",
       "zhHant": "已砍伐<COLOR=54D86A>{0}</COLOR>棵<COLOR=FF833D>樹木</COLOR>",
       "ja": "<COLOR=FF833D>木</COLOR>を<COLOR=54D86A>{0}</COLOR>本伐採しました",
@@ -38,7 +38,7 @@
       "id": 4,
       "key": "treeKillCountMiddle",
       "kr": "<COLOR=58D7F2>{0}</COLOR>그루의 <COLOR=FF833D>나무</COLOR>를 벌목했습니다!",
-      "en": "Chopped down <COLOR=58D7F2>{0}</COLOR> <COLOR=FF833D>trees</COLOR>!",
+      "en": "Chopped <COLOR=58D7F2>{0}</COLOR> <COLOR=FF833D>trees</COLOR>!",
       "zhHans": "已砍伐<COLOR=58D7F2>{0}</COLOR>棵<COLOR=FF833D>树木</COLOR>！",
       "zhHant": "已砍伐<COLOR=58D7F2>{0}</COLOR>棵<COLOR=FF833D>樹木</COLOR>！",
       "ja": "<COLOR=FF833D>木</COLOR>を<COLOR=58D7F2>{0}</COLOR>本伐採しました！",
@@ -49,7 +49,7 @@
       "id": 5,
       "key": "treeKillCountHigh",
       "kr": "<COLOR=7EEDBE,EDD87E>{0}</COLOR>그루의 <COLOR=FF833D>나무</COLOR>를 벌목했습니다!!",
-      "en": "Chopped down <COLOR=7EEDBE,EDD87E>{0}</COLOR> <COLOR=FF833D>trees</COLOR>!!",
+      "en": "Chopped <COLOR=7EEDBE,EDD87E>{0}</COLOR> <COLOR=FF833D>trees</COLOR>!!",
       "zhHans": "已砍伐<COLOR=7EEDBE,EDD87E>{0}</COLOR>棵<COLOR=FF833D>树木</COLOR>！！",
       "zhHant": "已砍伐<COLOR=7EEDBE,EDD87E>{0}</COLOR>棵<COLOR=FF833D>樹木</COLOR>！！",
       "ja": "<COLOR=FF833D>木</COLOR>を<COLOR=7EEDBE,EDD87E>{0}</COLOR>本伐採しました！！",
@@ -60,7 +60,7 @@
       "id": 6,
       "key": "acquiredLogsHeader",
       "kr": "이번 원정에서 획득한 원목",
-      "en": "Logs Collected This Expedition",
+      "en": "Logs Collected",
       "zhHans": "本次远征获得的原木",
       "zhHant": "本次遠征獲得的原木",
       "ja": "今回の遠征で手に入れた丸太",
