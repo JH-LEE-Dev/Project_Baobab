@@ -207,7 +207,15 @@ public static class FontLocalizer
 
     private static LocalizedFontTracker GetOrCreateTracker(TMP_Text _text)
     {
-        if (true == _text.TryGetComponent(out LocalizedFontTracker _tracker)) return _tracker;
+        if (true == _text.TryGetComponent(out LocalizedFontTracker _tracker))
+        {
+            // 프리팹에 미리 붙여둔 트래커는, 오브젝트가 비활성인 채로 생성되면 Awake가 아직
+            // 돌지 않아 원본을 기록하지 못한 상태다. 그대로 두면 언어 변경 전수 적용이
+            // 이 텍스트를 조용히 건너뛴다. 여기서 확실히 기록시킨다.
+            // (아직 아무도 폰트를 바꾸지 않은 시점이므로 지금 읽는 값이 곧 원본이다)
+            _tracker.EnsureCaptured();
+            return _tracker;
+        }
 
         // AddComponent 시점에 오브젝트가 활성이면 Awake가 즉시 돌아 원본이 기록되고,
         // 이어지는 OnEnable이 Apply를 한 번 더 호출한다. (이미 맞춰진 상태라 두 번째는 즉시 반환)
