@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
+public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, IShadowCaster
 {
     public event Action<TreeObj> TreeDeadEvent;
     public event Action<TreeObj> TreeGetHitEvent;
@@ -118,6 +118,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public Shadow TopShadowObject => topShadowObject;
     public float TopShadowRadius => topShadowRadius;
     public Vector2 TopShadowOffset => topShadowOffset;
+
+    // 나무는 태양 각도에서 유도된 전역 장축 배율을 그대로 사용한다.
+    public float ShadowLengthScaleOverride => 0f;
 
     public bool bCanApplyDamage => !bIsSapling;
 

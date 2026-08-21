@@ -767,6 +767,9 @@ MonoBehaviour:
   coinPitchResetDelay: 0.2
   coinPitchStep: 0.05
   coinPitchMax: 1.5
+  shadowEllipseCenter: {x: -0.63, y: -0.46}
+  shadowEllipseRadius: 0.46
+  shadowEllipseLengthScale: 1.5
   sr: {fileID: 3531435560046198048}
   outlineSr: {fileID: 9082406534967800036}
   frameTime: 0.05

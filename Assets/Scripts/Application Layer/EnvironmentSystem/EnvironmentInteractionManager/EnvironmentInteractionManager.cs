@@ -180,7 +180,7 @@ public class EnvironmentInteractionManager : MonoBehaviour
             for (int i = 0; i < _activeTrees.Count; i++)
             {
                 if (_activeTrees[i] == null) continue;
-                if (IsUnderTreeShadow(_unitPos, _activeTrees[i], _invShadowRot, _shadowScaleY))
+                if (IsUnderShadow(_unitPos, _activeTrees[i], _invShadowRot, _shadowScaleY))
                 {
                     _isInShadow = true;
                     break;
@@ -195,7 +195,22 @@ public class EnvironmentInteractionManager : MonoBehaviour
             for (int i = 0; i < _activeTrees.Count; i++)
             {
                 if (_activeTrees[i] == null) continue;
-                if (IsUnderTreeShadow(_unitPos, _activeTrees[i], _invShadowRot, _shadowScaleY))
+                if (IsUnderShadow(_unitPos, _activeTrees[i], _invShadowRot, _shadowScaleY))
+                {
+                    _isInShadow = true;
+                    break;
+                }
+            }
+        }
+
+        // 마을 건물 (ShopNPC, Home 등)
+        if (!_isInShadow && townObjectManager != null)
+        {
+            var _buildingShadowCasters = townObjectManager.BuildingShadowCasters;
+            for (int i = 0; i < _buildingShadowCasters.Count; i++)
+            {
+                if (_buildingShadowCasters[i] == null) continue;
+                if (IsUnderShadow(_unitPos, _buildingShadowCasters[i], _invShadowRot, _shadowScaleY))
                 {
                     _isInShadow = true;
                     break;
@@ -209,29 +224,39 @@ public class EnvironmentInteractionManager : MonoBehaviour
         else if (_unit is OffroadPorterNPC _p) _p.SetInShadow(_isInShadow, shadowFadeDuration);
     }
 
-    private bool IsUnderTreeShadow(Vector2 _unitPos, TreeObj _tree, Quaternion _invShadowRot, float _shadowScaleY)
+    private bool IsUnderShadow(Vector2 _unitPos, IShadowCaster _caster, Quaternion _invShadowRot, float _shadowScaleY)
     {
         // 1. 장축 배율 보정 (원형인 1.0을 기준으로 덜 줄어들고 덜 늘어나게 함)
-        float _baseScaleY = _shadowScaleY * 3.0f;
-        float _effectiveScaleY = Mathf.Lerp(1.0f, _baseScaleY, shadowLengthDamping);
+        // 캐스터가 자체 배율을 지정하면(건물 등) 그 값을 쓰고, 아니면 태양 각도에서 유도된 전역 배율을 쓴다.
+        float _overrideScaleY = _caster.ShadowLengthScaleOverride;
+        float _effectiveScaleY;
+        if (_overrideScaleY > 0f)
+        {
+            _effectiveScaleY = _overrideScaleY;
+        }
+        else
+        {
+            float _baseScaleY = _shadowScaleY * 3.0f;
+            _effectiveScaleY = Mathf.Lerp(1.0f, _baseScaleY, shadowLengthDamping);
+        }
 
         var _shadowData = environmentProvider.shadowDataProvider;
-        Vector2 _treePos = _tree.transform.position;
-        float _radius = _tree.TopShadowRadius;
+        Vector2 _casterPos = _caster.Position;
+        float _radius = _caster.TopShadowRadius;
         if (_radius <= 0) return false;
 
         // 최적화 1: 조기 종료 (그림자의 최대 길이보다 멀리 있으면 연산 건너뜀)
         float _maxRange = _radius * Mathf.Max(1.0f, _effectiveScaleY) + 0.5f;
-        if (Vector2.SqrMagnitude(_unitPos - _treePos) > (_maxRange * _maxRange)) return false;
+        if (Vector2.SqrMagnitude(_unitPos - _casterPos) > (_maxRange * _maxRange)) return false;
 
         // 2. 로컬 좌표계 변환
-        Vector2 _localPos = _invShadowRot * (_unitPos - _treePos);
+        Vector2 _localPos = _invShadowRot * (_unitPos - _casterPos);
 
         // 3. 중심점(Offset) 동적 보정
         // ScaleY가 Max일 때가 기본 Offset이며, ScaleY가 작아질수록 Offset도 shadowOffsetMinScale 범위까지 줄어듭니다.
         float _scaleFactor = Mathf.InverseLerp(_shadowData.minHeightScale, _shadowData.maxHeightScale, _shadowData.CurrentShadowScaleY);
         float _offsetMultiplier = Mathf.Lerp(shadowOffsetMinScale, 1.0f, _scaleFactor);
-        Vector2 _dynamicOffset = _tree.TopShadowOffset * _offsetMultiplier;
+        Vector2 _dynamicOffset = _caster.TopShadowOffset * _offsetMultiplier;
 
         float _dx = _localPos.x - _dynamicOffset.x;
         float _dy = _localPos.y - _dynamicOffset.y;

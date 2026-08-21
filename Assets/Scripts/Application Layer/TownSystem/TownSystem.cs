@@ -65,6 +65,8 @@ public class TownSystem : MonoBehaviour
         townObjectManager.Initialize(environmentProvider, inputManager, characterInventory, offroadContainer);
         logProcessingManager.Initialize(inputManager);
         tentManager.Initialize(inputManager);
+        townObjectManager.RegisterBuildingShadowCaster(logProcessingManager.shopNPC);
+        townObjectManager.RegisterBuildingShadowCaster(tentManager.Tent);
         townTileManager.Initialize();
         townUnitSpawner?.Initialize(environmentProvider);
         lootPillarManager?.Initialize(inputManager);

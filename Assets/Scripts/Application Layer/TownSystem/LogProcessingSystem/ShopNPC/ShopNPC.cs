@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 
-public class ShopNPC : MonoBehaviour, IShopNPC
+public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 {
     private struct FlyingCoin
     {
@@ -107,6 +107,33 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     public int currentMoney => money;
 
     [SerializeField] private List<Sprite> animationSprite;
+
+    [Header("Shadow")]
+    // 그림자 판정 타원. SpriteRenderer.bounds는 쓰지 않는다 - 그림자 스프라이트(Market_Shadow, 64x80px)에
+    // 투명 여백이 많아 bounds가 실제로 보이는 그림자보다 한참 크기 때문이다.
+    // 아래 값은 실제 불투명 픽셀 영역(x 3~61, y 12~47 / PPU 32)에서 측정한 것이다.
+    //   보이는 그림자 중심 = ShopBuildingShadow 상대 위치(-0.65,-0.15) + 픽셀 중심 보정(0.016, -0.313) = (-0.63, -0.46)
+    //   보이는 그림자 반경 = (0.92, 0.56) -> 회전된 타원이 이 안에 들어오도록 단축 0.46 / 장축배율 1.5
+    // Scene 뷰에서 이 오브젝트를 선택하면 판정 타원이 그려지니 눈으로 보고 조절하면 된다.
+    [SerializeField] private Vector2 shadowEllipseCenter = new Vector2(-0.63f, -0.46f);
+    [SerializeField, Min(0f)] private float shadowEllipseRadius = 0.46f;
+    [SerializeField, Min(1f)] private float shadowEllipseLengthScale = 1.5f;
+
+    // 타원 중심을 Position에 직접 담으므로 TopShadowOffset은 항상 0이다.
+    // (TopShadowOffset은 회전 보정된 로컬 좌표계 값이라 그대로 넣으면 방향이 어긋난다.)
+    public Vector2 Position => (Vector2)transform.position + shadowEllipseCenter;
+    public float TopShadowRadius => shadowEllipseRadius;
+    public Vector2 TopShadowOffset => Vector2.zero;
+    public float ShadowLengthScaleOverride => shadowEllipseLengthScale;
+
+#if UNITY_EDITOR
+    private void OnDrawGizmosSelected()
+    {
+        if (shadowEllipseRadius <= 0f) return;
+
+        Tent.DrawShadowEllipseGizmo(transform.position, shadowEllipseCenter, shadowEllipseRadius, shadowEllipseLengthScale, 34f + 90f);
+    }
+#endif
 
     public void Initialize(InputManager _inputManager)
     {

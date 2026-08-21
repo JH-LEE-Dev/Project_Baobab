@@ -23,6 +23,8 @@ public class TentManager : MonoBehaviour
     /// </summary>
     public Transform TentTransform => null != tent ? tent.transform : null;
 
+    public Tent Tent => tent;
+
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;
