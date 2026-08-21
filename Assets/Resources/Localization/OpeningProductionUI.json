@@ -19,7 +19,7 @@
       "en": "So here I am, having a picnic.\n<color=#81C784,#4CAF50><b><wave>In the forest.</wave></b></color>",
       "zhHans": "所以，我们现在来郊游了。\n<color=#81C784,#4CAF50><b><wave>就在森林里。</wave></b></color>",
       "zhHant": "所以，我們現在來郊遊了。\n<color=#81C784,#4CAF50><b><wave>就在森林裡。</wave></b></color>",
-      "ja": "というわけで、今はピクニックに来ています。\n<color=#81C784,#4CAF50><b><wave>森に。</wave></b></color>",
+      "ja": "というわけで、ピクニックに来ました。\n<color=#81C784,#4CAF50><b><wave>森に。</wave></b></color>",
       "enumType": "",
       "enumValue": ""
     },
@@ -30,7 +30,7 @@
       "en": "<color=#FF8A65><char_shake>...What?</char_shake></color> You want me to quit talking and\n<color=#FFD54F>get back to chopping trees?</color>",
       "zhHans": "<color=#FF8A65><char_shake>…啊？</char_shake></color>别开玩笑了\n难道是叫我<color=#FFD54F>老老实实砍树</color>吗？",
       "zhHant": "<color=#FF8A65><char_shake>…啊？</char_shake></color>別開玩笑了\n難道是叫我<color=#FFD54F>老老實實砍樹</color>嗎？",
-      "ja": "<color=#FF8A65><char_shake>……え？</char_shake></color>くだらないことを言ってないで、\n<color=#FFD54F>木を切れってことですか？</color>",
+      "ja": "<color=#FF8A65><char_shake>……え？</char_shake></color>くだらない話はいいから、\n<color=#FFD54F>木を切れってことですか？</color>",
       "enumType": "",
       "enumValue": ""
     },
@@ -41,7 +41,7 @@
       "en": "Aw... <color=#90CAF9><wave>That's cold</wave></color>.\n<color=#CFD8DC>Fine, fine.</color>",
       "zhHans": "唉…<color=#90CAF9><wave>还真狠心啊</wave></color>。\n<color=#CFD8DC>行吧</color>。",
       "zhHant": "唉…<color=#90CAF9><wave>還真狠心啊</wave></color>。\n<color=#CFD8DC>行吧</color>。",
-      "ja": "えぇ……<color=#90CAF9><wave>冷たいですね</wave></color>。\n<color=#CFD8DC>分かりましたよ。</color>",
+      "ja": "えー……<color=#90CAF9><wave>冷たいですね</wave></color>。\n<color=#CFD8DC>分かりましたよ。</color>",
       "enumType": "",
       "enumValue": ""
     }

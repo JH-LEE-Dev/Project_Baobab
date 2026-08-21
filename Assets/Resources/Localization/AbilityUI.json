@@ -74,7 +74,7 @@
             "en": "Stamina Capacity I",
             "zhHans": "疲劳度上限增加 I",
             "zhHant": "疲勞度上限增加 I",
-            "ja": "スタミナ上限 I",
+            "ja": "最大スタミナ I",
             "enumType": "",
             "enumValue": ""
         },
@@ -85,7 +85,7 @@
             "en": "Stamina Capacity II",
             "zhHans": "疲劳度上限增加 II",
             "zhHant": "疲勞度上限增加 II",
-            "ja": "スタミナ上限 II",
+            "ja": "最大スタミナ II",
             "enumType": "",
             "enumValue": ""
         },
@@ -96,7 +96,7 @@
             "en": "Stamina Capacity III",
             "zhHans": "疲劳度上限增加 III",
             "zhHant": "疲勞度上限增加 III",
-            "ja": "スタミナ上限 III",
+            "ja": "最大スタミナ III",
             "enumType": "",
             "enumValue": ""
         },
@@ -437,7 +437,7 @@
             "en": "Steel Axe I",
             "zhHans": "钢铁斧头 I",
             "zhHant": "鋼鐵斧頭 I",
-            "ja": "鋼鉄の斧 I",
+            "ja": "鋼の斧 I",
             "enumType": "",
             "enumValue": ""
         },
@@ -1471,7 +1471,7 @@
             "en": "Adds a <COLOR=54D86A>{0}%</COLOR> chance for axe strikes not to reduce\n<COLOR=fca311>axe durability</COLOR>.",
             "zhHans": "<COLOR=fca311>斧头耐久度</COLOR>不消耗的概率增加<COLOR=54D86A>{0}%</COLOR>",
             "zhHant": "<COLOR=fca311>斧頭耐久度</COLOR>不消耗的概率增加<COLOR=54D86A>{0}%</COLOR>",
-            "ja": "<COLOR=fca311>斧の耐久度</COLOR>を消費しない確率が\n<COLOR=54D86A>{0}%</COLOR>上昇します。",
+            "ja": "攻撃時に<COLOR=fca311>斧の耐久度</COLOR>を消費しない確率が\n<COLOR=54D86A>{0}%</COLOR>上昇します。",
             "enumType": "SkillCommandType",
             "enumValue": "SteelAxe"
         },
@@ -1482,7 +1482,7 @@
             "en": "While you are away on an expedition,\n<COLOR=8bbeff>log processing speed</COLOR> is boosted to <COLOR=54D86A>{0}x</COLOR>.",
             "zhHans": "远征期间\n<COLOR=8bbeff>原木加工速度</COLOR>提升至<COLOR=54D86A>{0}倍</COLOR>",
             "zhHant": "遠征期間\n<COLOR=8bbeff>原木加工速度</COLOR>提升至<COLOR=54D86A>{0}倍</COLOR>",        
-            "ja": "遠征中、\n<COLOR=8bbeff>丸太の加工速度</COLOR>が<COLOR=54D86A>{0}倍</COLOR>になります。",
+            "ja": "遠征中は<COLOR=8bbeff>丸太の加工速度</COLOR>が\n<COLOR=54D86A>{0}倍</COLOR>になります。",
             "enumType": "SkillCommandType",
             "enumValue": "PowerSupply"
         },

@@ -96,7 +96,7 @@
       "en": "Window Mode",
       "zhHans": "显示模式",
       "zhHant": "顯示模式",
-      "ja": "表示モード",
+      "ja": "画面モード",
       "enumType": "",
       "enumValue": ""
     },
@@ -140,7 +140,7 @@
       "en": "Crosshair Brightness",
       "zhHans": "准星亮度",
       "zhHant": "準星亮度",
-      "ja": "照準の明るさ",
+      "ja": "クロスヘアの明るさ",
       "enumType": "",
       "enumValue": ""
     },
@@ -206,7 +206,7 @@
       "en": "Sound Effects Volume",
       "zhHans": "音效音量",
       "zhHant": "音效音量",
-      "ja": "効果音音量",
+      "ja": "SE音量",
       "enumType": "",
       "enumValue": ""
     },
