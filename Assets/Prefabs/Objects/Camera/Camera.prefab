@@ -83,6 +83,7 @@ GameObject:
   - component: {fileID: 7405982313315392568}
   - component: {fileID: 5123585009503024649}
   - component: {fileID: 5933371813165279111}
+  - component: {fileID: 7179505949941749077}
   m_Layer: 0
   m_Name: PP UI Camera
   m_TagString: Untagged
@@ -232,6 +233,18 @@ MonoBehaviour:
   m_CropFrameX: 0
   m_CropFrameY: 0
   m_StretchFill: 0
+--- !u!114 &7179505949941749077
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7138655054702420511}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c080e0023a39092428e5389a60023b2a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UltraWideCropApplier
 --- !u!1 &7548777740101753980
 GameObject:
   m_ObjectHideFlags: 0
@@ -247,6 +260,7 @@ GameObject:
   - component: {fileID: 2684437305768858760}
   - component: {fileID: 3470264435266028823}
   - component: {fileID: 1810844117801629154}
+  - component: {fileID: 2122548514164758056}
   m_Layer: 0
   m_Name: PP Main Camera
   m_TagString: MainCamera
@@ -441,6 +455,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a1d46436d26f43e5ae4d31a1b20fd949, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &2122548514164758056
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7548777740101753980}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c080e0023a39092428e5389a60023b2a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UltraWideCropApplier
 --- !u!1 &8144299782213539077
 GameObject:
   m_ObjectHideFlags: 0
@@ -595,7 +621,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1a8a05de0ac134f4f9d01bef6b9da077, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachinePixelPerfect
 --- !u!114 &3812446907715503284
 MonoBehaviour:
@@ -607,7 +633,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 68bb026fafb42b14791938953eaace77, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineBasicMultiChannelPerlin
   NoiseProfile: {fileID: 11400000, guid: 6f230a7dac834fa48afb0dab8bc78a3f, type: 2}
   PivotOffset: {x: 0, y: 0, z: 0}

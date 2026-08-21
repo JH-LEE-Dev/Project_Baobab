@@ -152,8 +152,17 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
             if (null == mainCamera)
                 return;
 
-            float _screenWidth = Screen.width;
-            float _screenHeight = Screen.height;
+            // 카메라가 실제로 그리는 영역을 화면 경계로 삼는다. UltraWideCropApplier가 Pillarbox를
+            // 켜면 화면 전체가 아니라 중앙 일부만 그려지므로, Screen.width를 경계로 쓰면 지시자가
+            // 검은 띠 위에 놓이고 이탈 판정도 어긋난다. 크롭이 없으면 pixelRect == 화면 전체라
+            // 기존 계산과 결과가 같다.
+            Rect _viewRect = mainCamera.pixelRect;
+            float _left = _viewRect.xMin;
+            float _right = _viewRect.xMax;
+            float _bottom = _viewRect.yMin;
+            float _top = _viewRect.yMax;
+            float _screenWidth = _viewRect.width;
+            float _screenHeight = _viewRect.height;
 
             // 1. 현재 화면 해상도 비율(1080p 기준 스케일) 산출 (16:9, 16:10 등 모든 해상도 완벽 대응)
             float _resScale = (0f < referenceScreenHeight) ? (_screenHeight / referenceScreenHeight) : 1f;
@@ -181,10 +190,10 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
             // - 위쪽으로 나감: 차량의 바닥 끝(피벗 - BottomMargin)이 화면 위쪽(ScreenHeight)보다 클 때
             // - 아래쪽으로 나감: 차량의 지붕 끝(피벗 + TopMargin)이 화면 아래쪽(0)보다 작을 때
             bool _isCompletelyOffscreen = (0f >= _screenPos.z)
-                || (_screenPos.x + _scaledWidthMargin < 0f)
-                || (_screenPos.x - _scaledWidthMargin > _screenWidth)
-                || (_screenPos.y - _scaledBottomMargin > _screenHeight)
-                || (_screenPos.y + _scaledTopMargin < 0f);
+                || (_screenPos.x + _scaledWidthMargin < _left)
+                || (_screenPos.x - _scaledWidthMargin > _right)
+                || (_screenPos.y - _scaledBottomMargin > _top)
+                || (_screenPos.y + _scaledTopMargin < _bottom);
 
             float _finalX = 0f;
             float _finalY = 0f;
@@ -199,7 +208,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
                 }
 
                 // 화면 중심에서 차량 Transform을 향하는 방향 벡터
-                Vector2 _screenCenter = new Vector2(_screenWidth * 0.5f, _screenHeight * 0.5f);
+                Vector2 _screenCenter = _viewRect.center;
                 Vector2 _dir = (Vector2)_screenPos - _screenCenter;
 
                 if (Mathf.Approximately(_dir.x, 0f) && Mathf.Approximately(_dir.y, 0f))
@@ -219,19 +228,19 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
                 if (_scaleY == _scale)
                 {
                     // 상/하단 경계: 차량의 실제 X좌표와 1:1 직교 정렬
-                    _finalX = Mathf.Clamp(_screenPos.x, _scaledPadding, _screenWidth - _scaledPadding);
+                    _finalX = Mathf.Clamp(_screenPos.x, _left + _scaledPadding, _right - _scaledPadding);
 
                     if (0f < _dir.y)
                     {
                         // 화면 상단에서 위를 가리킴
-                        _finalY = _screenHeight - _scaledPadding - _snapIdleOffset;
+                        _finalY = _top - _scaledPadding - _snapIdleOffset;
                         if (null != indicatorImage && upArrowSprite != indicatorImage.sprite)
                             indicatorImage.sprite = upArrowSprite;
                     }
                     else
                     {
                         // 화면 하단에서 아래를 가리킴
-                        _finalY = _scaledPadding + _snapIdleOffset;
+                        _finalY = _bottom + _scaledPadding + _snapIdleOffset;
                         if (null != indicatorImage && downArrowSprite != indicatorImage.sprite)
                             indicatorImage.sprite = downArrowSprite;
                     }
@@ -239,19 +248,19 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
                 else
                 {
                     // 좌/우측 경계: 차량의 실제 Y좌표와 1:1 직교 정렬
-                    _finalY = Mathf.Clamp(_screenPos.y, _scaledPadding, _screenHeight - _scaledPadding);
+                    _finalY = Mathf.Clamp(_screenPos.y, _bottom + _scaledPadding, _top - _scaledPadding);
 
                     if (0f < _dir.x)
                     {
                         // 화면 우측에서 오른쪽을 가리킴
-                        _finalX = _screenWidth - _scaledPadding - _snapIdleOffset;
+                        _finalX = _right - _scaledPadding - _snapIdleOffset;
                         if (null != indicatorImage && rightArrowSprite != indicatorImage.sprite)
                             indicatorImage.sprite = rightArrowSprite;
                     }
                     else
                     {
                         // 화면 좌측에서 왼쪽을 가리킴
-                        _finalX = _scaledPadding + _snapIdleOffset;
+                        _finalX = _left + _scaledPadding + _snapIdleOffset;
                         if (null != indicatorImage && leftArrowSprite != indicatorImage.sprite)
                             indicatorImage.sprite = leftArrowSprite;
                     }

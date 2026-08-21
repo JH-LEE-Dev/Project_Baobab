@@ -59,7 +59,8 @@ public class UI_MainMenuBackground : MonoBehaviour
     {
         if (true == isInitialized) return;
 
-        screenSize = new Vector2(Screen.width, Screen.height);
+        // UpdateMousePosition이 매 프레임 갱신하지만, 초기 1프레임을 위해 같은 기준으로 맞춰둔다.
+        screenSize = GlobalUI.GetViewRect().size;
 
         // 각 레이어의 초기 위치를 캐싱하고 부유 효과를 위한 랜덤 오프셋 부여
         for (int i = 0; i < backgroundLayers.Length; i++)
@@ -105,13 +106,17 @@ public class UI_MainMenuBackground : MonoBehaviour
     private void UpdateMousePosition()
     {
         // 화면 크기 변경 대비 (에디터 환경 등)
-        screenSize.x = Screen.width;
-        screenSize.y = Screen.height;
+        // 카메라가 실제로 그리는 영역을 기준으로 삼는다. 크롭(Pillarbox)이 켜진 해상도에서
+        // Screen 크기로 정규화하면 마우스가 화면 중앙에 있어도 패럴랙스가 중앙이 아니게 된다.
+        // 크롭이 없으면 원점 (0,0), 크기 = 화면 크기라 기존 계산과 결과가 같다.
+        Rect _viewRect = GlobalUI.GetViewRect();
+        screenSize.x = _viewRect.width;
+        screenSize.y = _viewRect.height;
 
-        // New Input System을 활용한 마우스 위치 획득
+        // New Input System을 활용한 마우스 위치 획득 (렌더 영역 기준 좌표로 변환)
         if (null != Mouse.current)
         {
-            currentMousePos = Mouse.current.position.ReadValue();
+            currentMousePos = (Vector2)Mouse.current.position.ReadValue() - _viewRect.min;
         }
         else
         {

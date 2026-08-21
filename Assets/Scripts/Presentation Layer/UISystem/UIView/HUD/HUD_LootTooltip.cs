@@ -93,7 +93,11 @@ public class HUD_LootTooltip : MonoBehaviour
         Vector2 _screenTR = RectTransformUtility.WorldToScreenPoint(_cam, _tooltipCorners[2]); // 우측 상단
         float _screenPadding = 15f;
 
-        if (Screen.height - _screenPadding < _screenTR.y)
+        // 카메라가 실제로 그리는 영역을 화면 경계로 삼는다. 크롭(Pillarbox)이 켜진 해상도에서
+        // Screen 크기를 쓰면 툴팁이 검은 띠까지 밀려난다. 크롭이 없으면 결과가 같다.
+        Rect _viewRect = GlobalUI.GetViewRect();
+
+        if (_viewRect.yMax - _screenPadding < _screenTR.y)
         {
             // 위로 나가면 타겟의 아래쪽으로 즉시 재배치
             rectTransform.pivot = new Vector2(0.5f, 1f); // 피벗을 툴팁 천장 중앙으로 변경
@@ -108,13 +112,13 @@ public class HUD_LootTooltip : MonoBehaviour
         _screenTR = RectTransformUtility.WorldToScreenPoint(_cam, _tooltipCorners[2]);
 
         float _shiftX = 0f;
-        if (_screenPadding > _screenBL.x)
+        if (_viewRect.xMin + _screenPadding > _screenBL.x)
         {
-            _shiftX = _screenPadding - _screenBL.x; // 우측으로 밀어내야 할 픽셀 수
+            _shiftX = (_viewRect.xMin + _screenPadding) - _screenBL.x; // 우측으로 밀어내야 할 픽셀 수
         }
-        else if (Screen.width - _screenPadding < _screenTR.x)
+        else if (_viewRect.xMax - _screenPadding < _screenTR.x)
         {
-            _shiftX = (Screen.width - _screenPadding) - _screenTR.x; // 좌측으로 밀어내야 할 픽셀 수 (음수)
+            _shiftX = (_viewRect.xMax - _screenPadding) - _screenTR.x; // 좌측으로 밀어내야 할 픽셀 수 (음수)
         }
 
         // 밀어내야 할 양이 있다면, 순수 월드 벡터로 치환해서 더해줌

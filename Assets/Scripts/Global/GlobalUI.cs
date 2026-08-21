@@ -8,10 +8,16 @@ public static class GlobalUI
         Canvas.ForceUpdateCanvases();
         targetUI.GetWorldCorners(corners);
 
-        float minX = 10f;
-        float maxX = Screen.width;
-        float minY = 10f;
-        float maxY = Screen.height;
+        // 카메라가 실제로 그리는 영역을 화면 경계로 삼는다. UltraWideCropApplier가 Pillarbox를
+        // 켜면 화면 전체가 아니라 중앙 일부만 그려지므로, Screen 크기를 쓰면 UI가 검은 띠까지
+        // 밀려난다. 크롭이 없으면 pixelRect == 화면 전체라 기존 계산과 결과가 같다.
+        Rect _viewRect = GetViewRect();
+
+        const float PADDING = 10f;
+        float minX = _viewRect.xMin + PADDING;
+        float maxX = _viewRect.xMax;
+        float minY = _viewRect.yMin + PADDING;
+        float maxY = _viewRect.yMax;
 
         Vector3 clampedPos = targetUI.position;
 
@@ -26,6 +32,22 @@ public static class GlobalUI
             clampedPos.y -= (corners[2].y - maxY); // 위로 나감
 
         return clampedPos;
+    }
+
+    /// <summary>
+    /// 화면에서 실제로 그려지는 영역(픽셀)입니다. 카메라를 찾지 못하면 화면 전체로 폴백합니다.
+    /// </summary>
+    public static Rect GetViewRect()
+    {
+        Camera _camera = (null != CameraFinder.Instance) ? CameraFinder.Instance.PPMainCamera : null;
+
+        if (null == _camera)
+            _camera = Camera.main;
+
+        if (null != _camera && 0f < _camera.pixelRect.width && 0f < _camera.pixelRect.height)
+            return _camera.pixelRect;
+
+        return new Rect(0f, 0f, Screen.width, Screen.height);
     }
 
     public static Sprite GetSpritefromPath(string _folderPath, string _itemName)
