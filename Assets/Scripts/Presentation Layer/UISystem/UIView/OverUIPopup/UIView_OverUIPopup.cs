@@ -114,6 +114,28 @@ public class UIView_OverUIPopup : UIView
         }
     }
 
+    /// <summary>
+    /// ESC 메뉴(일시정지) 열림/닫힘에 따라 튜토리얼 퀘스트 UI를 임시로 닫거나 복원합니다.
+    /// </summary>
+    public void SetPauseState(bool _isPaused)
+    {
+        if (null != tutorialQuest)
+        {
+            tutorialQuest.SetPauseState(_isPaused);
+        }
+    }
+
+    /// <summary>
+    /// 메인 메뉴 이동 또는 씬 리셋 시 튜토리얼 퀘스트를 즉시 리셋하고 숨깁니다.
+    /// </summary>
+    public void ResetQuest()
+    {
+        if (null != tutorialQuest)
+        {
+            tutorialQuest.ResetQuest();
+        }
+    }
+
     public override void Release()
     {
         base.Release();
