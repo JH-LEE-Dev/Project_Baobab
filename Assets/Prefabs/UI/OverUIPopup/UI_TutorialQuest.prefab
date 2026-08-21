@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 49886899377680699}
   - component: {fileID: 3505798490811632111}
   - component: {fileID: 3619203371002628224}
+  - component: {fileID: 1984654257045130842}
   m_Layer: 0
   m_Name: Main
   m_TagString: Untagged
@@ -209,6 +210,22 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &1984654257045130842
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 837526934583027046}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &2738847365763537002
 GameObject:
   m_ObjectHideFlags: 0
@@ -406,6 +423,8 @@ MonoBehaviour:
   questTitleText: {fileID: 3505798490811632111}
   questDescRoot: {fileID: 7616728995601824526}
   questDescText: {fileID: 8344108184232261105}
+  titleTextPoint: {fileID: 0}
+  descTextPoint: {fileID: 0}
   useBgFadeIn: 1
   useBgFadeOut: 1
   bgTargetWidth: 700
@@ -427,7 +446,6 @@ MonoBehaviour:
   completedTextSquashScale: {x: 1.12, y: 0.88, z: 1}
   completedTextStretchScale: {x: 0.96, y: 1.08, z: 1}
   yOffset: 0
-  useCustomMode: 0
   customInitialDuration: 2
   customCompletedHoldDuration: 2
 --- !u!1 &6371201734892318978
@@ -517,6 +535,7 @@ GameObject:
   - component: {fileID: 8982500162500497182}
   - component: {fileID: 8344108184232261105}
   - component: {fileID: 6431702267970297299}
+  - component: {fileID: 6358895411832787100}
   m_Layer: 0
   m_Name: Desc
   m_TagString: Untagged
@@ -714,6 +733,22 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &6358895411832787100
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7616728995601824526}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &7997913772012829266
 GameObject:
   m_ObjectHideFlags: 0

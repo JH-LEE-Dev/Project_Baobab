@@ -68,6 +68,61 @@
       "enumValue": ""
     },
     {
+      "id": 107,
+      "key": "LanguageKorean",
+      "kr": "한국어",
+      "en": "한국어",
+      "zhHans": "한국어",
+      "zhHant": "한국어",
+      "ja": "한국어",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 108,
+      "key": "LanguageEnglish",
+      "kr": "English",
+      "en": "English",
+      "zhHans": "English",
+      "zhHant": "English",
+      "ja": "English",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 109,
+      "key": "LanguageChineseSimplified",
+      "kr": "简体中文",
+      "en": "简体中文",
+      "zhHans": "简体中文",
+      "zhHant": "简体中文",
+      "ja": "简体中文",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 110,
+      "key": "LanguageChineseTraditional",
+      "kr": "繁體中文",
+      "en": "繁體中文",
+      "zhHans": "繁體中文",
+      "zhHant": "繁體中文",
+      "ja": "繁體中文",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 111,
+      "key": "LanguageJapanese",
+      "kr": "日本語",
+      "en": "日本語",
+      "zhHans": "日本語",
+      "zhHant": "日本語",
+      "ja": "日本語",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
       "id": 201,
       "key": "Language",
       "kr": "언어",

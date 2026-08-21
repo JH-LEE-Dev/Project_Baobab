@@ -10,10 +10,16 @@ using UnityEngine;
 /// (TMP_Text.font에 대입하면 머티리얼이 새 폰트의 기본 머티리얼로 리셋되므로,
 ///  대입 직후 반드시 파생 머티리얼을 다시 지정해야 합니다)
 ///
-/// 주의: 대상 폰트 에셋은 원본과 같은 렌더 모드로 만들어야 합니다. 이 프로젝트는
-/// 픽셀 아트라 비트맵(RASTER) 아틀라스에 "TextMeshPro/Bitmap Pixel Outline" 셰이더를 쓰는데,
-/// 대상 폰트를 SDF로 뽑으면 같은 셰이더로는 정상적으로 그려지지 않습니다.
-/// 불일치가 감지되면 경고를 남깁니다.
+/// 교체 시점은 두 가지입니다.
+///  1) 언어 변경·씬 로드: 로드된 모든 텍스트를 전수 교체한다.
+///  2) 프리팹에 미리 붙여둔 <see cref="LocalizedFontTracker"/>의 OnEnable:
+///     런타임에 Instantiate된 UI가 처음 그려지기 전에 교체된다.
+/// 둘 다 놓친 텍스트(코드로 직접 만든 TMP 등)는 TMP의 텍스트 갱신 이벤트로 뒤늦게 잡지만,
+/// 그 경우에만 첫 한 프레임이 원본 폰트로 그려집니다.
+///
+/// 주의: 대상 폰트 에셋은 원본과 같은 렌더 모드여야 합니다. 이 프로젝트는 픽셀 아트라
+/// 비트맵(RASTER) 아틀라스를 쓰는데, SDF 머티리얼에 비트맵 아틀라스를 물리면 글자가 뭉개집니다.
+/// 그래서 렌더 모드가 다르면 교체를 포기하고 원본을 유지한 뒤 경고를 남깁니다.
 /// </summary>
 public static class FontLocalizer
 {
@@ -41,7 +47,9 @@ public static class FontLocalizer
     private static TMP_FontAsset currentFont;   // null이면 "원본 폰트 유지"
     private static bool isInitialized = false;
     private static FontLocalizerRunner runner;
-    private static bool hasWarnedRenderModeMismatch = false;
+    // 렌더 모드가 안 맞아 교체를 포기한 (원본, 대상) 조합. 같은 경고를 반복해서 남기지 않는다.
+    private static readonly HashSet<(TMP_FontAsset, TMP_FontAsset)> warnedFontPairs = new HashSet<(TMP_FontAsset, TMP_FontAsset)>();
+    private static bool isTraversingHierarchy = false;
 
     public static Language CurrentLanguage => currentLanguage;
 
@@ -102,12 +110,27 @@ public static class FontLocalizer
     {
         if (false == isInitialized || null == _root) return;
 
-        _root.GetComponentsInChildren(true, textBuffer);
-        for (int i = 0; i < textBuffer.Count; i++)
+        // 공용 버퍼는 재진입에 안전하지 않다. 교체 도중 호출된 코드가 이 메서드를 다시 부르면
+        // 안쪽 호출이 버퍼를 비워버려 바깥 루프가 남은 텍스트를 조용히 건너뛴다.
+        // 사용 중이면 임시 리스트로 처리한다. (평소 경로에서는 항상 공용 버퍼가 쓰인다)
+        bool _isOuterCall = (false == isTraversingHierarchy);
+        List<TMP_Text> _texts = _isOuterCall ? textBuffer : new List<TMP_Text>(16);
+
+        if (true == _isOuterCall) isTraversingHierarchy = true;
+
+        try
         {
-            Apply(textBuffer[i]);
+            _root.GetComponentsInChildren(true, _texts);
+            for (int i = 0; i < _texts.Count; i++)
+            {
+                Apply(_texts[i]);
+            }
         }
-        textBuffer.Clear();
+        finally
+        {
+            _texts.Clear();
+            if (true == _isOuterCall) isTraversingHierarchy = false;
+        }
     }
 
     /// <summary>텍스트 하나에 현재 언어 폰트를 적용합니다. 이미 맞춰져 있으면 아무 일도 하지 않습니다.</summary>
@@ -131,6 +154,16 @@ public static class FontLocalizer
 
         if (_target == _origin)
         {
+            RestoreOriginal(_text, _tracker);
+            return;
+        }
+
+        // 렌더 모드가 다르면(SDF ↔ 비트맵) 교체하지 않고 원본을 유지한다.
+        // 억지로 바꾸면 SDF 셰이더가 비트맵 아틀라스를 샘플링하게 되어 글자가 뭉개진다.
+        // 글자가 안 보이는 편이 뭉개진 채로 출시되는 것보다 낫고, 경고로 원인도 남는다.
+        if (false == IsRenderModeCompatible(_tracker.OriginalMaterial, _target))
+        {
+            WarnRenderModeMismatch(_text, _origin, _target);
             RestoreOriginal(_text, _tracker);
             return;
         }
@@ -199,8 +232,6 @@ public static class FontLocalizer
         (Material, TMP_FontAsset) _key = (_sourceMaterial, _targetFont);
         if (true == materialCache.TryGetValue(_key, out Material _cached) && null != _cached) return _cached;
 
-        WarnIfRenderModeMismatch(_sourceMaterial, _targetDefault, _targetFont);
-
         Material _derived = new Material(_sourceMaterial);
         _derived.hideFlags = HideFlags.HideAndDontSave;
         _derived.SetTexture(ID_MainTex, _atlas);
@@ -226,18 +257,32 @@ public static class FontLocalizer
         return _derived;
     }
 
-    private static void WarnIfRenderModeMismatch(Material _sourceMaterial, Material _targetDefault, TMP_FontAsset _targetFont)
+    /// <summary>
+    /// 원본 머티리얼과 대상 폰트가 같은 렌더 방식(SDF/비트맵)인지 확인합니다.
+    /// SDF 머티리얼에는 _GradientScale이 있고 비트맵 머티리얼에는 없다는 점으로 구분합니다.
+    /// </summary>
+    private static bool IsRenderModeCompatible(Material _sourceMaterial, TMP_FontAsset _targetFont)
     {
-        if (true == hasWarnedRenderModeMismatch || null == _targetDefault) return;
+        if (null == _sourceMaterial) return true;   // 원본 머티리얼이 없으면 대상 기본 머티리얼을 그대로 쓴다.
 
-        bool _sourceIsSdf = _sourceMaterial.HasProperty(ID_GradientScale);
-        bool _targetIsSdf = _targetDefault.HasProperty(ID_GradientScale);
-        if (_sourceIsSdf == _targetIsSdf) return;
+        Material _targetDefault = _targetFont.material;
+        if (null == _targetDefault) return true;
 
-        hasWarnedRenderModeMismatch = true;
-        Debug.LogWarning("[FontLocalizer] '" + _targetFont.name + "'의 렌더 모드가 원본 머티리얼과 다릅니다. " +
-            "(원본 SDF=" + _sourceIsSdf + ", 대상 SDF=" + _targetIsSdf + ") 원본과 같은 렌더 모드/패딩으로 " +
-            "폰트 에셋을 다시 생성해야 아웃라인과 글자 두께가 그대로 유지됩니다.");
+        return _sourceMaterial.HasProperty(ID_GradientScale) == _targetDefault.HasProperty(ID_GradientScale);
+    }
+
+    /// <summary>
+    /// 렌더 모드가 달라 교체를 포기했음을 알립니다. 폰트 조합당 한 번만 남깁니다.
+    /// (매 텍스트마다 남기면 콘솔이 같은 경고로 가득 차 원인을 찾기 어려워집니다)
+    /// </summary>
+    private static void WarnRenderModeMismatch(TMP_Text _text, TMP_FontAsset _origin, TMP_FontAsset _target)
+    {
+        if (false == warnedFontPairs.Add((_origin, _target))) return;
+
+        Debug.LogWarning("[FontLocalizer] '" + _origin.name + "' → '" + _target.name + "' 교체를 건너뜁니다. " +
+            "두 폰트의 렌더 모드가 다릅니다(SDF ↔ 비트맵). 해당 텍스트는 원본 폰트로 남으므로 " +
+            "이 언어에서 글자가 보이지 않을 수 있습니다. 텍스트의 폰트를 다른 UI와 같은 것으로 " +
+            "맞추거나, LocalizationFontTable의 excludedFonts에 등록하세요.", _text);
     }
 
     private static void EnsureRunner()
@@ -264,7 +309,8 @@ public static class FontLocalizer
         currentLanguage = Language.KR;
         isInitialized = false;
         runner = null;
-        hasWarnedRenderModeMismatch = false;
+        warnedFontPairs.Clear();
+        isTraversingHierarchy = false;
     }
 
     /// <summary>

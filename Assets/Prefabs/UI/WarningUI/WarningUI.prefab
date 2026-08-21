@@ -87,6 +87,7 @@ GameObject:
   - component: {fileID: 8943198738736791234}
   - component: {fileID: 2466212056770180651}
   - component: {fileID: 7284406543367815097}
+  - component: {fileID: 5409781360956959821}
   m_Layer: 5
   m_Name: MainText
   m_TagString: Untagged
@@ -284,6 +285,22 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &5409781360956959821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1412394429918743755}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &2137762667678527657
 GameObject:
   m_ObjectHideFlags: 0
@@ -296,6 +313,7 @@ GameObject:
   - component: {fileID: 5062139524155335114}
   - component: {fileID: 4189479664239273959}
   - component: {fileID: 7048419488051917151}
+  - component: {fileID: 3750868897712516968}
   m_Layer: 5
   m_Name: SubText
   m_TagString: Untagged
@@ -493,6 +511,22 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &3750868897712516968
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2137762667678527657}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &2244728935564146090
 GameObject:
   m_ObjectHideFlags: 0

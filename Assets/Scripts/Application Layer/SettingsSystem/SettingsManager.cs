@@ -53,14 +53,18 @@ public class SettingsManager : MonoBehaviour
     /// </summary>
     public event Action<int, int> OnScreenTargetResolvedEvent;
 
-    // 로컬라이징이 필요 없는 고정 표기 (언어명은 해당 언어 자체로 표기)
-    // 실제로 지원하는 언어만 담는다. (길이가 SettingsData.SUPPORTED_LANGUAGE_COUNT와 일치해야 함)
+    // 언어 이름 표기는 여기에 두지 않는다. OptionUI.json의 LanguageKorean~LanguageJapanese 항목에
+    // 있고 UI_Option.GetLanguageText가 읽는다. (창모드·On/Off 표기와 같은 방식)
+    // 코드에 문자열로 박아두면 로컬라이징 문자셋 생성기가 그 글자를 수집하지 못해,
+    // 정적 아틀라스로 구운 CJK 폰트에서 언어 이름이 통째로 깨진다. 실제로 그런 상태였다.
     //
-    // 언어를 추가하려면 이 배열만 늘려서는 안 되고 다음을 함께 손봐야 한다:
+    // 언어를 추가하려면 다음을 함께 손봐야 한다:
     //   1) SettingsData.SUPPORTED_LANGUAGE_COUNT
     //   2) ApplyLanguageToLocalization의 Language 매핑 (매핑되지 않은 항목은 모두 EN이 된다)
-    //   3) LocalizationManager가 읽는 로컬라이징 데이터
-    private static readonly string[] languageLabels = { "한국어", "English", "简体中文", "繁體中文", "日本語" };
+    //   3) LocalizationManager가 읽는 로컬라이징 데이터 (OptionUI.json의 언어 이름 항목 포함)
+    //   4) UI_Option.GetLanguageText의 분기
+    //   5) LocalizationFontTable의 해당 언어 폰트
+
     // 표기 문자열은 SettingsData의 해상도 목록에서 파생해 1회만 생성한다.
     // (손으로 관리하면 크기와 표기가 어긋날 수 있고, 컴파일러가 잡아주지 못한다)
     private static readonly string[] resolutionLabels = BuildResolutionLabels();
@@ -313,13 +317,6 @@ public class SettingsManager : MonoBehaviour
     }
 
     // 표기용 헬퍼 (로컬라이징이 불필요한 항목만 담당)
-    public static string GetLanguageLabel(EOptionLanguage _lang)
-    {
-        int _idx = (int)_lang;
-        if (_idx >= 0 && _idx < languageLabels.Length) return languageLabels[_idx];
-        return "Unknown";
-    }
-
     public static string GetResolutionLabel(EResolution _res)
     {
         int _idx = (int)_res;

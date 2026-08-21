@@ -149,6 +149,7 @@ GameObject:
   - component: {fileID: 1047850715191245089}
   - component: {fileID: 3845837017079714511}
   - component: {fileID: 8209789684736001894}
+  - component: {fileID: 2845966210311752375}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -426,6 +427,22 @@ MonoBehaviour:
   m_DetailTexSpeed: {x: 0, y: 0}
   m_CustomRoot: {fileID: 0}
   m_Flip: 0
+--- !u!114 &2845966210311752375
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1954349831041302671}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &2455254597185841746
 GameObject:
   m_ObjectHideFlags: 0
@@ -815,6 +832,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
   isUIComponent: 1
+  initializeOnAwake: 1
   vfxPoolDataList:
   - vfxTag: UnLock
     effectPrefab: {fileID: 5748764238649717206, guid: 24b6ef70f1f1a1342908bdc1240eb134, type: 3}
@@ -1402,6 +1420,7 @@ GameObject:
   - component: {fileID: 2022977445887808608}
   - component: {fileID: 1489161759741880139}
   - component: {fileID: 6387380646926510598}
+  - component: {fileID: 8649658376530209498}
   m_Layer: 5
   m_Name: New
   m_TagString: Untagged
@@ -1679,3 +1698,19 @@ MonoBehaviour:
   m_DetailTexSpeed: {x: 0, y: 0}
   m_CustomRoot: {fileID: 0}
   m_Flip: 0
+--- !u!114 &8649658376530209498
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8700845849746939958}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0

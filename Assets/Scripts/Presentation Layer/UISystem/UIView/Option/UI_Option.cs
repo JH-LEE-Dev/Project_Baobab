@@ -344,7 +344,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         SettingsData _data = settings.Current;
 
-        if (null != languageSelector) languageSelector.Initialize(GetText(LocKeys.OptionUI.language, "언어"), SettingsManager.GetLanguageLabel(_data.language), onLanguageLeft, onLanguageRight);
+        if (null != languageSelector) languageSelector.Initialize(GetText(LocKeys.OptionUI.language, "언어"), GetLanguageText(_data.language), onLanguageLeft, onLanguageRight);
         // 저장 원본이 아니라 실제 적용값으로 초기 표기한다. (선택기 순환 기준과 맞추기 위함)
         if (null != resolutionSelector) resolutionSelector.Initialize(GetText(LocKeys.OptionUI.resolution, "해상도"), SettingsManager.GetResolutionLabel(settings.EffectiveResolution), onResolutionLeft, onResolutionRight);
         if (null != windowModeSelector) windowModeSelector.Initialize(GetText(LocKeys.OptionUI.windowMode, "화면"), GetWindowModeText(_data.windowMode), onWindowModeLeft, onWindowModeRight);
@@ -422,6 +422,25 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     }
 
     // 로컬라이징이 필요한 Enum 표기 변환기
+    /// <summary>
+    /// 언어 이름은 각 언어 자체 표기(한국어/English/日本語 …)를 씁니다. 어느 언어로 UI가 떠 있든
+    /// 자기 언어를 찾을 수 있어야 하기 때문이며, 그래서 로컬라이징 데이터의 모든 열에 같은 값이
+    /// 들어 있습니다. 값을 바꾸고 싶으면 OptionUI.json만 고치면 됩니다.
+    /// 코드에 문자열을 박지 않는 이유는 그래야 폰트 문자셋 생성기가 이 글자들을 수집하기 때문입니다.
+    /// </summary>
+    private string GetLanguageText(EOptionLanguage _lang)
+    {
+        switch (_lang)
+        {
+            case EOptionLanguage.Korean: return GetText(LocKeys.OptionUI.languageKorean, "한국어");
+            case EOptionLanguage.English: return GetText(LocKeys.OptionUI.languageEnglish, "English");
+            case EOptionLanguage.ChineseSimplified: return GetText(LocKeys.OptionUI.languageChineseSimplified, "简体中文");
+            case EOptionLanguage.ChineseTraditional: return GetText(LocKeys.OptionUI.languageChineseTraditional, "繁體中文");
+            case EOptionLanguage.Japanese: return GetText(LocKeys.OptionUI.languageJapanese, "日本語");
+        }
+        return _lang.ToString();
+    }
+
     private string GetWindowModeText(EWindowMode _mode)
     {
         switch (_mode)

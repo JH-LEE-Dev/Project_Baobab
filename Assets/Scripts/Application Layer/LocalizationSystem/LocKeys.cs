@@ -304,6 +304,11 @@ public static class LocKeys
         public const int off = 18874472;
         public const int vSync = 18874473;
         public const int unlimited = 18874474;
+        public const int languageKorean = 18874475;
+        public const int languageEnglish = 18874476;
+        public const int languageChineseSimplified = 18874477;
+        public const int languageChineseTraditional = 18874478;
+        public const int languageJapanese = 18874479;
         public const int language = 18874569;
         public const int resolution = 18874570;
         public const int windowMode = 18874571;

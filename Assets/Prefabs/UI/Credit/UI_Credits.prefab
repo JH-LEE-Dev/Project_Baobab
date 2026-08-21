@@ -90,6 +90,7 @@ GameObject:
   - component: {fileID: 2285679119649187351}
   - component: {fileID: 3837897620790065205}
   - component: {fileID: 1013133395924375484}
+  - component: {fileID: 456051999557291684}
   m_Layer: 5
   m_Name: Title
   m_TagString: Untagged
@@ -216,6 +217,22 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &456051999557291684
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 667697295893570539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &888343201135842624
 GameObject:
   m_ObjectHideFlags: 0
@@ -228,6 +245,7 @@ GameObject:
   - component: {fileID: 8858572311346859357}
   - component: {fileID: 1011617618496725438}
   - component: {fileID: 4226731171237524918}
+  - component: {fileID: 6837483930491478297}
   m_Layer: 5
   m_Name: Detail
   m_TagString: Untagged
@@ -369,6 +387,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ContentSizeFitter
   m_HorizontalFit: 0
   m_VerticalFit: 2
+--- !u!114 &6837483930491478297
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 888343201135842624}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &1037310188705149443
 GameObject:
   m_ObjectHideFlags: 0
@@ -381,6 +415,7 @@ GameObject:
   - component: {fileID: 744034697998402878}
   - component: {fileID: 6973988002072530912}
   - component: {fileID: 5413842051495908230}
+  - component: {fileID: 5774365199638861304}
   m_Layer: 5
   m_Name: Detail
   m_TagString: Untagged
@@ -521,6 +556,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ContentSizeFitter
   m_HorizontalFit: 0
   m_VerticalFit: 2
+--- !u!114 &5774365199638861304
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1037310188705149443}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &1808166132600450260
 GameObject:
   m_ObjectHideFlags: 0
@@ -612,6 +663,7 @@ GameObject:
   - component: {fileID: 7745863022373976095}
   - component: {fileID: 7672262952654380757}
   - component: {fileID: 799692908102201379}
+  - component: {fileID: 5310069752501610603}
   m_Layer: 5
   m_Name: Detail
   m_TagString: Untagged
@@ -752,6 +804,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ContentSizeFitter
   m_HorizontalFit: 0
   m_VerticalFit: 2
+--- !u!114 &5310069752501610603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2721488544088771900}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &3712249540437513827
 GameObject:
   m_ObjectHideFlags: 0
@@ -1072,6 +1140,7 @@ GameObject:
   - component: {fileID: 2415933526034907584}
   - component: {fileID: 722061769932009659}
   - component: {fileID: 4558874439127575692}
+  - component: {fileID: 8928315088089976853}
   m_Layer: 5
   m_Name: Detail
   m_TagString: Untagged
@@ -1212,6 +1281,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ContentSizeFitter
   m_HorizontalFit: 0
   m_VerticalFit: 2
+--- !u!114 &8928315088089976853
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4701661649724771648}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &4908825358790600254
 GameObject:
   m_ObjectHideFlags: 0
@@ -1302,6 +1387,7 @@ GameObject:
   - component: {fileID: 4196664455133330447}
   - component: {fileID: 5572658253191578289}
   - component: {fileID: 2461636244454356945}
+  - component: {fileID: 1176668736322802890}
   m_Layer: 5
   m_Name: Title
   m_TagString: Untagged
@@ -1428,6 +1514,22 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1176668736322802890
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5131985974506709493}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &5728892731276743379
 GameObject:
   m_ObjectHideFlags: 0
@@ -1514,6 +1616,7 @@ GameObject:
   - component: {fileID: 8320225078722160930}
   - component: {fileID: 7202112656714131632}
   - component: {fileID: 5724192263516279996}
+  - component: {fileID: 349945893810567877}
   m_Layer: 5
   m_Name: Title
   m_TagString: Untagged
@@ -1640,6 +1743,22 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &349945893810567877
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7898272419323325089}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &8158924313011236551
 GameObject:
   m_ObjectHideFlags: 0
@@ -1651,6 +1770,7 @@ GameObject:
   - component: {fileID: 3023554830726751108}
   - component: {fileID: 9180846556418457969}
   - component: {fileID: 241707727622740553}
+  - component: {fileID: 895459798569252331}
   m_Layer: 5
   m_Name: Title
   m_TagString: Untagged
@@ -1777,6 +1897,22 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &895459798569252331
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8158924313011236551}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &8350787804053961784
 GameObject:
   m_ObjectHideFlags: 0
@@ -1788,6 +1924,7 @@ GameObject:
   - component: {fileID: 5119377138205045357}
   - component: {fileID: 6760484670883203651}
   - component: {fileID: 5698538083062772068}
+  - component: {fileID: 959365892196537822}
   m_Layer: 5
   m_Name: Title
   m_TagString: Untagged
@@ -1914,6 +2051,22 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &959365892196537822
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8350787804053961784}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &8422067800832003758
 GameObject:
   m_ObjectHideFlags: 0
@@ -1926,6 +2079,7 @@ GameObject:
   - component: {fileID: 5570601966894307904}
   - component: {fileID: 5977115511873441}
   - component: {fileID: 2139080679748354724}
+  - component: {fileID: 355597962197631600}
   m_Layer: 5
   m_Name: Detail
   m_TagString: Untagged
@@ -2066,6 +2220,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ContentSizeFitter
   m_HorizontalFit: 0
   m_VerticalFit: 2
+--- !u!114 &355597962197631600
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8422067800832003758}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &8554390891901861268
 GameObject:
   m_ObjectHideFlags: 0

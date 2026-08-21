@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 5303984171583591723}
   - component: {fileID: 1628088891381463966}
   - component: {fileID: 246178154004603555}
+  - component: {fileID: 6781355285574691545}
   m_Layer: 5
   m_Name: TMP_Value
   m_TagString: Untagged
@@ -137,6 +138,22 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &6781355285574691545
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1387528268014398938}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &2057551781726038869
 GameObject:
   m_ObjectHideFlags: 0
@@ -391,14 +408,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_OptionButton
   targetGraphic: {fileID: 5554445981835633976}
+  buttonText: {fileID: 0}
+  targetEffect: {fileID: 0}
   enableScaleMotion: 0
-  enableColorMotion: 1
+  visualMode: 1
   hoverScale: {x: 1.1, y: 1.1, z: 1}
   clickScale: {x: 0.9, y: 0.9, z: 1}
   tweenDuration: 0.1
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   hoverColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
   clickColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
+  normalSprite: {fileID: 0}
+  hoverSprite: {fileID: 0}
+  clickSprite: {fileID: 0}
+  normalTextColor: {r: 1, g: 1, b: 1, a: 1}
+  hoverTextColor: {r: 1, g: 1, b: 1, a: 1}
+  clickTextColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
+  normalEffectColor: {r: 0, g: 0, b: 0, a: 1}
+  hoverEffectColor: {r: 0, g: 0, b: 0, a: 1}
+  clickEffectColor: {r: 0, g: 0, b: 0, a: 1}
 --- !u!1 &4742127747711506820
 GameObject:
   m_ObjectHideFlags: 0
@@ -604,14 +632,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_OptionButton
   targetGraphic: {fileID: 9058850686146390462}
+  buttonText: {fileID: 0}
+  targetEffect: {fileID: 0}
   enableScaleMotion: 0
-  enableColorMotion: 1
+  visualMode: 1
   hoverScale: {x: 1.1, y: 1.1, z: 1}
   clickScale: {x: 0.9, y: 0.9, z: 1}
   tweenDuration: 0.1
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   hoverColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
   clickColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
+  normalSprite: {fileID: 0}
+  hoverSprite: {fileID: 0}
+  clickSprite: {fileID: 0}
+  normalTextColor: {r: 1, g: 1, b: 1, a: 1}
+  hoverTextColor: {r: 1, g: 1, b: 1, a: 1}
+  clickTextColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
+  normalEffectColor: {r: 0, g: 0, b: 0, a: 1}
+  hoverEffectColor: {r: 0, g: 0, b: 0, a: 1}
+  clickEffectColor: {r: 0, g: 0, b: 0, a: 1}
 --- !u!1 &8805604100166189895
 GameObject:
   m_ObjectHideFlags: 0
@@ -623,6 +662,7 @@ GameObject:
   - component: {fileID: 2537430798185462792}
   - component: {fileID: 313727325948433010}
   - component: {fileID: 4135917404057033917}
+  - component: {fileID: 1241555451604049483}
   m_Layer: 5
   m_Name: TMP_Title
   m_TagString: Untagged
@@ -751,6 +791,22 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1241555451604049483
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8805604100166189895}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &9153089378130910730
 GameObject:
   m_ObjectHideFlags: 0

@@ -87,6 +87,7 @@ GameObject:
   - component: {fileID: 8368657005710359438}
   - component: {fileID: 1468574393422871159}
   - component: {fileID: 3022198326451757222}
+  - component: {fileID: 109798481479719422}
   m_Layer: 18
   m_Name: OpenText
   m_TagString: Untagged
@@ -364,6 +365,22 @@ MonoBehaviour:
   m_DetailTexSpeed: {x: 0, y: 0}
   m_CustomRoot: {fileID: 0}
   m_Flip: 0
+--- !u!114 &109798481479719422
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 452980546219274359}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1 &1108974525502667372
 GameObject:
   m_ObjectHideFlags: 0
@@ -2204,6 +2221,7 @@ MonoBehaviour:
   uiSlotPrefab: {fileID: 579466836129025464, guid: fb43f9e42a2b2fd4999daf76b9e7d5e0, type: 3}
   uiPopupPrefab: {fileID: 7047183625215616851, guid: 8f0199b641621114ea2b4c7bc8799070, type: 3}
   uiSlotLayerName: ScreenSpaceUI
+  maxSlotPrewarmCount: 32
   inventorySlots: []
 --- !u!1 &7268536504453633950
 GameObject:
