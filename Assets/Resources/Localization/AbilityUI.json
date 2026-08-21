@@ -1940,7 +1940,7 @@
     {
       "id": 9157,
       "key": "AbilityDescription_ConstellationDamage",
-      "kr": "<COLOR=ff5d8f>별자리 발현</COLOR> 데미지가 <COLOR=54D86A>{0}% 증가합니다.",
+      "kr": "<COLOR=ff5d8f>별자리 발현</COLOR> 데미지가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
       "en": "Increases <COLOR=ff5d8f>Constellation Surge</COLOR> damage by <COLOR=54D86A>{0}%</COLOR>",
       "zhHans": "",
       "zhHant": "",
