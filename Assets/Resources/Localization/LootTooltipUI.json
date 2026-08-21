@@ -6,8 +6,8 @@
       "key": "foundbox",
       "kr": "탈진 시, 인벤토리에서 유실되는 원목의\n<color=#FFA500,#FF4500><b>30%</b></color>가 자동으로 원목 운반 상자에 담깁니다.",
       "en": "When you run out of stamina, <color=#FFA500,#FF4500><b>30%</b></color> of the logs that would be lost\nfrom your inventory are automatically moved to the cargo crate.",
-      "zhHans": "精疲力竭时, 背包内原本会损失的原木中, \n<color=#FFA500,#FF4500><b>30%</b></color>会自动装入原木运输箱。",
-      "zhHant": "精疲力竭時, 背包內原本會損失的原木中, \n<color=#FFA500,#FF4500><b>30%</b></color>會自動裝入原木運輸箱。",
+      "zhHans": "耐力耗尽时，背包内原本会损失的原木中，\n<color=#FFA500,#FF4500><b>30%</b></color>会自动装入原木运输箱。",
+      "zhHant": "耐力耗盡時，背包內原本會損失的原木中，\n<color=#FFA500,#FF4500><b>30%</b></color>會自動裝入原木運輸箱。",
       "ja": "スタミナが尽きると、バッグから失われるはずの丸太の\n<color=#FFA500,#FF4500><b>30%</b></color>が自動的に丸太運搬箱へ送られます。",
       "enumType": "",
       "enumValue": ""

@@ -39,8 +39,8 @@
       "key": "GoHomeBeforeExhausted_Title",
       "kr": "탈진하기 전에 마을로 돌아가세요!",
       "en": "Return to town before you run out of stamina!",
-      "zhHans": "请在精疲力竭前返回村庄！",
-      "zhHant": "請在精疲力竭前返回村莊！",
+      "zhHans": "请在耐力耗尽前返回村庄！",
+      "zhHant": "請在耐力耗盡前返回村莊！",
       "ja": "スタミナが尽きる前に町へ戻ろう！",
       "enumType": "",
       "enumValue": ""

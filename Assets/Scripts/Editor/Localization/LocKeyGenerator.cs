@@ -28,7 +28,6 @@ public class LocKeyGenerator
         sb.AppendLine("public static class LocKeys");
         sb.AppendLine("{");
 
-        var manager = new LocalizationManager();
         string[] jsonFiles = Directory.GetFiles(JsonPath, "*.json");
 
         List<LocalizationMapping.MappingEntry> mappingEntries = new List<LocalizationMapping.MappingEntry>();
@@ -48,7 +47,7 @@ public class LocKeyGenerator
             {
                 if (entry.id == 0) continue;
 
-                int key = manager.GenerateKey(data.jsonId, entry.id);
+                int key = GenerateCompositeKey(data.jsonId, entry.id);
                 string identifier = !string.IsNullOrEmpty(entry.key) ? entry.key : entry.en;
                 string safeName = SanitizeName(identifier);
                 if (string.IsNullOrEmpty(safeName)) safeName = $"Id{entry.id}";
@@ -103,8 +102,17 @@ public class LocKeyGenerator
         // ScriptableObject 매핑 파일 갱신/생성
         SaveMappingScriptableObject(mappingEntries);
 
+        bool generatedFontCharacterSets = LocalizationFontCharacterSetGenerator.GenerateAll(false);
+
         AssetDatabase.Refresh();
-        Debug.Log($"[LocKeyGenerator] Keys and Mappings generated successfully!");
+        if (generatedFontCharacterSets)
+        {
+            Debug.Log("[LocKeyGenerator] Keys, mappings, and font character sets generated successfully!");
+        }
+        else
+        {
+            Debug.LogWarning("[LocKeyGenerator] Keys and mappings were generated, but font character set generation failed.");
+        }
     }
 
     private static Type FindTypeInAssemblies(string _typeName)
@@ -116,6 +124,11 @@ public class LocKeyGenerator
             if (type != null) return type;
         }
         return null;
+    }
+
+    private static int GenerateCompositeKey(int _jsonId, int _entryId)
+    {
+        return (_jsonId << 21) | (_entryId & 0x1FFFFF);
     }
 
     private static void SaveMappingScriptableObject(List<LocalizationMapping.MappingEntry> _mappings)
