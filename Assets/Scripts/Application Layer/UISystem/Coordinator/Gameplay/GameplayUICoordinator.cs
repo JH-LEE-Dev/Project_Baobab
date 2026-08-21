@@ -457,6 +457,11 @@ public class GameplayUICoordinator
         // 여기서는 EscButtonPressed의 ESC 키 종료 경로와 동일하게 이동/시간만 복구한다.
         inputManager.PauseMove(false);
         Time.timeScale = 1f;
+
+        if (null != overUIPopupUI)
+        {
+            overUIPopupUI.SetPauseState(false);
+        }
     }
 
     private void GoToMainMenu()
@@ -467,6 +472,11 @@ public class GameplayUICoordinator
             escUI.HideImmediately();
         }
         inputManager.PauseMove(false);
+
+        if (null != overUIPopupUI)
+        {
+            overUIPopupUI.ResetQuest();
+        }
 
         GoToMainMenuEvent?.Invoke();
         Time.timeScale = 1f;
@@ -499,12 +509,22 @@ public class GameplayUICoordinator
             escUI.Hide();
             inputManager.PauseMove(false);
             Time.timeScale = 1f;
+
+            if (null != overUIPopupUI)
+            {
+                overUIPopupUI.SetPauseState(false);
+            }
         }
         else if (null != escUI)
         {
             escUI.ShowPauseMenu();
             inputManager.PauseMove(true);
             Time.timeScale = 0f;
+
+            if (null != overUIPopupUI)
+            {
+                overUIPopupUI.SetPauseState(true);
+            }
         }
     }
 

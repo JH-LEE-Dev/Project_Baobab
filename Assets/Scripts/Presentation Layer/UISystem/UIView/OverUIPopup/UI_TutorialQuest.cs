@@ -89,9 +89,13 @@ public class UI_TutorialQuest : MonoBehaviour
     private TweenCallback cachedOnTransitionBGCollapse;
     private TweenCallback cachedPlayQuestTextAppearSounds;
     private TweenCallback cachedOnCompleteHideCallback;
+    private TweenCallback cachedOnPauseHideComplete;
 
     private TutorialStep currentStep;
     private bool bIsShowing = false;
+    private bool isSuspendedByPause = false;
+    private string currentQuestTitle;
+    private string currentQuestDesc;
     public event Action<TutorialStep> HideCompletedEvent;
     public event Action<TutorialStep> StepTransitionCompletedEvent;
 
@@ -175,9 +179,50 @@ public class UI_TutorialQuest : MonoBehaviour
         }
     }
 
+    public void SetPauseState(bool _isPaused)
+    {
+        if (true == _isPaused)
+        {
+            if (false == bIsShowing)
+                return;
+
+            isSuspendedByPause = true;
+            bIsShowing = false;
+
+            KillSequences();
+
+            hideSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
+            AppendHideEffect(hideSequence, 0f);
+            hideSequence.OnComplete(cachedOnPauseHideComplete);
+        }
+        else
+        {
+            if (false == isSuspendedByPause)
+                return;
+
+            isSuspendedByPause = false;
+
+            if (false == string.IsNullOrEmpty(currentQuestTitle))
+            {
+                SetQuestContent(currentQuestTitle, currentQuestDesc);
+            }
+            else
+            {
+                GetQuestTitleAndDesc(currentStep, out string _title, out string _desc);
+                SetQuestContent(_title, _desc);
+            }
+
+            PlayShowQuest();
+        }
+    }
+
     public void ResetQuest()
     {
         KillSequences();
+
+        isSuspendedByPause = false;
+        currentQuestTitle = null;
+        currentQuestDesc = null;
 
         bIsShowing = false;
         PrepareHiddenState();
@@ -451,6 +496,9 @@ public class UI_TutorialQuest : MonoBehaviour
 
     private void SetQuestContent(string _title, string _desc)
     {
+        currentQuestTitle = _title;
+        currentQuestDesc = _desc;
+
         if (null != questTitleText)
         {
             questTitleText.text = _title;
@@ -948,6 +996,7 @@ public class UI_TutorialQuest : MonoBehaviour
         cachedOnTransitionBGCollapse = OnTransitionBGCollapse;
         cachedPlayQuestTextAppearSounds = PlayQuestTextAppearSounds;
         cachedOnCompleteHideCallback = OnCompleteHideCallback;
+        cachedOnPauseHideComplete = OnPauseHideComplete;
     }
 
     private void OnShowComplete() { }
@@ -955,6 +1004,11 @@ public class UI_TutorialQuest : MonoBehaviour
     private void OnHideComplete() 
     { 
         HideCompletedEvent?.Invoke(currentStep); 
+    }
+
+    private void OnPauseHideComplete()
+    {
+        PrepareHiddenState();
     }
     
     private void OnTransitionComplete() 
@@ -988,6 +1042,7 @@ public class UI_TutorialQuest : MonoBehaviour
         }
 
         cachedRefreshLocalizedTexts = null;
+        cachedOnPauseHideComplete = null;
         localizationManager = null;
     }
 }

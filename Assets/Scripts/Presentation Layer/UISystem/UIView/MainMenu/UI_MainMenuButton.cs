@@ -90,6 +90,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private Vector2 textOriginalPos;
     private Vector3 dotOriginalRot;
     private TextMeshProUGUI targetTextComponent;
+    private TextMeshProUGUI targetDotTextComponent;
     private UnityEngine.UI.Graphic dotGraphicComponent;
     private Color originalDotColor = Color.white;
     private Color originalTextColor = Color.white;
@@ -129,20 +130,6 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void Awake()
     {
-        if (null != textTarget)
-        {
-            textOriginalPos = textTarget.anchoredPosition;
-            targetTextComponent = textTarget.GetComponent<TextMeshProUGUI>();
-            if (null != targetTextComponent) originalTextColor = targetTextComponent.color;
-        }
-
-        if (null != dotTarget)
-        {
-            dotOriginalRot = dotTarget.localEulerAngles;
-            dotGraphicComponent = dotTarget.GetComponentInChildren<UnityEngine.UI.Graphic>(); // 자식까지 탐색하거나 Graphic(Image, Text 등)으로 포괄 탐색
-            if (null != dotGraphicComponent) originalDotColor = dotGraphicComponent.color;
-        }
-
         // 델리게이트 인스턴스 사전 생성 및 캐싱 (람다/클로저 제거)
         onAppearCompleteCallback = OnAppearComplete;
         onDisappearCompleteCallback = OnDisappearComplete;
@@ -227,14 +214,36 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         onClickAction = _onClickCallback;
         onPressedAction = _onPressedCallback;
 
+        EnsureTargetComponents();
+    }
+
+    private void EnsureTargetComponents()
+    {
         if (null == buttonImage)
         {
             buttonImage = GetComponent<Image>();
+        }
+
+        if (null != textTarget && null == targetTextComponent)
+        {
+            textOriginalPos = textTarget.anchoredPosition;
+            targetTextComponent = textTarget.GetComponent<TextMeshProUGUI>();
+            if (null != targetTextComponent) originalTextColor = targetTextComponent.color;
+        }
+
+        if (null != dotTarget)
+        {
+            dotOriginalRot = dotTarget.localEulerAngles;
+            if (null == dotGraphicComponent) dotGraphicComponent = dotTarget.GetComponentInChildren<UnityEngine.UI.Graphic>();
+            if (null == targetDotTextComponent) targetDotTextComponent = dotTarget.GetComponentInChildren<TextMeshProUGUI>();
+            if (null != dotGraphicComponent) originalDotColor = dotGraphicComponent.color;
         }
     }
 
     public void SetInteractable(bool _isInteractable)
     {
+        EnsureTargetComponents();
+
         isInteractable = _isInteractable;
 
         if (null != targetTextComponent)
@@ -253,9 +262,24 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     /// </summary>
     public void SetText(string _text)
     {
+        EnsureTargetComponents();
+
         if (null != targetTextComponent)
         {
             targetTextComponent.text = _text;
+        }
+    }
+
+    /// <summary>
+    /// 로컬라이징 등 외부에서 도트 텍스트(특수기호)를 변경할 때 사용합니다.
+    /// </summary>
+    public void SetDotText(string _dotText)
+    {
+        EnsureTargetComponents();
+
+        if (null != targetDotTextComponent)
+        {
+            targetDotTextComponent.text = _dotText;
         }
     }
 

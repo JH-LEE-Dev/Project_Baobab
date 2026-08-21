@@ -221,29 +221,37 @@ public class UI_MainMenu : MonoBehaviour
         if (null == viewCtx || null == viewCtx.localizationManager)
             return;
 
+        string _dotText = viewCtx.localizationManager.GetText(mainMenuUIJsonId, 7);
+        if (true == string.IsNullOrEmpty(_dotText)) _dotText = "◆";
+
         if (null != newGameButton)
         {
             newGameButton.SetText(viewCtx.localizationManager.GetText(mainMenuUIJsonId, 1));
+            newGameButton.SetDotText(_dotText);
         }
         
         if (null != loadGameButton)
         {
             loadGameButton.SetText(viewCtx.localizationManager.GetText(mainMenuUIJsonId, 2));
+            loadGameButton.SetDotText(_dotText);
         }
         
         if (null != optionButton)
         {
             optionButton.SetText(viewCtx.localizationManager.GetText(mainMenuUIJsonId, 3));
+            optionButton.SetDotText(_dotText);
         }
         
         if (null != creditButton)
         {
             creditButton.SetText(viewCtx.localizationManager.GetText(mainMenuUIJsonId, 4));
+            creditButton.SetDotText(_dotText);
         }
 
         if (null != exitButton)
         {
             exitButton.SetText(viewCtx.localizationManager.GetText(mainMenuUIJsonId, 5));
+            exitButton.SetDotText(_dotText);
         }
     }
     

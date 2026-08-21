@@ -1,18 +1,17 @@
-{
+﻿{
   "jsonId": 1,
   "entries": [
     {
       "id": 1,
       "key": "Information",
       "kr": "등장하는 나무 정보",
-      "en": "Trees Found Here",
+      "en": "Native Trees",
       "zhHans": "",
       "zhHant": "",
       "ja": "",
       "enumType": "MapType",
       "enumValue": "None"
     },
-
     {
       "id": 2,
       "key": "mapName_1",

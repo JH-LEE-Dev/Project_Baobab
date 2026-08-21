@@ -1,4 +1,4 @@
-{
+﻿{
   "jsonId": 7,
   "entries": [
     {
@@ -67,7 +67,7 @@
       "enumType": "TreeType",
       "enumValue": "BellpineTree"
     },
-        {
+    {
       "id": 7,
       "key": "StarrootTree",
       "kr": "별뿌리나무",
