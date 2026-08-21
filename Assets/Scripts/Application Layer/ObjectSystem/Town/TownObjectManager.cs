@@ -41,6 +41,16 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(200);
     public IReadOnlyList<TreeObj> ActiveTrees => activeTreesForUpdate;
 
+    // 나무 외에 그림자 판정에 참여하는 건물(Tent, ShopNPC 등). 마을에 고정 배치되어 씬 시작 시 한 번만 등록된다.
+    private readonly List<IShadowCaster> buildingShadowCasters = new List<IShadowCaster>(4);
+    public IReadOnlyList<IShadowCaster> BuildingShadowCasters => buildingShadowCasters;
+
+    public void RegisterBuildingShadowCaster(IShadowCaster _caster)
+    {
+        if (_caster == null || buildingShadowCasters.Contains(_caster)) return;
+        buildingShadowCasters.Add(_caster);
+    }
+
     private bool bCanTravel = true;
 
     [SerializeField] private TreeVisualDataBase treeVisualDataBase;
