@@ -49,13 +49,20 @@ namespace ProjectBaobab
             Camera cam = (canvas.renderMode == RenderMode.ScreenSpaceOverlay) ? null : canvas.worldCamera;
             Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(cam, targetIcon.position);
             
-            // 현재 화면 해상도로 정규화 (0~1 범위)
-            float sw = Screen.width;
-            float sh = Screen.height;
+            // 카메라가 실제로 그리는 영역을 기준으로 정규화한다 (0~1 범위).
+            // 크롭(Pillarbox)이 켜지면 셰이더가 보는 화면 공간이 화면 전체가 아니라 잘린 영역이라,
+            // Screen 크기로 나누면 마스크 위치가 어긋난다. 크롭이 없으면 결과가 같다.
+            // [ExecuteAlways]라 에디터에서도 도므로 싱글톤 대신 캔버스의 카메라를 직접 쓴다.
+            Rect viewRect = (cam != null && 0f < cam.pixelRect.width)
+                ? cam.pixelRect
+                : new Rect(0f, 0f, Screen.width, Screen.height);
+
+            float sw = viewRect.width;
+            float sh = viewRect.height;
 
             Vector4 maskRect;
-            maskRect.x = screenPoint.x / sw;
-            maskRect.y = screenPoint.y / sh;
+            maskRect.x = (screenPoint.x - viewRect.xMin) / sw;
+            maskRect.y = (screenPoint.y - viewRect.yMin) / sh;
 
             // 아이콘의 화면상 크기 계산 (0~1 범위)
             Vector3[] corners = new Vector3[4];

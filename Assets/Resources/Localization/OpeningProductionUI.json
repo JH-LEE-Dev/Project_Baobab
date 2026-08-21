@@ -6,8 +6,8 @@
       "key": "Opening_Monologue_0",
       "kr": "음... 날씨 참 <color=#FFE082,#FFB74D><wave>좋다</wave></color>, 그쵸?\n오늘 같은 날엔 돗자리 펴고\n<color=#FFE082,#FFB74D><wave>소풍</wave></color>을 가야 하는데 말이죠.",
       "en": "Hmm... The weather sure is <color=#FFE082,#FFB74D><wave>nice</wave></color>, isn't it?\nA day like this is perfect for laying out a blanket\nand having a <color=#FFE082,#FFB74D><wave>picnic</wave></color>.",
-      "zhHans": "嗯…今天天气真<color=#FFE082,#FFB74D><wave>好</wave></color>，对吧？\n像今天这样的好天气, \n就该铺开野餐垫, 去<color=#FFE082,#FFB74D><wave>郊游</wave></color>才对。",
-      "zhHant": "嗯…今天天氣真<color=#FFE082,#FFB74D><wave>好</wave></color>，對吧？\n像今天這樣的好天氣, \n就該鋪開野餐墊, 去<color=#FFE082,#FFB74D><wave>郊遊</wave></color>才對。",
+      "zhHans": "嗯…今天天气真<color=#FFE082,#FFB74D><wave>好</wave></color>，对吧？\n像今天这样的好天气，\n就该铺开野餐垫，去<color=#FFE082,#FFB74D><wave>郊游</wave></color>才对。",
+      "zhHant": "嗯…今天天氣真<color=#FFE082,#FFB74D><wave>好</wave></color>，對吧？\n像今天這樣的好天氣，\n就該鋪開野餐墊，去<color=#FFE082,#FFB74D><wave>郊遊</wave></color>才對。",
       "ja": "うーん……今日は本当に<color=#FFE082,#FFB74D><wave>いい天気</wave></color>ですね。\nこんな日はレジャーシートを広げて、\n<color=#FFE082,#FFB74D><wave>ピクニック</wave></color>に行きたいところです。",
       "enumType": "",
       "enumValue": ""
@@ -19,7 +19,7 @@
       "en": "So here I am, having a picnic.\n<color=#81C784,#4CAF50><b><wave>In the forest.</wave></b></color>",
       "zhHans": "所以，我们现在来郊游了。\n<color=#81C784,#4CAF50><b><wave>就在森林里。</wave></b></color>",
       "zhHant": "所以，我們現在來郊遊了。\n<color=#81C784,#4CAF50><b><wave>就在森林裡。</wave></b></color>",
-      "ja": "というわけで、今はピクニックに来ています。\n<color=#81C784,#4CAF50><b><wave>森に。</wave></b></color>",
+      "ja": "というわけで、ピクニックに来ました。\n<color=#81C784,#4CAF50><b><wave>森に。</wave></b></color>",
       "enumType": "",
       "enumValue": ""
     },
@@ -30,7 +30,7 @@
       "en": "<color=#FF8A65><char_shake>...What?</char_shake></color> You want me to quit talking and\n<color=#FFD54F>get back to chopping trees?</color>",
       "zhHans": "<color=#FF8A65><char_shake>…啊？</char_shake></color>别开玩笑了\n难道是叫我<color=#FFD54F>老老实实砍树</color>吗？",
       "zhHant": "<color=#FF8A65><char_shake>…啊？</char_shake></color>別開玩笑了\n難道是叫我<color=#FFD54F>老老實實砍樹</color>嗎？",
-      "ja": "<color=#FF8A65><char_shake>……え？</char_shake></color>くだらないことを言ってないで、\n<color=#FFD54F>木を切れってことですか？</color>",
+      "ja": "<color=#FF8A65><char_shake>……え？</char_shake></color>くだらない話はいいから、\n<color=#FFD54F>木を切れってことですか？</color>",
       "enumType": "",
       "enumValue": ""
     },
@@ -41,7 +41,7 @@
       "en": "Aw... <color=#90CAF9><wave>That's cold</wave></color>.\n<color=#CFD8DC>Fine, fine.</color>",
       "zhHans": "唉…<color=#90CAF9><wave>还真狠心啊</wave></color>。\n<color=#CFD8DC>行吧</color>。",
       "zhHant": "唉…<color=#90CAF9><wave>還真狠心啊</wave></color>。\n<color=#CFD8DC>行吧</color>。",
-      "ja": "えぇ……<color=#90CAF9><wave>冷たいですね</wave></color>。\n<color=#CFD8DC>分かりましたよ。</color>",
+      "ja": "えー……<color=#90CAF9><wave>冷たいですね</wave></color>。\n<color=#CFD8DC>分かりましたよ。</color>",
       "enumType": "",
       "enumValue": ""
     }

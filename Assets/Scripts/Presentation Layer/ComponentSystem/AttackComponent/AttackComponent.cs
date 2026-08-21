@@ -152,21 +152,20 @@ public class AttackComponent : PComponent
         if (mainCamera == null)
             return;
 
-        // 1. 현재 모니터 화면 좌표를 0~1 비율(정규화)로 변환
-        float _normalizedX = _mouseScreenPos.x / Screen.width;
-        float _normalizedY = _mouseScreenPos.y / Screen.height;
-
-        // 2. 월드 카메라가 출력 중인 해상도 기준으로 좌표 리매핑
-        float _targetWidth = (mainCamera.targetTexture != null) ? mainCamera.targetTexture.width : mainCamera.pixelWidth;
-        float _targetHeight = (mainCamera.targetTexture != null) ? mainCamera.targetTexture.height : mainCamera.pixelHeight;
-
+        // 마우스 화면 좌표를 그대로 넘긴다. ScreenToWorldPoint가 카메라의 pixelRect를 이미
+        // 반영하므로, 화면 크기로 정규화한 뒤 pixelWidth를 다시 곱하는 리매핑을 하면 안 된다.
+        //
+        // 예전에는 그 리매핑을 했는데, 카메라가 화면 일부만 그리는 경우(UltraWideCropApplier가
+        // Pillarbox를 켠 상태)에 pixelRect의 시작점을 두 번 빼게 되어 조준이 어긋났다.
+        // 3440x1440이면 화면 오른쪽 끝을 가리켜도 시야의 83% 지점으로 계산된다.
+        //
+        // 크롭이 없는 해상도(Screen.width == pixelWidth)에서는 예전 계산과 결과가 같다.
         Vector3 _convertedMousePos = new Vector3(
-            _normalizedX * _targetWidth,
-            _normalizedY * _targetHeight,
+            _mouseScreenPos.x,
+            _mouseScreenPos.y,
             -mainCamera.transform.position.z
         );
 
-        // 3. 변환된 좌표를 사용하여 월드 좌표 계산
         Vector3 mouseWorldPos = mainCamera.ScreenToWorldPoint(_convertedMousePos);
         mouseWorldPos.z = 0;
 

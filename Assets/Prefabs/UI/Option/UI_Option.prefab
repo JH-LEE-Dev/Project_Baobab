@@ -1326,10 +1326,10 @@ RectTransform:
   - {fileID: 2951982338782109065}
   m_Father: {fileID: 4699113252308768433}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 640, y: 360}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &3117318703062886137
 GameObject:
@@ -2359,6 +2359,7 @@ MonoBehaviour:
   masterVolumeSlider: {fileID: 8319413193849960726}
   bgmVolumeSlider: {fileID: 5685979054745341131}
   sfxVolumeSlider: {fileID: 9069210439176553583}
+  sfxVolumePreviewSound: -911198171
   keyBindRowContainer: {fileID: 754617683967783080}
   keyBindRowPrefab: {fileID: 1506463113688217717, guid: fe8baa3bc073aaa459f4d803c40ee997, type: 3}
   resetAllBindingsButton: {fileID: 862903188062434234}
@@ -4220,10 +4221,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 4699113252308768433}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 640, y: 360}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1607666781148990032
 CanvasRenderer:

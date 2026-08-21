@@ -7,7 +7,7 @@
       "kr": "창모드",
       "en": "Windowed",
       "zhHans": "窗口化",
-      "zhHant": "視窗化",
+      "zhHant": "窗口化",
       "ja": "ウィンドウ",
       "enumType": "",
       "enumValue": ""
@@ -18,7 +18,7 @@
       "kr": "전체화면",
       "en": "Fullscreen",
       "zhHans": "全屏",
-      "zhHant": "全螢幕",
+      "zhHant": "全屏",
       "ja": "フルスクリーン",
       "enumType": "",
       "enumValue": ""
@@ -84,7 +84,7 @@
       "kr": "해상도",
       "en": "Resolution",
       "zhHans": "分辨率",
-      "zhHant": "解析度",
+      "zhHant": "分辨率",
       "ja": "解像度",
       "enumType": "",
       "enumValue": ""
@@ -96,7 +96,7 @@
       "en": "Window Mode",
       "zhHans": "显示模式",
       "zhHant": "顯示模式",
-      "ja": "表示モード",
+      "ja": "画面モード",
       "enumType": "",
       "enumValue": ""
     },
@@ -140,7 +140,7 @@
       "en": "Crosshair Brightness",
       "zhHans": "准星亮度",
       "zhHant": "準星亮度",
-      "ja": "照準の明るさ",
+      "ja": "クロスヘアの明るさ",
       "enumType": "",
       "enumValue": ""
     },
@@ -161,7 +161,7 @@
       "kr": "화면 명도",
       "en": "Screen Brightness",
       "zhHans": "屏幕亮度",
-      "zhHant": "螢幕亮度",
+      "zhHant": "屏幕亮度",
       "ja": "画面の明るさ",
       "enumType": "",
       "enumValue": ""
@@ -172,7 +172,7 @@
       "kr": "화면 채도",
       "en": "Screen Saturation",
       "zhHans": "屏幕饱和度",
-      "zhHant": "螢幕飽和度",
+      "zhHant": "屏幕飽和度",
       "ja": "画面の彩度",
       "enumType": "",
       "enumValue": ""
@@ -206,7 +206,7 @@
       "en": "Sound Effects Volume",
       "zhHans": "音效音量",
       "zhHant": "音效音量",
-      "ja": "効果音音量",
+      "ja": "SE音量",
       "enumType": "",
       "enumValue": ""
     },
@@ -227,7 +227,7 @@
       "kr": "사운드",
       "en": "Audio",
       "zhHans": "音频",
-      "zhHant": "音訊",
+      "zhHant": "音頻",
       "ja": "サウンド",
       "enumType": "",
       "enumValue": ""
@@ -238,7 +238,7 @@
       "kr": "그래픽",
       "en": "Graphics",
       "zhHans": "图像",
-      "zhHant": "畫面",
+      "zhHant": "圖像",
       "ja": "グラフィック",
       "enumType": "",
       "enumValue": ""
@@ -347,8 +347,8 @@
       "key": "pressKeyPrompt",
       "kr": "변경할 키를 입력하세요.\n(ESC: 취소)",
       "en": "Press any key to rebind.\n(Esc: Cancel)",
-      "zhHans": "请按下要绑定的按键。\n(ESC: 取消)",
-      "zhHant": "請按下要綁定的按鍵。\n(ESC:取消)",
+      "zhHans": "请按下要绑定的按键。\n（ESC：取消）",
+      "zhHant": "請按下要綁定的按鍵。\n（ESC：取消）",
       "ja": "割り当てるキーを押してください。\n（ESC：キャンセル）",
       "enumType": "",
       "enumValue": ""
@@ -359,7 +359,7 @@
       "kr": "모든 키 설정을 기본값으로 되돌리시겠습니까?",
       "en": "Reset all key bindings to their defaults?",
       "zhHans": "确定要将所有按键设置恢复为默认值吗？",
-      "zhHant": "確定要將所有按鍵設定恢復為預設值嗎？",
+      "zhHant": "確定要將所有按鍵設定恢復為默認值嗎？",
       "ja": "すべてのキー設定を初期状態に戻しますか？",
       "enumType": "",
       "enumValue": ""
@@ -381,7 +381,7 @@
       "kr": "기본 값으로 초기화",
       "en": "Reset to Defaults",
       "zhHans": "恢复默认设置",
-      "zhHant": "恢復預設設定",
+      "zhHant": "恢復默認設定",
       "ja": "初期設定に戻す",
       "enumType": "",
       "enumValue": ""
