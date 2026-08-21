@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f2b8d1c5a6e4f7d8b9c0a1e2d3f4b5c, type: 3}
+  m_Name: LocalizationFontTable
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizationFontTable
+  entries:
+  - language: 0
+    fontAsset: {fileID: 0}
+  - language: 1
+    fontAsset: {fileID: 0}
+  - language: 2
+    fontAsset: {fileID: 11400000, guid: 1ffc0e3d743c98244a74b4bd169c1c0e, type: 2}
+  - language: 3
+    fontAsset: {fileID: 11400000, guid: fe9c262ce5b3f90439c4508228c9555c, type: 2}
+  - language: 4
+    fontAsset: {fileID: 11400000, guid: 19b4e33d5de41244ea1b9ef098e7b84e, type: 2}
+  excludedFonts: []
+  trackRuntimeCreatedText: 1

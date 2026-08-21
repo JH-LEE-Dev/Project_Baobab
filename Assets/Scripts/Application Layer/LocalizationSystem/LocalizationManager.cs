@@ -16,6 +16,12 @@ public class LocalizationManager : MonoBehaviour
 
     [SerializeField] private LocalizationMapping localizationMapping;
 
+    // 언어별 폰트 교체 설정. 비워두면 폰트 교체 없이 로컬라이징 텍스트만 바뀐다.
+    [SerializeField] private LocalizationFontTable fontTable;
+
+    /// <summary>현재 적용된 언어입니다.</summary>
+    public Language CurrentLanguage => currentLanguage;
+
     // //정적 내부 캐시 클래스
     private static class EnumTypeCache<T> where T : struct, Enum
     {
@@ -32,6 +38,11 @@ public class LocalizationManager : MonoBehaviour
         stringBuilder = new StringBuilder(128);
 
         LoadMappingData(localizationMapping);
+
+        // 폰트 교체기는 현재 언어를 알아야 하므로, 언어를 먼저 알려준 뒤 초기화한다.
+        // (Initialize 이전 호출은 값만 기억해두고 실제 적용은 하지 않는다)
+        FontLocalizer.SetLanguage(currentLanguage);
+        FontLocalizer.Initialize(fontTable);
 
         //SetLanguage(Language.EN);
     }
@@ -183,6 +194,10 @@ public class LocalizationManager : MonoBehaviour
         {
             ParseJson(loadedJsons[i]);
         }
+
+        // 텍스트가 갱신되기 전에 폰트를 먼저 바꾼다. 구독자가 새로 채워 넣는 문자열이
+        // 곧바로 해당 언어의 폰트로 그려지도록 하기 위해서다.
+        FontLocalizer.SetLanguage(_lang);
 
         OnLanguageChanged?.Invoke();
     }
