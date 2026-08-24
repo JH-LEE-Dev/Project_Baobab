@@ -28,6 +28,12 @@ public static class SettingsRepository
     private const int CURRENT_VERSION = 3;
     private const string TEMP_SUFFIX = ".tmp";
 
+    /// <summary>
+    /// hapticStrength 필드가 파일에 들어 있는지 확인할 때 찾는 JSON 키입니다.
+    /// 필드 이름을 바꾸면 이 상수도 함께 바꿔야 합니다. (TryLoad의 보정 참고)
+    /// </summary>
+    private const string MIGRATION_KEY_HAPTIC_STRENGTH = "\"hapticStrength\"";
+
     [Serializable]
     private class SettingsFileModel
     {
@@ -64,6 +70,21 @@ public static class SettingsRepository
             }
 
             _result = _model.data;
+
+            // 버전을 올리지 않고 추가된 필드의 보정.
+            //
+            // JsonUtility는 JSON에 없는 키를 default(0)로 채우는데, hapticStrength는 0이
+            // "진동 끔"이라는 유효한 값이라 "없음"과 구분되지 않는다. 그대로 두면 이 필드가
+            // 생기기 전에 만들어진 설정 파일을 쓰는 유저는 진동이 조용히 꺼진 채로 시작한다.
+            // (gamepadIconPreference는 0이 곧 기본값 Auto라 이런 보정이 필요 없다)
+            //
+            // 버전을 올려 해결하지 않는 이유: 그러면 파일이 통째로 폐기되어 유저가 맞춰둔
+            // 해상도·볼륨까지 전부 날아간다.
+            if (false == _json.Contains(MIGRATION_KEY_HAPTIC_STRENGTH))
+            {
+                _result.hapticStrength = SettingsData.SLIDER_MAX;
+            }
+
             return ESettingsLoadResult.Loaded;
         }
         catch (Exception _e)

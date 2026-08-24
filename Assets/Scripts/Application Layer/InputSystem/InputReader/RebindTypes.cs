@@ -23,6 +23,48 @@ public enum ERebindableAction
 }
 
 /// <summary>
+/// 패드 기본 배치입니다. (참고용 문서. 실제 값은 InputActionSystem.inputactions에 있습니다)
+///
+/// | 액션        | 패드                  |
+/// |------------|----------------------|
+/// | Move       | leftStick            |
+/// | Aim        | rightStick           |
+/// | Attack     | rightTrigger (RT/R2) |
+/// | Interaction| buttonSouth (A/×)    |
+/// | Inventory  | buttonNorth (Y/△)    |
+/// | PotionKey  | buttonWest (X/□)     |
+/// | ESC(메뉴)   | start                |
+///
+/// buttonEast(B/○)는 비워 둡니다. 리바인딩 취소이자 "뒤로가기"라는 보편 관례라
+/// 다른 기능에 할당하면 유저가 리바인딩 대기 상태에서 빠져나오지 못합니다.
+/// </summary>
+public static class GamepadDefaultBindings
+{
+    /// <summary>
+    /// 스틱에 묶인 액션은 패드에서 리바인딩 대상이 아닙니다.
+    ///
+    /// 이유: 패드의 이동/조준은 "왼쪽 스틱 / 오른쪽 스틱"이라는 덩어리 하나이지, 방향별로
+    /// 나뉘지 않습니다. 키보드처럼 MoveUp/Down/Left/Right를 따로 바꾸게 하면 넷 다 같은
+    /// 스틱 바인딩을 가리켜서, 하나를 바꾸면 나머지 셋이 함께 바뀌는 것처럼 보입니다.
+    /// (표시는 그대로 됩니다. 편집만 막습니다)
+    /// </summary>
+    public static bool IsRebindableOnGamepad(ERebindableAction _action)
+    {
+        switch (_action)
+        {
+            case ERebindableAction.MoveUp:
+            case ERebindableAction.MoveDown:
+            case ERebindableAction.MoveLeft:
+            case ERebindableAction.MoveRight:
+                return false;
+
+            default:
+                return true;
+        }
+    }
+}
+
+/// <summary>
 /// 리바인딩 시도 결과입니다. Duplicate여도 입력한 키는 그대로 적용됩니다.
 /// (편집 세션 동안은 중복 상태를 허용하고 화면에 표시만 하다가, 저장 시점에만 막습니다)
 /// ESC는 인터랙티브 리바인딩의 취소 키로 예약되어 있어 애초에 새 바인딩으로 입력될 수 없으므로

@@ -6,6 +6,20 @@ public class InputManager : MonoBehaviour
 {
     public InputReader inputReader { get; private set; }
 
+    [Header("Input Device")]
+    [SerializeField, Tooltip("키보드/마우스 ↔ 패드 자동 전환의 민감도 설정. 비워두면 기본값으로 동작한다.")]
+    private InputDeviceSettings deviceSettings;
+
+    // 진동은 InputReader(액션 해석)와 관심사가 달라 InputManager가 직접 소유한다.
+    // 필드 초기화로 만들어 두는 이유: Initialize 이전에 ApplyInputSettings가 불려도 안전하도록.
+    private readonly GamepadHaptics haptics = new GamepadHaptics();
+
+    /// <summary>
+    /// 패드 진동입니다. 무엇이 언제 진동할지는 호출부가 정합니다.
+    /// 예: <c>inputManager.Haptics.Play(0.8f, 0.2f, 0.15f)</c>
+    /// </summary>
+    public GamepadHaptics Haptics => haptics;
+
     private bool bCursorHoveredOnUI = false;
 
     public void Initialize()
@@ -18,17 +32,151 @@ public class InputManager : MonoBehaviour
             return;
         }
 
-        inputReader.Initialize();
+        inputReader.Initialize(deviceSettings);
+
+        BindSettings();
+    }
+
+    /// <summary>
+    /// 저장된 패드 아이콘 표기 설정을 반영하고, 이후 변경도 따라가도록 구독합니다.
+    ///
+    /// 적용 이벤트는 옵션 창을 닫을 때(또는 실시간 미리보기에서)만 발행되므로, 여기서
+    /// 현재 값을 한 번 직접 적용하지 않으면 게임을 껐다 켰을 때 저장된 표기가 무시됩니다.
+    /// (AudioManager가 볼륨을 다루는 방식과 동일합니다)
+    /// </summary>
+    private void BindSettings()
+    {
+        SettingsManager _settings = SettingsManager.Instance;
+        if (null == _settings) return;
+
+        _settings.OnInputSettingsAppliedEvent -= ApplyInputSettings;
+        _settings.OnInputSettingsAppliedEvent += ApplyInputSettings;
+
+        ApplyInputSettings(_settings.Current);
+    }
+
+    public void ApplyInputSettings(SettingsData _data)
+    {
+        bool _bUseOverride = ToIconSetOverride(_data.gamepadIconPreference, out EGamepadIconSet _iconSet);
+        SetGamepadIconSetOverride(_bUseOverride, _iconSet);
+
+        // 슬라이더는 0~100, 진동 서비스는 0~1 배율을 쓴다.
+        haptics.SetStrengthScale(_data.hapticStrength / SettingsData.SLIDER_MAX);
+    }
+
+    /// <summary>
+    /// 유저 설정(EGamepadIconPreference)을 트래커가 쓰는 형태로 변환합니다.
+    /// Auto는 "수동 지정 없음"이므로 false를 반환하며, 이때 _iconSet은 쓰이지 않습니다.
+    /// </summary>
+    private static bool ToIconSetOverride(EGamepadIconPreference _preference, out EGamepadIconSet _iconSet)
+    {
+        switch (_preference)
+        {
+            case EGamepadIconPreference.Xbox: _iconSet = EGamepadIconSet.Xbox; return true;
+            case EGamepadIconPreference.PlayStation: _iconSet = EGamepadIconSet.PlayStation; return true;
+            case EGamepadIconPreference.Nintendo: _iconSet = EGamepadIconSet.Nintendo; return true;
+            case EGamepadIconPreference.Generic: _iconSet = EGamepadIconSet.Generic; return true;
+
+            default:
+                _iconSet = EGamepadIconSet.Generic;
+                return false;
+        }
     }
 
     public void Release()
     {
+        haptics.Release();
         inputReader.Release();
     }
 
     public void OnDestroy()
     {
+        // 종료 중에 Instance 게터를 쓰면 싱글턴이 되살아나므로 HasInstance로 확인한다.
+        if (true == SettingsManager.HasInstance)
+        {
+            SettingsManager.Instance.OnInputSettingsAppliedEvent -= ApplyInputSettings;
+        }
+
+        haptics.Release();
         inputReader?.Release();
+    }
+
+    private void Update()
+    {
+        // 일시정지(timeScale = 0) 중에도 옵션 창에서 패드를 만지면 표기가 바뀌어야 하므로 unscaled를 쓴다.
+        // 진동도 같은 이유로 unscaled여야 한다. (일시정지 중에 진동이 영원히 안 끝나면 안 된다)
+        float _unscaledDeltaTime = Time.unscaledDeltaTime;
+
+        inputReader?.Tick(_unscaledDeltaTime);
+        haptics.Tick(_unscaledDeltaTime);
+    }
+
+    private void OnApplicationFocus(bool _bFocused)
+    {
+        // 알트탭으로 게임을 벗어났는데 패드가 계속 울리는 것을 막는다.
+        haptics.SetApplicationFocus(_bFocused);
+    }
+
+    private void OnApplicationQuit()
+    {
+        // 진동은 장치 쪽에 남는 상태라 게임이 꺼져도 스스로 멎지 않는다. 반드시 명시적으로 끈다.
+        haptics.Release();
+    }
+
+    // 입력 장치 (실제 처리는 inputReader 위임. 변경 알림 이벤트는 다른 입력 이벤트들과 동일하게
+    // inputManager.inputReader에서 직접 구독한다)
+
+    /// <summary>지금 유저가 조작에 쓰고 있는 장치입니다. 물리적 연결 여부가 아니라 "마지막으로 실제 입력이 들어온 쪽"입니다.</summary>
+    public EInputDeviceType CurrentDevice => null != inputReader ? inputReader.CurrentDevice : EInputDeviceType.KeyboardMouse;
+
+    /// <summary>CurrentDevice == Gamepad 의 편의 표현입니다.</summary>
+    public bool IsGamepadMode => null != inputReader && inputReader.IsGamepadMode;
+
+    /// <summary>패드가 물리적으로 하나 이상 연결되어 있는지입니다. 실제 사용 여부와는 별개입니다.</summary>
+    public bool IsGamepadConnected => null != inputReader && inputReader.IsGamepadConnected;
+
+    /// <summary>화면에 그릴 패드 아이콘 세트입니다. 수동 지정이 켜져 있으면 그 값, 아니면 자동 판별 결과입니다.</summary>
+    public EGamepadIconSet CurrentGamepadIconSet => null != inputReader ? inputReader.CurrentGamepadIconSet : EGamepadIconSet.Generic;
+
+    /// <summary>수동 지정과 무관한 자동 판별 결과입니다. 옵션에서 "자동 (Xbox)"처럼 보여줄 때 씁니다.</summary>
+    public EGamepadIconSet DetectedGamepadIconSet => null != inputReader ? inputReader.DetectedGamepadIconSet : EGamepadIconSet.Generic;
+
+    /// <summary>이번 프레임에 어느 장치에서든 조작이 들어왔는지입니다. ("아무 키나 누르세요" 화면 등)</summary>
+    public bool AnyInputThisFrame => null != inputReader && inputReader.AnyInputThisFrame;
+
+    public void SetGamepadIconSetOverride(bool _bUseOverride, EGamepadIconSet _iconSet)
+    {
+        inputReader?.SetGamepadIconSetOverride(_bUseOverride, _iconSet);
+    }
+
+    public void ForceInputDevice(EInputDeviceType _device)
+    {
+        inputReader?.ForceInputDevice(_device);
+    }
+
+    public string GetBindingPath(ERebindableAction _action, EInputDeviceType _device)
+    {
+        return inputReader.GetBindingPath(_action, _device);
+    }
+
+    public string GetBindingDisplayString(ERebindableAction _action, EInputDeviceType _device)
+    {
+        return inputReader.GetBindingDisplayString(_action, _device);
+    }
+
+    public string GetBindingPathForCurrentDevice(ERebindableAction _action)
+    {
+        return inputReader.GetBindingPathForCurrentDevice(_action);
+    }
+
+    public string GetBindingDisplayStringForCurrentDevice(ERebindableAction _action)
+    {
+        return inputReader.GetBindingDisplayStringForCurrentDevice(_action);
+    }
+
+    public bool HasBindingFor(ERebindableAction _action, EInputDeviceType _device)
+    {
+        return inputReader.HasBindingFor(_action, _device);
     }
 
     public void PauseMove(bool _bPause)
@@ -46,9 +194,27 @@ public class InputManager : MonoBehaviour
         bCursorHoveredOnUI = _bCursorHoveredOnUI;
     }
 
+    /// <summary>
+    /// 게임플레이 입력을 UI가 가로채고 있는지입니다.
+    ///
+    /// 이름은 마우스 시절 그대로지만, 이제 "커서가 UI 위에 있다"뿐 아니라 "입력 모드가 UI다"도
+    /// 참으로 봅니다. 패드에는 커서가 없어서 앞의 조건만으로는 판단이 안 되기 때문입니다.
+    /// 덕분에 호출부(AxeComponent 등)를 고치지 않아도 패드에서 같은 보호가 걸립니다.
+    /// </summary>
     public bool IsCursorHoveredOnUI()
     {
-        return bCursorHoveredOnUI;
+        return bCursorHoveredOnUI || EInputMode.UI == CurrentInputMode;
+    }
+
+    // 입력 모드 (게임플레이 ↔ UI)
+
+    /// <summary>지금 입력이 게임플레이로 가는지 UI로 가는지입니다.</summary>
+    public EInputMode CurrentInputMode => null != inputReader ? inputReader.CurrentInputMode : EInputMode.Gameplay;
+
+    /// <summary>팝업·메뉴를 열 때 UI로, 닫을 때 Gameplay로 되돌리세요.</summary>
+    public void SetInputMode(EInputMode _mode)
+    {
+        inputReader?.SetInputMode(_mode);
     }
 
     public void PauseInteractKey(bool _boolean)
@@ -89,9 +255,27 @@ public class InputManager : MonoBehaviour
         return inputReader.IsConflicting(_action);
     }
 
+    public bool IsConflicting(ERebindableAction _action, EInputDeviceType _device)
+    {
+        return inputReader.IsConflicting(_action, _device);
+    }
+
+    /// <summary>중복이 하나라도 있는지입니다. (모든 장치를 통틀어 — 저장 차단 판단용)</summary>
     public bool HasAnyConflict()
     {
         return inputReader.HasAnyConflict();
+    }
+
+    /// <summary>지정한 장치 안에 중복이 있는지입니다. (탭별 표시용)</summary>
+    public bool HasAnyConflict(EInputDeviceType _device)
+    {
+        return inputReader.HasAnyConflict(_device);
+    }
+
+    /// <summary>그 장치에서 유저가 바꿀 수 있는 항목인지입니다. false면 "변경" 버튼을 비활성화하세요.</summary>
+    public bool IsRebindable(ERebindableAction _action, EInputDeviceType _device)
+    {
+        return inputReader.IsRebindable(_action, _device);
     }
 
     public void BeginEditSession()
@@ -114,6 +298,11 @@ public class InputManager : MonoBehaviour
         inputReader.StartRebind(_action, _onFinished);
     }
 
+    public void StartRebind(ERebindableAction _action, EInputDeviceType _device, Action<ERebindResult, ERebindableAction?> _onFinished)
+    {
+        inputReader.StartRebind(_action, _device, _onFinished);
+    }
+
     public void CancelRebind()
     {
         inputReader.CancelRebind();
@@ -122,6 +311,11 @@ public class InputManager : MonoBehaviour
     public void ResetBinding(ERebindableAction _action)
     {
         inputReader.ResetBinding(_action);
+    }
+
+    public void ResetBinding(ERebindableAction _action, EInputDeviceType _device)
+    {
+        inputReader.ResetBinding(_action, _device);
     }
 
     public void ResetAllBindings()
