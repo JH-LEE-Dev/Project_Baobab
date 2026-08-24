@@ -440,6 +440,26 @@
       "ja": "初期設定に戻す",
       "enumType": "",
       "enumValue": ""
-    }
+    },
+    {
+      "id": 317,
+      "key": "apply",
+      "kr": "적용",
+      "en": "Apply",
+      "zhHans": "应用",
+      "zhHant": "套用",
+      "ja": "適用",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 318,
+      "key": "unsavedChangesWarning",
+      "kr": "변경된 설정을 저장하지 않고 나가시겠습니까?",
+      "en": "Leave without saving your changes?",
+      "zhHans": "确定要放弃未保存的更改并离开吗？",
+      "zhHant": "確定要放棄未儲存的變更並離開嗎？",
+      "ja": "変更内容を保存せずに閉じますか？"
+    }  
   ]
 }

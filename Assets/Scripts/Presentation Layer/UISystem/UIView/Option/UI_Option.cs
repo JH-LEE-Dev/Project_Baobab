@@ -15,6 +15,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     [Header("Core System")]
     [SerializeField] private UI_OptionTabGroup tabGroup;
     [SerializeField] private GameObject optionPanelRoot;
+    [SerializeField] private UI_OptionButton applyButton;
     [SerializeField] private UI_OptionButton closeButton;
     [SerializeField] private UI_WarningPopup warningPopup;
 
@@ -98,7 +99,46 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         = new System.Collections.Generic.List<UI_OptionKeyBindRow>();
     private string[] cachedTabTexts;
 
+    private readonly struct ApplyTargetSettingsSnapshot
+    {
+        public readonly EWindowMode windowMode;
+        public readonly EResolution resolution;
+        public readonly EFPS fps;
+        public readonly EOnOff pauseOnUnfocus;
+        public readonly float cameraShake;
+        public readonly float crosshairBrightness;
+
+        public ApplyTargetSettingsSnapshot(in SettingsData _data)
+        {
+            windowMode = _data.windowMode;
+            resolution = _data.resolution;
+            fps = _data.fps;
+            pauseOnUnfocus = _data.pauseOnUnfocus;
+            cameraShake = _data.cameraShake;
+            crosshairBrightness = _data.crosshairBrightness;
+        }
+
+        public bool Equals(in SettingsData _current)
+        {
+            bool _windowModeMatches = (windowMode == _current.windowMode);
+            bool _resolutionMatches = (EWindowMode.Fullscreen == windowMode && EWindowMode.Fullscreen == _current.windowMode)
+                || (resolution == _current.resolution);
+
+            return true == _windowModeMatches
+                && true == _resolutionMatches
+                && fps == _current.fps
+                && pauseOnUnfocus == _current.pauseOnUnfocus
+                && Mathf.Approximately(cameraShake, _current.cameraShake)
+                && Mathf.Approximately(crosshairBrightness, _current.crosshairBrightness);
+        }
+    }
+
+    private ApplyTargetSettingsSnapshot savedSnapshot;
+
     // 캐싱 델리게이트
+    private Action cachedOnApplyClicked;
+    private Action cachedConfirmDiscardAndClose;
+    private Action cachedCancelDiscardAndClose;
     private Action<ERebindableAction> cachedOnRowRebindRequested;
     private Action<ERebindableAction> cachedOnRowResetRequested;
     private Action cachedOnResetAllClicked;
@@ -122,6 +162,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         settings.Bind(locManager);
 
         CacheDelegates();
+        CacheControlDelegates();
 
         settings.OnLanguageChangedEvent -= onSettingsLanguageChanged;
         settings.OnLanguageChangedEvent += onSettingsLanguageChanged;
@@ -135,6 +176,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             tabGroup.Initialize(BuildTabTexts());
         }
 
+        if (null != applyButton)
+        {
+            applyButton.Initialize(cachedOnApplyClicked, SoundID.MainButtonHover, SoundID.MainClick);
+        }
+
         if (null != closeButton)
         {
             closeButton.Initialize(hideAction, SoundID.MainButtonHover, SoundID.MainClick);
@@ -144,8 +190,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         {
             warningPopup.Initialize(_ctx);
         }
-
-        CacheControlDelegates();
 
         InitializeSelectors();
         InitializeSliders();
@@ -169,6 +213,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         onCloseAction = _onCloseCallback;
 
+        if (null != settings)
+        {
+            savedSnapshot = new ApplyTargetSettingsSnapshot(settings.Current);
+        }
+
         depthController?.RegisterView(this);
 
         // 옵션 창은 ESC 메뉴(일시정지)에서 열리는데, 그 상태에서는 게임플레이 사운드가 음소거라
@@ -188,19 +237,59 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             inputManager.inputReader.KeyBindingsChangedEvent += cachedRefreshKeyBindRows;
             RefreshKeyBindRows();
         }
+
+        UpdateApplyButtonState();
     }
 
     public void Hide()
     {
+        // Option이 ESC가 아닌 다른 경로(escUI.Hide() 등)로 강제로 닫힐 때, 그 안에 중첩된 경고
+        // 팝업(warningPopup)이 아직 열려 있으면 뎁스 스택에 좀비로 남는다. 팝업부터 확실히 닫아 정리한다.
+        if (null != warningPopup && true == warningPopup.IsActive)
+        {
+            warningPopup.Hide();
+            return;
+        }
+
+        if (true == IsDirty())
+        {
+            if (null != warningPopup && null != locManager)
+            {
+                string _warningMsg = locManager.GetText(LocKeys.OptionUI.unsavedChangesWarning);
+                if (true == string.IsNullOrEmpty(_warningMsg))
+                {
+                    _warningMsg = "변경된 설정을 저장하지 않고 나가시겠습니까?";
+                }
+
+                warningPopup.ShowWarning(
+                    _warningMsg,
+                    cachedConfirmDiscardAndClose,
+                    cachedCancelDiscardAndClose,
+                    SoundID.ResultUIOpen,
+                    SoundID.ResultUIClose,
+                    SoundID.ResultUIHover);
+            }
+            else
+            {
+                OnDiscardAndCloseConfirmed();
+            }
+        }
+        else
+        {
+            ForceHide();
+        }
+    }
+
+    private void ForceHide()
+    {
         depthController?.UnregisterView(this);
 
-        // Option이 ESC가 아닌 다른 경로(escUI.Hide() 등)로 강제로 닫힐 때, 그 안에 중첩된 경고
-        // 팝업(warningPopup)이 아직 열려 있으면 뎁스 스택에 좀비로 남는다(부모가 비활성화되어도
-        // 자기 자신의 activeSelf는 그대로라 IsActive가 true로 남음). 팝업부터 확실히 닫아 정리한다.
         if (null != warningPopup && true == warningPopup.IsActive)
         {
             warningPopup.Hide();
         }
+
+        RestoreSnapshot(savedSnapshot);
 
         // 창을 닫으면 원래의 덕킹/일시정지 음소거 상태로 되돌린다(ESC 메뉴로 복귀하는 경우 등).
         Sound.SetAudioPreviewMode(false);
@@ -218,14 +307,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             onCloseAction = null;
         }
 
-        // 닫기 버튼을 누를 때 실제 설정 반영 및 저장.
-        // 바꾼 값이 없으면 CommitChanges가 스스로 스킵하므로,
-        // 창을 열었다 닫기만 해도 해상도가 바뀌는 일은 없다.
-        if (null != settings)
-        {
-            settings.CommitChanges();
-        }
-
         if (null != inputManager)
         {
             inputManager.inputReader.KeyBindingsChangedEvent -= cachedRefreshKeyBindRows;
@@ -236,17 +317,36 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
                 inputManager.CancelRebind();
             }
             if (null != rebindOverlay) rebindOverlay.SetActive(false);
-
-            // 충돌 없으면 저장, 있으면 변경 취소
-            if (false == inputManager.HasAnyConflict())
-            {
-                inputManager.CommitEditSession();
-            }
-            else
-            {
-                inputManager.DiscardEditSession();
-            }
         }
+    }
+
+    private void OnDiscardAndCloseConfirmed()
+    {
+        Sound.PlayUI(SoundID.ResultUIClose);
+
+        RestoreSnapshot(savedSnapshot);
+
+        InitializeSelectors();
+        InitializeSliders();
+        RefreshResolutionSelector();
+
+        ForceHide();
+    }
+
+    private void OnDiscardAndCloseCancelled()
+    {
+        Sound.PlayUI(SoundID.ResultUIClose);
+    }
+
+    private void OnApplyClicked()
+    {
+        if (null != settings)
+        {
+            settings.CommitChanges();
+            savedSnapshot = new ApplyTargetSettingsSnapshot(settings.Current);
+        }
+
+        UpdateApplyButtonState();
     }
 
     // 초기화 관련 프라이빗 메서드
@@ -283,6 +383,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     private void CacheControlDelegates()
     {
+        cachedOnApplyClicked = OnApplyClicked;
+        cachedConfirmDiscardAndClose = OnDiscardAndCloseConfirmed;
+        cachedCancelDiscardAndClose = OnDiscardAndCloseCancelled;
+
         cachedOnRowRebindRequested = OnRowRebindRequested;
         cachedOnRowResetRequested = OnRowResetRequested;
         cachedOnResetAllClicked = OnResetAllClicked;
@@ -517,15 +621,23 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != resetAllBindingsButton)
         {
             string _txt = string.Empty;
-            if (null != locManager) _txt = locManager.GetText("resetToDefault");
+            if (null != locManager) _txt = locManager.GetText(LocKeys.OptionUI.resetToDefault);
             if (true == string.IsNullOrEmpty(_txt)) _txt = "기본 값으로 초기화";
             resetAllBindingsButton.SetText(_txt);
+        }
+
+        if (null != applyButton)
+        {
+            string _txt = string.Empty;
+            if (null != locManager) _txt = locManager.GetText(LocKeys.OptionUI.apply);
+            if (true == string.IsNullOrEmpty(_txt)) _txt = "적용";
+            applyButton.SetText(_txt);
         }
 
         if (null != closeButton)
         {
             string _txt = string.Empty;
-            if (null != locManager) _txt = locManager.GetText("close");
+            if (null != locManager) _txt = locManager.GetText(LocKeys.OptionUI.close);
             if (true == string.IsNullOrEmpty(_txt)) _txt = "닫기";
             closeButton.SetText(_txt);
         }
@@ -562,84 +674,93 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     }
 
     // 명시적 델리게이트 바인딩 메서드들 (GC 할당 방지)
-    private void OnLanguageLeft() { settings.CycleLanguage(-1); }
-    private void OnLanguageRight() { settings.CycleLanguage(1); }
+    private void OnLanguageLeft() { settings.CycleLanguage(-1); settings.CommitChanges(); }
+    private void OnLanguageRight() { settings.CycleLanguage(1); settings.CommitChanges(); }
 
     // 표기 규칙(전체화면 강제 표기, 표시 불가 해상도 강등)이 한 곳에만 있도록 갱신을 위임한다.
     private void OnResolutionLeft()
     {
         settings.CycleResolution(-1);
         RefreshResolutionSelector();
+        UpdateApplyButtonState();
     }
 
     private void OnResolutionRight()
     {
         settings.CycleResolution(1);
         RefreshResolutionSelector();
+        UpdateApplyButtonState();
     }
 
-    private void OnWindowModeLeft() { settings.CycleWindowMode(-1); }
-    private void OnWindowModeRight() { settings.CycleWindowMode(1); }
+    private void OnWindowModeLeft() { settings.CycleWindowMode(-1); UpdateApplyButtonState(); }
+    private void OnWindowModeRight() { settings.CycleWindowMode(1); UpdateApplyButtonState(); }
 
     private void OnFpsLeft()
     {
         settings.CycleFps(-1);
         if (null != fpsSelector) fpsSelector.UpdateValue(GetFpsText(settings.Current.fps));
+        UpdateApplyButtonState();
     }
 
     private void OnFpsRight()
     {
         settings.CycleFps(1);
         if (null != fpsSelector) fpsSelector.UpdateValue(GetFpsText(settings.Current.fps));
+        UpdateApplyButtonState();
     }
 
     private void OnPauseLeft()
     {
         settings.CyclePauseOnUnfocus(-1);
         if (null != pauseOnUnfocusSelector) pauseOnUnfocusSelector.UpdateValue(GetOnOffText(settings.Current.pauseOnUnfocus));
+        UpdateApplyButtonState();
     }
 
     private void OnPauseRight()
     {
         settings.CyclePauseOnUnfocus(1);
         if (null != pauseOnUnfocusSelector) pauseOnUnfocusSelector.UpdateValue(GetOnOffText(settings.Current.pauseOnUnfocus));
+        UpdateApplyButtonState();
     }
 
-    private void OnCameraShakeChanged(float _val) { settings.SetCameraShake(_val); }
-    private void OnCrosshairBrightnessChanged(float _val) { settings.SetCrosshairBrightness(_val); }
+    private void OnCameraShakeChanged(float _val) { settings.SetCameraShake(_val); UpdateApplyButtonState(); }
+    private void OnCrosshairBrightnessChanged(float _val) { settings.SetCrosshairBrightness(_val); UpdateApplyButtonState(); }
 
-    // 화면 효과는 볼륨과 마찬가지로 창을 닫을 때가 아니라 조작하는 즉시 보여야 조절이 가능하므로,
-    // 값을 넘긴 뒤 곧바로 실시간 반영까지 요청한다. (저장은 기존대로 창을 닫을 때 CommitChanges가 담당)
+    // 화면 효과는 조작 즉시 실시간 반영 및 자동 저장된다.
     private void OnChromaticAberrationChanged(float _val)
     {
         settings.SetChromaticAberration(_val);
         settings.ApplyGraphicsSettingsLive();
+        settings.Save();
     }
 
     private void OnBrightnessChanged(float _val)
     {
         settings.SetBrightness(_val);
         settings.ApplyGraphicsSettingsLive();
+        settings.Save();
     }
 
     private void OnSaturationChanged(float _val)
     {
         settings.SetSaturation(_val);
         settings.ApplyGraphicsSettingsLive();
+        settings.Save();
     }
 
-    // 볼륨은 창을 닫을 때가 아니라 조작하는 즉시 들려야 조절이 가능하므로, 값을 넘긴 뒤
-    // 곧바로 실시간 반영까지 요청한다. (저장은 기존대로 창을 닫을 때 CommitChanges가 담당)
+    // 볼륨은 조작 즉시 실시간 반영 및 자동 저장된다.
     private void OnMasterVolumeChanged(float _val)
     {
         settings.SetMasterVolume(_val);
         settings.ApplyAudioSettingsLive();
+        settings.Save();
     }
 
     private void OnBgmVolumeChanged(float _val)
     {
         settings.SetBgmVolume(_val);
         settings.ApplyAudioSettingsLive();
+        settings.Save();
     }
 
     private void OnSfxVolumeChanged(float _val)
@@ -647,6 +768,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         settings.SetSfxVolume(_val);
         settings.ApplyAudioSettingsLive();
         PlaySfxVolumePreview(_val);
+        settings.Save();
     }
 
     // 효과음은 BGM과 달리 조작하는 동안 계속 울리는 소리가 없어서, 슬라이더를 움직여도 지금
@@ -700,14 +822,20 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         // 오버레이 숨김
         if (null != rebindOverlay) rebindOverlay.SetActive(false);
 
-        // Duplicate 경고 (선택적 - 행 색상으로 이미 표시됨)
-        // RefreshKeyBindRows는 KeyBindingsChangedEvent가 자동 호출하므로 별도 처리 불필요
+        if (null != inputManager && false == inputManager.HasAnyConflict())
+        {
+            inputManager.CommitEditSession();
+        }
     }
 
     private void OnRowResetRequested(ERebindableAction _action)
     {
         if (null == inputManager) return;
         inputManager.ResetBinding(_action);
+        if (false == inputManager.HasAnyConflict())
+        {
+            inputManager.CommitEditSession();
+        }
     }
 
     private void OnResetAllClicked()
@@ -737,6 +865,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != inputManager)
         {
             inputManager.ResetAllBindings();
+            if (false == inputManager.HasAnyConflict())
+            {
+                inputManager.CommitEditSession();
+            }
         }
     }
 
@@ -753,6 +885,50 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         isResetAllConfirmationOpen = false;
         Sound.PlayUI(SoundID.MainClick);
+    }
+
+    private bool IsDirty()
+    {
+        if (null == settings) return false;
+        return false == savedSnapshot.Equals(settings.Current);
+    }
+
+    private void UpdateApplyButtonState()
+    {
+        if (null == applyButton) return;
+        bool _dirty = IsDirty();
+        applyButton.SetInteractable(_dirty);
+    }
+
+    private void RestoreSnapshot(in ApplyTargetSettingsSnapshot _snapshot)
+    {
+        if (null == settings) return;
+
+        settings.SetCameraShake(_snapshot.cameraShake);
+        settings.SetCrosshairBrightness(_snapshot.crosshairBrightness);
+
+        while (settings.Current.windowMode != _snapshot.windowMode)
+        {
+            settings.CycleWindowMode(1);
+        }
+
+        while (settings.Current.resolution != _snapshot.resolution)
+        {
+            settings.CycleResolution(1);
+        }
+
+        while (settings.Current.fps != _snapshot.fps)
+        {
+            settings.CycleFps(1);
+        }
+
+        while (settings.Current.pauseOnUnfocus != _snapshot.pauseOnUnfocus)
+        {
+            settings.CyclePauseOnUnfocus(1);
+        }
+
+        settings.ApplySettings();
+        Application.runInBackground = (EOnOff.Off == _snapshot.pauseOnUnfocus);
     }
 
     // 유니티 이벤트 함수
@@ -791,6 +967,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         {
             inputManager.inputReader.KeyBindingsChangedEvent -= cachedRefreshKeyBindRows;
         }
+
+        cachedOnApplyClicked = null;
+        cachedConfirmDiscardAndClose = null;
+        cachedCancelDiscardAndClose = null;
 
         cachedOnRowRebindRequested = null;
         cachedOnRowResetRequested = null;
