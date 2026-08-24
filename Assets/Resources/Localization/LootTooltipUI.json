@@ -8,7 +8,7 @@
       "en": "When exhausted, <color=#FFA500,#FF4500><b>30%</b></color> of logs that would be lost are automatically saved to the cargo crate",
       "zhHans": "耐力耗尽时，背包内原本会损失的原木中，\n<color=#FFA500,#FF4500><b>30%</b></color>会自动装入原木运输箱。",
       "zhHant": "耐力耗盡時，背包內原本會損失的原木中，\n<color=#FFA500,#FF4500><b>30%</b></color>會自動裝入原木運輸箱。",
-      "ja": "スタミナが尽きると、バッグから失われるはずの丸太の\n<color=#FFA500,#FF4500><b>30%</b></color>が自動的に丸太運搬箱へ送られます。",
+      "ja": "スタミナが尽きた際、バッグ内の丸太のうち、\n<color=#FFA500,#FF4500><b>30%</b></color>は失われず、自動的に丸太運搬箱へ送られます。",
       "enumType": "",
       "enumValue": ""
     },
