@@ -120,8 +120,12 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         public bool Equals(in SettingsData _current)
         {
-            return windowMode == _current.windowMode
-                && resolution == _current.resolution
+            bool _windowModeMatches = (windowMode == _current.windowMode);
+            bool _resolutionMatches = (EWindowMode.Fullscreen == windowMode && EWindowMode.Fullscreen == _current.windowMode)
+                || (resolution == _current.resolution);
+
+            return true == _windowModeMatches
+                && true == _resolutionMatches
                 && fps == _current.fps
                 && pauseOnUnfocus == _current.pauseOnUnfocus
                 && Mathf.Approximately(cameraShake, _current.cameraShake)
@@ -284,6 +288,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         {
             warningPopup.Hide();
         }
+
+        RestoreSnapshot(savedSnapshot);
 
         // 창을 닫으면 원래의 덕킹/일시정지 음소거 상태로 되돌린다(ESC 메뉴로 복귀하는 경우 등).
         Sound.SetAudioPreviewMode(false);
