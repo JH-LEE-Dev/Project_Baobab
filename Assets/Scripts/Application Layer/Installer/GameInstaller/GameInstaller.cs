@@ -141,6 +141,10 @@ public class GameInstaller : MonoBehaviour
 
         cameraManager.ResetCamera();
 
+        // 가상 커서 요청을 씬 전환마다 초기화한다. 커서를 띄운 창이 정상적으로 닫히면 스스로
+        // 요청을 거두지만, 씬 전환처럼 OnHide를 거치지 않고 사라지는 경로가 있어서 여기서 한 번 막는다.
+        inputManager.SetVirtualCursorRequested(false);
+
         if (_sceneChangeData.currentScene == SceneType.DungeonScene)
         {
             environmentSystem.SetupForMapType(_sceneChangeData.forestType, _sceneChangeData.mapType);

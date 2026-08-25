@@ -205,8 +205,9 @@ public static class Sound
         AudioManager.Instance.SetGameplayAudioMuted(muted);
     }
 
-    // 옵션 창이 열려 있는 동안 덕킹/일시정지 음소거를 잠시 풀어, 조절 중인 볼륨을 실제로 들을 수
-    // 있게 한다. (옵션은 ESC 메뉴에서 열리는데 그때는 게임플레이 사운드가 꺼져 있다)
+    // 옵션 창이 열려 있는 동안 덕킹(로우패스 먹먹함)만 잠시 풀어 BGM 슬라이더 조절 시 원래 음색으로
+    // 들리게 한다. 일시정지 음소거는 그대로 유지되므로(ESC와 동일하게 SFX/Ambience는 계속 안 들림),
+    // 효과음 슬라이더의 미리듣기 사운드는 PlayUI(bypassDucking: true)로 예외 재생해야 한다.
     public static void SetAudioPreviewMode(bool enabled)
     {
         if (AudioManager.Instance == null)

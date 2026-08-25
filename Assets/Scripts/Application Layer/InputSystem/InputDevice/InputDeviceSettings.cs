@@ -42,6 +42,29 @@ public class InputDeviceSettings : ScriptableObject
     [Min(0f)]
     public float switchCooldownSeconds = 0.3f;
 
+    [Header("Gamepad Virtual Cursor")]
+    [Tooltip("커서 이동 속도. 픽셀/초가 아니라 '초당 화면 높이 배수'다. 1이면 스틱을 끝까지 " +
+             "밀었을 때 1초에 화면 높이만큼 움직인다. 해상도가 달라도 체감 속도가 같아야 하므로 " +
+             "픽셀이 아닌 비율로 둔다. (스팀덱 1280x800 ↔ 울트라와이드 3440x1440)")]
+    [Range(0.3f, 4f)]
+    public float cursorSpeedScreensPerSecond = 1.1f;
+
+    [Tooltip("커서를 움직였다고 볼 최소 스틱 기울기(0~1). 장치 전환 판정(stickActuationThreshold)보다 " +
+             "훨씬 낮아야 한다. 그쪽은 '실수로 건드린 것을 무시'하는 값이지만, 이쪽은 실제 조작이라 " +
+             "드리프트만 걸러내면 충분하다.")]
+    [Range(0.05f, 0.5f)]
+    public float cursorStickDeadzone = 0.2f;
+
+    [Tooltip("스틱 기울기를 속도로 바꿀 때 씌우는 지수. 1이면 선형, 클수록 살짝 기울였을 때가 더 느려져 " +
+             "미세 조작이 쉬워진다. 마우스 가속과 반대 방향의 보정이라고 보면 된다.")]
+    [Range(1f, 4f)]
+    public float cursorResponseExponent = 2f;
+
+    [Tooltip("커서가 화면 가장자리에서 얼마나 안쪽까지만 갈 수 있는지(픽셀). 커서 그림이 반쯤 잘려 " +
+             "보이지 않게 하는 여백이다.")]
+    [Min(0f)]
+    public float cursorEdgePaddingPixels = 4f;
+
     /// <summary>
     /// 에셋이 지정되지 않았을 때 쓸 기본 설정 인스턴스를 만듭니다.
     /// (필드 기본값이 곧 기본 설정이므로 별도 값 세팅은 필요 없습니다)

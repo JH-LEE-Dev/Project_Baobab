@@ -414,10 +414,12 @@ public class AudioManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 옵션 창에서 볼륨을 조절하는 동안 덕킹과 일시정지 음소거를 일시적으로 해제한다.
-    /// 옵션 창은 ESC 메뉴에서 열리는데, 그때는 게임플레이 그룹이 음소거 상태라 효과음 슬라이더를
-    /// 움직여도 미리듣기가 아예 들리지 않는다 - 정작 조절이 필요한 자리에서 피드백이 죽는다.
-    /// 덕킹까지 같이 풀어야 먹먹하지 않은 원래 음색으로 볼륨을 판단할 수 있다.
+    /// 옵션 창에서 볼륨을 조절하는 동안 덕킹(로우패스 먹먹함)만 일시적으로 해제해, BGM 슬라이더를
+    /// 움직일 때 원래 음색으로 들리게 한다. 일시정지 음소거(gameplayMuted)는 여기서 풀지 않는다 -
+    /// 이걸 같이 풀면 옵션 창이 떠 있는 내내 SFX/Ambience 그룹 전체가 음소거에서 풀려버려서, 예를
+    /// 들어 옵션을 열기 직전까지 돌고 있던 루프 SFX(장비 가동음 등)가 그대로 다시 들리는 문제가
+    /// 있었다. 효과음 슬라이더의 미리듣기 틱 사운드는 이 그룹을 타지 않고 UI 그룹으로 우회
+    /// 재생하므로(PlayUI bypassDucking, UI_Option.PlaySfxVolumePreview 참고) 음소거와 무관하게 들린다.
     /// </summary>
     public void SetAudioPreviewMode(bool enabled)
     {
@@ -438,7 +440,8 @@ public class AudioManager : MonoBehaviour
         if (duckSettings == null) return;
 
         bool ducked = IsDucked;
-        bool muted = false == audioPreviewMode && gameplayMuted;
+        // 일시정지 음소거는 옵션 미리듣기 모드와 무관하게 유지한다(위 SetAudioPreviewMode 주석 참고).
+        bool muted = gameplayMuted;
 
         // 게임플레이 볼륨은 세 상태가 겹칠 수 있어 우선순위가 필요하다.
         // 일시정지 음소거 > 덕킹 감쇠 > 평소. (일시정지는 아예 안 들려야 하므로 덕킹보다 우선한다)

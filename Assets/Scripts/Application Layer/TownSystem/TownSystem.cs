@@ -687,6 +687,10 @@ public class TownSystem : MonoBehaviour
 
         bGoingToMainMenu = true;
 
+        // 마을 → 메인메뉴 이탈 시점 자동저장. 게임 종료(OnApplicationQuit)와 같은 느낌의 타이밍으로,
+        // townObjectManager가 정리되기 전, 가장 온전한 상태에서 저장한다.
+        signalHub.Publish(new AutoSaveRequestedSignal(AutoSaveReason.DepartToMainMenu));
+
         // 메인메뉴로 나갈 때도 카메라 상승 연출 시간 안에 BGM이 반드시 꺼지도록 페이드아웃한다.
         Sound.FadeOutBGM(skyCameraProductionManager.MoveDuration);
 

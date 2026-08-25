@@ -104,6 +104,9 @@ public class GamepadDiagnosticsWindow : EditorWindow
         DrawHapticsTest();
         EditorGUILayout.Space();
 
+        DrawVirtualCursor();
+        EditorGUILayout.Space();
+
         DrawBindingTable();
         EditorGUILayout.Space();
 
@@ -270,6 +273,52 @@ public class GamepadDiagnosticsWindow : EditorWindow
         }
     }
 
+    /// <summary>
+    /// 패드 가상 커서의 상태를 그대로 보여 줍니다.
+    ///
+    /// 이 항목이 필요한 이유: 커서를 화면에 그리는 일은 UI 작업자 몫이라, 그 작업이 끝나기 전까지는
+    /// 기능이 잘 도는지 눈으로 확인할 방법이 전혀 없습니다. 특성 UI를 열고 여기서 좌표가 스틱을
+    /// 따라 움직이는 것만 확인되면, 남은 것은 그 좌표에 그림을 얹는 일뿐입니다.
+    /// </summary>
+    private void DrawVirtualCursor()
+    {
+        EditorGUILayout.LabelField("패드 가상 커서", EditorStyles.boldLabel);
+
+        if (false == EditorApplication.isPlaying)
+        {
+            EditorGUILayout.HelpBox("플레이 모드에서만 확인할 수 있습니다.", MessageType.None);
+            return;
+        }
+
+        InputManager _live = FindLiveInputManager();
+
+        if (null == _live)
+        {
+            EditorGUILayout.HelpBox("씬에서 InputManager를 찾지 못했습니다.", MessageType.Warning);
+            return;
+        }
+
+        GamepadVirtualCursor _cursor = _live.VirtualCursor;
+
+        if (null == _cursor)
+        {
+            EditorGUILayout.HelpBox("InputManager가 아직 초기화되지 않았습니다.", MessageType.Warning);
+            return;
+        }
+
+        EditorGUILayout.LabelField("요청됨", _cursor.IsRequested ? "예 (특성 UI 열림)" : "아니오");
+        EditorGUILayout.LabelField("켜짐", _cursor.IsActive ? "예" : "아니오  (요청 + 패드 사용 중이어야 켜짐)");
+        EditorGUILayout.LabelField("화면 좌표", string.Format("{0:0.0}, {1:0.0}", _cursor.ScreenPosition.x, _cursor.ScreenPosition.y));
+
+        Rect _bounds = _cursor.Bounds;
+        EditorGUILayout.LabelField("이동 영역", string.Format("x {0:0} ~ {1:0}   y {2:0} ~ {3:0}", _bounds.xMin, _bounds.xMax, _bounds.yMin, _bounds.yMax));
+
+        EditorGUILayout.HelpBox(
+            "별도의 토글 키는 없습니다. 특성 UI(TentUI)를 열면 요청되고, 그 상태에서 패드를 쓰는 중이면 " +
+            "화면 중앙에 켜집니다. 마우스를 움직이면 사라지고, 다시 패드를 잡으면 중앙에서 되살아납니다.",
+            MessageType.None);
+    }
+
     private void DrawBindingTable()
     {
         EditorGUILayout.LabelField("바인딩", EditorStyles.boldLabel);
@@ -324,7 +373,12 @@ public class GamepadDiagnosticsWindow : EditorWindow
             "B4. RT 공격 / A 상호작용 / Y 인벤토리 / X 물약 / Start 메뉴\n" +
             "B5. 마우스를 움직이면 즉시 키보드 표기로 돌아오는가 (깜빡임 없이)\n" +
             "B6. 플레이 중 패드를 뽑으면 키보드 표기로 즉시 돌아오는가\n" +
-            "B7. 알트탭으로 나갔을 때 진동이 멈추는가",
+            "B7. 알트탭으로 나갔을 때 진동이 멈추는가\n" +
+            "B8. 특성 UI를 패드로 열면 커서 좌표가 화면 중앙에서 시작하는가\n" +
+            "B9. 마우스로 특성 UI를 열면 가상 커서가 나오지 않는가\n" +
+            "B10. 특성 UI를 연 채 마우스↔패드를 오가면 커서가 사라졌다 중앙에서 되살아나는가\n" +
+            "B11. 특성 UI를 닫으면 커서 요청이 풀리는가\n" +
+            "B12. 패드로 조작하면 OS 커서가 사라지고, 마우스를 움직이면 다시 나타나는가",
             MessageType.None);
 
         EditorGUILayout.LabelField("C. 키 설정 화면 (패드)", EditorStyles.miniBoldLabel);
