@@ -26,10 +26,10 @@
 | 5 | 옵션 — **패드 키 설정 탭** (Move 항목 잠금 필수) | [3-5](#3-5-키-설정-화면과-패드-패드-리바인딩-지원됨) |
 | 6 | **팝업 열고 닫을 때 `SetInputMode` 호출** ← 빠뜨리면 패드에서 오작동 | [3-7](#3-7-입력-모드--팝업을-열-때-반드시-호출하세요) |
 | 7 | UI 포커스 이동 (선택 표시, 복원, 먹통 방어) | [3-8](#3-8-ui-포커스-이동) |
-| 8 | 커서 표시/숨김 | [3-9](#3-9-커서-표시숨김) |
-| 9 | 패드 연결 해제 모달 | [3-6](#3-6-패드-연결-해제) |
-| 10 | `UI_PressAnyKey` 이관 | [3-4](#3-4-ui_pressanykey-이관-권장) |
-| 11 | 마우스 좌표를 직접 읽는 UI 4곳 가드 | [3-10](#3-10-마우스-좌표를-직접-읽는-곳-패드에서-오작동) |
+| 8 | 패드 연결 해제 모달 | [3-6](#3-6-패드-연결-해제) |
+| 9 | `UI_PressAnyKey` 이관 | [3-4](#3-4-ui_pressanykey-이관-권장) |
+| 10 | 마우스 좌표를 직접 읽는 UI 4곳 가드 | [3-10](#3-10-마우스-좌표를-직접-읽는-곳-패드에서-오작동) |
+| 11 | **마을 가상 커서 그리기 + 그 좌표로 집기** | [3-12](#3-12-마을-가상-커서-패드-전용) |
 
 기획 결정이 필요한 것 하나: **무엇이 언제 진동할지.** 진동 시스템은 완료되어 호출 지점만 비어 있습니다.
 
@@ -49,6 +49,9 @@
 | 패드 진동 + 세기 설정 저장 | 호출 지점은 기획 결정 |
 | UI 액션 맵 + 입력 모드 전환 | EventSystem 5개 씬 교체 완료 |
 | "아무 입력이나 있었는가" 조회 | |
+| 마을 가상 커서 (좌표·토글·영역 제한) | 그림과 집기는 UI 몫 → [3-12](#3-12-마을-가상-커서-패드-전용) |
+| 가상 커서 토글 키 리바인딩 | 패드 탭에만 표시됨 (`GetRebindableActions(장치)`) |
+| 패드 사용 중 OS 커서 숨김 | InputManager가 자동 처리 → [3-9](#3-9-os-커서-표시숨김-시스템이-처리함) |
 
 **패드 기본 배치**
 
@@ -57,7 +60,8 @@
 | Move | `leftStick` | | Interaction | `buttonSouth` (A/×) |
 | Aim | `rightStick` | | Inventory | `buttonNorth` (Y/△) |
 | Attack | `rightTrigger` (RT/R2) | | PotionKey | `buttonWest` (X/□) |
-| ESC(메뉴) | `start` | | *(B/○ 는 취소 전용으로 비워둠)* | |
+| ESC(메뉴) | `start` | | 가상 커서 토글 | `rightStickPress` (R3) |
+| *(B/○ 는 취소 전용으로 비워둠)* | | | | |
 
 `buttonEast (B/○)`는 **의도적으로 비워둔 것**입니다. 리바인딩 취소이자 "뒤로가기"라는 보편 관례라, 다른 기능에 할당하면 유저가 리바인딩 대기 상태에서 빠져나올 수단을 잃습니다.
 
@@ -246,12 +250,19 @@ bool _anyInputReceived = inputManager.AnyInputThisFrame;
 키 설정 API는 전부 **장치 인자 오버로드**가 생겼습니다. 인자를 안 넘기면 기존처럼 키보드입니다.
 
 ```csharp
+inputManager.GetRebindableActions(EInputDeviceType.Gamepad);   // 탭에 그릴 목록
 inputManager.StartRebind(action, EInputDeviceType.Gamepad, onFinished);
 inputManager.ResetBinding(action, EInputDeviceType.Gamepad);
 inputManager.IsConflicting(action, EInputDeviceType.Gamepad);
 inputManager.HasAnyConflict(EInputDeviceType.Gamepad);   // 탭별 표시용
 inputManager.IsRebindable(action, EInputDeviceType.Gamepad);
 ```
+
+**행 목록은 `GetRebindableActions(장치)`로 받으세요.** 두 장치의 항목 수가 다릅니다 — 가상 커서 토글(R3)은 패드에만 있어서 키보드 탭에는 나오지 않습니다. 전체 enum을 그대로 돌면 키보드 탭에 빈 칸 행이 하나 끼어듭니다.
+
+> 행과 액션을 인덱스로 짝짓는 구조라면, **행을 만들 때와 갱신할 때 같은 장치의 목록**을 써야 합니다. 섞으면 라벨과 키가 어긋납니다. 지금 [UI_Option](../../Presentation%20Layer/UISystem/UIView/Option/UI_Option.cs)이 그 구조이고, 인자 없는 `GetRebindableActions()`가 키보드 목록을 돌려주므로 **키보드 탭은 고칠 것이 없습니다.**
+>
+> 패드 탭을 만들 때 `GetActionLabel`에 `ERebindableAction.VirtualCursor` 케이스를 추가하세요. 없으면 화면에 `VirtualCursor`가 그대로 나옵니다. (로컬라이징 키도 함께 필요합니다)
 
 **`IsRebindable`을 반드시 확인하세요.** 패드의 이동(`MoveUp/Down/Left/Right`)은 전부 왼쪽 스틱 하나에 묶여 있어 개별 변경이 불가능합니다. 이 항목들은 **표시는 되지만 "변경" 버튼을 비활성화**해야 합니다.
 
@@ -266,8 +277,6 @@ inputManager.IsRebindable(action, EInputDeviceType.Gamepad);
 ### 3-6. 패드 연결 해제
 
 패드가 빠지면 `GamepadConnectionChangedEvent(false)`가 오고 표기는 자동으로 키보드로 돌아갑니다. 다만 **게임을 일시정지하고 "컨트롤러 연결이 끊겼습니다" 모달을 띄우는 것은 UI 몫**입니다. 콘솔 인증 필수 항목이고 PC에서도 표준입니다.
-
----
 
 ### 3-7. 입력 모드 — 팝업을 열 때 반드시 호출하세요
 
@@ -321,15 +330,19 @@ viewCtx.inputManager.inputReader.InputModeChangedEvent += OnModeChanged;
 
 탭 전환은 `UITabShiftEvent`(LB/RB · PageUp/PageDown)를 쓰면 됩니다. ([3-7](#3-7-입력-모드--팝업을-열-때-반드시-호출하세요))
 
-### 3-9. 커서 표시/숨김
+### 3-9. OS 커서 표시/숨김 (시스템이 처리함)
 
-프로젝트 전체에 `Cursor.visible` 호출이 **0건**이라, 패드로 조작해도 OS 커서가 화면에 그대로 남습니다.
+**UI가 할 일은 없습니다.** `InputManager`가 장치 상태를 보고 알아서 처리합니다.
 
-- 패드로 전환 → 커서 숨김, 키보드/마우스로 전환 → 커서 표시
-- 소프트웨어 커서([UIView_CursorBox](../../Presentation%20Layer/UISystem/UIView/CursorBox/UIView_CursorBox.cs))도 같이 처리
-- 판단 기준은 `InputDeviceChangedEvent` / `IsGamepadMode`입니다
+- 패드로 조작하는 동안 OS 커서를 감춥니다 (`Cursor.visible`)
+- 마우스를 조금(기본 12px) 움직이면 장치가 키보드/마우스로 바뀌면서 다시 나타납니다
+- 알트탭 등으로 포커스를 잃으면 장치와 무관하게 돌려줍니다
 
-> `IsGamepadConnected`(연결 여부)가 아니라 **`IsGamepadMode`(실제 사용 중)** 로 판단하세요. 패드를 꽂아둔 채 키보드로 플레이하는 유저가 흔합니다.
+판단 기준은 `IsGamepadConnected`(연결 여부)가 아니라 **`IsGamepadMode`(실제 사용 중)** 입니다. 패드를 꽂아둔 채 키보드로 플레이하는 유저가 흔한데, 연결 여부로 판단하면 그 유저는 커서를 통째로 잃습니다.
+
+> 커서가 숨겨져 있어도 마우스 이동 자체는 그대로 읽히므로, "커서가 사라져서 되돌릴 방법이 없는" 상태에는 빠지지 않습니다. 에디터에서 패드로 테스트하다 커서가 사라지면 마우스를 살짝 움직이면 됩니다.
+
+[UIView_CursorBox](../../Presentation%20Layer/UISystem/UIView/CursorBox/UIView_CursorBox.cs)는 이름과 달리 마우스 포인터가 아니라 **UI 선택 표시(하이라이트 박스)** 라 여기와 무관합니다. 그쪽은 [3-8 포커스 이동](#3-8-ui-포커스-이동)에 속합니다.
 
 ### 3-10. 마우스 좌표를 직접 읽는 곳 (패드에서 오작동)
 
@@ -346,9 +359,45 @@ viewCtx.inputManager.inputReader.InputModeChangedEvent += OnModeChanged;
 
 ### 3-11. 진단 창
 
-`Tools > Input > 게임패드 진단` 으로 엽니다. 연결된 패드와 벤더 판별, 실시간 스틱·버튼 값, 스틱 드리프트 실측, 진동 테스트, 바인딩 표와 중복 여부를 한 화면에서 볼 수 있습니다. 실기 확인 체크리스트도 들어 있습니다.
+`Tools > Input > 게임패드 진단` 으로 엽니다. 연결된 패드와 벤더 판별, 실시간 스틱·버튼 값, 스틱 드리프트 실측, 진동 테스트, 바인딩 표와 중복 여부를 한 화면에서 볼 수 있습니다. 실기 확인 체크리스트도 들어 있습니다. 가상 커서의 켜짐 여부·좌표·이동 영역도 여기서 실시간으로 보이므로, 커서 그림을 붙이기 전에도 동작을 확인할 수 있습니다.
 
 편집 모드에서는 **장치 원시값까지만** 나옵니다. 액션 값과 게임의 실제 장치 상태는 플레이 모드에서만 확인됩니다(아래 한계 참고).
+
+### 3-12. 마을 가상 커서 (패드 전용)
+
+패드에는 포인터가 없어 마을에서 화면의 임의 지점을 가리킬 수 없습니다. 그래서 **가상 커서**를 시스템 쪽에 넣어 두었습니다.
+
+- **토글**: `rightStickPress` (R3). 마을에서만 켜지고, 던전·메인 메뉴에서는 눌러도 반응하지 않습니다. **옵션에서 다른 패드 버튼으로 바꿀 수 있습니다** ([3-5](#3-5-키-설정-화면과-패드-패드-리바인딩-지원됨))
+- **켤 때 위치**: 언제나 **화면 중앙**. 마지막 위치를 기억하지 않습니다 (유저가 커서 위치를 예측할 수 있어야 하므로)
+- **이동**: 오른쪽 스틱. 커서가 켜져 있는 동안 그 스틱은 캐릭터 조준으로 가지 않습니다
+- **자동 해제**: 마우스를 만지면 스스로 꺼집니다. 씬을 벗어날 때도 꺼집니다
+- **이동 영역**: 카메라가 실제로 그리는 사각형(`pixelRect`)으로 제한됩니다. 울트라와이드 Pillarbox의 검은 띠로 나가지 않습니다
+
+```csharp
+GamepadVirtualCursor _cursor = viewCtx.inputManager.VirtualCursor;
+
+_cursor.ActiveChangedEvent += OnCursorActiveChanged; // bool  — 커서 이미지 보이기/숨기기
+_cursor.MovedEvent         += OnCursorMoved;         // Vector2(화면 좌표) — 이미지 옮기기
+
+// 폴링해도 됩니다
+bool    _bOn = viewCtx.inputManager.IsVirtualCursorActive;
+Vector2 _pos = _cursor.ScreenPosition;
+```
+
+**UI 작업자가 할 일**
+
+| 할 일 | 비고 |
+|---|---|
+| 커서 스프라이트를 화면 좌표에 그리기 | 좌하단 원점 픽셀 좌표. 마우스 좌표와 같은 좌표계입니다 |
+| 그 좌표로 무엇을 집을지 정하기 | 월드 레이캐스트 / UI 히트 테스트 — 마우스 클릭 경로를 그대로 재사용하면 됩니다 |
+| "집기" 버튼 정하기 | 시스템은 좌표만 줍니다. RT를 클릭으로 볼지, A로 볼지는 UI/기획 결정입니다 |
+| 켜져 있을 때 조작 안내 바꾸기 | 선택 사항 |
+
+> 시스템은 **좌표 하나만** 책임집니다. 커서 위치를 마우스로 흘려보내거나 클릭을 대신 만들어 주지 않습니다. 그렇게 하면 캐릭터 조준이 커서를 따라 도는 등 게임플레이가 함께 끌려가기 때문입니다.
+
+속도·데드존·반응 곡선은 [`InputDeviceSettings`](InputDevice/InputDeviceSettings.cs)의 `Gamepad Virtual Cursor` 항목에서 조절합니다. 속도는 픽셀/초가 아니라 **초당 화면 높이 배수**라, 스팀덱(1280x800)과 울트라와이드에서 체감이 같습니다.
+
+---
 
 ## 4. 알려진 한계
 

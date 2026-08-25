@@ -162,6 +162,10 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
         currentSceneType = SceneType.MainMenu;
 
+        // 패드 가상 커서는 마을 전용이다. 메인 메뉴로 돌아올 때 꺼 주지 않으면
+        // 마을에서 켜 둔 상태가 그대로 남아, 아무도 그리지 않는 커서를 조작하게 된다.
+        inputManager?.SetVirtualCursorAvailable(false);
+
         if (mainMenuInstaller == null)
         {
             // 최초 1회(앱 부팅)만 생성한다. 이후로는 절대 파괴하지 않고 같은 인스턴스를 계속 재사용한다.

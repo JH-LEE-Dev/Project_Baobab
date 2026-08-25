@@ -50,9 +50,24 @@ public class InputReader
 
     private InputDeviceTracker deviceTracker;
 
+    // 진동과 같은 이유로 액션 해석과 분리해 둔다. 이 객체는 "화면 좌표 하나"만 책임진다.
+    private readonly GamepadVirtualCursor virtualCursor = new GamepadVirtualCursor();
+
+    /// <summary>
+    /// 패드용 가상 커서입니다. 마을처럼 화면의 임의 지점을 가리켜야 하는 곳에서 씁니다.
+    /// 켜고 끄는 것은 유저(오른쪽 스틱 누르기)가 하고, 쓸 수 있는 상황인지는 게임 쪽이 정합니다.
+    /// </summary>
+    public GamepadVirtualCursor VirtualCursor => virtualCursor;
+
     private EInputMode currentInputMode = EInputMode.Gameplay;
 
     private static readonly ERebindableAction[] rebindableActions = (ERebindableAction[])Enum.GetValues(typeof(ERebindableAction));
+
+    // 장치별로 "그 장치에 실제 바인딩이 있는" 액션만 추려 둔 목록.
+    // 리바인딩으로도 액션이 장치를 넘나들 수는 없으므로(StartRebind가 다른 장치의 컨트롤을
+    // 제외한다) 한 번 만들면 바뀌지 않는다. 그래서 매번 만들지 않고 캐싱한다.
+    private ERebindableAction[] keyboardRebindableActions;
+    private ERebindableAction[] gamepadRebindableActions;
 
     // ESC는 메뉴 토글용으로 예약되어 있어, 다른 액션에 재할당하지 못하게 막는다.
     private const string RESERVED_ESCAPE_PATH = "<Keyboard>/escape";
@@ -95,6 +110,8 @@ public class InputReader
 
         deviceTracker.Initialize(_deviceSettings);
 
+        virtualCursor.Initialize(_deviceSettings);
+
         if (actions == null)
         {
             actions = new InputActionSystem();
@@ -117,10 +134,14 @@ public class InputReader
             actions.Normal.Aim.performed += OnAim;
             actions.Normal.Aim.canceled += OnAim;
 
+            actions.Normal.VirtualCursor.performed += OnVirtualCursorToggle;
+
             actions.UI.Cancel.performed += OnUICancel;
             actions.UI.TabLeft.performed += OnUITabLeft;
             actions.UI.TabRight.performed += OnUITabRight;
         }
+
+        BuildDeviceActionLists();
 
         actions.Normal.Enable();
 
@@ -137,6 +158,7 @@ public class InputReader
 
         // Release가 두 번 불릴 수 있어(InputManager.Release + OnDestroy) 구독 해제는 멱등해야 한다.
         deviceTracker?.Release();
+        virtualCursor.Release();
 
         actions.Normal.Disable();
 
@@ -156,6 +178,8 @@ public class InputReader
         actions.Normal.Aim.performed -= OnAim;
         actions.Normal.Aim.canceled -= OnAim;
 
+        actions.Normal.VirtualCursor.performed -= OnVirtualCursorToggle;
+
         actions.UI.Cancel.performed -= OnUICancel;
         actions.UI.TabLeft.performed -= OnUITabLeft;
         actions.UI.TabRight.performed -= OnUITabRight;
@@ -164,12 +188,14 @@ public class InputReader
     }
 
     /// <summary>
-    /// InputManager가 매 프레임 호출합니다. 장치 자동 전환 판정만 수행합니다.
-    /// 일시정지 중에도 장치 전환은 되어야 하므로 unscaled 델타를 넘겨야 합니다.
+    /// InputManager가 매 프레임 호출합니다. 이벤트로 처리할 수 없는, 상태를 계속 지켜봐야 하는
+    /// 것들만 여기서 돕니다. (장치 자동 전환 판정, 가상 커서 이동, 리바인딩 취소 감시)
+    /// 일시정지 중에도 전부 동작해야 하므로 unscaled 델타를 넘겨야 합니다.
     /// </summary>
     public void Tick(float _unscaledDeltaTime)
     {
         deviceTracker?.Tick(_unscaledDeltaTime);
+        TickVirtualCursor(_unscaledDeltaTime);
         UpdateGamepadRebindCancel();
     }
 
@@ -349,7 +375,50 @@ public class InputReader
     {
         if (false == CanDispatchGameplay) return;
 
+        // 가상 커서가 떠 있으면 같은 오른쪽 스틱이 커서를 몰고 있다. 그 입력을 조준으로도
+        // 흘려보내면 커서를 움직일 때마다 캐릭터가 함께 홱홱 돌아간다.
+        // 여기서 막으면 조준은 마지막으로 겨눈 방향에 그대로 멈춰 있는다.
+        if (true == virtualCursor.IsActive) return;
+
         AimEvent?.Invoke(context.ReadValue<Vector2>());
+    }
+
+    /// <summary>
+    /// 가상 커서 토글(오른쪽 스틱 누르기)입니다.
+    ///
+    /// 이 액션은 패드에만 바인딩되어 있고 리바인딩 대상(ERebindableAction)에도 넣지 않았습니다.
+    /// 키보드/마우스에는 이미 진짜 커서가 있어 대응하는 키가 존재할 이유가 없고,
+    /// 대응 키가 없는 항목을 키 설정 화면에 올리면 빈 칸만 보이기 때문입니다.
+    /// </summary>
+    private void OnVirtualCursorToggle(InputAction.CallbackContext context)
+    {
+        // UI가 입력을 가져간 동안에는 켜고 끄지 않는다. 팝업 위에서 스틱을 눌렀을 때
+        // 뒤에 있는 월드용 커서가 튀어나오면 UI 조작과 뒤엉킨다.
+        if (false == CanDispatchGameplay) return;
+
+        // 장치 표기를 즉시 패드로 넘긴다. 이 액션은 패드에만 바인딩되어 있으므로,
+        // 눌렸다는 사실 자체가 "지금 패드를 쓰고 있다"는 확실한 증거다.
+        //
+        // 없으면 생기는 문제: 마우스를 만진 직후 0.3초(전환 쿨다운) 안에 이 버튼을 누르면
+        // 장치가 아직 키보드/마우스로 남아 있어서, 켜진 커서가 같은 프레임의 Tick에서
+        // 곧바로 스스로 꺼진다. 유저 눈에는 버튼이 씹힌 것으로 보인다.
+        ForceInputDevice(EInputDeviceType.Gamepad);
+
+        virtualCursor.Toggle();
+    }
+
+    /// <summary>
+    /// 가상 커서를 매 프레임 움직입니다.
+    ///
+    /// 스틱 값을 장치에서 직접 읽지 않고 Aim 액션에서 읽는 이유: 조준 스틱을 다른 컨트롤로
+    /// 리바인딩하면 커서도 같은 컨트롤을 따라가야 하기 때문입니다. 액션의 데드존 처리도 함께 받습니다.
+    /// </summary>
+    private void TickVirtualCursor(float _unscaledDeltaTime)
+    {
+        if (false == virtualCursor.IsActive) return;
+        if (null == actions) return;
+
+        virtualCursor.Tick(_unscaledDeltaTime, actions.Normal.Aim.ReadValue<Vector2>(), IsGamepadMode);
     }
 
     private void OnMouseMove(InputAction.CallbackContext context)
@@ -452,23 +521,75 @@ public class InputReader
     // 키 리바인딩
     public bool IsRebinding => null != rebindOperation;
 
+    /// <summary>
+    /// 키 설정 화면에 그릴 액션 목록입니다. (키보드/마우스 기준)
+    ///
+    /// 인자 없는 다른 API와 마찬가지로 키보드/마우스를 뜻합니다. 패드 탭을 그릴 때는
+    /// 반드시 장치 인자 버전을 쓰세요. 두 장치의 항목 수는 서로 다릅니다.
+    /// </summary>
     public IReadOnlyList<ERebindableAction> GetRebindableActions()
     {
-        return rebindableActions;
+        return GetRebindableActions(EInputDeviceType.KeyboardMouse);
     }
 
-    /// <summary>UI에 표시할 현재 바인딩 문자열입니다. (예: "W", "Left Shift")</summary>
+    /// <summary>
+    /// 그 장치에 실제 바인딩이 있는 액션만 순서대로 돌려줍니다.
+    ///
+    /// 장치마다 목록이 다른 이유: VirtualCursor(마을 가상 커서)는 패드에만 있습니다.
+    /// 전체 목록을 그대로 돌면 키보드 탭에 빈 칸 행이 하나 끼어듭니다.
+    ///
+    /// 행과 액션을 인덱스로 짝지어 쓰는 UI라면, 행을 만들 때와 갱신할 때 **같은 장치의**
+    /// 목록을 써야 합니다. 섞으면 라벨과 키가 어긋납니다.
+    /// </summary>
+    public IReadOnlyList<ERebindableAction> GetRebindableActions(EInputDeviceType _device)
+    {
+        ERebindableAction[] _list = (EInputDeviceType.Gamepad == _device)
+            ? gamepadRebindableActions
+            : keyboardRebindableActions;
+
+        // Initialize 이전에 불리면 아직 목록이 없다. 전체를 돌려주는 편이 빈 목록보다 덜 위험하다.
+        return null != _list ? _list : (IReadOnlyList<ERebindableAction>)rebindableActions;
+    }
+
+    private void BuildDeviceActionLists()
+    {
+        keyboardRebindableActions = BuildDeviceActionList(EInputDeviceType.KeyboardMouse);
+        gamepadRebindableActions = BuildDeviceActionList(EInputDeviceType.Gamepad);
+    }
+
+    private ERebindableAction[] BuildDeviceActionList(EInputDeviceType _device)
+    {
+        int _count = 0;
+
+        for (int i = 0; i < rebindableActions.Length; i++)
+        {
+            if (true == HasBindingFor(rebindableActions[i], _device)) _count++;
+        }
+
+        ERebindableAction[] _list = new ERebindableAction[_count];
+        int _index = 0;
+
+        for (int i = 0; i < rebindableActions.Length; i++)
+        {
+            if (false == HasBindingFor(rebindableActions[i], _device)) continue;
+
+            _list[_index] = rebindableActions[i];
+            _index++;
+        }
+
+        return _list;
+    }
+
+    /// <summary>UI에 표시할 현재 바인딩 문자열입니다. (예: "W", "Left Shift") 키보드/마우스 기준입니다.</summary>
     public string GetBindingDisplayString(ERebindableAction _action)
     {
-        GetBindingTarget(_action, out InputAction _inputAction, out int _bindingIndex);
-        return _inputAction.GetBindingDisplayString(_bindingIndex);
+        return GetBindingDisplayString(_action, EInputDeviceType.KeyboardMouse);
     }
 
     /// <summary>현재 바인딩된 컨트롤의 원본 경로입니다. (예: "&lt;Keyboard&gt;/w") 아이콘 스프라이트 매핑용으로, 표시 문자열과 달리 로케일에 흔들리지 않습니다.</summary>
     public string GetBindingPath(ERebindableAction _action)
     {
-        GetBindingTarget(_action, out InputAction _inputAction, out int _bindingIndex);
-        return _inputAction.bindings[_bindingIndex].effectivePath;
+        return GetBindingPath(_action, EInputDeviceType.KeyboardMouse);
     }
 
     // 장치별 바인딩 조회
@@ -539,7 +660,11 @@ public class InputReader
         if (EInputDeviceType.Gamepad != _device)
         {
             _bindingIndex = _keyboardIndex;
-            return true;
+
+            // 패드에만 있는 액션(VirtualCursor)은 이 자리에 패드 경로가 들어 있다.
+            // 그대로 돌려주면 키 설정 화면의 키보드 탭에 "Right Stick Press" 같은 행이 뜨고,
+            // 거기서 변경을 누르면 패드 바인딩이 키보드 키로 덮어써진다.
+            return false == IsGamepadBindingPath(_inputAction.bindings[_keyboardIndex].effectivePath);
         }
 
         // Move처럼 컴포지트의 한 파트를 가리키는 액션이면, 같은 파트 이름을 가진 패드 바인딩을 먼저 찾는다.
@@ -661,7 +786,8 @@ public class InputReader
     /// </summary>
     public bool IsRebindable(ERebindableAction _action, EInputDeviceType _device)
     {
-        if (EInputDeviceType.Gamepad != _device) return true;
+        // 그 장치에 바인딩이 없으면 바꿀 대상 자체가 없다. (패드 전용 항목의 키보드 탭 등)
+        if (EInputDeviceType.Gamepad != _device) return HasBindingFor(_action, _device);
 
         if (false == GamepadDefaultBindings.IsRebindableOnGamepad(_action)) return false;
 
@@ -905,6 +1031,12 @@ public class InputReader
             case ERebindableAction.Interaction: _inputAction = actions.Normal.Interaction; _bindingIndex = 0; break;
             case ERebindableAction.Attack: _inputAction = actions.Normal.Click; _bindingIndex = 0; break;
             case ERebindableAction.PotionKey: _inputAction = actions.Normal.PotionKey; _bindingIndex = 0; break;
+
+            // 패드 전용이라 여기서 돌려주는 인덱스 0도 패드 바인딩이다.
+            // TryGetBindingTarget이 "키보드 자리에 패드 경로가 있으면 없는 것으로 친다"로
+            // 걸러내므로, 키보드 쪽 조회에는 이 값이 새어 나가지 않는다.
+            case ERebindableAction.VirtualCursor: _inputAction = actions.Normal.VirtualCursor; _bindingIndex = 0; break;
+
             default: throw new ArgumentOutOfRangeException(nameof(_action), _action, null);
         }
     }
