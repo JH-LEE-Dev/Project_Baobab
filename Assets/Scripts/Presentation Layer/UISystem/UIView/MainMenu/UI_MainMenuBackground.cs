@@ -52,12 +52,14 @@ public class UI_MainMenuBackground : MonoBehaviour
     private Vector2 targetParallaxOffset;
     private Vector2 currentParallaxOffset;
     private Vector2 screenSize;
+    private InputManager inputManager;
     
     private bool isInitialized = false;
 
-    public void Initialize()
+    public void Initialize(InputManager _inputManager = null)
     {
         if (true == isInitialized) return;
+        inputManager = _inputManager;
 
         // UpdateMousePosition이 매 프레임 갱신하지만, 초기 1프레임을 위해 같은 기준으로 맞춰둔다.
         screenSize = GlobalUI.GetViewRect().size;
@@ -113,8 +115,13 @@ public class UI_MainMenuBackground : MonoBehaviour
         screenSize.x = _viewRect.width;
         screenSize.y = _viewRect.height;
 
+        // 패드 모드이거나 마우스가 없으면 화면 중앙으로 취급 (패럴랙스 중앙 정렬)
+        if (null != inputManager && true == inputManager.IsGamepadMode)
+        {
+            currentMousePos = screenSize * 0.5f;
+        }
         // New Input System을 활용한 마우스 위치 획득 (렌더 영역 기준 좌표로 변환)
-        if (null != Mouse.current)
+        else if (null != Mouse.current)
         {
             currentMousePos = (Vector2)Mouse.current.position.ReadValue() - _viewRect.min;
         }

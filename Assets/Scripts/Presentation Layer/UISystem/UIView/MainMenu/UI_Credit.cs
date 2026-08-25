@@ -93,17 +93,23 @@ public class UI_Credit : MonoBehaviour
     {
         if (false == isPlaying) return;
 
-        // ESC 키로 강제 닫기
-        if (null != Keyboard.current && Keyboard.current.escapeKey.wasPressedThisFrame)
+        // ESC 키 또는 게임패드 B(buttonEast)/Start 버튼으로 강제 닫기
+        bool _cancelPressed = (null != Keyboard.current && Keyboard.current.escapeKey.wasPressedThisFrame)
+            || (null != Gamepad.current && (Gamepad.current.buttonEast.wasPressedThisFrame || Gamepad.current.startButton.wasPressedThisFrame));
+
+        if (true == _cancelPressed)
         {
             CloseCredit();
             return;
         }
 
-        // 좌클릭 홀드 시 스피드업
+        // 좌클릭 또는 게임패드 A(buttonSouth) 홀드 시 스피드업
         if (null != scrollTween && scrollTween.IsActive())
         {
-            if (null != Mouse.current && Mouse.current.leftButton.isPressed)
+            bool _speedUpHeld = (null != Mouse.current && Mouse.current.leftButton.isPressed)
+                || (null != Gamepad.current && Gamepad.current.buttonSouth.isPressed);
+
+            if (true == _speedUpHeld)
             {
                 scrollTween.timeScale = speedMultiplier;
             }

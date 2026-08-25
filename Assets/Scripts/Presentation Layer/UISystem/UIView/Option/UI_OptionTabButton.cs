@@ -6,7 +6,7 @@ using TMPro;
 /// <summary>
 /// 옵션 창의 개별 탭 버튼을 담당합니다. 클로저 할당 방지를 위해 IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler를 직접 구현합니다.
 /// </summary>
-public class UI_OptionTabButton : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
+public class UI_OptionTabButton : Selectable, IPointerClickHandler, ISubmitHandler
 {
     // 외부 컴포넌트 참조
     [Header("Visual Settings")]
@@ -32,6 +32,12 @@ public class UI_OptionTabButton : MonoBehaviour, IPointerClickHandler, IPointerE
     private int tabIndex;
     private bool isSelected;
     private bool isHovered;
+
+    protected override void Awake()
+    {
+        base.Awake();
+        transition = Transition.None;
+    }
 
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize(UI_OptionTabGroup _parent, int _index)
@@ -109,23 +115,95 @@ public class UI_OptionTabButton : MonoBehaviour, IPointerClickHandler, IPointerE
         }
     }
 
-    private void OnDisable()
+    [Header("Cursor Settings")]
+    [SerializeField] private Vector2 cursorPadding = new Vector2(10f, 10f);
+    [SerializeField] private Vector2 cursorOffset = Vector2.zero;
+
+    private ICursorBoxUI cursorBoxUI;
+    private InputManager inputManager;
+
+    public void SetCursorBoxUI(ICursorBoxUI _cursorBoxUI, InputManager _inputManager = null)
     {
+        cursorBoxUI = _cursorBoxUI;
+        inputManager = _inputManager;
+    }
+
+    public void ShowCursor()
+    {
+        if (null == cursorBoxUI) return;
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+
+        RectTransform _targetRect = transform as RectTransform;
+        if (null != _targetRect)
+        {
+            Vector2 _size = _targetRect.rect.size + cursorPadding;
+            cursorBoxUI.Show(_targetRect, _size, cursorOffset, CursorMotionSettings.Subtle);
+        }
+    }
+
+    public void HideCursor()
+    {
+        if (null == cursorBoxUI) return;
+        RectTransform _targetRect = transform as RectTransform;
+        if (null != _targetRect)
+        {
+            cursorBoxUI.Hide(_targetRect);
+        }
+        else
+        {
+            cursorBoxUI.Hide();
+        }
+    }
+
+    protected override void OnDisable()
+    {
+        base.OnDisable();
         isHovered = false;
+        HideCursor();
     }
 
     // 유니티 이벤트 함수
-    public void OnPointerEnter(PointerEventData _eventData)
+    public override void OnPointerEnter(PointerEventData _eventData)
     {
+        base.OnPointerEnter(_eventData);
         isHovered = true;
         Sound.PlayUI(SoundID.MainMenuDot01);
         UpdateVisualState();
     }
 
-    public void OnPointerExit(PointerEventData _eventData)
+    public override void OnPointerExit(PointerEventData _eventData)
     {
+        base.OnPointerExit(_eventData);
         isHovered = false;
         UpdateVisualState();
+        HideCursor();
+    }
+
+    public override void OnSelect(BaseEventData _eventData)
+    {
+        base.OnSelect(_eventData);
+        isHovered = true;
+        Sound.PlayUI(SoundID.MainMenuDot01);
+        UpdateVisualState();
+        ShowCursor();
+
+        if (null != parentGroup)
+        {
+            parentGroup.OnTabClicked(tabIndex);
+        }
+    }
+
+    public override void OnDeselect(BaseEventData _eventData)
+    {
+        base.OnDeselect(_eventData);
+        isHovered = false;
+        UpdateVisualState();
+        HideCursor();
+    }
+
+    public void OnSubmit(BaseEventData _eventData)
+    {
+        OnPointerClick(null);
     }
 
     public void OnPointerClick(PointerEventData _eventData)

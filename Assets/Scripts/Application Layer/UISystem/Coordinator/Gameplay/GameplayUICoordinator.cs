@@ -207,6 +207,9 @@ public class GameplayUICoordinator
         inputManager.inputReader.ESCButtonPressedEvent -= EscButtonPressed;
         inputManager.inputReader.ESCButtonPressedEvent += EscButtonPressed;
 
+        inputManager.inputReader.UICancelEvent -= OnUICancelPressed;
+        inputManager.inputReader.UICancelEvent += OnUICancelPressed;
+
         escUI.ResumeButtonClickedEvent -= ResumeGame;
         escUI.ResumeButtonClickedEvent += ResumeGame;
 
@@ -266,6 +269,7 @@ public class GameplayUICoordinator
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
         menuPopupUI.CancelButtonClickedEvent -= CancelMenuPopup;
         inputManager.inputReader.ESCButtonPressedEvent -= EscButtonPressed;
+        inputManager.inputReader.UICancelEvent -= OnUICancelPressed;
         escUI.ResumeButtonClickedEvent -= ResumeGame;
         escUI.ExitButtonClickedEvent -= ExitGame;
         escUI.GoToMainMenuButtonClickedEvent -= GoToMainMenu;
@@ -525,6 +529,39 @@ public class GameplayUICoordinator
             {
                 overUIPopupUI.SetPauseState(true);
             }
+        }
+    }
+
+    private void OnUICancelPressed()
+    {
+        if (null != uiDepthController && true == uiDepthController.TryCloseTopView())
+        {
+            return;
+        }
+
+        if (null != escUI && true == escUI.IsVisible)
+        {
+            if (true == escUI.IsOptionOpen)
+            {
+                escUI.CloseOption();
+                return;
+            }
+
+            escUI.Hide();
+            inputManager.PauseMove(false);
+            Time.timeScale = 1f;
+
+            if (null != overUIPopupUI)
+            {
+                overUIPopupUI.SetPauseState(false);
+            }
+            return;
+        }
+
+        if (null != popUpUI && true == popUpUI.IsVisible)
+        {
+            popUpUI.Hide();
+            return;
         }
     }
 

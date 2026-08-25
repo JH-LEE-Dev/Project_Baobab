@@ -13,7 +13,9 @@ using UnityEngine.InputSystem;
 /// 메인 메뉴 전용 버튼 스크립트입니다.
 /// GC 발생 방지를 위해 람다 및 클로저 사용을 배제하고 델리게이트를 캐싱하여 사용합니다.
 /// </summary>
-public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
+public class UI_MainMenuButton : Selectable,
+    IPointerClickHandler,
+    ISubmitHandler
 {
     // 외부 의존성
     [Header("Targets")]
@@ -82,6 +84,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private Action onClickAction;
     private Action onPressedAction;
     private Action manualDisappearCallback;
+    private InputManager inputManager;
     private Vector2 textOriginalPos;
     private Vector3 dotOriginalRot;
     private TextMeshProUGUI targetTextComponent;
@@ -121,8 +124,11 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private int appearSoundIndex = -1;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+        transition = Transition.None;
+
         EnsureTargetComponents();
 
         // 델리게이트 인스턴스 사전 생성 및 캐싱 (람다/클로저 제거)
@@ -150,13 +156,15 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         }
     }
 
-    private void OnEnable()
+    protected override void OnEnable()
     {
+        base.OnEnable();
         ResetAndPlayAppearInternal();
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
+        base.OnDisable();
         isHovered = false;
         isClicked = false;
         isDisappearing = false;
@@ -202,10 +210,11 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     }
 
     // 퍼블릭 초기화 및 제어 메서드
-    public void Initialize(Action _onClickCallback, Action _onPressedCallback = null)
+    public void Initialize(Action _onClickCallback, Action _onPressedCallback = null, InputManager _inputManager = null)
     {
         onClickAction = _onClickCallback;
         onPressedAction = _onPressedCallback;
+        inputManager = _inputManager;
 
         EnsureTargetComponents();
     }
@@ -377,8 +386,9 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         }
     }
 
-    public void OnPointerEnter(PointerEventData _eventData)
+    public override void OnPointerEnter(PointerEventData _eventData)
     {
+        base.OnPointerEnter(_eventData);
         isHovered = true;
         if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
 
@@ -386,12 +396,39 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         PlayHoverMotion();
     }
 
-    public void OnPointerExit(PointerEventData _eventData)
+    public override void OnPointerExit(PointerEventData _eventData)
     {
+        base.OnPointerExit(_eventData);
         isHovered = false;
         if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
 
         PlayUnhoverMotion();
+    }
+
+    public override void OnSelect(BaseEventData _eventData)
+    {
+        base.OnSelect(_eventData);
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+
+        isHovered = true;
+        if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
+
+        Sound.PlayUI(SoundID.MainButtonHover);
+        PlayHoverMotion();
+    }
+
+    public override void OnDeselect(BaseEventData _eventData)
+    {
+        base.OnDeselect(_eventData);
+        isHovered = false;
+        if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
+
+        PlayUnhoverMotion();
+    }
+
+    public void OnSubmit(BaseEventData _eventData)
+    {
+        OnPointerClick(null);
     }
 
     private void PlayHoverMotion()
@@ -710,35 +747,11 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     {
         if (false == gameObject.activeInHierarchy) return;
 
-        bool _isOver = isHovered; // 기본적으로 OnPointerEnter로 들어온 값을 신뢰
+        bool _isOver = isHovered;
 
-        // OnPointerEnter가 안 불렸을 가능성을 대비해 레이캐스트 수동 검사
-        if (false == _isOver && null != EventSystem.current)
+        if (null != inputManager && true == inputManager.IsGamepadMode)
         {
-            Vector2 _mousePos = Vector2.zero;
-            if (null != Mouse.current)
-            {
-                _mousePos = Mouse.current.position.ReadValue();
-            }
-
-            if (null == cachedPointerData)
-            {
-                cachedPointerData = new PointerEventData(EventSystem.current);
-            }
-
-            cachedPointerData.position = _mousePos;
-            
-            raycastResults.Clear();
-            EventSystem.current.RaycastAll(cachedPointerData, raycastResults);
-            
-            if (0 < raycastResults.Count)
-            {
-                GameObject _topHit = raycastResults[0].gameObject;
-                if (_topHit == gameObject || _topHit.transform.IsChildOf(transform))
-                {
-                    _isOver = true;
-                }
-            }
+            _isOver = (null != EventSystem.current && EventSystem.current.currentSelectedGameObject == gameObject);
         }
 
         isHovered = _isOver;
@@ -780,8 +793,9 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private Color GetTextShadowColor() => null != textUIEffect ? textUIEffect.shadowColor : Color.white;
     private void SetTextShadowColor(Color _c) { if (null != textUIEffect) textUIEffect.shadowColor = _c; }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
         Release();
     }
 }

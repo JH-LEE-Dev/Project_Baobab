@@ -9,7 +9,9 @@ using System;
 /// 유니티 기본 Button 컴포넌트를 사용하지 않으며, Raycast 타겟과 시각적 타겟을 분리하여 관리합니다.
 /// OMB_UIHoverWiggle, OMB_UIHoverOffWiggle, OMB_UIClickTwist 모션을 기반으로 한 연출을 지원합니다.
 /// </summary>
-public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
+public class UI_WarningPopupButton : Selectable,
+    IPointerClickHandler,
+    ISubmitHandler
 {
     [System.Serializable]
     public class HoverSettings
@@ -47,7 +49,7 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
 
     [Header("UI Component")]
     [SerializeField, Tooltip("크기와 회전이 변형될 대상 (Raycast 본체와 다를 경우 지정)")] 
-    private Graphic targetGraphic;
+    private new Graphic targetGraphic;
 
     [Header("Cursor Settings")]
     [SerializeField, Tooltip("커서가 감쌀 실제 비주얼 RectTransform (미지정 시 targetGraphic 사용)")]
@@ -64,6 +66,7 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
     private UI_WarningPopup parentPopup;
     private Action onClickAction;
     private Action onHoverAction;
+    [SerializeField] private SoundID clickSoundId = SoundID.OptionClick;
     private bool isInteractable = true;
     private bool isHovered = false;
 
@@ -76,15 +79,19 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
 
     private Tween activeTween;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+        transition = Transition.None;
+
         scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
         originalScale = scaleTarget.localScale;
         originalRotation = scaleTarget.localRotation;
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
+        base.OnDisable();
         isHovered = false;
         
         KillTween();
@@ -101,8 +108,9 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
         }
     }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
         KillTween();
         onClickAction = null;
         onHoverAction = null;
@@ -175,8 +183,9 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
         }
     }
 
-    public void OnPointerEnter(PointerEventData _eventData)
+    public override void OnPointerEnter(PointerEventData _eventData)
     {
+        base.OnPointerEnter(_eventData);
         isHovered = true;
         if (false == isInteractable)
             return;
@@ -193,8 +202,9 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
         }
     }
 
-    public void OnPointerExit(PointerEventData _eventData)
+    public override void OnPointerExit(PointerEventData _eventData)
     {
+        base.OnPointerExit(_eventData);
         isHovered = false;
         if (false == isInteractable)
             return;
@@ -208,10 +218,52 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
         }
     }
 
+    public override void OnSelect(BaseEventData _eventData)
+    {
+        base.OnSelect(_eventData);
+        isHovered = true;
+        if (false == isInteractable)
+            return;
+
+        if (null != onHoverAction)
+            onHoverAction();
+        
+        KillTween();
+        PlayHoverAnimation();
+
+        if (null != parentPopup)
+        {
+            parentPopup.OnButtonHovered(this);
+        }
+    }
+
+    public override void OnDeselect(BaseEventData _eventData)
+    {
+        base.OnDeselect(_eventData);
+        isHovered = false;
+        if (false == isInteractable)
+            return;
+        
+        KillTween();
+        PlayUnhoverAnimation();
+
+        if (null != parentPopup)
+        {
+            parentPopup.OnButtonUnhovered(this);
+        }
+    }
+
+    public void OnSubmit(BaseEventData _eventData)
+    {
+        OnPointerClick(null);
+    }
+
     public void OnPointerClick(PointerEventData _eventData)
     {
         if (false == isInteractable)
             return;
+
+        Sound.PlayUI(clickSoundId);
 
         if (null != parentPopup)
         {

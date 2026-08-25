@@ -305,6 +305,8 @@ public class UIView_Result : UIView
 
     public void OpenResultUI()
     {
+        viewCtx?.inputManager?.SetInputMode(EInputMode.UI);
+
         if (!bDuckRegistered)
         {
             bDuckRegistered = true;
@@ -319,6 +321,8 @@ public class UIView_Result : UIView
 
     public void DungeonStarted()
     {
+        viewCtx?.inputManager?.SetInputMode(EInputMode.Gameplay);
+
         // 닫기 연출을 거치지 않고 결과창이 사라지는 경로(연출 중단 등)를 위한 안전장치.
         ReleaseAudioDuckIfRegistered();
 
@@ -786,6 +790,8 @@ public class UIView_Result : UIView
 
     private void OnResultCloseProductionComplete()
     {
+        viewCtx?.inputManager?.SetInputMode(EInputMode.Gameplay);
+
         Action completedEvent = pendingCloseCompletedEvent;
         pendingCloseCompletedEvent = null;
         resultCloseSequence = null;

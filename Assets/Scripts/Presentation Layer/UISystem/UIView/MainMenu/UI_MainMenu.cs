@@ -1,4 +1,7 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 /// <summary>
 /// 메인 메뉴의 실질적인 UI 요소들을 관리하는 스크립트입니다.
@@ -37,6 +40,7 @@ public class UI_MainMenu : MonoBehaviour
     private System.Action cachedCancelNewGame;
     private System.Action cachedOnNewGameDisappearComplete;
     private System.Action cachedSetLocalization;
+    private System.Action<EInputDeviceType> cachedOnDeviceChanged;
 
     private bool isNewGameConfirmationOpen;
     
@@ -50,37 +54,46 @@ public class UI_MainMenu : MonoBehaviour
         cachedCancelNewGame = CancelNewGame;
         cachedOnNewGameDisappearComplete = OnNewGameDisappearComplete;
         cachedSetLocalization = SetLocalization;
+        cachedOnDeviceChanged = OnDeviceChanged;
         
         if (null != viewCtx && null != viewCtx.localizationManager)
         {
             viewCtx.localizationManager.OnLanguageChanged -= cachedSetLocalization;
             viewCtx.localizationManager.OnLanguageChanged += cachedSetLocalization;
         }
+
+        if (null != viewCtx && null != viewCtx.inputManager && null != viewCtx.inputManager.inputReader)
+        {
+            viewCtx.inputManager.inputReader.InputDeviceChangedEvent -= cachedOnDeviceChanged;
+            viewCtx.inputManager.inputReader.InputDeviceChangedEvent += cachedOnDeviceChanged;
+        }
         
+        InputManager _inputMgr = _uIViewContext?.inputManager;
+
         if (null != newGameButton)
         {
-            newGameButton.Initialize(OnNewGameClicked);
+            newGameButton.Initialize(OnNewGameClicked, null, _inputMgr);
         }
         
         if (null != loadGameButton)
         {
-            loadGameButton.Initialize(OnLoadGameClicked);
+            loadGameButton.Initialize(OnLoadGameClicked, null, _inputMgr);
             // 이곳에서의 초기 판단은 saveSystem 주입 전일 수 있으므로 제거하거나 둡니다. (안전하게 의존성 주입 후 다시 업데이트함)
         }
         
         if (null != exitButton)
         {
-            exitButton.Initialize(OnExitClicked);
+            exitButton.Initialize(OnExitClicked, null, _inputMgr);
         }
         
         if (null != optionButton)
         {
-            optionButton.Initialize(OnOptionClicked);
+            optionButton.Initialize(OnOptionClicked, null, _inputMgr);
         }
         
         if (null != creditButton)
         {
-            creditButton.Initialize(OnCreditClicked);
+            creditButton.Initialize(OnCreditClicked, null, _inputMgr);
         }
 
         if (null != warningPopup)
@@ -146,12 +159,15 @@ public class UI_MainMenu : MonoBehaviour
             }
         }
 
+        List<UI_MainMenuButton> _activeButtons = new List<UI_MainMenuButton>();
+
         for (int i = 0; i < buttonsInOrder.Length; i++)
         {
             UI_MainMenuButton _btn = buttonsInOrder[i];
             
             if (null != _btn && _btn.gameObject.activeSelf)
             {
+                _activeButtons.Add(_btn);
                 RectTransform _rect = _btn.GetComponent<RectTransform>();
                 if (null != _rect)
                 {
@@ -163,6 +179,18 @@ public class UI_MainMenu : MonoBehaviour
                     
                     _activeIndex++;
                 }
+            }
+        }
+
+        if (0 < _activeButtons.Count)
+        {
+            for (int i = 0; _activeButtons.Count > i; i++)
+            {
+                Navigation _nav = new Navigation();
+                _nav.mode = Navigation.Mode.Explicit;
+                _nav.selectOnUp = _activeButtons[(i - 1 + _activeButtons.Count) % _activeButtons.Count];
+                _nav.selectOnDown = _activeButtons[(i + 1) % _activeButtons.Count];
+                _activeButtons[i].navigation = _nav;
             }
         }
     }
@@ -209,6 +237,68 @@ public class UI_MainMenu : MonoBehaviour
             {
                 _btn.ResetAndPlayAppear(_appearSoundIndex);
                 _appearSoundIndex++;
+            }
+        }
+
+        SelectFirstActiveButton();
+    }
+
+    public void SelectFirstActiveButton()
+    {
+        if (null == viewCtx || null == viewCtx.inputManager || false == viewCtx.inputManager.IsGamepadMode)
+            return;
+
+        if (null == buttonsInOrder)
+            return;
+
+        for (int i = 0; buttonsInOrder.Length > i; i++)
+        {
+            UI_MainMenuButton _btn = buttonsInOrder[i];
+            if (null != _btn && true == _btn.gameObject.activeInHierarchy)
+            {
+                if (null != EventSystem.current)
+                {
+                    EventSystem.current.SetSelectedGameObject(_btn.gameObject);
+                }
+                break;
+            }
+        }
+    }
+
+    private bool IsMainMenuButton(GameObject _obj)
+    {
+        if (null == _obj || null == buttonsInOrder) return false;
+        for (int i = 0; buttonsInOrder.Length > i; i++)
+        {
+            if (null != buttonsInOrder[i] && buttonsInOrder[i].gameObject == _obj)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void OnDeviceChanged(EInputDeviceType _device)
+    {
+        if (EInputDeviceType.Gamepad == _device)
+        {
+            if (null != newGameButton && true == newGameButton.gameObject.activeInHierarchy)
+            {
+                if (null != EventSystem.current)
+                {
+                    GameObject _cur = EventSystem.current.currentSelectedGameObject;
+                    if (null == _cur || false == IsMainMenuButton(_cur))
+                    {
+                        SelectFirstActiveButton();
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (null != EventSystem.current)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
             }
         }
     }
@@ -354,6 +444,11 @@ public class UI_MainMenu : MonoBehaviour
         
         // 옵션 창이 닫히면 모든 메인 메뉴 버튼을 다시 활성화하고 등장 연출을 재생
         ResetAndShowButtons();
+
+        if (null != viewCtx && null != viewCtx.inputManager && true == viewCtx.inputManager.IsGamepadMode && null != optionButton)
+        {
+            EventSystem.current?.SetSelectedGameObject(optionButton.gameObject);
+        }
     }
     
     private void OnCreditClicked()
@@ -370,6 +465,11 @@ public class UI_MainMenu : MonoBehaviour
         if (null != viewCtx && null != viewCtx.localizationManager && null != cachedSetLocalization)
         {
             viewCtx.localizationManager.OnLanguageChanged -= cachedSetLocalization;
+        }
+
+        if (null != viewCtx && null != viewCtx.inputManager && null != viewCtx.inputManager.inputReader && null != cachedOnDeviceChanged)
+        {
+            viewCtx.inputManager.inputReader.InputDeviceChangedEvent -= cachedOnDeviceChanged;
         }
 
         if (null != newGameButton)

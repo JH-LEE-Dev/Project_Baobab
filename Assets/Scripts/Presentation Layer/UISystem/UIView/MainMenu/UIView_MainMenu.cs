@@ -88,7 +88,7 @@ public class UIView_MainMenu : UIView
 
         if (null != pressAnyKeyUI)
         {
-            pressAnyKeyUI.Initialize(this);
+            pressAnyKeyUI.Initialize(this, _ctx?.inputManager);
             pressAnyKeyUI.SetText(_ctx.localizationManager.GetText(mainMenuUIJsonId, 99));
         }
         
@@ -99,7 +99,7 @@ public class UIView_MainMenu : UIView
 
         if (null != backgroundUI)
         {
-            backgroundUI.Initialize();
+            backgroundUI.Initialize(_ctx?.inputManager);
         }
 
         if (null != _ctx && null != _ctx.localizationManager)

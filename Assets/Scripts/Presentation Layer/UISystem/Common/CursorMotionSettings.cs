@@ -57,4 +57,41 @@ public class CursorMotionSettings
     }
 
     public static CursorMotionSettings Default => new CursorMotionSettings();
+
+    public static CursorMotionSettings Instant => new CursorMotionSettings
+    {
+        enableShowMotion = false,
+        enableIdleMotion = false,
+        enableHideMotion = false,
+        showDuration = 0f,
+        shrinkSizeScale = 1f,
+        startAngle = 0f,
+        swingCount = 0,
+        idleSizeOffset = 0f,
+        hideDuration = 0f
+    };
+
+    public static CursorMotionSettings Subtle => new CursorMotionSettings
+    {
+        enableShowMotion = true,
+        showDuration = 0.18f,
+        shrinkSizeScale = 0.97f,
+        shrinkTimeRatio = 0.4f,
+        restoreTimeRatio = 0.6f,
+        sizeRestoreEase = Ease.OutQuad,
+        startAngle = 1.2f,
+        angleDamping = 0.4f,
+        swingCount = 2,
+        rotationTimeRatio = 0.8f,
+        rotationEase = Ease.OutSine,
+
+        enableIdleMotion = true,
+        idleCycleDuration = 2.4f,
+        idleSizeOffset = 1.0f,
+
+        enableHideMotion = true,
+        hideDuration = 0.12f,
+        hideExpandOffset = 4f,
+        hideEase = Ease.OutQuad
+    };
 }

@@ -179,6 +179,51 @@ public class UI_CustomScroll : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         verticalScrollbar.interactable = 1f > _sizeRatio;
     }
 
+    public void ResetScrollPosition()
+    {
+        if (null == content) return;
+        content.anchoredPosition = new Vector2(content.anchoredPosition.x, 0f);
+        SyncScrollbarFromContent();
+    }
+
+    public void EnsureVisible(RectTransform _target)
+    {
+        if (null == _target || null == content || null == viewport) return;
+
+        float _contentHeight = content.rect.height;
+        float _viewportHeight = viewport.rect.height;
+        if (_contentHeight <= _viewportHeight) return;
+
+        Vector3 _targetWorldPos = _target.TransformPoint(_target.rect.center);
+        Vector3 _targetInViewport = viewport.InverseTransformPoint(_targetWorldPos);
+
+        float _targetHalfHeight = _target.rect.height * 0.5f;
+        float _targetTop = _targetInViewport.y + _targetHalfHeight;
+        float _targetBottom = _targetInViewport.y - _targetHalfHeight;
+
+        float _viewportTop = viewport.rect.yMax;
+        float _viewportBottom = viewport.rect.yMin;
+
+        float _scrollDelta = 0f;
+        const float _padding = 10f;
+
+        if (_targetTop > _viewportTop - _padding)
+        {
+            _scrollDelta = _targetTop - (_viewportTop - _padding);
+        }
+        else if (_viewportBottom + _padding > _targetBottom)
+        {
+            _scrollDelta = _targetBottom - (_viewportBottom + _padding);
+        }
+
+        if (0f != _scrollDelta)
+        {
+            float _newY = ClampYPosition(content.anchoredPosition.y - _scrollDelta);
+            content.anchoredPosition = new Vector2(content.anchoredPosition.x, _newY);
+            SyncScrollbarFromContent();
+        }
+    }
+
     private void OnDestroy()
     {
         if (null != verticalScrollbar)

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
@@ -59,6 +60,7 @@ public class UI_EscapeMenu : MonoBehaviour
     private Action cachedConfirmExit;
     private Action cachedConfirmMainMenu;
     private Action cachedCancelWarningAndRestoreMenu;
+    private InputManager inputManager;
 
     private Action onResumeCallback;
     private Action onOptionCallback;
@@ -113,6 +115,7 @@ public class UI_EscapeMenu : MonoBehaviour
         cachedConfirmExit = null;
         cachedConfirmMainMenu = null;
         cachedCancelWarningAndRestoreMenu = null;
+        inputManager = null;
     }
 
     public void Initialize(
@@ -121,13 +124,15 @@ public class UI_EscapeMenu : MonoBehaviour
         Action _onOption,
         Action _onMainMenu,
         Action _onExit,
-        UI_WarningPopup _warningPopup = null)
+        UI_WarningPopup _warningPopup = null,
+        InputManager _inputManager = null)
     {
         localizationManager = _localizationManager;
         onResumeCallback = _onResume;
         onOptionCallback = _onOption;
         onMainMenuCallback = _onMainMenu;
         onExitCallback = _onExit;
+        inputManager = _inputManager;
 
         if (null != _warningPopup)
         {
@@ -144,10 +149,25 @@ public class UI_EscapeMenu : MonoBehaviour
         cachedConfirmMainMenu = ConfirmMainMenu;
         cachedCancelWarningAndRestoreMenu = CancelWarningAndRestoreMenu;
 
-        if (null != resumeButton) resumeButton.Initialize(OnResumeButtonClicked);
-        if (null != optionButton) optionButton.Initialize(OnOptionButtonClicked);
-        if (null != mainMenuButton) mainMenuButton.Initialize(OnMainMenuButtonClicked);
-        if (null != exitButton) exitButton.Initialize(OnExitButtonClicked);
+        if (null != resumeButton) resumeButton.Initialize(OnResumeButtonClicked, inputManager);
+        if (null != optionButton) optionButton.Initialize(OnOptionButtonClicked, inputManager);
+        if (null != mainMenuButton) mainMenuButton.Initialize(OnMainMenuButtonClicked, inputManager);
+        if (null != exitButton) exitButton.Initialize(OnExitButtonClicked, inputManager);
+
+        List<UI_EscapeMenuButton> _activeButtons = new List<UI_EscapeMenuButton>();
+        if (null != resumeButton) _activeButtons.Add(resumeButton);
+        if (null != optionButton) _activeButtons.Add(optionButton);
+        if (null != mainMenuButton) _activeButtons.Add(mainMenuButton);
+        if (null != exitButton) _activeButtons.Add(exitButton);
+
+        for (int i = 0; _activeButtons.Count > i; i++)
+        {
+            Navigation _nav = new Navigation();
+            _nav.mode = Navigation.Mode.Explicit;
+            _nav.selectOnUp = _activeButtons[(i - 1 + _activeButtons.Count) % _activeButtons.Count];
+            _nav.selectOnDown = _activeButtons[(i + 1) % _activeButtons.Count];
+            _activeButtons[i].navigation = _nav;
+        }
 
         if (null != localizationManager)
         {
@@ -259,11 +279,30 @@ public class UI_EscapeMenu : MonoBehaviour
         openSequence.OnComplete(() =>
         {
             openSequence = null;
+            SelectFirstButton();
             if (null != _onComplete)
             {
                 _onComplete.Invoke();
             }
         });
+    }
+
+    public void SelectFirstButton()
+    {
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
+        if (null != resumeButton && true == resumeButton.gameObject.activeInHierarchy)
+        {
+            EventSystem.current?.SetSelectedGameObject(resumeButton.gameObject);
+        }
+    }
+
+    public void SelectOptionButton()
+    {
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
+        if (null != optionButton && true == optionButton.gameObject.activeInHierarchy)
+        {
+            EventSystem.current?.SetSelectedGameObject(optionButton.gameObject);
+        }
     }
 
     /// <summary>

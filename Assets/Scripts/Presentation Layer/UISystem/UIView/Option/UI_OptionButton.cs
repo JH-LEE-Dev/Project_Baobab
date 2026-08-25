@@ -8,11 +8,15 @@ using System;
 /// 옵션 창 전용 버튼 클래스입니다. (닫기 버튼, 좌우 화살표 등)
 /// 람다를 배제하고 GC 할당이 없는 커스텀 클릭 및 마우스 호버 모션을 지원합니다.
 /// </summary>
-public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
+public class UI_OptionButton : Selectable,
+    IPointerClickHandler,
+    IPointerDownHandler,
+    IPointerUpHandler,
+    ISubmitHandler
 {
     [Header("UI Component")]
     [SerializeField, Tooltip("크기와 색상이 변형될 대상 이미지 (Raycast 본체와 다를 경우 지정)")] 
-    private Graphic targetGraphic;
+    private new Graphic targetGraphic;
     
     [SerializeField, Tooltip("버튼에 표시될 텍스트 (선택 사항)")]
     private TMPro.TextMeshProUGUI buttonText;
@@ -49,7 +53,10 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
     [ColorUsage(true, true)] [SerializeField] private Color hoverEffectColor = Color.black;
     [ColorUsage(true, true)] [SerializeField] private Color clickEffectColor = Color.black;
     
+    public enum EArrowDirection { None, Left, Right }
+
     private Action onClickAction;
+    public event Action<bool> OnFocusChanged;
     private SoundID hoverSoundId = SoundID.MainMenuDot01;
     private SoundID clickSoundId = SoundID.OptionClick;
     private bool isInteractable = true;
@@ -57,17 +64,30 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
     private bool isHovered = false;
     private bool isPointerDown = false;
 
+    private UI_OptionButton pairedArrowButton;
+    private EArrowDirection arrowDirection = EArrowDirection.None;
+    private UI_CustomScroll customScroll;
+
     // 초기 상태 캐싱
     private Vector3 originalScale;
     private Transform scaleTarget;
     private Image targetImage;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+        transition = Transition.None;
+
         scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
         originalScale = scaleTarget.localScale;
         
         targetImage = targetGraphic as Image;
+    }
+
+    public void SetPairedButton(UI_OptionButton _pair, EArrowDirection _direction)
+    {
+        pairedArrowButton = _pair;
+        arrowDirection = _direction;
     }
 
     public void Initialize(
@@ -80,15 +100,19 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         clickSoundId = _clickSoundId;
     }
 
+    public bool IsInteractable => isInteractable && interactable;
+
     public void SetInteractable(bool _isInteractable)
     {
         isInteractable = _isInteractable;
+        interactable = _isInteractable;
         
         if (false == isInteractable)
         {
             KillTween();
             isHovered = false;
             isPointerDown = false;
+            HideCursor();
             
             Color _targetGraphicColor = (EVisualMode.Color == visualMode) ? normalColor : (null != targetGraphic ? targetGraphic.color : Color.white);
             _targetGraphicColor.a = 0.5f;
@@ -110,6 +134,52 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         }
     }
 
+    [Header("Cursor Settings")]
+    [SerializeField] private Vector2 cursorPadding = new Vector2(10f, 10f);
+    [SerializeField] private Vector2 cursorOffset = Vector2.zero;
+
+    private ICursorBoxUI cursorBoxUI;
+    private InputManager inputManager;
+
+    public void SetCursorBoxUI(ICursorBoxUI _cursorBoxUI, InputManager _inputManager = null)
+    {
+        cursorBoxUI = _cursorBoxUI;
+        inputManager = _inputManager;
+    }
+
+    public void ShowCursor()
+    {
+        if (null == cursorBoxUI) return;
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+
+        RectTransform _targetRect = (null != targetGraphic) ? targetGraphic.rectTransform : (transform as RectTransform);
+        if (null != _targetRect)
+        {
+            Vector2 _size = _targetRect.rect.size;
+            if (null != buttonText)
+            {
+                _size.x = Mathf.Max(_size.x, buttonText.rectTransform.rect.size.x, buttonText.preferredWidth);
+                _size.y = Mathf.Max(_size.y, buttonText.rectTransform.rect.size.y, buttonText.preferredHeight);
+            }
+            _size += cursorPadding;
+            cursorBoxUI.Show(_targetRect, _size, cursorOffset, CursorMotionSettings.Subtle);
+        }
+    }
+
+    public void HideCursor()
+    {
+        if (null == cursorBoxUI) return;
+        RectTransform _targetRect = (null != targetGraphic) ? targetGraphic.rectTransform : (transform as RectTransform);
+        if (null != _targetRect)
+        {
+            cursorBoxUI.Hide(_targetRect);
+        }
+        else
+        {
+            cursorBoxUI.Hide();
+        }
+    }
+
     public void SetText(string _text)
     {
         if (null != buttonText)
@@ -118,8 +188,9 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         }
     }
 
-    public void OnPointerEnter(PointerEventData _eventData)
+    public override void OnPointerEnter(PointerEventData _eventData)
     {
+        base.OnPointerEnter(_eventData);
         isHovered = true;
         if (false == isInteractable) return;
 
@@ -136,17 +207,142 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         }
     }
 
-    public void OnPointerExit(PointerEventData _eventData)
+    public override void OnPointerExit(PointerEventData _eventData)
     {
+        base.OnPointerExit(_eventData);
         isHovered = false;
         if (false == isInteractable) return;
         
         KillTween();
         ApplyVisualState(originalScale, normalColor, normalSprite, normalTextColor, normalEffectColor, true);
+
+        HideCursor();
     }
 
-    public void OnPointerDown(PointerEventData _eventData)
+    public override void OnSelect(BaseEventData _eventData)
     {
+        base.OnSelect(_eventData);
+        isHovered = true;
+        if (false == isInteractable) return;
+
+        Sound.PlayUI(hoverSoundId);
+        
+        KillTween();
+        ApplyVisualState(hoverScale, hoverColor, hoverSprite, hoverTextColor, hoverEffectColor, true);
+
+        if (null == customScroll)
+        {
+            customScroll = GetComponentInParent<UI_CustomScroll>();
+        }
+        if (null != customScroll)
+        {
+            customScroll.EnsureVisible(transform as RectTransform);
+        }
+
+        ShowCursor();
+        OnFocusChanged?.Invoke(true);
+    }
+
+    public override void OnDeselect(BaseEventData _eventData)
+    {
+        base.OnDeselect(_eventData);
+        isHovered = false;
+        if (false == isInteractable) return;
+        
+        KillTween();
+        ApplyVisualState(originalScale, normalColor, normalSprite, normalTextColor, normalEffectColor, true);
+
+        HideCursor();
+        OnFocusChanged?.Invoke(false);
+    }
+
+    public void OnSubmit(BaseEventData _eventData)
+    {
+        if (false == isInteractable) return;
+
+        Sound.PlayUI(clickSoundId);
+        PlayClickFeedback();
+
+        if (null != onClickAction)
+        {
+            onClickAction.Invoke();
+        }
+    }
+
+    public override void OnMove(AxisEventData _eventData)
+    {
+        if (EArrowDirection.Left == arrowDirection)
+        {
+            if (MoveDirection.Left == _eventData.moveDir)
+            {
+                // < 버튼에서 Left 입력 ➔ 값 감소 / 이전 선택지 실행 + 클릭 피드백
+                if (true == isInteractable)
+                {
+                    Sound.PlayUI(clickSoundId);
+                    PlayClickFeedback();
+                    onClickAction?.Invoke();
+                }
+                _eventData.Use();
+                return;
+            }
+            else if (MoveDirection.Right == _eventData.moveDir)
+            {
+                // < 버튼에서 Right 입력 ➔ > 버튼으로 포커스 이동
+                if (null != pairedArrowButton && true == pairedArrowButton.gameObject.activeInHierarchy)
+                {
+                    EventSystem.current?.SetSelectedGameObject(pairedArrowButton.gameObject);
+                }
+                _eventData.Use();
+                return;
+            }
+        }
+        else if (EArrowDirection.Right == arrowDirection)
+        {
+            if (MoveDirection.Right == _eventData.moveDir)
+            {
+                // > 버튼에서 Right 입력 ➔ 값 증가 / 다음 선택지 실행 + 클릭 피드백
+                if (true == isInteractable)
+                {
+                    Sound.PlayUI(clickSoundId);
+                    PlayClickFeedback();
+                    onClickAction?.Invoke();
+                }
+                _eventData.Use();
+                return;
+            }
+            else if (MoveDirection.Left == _eventData.moveDir)
+            {
+                // > 버튼에서 Left 입력 ➔ < 버튼으로 포커스 이동
+                if (null != pairedArrowButton && true == pairedArrowButton.gameObject.activeInHierarchy)
+                {
+                    EventSystem.current?.SetSelectedGameObject(pairedArrowButton.gameObject);
+                }
+                _eventData.Use();
+                return;
+            }
+        }
+
+        // Up, Down 및 일반 버튼은 기본 Selectable 네비게이션으로 행 간 이동
+        base.OnMove(_eventData);
+    }
+
+    public void PlayClickFeedback()
+    {
+        KillTween();
+        ApplyVisualState(clickScale, clickColor, clickSprite, clickTextColor, clickEffectColor, false);
+        if (true == isHovered)
+        {
+            ApplyVisualState(hoverScale, hoverColor, hoverSprite, hoverTextColor, hoverEffectColor, true);
+        }
+        else
+        {
+            ApplyVisualState(originalScale, normalColor, normalSprite, normalTextColor, normalEffectColor, true);
+        }
+    }
+
+    public override void OnPointerDown(PointerEventData _eventData)
+    {
+        base.OnPointerDown(_eventData);
         isPointerDown = true;
         if (false == isInteractable) return;
         
@@ -154,8 +350,9 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         ApplyVisualState(clickScale, clickColor, clickSprite, clickTextColor, clickEffectColor, true);
     }
 
-    public void OnPointerUp(PointerEventData _eventData)
+    public override void OnPointerUp(PointerEventData _eventData)
     {
+        base.OnPointerUp(_eventData);
         isPointerDown = false;
         if (false == isInteractable) return;
         
@@ -176,6 +373,7 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         if (false == isInteractable) return;
 
         Sound.PlayUI(clickSoundId);
+        PlayClickFeedback();
 
         if (null != onClickAction)
         {
@@ -191,12 +389,15 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         if (null != targetEffect) DOTween.Kill(targetEffect);
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
+        base.OnDisable();
         isHovered = false;
         isPointerDown = false;
 
         KillTween();
+        HideCursor();
+        OnFocusChanged?.Invoke(false);
         
         Color _targetGraphicColor = (EVisualMode.Color == visualMode) ? normalColor : (null != targetGraphic ? targetGraphic.color : Color.white);
         _targetGraphicColor.a = (true == isInteractable) ? 1f : 0.5f;
@@ -228,8 +429,9 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         }
     }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
         KillTween();
         onClickAction = null;
     }

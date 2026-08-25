@@ -112,7 +112,8 @@ public class UIView_ESC : UIView
                 OnOptionButtonClicked,
                 OnGoToMainMenuButtonClicked,
                 OnExitButtonClicked,
-                warningPopup);
+                warningPopup,
+                _ctx?.inputManager);
         }
 
         if (null != optionUI)
@@ -211,6 +212,8 @@ public class UIView_ESC : UIView
         base.OnShow();
         gameObject.SetActive(true);
 
+        viewCtx?.inputManager?.SetInputMode(EInputMode.UI);
+
         // ESC 메뉴 = 일시정지. BGM을 먹먹하게 하고, 게임플레이 사운드는 통째로 죽여
         // BGM과 이 메뉴의 조작음만 들리게 한다.
         if (true == isPauseShow)
@@ -238,6 +241,8 @@ public class UIView_ESC : UIView
 
     protected override void OnHide()
     {
+        viewCtx?.inputManager?.SetInputMode(EInputMode.Gameplay);
+
         base.OnHide();
 
         if (true == isPauseShow)
@@ -364,6 +369,11 @@ public class UIView_ESC : UIView
         if (true == lockOnTransitionFromOption)
         {
             DispatchInputLock(false);
+        }
+
+        if (null != escapeMenu)
+        {
+            escapeMenu.SelectOptionButton();
         }
     }
 

@@ -278,10 +278,48 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7afaa43b5c4ab73468e96299058d02bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_OptionSelector
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 0
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 0}
   titleText: {fileID: 4135917404057033917}
   valueText: {fileID: 246178154004603555}
   leftArrowButton: {fileID: 332851449775756194}
   rightArrowButton: {fileID: 5904876116561674797}
+  backgroundImage: {fileID: 1787800147968665940}
+  normalSprite: {fileID: 21300000, guid: 7b696170b6296a942a40230633949cb8, type: 3}
+  hoverSprite: {fileID: 21300000, guid: 97296077427acd84285ef39f10e974d0, type: 3}
+  normalColor: {r: 1, g: 1, b: 1, a: 1}
+  hoverColor: {r: 1, g: 1, b: 1, a: 1}
+  normalTextColor: {r: 1, g: 1, b: 1, a: 1}
+  hoverTextColor: {r: 1, g: 1, b: 1, a: 1}
+  cursorPadding: {x: 10, y: 6}
+  cursorOffset: {x: 0, y: 0}
 --- !u!1 &2689112069182009532
 GameObject:
   m_ObjectHideFlags: 0
@@ -407,6 +445,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf07bd84ac9aaf74780e127d4dea493a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_OptionButton
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 0
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 0}
   targetGraphic: {fileID: 5554445981835633976}
   buttonText: {fileID: 0}
   targetEffect: {fileID: 0}
@@ -427,6 +494,8 @@ MonoBehaviour:
   normalEffectColor: {r: 0, g: 0, b: 0, a: 1}
   hoverEffectColor: {r: 0, g: 0, b: 0, a: 1}
   clickEffectColor: {r: 0, g: 0, b: 0, a: 1}
+  cursorPadding: {x: 10, y: 10}
+  cursorOffset: {x: 0, y: 0}
 --- !u!1 &4742127747711506820
 GameObject:
   m_ObjectHideFlags: 0
@@ -631,6 +700,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf07bd84ac9aaf74780e127d4dea493a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_OptionButton
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 0
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 0}
   targetGraphic: {fileID: 9058850686146390462}
   buttonText: {fileID: 0}
   targetEffect: {fileID: 0}
@@ -651,6 +749,8 @@ MonoBehaviour:
   normalEffectColor: {r: 0, g: 0, b: 0, a: 1}
   hoverEffectColor: {r: 0, g: 0, b: 0, a: 1}
   clickEffectColor: {r: 0, g: 0, b: 0, a: 1}
+  cursorPadding: {x: 10, y: 10}
+  cursorOffset: {x: 0, y: 0}
 --- !u!1 &8805604100166189895
 GameObject:
   m_ObjectHideFlags: 0

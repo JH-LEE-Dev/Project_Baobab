@@ -11,6 +11,7 @@ trigger: always_on
 
 ## 2. 스크립트 검수 및 최적화 강제 (Strict Code Audit)
 - **사전 검수 의무화**: 모든 스크립트 작업 전에는 반드시 코드 상태를 검수해야 합니다. 문제점이 발견되면 계획표에 이를 브리핑하고 수정에 대한 허가를 요청하세요.
+- **네임스페이스 누락 방지 및 사전 정리 (Namespace Integrity)**: 새로 추가하거나 사용하는 모든 기능/타입(예: `Action`, `Func`, `IEnumerator`, `List<T>`, `Dictionary<TKey, TValue>`, `EventSystems`, `DOTween`, `TextMeshPro` 등)에 필요한 네임스페이스(`using System;`, `using System.Collections.Generic;`, `using UnityEngine.EventSystems;` 등)가 파일 상단에 완벽하게 선언되어 있는지 반드시 사전 검수하고 누락되지 않도록 정리하세요 (`CS0246` 원천 차단).
 - **Yoda 표기법 강제**: 조건문 작성 시 Yoda 표기법(예: `true == isHovered`, `null != obj`)을 준수하고 있지 않다면 이를 준수하도록 로직을 수정하세요.
 - **스파게티 및 람다식 제거**: 스파게티 코드, 최적화되지 않은 부분, GC(가비지 컬렉션)를 유발하는 람다식 사용 등의 문제가 있다면 유지보수가 편리하도록 강력하게 리팩토링하세요.
 - **마크다운/최적화 규칙 준수**: 코드 내 규칙(최적화 등)이 엄격하게 지켜지고 있는지 파악하고, 그렇지 않다면 규칙을 지키도록 수정하세요.

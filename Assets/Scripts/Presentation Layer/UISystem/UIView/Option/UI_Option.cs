@@ -1,5 +1,8 @@
-using UnityEngine;
 using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
@@ -29,9 +32,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     [SerializeField] private UI_OptionSelector windowModeSelector;
     [SerializeField] private UI_OptionSelector fpsSelector;
     [SerializeField] private UI_OptionSelector pauseOnUnfocusSelector;
+    [SerializeField] private UI_OptionSelector gamepadIconPreferenceSelector;
 
     [SerializeField] private UI_OptionSlider cameraShakeSlider;
     [SerializeField] private UI_OptionSlider crosshairBrightnessSlider;
+    [SerializeField] private UI_OptionSlider hapticStrengthSlider;
     [SerializeField] private UI_OptionSlider chromaticAberrationSlider;
     [SerializeField] private UI_OptionSlider brightnessSlider;
     [SerializeField] private UI_OptionSlider saturationSlider;
@@ -51,6 +56,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private const float SfxPreviewInterval = 0.03f;
     private float lastSfxPreviewTime = float.NegativeInfinity;
     private int lastSfxPreviewTick = int.MinValue;
+
+    private const float HapticPreviewInterval = 0.05f;
+    private float lastHapticPreviewTime = float.NegativeInfinity;
+    private int lastHapticPreviewTick = int.MinValue;
 
     [Header("Control Options")]
     [SerializeField] private Transform keyBindRowContainer;           // 행들이 배치될 부모 Transform (ScrollView Content 등)
@@ -74,9 +83,12 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private Action onFpsRight;
     private Action onPauseLeft;
     private Action onPauseRight;
+    private Action onGamepadIconPreferenceLeft;
+    private Action onGamepadIconPreferenceRight;
 
     private Action<float> onCameraShakeChanged;
     private Action<float> onCrosshairBrightnessChanged;
+    private Action<float> onHapticStrengthChanged;
     private Action<float> onChromaticAberrationChanged;
     private Action<float> onBrightnessChanged;
     private Action<float> onSaturationChanged;
@@ -84,6 +96,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private Action<float> onBgmVolumeChanged;
     private Action<float> onSfxVolumeChanged;
 
+    private Action<bool> cachedOnGamepadConnectionChanged;
     private Action<EOptionLanguage> onSettingsLanguageChanged;
     private Action<EWindowMode> onSettingsWindowModeChanged;
 
@@ -107,6 +120,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         public readonly EOnOff pauseOnUnfocus;
         public readonly float cameraShake;
         public readonly float crosshairBrightness;
+        public readonly float hapticStrength;
+        public readonly EGamepadIconPreference gamepadIconPreference;
 
         public ApplyTargetSettingsSnapshot(in SettingsData _data)
         {
@@ -116,6 +131,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             pauseOnUnfocus = _data.pauseOnUnfocus;
             cameraShake = _data.cameraShake;
             crosshairBrightness = _data.crosshairBrightness;
+            hapticStrength = _data.hapticStrength;
+            gamepadIconPreference = _data.gamepadIconPreference;
         }
 
         public bool Equals(in SettingsData _current)
@@ -129,7 +146,9 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
                 && fps == _current.fps
                 && pauseOnUnfocus == _current.pauseOnUnfocus
                 && Mathf.Approximately(cameraShake, _current.cameraShake)
-                && Mathf.Approximately(crosshairBrightness, _current.crosshairBrightness);
+                && Mathf.Approximately(crosshairBrightness, _current.crosshairBrightness)
+                && Mathf.Approximately(hapticStrength, _current.hapticStrength)
+                && gamepadIconPreference == _current.gamepadIconPreference;
         }
     }
 
@@ -145,6 +164,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private Action cachedRefreshKeyBindRows;
     private Action cachedExecuteResetAll;
     private Action cachedCancelResetAll;
+    private Action<int> cachedOnTabShift;
+    private Action cachedOnUICancel;
+    private Action<EInputDeviceType> cachedOnInputDeviceChanged;
+
+    private ICursorBoxUI cursorBoxUI;
 
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize(UIViewContext _ctx)
@@ -156,6 +180,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             locManager = _ctx.localizationManager;
             inputManager = _ctx.inputManager;
             depthController = _ctx.depthController;
+            cursorBoxUI = _ctx.cursorBoxUI;
         }
 
         settings = SettingsManager.Instance;
@@ -174,16 +199,21 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != tabGroup)
         {
             tabGroup.Initialize(BuildTabTexts());
+            tabGroup.SetCursorBoxUI(cursorBoxUI, inputManager);
+            tabGroup.OnTabChanged -= OnTabGroupChanged;
+            tabGroup.OnTabChanged += OnTabGroupChanged;
         }
 
         if (null != applyButton)
         {
             applyButton.Initialize(cachedOnApplyClicked, SoundID.MainButtonHover, SoundID.MainClick);
+            applyButton.SetCursorBoxUI(cursorBoxUI, inputManager);
         }
 
         if (null != closeButton)
         {
             closeButton.Initialize(hideAction, SoundID.MainButtonHover, SoundID.MainClick);
+            closeButton.SetCursorBoxUI(cursorBoxUI, inputManager);
         }
 
         if (null != warningPopup)
@@ -230,12 +260,29 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             optionPanelRoot.SetActive(true);
         }
 
+        RefreshGamepadOptionsVisibility();
+
         if (null != inputManager)
         {
             inputManager.BeginEditSession();
             inputManager.inputReader.KeyBindingsChangedEvent -= cachedRefreshKeyBindRows;
             inputManager.inputReader.KeyBindingsChangedEvent += cachedRefreshKeyBindRows;
+            inputManager.inputReader.GamepadConnectionChangedEvent -= cachedOnGamepadConnectionChanged;
+            inputManager.inputReader.GamepadConnectionChangedEvent += cachedOnGamepadConnectionChanged;
+            inputManager.inputReader.UITabShiftEvent -= cachedOnTabShift;
+            inputManager.inputReader.UITabShiftEvent += cachedOnTabShift;
+            inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+            inputManager.inputReader.UICancelEvent += cachedOnUICancel;
+            inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+            inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
             RefreshKeyBindRows();
+        }
+
+        SetupOptionNavigation();
+
+        if (null != inputManager && true == inputManager.IsGamepadMode)
+        {
+            SelectDefaultFocusElement();
         }
 
         UpdateApplyButtonState();
@@ -283,6 +330,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private void ForceHide()
     {
         depthController?.UnregisterView(this);
+        cursorBoxUI?.HideImmediately();
 
         if (null != warningPopup && true == warningPopup.IsActive)
         {
@@ -310,6 +358,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != inputManager)
         {
             inputManager.inputReader.KeyBindingsChangedEvent -= cachedRefreshKeyBindRows;
+            inputManager.inputReader.GamepadConnectionChangedEvent -= cachedOnGamepadConnectionChanged;
+            inputManager.inputReader.UITabShiftEvent -= cachedOnTabShift;
+            inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+            inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
 
             // 리바인딩 진행 중이면 취소
             if (true == inputManager.IsRebinding)
@@ -367,8 +419,12 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         onPauseLeft = OnPauseLeft;
         onPauseRight = OnPauseRight;
 
+        onGamepadIconPreferenceLeft = OnGamepadIconPreferenceLeft;
+        onGamepadIconPreferenceRight = OnGamepadIconPreferenceRight;
+
         onCameraShakeChanged = OnCameraShakeChanged;
         onCrosshairBrightnessChanged = OnCrosshairBrightnessChanged;
+        onHapticStrengthChanged = OnHapticStrengthChanged;
         onChromaticAberrationChanged = OnChromaticAberrationChanged;
         onBrightnessChanged = OnBrightnessChanged;
         onSaturationChanged = OnSaturationChanged;
@@ -377,6 +433,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         onBgmVolumeChanged = OnBgmVolumeChanged;
         onSfxVolumeChanged = OnSfxVolumeChanged;
 
+        cachedOnGamepadConnectionChanged = OnGamepadConnectionChanged;
         onSettingsLanguageChanged = HandleLanguageChanged;
         onSettingsWindowModeChanged = HandleWindowModeChanged;
     }
@@ -394,6 +451,207 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         
         cachedExecuteResetAll = ExecuteResetAllBindings;
         cachedCancelResetAll = CancelResetAllBindings;
+
+        cachedOnTabShift = HandleTabShift;
+        cachedOnUICancel = HandleUICancel;
+        cachedOnInputDeviceChanged = OnInputDeviceChanged;
+    }
+
+    private void OnInputDeviceChanged(EInputDeviceType _device)
+    {
+        if (EInputDeviceType.KeyboardMouse == _device)
+        {
+            cursorBoxUI?.HideImmediately();
+            ResetAllRowsFocusVisuals();
+        }
+        else if (EInputDeviceType.Gamepad == _device)
+        {
+            GameObject _selected = EventSystem.current?.currentSelectedGameObject;
+            bool _hasValidSelection = (null != _selected && true == _selected.activeInHierarchy && true == _selected.transform.IsChildOf(transform));
+
+            if (false == _hasValidSelection)
+            {
+                SelectDefaultFocusElement();
+            }
+            else
+            {
+                UI_OptionSelector _selector = _selected.GetComponent<UI_OptionSelector>();
+                if (null != _selector)
+                {
+                    _selector.ShowCursor();
+                    _selector.ApplyFocusVisual(true);
+                }
+                else
+                {
+                    UI_OptionSlider _slider = _selected.GetComponent<UI_OptionSlider>();
+                    if (null != _slider)
+                    {
+                        _slider.ShowCursor();
+                        _slider.ApplyFocusVisual(true);
+                    }
+                    else
+                    {
+                        UI_OptionButton _btn = _selected.GetComponent<UI_OptionButton>();
+                        if (null != _btn)
+                        {
+                            _btn.ShowCursor();
+                        }
+                        else
+                        {
+                            UI_OptionTabButton _tab = _selected.GetComponent<UI_OptionTabButton>();
+                            if (null != _tab)
+                            {
+                                _tab.ShowCursor();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void ResetAllRowsFocusVisuals()
+    {
+        if (null != languageSelector) languageSelector.ApplyFocusVisual(false);
+        if (null != resolutionSelector) resolutionSelector.ApplyFocusVisual(false);
+        if (null != windowModeSelector) windowModeSelector.ApplyFocusVisual(false);
+        if (null != fpsSelector) fpsSelector.ApplyFocusVisual(false);
+        if (null != pauseOnUnfocusSelector) pauseOnUnfocusSelector.ApplyFocusVisual(false);
+        if (null != gamepadIconPreferenceSelector) gamepadIconPreferenceSelector.ApplyFocusVisual(false);
+
+        if (null != cameraShakeSlider) cameraShakeSlider.ApplyFocusVisual(false);
+        if (null != crosshairBrightnessSlider) crosshairBrightnessSlider.ApplyFocusVisual(false);
+        if (null != hapticStrengthSlider) hapticStrengthSlider.ApplyFocusVisual(false);
+        if (null != chromaticAberrationSlider) chromaticAberrationSlider.ApplyFocusVisual(false);
+        if (null != brightnessSlider) brightnessSlider.ApplyFocusVisual(false);
+        if (null != saturationSlider) saturationSlider.ApplyFocusVisual(false);
+
+        if (null != masterVolumeSlider) masterVolumeSlider.ApplyFocusVisual(false);
+        if (null != bgmVolumeSlider) bgmVolumeSlider.ApplyFocusVisual(false);
+        if (null != sfxVolumeSlider) sfxVolumeSlider.ApplyFocusVisual(false);
+
+        if (null != keyBindRows)
+        {
+            for (int i = 0; keyBindRows.Count > i; i++)
+            {
+                if (null != keyBindRows[i])
+                {
+                    keyBindRows[i].SetRowFocus(false);
+                }
+            }
+        }
+    }
+
+    private void SelectDefaultFocusElement()
+    {
+        if (null == tabGroup) return;
+
+        int _curTab = tabGroup.CurrentTabIndex;
+        List<OptionRowNav> _validRows = GetTabValidRows(_curTab);
+        Selectable _target = null;
+
+        if (0 < _validRows.Count)
+        {
+            _target = _validRows[0].left ?? _validRows[0].right;
+        }
+
+        if (null == _target)
+        {
+            _target = tabGroup.GetTabButton(_curTab);
+        }
+
+        if (null != _target && true == _target.gameObject.activeInHierarchy)
+        {
+            if (null != EventSystem.current)
+            {
+                EventSystem.current.firstSelectedGameObject = _target.gameObject;
+                EventSystem.current.SetSelectedGameObject(_target.gameObject);
+            }
+        }
+    }
+
+    private void Update()
+    {
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
+        if (false == gameObject.activeInHierarchy || false == IsActive) return;
+
+        // 경고 팝업 활성 중에는 팝업이 포커스를 관리
+        if (null != warningPopup && true == warningPopup.IsActive) return;
+
+        if (null != EventSystem.current)
+        {
+            GameObject _selected = EventSystem.current.currentSelectedGameObject;
+            bool _isValid = (null != _selected && 
+                             true == _selected.activeInHierarchy && 
+                             true == _selected.transform.IsChildOf(transform));
+
+            if (true == _isValid)
+            {
+                Selectable _sel = _selected.GetComponent<Selectable>();
+                if (null != _sel && false == _sel.interactable)
+                {
+                    _isValid = false;
+                }
+            }
+
+            if (false == _isValid)
+            {
+                if (null != closeButton && true == closeButton.gameObject.activeInHierarchy && true == closeButton.IsInteractable)
+                {
+                    EventSystem.current.SetSelectedGameObject(closeButton.gameObject);
+                    closeButton.ShowCursor();
+                }
+                else
+                {
+                    SelectDefaultFocusElement();
+                }
+            }
+        }
+    }
+
+    private void HandleTabShift(int _direction)
+    {
+        if (false == gameObject.activeInHierarchy || false == IsActive) return;
+        if (null != tabGroup)
+        {
+            tabGroup.ShiftTab(_direction);
+        }
+    }
+
+    private void HandleUICancel()
+    {
+        if (false == gameObject.activeInHierarchy || false == IsActive) return;
+
+        // 리바인딩 대기 중에는 B 버튼이 리바인드 취소 역할을 하므로 창 닫기를 수행하지 않음
+        if (null != inputManager && true == inputManager.IsRebinding)
+        {
+            return;
+        }
+
+        // 경고 팝업이 열려 있으면 팝업 닫기 처리
+        if (null != warningPopup && true == warningPopup.IsActive)
+        {
+            warningPopup.Hide();
+            return;
+        }
+
+        // 패드 모드이고 현재 포커스가 탭 버튼이 아닌 하위 옵션에 위치해 있다면 ➔ 상단 탭 버튼으로 포커스 복귀
+        if (null != inputManager && true == inputManager.IsGamepadMode && null != EventSystem.current && null != tabGroup)
+        {
+            GameObject _selected = EventSystem.current.currentSelectedGameObject;
+            UI_OptionTabButton _currentTabBtn = tabGroup.GetTabButton(tabGroup.CurrentTabIndex);
+            if (null != _selected && (null == _currentTabBtn || _selected != _currentTabBtn.gameObject))
+            {
+                if (null != _currentTabBtn && true == _currentTabBtn.gameObject.activeInHierarchy)
+                {
+                    EventSystem.current.SetSelectedGameObject(_currentTabBtn.gameObject);
+                    Sound.PlayUI(SoundID.MainButtonHover);
+                    return;
+                }
+            }
+        }
+
+        Hide();
     }
 
     private string GetText(int _compositeKey, string _fallback)
@@ -448,27 +706,88 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         SettingsData _data = settings.Current;
 
-        if (null != languageSelector) languageSelector.Initialize(GetText(LocKeys.OptionUI.language, "언어"), GetLanguageText(_data.language), onLanguageLeft, onLanguageRight);
-        // 저장 원본이 아니라 실제 적용값으로 초기 표기한다. (선택기 순환 기준과 맞추기 위함)
-        if (null != resolutionSelector) resolutionSelector.Initialize(GetText(LocKeys.OptionUI.resolution, "해상도"), SettingsManager.GetResolutionLabel(settings.EffectiveResolution), onResolutionLeft, onResolutionRight);
-        if (null != windowModeSelector) windowModeSelector.Initialize(GetText(LocKeys.OptionUI.windowMode, "화면"), GetWindowModeText(_data.windowMode), onWindowModeLeft, onWindowModeRight);
-        if (null != fpsSelector) fpsSelector.Initialize(GetText(LocKeys.OptionUI.fPS, "FPS"), GetFpsText(_data.fps), onFpsLeft, onFpsRight);
-        if (null != pauseOnUnfocusSelector) pauseOnUnfocusSelector.Initialize(GetText(LocKeys.OptionUI.pauseOnUnfocus, "비활성화 중 게임 일시정지"), GetOnOffText(_data.pauseOnUnfocus), onPauseLeft, onPauseRight);
+        if (null != languageSelector)
+        {
+            languageSelector.Initialize(GetText(LocKeys.OptionUI.language, "언어"), GetLanguageText(_data.language), onLanguageLeft, onLanguageRight);
+            languageSelector.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+        if (null != resolutionSelector)
+        {
+            resolutionSelector.Initialize(GetText(LocKeys.OptionUI.resolution, "해상도"), SettingsManager.GetResolutionLabel(settings.EffectiveResolution), onResolutionLeft, onResolutionRight);
+            resolutionSelector.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+        if (null != windowModeSelector)
+        {
+            windowModeSelector.Initialize(GetText(LocKeys.OptionUI.windowMode, "화면"), GetWindowModeText(_data.windowMode), onWindowModeLeft, onWindowModeRight);
+            windowModeSelector.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+        if (null != fpsSelector)
+        {
+            fpsSelector.Initialize(GetText(LocKeys.OptionUI.fPS, "FPS"), GetFpsText(_data.fps), onFpsLeft, onFpsRight);
+            fpsSelector.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+        if (null != pauseOnUnfocusSelector)
+        {
+            pauseOnUnfocusSelector.Initialize(GetText(LocKeys.OptionUI.pauseOnUnfocus, "비활성화 중 게임 일시정지"), GetOnOffText(_data.pauseOnUnfocus), onPauseLeft, onPauseRight);
+            pauseOnUnfocusSelector.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+        if (null != gamepadIconPreferenceSelector)
+        {
+            gamepadIconPreferenceSelector.Initialize(GetText(LocKeys.OptionUI.gamepadIconPreference, "게임패드 버튼 표기"), GetGamepadIconPreferenceText(_data.gamepadIconPreference), onGamepadIconPreferenceLeft, onGamepadIconPreferenceRight);
+            gamepadIconPreferenceSelector.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
     }
 
     private void InitializeSliders()
     {
         SettingsData _data = settings.Current;
 
-        if (null != cameraShakeSlider) cameraShakeSlider.Initialize(GetText(LocKeys.OptionUI.cameraShake, "카메라 흔들림"), _data.cameraShake, 0f, 100f, onCameraShakeChanged);
-        if (null != crosshairBrightnessSlider) crosshairBrightnessSlider.Initialize(GetText(LocKeys.OptionUI.crosshairBrightness, "캐릭터 조준 인디케이터 밝기"), _data.crosshairBrightness, 0f, 100f, onCrosshairBrightnessChanged);
-        if (null != chromaticAberrationSlider) chromaticAberrationSlider.Initialize(GetText(LocKeys.OptionUI.chromaticAberration, "색수차 효과"), _data.chromaticAberration, 0f, 100f, onChromaticAberrationChanged);
-        if (null != brightnessSlider) brightnessSlider.Initialize(GetText(LocKeys.OptionUI.screenBrightness, "화면 명도"), _data.brightness, 0f, 100f, onBrightnessChanged);
-        if (null != saturationSlider) saturationSlider.Initialize(GetText(LocKeys.OptionUI.screenSaturation, "화면 채도"), _data.saturation, 0f, 100f, onSaturationChanged);
+        if (null != cameraShakeSlider)
+        {
+            cameraShakeSlider.Initialize(GetText(LocKeys.OptionUI.cameraShake, "카메라 흔들림"), _data.cameraShake, 0f, 100f, onCameraShakeChanged);
+            cameraShakeSlider.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+        if (null != crosshairBrightnessSlider)
+        {
+            crosshairBrightnessSlider.Initialize(GetText(LocKeys.OptionUI.crosshairBrightness, "캐릭터 조준 인디케이터 밝기"), _data.crosshairBrightness, 0f, 100f, onCrosshairBrightnessChanged);
+            crosshairBrightnessSlider.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+        if (null != hapticStrengthSlider)
+        {
+            hapticStrengthSlider.Initialize(GetText(LocKeys.OptionUI.hapticStrength, "컨트롤러 진동"), _data.hapticStrength, 0f, 100f, onHapticStrengthChanged);
+            hapticStrengthSlider.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+        if (null != chromaticAberrationSlider)
+        {
+            chromaticAberrationSlider.Initialize(GetText(LocKeys.OptionUI.chromaticAberration, "색수차 효과"), _data.chromaticAberration, 0f, 100f, onChromaticAberrationChanged);
+            chromaticAberrationSlider.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+        if (null != brightnessSlider)
+        {
+            brightnessSlider.Initialize(GetText(LocKeys.OptionUI.screenBrightness, "화면 명도"), _data.brightness, 0f, 100f, onBrightnessChanged);
+            brightnessSlider.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+        if (null != saturationSlider)
+        {
+            saturationSlider.Initialize(GetText(LocKeys.OptionUI.screenSaturation, "화면 채도"), _data.saturation, 0f, 100f, onSaturationChanged);
+            saturationSlider.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
 
-        if (null != masterVolumeSlider) masterVolumeSlider.Initialize(GetText(LocKeys.OptionUI.masterVolume, "마스터 볼륨"), _data.masterVolume, 0f, 100f, onMasterVolumeChanged);
-        if (null != bgmVolumeSlider) bgmVolumeSlider.Initialize(GetText(LocKeys.OptionUI.bGMVolume, "배경음악 볼륨"), _data.bgmVolume, 0f, 100f, onBgmVolumeChanged);
-        if (null != sfxVolumeSlider) sfxVolumeSlider.Initialize(GetText(LocKeys.OptionUI.sFXVolume, "사운드 볼륨"), _data.sfxVolume, 0f, 100f, onSfxVolumeChanged);
+        if (null != masterVolumeSlider)
+        {
+            masterVolumeSlider.Initialize(GetText(LocKeys.OptionUI.masterVolume, "마스터 볼륨"), _data.masterVolume, 0f, 100f, onMasterVolumeChanged);
+            masterVolumeSlider.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+        if (null != bgmVolumeSlider)
+        {
+            bgmVolumeSlider.Initialize(GetText(LocKeys.OptionUI.bGMVolume, "배경음악 볼륨"), _data.bgmVolume, 0f, 100f, onBgmVolumeChanged);
+            bgmVolumeSlider.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+        if (null != sfxVolumeSlider)
+        {
+            sfxVolumeSlider.Initialize(GetText(LocKeys.OptionUI.sFXVolume, "사운드 볼륨"), _data.sfxVolume, 0f, 100f, onSfxVolumeChanged);
+            sfxVolumeSlider.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
     }
 
     private void InitializeControlTab()
@@ -496,6 +815,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
             _row.Initialize(_action, _label, _bindingPath, _displayString, _isConflict,
                             keyIconDatabase, cachedOnRowRebindRequested, cachedOnRowResetRequested);
+            _row.SetCursorBoxUI(cursorBoxUI, inputManager);
             keyBindRows.Add(_row);
         }
 
@@ -503,10 +823,13 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != resetAllBindingsButton)
         {
             resetAllBindingsButton.Initialize(cachedOnResetAllClicked);
+            resetAllBindingsButton.SetCursorBoxUI(cursorBoxUI, inputManager);
         }
 
         // 오버레이 숨김
         if (null != rebindOverlay) rebindOverlay.SetActive(false);
+
+        SetupOptionNavigation();
     }
 
     private string GetActionLabel(ERebindableAction _action)
@@ -583,6 +906,327 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         }
 
         return _fps.ToString();
+    }
+
+    private string GetGamepadIconSetShortName(EGamepadIconSet _iconSet)
+    {
+        switch (_iconSet)
+        {
+            case EGamepadIconSet.Xbox: return "Xbox";
+            case EGamepadIconSet.PlayStation: return "PS";
+            case EGamepadIconSet.Nintendo: return "Switch";
+            case EGamepadIconSet.Generic: return GetText(LocKeys.OptionUI.gamepadIconGeneric, "Generic");
+        }
+        return _iconSet.ToString();
+    }
+
+    private string GetGamepadIconPreferenceText(EGamepadIconPreference _pref)
+    {
+        switch (_pref)
+        {
+            case EGamepadIconPreference.Auto:
+                string _autoText = GetText(LocKeys.OptionUI.gamepadIconAuto, "자동");
+                if (null != inputManager)
+                {
+                    return $"{_autoText} ({GetGamepadIconSetShortName(inputManager.DetectedGamepadIconSet)})";
+                }
+                return _autoText;
+            case EGamepadIconPreference.Xbox: return "Xbox";
+            case EGamepadIconPreference.PlayStation: return "PS";
+            case EGamepadIconPreference.Nintendo: return "Switch";
+            case EGamepadIconPreference.Generic: return GetText(LocKeys.OptionUI.gamepadIconGeneric, "Generic");
+        }
+        return _pref.ToString();
+    }
+
+    private void RefreshGamepadOptionsVisibility()
+    {
+        bool _isConnected = (null != inputManager && true == inputManager.IsGamepadConnected);
+
+        if (null != gamepadIconPreferenceSelector)
+        {
+            gamepadIconPreferenceSelector.gameObject.SetActive(_isConnected);
+        }
+
+        if (null != hapticStrengthSlider)
+        {
+            hapticStrengthSlider.gameObject.SetActive(_isConnected);
+        }
+
+        SetupOptionNavigation();
+    }
+
+    private struct OptionRowNav
+    {
+        public Selectable left;
+        public Selectable right;
+
+        public OptionRowNav(Selectable _single)
+        {
+            left = _single;
+            right = _single;
+        }
+
+        public OptionRowNav(Selectable _left, Selectable _right)
+        {
+            left = _left;
+            right = _right;
+        }
+
+        public bool IsValid => null != left || null != right;
+    }
+
+    private void SetupOptionNavigation()
+    {
+        if (null == tabGroup) return;
+
+        for (int t = 0; tabGroup.TabCount > t; t++)
+        {
+            SetupTabPanelNav(t);
+        }
+
+        SetupBottomButtonsNavigation();
+    }
+
+    private void SetupBottomButtonsNavigation()
+    {
+        if (null == tabGroup) return;
+
+        int _curTab = tabGroup.CurrentTabIndex;
+        List<OptionRowNav> _validRows = GetTabValidRows(_curTab);
+
+        Selectable _elementAboveBottom = null;
+        if (0 < _validRows.Count)
+        {
+            _elementAboveBottom = _validRows[_validRows.Count - 1].left ?? _validRows[_validRows.Count - 1].right;
+        }
+        else
+        {
+            _elementAboveBottom = tabGroup.GetTabButton(_curTab);
+        }
+
+        bool _isApplyValid = (null != applyButton && true == applyButton.gameObject.activeSelf && true == applyButton.IsInteractable);
+        bool _isCloseValid = (null != closeButton && true == closeButton.gameObject.activeSelf && true == closeButton.IsInteractable);
+
+        if (true == _isApplyValid && true == _isCloseValid)
+        {
+            Navigation _applyNav = new Navigation();
+            _applyNav.mode = Navigation.Mode.Explicit;
+            _applyNav.selectOnUp = _elementAboveBottom;
+            _applyNav.selectOnDown = closeButton;
+            _applyNav.selectOnLeft = applyButton;
+            _applyNav.selectOnRight = closeButton;
+            applyButton.navigation = _applyNav;
+
+            Navigation _closeNav = new Navigation();
+            _closeNav.mode = Navigation.Mode.Explicit;
+            _closeNav.selectOnUp = applyButton;
+            _closeNav.selectOnDown = null;
+            _closeNav.selectOnLeft = applyButton;
+            _closeNav.selectOnRight = closeButton;
+            closeButton.navigation = _closeNav;
+        }
+        else if (true == _isCloseValid)
+        {
+            Navigation _closeNav = new Navigation();
+            _closeNav.mode = Navigation.Mode.Explicit;
+            _closeNav.selectOnUp = _elementAboveBottom;
+            _closeNav.selectOnDown = null;
+            _closeNav.selectOnLeft = closeButton;
+            _closeNav.selectOnRight = closeButton;
+            closeButton.navigation = _closeNav;
+        }
+    }
+
+    private void OnTabGroupChanged(int _index)
+    {
+        SetupOptionNavigation();
+
+        if (null != inputManager && true == inputManager.IsGamepadMode)
+        {
+            GameObject _selected = EventSystem.current?.currentSelectedGameObject;
+            bool _hasValidSelection = (null != _selected && true == _selected.activeInHierarchy && true == _selected.transform.IsChildOf(transform));
+            if (false == _hasValidSelection)
+            {
+                SelectDefaultFocusElement();
+            }
+        }
+    }
+
+    private RectTransform GetContentRoot(GameObject _tabPanel)
+    {
+        if (null == _tabPanel) return null;
+
+        Transform _gpContents = _tabPanel.transform.Find("ViewRect/GP_Contents");
+        if (null != _gpContents) return _gpContents as RectTransform;
+
+        VerticalLayoutGroup _vlg = _tabPanel.GetComponentInChildren<VerticalLayoutGroup>(true);
+        if (null != _vlg) return _vlg.transform as RectTransform;
+
+        return _tabPanel.transform as RectTransform;
+    }
+
+    private List<OptionRowNav> GetTabValidRows(int _tabIndex)
+    {
+        List<OptionRowNav> _validRows = new List<OptionRowNav>();
+        if (null == tabGroup) return _validRows;
+
+        GameObject _panel = tabGroup.GetTabPanel(_tabIndex);
+        if (null == _panel) return _validRows;
+
+        RectTransform _contentRoot = GetContentRoot(_panel);
+        if (null != _contentRoot)
+        {
+            for (int i = 0; _contentRoot.childCount > i; i++)
+            {
+                Transform _child = _contentRoot.GetChild(i);
+                if (false == _child.gameObject.activeSelf) continue;
+
+                // 1) UI_OptionSelector
+                UI_OptionSelector _selector = _child.GetComponent<UI_OptionSelector>();
+                if (null != _selector)
+                {
+                    if (true == _selector.IsInteractable)
+                    {
+                        _validRows.Add(new OptionRowNav(_selector));
+                    }
+                    continue;
+                }
+
+                // 2) UI_OptionSlider
+                UI_OptionSlider _slider = _child.GetComponent<UI_OptionSlider>();
+                if (null != _slider)
+                {
+                    if (true == _slider.IsInteractable)
+                    {
+                        _validRows.Add(new OptionRowNav(_slider));
+                    }
+                    continue;
+                }
+
+                // 3) UI_OptionKeyBindRow
+                UI_OptionKeyBindRow _keyRow = _child.GetComponent<UI_OptionKeyBindRow>();
+                if (null != _keyRow)
+                {
+                    bool _hasRebind = (null != _keyRow.RebindButton && true == _keyRow.RebindButton.gameObject.activeSelf && true == _keyRow.RebindButton.IsInteractable);
+                    bool _hasReset = (null != _keyRow.ResetButton && true == _keyRow.ResetButton.gameObject.activeSelf && true == _keyRow.ResetButton.IsInteractable);
+                    if (true == _hasRebind && true == _hasReset)
+                    {
+                        _validRows.Add(new OptionRowNav(_keyRow.RebindButton, _keyRow.ResetButton));
+                    }
+                    else if (true == _hasRebind)
+                    {
+                        _validRows.Add(new OptionRowNav(_keyRow.RebindButton));
+                    }
+                    else if (true == _hasReset)
+                    {
+                        _validRows.Add(new OptionRowNav(_keyRow.ResetButton));
+                    }
+                    continue;
+                }
+
+                // 4) UI_OptionButton
+                UI_OptionButton _btn = _child.GetComponent<UI_OptionButton>();
+                if (null != _btn)
+                {
+                    if (true == _btn.IsInteractable)
+                    {
+                        _validRows.Add(new OptionRowNav(_btn));
+                    }
+                    continue;
+                }
+
+                // 5) 기타 Selectable
+                Selectable _sel = _child.GetComponent<Selectable>();
+                if (null != _sel && true == _sel.interactable)
+                {
+                    _validRows.Add(new OptionRowNav(_sel));
+                }
+            }
+        }
+
+        // 조작 탭 등 패널 바깥에 있는 추가 버튼 (예: 전체 초기화 버튼)
+        if (3 == _tabIndex && null != resetAllBindingsButton && true == resetAllBindingsButton.gameObject.activeSelf && true == resetAllBindingsButton.IsInteractable)
+        {
+            _validRows.Add(new OptionRowNav(resetAllBindingsButton));
+        }
+
+        return _validRows;
+    }
+
+    private void SetupTabPanelNav(int _tabIndex)
+    {
+        if (null == tabGroup) return;
+        UI_OptionTabButton _tabBtn = tabGroup.GetTabButton(_tabIndex);
+        if (null == _tabBtn) return;
+
+        List<OptionRowNav> _validRows = GetTabValidRows(_tabIndex);
+        ApplyRowsExplicitNavigation(_tabBtn, _validRows);
+    }
+
+    private void ApplyRowsExplicitNavigation(UI_OptionTabButton _tabBtn, List<OptionRowNav> _validRows)
+    {
+        if (null == _tabBtn) return;
+
+        bool _isApplyValid = (null != applyButton && true == applyButton.gameObject.activeSelf && true == applyButton.IsInteractable);
+        bool _isCloseValid = (null != closeButton && true == closeButton.gameObject.activeSelf && true == closeButton.IsInteractable);
+        Selectable _bottomEntry = true == _isApplyValid ? (Selectable)applyButton : (true == _isCloseValid ? (Selectable)closeButton : null);
+
+        if (null != _validRows && 0 < _validRows.Count)
+        {
+            Selectable _firstElement = _validRows[0].left ?? _validRows[0].right;
+            Navigation _tabNav = _tabBtn.navigation;
+            _tabNav.selectOnDown = _firstElement;
+            _tabBtn.navigation = _tabNav;
+
+            for (int i = 0; _validRows.Count > i; i++)
+            {
+                OptionRowNav _cur = _validRows[i];
+                Selectable _prevLeft = (0 == i) ? (Selectable)_tabBtn : (_validRows[i - 1].left ?? _validRows[i - 1].right);
+                Selectable _prevRight = (0 == i) ? (Selectable)_tabBtn : (_validRows[i - 1].right ?? _validRows[i - 1].left);
+                Selectable _nextLeft = (_validRows.Count - 1 == i) ? _bottomEntry : (_validRows[i + 1].left ?? _validRows[i + 1].right);
+                Selectable _nextRight = (_validRows.Count - 1 == i) ? _bottomEntry : (_validRows[i + 1].right ?? _validRows[i + 1].left);
+
+                if (null != _cur.left && null != _cur.right && _cur.left != _cur.right)
+                {
+                    Navigation _leftNav = new Navigation();
+                    _leftNav.mode = Navigation.Mode.Explicit;
+                    _leftNav.selectOnLeft = _cur.left;
+                    _leftNav.selectOnRight = _cur.right;
+                    _leftNav.selectOnUp = _prevLeft;
+                    _leftNav.selectOnDown = _nextLeft;
+                    _cur.left.navigation = _leftNav;
+
+                    Navigation _rightNav = new Navigation();
+                    _rightNav.mode = Navigation.Mode.Explicit;
+                    _rightNav.selectOnLeft = _cur.left;
+                    _rightNav.selectOnRight = _cur.right;
+                    _rightNav.selectOnUp = _prevRight;
+                    _rightNav.selectOnDown = _nextRight;
+                    _cur.right.navigation = _rightNav;
+                }
+                else
+                {
+                    Selectable _single = _cur.left ?? _cur.right;
+                    if (null != _single)
+                    {
+                        Navigation _singleNav = new Navigation();
+                        _singleNav.mode = Navigation.Mode.Explicit;
+                        _singleNav.selectOnLeft = _single;
+                        _singleNav.selectOnRight = _single;
+                        _singleNav.selectOnUp = _prevLeft;
+                        _singleNav.selectOnDown = _nextLeft;
+                        _single.navigation = _singleNav;
+                    }
+                }
+            }
+        }
+        else
+        {
+            Navigation _tabNav = _tabBtn.navigation;
+            _tabNav.selectOnDown = _bottomEntry;
+            _tabBtn.navigation = _tabNav;
+        }
     }
 
     // SettingsManager 이벤트 반영
@@ -671,6 +1315,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             // 저장된 값 자체는 그대로 남아, 큰 모니터로 돌아가면 원래 설정이 복원된다.
             resolutionSelector.UpdateValue(SettingsManager.GetResolutionLabel(settings.EffectiveResolution));
         }
+
+        SetupOptionNavigation();
     }
 
     // 명시적 델리게이트 바인딩 메서드들 (GC 할당 방지)
@@ -721,6 +1367,38 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         settings.CyclePauseOnUnfocus(1);
         if (null != pauseOnUnfocusSelector) pauseOnUnfocusSelector.UpdateValue(GetOnOffText(settings.Current.pauseOnUnfocus));
         UpdateApplyButtonState();
+    }
+
+    private void OnGamepadIconPreferenceLeft()
+    {
+        settings.CycleGamepadIconPreference(-1);
+        if (null != gamepadIconPreferenceSelector)
+        {
+            gamepadIconPreferenceSelector.UpdateValue(GetGamepadIconPreferenceText(settings.Current.gamepadIconPreference));
+        }
+        UpdateApplyButtonState();
+    }
+
+    private void OnGamepadIconPreferenceRight()
+    {
+        settings.CycleGamepadIconPreference(1);
+        if (null != gamepadIconPreferenceSelector)
+        {
+            gamepadIconPreferenceSelector.UpdateValue(GetGamepadIconPreferenceText(settings.Current.gamepadIconPreference));
+        }
+        UpdateApplyButtonState();
+    }
+
+    private void OnHapticStrengthChanged(float _val)
+    {
+        settings.SetHapticStrength(_val);
+        PlayHapticPreview(_val);
+        UpdateApplyButtonState();
+    }
+
+    private void OnGamepadConnectionChanged(bool _isConnected)
+    {
+        RefreshGamepadOptionsVisibility();
     }
 
     private void OnCameraShakeChanged(float _val) { settings.SetCameraShake(_val); UpdateApplyButtonState(); }
@@ -787,6 +1465,29 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         Sound.PlayUI(sfxVolumePreviewSound);
     }
 
+    private void PlayHapticPreview(float _val)
+    {
+        if (null == inputManager || false == inputManager.IsGamepadConnected) return;
+
+        int _tick = Mathf.RoundToInt(_val);
+        if (_tick == lastHapticPreviewTick) return;
+
+        float _now = Time.unscaledTime;
+        if (HapticPreviewInterval > _now - lastHapticPreviewTime) return;
+
+        lastHapticPreviewTick = _tick;
+        lastHapticPreviewTime = _now;
+
+        if (0f < _val)
+        {
+            inputManager.Haptics.Play(0.8f, 0.4f, 0.12f);
+        }
+        else
+        {
+            inputManager.Haptics.Stop();
+        }
+    }
+
     private void RefreshKeyBindRows()
     {
         if (null == inputManager) return;
@@ -801,6 +1502,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             bool _isConflict = inputManager.IsConflicting(_actions[i]);
             keyBindRows[i].Refresh(_bindingPath, _displayString, _isConflict);
         }
+
+        SetupOptionNavigation();
     }
 
     private void OnRowRebindRequested(ERebindableAction _action)
@@ -897,7 +1600,31 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         if (null == applyButton) return;
         bool _dirty = IsDirty();
+        bool _wasFocusedOnApply = (null != EventSystem.current && 
+            (EventSystem.current.currentSelectedGameObject == applyButton.gameObject ||
+             null == EventSystem.current.currentSelectedGameObject));
+
         applyButton.SetInteractable(_dirty);
+        SetupOptionNavigation();
+
+        if (false == _dirty && true == _wasFocusedOnApply)
+        {
+            if (null != closeButton && true == closeButton.gameObject.activeInHierarchy && true == closeButton.IsInteractable)
+            {
+                if (null != EventSystem.current)
+                {
+                    EventSystem.current.SetSelectedGameObject(closeButton.gameObject);
+                }
+                if (null != inputManager && true == inputManager.IsGamepadMode)
+                {
+                    closeButton.ShowCursor();
+                }
+            }
+            else
+            {
+                SelectDefaultFocusElement();
+            }
+        }
     }
 
     private void RestoreSnapshot(in ApplyTargetSettingsSnapshot _snapshot)
@@ -906,6 +1633,12 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         settings.SetCameraShake(_snapshot.cameraShake);
         settings.SetCrosshairBrightness(_snapshot.crosshairBrightness);
+        settings.SetHapticStrength(_snapshot.hapticStrength);
+        settings.SetGamepadIconPreference(_snapshot.gamepadIconPreference);
+        if (null != gamepadIconPreferenceSelector)
+        {
+            gamepadIconPreferenceSelector.UpdateValue(GetGamepadIconPreferenceText(_snapshot.gamepadIconPreference));
+        }
 
         while (settings.Current.windowMode != _snapshot.windowMode)
         {
@@ -936,6 +1669,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         depthController?.UnregisterView(this);
 
+        if (null != tabGroup)
+        {
+            tabGroup.OnTabChanged -= OnTabGroupChanged;
+        }
+
         if (null != settings)
         {
             settings.OnLanguageChangedEvent -= onSettingsLanguageChanged;
@@ -950,9 +1688,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         onWindowModeLeft = null; onWindowModeRight = null;
         onFpsLeft = null; onFpsRight = null;
         onPauseLeft = null; onPauseRight = null;
+        onGamepadIconPreferenceLeft = null; onGamepadIconPreferenceRight = null;
 
         onCameraShakeChanged = null;
         onCrosshairBrightnessChanged = null;
+        onHapticStrengthChanged = null;
         onChromaticAberrationChanged = null;
         onBrightnessChanged = null;
         onSaturationChanged = null;
@@ -960,12 +1700,17 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         onBgmVolumeChanged = null;
         onSfxVolumeChanged = null;
 
+        cachedOnGamepadConnectionChanged = null;
         onSettingsLanguageChanged = null;
         onSettingsWindowModeChanged = null;
 
         if (null != inputManager)
         {
             inputManager.inputReader.KeyBindingsChangedEvent -= cachedRefreshKeyBindRows;
+            inputManager.inputReader.GamepadConnectionChangedEvent -= cachedOnGamepadConnectionChanged;
+            inputManager.inputReader.UITabShiftEvent -= cachedOnTabShift;
+            inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+            inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
         }
 
         cachedOnApplyClicked = null;
@@ -978,5 +1723,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         cachedRefreshKeyBindRows = null;
         cachedExecuteResetAll = null;
         cachedCancelResetAll = null;
+        cachedOnTabShift = null;
+        cachedOnUICancel = null;
+        cachedOnInputDeviceChanged = null;
+
+        cursorBoxUI?.HideImmediately();
+        cursorBoxUI = null;
     }
 }

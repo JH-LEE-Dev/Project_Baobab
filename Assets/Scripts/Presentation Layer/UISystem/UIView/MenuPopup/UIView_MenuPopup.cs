@@ -166,6 +166,8 @@ public class UIView_MenuPopup : UIView
     {
         base.OnShow();
 
+        viewCtx?.inputManager?.SetInputMode(EInputMode.UI);
+
         Sound.RequestAudioDuck();
 
         if (false == isInitialOpen)
@@ -236,6 +238,8 @@ public class UIView_MenuPopup : UIView
 
     protected override void OnHide()
     {
+        viewCtx?.inputManager?.SetInputMode(EInputMode.Gameplay);
+
         base.OnHide();
 
         Sound.ReleaseAudioDuck();

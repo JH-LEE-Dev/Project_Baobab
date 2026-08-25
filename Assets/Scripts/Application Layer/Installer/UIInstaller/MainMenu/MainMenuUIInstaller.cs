@@ -57,6 +57,9 @@ public class MainMenuUIInstaller : MonoBehaviour
 
         inputManager.inputReader.ESCButtonPressedEvent -= EscButtonPressed;
         inputManager.inputReader.ESCButtonPressedEvent += EscButtonPressed;
+
+        inputManager.inputReader.UICancelEvent -= EscButtonPressed;
+        inputManager.inputReader.UICancelEvent += EscButtonPressed;
     }
 
     private void EscButtonPressed()

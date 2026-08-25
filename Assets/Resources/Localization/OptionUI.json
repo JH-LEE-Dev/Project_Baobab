@@ -1,4 +1,4 @@
-﻿{
+{
   "jsonId": 9,
   "entries": [
     {
@@ -119,6 +119,28 @@
       "zhHans": "日本語",
       "zhHant": "日本語",
       "ja": "日本語",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 112,
+      "key": "GamepadIconAuto",
+      "kr": "자동",
+      "en": "Auto",
+      "zhHans": "自动",
+      "zhHant": "自動",
+      "ja": "自動",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 113,
+      "key": "GamepadIconGeneric",
+      "kr": "일반",
+      "en": "Generic",
+      "zhHans": "通用",
+      "zhHant": "通用",
+      "ja": "汎用",
       "enumType": "",
       "enumValue": ""
     },
@@ -262,6 +284,28 @@
       "zhHans": "音效音量",
       "zhHant": "音效音量",
       "ja": "SE音量",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 214,
+      "key": "GamepadIconPreference",
+      "kr": "게임패드 버튼 표기",
+      "en": "Gamepad Button Icons",
+      "zhHans": "手柄按键图标",
+      "zhHant": "控制器按鍵圖示",
+      "ja": "ボタン表記",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 215,
+      "key": "HapticStrength",
+      "kr": "컨트롤러 진동",
+      "en": "Vibration Strength",
+      "zhHans": "手柄震动",
+      "zhHant": "控制器震動",
+      "ja": "コントローラーの振動",
       "enumType": "",
       "enumValue": ""
     },

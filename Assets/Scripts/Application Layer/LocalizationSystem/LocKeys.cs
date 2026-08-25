@@ -310,6 +310,8 @@ public static class LocKeys
         public const int languageChineseSimplified = 18874477;
         public const int languageChineseTraditional = 18874478;
         public const int languageJapanese = 18874479;
+        public const int gamepadIconAuto = 18874480;
+        public const int gamepadIconGeneric = 18874481;
         public const int language = 18874569;
         public const int resolution = 18874570;
         public const int windowMode = 18874571;
@@ -323,6 +325,8 @@ public static class LocKeys
         public const int masterVolume = 18874579;
         public const int bGMVolume = 18874580;
         public const int sFXVolume = 18874581;
+        public const int gamepadIconPreference = 18874582;
+        public const int hapticStrength = 18874583;
         public const int tabGameplay = 18874669;
         public const int tabSound = 18874670;
         public const int tabGraphic = 18874671;

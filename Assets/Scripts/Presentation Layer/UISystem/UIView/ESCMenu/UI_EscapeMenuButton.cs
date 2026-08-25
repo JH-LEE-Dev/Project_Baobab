@@ -14,10 +14,9 @@ using Coffee.UIEffects;
 /// 호버 및 클릭 시 Y 스케일이 살짝 찌부되었다가 뽀잉 원복되는 찰진 모션을 제공합니다.
 /// 퇴장 시에는 역순으로 찌부되며 페이드아웃됩니다.
 /// </summary>
-public class UI_EscapeMenuButton : MonoBehaviour,
+public class UI_EscapeMenuButton : Selectable,
     IPointerClickHandler,
-    IPointerEnterHandler,
-    IPointerExitHandler
+    ISubmitHandler
 {
     [Header("UI Component References")]
     [SerializeField] private Image raycastImage;
@@ -53,6 +52,7 @@ public class UI_EscapeMenuButton : MonoBehaviour,
     [SerializeField] private Ease shadowEase = Ease.OutQuad;
 
     private Action onClickAction;
+    private InputManager inputManager;
     private bool isInteractable = true;
     private bool isHovered = false;
     private bool isAppearing = false;
@@ -95,8 +95,11 @@ public class UI_EscapeMenuButton : MonoBehaviour,
     public float AppearDuration => appearDuration;
     public float DisappearDuration => disappearDuration;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+        transition = Transition.None;
+
         if (null == cachedRectTransform)
             cachedRectTransform = GetComponent<RectTransform>();
 
@@ -127,8 +130,9 @@ public class UI_EscapeMenuButton : MonoBehaviour,
         onAppearCompleteCallback = OnAppearAnimationComplete;
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
+        base.OnDisable();
         isHovered = false;
         isAppearing = false;
 
@@ -150,8 +154,9 @@ public class UI_EscapeMenuButton : MonoBehaviour,
         }
     }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
         KillTweens();
         onClickAction = null;
         getShadowColorDelegate = null;
@@ -160,9 +165,10 @@ public class UI_EscapeMenuButton : MonoBehaviour,
         onAppearCompleteCallback = null;
     }
 
-    public void Initialize(Action _onClick)
+    public void Initialize(Action _onClick, InputManager _inputManager = null)
     {
         onClickAction = _onClick;
+        inputManager = _inputManager;
     }
 
     public void SetText(string _text)
@@ -364,6 +370,9 @@ public class UI_EscapeMenuButton : MonoBehaviour,
         if (false == isInteractable || false == gameObject.activeInHierarchy || true == isAppearing)
             return;
 
+        if (null != inputManager && true == inputManager.IsGamepadMode)
+            return;
+
         Vector2 _mousePos = Vector2.zero;
         if (null != Mouse.current)
         {
@@ -400,20 +409,45 @@ public class UI_EscapeMenuButton : MonoBehaviour,
         }
     }
 
-    public void OnPointerEnter(PointerEventData _eventData)
+    public override void OnPointerEnter(PointerEventData _eventData)
     {
+        base.OnPointerEnter(_eventData);
         isHovered = true;
         if (false == isInteractable || true == isAppearing) return;
 
         PlayHoverAnimation();
     }
 
-    public void OnPointerExit(PointerEventData _eventData)
+    public override void OnPointerExit(PointerEventData _eventData)
     {
+        base.OnPointerExit(_eventData);
         isHovered = false;
         if (false == isInteractable || true == isAppearing) return;
 
         PlayUnhoverAnimation();
+    }
+
+    public override void OnSelect(BaseEventData _eventData)
+    {
+        base.OnSelect(_eventData);
+        isHovered = true;
+        if (false == isInteractable || true == isAppearing) return;
+
+        PlayHoverAnimation();
+    }
+
+    public override void OnDeselect(BaseEventData _eventData)
+    {
+        base.OnDeselect(_eventData);
+        isHovered = false;
+        if (false == isInteractable || true == isAppearing) return;
+
+        PlayUnhoverAnimation();
+    }
+
+    public void OnSubmit(BaseEventData _eventData)
+    {
+        OnPointerClick(null);
     }
 
     public void OnPointerClick(PointerEventData _eventData)

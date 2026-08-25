@@ -1,5 +1,7 @@
-using UnityEngine;
 using System;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 /// <summary>
 /// 옵션 창 상단의 탭 목록과 각 패널의 활성/비활성을 관리하는 그룹 컨트롤러입니다.
@@ -32,6 +34,12 @@ public class UI_OptionTabGroup : MonoBehaviour
                 {
                     tabs[i].tabButton.SetText(_tabTexts[i]);
                 }
+
+                Navigation _nav = new Navigation();
+                _nav.mode = Navigation.Mode.Explicit;
+                _nav.selectOnLeft = tabs[(i - 1 + tabs.Length) % tabs.Length].tabButton;
+                _nav.selectOnRight = tabs[(i + 1) % tabs.Length].tabButton;
+                tabs[i].tabButton.navigation = _nav;
             }
         }
 
@@ -55,14 +63,58 @@ public class UI_OptionTabGroup : MonoBehaviour
         }
     }
 
+    public int CurrentTabIndex { get; private set; } = 0;
+    public int TabCount => null != tabs ? tabs.Length : 0;
+
+    public void SetCursorBoxUI(ICursorBoxUI _cursorBoxUI, InputManager _inputManager = null)
+    {
+        if (null == tabs) return;
+        for (int i = 0; tabs.Length > i; i++)
+        {
+            if (null != tabs[i].tabButton)
+            {
+                tabs[i].tabButton.SetCursorBoxUI(_cursorBoxUI, _inputManager);
+            }
+        }
+    }
+
+    public UI_OptionTabButton GetTabButton(int _index)
+    {
+        if (null != tabs && 0 <= _index && tabs.Length > _index) return tabs[_index].tabButton;
+        return null;
+    }
+
+    public GameObject GetTabPanel(int _index)
+    {
+        if (null != tabs && 0 <= _index && tabs.Length > _index) return tabs[_index].tabPanel;
+        return null;
+    }
+
     public void OnTabClicked(int _index)
     {
         SelectTab(_index);
     }
 
-    private void SelectTab(int _selectedIndex)
+    public void ShiftTab(int _delta)
+    {
+        if (null == tabs || 0 == tabs.Length) return;
+        int _newIndex = (CurrentTabIndex + _delta) % tabs.Length;
+        if (0 > _newIndex) _newIndex += tabs.Length;
+        SelectTab(_newIndex);
+        Sound.PlayUI(SoundID.MainButtonHover);
+        if (null != tabs[_newIndex].tabButton && true == tabs[_newIndex].tabButton.gameObject.activeInHierarchy)
+        {
+            EventSystem.current?.SetSelectedGameObject(tabs[_newIndex].tabButton.gameObject);
+        }
+    }
+
+    public event Action<int> OnTabChanged;
+
+    public void SelectTab(int _selectedIndex)
     {
         if (null == tabs) return;
+
+        CurrentTabIndex = _selectedIndex;
 
         for (int i = 0; tabs.Length > i; i++)
         {
@@ -77,5 +129,7 @@ public class UI_OptionTabGroup : MonoBehaviour
                 tabs[i].tabButton.SetSelected(_isSelected);
             }
         }
+
+        OnTabChanged?.Invoke(_selectedIndex);
     }
 }

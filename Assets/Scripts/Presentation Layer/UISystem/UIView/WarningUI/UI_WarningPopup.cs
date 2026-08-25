@@ -1,5 +1,7 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
 
@@ -29,8 +31,11 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 
     private ICursorBoxUI cursorBoxUI;
     private UIDepthController depthController;
+    private InputManager inputManager;
     private Action onConfirmAction;
     private Action onCancelAction;
+    private Action cachedOnUICancel;
+    private GameObject previousSelectedGameObject;
     private SoundID openSoundId = SoundID.None;
     private SoundID closeSoundId = SoundID.None;
     private SoundID hoverSoundId = SoundID.None;
@@ -55,6 +60,11 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         {
             originalRootAnchoredPosition = popupWindowRoot.anchoredPosition;
         }
+
+        if (null == cachedOnUICancel)
+        {
+            cachedOnUICancel = OnCancelButtonClicked;
+        }
     }
 
     private void OnDestroy()
@@ -63,10 +73,19 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         depthController?.UnregisterView(this);
         KillSequence();
         HideCursor();
+
+        if (null != inputManager && null != inputManager.inputReader && null != cachedOnUICancel)
+        {
+            inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+        }
+
         onConfirmAction = null;
         onCancelAction = null;
+        cachedOnUICancel = null;
+        previousSelectedGameObject = null;
         cursorBoxUI = null;
         depthController = null;
+        inputManager = null;
     }
 
     public void Initialize(UIViewContext _ctx)
@@ -80,7 +99,13 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         {
             cursorBoxUI = _ctx.cursorBoxUI;
             depthController = _ctx.depthController;
+            inputManager = _ctx.inputManager;
             isInitialized = true;
+        }
+
+        if (null == cachedOnUICancel)
+        {
+            cachedOnUICancel = OnCancelButtonClicked;
         }
     }
 
@@ -100,6 +125,14 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         SoundID _closeSoundId = SoundID.None,
         SoundID _hoverSoundId = SoundID.None)
     {
+        previousSelectedGameObject = EventSystem.current?.currentSelectedGameObject;
+
+        if (null != inputManager && null != inputManager.inputReader && null != cachedOnUICancel)
+        {
+            inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+            inputManager.inputReader.UICancelEvent += cachedOnUICancel;
+        }
+
         if (null != messageText)
             messageText.text = _message;
 
@@ -119,10 +152,56 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
             cancelButton.Initialize(OnCancelButtonClicked, PlayHoverSound, this);
         }
 
+        if (null != confirmButton && null != cancelButton && true == cancelButton.gameObject.activeSelf)
+        {
+            Navigation _confirmNav = new Navigation
+            {
+                mode = Navigation.Mode.Explicit,
+                selectOnRight = cancelButton,
+                selectOnLeft = cancelButton,
+                selectOnUp = confirmButton,
+                selectOnDown = confirmButton
+            };
+            Navigation _cancelNav = new Navigation
+            {
+                mode = Navigation.Mode.Explicit,
+                selectOnLeft = confirmButton,
+                selectOnRight = confirmButton,
+                selectOnUp = cancelButton,
+                selectOnDown = cancelButton
+            };
+            confirmButton.navigation = _confirmNav;
+            cancelButton.navigation = _cancelNav;
+        }
+        else if (null != confirmButton)
+        {
+            Navigation _confirmNav = new Navigation
+            {
+                mode = Navigation.Mode.Explicit,
+                selectOnRight = confirmButton,
+                selectOnLeft = confirmButton,
+                selectOnUp = confirmButton,
+                selectOnDown = confirmButton
+            };
+            confirmButton.navigation = _confirmNav;
+        }
+
         depthController?.RegisterView(this);
 
         PlayConfiguredSound(openSoundId);
         PlayOpenProduction();
+
+        if (null != inputManager && true == inputManager.IsGamepadMode)
+        {
+            if (null != confirmButton && true == confirmButton.gameObject.activeInHierarchy)
+            {
+                if (null != EventSystem.current)
+                {
+                    EventSystem.current.SetSelectedGameObject(confirmButton.gameObject);
+                }
+                OnButtonHovered(confirmButton);
+            }
+        }
     }
 
     #region Button Event Handling
@@ -132,6 +211,9 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         if (null == cursorBoxUI || null == _button)
             return;
 
+        if (null != inputManager && false == inputManager.IsGamepadMode)
+            return;
+
         RectTransform targetRect = _button.GetCursorTargetRect();
         if (null == targetRect)
             return;
@@ -139,7 +221,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         Vector2 size = _button.GetCursorSize();
         Vector2 offset = _button.GetCursorOffset();
 
-        cursorBoxUI.Show(targetRect, size, offset);
+        cursorBoxUI.Show(targetRect, size, offset, CursorMotionSettings.Subtle);
     }
 
     public void OnButtonUnhovered(UI_WarningPopupButton _button)
@@ -194,6 +276,59 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         }
 
         gameObject.SetActive(false);
+        RestorePreviousFocus();
+    }
+
+    private void RestorePreviousFocus()
+    {
+        if (null != inputManager && null != inputManager.inputReader && null != cachedOnUICancel)
+        {
+            inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+        }
+
+        if (null != previousSelectedGameObject && true == previousSelectedGameObject.activeInHierarchy)
+        {
+            if (null != EventSystem.current)
+            {
+                EventSystem.current.SetSelectedGameObject(previousSelectedGameObject);
+            }
+
+            if (null != inputManager && true == inputManager.IsGamepadMode)
+            {
+                UI_OptionButton _ob = previousSelectedGameObject.GetComponent<UI_OptionButton>();
+                if (null != _ob)
+                {
+                    _ob.ShowCursor();
+                }
+                else
+                {
+                    UI_OptionSelector _os = previousSelectedGameObject.GetComponent<UI_OptionSelector>();
+                    if (null != _os)
+                    {
+                        _os.ShowCursor();
+                        _os.ApplyFocusVisual(true);
+                    }
+                    else
+                    {
+                        UI_OptionSlider _osl = previousSelectedGameObject.GetComponent<UI_OptionSlider>();
+                        if (null != _osl)
+                        {
+                            _osl.ShowCursor();
+                            _osl.ApplyFocusVisual(true);
+                        }
+                        else
+                        {
+                            UI_OptionTabButton _otb = previousSelectedGameObject.GetComponent<UI_OptionTabButton>();
+                            if (null != _otb)
+                            {
+                                _otb.ShowCursor();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        previousSelectedGameObject = null;
     }
 
     private void OnConfirmButtonClicked()
@@ -257,6 +392,17 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         {
             productionSequence.Join(dimCanvasGroup.DOFade(dimTargetAlpha, dimAnimationDuration));
         }
+
+        productionSequence.OnComplete(() =>
+        {
+            if (null != inputManager && true == inputManager.IsGamepadMode)
+            {
+                if (null != confirmButton && true == confirmButton.gameObject.activeInHierarchy)
+                {
+                    EventSystem.current?.SetSelectedGameObject(confirmButton.gameObject);
+                }
+            }
+        });
     }
 
     private void PlayCloseProduction()
@@ -299,6 +445,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     private void OnCloseProductionComplete()
     {
         gameObject.SetActive(false);
+        RestorePreviousFocus();
     }
 
     private void KillSequence()

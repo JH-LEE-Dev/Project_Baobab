@@ -17,11 +17,13 @@ public class UI_PressAnyKey : MonoBehaviour
     [SerializeField] private float minAlpha = 0.2f;
 
     private UIView_MainMenu parentView;
+    private InputManager inputManager;
     private bool isWaitingForInput = false;
 
-    public void Initialize(UIView_MainMenu _parentView)
+    public void Initialize(UIView_MainMenu _parentView, InputManager _inputManager = null)
     {
         parentView = _parentView;
+        inputManager = _inputManager;
         
         if (null != pressAnyKeyText)
         {
@@ -61,32 +63,39 @@ public class UI_PressAnyKey : MonoBehaviour
 
         bool _anyInputReceived = false;
 
-        // 키보드 아무 키 입력 감지 (New Input System)
-        if (null != Keyboard.current && Keyboard.current.anyKey.wasPressedThisFrame)
+        if (null != inputManager)
         {
-            _anyInputReceived = true;
+            _anyInputReceived = inputManager.AnyInputThisFrame;
         }
-        // 마우스 클릭 감지
-        else if (null != Mouse.current && (Mouse.current.leftButton.wasPressedThisFrame || Mouse.current.rightButton.wasPressedThisFrame))
+        else
         {
-            _anyInputReceived = true;
-        }
-        // 게임패드 아무 버튼 감지
-        else if (null != Gamepad.current)
-        {
-            var _controls = Gamepad.current.allControls;
-            for (int i = 0; i < _controls.Count; i++)
+            // 키보드 아무 키 입력 감지 (New Input System)
+            if (null != Keyboard.current && Keyboard.current.anyKey.wasPressedThisFrame)
             {
-                if (_controls[i] is UnityEngine.InputSystem.Controls.ButtonControl _button && _button.wasPressedThisFrame)
+                _anyInputReceived = true;
+            }
+            // 마우스 클릭 감지
+            else if (null != Mouse.current && (Mouse.current.leftButton.wasPressedThisFrame || Mouse.current.rightButton.wasPressedThisFrame))
+            {
+                _anyInputReceived = true;
+            }
+            // 게임패드 아무 버튼 감지
+            else if (null != Gamepad.current)
+            {
+                var _controls = Gamepad.current.allControls;
+                for (int i = 0; i < _controls.Count; i++)
                 {
-                    _anyInputReceived = true;
-                    break;
+                    if (_controls[i] is UnityEngine.InputSystem.Controls.ButtonControl _button && _button.wasPressedThisFrame)
+                    {
+                        _anyInputReceived = true;
+                        break;
+                    }
                 }
             }
         }
 
         // 입력이 감지되면 메인 메뉴로 전환
-        if (_anyInputReceived)
+        if (true == _anyInputReceived)
         {
             isWaitingForInput = false;
             if (null != parentView)
