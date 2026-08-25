@@ -141,6 +141,10 @@ public class GameInstaller : MonoBehaviour
 
         cameraManager.ResetCamera();
 
+        // 패드 가상 커서는 마을에서만 쓴다. 던전은 전투 중이라 오른쪽 스틱이 조준에 매여 있고,
+        // 화면의 임의 지점을 집어야 할 일도 없다. 씬을 넘어갈 때 켜져 있던 커서를 내리는 것도 여기서 함께 처리된다.
+        inputManager.SetVirtualCursorAvailable(_sceneChangeData.currentScene != SceneType.DungeonScene);
+
         if (_sceneChangeData.currentScene == SceneType.DungeonScene)
         {
             environmentSystem.SetupForMapType(_sceneChangeData.forestType, _sceneChangeData.mapType);

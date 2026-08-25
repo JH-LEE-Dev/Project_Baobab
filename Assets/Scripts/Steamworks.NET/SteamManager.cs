@@ -93,10 +93,13 @@ public class SteamManager : MonoBehaviour {
 			// Note that this will run which ever version you have installed in steam. Which may not be the precise executable
 			// we were currently running.
 
-			// Once you get a Steam AppID assigned by Valve, you need to replace AppId_t.Invalid with it and
-			// remove steam_appid.txt from the game depot. eg: "(AppId_t)480" or "new AppId_t(480)".
+			// 주의: 배포 depot에는 steam_appid.txt를 넣지 말 것.
+			// 그 파일은 Steam을 거치지 않고 실행해도 API를 쓸 수 있게 해주는 개발용 우회 수단이라,
+			// 함께 배포되면 아래 소유권 확인이 통째로 무의미해진다. 개발 머신에만 두면 된다.
 			// See the Valve documentation for more information: https://partner.steamgames.com/doc/sdk/api#initialization_and_shutdown
-			if (SteamAPI.RestartAppIfNecessary(AppId_t.Invalid)) {
+			// 앱 ID는 BuildInfo가 갖는다. 데모/정식이 서로 다른 Steam 앱이라 여기서 상수로 박아두면
+			// 세이브 변형과 어긋난다. (BuildInfo.SteamAppId 주석 참고)
+			if (SteamAPI.RestartAppIfNecessary(new AppId_t(BuildInfo.SteamAppId))) {
 				Debug.Log("[Steamworks.NET] Shutting down because RestartAppIfNecessary returned true. Steam will restart the application.");
 
 				Application.Quit();

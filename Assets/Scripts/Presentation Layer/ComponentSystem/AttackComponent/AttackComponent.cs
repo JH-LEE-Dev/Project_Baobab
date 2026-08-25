@@ -30,21 +30,27 @@ public class AttackComponent : PComponent
     private const int OverheatDotTickCount = 6;
     private const float OverheatDotTickInterval = 0.5f;
 
-    [Header("Aim Correction")]
-    [SerializeField] private float aimCorrectionRadius = 1.0f; // 조준 보정 탐색 반경
-    [SerializeField] private LayerMask aimCorrectionLayer; // 조준 보정 대상 레이어
-
     [SerializeField] private Transform attackPointTransform;
     private Transform componentCenterTransform;
 
     //최적화를 위한 재사용 컬렉션
     private List<IStaticCollidable> collisionResults = new List<IStaticCollidable>(16);
-    private List<IStaticCollidable> correctionResults = new List<IStaticCollidable>(16);
     private List<IStaticCollidable> multiAttackResults = new List<IStaticCollidable>(16);
     private List<TreeObj> currentlyDetectedTrees = new List<TreeObj>(16);
     private List<TreeObj> previouslyDetectedTrees = new List<TreeObj>(16);
 
     private WeaponMode currentWeaponMode = WeaponMode.Axe;
+
+    [Header("Gamepad Aim")]
+    [SerializeField, Tooltip("패드 조준 시 캐릭터로부터 조준점을 띄울 거리. 게임플레이에는 영향이 없고 " +
+        "기즈모·디버깅에서만 보인다. 조준점을 읽는 코드가 전부 '방향'만 쓰기 때문이다.")]
+    private float gamepadAimRadius = 1.25f;
+
+    // 스틱 중립 근처의 노이즈를 조준으로 치지 않기 위한 하한. 장치 전환 문턱값(0.5)보다 낮은데,
+    // 여기서는 "패드를 쓰는 중"이 이미 확정된 상태라 더 미세한 조준까지 받아야 하기 때문이다.
+    private const float GamepadAimDeadzoneSqr = 0.04f; // 0.2^2
+
+    private Vector2 aimStickDirection = Vector2.zero;
 
     private bool bAttack = false;
     private bool bCanRotate = true;
@@ -121,6 +127,9 @@ public class AttackComponent : PComponent
 
         ctx.inputManager.inputReader.MouseMoveEvent -= MouseMove;
         ctx.inputManager.inputReader.MouseMoveEvent += MouseMove;
+
+        ctx.inputManager.inputReader.AimEvent -= AimStickMoved;
+        ctx.inputManager.inputReader.AimEvent += AimStickMoved;
     }
 
     private void ReleaseEvents()
@@ -129,6 +138,41 @@ public class AttackComponent : PComponent
             return;
 
         ctx.inputManager.inputReader.MouseMoveEvent -= MouseMove;
+        ctx.inputManager.inputReader.AimEvent -= AimStickMoved;
+    }
+
+    /// <summary>
+    /// 패드 조준 스틱 입력입니다. 방향만 기억하고, 실제 적용은 매 프레임 UpdateGamepadAim에서 합니다.
+    ///
+    /// 스틱을 중립으로 놓아도 방향을 지우지 않는 것이 중요합니다. 지우면 손을 떼는 순간
+    /// 캐릭터가 조준을 잃고 엉뚱한 방향으로 돌아가 버립니다. 마지막으로 겨눈 방향을 유지해야 합니다.
+    /// </summary>
+    private void AimStickMoved(Vector2 _stick)
+    {
+        if (_stick.sqrMagnitude < GamepadAimDeadzoneSqr)
+            return;
+
+        aimStickDirection = _stick.normalized;
+    }
+
+    /// <summary>
+    /// 패드 조준을 매 프레임 다시 계산합니다.
+    ///
+    /// 매 프레임이어야 하는 이유가 마우스와 다릅니다. 마우스 조준점은 월드에 고정이지만,
+    /// 패드 조준점은 "캐릭터로부터 일정 거리"라는 상대 좌표라서 캐릭터가 움직이면 같이 따라와야
+    /// 합니다. 게다가 스틱을 기울인 채 가만히 있으면 입력 이벤트가 오지 않으므로,
+    /// 이벤트에만 의존하면 조준점이 뒤처집니다.
+    /// </summary>
+    private void UpdateGamepadAim()
+    {
+        if (aimStickDirection == Vector2.zero) return;
+        if (ctx == null || ctx.inputManager == null) return;
+
+        // 마우스를 쓰는 동안에는 패드 조준이 끼어들지 않아야 한다.
+        if (EInputDeviceType.Gamepad != ctx.inputManager.CurrentDevice) return;
+
+        Vector3 _aimWorldPos = transform.position + (Vector3)(aimStickDirection * gamepadAimRadius);
+        ApplyAimWorldPosition(_aimWorldPos);
     }
 
     private void MouseMove(Vector2 _mouseScreenPos)
@@ -169,26 +213,23 @@ public class AttackComponent : PComponent
         Vector3 mouseWorldPos = mainCamera.ScreenToWorldPoint(_convertedMousePos);
         mouseWorldPos.z = 0;
 
-        // 4. 조준 보정 (Aim Correction)
-        if (CollisionSystem.Instance != null)
-        {
-            CollisionSystem.Instance.GetCollidablesInRadius(mouseWorldPos, aimCorrectionRadius, aimCorrectionLayer, correctionResults);
-            if (correctionResults.Count > 0)
-            {
-                float minDistSqr = float.MaxValue;
-                Vector2 bestPos = mouseWorldPos;
-                bool found = false;
+        ApplyAimWorldPosition(mouseWorldPos);
+    }
 
-                for (int i = 0; i < correctionResults.Count; i++)
-                {
-                    Vector2 targetPos = correctionResults[i].Position + correctionResults[i].Offset;
-                    float dSqr = (targetPos - (Vector2)mouseWorldPos).sqrMagnitude;
-                    if (dSqr < minDistSqr) { minDistSqr = dSqr; bestPos = targetPos; found = true; }
-                }
-                if (found) mouseWorldPos = (Vector3)bestPos;
-            }
-        }
+    /// <summary>
+    /// 조준 지점을 캐릭터 기준의 방향으로 바꿔 실제로 적용합니다.
+    /// 마우스(화면 좌표 → 월드 좌표)와 패드(스틱 방향 → 월드 좌표)가 이 지점에서 합류합니다.
+    ///
+    /// 조준 보정(에임 어시스트)은 쓰지 않기로 확정되어 제거했습니다. 마우스든 패드든
+    /// 유저가 가리킨 방향을 그대로 따릅니다.
+    /// </summary>
+    private void ApplyAimWorldPosition(Vector3 _aimWorldPos)
+    {
+        // 각 진입점이 스스로를 지키도록 여기서도 검사한다. (패드 경로는 카메라를 거치지 않고 바로 들어온다)
+        if (bCursorEnable == false || Time.timeScale == 0f)
+            return;
 
+        Vector3 mouseWorldPos = _aimWorldPos;
         Vector3 centerPos = transform.position;
         Vector3 direction = mouseWorldPos - centerPos;
 
@@ -204,25 +245,21 @@ public class AttackComponent : PComponent
             {
                 mouseWorldPos = centerPos + Vector3.right * 0.1f;
             }
-            direction = mouseWorldPos - centerPos;
         }
 
         mouseTransform = mouseWorldPos;
 
-        // 6. 일정 거리(Radius) 무조건 유지
-        if (direction.sqrMagnitude > 0.0001f)
-        {
-            direction = direction.normalized * maxAttackDistance;
-        }
-        else
-        {
-            Vector3 currentOffset = attackPointTransform.position - centerPos;
-            direction = (currentOffset.sqrMagnitude > 0.0001f)
-                ? currentOffset.normalized * maxAttackDistance
-                : Vector3.right * maxAttackDistance;
-        }
-
-        // 7. 위치 업데이트 (계산된 오프셋 적용)
+        // 6. 위치 업데이트
+        //
+        // 예전에는 여기에 "캐릭터로부터 maxAttackDistance만큼 떨어진 지점으로 고정"하는 계산이
+        // 있었지만, 그 결과가 담긴 지역 변수를 한 번도 쓰지 않고 아래 줄이 mouseWorldPos를 그대로
+        // 대입해 버려서 실제로는 아무 효과가 없었다. 혼동을 없애려고 그 계산을 걷어냈다.
+        //
+        // 지워도 안전한 이유: attackPointTransform의 위치를 읽는 살아있는 코드(Attack,
+        // UpdateIndicator, DetectNearestTarget, Character.UpdateFacingByAttackPoint,
+        // Character.UpdateDroneFormation, ArmComponent.UpdateRotation/UpdatePositionOffset,
+        // AxeComponent.SetFacingDir)는 전부 centerPos로부터의 "방향"만 정규화해서 쓰고
+        // 거리는 읽지 않는다. 즉 그 계산을 되살리든 말든 게임 동작은 동일하다.
         attackPointTransform.position = mouseWorldPos;
     }
 
@@ -463,6 +500,7 @@ public class AttackComponent : PComponent
 
     private void Update()
     {
+        UpdateGamepadAim();
         UpdateIndicator();
 
         detectionTimer += Time.deltaTime;
@@ -655,10 +693,6 @@ public class AttackComponent : PComponent
             Gizmos.DrawLine(centerPos, centerPos + leftBoundary);
             Gizmos.DrawLine(centerPos, centerPos + rightBoundary);
         }
-
-        // 조준 보정 범위 시각화
-        Gizmos.color = new Color(0, 0.5f, 1f, 0.3f);
-        Gizmos.DrawWireSphere(mouseTransform, aimCorrectionRadius);
     }
 
     public Transform GetAttackPointTransform()

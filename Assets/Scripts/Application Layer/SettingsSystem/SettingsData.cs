@@ -64,6 +64,20 @@ public enum EResolution
 public enum EFPS { FPS60, FPS75, FPS120, FPS144, FPS165, FPS240, VSync, Unlimited }
 
 /// <summary>
+/// 패드 버튼 아이콘을 어느 벤더 표기로 그릴지에 대한 "유저 설정"입니다.
+/// 런타임 판별 결과인 EGamepadIconSet과는 별개의 타입인데, 이쪽에만 Auto가 있기 때문입니다.
+/// (Auto = 자동 판별에 맡김. 나머지는 판별 결과를 무시하고 그 표기로 고정)
+///
+/// Auto가 아닌 선택지가 반드시 필요한 이유: Steam Input이 켜져 있으면 DualSense도 XInput
+/// 가상 패드로 위장해서 들어와 자동 판별이 Xbox로 나옵니다. 어떤 판별 로직으로도 뚫을 수
+/// 없으므로 유저가 직접 고를 수단이 있어야 합니다.
+///
+/// 주의: 다른 옵션 enum과 마찬가지로 정수값이 그대로 Settings.json에 직렬화됩니다.
+/// 기존 항목의 순서를 바꾸거나 중간에 삽입하지 마세요. Auto는 기본값이므로 반드시 0입니다.
+/// </summary>
+public enum EGamepadIconPreference { Auto, Xbox, PlayStation, Nintendo, Generic }
+
+/// <summary>
 /// 환경설정 값 전체를 담는 데이터 모델입니다.
 /// UI가 아닌 SettingsManager가 소유하며, UI는 이 값을 읽어 표시만 합니다.
 /// 여기 담긴 값은 "유저가 선택한 원본"이며, 현재 디스플레이 사정에 따른 보정은
@@ -88,6 +102,27 @@ public struct SettingsData
     public float bgmVolume;
     public float sfxVolume;
 
+    /// <summary>
+    /// 패드 버튼 아이콘 표기 설정입니다.
+    ///
+    /// 이 필드를 추가하면서 SettingsRepository의 버전을 올리지 않은 것은 의도적입니다.
+    /// JsonUtility는 키 이름으로 매칭하므로, 이 필드가 없는 구버전 파일을 읽어도 나머지 값은
+    /// 그대로 살아나고 이 값만 default(0 = Auto)가 됩니다. 버전을 올리면 파일이 통째로
+    /// 폐기되어(ESettingsLoadResult.Discarded) 유저의 해상도·볼륨 설정까지 날아갑니다.
+    /// </summary>
+    public EGamepadIconPreference gamepadIconPreference;
+
+    /// <summary>
+    /// 패드 진동 세기입니다. (0~100, 다른 슬라이더와 동일한 범위. 0 = 진동 끔)
+    /// gamepadIconPreference와 같은 이유로 SettingsRepository 버전을 올리지 않았습니다.
+    ///
+    /// 주의: 이 값은 "없음"과 "0(유저가 끔)"을 구분할 수 없습니다. 기본값이 SLIDER_MAX인데
+    /// 키가 없는 구버전 파일은 0으로 읽히므로, 그대로 두면 기존 유저의 진동이 조용히 꺼집니다.
+    /// 그래서 SettingsRepository.TryLoad가 JSON에 이 키가 있는지 직접 확인해 보정합니다.
+    /// (MIGRATION_KEY_HAPTIC_STRENGTH 참고)
+    /// </summary>
+    public float hapticStrength;
+
     public const float SLIDER_MIN = 0f;
     public const float SLIDER_MAX = 100f;
 
@@ -104,6 +139,7 @@ public struct SettingsData
     public const int WINDOW_MODE_COUNT = 2;
     public const int FPS_COUNT = 8;
     public const int ON_OFF_COUNT = 2;
+    public const int GAMEPAD_ICON_PREFERENCE_COUNT = 5;
 
     /// <summary>
     /// LocalizationManager가 실제로 처리할 수 있는 언어 수입니다.
@@ -130,7 +166,10 @@ public struct SettingsData
 
             masterVolume = SLIDER_MAX,
             bgmVolume = SLIDER_MIX_DEFAULT,
-            sfxVolume = SLIDER_MIX_DEFAULT
+            sfxVolume = SLIDER_MIX_DEFAULT,
+
+            gamepadIconPreference = EGamepadIconPreference.Auto,
+            hapticStrength = SLIDER_MAX
         };
     }
 
@@ -380,6 +419,7 @@ public struct SettingsData
         if ((int)windowMode < 0 || (int)windowMode >= WINDOW_MODE_COUNT) { windowMode = EWindowMode.Windowed; _corrected = true; }
         if ((int)fps < 0 || (int)fps >= FPS_COUNT) { fps = EFPS.Unlimited; _corrected = true; }
         if ((int)pauseOnUnfocus < 0 || (int)pauseOnUnfocus >= ON_OFF_COUNT) { pauseOnUnfocus = EOnOff.Off; _corrected = true; }
+        if ((int)gamepadIconPreference < 0 || (int)gamepadIconPreference >= GAMEPAD_ICON_PREFERENCE_COUNT) { gamepadIconPreference = EGamepadIconPreference.Auto; _corrected = true; }
 
         _corrected |= ClampSlider(ref cameraShake);
         _corrected |= ClampSlider(ref crosshairBrightness);
@@ -390,6 +430,8 @@ public struct SettingsData
         _corrected |= ClampSlider(ref masterVolume);
         _corrected |= ClampSlider(ref bgmVolume);
         _corrected |= ClampSlider(ref sfxVolume);
+
+        _corrected |= ClampSlider(ref hapticStrength);
 
         return _corrected;
     }

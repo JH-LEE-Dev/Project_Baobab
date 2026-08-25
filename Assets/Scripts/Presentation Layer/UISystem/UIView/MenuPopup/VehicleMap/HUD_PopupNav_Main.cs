@@ -1103,9 +1103,32 @@ public class HUD_PopupNav_Main : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 데모 제한을 적용해야 하는지입니다.
+    ///
+    /// 빌드에서는 인스펙터 값(isDemoVersion)을 보지 않고 BuildInfo만 따릅니다. 데모/정식은
+    /// 세이브 변형과 Steam 앱까지 갈리는 구분이라, 씬 값에 맡기면 체크를 깜빡한 채로
+    /// 업로드될 수 있기 때문입니다. 이제 BAOBAB_FULL_RELEASE 디파인 하나가 전부 결정합니다.
+    ///
+    /// 에디터에서는 인스펙터 토글로도 켤 수 있게 남겨둡니다. 디파인을 바꿔 재컴파일하지 않고도
+    /// 데모 제한이 걸린 화면을 확인할 수 있어야 하기 때문입니다.
+    /// (개발 중 기본값이 데모라 이 토글은 정식 빌드를 테스트할 때만 의미가 있습니다)
+    /// </summary>
+    private bool IsDemoRestrictionEnabled
+    {
+        get
+        {
+#if UNITY_EDITOR
+            return BuildInfo.IsDemo || isDemoVersion;
+#else
+            return BuildInfo.IsDemo;
+#endif
+        }
+    }
+
     public bool IsDemoRestrictedMapType(MapType _mapType)
     {
-        if (false == isDemoVersion) return false;
+        if (false == IsDemoRestrictionEnabled) return false;
         if (_mapType == MapType.None || _mapType == MapType.Town) return false;
         return _mapType > maxPlayableMapTypeInDemo;
     }

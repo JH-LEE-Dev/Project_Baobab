@@ -45,6 +45,9 @@ public class SettingsManager : MonoBehaviour
     /// <summary>포스트프로세싱·카메라 등 그래픽 관련 설정이 적용될 때 발생합니다.</summary>
     public event Action<SettingsData> OnGraphicsSettingsAppliedEvent;
 
+    /// <summary>입력 관련 설정(패드 아이콘 표기)을 하위 시스템이 가져가도록 알립니다. InputManager가 구독합니다.</summary>
+    public event Action<SettingsData> OnInputSettingsAppliedEvent;
+
     /// <summary>
     /// 실제 화면 크기(_width, _height)가 정해질 때(부팅 시 포함) 발생합니다.
     /// OnGraphicsSettingsAppliedEvent와 달리 Bootstrap에서도 발생하므로,
@@ -280,6 +283,56 @@ public class SettingsManager : MonoBehaviour
         MarkDisplayDirty();
     }
 
+    /// <summary>
+    /// 패드 아이콘 표기를 순환시킵니다. 화면 항목이 아니므로 MarkDisplayDirty가 아니라 isDirty만 세웁니다.
+    /// (여기서 화면 dirty를 세우면 표기만 바꿔도 해상도가 다시 적용되어 창 크기가 튑니다)
+    ///
+    /// 선택 즉시 화면의 아이콘이 바뀌어야 유저가 무엇을 고르는지 알 수 있으므로,
+    /// 볼륨 슬라이더와 같은 방식으로 여기서 곧바로 실시간 반영까지 합니다. (저장은 CommitChanges)
+    /// </summary>
+    public void CycleGamepadIconPreference(int _delta)
+    {
+        EnsureLoaded();
+
+        EGamepadIconPreference _next = (EGamepadIconPreference)IterateEnum((int)current.gamepadIconPreference, SettingsData.GAMEPAD_ICON_PREFERENCE_COUNT, _delta);
+        if (_next == current.gamepadIconPreference) return;
+
+        current.gamepadIconPreference = _next;
+        isDirty = true;
+
+        ApplyInputSettingsLive();
+    }
+
+    /// <summary>
+    /// 패드 진동 세기를 설정합니다. (0~100, 0 = 진동 끔)
+    /// 다른 슬라이더와 달리 여기서 곧바로 실시간 반영까지 하므로, UI는 이 메서드만 부르면 됩니다.
+    /// (조절하는 동안 실제로 패드가 울려야 세기를 가늠할 수 있기 때문입니다. 저장은 CommitChanges)
+    /// </summary>
+    public void SetHapticStrength(float _val)
+    {
+        EnsureLoaded();
+
+        if (Mathf.Approximately(_val, current.hapticStrength)) return;
+
+        current.hapticStrength = _val;
+        isDirty = true;
+
+        ApplyInputSettingsLive();
+    }
+
+    /// <summary>패드 아이콘 표기를 직접 지정합니다. (순환이 아닌 목록형 UI용)</summary>
+    public void SetGamepadIconPreference(EGamepadIconPreference _preference)
+    {
+        EnsureLoaded();
+
+        if (_preference == current.gamepadIconPreference) return;
+
+        current.gamepadIconPreference = _preference;
+        isDirty = true;
+
+        ApplyInputSettingsLive();
+    }
+
     public void SetCameraShake(float _val) { EnsureLoaded(); current.cameraShake = _val; isDirty = true; }
     public void SetCrosshairBrightness(float _val) { EnsureLoaded(); current.crosshairBrightness = _val; isDirty = true; }
     public void SetChromaticAberration(float _val) { EnsureLoaded(); current.chromaticAberration = _val; isDirty = true; }
@@ -308,6 +361,16 @@ public class SettingsManager : MonoBehaviour
     {
         EnsureLoaded();
         OnGraphicsSettingsAppliedEvent?.Invoke(current);
+    }
+
+    /// <summary>
+    /// 패드 아이콘 표기를 바꾸는 즉시 화면에 반영합니다. (옵션 창에서 선택하는 동안의 실시간 피드백용)
+    /// 저장은 하지 않으므로 CommitChanges와 별개이며, 창을 닫을 때 한 번 더 적용/저장됩니다.
+    /// </summary>
+    public void ApplyInputSettingsLive()
+    {
+        EnsureLoaded();
+        OnInputSettingsAppliedEvent?.Invoke(current);
     }
 
     private void MarkDisplayDirty()
@@ -354,6 +417,7 @@ public class SettingsManager : MonoBehaviour
         // 하위 시스템이 자기 몫을 가져가도록 알린다. (구독자가 없으면 아무 일도 일어나지 않음)
         OnAudioSettingsAppliedEvent?.Invoke(current);
         OnGraphicsSettingsAppliedEvent?.Invoke(current);
+        OnInputSettingsAppliedEvent?.Invoke(current);
     }
 
     /// <summary>
