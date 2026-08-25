@@ -162,7 +162,7 @@ public class UI_OptionSlider : Selectable, IMoveHandler
         }
     }
 
-    public bool IsInteractable => interactable && ((null != leftArrowButton && true == leftArrowButton.IsInteractable) || (null != rightArrowButton && true == rightArrowButton.IsInteractable) || (null != slider && true == slider.interactable));
+    public new bool IsInteractable => interactable && ((null != leftArrowButton && true == leftArrowButton.IsInteractable) || (null != rightArrowButton && true == rightArrowButton.IsInteractable) || (null != slider && true == slider.interactable));
 
     public void SetInteractable(bool _isInteractable)
     {

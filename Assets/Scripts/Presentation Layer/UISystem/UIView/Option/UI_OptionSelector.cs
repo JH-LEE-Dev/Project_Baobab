@@ -123,7 +123,7 @@ public class UI_OptionSelector : Selectable, IMoveHandler
         }
     }
 
-    public bool IsInteractable => interactable && ((null != leftArrowButton && true == leftArrowButton.IsInteractable) || (null != rightArrowButton && true == rightArrowButton.IsInteractable));
+    public new bool IsInteractable => interactable && ((null != leftArrowButton && true == leftArrowButton.IsInteractable) || (null != rightArrowButton && true == rightArrowButton.IsInteractable));
 
     public void SetInteractable(bool _isInteractable)
     {

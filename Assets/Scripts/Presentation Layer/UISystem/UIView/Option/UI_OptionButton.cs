@@ -100,7 +100,7 @@ public class UI_OptionButton : Selectable,
         clickSoundId = _clickSoundId;
     }
 
-    public bool IsInteractable => isInteractable && interactable;
+    public new bool IsInteractable => isInteractable && interactable;
 
     public void SetInteractable(bool _isInteractable)
     {
