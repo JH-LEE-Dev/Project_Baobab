@@ -122,15 +122,6 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
-                },
-                {
-                    "name": "VirtualCursor",
-                    "type": "Button",
-                    "id": "7d4a1e60-2b93-4c57-9f18-6e0c3a5d82b1",
-                    "expectedControlType": "Button",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -428,17 +419,6 @@
                     "processors": "",
                     "groups": "",
                     "action": "ESC",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "0b6f9c14-3ad8-45e2-8c71-9f2d6e4a70c3",
-                    "path": "<Gamepad>/rightStickPress",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "VirtualCursor",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

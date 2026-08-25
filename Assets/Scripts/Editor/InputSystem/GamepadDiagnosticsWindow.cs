@@ -277,8 +277,8 @@ public class GamepadDiagnosticsWindow : EditorWindow
     /// 패드 가상 커서의 상태를 그대로 보여 줍니다.
     ///
     /// 이 항목이 필요한 이유: 커서를 화면에 그리는 일은 UI 작업자 몫이라, 그 작업이 끝나기 전까지는
-    /// 기능이 잘 도는지 눈으로 확인할 방법이 전혀 없습니다. 여기서 좌표가 스틱을 따라 움직이는 것만
-    /// 확인되면, 남은 것은 그 좌표에 그림을 얹는 일뿐입니다.
+    /// 기능이 잘 도는지 눈으로 확인할 방법이 전혀 없습니다. 특성 UI를 열고 여기서 좌표가 스틱을
+    /// 따라 움직이는 것만 확인되면, 남은 것은 그 좌표에 그림을 얹는 일뿐입니다.
     /// </summary>
     private void DrawVirtualCursor()
     {
@@ -306,15 +306,16 @@ public class GamepadDiagnosticsWindow : EditorWindow
             return;
         }
 
-        EditorGUILayout.LabelField("사용 가능", _cursor.IsAvailable ? "예 (마을)" : "아니오 (던전/메인 메뉴)");
-        EditorGUILayout.LabelField("켜짐", _cursor.IsActive ? "예" : "아니오");
+        EditorGUILayout.LabelField("요청됨", _cursor.IsRequested ? "예 (특성 UI 열림)" : "아니오");
+        EditorGUILayout.LabelField("켜짐", _cursor.IsActive ? "예" : "아니오  (요청 + 패드 사용 중이어야 켜짐)");
         EditorGUILayout.LabelField("화면 좌표", string.Format("{0:0.0}, {1:0.0}", _cursor.ScreenPosition.x, _cursor.ScreenPosition.y));
 
         Rect _bounds = _cursor.Bounds;
         EditorGUILayout.LabelField("이동 영역", string.Format("x {0:0} ~ {1:0}   y {2:0} ~ {3:0}", _bounds.xMin, _bounds.xMax, _bounds.yMin, _bounds.yMax));
 
         EditorGUILayout.HelpBox(
-            "토글은 오른쪽 스틱 누르기(R3)입니다. 마을에서만 켜지며, 마우스를 움직이면 스스로 꺼집니다.",
+            "별도의 토글 키는 없습니다. 특성 UI(TentUI)를 열면 요청되고, 그 상태에서 패드를 쓰는 중이면 " +
+            "화면 중앙에 켜집니다. 마우스를 움직이면 사라지고, 다시 패드를 잡으면 중앙에서 되살아납니다.",
             MessageType.None);
     }
 
@@ -325,11 +326,9 @@ public class GamepadDiagnosticsWindow : EditorWindow
         InputReader _reader = GetPreviewReader();
         if (null == _reader) return;
 
-        // 장치별 목록이 아니라 enum 전체를 돈다. 이 표의 목적이 "어느 장치에 무엇이 있는지"를
-        // 한눈에 보는 것이라, 한쪽에만 있는 항목(가상 커서 등)이 빠지면 안 되기 때문이다.
-        ERebindableAction[] _actions = (ERebindableAction[])System.Enum.GetValues(typeof(ERebindableAction));
+        System.Collections.Generic.IReadOnlyList<ERebindableAction> _actions = _reader.GetRebindableActions();
 
-        for (int i = 0; i < _actions.Length; i++)
+        for (int i = 0; i < _actions.Count; i++)
         {
             ERebindableAction _action = _actions[i];
 
@@ -340,7 +339,7 @@ public class GamepadDiagnosticsWindow : EditorWindow
             EditorGUILayout.LabelField(
                 _action.ToString(),
                 string.Format("{0}   |   {1}{2}",
-                    string.IsNullOrEmpty(_keyboard) ? "(없음)" : _keyboard,
+                    _keyboard,
                     string.IsNullOrEmpty(_gamepad) ? "(없음)" : _gamepad,
                     _rebindable ? "" : "  [고정]"));
         }
@@ -375,10 +374,11 @@ public class GamepadDiagnosticsWindow : EditorWindow
             "B5. 마우스를 움직이면 즉시 키보드 표기로 돌아오는가 (깜빡임 없이)\n" +
             "B6. 플레이 중 패드를 뽑으면 키보드 표기로 즉시 돌아오는가\n" +
             "B7. 알트탭으로 나갔을 때 진동이 멈추는가\n" +
-            "B8. 마을에서 R3(오른쪽 스틱 누르기) → 커서 좌표가 화면 중앙에서 시작하는가\n" +
-            "B9. 커서가 켜진 동안 오른쪽 스틱이 캐릭터 조준을 건드리지 않는가\n" +
-            "B10. 던전에서는 R3를 눌러도 커서가 켜지지 않는가\n" +
-            "B11. 패드로 조작하면 OS 커서가 사라지고, 마우스를 움직이면 다시 나타나는가",
+            "B8. 특성 UI를 패드로 열면 커서 좌표가 화면 중앙에서 시작하는가\n" +
+            "B9. 마우스로 특성 UI를 열면 가상 커서가 나오지 않는가\n" +
+            "B10. 특성 UI를 연 채 마우스↔패드를 오가면 커서가 사라졌다 중앙에서 되살아나는가\n" +
+            "B11. 특성 UI를 닫으면 커서 요청이 풀리는가\n" +
+            "B12. 패드로 조작하면 OS 커서가 사라지고, 마우스를 움직이면 다시 나타나는가",
             MessageType.None);
 
         EditorGUILayout.LabelField("C. 키 설정 화면 (패드)", EditorStyles.miniBoldLabel);
@@ -387,9 +387,7 @@ public class GamepadDiagnosticsWindow : EditorWindow
             "C2. 키보드 항목 변경 중 패드 버튼을 눌러도 잡히지 않는가\n" +
             "C3. 패드 항목 변경 중 키보드를 눌러도 잡히지 않는가\n" +
             "C4. 이동(Move) 항목은 패드에서 변경 버튼이 잠겨 있는가\n" +
-            "C5. 패드 버튼을 중복으로 지정하면 경고가 뜨고 저장이 막히는가\n" +
-            "C6. 가상 커서 항목이 패드 탭에만 있고, 키보드 탭에는 없는가\n" +
-            "C7. 가상 커서 키를 바꾼 뒤 그 버튼으로 커서가 켜지는가",
+            "C5. 패드 버튼을 중복으로 지정하면 경고가 뜨고 저장이 막히는가",
             MessageType.None);
     }
 

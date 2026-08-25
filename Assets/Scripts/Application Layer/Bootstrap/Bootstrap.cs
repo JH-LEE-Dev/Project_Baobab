@@ -162,9 +162,8 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
         currentSceneType = SceneType.MainMenu;
 
-        // 패드 가상 커서는 마을 전용이다. 메인 메뉴로 돌아올 때 꺼 주지 않으면
-        // 마을에서 켜 둔 상태가 그대로 남아, 아무도 그리지 않는 커서를 조작하게 된다.
-        inputManager?.SetVirtualCursorAvailable(false);
+        // 가상 커서 요청이 남은 채 메인 메뉴로 돌아오지 않도록 여기서도 거둔다.
+        inputManager?.SetVirtualCursorRequested(false);
 
         if (mainMenuInstaller == null)
         {

@@ -151,7 +151,7 @@ public class InputManager : MonoBehaviour
     /// 패드를 쓰는 동안 OS 커서를 감춥니다.
     ///
     /// 이게 없으면 패드로 조작하는 내내 화면 한가운데에 쓰지도 않는 커서가 남아 있습니다.
-    /// 특히 마을에서 가상 커서를 켜면 커서가 둘 보이게 됩니다.
+    /// 특히 특성 UI에서 가상 커서가 뜨면 커서가 둘 보이게 됩니다.
     ///
     /// 판단 기준이 IsGamepadConnected(연결 여부)가 아니라 IsGamepadMode(실제 사용 중)인 것이
     /// 중요합니다. 패드를 꽂아둔 채 키보드로 플레이하는 유저가 흔한데, 연결 여부로 판단하면
@@ -273,12 +273,14 @@ public class InputManager : MonoBehaviour
     public GamepadVirtualCursor VirtualCursor => null != inputReader ? inputReader.VirtualCursor : null;
 
     /// <summary>
-    /// 지금 가상 커서를 쓸 수 있는 상황인지 알려 줍니다. (마을 true / 던전 false)
-    /// false로 바꾸면 켜져 있던 커서도 즉시 내려갑니다.
+    /// 가상 커서가 필요한 화면이 열렸는지 알려 줍니다. (특성 UI를 열 때 true, 닫을 때 false)
+    ///
+    /// 요청했다고 반드시 나오는 것은 아닙니다. 마우스를 쓰는 유저에게는 진짜 커서가 이미 있어
+    /// 켜지지 않습니다. 창을 열어 둔 채 패드를 잡으면 그때 화면 중앙에 나타납니다.
     /// </summary>
-    public void SetVirtualCursorAvailable(bool _bAvailable)
+    public void SetVirtualCursorRequested(bool _bRequested)
     {
-        VirtualCursor?.SetAvailable(_bAvailable);
+        inputReader?.SetVirtualCursorRequested(_bRequested);
     }
 
     /// <summary>커서가 지금 화면에 떠 있는지입니다.</summary>
@@ -339,19 +341,9 @@ public class InputManager : MonoBehaviour
     // 키 리바인딩 (실제 처리는 inputReader 위임, KeyBindingsChangedEvent는 inputManager.inputReader에서 직접 구독)
     public bool IsRebinding => inputReader.IsRebinding;
 
-    /// <summary>키 설정 화면에 그릴 액션 목록입니다. (키보드/마우스 기준)</summary>
     public IReadOnlyList<ERebindableAction> GetRebindableActions()
     {
         return inputReader.GetRebindableActions();
-    }
-
-    /// <summary>
-    /// 그 장치에 실제 바인딩이 있는 액션만 돌려줍니다. 패드 탭은 반드시 이쪽을 쓰세요.
-    /// 두 장치의 항목 수가 다릅니다. (가상 커서 토글은 패드에만 있습니다)
-    /// </summary>
-    public IReadOnlyList<ERebindableAction> GetRebindableActions(EInputDeviceType _device)
-    {
-        return inputReader.GetRebindableActions(_device);
     }
 
     public string GetBindingDisplayString(ERebindableAction _action)

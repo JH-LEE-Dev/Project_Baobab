@@ -9,14 +9,18 @@ using UnityEngine;
 /// 시스템만 먼저 완성해 둘 수 있습니다.
 ///
 /// [동작 규칙]
+/// - 켜고 끄는 것은 화면이 정합니다. 별도의 토글 키가 없습니다.
+///   커서가 필요한 화면(특성 UI 등)이 SetRequested(true)를 부르고, 닫을 때 false로 되돌립니다.
+///   전용 키를 두지 않은 이유: 유저가 그 키의 존재와 용도를 알 방법이 없기 때문입니다.
+/// - 요청이 있어도 **패드를 쓰는 중일 때만** 실제로 켜집니다. 마우스 유저에게는 진짜 커서가
+///   이미 있으므로 나오면 안 됩니다. 창을 열어 둔 채 장치를 오가도 알아서 따라옵니다.
 /// - 켜는 순간 위치는 항상 화면 중앙입니다. 마지막 위치를 기억하지 않습니다.
-///   이유: 유저가 커서를 켜는 시점에 그것이 어디 있는지 예측할 수 있어야 하기 때문입니다.
+///   이유: 유저가 커서가 어디서 나타날지 예측할 수 있어야 하기 때문입니다.
 ///   화면 밖 구석에 남아 있던 커서가 되살아나면 "안 켜졌다"고 오해합니다.
 /// - 오른쪽 스틱으로 움직입니다. 스틱 입력은 바깥에서 받습니다(어떤 액션에 물려 있는지 몰라도 되도록).
 /// - 이동 속도는 픽셀이 아니라 "초당 화면 높이 배수"입니다.
 ///   이유: 스팀덱(1280x800)과 울트라와이드(3440x1440)에서 체감 속도가 같아야 합니다.
 ///   픽셀/초로 두면 고해상도에서 커서가 답답할 만큼 느려집니다.
-/// - 마우스/키보드로 돌아가면 스스로 꺼집니다. 커서가 둘이 되는 상황을 만들지 않습니다.
 /// </summary>
 public class GamepadVirtualCursor
 {
@@ -31,9 +35,10 @@ public class GamepadVirtualCursor
 
     private InputDeviceSettings settings;
 
-    // 이 기능을 지금 쓸 수 있는 상황인지(예: 마을). 게임 쪽에서 정해 줍니다.
-    private bool bAvailable = false;
+    // 커서가 필요한 화면이 떠 있는지. UI 쪽에서 정해 줍니다.
+    private bool bRequested = false;
 
+    // 실제로 화면에 떠 있는지. (요청 && 패드 사용 중)
     private bool bActive = false;
 
     private Vector2 screenPosition;
@@ -42,10 +47,10 @@ public class GamepadVirtualCursor
     private bool bUseExplicitBounds = false;
     private Rect explicitBounds;
 
-    /// <summary>지금 이 기능을 쓸 수 있는 상황인지입니다. (마을이면 true, 던전이면 false)</summary>
-    public bool IsAvailable => bAvailable;
+    /// <summary>커서가 필요한 화면이 떠 있는지입니다. 실제 표시 여부와는 별개입니다.</summary>
+    public bool IsRequested => bRequested;
 
-    /// <summary>커서가 화면에 떠 있는지입니다.</summary>
+    /// <summary>커서가 실제로 화면에 떠 있는지입니다. (요청이 있고, 지금 패드를 쓰는 중)</summary>
     public bool IsActive => bActive;
 
     /// <summary>커서의 화면 좌표입니다. (좌하단 원점, 픽셀 — 마우스 좌표와 같은 좌표계)</summary>
@@ -94,36 +99,31 @@ public class GamepadVirtualCursor
     }
 
     /// <summary>
-    /// 이 기능을 쓸 수 있는 상황인지 알려 줍니다. 마을 진입 시 true, 던전 진입 시 false.
-    /// false로 바꾸면 켜져 있던 커서도 즉시 꺼집니다. (씬을 넘어가며 유령 커서가 남지 않도록)
+    /// 커서가 필요한 화면이 열렸는지 알려 줍니다. 특성 UI를 열 때 true, 닫을 때 false.
+    ///
+    /// 요청이 있어도 패드를 쓰는 중이 아니면 켜지지 않습니다. 그 판단에 필요해서
+    /// 현재 장치 상태를 함께 받습니다.
     /// </summary>
-    public void SetAvailable(bool _bAvailable)
+    public void SetRequested(bool _bRequested, bool _bGamepadMode)
     {
-        if (bAvailable == _bAvailable) return;
+        bRequested = _bRequested;
 
-        bAvailable = _bAvailable;
-
-        if (false == bAvailable)
-        {
-            SetActive(false);
-        }
-    }
-
-    /// <summary>켜져 있으면 끄고, 꺼져 있으면 켭니다. 토글 버튼이 호출하는 지점입니다.</summary>
-    public void Toggle()
-    {
-        SetActive(false == bActive);
+        UpdateActiveState(_bGamepadMode);
     }
 
     /// <summary>
-    /// 커서를 켜거나 끕니다. 켤 때는 쓸 수 있는 상황이어야 하며, 위치는 항상 화면 중앙으로 초기화됩니다.
+    /// 요청과 현재 장치를 종합해 실제 표시 상태를 맞춥니다.
+    ///
+    /// 이 한 곳으로 모아 둔 덕분에 "창을 연 뒤 패드를 잡았다", "창이 열린 채 마우스를 만졌다",
+    /// "패드를 쓰다 창을 닫았다"가 전부 같은 경로로 처리됩니다.
     /// </summary>
-    public void SetActive(bool _bActive)
+    private void UpdateActiveState(bool _bGamepadMode)
     {
-        if (true == _bActive && false == bAvailable) return;
-        if (bActive == _bActive) return;
+        bool _bShouldBeActive = bRequested && _bGamepadMode;
 
-        bActive = _bActive;
+        if (bActive == _bShouldBeActive) return;
+
+        bActive = _bShouldBeActive;
 
         if (true == bActive)
         {
@@ -159,15 +159,11 @@ public class GamepadVirtualCursor
     /// </summary>
     public void Tick(float _unscaledDeltaTime, Vector2 _stick, bool _bGamepadMode)
     {
-        if (false == bActive) return;
+        // 마우스를 잡으면 진짜 커서가 돌아오므로 가상 커서는 물러나고, 다시 패드를 잡으면
+        // 화면 중앙에서 되살아난다. 그 판정이 여기서 매 프레임 갱신된다.
+        UpdateActiveState(_bGamepadMode);
 
-        // 마우스를 잡는 순간 진짜 커서가 돌아오므로 가상 커서는 물러난다.
-        // 화면에 커서가 둘 보이는 상태가 제일 나쁘다.
-        if (false == _bGamepadMode)
-        {
-            SetActive(false);
-            return;
-        }
+        if (false == bActive) return;
 
         float _deadzone = null != settings ? settings.cursorStickDeadzone : 0.2f;
         float _magnitude = _stick.magnitude;
@@ -227,7 +223,7 @@ public class GamepadVirtualCursor
     public void Release()
     {
         bActive = false;
-        bAvailable = false;
+        bRequested = false;
 
         ActiveChangedEvent = null;
         MovedEvent = null;

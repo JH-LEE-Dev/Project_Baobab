@@ -41,8 +41,9 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     [SerializeField] private UI_OptionSlider bgmVolumeSlider;
     [SerializeField] private UI_OptionSlider sfxVolumeSlider;
 
-    [SerializeField, Tooltip("효과음 슬라이더를 조작할 때 들려줄 미리듣기 사운드. 반드시 SFX 믹서 " +
-        "그룹을 타는 사운드여야 조절한 볼륨이 그대로 반영되어 들린다(UI 그룹 사운드는 영향을 받지 않는다).")]
+    [SerializeField, Tooltip("효과음 슬라이더를 조작할 때 들려줄 미리듣기 사운드. UI 그룹으로 우회 " +
+        "재생되어(PlayUI bypassDucking) 일시정지 음소거 중에도 예외적으로 들린다. UiVolume이 효과음 " +
+        "슬라이더 값과 동기화되어 있어(AudioManager.ApplyVolumeSettings) 조절한 볼륨은 그대로 반영된다.")]
     private SoundID sfxVolumePreviewSound = SoundID.OptionSFXBarTick;
 
     // 슬라이더는 소수점 단위로 값이 들어오지만, 미리듣기는 화면에 표시되는 정수(%) 눈금이
@@ -220,9 +221,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         depthController?.RegisterView(this);
 
-        // 옵션 창은 ESC 메뉴(일시정지)에서 열리는데, 그 상태에서는 게임플레이 사운드가 음소거라
-        // 효과음 볼륨을 조절해도 아무것도 들리지 않는다. 창이 열려 있는 동안만 덕킹/음소거를 풀어
-        // 조절 중인 소리를 실제로 들을 수 있게 한다.
+        // 옵션 창은 ESC 메뉴(일시정지)에서 열리는데, 그 상태에서는 덕킹(로우패스)으로 소리가 먹먹하다.
+        // BGM 슬라이더를 원래 음색 기준으로 판단할 수 있도록 창이 열려 있는 동안만 덕킹을 푼다.
+        // 일시정지 음소거(SFX/Ambience) 자체는 ESC와 동일하게 유지되며, 효과음 미리듣기만
+        // PlaySfxVolumePreview에서 UI 그룹으로 우회 재생해 예외적으로 들리게 한다.
         Sound.SetAudioPreviewMode(true);
 
         if (null != optionPanelRoot)
@@ -291,7 +293,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         RestoreSnapshot(savedSnapshot);
 
-        // 창을 닫으면 원래의 덕킹/일시정지 음소거 상태로 되돌린다(ESC 메뉴로 복귀하는 경우 등).
+        // 창을 닫으면 원래의 덕킹 상태로 되돌린다(ESC 메뉴로 복귀하는 경우 등).
         Sound.SetAudioPreviewMode(false);
 
         if (null != optionPanelRoot)
@@ -772,8 +774,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     }
 
     // 효과음은 BGM과 달리 조작하는 동안 계속 울리는 소리가 없어서, 슬라이더를 움직여도 지금
-    // 몇 %인지 귀로 알 수 없다. 그래서 화면에 표시되는 정수(%) 눈금이 바뀔 때마다 효과음 그룹을
-    // 타는 소리를 짧게 재생해 유저가 바로 체감하게 한다.
+    // 몇 %인지 귀로 알 수 없다. 그래서 화면에 표시되는 정수(%) 눈금이 바뀔 때마다 짧게 재생해
+    // 유저가 바로 체감하게 한다. 옵션 창이 열려 있는 동안에도 ESC와 동일하게 일시정지 음소거가
+    // 유지되므로(SetAudioPreviewMode 참고), 이 미리듣기만은 예외로 들려야 해서 UI 그룹으로 우회
+    // 재생한다(bypassDucking: true) - 그 외 게임플레이 SFX/Ambience는 계속 음소거된 채로 남는다.
     private void PlaySfxVolumePreview(float _val)
     {
         int _tick = Mathf.RoundToInt(_val);
@@ -784,7 +788,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         lastSfxPreviewTick = _tick;
         lastSfxPreviewTime = _now;
-        Sound.PlayUI(sfxVolumePreviewSound);
+        Sound.PlayUI(sfxVolumePreviewSound, bypassDucking: true);
     }
 
     private void RefreshKeyBindRows()

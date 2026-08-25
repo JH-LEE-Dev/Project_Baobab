@@ -29,7 +29,7 @@
 | 8 | 패드 연결 해제 모달 | [3-6](#3-6-패드-연결-해제) |
 | 9 | `UI_PressAnyKey` 이관 | [3-4](#3-4-ui_pressanykey-이관-권장) |
 | 10 | 마우스 좌표를 직접 읽는 UI 4곳 가드 | [3-10](#3-10-마우스-좌표를-직접-읽는-곳-패드에서-오작동) |
-| 11 | **마을 가상 커서 그리기 + 그 좌표로 집기** | [3-12](#3-12-마을-가상-커서-패드-전용) |
+| 11 | **특성 UI 가상 커서 그리기 + 그 좌표로 노드 집기** | [3-12](#3-12-특성-ui-가상-커서-패드-전용) |
 
 기획 결정이 필요한 것 하나: **무엇이 언제 진동할지.** 진동 시스템은 완료되어 호출 지점만 비어 있습니다.
 
@@ -49,8 +49,7 @@
 | 패드 진동 + 세기 설정 저장 | 호출 지점은 기획 결정 |
 | UI 액션 맵 + 입력 모드 전환 | EventSystem 5개 씬 교체 완료 |
 | "아무 입력이나 있었는가" 조회 | |
-| 마을 가상 커서 (좌표·토글·영역 제한) | 그림과 집기는 UI 몫 → [3-12](#3-12-마을-가상-커서-패드-전용) |
-| 가상 커서 토글 키 리바인딩 | 패드 탭에만 표시됨 (`GetRebindableActions(장치)`) |
+| 특성 UI 가상 커서 (좌표·영역 제한·자동 표시) | 그림과 집기는 UI 몫 → [3-12](#3-12-특성-ui-가상-커서-패드-전용) |
 | 패드 사용 중 OS 커서 숨김 | InputManager가 자동 처리 → [3-9](#3-9-os-커서-표시숨김-시스템이-처리함) |
 
 **패드 기본 배치**
@@ -60,8 +59,7 @@
 | Move | `leftStick` | | Interaction | `buttonSouth` (A/×) |
 | Aim | `rightStick` | | Inventory | `buttonNorth` (Y/△) |
 | Attack | `rightTrigger` (RT/R2) | | PotionKey | `buttonWest` (X/□) |
-| ESC(메뉴) | `start` | | 가상 커서 토글 | `rightStickPress` (R3) |
-| *(B/○ 는 취소 전용으로 비워둠)* | | | | |
+| ESC(메뉴) | `start` | | *(B/○ 는 취소 전용으로 비워둠)* | |
 
 `buttonEast (B/○)`는 **의도적으로 비워둔 것**입니다. 리바인딩 취소이자 "뒤로가기"라는 보편 관례라, 다른 기능에 할당하면 유저가 리바인딩 대기 상태에서 빠져나올 수단을 잃습니다.
 
@@ -250,19 +248,12 @@ bool _anyInputReceived = inputManager.AnyInputThisFrame;
 키 설정 API는 전부 **장치 인자 오버로드**가 생겼습니다. 인자를 안 넘기면 기존처럼 키보드입니다.
 
 ```csharp
-inputManager.GetRebindableActions(EInputDeviceType.Gamepad);   // 탭에 그릴 목록
 inputManager.StartRebind(action, EInputDeviceType.Gamepad, onFinished);
 inputManager.ResetBinding(action, EInputDeviceType.Gamepad);
 inputManager.IsConflicting(action, EInputDeviceType.Gamepad);
 inputManager.HasAnyConflict(EInputDeviceType.Gamepad);   // 탭별 표시용
 inputManager.IsRebindable(action, EInputDeviceType.Gamepad);
 ```
-
-**행 목록은 `GetRebindableActions(장치)`로 받으세요.** 두 장치의 항목 수가 다릅니다 — 가상 커서 토글(R3)은 패드에만 있어서 키보드 탭에는 나오지 않습니다. 전체 enum을 그대로 돌면 키보드 탭에 빈 칸 행이 하나 끼어듭니다.
-
-> 행과 액션을 인덱스로 짝짓는 구조라면, **행을 만들 때와 갱신할 때 같은 장치의 목록**을 써야 합니다. 섞으면 라벨과 키가 어긋납니다. 지금 [UI_Option](../../Presentation%20Layer/UISystem/UIView/Option/UI_Option.cs)이 그 구조이고, 인자 없는 `GetRebindableActions()`가 키보드 목록을 돌려주므로 **키보드 탭은 고칠 것이 없습니다.**
->
-> 패드 탭을 만들 때 `GetActionLabel`에 `ERebindableAction.VirtualCursor` 케이스를 추가하세요. 없으면 화면에 `VirtualCursor`가 그대로 나옵니다. (로컬라이징 키도 함께 필요합니다)
 
 **`IsRebindable`을 반드시 확인하세요.** 패드의 이동(`MoveUp/Down/Left/Right`)은 전부 왼쪽 스틱 하나에 묶여 있어 개별 변경이 불가능합니다. 이 항목들은 **표시는 되지만 "변경" 버튼을 비활성화**해야 합니다.
 
@@ -363,14 +354,15 @@ viewCtx.inputManager.inputReader.InputModeChangedEvent += OnModeChanged;
 
 편집 모드에서는 **장치 원시값까지만** 나옵니다. 액션 값과 게임의 실제 장치 상태는 플레이 모드에서만 확인됩니다(아래 한계 참고).
 
-### 3-12. 마을 가상 커서 (패드 전용)
+### 3-12. 특성 UI 가상 커서 (패드 전용)
 
-패드에는 포인터가 없어 마을에서 화면의 임의 지점을 가리킬 수 없습니다. 그래서 **가상 커서**를 시스템 쪽에 넣어 두었습니다.
+특성(스킬) 트리는 노드를 직접 찍어야 하는데 패드에는 포인터가 없습니다. 그래서 **특성 UI가 열리면 화면 중앙에 가상 커서가 나타납니다.**
 
-- **토글**: `rightStickPress` (R3). 마을에서만 켜지고, 던전·메인 메뉴에서는 눌러도 반응하지 않습니다. **옵션에서 다른 패드 버튼으로 바꿀 수 있습니다** ([3-5](#3-5-키-설정-화면과-패드-패드-리바인딩-지원됨))
-- **켤 때 위치**: 언제나 **화면 중앙**. 마지막 위치를 기억하지 않습니다 (유저가 커서 위치를 예측할 수 있어야 하므로)
+- **별도의 토글 키가 없습니다.** [UIView_Tent](../../Presentation%20Layer/UISystem/UIView/TentUI/UIView_Tent.cs)의 `OnShow`/`OnHide`가 요청하고 거둡니다
+- **패드를 쓰는 중일 때만** 실제로 켜집니다. 마우스 유저에게는 진짜 커서가 이미 있으므로 나오지 않습니다
+- **켤 때 위치는 언제나 화면 중앙.** 마지막 위치를 기억하지 않습니다 (커서가 어디서 나타날지 예측할 수 있어야 하므로)
 - **이동**: 오른쪽 스틱. 커서가 켜져 있는 동안 그 스틱은 캐릭터 조준으로 가지 않습니다
-- **자동 해제**: 마우스를 만지면 스스로 꺼집니다. 씬을 벗어날 때도 꺼집니다
+- **장치를 오가도 따라옵니다.** 창을 열어 둔 채 마우스를 만지면 사라지고, 다시 패드를 잡으면 중앙에서 되살아납니다
 - **이동 영역**: 카메라가 실제로 그리는 사각형(`pixelRect`)으로 제한됩니다. 울트라와이드 Pillarbox의 검은 띠로 나가지 않습니다
 
 ```csharp
@@ -388,6 +380,18 @@ Vector2 _pos = _cursor.ScreenPosition;
 
 | 할 일 | 비고 |
 |---|---|
+| 커서 스프라이트를 화면 좌표에 그리기 | 좌하단 원점 픽셀 좌표. 마우스 좌표와 같은 좌표계입니다 |
+| 그 좌표로 특성 노드를 히트 테스트 | [UI_TentAbilityComponent](../../Presentation%20Layer/UISystem/UIView/TentUI/UI_TentAbilityComponent.cs)가 `Mouse.current`를 직접 읽는 곳(1693·1699·1833·1848)을 가상 커서 좌표로도 받게 하세요 |
+| "찍기" 버튼 정하기 | 시스템은 좌표만 줍니다. A로 볼지 RT로 볼지는 UI/기획 결정입니다 |
+| 커서가 켜졌을 때 조작 안내 바꾸기 | 선택 사항 |
+
+> 시스템은 **좌표 하나만** 책임집니다. 커서 위치를 마우스로 흘려보내거나 클릭을 대신 만들어 주지 않습니다. 그렇게 하면 캐릭터 조준이 커서를 따라 도는 등 게임플레이가 함께 끌려가기 때문입니다.
+
+**다른 화면에도 붙이려면** 그 UIView의 `OnShow`/`OnHide`에서 `inputManager.SetVirtualCursorRequested(true/false)`를 부르면 됩니다. 나머지(장치 판정, 중앙 배치, 영역 제한, 해제)는 전부 시스템이 처리합니다.
+
+속도·데드존·반응 곡선은 [`InputDeviceSettings`](InputDevice/InputDeviceSettings.cs)의 `Gamepad Virtual Cursor` 항목에서 조절합니다. 속도는 픽셀/초가 아니라 **초당 화면 높이 배수**라, 스팀덱(1280x800)과 울트라와이드에서 체감이 같습니다.
+
+---|---|
 | 커서 스프라이트를 화면 좌표에 그리기 | 좌하단 원점 픽셀 좌표. 마우스 좌표와 같은 좌표계입니다 |
 | 그 좌표로 무엇을 집을지 정하기 | 월드 레이캐스트 / UI 히트 테스트 — 마우스 클릭 경로를 그대로 재사용하면 됩니다 |
 | "집기" 버튼 정하기 | 시스템은 좌표만 줍니다. RT를 클릭으로 볼지, A로 볼지는 UI/기획 결정입니다 |
