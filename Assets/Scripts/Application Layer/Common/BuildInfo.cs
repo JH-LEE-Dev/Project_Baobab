@@ -33,6 +33,28 @@ public static class BuildInfo
 
     public static bool IsFullRelease => SaveBuildVariant.Release == Variant;
 
+    /// <summary>IsFullRelease의 반대입니다. 읽는 쪽 문맥에 맞는 쪽을 쓰세요.</summary>
+    public static bool IsDemo => false == IsFullRelease;
+
+    /// <summary>
+    /// Steam 앱 ID입니다. 데모와 정식은 Steam에서 **서로 다른 앱**이라 번호가 다릅니다.
+    ///
+    /// 세이브 변형과 반드시 같은 디파인을 따라야 합니다. 둘이 어긋나면
+    /// "정식 앱으로 실행되는데 데모 세이브를 쓰는" 같은 상태가 되고, 나중에 디파인을 맞추는
+    /// 순간 그 세이브가 호환되지 않는 것으로 취급되어 덮어써집니다.
+    /// 그래서 별도 상수로 두지 않고 여기서 Variant와 함께 파생시킵니다.
+    ///
+    /// 개발 실행용 steam_appid.txt는 코드가 아니라 파일이라 자동으로 따라오지 않습니다.
+    /// 전환은 `Tools > Steam > 빌드 모드` 메뉴를 쓰세요. 디파인과 파일을 함께 바꿔줍니다.
+    /// </summary>
+    public static uint SteamAppId => IsFullRelease ? STEAM_APP_ID_RELEASE : STEAM_APP_ID_DEMO;
+
+    /// <summary>LumberBoy</summary>
+    public const uint STEAM_APP_ID_RELEASE = 5129170;
+
+    /// <summary>LumberBoy Demo</summary>
+    public const uint STEAM_APP_ID_DEMO = 5135490;
+
     /// <summary>
     /// 세이브에 기록된 변형을 현재 빌드에서 이어서 플레이해도 되는지 판정합니다.
     /// 데모↔정식은 서로 호환되지 않으며, 호환되지 않는 세이브는 "없는 것"으로 취급되어
