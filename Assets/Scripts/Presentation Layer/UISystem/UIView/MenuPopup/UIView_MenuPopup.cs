@@ -93,7 +93,7 @@ public class UIView_MenuPopup : UIView
         // [신규 1-Depth 내비게이션 동기화]
         if (null != popupNavMain)
         {
-            popupNavMain.Initialize(mapDataProvider, viewCtx.localizationManager, viewCtx.cursorBoxUI, HandlePopupNavClosed, HandleEnterDungeon, viewCtx.depthController);
+            popupNavMain.Initialize(mapDataProvider, viewCtx.localizationManager, viewCtx.cursorBoxUI, HandlePopupNavClosed, HandleEnterDungeon, viewCtx.depthController, viewCtx.inputManager);
 
             popupNavMain.OnUnlockProductionStarted -= HandleUnlockProductionStarted;
             popupNavMain.OnUnlockProductionStarted += HandleUnlockProductionStarted;

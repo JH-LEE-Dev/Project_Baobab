@@ -183,7 +183,6 @@ public class UI_OptionTabButton : Selectable, IPointerClickHandler, ISubmitHandl
     {
         base.OnSelect(_eventData);
         isHovered = true;
-        Sound.PlayUI(SoundID.MainMenuDot01);
         UpdateVisualState();
         ShowCursor();
 
@@ -208,8 +207,6 @@ public class UI_OptionTabButton : Selectable, IPointerClickHandler, ISubmitHandl
 
     public void OnPointerClick(PointerEventData _eventData)
     {
-        Sound.PlayUI(SoundID.OptionClick);
-
         if (null != parentGroup)
         {
             parentGroup.OnTabClicked(tabIndex);

@@ -153,6 +153,8 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     private bool hasInstantiatedParticleMat = false;
 
     public MapType GetMapType() => (true == isInitialized ? myInfo.mapType : MapType.None);
+    public bool IsUnlocked => (true == isInitialized && true == myInfo.isUnlocked);
+    public bool IsSelected => isSelected;
 
     private void Awake()
     {
@@ -356,18 +358,34 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             hoverTween = null;
         }
 
-        Sequence _seq = DOTween.Sequence();
-        for (int i = 0; i < visualChildren.Count; i++)
-        {
-            _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i], hoverMoveDuration).SetEase(hoverMoveEase));
-        }
-        hoverTween = _seq;
-
-        bool _isUnlocked = (true == isInitialized && true == myInfo.isUnlocked);
-        Color _targetNormalShadow = _isUnlocked ? normalShadowColor : lockedNormalShadowColor;
-        Color _targetNormalBg = _isUnlocked ? normalBgColor : lockedNormalBgColor;
-        TweenColors(_targetNormalShadow, _targetNormalBg, true);
-
+        if (false == isSelected)
+        {
+            Sequence _seq = DOTween.Sequence();
+            for (int i = 0; i < visualChildren.Count; i++)
+            {
+                if (null != originalLocalX && i < originalLocalX.Length)
+                {
+                    _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i], hoverMoveDuration).SetEase(hoverMoveEase));
+                }
+            }
+            hoverTween = _seq;
+
+            bool _isUnlocked = (true == isInitialized && true == myInfo.isUnlocked);
+            Color _targetNormalShadow = _isUnlocked ? normalShadowColor : lockedNormalShadowColor;
+            Color _targetNormalBg = _isUnlocked ? normalBgColor : lockedNormalBgColor;
+            TweenColors(_targetNormalShadow, _targetNormalBg, true);
+        }
+        else
+        {
+            for (int i = 0; i < visualChildren.Count; i++)
+            {
+                if (null != originalLocalX && i < originalLocalX.Length)
+                {
+                    visualChildren[i].localPosition = new Vector3(originalLocalX[i] + hoverMoveX, visualChildren[i].localPosition.y, visualChildren[i].localPosition.z);
+                }
+            }
+        }
+
         if (null != cursorBoxUI)
         {
             RectTransform _target = null != cursorTargetTransform ? cursorTargetTransform : CachedRectTransform;
@@ -403,37 +421,35 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         }
     }
 
-    private void TriggerHover()
+    public void TriggerHover()
     {
-        if (true == isSelected)
+        if (false == isSelected)
         {
-            return;
-        }
+            bool _isUnlocked = (true == isInitialized && true == myInfo.isUnlocked);
+            Color _targetHoverShadow = _isUnlocked ? hoverShadowColor : lockedHoverShadowColor;
+            Color _targetHoverBg = _isUnlocked ? hoverBgColor : lockedHoverBgColor;
+            TweenColors(_targetHoverShadow, _targetHoverBg, false);
+            
+            ClearNewIndicator();
 
-        bool _isUnlocked = (true == isInitialized && true == myInfo.isUnlocked);
-        Color _targetHoverShadow = _isUnlocked ? hoverShadowColor : lockedHoverShadowColor;
-        Color _targetHoverBg = _isUnlocked ? hoverBgColor : lockedHoverBgColor;
-        TweenColors(_targetHoverShadow, _targetHoverBg, false);
-        
-        ClearNewIndicator();
-
-        if (null != hoverTween && true == hoverTween.IsActive())
-        {
-            hoverTween.Kill();
-            hoverTween = null;
-        }
-        
-        // clickImage(Raycast) 영역은 움직이지 않도록 루트 대신 비주얼 자식들만 연출
-        Sequence _seq = DOTween.Sequence();
-        for (int i = 0; i < visualChildren.Count; i++)
-        {
-            if (null != originalLocalX && i < originalLocalX.Length)
+            if (null != hoverTween && true == hoverTween.IsActive())
             {
-                _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i] + hoverMoveX, hoverMoveDuration).SetEase(hoverMoveEase));
+                hoverTween.Kill();
+                hoverTween = null;
             }
+            
+            // clickImage(Raycast) 영역은 움직이지 않도록 루트 대신 비주얼 자식들만 연출
+            Sequence _seq = DOTween.Sequence();
+            for (int i = 0; i < visualChildren.Count; i++)
+            {
+                if (null != originalLocalX && i < originalLocalX.Length)
+                {
+                    _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i] + hoverMoveX, hoverMoveDuration).SetEase(hoverMoveEase));
+                }
+            }
+            _seq.SetTarget(this);
+            hoverTween = _seq;
         }
-        _seq.SetTarget(this);
-        hoverTween = _seq;
 
         if (null != cursorBoxUI)
         {
@@ -482,6 +498,32 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             RectTransform _target = null != cursorTargetTransform ? cursorTargetTransform : CachedRectTransform;
             cursorBoxUI.Hide(_target);
         }
+    }
+
+    public bool IsMouseOver()
+    {
+        if (false == gameObject.activeInHierarchy || false == isInitialized) return false;
+        if (true == isPointerOver) return true;
+
+        RectTransform _rect = null != clickImage ? clickImage.rectTransform : CachedRectTransform;
+        if (null == _rect) return false;
+
+        Vector2 _mousePos = Vector2.zero;
+        if (null != UnityEngine.InputSystem.Mouse.current)
+        {
+            _mousePos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+        }
+        else
+        {
+            _mousePos = Input.mousePosition;
+        }
+
+        Canvas _canvas = GetComponentInParent<Canvas>();
+        Camera _cam = (null != _canvas && RenderMode.ScreenSpaceOverlay != _canvas.renderMode)
+            ? _canvas.worldCamera
+            : null;
+
+        return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, _cam);
     }
 
     private void TweenColors(Color _targetShadow, Color _targetBg, bool _isIdle = false)
