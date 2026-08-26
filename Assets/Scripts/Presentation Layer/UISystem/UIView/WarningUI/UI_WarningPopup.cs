@@ -368,29 +368,6 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         }
     }
 
-    private void Update()
-    {
-        if (false == gameObject.activeInHierarchy || false == IsActive) return;
-        if (null == inputManager || false == inputManager.IsGamepadMode) return;
-
-        if (null != EventSystem.current)
-        {
-            GameObject _selected = EventSystem.current.currentSelectedGameObject;
-            bool _isValid = (null != _selected &&
-                             true == _selected.activeInHierarchy &&
-                             ((null != confirmButton && _selected == confirmButton.gameObject) ||
-                              (null != cancelButton && _selected == cancelButton.gameObject)));
-
-            if (false == _isValid)
-            {
-                if (null != confirmButton && true == confirmButton.gameObject.activeInHierarchy)
-                {
-                    EventSystem.current.SetSelectedGameObject(confirmButton.gameObject);
-                    OnButtonHovered(confirmButton);
-                }
-            }
-        }
-    }
 
     #endregion
 

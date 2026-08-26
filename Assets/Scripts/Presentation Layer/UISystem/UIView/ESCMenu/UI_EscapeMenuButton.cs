@@ -55,7 +55,10 @@ public class UI_EscapeMenuButton : Selectable,
     private InputManager inputManager;
     private bool isInteractable = true;
     private bool isHovered = false;
+    private bool isPointerHovered = false;
     private bool isAppearing = false;
+
+    public bool IsPointerHovered => isPointerHovered;
 
     private Vector3 originalScale = Vector3.one;
 
@@ -134,6 +137,7 @@ public class UI_EscapeMenuButton : Selectable,
     {
         base.OnDisable();
         isHovered = false;
+        isPointerHovered = false;
         isAppearing = false;
 
         KillTweens();
@@ -413,6 +417,7 @@ public class UI_EscapeMenuButton : Selectable,
     {
         base.OnPointerEnter(_eventData);
         isHovered = true;
+        isPointerHovered = true;
         if (false == isInteractable || true == isAppearing) return;
 
         PlayHoverAnimation();
@@ -422,14 +427,62 @@ public class UI_EscapeMenuButton : Selectable,
     {
         base.OnPointerExit(_eventData);
         isHovered = false;
+        isPointerHovered = false;
         if (false == isInteractable || true == isAppearing) return;
 
+        PlayUnhoverAnimation();
+    }
+
+    public bool IsMouseOver()
+    {
+        if (false == isInteractable || false == gameObject.activeInHierarchy || true == isAppearing) return false;
+        if (true == isPointerHovered) return true;
+
+        RectTransform _rect = null != raycastImage ? raycastImage.rectTransform : RectTransform;
+        if (null == _rect) return false;
+
+        Vector2 _mousePos = Vector2.zero;
+        if (null != Mouse.current)
+        {
+            _mousePos = Mouse.current.position.ReadValue();
+        }
+        else
+        {
+            _mousePos = Input.mousePosition;
+        }
+
+        if (null == cachedCanvas)
+        {
+            cachedCanvas = GetComponentInParent<Canvas>();
+        }
+
+        Camera _cam = (null != cachedCanvas && RenderMode.ScreenSpaceOverlay != cachedCanvas.renderMode)
+            ? cachedCanvas.worldCamera
+            : null;
+
+        return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, _cam);
+    }
+
+    public void ForceHover()
+    {
+        isHovered = true;
+        if (false == isInteractable || true == isAppearing) return;
+        PlayHoverAnimation();
+    }
+
+    public void ForceUnhover()
+    {
+        isHovered = false;
+        isPointerHovered = false;
+        if (false == isInteractable || true == isAppearing) return;
         PlayUnhoverAnimation();
     }
 
     public override void OnSelect(BaseEventData _eventData)
     {
         base.OnSelect(_eventData);
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+
         isHovered = true;
         if (false == isInteractable || true == isAppearing) return;
 

@@ -597,44 +597,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         }
     }
 
-    private void Update()
-    {
-        if (null == inputManager || false == inputManager.IsGamepadMode) return;
-        if (false == gameObject.activeInHierarchy || false == IsActive) return;
-
-        // 경고 팝업 활성 중에는 팝업이 포커스를 관리
-        if (null != warningPopup && true == warningPopup.IsActive) return;
-
-        if (null != EventSystem.current)
-        {
-            GameObject _selected = EventSystem.current.currentSelectedGameObject;
-            bool _isValid = (null != _selected && 
-                             true == _selected.activeInHierarchy && 
-                             true == _selected.transform.IsChildOf(transform));
-
-            if (true == _isValid)
-            {
-                Selectable _sel = _selected.GetComponent<Selectable>();
-                if (null != _sel && false == _sel.interactable)
-                {
-                    _isValid = false;
-                }
-            }
-
-            if (false == _isValid)
-            {
-                if (null != closeButton && true == closeButton.gameObject.activeInHierarchy && true == closeButton.IsInteractable)
-                {
-                    EventSystem.current.SetSelectedGameObject(closeButton.gameObject);
-                    closeButton.ShowCursor();
-                }
-                else
-                {
-                    SelectDefaultFocusElement();
-                }
-            }
-        }
-    }
 
     private void HandleTabShift(int _direction)
     {

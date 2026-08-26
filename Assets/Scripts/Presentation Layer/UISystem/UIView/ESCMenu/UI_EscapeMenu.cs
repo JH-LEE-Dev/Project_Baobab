@@ -60,6 +60,7 @@ public class UI_EscapeMenu : MonoBehaviour
     private Action cachedConfirmExit;
     private Action cachedConfirmMainMenu;
     private Action cachedCancelWarningAndRestoreMenu;
+    private Action<EInputDeviceType> cachedOnInputDeviceChanged;
     private InputManager inputManager;
 
     private Action onResumeCallback;
@@ -107,6 +108,11 @@ public class UI_EscapeMenu : MonoBehaviour
             localizationManager.OnLanguageChanged -= cachedRefreshLocalizedTexts;
         }
 
+        if (null != inputManager && null != inputManager.inputReader && null != cachedOnInputDeviceChanged)
+        {
+            inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+        }
+
         onResumeCallback = null;
         onOptionCallback = null;
         onMainMenuCallback = null;
@@ -115,6 +121,7 @@ public class UI_EscapeMenu : MonoBehaviour
         cachedConfirmExit = null;
         cachedConfirmMainMenu = null;
         cachedCancelWarningAndRestoreMenu = null;
+        cachedOnInputDeviceChanged = null;
         inputManager = null;
     }
 
@@ -133,6 +140,17 @@ public class UI_EscapeMenu : MonoBehaviour
         onMainMenuCallback = _onMainMenu;
         onExitCallback = _onExit;
         inputManager = _inputManager;
+
+        if (null == cachedOnInputDeviceChanged)
+        {
+            cachedOnInputDeviceChanged = OnDeviceChanged;
+        }
+
+        if (null != inputManager && null != inputManager.inputReader && null != cachedOnInputDeviceChanged)
+        {
+            inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+            inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
+        }
 
         if (null != _warningPopup)
         {
@@ -287,23 +305,164 @@ public class UI_EscapeMenu : MonoBehaviour
         });
     }
 
+    public UI_EscapeMenuButton GetFirstActiveButton()
+    {
+        if (null == allButtons) return null;
+        for (int i = 0; allButtons.Length > i; i++)
+        {
+            UI_EscapeMenuButton _btn = allButtons[i];
+            if (null != _btn && true == _btn.gameObject.activeInHierarchy)
+            {
+                return _btn;
+            }
+        }
+        return null;
+    }
+
+    private bool IsEscapeMenuButton(GameObject _obj)
+    {
+        if (null == _obj || null == allButtons) return false;
+        for (int i = 0; allButtons.Length > i; i++)
+        {
+            if (null != allButtons[i] && allButtons[i].gameObject == _obj)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void SelectFirstButton()
     {
         if (null == inputManager || false == inputManager.IsGamepadMode) return;
-        if (null != resumeButton && true == resumeButton.gameObject.activeInHierarchy)
+
+        UI_EscapeMenuButton _hoveredBtn = null;
+        if (null != allButtons)
         {
-            EventSystem.current?.SetSelectedGameObject(resumeButton.gameObject);
+            for (int i = 0; allButtons.Length > i; i++)
+            {
+                UI_EscapeMenuButton _btn = allButtons[i];
+                if (null != _btn && true == _btn.gameObject.activeInHierarchy && true == _btn.IsMouseOver())
+                {
+                    _hoveredBtn = _btn;
+                    break;
+                }
+            }
+        }
+
+        UI_EscapeMenuButton _targetBtn = _hoveredBtn ?? GetFirstActiveButton();
+
+        if (null != allButtons)
+        {
+            for (int i = 0; allButtons.Length > i; i++)
+            {
+                UI_EscapeMenuButton _btn = allButtons[i];
+                if (null != _btn && _btn != _targetBtn)
+                {
+                    _btn.ForceUnhover();
+                }
+            }
+        }
+
+        if (null != _targetBtn && null != EventSystem.current)
+        {
+            EventSystem.current.SetSelectedGameObject(_targetBtn.gameObject);
+            _targetBtn.ForceHover();
         }
     }
 
     public void SelectOptionButton()
     {
         if (null == inputManager || false == inputManager.IsGamepadMode) return;
+
+        if (null != allButtons)
+        {
+            for (int i = 0; allButtons.Length > i; i++)
+            {
+                UI_EscapeMenuButton _btn = allButtons[i];
+                if (null != _btn && _btn != optionButton)
+                {
+                    _btn.ForceUnhover();
+                }
+            }
+        }
+
         if (null != optionButton && true == optionButton.gameObject.activeInHierarchy)
         {
             EventSystem.current?.SetSelectedGameObject(optionButton.gameObject);
+            optionButton.ForceHover();
         }
     }
+
+    private void OnDeviceChanged(EInputDeviceType _device)
+    {
+        if (false == gameObject.activeInHierarchy || true == isClosing) return;
+        if (null != warningPopup && true == warningPopup.IsActive) return;
+
+        if (EInputDeviceType.Gamepad == _device)
+        {
+            UI_EscapeMenuButton _hoveredBtn = null;
+            if (null != allButtons)
+            {
+                for (int i = 0; allButtons.Length > i; i++)
+                {
+                    UI_EscapeMenuButton _btn = allButtons[i];
+                    if (null != _btn && true == _btn.gameObject.activeInHierarchy && true == _btn.IsMouseOver())
+                    {
+                        _hoveredBtn = _btn;
+                        break;
+                    }
+                }
+            }
+
+            UI_EscapeMenuButton _targetBtn = _hoveredBtn ?? GetFirstActiveButton();
+
+            if (null != allButtons)
+            {
+                for (int i = 0; allButtons.Length > i; i++)
+                {
+                    UI_EscapeMenuButton _btn = allButtons[i];
+                    if (null != _btn && _btn != _targetBtn)
+                    {
+                        _btn.ForceUnhover();
+                    }
+                }
+            }
+
+            if (null != _targetBtn && null != EventSystem.current)
+            {
+                EventSystem.current.SetSelectedGameObject(_targetBtn.gameObject);
+                _targetBtn.ForceHover();
+            }
+        }
+        else if (EInputDeviceType.KeyboardMouse == _device)
+        {
+            if (null != EventSystem.current)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+            }
+
+            if (null != allButtons)
+            {
+                for (int i = 0; allButtons.Length > i; i++)
+                {
+                    UI_EscapeMenuButton _btn = allButtons[i];
+                    if (null != _btn && true == _btn.gameObject.activeInHierarchy)
+                    {
+                        if (true == _btn.IsMouseOver())
+                        {
+                            _btn.ForceHover();
+                        }
+                        else
+                        {
+                            _btn.ForceUnhover();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
     /// <summary>
     /// 버튼과 백그라운드를 되감기(Rewind)하듯이 역순으로 축소/퇴장시키는 역모션 연출을 재생합니다.
