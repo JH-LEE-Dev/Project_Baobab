@@ -440,6 +440,16 @@ MonoBehaviour:
   selectionCursorPrefab: {fileID: 1125404888247100005, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
   selectionCursorParent: {fileID: 0}
   selectionCursorSize: {x: 38, y: 38}
+  padCursorSprite: {fileID: 21300000, guid: 0be6f1a06f28b3c4898357409234e49a, type: 3}
+  padCursorSize: {x: 32, y: 32}
+  padCursorSpeedPixelsPerSecond: 280
+  forcePadControlModeForDebug: 1
+  padCursorHoverCorrectionSize: {x: 64, y: 64}
+  padCursorHoverReleasePadding: 8
+  padSelectionCursorMagnetDuration: 0.15
+  padCursorSafeAreaSize: {x: 315, y: 175}
+  padViewFollowMaxGridUnitsPerSecond: 14
+  padViewFollowSmoothTime: 0.08
   nodeHoverSoundSuppressDurationAfterOpen: 0.3
   viewGridHalfExtents: {x: 60, y: 30}
   viewShakeDuration: 0.2
