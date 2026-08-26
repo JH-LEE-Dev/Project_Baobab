@@ -104,6 +104,9 @@ public class UI_MainMenuButton : Selectable,
     private bool isMaintained = false;
     private bool isAppearing = false;
     private bool isHovered = false;
+    private bool isPointerHovered = false;
+
+    public bool IsPointerHovered => isPointerHovered;
 
     // 델리게이트 캐싱 (GC Alloc 방지)
     private TweenCallback onAppearCompleteCallback;
@@ -166,6 +169,7 @@ public class UI_MainMenuButton : Selectable,
     {
         base.OnDisable();
         isHovered = false;
+        isPointerHovered = false;
         isClicked = false;
         isDisappearing = false;
         isMaintained = false;
@@ -390,6 +394,7 @@ public class UI_MainMenuButton : Selectable,
     {
         base.OnPointerEnter(_eventData);
         isHovered = true;
+        isPointerHovered = true;
         if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
 
         Sound.PlayUI(SoundID.MainButtonHover);
@@ -400,8 +405,48 @@ public class UI_MainMenuButton : Selectable,
     {
         base.OnPointerExit(_eventData);
         isHovered = false;
+        isPointerHovered = false;
         if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
 
+        PlayUnhoverMotion();
+    }
+
+    public bool IsMouseOver()
+    {
+        if (false == gameObject.activeInHierarchy) return false;
+        if (true == isPointerHovered) return true;
+
+        RectTransform _rect = transform as RectTransform;
+        if (null == _rect) return false;
+
+        Vector2 _mousePos = Vector2.zero;
+        if (null != Mouse.current)
+        {
+            _mousePos = Mouse.current.position.ReadValue();
+        }
+        else
+        {
+            _mousePos = Input.mousePosition;
+        }
+
+        Canvas _canvas = GetComponentInParent<Canvas>();
+        Camera _cam = (null != _canvas && RenderMode.ScreenSpaceOverlay != _canvas.renderMode) ? _canvas.worldCamera : null;
+
+        return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, _cam);
+    }
+
+    public void ForceHover()
+    {
+        isHovered = true;
+        if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
+        PlayHoverMotion();
+    }
+
+    public void ForceUnhover()
+    {
+        isHovered = false;
+        isPointerHovered = false;
+        if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
         PlayUnhoverMotion();
     }
 

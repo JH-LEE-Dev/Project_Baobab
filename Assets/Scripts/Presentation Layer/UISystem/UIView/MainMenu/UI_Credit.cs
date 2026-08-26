@@ -94,8 +94,8 @@ public class UI_Credit : MonoBehaviour
         if (false == isPlaying) return;
 
         // ESC 키 또는 게임패드 B(buttonEast)/Start 버튼으로 강제 닫기
-        bool _cancelPressed = (null != Keyboard.current && Keyboard.current.escapeKey.wasPressedThisFrame)
-            || (null != Gamepad.current && (Gamepad.current.buttonEast.wasPressedThisFrame || Gamepad.current.startButton.wasPressedThisFrame));
+        bool _cancelPressed = (null != Keyboard.current && true == Keyboard.current.escapeKey.wasPressedThisFrame)
+            || (null != Gamepad.current && (true == Gamepad.current.buttonEast.wasPressedThisFrame || true == Gamepad.current.startButton.wasPressedThisFrame));
 
         if (true == _cancelPressed)
         {
@@ -103,11 +103,12 @@ public class UI_Credit : MonoBehaviour
             return;
         }
 
-        // 좌클릭 또는 게임패드 A(buttonSouth) 홀드 시 스피드업
-        if (null != scrollTween && scrollTween.IsActive())
+        // 종료 키를 제외한 모든 키보드/마우스/게임패드 입력 감지 시 배속 적용
+        if (null != scrollTween && true == scrollTween.IsActive())
         {
-            bool _speedUpHeld = (null != Mouse.current && Mouse.current.leftButton.isPressed)
-                || (null != Gamepad.current && Gamepad.current.buttonSouth.isPressed);
+            bool _speedUpHeld = IsKeyboardSpeedUpPressed(Keyboard.current)
+                || IsMouseSpeedUpPressed(Mouse.current)
+                || IsGamepadSpeedUpPressed(Gamepad.current);
 
             if (true == _speedUpHeld)
             {
@@ -118,6 +119,42 @@ public class UI_Credit : MonoBehaviour
                 scrollTween.timeScale = 1f;
             }
         }
+    }
+
+    private bool IsKeyboardSpeedUpPressed(Keyboard _keyboard)
+    {
+        if (null == _keyboard) return false;
+        return true == _keyboard.anyKey.isPressed && false == _keyboard.escapeKey.isPressed;
+    }
+
+    private bool IsMouseSpeedUpPressed(Mouse _mouse)
+    {
+        if (null == _mouse) return false;
+        return true == _mouse.leftButton.isPressed
+            || true == _mouse.rightButton.isPressed
+            || true == _mouse.middleButton.isPressed;
+    }
+
+    private bool IsGamepadSpeedUpPressed(Gamepad _gamepad)
+    {
+        if (null == _gamepad) return false;
+
+        return true == _gamepad.buttonSouth.isPressed
+            || true == _gamepad.buttonWest.isPressed
+            || true == _gamepad.buttonNorth.isPressed
+            || true == _gamepad.leftShoulder.isPressed
+            || true == _gamepad.rightShoulder.isPressed
+            || true == _gamepad.leftTrigger.isPressed
+            || true == _gamepad.rightTrigger.isPressed
+            || true == _gamepad.leftStickButton.isPressed
+            || true == _gamepad.rightStickButton.isPressed
+            || true == _gamepad.selectButton.isPressed
+            || true == _gamepad.dpad.up.isPressed
+            || true == _gamepad.dpad.down.isPressed
+            || true == _gamepad.dpad.left.isPressed
+            || true == _gamepad.dpad.right.isPressed
+            || 0.25f <= _gamepad.leftStick.ReadValue().sqrMagnitude
+            || 0.25f <= _gamepad.rightStick.ReadValue().sqrMagnitude;
     }
 
     private void OnScrollComplete()

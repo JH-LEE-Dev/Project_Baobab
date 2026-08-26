@@ -15,8 +15,10 @@ public enum TutorialKeyType
 public struct TutorialKeyConfig
 {
     public TutorialKeyType keyType;
-    public GameObject rootObject; // 켜고 끌 오브젝트
-    public string motionTag;      // motionPlayer에 재생할 태그
+    public GameObject rootObject;          // 켜고 끌 전체 루트 오브젝트 (예: Tutorial_Move)
+    public GameObject keyboardRootObject;  // 키보드 모드 시 활성화할 오브젝트 (예: KeyboardImages)
+    public GameObject gamepadRootObject;   // 게임패드 모드 시 활성화할 오브젝트 (예: PadMoveImg)
+    public string motionTag;               // motionPlayer에 재생할 태그
 }
 
 public class UI_InteractionUnit : MonoBehaviour
@@ -48,13 +50,19 @@ public class UI_InteractionUnit : MonoBehaviour
     private bool bTutorialKeyDisabled = false;
     private bool isInteractionShowing => 0 < showCount;
 
+    private InputManager inputManager;
+
     // 델리게이트 캐싱
     private UnityAction cachedOnHideComplete;
     private UnityAction cachedOnHideVisibleTutorialKeyComplete;
+    private Action<EInputDeviceType> cachedOnInputDeviceChanged;
 
     public void Initialize(InputManager _inputManager)
     {
+        UnsubscribeEvents();
+
         rectTransform = GetComponent<RectTransform>();
+        inputManager = _inputManager;
         showCount = 0;
         bHide = true;
         pendingTutorialKey = TutorialKeyType.None;
@@ -67,12 +75,20 @@ public class UI_InteractionUnit : MonoBehaviour
         if (null == cachedOnHideVisibleTutorialKeyComplete)
             cachedOnHideVisibleTutorialKeyComplete = OnHideVisibleTutorialKeyComplete;
 
+        if (null == cachedOnInputDeviceChanged)
+            cachedOnInputDeviceChanged = OnInputDeviceChanged;
+
+        if (null != inputManager && null != inputManager.inputReader)
+        {
+            inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
+        }
+
         if (null != motionPlayer)
             motionPlayer.Initialize();
 
         if (null != keyboardImages)
         {
-            for (int i = 0; i < keyboardImages.Length; i++)
+            for (int i = 0; keyboardImages.Length > i; i++)
             {
                 if (null != keyboardImages[i]) keyboardImages[i].Initialize(_inputManager);
             }
@@ -81,14 +97,27 @@ public class UI_InteractionUnit : MonoBehaviour
         // 초기화 시 모든 튜토리얼 키 숨기기
         if (null != tutorialKeyConfigs)
         {
-            foreach (var config in tutorialKeyConfigs)
+            for (int i = 0; tutorialKeyConfigs.Length > i; i++)
             {
-                if (null != config.rootObject)
-                    config.rootObject.SetActive(false);
+                if (null != tutorialKeyConfigs[i].rootObject)
+                    tutorialKeyConfigs[i].rootObject.SetActive(false);
             }
         }
 
         HideInteraction(true);
+    }
+
+    private void OnDestroy()
+    {
+        UnsubscribeEvents();
+    }
+
+    private void UnsubscribeEvents()
+    {
+        if (null != inputManager && null != inputManager.inputReader && null != cachedOnInputDeviceChanged)
+        {
+            inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+        }
     }
 
     /// <summary>
@@ -236,6 +265,51 @@ public class UI_InteractionUnit : MonoBehaviour
     // 튜토리얼 내부 헬퍼 로직
     // ==========================================================
     
+    private void OnInputDeviceChanged(EInputDeviceType _device)
+    {
+        RefreshTutorialKeyDeviceVisuals();
+    }
+
+    private void RefreshTutorialKeyDeviceVisuals()
+    {
+        if (null == tutorialKeyConfigs) return;
+
+        bool _isGamepad = (null != inputManager) && inputManager.IsGamepadMode;
+
+        for (int i = 0; tutorialKeyConfigs.Length > i; i++)
+        {
+            var config = tutorialKeyConfigs[i];
+            if (config.keyType == currentlyVisibleTutorialKey || (null != config.rootObject && true == config.rootObject.activeSelf))
+            {
+                ApplyDeviceVisuals(config, _isGamepad);
+            }
+        }
+
+        if (null != keyboardImages)
+        {
+            for (int i = 0; keyboardImages.Length > i; i++)
+            {
+                if (null != keyboardImages[i])
+                {
+                    keyboardImages[i].RefreshIcon();
+                }
+            }
+        }
+    }
+
+    private void ApplyDeviceVisuals(TutorialKeyConfig _config, bool _isGamepad)
+    {
+        if (null != _config.keyboardRootObject)
+        {
+            _config.keyboardRootObject.SetActive(false == _isGamepad);
+        }
+
+        if (null != _config.gamepadRootObject)
+        {
+            _config.gamepadRootObject.SetActive(true == _isGamepad);
+        }
+    }
+
     private void ShowPendingTutorialKey()
     {
         if (true == bTutorialKeyDisabled) return;
@@ -244,7 +318,9 @@ public class UI_InteractionUnit : MonoBehaviour
 
         if (null == tutorialKeyConfigs) return;
 
-        for (int i = 0; i < tutorialKeyConfigs.Length; i++)
+        bool _isGamepad = (null != inputManager) && inputManager.IsGamepadMode;
+
+        for (int i = 0; tutorialKeyConfigs.Length > i; i++)
         {
             if (pendingTutorialKey == tutorialKeyConfigs[i].keyType)
             {
@@ -253,6 +329,8 @@ public class UI_InteractionUnit : MonoBehaviour
                 {
                     config.rootObject.SetActive(true);
                 }
+
+                ApplyDeviceVisuals(config, _isGamepad);
 
                 if (null != motionPlayer && false == string.IsNullOrEmpty(config.motionTag))
                 {
@@ -277,7 +355,7 @@ public class UI_InteractionUnit : MonoBehaviour
 
         bool _hasTargetHideKey = (TutorialKeyType.None != _targetHideKey);
 
-        for (int i = 0; i < tutorialKeyConfigs.Length; i++)
+        for (int i = 0; tutorialKeyConfigs.Length > i; i++)
         {
             var config = tutorialKeyConfigs[i];
             bool _isTarget = (_hasTargetHideKey && _targetHideKey == config.keyType);
@@ -301,7 +379,7 @@ public class UI_InteractionUnit : MonoBehaviour
     {
         if (TutorialKeyType.None == _keyType || null == tutorialKeyConfigs) return;
 
-        for (int i = 0; i < tutorialKeyConfigs.Length; i++)
+        for (int i = 0; tutorialKeyConfigs.Length > i; i++)
         {
             if (_keyType == tutorialKeyConfigs[i].keyType)
             {
@@ -326,7 +404,7 @@ public class UI_InteractionUnit : MonoBehaviour
 
         if (null == tutorialKeyConfigs) return;
 
-        for (int i = 0; i < tutorialKeyConfigs.Length; i++)
+        for (int i = 0; tutorialKeyConfigs.Length > i; i++)
         {
             if (null != tutorialKeyConfigs[i].rootObject)
             {

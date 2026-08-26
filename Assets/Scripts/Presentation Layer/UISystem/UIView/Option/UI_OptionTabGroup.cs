@@ -46,7 +46,7 @@ public class UI_OptionTabGroup : MonoBehaviour
         // 기본적으로 첫 번째 탭 활성화
         if (0 < tabs.Length)
         {
-            SelectTab(0);
+            SelectTab(0, false);
         }
     }
 
@@ -101,7 +101,6 @@ public class UI_OptionTabGroup : MonoBehaviour
         int _newIndex = (CurrentTabIndex + _delta) % tabs.Length;
         if (0 > _newIndex) _newIndex += tabs.Length;
         SelectTab(_newIndex);
-        Sound.PlayUI(SoundID.MainButtonHover);
         if (null != tabs[_newIndex].tabButton && true == tabs[_newIndex].tabButton.gameObject.activeInHierarchy)
         {
             EventSystem.current?.SetSelectedGameObject(tabs[_newIndex].tabButton.gameObject);
@@ -110,11 +109,17 @@ public class UI_OptionTabGroup : MonoBehaviour
 
     public event Action<int> OnTabChanged;
 
-    public void SelectTab(int _selectedIndex)
+    public void SelectTab(int _selectedIndex, bool _playSound = true)
     {
         if (null == tabs) return;
 
+        bool _isChanged = (CurrentTabIndex != _selectedIndex);
         CurrentTabIndex = _selectedIndex;
+
+        if (true == _isChanged && true == _playSound)
+        {
+            Sound.PlayUI(SoundID.OptionClick);
+        }
 
         for (int i = 0; tabs.Length > i; i++)
         {

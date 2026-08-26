@@ -5,10 +5,10 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// 옵션 패널 - 컨트롤(조작) 탭의 키보드/마우스 전용 키 변경 행 컴포넌트입니다.
-/// 행 자체가 단일 Selectable 버튼으로 작동하며, 마우스 클릭 또는 패드/키보드 선택 후 Submit 시 리바인딩 프롬프트를 엽니다.
+/// 옵션 패널 - 컨트롤(조작) 탭의 게임패드 전용 키 변경 행 컴포넌트입니다.
+/// 행 자체가 단일 Selectable 버튼으로 작동하며, 패드로 선택 후 A 버튼(Submit) 클릭 시 리바인딩 프롬프트를 엽니다.
 /// </summary>
-public class UI_OptionKeyBindRow : Selectable,
+public class UI_OptionGamepadKeyBindRow : Selectable,
     IMoveHandler,
     ISubmitHandler,
     IPointerClickHandler,
@@ -17,12 +17,14 @@ public class UI_OptionKeyBindRow : Selectable,
 {
     [Header("UI Components")]
     [SerializeField] private TextMeshProUGUI actionNameText;     // 액션 한글 이름
-    [SerializeField] private Image keyIconImage;                  // 키 아이콘 이미지
+    [SerializeField] private Image keyIconImage;                  // 패드 버튼 아이콘 이미지
     [SerializeField] private TextMeshProUGUI keyFallbackText;    // 아이콘 없을 때 폴백 텍스트
+    [SerializeField] private GameObject lockIndicator;           // 리바인드 불가(이동 등) 잠금 표시 UI
 
     [Header("Conflict Warning")]
     [SerializeField] private Color normalColor = Color.white;
     [SerializeField] private Color conflictColor = Color.red;
+    [SerializeField] private Color disabledColor = new Color(0.6f, 0.6f, 0.6f, 0.5f);
 
     [Header("Focus Visual Settings")]
     [SerializeField] private Image backgroundImage;
@@ -42,7 +44,9 @@ public class UI_OptionKeyBindRow : Selectable,
     [SerializeField] private SoundID clickSoundId = SoundID.OptionClick;
 
     private ERebindableAction boundAction;
+    private bool isRebindable = true;
     private KeyIconDatabase iconDatabase;
+    private EGamepadIconSet iconSet = EGamepadIconSet.Xbox;
     private Action<ERebindableAction> onRebindRequested;
     private ICursorBoxUI cursorBoxUI;
     private InputManager inputManager;
@@ -50,6 +54,7 @@ public class UI_OptionKeyBindRow : Selectable,
     private bool isInteractableState = true;
 
     public ERebindableAction BoundAction => boundAction;
+    public bool IsRebindable => isRebindable;
     public new bool IsInteractable => isInteractableState && interactable;
 
     protected override void Awake()
@@ -77,52 +82,44 @@ public class UI_OptionKeyBindRow : Selectable,
         string _bindingPath,
         string _displayString,
         bool _isConflict,
+        bool _isRebindable,
         KeyIconDatabase _iconDB,
-        Action<ERebindableAction> _onRebind)
+        Action<ERebindableAction> _onRebind,
+        EGamepadIconSet _iconSet = EGamepadIconSet.Xbox)
     {
         boundAction = _action;
         iconDatabase = _iconDB;
         onRebindRequested = _onRebind;
+        iconSet = _iconSet;
 
         if (null != actionNameText)
         {
             actionNameText.text = _label;
         }
 
-        Refresh(_bindingPath, _displayString, _isConflict);
+        Refresh(_bindingPath, _displayString, _isConflict, _isRebindable, _iconSet);
     }
 
-    public void SetInteractable(bool _interactable)
+    public void Refresh(string _bindingPath, string _displayString, bool _isConflict, bool _isRebindable = true, EGamepadIconSet? _iconSet = null)
     {
-        isInteractableState = _interactable;
-        interactable = _interactable;
-        if (false == _interactable)
+        if (null != _iconSet)
         {
-            ApplyFocusVisual(false);
-            HideCursor();
+            iconSet = _iconSet.Value;
         }
-    }
+        isRebindable = _isRebindable;
 
-    public void SetCursorBoxUI(ICursorBoxUI _cursorBoxUI, InputManager _inputManager = null)
-    {
-        cursorBoxUI = _cursorBoxUI;
-        inputManager = _inputManager;
-    }
+        if (null != lockIndicator)
+        {
+            lockIndicator.SetActive(false == _isRebindable);
+        }
 
-    public void SetCustomScroll(UI_CustomScroll _customScroll)
-    {
-        customScroll = _customScroll;
-    }
-
-    public void Refresh(string _bindingPath, string _displayString, bool _isConflict)
-    {
         Sprite _icon = null;
         if (null != iconDatabase && false == string.IsNullOrEmpty(_bindingPath))
         {
-            _icon = iconDatabase.GetIcon(_bindingPath);
+            _icon = iconDatabase.GetIcon(_bindingPath, iconSet);
         }
 
-        Color _targetColor = true == _isConflict ? conflictColor : normalColor;
+        Color _targetColor = true == _isConflict ? conflictColor : (false == isRebindable ? disabledColor : normalColor);
 
         if (null != _icon)
         {
@@ -146,10 +143,41 @@ public class UI_OptionKeyBindRow : Selectable,
             if (null != keyFallbackText)
             {
                 keyFallbackText.gameObject.SetActive(true);
-                keyFallbackText.text = _displayString;
+                keyFallbackText.text = FormatGamepadDisplayString(_bindingPath, _displayString);
                 keyFallbackText.color = _targetColor;
             }
         }
+    }
+
+    private string FormatGamepadDisplayString(string _bindingPath, string _rawDisplayString)
+    {
+        if (false == string.IsNullOrWhiteSpace(_rawDisplayString))
+        {
+            return _rawDisplayString;
+        }
+
+        if (true == string.IsNullOrEmpty(_bindingPath)) return string.Empty;
+
+        if (true == _bindingPath.Contains("buttonSouth")) return "A";
+        if (true == _bindingPath.Contains("buttonEast")) return "B";
+        if (true == _bindingPath.Contains("buttonWest")) return "X";
+        if (true == _bindingPath.Contains("buttonNorth")) return "Y";
+        if (true == _bindingPath.Contains("leftTrigger")) return "LT";
+        if (true == _bindingPath.Contains("rightTrigger")) return "RT";
+        if (true == _bindingPath.Contains("leftShoulder")) return "LB";
+        if (true == _bindingPath.Contains("rightShoulder")) return "RB";
+        if (true == _bindingPath.Contains("leftStickPress")) return "LS";
+        if (true == _bindingPath.Contains("rightStickPress")) return "RS";
+        if (true == _bindingPath.Contains("leftStick")) return "Left Stick";
+        if (true == _bindingPath.Contains("rightStick")) return "Right Stick";
+        if (true == _bindingPath.Contains("dpad/up")) return "D-Up";
+        if (true == _bindingPath.Contains("dpad/down")) return "D-Down";
+        if (true == _bindingPath.Contains("dpad/left")) return "D-Left";
+        if (true == _bindingPath.Contains("dpad/right")) return "D-Right";
+        if (true == _bindingPath.Contains("start")) return "Start";
+        if (true == _bindingPath.Contains("select")) return "Select";
+
+        return _bindingPath.Replace("<Gamepad>/", "");
     }
 
     public void RefreshLabel(string _label)
@@ -158,6 +186,17 @@ public class UI_OptionKeyBindRow : Selectable,
         {
             actionNameText.text = _label;
         }
+    }
+
+    public void SetCursorBoxUI(ICursorBoxUI _cursorBoxUI, InputManager _inputManager = null)
+    {
+        cursorBoxUI = _cursorBoxUI;
+        inputManager = _inputManager;
+    }
+
+    public void SetCustomScroll(UI_CustomScroll _scroll)
+    {
+        customScroll = _scroll;
     }
 
     public void ApplyFocusVisual(bool _isFocused)
@@ -179,11 +218,6 @@ public class UI_OptionKeyBindRow : Selectable,
         {
             actionNameText.color = (true == _isFocused) ? hoverTextColor : normalTextColor;
         }
-    }
-
-    public void SetRowFocus(bool _isFocused)
-    {
-        ApplyFocusVisual(_isFocused);
     }
 
     public void ShowCursor()
@@ -266,6 +300,7 @@ public class UI_OptionKeyBindRow : Selectable,
     private void ExecuteRebindRequest()
     {
         if (false == IsInteractable) return;
+        if (false == isRebindable) return;
 
         Sound.PlayUI(clickSoundId);
 

@@ -75,7 +75,7 @@ public enum EFPS { FPS60, FPS75, FPS120, FPS144, FPS165, FPS240, VSync, Unlimite
 /// 주의: 다른 옵션 enum과 마찬가지로 정수값이 그대로 Settings.json에 직렬화됩니다.
 /// 기존 항목의 순서를 바꾸거나 중간에 삽입하지 마세요. Auto는 기본값이므로 반드시 0입니다.
 /// </summary>
-public enum EGamepadIconPreference { Auto, Xbox, PlayStation, Nintendo, Generic }
+public enum EGamepadIconPreference { Auto, Xbox, PlayStation, Generic }
 
 /// <summary>
 /// 환경설정 값 전체를 담는 데이터 모델입니다.
@@ -139,7 +139,7 @@ public struct SettingsData
     public const int WINDOW_MODE_COUNT = 2;
     public const int FPS_COUNT = 8;
     public const int ON_OFF_COUNT = 2;
-    public const int GAMEPAD_ICON_PREFERENCE_COUNT = 5;
+    public const int GAMEPAD_ICON_PREFERENCE_COUNT = 4;
 
     /// <summary>
     /// LocalizationManager가 실제로 처리할 수 있는 언어 수입니다.

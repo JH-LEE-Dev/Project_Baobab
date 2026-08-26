@@ -593,6 +593,61 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         }
     }
 
+    public IReadOnlyList<HUD_PopupNav_SubRegionBtn> GetActiveSubRegionButtons() => activeSubRegionButtons;
+
+    public HUD_PopupNav_SubRegionBtn GetHoveredSubRegionButton()
+    {
+        for (int i = 0; activeSubRegionButtons.Count > i; i++)
+        {
+            if (null != activeSubRegionButtons[i] && true == activeSubRegionButtons[i].gameObject.activeSelf && true == activeSubRegionButtons[i].IsMouseOver())
+            {
+                return activeSubRegionButtons[i];
+            }
+        }
+        return null;
+    }
+
+    public int GetSubRegionIndex(ForestType _forestType)
+    {
+        for (int i = 0; activeSubRegionButtons.Count > i; i++)
+        {
+            if (null != activeSubRegionButtons[i] && true == activeSubRegionButtons[i].gameObject.activeSelf && _forestType == activeSubRegionButtons[i].GetForestType())
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public int GetFirstUnlockedSubRegionIndex()
+    {
+        for (int i = 0; activeSubRegionButtons.Count > i; i++)
+        {
+            if (null != activeSubRegionButtons[i] && true == activeSubRegionButtons[i].gameObject.activeSelf && true == activeSubRegionButtons[i].IsUnlocked)
+            {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    public void FocusSubRegionButton(int _index)
+    {
+        for (int i = 0; activeSubRegionButtons.Count > i; i++)
+        {
+            if (null == activeSubRegionButtons[i] || false == activeSubRegionButtons[i].gameObject.activeSelf) continue;
+
+            if (i == _index)
+            {
+                activeSubRegionButtons[i].TriggerHover();
+            }
+            else
+            {
+                activeSubRegionButtons[i].ForceStopHoverEffect();
+            }
+        }
+    }
+
     public void ResetState()
     {
         if (null != currentAppearSequence && true == currentAppearSequence.IsActive())

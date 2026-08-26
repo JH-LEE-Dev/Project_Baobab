@@ -241,6 +241,64 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
         }
     }
 
+    public IReadOnlyList<HUD_PopupNav_RegionBtn> GetActiveRegionButtons()
+    {
+        return regionButtons;
+    }
+
+    public HUD_PopupNav_RegionBtn GetHoveredRegionButton()
+    {
+        for (int i = 0; regionButtons.Count > i; i++)
+        {
+            if (null != regionButtons[i] && true == regionButtons[i].gameObject.activeSelf && true == regionButtons[i].IsMouseOver())
+            {
+                return regionButtons[i];
+            }
+        }
+        return null;
+    }
+
+    public int GetActiveRegionIndex(MapType _mapType)
+    {
+        for (int i = 0; regionButtons.Count > i; i++)
+        {
+            if (null != regionButtons[i] && true == regionButtons[i].gameObject.activeSelf && _mapType == regionButtons[i].GetMapType())
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public int GetFirstUnlockedRegionIndex()
+    {
+        for (int i = 0; regionButtons.Count > i; i++)
+        {
+            if (null != regionButtons[i] && true == regionButtons[i].gameObject.activeSelf && true == regionButtons[i].IsUnlocked)
+            {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    public void FocusRegionButton(int _index)
+    {
+        for (int i = 0; regionButtons.Count > i; i++)
+        {
+            if (null == regionButtons[i] || false == regionButtons[i].gameObject.activeSelf) continue;
+
+            if (i == _index)
+            {
+                regionButtons[i].TriggerHover();
+            }
+            else
+            {
+                regionButtons[i].ForceStopHoverEffect();
+            }
+        }
+    }
+
     public void EvaluateAllHoverStates()
     {
         for (int i = 0; i < regionButtons.Count; i++)

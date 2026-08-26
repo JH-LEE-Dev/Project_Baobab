@@ -243,25 +243,31 @@ public class UI_MainMenu : MonoBehaviour
         SelectFirstActiveButton();
     }
 
-    public void SelectFirstActiveButton()
+    public UI_MainMenuButton GetFirstActiveButton()
     {
-        if (null == viewCtx || null == viewCtx.inputManager || false == viewCtx.inputManager.IsGamepadMode)
-            return;
-
-        if (null == buttonsInOrder)
-            return;
+        if (null == buttonsInOrder) return null;
 
         for (int i = 0; buttonsInOrder.Length > i; i++)
         {
             UI_MainMenuButton _btn = buttonsInOrder[i];
             if (null != _btn && true == _btn.gameObject.activeInHierarchy)
             {
-                if (null != EventSystem.current)
-                {
-                    EventSystem.current.SetSelectedGameObject(_btn.gameObject);
-                }
-                break;
+                return _btn;
             }
+        }
+        return null;
+    }
+
+    public void SelectFirstActiveButton()
+    {
+        if (null == viewCtx || null == viewCtx.inputManager || false == viewCtx.inputManager.IsGamepadMode)
+            return;
+
+        UI_MainMenuButton _first = GetFirstActiveButton();
+        if (null != _first && null != EventSystem.current)
+        {
+            EventSystem.current.SetSelectedGameObject(_first.gameObject);
+            _first.ForceHover();
         }
     }
 
@@ -282,23 +288,68 @@ public class UI_MainMenu : MonoBehaviour
     {
         if (EInputDeviceType.Gamepad == _device)
         {
-            if (null != newGameButton && true == newGameButton.gameObject.activeInHierarchy)
+            UI_MainMenuButton _hoveredBtn = null;
+            if (null != buttonsInOrder)
             {
-                if (null != EventSystem.current)
+                for (int i = 0; i < buttonsInOrder.Length; i++)
                 {
-                    GameObject _cur = EventSystem.current.currentSelectedGameObject;
-                    if (null == _cur || false == IsMainMenuButton(_cur))
+                    UI_MainMenuButton _btn = buttonsInOrder[i];
+                    if (null != _btn && true == _btn.gameObject.activeInHierarchy && true == _btn.IsMouseOver())
                     {
-                        SelectFirstActiveButton();
+                        _hoveredBtn = _btn;
+                        break;
                     }
                 }
             }
+
+            UI_MainMenuButton _targetBtn = _hoveredBtn;
+            if (null == _targetBtn)
+            {
+                _targetBtn = GetFirstActiveButton();
+            }
+
+            if (null != buttonsInOrder)
+            {
+                for (int i = 0; i < buttonsInOrder.Length; i++)
+                {
+                    UI_MainMenuButton _btn = buttonsInOrder[i];
+                    if (null != _btn && _btn != _targetBtn)
+                    {
+                        _btn.ForceUnhover();
+                    }
+                }
+            }
+
+            if (null != _targetBtn && null != EventSystem.current)
+            {
+                EventSystem.current.SetSelectedGameObject(_targetBtn.gameObject);
+                _targetBtn.ForceHover();
+            }
         }
-        else
+        else if (EInputDeviceType.KeyboardMouse == _device)
         {
             if (null != EventSystem.current)
             {
                 EventSystem.current.SetSelectedGameObject(null);
+            }
+
+            if (null != buttonsInOrder)
+            {
+                for (int i = 0; i < buttonsInOrder.Length; i++)
+                {
+                    UI_MainMenuButton _btn = buttonsInOrder[i];
+                    if (null != _btn && true == _btn.gameObject.activeInHierarchy)
+                    {
+                        if (true == _btn.IsMouseOver())
+                        {
+                            _btn.ForceHover();
+                        }
+                        else
+                        {
+                            _btn.ForceUnhover();
+                        }
+                    }
+                }
             }
         }
     }

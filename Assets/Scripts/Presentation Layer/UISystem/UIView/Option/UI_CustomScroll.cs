@@ -179,6 +179,14 @@ public class UI_CustomScroll : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         verticalScrollbar.interactable = 1f > _sizeRatio;
     }
 
+    public void SetContent(RectTransform _newContent)
+    {
+        if (content == _newContent) return;
+        content = _newContent;
+        UpdateScrollbarSize();
+        SyncScrollbarFromContent();
+    }
+
     public void ResetScrollPosition()
     {
         if (null == content) return;
@@ -188,9 +196,34 @@ public class UI_CustomScroll : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 
     public void EnsureVisible(RectTransform _target)
     {
-        if (null == _target || null == content || null == viewport) return;
+        if (null == _target || null == viewport) return;
+
+        // 뷰포트 내부의 요소가 아닌 고정 UI(전체 초기화 버튼, 적용/닫기 버튼 등)는 스크롤하지 않고 무시한다.
+        if (false == _target.IsChildOf(viewport)) return;
+
+        if (null == content || false == content.gameObject.activeInHierarchy || false == _target.IsChildOf(content))
+        {
+            Transform _curr = _target;
+            while (null != _curr && _curr.parent != viewport && null != _curr.parent)
+            {
+                _curr = _curr.parent;
+            }
+
+            if (null != _curr && _curr is RectTransform _contentRt)
+            {
+                SetContent(_contentRt);
+            }
+        }
+
+        if (null == content) return;
 
         float _contentHeight = content.rect.height;
+        if (0f >= _contentHeight)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+            _contentHeight = content.rect.height;
+        }
+
         float _viewportHeight = viewport.rect.height;
         if (_contentHeight <= _viewportHeight) return;
 

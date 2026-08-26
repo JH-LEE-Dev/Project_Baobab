@@ -453,6 +453,17 @@
       "enumValue": ""
     },
     {
+      "id": 3131,
+      "key": "pressGamepadPrompt",
+      "kr": "변경할 패드 버튼을 입력하세요.",
+      "en": "Press any button to bind",
+      "zhHans": "请按下要绑定的手柄按键。",
+      "zhHant": "請按下要綁定的手柄按鍵。",
+      "ja": "割り当てるボタンを押してください。",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
       "id": 314,
       "key": "resetAllWarning",
       "kr": "모든 키 설정을 기본값으로 되돌리시겠습니까?",

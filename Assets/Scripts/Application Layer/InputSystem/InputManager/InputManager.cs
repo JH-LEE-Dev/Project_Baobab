@@ -81,7 +81,6 @@ public class InputManager : MonoBehaviour
         {
             case EGamepadIconPreference.Xbox: _iconSet = EGamepadIconSet.Xbox; return true;
             case EGamepadIconPreference.PlayStation: _iconSet = EGamepadIconSet.PlayStation; return true;
-            case EGamepadIconPreference.Nintendo: _iconSet = EGamepadIconSet.Nintendo; return true;
             case EGamepadIconPreference.Generic: _iconSet = EGamepadIconSet.Generic; return true;
 
             default:
@@ -163,17 +162,16 @@ public class InputManager : MonoBehaviour
     /// </summary>
     private void ApplyCursorVisibility()
     {
-        // 포커스를 잃은 동안에는 무조건 돌려준다. 창 모드에서 게임 창 위에 커서가 없으면
-        // 유저는 다른 창을 클릭할 수도, 창을 닫을 수도 없다고 느낀다.
-        bool _bVisible = (false == bApplicationFocused) || (false == IsGamepadMode);
-
+#if UNITY_EDITOR
+        bool _bVisible = (false == IsGamepadMode);
+#else
+        bool _bVisible = (false == Application.isFocused) || (false == IsGamepadMode);
+#endif
         SetCursorVisible(_bVisible);
     }
 
     private void SetCursorVisible(bool _bVisible)
     {
-        if (bCursorVisibleApplied == _bVisible) return;
-
         bCursorVisibleApplied = _bVisible;
         Cursor.visible = _bVisible;
     }
@@ -211,22 +209,22 @@ public class InputManager : MonoBehaviour
 
     public string GetBindingPath(ERebindableAction _action, EInputDeviceType _device)
     {
-        return inputReader.GetBindingPath(_action, _device);
+        return null != inputReader ? inputReader.GetBindingPath(_action, _device) : null;
     }
 
     public string GetBindingDisplayString(ERebindableAction _action, EInputDeviceType _device)
     {
-        return inputReader.GetBindingDisplayString(_action, _device);
+        return null != inputReader ? inputReader.GetBindingDisplayString(_action, _device) : string.Empty;
     }
 
     public string GetBindingPathForCurrentDevice(ERebindableAction _action)
     {
-        return inputReader.GetBindingPathForCurrentDevice(_action);
+        return null != inputReader ? inputReader.GetBindingPathForCurrentDevice(_action) : null;
     }
 
     public string GetBindingDisplayStringForCurrentDevice(ERebindableAction _action)
     {
-        return inputReader.GetBindingDisplayStringForCurrentDevice(_action);
+        return null != inputReader ? inputReader.GetBindingDisplayStringForCurrentDevice(_action) : string.Empty;
     }
 
     public bool HasBindingFor(ERebindableAction _action, EInputDeviceType _device)

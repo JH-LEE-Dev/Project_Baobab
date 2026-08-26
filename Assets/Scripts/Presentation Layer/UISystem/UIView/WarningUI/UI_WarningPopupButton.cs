@@ -69,8 +69,10 @@ public class UI_WarningPopupButton : Selectable,
     [SerializeField] private SoundID clickSoundId = SoundID.OptionClick;
     private bool isInteractable = true;
     private bool isHovered = false;
+    private bool isPointerHovered = false;
 
     public bool IsHovered => isHovered;
+    public bool IsPointerHovered => isPointerHovered;
 
     // 초기 상태 캐싱
     private Vector3 originalScale;
@@ -93,6 +95,7 @@ public class UI_WarningPopupButton : Selectable,
     {
         base.OnDisable();
         isHovered = false;
+        isPointerHovered = false;
         
         KillTween();
         
@@ -183,10 +186,23 @@ public class UI_WarningPopupButton : Selectable,
         }
     }
 
+    public void ResetHoverState()
+    {
+        isHovered = false;
+        isPointerHovered = false;
+        KillTween();
+        if (null != scaleTarget)
+        {
+            scaleTarget.localScale = originalScale;
+            scaleTarget.localRotation = originalRotation;
+        }
+    }
+
     public override void OnPointerEnter(PointerEventData _eventData)
     {
         base.OnPointerEnter(_eventData);
         isHovered = true;
+        isPointerHovered = true;
         if (false == isInteractable)
             return;
 
@@ -206,6 +222,7 @@ public class UI_WarningPopupButton : Selectable,
     {
         base.OnPointerExit(_eventData);
         isHovered = false;
+        isPointerHovered = false;
         if (false == isInteractable)
             return;
         

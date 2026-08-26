@@ -169,6 +169,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     public ForestType GetForestType() => myInfo.forestType;
     public ForestEnvironmentInfo GetInfo() => myInfo;
+    public bool IsUnlocked => (true == myInfo.isUnlocked);
 
     /// <summary>
     /// 레이아웃 배치 시 사용될 실제 시각적 너비를 반환합니다.
@@ -344,7 +345,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         mainController.HandleSubRegionSelected(myInfo.forestType);
     }
 
-    private void PlayLockedInteraction()
+    public void PlayLockedInteraction()
     {
         if (null == lockIconObj) return;
 
@@ -407,7 +408,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         }
     }
 
-    private void TriggerHover()
+    public void TriggerHover()
     {
         if (false == myInfo.isUnlocked)
         {
@@ -524,6 +525,65 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             RectTransform target = null != cursorTargetTransform ? cursorTargetTransform : CachedRectTransform;
             cursorBoxUI.Hide(target);
         }
+    }
+
+    public void ForceStopHoverEffect()
+    {
+        isPointerOver = false;
+
+        if (null != hoverTween && true == hoverTween.IsActive())
+        {
+            hoverTween.Kill();
+            hoverTween = null;
+        }
+
+        for (int i = 0; i < treeProps.Count; i++)
+        {
+            if (null != treeProps[i] && true == treeProps[i].gameObject.activeSelf)
+            {
+                treeProps[i].SetVisualState(TreeVisualState.Unlocked_Idle, colorTransitionDuration);
+                treeProps[i].StopHoverEffect();
+            }
+        }
+
+        Sequence _seq = DOTween.Sequence();
+        for (int i = 0; i < visualChildren.Count; i++)
+        {
+            _seq.Join(visualChildren[i].DOScale(1f, 0.2f).SetEase(Ease.OutBack));
+        }
+        hoverTween = _seq;
+
+        if (null != cursorBoxUI)
+        {
+            RectTransform target = null != cursorTargetTransform ? cursorTargetTransform : CachedRectTransform;
+            cursorBoxUI.Hide(target);
+        }
+    }
+
+    public bool IsMouseOver()
+    {
+        if (false == gameObject.activeInHierarchy) return false;
+        if (true == isPointerOver) return true;
+
+        RectTransform _rect = null != clickImage ? clickImage.rectTransform : CachedRectTransform;
+        if (null == _rect) return false;
+
+        Vector2 _mousePos = Vector2.zero;
+        if (null != UnityEngine.InputSystem.Mouse.current)
+        {
+            _mousePos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+        }
+        else
+        {
+            _mousePos = Input.mousePosition;
+        }
+
+        Canvas _canvas = GetComponentInParent<Canvas>();
+        Camera _cam = (null != _canvas && RenderMode.ScreenSpaceOverlay != _canvas.renderMode)
+            ? _canvas.worldCamera
+            : null;
+
+        return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, _cam);
     }
 
     public void StopAllTreePropHoverEffects()

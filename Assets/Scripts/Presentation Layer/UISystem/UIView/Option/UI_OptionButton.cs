@@ -84,6 +84,24 @@ public class UI_OptionButton : Selectable,
         targetImage = targetGraphic as Image;
     }
 
+    protected override void OnEnable()
+    {
+        base.OnEnable();
+        isHovered = false;
+        isPointerDown = false;
+
+        KillTween();
+        HideCursor();
+        OnFocusChanged?.Invoke(false);
+
+        Color _targetGraphicColor = (EVisualMode.Color == visualMode) ? normalColor : (null != targetGraphic ? targetGraphic.color : Color.white);
+        _targetGraphicColor.a = (true == isInteractable) ? 1f : 0.5f;
+        Color _targetTextColor = normalTextColor; _targetTextColor.a = (true == isInteractable) ? 1f : 0.5f;
+        Color _targetEffectColor = normalEffectColor; _targetEffectColor.a = (true == isInteractable) ? 1f : 0.5f;
+
+        ApplyVisualState(originalScale, _targetGraphicColor, normalSprite, _targetTextColor, _targetEffectColor, false);
+    }
+
     public void SetPairedButton(UI_OptionButton _pair, EArrowDirection _direction)
     {
         pairedArrowButton = _pair;
