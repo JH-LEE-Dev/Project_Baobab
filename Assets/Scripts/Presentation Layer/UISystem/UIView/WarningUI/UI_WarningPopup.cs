@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
@@ -35,6 +36,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     private Action onConfirmAction;
     private Action onCancelAction;
     private Action cachedOnUICancel;
+    private Action<EInputDeviceType> cachedOnInputDeviceChanged;
     private GameObject previousSelectedGameObject;
     private SoundID openSoundId = SoundID.None;
     private SoundID closeSoundId = SoundID.None;
@@ -65,6 +67,11 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         {
             cachedOnUICancel = OnCancelButtonClicked;
         }
+
+        if (null == cachedOnInputDeviceChanged)
+        {
+            cachedOnInputDeviceChanged = OnInputDeviceChanged;
+        }
     }
 
     private void OnDestroy()
@@ -74,14 +81,22 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         KillSequence();
         HideCursor();
 
-        if (null != inputManager && null != inputManager.inputReader && null != cachedOnUICancel)
+        if (null != inputManager && null != inputManager.inputReader)
         {
-            inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+            if (null != cachedOnUICancel)
+            {
+                inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+            }
+            if (null != cachedOnInputDeviceChanged)
+            {
+                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+            }
         }
 
         onConfirmAction = null;
         onCancelAction = null;
         cachedOnUICancel = null;
+        cachedOnInputDeviceChanged = null;
         previousSelectedGameObject = null;
         cursorBoxUI = null;
         depthController = null;
@@ -95,17 +110,28 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
             return;
         }
 
+        if (null == cachedOnUICancel)
+        {
+            cachedOnUICancel = OnCancelButtonClicked;
+        }
+
+        if (null == cachedOnInputDeviceChanged)
+        {
+            cachedOnInputDeviceChanged = OnInputDeviceChanged;
+        }
+
         if (null != _ctx)
         {
             cursorBoxUI = _ctx.cursorBoxUI;
             depthController = _ctx.depthController;
             inputManager = _ctx.inputManager;
             isInitialized = true;
-        }
 
-        if (null == cachedOnUICancel)
-        {
-            cachedOnUICancel = OnCancelButtonClicked;
+            if (null != inputManager && null != inputManager.inputReader && null != cachedOnInputDeviceChanged)
+            {
+                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+                inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
+            }
         }
     }
 
@@ -127,10 +153,18 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     {
         previousSelectedGameObject = EventSystem.current?.currentSelectedGameObject;
 
-        if (null != inputManager && null != inputManager.inputReader && null != cachedOnUICancel)
+        if (null != inputManager && null != inputManager.inputReader)
         {
-            inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
-            inputManager.inputReader.UICancelEvent += cachedOnUICancel;
+            if (null != cachedOnUICancel)
+            {
+                inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+                inputManager.inputReader.UICancelEvent += cachedOnUICancel;
+            }
+            if (null != cachedOnInputDeviceChanged)
+            {
+                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+                inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
+            }
         }
 
         if (null != messageText)
@@ -211,9 +245,6 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         if (null == cursorBoxUI || null == _button)
             return;
 
-        if (null != inputManager && false == inputManager.IsGamepadMode)
-            return;
-
         RectTransform targetRect = _button.GetCursorTargetRect();
         if (null == targetRect)
             return;
@@ -229,14 +260,18 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         if (null == cursorBoxUI || null == _button)
             return;
 
-        RectTransform targetRect = _button.GetCursorTargetRect();
-        if (null != targetRect)
+        // 키마 모드일 때만 마우스가 버튼을 벗어났을 때 커서박스를 숨긴다.
+        if (null != inputManager && false == inputManager.IsGamepadMode)
         {
-            cursorBoxUI.Hide(targetRect);
-        }
-        else
-        {
-            cursorBoxUI.Hide();
+            RectTransform targetRect = _button.GetCursorTargetRect();
+            if (null != targetRect)
+            {
+                cursorBoxUI.Hide(targetRect);
+            }
+            else
+            {
+                cursorBoxUI.Hide();
+            }
         }
     }
 
@@ -250,6 +285,110 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         if (null != cursorBoxUI)
         {
             cursorBoxUI.HideImmediately();
+        }
+    }
+
+    private bool IsMouseOverButton(UI_WarningPopupButton _button)
+    {
+        if (null == _button || false == _button.gameObject.activeInHierarchy) return false;
+        if (true == _button.IsPointerHovered) return true;
+
+        RectTransform _rect = _button.transform as RectTransform;
+        if (null == _rect) return false;
+
+        Vector2 _mousePos = Vector2.zero;
+        if (null != Mouse.current)
+        {
+            _mousePos = Mouse.current.position.ReadValue();
+        }
+        else
+        {
+            _mousePos = Input.mousePosition;
+        }
+
+        Canvas _canvas = _button.GetComponentInParent<Canvas>();
+        Camera _cam = (null != _canvas && RenderMode.ScreenSpaceOverlay != _canvas.renderMode) ? _canvas.worldCamera : null;
+
+        return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, _cam);
+    }
+
+    private void OnInputDeviceChanged(EInputDeviceType _device)
+    {
+        if (false == gameObject.activeInHierarchy || false == IsActive) return;
+
+        if (EInputDeviceType.Gamepad == _device)
+        {
+            Cursor.visible = false;
+
+            if (null != confirmButton) confirmButton.ResetHoverState();
+            if (null != cancelButton) cancelButton.ResetHoverState();
+
+            GameObject _selected = EventSystem.current?.currentSelectedGameObject;
+            bool _isOurButton = (null != _selected &&
+                                 true == _selected.activeInHierarchy &&
+                                 ((null != confirmButton && _selected == confirmButton.gameObject) ||
+                                  (null != cancelButton && _selected == cancelButton.gameObject)));
+
+            if (false == _isOurButton)
+            {
+                if (null != confirmButton && true == confirmButton.gameObject.activeInHierarchy)
+                {
+                    if (null != EventSystem.current)
+                    {
+                        EventSystem.current.SetSelectedGameObject(confirmButton.gameObject);
+                    }
+                    OnButtonHovered(confirmButton);
+                }
+            }
+            else
+            {
+                UI_WarningPopupButton _btn = _selected.GetComponent<UI_WarningPopupButton>();
+                if (null != _btn)
+                {
+                    OnButtonHovered(_btn);
+                }
+            }
+        }
+        else if (EInputDeviceType.KeyboardMouse == _device)
+        {
+            Cursor.visible = true;
+
+            if (true == IsMouseOverButton(confirmButton))
+            {
+                OnButtonHovered(confirmButton);
+            }
+            else if (true == IsMouseOverButton(cancelButton))
+            {
+                OnButtonHovered(cancelButton);
+            }
+            else
+            {
+                HideCursor();
+            }
+        }
+    }
+
+    private void Update()
+    {
+        if (false == gameObject.activeInHierarchy || false == IsActive) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
+
+        if (null != EventSystem.current)
+        {
+            GameObject _selected = EventSystem.current.currentSelectedGameObject;
+            bool _isValid = (null != _selected &&
+                             true == _selected.activeInHierarchy &&
+                             ((null != confirmButton && _selected == confirmButton.gameObject) ||
+                              (null != cancelButton && _selected == cancelButton.gameObject)));
+
+            if (false == _isValid)
+            {
+                if (null != confirmButton && true == confirmButton.gameObject.activeInHierarchy)
+                {
+                    EventSystem.current.SetSelectedGameObject(confirmButton.gameObject);
+                    OnButtonHovered(confirmButton);
+                }
+            }
         }
     }
 

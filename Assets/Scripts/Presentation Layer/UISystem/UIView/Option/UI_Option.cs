@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -63,8 +64,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private int lastHapticPreviewTick = int.MinValue;
 
     [Header("Control Options")]
-    [SerializeField] private Transform keyBindRowContainer;           // 행들이 배치될 부모 Transform (ScrollView Content 등)
-    [SerializeField] private UI_OptionKeyBindRow keyBindRowPrefab;    // 행 프리팹
+    [SerializeField] private Transform keyBindRowContainer;           // 키보드/마우스 행 부모 Transform (KeyMo_Contents)
+    [SerializeField] private Transform gamepadKeyBindRowContainer;    // 게임패드 행 부모 Transform (Pad_Contents)
+    [SerializeField] private UI_OptionKeyBindRow keyBindRowPrefab;    // 키보드/마우스 행 프리팹
+    [SerializeField] private UI_OptionGamepadKeyBindRow gamepadKeyBindRowPrefab; // 게임패드 행 프리팹
     [SerializeField] private UI_OptionButton resetAllBindingsButton;  // "전체 초기화" 버튼
     [SerializeField] private GameObject rebindOverlay;                // "키를 입력하세요" 오버레이
     [SerializeField] private TextMeshProUGUI rebindOverlayText;       // 오버레이 안내 텍스트
@@ -111,6 +114,9 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     public bool IsActive => gameObject.activeSelf;
     private System.Collections.Generic.List<UI_OptionKeyBindRow> keyBindRows 
         = new System.Collections.Generic.List<UI_OptionKeyBindRow>();
+    private System.Collections.Generic.List<UI_OptionGamepadKeyBindRow> gamepadKeyBindRows 
+        = new System.Collections.Generic.List<UI_OptionGamepadKeyBindRow>();
+    private Action<ERebindableAction> cachedOnGamepadRowRebindRequested;
     private string[] cachedTabTexts;
 
     private readonly struct ApplyTargetSettingsSnapshot
@@ -160,7 +166,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private Action cachedConfirmDiscardAndClose;
     private Action cachedCancelDiscardAndClose;
     private Action<ERebindableAction> cachedOnRowRebindRequested;
-    private Action<ERebindableAction> cachedOnRowResetRequested;
     private Action cachedOnResetAllClicked;
     private Action cachedRefreshKeyBindRows;
     private Action cachedExecuteResetAll;
@@ -169,6 +174,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private Action cachedOnUICancel;
     private Action<EInputDeviceType> cachedOnInputDeviceChanged;
 
+    private Coroutine rebindCoroutine;
     private ICursorBoxUI cursorBoxUI;
 
     // 퍼블릭 초기화 및 제어 메서드
@@ -263,6 +269,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         }
 
         RefreshGamepadOptionsVisibility();
+        RefreshControlTabVisibility();
 
         if (null != inputManager)
         {
@@ -447,7 +454,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         cachedCancelDiscardAndClose = OnDiscardAndCloseCancelled;
 
         cachedOnRowRebindRequested = OnRowRebindRequested;
-        cachedOnRowResetRequested = OnRowResetRequested;
+        cachedOnGamepadRowRebindRequested = OnGamepadRowRebindRequested;
         cachedOnResetAllClicked = OnResetAllClicked;
         cachedRefreshKeyBindRows = RefreshKeyBindRows;
         
@@ -461,6 +468,15 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     private void OnInputDeviceChanged(EInputDeviceType _device)
     {
+        RefreshGamepadOptionsVisibility();
+        RefreshControlTabVisibility(EInputDeviceType.Gamepad == _device);
+        SetupOptionNavigation();
+
+        if (null != warningPopup && true == warningPopup.IsActive)
+        {
+            return;
+        }
+
         if (EInputDeviceType.KeyboardMouse == _device)
         {
             cursorBoxUI?.HideImmediately();
@@ -493,17 +509,26 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
                     }
                     else
                     {
-                        UI_OptionButton _btn = _selected.GetComponent<UI_OptionButton>();
-                        if (null != _btn)
+                        UI_OptionGamepadKeyBindRow _padRow = _selected.GetComponent<UI_OptionGamepadKeyBindRow>();
+                        if (null != _padRow)
                         {
-                            _btn.ShowCursor();
+                            _padRow.ShowCursor();
+                            _padRow.ApplyFocusVisual(true);
                         }
                         else
                         {
-                            UI_OptionTabButton _tab = _selected.GetComponent<UI_OptionTabButton>();
-                            if (null != _tab)
+                            UI_OptionButton _btn = _selected.GetComponent<UI_OptionButton>();
+                            if (null != _btn)
                             {
-                                _tab.ShowCursor();
+                                _btn.ShowCursor();
+                            }
+                            else
+                            {
+                                UI_OptionTabButton _tab = _selected.GetComponent<UI_OptionTabButton>();
+                                if (null != _tab)
+                                {
+                                    _tab.ShowCursor();
+                                }
                             }
                         }
                     }
@@ -538,7 +563,18 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             {
                 if (null != keyBindRows[i])
                 {
-                    keyBindRows[i].SetRowFocus(false);
+                    keyBindRows[i].ApplyFocusVisual(false);
+                }
+            }
+        }
+
+        if (null != gamepadKeyBindRows)
+        {
+            for (int i = 0; gamepadKeyBindRows.Count > i; i++)
+            {
+                if (null != gamepadKeyBindRows[i])
+                {
+                    gamepadKeyBindRows[i].ApplyFocusVisual(false);
                 }
             }
         }
@@ -549,18 +585,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null == tabGroup) return;
 
         int _curTab = tabGroup.CurrentTabIndex;
-        List<OptionRowNav> _validRows = GetTabValidRows(_curTab);
-        Selectable _target = null;
-
-        if (0 < _validRows.Count)
-        {
-            _target = _validRows[0].left ?? _validRows[0].right;
-        }
-
-        if (null == _target)
-        {
-            _target = tabGroup.GetTabButton(_curTab);
-        }
+        Selectable _target = tabGroup.GetTabButton(_curTab);
 
         if (null != _target && true == _target.gameObject.activeInHierarchy)
         {
@@ -614,6 +639,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private void HandleTabShift(int _direction)
     {
         if (false == gameObject.activeInHierarchy || false == IsActive) return;
+        if (null != warningPopup && true == warningPopup.IsActive) return;
         if (null != tabGroup)
         {
             tabGroup.ShiftTab(_direction);
@@ -794,31 +820,67 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     private void InitializeControlTab()
     {
-        if (null == inputManager || null == keyBindRowPrefab || null == keyBindRowContainer) return;
+        if (null == inputManager) return;
 
-        // 기존 행 정리
-        for (int i = 0; keyBindRows.Count > i; i++)
-        {
-            if (null != keyBindRows[i]) Destroy(keyBindRows[i].gameObject);
-        }
-        keyBindRows.Clear();
-
-        // 리바인딩 가능한 액션 목록으로 행 동적 생성
         System.Collections.Generic.IReadOnlyList<ERebindableAction> _actions = inputManager.GetRebindableActions();
-        for (int i = 0; _actions.Count > i; i++)
+
+        // 1) 키보드/마우스 행 초기화
+        if (null != keyBindRowContainer && null != keyBindRowPrefab)
         {
-            ERebindableAction _action = _actions[i];
-            UI_OptionKeyBindRow _row = Instantiate(keyBindRowPrefab, keyBindRowContainer);
+            for (int i = 0; keyBindRows.Count > i; i++)
+            {
+                if (null != keyBindRows[i]) Destroy(keyBindRows[i].gameObject);
+            }
+            keyBindRows.Clear();
 
-            string _label = GetActionLabel(_action);
-            string _bindingPath = inputManager.GetBindingPath(_action);
-            string _displayString = inputManager.GetBindingDisplayString(_action);
-            bool _isConflict = inputManager.IsConflicting(_action);
+            UI_CustomScroll _customScroll = keyBindRowContainer.GetComponentInParent<UI_CustomScroll>();
 
-            _row.Initialize(_action, _label, _bindingPath, _displayString, _isConflict,
-                            keyIconDatabase, cachedOnRowRebindRequested, cachedOnRowResetRequested);
-            _row.SetCursorBoxUI(cursorBoxUI, inputManager);
-            keyBindRows.Add(_row);
+            for (int i = 0; _actions.Count > i; i++)
+            {
+                ERebindableAction _action = _actions[i];
+                UI_OptionKeyBindRow _row = Instantiate(keyBindRowPrefab, keyBindRowContainer);
+
+                string _label = GetActionLabel(_action);
+                string _bindingPath = inputManager.GetBindingPath(_action, EInputDeviceType.KeyboardMouse);
+                string _displayString = inputManager.GetBindingDisplayString(_action, EInputDeviceType.KeyboardMouse);
+                bool _isConflict = inputManager.IsConflicting(_action, EInputDeviceType.KeyboardMouse);
+
+                _row.Initialize(_action, _label, _bindingPath, _displayString, _isConflict,
+                                keyIconDatabase, cachedOnRowRebindRequested);
+                _row.SetCursorBoxUI(cursorBoxUI, inputManager);
+                _row.SetCustomScroll(_customScroll);
+                keyBindRows.Add(_row);
+            }
+        }
+
+        // 2) 게임패드 행 초기화
+        if (null != gamepadKeyBindRowContainer && null != gamepadKeyBindRowPrefab)
+        {
+            for (int i = 0; gamepadKeyBindRows.Count > i; i++)
+            {
+                if (null != gamepadKeyBindRows[i]) Destroy(gamepadKeyBindRows[i].gameObject);
+            }
+            gamepadKeyBindRows.Clear();
+
+            UI_CustomScroll _customScroll = gamepadKeyBindRowContainer.GetComponentInParent<UI_CustomScroll>();
+
+            for (int i = 0; _actions.Count > i; i++)
+            {
+                ERebindableAction _action = _actions[i];
+                UI_OptionGamepadKeyBindRow _padRow = Instantiate(gamepadKeyBindRowPrefab, gamepadKeyBindRowContainer);
+
+                string _label = GetActionLabel(_action);
+                string _bindingPath = inputManager.GetBindingPath(_action, EInputDeviceType.Gamepad);
+                string _displayString = inputManager.GetBindingDisplayString(_action, EInputDeviceType.Gamepad);
+                bool _isConflict = inputManager.IsConflicting(_action, EInputDeviceType.Gamepad);
+                bool _isRebindable = GamepadDefaultBindings.IsRebindableOnGamepad(_action);
+
+                _padRow.Initialize(_action, _label, _bindingPath, _displayString, _isConflict, _isRebindable,
+                                   keyIconDatabase, cachedOnGamepadRowRebindRequested);
+                _padRow.SetCursorBoxUI(cursorBoxUI, inputManager);
+                _padRow.SetCustomScroll(_customScroll);
+                gamepadKeyBindRows.Add(_padRow);
+            }
         }
 
         // 전체 초기화 버튼
@@ -831,7 +893,53 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         // 오버레이 숨김
         if (null != rebindOverlay) rebindOverlay.SetActive(false);
 
+        RefreshControlTabVisibility();
         SetupOptionNavigation();
+    }
+
+    private void RefreshControlTabVisibility(bool? _isGamepadOverride = null)
+    {
+        bool _isGamepad = _isGamepadOverride ?? (null != inputManager && true == inputManager.IsGamepadMode);
+
+        if (null == keyBindRowContainer && null != tabGroup)
+        {
+            GameObject _controlPanel = tabGroup.GetTabPanel(3);
+            if (null != _controlPanel)
+            {
+                Transform _km = _controlPanel.transform.Find("ViewRect/KeyMo_Contents");
+                if (null != _km) keyBindRowContainer = _km;
+            }
+        }
+
+        if (null == gamepadKeyBindRowContainer && null != tabGroup)
+        {
+            GameObject _controlPanel = tabGroup.GetTabPanel(3);
+            if (null != _controlPanel)
+            {
+                Transform _pad = _controlPanel.transform.Find("ViewRect/Pad_Contents");
+                if (null != _pad) gamepadKeyBindRowContainer = _pad;
+            }
+        }
+
+        if (null != keyBindRowContainer)
+        {
+            keyBindRowContainer.gameObject.SetActive(false == _isGamepad);
+        }
+
+        if (null != gamepadKeyBindRowContainer)
+        {
+            gamepadKeyBindRowContainer.gameObject.SetActive(true == _isGamepad);
+        }
+
+        Transform _activeContainer = (true == _isGamepad) ? gamepadKeyBindRowContainer : keyBindRowContainer;
+        if (null != _activeContainer)
+        {
+            UI_CustomScroll _customScroll = _activeContainer.GetComponentInParent<UI_CustomScroll>();
+            if (null != _customScroll)
+            {
+                _customScroll.SetContent(_activeContainer as RectTransform);
+            }
+        }
     }
 
     private string GetActionLabel(ERebindableAction _action)
@@ -1008,24 +1116,31 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         }
 
         bool _isApplyValid = (null != applyButton && true == applyButton.gameObject.activeSelf && true == applyButton.IsInteractable);
+        bool _isResetAllValid = (null != resetAllBindingsButton && true == resetAllBindingsButton.gameObject.activeSelf && true == resetAllBindingsButton.IsInteractable);
         bool _isCloseValid = (null != closeButton && true == closeButton.gameObject.activeSelf && true == closeButton.IsInteractable);
 
-        if (true == _isApplyValid && true == _isCloseValid)
+        Selectable _rightBottomButton = true == _isApplyValid ? (Selectable)applyButton : (true == _isResetAllValid ? (Selectable)resetAllBindingsButton : null);
+
+        if (null != _rightBottomButton && true == _isCloseValid)
         {
-            Navigation _applyNav = new Navigation();
-            _applyNav.mode = Navigation.Mode.Explicit;
-            _applyNav.selectOnUp = _elementAboveBottom;
-            _applyNav.selectOnDown = closeButton;
-            _applyNav.selectOnLeft = applyButton;
-            _applyNav.selectOnRight = closeButton;
-            applyButton.navigation = _applyNav;
+            Selectable _aboveTarget = (_elementAboveBottom != _rightBottomButton)
+                ? _elementAboveBottom
+                : (1 < _validRows.Count ? (_validRows[_validRows.Count - 2].left ?? _validRows[_validRows.Count - 2].right) : tabGroup.GetTabButton(_curTab));
+
+            Navigation _rightNav = new Navigation();
+            _rightNav.mode = Navigation.Mode.Explicit;
+            _rightNav.selectOnUp = _aboveTarget;
+            _rightNav.selectOnDown = closeButton;
+            _rightNav.selectOnLeft = closeButton;
+            _rightNav.selectOnRight = _rightBottomButton;
+            _rightBottomButton.navigation = _rightNav;
 
             Navigation _closeNav = new Navigation();
             _closeNav.mode = Navigation.Mode.Explicit;
-            _closeNav.selectOnUp = applyButton;
+            _closeNav.selectOnUp = _aboveTarget;
             _closeNav.selectOnDown = null;
-            _closeNav.selectOnLeft = applyButton;
-            _closeNav.selectOnRight = closeButton;
+            _closeNav.selectOnLeft = closeButton;
+            _closeNav.selectOnRight = _rightBottomButton;
             closeButton.navigation = _closeNav;
         }
         else if (true == _isCloseValid)
@@ -1042,6 +1157,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     private void OnTabGroupChanged(int _index)
     {
+        RefreshControlTabVisibility();
         SetupOptionNavigation();
 
         if (null != inputManager && true == inputManager.IsGamepadMode)
@@ -1062,6 +1178,9 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         Transform _gpContents = _tabPanel.transform.Find("ViewRect/GP_Contents");
         if (null != _gpContents) return _gpContents as RectTransform;
 
+        Transform _contents = _tabPanel.transform.Find("ViewRect/Contents");
+        if (null != _contents) return _contents as RectTransform;
+
         VerticalLayoutGroup _vlg = _tabPanel.GetComponentInChildren<VerticalLayoutGroup>(true);
         if (null != _vlg) return _vlg.transform as RectTransform;
 
@@ -1072,6 +1191,42 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         List<OptionRowNav> _validRows = new List<OptionRowNav>();
         if (null == tabGroup) return _validRows;
+
+        // 조작 탭(3)의 경우 키보드마우스 / 게임패드 행 목록을 분기하여 반환
+        if (3 == _tabIndex)
+        {
+            if (null != inputManager && true == inputManager.IsGamepadMode)
+            {
+                for (int i = 0; gamepadKeyBindRows.Count > i; i++)
+                {
+                    UI_OptionGamepadKeyBindRow _padRow = gamepadKeyBindRows[i];
+                    if (null != _padRow && true == _padRow.gameObject.activeSelf && true == _padRow.IsInteractable)
+                    {
+                        _validRows.Add(new OptionRowNav(_padRow));
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; keyBindRows.Count > i; i++)
+                {
+                    UI_OptionKeyBindRow _keyRow = keyBindRows[i];
+                    if (null == _keyRow || false == _keyRow.gameObject.activeSelf) continue;
+
+                    if (true == _keyRow.IsInteractable)
+                    {
+                        _validRows.Add(new OptionRowNav(_keyRow));
+                    }
+                }
+            }
+
+            if (null != resetAllBindingsButton && true == resetAllBindingsButton.gameObject.activeSelf && true == resetAllBindingsButton.IsInteractable)
+            {
+                _validRows.Add(new OptionRowNav(resetAllBindingsButton));
+            }
+
+            return _validRows;
+        }
 
         GameObject _panel = tabGroup.GetTabPanel(_tabIndex);
         if (null == _panel) return _validRows;
@@ -1110,24 +1265,25 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
                 UI_OptionKeyBindRow _keyRow = _child.GetComponent<UI_OptionKeyBindRow>();
                 if (null != _keyRow)
                 {
-                    bool _hasRebind = (null != _keyRow.RebindButton && true == _keyRow.RebindButton.gameObject.activeSelf && true == _keyRow.RebindButton.IsInteractable);
-                    bool _hasReset = (null != _keyRow.ResetButton && true == _keyRow.ResetButton.gameObject.activeSelf && true == _keyRow.ResetButton.IsInteractable);
-                    if (true == _hasRebind && true == _hasReset)
+                    if (true == _keyRow.IsInteractable)
                     {
-                        _validRows.Add(new OptionRowNav(_keyRow.RebindButton, _keyRow.ResetButton));
-                    }
-                    else if (true == _hasRebind)
-                    {
-                        _validRows.Add(new OptionRowNav(_keyRow.RebindButton));
-                    }
-                    else if (true == _hasReset)
-                    {
-                        _validRows.Add(new OptionRowNav(_keyRow.ResetButton));
+                        _validRows.Add(new OptionRowNav(_keyRow));
                     }
                     continue;
                 }
 
-                // 4) UI_OptionButton
+                // 4) UI_OptionGamepadKeyBindRow
+                UI_OptionGamepadKeyBindRow _padRow = _child.GetComponent<UI_OptionGamepadKeyBindRow>();
+                if (null != _padRow)
+                {
+                    if (true == _padRow.IsInteractable)
+                    {
+                        _validRows.Add(new OptionRowNav(_padRow));
+                    }
+                    continue;
+                }
+
+                // 5) UI_OptionButton
                 UI_OptionButton _btn = _child.GetComponent<UI_OptionButton>();
                 if (null != _btn)
                 {
@@ -1138,19 +1294,13 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
                     continue;
                 }
 
-                // 5) 기타 Selectable
+                // 6) 기타 Selectable
                 Selectable _sel = _child.GetComponent<Selectable>();
                 if (null != _sel && true == _sel.interactable)
                 {
                     _validRows.Add(new OptionRowNav(_sel));
                 }
             }
-        }
-
-        // 조작 탭 등 패널 바깥에 있는 추가 버튼 (예: 전체 초기화 버튼)
-        if (3 == _tabIndex && null != resetAllBindingsButton && true == resetAllBindingsButton.gameObject.activeSelf && true == resetAllBindingsButton.IsInteractable)
-        {
-            _validRows.Add(new OptionRowNav(resetAllBindingsButton));
         }
 
         return _validRows;
@@ -1214,8 +1364,18 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
                     {
                         Navigation _singleNav = new Navigation();
                         _singleNav.mode = Navigation.Mode.Explicit;
-                        _singleNav.selectOnLeft = _single;
-                        _singleNav.selectOnRight = _single;
+
+                        if (_single == resetAllBindingsButton || _single == applyButton)
+                        {
+                            _singleNav.selectOnLeft = true == _isCloseValid ? closeButton : _single;
+                            _singleNav.selectOnRight = _single;
+                        }
+                        else
+                        {
+                            _singleNav.selectOnLeft = _single;
+                            _singleNav.selectOnRight = _single;
+                        }
+
                         _singleNav.selectOnUp = _prevLeft;
                         _singleNav.selectOnDown = _nextLeft;
                         _single.navigation = _singleNav;
@@ -1259,6 +1419,12 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         {
             if (null == keyBindRows[i]) continue;
             keyBindRows[i].RefreshLabel(GetActionLabel(_actions[i]));
+        }
+
+        for (int i = 0; gamepadKeyBindRows.Count > i && _actions.Count > i; i++)
+        {
+            if (null == gamepadKeyBindRows[i]) continue;
+            gamepadKeyBindRows[i].RefreshLabel(GetActionLabel(_actions[i]));
         }
     }
 
@@ -1497,14 +1663,28 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null == inputManager) return;
 
         System.Collections.Generic.IReadOnlyList<ERebindableAction> _actions = inputManager.GetRebindableActions();
+
+        // 1) 키보드/마우스 행 갱신
         for (int i = 0; keyBindRows.Count > i && _actions.Count > i; i++)
         {
             if (null == keyBindRows[i]) continue;
 
-            string _bindingPath = inputManager.GetBindingPath(_actions[i]);
-            string _displayString = inputManager.GetBindingDisplayString(_actions[i]);
-            bool _isConflict = inputManager.IsConflicting(_actions[i]);
+            string _bindingPath = inputManager.GetBindingPath(_actions[i], EInputDeviceType.KeyboardMouse);
+            string _displayString = inputManager.GetBindingDisplayString(_actions[i], EInputDeviceType.KeyboardMouse);
+            bool _isConflict = inputManager.IsConflicting(_actions[i], EInputDeviceType.KeyboardMouse);
             keyBindRows[i].Refresh(_bindingPath, _displayString, _isConflict);
+        }
+
+        // 2) 게임패드 행 갱신
+        for (int i = 0; gamepadKeyBindRows.Count > i && _actions.Count > i; i++)
+        {
+            if (null == gamepadKeyBindRows[i]) continue;
+
+            string _bindingPath = inputManager.GetBindingPath(_actions[i], EInputDeviceType.Gamepad);
+            string _displayString = inputManager.GetBindingDisplayString(_actions[i], EInputDeviceType.Gamepad);
+            bool _isConflict = inputManager.IsConflicting(_actions[i], EInputDeviceType.Gamepad);
+            bool _isRebindable = GamepadDefaultBindings.IsRebindableOnGamepad(_actions[i]);
+            gamepadKeyBindRows[i].Refresh(_bindingPath, _displayString, _isConflict, _isRebindable);
         }
 
         SetupOptionNavigation();
@@ -1521,25 +1701,58 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             rebindOverlayText.text = GetText(LocKeys.OptionUI.pressKeyPrompt, "변경할 키를 입력하세요.\n(ESC: 취소)");
         }
 
-        inputManager.StartRebind(_action, OnRebindFinished);
+        inputManager.StartRebind(_action, EInputDeviceType.KeyboardMouse, OnRebindFinished);
+    }
+
+    private void OnGamepadRowRebindRequested(ERebindableAction _action)
+    {
+        if (null == inputManager || true == inputManager.IsRebinding) return;
+        if (false == GamepadDefaultBindings.IsRebindableOnGamepad(_action)) return;
+
+        // 오버레이 표시
+        if (null != rebindOverlay) rebindOverlay.SetActive(true);
+        if (null != rebindOverlayText)
+        {
+            rebindOverlayText.text = GetText(LocKeys.OptionUI.pressGamepadPrompt, "변경할 패드 버튼을 입력하세요.");
+        }
+
+        if (null != rebindCoroutine)
+        {
+            StopCoroutine(rebindCoroutine);
+        }
+        rebindCoroutine = StartCoroutine(CoStartGamepadRebind(_action));
+    }
+
+    private IEnumerator CoStartGamepadRebind(ERebindableAction _action)
+    {
+        // 1) 행 선택을 위해 누른 Submit 버튼(A 버튼 / South)이 완전히 떼어질 때까지 대기
+        while (null != UnityEngine.InputSystem.Gamepad.current && true == UnityEngine.InputSystem.Gamepad.current.buttonSouth.isPressed)
+        {
+            yield return null;
+        }
+
+        // 2) 바운스 방지용 추가 2프레임 대기 (Input System 내부 버퍼 잔여 이벤트 플러시)
+        yield return null;
+        yield return null;
+
+        if (null != inputManager)
+        {
+            inputManager.StartRebind(_action, EInputDeviceType.Gamepad, OnRebindFinished);
+        }
     }
 
     private void OnRebindFinished(ERebindResult _result, ERebindableAction? _conflict)
     {
+        if (null != rebindCoroutine)
+        {
+            StopCoroutine(rebindCoroutine);
+            rebindCoroutine = null;
+        }
+
         // 오버레이 숨김
         if (null != rebindOverlay) rebindOverlay.SetActive(false);
 
         if (null != inputManager && false == inputManager.HasAnyConflict())
-        {
-            inputManager.CommitEditSession();
-        }
-    }
-
-    private void OnRowResetRequested(ERebindableAction _action)
-    {
-        if (null == inputManager) return;
-        inputManager.ResetBinding(_action);
-        if (false == inputManager.HasAnyConflict())
         {
             inputManager.CommitEditSession();
         }
@@ -1722,7 +1935,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         cachedCancelDiscardAndClose = null;
 
         cachedOnRowRebindRequested = null;
-        cachedOnRowResetRequested = null;
+        cachedOnGamepadRowRebindRequested = null;
         cachedOnResetAllClicked = null;
         cachedRefreshKeyBindRows = null;
         cachedExecuteResetAll = null;
@@ -1730,6 +1943,15 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         cachedOnTabShift = null;
         cachedOnUICancel = null;
         cachedOnInputDeviceChanged = null;
+
+        keyBindRows.Clear();
+        gamepadKeyBindRows.Clear();
+
+        if (null != rebindCoroutine)
+        {
+            StopCoroutine(rebindCoroutine);
+            rebindCoroutine = null;
+        }
 
         cursorBoxUI?.HideImmediately();
         cursorBoxUI = null;

@@ -41,37 +41,10 @@ public class UIView_CursorBox : UIView, ICursorBoxUI
         CacheReferences();
     }
 
-    private Action<EInputDeviceType> cachedOnDeviceChanged;
-
     public override void Initialize(UIViewContext ctx)
     {
         base.Initialize(ctx);
-
-        cachedOnDeviceChanged = OnDeviceChanged;
-
-        if (null != viewCtx && null != viewCtx.inputManager)
-        {
-            viewCtx.inputManager.inputReader.InputDeviceChangedEvent -= cachedOnDeviceChanged;
-            viewCtx.inputManager.inputReader.InputDeviceChangedEvent += cachedOnDeviceChanged;
-
-            ApplyDeviceVisibility(viewCtx.inputManager.CurrentDevice);
-        }
-    }
-
-    private void OnDeviceChanged(EInputDeviceType _device)
-    {
-        ApplyDeviceVisibility(_device);
-    }
-
-    private void ApplyDeviceVisibility(EInputDeviceType _device)
-    {
-        bool _isGamepad = (EInputDeviceType.Gamepad == _device);
-        Cursor.visible = (false == _isGamepad);
-
-        if (true == _isGamepad)
-        {
-            HideImmediately();
-        }
+        CacheReferences();
     }
 
     public override void SetupUI()
@@ -277,12 +250,6 @@ public class UIView_CursorBox : UIView, ICursorBoxUI
 
     public override void OnDestroy()
     {
-        if (null != viewCtx && null != viewCtx.inputManager && null != cachedOnDeviceChanged)
-        {
-            viewCtx.inputManager.inputReader.InputDeviceChangedEvent -= cachedOnDeviceChanged;
-        }
-
-        Cursor.visible = true;
         HideImmediately();
         base.OnDestroy();
     }

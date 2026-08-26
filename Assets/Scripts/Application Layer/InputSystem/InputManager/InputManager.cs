@@ -163,17 +163,16 @@ public class InputManager : MonoBehaviour
     /// </summary>
     private void ApplyCursorVisibility()
     {
-        // 포커스를 잃은 동안에는 무조건 돌려준다. 창 모드에서 게임 창 위에 커서가 없으면
-        // 유저는 다른 창을 클릭할 수도, 창을 닫을 수도 없다고 느낀다.
-        bool _bVisible = (false == bApplicationFocused) || (false == IsGamepadMode);
-
+#if UNITY_EDITOR
+        bool _bVisible = (false == IsGamepadMode);
+#else
+        bool _bVisible = (false == Application.isFocused) || (false == IsGamepadMode);
+#endif
         SetCursorVisible(_bVisible);
     }
 
     private void SetCursorVisible(bool _bVisible)
     {
-        if (bCursorVisibleApplied == _bVisible) return;
-
         bCursorVisibleApplied = _bVisible;
         Cursor.visible = _bVisible;
     }
