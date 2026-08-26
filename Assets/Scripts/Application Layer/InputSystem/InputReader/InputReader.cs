@@ -781,41 +781,62 @@ public class InputReader
             CancelRebind();
         }
 
+        // 여기서 걸리면 입력 대기 자체를 시작하지 않고 즉시 콜백이 돌아온다. UI가 안내창을 먼저
+        // 띄우는 구조라면 그 창이 뜨자마자 닫히는 것처럼 보이므로, 버튼을 미리 잠그는 편이 낫다.
         if (false == IsRebindable(_action, _device)
             || false == TryGetBindingTarget(_action, _device, out InputAction _inputAction, out int _bindingIndex))
         {
-            _onFinished?.Invoke(ERebindResult.Canceled, null);
+            _onFinished?.Invoke(ERebindResult.NotRebindable, null);
             return;
         }
 
         _inputAction.Disable();
 
         InputActionRebindingExtensions.RebindingOperation _rebind = _inputAction.PerformInteractiveRebinding(_bindingIndex)
-            .WithCancelingThrough(RESERVED_ESCAPE_PATH);
+            .WithCancelingThrough(RESERVED_ESCAPE_PATH)
 
+            // 리바인딩 대상은 전부 버튼 계열이다. (키, 마우스 버튼, 패드 페이스 버튼·트리거·D-Pad는
+            // 모두 Button 레이아웃을 기반으로 한다)
+            //
+            // 이 제한이 반드시 있어야 하는 이유: .inputactions의 이 액션들은 expectedControlType이
+            // 비어 있어서 PerformInteractiveRebinding이 스스로 후보를 좁히지 못한다. 그러면 스틱과
+            // 개별 축(leftStick, leftStick/x, leftStick/up …)은 물론 dpad 벡터까지 후보가 되고,
+            // UI를 스틱으로 조작하다 들어간 잔여 입력만으로 리바인딩이 눌러보기도 전에 끝나 버린다.
+            //
+            // 경로 제외로 스틱만 골라 막는 방법은 권하지 않는다. 제외 경로에는 부분 와일드카드가
+            // 통하지 않아서("<Gamepad>/leftStick*" 같은 표기는 아무것도 매칭하지 않는다)
+            // 조용히 무효가 되고, 축이 하나 늘어난 장치가 나오면 다시 뚫린다.
+            .WithExpectedControlType("Button")
+
+            // 시작 시점 대비 이만큼은 변해야 "눌렀다"로 인정한다.
+            // 기본값 0.2는 아날로그 트리거의 잔여 신호나 스틱이 중립으로 돌아오는 움직임까지
+            // 통과시킨다. 버튼은 0↔1이라 0.5로 올려도 아무 영향이 없다.
+            .WithMagnitudeHavingToBeGreaterThan(0.5f);
+
+        // 장치 한정은 제외(블랙리스트)가 아니라 허용(화이트리스트)으로 건다.
+        //
+        // 제외 방식은 "적어둔 장치만" 막으므로 조이스틱·가상 장치·서드파티 어댑터처럼 목록에 없는
+        // 것이 그대로 새어 들어온다. 게다가 꺾쇠 없는 표기("Gamepad")는 레이아웃이 아니라 장치
+        // **이름**과 비교되는데, 실제 패드의 이름은 XInputControllerWindows 같은 구체 레이아웃
+        // 이름이라 영원히 일치하지 않는다. 즉 그런 줄은 있어도 아무 일도 하지 않는다.
         if (EInputDeviceType.Gamepad == _device)
         {
-            // 패드 바인딩을 잡는 중에는 키보드/마우스가 끼어들면 안 된다.
             _rebind = _rebind
-                .WithControlsExcluding("Keyboard")
-                .WithControlsExcluding("Mouse")
+                .WithControlsHavingToMatchPath("<Gamepad>/*")
                 // B/○는 취소 전용이라 새 바인딩으로 잡히면 안 된다. 잡히는 순간
                 // 그 유저는 다음부터 리바인딩 대기에서 빠져나올 수단을 잃는다.
                 .WithControlsExcluding(RESERVED_GAMEPAD_CANCEL_PATH);
         }
         else
         {
-            // Attack은 기본값 자체가 마우스 좌클릭이라 마우스 버튼도 허용해야 한다.
-            // 그 외 액션은 키보드 전용이므로, 마우스 이동/클릭이 실수로 잡히지 않도록 제외한다.
-            if (ERebindableAction.Attack != _action)
-            {
-                _rebind = _rebind.WithControlsExcluding("Mouse");
-            }
+            _rebind = _rebind.WithControlsHavingToMatchPath("<Keyboard>/*");
 
-            // 여기서 대상으로 넘기는 인덱스는 키보드/마우스 쪽이다. 패드를 제외하지 않으면
-            // 유저가 패드 버튼을 눌렀을 때 그 키보드 바인딩이 패드 경로로 덮어써져,
-            // 해당 기능의 키보드 키가 조용히 사라진다.
-            _rebind = _rebind.WithControlsExcluding("Gamepad");
+            // Attack만 기본값이 마우스 좌클릭이라 마우스 버튼도 허용한다.
+            // (허용 경로는 OR로 합쳐진다. 이동/스크롤은 위의 Button 제한에서 이미 걸러진다)
+            if (ERebindableAction.Attack == _action)
+            {
+                _rebind = _rebind.WithControlsHavingToMatchPath("<Mouse>/*");
+            }
         }
 
         InputActionRebindingExtensions.RebindingOperation _operation = _rebind
