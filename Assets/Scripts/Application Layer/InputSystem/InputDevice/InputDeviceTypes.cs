@@ -26,7 +26,4 @@ public enum EGamepadIconSet
 
     /// <summary>✕ / ○ / □ / △</summary>
     PlayStation = 2,
-
-    /// <summary>B / A / Y / X (닌텐도는 Xbox와 좌우가 반대입니다)</summary>
-    Nintendo = 3,
 }

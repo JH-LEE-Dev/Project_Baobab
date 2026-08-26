@@ -327,7 +327,6 @@ public class InputDeviceTracker
         {
             // XInput보다 먼저 검사한다. 벤더 전용 레이아웃이 더 구체적인 정보이기 때문이다.
             if (true == InputSystem.IsFirstLayoutBasedOnSecond(_layout, "DualShockGamepad")) return EGamepadIconSet.PlayStation;
-            if (true == InputSystem.IsFirstLayoutBasedOnSecond(_layout, "SwitchProControllerHID")) return EGamepadIconSet.Nintendo;
             if (true == InputSystem.IsFirstLayoutBasedOnSecond(_layout, "XInputController")) return EGamepadIconSet.Xbox;
         }
 
@@ -348,10 +347,6 @@ public class InputDeviceTracker
         if (true == ContainsIgnoreCase(_text, "playstation")) return EGamepadIconSet.PlayStation;
         if (true == ContainsIgnoreCase(_text, "sony")) return EGamepadIconSet.PlayStation;
         if (true == ContainsIgnoreCase(_text, "wireless controller")) return EGamepadIconSet.PlayStation;
-
-        if (true == ContainsIgnoreCase(_text, "nintendo")) return EGamepadIconSet.Nintendo;
-        if (true == ContainsIgnoreCase(_text, "switch")) return EGamepadIconSet.Nintendo;
-        if (true == ContainsIgnoreCase(_text, "joy-con")) return EGamepadIconSet.Nintendo;
 
         if (true == ContainsIgnoreCase(_text, "xbox")) return EGamepadIconSet.Xbox;
         if (true == ContainsIgnoreCase(_text, "xinput")) return EGamepadIconSet.Xbox;

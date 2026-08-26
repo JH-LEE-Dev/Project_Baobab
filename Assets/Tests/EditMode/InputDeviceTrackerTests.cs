@@ -97,7 +97,6 @@ public class InputDeviceTrackerTests
     [TestCase("XInputControllerWindows", EGamepadIconSet.Xbox)]
     [TestCase("DualShock4GamepadHID", EGamepadIconSet.PlayStation)]
     [TestCase("DualSenseGamepadHID", EGamepadIconSet.PlayStation)]
-    [TestCase("SwitchProControllerHID", EGamepadIconSet.Nintendo)]
     [TestCase("Gamepad", EGamepadIconSet.Generic)]
     public void DetectedIconSet_MatchesGamepadVendor(string _layout, EGamepadIconSet _expected)
     {
@@ -152,7 +151,7 @@ public class InputDeviceTrackerTests
         // 판별 결과도 Generic(패드 없음)이라 실제로 보이는 값이 안 바뀌었으므로 발행되지 않아야 한다.
         Assert.AreEqual(0, _count, "표시 결과가 그대로인데 이벤트가 발행되었습니다.");
 
-        tracker.SetIconSetOverride(true, EGamepadIconSet.Nintendo);
+        tracker.SetIconSetOverride(true, EGamepadIconSet.PlayStation);
         Assert.AreEqual(1, _count);
     }
 

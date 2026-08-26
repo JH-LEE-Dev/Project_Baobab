@@ -81,7 +81,6 @@ public class InputManager : MonoBehaviour
         {
             case EGamepadIconPreference.Xbox: _iconSet = EGamepadIconSet.Xbox; return true;
             case EGamepadIconPreference.PlayStation: _iconSet = EGamepadIconSet.PlayStation; return true;
-            case EGamepadIconPreference.Nintendo: _iconSet = EGamepadIconSet.Nintendo; return true;
             case EGamepadIconPreference.Generic: _iconSet = EGamepadIconSet.Generic; return true;
 
             default:
@@ -210,22 +209,22 @@ public class InputManager : MonoBehaviour
 
     public string GetBindingPath(ERebindableAction _action, EInputDeviceType _device)
     {
-        return inputReader.GetBindingPath(_action, _device);
+        return null != inputReader ? inputReader.GetBindingPath(_action, _device) : null;
     }
 
     public string GetBindingDisplayString(ERebindableAction _action, EInputDeviceType _device)
     {
-        return inputReader.GetBindingDisplayString(_action, _device);
+        return null != inputReader ? inputReader.GetBindingDisplayString(_action, _device) : string.Empty;
     }
 
     public string GetBindingPathForCurrentDevice(ERebindableAction _action)
     {
-        return inputReader.GetBindingPathForCurrentDevice(_action);
+        return null != inputReader ? inputReader.GetBindingPathForCurrentDevice(_action) : null;
     }
 
     public string GetBindingDisplayStringForCurrentDevice(ERebindableAction _action)
     {
-        return inputReader.GetBindingDisplayStringForCurrentDevice(_action);
+        return null != inputReader ? inputReader.GetBindingDisplayStringForCurrentDevice(_action) : string.Empty;
     }
 
     public bool HasBindingFor(ERebindableAction _action, EInputDeviceType _device)

@@ -63,34 +63,40 @@ public class UI_PressAnyKey : MonoBehaviour
 
         bool _anyInputReceived = false;
 
-        if (null != inputManager)
+        // 1. 키보드 아무 키 입력 감지 (New Input System)
+        if (null != Keyboard.current && true == Keyboard.current.anyKey.wasPressedThisFrame)
         {
-            _anyInputReceived = inputManager.AnyInputThisFrame;
+            _anyInputReceived = true;
         }
-        else
+        // 2. 마우스 버튼 클릭 감지 (좌클릭, 우클릭, 휠클릭) - 마우스 단순 이동(delta)은 제외
+        else if (null != Mouse.current && (true == Mouse.current.leftButton.wasPressedThisFrame
+                                        || true == Mouse.current.rightButton.wasPressedThisFrame
+                                        || true == Mouse.current.middleButton.wasPressedThisFrame))
         {
-            // 키보드 아무 키 입력 감지 (New Input System)
-            if (null != Keyboard.current && Keyboard.current.anyKey.wasPressedThisFrame)
+            _anyInputReceived = true;
+        }
+        // 3. 게임패드 아무 버튼 입력 감지
+        else if (null != Gamepad.current)
+        {
+            Gamepad _pad = Gamepad.current;
+            if (true == _pad.buttonSouth.wasPressedThisFrame ||
+                true == _pad.buttonEast.wasPressedThisFrame ||
+                true == _pad.buttonWest.wasPressedThisFrame ||
+                true == _pad.buttonNorth.wasPressedThisFrame ||
+                true == _pad.startButton.wasPressedThisFrame ||
+                true == _pad.selectButton.wasPressedThisFrame ||
+                true == _pad.leftShoulder.wasPressedThisFrame ||
+                true == _pad.rightShoulder.wasPressedThisFrame ||
+                true == _pad.leftStickButton.wasPressedThisFrame ||
+                true == _pad.rightStickButton.wasPressedThisFrame ||
+                true == _pad.dpad.up.wasPressedThisFrame ||
+                true == _pad.dpad.down.wasPressedThisFrame ||
+                true == _pad.dpad.left.wasPressedThisFrame ||
+                true == _pad.dpad.right.wasPressedThisFrame ||
+                _pad.leftTrigger.wasPressedThisFrame ||
+                _pad.rightTrigger.wasPressedThisFrame)
             {
                 _anyInputReceived = true;
-            }
-            // 마우스 클릭 감지
-            else if (null != Mouse.current && (Mouse.current.leftButton.wasPressedThisFrame || Mouse.current.rightButton.wasPressedThisFrame))
-            {
-                _anyInputReceived = true;
-            }
-            // 게임패드 아무 버튼 감지
-            else if (null != Gamepad.current)
-            {
-                var _controls = Gamepad.current.allControls;
-                for (int i = 0; i < _controls.Count; i++)
-                {
-                    if (_controls[i] is UnityEngine.InputSystem.Controls.ButtonControl _button && _button.wasPressedThisFrame)
-                    {
-                        _anyInputReceived = true;
-                        break;
-                    }
-                }
             }
         }
 

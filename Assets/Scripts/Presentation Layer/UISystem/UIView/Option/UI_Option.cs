@@ -173,6 +173,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private Action<int> cachedOnTabShift;
     private Action cachedOnUICancel;
     private Action<EInputDeviceType> cachedOnInputDeviceChanged;
+    private Action<EGamepadIconSet> cachedOnGamepadIconSetChanged;
 
     private Coroutine rebindCoroutine;
     private ICursorBoxUI cursorBoxUI;
@@ -284,6 +285,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             inputManager.inputReader.UICancelEvent += cachedOnUICancel;
             inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
             inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
+            inputManager.inputReader.GamepadIconSetChangedEvent -= cachedOnGamepadIconSetChanged;
+            inputManager.inputReader.GamepadIconSetChangedEvent += cachedOnGamepadIconSetChanged;
             RefreshKeyBindRows();
         }
 
@@ -371,6 +374,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             inputManager.inputReader.UITabShiftEvent -= cachedOnTabShift;
             inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
             inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+            inputManager.inputReader.GamepadIconSetChangedEvent -= cachedOnGamepadIconSetChanged;
 
             // 리바인딩 진행 중이면 취소
             if (true == inputManager.IsRebinding)
@@ -464,6 +468,12 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         cachedOnTabShift = HandleTabShift;
         cachedOnUICancel = HandleUICancel;
         cachedOnInputDeviceChanged = OnInputDeviceChanged;
+        cachedOnGamepadIconSetChanged = OnGamepadIconSetChanged;
+    }
+
+    private void OnGamepadIconSetChanged(EGamepadIconSet _iconSet)
+    {
+        RefreshKeyBindRows();
     }
 
     private void OnInputDeviceChanged(EInputDeviceType _device)
@@ -837,8 +847,9 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
                 bool _isConflict = inputManager.IsConflicting(_action, EInputDeviceType.Gamepad);
                 bool _isRebindable = GamepadDefaultBindings.IsRebindableOnGamepad(_action);
 
+                EGamepadIconSet _iconSet = (null != inputManager) ? inputManager.CurrentGamepadIconSet : EGamepadIconSet.Xbox;
                 _padRow.Initialize(_action, _label, _bindingPath, _displayString, _isConflict, _isRebindable,
-                                   keyIconDatabase, cachedOnGamepadRowRebindRequested);
+                                   keyIconDatabase, cachedOnGamepadRowRebindRequested, _iconSet);
                 _padRow.SetCursorBoxUI(cursorBoxUI, inputManager);
                 _padRow.SetCustomScroll(_customScroll);
                 gamepadKeyBindRows.Add(_padRow);
@@ -986,7 +997,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         {
             case EGamepadIconSet.Xbox: return "Xbox";
             case EGamepadIconSet.PlayStation: return "PS";
-            case EGamepadIconSet.Nintendo: return "Switch";
             case EGamepadIconSet.Generic: return GetText(LocKeys.OptionUI.gamepadIconGeneric, "Generic");
         }
         return _iconSet.ToString();
@@ -1005,7 +1015,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
                 return _autoText;
             case EGamepadIconPreference.Xbox: return "Xbox";
             case EGamepadIconPreference.PlayStation: return "PS";
-            case EGamepadIconPreference.Nintendo: return "Switch";
             case EGamepadIconPreference.Generic: return GetText(LocKeys.OptionUI.gamepadIconGeneric, "Generic");
         }
         return _pref.ToString();
@@ -1506,6 +1515,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         {
             gamepadIconPreferenceSelector.UpdateValue(GetGamepadIconPreferenceText(settings.Current.gamepadIconPreference));
         }
+        RefreshKeyBindRows();
         UpdateApplyButtonState();
     }
 
@@ -1516,6 +1526,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         {
             gamepadIconPreferenceSelector.UpdateValue(GetGamepadIconPreferenceText(settings.Current.gamepadIconPreference));
         }
+        RefreshKeyBindRows();
         UpdateApplyButtonState();
     }
 
@@ -1646,7 +1657,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             string _displayString = inputManager.GetBindingDisplayString(_actions[i], EInputDeviceType.Gamepad);
             bool _isConflict = inputManager.IsConflicting(_actions[i], EInputDeviceType.Gamepad);
             bool _isRebindable = GamepadDefaultBindings.IsRebindableOnGamepad(_actions[i]);
-            gamepadKeyBindRows[i].Refresh(_bindingPath, _displayString, _isConflict, _isRebindable);
+            EGamepadIconSet _iconSet = (null != inputManager) ? inputManager.CurrentGamepadIconSet : EGamepadIconSet.Xbox;
+            gamepadKeyBindRows[i].Refresh(_bindingPath, _displayString, _isConflict, _isRebindable, _iconSet);
         }
 
         SetupOptionNavigation();
@@ -1890,6 +1902,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             inputManager.inputReader.UITabShiftEvent -= cachedOnTabShift;
             inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
             inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+            inputManager.inputReader.GamepadIconSetChangedEvent -= cachedOnGamepadIconSetChanged;
         }
 
         cachedOnApplyClicked = null;

@@ -86,9 +86,17 @@ public enum EGamepadButton
     LeftTrigger,      // LT / L2
     RightTrigger,     // RT / R2
 
-    // 스틱 클릭
+    // 스틱 클릭 및 방향
     LeftStick,        // L3 / LS Click
     RightStick,       // R3 / RS Click
+    LeftStickUp,      // LS Up
+    LeftStickDown,    // LS Down
+    LeftStickLeft,    // LS Left
+    LeftStickRight,   // LS Right
+    RightStickUp,     // RS Up
+    RightStickDown,   // RS Down
+    RightStickLeft,   // RS Left
+    RightStickRight,  // RS Right
 
     // D-Pad (방향키)
     DPadUp,           // D-Pad Up
@@ -141,6 +149,8 @@ public class UI_KeyboardImage : MonoBehaviour
 
     private InputManager inputManager;
     private Action cachedRefreshIcon;
+    private Action<EInputDeviceType> cachedOnDeviceChanged;
+    private Action<EGamepadIconSet> cachedOnIconSetChanged;
     private bool isGamepadMode;
 
     public EKeyIconMode KeyIconMode => keyIconMode;
@@ -155,10 +165,19 @@ public class UI_KeyboardImage : MonoBehaviour
         {
             targetImage = GetComponent<Image>();
         }
+
+        EnsureInputManager();
     }
 
     private void OnEnable()
     {
+        EnsureInputManager();
+
+        if (null != inputManager)
+        {
+            isGamepadMode = inputManager.IsGamepadMode;
+        }
+
         // Other 모드이거나 이미 초기화된 경우 활성화 시 자동 갱신
         if (EKeyIconMode.Other == keyIconMode || null != inputManager)
         {
@@ -166,27 +185,87 @@ public class UI_KeyboardImage : MonoBehaviour
         }
     }
 
+    private void EnsureInputManager()
+    {
+        if (null == inputManager)
+        {
+            InputManager _found = FindAnyObjectByType<InputManager>();
+            if (null != _found)
+            {
+                Initialize(_found);
+            }
+        }
+    }
+
+    private void OnDestroy()
+    {
+        UnsubscribeEvents();
+    }
+
     /// <summary>
     /// 부모 UI에서 이 컴포넌트를 초기화할 때 호출합니다.
-    /// InputManager 참조를 전달받아 키 설정 변경 이벤트를 구독합니다.
+    /// InputManager 참조를 전달받아 키 설정 변경 및 장치 전환 이벤트를 구독합니다.
     /// </summary>
     public void Initialize(InputManager _inputManager)
     {
+        UnsubscribeEvents();
+
         inputManager = _inputManager;
         
         if (null == cachedRefreshIcon)
         {
             cachedRefreshIcon = RefreshIcon;
         }
+
+        if (null == cachedOnDeviceChanged)
+        {
+            cachedOnDeviceChanged = OnInputDeviceChanged;
+        }
+
+        if (null == cachedOnIconSetChanged)
+        {
+            cachedOnIconSetChanged = OnGamepadIconSetChanged;
+        }
         
-        // 키 바인딩이 변경될 때마다 자동 갱신되도록 이벤트 구독
+        // 키 바인딩 및 장치 전환 시 자동 갱신되도록 이벤트 구독
         if (null != inputManager && null != inputManager.inputReader)
         {
-            inputManager.inputReader.KeyBindingsChangedEvent -= cachedRefreshIcon;
             inputManager.inputReader.KeyBindingsChangedEvent += cachedRefreshIcon;
+            inputManager.inputReader.InputDeviceChangedEvent += cachedOnDeviceChanged;
+            inputManager.inputReader.GamepadIconSetChangedEvent += cachedOnIconSetChanged;
+            isGamepadMode = inputManager.IsGamepadMode;
         }
 
         RefreshIcon();
+    }
+
+    private void OnInputDeviceChanged(EInputDeviceType _device)
+    {
+        SetGamepadMode(EInputDeviceType.Gamepad == _device);
+    }
+
+    private void OnGamepadIconSetChanged(EGamepadIconSet _iconSet)
+    {
+        RefreshIcon();
+    }
+
+    private void UnsubscribeEvents()
+    {
+        if (null != inputManager && null != inputManager.inputReader)
+        {
+            if (null != cachedRefreshIcon)
+            {
+                inputManager.inputReader.KeyBindingsChangedEvent -= cachedRefreshIcon;
+            }
+            if (null != cachedOnDeviceChanged)
+            {
+                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnDeviceChanged;
+            }
+            if (null != cachedOnIconSetChanged)
+            {
+                inputManager.inputReader.GamepadIconSetChangedEvent -= cachedOnIconSetChanged;
+            }
+        }
     }
 
     /// <summary>
@@ -278,8 +357,7 @@ public class UI_KeyboardImage : MonoBehaviour
             {
                 if (null != inputManager)
                 {
-                    // 향후 InputManager에 패드 바인딩 조회가 추가되면 해당 경로 활용, 현재는 기본 바인딩 조회
-                    _bindingPath = inputManager.GetBindingPath(boundAction);
+                    _bindingPath = inputManager.GetBindingPath(boundAction, EInputDeviceType.Gamepad);
                 }
             }
             else if (EKeyIconMode.Other == keyIconMode)
@@ -301,7 +379,7 @@ public class UI_KeyboardImage : MonoBehaviour
             {
                 if (null != inputManager)
                 {
-                    _bindingPath = inputManager.GetBindingPath(boundAction);
+                    _bindingPath = inputManager.GetBindingPath(boundAction, EInputDeviceType.KeyboardMouse);
                 }
             }
             else if (EKeyIconMode.Other == keyIconMode)
@@ -317,7 +395,8 @@ public class UI_KeyboardImage : MonoBehaviour
             }
         }
 
-        Sprite _icon = keyIconDatabase.GetIcon(_bindingPath);
+        EGamepadIconSet _iconSet = (null != inputManager) ? inputManager.CurrentGamepadIconSet : EGamepadIconSet.Xbox;
+        Sprite _icon = keyIconDatabase.GetIcon(_bindingPath, _iconSet);
 
         if (null != _icon)
         {
@@ -443,6 +522,16 @@ public class UI_KeyboardImage : MonoBehaviour
             case EGamepadButton.LeftStick:      return "<Gamepad>/leftStickPress";
             case EGamepadButton.RightStick:     return "<Gamepad>/rightStickPress";
 
+            case EGamepadButton.LeftStickUp:    return "<Gamepad>/leftStick/up";
+            case EGamepadButton.LeftStickDown:  return "<Gamepad>/leftStick/down";
+            case EGamepadButton.LeftStickLeft:  return "<Gamepad>/leftStick/left";
+            case EGamepadButton.LeftStickRight: return "<Gamepad>/leftStick/right";
+
+            case EGamepadButton.RightStickUp:   return "<Gamepad>/rightStick/up";
+            case EGamepadButton.RightStickDown: return "<Gamepad>/rightStick/down";
+            case EGamepadButton.RightStickLeft: return "<Gamepad>/rightStick/left";
+            case EGamepadButton.RightStickRight: return "<Gamepad>/rightStick/right";
+
             case EGamepadButton.DPadUp:         return "<Gamepad>/dpad/up";
             case EGamepadButton.DPadDown:       return "<Gamepad>/dpad/down";
             case EGamepadButton.DPadLeft:       return "<Gamepad>/dpad/left";
@@ -453,14 +542,6 @@ public class UI_KeyboardImage : MonoBehaviour
 
             default:
                 return null;
-        }
-    }
-
-    private void OnDestroy()
-    {
-        if (null != inputManager && null != inputManager.inputReader && null != cachedRefreshIcon)
-        {
-            inputManager.inputReader.KeyBindingsChangedEvent -= cachedRefreshIcon;
         }
     }
 }

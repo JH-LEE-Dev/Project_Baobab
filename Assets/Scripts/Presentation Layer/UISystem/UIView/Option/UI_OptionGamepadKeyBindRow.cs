@@ -46,6 +46,7 @@ public class UI_OptionGamepadKeyBindRow : Selectable,
     private ERebindableAction boundAction;
     private bool isRebindable = true;
     private KeyIconDatabase iconDatabase;
+    private EGamepadIconSet iconSet = EGamepadIconSet.Xbox;
     private Action<ERebindableAction> onRebindRequested;
     private ICursorBoxUI cursorBoxUI;
     private InputManager inputManager;
@@ -83,22 +84,28 @@ public class UI_OptionGamepadKeyBindRow : Selectable,
         bool _isConflict,
         bool _isRebindable,
         KeyIconDatabase _iconDB,
-        Action<ERebindableAction> _onRebind)
+        Action<ERebindableAction> _onRebind,
+        EGamepadIconSet _iconSet = EGamepadIconSet.Xbox)
     {
         boundAction = _action;
         iconDatabase = _iconDB;
         onRebindRequested = _onRebind;
+        iconSet = _iconSet;
 
         if (null != actionNameText)
         {
             actionNameText.text = _label;
         }
 
-        Refresh(_bindingPath, _displayString, _isConflict, _isRebindable);
+        Refresh(_bindingPath, _displayString, _isConflict, _isRebindable, _iconSet);
     }
 
-    public void Refresh(string _bindingPath, string _displayString, bool _isConflict, bool _isRebindable = true)
+    public void Refresh(string _bindingPath, string _displayString, bool _isConflict, bool _isRebindable = true, EGamepadIconSet? _iconSet = null)
     {
+        if (null != _iconSet)
+        {
+            iconSet = _iconSet.Value;
+        }
         isRebindable = _isRebindable;
 
         if (null != lockIndicator)
@@ -109,7 +116,7 @@ public class UI_OptionGamepadKeyBindRow : Selectable,
         Sprite _icon = null;
         if (null != iconDatabase && false == string.IsNullOrEmpty(_bindingPath))
         {
-            _icon = iconDatabase.GetIcon(_bindingPath);
+            _icon = iconDatabase.GetIcon(_bindingPath, iconSet);
         }
 
         Color _targetColor = true == _isConflict ? conflictColor : (false == isRebindable ? disabledColor : normalColor);
