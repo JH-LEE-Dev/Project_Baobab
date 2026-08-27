@@ -83,6 +83,11 @@ public class UI_EscapeMenu : MonoBehaviour
     private TweenCallback[] buttonDisappearCallbacks = Array.Empty<TweenCallback>();
     private bool soundsEnabled;
 
+    private Action onOpenCompleteAction;
+    private Action onCloseCompleteAction;
+    private TweenCallback cachedOnOpenComplete;
+    private TweenCallback cachedOnCloseComplete;
+
     private sealed class EscapeMenuBGPiece
     {
         public RectTransform rectTransform;
@@ -94,6 +99,9 @@ public class UI_EscapeMenu : MonoBehaviour
 
     private void Awake()
     {
+        cachedOnOpenComplete = HandleOpenComplete;
+        cachedOnCloseComplete = HandleCloseComplete;
+
         CacheCanvasGroups();
         CacheBGPieces();
         CacheButtons();
@@ -122,6 +130,10 @@ public class UI_EscapeMenu : MonoBehaviour
         cachedConfirmMainMenu = null;
         cachedCancelWarningAndRestoreMenu = null;
         cachedOnInputDeviceChanged = null;
+        cachedOnOpenComplete = null;
+        cachedOnCloseComplete = null;
+        onOpenCompleteAction = null;
+        onCloseCompleteAction = null;
         inputManager = null;
     }
 
@@ -241,6 +253,8 @@ public class UI_EscapeMenu : MonoBehaviour
 
         PrepareOpenState();
 
+        onOpenCompleteAction = _onComplete;
+
         openSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
         // BG Open Animation
@@ -289,20 +303,27 @@ public class UI_EscapeMenu : MonoBehaviour
             }
         }
 
-        if (_maxButtonEndTime > 0f)
+        if (_maxButtonEndTime > openSequence.Duration())
         {
-            openSequence.Insert(_maxButtonEndTime, DOTween.To(() => 0f, _ => { }, 0f, 0f));
+            openSequence.AppendInterval(_maxButtonEndTime - openSequence.Duration());
         }
 
-        openSequence.OnComplete(() =>
+        if (null != cachedOnOpenComplete)
         {
-            openSequence = null;
-            SelectFirstButton();
-            if (null != _onComplete)
-            {
-                _onComplete.Invoke();
-            }
-        });
+            openSequence.OnComplete(cachedOnOpenComplete);
+        }
+    }
+
+    private void HandleOpenComplete()
+    {
+        openSequence = null;
+        SelectFirstButton();
+        if (null != onOpenCompleteAction)
+        {
+            Action _cb = onOpenCompleteAction;
+            onOpenCompleteAction = null;
+            _cb.Invoke();
+        }
     }
 
     public UI_EscapeMenuButton GetFirstActiveButton()
@@ -366,8 +387,14 @@ public class UI_EscapeMenu : MonoBehaviour
 
         if (null != _targetBtn && null != EventSystem.current)
         {
-            EventSystem.current.SetSelectedGameObject(_targetBtn.gameObject);
-            _targetBtn.ForceHover();
+            if (EventSystem.current.currentSelectedGameObject == _targetBtn.gameObject)
+            {
+                _targetBtn.ForceHover();
+            }
+            else
+            {
+                EventSystem.current.SetSelectedGameObject(_targetBtn.gameObject);
+            }
         }
     }
 
@@ -389,8 +416,17 @@ public class UI_EscapeMenu : MonoBehaviour
 
         if (null != optionButton && true == optionButton.gameObject.activeInHierarchy)
         {
-            EventSystem.current?.SetSelectedGameObject(optionButton.gameObject);
-            optionButton.ForceHover();
+            if (null != EventSystem.current)
+            {
+                if (EventSystem.current.currentSelectedGameObject == optionButton.gameObject)
+                {
+                    optionButton.ForceHover();
+                }
+                else
+                {
+                    EventSystem.current.SetSelectedGameObject(optionButton.gameObject);
+                }
+            }
         }
     }
 
@@ -431,8 +467,14 @@ public class UI_EscapeMenu : MonoBehaviour
 
             if (null != _targetBtn && null != EventSystem.current)
             {
-                EventSystem.current.SetSelectedGameObject(_targetBtn.gameObject);
-                _targetBtn.ForceHover();
+                if (EventSystem.current.currentSelectedGameObject == _targetBtn.gameObject)
+                {
+                    _targetBtn.ForceHover();
+                }
+                else
+                {
+                    EventSystem.current.SetSelectedGameObject(_targetBtn.gameObject);
+                }
             }
         }
         else if (EInputDeviceType.KeyboardMouse == _device)
@@ -481,6 +523,8 @@ public class UI_EscapeMenu : MonoBehaviour
         if (soundsEnabled)
             Sound.PlayUI(SoundID.ResultUIClose);
 
+        onCloseCompleteAction = _onComplete;
+
         closeSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
         // 1단계: 버튼 역순 퇴장 (하단 -> 상단)
@@ -525,15 +569,22 @@ public class UI_EscapeMenu : MonoBehaviour
             closeSequence.Insert(_bgStartTime + _totalBGCloseDuration * 0.8f, menuCanvasGroup.DOFade(0f, _totalBGCloseDuration * 0.2f));
         }
 
-        closeSequence.OnComplete(() =>
+        if (null != cachedOnCloseComplete)
         {
-            closeSequence = null;
-            isClosing = false;
-            if (null != _onComplete)
-            {
-                _onComplete.Invoke();
-            }
-        });
+            closeSequence.OnComplete(cachedOnCloseComplete);
+        }
+    }
+
+    private void HandleCloseComplete()
+    {
+        closeSequence = null;
+        isClosing = false;
+        if (null != onCloseCompleteAction)
+        {
+            Action _cb = onCloseCompleteAction;
+            onCloseCompleteAction = null;
+            _cb.Invoke();
+        }
     }
 
     private void CacheCanvasGroups()

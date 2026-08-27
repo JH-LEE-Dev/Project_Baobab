@@ -266,8 +266,14 @@ public class UI_MainMenu : MonoBehaviour
         UI_MainMenuButton _first = GetFirstActiveButton();
         if (null != _first && null != EventSystem.current)
         {
-            EventSystem.current.SetSelectedGameObject(_first.gameObject);
-            _first.ForceHover();
+            if (EventSystem.current.currentSelectedGameObject == _first.gameObject)
+            {
+                _first.ForceHover();
+            }
+            else
+            {
+                EventSystem.current.SetSelectedGameObject(_first.gameObject);
+            }
         }
     }
 
@@ -322,8 +328,14 @@ public class UI_MainMenu : MonoBehaviour
 
             if (null != _targetBtn && null != EventSystem.current)
             {
-                EventSystem.current.SetSelectedGameObject(_targetBtn.gameObject);
-                _targetBtn.ForceHover();
+                if (EventSystem.current.currentSelectedGameObject == _targetBtn.gameObject)
+                {
+                    _targetBtn.ForceHover();
+                }
+                else
+                {
+                    EventSystem.current.SetSelectedGameObject(_targetBtn.gameObject);
+                }
             }
         }
         else if (EInputDeviceType.KeyboardMouse == _device)

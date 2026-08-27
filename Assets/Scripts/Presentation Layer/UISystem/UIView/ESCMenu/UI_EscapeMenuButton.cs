@@ -70,6 +70,8 @@ public class UI_EscapeMenuButton : Selectable,
     private DOSetter<Color> setShadowColorDelegate;
     private TweenCallback onAppearMotionStartCallback;
     private TweenCallback onAppearCompleteCallback;
+    private Action onDisappearCallback;
+    private TweenCallback onDisappearCompleteCallback;
 
     public RectTransform RectTransform
     {
@@ -131,6 +133,7 @@ public class UI_EscapeMenuButton : Selectable,
         setShadowColorDelegate = SetShadowColor;
         onAppearMotionStartCallback = OnAppearMotionStart;
         onAppearCompleteCallback = OnAppearAnimationComplete;
+        onDisappearCompleteCallback = OnDisappearAnimationComplete;
     }
 
     protected override void OnDisable()
@@ -167,6 +170,8 @@ public class UI_EscapeMenuButton : Selectable,
         setShadowColorDelegate = null;
         onAppearMotionStartCallback = null;
         onAppearCompleteCallback = null;
+        onDisappearCompleteCallback = null;
+        onDisappearCallback = null;
     }
 
     public void Initialize(Action _onClick, InputManager _inputManager = null)
@@ -340,6 +345,8 @@ public class UI_EscapeMenuButton : Selectable,
             originalScale.y * appearStartScale.y,
             originalScale.z * appearStartScale.z);
 
+        onDisappearCallback = _onComplete;
+
         Sequence _disappearSeq = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
         if (_delay > 0f)
@@ -353,17 +360,26 @@ public class UI_EscapeMenuButton : Selectable,
             _disappearSeq.Join(CanvasGroup.DOFade(0f, disappearDuration * 0.8f).SetEase(Ease.InQuad));
         }
 
-        _disappearSeq.OnComplete(() =>
+        if (null != onDisappearCompleteCallback)
         {
-            if (null != motionTarget)
-                motionTarget.localScale = Vector3.zero;
+            _disappearSeq.OnComplete(onDisappearCompleteCallback);
+        }
+    }
 
-            if (null != CanvasGroup)
-                CanvasGroup.alpha = 0f;
+    private void OnDisappearAnimationComplete()
+    {
+        if (null != motionTarget)
+            motionTarget.localScale = Vector3.zero;
 
-            if (null != _onComplete)
-                _onComplete.Invoke();
-        });
+        if (null != CanvasGroup)
+            CanvasGroup.alpha = 0f;
+
+        if (null != onDisappearCallback)
+        {
+            Action _cb = onDisappearCallback;
+            onDisappearCallback = null;
+            _cb.Invoke();
+        }
     }
 
     /// <summary>

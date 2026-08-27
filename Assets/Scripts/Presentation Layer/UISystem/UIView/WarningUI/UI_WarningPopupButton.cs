@@ -235,13 +235,31 @@ public class UI_WarningPopupButton : Selectable,
         }
     }
 
-    public override void OnSelect(BaseEventData _eventData)
+    public void SimulateSelect()
     {
-        base.OnSelect(_eventData);
-        isHovered = true;
         if (false == isInteractable)
             return;
 
+        isHovered = true;
+        if (null != onHoverAction)
+            onHoverAction();
+
+        KillTween();
+        PlayHoverAnimation();
+
+        if (null != parentPopup)
+        {
+            parentPopup.OnButtonHovered(this);
+        }
+    }
+
+    public override void OnSelect(BaseEventData _eventData)
+    {
+        base.OnSelect(_eventData);
+        if (false == isInteractable)
+            return;
+
+        isHovered = true;
         if (null != onHoverAction)
             onHoverAction();
         
