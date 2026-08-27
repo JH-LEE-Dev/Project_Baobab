@@ -158,6 +158,7 @@ public class GameInstaller : MonoBehaviour
             inDungeonSystem.ClearInDungeonSystem();
             townSystem.StartTownSystem(_sceneChangeData);
             townSystem.lootPillarManager?.SpawnAcquiredPillars(inDungeonSystem.inDungeonObjectManager);
+            townSystem.ApplyLootPillarColliderState(inDungeonSystem.inDungeonObjectManager);
             // Town 초기화(그리드 생성, NPC 스폰)가 끝난 뒤에만 구름이 걷히도록 여기서 명시적으로 트리거한다.
             inDungeonSystem.NotifyTownSystemReady();
             unitSystem.SetWhereIsCharacter(false);

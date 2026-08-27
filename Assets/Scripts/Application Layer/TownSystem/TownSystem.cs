@@ -718,4 +718,14 @@ public class TownSystem : MonoBehaviour
         if (townObjectManager.offroadVehicle != null)
             townObjectManager.offroadVehicle.col.enabled = true;
     }
+
+    /// <summary>
+    /// 영구 획득한 전리품 종류에 맞춰 LootPhillarColliderTilemap의 타일을 켠다.
+    /// LootPillarManager.SpawnAcquiredPillars()와 마찬가지로 Grid가 새로 생성될 때마다(마을 재입장 포함)
+    /// 현재 영구 획득 상태를 기준으로 다시 적용해야 하므로, GameInstaller가 StartTownSystem() 직후 호출한다.
+    /// </summary>
+    public void ApplyLootPillarColliderState(InDungeonObjectManager _inDungeonObjectManager)
+    {
+        townTileManager.ApplyLootPillarColliderState(_inDungeonObjectManager);
+    }
 }
