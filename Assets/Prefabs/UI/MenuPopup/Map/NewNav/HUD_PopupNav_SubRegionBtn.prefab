@@ -626,22 +626,22 @@ MonoBehaviour:
   customCursorSize: {x: 100, y: 40}
   hoverCursorMotion:
     enableShowMotion: 1
-    showDuration: 0.2
-    shrinkSizeScale: 0.9
-    shrinkTimeRatio: 0.08
-    restoreTimeRatio: 0.12
+    showDuration: 0.24
+    shrinkSizeScale: 0.91
+    shrinkTimeRatio: 0.35
+    restoreTimeRatio: 0.65
     sizeRestoreEase: 27
-    startAngle: 5
-    angleDamping: 0.62
+    startAngle: 3.5
+    angleDamping: 0.5
     swingCount: 2
-    rotationTimeRatio: 0.8
+    rotationTimeRatio: 0.85
     rotationEase: 3
     enableIdleMotion: 1
-    idleCycleDuration: 3
-    idleSizeOffset: 1
+    idleCycleDuration: 2
+    idleSizeOffset: 1.2
     enableHideMotion: 1
     hideDuration: 0.1
-    hideExpandOffset: 10
+    hideExpandOffset: 4
     hideEase: 6
 --- !u!1 &8148430121089073189
 GameObject:

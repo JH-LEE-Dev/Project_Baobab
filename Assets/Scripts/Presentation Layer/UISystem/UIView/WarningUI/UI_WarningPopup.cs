@@ -252,7 +252,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         Vector2 size = _button.GetCursorSize();
         Vector2 offset = _button.GetCursorOffset();
 
-        cursorBoxUI.Show(targetRect, size, offset, CursorMotionSettings.Subtle);
+        cursorBoxUI.Show(targetRect, size, offset, CursorMotionSettings.Default);
     }
 
     public void OnButtonUnhovered(UI_WarningPopupButton _button)

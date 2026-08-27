@@ -312,6 +312,12 @@ public class GamepadDiagnosticsWindow : EditorWindow
 
         Rect _bounds = _cursor.Bounds;
         EditorGUILayout.LabelField("이동 영역", string.Format("x {0:0} ~ {1:0}   y {2:0} ~ {3:0}", _bounds.xMin, _bounds.xMax, _bounds.yMin, _bounds.yMax));
+        // Instance 게터를 그냥 쓰면 진단 창을 열었다는 이유만으로 씬에 싱글턴 오브젝트가 생긴다.
+        string _sliderText = true == SettingsManager.HasInstance
+            ? string.Format("   (옵션 슬라이더 {0:0})", SettingsManager.Instance.Current.virtualCursorSensitivity)
+            : string.Empty;
+
+        EditorGUILayout.LabelField("감도 배율", string.Format("{0:0.00}배{1}", _cursor.SensitivityScale, _sliderText));
 
         EditorGUILayout.HelpBox(
             "별도의 토글 키는 없습니다. 특성 UI(TentUI)를 열면 요청되고, 그 상태에서 패드를 쓰는 중이면 " +

@@ -608,6 +608,11 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         // 시동 임팩트(먼지 파티클)보다 엔진 캐치 지점만큼 앞서 엔진 사운드를 재생한다.
         engineStartHandle = Sound.PlayTracked(SoundID.OffroadNonEdit, transform.position);
+
+        // 진동도 사운드와 같은 시점에 시작한다. 파형 자체가 "크랭킹 두 번 → 엔진이 걸림 → 공회전"
+        // 순서라, 아래 IgnitionImpactSequence(=엔진이 걸리는 순간)에서 시작하면 걸린 뒤에야
+        // 덜덜거리기 시작해 순서가 뒤집힌다.
+        Rumble.Play(EHapticEvent.VehicleIgnition);
         float runStartClipLength = Sound.GetClipLength(SoundID.OffroadNonEdit);
         float ignitionCatchTime = runStartClipLength * engineIgnitionCatchRatio;
         yield return new WaitForSeconds(ignitionCatchTime);
@@ -647,6 +652,9 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             containerSpringDamping
         );
 
+        // 상자가 차 위에 내려앉는 순간
+        Rumble.Play(EHapticEvent.ContainerLanding);
+
         // 상자 안착 후 차량(VisualObject) 쫀득한 연출
         yield return VehicleLandingImpactSequence();
     }
@@ -676,6 +684,10 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     public IEnumerator CharacterRideLandingImpactSequence(Action _onHalfway = null)
     {
+        // 캐릭터가 차에 올라타 착지하는 순간. 마을/던전 어느 쪽 연출이든 이 경로를 지난다.
+        // (연출 오브젝트가 없어 아래에서 빠져나가더라도 탑승 자체는 일어난 것이므로 먼저 울린다)
+        Rumble.Play(EHapticEvent.VehicleBoard);
+
         if (visualObject == null) yield break;
 
         if (_onHalfway != null)

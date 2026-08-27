@@ -202,29 +202,29 @@ MonoBehaviour:
   - bindingPath: "<Gamepad>/dpad/right"
     icon: {fileID: 4544353558242898176, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStick"
-    icon: {fileID: 8826971816034754143, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -646138271746723700, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStick/up"
-    icon: {fileID: -126794882489063307, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -4615439149782312506, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStick/down"
-    icon: {fileID: -3011890033331817458, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -8511644349147864549, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStick/left"
-    icon: {fileID: -3922396591058406298, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: 4341242233682392122, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStick/right"
-    icon: {fileID: -713529409432279870, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: 1015956377206813849, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStickPress"
-    icon: {fileID: 5020422028123760507, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: 4434343234319022908, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStick"
-    icon: {fileID: -3666386178584219325, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -2883052226867646649, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStick/up"
-    icon: {fileID: 720899713426743698, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: 7873589299238367052, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStick/down"
-    icon: {fileID: 8710204769650846628, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -4139978388081458354, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStick/left"
-    icon: {fileID: -8591518706600756193, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -7975832585342278701, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStick/right"
-    icon: {fileID: 1501802328000914204, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -8338973624520761740, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStickPress"
-    icon: {fileID: 1182073080421373716, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: 5039741971190919691, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   xboxEntries:
   - bindingPath: "<Gamepad>/buttonSouth"
     icon: {fileID: -7195449788458874145, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
@@ -243,29 +243,29 @@ MonoBehaviour:
   - bindingPath: "<Gamepad>/rightTrigger"
     icon: {fileID: 4834564327344080452, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStick"
-    icon: {fileID: 8826971816034754143, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -646138271746723700, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStick/up"
-    icon: {fileID: -126794882489063307, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -4615439149782312506, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStick/down"
-    icon: {fileID: -3011890033331817458, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -8511644349147864549, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStick/left"
-    icon: {fileID: -3922396591058406298, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: 4341242233682392122, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStick/right"
-    icon: {fileID: -713529409432279870, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: 1015956377206813849, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStickPress"
-    icon: {fileID: 5020422028123760507, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: 4434343234319022908, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStick"
-    icon: {fileID: -3666386178584219325, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -2883052226867646649, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStick/up"
-    icon: {fileID: 720899713426743698, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: 7873589299238367052, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStick/down"
-    icon: {fileID: 8710204769650846628, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -4139978388081458354, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStick/left"
-    icon: {fileID: -8591518706600756193, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -7975832585342278701, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStick/right"
-    icon: {fileID: 1501802328000914204, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -8338973624520761740, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStickPress"
-    icon: {fileID: 1182073080421373716, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: 5039741971190919691, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/start"
     icon: {fileID: -8857844325025268526, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/select"
@@ -298,29 +298,29 @@ MonoBehaviour:
   - bindingPath: "<Gamepad>/rightTrigger"
     icon: {fileID: -1671014832886021121, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStick"
-    icon: {fileID: 8826971816034754143, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -646138271746723700, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStick/up"
-    icon: {fileID: -126794882489063307, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -4615439149782312506, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStick/down"
-    icon: {fileID: -3011890033331817458, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -8511644349147864549, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStick/left"
-    icon: {fileID: -3922396591058406298, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: 4341242233682392122, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStick/right"
-    icon: {fileID: -713529409432279870, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: 1015956377206813849, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/leftStickPress"
-    icon: {fileID: 5020422028123760507, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: 4434343234319022908, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStick"
-    icon: {fileID: -3666386178584219325, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -2883052226867646649, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStick/up"
-    icon: {fileID: 720899713426743698, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: 7873589299238367052, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStick/down"
-    icon: {fileID: 8710204769650846628, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -4139978388081458354, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStick/left"
-    icon: {fileID: -8591518706600756193, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -7975832585342278701, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStick/right"
-    icon: {fileID: 1501802328000914204, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: -8338973624520761740, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/rightStickPress"
-    icon: {fileID: 1182073080421373716, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
+    icon: {fileID: 5039741971190919691, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/start"
     icon: {fileID: -4393018850328578598, guid: 3481fff8b49e29742b59171fead05bed, type: 3}
   - bindingPath: "<Gamepad>/select"

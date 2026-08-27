@@ -12,6 +12,10 @@ using UnityEngine.InputSystem;
 ///
 /// 겹침 정책은 "더 강한 쪽이 이긴다"입니다. 약하고 긴 진동(예: 엔진 아이들)이 도중에 들어온
 /// 강한 타격 진동을 덮어써 버리면 타격감이 사라지기 때문입니다.
+///
+/// 한 가지 세기를 일정 시간 유지하는 Play와, 여러 구간이 이어진 파형을 재생하는 PlayPattern이
+/// 있습니다. 중간에 세기 0인 구간을 넣으면 진동이 끊겼다 다시 걸리므로, 시동을 거는 느낌처럼
+/// 단순한 "세게/약하게"로는 안 나오는 감각을 만들 수 있습니다.
 /// </summary>
 public class GamepadHaptics
 {
@@ -24,6 +28,11 @@ public class GamepadHaptics
 
     private bool bMotorsRunning = false;
 
+    // 재생 중인 파형. null이면 Play로 들어온 단일 세기 진동이다.
+    private HapticStep[] patternSteps = null;
+    private int patternIndex = 0;
+    private float patternPeak = 0f;
+
     // 포커스를 잃어 일시적으로 멈춘 상태. 남은 시간은 그대로 두고 모터만 멈춘다.
     private bool bSuspended = false;
 
@@ -32,6 +41,12 @@ public class GamepadHaptics
 
     /// <summary>진동을 낼 수 있는 상태인지입니다. 패드가 없거나 세기가 0이면 false입니다.</summary>
     public bool CanPlay => strengthScale > 0f && null != Gamepad.current;
+
+    // 겹침 비교용 "지금 재생 중인 것의 세기". 파형은 중간에 약해지는 구간이 있어도 전체 피크로
+    // 비교해야 한다. 안 그러면 강한 파형의 잦아드는 꼬리에 약한 진동이 끼어들어 파형이 망가진다.
+    private float CurrentPeak => null != patternSteps
+        ? patternPeak
+        : Mathf.Max(currentLowFrequency, currentHighFrequency);
 
     /// <summary>
     /// 진동 세기 배율을 설정합니다. (0 = 끔, 1 = 최대)
@@ -75,16 +90,18 @@ public class GamepadHaptics
         if (true == IsPlaying)
         {
             float _incoming = Mathf.Max(_low, _high);
-            float _current = Mathf.Max(currentLowFrequency, currentHighFrequency);
 
-            if (_incoming < _current)
+            if (_incoming < CurrentPeak)
             {
                 // 약한 요청이라도 더 오래 끌고 가야 한다면 남은 시간만 늘려준다.
-                if (_duration > remainSeconds) remainSeconds = _duration;
+                // 단, 파형 재생 중에는 늘리면 안 된다. 여기서 늘어나는 것은 "파형의 현재 구간"이라
+                // 구간 하나만 길어져 파형이 뭉개진다.
+                if (null == patternSteps && _duration > remainSeconds) remainSeconds = _duration;
                 return;
             }
         }
 
+        patternSteps = null;
         currentLowFrequency = _low;
         currentHighFrequency = _high;
         remainSeconds = _duration;
@@ -95,9 +112,39 @@ public class GamepadHaptics
         }
     }
 
+    /// <summary>
+    /// 여러 구간이 이어진 파형을 재생합니다. 겹침 규칙은 Play와 같고, 비교 기준은 파형의 피크입니다.
+    /// </summary>
+    public void PlayPattern(HapticPattern _pattern)
+    {
+        if (null == _pattern || 0 == _pattern.steps.Length) return;
+        if (0f == strengthScale) return;
+        if (0f == _pattern.peak) return;
+
+        if (true == IsPlaying && _pattern.peak < CurrentPeak) return;
+
+        patternSteps = _pattern.steps;
+        patternIndex = 0;
+        patternPeak = _pattern.peak;
+
+        HapticStep _first = patternSteps[0];
+        currentLowFrequency = _first.lowFrequency;
+        currentHighFrequency = _first.highFrequency;
+        remainSeconds = _first.duration;
+
+        if (false == bSuspended)
+        {
+            ApplyMotorSpeeds();
+        }
+    }
+
     /// <summary>진동을 즉시 멈추고 상태를 초기화합니다.</summary>
     public void Stop()
     {
+        patternSteps = null;
+        patternIndex = 0;
+        patternPeak = 0f;
+
         currentLowFrequency = 0f;
         currentHighFrequency = 0f;
         remainSeconds = 0f;
@@ -117,8 +164,18 @@ public class GamepadHaptics
 
         if (remainSeconds <= 0f)
         {
-            Stop();
-            return;
+            if (null == patternSteps)
+            {
+                Stop();
+                return;
+            }
+
+            // 넘친 시간은 다음 구간에서 이어서 소모한다. 프레임이 한 번 길게 튀어도 짧은 구간들이
+            // 통째로 건너뛰어지지 않고, 파형 전체 길이도 늘어나지 않는다.
+            if (false == AdvancePattern(-remainSeconds))
+            {
+                return;
+            }
         }
 
         // 재생 도중 패드가 교체·재연결되면 새 패드에는 모터 값이 설정되어 있지 않다.
@@ -126,6 +183,35 @@ public class GamepadHaptics
         if (false == bSuspended)
         {
             ApplyMotorSpeeds();
+        }
+    }
+
+    /// <summary>
+    /// 파형의 다음 구간으로 넘어갑니다. 파형이 끝나 정지했다면 false를 반환합니다.
+    /// </summary>
+    private bool AdvancePattern(float _overflowSeconds)
+    {
+        while (true)
+        {
+            patternIndex++;
+
+            if (patternIndex >= patternSteps.Length)
+            {
+                Stop();
+                return false;
+            }
+
+            HapticStep _step = patternSteps[patternIndex];
+
+            if (_step.duration > _overflowSeconds)
+            {
+                currentLowFrequency = _step.lowFrequency;
+                currentHighFrequency = _step.highFrequency;
+                remainSeconds = _step.duration - _overflowSeconds;
+                return true;
+            }
+
+            _overflowSeconds -= _step.duration;
         }
     }
 
@@ -162,7 +248,18 @@ public class GamepadHaptics
         Gamepad _gamepad = Gamepad.current;
         if (null == _gamepad) return;
 
-        _gamepad.SetMotorSpeeds(currentLowFrequency * strengthScale, currentHighFrequency * strengthScale);
+        float _low = currentLowFrequency * strengthScale;
+        float _high = currentHighFrequency * strengthScale;
+
+        // 파형 중간의 "쉬는 구간". 재생 상태(남은 시간·다음 구간)는 그대로 두고 모터만 멈춘다.
+        // 여기서 Stop()을 부르면 파형이 첫 공백에서 끝나 버린다.
+        if (0f == _low && 0f == _high)
+        {
+            if (true == bMotorsRunning) StopMotors();
+            return;
+        }
+
+        _gamepad.SetMotorSpeeds(_low, _high);
         bMotorsRunning = true;
     }
 

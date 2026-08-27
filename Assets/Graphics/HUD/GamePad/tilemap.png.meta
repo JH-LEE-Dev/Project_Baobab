@@ -8687,7 +8687,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_280
+      name: RStick_None
       rect:
         serializedVersion: 2
         x: 136
@@ -8709,7 +8709,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_281
+      name: RStick_Up
       rect:
         serializedVersion: 2
         x: 153
@@ -8731,7 +8731,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_282
+      name: RStick_Right
       rect:
         serializedVersion: 2
         x: 170
@@ -8753,7 +8753,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_283
+      name: RStick_Down
       rect:
         serializedVersion: 2
         x: 187
@@ -8775,7 +8775,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_284
+      name: RStick_Left
       rect:
         serializedVersion: 2
         x: 204
@@ -8797,7 +8797,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_285
+      name: RStick_LR
       rect:
         serializedVersion: 2
         x: 221
@@ -8819,7 +8819,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_286
+      name: RStick_UD
       rect:
         serializedVersion: 2
         x: 238
@@ -8841,7 +8841,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_287
+      name: RStick_Full
       rect:
         serializedVersion: 2
         x: 255
@@ -8863,7 +8863,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_288
+      name: RStick_Click
       rect:
         serializedVersion: 2
         x: 272
@@ -16079,7 +16079,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_616
+      name: Pad_View
       rect:
         serializedVersion: 2
         x: 68
@@ -16101,7 +16101,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_617
+      name: Pad_Menu
       rect:
         serializedVersion: 2
         x: 85
@@ -17993,7 +17993,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_703
+      name: Pad_Haptic
       rect:
         serializedVersion: 2
         x: 391
@@ -19423,7 +19423,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_768
+      name: tilemap
       rect:
         serializedVersion: 2
         x: 340
@@ -19445,7 +19445,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_769
+      name: TripleDot
       rect:
         serializedVersion: 2
         x: 357
@@ -19511,7 +19511,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_772
+      name: Pad_L4
       rect:
         serializedVersion: 2
         x: 408
@@ -19533,7 +19533,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_773
+      name: Pad_L5
       rect:
         serializedVersion: 2
         x: 425
@@ -19555,7 +19555,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_774
+      name: Pad_R4
       rect:
         serializedVersion: 2
         x: 442
@@ -19577,7 +19577,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tilemap_775
+      name: Pad_R5
       rect:
         serializedVersion: 2
         x: 459
@@ -20542,15 +20542,24 @@ TextureImporter:
       PadRStick_Right: 1501802328000914204
       PadRStick_UD: 2707152377779687568
       PadRStick_Up: 720899713426743698
+      Pad_Haptic: -201609132370073243
       Pad_Home: -8713988563712651191
       Pad_L: -2226660881085788834
+      Pad_L4: -5047104055258720360
+      Pad_L5: -7576329898901793020
       Pad_LB: -1602624755615176819
       Pad_LT: 2745943385631762757
+      Pad_Menu: 4997168057449175036
       Pad_R: 4273698654875218624
+      Pad_R4: -7796431096493957787
+      Pad_R5: 2966357830817701334
       Pad_RB: 1750199302475870051
       Pad_RT: 4834564327344080452
+      Pad_View: -1482645589828966845
       Plus: 3959805602275343285
       Power: 3972734455106294240
+      RStick_Click: 5039741971190919691
+      TripleDot: -2937792145721087748
       XBox_A: -7195449788458874145
       XBox_B: 6296137254373669167
       XBox_Back: 3933339412012798598
@@ -20558,6 +20567,7 @@ TextureImporter:
       XBox_X: -251864790952300765
       XBox_Y: -1052767623090001999
       ZButton: -4891742609313590740
+      tilemap: -1454210120536090024
       tilemap_0: 8490642196906846815
       tilemap_1: 7988907048659085410
       tilemap_10: -8435285650344880516
@@ -20747,15 +20757,14 @@ TextureImporter:
       tilemap_278: 5540002491061350785
       tilemap_279: 3205834896906667570
       tilemap_28: 7979362951490992292
-      tilemap_280: -5827497617566574700
-      tilemap_281: 7873589299238367052
-      tilemap_282: -8338973624520761740
-      tilemap_283: -4139978388081458354
-      tilemap_284: -7975832585342278701
-      tilemap_285: -876428464156767547
-      tilemap_286: -6404109242997774216
-      tilemap_287: -2883052226867646649
-      tilemap_288: 5039741971190919691
+      RStick_None: -5827497617566574700
+      RStick_Up: 7873589299238367052
+      RStick_Right: -8338973624520761740
+      RStick_Down: -4139978388081458354
+      RStick_Left: -7975832585342278701
+      RStick_LR: -876428464156767547
+      RStick_UD: -6404109242997774216
+      RStick_Full: -2883052226867646649
       tilemap_289: -3818507049497757611
       tilemap_29: -6264777607469435119
       tilemap_290: -4486400200236260253
@@ -21086,8 +21095,6 @@ TextureImporter:
       tilemap_613: -3769278490334663164
       tilemap_614: -3108344203582389737
       tilemap_615: -928228796191860375
-      tilemap_616: -1482645589828966845
-      tilemap_617: 4997168057449175036
       tilemap_618: -3499640677835922437
       tilemap_619: -8754988874659523803
       tilemap_62: 9180185122099951743
@@ -21166,7 +21173,6 @@ TextureImporter:
       tilemap_7: 4755373664117421245
       tilemap_70: 3242445901158374030
       tilemap_702: -7120557658730103675
-      tilemap_703: -201609132370073243
       tilemap_704: -350056854485554834
       tilemap_705: -1320289066692050678
       tilemap_706: 253044187976296838
@@ -21237,15 +21243,9 @@ TextureImporter:
       tilemap_765: -3511389510452359814
       tilemap_766: 2227533650238668091
       tilemap_767: -1602314925978461186
-      tilemap_768: -1454210120536090024
-      tilemap_769: -2937792145721087748
       tilemap_77: 4928565880463290548
       tilemap_770: 5203388586121945324
       tilemap_771: -803691166867021714
-      tilemap_772: -5047104055258720360
-      tilemap_773: -7576329898901793020
-      tilemap_774: -7796431096493957787
-      tilemap_775: 2966357830817701334
       tilemap_776: 6267216795775574533
       tilemap_777: 2006752471839311477
       tilemap_778: -9115811287173213836

@@ -179,7 +179,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         {
             yield return new WaitForSeconds(_tickInterval);
             if (!bCanApplyDamage) break;
-            TakeDamage(_damagePerTick);
+            TakeDamageWithoutHaptic(_damagePerTick);
         }
         if (_isDrone)
         {
@@ -360,6 +360,21 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     public void TakeDamage(float _damage)
     {
+        TakeDamageInternal(_damage, true);
+    }
+
+    /// <summary>
+    /// 진동 없이 데미지를 넣습니다. 과열 지속 피해(DoT)처럼 "때린 순간"이 아닌 데미지에 씁니다.
+    /// 매 틱마다 패드가 울리면 나무 한 그루가 타는 내내 손이 떨리기 때문입니다.
+    /// (사운드/이펙트는 지금까지와 동일하게 그대로 재생됩니다)
+    /// </summary>
+    private void TakeDamageWithoutHaptic(float _damage)
+    {
+        TakeDamageInternal(_damage, false);
+    }
+
+    private void TakeDamageInternal(float _damage, bool _bPlayHaptic)
+    {
         if (!bCanApplyDamage) return;
 
         // 죽음 판정 직전 상태를 기억해, 이미 죽은 나무가 정리되기 전 다시 타격당해도
@@ -387,10 +402,28 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
         PlayHitSound(wasGemBeforeHit, gemStageBeforeHit);
 
+        // 진동은 플레이어가 때린 경우에만 낸다. 벌목 NPC가 베는 것까지 울리면 아무것도 안 하고
+        // 서 있어도 패드가 계속 떤다. (bLastHitByPlayer는 LumberjackNPC가 때리기 직전에 false로
+        // 내려두고, 이 함수 끝에서 다시 true로 돌아간다)
+        //
+        // 도끼 평타와 쇼크웨이브 모두 이 함수를 지나므로 EHapticEvent.TreeImpact 하나로 묶인다.
+        // 한 번 휘두른 결과로 여러 그루가 맞아도 Rumble이 한 번의 사건으로 묶어 한 번만 울린다.
+        if (_bPlayHaptic && bLastHitByPlayer)
+        {
+            Rumble.Play(EHapticEvent.TreeImpact);
+        }
+
         TreeGetHitEvent?.Invoke(this);
 
         if (!wasAlreadyDead && bDead)
         {
+            // TreeDeadEvent를 타면 나무가 풀로 반환되며 ResetTree()가 bLastHitByPlayer를 true로
+            // 되돌리므로, 판정은 반드시 이벤트를 쏘기 전에 끝내야 한다.
+            if (_bPlayHaptic && bLastHitByPlayer)
+            {
+                Rumble.Play(EHapticEvent.TreeDestroy);
+            }
+
             TreeDeadEvent?.Invoke(this);
         }
 

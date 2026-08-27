@@ -268,6 +268,11 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                         AddToCharacterInventory(arrivalDataBuffer, item.logState);
                         character?.PlayItemAcquireBounce();
                         character?.PlayItemAcquireFlash();
+
+                        // 원목이 상자에서 나와 캐릭터에 박히는 순간. 위쪽 toCarrier 분기(운반 NPC가
+                        // 가져가는 경로)와 갈라진 뒤라, 여기는 항상 캐릭터가 받는 흐름이다.
+                        Rumble.Play(EHapticEvent.ItemImpact);
+
                         PlayDepositPitchSound(ref currentWithdrawPitchCharacter, ref lastWithdrawPitchTimeCharacter);
                     }
                 }
@@ -281,6 +286,10 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     if (flyingData.fromCharacter)
                     {
                         CameraMoveController.Instance?.ShakeCamera(1f, 0.08f);
+
+                        // 원목이 상자에 박히는 순간. fromCharacter 가드가 곧 "캐릭터가 넣은 것"이라,
+                        // 벌목 NPC가 납품하는 동안에는 울리지 않는다.
+                        Rumble.Play(EHapticEvent.ItemImpact);
                     }
 
                     // 납품은 캐릭터/NPC 구분 없이 하나의 흐름(currentDepositPitch)을 공유한다.

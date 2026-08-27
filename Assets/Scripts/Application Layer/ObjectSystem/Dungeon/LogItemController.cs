@@ -193,10 +193,14 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         if (_item.CustomAcquirer != null)
         {
             // NPC 등 특정 소비자가 지정된 경우, 전역(플레이어) 이벤트 체인을 타지 않고 직접 귀속시킨다
+            // (진동도 여기서는 울리지 않는다 - 손에 잡히는 것은 캐릭터가 주울 때뿐이어야 한다)
             _item.CustomAcquirer.ItemAcquired(_item);
         }
         else
         {
+            // 캐릭터가 필드 위 원목을 주운 순간 (아주 짧은 톡 하는 진동)
+            Rumble.Play(EHapticEvent.ItemImpact);
+
             LogItemAcquiredEvent?.Invoke(_item);
         }
 
@@ -383,6 +387,10 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         if (logType > LogState.Normal && spawnCount > 0)
         {
             Sound.Play(SoundID.NiceItem, spawnPos);
+
+            // 효과음과 같은 이유로 진동도 드랍 묶음당 한 번만 울린다.
+            // (원목 하나마다 울리면 4~7번이 겹쳐 한 덩어리로 뭉개진다)
+            Rumble.Play(EHapticEvent.RareLogSpawn);
         }
 
         for (int i = 0; i < spawnCount; i++)

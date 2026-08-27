@@ -423,6 +423,9 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
                 character?.PlayItemAcquireBounce();
                 character?.PlayItemAcquireFlash();
 
+                // 코인이 캐릭터에 박히는 순간. 이 경로는 항상 캐릭터가 받는 흐름이다.
+                Rumble.Play(EHapticEvent.ItemImpact);
+
                 TryPlayCoinGetSound(fc.coin.transform.position);
 
                 coinItemPoolingManager.ReturnCoin(fc.coin);

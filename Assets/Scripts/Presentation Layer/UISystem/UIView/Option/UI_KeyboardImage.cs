@@ -62,9 +62,6 @@ public enum EOtherKey
 
     // 기능키 (F1-F12)
     F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
-
-    // 직접 바인딩 경로 입력
-    Custom,
 }
 
 /// <summary>
@@ -74,42 +71,44 @@ public enum EGamepadButton
 {
     None = 0,
 
-    // 페이스 버튼 (A/B/X/Y or Cross/Circle/Square/Triangle)
-    ButtonSouth,      // A (Xbox) / Cross (PlayStation) / B (Nintendo)
-    ButtonEast,       // B (Xbox) / Circle (PlayStation) / A (Nintendo)
-    ButtonWest,       // X (Xbox) / Square (PlayStation) / Y (Nintendo)
-    ButtonNorth,      // Y (Xbox) / Triangle (PlayStation) / X (Nintendo)
+    // 페이스 버튼 (Xbox / PlayStation)
+    Button_A_Cross = 1,       // A (Xbox) / ✕ (PlayStation)
+    Button_B_Circle = 2,      // B (Xbox) / ○ (PlayStation)
+    Button_X_Square = 3,      // X (Xbox) / □ (PlayStation)
+    Button_Y_Triangle = 4,    // Y (Xbox) / △ (PlayStation)
 
     // 숄더 및 트리거
-    LeftShoulder,     // LB / L1
-    RightShoulder,    // RB / R1
-    LeftTrigger,      // LT / L2
-    RightTrigger,     // RT / R2
+    LeftShoulder_LB_L1 = 5,   // LB (Xbox) / L1 (PlayStation)
+    RightShoulder_RB_R1 = 6,  // RB (Xbox) / R1 (PlayStation)
+    LeftTrigger_LT_L2 = 7,    // LT (Xbox) / L2 (PlayStation)
+    RightTrigger_RT_R2 = 8,   // RT (Xbox) / R2 (PlayStation)
 
-    // 스틱 클릭 및 방향
-    LeftStick,        // L3 / LS Click
-    RightStick,       // R3 / RS Click
-    LeftStickUp,      // LS Up
-    LeftStickDown,    // LS Down
-    LeftStickLeft,    // LS Left
-    LeftStickRight,   // LS Right
-    RightStickUp,     // RS Up
-    RightStickDown,   // RS Down
-    RightStickLeft,   // RS Left
-    RightStickRight,  // RS Right
+    // 스틱 전체 및 클릭
+    LeftStick = 9,            // 왼쪽 스틱 전체 (Move / PadLStick_Full)
+    LeftStick_Click_LS_L3 = 10, // LS / L3 클릭
+    RightStick = 11,          // 오른쪽 스틱 전체 (Aim / PadRStick_Full)
+    RightStick_Click_RS_R3 = 12, // RS / R3 클릭
 
-    // D-Pad (방향키)
-    DPadUp,           // D-Pad Up
-    DPadDown,         // D-Pad Down
-    DPadLeft,         // D-Pad Left
-    DPadRight,        // D-Pad Right
+    // 스틱 방향별
+    LeftStick_Up = 13,
+    LeftStick_Down = 14,
+    LeftStick_Left = 15,
+    LeftStick_Right = 16,
+    RightStick_Up = 17,
+    RightStick_Down = 18,
+    RightStick_Left = 19,
+    RightStick_Right = 20,
+
+    // D-Pad (십자키)
+    DPad_Full = 21,           // 십자키 전체 (DPad_Full)
+    DPad_Up = 22,
+    DPad_Down = 23,
+    DPad_Left = 24,
+    DPad_Right = 25,
 
     // 메뉴 / 시스템 버튼
-    Start,            // Menu / Start / Options
-    Select,           // View / Back / Share / Touchpad
-
-    // 직접 바인딩 경로 입력
-    Custom,
+    Start_Menu_Options = 26,  // Menu / Start / Options
+    Select_View_Share = 27,   // View / Back / Share / Touchpad
 }
 
 /// <summary>
@@ -133,15 +132,9 @@ public class UI_KeyboardImage : MonoBehaviour
     [SerializeField, Tooltip("Other 모드(키보드)일 때 표시할 키 선택")]
     private EOtherKey otherKey = EOtherKey.None;
 
-    [SerializeField, Tooltip("EOtherKey.Custom 선택 시 사용할 직접 바인딩 경로 (예: <Keyboard>/c)")]
-    private string customKeyboardPath;
-
     [Header("Other Mode - Gamepad Settings")]
     [SerializeField, Tooltip("Other 모드(패드)일 때 표시할 게임패드 버튼 선택")]
     private EGamepadButton otherGamepadButton = EGamepadButton.None;
-
-    [SerializeField, Tooltip("EGamepadButton.Custom 선택 시 사용할 직접 바인딩 경로 (예: <Gamepad>/rightTrigger)")]
-    private string customGamepadPath;
 
     [Header("UI Component")]
     [SerializeField, Tooltip("스프라이트를 노출할 이미지 컴포넌트")] 
@@ -301,30 +294,6 @@ public class UI_KeyboardImage : MonoBehaviour
     }
 
     /// <summary>
-    /// Other 모드로 전환하고 커스텀 키보드 바인딩 경로를 지정합니다.
-    /// </summary>
-    public void SetCustomKeyboardPath(string _path)
-    {
-        keyIconMode = EKeyIconMode.Other;
-        otherKey = EOtherKey.Custom;
-        customKeyboardPath = _path;
-        RefreshIcon();
-    }
-
-    /// <summary>
-    /// Other 모드로 전환하고 커스텀 게임패드 바인딩 경로를 지정합니다.
-    /// </summary>
-    public void SetCustomGamepadPath(string _path)
-    {
-        otherGamepadButton = EGamepadButton.Custom;
-        customGamepadPath = _path;
-        if (true == isGamepadMode)
-        {
-            RefreshIcon();
-        }
-    }
-
-    /// <summary>
     /// 패드 모드 여부를 설정합니다. KeyIconDatabase에서 패드/키보드 아이콘을 자동 전환합니다.
     /// </summary>
     public void SetGamepadMode(bool _isGamepad)
@@ -362,14 +331,7 @@ public class UI_KeyboardImage : MonoBehaviour
             }
             else if (EKeyIconMode.Other == keyIconMode)
             {
-                if (EGamepadButton.Custom == otherGamepadButton)
-                {
-                    _bindingPath = customGamepadPath;
-                }
-                else
-                {
-                    _bindingPath = GetBindingPathForGamepadButton(otherGamepadButton);
-                }
+                _bindingPath = GetBindingPathForGamepadButton(otherGamepadButton);
             }
         }
         // 2. 키보드/마우스 모드
@@ -384,14 +346,7 @@ public class UI_KeyboardImage : MonoBehaviour
             }
             else if (EKeyIconMode.Other == keyIconMode)
             {
-                if (EOtherKey.Custom == otherKey)
-                {
-                    _bindingPath = customKeyboardPath;
-                }
-                else
-                {
-                    _bindingPath = GetBindingPathForOtherKey(otherKey);
-                }
+                _bindingPath = GetBindingPathForOtherKey(otherKey);
             }
         }
 
@@ -509,36 +464,39 @@ public class UI_KeyboardImage : MonoBehaviour
     {
         switch (_button)
         {
-            case EGamepadButton.ButtonSouth:    return "<Gamepad>/buttonSouth";
-            case EGamepadButton.ButtonEast:     return "<Gamepad>/buttonEast";
-            case EGamepadButton.ButtonWest:     return "<Gamepad>/buttonWest";
-            case EGamepadButton.ButtonNorth:    return "<Gamepad>/buttonNorth";
+            case EGamepadButton.Button_A_Cross:       return "<Gamepad>/buttonSouth";
+            case EGamepadButton.Button_B_Circle:      return "<Gamepad>/buttonEast";
+            case EGamepadButton.Button_X_Square:      return "<Gamepad>/buttonWest";
+            case EGamepadButton.Button_Y_Triangle:    return "<Gamepad>/buttonNorth";
 
-            case EGamepadButton.LeftShoulder:   return "<Gamepad>/leftShoulder";
-            case EGamepadButton.RightShoulder:  return "<Gamepad>/rightShoulder";
-            case EGamepadButton.LeftTrigger:    return "<Gamepad>/leftTrigger";
-            case EGamepadButton.RightTrigger:   return "<Gamepad>/rightTrigger";
+            case EGamepadButton.LeftShoulder_LB_L1:   return "<Gamepad>/leftShoulder";
+            case EGamepadButton.RightShoulder_RB_R1:  return "<Gamepad>/rightShoulder";
+            case EGamepadButton.LeftTrigger_LT_L2:    return "<Gamepad>/leftTrigger";
+            case EGamepadButton.RightTrigger_RT_R2:   return "<Gamepad>/rightTrigger";
 
-            case EGamepadButton.LeftStick:      return "<Gamepad>/leftStickPress";
-            case EGamepadButton.RightStick:     return "<Gamepad>/rightStickPress";
+            case EGamepadButton.LeftStick:            return "<Gamepad>/leftStick";
+            case EGamepadButton.LeftStick_Click_LS_L3: return "<Gamepad>/leftStickPress";
+            case EGamepadButton.RightStick:           return "<Gamepad>/rightStick";
+            case EGamepadButton.RightStick_Click_RS_R3: return "<Gamepad>/rightStickPress";
 
-            case EGamepadButton.LeftStickUp:    return "<Gamepad>/leftStick/up";
-            case EGamepadButton.LeftStickDown:  return "<Gamepad>/leftStick/down";
-            case EGamepadButton.LeftStickLeft:  return "<Gamepad>/leftStick/left";
-            case EGamepadButton.LeftStickRight: return "<Gamepad>/leftStick/right";
+            case EGamepadButton.LeftStick_Up:         return "<Gamepad>/leftStick/up";
+            case EGamepadButton.LeftStick_Down:       return "<Gamepad>/leftStick/down";
+            case EGamepadButton.LeftStick_Left:       return "<Gamepad>/leftStick/left";
+            case EGamepadButton.LeftStick_Right:      return "<Gamepad>/leftStick/right";
 
-            case EGamepadButton.RightStickUp:   return "<Gamepad>/rightStick/up";
-            case EGamepadButton.RightStickDown: return "<Gamepad>/rightStick/down";
-            case EGamepadButton.RightStickLeft: return "<Gamepad>/rightStick/left";
-            case EGamepadButton.RightStickRight: return "<Gamepad>/rightStick/right";
+            case EGamepadButton.RightStick_Up:        return "<Gamepad>/rightStick/up";
+            case EGamepadButton.RightStick_Down:      return "<Gamepad>/rightStick/down";
+            case EGamepadButton.RightStick_Left:      return "<Gamepad>/rightStick/left";
+            case EGamepadButton.RightStick_Right:     return "<Gamepad>/rightStick/right";
 
-            case EGamepadButton.DPadUp:         return "<Gamepad>/dpad/up";
-            case EGamepadButton.DPadDown:       return "<Gamepad>/dpad/down";
-            case EGamepadButton.DPadLeft:       return "<Gamepad>/dpad/left";
-            case EGamepadButton.DPadRight:      return "<Gamepad>/dpad/right";
+            case EGamepadButton.DPad_Full:            return "<Gamepad>/dpad";
+            case EGamepadButton.DPad_Up:              return "<Gamepad>/dpad/up";
+            case EGamepadButton.DPad_Down:            return "<Gamepad>/dpad/down";
+            case EGamepadButton.DPad_Left:            return "<Gamepad>/dpad/left";
+            case EGamepadButton.DPad_Right:           return "<Gamepad>/dpad/right";
 
-            case EGamepadButton.Start:          return "<Gamepad>/start";
-            case EGamepadButton.Select:         return "<Gamepad>/select";
+            case EGamepadButton.Start_Menu_Options:   return "<Gamepad>/start";
+            case EGamepadButton.Select_View_Share:    return "<Gamepad>/select";
 
             default:
                 return null;

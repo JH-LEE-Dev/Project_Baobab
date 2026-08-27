@@ -163,12 +163,20 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         // 레벨업
         node.currentLevel++;
 
+        // 특성을 찍는 순간 (가벼운 진동)
+        Rumble.Play(EHapticEvent.SkillPoint);
+
         // 경험치 증가 및 프레스티지 레벨업 처리
         skillExperience++;
         if (skillExperience >= GetPrestigeExpLimit())
         {
             skillExperience = 0;
             prestigeLevel++;
+
+            // 프레스티지 레벨업은 특성 습득 진동보다 훨씬 세고 길어서, 같은 프레임에 겹쳐도
+            // GamepadHaptics의 "더 강한 쪽이 이긴다" 규칙에 따라 이쪽 파형이 남는다.
+            Rumble.Play(EHapticEvent.PrestigeLevelUp);
+
             PrestigeLevelIncreasedEvent?.Invoke(prestigeLevel);
         }
 
@@ -261,12 +269,20 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         // 레벨업
         node.currentLevel++;
 
+        // 특성을 찍는 순간 (가벼운 진동)
+        Rumble.Play(EHapticEvent.SkillPoint);
+
         // 경험치 증가 및 프레스티지 레벨업 처리
         skillExperience++;
         if (skillExperience >= GetPrestigeExpLimit())
         {
             skillExperience = 0;
             prestigeLevel++;
+
+            // 프레스티지 레벨업은 특성 습득 진동보다 훨씬 세고 길어서, 같은 프레임에 겹쳐도
+            // GamepadHaptics의 "더 강한 쪽이 이긴다" 규칙에 따라 이쪽 파형이 남는다.
+            Rumble.Play(EHapticEvent.PrestigeLevelUp);
+
             PrestigeLevelIncreasedEvent?.Invoke(prestigeLevel);
         }
 

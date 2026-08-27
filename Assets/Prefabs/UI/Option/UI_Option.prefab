@@ -1141,13 +1141,13 @@ MonoBehaviour:
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   clickColor: {r: 1, g: 1, b: 1, a: 1}
   normalSprite: {fileID: 21300000, guid: 53d8c672ab0433c46ae704732639119c, type: 3}
-  hoverSprite: {fileID: 21300000, guid: 912478fd2bb866e429429ea0ad8bada9, type: 3}
+  hoverSprite: {fileID: 21300000, guid: 0ba6e5f7938b78e4fbca1484c417dea3, type: 3}
   clickSprite: {fileID: 21300000, guid: 53d8c672ab0433c46ae704732639119c, type: 3}
   normalTextColor: {r: 1, g: 1, b: 1, a: 1}
-  hoverTextColor: {r: 0, g: 0, b: 0, a: 1}
+  hoverTextColor: {r: 1, g: 1, b: 1, a: 1}
   clickTextColor: {r: 1, g: 1, b: 1, a: 1}
   normalEffectColor: {r: 0, g: 0, b: 0, a: 1}
-  hoverEffectColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  hoverEffectColor: {r: 0, g: 0, b: 0, a: 1}
   clickEffectColor: {r: 0, g: 0, b: 0, a: 1}
   cursorPadding: {x: 10, y: 10}
   cursorOffset: {x: 0, y: 0}
@@ -2247,13 +2247,13 @@ MonoBehaviour:
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   clickColor: {r: 1, g: 1, b: 1, a: 1}
   normalSprite: {fileID: 21300000, guid: 53d8c672ab0433c46ae704732639119c, type: 3}
-  hoverSprite: {fileID: 21300000, guid: 912478fd2bb866e429429ea0ad8bada9, type: 3}
+  hoverSprite: {fileID: 21300000, guid: 0ba6e5f7938b78e4fbca1484c417dea3, type: 3}
   clickSprite: {fileID: 21300000, guid: 53d8c672ab0433c46ae704732639119c, type: 3}
   normalTextColor: {r: 1, g: 1, b: 1, a: 1}
-  hoverTextColor: {r: 0, g: 0, b: 0, a: 1}
+  hoverTextColor: {r: 1, g: 1, b: 1, a: 1}
   clickTextColor: {r: 1, g: 1, b: 1, a: 1}
   normalEffectColor: {r: 0, g: 0, b: 0, a: 1}
-  hoverEffectColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  hoverEffectColor: {r: 0, g: 0, b: 0, a: 1}
   clickEffectColor: {r: 0, g: 0, b: 0, a: 1}
   cursorPadding: {x: 10, y: 10}
   cursorOffset: {x: 0, y: 0}
