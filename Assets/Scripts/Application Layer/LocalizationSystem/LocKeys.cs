@@ -327,6 +327,7 @@ public static class LocKeys
         public const int sFXVolume = 18874581;
         public const int gamepadIconPreference = 18874582;
         public const int hapticStrength = 18874583;
+        public const int virtualCursorSensitivity = 18874584;
         public const int tabGameplay = 18874669;
         public const int tabSound = 18874670;
         public const int tabGraphic = 18874671;
