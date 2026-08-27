@@ -958,18 +958,32 @@ public class UI_EscapeMenu : MonoBehaviour
         }
     }
 
+    // 진행 중인 연출을 교체하기 위해 죽인다.
+    //
+    // 주의: DOTween의 Kill()은 OnComplete를 발동시키지 않으므로, 여기서 죽는 시퀀스의 완료 콜백
+    // (HandleOpenComplete/HandleCloseComplete를 거쳐 호출될 onOpenCompleteAction/onCloseCompleteAction)은
+    // "영영 호출되지 않는다". 연출이 실제로 끝나지 않았으므로 여기서 대신 호출해 주는 것도 옳지 않다
+    // - 예컨대 닫기 완료 콜백(OnCloseProductionFinished)은 GameObject를 비활성화하는데, 다시 여는
+    // 도중에 그것을 실행하면 방금 연 창이 꺼져 버린다.
+    //
+    // 따라서 이 콜백들에는 "반드시 실행되어야 하는 뒷정리"를 담으면 안 된다. 입력 잠금 해제가 바로
+    // 그런 뒷정리였고, 그래서 UIView_ESC가 완료 콜백이 아니라 소유 플래그(bInputLockHeld)로 직접
+    // 관리하도록 옮겼다. 아래에서 참조를 비우는 것은 죽은 콜백이 나중에 엉뚱한 순서로 살아나지
+    // 못하게 하기 위해서다.
     private void KillProductionSequences()
     {
         if (null != openSequence && true == openSequence.IsActive())
         {
             openSequence.Kill();
             openSequence = null;
+            onOpenCompleteAction = null;
         }
 
         if (null != closeSequence && true == closeSequence.IsActive())
         {
             closeSequence.Kill();
             closeSequence = null;
+            onCloseCompleteAction = null;
         }
     }
 
