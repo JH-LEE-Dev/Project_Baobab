@@ -396,6 +396,15 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     public void Hide()
     {
+        // 키 바인딩 오버레이 또는 리바인딩 코루틴/오퍼레이션이 활성화되어 있으면 오버레이만 닫고 조기 반환 (옵션 패널 유지)
+        if ((null != rebindOverlay && true == rebindOverlay.activeSelf)
+            || null != rebindCoroutine
+            || (null != inputManager && true == inputManager.IsRebinding))
+        {
+            CancelRebindOverlay();
+            return;
+        }
+
         // Option이 ESC가 아닌 다른 경로(escUI.Hide() 등)로 강제로 닫힐 때, 그 안에 중첩된 경고
         // 팝업(warningPopup)이 아직 열려 있으면 뎁스 스택에 좀비로 남는다. 팝업부터 확실히 닫아 정리한다.
         if (null != warningPopup && true == warningPopup.IsActive)
@@ -471,6 +480,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             inputManager.inputReader.GamepadIconSetChangedEvent -= cachedOnGamepadIconSetChanged;
 
             // 리바인딩 진행 중이면 취소
+            if (null != rebindCoroutine)
+            {
+                StopCoroutine(rebindCoroutine);
+                rebindCoroutine = null;
+            }
             if (true == inputManager.IsRebinding)
             {
                 inputManager.CancelRebind();
@@ -719,9 +733,12 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         if (false == gameObject.activeInHierarchy || false == IsActive) return;
 
-        // 리바인딩 대기 중에는 B 버튼이 리바인드 취소 역할을 하므로 창 닫기를 수행하지 않음
-        if (null != inputManager && true == inputManager.IsRebinding)
+        // 키 바인딩 오버레이 또는 리바인딩 진행 중이면 오버레이만 닫고 조기 반환
+        if ((null != rebindOverlay && true == rebindOverlay.activeSelf)
+            || null != rebindCoroutine
+            || (null != inputManager && true == inputManager.IsRebinding))
         {
+            CancelRebindOverlay();
             return;
         }
 
@@ -1835,6 +1852,22 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         {
             inputManager.CommitEditSession();
         }
+    }
+
+    private void CancelRebindOverlay()
+    {
+        if (null != rebindCoroutine)
+        {
+            StopCoroutine(rebindCoroutine);
+            rebindCoroutine = null;
+        }
+
+        if (null != inputManager && true == inputManager.IsRebinding)
+        {
+            inputManager.CancelRebind();
+        }
+
+        PlayRebindCloseProduction();
     }
 
     private void PlayRebindOpenProduction(string _promptText)
