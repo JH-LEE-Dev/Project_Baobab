@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// 볼륨, 밝기 등 연속적인 범위의 값을 좌우 버튼 및 슬라이더 드래그로 조절하는 옵션 항목의 UI입니다.
@@ -243,15 +244,38 @@ public class UI_OptionSlider : Selectable, IMoveHandler
         }
     }
 
+    public bool IsMouseOver()
+    {
+        if (false == gameObject.activeInHierarchy) return false;
+        Vector2 _mousePos = Vector2.zero;
+        if (null != Mouse.current)
+        {
+            _mousePos = Mouse.current.position.ReadValue();
+        }
+        else
+        {
+            return false;
+        }
+
+        Canvas _canvas = GetComponentInParent<Canvas>();
+        Camera _cam = (null != _canvas && _canvas.renderMode != RenderMode.ScreenSpaceOverlay) ? _canvas.worldCamera : null;
+        RectTransform _rect = transform as RectTransform;
+        if (null == _rect) return false;
+
+        return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, _cam);
+    }
+
     public override void OnSelect(BaseEventData eventData)
     {
         base.OnSelect(eventData);
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
             ShowCursor();
             ApplyFocusVisual(true);
+            Sound.PlayUI(SoundID.MainMenuDot01);
         }
-        Sound.PlayUI(SoundID.MainMenuDot01);
 
         if (null == customScroll)
         {
@@ -266,6 +290,8 @@ public class UI_OptionSlider : Selectable, IMoveHandler
     public override void OnDeselect(BaseEventData eventData)
     {
         base.OnDeselect(eventData);
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+
         ApplyFocusVisual(false);
         HideCursor();
     }

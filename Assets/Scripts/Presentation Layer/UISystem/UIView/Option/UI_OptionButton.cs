@@ -3,6 +3,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using DG.Tweening;
 using System;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// 옵션 창 전용 버튼 클래스입니다. (닫기 버튼, 좌우 화살표 등)
@@ -244,12 +245,50 @@ public class UI_OptionButton : Selectable,
         HideCursor();
     }
 
+    public bool IsMouseOver()
+    {
+        if (false == gameObject.activeInHierarchy) return false;
+        Vector2 _mousePos = Vector2.zero;
+        if (null != Mouse.current)
+        {
+            _mousePos = Mouse.current.position.ReadValue();
+        }
+        else
+        {
+            return false;
+        }
+
+        Canvas _canvas = GetComponentInParent<Canvas>();
+        Camera _cam = (null != _canvas && _canvas.renderMode != RenderMode.ScreenSpaceOverlay) ? _canvas.worldCamera : null;
+        RectTransform _rect = (null != targetGraphic) ? targetGraphic.rectTransform : (transform as RectTransform);
+        if (null == _rect) return false;
+
+        return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, _cam);
+    }
+
+    public void ForceUnhover()
+    {
+        isHovered = false;
+        isPointerDown = false;
+        KillTween();
+        ApplyVisualState(originalScale, normalColor, normalSprite, normalTextColor, normalEffectColor, false);
+        HideCursor();
+        OnFocusChanged?.Invoke(false);
+    }
+
     public override void OnSelect(BaseEventData _eventData)
     {
         base.OnSelect(_eventData);
-        isHovered = true;
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
         if (false == isInteractable) return;
 
+        if (true == isHovered)
+        {
+            ShowCursor();
+            return;
+        }
+
+        isHovered = true;
         Sound.PlayUI(hoverSoundId);
         
         KillTween();
@@ -271,9 +310,10 @@ public class UI_OptionButton : Selectable,
     public override void OnDeselect(BaseEventData _eventData)
     {
         base.OnDeselect(_eventData);
-        isHovered = false;
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
         if (false == isInteractable) return;
         
+        isHovered = false;
         KillTween();
         ApplyVisualState(originalScale, normalColor, normalSprite, normalTextColor, normalEffectColor, true);
 

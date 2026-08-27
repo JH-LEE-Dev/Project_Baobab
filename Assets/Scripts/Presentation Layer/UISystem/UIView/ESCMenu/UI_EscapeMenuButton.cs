@@ -508,6 +508,8 @@ public class UI_EscapeMenuButton : Selectable,
     public override void OnDeselect(BaseEventData _eventData)
     {
         base.OnDeselect(_eventData);
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+
         isHovered = false;
         if (false == isInteractable || true == isAppearing) return;
 

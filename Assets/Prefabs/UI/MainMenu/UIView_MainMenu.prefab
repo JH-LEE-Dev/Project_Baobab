@@ -1921,8 +1921,22 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4707890799268076892, guid: a623ac0844e86ca4699b60b86e5a1ce4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2590107283044133557}
+    - targetCorrespondingSourceObject: {fileID: 7979475101102813049, guid: a623ac0844e86ca4699b60b86e5a1ce4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1010966653574528404}
+    - targetCorrespondingSourceObject: {fileID: 7389906761529864622, guid: a623ac0844e86ca4699b60b86e5a1ce4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 434807573339625369}
   m_SourcePrefab: {fileID: 100100000, guid: a623ac0844e86ca4699b60b86e5a1ce4, type: 3}
+--- !u!224 &2825645737214109946 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 596935604651607483, guid: a623ac0844e86ca4699b60b86e5a1ce4, type: 3}
+  m_PrefabInstance: {fileID: 3422181660495752513}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &2937029023384232781 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 557430694010211852, guid: a623ac0844e86ca4699b60b86e5a1ce4, type: 3}
@@ -1939,11 +1953,57 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!1 &4738563361602142776 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7979475101102813049, guid: a623ac0844e86ca4699b60b86e5a1ce4, type: 3}
+  m_PrefabInstance: {fileID: 3422181660495752513}
+  m_PrefabAsset: {fileID: 0}
+--- !u!225 &1010966653574528404
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4738563361602142776}
+  m_Enabled: 1
+  m_Alpha: 0.8
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!1 &5327812361456327919 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7389906761529864622, guid: a623ac0844e86ca4699b60b86e5a1ce4, type: 3}
+  m_PrefabInstance: {fileID: 3422181660495752513}
+  m_PrefabAsset: {fileID: 0}
+--- !u!225 &434807573339625369
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5327812361456327919}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &7938651711525138461 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4707890799268076892, guid: a623ac0844e86ca4699b60b86e5a1ce4, type: 3}
   m_PrefabInstance: {fileID: 3422181660495752513}
   m_PrefabAsset: {fileID: 0}
+--- !u!225 &2590107283044133557
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7938651711525138461}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1001 &3809766693857900727
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2610,9 +2670,21 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 7938651711525138461}
     - target: {fileID: 8664077167452570210, guid: 0b2eda5965a8af845b8e07e6b86168c8, type: 3}
+      propertyPath: rebindWindowRoot
+      value: 
+      objectReference: {fileID: 2825645737214109946}
+    - target: {fileID: 8664077167452570210, guid: 0b2eda5965a8af845b8e07e6b86168c8, type: 3}
       propertyPath: rebindOverlayText
       value: 
       objectReference: {fileID: 4523527007335955340}
+    - target: {fileID: 8664077167452570210, guid: 0b2eda5965a8af845b8e07e6b86168c8, type: 3}
+      propertyPath: rebindDimCanvasGroup
+      value: 
+      objectReference: {fileID: 1010966653574528404}
+    - target: {fileID: 8664077167452570210, guid: 0b2eda5965a8af845b8e07e6b86168c8, type: 3}
+      propertyPath: rebindOverlayCanvasGroup
+      value: 
+      objectReference: {fileID: 2590107283044133557}
     - target: {fileID: 8912409220408080157, guid: 0b2eda5965a8af845b8e07e6b86168c8, type: 3}
       propertyPath: m_AnchorMax.y
       value: 1
