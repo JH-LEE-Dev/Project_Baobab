@@ -165,13 +165,22 @@ public class AttackComponent : PComponent
     /// </summary>
     private void UpdateGamepadAim()
     {
-        if (aimStickDirection == Vector2.zero) return;
-        if (ctx == null || ctx.inputManager == null) return;
+        if (null == ctx || null == ctx.inputManager) return;
 
         // 마우스를 쓰는 동안에는 패드 조준이 끼어들지 않아야 한다.
         if (EInputDeviceType.Gamepad != ctx.inputManager.CurrentDevice) return;
 
-        Vector3 _aimWorldPos = transform.position + (Vector3)(aimStickDirection * gamepadAimRadius);
+        Vector2 targetAimDir = aimStickDirection;
+
+        // 우측 조준 스틱을 사용하지 않은 상태이고 이동 입력이 있는 경우, 이동 방향을 조준 방향의 기본값으로 사용
+        if (Vector2.zero == targetAimDir && Vector2.zero != ctx.moveInput)
+        {
+            targetAimDir = ctx.moveInput.normalized;
+        }
+
+        if (Vector2.zero == targetAimDir) return;
+
+        Vector3 _aimWorldPos = transform.position + (Vector3)(targetAimDir * gamepadAimRadius);
         ApplyAimWorldPosition(_aimWorldPos);
     }
 
@@ -735,9 +744,13 @@ public class AttackComponent : PComponent
     {
         bAttack = _bAttack;
 
-        if (!bAttack)
+        if (false == bAttack)
         {
-            UpdateAttackColliderPosition(lastMouseScreenPos);
+            // 키보드/마우스 모드일 때만 마우스 위치로 조준점을 갱신하고, 패드 모드일 때는 마우스 좌표로 덮어쓰지 않는다.
+            if (null != ctx && null != ctx.inputManager && EInputDeviceType.Gamepad != ctx.inputManager.CurrentDevice)
+            {
+                UpdateAttackColliderPosition(lastMouseScreenPos);
+            }
         }
     }
 
@@ -748,8 +761,8 @@ public class AttackComponent : PComponent
 
     public void GoToAxeMode()
     {
-        if (ctx == null || bCanRotate == false || bCanSwap == false) return;
-        if (currentWeaponMode == WeaponMode.Axe) return;
+        if (null == ctx || false == bCanRotate || false == bCanSwap) return;
+        if (WeaponMode.Axe == currentWeaponMode) return;
 
         currentWeaponMode = WeaponMode.Axe;
         WeaponModeChangedEvent?.Invoke(currentWeaponMode);
@@ -759,8 +772,8 @@ public class AttackComponent : PComponent
 
     public void GoToRifleMode()
     {
-        if (ctx == null || ctx.characterStat.bCanHunting == false || bCanRotate == false || bCanSwap == false) return;
-        if (currentWeaponMode == WeaponMode.Rifle) return;
+        if (null == ctx || false == ctx.characterStat.bCanHunting || false == bCanRotate || false == bCanSwap) return;
+        if (WeaponMode.Rifle == currentWeaponMode) return;
 
         currentWeaponMode = WeaponMode.Rifle;
         WeaponModeChangedEvent?.Invoke(currentWeaponMode);
@@ -770,7 +783,7 @@ public class AttackComponent : PComponent
 
     private void ApplyWeaponChangeSpeedModifier()
     {
-        if (ctx != null && ctx.characterStat != null)
+        if (null != ctx && null != ctx.characterStat)
         {
             StopCoroutine(nameof(WeaponChangeSpeedModifierRoutine));
             StartCoroutine(nameof(WeaponChangeSpeedModifierRoutine));
@@ -823,13 +836,13 @@ public class AttackComponent : PComponent
     {
         ellipseRadiusIndicator.gameObject.SetActive(_boolean);
 
-        if (indicatorFadeCoroutine != null)
+        if (null != indicatorFadeCoroutine)
         {
             StopCoroutine(indicatorFadeCoroutine);
             indicatorFadeCoroutine = null;
         }
 
-        if (ellipseIndicatorMat == null) return;
+        if (null == ellipseIndicatorMat) return;
 
         if (_boolean)
         {
@@ -875,10 +888,13 @@ public class AttackComponent : PComponent
         // 조준은 마우스가 물리적으로 움직일 때(MouseMove)만 갱신되므로, 켜는 순간 한 번 직접
         // 계산해주지 않으면 다음 마우스 이동이 있을 때까지 이전 방향을 그대로 보고 있게 된다.
         // lastMouseScreenPos는 bCursorEnable이 false인 동안에도 계속 캐싱되므로(MouseMove 참고)
-        // 여기서 곧바로 현재 커서 위치 기준으로 맞출 수 있다.
-        if (_boolean && _wasEnabled == false && lastMouseScreenPos != Vector2.zero)
+        // 여기서 곧바로 현재 커서 위치 기준으로 맞출 수 있다. 단, 패드 모드일 때는 마우스 위치로 덮어쓰지 않는다.
+        if (_boolean && false == _wasEnabled && Vector2.zero != lastMouseScreenPos)
         {
-            UpdateAttackColliderPosition(lastMouseScreenPos);
+            if (null != ctx && null != ctx.inputManager && EInputDeviceType.Gamepad != ctx.inputManager.CurrentDevice)
+            {
+                UpdateAttackColliderPosition(lastMouseScreenPos);
+            }
         }
     }
 

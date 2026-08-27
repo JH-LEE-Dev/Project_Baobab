@@ -21,6 +21,12 @@ public class RunState : CharacterState
         ctx.pathfindGridProvider.Occupy(currentReservedPos);
 
         character.bMoving = true;
+
+        // 상태 진입 시 현재 입력이 유효하다면 즉시 방향 갱신 (패드 아날로그 유지 시 이벤트 유실로 인한 문워크 방지)
+        if (Vector2.zero != ctx.moveInput)
+        {
+            UpdateFacingDirection(ctx.moveInput);
+        }
     }
 
     public override void Exit()
@@ -38,7 +44,7 @@ public class RunState : CharacterState
 
     public override void Update()
     {
-        if (bActivated == false)
+        if (false == bActivated)
             return;
 
         HandleDelayedDirectionUpdate();
@@ -46,7 +52,7 @@ public class RunState : CharacterState
 
     public override void FixedUpdate()
     {
-        if (bActivated == false)
+        if (false == bActivated)
             return;
 
         ApplyMovement();
@@ -71,7 +77,7 @@ public class RunState : CharacterState
 
     protected override void UnSubscribeEvents()
     {
-        if (character != null && character.inputManager != null && character.inputManager.inputReader != null)
+        if (null != character && null != character.inputManager && null != character.inputManager.inputReader)
         {
             character.inputManager.inputReader.MoveEvent -= OnMove;
         }
@@ -79,25 +85,26 @@ public class RunState : CharacterState
 
     private void OnMove(Vector2 _input)
     {
-        if (bActivated == false)
+        if (false == bActivated)
             return;
 
         ctx.moveInput = _input;
 
-        if (_input == Vector2.zero)
+        if (Vector2.zero == _input)
         {
             stateMachine.ChangeState<IdleState>();
             return;
         }
 
+        bool isGamepad = (null != character.inputManager && EInputDeviceType.Gamepad == character.inputManager.CurrentDevice);
         int currentAxisCount = GetActiveAxisCount(_input);
 
-        // 대각선 입력 (축이 2개)인 경우에는 즉시 방향 변경 적용
-        if (currentAxisCount >= 2)
+        // 패드 조작이거나 대각선 입력 (축이 2개 이상)인 경우에는 즉시 방향 변경 적용
+        if (isGamepad || 2 <= currentAxisCount)
         {
             UpdateFacingDirection(_input);
         }
-        // 단일축 입력 (축이 1개)인 경우에는 대각선 입력 대기 및 떼기 보정을 위해 유예 시간 적용
+        // 키보드 단일축 입력인 경우에는 대각선 입력 대기 및 떼기 보정을 위해 유예 시간 적용
         else
         {
             pendingDirection = _input;
@@ -109,14 +116,14 @@ public class RunState : CharacterState
     {
         int count = 0;
         // 키보드 대각선 입력 시 0.707... 과 같은 부동 소수점 오차를 고려
-        if (Mathf.Abs(_v.x) > 0.01f) count++;
-        if (Mathf.Abs(_v.y) > 0.01f) count++;
+        if (0.01f < Mathf.Abs(_v.x)) count++;
+        if (0.01f < Mathf.Abs(_v.y)) count++;
         return count;
     }
 
     private void UpdateFacingDirection(Vector2 _input)
     {
-        if (character.bInDungeon == false)
+        if (false == character.bInDungeon)
         {
             character.SetFacingDirection(GetIsometricVector(_input));
         }
@@ -127,10 +134,10 @@ public class RunState : CharacterState
 
     private void HandleDelayedDirectionUpdate()
     {
-        if (directionUpdateTimer > 0)
+        if (0f < directionUpdateTimer)
         {
             directionUpdateTimer -= Time.deltaTime;
-            if (directionUpdateTimer <= 0)
+            if (0f >= directionUpdateTimer)
             {
                 UpdateFacingDirection(pendingDirection);
             }
@@ -142,7 +149,7 @@ public class RunState : CharacterState
         var groundData = character.currentGroundData;
         Vector2 inputDir = GetIsometricVector(ctx.moveInput);
 
-        if (inputDir.sqrMagnitude > 0.0001f)
+        if (0.0001f < inputDir.sqrMagnitude)
             inputDir.Normalize();
 
         float speed = groundData.maxSpeed * ctx.characterStat.speed;

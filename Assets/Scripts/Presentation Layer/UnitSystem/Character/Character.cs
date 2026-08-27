@@ -1123,13 +1123,17 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         UpdateDroneFormation(); // 캐릭터 이동 방향에 맞춰 드론 대형 슬롯을 매 프레임 회전/갱신
         UpdateDroneSeparation(Time.deltaTime); // 드론끼리 겹치지 않도록 매 프레임 살짝 밀어냄(안전망)
 
+        // 조준점 및 무기 방향을 먼저 갱신한 뒤 비주얼을 렌더링하여 1프레임 지연을 제거
+        UpdateFacingByAttackPoint();
+        ConnectAttackToArm();
+
         // 비주얼 업데이트
         characterVisualComponent.UpdateVisuals(bMoving, !bInDungeon, bDead);
         UpdateItemAcquireBounce(Time.deltaTime);
 
         // 스태미나 로직
         UpdateStaminaAmounts(); // 실시간 소모량 갱신 반영
-        if (bStaminaUpDown) healthComponent.IncreaseStamina();
+        if (true == bStaminaUpDown) healthComponent.IncreaseStamina();
         else healthComponent.DecreaseStamina();
 
         float staminaRatio = healthComponent.GetCurrentStamina() / Mathf.Max(1f, healthComponent.GetMaxStamina());
@@ -1151,18 +1155,15 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 입장 연출 도중에 사망이 발생해 사망 시퀀스가 아직 끝나지 않은 입장 시퀀스와 충돌하고,
         // 공유 카메라(isMoved 토글)·입력 잠금 플래그가 꼬여 마을에서 캐릭터가 죽은 채로 남고 입력이 먹통이 된다.
         CurrentCell = environmentProvider.tilemapDataProvider.WorldToCell(transform.position);
-        if (bInDungeon && !bWhileReset && !bDead)
+        if (true == bInDungeon && false == bWhileReset && false == bDead)
         {
             float hazardDrain = environmentProvider.tilemapDataProvider.GetHazardStaminaDrainPerSecond(CurrentCell);
-            if (hazardDrain > 0f)
+            if (0f < hazardDrain)
             {
                 healthComponent.ApplyEnvironmentalStaminaDrain(hazardDrain);
                 overheatComponent?.AddOverheatDuration(2f * Time.deltaTime); // 용암 열기 노출 1초당 2초 비율로 연속 적립
             }
         }
-
-        UpdateFacingByAttackPoint();
-        ConnectAttackToArm();
     }
 
     private void LateUpdate()

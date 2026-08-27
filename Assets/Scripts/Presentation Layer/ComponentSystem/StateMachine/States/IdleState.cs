@@ -23,16 +23,16 @@ public class IdleState : CharacterState
 
     public override void Update()
     {
-        if (bActivated == false)
+        if (false == bActivated)
             return;
     }
 
     public override void FixedUpdate()
     {
-        if (bActivated == false)
+        if (false == bActivated)
             return;
 
-        if (ctx.moveInput.sqrMagnitude != 0)
+        if (0f != ctx.moveInput.sqrMagnitude)
             stateMachine.ChangeState<RunState>();
 
         ApplyDeceleration();
@@ -57,7 +57,7 @@ public class IdleState : CharacterState
 
     protected override void UnSubscribeEvents()
     {
-        if (character != null && character.inputManager != null && character.inputManager.inputReader != null)
+        if (null != character && null != character.inputManager && null != character.inputManager.inputReader)
         {
             character.inputManager.inputReader.MoveEvent -= OnMove;
         }
@@ -65,14 +65,19 @@ public class IdleState : CharacterState
 
     private void OnMove(Vector2 _input)
     {
-        if (bActivated == false)
+        if (false == bActivated)
             return;
 
         ctx.moveInput = _input;
 
-        // 키보드 입력이 발생하면 즉시 방향 설정 후 RunState로 전환
-        if (_input != Vector2.zero)
+        // 입력이 발생하면 마을 상태일 때 즉시 방향 설정 후 RunState로 전환
+        if (Vector2.zero != _input)
         {
+            if (false == character.bInDungeon)
+            {
+                character.SetFacingDirection(new Vector2(_input.x, _input.y * 0.5f));
+            }
+
             stateMachine.ChangeState<RunState>();
         }
     }
@@ -82,7 +87,7 @@ public class IdleState : CharacterState
         var groundData = character.currentGroundData;
 
         // 속도가 어느 정도 있을 때는 감속 적용
-        if (character.rb.linearVelocity.sqrMagnitude > 0.001f)
+        if (0.001f < character.rb.linearVelocity.sqrMagnitude)
         {
             character.rb.linearVelocity = Vector2.MoveTowards(
                 character.rb.linearVelocity,
