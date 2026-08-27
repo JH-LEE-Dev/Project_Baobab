@@ -1,6 +1,7 @@
 using System;
 using PresentationLayer.UISystem.CustomNumber;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class UIView_Tent : UIView
 {
@@ -80,6 +81,24 @@ public class UIView_Tent : UIView
         UpdateTutorialHUDPresentation();
     }
 
+    public override void Hide()
+    {
+        // UI Cancel 이벤트는 입력 장치 자동 판별보다 먼저 전달될 수 있다. 키마 모드에서 처음 누른
+        // B/○라면 이 TentUI 안에서 즉시 패드 모드로 바꾸고, 닫기 요청은 한 번만 소비한다.
+        Gamepad _gamepad = Gamepad.current;
+        if (true == IsVisible &&
+            null != viewCtx?.inputManager &&
+            false == viewCtx.inputManager.IsGamepadMode &&
+            null != _gamepad &&
+            true == _gamepad.buttonEast.wasPressedThisFrame)
+        {
+            viewCtx.inputManager.ForceInputDevice(EInputDeviceType.Gamepad);
+            return;
+        }
+
+        base.Hide();
+    }
+
     protected override void OnShow()
     {
         base.OnShow();
@@ -95,6 +114,7 @@ public class UIView_Tent : UIView
         playSoundsForCurrentPresentation = true;
         Sound.PlayUI(SoundID.AbilityOpen);
 
+        viewCtx.inputManager.SetInputMode(EInputMode.UI);
         viewCtx.inputManager.PauseMove(true);
 
         // 패드에는 포인터가 없어서 특성 노드를 찍을 수단이 없다. 여기서 가상 커서를 요청하면
@@ -119,8 +139,9 @@ public class UIView_Tent : UIView
             playSoundsForCurrentPresentation = false;
         }
 
-        viewCtx.inputManager.PauseMove(false);
         viewCtx.inputManager.SetVirtualCursorRequested(false);
+        viewCtx.inputManager.SetInputMode(EInputMode.Gameplay);
+        viewCtx.inputManager.PauseMove(false);
 
         abilityUIComponent?.Close();
 

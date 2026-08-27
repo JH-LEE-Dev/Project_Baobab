@@ -3,7 +3,12 @@ using PresentationLayer.DOTweenAnimationSystem;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class UIHoverSelectionTarget : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
+public class UIHoverSelectionTarget : MonoBehaviour,
+    IPointerEnterHandler,
+    IPointerExitHandler,
+    IPointerClickHandler,
+    ISelectHandler,
+    IDeselectHandler
 {
     public event Action PointerEnteredEvent;
 
@@ -19,6 +24,9 @@ public class UIHoverSelectionTarget : MonoBehaviour, IPointerEnterHandler, IPoin
     private MotionEntry hoverMotionEntry;
     private MotionEntry unHoverMotionEntry;
     private bool isPointerHovering;
+    private bool isSelected;
+    private bool isHoverActive;
+    private Func<bool> isSelectionMode;
 
     public void Initialize(UISelectionCursor _selectionCursor)
     {
@@ -27,20 +35,32 @@ public class UIHoverSelectionTarget : MonoBehaviour, IPointerEnterHandler, IPoin
 
     public void Initialize(UISelectionCursor _selectionCursor, RectTransform _cursorTargetRectTransform, ObjectMotionPlayer _motionPlayer)
     {
+        Initialize(_selectionCursor, _cursorTargetRectTransform, _motionPlayer, null);
+    }
+
+    public void Initialize(
+        UISelectionCursor _selectionCursor,
+        RectTransform _cursorTargetRectTransform,
+        ObjectMotionPlayer _motionPlayer,
+        Func<bool> _isSelectionMode)
+    {
         selectionCursor = _selectionCursor;
         cursorTargetRectTransform = _cursorTargetRectTransform;
         motionPlayer = _motionPlayer;
+        isSelectionMode = _isSelectionMode;
         CacheReferences();
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        BeginHover();
+        isPointerHovering = true;
+        RefreshHoverState();
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        EndHover();
+        isPointerHovering = false;
+        RefreshHoverState();
     }
 
     public void OnPointerClick(PointerEventData eventData)
@@ -48,9 +68,35 @@ public class UIHoverSelectionTarget : MonoBehaviour, IPointerEnterHandler, IPoin
         HideCursorImmediately();
     }
 
+    public void OnSelect(BaseEventData eventData)
+    {
+        if (false == IsSelectionModeActive())
+            return;
+
+        isSelected = true;
+        RefreshHoverState(true);
+    }
+
+    public void OnDeselect(BaseEventData eventData)
+    {
+        isSelected = false;
+        RefreshHoverState();
+    }
+
+    public void ForceSelect()
+    {
+        if (false == IsSelectionModeActive())
+            return;
+
+        isSelected = true;
+        RefreshHoverState(true);
+    }
+
     public void HideCursorImmediately()
     {
         isPointerHovering = false;
+        isSelected = false;
+        isHoverActive = false;
 
         if (selectionCursor != null)
             selectionCursor.HideImmediately();
@@ -63,10 +109,8 @@ public class UIHoverSelectionTarget : MonoBehaviour, IPointerEnterHandler, IPoin
         if (targetRectTransform == null)
             return;
 
-        if (RectTransformUtility.RectangleContainsScreenPoint(targetRectTransform, screenPosition, eventCamera))
-            BeginHover();
-        else
-            EndHover();
+        isPointerHovering = RectTransformUtility.RectangleContainsScreenPoint(targetRectTransform, screenPosition, eventCamera);
+        RefreshHoverState();
     }
 
     private void OnDisable()
@@ -107,16 +151,28 @@ public class UIHoverSelectionTarget : MonoBehaviour, IPointerEnterHandler, IPoin
         unHoverMotionEntry = motionPlayer.Play(unHoverMotionTag, bReset: resetCurrentMotionBeforePlay);
     }
 
-    private void EndHover()
+    private bool IsSelectionModeActive()
     {
-        if (isPointerHovering == false)
+        return null != isSelectionMode && true == isSelectionMode.Invoke();
+    }
+
+    private void RefreshHoverState(bool forceEnter = false)
+    {
+        bool shouldHover = isSelected || (isPointerHovering && false == IsSelectionModeActive());
+        if (shouldHover == isHoverActive && false == (forceEnter && shouldHover))
             return;
 
-        isPointerHovering = false;
+        isHoverActive = shouldHover;
 
-        if (selectionCursor != null)
-            selectionCursor.Hide();
+        if (shouldHover)
+        {
+            PointerEnteredEvent?.Invoke();
+            selectionCursor?.Show(cursorTargetRectTransform != null ? cursorTargetRectTransform : targetRectTransform);
+            PlayHoverMotion();
+            return;
+        }
 
+        selectionCursor?.Hide();
         PlayUnHoverMotion();
     }
 
@@ -126,16 +182,5 @@ public class UIHoverSelectionTarget : MonoBehaviour, IPointerEnterHandler, IPoin
             return;
 
         motionPlayer.SettingEntryMotion(entry, true, true);
-    }
-
-    private void BeginHover()
-    {
-        if (isPointerHovering)
-            return;
-
-        isPointerHovering = true;
-        PointerEnteredEvent?.Invoke();
-        selectionCursor?.Show(cursorTargetRectTransform != null ? cursorTargetRectTransform : targetRectTransform);
-        PlayHoverMotion();
     }
 }

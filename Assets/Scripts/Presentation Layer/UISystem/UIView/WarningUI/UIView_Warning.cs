@@ -4,6 +4,7 @@ using DG.Tweening;
 using PresentationLayer.DOTweenAnimationSystem;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
@@ -66,6 +67,9 @@ public class UIView_Warning : UIView
     private RectTransform okButtonVisual;
     private RectTransform cancelButtonVisual;
     private LocalizationManager localizationManager;
+    private InputManager inputManager;
+    private Action cachedOnUICancel;
+    private Action<EInputDeviceType> cachedOnInputDeviceChanged;
     private bool isClosing;
     private bool playSoundsForCurrentPresentation;
 
@@ -82,12 +86,23 @@ public class UIView_Warning : UIView
     {
         base.Initialize(_ctx);
         localizationManager = _ctx?.localizationManager;
+        inputManager = _ctx?.inputManager;
+        cachedOnUICancel ??= OnUICancelPressed;
+        cachedOnInputDeviceChanged ??= OnInputDeviceChanged;
+
         if (localizationManager != null)
             localizationManager.OnLanguageChanged += RefreshLocalizedTexts;
+
+        if (null != inputManager?.inputReader)
+        {
+            inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+            inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
+        }
 
         CacheCanvasGroups();
         CacheTextReferences();
         CacheButtonTouchAreas();
+        ConfigureButtonNavigation();
         RefreshLocalizedTexts();
         InitializeButtonHoverTargets();
         BindButtonEvents();
@@ -96,6 +111,13 @@ public class UIView_Warning : UIView
     public void ShowWarning()
     {
         playSoundsForCurrentPresentation = true;
+
+        if (null != inputManager?.inputReader && null != cachedOnUICancel)
+        {
+            inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+            inputManager.inputReader.UICancelEvent += cachedOnUICancel;
+        }
+
         Show();
     }
 
@@ -135,6 +157,9 @@ public class UIView_Warning : UIView
         if (playSoundsForCurrentPresentation)
             Sound.ReleaseAudioDuck();
 
+        if (null != inputManager?.inputReader && null != cachedOnUICancel)
+            inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+
         DeActivateWarningUI();
         bApproved = false;
         playSoundsForCurrentPresentation = false;
@@ -148,12 +173,24 @@ public class UIView_Warning : UIView
         if (localizationManager != null)
             localizationManager.OnLanguageChanged -= RefreshLocalizedTexts;
 
+        if (null != inputManager?.inputReader && null != cachedOnInputDeviceChanged)
+            inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+
+        if (null != inputManager?.inputReader && null != cachedOnUICancel)
+            inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+
         DeActivateWarningUIEvent = null;
+        cachedOnUICancel = null;
+        cachedOnInputDeviceChanged = null;
+        inputManager = null;
         base.OnDestroy();
     }
 
     public void OnOKButtonClicked()
     {
+        if (true == isClosing)
+            return;
+
         HideSelectionCursorImmediately();
         bApproved = true;
 
@@ -165,6 +202,9 @@ public class UIView_Warning : UIView
 
     public void OnCancelButtonClicked()
     {
+        if (true == isClosing)
+            return;
+
         HideSelectionCursorImmediately();
         bApproved = false;
 
@@ -485,6 +525,7 @@ public class UIView_Warning : UIView
         if (playSoundsForCurrentPresentation)
             Sound.PlayUI(SoundID.ResultUIClose);
 
+        ClearButtonSelection();
         HideSelectionCursorImmediately();
         SetButtonInputEnabled(false);
         SetCanvasGroupRaycast(warningBGCanvasGroup, true);
@@ -560,7 +601,11 @@ public class UIView_Warning : UIView
         SetCanvasGroupRaycast(mainTextCanvasGroup, false);
         SetCanvasGroupRaycast(subTextCanvasGroup, false);
         SetButtonInputEnabled(true);
-        RefreshButtonHoverTargets();
+
+        if (true == IsGamepadMode())
+            SelectDefaultButton();
+        else
+            RefreshButtonHoverTargets();
     }
 
     private void SetButtonInputEnabled(bool enabled)
@@ -701,8 +746,93 @@ public class UIView_Warning : UIView
             hoverTarget = touchArea.gameObject.AddComponent<UIHoverSelectionTarget>();
 
         ObjectMotionPlayer motionPlayer = visual != null ? visual.GetComponentInChildren<ObjectMotionPlayer>(true) : null;
-        hoverTarget.Initialize(selectionCursorInstance, touchArea, motionPlayer);
+        hoverTarget.Initialize(selectionCursorInstance, touchArea, motionPlayer, IsGamepadMode);
         return hoverTarget;
+    }
+
+    private bool IsGamepadMode()
+    {
+        return null != inputManager && true == inputManager.IsGamepadMode;
+    }
+
+    private void ConfigureButtonNavigation()
+    {
+        ConfigureHorizontalNavigation(okTouchAreaButton, cancelTouchAreaButton);
+        ConfigureHorizontalNavigation(cancelTouchAreaButton, okTouchAreaButton);
+    }
+
+    private static void ConfigureHorizontalNavigation(Selectable source, Selectable other)
+    {
+        if (null == source)
+            return;
+
+        Selectable horizontalTarget = null != other ? other : source;
+        source.navigation = new Navigation
+        {
+            mode = Navigation.Mode.Explicit,
+            selectOnLeft = horizontalTarget,
+            selectOnRight = horizontalTarget,
+            selectOnUp = source,
+            selectOnDown = source
+        };
+    }
+
+    private void SelectDefaultButton()
+    {
+        if (false == IsVisible || true == isClosing || null == okTouchAreaButton ||
+            false == okTouchAreaButton.interactable || false == okTouchAreaButton.gameObject.activeInHierarchy)
+            return;
+
+        if (null != EventSystem.current)
+        {
+            if (EventSystem.current.currentSelectedGameObject == okTouchAreaButton.gameObject)
+                okHoverTarget?.ForceSelect();
+            else
+                EventSystem.current.SetSelectedGameObject(okTouchAreaButton.gameObject);
+        }
+        else
+        {
+            okHoverTarget?.ForceSelect();
+        }
+    }
+
+    private void OnInputDeviceChanged(EInputDeviceType device)
+    {
+        if (false == IsVisible || true == isClosing || false == gameObject.activeInHierarchy)
+            return;
+
+        if (EInputDeviceType.Gamepad == device)
+        {
+            SelectDefaultButton();
+            return;
+        }
+
+        if (EInputDeviceType.KeyboardMouse == device)
+        {
+            ClearButtonSelection();
+            RefreshButtonHoverTargets();
+        }
+    }
+
+    private void OnUICancelPressed()
+    {
+        if (false == IsVisible || true == isClosing || false == gameObject.activeInHierarchy)
+            return;
+
+        OnCancelButtonClicked();
+    }
+
+    private void ClearButtonSelection()
+    {
+        if (null == EventSystem.current)
+            return;
+
+        GameObject selected = EventSystem.current.currentSelectedGameObject;
+        if ((null != okTouchAreaButton && selected == okTouchAreaButton.gameObject) ||
+            (null != cancelTouchAreaButton && selected == cancelTouchAreaButton.gameObject))
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
     }
 
     private void EnsureSelectionCursorInstance()
