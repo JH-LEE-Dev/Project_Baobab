@@ -288,6 +288,14 @@ public class InputReader
 
     private void OnUICancel(InputAction.CallbackContext context)
     {
+        if (false == context.performed) return;
+
+        if (true == IsRebinding)
+        {
+            CancelRebind();
+            return;
+        }
+
         UICancelEvent?.Invoke();
     }
 
@@ -792,8 +800,10 @@ public class InputReader
 
         _inputAction.Disable();
 
+        string _cancelPath = (EInputDeviceType.Gamepad == _device) ? RESERVED_GAMEPAD_CANCEL_PATH : RESERVED_ESCAPE_PATH;
+
         InputActionRebindingExtensions.RebindingOperation _rebind = _inputAction.PerformInteractiveRebinding(_bindingIndex)
-            .WithCancelingThrough(RESERVED_ESCAPE_PATH)
+            .WithCancelingThrough(_cancelPath)
 
             // 리바인딩 대상은 전부 버튼 계열이다. (키, 마우스 버튼, 패드 페이스 버튼·트리거·D-Pad는
             // 모두 Button 레이아웃을 기반으로 한다)
