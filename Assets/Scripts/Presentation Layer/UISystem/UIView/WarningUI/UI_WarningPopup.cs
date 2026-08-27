@@ -49,6 +49,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     private Vector2 originalRootAnchoredPosition;
 
     public bool IsActive => gameObject.activeSelf;
+    public InputManager InputManager => inputManager;
 
     /// <summary>ESC로 뎁스 스택에서 닫힐 때 호출됩니다. 확인(Confirm)이 아닌 취소(Cancel)로 처리해
     /// 파괴적인 동작이 실수로 실행되지 않게 합니다.</summary>
@@ -423,15 +424,15 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
             inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
         }
 
-        if (null != previousSelectedGameObject && true == previousSelectedGameObject.activeInHierarchy)
+        if (null != inputManager && true == inputManager.IsGamepadMode)
         {
-            if (null != EventSystem.current)
+            if (null != previousSelectedGameObject && true == previousSelectedGameObject.activeInHierarchy)
             {
-                EventSystem.current.SetSelectedGameObject(previousSelectedGameObject);
-            }
+                if (null != EventSystem.current)
+                {
+                    EventSystem.current.SetSelectedGameObject(previousSelectedGameObject);
+                }
 
-            if (null != inputManager && true == inputManager.IsGamepadMode)
-            {
                 UI_OptionButton _ob = previousSelectedGameObject.GetComponent<UI_OptionButton>();
                 if (null != _ob)
                 {
@@ -463,6 +464,13 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
                         }
                     }
                 }
+            }
+        }
+        else
+        {
+            if (null != EventSystem.current)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
             }
         }
         previousSelectedGameObject = null;

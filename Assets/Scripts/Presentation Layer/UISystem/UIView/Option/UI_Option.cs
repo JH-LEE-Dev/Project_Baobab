@@ -6,6 +6,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// 옵션 UI 시스템 전체를 총괄하는 최상위 컨트롤러입니다.
@@ -601,60 +602,186 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         {
             cursorBoxUI?.HideImmediately();
             ResetAllRowsFocusVisuals();
+            if (null != EventSystem.current)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+            }
+            if (null != applyButton) applyButton.ForceUnhover();
+            if (null != closeButton) closeButton.ForceUnhover();
+            if (null != resetAllBindingsButton) resetAllBindingsButton.ForceUnhover();
         }
         else if (EInputDeviceType.Gamepad == _device)
         {
-            GameObject _selected = EventSystem.current?.currentSelectedGameObject;
-            bool _hasValidSelection = (null != _selected && true == _selected.activeInHierarchy && true == _selected.transform.IsChildOf(transform));
+            Selectable _hoveredSelectable = GetMouseHoveredSelectable();
+            Selectable _targetSelectable = _hoveredSelectable;
 
-            if (false == _hasValidSelection)
+            if (null != _hoveredSelectable)
             {
-                SelectDefaultFocusElement();
+                MoveDirection _dir = GetTriggeringMoveDirection();
+                if (MoveDirection.Down == _dir && null != _hoveredSelectable.navigation.selectOnDown && true == _hoveredSelectable.navigation.selectOnDown.gameObject.activeInHierarchy)
+                {
+                    _targetSelectable = _hoveredSelectable.navigation.selectOnDown;
+                }
+                else if (MoveDirection.Up == _dir && null != _hoveredSelectable.navigation.selectOnUp && true == _hoveredSelectable.navigation.selectOnUp.gameObject.activeInHierarchy)
+                {
+                    _targetSelectable = _hoveredSelectable.navigation.selectOnUp;
+                }
+                else if (MoveDirection.Left == _dir && null != _hoveredSelectable.navigation.selectOnLeft && true == _hoveredSelectable.navigation.selectOnLeft.gameObject.activeInHierarchy)
+                {
+                    _targetSelectable = _hoveredSelectable.navigation.selectOnLeft;
+                }
+                else if (MoveDirection.Right == _dir && null != _hoveredSelectable.navigation.selectOnRight && true == _hoveredSelectable.navigation.selectOnRight.gameObject.activeInHierarchy)
+                {
+                    _targetSelectable = _hoveredSelectable.navigation.selectOnRight;
+                }
+            }
+
+            if (null != _targetSelectable && true == _targetSelectable.gameObject.activeInHierarchy)
+            {
+                if (null != EventSystem.current)
+                {
+                    EventSystem.current.SetSelectedGameObject(_targetSelectable.gameObject);
+                }
+                ApplyFocusOnSelectable(_targetSelectable);
             }
             else
             {
-                UI_OptionSelector _selector = _selected.GetComponent<UI_OptionSelector>();
-                if (null != _selector)
+                GameObject _selected = EventSystem.current?.currentSelectedGameObject;
+                bool _hasValidSelection = (null != _selected && true == _selected.activeInHierarchy && true == _selected.transform.IsChildOf(transform));
+
+                if (false == _hasValidSelection)
                 {
-                    _selector.ShowCursor();
-                    _selector.ApplyFocusVisual(true);
+                    SelectDefaultFocusElement();
                 }
                 else
                 {
-                    UI_OptionSlider _slider = _selected.GetComponent<UI_OptionSlider>();
-                    if (null != _slider)
-                    {
-                        _slider.ShowCursor();
-                        _slider.ApplyFocusVisual(true);
-                    }
-                    else
-                    {
-                        UI_OptionGamepadKeyBindRow _padRow = _selected.GetComponent<UI_OptionGamepadKeyBindRow>();
-                        if (null != _padRow)
-                        {
-                            _padRow.ShowCursor();
-                            _padRow.ApplyFocusVisual(true);
-                        }
-                        else
-                        {
-                            UI_OptionButton _btn = _selected.GetComponent<UI_OptionButton>();
-                            if (null != _btn)
-                            {
-                                _btn.ShowCursor();
-                            }
-                            else
-                            {
-                                UI_OptionTabButton _tab = _selected.GetComponent<UI_OptionTabButton>();
-                                if (null != _tab)
-                                {
-                                    _tab.ShowCursor();
-                                }
-                            }
-                        }
-                    }
+                    ApplyFocusOnGameObject(_selected);
                 }
             }
         }
+    }
+
+    private Selectable GetMouseHoveredSelectable()
+    {
+        if (null != tabGroup)
+        {
+            for (int i = 0; tabGroup.TabCount > i; i++)
+            {
+                UI_OptionTabButton _tab = tabGroup.GetTabButton(i);
+                if (null != _tab && true == _tab.IsMouseOver()) return _tab;
+            }
+        }
+
+        if (null != applyButton && true == applyButton.IsMouseOver()) return applyButton;
+        if (null != closeButton && true == closeButton.IsMouseOver()) return closeButton;
+        if (null != resetAllBindingsButton && true == resetAllBindingsButton.IsMouseOver()) return resetAllBindingsButton;
+
+        if (null != languageSelector && true == languageSelector.IsMouseOver()) return languageSelector;
+        if (null != resolutionSelector && true == resolutionSelector.IsMouseOver()) return resolutionSelector;
+        if (null != windowModeSelector && true == windowModeSelector.IsMouseOver()) return windowModeSelector;
+        if (null != fpsSelector && true == fpsSelector.IsMouseOver()) return fpsSelector;
+        if (null != pauseOnUnfocusSelector && true == pauseOnUnfocusSelector.IsMouseOver()) return pauseOnUnfocusSelector;
+        if (null != gamepadIconPreferenceSelector && true == gamepadIconPreferenceSelector.IsMouseOver()) return gamepadIconPreferenceSelector;
+
+        if (null != cameraShakeSlider && true == cameraShakeSlider.IsMouseOver()) return cameraShakeSlider;
+        if (null != crosshairBrightnessSlider && true == crosshairBrightnessSlider.IsMouseOver()) return crosshairBrightnessSlider;
+        if (null != hapticStrengthSlider && true == hapticStrengthSlider.IsMouseOver()) return hapticStrengthSlider;
+        if (null != virtualCursorSensitivitySlider && true == virtualCursorSensitivitySlider.IsMouseOver()) return virtualCursorSensitivitySlider;
+        if (null != chromaticAberrationSlider && true == chromaticAberrationSlider.IsMouseOver()) return chromaticAberrationSlider;
+        if (null != brightnessSlider && true == brightnessSlider.IsMouseOver()) return brightnessSlider;
+        if (null != saturationSlider && true == saturationSlider.IsMouseOver()) return saturationSlider;
+
+        if (null != masterVolumeSlider && true == masterVolumeSlider.IsMouseOver()) return masterVolumeSlider;
+        if (null != bgmVolumeSlider && true == bgmVolumeSlider.IsMouseOver()) return bgmVolumeSlider;
+        if (null != sfxVolumeSlider && true == sfxVolumeSlider.IsMouseOver()) return sfxVolumeSlider;
+
+        if (null != keyBindRows)
+        {
+            for (int i = 0; keyBindRows.Count > i; i++)
+            {
+                if (null != keyBindRows[i] && true == keyBindRows[i].IsMouseOver()) return keyBindRows[i];
+            }
+        }
+
+        if (null != gamepadKeyBindRows)
+        {
+            for (int i = 0; gamepadKeyBindRows.Count > i; i++)
+            {
+                if (null != gamepadKeyBindRows[i] && true == gamepadKeyBindRows[i].IsMouseOver()) return gamepadKeyBindRows[i];
+            }
+        }
+
+        return null;
+    }
+
+    private void ApplyFocusOnSelectable(Selectable _sel)
+    {
+        if (null == _sel) return;
+        ApplyFocusOnGameObject(_sel.gameObject);
+    }
+
+    private void ApplyFocusOnGameObject(GameObject _selected)
+    {
+        if (null == _selected) return;
+
+        UI_OptionSelector _selector = _selected.GetComponent<UI_OptionSelector>();
+        if (null != _selector)
+        {
+            _selector.ShowCursor();
+            _selector.ApplyFocusVisual(true);
+            return;
+        }
+
+        UI_OptionSlider _slider = _selected.GetComponent<UI_OptionSlider>();
+        if (null != _slider)
+        {
+            _slider.ShowCursor();
+            _slider.ApplyFocusVisual(true);
+            return;
+        }
+
+        UI_OptionGamepadKeyBindRow _padRow = _selected.GetComponent<UI_OptionGamepadKeyBindRow>();
+        if (null != _padRow)
+        {
+            _padRow.ShowCursor();
+            _padRow.ApplyFocusVisual(true);
+            return;
+        }
+
+        UI_OptionKeyBindRow _keyRow = _selected.GetComponent<UI_OptionKeyBindRow>();
+        if (null != _keyRow)
+        {
+            _keyRow.ShowCursor();
+            _keyRow.ApplyFocusVisual(true);
+            return;
+        }
+
+        UI_OptionButton _btn = _selected.GetComponent<UI_OptionButton>();
+        if (null != _btn)
+        {
+            _btn.ShowCursor();
+            return;
+        }
+
+        UI_OptionTabButton _tab = _selected.GetComponent<UI_OptionTabButton>();
+        if (null != _tab)
+        {
+            _tab.ShowCursor();
+            return;
+        }
+    }
+
+    private MoveDirection GetTriggeringMoveDirection()
+    {
+        Gamepad _pad = Gamepad.current;
+        if (null == _pad) return MoveDirection.None;
+
+        if (true == _pad.dpad.down.isPressed || _pad.leftStick.y.ReadValue() < -0.5f) return MoveDirection.Down;
+        if (true == _pad.dpad.up.isPressed || _pad.leftStick.y.ReadValue() > 0.5f) return MoveDirection.Up;
+        if (true == _pad.dpad.left.isPressed || _pad.leftStick.x.ReadValue() < -0.5f) return MoveDirection.Left;
+        if (true == _pad.dpad.right.isPressed || _pad.leftStick.x.ReadValue() > 0.5f) return MoveDirection.Right;
+
+        return MoveDirection.None;
     }
 
     private void ResetAllRowsFocusVisuals()
@@ -2034,28 +2161,34 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null == applyButton) return;
         bool _dirty = IsDirty();
         bool _wasFocusedOnApply = (null != EventSystem.current && 
-            (EventSystem.current.currentSelectedGameObject == applyButton.gameObject ||
-             null == EventSystem.current.currentSelectedGameObject));
+            EventSystem.current.currentSelectedGameObject == applyButton.gameObject);
 
         applyButton.SetInteractable(_dirty);
         SetupOptionNavigation();
 
         if (false == _dirty && true == _wasFocusedOnApply)
         {
-            if (null != closeButton && true == closeButton.gameObject.activeInHierarchy && true == closeButton.IsInteractable)
+            if (null != inputManager && true == inputManager.IsGamepadMode)
             {
-                if (null != EventSystem.current)
+                if (null != closeButton && true == closeButton.gameObject.activeInHierarchy && true == closeButton.IsInteractable)
                 {
-                    EventSystem.current.SetSelectedGameObject(closeButton.gameObject);
-                }
-                if (null != inputManager && true == inputManager.IsGamepadMode)
-                {
+                    if (null != EventSystem.current)
+                    {
+                        EventSystem.current.SetSelectedGameObject(closeButton.gameObject);
+                    }
                     closeButton.ShowCursor();
+                }
+                else
+                {
+                    SelectDefaultFocusElement();
                 }
             }
             else
             {
-                SelectDefaultFocusElement();
+                if (null != EventSystem.current)
+                {
+                    EventSystem.current.SetSelectedGameObject(null);
+                }
             }
         }
     }

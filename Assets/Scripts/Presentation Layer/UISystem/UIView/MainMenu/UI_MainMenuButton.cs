@@ -472,6 +472,8 @@ public class UI_MainMenuButton : Selectable,
     public override void OnDeselect(BaseEventData _eventData)
     {
         base.OnDeselect(_eventData);
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+
         isHovered = false;
         if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
 

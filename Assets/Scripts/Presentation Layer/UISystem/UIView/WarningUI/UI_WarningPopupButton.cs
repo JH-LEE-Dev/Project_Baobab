@@ -259,6 +259,18 @@ public class UI_WarningPopupButton : Selectable,
         if (false == isInteractable)
             return;
 
+        if (null != parentPopup && null != parentPopup.InputManager && false == parentPopup.InputManager.IsGamepadMode)
+            return;
+
+        if (true == isHovered)
+        {
+            if (null != parentPopup)
+            {
+                parentPopup.OnButtonHovered(this);
+            }
+            return;
+        }
+
         isHovered = true;
         if (null != onHoverAction)
             onHoverAction();
@@ -275,10 +287,13 @@ public class UI_WarningPopupButton : Selectable,
     public override void OnDeselect(BaseEventData _eventData)
     {
         base.OnDeselect(_eventData);
-        isHovered = false;
         if (false == isInteractable)
             return;
-        
+
+        if (null != parentPopup && null != parentPopup.InputManager && false == parentPopup.InputManager.IsGamepadMode)
+            return;
+
+        isHovered = false;
         KillTween();
         PlayUnhoverAnimation();
 

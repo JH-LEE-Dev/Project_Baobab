@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// 메인 메뉴의 실질적인 UI 요소들을 관리하는 스크립트입니다.
@@ -309,7 +310,19 @@ public class UI_MainMenu : MonoBehaviour
             }
 
             UI_MainMenuButton _targetBtn = _hoveredBtn;
-            if (null == _targetBtn)
+            if (null != _hoveredBtn)
+            {
+                MoveDirection _dir = GetTriggeringMoveDirection();
+                if (MoveDirection.Down == _dir && null != _hoveredBtn.navigation.selectOnDown && _hoveredBtn.navigation.selectOnDown is UI_MainMenuButton _downBtn && true == _downBtn.gameObject.activeInHierarchy)
+                {
+                    _targetBtn = _downBtn;
+                }
+                else if (MoveDirection.Up == _dir && null != _hoveredBtn.navigation.selectOnUp && _hoveredBtn.navigation.selectOnUp is UI_MainMenuButton _upBtn && true == _upBtn.gameObject.activeInHierarchy)
+                {
+                    _targetBtn = _upBtn;
+                }
+            }
+            else
             {
                 _targetBtn = GetFirstActiveButton();
             }
@@ -559,5 +572,18 @@ public class UI_MainMenu : MonoBehaviour
         {
             creditButton.Release();
         }
+    }
+
+    private MoveDirection GetTriggeringMoveDirection()
+    {
+        Gamepad _pad = Gamepad.current;
+        if (null == _pad) return MoveDirection.None;
+
+        if (true == _pad.dpad.down.isPressed || _pad.leftStick.y.ReadValue() < -0.5f) return MoveDirection.Down;
+        if (true == _pad.dpad.up.isPressed || _pad.leftStick.y.ReadValue() > 0.5f) return MoveDirection.Up;
+        if (true == _pad.dpad.left.isPressed || _pad.leftStick.x.ReadValue() < -0.5f) return MoveDirection.Left;
+        if (true == _pad.dpad.right.isPressed || _pad.leftStick.x.ReadValue() > 0.5f) return MoveDirection.Right;
+
+        return MoveDirection.None;
     }
 }

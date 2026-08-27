@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// 옵션 창의 개별 탭 버튼을 담당합니다. 클로저 할당 방지를 위해 IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler를 직접 구현합니다.
@@ -179,9 +180,42 @@ public class UI_OptionTabButton : Selectable, IPointerClickHandler, ISubmitHandl
         HideCursor();
     }
 
+    public bool IsMouseOver()
+    {
+        if (false == gameObject.activeInHierarchy) return false;
+        Vector2 _mousePos = Vector2.zero;
+        if (null != Mouse.current)
+        {
+            _mousePos = Mouse.current.position.ReadValue();
+        }
+        else
+        {
+            return false;
+        }
+
+        Canvas _canvas = GetComponentInParent<Canvas>();
+        Camera _cam = (null != _canvas && _canvas.renderMode != RenderMode.ScreenSpaceOverlay) ? _canvas.worldCamera : null;
+        RectTransform _rect = transform as RectTransform;
+        if (null == _rect) return false;
+
+        return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, _cam);
+    }
+
     public override void OnSelect(BaseEventData _eventData)
     {
         base.OnSelect(_eventData);
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+
+        if (true == isHovered)
+        {
+            ShowCursor();
+            if (null != parentGroup)
+            {
+                parentGroup.OnTabClicked(tabIndex);
+            }
+            return;
+        }
+
         isHovered = true;
         UpdateVisualState();
         ShowCursor();
@@ -195,6 +229,8 @@ public class UI_OptionTabButton : Selectable, IPointerClickHandler, ISubmitHandl
     public override void OnDeselect(BaseEventData _eventData)
     {
         base.OnDeselect(_eventData);
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+
         isHovered = false;
         UpdateVisualState();
         HideCursor();

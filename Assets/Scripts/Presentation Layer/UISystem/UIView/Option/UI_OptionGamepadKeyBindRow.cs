@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// 옵션 패널 - 컨트롤(조작) 탭의 게임패드 전용 키 변경 행 컴포넌트입니다.
@@ -247,16 +248,38 @@ public class UI_OptionGamepadKeyBindRow : Selectable,
         }
     }
 
+    public bool IsMouseOver()
+    {
+        if (false == gameObject.activeInHierarchy) return false;
+        Vector2 _mousePos = Vector2.zero;
+        if (null != Mouse.current)
+        {
+            _mousePos = Mouse.current.position.ReadValue();
+        }
+        else
+        {
+            return false;
+        }
+
+        Canvas _canvas = GetComponentInParent<Canvas>();
+        Camera _cam = (null != _canvas && _canvas.renderMode != RenderMode.ScreenSpaceOverlay) ? _canvas.worldCamera : null;
+        RectTransform _rect = transform as RectTransform;
+        if (null == _rect) return false;
+
+        return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, _cam);
+    }
+
     public override void OnSelect(BaseEventData eventData)
     {
         base.OnSelect(eventData);
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
 
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
             ShowCursor();
             ApplyFocusVisual(true);
+            Sound.PlayUI(hoverSoundId);
         }
-        Sound.PlayUI(hoverSoundId);
 
         if (null == customScroll)
         {
@@ -271,6 +294,8 @@ public class UI_OptionGamepadKeyBindRow : Selectable,
     public override void OnDeselect(BaseEventData eventData)
     {
         base.OnDeselect(eventData);
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+
         ApplyFocusVisual(false);
         HideCursor();
     }

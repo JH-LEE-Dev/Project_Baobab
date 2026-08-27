@@ -4,6 +4,7 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// ESC 메뉴의 백그라운드 조각 연출, 버튼 순차 등장 애니메이션, 되감기 역모션 퇴장, 다국어 로컬라이징을 총괄하는 컴포넌트입니다.
@@ -451,7 +452,23 @@ public class UI_EscapeMenu : MonoBehaviour
                 }
             }
 
-            UI_EscapeMenuButton _targetBtn = _hoveredBtn ?? GetFirstActiveButton();
+            UI_EscapeMenuButton _targetBtn = _hoveredBtn;
+            if (null != _hoveredBtn)
+            {
+                MoveDirection _dir = GetTriggeringMoveDirection();
+                if (MoveDirection.Down == _dir && null != _hoveredBtn.navigation.selectOnDown && _hoveredBtn.navigation.selectOnDown is UI_EscapeMenuButton _downBtn && true == _downBtn.gameObject.activeInHierarchy)
+                {
+                    _targetBtn = _downBtn;
+                }
+                else if (MoveDirection.Up == _dir && null != _hoveredBtn.navigation.selectOnUp && _hoveredBtn.navigation.selectOnUp is UI_EscapeMenuButton _upBtn && true == _upBtn.gameObject.activeInHierarchy)
+                {
+                    _targetBtn = _upBtn;
+                }
+            }
+            else
+            {
+                _targetBtn = GetFirstActiveButton();
+            }
 
             if (null != allButtons)
             {
@@ -1033,5 +1050,18 @@ public class UI_EscapeMenu : MonoBehaviour
         {
             onExitCallback.Invoke();
         }
+    }
+
+    private MoveDirection GetTriggeringMoveDirection()
+    {
+        Gamepad _pad = Gamepad.current;
+        if (null == _pad) return MoveDirection.None;
+
+        if (true == _pad.dpad.down.isPressed || _pad.leftStick.y.ReadValue() < -0.5f) return MoveDirection.Down;
+        if (true == _pad.dpad.up.isPressed || _pad.leftStick.y.ReadValue() > 0.5f) return MoveDirection.Up;
+        if (true == _pad.dpad.left.isPressed || _pad.leftStick.x.ReadValue() < -0.5f) return MoveDirection.Left;
+        if (true == _pad.dpad.right.isPressed || _pad.leftStick.x.ReadValue() > 0.5f) return MoveDirection.Right;
+
+        return MoveDirection.None;
     }
 }
