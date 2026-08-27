@@ -46,6 +46,7 @@ public class UIView_ESC : UIView
 
     private bool isClosing = false;
     private bool isOpeningOption = false;
+    private bool isInputCurrentlyLocked = false;
     // 설치 시점(GameplayUIInstaller)에도 UIManager.Open()이 Show()를 호출했다가 곧바로 Hide()하는데,
     // 이때의 Hide는 닫기 연출을 거치는 비동기라 OnHide가 몇 프레임 뒤에 온다. 그 사이 오디오가
     // 먹먹해지고 루프가 꺼지는 게 메인 메뉴에서 실제로 들리므로, 진짜 일시정지(ShowPauseMenu)로
@@ -124,6 +125,8 @@ public class UIView_ESC : UIView
 
     public override void OnDestroy()
     {
+        DispatchInputLock(false);
+
         ResumeButtonClickedEvent = null;
         OptionButtonClickedEvent = null;
         GoToMainMenuButtonClickedEvent = null;
@@ -189,6 +192,7 @@ public class UIView_ESC : UIView
     {
         isClosing = false;
         isOpeningOption = false;
+        DispatchInputLock(false);
 
         if (null != optionUI && true == optionUI.gameObject.activeInHierarchy)
         {
@@ -241,6 +245,7 @@ public class UIView_ESC : UIView
 
     protected override void OnHide()
     {
+        DispatchInputLock(false);
         viewCtx?.inputManager?.SetInputMode(EInputMode.Gameplay);
 
         base.OnHide();
@@ -265,6 +270,7 @@ public class UIView_ESC : UIView
     private void OnCloseProductionFinished()
     {
         isClosing = false;
+        DispatchInputLock(false);
         base.Hide();
         gameObject.SetActive(false);
 
@@ -379,6 +385,9 @@ public class UIView_ESC : UIView
 
     private void DispatchInputLock(bool _isLocked)
     {
+        if (_isLocked == isInputCurrentlyLocked) return;
+        isInputCurrentlyLocked = _isLocked;
+
         if (null != UIInputLockChangedEvent)
         {
             UIInputLockChangedEvent.Invoke(_isLocked);
