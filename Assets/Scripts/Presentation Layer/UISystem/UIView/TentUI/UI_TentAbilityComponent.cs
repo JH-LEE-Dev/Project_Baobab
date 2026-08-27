@@ -108,6 +108,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private AbilityToolTip toolTipInstance;
     private UISelectionCursor selectionCursorInstance;
     private RectTransform padCursorRect;
+    private Image padCursorImage;
+    private float currentPadCursorAlpha = 1f;
     // moveTarget 로컬 좌표. 화면이 움직여도 변하지 않는 특성 그리드상의 절대 위치다.
     private Vector2 padCursorGridPosition;
     private Vector2 padCursorScreenPosition;
@@ -216,6 +218,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField, Min(0f)] private float padCursorSpeedPixelsPerSecond = DefaultPadCursorSpeedPixelsPerSecond;
     [Tooltip("TentUI의 왼쪽/오른쪽 스틱 입력에만 적용하는 로컬 데드존입니다.")]
     [SerializeField, Range(0f, 1f)] private float padCursorStickDeadzone = 0.2f;
+    [Tooltip("SelectionCursor가 노드를 가리킬 때 PadCursor가 내려갈 알파입니다.")]
+    [SerializeField, Range(0f, 1f)] private float padCursorNodeHoverAlpha = 0.2f;
+    [Tooltip("PadCursor 알파가 1과 노드 Hover 알파 사이를 이동하는 시간입니다.")]
+    [SerializeField, Min(0.01f)] private float padCursorAlphaTransitionDuration = 0.2f;
 
     [Header("Pad Cursor Hover Correction")]
     [SerializeField] private Vector2 padCursorHoverCorrectionSize = new Vector2(64f, 64f);
@@ -528,15 +534,16 @@ public class UI_TentAbilityComponent : MonoBehaviour
         padCursorRect.anchorMax = new Vector2(0.5f, 0.5f);
         padCursorRect.pivot = new Vector2(0.5f, 0.5f);
 
-        Image _cursorImage = _cursorObject.GetComponent<Image>();
-        _cursorImage.sprite = padCursorSprite;
-        _cursorImage.preserveAspect = true;
-        _cursorImage.raycastTarget = false;
+        padCursorImage = _cursorObject.GetComponent<Image>();
+        padCursorImage.sprite = padCursorSprite;
+        padCursorImage.preserveAspect = true;
+        padCursorImage.raycastTarget = false;
 
         // 원본이 32x32 픽셀 아트이므로 축소하지 않고 32x32 UI 단위로 고정한다.
         // SetNativeSize는 Canvas 연결 전 호출될 경우 기본 Reference PPU(100)를 사용해
         // 100x100으로 계산될 수 있으므로 초기화 순서에 의존하지 않는 명시 크기를 쓴다.
         padCursorRect.sizeDelta = padCursorSize;
+        SetPadCursorAlphaImmediate(1f);
 
         _cursorObject.SetActive(false);
     }
@@ -839,6 +846,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     {
         currentZoom = Mathf.Max(_zoom, MinZoom);
         moveTarget.localScale = Vector3.one * currentZoom;
+        ApplyPadSelectionCursorZoom();
         moveTarget.anchoredPosition = -openingZoomFocusPoint * currentZoom;
         ClampCurrentViewPosition(currentZoom);
     }
@@ -1186,7 +1194,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
         ReleasePadInputFocus();
 
         if (padCursorRect != null)
+        {
+            SetPadCursorAlphaImmediate(1f);
             padCursorRect.gameObject.SetActive(false);
+        }
 
         if (toolTipInstance != null)
             toolTipInstance.HideImmediately();
@@ -1846,10 +1857,15 @@ public class UI_TentAbilityComponent : MonoBehaviour
             padCursorRect.gameObject.SetActive(_showPadCursor);
             if (_showPadCursor)
             {
+                SetPadCursorAlphaImmediate(1f);
                 padCursorRect.SetAsLastSibling();
                 CenterPadCursor();
                 padInputSuppressedFrame = Time.frameCount;
                 TryAcquirePadInputFocus(_forceRefresh);
+            }
+            else
+            {
+                SetPadCursorAlphaImmediate(1f);
             }
         }
 
@@ -1916,6 +1932,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         RefreshPadCursorHover();
         UpdatePadSelectionCursorMagnet();
+        UpdatePadCursorAlpha();
 
         // 툴팁이나 노드 이펙트가 런타임에 생성되어도 커서는 항상 TentUI 최상단에 둔다.
         if (selectionCursorInstance != null)
@@ -2063,6 +2080,46 @@ public class UI_TentAbilityComponent : MonoBehaviour
         return rootCanvas != null ? Mathf.Max(rootCanvas.rootCanvas.scaleFactor, 0.0001f) : 1f;
     }
 
+    private void UpdatePadCursorAlpha()
+    {
+        if (padCursorImage == null)
+            return;
+
+        float _dimAlpha = Mathf.Clamp01(padCursorNodeHoverAlpha);
+        float _targetAlpha = padSelectionCursorMagnetTargetNode != null ? _dimAlpha : 1f;
+        float _fullRange = 1f - _dimAlpha;
+
+        if (_fullRange <= 0.0001f)
+        {
+            SetPadCursorAlphaImmediate(_targetAlpha);
+            return;
+        }
+
+        float _duration = Mathf.Max(0.01f, padCursorAlphaTransitionDuration);
+        float _alphaSpeed = _fullRange / _duration;
+        currentPadCursorAlpha = Mathf.MoveTowards(
+            currentPadCursorAlpha,
+            _targetAlpha,
+            _alphaSpeed * Time.unscaledDeltaTime);
+        ApplyPadCursorAlpha();
+    }
+
+    private void SetPadCursorAlphaImmediate(float _alpha)
+    {
+        currentPadCursorAlpha = Mathf.Clamp01(_alpha);
+        ApplyPadCursorAlpha();
+    }
+
+    private void ApplyPadCursorAlpha()
+    {
+        if (padCursorImage == null)
+            return;
+
+        Color _color = padCursorImage.color;
+        _color.a = currentPadCursorAlpha;
+        padCursorImage.color = _color;
+    }
+
     private void ActivatePadSelectionCursorIdle()
     {
         EnsureSelectionCursorInstance();
@@ -2088,7 +2145,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
         _selectionRect.pivot = new Vector2(0.5f, 0.5f);
 
         if (TryGetPadSelectionCursorTargetPosition(null, out Vector2 _padPosition))
+        {
             selectionCursorInstance.ActivateIdleAtAnchoredPosition(_padPosition, selectionCursorSize);
+            ApplyPadSelectionCursorZoom();
+        }
     }
 
     private void RestoreMouseKeyboardSelectionCursor()
@@ -2101,8 +2161,14 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         RectTransform _selectionRect = selectionCursorInstance.transform as RectTransform;
         RectTransform _mouseParent = selectionCursorParent != null ? selectionCursorParent : moveTarget;
-        if (_selectionRect != null && _mouseParent != null && _selectionRect.parent != _mouseParent)
-            _selectionRect.SetParent(_mouseParent, false);
+        if (_selectionRect != null)
+        {
+            if (_mouseParent != null && _selectionRect.parent != _mouseParent)
+                _selectionRect.SetParent(_mouseParent, false);
+
+            // 키마 모드에서는 moveTarget의 줌을 부모로부터 다시 상속하므로 중복 배율을 제거한다.
+            _selectionRect.localScale = Vector3.one;
+        }
     }
 
     private void SetPadSelectionCursorMagnetTarget(AbilityNode _targetNode)
@@ -2127,6 +2193,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
             selectionCursorInstance == null ||
             false == selectionCursorInstance.gameObject.activeSelf)
             return;
+
+        ApplyPadSelectionCursorZoom();
 
         if (false == TryGetPadSelectionCursorTargetPosition(
                 padSelectionCursorMagnetTargetNode,
@@ -2153,6 +2221,21 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         // PadCursor로 돌아온 뒤에는 물론, 노드에 붙은 뒤에도 대상의 화면 이동을 정확히 추적한다.
         selectionCursorInstance.SetAnchoredPosition(_targetPosition);
+    }
+
+    private void ApplyPadSelectionCursorZoom()
+    {
+        if (currentControlMode != TentAbilityControlMode.Pad || selectionCursorInstance == null)
+            return;
+
+        RectTransform _selectionRect = selectionCursorInstance.transform as RectTransform;
+        if (_selectionRect == null)
+            return;
+
+        // 키마 모드에서는 SelectionCursor가 moveTarget 아래에서 이 배율을 부모로부터 상속한다.
+        // 패드 모드는 화면 오버레이로 옮겨졌으므로 같은 배율을 직접 적용해 노드 크기와 맞춘다.
+        float _zoom = Mathf.Max(0.0001f, currentZoom);
+        _selectionRect.localScale = new Vector3(_zoom, _zoom, 1f);
     }
 
     private bool TryGetPadSelectionCursorTargetPosition(AbilityNode _targetNode, out Vector2 _targetPosition)
@@ -2682,6 +2765,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             ApplyZoomAroundFocus(previousZoom, currentZoom);
 
         moveTarget.localScale = Vector3.one * currentZoom;
+        ApplyPadSelectionCursorZoom();
         ClampCurrentViewPosition(currentZoom);
         return Mathf.Approximately(previousZoom, currentZoom) == false;
     }
@@ -2719,6 +2803,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             Vector2 viewCenter = -logicalPosition / Mathf.Max(currentZoom, 0.0001f);
             currentZoom = effectiveMinZoom;
             moveTarget.localScale = Vector3.one * currentZoom;
+            ApplyPadSelectionCursorZoom();
             moveTarget.anchoredPosition = -viewCenter * currentZoom + currentViewShakeOffset;
             changed = true;
         }
