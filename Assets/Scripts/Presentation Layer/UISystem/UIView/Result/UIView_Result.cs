@@ -5,6 +5,8 @@ using PresentationLayer.DOTweenAnimationSystem;
 using PresentationLayer.UISystem;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class UIView_Result : UIView
@@ -161,6 +163,8 @@ public class UIView_Result : UIView
     private IInventory offroadContainer;
     private IDungeonResultProvider dungeonResultProvider;
     private LocalizationManager localizationManager;
+    private InputManager inputManager;
+    private Action<EInputDeviceType> cachedOnInputDeviceChanged;
     private bool bIsTutorial;
 
     [Header("UI References")]
@@ -260,14 +264,24 @@ public class UIView_Result : UIView
         base.Initialize(_ctx);
 
         localizationManager = _ctx?.localizationManager;
+        inputManager = _ctx?.inputManager;
+        cachedOnInputDeviceChanged ??= OnInputDeviceChanged;
+
         if (localizationManager != null)
             localizationManager.OnLanguageChanged += RefreshLocalizedResultTexts;
+
+        if (null != inputManager?.inputReader)
+        {
+            inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+            inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
+        }
 
         CacheProductionRuntimeReferences();
         CacheProductionStartState();
         InitializeResultLogRows();
         RefreshLocalizedStaticTexts();
         CacheButtonTouchAreas();
+        ConfigureButtonNavigation();
         InitializeButtonHoverTargets();
         BindButtonEvents();
 
@@ -291,6 +305,9 @@ public class UIView_Result : UIView
 
     public void OnGoHomeButtonClicked()
     {
+        if (true == isClosingProduction)
+            return;
+
         Sound.PlayUI(SoundID.MainClick);
         HideSelectionCursorImmediately();
         PlayResultCloseProduction(InvokeGoHomeButtonClickedEvent);
@@ -298,6 +315,9 @@ public class UIView_Result : UIView
 
     public void OnRetryButtonClicked()
     {
+        if (true == isClosingProduction)
+            return;
+
         Sound.PlayUI(SoundID.MainClick);
         HideSelectionCursorImmediately();
         PlayResultCloseProduction(InvokeRetryButtonClickedEvent);
@@ -328,6 +348,8 @@ public class UIView_Result : UIView
 
         SnapshotOffroadContainer();
         KillResultProductionSequences();
+        ClearButtonSelection();
+        HideSelectionCursorImmediately();
         SetResultContentsActive(false);
     }
 
@@ -342,7 +364,12 @@ public class UIView_Result : UIView
         if (localizationManager != null)
             localizationManager.OnLanguageChanged -= RefreshLocalizedResultTexts;
 
+        if (null != inputManager?.inputReader && null != cachedOnInputDeviceChanged)
+            inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+
         UnbindButtonEvents();
+        cachedOnInputDeviceChanged = null;
+        inputManager = null;
         base.OnDestroy();
 
         GoHomeButtonClickedEvent = null;
@@ -449,6 +476,11 @@ public class UIView_Result : UIView
             SetCanvasGroupRaycast(sectionTitleCanvasGroup, false);
             SetCanvasGroupRaycast(sectionButtonCanvasGroup, true);
             SetButtonsInteractable(true);
+
+            if (true == IsGamepadMode())
+                SelectDefaultButton();
+            else
+                RefreshButtonHoverTargets();
         });
 
         resultOpenSequence.Insert(resultOpenDuration, CreateTreeKillCountProductionSequence());
@@ -556,6 +588,7 @@ public class UIView_Result : UIView
         KillResultProductionSequences();
         isClosingProduction = true;
         Sound.PlayUI(SoundID.ResultUIClose);
+        ClearButtonSelection();
         HideSelectionCursorImmediately();
         SetButtonsInteractable(false);
 
@@ -706,10 +739,114 @@ public class UIView_Result : UIView
 
         RectTransform visualRectTransform = visual != null ? visual : touchArea;
         ObjectMotionPlayer motionPlayer = visual != null ? visual.GetComponentInChildren<ObjectMotionPlayer>(true) : null;
-        hoverTarget.Initialize(selectionCursorInstance, visualRectTransform, motionPlayer);
+        hoverTarget.Initialize(selectionCursorInstance, visualRectTransform, motionPlayer, IsGamepadMode);
         hoverTarget.PointerEnteredEvent -= OnResultButtonHovered;
         hoverTarget.PointerEnteredEvent += OnResultButtonHovered;
         return hoverTarget;
+    }
+
+    private bool IsGamepadMode()
+    {
+        return null != inputManager && true == inputManager.IsGamepadMode;
+    }
+
+    private void ConfigureButtonNavigation()
+    {
+        ConfigureHorizontalNavigation(goHomeTouchAreaButton, retryTouchAreaButton);
+        ConfigureHorizontalNavigation(retryTouchAreaButton, goHomeTouchAreaButton);
+        ConfigureHorizontalNavigation(tutorialGoHomeTouchAreaButton, null);
+    }
+
+    private static void ConfigureHorizontalNavigation(Selectable source, Selectable other)
+    {
+        if (null == source)
+            return;
+
+        Selectable horizontalTarget = null != other ? other : source;
+        source.navigation = new Navigation
+        {
+            mode = Navigation.Mode.Explicit,
+            selectOnLeft = horizontalTarget,
+            selectOnRight = horizontalTarget,
+            selectOnUp = source,
+            selectOnDown = source
+        };
+    }
+
+    private void SelectDefaultButton()
+    {
+        Button targetButton = true == bIsTutorial ? tutorialGoHomeTouchAreaButton : goHomeTouchAreaButton;
+        UIHoverSelectionTarget targetHover = true == bIsTutorial ? tutorialGoHomeHoverTarget : goHomeHoverTarget;
+
+        if (true == isClosingProduction || null == targetButton || false == targetButton.interactable ||
+            false == targetButton.gameObject.activeInHierarchy)
+            return;
+
+        if (null != EventSystem.current)
+        {
+            if (EventSystem.current.currentSelectedGameObject == targetButton.gameObject)
+                targetHover?.ForceSelect();
+            else
+                EventSystem.current.SetSelectedGameObject(targetButton.gameObject);
+        }
+        else
+        {
+            targetHover?.ForceSelect();
+        }
+    }
+
+    private void OnInputDeviceChanged(EInputDeviceType device)
+    {
+        if (true == isClosingProduction || false == gameObject.activeInHierarchy)
+            return;
+
+        if (EInputDeviceType.Gamepad == device)
+        {
+            SelectDefaultButton();
+            return;
+        }
+
+        if (EInputDeviceType.KeyboardMouse == device)
+        {
+            ClearButtonSelection();
+            RefreshButtonHoverTargets();
+        }
+    }
+
+    private void ClearButtonSelection()
+    {
+        if (null == EventSystem.current)
+            return;
+
+        GameObject selected = EventSystem.current.currentSelectedGameObject;
+        if ((null != goHomeTouchAreaButton && selected == goHomeTouchAreaButton.gameObject) ||
+            (null != retryTouchAreaButton && selected == retryTouchAreaButton.gameObject) ||
+            (null != tutorialGoHomeTouchAreaButton && selected == tutorialGoHomeTouchAreaButton.gameObject))
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
+    }
+
+    private void RefreshButtonHoverTargets()
+    {
+        Mouse mouse = Mouse.current;
+        if (null == mouse)
+            return;
+
+        Vector2 screenPosition = mouse.position.ReadValue();
+        Camera eventCamera = GetUICamera();
+        goHomeHoverTarget?.RefreshHover(screenPosition, eventCamera);
+        retryHoverTarget?.RefreshHover(screenPosition, eventCamera);
+        tutorialGoHomeHoverTarget?.RefreshHover(screenPosition, eventCamera);
+    }
+
+    private Camera GetUICamera()
+    {
+        Canvas canvas = GetComponentInParent<Canvas>();
+        if (null == canvas || RenderMode.ScreenSpaceOverlay == canvas.renderMode)
+            return null;
+
+        return null != canvas.worldCamera ? canvas.worldCamera : Camera.main;
     }
 
     private void EnsureSelectionCursorInstance()
