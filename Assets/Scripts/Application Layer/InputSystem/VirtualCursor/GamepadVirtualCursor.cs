@@ -35,6 +35,15 @@ public class GamepadVirtualCursor
 
     private InputDeviceSettings settings;
 
+    /// <summary>
+    /// 감도 배율의 폭입니다. 슬라이더 가운데(1배)를 기준으로 위아래 이 배수만큼 벌어집니다.
+    /// 3이면 최저 1/3배, 최고 3배가 됩니다.
+    /// </summary>
+    private const float SENSITIVITY_RANGE = 3f;
+
+    // 유저 감도 설정에서 나온 속도 배율. 1이 기본이다.
+    private float sensitivityScale = 1f;
+
     // 커서가 필요한 화면이 떠 있는지. UI 쪽에서 정해 줍니다.
     private bool bRequested = false;
 
@@ -55,6 +64,9 @@ public class GamepadVirtualCursor
 
     /// <summary>커서의 화면 좌표입니다. (좌하단 원점, 픽셀 — 마우스 좌표와 같은 좌표계)</summary>
     public Vector2 ScreenPosition => screenPosition;
+
+    /// <summary>유저 감도 설정에서 나온 속도 배율입니다. 1이 기본입니다.</summary>
+    public float SensitivityScale => sensitivityScale;
 
     /// <summary>커서가 움직일 수 있는 영역입니다.</summary>
     public Rect Bounds => bUseExplicitBounds ? explicitBounds : FullScreenBounds;
@@ -90,6 +102,27 @@ public class GamepadVirtualCursor
         {
             ApplyPosition(ClampToBounds(screenPosition));
         }
+    }
+
+    /// <summary>
+    /// 유저가 정한 감도를 반영합니다. _normalized는 0~1이고 **0.5가 기본(1배)** 입니다.
+    /// (옵션 슬라이더 0~100을 100으로 나눈 값을 그대로 넘기면 됩니다)
+    ///
+    /// 선형이 아니라 지수로 변환하는 이유: 감도는 곱셈으로 체감됩니다. 0.5배에서 0.6배로 가는
+    /// 변화와 2.5배에서 3배로 가는 변화가 비슷하게 느껴져야 슬라이더가 고르게 움직이는 것처럼
+    /// 느껴지는데, 선형으로 두면 낮은 쪽은 거의 차이가 없고 높은 쪽만 급격해집니다.
+    ///
+    /// 0에서도 배율이 0이 되지 않는 것이 중요합니다. 감도 0은 커서가 아예 안 움직이는 상태라,
+    /// 유저가 실수로 끝까지 내리면 옵션 화면으로 되돌아갈 수단까지 잃습니다.
+    /// </summary>
+    public void SetSensitivityScale(float _normalized)
+    {
+        // NaN은 어떤 비교에도 false라 Clamp만으로는 걸러지지 않는다.
+        if (true == float.IsNaN(_normalized)) _normalized = 0.5f;
+
+        _normalized = Mathf.Clamp01(_normalized);
+
+        sensitivityScale = Mathf.Pow(SENSITIVITY_RANGE, (_normalized - 0.5f) * 2f);
     }
 
     /// <summary>영역 제한을 풀고 화면 전체를 쓰도록 되돌립니다.</summary>
@@ -185,8 +218,10 @@ public class GamepadVirtualCursor
 
         Rect _bounds = Bounds;
 
+        // 기본 속도(제작자가 정한 값) × 감도(유저가 정한 값).
+        // 둘을 곱으로 나눠 둔 덕분에, 나중에 기본 속도를 조정해도 유저 설정이 그대로 따라온다.
         float _screensPerSecond = null != settings ? settings.cursorSpeedScreensPerSecond : 1.1f;
-        float _pixelsPerSecond = _screensPerSecond * _bounds.height;
+        float _pixelsPerSecond = _screensPerSecond * sensitivityScale * _bounds.height;
 
         Vector2 _direction = _stick / _magnitude;
         Vector2 _next = screenPosition + _direction * (_normalized * _pixelsPerSecond * _unscaledDeltaTime);

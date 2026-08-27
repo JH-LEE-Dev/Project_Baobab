@@ -81,6 +81,10 @@ public class InputManager : MonoBehaviour
 
         // 슬라이더는 0~100, 진동 서비스는 0~1 배율을 쓴다.
         haptics.SetStrengthScale(_data.hapticStrength / SettingsData.SLIDER_MAX);
+
+        // 커서 감도도 같은 0~1로 넘긴다. 다만 이쪽은 0.5가 기본(1배)이라 의미가 다르다.
+        // 곡선 변환은 커서 쪽이 담당한다. (SetSensitivityScale 주석 참고)
+        VirtualCursor?.SetSensitivityScale(_data.virtualCursorSensitivity / SettingsData.SLIDER_MAX);
     }
 
     /// <summary>
@@ -302,6 +306,13 @@ public class InputManager : MonoBehaviour
 
     /// <summary>커서가 지금 화면에 떠 있는지입니다.</summary>
     public bool IsVirtualCursorActive => null != VirtualCursor && VirtualCursor.IsActive;
+
+    /// <summary>
+    /// 지금 적용 중인 감도 배율입니다. (1 = 기본)
+    /// 옵션 화면에서 "1.4배"처럼 숫자로 보여주고 싶을 때 씁니다.
+    /// 슬라이더 값 자체는 SettingsManager.Current.virtualCursorSensitivity에서 읽으세요.
+    /// </summary>
+    public float VirtualCursorSensitivityScale => null != VirtualCursor ? VirtualCursor.SensitivityScale : 1f;
 
     /// <summary>
     /// 커서가 나갈 수 있는 영역을 카메라가 실제로 그리는 사각형으로 맞춥니다.

@@ -320,6 +320,25 @@ public class SettingsManager : MonoBehaviour
         ApplyInputSettingsLive();
     }
 
+    /// <summary>
+    /// 특성 UI 가상 커서의 감도를 설정합니다. (0~100, 가운데 50이 기본 배율)
+    ///
+    /// 진동 세기와 마찬가지로 여기서 곧바로 실시간 반영까지 하므로 UI는 이 메서드만 부르면 됩니다.
+    /// 감도는 숫자로는 가늠이 안 되고 직접 움직여 봐야 알 수 있는 값이라 실시간 반영이 특히 중요합니다.
+    /// (저장은 CommitChanges)
+    /// </summary>
+    public void SetVirtualCursorSensitivity(float _val)
+    {
+        EnsureLoaded();
+
+        if (Mathf.Approximately(_val, current.virtualCursorSensitivity)) return;
+
+        current.virtualCursorSensitivity = _val;
+        isDirty = true;
+
+        ApplyInputSettingsLive();
+    }
+
     /// <summary>패드 아이콘 표기를 직접 지정합니다. (순환이 아닌 목록형 UI용)</summary>
     public void SetGamepadIconPreference(EGamepadIconPreference _preference)
     {
