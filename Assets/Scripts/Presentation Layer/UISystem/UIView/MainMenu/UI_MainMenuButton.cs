@@ -162,12 +162,14 @@ public class UI_MainMenuButton : Selectable,
     protected override void OnEnable()
     {
         base.OnEnable();
+        if (false == Application.isPlaying) return;
         ResetAndPlayAppearInternal();
     }
 
     protected override void OnDisable()
     {
         base.OnDisable();
+        if (false == Application.isPlaying) return;
         isHovered = false;
         isPointerHovered = false;
         isClicked = false;
@@ -233,6 +235,10 @@ public class UI_MainMenuButton : Selectable,
         if (null != textTarget && null == targetTextComponent)
         {
             textOriginalPos = textTarget.anchoredPosition;
+            if (null != dotTarget && textOriginalPos.x <= dotTarget.anchoredPosition.x)
+            {
+                textOriginalPos = new Vector2(dotTarget.anchoredPosition.x + 10f, textOriginalPos.y);
+            }
             targetTextComponent = textTarget.GetComponent<TextMeshProUGUI>();
         }
 
@@ -290,6 +296,7 @@ public class UI_MainMenuButton : Selectable,
 
     public void PlayAppearMotion(float _delay = 0f)
     {
+        if (false == Application.isPlaying) return;
         isAppearing = true;
         isClicked = false;
         isDisappearing = false;

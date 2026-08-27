@@ -304,6 +304,24 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
         }
     }
 
+    public void StopAllTweens()
+    {
+        if (null != appearTween && true == appearTween.IsActive())
+        {
+            appearTween.Kill();
+            appearTween = null;
+        }
+
+        for (int i = 0; i < colorTweens.Length; i++)
+        {
+            if (null != colorTweens[i] && true == colorTweens[i].IsActive())
+            {
+                colorTweens[i].Kill();
+                colorTweens[i] = null;
+            }
+        }
+    }
+
     private void ApplyStateColorToImage(Image _image, Material _mat, Color _originalColor, Color _stateMultiplier, float _duration, ref Tween _tween, float _intensity)
     {
         if (null == _image || false == _image.gameObject.activeSelf) return;
@@ -338,6 +356,27 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
 
             _targetColor = _hdrColor * _stateMultiplier;
 
+            if (0f >= _duration)
+            {
+                if (_mat.HasProperty(HdrColorPropertyId))
+                {
+                    _mat.SetColor(HdrColorPropertyId, _targetColor);
+                }
+                else if (_mat.HasProperty(BaseHdrColorPropertyId))
+                {
+                    _mat.SetColor(BaseHdrColorPropertyId, _targetColor);
+                }
+                else if (_mat.HasProperty(ColorPropertyId))
+                {
+                    _mat.SetColor(ColorPropertyId, _targetColor);
+                }
+                else
+                {
+                    _mat.color = _targetColor;
+                }
+                return;
+            }
+
             if (_mat.HasProperty(HdrColorPropertyId))
             {
                 _tween = _mat.DOColor(_targetColor, HdrColorPropertyId, _duration);
@@ -358,21 +397,20 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
         else
         {
             _targetColor = _originalColor * _stateMultiplier;
+
+            if (0f >= _duration)
+            {
+                _image.color = _targetColor;
+                return;
+            }
+
             _tween = _image.DOColor(_targetColor, _duration);
         }
     }
 
     private void OnDestroy()
     {
-        if (null != appearTween && true == appearTween.IsActive()) { appearTween.Kill(); appearTween = null; }
-        for (int i = 0; i < colorTweens.Length; i++)
-        {
-            if (null != colorTweens[i] && true == colorTweens[i].IsActive())
-            {
-                colorTweens[i].Kill();
-                colorTweens[i] = null;
-            }
-        }
+        StopAllTweens();
 
         if (null != shieldLeafMat)
         {

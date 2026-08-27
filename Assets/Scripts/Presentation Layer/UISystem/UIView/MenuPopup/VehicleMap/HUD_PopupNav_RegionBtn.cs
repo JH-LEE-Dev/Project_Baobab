@@ -103,7 +103,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     [Tooltip("커스텀 커서 크기")]
     [SerializeField] private Vector2 customCursorSize = new Vector2(300f, 150f);
     [Tooltip("호버 시 커서 모션 세팅")]
-    [SerializeField] private CursorMotionSettings hoverCursorMotion = new CursorMotionSettings();
+    [SerializeField] private CursorMotionSettings hoverCursorMotion = CursorMotionSettings.RowSubtle;
 
     private ICursorBoxUI cursorBoxUI;
     private RectTransform cachedRectTransform;

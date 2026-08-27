@@ -180,7 +180,7 @@ public class UI_OptionButton : Selectable,
                 _size.y = Mathf.Max(_size.y, buttonText.rectTransform.rect.size.y, buttonText.preferredHeight);
             }
             _size += cursorPadding;
-            cursorBoxUI.Show(_targetRect, _size, cursorOffset, CursorMotionSettings.Subtle);
+            cursorBoxUI.Show(_targetRect, _size, cursorOffset, CursorMotionSettings.RowSubtle);
         }
     }
 

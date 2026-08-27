@@ -156,7 +156,7 @@ public class UI_OptionSelector : Selectable, IMoveHandler
         if (null != _targetRect)
         {
             Vector2 _size = _targetRect.rect.size + cursorPadding;
-            cursorBoxUI.Show(_targetRect, _size, cursorOffset, CursorMotionSettings.Subtle);
+            cursorBoxUI.Show(_targetRect, _size, cursorOffset, CursorMotionSettings.RowSubtle);
         }
     }
 
