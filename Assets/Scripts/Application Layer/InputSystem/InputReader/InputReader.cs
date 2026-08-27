@@ -21,6 +21,17 @@ public class InputReader
     public event Action MouseReleaseEvent;
     public event Action ESCButtonPressedEvent;
     public event Action InteractionKeyPressedEvent;
+
+    /// <summary>
+    /// UI 모드라 InteractionKeyPressedEvent가 막혀 있는 동안, 키보드로 들어온 상호작용 키 입력만
+    /// 예외로 통과시키는 전용 통로입니다. 텐트 UI처럼 "같은 키(E)로 열고 닫는" 화면이 자기 자신을
+    /// 닫을 방법을 잃지 않게 하기 위한 것입니다.
+    ///
+    /// 패드는 일부러 제외합니다 - 상호작용(buttonSouth/A)이 특성 UI의 "노드 찍기" 버튼과 같은 물리
+    /// 버튼이라, 여기서도 통과시키면 노드를 찍을 때마다 뒤에서 텐트도 같이 닫혀버립니다. 패드는
+    /// B(UICancelEvent)나 Start(ESCButtonPressedEvent)로 닫아야 합니다.
+    /// </summary>
+    public event Action InteractionKeyPressedWhileUIModeEvent;
     public event Action InteractionKeyCanceledEvent;
     public event Action PotionKeyPressedEvent;
 
@@ -446,10 +457,17 @@ public class InputReader
 
     private void InteractionKeyPressed(InputAction.CallbackContext context)
     {
-        if (false == CanDispatchGameplay) return;
-
         if (0 >= pauseInteractCount)
-            InteractionKeyPressedEvent?.Invoke();
+        {
+            if (true == CanDispatchGameplay)
+            {
+                InteractionKeyPressedEvent?.Invoke();
+            }
+            else if (context.control?.device is Keyboard)
+            {
+                InteractionKeyPressedWhileUIModeEvent?.Invoke();
+            }
+        }
     }
 
     private void InteractionKeyCanceled(InputAction.CallbackContext context)

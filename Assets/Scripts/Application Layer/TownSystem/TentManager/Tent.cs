@@ -94,17 +94,37 @@ public class Tent : MonoBehaviour, IShadowCaster
     {
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
         inputManager.inputReader.InteractionKeyPressedEvent += InteractionKeyPressed;
+
+        inputManager.inputReader.InteractionKeyPressedWhileUIModeEvent -= InteractionKeyPressedWhileUIMode;
+        inputManager.inputReader.InteractionKeyPressedWhileUIModeEvent += InteractionKeyPressedWhileUIMode;
     }
 
     private void ReleaseEvents()
     {
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
+        inputManager.inputReader.InteractionKeyPressedWhileUIModeEvent -= InteractionKeyPressedWhileUIMode;
     }
 
     private void InteractionKeyPressed()
     {
         if (!bCanInteract) return;
 
+        ToggleInteract();
+    }
+
+    // TentUI가 스스로 SetInputMode(UI)를 걸어둔 동안에는 InteractionKeyPressedEvent가 막혀 있어
+    // 위 InteractionKeyPressed()가 호출되지 않는다. 그동안에도 키보드로는 닫을 수 있도록 하는 전용
+    // 통로 - TentUI가 이미 열려 있을 때(bInteract == true)만 의미가 있으므로 닫기만 처리한다.
+    // (패드는 InputReader가 걸러서 여기로 오지 않는다 - 특성 노드 찍기 버튼과 겹치기 때문)
+    private void InteractionKeyPressedWhileUIMode()
+    {
+        if (bInteract == false) return;
+
+        ToggleInteract();
+    }
+
+    private void ToggleInteract()
+    {
         if (bInteract == true)
         {
             bInteract = false;

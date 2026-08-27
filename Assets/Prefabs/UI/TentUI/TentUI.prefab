@@ -1030,7 +1030,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 4.5, y: 0}
+  m_AnchoredPosition: {x: 7.5, y: 0}
   m_SizeDelta: {x: 12, y: 12}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2774632630876670493
@@ -1061,7 +1061,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 2800000, guid: 3b5086c4c1106fe439214ca88f69ebf2, type: 3}
+  m_Texture: {fileID: 2800000, guid: fd54dd86a865725408f1c68f5e0f85ce, type: 3}
   m_UVRect:
     serializedVersion: 2
     x: 0
@@ -1102,7 +1102,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -5.5, y: 0}
+  m_AnchoredPosition: {x: -3.5, y: 0}
   m_SizeDelta: {x: 12, y: 12}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2554205633934032880
@@ -1133,7 +1133,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 2800000, guid: 3b5086c4c1106fe439214ca88f69ebf2, type: 3}
+  m_Texture: {fileID: 2800000, guid: 6014525d02e5a5e49a5c0873385a5a3d, type: 3}
   m_UVRect:
     serializedVersion: 2
     x: 0
@@ -1757,7 +1757,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 820676957926840965, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 913802642584626678, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_SizeDelta.x
@@ -1806,10 +1806,10 @@ PrefabInstance:
     - target: {fileID: 3378958046967802897, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_Texture
       value: 
-      objectReference: {fileID: 2800000, guid: 3b5086c4c1106fe439214ca88f69ebf2, type: 3}
+      objectReference: {fileID: 2800000, guid: fd54dd86a865725408f1c68f5e0f85ce, type: 3}
     - target: {fileID: 3448267155040123733, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: -0.5
       objectReference: {fileID: 0}
     - target: {fileID: 3931956723958816169, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_Layer
@@ -1826,10 +1826,10 @@ PrefabInstance:
     - target: {fileID: 4490371444358176308, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_Texture
       value: 
-      objectReference: {fileID: 2800000, guid: 4b61233f5194df94a97941e9a715f2a6, type: 3}
+      objectReference: {fileID: 2800000, guid: fd54dd86a865725408f1c68f5e0f85ce, type: 3}
     - target: {fileID: 4571098424541202800, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -11.5
+      value: -8.5
       objectReference: {fileID: 0}
     - target: {fileID: 4738906387156434026, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_Layer
@@ -1977,7 +1977,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7145085122874715204, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -0.5
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 7204546940896520633, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_Layer
@@ -2026,7 +2026,7 @@ PrefabInstance:
     - target: {fileID: 8955753375711611131, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_Texture
       value: 
-      objectReference: {fileID: 2800000, guid: 6014525d02e5a5e49a5c0873385a5a3d, type: 3}
+      objectReference: {fileID: 2800000, guid: aa8931fb0e954c34695ce8b010449d88, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
