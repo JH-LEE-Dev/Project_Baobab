@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
+using DG.Tweening;
 
 /// <summary>
 /// 옵션 UI 시스템 전체를 총괄하는 최상위 컨트롤러입니다.
@@ -73,6 +74,94 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     [SerializeField] private GameObject rebindOverlay;                // "키를 입력하세요" 오버레이
     [SerializeField] private TextMeshProUGUI rebindOverlayText;       // 오버레이 안내 텍스트
     [SerializeField] private KeyIconDatabase keyIconDatabase;         // 키 아이콘 매핑 DB
+
+    [Header("Rebind Overlay Animation Settings")]
+    [SerializeField] private CanvasGroup rebindOverlayCanvasGroup;
+    [SerializeField] private RectTransform rebindWindowRoot;
+    [SerializeField] private CanvasGroup rebindDimCanvasGroup;
+    [SerializeField] private float rebindAnimationDuration = 0.25f;
+    [SerializeField] private float rebindSlideOffset = 50f;
+    [SerializeField] private Ease rebindOpenEase = Ease.OutCubic;
+    [SerializeField] private Ease rebindCloseEase = Ease.InCubic;
+    [SerializeField, Range(0f, 1f)] private float rebindDimTargetAlpha = 0.8f;
+    [SerializeField] private float rebindDimAnimationDuration = 0.25f;
+
+    private Sequence rebindSequence;
+    private Vector2 originalRebindRootAnchoredPosition;
+    private bool isRebindRootPosInitialized = false;
+    private TweenCallback cachedOnRebindCloseComplete;
+
+    private void EnsureRebindComponents()
+    {
+        if (null == rebindOverlay)
+        {
+            Transform _overlay = transform.Find("RebindOverlay") 
+                ?? transform.Find("UI_RebindOverlay") 
+                ?? transform.parent?.Find("UI_RebindOverlay")
+                ?? transform.parent?.Find("RebindOverlay");
+            if (null != _overlay)
+            {
+                rebindOverlay = _overlay.gameObject;
+            }
+        }
+
+        if (null != rebindOverlay)
+        {
+            if (null == rebindOverlayCanvasGroup)
+            {
+                rebindOverlayCanvasGroup = rebindOverlay.GetComponent<CanvasGroup>();
+                if (null == rebindOverlayCanvasGroup)
+                {
+                    rebindOverlayCanvasGroup = rebindOverlay.AddComponent<CanvasGroup>();
+                }
+            }
+
+            if (null == rebindWindowRoot)
+            {
+                Transform _window = rebindOverlay.transform.Find("Border") 
+                    ?? rebindOverlay.transform.Find("PopupWindowRoot");
+                if (null != _window)
+                {
+                    rebindWindowRoot = _window as RectTransform;
+                }
+            }
+
+            if (null != rebindWindowRoot && null == rebindWindowRoot.GetComponent<CanvasGroup>())
+            {
+                rebindWindowRoot.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            if (null == rebindDimCanvasGroup)
+            {
+                Transform _dim = rebindOverlay.transform.Find("DimBG");
+                if (null != _dim)
+                {
+                    rebindDimCanvasGroup = _dim.GetComponent<CanvasGroup>();
+                    if (null == rebindDimCanvasGroup)
+                    {
+                        rebindDimCanvasGroup = _dim.gameObject.AddComponent<CanvasGroup>();
+                    }
+                }
+            }
+
+            if (null == rebindOverlayText)
+            {
+                rebindOverlayText = rebindOverlay.GetComponentInChildren<TextMeshProUGUI>(true);
+            }
+        }
+
+        if (null != rebindWindowRoot && false == isRebindRootPosInitialized)
+        {
+            originalRebindRootAnchoredPosition = rebindWindowRoot.anchoredPosition;
+            isRebindRootPosInitialized = true;
+        }
+    }
+
+    private void Awake()
+    {
+        EnsureRebindComponents();
+        cachedOnRebindCloseComplete = HandleRebindCloseComplete;
+    }
 
     private Action onCloseAction;
     private Action hideAction;
@@ -386,6 +475,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             {
                 inputManager.CancelRebind();
             }
+            KillRebindSequence();
             if (null != rebindOverlay) rebindOverlay.SetActive(false);
         }
     }
@@ -1691,12 +1781,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         if (null == inputManager || true == inputManager.IsRebinding) return;
 
-        // 오버레이 표시
-        if (null != rebindOverlay) rebindOverlay.SetActive(true);
-        if (null != rebindOverlayText)
-        {
-            rebindOverlayText.text = GetText(LocKeys.OptionUI.pressKeyPrompt, "변경할 키를 입력하세요.\n(ESC: 취소)");
-        }
+        string _prompt = GetText(LocKeys.OptionUI.pressKeyPrompt, "변경할 키를 입력하세요.\n(ESC: 취소)");
+        PlayRebindOpenProduction(_prompt);
 
         inputManager.StartRebind(_action, EInputDeviceType.KeyboardMouse, OnRebindFinished);
     }
@@ -1706,12 +1792,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null == inputManager || true == inputManager.IsRebinding) return;
         if (false == GamepadDefaultBindings.IsRebindableOnGamepad(_action)) return;
 
-        // 오버레이 표시
-        if (null != rebindOverlay) rebindOverlay.SetActive(true);
-        if (null != rebindOverlayText)
-        {
-            rebindOverlayText.text = GetText(LocKeys.OptionUI.pressGamepadPrompt, "변경할 패드 버튼을 입력하세요.");
-        }
+        string _prompt = GetText(LocKeys.OptionUI.pressGamepadPrompt, "변경할 패드 버튼을 입력하세요.");
+        PlayRebindOpenProduction(_prompt);
 
         if (null != rebindCoroutine)
         {
@@ -1746,12 +1828,116 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             rebindCoroutine = null;
         }
 
-        // 오버레이 숨김
-        if (null != rebindOverlay) rebindOverlay.SetActive(false);
+        // 오버레이 닫기 연출 재생
+        PlayRebindCloseProduction();
 
         if (null != inputManager && false == inputManager.HasAnyConflict())
         {
             inputManager.CommitEditSession();
+        }
+    }
+
+    private void PlayRebindOpenProduction(string _promptText)
+    {
+        EnsureRebindComponents();
+
+        if (null != rebindOverlayText)
+        {
+            rebindOverlayText.text = _promptText;
+        }
+
+        if (null != rebindOverlay)
+        {
+            rebindOverlay.SetActive(true);
+        }
+
+        KillRebindSequence();
+
+        if (null != rebindOverlayCanvasGroup)
+        {
+            rebindOverlayCanvasGroup.interactable = true;
+            rebindOverlayCanvasGroup.blocksRaycasts = true;
+            rebindOverlayCanvasGroup.alpha = 0f;
+        }
+
+        if (null != rebindWindowRoot)
+        {
+            rebindWindowRoot.anchoredPosition = originalRebindRootAnchoredPosition + new Vector2(0f, -rebindSlideOffset);
+        }
+
+        if (null != rebindDimCanvasGroup)
+        {
+            rebindDimCanvasGroup.alpha = 0f;
+        }
+
+        rebindSequence = DOTween.Sequence().SetUpdate(true);
+
+        if (null != rebindOverlayCanvasGroup)
+        {
+            rebindSequence.Join(rebindOverlayCanvasGroup.DOFade(1f, rebindAnimationDuration).SetEase(rebindOpenEase));
+        }
+
+        if (null != rebindWindowRoot)
+        {
+            rebindSequence.Join(rebindWindowRoot.DOAnchorPosY(originalRebindRootAnchoredPosition.y, rebindAnimationDuration).SetEase(rebindOpenEase));
+        }
+
+        if (null != rebindDimCanvasGroup)
+        {
+            rebindSequence.Join(rebindDimCanvasGroup.DOFade(rebindDimTargetAlpha, rebindDimAnimationDuration));
+        }
+    }
+
+    private void PlayRebindCloseProduction()
+    {
+        EnsureRebindComponents();
+        KillRebindSequence();
+
+        if (null == rebindOverlayCanvasGroup || null == rebindWindowRoot)
+        {
+            if (null != rebindOverlay)
+            {
+                rebindOverlay.SetActive(false);
+            }
+            return;
+        }
+
+        rebindOverlayCanvasGroup.interactable = false;
+        rebindOverlayCanvasGroup.blocksRaycasts = false;
+
+        rebindSequence = DOTween.Sequence().SetUpdate(true);
+
+        float _targetY = originalRebindRootAnchoredPosition.y - rebindSlideOffset;
+
+        rebindSequence.Join(rebindOverlayCanvasGroup.DOFade(0f, rebindAnimationDuration).SetEase(rebindCloseEase));
+        rebindSequence.Join(rebindWindowRoot.DOAnchorPosY(_targetY, rebindAnimationDuration).SetEase(rebindCloseEase));
+
+        if (null != rebindDimCanvasGroup)
+        {
+            rebindSequence.Join(rebindDimCanvasGroup.DOFade(0f, rebindDimAnimationDuration).SetEase(rebindCloseEase));
+        }
+
+        if (null != cachedOnRebindCloseComplete)
+        {
+            rebindSequence.OnComplete(cachedOnRebindCloseComplete);
+        }
+    }
+
+    private void HandleRebindCloseComplete()
+    {
+        if (null != rebindOverlay)
+        {
+            rebindOverlay.SetActive(false);
+        }
+        rebindSequence = null;
+    }
+
+    private void KillRebindSequence()
+    {
+        if (null != rebindSequence && true == rebindSequence.IsActive())
+        {
+            rebindSequence.Kill();
+            rebindSequence = null;
         }
     }
 
@@ -1952,6 +2138,9 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             StopCoroutine(rebindCoroutine);
             rebindCoroutine = null;
         }
+
+        KillRebindSequence();
+        cachedOnRebindCloseComplete = null;
 
         cursorBoxUI?.HideImmediately();
         cursorBoxUI = null;
