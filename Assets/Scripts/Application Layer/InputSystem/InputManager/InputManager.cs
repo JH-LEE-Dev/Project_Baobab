@@ -33,16 +33,20 @@ public class InputManager : MonoBehaviour
     // 알트탭 등으로 게임이 포커스를 잃은 상태. 그때는 장치와 무관하게 커서를 돌려준다.
     private bool bApplicationFocused = true;
 
-    private void Awake()
-    {
-        // Rumble(정적 창구)에 진동 서비스를 연결한다. Initialize가 아니라 Awake인 이유는,
-        // 씬 시작 연출처럼 Bootstrap의 Initialize보다 먼저 도는 코드에서 진동을 요청할 수 있어서다.
-        // 연결 전 요청은 조용히 무시되므로 터지지는 않지만, 그만큼 진동이 통째로 빠진다.
-        Rumble.SetService(haptics);
-    }
-
     public void Initialize()
     {
+        // Rumble(정적 창구)에 진동 서비스를 연결한다.
+        //
+        // Awake가 아니라 여기인 것이 중요하다. BootStrap은 씬마다 놓여 있고, 이미 하나가 살아있으면
+        // 뒤늦게 깨어난 쪽을 Destroy(gameObject)로 버린다. 그런데 컴포넌트의 Awake는 그 파괴가
+        // 실제로 반영되기 전에 이미 다 돌아버리기 때문에, Awake에서 등록하면 "버려질 InputManager"가
+        // 마지막 등록자가 되고, 곧이어 그 OnDestroy가 자기 자신을 해제하면서 살아있는 쪽의 연결까지
+        // 함께 끊어진다. 그 결과 게임 내내 진동이 하나도 나오지 않는다.
+        //
+        // Initialize는 살아남은 BootStrap만 호출하므로 이 문제가 없다. 버려지는 쪽은 등록한 적이
+        // 없어서, ClearService의 "지금 등록된 것과 같을 때만 해제한다" 가드에 걸려 조용히 무시된다.
+        Rumble.SetService(haptics);
+
         inputReader = new InputReader();
 
         if (inputReader == null)

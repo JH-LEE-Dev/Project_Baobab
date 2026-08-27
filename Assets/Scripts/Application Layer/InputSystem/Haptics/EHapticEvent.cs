@@ -20,8 +20,17 @@ public enum EHapticEvent
     /// <summary>프레스티지 레벨이 올라감.</summary>
     PrestigeLevelUp,
 
-    /// <summary>원목/코인이 캐릭터나 상자에 박힘. (NPC는 제외)</summary>
-    ItemImpact,
+    /// <summary>캐릭터가 필드에 떨어진 원목을 주움. (NPC는 제외)</summary>
+    ItemPickup,
+
+    /// <summary>
+    /// 상자↔캐릭터 원목 이동, 상점 코인처럼 짧은 간격으로 연달아 쏟아지는 획득입니다. (NPC는 제외)
+    ///
+    /// ItemPickup과 나눠 둔 이유가 있습니다. 이쪽은 0.09초 간격으로 수십 개가 이어져서, 모터가
+    /// 미처 멎기 전에 다음 것이 들어옵니다. 그래서 한 발씩 보면 약한 파형이라도 겹쳐 쌓이며
+    /// 실제로는 아주 센 진동으로 느껴집니다. 하나짜리와 같은 세기를 쓰면 안 되는 이유입니다.
+    /// </summary>
+    ItemStream,
 
     /// <summary>차량에 탑승함. (마을/던전 공통)</summary>
     VehicleBoard,
