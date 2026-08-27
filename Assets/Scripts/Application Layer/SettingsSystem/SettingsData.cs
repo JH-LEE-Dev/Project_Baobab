@@ -123,6 +123,20 @@ public struct SettingsData
     /// </summary>
     public float hapticStrength;
 
+    /// <summary>
+    /// 특성 UI 가상 커서의 이동 감도입니다. (0~100, 가운데 50이 기본 배율)
+    ///
+    /// 다른 슬라이더와 달리 0이 "끔"이 아닙니다. 0이어도 커서는 느리게나마 움직입니다.
+    /// 감도 0은 커서를 아예 못 쓰는 상태라 유저가 스스로를 가둘 수 있기 때문입니다.
+    /// 실제 배율 변환은 GamepadVirtualCursor.SetSensitivityScale이 담당합니다.
+    ///
+    /// hapticStrength와 같은 이유로 SettingsRepository 버전을 올리지 않았고,
+    /// 같은 이유로 "키 없음"과 "0"을 구분하는 보정이 필요합니다.
+    /// (기본값이 50인데 키가 없는 파일은 0으로 읽혀서, 그대로 두면 기존 유저의 커서가
+    ///  이유 없이 느려집니다. MIGRATION_KEY_CURSOR_SENSITIVITY 참고)
+    /// </summary>
+    public float virtualCursorSensitivity;
+
     public const float SLIDER_MIN = 0f;
     public const float SLIDER_MAX = 100f;
 
@@ -133,6 +147,13 @@ public struct SettingsData
     /// (실제 dB 변환은 AudioManager와 AudioDuckSettings가 담당합니다)
     /// </summary>
     public const float SLIDER_MIX_DEFAULT = 50f;
+
+    /// <summary>
+    /// 가운데가 기본인 슬라이더의 기본값입니다. 감도처럼 "기준에서 위아래로 조절"하는 항목에 씁니다.
+    /// SLIDER_MIX_DEFAULT와 숫자는 같지만 이유가 전혀 다르므로 따로 둡니다.
+    /// (저쪽은 '0dB가 되는 지점', 이쪽은 '배율 1배가 되는 지점')
+    /// </summary>
+    public const float SLIDER_CENTER_DEFAULT = 50f;
 
     // enum 순환·검증에 쓰는 길이 상수 (Enum.IsDefined는 박싱이 발생하므로 쓰지 않는다)
     // 해상도 항목 수는 resolutionSizes 배열에서 파생된다. (SettingsData.ResolutionCount)
@@ -169,7 +190,8 @@ public struct SettingsData
             sfxVolume = SLIDER_MIX_DEFAULT,
 
             gamepadIconPreference = EGamepadIconPreference.Auto,
-            hapticStrength = SLIDER_MAX
+            hapticStrength = SLIDER_MAX,
+            virtualCursorSensitivity = SLIDER_CENTER_DEFAULT
         };
     }
 
@@ -432,6 +454,7 @@ public struct SettingsData
         _corrected |= ClampSlider(ref sfxVolume);
 
         _corrected |= ClampSlider(ref hapticStrength);
+        _corrected |= ClampSlider(ref virtualCursorSensitivity);
 
         return _corrected;
     }

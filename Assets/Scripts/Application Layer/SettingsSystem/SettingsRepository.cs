@@ -34,6 +34,12 @@ public static class SettingsRepository
     /// </summary>
     private const string MIGRATION_KEY_HAPTIC_STRENGTH = "\"hapticStrength\"";
 
+    /// <summary>
+    /// virtualCursorSensitivity 필드가 파일에 들어 있는지 확인할 때 찾는 JSON 키입니다.
+    /// 필드 이름을 바꾸면 이 상수도 함께 바꿔야 합니다. (TryLoad의 보정 참고)
+    /// </summary>
+    private const string MIGRATION_KEY_CURSOR_SENSITIVITY = "\"virtualCursorSensitivity\"";
+
     [Serializable]
     private class SettingsFileModel
     {
@@ -83,6 +89,13 @@ public static class SettingsRepository
             if (false == _json.Contains(MIGRATION_KEY_HAPTIC_STRENGTH))
             {
                 _result.hapticStrength = SettingsData.SLIDER_MAX;
+            }
+
+            // 커서 감도도 같은 문제를 가진다. 기본값이 가운데(50)라 키가 없는 파일을 그대로 쓰면
+            // 0으로 읽혀 커서가 최저 감도로 시작한다.
+            if (false == _json.Contains(MIGRATION_KEY_CURSOR_SENSITIVITY))
+            {
+                _result.virtualCursorSensitivity = SettingsData.SLIDER_CENTER_DEFAULT;
             }
 
             return ESettingsLoadResult.Loaded;

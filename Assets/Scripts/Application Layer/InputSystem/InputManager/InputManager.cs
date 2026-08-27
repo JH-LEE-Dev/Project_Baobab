@@ -17,6 +17,10 @@ public class InputManager : MonoBehaviour
     /// <summary>
     /// 패드 진동입니다. 무엇이 언제 진동할지는 호출부가 정합니다.
     /// 예: <c>inputManager.Haptics.Play(0.8f, 0.2f, 0.15f)</c>
+    ///
+    /// 게임플레이 상황(나무 타격, 아이템 획득 등)에서는 이걸 직접 쓰지 말고 Rumble을 쓰세요.
+    /// 파형과 겹침 규칙이 HapticPresets에 정리되어 있고, InputManager 참조도 필요 없습니다.
+    /// 예: <c>Rumble.Play(EHapticEvent.TreeImpact);</c>
     /// </summary>
     public GamepadHaptics Haptics => haptics;
 
@@ -28,6 +32,14 @@ public class InputManager : MonoBehaviour
 
     // 알트탭 등으로 게임이 포커스를 잃은 상태. 그때는 장치와 무관하게 커서를 돌려준다.
     private bool bApplicationFocused = true;
+
+    private void Awake()
+    {
+        // Rumble(정적 창구)에 진동 서비스를 연결한다. Initialize가 아니라 Awake인 이유는,
+        // 씬 시작 연출처럼 Bootstrap의 Initialize보다 먼저 도는 코드에서 진동을 요청할 수 있어서다.
+        // 연결 전 요청은 조용히 무시되므로 터지지는 않지만, 그만큼 진동이 통째로 빠진다.
+        Rumble.SetService(haptics);
+    }
 
     public void Initialize()
     {
@@ -69,6 +81,10 @@ public class InputManager : MonoBehaviour
 
         // 슬라이더는 0~100, 진동 서비스는 0~1 배율을 쓴다.
         haptics.SetStrengthScale(_data.hapticStrength / SettingsData.SLIDER_MAX);
+
+        // 커서 감도도 같은 0~1로 넘긴다. 다만 이쪽은 0.5가 기본(1배)이라 의미가 다르다.
+        // 곡선 변환은 커서 쪽이 담당한다. (SetSensitivityScale 주석 참고)
+        VirtualCursor?.SetSensitivityScale(_data.virtualCursorSensitivity / SettingsData.SLIDER_MAX);
     }
 
     /// <summary>
@@ -95,6 +111,13 @@ public class InputManager : MonoBehaviour
         inputReader.Release();
     }
 
+    /// <summary>진동이 장치에 남지 않도록 끄고, 정적 창구 연결도 함께 끊는다.</summary>
+    private void ReleaseHaptics()
+    {
+        haptics.Release();
+        Rumble.ClearService(haptics);
+    }
+
     public void OnDestroy()
     {
         // 종료 중에 Instance 게터를 쓰면 싱글턴이 되살아나므로 HasInstance로 확인한다.
@@ -103,7 +126,7 @@ public class InputManager : MonoBehaviour
             SettingsManager.Instance.OnInputSettingsAppliedEvent -= ApplyInputSettings;
         }
 
-        haptics.Release();
+        ReleaseHaptics();
         inputReader?.Release();
     }
 
@@ -136,7 +159,7 @@ public class InputManager : MonoBehaviour
     private void OnApplicationQuit()
     {
         // 진동은 장치 쪽에 남는 상태라 게임이 꺼져도 스스로 멎지 않는다. 반드시 명시적으로 끈다.
-        haptics.Release();
+        ReleaseHaptics();
 
         // 에디터에서는 플레이 모드를 나가도 Cursor.visible이 그대로 남아, 패드로 플레이하다
         // 멈추면 에디터 전체에서 커서가 사라진 것처럼 보인다. 빌드에서는 프로세스가 끝나며
@@ -283,6 +306,13 @@ public class InputManager : MonoBehaviour
 
     /// <summary>커서가 지금 화면에 떠 있는지입니다.</summary>
     public bool IsVirtualCursorActive => null != VirtualCursor && VirtualCursor.IsActive;
+
+    /// <summary>
+    /// 지금 적용 중인 감도 배율입니다. (1 = 기본)
+    /// 옵션 화면에서 "1.4배"처럼 숫자로 보여주고 싶을 때 씁니다.
+    /// 슬라이더 값 자체는 SettingsManager.Current.virtualCursorSensitivity에서 읽으세요.
+    /// </summary>
+    public float VirtualCursorSensitivityScale => null != VirtualCursor ? VirtualCursor.SensitivityScale : 1f;
 
     /// <summary>
     /// 커서가 나갈 수 있는 영역을 카메라가 실제로 그리는 사각형으로 맞춥니다.

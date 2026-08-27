@@ -503,6 +503,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         CameraMoveController.Instance?.ShakeCamera(5f, 0.3f);
         CameraMoveController.Instance?.ZoomCamera(1.05f, 0.08f, 0.05f, 0.15f);
         PostProcessSettingsApplier.Instance?.PlayDeathChromaticAberrationPulse();
+
+        // 스태미너가 다 닳아 쓰러지는 순간
+        Rumble.Play(EHapticEvent.StaminaDeath);
+
         bDead = true;
         healthComponent.SetStaminaDecrease(false);
         inputManager.PauseMove(true);
