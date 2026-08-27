@@ -98,7 +98,27 @@ public class InputReader
     // 구간에서 조기 해제되어 버린다.
     private int pauseInteractCount = 0;
 
-    private bool bPauseESC = false;
+    // ESC 잠금은 카운터가 아니라 "소유자 집합"이다.
+    //
+    // 카운터로 두면 안 되는 이유: 기존 호출부들은 의도적으로 짝이 맞지 않는다. 던전 진입 구간은
+    // TownSystem.DungeonSelected와 GameplayUICoordinator.DungeonConfirmStarted가 같은 구간을 각각
+    // 한 번씩(안전망 목적으로 중복) 걸고 해제는 한 번만 하며, Bootstrap.SetupMainMenuScene()은 다른
+    // 시스템이 씬 전환 전에 걸어둔 잠금을 일괄로 푼다. 카운터라면 이 경우들이 전부 "안 풀린 잠금"으로
+    // 남아 ESC가 영구히 죽는다.
+    //
+    // 반대로 단순 bool도 안 되는 이유: 서로 다른 시스템이 겹쳐 잠글 때 한쪽의 해제가 다른 쪽의
+    // 잠금까지 같이 풀어버린다. 소유자별로 나눠 두면 각자 자기 것만 걸고 풀 수 있어 둘 다 해결된다.
+    private readonly HashSet<string> escLockOwners = new HashSet<string>();
+
+    /// <summary>PauseESCKey(bool)이 사용하는 기본 소유자 키입니다. (기존 호출부 호환용)</summary>
+    public const string ESC_LOCK_OWNER_LEGACY = "Legacy";
+
+    /// <summary>ESC 메뉴 자신의 등장/퇴장 연출이 거는 잠금의 소유자 키입니다.</summary>
+    public const string ESC_LOCK_OWNER_ESCUI = "ESCUIProduction";
+
+    // UI 취소(패드 B/○) 잠금. ESC 잠금과 달리 거는 쪽이 UIView_ESC 하나뿐이고 소유권 추적으로
+    // 걸기/풀기가 정확히 1:1로 보장되므로 카운터로 충분하다.
+    private int pauseUICancelCount = 0;
 
     // 마을에서 던전을 클릭해 선택을 확정한 시점부터 던전 입장 연출이 끝날 때까지 Space(인벤토리)를 막는다.
     private bool bPauseInventory = false;
@@ -301,11 +321,15 @@ public class InputReader
     {
         if (false == context.performed) return;
 
+        // 리바인딩 취소는 잠금보다 먼저 판정한다. 여기서 막히면 패드만 쓰는 유저가 키 입력 대기
+        // 상태에서 빠져나올 수단을 잃는다.
         if (true == IsRebinding)
         {
             CancelRebind();
             return;
         }
+
+        if (0 < pauseUICancelCount) return;
 
         UICancelEvent?.Invoke();
     }
@@ -373,7 +397,7 @@ public class InputReader
         if (LoadingManager.Instance != null && LoadingManager.Instance.IsLoading)
             return;
 
-        if (bPauseESC)
+        if (0 < escLockOwners.Count)
             return;
 
         ESCButtonPressedEvent?.Invoke();
@@ -508,9 +532,48 @@ public class InputReader
         }
     }
 
+    /// <summary>
+    /// 기본 소유자로 ESC 키를 잠그거나 풉니다. 기존 호출부(던전 진입/귀환 연출 등)의 동작을
+    /// 그대로 유지하기 위해 하나의 공용 소유자를 씁니다 - 즉 여러 번 걸어도 한 번 풀면 풀립니다.
+    /// 다른 시스템의 잠금과 섞이면 안 되는 곳은 SetESCKeyLock(소유자, ...)을 쓰세요.
+    /// </summary>
     public void PauseESCKey(bool _boolean)
     {
-        bPauseESC = _boolean;
+        SetESCKeyLock(ESC_LOCK_OWNER_LEGACY, _boolean);
+    }
+
+    /// <summary>
+    /// 지정한 소유자 이름으로 ESC 키를 잠그거나 풉니다. 같은 소유자가 여러 번 잠가도 한 번 풀면
+    /// 풀리고(멱등), 다른 소유자의 잠금은 건드리지 않습니다.
+    /// </summary>
+    public void SetESCKeyLock(string _owner, bool _locked)
+    {
+        if (true == string.IsNullOrEmpty(_owner))
+            return;
+
+        if (true == _locked)
+            escLockOwners.Add(_owner);
+        else
+            escLockOwners.Remove(_owner);
+    }
+
+    /// <summary>
+    /// UI 취소(패드 B/○) 입력을 잠그거나 풉니다. ESC 메뉴 등장/퇴장 연출처럼 "연출 중 재입력"을
+    /// 막아야 하는 구간에서 ESC 잠금과 함께 걸어야 합니다 - ESC만 막으면 패드 유저는 B로 그대로
+    /// 뚫고 들어옵니다.
+    ///
+    /// 리바인딩 취소는 이 잠금과 무관하게 항상 동작합니다. (OnUICancel 참고)
+    /// </summary>
+    public void PauseUICancelKey(bool _boolean)
+    {
+        if (true == _boolean)
+        {
+            pauseUICancelCount++;
+        }
+        else if (0 < pauseUICancelCount)
+        {
+            pauseUICancelCount--;
+        }
     }
 
     public void PauseInventoryKey(bool _boolean)

@@ -46,6 +46,17 @@ public class UIView_ESC : UIView
 
     private bool isClosing = false;
     private bool isOpeningOption = false;
+
+    // 지금 이 뷰가 입력 잠금을 쥐고 있는지.
+    //
+    // 잠금을 푸는 일은 등장/퇴장 연출의 완료 콜백(OnMenuAppearCompleted 등)이 담당하는데, 그 연출이
+    // 끝나기 전에 다른 연출이 시작되면 UI_EscapeMenu.KillProductionSequences()가 진행 중인 시퀀스를
+    // Kill()로 죽인다. DOTween의 Kill()은 OnComplete를 발동시키지 않으므로 그 콜백은 통째로 사라지고,
+    // 결과적으로 잠금이 영구히 남아 ESC가 죽는다. (패드로 ESC 메뉴를 열자마자 B로 닫으면 재현)
+    //
+    // 그래서 "연출이 끝났는가"에 의존하지 않고 소유 여부를 직접 들고 있다가, 상태가 바뀌는 모든
+    // 지점에서 ReleaseInputLock()으로 확실히 반납한다.
+    private bool isInputCurrentlyLocked = false;
     // 설치 시점(GameplayUIInstaller)에도 UIManager.Open()이 Show()를 호출했다가 곧바로 Hide()하는데,
     // 이때의 Hide는 닫기 연출을 거치는 비동기라 OnHide가 몇 프레임 뒤에 온다. 그 사이 오디오가
     // 먹먹해지고 루프가 꺼지는 게 메인 메뉴에서 실제로 들리므로, 진짜 일시정지(ShowPauseMenu)로
@@ -124,6 +135,10 @@ public class UIView_ESC : UIView
 
     public override void OnDestroy()
     {
+        // 잠금을 쥔 채로 파괴되면(씬 전환 등) InputManager는 살아남아 그 잠금이 다음 씬까지 따라간다.
+        // 반드시 UIInputLockChangedEvent를 비우기 전에 반납해야 통지가 실제로 전달된다.
+        ReleaseInputLock();
+
         ResumeButtonClickedEvent = null;
         OptionButtonClickedEvent = null;
         GoToMainMenuButtonClickedEvent = null;
@@ -142,6 +157,9 @@ public class UIView_ESC : UIView
 
     public override void Show()
     {
+        // 직전 퇴장 연출이 완료 콜백을 남긴 채 교체될 수 있으므로, 새 연출을 시작하기 전에 반납한다.
+        ReleaseInputLock();
+
         isClosing = false;
         isOpeningOption = false;
         base.Show();
@@ -159,6 +177,10 @@ public class UIView_ESC : UIView
     public override void Hide()
     {
         if (false == IsVisible || true == isClosing || true == isOpeningOption) return;
+
+        // 아래 PlayCloseProduction()이 아직 재생 중인 등장 연출을 죽이면서 그 완료 콜백(=잠금 해제)을
+        // 함께 없앤다. 그러기 전에 여기서 확실히 반납한다.
+        ReleaseInputLock();
 
         if (null != optionUI && true == optionUI.gameObject.activeInHierarchy)
         {
@@ -187,6 +209,8 @@ public class UIView_ESC : UIView
 
     public void HideImmediately()
     {
+        ReleaseInputLock();
+
         isClosing = false;
         isOpeningOption = false;
 
@@ -241,6 +265,10 @@ public class UIView_ESC : UIView
 
     protected override void OnHide()
     {
+        // 어떤 경로로 닫히든 마지막 안전망. (Hide/HideImmediately/OnCloseProductionFinished가 이미
+        // 반납했다면 멱등 가드에 걸려 아무 일도 하지 않는다)
+        ReleaseInputLock();
+
         viewCtx?.inputManager?.SetInputMode(EInputMode.Gameplay);
 
         base.OnHide();
@@ -264,6 +292,8 @@ public class UIView_ESC : UIView
 
     private void OnCloseProductionFinished()
     {
+        ReleaseInputLock();
+
         isClosing = false;
         base.Hide();
         gameObject.SetActive(false);
@@ -379,10 +409,25 @@ public class UIView_ESC : UIView
 
     private void DispatchInputLock(bool _isLocked)
     {
+        // 같은 상태를 두 번 통지하지 않는다. 중복 잠금은 해제 한 번으로 안 풀리는 사고를,
+        // 중복 해제는 다른 시스템의 잠금까지 건드리는 사고를 만든다.
+        if (_isLocked == isInputCurrentlyLocked) return;
+
+        isInputCurrentlyLocked = _isLocked;
+
         if (null != UIInputLockChangedEvent)
         {
             UIInputLockChangedEvent.Invoke(_isLocked);
         }
+    }
+
+    /// <summary>
+    /// 쥐고 있던 입력 잠금을 반납합니다. 연출이 중간에 교체되어 완료 콜백이 유실되더라도 잠금이
+    /// 남지 않도록, 상태가 바뀌는 모든 지점에서 호출합니다. 쥔 것이 없으면 아무 일도 하지 않습니다.
+    /// </summary>
+    private void ReleaseInputLock()
+    {
+        DispatchInputLock(false);
     }
 
     public void OnGoToMainMenuButtonClicked()
