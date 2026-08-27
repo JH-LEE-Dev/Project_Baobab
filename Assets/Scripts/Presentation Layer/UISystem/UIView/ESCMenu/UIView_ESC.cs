@@ -56,7 +56,7 @@ public class UIView_ESC : UIView
     //
     // 그래서 "연출이 끝났는가"에 의존하지 않고 소유 여부를 직접 들고 있다가, 상태가 바뀌는 모든
     // 지점에서 ReleaseInputLock()으로 확실히 반납한다.
-    private bool bInputLockHeld = false;
+    private bool isInputCurrentlyLocked = false;
     // 설치 시점(GameplayUIInstaller)에도 UIManager.Open()이 Show()를 호출했다가 곧바로 Hide()하는데,
     // 이때의 Hide는 닫기 연출을 거치는 비동기라 OnHide가 몇 프레임 뒤에 온다. 그 사이 오디오가
     // 먹먹해지고 루프가 꺼지는 게 메인 메뉴에서 실제로 들리므로, 진짜 일시정지(ShowPauseMenu)로
@@ -265,6 +265,10 @@ public class UIView_ESC : UIView
 
     protected override void OnHide()
     {
+        // 어떤 경로로 닫히든 마지막 안전망. (Hide/HideImmediately/OnCloseProductionFinished가 이미
+        // 반납했다면 멱등 가드에 걸려 아무 일도 하지 않는다)
+        ReleaseInputLock();
+
         viewCtx?.inputManager?.SetInputMode(EInputMode.Gameplay);
 
         base.OnHide();
@@ -407,12 +411,9 @@ public class UIView_ESC : UIView
     {
         // 같은 상태를 두 번 통지하지 않는다. 중복 잠금은 해제 한 번으로 안 풀리는 사고를,
         // 중복 해제는 다른 시스템의 잠금까지 건드리는 사고를 만든다.
-        if (bInputLockHeld == _isLocked)
-        {
-            return;
-        }
+        if (_isLocked == isInputCurrentlyLocked) return;
 
-        bInputLockHeld = _isLocked;
+        isInputCurrentlyLocked = _isLocked;
 
         if (null != UIInputLockChangedEvent)
         {
