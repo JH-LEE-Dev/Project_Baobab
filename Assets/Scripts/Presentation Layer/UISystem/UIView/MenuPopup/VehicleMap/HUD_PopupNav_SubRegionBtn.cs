@@ -537,11 +537,13 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             hoverTween = null;
         }
 
+        TreeVisualState _targetState = (false == myInfo.isUnlocked) ? TreeVisualState.Locked : TreeVisualState.Unlocked_Idle;
+
         for (int i = 0; i < treeProps.Count; i++)
         {
             if (null != treeProps[i] && true == treeProps[i].gameObject.activeSelf)
             {
-                treeProps[i].SetVisualState(TreeVisualState.Unlocked_Idle, colorTransitionDuration);
+                treeProps[i].SetVisualState(_targetState, colorTransitionDuration);
                 treeProps[i].StopHoverEffect();
             }
         }
@@ -645,6 +647,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             if (null != treeProps[i])
             {
                 treeProps[i].StopHoverEffect();
+                treeProps[i].StopAllTweens();
             }
         }
 
