@@ -106,13 +106,23 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     [SerializeField] private CursorMotionSettings hoverCursorMotion = new CursorMotionSettings
     {
         enableShowMotion = true,
-        showDuration = 0.2f,
-        shrinkSizeScale = 0.9f,
+        showDuration = 0.24f,
+        shrinkSizeScale = 0.91f,
+        shrinkTimeRatio = 0.35f,
+        restoreTimeRatio = 0.65f,
+        sizeRestoreEase = Ease.OutBack,
+        startAngle = 3.5f,
+        angleDamping = 0.5f,
         swingCount = 2,
-        startAngle = 5f,
+        rotationTimeRatio = 0.85f,
+        rotationEase = Ease.OutSine,
         enableIdleMotion = true,
-        idleSizeOffset = 0.5f,
-        hideDuration = 0.1f
+        idleCycleDuration = 2.0f,
+        idleSizeOffset = 1.2f,
+        enableHideMotion = true,
+        hideDuration = 0.1f,
+        hideExpandOffset = 4f,
+        hideEase = Ease.OutQuad
     };
 
     private ICursorBoxUI cursorBoxUI;
