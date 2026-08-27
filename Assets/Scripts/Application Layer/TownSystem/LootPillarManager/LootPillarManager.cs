@@ -11,7 +11,9 @@ public class LootPillarManager : MonoBehaviour
     [SerializeField] private Transform[] lootPointPivots;
 
     // 마을에 전시할 고정 순서 - LootPoint_01부터 차례로 채운다.
-    private static readonly LootType[] displayOrder =
+    // TownTileManager.ApplyLootPillarColliderState()도 LootPhillarColliderTilemap의 타일(좌상단부터)을
+    // 같은 순서로 대응시키므로, 두 곳이 어긋나지 않도록 이 배열을 공유한다.
+    public static readonly LootType[] DisplayOrder =
     {
         LootType.LostAndFoundBox,
         LootType.SporePotion,
@@ -43,16 +45,16 @@ public class LootPillarManager : MonoBehaviour
         spawnedPillars.Clear();
 
         int pointIndex = 0;
-        for (int i = 0; i < displayOrder.Length && pointIndex < lootPoints.Length; i++)
+        for (int i = 0; i < DisplayOrder.Length && pointIndex < lootPoints.Length; i++)
         {
-            if (!IsAcquired(_inDungeonObjectManager, displayOrder[i])) continue;
+            if (!IsAcquired(_inDungeonObjectManager, DisplayOrder[i])) continue;
 
             Transform point = lootPoints[pointIndex];
             Transform pivot = (lootPointPivots != null && pointIndex < lootPointPivots.Length) ? lootPointPivots[pointIndex] : null;
 
             LootDisplayObject pillar = Instantiate(lootPillarPrefab, point.position, Quaternion.identity);
             pillar.ApplySortingBasis(pivot != null ? pivot.position.y : point.position.y);
-            pillar.SetLootDisplay(displayOrder[i]);
+            pillar.SetLootDisplay(DisplayOrder[i]);
             pillar.Initialize(inputManager);
 
             pillar.InteractStateChangedEvent -= OnPillarInteractStateChanged;
@@ -77,7 +79,7 @@ public class LootPillarManager : MonoBehaviour
         LootPillarInteractEvent?.Invoke(_bInteract, _lootType);
     }
 
-    private bool IsAcquired(InDungeonObjectManager _inDungeonObjectManager, LootType _type)
+    public static bool IsAcquired(InDungeonObjectManager _inDungeonObjectManager, LootType _type)
     {
         switch (_type)
         {
