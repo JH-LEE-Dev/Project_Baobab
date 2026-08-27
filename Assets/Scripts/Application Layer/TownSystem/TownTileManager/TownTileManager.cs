@@ -19,6 +19,12 @@ public class TownTileManager : MonoBehaviour
     // CreateGrid()마다 다시 적용한다. (증설이 던전 안에서 해금되는 경우도 이 값으로 보관된다)
     private int buildingExpansionCount = 0;
 
+    // LootPhillarColliderTilemap에 원래 찍혀 있던(=기본값 활성화) 타일들을 좌상단부터 순서대로 담아둔다.
+    // CreateGrid() 직후 전부 비웠다가, ApplyLootPillarColliderState()가 획득한 종류만 다시 채운다.
+    // 인덱스는 LootPillarManager.DisplayOrder와 1:1로 대응한다.
+    private readonly List<Vector3Int> lootPillarColliderCells = new List<Vector3Int>(4);
+    private readonly List<TileBase> lootPillarColliderTiles = new List<TileBase>(4);
+
     public Tilemap GroundTilemap { get; private set; }
     public Tilemap WaterTilemap { get; private set; }
     public Tilemap WaterCornerTilemap { get; private set; }
@@ -29,6 +35,7 @@ public class TownTileManager : MonoBehaviour
     public Tilemap RockColliderTilemap { get; private set; }
     public Tilemap WaterStencilTilemap { get; private set; }
     public Tilemap GroundStencilTilemap { get; private set; }
+    public Tilemap LootPillarColliderTilemap { get; private set; }
 
     /// <summary>
     /// 제재소 증설분 건물 충돌 타일맵들. 아직 증설되지 않은 것은 GameObject가 꺼져 있으므로,
@@ -63,9 +70,12 @@ public class TownTileManager : MonoBehaviour
         RockColliderTilemap = null;
         WaterStencilTilemap = null;
         GroundStencilTilemap = null;
+        LootPillarColliderTilemap = null;
 
         // buildingExpansionCount는 유지한다(다음 CreateGrid에서 같은 단계로 복원하기 위함).
         buildingColliderExpansions.Clear();
+        lootPillarColliderCells.Clear();
+        lootPillarColliderTiles.Clear();
     }
 
     public void CreateGrid()
@@ -102,6 +112,7 @@ public class TownTileManager : MonoBehaviour
                 case "RockColliderTilemap": RockColliderTilemap = tilemap; break;
                 case "WaterStencilTilemap": WaterStencilTilemap = tilemap; break;
                 case "GroundStencilTilemap": GroundStencilTilemap = tilemap; break;
+                case "LootPhillarColliderTilemap": LootPillarColliderTilemap = tilemap; break;
                 default:
                     if (tilemap.gameObject.name.StartsWith(BuildingColliderExpansionPrefix))
                         buildingColliderExpansions.Add(tilemap);
@@ -113,6 +124,66 @@ public class TownTileManager : MonoBehaviour
         buildingColliderExpansions.Sort((a, b) => string.CompareOrdinal(a.gameObject.name, b.gameObject.name));
 
         ApplyBuildingExpansion();
+
+        // 기본값은 4칸 모두 활성화(콜라이더 있음)된 상태로 배치되어 있으므로, 원본을 좌상단부터 기억해두고
+        // 일단 전부 비활성화한다. 실제 활성화는 ApplyLootPillarColliderState()가 획득 상태에 맞춰 적용한다.
+        CaptureLootPillarColliderTiles();
+        ClearLootPillarColliderTiles();
+    }
+
+    /// <summary>
+    /// LootPhillarColliderTilemap에 원래 찍혀 있던 타일들을 좌상단(위→아래, 왼→오른쪽)부터 순서대로
+    /// 기억해둔다. 이 순서가 LootPillarManager.DisplayOrder의 인덱스와 그대로 대응된다.
+    /// </summary>
+    private void CaptureLootPillarColliderTiles()
+    {
+        lootPillarColliderCells.Clear();
+        lootPillarColliderTiles.Clear();
+
+        if (LootPillarColliderTilemap == null) return;
+
+        LootPillarColliderTilemap.CompressBounds();
+        BoundsInt bounds = LootPillarColliderTilemap.cellBounds;
+
+        for (int y = bounds.yMax - 1; y >= bounds.yMin; y--)
+        {
+            for (int x = bounds.xMin; x < bounds.xMax; x++)
+            {
+                Vector3Int cell = new Vector3Int(x, y, 0);
+                TileBase tile = LootPillarColliderTilemap.GetTile(cell);
+                if (tile == null) continue;
+
+                lootPillarColliderCells.Add(cell);
+                lootPillarColliderTiles.Add(tile);
+            }
+        }
+    }
+
+    private void ClearLootPillarColliderTiles()
+    {
+        if (LootPillarColliderTilemap == null) return;
+
+        for (int i = 0; i < lootPillarColliderCells.Count; i++)
+        {
+            LootPillarColliderTilemap.SetTile(lootPillarColliderCells[i], null);
+        }
+    }
+
+    /// <summary>
+    /// 영구 획득한 전리품 종류만큼 LootPhillarColliderTilemap의 타일을 켠다.
+    /// CaptureLootPillarColliderTiles()가 좌상단부터 담아둔 칸을 LootPillarManager.DisplayOrder와
+    /// 같은 순서로 대응시키므로, 두 목록의 순서가 어긋나지 않는 한 인덱스로 바로 매칭된다.
+    /// </summary>
+    public void ApplyLootPillarColliderState(InDungeonObjectManager _inDungeonObjectManager)
+    {
+        if (LootPillarColliderTilemap == null || _inDungeonObjectManager == null) return;
+
+        int count = Mathf.Min(LootPillarManager.DisplayOrder.Length, lootPillarColliderCells.Count);
+        for (int i = 0; i < count; i++)
+        {
+            bool bAcquired = LootPillarManager.IsAcquired(_inDungeonObjectManager, LootPillarManager.DisplayOrder[i]);
+            LootPillarColliderTilemap.SetTile(lootPillarColliderCells[i], bAcquired ? lootPillarColliderTiles[i] : null);
+        }
     }
 
     /// <summary>

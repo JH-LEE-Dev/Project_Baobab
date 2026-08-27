@@ -11,9 +11,9 @@
 /// </summary>
 public static class HapticPresets
 {
-    // 나무 타격 - 약하고 은은하게. 벨 때마다 계속 울리는 진동이라 조금만 세도 금방 피로해진다.
+    // 나무 타격 - 고주파 중심의 깔끔하고 즉각적인 타격감.
     private static readonly HapticPattern treeImpact = new HapticPattern(
-        new HapticStep(0.20f, 0.08f, 0.06f));
+        new HapticStep(0.25f, 0.35f, 0.07f));
 
     // 나무 파괴 - 약~중, 짧게. 타격보다 확실히 세야 "쓰러졌다"는 구분이 생긴다.
     private static readonly HapticPattern treeDestroy = new HapticPattern(
@@ -30,9 +30,9 @@ public static class HapticPresets
         new HapticStep(0.30f, 0.15f, 0.25f),
         new HapticStep(0.16f, 0.07f, 0.35f));
 
-    // 스킬 찍기 - 가볍게. 굵은 모터를 아예 쓰지 않아 "톡" 하고 끝나는 느낌만 남긴다.
+    // 스킬 찍기 - 가볍고 분명하게. 굵은 모터를 살짝 섞어 "톡" 하고 끝나는 느낌을 확실히 살린다.
     private static readonly HapticPattern skillPoint = new HapticPattern(
-        new HapticStep(0f, 0.30f, 0.05f));
+        new HapticStep(0.15f, 0.40f, 0.07f));
 
     // 프레스티지 레벨업 - 특이한 파형. 가는 모터로 세 번 올라갔다가 굵은 모터로 묵직하게 닫는다.
     private static readonly HapticPattern prestigeLevelUp = new HapticPattern(
@@ -44,19 +44,17 @@ public static class HapticPresets
         new HapticStep(0f, 0f, 0.06f),
         new HapticStep(0.85f, 0.35f, 0.22f));
 
-    // 원목/코인이 박힘 - 진짜 1~3틱짜리. 60FPS 기준 0.04초면 2~3프레임이다.
-    // 굵은 모터는 물리적으로 감았다 푸는 데 시간이 걸려 이렇게 짧으면 소리만 나고 느낌이 안 오므로,
-    // 반응이 빠른 가는 모터로만 낸다.
+    // 원목/코인이 박힘 - 짧고 또렷한 틱. 반응이 빠른 가는 모터로 낸다.
     private static readonly HapticPattern itemImpact = new HapticPattern(
-        new HapticStep(0f, 0.35f, 0.04f));
+        new HapticStep(0f, 0.40f, 0.06f));
 
     // 차량 탑승 - 약~중, 짧게.
     private static readonly HapticPattern vehicleBoard = new HapticPattern(
         new HapticStep(0.45f, 0.25f, 0.12f));
 
-    // 상자가 차 위에 착지 - 약하게.
+    // 상자가 차 위에 착지 - 쫀득한 임팩트.
     private static readonly HapticPattern containerLanding = new HapticPattern(
-        new HapticStep(0.30f, 0.12f, 0.09f));
+        new HapticStep(0.35f, 0.25f, 0.09f));
 
     // 차량에서 하차 - 약~중, 짧게.
     private static readonly HapticPattern vehicleDismount = new HapticPattern(
@@ -72,9 +70,9 @@ public static class HapticPresets
         new HapticStep(0.55f, 0.55f, 0.09f),
         new HapticStep(0.20f, 0.30f, 0.12f));
 
-    // 원목 유실 - 1~2틱. 박히는 느낌보다 더 약해야 "잃었다"는 인상이 산다.
+    // 원목 유실 - 잃었음을 인지할 수 있는 가벼운 틱.
     private static readonly HapticPattern itemDropped = new HapticPattern(
-        new HapticStep(0f, 0.18f, 0.03f));
+        new HapticStep(0f, 0.35f, 0.06f));
 
     private static readonly HapticPattern[] patterns = BuildPatterns();
 
@@ -85,8 +83,8 @@ public static class HapticPresets
     /// 나무 타격이 0이 아닌 이유가 핵심입니다. 쇼크웨이브는 0.04초마다 판정을 돌며 퍼져 나가기
     /// 때문에, 한 번 휘두른 결과가 여러 프레임에 걸쳐 수십 그루에 나눠 들어옵니다. 프레임 단위로만
     /// 막으면 그 내내 진동이 재시작되어 "드르륵" 끌리는 소리가 됩니다. 판정 주기보다 넉넉한
-    /// 0.12초로 묶으면 도끼 평타 + 뒤따르는 쇼크웨이브 전체가 한 번의 진동으로 정리됩니다.
-    /// (도끼 쿨타임은 이보다 훨씬 길어서, 다음 휘두르기가 여기에 잡아먹히지 않습니다)
+    /// 0.08초로 묶으면 도끼 평타 + 뒤따르는 쇼크웨이브 전체가 한 번의 진동으로 정리됩니다.
+    /// (도끼 쿨타임은 이보다 길어서, 다음 휘두르기가 여기에 잡아먹히지 않습니다)
     ///
     /// 반대로 아이템이 박히는 진동은 하나하나 톡톡 느껴져야 하므로 0입니다.
     /// </summary>
@@ -136,8 +134,8 @@ public static class HapticPresets
     {
         float[] _table = new float[(int)EHapticEvent.Count];
 
-        // 한 번 휘두른 결과(평타 + 쇼크웨이브 + 연쇄 폭발)를 통째로 한 번으로 묶는다.
-        _table[(int)EHapticEvent.TreeImpact] = 0.12f;
+        // 한 번 휘두른 결과(평타 + 쇼크웨이브 + 연쇄 폭발)를 한 번으로 묶되, 고속 평타 연타가 씹히지 않도록 맞춘다.
+        _table[(int)EHapticEvent.TreeImpact] = 0.08f;
         _table[(int)EHapticEvent.TreeDestroy] = 0.12f;
 
         // 연출 중 중복 호출 방지용 최소 간격. 사람이 두 번 겪는 일이 아니라 코드가 두 번 부르는 경우만 막는다.

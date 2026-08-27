@@ -38,6 +38,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     [SerializeField] private UI_OptionSlider cameraShakeSlider;
     [SerializeField] private UI_OptionSlider crosshairBrightnessSlider;
     [SerializeField] private UI_OptionSlider hapticStrengthSlider;
+    [SerializeField] private UI_OptionSlider virtualCursorSensitivitySlider;
     [SerializeField] private UI_OptionSlider chromaticAberrationSlider;
     [SerializeField] private UI_OptionSlider brightnessSlider;
     [SerializeField] private UI_OptionSlider saturationSlider;
@@ -93,6 +94,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private Action<float> onCameraShakeChanged;
     private Action<float> onCrosshairBrightnessChanged;
     private Action<float> onHapticStrengthChanged;
+    private Action<float> onVirtualCursorSensitivityChanged;
     private Action<float> onChromaticAberrationChanged;
     private Action<float> onBrightnessChanged;
     private Action<float> onSaturationChanged;
@@ -128,6 +130,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         public readonly float cameraShake;
         public readonly float crosshairBrightness;
         public readonly float hapticStrength;
+        public readonly float virtualCursorSensitivity;
         public readonly EGamepadIconPreference gamepadIconPreference;
 
         public ApplyTargetSettingsSnapshot(in SettingsData _data)
@@ -139,6 +142,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             cameraShake = _data.cameraShake;
             crosshairBrightness = _data.crosshairBrightness;
             hapticStrength = _data.hapticStrength;
+            virtualCursorSensitivity = _data.virtualCursorSensitivity;
             gamepadIconPreference = _data.gamepadIconPreference;
         }
 
@@ -155,6 +159,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
                 && Mathf.Approximately(cameraShake, _current.cameraShake)
                 && Mathf.Approximately(crosshairBrightness, _current.crosshairBrightness)
                 && Mathf.Approximately(hapticStrength, _current.hapticStrength)
+                && Mathf.Approximately(virtualCursorSensitivity, _current.virtualCursorSensitivity)
                 && gamepadIconPreference == _current.gamepadIconPreference;
         }
     }
@@ -438,6 +443,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         onCameraShakeChanged = OnCameraShakeChanged;
         onCrosshairBrightnessChanged = OnCrosshairBrightnessChanged;
         onHapticStrengthChanged = OnHapticStrengthChanged;
+        onVirtualCursorSensitivityChanged = OnVirtualCursorSensitivityChanged;
         onChromaticAberrationChanged = OnChromaticAberrationChanged;
         onBrightnessChanged = OnBrightnessChanged;
         onSaturationChanged = OnSaturationChanged;
@@ -559,6 +565,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != cameraShakeSlider) cameraShakeSlider.ApplyFocusVisual(false);
         if (null != crosshairBrightnessSlider) crosshairBrightnessSlider.ApplyFocusVisual(false);
         if (null != hapticStrengthSlider) hapticStrengthSlider.ApplyFocusVisual(false);
+        if (null != virtualCursorSensitivitySlider) virtualCursorSensitivitySlider.ApplyFocusVisual(false);
         if (null != chromaticAberrationSlider) chromaticAberrationSlider.ApplyFocusVisual(false);
         if (null != brightnessSlider) brightnessSlider.ApplyFocusVisual(false);
         if (null != saturationSlider) saturationSlider.ApplyFocusVisual(false);
@@ -756,6 +763,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         {
             hapticStrengthSlider.Initialize(GetText(LocKeys.OptionUI.hapticStrength, "컨트롤러 진동"), _data.hapticStrength, 0f, 100f, onHapticStrengthChanged);
             hapticStrengthSlider.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+        if (null != virtualCursorSensitivitySlider)
+        {
+            virtualCursorSensitivitySlider.Initialize(GetText(LocKeys.OptionUI.virtualCursorSensitivity, "가상 커서 감도"), _data.virtualCursorSensitivity, 0f, 100f, onVirtualCursorSensitivityChanged);
+            virtualCursorSensitivitySlider.SetCursorBoxUI(cursorBoxUI, inputManager);
         }
         if (null != chromaticAberrationSlider)
         {
@@ -1032,6 +1044,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != hapticStrengthSlider)
         {
             hapticStrengthSlider.gameObject.SetActive(_isConnected);
+        }
+
+        if (null != virtualCursorSensitivitySlider)
+        {
+            virtualCursorSensitivitySlider.gameObject.SetActive(_isConnected);
         }
 
         SetupOptionNavigation();
@@ -1537,6 +1554,12 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         UpdateApplyButtonState();
     }
 
+    private void OnVirtualCursorSensitivityChanged(float _val)
+    {
+        settings.SetVirtualCursorSensitivity(_val);
+        UpdateApplyButtonState();
+    }
+
     private void OnGamepadConnectionChanged(bool _isConnected)
     {
         RefreshGamepadOptionsVisibility();
@@ -1825,6 +1848,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         settings.SetCameraShake(_snapshot.cameraShake);
         settings.SetCrosshairBrightness(_snapshot.crosshairBrightness);
         settings.SetHapticStrength(_snapshot.hapticStrength);
+        settings.SetVirtualCursorSensitivity(_snapshot.virtualCursorSensitivity);
         settings.SetGamepadIconPreference(_snapshot.gamepadIconPreference);
         if (null != gamepadIconPreferenceSelector)
         {
@@ -1884,6 +1908,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         onCameraShakeChanged = null;
         onCrosshairBrightnessChanged = null;
         onHapticStrengthChanged = null;
+        onVirtualCursorSensitivityChanged = null;
         onChromaticAberrationChanged = null;
         onBrightnessChanged = null;
         onSaturationChanged = null;

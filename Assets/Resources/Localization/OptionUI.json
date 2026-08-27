@@ -310,6 +310,17 @@
       "enumValue": ""
     },
     {
+      "id": 216,
+      "key": "VirtualCursorSensitivity",
+      "kr": "가상 커서 감도",
+      "en": "Cursor Sensitivity",
+      "zhHans": "虚拟光标灵敏度",
+      "zhHant": "虛擬游標靈敏度",
+      "ja": "カーソル感度",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
       "id": 301,
       "key": "tabGameplay",
       "kr": "게임플레이",
