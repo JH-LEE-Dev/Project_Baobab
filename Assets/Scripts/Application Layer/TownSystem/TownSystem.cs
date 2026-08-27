@@ -266,6 +266,7 @@ public class TownSystem : MonoBehaviour
         signalHub.Subscribe<DecalreDungeonTypeSignal>(CurrentlyInDungeon);
         signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.Subscribe<TeleportUIClosedSignal>(TeleportUIClosed);
+        signalHub.Subscribe<TentUIClosedSignal>(TentUIClosed);
         signalHub.Subscribe<DungeonStartSignal>(DungeonStarted);
         signalHub.Subscribe<TeleportUIClosedWhileTeleportSignal>(TeleportUIClosedWhileTeleport);
         signalHub.Subscribe<RetryButtonClickedSignal>(RetryButtonClicked);
@@ -282,6 +283,7 @@ public class TownSystem : MonoBehaviour
         signalHub.UnSubscribe<DecalreDungeonTypeSignal>(CurrentlyInDungeon);
         signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.UnSubscribe<TeleportUIClosedSignal>(TeleportUIClosed);
+        signalHub.UnSubscribe<TentUIClosedSignal>(TentUIClosed);
         signalHub.UnSubscribe<DungeonStartSignal>(DungeonStarted);
         signalHub.UnSubscribe<TeleportUIClosedWhileTeleportSignal>(TeleportUIClosedWhileTeleport);
         signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryButtonClicked);
@@ -359,6 +361,14 @@ public class TownSystem : MonoBehaviour
     private void TentInteract(bool _bInteract)
     {
         signalHub.Publish(new TentInteractSignal(_bInteract));
+    }
+
+    // TentUI가 실제로 닫힐 때(E 토글이 아닌 ESC·패드 Cancel로 닫힌 경우 포함) 항상 발행되는 신호.
+    // Tent의 내부 상호작용 토글(bInteract)이 UI가 이미 닫혔다는 사실을 놓치지 않도록 여기서 맞춰준다.
+    // (E 토글 경로로 닫힌 경우는 이미 bInteract가 false라 이 호출은 아무 효과가 없다)
+    private void TentUIClosed(TentUIClosedSignal _tentUIClosedSignal)
+    {
+        tentManager.SyncInteractStateOnExternalClose();
     }
 
     private void DungeonSelected(DungeonSelectedSignal dungeonSelectedSignal)
