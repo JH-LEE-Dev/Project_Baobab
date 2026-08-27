@@ -94,9 +94,7 @@ MonoBehaviour:
   keyIconMode: 1
   boundAction: 0
   otherKey: 0
-  customKeyboardPath: 
-  otherGamepadButton: 25
-  customGamepadPath: <Gamepad>/leftStick
+  otherGamepadButton: 9
   targetImage: {fileID: 8139970059329763434}
 --- !u!114 &1882276957104206570
 MonoBehaviour:
