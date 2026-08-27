@@ -12,8 +12,8 @@ public static class Rumble
 {
     private static GamepadHaptics haptics;
 
-    // 이벤트별로 마지막 요청이 들어온 시각(unscaled). 묶음 간격 판정에 쓴다.
-    private static readonly float[] lastRequestTimes = new float[(int)EHapticEvent.Count];
+    // 이벤트별로 마지막으로 실제 진동을 울린 시각(unscaled). 묶음 간격 판정에 쓴다.
+    private static readonly float[] lastPlayedTimes = new float[(int)EHapticEvent.Count];
 
     static Rumble()
     {
@@ -56,18 +56,24 @@ public static class Rumble
         float _now = Time.unscaledTime;
         float _burstInterval = HapticPresets.GetBurstInterval(_event);
 
-        // 묶음 판정은 "마지막으로 울린 시각"이 아니라 "마지막으로 요청이 들어온 시각" 기준이다.
-        // 쇼크웨이브처럼 요청이 끊이지 않고 이어지는 동안은 계속 같은 사건으로 봐야 하는데,
-        // 울린 시각을 기준으로 하면 첫 진동이 끝나자마자 다음 요청이 새 사건으로 취급되어
-        // 진동이 계속 다시 울린다.
-        float _lastRequestTime = lastRequestTimes[_index];
-        lastRequestTimes[_index] = _now;
-
-        if (_burstInterval > 0f && _now - _lastRequestTime < _burstInterval) return;
+        // 묶음 판정의 기준은 "마지막으로 울린 시각"이다. 막힌 요청은 이 시각을 갱신하지 않는다.
+        //
+        // 처음에는 "마지막으로 요청이 들어온 시각"을 기준으로 삼았는데, 그러면 요청이 끊이지 않고
+        // 이어지는 동안 창이 계속 뒤로 밀려 영영 열리지 않는다. 나무를 연속으로 팰 때가 정확히
+        // 그 상황이라(도끼 타격 + 쇼크웨이브 판정이 0.04초 간격으로 계속 들어온다) 첫 한 번만
+        // 울리고 그 뒤로는 아무리 패도 진동이 오지 않았다.
+        //
+        // 울린 시각 기준으로 바꾸면 쇼크웨이브가 퍼지는 동안 0.12초마다 한 번씩 끊어 울린다.
+        // 같은 프레임에 여러 그루가 맞아도 한 번인 것은 그대로이고, 휘두를 때마다 확실히 울린다.
+        // 쇼크웨이브가 훑는 내내 한 번만 울리게 하고 싶다면 HapticPresets에서 이 이벤트의 묶음
+        // 간격을 쇼크웨이브 지속시간(기본 0.5초)까지 올리면 되지만, 그만큼 빠른 연타에서 진동이
+        // 빠지는 것을 감수해야 한다.
+        if (_burstInterval > 0f && _now - lastPlayedTimes[_index] < _burstInterval) return;
 
         HapticPattern _pattern = HapticPresets.GetPattern(_event);
         if (null == _pattern) return;
 
+        lastPlayedTimes[_index] = _now;
         haptics.PlayPattern(_pattern);
     }
 
@@ -80,9 +86,9 @@ public static class Rumble
     private static void ResetTimes()
     {
         // 게임을 켜자마자 일어난 이벤트가 "방금 전에도 있었다"로 오판되지 않도록 충분히 과거로 둔다.
-        for (int i = 0; i < lastRequestTimes.Length; i++)
+        for (int i = 0; i < lastPlayedTimes.Length; i++)
         {
-            lastRequestTimes[i] = -999f;
+            lastPlayedTimes[i] = -999f;
         }
     }
 }

@@ -296,7 +296,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
                     // 원목이 상자에 박히는 순간. fromCharacter 가드가 곧 "캐릭터가 넣은 것"이라,
                     // 벌목 NPC가 납품하는 동안에는 울리지 않는다.
-                    Rumble.Play(EHapticEvent.ItemImpact);
+                    // 0.075초 간격으로 연달아 들어오므로 연속 전용(약한) 파형을 쓴다.
+                    Rumble.Play(EHapticEvent.ItemStream);
                 }
 
                 // 마지막 납품 이후 depositPitchResetTimeout(초)가 넘게 흘렀다면 그 사이 흐름이

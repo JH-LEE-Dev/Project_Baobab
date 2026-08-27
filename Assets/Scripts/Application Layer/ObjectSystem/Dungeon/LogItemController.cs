@@ -199,7 +199,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         else
         {
             // 캐릭터가 필드 위 원목을 주운 순간 (아주 짧은 톡 하는 진동)
-            Rumble.Play(EHapticEvent.ItemImpact);
+            Rumble.Play(EHapticEvent.ItemPickup);
 
             LogItemAcquiredEvent?.Invoke(_item);
         }
