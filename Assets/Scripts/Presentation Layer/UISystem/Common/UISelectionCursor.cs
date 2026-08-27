@@ -132,6 +132,29 @@ public class UISelectionCursor : MonoBehaviour
         PlayBuiltInShowMotion(currentVersion, activeMotionSettings);
     }
 
+    // Show/Hide 연출 없이 즉시 표시하고 Idle 모션만 유지한다.
+    // 패드 가상 커서처럼 항상 노출되는 선택 커서에서 사용한다.
+    public void ActivateIdleAtAnchoredPosition(Vector2 _anchoredPosition, Vector2 _size, CursorMotionSettings _customMotion = null)
+    {
+        cursorSize = new Vector2(Mathf.Round(_size.x), Mathf.Round(_size.y));
+        CacheReferences();
+        if (null == rootRectTransform)
+            return;
+
+        StopAndResetAllMotions();
+
+        currentAnchoredPosition = GetPixelPerfectPosition(_anchoredPosition, cursorSize);
+        rootRectTransform.anchoredPosition = currentAnchoredPosition;
+        rootRectTransform.SetAsLastSibling();
+        ApplySize();
+        SetAlpha(1f);
+        gameObject.SetActive(true);
+
+        int currentVersion = ++motionVersion;
+        activeMotionSettings = null != _customMotion ? _customMotion : motionSettings;
+        PlayBuiltInIdleMotion(currentVersion, activeMotionSettings);
+    }
+
     public void SetAnchoredPosition(Vector2 _anchoredPosition)
     {
         currentAnchoredPosition = GetPixelPerfectPosition(_anchoredPosition, cursorSize);

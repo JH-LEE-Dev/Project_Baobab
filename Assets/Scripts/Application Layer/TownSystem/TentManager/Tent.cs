@@ -94,17 +94,37 @@ public class Tent : MonoBehaviour, IShadowCaster
     {
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
         inputManager.inputReader.InteractionKeyPressedEvent += InteractionKeyPressed;
+
+        inputManager.inputReader.InteractionKeyPressedWhileUIModeEvent -= InteractionKeyPressedWhileUIMode;
+        inputManager.inputReader.InteractionKeyPressedWhileUIModeEvent += InteractionKeyPressedWhileUIMode;
     }
 
     private void ReleaseEvents()
     {
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
+        inputManager.inputReader.InteractionKeyPressedWhileUIModeEvent -= InteractionKeyPressedWhileUIMode;
     }
 
     private void InteractionKeyPressed()
     {
         if (!bCanInteract) return;
 
+        ToggleInteract();
+    }
+
+    // TentUI가 스스로 SetInputMode(UI)를 걸어둔 동안에는 InteractionKeyPressedEvent가 막혀 있어
+    // 위 InteractionKeyPressed()가 호출되지 않는다. 그동안에도 키보드로는 닫을 수 있도록 하는 전용
+    // 통로 - TentUI가 이미 열려 있을 때(bInteract == true)만 의미가 있으므로 닫기만 처리한다.
+    // (패드는 InputReader가 걸러서 여기로 오지 않는다 - 특성 노드 찍기 버튼과 겹치기 때문)
+    private void InteractionKeyPressedWhileUIMode()
+    {
+        if (bInteract == false) return;
+
+        ToggleInteract();
+    }
+
+    private void ToggleInteract()
+    {
         if (bInteract == true)
         {
             bInteract = false;
@@ -134,9 +154,18 @@ public class Tent : MonoBehaviour, IShadowCaster
         {
             outLineObject.SetActive(false);
 
-            bInteract = false;
             bCanInteract = false;
-            
+
+            // TentUI가 열려 있는 채로 트리거를 벗어나는 경우(넉백 등), bInteract만 조용히 꺼버리면
+            // 실제 UI는 열린 채로 남아 있는데 내부 상태만 "닫힘"이 되어버린다. 그러면 다음 E 입력이
+            // bCanInteract==false 가드에 걸려 완전히 무시되므로("E를 눌러도 안 닫힘"), 정상적인
+            // 닫기 이벤트를 그대로 발행해 UI도 함께 닫는다.
+            if (bInteract == true)
+            {
+                bInteract = false;
+                TentInteractEvent?.Invoke(false);
+            }
+
             TentInteractStateChangedEvent?.Invoke(false);
         }
     }
@@ -144,6 +173,16 @@ public class Tent : MonoBehaviour, IShadowCaster
     public void ResetTent()
     {
         bCanInteract = false;
+        bInteract = false;
+    }
+
+    // TentUI가 E키 토글 경로(InteractionKeyPressed)를 거치지 않고 닫혔을 때(ESC·패드 Cancel 등
+    // UIDepthController가 Hide()를 직접 호출하는 경로) bInteract가 true로 남아, 다음 E 입력이
+    // "닫기"로 오인되어 무시되는 문제를 막는다. GameplayUICoordinator가 TentUIClosedSignal
+    // (UIView_Tent.OnHide에서 닫히는 경로와 무관하게 항상 발행)을 받아 호출한다.
+    // bCanInteract(상호작용 가능 범위)는 건드리지 않는다 - 플레이어가 여전히 텐트 앞에 서 있을 수 있다.
+    public void SyncInteractStateOnExternalClose()
+    {
         bInteract = false;
     }
 

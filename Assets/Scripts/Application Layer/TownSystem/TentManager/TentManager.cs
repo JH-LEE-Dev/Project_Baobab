@@ -65,6 +65,12 @@ public class TentManager : MonoBehaviour
         TentInteractStateChangedEvent?.Invoke(_boolean);
     }
 
+    // TentUI가 E키 토글이 아닌 경로(ESC 등)로 닫혔을 때 Tent의 내부 토글 상태를 실제 UI 상태와 맞춘다.
+    public void SyncInteractStateOnExternalClose()
+    {
+        tent.SyncInteractStateOnExternalClose();
+    }
+
     public void DisableTent()
     {
         tent.gameObject.SetActive(false);

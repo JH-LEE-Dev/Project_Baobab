@@ -66,6 +66,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private bool completedVisual;
     private bool visualHidden;
     private bool isPointerInside;
+    private bool isPadCursorInside;
     private bool isPointerHovering;
     private bool consumedRapidClick;
     private Vector2 interactionShakeCompensation;
@@ -95,7 +96,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public bool CanApplyVisual => canApplyVisual;
     public bool CompletedVisual => completedVisual;
     public Color CurrentNodeFrameColor => currentNodeFrameColor;
-    public bool IsPointerInside => isPointerInside;
+    public bool IsPointerInside => isPointerInside || isPadCursorInside;
     public bool IsProgressionVisible => progressionVisible;
     public VFXComponent VfxTemplate => vfxComponent;
 
@@ -625,6 +626,9 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void OnPointerEnter(PointerEventData eventData)
     {
         isPointerInside = true;
+        if (owner != null && false == owner.IsMouseKeyboardControlMode)
+            return;
+
         if (owner != null && owner.CanShowNodeHover(this) == false)
             return;
 
@@ -635,15 +639,54 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void OnPointerExit(PointerEventData eventData)
     {
         isPointerInside = false;
+        if (owner != null && false == owner.IsMouseKeyboardControlMode)
+            return;
+
+        if (IsPointerInside)
+            return;
+
         if (owner != null && owner.ShouldKeepNodeHoverCaptured(this))
             return;
 
         EndHover();
     }
 
+    // 패드 가상 커서는 EventSystem의 실제 포인터가 아니므로 별도 진입점을 사용한다.
+    // 마우스가 같은 노드 위에 남아 있을 수 있어 두 Hover 상태를 따로 기억한다.
+    public void SetPadCursorHover(bool _isInside)
+    {
+        if (isPadCursorInside == _isInside)
+            return;
+
+        isPadCursorInside = _isInside;
+
+        if (IsPointerInside)
+        {
+            if (owner == null || owner.CanShowNodeHover(this))
+                BeginHover();
+
+            return;
+        }
+
+        if (owner != null && owner.ShouldKeepNodeHoverCaptured(this))
+            return;
+
+        EndHover();
+    }
+
+    public bool ContainsScreenPoint(Vector2 _screenPosition, Camera _eventCamera)
+    {
+        CacheInteractionReferences();
+        RectTransform _hitArea = abilityNodeTouchArea != null ? abilityNodeTouchArea : RectTransform;
+        return _hitArea != null && RectTransformUtility.RectangleContainsScreenPoint(_hitArea, _screenPosition, _eventCamera);
+    }
+
     // 어느 마우스 버튼이든 노드에서 눌리면 Hover를 캡처한다. 레벨업 입력은 좌클릭만 처리한다.
     public void OnPointerDown(PointerEventData eventData)
     {
+        if (owner != null && false == owner.IsMouseKeyboardControlMode)
+            return;
+
         owner?.CaptureNodeHover(this);
 
         if (eventData != null && eventData.button != PointerEventData.InputButton.Left)
@@ -661,11 +704,17 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     public void OnPointerUp(PointerEventData eventData)
     {
+        if (owner != null && false == owner.IsMouseKeyboardControlMode)
+            return;
+
         owner?.ReleaseNodeHoverCapture(this);
     }
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (owner != null && false == owner.IsMouseKeyboardControlMode)
+            return;
+
         if (eventData != null && eventData.button != PointerEventData.InputButton.Left)
             return;
 
@@ -678,9 +727,35 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (IsDraggedClick(eventData))
             return;
 
+        SubmitLevelUpRequest(true);
+    }
+
+    /// <summary>
+    /// 패드 가상 커서의 A/× 입력을 마우스 좌클릭과 완전히 같은 특성 요청·연출 경로로 보냅니다.
+    /// </summary>
+    public void SubmitPadSelection()
+    {
+        if (owner == null || owner.IsMouseKeyboardControlMode)
+            return;
+
+        SubmitLevelUpRequest(false);
+    }
+
+    /// <summary>
+    /// 패드 모드로 바뀔 때 실제 마우스 포인터 위치는 보존하되, 마우스 전용 Hover 연출만 정리합니다.
+    /// 키보드/마우스 모드로 돌아오면 RefreshHoverAfterCapture가 같은 위치의 Hover를 복원합니다.
+    /// </summary>
+    public void SuspendPointerHoverForPadMode()
+    {
+        if (false == isPadCursorInside)
+            EndHover();
+    }
+
+    private void SubmitLevelUpRequest(bool _allowEditorModifiers)
+    {
         bool isApproved;
 #if UNITY_EDITOR
-        isApproved = owner != null && (IsControlPressed()
+        isApproved = owner != null && (_allowEditorModifiers && IsControlPressed()
             ? owner.TryRequestNodeLevelUpWithoutCost(this)
             : owner.TryRequestNodeLevelUp(this));
 #else
@@ -915,6 +990,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private void CancelHoverState()
     {
         isPointerInside = false;
+        isPadCursorInside = false;
         owner?.NotifyNodeHoverUnavailable(this);
 
         if (isPointerHovering)

@@ -367,6 +367,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     {
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
         inputManager.inputReader.InteractionKeyPressedEvent += InteractionKeyPressed;
+        inputManager.inputReader.InteractionKeyPressedWhileUIModeEvent -= InteractionKeyPressedWhileUIMode;
+        inputManager.inputReader.InteractionKeyPressedWhileUIModeEvent += InteractionKeyPressedWhileUIMode;
         inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
         inputManager.inputReader.InteractionKeyCanceledEvent += InteractionKeyCanceled;
 
@@ -399,6 +401,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     public void ReleaseEvents()
     {
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
+        inputManager.inputReader.InteractionKeyPressedWhileUIModeEvent -= InteractionKeyPressedWhileUIMode;
         inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
         offroadContainer.ContainerOpenedEvent -= ContainerOpend;
         offroadContainer.ContainerClosedEvent -= ContainerClosed;
@@ -445,12 +448,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         if (bUIActivated)
         {
-            if (type == PortalType.ToDungeonPortal)
-            {
-                lastActivatedTime = Time.time;
-                PortalDeActivatedEvent?.Invoke();
-                bUIActivated = false;
-            }
+            CloseNavigationUI();
         }
         else if (bOverlapped == true)
         {
@@ -465,6 +463,34 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
                 lastActivatedTime = Time.time;
                 GameEndEvent?.Invoke();
             }
+        }
+    }
+
+    // 내비게이션(MenuPopup)이 열려 있는 동안 SetInputMode(UI)가 걸려 InteractionKeyPressedEvent가
+    // 막혀 있어도, 키보드 상호작용 키로는 닫을 수 있도록 하는 전용 통로. bUIActivated가 true일 때
+    // (=이미 열려 있을 때)만 의미가 있으므로 닫기만 처리한다.
+    // (패드는 InputReader가 걸러서 여기로 오지 않는다 - 특성 UI의 노드 찍기 버튼과 같은 이유)
+    private void InteractionKeyPressedWhileUIMode()
+    {
+        if (gameObject.activeSelf == false) return;
+
+        if (bCanJump == false) return;
+
+        if (Time.time - lastActivatedTime < 0.5f) return;
+
+        if (bUIActivated)
+        {
+            CloseNavigationUI();
+        }
+    }
+
+    private void CloseNavigationUI()
+    {
+        if (type == PortalType.ToDungeonPortal)
+        {
+            lastActivatedTime = Time.time;
+            PortalDeActivatedEvent?.Invoke();
+            bUIActivated = false;
         }
     }
 

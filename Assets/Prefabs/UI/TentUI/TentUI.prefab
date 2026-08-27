@@ -440,6 +440,16 @@ MonoBehaviour:
   selectionCursorPrefab: {fileID: 1125404888247100005, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
   selectionCursorParent: {fileID: 0}
   selectionCursorSize: {x: 38, y: 38}
+  padCursorSprite: {fileID: 21300000, guid: 0be6f1a06f28b3c4898357409234e49a, type: 3}
+  padCursorSize: {x: 32, y: 32}
+  padCursorSpeedPixelsPerSecond: 280
+  padCursorStickDeadzone: 0.2
+  padCursorHoverCorrectionSize: {x: 64, y: 64}
+  padCursorHoverReleasePadding: 8
+  padSelectionCursorMagnetDuration: 0.15
+  padCursorSafeAreaSize: {x: 315, y: 175}
+  padViewFollowMaxGridUnitsPerSecond: 14
+  padViewFollowSmoothTime: 0.08
   nodeHoverSoundSuppressDurationAfterOpen: 0.3
   viewGridHalfExtents: {x: 60, y: 30}
   viewShakeDuration: 0.2
@@ -1138,9 +1148,13 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2514996248941026845}
     m_Modifications:
+    - target: {fileID: 1627704048318703699, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: otherGamepadButton
+      value: 8
+      objectReference: {fileID: 0}
     - target: {fileID: 3174445166996621861, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_text
-      value: "\uD655\uB300 / \uCD95\uC18C"
+      value: Temp
       objectReference: {fileID: 0}
     - target: {fileID: 5708205854321629177, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_Name
@@ -1149,6 +1163,10 @@ PrefabInstance:
     - target: {fileID: 5749843511807943119, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: otherKey
       value: 26
+      objectReference: {fileID: 0}
+    - target: {fileID: 5749843511807943119, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: otherGamepadButton
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 6587975889572139397, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_Pivot.x
@@ -1278,6 +1296,30 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1309,7 +1351,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3174445166996621861, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_text
-      value: "\uB4DC\uB798\uADF8\uB85C \uC774\uB3D9"
+      value: Temp
       objectReference: {fileID: 0}
     - target: {fileID: 5708205854321629177, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_Name
@@ -1318,6 +1360,10 @@ PrefabInstance:
     - target: {fileID: 5749843511807943119, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: otherKey
       value: 27
+      objectReference: {fileID: 0}
+    - target: {fileID: 5749843511807943119, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: otherGamepadButton
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 6587975889572139397, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_Pivot.x
@@ -1447,6 +1493,30 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1476,9 +1546,17 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2514996248941026845}
     m_Modifications:
+    - target: {fileID: 3174445166996621861, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_text
+      value: Temp
+      objectReference: {fileID: 0}
     - target: {fileID: 5708205854321629177, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_Name
       value: KeyGuideRow_Upgrade
+      objectReference: {fileID: 0}
+    - target: {fileID: 5749843511807943119, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: otherGamepadButton
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6587975889572139397, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_Pivot.x
@@ -1605,6 +1683,30 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7447498633077770666, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055285996019445125, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
