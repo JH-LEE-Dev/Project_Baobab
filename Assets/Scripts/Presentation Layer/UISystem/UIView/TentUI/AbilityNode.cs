@@ -727,9 +727,35 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (IsDraggedClick(eventData))
             return;
 
+        SubmitLevelUpRequest(true);
+    }
+
+    /// <summary>
+    /// 패드 가상 커서의 A/× 입력을 마우스 좌클릭과 완전히 같은 특성 요청·연출 경로로 보냅니다.
+    /// </summary>
+    public void SubmitPadSelection()
+    {
+        if (owner == null || owner.IsMouseKeyboardControlMode)
+            return;
+
+        SubmitLevelUpRequest(false);
+    }
+
+    /// <summary>
+    /// 패드 모드로 바뀔 때 실제 마우스 포인터 위치는 보존하되, 마우스 전용 Hover 연출만 정리합니다.
+    /// 키보드/마우스 모드로 돌아오면 RefreshHoverAfterCapture가 같은 위치의 Hover를 복원합니다.
+    /// </summary>
+    public void SuspendPointerHoverForPadMode()
+    {
+        if (false == isPadCursorInside)
+            EndHover();
+    }
+
+    private void SubmitLevelUpRequest(bool _allowEditorModifiers)
+    {
         bool isApproved;
 #if UNITY_EDITOR
-        isApproved = owner != null && (IsControlPressed()
+        isApproved = owner != null && (_allowEditorModifiers && IsControlPressed()
             ? owner.TryRequestNodeLevelUpWithoutCost(this)
             : owner.TryRequestNodeLevelUp(this));
 #else

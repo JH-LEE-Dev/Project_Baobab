@@ -1311,6 +1311,17 @@
       "enumValue": ""
     },
     {
+      "id": 9008,
+      "key": "KeyGuide_Move",
+      "kr": " 이동",
+      "en": " Move",
+      "zhHans": " 移动",
+      "zhHant": " 移動",
+      "ja": " 移動",      
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
       "id": 9100,
       "key": "AbilityDescription_InventoryExpansion",
       "kr": "<COLOR=8bbeff>인벤토리</COLOR> 공간을 <COLOR=54D86A>{0}칸</COLOR> 늘립니다.",

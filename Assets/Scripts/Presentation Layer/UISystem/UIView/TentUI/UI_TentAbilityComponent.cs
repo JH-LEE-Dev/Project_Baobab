@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 using UnityEngine.UI;
@@ -16,7 +17,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const float ZoomStep = 0.1f;
     private const float ZoomFollowSpeed = 18f;
     private const float KeyboardMoveGridUnitsPerSecond = 9f;
-    private const float DefaultPadCursorSpeedPixelsPerSecond = 640f;
+    private const float DefaultPadCursorSpeedPixelsPerSecond = 280f;
+    private const float PadCursorSensitivitySpeedMultiplier = 5.6f;
+    private const float PadZoomRepeatInterval = 0.1f;
     private const float ToolTipSpacing = 32f;
     private const float ToolTipVerticalScreenPadding = 16f;
     private const float UnlockRevealDuration = 0.1f;
@@ -113,6 +116,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private Vector2 padSelectionCursorMagnetStartPosition;
     private float padSelectionCursorMagnetElapsed;
     private bool isPadSelectionCursorMagnetMoving;
+    private int padInputSuppressedFrame = -1;
+    private int padZoomHoldDirection;
+    private float padZoomRepeatElapsed;
+    private bool wasInputAllowedLastTick;
     private VFXComponent sharedNodeVfxPool;
     private Material circleRevealDimMaterialInstance;
     private ButtonControl moveUpControl;
@@ -202,12 +209,13 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField] private RectTransform selectionCursorParent;
     [SerializeField] private Vector2 selectionCursorSize = new Vector2(40f, 40f);
 
-    [Header("Pad Cursor (Debug)")]
+    [Header("Pad Cursor")]
     [SerializeField] private Sprite padCursorSprite;
     [SerializeField] private Vector2 padCursorSize = new Vector2(32f, 32f);
-    [Tooltip("Canvas 기준 해상도에서의 초당 이동 픽셀 수입니다.")]
-    [SerializeField, Min(1f)] private float padCursorSpeedPixelsPerSecond = DefaultPadCursorSpeedPixelsPerSecond;
-    [SerializeField] private bool forcePadControlModeForDebug = true;
+    [Tooltip("옵션의 가상 커서 감도(0~100) x 5.6으로 런타임에 갱신됩니다.")]
+    [SerializeField, Min(0f)] private float padCursorSpeedPixelsPerSecond = DefaultPadCursorSpeedPixelsPerSecond;
+    [Tooltip("TentUI의 왼쪽/오른쪽 스틱 입력에만 적용하는 로컬 데드존입니다.")]
+    [SerializeField, Range(0f, 1f)] private float padCursorStickDeadzone = 0.2f;
 
     [Header("Pad Cursor Hover Correction")]
     [SerializeField] private Vector2 padCursorHoverCorrectionSize = new Vector2(64f, 64f);
@@ -283,6 +291,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         RefreshLocalizedNodeTexts();
         RefreshKeyGuideTexts();
         RefreshAbilityHUDImmediately();
+        BindPadCursorSensitivity();
         Close();
     }
 
@@ -305,14 +314,51 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private void SetInputManager(InputManager _inputManager)
     {
         if (inputManager != null && inputManager.inputReader != null)
+        {
             inputManager.inputReader.KeyBindingsChangedEvent -= CacheKeyboardMoveControls;
+            inputManager.inputReader.InputDeviceChangedEvent -= OnInputDeviceChanged;
+        }
 
         inputManager = _inputManager;
 
         if (inputManager != null && inputManager.inputReader != null)
+        {
             inputManager.inputReader.KeyBindingsChangedEvent += CacheKeyboardMoveControls;
+            inputManager.inputReader.InputDeviceChangedEvent += OnInputDeviceChanged;
+        }
 
         CacheKeyboardMoveControls();
+    }
+
+    private void BindPadCursorSensitivity()
+    {
+        SettingsManager _settings = SettingsManager.Instance;
+        _settings.OnInputSettingsAppliedEvent -= ApplyPadCursorSensitivity;
+        _settings.OnInputSettingsAppliedEvent += ApplyPadCursorSensitivity;
+        ApplyPadCursorSensitivity(_settings.Current);
+    }
+
+    private void ApplyPadCursorSensitivity(SettingsData _data)
+    {
+        float _rawSensitivity = _data.virtualCursorSensitivity;
+        if (float.IsNaN(_rawSensitivity))
+            _rawSensitivity = SettingsData.SLIDER_CENTER_DEFAULT;
+
+        float _sensitivity = Mathf.Clamp(
+            _rawSensitivity,
+            SettingsData.SLIDER_MIN,
+            SettingsData.SLIDER_MAX);
+        padCursorSpeedPixelsPerSecond = _sensitivity * PadCursorSensitivitySpeedMultiplier;
+    }
+
+    private void OnInputDeviceChanged(EInputDeviceType _device)
+    {
+        if (false == hasOpenedView || null == abilityBackground || false == abilityBackground.gameObject.activeSelf)
+            return;
+
+        SetControlMode(EInputDeviceType.Gamepad == _device
+            ? TentAbilityControlMode.Pad
+            : TentAbilityControlMode.MouseKeyboard);
     }
 
     private void CacheKeyboardMoveControls()
@@ -361,7 +407,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private void RefreshKeyGuideTexts()
     {
         SetLocalizedText(keyGuideUpgradeText, LocKeys.AbilityUI.keyGuideAbilityUpgrade, "특성 업그레이드");
-        SetLocalizedText(keyGuideMoveText, LocKeys.AbilityUI.keyGuideDragToMove, "드래그로 이동");
+        SetLocalizedText(
+            keyGuideMoveText,
+            IsMouseKeyboardControlMode ? LocKeys.AbilityUI.keyGuideDragToMove : LocKeys.AbilityUI.keyGuideMove,
+            IsMouseKeyboardControlMode ? "드래그로 이동" : "이동");
         SetLocalizedText(keyGuideMagnificationText, LocKeys.AbilityUI.keyGuideZoom, "확대 / 축소");
     }
 
@@ -507,6 +556,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         nodeHoverSoundEnableUnscaledTime = Time.unscaledTime + Mathf.Max(0f, nodeHoverSoundSuppressDurationAfterOpen);
         hasOpenedView = true;
+        wasInputAllowedLastTick = false;
         isCloseFading = false;
         isCircleRevealPlaying = false;
         toolTipPlacementMode = ToolTipPlacementMode.Right;
@@ -522,9 +572,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
         RefreshAbilityHUDImmediately();
         RestoreViewOnOpen();
         // 저장된 뷰를 복원한 뒤 화면 중앙을 그리드 좌표로 환산해야 실제 중앙에서 시작한다.
-        SetControlMode(forcePadControlModeForDebug
+        SetControlMode(null != inputManager && true == inputManager.IsGamepadMode
             ? TentAbilityControlMode.Pad
-            : TentAbilityControlMode.MouseKeyboard);
+            : TentAbilityControlMode.MouseKeyboard,
+            true);
         RefreshNodeViewportCullingIfNeeded();
         BeginCircleReveal();
         RefreshOpenTransitionInput();
@@ -1113,6 +1164,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (hasOpenedView && abilityBackground != null && abilityBackground.gameObject.activeSelf)
             SaveCurrentView();
 
+        hasOpenedView = false;
+
         CancelViewDrag();
         hasZoomFocus = false;
         isOpeningZoomReveal = false;
@@ -1127,6 +1180,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
         currentCursorNode = null;
         ClearPadCursorHover();
         padViewFollowVelocity = Vector2.zero;
+        ResetPadZoomInput();
+        padInputSuppressedFrame = -1;
+        wasInputAllowedLastTick = false;
+        ReleasePadInputFocus();
 
         if (padCursorRect != null)
             padCursorRect.gameObject.SetActive(false);
@@ -1684,7 +1741,16 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (abilityBackground == null || abilityBackground.gameObject.activeSelf == false || moveTarget == null)
             return;
 
-        bool padViewChanged = UpdatePadCursor();
+        // 패드 모드에서는 이 TentUI가 EventSystem 선택권을 가진 동안에만 직접 입력을 처리한다.
+        // Warning 같은 상위 팝업이 자신의 버튼을 선택하면 커서/A/트리거 입력이 뒤로 새지 않는다.
+        bool _inputAllowed = IsMouseKeyboardControlMode || TryAcquirePadInputFocus(false);
+
+        // 위에 떠 있던 모달이 A/×로 닫힌 프레임에 같은 입력이 뒤의 특성 선택으로 새지 않게 한다.
+        if (_inputAllowed && false == wasInputAllowedLastTick)
+            padInputSuppressedFrame = Time.frameCount;
+        wasInputAllowedLastTick = _inputAllowed;
+
+        bool padViewChanged = UpdatePadCursor(_inputAllowed);
 
         if (isCloseFading)
         {
@@ -1715,18 +1781,40 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         // 드래그 이동
         bool viewChanged = boundsAdjusted || padViewChanged;
-        if (IsMouseKeyboardControlMode)
+        if (_inputAllowed && IsMouseKeyboardControlMode)
             viewChanged |= UpdateKeyboardViewMovement();
 
 #if UNITY_EDITOR
         UpdateAutoLevelUps();
 #endif
         // 줌 기능
-        bool zoomChanged = IsMouseKeyboardControlMode && HandleZoom();
+        bool zoomChanged = false;
+        if (_inputAllowed)
+        {
+            zoomChanged = IsMouseKeyboardControlMode
+                ? HandleZoom()
+                : HandlePadZoom();
+
+            if (false == IsMouseKeyboardControlMode)
+                HandlePadNodeSelection();
+        }
+        else
+        {
+            ResetPadZoomInput();
+        }
+
         if (zoomChanged)
             StopViewShake();
         // 줌 애니메이션 기능
-        viewChanged |= UpdateZoomAnimation();
+        bool zoomAnimationChanged = UpdateZoomAnimation();
+        viewChanged |= zoomAnimationChanged;
+
+        if (zoomAnimationChanged && false == IsMouseKeyboardControlMode)
+        {
+            UpdatePadCursorScreenPositionFromGrid();
+            RefreshPadCursorHover();
+            UpdatePadSelectionCursorMagnet();
+        }
         // Line 스냅 및 재구성
         if (viewChanged)
             MarkViewLayoutDirty();
@@ -1739,10 +1827,18 @@ public class UI_TentAbilityComponent : MonoBehaviour
         UpdateToolTipPositionIfNeeded();
     }
 
-    private void SetControlMode(TentAbilityControlMode _mode)
+    private void SetControlMode(TentAbilityControlMode _mode, bool _forceRefresh = false)
     {
+        if (false == _forceRefresh && currentControlMode == _mode)
+            return;
+
+        if (TentAbilityControlMode.Pad == _mode)
+            currentCursorNode?.SuspendPointerHoverForPadMode();
+
         currentControlMode = _mode;
         EnsurePadCursorInstance();
+        ResetPadZoomInput();
+        RefreshKeyGuideTexts();
 
         bool _showPadCursor = TentAbilityControlMode.Pad == currentControlMode && padCursorRect != null;
         if (padCursorRect != null)
@@ -1752,6 +1848,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
             {
                 padCursorRect.SetAsLastSibling();
                 CenterPadCursor();
+                padInputSuppressedFrame = Time.frameCount;
+                TryAcquirePadInputFocus(_forceRefresh);
             }
         }
 
@@ -1759,8 +1857,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
             ActivatePadSelectionCursorIdle();
         else
         {
-            ClearPadCursorHover();
+            ReleasePadInputFocus();
             RestoreMouseKeyboardSelectionCursor();
+            ClearPadCursorHover();
+            RefreshMouseKeyboardNodeHover();
         }
     }
 
@@ -1781,7 +1881,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
     }
 
-    private bool UpdatePadCursor()
+    private bool UpdatePadCursor(bool _inputAllowed)
     {
         if (TentAbilityControlMode.Pad != currentControlMode || padCursorRect == null || false == padCursorRect.gameObject.activeSelf)
         {
@@ -1789,9 +1889,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return false;
         }
 
-        Vector2 _direction = ReadDebugPadDirection();
-        if (_direction.sqrMagnitude > 1f)
-            _direction.Normalize();
+        Vector2 _direction = _inputAllowed && Time.frameCount != padInputSuppressedFrame
+            ? ReadPadCursorDirection()
+            : Vector2.zero;
 
         if (_direction.sqrMagnitude > 0.0001f)
         {
@@ -1807,7 +1907,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
         // 따라서 화면이 따라오면 노드와 마찬가지로 커서의 화면 위치도 함께 중앙 쪽으로 이동한다.
         UpdatePadCursorScreenPositionFromGrid();
 
-        bool _viewChanged = UpdatePadViewFollow();
+        bool _viewChanged = _inputAllowed && UpdatePadViewFollow();
+        if (false == _inputAllowed)
+            padViewFollowVelocity = Vector2.zero;
+
         if (_viewChanged)
             UpdatePadCursorScreenPositionFromGrid();
 
@@ -1866,22 +1969,56 @@ public class UI_TentAbilityComponent : MonoBehaviour
         ApplyPadCursorPosition();
     }
 
-    private static Vector2 ReadDebugPadDirection()
+    private Vector2 ReadPadCursorDirection()
     {
-        Keyboard _keyboard = Keyboard.current;
-        if (_keyboard == null)
+        Gamepad _gamepad = Gamepad.current;
+        if (_gamepad == null)
             return Vector2.zero;
 
-        Vector2 _direction = Vector2.zero;
-        if (_keyboard.numpad1Key.isPressed) _direction += new Vector2(-1f, -1f);
-        if (_keyboard.numpad2Key.isPressed) _direction += Vector2.down;
-        if (_keyboard.numpad3Key.isPressed) _direction += new Vector2(1f, -1f);
-        if (_keyboard.numpad4Key.isPressed) _direction += Vector2.left;
-        if (_keyboard.numpad6Key.isPressed) _direction += Vector2.right;
-        if (_keyboard.numpad7Key.isPressed) _direction += new Vector2(-1f, 1f);
-        if (_keyboard.numpad8Key.isPressed) _direction += Vector2.up;
-        if (_keyboard.numpad9Key.isPressed) _direction += new Vector2(1f, 1f);
-        return _direction;
+        Vector2 _leftStick = _gamepad.leftStick.ReadValue();
+        Vector2 _rightStick = _gamepad.rightStick.ReadValue();
+        Vector2 _strongerStick = _leftStick.sqrMagnitude >= _rightStick.sqrMagnitude
+            ? _leftStick
+            : _rightStick;
+
+        float _deadzone = Mathf.Clamp01(padCursorStickDeadzone);
+        float _magnitude = _strongerStick.magnitude;
+        if (_magnitude <= _deadzone)
+            return Vector2.zero;
+
+        // 스틱 기울기 세기는 버리고 방향만 사용한다. 대각선도 같은 초당 속도를 유지한다.
+        return _strongerStick / _magnitude;
+    }
+
+    private bool TryAcquirePadInputFocus(bool _force)
+    {
+        EventSystem _eventSystem = EventSystem.current;
+        if (null == _eventSystem)
+            return true;
+
+        GameObject _selectedObject = _eventSystem.currentSelectedGameObject;
+        if (_selectedObject == gameObject)
+            return true;
+
+        bool _isFocusAvailable = null == _selectedObject || false == _selectedObject.activeInHierarchy;
+        if (false == _force && false == _isFocusAvailable)
+            return false;
+
+        _eventSystem.SetSelectedGameObject(gameObject);
+        return _eventSystem.currentSelectedGameObject == gameObject;
+    }
+
+    private void ReleasePadInputFocus()
+    {
+        EventSystem _eventSystem = EventSystem.current;
+        if (null != _eventSystem && _eventSystem.currentSelectedGameObject == gameObject)
+            _eventSystem.SetSelectedGameObject(null);
+    }
+
+    private void RefreshMouseKeyboardNodeHover()
+    {
+        for (int i = 0; i < spawnedNodes.Count; i++)
+            spawnedNodes[i]?.RefreshHoverAfterCapture();
     }
 
     private Rect GetPadCursorScreenBounds()
@@ -2447,11 +2584,86 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (Mathf.Approximately(scrollY, 0f))
             return false;
 
-        zoomFocusScreenPosition = mouse.position.ReadValue();
+        return ApplyZoomStep(Mathf.Sign(scrollY), mouse.position.ReadValue());
+    }
+
+    private bool HandlePadZoom()
+    {
+        if (Time.frameCount == padInputSuppressedFrame || false == IsViewInputEnabled())
+        {
+            ResetPadZoomInput();
+            return false;
+        }
+
+        Gamepad _gamepad = Gamepad.current;
+        if (_gamepad == null)
+        {
+            ResetPadZoomInput();
+            return false;
+        }
+
+        bool _zoomOutHeld = _gamepad.leftTrigger.isPressed;
+        bool _zoomInHeld = _gamepad.rightTrigger.isPressed;
+        int _direction = (_zoomInHeld ? 1 : 0) - (_zoomOutHeld ? 1 : 0);
+
+        // 두 트리거를 동시에 누른 상태는 서로 상쇄한다. 한쪽을 놓으면 그 방향으로 새 입력을 시작한다.
+        if (0 == _direction)
+        {
+            ResetPadZoomInput();
+            return false;
+        }
+
+        bool _pressedThisFrame = 0 < _direction
+            ? _gamepad.rightTrigger.wasPressedThisFrame
+            : _gamepad.leftTrigger.wasPressedThisFrame;
+
+        if (_pressedThisFrame || padZoomHoldDirection != _direction)
+        {
+            padZoomHoldDirection = _direction;
+            padZoomRepeatElapsed = 0f;
+            return ApplyZoomStep(_direction, padCursorScreenPosition);
+        }
+
+        padZoomRepeatElapsed += Time.unscaledDeltaTime;
+        if (padZoomRepeatElapsed < PadZoomRepeatInterval)
+            return false;
+
+        padZoomRepeatElapsed -= PadZoomRepeatInterval;
+        return ApplyZoomStep(_direction, padCursorScreenPosition);
+    }
+
+    private bool ApplyZoomStep(float _direction, Vector2 _focusScreenPosition)
+    {
+        float _previousTargetZoom = targetZoom;
+        zoomFocusScreenPosition = _focusScreenPosition;
         hasZoomFocus = true;
-        targetZoom += Mathf.Sign(scrollY) * ZoomStep;
-        targetZoom = Mathf.Clamp(targetZoom, GetEffectiveMinZoom(), MaxZoom);
-        return true;
+        targetZoom = Mathf.Clamp(
+            targetZoom + Mathf.Sign(_direction) * ZoomStep,
+            GetEffectiveMinZoom(),
+            MaxZoom);
+        return false == Mathf.Approximately(_previousTargetZoom, targetZoom);
+    }
+
+    private void ResetPadZoomInput()
+    {
+        padZoomHoldDirection = 0;
+        padZoomRepeatElapsed = 0f;
+    }
+
+    private void HandlePadNodeSelection()
+    {
+        if (Time.frameCount == padInputSuppressedFrame || false == IsViewInputEnabled())
+            return;
+
+        Gamepad _gamepad = Gamepad.current;
+        if (_gamepad == null || false == _gamepad.buttonSouth.wasPressedThisFrame)
+            return;
+
+        AbilityNode _targetNode = currentPadCursorNode;
+        if (false == IsPadHoverNodeAvailable(_targetNode))
+            return;
+
+        _targetNode.SubmitPadSelection();
     }
 
     // 목표 줌 값을 따라가며 현재 줌을 부드럽게 갱신한다.
@@ -3045,6 +3257,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     private void OnDestroy()
     {
+        ReleasePadInputFocus();
+
+        if (SettingsManager.HasInstance)
+            SettingsManager.Instance.OnInputSettingsAppliedEvent -= ApplyPadCursorSensitivity;
+
         SetInputManager(null);
         SetLocalizationManager(null);
     }
