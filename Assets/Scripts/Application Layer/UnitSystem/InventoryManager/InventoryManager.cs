@@ -813,6 +813,9 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         logItem.Launch(_startPos, endPos, height, randomRotation);
 
         Sound.PlayUI(SoundID.OutItem);
+
+        // 원목이 하나씩 순차적으로 튀어나가므로, 흘릴 때마다 1~2틱짜리 진동이 톡톡 이어진다.
+        Rumble.Play(EHapticEvent.ItemDropped);
     }
 
     // 공중에서 페이드아웃되어 사라지는 연출(DropAllItem)이 끝난 LogItem을 즉시 풀로 반환한다.
