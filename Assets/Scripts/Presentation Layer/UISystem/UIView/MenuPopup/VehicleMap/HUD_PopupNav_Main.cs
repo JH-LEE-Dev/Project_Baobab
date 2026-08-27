@@ -879,19 +879,16 @@ OnMainPopupAppearCompleteForAnimation();
 }
 
 private void OnAppearComplete()
-
 {
+    isInputBlocked = false;
 
-isInputBlocked = false;
-
-if (null != inputManager && true == inputManager.IsGamepadMode)
-
-{
-
-SetupInitialGamepadFocus();
-
-}
-
+    if (null != inputManager && true == inputManager.IsGamepadMode)
+    {
+        if (ENavFocusArea.None == currentFocusArea)
+        {
+            SetupInitialGamepadFocus();
+        }
+    }
 }
 
 private void PlayPanelOpenSound()

@@ -73,6 +73,10 @@ public class UI_OptionButton : Selectable,
     private Transform scaleTarget;
     private Image targetImage;
 
+    // GC Alloc 방지용 델리게이트 캐싱
+    private DG.Tweening.Core.DOGetter<Color> getShadowColor;
+    private DG.Tweening.Core.DOSetter<Color> setShadowColor;
+
     protected override void Awake()
     {
         base.Awake();
@@ -82,6 +86,9 @@ public class UI_OptionButton : Selectable,
         originalScale = scaleTarget.localScale;
         
         targetImage = targetGraphic as Image;
+
+        getShadowColor = GetShadowColor;
+        setShadowColor = SetShadowColor;
     }
 
     protected override void OnEnable()
@@ -434,7 +441,10 @@ public class UI_OptionButton : Selectable,
             else if (EVisualMode.Sprite == visualMode && null != targetImage && null != _sprite) targetImage.sprite = _sprite;
             
             if (null != buttonText) buttonText.DOColor(_textColor, tweenDuration).SetUpdate(true);
-            if (null != targetEffect) DOTween.To(() => targetEffect.shadowColor, x => targetEffect.shadowColor = x, _effectColor, tweenDuration).SetUpdate(true).SetTarget(targetEffect);
+            if (null != targetEffect && null != getShadowColor && null != setShadowColor)
+            {
+                DOTween.To(getShadowColor, setShadowColor, _effectColor, tweenDuration).SetUpdate(true).SetTarget(targetEffect);
+            }
         }
         else
         {
@@ -447,10 +457,25 @@ public class UI_OptionButton : Selectable,
         }
     }
 
+    private Color GetShadowColor()
+    {
+        return null != targetEffect ? targetEffect.shadowColor : Color.black;
+    }
+
+    private void SetShadowColor(Color _color)
+    {
+        if (null != targetEffect)
+        {
+            targetEffect.shadowColor = _color;
+        }
+    }
+
     protected override void OnDestroy()
     {
         base.OnDestroy();
         KillTween();
         onClickAction = null;
+        getShadowColor = null;
+        setShadowColor = null;
     }
 }
