@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DG.Tweening;
+using DG.Tweening.Core;
 using PresentationLayer.DOTweenAnimationSystem;
 using PresentationLayer.UISystem;
 using TMPro;
@@ -47,6 +48,86 @@ public class UIView_Result : UIView
         {
             this.key = key;
             this.count = count;
+        }
+    }
+
+    private sealed class ResultLogRowProductionState
+    {
+        private readonly UIView_Result owner;
+        private UI_ResultLogRow row;
+        private LogVariantKey key;
+        private int targetCount;
+        private int currentCount;
+        private RectTransform rowRect;
+        private CanvasGroup rowCanvasGroup;
+        private Vector2 targetPosition;
+
+        public TweenCallback BeginCallback { get; }
+        public DOGetter<int> CountGetter { get; }
+        public DOSetter<int> CountSetter { get; }
+        public TweenCallback CompleteCallback { get; }
+
+        public ResultLogRowProductionState(UIView_Result _owner)
+        {
+            owner = _owner;
+            BeginCallback = Begin;
+            CountGetter = GetCurrentCount;
+            CountSetter = SetCurrentCount;
+            CompleteCallback = Complete;
+        }
+
+        public void Configure(
+            UI_ResultLogRow _row,
+            LogVariantKey _key,
+            int _targetCount,
+            RectTransform _rowRect,
+            CanvasGroup _rowCanvasGroup,
+            Vector2 _targetPosition)
+        {
+            row = _row;
+            key = _key;
+            targetCount = _targetCount;
+            currentCount = 1;
+            rowRect = _rowRect;
+            rowCanvasGroup = _rowCanvasGroup;
+            targetPosition = _targetPosition;
+        }
+
+        private void Begin()
+        {
+            if (null != rowRect)
+                rowRect.anchoredPosition = targetPosition + new Vector2(0f, owner.resultOpenYOffset);
+
+            if (null != rowCanvasGroup)
+            {
+                rowCanvasGroup.alpha = 0f;
+                owner.SetCanvasGroupRaycast(rowCanvasGroup, false);
+            }
+
+            row.SetDataVisible(key.treeType, key.logState, 1);
+            owner.SetLogDisplayProgress(key, targetCount <= 0 ? 1f : 1f / targetCount);
+        }
+
+        private int GetCurrentCount()
+        {
+            return currentCount;
+        }
+
+        private void SetCurrentCount(int _value)
+        {
+            if (_value == currentCount)
+                return;
+
+            currentCount = _value;
+            row.SetDataVisible(key.treeType, key.logState, currentCount);
+            owner.SetLogDisplayProgress(key, targetCount <= 0 ? 1f : (float)currentCount / targetCount);
+        }
+
+        private void Complete()
+        {
+            row.SetDataVisible(key.treeType, key.logState, targetCount);
+            owner.SetLogDisplayProgress(key, 1f);
+            owner.SetCanvasGroupRaycast(rowCanvasGroup, false);
         }
     }
 
@@ -220,6 +301,8 @@ public class UIView_Result : UIView
     private readonly Dictionary<LogVariantKey, float> logDisplayProgress = new Dictionary<LogVariantKey, float>();
     private readonly List<UI_InventorySlot> containerSlots = new List<UI_InventorySlot>();
     private readonly List<Vector2> resultLogRowBasePositions = new List<Vector2>(2);
+    private readonly List<ResultLogRowProductionState> resultLogRowProductionStates = new List<ResultLogRowProductionState>(2);
+    private int resultLogRowProductionStateCursor;
     private Sequence resultOpenSequence;
     private Sequence resultCloseSequence;
     private CanvasGroup sectionTitleCanvasGroup;
@@ -1145,6 +1228,7 @@ public class UIView_Result : UIView
     {
         Sequence sequence = DOTween.Sequence();
         List<ResultLogCount> acquiredLogs = GetAcquiredLogCounts();
+        resultLogRowProductionStateCursor = 0;
 
         EnsureResultLogRowCount(acquiredLogs.Count);
 
@@ -1176,21 +1260,10 @@ public class UIView_Result : UIView
         Sequence sequence = DOTween.Sequence();
         CanvasGroup rowCanvasGroup = GetOrAddCanvasGroup(row.transform as RectTransform);
         RectTransform rowRect = row.transform as RectTransform;
+        ResultLogRowProductionState productionState = GetResultLogRowProductionState();
+        productionState.Configure(row, key, targetCount, rowRect, rowCanvasGroup, targetPosition);
 
-        sequence.AppendCallback(() =>
-        {
-            if (rowRect != null)
-                rowRect.anchoredPosition = targetPosition + new Vector2(0f, resultOpenYOffset);
-
-            if (rowCanvasGroup != null)
-            {
-                rowCanvasGroup.alpha = 0f;
-                SetCanvasGroupRaycast(rowCanvasGroup, false);
-            }
-
-            row.SetDataVisible(key.treeType, key.logState, 1);
-            SetLogDisplayProgress(key, targetCount <= 0 ? 1f : 1f / targetCount);
-        });
+        sequence.AppendCallback(productionState.BeginCallback);
 
         if (rowRect != null)
         {
@@ -1201,30 +1274,26 @@ public class UIView_Result : UIView
         if (rowCanvasGroup != null)
             sequence.Join(rowCanvasGroup.DOFade(1f, slotBackgroundOpenDuration));
 
-        int currentCount = 1;
         sequence.Join(DOTween.To(
-                () => currentCount,
-                value =>
-                {
-                    if (value == currentCount)
-                        return;
-
-                    currentCount = value;
-                    row.SetDataVisible(key.treeType, key.logState, currentCount);
-                    SetLogDisplayProgress(key, targetCount <= 0 ? 1f : (float)currentCount / targetCount);
-                },
+                productionState.CountGetter,
+                productionState.CountSetter,
                 targetCount,
                 resultLogRowCountUpDuration)
             .SetEase(Ease.OutQuad));
 
-        sequence.OnComplete(() =>
-        {
-            row.SetDataVisible(key.treeType, key.logState, targetCount);
-            SetLogDisplayProgress(key, 1f);
-            SetCanvasGroupRaycast(rowCanvasGroup, false);
-        });
+        sequence.OnComplete(productionState.CompleteCallback);
 
         return sequence;
+    }
+
+    private ResultLogRowProductionState GetResultLogRowProductionState()
+    {
+        if (resultLogRowProductionStateCursor >= resultLogRowProductionStates.Count)
+            resultLogRowProductionStates.Add(new ResultLogRowProductionState(this));
+
+        ResultLogRowProductionState _state = resultLogRowProductionStates[resultLogRowProductionStateCursor];
+        resultLogRowProductionStateCursor++;
+        return _state;
     }
 
     private void KillResultProductionSequences()

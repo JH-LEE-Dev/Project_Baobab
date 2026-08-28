@@ -84,6 +84,8 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private int importantNodeLoopEffectSecondFrameIndex;
     private float importantNodeLoopEffectElapsed;
     private Tween maxLevelUpEffectTween;
+    private float maxLevelUpEffectActiveFrameRate;
+    private int maxLevelUpEffectLastFrameIndex;
 
     public SkillType SkillType => skillType;
     public string DisplayName => displayName;
@@ -534,27 +536,31 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         maxLevelUpEffectImage.sprite = maxLevelUpEffectFrames[0];
         maxLevelUpEffectImage.gameObject.SetActive(true);
 
-        float frameRate = Mathf.Max(1f, maxLevelUpEffectFrameRate);
-        float duration = maxLevelUpEffectFrames.Length / frameRate;
-        int currentFrameIndex = 0;
-        maxLevelUpEffectTween = DOVirtual.Float(0f, duration, duration, _elapsedTime =>
-        {
-            int frameIndex = Mathf.Min(
-                Mathf.FloorToInt(_elapsedTime * frameRate),
-                maxLevelUpEffectFrames.Length - 1);
-            if (frameIndex == currentFrameIndex)
-                return;
-
-            currentFrameIndex = frameIndex;
-            maxLevelUpEffectImage.sprite = maxLevelUpEffectFrames[frameIndex];
-        })
+        maxLevelUpEffectActiveFrameRate = Mathf.Max(1f, maxLevelUpEffectFrameRate);
+        float duration = maxLevelUpEffectFrames.Length / maxLevelUpEffectActiveFrameRate;
+        maxLevelUpEffectLastFrameIndex = 0;
+        maxLevelUpEffectTween = DOVirtual.Float(0f, duration, duration, UpdateMaxLevelUpEffectFrame)
         .SetEase(Ease.Linear)
         .SetUpdate(true)
-        .OnComplete(() =>
-        {
-            maxLevelUpEffectTween = null;
-            HideMaxLevelUpEffect();
-        });
+        .OnComplete(CompleteMaxLevelUpEffect);
+    }
+
+    private void UpdateMaxLevelUpEffectFrame(float _elapsedTime)
+    {
+        int _frameIndex = Mathf.Min(
+            Mathf.FloorToInt(_elapsedTime * maxLevelUpEffectActiveFrameRate),
+            maxLevelUpEffectFrames.Length - 1);
+        if (_frameIndex == maxLevelUpEffectLastFrameIndex)
+            return;
+
+        maxLevelUpEffectLastFrameIndex = _frameIndex;
+        maxLevelUpEffectImage.sprite = maxLevelUpEffectFrames[_frameIndex];
+    }
+
+    private void CompleteMaxLevelUpEffect()
+    {
+        maxLevelUpEffectTween = null;
+        HideMaxLevelUpEffect();
     }
 
     private void StopMaxLevelUpEffect()

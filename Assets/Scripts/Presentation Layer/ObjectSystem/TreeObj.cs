@@ -445,7 +445,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         float maxHealth = health.GetMaxHealth();
         float damageRatio = maxHealth > 0f ? Mathf.Clamp01(1f - health.GetCurrentHealth() / maxHealth) : 0f;
         float treeHitPitch = Mathf.Lerp(1.0f, 1.3f, damageRatio);
-        float pitchHitVolume = Mathf.Lerp(1.0f, 1.4f, damageRatio);
+        float pitchHitVolume = Mathf.Lerp(1.0f, 1.6f, damageRatio);
 
         Sound.Play(SoundID.TreeHit, cachedTransform.position, 1f, true, treeHitPitch);
 
@@ -472,7 +472,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         }
         else
         {
-            float pitchHitPitch = Mathf.Lerp(1.0f, 1.6f, damageRatio);
+            float pitchHitPitch = Mathf.Lerp(0.7f, 2.0f, damageRatio);
             Sound.Play(SoundID.PitchHit, cachedTransform.position, pitchHitVolume, true, pitchHitPitch);
         }
     }
