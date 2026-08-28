@@ -238,6 +238,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField, Min(0.01f)] private float padSelectionCursorMagnetDuration = 0.35f;
 
     [Header("Pad Cursor Safe Area")]
+    [Tooltip("오른쪽 스틱 최대 입력 시 PadCursor가 도달할 수 있는 화면상 영역의 전체 크기입니다.")]
     [SerializeField] private Vector2 padCursorSafeAreaSize = new Vector2(450f, 250f);
     [SerializeField, Min(0.1f)] private float padViewFollowMaxGridUnitsPerSecond = 9f;
     [SerializeField, Min(0.01f)] private float padViewFollowSmoothTime = 0.16f;
@@ -2004,18 +2005,30 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return Vector2.zero;
 
         Vector2 _leftStick = _gamepad.leftStick.ReadValue();
-        Vector2 _rightStick = _gamepad.rightStick.ReadValue();
-        Vector2 _strongerStick = _leftStick.sqrMagnitude >= _rightStick.sqrMagnitude
-            ? _leftStick
-            : _rightStick;
-
         float _deadzone = Mathf.Clamp01(padCursorStickDeadzone);
-        float _magnitude = _strongerStick.magnitude;
+        float _magnitude = _leftStick.magnitude;
         if (_magnitude <= _deadzone)
             return Vector2.zero;
 
-        // 스틱 기울기 세기는 버리고 방향만 사용한다. 대각선도 같은 초당 속도를 유지한다.
-        return _strongerStick / _magnitude;
+        // 왼쪽 스틱은 커서 이동 전용이다. 기울기 세기는 버려 대각선도 같은 초당 속도를 유지한다.
+        return _leftStick / _magnitude;
+    }
+
+    private Vector2 ReadPadCameraLookAheadInput()
+    {
+        Gamepad _gamepad = Gamepad.current;
+        if (_gamepad == null)
+            return Vector2.zero;
+
+        Vector2 _rightStick = _gamepad.rightStick.ReadValue();
+        float _deadzone = Mathf.Clamp(padCursorStickDeadzone, 0f, 0.99f);
+        float _magnitude = _rightStick.magnitude;
+        if (_magnitude <= _deadzone)
+            return Vector2.zero;
+
+        // 오른쪽 스틱은 카메라에 가하는 힘이다. 데드존 바깥의 입력 세기를 0~1로 다시 매핑한다.
+        float _strength = Mathf.InverseLerp(_deadzone, 1f, Mathf.Min(_magnitude, 1f));
+        return (_rightStick / _magnitude) * _strength;
     }
 
     private bool TryAcquirePadInputFocus(bool _force)
@@ -2282,42 +2295,40 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return false;
         }
 
-        RectTransform _cursorParent = padCursorRect.parent as RectTransform;
-        if (_cursorParent == null)
-            return false;
-
         Vector2 _cursorLocal = padCursorRect.anchoredPosition;
         Vector2 _safeHalfSize = new Vector2(
             Mathf.Max(1f, padCursorSafeAreaSize.x * 0.5f),
             Mathf.Max(1f, padCursorSafeAreaSize.y * 0.5f));
 
-        Vector2 _clampedToSafeArea = new Vector2(
-            Mathf.Clamp(_cursorLocal.x, -_safeHalfSize.x, _safeHalfSize.x),
-            Mathf.Clamp(_cursorLocal.y, -_safeHalfSize.y, _safeHalfSize.y));
-        Vector2 _overflow = _cursorLocal - _clampedToSafeArea;
-
-        Vector2 _availableOutsideSafeArea = new Vector2(
-            Mathf.Max(1f, _cursorParent.rect.width * 0.5f - _safeHalfSize.x),
-            Mathf.Max(1f, _cursorParent.rect.height * 0.5f - _safeHalfSize.y));
-        Vector2 _normalizedOverflow = new Vector2(
-            Mathf.Clamp(_overflow.x / _availableOutsideSafeArea.x, -1f, 1f),
-            Mathf.Clamp(_overflow.y / _availableOutsideSafeArea.y, -1f, 1f));
-
+        // 오른쪽으로 미리 보려면 커서는 화면 왼쪽에 위치해야 한다.
+        // 최대 입력은 Safe Area 가장자리, 입력이 없으면 화면 중앙을 목표로 삼는다.
+        Vector2 _lookAheadInput = Time.frameCount != padInputSuppressedFrame
+            ? ReadPadCameraLookAheadInput()
+            : Vector2.zero;
+        Vector2 _targetCursorLocal = -Vector2.Scale(_lookAheadInput, _safeHalfSize);
         float _maxSpeed = gridCellSize * padViewFollowMaxGridUnitsPerSecond * currentZoom;
-        Vector2 _targetVelocity = -_normalizedOverflow * _maxSpeed;
-        float _followRate = 1f / Mathf.Max(0.01f, padViewFollowSmoothTime);
-        float _blend = 1f - Mathf.Exp(-_followRate * Time.unscaledDeltaTime);
-        padViewFollowVelocity = Vector2.Lerp(padViewFollowVelocity, _targetVelocity, _blend);
+        Vector2 _nextCursorLocal = Vector2.SmoothDamp(
+            _cursorLocal,
+            _targetCursorLocal,
+            ref padViewFollowVelocity,
+            Mathf.Max(0.01f, padViewFollowSmoothTime),
+            _maxSpeed,
+            Time.unscaledDeltaTime);
+        Vector2 _viewDelta = _nextCursorLocal - _cursorLocal;
 
-        if (padViewFollowVelocity.sqrMagnitude <= 0.0001f)
+        if (_viewDelta.sqrMagnitude <= 0.0001f)
         {
-            padViewFollowVelocity = Vector2.zero;
+            if ((_cursorLocal - _targetCursorLocal).sqrMagnitude <= 0.0001f)
+                padViewFollowVelocity = Vector2.zero;
             return false;
         }
 
-        bool _moved = ApplyViewLogicalDelta(padViewFollowVelocity * Time.unscaledDeltaTime);
+        bool _moved = ApplyViewLogicalDelta(_viewDelta);
         if (_moved)
             StopViewShake();
+        else
+            // 화면 경계에서 쌓인 속도가 반대 방향 전환을 늦추지 않게 한다.
+            padViewFollowVelocity = Vector2.zero;
 
         return _moved;
     }
