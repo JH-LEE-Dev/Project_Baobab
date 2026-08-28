@@ -85,10 +85,6 @@ public class InputManager : MonoBehaviour
 
         // 슬라이더는 0~100, 진동 서비스는 0~1 배율을 쓴다.
         haptics.SetStrengthScale(_data.hapticStrength / SettingsData.SLIDER_MAX);
-
-        // 커서 감도도 같은 0~1로 넘긴다. 다만 이쪽은 0.5가 기본(1배)이라 의미가 다르다.
-        // 곡선 변환은 커서 쪽이 담당한다. (SetSensitivityScale 주석 참고)
-        VirtualCursor?.SetSensitivityScale(_data.virtualCursorSensitivity / SettingsData.SLIDER_MAX);
     }
 
     /// <summary>
@@ -139,10 +135,6 @@ public class InputManager : MonoBehaviour
         // 일시정지(timeScale = 0) 중에도 옵션 창에서 패드를 만지면 표기가 바뀌어야 하므로 unscaled를 쓴다.
         // 진동도 같은 이유로 unscaled여야 한다. (일시정지 중에 진동이 영원히 안 끝나면 안 된다)
         float _unscaledDeltaTime = Time.unscaledDeltaTime;
-
-        // 커서가 움직이기 전에 이동 가능 영역부터 최신으로 맞춘다. 순서가 뒤바뀌면
-        // 해상도가 바뀐 프레임에 커서가 한 번 옛 영역으로 잘린다.
-        UpdateVirtualCursorBounds();
 
         inputReader?.Tick(_unscaledDeltaTime);
         haptics.Tick(_unscaledDeltaTime);
@@ -284,64 +276,6 @@ public class InputManager : MonoBehaviour
     public bool IsCursorHoveredOnUI()
     {
         return bCursorHoveredOnUI || EInputMode.UI == CurrentInputMode;
-    }
-
-    // 패드 가상 커서
-
-    /// <summary>
-    /// 패드용 가상 커서입니다. 마우스가 없는 상태에서 화면의 임의 지점을 가리켜야 할 때 씁니다.
-    ///
-    /// UI는 여기의 ActiveChangedEvent / MovedEvent를 구독해 커서 이미지를 보이고 옮기면 됩니다.
-    /// 그 좌표로 무엇을 집을지(월드 오브젝트 레이캐스트, UI 히트 테스트)는 소비하는 쪽이 정합니다.
-    /// 예: <c>inputManager.VirtualCursor.MovedEvent += OnCursorMoved;</c>
-    /// </summary>
-    public GamepadVirtualCursor VirtualCursor => null != inputReader ? inputReader.VirtualCursor : null;
-
-    /// <summary>
-    /// 가상 커서가 필요한 화면이 열렸는지 알려 줍니다. (특성 UI를 열 때 true, 닫을 때 false)
-    ///
-    /// 요청했다고 반드시 나오는 것은 아닙니다. 마우스를 쓰는 유저에게는 진짜 커서가 이미 있어
-    /// 켜지지 않습니다. 창을 열어 둔 채 패드를 잡으면 그때 화면 중앙에 나타납니다.
-    /// </summary>
-    public void SetVirtualCursorRequested(bool _bRequested)
-    {
-        inputReader?.SetVirtualCursorRequested(_bRequested);
-    }
-
-    /// <summary>커서가 지금 화면에 떠 있는지입니다.</summary>
-    public bool IsVirtualCursorActive => null != VirtualCursor && VirtualCursor.IsActive;
-
-    /// <summary>
-    /// 지금 적용 중인 감도 배율입니다. (1 = 기본)
-    /// 옵션 화면에서 "1.4배"처럼 숫자로 보여주고 싶을 때 씁니다.
-    /// 슬라이더 값 자체는 SettingsManager.Current.virtualCursorSensitivity에서 읽으세요.
-    /// </summary>
-    public float VirtualCursorSensitivityScale => null != VirtualCursor ? VirtualCursor.SensitivityScale : 1f;
-
-    /// <summary>
-    /// 커서가 나갈 수 있는 영역을 카메라가 실제로 그리는 사각형으로 맞춥니다.
-    ///
-    /// 울트라와이드에서는 PixelPerfectCamera의 Pillarbox 때문에 화면 좌우에 검은 띠가 생기고,
-    /// 그 띠는 카메라가 그리지 않는 영역이라 커서가 거기까지 나가면 가리킬 대상이 없습니다.
-    /// 창 크기나 크롭 설정이 언제든 바뀔 수 있으므로 매 프레임 다시 맞춥니다.
-    /// 커서가 꺼져 있을 때도 갱신하는 이유: 켜지는 순간의 "화면 중앙"이 옛 영역 기준으로
-    /// 계산되면 커서가 엉뚱한 자리에서 시작합니다. 비용은 Rect 비교 한 번이라 무시할 수준입니다.
-    /// </summary>
-    private void UpdateVirtualCursorBounds()
-    {
-        GamepadVirtualCursor _cursor = VirtualCursor;
-
-        if (null == _cursor) return;
-
-        Camera _camera = null != CameraFinder.Instance ? CameraFinder.Instance.PPMainCamera : null;
-
-        if (null == _camera)
-        {
-            _cursor.ClearBounds();
-            return;
-        }
-
-        _cursor.SetBounds(_camera.pixelRect);
     }
 
     // 입력 모드 (게임플레이 ↔ UI)

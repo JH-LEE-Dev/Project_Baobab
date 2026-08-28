@@ -286,6 +286,11 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         // 그때까지 기다리면 풀에서 쉬고 있는 원목들이 아우라를 붙든 채로 남는다.
         _item.ReleaseGemAura();
 
+        // 반짝임 파티클도 같은 이유로 여기서 회수한다. 자식으로 매달린 채 부모가 꺼지면
+        // 파티클의 activeSelf는 true로 남아 VFX 풀이 "사용 중"으로 오인하고, 그 인스턴스는
+        // 영영 재사용되지 못한 채 누수된다.
+        _item.StopGemShiny();
+
         // 최적화: 업데이트 리스트에서 제거
         UpdateItemVisibility(_item, false);
 

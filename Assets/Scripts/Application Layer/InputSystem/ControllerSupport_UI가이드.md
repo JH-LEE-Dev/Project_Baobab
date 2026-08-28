@@ -23,14 +23,14 @@
 | 2 | `UI_KeyboardImage` 연결 + 패드 분기 1줄 수정 | [3-2](#3-2-ui_keyboardimage-연결) |
 | 3 | 옵션 — **버튼 표기 셀렉터** | [2-1](#2-1-옵션의-버튼-표기-항목--저장까지-이미-연결됨) |
 | 4 | 옵션 — **진동 세기 슬라이더** | [진동 세기 설정](#진동-세기-설정) |
-| 5 | 옵션 — **가상 커서 감도 슬라이더** | [3-12](#3-12-특성-ui-가상-커서-패드-전용) |
+| 5 | ~~옵션 — 가상 커서 감도 슬라이더~~ | **완료** |
 | 6 | 옵션 — **패드 키 설정 탭** (Move 항목 잠금 필수) | [3-5](#3-5-키-설정-화면과-패드-패드-리바인딩-지원됨) |
 | 7 | **팝업 열고 닫을 때 `SetInputMode` 호출** ← 빠뜨리면 패드에서 오작동 | [3-7](#3-7-입력-모드--팝업을-열-때-반드시-호출하세요) |
 | 8 | UI 포커스 이동 (선택 표시, 복원, 먹통 방어) | [3-8](#3-8-ui-포커스-이동) |
 | 9 | 패드 연결 해제 모달 | [3-6](#3-6-패드-연결-해제) |
 | 10 | `UI_PressAnyKey` 이관 | [3-4](#3-4-ui_pressanykey-이관-권장) |
 | 11 | 마우스 좌표를 직접 읽는 UI 4곳 가드 | [3-10](#3-10-마우스-좌표를-직접-읽는-곳-패드에서-오작동) |
-| 12 | **특성 UI 가상 커서 그리기 + 그 좌표로 노드 집기** | [3-12](#3-12-특성-ui-가상-커서-패드-전용) |
+| 12 | ~~특성 UI 패드 커서~~ | **완료** → [3-12](#3-12-특성-ui-패드-커서) |
 
 기획 결정이 필요한 것 하나: **무엇이 언제 진동할지.** 진동 시스템은 완료되어 호출 지점만 비어 있습니다.
 
@@ -50,8 +50,7 @@
 | 패드 진동 + 세기 설정 저장 | 호출 지점은 기획 결정 |
 | UI 액션 맵 + 입력 모드 전환 | EventSystem 5개 씬 교체 완료 |
 | "아무 입력이나 있었는가" 조회 | |
-| 특성 UI 가상 커서 (좌표·영역 제한·자동 표시) | 그림과 집기는 UI 몫 → [3-12](#3-12-특성-ui-가상-커서-패드-전용) |
-| 커서 감도 설정 + 저장·복원 | UI는 슬라이더만 붙이면 됨 |
+| 커서 감도 설정 저장·복원 | 값만 보관. 해석은 특성 UI가 함 → [3-12](#3-12-특성-ui-패드-커서) |
 | 패드 사용 중 OS 커서 숨김 | InputManager가 자동 처리 → [3-9](#3-9-os-커서-표시숨김-시스템이-처리함) |
 
 **패드 기본 배치**
@@ -96,9 +95,6 @@
 | `CurrentGamepadIconSet` | `EGamepadIconSet` | 그려야 할 아이콘 표기. 수동 지정이 있으면 그 값 |
 | `DetectedGamepadIconSet` | `EGamepadIconSet` | 수동 지정과 무관한 자동 판별 결과 |
 | `AnyInputThisFrame` | `bool` | 이번 프레임에 **어느 장치에서든** 조작이 있었는지 |
-| `VirtualCursor` | `GamepadVirtualCursor` | 특성 UI 가상 커서. 좌표·이벤트는 여기서 → [3-12](#3-12-특성-ui-가상-커서-패드-전용) |
-| `IsVirtualCursorActive` | `bool` | 가상 커서가 지금 화면에 떠 있는지 |
-| `VirtualCursorSensitivityScale` | `float` | 지금 적용 중인 커서 감도 배율 (1 = 기본) |
 
 `AnyInputThisFrame`은 "아무 키나 누르세요" 화면이나 유휴 타이머 해제처럼 **무슨 키인지는 상관없고 입력이 있었다는 사실만 필요한 곳**에 씁니다. 장치 전환과 같은 문턱값을 쓰므로 책상 진동으로 인한 마우스 지터나 스틱 드리프트는 입력으로 치지 않습니다. `InputManager.Update`에서 갱신되므로 스크립트 실행 순서에 따라 최대 1프레임 늦을 수 있습니다.
 
@@ -138,9 +134,6 @@ void ForceInputDevice(EInputDeviceType _device);
 
 // 저장 없이 표기만 즉시 바꾸는 저수준 API. 옵션 UI는 이걸 직접 쓰지 말고 아래 2-1을 쓰세요.
 void SetGamepadIconSetOverride(bool _bUseOverride, EGamepadIconSet _iconSet);
-
-// 가상 커서가 필요한 화면을 열고 닫을 때. 패드를 쓰는 중일 때만 실제로 뜹니다. (3-12)
-void SetVirtualCursorRequested(bool _bRequested);
 ```
 
 ### 2-1. 옵션의 "버튼 표기" 항목 — 저장까지 이미 연결됨
@@ -365,32 +358,40 @@ viewCtx.inputManager.inputReader.InputModeChangedEvent += OnModeChanged;
 
 편집 모드에서는 **장치 원시값까지만** 나옵니다. 액션 값과 게임의 실제 장치 상태는 플레이 모드에서만 확인됩니다(아래 한계 참고).
 
-### 3-12. 특성 UI 가상 커서 (패드 전용)
+### 3-12. 특성 UI 패드 커서
 
-특성(스킬) 트리는 노드를 직접 찍어야 하는데 패드에는 포인터가 없습니다. 그래서 **특성 UI가 열리면 화면 중앙에 가상 커서가 나타납니다.**
+특성(스킬) 트리는 노드를 직접 찍어야 하는데 패드에는 포인터가 없습니다. 그래서 특성 UI가 **자체 패드 커서**를 갖고 있습니다.
 
-- **별도의 토글 키가 없습니다.** [UIView_Tent](../../Presentation%20Layer/UISystem/UIView/TentUI/UIView_Tent.cs)의 `OnShow`/`OnHide`가 요청하고 거둡니다
-- **패드를 쓰는 중일 때만** 실제로 켜집니다. 마우스 유저에게는 진짜 커서가 이미 있으므로 나오지 않습니다
-- **켤 때 위치는 언제나 화면 중앙.** 마지막 위치를 기억하지 않습니다 (커서가 어디서 나타날지 예측할 수 있어야 하므로)
-- **이동**: 오른쪽 스틱. 커서가 켜져 있는 동안 그 스틱은 캐릭터 조준으로 가지 않습니다
-- **장치를 오가도 따라옵니다.** 창을 열어 둔 채 마우스를 만지면 사라지고, 다시 패드를 잡으면 중앙에서 되살아납니다
-- **이동 영역**: 카메라가 실제로 그리는 사각형(`pixelRect`)으로 제한됩니다. 울트라와이드 Pillarbox의 검은 띠로 나가지 않습니다
+**구현 위치는 입력 시스템이 아니라 [UI_TentAbilityComponent](../../Presentation%20Layer/UISystem/UIView/TentUI/UI_TentAbilityComponent.cs)입니다.** 노드 스냅, 호버 보정, 세이프 에어리어처럼 특성 트리의 사정을 알아야 하는 로직이라 그 화면이 직접 소유합니다. 입력 시스템은 여기에 관여하지 않고 스틱도 직접 읽습니다.
+
+> 한때 `GamepadVirtualCursor`라는 범용 커서를 입력 시스템에 두었지만, 특성 UI가 자기 것을 갖게 되면서 **두 커서가 동시에 도는 상태**가 됐습니다. 하나는 아무도 그리지 않으면서 오른쪽 스틱 입력만 가로채고 있었습니다. 그래서 범용 쪽을 걷어냈습니다. 다른 화면에도 커서가 필요해지면 그때 다시 공용화를 검토하세요.
+
+#### 감도 설정 — 이미 연결되어 있습니다
+
+옵션 슬라이더, 저장·복원, 실시간 반영까지 전부 붙어 있습니다.
 
 ```csharp
-GamepadVirtualCursor _cursor = viewCtx.inputManager.VirtualCursor;
-
-_cursor.ActiveChangedEvent += OnCursorActiveChanged; // bool  — 커서 이미지 보이기/숨기기
-_cursor.MovedEvent         += OnCursorMoved;         // Vector2(화면 좌표) — 이미지 옮기기
-
-// 폴링해도 됩니다
-bool    _bOn = viewCtx.inputManager.IsVirtualCursorActive;
-Vector2 _pos = _cursor.ScreenPosition;
+// 값 보관은 설정 시스템, 해석은 특성 UI
+float _slider = SettingsManager.Instance.Current.virtualCursorSensitivity;   // 0~100
+SettingsManager.Instance.SetVirtualCursorSensitivity(_slider);               // 즉시 반영
 ```
 
-**UI 작업자가 할 일**
+특성 UI가 `OnInputSettingsAppliedEvent`를 구독해 `ApplyPadCursorSensitivity`에서 속도로 바꿉니다.
 
-| 할 일 | 비고 |
+> **0을 "끔"으로 만들지 마세요.** 속도가 0이 되면 커서가 멈춰서, 유저는 패드만으로 옵션 화면에 돌아가 값을 되돌릴 수단까지 잃습니다. 지금은 `MinPadCursorSensitivity`로 하한을 걸어 두었습니다.
+
+#### 다른 화면에도 커서가 필요해지면
+
+입력 시스템에는 커서가 없으므로, 그 화면이 직접 만들거나 특성 UI의 구현을 공용 컴포넌트로 빼야 합니다. 필요한 재료는 입력 시스템이 이미 제공합니다.
+
+| 필요한 것 | 어디서 |
 |---|---|
+| 지금 패드를 쓰는 중인지 | `inputManager.IsGamepadMode` |
+| 장치가 바뀌는 순간 | `inputReader.InputDeviceChangedEvent` |
+| 스틱 값 | `Gamepad.current` 직접, 또는 `Aim` 액션 |
+| 감도 설정 | `SettingsManager.Current.virtualCursorSensitivity` |
+
+---|---|
 | 커서 스프라이트를 화면 좌표에 그리기 | 좌하단 원점 픽셀 좌표. 마우스 좌표와 같은 좌표계입니다 |
 | 그 좌표로 특성 노드를 히트 테스트 | [UI_TentAbilityComponent](../../Presentation%20Layer/UISystem/UIView/TentUI/UI_TentAbilityComponent.cs)가 `Mouse.current`를 직접 읽는 곳(1693·1699·1833·1848)을 가상 커서 좌표로도 받게 하세요 |
 | "찍기" 버튼 정하기 | 시스템은 좌표만 줍니다. A로 볼지 RT로 볼지는 UI/기획 결정입니다 |

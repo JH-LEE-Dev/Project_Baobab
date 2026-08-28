@@ -117,10 +117,6 @@ public class UIView_Tent : UIView
         viewCtx.inputManager.SetInputMode(EInputMode.UI);
         viewCtx.inputManager.PauseMove(true);
 
-        // 패드에는 포인터가 없어서 특성 노드를 찍을 수단이 없다. 여기서 가상 커서를 요청하면
-        // 패드를 쓰는 중일 때만 화면 중앙에 나타난다. (마우스 유저에게는 나오지 않는다)
-        viewCtx.inputManager.SetVirtualCursorRequested(true);
-
         RefreshMoneyTexts(false);
         ApplyTutorialHUDAlpha(tutorialHUDAlpha);
         abilityUIComponent?.Open();
@@ -139,7 +135,6 @@ public class UIView_Tent : UIView
             playSoundsForCurrentPresentation = false;
         }
 
-        viewCtx.inputManager.SetVirtualCursorRequested(false);
         viewCtx.inputManager.SetInputMode(EInputMode.Gameplay);
         viewCtx.inputManager.PauseMove(false);
 

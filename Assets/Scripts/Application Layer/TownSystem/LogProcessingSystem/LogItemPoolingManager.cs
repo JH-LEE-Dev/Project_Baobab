@@ -101,13 +101,23 @@ public class LogItemPoolingManager : MonoBehaviour
     private void OnGetLogItem(LogItem _item)
     {
         _item.IsPooled = false;
-        _item.ResetItem();
+
+        // 활성화를 ResetItem()보다 먼저 한다. ResetItem()은 붙어 있던 반짝임 VFX를 풀로 되돌리는데,
+        // 오브젝트가 꺼진 상태에서 반납되면 VFXPoolInstanceHelper가 재부모화를 다음 프레임으로 미룬다.
+        // 그 사이 같은 프레임에 그 인스턴스가 다시 대여되면(LogIn -> PlayGemShiny) 뒤늦게 터진 예약이
+        // 새 주인에게서 이펙트를 떼어내, 원목을 따라가지 못하고 그 자리에 박힌 채 남는다.
         _item.gameObject.SetActive(true);
+        _item.ResetItem();
     }
 
     private void OnReleaseLogItem(LogItem _item)
     {
         _item.IsPooled = true;
+
+        // 자식으로 매달린 채 부모가 꺼지면 파티클의 activeSelf는 true로 남아 풀이 "사용 중"으로
+        // 오인하고 그 인스턴스는 영영 재사용되지 못한다. 끄기 전에 반드시 회수한다.
+        _item.StopGemShiny();
+
         _item.gameObject.transform.SetParent(transform);
         _item.gameObject.SetActive(false);
     }

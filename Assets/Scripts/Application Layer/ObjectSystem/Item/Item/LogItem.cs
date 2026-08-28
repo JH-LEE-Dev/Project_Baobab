@@ -305,6 +305,22 @@ public class LogItem : Item, IStaticCollidable
     }
 
     /// <summary>
+    /// 붙어 있는 반짝임 파티클을 즉시 풀로 회수한다.
+    /// 오브젝트를 비활성화하기 전에 반드시 호출해야 한다. 자식으로 매달린 채 부모가 꺼지면
+    /// 파티클의 activeSelf는 true로 남아 풀이 "사용 중"으로 오인하고, 그 인스턴스는 영영
+    /// 재사용되지 못한 채 누수된다(풀이 마르면 반짝임이 아예 붙지 않는다).
+    /// </summary>
+    public void StopGemShiny()
+    {
+        if (null == particleEffect) return;
+
+        if (null != vfxComponent && particleEffect.transform.IsChildOf(transform))
+            vfxComponent.Stop(particleEffect, true);
+
+        particleEffect = null;
+    }
+
+    /// <summary>
     /// 반짝임 파티클을 원목 본체 바로 앞에 그린다.
     /// 레이어를 "Objects"로 고정하지 않고 본체를 따라가게 해야, 벨트/컨테이너로 옮겨지며
     /// FlyingItem 레이어로 전환됐을 때도 파티클이 함께 따라간다.
@@ -561,13 +577,7 @@ public class LogItem : Item, IStaticCollidable
     {
         base.ResetItem();
 
-        if (null != particleEffect)
-        {
-            if (null != vfxComponent && particleEffect.transform.IsChildOf(transform))
-                vfxComponent.Stop(particleEffect, true);
-            particleEffect = null;    
-        }
-
+        StopGemShiny();
         StopGemAura();
 
         state = ItemMoveState.None;

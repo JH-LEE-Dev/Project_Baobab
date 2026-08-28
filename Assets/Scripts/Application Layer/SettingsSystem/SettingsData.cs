@@ -127,8 +127,8 @@ public struct SettingsData
     /// 특성 UI 가상 커서의 이동 감도입니다. (0~100, 가운데 50이 기본 배율)
     ///
     /// 다른 슬라이더와 달리 0이 "끔"이 아닙니다. 0이어도 커서는 느리게나마 움직입니다.
-    /// 감도 0은 커서를 아예 못 쓰는 상태라 유저가 스스로를 가둘 수 있기 때문입니다.
-    /// 실제 배율 변환은 GamepadVirtualCursor.SetSensitivityScale이 담당합니다.
+    /// 감도 0은 커서를 아예 못 쓰는 상태라, 유저가 패드만으로 이 설정을 되돌릴 수단까지 잃습니다.
+    /// 실제 속도 변환과 하한 처리는 UI_TentAbilityComponent.ApplyPadCursorSensitivity가 담당합니다.
     ///
     /// hapticStrength와 같은 이유로 SettingsRepository 버전을 올리지 않았고,
     /// 같은 이유로 "키 없음"과 "0"을 구분하는 보정이 필요합니다.
