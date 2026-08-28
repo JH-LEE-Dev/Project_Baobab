@@ -412,9 +412,27 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     public void EvaluateHoverState()
     {
-        if (true == isPointerOver && false == mainController.IsInputBlocked && false == mainController.IsTransitioning)
+        if (null == mainController || true == mainController.IsInputBlocked || true == mainController.IsTransitioning)
         {
+            return;
+        }
+
+        if (true == IsMouseOver())
+        {
+            if (false == isPointerOver)
+            {
+                Sound.PlayUI(true == myInfo.isUnlocked ? SoundID.NaviSubHover : SoundID.NaviLockHover);
+            }
+            isPointerOver = true;
             TriggerHover();
+        }
+        else
+        {
+            if (true == isPointerOver)
+            {
+                isPointerOver = false;
+                OnPointerExit(null);
+            }
         }
     }
 
@@ -575,7 +593,6 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     public bool IsMouseOver()
     {
         if (false == gameObject.activeInHierarchy) return false;
-        if (true == isPointerOver) return true;
 
         RectTransform _rect = null != clickImage ? clickImage.rectTransform : CachedRectTransform;
         if (null == _rect) return false;
