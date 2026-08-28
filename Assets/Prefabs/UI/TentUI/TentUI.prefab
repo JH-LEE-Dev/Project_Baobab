@@ -444,6 +444,8 @@ MonoBehaviour:
   padCursorSize: {x: 32, y: 32}
   padCursorSpeedPixelsPerSecond: 280
   padCursorStickDeadzone: 0.2
+  padCursorNodeHoverAlpha: 0.2
+  padCursorAlphaTransitionDuration: 0.2
   padCursorHoverCorrectionSize: {x: 64, y: 64}
   padCursorHoverReleasePadding: 8
   padSelectionCursorMagnetDuration: 0.15

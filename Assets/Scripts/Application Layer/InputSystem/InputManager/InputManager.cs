@@ -365,6 +365,18 @@ public class InputManager : MonoBehaviour
         inputReader.PauseESCKey(_boolean);
     }
 
+    /// <summary>지정한 소유자 이름으로만 ESC 키를 잠그거나 풉니다. 다른 시스템의 잠금과 섞이지 않습니다.</summary>
+    public void SetESCKeyLock(string _owner, bool _locked)
+    {
+        inputReader?.SetESCKeyLock(_owner, _locked);
+    }
+
+    /// <summary>UI 취소(패드 B/○) 입력을 잠그거나 풉니다. 연출 중 재입력을 막을 때 ESC 잠금과 함께 쓰세요.</summary>
+    public void PauseUICancelKey(bool _boolean)
+    {
+        inputReader?.PauseUICancelKey(_boolean);
+    }
+
     public void PauseInventoryKey(bool _boolean)
     {
         inputReader.PauseInventoryKey(_boolean);

@@ -690,9 +690,18 @@ public class GameplayUICoordinator
         inputManager.PauseInventoryKey(true);
     }
 
+    // ESC 메뉴의 등장/퇴장 연출 중에는 재입력을 막는다.
+    //
+    // UI 취소(패드 B/○)도 반드시 함께 잠근다. ESC만 막으면 패드 유저는 B로 그대로 뚫고 들어와
+    // 연출을 중간에 갈아엎을 수 있는데, 그때 등장 연출의 완료 콜백(=이 잠금을 푸는 콜백)이 함께
+    // 죽어 ESC가 영구히 잠긴 채로 남는다.
+    //
+    // 잠금 소유자를 따로 두는 이유: 던전 진입/귀환 연출도 ESC를 잠그는데, 공용 잠금을 쓰면
+    // 한쪽의 해제가 다른 쪽이 아직 막아야 하는 구간까지 같이 풀어버린다.
     private void ESCUIInputLockChanged(bool _isLocked)
     {
-        inputManager.PauseESCKey(_isLocked);
+        inputManager.SetESCKeyLock(InputReader.ESC_LOCK_OWNER_ESCUI, _isLocked);
+        inputManager.PauseUICancelKey(_isLocked);
     }
 
     private void OffroadContainerInteractStateChanged(OffroadContainerInteractStateChangedSignal _offroadContainerInteractStateChangedSignal)
