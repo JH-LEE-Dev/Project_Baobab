@@ -120,6 +120,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private Vector2 padCursorGridPosition;
     private Vector2 padCursorScreenPosition;
     private Vector2 padViewFollowVelocity;
+    private Vector2 padLookAheadVelocity;
     private bool wasPadCameraLookAheadActive;
     private bool isPadCameraRecentering;
     private AbilityNode padSelectionCursorMagnetTargetNode;
@@ -1944,8 +1945,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         // 따라서 화면이 따라오면 노드와 마찬가지로 커서의 화면 위치도 함께 중앙 쪽으로 이동한다.
         UpdatePadCursorScreenPositionFromGrid();
 
-        bool _cursorInputActive = _direction.sqrMagnitude > 0.0001f;
-        bool _viewChanged = _inputAllowed && UpdatePadViewFollow(_cursorInputActive);
+        bool _viewChanged = _inputAllowed && UpdatePadViewFollow();
         if (false == _inputAllowed)
             ResetPadViewFollowState();
 
@@ -2297,7 +2297,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         isPadSelectionCursorMagnetMoving = false;
     }
 
-    private bool UpdatePadViewFollow(bool _cursorInputActive)
+    private bool UpdatePadViewFollow()
     {
         if (false == IsViewInputEnabled() || moveTarget == null || padCursorRect == null)
         {
@@ -2321,6 +2321,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         if (_lookAheadActive)
         {
+            // Look Ahead가 카메라를 소유하는 동안 이전 Safe Area 관성은 섞지 않는다.
+            padViewFollowVelocity = Vector2.zero;
             wasPadCameraLookAheadActive = true;
             isPadCameraRecentering = false;
 
@@ -2333,19 +2335,15 @@ public class UI_TentAbilityComponent : MonoBehaviour
         // 오른쪽 스틱을 놓은 직후에는 한 번 중앙으로 돌아간다.
         if (wasPadCameraLookAheadActive)
         {
+            padViewFollowVelocity = Vector2.zero;
             wasPadCameraLookAheadActive = false;
             isPadCameraRecentering = true;
         }
 
-        // 중앙 복귀 중이라도 왼쪽 스틱으로 커서를 움직이면 기존 Safe Area 추적을 즉시 우선한다.
-        if (_cursorInputActive && isPadCameraRecentering)
-        {
-            isPadCameraRecentering = false;
-            padViewFollowVelocity = Vector2.zero;
-        }
-
         if (isPadCameraRecentering)
         {
+            // 왼쪽 스틱으로 커서가 움직여도 복귀 상태는 취소하지 않는다.
+            // 매 프레임 갱신된 커서 위치를 중앙으로 계속 추적하고, 완료된 뒤 Safe Area에 인계한다.
             bool _moved = SmoothPadViewToCursorTarget(_cursorLocal, Vector2.zero, out bool _reachedCenter);
             if (_reachedCenter)
                 isPadCameraRecentering = false;
@@ -2378,18 +2376,18 @@ public class UI_TentAbilityComponent : MonoBehaviour
         Vector2 _nextCursorLocal = Vector2.SmoothDamp(
             _cursorLocal,
             _targetCursorLocal,
-            ref padViewFollowVelocity,
+            ref padLookAheadVelocity,
             Mathf.Max(0.01f, padLookAheadSmoothTime),
             _maxSpeed,
             Time.unscaledDeltaTime);
         Vector2 _viewDelta = _nextCursorLocal - _cursorLocal;
         _reachedTarget = (_cursorLocal - _targetCursorLocal).sqrMagnitude <= 0.01f &&
-                         padViewFollowVelocity.sqrMagnitude <= 0.01f;
+                         padLookAheadVelocity.sqrMagnitude <= 0.01f;
 
         if (_viewDelta.sqrMagnitude <= 0.0001f)
         {
             if (_reachedTarget)
-                padViewFollowVelocity = Vector2.zero;
+                padLookAheadVelocity = Vector2.zero;
             return false;
         }
 
@@ -2398,7 +2396,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             StopViewShake();
         else
             // 화면 경계에서 쌓인 속도가 반대 방향 전환을 늦추지 않게 한다.
-            padViewFollowVelocity = Vector2.zero;
+            padLookAheadVelocity = Vector2.zero;
 
         return _moved;
     }
@@ -2446,6 +2444,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private void ResetPadViewFollowState()
     {
         padViewFollowVelocity = Vector2.zero;
+        padLookAheadVelocity = Vector2.zero;
         wasPadCameraLookAheadActive = false;
         isPadCameraRecentering = false;
     }
