@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using Coffee.UIEffects;
 using DG.Tweening;
+using DG.Tweening.Core;
 
 /// <summary>
 /// 동적으로 생성된 전리품 슬롯(Image)에 부착되어 마우스 호버 이벤트를 감지하고 툴팁을 띄웁니다.
@@ -17,8 +18,14 @@ public class HUD_LootSlotTrigger : MonoBehaviour, IPointerEnterHandler, IPointer
     private Tween outlineTween;
     private Color originalShadowColor;
 
+    private DOGetter<Color> cachedGetShadowColor;
+    private DOSetter<Color> cachedSetShadowColor;
+
     public void Initialize(HUD_LootTooltip _tooltipUI, UI_RedDot _redDotUI)
     {
+        cachedGetShadowColor = GetOutlineShadowColor;
+        cachedSetShadowColor = SetOutlineShadowColor;
+
         tooltipUI = _tooltipUI;
         redDotUI = _redDotUI;
         rectTransform = GetComponent<RectTransform>();
@@ -54,9 +61,10 @@ public class HUD_LootSlotTrigger : MonoBehaviour, IPointerEnterHandler, IPointer
         Color _endC = originalShadowColor;
         _endC.a = 1f;
 
-        outlineTween = DOTween.To(() => outlineEffect.shadowColor, x => outlineEffect.shadowColor = x, _endC, 0.5f)
+        outlineTween = DOTween.To(cachedGetShadowColor, cachedSetShadowColor, _endC, 0.5f)
             .SetLoops(-1, LoopType.Yoyo)
-            .SetEase(Ease.InOutSine);
+            .SetEase(Ease.InOutSine)
+            .SetLink(gameObject);
     }
 
     private void StopPulse()
@@ -71,8 +79,22 @@ public class HUD_LootSlotTrigger : MonoBehaviour, IPointerEnterHandler, IPointer
         Color _endC = originalShadowColor;
         _endC.a = 0f;
 
-        outlineTween = DOTween.To(() => outlineEffect.shadowColor, x => outlineEffect.shadowColor = x, _endC, 0.3f)
-            .SetEase(Ease.OutQuad);
+        outlineTween = DOTween.To(cachedGetShadowColor, cachedSetShadowColor, _endC, 0.3f)
+            .SetEase(Ease.OutQuad)
+            .SetLink(gameObject);
+    }
+
+    private Color GetOutlineShadowColor()
+    {
+        return null != outlineEffect ? outlineEffect.shadowColor : Color.clear;
+    }
+
+    private void SetOutlineShadowColor(Color _color)
+    {
+        if (null != outlineEffect)
+        {
+            outlineEffect.shadowColor = _color;
+        }
     }
 
     public void OnPointerEnter(PointerEventData _eventData)

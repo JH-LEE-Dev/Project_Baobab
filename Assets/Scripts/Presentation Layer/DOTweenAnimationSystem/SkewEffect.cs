@@ -1,5 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
+using DG.Tweening.Core;
+using DG.Tweening.Plugins.Options;
 
 namespace PresentationLayer.DOTweenAnimationSystem
 {
@@ -13,6 +16,11 @@ namespace PresentationLayer.DOTweenAnimationSystem
         // //외부 의존성
         [SerializeField] private float skewX = 0f;
         [SerializeField] private float skewY = 0f;
+
+        private DOGetter<float> cachedGetSkewX;
+        private DOSetter<float> cachedSetSkewX;
+        private DOGetter<float> cachedGetSkewY;
+        private DOSetter<float> cachedSetSkewY;
 
         // //퍼블릭 프로퍼티
         public float SkewX
@@ -41,6 +49,40 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 if (null != graphic)
                     graphic.SetVerticesDirty();
             }
+        }
+
+        protected override void Awake()
+        {
+            base.Awake();
+            cachedGetSkewX = GetSkewXVal;
+            cachedSetSkewX = SetSkewXVal;
+            cachedGetSkewY = GetSkewYVal;
+            cachedSetSkewY = SetSkewYVal;
+        }
+
+        private float GetSkewXVal() => skewX;
+        private void SetSkewXVal(float _v) => SkewX = _v;
+        private float GetSkewYVal() => skewY;
+        private void SetSkewYVal(float _v) => SkewY = _v;
+
+        public TweenerCore<float, float, FloatOptions> DOSkewX(float _endValue, float _duration)
+        {
+            if (null == cachedGetSkewX)
+            {
+                cachedGetSkewX = GetSkewXVal;
+                cachedSetSkewX = SetSkewXVal;
+            }
+            return DOTween.To(cachedGetSkewX, cachedSetSkewX, _endValue, _duration).SetTarget(this);
+        }
+
+        public TweenerCore<float, float, FloatOptions> DOSkewY(float _endValue, float _duration)
+        {
+            if (null == cachedGetSkewY)
+            {
+                cachedGetSkewY = GetSkewYVal;
+                cachedSetSkewY = SetSkewYVal;
+            }
+            return DOTween.To(cachedGetSkewY, cachedSetSkewY, _endValue, _duration).SetTarget(this);
         }
 
         // //퍼블릭 제어 메서드 및 오버라이드

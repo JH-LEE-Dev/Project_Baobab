@@ -19,9 +19,14 @@ public class HUD_LootTooltip : MonoBehaviour
 
     private Tween fadeTween;
     private Tween scaleTween;
+    private TweenCallback cachedOnHideComplete;
+    private readonly Vector3[] targetCorners = new Vector3[4];
+    private readonly Vector3[] tooltipCorners = new Vector3[4];
     
     public void Initialize()
     {
+        cachedOnHideComplete = OnHideTooltipComplete;
+
         if (null == canvasGroup)
         {
             canvasGroup = GetComponent<CanvasGroup>();
@@ -72,13 +77,12 @@ public class HUD_LootTooltip : MonoBehaviour
         Canvas _canvas = GetComponentInParent<Canvas>();
         Camera _cam = (null != _canvas && RenderMode.ScreenSpaceOverlay != _canvas.renderMode) ? _canvas.worldCamera : null;
 
-        Vector3[] _targetCorners = new Vector3[4];
-        _targetSlot.GetWorldCorners(_targetCorners);
+        _targetSlot.GetWorldCorners(targetCorners);
         // 0: BottomLeft, 1: TopLeft, 2: TopRight, 3: BottomRight
 
-        Vector3 _targetTopCenter = (_targetCorners[1] + _targetCorners[2]) * 0.5f;
-        Vector3 _targetBottomCenter = (_targetCorners[0] + _targetCorners[3]) * 0.5f;
-        Vector3 _upDir = (_targetCorners[1] - _targetCorners[0]).normalized;
+        Vector3 _targetTopCenter = (targetCorners[1] + targetCorners[2]) * 0.5f;
+        Vector3 _targetBottomCenter = (targetCorners[0] + targetCorners[3]) * 0.5f;
+        Vector3 _upDir = (targetCorners[1] - targetCorners[0]).normalized;
         float _worldOffsetY = yOffset * rectTransform.lossyScale.y;
 
         // --- 1차 배치 (타겟 위쪽) ---
@@ -87,10 +91,9 @@ public class HUD_LootTooltip : MonoBehaviour
         rectTransform.position = _targetTopCenter + (_upDir * _worldOffsetY);
 
         // --- 2차 검사: 화면 위쪽으로 나가는지? (전리품 가림 방지) ---
-        Vector3[] _tooltipCorners = new Vector3[4];
-        rectTransform.GetWorldCorners(_tooltipCorners);
+        rectTransform.GetWorldCorners(tooltipCorners);
         
-        Vector2 _screenTR = RectTransformUtility.WorldToScreenPoint(_cam, _tooltipCorners[2]); // 우측 상단
+        Vector2 _screenTR = RectTransformUtility.WorldToScreenPoint(_cam, tooltipCorners[2]); // 우측 상단
         float _screenPadding = 15f;
 
         // 카메라가 실제로 그리는 영역을 화면 경계로 삼는다. 크롭(Pillarbox)이 켜진 해상도에서
@@ -104,12 +107,12 @@ public class HUD_LootTooltip : MonoBehaviour
             rectTransform.position = _targetBottomCenter - (_upDir * _worldOffsetY);
             
             // 변경된 위치로 코너 다시 업데이트
-            rectTransform.GetWorldCorners(_tooltipCorners);
+            rectTransform.GetWorldCorners(tooltipCorners);
         }
 
         // --- 3차 검사: 좌/우 화면 이탈 픽셀 계산 (화면 밖 이탈 방지) ---
-        Vector2 _screenBL = RectTransformUtility.WorldToScreenPoint(_cam, _tooltipCorners[0]); // 좌측 하단
-        _screenTR = RectTransformUtility.WorldToScreenPoint(_cam, _tooltipCorners[2]);
+        Vector2 _screenBL = RectTransformUtility.WorldToScreenPoint(_cam, tooltipCorners[0]); // 좌측 하단
+        _screenTR = RectTransformUtility.WorldToScreenPoint(_cam, tooltipCorners[2]);
 
         float _shiftX = 0f;
         if (_viewRect.xMin + _screenPadding > _screenBL.x)
@@ -141,8 +144,8 @@ public class HUD_LootTooltip : MonoBehaviour
         rectTransform.localScale = new Vector3(0.8f, 0.8f, 1f);
         canvasGroup.alpha = 0f;
 
-        fadeTween = canvasGroup.DOFade(1f, animationDuration).SetEase(Ease.OutQuad);
-        scaleTween = rectTransform.DOScale(1f, animationDuration).SetEase(Ease.OutBack);
+        fadeTween = canvasGroup.DOFade(1f, animationDuration).SetEase(Ease.OutQuad).SetLink(gameObject);
+        scaleTween = rectTransform.DOScale(1f, animationDuration).SetEase(Ease.OutBack).SetLink(gameObject);
     }
 
     public void HideTooltip()
@@ -155,10 +158,17 @@ public class HUD_LootTooltip : MonoBehaviour
         if (null != fadeTween && true == fadeTween.IsActive()) fadeTween.Kill();
         if (null != scaleTween && true == scaleTween.IsActive()) scaleTween.Kill();
 
-        fadeTween = canvasGroup.DOFade(0f, animationDuration * 0.7f).SetEase(Ease.InQuad).OnComplete(() =>
-        {
-            gameObject.SetActive(false);
-        });
-        scaleTween = rectTransform.DOScale(0.8f, animationDuration * 0.7f).SetEase(Ease.InQuad);
+        fadeTween = canvasGroup.DOFade(0f, animationDuration * 0.7f)
+            .SetEase(Ease.InQuad)
+            .SetLink(gameObject)
+            .OnComplete(cachedOnHideComplete);
+        scaleTween = rectTransform.DOScale(0.8f, animationDuration * 0.7f)
+            .SetEase(Ease.InQuad)
+            .SetLink(gameObject);
+    }
+
+    private void OnHideTooltipComplete()
+    {
+        gameObject.SetActive(false);
     }
 }

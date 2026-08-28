@@ -171,7 +171,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             float skewDuration = forwardDuration * Mathf.Clamp01(valueSettings.skewTimeRatio / totalRatio);
             float restoreDuration = forwardDuration * Mathf.Clamp01(valueSettings.restoreTimeRatio / totalRatio);
 
-            Sequence sequence = DOTween.Sequence();
+            Sequence sequence = DOTween.Sequence().SetLink(_target.gameObject);
             sequence.Append(_target.DOColor(valueSettings.targetColor, skewDuration).SetEase(valueSettings.colorEase));
             sequence.Append(_target.DOColor(_initialColor, restoreDuration).SetEase(valueSettings.restoreEase));
 
@@ -184,15 +184,15 @@ namespace PresentationLayer.DOTweenAnimationSystem
             float skewDuration = forwardDuration * Mathf.Clamp01(valueSettings.skewTimeRatio / totalRatio);
             float restoreDuration = forwardDuration * Mathf.Clamp01(valueSettings.restoreTimeRatio / totalRatio);
 
-            Sequence sequence = DOTween.Sequence();
+            Sequence sequence = DOTween.Sequence().SetLink(_target.gameObject);
 
             // X축, Y축 비틀기 목표값으로 점진 변화 수행
-            sequence.Append(DOTween.To(() => _target.SkewX, _x => _target.SkewX = _x, _initialSkew.x + valueSettings.maxSkew.x, skewDuration).SetEase(valueSettings.skewEase));
-            sequence.Join(DOTween.To(() => _target.SkewY, _y => _target.SkewY = _y, _initialSkew.y + valueSettings.maxSkew.y, skewDuration).SetEase(valueSettings.skewEase));
+            sequence.Append(_target.DOSkewX(_initialSkew.x + valueSettings.maxSkew.x, skewDuration).SetEase(valueSettings.skewEase));
+            sequence.Join(_target.DOSkewY(_initialSkew.y + valueSettings.maxSkew.y, skewDuration).SetEase(valueSettings.skewEase));
 
             // 제자리로 원상태 복구 트윈 적용
-            sequence.Append(DOTween.To(() => _target.SkewX, _x => _target.SkewX = _x, _initialSkew.x, restoreDuration).SetEase(valueSettings.restoreEase));
-            sequence.Join(DOTween.To(() => _target.SkewY, _y => _target.SkewY = _y, _initialSkew.y, restoreDuration).SetEase(valueSettings.restoreEase));
+            sequence.Append(_target.DOSkewX(_initialSkew.x, restoreDuration).SetEase(valueSettings.restoreEase));
+            sequence.Join(_target.DOSkewY(_initialSkew.y, restoreDuration).SetEase(valueSettings.restoreEase));
 
             return sequence;
         }
