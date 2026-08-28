@@ -415,9 +415,23 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public void EvaluateHoverState()
     {
-        if (true == isPointerOver && false == mainController.IsInputBlocked)
+        if (null == mainController || true == mainController.IsInputBlocked)
         {
+            return;
+        }
+
+        if (true == IsMouseOver())
+        {
+            isPointerOver = true;
             TriggerHover();
+        }
+        else
+        {
+            if (true == isPointerOver)
+            {
+                isPointerOver = false;
+                ForceStopHoverEffect();
+            }
         }
     }
 
@@ -503,7 +517,6 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     public bool IsMouseOver()
     {
         if (false == gameObject.activeInHierarchy || false == isInitialized) return false;
-        if (true == isPointerOver) return true;
 
         RectTransform _rect = null != clickImage ? clickImage.rectTransform : CachedRectTransform;
         if (null == _rect) return false;

@@ -72,6 +72,12 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     private int currentGemStage = 0;
     private int lastRevivalFrame = -1;
 
+    private TweenCallback<float> cachedSpecialRecoveryUpdate;
+    private TweenCallback cachedSpecialRecoveryComplete;
+    private TweenCallback<float> cachedSpecialShakeUpdate;
+    private TweenCallback cachedSpecialShakeComplete;
+    private TweenCallback cachedOnHideDelayExpired;
+
     public object Owner => owner;
     public bool IsSpecialRecovering => isSpecialRecovering;
     public int LastRevivalFrame => lastRevivalFrame;
@@ -84,6 +90,11 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         base.Initialize();
 
         onHideCompleteAction = HandleHideComplete;
+        cachedSpecialRecoveryUpdate = HandleSpecialRecoveryUpdate;
+        cachedSpecialRecoveryComplete = HandleSpecialRecoveryComplete;
+        cachedSpecialShakeUpdate = HandleSpecialShakeUpdate;
+        cachedSpecialShakeComplete = HandleSpecialShakeComplete;
+        cachedOnHideDelayExpired = HandleHideDelayExpired;
 
         if (null != motionPlayer)
             motionPlayer.Initialize();
@@ -273,20 +284,10 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         RestartHideTimer();
 
         float _target = Mathf.Clamp01(_targetHpRatio);
-        specialRecoveryTween = DOVirtual.Float(0.0f, _target, revivalDuration, val =>
-        {
-            currentHpValue = val;
-            if (null != progressSlider)
-                progressSlider.value = val;
-            if (null != ghostSlider)
-                ghostSlider.value = val;
-        })
-        .SetEase(revivalEase)
-        .OnComplete(() =>
-        {
-            isSpecialRecovering = false;
-            specialRecoveryTween = null;
-        });
+        specialRecoveryTween = DOVirtual.Float(0.0f, _target, revivalDuration, cachedSpecialRecoveryUpdate)
+            .SetEase(revivalEase)
+            .SetLink(gameObject)
+            .OnComplete(cachedSpecialRecoveryComplete);
 
         if (null != specialShakeTween && true == specialShakeTween.IsActive())
         {
@@ -295,20 +296,45 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         }
 
         shakeOffset = Vector3.zero;
-        specialShakeTween = DOVirtual.Float(0.0f, 1.0f, revivalShakeDuration, t =>
-        {
-            float decay = Mathf.Pow(1.0f - t, 2.5f);
-            float waveY = (Mathf.Sin(t * Mathf.PI * 36.0f) + Mathf.Sin(t * Mathf.PI * 72.0f) * 0.4f) * decay * revivalShakeStrength;
-            float waveX = (Mathf.Cos(t * Mathf.PI * 30.0f) + Mathf.Sin(t * Mathf.PI * 60.0f) * 0.4f) * decay * (revivalShakeStrength * 0.8f);
-            shakeOffset.x = waveX;
-            shakeOffset.y = waveY;
-        })
-        .SetEase(Ease.Linear)
-        .OnComplete(() =>
-        {
-            shakeOffset = Vector3.zero;
-            specialShakeTween = null;
-        });
+        specialShakeTween = DOVirtual.Float(0.0f, 1.0f, revivalShakeDuration, cachedSpecialShakeUpdate)
+            .SetEase(Ease.Linear)
+            .SetLink(gameObject)
+            .OnComplete(cachedSpecialShakeComplete);
+    }
+
+    private void HandleSpecialRecoveryUpdate(float _val)
+    {
+        currentHpValue = _val;
+        if (null != progressSlider)
+            progressSlider.value = _val;
+        if (null != ghostSlider)
+            ghostSlider.value = _val;
+    }
+
+    private void HandleSpecialRecoveryComplete()
+    {
+        isSpecialRecovering = false;
+        specialRecoveryTween = null;
+    }
+
+    private void HandleSpecialShakeUpdate(float _t)
+    {
+        float _decay = Mathf.Pow(1.0f - _t, 2.5f);
+        float _waveY = (Mathf.Sin(_t * Mathf.PI * 36.0f) + Mathf.Sin(_t * Mathf.PI * 72.0f) * 0.4f) * _decay * revivalShakeStrength;
+        float _waveX = (Mathf.Cos(_t * Mathf.PI * 30.0f) + Mathf.Sin(_t * Mathf.PI * 60.0f) * 0.4f) * _decay * (revivalShakeStrength * 0.8f);
+        shakeOffset.x = _waveX;
+        shakeOffset.y = _waveY;
+    }
+
+    private void HandleSpecialShakeComplete()
+    {
+        shakeOffset = Vector3.zero;
+        specialShakeTween = null;
+    }
+
+    private void HandleHideDelayExpired()
+    {
+        OnHide(-1f);
     }
 
     public void Setup(GameObject _target, float _yOffset, float _duration)
@@ -394,7 +420,8 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
 
                 hpGhostTween = ghostSlider.DOValue(_hpRatio, ghostFollowDuration)
                     .SetDelay(_nextHpDelay)
-                    .SetEase(Ease.OutQuad);
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(gameObject);
             }
         }
 
@@ -430,7 +457,8 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
 
                     shieldGhostTween = shieldGhostSlider.DOValue(_shieldRatio, ghostFollowDuration)
                         .SetDelay(_nextShieldDelay)
-                        .SetEase(Ease.OutQuad);
+                        .SetEase(Ease.OutQuad)
+                        .SetLink(gameObject);
                 }
             }
             else if (_shieldRatio > _prevShield) // 쉴드 회복
@@ -463,7 +491,8 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
 
                     shieldRecoveryTween = shieldSlider.DOValue(_shieldRatio, ghostFollowDuration)
                         .SetDelay(_nextShieldDelay)
-                        .SetEase(Ease.OutQuad);
+                        .SetEase(Ease.OutQuad)
+                        .SetLink(gameObject);
                 }
             }
             else // 변화 없음
@@ -489,7 +518,8 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
                     if (null != shieldCanvasGroup)
                     {
                         shieldFadeTween = shieldCanvasGroup.DOFade(0.0f, shieldFadeDuration)
-                            .SetEase(Ease.OutQuad);
+                            .SetEase(Ease.OutQuad)
+                            .SetLink(gameObject);
                     }
                 }
             }
@@ -507,7 +537,8 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
                     if (null != shieldCanvasGroup)
                     {
                         shieldFadeTween = shieldCanvasGroup.DOFade(1.0f, shieldFadeDuration)
-                            .SetEase(Ease.OutQuad);
+                            .SetEase(Ease.OutQuad)
+                            .SetLink(gameObject);
                     }
                 }
             }
@@ -526,7 +557,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             hideDelayTween.Kill();
 
         if (0.0f < showDuration)
-            hideDelayTween = DOVirtual.DelayedCall(showDuration, () => OnHide(-1f), false);
+            hideDelayTween = DOVirtual.DelayedCall(showDuration, cachedOnHideDelayExpired, false).SetLink(gameObject);
     }
 
     public void OnHide(float _forceDuration = -1f, bool _bSkip = false)

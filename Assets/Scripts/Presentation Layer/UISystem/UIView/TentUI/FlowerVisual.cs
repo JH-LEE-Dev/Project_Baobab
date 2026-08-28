@@ -133,11 +133,7 @@ public class FlowerVisual : MonoBehaviour
         growSequence.Append(rectTransform.DOScale(initialScale * growOvershootScale, growDuration * 0.55f).SetEase(Ease.OutBack));
         growSequence.Append(rectTransform.DOScale(initialScale * 0.94f, growDuration * 0.20f).SetEase(Ease.InOutSine));
         growSequence.Append(rectTransform.DOScale(initialScale, growDuration * 0.25f).SetEase(Ease.OutBack));
-        growSequence.OnComplete(() =>
-        {
-            rectTransform.localScale = initialScale;
-            growSequence = null;
-        });
+        growSequence.OnComplete(CompleteGrow);
     }
 
     public void PlayWhiteFade()
@@ -146,11 +142,19 @@ public class FlowerVisual : MonoBehaviour
         SetWhiteOverlayAlpha(1.0f);
         whiteFadeTween = DOVirtual.Float(1.0f, 0.0f, Mathf.Max(0.01f, whiteFadeDuration), SetWhiteOverlayAlpha)
             .SetEase(Ease.OutQuad)
-            .OnComplete(() =>
-            {
-                SetWhiteOverlayAlpha(0.0f);
-                whiteFadeTween = null;
-            });
+            .OnComplete(CompleteWhiteFade);
+    }
+
+    private void CompleteGrow()
+    {
+        rectTransform.localScale = initialScale;
+        growSequence = null;
+    }
+
+    private void CompleteWhiteFade()
+    {
+        SetWhiteOverlayAlpha(0.0f);
+        whiteFadeTween = null;
     }
 
     private void Initialize()

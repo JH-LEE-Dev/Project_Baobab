@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DG.Tweening;
+using DG.Tweening.Core;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -157,6 +158,10 @@ namespace PresentationLayer.UISystem.CustomNumber
         private bool activeDeltaUsesPivotB;
         private int activeDeltaLength;
         private float currentDeltaShowTime;
+        private float activeDeltaShakeDistance;
+        private double numberTweenDisplayedValue;
+        private long numberTweenDisplayedLongValue;
+        private long numberTweenTargetValue;
         private Color currentGlyphColor = Color.white;
 
         public event Action VisibleContentBoundsChanged;
@@ -410,24 +415,31 @@ namespace PresentationLayer.UISystem.CustomNumber
         private Tween CreateDeltaShakeTween()
         {
             float _shakeDuration = Mathf.Max(0.01f, deltaHoldShakeDuration);
-            float _shakeDistance = Mathf.Max(0.0f, deltaHoldShakeDistance);
+            activeDeltaShakeDistance = Mathf.Max(0.0f, deltaHoldShakeDistance);
 
-            return DOVirtual.Float(0.0f, 1.0f, _shakeDuration, _progress =>
+            return DOVirtual.Float(0.0f, 1.0f, _shakeDuration, UpdateDeltaShake)
+                .SetEase(Ease.Linear)
+                .OnComplete(RebuildActiveDeltaGlyphs);
+        }
+
+        private void UpdateDeltaShake(float _progress)
+        {
+            RebuildActiveDeltaGlyphs();
+            float _offset = Mathf.Sin(_progress * Mathf.PI * 6.0f) *
+                (1.0f - _progress) *
+                activeDeltaShakeDistance *
+                pixelScale;
+            for (int i = 0; i < activeDeltaLength; i++)
             {
-                RebuildActiveDeltaGlyphs();
-                float _offset = Mathf.Sin(_progress * Mathf.PI * 6.0f) * (1.0f - _progress) * _shakeDistance * pixelScale;
-                for (int i = 0; i < activeDeltaLength; i++)
-                {
-                    RawImage _glyph = deltaGlyphPool[i];
-                    if (null == _glyph)
-                        continue;
+                RawImage _glyph = deltaGlyphPool[i];
+                if (null == _glyph)
+                    continue;
 
-                    RectTransform _glyphRect = (RectTransform)_glyph.transform;
-                    Vector2 _position = _glyphRect.anchoredPosition;
-                    _position.x += _offset;
-                    _glyphRect.anchoredPosition = _position;
-                }
-            }).SetEase(Ease.Linear).OnComplete(() => RebuildActiveDeltaGlyphs());
+                RectTransform _glyphRect = (RectTransform)_glyph.transform;
+                Vector2 _position = _glyphRect.anchoredPosition;
+                _position.x += _offset;
+                _glyphRect.anchoredPosition = _position;
+            }
         }
 
         private void RebuildActiveDeltaGlyphs()
@@ -564,54 +576,31 @@ namespace PresentationLayer.UISystem.CustomNumber
                     _sequence.AppendInterval(_delay);
 
                 _sequence.Append(DOTween.To(
-                    () => _state.MotionScale,
-                    _value =>
-                    {
-                        _state.MotionScale = _value;
-                        ApplyGlyphMotionState(_state);
-                    },
+                    _state.MotionScaleGetter,
+                    _state.MotionScaleSetter,
                     new Vector3(glyphPreSquashScale.x, glyphPreSquashScale.y, 1.0f),
                     _squashDuration).SetEase(glyphPreSquashEase));
                 _sequence.Append(DOTween.To(
-                    () => _state.MotionOffset,
-                    _value =>
-                    {
-                        _state.MotionOffset = _value;
-                        ApplyGlyphMotionState(_state);
-                    },
+                    _state.MotionOffsetGetter,
+                    _state.MotionOffsetSetter,
                     new Vector2(glyphBounceDistance, 0.0f),
                     _bounceDuration).SetEase(glyphBounceMoveEase));
                 _sequence.Join(DOTween.To(
-                    () => _state.MotionScale,
-                    _value =>
-                    {
-                        _state.MotionScale = _value;
-                        ApplyGlyphMotionState(_state);
-                    },
+                    _state.MotionScaleGetter,
+                    _state.MotionScaleSetter,
                     new Vector3(glyphBounceSquashScale.x, glyphBounceSquashScale.y, 1.0f),
                     _bounceDuration).SetEase(glyphBounceMoveEase));
                 _sequence.Append(DOTween.To(
-                    () => _state.MotionOffset,
-                    _value =>
-                    {
-                        _state.MotionOffset = _value;
-                        ApplyGlyphMotionState(_state);
-                    },
+                    _state.MotionOffsetGetter,
+                    _state.MotionOffsetSetter,
                     Vector2.zero,
                     _returnDuration).SetEase(glyphReturnMoveEase, glyphReturnOvershoot));
                 _sequence.Join(DOTween.To(
-                    () => _state.MotionScale,
-                    _value =>
-                    {
-                        _state.MotionScale = _value;
-                        ApplyGlyphMotionState(_state);
-                    },
+                    _state.MotionScaleGetter,
+                    _state.MotionScaleSetter,
                     Vector3.one,
                     _returnDuration).SetEase(glyphReturnScaleEase, glyphReturnOvershoot));
-                _sequence.OnKill(() =>
-                {
-                    RestoreGlyphMotionState(_state);
-                });
+                _sequence.OnKill(_state.RestoreCallback);
 
                 glyphMotionTweens.Add(_sequence);
             }
@@ -654,26 +643,39 @@ namespace PresentationLayer.UISystem.CustomNumber
 
         private void PlayNumberTween(long _previousValue, long _targetValue)
         {
-            double _displayedValue = _previousValue;
-            long _displayedLongValue = (long)Math.Round(_displayedValue);
+            numberTweenDisplayedValue = _previousValue;
+            numberTweenDisplayedLongValue = (long)Math.Round(numberTweenDisplayedValue);
+            numberTweenTargetValue = _targetValue;
 
             numberTween = DOTween.To(
-                    () => _displayedValue,
-                    _value =>
-                    {
-                        _displayedValue = _value;
-                        long _nextDisplayValue = (long)Math.Round(_displayedValue);
-
-                        if (_displayedLongValue == _nextDisplayValue)
-                            return;
-
-                        _displayedLongValue = _nextDisplayValue;
-                        SetTweenedValue(_displayedLongValue);
-                    },
+                    GetNumberTweenDisplayedValue,
+                    SetNumberTweenDisplayedValue,
                     _targetValue,
                     Mathf.Max(0.01f, valueTweenDuration))
                 .SetEase(valueTweenEase)
-                .OnComplete(() => SetTweenedValue(_targetValue));
+                .OnComplete(CompleteNumberTween);
+        }
+
+        private double GetNumberTweenDisplayedValue()
+        {
+            return numberTweenDisplayedValue;
+        }
+
+        private void SetNumberTweenDisplayedValue(double _value)
+        {
+            numberTweenDisplayedValue = _value;
+            long _nextDisplayValue = (long)Math.Round(numberTweenDisplayedValue);
+
+            if (numberTweenDisplayedLongValue == _nextDisplayValue)
+                return;
+
+            numberTweenDisplayedLongValue = _nextDisplayValue;
+            SetTweenedValue(numberTweenDisplayedLongValue);
+        }
+
+        private void CompleteNumberTween()
+        {
+            SetTweenedValue(numberTweenTargetValue);
         }
 
         private void SetTweenedValue(long _value)
@@ -797,7 +799,7 @@ namespace PresentationLayer.UISystem.CustomNumber
                     continue;
 
                 RectTransform _glyphRect = (RectTransform)_glyph.transform;
-                glyphMotionStates.Add(new GlyphMotionState(_glyph, _glyphRect, _glyphRect.anchoredPosition, _glyphRect.localScale));
+                glyphMotionStates.Add(new GlyphMotionState(this, _glyph, _glyphRect, _glyphRect.anchoredPosition, _glyphRect.localScale));
             }
         }
 
@@ -1474,25 +1476,66 @@ namespace PresentationLayer.UISystem.CustomNumber
 
         private sealed class GlyphMotionState
         {
+            private readonly CurrencyFontHUD owner;
+
             public readonly RawImage Glyph;
             public readonly RectTransform RectTransform;
+            public DOGetter<Vector2> MotionOffsetGetter { get; }
+            public DOSetter<Vector2> MotionOffsetSetter { get; }
+            public DOGetter<Vector3> MotionScaleGetter { get; }
+            public DOSetter<Vector3> MotionScaleSetter { get; }
+            public TweenCallback RestoreCallback { get; }
             public Vector2 InitialPosition;
             public Vector3 InitialScale;
             public Vector2 MotionOffset;
             public Vector3 MotionScale;
 
             public GlyphMotionState(
+                CurrencyFontHUD _owner,
                 RawImage _glyph,
                 RectTransform _rectTransform,
                 Vector2 _initialPosition,
                 Vector3 _initialScale)
             {
+                owner = _owner;
                 Glyph = _glyph;
                 RectTransform = _rectTransform;
                 InitialPosition = _initialPosition;
                 InitialScale = _initialScale;
                 MotionOffset = Vector2.zero;
                 MotionScale = Vector3.one;
+                MotionOffsetGetter = GetMotionOffset;
+                MotionOffsetSetter = SetMotionOffset;
+                MotionScaleGetter = GetMotionScale;
+                MotionScaleSetter = SetMotionScale;
+                RestoreCallback = Restore;
+            }
+
+            private Vector2 GetMotionOffset()
+            {
+                return MotionOffset;
+            }
+
+            private void SetMotionOffset(Vector2 _value)
+            {
+                MotionOffset = _value;
+                owner.ApplyGlyphMotionState(this);
+            }
+
+            private Vector3 GetMotionScale()
+            {
+                return MotionScale;
+            }
+
+            private void SetMotionScale(Vector3 _value)
+            {
+                MotionScale = _value;
+                owner.ApplyGlyphMotionState(this);
+            }
+
+            private void Restore()
+            {
+                owner.RestoreGlyphMotionState(this);
             }
         }
     }

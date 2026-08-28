@@ -81,12 +81,13 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
                 // 증가 시: 고스트 바 즉시 반영, 메인 바는 딜레이 후 따라감 (아이템 계속 먹으면 딜레이 갱신)
                 ghostSlider.value = _ratio;
 
-                if (null != catchupTween && catchupTween.IsActive())
+                if (null != catchupTween && true == catchupTween.IsActive())
                     catchupTween.Kill();
 
                 catchupTween = progressSlider.DOValue(_ratio, ghostCatchupDuration)
                     .SetDelay(ghostDelay)
                     .SetEase(Ease.OutQuad)
+                    .SetLink(gameObject)
                     .OnUpdate(cachedOnCapacityUpdate);
             }
             else
@@ -95,12 +96,13 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
                 UpdateValue(_ratio);
                 UpdateColor(_ratio);
 
-                if (null != catchupTween && catchupTween.IsActive())
+                if (null != catchupTween && true == catchupTween.IsActive())
                     catchupTween.Kill();
 
                 catchupTween = ghostSlider.DOValue(_ratio, ghostCatchupDuration)
                     .SetDelay(ghostDelay)
-                    .SetEase(Ease.OutQuad);
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(gameObject);
             }
         }
         else
@@ -115,12 +117,12 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
     /// </summary>
     public void PlayFeedbackAnimation()
     {
-        if (null != feedbackSequence && feedbackSequence.IsActive())
+        if (null != feedbackSequence && true == feedbackSequence.IsActive())
             feedbackSequence.Kill(true);
 
         transform.localScale = Vector3.one;
         
-        feedbackSequence = DOTween.Sequence();
+        feedbackSequence = DOTween.Sequence().SetLink(gameObject);
         // 1. 가로로 늘어나면서 세로로 수축 (Stretch)
         feedbackSequence.Append(transform.DOScale(new Vector3(stretchX, stretchY, 1f), stepDuration).SetEase(Ease.OutQuad));
         // 2. 가로로 수축되면서 세로로 늘어남 (Squash)
@@ -134,12 +136,12 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
     /// </summary>
     public void PlayRemoveFeedbackAnimation()
     {
-        if (null != feedbackSequence && feedbackSequence.IsActive())
+        if (null != feedbackSequence && true == feedbackSequence.IsActive())
             feedbackSequence.Kill(true);
 
         transform.localScale = Vector3.one;
 
-        feedbackSequence = DOTween.Sequence();
+        feedbackSequence = DOTween.Sequence().SetLink(gameObject);
         // 1. 살짝 작아지면서 눌리는 느낌 (Squash)
         feedbackSequence.Append(transform.DOScale(new Vector3(removeSquashScale, removeSquashScale, 1f), stepDuration).SetEase(Ease.OutQuad));
         // 2. 원래대로 찰지게 돌아오기
@@ -170,5 +172,22 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
             float _t = (_ratio - 0.5f) / 0.5f;
             fillImage.color = Color.Lerp(mediumCapacityColor, highCapacityColor, _t);
         }
+    }
+
+    private void OnDisable()
+    {
+        if (null != catchupTween && true == catchupTween.IsActive())
+        {
+            catchupTween.Kill();
+            catchupTween = null;
+        }
+
+        if (null != feedbackSequence && true == feedbackSequence.IsActive())
+        {
+            feedbackSequence.Kill();
+            feedbackSequence = null;
+        }
+
+        transform.localScale = Vector3.one;
     }
 }

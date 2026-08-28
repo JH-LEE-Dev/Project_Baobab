@@ -14,6 +14,12 @@ public class UI_RedDot : MonoBehaviour
     [SerializeField] private int shakeVibrato = 40;
 
     private Sequence dotweenSeq;
+    private TweenCallback cachedOnAppearComplete;
+
+    private void Awake()
+    {
+        cachedOnAppearComplete = StartIdleLoopSequence;
+    }
 
     /// <summary>
     /// 레드닷 알림을 활성화하고 애니메이션을 시작합니다.
@@ -38,7 +44,7 @@ public class UI_RedDot : MonoBehaviour
 
     private void PlayAnimation(bool wasActive)
     {
-        if (targetVisual == null)
+        if (null == targetVisual)
         {
             Debug.LogWarning("[UI_RedDot] 타겟 비주얼이 할당되지 않았습니다. 인스펙터에서 타겟 이미지를 바인딩해주세요.", this);
             return;
@@ -50,7 +56,7 @@ public class UI_RedDot : MonoBehaviour
         targetVisual.localPosition = Vector3.zero;
         targetVisual.localEulerAngles = Vector3.zero;
 
-        dotweenSeq = DOTween.Sequence();
+        dotweenSeq = DOTween.Sequence().SetLink(gameObject);
         
         if (true == wasActive)
         {
@@ -67,25 +73,29 @@ public class UI_RedDot : MonoBehaviour
         
         // DOTween은 시퀀스 내부에 무한 반복(-1) 요소를 Append하는 것을 허용하지 않습니다.
         // 따라서 첫 등장 연출이 끝난 직후(OnComplete)에 무한 반복 시퀀스로 덮어씌워 재생합니다.
-        dotweenSeq.OnComplete(() =>
-        {
-            dotweenSeq = DOTween.Sequence();
-            dotweenSeq.AppendInterval(idleDuration);
-            dotweenSeq.Append(targetVisual.DOShakeRotation(shakeDuration, shakeRotStrength, shakeVibrato, 90f, fadeOut: true));
-            dotweenSeq.SetLoops(-1);
-        });
+        dotweenSeq.OnComplete(cachedOnAppearComplete);
+    }
+
+    private void StartIdleLoopSequence()
+    {
+        if (null == targetVisual) return;
+
+        dotweenSeq = DOTween.Sequence().SetLink(gameObject);
+        dotweenSeq.AppendInterval(idleDuration);
+        dotweenSeq.Append(targetVisual.DOShakeRotation(shakeDuration, shakeRotStrength, shakeVibrato, 90f, fadeOut: true));
+        dotweenSeq.SetLoops(-1);
     }
 
     private void KillAnimation()
     {
-        if (dotweenSeq != null)
+        if (null != dotweenSeq)
         {
             dotweenSeq.Kill();
             dotweenSeq = null;
         }
         
         // 트랜스폼 롤백
-        if (targetVisual != null)
+        if (null != targetVisual)
         {
             targetVisual.localScale = Vector3.one;
             targetVisual.localPosition = Vector3.zero;
