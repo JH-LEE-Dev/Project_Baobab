@@ -260,7 +260,13 @@ public class VFXComponent : MonoBehaviour
             {
                 VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
                 if (null != _helper && null != _helper.TargetTransform)
+                {
+                    // 직전 반납이 비활성 상태에서 일어났다면 재부모화가 지연 예약되어 있을 수 있다.
+                    // 그대로 두면 이 인스턴스가 새 주인에게 붙어 재생을 시작한 뒤 예약분이 터져
+                    // 주인에게서 떨어져 나가므로(월드 위치 고정), 꺼내는 시점에 반드시 취소한다.
+                    _helper.CancelPendingReparent();
                     _helper.TargetTransform.SetParent(transform);
+                }
                 else
                     _effect.transform.SetParent(transform);
 
@@ -759,6 +765,9 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     private bool isReturning;
     private Coroutine stopCoroutine;
     private DG.Tweening.TweenCallback cachedDeferredSetParent;
+    // 비활성 상태에서 반납될 때 예약해두는 재부모화 트윈. 예약이 살아있는 동안 이 인스턴스가
+    // 다시 대여되면 반드시 취소해야 한다(CancelPendingReparent).
+    private DG.Tweening.Tween deferredReparentTween;
     private Vector3 originalLocalScale = Vector3.one;
     private bool hasOriginalLocalScale = false;
 
@@ -878,7 +887,8 @@ public class VFXPoolInstanceHelper : MonoBehaviour
                     }
                     else
                     {
-                        DG.Tweening.DOVirtual.DelayedCall(0.01f, cachedDeferredSetParent, true);
+                        CancelPendingReparent();
+                        deferredReparentTween = DG.Tweening.DOVirtual.DelayedCall(0.01f, cachedDeferredSetParent, true);
                     }
                 }
                 catch (System.Exception ex)
@@ -900,12 +910,37 @@ public class VFXPoolInstanceHelper : MonoBehaviour
 
     public Transform TargetTransform => targetTransform;
 
+    /// <summary>
+    /// 비활성 반납 시 예약해둔 지연 재부모화를 취소합니다.
+    /// 인스턴스를 풀에서 다시 꺼낼 때 호출해야, 새 주인에게 붙은 이펙트가 뒤늦게 떨어져 나가지 않습니다.
+    /// </summary>
+    public void CancelPendingReparent()
+    {
+        if (null != deferredReparentTween)
+        {
+            if (true == DG.Tweening.TweenExtensions.IsActive(deferredReparentTween))
+                DG.Tweening.TweenExtensions.Kill(deferredReparentTween, false);
+
+            deferredReparentTween = null;
+        }
+    }
+
     private void ExecuteDeferredSetParent()
     {
-        if (null != targetTransform && null != originalParent)
-        {
-            try { targetTransform.SetParent(originalParent); } catch {}
-        }
+        deferredReparentTween = null;
+
+        if (null == targetTransform || null == originalParent)
+            return;
+
+        // 예약과 실행 사이에 다시 대여되어 재생 중이면(활성 상태) 손대면 안 된다.
+        // 여기서 부모를 바꾸면 이펙트가 주인에게서 분리되어 그 자리에 그대로 남는다.
+        if (true == targetTransform.gameObject.activeSelf)
+            return;
+
+        if (targetTransform.parent == originalParent)
+            return;
+
+        try { targetTransform.SetParent(originalParent); } catch {}
     }
 
     // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
@@ -917,6 +952,8 @@ public class VFXPoolInstanceHelper : MonoBehaviour
 
     private void OnDestroy()
     {
+        CancelPendingReparent();
+
         if (null != targetTransform && transform != targetTransform)
         {
             Destroy(targetTransform.gameObject);

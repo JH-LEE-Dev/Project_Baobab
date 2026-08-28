@@ -61,16 +61,6 @@ public class InputReader
 
     private InputDeviceTracker deviceTracker;
 
-    // 진동과 같은 이유로 액션 해석과 분리해 둔다. 이 객체는 "화면 좌표 하나"만 책임진다.
-    private readonly GamepadVirtualCursor virtualCursor = new GamepadVirtualCursor();
-
-    /// <summary>
-    /// 패드용 가상 커서입니다. 특성 UI처럼 화면의 임의 지점을 찍어야 하는 화면에서 씁니다.
-    /// 켜고 끄는 것은 그 화면이 SetVirtualCursorRequested로 정하고,
-    /// 실제로 표시할지는 지금 패드를 쓰는 중인지가 결정합니다.
-    /// </summary>
-    public GamepadVirtualCursor VirtualCursor => virtualCursor;
-
     private EInputMode currentInputMode = EInputMode.Gameplay;
 
     private static readonly ERebindableAction[] rebindableActions = (ERebindableAction[])Enum.GetValues(typeof(ERebindableAction));
@@ -136,8 +126,6 @@ public class InputReader
 
         deviceTracker.Initialize(_deviceSettings);
 
-        virtualCursor.Initialize(_deviceSettings);
-
         if (actions == null)
         {
             actions = new InputActionSystem();
@@ -180,7 +168,6 @@ public class InputReader
 
         // Release가 두 번 불릴 수 있어(InputManager.Release + OnDestroy) 구독 해제는 멱등해야 한다.
         deviceTracker?.Release();
-        virtualCursor.Release();
 
         actions.Normal.Disable();
 
@@ -209,13 +196,12 @@ public class InputReader
 
     /// <summary>
     /// InputManager가 매 프레임 호출합니다. 이벤트로 처리할 수 없는, 상태를 계속 지켜봐야 하는
-    /// 것들만 여기서 돕니다. (장치 자동 전환 판정, 가상 커서 이동, 리바인딩 취소 감시)
+    /// 것들만 여기서 돕니다. (장치 자동 전환 판정, 리바인딩 취소 감시)
     /// 일시정지 중에도 전부 동작해야 하므로 unscaled 델타를 넘겨야 합니다.
     /// </summary>
     public void Tick(float _unscaledDeltaTime)
     {
         deviceTracker?.Tick(_unscaledDeltaTime);
-        TickVirtualCursor(_unscaledDeltaTime);
         UpdateGamepadRebindCancel();
     }
 
@@ -407,42 +393,7 @@ public class InputReader
     {
         if (false == CanDispatchGameplay) return;
 
-        // 가상 커서가 떠 있으면 같은 오른쪽 스틱이 커서를 몰고 있다. 그 입력을 조준으로도
-        // 흘려보내면 커서를 움직일 때마다 캐릭터가 함께 홱홱 돌아간다.
-        // 여기서 막으면 조준은 마지막으로 겨눈 방향에 그대로 멈춰 있는다.
-        if (true == virtualCursor.IsActive) return;
-
         AimEvent?.Invoke(context.ReadValue<Vector2>());
-    }
-
-    /// <summary>
-    /// 가상 커서가 필요한 화면인지 알려 줍니다. (특성 UI를 열 때 true, 닫을 때 false)
-    ///
-    /// "요청"과 "실제 표시"를 나눠 둔 이유: 마우스로 플레이하는 유저에게는 특성 UI를 열어도
-    /// 가상 커서가 나오면 안 됩니다. 진짜 커서가 이미 있으니까요. 그래서 요청은 화면이 하고,
-    /// 실제로 켤지는 지금 패드를 쓰고 있는지가 결정합니다.
-    ///
-    /// 덕분에 창을 열어 둔 채 마우스와 패드를 오가도 알아서 따라옵니다.
-    /// (패드를 잡으면 화면 중앙에 나타나고, 마우스를 만지면 사라집니다)
-    /// </summary>
-    public void SetVirtualCursorRequested(bool _bRequested)
-    {
-        virtualCursor.SetRequested(_bRequested, IsGamepadMode);
-    }
-
-    /// <summary>
-    /// 가상 커서를 매 프레임 갱신합니다.
-    ///
-    /// 스틱 값을 장치에서 직접 읽지 않고 Aim 액션에서 읽는 이유: 조준 스틱을 다른 컨트롤로
-    /// 리바인딩하면 커서도 같은 컨트롤을 따라가야 하기 때문입니다. 액션의 데드존 처리도 함께 받습니다.
-    /// </summary>
-    private void TickVirtualCursor(float _unscaledDeltaTime)
-    {
-        // 요청이 없으면 켜질 일도, 장치 전환을 지켜볼 일도 없다.
-        if (false == virtualCursor.IsRequested) return;
-        if (null == actions) return;
-
-        virtualCursor.Tick(_unscaledDeltaTime, actions.Normal.Aim.ReadValue<Vector2>(), IsGamepadMode);
     }
 
     private void OnMouseMove(InputAction.CallbackContext context)

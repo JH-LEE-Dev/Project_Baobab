@@ -19,6 +19,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const float KeyboardMoveGridUnitsPerSecond = 9f;
     private const float DefaultPadCursorSpeedPixelsPerSecond = 280f;
     private const float PadCursorSensitivitySpeedMultiplier = 5.6f;
+
+    /// <summary>
+    /// 슬라이더가 0이어도 이 값 이하로는 내려가지 않습니다. (0 * 배수 = 정지 방지)
+    /// 15 * 5.6 = 84px/s 정도로, 느리지만 화면을 가로지를 수는 있는 속도입니다.
+    /// </summary>
+    private const float MinPadCursorSensitivity = 15f;
     private const float PadZoomRepeatInterval = 0.1f;
     private const float ToolTipSpacing = 32f;
     private const float ToolTipVerticalScreenPadding = 16f;
@@ -351,9 +357,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (float.IsNaN(_rawSensitivity))
             _rawSensitivity = SettingsData.SLIDER_CENTER_DEFAULT;
 
+        // 하한이 반드시 있어야 한다. 슬라이더 0을 그대로 곱하면 속도가 0이 되어 커서가 아예
+        // 움직이지 않고, 그러면 유저는 패드만으로 옵션 화면에 돌아가 값을 되돌릴 수단까지 잃는다.
+        // 감도 0은 "느림"이어야지 "끔"이면 안 된다.
         float _sensitivity = Mathf.Clamp(
             _rawSensitivity,
-            SettingsData.SLIDER_MIN,
+            MinPadCursorSensitivity,
             SettingsData.SLIDER_MAX);
         padCursorSpeedPixelsPerSecond = _sensitivity * PadCursorSensitivitySpeedMultiplier;
     }

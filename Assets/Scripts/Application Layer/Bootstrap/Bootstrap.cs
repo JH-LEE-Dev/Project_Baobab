@@ -162,9 +162,6 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
         currentSceneType = SceneType.MainMenu;
 
-        // 가상 커서 요청이 남은 채 메인 메뉴로 돌아오지 않도록 여기서도 거둔다.
-        inputManager?.SetVirtualCursorRequested(false);
-
         if (mainMenuInstaller == null)
         {
             // 최초 1회(앱 부팅)만 생성한다. 이후로는 절대 파괴하지 않고 같은 인스턴스를 계속 재사용한다.

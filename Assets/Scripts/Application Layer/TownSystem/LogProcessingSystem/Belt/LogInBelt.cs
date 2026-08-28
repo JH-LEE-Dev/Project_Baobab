@@ -291,6 +291,9 @@ public class LogInBelt : MonoBehaviour
 
                     LogOutEvent?.Invoke(dItem.item, logItemData);
 
+                    // 파티클이 자식으로 붙은 채 꺼지면 파티클의 activeSelf는 true로 남아
+                    // VFX 풀이 "사용 중"으로 오인하고, 그 인스턴스는 영영 재사용되지 못한다.
+                    dItem.item.StopGemShiny();
                     dItem.item.gameObject.SetActive(false);
                 }
                 deactivatingItems.RemoveAt(i);
@@ -369,6 +372,7 @@ public class LogInBelt : MonoBehaviour
 
                     LogOutEvent?.Invoke(dItem.item, logItemData);
 
+                    dItem.item.StopGemShiny();
                     dItem.item.gameObject.SetActive(false);
                 }
             }
