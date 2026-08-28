@@ -99,6 +99,10 @@ public class AbilityHUD : MonoBehaviour
     private Tween levelUpSpriteEffectTween;
     private Tween levelUpParticleStopTween;
     private readonly Tween[] eventSpriteEffectTweens = new Tween[(int)EventSpriteEffectType.Count];
+    private readonly Image[] activeEventSpriteEffectImages = new Image[(int)EventSpriteEffectType.Count];
+    private readonly Sprite[][] activeEventSpriteEffectFrames = new Sprite[(int)EventSpriteEffectType.Count][];
+    private readonly float[] activeEventSpriteEffectFrameRates = new float[(int)EventSpriteEffectType.Count];
+    private readonly int[] activeEventSpriteEffectLastFrameIndices = new int[(int)EventSpriteEffectType.Count];
     private readonly List<RectTransform> spawnedFlowerObjects = new List<RectTransform>();
     private readonly List<RectTransform> pooledFlowerObjects = new List<RectTransform>();
     private RectTransform barFontRectTransform;
@@ -111,6 +115,10 @@ public class AbilityHUD : MonoBehaviour
     private AudioHandle downStartSoundHandle = AudioHandle.Invalid;
     private int resetDrainTargetExperience;
     private int resetTargetFlowerStack;
+    private int resetStartExperience;
+    private float resetFlashTweenDuration;
+    private float levelUpSpriteEffectActiveFrameRate;
+    private int levelUpSpriteEffectLastFrameIndex;
     private float lastDownTickSoundElapsed = float.NegativeInfinity;
     private bool playExperienceMotionAfterReset;
     private bool playFlowerDangleAfterReset;
@@ -382,8 +390,8 @@ public class AbilityHUD : MonoBehaviour
         // The reset begins from a visually full bar using the newly applied limit.
         // The previous limit can differ, so using the old absolute experience here
         // would make the fill jump before the drain starts.
-        int _startExperience = maxExperience;
-        currentExperience = _startExperience;
+        resetStartExperience = maxExperience;
+        currentExperience = resetStartExperience;
         RefreshAbilityBar();
         lastDownTickSoundElapsed = float.NegativeInfinity;
 
@@ -391,53 +399,59 @@ public class AbilityHUD : MonoBehaviour
         ApplyResetFlashColors(0.0f, 0.0f);
 
         resetEffectSequence = DOTween.Sequence();
-        resetEffectSequence.AppendCallback(() =>
-        {
-            Sound.PlayUI(SoundID.AbilityHUDLevelUp);
-            PlayLevelUpSpriteEffect();
-            PlayLevelUpParticleEffect();
-            PlayEventSpriteEffect(EventSpriteEffectType.LevelUpSpark);
-
-            if (null != barFontRectTransform)
-                barFontRectTransform.DOShakeAnchorPos(
-                    Mathf.Max(0.0f, resetColorDuration + resetDrainDuration),
-                    resetShakeStrength,
-                    Mathf.Max(1, resetShakeVibrato),
-                    90.0f,
-                    false,
-                    true);
-        });
+        resetEffectSequence.AppendCallback(PlayResetStartEffects);
         resetEffectSequence.Join(BuildResetSquashTween());
         resetEffectSequence.Join(BuildResetColorFlashTween());
         resetEffectSequence.AppendCallback(PlayFlowerStackGrowEffect);
         resetEffectSequence.AppendCallback(PlayDownStartSound);
-        resetEffectSequence.Append(DOVirtual.Float(0.0f, 1.0f, Mathf.Max(0.0f, resetDrainDuration), _progress =>
-        {
-            int _targetExperience = ClampExperience(resetDrainTargetExperience);
-            int _previousExperience = currentExperience;
-            currentExperience = Mathf.RoundToInt(Mathf.Lerp(_startExperience, _targetExperience, _progress));
-            TryPlayDownTickSound(
-                _previousExperience,
-                currentExperience,
-                resetDrainDuration * _progress);
-            ApplyResetFlashColors(resetColorDuration + (resetDrainDuration * _progress), _progress);
-            RefreshAbilityBar();
-        }).SetEase(Ease.Linear));
+        resetEffectSequence.Append(DOVirtual.Float(0.0f, 1.0f, Mathf.Max(0.0f, resetDrainDuration), UpdateResetDrain).SetEase(Ease.Linear));
         resetEffectSequence.OnKill(RestoreResetExperienceEffectState);
-        resetEffectSequence.OnComplete(() =>
-        {
-            currentExperience = ClampExperience(resetDrainTargetExperience);
-            RefreshAbilityBar();
-            RestoreResetExperienceEffectState();
-            resetEffectSequence = null;
-            ScheduleDeferredExperienceMotion();
-        });
+        resetEffectSequence.OnComplete(CompleteResetEffect);
+    }
+
+    private void PlayResetStartEffects()
+    {
+        Sound.PlayUI(SoundID.AbilityHUDLevelUp);
+        PlayLevelUpSpriteEffect();
+        PlayLevelUpParticleEffect();
+        PlayEventSpriteEffect(EventSpriteEffectType.LevelUpSpark);
+
+        if (null != barFontRectTransform)
+            barFontRectTransform.DOShakeAnchorPos(
+                Mathf.Max(0.0f, resetColorDuration + resetDrainDuration),
+                resetShakeStrength,
+                Mathf.Max(1, resetShakeVibrato),
+                90.0f,
+                false,
+                true);
+    }
+
+    private void UpdateResetDrain(float _progress)
+    {
+        int _targetExperience = ClampExperience(resetDrainTargetExperience);
+        int _previousExperience = currentExperience;
+        currentExperience = Mathf.RoundToInt(Mathf.Lerp(resetStartExperience, _targetExperience, _progress));
+        TryPlayDownTickSound(
+            _previousExperience,
+            currentExperience,
+            resetDrainDuration * _progress);
+        ApplyResetFlashColors(resetColorDuration + (resetDrainDuration * _progress), _progress);
+        RefreshAbilityBar();
+    }
+
+    private void CompleteResetEffect()
+    {
+        currentExperience = ClampExperience(resetDrainTargetExperience);
+        RefreshAbilityBar();
+        RestoreResetExperienceEffectState();
+        resetEffectSequence = null;
+        ScheduleDeferredExperienceMotion();
     }
 
     private Tween BuildResetSquashTween()
     {
         if (null == barFontRectTransform)
-            return DOVirtual.DelayedCall(Mathf.Max(0.0f, resetSquashDuration), () => { });
+            return DOVirtual.DelayedCall(Mathf.Max(0.0f, resetSquashDuration), DoNothing);
 
         float _halfDuration = Mathf.Max(0.0f, resetSquashDuration) * 0.5f;
         Vector3 _targetScale = new Vector3(
@@ -518,15 +532,24 @@ public class AbilityHUD : MonoBehaviour
 
     private Tween BuildResetColorFlashTween()
     {
-        float _duration = Mathf.Max(0.0f, resetColorDuration);
+        resetFlashTweenDuration = Mathf.Max(0.0f, resetColorDuration);
+        return DOVirtual.Float(0.0f, resetFlashTweenDuration, resetFlashTweenDuration, UpdateResetFlashColors)
+            .SetEase(Ease.Linear)
+            .OnComplete(CompleteResetFlashColors);
+    }
 
-        return DOVirtual.Float(0.0f, _duration, _duration, _elapsedTime =>
-        {
-            ApplyResetFlashColors(_elapsedTime, 0.0f);
-        }).SetEase(Ease.Linear).OnComplete(() =>
-            {
-                ApplyResetFlashColors(_duration, 0.0f);
-            });
+    private void UpdateResetFlashColors(float _elapsedTime)
+    {
+        ApplyResetFlashColors(_elapsedTime, 0.0f);
+    }
+
+    private void CompleteResetFlashColors()
+    {
+        ApplyResetFlashColors(resetFlashTweenDuration, 0.0f);
+    }
+
+    private static void DoNothing()
+    {
     }
 
     private void ApplyResetFlashColors(float _elapsedTime, float _whiteBlend)
@@ -1035,25 +1058,29 @@ public class AbilityHUD : MonoBehaviour
         levelUpSpriteEffectRoot.SetActive(true);
         SetSpriteEffectFrame(levelUpAboveEffectImage, levelUpAboveEffectFrames, 0);
 
-        float _frameRate = Mathf.Max(1.0f, levelUpSpriteEffectFrameRate);
-        float _duration = _aboveFrameCount / _frameRate;
-        int _lastFrameIndex = 0;
-        levelUpSpriteEffectTween = DOVirtual.Float(0.0f, _duration, _duration, _elapsedTime =>
-        {
-            int _frameIndex = Mathf.FloorToInt(_elapsedTime * _frameRate);
-            if (_frameIndex == _lastFrameIndex)
-                return;
-
-            _lastFrameIndex = _frameIndex;
-            SetSpriteEffectFrame(levelUpAboveEffectImage, levelUpAboveEffectFrames, _frameIndex);
-        })
+        levelUpSpriteEffectActiveFrameRate = Mathf.Max(1.0f, levelUpSpriteEffectFrameRate);
+        float _duration = _aboveFrameCount / levelUpSpriteEffectActiveFrameRate;
+        levelUpSpriteEffectLastFrameIndex = 0;
+        levelUpSpriteEffectTween = DOVirtual.Float(0.0f, _duration, _duration, UpdateLevelUpSpriteEffectFrame)
         .SetEase(Ease.Linear)
         .SetUpdate(true)
-        .OnComplete(() =>
-        {
-            levelUpSpriteEffectTween = null;
-            HideLevelUpSpriteEffect();
-        });
+        .OnComplete(CompleteLevelUpSpriteEffect);
+    }
+
+    private void UpdateLevelUpSpriteEffectFrame(float _elapsedTime)
+    {
+        int _frameIndex = Mathf.FloorToInt(_elapsedTime * levelUpSpriteEffectActiveFrameRate);
+        if (_frameIndex == levelUpSpriteEffectLastFrameIndex)
+            return;
+
+        levelUpSpriteEffectLastFrameIndex = _frameIndex;
+        SetSpriteEffectFrame(levelUpAboveEffectImage, levelUpAboveEffectFrames, _frameIndex);
+    }
+
+    private void CompleteLevelUpSpriteEffect()
+    {
+        levelUpSpriteEffectTween = null;
+        HideLevelUpSpriteEffect();
     }
 
     private void StopLevelUpSpriteEffect()
@@ -1096,12 +1123,14 @@ public class AbilityHUD : MonoBehaviour
             .AppendInterval(_emissionDuration)
             .AppendCallback(StopLevelUpParticleEmission)
             .AppendInterval(Mathf.Max(0.0f, _maxParticleLifetime))
-            .OnComplete(() =>
-            {
-                levelUpParticleStopTween = null;
-                SetLevelUpParticleRootsActive(false);
-            })
+            .OnComplete(CompleteLevelUpParticleEffect)
             .SetUpdate(true);
+    }
+
+    private void CompleteLevelUpParticleEffect()
+    {
+        levelUpParticleStopTween = null;
+        SetLevelUpParticleRootsActive(false);
     }
 
     private void StopLevelUpParticleEffect()
@@ -1225,25 +1254,99 @@ public class AbilityHUD : MonoBehaviour
 
         float _frameRate = Mathf.Max(1.0f, eventSpriteEffectFrameRate);
         float _duration = _frames.Length / _frameRate;
-        int _lastFrameIndex = 0;
-        eventSpriteEffectTweens[_effectIndex] = DOVirtual.Float(0.0f, _duration, _duration, _elapsedTime =>
-        {
-            int _frameIndex = Mathf.Min(
-                Mathf.FloorToInt(_elapsedTime * _frameRate),
-                _frames.Length - 1);
-            if (_frameIndex == _lastFrameIndex)
-                return;
+        activeEventSpriteEffectImages[_effectIndex] = _effectImage;
+        activeEventSpriteEffectFrames[_effectIndex] = _frames;
+        activeEventSpriteEffectFrameRates[_effectIndex] = _frameRate;
+        activeEventSpriteEffectLastFrameIndices[_effectIndex] = 0;
 
-            _lastFrameIndex = _frameIndex;
-            SetSpriteEffectFrame(_effectImage, _frames, _frameIndex);
-        })
-        .SetEase(Ease.Linear)
-        .SetUpdate(true)
-        .OnComplete(() =>
+        switch (_effectType)
         {
-            eventSpriteEffectTweens[_effectIndex] = null;
-            SetSpriteEffectFrame(_effectImage, null, -1);
-        });
+            case EventSpriteEffectType.LevelUpSpark:
+                eventSpriteEffectTweens[_effectIndex] = CreateEventSpriteEffectTween(
+                    _duration,
+                    UpdateLevelUpSparkEffect,
+                    CompleteLevelUpSparkEffect);
+                break;
+            case EventSpriteEffectType.FontSpark:
+                eventSpriteEffectTweens[_effectIndex] = CreateEventSpriteEffectTween(
+                    _duration,
+                    UpdateFontSparkEffect,
+                    CompleteFontSparkEffect);
+                break;
+            case EventSpriteEffectType.FlowerAppear:
+                eventSpriteEffectTweens[_effectIndex] = CreateEventSpriteEffectTween(
+                    _duration,
+                    UpdateFlowerAppearEffect,
+                    CompleteFlowerAppearEffect);
+                break;
+        }
+    }
+
+    private static Tween CreateEventSpriteEffectTween(
+        float _duration,
+        TweenCallback<float> _updateCallback,
+        TweenCallback _completeCallback)
+    {
+        return DOVirtual.Float(0.0f, _duration, _duration, _updateCallback)
+            .SetEase(Ease.Linear)
+            .SetUpdate(true)
+            .OnComplete(_completeCallback);
+    }
+
+    private void UpdateLevelUpSparkEffect(float _elapsedTime)
+    {
+        UpdateEventSpriteEffect(EventSpriteEffectType.LevelUpSpark, _elapsedTime);
+    }
+
+    private void UpdateFontSparkEffect(float _elapsedTime)
+    {
+        UpdateEventSpriteEffect(EventSpriteEffectType.FontSpark, _elapsedTime);
+    }
+
+    private void UpdateFlowerAppearEffect(float _elapsedTime)
+    {
+        UpdateEventSpriteEffect(EventSpriteEffectType.FlowerAppear, _elapsedTime);
+    }
+
+    private void UpdateEventSpriteEffect(EventSpriteEffectType _effectType, float _elapsedTime)
+    {
+        int _effectIndex = (int)_effectType;
+        Sprite[] _frames = activeEventSpriteEffectFrames[_effectIndex];
+        if (null == _frames || 0 == _frames.Length)
+            return;
+
+        int _frameIndex = Mathf.Min(
+            Mathf.FloorToInt(_elapsedTime * activeEventSpriteEffectFrameRates[_effectIndex]),
+            _frames.Length - 1);
+        if (_frameIndex == activeEventSpriteEffectLastFrameIndices[_effectIndex])
+            return;
+
+        activeEventSpriteEffectLastFrameIndices[_effectIndex] = _frameIndex;
+        SetSpriteEffectFrame(activeEventSpriteEffectImages[_effectIndex], _frames, _frameIndex);
+    }
+
+    private void CompleteLevelUpSparkEffect()
+    {
+        CompleteEventSpriteEffect(EventSpriteEffectType.LevelUpSpark);
+    }
+
+    private void CompleteFontSparkEffect()
+    {
+        CompleteEventSpriteEffect(EventSpriteEffectType.FontSpark);
+    }
+
+    private void CompleteFlowerAppearEffect()
+    {
+        CompleteEventSpriteEffect(EventSpriteEffectType.FlowerAppear);
+    }
+
+    private void CompleteEventSpriteEffect(EventSpriteEffectType _effectType)
+    {
+        int _effectIndex = (int)_effectType;
+        eventSpriteEffectTweens[_effectIndex] = null;
+        SetSpriteEffectFrame(activeEventSpriteEffectImages[_effectIndex], null, -1);
+        activeEventSpriteEffectImages[_effectIndex] = null;
+        activeEventSpriteEffectFrames[_effectIndex] = null;
     }
 
     private void StopEventSpriteEffect(EventSpriteEffectType _effectType)
@@ -1255,6 +1358,8 @@ public class AbilityHUD : MonoBehaviour
 
         eventSpriteEffectTweens[_effectIndex] = null;
         SetSpriteEffectFrame(GetEventSpriteEffectImage(_effectType), null, -1);
+        activeEventSpriteEffectImages[_effectIndex] = null;
+        activeEventSpriteEffectFrames[_effectIndex] = null;
     }
 
     private void StopAllEventSpriteEffects()
