@@ -240,7 +240,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField, Min(0.01f)] private float padSelectionCursorMagnetDuration = 0.35f;
 
     [Header("Pad Cursor Safe Area")]
-    [Tooltip("오른쪽 스틱 최대 입력 시 PadCursor가 도달할 수 있는 화면상 영역의 전체 크기입니다.")]
+    [Tooltip("오른쪽 스틱 최대 입력과 일반 커서 추적이 공유하는 화면상 타원 영역의 전체 크기입니다.")]
     [SerializeField] private Vector2 padCursorSafeAreaSize = new Vector2(450f, 250f);
     [SerializeField, Min(0.1f)] private float padViewFollowMaxGridUnitsPerSecond = 9f;
     [SerializeField, Min(0.01f)] private float padViewFollowSmoothTime = 0.16f;
@@ -2320,7 +2320,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
             // 오른쪽으로 미리 보려면 커서는 화면 왼쪽에 위치해야 한다.
             // 최대 입력은 Safe Area 가장자리까지 커서의 화면 목표 위치를 이동시킨다.
-            Vector2 _targetCursorLocal = -Vector2.Scale(_lookAheadInput, _safeHalfSize);
+            Vector2 _targetCursorLocal = -GetPadEllipseOffset(_lookAheadInput, _safeHalfSize);
             return SmoothPadViewToCursorTarget(_cursorLocal, _targetCursorLocal, out _);
         }
 
@@ -2347,6 +2347,20 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
 
         return UpdatePadSafeAreaFollow(_cursorLocal, _safeHalfSize, _cursorParent);
+    }
+
+    private static Vector2 GetPadEllipseOffset(Vector2 _input, Vector2 _ellipseHalfSize)
+    {
+        float _strength = Mathf.Clamp01(_input.magnitude);
+        if (_strength <= 0.0001f)
+            return Vector2.zero;
+
+        Vector2 _direction = _input / _input.magnitude;
+        Vector2 _normalizedDirection = new Vector2(
+            _direction.x / _ellipseHalfSize.x,
+            _direction.y / _ellipseHalfSize.y);
+        float _ellipseRadius = 1f / Mathf.Max(0.0001f, _normalizedDirection.magnitude);
+        return _direction * (_ellipseRadius * _strength);
     }
 
     private bool SmoothPadViewToCursorTarget(
@@ -2388,9 +2402,13 @@ public class UI_TentAbilityComponent : MonoBehaviour
         Vector2 _safeHalfSize,
         RectTransform _cursorParent)
     {
-        Vector2 _clampedToSafeArea = new Vector2(
-            Mathf.Clamp(_cursorLocal.x, -_safeHalfSize.x, _safeHalfSize.x),
-            Mathf.Clamp(_cursorLocal.y, -_safeHalfSize.y, _safeHalfSize.y));
+        // 오른쪽 스틱 Look Ahead가 만드는 타원과 완전히 같은 경계를 사용한다.
+        // 정규화 공간에서 단위원으로 Clamp한 뒤 다시 화면 좌표로 복원한다.
+        Vector2 _normalizedCursor = new Vector2(
+            _cursorLocal.x / _safeHalfSize.x,
+            _cursorLocal.y / _safeHalfSize.y);
+        Vector2 _clampedNormalizedCursor = Vector2.ClampMagnitude(_normalizedCursor, 1f);
+        Vector2 _clampedToSafeArea = Vector2.Scale(_clampedNormalizedCursor, _safeHalfSize);
         Vector2 _overflow = _cursorLocal - _clampedToSafeArea;
 
         Vector2 _availableOutsideSafeArea = new Vector2(
