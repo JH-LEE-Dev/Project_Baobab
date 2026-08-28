@@ -254,6 +254,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField, Min(0.01f)] private float padLookAheadSmoothTime = 0.04f;
     [Tooltip("중앙 복귀가 완료된 것으로 판단하는 커서와 화면 중앙 사이의 거리입니다.")]
     [SerializeField, Min(0f)] private float padLookAheadRecenterCompletionDistance = 12f;
+    [Tooltip("중앙 복귀가 감속을 시작하는 거리입니다. 이 거리보다 멀면 최대 속도를 유지합니다.")]
+    [SerializeField, Min(0.01f)] private float padLookAheadRecenterSlowdownDistance = 64f;
     [Tooltip("커서가 계속 이동하거나 화면 경계에 막혔을 때 중앙 추적을 종료하는 최대 시간입니다.")]
     [SerializeField, Min(0.01f)] private float padLookAheadRecenterMaxDuration = 0.35f;
 
@@ -2370,8 +2372,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
         padLookAheadRecenterElapsed += Time.unscaledDeltaTime;
 
         float _completionDistance = Mathf.Max(0f, padLookAheadRecenterCompletionDistance);
-        bool _isCloseEnough = _cursorLocal.sqrMagnitude <= _completionDistance * _completionDistance;
-        bool _hasTimedOut = padLookAheadRecenterElapsed >= Mathf.Max(0.01f, padLookAheadRecenterMaxDuration);
+        float _distanceToCenter = _cursorLocal.magnitude;
+        float _maxDuration = Mathf.Max(0.01f, padLookAheadRecenterMaxDuration);
+        bool _isCloseEnough = _distanceToCenter <= _completionDistance;
+        bool _hasTimedOut = padLookAheadRecenterElapsed >= _maxDuration;
 
         if (_isCloseEnough || _hasTimedOut)
         {
@@ -2381,7 +2385,38 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         // 왼쪽 스틱으로 커서가 움직여도 복귀 상태는 취소하지 않는다.
         // 근접 거리 또는 최대 시간이 충족될 때까지만 갱신된 커서 위치를 중앙으로 추적한다.
-        return SmoothPadViewToCursorTarget(_cursorLocal, Vector2.zero);
+        float _motionScale = CalculatePadRecenterMotionScale(
+            _distanceToCenter,
+            _completionDistance,
+            _maxDuration);
+        return SmoothPadViewToCursorTarget(_cursorLocal, Vector2.zero, _motionScale);
+    }
+
+    private float CalculatePadRecenterMotionScale(
+        float _distanceToCenter,
+        float _completionDistance,
+        float _maxDuration)
+    {
+        float _slowdownDistance = Mathf.Max(
+            _completionDistance + 0.01f,
+            padLookAheadRecenterSlowdownDistance);
+        float _distanceRatio = Mathf.InverseLerp(
+            _completionDistance,
+            _slowdownDistance,
+            _distanceToCenter);
+
+        // 멀리서는 100%, 완료 지점 부근에서는 8%까지 SmoothStep으로 감속한다.
+        float _distanceScale = Mathf.Lerp(0.08f, 1f, Mathf.SmoothStep(0f, 1f, _distanceRatio));
+
+        // 최대 시간에 의한 종료도 마지막 구간에서 속도를 0으로 감쇠시켜 단절감을 없앤다.
+        float _timeoutFadeDuration = Mathf.Min(
+            _maxDuration,
+            Mathf.Max(0.05f, padLookAheadSmoothTime * 2f));
+        float _remainingTime = Mathf.Max(0f, _maxDuration - padLookAheadRecenterElapsed);
+        float _timeoutRatio = Mathf.Clamp01(_remainingTime / _timeoutFadeDuration);
+        float _timeoutScale = Mathf.SmoothStep(0f, 1f, _timeoutRatio);
+
+        return _distanceScale * _timeoutScale;
     }
 
     private void CompletePadCameraRecentering()
@@ -2407,7 +2442,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
         return _direction * (_ellipseRadius * _strength);
     }
 
-    private bool SmoothPadViewToCursorTarget(Vector2 _cursorLocal, Vector2 _targetCursorLocal)
+    private bool SmoothPadViewToCursorTarget(
+        Vector2 _cursorLocal,
+        Vector2 _targetCursorLocal,
+        float _motionScale = 1f)
     {
         float _maxSpeed = gridCellSize * padLookAheadMaxGridUnitsPerSecond * currentZoom;
         Vector2 _nextCursorLocal = Vector2.SmoothDamp(
@@ -2417,7 +2455,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             Mathf.Max(0.01f, padLookAheadSmoothTime),
             _maxSpeed,
             Time.unscaledDeltaTime);
-        Vector2 _viewDelta = _nextCursorLocal - _cursorLocal;
+        Vector2 _viewDelta = (_nextCursorLocal - _cursorLocal) * Mathf.Clamp01(_motionScale);
 
         if (_viewDelta.sqrMagnitude <= 0.0001f)
         {
