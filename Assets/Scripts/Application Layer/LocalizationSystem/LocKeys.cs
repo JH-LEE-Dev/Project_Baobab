@@ -123,6 +123,7 @@ public static class LocKeys
         public const int keyGuideDragToMove = 4203310;
         public const int keyGuideZoom = 4203311;
         public const int keyGuideMove = 4203312;
+        public const int keyGuideExit = 4203313;
         public const int abilityDescriptionInventoryExpansion = 4203404;
         public const int abilityDescriptionLogCapacityIncrease = 4203405;
         public const int abilityDescriptionSawmillLogStorageExpansion = 4203406;

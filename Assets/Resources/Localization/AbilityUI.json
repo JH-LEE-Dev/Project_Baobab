@@ -1322,6 +1322,17 @@
       "enumValue": ""
     },
     {
+      "id": 9009,
+      "key": "KeyGuide_Exit",
+      "kr": " 나가기",
+      "en": " Exit",
+      "zhHans": " 退出",
+      "zhHant": " 退出",
+      "ja": " 終了",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
       "id": 9100,
       "key": "AbilityDescription_InventoryExpansion",
       "kr": "<COLOR=8bbeff>인벤토리</COLOR> 공간을 <COLOR=54D86A>{0}칸</COLOR> 늘립니다.",

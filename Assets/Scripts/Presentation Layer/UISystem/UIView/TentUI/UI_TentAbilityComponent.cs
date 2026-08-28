@@ -186,6 +186,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField] private TMP_Text keyGuideUpgradeText;
     [SerializeField] private TMP_Text keyGuideMoveText;
     [SerializeField] private TMP_Text keyGuideMagnificationText;
+    [SerializeField] private TMP_Text keyGuideExitText;
 
     [Header("Ability Node Setup")]
     [SerializeField] private AbilityNode abilityNodePrefab;
@@ -418,6 +419,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             IsMouseKeyboardControlMode ? LocKeys.AbilityUI.keyGuideDragToMove : LocKeys.AbilityUI.keyGuideMove,
             IsMouseKeyboardControlMode ? "드래그로 이동" : "이동");
         SetLocalizedText(keyGuideMagnificationText, LocKeys.AbilityUI.keyGuideZoom, "확대 / 축소");
+        SetLocalizedText(keyGuideExitText, LocKeys.AbilityUI.keyGuideExit, "나가기");
     }
 
     private void SetLocalizedText(TMP_Text _target, int _compositeKey, string _fallback)
