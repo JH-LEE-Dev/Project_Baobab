@@ -1555,6 +1555,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2514996248941026845}
     m_Modifications:
+    - target: {fileID: 1627704048318703699, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: otherGamepadButton
+      value: 11
+      objectReference: {fileID: 0}
     - target: {fileID: 3174445166996621861, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_text
       value: Temp
