@@ -453,6 +453,8 @@ MonoBehaviour:
   padCursorSafeAreaSize: {x: 315, y: 175}
   padViewFollowMaxGridUnitsPerSecond: 14
   padViewFollowSmoothTime: 0.08
+  padLookAheadMaxGridUnitsPerSecond: 24
+  padLookAheadSmoothTime: 0.04
   nodeHoverSoundSuppressDurationAfterOpen: 0.3
   viewGridHalfExtents: {x: 60, y: 30}
   viewShakeDuration: 0.2

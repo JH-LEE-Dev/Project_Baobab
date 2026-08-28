@@ -245,6 +245,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField, Min(0.1f)] private float padViewFollowMaxGridUnitsPerSecond = 9f;
     [SerializeField, Min(0.01f)] private float padViewFollowSmoothTime = 0.16f;
 
+    [Header("Pad Right Stick Look Ahead")]
+    [Tooltip("오른쪽 스틱 Look Ahead와 중앙 복귀의 최대 카메라 이동속도입니다.")]
+    [SerializeField, Min(0.1f)] private float padLookAheadMaxGridUnitsPerSecond = 24f;
+    [Tooltip("오른쪽 스틱 Look Ahead와 중앙 복귀의 반응 시간입니다. 낮을수록 빠릿합니다.")]
+    [SerializeField, Min(0.01f)] private float padLookAheadSmoothTime = 0.04f;
+
     [Header("Node Hover Sound")]
     [SerializeField, Min(0f)] private float nodeHoverSoundSuppressDurationAfterOpen = 0.3f;
 
@@ -2368,12 +2374,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
         Vector2 _targetCursorLocal,
         out bool _reachedTarget)
     {
-        float _maxSpeed = gridCellSize * padViewFollowMaxGridUnitsPerSecond * currentZoom;
+        float _maxSpeed = gridCellSize * padLookAheadMaxGridUnitsPerSecond * currentZoom;
         Vector2 _nextCursorLocal = Vector2.SmoothDamp(
             _cursorLocal,
             _targetCursorLocal,
             ref padViewFollowVelocity,
-            Mathf.Max(0.01f, padViewFollowSmoothTime),
+            Mathf.Max(0.01f, padLookAheadSmoothTime),
             _maxSpeed,
             Time.unscaledDeltaTime);
         Vector2 _viewDelta = _nextCursorLocal - _cursorLocal;
