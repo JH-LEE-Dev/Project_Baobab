@@ -455,6 +455,8 @@ MonoBehaviour:
   padViewFollowSmoothTime: 0.08
   padLookAheadMaxGridUnitsPerSecond: 24
   padLookAheadSmoothTime: 0.04
+  padLookAheadRecenterCompletionDistance: 12
+  padLookAheadRecenterMaxDuration: 0.35
   nodeHoverSoundSuppressDurationAfterOpen: 0.3
   viewGridHalfExtents: {x: 60, y: 30}
   viewShakeDuration: 0.2

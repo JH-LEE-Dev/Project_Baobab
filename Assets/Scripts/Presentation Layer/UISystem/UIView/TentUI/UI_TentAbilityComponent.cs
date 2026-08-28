@@ -123,6 +123,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private Vector2 padLookAheadVelocity;
     private bool wasPadCameraLookAheadActive;
     private bool isPadCameraRecentering;
+    private float padLookAheadRecenterElapsed;
     private AbilityNode padSelectionCursorMagnetTargetNode;
     private Vector2 padSelectionCursorMagnetStartPosition;
     private float padSelectionCursorMagnetElapsed;
@@ -251,6 +252,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField, Min(0.1f)] private float padLookAheadMaxGridUnitsPerSecond = 24f;
     [Tooltip("오른쪽 스틱 Look Ahead와 중앙 복귀의 반응 시간입니다. 낮을수록 빠릿합니다.")]
     [SerializeField, Min(0.01f)] private float padLookAheadSmoothTime = 0.04f;
+    [Tooltip("중앙 복귀가 완료된 것으로 판단하는 커서와 화면 중앙 사이의 거리입니다.")]
+    [SerializeField, Min(0f)] private float padLookAheadRecenterCompletionDistance = 12f;
+    [Tooltip("커서가 계속 이동하거나 화면 경계에 막혔을 때 중앙 추적을 종료하는 최대 시간입니다.")]
+    [SerializeField, Min(0.01f)] private float padLookAheadRecenterMaxDuration = 0.35f;
 
     [Header("Node Hover Sound")]
     [SerializeField, Min(0f)] private float nodeHoverSoundSuppressDurationAfterOpen = 0.3f;
@@ -2320,37 +2325,72 @@ public class UI_TentAbilityComponent : MonoBehaviour
         bool _lookAheadActive = _lookAheadInput.sqrMagnitude > 0.0001f;
 
         if (_lookAheadActive)
-        {
-            // Look Ahead가 카메라를 소유하는 동안 이전 Safe Area 관성은 섞지 않는다.
-            padViewFollowVelocity = Vector2.zero;
-            wasPadCameraLookAheadActive = true;
-            isPadCameraRecentering = false;
-
-            // 오른쪽으로 미리 보려면 커서는 화면 왼쪽에 위치해야 한다.
-            // 최대 입력은 Safe Area 가장자리까지 커서의 화면 목표 위치를 이동시킨다.
-            Vector2 _targetCursorLocal = -GetPadEllipseOffset(_lookAheadInput, _safeHalfSize);
-            return SmoothPadViewToCursorTarget(_cursorLocal, _targetCursorLocal, out _);
-        }
+            return UpdatePadLookAhead(_cursorLocal, _lookAheadInput, _safeHalfSize);
 
         // 오른쪽 스틱을 놓은 직후에는 한 번 중앙으로 돌아간다.
         if (wasPadCameraLookAheadActive)
-        {
-            padViewFollowVelocity = Vector2.zero;
-            wasPadCameraLookAheadActive = false;
-            isPadCameraRecentering = true;
-        }
+            BeginPadCameraRecentering();
 
         if (isPadCameraRecentering)
-        {
-            // 왼쪽 스틱으로 커서가 움직여도 복귀 상태는 취소하지 않는다.
-            // 매 프레임 갱신된 커서 위치를 중앙으로 계속 추적하고, 완료된 뒤 Safe Area에 인계한다.
-            bool _moved = SmoothPadViewToCursorTarget(_cursorLocal, Vector2.zero, out bool _reachedCenter);
-            if (_reachedCenter)
-                isPadCameraRecentering = false;
-            return _moved;
-        }
+            return UpdatePadCameraRecentering(_cursorLocal, _safeHalfSize, _cursorParent);
 
         return UpdatePadSafeAreaFollow(_cursorLocal, _safeHalfSize, _cursorParent);
+    }
+
+    private bool UpdatePadLookAhead(
+        Vector2 _cursorLocal,
+        Vector2 _lookAheadInput,
+        Vector2 _safeHalfSize)
+    {
+        // Look Ahead가 카메라를 소유하는 동안 이전 Safe Area 관성은 섞지 않는다.
+        padViewFollowVelocity = Vector2.zero;
+        wasPadCameraLookAheadActive = true;
+        isPadCameraRecentering = false;
+        padLookAheadRecenterElapsed = 0f;
+
+        // 오른쪽으로 미리 보려면 커서는 화면 왼쪽에 위치해야 한다.
+        // 최대 입력은 Safe Area 가장자리까지 커서의 화면 목표 위치를 이동시킨다.
+        Vector2 _targetCursorLocal = -GetPadEllipseOffset(_lookAheadInput, _safeHalfSize);
+        return SmoothPadViewToCursorTarget(_cursorLocal, _targetCursorLocal);
+    }
+
+    private void BeginPadCameraRecentering()
+    {
+        padViewFollowVelocity = Vector2.zero;
+        wasPadCameraLookAheadActive = false;
+        isPadCameraRecentering = true;
+        padLookAheadRecenterElapsed = 0f;
+    }
+
+    private bool UpdatePadCameraRecentering(
+        Vector2 _cursorLocal,
+        Vector2 _safeHalfSize,
+        RectTransform _cursorParent)
+    {
+        padLookAheadRecenterElapsed += Time.unscaledDeltaTime;
+
+        float _completionDistance = Mathf.Max(0f, padLookAheadRecenterCompletionDistance);
+        bool _isCloseEnough = _cursorLocal.sqrMagnitude <= _completionDistance * _completionDistance;
+        bool _hasTimedOut = padLookAheadRecenterElapsed >= Mathf.Max(0.01f, padLookAheadRecenterMaxDuration);
+
+        if (_isCloseEnough || _hasTimedOut)
+        {
+            CompletePadCameraRecentering();
+            return UpdatePadSafeAreaFollow(_cursorLocal, _safeHalfSize, _cursorParent);
+        }
+
+        // 왼쪽 스틱으로 커서가 움직여도 복귀 상태는 취소하지 않는다.
+        // 근접 거리 또는 최대 시간이 충족될 때까지만 갱신된 커서 위치를 중앙으로 추적한다.
+        return SmoothPadViewToCursorTarget(_cursorLocal, Vector2.zero);
+    }
+
+    private void CompletePadCameraRecentering()
+    {
+        padViewFollowVelocity = Vector2.zero;
+        padLookAheadVelocity = Vector2.zero;
+        wasPadCameraLookAheadActive = false;
+        isPadCameraRecentering = false;
+        padLookAheadRecenterElapsed = 0f;
     }
 
     private static Vector2 GetPadEllipseOffset(Vector2 _input, Vector2 _ellipseHalfSize)
@@ -2367,10 +2407,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         return _direction * (_ellipseRadius * _strength);
     }
 
-    private bool SmoothPadViewToCursorTarget(
-        Vector2 _cursorLocal,
-        Vector2 _targetCursorLocal,
-        out bool _reachedTarget)
+    private bool SmoothPadViewToCursorTarget(Vector2 _cursorLocal, Vector2 _targetCursorLocal)
     {
         float _maxSpeed = gridCellSize * padLookAheadMaxGridUnitsPerSecond * currentZoom;
         Vector2 _nextCursorLocal = Vector2.SmoothDamp(
@@ -2381,12 +2418,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
             _maxSpeed,
             Time.unscaledDeltaTime);
         Vector2 _viewDelta = _nextCursorLocal - _cursorLocal;
-        _reachedTarget = (_cursorLocal - _targetCursorLocal).sqrMagnitude <= 0.01f &&
-                         padLookAheadVelocity.sqrMagnitude <= 0.01f;
 
         if (_viewDelta.sqrMagnitude <= 0.0001f)
         {
-            if (_reachedTarget)
+            if ((_cursorLocal - _targetCursorLocal).sqrMagnitude <= 0.0001f)
                 padLookAheadVelocity = Vector2.zero;
             return false;
         }
@@ -2447,6 +2482,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         padLookAheadVelocity = Vector2.zero;
         wasPadCameraLookAheadActive = false;
         isPadCameraRecentering = false;
+        padLookAheadRecenterElapsed = 0f;
     }
 
     private void RefreshPadCursorHover()
