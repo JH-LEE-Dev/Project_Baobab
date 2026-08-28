@@ -450,9 +450,9 @@ MonoBehaviour:
   padCursorHoverCorrectionSize: {x: 64, y: 64}
   padCursorHoverReleasePadding: 8
   padSelectionCursorMagnetDuration: 0.15
-  padCursorSafeAreaSize: {x: 315, y: 175}
-  padViewFollowMaxGridUnitsPerSecond: 14
-  padViewFollowSmoothTime: 0.08
+  padCursorSafeAreaSize: {x: 189, y: 105}
+  padViewFollowMaxGridUnitsPerSecond: 30
+  padViewFollowSmoothTime: 0.04
   padLookAheadMaxGridUnitsPerSecond: 24
   padLookAheadSmoothTime: 0.04
   padLookAheadRecenterCompletionDistance: 12
