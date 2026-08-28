@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Tilemaps;
 using System.Collections.Generic;
 using System;
@@ -435,6 +435,44 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         }
     }
 
+    /// <summary>
+    /// 배치 구간 동안 지울 셀을 모아두는 버퍼. Tilemap.SetTile은 호출마다 네이티브 경계를
+    /// 넘나들어서, 던전 정리처럼 수천 번을 한 프레임에 부르면 그것만으로 프레임이 눌린다.
+    /// 좌표가 흩어져 있어 연속 영역을 요구하는 SetTilesBlock은 쓸 수 없고(사각 영역 안의
+    /// 나무 아닌 충돌 타일까지 지워버린다), 임의 좌표를 받는 SetTiles로 한 번에 처리한다.
+    /// </summary>
+    private readonly List<Vector3Int> pendingTreeTileClears = new List<Vector3Int>(256);
+    private bool bBatchingTreeTileClears = false;
+
+    public void BeginTreeCollisionTileBatch()
+    {
+        bBatchingTreeTileClears = true;
+        pendingTreeTileClears.Clear();
+    }
+
+    public void EndTreeCollisionTileBatch()
+    {
+        if (false == bBatchingTreeTileClears) return;
+
+        bBatchingTreeTileClears = false;
+
+        int count = pendingTreeTileClears.Count;
+        if (collisionTilemap == null || count == 0)
+        {
+            pendingTreeTileClears.Clear();
+            return;
+        }
+
+        // SetTiles는 positionArray.Length만큼 순회하므로 정확한 길이의 배열이어야 한다.
+        // 재사용 버퍼를 크게 잡아두면 남는 칸의 옛 좌표까지 null로 밀어버려 나무와 무관한
+        // 충돌 타일을 지우게 되므로, 던전 정리마다 한 번뿐인 이 할당을 감수한다.
+        Vector3Int[] cells = pendingTreeTileClears.ToArray();
+        TileBase[] emptyTiles = new TileBase[count];
+
+        collisionTilemap.SetTiles(cells, emptyTiles);
+        pendingTreeTileClears.Clear();
+    }
+
     public void ClearTreeCollisionTile(Vector3 _worldPos)
     {
         if (collisionTilemap == null) return;
@@ -443,7 +481,17 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         adjustedPos.y -= halfCellY;
 
         Vector3Int cellPos = collisionTilemap.WorldToCell(adjustedPos);
-        collisionTilemap.SetTile(cellPos, null);
+
+        // 배치 중에는 Tilemap 쓰기만 미룬다. 아래 cellToIndex/walkablePositions 부기는
+        // 배치 여부와 상관없이 지금 그대로 반영되므로 호출부가 보는 상태는 달라지지 않는다.
+        if (true == bBatchingTreeTileClears)
+        {
+            pendingTreeTileClears.Add(cellPos);
+        }
+        else
+        {
+            collisionTilemap.SetTile(cellPos, null);
+        }
 
         if (cellPos.x < 0 || cellPos.x >= width || cellPos.y < 0 || cellPos.y >= height) return;
 

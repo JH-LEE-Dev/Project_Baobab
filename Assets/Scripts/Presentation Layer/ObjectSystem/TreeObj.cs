@@ -132,6 +132,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     public int PoolIndex { get; set; } = -1;
     public int UpdateIndex { get; set; } = -1;
 
+    // 이 오브젝트가 현재 풀 안에 들어가 있는지. 이중 반납을 O(1)로 차단하기 위한 플래그로,
+    // 풀의 actionOnGet/actionOnRelease에서만 갱신한다. (자세한 배경은 PoolSettings 참조)
+    public bool IsPooled { get; set; } = false;
+
     private bool bWaterNearBy = false;
     private bool bTreeShadowSet = false;
 
@@ -443,7 +447,13 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     private void PlayHitSound(bool _bGemTree, int _gemStage)
     {
         float maxHealth = health.GetMaxHealth();
-        float damageRatio = maxHealth > 0f ? Mathf.Clamp01(1f - health.GetCurrentHealth() / maxHealth) : 0f;
+        // 이번 타격으로 보석 단계가 전환되어 체력이 즉시 풀피로 회복되었거나 완전히 죽은 경우,
+        // 해당 타격은 체력이 0에 도달한 최종 타격이므로 damageRatio를 1.0f(최고 피치)로 설정한다.
+        bool isTransformedOrDead = (_gemStage != currentGemStage || true == bDead);
+        float damageRatio = (true == isTransformedOrDead)
+            ? 1.0f
+            : (maxHealth > 0f ? Mathf.Clamp01(1f - health.GetCurrentHealth() / maxHealth) : 0f);
+
         float treeHitPitch = Mathf.Lerp(1.0f, 1.3f, damageRatio);
         float pitchHitVolume = Mathf.Lerp(1.0f, 1.4f, damageRatio);
 

@@ -479,8 +479,6 @@ MonoBehaviour:
   - treeType: 12
     minCnt: 4
     maxCnt: 5
-  highGradeDropCntMin: 4
-  highGradeDropCntMax: 7
   logStateAuraDatas:
   - logState: 3
     auraPrefab: {fileID: 5369747700770951006, guid: f2e753f545c8dd043ad37ef888ef4c3f, type: 3}
@@ -490,6 +488,8 @@ MonoBehaviour:
     auraPrefab: {fileID: 5281492004658125304, guid: 0fce9d92e39f10b479a813a16a055501, type: 3}
   auraPoolDefaultCapacity: 8
   auraPoolMaxSize: 64
+  highGradeDropCntMin: 4
+  highGradeDropCntMax: 7
   enableCulling: 0
   cullingUpdateInterval: 0.05
 --- !u!114 &597610330652353424
@@ -870,27 +870,6 @@ MonoBehaviour:
     initialPoolSize: 100
     allowDynamicExpansion: 1
     maxPoolSize: 500
-    uiParticleScale: 0
---- !u!114 &8412903755061238470
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4086116617705099080}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
-  isUIComponent: 0
-  initializeOnAwake: 1
-  vfxPoolDataList:
-  - vfxTag: Shiny
-    effectPrefab: {fileID: 2164660391435094963, guid: f9a4dc6ca35113949aeb0810ad1e7927, type: 3}
-    initialPoolSize: 30
-    allowDynamicExpansion: 1
-    maxPoolSize: 200
     uiParticleScale: 0
 --- !u!1 &3535782070355411120
 GameObject:
@@ -1377,6 +1356,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LogItemPoolingManager
   logItemPrefab: {fileID: 5360078145449572918, guid: 169fe35dfcb21354eaf9328139723c41, type: 3}
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
+--- !u!114 &8412903755061238470
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4086116617705099080}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 0
+  initializeOnAwake: 1
+  vfxPoolDataList:
+  - vfxTag: Shiny
+    effectPrefab: {fileID: 2164660391435094963, guid: f9a4dc6ca35113949aeb0810ad1e7927, type: 3}
+    initialPoolSize: 30
+    allowDynamicExpansion: 1
+    maxPoolSize: 200
+    uiParticleScale: 0
 --- !u!1 &4623915527415485074
 GameObject:
   m_ObjectHideFlags: 0
@@ -1988,7 +1988,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cba207b271e1d484689ea31004af9189, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeatherManager
-  rainEffectPrefab: {fileID: 2369352953646517886, guid: e34d3c23919a9b04f8ba3dd86648afcc, type: 3}
+  useWeatherEffect: 0
+  rainEffectPrefab: {fileID: 0}
 --- !u!1 &6719872411186822141
 GameObject:
   m_ObjectHideFlags: 0

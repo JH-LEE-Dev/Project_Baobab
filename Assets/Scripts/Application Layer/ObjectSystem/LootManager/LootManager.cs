@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -28,7 +28,7 @@ public class LootManager : MonoBehaviour
             actionOnGet: OnGetLootItem,
             actionOnRelease: OnReleaseLootItem,
             actionOnDestroy: OnDestroyLootItem,
-            collectionCheck: true,
+            collectionCheck: PoolSettings.CollectionCheck,
             defaultCapacity: 50,
             maxSize: 300 // 최적화: 전리품은 로그보다는 적으므로 300 정도로 설정
         );
@@ -70,7 +70,7 @@ public class LootManager : MonoBehaviour
     private void OnLootItemAcquired(LootItem _item)
     {
         LootItemAcquiredEvent?.Invoke(_item);
-        lootPool.Release(_item);
+        TryReleaseLootItem(_item);
     }
 
     private LootItem CreateLootItem()
@@ -90,8 +90,21 @@ public class LootManager : MonoBehaviour
         return newItem;
     }
 
+    /// <summary>
+    /// 이미 풀에 들어가 있는 항목을 다시 반환하지 않도록 막고 반환한다. 반환이 실제로
+    /// 일어났으면 true. IsPooled는 풀의 actionOnGet/actionOnRelease에서만 갱신된다.
+    /// </summary>
+    private bool TryReleaseLootItem(LootItem _item)
+    {
+        if (_item == null || _item.IsPooled) return false;
+
+        lootPool.Release(_item);
+        return true;
+    }
+
     private void OnGetLootItem(LootItem _item)
     {
+        _item.IsPooled = false;
         _item.UpdateIndex = activeItemsList.Count;
         activeItemsList.Add(_item);
 
@@ -101,6 +114,7 @@ public class LootManager : MonoBehaviour
 
     private void OnReleaseLootItem(LootItem _item)
     {
+        _item.IsPooled = true;
         // 최적화: Swap-with-last 방식을 이용한 리스트 삭제 (O(1))
         int idx = _item.UpdateIndex;
         if (idx != -1 && idx < activeItemsList.Count)
@@ -139,7 +153,7 @@ public class LootManager : MonoBehaviour
 
         for (int i = 0; i < cleanupList.Count; i++)
         {
-            lootPool.Release(cleanupList[i]);
+            TryReleaseLootItem(cleanupList[i]);
         }
 
         activeItemsList.Clear();
@@ -260,7 +274,7 @@ public class LootManager : MonoBehaviour
     {
         if (_item != null)
         {
-            lootPool.Release(_item);
+            TryReleaseLootItem(_item);
         }
     }
 }

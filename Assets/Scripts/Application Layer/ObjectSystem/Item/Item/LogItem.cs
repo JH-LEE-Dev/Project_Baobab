@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using DG.Tweening;
 
 public class LogItem : Item, IStaticCollidable
 {
@@ -66,6 +67,10 @@ public class LogItem : Item, IStaticCollidable
     // 관리용 인덱스
     public int PoolIndex { get; set; } = -1;
     public int UpdateIndex { get; set; } = -1;
+
+    // 이 오브젝트가 현재 풀 안에 들어가 있는지. 이중 반납을 O(1)로 차단하기 위한 플래그로,
+    // 풀의 actionOnGet/actionOnRelease에서만 갱신한다. (자세한 배경은 PoolSettings 참조)
+    public bool IsPooled { get; set; } = false;
 
     // 쫀득한 착지 연출용 변수
     private float landingDampTime = 0.5f;
@@ -237,6 +242,38 @@ public class LogItem : Item, IStaticCollidable
     }
 
     /// <summary>
+    /// 벨트 진입 시 통통 튀는 팝업 연출을 재생한다.
+    /// 루트 Transform이 아닌 visualTransform을 스케일링하여, 자식으로 부착된 파티클이나 그림자의 스케일 왜곡을 방지한다.
+    /// </summary>
+    public void PlayBeltEnterAnimation()
+    {
+        transform.DOKill();
+        transform.localScale = Vector3.one;
+
+        if (null != visualTransform)
+        {
+            visualTransform.DOKill();
+            visualTransform.localScale = Vector3.zero;
+            visualTransform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutElastic, 1.7f, 0.3f);
+        }
+    }
+
+    /// <summary>
+    /// 벨트 퇴출 시 축소 이동 연출을 재생한다.
+    /// </summary>
+    public void PlayBeltExitAnimation(Vector3 _targetPos, float _duration)
+    {
+        transform.DOKill();
+        transform.DOMove(_targetPos, _duration).SetEase(Ease.Linear);
+
+        if (null != visualTransform)
+        {
+            visualTransform.DOKill();
+            visualTransform.DOScale(Vector3.zero, _duration).SetEase(Ease.InBack);
+        }
+    }
+
+    /// <summary>
     /// Fascinating 등급 이상 원목의 반짝임 파티클을 재생한다.
     /// 던전 착지뿐 아니라 마을 벨트에 안착했을 때(제재목 포함)도 같은 이펙트를 쓴다.
     /// </summary>
@@ -251,17 +288,17 @@ public class LogItem : Item, IStaticCollidable
 
     private void PlayShinyEffect()
     {
-        if (vfxComponent == null || logState <= LogState.Normal) return;
+        if (null == vfxComponent || logState <= LogState.Normal) return;
 
         // 이전 재생분이 남아 있으면 정리하고 새로 붙인다(전송 -> 안착 경로에서 중복 부착 방지).
-        if (particleEffect != null)
+        if (null != particleEffect)
         {
             vfxComponent.Stop(particleEffect, false);
             particleEffect = null;
         }
 
         particleEffect = vfxComponent.Play("Shiny", transform.position, transform.rotation, transform);
-        if (particleEffect == null) return;
+        if (null == particleEffect) return;
 
         particleEffect.transform.localScale = Vector3.one;
         SyncParticleSorting();
@@ -524,9 +561,9 @@ public class LogItem : Item, IStaticCollidable
     {
         base.ResetItem();
 
-        if(particleEffect != null)
+        if (null != particleEffect)
         {
-            if(vfxComponent != null && particleEffect.transform.IsChildOf(transform))
+            if (null != vfxComponent && particleEffect.transform.IsChildOf(transform))
                 vfxComponent.Stop(particleEffect, true);
             particleEffect = null;    
         }
@@ -547,26 +584,27 @@ public class LogItem : Item, IStaticCollidable
         bFadeAndVanish = false;
         // 풀에서 재사용될 때 이전 소유자(예: DropAllItem)가 남긴 구독이 새 사용처로 잘못 넘어가지 않도록 초기화
         LogItemVanishedEvent = null;
+        transform.DOKill();
         transform.localScale = Vector3.one;
         landingDampTime = landingDampDuration;
         durability = originalDurability;
         inventoryCheckTimer = 0.15f; // 스폰 시 즉시 검사하도록 설정
 
-        if (outlineObj != null)
+        if (null != outlineObj)
             outlineObj.SetActive(false);
 
-        if (outlineSR != null)
+        if (null != outlineSR)
         {
             outlineSR.SetPropertyBlock(null);
             outlineSR.color = originalOutlineColor; // FadeAndVanish 연출로 줄어든 알파 복구
         }
 
-        if (shadowRenderer != null)
+        if (null != shadowRenderer)
         {
             shadowRenderer.color = originalShadowColor; // FadeAndVanish 연출로 줄어든 알파 복구
         }
 
-        if (spriteRenderer != null)
+        if (null != spriteRenderer)
         {
             spriteRenderer.color = originalColor;
             spriteRenderer.SetPropertyBlock(null);
@@ -576,21 +614,22 @@ public class LogItem : Item, IStaticCollidable
         // 풀 재사용 시 원목 스프라이트로 되돌아가므로 가공 상태도 함께 해제한다.
         bIsTimber = false;
 
-        if (sprite != null && spriteRenderer != null)
+        if (null != sprite && null != spriteRenderer)
             spriteRenderer.sprite = sprite;
 
-        if (visualTransform != null)
+        if (null != visualTransform)
         {
+            visualTransform.DOKill();
             visualTransform.localRotation = Quaternion.identity;
             visualTransform.localScale = Vector3.one;
         }
 
-        if (customSortable != null)
+        if (null != customSortable)
         {
             customSortable.SetHeight(0f);
         }
 
-        if (shadowTransform != null)
+        if (null != shadowTransform)
         {
             shadowTransform.localScale = Vector3.one;
         }

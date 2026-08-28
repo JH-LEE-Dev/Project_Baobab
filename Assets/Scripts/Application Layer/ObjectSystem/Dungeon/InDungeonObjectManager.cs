@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Pool;
 using System.Collections.Generic;
 using System.Collections;
@@ -316,7 +316,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             actionOnGet: OnGetTree,
             actionOnRelease: OnReleaseTree,
             actionOnDestroy: OnDestroyTree,
-            collectionCheck: true,
+            collectionCheck: PoolSettings.CollectionCheck,
             defaultCapacity: 200,
             maxSize: 2500
         );
@@ -614,9 +614,20 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             StopGrowth();
             ClearTrees();
 
-            if (currentTreeGenerationStrategy != null)
+            // 일괄 스폰 구간에서는 나무마다 컬링 개수를 갱신하지 않는다. 스폰이 끝난 직후의
+            // RefreshCullingGroup()이 개수 설정과 전체 가시성 재계산을 한 번에 처리한다.
+            // (이 코루틴이 끝나야 던전이 플레이어에게 공개되므로 중간에 안 보여도 문제없다)
+            deferCullingSync = true;
+            try
             {
-                yield return currentTreeGenerationStrategy.SpawnInitialTrees(this, grassTileWorldPositions);
+                if (currentTreeGenerationStrategy != null)
+                {
+                    yield return currentTreeGenerationStrategy.SpawnInitialTrees(this, grassTileWorldPositions);
+                }
+            }
+            finally
+            {
+                deferCullingSync = false;
             }
 
             RefreshCullingGroup();
@@ -713,8 +724,22 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
             if (enableCulling && cullingGroup != null)
             {
-                cullingGroup.SetBoundingSphereCount(activeTrees.Count);
-                UpdateTreeVisibility(tree, cullingGroup.IsVisible(tree.PoolIndex) && (cullingGroup.GetDistance(tree.PoolIndex) == 0));
+                if (false == deferCullingSync)
+                {
+                    cullingGroup.SetBoundingSphereCount(activeTrees.Count);
+                    UpdateTreeVisibility(tree, cullingGroup.IsVisible(tree.PoolIndex) && (cullingGroup.GetDistance(tree.PoolIndex) == 0));
+                }
+                else
+                {
+                    // 일괄 스폰 중에는 네이티브 컬링 갱신만 건너뛰고, 상태는 반드시 "비활성"으로
+                    // 맞춰둔다. 스폰이 끝난 뒤 RefreshCullingGroup()이 보이는 것만 다시 켠다.
+                    //
+                    // 이 else가 없으면 안 된다: 풀이 비어 처음 Instantiate된 나무는 프리팹이 활성이라
+                    // 그대로 활성 상태로 나온다. 여기서 꺼주지 않으면 첫 던전에서만 스폰 중인 나무
+                    // 수천 그루가 전부 켜진 채 렌더링되고, 두 번째 던전부터는(풀에서 꺼내와 이미
+                    // 비활성) 그렇지 않아 회차마다 동작이 달라진다.
+                    UpdateTreeVisibility(tree, false);
+                }
             }
             else
             {
@@ -780,30 +805,42 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void ClearTrees()
     {
-        for (int i = activeTrees.Count - 1; i >= 0; i--)
+        // 전량 반환 중에는 나무마다 cullingGroup 개수를 다시 세지 않고, 충돌 타일 쓰기도 모아둔다.
+        // 둘 다 루프가 끝난 직후 한 번에 반영한다. 루프 안의 다른 처리(걷기 가능 복원, 밀도 카운트,
+        // 풀 반환)는 순서와 시점이 예전과 완전히 동일하다.
+        deferCullingSync = true;
+        environmentProvider.tilemapDataProvider.BeginTreeCollisionTileBatch();
+
+        try
         {
-            if (activeTrees[i] != null)
+            for (int i = activeTrees.Count - 1; i >= 0; i--)
             {
-                environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(activeTrees[i].transform.position);
-                environmentProvider.densityProvider.UpdateTreeCnt(false);
-
-                activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
-
-                // 개별 나무 반환이 실패(예: 이미 반환된 나무 재반환)하더라도 전체 정리 루프가
-                // 중단되어 나머지 나무가 다음 스테이지까지 남아버리는 일이 없도록 방어한다.
-                try
+                if (activeTrees[i] != null)
                 {
-                    treePool.Release(activeTrees[i]);
-                }
-                catch (System.InvalidOperationException e)
-                {
-                    Debug.LogWarning($"[InDungeonObjectManager] 나무 정리 중 이미 반환된 오브젝트를 건너뜁니다: {e.Message}");
+                    environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(activeTrees[i].transform.position);
+                    environmentProvider.densityProvider.UpdateTreeCnt(false);
+
+                    activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
+
+                    // 이미 반환된 나무를 다시 반환하면 풀이 오염되므로 IsPooled로 사전에 걸러낸다.
+                    // 예전에는 collectionCheck가 던지는 예외를 catch해서 넘겼는데, 예외 처리는 비싼 데다
+                    // 릴리즈 빌드에서 collectionCheck를 끄면 아예 동작하지 않는다.
+                    TryReleaseTree(activeTrees[i]);
                 }
             }
         }
+        finally
+        {
+            // 루프가 중간에 빠져나가도 모아둔 타일 쓰기는 반드시 반영하고 배치를 닫는다.
+            // 여기서 흘리면 나무가 사라진 자리에 충돌 타일이 남아 길이 막힌다.
+            environmentProvider.tilemapDataProvider.EndTreeCollisionTileBatch();
+            deferCullingSync = false;
+        }
+
         activeTrees.Clear();
         activeTreesForUpdate.Clear();
         System.Array.Clear(treeGridMap, 0, treeGridMap.Length);
+
         if (enableCulling && cullingGroup != null) cullingGroup.SetBoundingSphereCount(0);
 
         // 아직 발현되지 않은 별자리 그라운드 마크가 남아있다면 여기서 정리한다. 이 시점 이후
@@ -1098,13 +1135,32 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             currentTreeGenerationStrategy.OnTreeDead(this, _treeObj, deadPos);
         }
 
-        treePool.Release(_treeObj);
+        TryReleaseTree(_treeObj);
         TreeDeadEvent?.Invoke(_treeObj.treeData.type, _treeObj.bLastHitByPlayer);
 
         inDungeonResultManager.IncreaseTreeKillCnt();
     }
 
     // // 오브젝트 풀 콜백
+
+    /// <summary>
+    /// 일괄 스폰·정리 중에는 true. 이 동안에는 나무 하나마다 cullingGroup 개수를 다시 세지 않고,
+    /// 작업이 끝난 뒤 RefreshCullingGroup()(또는 SetBoundingSphereCount(0))에서 한 번에 맞춘다.
+    /// 나무 2500그루 기준 네이티브 호출 2500회가 1회로 줄어든다.
+    /// </summary>
+    private bool deferCullingSync = false;
+
+    /// <summary>
+    /// 이미 풀에 들어가 있는 나무를 다시 반환하지 않도록 막고 반환한다. 반환이 실제로
+    /// 일어났으면 true. IsPooled는 OnGetTree/OnReleaseTree에서만 갱신된다.
+    /// </summary>
+    private bool TryReleaseTree(TreeObj _tree)
+    {
+        if (_tree == null || _tree.IsPooled) return false;
+
+        treePool.Release(_tree);
+        return true;
+    }
 
     private TreeObj OnCreateTree()
     {
@@ -1200,6 +1256,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void OnGetTree(TreeObj _tree)
     {
+        _tree.IsPooled = false;
         _tree.ApplyData(CalculateRandomTreeData());
         _tree.TreeDeadEvent -= OnTreeDead;
         _tree.TreeDeadEvent += OnTreeDead;
@@ -1260,12 +1317,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
             activeTrees.RemoveAt(lastIdx);
 
-            if (enableCulling && cullingGroup != null)
+            if (enableCulling && cullingGroup != null && false == deferCullingSync)
             {
                 cullingGroup.SetBoundingSphereCount(activeTrees.Count);
             }
         }
 
+        _tree.IsPooled = true;
         _tree.bDead = true;
         _tree.PoolIndex = -1;
         _tree.UpdateIndex = -1;

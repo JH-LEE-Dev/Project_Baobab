@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using UnityEngine;
 
@@ -45,6 +45,10 @@ public class LootItem : Item
 
     // 관리용 인덱스
     public int UpdateIndex { get; set; } = -1;
+
+    // 이 오브젝트가 현재 풀 안에 들어가 있는지. 이중 반납을 O(1)로 차단하기 위한 플래그로,
+    // 풀의 actionOnGet/actionOnRelease에서만 갱신한다. (자세한 배경은 PoolSettings 참조)
+    public bool IsPooled { get; set; } = false;
 
     [SerializeField] private GameObject outlineObj;
     [SerializeField] private SpriteRenderer outlineStencilSR;

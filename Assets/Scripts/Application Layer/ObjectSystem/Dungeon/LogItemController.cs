@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -70,7 +70,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
             actionOnGet: OnGetLogItem,
             actionOnRelease: OnReleaseLogItem,
             actionOnDestroy: OnDestroyLogItem,
-            collectionCheck: true,
+            collectionCheck: PoolSettings.CollectionCheck,
             defaultCapacity: 200,
             maxSize: 1000 // 최적화: 나무가 많은 게임 특성상 풀 크기를 넉넉하게 설정
         );
@@ -204,7 +204,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
             LogItemAcquiredEvent?.Invoke(_item);
         }
 
-        logPool.Release(_item);
+        TryReleaseLogItem(_item);
     }
 
     private LogItem CreateLogItem()
@@ -225,8 +225,21 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         return newItem;
     }
 
+    /// <summary>
+    /// 이미 풀에 들어가 있는 항목을 다시 반환하지 않도록 막고 반환한다. 반환이 실제로
+    /// 일어났으면 true. IsPooled는 풀의 actionOnGet/actionOnRelease에서만 갱신된다.
+    /// </summary>
+    private bool TryReleaseLogItem(LogItem _item)
+    {
+        if (_item == null || _item.IsPooled) return false;
+
+        logPool.Release(_item);
+        return true;
+    }
+
     private void OnGetLogItem(LogItem _item)
     {
+        _item.IsPooled = false;
         // 최적화: 마스터 리스트 추가 및 인덱스 설정 (O(1))
         _item.PoolIndex = activeItemsList.Count;
         activeItemsList.Add(_item);
@@ -268,6 +281,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
     private void OnReleaseLogItem(LogItem _item)
     {
+        _item.IsPooled = true;
         // 빌려간 아우라를 여기서 바로 회수한다. ResetItem은 다음 획득 때 호출되므로,
         // 그때까지 기다리면 풀에서 쉬고 있는 원목들이 아우라를 붙든 채로 남는다.
         _item.ReleaseGemAura();
@@ -322,7 +336,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
             if (item.MoveState == ItemMoveState.Sucking)
             {
-                logPool.Release(item);
+                TryReleaseLogItem(item);
             }
             else
             {
@@ -338,7 +352,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
         for (int i = count - 1; i >= 0; i--)
         {
-            logPool.Release(activeItemsList[i]);
+            TryReleaseLogItem(activeItemsList[i]);
         }
 
         activeItemsList.Clear();
@@ -467,7 +481,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
     public void ReturnToPool(LogItem _item)
     {
-        logPool.Release(_item);
+        TryReleaseLogItem(_item);
     }
 
     private void OnDestroy()

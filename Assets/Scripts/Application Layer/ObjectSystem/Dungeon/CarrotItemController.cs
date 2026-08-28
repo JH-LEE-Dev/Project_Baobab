@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -37,7 +37,7 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
             actionOnGet: OnGetCarrotItem,
             actionOnRelease: OnReleaseCarrotItem,
             actionOnDestroy: OnDestroyCarrotItem,
-            collectionCheck: true,
+            collectionCheck: PoolSettings.CollectionCheck,
             defaultCapacity: 50,
             maxSize: 500
         );
@@ -148,7 +148,7 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
     private void CarrotItemAcquired(CarrotItem _item)
     {
         CarrotItemAcquiredEvent?.Invoke(_item);
-        carrotPool.Release(_item);
+        TryReleaseCarrotItem(_item);
     }
 
     private CarrotItem CreateCarrotItem()
@@ -161,8 +161,21 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
         return newItem;
     }
 
+    /// <summary>
+    /// 이미 풀에 들어가 있는 항목을 다시 반환하지 않도록 막고 반환한다. 반환이 실제로
+    /// 일어났으면 true. IsPooled는 풀의 actionOnGet/actionOnRelease에서만 갱신된다.
+    /// </summary>
+    private bool TryReleaseCarrotItem(CarrotItem _item)
+    {
+        if (_item == null || _item.IsPooled) return false;
+
+        carrotPool.Release(_item);
+        return true;
+    }
+
     private void OnGetCarrotItem(CarrotItem _item)
     {
+        _item.IsPooled = false;
         // 최적화: 마스터 리스트 추가 및 인덱스 설정 (O(1))
         _item.PoolIndex = activeItemsList.Count;
         activeItemsList.Add(_item);
@@ -200,6 +213,7 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
     private void OnReleaseCarrotItem(CarrotItem _item)
     {
+        _item.IsPooled = true;
         // 최적화: 업데이트 리스트에서 제거
         UpdateItemVisibility(_item, false);
 
@@ -244,7 +258,7 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
         for (int i = 0; i < cleanupList.Count; i++)
         {
-            carrotPool.Release(cleanupList[i]);
+            TryReleaseCarrotItem(cleanupList[i]);
         }
 
         activeItemsList.Clear();
@@ -307,7 +321,7 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
     public void ReturnToPool(CarrotItem _item)
     {
-        carrotPool.Release(_item);
+        TryReleaseCarrotItem(_item);
     }
 
     public void IncreaseCarrotDrop(float _amount)

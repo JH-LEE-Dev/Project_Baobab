@@ -139,7 +139,7 @@ public class LogInBelt : MonoBehaviour
 
     public void LogIn(LogItem _item)
     {
-        if (_item == null || checkPoints.Count == 0) return;
+        if (null == _item || 0 == checkPoints.Count) return;
 
         Sound.Play(SoundID.ConvayerPut, checkPoints[0].position, GetSoundVolume());
 
@@ -148,10 +148,7 @@ public class LogInBelt : MonoBehaviour
         _item.transform.position = checkPoints[0].position;
 
         // 진입 연출 (스프링 댐퍼 효과)
-        _item.transform.DOKill();
-        _item.transform.localScale = Vector3.zero;
-        var targetScale = new Vector3(1f,1f,1f);
-        _item.transform.DOScale(targetScale, 0.5f).SetEase(Ease.OutElastic, 1.7f, 0.3f);
+        _item.PlayBeltEnterAnimation();
 
         // 다음 목표 인덱스 설정 (체크포인트가 1개보다 많으면 1번부터, 아니면 0번 도달 처리 대기)
         int nextTarget = checkPoints.Count > 1 ? 1 : 0;
@@ -309,7 +306,7 @@ public class LogInBelt : MonoBehaviour
     {
         // _item.gameObject.SetActive(false); // 지연 비활성화를 위해 제거
 
-        if (stopsOnLogOut)
+        if (true == stopsOnLogOut)
         {
             // 커터는 한 번에 하나만 가공하므로, 아이템이 하나 나갈 때마다(뒤에 남은 아이템이 있어도)
             // 무조건 벨트를 멈춘다. 그렇지 않으면 뒤따르는 아이템이 커터가 비기 전에 끝까지 도달해
@@ -319,11 +316,8 @@ public class LogInBelt : MonoBehaviour
             BeltStopEvent?.Invoke();
         }
 
-        // 퇴출 연출: 스케일이 작아지는 동안 마지막 이동 방향으로 계속 전진
-        _item.transform.DOKill();
-
         Vector3 moveDir = Vector3.right; // 기본값
-        if (checkPoints.Count >= 2)
+        if (2 <= checkPoints.Count)
         {
             // 마지막 이동 방향 계산 (마지막 체크포인트 - 이전 체크포인트)
             moveDir = (checkPoints[checkPoints.Count - 1].position - checkPoints[checkPoints.Count - 2].position).normalized;
@@ -331,11 +325,10 @@ public class LogInBelt : MonoBehaviour
 
         float duration = 0.1f;
         // 현재 벨트 속도를 반영하여 미끄러지는 거리 산출
-        float moveDist = slideSpeed * duration * 3;
+        float moveDist = slideSpeed * duration * 3f;
         Vector3 targetPos = _item.transform.position + (moveDir * moveDist);
 
-        _item.transform.DOMove(targetPos, duration).SetEase(Ease.Linear);
-        _item.transform.DOScale(Vector3.zero, duration).SetEase(Ease.InBack);
+        _item.PlayBeltExitAnimation(targetPos, duration);
 
         // 람다 대신 비활성화 대기 리스트에 추가
         deactivatingItems.Add(new DeactivatingItem(_item, duration));

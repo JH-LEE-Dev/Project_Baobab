@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -174,4 +174,6 @@ public class TownTilemapDataProvider : ITilemapDataProvider
     public Vector3 GetPortalSpawnPosition() => GetPlayerSpawnPosition();
     public void SetTreeCollisionTile(Vector3 _worldPos) { }
     public void ClearTreeCollisionTile(Vector3 _worldPos) { }
+    public void BeginTreeCollisionTileBatch() { }
+    public void EndTreeCollisionTileBatch() { }
 }

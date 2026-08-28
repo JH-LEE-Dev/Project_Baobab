@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 public enum ItemMoveState
@@ -49,6 +49,10 @@ public class CarrotItem : Item, IStaticCollidable
     // 관리용 인덱스
     public int PoolIndex { get; set; } = -1;
     public int UpdateIndex { get; set; } = -1;
+
+    // 이 오브젝트가 현재 풀 안에 들어가 있는지. 이중 반납을 O(1)로 차단하기 위한 플래그로,
+    // 풀의 actionOnGet/actionOnRelease에서만 갱신한다. (자세한 배경은 PoolSettings 참조)
+    public bool IsPooled { get; set; } = false;
 
     public void Initialize()
     {

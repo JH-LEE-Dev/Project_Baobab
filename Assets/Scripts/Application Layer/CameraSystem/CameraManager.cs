@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using Unity.Cinemachine;
 
 public class CameraManager : MonoBehaviour
@@ -16,7 +16,12 @@ public class CameraManager : MonoBehaviour
 
     private GameObject uiCamera;
 
+    // F1 시네마틱 모드는 개발 중 확인용 기능이라 릴리즈 빌드에서는 통째로 제외한다.
+    // 가드가 없으면 출시 빌드에서 플레이어가 F1을 누르는 것만으로 하위 Canvas가 전부 꺼지고
+    // 카메라가 캐릭터 추적에서 풀려버린다.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     private bool isCinematicMode = false;
+#endif
 
     public void Initialize(SignalHub _signalHub, InputManager _inputManager)
     {
@@ -144,6 +149,7 @@ public class CameraManager : MonoBehaviour
         // lastCharacterPosition = currentCharacterPos;
     }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     private void Update()
     {
         if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.f1Key.wasPressedThisFrame)
@@ -191,6 +197,7 @@ public class CameraManager : MonoBehaviour
             virtualCamera.ForceCameraPosition(nextPos, virtualCamera.transform.rotation);
         }
     }
+#endif
 
     private void CharacterMoved(Vector2 _input)
     {

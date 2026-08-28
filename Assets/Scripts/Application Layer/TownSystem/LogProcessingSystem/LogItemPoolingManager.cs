@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Pool;
 
 public class LogItemPoolingManager : MonoBehaviour
@@ -31,7 +31,7 @@ public class LogItemPoolingManager : MonoBehaviour
             actionOnGet: OnGetLogItem,
             actionOnRelease: OnReleaseLogItem,
             actionOnDestroy: OnDestroyLogItem,
-            collectionCheck: true,
+            collectionCheck: PoolSettings.CollectionCheck,
             defaultCapacity: 20,
             maxSize: 100
         );
@@ -72,7 +72,7 @@ public class LogItemPoolingManager : MonoBehaviour
 
     public void ReturnLogItem(LogItem _item)
     {
-        logPool.Release(_item);
+        TryReleaseLogItem(_item);
     }
 
     // 내부 풀 관리 메서드
@@ -86,14 +86,28 @@ public class LogItemPoolingManager : MonoBehaviour
         return newItem;
     }
 
+    /// <summary>
+    /// 이미 풀에 들어가 있는 항목을 다시 반환하지 않도록 막고 반환한다. 반환이 실제로
+    /// 일어났으면 true. IsPooled는 풀의 actionOnGet/actionOnRelease에서만 갱신된다.
+    /// </summary>
+    private bool TryReleaseLogItem(LogItem _item)
+    {
+        if (_item == null || _item.IsPooled) return false;
+
+        logPool.Release(_item);
+        return true;
+    }
+
     private void OnGetLogItem(LogItem _item)
     {
+        _item.IsPooled = false;
         _item.ResetItem();
         _item.gameObject.SetActive(true);
     }
 
     private void OnReleaseLogItem(LogItem _item)
     {
+        _item.IsPooled = true;
         _item.gameObject.transform.SetParent(transform);
         _item.gameObject.SetActive(false);
     }
