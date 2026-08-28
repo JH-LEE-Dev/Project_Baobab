@@ -49,12 +49,18 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private bool isClosing = false;
         private float targetPosX = 0.0f;
 
+        private Action cachedFadeOnComplete;
+        private TweenCallback cachedOnFadeComplete;
+        private Tween fadeTween;
+
         // //퍼블릭 초기화 및 제어 메서드
 
         public void Initialize(IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider, Action<MapType, ForestType> _onConfirm, Action _onExit)
         {
             if (true == isInitialized)
                 return;
+
+            cachedOnFadeComplete = HandleFadeComplete;
 
             mapDataProvider = _mapDataProvider;
             timeDataProvider = _timeDataProvider;
@@ -267,9 +273,27 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 return;
             }
 
-            canvasGroup.DOFade(_targetAlpha, fadeDuration)
+            if (null != fadeTween && true == fadeTween.IsActive())
+            {
+                fadeTween.Kill();
+                fadeTween = null;
+            }
+
+            cachedFadeOnComplete = _onComplete;
+            fadeTween = canvasGroup.DOFade(_targetAlpha, fadeDuration)
                 .SetEase(Ease.InOutSine)
-                .OnComplete(() => _onComplete?.Invoke());
+                .SetLink(gameObject)
+                .OnComplete(cachedOnFadeComplete);
+        }
+
+        private void HandleFadeComplete()
+        {
+            if (null != cachedFadeOnComplete)
+            {
+                Action _cb = cachedFadeOnComplete;
+                cachedFadeOnComplete = null;
+                _cb.Invoke();
+            }
         }
 
         private void SetUIAlpha(float _alpha)

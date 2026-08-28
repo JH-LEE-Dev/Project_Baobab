@@ -48,6 +48,8 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     private Sequence productionSequence;
     private Vector2 originalRootAnchoredPosition;
 
+    private TweenCallback cachedOnOpenProductionComplete;
+
     public bool IsActive => gameObject.activeSelf;
     public InputManager InputManager => inputManager;
 
@@ -65,6 +67,8 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 
     private void Awake()
     {
+        cachedOnOpenProductionComplete = OnOpenProductionComplete;
+
         if (null != popupWindowRoot)
         {
             originalRootAnchoredPosition = popupWindowRoot.anchoredPosition;
@@ -540,7 +544,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
             dimCanvasGroup.alpha = 0f;
         }
 
-        productionSequence = DOTween.Sequence().SetUpdate(true);
+        productionSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
         
         productionSequence.Join(popupCanvasGroup.DOFade(1f, animationDuration).SetEase(openEase));
         productionSequence.Join(popupWindowRoot.DOAnchorPosY(originalRootAnchoredPosition.y, animationDuration).SetEase(openEase));
@@ -550,19 +554,21 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
             productionSequence.Join(dimCanvasGroup.DOFade(dimTargetAlpha, dimAnimationDuration));
         }
 
-        productionSequence.OnComplete(() =>
+        productionSequence.OnComplete(cachedOnOpenProductionComplete);
+    }
+
+    private void OnOpenProductionComplete()
+    {
+        if (null != inputManager && true == inputManager.IsGamepadMode)
         {
-            if (null != inputManager && true == inputManager.IsGamepadMode)
+            if (null != confirmButton && true == confirmButton.gameObject.activeInHierarchy)
             {
-                if (null != confirmButton && true == confirmButton.gameObject.activeInHierarchy)
+                if (null != EventSystem.current && EventSystem.current.currentSelectedGameObject != confirmButton.gameObject)
                 {
-                    if (null != EventSystem.current && EventSystem.current.currentSelectedGameObject != confirmButton.gameObject)
-                    {
-                        EventSystem.current.SetSelectedGameObject(confirmButton.gameObject);
-                    }
+                    EventSystem.current.SetSelectedGameObject(confirmButton.gameObject);
                 }
             }
-        });
+        }
     }
 
     private void PlayCloseProduction()
@@ -600,7 +606,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         popupCanvasGroup.interactable = false;
         popupCanvasGroup.blocksRaycasts = false;
 
-        productionSequence = DOTween.Sequence().SetUpdate(true);
+        productionSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
         
         float targetY = originalRootAnchoredPosition.y - slideOffset;
         

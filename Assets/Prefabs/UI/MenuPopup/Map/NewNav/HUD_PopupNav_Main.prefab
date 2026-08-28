@@ -635,7 +635,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf05075ec9d387d45aa12d9f648050da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD_PopupNav_Main
-  isDemoVersion: 1
+  isDemoVersion: 0
   maxPlayableMapTypeInDemo: 2
   demoNotice: {fileID: 4100740821099004238}
   navImageContainer: {fileID: 5896490869211914173}
