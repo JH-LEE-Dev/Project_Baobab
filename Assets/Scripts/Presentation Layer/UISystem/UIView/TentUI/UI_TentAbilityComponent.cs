@@ -120,6 +120,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private Vector2 padCursorGridPosition;
     private Vector2 padCursorScreenPosition;
     private Vector2 padViewFollowVelocity;
+    private bool wasPadCameraLookAheadActive;
+    private bool isPadCameraRecentering;
     private AbilityNode padSelectionCursorMagnetTargetNode;
     private Vector2 padSelectionCursorMagnetStartPosition;
     private float padSelectionCursorMagnetElapsed;
@@ -1199,7 +1201,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         currentToolTipNode = null;
         currentCursorNode = null;
         ClearPadCursorHover();
-        padViewFollowVelocity = Vector2.zero;
+        ResetPadViewFollowState();
         ResetPadZoomInput();
         padInputSuppressedFrame = -1;
         wasInputAllowedLastTick = false;
@@ -1859,6 +1861,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             currentCursorNode?.SuspendPointerHoverForPadMode();
 
         currentControlMode = _mode;
+        ResetPadViewFollowState();
         EnsurePadCursorInstance();
         ResetPadZoomInput();
         RefreshKeyGuideTexts();
@@ -1913,7 +1916,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     {
         if (TentAbilityControlMode.Pad != currentControlMode || padCursorRect == null || false == padCursorRect.gameObject.activeSelf)
         {
-            padViewFollowVelocity = Vector2.zero;
+            ResetPadViewFollowState();
             return false;
         }
 
@@ -1935,9 +1938,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
         // 따라서 화면이 따라오면 노드와 마찬가지로 커서의 화면 위치도 함께 중앙 쪽으로 이동한다.
         UpdatePadCursorScreenPositionFromGrid();
 
-        bool _viewChanged = _inputAllowed && UpdatePadViewFollow();
+        bool _cursorInputActive = _direction.sqrMagnitude > 0.0001f;
+        bool _viewChanged = _inputAllowed && UpdatePadViewFollow(_cursorInputActive);
         if (false == _inputAllowed)
-            padViewFollowVelocity = Vector2.zero;
+            ResetPadViewFollowState();
 
         if (_viewChanged)
             UpdatePadCursorScreenPositionFromGrid();
@@ -2287,25 +2291,69 @@ public class UI_TentAbilityComponent : MonoBehaviour
         isPadSelectionCursorMagnetMoving = false;
     }
 
-    private bool UpdatePadViewFollow()
+    private bool UpdatePadViewFollow(bool _cursorInputActive)
     {
         if (false == IsViewInputEnabled() || moveTarget == null || padCursorRect == null)
         {
-            padViewFollowVelocity = Vector2.zero;
+            ResetPadViewFollowState();
             return false;
         }
+
+        RectTransform _cursorParent = padCursorRect.parent as RectTransform;
+        if (_cursorParent == null)
+            return false;
 
         Vector2 _cursorLocal = padCursorRect.anchoredPosition;
         Vector2 _safeHalfSize = new Vector2(
             Mathf.Max(1f, padCursorSafeAreaSize.x * 0.5f),
             Mathf.Max(1f, padCursorSafeAreaSize.y * 0.5f));
 
-        // 오른쪽으로 미리 보려면 커서는 화면 왼쪽에 위치해야 한다.
-        // 최대 입력은 Safe Area 가장자리, 입력이 없으면 화면 중앙을 목표로 삼는다.
         Vector2 _lookAheadInput = Time.frameCount != padInputSuppressedFrame
             ? ReadPadCameraLookAheadInput()
             : Vector2.zero;
-        Vector2 _targetCursorLocal = -Vector2.Scale(_lookAheadInput, _safeHalfSize);
+        bool _lookAheadActive = _lookAheadInput.sqrMagnitude > 0.0001f;
+
+        if (_lookAheadActive)
+        {
+            wasPadCameraLookAheadActive = true;
+            isPadCameraRecentering = false;
+
+            // 오른쪽으로 미리 보려면 커서는 화면 왼쪽에 위치해야 한다.
+            // 최대 입력은 Safe Area 가장자리까지 커서의 화면 목표 위치를 이동시킨다.
+            Vector2 _targetCursorLocal = -Vector2.Scale(_lookAheadInput, _safeHalfSize);
+            return SmoothPadViewToCursorTarget(_cursorLocal, _targetCursorLocal, out _);
+        }
+
+        // 오른쪽 스틱을 놓은 직후에는 한 번 중앙으로 돌아간다.
+        if (wasPadCameraLookAheadActive)
+        {
+            wasPadCameraLookAheadActive = false;
+            isPadCameraRecentering = true;
+        }
+
+        // 중앙 복귀 중이라도 왼쪽 스틱으로 커서를 움직이면 기존 Safe Area 추적을 즉시 우선한다.
+        if (_cursorInputActive && isPadCameraRecentering)
+        {
+            isPadCameraRecentering = false;
+            padViewFollowVelocity = Vector2.zero;
+        }
+
+        if (isPadCameraRecentering)
+        {
+            bool _moved = SmoothPadViewToCursorTarget(_cursorLocal, Vector2.zero, out bool _reachedCenter);
+            if (_reachedCenter)
+                isPadCameraRecentering = false;
+            return _moved;
+        }
+
+        return UpdatePadSafeAreaFollow(_cursorLocal, _safeHalfSize, _cursorParent);
+    }
+
+    private bool SmoothPadViewToCursorTarget(
+        Vector2 _cursorLocal,
+        Vector2 _targetCursorLocal,
+        out bool _reachedTarget)
+    {
         float _maxSpeed = gridCellSize * padViewFollowMaxGridUnitsPerSecond * currentZoom;
         Vector2 _nextCursorLocal = Vector2.SmoothDamp(
             _cursorLocal,
@@ -2315,10 +2363,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
             _maxSpeed,
             Time.unscaledDeltaTime);
         Vector2 _viewDelta = _nextCursorLocal - _cursorLocal;
+        _reachedTarget = (_cursorLocal - _targetCursorLocal).sqrMagnitude <= 0.01f &&
+                         padViewFollowVelocity.sqrMagnitude <= 0.01f;
 
         if (_viewDelta.sqrMagnitude <= 0.0001f)
         {
-            if ((_cursorLocal - _targetCursorLocal).sqrMagnitude <= 0.0001f)
+            if (_reachedTarget)
                 padViewFollowVelocity = Vector2.zero;
             return false;
         }
@@ -2331,6 +2381,49 @@ public class UI_TentAbilityComponent : MonoBehaviour
             padViewFollowVelocity = Vector2.zero;
 
         return _moved;
+    }
+
+    private bool UpdatePadSafeAreaFollow(
+        Vector2 _cursorLocal,
+        Vector2 _safeHalfSize,
+        RectTransform _cursorParent)
+    {
+        Vector2 _clampedToSafeArea = new Vector2(
+            Mathf.Clamp(_cursorLocal.x, -_safeHalfSize.x, _safeHalfSize.x),
+            Mathf.Clamp(_cursorLocal.y, -_safeHalfSize.y, _safeHalfSize.y));
+        Vector2 _overflow = _cursorLocal - _clampedToSafeArea;
+
+        Vector2 _availableOutsideSafeArea = new Vector2(
+            Mathf.Max(1f, _cursorParent.rect.width * 0.5f - _safeHalfSize.x),
+            Mathf.Max(1f, _cursorParent.rect.height * 0.5f - _safeHalfSize.y));
+        Vector2 _normalizedOverflow = new Vector2(
+            Mathf.Clamp(_overflow.x / _availableOutsideSafeArea.x, -1f, 1f),
+            Mathf.Clamp(_overflow.y / _availableOutsideSafeArea.y, -1f, 1f));
+
+        float _maxSpeed = gridCellSize * padViewFollowMaxGridUnitsPerSecond * currentZoom;
+        Vector2 _targetVelocity = -_normalizedOverflow * _maxSpeed;
+        float _followRate = 1f / Mathf.Max(0.01f, padViewFollowSmoothTime);
+        float _blend = 1f - Mathf.Exp(-_followRate * Time.unscaledDeltaTime);
+        padViewFollowVelocity = Vector2.Lerp(padViewFollowVelocity, _targetVelocity, _blend);
+
+        if (padViewFollowVelocity.sqrMagnitude <= 0.0001f)
+        {
+            padViewFollowVelocity = Vector2.zero;
+            return false;
+        }
+
+        bool _moved = ApplyViewLogicalDelta(padViewFollowVelocity * Time.unscaledDeltaTime);
+        if (_moved)
+            StopViewShake();
+
+        return _moved;
+    }
+
+    private void ResetPadViewFollowState()
+    {
+        padViewFollowVelocity = Vector2.zero;
+        wasPadCameraLookAheadActive = false;
+        isPadCameraRecentering = false;
     }
 
     private void RefreshPadCursorHover()
