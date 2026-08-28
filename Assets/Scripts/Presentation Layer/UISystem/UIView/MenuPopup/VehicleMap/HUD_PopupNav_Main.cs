@@ -931,9 +931,9 @@ isPendingUnlockProcess = true;
 
 }
 
-bool _sessionRestored = RestoreSessionState();
+RestoreSessionState();
 
-if (false == _sessionRestored && true == isPendingUnlockProcess)
+if (true == isPendingUnlockProcess)
 
 {
 
@@ -2827,7 +2827,7 @@ get
 
 #if UNITY_EDITOR
 
-return BuildInfo.IsDemo || isDemoVersion;
+return isDemoVersion;
 
 #else
 
