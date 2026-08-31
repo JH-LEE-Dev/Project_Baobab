@@ -1353,7 +1353,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
                 focusedRegionIndex = _nextIdx;
                 regionGroup.FocusRegionButton(focusedRegionIndex);
-                Sound.PlayUI(SoundID.NaviMainHover);
+                Sound.PlayUI(SoundID.NaviSelectStart);
                 HandleRegionSelected(_candidateBtn.GetMapType(), _force: true, _playClickAnim: false);
             }
         }
