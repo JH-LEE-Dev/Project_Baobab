@@ -40,8 +40,48 @@ public class LogInBelt : MonoBehaviour
     // 레일에 가려진다. LogIn(신규 투입)과 LoadSaveData(세이브 복원) 두 경로가 반드시 같은 값을 써야 한다.
     private const float LogOnBeltSortHeight = 0.425f;
 
+    // 원목이 지나갈 경로. 손으로 찍은 체크포인트 몇 개만 잇던 방식은 그 직선이 벨트 타일이 놓인
+    // 아이소메트릭 대각선(타일 간격 0.5, 0.25 = 기울기 0.5)과 미세하게 어긋나서, 구간 중간으로
+    // 갈수록 원목이 레일 밖으로 밀려 보였다. 지금은 벨트 타일 트랜스폼에서 경로를 그대로 만들어
+    // 쓰므로 원목이 항상 타일 중심을 지난다.
+    // - 중간 지점: belts[i] 위치 + beltSurfaceOffset (타일 상판 중심)
+    // - 마지막 지점: checkPoints의 마지막 항목. 벨트를 벗어나 커터/평가기로 넘어가는 투입구라
+    //   타일 중심으로 대체할 수 없어 손으로 찍은 값을 그대로 쓴다.
+    // 그래서 checkPoints의 중간 항목들은(있어도) 더 이상 경로에 쓰이지 않는다.
+    private struct PathPoint
+    {
+        public Transform anchor;
+        public Vector3 offset;
+
+        public PathPoint(Transform _anchor, Vector3 _offset)
+        {
+            anchor = _anchor;
+            offset = _offset;
+        }
+
+        // 상점 오브젝트가 통째로 이동할 수 있으므로(DisableShopObj/EnableShopObj) 월드 좌표를
+        // 캐싱하지 않고 매번 트랜스폼에서 읽는다.
+        public Vector3 Position => anchor.position + offset;
+    }
+
+    private List<PathPoint> path = new List<PathPoint>(8);
+
     // 외부 의존성
     [SerializeField] private List<Transform> checkPoints = new List<Transform>(5);
+
+    [Tooltip("벨트 타일 트랜스폼 원점에서 상판(원목이 실제로 얹혀 보이는 면) 중심까지의 오프셋. " +
+             "벨트 스프라이트 피벗이 상판 중심보다 4px(=0.125유닛) 아래에 있어 그만큼 올려준다.")]
+    [SerializeField] private Vector2 beltSurfaceOffset = new Vector2(0f, 0.12f);
+
+    [Tooltip("배출 지점(마지막 체크포인트)의 방향을 벨트 그리드 축에 맞춰 보정한다. 손으로 찍은 " +
+             "배출 지점은 축에서 40~49도로 벗어나 있어, 원목이 커터로 빨려들어갈 때 벨트와 다른 " +
+             "각도로 튀어나가 어색해진다. 마지막 타일에서 떨어진 거리는 그대로 두고 방향만 맞춘다.")]
+    [SerializeField] private bool snapExitToBeltAxis = true;
+
+    [Tooltip("아이소메트릭 타일 한 칸 간격. 벨트 타일이 2장 이상이면 실제 배치 간격을 쓰고, " +
+             "1장뿐이라 간격을 알아낼 수 없을 때만 이 값을 쓴다.")]
+    [SerializeField] private Vector2 beltGridStep = new Vector2(0.5f, 0.25f);
+
     [SerializeField] private float beltSpeed = 0.1f;
     [SerializeField] private float acceleration = 2.5f;
     [SerializeField] private float beltAnimationSpeedMultiplier = 1f;
@@ -116,6 +156,138 @@ public class LogInBelt : MonoBehaviour
             belts[i].Initialize();
         }
         SetBeltsAnimationSpeed(0f);
+
+        BuildPath();
+    }
+
+    private void BuildPath()
+    {
+        path.Clear();
+
+        Vector3 surfaceOffset = new Vector3(beltSurfaceOffset.x, beltSurfaceOffset.y, 0f);
+        for (int i = 0; i < belts.Count; ++i)
+        {
+            if (belts[i] == null) continue;
+            path.Add(new PathPoint(belts[i].transform, surfaceOffset));
+        }
+
+        if (path.Count > 0)
+        {
+            // 벨트 밖 투입구(커터/평가기)로 넘어가는 마지막 한 지점만 체크포인트에서 가져온다.
+            if (checkPoints.Count > 0 && checkPoints[checkPoints.Count - 1] != null)
+                path.Add(BuildExitPoint(checkPoints[checkPoints.Count - 1], path[path.Count - 1]));
+
+            return;
+        }
+
+        // 벨트 타일이 하나도 배선되지 않은 예외 상황에서는 기존처럼 체크포인트만으로 움직인다.
+        for (int i = 0; i < checkPoints.Count; ++i)
+        {
+            if (checkPoints[i] == null) continue;
+            path.Add(new PathPoint(checkPoints[i], Vector3.zero));
+        }
+    }
+
+    // 배출 지점. 원목은 여기 도달한 뒤 같은 방향으로 한 번 더 미끄러지며(PlayBeltExitAnimation)
+    // 커터/평가기로 빨려들어가므로, 이 마지막 구간의 방향이 곧 "빨려들어가는 방향"이 된다.
+    // 손으로 찍은 체크포인트는 벨트 축(26.57도)에서 40~49도로 벗어나 있어 원목이 벨트와 다른
+    // 각도로 튀어나갔다. 마지막 타일에서 떨어진 거리는 그대로 두고 방향만 축에 맞춘다.
+    // 마지막 벨트 타일을 기준(anchor)으로 삼기 때문에 상점이 통째로 움직여도 축이 유지된다.
+    private PathPoint BuildExitPoint(Transform _exitCheckPoint, PathPoint _lastBelt)
+    {
+        if (!snapExitToBeltAxis)
+            return new PathPoint(_exitCheckPoint, Vector3.zero);
+
+        Vector3 raw = _exitCheckPoint.position - _lastBelt.Position;
+        raw.z = 0f;
+
+        if (raw.sqrMagnitude <= Mathf.Epsilon)
+            return new PathPoint(_exitCheckPoint, Vector3.zero);
+
+        Vector3 axis = SnapToBeltAxis(raw);
+        return new PathPoint(_lastBelt.anchor, _lastBelt.offset + axis * raw.magnitude);
+    }
+
+    // 벨트 타일 간격이 곧 아이소메트릭 축이다. 간격 (dx, dy)의 부호를 뒤집어 만든 네 방향 중
+    // 원래 배출 방향과 가장 가까운 축을 고른다.
+    private Vector3 SnapToBeltAxis(Vector3 _rawDir)
+    {
+        Vector3 step = GetBeltGridStep();
+        float ax = Mathf.Abs(step.x);
+        float ay = Mathf.Abs(step.y);
+
+        if (Mathf.Approximately(ax, 0f) && Mathf.Approximately(ay, 0f))
+            return _rawDir.normalized;
+
+        Vector3 rawDir = _rawDir.normalized;
+        Vector3 best = rawDir;
+        float bestDot = float.MinValue;
+
+        for (int sx = -1; sx <= 1; sx += 2)
+        {
+            for (int sy = -1; sy <= 1; sy += 2)
+            {
+                Vector3 axis = new Vector3(ax * sx, ay * sy, 0f).normalized;
+                float dot = Vector3.Dot(rawDir, axis);
+                if (dot > bestDot)
+                {
+                    bestDot = dot;
+                    best = axis;
+                }
+            }
+        }
+
+        return best;
+    }
+
+    private Vector3 GetBeltGridStep()
+    {
+        // 타일이 2장 이상이면 실제 배치 간격을 그대로 쓴다(그리드가 바뀌어도 따라간다).
+        if (belts != null && belts.Count >= 2 && belts[0] != null && belts[1] != null)
+        {
+            Vector3 step = belts[1].transform.position - belts[0].transform.position;
+            step.z = 0f;
+            if (step.sqrMagnitude > 0.0001f) return step;
+        }
+
+        return new Vector3(beltGridStep.x, beltGridStep.y, 0f);
+    }
+
+    // Initialize()를 거치지 않은 경로(에디터에서 라인만 켜 두고 테스트하는 경우 등)에서도
+    // 경로가 비어 있으면 그때 만들어 둔다.
+    private void EnsurePath()
+    {
+        if (path.Count == 0) BuildPath();
+    }
+
+    // 저장된 위치에서 다음 목표 지점을 다시 계산한다. 경로가 체크포인트 2~3개에서 벨트 타일 수만큼으로
+    // 늘어났기 때문에, 예전 세이브의 targetIndex를 그대로 쓰면 엉뚱한 지점을 향해 되돌아간다.
+    // 경로는 한 방향으로만 뻗어 자기교차가 없으므로, 위치에서 가장 가까운 구간의 끝점이 곧 다음 목표다.
+    private int ResolveTargetIndex(Vector3 _position)
+    {
+        if (path.Count <= 1) return 0;
+
+        int best = 1;
+        float bestSqrDist = float.MaxValue;
+
+        for (int i = 1; i < path.Count; ++i)
+        {
+            Vector3 from = path[i - 1].Position;
+            Vector3 to = path[i].Position;
+            Vector3 seg = to - from;
+
+            float sqrLen = seg.sqrMagnitude;
+            float t = sqrLen > 0f ? Mathf.Clamp01(Vector3.Dot(_position - from, seg) / sqrLen) : 0f;
+
+            float sqrDist = (_position - (from + seg * t)).sqrMagnitude;
+            if (sqrDist < bestSqrDist)
+            {
+                bestSqrDist = sqrDist;
+                best = i;
+            }
+        }
+
+        return best;
     }
 
     private void SetBeltsAnimationSpeed(float _speed)
@@ -139,19 +311,24 @@ public class LogInBelt : MonoBehaviour
 
     public void LogIn(LogItem _item)
     {
-        if (null == _item || 0 == checkPoints.Count) return;
+        if (null == _item) return;
 
-        Sound.Play(SoundID.ConvayerPut, checkPoints[0].position, GetSoundVolume());
+        EnsurePath();
+        if (0 == path.Count) return;
+
+        Vector3 entryPos = path[0].Position;
+
+        Sound.Play(SoundID.ConvayerPut, entryPos, GetSoundVolume());
 
         _item.SetHeight(LogOnBeltSortHeight);
-        // 아이템을 첫 번째 체크포인트 위치로 즉시 이동
-        _item.transform.position = checkPoints[0].position;
+        // 아이템을 첫 번째 벨트 타일 중심으로 즉시 이동
+        _item.transform.position = entryPos;
 
         // 진입 연출 (스프링 댐퍼 효과)
         _item.PlayBeltEnterAnimation();
 
-        // 다음 목표 인덱스 설정 (체크포인트가 1개보다 많으면 1번부터, 아니면 0번 도달 처리 대기)
-        int nextTarget = checkPoints.Count > 1 ? 1 : 0;
+        // 다음 목표 인덱스 설정 (경로 지점이 1개보다 많으면 1번부터, 아니면 0번 도달 처리 대기)
+        int nextTarget = path.Count > 1 ? 1 : 0;
         activeItems.Add(new BeltItem(_item, nextTarget));
 
         // 보석 등급이면 벨트 위에서도 반짝임을 붙인다(제재목 포함).
@@ -183,7 +360,7 @@ public class LogInBelt : MonoBehaviour
         if (currentSpeed <= 0f && targetSpeedValue <= 0f) return;
 
         // 4. 아이템 이동 처리
-        if (activeItems.Count == 0) return;
+        if (activeItems.Count == 0 || path.Count == 0) return;
 
         float step = currentSpeed * globalSpeedMultiplier * deltaTime;
         for (int i = activeItems.Count - 1; i >= 0; i--)
@@ -196,24 +373,24 @@ public class LogInBelt : MonoBehaviour
                 continue;
             }
 
-            Transform target = checkPoints[beltItem.targetIndex];
+            Vector3 targetPos = path[beltItem.targetIndex].Position;
 
             // 이동 처리
             beltItem.item.transform.position = Vector3.MoveTowards(
                 beltItem.item.transform.position,
-                target.position,
+                targetPos,
                 step
             );
 
             beltItem.item.UpdateSortingOrder();
 
             // 도달 확인
-            if (Vector3.Distance(beltItem.item.transform.position, target.position) < 0.01f)
+            if (Vector3.Distance(beltItem.item.transform.position, targetPos) < 0.01f)
             {
                 beltItem.targetIndex++;
 
-                // 모든 체크포인트를 통과했는지 확인
-                if (beltItem.targetIndex >= checkPoints.Count)
+                // 모든 경로 지점을 통과했는지 확인
+                if (beltItem.targetIndex >= path.Count)
                 {
                     LogOut(beltItem.item);
                     activeItems.RemoveAt(i);
@@ -320,10 +497,10 @@ public class LogInBelt : MonoBehaviour
         }
 
         Vector3 moveDir = Vector3.right; // 기본값
-        if (2 <= checkPoints.Count)
+        if (2 <= path.Count)
         {
-            // 마지막 이동 방향 계산 (마지막 체크포인트 - 이전 체크포인트)
-            moveDir = (checkPoints[checkPoints.Count - 1].position - checkPoints[checkPoints.Count - 2].position).normalized;
+            // 마지막 이동 방향 계산 (마지막 경로 지점 - 이전 경로 지점)
+            moveDir = (path[path.Count - 1].Position - path[path.Count - 2].Position).normalized;
         }
 
         float duration = 0.1f;
@@ -441,6 +618,8 @@ public class LogInBelt : MonoBehaviour
         deactivatingItems.Clear();
         isMoving = _data.isMoving;
 
+        EnsurePath();
+
         if (_data.activeItems != null)
         {
             foreach (var itemData in _data.activeItems)
@@ -460,7 +639,9 @@ public class LogInBelt : MonoBehaviour
                     newItem.transform.position = itemData.position;
                     newItem.durability = itemData.itemData.durability;
                     newItem.UpdateSortingOrder();
-                    activeItems.Add(new BeltItem(newItem, itemData.targetIndex));
+                    // targetIndex는 저장 당시 경로 기준이라 그대로 믿을 수 없다(경로 지점 수가 바뀐
+                    // 세이브 호환). 저장된 위치에서 다음 목표를 다시 찾는다.
+                    activeItems.Add(new BeltItem(newItem, ResolveTargetIndex(itemData.position)));
 
                     // 가공이 끝난 제재목이면 외형을 되돌린다(스프라이트만 바뀌므로 별도 복원이 필요하다).
                     if (itemData.itemData.bIsTimber) newItem.SetTimberSprite();
@@ -511,4 +692,55 @@ public class LogInBelt : MonoBehaviour
             SetBeltsAnimationSpeed(0f);
         }
     }
+
+#if UNITY_EDITOR
+    // 원목이 실제로 지나갈 경로를 씬 뷰에 그려서, beltSurfaceOffset이 벨트 상판 중심과 맞는지
+    // 눈으로 바로 확인할 수 있게 한다.
+    private void OnDrawGizmosSelected()
+    {
+        if (belts == null || checkPoints == null) return;
+
+        Vector3 surfaceOffset = new Vector3(beltSurfaceOffset.x, beltSurfaceOffset.y, 0f);
+
+        Vector3 prev = Vector3.zero;
+        bool hasPrev = false;
+
+        Gizmos.color = Color.cyan;
+        for (int i = 0; i < belts.Count; ++i)
+        {
+            if (belts[i] == null) continue;
+
+            Vector3 p = belts[i].transform.position + surfaceOffset;
+            Gizmos.DrawWireSphere(p, 0.04f);
+            if (hasPrev) Gizmos.DrawLine(prev, p);
+            prev = p;
+            hasPrev = true;
+        }
+
+        if (hasPrev && checkPoints.Count > 0 && checkPoints[checkPoints.Count - 1] != null)
+        {
+            Transform exitCheckPoint = checkPoints[checkPoints.Count - 1];
+            Vector3 exit = exitCheckPoint.position;
+
+            if (snapExitToBeltAxis)
+            {
+                Vector3 raw = exit - prev;
+                raw.z = 0f;
+                if (raw.sqrMagnitude > Mathf.Epsilon) exit = prev + SnapToBeltAxis(raw) * raw.magnitude;
+
+                // 보정 전 위치도 같이 보여줘야 얼마나 틀어져 있었는지 바로 보인다.
+                Gizmos.color = Color.gray;
+                Gizmos.DrawLine(exitCheckPoint.position, exit);
+            }
+
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(exit, 0.04f);
+            Gizmos.DrawLine(prev, exit);
+
+            // 커터/평가기로 빨려들어가는 방향 (LogOut의 슬라이드 연출과 같은 방향)
+            Vector3 slideDir = (exit - prev).normalized;
+            Gizmos.DrawLine(exit, exit + slideDir * 0.3f);
+        }
+    }
+#endif
 }
