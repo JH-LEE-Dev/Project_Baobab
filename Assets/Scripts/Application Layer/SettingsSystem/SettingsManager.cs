@@ -67,6 +67,7 @@ public class SettingsManager : MonoBehaviour
     //   3) LocalizationManager가 읽는 로컬라이징 데이터 (OptionUI.json의 언어 이름 항목 포함)
     //   4) UI_Option.GetLanguageText의 분기
     //   5) LocalizationFontTable의 해당 언어 폰트
+    //   6) LanguageAutoDetect의 매핑 두 곳 (빠뜨리면 그 언어권 유저가 첫 실행에 영어로 시작한다)
 
     // 표기 문자열은 SettingsData의 해상도 목록에서 파생해 1회만 생성한다.
     // (손으로 관리하면 크기와 표기가 어긋날 수 있고, 컴파일러가 잡아주지 못한다)
@@ -587,6 +588,14 @@ public class SettingsManager : MonoBehaviour
     private void Load()
     {
         ESettingsLoadResult _result = SettingsRepository.TryLoad(out current);
+
+        // 유저가 고른 언어가 아직 없으면(첫 실행이거나 파일을 폐기한 경우) 기본값인 한국어를 그대로
+        // 쓰지 않고 환경에서 추론한다. 근거와 우선순위는 LanguageAutoDetect 주석 참고.
+        // Loaded일 때는 파일에 유저의 선택이 들어 있으므로 절대 건드리지 않는다.
+        if (ESettingsLoadResult.Loaded != _result)
+        {
+            current.language = LanguageAutoDetect.Resolve();
+        }
 
         // 손상·변조된 값만 교정한다. 현재 모니터에 맞춘 해상도 보정은 적용 시점에만 수행하며
         // 저장값에는 반영하지 않는다. (작은 화면에 임시로 연결한 것만으로 설정이 사라지지 않도록)

@@ -173,6 +173,9 @@ public struct SettingsData
     {
         return new SettingsData
         {
+            // 실제 첫 실행 언어는 이 값이 아니라 LanguageAutoDetect가 정한다(SettingsManager.Load).
+            // 여기를 한국어로 두는 것은 추론까지 실패했을 때가 아니라, 이 메서드가 손상된 파일의
+            // 폴백으로도 쓰이기 때문이다. 순수해야 해서 추론을 여기 넣지 않는다.
             language = EOptionLanguage.Korean,
             resolution = EResolution.Res1920x1080,
             windowMode = EWindowMode.Fullscreen,

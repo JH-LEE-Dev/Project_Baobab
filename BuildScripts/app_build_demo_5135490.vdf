@@ -1,0 +1,38 @@
+// ============================================================================
+//  LumberBoy Demo — 데모 앱 빌드 스크립트
+//
+//  앱 ID 5135490 = LumberBoy Demo (BuildInfo.STEAM_APP_ID_DEMO)
+//
+//  실행:
+//    steamcmd +login <계정> +run_app_build "<절대경로>\BuildScripts\app_build_demo_5135490.vdf" +quit
+//
+//  ※ 데모와 정식은 Steam에서 서로 다른 앱입니다. contentroot도 반드시 서로 다른
+//    폴더여야 합니다. 같은 폴더를 가리키면 데모 앱에 정식 콘텐츠가 올라갑니다.
+//  ※ 올리기 전에 반드시 BuildScripts/README.md 의 체크리스트를 지나세요.
+// ============================================================================
+
+"appbuild"
+{
+	"appid"		"5135490"
+
+	"desc"		"LumberBoy Demo 1.0.0-demo"
+
+	"buildoutput"	"..\Build\_SteamPipeOutput\Demo"
+
+	// Unity가 데모 빌드를 출력하는 폴더입니다. 정식과 반드시 분리하세요.
+	"contentroot"	"..\Build\Demo"
+
+	// 정식과 같은 이유로 비워 둡니다. README의 setlive 항목 참고.
+	"setlive"	""
+
+	"preview"	"0"
+
+	"local"		""
+
+	"depots"
+	{
+		// ⚠ 관례값(앱 ID + 1)입니다. Steamworks > LumberBoy Demo > SteamPipe > Depots 에서
+		//   실제 번호를 확인하고, 다르면 depot_build_demo_5135491.vdf 와 함께 고치세요.
+		"5135491"	"depot_build_demo_5135491.vdf"
+	}
+}

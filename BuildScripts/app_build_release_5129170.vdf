@@ -1,0 +1,51 @@
+// ============================================================================
+//  LumberBoy — 정식(Release) 앱 빌드 스크립트
+//
+//  앱 ID 5129170 = LumberBoy (BuildInfo.STEAM_APP_ID_RELEASE)
+//
+//  실행:
+//    steamcmd +login <계정> +run_app_build "<절대경로>\BuildScripts\app_build_release_5129170.vdf" +quit
+//
+//  ※ 경로가 상대경로일 때는 이 vdf 파일이 있는 폴더가 기준입니다.
+//  ※ 올리기 전에 반드시 BuildScripts/README.md 의 체크리스트를 지나세요.
+// ============================================================================
+
+"appbuild"
+{
+	"appid"		"5129170"
+
+	// Steamworks 빌드 목록에 그대로 보이는 설명입니다. 나중에 어느 빌드가 무엇이었는지
+	// 되짚는 유일한 단서이므로, 매 업로드마다 버전과 커밋을 갱신하세요.
+	"desc"		"LumberBoy 1.0.0 (release)"
+
+	// SteamPipe가 로그와 청크 캐시를 쌓는 곳입니다.
+	// contentroot 안에 두면 그 찌꺼기가 그대로 depot에 실리므로 반드시 바깥이어야 합니다.
+	"buildoutput"	"..\Build\_SteamPipeOutput\Release"
+
+	// Unity가 정식 빌드를 출력하는 폴더입니다. (LumberBoy.exe 가 여기 바로 아래)
+	"contentroot"	"..\Build\Release"
+
+	// 업로드와 동시에 어느 브랜치를 라이브로 만들지입니다.
+	//
+	// 비워 두는 것이 안전 기본값입니다. 업로드만 되고 아무 브랜치에도 반영되지 않아,
+	// 파트너 사이트에서 눈으로 확인한 뒤 직접 올릴 수 있습니다.
+	// default(기본 브랜치)는 여기에 절대 적지 마세요. 검수 안 끝난 빌드가 곧바로
+	// 전체 유저에게 나갑니다. 테스트 브랜치가 있다면 그 이름만 넣으세요.
+	"setlive"	""
+
+	// "1"이면 실제 업로드 없이 무엇이 올라갈지만 확인합니다(예행 연습).
+	// 스크립트를 처음 돌리거나 제외 규칙을 고친 직후에는 반드시 1로 한 번 돌려서,
+	// buildoutput 로그의 파일 목록에 심볼 폴더나 steam_appid.txt가 없는지 확인하세요.
+	"preview"	"0"
+
+	"local"		""
+
+	"depots"
+	{
+		// ⚠ 이 depot ID는 신규 앱의 관례값(앱 ID + 1)입니다.
+		//   Steamworks > LumberBoy > SteamPipe > Depots 에서 실제 번호를 확인하고
+		//   다르면 이 줄과 depot_build_release_5129171.vdf 안의 DepotID를 함께 고치세요.
+		//   틀리면 steamcmd가 업로드를 거부하므로 조용히 잘못될 일은 없습니다.
+		"5129171"	"depot_build_release_5129171.vdf"
+	}
+}

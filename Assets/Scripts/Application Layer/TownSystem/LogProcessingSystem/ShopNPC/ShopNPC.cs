@@ -72,6 +72,15 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     // LateUpdate()에서 처리해 이 경합을 없앤다.
     private bool bInteractRequested = false;
 
+    // 요청을 받은 LateUpdate()에서 조건(돈이 있음 / 상호작용 가능)이 아직 안 맞아도 즉시 버리지 않고,
+    // 이 프레임 수만큼 들고 있다가 재시도한다. 한 프레임만 어긋나서 입력이 통째로 씹히는 경우가 있다.
+    //  - bCanInteract: LogProcessingManager.Update()의 CalcDistForInteraction()이 입력 콜백과 이
+    //    LateUpdate() 사이에서 돌면서 상점 도달 가능 여부를 뒤집을 수 있다(보관함과 콜라이더가 겹치는 경계).
+    //  - money == 0: 광클 중에는 직전 프레임에 이미 수금해 잔액이 0인 프레임에 입력이 떨어지는 일이
+    //    대부분이라, 바로 다음 프레임의 InsertMoney()까지는 그 입력으로 이어서 받게 해준다.
+    private const int InteractRequestLifeFrames = 2;
+    private int interactRequestLifeFrames = 0;
+
     [Header("Coin Pickup Sound")]
     [SerializeField, Min(0f)] private float coinGetCooldown = 0.04f;
     [SerializeField, Min(0f)] private float coinPitchResetDelay = 0.2f;
@@ -157,6 +166,10 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     public void Release()
     {
         ReleaseEvents();
+
+        bInteractRequested = false;
+        interactRequestLifeFrames = 0;
+
         if (coinThrowCoroutine != null)
         {
             StopCoroutine(coinThrowCoroutine);
@@ -277,6 +290,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
             return;
 
         bInteractRequested = true;
+        interactRequestLifeFrames = InteractRequestLifeFrames;
     }
 
     // InteractKeyPressed()에서 요청 플래그만 받아, 그 프레임의 InsertMoney()까지 전부 반영된
@@ -286,10 +300,17 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         if (bInteractRequested == false)
             return;
 
-        bInteractRequested = false;
-
+        // 조건이 아직 안 맞으면 입력을 버리지 않고 InteractRequestLifeFrames 동안 재시도한다.
         if (money == 0 || bCanInteract == false)
+        {
+            --interactRequestLifeFrames;
+            if (interactRequestLifeFrames <= 0)
+                bInteractRequested = false;
+
             return;
+        }
+
+        bInteractRequested = false;
 
         int tempMoney = money;
         money = 0;

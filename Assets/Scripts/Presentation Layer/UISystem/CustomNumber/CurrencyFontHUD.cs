@@ -268,9 +268,15 @@ namespace PresentationLayer.UISystem.CustomNumber
             long _previousValue = _hasDisplayedValue ? lastDisplayedValue : 0L;
             if (_previousValue == _value)
             {
-                if (false == _hasDisplayedValue)
-                    SetNumber(_value);
-
+                // 표시값이 목표값과 같아도 "목표가 다른" 트윈이 아직 돌고 있을 수 있다. 여기서 그냥
+                // 리턴해버리면 그 트윈이 살아남아 화면 숫자를 옛 목표값까지 계속 굴려버린다.
+                // (상점 수금을 광클하면 InsertMoney -> 수금이 같은 프레임에 붙는데, DOTween은 생성된
+                //  다음 틱부터 돌기 때문에 이 시점의 lastDisplayedValue는 아직 갱신 전인 0이다.
+                //  그래서 이 가드에 걸려 0->N count-up 트윈이 살아남고, 이미 받아간 금액이 상인
+                //  머리 위에 그대로 남아있는 것처럼 보였다.)
+                // SetNumber()가 트윈/델타 연출 정리 + 글리프 색 복구까지 해주고, 정말 아무것도
+                // 돌고 있지 않으면 자체 가드로 그냥 빠져나가므로 그대로 위임한다.
+                SetNumber(_value);
                 return;
             }
 

@@ -1,0 +1,41 @@
+// ============================================================================
+//  LumberBoy — 정식(Release) depot 스크립트
+//
+//  depot 5129171 ⊂ 앱 5129170
+//  제외 규칙의 근거는 BuildScripts/README.md 의 "무엇을 빼는가" 참고.
+// ============================================================================
+
+"DepotBuildConfig"
+{
+	// ⚠ app_build_release_5129170.vdf 의 depots 항목과 반드시 같은 번호여야 합니다.
+	"DepotID"	"5129171"
+
+	"contentroot"	"..\Build\Release"
+
+	// 빌드 폴더 전체를 depot 루트에 그대로 옮깁니다. 아래 FileExclusion이 걸러냅니다.
+	"FileMapping"
+	{
+		"LocalPath"	"*"
+		"DepotPath"	"."
+		"recursive"	"1"
+	}
+
+	// --- 개발용 파일 -------------------------------------------------------
+	// Steam을 거치지 않고도 API를 쓰게 해주는 개발용 우회 파일입니다.
+	// 이게 실리면 SteamManager의 RestartAppIfNecessary 소유권 확인이 통째로 무의미해집니다.
+	// 프로젝트 루트에 있어 Unity가 빌드 출력에 복사하지 않지만, 이중으로 막아 둡니다.
+	"FileExclusion"	"steam_appid.txt"
+
+	// --- 디버그 심볼 -------------------------------------------------------
+	// IL2CPP가 뱉는 C++ 소스와 심볼입니다. Sentry 심볼 업로드에는 필요하지만
+	// (빌드 직후 sentry-cli가 로컬에서 읽어 갑니다) depot에는 절대 실으면 안 됩니다.
+	// 용량도 크고 게임 로직이 그대로 들어 있습니다. 폴더 이름 자체가 경고문입니다.
+	"FileExclusion"	"*_BackUpThisFolder_ButDontShipItWithYourGame*"
+	"FileExclusion"	"*_BurstDebugInformation_DoNotShip*"
+	"FileExclusion"	"*.pdb"
+
+	// --- 잡동사니 ----------------------------------------------------------
+	"FileExclusion"	"*.log"
+	"FileExclusion"	"Thumbs.db"
+	"FileExclusion"	"desktop.ini"
+}
