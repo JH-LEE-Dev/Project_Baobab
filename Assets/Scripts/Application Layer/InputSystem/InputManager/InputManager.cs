@@ -316,6 +316,12 @@ public class InputManager : MonoBehaviour
         inputReader.PauseInventoryKey(_boolean);
     }
 
+    /// <summary>지정한 소유자 이름으로만 인벤토리 키를 잠그거나 풉니다. 다른 시스템의 잠금과 섞이지 않습니다.</summary>
+    public void SetInventoryKeyLock(string _owner, bool _locked)
+    {
+        inputReader?.SetInventoryKeyLock(_owner, _locked);
+    }
+
     // 키 리바인딩 (실제 처리는 inputReader 위임, KeyBindingsChangedEvent는 inputManager.inputReader에서 직접 구독)
     public bool IsRebinding => inputReader.IsRebinding;
 

@@ -110,8 +110,16 @@ public class InputReader
     // 걸기/풀기가 정확히 1:1로 보장되므로 카운터로 충분하다.
     private int pauseUICancelCount = 0;
 
-    // 마을에서 던전을 클릭해 선택을 확정한 시점부터 던전 입장 연출이 끝날 때까지 Space(인벤토리)를 막는다.
-    private bool bPauseInventory = false;
+    // 인벤토리 키 잠금. 던전 진입 연출(마을에서 던전을 확정한 시점부터 입장 연출이 끝날 때까지)과
+    // TentUI(특성 창)가 열려 있는 구간이 서로 겹쳐 잠글 수 있어 ESC와 같은 소유자별 잠금을 쓴다 -
+    // 단순 bool이면 한쪽의 해제가 아직 막아야 하는 다른 쪽의 잠금까지 같이 풀어버린다.
+    private readonly HashSet<string> inventoryLockOwners = new HashSet<string>();
+
+    /// <summary>PauseInventoryKey(bool)이 사용하는 기본 소유자 키입니다. (던전 진입 연출 등 기존 호출부)</summary>
+    public const string INVENTORY_LOCK_OWNER_LEGACY = "Legacy";
+
+    /// <summary>TentUI(특성 창)가 열려 있는 동안 거는 잠금의 소유자 키입니다.</summary>
+    public const string INVENTORY_LOCK_OWNER_TENTUI = "TentUI";
 
     public void Initialize(InputDeviceSettings _deviceSettings)
     {
@@ -424,7 +432,7 @@ public class InputReader
 
     private void OnInventoryKeyPressed(InputAction.CallbackContext context)
     {
-        if (bPauseInventory)
+        if (0 < inventoryLockOwners.Count)
             return;
 
         InventoryKeyEvent?.Invoke();
@@ -527,9 +535,29 @@ public class InputReader
         }
     }
 
+    /// <summary>
+    /// 기본 소유자로 인벤토리 키를 잠그거나 풉니다. 기존 호출부(던전 진입 연출 등)의 동작을 그대로
+    /// 유지하기 위해 하나의 공용 소유자를 씁니다 - 즉 여러 번 걸어도 한 번 풀면 풀립니다.
+    /// 다른 시스템의 잠금과 섞이면 안 되는 곳은 SetInventoryKeyLock(소유자, ...)을 쓰세요.
+    /// </summary>
     public void PauseInventoryKey(bool _boolean)
     {
-        bPauseInventory = _boolean;
+        SetInventoryKeyLock(INVENTORY_LOCK_OWNER_LEGACY, _boolean);
+    }
+
+    /// <summary>
+    /// 지정한 소유자 이름으로 인벤토리 키를 잠그거나 풉니다. 같은 소유자가 여러 번 잠가도 한 번 풀면
+    /// 풀리고(멱등), 다른 소유자의 잠금은 건드리지 않습니다.
+    /// </summary>
+    public void SetInventoryKeyLock(string _owner, bool _locked)
+    {
+        if (true == string.IsNullOrEmpty(_owner))
+            return;
+
+        if (true == _locked)
+            inventoryLockOwners.Add(_owner);
+        else
+            inventoryLockOwners.Remove(_owner);
     }
 
     public void PotionKeyPressed(InputAction.CallbackContext context)

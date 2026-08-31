@@ -49,7 +49,7 @@ public static class KeyBindingRepository
         catch (Exception _e)
         {
             // 키 바인딩 파일 하나 때문에 게임이 부팅되지 않는 상황을 만들지 않는다.
-            Debug.LogWarning($"[KeyBindingRepository] Load failed, using defaults: {_e.Message}");
+            Debug.LogWarning(GamePaths.Redact($"[KeyBindingRepository] Load failed, using defaults: {_e.Message}"));
             _overridesJson = null;
             return false;
         }
@@ -85,7 +85,7 @@ public static class KeyBindingRepository
         }
         catch (Exception _e)
         {
-            Debug.LogError($"[KeyBindingRepository] Save failed: {_e.Message}");
+            Debug.LogError(GamePaths.Redact($"[KeyBindingRepository] Save failed: {_e.Message}"));
 
             try
             {

@@ -13,7 +13,7 @@ PlayerSettings:
   useOnDemandResources: 0
   accelerometerFrequency: 60
   companyName: Earth-999
-  productName: Project_Baobab
+  productName: LumberBoy
   defaultCursor: {fileID: 2800000, guid: bf64de7ff90df4d4b98ae3d6a6fb6413, type: 3}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.13725491, g: 0.12156863, b: 0.1254902, a: 1}
@@ -143,7 +143,7 @@ PlayerSettings:
   loadStoreDebugModeEnabled: 0
   visionOSBundleVersion: 1.0
   tvOSBundleVersion: 1.0
-  bundleVersion: 0.5
+  bundleVersion: 1.0.0
   preloadedAssets:
   - {fileID: 11400000, guid: ec6adc2f74248fa478009f15781b955d, type: 2}
   - {fileID: 11400000, guid: 7d5882a4a48d6f640adb33699c6a244a, type: 2}
@@ -606,7 +606,7 @@ PlayerSettings:
     PS4: DOTWEEN;DOTWEEN_DEAUDIO;DOTWEEN_DEUNITYEXTENDED;DOTWEEN_TEXTMESHPRO
     PS5: DOTWEEN;DOTWEEN_DEAUDIO;DOTWEEN_DEUNITYEXTENDED;DOTWEEN_TEXTMESHPRO
     QNX: DOTWEEN;DOTWEEN_DEAUDIO;DOTWEEN_DEUNITYEXTENDED;DOTWEEN_TEXTMESHPRO
-    Standalone: DOTWEEN;DOTWEEN_DEAUDIO;DOTWEEN_DEUNITYEXTENDED;DOTWEEN_TEXTMESHPRO;STEAMWORKS_NET;SENTIS_ANALYTICS_ENABLED;APP_UI_EDITOR_ONLY
+    Standalone: DOTWEEN;DOTWEEN_DEAUDIO;DOTWEEN_DEUNITYEXTENDED;DOTWEEN_TEXTMESHPRO;STEAMWORKS_NET
     VisionOS: DOTWEEN;DOTWEEN_DEAUDIO;DOTWEEN_DEUNITYEXTENDED;DOTWEEN_TEXTMESHPRO
     WebGL: DOTWEEN;DOTWEEN_DEAUDIO;DOTWEEN_DEUNITYEXTENDED;DOTWEEN_TEXTMESHPRO
     Windows Store Apps: DOTWEEN;DOTWEEN_DEAUDIO;DOTWEEN_DEUNITYEXTENDED;DOTWEEN_TEXTMESHPRO
@@ -617,17 +617,17 @@ PlayerSettings:
   platformArchitecture: {}
   scriptingBackend:
     Android: 1
-    Standalone: 0
+    Standalone: 1
   il2cppCompilerConfiguration: {}
   il2cppCodeGeneration: {}
   il2cppStacktraceInformation: {}
   managedStrippingLevel:
-    Standalone: 0
+    Standalone: 1
   incrementalIl2cppBuild: {}
   suppressCommonWarnings: 1
   allowUnsafeCode: 0
   useDeterministicCompilation: 1
-  additionalIl2CppArgs: 
+  additionalIl2CppArgs: ' --emit-source-mapping'
   scriptingRuntimeVersion: 1
   gcIncremental: 1
   gcWBarrierValidation: 0

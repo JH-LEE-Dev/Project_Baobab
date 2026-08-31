@@ -137,6 +137,9 @@ public class UnitSystem
 
         offroadContainer.ItemTransferToContainerEvent -= InventoryItemTransferToOffroadContainer;
         offroadContainer.ItemTransferToContainerEvent += InventoryItemTransferToOffroadContainer;
+
+        offroadContainer.ItemStoredFromCharacterEvent -= ItemStoredInOffroadContainer;
+        offroadContainer.ItemStoredFromCharacterEvent += ItemStoredInOffroadContainer;
     }
 
     private void ReleaseEvents()
@@ -157,6 +160,7 @@ public class UnitSystem
         inventoryManager.ItemCantAcquiedEvent -= ItemCantAcquied;
         unitLogicManager.GameEndEvent -= GameEnd;
         offroadContainer.ItemTransferToContainerEvent -= InventoryItemTransferToOffroadContainer;
+        offroadContainer.ItemStoredFromCharacterEvent -= ItemStoredInOffroadContainer;
     }
 
     private void CharacterSpawned(Character _character)
@@ -337,6 +341,11 @@ public class UnitSystem
     private void InventoryItemTransferToOffroadContainer()
     {
         signalHub.Publish(new InventoryItemTransferToOffroadContainerSignal());
+    }
+
+    private void ItemStoredInOffroadContainer(ItemType _itemType, int _count)
+    {
+        signalHub.Publish(new ItemStoredInOffroadContainerSignal(_itemType, _count));
     }
 
     private void ActivateCharacter(ActivateCharacterSignal _activateCharacterSignal)

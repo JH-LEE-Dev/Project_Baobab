@@ -177,7 +177,26 @@ public struct DropAllItemSignal { }
 
 public struct LostAndFoundBoxAcquiredSignal { }
 
+// 플레이어가 슬롯 하나의 이관을 "시작"할 때 발행된다(아이템이 실제로 빠져나가기 전).
+// 적재 수량 판정에는 쓸 수 없으므로 아래 ItemStoredInOffroadContainerSignal을 사용할 것.
 public struct InventoryItemTransferToOffroadContainerSignal { }
+
+// 플레이어가 넣은 아이템이 날아가는 연출을 끝내고 OffroadContainer에 "실제로 적재된" 시점에
+// 아이템 하나마다 발행된다. 인벤토리에서 빠졌다는 사실만 알리는 ItemRemovedFromInventorySignal과
+// 달리(그 신호는 버리기/유실/빈 슬롯 정리와 구분되지 않고, 슬롯이 비워질 때 한 번 더 울린다)
+// 이 신호만이 컨테이너에 실제로 들어간 수량을 정확히 나타낸다.
+// 럼버잭 NPC 등 플레이어가 아닌 주체의 납품은 포함하지 않는다.
+public struct ItemStoredInOffroadContainerSignal
+{
+    public ItemType itemType;
+    public int count;
+
+    public ItemStoredInOffroadContainerSignal(ItemType _itemType, int _count)
+    {
+        itemType = _itemType;
+        count = _count;
+    }
+}
 
 public struct DeclareDungeonStateSignal
 {

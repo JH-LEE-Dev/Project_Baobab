@@ -32,6 +32,19 @@ public static class SteamBuildModeSwitcher
     private const string MENU_SPACEWAR = "Tools/Steam/steam_appid.txt 를 480(Spacewar)으로";
 
     /// <summary>
+    /// 빌드에 함께 실려 나가는 분석 도구 설정입니다. 둘 다 Resources 아래라 빌드에 무조건 포함됩니다.
+    /// </summary>
+    private const string GAME_ANALYTICS_SETTINGS_PATH = "Assets/Resources/GameAnalytics/Settings.asset";
+    private const string SENTRY_OPTIONS_PATH = "Assets/Resources/Sentry/SentryOptions.asset";
+
+    /// <summary>Sentry 이슈를 데모/정식으로 나눠 보기 위한 environment 태그입니다.</summary>
+    private const string SENTRY_ENV_DEMO = "demo";
+    private const string SENTRY_ENV_RELEASE = "production";
+
+    /// <summary>GameAnalytics의 build 문자열에 붙는 데모 접미사입니다. (예: 0.5-demo)</summary>
+    private const string GAME_ANALYTICS_DEMO_SUFFIX = "-demo";
+
+    /// <summary>
     /// Valve의 공개 테스트 앱. 모든 Steam 계정이 자동으로 소유하므로 SteamAPI.Init()이 항상 성공합니다.
     ///
     /// 실제 앱 ID는 그 앱의 라이선스가 계정에 붙어 있어야(라이브러리에 보여야) Init이 됩니다.
@@ -116,7 +129,9 @@ public static class SteamBuildModeSwitcher
             $"디파인        : {(_isFull ? FULL_RELEASE_DEFINE : "없음")}\n" +
             $"세이브 변형    : {BuildInfo.Variant}\n" +
             $"기대 앱 ID     : {_expected}\n" +
-            $"steam_appid   : {_fileId}\n\n" + _verdict;
+            $"steam_appid   : {_fileId}\n" +
+            $"Sentry env    : {ReadSentryEnvironment()}\n" +
+            $"GA build      : {ReadGameAnalyticsBuild()}\n\n" + _verdict;
 
         EditorUtility.DisplayDialog("Steam 빌드 모드", _message, "확인");
 
@@ -148,6 +163,8 @@ public static class SteamBuildModeSwitcher
 
         uint _appId = _isFullRelease ? BuildInfo.STEAM_APP_ID_RELEASE : BuildInfo.STEAM_APP_ID_DEMO;
         WriteAppIdFile(_appId);
+
+        SyncAnalyticsAssets(_isFullRelease);
 
         Debug.Log($"[SteamBuildMode] {(_isFullRelease ? "정식" : "데모")} 모드로 전환. 앱 ID={_appId} / 대상={_target.TargetName}\n" +
                   "스크립트 재컴파일 후 적용됩니다.\n" +
@@ -198,5 +215,101 @@ public static class SteamBuildModeSwitcher
         {
             Debug.LogError("[SteamBuildMode] steam_appid.txt 기록 실패: " + _e.Message);
         }
+    }
+
+    /// <summary>
+    /// 빌드에 함께 실려 나가는 분석 도구 설정을 모드에 맞춥니다.
+    ///
+    /// steam_appid.txt와 같은 이유로 여기서 처리합니다. 이 값들도 코드가 아니라 에셋이라
+    /// 디파인을 따라오지 않는데, 둘 다 Resources 아래에 있어 빌드에 무조건 실립니다.
+    /// 어긋나면 데모에서 올라온 크래시·지표가 정식 데이터에 섞여 구분할 수 없게 됩니다.
+    /// </summary>
+    private static void SyncAnalyticsAssets(bool _isFullRelease)
+    {
+        bool _changed = false;
+
+        // |= 는 단축 평가를 하지 않으므로 둘 다 실행된다.
+        _changed |= SyncSentryEnvironment(_isFullRelease);
+        _changed |= SyncGameAnalyticsBuild(_isFullRelease);
+
+        if (true == _changed) AssetDatabase.SaveAssets();
+    }
+
+    private static bool SyncSentryEnvironment(bool _isFullRelease)
+    {
+        SerializedObject _so = LoadSettingsAsset(SENTRY_OPTIONS_PATH);
+        if (null == _so) return false;
+
+        SerializedProperty _env = _so.FindProperty("<EnvironmentOverride>k__BackingField");
+
+        if (null == _env)
+        {
+            Debug.LogWarning("[SteamBuildMode] Sentry의 EnvironmentOverride 필드를 찾지 못했습니다. SDK 버전이 바뀌었는지 확인하세요.");
+            return false;
+        }
+
+        _env.stringValue = _isFullRelease ? SENTRY_ENV_RELEASE : SENTRY_ENV_DEMO;
+
+        return _so.ApplyModifiedProperties();
+    }
+
+    private static bool SyncGameAnalyticsBuild(bool _isFullRelease)
+    {
+        SerializedObject _so = LoadSettingsAsset(GAME_ANALYTICS_SETTINGS_PATH);
+        if (null == _so) return false;
+
+        SerializedProperty _build = _so.FindProperty("Build");
+
+        if (null == _build || false == _build.isArray)
+        {
+            Debug.LogWarning("[SteamBuildMode] GameAnalytics의 Build 필드를 찾지 못했습니다. SDK 버전이 바뀌었는지 확인하세요.");
+            return false;
+        }
+
+        // 버전은 Player Settings를 따라가므로, 버전을 올려도 여기를 따로 고칠 필요가 없다.
+        string _value = PlayerSettings.bundleVersion + (_isFullRelease ? "" : GAME_ANALYTICS_DEMO_SUFFIX);
+
+        // GA는 플랫폼별 배열을 쓰지만 이 프로젝트는 Standalone 하나뿐이라 전부 같은 값으로 맞춘다.
+        if (0 == _build.arraySize) _build.arraySize = 1;
+
+        for (int i = 0; i < _build.arraySize; i++)
+        {
+            _build.GetArrayElementAtIndex(i).stringValue = _value;
+        }
+
+        return _so.ApplyModifiedProperties();
+    }
+
+    private static SerializedObject LoadSettingsAsset(string _path)
+    {
+        ScriptableObject _asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(_path);
+
+        if (null == _asset)
+        {
+            Debug.LogWarning("[SteamBuildMode] 설정 에셋을 찾지 못했습니다: " + _path);
+            return null;
+        }
+
+        return new SerializedObject(_asset);
+    }
+
+    private static string ReadSentryEnvironment()
+    {
+        SerializedObject _so = LoadSettingsAsset(SENTRY_OPTIONS_PATH);
+        SerializedProperty _env = (null == _so) ? null : _so.FindProperty("<EnvironmentOverride>k__BackingField");
+
+        if (null == _env) return "(읽기 실패)";
+
+        return string.IsNullOrEmpty(_env.stringValue) ? "(비어 있음)" : _env.stringValue;
+    }
+
+    private static string ReadGameAnalyticsBuild()
+    {
+        SerializedObject _so = LoadSettingsAsset(GAME_ANALYTICS_SETTINGS_PATH);
+        SerializedProperty _build = (null == _so) ? null : _so.FindProperty("Build");
+
+        if (null == _build || false == _build.isArray || 0 == _build.arraySize) return "(읽기 실패)";
+
+        return _build.GetArrayElementAtIndex(0).stringValue;
     }
 }

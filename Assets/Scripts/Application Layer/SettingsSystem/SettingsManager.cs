@@ -99,10 +99,6 @@ public class SettingsManager : MonoBehaviour
         return _labels;
     }
 
-    // 모니터 주사율은 정수가 아님 (59.94Hz, 143.98Hz 등). 오차 범위 내면 일치로 간주한다.
-    // 선택지 간 최소 간격이 15Hz(60→75)이므로 1Hz 허용은 오검출 위험이 없다.
-    private const float REFRESH_RATE_TOLERANCE = 1f;
-
     private SettingsData current = SettingsData.CreateDefault();
     private LocalizationManager locManager;
     private bool isLoaded = false;
@@ -519,27 +515,23 @@ public class SettingsManager : MonoBehaviour
 
     private void ApplyFrameRate()
     {
-        // 1. 유저가 VSync를 명시적으로 선택한 경우
+        // 1. 유저가 VSync를 명시적으로 선택한 경우에만 VSync를 켠다.
         if (EFPS.VSync == current.fps)
         {
             EnableVSync();
             return;
         }
 
-        int _targetFps = GetFpsValue(current.fps);
-
-        // 2. 선택한 FPS가 모니터 주사율과 같으면 VSync로 처리한다.
-        //    targetFrameRate로 직접 제한하는 것보다 프레임 페이싱이 정확하고 티어링이 사라진다.
-        //    (유저가 고른 값 자체는 바꾸지 않고 적용 방식만 달라짐)
-        if (_targetFps > 0 && true == IsMatchingMonitorRefreshRate(_targetFps))
-        {
-            EnableVSync();
-            return;
-        }
-
-        // 3. 그 외에는 VSync를 끄고 목표 프레임레이트로 제한 (Unlimited는 -1)
+        // 2. 숫자 FPS(및 Unlimited)는 항상 targetFrameRate로 직접 제한한다.
+        //
+        //    선택값이 모니터 주사율과 같을 때 VSync로 대신 처리하던 분기가 있었으나 제거했다.
+        //    vSyncCount가 0이 아니면 Unity는 targetFrameRate를 아예 무시하므로, 그 경로에서는
+        //    상한이 오직 VSync에만 의존한다. 그런데 그래픽 드라이버의 "수직 동기화: 끄기"는
+        //    앱의 요청을 덮어쓸 수 있고(특히 이 프로젝트처럼 테두리 없는 창 + flip model 조합),
+        //    그러면 상한이 하나도 남지 않아 165 선택에도 200+ FPS로 치솟았다.
+        //    프레임 페이싱/티어링보다 "유저가 고른 상한이 어떤 환경에서든 지켜지는 것"을 우선한다.
         QualitySettings.vSyncCount = 0;
-        Application.targetFrameRate = _targetFps;
+        Application.targetFrameRate = GetFpsValue(current.fps); // Unlimited는 -1
     }
 
     private void EnableVSync()
@@ -563,15 +555,6 @@ public class SettingsManager : MonoBehaviour
     public static float GetMonitorRefreshRate()
     {
         return DisplayUtil.GetMainDisplayRefreshRate();
-    }
-
-    /// <summary>지정한 FPS가 현재 모니터 주사율과 (오차 범위 내에서) 일치하는지 여부입니다.</summary>
-    public static bool IsMatchingMonitorRefreshRate(int _fps)
-    {
-        float _refreshRate = GetMonitorRefreshRate();
-        if (_refreshRate <= 0f) return false; // 주사율을 알 수 없는 환경에서는 판단하지 않음
-
-        return Mathf.Abs(_refreshRate - _fps) <= REFRESH_RATE_TOLERANCE;
     }
 
     /// <summary>언어는 예외적으로 선택 즉시 반영됩니다.</summary>

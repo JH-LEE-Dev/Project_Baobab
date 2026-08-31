@@ -78,6 +78,12 @@ public class UI_TutorialQuest : MonoBehaviour
     private Sequence stepTransitionSequence;
     private Sequence completedSequence;
 
+    // ESC 일시정지 전용 퇴장 연출. 이 연출은 HideCompletedEvent를 발행하지 않으므로
+    // hideSequence(발행 책임이 있는 퇴장 연출)와 반드시 분리해서 들고 있어야 한다.
+    // 같은 필드를 공유하면 HasPendingHide()가 이걸 "미발행 퇴장 연출"로 오인해
+    // 이벤트를 중복 발행하게 된다.
+    private Sequence pauseHideSequence;
+
     private string pendingNextTitle;
     private string pendingNextDesc;
 
@@ -93,7 +99,19 @@ public class UI_TutorialQuest : MonoBehaviour
 
     private TutorialStep currentStep;
     private bool bIsShowing = false;
+
+    // ESC 일시정지로 안내 UI가 잠시 내려갔고, 일시정지 해제 시 다시 띄워야 하는지.
     private bool isSuspendedByPause = false;
+
+    // ESC 일시정지 메뉴가 열려 있는지. 연출 시퀀스가 전부 SetUpdate(true)(비스케일 시간)라
+    // timeScale이 0이어도 그대로 재생되기 때문에, 일시정지 중에 들어온 스텝 시작/완료를
+    // 이 플래그로 걸러 일시정지 메뉴 위에 퀘스트가 튀어나오지 않게 한다.
+    private bool bPaused = false;
+
+    // 현재 showSequence가 PlayCustomSequence()로 만들어진 것인지. 이 시퀀스는 등장뿐 아니라
+    // "완료 색상 → 유지 → 퇴장"까지 한 덩어리라, 일반 등장 연출과 달리 중간에 죽이면
+    // HideCompletedEvent가 유실된다(HasPendingHide() 참고).
+    private bool bCustomSequenceRunning = false;
     private string currentQuestTitle;
     private string currentQuestDesc;
     public event Action<TutorialStep> HideCompletedEvent;
@@ -145,9 +163,20 @@ public class UI_TutorialQuest : MonoBehaviour
 
         currentStep = _step;
 
-        currentStep = _step;
-
         GetQuestTitleAndDesc(_step, out string _title, out string _desc);
+
+        // ESC 일시정지 중에는 안내 UI를 띄우지 않는다. 연출이 비스케일 시간으로 돌기 때문에
+        // 그냥 재생하면 일시정지 메뉴 위로 퀘스트가 튀어나온다. 대신 "일시정지로 내려간 퀘스트"로
+        // 기록해두고, 일시정지가 풀릴 때 ResumeQuest()가 정상 등장 연출로 띄운다.
+        if (true == bPaused)
+        {
+            SetQuestContent(_title, _desc);
+            isSuspendedByPause = true;
+
+            bIsShowing = false;
+            PrepareHiddenState();
+            return;
+        }
 
         if (true == bIsShowing)
         {
@@ -174,6 +203,16 @@ public class UI_TutorialQuest : MonoBehaviour
                 if (true == bIsShowing)
                 {
                     PlayCompleteAndHide();
+                    break;
+                }
+
+                // ESC 일시정지로 안내 UI가 내려가 있는 동안 스텝이 완료된 경우. 그대로 두면
+                // 일시정지 해제 시 이미 끝난 퀘스트가 다시 떠오르고, 그 퀘스트는 두 번 완료될 일이
+                // 없으므로 HideCompletedEvent도 영영 발행되지 않아 상호작용 잠금이 풀리지 않는다.
+                if (true == bPaused && true == isSuspendedByPause && _step == currentStep)
+                {
+                    CancelPauseSuspension();
+                    HideCompletedEvent?.Invoke(_step);
                 }
                 break;
         }
@@ -183,43 +222,115 @@ public class UI_TutorialQuest : MonoBehaviour
     {
         if (true == _isPaused)
         {
-            if (false == bIsShowing)
-                return;
-
-            isSuspendedByPause = true;
-            bIsShowing = false;
-
-            KillSequences();
-
-            hideSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
-            AppendHideEffect(hideSequence, 0f);
-            hideSequence.OnComplete(cachedOnPauseHideComplete);
+            PauseQuest();
         }
         else
         {
-            if (false == isSuspendedByPause)
-                return;
-
-            isSuspendedByPause = false;
-
-            if (false == string.IsNullOrEmpty(currentQuestTitle))
-            {
-                SetQuestContent(currentQuestTitle, currentQuestDesc);
-            }
-            else
-            {
-                GetQuestTitleAndDesc(currentStep, out string _title, out string _desc);
-                SetQuestContent(_title, _desc);
-            }
-
-            PlayShowQuest();
+            ResumeQuest();
         }
+    }
+
+    /// <summary>
+    /// ESC 일시정지 진입. 진행 중이던 연출을 그냥 Kill()하면 그 연출 끝에 걸려 있는
+    /// HideCompletedEvent / StepTransitionCompletedEvent가 유실되는데, 이 이벤트로만 풀리는 게임
+    /// 로직(OffroadContainer/OffroadVehicle 상호작용 잠금 해제, 다음 튜토리얼 스텝 시작)이 있어
+    /// 튜토리얼이 영구히 진행 불가 상태가 된다. 따라서 죽이기 전에 반드시 논리적으로 확정한다.
+    /// </summary>
+    private void PauseQuest()
+    {
+        if (true == bPaused)
+            return;
+
+        bPaused = true;
+
+        // 죽이기 전에 무엇이 진행 중이었는지 먼저 기록해둔다.
+        bool _hasPendingTransition = null != stepTransitionSequence && stepTransitionSequence.IsActive();
+        bool _hasPendingHide = HasPendingHide();
+        bool _bWasShowing = bIsShowing;
+        TutorialStep _pendingStep = currentStep;
+
+        // 전환 연출은 중간 지점(OnStepMidpoint)에서야 다음 퀘스트 텍스트로 교체된다. 그 전에 끊기면
+        // 이미 완료된 이전 퀘스트 문구가 currentQuestTitle에 남아 복원 시 되살아나므로 여기서 확정한다.
+        if (true == _hasPendingTransition)
+        {
+            SetQuestContent(pendingNextTitle, pendingNextDesc);
+        }
+
+        KillSequences();
+
+        // 완료(초록색) 연출 중이었다면 그 퀘스트는 이미 끝난 것이므로 복원 대상이 아니다.
+        isSuspendedByPause = _bWasShowing && false == _hasPendingHide;
+        bIsShowing = false;
+
+        if (true == _bWasShowing || true == _hasPendingHide)
+        {
+            pauseHideSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
+            AppendHideEffect(pauseHideSequence, 0f);
+            pauseHideSequence.OnComplete(cachedOnPauseHideComplete);
+        }
+
+        // 이벤트는 내부 상태를 전부 정리한 뒤 맨 마지막에 발행한다. 구독자(TutorialSystem)가 그 자리에서
+        // 곧바로 다음 스텝을 시작해 OnTutorialStepStarted로 재진입할 수 있는데, 그때 세워지는
+        // currentStep/currentQuestTitle/isSuspendedByPause를 이 메서드가 나중에 덮어써서는 안 된다.
+        if (true == _hasPendingTransition)
+        {
+            StepTransitionCompletedEvent?.Invoke(_pendingStep);
+        }
+
+        if (true == _hasPendingHide)
+        {
+            HideCompletedEvent?.Invoke(_pendingStep);
+        }
+    }
+
+    /// <summary>
+    /// ESC 일시정지 해제. 일시정지 때문에 내려간 퀘스트가 있을 때만 다시 띄운다.
+    /// </summary>
+    private void ResumeQuest()
+    {
+        bPaused = false;
+
+        if (false == isSuspendedByPause)
+            return;
+
+        isSuspendedByPause = false;
+
+        if (false == string.IsNullOrEmpty(currentQuestTitle))
+        {
+            SetQuestContent(currentQuestTitle, currentQuestDesc);
+        }
+        else
+        {
+            GetQuestTitleAndDesc(currentStep, out string _title, out string _desc);
+            SetQuestContent(_title, _desc);
+        }
+
+        PlayShowQuest();
+    }
+
+    /// <summary>
+    /// 일시정지로 내려간 퀘스트의 복원을 취소한다(그 퀘스트가 일시정지 도중 완료된 경우).
+    /// </summary>
+    private void CancelPauseSuspension()
+    {
+        KillSequences();
+
+        isSuspendedByPause = false;
+        currentQuestTitle = null;
+        currentQuestDesc = null;
+
+        bIsShowing = false;
+        PrepareHiddenState();
     }
 
     public void ResetQuest()
     {
         KillSequences();
 
+        // 메인 메뉴 이동/씬 리셋은 일시정지 상태에서 들어올 수 있는데 그 경로엔
+        // SetPauseState(false)가 없다. 여기서 일시정지 플래그까지 확실히 내려야
+        // 다음 세션에서 퀘스트가 계속 숨겨진 상태로 남지 않는다.
+        bPaused = false;
         isSuspendedByPause = false;
         currentQuestTitle = null;
         currentQuestDesc = null;
@@ -255,6 +366,9 @@ public class UI_TutorialQuest : MonoBehaviour
 
         KillSequences();
         bIsShowing = true;
+
+        // KillSequences()가 이 플래그를 내리므로 반드시 그 뒤에 세운다.
+        bCustomSequenceRunning = true;
 
         SetQuestContent(_title, _desc);
 
@@ -792,10 +906,7 @@ public class UI_TutorialQuest : MonoBehaviour
     /// </summary>
     private void ForceCompletePendingHide()
     {
-        bool _hasPendingHide = (null != completedSequence && completedSequence.IsActive())
-                             || (null != hideSequence && hideSequence.IsActive());
-
-        if (false == _hasPendingHide)
+        if (false == HasPendingHide())
             return;
 
         TutorialStep _hidingStep = currentStep;
@@ -807,8 +918,37 @@ public class UI_TutorialQuest : MonoBehaviour
         HideCompletedEvent?.Invoke(_hidingStep);
     }
 
+    /// <summary>
+    /// 끝까지 재생돼야 HideCompletedEvent가 발행되는 연출이 진행 중인지.
+    /// pauseHideSequence는 이벤트를 발행하지 않는 일시정지 전용 퇴장 연출이라 포함하지 않는다.
+    /// </summary>
+    private bool HasPendingHide()
+    {
+        if (null != completedSequence && completedSequence.IsActive())
+            return true;
+
+        if (null != hideSequence && hideSequence.IsActive())
+            return true;
+
+        // PlayCustomSequence()의 showSequence는 등장부터 퇴장까지 한 시퀀스에 담겨 있어,
+        // 일반 등장 연출과 달리 끝까지 가야 HideCompletedEvent가 발행된다.
+        if (true == bCustomSequenceRunning && null != showSequence && showSequence.IsActive())
+            return true;
+
+        return false;
+    }
+
     private void KillSequences()
     {
+        // showSequence의 "커스텀 연출 여부"는 그 시퀀스의 수명과 함께 끝난다.
+        bCustomSequenceRunning = false;
+
+        if (null != pauseHideSequence && pauseHideSequence.IsActive())
+        {
+            pauseHideSequence.Kill();
+        }
+        pauseHideSequence = null;
+
         if (null != stepTransitionSequence && stepTransitionSequence.IsActive())
         {
             stepTransitionSequence.Kill();

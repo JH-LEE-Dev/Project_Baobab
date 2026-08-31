@@ -6,6 +6,10 @@ using UnityEngine;
 public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 {
     public event Action ItemTransferToContainerEvent;
+
+    // 플레이어가 넣은 아이템이 실제로 컨테이너 슬롯에 적재된 순간, 아이템 하나마다 발행된다.
+    // (ItemType, 적재 수량) - 커밋은 착지 시점(UpdateFlyingItems)에 일어나므로 여기서만 정확히 알 수 있다.
+    public event Action<ItemType, int> ItemStoredFromCharacterEvent;
     public event Action ContainerOpenedEvent;
     public event Action ContainerClosedEvent;
     public event Action<bool> InteractStateEvent;
@@ -281,7 +285,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 {
                     // 컨테이너로 들어오는 납품도 착지 시점에 커밋한다(발사 시점엔 CanAddItemByData의
                     // pendingCount로만 반영됨).
-                    AddItemByData(arrivalDataBuffer, item.logState);
+                    bool _bStored = AddItemByData(arrivalDataBuffer, item.logState);
                     TriggerBounce();
 
                     if (flyingData.fromCharacter)
@@ -292,6 +296,13 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                         // 벌목 NPC가 납품하는 동안에는 울리지 않는다.
                         // 0.075초 간격으로 연달아 들어오므로 연속 전용(약한) 파형을 쓴다.
                         Rumble.Play(EHapticEvent.ItemStream);
+
+                        // "플레이어가 넣은 아이템 하나가 실제로 적재됨"이 확정되는 유일한 지점.
+                        // 슬롯이 가득 차 커밋에 실패했다면(_bStored == false) 세지 않는다.
+                        if (_bStored)
+                        {
+                            ItemStoredFromCharacterEvent?.Invoke(arrivalDataBuffer.itemType, 1);
+                        }
                     }
 
                     // 납품은 캐릭터/NPC 구분 없이 하나의 흐름(currentDepositPitch)을 공유한다.
@@ -1649,9 +1660,10 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         return pendingSameType < totalCapacity;
     }
 
-    private void AddItemByData(ItemData _sourceData, LogState _state)
+    /// <returns>실제로 슬롯에 적재됐는지. 여유 슬롯이 없으면 아무것도 하지 않고 false를 반환한다.</returns>
+    private bool AddItemByData(ItemData _sourceData, LogState _state)
     {
-        if (_sourceData == null) return;
+        if (_sourceData == null) return false;
 
         // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
         for (int i = 0; i < currentSlotCount; i++)
@@ -1662,7 +1674,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             {
                 inventorySlots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
                 ContainerUpdatedEvent?.Invoke();
-                return;
+                return true;
             }
         }
 
@@ -1672,27 +1684,29 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             if (inventorySlots[i].itemData == null)
             {
                 ItemData newData = itemDataPool.Get(_sourceData.itemType);
-                if (newData != null)
+                if (newData == null)
+                    return false;
+
+                // 데이터 복사
+                newData.itemType = _sourceData.itemType;
+                newData.sprite = _sourceData.sprite;
+                newData.color = _sourceData.color;
+
+                if (newData is LogItemData newLogData && _sourceData is LogItemData sourceLogData)
                 {
-                    // 데이터 복사
-                    newData.itemType = _sourceData.itemType;
-                    newData.sprite = _sourceData.sprite;
-                    newData.color = _sourceData.color;
-
-                    if (newData is LogItemData newLogData && _sourceData is LogItemData sourceLogData)
-                    {
-                        newLogData.treeType = sourceLogData.treeType;
-                        newLogData.logState = _state;
-                    }
-
-                    inventorySlots[i].Setup(newData, 0);
-                    inventorySlots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
-                    ContainerUpdatedEvent?.Invoke();
+                    newLogData.treeType = sourceLogData.treeType;
+                    newLogData.logState = _state;
                 }
 
-                return;
+                inventorySlots[i].Setup(newData, 0);
+                inventorySlots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
+                ContainerUpdatedEvent?.Invoke();
+
+                return true;
             }
         }
+
+        return false;
     }
 
     public void SetCanReach(bool _bCanReach)

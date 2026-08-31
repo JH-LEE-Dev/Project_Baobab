@@ -37,6 +37,10 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
     // 다른 변형(정식) 세이브 보존을 세션당 한 번만 시도하기 위한 플래그. (아래 PreserveForeignSaveOnce 참고)
     private bool bForeignSavePreserveChecked;
 
+    // OneDrive 동기화/백신 스캔 등으로 세이브 파일이 잠깐 잠길 수 있어, 파일 조작은 짧게 재시도한다.
+    private const int FILE_OP_MAX_RETRIES = 3;
+    private const int FILE_OP_RETRY_DELAY_MS = 75;
+
     private void Awake()
     {
         bootstrap = GetComponent<BootStrap>();
@@ -127,7 +131,15 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
     public void SyncCloudSaveIfNewer()
     {
         if (!SteamCloudSaveService.IsAvailable) return;
-        if (!SteamCloudSaveService.TryGetCloudTimestampUtc(out DateTime cloudTimeUtc)) return;
+
+        if (!SteamCloudSaveService.TryGetCloudTimestampUtc(out DateTime cloudTimeUtc))
+        {
+            // 클라우드에 파일이 없다. 지우려던 대상이 이미 사라졌으므로 표식도 정리한다.
+            ClearCloudTombstone();
+            return;
+        }
+
+        if (TryResolveCloudTombstone(cloudTimeUtc)) return;
 
         string path = GetSaveFilePath();
         bool localExists = File.Exists(path);
@@ -262,8 +274,13 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         if (WriteSaveFileWithBackup(encryptedData, "SaveGameData"))
         {
             // 로컬 쓰기가 실패했는데 클라우드에 업로드하면, 클라우드의 "최신" 스냅샷과 로컬 파일이 어긋난다.
-            SteamCloudSaveService.Upload(encryptedData);
-            Debug.Log($"[SaveManager] Game Data Encrypted & Saved to: {GetSaveFilePath()} (variant={cachedSaveData.buildVariant}, Alloc-minimized)");
+            if (SteamCloudSaveService.Upload(encryptedData))
+            {
+                // 클라우드가 새 진행도로 교체됐으니, 삭제 대상이던 예전 세이브는 더 이상 존재하지 않는다.
+                ClearCloudTombstone();
+            }
+
+            Debug.Log(GamePaths.Redact($"[SaveManager] Game Data Encrypted & Saved to: {GetSaveFilePath()} (variant={cachedSaveData.buildVariant}, Alloc-minimized)"));
         }
         else
         {
@@ -316,13 +333,44 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
 
         if (!BuildInfo.IsSaveVariantCompatible(data.buildVariant))
         {
-            Debug.LogWarning($"[SaveManager] '{_path}' was created by another build variant ({data.buildVariant}); current build is {BuildInfo.Variant}. Treating it as no save data (it will be overwritten by the next save).");
+            Debug.LogWarning(GamePaths.Redact($"[SaveManager] '{_path}' was created by another build variant ({data.buildVariant}); current build is {BuildInfo.Variant}. Treating it as no save data (it will be overwritten by the next save)."));
             return false;
         }
 
         _data = data;
         _rawBytes = rawBytes;
         return true;
+    }
+
+    // "새로하기" 진입 시 기존 진행도를 즉시 제거한다. 이 호출이 없어도 SetupScene()의 bNewGame 가드가
+    // 로드는 막아주지만, 파일 자체는 다음 자동저장 전까지 디스크에 남아있어 그 사이 강제 종료되면
+    // 이전 진행도가 그대로 살아남는다. 메인/백업 파일을 모두 지워 확실히 새 시작을 보장한다.
+    public void DeleteSaveData()
+    {
+        // 데모 빌드에서 남아있는 정식 빌드 세이브를 삭제하기 전에 먼저 보존한다.
+        // (WriteSaveFileWithBackup 경로와 동일한 보호: PreserveForeignSaveOnce 참고)
+        PreserveForeignSaveOnce();
+
+        TryDeleteFile(GetSaveFilePath());
+        TryDeleteFile(GamePaths.GameSaveBackupFile);
+
+        // 로컬만 지우면 다음 실행 시 SyncCloudSaveIfNewer()가 "로컬 없음 = 클라우드가 최신"으로 오판해
+        // 방금 지운 세이브를 클라우드에서 그대로 복원해버린다. 클라우드도 함께 지워야 삭제가 유지된다.
+        // 오프라인 등으로 지금 못 지웠다면 표식을 남겨 다음 실행에서 정리한다.
+        if (SteamCloudSaveService.Delete())
+        {
+            ClearCloudTombstone();
+        }
+        else
+        {
+            WriteCloudTombstone();
+        }
+
+        // 캐시를 무효화해 다음 HasSaveData() 호출이 삭제된 상태를 바로 반영하도록 한다.
+        cachedSaveStateKey = null;
+        bCachedHasUsableSave = false;
+
+        Debug.Log("[SaveManager] Existing save data deleted for New Game.");
     }
 
     public void LoadGameData()
@@ -332,7 +380,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         if (TryLoadUsableSave(path, out GameSaveData saveData, out _))
         {
             ApplyLoadedData(saveData);
-            Debug.Log($"[SaveManager] Game Data Decrypted & Loaded from: {path}");
+            Debug.Log(GamePaths.Redact($"[SaveManager] Game Data Decrypted & Loaded from: {path}"));
             return;
         }
 
@@ -432,7 +480,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         }
         catch (Exception _e)
         {
-            Debug.LogError($"[SaveManager] Failed to read save file '{_path}': {_e.Message}");
+            Debug.LogError(GamePaths.Redact($"[SaveManager] Failed to read save file '{_path}': {_e.Message}"));
             return false;
         }
 
@@ -445,18 +493,42 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         return true;
     }
 
+    // 파일이 잠겨있을 수 있으므로 WriteSaveFileWithBackup과 같은 정책으로 짧게 재시도한다.
+    // 대상이 애초에 없으면 File.Delete는 예외 없이 통과하므로 true가 된다.
     private bool TryDeleteFile(string _path)
     {
-        try
+        for (int attempt = 1; attempt <= FILE_OP_MAX_RETRIES; attempt++)
         {
-            File.Delete(_path);
-            return true;
+            try
+            {
+                File.Delete(_path);
+                return true;
+            }
+            catch (IOException _e)
+            {
+                // 다른 프로세스가 붙잡고 있는 경우다. 잠시 뒤 풀릴 수 있으니 재시도한다.
+                if (attempt >= FILE_OP_MAX_RETRIES)
+                {
+                    Debug.LogError(GamePaths.Redact($"[SaveManager] Failed to delete file '{_path}' after {FILE_OP_MAX_RETRIES} attempts: {_e.Message}"));
+                    return false;
+                }
+
+                Thread.Sleep(FILE_OP_RETRY_DELAY_MS);
+            }
+            catch (UnauthorizedAccessException _e)
+            {
+                // 읽기 전용/권한 문제는 재시도해도 결과가 같다.
+                Debug.LogError(GamePaths.Redact($"[SaveManager] Failed to delete file '{_path}': {_e.Message}"));
+                return false;
+            }
+            catch (Exception _e)
+            {
+                Debug.LogError(GamePaths.Redact($"[SaveManager] Unexpected error deleting file '{_path}': {_e.Message}"));
+                return false;
+            }
         }
-        catch (Exception _e)
-        {
-            Debug.LogError($"[SaveManager] Failed to delete file '{_path}': {_e.Message}");
-            return false;
-        }
+
+        return false;
     }
 
     // 복호화 + JSON 파싱만 담당한다(서브시스템 반영은 ApplyLoadedData에서). 클라우드 데이터 사전 검증에도 재사용된다.
@@ -508,8 +580,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
             return false;
         }
 
-        const int maxRetries = 3;
-        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        for (int attempt = 1; attempt <= FILE_OP_MAX_RETRIES; attempt++)
         {
             try
             {
@@ -528,13 +599,13 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
             catch (IOException _e)
             {
                 // OneDrive 동기화/백신 스캔 등으로 대상 파일이 잠깐 잠겨있을 수 있어 짧게 재시도한다.
-                if (attempt >= maxRetries)
+                if (attempt >= FILE_OP_MAX_RETRIES)
                 {
-                    Debug.LogError($"[SaveManager] ({_context}) Failed to replace save file after {maxRetries} attempts: {_e.Message}");
+                    Debug.LogError($"[SaveManager] ({_context}) Failed to replace save file after {FILE_OP_MAX_RETRIES} attempts: {_e.Message}");
                     return false;
                 }
 
-                Thread.Sleep(75);
+                Thread.Sleep(FILE_OP_RETRY_DELAY_MS);
             }
             catch (Exception _e)
             {
@@ -544,6 +615,93 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         }
 
         return false;
+    }
+
+    // // 클라우드 삭제 표식(tombstone)
+    // "새로하기"로 로컬 세이브를 지웠는데 그 시점에 클라우드까지 지우지 못하면(오프라인/스팀 미실행),
+    // 다음 실행에서 SyncCloudSaveIfNewer가 "로컬 없음 = 클라우드가 최신"으로 판단해 방금 지운 세이브를
+    // 그대로 복원해버린다. 삭제 시각을 남겨두고, 다음 실행에서 그보다 오래된 클라우드 세이브는
+    // 복원 대신 삭제하도록 한다.
+
+    /// <summary>
+    /// 삭제 표식이 남아있는지 확인하고, 남아있다면 클라우드 세이브를 지금 정리한다.
+    /// 이번 동기화를 중단해야 하면(= 복원하면 안 되면) true를 반환한다.
+    /// </summary>
+    private bool TryResolveCloudTombstone(DateTime _cloudTimeUtc)
+    {
+        if (!TryReadCloudTombstoneUtc(out DateTime deletedAtUtc)) return false;
+
+        // 삭제 이후에 기록된 클라우드 세이브라면 다른 기기에서 이어서 플레이한 정상 진행도다.
+        // 이 경우엔 표식을 버리고 평소 동기화 규칙을 그대로 따른다.
+        if (_cloudTimeUtc > deletedAtUtc)
+        {
+            Debug.Log("[SaveManager] Cloud save is newer than the recorded deletion; treating it as valid progress from another device.");
+            ClearCloudTombstone();
+            return false;
+        }
+
+        // 우리가 지우려다 실패했던 바로 그 세이브다. 복원하지 않고 이제야 지운다.
+        if (SteamCloudSaveService.Delete())
+        {
+            ClearCloudTombstone();
+            Debug.Log("[SaveManager] Deleted the leftover cloud save from an earlier offline New Game.");
+        }
+        else
+        {
+            // 아직도 못 지웠다면 표식을 유지해 다음 실행에서 다시 시도한다.
+            Debug.LogWarning("[SaveManager] Could not delete the leftover cloud save; keeping the tombstone for a later attempt.");
+        }
+
+        return true;
+    }
+
+    private void WriteCloudTombstone()
+    {
+        try
+        {
+            File.WriteAllText(GamePaths.GameSaveCloudTombstoneFile, DateTime.UtcNow.Ticks.ToString());
+            Debug.Log("[SaveManager] Cloud delete pending; wrote tombstone to clean it up on a later launch.");
+        }
+        catch (Exception _e)
+        {
+            Debug.LogError($"[SaveManager] Failed to write cloud tombstone: {_e.Message}");
+        }
+    }
+
+    private bool TryReadCloudTombstoneUtc(out DateTime _deletedAtUtc)
+    {
+        _deletedAtUtc = default;
+
+        string path = GamePaths.GameSaveCloudTombstoneFile;
+        if (false == File.Exists(path)) return false;
+
+        try
+        {
+            string raw = File.ReadAllText(path);
+
+            if (!long.TryParse(raw.Trim(), out long ticks) || ticks < 0 || ticks > DateTime.MaxValue.Ticks)
+            {
+                // 내용이 깨졌으면 판단 기준이 없다. 표식을 지우고 기존 동기화 로직에 맡긴다.
+                Debug.LogWarning("[SaveManager] Cloud tombstone is unreadable; removing it.");
+                ClearCloudTombstone();
+                return false;
+            }
+
+            _deletedAtUtc = new DateTime(ticks, DateTimeKind.Utc);
+            return true;
+        }
+        catch (Exception _e)
+        {
+            Debug.LogError($"[SaveManager] Failed to read cloud tombstone: {_e.Message}");
+            return false;
+        }
+    }
+
+    private void ClearCloudTombstone()
+    {
+        if (false == File.Exists(GamePaths.GameSaveCloudTombstoneFile)) return;
+
+        TryDeleteFile(GamePaths.GameSaveCloudTombstoneFile);
     }
 
     // 데모 빌드는 정식 빌드가 남긴 세이브를 덮어쓰기 직전에 한 번만 따로 복사해둔다.
@@ -567,7 +725,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         try
         {
             File.Copy(path, GamePaths.GameSaveForeignBackupFile, overwrite: true);
-            Debug.LogWarning($"[SaveManager] Preserved a {existingData.buildVariant} save to '{GamePaths.GameSaveForeignBackupFile}' before this demo build overwrites it.");
+            Debug.LogWarning(GamePaths.Redact($"[SaveManager] Preserved a {existingData.buildVariant} save to '{GamePaths.GameSaveForeignBackupFile}' before this demo build overwrites it."));
         }
         catch (Exception _e)
         {

@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Sentry.Unity.dll::Sentry.Unity.ScriptableSentryUnityOptions
   <Enabled>k__BackingField: 1
   <Dsn>k__BackingField: https://6d22a87952aa5e80cfbe056b72ce2100@o4511789707624448.ingest.us.sentry.io/4511789717454848
-  <CaptureInEditor>k__BackingField: 1
+  <CaptureInEditor>k__BackingField: 0
   <EnableErrorEventThrottling>k__BackingField: 1
   <ThrottleDedupeWindow>k__BackingField: 1000
-  <EnableLogDebouncing>k__BackingField: 0
+  <EnableLogDebouncing>k__BackingField: 1
   <DebounceTimeLog>k__BackingField: 1000
   <DebounceTimeWarning>k__BackingField: 1000
   <DebounceTimeError>k__BackingField: 1000
@@ -28,9 +28,9 @@ MonoBehaviour:
   <AutoSessionTracking>k__BackingField: 1
   <AutoSessionTrackingInterval>k__BackingField: 30000
   <ReleaseOverride>k__BackingField: 
-  <EnvironmentOverride>k__BackingField: 
+  <EnvironmentOverride>k__BackingField: demo
   <AttachStacktrace>k__BackingField: 1
-  <AttachScreenshot>k__BackingField: 1
+  <AttachScreenshot>k__BackingField: 0
   <ScreenshotQuality>k__BackingField: 1
   <ScreenshotCompression>k__BackingField: 75
   <AttachViewHierarchy>k__BackingField: 1
@@ -60,9 +60,9 @@ MonoBehaviour:
   <ShutdownTimeout>k__BackingField: 2000
   <MaxQueueItems>k__BackingField: 30
   <AnrDetectionEnabled>k__BackingField: 1
-  <AnrTimeout>k__BackingField: 5000
+  <AnrTimeout>k__BackingField: 10000
   <EnableAppHangTracking>k__BackingField: 1
-  <AppHangTimeout>k__BackingField: 5000
+  <AppHangTimeout>k__BackingField: 10000
   <CaptureFailedRequests>k__BackingField: 1
   <FailedRequestStatusCodes>k__BackingField: f401000057020000
   <FilterBadGatewayExceptions>k__BackingField: 1
@@ -79,7 +79,7 @@ MonoBehaviour:
   <XboxNativeSupportEnabled>k__BackingField: 1
   <PlayStationNativeSupportEnabled>k__BackingField: 1
   <SwitchNativeSupportEnabled>k__BackingField: 1
-  <Il2CppLineNumberSupportEnabled>k__BackingField: 0
+  <Il2CppLineNumberSupportEnabled>k__BackingField: 1
   <EnableMetrics>k__BackingField: 0
   <Experimental>k__BackingField:
     <MacosBackend>k__BackingField: 0

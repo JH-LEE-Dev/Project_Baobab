@@ -241,6 +241,15 @@ public class GameSaveData
 
         if (currentOwnedLoots == null) currentOwnedLoots = new List<LootType>(10);
         else currentOwnedLoots.Clear();
+
+        // 이 객체는 SaveManager(DontDestroyOnLoad)에 캐싱되어 세션이 바뀌어도 살아남는다.
+        // 아래 플래그들은 SaveGameData()에서 inDungeonObjectManager가 있을 때만 덮어써지므로,
+        // 여기서 비워두지 않으면 이전 세션(새로하기 이전)의 값이 그대로 남을 수 있다.
+        bHasAcquiredLostAndFoundBox = false;
+        bHasAcquiredSporePotion = false;
+        sporePotionCharge = 0f;
+        bHasAcquiredStarCompass = false;
+        bHasAcquiredObsidianCharm = false;
     }
 }
 

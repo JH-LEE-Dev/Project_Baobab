@@ -215,16 +215,27 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     public void GoToDungeonFromMainMenu()
     {
+        // 튜토리얼 설정에 따라 목적지가 달라지므로 먼저 확정한다.
+        SceneType _targetScene = (enableTutorial == false) ? SceneType.Town : SceneType.DungeonScene;
+
+        // 중복 요청이면 세이브 삭제까지 가지 않도록 시작 여부를 먼저 확인한다.
+        // 여기서 지워버리면 전환은 무시된 채 진행도만 사라져, 메인 메뉴에 그대로 남은 유저의
+        // 이어하기 버튼만 없어지는 최악의 결과가 된다.
+        if (IsTransitionBlocked(_targetScene)) return;
+
+        // "새로하기"의 유일한 진입점이므로, 전환 시작이 확정된 이 시점에 기존 세이브를 삭제한다.
+        // (UI에서 이미 HasSaveData()를 확인해 확인 팝업을 띄운 뒤에만 이 경로를 타므로 안전하다.)
+        saveManager?.DeleteSaveData();
+
         if (enableTutorial == false)
         {
             // 튜토리얼 비활성화: 던전 직행 대신 기존 새 게임 경로(MainMenu → Town)로 보낸다.
             // InDungeonSystem/TutorialSystem/UnitSystem의 튜토리얼 로직은 전부 MainMenu → Dungeon
             // 진입(bIsFromMainMenu)에서만 트리거되므로, 이 경로로는 전혀 발동하지 않는다.
+            // GoToTownScene(true)는 _bNewGame=true라 방금 지운 세이브를 HasSaveData()로 확인하지 않는다.
             GoToTownScene(true);
             return;
         }
-
-        if (IsTransitionBlocked(SceneType.DungeonScene)) return;
 
         bNewGame = true;
         currentMapType = MapType.WideGreenForest;

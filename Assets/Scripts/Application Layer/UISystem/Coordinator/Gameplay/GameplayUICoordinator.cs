@@ -396,6 +396,10 @@ public class GameplayUICoordinator
             // 열리는 게 그 튜토리얼 스텝 중인지 미리 알려준다.
             tentUI.SetTutorialState(bIsTutorialActive);
             tentUI.Show();
+
+            // TentUI가 떠 있는 동안에는 인벤토리 키를 막는다. TentUI는 스스로 입력 모드를 UI로 바꾸지만
+            // 인벤토리 키는 그와 무관하게 살아 있어서, 특성 창 위로 인벤토리가 겹쳐 열릴 수 있다.
+            inputManager.SetInventoryKeyLock(InputReader.INVENTORY_LOCK_OWNER_TENTUI, true);
         }
         else
         {
@@ -659,6 +663,10 @@ public class GameplayUICoordinator
 
     private void TentUIClosed()
     {
+        // ESC/패드 Cancel로 닫히는 경로는 TentInteractSignal(false)를 거치지 않으므로, 잠금 해제는
+        // 어떤 경로로 닫히든 항상 발행되는 이 이벤트(UIView_Tent.OnHide)에서 한다.
+        inputManager.SetInventoryKeyLock(InputReader.INVENTORY_LOCK_OWNER_TENTUI, false);
+
         signalHub.Publish(new TentUIClosedSignal());
     }
 

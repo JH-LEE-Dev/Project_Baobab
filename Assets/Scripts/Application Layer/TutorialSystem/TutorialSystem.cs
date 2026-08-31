@@ -23,11 +23,7 @@ public class TutorialSystem
     // 막는 데 사용한다(마지막 스텝 완료로 bTutorialCompleted가 true가 되는 순간 곧바로 false로 바뀐다).
     public bool IsTutorialInProgress => CanProcessTutorialLogic();
 
-    // 2단계에서 플레이어가 실제로 OffroadContainer에 원목을 넣기 시작했는지.
-    // 인벤토리가 비는 것만으로는 "컨테이너에 넣어서 비운 것"인지 구분할 수 없어(버리기 등) 함께 확인한다.
-    private bool bContainerTransferStarted;
-
-    // FillOffroadContainer 스텝 동안 OffroadContainer에 이관된 아이템 누적 개수.
+    // FillOffroadContainer 스텝 동안 OffroadContainer에 "실제로 적재된" 원목 누적 개수.
     // 이 값이 아래 기준치(RequiredItemsForFillOffroadContainer)에 도달하면 해당 단계가 완료된다.
     private int itemsTransferredToOffroadContainer;
     private const int RequiredItemsForFillOffroadContainer = 2;
@@ -84,8 +80,7 @@ public class TutorialSystem
         signalHub.Subscribe<TutorialIntroEndedSignal>(TutorialIntroEnded);
         signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.Subscribe<ItemAcquiredSignal>(ItemAcquired);
-        signalHub.Subscribe<InventoryItemTransferToOffroadContainerSignal>(ItemTransferredToOffroadContainer);
-        signalHub.Subscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
+        signalHub.Subscribe<ItemStoredInOffroadContainerSignal>(ItemStoredInOffroadContainer);
         signalHub.Subscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
         signalHub.Subscribe<CharacterRideStartSignal>(CharacterRideStart);
         signalHub.Subscribe<ReturnToTownCameraDownEndedSignal>(ReturnToTownCameraDownEnded);
@@ -104,8 +99,7 @@ public class TutorialSystem
         signalHub.UnSubscribe<TutorialIntroEndedSignal>(TutorialIntroEnded);
         signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.UnSubscribe<ItemAcquiredSignal>(ItemAcquired);
-        signalHub.UnSubscribe<InventoryItemTransferToOffroadContainerSignal>(ItemTransferredToOffroadContainer);
-        signalHub.UnSubscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
+        signalHub.UnSubscribe<ItemStoredInOffroadContainerSignal>(ItemStoredInOffroadContainer);
         signalHub.UnSubscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
         signalHub.UnSubscribe<CharacterRideStartSignal>(CharacterRideStart);
         signalHub.UnSubscribe<ReturnToTownCameraDownEndedSignal>(ReturnToTownCameraDownEnded);
@@ -167,10 +161,17 @@ public class TutorialSystem
         StartStep(TutorialStep.FillOffroadContainer);
     }
 
-    // 2단계: 이관이 시작됐다는 것만 기록한다. 이 신호는 슬롯 전송을 "시작"할 때 발행되어
-    // (OffroadContainer.TransferOneSlotVisualRoutine에서 아이템을 실제로 빼내기 전에 호출된다)
-    // 이 시점엔 인벤토리가 아직 비어 있지 않으므로, 여기서 완료를 판정하면 영원히 완료되지 않는다.
-    private void ItemTransferredToOffroadContainer(InventoryItemTransferToOffroadContainerSignal _signal)
+    // 2단계 완료 판정. 플레이어가 넣은 원목이 날아가는 연출을 끝내고 OffroadContainer에 실제로
+    // 적재된 순간에만, 적재된 개수만큼 발행되는 신호를 센다.
+    //
+    // 예전에는 ItemRemovedFromInventorySignal(인벤토리에서 아이템이 빠짐)을 셌는데, 그 신호에는
+    // 어떤 아이템이 어디로 왜 빠졌는지가 전혀 담겨 있지 않아 다음을 구분할 수 없었다.
+    //   - 컨테이너에 넣어서 빠진 것 / 버려서 빠진 것 / 탈진으로 유실된 것
+    //   - 무엇보다, 슬롯의 마지막 아이템을 꺼내면 아이템 제거로 한 번, 빈 슬롯을 정리하는
+    //     InventoryManager.ItemDeleted()에서 다시 한 번 - 총 두 번 울린다.
+    // 그래서 1개짜리 슬롯을 이관하면 실제로는 원목 1개만 들어갔는데 카운트가 2가 되어 이 단계가
+    // 조기 완료됐다. 이 신호는 착지 커밋이 성공한 경우에만 발행되므로 그런 오차가 없다.
+    private void ItemStoredInOffroadContainer(ItemStoredInOffroadContainerSignal _signal)
     {
         if (false == CanProcessTutorialLogic())
             return;
@@ -178,24 +179,10 @@ public class TutorialSystem
         if (false == bStepActive || TutorialStep.FillOffroadContainer != currentStep)
             return;
 
-        bContainerTransferStarted = true;
-    }
-
-    // 실제 완료 판정 지점. 아이템이 인벤토리에서 빠져나간 직후에 발행되는 신호라
-    // 여기서 이관 수량을 누적 확인해야 정확히 잡아낼 수 있다.
-    private void ItemRemovedFromInventory(ItemRemovedFromInventorySignal _signal)
-    {
-        if (false == CanProcessTutorialLogic())
+        if (ItemType.Log != _signal.itemType)
             return;
 
-        if (false == bStepActive || TutorialStep.FillOffroadContainer != currentStep)
-            return;
-
-        // 컨테이너에 한 번도 넣지 않았는데 인벤토리가 빈 경우(아이템 유실 등)는 카운트하지 않는다.
-        if (false == bContainerTransferStarted)
-            return;
-
-        itemsTransferredToOffroadContainer++;
+        itemsTransferredToOffroadContainer += _signal.count;
         if (itemsTransferredToOffroadContainer < RequiredItemsForFillOffroadContainer)
             return;
 
@@ -375,10 +362,13 @@ public class TutorialSystem
         StartStep(TutorialStep.StartNewLogging);
 
         // 연출이 흐르는 동안 이미 차량에 탑승했다면 조건은 이미 만족된 것이므로 곧바로 완료 처리한다.
+        // TownOffroadVehicleActivated의 정상 완료 분기와 동일하게 여기서도 튜토리얼 전체 완료를 확정해야
+        // bTutorialCompleted가 세워지지 않아 IsTutorialInProgress가 계속 true로 남는 것을 막을 수 있다.
         if (bTownVehicleActivatedBeforeLastStep)
         {
             bTownVehicleActivatedBeforeLastStep = false;
             CompleteStep();
+            bTutorialCompleted = true;
         }
     }
 

@@ -30,7 +30,7 @@ MonoBehaviour:
   secretKey:
   - cf8fdbd74be12b678a0286f5901d08fa075c3228
   Build:
-  - 0.5
+  - 1.0.0-demo
   SelectedPlatformOrganization:
   - 
   SelectedPlatformStudio:
@@ -51,7 +51,7 @@ MonoBehaviour:
   EmailGA: 
   IntroScreen: 0
   InfoLogEditor: 1
-  InfoLogBuild: 1
+  InfoLogBuild: 0
   VerboseLogBuild: 0
   UseManualSessionHandling: 0
   SendExampleGameDataToMyGame: 0

@@ -103,7 +103,7 @@ public static class SettingsRepository
         catch (Exception _e)
         {
             // 설정 파일 하나 때문에 게임이 부팅되지 않는 상황을 만들지 않는다.
-            Debug.LogWarning($"[SettingsRepository] Load failed, using defaults: {_e.Message}");
+            Debug.LogWarning(GamePaths.Redact($"[SettingsRepository] Load failed, using defaults: {_e.Message}"));
             _result = SettingsData.CreateDefault();
             return ESettingsLoadResult.Discarded;
         }
@@ -139,7 +139,7 @@ public static class SettingsRepository
         }
         catch (Exception _e)
         {
-            Debug.LogError($"[SettingsRepository] Save failed: {_e.Message}");
+            Debug.LogError(GamePaths.Redact($"[SettingsRepository] Save failed: {_e.Message}"));
 
             // 교체에 실패한 임시 파일은 남겨두지 않는다.
             try
