@@ -71,6 +71,11 @@ public class FlowerVisual : MonoBehaviour
         ApplySprites();
     }
 
+    private void OnDisable()
+    {
+        StopPresentationEffects();
+    }
+
     private void OnValidate()
     {
         idleCycleDuration = Mathf.Max(0.01f, idleCycleDuration);
@@ -143,6 +148,22 @@ public class FlowerVisual : MonoBehaviour
         whiteFadeTween = DOVirtual.Float(1.0f, 0.0f, Mathf.Max(0.01f, whiteFadeDuration), SetWhiteOverlayAlpha)
             .SetEase(Ease.OutQuad)
             .OnComplete(CompleteWhiteFade);
+    }
+
+    public void StopPresentationEffects()
+    {
+        bool _wasGrowing = null != growSequence && growSequence.IsActive();
+        growSequence?.Kill(false);
+        whiteFadeTween?.Kill(false);
+        growSequence = null;
+        whiteFadeTween = null;
+        isDanglePlaying = false;
+        dangleElapsedTime = 0.0f;
+
+        if (_wasGrowing && null != rectTransform)
+            rectTransform.localScale = initialScale;
+
+        SetWhiteOverlayAlpha(0.0f);
     }
 
     private void CompleteGrow()

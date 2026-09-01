@@ -1202,6 +1202,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         hasOpenedView = false;
 
+        BindAbilityHUDIfNeeded();
+        abilityHUD?.CancelPresentation();
+
         CancelViewDrag();
         hasZoomFocus = false;
         isOpeningZoomReveal = false;
@@ -1283,7 +1286,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     // 드래그 중에는 눌렀던 노드 하나만 Hover 연출의 소유권을 유지한다.
     public bool CanShowNodeHover(AbilityNode _node)
     {
-        if (_node == null)
+        if (false == IsNodeInteractionAvailable(_node))
             return false;
 
         return hoverCaptureMode == HoverCaptureMode.None ||
@@ -1299,7 +1302,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     public void CaptureNodeHover(AbilityNode _node)
     {
-        if (_node == null || _node.IsPointerInside == false || IsViewInputEnabled() == false)
+        if (false == IsNodeInteractionAvailable(_node) ||
+            _node.IsPointerInside == false ||
+            IsViewInputEnabled() == false)
             return;
 
         if (hoverCaptureMode == HoverCaptureMode.Node && capturedHoverNode != _node)
@@ -2628,7 +2633,15 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     private static bool IsPadHoverNodeAvailable(AbilityNode _node)
     {
-        return _node != null && _node.IsProgressionVisible && _node.gameObject.activeInHierarchy;
+        return IsNodeInteractionAvailable(_node);
+    }
+
+    private static bool IsNodeInteractionAvailable(AbilityNode _node)
+    {
+        return _node != null &&
+               _node.IsProgressionVisible &&
+               _node.IsVisualVisible &&
+               _node.gameObject.activeInHierarchy;
     }
 
     private void ClearPadCursorHover()
@@ -3245,7 +3258,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (isOpeningZoomReveal || isCloseFading)
             return false;
 
-        if (_node == null)
+        if (false == IsNodeInteractionAvailable(_node))
             return false;
 
         SkillType requestedSkillType = _node.SkillType;
@@ -3259,7 +3272,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (isOpeningZoomReveal || isCloseFading)
             return false;
 
-        if (_node == null)
+        if (false == IsNodeInteractionAvailable(_node))
             return false;
 
         SkillType requestedSkillType = _node.SkillType;
