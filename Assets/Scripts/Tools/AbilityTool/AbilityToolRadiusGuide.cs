@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -43,3 +44,4 @@ public class AbilityToolRadiusGuide : MaskableGraphic
             _vertexHelper.AddTriangle(0, i + 1, i + 2);
     }
 }
+#endif
