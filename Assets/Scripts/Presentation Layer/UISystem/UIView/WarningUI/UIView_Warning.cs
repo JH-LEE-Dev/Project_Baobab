@@ -129,6 +129,27 @@ public class UIView_Warning : UIView
         PlayCloseProduction();
     }
 
+    /// <summary>
+    /// 닫기 연출을 건너뛰고 그 자리에서 즉시 닫습니다. (UIView_ESC.HideImmediately와 같은 목적)
+    ///
+    /// Hide()는 PlayCloseProduction()을 태우는 비동기라 실제 SetActive(false)가 연출이 끝난 뒤에 옵니다.
+    /// GameplayUIInstaller가 Open() 직후 닫아둘 때 그 경로를 타면, 아직 아무도 부르지 않은 경고창이
+    /// 씬 전환 순간 화면에 잠깐 떴다가 사라집니다. 그런 "만들자마자 닫기"에는 이걸 씁니다.
+    /// (에디터에서는 씬 로드 프레임 하나가 길어 DOTween이 연출을 한 틱에 끝내버리는 탓에 보이지 않고,
+    ///  로드가 빠른 빌드에서만 눈에 띕니다)
+    /// </summary>
+    public void HideImmediately()
+    {
+        KillProductionSequences();
+
+        // base.Hide()는 bVisible이 false면 조기 반환해 OnHide()까지 가지 않는다. 그 경우
+        // SetActive(false)가 실행되지 않아 창이 켜진 채로 남으므로, UIView_ESC.HideImmediately와
+        // 똑같이 여기서 직접 못 박는다. (지금 호출부는 Open() 직후라 항상 visible이지만,
+        // "즉시 닫는다"는 이름이 조건에 관계없이 지켜져야 다음 호출부가 안전하다)
+        base.Hide();
+        gameObject.SetActive(false);
+    }
+
     protected override void OnShow()
     {
         base.OnShow();
