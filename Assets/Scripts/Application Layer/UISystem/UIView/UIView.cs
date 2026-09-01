@@ -25,7 +25,14 @@ public abstract class UIView : MonoBehaviour, IUIDepthCloseable
 
     public virtual void OnDestroy()
     {
-
+        // 보이는 상태(=뎁스 스택에 등록된 상태)로 파괴되면 스택에 죽은 참조가 남는다.
+        // 지금은 뷰와 UIDepthController가 같은 GameplayUIInstaller에 붙어 함께 파괴되므로
+        // 실제로 남는 경우가 없지만, 둘의 수명이 갈리는 순간 ESC가 죽는 형태로 터진다.
+        // 등록한 쪽이 해제까지 책임지도록 여기서 짝을 맞춘다. (등록된 적이 없으면 무시된다)
+        if (bCloseableByESC && null != viewCtx?.depthController)
+        {
+            viewCtx.depthController.UnregisterView(this);
+        }
     }
 
     public virtual void Update()

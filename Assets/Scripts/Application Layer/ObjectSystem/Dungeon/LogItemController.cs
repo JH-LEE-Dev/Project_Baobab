@@ -76,6 +76,16 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         );
     }
 
+    /// <summary>
+    /// Initialize() 시점엔 캐릭터가 아직 스폰되기 전이라 null이 들어온다. 캐릭터 스폰 이후
+    /// ItemManager.SetCharacter를 통해 뒤늦게 주입받는다. SpawnLogItem에서 LogItem마다 이 값을
+    /// 넘겨주므로, 나무가 죽기 전(= 첫 LogItem 스폰 전)에만 채워지면 충분하다.
+    /// </summary>
+    public void SetCharacter(ICharacter _character)
+    {
+        character = _character;
+    }
+
     public void SetupCullingGroup()
     {
         if (!enableCulling) return;

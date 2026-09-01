@@ -275,6 +275,16 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private bool bStarGazeUnlocked = false;
     private Coroutine starGazeCoroutine;
 
+    // 귀환 절차(GameEnd)가 시작되어 별똥별을 더 이상 떨어뜨리면 안 되는 상태인지.
+    //
+    // StarGazeRoutine은 매니저 생애주기 동안 도는 무한 루프인데, 나무가 정리되는 시점은 씬 전환의
+    // ClearObjManager()라 그 사이(차량 탑승 ~ 카메라 상승) 구간에는 activeTrees가 그대로 살아 있다.
+    // 그래서 하늘로 올라가는 연출 도중에 별똥별이 떨어지고 카메라까지 흔들렸다.
+    //
+    // NPCPauseRequestedEvent / FlyingItemPauseRequestedEvent와 완전히 같은 생애주기를 따른다.
+    // (GameEnd에서 세우고, 경고창을 취소한 경우에만 AbortGameEnd에서 되돌린다)
+    private bool bStarGazeSuspendedByGameEnd = false;
+
     // // 퍼블릭 초기화 및 제어 메서드
 
     public void Initialize(IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker, InputManager _inputManager,
@@ -376,22 +386,31 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public void SetupForMapType(MapType _mapType)
     {
-        if (mapTypeTreeGenerationDatas == null) return;
-
         currentMapType = _mapType;
 
-        for (int i = 0; i < mapTypeTreeGenerationDatas.Count; i++)
+        // 먼저 반드시 비운다. 예전엔 목록에서 해당 MapType을 못 찾거나 strategy가 비어 있으면 그대로
+        // return해버려서 "직전 던전의 전략"이 그대로 남았다. 그러면 예컨대 별무리 숲에서 나온 직후
+        // 데이터가 빠진 숲으로 들어갔을 때 별 표식/별자리 발현 로직이 엉뚱한 숲에서 계속 돈다.
+        // 인스펙터 기본값(currentTreeGenerationStrategy)은 비어 있으므로 여기서 null로 두면
+        // 나무가 아예 생성되지 않아, 데이터 누락이 조용히 묻히지 않고 즉시 드러난다.
+        currentTreeGenerationStrategy = null;
+
+        if (mapTypeTreeGenerationDatas != null)
         {
-            if (mapTypeTreeGenerationDatas[i].mapType == _mapType)
+            for (int i = 0; i < mapTypeTreeGenerationDatas.Count; i++)
             {
-                if (mapTypeTreeGenerationDatas[i].strategy != null)
-                {
-                    currentTreeGenerationStrategy = Instantiate(mapTypeTreeGenerationDatas[i].strategy);
-                    currentTreeGenerationStrategy.currentMapType = _mapType;
-                }
+                if (mapTypeTreeGenerationDatas[i].mapType != _mapType) continue;
+                if (mapTypeTreeGenerationDatas[i].strategy == null) break;
+
+                currentTreeGenerationStrategy = Instantiate(mapTypeTreeGenerationDatas[i].strategy);
+                currentTreeGenerationStrategy.currentMapType = _mapType;
                 return;
             }
         }
+
+        // Debug.LogError는 Sentry가 스택과 함께 자동 수집하므로 별도 전송 코드가 필요 없다.
+        Debug.LogError($"[InDungeonObjectManager] MapType '{_mapType}'에 대응하는 TreeGenerationStrategy를 " +
+            "찾지 못했습니다(mapTypeTreeGenerationDatas 확인 필요). 이 던전에서는 나무가 생성되지 않습니다.");
     }
 
     /// <summary>
@@ -530,6 +549,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (spawnTreesCoroutine != null)
         {
             StopCoroutine(spawnTreesCoroutine);
+
+            // StopCoroutine으로 중단된 이터레이터는 try/finally의 finally가 실행된다는 보장이 없다.
+            // 일괄 스폰 구간(SpawnInitialTreesRoutine)에서 끊기면 deferCullingSync가 true로 굳어버리고,
+            // 그 뒤로 스폰되는 나무가 전부 "비활성"으로만 설정된 채 다시 켜지지 않는다.
+            // (지금은 아래 루틴이 곧 ClearTrees()를 거치며 finally로 되돌려주지만, 그 간접 의존을
+            //  믿지 않고 중단 지점에서 바로 불변식을 복구한다)
+            deferCullingSync = false;
         }
         spawnTreesCoroutine = StartCoroutine(SpawnInitialTreesRoutine(_onSpawnComplete));
     }
@@ -542,6 +568,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             offroadVehicle.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager, characterInventory, offroadContainer,
             character.centerTransform);
             OffroadSpawnedEvent?.Invoke(offroadVehicle);
+
+            // 차량이 없던 동안(= 타운에서 스킬을 적용/재적용하는 내내) 쌓아둔 수리 스킬 값을 지금 반영한다.
+            // 아래 ResetObject()가 ResetRepairBox()로 이 값들을 읽으므로 반드시 그보다 먼저 호출해야 하고,
+            // 이 생성 블록 안에 있어야 이후 회차에서 이중 적용되지 않는다.
+            ApplyPendingRepairSkillsToVehicle();
         }
 
         var pos = environmentProvider.tilemapDataProvider.GetPortalSpawnPosition();
@@ -573,6 +604,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public void ClearObjManager()
     {
+        // 이번 원정의 귀환 절차는 여기서 끝난다. 다음 던전은 다시 별똥별이 떨어져야 하므로
+        // 플래그를 반드시 되돌린다. (starGazeCoroutine 자체는 매니저 생애주기 동안 계속 돈다)
+        bStarGazeSuspendedByGameEnd = false;
+
         if (offroadVehicle != null)
         {
             offroadVehicle.SetVisualActive(false);
@@ -589,7 +624,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (lootManager != null)
             lootManager.ForceAcquireAllActive();
 
-        currentOwnedLoots.Clear();
+        // currentOwnedLoots는 "이번 런에서 얻은 것"이 아니라 "영구 소지 중인 전리품" 목록이라
+        // 여기서 비우면 안 된다. 이 메서드는 마을 도착 시 GameInstaller.SetupGameInstaller()에서
+        // 자동저장(AutoSaveReason.ArriveTown) 직전에 호출되므로, 예전엔 세이브에 항상 빈 목록이
+        // 기록됐고 이어하기 시 HUD 포션 슬롯이 영영 복구되지 않았다.
 
         // 초기 스폰 코루틴이 아직 진행 중인 상태로 여길 진입하는 경우는 사실상 없지만(스폰이 끝나야
         // 던전이 플레이어에게 공개되므로), ClearTrees()가 activeTrees를 비운 뒤에도 스폰 코루틴이 계속
@@ -598,6 +636,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             StopCoroutine(spawnTreesCoroutine);
             spawnTreesCoroutine = null;
+
+            // ReadyTrees()와 같은 이유. 중단된 코루틴의 finally 실행은 보장되지 않으므로,
+            // 일괄 스폰용 플래그를 중단 지점에서 직접 되돌린다.
+            deferCullingSync = false;
         }
 
         StopGrowth();
@@ -847,6 +889,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // Stage3TreeGenerationStrategySO의 groupId 카운터가 0부터 다시 시작되므로, 정리하지 않으면
         // 이전 런의 미발현 마크가 다음 런의 같은 groupId 그룹과 뒤섞인다.
         if (inDungeonVFXManager != null) inDungeonVFXManager.ClearAllConstellationGroundMarks();
+
+        // 마크를 강제 회수한 위 호출은 ConstellationManifestReadyEvent를 발생시키지 않으므로(던전을
+        // 나가는 중에 실제 발현/데미지를 시작하면 안 된다), 발현 대기 상태로 남은 이쪽 컬렉션들도
+        // 짝을 맞춰 함께 비운다. 그냥 두면 소멸 연출 도중 귀환할 때마다 엔트리가 계속 쌓이고,
+        // 그 엔트리가 이전 런의 별 위치 리스트를 붙들고 있어 회수되지 않는다.
+        // (진행 중이던 ConstellationBeamRoutine의 finally가 뒤늦게 Remove를 호출해도 무해하다)
+        pendingConstellationStarPositions.Clear();
+        activeConstellationGroups.Clear();
     }
 
     private void StopGrowth()
@@ -1135,8 +1185,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             currentTreeGenerationStrategy.OnTreeDead(this, _treeObj, deadPos);
         }
 
+        // 풀 반환(TryReleaseTree -> OnReleaseTree -> ResetTree)이 bLastHitByPlayer를 true로 되돌리므로,
+        // "누가 마지막 타격을 넣었는지"는 반드시 반환 전에 읽어둬야 한다. 예전엔 반환 뒤에 읽어서
+        // 럼버잭 NPC가 벤 나무까지 전부 플레이어 킬로 집계됐고, 그 결과 NPC가 나무를 벨 때마다
+        // 피로도 회복(UnitSystem.TreeIsDead -> SourceOfStaminaRecover)이 공짜로 발생했다.
+        TreeType deadTreeType = _treeObj.treeData.type;
+        bool bKilledByPlayer = _treeObj.bLastHitByPlayer;
+
         TryReleaseTree(_treeObj);
-        TreeDeadEvent?.Invoke(_treeObj.treeData.type, _treeObj.bLastHitByPlayer);
+        TreeDeadEvent?.Invoke(deadTreeType, bKilledByPlayer);
 
         inDungeonResultManager.IncreaseTreeKillCnt();
     }
@@ -1324,9 +1381,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         _tree.IsPooled = true;
-        _tree.bDead = true;
         _tree.PoolIndex = -1;
         _tree.UpdateIndex = -1;
+
+        // 여기서 bDead = true를 세워봐야 바로 아래 ResetTree()가 첫 줄에서 false로 되돌리므로
+        // 아무 의미가 없었다(풀에 들어간 나무의 bDead는 결국 false). "풀에 있는 나무 = 죽은 상태"라는
+        // 전제로 코드를 덧붙이면 바로 깨지는 함정이라, 오해를 남기지 않도록 지운다.
+        // 풀 안에 있는지는 IsPooled로 판단한다.
         _tree.ResetTree();
         _tree.TreeDeadEvent -= OnTreeDead;
         _tree.TreeGetHitEvent -= OnTreeHit;
@@ -1470,6 +1531,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public void SetCharacter(Character _character)
     {
         character = _character;
+
+        // Initialize() 시점엔 캐릭터가 아직 스폰되기 전이라 itemManager에 null이 주입된다. 그대로 두면
+        // LogItem이 들고 있는 character가 영원히 null이라 "캐릭터가 죽으면 흡입을 중단한다"는 판정
+        // (LogItem.UpdateSucking)이 통째로 죽은 코드가 되고, 탈진 사망 시 흡입 중이던 원목이 시체
+        // 위치까지 날아가 그대로 습득된다. 캐릭터가 스폰된 이 시점에 뒤늦게 주입해준다.
+        itemManager?.SetCharacter(_character);
     }
 
     private void GameEnd()
@@ -1477,12 +1544,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (CheckWarningUIActivate() == false)
         {
             NPCPauseRequestedEvent?.Invoke(true);
+            bStarGazeSuspendedByGameEnd = true;
             FlyingItemDismissRequestedEvent?.Invoke();
             HandleGameEnd();
             return;
         }
 
         NPCPauseRequestedEvent?.Invoke(true);
+        bStarGazeSuspendedByGameEnd = true;
         FlyingItemPauseRequestedEvent?.Invoke();
         character.PauseBoomerangs();
 
@@ -1502,18 +1571,25 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             character.SetStaminaDecrease(true);
             NPCPauseRequestedEvent?.Invoke(false);
+            bStarGazeSuspendedByGameEnd = false;
             FlyingItemResumeRequestedEvent?.Invoke();
             character.ResumeBoomerangs();
+
+            // 성장 루틴 재개도 "진짜 취소"일 때만 한다.
+            //
+            // 예전엔 이 블록 밖에 있어서, 귀환이 확정된 경우(HandleGameEnd가 초기화 목적으로
+            // AbortGameEnd(false)를 호출한다)에도 GameEnd()의 StopGrowth()로 비워진 핸들을 보고
+            // 성장을 다시 켜버렸다. 그 결과 경고창을 거친 귀환에서만 탑승/카메라 상승 연출 내내
+            // 나무가 계속 돋아났다(경고창 없는 경로는 StopGrowth를 거치지 않아 재시작되지 않는다).
+            if (growthCoroutine == null && currentTreeGenerationStrategy != null)
+            {
+                growthCoroutine = StartCoroutine(currentTreeGenerationStrategy.GrowthRoutine(this));
+            }
         }
 
         character.PauseCharacter(false);
         inputManager.PauseMove(false);
         inputManager.PauseInteractKey(false);
-
-        if (growthCoroutine == null && currentTreeGenerationStrategy != null)
-        {
-            growthCoroutine = StartCoroutine(currentTreeGenerationStrategy.GrowthRoutine(this));
-        }
     }
 
     public void HandleGameEnd()
@@ -1533,6 +1609,16 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         inputManager.PauseMove(true);
         inputManager.PauseInteractKey(true);
+
+        // 귀환이 확정된 시점부터 ESC를 막는다. 여기서 시작되는 "아이템 떨구기 → 차량 탑승" 구간은
+        // 이미 취소 불가능한데, 그동안 ESC가 열려 있으면 일시정지 메뉴를 닫는 순간
+        // GameplayUICoordinator가 PauseMove(false)를 무조건 호출해 위에서 건 이동 잠금을 풀어버린다.
+        // (PauseMove는 소유자별 잠금이 아니라 단일 bool이다) 그러면 아이템이 떨어지는 동안 캐릭터가
+        // 걸어다니다가, GameEndRoutine이 끝나며 차량 탑승 위치로 순간이동한다.
+        // 종료 시점은 뒤이어 걸리는 CharacterRideRoutine의 잠금과 동일하게
+        // InDungeonProductionManager.CameraDownIsEnd()(타운 도착), 메인메뉴로 이탈한 경우엔
+        // BootStrap.SetupMainMenuScene().
+        inputManager.PauseESCKey(true);
 
         if (inventoryChecker.bInventoryIsEmpty == false)
         {
@@ -1567,7 +1653,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private bool CheckWarningUIActivate()
     {
-        if (offroadContainer.currentItemCount == offroadContainer.maxCapacity)
+        // 정확히 같을 때만 걸러내면, 어떤 경로로든 용량을 넘겨버린 상태(currentItemCount > maxCapacity)에서
+        // "아직 더 담을 수 있다"고 오판해 넣을 수도 없는 경고창을 띄운다. 포화 이상은 전부 가득 찬 것으로 본다.
+        if (offroadContainer.currentItemCount >= offroadContainer.maxCapacity)
         {
             return false;
         }
@@ -2027,7 +2115,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             yield return new WaitForSeconds(StarGazeInterval);
 
             if (!bStarGazeUnlocked) continue;
+            if (bStarGazeSuspendedByGameEnd) continue;
             if (character == null) continue;
+
+            // 탈진 사망은 차량 탑승(GameEnd)을 거치지 않아 위 플래그가 서지 않는다.
+            // 사망 연출과 그 뒤 결과창이 떠 있는 동안에도 별똥별이 떨어지면 안 되므로 함께 막는다.
+            if (character.bDead) continue;
 
             TreeObj nearest = FindNearestTreeInScreenEllipse();
             if (nearest == null) continue;
@@ -2107,9 +2200,28 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
     }
 
+    // 수리 관련 스킬 값 보관용.
+    //
+    // offroadVehicle은 던전에 처음 들어가 ReadyPortal()이 돌 때야 생성되는데, 스킬 적용/재적용은
+    // 그보다 훨씬 이른 타운 진입 시점에 일어난다(BootStrap.SetupScene -> GameInstaller.LoadGame ->
+    // SaveManager.LoadGameData -> SkillManager.LoadSaveData가 레벨 1~N의 커맨드를 전부 재발행).
+    // 그 시점의 차량은 항상 null이라, 예전엔 아래 두 메서드가 조용히 값을 버렸다 - 이어하기를 할
+    // 때마다 수리 상자/수리량 스킬이 통째로 사라졌고, 세션 첫 던전 진입 전에 텐트에서 찍은 수리
+    // 스킬도 마찬가지로 유실됐다. 여기에 보관해뒀다가 차량이 만들어지는 즉시 밀어넣는다.
+    //
+    // 각 값의 누적 방식은 OffroadVehicleObj 쪽 구현과 정확히 같게 맞춘다
+    // (repairBoxCount는 대입, repairAmount는 누적). 그래야 보관해뒀다 미는 것과
+    // 곧바로 미는 것의 결과가 항상 동일하다.
+    private bool bRepairBoxCountAssigned;
+    private float pendingRepairBoxCount;
+    private float pendingRepairAmountTotal;
+
     public void IncreaseRepairBoxCount(float _amount)
     {
-        if(offroadVehicle != null)
+        bRepairBoxCountAssigned = true;
+        pendingRepairBoxCount = _amount;
+
+        if (offroadVehicle != null)
         {
             offroadVehicle.IncreaseRepairBoxCount(_amount);
         }
@@ -2117,9 +2229,32 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public void IncreaseRepairAmount(float _amount)
     {
-         if(offroadVehicle != null)
+        pendingRepairAmountTotal += _amount;
+
+        if (offroadVehicle != null)
         {
             offroadVehicle.IncreaseRepairAmount(_amount);
+        }
+    }
+
+    /// <summary>
+    /// 차량이 막 생성된 직후 한 번만 호출한다. 그 전까지 쌓아둔 수리 스킬 값을 차량에 반영한다.
+    /// 반드시 ResetObject()(내부에서 ResetRepairBox()가 repairBoxCount/repairAmount를 읽는다)보다
+    /// 먼저 호출되어야 하고, 생성 시점에만 호출해야 이후의 직접 호출과 이중 적용되지 않는다.
+    /// </summary>
+    private void ApplyPendingRepairSkillsToVehicle()
+    {
+        if (offroadVehicle == null) return;
+
+        // 스킬이 한 번도 값을 정한 적 없으면 건드리지 않는다(프리팹 기본값을 덮어쓰지 않기 위해).
+        if (bRepairBoxCountAssigned)
+        {
+            offroadVehicle.IncreaseRepairBoxCount(pendingRepairBoxCount);
+        }
+
+        if (pendingRepairAmountTotal != 0f)
+        {
+            offroadVehicle.IncreaseRepairAmount(pendingRepairAmountTotal);
         }
     }
 }

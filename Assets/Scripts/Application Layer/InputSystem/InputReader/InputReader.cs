@@ -353,6 +353,15 @@ public class InputReader
         GamepadConnectionChangedEvent?.Invoke(_bConnected);
     }
 
+    /// <summary>
+    /// 지금 이동 입력이 잠겨 있는지입니다.
+    ///
+    /// PauseMove는 소유자별 잠금이 아니라 단일 bool이라, 잠깐 겹쳐 잠그는 쪽(ESC 일시정지)이
+    /// 해제할 때 false를 박아버리면 원래 잠그고 있던 쪽의 잠금까지 함께 풀린다.
+    /// 겹쳐 잠그는 쪽은 이 값을 미리 읽어두었다가 그대로 되돌려야 한다.
+    /// </summary>
+    public bool IsMovePaused => bPauseMove;
+
     public void PauseMove(bool _bPause)
     {
         bPauseMove = _bPause;

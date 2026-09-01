@@ -25,6 +25,18 @@ public class ItemManager : MonoBehaviour
         BindEvents();
     }
 
+    /// <summary>
+    /// Initialize()는 캐릭터가 스폰되기 전에 호출되므로 그때 넘어오는 _character는 항상 null이다.
+    /// 캐릭터 스폰 이후(InDungeonObjectManager.SetCharacter) 여기로 뒤늦게 주입받아, 이후 스폰되는
+    /// LogItem들이 올바른 캐릭터 참조를 갖도록 한다.
+    /// </summary>
+    public void SetCharacter(ICharacter _character)
+    {
+        character = _character;
+
+        logItemController?.SetCharacter(_character);
+    }
+
     public void Release()
     {
         ReleaseEvents();
