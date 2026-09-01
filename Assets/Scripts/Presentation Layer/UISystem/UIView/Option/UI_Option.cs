@@ -346,6 +346,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         onCloseAction = _onCloseCallback;
 
+        RefreshAllUIFromSettings();
+
         if (null != settings)
         {
             savedSnapshot = new ApplyTargetSettingsSnapshot(settings.Current);
@@ -501,9 +503,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         RestoreSnapshot(savedSnapshot);
 
-        InitializeSelectors();
-        InitializeSliders();
-        RefreshResolutionSelector();
+        RefreshAllUIFromSettings();
 
         ForceHide();
     }
@@ -941,6 +941,45 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             cachedTabTexts[i] = GetTextFromKeyString(tabLocalizeKeys[i], "Tab");
         }
         return cachedTabTexts;
+    }
+
+    /// <summary>
+    /// SettingsManager의 최신 설정값을 모든 셀렉터, 슬라이더, 키 바인딩 UI에 동기화합니다.
+    /// </summary>
+    public void RefreshAllUIFromSettings()
+    {
+        if (null == settings) return;
+
+        SettingsData _data = settings.Current;
+
+        // 1) 셀렉터 동기화
+        if (null != languageSelector) languageSelector.UpdateValue(GetLanguageText(_data.language));
+        RefreshResolutionSelector();
+        if (null != windowModeSelector) windowModeSelector.UpdateValue(GetWindowModeText(_data.windowMode));
+        if (null != fpsSelector) fpsSelector.UpdateValue(GetFpsText(_data.fps));
+        if (null != pauseOnUnfocusSelector) pauseOnUnfocusSelector.UpdateValue(GetOnOffText(_data.pauseOnUnfocus));
+        if (null != gamepadIconPreferenceSelector) gamepadIconPreferenceSelector.UpdateValue(GetGamepadIconPreferenceText(_data.gamepadIconPreference));
+
+        // 2) 슬라이더 동기화
+        if (null != cameraShakeSlider) cameraShakeSlider.UpdateValue(_data.cameraShake);
+        if (null != crosshairBrightnessSlider) crosshairBrightnessSlider.UpdateValue(_data.crosshairBrightness);
+        if (null != chromaticAberrationSlider) chromaticAberrationSlider.UpdateValue(_data.chromaticAberration);
+        if (null != brightnessSlider) brightnessSlider.UpdateValue(_data.brightness);
+        if (null != saturationSlider) saturationSlider.UpdateValue(_data.saturation);
+
+        if (null != masterVolumeSlider) masterVolumeSlider.UpdateValue(_data.masterVolume);
+        if (null != bgmVolumeSlider) bgmVolumeSlider.UpdateValue(_data.bgmVolume);
+        if (null != sfxVolumeSlider) sfxVolumeSlider.UpdateValue(_data.sfxVolume);
+
+        if (null != hapticStrengthSlider) hapticStrengthSlider.UpdateValue(_data.hapticStrength);
+        if (null != virtualCursorSensitivitySlider) virtualCursorSensitivitySlider.UpdateValue(_data.virtualCursorSensitivity);
+
+        // 3) 키 바인딩 및 가시성/버튼 갱신
+        RefreshKeyBindRows();
+        RefreshGamepadOptionsVisibility();
+        RefreshControlTabVisibility();
+        RefreshButtonLabels();
+        UpdateApplyButtonState();
     }
 
     private void InitializeSelectors()

@@ -588,7 +588,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         {
             if (null != activeSubRegionButtons[i] && true == activeSubRegionButtons[i].gameObject.activeSelf)
             {
-                activeSubRegionButtons[i].StopAllTreePropHoverEffects();
+                activeSubRegionButtons[i].ForceStopHoverEffect();
             }
         }
     }

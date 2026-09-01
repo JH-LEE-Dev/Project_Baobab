@@ -17,6 +17,8 @@ public class UI_MainMenuButton : Selectable,
     IPointerClickHandler,
     ISubmitHandler
 {
+    public event Action<UI_MainMenuButton> OnButtonSelectedEvent;
+
     // 외부 의존성
     [Header("Targets")]
     [SerializeField] private Image buttonImage; 
@@ -280,6 +282,7 @@ public class UI_MainMenuButton : Selectable,
     {
         onClickAction = null;
         onPressedAction = null;
+        OnButtonSelectedEvent = null;
         _siblingButtons = null;
         _siblingsCached = false;
         KillAllTweens();
@@ -400,6 +403,8 @@ public class UI_MainMenuButton : Selectable,
     public override void OnPointerEnter(PointerEventData _eventData)
     {
         base.OnPointerEnter(_eventData);
+        if (null != inputManager && true == inputManager.IsGamepadMode) return;
+
         isHovered = true;
         isPointerHovered = true;
         if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
@@ -411,6 +416,8 @@ public class UI_MainMenuButton : Selectable,
     public override void OnPointerExit(PointerEventData _eventData)
     {
         base.OnPointerExit(_eventData);
+        if (null != inputManager && true == inputManager.IsGamepadMode) return;
+
         isHovered = false;
         isPointerHovered = false;
         if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
@@ -418,12 +425,17 @@ public class UI_MainMenuButton : Selectable,
         PlayUnhoverMotion();
     }
 
+    public bool IsHovered => isHovered;
+
     public bool IsMouseOver()
     {
         if (false == gameObject.activeInHierarchy) return false;
         if (true == isPointerHovered) return true;
 
-        RectTransform _rect = transform as RectTransform;
+        RectTransform _rect = (null != targetGraphic)
+            ? targetGraphic.rectTransform
+            : (null != buttonImage ? buttonImage.rectTransform : (transform as RectTransform));
+
         if (null == _rect) return false;
 
         Vector2 _mousePos = Vector2.zero;
@@ -442,15 +454,24 @@ public class UI_MainMenuButton : Selectable,
         return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, _cam);
     }
 
-    public void ForceHover()
+    public void ForceHover(bool _playSound = false)
     {
+        if (true == isHovered) return;
         isHovered = true;
+        isPointerHovered = true;
         if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
+
+        if (true == _playSound)
+        {
+            Sound.PlayUI(SoundID.MainButtonHover);
+        }
+
         PlayHoverMotion();
     }
 
     public void ForceUnhover()
     {
+        if (false == isHovered && false == isPointerHovered) return;
         isHovered = false;
         isPointerHovered = false;
         if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
@@ -460,6 +481,8 @@ public class UI_MainMenuButton : Selectable,
     public override void OnSelect(BaseEventData _eventData)
     {
         base.OnSelect(_eventData);
+        OnButtonSelectedEvent?.Invoke(this);
+
         if (null != inputManager && false == inputManager.IsGamepadMode) return;
 
         isHovered = true;

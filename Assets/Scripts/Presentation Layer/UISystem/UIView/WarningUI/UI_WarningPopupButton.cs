@@ -201,6 +201,9 @@ public class UI_WarningPopupButton : Selectable,
     public override void OnPointerEnter(PointerEventData _eventData)
     {
         base.OnPointerEnter(_eventData);
+        if (null != parentPopup && null != parentPopup.InputManager && true == parentPopup.InputManager.IsGamepadMode)
+            return;
+
         isHovered = true;
         isPointerHovered = true;
         if (false == isInteractable)
@@ -221,6 +224,9 @@ public class UI_WarningPopupButton : Selectable,
     public override void OnPointerExit(PointerEventData _eventData)
     {
         base.OnPointerExit(_eventData);
+        if (null != parentPopup && null != parentPopup.InputManager && true == parentPopup.InputManager.IsGamepadMode)
+            return;
+
         isHovered = false;
         isPointerHovered = false;
         if (false == isInteractable)

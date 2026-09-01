@@ -272,7 +272,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
         if (null != demoNotice)
         {
-            demoNotice.Initialize(this, localizationManager, depthController);
+            demoNotice.Initialize(this, localizationManager, depthController, cursorBoxUI, inputManager);
         }
 
         if (null != subRegionFieldTransform)
@@ -1140,6 +1140,22 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
 #region Gamepad Navigation
 
+    public int GetFirstUnlockedAndPlayableRegionIndex()
+    {
+        if (null == regionGroup) return 0;
+        IReadOnlyList<HUD_PopupNav_RegionBtn> _activeRegions = regionGroup.GetActiveRegionButtons();
+        if (null == _activeRegions || 0 == _activeRegions.Count) return 0;
+
+        for (int i = 0; i < _activeRegions.Count; i++)
+        {
+            if (null != _activeRegions[i] && true == _activeRegions[i].IsUnlocked && false == IsDemoRestrictedMapType(_activeRegions[i].GetMapType()))
+            {
+                return i;
+            }
+        }
+        return 0;
+    }
+
     private void SetupInitialGamepadFocus()
     {
         if (null == inputManager || false == inputManager.IsGamepadMode)
@@ -1153,26 +1169,47 @@ public class HUD_PopupNav_Main : MonoBehaviour
             return;
         }
 
-        // 요구사항 3: 이전에 소지역을 방문했던 흔적이 있다면 해당 소지역에서 즉시 포커스 시작
+        // 1. 데모 제한 대지역이거나 유효하지 않은 경우 안전 대지역으로 보정
+        MapType _targetMap = currentSelectedMapType;
+        if (MapType.None == _targetMap || true == IsDemoRestrictedMapType(_targetMap))
+        {
+            _targetMap = maxPlayableMapTypeInDemo;
+            currentSelectedMapType = _targetMap;
+        }
+
+        // 2. 이전에 소지역을 방문했던 흔적이 있다면 해당 소지역에서 포커스 시작 (단, 해당 소지역이 해금 상태일 때만)
         if (ForestType.None != runtimeLastVisitedForestType && null != subRegionGroup)
         {
             int _visitedSubIdx = subRegionGroup.GetSubRegionIndex(runtimeLastVisitedForestType);
             if (0 <= _visitedSubIdx)
             {
-                currentFocusArea = ENavFocusArea.SubRegionList;
-                focusedSubRegionIndex = _visitedSubIdx;
-                subRegionGroup.FocusSubRegionButton(focusedSubRegionIndex);
-                if (null != regionGroup) regionGroup.StopAllHoverEffects();
-                return;
+                IReadOnlyList<HUD_PopupNav_SubRegionBtn> _subs = subRegionGroup.GetActiveSubRegionButtons();
+                if (null != _subs && _visitedSubIdx < _subs.Count && null != _subs[_visitedSubIdx] && true == _subs[_visitedSubIdx].IsUnlocked)
+                {
+                    currentFocusArea = ENavFocusArea.SubRegionList;
+                    focusedSubRegionIndex = _visitedSubIdx;
+                    subRegionGroup.FocusSubRegionButton(focusedSubRegionIndex);
+                    if (null != regionGroup) regionGroup.StopAllHoverEffects();
+                    return;
+                }
             }
         }
 
-        // 요구사항 1: 방문 흔적이 없다면 무조건 대지역부터 선택
+        // 3. 대지역 포커스 설정: 반드시 해금되고 데모 제한이 아닌 유효 대지역으로 설정
         currentFocusArea = ENavFocusArea.RegionList;
         if (null != regionGroup)
         {
-            int _curIdx = regionGroup.GetActiveRegionIndex(currentSelectedMapType);
-            focusedRegionIndex = (0 <= _curIdx) ? _curIdx : regionGroup.GetFirstUnlockedRegionIndex();
+            int _curIdx = regionGroup.GetActiveRegionIndex(_targetMap);
+            IReadOnlyList<HUD_PopupNav_RegionBtn> _regions = regionGroup.GetActiveRegionButtons();
+            if (0 <= _curIdx && null != _regions && _curIdx < _regions.Count && null != _regions[_curIdx] && true == _regions[_curIdx].IsUnlocked && false == IsDemoRestrictedMapType(_regions[_curIdx].GetMapType()))
+            {
+                focusedRegionIndex = _curIdx;
+            }
+            else
+            {
+                focusedRegionIndex = GetFirstUnlockedAndPlayableRegionIndex();
+            }
+
             regionGroup.FocusRegionButton(focusedRegionIndex);
         }
 
@@ -1351,6 +1388,12 @@ public class HUD_PopupNav_Main : MonoBehaviour
                     return;
                 }
 
+                if (true == IsDemoRestrictedMapType(_candidateBtn.GetMapType()))
+                {
+                    ShowDemoNoticeOverlay(_candidateBtn.GetMapType());
+                    return;
+                }
+
                 focusedRegionIndex = _nextIdx;
                 regionGroup.FocusRegionButton(focusedRegionIndex);
                 Sound.PlayUI(SoundID.NaviSelectStart);
@@ -1511,31 +1554,38 @@ public class HUD_PopupNav_Main : MonoBehaviour
     {
         if (false == gameObject.activeInHierarchy || true == isClosing) return;
         if (true == IsInputBlocked) return;
+
+        // 데모 안내 패널이 열려있는 동안에는 메인 맵의 포커스 계승 로직을 실행하지 않음
+        if (null != demoNotice && true == demoNotice.IsDemoNoticeShowing) return;
+
         HUD_PopupNav_SubRegionBtn _hoveredSubBtn = (null != subRegionGroup) ? subRegionGroup.GetHoveredSubRegionButton() : null;
         HUD_PopupNav_RegionBtn _hoveredRegionBtn = (null != regionGroup) ? regionGroup.GetHoveredRegionButton() : null;
         if (EInputDeviceType.Gamepad == _device)
         {
-            if (null != _hoveredSubBtn)
+            if (null != _hoveredSubBtn && true == _hoveredSubBtn.IsUnlocked)
             {
-                // 마우스가 소지역 버튼 위에 있었던 경우: 소지역 필드 포커스 시작
+                // 마우스가 해금된 소지역 버튼 위에 있었던 경우: 소지역 필드 포커스 시작
                 currentFocusArea = ENavFocusArea.SubRegionList;
                 int _subIdx = subRegionGroup.GetSubRegionIndex(_hoveredSubBtn.GetForestType());
-                focusedSubRegionIndex = (0 <= _subIdx) ? _subIdx : 0;
+                focusedSubRegionIndex = (0 <= _subIdx) ? _subIdx : subRegionGroup.GetFirstUnlockedSubRegionIndex();
                 subRegionGroup.FocusSubRegionButton(focusedSubRegionIndex);
                 if (null != regionGroup) regionGroup.StopAllHoverEffects();
             }
-            else if (null != _hoveredRegionBtn)
+            else if (null != _hoveredRegionBtn && true == _hoveredRegionBtn.IsUnlocked && false == IsDemoRestrictedMapType(_hoveredRegionBtn.GetMapType()))
             {
-                // 마우스가 대지역 버튼 위에 있었던 경우: 대지역 필드 포커스 시작
+                // 마우스가 해금되고 데모 제한이 아닌 유효 대지역 버튼 위에 있었던 경우만 포커스 시작
                 currentFocusArea = ENavFocusArea.RegionList;
                 int _regIdx = regionGroup.GetActiveRegionIndex(_hoveredRegionBtn.GetMapType());
-                focusedRegionIndex = (0 <= _regIdx) ? _regIdx : 0;
+                focusedRegionIndex = (0 <= _regIdx) ? _regIdx : GetFirstUnlockedAndPlayableRegionIndex();
                 regionGroup.FocusRegionButton(focusedRegionIndex);
                 if (null != subRegionGroup) subRegionGroup.StopAllHoverEffects();
                 HandleRegionSelected(_hoveredRegionBtn.GetMapType(), false, false);
             }
             else
             {
+                // 마우스가 없거나, 잠긴 버튼/데모 제한 버튼 위에 있었던 경우: 안전한 초기 포커스로 보정
+                if (null != regionGroup) regionGroup.StopAllHoverEffects();
+                if (null != subRegionGroup) subRegionGroup.StopAllHoverEffects();
                 SetupInitialGamepadFocus();
             }
         }
@@ -1595,18 +1645,40 @@ public class HUD_PopupNav_Main : MonoBehaviour
         get
         {
 #if UNITY_EDITOR
-            return isDemoVersion;
-#else
-            return BuildInfo.IsDemo;
+            if (true == debugForceUnlockAll)
+            {
+                return false;
+            }
 #endif
+            return BuildInfo.IsDemo;
+        }
+    }
+
+    public bool IsGamepadMode => (null != inputManager && true == inputManager.IsGamepadMode);
+    public HUD_PopupNav_RegionGroup RegionGroup => regionGroup;
+    public HUD_PopupNav_SubRegionGroup SubRegionGroup => subRegionGroup;
+
+    public void StopAllSubRegionHoverEffects()
+    {
+        if (null != subRegionGroup)
+        {
+            subRegionGroup.StopAllHoverEffects();
+        }
+    }
+
+    public void StopAllRegionHoverEffects()
+    {
+        if (null != regionGroup)
+        {
+            regionGroup.StopAllHoverEffects();
         }
     }
 
     public bool IsDemoRestrictedMapType(MapType _mapType)
     {
         if (false == IsDemoRestrictionEnabled) return false;
-        if (_mapType == MapType.None || _mapType == MapType.Town) return false;
-        return _mapType > maxPlayableMapTypeInDemo;
+        if (MapType.None == _mapType || MapType.Town == _mapType) return false;
+        return maxPlayableMapTypeInDemo < _mapType;
     }
 
     public void ShowDemoNoticeOverlay(MapType _restrictedMapType = MapType.None)
@@ -1649,15 +1721,26 @@ public class HUD_PopupNav_Main : MonoBehaviour
         MapType _targetMap = (MapType.None != currentSelectedMapType && false == IsDemoRestrictedMapType(currentSelectedMapType))
         ? currentSelectedMapType
         : maxPlayableMapTypeInDemo;
+
+        currentSelectedMapType = _targetMap;
+
         if (null != regionGroup)
         {
             regionGroup.SetSelectRegion(_targetMap, false);
             regionGroup.EvaluateAllHoverStates();
+            int _regIdx = regionGroup.GetActiveRegionIndex(_targetMap);
+            focusedRegionIndex = (0 <= _regIdx) ? _regIdx : GetFirstUnlockedAndPlayableRegionIndex();
         }
 
         if (null != subRegionGroup)
         {
             subRegionGroup.EvaluateAllHoverStates();
+        }
+
+        if (null != inputManager && true == inputManager.IsGamepadMode && null != regionGroup)
+        {
+            currentFocusArea = ENavFocusArea.RegionList;
+            regionGroup.FocusRegionButton(focusedRegionIndex);
         }
     }
 

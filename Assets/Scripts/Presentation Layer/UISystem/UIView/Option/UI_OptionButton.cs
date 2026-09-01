@@ -176,7 +176,7 @@ public class UI_OptionButton : Selectable,
     public void ShowCursor()
     {
         if (null == cursorBoxUI) return;
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
         RectTransform _targetRect = (null != targetGraphic) ? targetGraphic.rectTransform : (transform as RectTransform);
         if (null != _targetRect)
@@ -217,6 +217,8 @@ public class UI_OptionButton : Selectable,
     public override void OnPointerEnter(PointerEventData _eventData)
     {
         base.OnPointerEnter(_eventData);
+        if (null != inputManager && true == inputManager.IsGamepadMode) return;
+
         isHovered = true;
         if (false == isInteractable) return;
 
@@ -236,6 +238,8 @@ public class UI_OptionButton : Selectable,
     public override void OnPointerExit(PointerEventData _eventData)
     {
         base.OnPointerExit(_eventData);
+        if (null != inputManager && true == inputManager.IsGamepadMode) return;
+
         isHovered = false;
         if (false == isInteractable) return;
         
@@ -279,7 +283,7 @@ public class UI_OptionButton : Selectable,
     public override void OnSelect(BaseEventData _eventData)
     {
         base.OnSelect(_eventData);
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
         if (false == isInteractable) return;
 
         if (true == isHovered)
@@ -310,7 +314,7 @@ public class UI_OptionButton : Selectable,
     public override void OnDeselect(BaseEventData _eventData)
     {
         base.OnDeselect(_eventData);
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
         if (false == isInteractable) return;
         
         isHovered = false;
@@ -443,6 +447,11 @@ public class UI_OptionButton : Selectable,
         if (null != onClickAction)
         {
             onClickAction.Invoke();
+        }
+
+        if (null == inputManager || false == inputManager.IsGamepadMode)
+        {
+            HideCursor();
         }
     }
 

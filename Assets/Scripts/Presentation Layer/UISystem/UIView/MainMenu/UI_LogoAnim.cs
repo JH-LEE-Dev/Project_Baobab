@@ -19,17 +19,25 @@ public class UI_LogoAnim : MonoBehaviour
     [SerializeField] private float moveDistanceY = 200f; // 위로 이동할 거리
     [SerializeField] private float moveDuration = 1f;
     [SerializeField] private Ease moveEase = Ease.OutBack; // 찰진 튕김 효과 (뽀잉)
+    [SerializeField] private float fadeInDuration = 0.8f; // 로고 페이드인 기본 시간
 
     private Vector2 initialPosition;
 
     private Action currentRevealComplete;
     private TweenCallback onRevealCompleteCallback;
 
+    private Action currentFadeInComplete;
+    private TweenCallback onFadeInCompleteCallback;
+
+    private Action currentFadeOutComplete;
+    private TweenCallback onFadeOutCompleteCallback;
+
     private bool isInitialPositionSet = false;
 
     public void Initialize()
     {
         if (null == onRevealCompleteCallback) onRevealCompleteCallback = OnRevealComplete;
+        if (null == onFadeInCompleteCallback) onFadeInCompleteCallback = OnFadeInComplete;
         if (null == onFadeOutCompleteCallback) onFadeOutCompleteCallback = OnFadeOutComplete;
 
         if (null != logoTransform && false == isInitialPositionSet)
@@ -109,11 +117,45 @@ public class UI_LogoAnim : MonoBehaviour
     }
 
     /// <summary>
+    /// 로고의 알파 값을 즉시 설정합니다.
+    /// </summary>
+    public void SetAlpha(float _alpha)
+    {
+        if (null != canvasGroup)
+        {
+            canvasGroup.DOKill();
+            canvasGroup.alpha = _alpha;
+        }
+    }
+
+    private void OnFadeInComplete()
+    {
+        currentFadeInComplete?.Invoke();
+        currentFadeInComplete = null;
+    }
+
+    /// <summary>
+    /// 로고를 서서히 선명하게 만듭니다.
+    /// </summary>
+    public void PlayFadeIn(float _duration = -1f, Action _onComplete = null)
+    {
+        currentFadeInComplete = _onComplete;
+        float _dur = (0f <= _duration) ? _duration : fadeInDuration;
+
+        if (null != canvasGroup)
+        {
+            canvasGroup.DOKill();
+            canvasGroup.DOFade(1f, _dur).OnComplete(onFadeInCompleteCallback);
+        }
+        else
+        {
+            _onComplete?.Invoke();
+        }
+    }
+
+    /// <summary>
     /// 로고를 서서히 투명하게 만듭니다.
     /// </summary>
-    private Action currentFadeOutComplete;
-    private TweenCallback onFadeOutCompleteCallback;
-
     private void OnFadeOutComplete()
     {
         currentFadeOutComplete?.Invoke();
@@ -125,6 +167,7 @@ public class UI_LogoAnim : MonoBehaviour
         currentFadeOutComplete = _onComplete;
         if (null != canvasGroup)
         {
+            canvasGroup.DOKill();
             canvasGroup.DOFade(0f, _duration).OnComplete(onFadeOutCompleteCallback);
         }
         else
@@ -138,6 +181,10 @@ public class UI_LogoAnim : MonoBehaviour
         if (null != logoTransform)
         {
             logoTransform.DOKill();
+        }
+        if (null != canvasGroup)
+        {
+            canvasGroup.DOKill();
         }
     }
 }

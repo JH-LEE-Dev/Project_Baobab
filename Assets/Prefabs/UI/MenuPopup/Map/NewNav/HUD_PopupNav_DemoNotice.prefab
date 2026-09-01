@@ -49,7 +49,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e7152249d0fe5d8468652a23c1bc51d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD_PopupNav_DemoNotice
-  steamWishlistUrl: https://google.com/
+  steamWishlistUrl: https://store.steampowered.com/app/5129170/LumberBoy/
   discordCommunityUrl: https://discord.gg/JtaVpyUkU/
   demoNoticeOverlay: {fileID: 1239516781622017439}
   demoDimCanvasGroup: {fileID: 3272230724093129031}
@@ -434,7 +434,7 @@ MonoBehaviour:
   m_ShadowMirrorScale: 0.5
   m_ShadowBlurIntensity: 1
   m_ShadowColorFilter: 4
-  m_ShadowColor: {r: 0.5026682, g: 0.43867922, b: 1, a: 1}
+  m_ShadowColor: {r: 1, g: 1, b: 1, a: 0}
   m_ShadowColorGlow: 0
   m_GradationMode: 0
   m_GradationIntensity: 1
@@ -1317,12 +1317,46 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a625447a284229d4f8d09190c983209a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_ExternalLinkButton
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 1
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 0}
+  effectMode: 1
   targetVisualImage: {fileID: 805397981982625772}
-  targetUrl: https://naver.com/
+  targetUIEffect: {fileID: 7624881718563298259}
+  targetUrl: https://store.steampowered.com/app/5129170/LumberBoy/
   normalColor: {r: 1, g: 1, b: 1, a: 1}
-  hoverColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
-  clickColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
+  hoverColor: {r: 0.6320754, g: 0.6320754, b: 0.6320754, a: 1}
+  clickColor: {r: 0.6603774, g: 0.6603774, b: 0.6603774, a: 1}
   transitionDuration: 0.15
+  transitionEase: 6
+  cursorPadding: {x: 10, y: 10}
+  cursorOffset: {x: 0, y: 0}
 --- !u!1 &5457515955050420110
 GameObject:
   m_ObjectHideFlags: 0
@@ -1425,7 +1459,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 6f0e2d7babfa9744cb3b38a90fc0b0fa, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e0465ecfb8d615a42b180ec2e643b2e8, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1520,7 +1554,7 @@ MonoBehaviour:
   m_ShadowMirrorScale: 0.5
   m_ShadowBlurIntensity: 1
   m_ShadowColorFilter: 4
-  m_ShadowColor: {r: 0.5026682, g: 0.43867922, b: 1, a: 1}
+  m_ShadowColor: {r: 1, g: 1, b: 1, a: 0}
   m_ShadowColorGlow: 0
   m_GradationMode: 0
   m_GradationIntensity: 1
@@ -1714,9 +1748,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a625447a284229d4f8d09190c983209a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_ExternalLinkButton
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 1
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 0}
+  effectMode: 1
   targetVisualImage: {fileID: 633821695696335160}
-  targetUrl: https://naver.com/
+  targetUIEffect: {fileID: 6802175797008771381}
+  targetUrl: https://discord.gg/JtaVpyUkU
   normalColor: {r: 1, g: 1, b: 1, a: 1}
-  hoverColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
-  clickColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
+  hoverColor: {r: 0.5613208, g: 0.7780667, b: 1, a: 1}
+  clickColor: {r: 0.5254902, g: 0.6634194, b: 1, a: 1}
   transitionDuration: 0.15
+  transitionEase: 6
+  cursorPadding: {x: 10, y: 10}
+  cursorOffset: {x: 0, y: 0}
