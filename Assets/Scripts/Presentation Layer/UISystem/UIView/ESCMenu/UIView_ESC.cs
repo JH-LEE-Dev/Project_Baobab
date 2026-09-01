@@ -63,6 +63,13 @@ public class UIView_ESC : UIView
     // 열린 경우에만 오디오를 건드린다. escapeMenu.SetSoundsEnabled와 같은 취지의 플래그다.
     private bool isPauseShow = false;
 
+    // 이 메뉴를 열기 직전의 입력 모드. 닫을 때 Gameplay를 박는 대신 이 값으로 되돌린다.
+    //
+    // 입력 모드는 스택이 아니라 단일 값이라, 이미 UI 모드를 쥐고 있는 창(결과창 등) 위로 이 메뉴가
+    // 열렸다가 닫히면 그 창이 아직 UI 모드여야 하는데도 Gameplay로 풀려버린다.
+    // 실제로 탈진 사망 결과창에서 그 경로가 열려 있었다.
+    private EInputMode inputModeBeforeShow = EInputMode.Gameplay;
+
     public bool IsOptionOpen => (null != optionUI && true == optionUI.gameObject.activeInHierarchy) || true == isOpeningOption;
 
     public override void Initialize(UIViewContext _ctx)
@@ -236,6 +243,8 @@ public class UIView_ESC : UIView
         base.OnShow();
         gameObject.SetActive(true);
 
+        // 반드시 UI로 바꾸기 전에 읽는다.
+        inputModeBeforeShow = viewCtx?.inputManager?.CurrentInputMode ?? EInputMode.Gameplay;
         viewCtx?.inputManager?.SetInputMode(EInputMode.UI);
 
         // ESC 메뉴 = 일시정지. BGM을 먹먹하게 하고, 게임플레이 사운드는 통째로 죽여
@@ -269,7 +278,9 @@ public class UIView_ESC : UIView
         // 반납했다면 멱등 가드에 걸려 아무 일도 하지 않는다)
         ReleaseInputLock();
 
-        viewCtx?.inputManager?.SetInputMode(EInputMode.Gameplay);
+        // Gameplay를 박지 않고 열기 직전 값으로 되돌린다. (inputModeBeforeShow 참고)
+        // 원래 Gameplay였다면 결과는 종전과 완전히 동일하다.
+        viewCtx?.inputManager?.SetInputMode(inputModeBeforeShow);
 
         base.OnHide();
 

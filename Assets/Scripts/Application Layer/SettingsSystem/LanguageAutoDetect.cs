@@ -58,11 +58,15 @@ public static class LanguageAutoDetect
 
         EOptionLanguage _mapped;
 
-        if (Matches(_code, "koreana")) _mapped = EOptionLanguage.Korean;
-        else if (Matches(_code, "english")) _mapped = EOptionLanguage.English;
-        else if (Matches(_code, "schinese")) _mapped = EOptionLanguage.ChineseSimplified;
-        else if (Matches(_code, "tchinese")) _mapped = EOptionLanguage.ChineseTraditional;
-        else if (Matches(_code, "japanese")) _mapped = EOptionLanguage.Japanese;
+        // 한국어만 별칭을 둡니다. Steam의 공식 API 코드는 "koreana"인데, 이 철자는 Steam 안에서도
+        // 표기가 흔들려 온 이력이 있고(웹 API 쪽은 "ko") 사람이 보기에도 오타처럼 생겼습니다.
+        // 여기서 놓치면 조용히 OS 언어로 넘어가서, 한국어 Steam + 영어 윈도우 유저가 영어로 시작합니다.
+        // 로그도 남지 않아 알아채기 어려우므로 두 철자를 모두 받습니다.
+        if (MatchesAny(_code, "koreana", "korean")) _mapped = EOptionLanguage.Korean;
+        else if (MatchesAny(_code, "english")) _mapped = EOptionLanguage.English;
+        else if (MatchesAny(_code, "schinese")) _mapped = EOptionLanguage.ChineseSimplified;
+        else if (MatchesAny(_code, "tchinese")) _mapped = EOptionLanguage.ChineseTraditional;
+        else if (MatchesAny(_code, "japanese")) _mapped = EOptionLanguage.Japanese;
         else return false;
 
         return Accept(_mapped, out _language);
@@ -127,8 +131,21 @@ public static class LanguageAutoDetect
         return true;
     }
 
-    private static bool Matches(string _code, string _expected)
+    /// <summary>
+    /// 언어 코드가 후보 중 하나와 같은지 봅니다. 대소문자와 앞뒤 공백을 무시합니다.
+    ///
+    /// 공백까지 털어내는 이유: 이 문자열은 네이티브 쪽에서 건너온 값이라 우리가 형태를 보장할 수
+    /// 없고, 어긋나도 예외 없이 조용히 폴백으로 흘러가 원인을 찾기 어렵기 때문입니다.
+    /// </summary>
+    private static bool MatchesAny(string _code, params string[] _candidates)
     {
-        return string.Equals(_code, _expected, System.StringComparison.OrdinalIgnoreCase);
+        string _trimmed = _code.Trim();
+
+        for (int i = 0; i < _candidates.Length; i++)
+        {
+            if (string.Equals(_trimmed, _candidates[i], System.StringComparison.OrdinalIgnoreCase)) return true;
+        }
+
+        return false;
     }
 }

@@ -223,8 +223,13 @@ public class UIView_HUD : UIView
             var _ownedLoots = lootDataProvider.CurrentOwnedLoots;
             if (null != _ownedLoots)
             {
+                // HUD_Loot는 포션 슬롯 하나만 담당하므로(전달하는 LootType은 내부에서 무시된다)
+                // 실시간 경로인 OnLootAcquired와 동일하게 SporePotion만 걸러서 넘긴다.
+                // 필터 없이 넘기면 별빛 나침반 같은 다른 전리품만 가진 상태에서도 포션 슬롯이 켜진다.
                 for (int i = 0; i < _ownedLoots.Count; i++)
                 {
+                    if (LootType.SporePotion != _ownedLoots[i]) continue;
+
                     hudLoot.AcquireLoot(_ownedLoots[i], false);
                 }
             }

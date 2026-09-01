@@ -278,13 +278,10 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
         }
     }
 
-    public override void OnTreeGetHit(InDungeonObjectManager _manager, TreeObj _treeObj)
-    {
-        if (treeTriggerGroupDict.TryGetValue(_treeObj, out int groupId))
-        {
-            Debug.Log($"[Stage3] Trigger Group {groupId} hit! (Tree: {_treeObj.name}) - Prepare for chain reaction.");
-        }
-    }
+    // OnTreeGetHit은 별 표식 나무를 "때릴 때마다" 호출된다(쇼크웨이브/부메랑으로 여러 그루가 동시에
+    // 맞으면 한 프레임에 수십 번). 예전엔 여기서 보간 문자열 + _treeObj.name(네이티브 마샬링)으로
+    // Debug.Log를 찍고 있었는데, 출시 빌드에서는 순수 비용이자 로그 노이즈라 제거했다.
+    // 별자리 발현은 OnTreeDead에서만 판정하므로 이 훅에서 할 일은 없다(베이스의 빈 구현을 그대로 쓴다).
 
     private void ShuffleArray(Vector3Int[] array)
     {

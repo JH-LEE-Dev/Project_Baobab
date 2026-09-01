@@ -251,6 +251,11 @@ public class InputManager : MonoBehaviour
         return inputReader.HasBindingFor(_action, _device);
     }
 
+    /// <summary>
+    /// 지금 이동 입력이 잠겨 있는지입니다. (InputReader.IsMovePaused 참고)
+    /// </summary>
+    public bool IsMovePaused => null != inputReader && inputReader.IsMovePaused;
+
     public void PauseMove(bool _bPause)
     {
         inputReader.PauseMove(_bPause);

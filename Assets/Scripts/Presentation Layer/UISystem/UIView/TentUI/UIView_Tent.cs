@@ -29,6 +29,18 @@ public class UIView_Tent : UIView
 
     private bool isInitialOpen = false;
     private bool playSoundsForCurrentPresentation;
+
+    // 이 창을 열기 직전의 입력 모드/이동 잠금 상태. 닫을 때 Gameplay·false를 박는 대신 이 값으로 되돌린다.
+    //
+    // 입력 모드는 스택이 아니라 단일 값이고 PauseMove도 소유자별 잠금이 아니라 단일 bool이라
+    // (InputReader.IsMovePaused 참고), 무조건 되돌리면 아직 잠겨 있어야 하는 다른 시스템의 잠금까지
+    // 함께 풀린다. UIView_ESC와 같은 방식으로 열기 직전 값을 보존한다.
+    //
+    // 저장은 OnShow()의 조기 return(isInitialOpen)보다 위에서 한다. OnShow()는 최초 1회 잠금을
+    // 걸지 않고 빠져나가는데 OnHide()는 그때도 실행되므로, 그 최초 여닫기가 남이 걸어둔 잠금을
+    // 풀어버리지 않으려면 저장이 반드시 return보다 앞서야 한다.
+    private EInputMode inputModeBeforeShow = EInputMode.Gameplay;
+    private bool bMovePausedBeforeShow = false;
     private bool isTutorialState;
     private bool isTutorialUpgradeAxeQuestUIHidden;
     private bool isTutorialHUDRevealPlaying;
@@ -103,6 +115,11 @@ public class UIView_Tent : UIView
     {
         base.OnShow();
 
+        // 반드시 아래의 조기 return과 SetInputMode(UI)/PauseMove(true)보다 먼저 읽는다.
+        // (inputModeBeforeShow 주석 참고)
+        inputModeBeforeShow = viewCtx?.inputManager?.CurrentInputMode ?? EInputMode.Gameplay;
+        bMovePausedBeforeShow = null != viewCtx?.inputManager && viewCtx.inputManager.IsMovePaused;
+
         Sound.RequestAudioDuck();
 
         if (false == isInitialOpen)
@@ -135,8 +152,10 @@ public class UIView_Tent : UIView
             playSoundsForCurrentPresentation = false;
         }
 
-        viewCtx.inputManager.SetInputMode(EInputMode.Gameplay);
-        viewCtx.inputManager.PauseMove(false);
+        // Gameplay/false를 박지 않고 열기 직전 값으로 되돌린다. (inputModeBeforeShow 주석 참고)
+        // 원래 Gameplay + 잠금 없음이었다면 결과는 종전과 완전히 동일하다.
+        viewCtx.inputManager.SetInputMode(inputModeBeforeShow);
+        viewCtx.inputManager.PauseMove(bMovePausedBeforeShow);
 
         abilityUIComponent?.Close();
 
@@ -254,6 +273,9 @@ public class UIView_Tent : UIView
     // Tent UI 정리 시 확장 포인트로 남겨둔다.
     public override void OnDestroy()
     {
+        // TentUI는 ESC 뎁스 스택에 등록되는 뷰(bCloseableByESC)라, 파괴 시 등록 해제를
+        // 담당하는 base.OnDestroy()를 반드시 거쳐야 한다.
+        base.OnDestroy();
     }
 
     public override void Refresh() //저장 파일 로드할 때 호출됨.

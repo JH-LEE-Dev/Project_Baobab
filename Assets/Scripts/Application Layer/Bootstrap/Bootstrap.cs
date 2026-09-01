@@ -105,9 +105,30 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     }
 
 
+    /// <summary>
+    /// 씬 진입 시 일시정지 상태를 해제합니다. 정상 경로라면 이미 1이므로 아무 일도 하지 않고,
+    /// 어떤 경로가 timeScale = 0을 남긴 채 씬을 바꿨다면 여기서 복구하며 그 사실을 로그로 남깁니다.
+    /// (조용히 고치면 원인이 된 경로를 영영 못 찾는다)
+    /// </summary>
+    private void ResetTimeScale()
+    {
+        if (1f == Time.timeScale)
+            return;
+
+        Debug.LogWarning($"[BootStrap] 씬 진입 시 Time.timeScale이 {Time.timeScale}였습니다. " +
+            "일시정지를 해제하지 않고 씬을 빠져나온 경로가 있습니다. 1로 복구합니다.");
+
+        Time.timeScale = 1f;
+    }
+
     // 퍼블릭 초기화 및 제어 메서드
     public void SetupScene(string _sceneName)
     {
+        // 일시정지(Time.timeScale = 0)를 되돌리는 코드는 GameplayUICoordinator의 ESC 경로 네 군데뿐이라,
+        // 그 경로를 거치지 않고 씬이 바뀌면 새 씬이 통째로 멈춘 채 시작되고 되살릴 방법이 없다.
+        // 씬 진입은 "일시정지가 남아 있을 이유가 없는" 유일하게 확실한 지점이므로 여기서 못 박는다.
+        ResetTimeScale();
+
         if (_sceneName == townSceneName)
         {
             currentSceneType = SceneType.Town;
@@ -159,6 +180,9 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         // 둘 다 찍혔는데 화면이 비어 있으면 메인 메뉴 UI 쪽 문제다.
         Debug.Log($"[BootStrap] SetupMainMenuScene 진입 (timeScale={Time.timeScale}, " +
             $"installer={(mainMenuInstaller != null ? "재사용" : "신규 생성")})");
+
+        // SetupScene()과 같은 이유. 위 로그가 timeScale을 이미 찍고 있으므로 반드시 그 뒤에 호출한다.
+        ResetTimeScale();
 
         currentSceneType = SceneType.MainMenu;
 

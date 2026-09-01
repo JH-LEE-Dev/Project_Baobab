@@ -518,6 +518,15 @@ public class InDungeonSystem : MonoBehaviour
 
     private void RideOffroad()
     {
+        // 탑승 요청이 이미 무의미해진 상태에서 뒤늦게 도착할 수 있다. HandleGameEnd()의
+        // GameEndRoutine(아이템 떨구기 대기)은 timeScale = 0이면 멈춰 있다가, ESC 메뉴에서
+        // "메인 메뉴로"를 눌러 timeScale이 1로 돌아오는 순간 그대로 재개되기 때문이다.
+        // 그대로 두면 메인메뉴 이탈 카메라 상승 중에 캐릭터가 차량 위치로 순간이동한 뒤 비활성화되고
+        // (상승 카메라가 추적하던 대상이 사라진다), 0.25초 뒤 CharacterRideEndEvent → GameEnd()로
+        // 결과창까지 씬 전환 위에 떠버린다. PopupUIGoUPCoroutine과 같은 이유의 가드다.
+        if (bCurrentlyDungeonScene == false || bGoingToMainMenu == true)
+            return;
+
         signalHub.Publish(new PopupUIDownSignal());
         inDungeonProductionManager.StartCharacterRide();
         signalHub.Publish(new CharacterRideStartSignal());
@@ -830,6 +839,14 @@ public class InDungeonSystem : MonoBehaviour
     private IEnumerator StaminaDecreaseCoroutine()
     {
         yield return new WaitForSeconds(0.7f);
+
+        // 이 코루틴이 시작되는 시점(PopupUIGoUPCoroutine)엔 이미 ESC가 풀려 있으므로, 대기하는
+        // 0.7초 사이에 ESC → 메인메뉴 이탈이 요청될 수 있다. 그대로 두면 카메라 상승 연출 도중에
+        // 피로도 감소가 시작되고 컨테이너/차량 콜라이더까지 되살아나 상호작용 팝업이 뜬다.
+        // PopupUIGoUPCoroutine / RideOffroad와 같은 이유의 가드다.
+        if (bGoingToMainMenu == true)
+            yield break;
+
         signalHub.Publish(new StartDecreaseStaminaSignal());
 
         offroadContainer.col.enabled = true;
@@ -940,6 +957,23 @@ public class InDungeonSystem : MonoBehaviour
 
     private void FlyingItemDismissRequested()
     {
-        offroadContainer.DismissAllFlyingItems();
+        int _dismissedLogCount = offroadContainer.DismissAllFlyingItems();
+
+        // 공중에서 소멸한 원목도 결과창의 "잃어버린 원목"에 포함한다.
+        //
+        // 이 시점의 비행 중 원목은 출발지 슬롯에서 이미 빠졌고 목적지에는 아직 커밋되지 않아
+        // 어느 인벤토리에도 없다. 그래서 UnitSystem이 DropAllItem 반환값으로 집계하는 경로에는
+        // 절대 잡히지 않고, 여기서만 계상할 수 있다.
+        //
+        // 이 핸들러는 InDungeonObjectManager의 GameEnd()/HandleGameEnd() 두 곳에서 호출되고
+        // 귀환이 확정된 경로에서는 둘 다 연달아 불릴 수 있는데, 첫 호출이 flyingItems를 비우므로
+        // 두 번째 호출은 0을 반환한다. 따라서 중복 가산은 일어나지 않는다.
+        //
+        // 집계 시점은 결과창(GameEndSignal)보다 한참 앞이고, 카운터를 되돌리는 Reset()은 다음
+        // 던전 진입(StartDungeonSystem)에서만 돌므로 이번 원정 결과에 정상 반영된다.
+        if (_dismissedLogCount > 0)
+        {
+            inDungeonResultManager.IncreaseLostLogItemCnt(_dismissedLogCount);
+        }
     }
 }

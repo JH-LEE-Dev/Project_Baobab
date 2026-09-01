@@ -510,6 +510,19 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         bDead = true;
         healthComponent.SetStaminaDecrease(false);
         inputManager.PauseMove(true);
+
+        // 여기서부터 결과창까지는 되돌릴 수 없는 구간이므로 ESC를 막는다.
+        //
+        // 차량을 타고 귀환하는 경로는 InDungeonProductionManager.CharacterRideRoutine()이 ESC를
+        // 잠근 채 결과창까지 이어지는데, 사망 경로는 그 코루틴을 타지 않아 잠금이 아예 없었다.
+        // 그래서 사망 결과창(UIView_Result는 bCloseableByESC = false라 뎁스 스택에도 없다) 위로
+        // 일시정지 메뉴가 그대로 열렸고, 그 메뉴가 닫히면서 SetInputMode(Gameplay)/PauseMove(false)가
+        // 결과창이 걸어둔 UI 모드와 이동 잠금을 덮어썼다.
+        //
+        // 해제 시점은 차량 경로와 동일하다. 결과창의 귀가/재도전 어느 쪽을 눌러도
+        // InDungeonProductionManager.CameraDownIsEnd()가 풀어준다.
+        inputManager.PauseESCKey(true);
+
         StartCoroutine(StaminaIsEmptyRoutine());
     }
 

@@ -399,14 +399,42 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         bFlyingPaused = false;
     }
 
-    public void DismissAllFlyingItems()
+    /// <summary>
+    /// 아직 도착하지 않은(공중에 떠 있는) 아이템을 전부 소멸 연출로 넘긴다.
+    /// 반환값은 그중 실제로 사라진 원목(LogItem)의 개수다.
+    ///
+    /// 이 개수를 호출부에 넘겨야 하는 이유: 비행 중인 원목은 발사 시점에 출발지에서 이미 빠졌고
+    /// (TransferOneSlotVisualRoutine의 TakeOneItem) 목적지에는 착지 시점에야 커밋되므로
+    /// (UpdateFlyingItems), 소멸하는 순간 어느 인벤토리에도 존재하지 않는다. 따라서 인벤토리를
+    /// 훑는 DropAllItem 기반 집계로는 절대 잡히지 않고, 여기서 세어 넘기는 방법밖에 없다.
+    ///
+    /// 이중 계산 걱정은 없다 - 이미 착지한 것은 커밋과 동시에 flyingItems에서 제거되므로
+    /// 여기 남아 있지 않고, 아직 발사되지 않은 것은 출발지 슬롯에 그대로 있어 DropAllItem이 센다.
+    ///
+    /// 집계에 쓸지 여부는 호출부가 정한다. 결과 집계가 의미 없는 시점(ResetState의 던전 재진입 등)에서는
+    /// 반환값을 그냥 무시하면 된다.
+    /// </summary>
+    public int DismissAllFlyingItems()
     {
         bFlyingPaused = false;
+
+        int _dismissedLogCount = 0;
+
         for (int i = flyingItems.Count - 1; i >= 0; i--)
         {
+            LogItem _item = flyingItems[i].item;
+
+            // 집계는 원목만. (AppendTransitToSaveData의 정산 대상 판정과 같은 기준)
+            if (null != _item && ItemType.Log == _item.itemType)
+            {
+                _dismissedLogCount++;
+            }
+
             dismissingItems.Add(flyingItems[i]);
         }
         flyingItems.Clear();
+
+        return _dismissedLogCount;
     }
 
     /// <summary>
@@ -417,6 +445,10 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         bContainerOpen = false;
         bContainerVisualOpened = false;
         closeTimer = -1f;
+
+        // 던전 재진입 시점의 강제 초기화라 결과 집계와 무관하다(이번 원정의 결과는 이미 확정됐고,
+        // 진입 시 인벤토리 이관은 연출 없는 즉시 커밋 경로라 애초에 비행 중인 항목이 없다).
+        // 반환되는 소멸 개수는 의도적으로 무시한다.
         DismissAllFlyingItems();
 
         if (transferCoroutine != null)

@@ -28,6 +28,16 @@ public class GameplayUICoordinator
     private bool bIsTutorialQuestHiding = false;
     private bool bPendingGameEnd = false;
 
+    // ESC 일시정지를 열기 직전의 이동 잠금 상태. 닫을 때 false를 박는 대신 이 값으로 되돌린다.
+    //
+    // PauseMove는 소유자별 잠금이 아니라 단일 bool이라(InputReader.IsMovePaused 참고), 무조건
+    // false로 풀면 다른 시스템이 아직 막아야 하는 구간까지 함께 열어버린다. 연출 도중에 ESC를
+    // 여닫으면 캐릭터가 그 연출 위를 걸어다니게 되는 사고가 이 경로로 났다.
+    //
+    // 잠금을 거는 쪽마다 ESC를 함께 막는 것이 정석이지만(그렇게 고친 구간도 있다), 앞으로 추가될
+    // 연출까지 매번 기억해야 하므로 겹쳐 잠그는 이쪽에서도 원래 값을 보존한다.
+    private bool bMovePausedBeforeEsc = false;
+
     // PopupUIDown ~ HUD가 완전히 다 올라오는 시점(HUDGoUpCompleted)까지 true.
     // 이 구간에는 HUD가 내려가 있거나 애니메이션 중이므로 인벤토리 여닫기(Space)를 막는다.
     private bool bHUDDown = false;
@@ -463,7 +473,7 @@ public class GameplayUICoordinator
     {
         // escUI.OnResumeButtonClicked()가 Hide()를 이미 호출한 뒤 이 이벤트를 발행하므로
         // 여기서는 EscButtonPressed의 ESC 키 종료 경로와 동일하게 이동/시간만 복구한다.
-        inputManager.PauseMove(false);
+        inputManager.PauseMove(bMovePausedBeforeEsc);
         Time.timeScale = 1f;
 
         if (null != overUIPopupUI)
@@ -515,7 +525,7 @@ public class GameplayUICoordinator
             }
 
             escUI.Hide();
-            inputManager.PauseMove(false);
+            inputManager.PauseMove(bMovePausedBeforeEsc);
             Time.timeScale = 1f;
 
             if (null != overUIPopupUI)
@@ -525,6 +535,9 @@ public class GameplayUICoordinator
         }
         else if (null != escUI)
         {
+            // 반드시 PauseMove(true)보다 먼저 읽는다.
+            bMovePausedBeforeEsc = inputManager.IsMovePaused;
+
             escUI.ShowPauseMenu();
             inputManager.PauseMove(true);
             Time.timeScale = 0f;
@@ -552,7 +565,7 @@ public class GameplayUICoordinator
             }
 
             escUI.Hide();
-            inputManager.PauseMove(false);
+            inputManager.PauseMove(bMovePausedBeforeEsc);
             Time.timeScale = 1f;
 
             if (null != overUIPopupUI)

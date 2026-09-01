@@ -60,18 +60,37 @@ public class HUD_Loot : MonoBehaviour
     /// </summary>
     public void AcquireLoot(LootType _acquiredType, bool _playAnimation = true)
     {
-        if (false == _playAnimation || null == motionTarget)
-        {
-            return;
-        }
-
+        // _playAnimation이 false로 들어오는 건 세이브 복구 경로(UIView_HUD.Refresh)뿐이다. 예전엔
+        // 여기서 곧장 return해버려서 슬롯이 활성화조차 되지 않았고, 그 결과 이어하기를 하면 포션을
+        // 실제로 소지한 상태(bHasAcquiredSporePotion == true, 핫키로 마시는 것도 가능)인데도
+        // HUD 슬롯이 영영 나타나지 않았다. 연출만 생략하고 상태 전환은 그대로 수행해야 한다.
         if (false == hasAcquired)
         {
             hasAcquired = true;
             gameObject.SetActive(true);
-            PlayAppearanceMotion();
+
+            if (true == _playAnimation && null != motionTarget)
+            {
+                PlayAppearanceMotion();
+                return;
+            }
+
+            // 연출 없이 등장 모션이 끝난 것과 동일한 최종 상태로 맞춘다.
+            if (null != motionTarget)
+            {
+                motionTarget.localScale = Vector3.one;
+            }
+
+            if (null != slotCanvasGroup)
+            {
+                slotCanvasGroup.DOKill();
+                slotCanvasGroup.alpha = 1f;
+            }
+
+            return;
         }
-        else
+
+        if (true == _playAnimation && null != motionTarget)
         {
             PlayFeedbackMotion(Vector3.one * 1.2f, motionDuration * 0.8f);
         }
