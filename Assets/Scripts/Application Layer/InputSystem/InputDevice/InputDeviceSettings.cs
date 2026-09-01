@@ -28,7 +28,7 @@ public class InputDeviceSettings : ScriptableObject
     [Tooltip("마우스를 '움직였다'고 인정할 누적 이동 거리(픽셀). 책상 진동이나 센서 지터로 " +
              "1~2px가 수시로 들어오므로, 한 번의 델타가 아니라 누적치로 판정한다.")]
     [Min(1f)]
-    public float mouseTravelThresholdPixels = 12f;
+    public float mouseTravelThresholdPixels = 25f;
 
     [Tooltip("마우스가 이 시간(초) 동안 멈춰 있으면 누적 이동 거리를 0으로 되돌린다. " +
              "이게 없으면 몇 분에 걸친 미세 지터가 조금씩 쌓여서 결국 문턱값을 넘어버린다.")]

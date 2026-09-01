@@ -220,7 +220,7 @@ public class UI_OptionSlider : Selectable, IMoveHandler
     public void ShowCursor()
     {
         if (null == cursorBoxUI) return;
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
         RectTransform _targetRect = transform as RectTransform;
         if (null != _targetRect)
@@ -258,7 +258,7 @@ public class UI_OptionSlider : Selectable, IMoveHandler
         }
 
         Canvas _canvas = GetComponentInParent<Canvas>();
-        Camera _cam = (null != _canvas && _canvas.renderMode != RenderMode.ScreenSpaceOverlay) ? _canvas.worldCamera : null;
+        Camera _cam = (null != _canvas && RenderMode.ScreenSpaceOverlay != _canvas.renderMode) ? _canvas.worldCamera : null;
         RectTransform _rect = transform as RectTransform;
         if (null == _rect) return false;
 
@@ -268,14 +268,11 @@ public class UI_OptionSlider : Selectable, IMoveHandler
     public override void OnSelect(BaseEventData eventData)
     {
         base.OnSelect(eventData);
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
-        if (null != inputManager && true == inputManager.IsGamepadMode)
-        {
-            ShowCursor();
-            ApplyFocusVisual(true);
-            Sound.PlayUI(SoundID.MainMenuDot01);
-        }
+        ShowCursor();
+        ApplyFocusVisual(true);
+        Sound.PlayUI(SoundID.MainMenuDot01);
 
         if (null == customScroll)
         {
@@ -290,7 +287,7 @@ public class UI_OptionSlider : Selectable, IMoveHandler
     public override void OnDeselect(BaseEventData eventData)
     {
         base.OnDeselect(eventData);
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
         ApplyFocusVisual(false);
         HideCursor();

@@ -18,6 +18,7 @@ public class UIView_MainMenu : UIView
     [SerializeField] private UI_LogoAnim logoAnimUI; // 로고 애니메이션 객체
     [SerializeField] private UI_MainMenuBackground backgroundUI; // 동적 배경 관리 객체
     [SerializeField] private CanvasGroup otherCanvasGroup; // 게임 버전 등 기타 UI 최상위 캔버스 그룹
+    [SerializeField] private UI_ExternalLinkButton discordButton; // 디스코드 바로가기 버튼
 
     [Header("Sub Views")]
     [SerializeField] private UI_Option optionUI; // 공용 옵션 UI
@@ -80,10 +81,24 @@ public class UIView_MainMenu : UIView
             restAnchoredPosition = rootRectTransform.anchoredPosition;
         }
 
+        if (null == discordButton && null != otherCanvasGroup)
+        {
+            discordButton = otherCanvasGroup.GetComponentInChildren<UI_ExternalLinkButton>(true);
+        }
+
+        if (null != discordButton)
+        {
+            discordButton.SetCursorBoxUI(_ctx?.cursorBoxUI, _ctx?.inputManager);
+        }
+
         // 프리팹을 인스턴스화하지 않고, 이미 바인딩된 컴포넌트를 바로 초기화
         if (null != mainMenuUI)
         {
             mainMenuUI.Initialize(this, _ctx);
+            if (null != discordButton)
+            {
+                mainMenuUI.SetDiscordButton(discordButton);
+            }
         }
 
         if (null != pressAnyKeyUI)
@@ -512,13 +527,7 @@ public class UIView_MainMenu : UIView
         if (null != logoAnimUI)
         {
             logoAnimUI.ResetToInitialState();
-            
-            CanvasGroup _logoCanvas = logoAnimUI.GetComponent<CanvasGroup>();
-            if (null != _logoCanvas)
-            {
-                _logoCanvas.DOKill();
-                _logoCanvas.alpha = 1f;
-            }
+            logoAnimUI.SetAlpha(0f);
         }
 
         if (null != otherCanvasGroup)
@@ -529,6 +538,11 @@ public class UIView_MainMenu : UIView
 
         // 2. 스플래시 스크린(팀 로고) 이후의 초기 시작 연출을 그대로 다시 트리거합니다.
         PrepareNextUIAfterSplash();
+
+        if (null != logoAnimUI)
+        {
+            logoAnimUI.PlayFadeIn(0.8f);
+        }
 
         if (null == this.pressAnyKeyUI)
         {

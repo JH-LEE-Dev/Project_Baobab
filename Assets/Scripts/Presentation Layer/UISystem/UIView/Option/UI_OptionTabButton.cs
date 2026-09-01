@@ -132,7 +132,7 @@ public class UI_OptionTabButton : Selectable, IPointerClickHandler, ISubmitHandl
     public void ShowCursor()
     {
         if (null == cursorBoxUI) return;
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
         RectTransform _targetRect = transform as RectTransform;
         if (null != _targetRect)
@@ -167,6 +167,8 @@ public class UI_OptionTabButton : Selectable, IPointerClickHandler, ISubmitHandl
     public override void OnPointerEnter(PointerEventData _eventData)
     {
         base.OnPointerEnter(_eventData);
+        if (null != inputManager && true == inputManager.IsGamepadMode) return;
+
         isHovered = true;
         Sound.PlayUI(SoundID.MainMenuDot01);
         UpdateVisualState();
@@ -175,6 +177,8 @@ public class UI_OptionTabButton : Selectable, IPointerClickHandler, ISubmitHandl
     public override void OnPointerExit(PointerEventData _eventData)
     {
         base.OnPointerExit(_eventData);
+        if (null != inputManager && true == inputManager.IsGamepadMode) return;
+
         isHovered = false;
         UpdateVisualState();
         HideCursor();
@@ -204,7 +208,7 @@ public class UI_OptionTabButton : Selectable, IPointerClickHandler, ISubmitHandl
     public override void OnSelect(BaseEventData _eventData)
     {
         base.OnSelect(_eventData);
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
         if (true == isHovered)
         {
@@ -229,7 +233,7 @@ public class UI_OptionTabButton : Selectable, IPointerClickHandler, ISubmitHandl
     public override void OnDeselect(BaseEventData _eventData)
     {
         base.OnDeselect(_eventData);
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
         isHovered = false;
         UpdateVisualState();
@@ -246,6 +250,11 @@ public class UI_OptionTabButton : Selectable, IPointerClickHandler, ISubmitHandl
         if (null != parentGroup)
         {
             parentGroup.OnTabClicked(tabIndex);
+        }
+
+        if (null == inputManager || false == inputManager.IsGamepadMode)
+        {
+            HideCursor();
         }
     }
 }

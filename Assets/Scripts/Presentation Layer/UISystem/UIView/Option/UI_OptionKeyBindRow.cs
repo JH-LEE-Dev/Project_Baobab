@@ -190,7 +190,7 @@ public class UI_OptionKeyBindRow : Selectable,
     public void ShowCursor()
     {
         if (null == cursorBoxUI) return;
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
         RectTransform _targetRect = transform as RectTransform;
         if (null != _targetRect)
@@ -228,7 +228,7 @@ public class UI_OptionKeyBindRow : Selectable,
         }
 
         Canvas _canvas = GetComponentInParent<Canvas>();
-        Camera _cam = (null != _canvas && _canvas.renderMode != RenderMode.ScreenSpaceOverlay) ? _canvas.worldCamera : null;
+        Camera _cam = (null != _canvas && RenderMode.ScreenSpaceOverlay != _canvas.renderMode) ? _canvas.worldCamera : null;
         RectTransform _rect = transform as RectTransform;
         if (null == _rect) return false;
 
@@ -238,14 +238,11 @@ public class UI_OptionKeyBindRow : Selectable,
     public override void OnSelect(BaseEventData eventData)
     {
         base.OnSelect(eventData);
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
-        if (null != inputManager && true == inputManager.IsGamepadMode)
-        {
-            ShowCursor();
-            ApplyFocusVisual(true);
-            Sound.PlayUI(hoverSoundId);
-        }
+        ShowCursor();
+        ApplyFocusVisual(true);
+        Sound.PlayUI(hoverSoundId);
 
         if (null == customScroll)
         {
@@ -260,7 +257,7 @@ public class UI_OptionKeyBindRow : Selectable,
     public override void OnDeselect(BaseEventData eventData)
     {
         base.OnDeselect(eventData);
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
         ApplyFocusVisual(false);
         HideCursor();
@@ -269,12 +266,14 @@ public class UI_OptionKeyBindRow : Selectable,
     public override void OnPointerEnter(PointerEventData eventData)
     {
         base.OnPointerEnter(eventData);
+        if (null != inputManager && true == inputManager.IsGamepadMode) return;
         ApplyFocusVisual(true);
     }
 
     public override void OnPointerExit(PointerEventData eventData)
     {
         base.OnPointerExit(eventData);
+        if (null != inputManager && true == inputManager.IsGamepadMode) return;
         ApplyFocusVisual(false);
     }
 

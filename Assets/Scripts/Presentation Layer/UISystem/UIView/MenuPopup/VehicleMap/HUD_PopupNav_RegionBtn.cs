@@ -331,11 +331,18 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
+        if (null != mainController && true == mainController.IsGamepadMode) return;
+
         isPointerOver = true;
 
         if (null == mainController || true == mainController.IsInputBlocked)
         {
             return;
+        }
+
+        if (null != mainController)
+        {
+            mainController.StopAllSubRegionHoverEffects();
         }
 
         if (true == isSelected)
@@ -358,34 +365,34 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             hoverTween = null;
         }
 
-        if (false == isSelected)
-        {
-            Sequence _seq = DOTween.Sequence();
-            for (int i = 0; i < visualChildren.Count; i++)
-            {
-                if (null != originalLocalX && i < originalLocalX.Length)
-                {
-                    _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i], hoverMoveDuration).SetEase(hoverMoveEase));
-                }
-            }
-            hoverTween = _seq;
-
-            bool _isUnlocked = (true == isInitialized && true == myInfo.isUnlocked);
-            Color _targetNormalShadow = _isUnlocked ? normalShadowColor : lockedNormalShadowColor;
-            Color _targetNormalBg = _isUnlocked ? normalBgColor : lockedNormalBgColor;
-            TweenColors(_targetNormalShadow, _targetNormalBg, true);
-        }
-        else
-        {
-            for (int i = 0; i < visualChildren.Count; i++)
-            {
-                if (null != originalLocalX && i < originalLocalX.Length)
-                {
-                    visualChildren[i].localPosition = new Vector3(originalLocalX[i] + hoverMoveX, visualChildren[i].localPosition.y, visualChildren[i].localPosition.z);
-                }
-            }
-        }
-
+        if (false == isSelected)
+        {
+            Sequence _seq = DOTween.Sequence();
+            for (int i = 0; i < visualChildren.Count; i++)
+            {
+                if (null != originalLocalX && i < originalLocalX.Length)
+                {
+                    _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i], hoverMoveDuration).SetEase(hoverMoveEase));
+                }
+            }
+            hoverTween = _seq;
+
+            bool _isUnlocked = (true == isInitialized && true == myInfo.isUnlocked);
+            Color _targetNormalShadow = _isUnlocked ? normalShadowColor : lockedNormalShadowColor;
+            Color _targetNormalBg = _isUnlocked ? normalBgColor : lockedNormalBgColor;
+            TweenColors(_targetNormalShadow, _targetNormalBg, true);
+        }
+        else
+        {
+            for (int i = 0; i < visualChildren.Count; i++)
+            {
+                if (null != originalLocalX && i < originalLocalX.Length)
+                {
+                    visualChildren[i].localPosition = new Vector3(originalLocalX[i] + hoverMoveX, visualChildren[i].localPosition.y, visualChildren[i].localPosition.z);
+                }
+            }
+        }
+
         if (null != cursorBoxUI)
         {
             RectTransform _target = null != cursorTargetTransform ? cursorTargetTransform : CachedRectTransform;
@@ -415,6 +422,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public void EvaluateHoverState()
     {
+        if (null != mainController && true == mainController.IsGamepadMode) return;
         if (null == mainController || true == mainController.IsInputBlocked)
         {
             return;
@@ -437,6 +445,11 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public void TriggerHover()
     {
+        if (null != mainController)
+        {
+            mainController.StopAllSubRegionHoverEffects();
+        }
+
         if (false == isSelected)
         {
             bool _isUnlocked = (true == isInitialized && true == myInfo.isUnlocked);
@@ -475,6 +488,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public void OnPointerExit(PointerEventData _eventData)
     {
+        if (null != mainController && true == mainController.IsGamepadMode) return;
         isPointerOver = false;
 
         if (null == mainController || true == mainController.IsInputBlocked)

@@ -398,11 +398,18 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
+        if (null != mainController && true == mainController.IsGamepadMode) return;
+
         isPointerOver = true;
 
         if (null == mainController || true == mainController.IsInputBlocked || true == mainController.IsTransitioning)
         {
             return;
+        }
+
+        if (null != mainController)
+        {
+            mainController.StopAllRegionHoverEffects();
         }
 
         Sound.PlayUI(true == myInfo.isUnlocked ? SoundID.NaviSubHover : SoundID.NaviLockHover);
@@ -412,6 +419,8 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     public void EvaluateHoverState()
     {
+        if (null != mainController && true == mainController.IsGamepadMode) return;
+
         if (null == mainController || true == mainController.IsInputBlocked || true == mainController.IsTransitioning)
         {
             return;
@@ -438,6 +447,11 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     public void TriggerHover()
     {
+        if (null != mainController)
+        {
+            mainController.StopAllRegionHoverEffects();
+        }
+
         if (false == myInfo.isUnlocked)
         {
             if (null != lockIconObj)
@@ -456,6 +470,13 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         }
 
         bool _hasNew = (null != newIndicatorObj && true == newIndicatorObj.activeSelf);
+        if (null != cursorBoxUI)
+        {
+            RectTransform target = null != cursorTargetTransform ? cursorTargetTransform : CachedRectTransform;
+            Vector2 size = useCustomCursorSize ? customCursorSize : (target.rect.size + cursorPadding);
+
+            cursorBoxUI.Show(target, size, cursorOffset, hoverCursorMotion);
+        }
         
         if (true == _hasNew)
         {
@@ -492,14 +513,6 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             }
             hoverTween = _seq;
         }
-
-        if (null != cursorBoxUI)
-        {
-            RectTransform target = null != cursorTargetTransform ? cursorTargetTransform : CachedRectTransform;
-            Vector2 size = useCustomCursorSize ? customCursorSize : (target.rect.size + cursorPadding);
-
-            cursorBoxUI.Show(target, size, cursorOffset, hoverCursorMotion);
-        }
     }
 
     private void OnHoverClearNewComplete()
@@ -512,6 +525,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     public void OnPointerExit(PointerEventData _eventData)
     {
+        if (null != mainController && true == mainController.IsGamepadMode) return;
         isPointerOver = false;
 
         if (null == mainController || true == mainController.IsInputBlocked || true == mainController.IsTransitioning)
@@ -617,10 +631,12 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     public void StopAllTreePropHoverEffects()
     {
+        TreeVisualState _targetState = (false == myInfo.isUnlocked) ? TreeVisualState.Locked : TreeVisualState.Unlocked_Idle;
         for (int i = 0; i < treeProps.Count; i++)
         {
-            if (null != treeProps[i])
+            if (null != treeProps[i] && true == treeProps[i].gameObject.activeSelf)
             {
+                treeProps[i].SetVisualState(_targetState, colorTransitionDuration);
                 treeProps[i].StopHoverEffect();
             }
         }

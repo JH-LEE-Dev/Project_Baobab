@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "unity-mcp": {
-      "command": "C:/Users/hyulb/.unity/relay/relay_win.exe",
+      "command": "C:/Users/xarek/.unity/relay/relay_win.exe",
       "args": [
         "--mcp"
       ]

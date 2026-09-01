@@ -405,7 +405,7 @@ public class UI_EscapeMenuButton : Selectable,
         if (null == cachedCanvas)
             cachedCanvas = GetComponentInParent<Canvas>();
 
-        Camera _cam = (null != cachedCanvas && cachedCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
+        Camera _cam = (null != cachedCanvas && RenderMode.ScreenSpaceOverlay != cachedCanvas.renderMode)
             ? cachedCanvas.worldCamera
             : null;
 
@@ -432,6 +432,8 @@ public class UI_EscapeMenuButton : Selectable,
     public override void OnPointerEnter(PointerEventData _eventData)
     {
         base.OnPointerEnter(_eventData);
+        if (null != inputManager && true == inputManager.IsGamepadMode) return;
+
         isHovered = true;
         isPointerHovered = true;
         if (false == isInteractable || true == isAppearing) return;
@@ -442,6 +444,8 @@ public class UI_EscapeMenuButton : Selectable,
     public override void OnPointerExit(PointerEventData _eventData)
     {
         base.OnPointerExit(_eventData);
+        if (null != inputManager && true == inputManager.IsGamepadMode) return;
+
         isHovered = false;
         isPointerHovered = false;
         if (false == isInteractable || true == isAppearing) return;
@@ -452,6 +456,7 @@ public class UI_EscapeMenuButton : Selectable,
     public bool IsMouseOver()
     {
         if (false == isInteractable || false == gameObject.activeInHierarchy || true == isAppearing) return false;
+        if (null != inputManager && true == inputManager.IsGamepadMode) return false;
         if (true == isPointerHovered) return true;
 
         RectTransform _rect = null != raycastImage ? raycastImage.rectTransform : RectTransform;

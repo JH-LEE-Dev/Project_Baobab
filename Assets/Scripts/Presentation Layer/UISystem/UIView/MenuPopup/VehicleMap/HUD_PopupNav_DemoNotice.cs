@@ -62,6 +62,11 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     private HUD_PopupNav_Main mainController;
     private LocalizationManager localizationManager;
     private UIDepthController depthController;
+    private ICursorBoxUI cursorBoxUI;
+    private InputManager inputManager;
+    private GameObject previousSelectedObject;
+    private Action<EInputDeviceType> cachedOnInputDeviceChanged;
+
     private bool isDemoNoticeShowing = false;
     private bool isHiding = false;
     private Tween demoNoticeTween;
@@ -74,23 +79,82 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     public bool IsActive => isDemoNoticeShowing;
     public void Hide() => HideDemoNoticeOverlay();
 
-    public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager, UIDepthController _depthController = null)
+    public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager, UIDepthController _depthController = null, ICursorBoxUI _cursorBoxUI = null, InputManager _inputManager = null)
     {
         mainController = _mainController;
         localizationManager = _localizationManager;
         depthController = _depthController;
+        cursorBoxUI = _cursorBoxUI;
+        inputManager = _inputManager;
+
+        if (null != steamWishlistBtn)
+        {
+            steamWishlistBtn.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+        if (null != discordBtn)
+        {
+            discordBtn.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+
+        if (null != discordBtn && null != steamWishlistBtn)
+        {
+            Navigation _discordNav = new Navigation();
+            _discordNav.mode = Navigation.Mode.Explicit;
+            _discordNav.selectOnRight = steamWishlistBtn;
+            _discordNav.selectOnLeft = steamWishlistBtn;
+            discordBtn.navigation = _discordNav;
+
+            Navigation _steamNav = new Navigation();
+            _steamNav.mode = Navigation.Mode.Explicit;
+            _steamNav.selectOnLeft = discordBtn;
+            _steamNav.selectOnRight = discordBtn;
+            steamWishlistBtn.navigation = _steamNav;
+        }
+
+        if (null == cachedOnInputDeviceChanged) cachedOnInputDeviceChanged = OnInputDeviceChanged;
+        if (null != inputManager && null != inputManager.inputReader)
+        {
+            inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+            inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
+        }
 
         ResetNotice();
     }
 
+    private void OnInputDeviceChanged(EInputDeviceType _device)
+    {
+        if (false == isDemoNoticeShowing) return;
 
-
+        if (EInputDeviceType.Gamepad == _device)
+        {
+            if (null != discordBtn && null != EventSystem.current)
+            {
+                EventSystem.current.SetSelectedGameObject(discordBtn.gameObject);
+            }
+        }
+        else
+        {
+            if (null != cursorBoxUI)
+            {
+                cursorBoxUI.HideImmediately();
+            }
+            if (null != EventSystem.current)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+            }
+        }
+    }
 
     public void ShowDemoNoticeOverlay(MapType _restrictedMapType = MapType.None)
     {
         if (null == demoNoticeOverlay || true == isDemoNoticeShowing || true == isHiding)
         {
             return;
+        }
+
+        if (null != EventSystem.current)
+        {
+            previousSelectedObject = EventSystem.current.currentSelectedGameObject;
         }
 
         isDemoNoticeShowing = true;
@@ -176,6 +240,14 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
         {
             demoDescAnimator.PlayRevealBounce();
         }
+
+        if (null != inputManager && true == inputManager.IsGamepadMode)
+        {
+            if (null != discordBtn && null != EventSystem.current)
+            {
+                EventSystem.current.SetSelectedGameObject(discordBtn.gameObject);
+            }
+        }
     }
 
     public void HideDemoNoticeOverlay()
@@ -234,6 +306,15 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
 
     private void HandleHideAnimationComplete()
     {
+        if (null != steamWishlistBtn)
+        {
+            steamWishlistBtn.HideCursor();
+        }
+        if (null != discordBtn)
+        {
+            discordBtn.HideCursor();
+        }
+
         if (null != demoDimCanvasGroup)
         {
             demoDimCanvasGroup.blocksRaycasts = false;
@@ -246,6 +327,12 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
         isHiding = false;
 
         depthController?.UnregisterView(this);
+
+        if (null != previousSelectedObject && true == previousSelectedObject.activeInHierarchy && null != EventSystem.current)
+        {
+            EventSystem.current.SetSelectedGameObject(previousSelectedObject);
+            previousSelectedObject = null;
+        }
 
         // 메인 컨트롤러에 닫힘 알림 전달
         if (null != mainController)
@@ -268,6 +355,15 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
         KillTweens();
         SetContentAlpha(0f);
 
+        if (null != steamWishlistBtn)
+        {
+            steamWishlistBtn.HideCursor();
+        }
+        if (null != discordBtn)
+        {
+            discordBtn.HideCursor();
+        }
+
         if (null != demoNoticeOverlay)
         {
             demoNoticeOverlay.SetActive(false);
@@ -278,6 +374,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
         }
         isDemoNoticeShowing = false;
         isHiding = false;
+        previousSelectedObject = null;
 
         // 네비게이션 팝업이 애니메이션 없이(다른 경로로) 강제로 닫힐 때도 호출되므로, 뎁스 스택에
         // 좀비 항목으로 남지 않도록 여기서도 해제한다.
@@ -295,6 +392,11 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
 
     private void OnDestroy()
     {
+        if (null != inputManager && null != inputManager.inputReader && null != cachedOnInputDeviceChanged)
+        {
+            inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+        }
+
         depthController?.UnregisterView(this);
         KillTweens();
     }

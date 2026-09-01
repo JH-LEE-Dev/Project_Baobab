@@ -151,7 +151,7 @@ public class UI_OptionSelector : Selectable, IMoveHandler
     public void ShowCursor()
     {
         if (null == cursorBoxUI) return;
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
         RectTransform _targetRect = transform as RectTransform;
         if (null != _targetRect)
@@ -199,14 +199,11 @@ public class UI_OptionSelector : Selectable, IMoveHandler
     public override void OnSelect(BaseEventData eventData)
     {
         base.OnSelect(eventData);
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
-        if (null != inputManager && true == inputManager.IsGamepadMode)
-        {
-            ShowCursor();
-            ApplyFocusVisual(true);
-            Sound.PlayUI(SoundID.MainMenuDot01);
-        }
+        ShowCursor();
+        ApplyFocusVisual(true);
+        Sound.PlayUI(SoundID.MainMenuDot01);
 
         if (null == customScroll)
         {
@@ -221,7 +218,7 @@ public class UI_OptionSelector : Selectable, IMoveHandler
     public override void OnDeselect(BaseEventData eventData)
     {
         base.OnDeselect(eventData);
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
         ApplyFocusVisual(false);
         HideCursor();
