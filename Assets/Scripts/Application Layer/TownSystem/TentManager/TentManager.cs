@@ -71,6 +71,12 @@ public class TentManager : MonoBehaviour
         tent.SyncInteractStateOnExternalClose();
     }
 
+    // 튜토리얼 "도끼를 강화하세요" 안내가 뜨기 전까지 특성 창을 열지 못하게 잠근다.
+    public void SetTutorialLock(bool _bLocked)
+    {
+        tent?.SetTutorialLock(_bLocked);
+    }
+
     public void DisableTent()
     {
         tent.gameObject.SetActive(false);

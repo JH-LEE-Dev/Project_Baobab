@@ -300,6 +300,10 @@ public class TownProductionManager : MonoBehaviour
 
     private void CameraDownIsEnd()
     {
+        // 주의: 여기 bRetryGame은 재도전 하강을 걸러내지 못한다. TownSystem.DungeonStarted가
+        // DungeonStartSignal 시점에 이 플래그를 지우는데, 그 하강 자체는 같은 메서드의 더 뒤쪽
+        // (InDungeonSystem.OnTreesReady → inDungeonProductionManager.RollbackCameraMove)에서
+        // 시작되기 때문이다. 실제 차단은 TownSystem.CameraDownIsEnd의 bRetryArrivalOwnedByDungeon이 한다.
         if (bCurrentlyTownScene == true || bRetryGame == true)
             return;
 

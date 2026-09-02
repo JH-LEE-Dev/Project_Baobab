@@ -10,9 +10,13 @@ public class LootPillarManager : MonoBehaviour
     // lootPoints와 1:1 대응 - 정렬 기준으로 쓸 실제 지면 접점(Pivot). 인덱스가 어긋나지 않도록 항상 같은 순서로 채운다.
     [SerializeField] private Transform[] lootPointPivots;
 
-    // 마을에 전시할 고정 순서 - LootPoint_01부터 차례로 채운다.
-    // TownTileManager.ApplyLootPillarColliderState()도 LootPhillarColliderTilemap의 타일(좌상단부터)을
-    // 같은 순서로 대응시키므로, 두 곳이 어긋나지 않도록 이 배열을 공유한다.
+    // 마을에 전시할 고정 순서 - 아래 SpawnAcquiredPillars()가 획득한 것만 LootPoint_01부터
+    // "빈칸 없이 앞에서부터" 채운다(미획득은 건너뛰되 포인트 인덱스는 올리지 않는다).
+    //
+    // TownTileManager.ApplyLootPillarColliderState()도 같은 순서 + 같은 압축 규칙으로 콜라이더 타일을
+    // 채운다. 이 배열을 공유하는 것만으로는 부족하다 - 한쪽만 압축하면 획득 집합이 이 배열의
+    // 접두사가 아닐 때 그림과 콜라이더가 어긋난다(실제로 그런 버그가 있었다). 한쪽 채우는 방식을
+    // 바꾸면 반드시 다른 쪽도 같이 바꿀 것.
     public static readonly LootType[] DisplayOrder =
     {
         LootType.LostAndFoundBox,

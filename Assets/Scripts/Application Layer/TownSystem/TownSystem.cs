@@ -39,9 +39,31 @@ public class TownSystem : MonoBehaviour
     private bool bGoingToMainMenu = false;
     private bool bTownSystemStarted = false;
 
+    // 메인메뉴 이탈이 요청됐는지를 "씬과 무관하게" 기록한다. bGoingToMainMenu는 마을에 있을 때만
+    // 세워지는데(아래 GoToMainMenuRequested의 씬 가드), 정작 마을→던전 입장 연출 코루틴은 던전 씬에서
+    // 도는 것이 TownSystem 쪽 사본이라 그 플래그로는 이탈을 감지할 수 없다. 그래서 가드 전용으로
+    // 하나 더 둔다. 이탈 요청은 GameplayUICoordinator.GoToMainMenu()가 ESC 창을 즉시 닫고 곧바로
+    // 발행하는 취소 불가 지점이므로, 한 번 서면 되돌릴 필요가 없다(이탈이 끝나면 GameInstaller가
+    // 통째로 파괴되면서 이 인스턴스도 함께 사라진다).
+    private bool bMainMenuExitRequested = false;
+
+    // 이번 던전 하강의 입장 연출을 InDungeonSystem이 맡는지(= 재도전으로 들어가는지). 두 연출 매니저가
+    // 같은 SkyProductionRollbackEndEvent를 구독하므로, 재도전에서는 양쪽이 모두 입장 연출을 돌려
+    // HUD 상승과 BGM 재생이 두 번씩 일어났다. TownProductionManager.CameraDownIsEnd의 bRetryGame
+    // 가드가 이걸 막으라고 있었지만, 아래 DungeonStarted가 그 플래그를 하강이 시작되기도 전에
+    // 지워버려 무력했다(DungeonStartSignal 발행 → 여기서 리셋 → 같은 메서드 뒤쪽에서 하강 시작).
+    // DungeonStarted에서 매번 무조건 대입하므로 값이 눌러붙지 않는다.
+    private bool bRetryArrivalOwnedByDungeon = false;
+
     // 튜토리얼 "도끼를 강화하세요"(UpgradeAxe)가 완료되기 전까지 마을의 OffroadVehicle 상호작용을 잠가둔다.
     // 튜토리얼 첫 스텝이 시작되면 true가 되고, UpgradeAxe가 완료되면 false로 풀린다.
     private bool bTutorialAxeUpgradePending = false;
+
+    // 튜토리얼 "도끼를 강화하세요"(UpgradeAxe) 안내가 화면에 뜨기 전까지 집(Tent)의 특성 창을 잠가둔다.
+    // 차량 잠금(bTutorialAxeUpgradePending)이 UpgradeAxe "완료"에 풀리는 것과 달리 이쪽은 UpgradeAxe
+    // "시작"에 풀린다 - 정산금을 받고 안내 UI가 사라지기 전 빈틈에 도끼를 미리 강화해버리면 남은 돈이
+    // 재강화 비용에 못 미쳐 그 퀘스트를 완료할 방법이 사라지고, 차량도 잠긴 채라 마을에 갇히기 때문이다.
+    private bool bTutorialTentLocked = false;
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
     IInventory _characterInventory, OffroadContainer _offroadContainer, SkyCameraProductionManager _skyCameraProductionManager)
@@ -104,6 +126,9 @@ public class TownSystem : MonoBehaviour
             townObjectManager.SetCanTravel(false);
         logProcessingManager.EnableShopObj();
         tentManager.EnableTent();
+
+        // 텐트도 차량과 같은 이유로, 마을에 다시 들어와 새로 켜질 때마다 튜토리얼 잠금을 다시 반영한다.
+        tentManager.SetTutorialLock(bTutorialTentLocked);
 
         if (townProductionManager.offroadVehicleObj == null)
         {
@@ -302,10 +327,22 @@ public class TownSystem : MonoBehaviour
         {
             // 이미 UpgradeAxe 완료 시점에 풀렸지만, 순서가 어긋나더라도 확실히 열려 있도록 한 번 더 보장한다.
             UnlockTownVehicleForTutorial();
+            UnlockTentForTutorial();
             return;
         }
 
         bTutorialAxeUpgradePending = true;
+
+        // "도끼를 강화하세요" 안내가 화면에 뜨는 바로 그 시점에 특성 창을 열어준다. 이보다 이르면
+        // (정산 퀘스트 완료 ~ 이 안내 등장 사이의 빈틈에) 도끼를 미리 강화해버릴 수 있는데, 그러면
+        // 남은 돈이 재강화 비용에 못 미쳐 이 퀘스트를 완료할 방법이 사라진다.
+        if (_signal.step == TutorialStep.UpgradeAxe)
+        {
+            UnlockTentForTutorial();
+            return;
+        }
+
+        LockTentForTutorial();
     }
 
     // "도끼를 강화하세요"가 완료되면 그 즉시 잠금을 푼다. 안내 UI가 사라지는 연출이 끝나기를 기다렸다가
@@ -323,6 +360,18 @@ public class TownSystem : MonoBehaviour
     {
         bTutorialAxeUpgradePending = false;
         townObjectManager.SetCanTravel(true);
+    }
+
+    private void LockTentForTutorial()
+    {
+        bTutorialTentLocked = true;
+        tentManager.SetTutorialLock(true);
+    }
+
+    private void UnlockTentForTutorial()
+    {
+        bTutorialTentLocked = false;
+        tentManager.SetTutorialLock(false);
     }
 
     private void PortalActivated()
@@ -494,6 +543,11 @@ public class TownSystem : MonoBehaviour
 
     private void DungeonStarted(DungeonStartSignal _dungeonStartSignal)
     {
+        // 이번 하강의 입장 연출을 누가 맡는지 여기서 확정한다. 재도전이면 InDungeonSystem이 맡으므로
+        // 아래에서 bRetryGame을 지운 뒤에도 CameraDownIsEnd가 그 사실을 알 수 있어야 한다.
+        // (매 진입마다 무조건 대입하므로 하강이 생략되는 경로가 있어도 값이 눌러붙지 않는다)
+        bRetryArrivalOwnedByDungeon = bRetryGame;
+
         // Town 전용 타일맵 오버라이드를 풀고 던전의 TileMapGenerator로 되돌린다.
         character?.SetTilemapDataProvider(environmentProvider.tilemapDataProvider);
 
@@ -562,6 +616,18 @@ public class TownSystem : MonoBehaviour
         if (bCurrentlyTownScene == true)
             return;
 
+        // 재도전으로 들어가는 하강은 InDungeonSystem이 입장 연출을 맡는다(InDungeonSystem.CameraDownIsEnd가
+        // 자기 bRetryGame을 보고 통과시킨다). 여기서 한 번 더 돌면 HUD 상승과 캐릭터 활성화(→ BGM 재생)가
+        // 두 번씩 일어나므로, 이번 하강 몫을 소비하고 물러난다. 조작 잠금 해제는 재도전 경로에서도
+        // InDungeonProductionManager.CameraDownIsEnd(PauseMove/PauseESCKey)와 InDungeonSystem.CameraDownIsEnd
+        // (EnableCharacterAimSignal)가 이미 담당한다. PauseInventoryKey는 마을 차량 내비(HUD_PopupNav_Main)를
+        // 거칠 때만 잠기므로 재도전 경로에는 애초에 잠금이 없다.
+        if (bRetryArrivalOwnedByDungeon == true)
+        {
+            bRetryArrivalOwnedByDungeon = false;
+            return;
+        }
+
         // MainMenu → Dungeon 튜토리얼 최초 진입: 조작 해제/캐릭터 활성화(ActivateCharacterSignal)/HUD 복귀는
         // 별도 트리거로 원하는 시점에 실행할 예정이므로 카메라 하강 완료 시점엔 대신 스튜디오 로고 연출만 예약한다.
         // 단, BGM은 다른 경로와 동일하게 카메라 하강이 끝나는 이 시점부터 흐르게 한다.
@@ -614,11 +680,19 @@ public class TownSystem : MonoBehaviour
 
         // 대기하는 0.7초 사이에 ESC로 메인메뉴 이탈이 요청됐다면, 이미 내려가고 있는 HUD를
         // 다시 올리면 안 되므로 여기서 멈춘다(HUDDown 직후 HUDUp이 뒤따라오던 레이스 컨디션 방지).
-        if (bGoingToMainMenu == true)
+        // bGoingToMainMenu가 아니라 bMainMenuExitRequested를 보는 이유는 그 필드 주석 참조 -
+        // 이 코루틴은 던전 씬에서도 도는데, 그때 bGoingToMainMenu는 씬 가드에 막혀 서지 않는다.
+        if (bMainMenuExitRequested == true)
             yield break;
 
         signalHub.Publish(new PopupUIUpSignal());
 
+        // 이 코루틴은 CompleteDungeonEntry()에서만 시작되고 그 시점 bCurrentlyTownScene은 반드시
+        // false이므로, 여기 도달했다는 것은 곧 "던전 입장"이라는 뜻이다. 반대편(던전 → 마을 귀환)은
+        // InDungeonSystem.PopupUIGoUPCoroutine이 담당한다 - 예전엔 이 아래에 그 경로용 else 분기가
+        // 대칭으로 있었지만 도달할 수 없었고, 심지어 살아 있는 원본과 내용까지 갈라져 있어 지웠다.
+        // 조건문 자체는 남겨둔다: ActivateCharacterSignal은 던전 입장 전용(attackComponent 활성화 포함)이라,
+        // 혹시 마을에서 이 코루틴이 돌게 되는 경로가 생기더라도 그때 발행되면 안 된다.
         if (bCurrentlyTownScene == false)
         {
             // AttackIndicator(공격 사거리 인디케이터)는 캐릭터가 움직일 수 있게 되는 시점이 아니라
@@ -627,21 +701,22 @@ public class TownSystem : MonoBehaviour
 
             StartCoroutine(StaminaDecreaseCoroutine());
         }
-        else
-        {
-            offroadContainer.col.enabled = true;
-
-            if (townObjectManager.offroadVehicle != null)
-                townObjectManager.offroadVehicle.col.enabled = true;
-
-            inputManager.PauseInteractKey(false);
-            signalHub.Publish(new ReturnToTownCameraDownEndedSignal());
-        }
     }
 
     private IEnumerator StaminaDecreaseCoroutine()
     {
         yield return new WaitForSeconds(0.7f);
+
+        // 이 코루틴이 시작되는 시점(PopupUIGoUPCoroutine)엔 이미 ESC가 풀려 있으므로, 대기하는
+        // 0.7초 사이에 ESC → 메인메뉴 이탈이 요청될 수 있다. 게다가 ESC 메뉴는 Time.timeScale = 0이라
+        // 이 대기가 멈춘 채로 있다가 이탈이 확정되는 순간(GoToMainMenu가 timeScale을 되돌린다)
+        // 되살아난다. 그대로 두면 카메라 상승 연출 도중에 피로도 감소가 시작되고 컨테이너/차량
+        // 콜라이더까지 되살아나 상호작용 팝업이 뜬다. InDungeonSystem 쪽 같은 이름의 코루틴에는
+        // 이미 들어 있던 가드인데, 마을→던전 입장이라는 가장 흔한 경로에서 실제로 도는 것은
+        // 이쪽 사본이라 여기가 비어 있으면 아무 소용이 없다.
+        if (bMainMenuExitRequested == true)
+            yield break;
+
         signalHub.Publish(new StartDecreaseStaminaSignal());
 
         offroadContainer.col.enabled = true;
@@ -683,7 +758,9 @@ public class TownSystem : MonoBehaviour
 
         // 대기하는 0.7초 사이에 ESC로 메인메뉴 이탈이 요청됐다면, 이미 내려가고 있는 HUD를
         // 다시 올리면 안 되므로 여기서 멈춘다(HUDDown 직후 HUDUp이 뒤따라오던 레이스 컨디션 방지).
-        if (bGoingToMainMenu == true)
+        // 이쪽은 마을 씬에서만 도는 인트로 전용이라 bGoingToMainMenu로도 충분하지만, 이탈 가드는
+        // 한 가지 플래그로만 판단하도록 위 두 코루틴과 통일한다(bMainMenuExitRequested가 상위 집합이다).
+        if (bMainMenuExitRequested == true)
             yield break;
 
         signalHub.Publish(new PopupUIUpSignal());
@@ -691,6 +768,11 @@ public class TownSystem : MonoBehaviour
 
     private void GoToMainMenuRequested(GoToMainMenuRequestedSignal _signal)
     {
+        // 이탈 요청 자체는 씬과 무관하게 먼저 기록한다. 아래 씬 가드보다 반드시 앞이어야 한다 -
+        // 마을→던전 입장 연출 코루틴은 던전 씬에서 도는 TownSystem 쪽 사본이라, 그 구간의 이탈은
+        // 여기서 씬 가드에 걸려 되돌아간다. 그 코루틴들이 볼 수 있는 유일한 신호가 이 플래그다.
+        bMainMenuExitRequested = true;
+
         // 던전에 있을 때는 InDungeonSystem이 처리하고, 여기선 Town이 실제로 활성화된 상태일 때만 처리한다.
         if (bCurrentlyTownScene == false || bGoingToMainMenu == true)
             return;
