@@ -50,9 +50,9 @@ public class UI_InitialSetupPopup : MonoBehaviour
     private Sequence panelTransitionTween;
     private bool isConsentPhase = false;
     private bool lastConsentResult = true;
+    private bool isConsentToggleHovered = false;
     private UI_PanelSelectButton lastFocusedLanguageButton;
     private Selectable lastFocusedConsentSelectable;
-    private Vector2 lastMousePosition = Vector2.zero;
     private Vector2 originalWindowPos = Vector2.zero;
     private bool isToggleCursorShowing = false;
 
@@ -272,12 +272,89 @@ public class UI_InitialSetupPopup : MonoBehaviour
             consentToggle.isOn = true;
             consentToggle.onValueChanged.RemoveListener(HandleConsentToggleValueChanged);
             consentToggle.onValueChanged.AddListener(HandleConsentToggleValueChanged);
+
+            BindConsentToggleHoverTriggers(consentToggle.gameObject);
+        }
+
+        if (null != consentToggleLabel)
+        {
+            consentToggleLabel.raycastTarget = true;
+            BindConsentToggleHoverTriggers(consentToggleLabel.gameObject, true);
         }
 
         if (null != confirmButton)
         {
             confirmButton.Initialize(inputManager, cursorBoxUI, HandleConfirmButtonClicked);
         }
+    }
+
+    private void BindConsentToggleHoverTriggers(GameObject _targetGo, bool _isLabel = false)
+    {
+        if (null == _targetGo) return;
+
+        EventTrigger _trigger = _targetGo.GetComponent<EventTrigger>();
+        if (null == _trigger)
+        {
+            _trigger = _targetGo.AddComponent<EventTrigger>();
+        }
+
+        AddTriggerEntry(_trigger, EventTriggerType.PointerEnter, HandleConsentTogglePointerEnter);
+        AddTriggerEntry(_trigger, EventTriggerType.PointerExit, HandleConsentTogglePointerExit);
+
+        if (true == _isLabel)
+        {
+            AddTriggerEntry(_trigger, EventTriggerType.PointerClick, HandleConsentToggleLabelClicked);
+        }
+        else
+        {
+            AddTriggerEntry(_trigger, EventTriggerType.Select, HandleConsentToggleSelected);
+            AddTriggerEntry(_trigger, EventTriggerType.Deselect, HandleConsentToggleDeselected);
+        }
+    }
+
+    private void AddTriggerEntry(EventTrigger _trigger, EventTriggerType _type, UnityEngine.Events.UnityAction<BaseEventData> _callback)
+    {
+        if (null == _trigger || null == _callback) return;
+
+        EventTrigger.Entry _entry = new EventTrigger.Entry();
+        _entry.eventID = _type;
+        _entry.callback.AddListener(_callback);
+        _trigger.triggers.Add(_entry);
+    }
+
+    private void HandleConsentToggleLabelClicked(BaseEventData _eventData)
+    {
+        if (null != inputManager && true == inputManager.IsGamepadMode) return;
+        if (null != consentToggle)
+        {
+            consentToggle.isOn = !consentToggle.isOn;
+        }
+    }
+
+    private void HandleConsentTogglePointerEnter(BaseEventData _eventData)
+    {
+        isConsentToggleHovered = true;
+        if (null != inputManager && true == inputManager.IsGamepadMode) return;
+        ShowConsentToggleCursor();
+    }
+
+    private void HandleConsentTogglePointerExit(BaseEventData _eventData)
+    {
+        isConsentToggleHovered = false;
+        if (null != inputManager && true == inputManager.IsGamepadMode) return;
+        HideConsentToggleCursor();
+    }
+
+    private void HandleConsentToggleSelected(BaseEventData _eventData)
+    {
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        ShowConsentToggleCursor();
+    }
+
+    private void HandleConsentToggleDeselected(BaseEventData _eventData)
+    {
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        HideConsentToggleCursor();
     }
 
     private void HandleConsentToggleValueChanged(bool _isOn)
@@ -290,6 +367,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
         onCompletedCallback = _onCompleted;
         isConsentPhase = false;
         gameObject.SetActive(true);
+        Sound.PlayUI(SoundID.ResultUIOpen);
 
         if (null != inputManager)
         {
@@ -445,7 +523,6 @@ public class UI_InitialSetupPopup : MonoBehaviour
     {
         if (true == isToggleCursorShowing) return;
         if (null == cursorBoxUI || null == consentToggle) return;
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
 
         RectTransform _rect = consentToggle.GetComponent<RectTransform>();
         if (null == _rect) return;
@@ -471,6 +548,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
             cursorBoxUI.Hide(_rect);
         }
     }
+
 
     private void HandleLanguageButtonClicked(UI_PanelSelectButton _btn)
     {
@@ -560,7 +638,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
             cursorBoxUI.Hide();
         }
 
-        Sound.PlayUI(SoundID.OptionClick);
+        Sound.PlayUI(SoundID.ResultUIClose);
 
         Sequence _seq = DOTween.Sequence();
         if (null != rootCanvasGroup)
@@ -643,6 +721,8 @@ public class UI_InitialSetupPopup : MonoBehaviour
     private void SnapConsentTogglePixelPerfect()
     {
         if (null == consentToggle || null == consentToggleLabel) return;
+
+        consentToggleLabel.raycastTarget = true;
 
         RectTransform _toggleRect = consentToggle.GetComponent<RectTransform>();
         RectTransform _labelRect = consentToggleLabel.rectTransform;
@@ -766,8 +846,6 @@ public class UI_InitialSetupPopup : MonoBehaviour
             {
                 cursorBoxUI.Hide();
             }
-
-            EvaluateMouseHoverStates(true);
         }
     }
 
@@ -800,146 +878,6 @@ public class UI_InitialSetupPopup : MonoBehaviour
         }
 
         HideConsentToggleCursor();
-    }
-
-    private void Update()
-    {
-        if (false == IsActive || null == inputManager) return;
-
-        // 게임패드 조작 실시간 감지 (D-Pad, LeftStick, ButtonSouth)
-        Gamepad _pad = Gamepad.current;
-        bool _gamepadActive = false;
-        if (null != _pad)
-        {
-            if (true == _pad.dpad.up.wasPressedThisFrame ||
-                true == _pad.dpad.down.wasPressedThisFrame ||
-                true == _pad.dpad.left.wasPressedThisFrame ||
-                true == _pad.dpad.right.wasPressedThisFrame ||
-                true == _pad.buttonSouth.wasPressedThisFrame ||
-                _pad.leftStick.ReadValue().sqrMagnitude >= 0.25f)
-            {
-                _gamepadActive = true;
-            }
-        }
-
-        if (true == _gamepadActive)
-        {
-            if (false == inputManager.IsGamepadMode)
-            {
-                inputManager.inputReader?.ForceInputDevice(EInputDeviceType.Gamepad);
-            }
-
-            if (null != EventSystem.current && null == EventSystem.current.currentSelectedGameObject)
-            {
-                if (false == isConsentPhase)
-                {
-                    FocusLanguageButton(lastFocusedLanguageButton ?? GetFirstLanguageButton());
-                }
-                else
-                {
-                    FocusConsentItem(lastFocusedConsentSelectable ?? (Selectable)confirmButton ?? (Selectable)consentToggle);
-                }
-            }
-        }
-
-        // 2단계 약관 패널에서 게임패드 포커스 커서박스 동기화
-        if (true == isConsentPhase)
-        {
-            if (null != EventSystem.current)
-            {
-                if (null != consentToggle && EventSystem.current.currentSelectedGameObject == consentToggle.gameObject)
-                {
-                    if (null != inputManager && true == inputManager.IsGamepadMode)
-                    {
-                        ShowConsentToggleCursor();
-                    }
-                }
-                else
-                {
-                    HideConsentToggleCursor();
-                }
-            }
-        }
-
-        // 마우스 실제 이동 여부 감지 (패드 포커스 보호)
-        Vector2 _curMousePos = (null != Mouse.current) ? Mouse.current.position.ReadValue() : (Vector2)Input.mousePosition;
-        bool _mouseMoved = Vector2.Distance(_curMousePos, lastMousePosition) > 1.0f;
-        if (true == _mouseMoved)
-        {
-            lastMousePosition = _curMousePos;
-        }
-
-        if (false == inputManager.IsGamepadMode)
-        {
-            if (true == _mouseMoved)
-            {
-                EvaluateMouseHoverStates(false);
-            }
-        }
-        else
-        {
-            // 패드 모드에서 포커스가 유실되어 null이 되는 먹통 상태 방어
-            if (null != EventSystem.current && null == EventSystem.current.currentSelectedGameObject)
-            {
-                if (false == isConsentPhase)
-                {
-                    FocusLanguageButton(lastFocusedLanguageButton ?? GetFirstLanguageButton());
-                }
-                else
-                {
-                    FocusConsentItem(lastFocusedConsentSelectable ?? (Selectable)confirmButton ?? (Selectable)consentToggle);
-                }
-            }
-        }
-    }
-
-    private void EvaluateMouseHoverStates(bool _forceCheckSound)
-    {
-        if (false == isConsentPhase)
-        {
-            if (null == languageButtons) return;
-
-            for (int i = 0; i < languageButtons.Length; i++)
-            {
-                UI_PanelSelectButton _btn = languageButtons[i];
-                if (null == _btn || false == _btn.gameObject.activeInHierarchy) continue;
-
-                if (true == _btn.IsMouseOver())
-                {
-                    if (false == _btn.IsSelectedState && false == _btn.IsHovered)
-                    {
-                        _btn.ForceHover(true);
-                    }
-                }
-                else
-                {
-                    if (false == _btn.IsSelectedState && true == _btn.IsHovered)
-                    {
-                        _btn.ForceUnhover();
-                    }
-                }
-            }
-        }
-        else
-        {
-            if (null != confirmButton && true == confirmButton.gameObject.activeInHierarchy)
-            {
-                if (true == confirmButton.IsMouseOver())
-                {
-                    if (false == confirmButton.IsHovered)
-                    {
-                        confirmButton.ForceHover();
-                    }
-                }
-                else
-                {
-                    if (true == confirmButton.IsHovered)
-                    {
-                        confirmButton.ForceUnhover();
-                    }
-                }
-            }
-        }
     }
 
     private void KillTransition()

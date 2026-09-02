@@ -332,7 +332,7 @@ public class UIView_MainMenu : UIView
             splashScreenUI.gameObject.SetActive(false);
         }
 
-        if (false == DataCollectionConsentManager.IsInitialSetupCompleted && null != initialSetupPopup && true == initialSetupPopup.IsActive)
+        if (null != initialSetupPopup && true == initialSetupPopup.IsActive)
         {
             return;
         }

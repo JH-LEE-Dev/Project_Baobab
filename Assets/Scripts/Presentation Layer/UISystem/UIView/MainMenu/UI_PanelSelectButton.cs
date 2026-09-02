@@ -153,6 +153,7 @@ public class UI_PanelSelectButton : Selectable,
         isPointerHovered = true;
         Sound.PlayUI(SoundID.MainMenuDot01);
         ApplyVisualState(true);
+        ShowCursor();
     }
 
     public override void OnPointerExit(PointerEventData _eventData)
@@ -163,6 +164,7 @@ public class UI_PanelSelectButton : Selectable,
         isHovered = false;
         isPointerHovered = false;
         ApplyVisualState(true);
+        HideCursor();
     }
 
     public override void OnSelect(BaseEventData _eventData)
@@ -286,7 +288,6 @@ public class UI_PanelSelectButton : Selectable,
     private void ShowCursor()
     {
         if (null == cursorBoxUI) return;
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
 
         RectTransform _target = (null != cursorTargetTransform) ? cursorTargetTransform : CachedRectTransform;
         if (null == _target) return;
