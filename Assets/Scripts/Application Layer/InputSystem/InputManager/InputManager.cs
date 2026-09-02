@@ -288,6 +288,9 @@ public class InputManager : MonoBehaviour
     /// <summary>지금 입력이 게임플레이로 가는지 UI로 가는지입니다.</summary>
     public EInputMode CurrentInputMode => null != inputReader ? inputReader.CurrentInputMode : EInputMode.Gameplay;
 
+    /// <summary>현재 리바인딩된 상호작용 키(Interaction Action)가 이번 프레임에 눌렸는지 여부입니다.</summary>
+    public bool WasInteractionPressedThisFrame => null != inputReader && true == inputReader.WasInteractionPressedThisFrame;
+
     /// <summary>팝업·메뉴를 열 때 UI로, 닫을 때 Gameplay로 되돌리세요.</summary>
     public void SetInputMode(EInputMode _mode)
     {

@@ -466,38 +466,16 @@ public class UI_MainMenu : MonoBehaviour
                 EventSystem.current.SetSelectedGameObject(null);
             }
 
-            EvaluateMouseHoverStates(true);
-        }
-    }
-
-    private void Update()
-    {
-        if (null != viewCtx && null != viewCtx.inputManager && false == viewCtx.inputManager.IsGamepadMode)
-        {
-            EvaluateMouseHoverStates(false);
-        }
-    }
-
-    private void EvaluateMouseHoverStates(bool _forceCheckSound)
-    {
-        if (null == buttonsInOrder) return;
-        for (int i = 0; buttonsInOrder.Length > i; i++)
-        {
-            UI_MainMenuButton _btn = buttonsInOrder[i];
-            if (null == _btn || false == _btn.gameObject.activeInHierarchy) continue;
-
-            if (true == _btn.IsMouseOver())
+            if (null != discordButton)
             {
-                if (false == _btn.IsHovered)
-                {
-                    _btn.ForceHover(true);
-                }
+                discordButton.ForceUnhover();
             }
-            else
+
+            if (null != buttonsInOrder)
             {
-                if (true == _btn.IsHovered)
+                for (int i = 0; buttonsInOrder.Length > i; i++)
                 {
-                    _btn.ForceUnhover();
+                    if (null != buttonsInOrder[i]) buttonsInOrder[i].ForceUnhover();
                 }
             }
         }
@@ -549,6 +527,19 @@ public class UI_MainMenu : MonoBehaviour
             if (ShouldConfirmNewGame())
             {
                 isNewGameConfirmationOpen = true;
+
+                if (null != buttonsInOrder)
+                {
+                    for (int i = 0; buttonsInOrder.Length > i; i++)
+                    {
+                        if (null != buttonsInOrder[i]) buttonsInOrder[i].ForceUnhover();
+                    }
+                }
+                if (null != discordButton)
+                {
+                    discordButton.ForceUnhover();
+                }
+
                 string _warnMsg = viewCtx.localizationManager.GetText("NewGameWarning");
                 warningPopup.ShowWarning(
                     _warnMsg,
@@ -608,7 +599,14 @@ public class UI_MainMenu : MonoBehaviour
             Sound.PlayUI(SoundID.MainClick);
         }
 
-        // 팝업 닫힘 (특별한 동작 없음)
+        if (null != viewCtx && null != viewCtx.inputManager && true == viewCtx.inputManager.IsGamepadMode)
+        {
+            if (null != newGameButton && null != EventSystem.current)
+            {
+                EventSystem.current.SetSelectedGameObject(newGameButton.gameObject);
+                newGameButton.ForceHover();
+            }
+        }
     }
     
     private void OnLoadGameClicked()

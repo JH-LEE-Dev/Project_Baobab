@@ -1248,9 +1248,13 @@ public class HUD_PopupNav_Main : MonoBehaviour
         }
 
         ProcessDirectionalInput(_dir);
-        // 2. 선택/확정 버튼 (A / South / Enter / Space)
+        // 2. 선택/확정 버튼: 리바인딩된 상호작용 키(Interaction Action) 또는 UI/Submit 키 검사
         bool _submitPressed = false;
-        if (null != Gamepad.current && Gamepad.current.buttonSouth.wasPressedThisFrame)
+        if (null != inputManager && true == inputManager.WasInteractionPressedThisFrame)
+        {
+            _submitPressed = true;
+        }
+        else if (null != Gamepad.current && Gamepad.current.buttonSouth.wasPressedThisFrame)
         {
             _submitPressed = true;
         }
@@ -1458,7 +1462,16 @@ public class HUD_PopupNav_Main : MonoBehaviour
     {
         if (false == gameObject.activeInHierarchy || true == isClosing) return;
         if (null == inputManager || false == inputManager.IsGamepadMode) return;
+
+        // 데모 안내 패널이 열려있는 경우: IsInputBlocked 검사 전에 팝업에 입력 위임
+        if (null != demoNotice && true == demoNotice.IsDemoNoticeShowing)
+        {
+            demoNotice.HandleInteractionKey();
+            return;
+        }
+
         if (true == IsInputBlocked) return;
+
         if (ENavFocusArea.RegionList == currentFocusArea)
         {
             if (null == regionGroup) return;

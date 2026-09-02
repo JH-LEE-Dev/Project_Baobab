@@ -10,6 +10,7 @@ public class UIView_MainMenu : UIView
     public event Action LoadGameButtonClickedEvent;
     public event Action ExitButtonClickedEvent;
     public event Action<EOptionLanguage> OnLanguageOptionChangedEvent;
+    public event Action<bool> InitialSetupCompletedEvent;
 
     [Header("UI References")]
     [SerializeField] private UI_MainMenu mainMenuUI; // 메인 메뉴
@@ -23,6 +24,7 @@ public class UIView_MainMenu : UIView
     [Header("Sub Views")]
     [SerializeField] private UI_Option optionUI; // 공용 옵션 UI
     [SerializeField] private UI_Credit creditUI; // 크레딧 UI
+    [SerializeField] private UI_InitialSetupPopup initialSetupPopup; // 초기 언어 및 약관 동의 팝업
 
     [Header("Background Overlay")]
     [SerializeField, Tooltip("메인 메뉴 뒤에 깔릴 검은색 셀로판지(Dimmer)")] 
@@ -134,6 +136,11 @@ public class UIView_MainMenu : UIView
         {
             creditUI.Initialize(HideCredit);
         }
+
+        if (null != initialSetupPopup)
+        {
+            initialSetupPopup.Initialize(_ctx?.inputManager, _ctx?.localizationManager, _ctx?.cursorBoxUI);
+        }
     }
 
     private void HandleLanguageOptionChanged(EOptionLanguage _lang)
@@ -148,6 +155,7 @@ public class UIView_MainMenu : UIView
         LoadGameButtonClickedEvent = null;
         ExitButtonClickedEvent = null;
         OnLanguageOptionChangedEvent = null;
+        InitialSetupCompletedEvent = null;
 
         if (null != context && null != context.localizationManager)
         {
@@ -264,40 +272,80 @@ public class UIView_MainMenu : UIView
 
     private void PrepareNextUIAfterSplash()
     {
-        // 시작 시 분기: Press Any Key 화면이 있으면 먼저 띄우고 메인 메뉴 숨김
-        if (null != this.pressAnyKeyUI)
+        // 언어 선택 및 데이터 수집 약관 동의 팝업 상시 노출
+        if (null != initialSetupPopup)
         {
-            this.pressAnyKeyUI.Show();
-            if (null != this.mainMenuUI) this.mainMenuUI.gameObject.SetActive(false);
-            if (null != this.logoAnimUI) this.logoAnimUI.gameObject.SetActive(true); // 로고는 항상 먼저 보여야 함
+            if (null != pressAnyKeyUI) pressAnyKeyUI.Hide();
+            if (null != mainMenuUI) mainMenuUI.gameObject.SetActive(false);
+            if (null != logoAnimUI) logoAnimUI.gameObject.SetActive(false);
+
+            initialSetupPopup.Show(OnInitialSetupPopupCompleted);
+            return;
+        }
+
+        // 시작 시 분기: Press Any Key 화면이 있으면 먼저 띄우고 메인 메뉴 숨김
+        if (null != pressAnyKeyUI)
+        {
+            pressAnyKeyUI.Show();
+            if (null != mainMenuUI) mainMenuUI.gameObject.SetActive(false);
+            if (null != logoAnimUI) logoAnimUI.gameObject.SetActive(true); // 로고는 항상 먼저 보여야 함
         }
         else
         {
-            this.ShowDimmer(); // 로고 애니메이션(또는 메인메뉴) 시작 시 딤 처리 실행
+            ShowDimmer(); // 로고 애니메이션(또는 메인메뉴) 시작 시 딤 처리 실행
 
-            if (null != this.logoAnimUI)
+            if (null != logoAnimUI)
             {
-                this.logoAnimUI.gameObject.SetActive(true);
+                logoAnimUI.gameObject.SetActive(true);
+            }
+        }
+    }
+
+    private void OnInitialSetupPopupCompleted(bool _isAgreed)
+    {
+        InitialSetupCompletedEvent?.Invoke(_isAgreed);
+
+        if (null != pressAnyKeyUI)
+        {
+            pressAnyKeyUI.Show();
+            if (null != mainMenuUI) mainMenuUI.gameObject.SetActive(false);
+            if (null != logoAnimUI) logoAnimUI.gameObject.SetActive(true);
+        }
+        else
+        {
+            ShowDimmer();
+            if (null != logoAnimUI)
+            {
+                logoAnimUI.PlayRevealSequence(ShowMainMenu);
+            }
+            else
+            {
+                ShowMainMenu();
             }
         }
     }
 
     private void OnSplashScreenCompleted()
     {
-        if (null != this.splashScreenUI)
+        if (null != splashScreenUI)
         {
-            this.splashScreenUI.gameObject.SetActive(false);
+            splashScreenUI.gameObject.SetActive(false);
         }
 
-        if (null == this.pressAnyKeyUI)
+        if (null != initialSetupPopup && true == initialSetupPopup.IsActive)
         {
-            if (null != this.logoAnimUI)
+            return;
+        }
+
+        if (null == pressAnyKeyUI)
+        {
+            if (null != logoAnimUI)
             {
-                this.logoAnimUI.PlayRevealSequence(this.ShowMainMenu);
+                logoAnimUI.PlayRevealSequence(ShowMainMenu);
             }
             else
             {
-                this.ShowMainMenu();
+                ShowMainMenu();
             }
         }
     }

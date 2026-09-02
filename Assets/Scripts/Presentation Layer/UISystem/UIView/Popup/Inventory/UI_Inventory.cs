@@ -217,10 +217,19 @@ public class UI_Inventory : MonoBehaviour
                 if (null != newAlertRedDot)
                     newAlertRedDot.Activate();
             }
+            else if (0 >= currentLogCount)
+            {
+                if (null != newAlertRedDot)
+                    newAlertRedDot.Deactivate();
+            }
         }
         else
         {
             isFirstDataBind = false;
+            if (0 >= currentLogCount && null != newAlertRedDot)
+            {
+                newAlertRedDot.Deactivate();
+            }
         }
 
         previousLogCount = currentLogCount;

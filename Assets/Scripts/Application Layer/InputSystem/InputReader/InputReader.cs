@@ -291,6 +291,11 @@ public class InputReader
     public EInputMode CurrentInputMode => currentInputMode;
 
     /// <summary>
+    /// 현재 리바인딩된 상호작용 키(Interaction Action)가 이번 프레임에 눌렸는지 여부입니다.
+    /// </summary>
+    public bool WasInteractionPressedThisFrame => null != actions && true == actions.Normal.Interaction.WasPressedThisFrame();
+
+    /// <summary>
     /// 입력 모드를 바꿉니다. 팝업·메뉴를 열 때 UI로, 닫을 때 Gameplay로 되돌리세요.
     ///
     /// UI로 바꾸는 순간 이동 입력을 0으로 흘려보냅니다. 그러지 않으면 키를 누른 채 창이 열렸을 때

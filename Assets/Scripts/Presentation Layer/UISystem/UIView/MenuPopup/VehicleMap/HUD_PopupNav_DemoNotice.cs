@@ -79,6 +79,31 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     public bool IsActive => isDemoNoticeShowing;
     public void Hide() => HideDemoNoticeOverlay();
 
+    public void HandleInteractionKey()
+    {
+        if (false == isDemoNoticeShowing || true == isHiding) return;
+
+        GameObject _currentSelected = EventSystem.current?.currentSelectedGameObject;
+        if (null != _currentSelected)
+        {
+            if (null != steamWishlistBtn && _currentSelected == steamWishlistBtn.gameObject)
+            {
+                steamWishlistBtn.ExecuteClick();
+                return;
+            }
+            if (null != discordBtn && _currentSelected == discordBtn.gameObject)
+            {
+                discordBtn.ExecuteClick();
+                return;
+            }
+        }
+
+        if (null != discordBtn)
+        {
+            discordBtn.ExecuteClick();
+        }
+    }
+
     public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager, UIDepthController _depthController = null, ICursorBoxUI _cursorBoxUI = null, InputManager _inputManager = null)
     {
         mainController = _mainController;

@@ -456,7 +456,6 @@ public class UI_EscapeMenuButton : Selectable,
     public bool IsMouseOver()
     {
         if (false == isInteractable || false == gameObject.activeInHierarchy || true == isAppearing) return false;
-        if (null != inputManager && true == inputManager.IsGamepadMode) return false;
         if (true == isPointerHovered) return true;
 
         RectTransform _rect = null != raycastImage ? raycastImage.rectTransform : RectTransform;
