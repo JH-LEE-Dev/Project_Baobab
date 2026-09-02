@@ -471,68 +471,11 @@ public class UI_MainMenu : MonoBehaviour
                 discordButton.ForceUnhover();
             }
 
-            EvaluateMouseHoverStates(true);
-        }
-    }
-
-    private void Update()
-    {
-        if (null != viewCtx && null != viewCtx.inputManager && false == viewCtx.inputManager.IsGamepadMode)
-        {
-            EvaluateMouseHoverStates(false);
-        }
-    }
-
-    private void EvaluateMouseHoverStates(bool _forceCheckSound)
-    {
-        bool _isDiscordMouseOver = (null != discordButton && true == discordButton.gameObject.activeInHierarchy && true == discordButton.IsMouseOver());
-
-        if (true == _isDiscordMouseOver)
-        {
-            if (false == discordButton.IsHovered)
-            {
-                discordButton.ForceHover(true);
-            }
-
             if (null != buttonsInOrder)
             {
                 for (int i = 0; buttonsInOrder.Length > i; i++)
                 {
-                    UI_MainMenuButton _btn = buttonsInOrder[i];
-                    if (null != _btn && true == _btn.IsHovered)
-                    {
-                        _btn.ForceUnhover();
-                    }
-                }
-            }
-            return;
-        }
-        else
-        {
-            if (null != discordButton && true == discordButton.IsHovered)
-            {
-                discordButton.ForceUnhover();
-            }
-        }
-
-        if (null == buttonsInOrder) return;
-        for (int i = 0; buttonsInOrder.Length > i; i++)
-        {
-            UI_MainMenuButton _btn = buttonsInOrder[i];
-            if (null == _btn || false == _btn.gameObject.activeInHierarchy) continue;
-
-            if (true == _btn.IsMouseOver())
-            {
-                if (false == _btn.IsHovered)
-                {
-                    _btn.ForceHover(true);
-                }
-            }
-            else
-            {
-                if (true == _btn.IsHovered)
-                {
-                    _btn.ForceUnhover();
+                    if (null != buttonsInOrder[i]) buttonsInOrder[i].ForceUnhover();
                 }
             }
         }
@@ -584,6 +527,19 @@ public class UI_MainMenu : MonoBehaviour
             if (ShouldConfirmNewGame())
             {
                 isNewGameConfirmationOpen = true;
+
+                if (null != buttonsInOrder)
+                {
+                    for (int i = 0; buttonsInOrder.Length > i; i++)
+                    {
+                        if (null != buttonsInOrder[i]) buttonsInOrder[i].ForceUnhover();
+                    }
+                }
+                if (null != discordButton)
+                {
+                    discordButton.ForceUnhover();
+                }
+
                 string _warnMsg = viewCtx.localizationManager.GetText("NewGameWarning");
                 warningPopup.ShowWarning(
                     _warnMsg,
@@ -643,7 +599,14 @@ public class UI_MainMenu : MonoBehaviour
             Sound.PlayUI(SoundID.MainClick);
         }
 
-        // 팝업 닫힘 (특별한 동작 없음)
+        if (null != viewCtx && null != viewCtx.inputManager && true == viewCtx.inputManager.IsGamepadMode)
+        {
+            if (null != newGameButton && null != EventSystem.current)
+            {
+                EventSystem.current.SetSelectedGameObject(newGameButton.gameObject);
+                newGameButton.ForceHover();
+            }
+        }
     }
     
     private void OnLoadGameClicked()
