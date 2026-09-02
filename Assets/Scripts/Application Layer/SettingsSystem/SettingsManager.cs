@@ -514,31 +514,73 @@ public class SettingsManager : MonoBehaviour
         OnScreenTargetResolvedEvent?.Invoke(_width, _height);
     }
 
+    /// <summary>
+    /// 목표 fps와 모니터 주사율을 "같다"고 볼 허용 오차(Hz)입니다.
+    /// 모니터는 60을 59.94로, 165를 164.8로 보고하는 등 정수로 떨어지지 않습니다.
+    /// </summary>
+    private const float refreshRateTolerance = 1.5f;
+
+    private FrameRateLimiter frameRateLimiter;
+
+    /// <summary>
+    /// 엔진 설정과 무관하게 상한을 보장하는 리미터입니다. 싱글턴 오브젝트에 붙여 두므로
+    /// 씬 전환에도 유지되고, 이 매니저와 수명을 같이합니다.
+    /// </summary>
+    private FrameRateLimiter Limiter
+    {
+        get
+        {
+            if (null == frameRateLimiter)
+            {
+                // 프리팹으로 배치된 경우 이미 붙어 있을 수 있으므로 먼저 찾아본다.
+                frameRateLimiter = GetComponent<FrameRateLimiter>();
+
+                if (null == frameRateLimiter)
+                {
+                    frameRateLimiter = gameObject.AddComponent<FrameRateLimiter>();
+                }
+            }
+            return frameRateLimiter;
+        }
+    }
+
     private void ApplyFrameRate()
     {
-        // 1. 유저가 VSync를 명시적으로 선택한 경우에만 VSync를 켠다.
+        int _target = GetFpsValue(current.fps);   // VSync/Unlimited는 -1
+        float _refresh = GetMonitorRefreshRate(); // 알 수 없으면 0
+
+        // 1. 유저가 VSync를 명시적으로 선택한 경우.
+        //    이때의 상한은 곧 주사율이므로, 드라이버가 VSync를 무시하는 환경을 대비해
+        //    리미터에도 주사율을 걸어 둔다. (주사율을 모르면 0이 되어 제한하지 않는다)
         if (EFPS.VSync == current.fps)
         {
-            EnableVSync();
+            QualitySettings.vSyncCount = 1;
+            Application.targetFrameRate = -1; // VSync에 동기화
+            Limiter.SetLimit(Mathf.RoundToInt(_refresh));
             return;
         }
 
-        // 2. 숫자 FPS(및 Unlimited)는 항상 targetFrameRate로 직접 제한한다.
+        // 2. 목표 fps가 모니터 주사율과 사실상 같으면 VSync로 처리한다.
+        //    targetFrameRate 리미터는 스캔아웃과 무관한 타이머라 프레임 간격이 흔들리는데,
+        //    이 프로젝트의 저해상도 RT + 픽셀 스냅(SubpixelSnapper) 파이프라인에서는
+        //    그 지터가 Mathf.Round 경계를 넘나들며 픽셀 우글거림으로 증폭된다.
         //
-        //    선택값이 모니터 주사율과 같을 때 VSync로 대신 처리하던 분기가 있었으나 제거했다.
-        //    vSyncCount가 0이 아니면 Unity는 targetFrameRate를 아예 무시하므로, 그 경로에서는
-        //    상한이 오직 VSync에만 의존한다. 그런데 그래픽 드라이버의 "수직 동기화: 끄기"는
-        //    앱의 요청을 덮어쓸 수 있고(특히 이 프로젝트처럼 테두리 없는 창 + flip model 조합),
-        //    그러면 상한이 하나도 남지 않아 165 선택에도 200+ FPS로 치솟았다.
-        //    프레임 페이싱/티어링보다 "유저가 고른 상한이 어떤 환경에서든 지켜지는 것"을 우선한다.
-        QualitySettings.vSyncCount = 0;
-        Application.targetFrameRate = GetFpsValue(current.fps); // Unlimited는 -1
-    }
+        //    예전에 이 분기를 제거했던 이유는, vSyncCount가 0이 아니면 Unity가
+        //    targetFrameRate를 아예 무시하는데 드라이버의 "수직 동기화: 끄기"가 VSync까지
+        //    덮어쓰면 상한이 하나도 남지 않아 165 선택에도 200+ FPS로 치솟았기 때문이다.
+        //    이제는 FrameRateLimiter가 드라이버와 무관하게 상한을 보장하므로 안전하다.
+        //
+        //    주사율과 정수비가 아닌 조합(144Hz 모니터에서 60 선택 등)은 원리상 균등 배분이
+        //    불가능하므로 VSync를 쓰지 않고 기존대로 targetFrameRate로 제한한다.
+        bool _matchesRefresh = _target > 0
+                               && _refresh > 0f
+                               && Mathf.Abs(_refresh - _target) <= refreshRateTolerance;
 
-    private void EnableVSync()
-    {
-        QualitySettings.vSyncCount = 1;
-        Application.targetFrameRate = -1; // VSync에 동기화
+        QualitySettings.vSyncCount = _matchesRefresh ? 1 : 0;
+        Application.targetFrameRate = _matchesRefresh ? -1 : _target;
+
+        // 3. 어느 경로를 타든 최종 상한은 리미터가 보장한다. (Unlimited는 -1이라 제한 없음)
+        Limiter.SetLimit(_target);
     }
 
     /// <summary>

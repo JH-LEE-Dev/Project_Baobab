@@ -19,6 +19,18 @@ using Steamworks;
 // The SteamManager provides a base implementation of Steamworks.NET on which you can build upon.
 // It handles the basics of starting up and shutting down the SteamAPI for use.
 //
+// 다른 어떤 Awake보다 먼저 돌아야 한다.
+//
+// Instance 게터는 s_instance가 비어 있으면 그 자리에서 SteamManager를 새로 만들어버린다.
+// 그런데 부팅 중 Steam을 처음 건드리는 곳이 BootStrap.Awake 안이다
+// (SettingsManager.Bind → 설정 파일이 없으면 LanguageAutoDetect.Resolve → SteamLanguageService).
+// SteamManager는 BootStrap과 같은 오브젝트에 붙어 있지만 컴포넌트 목록에서 뒤에 있어 Awake가
+// 아직 안 돈 상태라, 그 접근이 임시 SteamManager 오브젝트를 만들어 s_instance를 선점해버린다.
+// 그 뒤 진짜 SteamManager의 Awake가 자신을 중복으로 판정해 Bootstrap을 통째로 지웠다.
+// (AudioManager·SaveManager·InputManager까지 동반 사망 → 소리 전멸 + 씬 전환 불능)
+//
+// 실행 순서를 앞당겨 s_instance가 항상 먼저 잡히게 하면 임시 인스턴스 자체가 생기지 않는다.
+[DefaultExecutionOrder(-100)]
 [DisallowMultipleComponent]
 public class SteamManager : MonoBehaviour {
 #if !DISABLESTEAMWORKS
@@ -62,8 +74,14 @@ public class SteamManager : MonoBehaviour {
 
 	protected virtual void Awake() {
 		// Only one instance of SteamManager at a time!
+		//
+		// 원본은 Destroy(gameObject)였다. SteamManager가 자기 전용 오브젝트에 홀로 붙어 있다는
+		// 전제인데, 이 프로젝트에서는 Bootstrap(BootStrap/SceneManager/InputManager/SaveManager/
+		// LoadingManager + 자식 AudioManager·LocalizationManager·CameraFinder)에 얹혀 있다.
+		// 중복으로 판정되는 순간 그 전부가 함께 사라져, 소리가 전멸하고 씬 전환이 먹통이 됐다.
+		// 중복이면 자기 컴포넌트만 제거해 남의 오브젝트를 끌고 가지 않는다.
 		if (s_instance != null) {
-			Destroy(gameObject);
+			Destroy(this);
 			return;
 		}
 		s_instance = this;

@@ -184,7 +184,15 @@ public class GameplayUIInstaller : MonoBehaviour
         tentUI.Hide();
 
         UIView_ESC escUI = uiManager.Open<UIView_ESC>();
-        escUI.Hide();
+
+        // Hide()가 아니라 HideImmediately()여야 한다. Open<T>()가 Show()를 부르면서 ESC 메뉴가 실제로
+        // 켜지는데(OnShow의 SetActive(true)), Hide()는 곧바로 끄지 않고 PlayCloseProduction() -
+        // 버튼 역순 퇴장 → 배경 축소 → 페이드아웃으로 이어지는 0.4초짜리 퇴장 연출을 재생한 뒤에야
+        // SetActive(false)를 한다. 그 0.4초 동안 아무도 부르지 않은 일시정지 메뉴가 화면 중앙에 떠 있다.
+        //
+        // 에디터에서는 씬 로드 프레임 하나가 400ms 넘게 걸리고 DOTween이 그 deltaTime을 한 틱에
+        // 몰아 적용해 연출이 렌더링 없이 끝나버린다. 그래서 이 버그는 로드가 빠른 빌드에서만 보인다.
+        escUI.HideImmediately();
 
         UIView_SkyProduction skyProductionUI = uiManager.Open<UIView_SkyProduction>();
         // GameplayUIInstaller는 GameInstaller 세션당 한 번만 초기화되므로(Town↔Dungeon 왕복 시 재사용됨),
@@ -195,7 +203,7 @@ public class GameplayUIInstaller : MonoBehaviour
         UIView_Result resultUI = uiManager.Open<UIView_Result>();
 
         UIView_Warning warningUI = uiManager.Open<UIView_Warning>();
-        warningUI.Hide();
+        warningUI.HideImmediately(); // ESC 메뉴와 같은 이유. (UIView_Warning.OnShow의 주석 참고)
 
         UIView_ScreenModal screenModalUI = uiManager.Open<UIView_ScreenModal>();
         screenModalUI.Hide();
