@@ -47,7 +47,6 @@ public class LogItem : Item, IStaticCollidable
     private Vector3 startPos;
     private Vector3 endPos;
     private Vector3 trajectoryJitter;
-    private Vector3 sideDir; // 곡선 방향 (기울기에 수직)
     private float height;
     private float duration;
     private float elapsed;
@@ -538,27 +537,6 @@ public class LogItem : Item, IStaticCollidable
         }
     }
 
-    public void CurveTransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, float _rotationSpeed = 0f)
-    {
-        startPos = _start;
-        endPos = _end;
-        height = _height;
-        duration = _duration;
-        rotationSpeed = _rotationSpeed;
-        elapsed = 0f;
-        state = ItemMoveState.CurveTransferring;
-        LogItemActivatedEvent?.Invoke(this);
-        transform.localScale = Vector3.zero;
-
-        // 시점과 종점을 잇는 방향에 수직인 벡터 계산 (2D 법선)
-        Vector3 dir = (endPos - startPos).normalized;
-        sideDir = new Vector3(-dir.y, dir.x, 0f);
-
-        if (gameObject.activeInHierarchy)
-        {
-            CollisionSystem.Instance?.Register(this, false);
-        }
-    }
     private void OnEnable()
     {
         // Launch나 TransferLaunch가 이미 호출된 상태에서 활성화될 때만 등록
@@ -587,7 +565,6 @@ public class LogItem : Item, IStaticCollidable
         dynamicTarget = null;
         elapsed = 0;
         trajectoryJitter = Vector3.zero;
-        sideDir = Vector3.zero;
         rotationSpeed = 0f;
         totalRotation = 0f;
         bCanAcquired = true;
