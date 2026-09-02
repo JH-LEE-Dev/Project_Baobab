@@ -683,7 +683,12 @@ public class TownSystem : MonoBehaviour
         // bGoingToMainMenu가 아니라 bMainMenuExitRequested를 보는 이유는 그 필드 주석 참조 -
         // 이 코루틴은 던전 씬에서도 도는데, 그때 bGoingToMainMenu는 씬 가드에 막혀 서지 않는다.
         if (bMainMenuExitRequested == true)
+        {
+            // 여기서 빠지면 아래 StaminaDecreaseCoroutine이 시작조차 못 하므로, 거기서 하던
+            // 상호작용 키 잠금 해제를 대신 해준다. 이유는 그쪽 가드 주석 참조.
+            inputManager.PauseInteractKey(false);
             yield break;
+        }
 
         signalHub.Publish(new PopupUIUpSignal());
 
@@ -714,8 +719,19 @@ public class TownSystem : MonoBehaviour
         // 콜라이더까지 되살아나 상호작용 팝업이 뜬다. InDungeonSystem 쪽 같은 이름의 코루틴에는
         // 이미 들어 있던 가드인데, 마을→던전 입장이라는 가장 흔한 경로에서 실제로 도는 것은
         // 이쪽 사본이라 여기가 비어 있으면 아무 소용이 없다.
+        //
+        // 단, 아래 PauseInteractKey(false)만은 빠져나가면서도 반드시 해줘야 한다.
+        // PauseInteractKey는 bool이 아니라 카운터라(InputReader.pauseInteractCount), 마을 출발 때
+        // TownProductionManager.StartSkyProduction()이 올려둔 +1이 상쇄되지 않으면 0으로 돌아오지
+        // 않는다. InputManager는 BootStrap이 들고 있어 게임 실행 내내 살아남고 SetupMainMenuScene()도
+        // PauseMove/PauseESCKey만 풀어주므로, 그 불균형은 메인메뉴를 거쳐 다음 세션까지 따라가
+        // 상호작용 키가 통째로 죽는다. 잠금만 풀 뿐 콜라이더는 되살리지 않으므로 이탈 연출 도중에
+        // 상호작용 팝업이 뜨지도 않는다.
         if (bMainMenuExitRequested == true)
+        {
+            inputManager.PauseInteractKey(false);
             yield break;
+        }
 
         signalHub.Publish(new StartDecreaseStaminaSignal());
 
