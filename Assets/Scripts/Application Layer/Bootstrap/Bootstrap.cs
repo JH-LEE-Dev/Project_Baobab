@@ -1,7 +1,4 @@
 using DG.Tweening;
-using GameAnalyticsSDK;
-using Sentry;
-using Sentry.Unity;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -11,6 +8,8 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     [SerializeField] private bool isTempScene = false;
 
     [Header("SDK Toggles")]
+    [Tooltip("빌드 단위 스위치입니다. 유저 동의와는 별개이며, 둘 다 켜져 있을 때만 실제로 동작합니다. " +
+        "여기를 켠다고 해서 동의하지 않은 유저의 데이터가 수집되지는 않습니다.")]
     [SerializeField] private bool enableSentry = true;
     [SerializeField] private bool enableGameAnalytics = true;
 
@@ -65,18 +64,14 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         instance = this;
         DontDestroyOnLoad(gameObject);
 
-        // Sentry는 SentryOptions.asset 기반으로 이 Awake보다도 먼저 자동 초기화되므로,
-        // 여기서 막을 수 있는 건 "시작 자체"가 아니라 "초기화 직후 바로 종료"뿐이다.
-        // 아직 실제 게임플레이가 시작되기 전이라 의미 있는 데이터가 새어나가지는 않는다.
-        if (!enableSentry)
-        {
-            SentrySdk.Close();
-        }
-
-        if (enableGameAnalytics)
-        {
-            GameAnalytics.Initialize();
-        }
+        // 데이터 수집 SDK를 켜고 끄는 판단은 전부 DataConsentGate가 한다. 여기서 직접
+        // GameAnalytics.Initialize()나 SentrySdk.Close()를 부르지 말 것 - 동의 정책이
+        // 두 곳으로 갈라지면 한쪽만 고친 채 출시되는 사고가 난다.
+        //
+        // Sentry는 이 Awake보다 훨씬 이른 SubsystemRegistration에서 스스로 초기화되며,
+        // 그 시점에 SentryConsentOptionsConfiguration이 동의 여부를 보고 시작할지를 이미
+        // 정한다. 그래서 "동의 없는 유저에게서 Sentry가 잠깐이라도 켜지는" 구간은 없다.
+        DataConsentGate.ApplyAtStartup(enableSentry, enableGameAnalytics);
 
         // 이벤트 중복 등록 방지
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
@@ -419,7 +414,9 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     private void Start()
     {
-        if (enableSentry)
+        // 해시된 SteamID를 붙이는 것도 데이터 수집이다. 빌드 토글만 보고 태깅하면
+        // 동의하지 않은 유저의 식별자가 (SDK가 꺼져 있더라도) 스코프에 실린다.
+        if (enableSentry && EDataConsent.Granted == SettingsManager.ReadPersistedConsent())
         {
             SentryUserContextTagger.TagCurrentUser();
         }

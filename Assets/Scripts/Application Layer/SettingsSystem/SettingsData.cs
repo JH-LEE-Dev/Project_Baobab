@@ -21,6 +21,21 @@ public enum EWindowMode { Windowed, Fullscreen }
 public enum EOnOff { Off, On }
 
 /// <summary>
+/// 크래시 리포트(Sentry)와 플레이 통계(GameAnalytics) 수집에 대한 유저의 선택입니다.
+///
+/// EOnOff를 쓰지 않고 별도 enum을 두는 이유는 "아직 묻지 않았음"이 반드시 구분되어야 하기
+/// 때문입니다. 둘을 구분하지 못하면 (a) 최초 동의 팝업을 몇 번 띄워야 하는지 알 수 없고,
+/// (b) 거부한 유저에게 매 실행마다 다시 묻게 됩니다.
+///
+/// NotAsked가 0인 것은 필수입니다. JsonUtility는 JSON에 없는 키를 default(0)로 채우므로,
+/// 이 필드가 생기기 전에 만들어진 설정 파일은 자동으로 "아직 묻지 않음"이 되어 다음 실행에
+/// 동의 팝업이 한 번 뜹니다. 반대로 Granted가 0이면 기존 유저 전원이 묻지도 않고 동의한
+/// 것으로 처리되므로 절대 순서를 바꾸지 마십시오.
+/// (SettingsRepository의 hapticStrength 보정이 필요 없는 것도 같은 이유입니다)
+/// </summary>
+public enum EDataConsent { NotAsked, Granted, Declined }
+
+/// <summary>
 /// 주의: 기존 항목(Res640x360~Res2560x1440)의 순서·인덱스는 절대 바꾸지 않습니다.
 /// 중간 삽입이나 순서 변경은 저장된 정수값의 의미를 바꾸므로,
 /// SettingsRepository의 버전을 올려 구버전 파일이 폐기되도록 해야 합니다.
@@ -92,6 +107,19 @@ public struct SettingsData
     public EFPS fps;
     public EOnOff pauseOnUnfocus;
 
+    /// <summary>
+    /// 데이터 수집(Sentry 크래시 리포트 / GameAnalytics 플레이 통계) 동의 여부입니다.
+    ///
+    /// 이 필드를 추가하면서 SettingsRepository의 버전을 올리지 않은 것은 의도적입니다.
+    /// 기본값이 0(NotAsked)이라 키가 없는 구버전 파일도 올바르게 "아직 묻지 않음"으로
+    /// 읽히므로, hapticStrength처럼 키 존재 여부를 확인하는 보정이 필요 없습니다.
+    /// 버전을 올리면 파일이 통째로 폐기되어 유저의 해상도·볼륨 설정까지 날아갑니다.
+    ///
+    /// 이 값을 실제로 SDK에 반영하는 곳은 DataConsentGate 한 곳뿐입니다. 여기 값을 읽어
+    /// 직접 SDK를 켜고 끄는 코드를 다른 곳에 만들지 마십시오. (정책이 갈라집니다)
+    /// </summary>
+    public EDataConsent dataConsent;
+
     public float cameraShake;
     public float crosshairBrightness;
     public float chromaticAberration;
@@ -161,6 +189,7 @@ public struct SettingsData
     public const int FPS_COUNT = 8;
     public const int ON_OFF_COUNT = 2;
     public const int GAMEPAD_ICON_PREFERENCE_COUNT = 4;
+    public const int DATA_CONSENT_COUNT = 3;
 
     /// <summary>
     /// LocalizationManager가 실제로 처리할 수 있는 언어 수입니다.
@@ -181,6 +210,11 @@ public struct SettingsData
             windowMode = EWindowMode.Fullscreen,
             fps = EFPS.FPS60,
             pauseOnUnfocus = EOnOff.Off,
+
+            // 기본값은 반드시 "아직 묻지 않음"이다. Granted를 기본값으로 두면 설정 파일이
+            // 손상된 유저가 묻지도 않고 동의한 상태가 된다. (CreateDefault는 손상 파일의
+            // 폴백으로도 쓰인다)
+            dataConsent = EDataConsent.NotAsked,
 
             cameraShake = SLIDER_MAX,
             crosshairBrightness = SLIDER_MAX,
@@ -445,6 +479,10 @@ public struct SettingsData
         if ((int)fps < 0 || (int)fps >= FPS_COUNT) { fps = EFPS.Unlimited; _corrected = true; }
         if ((int)pauseOnUnfocus < 0 || (int)pauseOnUnfocus >= ON_OFF_COUNT) { pauseOnUnfocus = EOnOff.Off; _corrected = true; }
         if ((int)gamepadIconPreference < 0 || (int)gamepadIconPreference >= GAMEPAD_ICON_PREFERENCE_COUNT) { gamepadIconPreference = EGamepadIconPreference.Auto; _corrected = true; }
+
+        // 범위를 벗어난 동의값은 Declined가 아니라 NotAsked로 되돌린다. 변조된 파일 때문에
+        // 유저의 선택이 "거부"로 굳어버리는 것보다, 한 번 더 묻는 쪽이 안전하다.
+        if ((int)dataConsent < 0 || (int)dataConsent >= DATA_CONSENT_COUNT) { dataConsent = EDataConsent.NotAsked; _corrected = true; }
 
         _corrected |= ClampSlider(ref cameraShake);
         _corrected |= ClampSlider(ref crosshairBrightness);

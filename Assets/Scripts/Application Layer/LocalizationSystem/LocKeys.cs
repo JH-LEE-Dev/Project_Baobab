@@ -231,6 +231,11 @@ public static class LocKeys
         public const int pressAnyKey = 16777315;
         public const int newGameWarning = 16777222;
         public const int dotText = 16777223;
+        public const int languageSelectTitle = 16777316;
+        public const int consentTitle = 16777317;
+        public const int consentDesc = 16777318;
+        public const int consentCheckbox = 16777319;
+        public const int confirm = 16777320;
     }
 
     public static class MenuPopupUI
@@ -314,6 +319,8 @@ public static class LocKeys
         public const int languageJapanese = 18874479;
         public const int gamepadIconAuto = 18874480;
         public const int gamepadIconGeneric = 18874481;
+        public const int dataConsentGranted = 18874482;
+        public const int dataConsentDeclined = 18874483;
         public const int language = 18874569;
         public const int resolution = 18874570;
         public const int windowMode = 18874571;
@@ -330,6 +337,7 @@ public static class LocKeys
         public const int gamepadIconPreference = 18874582;
         public const int hapticStrength = 18874583;
         public const int virtualCursorSensitivity = 18874584;
+        public const int dataConsent = 18874585;
         public const int tabGameplay = 18874669;
         public const int tabSound = 18874670;
         public const int tabGraphic = 18874671;

@@ -37,19 +37,16 @@ public class UI_InitialSetupPopup : MonoBehaviour
     [SerializeField] private TextMeshProUGUI consentToggleLabel;
     [SerializeField] private UI_PopupButton confirmButton;
 
-    public event Action<bool> OnInitialSetupCompletedEvent;
-
     // 외부 의존성
     private InputManager inputManager;
     private LocalizationManager localizationManager;
     private ICursorBoxUI cursorBoxUI;
 
     // 내부 상태
-    private Action<bool> onCompletedCallback;
+    private Action onCompletedCallback;
     private Action<EInputDeviceType> cachedOnDeviceChanged;
     private Sequence panelTransitionTween;
     private bool isConsentPhase = false;
-    private bool lastConsentResult = true;
     private bool isConsentToggleHovered = false;
     private UI_PanelSelectButton lastFocusedLanguageButton;
     private Selectable lastFocusedConsentSelectable;
@@ -269,7 +266,9 @@ public class UI_InitialSetupPopup : MonoBehaviour
     {
         if (null != consentToggle)
         {
-            consentToggle.isOn = true;
+            // opt-in이어야 한다. 체크를 미리 켜두면 유저가 아무것도 하지 않고 확인만 눌러도
+            // 동의한 것이 되는데, 분석·텔레메트리 동의는 그렇게 받을 수 없다(GDPR).
+            consentToggle.isOn = false;
             consentToggle.onValueChanged.RemoveListener(HandleConsentToggleValueChanged);
             consentToggle.onValueChanged.AddListener(HandleConsentToggleValueChanged);
 
@@ -362,7 +361,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
         Sound.PlayUI(SoundID.OptionClick);
     }
 
-    public void Show(Action<bool> _onCompleted)
+    public void Show(Action _onCompleted)
     {
         onCompletedCallback = _onCompleted;
         isConsentPhase = false;
@@ -408,7 +407,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
         SetupSpatialNavigations();
         RefreshLocalizedTexts();
-        ResetAllLanguageButtons();
+        ApplyDefaultLanguageSelection();
 
         // 루트 페이드인 및 슬라이드 연출
         KillTransition();
@@ -437,16 +436,44 @@ public class UI_InitialSetupPopup : MonoBehaviour
         panelTransitionTween = _seq;
     }
 
-    private void ResetAllLanguageButtons()
+    /// <summary>
+    /// 지금 적용되어 있는 언어의 버튼을 미리 선택된 상태로 표시합니다.
+    ///
+    /// 첫 실행에는 저장된 설정 파일이 없으므로 SettingsManager가 이미 LanguageAutoDetect로
+    /// 언어를 정해둔 상태이고(Steam 지정 언어 -> OS 언어 -> 영어), 이 팝업의 안내 문구도
+    /// 그 언어로 나옵니다. 그런데 버튼은 전부 선택 해제된 채로 떠서, 화면에 보이는 문구의
+    /// 언어와 선택기 상태가 서로 다른 말을 하고 있었습니다. 유저 입장에서는 "지금 무슨
+    /// 언어인지"와 "그냥 넘어가면 무엇이 되는지"를 알 수 없습니다.
+    ///
+    /// 여기서 자동 판별 결과를 그대로 비추면 그 불일치가 사라지고, 대부분의 유저는 이미
+    /// 맞는 언어가 골라져 있는 것을 확인만 하면 됩니다.
+    ///
+    /// 판별 결과를 다시 계산하지 않고 SettingsManager의 현재 언어를 읽는 것이 중요합니다.
+    /// 그래야 화면에 실제로 적용된 언어와 선택 표시가 어긋날 수 없습니다.
+    /// (LanguageAutoDetect.Resolve를 여기서 또 부르면, 예컨대 지원 언어 판정이 한쪽에서만
+    ///  걸렸을 때 "영어로 보이는데 일본어가 선택된" 상태가 만들어질 수 있습니다)
+    /// </summary>
+    private void ApplyDefaultLanguageSelection()
     {
         if (null == languageButtons) return;
 
+        EOptionLanguage _current = SettingsManager.Instance.CurrentLanguage;
+
         for (int i = 0; i < languageButtons.Length; i++)
         {
-            if (null != languageButtons[i])
+            UI_PanelSelectButton _btn = languageButtons[i];
+            if (null == _btn) continue;
+
+            bool _isCurrent = (_btn.BoundLanguage == _current);
+
+            _btn.SetSelected(_isCurrent);
+            _btn.ForceUnhover();
+
+            // 패드로 열었을 때 첫 포커스가 현재 언어에 놓이도록 기억해둔다.
+            // (HandleShowCompleted가 이 값을 쓴다. 없으면 목록의 첫 버튼 = 한국어로 떨어진다)
+            if (true == _isCurrent)
             {
-                languageButtons[i].SetSelected(false);
-                languageButtons[i].ForceUnhover();
+                lastFocusedLanguageButton = _btn;
             }
         }
     }
@@ -558,6 +585,11 @@ public class UI_InitialSetupPopup : MonoBehaviour
         EOptionLanguage _selected = _btn.BoundLanguage;
         SettingsManager.Instance.SetLanguage(_selected);
 
+        // 선택 표시를 방금 누른 버튼으로 옮긴다. 곧바로 동의 패널로 넘어가긴 하지만, 전환
+        // 연출이 끝나기 전까지는 이전 언어가 선택된 것처럼 보이고, 뒤로 돌아오는 경로가
+        // 생기면 그대로 어긋난 채 남는다.
+        ApplyDefaultLanguageSelection();
+
         RefreshLocalizedTexts();
 
         // 2. 언어 패널 -> 약관 동의 패널 전환
@@ -617,8 +649,16 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
     private void HandleConfirmButtonClicked()
     {
-        lastConsentResult = (null != consentToggle && true == consentToggle.isOn);
-        OnInitialSetupCompletedEvent?.Invoke(lastConsentResult);
+        // 체크되지 않은 상태로 확인을 누르는 것은 유효한 "거부"다. 확인 버튼은 체크와
+        // 무관하게 항상 눌리며, 어느 쪽이든 여기서 답이 확정된다.
+        bool _isGranted = (null != consentToggle && true == consentToggle.isOn);
+
+        // 여기서 저장하지 않으면 이 선택은 어디에도 남지 않는다. 예전에는 구독자가 하나도 없는
+        // 이벤트를 발행하고 끝나서, 팝업은 있는데 아무 효력이 없는 상태였다.
+        // SetDataConsent는 곧바로 파일에 기록하고 DataConsentGate가 SDK에 반영하므로,
+        // 이 한 줄이 "동의 UI"를 "동의"로 만든다.
+        SettingsManager.Instance.SetDataConsent(
+            true == _isGranted ? EDataConsent.Granted : EDataConsent.Declined);
 
         // 팝업 페이드아웃 및 닫기
         Close();
@@ -685,11 +725,11 @@ public class UI_InitialSetupPopup : MonoBehaviour
         isConsentPhase = false;
         gameObject.SetActive(false);
 
-        Action<bool> _cb = onCompletedCallback;
+        Action _cb = onCompletedCallback;
         onCompletedCallback = null;
         if (null != _cb)
         {
-            _cb.Invoke(lastConsentResult);
+            _cb.Invoke();
         }
     }
 
@@ -900,7 +940,6 @@ public class UI_InitialSetupPopup : MonoBehaviour
     private void OnDestroy()
     {
         KillTransition();
-        OnInitialSetupCompletedEvent = null;
         onCompletedCallback = null;
         if (null != inputManager && null != inputManager.inputReader && null != cachedOnDeviceChanged)
         {

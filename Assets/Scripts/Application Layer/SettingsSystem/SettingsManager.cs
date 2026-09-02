@@ -49,6 +49,12 @@ public class SettingsManager : MonoBehaviour
     public event Action<SettingsData> OnInputSettingsAppliedEvent;
 
     /// <summary>
+    /// 데이터 수집 동의가 실제로 바뀌었을 때 발생합니다. DataConsentGate가 구독해 SDK에 반영합니다.
+    /// (SettingsManager가 Sentry/GameAnalytics를 직접 알지 않도록 의존성 방향을 뒤집기 위한 것)
+    /// </summary>
+    public event Action<EDataConsent> OnDataConsentChangedEvent;
+
+    /// <summary>
     /// 실제 화면 크기(_width, _height)가 정해질 때(부팅 시 포함) 발생합니다.
     /// OnGraphicsSettingsAppliedEvent와 달리 Bootstrap에서도 발생하므로,
     /// PixelPerfectCamera의 기준 해상도처럼 게임 시작부터 맞아 있어야 하는
@@ -221,6 +227,92 @@ public class SettingsManager : MonoBehaviour
         current.language = _next;
         isDirty = true;
         ApplyLanguage();
+    }
+
+    /// <summary>데이터 수집 동의 상태입니다. (NotAsked = 아직 묻지 않음)</summary>
+    public EDataConsent DataConsent
+    {
+        get
+        {
+            EnsureLoaded();
+            return current.dataConsent;
+        }
+    }
+
+    /// <summary>
+    /// 데이터 수집 동의를 설정하고 즉시 파일에 기록합니다.
+    ///
+    /// 다른 항목처럼 CommitChanges를 기다리지 않고 여기서 바로 저장하는 이유가 두 가지 있습니다.
+    ///  - 최초 동의 팝업은 옵션 창이 아니므로 CommitChanges를 부르는 주체가 없습니다. 저장이
+    ///    미뤄지면 그 실행에서 강제 종료됐을 때 다음 실행에 또 묻게 됩니다.
+    ///  - 동의 철회는 유저가 "지금 그만 보내라"고 말한 것입니다. 그 의사가 파일에 남기 전에
+    ///    게임이 죽으면 다음 실행에서 아무 일도 없었던 것처럼 다시 수집이 시작됩니다.
+    /// </summary>
+    public void SetDataConsent(EDataConsent _consent)
+    {
+        EnsureLoaded();
+        if (current.dataConsent == _consent) return;
+
+        // 설정은 파일 하나에 통째로 직렬화되므로, 여기서 저장하면 아직 "적용"을 누르지 않은
+        // 다른 변경분(해상도·볼륨 등)까지 같이 기록된다. 그것 자체는 큰 문제가 아니지만,
+        // Save()가 isDirty를 내려버리는 것은 문제다. 그 상태로 유저가 적용을 누르면
+        // CommitChanges가 맨 앞의 isDirty 검사에서 그냥 돌아가버려, 해상도를 바꾸고 적용을
+        // 눌러도 화면이 그대로인 증상이 된다. 그래서 저장 전 상태를 복원해준다.
+        bool _wasDirty = isDirty;
+
+        current.dataConsent = _consent;
+        isDirty = true;
+
+        // 화면 설정과 무관하므로 isDisplayDirty는 세우지 않는다. (세우면 동의만 바꿔도 창 크기가 튄다)
+        Save();
+
+        isDirty = _wasDirty;
+
+        OnDataConsentChangedEvent?.Invoke(current.dataConsent);
+    }
+
+    /// <summary>
+    /// 옵션 창의 좌/우 화살표용 순환입니다. NotAsked는 유저가 고를 수 있는 값이 아니므로
+    /// Granted <-> Declined 두 값만 오갑니다. (아직 묻지 않은 상태에서 화살표를 누르면
+    /// 동의 쪽이 아니라 거부 쪽으로 먼저 이동합니다 - 무심코 누른 것이 동의가 되면 안 됩니다)
+    /// </summary>
+    public void CycleDataConsent(int _delta)
+    {
+        EnsureLoaded();
+        if (0 == _delta) return;
+
+        EDataConsent _next = (EDataConsent.Granted == current.dataConsent)
+            ? EDataConsent.Declined
+            : EDataConsent.Granted;
+
+        if (EDataConsent.NotAsked == current.dataConsent)
+        {
+            _next = EDataConsent.Declined;
+        }
+
+        SetDataConsent(_next);
+    }
+
+    /// <summary>
+    /// 인스턴스를 만들지 않고 저장된 동의 상태만 읽습니다.
+    ///
+    /// Sentry는 RuntimeInitializeLoadType.SubsystemRegistration에서 자기 자신을 초기화하며,
+    /// 그 시점에는 씬이 아직 없어서 Instance 게터로 GameObject를 만들면 DontDestroyOnLoad
+    /// 보호가 보장되지 않습니다. (SettingsManager.Bootstrap의 AfterSceneLoad 주석과 같은 이유)
+    /// 그래서 그 경로에서는 이 메서드로 파일만 직접 읽습니다.
+    ///
+    /// 이미 매니저가 살아 있으면 로드된 값을 그대로 돌려주므로, 실행 중에 바뀐 값과
+    /// 어긋나지 않습니다. 즉 진실의 출처는 여전히 하나입니다.
+    /// </summary>
+    public static EDataConsent ReadPersistedConsent()
+    {
+        if (true == HasInstance) return instance.DataConsent;
+
+        SettingsRepository.TryLoad(out SettingsData _data);
+
+        // 변조·손상된 값이 그대로 "동의함"으로 읽히지 않도록 여기서도 교정한다.
+        _data.Validate();
+        return _data.dataConsent;
     }
 
     /// <summary>
@@ -709,6 +801,7 @@ public class SettingsManager : MonoBehaviour
         OnAudioSettingsAppliedEvent = null;
         OnGraphicsSettingsAppliedEvent = null;
         OnScreenTargetResolvedEvent = null;
+        OnDataConsentChangedEvent = null;
 
         if (instance == this)
         {

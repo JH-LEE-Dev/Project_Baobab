@@ -10,7 +10,6 @@ public class UIView_MainMenu : UIView
     public event Action LoadGameButtonClickedEvent;
     public event Action ExitButtonClickedEvent;
     public event Action<EOptionLanguage> OnLanguageOptionChangedEvent;
-    public event Action<bool> InitialSetupCompletedEvent;
 
     [Header("UI References")]
     [SerializeField] private UI_MainMenu mainMenuUI; // 메인 메뉴
@@ -155,7 +154,6 @@ public class UIView_MainMenu : UIView
         LoadGameButtonClickedEvent = null;
         ExitButtonClickedEvent = null;
         OnLanguageOptionChangedEvent = null;
-        InitialSetupCompletedEvent = null;
 
         if (null != context && null != context.localizationManager)
         {
@@ -272,8 +270,12 @@ public class UIView_MainMenu : UIView
 
     private void PrepareNextUIAfterSplash()
     {
-        // 언어 선택 및 데이터 수집 약관 동의 팝업 상시 노출
-        if (null != initialSetupPopup)
+        // 언어 선택 및 데이터 수집 동의 팝업은 "아직 묻지 않은" 유저에게만 노출한다.
+        //
+        // 예전에는 조건 없이 매 실행마다 띄웠는데, 선택이 저장되지 않던 시절에는 그럴 수밖에
+        // 없었다. 이제 선택이 Settings.json에 남으므로, 한 번 답한 유저에게 다시 묻는 것은
+        // 그 답을 무시하는 것과 같다. 마음이 바뀐 유저는 옵션 창에서 언제든 바꿀 수 있다.
+        if (null != initialSetupPopup && EDataConsent.NotAsked == SettingsManager.Instance.DataConsent)
         {
             if (null != pressAnyKeyUI) pressAnyKeyUI.Hide();
             if (null != mainMenuUI) mainMenuUI.gameObject.SetActive(false);
@@ -301,10 +303,16 @@ public class UIView_MainMenu : UIView
         }
     }
 
-    private void OnInitialSetupPopupCompleted(bool _isAgreed)
+    /// <summary>
+    /// 초기 설정 팝업이 닫힌 뒤의 화면 전환만 담당합니다.
+    ///
+    /// 동의 결과 자체는 여기로 오지 않습니다. 팝업이 확인 버튼에서 곧바로
+    /// SettingsManager.SetDataConsent로 기록하고, DataConsentGate가 그것을 SDK에 반영합니다.
+    /// 예전에는 이 자리에 결과를 실어 나르는 이벤트가 있었지만 구독자가 하나도 없어서
+    /// 동의 여부가 조용히 버려졌습니다. 같은 함정을 다시 만들지 않도록 통로를 없앴습니다.
+    /// </summary>
+    private void OnInitialSetupPopupCompleted()
     {
-        InitialSetupCompletedEvent?.Invoke(_isAgreed);
-
         if (null != pressAnyKeyUI)
         {
             pressAnyKeyUI.Show();
