@@ -88,6 +88,61 @@
       "ja": "◆",
       "enumType": "",
       "enumValue": ""
+    },
+    {
+      "id": 100,
+      "key": "LanguageSelectTitle",
+      "kr": "언어 설정",
+      "en": "Language",
+      "zhHans": "语言设置",
+      "zhHant": "語言設置",
+      "ja": "言語設定",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 101,
+      "key": "ConsentTitle",
+      "kr": "데이터 수집 및 서비스 약관",
+      "en": "Data Collection & Terms",
+      "zhHans": "数据收集与条款",
+      "zhHant": "數據收集與條款",
+      "ja": "データ収集および利用規約",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 102,
+      "key": "ConsentDesc",
+      "kr": "원활한 게임 서비스 제공과 오류 수정을 위해\n<color=#FFD54F>크래시 로그 및 익명 플레이 통계</color>를 수집합니다.\n수집된 정보는 게임 개선 목적으로만 사용되며,\n<color=#81C784>개인을 식별할 수 있는 정보는 수집되지 않습니다.</color>",
+      "en": "To improve stability and track in-game errors,\n<color=#FFD54F>anonymous crash logs and gameplay statistics</color> are collected.\nThis data is strictly used for game improvement,\nand <color=#81C784>no personally identifiable information is stored.</color>",
+      "zhHans": "为了提供更稳定的游戏体验并修复错误，\n我们将收集<color=#FFD54F>崩溃日志及匿名游戏统计数据</color>。\n所收集的信息仅用于改进游戏品质，\n<color=#81C784>绝不会收集任何个人身份信息。</color>",
+      "zhHant": "為了提供更穩定的遊戲體驗並修復錯誤，\n我們將收集<color=#FFD54F>崩潰日誌及匿名遊戲統計數據</color>。\n所收集的資訊僅用於改進遊戲品質，\n<color=#81C784>絕不會收集任何個人身分資訊。</color>",
+      "ja": "円滑なゲームサービスの提供および不具合修正のため、\n<color=#FFD54F>クラッシュログと匿名のプレイ統計</color>を収集します。\n収集された情報はゲーム品質の向上のみに使用され、\n<color=#81C784>個人を特定する情報は一切収集されません。</color>",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 103,
+      "key": "ConsentCheckbox",
+      "kr": "오류 보고 및 게임 데이터 수집에 동의합니다 (선택)",
+      "en": "I agree to error reporting and data collection (Optional)",
+      "zhHans": "同意错误报告和游戏数据收集（可选）",
+      "zhHant": "同意錯誤報告和遊戲數據收集（可選）",
+      "ja": "エラー報告およびゲームデータ収集に同意します（任意）",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 104,
+      "key": "Confirm",
+      "kr": "확인",
+      "en": "Confirm",
+      "zhHans": "确定",
+      "zhHant": "確認",
+      "ja": "確認",
+      "enumType": "",
+      "enumValue": ""
     }
   ]
 }

@@ -67,5 +67,5 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "LumberBoy.slnx"
+    "dotnet.defaultSolution": "Project_Baobab.slnx"
 }

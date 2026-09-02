@@ -192,6 +192,25 @@ public class SettingsManager : MonoBehaviour
     // 값 변경 (UI의 좌/우 화살표에 대응)
     // 값을 바꾸는 모든 경로는 먼저 EnsureLoaded를 거친다.
     // 로드 전에 current를 수정하면 뒤늦은 Load가 그 변경을 파일 내용으로 덮어써 버린다.
+    public EOptionLanguage CurrentLanguage
+    {
+        get
+        {
+            EnsureLoaded();
+            return current.language;
+        }
+    }
+
+    public void SetLanguage(EOptionLanguage _lang)
+    {
+        EnsureLoaded();
+        if (current.language == _lang) return;
+
+        current.language = _lang;
+        isDirty = true;
+        ApplyLanguage();
+    }
+
     public void CycleLanguage(int _delta)
     {
         EnsureLoaded();
