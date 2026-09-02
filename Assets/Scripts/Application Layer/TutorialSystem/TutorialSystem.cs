@@ -55,6 +55,12 @@ public class TutorialSystem
     private bool bMoneyThresholdReachedForUpgradeAxe;
     private bool bReceiveMoneyUIHideCompleted;
 
+    // ReceiveMoney 완료 ~ UpgradeAxe 시작 사이(안내 UI 퇴장 연출 약 1.7초)에 이미 도끼를 강화했는지.
+    // 이 구간은 TownSystem이 집(Tent) 상호작용을 잠가 애초에 들어갈 수 없지만, 그 잠금이 어떤 이유로든
+    // 걸리지 않은 경로를 대비한 안전망이다. 놓치면 UpgradeAxe를 완료시킬 방법이 사라지는데, 마을 차량은
+    // 그 완료로만 풀리므로 플레이어가 마을에 갇힌다.
+    private bool bAxeUpgradedBeforeUpgradeAxeStep;
+
     // TentUI(집)가 현재 열려 있는지. StartNewLogging은 "UpgradeAxe 안내 UI가 완전히 사라짐"과
     // "TentUI가 닫혀 있음" 두 조건이 모두 만족돼야 시작된다 - 도끼를 강화한 뒤에도 플레이어가
     // 다른 스킬을 마저 둘러보다가 나중에 TentUI를 닫을 수 있어서, 안내 UI가 먼저 사라지더라도
@@ -289,6 +295,14 @@ public class TutorialSystem
         bMoneyThresholdReachedForUpgradeAxe = false;
         bReceiveMoneyUIHideCompleted = false;
         StartStep(TutorialStep.UpgradeAxe);
+
+        // 안내 UI가 뜨기 전에 이미 도끼를 강화했다면 조건은 이미 만족된 것이므로 곧바로 완료 처리한다.
+        // (아래 TownOffroadVehicleActivated의 빈틈 처리와 같은 방식)
+        if (bAxeUpgradedBeforeUpgradeAxeStep)
+        {
+            bAxeUpgradedBeforeUpgradeAxeStep = false;
+            CompleteStep();
+        }
     }
 
     private void SkillDispatched(SkillDispatchedSignal _signal)
@@ -296,14 +310,23 @@ public class TutorialSystem
         if (CanProcessTutorialLogic() == false)
             return;
 
+        if (_signal.commandType != SkillCommandType.AxeDamage)
+            return;
+
         if (bStepActive && currentStep == TutorialStep.UpgradeAxe)
         {
-            if (_signal.commandType == SkillCommandType.AxeDamage)
-            {
-                // 마지막 스텝(StartNewLogging)은 여기서 곧바로 시작하지 않는다. "도끼를 강화하세요"
-                // 안내 UI가 사라지는 연출이 실제로 끝난 뒤(TutorialQuestHideCompletedSignal)에 시작한다.
-                CompleteStep();
-            }
+            // 마지막 스텝(StartNewLogging)은 여기서 곧바로 시작하지 않는다. "도끼를 강화하세요"
+            // 안내 UI가 사라지는 연출이 실제로 끝난 뒤(TutorialQuestHideCompletedSignal)에 시작한다.
+            CompleteStep();
+            return;
+        }
+
+        // UpgradeAxe가 아직 시작되지 않은 빈틈에서 강화한 경우. 그대로 두면 스텝이 시작된 뒤에는
+        // 완료 조건을 다시 만족시킬 수 없으므로(남은 돈이 재강화 비용에 못 미친다) 기억해뒀다가
+        // 스텝이 시작되는 즉시 완료시킨다.
+        if (bStepActive == false && currentStep == TutorialStep.ReceiveMoney)
+        {
+            bAxeUpgradedBeforeUpgradeAxeStep = true;
         }
     }
 

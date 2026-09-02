@@ -171,18 +171,28 @@ public class TownTileManager : MonoBehaviour
 
     /// <summary>
     /// 영구 획득한 전리품 종류만큼 LootPhillarColliderTilemap의 타일을 켠다.
-    /// CaptureLootPillarColliderTiles()가 좌상단부터 담아둔 칸을 LootPillarManager.DisplayOrder와
-    /// 같은 순서로 대응시키므로, 두 목록의 순서가 어긋나지 않는 한 인덱스로 바로 매칭된다.
+    ///
+    /// 채우는 방식이 LootPillarManager.SpawnAcquiredPillars()와 반드시 같아야 한다. 그쪽은 획득한
+    /// 것만 LootPoint_01부터 "앞에서부터 빈칸 없이" 채우므로(미획득은 건너뛰고 인덱스를 올리지 않는다),
+    /// 콜라이더도 똑같이 앞에서부터 채운다. 예전엔 여기서 DisplayOrder의 자리를 그대로 켰는데,
+    /// 그러면 획득 집합이 DisplayOrder의 접두사가 아닐 때(예: 포자 포션만 보유) 그림과 콜라이더가
+    /// 한 칸씩 어긋나 통과되는 기둥과 보이지 않는 벽이 동시에 생겼다.
+    /// (DisplayOrder 배열을 공유하는 것만으로는 부족하고, 채우는 규칙까지 같아야 한다)
     /// </summary>
     public void ApplyLootPillarColliderState(InDungeonObjectManager _inDungeonObjectManager)
     {
         if (LootPillarColliderTilemap == null || _inDungeonObjectManager == null) return;
 
-        int count = Mathf.Min(LootPillarManager.DisplayOrder.Length, lootPillarColliderCells.Count);
-        for (int i = 0; i < count; i++)
+        // 이 메서드만 따로 다시 호출돼도 결과가 같도록, 먼저 전부 비운 뒤 채운다.
+        ClearLootPillarColliderTiles();
+
+        int cellIndex = 0;
+        for (int i = 0; i < LootPillarManager.DisplayOrder.Length && cellIndex < lootPillarColliderCells.Count; i++)
         {
-            bool bAcquired = LootPillarManager.IsAcquired(_inDungeonObjectManager, LootPillarManager.DisplayOrder[i]);
-            LootPillarColliderTilemap.SetTile(lootPillarColliderCells[i], bAcquired ? lootPillarColliderTiles[i] : null);
+            if (!LootPillarManager.IsAcquired(_inDungeonObjectManager, LootPillarManager.DisplayOrder[i])) continue;
+
+            LootPillarColliderTilemap.SetTile(lootPillarColliderCells[cellIndex], lootPillarColliderTiles[cellIndex]);
+            cellIndex++;
         }
     }
 

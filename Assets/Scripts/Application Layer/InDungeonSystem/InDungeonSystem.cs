@@ -31,6 +31,13 @@ public class InDungeonSystem : MonoBehaviour
     private bool prevbCurrentlyDungeonScene = false;
     private bool bRetryGame = false;
     private bool bGoingToMainMenu = false;
+
+    // 메인메뉴 이탈이 요청됐는지를 "씬과 무관하게" 기록한다. bGoingToMainMenu는 던전에 있을 때만
+    // 세워지는데(아래 GoToMainMenuRequested의 씬 가드), 정작 던전→마을 귀환 연출 코루틴은 마을 씬에서
+    // 도는 것이 InDungeonSystem 쪽 사본이라 그 플래그로는 이탈을 감지할 수 없다. TownSystem 쪽에
+    // 대칭으로 있는 bMainMenuExitRequested와 같은 역할이며, 이탈 요청은 취소 불가 지점에서
+    // 발행되므로 한 번 서면 되돌릴 필요가 없다.
+    private bool bMainMenuExitRequested = false;
     private MapType selectedMapType;
     private ForestType selectedForestType;
     private bool bIsFromMainMenu = false;
@@ -806,7 +813,9 @@ public class InDungeonSystem : MonoBehaviour
 
         // 대기하는 0.7초 사이에 ESC로 메인메뉴 이탈이 요청됐다면, 이미 내려가고 있는 HUD를
         // 다시 올리면 안 되므로 여기서 멈춘다(HUDDown 직후 HUDUp이 뒤따라오던 레이스 컨디션 방지).
-        if (bGoingToMainMenu == true)
+        // bGoingToMainMenu가 아니라 bMainMenuExitRequested를 보는 이유는 그 필드 주석 참조 -
+        // 이 코루틴은 마을 씬(귀환 직후)에서도 도는데, 그때 bGoingToMainMenu는 씬 가드에 막혀 서지 않는다.
+        if (bMainMenuExitRequested == true)
             yield break;
 
         signalHub.Publish(new PopupUIUpSignal());
@@ -844,7 +853,8 @@ public class InDungeonSystem : MonoBehaviour
         // 0.7초 사이에 ESC → 메인메뉴 이탈이 요청될 수 있다. 그대로 두면 카메라 상승 연출 도중에
         // 피로도 감소가 시작되고 컨테이너/차량 콜라이더까지 되살아나 상호작용 팝업이 뜬다.
         // PopupUIGoUPCoroutine / RideOffroad와 같은 이유의 가드다.
-        if (bGoingToMainMenu == true)
+        // (bGoingToMainMenu가 아닌 이유는 PopupUIGoUPCoroutine 쪽 주석과 동일)
+        if (bMainMenuExitRequested == true)
             yield break;
 
         signalHub.Publish(new StartDecreaseStaminaSignal());
@@ -863,6 +873,11 @@ public class InDungeonSystem : MonoBehaviour
 
     private void GoToMainMenuRequested(GoToMainMenuRequestedSignal _signal)
     {
+        // 이탈 요청 자체는 씬과 무관하게 먼저 기록한다. 아래 씬 가드보다 반드시 앞이어야 한다 -
+        // 던전→마을 귀환 연출 코루틴은 마을 씬에서 도는 InDungeonSystem 쪽 사본이라, 그 구간의
+        // 이탈은 여기서 씬 가드에 걸려 되돌아간다. 그 코루틴들이 볼 수 있는 유일한 신호가 이 플래그다.
+        bMainMenuExitRequested = true;
+
         // Town에 있을 때는 TownSystem이 처리하고, 여기선 Dungeon이 실제로 활성화된 상태일 때만 처리한다.
         if (bCurrentlyDungeonScene == false || bGoingToMainMenu == true)
             return;

@@ -11,6 +11,15 @@ public class Tent : MonoBehaviour, IShadowCaster
 
     private InputManager inputManager;
 
+    // 플레이어가 상호작용 트리거 안에 들어와 있는지. 실제 상호작용 가능 여부(bCanInteract)는
+    // 여기에 튜토리얼 잠금까지 반영해 UpdateInteractState()가 정한다.
+    private bool bPlayerInRange = false;
+
+    // 튜토리얼 "도끼를 강화하세요" 안내가 뜨기 전까지 특성 창을 열지 못하게 막는 잠금.
+    // 정산금을 받은 직후 안내 UI가 사라지기 전 빈틈에 도끼를 미리 강화해버리면, 남은 돈이
+    // 재강화 비용에 못 미쳐 그 퀘스트를 영영 완료할 수 없게 되므로 구간 자체를 열지 않는다.
+    private bool bTutorialLocked = false;
+
     private bool bCanInteract = false;
     private bool bInteract = false;
 
@@ -141,10 +150,8 @@ public class Tent : MonoBehaviour, IShadowCaster
     {
         if (_other.CompareTag(PLAYER_TAG))
         {
-            outLineObject.SetActive(true);
-
-            bCanInteract = true;
-            TentInteractStateChangedEvent?.Invoke(true);
+            bPlayerInRange = true;
+            UpdateInteractState();
         }
     }
 
@@ -152,9 +159,7 @@ public class Tent : MonoBehaviour, IShadowCaster
     {
         if (_other.CompareTag(PLAYER_TAG))
         {
-            outLineObject.SetActive(false);
-
-            bCanInteract = false;
+            bPlayerInRange = false;
 
             // TentUI가 열려 있는 채로 트리거를 벗어나는 경우(넉백 등), bInteract만 조용히 꺼버리면
             // 실제 UI는 열린 채로 남아 있는데 내부 상태만 "닫힘"이 되어버린다. 그러면 다음 E 입력이
@@ -166,12 +171,45 @@ public class Tent : MonoBehaviour, IShadowCaster
                 TentInteractEvent?.Invoke(false);
             }
 
-            TentInteractStateChangedEvent?.Invoke(false);
+            UpdateInteractState();
         }
+    }
+
+    // 상호작용 범위와 튜토리얼 잠금을 합쳐 실제 상호작용 가능 여부를 확정한다. 아웃라인과
+    // 상호작용 안내(TentInteractStateChangedEvent)도 이 결과 하나만 따라간다.
+    private void UpdateInteractState()
+    {
+        bool _canInteract = bPlayerInRange && false == bTutorialLocked;
+        if (_canInteract == bCanInteract)
+            return;
+
+        bCanInteract = _canInteract;
+        outLineObject.SetActive(_canInteract);
+        TentInteractStateChangedEvent?.Invoke(_canInteract);
+    }
+
+    // 튜토리얼 "도끼를 강화하세요"가 시작될 때까지 특성 창을 잠근다(TownSystem이 호출).
+    public void SetTutorialLock(bool _bLocked)
+    {
+        if (bTutorialLocked == _bLocked)
+            return;
+
+        bTutorialLocked = _bLocked;
+
+        // 잠기는 순간 이미 열려 있던 특성 창은 함께 닫는다. TentUI는 시간을 멈추지 않아
+        // 창을 열어둔 채로도 게임이 계속 흐르므로, 열린 상태를 그대로 두면 잠금이 무의미해진다.
+        if (true == bTutorialLocked && true == bInteract)
+        {
+            bInteract = false;
+            TentInteractEvent?.Invoke(false);
+        }
+
+        UpdateInteractState();
     }
 
     public void ResetTent()
     {
+        bPlayerInRange = false;
         bCanInteract = false;
         bInteract = false;
     }
