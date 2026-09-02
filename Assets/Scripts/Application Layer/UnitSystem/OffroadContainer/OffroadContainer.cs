@@ -228,7 +228,6 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
             // ContainerTransferring 및 DynamicTransferring 상태도 비행 중인 상태로 간주
             bool bStillFlying = item.MoveState == ItemMoveState.Transferring ||
-                item.MoveState == ItemMoveState.CurveTransferring ||
                 item.MoveState == ItemMoveState.ContainerTransferring ||
                 item.MoveState == ItemMoveState.DynamicTransferring;
 
