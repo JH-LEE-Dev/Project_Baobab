@@ -96,6 +96,7 @@ public class AbilityHUD : MonoBehaviour
     public int FlowerStack => flowerStack;
 
     private Sequence resetEffectSequence;
+    private Sequence flowerStackPopSequence;
     private Tween levelUpSpriteEffectTween;
     private Tween levelUpParticleStopTween;
     private readonly Tween[] eventSpriteEffectTweens = new Tween[(int)EventSpriteEffectType.Count];
@@ -208,6 +209,19 @@ public class AbilityHUD : MonoBehaviour
         currentExperience = ClampExperience(_currentExperience);
         flowerStack = Mathf.Max(0, _flowerStack);
         Refresh();
+    }
+
+    public void CancelPresentation()
+    {
+        StopResetExperienceEffect(true);
+        ClearDeferredExperienceMotion();
+        StopLevelUpSpriteEffect();
+        StopLevelUpParticleEffect();
+        StopAllEventSpriteEffects();
+        StopDownStartSound();
+        StopBarFontExperienceMotion();
+        StopFlowerStackPopEffect();
+        StopFlowerVisualPresentationEffects();
     }
 
     public void SetExperience_Effect(int _currentExperience)
@@ -486,17 +500,58 @@ public class AbilityHUD : MonoBehaviour
             return;
         }
 
+        StopFlowerStackPopEffect();
         flowerStackFontRectTransform.DOKill(false);
         flowerStackFontRectTransform.localScale = flowerStackFontInitialScale;
         flowerStackFontRectTransform.anchoredPosition = flowerStackFontInitialAnchoredPosition;
 
-        Sequence _sequence = DOTween.Sequence();
-        _sequence.Append(flowerStackFontRectTransform.DOScale(flowerStackFontInitialScale * flowerStackPopScale, flowerStackPopDuration * 0.22f).SetEase(Ease.OutExpo));
-        _sequence.Append(flowerStackFontRectTransform.DOScale(flowerStackFontInitialScale * 0.86f, flowerStackPopDuration * 0.22f).SetEase(Ease.InOutSine));
-        _sequence.Append(flowerStackFontRectTransform.DOScale(flowerStackFontInitialScale * 1.12f, flowerStackPopDuration * 0.20f).SetEase(Ease.InOutSine));
-        _sequence.Append(flowerStackFontRectTransform.DOScale(flowerStackFontInitialScale, flowerStackPopDuration * 0.36f).SetEase(Ease.OutBack));
+        flowerStackPopSequence = DOTween.Sequence();
+        flowerStackPopSequence.Append(flowerStackFontRectTransform.DOScale(flowerStackFontInitialScale * flowerStackPopScale, flowerStackPopDuration * 0.22f).SetEase(Ease.OutExpo));
+        flowerStackPopSequence.Append(flowerStackFontRectTransform.DOScale(flowerStackFontInitialScale * 0.86f, flowerStackPopDuration * 0.22f).SetEase(Ease.InOutSine));
+        flowerStackPopSequence.Append(flowerStackFontRectTransform.DOScale(flowerStackFontInitialScale * 1.12f, flowerStackPopDuration * 0.20f).SetEase(Ease.InOutSine));
+        flowerStackPopSequence.Append(flowerStackFontRectTransform.DOScale(flowerStackFontInitialScale, flowerStackPopDuration * 0.36f).SetEase(Ease.OutBack));
+        flowerStackPopSequence.OnComplete(CompleteFlowerStackPopEffect);
 
         _newFlowerVisual?.PlayGrow();
+    }
+
+    private void CompleteFlowerStackPopEffect()
+    {
+        flowerStackPopSequence = null;
+    }
+
+    private void StopFlowerStackPopEffect()
+    {
+        bool _wasPlaying = null != flowerStackPopSequence && flowerStackPopSequence.IsActive();
+        if (_wasPlaying)
+            flowerStackPopSequence.Kill(false);
+
+        flowerStackPopSequence = null;
+
+        if (_wasPlaying && null != flowerStackFontRectTransform)
+        {
+            flowerStackFontRectTransform.localScale = flowerStackFontInitialScale;
+            flowerStackFontRectTransform.anchoredPosition = flowerStackFontInitialAnchoredPosition;
+        }
+    }
+
+    private void StopFlowerVisualPresentationEffects()
+    {
+        CollectFlowerObjectLists();
+        StopFlowerVisualPresentationEffects(spawnedFlowerObjects);
+        StopFlowerVisualPresentationEffects(pooledFlowerObjects);
+    }
+
+    private static void StopFlowerVisualPresentationEffects(List<RectTransform> _flowerObjects)
+    {
+        for (int i = 0; i < _flowerObjects.Count; i++)
+        {
+            RectTransform _flowerObject = _flowerObjects[i];
+            if (null == _flowerObject)
+                continue;
+
+            _flowerObject.GetComponent<FlowerVisual>()?.StopPresentationEffects();
+        }
     }
 
     private void TryPlayDownTickSound(int _previousExperience, int _currentExperience, float _elapsed)
@@ -631,10 +686,13 @@ public class AbilityHUD : MonoBehaviour
 
         if (null != flowerStackFontRectTransform)
         {
+            StopFlowerStackPopEffect();
             flowerStackFontRectTransform.DOKill(false);
             flowerStackFontRectTransform.localScale = flowerStackFontInitialScale;
             flowerStackFontRectTransform.anchoredPosition = flowerStackFontInitialAnchoredPosition;
         }
+
+        StopFlowerVisualPresentationEffects();
 
         fontMakerForBar?.ResetGlyphColor();
         if (null != fillImage)
@@ -1038,13 +1096,15 @@ public class AbilityHUD : MonoBehaviour
             levelUpSpriteEffectRoot.SetActive(true);
     }
 
+    private void OnDisable()
+    {
+        if (Application.isPlaying)
+            CancelPresentation();
+    }
+
     private void OnDestroy()
     {
-        StopResetExperienceEffect(false);
-        StopLevelUpSpriteEffect();
-        StopLevelUpParticleEffect();
-        StopAllEventSpriteEffects();
-        StopDownStartSound();
+        CancelPresentation();
     }
 
     private void PlayLevelUpSpriteEffect()

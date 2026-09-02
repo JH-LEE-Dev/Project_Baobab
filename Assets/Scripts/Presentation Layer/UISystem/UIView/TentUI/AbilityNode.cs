@@ -100,6 +100,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public Color CurrentNodeFrameColor => currentNodeFrameColor;
     public bool IsPointerInside => isPointerInside || isPadCursorInside;
     public bool IsProgressionVisible => progressionVisible;
+    public bool IsVisualVisible => visualHidden == false;
     public VFXComponent VfxTemplate => vfxComponent;
 
     private void Awake()
@@ -339,6 +340,15 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void SetVisualVisible(bool _visible)
     {
         visualHidden = _visible == false;
+        CacheInteractionReferences();
+        SetTouchAreaRaycastTarget(_visible);
+
+        if (false == _visible)
+        {
+            CancelHoverState();
+            consumedRapidClick = false;
+        }
+
         ApplyImageAlpha(abilityBaseImage, _visible ? 1f : 0f);
         ApplyImageAlpha(abilityBackgroundImage, _visible ? 1f : 0f);
         ApplyImageAlpha(abilityPictureImage, _visible ? 1f : 0f);
@@ -759,6 +769,9 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     private void SubmitLevelUpRequest(bool _allowEditorModifiers)
     {
+        if (visualHidden)
+            return;
+
         bool isApproved;
 #if UNITY_EDITOR
         isApproved = owner != null && (_allowEditorModifiers && IsControlPressed()
@@ -959,9 +972,19 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
         Image touchAreaImage = abilityNodeTouchArea.GetComponent<Image>();
         if (touchAreaImage != null)
-            touchAreaImage.raycastTarget = true;
+            touchAreaImage.raycastTarget = visualHidden == false;
 
         return touchAreaImage != null;
+    }
+
+    private void SetTouchAreaRaycastTarget(bool _enabled)
+    {
+        if (abilityNodeTouchArea == null)
+            return;
+
+        Image touchAreaImage = abilityNodeTouchArea.GetComponent<Image>();
+        if (touchAreaImage != null)
+            touchAreaImage.raycastTarget = _enabled;
     }
 
     private void DisableVisualRaycasts()
