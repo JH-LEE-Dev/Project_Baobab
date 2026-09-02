@@ -918,9 +918,24 @@ public class UIView_Result : UIView
 
         Vector2 screenPosition = mouse.position.ReadValue();
         Camera eventCamera = GetUICamera();
-        goHomeHoverTarget?.RefreshHover(screenPosition, eventCamera);
-        retryHoverTarget?.RefreshHover(screenPosition, eventCamera);
-        tutorialGoHomeHoverTarget?.RefreshHover(screenPosition, eventCamera);
+        RefreshButtonHoverTarget(goHomeHoverTarget, goHomeTouchAreaButton, screenPosition, eventCamera);
+        RefreshButtonHoverTarget(retryHoverTarget, retryTouchAreaButton, screenPosition, eventCamera);
+        RefreshButtonHoverTarget(tutorialGoHomeHoverTarget, tutorialGoHomeTouchAreaButton, screenPosition, eventCamera);
+    }
+
+    private static void RefreshButtonHoverTarget(
+        UIHoverSelectionTarget hoverTarget,
+        Button button,
+        Vector2 screenPosition,
+        Camera eventCamera)
+    {
+        // RectTransformUtility는 비활성 RectTransform도 좌표 판정을 할 수 있다.
+        // 현재 결과 타입에서 숨긴 버튼까지 수동 Hover 검사하면 공유 선택 커서를 가로챌 수 있으므로,
+        // 실제로 활성화되어 상호작용 가능한 버튼만 갱신한다.
+        if (null == hoverTarget || null == button || false == button.isActiveAndEnabled || false == button.IsInteractable())
+            return;
+
+        hoverTarget.RefreshHover(screenPosition, eventCamera);
     }
 
     private Camera GetUICamera()

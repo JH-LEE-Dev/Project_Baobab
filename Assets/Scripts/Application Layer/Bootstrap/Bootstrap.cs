@@ -237,6 +237,26 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         TryBeginTransition(SceneType.Town);
     }
 
+    /// <summary>
+    /// 던전 → 마을 귀환 전용 경로입니다. 이 전환은 "새 게임"도 "이어하기"도 아닙니다 -
+    /// gameInstaller가 살아 있는 채로 모든 상태를 그대로 들고 넘어가므로, bNewGame을 건드리지도
+    /// 않고 세이브 유무도 확인하지 않습니다.
+    ///
+    /// 예전엔 이 경로가 GoToTownScene(true)로 요청됐습니다. 지금은 bNewGame이 gameInstaller를
+    /// 새로 만들 때만 읽히는 덕에 결과적으로 무해했지만, 마을 진입 시점에 bNewGame을 참조하는
+    /// 로직이 하나라도 생기면 던전에서 돌아온 플레이어가 새 게임으로 오인됩니다.
+    ///
+    /// 그렇다고 GoToTownScene(false)로 바꾸면 안 됩니다. 위쪽 HasSaveData() 가드에 걸려
+    /// 전환 자체가 취소되는데, MainMenu → Dungeon 튜토리얼은 아직 한 번도 저장된 적이 없는
+    /// 상태로 첫 귀환을 하므로(자동저장은 ArriveTown/DepartToForest/DepartToMainMenu뿐이고,
+    /// GoToDungeonFromMainMenu가 기존 세이브를 지우고 출발한다) 카메라만 올라간 채
+    /// 던전에 갇힙니다. 그래서 둘 중 하나를 고르는 대신 전용 경로로 분리했습니다.
+    /// </summary>
+    public void ReturnToTownScene()
+    {
+        TryBeginTransition(SceneType.Town);
+    }
+
     public void GoToDungeonFromMainMenu()
     {
         // 튜토리얼 설정에 따라 목적지가 달라지므로 먼저 확정한다.

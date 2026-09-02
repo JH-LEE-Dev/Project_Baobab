@@ -364,6 +364,19 @@ public class InputReader
     /// PauseMove는 소유자별 잠금이 아니라 단일 bool이라, 잠깐 겹쳐 잠그는 쪽(ESC 일시정지)이
     /// 해제할 때 false를 박아버리면 원래 잠그고 있던 쪽의 잠금까지 함께 풀린다.
     /// 겹쳐 잠그는 쪽은 이 값을 미리 읽어두었다가 그대로 되돌려야 한다.
+    ///
+    /// [규칙] 이동 잠금을 새로 거는 지점을 추가할 때는, 해제할 때 false를 박지 말고
+    /// 잠그기 직전의 IsMovePaused를 저장했다가 그 값으로 되돌릴 것.
+    /// (선례: GameplayUICoordinator.bMovePausedBeforeEsc, KnockBackState.bMovePausedBeforeKnockBack,
+    ///  UIView_Tent.bMovePausedBeforeShow)
+    ///
+    /// ESC/인벤토리 잠금처럼 소유자 집합(escLockOwners)으로 바꾸지 않는 이유:
+    /// PauseMove는 잠그는 쪽과 푸는 쪽이 씬·시스템 경계를 넘어 의도적으로 짝이 맞지 않는다.
+    /// (TeleportManager가 잠그고 다음 씬의 InDungeonProductionManager.CameraDownIsEnd가 풀거나,
+    ///  BootStrap.SetupMainMenuScene/MainMenuInstaller가 "누가 걸었든 전부" 푸는 식)
+    /// 소유자별로 나누면 그 블랭킷 해제들의 의미가 바뀌고, 짝을 하나라도 놓치는 순간
+    /// 실패 방향이 "조금 일찍 풀림"에서 "영영 안 풀림(조작 불가)"으로 나빠진다.
+    /// 잠금 지점이 실제로 늘어나는 시점에 신규 호출부부터 소유자 키를 도입하는 편이 안전하다.
     /// </summary>
     public bool IsMovePaused => bPauseMove;
 

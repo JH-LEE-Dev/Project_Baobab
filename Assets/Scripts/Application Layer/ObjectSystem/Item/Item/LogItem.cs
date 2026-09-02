@@ -591,6 +591,12 @@ public class LogItem : Item, IStaticCollidable
         rotationSpeed = 0f;
         totalRotation = 0f;
         bCanAcquired = true;
+
+        // bDrop은 의도적으로 여기서 건드리지 않는다. ResetItem()은 풀 Get 시점에 불리는데,
+        // LogItemPoolingManager를 쓰는 벨트/재단기 쪽(LogInBelt, LogCutter, LogProcessingManager)은
+        // 생성 시 한 번 설정된 IsDropItem(false)에 의존하고 Get 이후 다시 설정하지 않는다.
+        // 여기서 true로 되돌리면 그 사용처들의 동작이 함께 바뀐다.
+        // 던전 드랍 아이템의 bDrop 보장은 LogItemController.OnGetLogItem에서 국소적으로 한다.
         bFadeAndVanish = false;
         // 풀에서 재사용될 때 이전 소유자(예: DropAllItem)가 남긴 구독이 새 사용처로 잘못 넘어가지 않도록 초기화
         LogItemVanishedEvent = null;

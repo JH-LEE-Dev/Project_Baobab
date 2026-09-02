@@ -509,6 +509,18 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         bDead = true;
         healthComponent.SetStaminaDecrease(false);
+
+        // 아이템 감지(UpdateItemDetection)를 여기서 꺼야 한다. 이 루프는 bDead를 보지 않고
+        // bCanAcquiredItem만 확인하는데, 차량 귀환 경로는 HandleGameEnd()가 DisableAttackComponent()로
+        // 이 값을 꺼주는 반면 사망 경로에는 그 처리가 없었다.
+        //
+        // 그대로 두면 사망 후에도 0.2초(itemDetectionInterval)마다 주변 원목에 SetSuckTarget이 걸리고,
+        // LogItem.UpdateSucking이 character.bDead를 보고 곧바로 Dropped로 되돌리면서 Shiny/보석 아우라
+        // 연출을 매번 다시 재생한다(초당 5회). 결과창이 뜰 때까지 시체 주변 원목이 계속 깜빡인다.
+        //
+        // 다음 던전 진입 시 SetWhereIsCharacter(true)가 다시 true로 되돌리므로 복구 경로는 기존과 같다.
+        bCanAcquiredItem = false;
+
         inputManager.PauseMove(true);
 
         // 여기서부터 결과창까지는 되돌릴 수 없는 구간이므로 ESC를 막는다.

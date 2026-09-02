@@ -287,6 +287,19 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         }
 
         _item.ResetItem();
+
+        // 이 풀의 원목은 던전 바닥에 떨어져 플레이어가 주워야 하므로 bDrop이 반드시 true여야 한다
+        // (LogItem.SetSuckTarget이 state==Dropped / bDrop / bCanAcquired 세 조건을 모두 본다).
+        //
+        // 지금까지는 이 풀이 IsDropItem을 한 번도 호출하지 않아 필드 기본값(true)이 유지되는 데
+        // 기대고 있었다. 그건 "이 풀에 다른 사용처의 아이템이 절대 섞이지 않는다"는 전제에 기댄
+        // 안전성이라(다른 풀들은 전부 IsDropItem(false)로 쓴다), 전제가 깨지면 bDrop이 false인 채로
+        // 바닥에 떨어져 영영 주울 수 없는 원목이 된다. 여기서 명시적으로 못 박는다.
+        //
+        // ResetItem()에 넣지 않은 이유: ResetItem()은 Get 시점에 불리는데, 벨트/재단기 쪽
+        // (LogInBelt/LogCutter/LogProcessingManager)은 생성 시 설정된 IsDropItem(false)에 의존하고
+        // Get 이후 다시 설정하지 않아, 거기서 되돌리면 마을 가공 동작까지 바뀐다.
+        _item.IsDropItem(true);
     }
 
     private void OnReleaseLogItem(LogItem _item)
