@@ -137,6 +137,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private IObjectPool<TreeObj> treePool;
     private Coroutine growthCoroutine;
     private Coroutine spawnTreesCoroutine;
+
+    // 스폰 지점 옆 칸들을 뒤늦게 개방하는 타이머. 맵마다 한 번만 돈다.
+    private Coroutine delayedGrassOpenCoroutine;
+
+    // 던전 진입(초기 스폰 완료) 후 스폰 지점 옆 칸을 개방하기까지의 시간.
+    // 예전에 TileMapGenerator의 코루틴이 쓰던 값과 같다.
+    private const float DelayedGrassOpenDelay = 5f;
     private CullingGroup cullingGroup;
     private BoundingSphere[] spheres;
     private float[] cullingDistances;
@@ -178,6 +185,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     [Header("Tree Generation")]
     [SerializeField] private TreeGenerationStrategySO currentTreeGenerationStrategy;
+
+    // SetupForMapType이 Instantiate로 만든 런타임 사본. 인스펙터에서 직접 꽂아둔 에셋과
+    // 구분하기 위해 따로 들고 있는다 - 에셋을 Destroy하면 에셋 자체가 날아간다.
+    private TreeGenerationStrategySO ownedStrategyInstance;
     [SerializeField] private List<MapTypeTreeGenerationData> mapTypeTreeGenerationDatas;
 
     private float treeGrowTime = 10f;
@@ -393,6 +404,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 데이터가 빠진 숲으로 들어갔을 때 별 표식/별자리 발현 로직이 엉뚱한 숲에서 계속 돈다.
         // 인스펙터 기본값(currentTreeGenerationStrategy)은 비어 있으므로 여기서 null로 두면
         // 나무가 아예 생성되지 않아, 데이터 누락이 조용히 묻히지 않고 즉시 드러난다.
+        // 직전 던전에서 만든 런타임 사본을 반드시 파괴한다. Instantiate로 만든 ScriptableObject는
+        // 어떤 씬에도 속하지 않아서, 참조만 끊으면 회수되지 않고 그대로 남는다(진입마다 하나씩 누적).
+        // 별뿌리 숲 전략은 그 사본이 treeTriggerGroupDict/groupStarPositions까지 붙들고 있다.
+        // 인스펙터에서 직접 꽂아둔 에셋은 절대 파괴하면 안 되므로 우리가 만든 사본만 지운다.
+        DestroyOwnedStrategyInstance();
+
         currentTreeGenerationStrategy = null;
 
         if (mapTypeTreeGenerationDatas != null)
@@ -403,6 +420,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 if (mapTypeTreeGenerationDatas[i].strategy == null) break;
 
                 currentTreeGenerationStrategy = Instantiate(mapTypeTreeGenerationDatas[i].strategy);
+                ownedStrategyInstance = currentTreeGenerationStrategy;
                 currentTreeGenerationStrategy.currentMapType = _mapType;
                 return;
             }
@@ -643,6 +661,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         StopGrowth();
+        StopDelayedGrassOpen();
         ClearTrees();
     }
 
@@ -654,6 +673,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             SetupCullingGroup();
             StopGrowth();
+            StopDelayedGrassOpen();
             ClearTrees();
 
             // 일괄 스폰 구간에서는 나무마다 컬링 개수를 갱신하지 않는다. 스폰이 끝난 직후의
@@ -677,6 +697,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             // 3. 5초 후 성장 루틴 시작
             growthCoroutine = StartCoroutine(StartGrowthAfterDelay());
 
+            // 스폰 지점 옆 칸 개방도 여기서 예약한다. 초기 스폰이 끝난 뒤에 걸어야
+            // availablePositions가 이미 채워진 상태라 추가분이 섞여도 안전하다.
+            delayedGrassOpenCoroutine = StartCoroutine(OpenDelayedGrassAfterDelay());
+
             // 별의 주시: 맵 전환과 무관하게 매니저 생애주기 동안 한 번만 시작해 계속 순환시킨다
             // (루틴 내부에서 currentMapType/스킬 해금 여부를 매 주기 확인하므로 재시작할 필요가 없다).
             if (starGazeCoroutine == null)
@@ -696,6 +720,40 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             growthCoroutine = StartCoroutine(currentTreeGenerationStrategy.GrowthRoutine(this));
         }
+    }
+
+    private void StopDelayedGrassOpen()
+    {
+        if (delayedGrassOpenCoroutine == null)
+            return;
+
+        StopCoroutine(delayedGrassOpenCoroutine);
+        delayedGrassOpenCoroutine = null;
+    }
+
+    /// <summary>
+    /// 스폰 지점(플레이어/포탈) 바로 옆이라 진입 직후에는 비워둔 칸들을, 일정 시간이 지난 뒤
+    /// 스폰 후보(availablePositions)에 합류시킨다. 여기부터는 성장 루틴이 그 자리에도
+    /// 나무를 심을 수 있다.
+    ///
+    /// 안전구역(centerSafeZoneRadius) 안쪽은 이 목록에 애초에 들어오지 않으므로 영향받지 않는다.
+    /// 개방 대상은 "안전구역 밖이면서 스폰 지점 월드 1.5 이내"인 몇 칸뿐이다
+    /// (두 판정의 단위가 달라서 - 안전구역은 셀 인덱스, 스폰 배제는 월드 거리 - 생기는 좁은 고리).
+    /// </summary>
+    private IEnumerator OpenDelayedGrassAfterDelay()
+    {
+        yield return new WaitForSeconds(DelayedGrassOpenDelay);
+
+        List<Vector3> _delayed = environmentProvider?.tilemapDataProvider?.GetDelayedGrassTileWorldPositions();
+        if (_delayed != null)
+        {
+            for (int i = 0; i < _delayed.Count; i++)
+            {
+                AddAvailablePosition(_delayed[i]);
+            }
+        }
+
+        delayedGrassOpenCoroutine = null;
     }
 
     public IEnvironmentProvider EnvironmentProvider => environmentProvider;
@@ -824,22 +882,20 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             int checkIdx = (startIdx + i) % count;
             Vector3 spawnPos = availablePositions[checkIdx];
-            Vector3Int cellPos = environmentProvider.tilemapDataProvider.WorldToCell(spawnPos);
 
-            // 해당 타일이 점유 중(플레이어, 몬스터 등)이 아니면 생성 진행
-            if (!environmentProvider.pathfindGridProvider.IsOccupied(cellPos) &&
-                !environmentProvider.tilemapDataProvider.HasRockDeco(cellPos))
-            {
-                int lastIdx = availablePositions.Count - 1;
-                availablePositions[checkIdx] = availablePositions[lastIdx];
-                availablePositions.RemoveAt(lastIdx);
+            // 스폰 가부(타일 점유/바위 데코) 판정은 SpawnTreeAt이 단독으로 책임진다.
+            // 예전엔 여기서 같은 조건을 한 번 더 검사하고, 통과하면 위치를 "먼저" 지운 뒤
+            // SpawnTreeAt을 불렀다. 두 검사가 항상 같은 답을 내는 동안에는 무해했지만,
+            // SpawnTreeAt에 조건이 하나라도 늘면 루프가 계속 돌게 되고 - 그때 위에서 스냅샷해 둔
+            // count가 이미 줄어든 리스트를 넘어 IndexOutOfRangeException으로 터지는 구조였다.
+            // 성공했을 때만 위치를 지우면 루프 도중 리스트 길이가 변하지 않고,
+            // 실패해도 그 자리를 잃지 않는다.
+            if (SpawnTreeAt(spawnPos, _isGrowing) == null) continue;
 
-                TreeObj tree = SpawnTreeAt(spawnPos, _isGrowing);
-                if (tree != null)
-                {
-                    return true;
-                }
-            }
+            int lastIdx = availablePositions.Count - 1;
+            availablePositions[checkIdx] = availablePositions[lastIdx];
+            availablePositions.RemoveAt(lastIdx);
+            return true;
         }
 
         return false;
@@ -1400,6 +1456,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.gameObject.SetActive(false);
     }
 
+    private void DestroyOwnedStrategyInstance()
+    {
+        if (ownedStrategyInstance == null)
+            return;
+
+        Destroy(ownedStrategyInstance);
+        ownedStrategyInstance = null;
+    }
+
     private void OnDestroyTree(TreeObj _tree)
     {
         if (_tree != null) Destroy(_tree.gameObject);
@@ -1432,7 +1497,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private void OnDestroy()
     {
         StopGrowth();
+        StopDelayedGrassOpen();
         ClearTrees();
+        DestroyOwnedStrategyInstance();
 
         if (offroadVehicle != null)
         {

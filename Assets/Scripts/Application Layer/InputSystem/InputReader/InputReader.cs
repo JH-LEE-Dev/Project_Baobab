@@ -121,6 +121,12 @@ public class InputReader
     /// <summary>TentUI(특성 창)가 열려 있는 동안 거는 잠금의 소유자 키입니다.</summary>
     public const string INVENTORY_LOCK_OWNER_TENTUI = "TentUI";
 
+    /// <summary>
+    /// WarningUI(확인 팝업)가 떠 있는 동안 거는 잠금의 소유자 키입니다.
+    /// WarningUI는 ESC/내비게이션과 달리 입력 모드를 UI로 바꾸지 않으므로 별도 잠금이 필요합니다.
+    /// </summary>
+    public const string INVENTORY_LOCK_OWNER_WARNINGUI = "WarningUI";
+
     public void Initialize(InputDeviceSettings _deviceSettings)
     {
         if (null == deviceTracker)
@@ -460,6 +466,13 @@ public class InputReader
     private void OnInventoryKeyPressed(InputAction.CallbackContext context)
     {
         if (0 < inventoryLockOwners.Count)
+            return;
+
+        // UI 모드(ESC 일시정지 메뉴, 내비게이션 팝업, 결과창, 특성 창 등이 떠 있는 구간)에서는
+        // 인벤토리 키를 게임플레이 쪽으로 흘리지 않는다. 다른 게임플레이 키(상호작용/포션/공격)는
+        // 모두 CanDispatchGameplay로 걸러지는데 인벤토리만 빠져 있어서, 메뉴 위로 가방이 겹쳐
+        // 열리고 그 상태로 조작까지 되는 버그가 있었다.
+        if (false == CanDispatchGameplay)
             return;
 
         InventoryKeyEvent?.Invoke();

@@ -4,6 +4,12 @@ using System.Collections.Generic;
 public interface ITilemapDataProvider
 {
     List<Vector3> GetGrassTileWorldPositions();
+
+    // 스폰 지점(플레이어/포탈) 바로 옆이라 진입 직후에는 나무를 심지 않는 칸들.
+    // 위 GetGrassTileWorldPositions()에는 들어 있지 않으며, 진입 후 일정 시간이 지나면
+    // InDungeonObjectManager가 이 목록을 스폰 후보에 합류시킨다.
+    List<Vector3> GetDelayedGrassTileWorldPositions();
+
     List<Vector3> GetWalkableTileWorldPositions();
     Vector3 GetPlayerSpawnPosition();
     Vector3 GetPortalSpawnPosition();

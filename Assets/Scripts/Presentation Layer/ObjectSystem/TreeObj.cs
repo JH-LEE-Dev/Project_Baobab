@@ -419,7 +419,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
         TreeGetHitEvent?.Invoke(this);
 
-        if (!wasAlreadyDead && bDead)
+        // 이 타격으로 죽었는지는 반드시 여기서 확정해 둔다. 아래 TreeDeadEvent를 타면 풀 반환
+        // (OnTreeDead -> TryReleaseTree -> OnReleaseTree -> ResetTree)이 bDead를 false로
+        // 되돌려버리므로, 이벤트가 끝난 뒤에 bDead를 다시 읽으면 "죽지 않았다"로 보인다.
+        bool bDiedThisHit = (false == wasAlreadyDead && true == bDead);
+
+        if (bDiedThisHit)
         {
             // TreeDeadEvent를 타면 나무가 풀로 반환되며 ResetTree()가 bLastHitByPlayer를 true로
             // 되돌리므로, 판정은 반드시 이벤트를 쏘기 전에 끝내야 한다.
@@ -431,9 +436,18 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
             TreeDeadEvent?.Invoke(this);
         }
 
-        // bDead 가드 필수: 이 히트로 나무가 죽었다면 TreeDeadEvent 처리 과정에서 이미 풀로 반환되어
-        // gameObject.SetActive(false) 상태이므로, 그 뒤에 StartCoroutine을 시도하면 안 된다.
-        TryStartHeatTimer();
+        // 이 히트로 죽었다면 위에서 이미 풀로 반환되어 gameObject가 비활성이므로,
+        // 여기서 StartCoroutine을 시도하면 안 된다.
+        //
+        // 예전엔 이 판단을 TryStartHeatTimer() 안의 bDead 가드에 맡겼는데, 그 시점엔 ResetTree()가
+        // bDead와 bHeatCounting을 둘 다 false로 되돌린 뒤라 가드 세 개 중 둘이 이미 무너져 있었다.
+        // 마지막 하나인 heatDamageAmount는 ResetTree가 건드리지 않아 그 맵의 값이 그대로 남으므로,
+        // 열기 수치가 0인 맵(Stage1~3)에서만 우연히 조기 반환에 걸려 조용했을 뿐이다.
+        // 열기가 켜진 맵에서는 벌목할 때마다 비활성 오브젝트에 코루틴을 걸려 시도하게 된다.
+        if (false == bDiedThisHit)
+        {
+            TryStartHeatTimer();
+        }
 
         bLastHitByPlayer = true;
     }

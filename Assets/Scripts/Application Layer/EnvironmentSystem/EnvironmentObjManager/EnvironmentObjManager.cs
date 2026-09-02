@@ -24,6 +24,10 @@ public class EnvironmentObjManager : MonoBehaviour
     [SerializeField] private List<EnvironmentObj> envObjPrefabs;
     private Dictionary<EnvironmentObjType, IObjectPool<EnvironmentObj>> objPools = new Dictionary<EnvironmentObjType, IObjectPool<EnvironmentObj>>();
 
+    // 현재 objPools가 어떤 프리팹 목록으로 만들어졌는지. SetupPools()가 불필요한 재생성을
+    // 건너뛰는 판단에만 쓴다(아래 SetupPools 주석 참고).
+    private List<EnvironmentObj> pooledPrefabSource;
+
     private List<EnvironmentObj> allSpawnedObjs = new List<EnvironmentObj>(SYSTEM_VAR.MAX_ENV_OBJ_CNT);
     public IReadOnlyList<EnvironmentObj> AllSpawnedObjs => allSpawnedObjs;
 
@@ -488,13 +492,31 @@ public class EnvironmentObjManager : MonoBehaviour
 
     // // 내부 메서드
 
+    /// <summary>
+    /// SetupForMapType()을 통해 던전 진입마다 호출된다. 그래서 두 가지를 지켜야 한다.
+    ///
+    /// 1. 프리팹 목록이 그대로면 풀을 다시 만들지 않는다. 풀을 새로 만드는 순간 그 안에서
+    ///    대기 중이던(비활성) 오브젝트가 추적에서 떨어져 나가 파괴도 재사용도 되지 않는다.
+    ///    같은 맵 타입으로 재진입하는 대부분의 경우가 여기에 해당한다.
+    /// 2. 목록이 실제로 바뀌었다면(맵 타입 변경) 풀은 새로 만들어야 한다 - createFunc가
+    ///    이전 맵의 프리팹을 캡처하고 있기 때문이다. 다만 버리기 전에 각 풀의 Clear()로
+    ///    보관 중인 오브젝트를 반드시 파괴해야 한다. 활성 오브젝트는 풀에 없으므로 영향받지
+    ///    않고, 뒤이은 ReleaseAll()이 새 풀로 회수해 그대로 재사용된다.
+    /// </summary>
     private void SetupPools()
     {
-        objPools.Clear();
-
         List<EnvironmentObj> prefabsToUse = (currentStageEnvData != null) 
             ? currentStageEnvData.EnvObjPrefabs 
             : envObjPrefabs;
+
+        if (objPools.Count > 0 && ReferenceEquals(pooledPrefabSource, prefabsToUse)) return;
+
+        foreach (var _kvp in objPools)
+        {
+            _kvp.Value?.Clear();
+        }
+        objPools.Clear();
+        pooledPrefabSource = prefabsToUse;
 
         if (prefabsToUse == null || prefabsToUse.Count == 0) return;
 
