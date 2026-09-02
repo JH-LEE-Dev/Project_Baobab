@@ -112,7 +112,10 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     // // 최적화 캐싱 배열
     private Vector3[] worldPosMap;
-    private WaitForSeconds delayYield;
+    // worldPosMap이 어떤 그리드 배치로 채워졌는지. 이 둘이 그대로면 다시 계산하지 않는다.
+    private Vector3 worldPosMapOrigin;
+    private Vector3 worldPosMapCellSize;
+    private bool bWorldPosMapDirty = true;
 
     // // 재사용 컬렉션 (GC 최소화)
     private List<int> shorelineList = new List<int>(5000);
@@ -173,44 +176,71 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         }
 
         int size = width * height;
-        noiseValues = new float[size];
-        isMainland = new bool[size];
-        groundTiles = new TileBase[size];
-        collisionTiles = new TileBase[size];
-        waterTiles = new TileBase[size];
-        waterCornerTiles = new TileBase[size];
-        waterCollisionTiles = new TileBase[size];
-        rockCollisionTiles = new TileBase[size];
-        decoTilesToApply = new TileBase[size];
-        bloomDecoTilesToApply = new TileBase[size];
-        waterDecoTilesToApply = new TileBase[size];
-        bloomWaterDecoTilesToApply = new TileBase[size];
-        waterStencilTiles = new TileBase[size];
-        groundStencilTiles = new TileBase[size];
-        cellToIndex = new int[size];
-        for (int i = 0; i < size; i++) cellToIndex[i] = -1;
-        isShoreline = new bool[size];
-        isOceanConnectedWater = new bool[size];
-        puddleVisited = new bool[size];
-        deepWaterTileFlags = new bool[size];
-        waterCompVisited = new bool[size];
-        forceGrassOverride = new bool[size];
-        sandPatchVisited = new bool[size];
 
-        worldPosMap = new Vector3[size];
-
-        for (int y = 0; y < height; y++)
+        // 이 배열들은 던전에 들어올 때마다 다시 만들 필요가 없다. width/height가 직렬화 상수라
+        // 크기가 변하지 않고, 내용도 전부 하류에서 초기화되기 때문이다.
+        //   - TileBase 12종 + deepWaterTileFlags + cellToIndex : ApplyTiles()가 Array.Clear/-1 대입
+        //   - noiseValues                                      : GenerateNoiseMap()이 전 칸을 덮어씀
+        //   - isMainland / isShoreline                         : MarkMainland() / DetermineSpawns()
+        //   - isOceanConnectedWater / puddleVisited            : ApplyInnerPuddleDensity()
+        //   - forceGrassOverride / sandPatchVisited            : ApplySmallInlandSandPatches()
+        //   - waterCompVisited                                 : PlaceWaterAnimatedObjects()
+        // 190x190 기준 한 번에 약 4.3MB(TileBase 배열 12개만 3.4MB)라, 매번 새로 만들면 던전
+        // 진입마다 그만큼이 그대로 가비지가 된다. 크기가 실제로 달라졌을 때만 다시 할당한다.
+        if (noiseValues == null || noiseValues.Length != size)
         {
-            int rowOffset = y * width;
-            for (int x = 0; x < width; x++)
-            {
-                int i = x + rowOffset;
-                Vector3Int cellPos = new Vector3Int(x, y, 0);
-                worldPosMap[i] = groundTilemap.GetCellCenterWorld(cellPos) + new Vector3(0, halfCellY, 0);
-            }
+            noiseValues = new float[size];
+            isMainland = new bool[size];
+            groundTiles = new TileBase[size];
+            collisionTiles = new TileBase[size];
+            waterTiles = new TileBase[size];
+            waterCornerTiles = new TileBase[size];
+            waterCollisionTiles = new TileBase[size];
+            rockCollisionTiles = new TileBase[size];
+            decoTilesToApply = new TileBase[size];
+            bloomDecoTilesToApply = new TileBase[size];
+            waterDecoTilesToApply = new TileBase[size];
+            bloomWaterDecoTilesToApply = new TileBase[size];
+            waterStencilTiles = new TileBase[size];
+            groundStencilTiles = new TileBase[size];
+            cellToIndex = new int[size];
+            for (int i = 0; i < size; i++) cellToIndex[i] = -1;
+            isShoreline = new bool[size];
+            isOceanConnectedWater = new bool[size];
+            puddleVisited = new bool[size];
+            deepWaterTileFlags = new bool[size];
+            waterCompVisited = new bool[size];
+            forceGrassOverride = new bool[size];
+            sandPatchVisited = new bool[size];
+
+            worldPosMap = new Vector3[size];
+            bWorldPosMapDirty = true;
         }
 
-        if (delayYield == null) delayYield = new WaitForSeconds(5f);
+        // worldPosMap은 그리드 배치에만 의존한다. 그리드는 씬 전환으로 파괴돼 던전마다 새로
+        // 만들어지지만 언제나 같은 자리(transform.position)에 같은 셀 크기로 생성되므로 값이
+        // 매번 똑같이 나온다. 그래도 그리드가 옮겨지는 경우까지 감수할 이유는 없으므로,
+        // 기준점과 셀 크기를 기억해 두고 실제로 달라졌을 때만 다시 계산한다
+        // (36,100번의 GetCellCenterWorld 네이티브 호출이다).
+        Vector3 _gridOrigin = groundTilemap.CellToWorld(Vector3Int.zero);
+        Vector3 _gridCellSize = grid.cellSize;
+        if (bWorldPosMapDirty || _gridOrigin != worldPosMapOrigin || _gridCellSize != worldPosMapCellSize)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                int rowOffset = y * width;
+                for (int x = 0; x < width; x++)
+                {
+                    int i = x + rowOffset;
+                    Vector3Int cellPos = new Vector3Int(x, y, 0);
+                    worldPosMap[i] = groundTilemap.GetCellCenterWorld(cellPos) + new Vector3(0, halfCellY, 0);
+                }
+            }
+
+            worldPosMapOrigin = _gridOrigin;
+            worldPosMapCellSize = _gridCellSize;
+            bWorldPosMapDirty = false;
+        }
 
         seed = UnityEngine.Random.Range(1, 100000);
     }
@@ -295,22 +325,16 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         ApplyTiles();
         ApplyOuterWaterTiles();
 
-        DeclareActiveTilesCntEvent?.Invoke(walkablePositions.Count, grassPositions.Count);
+        // 인자 순서 주의: (잔디 타일 수, 걷기 가능 타일 수)다.
+        // 나무는 잔디에만 심기고(TilemapGeneratedEvent가 넘기는 grassPositions가 곧 스폰 후보다)
+        // 동물은 걷기 가능한 곳이면 어디든 돌아다니므로, DensityManager는 나무 예산을 grassTileCnt로,
+        // 동물 예산을 walkableTilesCnt로 계산한다. 예전엔 이 두 인자가 뒤집혀 있어서 나무 수가
+        // 잔디가 아니라 걷기 가능 타일(모래·해안선·안전구역까지 포함) 기준으로 잡혔고,
+        // 그만큼(실측 약 1.24배) 설계보다 빽빽했다. 밀도 계수는 그 1.24를 흡수해 조정해 두었으므로
+        // 여기 순서를 다시 건드리면 눈에 보이는 밀도가 함께 달라진다.
+        DeclareActiveTilesCntEvent?.Invoke(grassPositions.Count, walkablePositions.Count);
         TilemapGeneratedEvent?.Invoke(grassPositions);
 
-        StopCoroutine(nameof(AddDelayedGrassPositions));
-        StartCoroutine(nameof(AddDelayedGrassPositions));
-    }
-
-    private System.Collections.IEnumerator AddDelayedGrassPositions()
-    {
-        yield return delayYield;
-
-        if (delayedGrassPositions.Count > 0)
-        {
-            grassPositions.AddRange(delayedGrassPositions);
-            delayedGrassPositions.Clear();
-        }
     }
 
     public Vector3 GetPlayerSpawnPosition() => GetWorldPos(playerIdx);
@@ -318,6 +342,17 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     public Vector3 GetPortalSpawnPosition() => GetWorldPos(portalIdx);
 
     public List<Vector3> GetGrassTileWorldPositions() => grassPositions;
+
+    /// <summary>
+    /// 스폰 지점(플레이어/포탈) 반경 안이라 진입 직후에는 나무를 심지 않는 칸들.
+    /// 안전구역(centerSafeZoneRadius) 안쪽은 여기에도 들어오지 않는다 - 그쪽은 영구 배제다.
+    ///
+    /// 예전엔 이 목록을 5초 뒤 grassPositions에 합쳐서 개방하려 했는데, 유일한 소비자인
+    /// SpawnInitialTrees가 던전 진입 시점에 grassPositions를 availablePositions로 이미
+    /// 복사해 간 뒤라 아무도 다시 읽지 않았다(= 이 칸들이 영영 개방되지 않았다).
+    /// 지금은 InDungeonObjectManager가 이 목록을 직접 받아 자기 스폰 후보에 합류시킨다.
+    /// </summary>
+    public List<Vector3> GetDelayedGrassTileWorldPositions() => delayedGrassPositions;
 
     public List<Vector3> GetWalkableTileWorldPositions() => walkablePositions;
 
@@ -830,9 +865,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         // 1. 플레이어 스폰 위치를 맵의 중앙(안전 구역의 정중앙)에서 한 칸 아래로 설정
         int centerX = width / 2;
         int centerY = (height / 2);
-        playerIdx = centerX + centerY * width;
-
-        if (playerIdx < 0 || playerIdx >= size) playerIdx = 0;
 
         // 2. 포탈 스폰 위치 결정: 캐릭터 스폰 위치에서 오른쪽으로 2칸 떨어진 위치
         int portalX = centerX + 2;
@@ -846,6 +878,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         centerX = width / 2;
         centerY = (height / 2) - 1;
         playerIdx = centerX + centerY * width;
+
+        // 경계 검사는 반드시 최종 값에 걸어야 한다. 예전엔 이 검사가 위쪽 임시 대입과
+        // 이 최종 대입 사이에 있어서, 실제로 쓰이는 값은 한 번도 검사받지 않았다.
+        if (playerIdx < 0 || playerIdx >= size) playerIdx = 0;
+        if (portalIdx < 0 || portalIdx >= size) portalIdx = 0;
     }
 
     // ApplyTiles()에서 sandThreshold를 계산하는 로직과 동일. 모래 패치 판정에도 같은 기준을 써야 하므로

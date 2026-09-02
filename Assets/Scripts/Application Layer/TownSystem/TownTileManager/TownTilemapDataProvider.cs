@@ -169,6 +169,7 @@ public class TownTilemapDataProvider : ITilemapDataProvider
     // 아래는 인터페이스 요구사항이지만 운반 NPC의 길찾기(FindPath/FindPathNear)에서는 사용하지 않는
     // 던전 전용 기능들(나무 심기, 잔디/걷기 가능 위치 목록 등)이라 안전한 기본값만 반환한다.
     public List<Vector3> GetGrassTileWorldPositions() => new List<Vector3>();
+    public List<Vector3> GetDelayedGrassTileWorldPositions() => new List<Vector3>();
     public List<Vector3> GetWalkableTileWorldPositions() => new List<Vector3>();
     public Vector3 GetPlayerSpawnPosition() => groundTilemap != null ? groundTilemap.transform.position : Vector3.zero;
     public Vector3 GetPortalSpawnPosition() => GetPlayerSpawnPosition();

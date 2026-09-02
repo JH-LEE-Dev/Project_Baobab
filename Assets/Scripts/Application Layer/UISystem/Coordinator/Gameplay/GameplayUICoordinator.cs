@@ -301,6 +301,12 @@ public class GameplayUICoordinator
 
     public void Release()
     {
+        // 경고창/특성 창이 열린 채로 씬이 정리되면(예: 메인 메뉴 복귀) 잠금만 남아 다음 판에서
+        // 인벤토리가 영영 열리지 않는다. InputManager가 이 코디네이터보다 오래 살 수 있으므로
+        // 걸어둔 잠금은 여기서 반납한다. (걸린 적이 없으면 무시된다)
+        inputManager?.SetInventoryKeyLock(InputReader.INVENTORY_LOCK_OWNER_WARNINGUI, false);
+        inputManager?.SetInventoryKeyLock(InputReader.INVENTORY_LOCK_OWNER_TENTUI, false);
+
         UnSubscribeSignals();
         ReleaseEvents();
     }
@@ -983,6 +989,12 @@ public class GameplayUICoordinator
 
     private void ActivateWarningUI(ActivateWarningUISignal _activateWarningUISignal)
     {
+        // WarningUI가 떠 있는 동안에는 인벤토리 키를 막는다. WarningUI는 ESC 메뉴/내비게이션 팝업과
+        // 달리 입력 모드를 UI로 바꾸지 않아(InputReader.CanDispatchGameplay 가드에 걸리지 않는다),
+        // 확인 팝업 위로 가방이 겹쳐 열리고 그대로 조작까지 되는 문제가 있었다.
+        // 해제는 어떤 경로로 닫히든 항상 발행되는 DeActivateWarningUIEvent(=UIView_Warning.OnHide)에서.
+        inputManager.SetInventoryKeyLock(InputReader.INVENTORY_LOCK_OWNER_WARNINGUI, true);
+
         warningUI.ShowWarning();
     }
 
@@ -990,9 +1002,13 @@ public class GameplayUICoordinator
     {
         if (warningUI.IsVisible == true)
         {
+            // 아직 닫히지 않았다면 닫기만 시킨다. 잠금 해제는 실제로 닫힌 뒤 다시 들어오는
+            // 이 콜백(아래 경로)에서 한다.
             warningUI.Hide();
             return;
         }
+
+        inputManager.SetInventoryKeyLock(InputReader.INVENTORY_LOCK_OWNER_WARNINGUI, false);
 
         signalHub.Publish(new WarningUIClosedSignal(warningUI.bApproved));
     }

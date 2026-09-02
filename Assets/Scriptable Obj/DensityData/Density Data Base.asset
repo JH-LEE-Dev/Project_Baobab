@@ -22,8 +22,8 @@ MonoBehaviour:
       spawnAnimalTypes:
       - animalType: 1
         regenProb: 100
-      treeStartDensityRatio: 0.04
-      treeMaxDensityRatio: 0.07
+      treeStartDensityRatio: 0.0496
+      treeMaxDensityRatio: 0.0868
       animalStartDensityRatio: 0.005
       animalMaxDensityRatio: 0.01
       treeRegenMinTime: 10
@@ -43,8 +43,8 @@ MonoBehaviour:
         regenProb: 70
       - animalType: 2
         regenProb: 30
-      treeStartDensityRatio: 0.04
-      treeMaxDensityRatio: 0.07
+      treeStartDensityRatio: 0.0496
+      treeMaxDensityRatio: 0.0868
       animalStartDensityRatio: 0.005
       animalMaxDensityRatio: 0.01
       treeRegenMinTime: 10
@@ -66,8 +66,8 @@ MonoBehaviour:
         regenProb: 60
       - animalType: 3
         regenProb: 40
-      treeStartDensityRatio: 0.04
-      treeMaxDensityRatio: 0.07
+      treeStartDensityRatio: 0.0496
+      treeMaxDensityRatio: 0.0868
       animalStartDensityRatio: 0.005
       animalMaxDensityRatio: 0.01
       treeRegenMinTime: 10
@@ -84,8 +84,8 @@ MonoBehaviour:
       - treeType: 4
         regenProb: 100
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0.04
-      treeMaxDensityRatio: 0.07
+      treeStartDensityRatio: 0.0496
+      treeMaxDensityRatio: 0.0868
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
       treeRegenMinTime: 10
@@ -101,8 +101,8 @@ MonoBehaviour:
       - treeType: 5
         regenProb: 70
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0.04
-      treeMaxDensityRatio: 0.07
+      treeStartDensityRatio: 0.0496
+      treeMaxDensityRatio: 0.0868
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
       treeRegenMinTime: 10
@@ -118,8 +118,8 @@ MonoBehaviour:
       - treeType: 6
         regenProb: 40
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0.04
-      treeMaxDensityRatio: 0.07
+      treeStartDensityRatio: 0.0496
+      treeMaxDensityRatio: 0.0868
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
       treeRegenMinTime: 10
@@ -136,8 +136,8 @@ MonoBehaviour:
       - treeType: 7
         regenProb: 100
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0.05
-      treeMaxDensityRatio: 0.05
+      treeStartDensityRatio: 0.062
+      treeMaxDensityRatio: 0.062
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
       treeRegenMinTime: 10
@@ -153,8 +153,8 @@ MonoBehaviour:
       - treeType: 8
         regenProb: 70
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0.05
-      treeMaxDensityRatio: 0.05
+      treeStartDensityRatio: 0.062
+      treeMaxDensityRatio: 0.062
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
       treeRegenMinTime: 10
@@ -170,8 +170,8 @@ MonoBehaviour:
       - treeType: 9
         regenProb: 40
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0.05
-      treeMaxDensityRatio: 0.05
+      treeStartDensityRatio: 0.062
+      treeMaxDensityRatio: 0.062
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
       treeRegenMinTime: 10
@@ -188,8 +188,8 @@ MonoBehaviour:
       - treeType: 10
         regenProb: 100
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0.04
-      treeMaxDensityRatio: 0.07
+      treeStartDensityRatio: 0.0496
+      treeMaxDensityRatio: 0.0868
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
       treeRegenMinTime: 10
@@ -205,8 +205,8 @@ MonoBehaviour:
       - treeType: 11
         regenProb: 70
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0.04
-      treeMaxDensityRatio: 0.07
+      treeStartDensityRatio: 0.0496
+      treeMaxDensityRatio: 0.0868
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
       treeRegenMinTime: 10
@@ -222,8 +222,8 @@ MonoBehaviour:
       - treeType: 12
         regenProb: 40
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0.04
-      treeMaxDensityRatio: 0.07
+      treeStartDensityRatio: 0.0496
+      treeMaxDensityRatio: 0.0868
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
       treeRegenMinTime: 10

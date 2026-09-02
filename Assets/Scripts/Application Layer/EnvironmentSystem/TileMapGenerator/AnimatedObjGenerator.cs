@@ -57,8 +57,30 @@ public class AnimatedObjGenerator : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 던전에 들어올 때마다 호출된다(TileMapGenerator.InitializeMapData).
+    ///
+    /// 그래서 컬렉션을 매번 새로 만들면 안 된다. 여기서 만드는 오브젝트는
+    /// Instantiate(_prefab, transform)으로 이 컴포넌트(= GameInstaller 하위, DontDestroyOnLoad)에
+    /// 매달리기 때문에, 딕셔너리를 교체하는 순간 추적에서 떨어져 나가 파괴도 회수도 되지 않는다.
+    ///   - 타운을 거친 진입: 직전 TownStarted가 전부 비활성화해 풀에 넣어둔 상태라, 그게 통째로
+    ///     고아가 되고 새 맵은 처음부터 다시 Instantiate했다. 원정 한 번마다 수백 개씩 쌓였다.
+    ///   - 재도전(타운 미경유): ClearObjManager()가 ReleaseAllAnimatedObj()를 부르지 않으므로
+    ///     이전 맵 장식이 활성 상태 그대로 고아가 되고, 뒤이은 ReleaseAllActive()는 이미 비워진
+    ///     딕셔너리를 훑어 아무것도 끄지 못했다. 이전 던전의 풀·물결이 새 맵 위에 겹쳐 보였다.
+    ///
+    /// 따라서 컬렉션은 최초 1회만 만들고, 이후 호출은 "이전 맵 정리 + 카메라 재연결"만 한다.
+    /// (씬이 바뀌면 Camera.main도 새 인스턴스이므로 SetupCullingGroup은 매번 다시 불러야 한다)
+    /// </summary>
     public void Initialize()
     {
+        if (poolDict != null)
+        {
+            ReleaseAllActive();
+            SetupCullingGroup();
+            return;
+        }
+
         poolDict = new Dictionary<AnimatedObj, IObjectPool<AnimatedObj>>(8);
         activeObjectsDict = new Dictionary<AnimatedObj, List<AnimatedObj>>(8);
 
