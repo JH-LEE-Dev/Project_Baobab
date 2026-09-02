@@ -466,6 +466,11 @@ public class UI_MainMenu : MonoBehaviour
                 EventSystem.current.SetSelectedGameObject(null);
             }
 
+            if (null != discordButton)
+            {
+                discordButton.ForceUnhover();
+            }
+
             EvaluateMouseHoverStates(true);
         }
     }
@@ -480,6 +485,36 @@ public class UI_MainMenu : MonoBehaviour
 
     private void EvaluateMouseHoverStates(bool _forceCheckSound)
     {
+        bool _isDiscordMouseOver = (null != discordButton && true == discordButton.gameObject.activeInHierarchy && true == discordButton.IsMouseOver());
+
+        if (true == _isDiscordMouseOver)
+        {
+            if (false == discordButton.IsHovered)
+            {
+                discordButton.ForceHover(true);
+            }
+
+            if (null != buttonsInOrder)
+            {
+                for (int i = 0; buttonsInOrder.Length > i; i++)
+                {
+                    UI_MainMenuButton _btn = buttonsInOrder[i];
+                    if (null != _btn && true == _btn.IsHovered)
+                    {
+                        _btn.ForceUnhover();
+                    }
+                }
+            }
+            return;
+        }
+        else
+        {
+            if (null != discordButton && true == discordButton.IsHovered)
+            {
+                discordButton.ForceUnhover();
+            }
+        }
+
         if (null == buttonsInOrder) return;
         for (int i = 0; buttonsInOrder.Length > i; i++)
         {

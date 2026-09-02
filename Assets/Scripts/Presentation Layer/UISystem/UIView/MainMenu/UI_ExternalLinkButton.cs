@@ -131,7 +131,7 @@ public class UI_ExternalLinkButton : Selectable, ISubmitHandler, IPointerClickHa
         {
             Vector2 _size = useCustomCursorSize
                 ? customCursorSize
-                : new Vector2(_targetRect.rect.width * Mathf.Abs(_targetRect.lossyScale.x), _targetRect.rect.height * Mathf.Abs(_targetRect.lossyScale.y)) + cursorPadding;
+                : Vector2.Scale(_targetRect.rect.size, new Vector2(Mathf.Abs(transform.localScale.x), Mathf.Abs(transform.localScale.y))) + cursorPadding;
 
             cursorBoxUI.Show(_targetRect, _size, cursorOffset, CursorMotionSettings.Subtle);
         }
@@ -164,11 +164,29 @@ public class UI_ExternalLinkButton : Selectable, ISubmitHandler, IPointerClickHa
         ShowCursor();
     }
 
+    public bool IsHovered => isHovered;
+
+    public void ForceHover(bool _playSound = false)
+    {
+        if (true == isHovered) return;
+        isHovered = true;
+        PlayVisualTween(hoverColor);
+        if (true == _playSound)
+        {
+            Sound.PlayUI(SoundID.MainMenuDot01);
+        }
+    }
+
+    public void ForceUnhover()
+    {
+        isHovered = false;
+        PlayVisualTween(normalColor);
+        HideCursor();
+    }
+
     public override void OnDeselect(BaseEventData _eventData)
     {
         base.OnDeselect(_eventData);
-
-        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
         isHovered = false;
         PlayVisualTween(normalColor);
@@ -210,7 +228,7 @@ public class UI_ExternalLinkButton : Selectable, ISubmitHandler, IPointerClickHa
         HideCursor();
     }
 
-    private void ExecuteClick()
+    public void ExecuteClick()
     {
         Sound.PlayUI(SoundID.OptionClick);
 

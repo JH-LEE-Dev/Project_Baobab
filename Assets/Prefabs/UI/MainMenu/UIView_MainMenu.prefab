@@ -127,6 +127,8 @@ MonoBehaviour:
   clickColor: {r: 0.5254902, g: 0.6634194, b: 1, a: 1}
   transitionDuration: 0.15
   transitionEase: 6
+  useCustomCursorSize: 1
+  customCursorSize: {x: 64, y: 64}
   cursorPadding: {x: 10, y: 10}
   cursorOffset: {x: 0, y: 0}
 --- !u!1 &1545942750125184316
