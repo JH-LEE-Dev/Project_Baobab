@@ -475,6 +475,7 @@ public class ItemAuraEffectController : MonoBehaviour
         ApplyAllSettings();
     }
 
+#if UNITY_EDITOR
     private void OnGUI()
     {
         if (false == showOnScreenDebugGui) return;
@@ -502,6 +503,7 @@ public class ItemAuraEffectController : MonoBehaviour
 
         GUILayout.EndArea();
     }
+#endif
 
     private void OnDestroy()
     {
