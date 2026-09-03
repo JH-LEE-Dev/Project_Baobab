@@ -63,11 +63,16 @@ public class UI_PopupButton : Selectable,
     [SerializeField] private float clickTwistAngle = 15f;
     [SerializeField] private float clickDuration = 0.3f;
 
+    [Header("Visual Dim Settings")]
+    [SerializeField] private float disabledAlpha = 0.35f;
+    [SerializeField] private float dimFadeDuration = 0.15f;
+
     // 내부 상태
     private bool isHovered = false;
     private bool isPointerHovered = false;
     private Sequence hoverSequence;
     private Sequence clickSequence;
+    private Tween dimTween;
     private RectTransform cachedRectTransform;
     private Canvas cachedCanvas;
 
@@ -103,6 +108,56 @@ public class UI_PopupButton : Selectable,
         onClickCallback = _onClickCallback;
     }
 
+    public void SetInteractable(bool _isInteractable, bool _instant = false)
+    {
+        interactable = _isInteractable;
+        if (null != targetGraphic)
+        {
+            targetGraphic.raycastTarget = _isInteractable;
+        }
+        if (false == _isInteractable)
+        {
+            ForceUnhover();
+        }
+        UpdateDimState(false == _isInteractable, _instant);
+    }
+
+    protected override void DoStateTransition(SelectionState state, bool instant)
+    {
+        base.DoStateTransition(state, instant);
+        bool _isDisabled = (SelectionState.Disabled == state);
+        if (null != targetGraphic)
+        {
+            targetGraphic.raycastTarget = !_isDisabled;
+        }
+        UpdateDimState(_isDisabled, instant);
+    }
+
+    private void UpdateDimState(bool _isDim, bool _instant)
+    {
+        Graphic _targetGraphic = (null != targetGraphicOverride) ? targetGraphicOverride : targetGraphic;
+        if (null == _targetGraphic) return;
+
+        float _targetAlpha = (true == _isDim) ? disabledAlpha : 1f;
+
+        if (null != dimTween && true == dimTween.IsActive())
+        {
+            dimTween.Kill();
+            dimTween = null;
+        }
+
+        if (true == _instant || false == gameObject.activeInHierarchy)
+        {
+            Color _col = _targetGraphic.color;
+            _col.a = _targetAlpha;
+            _targetGraphic.color = _col;
+        }
+        else
+        {
+            dimTween = _targetGraphic.DOFade(_targetAlpha, dimFadeDuration).SetEase(Ease.OutQuad).SetTarget(this);
+        }
+    }
+
     public void OnPointerClick(PointerEventData _eventData)
     {
         if (false == IsInteractable() || false == gameObject.activeInHierarchy) return;
@@ -133,6 +188,7 @@ public class UI_PopupButton : Selectable,
     public override void OnPointerEnter(PointerEventData _eventData)
     {
         base.OnPointerEnter(_eventData);
+        if (false == IsInteractable()) return;
         if (null != inputManager && true == inputManager.IsGamepadMode) return;
 
         isHovered = true;
@@ -147,15 +203,26 @@ public class UI_PopupButton : Selectable,
         base.OnPointerExit(_eventData);
         if (null != inputManager && true == inputManager.IsGamepadMode) return;
 
+        if (false == isHovered && false == isPointerHovered) return;
+
         isHovered = false;
         isPointerHovered = false;
-        PlayUnhoverAnimation();
         HideCursor();
+
+        if (true == IsInteractable())
+        {
+            PlayUnhoverAnimation();
+        }
+        else
+        {
+            ResetMotionImmediate();
+        }
     }
 
     public override void OnSelect(BaseEventData _eventData)
     {
         base.OnSelect(_eventData);
+        if (false == IsInteractable()) return;
         if (null != inputManager && false == inputManager.IsGamepadMode) return;
 
         isHovered = true;
@@ -167,14 +234,25 @@ public class UI_PopupButton : Selectable,
     public override void OnDeselect(BaseEventData _eventData)
     {
         base.OnDeselect(_eventData);
+        if (false == isHovered) return;
 
         isHovered = false;
-        PlayUnhoverAnimation();
         HideCursor();
+
+        if (true == IsInteractable())
+        {
+            PlayUnhoverAnimation();
+        }
+        else
+        {
+            ResetMotionImmediate();
+        }
     }
 
     public void ForceHover()
     {
+        if (false == IsInteractable()) return;
+
         isHovered = true;
         PlayHoverWiggleAnimation();
         ShowCursor();
@@ -182,10 +260,30 @@ public class UI_PopupButton : Selectable,
 
     public void ForceUnhover()
     {
+        bool _wasHovered = isHovered || isPointerHovered;
         isHovered = false;
         isPointerHovered = false;
-        PlayUnhoverAnimation();
         HideCursor();
+
+        if (true == _wasHovered && true == IsInteractable())
+        {
+            PlayUnhoverAnimation();
+        }
+        else
+        {
+            ResetMotionImmediate();
+        }
+    }
+
+    public void ResetMotionImmediate()
+    {
+        KillActiveTweens();
+        Transform _targetT = (null != targetGraphicOverride) ? targetGraphicOverride.transform : transform;
+        if (null != _targetT)
+        {
+            _targetT.localScale = Vector3.one;
+            _targetT.localRotation = Quaternion.identity;
+        }
     }
 
     public bool IsMouseOver()
@@ -329,6 +427,11 @@ public class UI_PopupButton : Selectable,
             clickSequence.Kill();
             clickSequence = null;
         }
+        if (null != dimTween && true == dimTween.IsActive())
+        {
+            dimTween.Kill();
+            dimTween = null;
+        }
     }
 
     protected override void OnDisable()
@@ -336,14 +439,7 @@ public class UI_PopupButton : Selectable,
         base.OnDisable();
         isHovered = false;
         isPointerHovered = false;
-        KillActiveTweens();
+        ResetMotionImmediate();
         HideCursor();
-
-        Transform _targetT = (null != targetGraphicOverride) ? targetGraphicOverride.transform : transform;
-        if (null != _targetT)
-        {
-            _targetT.localScale = Vector3.one;
-            _targetT.localRotation = Quaternion.identity;
-        }
     }
 }

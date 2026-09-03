@@ -35,7 +35,13 @@ public class UI_InitialSetupPopup : MonoBehaviour
     [SerializeField] private TextMeshProUGUI consentDescText;
     [SerializeField] private Toggle consentToggle;
     [SerializeField] private TextMeshProUGUI consentToggleLabel;
+    [SerializeField] private Toggle consentDisagreeToggle;
+    [SerializeField] private TextMeshProUGUI consentDisagreeToggleLabel;
     [SerializeField] private UI_PopupButton confirmButton;
+
+    [Header("3. Consent Visual Colors")]
+    [SerializeField] private Color consentNormalTextColor = Color.white;
+    [SerializeField] private Color consentSelectedTextColor = new Color(1.0f, 0.835f, 0.31f, 1.0f); // #FFD54F (골드 옐로우)
 
     // 외부 의존성
     private InputManager inputManager;
@@ -47,11 +53,10 @@ public class UI_InitialSetupPopup : MonoBehaviour
     private Action<EInputDeviceType> cachedOnDeviceChanged;
     private Sequence panelTransitionTween;
     private bool isConsentPhase = false;
-    private bool isConsentToggleHovered = false;
+    private Toggle hoveredConsentToggle = null;
     private UI_PanelSelectButton lastFocusedLanguageButton;
     private Selectable lastFocusedConsentSelectable;
     private Vector2 originalWindowPos = Vector2.zero;
-    private bool isToggleCursorShowing = false;
 
     private readonly EOptionLanguage[] supportedLanguages = new EOptionLanguage[]
     {
@@ -193,22 +198,42 @@ public class UI_InitialSetupPopup : MonoBehaviour
             };
         }
 
-        // 2. Consent 패널 상하 네비게이션 연결 (Toggle <-> ConfirmButton)
-        if (null != consentToggle && null != confirmButton)
+        // 2. Consent 패널 상하 네비게이션 연결 (Toggle <-> DisagreeToggle <-> ConfirmButton)
+        UpdateConsentNavigations();
+    }
+
+    private void UpdateConsentNavigations()
+    {
+        if (null != consentToggle)
         {
             consentToggle.navigation = new Navigation
             {
                 mode = Navigation.Mode.Explicit,
                 selectOnUp = null,
-                selectOnDown = confirmButton,
+                selectOnDown = consentDisagreeToggle ?? (Selectable)confirmButton,
                 selectOnLeft = null,
                 selectOnRight = null
             };
+        }
 
-            confirmButton.navigation = new Navigation
+        if (null != consentDisagreeToggle)
+        {
+            consentDisagreeToggle.navigation = new Navigation
             {
                 mode = Navigation.Mode.Explicit,
                 selectOnUp = consentToggle,
+                selectOnDown = (null != confirmButton && true == confirmButton.interactable) ? (Selectable)confirmButton : null,
+                selectOnLeft = null,
+                selectOnRight = null
+            };
+        }
+
+        if (null != confirmButton)
+        {
+            confirmButton.navigation = new Navigation
+            {
+                mode = Navigation.Mode.Explicit,
+                selectOnUp = consentDisagreeToggle ?? (Selectable)consentToggle,
                 selectOnDown = null,
                 selectOnLeft = null,
                 selectOnRight = null
@@ -266,28 +291,42 @@ public class UI_InitialSetupPopup : MonoBehaviour
     {
         if (null != consentToggle)
         {
-            // opt-in이어야 한다. 체크를 미리 켜두면 유저가 아무것도 하지 않고 확인만 눌러도
-            // 동의한 것이 되는데, 분석·텔레메트리 동의는 그렇게 받을 수 없다(GDPR).
             consentToggle.isOn = false;
             consentToggle.onValueChanged.RemoveListener(HandleConsentToggleValueChanged);
             consentToggle.onValueChanged.AddListener(HandleConsentToggleValueChanged);
-
-            BindConsentToggleHoverTriggers(consentToggle.gameObject);
+            BindConsentToggleTriggers(consentToggle, consentToggleLabel);
         }
 
-        if (null != consentToggleLabel)
+        if (null != consentDisagreeToggle)
         {
-            consentToggleLabel.raycastTarget = true;
-            BindConsentToggleHoverTriggers(consentToggleLabel.gameObject, true);
+            consentDisagreeToggle.isOn = false;
+            consentDisagreeToggle.onValueChanged.RemoveListener(HandleConsentDisagreeToggleValueChanged);
+            consentDisagreeToggle.onValueChanged.AddListener(HandleConsentDisagreeToggleValueChanged);
+            BindConsentToggleTriggers(consentDisagreeToggle, consentDisagreeToggleLabel);
         }
 
         if (null != confirmButton)
         {
             confirmButton.Initialize(inputManager, cursorBoxUI, HandleConfirmButtonClicked);
         }
+
+        UpdateConfirmButtonState(true);
     }
 
-    private void BindConsentToggleHoverTriggers(GameObject _targetGo, bool _isLabel = false)
+    private void BindConsentToggleTriggers(Toggle _toggle, TextMeshProUGUI _label)
+    {
+        if (null == _toggle) return;
+
+        BindSingleToggleEvents(_toggle.gameObject, _toggle, _label, false);
+
+        if (null != _label)
+        {
+            _label.raycastTarget = true;
+            BindSingleToggleEvents(_label.gameObject, _toggle, _label, true);
+        }
+    }
+
+    private void BindSingleToggleEvents(GameObject _targetGo, Toggle _toggle, TextMeshProUGUI _label, bool _isLabel)
     {
         if (null == _targetGo) return;
 
@@ -297,17 +336,44 @@ public class UI_InitialSetupPopup : MonoBehaviour
             _trigger = _targetGo.AddComponent<EventTrigger>();
         }
 
-        AddTriggerEntry(_trigger, EventTriggerType.PointerEnter, HandleConsentTogglePointerEnter);
-        AddTriggerEntry(_trigger, EventTriggerType.PointerExit, HandleConsentTogglePointerExit);
+        AddTriggerEntry(_trigger, EventTriggerType.PointerEnter, (_eventData) =>
+        {
+            hoveredConsentToggle = _toggle;
+            if (null != inputManager && true == inputManager.IsGamepadMode) return;
+            ShowConsentToggleCursor(_toggle, _label);
+        });
+
+        AddTriggerEntry(_trigger, EventTriggerType.PointerExit, (_eventData) =>
+        {
+            if (hoveredConsentToggle == _toggle)
+            {
+                hoveredConsentToggle = null;
+            }
+            if (null != inputManager && true == inputManager.IsGamepadMode) return;
+            HideConsentToggleCursor(_toggle);
+        });
 
         if (true == _isLabel)
         {
-            AddTriggerEntry(_trigger, EventTriggerType.PointerClick, HandleConsentToggleLabelClicked);
+            AddTriggerEntry(_trigger, EventTriggerType.PointerClick, (_eventData) =>
+            {
+                if (null != inputManager && true == inputManager.IsGamepadMode) return;
+                _toggle.isOn = true;
+            });
         }
         else
         {
-            AddTriggerEntry(_trigger, EventTriggerType.Select, HandleConsentToggleSelected);
-            AddTriggerEntry(_trigger, EventTriggerType.Deselect, HandleConsentToggleDeselected);
+            AddTriggerEntry(_trigger, EventTriggerType.Select, (_eventData) =>
+            {
+                if (null != inputManager && false == inputManager.IsGamepadMode) return;
+                ShowConsentToggleCursor(_toggle, _label);
+            });
+
+            AddTriggerEntry(_trigger, EventTriggerType.Deselect, (_eventData) =>
+            {
+                if (null != inputManager && false == inputManager.IsGamepadMode) return;
+                HideConsentToggleCursor(_toggle);
+            });
         }
     }
 
@@ -321,44 +387,61 @@ public class UI_InitialSetupPopup : MonoBehaviour
         _trigger.triggers.Add(_entry);
     }
 
-    private void HandleConsentToggleLabelClicked(BaseEventData _eventData)
-    {
-        if (null != inputManager && true == inputManager.IsGamepadMode) return;
-        if (null != consentToggle)
-        {
-            consentToggle.isOn = !consentToggle.isOn;
-        }
-    }
-
-    private void HandleConsentTogglePointerEnter(BaseEventData _eventData)
-    {
-        isConsentToggleHovered = true;
-        if (null != inputManager && true == inputManager.IsGamepadMode) return;
-        ShowConsentToggleCursor();
-    }
-
-    private void HandleConsentTogglePointerExit(BaseEventData _eventData)
-    {
-        isConsentToggleHovered = false;
-        if (null != inputManager && true == inputManager.IsGamepadMode) return;
-        HideConsentToggleCursor();
-    }
-
-    private void HandleConsentToggleSelected(BaseEventData _eventData)
-    {
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
-        ShowConsentToggleCursor();
-    }
-
-    private void HandleConsentToggleDeselected(BaseEventData _eventData)
-    {
-        if (null != inputManager && false == inputManager.IsGamepadMode) return;
-        HideConsentToggleCursor();
-    }
-
     private void HandleConsentToggleValueChanged(bool _isOn)
     {
-        Sound.PlayUI(SoundID.OptionClick);
+        if (true == _isOn)
+        {
+            Sound.PlayUI(SoundID.OptionClick);
+            if (null != consentDisagreeToggle && true == consentDisagreeToggle.isOn)
+            {
+                consentDisagreeToggle.isOn = false;
+            }
+        }
+        UpdateConfirmButtonState();
+    }
+
+    private void HandleConsentDisagreeToggleValueChanged(bool _isOn)
+    {
+        if (true == _isOn)
+        {
+            Sound.PlayUI(SoundID.OptionClick);
+            if (null != consentToggle && true == consentToggle.isOn)
+            {
+                consentToggle.isOn = false;
+            }
+        }
+        UpdateConfirmButtonState();
+    }
+
+    private void UpdateConfirmButtonState(bool _instant = false)
+    {
+        bool _hasSelection = (null != consentToggle && true == consentToggle.isOn)
+            || (null != consentDisagreeToggle && true == consentDisagreeToggle.isOn);
+
+        if (null != confirmButton)
+        {
+            confirmButton.SetInteractable(_hasSelection, _instant);
+        }
+
+        UpdateConsentToggleTextColors();
+        UpdateConsentNavigations();
+    }
+
+    private void UpdateConsentToggleTextColors()
+    {
+        if (null != consentToggleLabel && null != consentToggle)
+        {
+            consentToggleLabel.color = (true == consentToggle.isOn)
+                ? consentSelectedTextColor
+                : consentNormalTextColor;
+        }
+
+        if (null != consentDisagreeToggleLabel && null != consentDisagreeToggle)
+        {
+            consentDisagreeToggleLabel.color = (true == consentDisagreeToggle.isOn)
+                ? consentSelectedTextColor
+                : consentNormalTextColor;
+        }
     }
 
     public void Show(Action _onCompleted)
@@ -545,7 +628,14 @@ public class UI_InitialSetupPopup : MonoBehaviour
         if (_target == consentToggle)
         {
             if (null != confirmButton) confirmButton.ForceUnhover();
-            ShowConsentToggleCursor();
+            HideConsentToggleCursor(consentDisagreeToggle);
+            ShowConsentToggleCursor(consentToggle, consentToggleLabel);
+        }
+        else if (_target == consentDisagreeToggle)
+        {
+            if (null != confirmButton) confirmButton.ForceUnhover();
+            HideConsentToggleCursor(consentToggle);
+            ShowConsentToggleCursor(consentDisagreeToggle, consentDisagreeToggleLabel);
         }
         else if (_target == confirmButton)
         {
@@ -562,17 +652,15 @@ public class UI_InitialSetupPopup : MonoBehaviour
         }
     }
 
-    private void ShowConsentToggleCursor()
+    private void ShowConsentToggleCursor(Toggle _toggle, TextMeshProUGUI _label)
     {
-        if (true == isToggleCursorShowing) return;
-        if (null == cursorBoxUI || null == consentToggle) return;
+        if (null == cursorBoxUI || null == _toggle) return;
 
-        RectTransform _rect = consentToggle.GetComponent<RectTransform>();
+        RectTransform _rect = _toggle.GetComponent<RectTransform>();
         if (null == _rect) return;
 
-        isToggleCursorShowing = true;
-        float _textWidth = (null != consentToggleLabel && consentToggleLabel.preferredWidth > 0f)
-            ? consentToggleLabel.preferredWidth
+        float _textWidth = (null != _label && _label.preferredWidth > 0f)
+            ? _label.preferredWidth
             : 200f;
         float _totalWidth = 16f + 8f + _textWidth;
         Vector2 _size = new Vector2(_totalWidth + 12f, 28f);
@@ -580,17 +668,29 @@ public class UI_InitialSetupPopup : MonoBehaviour
         cursorBoxUI.Show(_rect, _size, Vector2.zero, CursorMotionSettings.RowSubtle);
     }
 
-    private void HideConsentToggleCursor()
+    private void HideConsentToggleCursor(Toggle _toggle = null)
     {
-        if (false == isToggleCursorShowing) return;
-        isToggleCursorShowing = false;
+        if (null == cursorBoxUI) return;
 
-        if (null == cursorBoxUI || null == consentToggle) return;
-
-        RectTransform _rect = consentToggle.GetComponent<RectTransform>();
-        if (null != _rect)
+        if (null != _toggle)
         {
-            cursorBoxUI.Hide(_rect);
+            RectTransform _rect = _toggle.GetComponent<RectTransform>();
+            if (null != _rect)
+            {
+                cursorBoxUI.Hide(_rect);
+                return;
+            }
+        }
+
+        if (null != consentToggle)
+        {
+            RectTransform _rect1 = consentToggle.GetComponent<RectTransform>();
+            if (null != _rect1) cursorBoxUI.Hide(_rect1);
+        }
+        if (null != consentDisagreeToggle)
+        {
+            RectTransform _rect2 = consentDisagreeToggle.GetComponent<RectTransform>();
+            if (null != _rect2) cursorBoxUI.Hide(_rect2);
         }
     }
 
@@ -652,31 +752,36 @@ public class UI_InitialSetupPopup : MonoBehaviour
             confirmButton.gameObject.SetActive(true);
         }
 
-        SnapConsentTogglePixelPerfect();
+        if (null != consentToggle) consentToggle.isOn = false;
+        if (null != consentDisagreeToggle) consentDisagreeToggle.isOn = false;
+        UpdateConfirmButtonState(true);
+
+        SnapConsentTogglesPixelPerfect();
     }
 
     private void HandleConsentPanelShown()
     {
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
-            FocusConsentItem(lastFocusedConsentSelectable ?? (Selectable)confirmButton ?? (Selectable)consentToggle);
+            FocusConsentItem(lastFocusedConsentSelectable ?? (Selectable)consentToggle);
         }
     }
 
     private void HandleConfirmButtonClicked()
     {
-        // 체크되지 않은 상태로 확인을 누르는 것은 유효한 "거부"다. 확인 버튼은 체크와
-        // 무관하게 항상 눌리며, 어느 쪽이든 여기서 답이 확정된다.
-        bool _isGranted = (null != consentToggle && true == consentToggle.isOn);
+        if (null != consentToggle && true == consentToggle.isOn)
+        {
+            SettingsManager.Instance.SetDataConsent(EDataConsent.Granted);
+        }
+        else if (null != consentDisagreeToggle && true == consentDisagreeToggle.isOn)
+        {
+            SettingsManager.Instance.SetDataConsent(EDataConsent.Declined);
+        }
+        else
+        {
+            return;
+        }
 
-        // 여기서 저장하지 않으면 이 선택은 어디에도 남지 않는다. 예전에는 구독자가 하나도 없는
-        // 이벤트를 발행하고 끝나서, 팝업은 있는데 아무 효력이 없는 상태였다.
-        // SetDataConsent는 곧바로 파일에 기록하고 DataConsentGate가 SDK에 반영하므로,
-        // 이 한 줄이 "동의 UI"를 "동의"로 만든다.
-        SettingsManager.Instance.SetDataConsent(
-            true == _isGranted ? EDataConsent.Granted : EDataConsent.Declined);
-
-        // 팝업 페이드아웃 및 닫기
         Close();
     }
 
@@ -771,22 +876,35 @@ public class UI_InitialSetupPopup : MonoBehaviour
             if (false == string.IsNullOrEmpty(_txt)) consentToggleLabel.text = _txt;
         }
 
-        SnapConsentTogglePixelPerfect();
+        if (null != consentDisagreeToggleLabel)
+        {
+            string _txt = localizationManager.GetText(MAIN_MENU_JSON_ID, 105);
+            if (false == string.IsNullOrEmpty(_txt)) consentDisagreeToggleLabel.text = _txt;
+        }
+
+        SnapConsentTogglesPixelPerfect();
     }
 
-    private void SnapConsentTogglePixelPerfect()
+    private void SnapConsentTogglesPixelPerfect()
     {
-        if (null == consentToggle || null == consentToggleLabel) return;
+        SnapSingleTogglePixelPerfect(consentToggle, consentToggleLabel);
+        SnapSingleTogglePixelPerfect(consentDisagreeToggle, consentDisagreeToggleLabel);
+        UpdateConsentToggleTextColors();
+    }
 
-        consentToggleLabel.raycastTarget = true;
+    private void SnapSingleTogglePixelPerfect(Toggle _toggle, TextMeshProUGUI _label)
+    {
+        if (null == _toggle || null == _label) return;
 
-        RectTransform _toggleRect = consentToggle.GetComponent<RectTransform>();
-        RectTransform _labelRect = consentToggleLabel.rectTransform;
+        _label.raycastTarget = true;
+
+        RectTransform _toggleRect = _toggle.GetComponent<RectTransform>();
+        RectTransform _labelRect = _label.rectTransform;
         if (null == _toggleRect || null == _labelRect) return;
 
         // 1. TMP 텍스트 정수 너비 및 높이 계산
-        int _textWidth = Mathf.CeilToInt(consentToggleLabel.preferredWidth);
-        int _textHeight = Mathf.CeilToInt(consentToggleLabel.preferredHeight);
+        int _textWidth = Mathf.CeilToInt(_label.preferredWidth);
+        int _textHeight = Mathf.CeilToInt(_label.preferredHeight);
         if (_textHeight <= 0) _textHeight = 16;
 
         // 2. 체크박스(Background) 규격
@@ -808,7 +926,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
         _toggleRect.anchoredPosition = new Vector2(0f, Mathf.Round(_toggleRect.anchoredPosition.y));
 
         // 5. 체크박스 (Background) 중앙 앵커 보장 및 왼쪽 배치
-        Transform _bgTransform = consentToggle.transform.Find("Background");
+        Transform _bgTransform = _toggle.transform.Find("Background");
         if (null != _bgTransform)
         {
             RectTransform _bgRect = _bgTransform.GetComponent<RectTransform>();
@@ -885,9 +1003,9 @@ public class UI_InitialSetupPopup : MonoBehaviour
             }
             else
             {
-                Selectable _target = (true == isConsentToggleHovered)
-                    ? (Selectable)consentToggle
-                    : (lastFocusedConsentSelectable ?? (Selectable)confirmButton ?? (Selectable)consentToggle);
+                Selectable _target = (null != hoveredConsentToggle)
+                    ? (Selectable)hoveredConsentToggle
+                    : (lastFocusedConsentSelectable ?? (Selectable)consentToggle);
                 ForceUnhoverAll();
                 FocusConsentItem(_target);
             }
