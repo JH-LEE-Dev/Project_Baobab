@@ -1294,7 +1294,7 @@ MonoBehaviour:
   cancelButtonTouchArea: {fileID: 7147597999920434654}
   selectionCursorPrefab: {fileID: 1125404888247100005, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
   selectionCursorParent: {fileID: 0}
-  selectionCursorSize: {x: 64, y: 30}
+  selectionCursorSize: {x: 66, y: 32}
   mainTextPivot: {fileID: 3545301721785324105}
   subTextPivot: {fileID: 4315820005572869537}
   buttonPivot: {fileID: 4847809646838716380}

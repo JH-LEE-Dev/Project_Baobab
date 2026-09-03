@@ -1550,7 +1550,7 @@ MonoBehaviour:
   containerTopY: -12
   selectionCursorPrefab: {fileID: 1125404888247100005, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
   selectionCursorParent: {fileID: 4974913713587254515}
-  selectionCursorSize: {x: 64, y: 30}
+  selectionCursorSize: {x: 66, y: 32}
   blackBG: {fileID: 9095366635969830895}
   sectionTitle: {fileID: 2098486811772482228}
   sectionKillCount: {fileID: 8927906452374081415}
