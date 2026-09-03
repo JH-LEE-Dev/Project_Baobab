@@ -10,7 +10,7 @@
 	// ⚠ app_build_demo_5135490.vdf 의 depots 항목과 반드시 같은 번호여야 합니다.
 	"DepotID"	"5135491"
 
-	"contentroot"	"..\Build\Demo"
+	"contentroot"	"C:\Unity Build\Demo"
 
 	"FileMapping"
 	{

@@ -33,17 +33,22 @@ Steamworks > 해당 앱 > SteamPipe > Depots 에서 실제 번호를 확인하�
 
 ## 1. 폴더 구조 전제
 
+빌드 출력은 프로젝트 **바깥**의 고정 경로를 씁니다. 경로에 공백이 있으므로 명령줄에서
+따옴표로 감싸야 합니다.
+
 ```
-Project_Baobab/
-  BuildScripts/                 <- 이 폴더
-  Build/                        <- .gitignore 처리됨
-    Release/                    <- 정식 빌드 출력 (LumberBoy.exe 가 바로 아래)
-    Demo/                       <- 데모 빌드 출력
-    _SteamPipeOutput/           <- SteamPipe 로그·청크 캐시
+C:\Unity Build\                 <- 빌드 출력 루트 (프로젝트 밖, git 대상 아님)
+  Release\                      <- 정식 빌드 출력 (LumberBoy.exe 가 바로 아래)
+  Demo\                         <- 데모 빌드 출력
+  _SteamPipeOutput\             <- SteamPipe 로그·청크 캐시
 ```
 
-`Build/Release` 와 `Build/Demo` 는 **반드시 분리**하세요. 같은 폴더에 두 모드를 번갈아
-빌드하면 이전 모드의 잔여 파일이 섞입니다.
+`Release` 와 `Demo` 는 **반드시 분리**하세요. 같은 폴더에 두 모드를 번갈아
+빌드하면 이전 모드의 잔여 파일이 섞입니다. 특히 두 모드는 Steam에서 서로 다른 앱이라,
+섞인 채로 올리면 데모 앱에 정식 콘텐츠가 실립니다.
+
+Unity에서 빌드할 때 출력 경로를 `C:\Unity Build\Demo` (또는 `\Release`) 로 지정하세요.
+`C:\Unity Build` 바로 아래에 빌드하면 `_SteamPipeOutput` 과 두 모드가 한 폴더에 섞입니다.
 
 `_SteamPipeOutput` 이 `contentroot` **바깥**에 있는 것이 중요합니다. 안에 두면 로그와
 청크 캐시가 그대로 depot에 실립니다.
@@ -72,14 +77,14 @@ Unity 에디터에서 `Tools > Steam > 빌드 모드 - 정식` (또는 `- 데모
 
 ### ③ 빌드
 
-`Build/Release` 또는 `Build/Demo` 로 출력합니다. 대상 폴더를 **비우고** 빌드하세요.
+`C:\Unity Build\Release` 또는 `C:\Unity Build\Demo` 로 출력합니다. 대상 폴더를 **비우고** 빌드하세요.
 
 ### ④ 예행 연습 (제외 규칙을 고쳤거나 오랜만이라면)
 
 `app_build_*.vdf` 의 `preview` 를 `"1"` 로 바꾸고 한 번 돌립니다. 업로드는 일어나지 않고
 무엇이 올라갈지만 로그로 남습니다.
 
-`Build/_SteamPipeOutput/<모드>/` 의 로그에서 아래가 **없는지** 확인하세요.
+`C:\Unity Build\_SteamPipeOutput\<모드>\` 의 로그에서 아래가 **없는지** 확인하세요.
 
 - `steam_appid.txt`
 - `LumberBoy_BackUpThisFolder_ButDontShipItWithYourGame/`

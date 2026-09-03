@@ -17,10 +17,10 @@
 
 	"desc"		"LumberBoy Demo 1.0.0-demo"
 
-	"buildoutput"	"..\Build\_SteamPipeOutput\Demo"
+	"buildoutput"	"C:\Unity Build\_SteamPipeOutput\Demo"
 
 	// Unity가 데모 빌드를 출력하는 폴더입니다. 정식과 반드시 분리하세요.
-	"contentroot"	"..\Build\Demo"
+	"contentroot"	"C:\Unity Build\Demo"
 
 	// 정식과 같은 이유로 비워 둡니다. README의 setlive 항목 참고.
 	"setlive"	""

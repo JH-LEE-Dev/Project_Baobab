@@ -10,7 +10,7 @@
 	// ⚠ app_build_release_5129170.vdf 의 depots 항목과 반드시 같은 번호여야 합니다.
 	"DepotID"	"5129171"
 
-	"contentroot"	"..\Build\Release"
+	"contentroot"	"C:\Unity Build\Release"
 
 	// 빌드 폴더 전체를 depot 루트에 그대로 옮깁니다. 아래 FileExclusion이 걸러냅니다.
 	"FileMapping"

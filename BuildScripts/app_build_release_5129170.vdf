@@ -20,10 +20,10 @@
 
 	// SteamPipe가 로그와 청크 캐시를 쌓는 곳입니다.
 	// contentroot 안에 두면 그 찌꺼기가 그대로 depot에 실리므로 반드시 바깥이어야 합니다.
-	"buildoutput"	"..\Build\_SteamPipeOutput\Release"
+	"buildoutput"	"C:\Unity Build\_SteamPipeOutput\Release"
 
 	// Unity가 정식 빌드를 출력하는 폴더입니다. (LumberBoy.exe 가 여기 바로 아래)
-	"contentroot"	"..\Build\Release"
+	"contentroot"	"C:\Unity Build\Release"
 
 	// 업로드와 동시에 어느 브랜치를 라이브로 만들지입니다.
 	//
