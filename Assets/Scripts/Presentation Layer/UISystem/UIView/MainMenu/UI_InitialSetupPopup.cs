@@ -555,9 +555,11 @@ public class UI_InitialSetupPopup : MonoBehaviour
         if (null == _rect) return;
 
         isToggleCursorShowing = true;
-        float _textWidth = (null != consentToggleLabel) ? consentToggleLabel.preferredWidth : 200f;
+        float _textWidth = (null != consentToggleLabel && consentToggleLabel.preferredWidth > 0f)
+            ? consentToggleLabel.preferredWidth
+            : 200f;
         float _totalWidth = 16f + 8f + _textWidth;
-        Vector2 _size = new Vector2(_totalWidth + 24f, 32f);
+        Vector2 _size = new Vector2(_totalWidth + 12f, 28f);
 
         cursorBoxUI.Show(_rect, _size, Vector2.zero, CursorMotionSettings.RowSubtle);
     }

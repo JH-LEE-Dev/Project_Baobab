@@ -54,7 +54,7 @@ public class UI_PopupButton : Selectable,
 
     [Header("Cursor Settings")]
     [SerializeField] private RectTransform cursorTargetTransform;
-    [SerializeField] private Vector2 cursorPadding = new Vector2(10f, 8f);
+    [SerializeField] private Vector2 cursorPadding = Vector2.zero;
     [SerializeField] private Vector2 cursorOffset = Vector2.zero;
 
     [Header("Motion Configs")]
