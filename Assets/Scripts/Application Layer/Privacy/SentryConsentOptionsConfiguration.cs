@@ -29,6 +29,22 @@ public class SentryConsentOptionsConfiguration : SentryOptionsConfiguration
     {
         if (null == _options) return;
 
+#if UNITY_EDITOR
+        // 이 훅은 런타임뿐 아니라 "빌드 시점"에도 호출됩니다.
+        // (Sentry의 빌드 처리기가 ScriptableSentryUnityOptions.LoadSentryUnityOptions로 옵션을 읽습니다)
+        //
+        // 그때 Enabled를 false로 두면 빌드 처리기가 Sentry를 쓰지 않는 프로젝트로 판단해서
+        //   - 네이티브 크래시 핸들러(sentry.dll, crashpad_handler.exe, crashpad_wer.dll)를 빌드에 넣지 않고
+        //   - 디버그 심볼 업로드(sentry-cli)도 건너뜁니다.
+        // 결과적으로 "빌드한 사람의 개인 동의 설정"이 모든 유저에게 나갈 빌드의 내용을 바꿔버립니다.
+        // 동의한 유저조차 네이티브 크래시를 남기지 못하고, 심볼이 없어 IL2CPP 스택 트레이스에
+        // 파일·줄 번호가 붙지 않습니다. 에셋 설정은 정상이라 파일만 봐서는 드러나지 않습니다.
+        //
+        // 동의 여부는 게임이 실제로 실행될 때만 의미가 있으므로, 플레이 중이 아니면 건드리지 않습니다.
+        // 플레이어 빌드에서는 이 블록이 컴파일되지 않으므로 동의 차단은 그대로 동작합니다.
+        if (false == Application.isPlaying) return;
+#endif
+
         // SettingsManager의 인스턴스를 만들지 않고 파일만 읽는다. 이 시점에는 씬이 아직 없어서
         // 여기서 만든 GameObject는 DontDestroyOnLoad 보호를 받지 못한 채 첫 씬 로드에서
         // 파괴될 수 있다. (SettingsManager.ReadPersistedConsent 주석 참고)
