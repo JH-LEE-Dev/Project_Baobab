@@ -56,8 +56,9 @@ public class AttackComponent : PComponent
 
     private Vector2 aimStickDirection = Vector2.zero;
 
-    // 마지막으로 조준 스틱이 유효하게 기울어져 있던 시각(unscaled). 만료 판정에만 쓴다.
-    private float lastAimStickInputTime = float.NegativeInfinity;
+    // 조준 스틱 입력이 끊긴 뒤로 흐른 시간(실시간). 만료 판정에만 쓴다.
+    // 시각(timestamp)이 아니라 누적값인 이유는, 조준 입력이 막혀 있는 동안 카운트를 멈춰야 하기 때문이다.
+    private float aimStickIdleTime = 0f;
 
     private bool bAttack = false;
     private bool bCanRotate = true;
@@ -170,7 +171,7 @@ public class AttackComponent : PComponent
             return;
 
         aimStickDirection = _stick.normalized;
-        lastAimStickInputTime = Time.unscaledTime;
+        aimStickIdleTime = 0f;
     }
 
     /// <summary>
@@ -183,7 +184,7 @@ public class AttackComponent : PComponent
     /// </summary>
     private void UpdateGamepadAim()
     {
-        if (null == ctx || null == ctx.inputManager) return;
+        if (null == ctx || null == ctx.inputManager || null == ctx.inputManager.inputReader) return;
 
         // 마우스를 쓰는 동안에는 패드 조준이 끼어들지 않아야 한다.
         if (EInputDeviceType.Gamepad != ctx.inputManager.CurrentDevice) return;
@@ -193,9 +194,18 @@ public class AttackComponent : PComponent
         // 1초 뒤에 조준이 이동방향으로 풀려 버린다.
         AccumulateAimStickInput(ctx.inputManager.inputReader.ReadAimStick());
 
+        // UI가 열려 있거나 일시정지 중이면 조준 입력 자체가 막혀 있으므로, 그 시간은 "입력이 없었다"로
+        // 세지 않는다. 인벤토리를 잠깐 열었다 닫았다는 이유로 조준이 풀리면 안 되기 때문이다.
+        // 멈추기만 하고 초기화하지는 않으므로, 화면을 닫으면 열기 직전까지 세던 시간에서 이어 센다.
+        bool bAimInputBlocked = EInputMode.Gameplay != ctx.inputManager.CurrentInputMode || 0f == Time.timeScale;
+
+        if (false == bAimInputBlocked)
+        {
+            aimStickIdleTime += Time.unscaledDeltaTime;
+        }
+
         // 조준 스틱 입력이 끊긴 지 일정 시간이 지나면 오버라이드를 풀고 기본 패드 조작으로 되돌린다.
-        if (Vector2.zero != aimStickDirection &&
-            GamepadAimHoldDuration <= Time.unscaledTime - lastAimStickInputTime)
+        if (Vector2.zero != aimStickDirection && GamepadAimHoldDuration <= aimStickIdleTime)
         {
             aimStickDirection = Vector2.zero;
         }
