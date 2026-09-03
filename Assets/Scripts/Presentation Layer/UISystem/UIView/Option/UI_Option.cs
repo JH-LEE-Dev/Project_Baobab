@@ -187,6 +187,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private Action onGamepadIconPreferenceRight;
     private Action onDataConsentLeft;
     private Action onDataConsentRight;
+    private EDataConsent pendingDataConsent = EDataConsent.NotAsked;
+    private EDataConsent savedDataConsent = EDataConsent.NotAsked;
 
     private Action<float> onCameraShakeChanged;
     private Action<float> onCrosshairBrightnessChanged;
@@ -229,6 +231,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         public readonly float hapticStrength;
         public readonly float virtualCursorSensitivity;
         public readonly EGamepadIconPreference gamepadIconPreference;
+        public readonly EDataConsent dataConsent;
 
         public ApplyTargetSettingsSnapshot(in SettingsData _data)
         {
@@ -241,6 +244,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             hapticStrength = _data.hapticStrength;
             virtualCursorSensitivity = _data.virtualCursorSensitivity;
             gamepadIconPreference = _data.gamepadIconPreference;
+            dataConsent = _data.dataConsent;
         }
 
         public bool Equals(in SettingsData _current)
@@ -257,7 +261,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
                 && Mathf.Approximately(crosshairBrightness, _current.crosshairBrightness)
                 && Mathf.Approximately(hapticStrength, _current.hapticStrength)
                 && Mathf.Approximately(virtualCursorSensitivity, _current.virtualCursorSensitivity)
-                && gamepadIconPreference == _current.gamepadIconPreference;
+                && gamepadIconPreference == _current.gamepadIconPreference
+                && dataConsent == _current.dataConsent;
         }
     }
 
@@ -353,12 +358,14 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         onCloseAction = _onCloseCallback;
 
-        RefreshAllUIFromSettings();
-
         if (null != settings)
         {
+            savedDataConsent = settings.Current.dataConsent;
+            pendingDataConsent = savedDataConsent;
             savedSnapshot = new ApplyTargetSettingsSnapshot(settings.Current);
         }
+
+        RefreshAllUIFromSettings();
 
         depthController?.RegisterView(this);
 
@@ -402,6 +409,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         }
 
         UpdateApplyButtonState();
+        RefreshCurrentTabScrollbar();
     }
 
     public void Hide()
@@ -524,9 +532,15 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         if (null != settings)
         {
+            if (pendingDataConsent != settings.Current.dataConsent)
+            {
+                settings.SetDataConsent(pendingDataConsent);
+            }
             settings.CommitChanges();
             savedSnapshot = new ApplyTargetSettingsSnapshot(settings.Current);
         }
+
+        savedDataConsent = pendingDataConsent;
 
         UpdateApplyButtonState();
     }
@@ -595,6 +609,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private void OnGamepadIconSetChanged(EGamepadIconSet _iconSet)
     {
         RefreshKeyBindRows();
+        RefreshShortcutIcons();
     }
 
     private void OnInputDeviceChanged(EInputDeviceType _device)
@@ -602,6 +617,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         RefreshGamepadOptionsVisibility();
         RefreshControlTabVisibility(EInputDeviceType.Gamepad == _device);
         SetupOptionNavigation();
+        RefreshShortcutIcons();
 
         if (null != warningPopup && true == warningPopup.IsActive)
         {
@@ -971,7 +987,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != fpsSelector) fpsSelector.UpdateValue(GetFpsText(_data.fps));
         if (null != pauseOnUnfocusSelector) pauseOnUnfocusSelector.UpdateValue(GetOnOffText(_data.pauseOnUnfocus));
         if (null != gamepadIconPreferenceSelector) gamepadIconPreferenceSelector.UpdateValue(GetGamepadIconPreferenceText(_data.gamepadIconPreference));
-        if (null != dataConsentSelector) dataConsentSelector.UpdateValue(GetDataConsentText(_data.dataConsent));
+        if (null != dataConsentSelector) dataConsentSelector.UpdateValue(GetDataConsentText(pendingDataConsent));
 
         // 2) 슬라이더 동기화
         if (null != cameraShakeSlider) cameraShakeSlider.UpdateValue(_data.cameraShake);
@@ -1031,7 +1047,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         }
         if (null != dataConsentSelector)
         {
-            dataConsentSelector.Initialize(GetText(LocKeys.OptionUI.dataConsent, "오류 보고 및 통계 수집"), GetDataConsentText(_data.dataConsent), onDataConsentLeft, onDataConsentRight);
+            dataConsentSelector.Initialize(GetText(LocKeys.OptionUI.dataConsent, "오류 보고 및 통계 수집"), GetDataConsentText(pendingDataConsent), onDataConsentLeft, onDataConsentRight);
             dataConsentSelector.SetCursorBoxUI(cursorBoxUI, inputManager);
         }
     }
@@ -1343,6 +1359,21 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         }
 
         SetupOptionNavigation();
+        RefreshCurrentTabScrollbar();
+    }
+
+    private void RefreshCurrentTabScrollbar()
+    {
+        if (null == tabGroup) return;
+        GameObject _panel = tabGroup.GetTabPanel(tabGroup.CurrentTabIndex);
+        if (null != _panel)
+        {
+            UI_CustomScroll _scroll = _panel.GetComponentInChildren<UI_CustomScroll>(true);
+            if (null != _scroll)
+            {
+                _scroll.UpdateScrollbarSize();
+            }
+        }
     }
 
     private struct OptionRowNav
@@ -1409,7 +1440,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             Navigation _rightNav = new Navigation();
             _rightNav.mode = Navigation.Mode.Explicit;
             _rightNav.selectOnUp = _aboveTarget;
-            _rightNav.selectOnDown = closeButton;
+            _rightNav.selectOnDown = tabGroup.GetTabButton(_curTab);
             _rightNav.selectOnLeft = closeButton;
             _rightNav.selectOnRight = _rightBottomButton;
             _rightBottomButton.navigation = _rightNav;
@@ -1417,7 +1448,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             Navigation _closeNav = new Navigation();
             _closeNav.mode = Navigation.Mode.Explicit;
             _closeNav.selectOnUp = _aboveTarget;
-            _closeNav.selectOnDown = null;
+            _closeNav.selectOnDown = tabGroup.GetTabButton(_curTab);
             _closeNav.selectOnLeft = closeButton;
             _closeNav.selectOnRight = _rightBottomButton;
             closeButton.navigation = _closeNav;
@@ -1427,7 +1458,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             Navigation _closeNav = new Navigation();
             _closeNav.mode = Navigation.Mode.Explicit;
             _closeNav.selectOnUp = _elementAboveBottom;
-            _closeNav.selectOnDown = null;
+            _closeNav.selectOnDown = tabGroup.GetTabButton(_curTab);
             _closeNav.selectOnLeft = closeButton;
             _closeNav.selectOnRight = closeButton;
             closeButton.navigation = _closeNav;
@@ -1438,6 +1469,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         RefreshControlTabVisibility();
         SetupOptionNavigation();
+        RefreshShortcutIcons();
+        RefreshCurrentTabScrollbar();
 
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
@@ -1607,6 +1640,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         {
             Selectable _firstElement = _validRows[0].left ?? _validRows[0].right;
             Navigation _tabNav = _tabBtn.navigation;
+            _tabNav.selectOnUp = _bottomEntry;
             _tabNav.selectOnDown = _firstElement;
             _tabBtn.navigation = _tabNav;
 
@@ -1665,6 +1699,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         else
         {
             Navigation _tabNav = _tabBtn.navigation;
+            _tabNav.selectOnUp = _bottomEntry;
             _tabNav.selectOnDown = _bottomEntry;
             _tabBtn.navigation = _tabNav;
         }
@@ -1731,6 +1766,77 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             if (null != locManager) _txt = locManager.GetText(LocKeys.OptionUI.close);
             if (true == string.IsNullOrEmpty(_txt)) _txt = "닫기";
             closeButton.SetText(_txt);
+        }
+
+        RefreshShortcutIcons();
+    }
+
+    private void RefreshShortcutIcons()
+    {
+        bool _isPad = (null != inputManager && true == inputManager.IsGamepadMode);
+        EGamepadIconSet _set = (null != inputManager) ? inputManager.CurrentGamepadIconSet : EGamepadIconSet.Xbox;
+
+        Sprite _yIcon = (null != keyIconDatabase) ? keyIconDatabase.GetIcon("<Gamepad>/buttonNorth", _set) : null;
+        Sprite _bIcon = (null != keyIconDatabase) ? keyIconDatabase.GetIcon("<Gamepad>/buttonEast", _set) : null;
+
+        bool _isControlTab = (null != tabGroup && tabGroup.CurrentTabIndex == 3);
+
+        if (null != closeButton)
+        {
+            closeButton.SetShortcutIcon(_bIcon, _isPad);
+        }
+
+        if (true == _isControlTab)
+        {
+            if (null != resetAllBindingsButton)
+            {
+                resetAllBindingsButton.SetShortcutIcon(_yIcon, _isPad);
+            }
+            if (null != applyButton)
+            {
+                applyButton.SetShortcutIcon(null, false);
+            }
+        }
+        else
+        {
+            if (null != applyButton)
+            {
+                applyButton.SetShortcutIcon(_yIcon, _isPad && applyButton.IsInteractable);
+            }
+            if (null != resetAllBindingsButton)
+            {
+                resetAllBindingsButton.SetShortcutIcon(null, false);
+            }
+        }
+    }
+
+    private void Update()
+    {
+        if (false == gameObject.activeInHierarchy || false == IsActive) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
+        if (null != rebindOverlay && true == rebindOverlay.activeSelf) return;
+        if (null != warningPopup && true == warningPopup.IsActive) return;
+
+        Gamepad _pad = Gamepad.current;
+        if (null == _pad) return;
+
+        if (_pad.buttonNorth.wasPressedThisFrame)
+        {
+            bool _isControlTab = (null != tabGroup && tabGroup.CurrentTabIndex == 3);
+            if (true == _isControlTab)
+            {
+                if (null != resetAllBindingsButton && true == resetAllBindingsButton.gameObject.activeSelf && true == resetAllBindingsButton.IsInteractable)
+                {
+                    OnResetAllClicked();
+                }
+            }
+            else
+            {
+                if (null != applyButton && true == applyButton.gameObject.activeSelf && true == applyButton.IsInteractable)
+                {
+                    OnApplyClicked();
+                }
+            }
         }
     }
 
@@ -1833,21 +1939,19 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     /// <summary>
     /// 데이터 수집 동의를 바꿉니다.
-    ///
-    /// 해상도·창모드와 달리 적용 버튼을 거치지 않고 즉시 반영·저장됩니다(언어와 같은 취급).
-    /// 동의 철회는 "지금 그만 보내라"는 뜻이라 확인 절차 뒤로 미룰 수 없고, 되돌리기
-    /// 스냅샷(ApplyTargetSettingsSnapshot)에 넣으면 창을 닫는 방식에 따라 유저의 의사가
-    /// 조용히 되돌려질 수 있기 때문입니다. 그래서 UpdateApplyButtonState도 부르지 않습니다.
-    ///
-    /// 실제 SDK 반영은 SettingsManager -> DataConsentGate가 담당합니다. (여기서 직접 켜고 끄지 말 것)
+    /// 즉각 반영하지 않고, 다른 설정들처럼 유저가 '적용' 버튼을 누를 때 반영되도록 변경 사항을 대기시킵니다.
     /// </summary>
     private void ApplyDataConsentCycle(int _delta)
     {
-        settings.CycleDataConsent(_delta);
+        EDataConsent _next = (EDataConsent.Granted == pendingDataConsent) ? EDataConsent.Declined : EDataConsent.Granted;
+        if (EDataConsent.NotAsked == pendingDataConsent) _next = EDataConsent.Declined;
+        pendingDataConsent = _next;
+
         if (null != dataConsentSelector)
         {
-            dataConsentSelector.UpdateValue(GetDataConsentText(settings.Current.dataConsent));
+            dataConsentSelector.UpdateValue(GetDataConsentText(pendingDataConsent));
         }
+        UpdateApplyButtonState();
     }
 
     private void OnDataConsentLeft()
@@ -2254,7 +2358,9 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private bool IsDirty()
     {
         if (null == settings) return false;
-        return false == savedSnapshot.Equals(settings.Current);
+        bool _settingsDirty = false == savedSnapshot.Equals(settings.Current);
+        bool _consentDirty = (pendingDataConsent != savedDataConsent);
+        return _settingsDirty || _consentDirty;
     }
 
     private void UpdateApplyButtonState()
@@ -2266,6 +2372,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         applyButton.SetInteractable(_dirty);
         SetupOptionNavigation();
+        RefreshShortcutIcons();
 
         if (false == _dirty && true == _wasFocusedOnApply)
         {
@@ -2306,6 +2413,12 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != gamepadIconPreferenceSelector)
         {
             gamepadIconPreferenceSelector.UpdateValue(GetGamepadIconPreferenceText(_snapshot.gamepadIconPreference));
+        }
+
+        pendingDataConsent = savedDataConsent;
+        if (null != dataConsentSelector)
+        {
+            dataConsentSelector.UpdateValue(GetDataConsentText(pendingDataConsent));
         }
 
         while (settings.Current.windowMode != _snapshot.windowMode)
