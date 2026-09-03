@@ -816,7 +816,12 @@ public class InDungeonSystem : MonoBehaviour
         // bGoingToMainMenu가 아니라 bMainMenuExitRequested를 보는 이유는 그 필드 주석 참조 -
         // 이 코루틴은 마을 씬(귀환 직후)에서도 도는데, 그때 bGoingToMainMenu는 씬 가드에 막혀 서지 않는다.
         if (bMainMenuExitRequested == true)
+        {
+            // 여기서 빠지면 아래 두 분기(StaminaDecreaseCoroutine / 귀환 분기)가 모두 실행되지 않아
+            // 상호작용 키 잠금이 상쇄되지 않는다. 이유는 StaminaDecreaseCoroutine 쪽 가드 주석 참조.
+            inputManager.PauseInteractKey(false);
             yield break;
+        }
 
         signalHub.Publish(new PopupUIUpSignal());
 
@@ -854,8 +859,17 @@ public class InDungeonSystem : MonoBehaviour
         // 피로도 감소가 시작되고 컨테이너/차량 콜라이더까지 되살아나 상호작용 팝업이 뜬다.
         // PopupUIGoUPCoroutine / RideOffroad와 같은 이유의 가드다.
         // (bGoingToMainMenu가 아닌 이유는 PopupUIGoUPCoroutine 쪽 주석과 동일)
+        //
+        // 단, 아래 PauseInteractKey(false)만은 빠져나가면서도 반드시 해줘야 한다. PauseInteractKey는
+        // bool이 아니라 카운터라(InputReader.pauseInteractCount) 걸어둔 +1이 상쇄되지 않으면 0으로
+        // 돌아오지 않는다. InputManager는 BootStrap이 들고 있어 게임 실행 내내 살아남고
+        // SetupMainMenuScene()도 PauseMove/PauseESCKey만 풀어주므로, 그 불균형은 메인메뉴를 거쳐
+        // 다음 세션까지 따라가 상호작용 키가 통째로 죽는다.
         if (bMainMenuExitRequested == true)
+        {
+            inputManager.PauseInteractKey(false);
             yield break;
+        }
 
         signalHub.Publish(new StartDecreaseStaminaSignal());
 

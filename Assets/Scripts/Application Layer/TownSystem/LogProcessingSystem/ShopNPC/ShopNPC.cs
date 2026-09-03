@@ -193,6 +193,16 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         return money;
     }
 
+    /// <summary>
+    /// 수금은 됐지만 코인이 아직 캐릭터에 도착하지 않아 지급 전인 금액.
+    /// 이 구간의 돈은 상점 잔액(money)에도 캐릭터 소지금에도 존재하지 않으므로,
+    /// 저장 시 이 값을 함께 적어두지 않으면 통째로 사라진다(LogProcessingManager.AppendTransitToSaveData).
+    /// </summary>
+    public int GetPendingBatchMoney()
+    {
+        return pendingBatchMoney;
+    }
+
     public void LoadSaveData(int _money, bool _bFirstTime)
     {
         money = _money;

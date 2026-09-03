@@ -127,6 +127,18 @@ public class TutorialSystem
 
     private void TutorialIntroEnded(TutorialIntroEndedSignal _signal)
     {
+        // 이 신호로 세션이 열리므로 다른 핸들러들처럼 CanProcessTutorialLogic()으로 시작할 수는 없지만,
+        // "이미 열려 있으면 무시"는 반드시 필요하다. 이 신호가 두 번 오면 진행 중이던 튜토리얼이
+        // CutTree부터 통째로 리셋되기 때문이다(currentStep/bStepActive를 덮어쓰고, bTutorialCompleted도
+        // 보지 않는다). bTutorialSessionActive는 false로 돌아가는 곳이 없고 세션마다 이 객체가 새로
+        // 만들어지므로, 이 한 줄이 "진행 중"과 "이미 완료" 두 경우를 모두 막는다.
+        //
+        // 지금은 발행 체인(스튜디오 로고 연출 종료 → 하차 → HUD 상승 → TutorialIntroEndedSignal)이
+        // MainMenu → Dungeon 최초 진입에서만 예약되어 두 번 올 일이 없지만, 그 체인은 이 시스템 밖의
+        // 여러 단계에 걸쳐 있어 여기서 스스로를 지켜두는 편이 안전하다.
+        if (bTutorialSessionActive)
+            return;
+
         bTutorialSessionActive = true;
         StartStep(TutorialStep.CutTree);
     }

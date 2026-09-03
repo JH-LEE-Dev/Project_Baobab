@@ -243,6 +243,20 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         {
             logContainer.AppendTransitToSaveData(ref _saveData.containerInventoryData);
         }
+
+        if (shopNPC != null)
+        {
+            // 수금 순간 상점 잔액은 0이 되고, 실제 지급은 첫 코인이 캐릭터에 닿을 때 일어난다.
+            // 그 사이의 금액은 상점에도 캐릭터 소지금에도 없어서, 위 PopulateSaveData가 적은
+            // shopMoney(=0)만으로 저장하면 통째로 유실된다. ESC 메뉴는 timeScale = 0이라 코인이
+            // 얼어붙은 채 대기하고, 메인메뉴 이탈 자동저장은 timeScale이 1로 돌아오기 전에
+            // 실행되므로 이 구간은 실제로 재현된다.
+            // 비행 원목과 같은 방식으로 라이브 상태는 건드리지 않고 세이브에만 되돌려 적어둔다.
+            // 다음 로드에서 상점 잔액으로 복원되어 다시 수금하면 되고, 저장 후에도 게임이 계속되는
+            // 경로(DepartToForest)에서는 코인이 도착해 라이브 소지금에 들어가지만 그 세션의
+            // 라이브 상태는 로드 시 버려지므로 이중 지급이 되지 않는다.
+            _saveData.shopMoney += shopNPC.GetPendingBatchMoney();
+        }
     }
 
     /// <summary>

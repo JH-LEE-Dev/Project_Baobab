@@ -37,6 +37,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     [SerializeField] private UI_OptionSelector pauseOnUnfocusSelector;
     [SerializeField] private UI_OptionSelector gamepadIconPreferenceSelector;
 
+    [Tooltip("데이터 수집(크래시 리포트·플레이 통계) 동의 항목입니다. 게임플레이 탭 맨 아래 " +
+        "OPT_DataConsent 행을 연결하세요. 비워두면 유저가 최초 팝업에서 한 번 답한 뒤로는 " +
+        "동의를 철회할 방법이 사라집니다.")]
+    [SerializeField] private UI_OptionSelector dataConsentSelector;
+
     [SerializeField] private UI_OptionSlider cameraShakeSlider;
     [SerializeField] private UI_OptionSlider crosshairBrightnessSlider;
     [SerializeField] private UI_OptionSlider hapticStrengthSlider;
@@ -180,6 +185,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private Action onPauseRight;
     private Action onGamepadIconPreferenceLeft;
     private Action onGamepadIconPreferenceRight;
+    private Action onDataConsentLeft;
+    private Action onDataConsentRight;
 
     private Action<float> onCameraShakeChanged;
     private Action<float> onCrosshairBrightnessChanged;
@@ -545,6 +552,9 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         onGamepadIconPreferenceLeft = OnGamepadIconPreferenceLeft;
         onGamepadIconPreferenceRight = OnGamepadIconPreferenceRight;
 
+        onDataConsentLeft = OnDataConsentLeft;
+        onDataConsentRight = OnDataConsentRight;
+
         onCameraShakeChanged = OnCameraShakeChanged;
         onCrosshairBrightnessChanged = OnCrosshairBrightnessChanged;
         onHapticStrengthChanged = OnHapticStrengthChanged;
@@ -682,6 +692,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != fpsSelector && true == fpsSelector.IsMouseOver()) return fpsSelector;
         if (null != pauseOnUnfocusSelector && true == pauseOnUnfocusSelector.IsMouseOver()) return pauseOnUnfocusSelector;
         if (null != gamepadIconPreferenceSelector && true == gamepadIconPreferenceSelector.IsMouseOver()) return gamepadIconPreferenceSelector;
+        if (null != dataConsentSelector && true == dataConsentSelector.IsMouseOver()) return dataConsentSelector;
 
         if (null != cameraShakeSlider && true == cameraShakeSlider.IsMouseOver()) return cameraShakeSlider;
         if (null != crosshairBrightnessSlider && true == crosshairBrightnessSlider.IsMouseOver()) return crosshairBrightnessSlider;
@@ -792,6 +803,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != fpsSelector) fpsSelector.ApplyFocusVisual(false);
         if (null != pauseOnUnfocusSelector) pauseOnUnfocusSelector.ApplyFocusVisual(false);
         if (null != gamepadIconPreferenceSelector) gamepadIconPreferenceSelector.ApplyFocusVisual(false);
+        if (null != dataConsentSelector) dataConsentSelector.ApplyFocusVisual(false);
 
         if (null != cameraShakeSlider) cameraShakeSlider.ApplyFocusVisual(false);
         if (null != crosshairBrightnessSlider) crosshairBrightnessSlider.ApplyFocusVisual(false);
@@ -959,6 +971,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != fpsSelector) fpsSelector.UpdateValue(GetFpsText(_data.fps));
         if (null != pauseOnUnfocusSelector) pauseOnUnfocusSelector.UpdateValue(GetOnOffText(_data.pauseOnUnfocus));
         if (null != gamepadIconPreferenceSelector) gamepadIconPreferenceSelector.UpdateValue(GetGamepadIconPreferenceText(_data.gamepadIconPreference));
+        if (null != dataConsentSelector) dataConsentSelector.UpdateValue(GetDataConsentText(_data.dataConsent));
 
         // 2) 슬라이더 동기화
         if (null != cameraShakeSlider) cameraShakeSlider.UpdateValue(_data.cameraShake);
@@ -1015,6 +1028,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         {
             gamepadIconPreferenceSelector.Initialize(GetText(LocKeys.OptionUI.gamepadIconPreference, "게임패드 버튼 표기"), GetGamepadIconPreferenceText(_data.gamepadIconPreference), onGamepadIconPreferenceLeft, onGamepadIconPreferenceRight);
             gamepadIconPreferenceSelector.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+        if (null != dataConsentSelector)
+        {
+            dataConsentSelector.Initialize(GetText(LocKeys.OptionUI.dataConsent, "오류 보고 및 통계 수집"), GetDataConsentText(_data.dataConsent), onDataConsentLeft, onDataConsentRight);
+            dataConsentSelector.SetCursorBoxUI(cursorBoxUI, inputManager);
         }
     }
 
@@ -1798,6 +1816,50 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         UpdateApplyButtonState();
     }
 
+    /// <summary>
+    /// 동의 상태의 표기 문자열입니다. NotAsked는 옵션 창에 도달할 무렵이면 이미 최초 팝업에서
+    /// 해소되어 있어야 하지만, 팝업을 건너뛴 경로(팝업 참조 누락 등)가 생기더라도 화면이
+    /// 비어 보이지 않도록 "동의 안 함"과 같게 표기합니다. 실제 동작도 그와 같으므로
+    /// 표기와 동작이 어긋나지 않습니다.
+    /// </summary>
+    private string GetDataConsentText(EDataConsent _consent)
+    {
+        if (EDataConsent.Granted == _consent)
+        {
+            return GetText(LocKeys.OptionUI.dataConsentGranted, "동의함");
+        }
+        return GetText(LocKeys.OptionUI.dataConsentDeclined, "동의 안 함");
+    }
+
+    /// <summary>
+    /// 데이터 수집 동의를 바꿉니다.
+    ///
+    /// 해상도·창모드와 달리 적용 버튼을 거치지 않고 즉시 반영·저장됩니다(언어와 같은 취급).
+    /// 동의 철회는 "지금 그만 보내라"는 뜻이라 확인 절차 뒤로 미룰 수 없고, 되돌리기
+    /// 스냅샷(ApplyTargetSettingsSnapshot)에 넣으면 창을 닫는 방식에 따라 유저의 의사가
+    /// 조용히 되돌려질 수 있기 때문입니다. 그래서 UpdateApplyButtonState도 부르지 않습니다.
+    ///
+    /// 실제 SDK 반영은 SettingsManager -> DataConsentGate가 담당합니다. (여기서 직접 켜고 끄지 말 것)
+    /// </summary>
+    private void ApplyDataConsentCycle(int _delta)
+    {
+        settings.CycleDataConsent(_delta);
+        if (null != dataConsentSelector)
+        {
+            dataConsentSelector.UpdateValue(GetDataConsentText(settings.Current.dataConsent));
+        }
+    }
+
+    private void OnDataConsentLeft()
+    {
+        ApplyDataConsentCycle(-1);
+    }
+
+    private void OnDataConsentRight()
+    {
+        ApplyDataConsentCycle(1);
+    }
+
     private void OnGamepadIconPreferenceLeft()
     {
         settings.CycleGamepadIconPreference(-1);
@@ -2295,6 +2357,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         onFpsLeft = null; onFpsRight = null;
         onPauseLeft = null; onPauseRight = null;
         onGamepadIconPreferenceLeft = null; onGamepadIconPreferenceRight = null;
+        onDataConsentLeft = null; onDataConsentRight = null;
 
         onCameraShakeChanged = null;
         onCrosshairBrightnessChanged = null;

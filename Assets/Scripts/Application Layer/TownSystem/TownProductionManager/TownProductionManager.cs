@@ -87,6 +87,17 @@ public class TownProductionManager : MonoBehaviour
         offroadVehicleObj.OffroadDriveEndEvent += DriveEnd;
 
         characterRidePoint = offroadVehicleObj.CharacterRidePoint;
+
+        // 새 차량을 받는 시점(=마을 진입)에 하차 가능 상태를 되돌린다.
+        // bCanGetOff는 던전 확정 때 false가 되고 오직 DriveEnd(주행 완료)에서만 true로 돌아오는데,
+        // 그 이벤트를 발행하는 차량은 씬 오브젝트라 씬 언로드와 함께 파괴된다. 즉 주행이 씬 전환보다
+        // 늦게 끝나면 이벤트가 영영 오지 않고, 이 매니저는 살아남으므로 false가 다음 마을 세션까지
+        // 따라간다. 그러면 차량에 탑승한 뒤 내비를 취소해도 GetOffFromTheVehicle()이 조기 반환해
+        // 캐릭터가 비활성 + 이동 잠금 상태로 차 안에 갇힌다.
+        // 지금 타이밍상으로는 주행이 먼저 끝나지만, 연출 시간(StartSkyProductionRoutine의 대기 ·
+        // SkyCameraProductionManager.moveDuration)이나 주행 거리를 조정하면 곧바로 깨지는 전제라
+        // 진입 시점에 못 박아둔다.
+        bCanGetOff = true;
     }
 
     public void Character_DI(Character _character)

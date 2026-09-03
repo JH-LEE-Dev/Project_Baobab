@@ -86,7 +86,7 @@ MonoBehaviour:
     <WindowsBackend>k__BackingField: 0
     <LinuxBackend>k__BackingField: 0
     <EnableNativeAppHangTracking>k__BackingField: 0
-  <OptionsConfiguration>k__BackingField: {fileID: 0}
+  <OptionsConfiguration>k__BackingField: {fileID: 11400000, guid: 07c7a5d2ceb54c4cb905a7a8defc255e, type: 2}
   <Debug>k__BackingField: 0
   <DebugOnlyInEditor>k__BackingField: 1
   <DiagnosticLevel>k__BackingField: 0

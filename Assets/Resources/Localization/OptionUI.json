@@ -145,6 +145,28 @@
       "enumValue": ""
     },
     {
+      "id": 114,
+      "key": "DataConsentGranted",
+      "kr": "동의함",
+      "en": "Allowed",
+      "zhHans": "已同意",
+      "zhHant": "已同意",
+      "ja": "同意する",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 115,
+      "key": "DataConsentDeclined",
+      "kr": "동의 안 함",
+      "en": "Declined",
+      "zhHans": "不同意",
+      "zhHant": "不同意",
+      "ja": "同意しない",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
       "id": 201,
       "key": "Language",
       "kr": "언어",
@@ -317,6 +339,17 @@
       "zhHans": "虚拟光标灵敏度",
       "zhHant": "虛擬游標靈敏度",
       "ja": "カーソル感度",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 217,
+      "key": "DataConsent",
+      "kr": "오류 보고 및 통계 수집",
+      "en": "Error Reports & Statistics",
+      "zhHans": "错误报告与统计收集",
+      "zhHant": "錯誤回報與統計收集",
+      "ja": "エラー報告と統計の収集",
       "enumType": "",
       "enumValue": ""
     },
