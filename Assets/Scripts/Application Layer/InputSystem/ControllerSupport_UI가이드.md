@@ -58,11 +58,13 @@
 | 액션 | 패드 | | 액션 | 패드 |
 |---|---|---|---|---|
 | Move | `leftStick` | | Interaction | `buttonSouth` (A/×) |
-| Aim | `rightStick` | | Inventory | `buttonNorth` (Y/△) |
+| Aim | `rightStick` | | Inventory | `leftTrigger` (LT/L2) |
 | Attack | `rightTrigger` (RT/R2) | | PotionKey | `buttonWest` (X/□) |
 | ESC(메뉴) | `start` | | *(B/○ 는 취소 전용으로 비워둠)* | |
 
 `buttonEast (B/○)`는 **의도적으로 비워둔 것**입니다. 리바인딩 취소이자 "뒤로가기"라는 보편 관례라, 다른 기능에 할당하면 유저가 리바인딩 대기 상태에서 빠져나올 수단을 잃습니다.
+
+`buttonNorth (Y/△)`는 인벤토리가 `leftTrigger`로 옮겨가면서 **현재 비어 있습니다.** 비워두기로 정한 `buttonEast`와 달리 그냥 남은 자리이므로, 새 액션이 필요하면 여기부터 쓰면 됩니다.
 
 ---
 

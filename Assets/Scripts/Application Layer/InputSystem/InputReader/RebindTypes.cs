@@ -31,7 +31,7 @@ public enum ERebindableAction
 /// | Aim        | rightStick           |
 /// | Attack     | rightTrigger (RT/R2) |
 /// | Interaction| buttonSouth (A/×)    |
-/// | Inventory  | buttonNorth (Y/△)    |
+/// | Inventory  | leftTrigger (LT/L2)  |
 /// | PotionKey  | buttonWest (X/□)     |
 /// | ESC(메뉴)   | start                |
 ///
