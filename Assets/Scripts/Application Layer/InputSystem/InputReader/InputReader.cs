@@ -654,12 +654,16 @@ public class InputReader
 
     public void OnMove(InputAction.CallbackContext context)
     {
-        // 패드 이동은 위의 폴링 경로가 히스테리시스를 걸어 처리한다. 여기서 또 받으면 히스테리시스가
+        // 캐시는 패드발 콜백에서도 갱신해야 한다. 이 값은 "액션이 마지막으로 내보낸 이동 입력"이고,
+        // 스틱을 놓았을 때와 이동 잠금이 풀릴 때 되돌려 보내는 값이기 때문이다.
+        // 여기서 건너뛰면, 키보드와 패드를 섞어 쓸 때 낡은 방향이 남아 캐릭터가 혼자 걸어간다.
+        // (키를 뗀 이벤트가 패드 컨트롤로 전달되면 갱신을 놓치게 된다)
+        keyboardMoveInput = context.ReadValue<Vector2>();
+
+        // 패드 이동은 위의 폴링 경로가 히스테리시스를 걸어 처리한다. 여기서 또 발행하면 히스테리시스가
         // 없는 원래 값이 섞여 들어와, 경계에서 방향이 그대로 떨린다.
         if (null != context.control && context.control.device is Gamepad)
             return;
-
-        keyboardMoveInput = context.ReadValue<Vector2>();
 
         if (bPauseMove || false == CanDispatchGameplay)
         {

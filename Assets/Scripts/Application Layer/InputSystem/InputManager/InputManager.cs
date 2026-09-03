@@ -2,6 +2,12 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// 다른 MonoBehaviour보다 먼저 돌아야 한다. Update에서 inputReader.Tick을 호출하고, 그 안의
+/// 패드 이동 폴링(UpdateGamepadMove)이 이번 프레임의 이동 입력을 발행하기 때문이다.
+/// 순서를 정하지 않으면 캐릭터가 먼저 돌아 이전 프레임의 입력을 읽는 프레임이 생긴다.
+/// </summary>
+[DefaultExecutionOrder(-100)]
 public class InputManager : MonoBehaviour
 {
     public InputReader inputReader { get; private set; }
