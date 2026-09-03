@@ -50,7 +50,14 @@ public class AttackComponent : PComponent
     // 여기서는 "패드를 쓰는 중"이 이미 확정된 상태라 더 미세한 조준까지 받아야 하기 때문이다.
     private const float GamepadAimDeadzoneSqr = 0.04f; // 0.2^2
 
+    // 조준 스틱에서 손을 뗀 뒤 이 시간이 지나면 조준 오버라이드를 풀고 기본 동작(이동방향 조준)으로 돌아간다.
+    // 실시간 기준(unscaled)인 이유는 슬로우모션·히트스톱 때문에 체감 대기 시간이 늘어나면 안 되기 때문이다.
+    private const float GamepadAimHoldDuration = 1f;
+
     private Vector2 aimStickDirection = Vector2.zero;
+
+    // 마지막으로 조준 스틱이 유효하게 기울어져 있던 시각(unscaled). 만료 판정에만 쓴다.
+    private float lastAimStickInputTime = float.NegativeInfinity;
 
     private bool bAttack = false;
     private bool bCanRotate = true;
@@ -143,16 +150,27 @@ public class AttackComponent : PComponent
 
     /// <summary>
     /// 패드 조준 스틱 입력입니다. 방향만 기억하고, 실제 적용은 매 프레임 UpdateGamepadAim에서 합니다.
-    ///
-    /// 스틱을 중립으로 놓아도 방향을 지우지 않는 것이 중요합니다. 지우면 손을 떼는 순간
-    /// 캐릭터가 조준을 잃고 엉뚱한 방향으로 돌아가 버립니다. 마지막으로 겨눈 방향을 유지해야 합니다.
     /// </summary>
     private void AimStickMoved(Vector2 _stick)
+    {
+        AccumulateAimStickInput(_stick);
+    }
+
+    /// <summary>
+    /// 조준 스틱 값을 받아 "조준 오버라이드" 상태를 갱신합니다. 이벤트(AimStickMoved)와
+    /// 매 프레임 폴링(UpdateGamepadAim) 양쪽에서 같은 판정을 쓰기 위한 공용 진입점입니다.
+    ///
+    /// 스틱을 중립으로 놓아도 방향을 즉시 지우지 않는 것이 중요합니다. 지우면 손을 떼는 순간
+    /// 캐릭터가 조준을 잃고 엉뚱한 방향으로 홱 돌아가 버립니다. 대신 마지막으로 겨눈 방향을
+    /// 유지해 두고, GamepadAimHoldDuration이 지난 뒤에 UpdateGamepadAim에서 풀어 줍니다.
+    /// </summary>
+    private void AccumulateAimStickInput(Vector2 _stick)
     {
         if (_stick.sqrMagnitude < GamepadAimDeadzoneSqr)
             return;
 
         aimStickDirection = _stick.normalized;
+        lastAimStickInputTime = Time.unscaledTime;
     }
 
     /// <summary>
@@ -170,9 +188,21 @@ public class AttackComponent : PComponent
         // 마우스를 쓰는 동안에는 패드 조준이 끼어들지 않아야 한다.
         if (EInputDeviceType.Gamepad != ctx.inputManager.CurrentDevice) return;
 
+        // 스틱을 기울인 채 가만히 있으면 입력 이벤트가 오지 않으므로, 지금 기울어져 있는지는
+        // 직접 읽어서 확인한다. 이게 없으면 "조준을 유지하는 중"이 입력 없음으로 오해되어
+        // 1초 뒤에 조준이 이동방향으로 풀려 버린다.
+        AccumulateAimStickInput(ctx.inputManager.inputReader.ReadAimStick());
+
+        // 조준 스틱 입력이 끊긴 지 일정 시간이 지나면 오버라이드를 풀고 기본 패드 조작으로 되돌린다.
+        if (Vector2.zero != aimStickDirection &&
+            GamepadAimHoldDuration <= Time.unscaledTime - lastAimStickInputTime)
+        {
+            aimStickDirection = Vector2.zero;
+        }
+
         Vector2 targetAimDir = aimStickDirection;
 
-        // 우측 조준 스틱을 사용하지 않은 상태이고 이동 입력이 있는 경우, 이동 방향을 조준 방향의 기본값으로 사용
+        // 우측 조준 스틱을 쓰지 않는 상태이고 이동 입력이 있으면, 이동 방향을 조준 방향의 기본값으로 쓴다.
         if (Vector2.zero == targetAimDir && Vector2.zero != ctx.moveInput)
         {
             targetAimDir = ctx.moveInput.normalized;
