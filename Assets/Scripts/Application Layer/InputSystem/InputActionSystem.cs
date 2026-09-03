@@ -478,7 +478,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""3da06148-be79-4f25-d4ca-60915e237f8b"",
-                    ""path"": ""<Gamepad>/buttonNorth"",
+                    ""path"": ""<Gamepad>/leftTrigger"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
