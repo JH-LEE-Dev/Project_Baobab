@@ -53,6 +53,7 @@ public enum SoundID
     AbilityOpen = 1422650221,
     AbilityUpgrade = -1560408535,
     AbilityUpgradeFailed = 1456123281,
+    ZoomTick = -854861696,
     AbilityHUDDownStart = -642383922,
     AbilityHUDDownTick = 419757159,
     AbilityHUDFlowerGrow = -1810764210,

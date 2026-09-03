@@ -15,6 +15,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const float MinZoom = 0.2f;
     private const float MaxZoom = 1f;
     private const float ZoomStep = 0.1f;
+    private const float ZoomTickMinPitch = 0.7f;
+    private const float ZoomTickMaxPitch = 1.3f;
 
     // 한 프레임에 휠로 적용할 수 있는 최대 줌 단계. 로딩 끊김처럼 프레임이 길게 밀린 뒤
     // 밀려 있던 휠 이벤트가 한꺼번에 처리될 때 줌이 통째로 넘어가는 것을 막는 안전장치다.
@@ -30,7 +32,6 @@ public class UI_TentAbilityComponent : MonoBehaviour
     /// 15 * 5.6 = 84px/s 정도로, 느리지만 화면을 가로지를 수는 있는 속도입니다.
     /// </summary>
     private const float MinPadCursorSensitivity = 15f;
-    private const float PadZoomRepeatInterval = 0.1f;
     private const float ToolTipSpacing = 32f;
     private const float ToolTipVerticalScreenPadding = 16f;
     private const float UnlockRevealDuration = 0.1f;
@@ -145,7 +146,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private bool isPadSelectionCursorMagnetMoving;
     private int padInputSuppressedFrame = -1;
     private int padZoomHoldDirection;
-    private float padZoomRepeatElapsed;
+    private float padZoomMinimumRemaining;
     private bool wasInputAllowedLastTick;
     private VFXComponent sharedNodeVfxPool;
     private Material circleRevealDimMaterialInstance;
@@ -273,6 +274,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField, Min(0.01f)] private float padLookAheadRecenterSlowdownDistance = 64f;
     [Tooltip("커서가 계속 이동하거나 화면 경계에 막혔을 때 중앙 추적을 종료하는 최대 시간입니다.")]
     [SerializeField, Min(0.01f)] private float padLookAheadRecenterMaxDuration = 0.35f;
+
+    [Header("Pad Zoom")]
+    [Tooltip("LT/RT를 누르고 있는 동안 초당 변경되는 줌 배율입니다. 기본값 0.2는 최소 입력 시간 0.5초와 합쳐져 짧게 눌러도 기존 휠 한 칸(0.1)만큼 이동합니다.")]
+    [SerializeField, Min(0f)] private float padZoomSpeedPerSecond = 0.2f;
+    [Tooltip("트리거를 짧게 눌러도 확대/축소가 계속되는 최소 시간입니다.")]
+    [SerializeField, Min(0f)] private float padZoomMinimumDuration = 0.5f;
 
     [Header("Node Hover Sound")]
     [SerializeField, Min(0f)] private float nodeHoverSoundSuppressDurationAfterOpen = 0.3f;
@@ -2990,50 +2997,141 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         bool _zoomOutHeld = _gamepad.leftTrigger.isPressed;
         bool _zoomInHeld = _gamepad.rightTrigger.isPressed;
-        int _direction = (_zoomInHeld ? 1 : 0) - (_zoomOutHeld ? 1 : 0);
+        bool _zoomOutPressed = _gamepad.leftTrigger.wasPressedThisFrame;
+        bool _zoomInPressed = _gamepad.rightTrigger.wasPressedThisFrame;
 
-        // 두 트리거를 동시에 누른 상태는 서로 상쇄한다. 한쪽을 놓으면 그 방향으로 새 입력을 시작한다.
-        if (0 == _direction)
+        // 양쪽 트리거를 동시에 누르면 서로 상쇄하고, 진행 중이던 최소 입력 보장도 취소한다.
+        if ((_zoomOutHeld || _zoomOutPressed) && (_zoomInHeld || _zoomInPressed))
         {
             ResetPadZoomInput();
             return false;
         }
 
-        bool _pressedThisFrame = 0 < _direction
-            ? _gamepad.rightTrigger.wasPressedThisFrame
-            : _gamepad.leftTrigger.wasPressedThisFrame;
+        int _requestedDirection = (_zoomInHeld || _zoomInPressed ? 1 : 0)
+            - (_zoomOutHeld || _zoomOutPressed ? 1 : 0);
+        bool _requestedPressedThisFrame = 0 < _requestedDirection
+            ? _zoomInPressed
+            : _zoomOutPressed;
 
-        if (_pressedThisFrame || padZoomHoldDirection != _direction)
+        // 새 입력이나 방향 전환이 들어오면 해당 방향으로 최소 입력 시간을 새로 보장한다.
+        // wasPressedThisFrame도 함께 보므로, 같은 프레임 안에 눌렀다 놓은 매우 짧은 입력도 놓치지 않는다.
+        if (0 != _requestedDirection
+            && (_requestedPressedThisFrame || padZoomHoldDirection != _requestedDirection))
         {
-            padZoomHoldDirection = _direction;
-            padZoomRepeatElapsed = 0f;
-            return ApplyZoomStep(_direction, padCursorScreenPosition);
+            padZoomHoldDirection = _requestedDirection;
+            padZoomMinimumRemaining = Mathf.Max(0f, padZoomMinimumDuration);
         }
 
-        padZoomRepeatElapsed += Time.unscaledDeltaTime;
-        if (padZoomRepeatElapsed < PadZoomRepeatInterval)
+        if (0 == padZoomHoldDirection)
             return false;
 
-        padZoomRepeatElapsed -= PadZoomRepeatInterval;
-        return ApplyZoomStep(_direction, padCursorScreenPosition);
+        bool _activeDirectionHeld = 0 < padZoomHoldDirection ? _zoomInHeld : _zoomOutHeld;
+        float _deltaTime = Time.unscaledDeltaTime;
+
+        // 손을 뗀 뒤에는 남은 최소 보장 시간만큼만 진행한다. 프레임이 길어져도 보장 시간을
+        // 초과한 분량까지 줌에 더하지 않아 짧은 입력의 이동량이 프레임레이트에 좌우되지 않는다.
+        float _activeDeltaTime = _activeDirectionHeld
+            ? _deltaTime
+            : Mathf.Min(_deltaTime, padZoomMinimumRemaining);
+
+        padZoomMinimumRemaining = Mathf.Max(0f, padZoomMinimumRemaining - _deltaTime);
+
+        bool _zoomChanged = ApplyZoomDelta(
+            padZoomHoldDirection * Mathf.Max(0f, padZoomSpeedPerSecond) * _activeDeltaTime,
+            padCursorScreenPosition,
+            true);
+
+        if (false == _activeDirectionHeld && 0f >= padZoomMinimumRemaining)
+            ResetPadZoomInput();
+
+        return _zoomChanged;
     }
 
     private bool ApplyZoomStep(float _direction, Vector2 _focusScreenPosition)
     {
+        bool _zoomChanged = ApplyZoomDelta(
+            Mathf.Sign(_direction) * ZoomStep,
+            _focusScreenPosition,
+            false);
+
+        // 마우스 휠은 실제로 적용된 한 칸마다 한 번 재생한다. 상·하한에 막혀 배율이
+        // 바뀌지 않은 입력에는 소리를 내지 않는다.
+        if (_zoomChanged)
+            PlayZoomTickSound(targetZoom);
+
+        return _zoomChanged;
+    }
+
+    private bool ApplyZoomDelta(
+        float _zoomDelta,
+        Vector2 _focusScreenPosition,
+        bool _playPadIntervalSounds)
+    {
+        if (Mathf.Approximately(_zoomDelta, 0f))
+            return false;
+
         float _previousTargetZoom = targetZoom;
         zoomFocusScreenPosition = _focusScreenPosition;
         hasZoomFocus = true;
         targetZoom = Mathf.Clamp(
-            targetZoom + Mathf.Sign(_direction) * ZoomStep,
+            targetZoom + _zoomDelta,
             GetEffectiveMinZoom(),
             MaxZoom);
-        return false == Mathf.Approximately(_previousTargetZoom, targetZoom);
+
+        bool _zoomChanged = false == Mathf.Approximately(_previousTargetZoom, targetZoom);
+        if (_zoomChanged && _playPadIntervalSounds)
+            PlayZoomTickSoundsForCrossedIntervals(_previousTargetZoom, targetZoom);
+
+        return _zoomChanged;
+    }
+
+    /// <summary>
+    /// 패드의 연속 줌이 0.1 배율 경계를 통과할 때마다 ZoomTick을 한 번 재생합니다.
+    /// 확대는 경계에 도달하는 순간, 축소도 다음 낮은 경계에 도달하는 순간에만 울리도록
+    /// 방향별로 Floor/Ceil을 나눠 사용합니다.
+    /// </summary>
+    private void PlayZoomTickSoundsForCrossedIntervals(float _previousZoom, float _currentZoom)
+    {
+        const float _boundaryEpsilon = 0.0001f;
+
+        int _previousInterval;
+        int _currentInterval;
+
+        if (_previousZoom < _currentZoom)
+        {
+            _previousInterval = Mathf.FloorToInt((_previousZoom + _boundaryEpsilon) / ZoomStep);
+            _currentInterval = Mathf.FloorToInt((_currentZoom + _boundaryEpsilon) / ZoomStep);
+        }
+        else
+        {
+            _previousInterval = Mathf.CeilToInt((_previousZoom - _boundaryEpsilon) / ZoomStep);
+            _currentInterval = Mathf.CeilToInt((_currentZoom - _boundaryEpsilon) / ZoomStep);
+        }
+
+        if (_previousInterval < _currentInterval)
+        {
+            for (int i = _previousInterval + 1; i <= _currentInterval; ++i)
+                PlayZoomTickSound(i * ZoomStep);
+        }
+        else
+        {
+            for (int i = _previousInterval - 1; i >= _currentInterval; --i)
+                PlayZoomTickSound(i * ZoomStep);
+        }
+    }
+
+    private void PlayZoomTickSound(float _zoomAtTick)
+    {
+        float _effectiveMinZoom = GetEffectiveMinZoom();
+        float _normalizedZoom = Mathf.InverseLerp(_effectiveMinZoom, MaxZoom, _zoomAtTick);
+        float _pitch = Mathf.Lerp(ZoomTickMinPitch, ZoomTickMaxPitch, _normalizedZoom);
+        Sound.PlayUI(SoundID.ZoomTick, 1f, _pitch);
     }
 
     private void ResetPadZoomInput()
     {
         padZoomHoldDirection = 0;
-        padZoomRepeatElapsed = 0f;
+        padZoomMinimumRemaining = 0f;
     }
 
     private void HandlePadNodeSelection()

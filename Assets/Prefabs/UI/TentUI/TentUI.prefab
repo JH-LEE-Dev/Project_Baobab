@@ -458,6 +458,8 @@ MonoBehaviour:
   padLookAheadRecenterCompletionDistance: 12
   padLookAheadRecenterSlowdownDistance: 64
   padLookAheadRecenterMaxDuration: 0.35
+  padZoomSpeedPerSecond: 0.85
+  padZoomMinimumDuration: 0.1
   nodeHoverSoundSuppressDurationAfterOpen: 0.3
   viewGridHalfExtents: {x: 60, y: 30}
   viewShakeDuration: 0.2
