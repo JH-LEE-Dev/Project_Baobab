@@ -407,7 +407,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
         SetupSpatialNavigations();
         RefreshLocalizedTexts();
-        ApplyDefaultLanguageSelection();
+        ClearLanguageSelection();
 
         // 루트 페이드인 및 슬라이드 연출
         KillTransition();
@@ -437,40 +437,42 @@ public class UI_InitialSetupPopup : MonoBehaviour
     }
 
     /// <summary>
-    /// 지금 적용되어 있는 언어의 버튼을 미리 선택된 상태로 표시합니다.
-    ///
-    /// 첫 실행에는 저장된 설정 파일이 없으므로 SettingsManager가 이미 LanguageAutoDetect로
-    /// 언어를 정해둔 상태이고(Steam 지정 언어 -> OS 언어 -> 영어), 이 팝업의 안내 문구도
-    /// 그 언어로 나옵니다. 그런데 버튼은 전부 선택 해제된 채로 떠서, 화면에 보이는 문구의
-    /// 언어와 선택기 상태가 서로 다른 말을 하고 있었습니다. 유저 입장에서는 "지금 무슨
-    /// 언어인지"와 "그냥 넘어가면 무엇이 되는지"를 알 수 없습니다.
-    ///
-    /// 여기서 자동 판별 결과를 그대로 비추면 그 불일치가 사라지고, 대부분의 유저는 이미
-    /// 맞는 언어가 골라져 있는 것을 확인만 하면 됩니다.
-    ///
-    /// 판별 결과를 다시 계산하지 않고 SettingsManager의 현재 언어를 읽는 것이 중요합니다.
-    /// 그래야 화면에 실제로 적용된 언어와 선택 표시가 어긋날 수 없습니다.
-    /// (LanguageAutoDetect.Resolve를 여기서 또 부르면, 예컨대 지원 언어 판정이 한쪽에서만
-    ///  걸렸을 때 "영어로 보이는데 일본어가 선택된" 상태가 만들어질 수 있습니다)
+    /// 처음 언어설정 진입 시에는 어떤 언어도 미리 선택되어 있지 않아야 합니다.
+    /// 모든 언어 버튼을 미선택(회색) 상태로 초기화하고, 게임패드 첫 포커스 대상만 한국어로 지정합니다.
     /// </summary>
-    private void ApplyDefaultLanguageSelection()
+    private void ClearLanguageSelection()
     {
         if (null == languageButtons) return;
-
-        EOptionLanguage _current = SettingsManager.Instance.CurrentLanguage;
 
         for (int i = 0; i < languageButtons.Length; i++)
         {
             UI_PanelSelectButton _btn = languageButtons[i];
             if (null == _btn) continue;
 
-            bool _isCurrent = (_btn.BoundLanguage == _current);
+            _btn.SetSelected(false);
+            _btn.ForceUnhover();
+        }
 
+        // 게임패드로 열었을 때 첫 포커스 대상은 한국어 버튼
+        lastFocusedLanguageButton = GetKoreanLanguageButton() ?? GetFirstLanguageButton();
+    }
+
+    /// <summary>
+    /// 유저가 언어 버튼을 클릭했을 때 선택 상태 비주얼을 반영합니다.
+    /// </summary>
+    private void ApplyLanguageSelection(EOptionLanguage _selected)
+    {
+        if (null == languageButtons) return;
+
+        for (int i = 0; i < languageButtons.Length; i++)
+        {
+            UI_PanelSelectButton _btn = languageButtons[i];
+            if (null == _btn) continue;
+
+            bool _isCurrent = (_btn.BoundLanguage == _selected);
             _btn.SetSelected(_isCurrent);
             _btn.ForceUnhover();
 
-            // 패드로 열었을 때 첫 포커스가 현재 언어에 놓이도록 기억해둔다.
-            // (HandleShowCompleted가 이 값을 쓴다. 없으면 목록의 첫 버튼 = 한국어로 떨어진다)
             if (true == _isCurrent)
             {
                 lastFocusedLanguageButton = _btn;
@@ -482,12 +484,26 @@ public class UI_InitialSetupPopup : MonoBehaviour
     {
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
-            FocusLanguageButton(lastFocusedLanguageButton ?? GetFirstLanguageButton());
+            FocusLanguageButton(lastFocusedLanguageButton ?? GetKoreanLanguageButton() ?? GetFirstLanguageButton());
         }
         else if (null != EventSystem.current)
         {
             EventSystem.current.SetSelectedGameObject(null);
         }
+    }
+
+    private UI_PanelSelectButton GetKoreanLanguageButton()
+    {
+        if (null == languageButtons || 0 == languageButtons.Length) return null;
+        for (int i = 0; i < languageButtons.Length; i++)
+        {
+            UI_PanelSelectButton _btn = languageButtons[i];
+            if (null != _btn && _btn.BoundLanguage == EOptionLanguage.Korean && true == _btn.gameObject.activeInHierarchy)
+            {
+                return _btn;
+            }
+        }
+        return GetFirstLanguageButton();
     }
 
     private UI_PanelSelectButton GetFirstLanguageButton()
@@ -555,9 +571,11 @@ public class UI_InitialSetupPopup : MonoBehaviour
         if (null == _rect) return;
 
         isToggleCursorShowing = true;
-        float _textWidth = (null != consentToggleLabel) ? consentToggleLabel.preferredWidth : 200f;
+        float _textWidth = (null != consentToggleLabel && consentToggleLabel.preferredWidth > 0f)
+            ? consentToggleLabel.preferredWidth
+            : 200f;
         float _totalWidth = 16f + 8f + _textWidth;
-        Vector2 _size = new Vector2(_totalWidth + 24f, 32f);
+        Vector2 _size = new Vector2(_totalWidth + 12f, 28f);
 
         cursorBoxUI.Show(_rect, _size, Vector2.zero, CursorMotionSettings.RowSubtle);
     }
@@ -585,10 +603,8 @@ public class UI_InitialSetupPopup : MonoBehaviour
         EOptionLanguage _selected = _btn.BoundLanguage;
         SettingsManager.Instance.SetLanguage(_selected);
 
-        // 선택 표시를 방금 누른 버튼으로 옮긴다. 곧바로 동의 패널로 넘어가긴 하지만, 전환
-        // 연출이 끝나기 전까지는 이전 언어가 선택된 것처럼 보이고, 뒤로 돌아오는 경로가
-        // 생기면 그대로 어긋난 채 남는다.
-        ApplyDefaultLanguageSelection();
+        // 선택 표시를 방금 누른 버튼으로 옮긴다.
+        ApplyLanguageSelection(_selected);
 
         RefreshLocalizedTexts();
 
@@ -861,7 +877,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
                 }
                 else
                 {
-                    _targetBtn = lastFocusedLanguageButton ?? GetFirstLanguageButton();
+                    _targetBtn = lastFocusedLanguageButton ?? GetKoreanLanguageButton() ?? GetFirstLanguageButton();
                 }
 
                 ForceUnhoverAll();
@@ -869,7 +885,9 @@ public class UI_InitialSetupPopup : MonoBehaviour
             }
             else
             {
-                Selectable _target = lastFocusedConsentSelectable ?? (Selectable)confirmButton ?? (Selectable)consentToggle;
+                Selectable _target = (true == isConsentToggleHovered)
+                    ? (Selectable)consentToggle
+                    : (lastFocusedConsentSelectable ?? (Selectable)confirmButton ?? (Selectable)consentToggle);
                 ForceUnhoverAll();
                 FocusConsentItem(_target);
             }

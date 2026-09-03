@@ -542,6 +542,23 @@ public class InputReader
         keyboardMoveInput = Vector2.zero;
     }
 
+    /// <summary>
+    /// 패드 조준 스틱의 현재 값을 직접 읽습니다. (데드존 처리된 -1~1)
+    ///
+    /// AimEvent만으로는 "스틱을 기울인 채 가만히 있는" 상태를 알 수 없습니다. 값이 변할 때만
+    /// performed가 오기 때문에, 스틱을 붙잡고 있어도 이벤트는 끊깁니다. 조준을 일정 시간 뒤에
+    /// 놓아주려면 "지금 스틱이 기울어져 있는가"를 매 프레임 확인할 수 있어야 하므로 폴링 통로를 엽니다.
+    ///
+    /// 게임패드 전용 액션이라 키보드/마우스 조작에는 아무 영향이 없습니다.
+    /// </summary>
+    public Vector2 ReadAimStick()
+    {
+        if (null == actions || false == CanDispatchGameplay)
+            return Vector2.zero;
+
+        return actions.Normal.Aim.ReadValue<Vector2>();
+    }
+
     public void OnMove(InputAction.CallbackContext context)
     {
         keyboardMoveInput = context.ReadValue<Vector2>();

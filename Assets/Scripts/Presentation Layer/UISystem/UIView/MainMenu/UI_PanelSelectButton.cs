@@ -37,7 +37,7 @@ public class UI_PanelSelectButton : Selectable,
 
     [Header("Cursor Settings")]
     [SerializeField] private RectTransform cursorTargetTransform;
-    [SerializeField] private Vector2 cursorPadding = new Vector2(8f, 6f);
+    [SerializeField] private Vector2 cursorPadding = new Vector2(2f, 2f);
     [SerializeField] private Vector2 cursorOffset = Vector2.zero;
 
     // 내부 상태

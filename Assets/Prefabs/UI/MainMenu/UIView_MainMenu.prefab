@@ -1316,24 +1316,24 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 5123456789012345678}
   targetGraphicOverride: {fileID: 4530563761830487228}
   cursorTargetTransform: {fileID: 6036963654619078755}
-  cursorPadding: {x: 10, y: 8}
+  cursorPadding: {x: 2, y: 2}
   cursorOffset: {x: 0, y: 0}
   hoverSettings:
-    duration: 0.5
-    shrinkScale: 0.9
-    shrinkTimeRatio: 0.1
-    restoreTimeRatio: 0.15
+    duration: 0.7
+    shrinkScale: 0.8
+    shrinkTimeRatio: 0.08
+    restoreTimeRatio: 0.12
     scaleEase: 27
-    startAngle: 12
-    angleDamping: 0.65
+    startAngle: 8
+    angleDamping: 1.5
     swingCount: 4
     rotationTimeRatio: 0.8
     rotationEase: 3
   unhoverSettings:
-    duration: 0.4
-    startAngle: 8
-    angleDamping: 0.65
-    swingCount: 3
+    duration: 0.7
+    startAngle: 5
+    angleDamping: 0.62
+    swingCount: 4
     rotationTimeRatio: 1
     rotationEase: 3
   clickTwistAngle: 15
@@ -1683,7 +1683,7 @@ MonoBehaviour:
   scalePunchStrength: 0.08
   scalePunchDuration: 0.2
   cursorTargetTransform: {fileID: 0}
-  cursorPadding: {x: 8, y: 6}
+  cursorPadding: {x: 2, y: 2}
   cursorOffset: {x: 0, y: 0}
 --- !u!1 &3115221654875396657
 GameObject:
@@ -1816,7 +1816,7 @@ MonoBehaviour:
   scalePunchStrength: 0.08
   scalePunchDuration: 0.2
   cursorTargetTransform: {fileID: 0}
-  cursorPadding: {x: 8, y: 6}
+  cursorPadding: {x: 2, y: 2}
   cursorOffset: {x: 0, y: 0}
 --- !u!1 &3155253999569448531
 GameObject:
@@ -2080,7 +2080,7 @@ MonoBehaviour:
   scalePunchStrength: 0.08
   scalePunchDuration: 0.2
   cursorTargetTransform: {fileID: 0}
-  cursorPadding: {x: 8, y: 6}
+  cursorPadding: {x: 2, y: 2}
   cursorOffset: {x: 0, y: 0}
 --- !u!1 &5348467041115094280
 GameObject:
@@ -3411,7 +3411,7 @@ MonoBehaviour:
   scalePunchStrength: 0.08
   scalePunchDuration: 0.2
   cursorTargetTransform: {fileID: 0}
-  cursorPadding: {x: 8, y: 6}
+  cursorPadding: {x: 2, y: 2}
   cursorOffset: {x: 0, y: 0}
 --- !u!1 &6312269867802690477
 GameObject:
@@ -4222,7 +4222,7 @@ MonoBehaviour:
   scalePunchStrength: 0.08
   scalePunchDuration: 0.2
   cursorTargetTransform: {fileID: 0}
-  cursorPadding: {x: 8, y: 6}
+  cursorPadding: {x: 2, y: 2}
   cursorOffset: {x: 0, y: 0}
 --- !u!1 &7979395056013113928
 GameObject:
