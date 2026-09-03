@@ -451,7 +451,15 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         Transform attackTarget = attackComponent.GetAttackPointTransform();
         if (null == attackTarget) return;
 
-        Vector2 dir = (Vector2)attackTarget.position - (Vector2)transform.position;
+        // 왼쪽 스틱만으로 플레이하는 동안에는 조준(아날로그 360°)과 스프라이트(8방향)가 갈라진다.
+        // 그때만 AttackComponent가 스프라이트용 방향을 따로 넘겨준다. 0이면 예전처럼 조준 방향을 쓴다.
+        // (자세한 이유는 AttackComponent.facingOverrideDirection 주석 참고)
+        Vector2 dir = attackComponent.facingOverrideDirection;
+        if (Vector2.zero == dir)
+        {
+            dir = (Vector2)attackTarget.position - (Vector2)transform.position;
+        }
+
         SetFacingDirection(dir);
     }
 

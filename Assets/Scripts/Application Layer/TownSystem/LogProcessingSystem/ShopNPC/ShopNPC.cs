@@ -101,7 +101,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
     private float GetSoundVolume()
     {
-        return mapType == MapType.Town ? 1f : 0f;
+        return MapType.Town == mapType ? 1f : 0f;
     }
     public SpriteRenderer sr;
     public SpriteRenderer outlineSr;
@@ -138,7 +138,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {
-        if (shadowEllipseRadius <= 0f) return;
+        if (0f >= shadowEllipseRadius) return;
 
         Tent.DrawShadowEllipseGizmo(transform.position, shadowEllipseCenter, shadowEllipseRadius, shadowEllipseLengthScale, 34f + 90f);
     }
@@ -170,12 +170,12 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         bInteractRequested = false;
         interactRequestLifeFrames = 0;
 
-        if (coinThrowCoroutine != null)
+        if (null != coinThrowCoroutine)
         {
             StopCoroutine(coinThrowCoroutine);
             coinThrowCoroutine = null;
         }
-        if (animationCoroutine != null)
+        if (null != animationCoroutine)
         {
             StopCoroutine(animationCoroutine);
             animationCoroutine = null;
@@ -229,7 +229,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     private void UpdateInteractState()
     {
         bool currentState = !bRemoteDepositLocked && bCanReach && bPhysicalOverlapped;
-        if (currentState != bLastInteractState)
+        if (bLastInteractState != currentState)
         {
             bLastInteractState = currentState;
             bCanInteract = currentState;
@@ -258,7 +258,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         money = 0;
         ShopMoneyChangedEvent?.Invoke();
 
-        if (leftover > 0)
+        if (0 < leftover)
         {
             EarnMoneyEvent?.Invoke(leftover);
         }
@@ -277,7 +277,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     {
         if (_other.CompareTag(playerTag))
         {
-            if (bPhysicalOverlapped == false)
+            if (false == bPhysicalOverlapped)
             {
                 bPhysicalOverlapped = true;
                 UpdateInteractState();
@@ -296,7 +296,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
     private void InteractKeyPressed()
     {
-        if (bCanInteract == false)
+        if (false == bCanInteract)
             return;
 
         bInteractRequested = true;
@@ -307,14 +307,14 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     // 뒤(LateUpdate)에 실제 수금을 처리한다.
     private void ProcessInteractRequest()
     {
-        if (bInteractRequested == false)
+        if (false == bInteractRequested)
             return;
 
         // 조건이 아직 안 맞으면 입력을 버리지 않고 InteractRequestLifeFrames 동안 재시도한다.
-        if (money == 0 || bCanInteract == false)
+        if (0 == money || false == bCanInteract)
         {
             --interactRequestLifeFrames;
-            if (interactRequestLifeFrames <= 0)
+            if (0 >= interactRequestLifeFrames)
                 bInteractRequested = false;
 
             return;
@@ -329,7 +329,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         pendingBatchMoney += tempMoney;
         bAwaitingFirstArrival = true;
 
-        if (bFirstTimeEarnMoney == true)
+        if (true == bFirstTimeEarnMoney)
         {
             bFirstTimeEarnMoney = false;
         }
@@ -339,16 +339,16 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         int remainingMoney = tempMoney;
         List<CoinSpawnInfo> coinsToSpawn = new List<CoinSpawnInfo>(20);
 
-        while (remainingMoney > 0)
+        while (0 < remainingMoney)
         {
-            if (coinsToSpawn.Count == 19)
+            if (19 == coinsToSpawn.Count)
             {
                 coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Gold, remainingMoney));
                 remainingMoney = 0;
                 break;
             }
 
-            if (remainingMoney >= 10)
+            if (10 <= remainingMoney)
             {
                 coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Gold, 10));
                 remainingMoney -= 10;
@@ -360,7 +360,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
             }
         }
 
-        if (coinThrowCoroutine != null)
+        if (null != coinThrowCoroutine)
         {
             StopCoroutine(coinThrowCoroutine);
         }
@@ -371,10 +371,10 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     {
         int coinCount = _coins.Count;
         float currentInterval = 0.09f;
-        if (coinCount > 0)
+        if (0 < coinCount)
         {
             float maxAllowedInterval = 0.9f / coinCount;
-            if (currentInterval > maxAllowedInterval)
+            if (maxAllowedInterval < currentInterval)
             {
                 currentInterval = maxAllowedInterval;
             }
@@ -384,22 +384,22 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         {
             CoinSpawnInfo info = _coins[i];
             Coin coin = coinItemPoolingManager.GetCoin(info.type);
-            if (coin == null) continue;
+            if (null == coin) continue;
 
             coin.gameObject.SetActive(true);
 
-            Vector3 start = coinThrowTransform != null ? coinThrowTransform.position : transform.position;
-            Vector3 end = characterTransform != null ? characterTransform.position : transform.position;
+            Vector3 start = null != coinThrowTransform ? coinThrowTransform.position : transform.position;
+            Vector3 end = null != characterTransform ? characterTransform.position : transform.position;
 
             Sound.Play(SoundID.CoinOut, start, GetSoundVolume());
 
             Vector3 dir = (end - start).normalized;
-            if (dir == Vector3.zero) dir = Vector3.up;
+            if (Vector3.zero == dir) dir = Vector3.up;
             Vector3 normal = new Vector3(-dir.y, dir.x, 0f);
             float arcPower = UnityEngine.Random.Range(-0.3f, 0.3f);
             Vector3 trajectoryJitter = normal * arcPower;
 
-            float rotationSpeed = UnityEngine.Random.Range(60f, 160f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
+            float rotationSpeed = UnityEngine.Random.Range(60f, 160f) * (0.5f < UnityEngine.Random.value ? 1f : -1f);
 
             coin.DynamicTransferLaunch(
                 start,
@@ -418,7 +418,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
     private void Update()
     {
-        if (customSortable != null)
+        if (null != customSortable)
             customSortable.SetHeight(0f);
 
         ResetCoinPitchAfterIdle();
@@ -429,7 +429,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     {
         ProcessInteractRequest();
 
-        if (customSortable != null)
+        if (null != customSortable)
             customSortable.ManualLateUpdate();
     }
 
@@ -469,7 +469,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     private void TryPlayCoinGetSound(Vector3 _position)
     {
         float currentTime = Time.time;
-        if (currentTime - lastCoinGetPlayedTime < coinGetCooldown)
+        if (coinGetCooldown > currentTime - lastCoinGetPlayedTime)
             return;
 
         Sound.Play(SoundID.CoinGet, _position, GetSoundVolume(), true, currentCoinPitch);
@@ -479,10 +479,10 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
     private void ResetCoinPitchAfterIdle()
     {
-        if (currentCoinPitch <= CoinPitchBase || float.IsNegativeInfinity(lastCoinGetPlayedTime))
+        if (CoinPitchBase >= currentCoinPitch || float.IsNegativeInfinity(lastCoinGetPlayedTime))
             return;
 
-        if (Time.time - lastCoinGetPlayedTime >= coinPitchResetDelay)
+        if (coinPitchResetDelay <= Time.time - lastCoinGetPlayedTime)
             currentCoinPitch = CoinPitchBase;
     }
 
@@ -498,7 +498,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
     private void PlayAnimation(bool _bOpen)
     {
-        if (animationCoroutine != null)
+        if (null != animationCoroutine)
         {
             StopCoroutine(animationCoroutine);
             animationCoroutine = null;
@@ -506,33 +506,34 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
         if (gameObject.activeInHierarchy)
         {
+            Sound.Play(true == _bOpen ? SoundID.ShopOpen : SoundID.ShopClose, transform.position, GetSoundVolume());
             animationCoroutine = StartCoroutine(CoPlayAnimation(_bOpen));
         }
         else
         {
-            if (animationSprite != null && animationSprite.Count > 0)
+            if (null != animationSprite && 0 < animationSprite.Count)
             {
-                currentFrameIndex = _bOpen ? animationSprite.Count - 1 : 0;
+                currentFrameIndex = true == _bOpen ? animationSprite.Count - 1 : 0;
                 Sprite currentSprite = animationSprite[currentFrameIndex];
-                if (sr != null) sr.sprite = currentSprite;
-                if (outlineSr != null) outlineSr.sprite = currentSprite;
+                if (null != sr) sr.sprite = currentSprite;
+                if (null != outlineSr) outlineSr.sprite = currentSprite;
             }
         }
     }
 
     private IEnumerator CoPlayAnimation(bool _bOpen)
     {
-        if (animationSprite == null || animationSprite.Count == 0) yield break;
+        if (null == animationSprite || 0 == animationSprite.Count) yield break;
 
-        int targetFrame = _bOpen ? animationSprite.Count - 1 : 0;
-        int step = _bOpen ? 1 : -1;
+        int targetFrame = true == _bOpen ? animationSprite.Count - 1 : 0;
+        int step = true == _bOpen ? 1 : -1;
 
-        while (currentFrameIndex != targetFrame)
+        while (targetFrame != currentFrameIndex)
         {
             currentFrameIndex = Mathf.Clamp(currentFrameIndex + step, 0, animationSprite.Count - 1);
             Sprite currentSprite = animationSprite[currentFrameIndex];
-            if (sr != null) sr.sprite = currentSprite;
-            if (outlineSr != null) outlineSr.sprite = currentSprite;
+            if (null != sr) sr.sprite = currentSprite;
+            if (null != outlineSr) outlineSr.sprite = currentSprite;
 
             yield return frameWait;
         }

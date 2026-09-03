@@ -56,6 +56,17 @@ public class AttackComponent : PComponent
 
     private Vector2 aimStickDirection = Vector2.zero;
 
+    /// <summary>
+    /// 스프라이트가 바라볼 방향입니다. 0이면 "조준 방향을 그대로 쓰라"는 뜻입니다.
+    ///
+    /// 왼쪽 스틱만으로 플레이할 때는 조준과 스프라이트가 갈라집니다. 조준은 스틱이 가리키는 각도를
+    /// 그대로 따라가지만(360°), 스프라이트는 8방향이라 그 각도를 그대로 쓰면 45° 경계에서 다시
+    /// 떨리고 실제 이동 방향과도 어긋납니다. 그래서 스프라이트만 이동 입력의 8방향 값을 씁니다.
+    ///
+    /// 마우스나 오른쪽 스틱으로 조준하는 동안에는 0으로 비워, 예전처럼 조준 방향을 그대로 따라갑니다.
+    /// </summary>
+    public Vector2 facingOverrideDirection { get; private set; }
+
     // 조준 스틱 입력이 끊긴 뒤로 흐른 시간(실시간). 만료 판정에만 쓴다.
     // 시각(timestamp)이 아니라 누적값인 이유는, 조준 입력이 막혀 있는 동안 카운트를 멈춰야 하기 때문이다.
     private float aimStickIdleTime = 0f;
@@ -187,7 +198,11 @@ public class AttackComponent : PComponent
         if (null == ctx || null == ctx.inputManager || null == ctx.inputManager.inputReader) return;
 
         // 마우스를 쓰는 동안에는 패드 조준이 끼어들지 않아야 한다.
-        if (EInputDeviceType.Gamepad != ctx.inputManager.CurrentDevice) return;
+        if (EInputDeviceType.Gamepad != ctx.inputManager.CurrentDevice)
+        {
+            facingOverrideDirection = Vector2.zero;
+            return;
+        }
 
         // 스틱을 기울인 채 가만히 있으면 입력 이벤트가 오지 않으므로, 지금 기울어져 있는지는
         // 직접 읽어서 확인한다. 이게 없으면 "조준을 유지하는 중"이 입력 없음으로 오해되어
@@ -212,14 +227,30 @@ public class AttackComponent : PComponent
 
         Vector2 targetAimDir = aimStickDirection;
 
-        // 우측 조준 스틱을 쓰지 않는 상태이고 이동 입력이 있으면, 이동 방향을 조준 방향의 기본값으로 쓴다.
-        //
-        // ctx.moveInput을 그대로 쓰는 것이 중요하다. 조준을 따로 가공하면 실제로 이동하는 방향과
-        // 바라보는 방향이 어긋난다. 경계에서의 떨림은 InputReader가 이동 입력 단계에서 이미
-        // 잡아 두었으므로(GamepadMoveAxisPressPoint 참고) 여기서 다시 손댈 필요가 없다.
-        if (Vector2.zero == targetAimDir && Vector2.zero != ctx.moveInput)
+        // 우측 조준 스틱을 쓰는 동안에는 스프라이트도 그 조준 방향을 따라간다. (예전 그대로)
+        if (Vector2.zero != targetAimDir)
         {
-            targetAimDir = ctx.moveInput.normalized;
+            facingOverrideDirection = Vector2.zero;
+        }
+        // 왼쪽 스틱만 쓰는 동안에는 조준과 스프라이트가 갈라진다.
+        //
+        // 캐릭터가 실제로 이동 중일 때만 갱신하는 것이 중요하다. 조준에만 더 낮은 문턱값을 쓰면,
+        // 스틱을 살짝 기울였을 때 캐릭터와 스프라이트는 가만히 있는데 팔만 따라 도는 상태가 된다.
+        // (이동은 축 0.5 = 원시 기울기 약 0.525에서 시작한다 - GamepadMoveAxisPressPoint 주석 참고)
+        // 멈춰 있으면 조준·스프라이트 모두 마지막으로 보던 방향을 유지한다.
+        else if (Vector2.zero != ctx.moveInput)
+        {
+            // 조준은 스틱이 가리키는 각도를 그대로 따라간다. 8방향으로 끊으면 조준선과 팔이 툭툭 튄다.
+            Vector2 _moveStick = ctx.inputManager.inputReader.ReadMoveStick();
+            if (GamepadAimDeadzoneSqr <= _moveStick.sqrMagnitude)
+            {
+                targetAimDir = _moveStick.normalized;
+            }
+
+            // 스프라이트만은 이동 입력의 8방향 값을 그대로 쓴다. 실제로 이동하는 방향과 어긋나지 않게
+            // 하려면 이동과 같은 값에서 나와야 한다. (경계 떨림은 InputReader가 이동 입력 단계에서
+            // 이미 히스테리시스로 잡아 두었다)
+            facingOverrideDirection = ctx.moveInput.normalized;
         }
 
         if (Vector2.zero == targetAimDir) return;

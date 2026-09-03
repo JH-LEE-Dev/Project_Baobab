@@ -8,7 +8,12 @@ public class ArmComponent : PComponent, IArmComponent
     private Vector3 mouseTransform;
 
     [SerializeField] private float smoothSpeed = 10f;
+
     [SerializeField] private float maxYOffset = 0.5f;
+
+    // 조준이 거의 수직일 때 팔이 좌우로 깜빡이는 것을 막는 완충 거리(월드 단위).
+    // 패드 조준 반경(1.25) 기준으로 수직에서 약 2도에 해당한다.
+    private const float FlipDeadband = 0.05f;
 
     // 캐싱된 해시값
     private WeaponMode currentWeaponMode = WeaponMode.None;
@@ -148,9 +153,16 @@ public class ArmComponent : PComponent, IArmComponent
     {
         if (attackTransform == null) return;
 
+        float _distanceX = attackTransform.position.x - transform.position.x;
+
+        // 조준이 거의 수직일 때는 방금까지의 방향을 유지한다. x 부호만 보고 뒤집으면, 스틱을 위로
+        // 곧게 밀었을 때 x가 0 근처에서 미세하게 흔들리며 팔이 좌우로 깜빡인다.
+        // (8방향 조준일 때는 x가 정확히 0이라 드러나지 않던 문제다)
+        if (Mathf.Abs(_distanceX) < FlipDeadband) return;
+
         // 타겟의 x 위치가 Arm의 x 위치보다 작으면 왼쪽(-1), 크면 오른쪽(1)
         Vector3 localScale = transform.localScale;
-        localScale.x = (attackTransform.position.x < transform.position.x) ? -1f : 1f;
+        localScale.x = (_distanceX < 0f) ? -1f : 1f;
         transform.localScale = localScale;
     }
 

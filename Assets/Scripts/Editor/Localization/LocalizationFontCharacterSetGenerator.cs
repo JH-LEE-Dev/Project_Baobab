@@ -6,6 +6,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.TextCore.LowLevel;
+using TMPro;
 
 public static class LocalizationFontCharacterSetGenerator
 {
@@ -35,10 +37,118 @@ public static class LocalizationFontCharacterSetGenerator
             "，。！？：；（）【】《》、「」『』“”‘’…—·")
     };
 
-    [MenuItem("Tools/Localization/Generate Font Character Sets")]
+    [MenuItem("Tools/Localization/Generate Font Character Sets", false, 1)]
     public static void GenerateFromMenu()
     {
         GenerateAll(true);
+    }
+
+    [MenuItem("Tools/Localization/Bake All Font Atlases", false, 2)]
+    public static void BakeAllFontAtlasesFromMenu()
+    {
+        BakeAllFontAtlases();
+    }
+
+    [MenuItem("Tools/Localization/Generate Character Sets and Bake Atlases", false, 0)]
+    public static void GenerateAndBakeFromMenu()
+    {
+        GenerateAll(false);
+        BakeAllFontAtlases();
+    }
+
+    public static void BakeAllFontAtlases()
+    {
+        string[] _fontAssetPaths = new string[]
+        {
+            "Assets/TextMesh Pro/Fonts/FusionPixel_JA.asset",
+            "Assets/TextMesh Pro/Fonts/FusionPixel_zh_hans.asset",
+            "Assets/TextMesh Pro/Fonts/FusionPixel_zh_hant.asset"
+        };
+
+        string[] _ttfPaths = new string[]
+        {
+            "Assets/TextMesh Pro/Fonts/fusion-pixel-12px-proportional-ja.ttf",
+            "Assets/TextMesh Pro/Fonts/fusion-pixel-12px-proportional-zh_hans.ttf",
+            "Assets/TextMesh Pro/Fonts/fusion-pixel-12px-proportional-zh_hant.ttf"
+        };
+
+        string[] _charSetPaths = new string[]
+        {
+            Path.Combine(ExportDirectory, "FusionPixel_JA_Characters.txt").Replace('\\', '/'),
+            Path.Combine(ExportDirectory, "FusionPixel_ZH_HANS_Characters.txt").Replace('\\', '/'),
+            Path.Combine(ExportDirectory, "FusionPixel_ZH_HANT_Characters.txt").Replace('\\', '/')
+        };
+
+        for (int i = 0; i < _fontAssetPaths.Length; i++)
+        {
+            BakeFontAsset(_fontAssetPaths[i], _ttfPaths[i], _charSetPaths[i]);
+        }
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("[LocalizationFontCharacterSetGenerator] 모든 다국어 폰트 아틀라스 베이킹이 성공적으로 완료되었습니다.");
+    }
+
+    private static void BakeFontAsset(string _fontPath, string _ttfPath, string _charSetPath)
+    {
+        TMP_FontAsset _existingFont = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(_fontPath);
+        Font _ttf = AssetDatabase.LoadAssetAtPath<Font>(_ttfPath);
+
+        if (null == _existingFont || null == _ttf || false == File.Exists(_charSetPath))
+        {
+            Debug.LogError($"[LocalizationFontCharacterSetGenerator] 폰트 베이킹 실패: {_fontPath} 또는 {_ttfPath} 에셋을 찾을 수 없습니다.");
+            return;
+        }
+
+        string _chars = File.ReadAllText(_charSetPath, Encoding.UTF8);
+
+        // 1. 깨끗한 신규 Dynamic 폰트 에셋을 메모리에 생성하여 대상 문자 전체 베이킹
+        TMP_FontAsset _newFont = TMP_FontAsset.CreateFontAsset(
+            _ttf,
+            12,
+            2,
+            GlyphRenderMode.RASTER_HINTED,
+            2048,
+            2048,
+            AtlasPopulationMode.Dynamic,
+            true);
+
+        if (null == _newFont)
+        {
+            Debug.LogError($"[LocalizationFontCharacterSetGenerator] CreateFontAsset 실패: {_fontPath}");
+            return;
+        }
+
+        string _missing;
+        _newFont.TryAddCharacters(_chars, out _missing);
+
+        if (false == string.IsNullOrEmpty(_missing))
+        {
+            Debug.LogWarning($"[LocalizationFontCharacterSetGenerator] {_existingFont.name} 미지원 문자: {_missing}");
+        }
+
+        // 2. 기존 폰트 에셋의 테이블을 신규 베이킹된 테이블로 동기화
+        _existingFont.faceInfo = _newFont.faceInfo;
+        _existingFont.glyphTable.Clear();
+        _existingFont.glyphTable.AddRange(_newFont.glyphTable);
+        _existingFont.characterTable.Clear();
+        _existingFont.characterTable.AddRange(_newFont.characterTable);
+
+        // 3. 아틀라스 텍스처 픽셀 복사 및 플러시
+        Texture2D _srcTex = _newFont.atlasTexture;
+        Texture2D _dstTex = _existingFont.atlasTexture;
+
+        if (null != _srcTex && null != _dstTex)
+        {
+            Graphics.CopyTexture(_srcTex, _dstTex);
+            _dstTex.Apply(false, false);
+            EditorUtility.SetDirty(_dstTex);
+        }
+
+        _existingFont.ReadFontAssetDefinition();
+        EditorUtility.SetDirty(_existingFont);
+
+        Debug.Log($"[LocalizationFontCharacterSetGenerator] {_existingFont.name} 베이킹 완료: 문자수={_existingFont.characterTable.Count}, 글리프수={_existingFont.glyphTable.Count}");
     }
 
     public static bool GenerateAll(bool _refreshAssetDatabase)

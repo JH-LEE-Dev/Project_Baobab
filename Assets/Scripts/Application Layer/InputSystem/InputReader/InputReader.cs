@@ -586,6 +586,27 @@ public class InputReader
     }
 
     /// <summary>
+    /// 패드 왼쪽 스틱의 방향 벡터입니다. (stickDeadzone이 적용된 원본, 길이 0~1)
+    ///
+    /// 이동 판정에 쓰는 축 값(ResolveMoveAxis)과 달리 기울인 각도를 그대로 보존합니다.
+    /// 이동은 8방향으로 끊어야 하지만 조준은 스틱이 가리키는 곳을 그대로 따라가야 하므로,
+    /// 각도가 중요한 쪽에서 씁니다. 축별로 데드존을 먹이면 축 근처에서 각도가 찌그러집니다.
+    ///
+    /// 게임패드 전용이라 키보드/마우스 조작에는 아무 영향이 없습니다.
+    /// </summary>
+    public Vector2 ReadMoveStick()
+    {
+        if (false == CanDispatchGameplay)
+            return Vector2.zero;
+
+        Gamepad _gamepad = Gamepad.current;
+        if (null == _gamepad)
+            return Vector2.zero;
+
+        return _gamepad.leftStick.ReadValue();
+    }
+
+    /// <summary>
     /// 패드 이동 입력을 매 프레임 다시 판정해서, 값이 바뀔 때만 이동 이벤트를 발행합니다.
     ///
     /// 액션 콜백(OnMove)이 아니라 폴링인 이유: 히스테리시스의 해제 임계값(0.35)이 컴포짓의 판정
