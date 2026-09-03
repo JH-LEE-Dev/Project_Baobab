@@ -659,11 +659,8 @@ public class UI_InitialSetupPopup : MonoBehaviour
         RectTransform _rect = _toggle.GetComponent<RectTransform>();
         if (null == _rect) return;
 
-        float _textWidth = (null != _label && _label.preferredWidth > 0f)
-            ? _label.preferredWidth
-            : 200f;
-        float _totalWidth = 16f + 8f + _textWidth;
-        Vector2 _size = new Vector2(_totalWidth + 12f, 28f);
+        float _width = (_rect.rect.width > 0f) ? _rect.rect.width : 160f;
+        Vector2 _size = new Vector2(_width + 12f, 28f);
 
         cursorBoxUI.Show(_rect, _size, Vector2.zero, CursorMotionSettings.RowSubtle);
     }
@@ -887,45 +884,63 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
     private void SnapConsentTogglesPixelPerfect()
     {
-        SnapSingleTogglePixelPerfect(consentToggle, consentToggleLabel);
-        SnapSingleTogglePixelPerfect(consentDisagreeToggle, consentDisagreeToggleLabel);
-        UpdateConsentToggleTextColors();
-    }
+        if (null == consentToggle || null == consentDisagreeToggle) return;
 
-    private void SnapSingleTogglePixelPerfect(Toggle _toggle, TextMeshProUGUI _label)
-    {
-        if (null == _toggle || null == _label) return;
+        // 1. 두 토글의 텍스트 레이블 raycastTarget 보장 및 preferredWidth 계산
+        int _textWidthAgree = 0;
+        int _textHeightAgree = 16;
+        if (null != consentToggleLabel)
+        {
+            consentToggleLabel.raycastTarget = true;
+            _textWidthAgree = Mathf.CeilToInt(consentToggleLabel.preferredWidth);
+            _textHeightAgree = Mathf.Max(16, Mathf.CeilToInt(consentToggleLabel.preferredHeight));
+        }
 
-        _label.raycastTarget = true;
-
-        RectTransform _toggleRect = _toggle.GetComponent<RectTransform>();
-        RectTransform _labelRect = _label.rectTransform;
-        if (null == _toggleRect || null == _labelRect) return;
-
-        // 1. TMP 텍스트 정수 너비 및 높이 계산
-        int _textWidth = Mathf.CeilToInt(_label.preferredWidth);
-        int _textHeight = Mathf.CeilToInt(_label.preferredHeight);
-        if (_textHeight <= 0) _textHeight = 16;
+        int _textWidthDisagree = 0;
+        int _textHeightDisagree = 16;
+        if (null != consentDisagreeToggleLabel)
+        {
+            consentDisagreeToggleLabel.raycastTarget = true;
+            _textWidthDisagree = Mathf.CeilToInt(consentDisagreeToggleLabel.preferredWidth);
+            _textHeightDisagree = Mathf.Max(16, Mathf.CeilToInt(consentDisagreeToggleLabel.preferredHeight));
+        }
 
         // 2. 체크박스(Background) 규격
         int _boxSize = 16;
         int _spacing = 8;
 
-        // 3. 총 너비 계산 및 짝수 스냅 (중앙 정렬 시 .5px 방지)
-        int _totalWidth = _boxSize + _spacing + _textWidth;
-        if (0 != (_totalWidth % 2))
+        // 3. 두 항목 중 더 긴 항목 기준으로 공통 너비 계산 (짝수 스냅으로 .5px 방지)
+        int _maxTextWidth = Mathf.Max(_textWidthAgree, _textWidthDisagree);
+        int _commonTotalWidth = _boxSize + _spacing + _maxTextWidth;
+        if (0 != (_commonTotalWidth % 2))
         {
-            _totalWidth += 1;
+            _commonTotalWidth += 1;
         }
 
-        // 4. Toggle 부모 앵커 및 크기 정수 스냅 (중앙 앵커 보장)
+        int _commonHeight = Mathf.Max(_boxSize, Mathf.Max(_textHeightAgree, _textHeightDisagree));
+
+        // 4. 두 토글에 동일한 공통 너비 및 왼쪽 정렬 기준점 적용 -> 두 체크박스의 X위치 일치 및 전체 중앙 정렬
+        SnapSingleToggleWithCommonWidth(consentToggle, consentToggleLabel, _textWidthAgree, _textHeightAgree, _commonTotalWidth, _commonHeight, _boxSize, _spacing);
+        SnapSingleToggleWithCommonWidth(consentDisagreeToggle, consentDisagreeToggleLabel, _textWidthDisagree, _textHeightDisagree, _commonTotalWidth, _commonHeight, _boxSize, _spacing);
+
+        UpdateConsentToggleTextColors();
+    }
+
+    private void SnapSingleToggleWithCommonWidth(Toggle _toggle, TextMeshProUGUI _label, int _textWidth, int _textHeight, int _commonTotalWidth, int _commonHeight, int _boxSize, int _spacing)
+    {
+        if (null == _toggle) return;
+
+        RectTransform _toggleRect = _toggle.GetComponent<RectTransform>();
+        if (null == _toggleRect) return;
+
+        // Toggle 부모 앵커 및 크기 스냅 (두 토글 모두 동일한 너비)
         _toggleRect.anchorMin = new Vector2(0.5f, 0.5f);
         _toggleRect.anchorMax = new Vector2(0.5f, 0.5f);
         _toggleRect.pivot = new Vector2(0.5f, 0.5f);
-        _toggleRect.sizeDelta = new Vector2(_totalWidth, Mathf.Max(_boxSize, _textHeight));
+        _toggleRect.sizeDelta = new Vector2(_commonTotalWidth, _commonHeight);
         _toggleRect.anchoredPosition = new Vector2(0f, Mathf.Round(_toggleRect.anchoredPosition.y));
 
-        // 5. 체크박스 (Background) 중앙 앵커 보장 및 왼쪽 배치
+        // 원형 체크박스 (Background): 공통 너비의 가장 왼쪽 시작점에 배치 -> 두 토글의 X좌표가 정확히 일치!
         Transform _bgTransform = _toggle.transform.Find("Background");
         if (null != _bgTransform)
         {
@@ -936,18 +951,25 @@ public class UI_InitialSetupPopup : MonoBehaviour
                 _bgRect.anchorMax = new Vector2(0.5f, 0.5f);
                 _bgRect.pivot = new Vector2(0.5f, 0.5f);
                 _bgRect.sizeDelta = new Vector2(_boxSize, _boxSize);
-                int _bgPosX = -(_totalWidth / 2) + (_boxSize / 2);
+                int _bgPosX = -(_commonTotalWidth / 2) + (_boxSize / 2);
                 _bgRect.anchoredPosition = new Vector2(_bgPosX, 0f);
             }
         }
 
-        // 6. 텍스트 (ToggleTMP) 중앙 앵커 보장 및 오른쪽 배치
-        _labelRect.anchorMin = new Vector2(0.5f, 0.5f);
-        _labelRect.anchorMax = new Vector2(0.5f, 0.5f);
-        _labelRect.pivot = new Vector2(0.5f, 0.5f);
-        _labelRect.sizeDelta = new Vector2(_textWidth, _textHeight);
-        int _labelPosX = -(_totalWidth / 2) + _boxSize + _spacing + (_textWidth / 2);
-        _labelRect.anchoredPosition = new Vector2(_labelPosX, 0f);
+        // 텍스트 (ToggleTMP): 체크박스 오른쪽 8px에서 시작하도록 배치
+        if (null != _label)
+        {
+            RectTransform _labelRect = _label.rectTransform;
+            if (null != _labelRect)
+            {
+                _labelRect.anchorMin = new Vector2(0.5f, 0.5f);
+                _labelRect.anchorMax = new Vector2(0.5f, 0.5f);
+                _labelRect.pivot = new Vector2(0.5f, 0.5f);
+                _labelRect.sizeDelta = new Vector2(_textWidth, _textHeight);
+                int _labelPosX = -(_commonTotalWidth / 2) + _boxSize + _spacing + (_textWidth / 2);
+                _labelRect.anchoredPosition = new Vector2(_labelPosX, 0f);
+            }
+        }
     }
 
     private void OnDeviceChanged(EInputDeviceType _device)

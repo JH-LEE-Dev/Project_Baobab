@@ -1644,6 +1644,8 @@ MonoBehaviour:
     rotationEase: 3
   clickTwistAngle: 15
   clickDuration: 0.3
+  disabledAlpha: 0.35
+  dimFadeDuration: 0.15
 --- !u!222 &3670877268868541929
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -4326,7 +4328,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 400, y: 0}
+  m_SizeDelta: {x: 460, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2180306153745551042
 CanvasRenderer:
@@ -4681,6 +4683,8 @@ MonoBehaviour:
   consentDisagreeToggle: {fileID: 2019435992638473550}
   consentDisagreeToggleLabel: {fileID: 3124215180995483666}
   confirmButton: {fileID: 8653861069624709782}
+  consentNormalTextColor: {r: 1, g: 1, b: 1, a: 1}
+  consentSelectedTextColor: {r: 1, g: 0.835, b: 0.31, a: 1}
 --- !u!1 &6790619838179920131
 GameObject:
   m_ObjectHideFlags: 0
@@ -5688,7 +5692,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 400, y: 0}
+  m_SizeDelta: {x: 460, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8021849892598533117
 CanvasRenderer:
