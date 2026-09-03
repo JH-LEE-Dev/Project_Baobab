@@ -47,7 +47,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
     private Action<EInputDeviceType> cachedOnDeviceChanged;
     private Sequence panelTransitionTween;
     private bool isConsentPhase = false;
-    private bool isConsentToggleHovered = false;
+    //private bool isConsentToggleHovered = false;
     private UI_PanelSelectButton lastFocusedLanguageButton;
     private Selectable lastFocusedConsentSelectable;
     private Vector2 originalWindowPos = Vector2.zero;
@@ -332,14 +332,14 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
     private void HandleConsentTogglePointerEnter(BaseEventData _eventData)
     {
-        isConsentToggleHovered = true;
+        //isConsentToggleHovered = true;
         if (null != inputManager && true == inputManager.IsGamepadMode) return;
         ShowConsentToggleCursor();
     }
 
     private void HandleConsentTogglePointerExit(BaseEventData _eventData)
     {
-        isConsentToggleHovered = false;
+        //isConsentToggleHovered = false;
         if (null != inputManager && true == inputManager.IsGamepadMode) return;
         HideConsentToggleCursor();
     }

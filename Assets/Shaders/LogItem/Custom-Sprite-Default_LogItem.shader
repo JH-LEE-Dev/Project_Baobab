@@ -20,7 +20,7 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
         _ShinyAngle("Shiny Angle", Range(0, 360)) = 45.0
         _ShinyDuration("Shiny Duration", Float) = 1.0
         _ShinyDelay("Shiny Delay", Float) = 0.5
-        [MaterialToggle] _ShinyEnabled("Shiny Enabled", Float) = 1
+        [MaterialToggle] _ShinyEnabled("Shiny Enabled", Float) = 0
     }
 
     SubShader

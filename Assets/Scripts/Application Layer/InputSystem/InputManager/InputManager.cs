@@ -283,6 +283,66 @@ public class InputManager : MonoBehaviour
         return bCursorHoveredOnUI || EInputMode.UI == CurrentInputMode;
     }
 
+    // UI 마우스 휠
+
+    /// <summary>
+    /// UI용 마우스 휠의 원시 델타입니다. 스크롤한 양에 비례해 움직여야 하는 곳에서 씁니다.
+    /// 한 칸에 한 단계씩 이산적으로 반응해야 하면 UIScrollNotchEvent를 쓰세요.
+    /// </summary>
+    public event Action<Vector2> UIScrollEvent
+    {
+        add
+        {
+            if (null == inputReader)
+            {
+                Debug.LogWarning("InputManager.UIScrollEvent 구독이 Initialize보다 먼저 시도되어 무시됩니다.");
+                return;
+            }
+
+            inputReader.UIScrollEvent += value;
+        }
+        remove
+        {
+            if (null == inputReader) return;
+
+            inputReader.UIScrollEvent -= value;
+        }
+    }
+
+    /// <summary>
+    /// 휠 입력이 한 칸(디텐트) 분량만큼 쌓일 때마다 방향(-1 = 아래, +1 = 위)만 통지합니다.
+    /// 고해상도/프리스핀 휠이나 터치패드에서도 실제 회전량에 비례하도록 InputReader가
+    /// 누적해서 발행하므로, 줌처럼 한 칸에 한 단계씩 반응하는 곳은 이쪽을 구독하세요.
+    /// </summary>
+    public event Action<int> UIScrollNotchEvent
+    {
+        add
+        {
+            if (null == inputReader)
+            {
+                Debug.LogWarning("InputManager.UIScrollNotchEvent 구독이 Initialize보다 먼저 시도되어 무시됩니다.");
+                return;
+            }
+
+            inputReader.UIScrollNotchEvent += value;
+        }
+        remove
+        {
+            if (null == inputReader) return;
+
+            inputReader.UIScrollNotchEvent -= value;
+        }
+    }
+
+    /// <summary>
+    /// 누적된 휠 잔량을 버립니다. 휠로 조작하는 화면을 열 때 호출하면, 닫혀 있던 동안 쌓인
+    /// 입력이 열자마자 반영되는 것을 막을 수 있습니다.
+    /// </summary>
+    public void ResetUIScrollAccumulation()
+    {
+        inputReader?.ResetUIScrollAccumulation();
+    }
+
     // 입력 모드 (게임플레이 ↔ UI)
 
     /// <summary>지금 입력이 게임플레이로 가는지 UI로 가는지입니다.</summary>
