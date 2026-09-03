@@ -56,6 +56,19 @@ public class InputReader
     /// <summary>UI 탭 전환입니다. -1 = 왼쪽(LB/PageUp), +1 = 오른쪽(RB/PageDown).</summary>
     public event Action<int> UITabShiftEvent;
 
+    /// <summary>
+    /// UI용 마우스 휠의 원시 델타입니다. 스크롤한 양에 비례해 움직여야 하는 곳(목록 스크롤 등)에서 씁니다.
+    /// 한 칸에 한 단계씩 이산적으로 반응해야 하는 곳에서는 UIScrollNotchEvent를 쓰세요.
+    /// </summary>
+    public event Action<Vector2> UIScrollEvent;
+
+    /// <summary>
+    /// 휠 입력이 "한 칸(디텐트)" 분량만큼 쌓일 때마다 방향(-1 = 아래, +1 = 위)만 통지합니다.
+    /// 특성 창 줌처럼 한 칸에 한 단계씩 반응해야 하는 곳에서 씁니다.
+    /// 왜 누적이 필요한지는 AccumulateUIScrollNotch의 주석을 보세요.
+    /// </summary>
+    public event Action<int> UIScrollNotchEvent;
+
     //내부 의존성
     private InputActionSystem actions;
 
@@ -81,6 +94,29 @@ public class InputReader
     private bool bPauseMove = false;
 
     private Vector2 keyboardMoveInput;
+
+    // 휠 한 칸 분량이 쌓일 때마다 UIScrollNotchEvent를 한 번 발행하기 위한 누적값이다.
+    //
+    // 부호만 보고 이벤트당 한 단계씩 반응하면 안 되는 이유: 고해상도/프리스핀 휠과 터치패드는
+    // 같은 물리 회전을 잘게 쪼갠 여러 개의 작은 이벤트로 보낸다. 크기를 버리고 부호만 쓰면
+    // 일반 디텐트 휠보다 몇 배 빠르게 반응해서, "민감한 마우스에서 확 튄다"는 문제가 된다.
+    // 크기를 누적해 한 칸 단위로 환산하면 장치 종류와 프레임레이트에 관계없이 실제 회전량에
+    // 비례하게 된다. 일반 디텐트 휠은 한 칸이 정확히 1이므로 기존 동작과 완전히 같다.
+    private float uiScrollAccumulator = 0f;
+
+    // 마지막으로 휠 입력이 들어온 시각(unscaled). 한 칸에 못 미치는 미세 입력이 오래 남아 있다가
+    // 한참 뒤에 갑자기 한 단계를 터뜨리는 일이 없도록, 일정 시간 멈추면 잔량을 버린다.
+    private float uiScrollLastInputTime = float.NegativeInfinity;
+
+    // 이 시간 이상 휠이 멈춰 있으면 누적 잔량을 폐기한다.
+    private const float UI_SCROLL_IDLE_RESET_SECONDS = 0.25f;
+
+    // 이벤트 하나에서 한 번에 발행할 수 있는 최대 칸 수. 큰 델타 하나가 화면을 통째로 넘겨버리는 것을 막는다.
+    private const int UI_SCROLL_MAX_NOTCHES_PER_EVENT = 3;
+
+    // 부동소수 오차 흡수용 여유분(한 칸 대비 비율). 1/6칸씩 보내는 고해상도 휠은 여섯 번 더해도
+    // 0.99998이라 이 여유가 없으면 한 칸이 영원히 한 번씩 밀린다.
+    private const float UI_SCROLL_NOTCH_EPSILON_RATIO = 0.001f;
 
     // 단순 bool이 아닌 카운터인 이유: 던전 진입 연출(TownProductionManager.StartSkyProduction 등)과
     // 내비게이션 팝업 해금 연출(GameplayUICoordinator) 등 서로 다른 시스템이 겹치는 타이밍에 각자
@@ -165,6 +201,7 @@ public class InputReader
             actions.UI.Cancel.performed += OnUICancel;
             actions.UI.TabLeft.performed += OnUITabLeft;
             actions.UI.TabRight.performed += OnUITabRight;
+            actions.UI.ScrollWheel.performed += OnUIScrollWheel;
         }
 
         actions.Normal.Enable();
@@ -204,6 +241,9 @@ public class InputReader
         actions.UI.Cancel.performed -= OnUICancel;
         actions.UI.TabLeft.performed -= OnUITabLeft;
         actions.UI.TabRight.performed -= OnUITabRight;
+        actions.UI.ScrollWheel.performed -= OnUIScrollWheel;
+
+        ResetUIScrollAccumulation();
 
         actions.UI.Disable();
     }
@@ -316,6 +356,9 @@ public class InputReader
             MoveEvent?.Invoke(keyboardMoveInput);
         }
 
+        // 모드가 바뀌는 경계에서 이전 구간의 휠 잔량이 넘어가지 않게 한다.
+        ResetUIScrollAccumulation();
+
         InputModeChangedEvent?.Invoke(currentInputMode);
     }
 
@@ -347,6 +390,100 @@ public class InputReader
     private void OnUITabRight(InputAction.CallbackContext context)
     {
         UITabShiftEvent?.Invoke(1);
+    }
+
+    /// <summary>
+    /// 휠 한 칸에 해당하는 원시 델타 크기입니다.
+    ///
+    /// Input System의 기본 설정(ScrollDeltaBehavior.UniformAcrossAllPlatforms)에서는 플랫폼과
+    /// 무관하게 한 칸이 1로 정규화되어 들어옵니다. 프로젝트 설정을 KeepPlatformSpecificInputRange로
+    /// 바꾸면 Windows만 120 단위가 되므로, 그때도 임계값이 어긋나지 않도록 여기서 함께 처리합니다.
+    /// </summary>
+    private static float UIScrollUnitsPerNotch
+    {
+        get
+        {
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN || UNITY_WSA
+            if (InputSettings.ScrollDeltaBehavior.KeepPlatformSpecificInputRange
+                == InputSystem.settings.scrollDeltaBehavior)
+            {
+                return 120f;
+            }
+#endif
+            return 1f;
+        }
+    }
+
+    private void OnUIScrollWheel(InputAction.CallbackContext context)
+    {
+        Vector2 _delta = context.ReadValue<Vector2>();
+
+        // PassThrough 액션이라 휠이 멈추면서 값이 0으로 돌아오는 순간에도 콜백이 한 번 더 온다.
+        if (true == Mathf.Approximately(0f, _delta.x) && true == Mathf.Approximately(0f, _delta.y)) return;
+
+        UIScrollEvent?.Invoke(_delta);
+
+        AccumulateUIScrollNotch(_delta.y);
+    }
+
+    /// <summary>
+    /// 휠 델타를 누적해 한 칸이 찰 때마다 UIScrollNotchEvent를 발행합니다.
+    ///
+    /// 핵심은 "부호가 아니라 크기를 쓴다"는 것입니다. 이벤트가 올 때마다 한 단계씩 반응하면
+    /// 회전량이 같아도 이벤트를 잘게 쪼개 보내는 장치(고해상도 휠, 프리스핀 휠, 터치패드)에서
+    /// 몇 배로 빠르게 반응합니다. 누적해서 한 칸 단위로 끊으면 장치와 프레임레이트에 관계없이
+    /// 물리 회전량에 비례하게 됩니다.
+    /// </summary>
+    private void AccumulateUIScrollNotch(float _scrollY)
+    {
+        if (true == Mathf.Approximately(0f, _scrollY)) return;
+
+        // 일시정지(timeScale = 0) 중에도 UI는 동작해야 하므로 unscaled를 쓴다.
+        float _now = Time.unscaledTime;
+
+        // 한동안 멈춰 있었다면 그때 남은 잔량은 지금 입력과 무관하므로 버린다.
+        if (UI_SCROLL_IDLE_RESET_SECONDS < _now - uiScrollLastInputTime)
+            uiScrollAccumulator = 0f;
+
+        uiScrollLastInputTime = _now;
+
+        // 방향이 바뀌면 반대 방향 잔량을 즉시 버린다. 남겨두면 방향을 되돌릴 때 그 잔량을
+        // 먼저 상쇄해야 해서 첫 한 칸이 씹히는 느낌이 난다.
+        if (0f > uiScrollAccumulator * _scrollY)
+            uiScrollAccumulator = 0f;
+
+        uiScrollAccumulator += _scrollY;
+
+        float _unitsPerNotch = UIScrollUnitsPerNotch;
+        if (0f >= _unitsPerNotch) return;
+
+        int _notchCount = Mathf.FloorToInt(
+            (Mathf.Abs(uiScrollAccumulator) + _unitsPerNotch * UI_SCROLL_NOTCH_EPSILON_RATIO) / _unitsPerNotch);
+        if (0 >= _notchCount) return;
+
+        int _direction = 0f < uiScrollAccumulator ? 1 : -1;
+
+        // 잔량은 0으로 밀지 말고 쓴 만큼만 뺀다. 0으로 밀면 빠르게 굴릴 때 한 칸에 못 미친
+        // 나머지가 매번 사라져 실제 회전량보다 적게 반응한다.
+        uiScrollAccumulator -= _direction * _notchCount * _unitsPerNotch;
+
+        // 한 이벤트가 만들 수 있는 단계 수는 제한한다. 초과분은 잔량으로 남기지 않고 버린다
+        // (남겨두면 다음 입력에서 몰아서 터진다).
+        if (UI_SCROLL_MAX_NOTCHES_PER_EVENT < _notchCount)
+            _notchCount = UI_SCROLL_MAX_NOTCHES_PER_EVENT;
+
+        for (int i = 0; i < _notchCount; ++i)
+            UIScrollNotchEvent?.Invoke(_direction);
+    }
+
+    /// <summary>
+    /// 누적된 휠 잔량을 버립니다. 휠로 조작하는 화면을 열고 닫을 때처럼, 이전 구간에서 쌓인
+    /// 입력이 넘어오면 안 되는 시점에 호출하세요.
+    /// </summary>
+    public void ResetUIScrollAccumulation()
+    {
+        uiScrollAccumulator = 0f;
+        uiScrollLastInputTime = float.NegativeInfinity;
     }
 
     private void OnInputDeviceChanged(EInputDeviceType _device)

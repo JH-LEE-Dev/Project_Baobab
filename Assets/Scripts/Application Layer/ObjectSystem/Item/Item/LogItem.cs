@@ -123,6 +123,9 @@ public class LogItem : Item, IStaticCollidable
     private Color originalColor;
     private Color originalOutlineColor;
     private Color originalShadowColor;
+    // CacheRenderers()가 렌더러와 원본 색을 확보했는지. 프리팹에 spriteRenderer가 바인딩되어 있지 않아
+    // 런타임에 찾아야 하므로, 중복 탐색과 원본 색 재캡처를 함께 막는다.
+    private bool bRenderersCached = false;
 
     private string flyingItemSortingLayerName = "FlyingItem";
     private string objectsSortingLayerName = "Objects";
@@ -172,15 +175,8 @@ public class LogItem : Item, IStaticCollidable
         landingDampTime = landingDampDuration;
         color = _color;
 
-        // 최적화: GetComponentInChildren 캐싱
-        if (spriteRenderer == null)
-        {
-            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-            if (spriteRenderer != null)
-            {
-                visualTransform = spriteRenderer.transform;
-            }
-        }
+        // 최적화: GetComponentInChildren 캐싱 (Awake에서 이미 끝났으면 즉시 반환한다)
+        CacheRenderers();
 
         if (spriteRenderer != null)
         {
@@ -189,12 +185,6 @@ public class LogItem : Item, IStaticCollidable
                 outlineStencilSR.sprite = sprite;
             if (outlineSR != null)
                 outlineSR.sprite = sprite;
-        }
-
-        if (shadow != null && shadowTransform == null)
-        {
-            shadowTransform = shadow.transform;
-            shadowRenderer = shadow.GetComponentInChildren<SpriteRenderer>();
         }
 
         InitializeShadowFrames();
@@ -225,9 +215,43 @@ public class LogItem : Item, IStaticCollidable
             customSortable.AddSpriteRenderer(outlineSR);
         }
 
+        // 원본 색은 CacheRenderers()가 프리팹 상태 그대로일 때 한 번만 잡아둔다.
+        // (여기서 매번 다시 잡으면 연출로 변형된 색을 원본으로 굳혀버릴 수 있다)
+    }
+
+    /// <summary>
+    /// 렌더러/트랜스폼과 색 원본값을 한 번만 캐싱한다.
+    ///
+    /// 풀에서 갓 생성된 인스턴스는 Get 시점의 ResetItem()이 Initialize()보다 먼저 불린다.
+    /// 그때 spriteRenderer가 아직 null이면 ResetItem()의 색 복원과 SetShaderFloating(false)가
+    /// 통째로 스킵되고, _ShinyEnabled가 머티리얼 기본값으로 남아 드랍 비행 중에 샤이니가
+    /// 한 번 스쳐 지나가 보인다. 그래서 Awake와 ResetItem 양쪽에서 미리 확보한다.
+    /// </summary>
+    private void CacheRenderers()
+    {
+        if (bRenderersCached)
+            return;
+
+        if (spriteRenderer == null)
+            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+
+        // 아직 준비되지 않았으면 캐싱 완료로 표시하지 않고 다음 호출에서 다시 시도한다
+        if (spriteRenderer == null)
+            return;
+
+        visualTransform = spriteRenderer.transform;
+
+        if (shadow != null && shadowTransform == null)
+        {
+            shadowTransform = shadow.transform;
+            shadowRenderer = shadow.GetComponentInChildren<SpriteRenderer>();
+        }
+
         originalColor = spriteRenderer.color;
         originalOutlineColor = outlineSR != null ? outlineSR.color : Color.white;
         originalShadowColor = shadowRenderer != null ? shadowRenderer.color : Color.white;
+
+        bRenderersCached = true;
     }
 
     public void SetVfxComponent(VFXComponent _vfxComponent)
@@ -537,6 +561,11 @@ public class LogItem : Item, IStaticCollidable
         }
     }
 
+    private void Awake()
+    {
+        CacheRenderers();
+    }
+
     private void OnEnable()
     {
         // Launch나 TransferLaunch가 이미 호출된 상태에서 활성화될 때만 등록
@@ -554,6 +583,9 @@ public class LogItem : Item, IStaticCollidable
     public override void ResetItem()
     {
         base.ResetItem();
+
+        // 프리팹이 비활성 상태로 생성되어 Awake가 아직 안 돌았을 수도 있으므로 여기서도 확보한다
+        CacheRenderers();
 
         StopGemShiny();
         StopGemAura();
@@ -978,6 +1010,8 @@ public class LogItem : Item, IStaticCollidable
         if (dynamicTarget == null)
         {
             state = ItemMoveState.Dropped;
+            // 다른 착지 경로와 맞춰, 보석 등급이면 셰이더 샤이니를 다시 켜준다
+            SetShaderFloating(true);
             
             if (vfxComponent != null && particleEffect != null)
             {
@@ -1066,6 +1100,8 @@ public class LogItem : Item, IStaticCollidable
             transform.localScale = Vector3.one;
             if (visualTransform != null) visualTransform.localScale = Vector3.one;
             state = ItemMoveState.Dropped;
+            // 다른 착지 경로와 맞춰, 보석 등급이면 셰이더 샤이니를 다시 켜준다
+            SetShaderFloating(true);
 
             if (vfxComponent != null && logState > LogState.Normal)
             {

@@ -43,6 +43,7 @@ Material:
     m_Floats:
     - _EnableExternalAlpha: 0
     - _FloatingOffset: 0
+    - _ShinyEnabled: 0
     - _UseFloating: 0
     - _ZWrite: 0
     m_Colors:

@@ -15,6 +15,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const float MinZoom = 0.2f;
     private const float MaxZoom = 1f;
     private const float ZoomStep = 0.1f;
+
+    // 한 프레임에 휠로 적용할 수 있는 최대 줌 단계. 로딩 끊김처럼 프레임이 길게 밀린 뒤
+    // 밀려 있던 휠 이벤트가 한꺼번에 처리될 때 줌이 통째로 넘어가는 것을 막는 안전장치다.
+    private const int MaxWheelZoomStepsPerFrame = 5;
+
     private const float ZoomFollowSpeed = 18f;
     private const float KeyboardMoveGridUnitsPerSecond = 9f;
     private const float DefaultPadCursorSpeedPixelsPerSecond = 280f;
@@ -56,6 +61,16 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private Vector2 currentViewShakeOffset;
     private float currentZoom = DefaultZoom;
     private float targetZoom = DefaultZoom;
+
+    // InputManager가 보내온 휠 "한 칸" 신호를 이번 프레임 분량만 모아 둔다. 부호가 방향,
+    // 절대값이 단계 수다. 콜백에서 즉시 줌을 적용하지 않는 이유는, 기존과 똑같이 Tick의
+    // 입력 허용 판정(_inputAllowed, 키마 모드 여부)을 거친 뒤 같은 자리에서 처리하기 위해서다.
+    private int pendingWheelNotches;
+
+    // pendingWheelNotches가 쌓인 프레임 번호. 이번 프레임에 도착한 것만 유효하게 취급하므로,
+    // 창이 닫혀 있거나 입력이 막혀 소비되지 않은 신호는 다음 프레임에 자연히 버려진다.
+    private int pendingWheelNotchFrame = -1;
+
     private float viewShakeElapsed;
     private float closeFadeElapsed;
     private float openingZoomElapsed;
@@ -347,14 +362,17 @@ public class UI_TentAbilityComponent : MonoBehaviour
         {
             inputManager.inputReader.KeyBindingsChangedEvent -= CacheKeyboardMoveControls;
             inputManager.inputReader.InputDeviceChangedEvent -= OnInputDeviceChanged;
+            inputManager.UIScrollNotchEvent -= OnUIScrollNotch;
         }
 
         inputManager = _inputManager;
+        ClearPendingWheelNotches();
 
         if (inputManager != null && inputManager.inputReader != null)
         {
             inputManager.inputReader.KeyBindingsChangedEvent += CacheKeyboardMoveControls;
             inputManager.inputReader.InputDeviceChangedEvent += OnInputDeviceChanged;
+            inputManager.UIScrollNotchEvent += OnUIScrollNotch;
         }
 
         CacheKeyboardMoveControls();
@@ -592,6 +610,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
         nodeHoverSoundEnableUnscaledTime = Time.unscaledTime + Mathf.Max(0f, nodeHoverSoundSuppressDurationAfterOpen);
         hasOpenedView = true;
         wasInputAllowedLastTick = false;
+        // 창이 닫혀 있는 동안 쌓인 휠 입력이 열자마자 줌으로 반영되지 않게 잔량을 버린다.
+        ClearPendingWheelNotches();
+        inputManager?.ResetUIScrollAccumulation();
         isCloseFading = false;
         isCircleRevealPlaying = false;
         toolTipPlacementMode = ToolTipPlacementMode.Right;
@@ -1206,6 +1227,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         abilityHUD?.CancelPresentation();
 
         CancelViewDrag();
+        ClearPendingWheelNotches();
         hasZoomFocus = false;
         isOpeningZoomReveal = false;
         openingZoomFocusPoint = Vector2.zero;
@@ -2881,18 +2903,74 @@ public class UI_TentAbilityComponent : MonoBehaviour
         hasPreviousMousePosition = true;
     }
 
+    /// <summary>
+    /// InputManager가 휠 한 칸을 감지할 때마다 호출됩니다. 여기서는 모아두기만 하고, 실제
+    /// 줌 적용은 Tick의 기존 자리(HandleZoom)에서 입력 허용 판정을 거친 뒤에 합니다.
+    /// </summary>
+    private void OnUIScrollNotch(int _direction)
+    {
+        if (0 == _direction)
+            return;
+
+        // 프레임이 바뀌었으면 지난 프레임에 소비되지 않은 신호는 버리고 새로 센다.
+        if (Time.frameCount != pendingWheelNotchFrame)
+        {
+            pendingWheelNotchFrame = Time.frameCount;
+            pendingWheelNotches = 0;
+        }
+
+        pendingWheelNotches += 0 < _direction ? 1 : -1;
+    }
+
+    private void ClearPendingWheelNotches()
+    {
+        pendingWheelNotches = 0;
+        pendingWheelNotchFrame = -1;
+    }
+
+    /// <summary>
+    /// 이번 프레임에 도착한 휠 신호를 꺼내 갑니다. 이전 프레임에 쌓였던 것은 유효하지 않으므로
+    /// 0을 돌려줍니다 - 창이 닫혀 있거나 입력이 막혀 있던 동안의 입력이 나중에 터지지 않게 하는
+    /// 장치입니다. (Input System 콜백은 MonoBehaviour.Update보다 먼저 도는 같은 프레임입니다)
+    /// </summary>
+    private int ConsumePendingWheelNotches()
+    {
+        if (Time.frameCount != pendingWheelNotchFrame)
+        {
+            pendingWheelNotches = 0;
+            return 0;
+        }
+
+        int _notches = pendingWheelNotches;
+        pendingWheelNotches = 0;
+
+        return Mathf.Clamp(_notches, -MaxWheelZoomStepsPerFrame, MaxWheelZoomStepsPerFrame);
+    }
+
     // 마우스 휠 입력으로 목표 줌 값을 갱신한다.
+    //
+    // 휠 원시 델타를 직접 읽지 않고 InputManager가 누적해 보내주는 "한 칸" 신호를 쓴다.
+    // 예전처럼 부호만 보고 이벤트당 한 단계씩 반응하면, 같은 회전을 잘게 쪼개 보내는
+    // 고해상도/프리스핀 휠과 터치패드에서 몇 배로 빠르게 줌이 튄다.
     private bool HandleZoom()
     {
+        int _notches = ConsumePendingWheelNotches();
+        if (0 == _notches)
+            return false;
+
         Mouse mouse = Mouse.current;
         if (mouse == null)
             return false;
 
-        float scrollY = mouse.scroll.ReadValue().y;
-        if (Mathf.Approximately(scrollY, 0f))
-            return false;
+        Vector2 _focusScreenPosition = mouse.position.ReadValue();
+        int _direction = 0 < _notches ? 1 : -1;
+        int _stepCount = Mathf.Abs(_notches);
+        bool _zoomChanged = false;
 
-        return ApplyZoomStep(Mathf.Sign(scrollY), mouse.position.ReadValue());
+        for (int i = 0; i < _stepCount; ++i)
+            _zoomChanged |= ApplyZoomStep(_direction, _focusScreenPosition);
+
+        return _zoomChanged;
     }
 
     private bool HandlePadZoom()
