@@ -95,6 +95,31 @@ public class InputReader
 
     private Vector2 keyboardMoveInput;
 
+    // 패드 이동 입력의 축별 히스테리시스 상태(-1 / 0 / +1)와, 마지막으로 발행한 이동 벡터.
+    //
+    // 왜 필요한가: Move의 패드 바인딩은 leftStick의 up/down/left/right를 버튼으로 읽는 2DVector
+    // 컴포짓인데, 이 버튼 판정에는 릴리즈 히스테리시스가 없다(press point 0.5 단순 비교). 그래서
+    // 대각선으로 밀 때처럼 한 축이 임계값에 걸치면 아날로그 노이즈와 엄지 떨림만으로 그 축이 매 프레임
+    // 켜졌다 꺼지고, 이동 방향이 대각선 ↔ 아래/옆 사이를 덜덜 떤다. 켤 때(0.5)보다 낮은 값(0.35)에서
+    // 꺼주면 경계에 완충 구간이 생겨 멈춘다. axisDeadzone(0.125~0.925)을 되돌리면 원시 기울기로는
+    // 약 0.405~0.525 구간이다.
+    //
+    // Unity에도 같은 개념의 InputSettings.buttonReleaseThreshold(기본 0.75 → 0.375)가 있지만
+    // 컴포짓의 버튼 읽기에는 적용되지 않는다(InputActionState가 ButtonControl.isPressed를 그대로 쓴다).
+    // 그래서 여기서 직접 건다.
+    //
+    // 조준·바라보는 방향도 결국 이 값을 따라가므로, 여기 한 곳만 안정화하면 이동과 방향이 어긋날 수 없다.
+    private const float GamepadMoveAxisPressPoint = 0.5f;
+    private const float GamepadMoveAxisReleasePoint = 0.35f;
+
+    // 대각선 길이를 1로 맞추는 계수. Unity의 DpadControl.MakeDpadVector가 쓰는 값과 같아야
+    // 기존 컴포짓이 내보내던 값과 완전히 동일해진다.
+    private const float GamepadMoveDiagonalFactor = 0.707107f;
+
+    private int gamepadMoveAxisX = 0;
+    private int gamepadMoveAxisY = 0;
+    private Vector2 lastGamepadMoveInput = Vector2.zero;
+
     // 휠 한 칸 분량이 쌓일 때마다 UIScrollNotchEvent를 한 번 발행하기 위한 누적값이다.
     //
     // 부호만 보고 이벤트당 한 단계씩 반응하면 안 되는 이유: 고해상도/프리스핀 휠과 터치패드는
@@ -256,6 +281,7 @@ public class InputReader
     public void Tick(float _unscaledDeltaTime)
     {
         deviceTracker?.Tick(_unscaledDeltaTime);
+        UpdateGamepadMove();
         UpdateGamepadRebindCancel();
     }
 
@@ -559,8 +585,80 @@ public class InputReader
         return actions.Normal.Aim.ReadValue<Vector2>();
     }
 
+    /// <summary>
+    /// 패드 이동 입력을 매 프레임 다시 판정해서, 값이 바뀔 때만 이동 이벤트를 발행합니다.
+    ///
+    /// 액션 콜백(OnMove)이 아니라 폴링인 이유: 히스테리시스의 해제 임계값(0.35)이 컴포짓의 판정
+    /// 임계값(0.5)보다 낮습니다. 컴포짓은 0.5를 지나는 순간 이미 "뗌"으로 이벤트를 한 번 보내고 그
+    /// 뒤로는 조용하므로, 콜백만 봐서는 0.35를 지나는 시점을 알 수 없습니다.
+    /// (자세한 이유는 GamepadMoveAxisPressPoint 주석 참고)
+    /// </summary>
+    private void UpdateGamepadMove()
+    {
+        bool _bBlocked = bPauseMove || false == CanDispatchGameplay;
+        Gamepad _gamepad = Gamepad.current;
+
+        Vector2 _move = Vector2.zero;
+
+        if (null != _gamepad && false == _bBlocked)
+        {
+            // leftStick 통짜(stickDeadzone)가 아니라 x/y 축(axisDeadzone)을 읽는다. 컴포짓의
+            // up/down/left/right가 보던 값과 같은 가공을 거쳐야 판정 기준이 어긋나지 않는다.
+            gamepadMoveAxisX = ResolveMoveAxis(_gamepad.leftStick.x.ReadValue(), gamepadMoveAxisX);
+            gamepadMoveAxisY = ResolveMoveAxis(_gamepad.leftStick.y.ReadValue(), gamepadMoveAxisY);
+
+            _move = new Vector2(gamepadMoveAxisX, gamepadMoveAxisY);
+
+            if (0 != gamepadMoveAxisX && 0 != gamepadMoveAxisY)
+                _move *= GamepadMoveDiagonalFactor;
+        }
+        else
+        {
+            gamepadMoveAxisX = 0;
+            gamepadMoveAxisY = 0;
+        }
+
+        if (_move == lastGamepadMoveInput)
+            return;
+
+        lastGamepadMoveInput = _move;
+
+        if (Vector2.zero == _move)
+        {
+            // 스틱을 놓았다고 키보드로 누르고 있던 이동까지 지우면 안 된다.
+            // (막혀 있는 동안에는 키보드 입력도 흘려보내지 않는다)
+            MoveEvent?.Invoke(_bBlocked ? Vector2.zero : keyboardMoveInput);
+            return;
+        }
+
+        MoveTriggerEvent?.Invoke();
+        MoveEvent?.Invoke(_move);
+    }
+
+    /// <summary>
+    /// 축 하나의 상태(-1 / 0 / +1)를 히스테리시스를 걸어 판정합니다.
+    /// 꺼져 있던 축은 GamepadMoveAxisPressPoint를 넘어야 켜지고, 켜져 있던 축은 그보다 낮은
+    /// GamepadMoveAxisReleasePoint 아래로 내려가야 꺼집니다.
+    /// </summary>
+    private int ResolveMoveAxis(float _value, int _currentState)
+    {
+        float _magnitude = Mathf.Abs(_value);
+        int _sign = 0f <= _value ? 1 : -1;
+
+        if (0 == _currentState)
+            return GamepadMoveAxisPressPoint <= _magnitude ? _sign : 0;
+
+        // 이미 켜져 있던 축은 더 낮은 값까지 버틴다. 반대쪽으로 넘어간 경우에는 부호만 따라간다.
+        return GamepadMoveAxisReleasePoint <= _magnitude ? _sign : 0;
+    }
+
     public void OnMove(InputAction.CallbackContext context)
     {
+        // 패드 이동은 위의 폴링 경로가 히스테리시스를 걸어 처리한다. 여기서 또 받으면 히스테리시스가
+        // 없는 원래 값이 섞여 들어와, 경계에서 방향이 그대로 떨린다.
+        if (null != context.control && context.control.device is Gamepad)
+            return;
+
         keyboardMoveInput = context.ReadValue<Vector2>();
 
         if (bPauseMove || false == CanDispatchGameplay)

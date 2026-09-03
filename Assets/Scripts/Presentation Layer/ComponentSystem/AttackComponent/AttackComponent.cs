@@ -213,6 +213,10 @@ public class AttackComponent : PComponent
         Vector2 targetAimDir = aimStickDirection;
 
         // 우측 조준 스틱을 쓰지 않는 상태이고 이동 입력이 있으면, 이동 방향을 조준 방향의 기본값으로 쓴다.
+        //
+        // ctx.moveInput을 그대로 쓰는 것이 중요하다. 조준을 따로 가공하면 실제로 이동하는 방향과
+        // 바라보는 방향이 어긋난다. 경계에서의 떨림은 InputReader가 이동 입력 단계에서 이미
+        // 잡아 두었으므로(GamepadMoveAxisPressPoint 참고) 여기서 다시 손댈 필요가 없다.
         if (Vector2.zero == targetAimDir && Vector2.zero != ctx.moveInput)
         {
             targetAimDir = ctx.moveInput.normalized;
