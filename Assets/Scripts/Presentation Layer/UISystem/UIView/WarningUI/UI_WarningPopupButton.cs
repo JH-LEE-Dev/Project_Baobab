@@ -17,17 +17,17 @@ public class UI_WarningPopupButton : Selectable,
     public class HoverSettings
     {
         [Tooltip("전체 Hover 연출 시간")]
-        public float duration = 0.5f;
+        public float duration = 0.7f;
 
         [Header("Scale Settings")]
-        public float shrinkScale = 0.9f;
-        [Range(0f, 1f)] public float shrinkTimeRatio = 0.1f;
-        [Range(0f, 1f)] public float restoreTimeRatio = 0.15f;
+        public float shrinkScale = 0.8f;
+        [Range(0f, 1f)] public float shrinkTimeRatio = 0.08f;
+        [Range(0f, 1f)] public float restoreTimeRatio = 0.12f;
         public Ease scaleEase = Ease.OutBack;
 
         [Header("Rotation Settings")]
-        public float startAngle = 12f;
-        public float angleDamping = 0.65f;
+        public float startAngle = 8f;
+        public float angleDamping = 1.5f;
         public int swingCount = 4;
         [Range(0f, 1f)] public float rotationTimeRatio = 0.8f;
         public Ease rotationEase = Ease.OutSine;
@@ -37,12 +37,12 @@ public class UI_WarningPopupButton : Selectable,
     public class UnhoverSettings
     {
         [Tooltip("전체 Unhover 연출 시간")]
-        public float duration = 0.4f;
+        public float duration = 0.7f;
 
         [Header("Rotation Settings")]
-        public float startAngle = 8f;
-        public float angleDamping = 0.65f;
-        public int swingCount = 3;
+        public float startAngle = 5f;
+        public float angleDamping = 0.62f;
+        public int swingCount = 4;
         [Range(0f, 1f)] public float rotationTimeRatio = 1f;
         public Ease rotationEase = Ease.OutSine;
     }
@@ -54,7 +54,7 @@ public class UI_WarningPopupButton : Selectable,
     [Header("Cursor Settings")]
     [SerializeField, Tooltip("커서가 감쌀 실제 비주얼 RectTransform (미지정 시 targetGraphic 사용)")]
     private RectTransform cursorTargetTransform;
-    [SerializeField] private Vector2 cursorPadding = Vector2.zero;
+    [SerializeField] private Vector2 cursorPadding = new Vector2(2f, 2f);
     [SerializeField] private Vector2 cursorOffset = Vector2.zero;
     [SerializeField] private bool useCustomCursorSize = false;
     [SerializeField] private Vector2 customCursorSize = new Vector2(100f, 40f);

@@ -117,7 +117,7 @@ public class UI_OptionTabButton : Selectable, IPointerClickHandler, ISubmitHandl
     }
 
     [Header("Cursor Settings")]
-    [SerializeField] private Vector2 cursorPadding = new Vector2(10f, 10f);
+    [SerializeField] private Vector2 cursorPadding = new Vector2(2f, 2f);
     [SerializeField] private Vector2 cursorOffset = Vector2.zero;
 
     private ICursorBoxUI cursorBoxUI;

@@ -25,6 +25,16 @@ public class UI_OptionButton : Selectable,
     [SerializeField, Tooltip("그림자 효과 변경을 위한 UIEffect 컴포넌트 (선택 사항)")]
     private Coffee.UIEffects.UIEffect targetEffect;
 
+    [SerializeField, Tooltip("게임패드 전용 핫키 안내 아이콘 이미지 (선택 사항)")]
+    private Image shortcutIconImage;
+
+    public void SetShortcutIcon(Sprite _icon, bool _show)
+    {
+        if (null == shortcutIconImage) return;
+        if (null != _icon) shortcutIconImage.sprite = _icon;
+        shortcutIconImage.gameObject.SetActive(_show && null != _icon);
+    }
+
     public enum EVisualMode { None, Color, Sprite }
 
     [Header("Motion Settings")]
@@ -161,7 +171,7 @@ public class UI_OptionButton : Selectable,
     }
 
     [Header("Cursor Settings")]
-    [SerializeField] private Vector2 cursorPadding = new Vector2(10f, 10f);
+    [SerializeField] private Vector2 cursorPadding = new Vector2(2f, 2f);
     [SerializeField] private Vector2 cursorOffset = Vector2.zero;
 
     private ICursorBoxUI cursorBoxUI;

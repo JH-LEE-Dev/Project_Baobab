@@ -47,6 +47,12 @@ public class UI_CustomScroll : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         SyncScrollbarFromContent();
     }
 
+    private void OnEnable()
+    {
+        UpdateScrollbarSize();
+        SyncScrollbarFromContent();
+    }
+
     public void OnBeginDrag(PointerEventData _eventData)
     {
         if (null == viewport) return;
@@ -165,18 +171,45 @@ public class UI_CustomScroll : MonoBehaviour, IBeginDragHandler, IDragHandler, I
     {
         if (null == verticalScrollbar || null == content || null == viewport) return;
 
+        if (true == content.gameObject.activeInHierarchy)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+        }
+
         float _contentHeight = content.rect.height;
         float _viewportHeight = viewport.rect.height;
 
-        if (0f >= _contentHeight) return;
+        if (0f >= _contentHeight || 0f >= _viewportHeight)
+        {
+            verticalScrollbar.size = 1f;
+            verticalScrollbar.interactable = false;
+            return;
+        }
 
         float _sizeRatio = _viewportHeight / _contentHeight;
         
-        // 뷰포트가 컨텐츠보다 크면 사이즈는 1 (스크롤 불필요)
-        verticalScrollbar.size = Mathf.Clamp01(_sizeRatio);
-        
-        // 스크롤이 불필요할 때 스크롤바 자체를 비활성화할 수도 있음
-        verticalScrollbar.interactable = 1f > _sizeRatio;
+        if (_sizeRatio >= 1f)
+        {
+            // 뷰포트가 컨텐츠보다 크거나 같으면 스크롤 불필요
+            verticalScrollbar.size = 1f;
+            verticalScrollbar.interactable = false;
+            content.anchoredPosition = new Vector2(content.anchoredPosition.x, 0f);
+        }
+        else
+        {
+            // 뷰포트가 컨텐츠보다 작으면 스크롤 필요 (최소 핸들 크기 0.1f 보장)
+            verticalScrollbar.size = Mathf.Clamp(_sizeRatio, 0.1f, 1f);
+            verticalScrollbar.interactable = true;
+
+            // 컨텐츠 높이가 줄어들었을 경우 현재 위치가 범위를 벗어날 수 있으므로 클램핑 보정
+            float _newY = ClampYPosition(content.anchoredPosition.y);
+            if (_newY != content.anchoredPosition.y)
+            {
+                content.anchoredPosition = new Vector2(content.anchoredPosition.x, _newY);
+            }
+        }
+
+        SyncScrollbarFromContent();
     }
 
     public void SetContent(RectTransform _newContent)

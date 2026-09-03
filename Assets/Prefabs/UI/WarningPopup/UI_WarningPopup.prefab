@@ -187,26 +187,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UI_WarningPopupButton
   targetGraphic: {fileID: 1986760502835578453}
   cursorTargetTransform: {fileID: 2338799203888061322}
-  cursorPadding: {x: 0, y: 0}
+  cursorPadding: {x: 2, y: 2}
   cursorOffset: {x: 0, y: 0}
   useCustomCursorSize: 0
   customCursorSize: {x: 100, y: 40}
   hoverSettings:
-    duration: 0.5
-    shrinkScale: 0.9
-    shrinkTimeRatio: 0.1
-    restoreTimeRatio: 0.15
+    duration: 0.7
+    shrinkScale: 0.8
+    shrinkTimeRatio: 0.08
+    restoreTimeRatio: 0.12
     scaleEase: 27
-    startAngle: 12
-    angleDamping: 0.65
+    startAngle: 8
+    angleDamping: 1.5
     swingCount: 4
     rotationTimeRatio: 0.8
     rotationEase: 3
   unhoverSettings:
-    duration: 0.4
-    startAngle: 8
-    angleDamping: 0.65
-    swingCount: 3
+    duration: 0.7
+    startAngle: 5
+    angleDamping: 0.62
+    swingCount: 4
     rotationTimeRatio: 1
     rotationEase: 3
 --- !u!1 &1943265971725105455
@@ -496,26 +496,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UI_WarningPopupButton
   targetGraphic: {fileID: 500627172970634607}
   cursorTargetTransform: {fileID: 6760869410420975540}
-  cursorPadding: {x: 0, y: 0}
+  cursorPadding: {x: 2, y: 2}
   cursorOffset: {x: 0, y: 0}
   useCustomCursorSize: 0
   customCursorSize: {x: 100, y: 40}
   hoverSettings:
-    duration: 0.5
-    shrinkScale: 0.9
-    shrinkTimeRatio: 0.1
-    restoreTimeRatio: 0.15
+    duration: 0.7
+    shrinkScale: 0.8
+    shrinkTimeRatio: 0.08
+    restoreTimeRatio: 0.12
     scaleEase: 27
-    startAngle: 12
-    angleDamping: 0.65
+    startAngle: 8
+    angleDamping: 1.5
     swingCount: 4
     rotationTimeRatio: 0.8
     rotationEase: 3
   unhoverSettings:
-    duration: 0.4
-    startAngle: 8
-    angleDamping: 0.65
-    swingCount: 3
+    duration: 0.7
+    startAngle: 5
+    angleDamping: 0.62
+    swingCount: 4
     rotationTimeRatio: 1
     rotationEase: 3
 --- !u!1 &4080633465160585376
