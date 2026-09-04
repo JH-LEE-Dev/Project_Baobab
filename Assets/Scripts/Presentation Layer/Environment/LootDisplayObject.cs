@@ -21,6 +21,19 @@ namespace PresentationLayer.Environment
         [SerializeField] private SpriteRenderer pillarRenderer;
         private CustomSortable customSortable;
 
+        [Header("Outline Settings")]
+        // 상호작용 범위에 들어오면 켜지는 Pillar 아웃라인. OffroadContainer/RepairBox와 같은 스텐실 방식이다 -
+        // outlineStencilObj(OutlineStencilWriter)가 Pillar 스프라이트 모양대로 스텐실을 찍고, 그 자식인
+        // Outline이 스텐실 바깥쪽만 그려 테두리가 된다. 둘이 부모-자식이라 켜고 끄는 건 루트 하나만 토글하면 된다.
+        // (Loot·Shadow는 제외하고 Pillar만 감싼다)
+        [SerializeField] private GameObject outlineStencilObj;
+
+        // 아웃라인 렌더러들. Pillar의 SortingOrder는 런타임에 정해지므로(ApplySortingBasis) 같이 따라가야
+        // 한다. 스텐실 라이터는 Pillar와 같은 Order, 아웃라인은 그 바로 위(+1)에 그린다.
+        // (Loot은 +2라 아웃라인이 아이템을 가리지 않는다)
+        [SerializeField] private SpriteRenderer outlineStencilRenderer;
+        [SerializeField] private SpriteRenderer outlineRenderer;
+
         [Header("Aura Orbit Settings")]
         [SerializeField] private bool useAuraOrbit = false;
         [SerializeField] private ItemAuraOrbitController auraOrbitController;
@@ -49,6 +62,17 @@ namespace PresentationLayer.Environment
             // 기본값: 생성 위치(자기 자신의 Y) 기준. 스포너가 별도 Pivot 기준점을 알고 있다면
             // ApplySortingBasis()로 덮어써서 그 기준으로 다시 계산한다.
             ApplySortingBasis(transform.position.y);
+
+            // 프리팹에서도 꺼진 상태로 저장해 두지만, 범위 밖에서 시작한다는 것을 코드로도 못 박는다.
+            SetOutlineActive(false);
+        }
+
+        // 상호작용 범위 진입/이탈에 맞춰 아웃라인을 켜고 끈다. (outlineStencilObj 주석 참고)
+        private void SetOutlineActive(bool _bActive)
+        {
+            if (null == outlineStencilObj) return;
+
+            outlineStencilObj.SetActive(_bActive);
         }
 
         public void Initialize(InputManager _inputManager)
@@ -57,6 +81,9 @@ namespace PresentationLayer.Environment
 
             inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
             inputManager.inputReader.InteractionKeyPressedEvent += InteractionKeyPressed;
+
+            inputManager.inputReader.InteractionKeyPressedWhileUIModeEvent -= InteractionKeyPressedWhileUIMode;
+            inputManager.inputReader.InteractionKeyPressedWhileUIModeEvent += InteractionKeyPressedWhileUIMode;
         }
 
         private void OnDestroy()
@@ -64,6 +91,7 @@ namespace PresentationLayer.Environment
             if (inputManager != null)
             {
                 inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
+                inputManager.inputReader.InteractionKeyPressedWhileUIModeEvent -= InteractionKeyPressedWhileUIMode;
             }
         }
 
@@ -75,11 +103,39 @@ namespace PresentationLayer.Environment
             LootPillarInteractEvent?.Invoke(bInteracting, CurrentLootType);
         }
 
+        // UIView_ScreenModal이 스스로 SetInputMode(UI)를 걸어둔 동안에는 InteractionKeyPressedEvent가
+        // 막혀 있어 위 InteractionKeyPressed()가 호출되지 않는다. 그동안에도 키보드로는 닫을 수 있도록
+        // 하는 전용 통로 - 이미 열려 있을 때(bInteracting == true)만 의미가 있으므로 닫기만 처리한다.
+        // (패드는 InputReader가 걸러서 여기로 오지 않는다 - 패드는 Cancel(B/○)로 닫는다)
+        // Tent.InteractionKeyPressedWhileUIMode()와 동일한 역할.
+        private void InteractionKeyPressedWhileUIMode()
+        {
+            if (false == bInteracting) return;
+
+            bInteracting = false;
+            LootPillarInteractEvent?.Invoke(false, CurrentLootType);
+        }
+
+        /// <summary>
+        /// UIView_ScreenModal이 상호작용 키 토글 경로를 거치지 않고 닫혔을 때(ESC·패드 Cancel 등
+        /// UIDepthController가 Hide()를 직접 호출하는 경로) bInteracting이 true로 남아, 다음 상호작용
+        /// 입력이 "닫기"로 오인되어 무시되는 문제를 막는다. TownSystem이 LootPillarUIClosedSignal을
+        /// 받아 호출한다. (Tent.SyncInteractStateOnExternalClose()와 동일한 역할)
+        ///
+        /// bPhysicalOverlapped(상호작용 가능 범위)는 건드리지 않는다 - 플레이어가 여전히 필러 앞에
+        /// 서 있을 수 있다.
+        /// </summary>
+        public void SyncInteractStateOnExternalClose()
+        {
+            bInteracting = false;
+        }
+
         private void OnTriggerEnter2D(Collider2D _other)
         {
             if (_other.gameObject.layer == characterLayer)
             {
                 bPhysicalOverlapped = true;
+                SetOutlineActive(true);
                 InteractStateChangedEvent?.Invoke(true, CurrentLootType);
             }
         }
@@ -89,6 +145,7 @@ namespace PresentationLayer.Environment
             if (_other.gameObject.layer == characterLayer)
             {
                 bPhysicalOverlapped = false;
+                SetOutlineActive(false);
                 InteractStateChangedEvent?.Invoke(false, CurrentLootType);
 
                 // 상호작용(모달이 열린) 상태로 범위를 벗어나면, 키를 다시 눌러 취소한 것과 동일하게
@@ -119,6 +176,17 @@ namespace PresentationLayer.Environment
             if (null != targetRenderer)
             {
                 targetRenderer.sortingOrder = pillarOrder + 2;
+            }
+
+            // 아웃라인도 Pillar와 같은 기준으로 따라간다. (outlineStencilRenderer 주석 참고)
+            if (null != outlineStencilRenderer)
+            {
+                outlineStencilRenderer.sortingOrder = pillarOrder;
+            }
+
+            if (null != outlineRenderer)
+            {
+                outlineRenderer.sortingOrder = pillarOrder + 1;
             }
         }
 

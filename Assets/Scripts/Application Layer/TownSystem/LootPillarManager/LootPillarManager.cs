@@ -83,6 +83,24 @@ public class LootPillarManager : MonoBehaviour
         LootPillarInteractEvent?.Invoke(_bInteract, _lootType);
     }
 
+    /// <summary>
+    /// UIView_ScreenModal이 상호작용 키 토글이 아닌 경로(ESC·패드 Cancel)로 닫혔을 때, 필러들의
+    /// 내부 토글 상태를 실제 UI 상태에 맞춰준다. TownSystem이 LootPillarUIClosedSignal을 받아 호출한다.
+    /// (TentManager.SyncInteractStateOnExternalClose()와 동일한 역할)
+    ///
+    /// 어느 필러가 열었는지 추적하지 않고 전부에 알린다 - 이미 닫힘 상태인 필러에는 아무 효과가 없다.
+    /// </summary>
+    public void SyncInteractStateOnExternalClose()
+    {
+        for (int i = 0; i < spawnedPillars.Count; i++)
+        {
+            LootDisplayObject pillar = spawnedPillars[i];
+            if (null == pillar) continue;
+
+            pillar.SyncInteractStateOnExternalClose();
+        }
+    }
+
     public static bool IsAcquired(InDungeonObjectManager _inDungeonObjectManager, LootType _type)
     {
         switch (_type)

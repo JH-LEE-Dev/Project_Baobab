@@ -30,6 +30,10 @@ public struct TeleportUIClosedWhileTeleportSignal { }
 // Tent(집) UI가 닫혔음을 알리는 신호. ESC로 닫힌 경우도 포함해 항상 발행된다.
 public struct TentUIClosedSignal { }
 
+// LootPillar 상호작용 UI(UIView_ScreenModal)가 닫혔음을 알리는 신호.
+// TentUIClosedSignal과 같은 역할 - E키 토글뿐 아니라 ESC/패드 Cancel로 닫힌 경우도 포함해 항상 발행된다.
+public struct LootPillarUIClosedSignal { }
+
 public struct RetryButtonClickedSignal { }
 
 public struct WarningUIClosedSignal

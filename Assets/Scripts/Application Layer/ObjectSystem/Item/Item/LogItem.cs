@@ -127,8 +127,8 @@ public class LogItem : Item, IStaticCollidable
     // 런타임에 찾아야 하므로, 중복 탐색과 원본 색 재캡처를 함께 막는다.
     private bool bRenderersCached = false;
 
-    private string flyingItemSortingLayerName = "FlyingItem";
-    private string objectsSortingLayerName = "Objects";
+    private const string flyingItemSortingLayerName = "FlyingItem";
+    private const string objectsSortingLayerName = "Objects";
     private static int objectsSortingLayerID = -1;
     private static int flyingItemSortingLayerID = -1;
 
@@ -150,6 +150,22 @@ public class LogItem : Item, IStaticCollidable
     private ItemAuraEffectController gemAura;
 
     //private string objectSortingLayerName = "Objects";
+
+    // 소팅 레이어 ID 캐싱. Initialize()에서만 채우면 풀 Get -> ResetItem()이 Initialize()보다 먼저
+    // 불리는 경로(LogItemController.OnGetLogItem)에서 아직 -1인 값이 렌더러에 대입되어
+    // "Invalid layer id" 에러가 난다. ID를 쓰는 쪽마다 이 메서드로 먼저 보장한다.
+    private static void EnsureSortingLayerIDs()
+    {
+        if (objectsSortingLayerID == -1)
+        {
+            objectsSortingLayerID = SortingLayer.NameToID(objectsSortingLayerName);
+        }
+
+        if (flyingItemSortingLayerID == -1)
+        {
+            flyingItemSortingLayerID = SortingLayer.NameToID(flyingItemSortingLayerName);
+        }
+    }
 
     public void Initialize(LogItemTypeData _logItemTypeData, Color _color, LogState _logState, ICharacter _character, bool _bDisableCustomSortable = false)
     {
@@ -189,15 +205,7 @@ public class LogItem : Item, IStaticCollidable
 
         InitializeShadowFrames();
 
-        if (objectsSortingLayerID == -1)
-        {
-            objectsSortingLayerID = SortingLayer.NameToID(objectsSortingLayerName);
-        }
-
-        if (flyingItemSortingLayerID == -1)
-        {
-            flyingItemSortingLayerID = SortingLayer.NameToID(flyingItemSortingLayerName);
-        }
+        EnsureSortingLayerIDs();
 
         transform.localScale = Vector3.one;
         originalMaterial = spriteRenderer.sharedMaterial;
@@ -631,6 +639,7 @@ public class LogItem : Item, IStaticCollidable
 
         if (null != spriteRenderer)
         {
+            EnsureSortingLayerIDs();
             spriteRenderer.color = originalColor;
             spriteRenderer.SetPropertyBlock(null);
             spriteRenderer.sortingLayerID = objectsSortingLayerID;
@@ -1400,6 +1409,7 @@ public class LogItem : Item, IStaticCollidable
 
     public void SetFlyingItemSortingLayer()
     {
+        EnsureSortingLayerIDs();
         spriteRenderer.sortingLayerID = flyingItemSortingLayerID;
     }
 
