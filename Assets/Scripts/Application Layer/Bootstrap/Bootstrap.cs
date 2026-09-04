@@ -229,6 +229,10 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         if (IsTransitionBlocked(SceneType.Town)) return;
 
         bNewGame = _bNewGame;
+        if (true == _bNewGame)
+        {
+            HUD_PopupNav_Main.ResetRuntimeSessionState();
+        }
         TryBeginTransition(SceneType.Town);
     }
 

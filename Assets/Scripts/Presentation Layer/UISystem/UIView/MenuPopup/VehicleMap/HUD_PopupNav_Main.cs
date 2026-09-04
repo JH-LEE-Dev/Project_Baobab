@@ -126,6 +126,8 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private const float NAVIGATION_COOLDOWN = 0.2f;
     // 상태 변수
     private bool isUnlockingProductionActive = false;
+    private bool isRegionUnlockActive = false;
+    private bool isPendingSubRegionUnlock = false;
     private bool hasPlayedUnlockStartSound = false;
     private bool isClosing = false;
     private bool isInputBlocked = false;
@@ -203,6 +205,8 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (true == isUnlockingProductionActive)
         {
             isUnlockingProductionActive = false;
+            isRegionUnlockActive = false;
+            isPendingSubRegionUnlock = false;
             OnUnlockProductionEnded?.Invoke();
             if (null != regionGroup)
             {
@@ -222,6 +226,17 @@ public class HUD_PopupNav_Main : MonoBehaviour
     }
 
     // 퍼블릭 초기화 및 제어 메서드
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    public static void ResetRuntimeSessionState()
+    {
+        runtimeLastHoveredArea = ENavFocusArea.None;
+        runtimeLastHoveredMapType = MapType.None;
+        runtimeLastHoveredForestType = ForestType.None;
+        runtimeLastSelectedMapType = MapType.None;
+        runtimeLastVisitedMapType = MapType.None;
+        runtimeLastVisitedForestType = ForestType.None;
+    }
+
     public void Initialize(
     IMapDataProvider _provider,
     LocalizationManager _localizer,
@@ -333,7 +348,14 @@ public class HUD_PopupNav_Main : MonoBehaviour
             demoNotice.ResetNotice();
         }
 
+        if (null != cursorBoxUI)
+        {
+            cursorBoxUI.HideImmediately();
+        }
+
         isUnlockingProductionActive = false;
+        isRegionUnlockActive = false;
+        isPendingSubRegionUnlock = false;
         hasPendingDungeonConfirm = false;
         currentSelectedMapType = MapType.None;
         currentSelectedForestType = ForestType.None;
@@ -535,47 +557,32 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
     private void SaveLastHoverState()
     {
-        // 1. 현재 포커스가 소지역 필드인 경우
-        if (ENavFocusArea.SubRegionList == currentFocusArea)
+        // 1. 게임패드 모드인 경우: 마우스 화면 좌표를 완전히 배제하고 오직 패드 포커스 상태만 반영
+        if (null != inputManager && true == inputManager.IsGamepadMode)
         {
-            runtimeLastHoveredArea = ENavFocusArea.SubRegionList;
-            runtimeLastHoveredMapType = currentSelectedMapType;
-            if (null != subRegionGroup)
+            if (ENavFocusArea.SubRegionList == currentFocusArea && null != subRegionGroup)
             {
                 IReadOnlyList<HUD_PopupNav_SubRegionBtn> _subs = subRegionGroup.GetActiveSubRegionButtons();
-                if (null != _subs && 0 <= focusedSubRegionIndex && focusedSubRegionIndex < _subs.Count && null != _subs[focusedSubRegionIndex])
+                if (null != _subs && 0 <= focusedSubRegionIndex && focusedSubRegionIndex < _subs.Count && null != _subs[focusedSubRegionIndex] && true == _subs[focusedSubRegionIndex].IsUnlocked)
                 {
+                    runtimeLastHoveredArea = ENavFocusArea.SubRegionList;
+                    runtimeLastHoveredMapType = currentSelectedMapType;
                     runtimeLastHoveredForestType = _subs[focusedSubRegionIndex].GetForestType();
                     runtimeLastVisitedForestType = runtimeLastHoveredForestType;
+                    return;
                 }
             }
-            return;
-        }
 
-        // 2. 마우스로 소지역 버튼 위에 올려져 있는 경우
-        if (null != subRegionGroup)
-        {
-            HUD_PopupNav_SubRegionBtn _hoveredSub = subRegionGroup.GetHoveredSubRegionButton();
-            if (null != _hoveredSub)
+            // 이전에 소지역 조작/호버한 이력이 있고, 현재 보고 있는 대지역과 동일하다면 소지역 기록 유지
+            // (사용자가 소지역에 포커스를 둔 상태에서 취소(B) 버튼으로 대지역 목록을 거쳐 닫았을 때 소지역 기록이 초기화되는 것 방지)
+            if (ForestType.None != runtimeLastHoveredForestType && MapType.None != runtimeLastHoveredMapType && currentSelectedMapType == runtimeLastHoveredMapType && true == IsSubRegionActuallyUnlocked(runtimeLastHoveredMapType, runtimeLastHoveredForestType))
             {
                 runtimeLastHoveredArea = ENavFocusArea.SubRegionList;
-                runtimeLastHoveredMapType = currentSelectedMapType;
-                runtimeLastHoveredForestType = _hoveredSub.GetForestType();
                 runtimeLastVisitedForestType = runtimeLastHoveredForestType;
                 return;
             }
-        }
 
-        // 3. 앞전에 소지역을 조작/호버한 이력(runtimeLastHoveredForestType)이 이미 있고, 현재 동일 대지역이라면 소지역 유지
-        if (ForestType.None != runtimeLastHoveredForestType && MapType.None != runtimeLastHoveredMapType && currentSelectedMapType == runtimeLastHoveredMapType)
-        {
-            runtimeLastHoveredArea = ENavFocusArea.SubRegionList;
-            return;
-        }
-
-        // 4. 대지역 리스트에 포커스가 있는 경우
-        if (ENavFocusArea.RegionList == currentFocusArea)
-        {
+            // 대지역에 포커스가 있거나 소지역 포커스가 유효하지 않은 경우 -> 대지역으로 저장
             runtimeLastHoveredArea = ENavFocusArea.RegionList;
             runtimeLastHoveredForestType = ForestType.None;
             if (null != regionGroup)
@@ -597,7 +604,40 @@ public class HUD_PopupNav_Main : MonoBehaviour
             return;
         }
 
-        // 5. 그 외 (기본 폴백)
+        // 2. 키보드/마우스 모드인 경우
+        if (null != subRegionGroup)
+        {
+            HUD_PopupNav_SubRegionBtn _hoveredSub = subRegionGroup.GetHoveredSubRegionButton();
+            if (null != _hoveredSub && true == _hoveredSub.IsUnlocked)
+            {
+                runtimeLastHoveredArea = ENavFocusArea.SubRegionList;
+                runtimeLastHoveredMapType = currentSelectedMapType;
+                runtimeLastHoveredForestType = _hoveredSub.GetForestType();
+                runtimeLastVisitedForestType = runtimeLastHoveredForestType;
+                return;
+            }
+        }
+
+        // 마우스 모드에서도 동일 대지역 내 이전 소지역 호버 이력이 남아있으면 보존
+        if (ForestType.None != runtimeLastHoveredForestType && MapType.None != runtimeLastHoveredMapType && currentSelectedMapType == runtimeLastHoveredMapType && true == IsSubRegionActuallyUnlocked(runtimeLastHoveredMapType, runtimeLastHoveredForestType))
+        {
+            runtimeLastHoveredArea = ENavFocusArea.SubRegionList;
+            runtimeLastVisitedForestType = runtimeLastHoveredForestType;
+            return;
+        }
+
+        if (null != regionGroup)
+        {
+            HUD_PopupNav_RegionBtn _hoveredRegion = regionGroup.GetHoveredRegionButton();
+            if (null != _hoveredRegion && true == _hoveredRegion.IsUnlocked && false == IsDemoRestrictedMapType(_hoveredRegion.GetMapType()))
+            {
+                runtimeLastHoveredArea = ENavFocusArea.RegionList;
+                runtimeLastHoveredMapType = _hoveredRegion.GetMapType();
+                runtimeLastHoveredForestType = ForestType.None;
+                return;
+            }
+        }
+
         if (MapType.None != currentSelectedMapType)
         {
             runtimeLastHoveredArea = ENavFocusArea.RegionList;
@@ -613,6 +653,11 @@ public class HUD_PopupNav_Main : MonoBehaviour
         MarkAllUnlockedAsRead();
         isClosing = true;
         isInputBlocked = true;
+        if (null != cursorBoxUI)
+        {
+            cursorBoxUI.HideImmediately();
+        }
+
         if (null != demoNotice)
         {
             demoNotice.ResetNotice();
@@ -866,9 +911,17 @@ public class HUD_PopupNav_Main : MonoBehaviour
                 }
             }
 
-            // 트랜지션 완료 대기가 필요 없으므로 짧은 딜레이 후 바로 연출 진행
-            float _delay = 0.1f;
             pendingRegionUnlockMapType = currentSelectedMapType; // mapType 캐싱 재사용
+
+            if (true == IsTransitioning)
+            {
+                // 소지역 버튼들이 아직 등장 중이므로, 등장 연출 완료(OnSubRegionsShown) 시점까지 대기
+                isPendingSubRegionUnlock = true;
+                return;
+            }
+
+            // 트랜지션이 이미 완료된 상태라면 짧은 딜레이 후 바로 연출 진행
+            float _delay = 0.1f;
             delayedCallTween = DOVirtual.DelayedCall(_delay, onSubRegionUnlockDelayCompleteCallback).SetEase(Ease.Linear);
             return;
         }
@@ -932,10 +985,12 @@ public class HUD_PopupNav_Main : MonoBehaviour
     {
         if (0 == regionUnlockList.Count)
         {
+            isRegionUnlockActive = false;
             ProcessNextUnlock();
             return;
         }
 
+        isRegionUnlockActive = true;
         UnlockInfo _target = regionUnlockList[0];
         regionUnlockList.RemoveAt(0);
         mapDataProvider.MarkMapUnlocked(_target.mapType);
@@ -957,8 +1012,61 @@ public class HUD_PopupNav_Main : MonoBehaviour
         PlayNextRegionUnlock(cachedUnlockSpeedRate);
     }
 
+    private bool IsSubRegionActuallyUnlocked(MapType _mapType, ForestType _forestType)
+    {
+        if (null == mapDataProvider) return false;
+        MapEnvironmentDatabase _db = mapDataProvider.GetMapEnvironmentDatabase();
+        if (null == _db.mapDatas) return false;
+
+        for (int i = 0; i < _db.mapDatas.Count; i++)
+        {
+            if (_mapType == _db.mapDatas[i].mapType)
+            {
+                List<ForestEnvironmentInfo> _forests = _db.mapDatas[i].forestDatas;
+                if (null == _forests) return false;
+                for (int j = 0; j < _forests.Count; j++)
+                {
+                    if (_forestType == _forests[j].forestType)
+                    {
+                        return _forests[j].isUnlocked;
+                    }
+                }
+                break;
+            }
+        }
+        return false;
+    }
+
     private bool RestoreSessionState()
     {
+        // 잔류된 소지역 세션 기록이 현재 세이브에서 실제로 해금된 상태인지 검증 (잠긴 소지역 기록 무효화)
+        if (ENavFocusArea.SubRegionList == runtimeLastHoveredArea)
+        {
+            if (ForestType.None == runtimeLastHoveredForestType || false == IsSubRegionActuallyUnlocked(runtimeLastHoveredMapType, runtimeLastHoveredForestType))
+            {
+                runtimeLastHoveredArea = ENavFocusArea.None;
+                runtimeLastHoveredMapType = MapType.None;
+                runtimeLastHoveredForestType = ForestType.None;
+            }
+        }
+        else if (ForestType.None != runtimeLastHoveredForestType)
+        {
+            if (false == IsSubRegionActuallyUnlocked(runtimeLastHoveredMapType, runtimeLastHoveredForestType))
+            {
+                runtimeLastHoveredArea = ENavFocusArea.None;
+                runtimeLastHoveredMapType = MapType.None;
+                runtimeLastHoveredForestType = ForestType.None;
+            }
+        }
+
+        if (ForestType.None != runtimeLastVisitedForestType)
+        {
+            if (false == IsSubRegionActuallyUnlocked(runtimeLastVisitedMapType, runtimeLastVisitedForestType))
+            {
+                runtimeLastVisitedForestType = ForestType.None;
+            }
+        }
+
         // [규칙 4] 대지역 해금이 1개 이상 대기 중인 경우:
         // 해금 전에 내가 갈 수 있었던 최상 대지역을 선택 (만약 대지역 2가 해금됐으면 대지역 1에 위치)
         if (0 < regionUnlockList.Count)
@@ -966,7 +1074,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
             MapType _highestBeforeUnlock = GetHighestPlayableUnlockedRegion(_excludePendingUnlocks: true);
             if (MapType.None != _highestBeforeUnlock)
             {
-                HandleRegionSelected(_highestBeforeUnlock, true, true);
+                HandleRegionSelected(_highestBeforeUnlock, true, false);
                 return true;
             }
         }
@@ -975,26 +1083,26 @@ public class HUD_PopupNav_Main : MonoBehaviour
         // 1번에서 저장한 마지막 Hover 위치에서 시작
         if (ENavFocusArea.SubRegionList == runtimeLastHoveredArea && MapType.None != runtimeLastHoveredMapType && false == IsDemoRestrictedMapType(runtimeLastHoveredMapType))
         {
-            HandleRegionSelected(runtimeLastHoveredMapType, true, true);
+            HandleRegionSelected(runtimeLastHoveredMapType, true, false);
             return true;
         }
 
         if (ENavFocusArea.RegionList == runtimeLastHoveredArea && MapType.None != runtimeLastHoveredMapType && false == IsDemoRestrictedMapType(runtimeLastHoveredMapType))
         {
-            HandleRegionSelected(runtimeLastHoveredMapType, true, true);
+            HandleRegionSelected(runtimeLastHoveredMapType, true, false);
             return true;
         }
 
         // 이전 방문 기록 폴백
         if (ForestType.None != runtimeLastVisitedForestType && MapType.None != runtimeLastVisitedMapType && false == IsDemoRestrictedMapType(runtimeLastVisitedMapType))
         {
-            HandleRegionSelected(runtimeLastVisitedMapType, true, true);
+            HandleRegionSelected(runtimeLastVisitedMapType, true, false);
             return true;
         }
 
         if (MapType.None != runtimeLastSelectedMapType && false == IsDemoRestrictedMapType(runtimeLastSelectedMapType))
         {
-            HandleRegionSelected(runtimeLastSelectedMapType, true, true);
+            HandleRegionSelected(runtimeLastSelectedMapType, true, false);
             return true;
         }
 
@@ -1003,7 +1111,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         MapType _highestPlayable = GetHighestPlayableUnlockedRegion(_excludePendingUnlocks: false);
         if (MapType.None != _highestPlayable)
         {
-            HandleRegionSelected(_highestPlayable, true, true);
+            HandleRegionSelected(_highestPlayable, true, false);
             return true;
         }
 
@@ -1169,30 +1277,68 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private void OnSubRegionsShown()
     {
         IsTransitioning = false;
+
+        // 대기 중인 소지역 해금 연출이 있다면 지금 시작
+        if (true == isPendingSubRegionUnlock)
+        {
+            isPendingSubRegionUnlock = false;
+            float _delay = 0.1f;
+            delayedCallTween = DOVirtual.DelayedCall(_delay, onSubRegionUnlockDelayCompleteCallback).SetEase(Ease.Linear);
+            return;
+        }
+
+        // 해금 연출이 진행 중이거나 대기 중인 경우 포커스를 잡지 않고 대기
+        if (true == isUnlockingProductionActive || 0 < regionUnlockList.Count || true == isRegionUnlockActive)
+        {
+            return;
+        }
+
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
             if (ENavFocusArea.SubRegionList == runtimeLastHoveredArea && null != subRegionGroup)
             {
                 ForestType _targetForest = runtimeLastHoveredForestType;
-                if (ForestType.None == _targetForest) _targetForest = runtimeLastVisitedForestType;
-
                 if (ForestType.None != _targetForest)
                 {
                     int _subIdx = subRegionGroup.GetSubRegionIndex(_targetForest);
                     if (0 <= _subIdx)
                     {
-                        currentFocusArea = ENavFocusArea.SubRegionList;
-                        focusedSubRegionIndex = _subIdx;
-                        subRegionGroup.FocusSubRegionButton(focusedSubRegionIndex);
-                        if (null != regionGroup) regionGroup.StopAllHoverEffects();
-                        return;
+                        IReadOnlyList<HUD_PopupNav_SubRegionBtn> _subs = subRegionGroup.GetActiveSubRegionButtons();
+                        if (null != _subs && _subIdx < _subs.Count && null != _subs[_subIdx] && true == _subs[_subIdx].IsUnlocked)
+                        {
+                            currentFocusArea = ENavFocusArea.SubRegionList;
+                            focusedSubRegionIndex = _subIdx;
+                            subRegionGroup.FocusSubRegionButton(focusedSubRegionIndex);
+                            Sound.PlayUI(SoundID.NaviSubHover);
+                            if (null != regionGroup) regionGroup.StopAllHoverEffects();
+                            return;
+                        }
                     }
                 }
             }
 
-            if (ENavFocusArea.SubRegionList == currentFocusArea && null != subRegionGroup)
+            // 이전 유효한 소지역 호버 기록이 없거나 잠겨있는 경우 소지역 호버 효과 차단 및 대지역 포커스 유지
+            if (null != subRegionGroup)
             {
-                subRegionGroup.FocusSubRegionButton(focusedSubRegionIndex);
+                subRegionGroup.StopAllHoverEffects();
+            }
+            currentFocusArea = ENavFocusArea.RegionList;
+            if (null != regionGroup)
+            {
+                int _expectedIdx = regionGroup.GetActiveRegionIndex(currentSelectedMapType);
+                if (0 <= _expectedIdx)
+                {
+                    focusedRegionIndex = _expectedIdx;
+                }
+                else
+                {
+                    IReadOnlyList<HUD_PopupNav_RegionBtn> _activeRegions = regionGroup.GetActiveRegionButtons();
+                    if (null != _activeRegions && (0 > focusedRegionIndex || focusedRegionIndex >= _activeRegions.Count))
+                    {
+                        focusedRegionIndex = 0;
+                    }
+                }
+                regionGroup.FocusRegionButton(focusedRegionIndex);
             }
         }
         else
@@ -1368,7 +1514,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
         // [규칙 4] 대지역 해금 연출 대기 또는 진행 중인 경우:
         // 해금 전에 내가 갈 수 있었던 최상 대지역에 Hover된다.
-        if (0 < regionUnlockList.Count || true == isUnlockingProductionActive)
+        if (0 < regionUnlockList.Count || true == isRegionUnlockActive)
         {
             currentFocusArea = ENavFocusArea.RegionList;
             if (null != regionGroup)
@@ -1383,12 +1529,18 @@ public class HUD_PopupNav_Main : MonoBehaviour
             return;
         }
 
+        // 해금 연출(소지역 해금 등)이 진행 중인 경우 연출이 모두 끝날 때까지 포커스 대기
+        if (true == isUnlockingProductionActive)
+        {
+            if (null != regionGroup) regionGroup.StopAllHoverEffects();
+            if (null != subRegionGroup) subRegionGroup.StopAllHoverEffects();
+            return;
+        }
+
         // [규칙 1 & 2] 마지막 Hover 위치가 소지역이었던 경우:
         if (ENavFocusArea.SubRegionList == runtimeLastHoveredArea && null != subRegionGroup)
         {
             ForestType _targetForest = runtimeLastHoveredForestType;
-            if (ForestType.None == _targetForest) _targetForest = runtimeLastVisitedForestType;
-
             if (ForestType.None != _targetForest)
             {
                 int _visitedSubIdx = subRegionGroup.GetSubRegionIndex(_targetForest);
@@ -1399,7 +1551,15 @@ public class HUD_PopupNav_Main : MonoBehaviour
                     {
                         currentFocusArea = ENavFocusArea.SubRegionList;
                         focusedSubRegionIndex = _visitedSubIdx;
+                        if (true == IsTransitioning)
+                        {
+                            if (null != regionGroup) regionGroup.StopAllHoverEffects();
+                            if (null != subRegionGroup) subRegionGroup.StopAllHoverEffects();
+                            return;
+                        }
+
                         subRegionGroup.FocusSubRegionButton(focusedSubRegionIndex);
+                        Sound.PlayUI(SoundID.NaviSubHover);
                         if (null != regionGroup) regionGroup.StopAllHoverEffects();
                         return;
                     }
@@ -1419,26 +1579,15 @@ public class HUD_PopupNav_Main : MonoBehaviour
                 {
                     currentFocusArea = ENavFocusArea.RegionList;
                     focusedRegionIndex = _curIdx;
+                    if (true == IsTransitioning)
+                    {
+                        if (null != regionGroup) regionGroup.StopAllHoverEffects();
+                        if (null != subRegionGroup) subRegionGroup.StopAllHoverEffects();
+                        return;
+                    }
+
                     regionGroup.FocusRegionButton(focusedRegionIndex);
                     if (null != subRegionGroup) subRegionGroup.StopAllHoverEffects();
-                    return;
-                }
-            }
-        }
-
-        // 이전 방문 기록 폴백 (소지역 방문 이력)
-        if (ForestType.None != runtimeLastVisitedForestType && null != subRegionGroup)
-        {
-            int _visitedSubIdx = subRegionGroup.GetSubRegionIndex(runtimeLastVisitedForestType);
-            if (0 <= _visitedSubIdx)
-            {
-                IReadOnlyList<HUD_PopupNav_SubRegionBtn> _subs = subRegionGroup.GetActiveSubRegionButtons();
-                if (null != _subs && _visitedSubIdx < _subs.Count && null != _subs[_visitedSubIdx] && true == _subs[_visitedSubIdx].IsUnlocked)
-                {
-                    currentFocusArea = ENavFocusArea.SubRegionList;
-                    focusedSubRegionIndex = _visitedSubIdx;
-                    subRegionGroup.FocusSubRegionButton(focusedSubRegionIndex);
-                    if (null != regionGroup) regionGroup.StopAllHoverEffects();
                     return;
                 }
             }
@@ -1465,6 +1614,13 @@ public class HUD_PopupNav_Main : MonoBehaviour
             else
             {
                 focusedRegionIndex = GetHighestUnlockedAndPlayableRegionIndex(_excludePendingUnlocks: false);
+            }
+
+            if (true == IsTransitioning)
+            {
+                if (null != regionGroup) regionGroup.StopAllHoverEffects();
+                if (null != subRegionGroup) subRegionGroup.StopAllHoverEffects();
+                return;
             }
 
             regionGroup.FocusRegionButton(focusedRegionIndex);
@@ -1866,6 +2022,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
                 int _subIdx = subRegionGroup.GetSubRegionIndex(_hoveredSubBtn.GetForestType());
                 focusedSubRegionIndex = (0 <= _subIdx) ? _subIdx : subRegionGroup.GetFirstUnlockedSubRegionIndex();
                 subRegionGroup.FocusSubRegionButton(focusedSubRegionIndex);
+                Sound.PlayUI(SoundID.NaviSubHover);
                 if (null != regionGroup) regionGroup.StopAllHoverEffects();
             }
             else if (null != _hoveredRegionBtn && true == _hoveredRegionBtn.IsUnlocked && false == IsDemoRestrictedMapType(_hoveredRegionBtn.GetMapType()))

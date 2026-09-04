@@ -382,16 +382,6 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             Color _targetNormalBg = _isUnlocked ? normalBgColor : lockedNormalBgColor;
             TweenColors(_targetNormalShadow, _targetNormalBg, true);
         }
-        else
-        {
-            for (int i = 0; i < visualChildren.Count; i++)
-            {
-                if (null != originalLocalX && i < originalLocalX.Length)
-                {
-                    visualChildren[i].localPosition = new Vector3(originalLocalX[i] + hoverMoveX, visualChildren[i].localPosition.y, visualChildren[i].localPosition.z);
-                }
-            }
-        }
 
         if (null != cursorBoxUI)
         {
@@ -481,8 +471,11 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         if (null != cursorBoxUI)
         {
             RectTransform _target = null != cursorTargetTransform ? cursorTargetTransform : CachedRectTransform;
-            Vector2 _size = useCustomCursorSize ? customCursorSize : (_target.rect.size + cursorPadding);
-            cursorBoxUI.Show(_target, _size, cursorOffset, hoverCursorMotion);
+            if (false == cursorBoxUI.IsShowing || false == cursorBoxUI.IsTarget(_target))
+            {
+                Vector2 _size = useCustomCursorSize ? customCursorSize : (_target.rect.size + cursorPadding);
+                cursorBoxUI.Show(_target, _size, cursorOffset, hoverCursorMotion);
+            }
         }
     }
 
@@ -764,12 +757,39 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             }
             else
             {
+                bool _needMove = false;
                 for (int i = 0; i < visualChildren.Count; i++)
                 {
-                    visualChildren[i].localScale = Vector3.one;
-                    if (null != originalLocalX && i < originalLocalX.Length)
+                    if (null != originalLocalX && i < originalLocalX.Length && 0.1f < Mathf.Abs(visualChildren[i].localPosition.x - (originalLocalX[i] + hoverMoveX)))
                     {
-                        visualChildren[i].localPosition = new Vector3(originalLocalX[i] + hoverMoveX, visualChildren[i].localPosition.y, visualChildren[i].localPosition.z);
+                        _needMove = true;
+                        break;
+                    }
+                }
+
+                if (true == _needMove)
+                {
+                    Sequence _seq = DOTween.Sequence();
+                    for (int i = 0; i < visualChildren.Count; i++)
+                    {
+                        visualChildren[i].localScale = Vector3.one;
+                        if (null != originalLocalX && i < originalLocalX.Length)
+                        {
+                            _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i] + hoverMoveX, hoverMoveDuration).SetEase(hoverMoveEase));
+                        }
+                    }
+                    _seq.SetTarget(this);
+                    selectTween = _seq;
+                }
+                else
+                {
+                    for (int i = 0; i < visualChildren.Count; i++)
+                    {
+                        visualChildren[i].localScale = Vector3.one;
+                        if (null != originalLocalX && i < originalLocalX.Length)
+                        {
+                            visualChildren[i].localPosition = new Vector3(originalLocalX[i] + hoverMoveX, visualChildren[i].localPosition.y, visualChildren[i].localPosition.z);
+                        }
                     }
                 }
                 TweenColors(_targetHoverShadow, _targetHoverBg, false);

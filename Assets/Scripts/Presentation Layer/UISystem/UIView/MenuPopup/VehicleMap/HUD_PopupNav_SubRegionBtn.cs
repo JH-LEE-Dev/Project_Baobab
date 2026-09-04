@@ -473,9 +473,11 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         if (null != cursorBoxUI)
         {
             RectTransform target = null != cursorTargetTransform ? cursorTargetTransform : CachedRectTransform;
-            Vector2 size = useCustomCursorSize ? customCursorSize : (target.rect.size + cursorPadding);
-
-            cursorBoxUI.Show(target, size, cursorOffset, hoverCursorMotion);
+            if (false == cursorBoxUI.IsShowing || false == cursorBoxUI.IsTarget(target))
+            {
+                Vector2 size = useCustomCursorSize ? customCursorSize : (target.rect.size + cursorPadding);
+                cursorBoxUI.Show(target, size, cursorOffset, hoverCursorMotion);
+            }
         }
         
         if (true == _hasNew)

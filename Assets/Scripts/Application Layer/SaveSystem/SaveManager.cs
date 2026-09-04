@@ -370,6 +370,9 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         cachedSaveStateKey = null;
         bCachedHasUsableSave = false;
 
+        // 새 게임 진입 시 내비게이션 팝업의 런타임 정적 세션 기록도 완전 초기화
+        HUD_PopupNav_Main.ResetRuntimeSessionState();
+
         Debug.Log("[SaveManager] Existing save data deleted for New Game.");
     }
 

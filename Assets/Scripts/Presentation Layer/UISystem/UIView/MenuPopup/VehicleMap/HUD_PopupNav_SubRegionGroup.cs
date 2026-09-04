@@ -496,13 +496,14 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             HUD_PopupNav_SubRegionBtn _btn = activeSubRegionButtons[i];
             if (null == _btn) continue;
 
-            _btn.gameObject.SetActive(true);
+            _btn.gameObject.SetActive(false);
             _btn.transform.localScale = new Vector3(1f, 0.01f, 1f);
             _btn.transform.localRotation = Quaternion.identity;
 
             float _startTime = i * appearSequenceDelay;
             
             Sequence _btnSeq = DOTween.Sequence();
+            _btnSeq.AppendCallback(_btn.CachedActivate);
             _btnSeq.Append(_btn.transform.DOScaleY(1f, appearAnimDuration).SetEase(appearAnimEase));
             
             _seq.Insert(_startTime, _btnSeq);
