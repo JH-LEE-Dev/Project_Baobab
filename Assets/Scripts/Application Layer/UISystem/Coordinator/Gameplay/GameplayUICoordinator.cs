@@ -241,6 +241,12 @@ public class GameplayUICoordinator
         tentUI.TentUIClosedEvent -= TentUIClosed;
         tentUI.TentUIClosedEvent += TentUIClosed;
 
+        if (null != screenModalUI)
+        {
+            screenModalUI.ScreenModalClosedEvent -= ScreenModalClosed;
+            screenModalUI.ScreenModalClosedEvent += ScreenModalClosed;
+        }
+
         menuPopupUI.UnlockProductionStartedEvent -= MenuPopupUnlockProductionStarted;
         menuPopupUI.UnlockProductionStartedEvent += MenuPopupUnlockProductionStarted;
 
@@ -287,6 +293,10 @@ public class GameplayUICoordinator
         escUI.UIInputLockChangedEvent -= ESCUIInputLockChanged;
         menuPopupUI.TeleportUIClosedEvent -= TeleportUIClosed;
         tentUI.TentUIClosedEvent -= TentUIClosed;
+        if (null != screenModalUI)
+        {
+            screenModalUI.ScreenModalClosedEvent -= ScreenModalClosed;
+        }
         menuPopupUI.UnlockProductionStartedEvent -= MenuPopupUnlockProductionStarted;
         menuPopupUI.UnlockProductionEndedEvent -= MenuPopupUnlockProductionEnded;
         menuPopupUI.DungeonConfirmStartedEvent -= DungeonConfirmStarted;
@@ -306,6 +316,7 @@ public class GameplayUICoordinator
         // 걸어둔 잠금은 여기서 반납한다. (걸린 적이 없으면 무시된다)
         inputManager?.SetInventoryKeyLock(InputReader.INVENTORY_LOCK_OWNER_WARNINGUI, false);
         inputManager?.SetInventoryKeyLock(InputReader.INVENTORY_LOCK_OWNER_TENTUI, false);
+        inputManager?.SetInventoryKeyLock(InputReader.INVENTORY_LOCK_OWNER_SCREENMODAL, false);
 
         UnSubscribeSignals();
         ReleaseEvents();
@@ -799,7 +810,25 @@ public class GameplayUICoordinator
     // 범위 안에서 상호작용 키를 눌렀을 때만 UIView_ScreenModal을 토글로 여닫는다.
     private void LootPillarInteract(LootPillarInteractSignal _lootPillarInteractSignal)
     {
+        if (true == _lootPillarInteractSignal.bInteract)
+        {
+            // ScreenModal이 떠 있는 동안에는 인벤토리 키를 막는다. ScreenModal도 스스로 입력 모드를
+            // UI로 바꾸지만, 그 모드는 이 창을 열기 직전 값으로 되돌려지는 값이라 다른 시스템이 먼저
+            // UI 모드를 걸어둔 상황에서는 인벤토리 차단의 근거로 삼기에 불안정하다. TentUI와 같은
+            // 방식으로 소유자별 잠금을 따로 못 박는다. (해제는 ScreenModalClosed에서)
+            inputManager.SetInventoryKeyLock(InputReader.INVENTORY_LOCK_OWNER_SCREENMODAL, true);
+        }
+
         screenModalUI.LootPillarInteractStateChanged(_lootPillarInteractSignal.bInteract, _lootPillarInteractSignal.lootType);
+    }
+
+    // ESC/패드 Cancel로 닫히는 경로는 LootPillarInteractSignal(false)를 거치지 않으므로, 잠금 해제는
+    // 어떤 경로로 닫히든 항상 발행되는 이 이벤트(UIView_ScreenModal.OnHide)에서 한다.
+    private void ScreenModalClosed()
+    {
+        inputManager.SetInventoryKeyLock(InputReader.INVENTORY_LOCK_OWNER_SCREENMODAL, false);
+
+        signalHub.Publish(new LootPillarUIClosedSignal());
     }
 
     private void LogItemProcessorIsActive(LogItemProcessorActiveStateSignal _logItemProcessorActiveStateSignal)

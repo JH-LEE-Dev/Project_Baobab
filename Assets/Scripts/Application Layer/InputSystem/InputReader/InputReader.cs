@@ -188,6 +188,13 @@ public class InputReader
     /// </summary>
     public const string INVENTORY_LOCK_OWNER_WARNINGUI = "WarningUI";
 
+    /// <summary>
+    /// LootPillar 상호작용 UI(UIView_ScreenModal)가 떠 있는 동안 거는 잠금의 소유자 키입니다.
+    /// ScreenModal도 스스로 입력 모드를 UI로 바꾸지만, 그 잠금은 다른 시스템이 먼저 걸어둔 UI 모드를
+    /// 되돌릴 때 함께 풀릴 수 있으므로 인벤토리는 소유자별 잠금으로 따로 못 박습니다.
+    /// </summary>
+    public const string INVENTORY_LOCK_OWNER_SCREENMODAL = "ScreenModal";
+
     public void Initialize(InputDeviceSettings _deviceSettings)
     {
         if (null == deviceTracker)
