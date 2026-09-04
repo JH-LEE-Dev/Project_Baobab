@@ -494,16 +494,15 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         for (int i = 0; i < activeSubRegionButtons.Count; i++)
         {
             HUD_PopupNav_SubRegionBtn _btn = activeSubRegionButtons[i];
-            
+            if (null == _btn) continue;
+
+            _btn.gameObject.SetActive(true);
             _btn.transform.localScale = new Vector3(1f, 0.01f, 1f);
             _btn.transform.localRotation = Quaternion.identity;
 
             float _startTime = i * appearSequenceDelay;
             
             Sequence _btnSeq = DOTween.Sequence();
-
-            _btnSeq.AppendCallback(_btn.CachedActivate);
-            
             _btnSeq.Append(_btn.transform.DOScaleY(1f, appearAnimDuration).SetEase(appearAnimEase));
             
             _seq.Insert(_startTime, _btnSeq);
@@ -611,7 +610,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     {
         for (int i = 0; activeSubRegionButtons.Count > i; i++)
         {
-            if (null != activeSubRegionButtons[i] && true == activeSubRegionButtons[i].gameObject.activeSelf && _forestType == activeSubRegionButtons[i].GetForestType())
+            if (null != activeSubRegionButtons[i] && _forestType == activeSubRegionButtons[i].GetForestType())
             {
                 return i;
             }
@@ -623,7 +622,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     {
         for (int i = 0; activeSubRegionButtons.Count > i; i++)
         {
-            if (null != activeSubRegionButtons[i] && true == activeSubRegionButtons[i].gameObject.activeSelf && true == activeSubRegionButtons[i].IsUnlocked)
+            if (null != activeSubRegionButtons[i] && true == activeSubRegionButtons[i].IsUnlocked)
             {
                 return i;
             }
@@ -635,7 +634,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     {
         for (int i = 0; activeSubRegionButtons.Count > i; i++)
         {
-            if (null == activeSubRegionButtons[i] || false == activeSubRegionButtons[i].gameObject.activeSelf) continue;
+            if (null == activeSubRegionButtons[i]) continue;
 
             if (i == _index)
             {
