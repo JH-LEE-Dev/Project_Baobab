@@ -506,7 +506,6 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
         if (gameObject.activeInHierarchy)
         {
-            Sound.Play(true == _bOpen ? SoundID.ShopOpen : SoundID.ShopClose, transform.position, GetSoundVolume());
             animationCoroutine = StartCoroutine(CoPlayAnimation(_bOpen));
         }
         else
