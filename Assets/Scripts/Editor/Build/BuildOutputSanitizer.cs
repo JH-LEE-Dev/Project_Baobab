@@ -68,8 +68,14 @@ public class BuildOutputSanitizer : IPostprocessBuildWithReport
         if (false == IsStandalone(_report.summary.platform)) return;
 
         // 실패한 빌드의 출력물은 중간 상태다. 원인을 보려면 그대로 남겨두는 편이 낫다.
-        if (BuildResult.Succeeded != _report.summary.result)
+        //
+        // 주의: 여기서 Succeeded 인지를 물으면 안 된다. 후처리 콜백은 빌드가 끝나기 "전"에 불리므로
+        // summary.result 는 아직 확정되지 않았고(대개 Unknown), Succeeded 를 요구하면 항상
+        // 조용히 빠져나간다. 실제로 그렇게 만들었다가 정리가 전혀 안 되는 것을 빌드로 확인했다.
+        // 그래서 "성공했나"가 아니라 "실패로 확정됐나"만 본다.
+        if (BuildResult.Failed == _report.summary.result || BuildResult.Cancelled == _report.summary.result)
         {
+            Debug.Log($"{SUMMARY_TAG} 빌드가 {_report.summary.result} 라 정리를 건너뜁니다.");
             return;
         }
 
@@ -223,6 +229,35 @@ public class BuildOutputSanitizer : IPostprocessBuildWithReport
 
 #region 보고
 
+    /// <summary>
+    /// 정리 결과를 빌드 출력의 <b>상위</b> 폴더에 파일로 남깁니다.
+    ///
+    /// 콘솔 로그는 놓치기 쉽고(창을 지우거나, 도구에 따라 Log 레벨이 아예 안 잡힙니다) 빌드가
+    /// 끝나면 사라집니다. 무엇이 지워졌는지는 업로드 전에 확인해야 하는 정보라 파일로도 남깁니다.
+    ///
+    /// 출력 폴더 <b>안</b>이 아니라 상위에 쓰는 것이 중요합니다. 안에 쓰면 이 클래스의
+    /// "*.log" 규칙에 자기가 걸려 지워지고, depot에도 함께 실립니다.
+    /// </summary>
+    private static void WriteAuditFile(string _root, string _body)
+    {
+        try
+        {
+            string _parent = Path.GetDirectoryName(_root);
+
+            if (true == string.IsNullOrEmpty(_parent)) return;
+
+            string _path = Path.Combine(_parent, "_BuildSanitizer." + Path.GetFileName(_root) + ".txt");
+
+            string[] _lines = { DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), _body };
+
+            File.WriteAllLines(_path, _lines);
+        }
+        catch (Exception)
+        {
+            // 감사 기록 실패로 빌드를 방해하지 않는다. 콘솔 로그가 남는다.
+        }
+    }
+
     private static void Report(string _root, List<string> _removed, long _freed)
     {
         if (0 == _removed.Count)
@@ -247,6 +282,7 @@ public class BuildOutputSanitizer : IPostprocessBuildWithReport
         _sb.Append("위에 있다면 심볼이 올라가기 전에 지워진 것이므로 callbackOrder를 더 키워야 합니다.");
 
         Debug.Log(_sb.ToString());
+        WriteAuditFile(_root, _sb.ToString());
     }
 
     private static string ToRelative(string _root, string _path)
