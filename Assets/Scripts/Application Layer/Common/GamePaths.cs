@@ -9,7 +9,38 @@ using System.Text;
 /// </summary>
 public static class GamePaths
 {
+    /// <summary>
+    /// 세이브 폴더 이름입니다. 플랫폼마다 다릅니다.
+    ///
+    /// [왜 나누는가]
+    /// STOVE 클라우드는 SDK 호출이 아니라 런처가 지정된 폴더를 통째로 동기화하는 방식입니다.
+    /// 폴더를 공유하면 한 로컬 파일을 서로 모르는 두 동기화 시스템(STOVE 런처 / Steam)이 각자
+    /// 백업하고 각자 복원하게 되어, 양쪽을 다 산 유저가 기기를 옮길 때 한쪽의 오래된 사본이
+    /// 다른 쪽 진행도를 덮을 수 있습니다. 나누면 서로를 아예 보지 못합니다.
+    ///
+    /// 세이브 변형(SaveBuildVariant)은 건드리지 않습니다. 폴더가 이미 갈라져 있어 서로 만날 일이
+    /// 없고, enum에 값을 더하면 이미 배포된 Steam 빌드가 그 값을 "모르는 미래 값"으로 보고
+    /// 세이브를 덮어씁니다. 데모/정식 구분은 지금처럼 변형이 계속 담당합니다.
+    ///
+    /// [극성 주의 - 디파인이 없는 쪽이 Steam입니다]
+    /// 반대로 두면 Steam 빌드에서 디파인을 깜빡하는 순간 기존 유저의 세이브 폴더가 통째로 바뀌어
+    /// 게임이 새 설치처럼 보입니다. 이미 배포된 제품이라 그 실수는 되돌릴 수 없습니다.
+    /// 지금 방향에서는 STOVE 빌드에서 깜빡했을 때 런처가 빈 폴더를 동기화할 뿐이고,
+    /// 로컬 플레이는 멀쩡합니다. 실수의 대가가 훨씬 싼 쪽입니다.
+    ///
+    /// 다만 SteamManager의 RestartAppIfNecessary는 안전한 방향이 정반대입니다(STOVE에서 깜빡하면
+    /// 유저가 게임을 못 켭니다). 둘이 같은 디파인에 매달리므로 "STOVE인데 디파인 없음"은 전체적으로
+    /// 치명적이며, 사람 기억이 아니라 빌드 전 정합성 검사로 막아야 합니다.
+    ///
+    /// [STOVE Studio와 반드시 같아야 합니다]
+    /// 파트너 사이트의 클라우드 세이빙 설정에 ($MYDOCUMENT) + 아래 문자열을 그대로 넣습니다.
+    /// 한 글자라도 어긋나면 런처가 엉뚱한(빈) 폴더를 동기화하며, 에러는 나지 않습니다.
+    /// </summary>
+#if BAOBAB_STOVE
+    private const string FOLDER_NAME = "LumberBoy_STOVE";
+#else
     private const string FOLDER_NAME = "LumberBoy";
+#endif
     private const string GAME_SAVE_FILE_NAME = "SaveData.dat";
     private const string GAME_SAVE_BACKUP_FILE_NAME = "SaveData.dat.bak";
     private const string GAME_SAVE_TEMP_FILE_NAME = "SaveData.dat.tmp";
