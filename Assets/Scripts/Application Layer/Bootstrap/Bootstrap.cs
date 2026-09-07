@@ -1,4 +1,5 @@
-using DG.Tweening;
+﻿using DG.Tweening;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -23,6 +24,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private InputManager inputManager;
     private LocalizationManager localizationManager;
     private SaveManager saveManager;
+    private SaveCheckCoordinator saveCheckCoordinator;
 
     [Header("Gameplay Level Object")]
     [SerializeField] private GameInstaller gameInstallerPrefab;
@@ -80,6 +82,11 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         sceneManager = GetComponent<SceneManager>();
         inputManager = GetComponent<InputManager>();
         saveManager = GetComponent<SaveManager>();
+
+        // 세이브 확인 화면은 메인 메뉴가 만들어지기 전에 떠야 해서 Installer/UIManager를 타지 않는다.
+        // 컴포넌트가 붙어 있지 않으면 확인은 그대로 돌되 화면만 안 뜬다. (SaveCheckCoordinator 참고)
+        saveCheckCoordinator = GetComponent<SaveCheckCoordinator>();
+        saveCheckCoordinator?.Initialize(saveManager);
 
         localizationManager = GetComponentInChildren<LocalizationManager>();
 
@@ -475,14 +482,70 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         }
         else
         {
-            // 이어하기 버튼 상태(HasSaveData)를 UI가 확인하기 전에 클라우드 세이브를 로컬로 먼저 반영한다.
-            // SyncCloudSaveIfNewer()는 Steam Remote Storage를 동기로 호출하므로, 멈춤 지점을 가리기 위해
-            // 앞뒤로 흔적을 남긴다. "시작"만 찍히고 "완료"가 없으면 여기서 블로킹된 것이다.
-            Debug.Log("[BootStrap] SyncCloudSaveIfNewer 시작");
-            saveManager?.SyncCloudSaveIfNewer();
-            Debug.Log("[BootStrap] SyncCloudSaveIfNewer 완료");
+            StartCoroutine(PrepareMainMenuRoutine());
+        }
+    }
 
-            SetupMainMenuScene();
+    /// <summary>
+    /// 메인 메뉴를 세우기 전에 세이브 상태를 확정합니다.
+    ///
+    /// 순서가 중요합니다. 클라우드 반영이 이어하기 버튼 판정보다 먼저여야 하고, 세이브를 읽을 수
+    /// 있는지 결론이 난 뒤에야 메뉴를 세워야 합니다. 결론 전에 메뉴가 뜨면 유저가 "세이브가 없네"
+    /// 하고 새로하기를 눌러 멀쩡한 파일을 지울 수 있습니다.
+    ///
+    /// "확인 중" 화면은 메인 메뉴 UI가 아직 없는 구간까지 덮어야 하므로, 메뉴가 아니라 씬을 넘어
+    /// 살아있는 오브젝트가 SaveCheckState를 구독해 그려야 합니다.
+    /// </summary>
+    private IEnumerator PrepareMainMenuRoutine()
+    {
+        // 바로 아래 SyncCloudSaveIfNewer가 동기 호출이라 그 구간에는 프레임이 돌지 않는다.
+        // "확인 중" 화면이 그 전에 한 번 그려지도록 상태를 먼저 세우고 한 프레임 넘긴다.
+        saveManager?.BeginSaveCheck();
+        yield return null;
+
+        // 이어하기 버튼 상태(HasSaveData)를 UI가 확인하기 전에 클라우드 세이브를 로컬로 먼저 반영한다.
+        // SyncCloudSaveIfNewer()는 Steam Remote Storage를 동기로 호출하므로, 멈춤 지점을 가리기 위해
+        // 앞뒤로 흔적을 남긴다. "시작"만 찍히고 "완료"가 없으면 여기서 블로킹된 것이다.
+        Debug.Log("[BootStrap] SyncCloudSaveIfNewer 시작");
+        saveManager?.SyncCloudSaveIfNewer();
+        Debug.Log("[BootStrap] SyncCloudSaveIfNewer 완료");
+
+        // 파일이 잠겨 있으면 여기서 몇 초 머문다. 그동안 UI가 "확인 중"을 그린다.
+        if (null != saveManager)
+        {
+            yield return saveManager.CheckSaveAvailabilityRoutine();
+
+            yield return WaitForSaveCheckDecisionRoutine();
+        }
+
+        SetupMainMenuScene();
+    }
+
+    /// <summary>
+    /// 세이브를 끝내 읽지 못했을 때, 유저가 다시 시도하거나 기존 세이브를 포기할 때까지 기다립니다.
+    ///
+    /// 결론이 나기 전에 메뉴를 세우면 안 됩니다. 이어하기가 없는 메뉴를 본 유저가 새로하기를 눌러
+    /// 멀쩡한 세이브를 지우는 것이 이 화면 전체가 막으려는 바로 그 사고입니다.
+    /// (유저가 종료를 고르면 앱이 닫히므로 이 대기는 자연히 끝납니다)
+    ///
+    /// 다만 화면을 띄울 수단이 없으면(프리팹 미할당 등) 물어볼 방법도 없으므로 기다리지 않습니다.
+    /// 그대로 두면 아무것도 없는 화면에서 영원히 멈춥니다. 이 경우엔 메뉴를 띄우고, 이어하기는
+    /// 남겨둔 채 SaveManager가 저장을 막아 파일을 지켜냅니다.
+    /// </summary>
+    private IEnumerator WaitForSaveCheckDecisionRoutine()
+    {
+        if (ESaveCheckState.Failed != saveManager.SaveCheckState) yield break;
+
+        if (null == saveCheckCoordinator || false == saveCheckCoordinator.IsPresenting)
+        {
+            Debug.LogError("[BootStrap] The save file could not be read, but there is no save check UI to ask the player. " +
+                "Continuing to the main menu; saving stays disabled so the file is left intact.");
+            yield break;
+        }
+
+        while (ESaveCheckState.Ready != saveManager.SaveCheckState)
+        {
+            yield return null;
         }
     }
 
