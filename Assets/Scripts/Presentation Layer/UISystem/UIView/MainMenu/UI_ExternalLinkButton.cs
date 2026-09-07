@@ -72,9 +72,12 @@ public class UI_ExternalLinkButton : Selectable, ISubmitHandler, IPointerClickHa
         base.Awake();
         transition = Transition.None;
 
-        getShadowColor = GetShadowColor;
-        setShadowColor = SetShadowColor;
+        EnsureDelegates();
+        ApplyInitialVisualState();
+    }
 
+    private void EnsureDelegates()
+    {
         if (null == targetVisualImage)
         {
             targetVisualImage = GetComponent<Image>();
@@ -85,11 +88,21 @@ public class UI_ExternalLinkButton : Selectable, ISubmitHandler, IPointerClickHa
             targetUIEffect = targetVisualImage.GetComponent<UIEffect>();
         }
 
-        ApplyInitialVisualState();
+        if (null == getShadowColor)
+        {
+            getShadowColor = GetShadowColor;
+        }
+
+        if (null == setShadowColor)
+        {
+            setShadowColor = SetShadowColor;
+        }
     }
 
     private void ApplyInitialVisualState()
     {
+        EnsureDelegates();
+
         if (EExternalLinkVisualEffectMode.OutlineShadow == effectMode)
         {
             if (null != targetUIEffect)
@@ -166,22 +179,57 @@ public class UI_ExternalLinkButton : Selectable, ISubmitHandler, IPointerClickHa
 
     public bool IsHovered => isHovered;
 
-    public void ForceHover(bool _playSound = false)
+    public void FocusButton(bool _playSound = true)
     {
-        if (true == isHovered) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
+
         isHovered = true;
         PlayVisualTween(hoverColor);
         if (true == _playSound)
         {
             Sound.PlayUI(SoundID.MainMenuDot01);
         }
+
+        if (null != EventSystem.current)
+        {
+            if (EventSystem.current.currentSelectedGameObject != gameObject)
+            {
+                EventSystem.current.SetSelectedGameObject(gameObject);
+            }
+        }
+
+        ShowCursor();
     }
 
-    public void ForceUnhover()
+    public void UnfocusButton()
     {
         isHovered = false;
         PlayVisualTween(normalColor);
         HideCursor();
+    }
+
+    public void UnfocusButtonImmediate()
+    {
+        isHovered = false;
+        KillVisualTween();
+        SetVisualColorImmediate(normalColor);
+        HideCursor();
+    }
+
+    public void ForceHover(bool _playSound = false)
+    {
+        isHovered = true;
+        PlayVisualTween(hoverColor);
+        if (true == _playSound)
+        {
+            Sound.PlayUI(SoundID.MainMenuDot01);
+        }
+        ShowCursor();
+    }
+
+    public void ForceUnhover()
+    {
+        UnfocusButton();
     }
 
     public override void OnDeselect(BaseEventData _eventData)
@@ -249,10 +297,11 @@ public class UI_ExternalLinkButton : Selectable, ISubmitHandler, IPointerClickHa
     private void PlayVisualTween(Color _targetColor)
     {
         KillVisualTween();
+        EnsureDelegates();
 
         if (EExternalLinkVisualEffectMode.OutlineShadow == effectMode)
         {
-            if (null != targetUIEffect)
+            if (null != targetUIEffect && null != getShadowColor && null != setShadowColor)
             {
                 visualTween = DOTween.To(getShadowColor, setShadowColor, _targetColor, transitionDuration)
                                      .SetEase(transitionEase)
@@ -271,6 +320,8 @@ public class UI_ExternalLinkButton : Selectable, ISubmitHandler, IPointerClickHa
 
     private void SetVisualColorImmediate(Color _color)
     {
+        EnsureDelegates();
+
         if (EExternalLinkVisualEffectMode.OutlineShadow == effectMode)
         {
             if (null != targetUIEffect)

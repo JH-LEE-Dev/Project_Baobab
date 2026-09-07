@@ -67,6 +67,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     private GameObject previousSelectedObject;
     private Action<EInputDeviceType> cachedOnInputDeviceChanged;
 
+    private int focusedButtonIndex = 0; // 0: discordBtn (가장 왼쪽), 1: steamWishlistBtn
     private bool isDemoNoticeShowing = false;
     private bool isHiding = false;
     private Tween demoNoticeTween;
@@ -79,28 +80,78 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     public bool IsActive => isDemoNoticeShowing;
     public void Hide() => HideDemoNoticeOverlay();
 
+    public void FocusDemoButton(int _index, bool _playSound = true)
+    {
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
+
+        focusedButtonIndex = Mathf.Clamp(_index, 0, 1);
+
+        if (0 == focusedButtonIndex)
+        {
+            if (null != steamWishlistBtn)
+            {
+                steamWishlistBtn.UnfocusButtonImmediate();
+            }
+            if (null != discordBtn)
+            {
+                discordBtn.FocusButton(_playSound);
+            }
+        }
+        else
+        {
+            if (null != discordBtn)
+            {
+                discordBtn.UnfocusButtonImmediate();
+            }
+            if (null != steamWishlistBtn)
+            {
+                steamWishlistBtn.FocusButton(_playSound);
+            }
+        }
+    }
+
+    public bool HandleDirectionalInput(Vector2 _input)
+    {
+        if (false == isDemoNoticeShowing || true == isHiding) return false;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return false;
+
+        if (_input.x <= -0.5f)
+        {
+            if (1 == focusedButtonIndex)
+            {
+                FocusDemoButton(0, true);
+                return true;
+            }
+        }
+        else if (_input.x >= 0.5f)
+        {
+            if (0 == focusedButtonIndex)
+            {
+                FocusDemoButton(1, true);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public void HandleInteractionKey()
     {
         if (false == isDemoNoticeShowing || true == isHiding) return;
 
-        GameObject _currentSelected = EventSystem.current?.currentSelectedGameObject;
-        if (null != _currentSelected)
+        if (0 == focusedButtonIndex)
         {
-            if (null != steamWishlistBtn && _currentSelected == steamWishlistBtn.gameObject)
-            {
-                steamWishlistBtn.ExecuteClick();
-                return;
-            }
-            if (null != discordBtn && _currentSelected == discordBtn.gameObject)
+            if (null != discordBtn)
             {
                 discordBtn.ExecuteClick();
-                return;
             }
         }
-
-        if (null != discordBtn)
+        else
         {
-            discordBtn.ExecuteClick();
+            if (null != steamWishlistBtn)
+            {
+                steamWishlistBtn.ExecuteClick();
+            }
         }
     }
 
@@ -123,17 +174,10 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
 
         if (null != discordBtn && null != steamWishlistBtn)
         {
-            Navigation _discordNav = new Navigation();
-            _discordNav.mode = Navigation.Mode.Explicit;
-            _discordNav.selectOnRight = steamWishlistBtn;
-            _discordNav.selectOnLeft = steamWishlistBtn;
-            discordBtn.navigation = _discordNav;
-
-            Navigation _steamNav = new Navigation();
-            _steamNav.mode = Navigation.Mode.Explicit;
-            _steamNav.selectOnLeft = discordBtn;
-            _steamNav.selectOnRight = discordBtn;
-            steamWishlistBtn.navigation = _steamNav;
+            Navigation _navNone = new Navigation();
+            _navNone.mode = Navigation.Mode.None;
+            discordBtn.navigation = _navNone;
+            steamWishlistBtn.navigation = _navNone;
         }
 
         if (null == cachedOnInputDeviceChanged) cachedOnInputDeviceChanged = OnInputDeviceChanged;
@@ -152,17 +196,12 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
 
         if (EInputDeviceType.Gamepad == _device)
         {
-            if (null != discordBtn && null != EventSystem.current)
-            {
-                EventSystem.current.SetSelectedGameObject(discordBtn.gameObject);
-            }
+            FocusDemoButton(focusedButtonIndex, false);
         }
         else
         {
-            if (null != cursorBoxUI)
-            {
-                cursorBoxUI.HideImmediately();
-            }
+            if (null != discordBtn) discordBtn.UnfocusButtonImmediate();
+            if (null != steamWishlistBtn) steamWishlistBtn.UnfocusButtonImmediate();
             if (null != EventSystem.current)
             {
                 EventSystem.current.SetSelectedGameObject(null);
@@ -268,10 +307,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
 
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
-            if (null != discordBtn && null != EventSystem.current)
-            {
-                EventSystem.current.SetSelectedGameObject(discordBtn.gameObject);
-            }
+            FocusDemoButton(0, true);
         }
     }
 
@@ -333,11 +369,11 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     {
         if (null != steamWishlistBtn)
         {
-            steamWishlistBtn.HideCursor();
+            steamWishlistBtn.UnfocusButtonImmediate();
         }
         if (null != discordBtn)
         {
-            discordBtn.HideCursor();
+            discordBtn.UnfocusButtonImmediate();
         }
 
         if (null != demoDimCanvasGroup)
@@ -350,6 +386,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
         }
         isDemoNoticeShowing = false;
         isHiding = false;
+        focusedButtonIndex = 0;
 
         depthController?.UnregisterView(this);
 
@@ -379,14 +416,15 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     {
         KillTweens();
         SetContentAlpha(0f);
+        focusedButtonIndex = 0;
 
         if (null != steamWishlistBtn)
         {
-            steamWishlistBtn.HideCursor();
+            steamWishlistBtn.UnfocusButtonImmediate();
         }
         if (null != discordBtn)
         {
-            discordBtn.HideCursor();
+            discordBtn.UnfocusButtonImmediate();
         }
 
         if (null != demoNoticeOverlay)
