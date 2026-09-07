@@ -45,7 +45,7 @@ public static class BuildInfo
     /// 그래서 별도 상수로 두지 않고 여기서 Variant와 함께 파생시킵니다.
     ///
     /// 개발 실행용 steam_appid.txt는 코드가 아니라 파일이라 자동으로 따라오지 않습니다.
-    /// 전환은 `Tools > Steam > 빌드 모드` 메뉴를 쓰세요. 디파인과 파일을 함께 바꿔줍니다.
+    /// 전환은 `Tools > 빌드` 메뉴를 쓰세요. 디파인과 파일을 함께 바꿔줍니다.
     /// </summary>
     public static uint SteamAppId => IsFullRelease ? STEAM_APP_ID_RELEASE : STEAM_APP_ID_DEMO;
 

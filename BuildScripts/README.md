@@ -2,7 +2,8 @@
 
 `steamcmd`로 depot을 올릴 때 쓰는 SteamPipe 스크립트입니다.
 파트너 사이트에서 손으로 올리지 말고 여기 있는 것만 쓰세요. **업로드 단계는 에디터 쪽
-안전장치(`SteamBuildModeSwitcher`, `DemoContentStripper`)가 닿지 않는 유일한 구간이고,
+안전장치(`PlatformBuildModeSwitcher`, `PlatformConsistencyGuard`, `BuildOutputSanitizer`,
+`DemoContentStripper`)가 닿지 않는 유일한 구간이고,
 출시 사고는 대부분 정확히 여기서 납니다.**
 
 | 파일 | 앱 | 앱 ID |
@@ -62,15 +63,24 @@ Unity에서 빌드할 때 출력 경로를 `C:\Unity Build\Demo` (또는 `\Relea
 
 ### ① 모드 전환
 
-Unity 에디터에서 `Tools > Steam > 빌드 모드 - 정식` (또는 `- 데모`).
+Unity 에디터에서 `Tools > 빌드 > 스토어 - Steam` 과 `Tools > 빌드 > 배포 - 정식`
+(또는 `- 데모`)을 각각 고릅니다. 축이 둘(스토어 × 배포)이라 두 번 고르며, 한쪽만 바꿔도
+나머지는 그대로 유지됩니다.
 
 디파인·`steam_appid.txt`·Sentry environment·GameAnalytics build 문자열이 한꺼번에
 맞춰집니다. **손으로 하나씩 바꾸지 마세요.**
 
+메뉴를 누른 뒤 **스크립트 재컴파일이 끝날 때까지 기다렸다가** 빌드하세요. 바로 빌드하면
+설정과 실제 코드가 다른 물건이 나오는데, `PlatformConsistencyGuard` 가 그 상태를 잡아
+빌드를 멈춥니다.
+
 ### ② 확인
 
-`Tools > Steam > 현재 빌드 모드 확인` 을 열어 모드 / 디파인 / 세이브 변형 / 앱 ID /
-`steam_appid.txt` / Sentry env / GA build 가 전부 의도한 값인지 봅니다.
+`Tools > 빌드 > 현재 빌드 설정 확인` 을 열어 스토어 / 배포 / 디파인 / 세이브 변형 /
+세이브 폴더 / 앱 ID / `steam_appid.txt` / Sentry env / GA build 가 전부 의도한 값인지 봅니다.
+
+이 확인을 걸러도 `PlatformConsistencyGuard` 가 빌드 직전에 같은 것을 검사해 어긋나면
+빌드를 중단합니다. 다만 가드는 배포 빌드에서만 막고 Development Build는 통과시킵니다.
 
 `steam_appid.txt` 가 **480(Spacewar)** 으로 되어 있으면 개발용 임시 설정이 남은 것입니다.
 ①로 돌아가세요.
@@ -124,6 +134,21 @@ steamcmd +login <계정> +run_app_build "<절대경로>\BuildScripts\app_build_r
 ---
 
 ## 무엇을 빼는가
+
+아래 목록은 이제 **두 겹**으로 걸립니다.
+
+1. `BuildOutputSanitizer` — 빌드 직후 출력 폴더에서 직접 지웁니다. 어느 스토어로 올리든 적용됩니다
+2. `depot_build_*.vdf` 의 `FileExclusion` — SteamPipe로 올릴 때만 적용되는 이중 방어
+
+1번이 생긴 이유는 STOVE 때문입니다. STOVE는 depot이 아니라 자체 업로더를 쓰므로 vdf 규칙이
+하나도 걸리지 않습니다. 안전장치가 업로드 경로 하나에만 붙어 있으면 스토어가 늘어나는 순간
+구멍이 납니다.
+
+`BuildOutputSanitizer` 는 Development Build에서는 아무것도 지우지 않습니다(프로파일링에
+심볼이 필요하므로). 배포 빌드 로그에서 `[BuildSanitizer]` 로 검색하면 무엇이 지워졌는지 나옵니다.
+**그 줄이 Sentry 심볼 업로드 로그보다 아래에 있는지 한 번은 확인하세요.** 위에 있으면 심볼이
+올라가기 전에 지워진 것이라 크래시 리포트가 줄 번호를 잃습니다.
+
 
 | 제외 | 이유 |
 |---|---|
