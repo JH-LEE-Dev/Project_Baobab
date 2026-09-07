@@ -12,7 +12,14 @@ public enum ESettingsLoadResult
     Loaded,
 
     /// <summary>파일은 있으나 버전이 다르거나 손상되어 폐기했습니다. 기본값으로 덮어써 정리해야 합니다.</summary>
-    Discarded
+    Discarded,
+
+    /// <summary>
+    /// 파일은 있으나 읽지 못했습니다. (잠금/권한) 내용은 멀쩡할 수 있으므로 이번 실행만 기본값으로
+    /// 진행하고, 파일은 절대 덮어쓰지 않습니다. Discarded로 뭉뚱그리면 백신이 파일을 잠깐 잡았다는
+    /// 이유만으로 유저가 맞춰둔 해상도·볼륨·언어가 통째로 초기화됩니다.
+    /// </summary>
+    Unreadable
 }
 
 /// <summary>
@@ -62,7 +69,18 @@ public static class SettingsRepository
             string _path = GamePaths.SettingsFile;
             if (false == File.Exists(_path)) return ESettingsLoadResult.NotFound;
 
-            string _json = File.ReadAllText(_path);
+            if (false == SafeFileIO.TryReadAllText(_path, out string _json, out Exception _readError))
+            {
+                // File.Exists 직후에 지워졌다면 없는 것과 같다.
+                if (_readError is FileNotFoundException || _readError is DirectoryNotFoundException)
+                {
+                    return ESettingsLoadResult.NotFound;
+                }
+
+                Debug.LogWarning(GamePaths.Redact($"[SettingsRepository] Could not read the settings file; using defaults for this run without touching it: {_readError.Message}"));
+                return ESettingsLoadResult.Unreadable;
+            }
+
             if (string.IsNullOrEmpty(_json)) return ESettingsLoadResult.Discarded;
 
             SettingsFileModel _model = JsonUtility.FromJson<SettingsFileModel>(_json);
@@ -118,35 +136,21 @@ public static class SettingsRepository
         string _path = GamePaths.SettingsFile;
         string _tempPath = _path + TEMP_SUFFIX;
 
-        try
+        SettingsFileModel _model = new SettingsFileModel
         {
-            SettingsFileModel _model = new SettingsFileModel
-            {
-                version = CURRENT_VERSION,
-                data = _data
-            };
+            version = CURRENT_VERSION,
+            data = _data
+        };
 
-            File.WriteAllText(_tempPath, JsonUtility.ToJson(_model, true));
-
-            if (true == File.Exists(_path))
-            {
-                File.Replace(_tempPath, _path, null);
-            }
-            else
-            {
-                File.Move(_tempPath, _path);
-            }
-        }
-        catch (Exception _e)
+        if (SafeFileIO.TryWriteAllText(_tempPath, JsonUtility.ToJson(_model, true), out Exception _error)
+         && SafeFileIO.TryReplaceOrMove(_tempPath, _path, null, out _error))
         {
-            Debug.LogError(GamePaths.Redact($"[SettingsRepository] Save failed: {_e.Message}"));
-
-            // 교체에 실패한 임시 파일은 남겨두지 않는다.
-            try
-            {
-                if (true == File.Exists(_tempPath)) File.Delete(_tempPath);
-            }
-            catch { /* 정리 실패는 무시 */ }
+            return;
         }
+
+        Debug.LogError(GamePaths.Redact($"[SettingsRepository] Save failed: {_error.Message}"));
+
+        // 교체에 실패한 임시 파일은 남겨두지 않는다.
+        SafeFileIO.CleanUpTempFile(_tempPath);
     }
 }

@@ -31,7 +31,14 @@ public static class KeyBindingRepository
             string _path = GamePaths.KeyBindingsFile;
             if (false == File.Exists(_path)) return false;
 
-            string _json = File.ReadAllText(_path);
+            if (false == SafeFileIO.TryReadAllText(_path, out string _json, out Exception _readError))
+            {
+                // 못 읽었을 뿐이므로 파일은 그대로 둔다. 이번 실행만 기본 바인딩으로 진행하고,
+                // 유저가 이번 세션에 재바인딩하지 않는 한 Save가 불리지 않아 파일이 유지된다.
+                Debug.LogWarning(GamePaths.Redact($"[KeyBindingRepository] Could not read the key binding file; using defaults for this run: {_readError.Message}"));
+                return false;
+            }
+
             if (string.IsNullOrEmpty(_json)) return false;
 
             KeyBindingFileModel _model = JsonUtility.FromJson<KeyBindingFileModel>(_json);
@@ -64,34 +71,20 @@ public static class KeyBindingRepository
         string _path = GamePaths.KeyBindingsFile;
         string _tempPath = _path + TEMP_SUFFIX;
 
-        try
+        KeyBindingFileModel _model = new KeyBindingFileModel
         {
-            KeyBindingFileModel _model = new KeyBindingFileModel
-            {
-                version = CURRENT_VERSION,
-                overridesJson = _overridesJson
-            };
+            version = CURRENT_VERSION,
+            overridesJson = _overridesJson
+        };
 
-            File.WriteAllText(_tempPath, JsonUtility.ToJson(_model, true));
-
-            if (true == File.Exists(_path))
-            {
-                File.Replace(_tempPath, _path, null);
-            }
-            else
-            {
-                File.Move(_tempPath, _path);
-            }
-        }
-        catch (Exception _e)
+        if (SafeFileIO.TryWriteAllText(_tempPath, JsonUtility.ToJson(_model, true), out Exception _error)
+         && SafeFileIO.TryReplaceOrMove(_tempPath, _path, null, out _error))
         {
-            Debug.LogError(GamePaths.Redact($"[KeyBindingRepository] Save failed: {_e.Message}"));
-
-            try
-            {
-                if (true == File.Exists(_tempPath)) File.Delete(_tempPath);
-            }
-            catch { /* 정리 실패는 무시 */ }
+            return;
         }
+
+        Debug.LogError(GamePaths.Redact($"[KeyBindingRepository] Save failed: {_error.Message}"));
+
+        SafeFileIO.CleanUpTempFile(_tempPath);
     }
 }

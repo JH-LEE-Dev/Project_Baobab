@@ -1,12 +1,34 @@
 using UnityEngine;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using System.IO;
-using System.Threading;
 
-public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
+/// <summary>
+/// 메인 메뉴가 세이브 파일 상태를 확인하는 과정의 진행 상태입니다. UI는 이 값만 보고 그리면 됩니다.
+/// </summary>
+public enum ESaveCheckState
+{
+    /// <summary>아직 확인을 시작하지 않았습니다.</summary>
+    NotStarted,
+
+    /// <summary>확인 중입니다. 이 동안 메인 메뉴 상호작용을 막아야 합니다.</summary>
+    Checking,
+
+    /// <summary>결론이 났습니다. 세이브가 있든 없든 메인 메뉴를 평소대로 진행하면 됩니다.</summary>
+    Ready,
+
+    /// <summary>
+    /// 제한 시간 안에 결론을 내지 못했습니다. 파일은 있는데 계속 읽지 못하는 상태입니다.
+    /// "다시 시도 / 기존 세이브 포기하고 새로 시작 / 종료"만 제시해야 합니다.
+    /// 평소의 새로하기 버튼을 열어두면 유저가 멀쩡한 세이브를 스스로 지웁니다.
+    /// </summary>
+    Failed
+}
+
+public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
 {
     private BootStrap bootstrap;
     private SignalHub signalHub;
@@ -37,9 +59,33 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
     // 다른 변형(정식) 세이브 보존을 세션당 한 번만 시도하기 위한 플래그. (아래 PreserveForeignSaveOnce 참고)
     private bool bForeignSavePreserveChecked;
 
-    // OneDrive 동기화/백신 스캔 등으로 세이브 파일이 잠깐 잠길 수 있어, 파일 조작은 짧게 재시도한다.
-    private const int FILE_OP_MAX_RETRIES = 3;
-    private const int FILE_OP_RETRY_DELAY_MS = 75;
+    // 세이브 파일이 디스크에 있는데 읽지 못해 로드를 포기했을 때 켜진다. 이 세션 동안 저장을 막는다.
+    // (LoadGameData의 설명 참고. "새로하기"로 세이브를 지우면 지킬 것이 없어지므로 함께 풀린다)
+    private bool bSaveBlockedByUnreadableSave;
+
+    // 저장이 막힌 사실을 자동저장마다 반복해서 찍지 않기 위한 플래그.
+    private bool bReportedSaveBlock;
+
+    // // 메인 메뉴 세이브 확인
+    // 파일이 잠겨 있어도 대개 몇 초 안에 풀린다(백신 스캔, 런처의 클라우드 복원 직후 등).
+    // SafeFileIO의 동기 재시도는 0.5초 만에 포기하는데, 그건 파일이 나빠서가 아니라 그 이상 멈추면
+    // 유저에게 프리즈로 보이기 때문이다. "확인 중" 화면을 띄울 수 있으면 훨씬 오래 기다려도 되고,
+    // 그만큼 실패 자체가 줄어든다. 그러려면 시도 사이에 프레임을 넘겨야 하므로 코루틴으로 돈다.
+    private const float SAVE_CHECK_TIMEOUT_SECONDS = 8f;
+    private const float SAVE_CHECK_INTERVAL_SECONDS = 0.25f;
+
+    private ESaveCheckState saveCheckState = ESaveCheckState.NotStarted;
+    private float saveCheckElapsedSeconds;
+
+    /// <summary>메인 메뉴 세이브 확인의 진행 상태입니다.</summary>
+    public ESaveCheckState SaveCheckState => saveCheckState;
+
+    /// <summary>
+    /// 확인을 시작한 뒤 흐른 시간입니다.
+    /// "0.3초를 넘길 때만 확인 중 화면을 띄운다" 같은 판단에 씁니다. 대부분은 첫 시도에 끝나므로
+    /// 그대로 띄우면 화면이 한 프레임 깜빡였다 사라집니다.
+    /// </summary>
+    public float SaveCheckElapsedSeconds => saveCheckElapsedSeconds;
 
     private void Awake()
     {
@@ -174,6 +220,18 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
     {
         if (null == character || null == character.statComponent) return;
 
+        // 읽지 못한 세이브가 디스크에 남아있다. 지금 쓰면 그 파일을 덮어써버린다. (LoadGameData 참고)
+        if (bSaveBlockedByUnreadableSave)
+        {
+            if (false == bReportedSaveBlock)
+            {
+                bReportedSaveBlock = true;
+                Debug.LogError("[SaveManager] Saving is disabled for this session because an existing save file could not be read. Progress in this session will not be kept.");
+            }
+
+            return;
+        }
+
         if (null == bootstrap)
         {
             bootstrap = GetComponent<BootStrap>();
@@ -301,8 +359,8 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         }
 
         cachedSaveStateKey = stateKey;
-        bCachedHasUsableSave = TryLoadUsableSave(GetSaveFilePath(), out _, out _)
-                            || TryLoadUsableSave(GamePaths.GameSaveBackupFile, out _, out _);
+        bCachedHasUsableSave = IsContinuable(ReadSaveSlot(GetSaveFilePath(), out _, out _))
+                            || IsContinuable(ReadSaveSlot(GamePaths.GameSaveBackupFile, out _, out _));
 
         return bCachedHasUsableSave;
     }
@@ -322,23 +380,194 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         return $"{info.LastWriteTimeUtc.Ticks}:{info.Length}";
     }
 
-    // 파일이 존재하고, 복호화/파싱까지 되고, 현재 빌드에서 이어서 플레이해도 되는 변형일 때만 true.
-    private bool TryLoadUsableSave(string _path, out GameSaveData _data, out byte[] _rawBytes)
+    /// <summary>
+    /// 세이브 슬롯(메인/백업) 하나를 읽어본 결과입니다.
+    ///
+    /// Unreadable과 Corrupted를 반드시 구분해야 합니다. 전자는 "지금 못 읽었다"일 뿐 파일 내용은
+    /// 멀쩡할 수 있습니다. 이것을 손상으로 취급해 백업으로 치유하면, 백신이 잠깐 파일을 잡고 있었다는
+    /// 이유만으로 멀쩡한 최신 진행도가 한 판 전으로 영구히 되돌아갑니다.
+    /// </summary>
+    private enum ESaveSlotState
+    {
+        /// <summary>읽고, 복호화/파싱까지 되고, 현재 빌드에서 이어서 플레이해도 되는 변형입니다.</summary>
+        Usable,
+
+        /// <summary>파일이 없습니다.</summary>
+        Missing,
+
+        /// <summary>파일은 있으나 읽지 못했습니다. (잠금/권한/장치 문제) 내용은 멀쩡할 수 있습니다.</summary>
+        Unreadable,
+
+        /// <summary>읽었지만 복호화/파싱에 실패했습니다. 내용 자체가 깨졌습니다.</summary>
+        Corrupted,
+
+        /// <summary>멀쩡하지만 다른 빌드 변형(데모↔정식)의 세이브라 이어서 플레이할 수 없습니다.</summary>
+        ForeignVariant
+    }
+
+    // 슬롯 하나를 읽어 상태를 판정한다.
+    // 복구 시 원본 바이트를 그대로 재사용할 수 있도록 읽어들인 바이트도 함께 돌려준다(파일을 두 번 읽지 않기 위함).
+    // _data와 _rawBytes는 파싱에 성공했으면 채워진다(ForeignVariant 포함). 반드시 상태를 먼저 확인하고 쓸 것.
+    //
+    // _maxAttempts에 SafeFileIO.SINGLE_ATTEMPT를 주면 이 안에서 기다리지 않는다. 대기를 코루틴이
+    // 쥐는 메인 메뉴 확인 경로에서 쓴다. 그 경로는 같은 실패를 초당 여러 번 만나므로 _bLogFailures를
+    // 꺼서 Sentry가 같은 사건을 수십 번 받지 않게 한다. (최종 판정만 호출부가 한 번 찍는다)
+    private ESaveSlotState ReadSaveSlot(string _path, out GameSaveData _data, out byte[] _rawBytes,
+                                        int _maxAttempts = SafeFileIO.MAX_ATTEMPTS_DEFAULT, bool _bLogFailures = true)
     {
         _data = null;
         _rawBytes = null;
 
-        if (false == File.Exists(_path)) return false;
-        if (!TryReadAndParse(_path, out GameSaveData data, out byte[] rawBytes)) return false;
+        if (false == File.Exists(_path)) return ESaveSlotState.Missing;
+
+        if (!SafeFileIO.TryReadAllBytes(_path, out byte[] encryptedData, out Exception readError, _maxAttempts))
+        {
+            // File.Exists 직후에 지워졌다면 없는 것과 같다. (외부 삭제, 클라우드 정리 등)
+            if (readError is FileNotFoundException || readError is DirectoryNotFoundException)
+            {
+                return ESaveSlotState.Missing;
+            }
+
+            if (_bLogFailures)
+            {
+                Debug.LogError(GamePaths.Redact($"[SaveManager] Failed to read save file '{_path}': {readError.Message}"));
+            }
+
+            return ESaveSlotState.Unreadable;
+        }
+
+        if (!TryParseSaveBytes(encryptedData, out GameSaveData data))
+        {
+            return ESaveSlotState.Corrupted;
+        }
+
+        _data = data;
+        _rawBytes = encryptedData;
 
         if (!BuildInfo.IsSaveVariantCompatible(data.buildVariant))
         {
             Debug.LogWarning(GamePaths.Redact($"[SaveManager] '{_path}' was created by another build variant ({data.buildVariant}); current build is {BuildInfo.Variant}. Treating it as no save data (it will be overwritten by the next save)."));
-            return false;
+            return ESaveSlotState.ForeignVariant;
         }
 
-        _data = data;
-        _rawBytes = rawBytes;
+        return ESaveSlotState.Usable;
+    }
+
+    // 이어하기 버튼을 살려둘 상태인지 판정한다.
+    // Unreadable을 "세이브 없음"으로 취급하면 버튼이 사라지고, 유저가 새 게임을 골라 멀쩡히 살아있는
+    // 진행도를 스스로 지우게 된다. 실제로 못 읽으면 LoadGameData가 저장을 막아 파일을 지켜낸다.
+    private static bool IsContinuable(ESaveSlotState _state)
+    {
+        return ESaveSlotState.Usable == _state || ESaveSlotState.Unreadable == _state;
+    }
+
+    // // 메인 메뉴 세이브 확인
+    // BootStrap이 메인 메뉴를 세우기 전에 여기를 통과시킨다. 파일을 읽을 수 있는지 결론이 날 때까지
+    // 천천히 재시도하고, 그동안 UI는 SaveCheckState를 보고 "확인 중" 화면으로 상호작용을 막는다.
+
+    /// <summary>
+    /// 확인이 시작됐음을 먼저 알립니다.
+    /// 확인 코루틴 앞에 스팀 클라우드 동기화처럼 프레임을 안 넘기는 동기 작업이 있을 때,
+    /// 그 구간까지 "확인 중" 화면으로 덮기 위해 미리 세워둡니다.
+    /// </summary>
+    public void BeginSaveCheck()
+    {
+        saveCheckState = ESaveCheckState.Checking;
+        saveCheckElapsedSeconds = 0f;
+    }
+
+    /// <summary>
+    /// 세이브 파일을 읽을 수 있는지 결론이 날 때까지 재시도합니다.
+    /// 정상적인 경우 첫 시도에 끝나 프레임을 한 번도 넘기지 않습니다.
+    /// </summary>
+    public IEnumerator CheckSaveAvailabilityRoutine()
+    {
+        BeginSaveCheck();
+
+        while (true)
+        {
+            if (TryResolveSaveAvailabilityOnce(out bool bHasUsableSave))
+            {
+                CacheSaveAvailability(bHasUsableSave);
+                saveCheckState = ESaveCheckState.Ready;
+                yield break;
+            }
+
+            if (saveCheckElapsedSeconds >= SAVE_CHECK_TIMEOUT_SECONDS)
+            {
+                // 파일은 있는데 끝내 못 읽었다. 이어하기는 열어둔다. 내용이 멀쩡할 수 있고,
+                // 실제 로드가 또 실패하면 LoadGameData가 저장을 막아 파일을 지켜낸다.
+                CacheSaveAvailability(true);
+                saveCheckState = ESaveCheckState.Failed;
+
+                Debug.LogError($"[SaveManager] Save files could not be read within {SAVE_CHECK_TIMEOUT_SECONDS} seconds. They are left untouched; asking the player what to do.");
+                yield break;
+            }
+
+            // 메뉴에서 Time.timeScale이 0일 수 있으므로 Realtime으로 기다린다.
+            yield return new WaitForSecondsRealtime(SAVE_CHECK_INTERVAL_SECONDS);
+            saveCheckElapsedSeconds += SAVE_CHECK_INTERVAL_SECONDS;
+        }
+    }
+
+    /// <summary>실패 화면의 "다시 시도"가 부릅니다. 잠금이 그새 풀렸으면 그대로 복구됩니다.</summary>
+    public void RetrySaveAvailabilityCheck()
+    {
+        if (ESaveCheckState.Checking == saveCheckState) return;
+
+        StartCoroutine(CheckSaveAvailabilityRoutine());
+    }
+
+    /// <summary>
+    /// 실패 화면의 "기존 세이브를 포기하고 새로 시작"이 부릅니다.
+    ///
+    /// 파일을 여기서 지우지는 않습니다. 지금 못 읽는 파일은 대개 지우지도 못하고, 지운다 해도
+    /// 이 시점에 그럴 이유가 없습니다. 대신 "세이브 없음"으로 결론을 확정하고 저장 차단을 풀어
+    /// 유저가 평소의 새로하기 경로를 그대로 타게 합니다. 그 경로의 DeleteSaveData가 삭제를
+    /// 시도하고, 실패하더라도 첫 저장이 File.Replace로 덮어씁니다.
+    ///
+    /// 되돌릴 수 없는 선택입니다. 부르기 전에 "기존 진행도를 덮어씁니다"를 확인 팝업으로 반드시
+    /// 알려야 하며, 스팀 클라우드 사본도 새로하기 경로에서 함께 정리된다는 점까지 포함해야 합니다.
+    /// </summary>
+    public void AbandonUnreadableSaveAndStartFresh()
+    {
+        Debug.LogError("[SaveManager] The player chose to abandon the unreadable save and start fresh. The existing file will be overwritten by the first save.");
+
+        bSaveBlockedByUnreadableSave = false;
+        bReportedSaveBlock = false;
+
+        CacheSaveAvailability(false);
+        saveCheckState = ESaveCheckState.Ready;
+    }
+
+    // 확인 결과를 HasSaveData 캐시에 심어, 메인 메뉴 UI가 같은 파일을 곧바로 다시 읽지 않게 한다.
+    private void CacheSaveAvailability(bool _bHasUsableSave)
+    {
+        cachedSaveStateKey = BuildSaveStateKey();
+        bCachedHasUsableSave = _bHasUsableSave;
+    }
+
+    // 한 번만 시도해 결론이 나는지 본다. Unreadable이 하나라도 있으면 아직 결론이 아니다.
+    // 초당 여러 번 도는 경로라 실패 로그는 끄고, 최종 판정만 호출부가 한 번 남긴다.
+    private bool TryResolveSaveAvailabilityOnce(out bool _bHasUsableSave)
+    {
+        _bHasUsableSave = false;
+
+        ESaveSlotState mainState = ReadSaveSlot(GetSaveFilePath(), out _, out _, SafeFileIO.SINGLE_ATTEMPT, false);
+
+        if (ESaveSlotState.Unreadable == mainState) return false;
+
+        if (ESaveSlotState.Usable == mainState)
+        {
+            _bHasUsableSave = true;
+            return true;
+        }
+
+        ESaveSlotState backupState = ReadSaveSlot(GamePaths.GameSaveBackupFile, out _, out _, SafeFileIO.SINGLE_ATTEMPT, false);
+
+        if (ESaveSlotState.Unreadable == backupState) return false;
+
+        _bHasUsableSave = (ESaveSlotState.Usable == backupState);
         return true;
     }
 
@@ -370,6 +599,11 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         cachedSaveStateKey = null;
         bCachedHasUsableSave = false;
 
+        // 읽지 못한 세이브 때문에 저장을 막아둔 상태였더라도, 유저가 직접 새로하기를 골랐으면
+        // 더 지킬 진행도가 없다. 막아두면 새 게임이 통째로 저장되지 않으므로 여기서 푼다.
+        bSaveBlockedByUnreadableSave = false;
+        bReportedSaveBlock = false;
+
         // 새 게임 진입 시 내비게이션 팝업의 런타임 정적 세션 기록도 완전 초기화
         HUD_PopupNav_Main.ResetRuntimeSessionState();
 
@@ -379,31 +613,54 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
     public void LoadGameData()
     {
         string path = GetSaveFilePath();
+        string backupPath = GamePaths.GameSaveBackupFile;
 
-        if (TryLoadUsableSave(path, out GameSaveData saveData, out _))
+        ESaveSlotState mainState = ReadSaveSlot(path, out GameSaveData saveData, out _);
+
+        if (ESaveSlotState.Usable == mainState)
         {
             ApplyLoadedData(saveData);
             Debug.Log(GamePaths.Redact($"[SaveManager] Game Data Decrypted & Loaded from: {path}"));
             return;
         }
 
-        string backupPath = GamePaths.GameSaveBackupFile;
-
-        if (File.Exists(path))
+        // 메인이 "지금 못 읽혔을 뿐"이면 백업으로 내려가지 않는다.
+        //
+        // 백업은 정의상 한 판 전 상태다. 여기서 백업을 로드해버리면 유저는 되돌아간 진행도로 계속
+        // 플레이하고, 다음 자동저장이 그 상태를 메인 자리에 써버린다. 즉 "잠깐 못 읽었다"가 "진행도가
+        // 되돌아갔다"로 확정된다. 백업이 살아있어도 마찬가지이므로 백업 상태를 보기 전에 멈춘다.
+        if (ESaveSlotState.Unreadable == mainState)
         {
-            Debug.LogWarning("[SaveManager] Main save file is unusable (corrupted or from another build variant). Trying backup...");
+            BlockSavingToProtectUnreadableSave("main save file");
+            return;
         }
 
-        if (!TryLoadUsableSave(backupPath, out GameSaveData backupData, out byte[] backupBytes))
+        if (ESaveSlotState.Missing != mainState)
         {
-            if (File.Exists(path) || File.Exists(backupPath))
+            Debug.LogWarning($"[SaveManager] Main save file is unusable ({mainState}). Trying backup...");
+        }
+
+        ESaveSlotState backupState = ReadSaveSlot(backupPath, out GameSaveData backupData, out byte[] backupBytes);
+
+        if (ESaveSlotState.Usable != backupState)
+        {
+            // 메인은 못 쓰는 게 확실한데 백업은 읽지도 못한 상태다. 백업 안에 멀쩡한 진행도가
+            // 들어있을 수 있으므로 위와 같은 이유로 저장을 막는다.
+            if (ESaveSlotState.Unreadable == backupState)
             {
-                Debug.LogError("[SaveManager] No usable save file (corrupted, or created by another build variant). Load aborted.");
+                BlockSavingToProtectUnreadableSave("backup save file");
+                return;
+            }
+
+            if (ESaveSlotState.Missing != mainState || ESaveSlotState.Missing != backupState)
+            {
+                Debug.LogError($"[SaveManager] No usable save file (main={mainState}, backup={backupState}). Load aborted.");
             }
             else
             {
                 Debug.LogWarning("[SaveManager] Save file not found.");
             }
+
             return;
         }
 
@@ -411,6 +668,9 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         Debug.LogWarning("[SaveManager] Recovered game data from backup save file.");
 
         // 메인 파일을 백업 내용으로 치유해서 다음 실행부터 같은 손상 파일을 다시 만나지 않게 한다.
+        // 여기까지 왔다면 메인은 Missing/Corrupted/ForeignVariant 중 하나로, 못 쓰는 것이 확실하다.
+        // (Unreadable은 위에서 이미 걸러졌다)
+        //
         // 단, 손상된 메인이 남아 있는 채로 WriteSaveFileWithBackup을 부르면 File.Replace가
         // 그 손상본을 백업 자리로 밀어넣어 방금 복구에 성공한 백업을 덮어써버린다.
         // 먼저 지워서 File.Move 경로(백업 미변경)를 타게 한다.
@@ -422,6 +682,16 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         {
             WriteSaveFileWithBackup(backupBytes, "RecoverFromBackup");
         }
+    }
+
+    // 디스크에 세이브가 있는데 읽지 못한 상태다. 그대로 게임을 진행시키면 다음 자동저장이 그 파일을
+    // 덮어써, 복구 가능했을 진행도가 영영 사라진다. 이 세션 동안 저장을 막아 파일을 손대지 않고 남긴다.
+    // 유저가 "새로하기"를 고르면 지킬 것이 없어지므로 DeleteSaveData에서 다시 풀린다.
+    private void BlockSavingToProtectUnreadableSave(string _which)
+    {
+        bSaveBlockedByUnreadableSave = true;
+
+        Debug.LogError($"[SaveManager] The {_which} exists but could not be read (locked, or inaccessible). Load aborted and saving is disabled for this session so the file is left intact for recovery.");
     }
 
     private void ApplyLoadedData(GameSaveData _data)
@@ -469,68 +739,12 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         }
     }
 
-    // 파일을 읽고 복호화+파싱까지 시도한다. 파일 자체가 잠겨있거나 손상된 경우 모두 false를 반환한다.
-    // 복구 시 원본 바이트를 그대로 재사용할 수 있도록 읽어들인 바이트도 함께 돌려준다(파일을 두 번 읽지 않기 위함).
-    private bool TryReadAndParse(string _path, out GameSaveData _data, out byte[] _rawBytes)
-    {
-        _data = null;
-        _rawBytes = null;
-
-        byte[] encryptedData;
-        try
-        {
-            encryptedData = File.ReadAllBytes(_path);
-        }
-        catch (Exception _e)
-        {
-            Debug.LogError(GamePaths.Redact($"[SaveManager] Failed to read save file '{_path}': {_e.Message}"));
-            return false;
-        }
-
-        if (!TryParseSaveBytes(encryptedData, out _data))
-        {
-            return false;
-        }
-
-        _rawBytes = encryptedData;
-        return true;
-    }
-
-    // 파일이 잠겨있을 수 있으므로 WriteSaveFileWithBackup과 같은 정책으로 짧게 재시도한다.
     // 대상이 애초에 없으면 File.Delete는 예외 없이 통과하므로 true가 된다.
     private bool TryDeleteFile(string _path)
     {
-        for (int attempt = 1; attempt <= FILE_OP_MAX_RETRIES; attempt++)
-        {
-            try
-            {
-                File.Delete(_path);
-                return true;
-            }
-            catch (IOException _e)
-            {
-                // 다른 프로세스가 붙잡고 있는 경우다. 잠시 뒤 풀릴 수 있으니 재시도한다.
-                if (attempt >= FILE_OP_MAX_RETRIES)
-                {
-                    Debug.LogError(GamePaths.Redact($"[SaveManager] Failed to delete file '{_path}' after {FILE_OP_MAX_RETRIES} attempts: {_e.Message}"));
-                    return false;
-                }
+        if (SafeFileIO.TryDelete(_path, out Exception _error)) return true;
 
-                Thread.Sleep(FILE_OP_RETRY_DELAY_MS);
-            }
-            catch (UnauthorizedAccessException _e)
-            {
-                // 읽기 전용/권한 문제는 재시도해도 결과가 같다.
-                Debug.LogError(GamePaths.Redact($"[SaveManager] Failed to delete file '{_path}': {_e.Message}"));
-                return false;
-            }
-            catch (Exception _e)
-            {
-                Debug.LogError(GamePaths.Redact($"[SaveManager] Unexpected error deleting file '{_path}': {_e.Message}"));
-                return false;
-            }
-        }
-
+        Debug.LogError(GamePaths.Redact($"[SaveManager] Failed to delete file '{_path}': {_error.Message}"));
         return false;
     }
 
@@ -573,49 +787,25 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         string tempPath = GamePaths.GameSaveTempFile;
         string backupPath = GamePaths.GameSaveBackupFile;
 
-        try
+        if (!SafeFileIO.TryWriteAllBytes(tempPath, _data, out Exception writeError))
         {
-            File.WriteAllBytes(tempPath, _data);
-        }
-        catch (Exception _e)
-        {
-            Debug.LogError($"[SaveManager] ({_context}) Failed to write temp save file: {_e.Message}");
+            Debug.LogError(GamePaths.Redact($"[SaveManager] ({_context}) Failed to write temp save file: {writeError.Message}"));
+
+            // 반쯤 쓰인 임시 파일을 남겨두지 않는다. 다음 저장이 덮어쓰긴 하지만, 그때까지
+            // 동기화 폴더에 찌꺼기가 올라가고 유저 눈에도 보인다.
+            SafeFileIO.CleanUpTempFile(tempPath);
             return false;
         }
 
-        for (int attempt = 1; attempt <= FILE_OP_MAX_RETRIES; attempt++)
+        // 새 내용 반영 + 기존 파일을 backupPath로 이동이 한 번에 원자적으로 처리된다.
+        // (대상이 없으면 백업할 것도 없으므로 단순 이동이 된다. SafeFileIO 참고)
+        if (SafeFileIO.TryReplaceOrMove(tempPath, path, backupPath, out Exception replaceError))
         {
-            try
-            {
-                if (File.Exists(path))
-                {
-                    // 새 내용 반영 + 기존 파일을 backupPath로 이동을 한 번에 원자적으로 처리한다.
-                    File.Replace(tempPath, path, backupPath, ignoreMetadataErrors: true);
-                }
-                else
-                {
-                    File.Move(tempPath, path);
-                }
-
-                return true;
-            }
-            catch (IOException _e)
-            {
-                // OneDrive 동기화/백신 스캔 등으로 대상 파일이 잠깐 잠겨있을 수 있어 짧게 재시도한다.
-                if (attempt >= FILE_OP_MAX_RETRIES)
-                {
-                    Debug.LogError($"[SaveManager] ({_context}) Failed to replace save file after {FILE_OP_MAX_RETRIES} attempts: {_e.Message}");
-                    return false;
-                }
-
-                Thread.Sleep(FILE_OP_RETRY_DELAY_MS);
-            }
-            catch (Exception _e)
-            {
-                Debug.LogError($"[SaveManager] ({_context}) Unexpected error replacing save file: {_e.Message}");
-                return false;
-            }
+            return true;
         }
+
+        Debug.LogError(GamePaths.Redact($"[SaveManager] ({_context}) Failed to replace save file: {replaceError.Message}"));
+        SafeFileIO.CleanUpTempFile(tempPath);
 
         return false;
     }
@@ -660,15 +850,13 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
 
     private void WriteCloudTombstone()
     {
-        try
+        if (SafeFileIO.TryWriteAllText(GamePaths.GameSaveCloudTombstoneFile, DateTime.UtcNow.Ticks.ToString(), out Exception _error))
         {
-            File.WriteAllText(GamePaths.GameSaveCloudTombstoneFile, DateTime.UtcNow.Ticks.ToString());
             Debug.Log("[SaveManager] Cloud delete pending; wrote tombstone to clean it up on a later launch.");
+            return;
         }
-        catch (Exception _e)
-        {
-            Debug.LogError($"[SaveManager] Failed to write cloud tombstone: {_e.Message}");
-        }
+
+        Debug.LogError(GamePaths.Redact($"[SaveManager] Failed to write cloud tombstone: {_error.Message}"));
     }
 
     private bool TryReadCloudTombstoneUtc(out DateTime _deletedAtUtc)
@@ -678,26 +866,23 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         string path = GamePaths.GameSaveCloudTombstoneFile;
         if (false == File.Exists(path)) return false;
 
-        try
+        if (!SafeFileIO.TryReadAllText(path, out string raw, out Exception _error))
         {
-            string raw = File.ReadAllText(path);
-
-            if (!long.TryParse(raw.Trim(), out long ticks) || ticks < 0 || ticks > DateTime.MaxValue.Ticks)
-            {
-                // 내용이 깨졌으면 판단 기준이 없다. 표식을 지우고 기존 동기화 로직에 맡긴다.
-                Debug.LogWarning("[SaveManager] Cloud tombstone is unreadable; removing it.");
-                ClearCloudTombstone();
-                return false;
-            }
-
-            _deletedAtUtc = new DateTime(ticks, DateTimeKind.Utc);
-            return true;
-        }
-        catch (Exception _e)
-        {
-            Debug.LogError($"[SaveManager] Failed to read cloud tombstone: {_e.Message}");
+            // 읽지 못했을 뿐이므로 표식은 지우지 않는다. 다음 실행에서 다시 판단하게 둔다.
+            Debug.LogError(GamePaths.Redact($"[SaveManager] Failed to read cloud tombstone: {_error.Message}"));
             return false;
         }
+
+        if (!long.TryParse(raw.Trim(), out long ticks) || ticks < 0 || ticks > DateTime.MaxValue.Ticks)
+        {
+            // 내용이 깨졌으면 판단 기준이 없다. 표식을 지우고 기존 동기화 로직에 맡긴다.
+            Debug.LogWarning("[SaveManager] Cloud tombstone is corrupted; removing it.");
+            ClearCloudTombstone();
+            return false;
+        }
+
+        _deletedAtUtc = new DateTime(ticks, DateTimeKind.Utc);
+        return true;
     }
 
     private void ClearCloudTombstone()
@@ -708,7 +893,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
     }
 
     // 데모 빌드는 정식 빌드가 남긴 세이브를 덮어쓰기 직전에 한 번만 따로 복사해둔다.
-    // 데모와 정식은 저장 경로가 같으므로(문서\LumberBoy\SaveData.dat), 정식을 플레이하던 유저가
+    // 데모와 정식은 같은 폴더의 같은 파일(SaveData.dat)을 쓰므로, 정식을 플레이하던 유저가
     // PC에 남아있는 데모를 잠깐 켜기만 해도 진행도가 사라질 수 있기 때문이다.
     // (반대 방향 - 정식이 데모 세이브를 덮어쓰는 것 - 은 의도된 동작이라 보존하지 않는다.
     //  덮어쓰기 직전 상태는 File.Replace가 SaveData.dat.bak에 남긴다.)
@@ -716,14 +901,23 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
     private void PreserveForeignSaveOnce()
     {
         if (bForeignSavePreserveChecked) return;
-        bForeignSavePreserveChecked = true;
 
-        if (BuildInfo.IsFullRelease) return;
+        if (BuildInfo.IsFullRelease)
+        {
+            bForeignSavePreserveChecked = true;
+            return;
+        }
 
         string path = GetSaveFilePath();
-        if (false == File.Exists(path)) return;
-        if (!TryReadAndParse(path, out GameSaveData existingData, out _)) return;
-        if (BuildInfo.IsSaveVariantCompatible(existingData.buildVariant)) return;
+        ESaveSlotState state = ReadSaveSlot(path, out GameSaveData existingData, out _);
+
+        // 읽지 못했다면 누구의 세이브인지 판단할 수 없다. 여기서 확인 완료로 표시해버리면 이번 세션에는
+        // 다시 보지 않게 되므로, 플래그를 그대로 두어 다음 호출에서 한 번 더 시도하게 한다.
+        if (ESaveSlotState.Unreadable == state) return;
+
+        bForeignSavePreserveChecked = true;
+
+        if (ESaveSlotState.ForeignVariant != state) return;
 
         try
         {

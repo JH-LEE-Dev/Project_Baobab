@@ -757,6 +757,8 @@ public class SettingsManager : MonoBehaviour
         // 다음 두 경우에는 정리된 값을 한 번 기록해 파일을 최신 상태로 만든다.
         //  - Discarded: 못 쓰는 파일(구버전·손상)이 남아 있어, 그대로 두면 매 실행 같은 경고가 반복된다.
         //  - Loaded + 교정 발생: 범위를 벗어난 값이 파일에 계속 남지 않도록 한다.
+        // Unreadable은 일부러 빠져 있다. 파일 내용이 멀쩡한데 잠깐 못 읽었을 뿐일 수 있어, 여기서
+        // 기록하면 유저가 맞춰둔 설정을 기본값으로 덮어쓰게 된다. 다음 실행에서 다시 읽어보게 둔다.
         isDirty = (ESettingsLoadResult.Discarded == _result)
                || (ESettingsLoadResult.Loaded == _result && true == _corrected);
 
