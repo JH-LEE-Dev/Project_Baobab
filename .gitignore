@@ -79,3 +79,8 @@ GEMINI.md
 
 # Antigravity Agent Configuration & Rules
 .agents/
+
+# Performance Testing 패키지가 테스트 실행 때마다 Resources 아래에 만드는 파일.
+# Resources 안에 있으면 빌드에 그대로 실리므로 커밋되지 않게 막는다.
+/[Aa]ssets/[Rr]esources/PerformanceTestRunInfo.json*
+/[Aa]ssets/[Rr]esources/PerformanceTestRunSettings.json*
