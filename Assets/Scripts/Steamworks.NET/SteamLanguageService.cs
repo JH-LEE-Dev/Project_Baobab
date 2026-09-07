@@ -1,4 +1,10 @@
+#if !(UNITY_STANDALONE_WIN || UNITY_STANDALONE_LINUX || UNITY_STANDALONE_OSX || STEAMWORKS_WIN || STEAMWORKS_LIN_OSX)
+#define DISABLESTEAMWORKS
+#endif
+
+#if !DISABLESTEAMWORKS
 using Steamworks;
+#endif
 
 /// <summary>
 /// Steam이 이 게임에 대해 지정한 언어를 읽습니다.
@@ -10,6 +16,9 @@ using Steamworks;
 ///
 /// 얇게 감싸기만 하는 이유는 SteamCloudSaveService와 같습니다. Steamworks 타입이 설정 시스템까지
 /// 번지지 않도록 여기서 문자열로 끊습니다.
+///
+/// DISABLESTEAMWORKS 가드의 의미도 SteamCloudSaveService와 같습니다. 스팀이 빠진 빌드에서는
+/// 답을 모른다고만 알리고, 호출부(LanguageAutoDetect)가 OS 언어로 넘어가게 둡니다.
 /// </summary>
 public static class SteamLanguageService
 {
@@ -24,6 +33,7 @@ public static class SteamLanguageService
     {
         _apiLanguageCode = null;
 
+#if !DISABLESTEAMWORKS
         // SteamManager.Initialized는 접근만으로 SteamManager를 만들어 SteamAPI를 초기화한다.
         // (SteamCloudSaveService와 같은 경로다. 부팅 중 어느 쪽이 먼저 불리든 결과는 같다)
         if (false == SteamManager.Initialized) return false;
@@ -34,5 +44,10 @@ public static class SteamLanguageService
 
         _apiLanguageCode = _code;
         return true;
+#else
+        // 스팀이 없으면 "유저가 이 게임을 무슨 말로 볼지 밝혀둔 답"도 없다.
+        // LanguageAutoDetect가 다음 순위인 OS 언어로 넘어간다.
+        return false;
+#endif
     }
 }
