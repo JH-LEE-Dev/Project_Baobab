@@ -75,6 +75,7 @@ public class PlatformConsistencyGuard : IPreprocessBuildWithReport
         CheckDefinePairing(_store, _errors);
         CheckRecompiled(_store, _release, _errors);
         CheckAnalytics(_store, _release, _errors);
+        CheckStoveDemoBranding(_store, _release, _errors);
         CheckSteamAppId(_store, _release, _warnings);
 
         for (int i = 0; i < _warnings.Count; i++)
@@ -175,6 +176,70 @@ public class PlatformConsistencyGuard : IPreprocessBuildWithReport
         if (_actualBuild != _expectedBuild)
         {
             _errors.Add($"GameAnalytics build 가 어긋납니다. 기대 \"{_expectedBuild}\", 실제 \"{_actualBuild ?? "(읽기 실패)"}\"");
+        }
+    }
+
+    /// <summary>
+    /// 데모 안내 팝업은 데모 빌드에서만 뜹니다. STOVE 데모를 내면 유저가 그 팝업을 실제로 보는데,
+    /// 기본값이 Steam 링크 · Steam 로고 · "Steam 찜하기" 문구라 그대로 나가면
+    /// <b>STOVE에서 받은 사람에게 Steam 상점으로 가라고 안내하게 됩니다.</b>
+    ///
+    /// 프리팹 값과 번역문이라 디파인을 따라오지 않고, 잘못돼도 에러가 나지 않습니다.
+    /// 유저가 바로 보는 종류의 사고라 빌드로 막습니다.
+    /// </summary>
+    private static void CheckStoveDemoBranding(BuildStore _store, BuildRelease _release, List<string> _errors)
+    {
+        if (BuildStore.Stove != _store) return;
+        if (BuildRelease.Demo != _release) return;
+
+        const string PREFAB_PATH = "Assets/Prefabs/UI/MenuPopup/Map/NewNav/HUD_PopupNav_DemoNotice.prefab";
+        const string LOC_PATH = "Assets/Resources/Localization/DemoNoticeUI.json";
+
+        GameObject _prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PREFAB_PATH);
+
+        if (null == _prefab)
+        {
+            _errors.Add($"데모 안내 팝업 프리팹을 찾지 못했습니다: {PREFAB_PATH}");
+        }
+        else
+        {
+            HUD_PopupNav_DemoNotice _notice = _prefab.GetComponentInChildren<HUD_PopupNav_DemoNotice>(true);
+
+            if (null == _notice)
+            {
+                _errors.Add($"프리팹에서 HUD_PopupNav_DemoNotice 컴포넌트를 찾지 못했습니다: {PREFAB_PATH}");
+            }
+            else
+            {
+                SerializedObject _so = new SerializedObject(_notice);
+
+                SerializedProperty _url = _so.FindProperty("stoveStoreUrl");
+                SerializedProperty _icon = _so.FindProperty("stoveStoreIcon");
+
+                if (null == _url || true == string.IsNullOrEmpty(_url.stringValue))
+                {
+                    _errors.Add("데모 안내 팝업의 STOVE 상점 URL(stoveStoreUrl)이 비어 있습니다. " +
+                                "이대로 나가면 STOVE 유저에게 Steam 상점 링크가 노출됩니다.");
+                }
+
+                if (null == _icon || null == _icon.objectReferenceValue)
+                {
+                    _errors.Add("데모 안내 팝업의 STOVE 로고(stoveStoreIcon)가 비어 있습니다. " +
+                                "이대로 나가면 STOVE 유저에게 Steam 로고가 노출됩니다.");
+                }
+            }
+        }
+
+        TextAsset _loc = AssetDatabase.LoadAssetAtPath<TextAsset>(LOC_PATH);
+
+        if (null == _loc)
+        {
+            _errors.Add($"데모 안내 번역 파일을 찾지 못했습니다: {LOC_PATH}");
+        }
+        else if (false == _loc.text.Contains("\"id\": 3") && false == _loc.text.Contains("\"id\":3"))
+        {
+            _errors.Add("DemoNoticeUI.json 에 STOVE용 본문(entry id 3)이 없습니다. " +
+                        "없으면 게임이 Steam 문구(\"Steam 찜하기\")를 그대로 보여줍니다.");
         }
     }
 

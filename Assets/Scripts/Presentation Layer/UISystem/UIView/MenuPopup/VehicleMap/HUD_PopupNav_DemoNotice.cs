@@ -11,8 +11,16 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     [Header("External Links")]
     [Tooltip("Steam 상점 페이지 / 찜하기 URL")]
     [SerializeField] private string steamWishlistUrl = "https://store.steampowered.com/app/YOUR_APP_ID/";
+    [Tooltip("STOVE 상점 페이지 URL. STOVE 데모 빌드에서 이 값이 비어 있으면 빌드가 중단됩니다.")]
+    [SerializeField] private string stoveStoreUrl = "";
     [Tooltip("공식 디스코드 커뮤니티 URL")]
     [SerializeField] private string discordCommunityUrl = "https://discord.gg/your_invite_link";
+
+    [Header("Store Branding")]
+    [Tooltip("상점 버튼의 로고 이미지. 스토어에 따라 아이콘을 갈아끼우기 위해 참조합니다.")]
+    [SerializeField] private Image storeIconImage;
+    [Tooltip("STOVE 로고 스프라이트. STOVE 데모 빌드에서 비어 있으면 빌드가 중단됩니다.")]
+    [SerializeField] private Sprite stoveStoreIcon;
 
     [Header("Demo Notice UI References")]
     [Tooltip("데모 안내 오버레이 루트 오브젝트 (Dim 및 배너 포함)")]
@@ -155,6 +163,49 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
         }
     }
 
+    /// <summary>DemoNoticeUI.json 의 본문 엔트리 id 입니다. 스토어마다 문구가 다릅니다.</summary>
+    private const int DESC_ENTRY_STEAM = 2;
+    private const int DESC_ENTRY_STOVE = 3;
+
+    /// <summary>
+    /// 상점 버튼의 링크와 로고를 현재 스토어에 맞춥니다.
+    ///
+    /// 이 팝업은 데모 빌드에서만 뜨므로(BuildInfo.IsDemo), STOVE 데모를 내면 유저가 실제로 봅니다.
+    /// 기본값이 Steam 링크·Steam 로고라, 갈아끼우지 않으면 STOVE에서 받은 사람에게
+    /// Steam 상점으로 가라고 안내하게 됩니다.
+    ///
+    /// 값이 비어 있어도 게임을 멈추지는 않습니다. 대신 크게 로그를 남기고, 출시를 막는 일은
+    /// PlatformConsistencyGuard가 빌드 시점에 합니다. (플레이 중에 죽이는 것보다 낫습니다)
+    /// </summary>
+    private void ApplyStoreBranding()
+    {
+        string _storeUrl = BuildInfo.IsStove ? stoveStoreUrl : steamWishlistUrl;
+
+        if (true == BuildInfo.IsStove)
+        {
+            if (true == string.IsNullOrEmpty(_storeUrl))
+            {
+                Debug.LogError("[DemoNotice] STOVE 상점 URL이 비어 있습니다. 상점 버튼이 동작하지 않습니다. " +
+                               "프리팹의 stoveStoreUrl 을 채우십시오.");
+            }
+
+            if (null != storeIconImage && null != stoveStoreIcon)
+            {
+                storeIconImage.sprite = stoveStoreIcon;
+            }
+            else if (null == stoveStoreIcon)
+            {
+                Debug.LogError("[DemoNotice] STOVE 로고 스프라이트가 없어 Steam 로고가 그대로 표시됩니다. " +
+                               "프리팹의 stoveStoreIcon 을 채우십시오.");
+            }
+        }
+
+        if (null != steamWishlistBtn && false == string.IsNullOrEmpty(_storeUrl))
+        {
+            steamWishlistBtn.SetUrl(_storeUrl);
+        }
+    }
+
     public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager, UIDepthController _depthController = null, ICursorBoxUI _cursorBoxUI = null, InputManager _inputManager = null)
     {
         mainController = _mainController;
@@ -246,7 +297,21 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
 
             if (null != demoDescText)
             {
-                string _desc = localizationManager.GetText(demoJsonId, 2);
+                // 본문은 스토어 이름을 직접 말합니다("Steam 찜하기"). 단어만 바꿔서 될 일이 아니라
+                // (찜하기라는 개념이 스토어마다 없을 수 있어) 아예 다른 엔트리를 씁니다.
+                //   1 = 제목 / 2 = 본문(Steam) / 3 = 본문(STOVE)
+                string _desc = localizationManager.GetText(demoJsonId, BuildInfo.IsStove ? DESC_ENTRY_STOVE : DESC_ENTRY_STEAM);
+
+                if (true == BuildInfo.IsStove && true == string.IsNullOrEmpty(_desc))
+                {
+                    // 여기까지 왔다는 것은 번역문이 아직 없다는 뜻이다. 빈 팝업을 띄우느니
+                    // Steam 문구라도 보여주되, 이 상태로 출시되지 않도록 크게 남긴다.
+                    // (PlatformConsistencyGuard가 STOVE 데모 빌드에서 이 상태를 막는다)
+                    Debug.LogError("[DemoNotice] STOVE 본문(DemoNoticeUI.json entry 3)이 없어 Steam 문구로 대체합니다. " +
+                                   "이 빌드를 STOVE에 올리면 유저에게 Steam 찜하기를 안내하게 됩니다.");
+                    _desc = localizationManager.GetText(demoJsonId, DESC_ENTRY_STEAM);
+                }
+
                 if (false == string.IsNullOrEmpty(_desc))
                 {
                     demoDescText.text = _desc;
@@ -254,11 +319,9 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
             }
         }
 
-        // URL 동적 주입
-        if (null != steamWishlistBtn && false == string.IsNullOrEmpty(steamWishlistUrl))
-        {
-            steamWishlistBtn.SetUrl(steamWishlistUrl);
-        }
+        // 상점 링크·아이콘을 스토어에 맞춘다.
+        // 프리팹 값이라 디파인을 자동으로 따라오지 않으므로 런타임에 갈아끼운다.
+        ApplyStoreBranding();
         if (null != discordBtn && false == string.IsNullOrEmpty(discordCommunityUrl))
         {
             discordBtn.SetUrl(discordCommunityUrl);

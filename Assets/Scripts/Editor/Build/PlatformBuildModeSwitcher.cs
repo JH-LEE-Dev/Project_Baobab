@@ -4,14 +4,10 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEngine;
 
-/// <summary>배포 대상 스토어입니다.</summary>
-public enum BuildStore
-{
-    Steam,
-    Stove,
-}
+// BuildStore 는 런타임 쪽 BuildInfo.cs 에 있습니다. 게임과 에디터가 같은 열거형을 봐야
+// 스위처가 만든 설정과 게임이 읽는 값이 어긋나지 않습니다.
 
-/// <summary>배포 형태입니다.</summary>
+/// <summary>배포 형태입니다. 런타임에서는 SaveBuildVariant 가 같은 역할을 합니다.</summary>
 public enum BuildRelease
 {
     Demo,

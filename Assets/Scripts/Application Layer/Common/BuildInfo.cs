@@ -11,6 +11,21 @@ public enum SaveBuildVariant
 }
 
 /// <summary>
+/// 이 빌드가 어느 스토어로 나가는지 나타냅니다.
+///
+/// 세이브에 직렬화되지 않습니다. 세이브가 어느 빌드에서 왔는지는 SaveBuildVariant가 담당하고,
+/// 스토어는 세이브 폴더 자체를 가르므로(GamePaths) 파일 안에 표기할 필요가 없습니다.
+///
+/// 에디터 쪽 PlatformBuildModeSwitcher도 같은 열거형을 씁니다. 둘로 나누면 어느 한쪽만
+/// 고쳐지는 순간 스위처가 만든 설정과 게임이 읽는 값이 어긋납니다.
+/// </summary>
+public enum BuildStore
+{
+    Steam = 0,
+    Stove = 1,
+}
+
+/// <summary>
 /// 지금 실행 중인 빌드가 데모인지 정식인지 판정합니다.
 ///
 /// [빌드 방법]
@@ -54,6 +69,27 @@ public static class BuildInfo
 
     /// <summary>LumberBoy Demo</summary>
     public const uint STEAM_APP_ID_DEMO = 5135490;
+
+    /// <summary>
+    /// 이 빌드가 나가는 스토어입니다.
+    ///
+    /// 극성 주의: <b>디파인이 없는 쪽이 Steam</b>입니다. GamePaths의 세이브 폴더 이름과 같은
+    /// 디파인을 따르므로 둘이 어긋날 수 없습니다. (그 주석의 [극성 주의] 참고)
+    ///
+    /// 런타임에서 이 값이 필요한 곳은 "유저에게 스토어를 말해야 하는 화면"입니다.
+    /// 데모 안내 팝업이 대표적입니다 - 상점 링크와 문구가 스토어마다 달라야 하는데,
+    /// 그건 프리팹과 번역문에 들어 있어 디파인을 자동으로 따라오지 않습니다.
+    /// </summary>
+#if BAOBAB_STOVE
+    public static BuildStore Store => BuildStore.Stove;
+#else
+    public static BuildStore Store => BuildStore.Steam;
+#endif
+
+    public static bool IsStove => BuildStore.Stove == Store;
+
+    /// <summary>IsStove의 반대입니다. 읽는 쪽 문맥에 맞는 쪽을 쓰세요.</summary>
+    public static bool IsSteam => false == IsStove;
 
     /// <summary>
     /// 세이브에 기록된 변형을 현재 빌드에서 이어서 플레이해도 되는지 판정합니다.
