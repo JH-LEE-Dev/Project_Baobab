@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using UnityEngine;
 
 /// <summary>
 /// 게임이 사용하는 영구 저장 경로를 한곳에서 정의합니다.
@@ -19,12 +20,13 @@ public static class GamePaths
     /// 다른 쪽 진행도를 덮을 수 있습니다. 나누면 서로를 아예 보지 못합니다.
     ///
     /// 세이브 변형(SaveBuildVariant)은 건드리지 않습니다. 폴더가 이미 갈라져 있어 서로 만날 일이
-    /// 없고, enum에 값을 더하면 이미 배포된 Steam 빌드가 그 값을 "모르는 미래 값"으로 보고
+    /// 없고, 출시 후에 enum에 값을 더하면 배포된 구버전 빌드가 그 값을 "모르는 미래 값"으로 보고
     /// 세이브를 덮어씁니다. 데모/정식 구분은 지금처럼 변형이 계속 담당합니다.
     ///
     /// [극성 주의 - 디파인이 없는 쪽이 Steam입니다]
-    /// 반대로 두면 Steam 빌드에서 디파인을 깜빡하는 순간 기존 유저의 세이브 폴더가 통째로 바뀌어
-    /// 게임이 새 설치처럼 보입니다. 이미 배포된 제품이라 그 실수는 되돌릴 수 없습니다.
+    /// 루트는 두 플랫폼이 공유하므로(ResolveRootFolder) 갈리는 것은 이 폴더 이름 하나뿐입니다.
+    /// 반대로 두면 Steam 빌드에서 디파인을 깜빡하는 순간 세이브 폴더가 통째로 바뀌어 게임이 새 설치처럼
+    /// 보이고, 출시 후에는 그 실수를 되돌릴 수 없습니다.
     /// 지금 방향에서는 STOVE 빌드에서 깜빡했을 때 런처가 빈 폴더를 동기화할 뿐이고,
     /// 로컬 플레이는 멀쩡합니다. 실수의 대가가 훨씬 싼 쪽입니다.
     ///
@@ -33,8 +35,9 @@ public static class GamePaths
     /// 치명적이며, 사람 기억이 아니라 빌드 전 정합성 검사로 막아야 합니다.
     ///
     /// [STOVE Studio와 반드시 같아야 합니다]
-    /// 파트너 사이트의 클라우드 세이빙 설정에 ($MYDOCUMENT) + 아래 문자열을 그대로 넣습니다.
+    /// 파트너 사이트의 클라우드 세이빙 설정에 ($APPDATA_LOCAL) + 아래 문자열을 그대로 넣습니다.
     /// 한 글자라도 어긋나면 런처가 엉뚱한(빈) 폴더를 동기화하며, 에러는 나지 않습니다.
+    /// 매크로도 ResolveRootFolder가 고르는 루트와 반드시 같은 곳을 가리켜야 합니다.
     /// </summary>
 #if BAOBAB_STOVE
     private const string FOLDER_NAME = "LumberBoy_STOVE";
@@ -54,6 +57,9 @@ public static class GamePaths
 
     private static string cachedFolder;
 
+    /// <summary>폴더 생성 실패 로그를 상태가 바뀔 때만 찍기 위한 플래그입니다. (SaveFolder는 매우 자주 불립니다)</summary>
+    private static bool bReportedCreateFailure;
+
     /// <summary>저장 폴더 경로입니다. 접근 시 폴더가 없으면 생성합니다.</summary>
     public static string SaveFolder
     {
@@ -61,17 +67,68 @@ public static class GamePaths
         {
             if (string.IsNullOrEmpty(cachedFolder))
             {
-                cachedFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), FOLDER_NAME);
+                cachedFolder = Path.Combine(ResolveRootFolder(), FOLDER_NAME);
             }
 
             // 유저가 실행 중에 폴더를 지울 수도 있으므로 매번 확인한다.
             if (false == Directory.Exists(cachedFolder))
             {
-                Directory.CreateDirectory(cachedFolder);
+                try
+                {
+                    Directory.CreateDirectory(cachedFolder);
+                    bReportedCreateFailure = false;
+                }
+                catch (Exception _e)
+                {
+                    // 여기서 예외를 그대로 흘리면 이 프로퍼티를 읽기만 해도 터진다. HasSaveData처럼
+                    // try 밖에서 부르는 곳이 있어 메인 메뉴가 통째로 깨질 수 있다. 경로는 그대로
+                    // 돌려주고, 실제 실패는 파일을 만지는 각 호출부가 자기 문맥으로 처리하게 둔다.
+                    if (false == bReportedCreateFailure)
+                    {
+                        bReportedCreateFailure = true;
+                        Debug.LogError(Redact($"[GamePaths] Failed to create save folder: {_e.Message}"));
+                    }
+                }
             }
 
             return cachedFolder;
         }
+    }
+
+    /// <summary>
+    /// 저장 폴더가 들어갈 루트를 고릅니다. 두 플랫폼 모두 AppData\Local을 씁니다.
+    ///
+    /// [문서 폴더를 쓰지 않는 이유]
+    /// OneDrive의 "알려진 폴더 이동"은 바탕화면/문서/사진을 OneDrive 안으로 리디렉션합니다. 켜져 있으면
+    /// 세이브 파일이 동기화 폴더에 놓이고, 파일 온디맨드가 이를 "온라인 전용"으로 탈수화할 수 있습니다.
+    /// 그 상태에서 오프라인이면 읽기가 실패하고, 동기화 중에는 파일이 잠깁니다. 진행도를 담은 파일이
+    /// 우리가 통제하지 못하는 동기화 시스템 위에 놓이는 셈입니다.
+    /// AppData\Local은 알려진 폴더 이동의 대상이 아니고, 기업용 폴더 리디렉션도 Roaming만 옮기고
+    /// Local은 건드리지 않습니다. 그래서 여기를 씁니다.
+    ///
+    /// 대신 숨김 폴더라 유저가 직접 백업하거나 서포트에 파일을 보내기가 번거롭습니다.
+    /// 안내할 때는 탐색기 주소창에 %LOCALAPPDATA%를 붙여넣게 하면 됩니다.
+    ///
+    /// [STOVE Studio의 $APPDATA_LOCAL과 같은 곳이어야 합니다]
+    /// 런처는 파트너 사이트에 적힌 경로를 동기화할 뿐, 게임이 실제로 어디에 쓰는지 모릅니다.
+    /// 둘이 어긋나면 런처가 빈 폴더를 동기화하고 에러는 나지 않습니다. 이 함수를 고칠 때는
+    /// 파트너 사이트 설정도 반드시 함께 고쳐야 합니다.
+    /// AppData\Local과 AppData\LocalLow는 다른 폴더입니다. Unity의 persistentDataPath는 후자이므로,
+    /// 아래 폴백을 타는 순간에는 런처와 경로가 어긋납니다. 그래서 폴백은 최후의 수단이며 로그를 남깁니다.
+    /// </summary>
+    private static string ResolveRootFolder()
+    {
+        string _root = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+        // 빈 문자열이 오면 Path.Combine이 상대 경로를 만들어 실행 파일 옆에 저장해버린다.
+        // 설치 폴더는 쓰기 권한이 없을 수 있고, 게임을 지우면 세이브도 함께 사라진다.
+        if (true == string.IsNullOrEmpty(_root))
+        {
+            Debug.LogError("[GamePaths] Could not resolve the OS save root; falling back to persistentDataPath. Cloud saving will not see this location.");
+            return Application.persistentDataPath;
+        }
+
+        return _root;
     }
 
     /// <summary>플레이 진행 상황 (암호화 바이너리)</summary>
@@ -105,7 +162,7 @@ public static class GamePaths
     /// <summary>
     /// 로그에 실을 수 있도록 문자열에서 사용자 계정 폴더 경로를 지웁니다.
     ///
-    /// 저장 경로는 문서 폴더 아래라 항상 C:\Users\{계정명}\... 형태이고, 계정명을 실명으로 쓰는
+    /// 저장 경로는 AppData 아래라 항상 C:\Users\{계정명}\... 형태이고, 계정명을 실명으로 쓰는
     /// 사람이 적지 않습니다. 이 문자열이 Debug.Log로 나가면 Sentry가 브레드크럼으로 주워 크래시
     /// 리포트에 함께 올려버립니다.
     ///
@@ -120,7 +177,7 @@ public static class GamePaths
     {
         if (true == string.IsNullOrEmpty(_text)) return _text;
 
-        // 계정 폴더 하나만 지우면 문서 폴더, OneDrive 리디렉션, 임시 폴더가 전부 그 아래라 함께 처리된다.
+        // 계정 폴더 하나만 지우면 AppData, 문서 폴더, OneDrive 리디렉션, 임시 폴더가 전부 그 아래라 함께 처리된다.
         string _userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
         if (true == string.IsNullOrEmpty(_userProfile)) return _text;
