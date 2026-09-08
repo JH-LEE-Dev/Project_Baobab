@@ -66,6 +66,21 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
     // 저장이 막힌 사실을 자동저장마다 반복해서 찍지 않기 위한 플래그.
     private bool bReportedSaveBlock;
 
+    /// <summary>
+    /// 포커스 상실 저장이 마지막으로 돈 시각입니다. (Time.unscaledTime)
+    ///
+    /// 이 값만으로 판단하는 것은 의도적입니다. SaveGameData 전체의 마지막 저장 시각을 쓰면
+    /// 기존 저장 경로에 필드 갱신을 끼워 넣어야 하는데, 그 경로는 이미 검증된 코드라
+    /// 건드리지 않는 편이 낫습니다. 체크포인트 저장 직후 alt-tab 하면 한 번 더 저장되지만
+    /// 그건 무해합니다.
+    /// </summary>
+    private float lastFocusSaveTime = float.NegativeInfinity;
+
+    /// <summary>
+    /// 포커스 상실 저장의 최소 간격입니다. alt-tab을 반복해도 디스크 쓰기가 몰리지 않게 합니다.
+    /// </summary>
+    private const float FOCUS_SAVE_MIN_INTERVAL_SECONDS = 5f;
+
     // // 메인 메뉴 세이브 확인
     // 파일이 잠겨 있어도 대개 몇 초 안에 풀린다(백신 스캔, 런처의 클라우드 복원 직후 등).
     // SafeFileIO의 동기 재시도는 0.5초 만에 포기하는데, 그건 파일이 나빠서가 아니라 그 이상 멈추면
@@ -161,6 +176,56 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
         }
 
         Debug.Log("[SaveManager] Auto save triggered (ApplicationQuit)");
+        SaveGameData();
+    }
+
+    /// <summary>
+    /// 창이 포커스를 잃을 때 저장합니다. (alt-tab, 런처가 앞으로 나옴, 창 최소화 등)
+    ///
+    /// [왜 필요한가 - 스토브 클라우드]
+    /// STOVE 클라우드 세이빙은 런처가 세이브 폴더를 통째로 동기화하는 방식입니다. 런처가 언제
+    /// 업로드하는지(프로세스 종료를 기다리는지)는 공개 문서에 없어서 확정할 수 없었습니다.
+    /// 만약 OnApplicationQuit의 저장보다 먼저 업로드가 일어나면 그 직전 진행이 클라우드에
+    /// 반영되지 않습니다.
+    ///
+    /// 창을 벗어나는 시점에 이미 저장되어 있으면 그 경합 자체가 의미를 잃습니다. 런처가 언제
+    /// 읽든 최신 파일을 보게 됩니다.
+    ///
+    /// [노출 범위가 좁은 이유]
+    /// 던전에서는 SaveGameData가 원래 저장하지 않습니다(아래 가드). 그래서 실제로 이 훅이
+    /// 지켜주는 것은 <b>마을에서 ArriveTown 자동저장 이후에 한 행동</b>(판매·업그레이드·정리)입니다.
+    /// 던전 진행은 애초에 종료 저장 대상이 아니라 경합할 것도 없습니다.
+    ///
+    /// [기존 동작에 영향이 없는 이유]
+    /// 저장 경로를 새로 만들지 않고 기존 SaveGameData()를 그대로 부릅니다. 던전/튜토리얼/
+    /// character null/저장 차단 가드가 모두 그대로 적용되고, 쓰는 내용도 다른 자동저장과 같습니다.
+    /// SaveGameData는 런타임 상태를 바꾸지 않습니다(AppendTransitToSaveData 계열은 세이브
+    /// 데이터에만 정산하고 라이브 상태는 건드리지 않습니다). 즉 "저장이 일어날 수 있는 시점"만
+    /// 늘어나고 저장 결과는 달라지지 않습니다.
+    ///
+    /// [막지 못하는 것]
+    /// 포커스 이벤트 없이 프로세스가 죽는 경우(작업 관리자 강제 종료, 크래시, 정전)는 그대로
+    /// 못 막습니다. OnApplicationQuit과 같은 한계입니다.
+    /// </summary>
+    private void OnApplicationFocus(bool _hasFocus)
+    {
+        // 포커스를 얻을 때는 할 일이 없다. (에디터/빌드 모두 시작 시 true로 한 번 불린다)
+        if (true == _hasFocus) return;
+
+        // alt-tab을 반복해도 디스크 쓰기가 몰리지 않게 한다.
+        if (Time.unscaledTime - lastFocusSaveTime < FOCUS_SAVE_MIN_INTERVAL_SECONDS) return;
+
+        if (null == bootstrap)
+        {
+            bootstrap = GetComponent<BootStrap>();
+        }
+
+        // 던전에서는 어차피 SaveGameData가 저장하지 않는다. 여기서 미리 걸러 로그만이라도 줄인다.
+        if (null != bootstrap && SceneType.DungeonScene == bootstrap.CurrentSceneType) return;
+
+        lastFocusSaveTime = Time.unscaledTime;
+
+        Debug.Log("[SaveManager] Auto save triggered (LostFocus)");
         SaveGameData();
     }
 

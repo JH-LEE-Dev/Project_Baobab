@@ -45,6 +45,35 @@ SaveCheckView (Canvas + UIView_SaveCheck)
 세 패널은 **서로 배타적**입니다. 동시에 두 개가 켜지는 일은 없습니다.
 켜고 끄는 것은 시스템이 하므로, 여러분은 **각 패널의 내용만** 만들면 됩니다.
 
+### 루트 캔버스 설정
+
+이 화면은 게임에서 **유일하게 자기 캔버스를 들고 뜨는 UI**입니다. 다른 UI는 전부
+`Assets/Prefabs/UI/Canvas` 아래 캔버스 프리팹의 자식으로 들어가서 해상도 대응을 물려받는데,
+이 화면만 그 경로를 타지 않기 때문에 루트 캔버스를 직접 맞춰야 합니다.
+
+`Assets/Prefabs/UI/Canvas/ScreenSpaceCanvas.prefab`을 열어 그 설정을 그대로 옮기면 됩니다.
+
+| 컴포넌트 | 값 |
+|---|---|
+| `Canvas` | Render Mode: **Screen Space - Overlay**, Sorting Order: **101 이상** |
+| `CanvasScaler` | Reference Pixels Per Unit: **32**, Reference Resolution: **640 x 360** |
+| `GraphicRaycaster` | 그대로 |
+| **`PixelPerfectCanvasScaleApplier`** | **반드시 추가** |
+
+`PixelPerfectCanvasScaleApplier`가 빠지면 캔버스 배율이 `화면세로 ÷ 360`이라는 **실수**가 됩니다.
+16:9 프리셋(1280x720, 1920x1080, 2560x1440)에서는 우연히 정수가 나와 멀쩡해 보이지만,
+**16:10 프리셋 전부(1280x800 등)와 1366x768 같은 노트북 해상도에서 2.13배 같은 값**이 나와
+원본 1px이 화면에서 2px과 3px로 들쭉날쭉 찍힙니다. 픽셀아트라 테두리와 폰트 굵기가 눈에 띄게
+불균일해집니다.
+
+빠뜨려도 `SaveCheckCoordinator`가 붙여주기는 합니다. 다만 그러면 에디터에서 보이는 모습과
+실행 결과가 달라지므로, 프리팹에 직접 넣어두는 쪽이 작업하기 편합니다.
+
+Sorting Order를 101 이상으로 두는 이유는 메인 메뉴에 캔버스가 둘이기 때문입니다.
+`Canvas.prefab`(Order 1)과 `Overlay Canvas.prefab`(Overlay, Order 100)이 있고, Overlay 캔버스는
+Sorting Order와 무관하게 Screen Space - Camera 캔버스보다 항상 위에 그려집니다.
+그래서 이 화면도 Overlay로 두고 그보다 높은 번호를 줘야 확실히 맨 위에 옵니다.
+
 ### 인스펙터에 채울 것
 
 | 필드 | 넣을 것 |

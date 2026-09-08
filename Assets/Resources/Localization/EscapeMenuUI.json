@@ -48,7 +48,7 @@
     {
       "id": 5,
       "key": "ExitGameWarning",
-      "kr": "정말 게임을 나가시겠습니까?",
+      "kr": "정말 게임을 종료하시겠습니까?",
       "en": "Are you sure you want to quit?",
       "zhHans": "确定要退出游戏吗？",
       "zhHant": "確定要退出遊戲嗎？",

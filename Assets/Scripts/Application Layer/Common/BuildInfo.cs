@@ -61,6 +61,21 @@ public static class BuildInfo
     ///
     /// 개발 실행용 steam_appid.txt는 코드가 아니라 파일이라 자동으로 따라오지 않습니다.
     /// 전환은 `Tools > 빌드` 메뉴를 쓰세요. 디파인과 파일을 함께 바꿔줍니다.
+    ///
+    /// [왜 Store를 보지 않는가 - 일부러 그렇습니다]
+    /// 스토어 축이 생겼는데도 이 값이 Variant 하나만 따르는 것이 어색해 보일 수 있습니다.
+    /// 하지만 이 프로퍼티를 읽는 곳은 프로젝트 전체에서 <b>SteamManager 한 곳뿐</b>이고,
+    /// 그 호출은 `#if !DISABLESTEAMWORKS` 블록 안에 있습니다.
+    ///
+    /// STOVE 빌드는 BAOBAB_STOVE와 짝으로 DISABLESTEAMWORKS가 켜지므로 그 블록이 통째로
+    /// 컴파일에서 빠지고, 이 값은 애초에 평가되지 않습니다. 즉 스토어 분리가 런타임 분기가
+    /// 아니라 <b>컴파일 단계</b>에서 끝나 있어서, 여기서 Store를 다시 볼 이유가 없습니다.
+    ///
+    /// 디파인 짝이 어긋난 채로 배포 빌드가 나가는 경우(=이 값이 STOVE 빌드에서 살아나는
+    /// 유일한 경로)는 PlatformConsistencyGuard가 빌드를 중단시켜 막습니다.
+    ///
+    /// 에디터 쪽은 스토어를 봅니다. PlatformBuildModeSwitcher.ExpectedSteamAppId는
+    /// STOVE일 때 null을 돌려주고, steam_appid.txt도 그때는 건드리지 않습니다.
     /// </summary>
     public static uint SteamAppId => IsFullRelease ? STEAM_APP_ID_RELEASE : STEAM_APP_ID_DEMO;
 

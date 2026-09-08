@@ -117,6 +117,11 @@ public class LogInBelt : MonoBehaviour
     public void SetGlobalSpeedMultiplier(float _mul)
     {
         globalSpeedMultiplier = _mul;
+
+        // 벨트 애니메이션 속도에도 이 배수가 곱해지므로 즉시 다시 밀어준다. Update()의 가감속
+        // 블록은 currentSpeed가 변할 때만 도는 탓에, 등속 주행 중 배수만 바뀌면 원목 속도만
+        // 바뀌고 벨트 애니메이션은 예전 속도로 남는다.
+        SetBeltsAnimationSpeed(currentSpeed);
     }
 
     // LogCutter.GetSoundVolume()과 동일한 규칙: 마을이 아니면(=던전에 있는 동안 배경에서 계속 도는
@@ -155,6 +160,8 @@ public class LogInBelt : MonoBehaviour
         {
             belts[i].Initialize();
         }
+        // 애니메이터를 새로 잡아왔으므로(기본 speed 1) 캐시를 무효화해서 정지 속도가 반드시 적용되게 한다.
+        appliedAnimationSpeed = float.NaN;
         SetBeltsAnimationSpeed(0f);
 
         BuildPath();
@@ -290,13 +297,21 @@ public class LogInBelt : MonoBehaviour
         return best;
     }
 
+    // 마지막으로 애니메이터에 실제로 넣은 속도. 값이 그대로인데 매 프레임 Animator.speed를
+    // 건드리지 않기 위한 캐시다. NaN은 "아직 적용한 적 없음"이라 무조건 한 번 적용된다.
+    private float appliedAnimationSpeed = float.NaN;
+
     private void SetBeltsAnimationSpeed(float _speed)
     {
+        float finalSpeed = _speed * beltAnimationSpeedMultiplier * globalSpeedMultiplier;
+        if (Mathf.Approximately(finalSpeed, appliedAnimationSpeed)) return;
+        appliedAnimationSpeed = finalSpeed;
+
         for (int i = 0; i < belts.Count; i++)
         {
             if (belts[i].animator != null)
             {
-                belts[i].animator.speed = _speed * beltAnimationSpeedMultiplier * globalSpeedMultiplier;
+                belts[i].animator.speed = finalSpeed;
             }
         }
     }
@@ -351,8 +366,13 @@ public class LogInBelt : MonoBehaviour
         if (!Mathf.Approximately(currentSpeed, targetSpeedValue))
         {
             currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeedValue, acceleration * deltaTime);
-            SetBeltsAnimationSpeed(currentSpeed);
         }
+
+        // 애니메이션 속도는 가감속 여부와 무관하게 매 프레임 동기화한다. 예전처럼 위 블록 안에서만
+        // 적용하면, currentSpeed가 이미 목표 속도와 같은 상태로 시작한 경우(세이브 로드 직후)
+        // 이 호출이 한 번도 일어나지 않아 원목만 흘러가고 벨트는 멈춰 보였다. 값이 실제로 바뀔 때만
+        // 애니메이터를 건드리므로 비용은 이전과 같다.
+        SetBeltsAnimationSpeed(currentSpeed);
 
         UpdateLoopSound();
 
@@ -689,8 +709,11 @@ public class LogInBelt : MonoBehaviour
         else
         {
             currentSpeed = 0f;
-            SetBeltsAnimationSpeed(0f);
         }
+
+        // 복원한 속도를 벨트 애니메이터에 즉시 반영한다. 이게 빠지면 Initialize()에서 설정한
+        // 정지(0) 상태가 그대로 남아, 원목은 저장된 속도로 움직이는데 벨트만 멈춰 있는 상태가 된다.
+        SetBeltsAnimationSpeed(currentSpeed);
     }
 
 #if UNITY_EDITOR

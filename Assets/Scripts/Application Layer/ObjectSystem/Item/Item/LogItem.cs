@@ -285,7 +285,7 @@ public class LogItem : Item, IStaticCollidable
         {
             visualTransform.DOKill();
             visualTransform.localScale = Vector3.zero;
-            visualTransform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutElastic, 1.7f, 0.3f);
+            visualTransform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutElastic, 1.7f, 0.3f).SetLink(visualTransform.gameObject);
         }
     }
 
@@ -295,12 +295,12 @@ public class LogItem : Item, IStaticCollidable
     public void PlayBeltExitAnimation(Vector3 _targetPos, float _duration)
     {
         transform.DOKill();
-        transform.DOMove(_targetPos, _duration).SetEase(Ease.Linear);
+        transform.DOMove(_targetPos, _duration).SetEase(Ease.Linear).SetLink(gameObject);
 
         if (null != visualTransform)
         {
             visualTransform.DOKill();
-            visualTransform.DOScale(Vector3.zero, _duration).SetEase(Ease.InBack);
+            visualTransform.DOScale(Vector3.zero, _duration).SetEase(Ease.InBack).SetLink(visualTransform.gameObject);
         }
     }
 
@@ -586,6 +586,24 @@ public class LogItem : Item, IStaticCollidable
     private void OnDisable()
     {
         CollisionSystem.Instance?.Unregister(this, false);
+    }
+
+    private void OnDestroy()
+    {
+        // 씬 전환(GameInstaller 파괴 등)으로 이 오브젝트가 사라질 때, 아직 재생 중이던 벨트 연출 트윈이
+        // 이미 파괴된 Transform의 position/scale을 계속 쓰다가 DOTween 세이프 모드에 NRE로 잡히는 것을 막는다.
+        // (Town -> MainMenu 전환에서 gameInstaller.Release()가 계층을 통째로 파괴하는데,
+        //  카메라 상승 연출 1.8초 동안에도 벨트는 계속 돌아 0.1초짜리 퇴출 트윈이 그 순간에 물릴 수 있다)
+        //
+        // 여기서 죽는 트윈은 PlayBeltEnter/ExitAnimation의 순수 시각 연출뿐이고 완료 콜백이 하나도 없으므로,
+        // 중간에 끊겨도 게임 로직에 영향을 주지 않는다. 각 트윈에 걸어둔 SetLink가 이미 같은 일을 하지만,
+        // 링크를 빠뜨린 경로나 트윈이 추가되더라도 덮이도록 남겨두는 안전망이다.
+        transform.DOKill();
+
+        if (null != visualTransform)
+        {
+            visualTransform.DOKill();
+        }
     }
 
     public override void ResetItem()
