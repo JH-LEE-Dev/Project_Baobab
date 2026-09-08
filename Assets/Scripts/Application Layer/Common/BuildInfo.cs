@@ -23,6 +23,7 @@ public enum BuildStore
 {
     Steam = 0,
     Stove = 1,
+    Itch = 2,
 }
 
 /// <summary>
@@ -67,15 +68,17 @@ public static class BuildInfo
     /// 하지만 이 프로퍼티를 읽는 곳은 프로젝트 전체에서 <b>SteamManager 한 곳뿐</b>이고,
     /// 그 호출은 `#if !DISABLESTEAMWORKS` 블록 안에 있습니다.
     ///
-    /// STOVE 빌드는 BAOBAB_STOVE와 짝으로 DISABLESTEAMWORKS가 켜지므로 그 블록이 통째로
-    /// 컴파일에서 빠지고, 이 값은 애초에 평가되지 않습니다. 즉 스토어 분리가 런타임 분기가
-    /// 아니라 <b>컴파일 단계</b>에서 끝나 있어서, 여기서 Store를 다시 볼 이유가 없습니다.
+    /// Steam이 아닌 빌드(STOVE, itch)는 각자의 스토어 디파인과 짝으로 DISABLESTEAMWORKS가
+    /// 켜지므로 그 블록이 통째로 컴파일에서 빠지고, 이 값은 애초에 평가되지 않습니다. 즉 스토어
+    /// 분리가 런타임 분기가 아니라 <b>컴파일 단계</b>에서 끝나 있어서, 여기서 Store를 다시 볼
+    /// 이유가 없습니다. 스토어가 더 늘어나도 같은 규칙(스토어 디파인 + DISABLESTEAMWORKS)을
+    /// 지키는 한 이 프로퍼티는 그대로 둬도 됩니다.
     ///
-    /// 디파인 짝이 어긋난 채로 배포 빌드가 나가는 경우(=이 값이 STOVE 빌드에서 살아나는
+    /// 디파인 짝이 어긋난 채로 배포 빌드가 나가는 경우(=이 값이 Steam이 아닌 빌드에서 살아나는
     /// 유일한 경로)는 PlatformConsistencyGuard가 빌드를 중단시켜 막습니다.
     ///
     /// 에디터 쪽은 스토어를 봅니다. PlatformBuildModeSwitcher.ExpectedSteamAppId는
-    /// STOVE일 때 null을 돌려주고, steam_appid.txt도 그때는 건드리지 않습니다.
+    /// Steam이 아닐 때 null을 돌려주고, steam_appid.txt도 그때는 건드리지 않습니다.
     /// </summary>
     public static uint SteamAppId => IsFullRelease ? STEAM_APP_ID_RELEASE : STEAM_APP_ID_DEMO;
 
@@ -94,17 +97,31 @@ public static class BuildInfo
     /// 런타임에서 이 값이 필요한 곳은 "유저에게 스토어를 말해야 하는 화면"입니다.
     /// 데모 안내 팝업이 대표적입니다 - 상점 링크와 문구가 스토어마다 달라야 하는데,
     /// 그건 프리팹과 번역문에 들어 있어 디파인을 자동으로 따라오지 않습니다.
+    ///
+    /// itch는 그 화면에서 분기하지 않습니다. 정식 출시가 Steam이라 itch 데모의 상점 버튼도
+    /// Steam 상점으로 보내기로 했고, 팝업의 분기가 전부 IsStove를 보므로 itch는 자연히
+    /// Steam 쪽으로 떨어집니다. <b>의도한 결과이니 itch 분기를 새로 만들지 마십시오.</b>
+    /// 그래서 지금 이 값을 실제로 읽는 곳은 없지만, 스토어를 표시하거나 판정해야 할 때
+    /// 부정형(IsStove가 아님 등)을 쓰지 않도록 남겨 둡니다.
     /// </summary>
 #if BAOBAB_STOVE
     public static BuildStore Store => BuildStore.Stove;
+#elif BAOBAB_ITCH
+    public static BuildStore Store => BuildStore.Itch;
 #else
     public static BuildStore Store => BuildStore.Steam;
 #endif
 
     public static bool IsStove => BuildStore.Stove == Store;
 
-    /// <summary>IsStove의 반대입니다. 읽는 쪽 문맥에 맞는 쪽을 쓰세요.</summary>
-    public static bool IsSteam => false == IsStove;
+    public static bool IsItch => BuildStore.Itch == Store;
+
+    /// <summary>
+    /// 스토어가 셋이 된 뒤로는 "STOVE가 아님"이 곧 Steam이 아닙니다.
+    /// 부정으로 정의하면 새 스토어가 늘어날 때마다 이 값이 조용히 그 스토어까지 삼킵니다.
+    /// 다른 곳에서 스토어를 판정할 때도 같은 이유로 부정형을 쓰지 마십시오.
+    /// </summary>
+    public static bool IsSteam => BuildStore.Steam == Store;
 
     /// <summary>
     /// 세이브에 기록된 변형을 현재 빌드에서 이어서 플레이해도 되는지 판정합니다.

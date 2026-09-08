@@ -186,9 +186,17 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     /// 문구도 같이 갈립니다. DemoNoticeUI.json entry 3(STOVE 본문)에는 찜하기 안내가 없습니다.
     /// 버튼만 끄고 문구를 그대로 두면 <b>없는 버튼을 누르라고 말하는 화면</b>이 됩니다.
     ///
+    /// [itch는 분기하지 않습니다 - 일부러 그렇습니다]
+    /// 스토어가 셋인데 여기가 STOVE/그 외 이분법인 것이 빠뜨린 것처럼 보일 수 있습니다.
+    /// itch 데모의 상점 버튼은 <b>Steam 위시리스트로 보내기로 했으므로</b>, itch가 아래쪽으로
+    /// 떨어져 Steam URL·Steam 로고·Steam 문구를 그대로 쓰는 것이 곧 정답입니다.
+    ///
     /// 로고는 "이 빌드가 어느 스토어에서 왔는가"가 아니라 <b>"이 버튼이 어디를 여는가"</b>를
-    /// 나타냅니다. 버튼이 Steam을 열면 Steam 로고가 맞습니다. 스토어를 더 늘리더라도, 그 스토어의
-    /// 상점으로 보내지 않는 한 로고를 새로 만들면 <b>지금 맞는 화면이 오히려 틀어집니다.</b>
+    /// 나타냅니다. 버튼이 Steam을 열면 어느 스토어의 빌드든 Steam 로고가 맞습니다.
+    /// itchStoreUrl이나 itch 로고를 새로 만들면 <b>지금 맞는 화면이 오히려 틀어집니다.</b>
+    ///
+    /// itch를 자기 상점으로 안내하기로 방침이 바뀌면 그때 세 갈래로 넓히고,
+    /// PlatformConsistencyGuard의 브랜딩 검사도 itch까지 함께 넓히십시오.
     /// </summary>
     private void ApplyStoreBranding()
     {

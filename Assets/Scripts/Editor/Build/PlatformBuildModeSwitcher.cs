@@ -15,7 +15,7 @@ public enum BuildRelease
 }
 
 /// <summary>
-/// 빌드 구성을 한 번에 전환합니다. 축은 둘입니다 — <b>스토어(Steam/STOVE) × 배포(데모/정식)</b>.
+/// 빌드 구성을 한 번에 전환합니다. 축은 둘입니다 — <b>스토어(Steam/STOVE/itch.io) × 배포(데모/정식)</b>.
 ///
 /// [왜 스위처가 하나인가]
 /// 축마다 메뉴를 따로 두면 "STOVE인데 Steam 디파인이 남은" 같은 어긋난 조합이 생기고,
@@ -37,7 +37,13 @@ public enum BuildRelease
 ///
 /// [극성 주의]
 /// <b>디파인이 없는 상태가 Steam + 데모입니다.</b> 정식일 때만 BAOBAB_FULL_RELEASE를,
-/// STOVE일 때만 BAOBAB_STOVE와 DISABLESTEAMWORKS를 켭니다. (BuildInfo / GamePaths 주석 참고)
+/// Steam이 아닌 스토어일 때만 그 스토어의 디파인(BAOBAB_STOVE / BAOBAB_ITCH)과
+/// DISABLESTEAMWORKS를 켭니다. (BuildInfo / GamePaths 주석 참고)
+///
+/// [스토어를 하나 더 더할 때]
+/// 디파인 상수 · 메뉴 상수 · CurrentStore · StoreTag · SaveFolderName · DescribeDefines · Apply의
+/// 제거 목록, 그리고 BuildInfo.Store와 GamePaths.FOLDER_NAME의 #if 사슬을 함께 고칩니다.
+/// DISABLESTEAMWORKS 짝은 RequiresDisableSteamworks가 스토어 목록 없이 판정하므로 손댈 필요가 없습니다.
 /// </summary>
 public static class PlatformBuildModeSwitcher
 {
@@ -45,14 +51,15 @@ public static class PlatformBuildModeSwitcher
 
     private const string FULL_RELEASE_DEFINE = "BAOBAB_FULL_RELEASE";
     private const string STOVE_DEFINE = "BAOBAB_STOVE";
+    private const string ITCH_DEFINE = "BAOBAB_ITCH";
 
     /// <summary>
     /// Steamworks.NET이 자기 파일 전체에서 존중하는 심볼입니다. 켜면 패키지 런타임 108개 파일과
     /// SteamManager·SteamCloudSaveService·SteamLanguageService가 통째로 컴파일에서 빠집니다.
     ///
-    /// STOVE 빌드에서 이게 빠지면 SteamAPI.RestartAppIfNecessary가 살아남아, Steam을 켜둔 채
+    /// Steam이 아닌 빌드에서 이게 빠지면 SteamAPI.RestartAppIfNecessary가 살아남아, Steam을 켜둔 채
     /// 이 게임을 Steam에서 사지 않은 유저가 게임을 아예 실행하지 못합니다.
-    /// 그래서 BAOBAB_STOVE와 <b>반드시 짝</b>이어야 하며, 가드가 그 짝을 검사합니다.
+    /// 그래서 <b>Steam이 아닌 모든 스토어 디파인과 반드시 짝</b>이어야 하며, 가드가 그 짝을 검사합니다.
     /// </summary>
     private const string DISABLE_STEAMWORKS_DEFINE = "DISABLESTEAMWORKS";
 
@@ -62,6 +69,7 @@ public static class PlatformBuildModeSwitcher
 
     private const string MENU_STORE_STEAM = "Tools/빌드/스토어 - Steam";
     private const string MENU_STORE_STOVE = "Tools/빌드/스토어 - STOVE";
+    private const string MENU_STORE_ITCH = "Tools/빌드/스토어 - itch.io";
     private const string MENU_RELEASE_DEMO = "Tools/빌드/배포 - 데모";
     private const string MENU_RELEASE_FULL = "Tools/빌드/배포 - 정식";
     private const string MENU_SHOW = "Tools/빌드/현재 빌드 설정 확인";
@@ -86,11 +94,46 @@ public static class PlatformBuildModeSwitcher
 
 #region 현재 상태 읽기 (가드도 같이 씁니다)
 
-    public static BuildStore CurrentStore => HasDefine(STOVE_DEFINE) ? BuildStore.Stove : BuildStore.Steam;
+    /// <summary>
+    /// 디파인이 하나도 없으면 Steam입니다. BuildInfo.Store의 #if 순서와 반드시 같아야 하며,
+    /// 둘 다 STOVE를 먼저 봅니다. 스토어 디파인이 둘 이상 켜진 상태는 Apply가 만들지 않지만,
+    /// 손으로 넣으면 만들어질 수 있어 우선순위를 한쪽으로 고정해 둡니다.
+    /// </summary>
+    public static BuildStore CurrentStore
+    {
+        get
+        {
+            if (true == HasDefine(STOVE_DEFINE)) return BuildStore.Stove;
+            if (true == HasDefine(ITCH_DEFINE)) return BuildStore.Itch;
+
+            return BuildStore.Steam;
+        }
+    }
 
     public static BuildRelease CurrentRelease => HasDefine(FULL_RELEASE_DEFINE) ? BuildRelease.Full : BuildRelease.Demo;
 
     public static bool HasDisableSteamworksDefine => HasDefine(DISABLE_STEAMWORKS_DEFINE);
+
+    /// <summary>
+    /// 이 스토어가 DISABLESTEAMWORKS를 함께 켜야 하는지입니다. Steam만 예외이며, 스토어가
+    /// 늘어나도 이 판정은 그대로 맞습니다. 스토어를 하나씩 나열하면 새 스토어를 추가할 때
+    /// 여기를 빠뜨리고, 그 빌드에 Steam DRM이 남습니다.
+    /// </summary>
+    public static bool RequiresDisableSteamworks(BuildStore _store) => BuildStore.Steam != _store;
+
+    /// <summary>
+    /// GamePaths.FOLDER_NAME과 반드시 같은 문자열이어야 합니다. 확인 화면과 전환 로그가
+    /// 이 값을 그대로 보여주므로, 어긋나면 사람이 잘못된 폴더를 확인하게 됩니다.
+    /// </summary>
+    public static string SaveFolderName(BuildStore _store)
+    {
+        switch (_store)
+        {
+            case BuildStore.Stove: return "LumberBoy_STOVE";
+            case BuildStore.Itch:  return "LumberBoy_ITCH";
+            default:               return "LumberBoy";
+        }
+    }
 
     /// <summary>
     /// Sentry의 environment 태그입니다. 스토어와 배포를 모두 담아, 크래시가 어느 빌드에서 왔는지
@@ -98,10 +141,24 @@ public static class PlatformBuildModeSwitcher
     /// </summary>
     public static string ExpectedSentryEnvironment(BuildStore _store, BuildRelease _release)
     {
-        string _storeTag = (BuildStore.Stove == _store) ? "stove" : "steam";
+        string _storeTag = StoreTag(_store);
         string _releaseTag = (BuildRelease.Full == _release) ? "production" : "demo";
 
         return _storeTag + "-" + _releaseTag;
+    }
+
+    /// <summary>
+    /// Sentry environment와 GameAnalytics build가 함께 쓰는 스토어 이름입니다. 한 곳에서
+    /// 만들어야 두 태그가 서로 다른 이름으로 갈리지 않습니다. (steam-demo / 1.0.0-itch 처럼)
+    /// </summary>
+    private static string StoreTag(BuildStore _store)
+    {
+        switch (_store)
+        {
+            case BuildStore.Stove: return "stove";
+            case BuildStore.Itch:  return "itch";
+            default:               return "steam";
+        }
     }
 
     /// <summary>
@@ -110,7 +167,7 @@ public static class PlatformBuildModeSwitcher
     /// </summary>
     public static string ExpectedGameAnalyticsBuild(BuildStore _store, BuildRelease _release)
     {
-        string _value = PlayerSettings.bundleVersion + ((BuildStore.Stove == _store) ? "-stove" : "-steam");
+        string _value = PlayerSettings.bundleVersion + "-" + StoreTag(_store);
 
         if (BuildRelease.Full != _release) _value += "-demo";
 
@@ -118,12 +175,12 @@ public static class PlatformBuildModeSwitcher
     }
 
     /// <summary>
-    /// steam_appid.txt에 들어갈 값입니다. STOVE 빌드에는 의미가 없어 null을 돌려줍니다.
+    /// steam_appid.txt에 들어갈 값입니다. Steam이 아닌 빌드에는 의미가 없어 null을 돌려줍니다.
     /// (데모와 정식은 Steam에서 서로 다른 앱이라 번호가 다릅니다)
     /// </summary>
     public static string ExpectedSteamAppId(BuildStore _store, BuildRelease _release)
     {
-        if (BuildStore.Stove == _store) return null;
+        if (BuildStore.Steam != _store) return null;
 
         uint _id = (BuildRelease.Full == _release) ? BuildInfo.STEAM_APP_ID_RELEASE : BuildInfo.STEAM_APP_ID_DEMO;
 
@@ -160,6 +217,9 @@ public static class PlatformBuildModeSwitcher
     [MenuItem(MENU_STORE_STOVE, false, 2)]
     private static void SwitchToStove() { Apply(BuildStore.Stove, CurrentRelease); }
 
+    [MenuItem(MENU_STORE_ITCH, false, 3)]
+    private static void SwitchToItch() { Apply(BuildStore.Itch, CurrentRelease); }
+
     [MenuItem(MENU_RELEASE_DEMO, false, 21)]
     private static void SwitchToDemo() { Apply(CurrentStore, BuildRelease.Demo); }
 
@@ -171,6 +231,9 @@ public static class PlatformBuildModeSwitcher
 
     [MenuItem(MENU_STORE_STOVE, true)]
     private static bool ValidateStove() { Menu.SetChecked(MENU_STORE_STOVE, BuildStore.Stove == CurrentStore); return true; }
+
+    [MenuItem(MENU_STORE_ITCH, true)]
+    private static bool ValidateItch() { Menu.SetChecked(MENU_STORE_ITCH, BuildStore.Itch == CurrentStore); return true; }
 
     [MenuItem(MENU_RELEASE_DEMO, true)]
     private static bool ValidateDemo() { Menu.SetChecked(MENU_RELEASE_DEMO, BuildRelease.Demo == CurrentRelease); return true; }
@@ -206,9 +269,9 @@ public static class PlatformBuildModeSwitcher
 
         List<string> _problems = new List<string>();
 
-        if (BuildStore.Stove == _store && false == HasDisableSteamworksDefine)
+        if (true == RequiresDisableSteamworks(_store) && false == HasDisableSteamworksDefine)
         {
-            _problems.Add("STOVE인데 DISABLESTEAMWORKS가 없습니다. Steam DRM이 살아 있어 유저가 게임을 못 켭니다.");
+            _problems.Add($"{_store}인데 DISABLESTEAMWORKS가 없습니다. Steam DRM이 살아 있어 유저가 게임을 못 켭니다.");
         }
 
         if (BuildStore.Steam == _store && true == HasDisableSteamworksDefine)
@@ -245,8 +308,8 @@ public static class PlatformBuildModeSwitcher
             $"배포           : {(BuildRelease.Full == _release ? "정식" : "데모")}\n" +
             $"디파인         : {DescribeDefines(_store, _release)}\n" +
             $"세이브 변형     : {BuildInfo.Variant}\n" +
-            $"세이브 폴더     : {(BuildStore.Stove == _store ? "LumberBoy_STOVE" : "LumberBoy")}\n" +
-            $"기대 앱 ID      : {(null == _expectedAppId ? "(STOVE - 사용 안 함)" : _expectedAppId)}\n" +
+            $"세이브 폴더     : {SaveFolderName(_store)}\n" +
+            $"기대 앱 ID      : {(null == _expectedAppId ? $"({_store} - 사용 안 함)" : _expectedAppId)}\n" +
             $"steam_appid    : {_fileAppId}\n" +
             $"Sentry env     : {ReadSentryEnvironment() ?? "(읽기 실패)"}\n" +
             $"GA build       : {ReadGameAnalyticsBuild() ?? "(읽기 실패)"}\n\n" + _verdict;
@@ -262,6 +325,7 @@ public static class PlatformBuildModeSwitcher
 
         if (BuildRelease.Full == _release) _list.Add(FULL_RELEASE_DEFINE);
         if (BuildStore.Stove == _store) _list.Add(STOVE_DEFINE);
+        if (BuildStore.Itch == _store) _list.Add(ITCH_DEFINE);
         if (true == HasDisableSteamworksDefine) _list.Add(DISABLE_STEAMWORKS_DEFINE);
 
         return (0 == _list.Count) ? "없음" : string.Join(" + ", _list);
@@ -277,7 +341,7 @@ public static class PlatformBuildModeSwitcher
 
         PlayerSettings.GetScriptingDefineSymbols(_target, out string[] _defines);
 
-        // 우리가 다루는 셋만 넣고 뺀다. 다른 디파인(DOTWEEN, STEAMWORKS_NET 등)은 그대로 둔다.
+        // 우리가 다루는 넷만 넣고 뺀다. 다른 디파인(DOTWEEN, STEAMWORKS_NET 등)은 그대로 둔다.
         List<string> _list = new List<string>(_defines.Length + 3);
 
         for (int i = 0; i < _defines.Length; i++)
@@ -286,6 +350,7 @@ public static class PlatformBuildModeSwitcher
 
             if (_d == FULL_RELEASE_DEFINE) continue;
             if (_d == STOVE_DEFINE) continue;
+            if (_d == ITCH_DEFINE) continue;
             if (_d == DISABLE_STEAMWORKS_DEFINE) continue;
 
             _list.Add(_d);
@@ -293,13 +358,13 @@ public static class PlatformBuildModeSwitcher
 
         if (BuildRelease.Full == _release) _list.Add(FULL_RELEASE_DEFINE);
 
-        if (BuildStore.Stove == _store)
-        {
-            // 이 둘은 반드시 함께 간다. 하나만 켜면 STOVE 빌드에 Steam DRM이 남거나,
-            // Steam 빌드에서 클라우드가 조용히 죽는다.
-            _list.Add(STOVE_DEFINE);
-            _list.Add(DISABLE_STEAMWORKS_DEFINE);
-        }
+        if (BuildStore.Stove == _store) _list.Add(STOVE_DEFINE);
+        if (BuildStore.Itch == _store) _list.Add(ITCH_DEFINE);
+
+        // 스토어 디파인과 반드시 함께 간다. 하나만 켜면 Steam이 아닌 빌드에 Steam DRM이 남거나,
+        // Steam 빌드에서 클라우드가 조용히 죽는다. 스토어를 하나씩 나열하지 않고 판정을 한 곳에
+        // 모아 둬야, 새 스토어를 더할 때 여기를 빠뜨릴 수 없다.
+        if (true == RequiresDisableSteamworks(_store)) _list.Add(DISABLE_STEAMWORKS_DEFINE);
 
         PlayerSettings.SetScriptingDefineSymbols(_target, _list.ToArray());
 
@@ -310,12 +375,12 @@ public static class PlatformBuildModeSwitcher
 
         Debug.Log($"[BuildMode] {_store} / {(BuildRelease.Full == _release ? "정식" : "데모")} 으로 전환했습니다.\n" +
                   $"  디파인      : {DescribeDefines(_store, _release)}\n" +
-                  $"  세이브 폴더  : {(BuildStore.Stove == _store ? "LumberBoy_STOVE" : "LumberBoy")}\n" +
+                  $"  세이브 폴더  : {SaveFolderName(_store)}\n" +
                   $"  Sentry env  : {ExpectedSentryEnvironment(_store, _release)}\n" +
                   $"  GA build    : {ExpectedGameAnalyticsBuild(_store, _release)}\n" +
-                  $"  steam_appid : {(null == _appId ? "(STOVE - 건드리지 않음)" : _appId)}\n" +
+                  $"  steam_appid : {(null == _appId ? $"({_store} - 건드리지 않음)" : _appId)}\n" +
                   "스크립트 재컴파일 후 적용됩니다.\n" +
-                  "주의: 데모↔정식 세이브는 서로 호환되지 않고, Steam↔STOVE는 세이브 폴더 자체가 다릅니다.");
+                  "주의: 데모↔정식 세이브는 서로 호환되지 않고, 스토어끼리는 세이브 폴더 자체가 다릅니다.");
     }
 
     private static NamedBuildTarget ActiveTarget =>

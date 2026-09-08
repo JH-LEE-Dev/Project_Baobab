@@ -19,6 +19,15 @@ public static class GamePaths
     /// 백업하고 각자 복원하게 되어, 양쪽을 다 산 유저가 기기를 옮길 때 한쪽의 오래된 사본이
     /// 다른 쪽 진행도를 덮을 수 있습니다. 나누면 서로를 아예 보지 못합니다.
     ///
+    /// itch는 클라우드가 아예 없어 STOVE와 이유가 다릅니다. 위험은 한 방향으로만 남습니다 -
+    /// 폴더를 공유하면, Steam 데모를 깔아 둔 기기에서 itch 빌드가 만든 세이브를 <b>Steam
+    /// 클라우드가 자기 것으로 올려갑니다.</b> itch 쪽은 그런 일이 벌어지는지조차 모릅니다.
+    /// 두 데모를 다 받은 사람이 진행도를 이어받지 못하는 것이 그 대가인데, 통제하지 못하는
+    /// 동기화가 세이브를 덮는 쪽이 훨씬 비쌉니다.
+    ///
+    /// itch 데모와 itch 정식은 이 폴더를 함께 씁니다. 스토어가 폴더를 가르고 변형이 파일 안을
+    /// 가르는 구조 그대로이며, Steam에서 이미 그렇게 돌고 있습니다.
+    ///
     /// 세이브 변형(SaveBuildVariant)은 건드리지 않습니다. 폴더가 이미 갈라져 있어 서로 만날 일이
     /// 없고, 출시 후에 enum에 값을 더하면 배포된 구버전 빌드가 그 값을 "모르는 미래 값"으로 보고
     /// 세이브를 덮어씁니다. 데모/정식 구분은 지금처럼 변형이 계속 담당합니다.
@@ -41,6 +50,8 @@ public static class GamePaths
     /// </summary>
 #if BAOBAB_STOVE
     private const string FOLDER_NAME = "LumberBoy_STOVE";
+#elif BAOBAB_ITCH
+    private const string FOLDER_NAME = "LumberBoy_ITCH";
 #else
     private const string FOLDER_NAME = "LumberBoy";
 #endif

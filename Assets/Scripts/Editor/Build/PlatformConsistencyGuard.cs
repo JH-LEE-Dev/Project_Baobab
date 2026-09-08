@@ -11,8 +11,9 @@ using UnityEngine;
 /// PlatformBuildModeSwitcher는 편의 장치입니다. 메뉴 누르는 걸 깜빡하면 그대로 나갑니다.
 /// 그런데 이 프로젝트의 플랫폼 축은 <b>실패 방향을 안전한 쪽으로 몰 수가 없습니다.</b>
 ///
-///   · 세이브 폴더  — STOVE에서 디파인을 깜빡 → 런처가 빈 폴더를 동기화. 클라우드만 조용히 안 됨
-///   · Steam DRM   — STOVE에서 디파인을 깜빡 → RestartAppIfNecessary가 살아남아
+///   · 세이브 폴더  — 스토어 디파인을 깜빡 → Steam 폴더를 그대로 씀. STOVE는 런처가 빈 폴더를
+///                    동기화하고, itch는 Steam 클라우드가 그 세이브를 자기 것으로 올려감
+///   · Steam DRM   — 스토어 디파인을 깜빡 → RestartAppIfNecessary가 살아남아
 ///                    <b>Steam을 켜둔 채 이 게임을 Steam에서 사지 않은 유저가 실행조차 못 함</b>
 ///
 /// 둘이 같은 디파인에 매달려 있고 한쪽 대가가 치명적이라, 사람 기억이 아니라 빌드 중단으로 막습니다.
@@ -20,7 +21,7 @@ using UnityEngine;
 ///
 /// [무엇을 보는가]
 /// 어긋나도 <b>아무 에러가 나지 않는</b> 것들만 봅니다. 컴파일이 깨지는 종류는 어차피 빌드가 안 됩니다.
-///   1. BAOBAB_STOVE 와 DISABLESTEAMWORKS 의 짝
+///   1. 스토어 디파인(BAOBAB_STOVE / BAOBAB_ITCH)과 DISABLESTEAMWORKS 의 짝
 ///   2. 스크립트 재컴파일 여부 (메뉴를 누르고 바로 빌드를 누른 경우)
 ///   3. Sentry environment / GameAnalytics build (Resources 아래라 빌드에 무조건 실림)
 ///   4. steam_appid.txt (경고만 — 배포물에 실리지 않아 빌드를 막을 이유가 없음)
@@ -47,6 +48,12 @@ public class PlatformConsistencyGuard : IPreprocessBuildWithReport
     private const bool COMPILED_AS_STOVE = true;
 #else
     private const bool COMPILED_AS_STOVE = false;
+#endif
+
+#if BAOBAB_ITCH
+    private const bool COMPILED_AS_ITCH = true;
+#else
+    private const bool COMPILED_AS_ITCH = false;
 #endif
 
 #if DISABLESTEAMWORKS
@@ -113,16 +120,19 @@ public class PlatformConsistencyGuard : IPreprocessBuildWithReport
 #region 검사
 
     /// <summary>
-    /// BAOBAB_STOVE 와 DISABLESTEAMWORKS 는 반드시 함께 켜지고 함께 꺼져야 합니다.
+    /// 스토어 디파인과 DISABLESTEAMWORKS 는 반드시 함께 켜지고 함께 꺼져야 합니다.
     /// 한쪽만 있으면 어느 방향이든 조용히 망가집니다.
+    ///
+    /// 판정을 스토어 목록이 아니라 RequiresDisableSteamworks 에 맡깁니다. 스토어를 하나씩
+    /// 나열하면 새 스토어를 더할 때 여기를 빠뜨리고, <b>가드가 있는데도 그 빌드만 안 걸립니다.</b>
     /// </summary>
     private static void CheckDefinePairing(BuildStore _store, List<string> _errors)
     {
         bool _hasDisable = PlatformBuildModeSwitcher.HasDisableSteamworksDefine;
 
-        if (BuildStore.Stove == _store && false == _hasDisable)
+        if (true == PlatformBuildModeSwitcher.RequiresDisableSteamworks(_store) && false == _hasDisable)
         {
-            _errors.Add("STOVE 빌드인데 DISABLESTEAMWORKS 가 없습니다. " +
+            _errors.Add($"{_store} 빌드인데 DISABLESTEAMWORKS 가 없습니다. " +
                         "SteamAPI.RestartAppIfNecessary 가 살아남아, Steam을 켜둔 채 이 게임을 Steam에서 " +
                         "사지 않은 유저가 게임을 실행조차 못 합니다.");
         }
@@ -141,24 +151,26 @@ public class PlatformConsistencyGuard : IPreprocessBuildWithReport
     private static void CheckRecompiled(BuildStore _store, BuildRelease _release, List<string> _errors)
     {
         bool _settingsSaysStove = BuildStore.Stove == _store;
+        bool _settingsSaysItch = BuildStore.Itch == _store;
         bool _settingsSaysFull = BuildRelease.Full == _release;
         bool _settingsSaysDisable = PlatformBuildModeSwitcher.HasDisableSteamworksDefine;
 
         if (_settingsSaysStove != COMPILED_AS_STOVE
+            || _settingsSaysItch != COMPILED_AS_ITCH
             || _settingsSaysFull != COMPILED_AS_FULL_RELEASE
             || _settingsSaysDisable != COMPILED_WITHOUT_STEAMWORKS)
         {
             _errors.Add("설정은 바뀌었지만 스크립트가 아직 그 설정으로 컴파일되지 않았습니다. " +
                         "메뉴를 누른 직후 바로 빌드한 경우입니다. " +
                         "에디터가 재컴파일을 끝낼 때까지 기다렸다가 다시 빌드하십시오. " +
-                        $"(설정: STOVE={_settingsSaysStove}, 정식={_settingsSaysFull}, DISABLESTEAMWORKS={_settingsSaysDisable} / " +
-                        $"컴파일됨: STOVE={COMPILED_AS_STOVE}, 정식={COMPILED_AS_FULL_RELEASE}, DISABLESTEAMWORKS={COMPILED_WITHOUT_STEAMWORKS})");
+                        $"(설정: STOVE={_settingsSaysStove}, itch={_settingsSaysItch}, 정식={_settingsSaysFull}, DISABLESTEAMWORKS={_settingsSaysDisable} / " +
+                        $"컴파일됨: STOVE={COMPILED_AS_STOVE}, itch={COMPILED_AS_ITCH}, 정식={COMPILED_AS_FULL_RELEASE}, DISABLESTEAMWORKS={COMPILED_WITHOUT_STEAMWORKS})");
         }
     }
 
     /// <summary>
-    /// 둘 다 Resources 아래라 빌드에 무조건 실립니다. 어긋나면 STOVE 크래시와 지표가
-    /// Steam 데이터에 섞여 나중에 구분할 수 없게 됩니다.
+    /// 둘 다 Resources 아래라 빌드에 무조건 실립니다. 어긋나면 다른 스토어의 크래시와 지표가
+    /// Steam 데이터에 섞여 나중에 구분할 수 없게 됩니다. 섞인 뒤에는 되돌릴 방법이 없습니다.
     /// </summary>
     private static void CheckAnalytics(BuildStore _store, BuildRelease _release, List<string> _errors)
     {
@@ -188,6 +200,11 @@ public class PlatformConsistencyGuard : IPreprocessBuildWithReport
     /// 본문에서도 찜하기 안내를 뺍니다(번역문). 둘은 반드시 함께 맞아야 합니다 - 한쪽만 되면
     /// "없는 버튼을 누르라고 말하는 화면" 또는 "Steam 버튼이 남은 STOVE 빌드"가 됩니다.
     /// 그래서 여기서 두 가지를 봅니다: 버튼을 끌 참조가 있는가, 본문에 상점 안내가 없는가.
+    ///
+    /// itch에는 같은 검사가 <b>일부러 없습니다.</b> 정식 출시가 Steam이라 itch 데모의 상점 버튼도
+    /// Steam으로 보내기로 했고, 팝업의 분기가 전부 IsStove를 보므로 itch는 손대지 않아도 Steam
+    /// 쪽으로 떨어집니다. 즉 itch에서는 기본값이 곧 정답이라 막을 것이 없습니다.
+    /// itch를 별도 상점으로 안내하기로 방침이 바뀌면 그때 이 검사를 itch에도 넓히십시오.
     ///
     /// 프리팹 값과 번역문이라 디파인을 따라오지 않고, 잘못돼도 에러가 나지 않습니다.
     /// 유저가 바로 보는 종류의 사고라 빌드로 막습니다.
