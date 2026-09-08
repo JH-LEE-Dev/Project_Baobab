@@ -100,27 +100,21 @@ public class SaveCheckCoordinator : MonoBehaviour
         }
 
         _canvas = _canvas.rootCanvas;
+        _canvas.pixelPerfect = true;
 
-        // 스케일러를 먼저 확보한다. 아래 Applier의 RequireComponent가 대신 붙이게 두면
-        // 유니티 기본값이 들어가 REFERENCE_PIXELS_PER_UNIT을 지정할 기회를 놓친다.
+        // 스케일러를 먼저 확보하고 REFERENCE_PIXELS_PER_UNIT(32)을 강제한다.
+        // PPU가 100 등 다른 값으로 남으면 9-슬라이스 스프라이트의 테두리가 3.125배로 뻥튀기되어
+        // 커서 박스의 테두리가 찌그러지고 강제로 늘어난 것처럼 왜곡된다.
         if (false == _canvas.TryGetComponent(out CanvasScaler _canvasScaler))
         {
             _canvasScaler = _canvas.gameObject.AddComponent<CanvasScaler>();
-            _canvasScaler.referencePixelsPerUnit = REFERENCE_PIXELS_PER_UNIT;
+        }
 
-            // Applier가 ConstantPixelSize로 바꾸고 나면 런타임 동작에는 쓰이지 않지만,
-            // 인스펙터에서 이 캔버스의 기준을 읽을 수 있도록 다른 캔버스와 같은 값을 넣어둔다.
-            _canvasScaler.referenceResolution =
-                new Vector2(SettingsData.PIXEL_PERFECT_REF_WIDTH, SettingsData.CAMERA_VIEW_HEIGHT);
-        }
-        else if (false == Mathf.Approximately(_canvasScaler.referencePixelsPerUnit, REFERENCE_PIXELS_PER_UNIT))
-        {
-            // 배율과 달리 이 값은 UI가 의도해서 넣었을 수 있으므로 덮어쓰지 않는다.
-            // 다만 어긋난 채로 두면 이 화면의 스프라이트만 크기가 달라지므로 조용히 넘기지도 않는다.
-            Debug.LogWarning("[SaveCheckCoordinator] The save check canvas uses Reference Pixels Per Unit " +
-                $"{_canvasScaler.referencePixelsPerUnit}, but the rest of the game's UI uses {REFERENCE_PIXELS_PER_UNIT}. " +
-                "Sprites on this screen will be drawn at a different size.");
-        }
+        _canvasScaler.referencePixelsPerUnit = REFERENCE_PIXELS_PER_UNIT;
+        _canvasScaler.referenceResolution =
+            new Vector2(SettingsData.PIXEL_PERFECT_REF_WIDTH, SettingsData.CAMERA_VIEW_HEIGHT);
+        _canvasScaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        _canvasScaler.matchWidthOrHeight = 1f;
 
         // 활성 오브젝트에 붙이므로 이 자리에서 곧바로 OnEnable이 돌아 첫 프레임부터 배율이 맞는다.
         if (false == _canvas.TryGetComponent<PixelPerfectCanvasScaleApplier>(out _))
