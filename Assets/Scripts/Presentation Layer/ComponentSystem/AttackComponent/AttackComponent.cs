@@ -56,6 +56,21 @@ public class AttackComponent : PComponent
 
     private Vector2 aimStickDirection = Vector2.zero;
 
+    // 조준 방향이 한 프레임에 확 꺾일 때(스틱을 중립에 뒀다가 정반대로 미는 경우) 조준점이 순간이동하면
+    // 인디케이터가 뚝뚝 끊겨 보인다. ArmComponent는 회전을 보간하므로 팔만 부드럽게 돌아오고
+    // 인디케이터는 튀어서, 둘이 따로 노는 것처럼 어색해진다.
+    //
+    // 인디케이터만 따로 보간하면 그림과 실제 공격 판정 방향이 어긋나므로, 원본인 조준 방향 자체에
+    // 각속도 제한을 건다. 조금씩 조준을 옮기는 평소 입력은 프레임당 변화가 이 한도보다 작아 그대로
+    // 즉각 반응하고, 180도 급반전 같은 큰 점프에서만 제한이 걸린다.
+    [SerializeField, Tooltip("패드 조준 방향이 1초에 돌 수 있는 최대 각도. 크면 즉각적이고 작으면 부드럽다. " +
+        "900이면 180도 반전에 0.2초가 걸린다.")]
+    private float gamepadAimTurnSpeed = 900f;
+
+    // 실제로 적용 중인(각속도 제한을 거친) 패드 조준 방향. Vector2.zero는 "아직 기준 방향이 없다"는
+    // 뜻이라, 다음 입력에서 보간 없이 곧바로 맞춘다.
+    private Vector2 gamepadAimAppliedDir = Vector2.zero;
+
     /// <summary>
     /// 스프라이트가 바라볼 방향입니다. 0이면 "조준 방향을 그대로 쓰라"는 뜻입니다.
     ///
@@ -201,6 +216,9 @@ public class AttackComponent : PComponent
         if (EInputDeviceType.Gamepad != ctx.inputManager.CurrentDevice)
         {
             facingOverrideDirection = Vector2.zero;
+            // 마우스로 조준하던 위치는 스틱 방향과 아무 관계가 없다. 기준 방향을 비워 두어, 패드로
+            // 돌아왔을 때 마우스가 있던 쪽에서 빙 돌지 않고 스틱이 가리키는 방향으로 바로 붙게 한다.
+            gamepadAimAppliedDir = Vector2.zero;
             return;
         }
 
@@ -255,8 +273,38 @@ public class AttackComponent : PComponent
 
         if (Vector2.zero == targetAimDir) return;
 
-        Vector3 _aimWorldPos = transform.position + (Vector3)(targetAimDir * gamepadAimRadius);
+        Vector2 _appliedAimDir = RotateAimTowards(targetAimDir);
+
+        Vector3 _aimWorldPos = transform.position + (Vector3)(_appliedAimDir * gamepadAimRadius);
         ApplyAimWorldPosition(_aimWorldPos);
+    }
+
+    /// <summary>
+    /// 조준 방향을 목표 방향 쪽으로 gamepadAimTurnSpeed만큼만 돌립니다.
+    ///
+    /// Vector3.RotateTowards가 아니라 각도로 직접 도는 이유는, 두 방향이 정확히 반대일 때
+    /// RotateTowards는 회전축이 정해지지 않아 XY 평면을 벗어날 수 있기 때문입니다. 하필 여기서
+    /// 문제가 되는 입력이 바로 그 "정반대로 밀기"입니다.
+    ///
+    /// 조준 유지 시간(aimStickIdleTime)과 달리 여기서는 unscaled가 아닌 Time.deltaTime을 씁니다.
+    /// ArmComponent의 회전 보간이 같은 기준이라, 슬로우모션·히트스톱에서 팔과 조준이 함께 느려져야
+    /// 둘이 어긋나 보이지 않기 때문입니다.
+    /// </summary>
+    private Vector2 RotateAimTowards(Vector2 _targetDir)
+    {
+        if (Vector2.zero == gamepadAimAppliedDir || gamepadAimTurnSpeed <= 0f)
+        {
+            gamepadAimAppliedDir = _targetDir;
+            return gamepadAimAppliedDir;
+        }
+
+        float _currentAngle = Mathf.Atan2(gamepadAimAppliedDir.y, gamepadAimAppliedDir.x) * Mathf.Rad2Deg;
+        float _targetAngle = Mathf.Atan2(_targetDir.y, _targetDir.x) * Mathf.Rad2Deg;
+        float _angle = Mathf.MoveTowardsAngle(_currentAngle, _targetAngle, gamepadAimTurnSpeed * Time.deltaTime);
+
+        float _rad = _angle * Mathf.Deg2Rad;
+        gamepadAimAppliedDir = new Vector2(Mathf.Cos(_rad), Mathf.Sin(_rad));
+        return gamepadAimAppliedDir;
     }
 
     private void MouseMove(Vector2 _mouseScreenPos)
@@ -1001,6 +1049,7 @@ public class AttackComponent : PComponent
         aimStickDirection = Vector2.zero;
         aimStickIdleTime = 0f;
         facingOverrideDirection = Vector2.zero;
+        gamepadAimAppliedDir = Vector2.zero; // 던전에 들어서며 정면 아래로 맞추는 자리라, 이전 방향에서 빙 돌면 안 된다
 
         // 마우스 조준은 SetCursorEnable이 이미 실제 커서 위치로 맞춰 두므로 정면 아래로 덮어쓰면 안 된다.
         if (null == ctx || null == ctx.inputManager || EInputDeviceType.Gamepad != ctx.inputManager.CurrentDevice)
