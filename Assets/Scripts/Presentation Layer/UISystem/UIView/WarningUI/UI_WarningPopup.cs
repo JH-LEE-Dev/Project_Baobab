@@ -16,7 +16,36 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     [SerializeField] private TMP_Text messageText;
     [SerializeField] private UI_WarningPopupButton confirmButton;
     [SerializeField] private UI_WarningPopupButton cancelButton;
-    
+
+    /// <summary>
+    /// 패드로 팝업이 열렸을 때 처음 잡히는 버튼을 취소 쪽으로 돌릴지입니다.
+    ///
+    /// 되돌릴 수 없는 선택을 확인(Confirm)에 걸어둔 팝업에서만 켭니다. 기본값은 false라
+    /// 기존 팝업들의 동작은 그대로입니다. ShowWarning 한 번마다 다시 지정해야 합니다.
+    /// (세이브 확인 화면의 "포기하고 진행" 재확인이 이 경우입니다)
+    /// </summary>
+    private bool bPreferCancelOnOpen;
+
+    /// <summary>패드가 처음 잡아야 할 버튼입니다. 취소 버튼이 꺼져 있으면 확인으로 되돌아갑니다.</summary>
+    private UI_WarningPopupButton DefaultSelectedButton
+    {
+        get
+        {
+            if (true == bPreferCancelOnOpen && null != cancelButton && true == cancelButton.gameObject.activeInHierarchy)
+            {
+                return cancelButton;
+            }
+
+            return confirmButton;
+        }
+    }
+
+    /// <summary>ShowWarning을 부르기 직전에 지정합니다. 지정하지 않으면 확인 버튼이 잡힙니다.</summary>
+    public void SetPreferCancelOnOpen(bool _bPreferCancel)
+    {
+        bPreferCancelOnOpen = _bPreferCancel;
+    }
+
     [Header("Animation Settings")]
     [SerializeField] private CanvasGroup popupCanvasGroup;
     [SerializeField] private RectTransform popupWindowRoot;
@@ -51,6 +80,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     private TweenCallback cachedOnOpenProductionComplete;
 
     public bool IsActive => gameObject.activeSelf;
+    public float AnimationDuration => animationDuration;
     public InputManager InputManager => inputManager;
 
     /// <summary>ESC로 뎁스 스택에서 닫힐 때 호출됩니다. 확인(Confirm)이 아닌 취소(Cancel)로 처리해
@@ -147,6 +177,35 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         }
     }
 
+    public void Initialize(InputManager _inputManager, ICursorBoxUI _cursorBoxUI = null, UIDepthController _depthController = null)
+    {
+        if (true == isInitialized)
+        {
+            return;
+        }
+
+        if (null == cachedOnUICancel)
+        {
+            cachedOnUICancel = OnCancelButtonClicked;
+        }
+
+        if (null == cachedOnInputDeviceChanged)
+        {
+            cachedOnInputDeviceChanged = OnInputDeviceChanged;
+        }
+
+        inputManager = _inputManager;
+        cursorBoxUI = _cursorBoxUI;
+        depthController = _depthController;
+        isInitialized = true;
+
+        if (null != inputManager && null != inputManager.inputReader && null != cachedOnInputDeviceChanged)
+        {
+            inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+            inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
+        }
+    }
+
     public void SetCursorBoxUI(ICursorBoxUI _cursorBoxUI)
     {
         cursorBoxUI = _cursorBoxUI;
@@ -240,22 +299,24 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
-            if (null != confirmButton && true == confirmButton.gameObject.activeInHierarchy)
+            UI_WarningPopupButton _defaultButton = DefaultSelectedButton;
+
+            if (null != _defaultButton && true == _defaultButton.gameObject.activeInHierarchy)
             {
                 if (null != EventSystem.current)
                 {
-                    if (EventSystem.current.currentSelectedGameObject == confirmButton.gameObject)
+                    if (EventSystem.current.currentSelectedGameObject == _defaultButton.gameObject)
                     {
-                        confirmButton.SimulateSelect();
+                        _defaultButton.SimulateSelect();
                     }
                     else
                     {
-                        EventSystem.current.SetSelectedGameObject(confirmButton.gameObject);
+                        EventSystem.current.SetSelectedGameObject(_defaultButton.gameObject);
                     }
                 }
                 else
                 {
-                    confirmButton.SimulateSelect();
+                    _defaultButton.SimulateSelect();
                 }
             }
         }
@@ -354,15 +415,17 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 
             if (false == _isOurButton)
             {
-                if (null != confirmButton && true == confirmButton.gameObject.activeInHierarchy)
+                UI_WarningPopupButton _defaultButton = DefaultSelectedButton;
+
+                if (null != _defaultButton && true == _defaultButton.gameObject.activeInHierarchy)
                 {
                     if (null != EventSystem.current)
                     {
-                        EventSystem.current.SetSelectedGameObject(confirmButton.gameObject);
+                        EventSystem.current.SetSelectedGameObject(_defaultButton.gameObject);
                     }
                     else
                     {
-                        confirmButton.SimulateSelect();
+                        _defaultButton.SimulateSelect();
                     }
                 }
             }
@@ -561,11 +624,13 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     {
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
-            if (null != confirmButton && true == confirmButton.gameObject.activeInHierarchy)
+            UI_WarningPopupButton _defaultButton = DefaultSelectedButton;
+
+            if (null != _defaultButton && true == _defaultButton.gameObject.activeInHierarchy)
             {
-                if (null != EventSystem.current && EventSystem.current.currentSelectedGameObject != confirmButton.gameObject)
+                if (null != EventSystem.current && EventSystem.current.currentSelectedGameObject != _defaultButton.gameObject)
                 {
-                    EventSystem.current.SetSelectedGameObject(confirmButton.gameObject);
+                    EventSystem.current.SetSelectedGameObject(_defaultButton.gameObject);
                 }
             }
         }

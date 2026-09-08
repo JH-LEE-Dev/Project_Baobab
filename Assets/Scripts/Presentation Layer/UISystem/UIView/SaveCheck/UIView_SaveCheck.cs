@@ -1,189 +1,320 @@
 using System;
+using DG.Tweening;
 using UnityEngine;
-using UnityEngine.UI;
 
 /// <summary>
-/// 세이브 파일을 읽을 수 있는지 확인하는 동안, 그리고 끝내 읽지 못했을 때 띄우는 전체 화면 뷰입니다.
+/// 세이브 파일을 읽을 수 있는지 확인하는 동안(Checking), 그리고 끝내 읽지 못했을 때(Failed)
+/// UI_WarningPopup을 띄워 유저에게 재시도 또는 진행 여부를 묻는 뷰입니다.
 ///
-/// [이 화면이 존재하는 이유]
-/// 세이브 파일이 백신이나 런처에 잠겨 잠깐 안 읽히는 일이 있습니다. 파일 내용은 멀쩡한데도요.
-/// 그때 아무 말 없이 메인 메뉴를 띄우면 "이어하기"가 사라져 보이고, 유저는 세이브가 날아간 줄 알고
-/// 새 게임을 눌러 멀쩡한 진행도를 스스로 지웁니다. 그걸 막는 것이 이 화면의 전부입니다.
-///
-/// [그래서 반드시 지켜야 하는 것]
-/// 이 화면이 떠 있는 동안 그 뒤로 아무것도 눌리면 안 됩니다. 각 패널은 자기만의 전체 화면 블로커
-/// (raycastTarget이 켜진 이미지)를 갖고 있어야 하고, 캔버스 sortingOrder는 메인 메뉴보다 위여야 합니다.
-/// ESC로 닫히면 안 되므로 UIView의 bCloseableByESC는 반드시 꺼둔 상태로 두세요.
-///
-/// [담당 구분]
-/// 아래 이벤트 세 개를 올려보내고 ApplyState를 받는 부분은 시스템 담당입니다. 건드리지 마세요.
-/// 그 아래 패널/버튼 참조와 OnShow/OnHide 계열 훅은 UI 담당입니다. 자세한 내용은
-/// Docs/SaveCheckUI.md 를 보세요.
+/// [동작 구조]
+/// - Checking 상태: 100% 불투명 검은색 배경(checkingPanel)만 노출되어 뒷배경을 완벽히 차단.
+/// - Failed 상태: checkingPanel 유지 상태에서 내장된 UI_WarningPopup을 호출.
+///   - Depth 1 (실패 안내): "저장 데이터를 불러오지 못했습니다.\n일시적인 오류일 수 있습니다. 다시 불러오시겠습니까?"
+///     - [Confirm (OK.png)]: 재시도(Retry) -> RetryRequestedEvent 호출.
+///     - [Cancel (Cancel.png)]: 1뎁스 닫힘 연출(0.25초) 후 2뎁스 자동 호출.
+///   - Depth 2 (진행 재확인): "저장 데이터를 불러오지 않고 계속할까요?\n이후 새 게임을 시작하면 기존 진행 데이터가 덮어쓰일 수 있습니다."
+///     - [Confirm (OK.png)]: 진행(Abandon) -> AbandonConfirmedEvent 호출.
+///     - [Cancel (Cancel.png)]: 2뎁스 닫힘 연출(0.25초) 후 1뎁스 자동 복귀.
+/// - CursorBox & Gamepad:
+///   - 캔버스 내에 자체 배치된 UIView_CursorBox를 UI_WarningPopup에 연결하여
+///     부팅 극초기(메인메뉴 생성 전)에도 버튼 호버 커서박스 및 패드 첫 포커싱 완벽 지원.
 /// </summary>
 public class UIView_SaveCheck : UIView
 {
-    // // 시스템으로 올라가는 신호 (SaveCheckCoordinator만 구독합니다)
-
-    /// <summary>"다시 시도"를 눌렀습니다.</summary>
+    // // 시스템 이벤트
     public event Action RetryRequestedEvent;
-
-    /// <summary>"기존 세이브를 포기하고 새로 시작"을 확인 팝업까지 거쳐 최종 확정했습니다.</summary>
     public event Action AbandonConfirmedEvent;
 
-    /// <summary>"게임 종료"를 눌렀습니다.</summary>
-    public event Action QuitRequestedEvent;
-
-    // // 여기서부터 UI 담당 영역
-
-    [Header("Panels")]
-    [SerializeField, Tooltip("\"세이브 파일을 확인 중입니다...\" 화면. 전체 화면 블로커를 포함해야 합니다.")]
+    // // 인스펙터 직렬화 필드 (내부 의존성 및 UI 컴포넌트)
+    [Header("Panels & Popups")]
+    [SerializeField, Tooltip("\"세이브 파일을 확인 중입니다...\" 검은색 블로커 패널")]
     private GameObject checkingPanel;
 
-    [SerializeField, Tooltip("읽기에 최종 실패했을 때의 화면. 다시 시도 / 새로 시작 / 종료 세 버튼만 둡니다.")]
-    private GameObject failedPanel;
+    [SerializeField, Tooltip("경고/확인 팝업 컴포넌트")]
+    private UI_WarningPopup warningPopup;
 
-    [SerializeField, Tooltip("\"기존 진행도를 덮어씁니다\" 최종 확인 팝업. 되돌릴 수 없는 선택이라 반드시 한 단계 거칩니다.")]
-    private GameObject abandonConfirmPanel;
-
-    [Header("Buttons - Failed Panel")]
-    [SerializeField] private Button retryButton;
-    [SerializeField] private Button abandonButton;
-    [SerializeField] private Button quitButton;
-
-    [Header("Buttons - Abandon Confirm Panel")]
-    [SerializeField] private Button abandonConfirmButton;
-    [SerializeField] private Button abandonCancelButton;
+    [SerializeField, Tooltip("부팅 극초기 커서 표시를 위한 CursorBox")]
+    private UIView_CursorBox cursorBox;
 
     [Header("Behaviour")]
-    [SerializeField, Tooltip("확인이 이 시간보다 빨리 끝나면 화면을 아예 띄우지 않습니다. " +
-        "정상적인 경우 확인은 한 프레임 안에 끝나므로, 0으로 두면 부팅 때마다 화면이 깜빡입니다.")]
+    [SerializeField, Tooltip("확인이 이 시간보다 빨리 끝나면 화면을 아예 띄우지 않습니다.")]
     private float checkingPanelDelaySeconds = 0.3f;
 
+    [Header("Messages")]
+    [SerializeField, TextArea(2, 4)]
+    private string depth1FailedMessage = "저장 데이터를 불러오지 못했습니다.\n일시적인 오류일 수 있습니다. 다시 불러오시겠습니까?";
+
+    [SerializeField, TextArea(2, 4)]
+    private string depth2AbandonMessage = "저장 데이터를 불러오지 않고 계속할까요?\n이후 새 게임을 시작하면 기존 진행 데이터가 덮어쓰일 수 있습니다.";
+
+    // // 외부 의존성
+    private InputManager inputManager;
+    private LocalizationManager localizationManager;
+
+    // // 상태 변수
     private ESaveCheckState currentState = ESaveCheckState.NotStarted;
     private float currentElapsedSeconds;
-    private bool bAbandonConfirmOpen;
+    private bool bHasShownFailedPopup;
+    private Tween delayedDepthTransitionTween;
 
-    protected override void Awake()
+    // // 캐시된 델리게이트 (GC Zero)
+    private Action cachedOnRetryClicked;
+    private Action cachedOnDepth1CancelClicked;
+    private Action cachedOnAbandonConfirmed;
+    private Action cachedOnDepth2CancelClicked;
+    private TweenCallback cachedShowAbandonConfirmDepth2;
+    private TweenCallback cachedShowFailedDepth1;
+
+    // // 1. 퍼블릭 초기화 및 제어 메서드
+    public void InitializeDependencies(InputManager _inputManager, LocalizationManager _localizationManager)
     {
-        base.Awake();
-
-        BindButtons();
-        RefreshPanels();
+        inputManager = _inputManager;
+        localizationManager = _localizationManager;
+        SetupWarningPopup();
     }
 
-    // // 시스템 담당 영역 (아래는 건드리지 마세요)
-
-    /// <summary>
-    /// 확인 상태를 반영합니다. SaveCheckCoordinator가 매 프레임 부릅니다.
-    /// 같은 값이 계속 들어오므로, 실제로 바뀐 프레임에만 훅이 불리도록 안에서 걸러냅니다.
-    /// </summary>
-    public void ApplyState(ESaveCheckState _state, float _elapsedSeconds)
+    public void InitializeInput(InputManager _inputManager)
     {
-        bool _bStateChanged = (currentState != _state);
+        InitializeDependencies(_inputManager, null);
+    }
 
-        currentState = _state;
+    public void ApplyState(ESaveCheckState _newState, float _elapsedSeconds)
+    {
+        currentState = _newState;
         currentElapsedSeconds = _elapsedSeconds;
 
-        // 확인이 끝났으면 열려 있던 확인 팝업도 함께 닫는다.
-        // (다시 시도가 그새 성공한 경우다. 포기 여부를 물을 이유가 사라졌다)
-        if (_bStateChanged && ESaveCheckState.Failed != _state)
+        switch (currentState)
         {
-            bAbandonConfirmOpen = false;
+            case ESaveCheckState.NotStarted:
+                HideAll();
+                bHasShownFailedPopup = false;
+                break;
+
+            case ESaveCheckState.Checking:
+                if (checkingPanelDelaySeconds <= currentElapsedSeconds)
+                {
+                    if (null != checkingPanel && false == checkingPanel.activeSelf)
+                    {
+                        checkingPanel.SetActive(true);
+                    }
+                }
+                bHasShownFailedPopup = false;
+                break;
+
+            case ESaveCheckState.Ready:
+                HideAll();
+                bHasShownFailedPopup = false;
+                break;
+
+            case ESaveCheckState.Failed:
+                if (null != checkingPanel && false == checkingPanel.activeSelf)
+                {
+                    checkingPanel.SetActive(true);
+                }
+
+                if (false == bHasShownFailedPopup)
+                {
+                    bHasShownFailedPopup = true;
+                    ShowFailedDepth1();
+                }
+                break;
+        }
+    }
+
+    // // 2. 일반 비즈니스 로직 및 내부 메서드
+    private void SetupWarningPopup()
+    {
+        if (null == warningPopup)
+        {
+            return;
         }
 
-        RefreshPanels();
+        if (null != cursorBox)
+        {
+            warningPopup.SetCursorBoxUI(cursorBox);
+        }
+
+        if (null != inputManager)
+        {
+            warningPopup.Initialize(inputManager, cursorBox);
+        }
     }
 
-    private void BindButtons()
+    private void ShowFailedDepth1()
     {
-        BindButton(retryButton, OnRetryClicked);
-        BindButton(abandonButton, OnAbandonClicked);
-        BindButton(quitButton, OnQuitClicked);
-        BindButton(abandonConfirmButton, OnAbandonConfirmClicked);
-        BindButton(abandonCancelButton, OnAbandonCancelClicked);
+        KillDelayedTween();
+
+        if (null == warningPopup)
+        {
+            return;
+        }
+
+        SetupWarningPopup();
+
+        if (null != cursorBox)
+        {
+            cursorBox.gameObject.SetActive(true);
+            cursorBox.HideImmediately();
+        }
+
+        string _displayMsg = null != localizationManager ? localizationManager.GetText("FailedMessage") : null;
+        if (true == string.IsNullOrEmpty(_displayMsg))
+        {
+            _displayMsg = depth1FailedMessage;
+        }
+
+        // 이 뎁스의 확인은 "다시 시도"라 되돌릴 수 없는 선택이 아니다. 기본 포커스를 그대로 둔다.
+        warningPopup.SetPreferCancelOnOpen(false);
+
+        warningPopup.ShowWarning(
+            _displayMsg,
+            _onConfirm: cachedOnRetryClicked,
+            _onCancel: cachedOnDepth1CancelClicked,
+            _openSoundId: SoundID.ResultUIOpen,
+            _closeSoundId: SoundID.ResultUIClose,
+            _hoverSoundId: SoundID.ResultUIHover);
     }
 
-    private static void BindButton(Button _button, UnityEngine.Events.UnityAction _action)
+    private void OnDepth1CancelClicked()
     {
-        if (null == _button) return;
+        KillDelayedTween();
+        float _delay = null != warningPopup ? warningPopup.AnimationDuration : 0.25f;
+        delayedDepthTransitionTween = DOVirtual.DelayedCall(_delay, cachedShowAbandonConfirmDepth2).SetLink(gameObject);
+    }
 
-        _button.onClick.RemoveListener(_action);
-        _button.onClick.AddListener(_action);
+    private void ShowAbandonConfirmDepth2()
+    {
+        KillDelayedTween();
+
+        if (null == warningPopup)
+        {
+            return;
+        }
+
+        SetupWarningPopup();
+
+        if (null != cursorBox)
+        {
+            cursorBox.gameObject.SetActive(true);
+            cursorBox.HideImmediately();
+        }
+
+        string _displayMsg = null != localizationManager ? localizationManager.GetText("AbandonMessage") : null;
+        if (true == string.IsNullOrEmpty(_displayMsg))
+        {
+            _displayMsg = depth2AbandonMessage;
+        }
+
+        // 이 뎁스의 확인은 세이브를 포기하는 되돌릴 수 없는 선택이다. 패드로 열었을 때 손가락이
+        // 얹혀 있는 자리가 파괴적인 쪽이면 안 되므로 취소를 먼저 잡게 한다.
+        warningPopup.SetPreferCancelOnOpen(true);
+
+        warningPopup.ShowWarning(
+            _displayMsg,
+            _onConfirm: cachedOnAbandonConfirmed,
+            _onCancel: cachedOnDepth2CancelClicked,
+            _openSoundId: SoundID.ResultUIOpen,
+            _closeSoundId: SoundID.ResultUIClose,
+            _hoverSoundId: SoundID.ResultUIHover);
+    }
+
+    private void OnDepth2CancelClicked()
+    {
+        KillDelayedTween();
+        float _delay = null != warningPopup ? warningPopup.AnimationDuration : 0.25f;
+        delayedDepthTransitionTween = DOVirtual.DelayedCall(_delay, cachedShowFailedDepth1).SetLink(gameObject);
     }
 
     private void OnRetryClicked()
     {
-        bAbandonConfirmOpen = false;
-        RefreshPanels();
-
+        KillDelayedTween();
         RetryRequestedEvent?.Invoke();
     }
 
-    // 곧바로 포기시키지 않는다. 한 번 더 묻는 단계가 이 흐름의 유일한 안전장치다.
-    private void OnAbandonClicked()
+    private void OnAbandonConfirmed()
     {
-        bAbandonConfirmOpen = true;
-        RefreshPanels();
-
-        OnAbandonConfirmOpened();
-    }
-
-    private void OnAbandonCancelClicked()
-    {
-        bAbandonConfirmOpen = false;
-        RefreshPanels();
-
-        OnAbandonConfirmClosed();
-    }
-
-    private void OnAbandonConfirmClicked()
-    {
-        bAbandonConfirmOpen = false;
-        RefreshPanels();
-
+        KillDelayedTween();
         AbandonConfirmedEvent?.Invoke();
     }
 
-    private void OnQuitClicked()
+    private void HideAll()
     {
-        QuitRequestedEvent?.Invoke();
+        KillDelayedTween();
+
+        if (null != warningPopup && true == warningPopup.IsActive)
+        {
+            warningPopup.HideImmediately();
+        }
+
+        if (null != cursorBox)
+        {
+            cursorBox.HideImmediately();
+            cursorBox.gameObject.SetActive(false);
+        }
+
+        if (null != checkingPanel)
+        {
+            checkingPanel.SetActive(false);
+        }
     }
 
-    private void RefreshPanels()
+    private void KillDelayedTween()
     {
-        // 확인이 순식간에 끝나는 정상적인 경우에는 아무것도 띄우지 않는다.
-        bool _bShowChecking = (ESaveCheckState.Checking == currentState)
-                           && (currentElapsedSeconds >= checkingPanelDelaySeconds);
-
-        bool _bFailed = (ESaveCheckState.Failed == currentState);
-
-        SetPanelActive(checkingPanel, _bShowChecking);
-        SetPanelActive(failedPanel, _bFailed && false == bAbandonConfirmOpen);
-        SetPanelActive(abandonConfirmPanel, _bFailed && bAbandonConfirmOpen);
-
-        if (_bShowChecking || _bFailed) Show();
-        else Hide();
+        if (null != delayedDepthTransitionTween)
+        {
+            delayedDepthTransitionTween.Kill();
+            delayedDepthTransitionTween = null;
+        }
     }
 
-    private static void SetPanelActive(GameObject _panel, bool _bActive)
+    // // 3. 유니티 라이프사이클 이벤트 함수 (SW_Rules에 따라 최하단 배치)
+    protected override void Awake()
     {
-        if (null == _panel) return;
-        if (_panel.activeSelf == _bActive) return;
+        base.Awake();
 
-        _panel.SetActive(_bActive);
+        cachedOnRetryClicked = OnRetryClicked;
+        cachedOnDepth1CancelClicked = OnDepth1CancelClicked;
+        cachedOnAbandonConfirmed = OnAbandonConfirmed;
+        cachedOnDepth2CancelClicked = OnDepth2CancelClicked;
+        cachedShowAbandonConfirmDepth2 = ShowAbandonConfirmDepth2;
+        cachedShowFailedDepth1 = ShowFailedDepth1;
+
+        if (null != checkingPanel)
+        {
+            checkingPanel.SetActive(false);
+        }
+
+        if (null != warningPopup)
+        {
+            warningPopup.gameObject.SetActive(false);
+        }
+
+        if (null != cursorBox)
+        {
+            cursorBox.HideImmediately();
+            cursorBox.gameObject.SetActive(false);
+        }
     }
 
-    // // 다시 UI 담당 영역 - 연출을 붙이려면 여기를 채우세요
+    protected virtual void OnDisable()
+    {
+        KillDelayedTween();
+    }
 
-    /// <summary>이 화면이 처음 떠오를 때 한 번 불립니다. 페이드 인 같은 연출 자리입니다.</summary>
-    protected override void OnShow() { }
+    public override void OnDestroy()
+    {
+        KillDelayedTween();
 
-    /// <summary>이 화면이 완전히 사라질 때 한 번 불립니다.</summary>
-    protected override void OnHide() { }
+        cachedOnRetryClicked = null;
+        cachedOnDepth1CancelClicked = null;
+        cachedOnAbandonConfirmed = null;
+        cachedOnDepth2CancelClicked = null;
+        cachedShowAbandonConfirmDepth2 = null;
+        cachedShowFailedDepth1 = null;
 
-    /// <summary>포기 확인 팝업이 열릴 때 불립니다.</summary>
-    protected virtual void OnAbandonConfirmOpened() { }
+        inputManager = null;
+        localizationManager = null;
 
-    /// <summary>포기 확인 팝업이 취소로 닫힐 때 불립니다.</summary>
-    protected virtual void OnAbandonConfirmClosed() { }
+        base.OnDestroy();
+    }
 }
