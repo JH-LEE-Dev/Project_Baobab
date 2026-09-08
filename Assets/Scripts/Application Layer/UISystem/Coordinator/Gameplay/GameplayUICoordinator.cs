@@ -722,10 +722,22 @@ public class GameplayUICoordinator
     // 해제 시점은 기존과 동일하게 TownSystem.CompleteDungeonEntry().
     // 같은 시점부터 Space(인벤토리)도 함께 막는다 - 이미 취소 불가능한 던전 진입 연출 중에 인벤토리를
     // 여닫으면 이후 이어지는 PopupUIDown/HUDGoDown 연출과 겹쳐 조작이 꼬일 수 있다.
+    //
+    // 상호작용 키도 같은 이유로 여기서 막는다. 이 구간에는 아직 OffroadVehicleObj.bUIActivated가 true라
+    // 상호작용 키(키보드)가 InteractionKeyPressedWhileUIModeEvent로 들어와 PortalDeActivatedEvent →
+    // menuPopupUI.Hide() → UIView_MenuPopup.OnHide()의 TeleportUIClosedEvent → GetOffFromTheVehicle()까지
+    // 이어지는데, 하차를 막아주는 bCanGetOff = false는 확정 딜레이가 끝나야(DungeonSelected) 걸리므로
+    // 그 사이에 캐릭터가 차에서 내려버린다. 기존 상호작용 키 잠금(TownProductionManager.StartSkyProduction)은
+    // DungeonSelected 이후라 이 구간을 못 덮는다.
+    // 해제 시점은 ESC/인벤토리와 동일하게 TownSystem.CompleteDungeonEntry() - PauseInteractKey는 bool이
+    // 아니라 카운터(InputReader.pauseInteractCount)라 짝을 반드시 맞춰야 한다. 재도전·MainMenu → Dungeon
+    // 튜토리얼 경로는 내비게이션을 거치지 않아 DungeonConfirmStartedEvent 자체가 오지 않으므로
+    // 불균형은 생기지 않는다.
     private void DungeonConfirmStarted()
     {
         inputManager.PauseESCKey(true);
         inputManager.PauseInventoryKey(true);
+        inputManager.PauseInteractKey(true);
     }
 
     // ESC 메뉴의 등장/퇴장 연출 중에는 재입력을 막는다.

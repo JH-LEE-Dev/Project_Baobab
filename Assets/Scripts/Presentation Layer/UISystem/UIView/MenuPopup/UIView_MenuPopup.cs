@@ -262,8 +262,19 @@ public class UIView_MenuPopup : UIView
         // [신규 1-Depth 내비게이션 동기화]
         if (null != popupNavMain)
         {
+            bool _isDungeonConfirmPending = popupNavMain.IsDungeonConfirmPending;
+
             popupNavMain.Close();
-            TeleportUIClosedEvent?.Invoke();
+
+            // 던전 확정 대기 구간(닫힘 연출 + dungeonConfirmDelay)에 외부 요인으로 이 뷰가 먼저 닫히면
+            // TeleportUIClosedEvent가 확정 콜백보다 앞서 발행되는데, 그 시점엔 아직 bCanGetOff가 true라
+            // TownSystem.TeleportUIClosed()의 GetOffFromTheVehicle()이 통과해 캐릭터가 차에서 잘못 내린다.
+            // 이 구간에서는 발행을 건너뛰어도 확정 딜레이가 끝나면 HUD_PopupNav_Main.OnDungeonConfirmDelayComplete가
+            // onNavigationClosedCallback(HandlePopupNavClosed)으로 같은 이벤트를 올바른 순서에 발행해준다.
+            if (false == _isDungeonConfirmPending)
+            {
+                TeleportUIClosedEvent?.Invoke();
+            }
         }
     }
 

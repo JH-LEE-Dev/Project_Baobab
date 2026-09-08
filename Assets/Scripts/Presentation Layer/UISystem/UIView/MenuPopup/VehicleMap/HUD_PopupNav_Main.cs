@@ -174,6 +174,13 @@ public class HUD_PopupNav_Main : MonoBehaviour
     public bool IsDemoNoticeShowing => null != demoNotice && demoNotice.IsDemoNoticeActive;
     public bool IsTransitioning { get; private set; }
     public bool IsDemoVersion { get => isDemoVersion; set => isDemoVersion = value; }
+
+    /// <summary>
+    /// 던전 선택이 확정됐지만(HandleSubRegionSelected) 아직 확정 콜백(OnDungeonConfirmDelayComplete)이
+    /// 돌지 않은 구간입니다. 닫힘 연출 + dungeonConfirmDelay 동안 true이며, 이 구간은 이미 취소
+    /// 불가능한 선택이면서도 하차 차단(bCanGetOff = false)은 아직 걸리기 전입니다.
+    /// </summary>
+    public bool IsDungeonConfirmPending => hasPendingDungeonConfirm || (null != dungeonConfirmDelayTween && true == dungeonConfirmDelayTween.IsActive());
     public MapType MaxPlayableMapTypeInDemo { get => maxPlayableMapTypeInDemo; set => maxPlayableMapTypeInDemo = value; }
     public event Action OnUnlockProductionStarted;
     public event Action OnUnlockProductionEnded;
