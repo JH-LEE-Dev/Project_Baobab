@@ -66,6 +66,12 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     private Action onCancelAction;
     private Action cachedOnUICancel;
     private Action<EInputDeviceType> cachedOnInputDeviceChanged;
+
+    // 구독한 리더를 직접 들고 있는다. 해제를 inputManager로 되짚어 가면, 팝업보다 InputManager가
+    // 먼저 파괴되거나(씬 언로드) Release가 한 번 돌아 inputManager가 null이 된 뒤에는
+    // 해제가 조용히 건너뛰어지고, 죽은 팝업이 이벤트에 남아 MissingReferenceException을 던진다.
+    private InputReader subscribedReader;
+
     private GameObject previousSelectedGameObject;
     private SoundID openSoundId = SoundID.None;
     private SoundID closeSoundId = SoundID.None;
@@ -115,6 +121,52 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         }
     }
 
+    /// <summary>
+    /// 입력 이벤트를 구독합니다. 구독한 리더는 subscribedReader에 남겨, 해제할 때
+    /// inputManager가 살아 있는지와 무관하게 같은 리더에서 빠지도록 합니다.
+    /// </summary>
+    private void SubscribeInputEvents()
+    {
+        InputReader _reader = (null != inputManager) ? inputManager.inputReader : null;
+        if (null == _reader) return;
+
+        // 리더가 바뀌었다면(재초기화 등) 예전 리더에서 먼저 빠진다.
+        if (null != subscribedReader && _reader != subscribedReader)
+        {
+            UnsubscribeInputEvents();
+        }
+
+        subscribedReader = _reader;
+
+        if (null != cachedOnUICancel)
+        {
+            subscribedReader.UICancelEvent -= cachedOnUICancel;
+            subscribedReader.UICancelEvent += cachedOnUICancel;
+        }
+        if (null != cachedOnInputDeviceChanged)
+        {
+            subscribedReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+            subscribedReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
+        }
+    }
+
+    /// <summary>구독해 둔 입력 이벤트에서 빠집니다. 여러 번 불려도 안전합니다.</summary>
+    private void UnsubscribeInputEvents()
+    {
+        if (null == subscribedReader) return;
+
+        if (null != cachedOnUICancel)
+        {
+            subscribedReader.UICancelEvent -= cachedOnUICancel;
+        }
+        if (null != cachedOnInputDeviceChanged)
+        {
+            subscribedReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+        }
+
+        subscribedReader = null;
+    }
+
     public void Release()
     {
         isInitialized = false;
@@ -123,17 +175,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         KillSequence();
         HideCursor();
 
-        if (null != inputManager && null != inputManager.inputReader)
-        {
-            if (null != cachedOnUICancel)
-            {
-                inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
-            }
-            if (null != cachedOnInputDeviceChanged)
-            {
-                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
-            }
-        }
+        UnsubscribeInputEvents();
 
         onConfirmAction = null;
         onCancelAction = null;
@@ -147,17 +189,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 
     private void OnDisable()
     {
-        if (null != inputManager && null != inputManager.inputReader)
-        {
-            if (null != cachedOnUICancel)
-            {
-                inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
-            }
-            if (null != cachedOnInputDeviceChanged)
-            {
-                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
-            }
-        }
+        UnsubscribeInputEvents();
     }
 
     private void OnDestroy()
@@ -232,19 +264,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     {
         previousSelectedGameObject = EventSystem.current?.currentSelectedGameObject;
 
-        if (null != inputManager && null != inputManager.inputReader)
-        {
-            if (null != cachedOnUICancel)
-            {
-                inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
-                inputManager.inputReader.UICancelEvent += cachedOnUICancel;
-            }
-            if (null != cachedOnInputDeviceChanged)
-            {
-                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
-                inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
-            }
-        }
+        SubscribeInputEvents();
 
         if (null != messageText)
             messageText.text = _message;
@@ -406,7 +426,15 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 
     private void OnInputDeviceChanged(EInputDeviceType _device)
     {
-        if ((UnityEngine.Object)this == null || false == gameObject.activeInHierarchy || false == IsActive) return;
+        // 이미 파괴된 팝업이 이벤트에 남아 있다면(해제가 한 번 새어 나간 경우) 여기서 스스로 빠진다.
+        // 가드만 두면 예외는 막아도 죽은 핸들러가 리스트에 영구히 쌓인다.
+        if ((UnityEngine.Object)this == null)
+        {
+            UnsubscribeInputEvents();
+            return;
+        }
+
+        if (false == gameObject.activeInHierarchy || false == IsActive) return;
 
         if (EInputDeviceType.Gamepad == _device)
         {
@@ -494,17 +522,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 
     private void RestorePreviousFocus()
     {
-        if (null != inputManager && null != inputManager.inputReader)
-        {
-            if (null != cachedOnUICancel)
-            {
-                inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
-            }
-            if (null != cachedOnInputDeviceChanged)
-            {
-                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
-            }
-        }
+        UnsubscribeInputEvents();
 
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
@@ -566,17 +584,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         }
         isClosing = true;
 
-        if (null != inputManager && null != inputManager.inputReader)
-        {
-            if (null != cachedOnUICancel)
-            {
-                inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
-            }
-            if (null != cachedOnInputDeviceChanged)
-            {
-                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
-            }
-        }
+        UnsubscribeInputEvents();
 
         HideCursor();
 
@@ -594,23 +602,20 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 
     private void OnCancelButtonClicked()
     {
+        // UICancelEvent 구독분도 같은 이유로 죽은 채 남을 수 있다. (OnInputDeviceChanged와 동일한 처리)
+        if ((UnityEngine.Object)this == null)
+        {
+            UnsubscribeInputEvents();
+            return;
+        }
+
         if (true == isClosing)
         {
             return;
         }
         isClosing = true;
 
-        if (null != inputManager && null != inputManager.inputReader)
-        {
-            if (null != cachedOnUICancel)
-            {
-                inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
-            }
-            if (null != cachedOnInputDeviceChanged)
-            {
-                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
-            }
-        }
+        UnsubscribeInputEvents();
 
         HideCursor();
 
@@ -679,17 +684,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     {
         depthController?.UnregisterView(this);
 
-        if (null != inputManager && null != inputManager.inputReader)
-        {
-            if (null != cachedOnUICancel)
-            {
-                inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
-            }
-            if (null != cachedOnInputDeviceChanged)
-            {
-                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
-            }
-        }
+        UnsubscribeInputEvents();
 
         if (false == hasPlayedCloseSound)
         {

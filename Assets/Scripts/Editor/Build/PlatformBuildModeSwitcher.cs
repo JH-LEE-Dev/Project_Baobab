@@ -27,8 +27,13 @@ public enum BuildRelease
 ///   - steam_appid.txt        (파일)
 ///   - Sentry environment     (Resources 아래 에셋 - 빌드에 무조건 실림)
 ///   - GameAnalytics build    (Resources 아래 에셋 - 빌드에 무조건 실림)
-/// 이 셋이 어긋나면 데모에서 올라온 크래시·지표가 정식에 섞이거나, 개발 중 Steam이 엉뚱한 앱으로
+///   - 빌드 출력 폴더          (에디터 설정 - 산출물에는 안 실리지만 사람이 폴더를 잘못 집습니다)
+/// 앞의 셋이 어긋나면 데모에서 올라온 크래시·지표가 정식에 섞이거나, 개발 중 Steam이 엉뚱한 앱으로
 /// 인식합니다. 그래서 여기서 함께 씁니다.
+///
+/// 마지막 하나는 성격이 다릅니다. 빌드 결과물에는 영향이 없지만, 스토어마다 폴더 이름이 제각각이면
+/// <b>Steam DLL이 든 빌드를 STOVE에 올리는 사고</b>가 폴더를 잘못 집는 것만으로 일어납니다.
+/// 그래서 전환할 때마다 &lt;스토어&gt;_&lt;배포&gt; 자리로 함께 옮깁니다. (BuildFolderName 참고)
 ///
 /// [스위처는 안전장치가 아닙니다]
 /// 이건 편의 장치일 뿐이고, 사람이 메뉴 누르는 걸 깜빡하면 그대로 나갑니다.
@@ -73,6 +78,7 @@ public static class PlatformBuildModeSwitcher
     private const string MENU_RELEASE_DEMO = "Tools/빌드/배포 - 데모";
     private const string MENU_RELEASE_FULL = "Tools/빌드/배포 - 정식";
     private const string MENU_SHOW = "Tools/빌드/현재 빌드 설정 확인";
+    private const string MENU_BUILD_ROOT = "Tools/빌드/빌드 출력 폴더 지정";
     private const string MENU_SPACEWAR = "Tools/빌드/steam_appid.txt 를 480(Spacewar)으로";
 
 #endregion
@@ -133,6 +139,87 @@ public static class PlatformBuildModeSwitcher
             case BuildStore.Itch:  return "LumberBoy_ITCH";
             default:               return "LumberBoy";
         }
+    }
+
+    /// <summary>
+    /// 빌드 출력 폴더 이름입니다. <b>&lt;스토어&gt;_&lt;배포&gt;</b> 한 층으로 통일합니다.
+    /// (STEAM_DEMO / STOVE_DEMO / ITCH_DEMO / STOVE_FULL ...)
+    ///
+    /// 폴더 이름만 보고 어느 스토어의 빌드인지 알 수 있어야 합니다. 예전에는 Steam이 그냥 Demo,
+    /// itch가 Itch/Demo 처럼 규칙이 제각각이었는데, 그러면 <b>Steam DLL이 든 빌드를 STOVE에
+    /// 올리는 사고</b>가 폴더를 잘못 집는 것만으로 일어납니다.
+    ///
+    /// 정리 스크립트가 남기는 감사 파일도 이 이름을 따릅니다(_BuildSanitizer.&lt;폴더&gt;.txt).
+    /// 이름이 겹치면 어느 빌드에서 무엇을 지웠는지의 기록끼리 서로 덮어씁니다.
+    /// </summary>
+    public static string BuildFolderName(BuildStore _store, BuildRelease _release)
+    {
+        return StoreTag(_store).ToUpperInvariant() + "_" + ((BuildRelease.Full == _release) ? "FULL" : "DEMO");
+    }
+
+    /// <summary>
+    /// 빌드 출력 루트를 담아두는 EditorPrefs 키입니다. EditorPrefs는 <b>기계별</b> 설정이라
+    /// 저장소에 들어가지 않습니다. 사람마다 드라이브 구성이 달라도 각자 자기 경로를 씁니다.
+    /// </summary>
+    private const string BUILD_ROOT_PREF = "LumberBoy.BuildOutputRoot";
+
+    /// <summary>
+    /// 스토어별 빌드 폴더들이 모이는 상위 폴더입니다.
+    ///
+    /// <b>저장소에 경로를 박아두지 않습니다.</b> 기계마다 다르고, 박아두면 다른 사람이 이 프로젝트를
+    /// 열었을 때 없는 드라이브를 가리킵니다. EditorPrefs(기계별 설정)에 두고, 값이 없으면
+    /// 지금 에디터가 기억하는 빌드 위치에서 한 번 유추해 저장합니다.
+    ///
+    /// 유추까지 실패하면 <b>빈 문자열을 돌려주고 아무것도 하지 않습니다.</b> 엉뚱한 곳에 빌드를
+    /// 떨구느니 사람이 한 번 지정하는 편이 낫습니다. (Tools > 빌드 > 빌드 출력 폴더 지정)
+    /// </summary>
+    public static string BuildOutputRoot
+    {
+        get
+        {
+            string _saved = EditorPrefs.GetString(BUILD_ROOT_PREF, string.Empty);
+
+            if (false == string.IsNullOrEmpty(_saved)) return _saved;
+
+            string _derived = DeriveBuildRootFromCurrentLocation();
+
+            if (false == string.IsNullOrEmpty(_derived)) EditorPrefs.SetString(BUILD_ROOT_PREF, _derived);
+
+            return _derived;
+        }
+    }
+
+    /// <summary>
+    /// 기억된 빌드 위치는 exe의 전체 경로입니다. exe가 든 폴더의 <b>상위</b>가 곧 출력 폴더들이
+    /// 모이는 자리입니다. (C:\Unity Build\STOVE_DEMO\LumberBoy.exe → C:\Unity Build)
+    /// </summary>
+    private static string DeriveBuildRootFromCurrentLocation()
+    {
+        string _location = EditorUserBuildSettings.GetBuildLocation(BuildTarget.StandaloneWindows64);
+
+        if (true == string.IsNullOrEmpty(_location)) return string.Empty;
+
+        try
+        {
+            string _dir = Path.GetDirectoryName(_location);
+            string _parent = (null == _dir) ? null : Path.GetDirectoryName(_dir);
+
+            return _parent ?? string.Empty;
+        }
+        catch (System.Exception)
+        {
+            return string.Empty;
+        }
+    }
+
+    /// <summary>다음 빌드가 나갈 전체 경로입니다. 루트를 모르면 빈 문자열입니다.</summary>
+    public static string ExpectedBuildLocation(BuildStore _store, BuildRelease _release)
+    {
+        string _root = BuildOutputRoot;
+
+        if (true == string.IsNullOrEmpty(_root)) return string.Empty;
+
+        return Path.Combine(_root, BuildFolderName(_store, _release), PlayerSettings.productName + ".exe");
     }
 
     /// <summary>
@@ -257,6 +344,31 @@ public static class PlatformBuildModeSwitcher
         return BuildStore.Steam == CurrentStore;
     }
 
+    /// <summary>
+    /// 빌드 출력 루트를 사람이 직접 정합니다. 유추가 틀렸거나(폴더를 통째로 옮겼다든지)
+    /// 새 기계에서 처음 빌드할 때 쓰는 탈출구입니다.
+    /// </summary>
+    [MenuItem(MENU_BUILD_ROOT, false, 62)]
+    private static void ChooseBuildRoot()
+    {
+        string _current = BuildOutputRoot;
+
+        string _picked = EditorUtility.OpenFolderPanel(
+            "빌드 출력 폴더 (스토어별 폴더가 이 아래에 생깁니다)",
+            string.IsNullOrEmpty(_current) ? string.Empty : _current,
+            string.Empty);
+
+        if (true == string.IsNullOrEmpty(_picked)) return;
+
+        EditorPrefs.SetString(BUILD_ROOT_PREF, _picked);
+
+        SyncBuildLocation(CurrentStore, CurrentRelease);
+
+        Debug.Log($"[BuildMode] 빌드 출력 폴더를 정했습니다.\n" +
+                  $"  루트       : {_picked}\n" +
+                  $"  다음 빌드   : {EditorUserBuildSettings.GetBuildLocation(BuildTarget.StandaloneWindows64)}");
+    }
+
     [MenuItem(MENU_SHOW, false, 61)]
     private static void ShowCurrent()
     {
@@ -285,6 +397,16 @@ public static class PlatformBuildModeSwitcher
         string _expectedBuild = ExpectedGameAnalyticsBuild(_store, _release);
         if (ReadGameAnalyticsBuild() != _expectedBuild) _problems.Add($"GameAnalytics build가 어긋납니다. (기대: {_expectedBuild})");
 
+        // 사람이 Build Settings 창에서 폴더를 직접 골라버리면 스위처가 맞춰둔 자리를 벗어납니다.
+        // 산출물 자체는 멀쩡하지만, 다른 스토어의 폴더에 덮어써 놓고 그걸 업로드하면 사고입니다.
+        string _expectedLocation = ExpectedBuildLocation(_store, _release);
+
+        if (false == string.IsNullOrEmpty(_expectedLocation)
+            && false == SamePath(_expectedLocation, EditorUserBuildSettings.GetBuildLocation(BuildTarget.StandaloneWindows64)))
+        {
+            _problems.Add($"빌드 위치가 어긋납니다. 이대로 빌드하면 {_store} 빌드가 엉뚱한 폴더로 나갑니다. (기대: {_expectedLocation})");
+        }
+
         if (null != _expectedAppId && _fileAppId != _expectedAppId && false == _isSpacewar)
         {
             _problems.Add($"steam_appid.txt가 어긋납니다. (기대: {_expectedAppId})");
@@ -309,6 +431,8 @@ public static class PlatformBuildModeSwitcher
             $"디파인         : {DescribeDefines(_store, _release)}\n" +
             $"세이브 변형     : {BuildInfo.Variant}\n" +
             $"세이브 폴더     : {SaveFolderName(_store)}\n" +
+            $"빌드 폴더       : {BuildFolderName(_store, _release)}\n" +
+            $"빌드 위치       : {NonEmptyOr(EditorUserBuildSettings.GetBuildLocation(BuildTarget.StandaloneWindows64), "(정해지지 않음 - 빌드 출력 폴더 지정)")}\n" +
             $"기대 앱 ID      : {(null == _expectedAppId ? $"({_store} - 사용 안 함)" : _expectedAppId)}\n" +
             $"steam_appid    : {_fileAppId}\n" +
             $"Sentry env     : {ReadSentryEnvironment() ?? "(읽기 실패)"}\n" +
@@ -372,15 +496,79 @@ public static class PlatformBuildModeSwitcher
         if (null != _appId) WriteAppIdFile(_appId);
 
         SyncAnalyticsAssets(_store, _release);
+        SyncBuildLocation(_store, _release);
 
         Debug.Log($"[BuildMode] {_store} / {(BuildRelease.Full == _release ? "정식" : "데모")} 으로 전환했습니다.\n" +
                   $"  디파인      : {DescribeDefines(_store, _release)}\n" +
                   $"  세이브 폴더  : {SaveFolderName(_store)}\n" +
+                  $"  빌드 위치    : {NonEmptyOr(EditorUserBuildSettings.GetBuildLocation(BuildTarget.StandaloneWindows64), "(정해지지 않음)")}\n" +
                   $"  Sentry env  : {ExpectedSentryEnvironment(_store, _release)}\n" +
                   $"  GA build    : {ExpectedGameAnalyticsBuild(_store, _release)}\n" +
                   $"  steam_appid : {(null == _appId ? $"({_store} - 건드리지 않음)" : _appId)}\n" +
                   "스크립트 재컴파일 후 적용됩니다.\n" +
                   "주의: 데모↔정식 세이브는 서로 호환되지 않고, 스토어끼리는 세이브 폴더 자체가 다릅니다.");
+    }
+
+    /// <summary>
+    /// 다음 빌드가 나갈 자리를 스토어·배포에 맞춰 옮깁니다.
+    ///
+    /// Build Settings 창의 저장 대화상자도 이 값을 기본으로 띄우므로, 메뉴로 전환만 하면
+    /// 사람이 손으로 폴더를 고를 일이 없습니다. 스크립트 빌드도 이 값을 읽어 씁니다.
+    ///
+    /// 루트를 모를 때는 <b>경로를 만들어내지 않고 그대로 둡니다.</b> 빌드 위치를 말없이 바꾸는 것은
+    /// 사람이 방금 고른 자리를 빼앗는 일이라, 모를 때는 손대지 않는 쪽이 안전합니다.
+    ///
+    /// [폴더를 먼저 만드는 이유]
+    /// SetBuildLocation은 <b>대상 폴더가 없으면 값을 조용히 버립니다.</b> 에러도 예외도 없이
+    /// 빌드 위치가 빈 값이 됩니다. 그러면 아직 한 번도 빌드하지 않은 조합(STOVE_FULL 등)으로
+    /// 전환했을 때 저장 대화상자가 엉뚱한 기본 폴더에서 열립니다. 먼저 만들어 두면 그 일이 없습니다.
+    /// 빈 폴더 하나가 생기는 것이 대가인데, 어차피 그 자리에 빌드할 참이라 문제되지 않습니다.
+    /// </summary>
+    private static void SyncBuildLocation(BuildStore _store, BuildRelease _release)
+    {
+        string _path = ExpectedBuildLocation(_store, _release);
+
+        if (true == string.IsNullOrEmpty(_path))
+        {
+            Debug.LogWarning("[BuildMode] 빌드 출력 폴더를 알 수 없어 빌드 위치는 그대로 둡니다.\n" +
+                             "  Tools > 빌드 > 빌드 출력 폴더 지정 에서 한 번 정해주세요.");
+            return;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_path));
+        }
+        catch (System.Exception _e)
+        {
+            Debug.LogWarning($"[BuildMode] 빌드 폴더를 만들지 못했습니다: {_e.Message}");
+            return;
+        }
+
+        EditorUserBuildSettings.SetBuildLocation(BuildTarget.StandaloneWindows64, _path);
+
+        // 위 규칙 때문에 조용히 실패할 수 있는 자리다. 값이 남았는지 확인하고 넘어간다.
+        if (false == SamePath(_path, EditorUserBuildSettings.GetBuildLocation(BuildTarget.StandaloneWindows64)))
+        {
+            Debug.LogWarning($"[BuildMode] 빌드 위치가 적용되지 않았습니다. 빌드할 때 폴더를 직접 고르세요.\n  기대: {_path}");
+        }
+    }
+
+    private static string NonEmptyOr(string _value, string _fallback)
+    {
+        return string.IsNullOrEmpty(_value) ? _fallback : _value;
+    }
+
+    /// <summary>
+    /// 두 경로가 같은 곳을 가리키는지 봅니다. 에디터가 기억하는 값은 구분자가 섞여 있고
+    /// (C:/Unity Build/STOVE_DEMO\LumberBoy.exe) Path.Combine 결과와 글자 그대로는 다릅니다.
+    /// </summary>
+    private static bool SamePath(string _a, string _b)
+    {
+        if (true == string.IsNullOrEmpty(_a) || true == string.IsNullOrEmpty(_b)) return false;
+
+        return 0 == string.Compare(_a.Replace('\\', '/'), _b.Replace('\\', '/'),
+                                   System.StringComparison.OrdinalIgnoreCase);
     }
 
     private static NamedBuildTarget ActiveTarget =>
