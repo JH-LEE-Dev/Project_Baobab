@@ -27,18 +27,27 @@ public class SaveCheckCoordinator : MonoBehaviour
     private UIView_SaveCheck saveCheckViewPrefab;
 
     private ISaveCheckSystem saveCheckSystem;
+    private LocalizationManager localizationManager;
     private UIView_SaveCheck view;
 
     /// <summary>
-    /// 화면을 띄울 준비가 됐는지입니다.
-    /// false면 실패 상태에서 유저에게 물어볼 방법이 없으므로, BootStrap은 기다리지 않고 진행해야 합니다.
+    /// 유저에게 물어볼 화면을 띄울 수 있는지입니다.
+    /// false면 실패 상태에서 물어볼 방법이 없으므로, BootStrap은 기다리지 않고 진행해야 합니다.
     /// (기다리면 아무것도 없는 화면에서 영원히 멈춥니다)
+    ///
+    /// 지금 인스턴스가 살아 있는지가 아니라 "필요하면 만들 수 있는지"를 답합니다. 결론이 난 뒤에는
+    /// 인스턴스를 파괴하지만(아래 PushState 참고) 물어볼 능력을 잃은 것은 아니기 때문입니다.
     /// </summary>
-    public bool IsPresenting => null != view;
+    public bool IsPresenting => null != saveCheckViewPrefab;
 
     public void Initialize(ISaveCheckSystem _saveCheckSystem, LocalizationManager _localizationManager = null)
     {
         saveCheckSystem = _saveCheckSystem;
+
+        // 화면을 다시 만들 때 또 필요하므로 들고 있는다. (메인 메뉴로 복귀할 때마다 확인이 다시 돈다)
+        localizationManager = null != _localizationManager
+            ? _localizationManager
+            : GetComponentInChildren<LocalizationManager>();
 
         if (null == saveCheckViewPrefab)
         {
@@ -47,26 +56,46 @@ public class SaveCheckCoordinator : MonoBehaviour
             return;
         }
 
-        if (null == view)
-        {
-            view = Instantiate(saveCheckViewPrefab);
-            DontDestroyOnLoad(view.gameObject);
-
-            EnsurePixelPerfectCanvas(view);
-
-            InputManager _inputManager = GetComponent<InputManager>();
-            if (null == _localizationManager)
-            {
-                _localizationManager = GetComponentInChildren<LocalizationManager>();
-            }
-
-            view.InitializeDependencies(_inputManager, _localizationManager);
-
-            view.RetryRequestedEvent += OnRetryRequested;
-            view.AbandonConfirmedEvent += OnAbandonConfirmed;
-        }
-
         PushState();
+    }
+
+    /// <summary>
+    /// 화면이 필요한데 없으면 만듭니다.
+    ///
+    /// 부팅 때 한 번 만들고 끝내지 않는 이유는, 결론이 난 뒤 인스턴스를 파괴하기 때문입니다.
+    /// 그런데 확인은 부팅 때만 도는 것이 아니라 타운/던전에서 메인 메뉴로 돌아올 때마다 다시 돕니다
+    /// (BootStrap.OnSceneLoaded). 만들어 두기만 하면 두 번째부터는 화면 없이 조용히 실패합니다.
+    /// </summary>
+    private bool EnsureView()
+    {
+        if (null != view) return true;
+        if (null == saveCheckViewPrefab) return false;
+
+        view = Instantiate(saveCheckViewPrefab);
+        DontDestroyOnLoad(view.gameObject);
+
+        EnsurePixelPerfectCanvas(view);
+
+        view.InitializeDependencies(GetComponent<InputManager>(), localizationManager);
+
+        view.RetryRequestedEvent += OnRetryRequested;
+        view.AbandonConfirmedEvent += OnAbandonConfirmed;
+
+        return true;
+    }
+
+    /// <summary>
+    /// 화면을 치웁니다. 결론이 난 뒤에도 들고 있으면 이 화면의 커서 박스가 메인 메뉴 것과 겹칩니다.
+    /// </summary>
+    private void DestroyViewIfAny()
+    {
+        if (null == view) return;
+
+        view.RetryRequestedEvent -= OnRetryRequested;
+        view.AbandonConfirmedEvent -= OnAbandonConfirmed;
+
+        Destroy(view.gameObject);
+        view = null;
     }
 
     /// <summary>
@@ -109,6 +138,14 @@ public class SaveCheckCoordinator : MonoBehaviour
         {
             _canvasScaler = _canvas.gameObject.AddComponent<CanvasScaler>();
         }
+        else if (false == Mathf.Approximately(_canvasScaler.referencePixelsPerUnit, REFERENCE_PIXELS_PER_UNIT))
+        {
+            // 값은 아래에서 강제하지만, 어긋났다는 사실은 알린다. 조용히 덮어쓰면 프리팹에서 보이는
+            // 모습과 실행 결과가 계속 다른 채로 남고, 작업자는 자기 설정이 무시된 줄 모른다.
+            Debug.LogWarning("[SaveCheckCoordinator] The save check canvas prefab uses Reference Pixels Per Unit " +
+                $"{_canvasScaler.referencePixelsPerUnit}, but the rest of the game's UI uses {REFERENCE_PIXELS_PER_UNIT}. " +
+                "Overriding it so sprites match the other screens; fix the prefab to remove this warning.");
+        }
 
         _canvasScaler.referencePixelsPerUnit = REFERENCE_PIXELS_PER_UNIT;
         _canvasScaler.referenceResolution =
@@ -124,18 +161,21 @@ public class SaveCheckCoordinator : MonoBehaviour
     }
     private void PushState()
     {
-        if (null == view || null == saveCheckSystem) return;
+        if (null == saveCheckSystem) return;
 
-        if (ESaveCheckState.Ready == saveCheckSystem.SaveCheckState)
+        ESaveCheckState _state = saveCheckSystem.SaveCheckState;
+
+        // 확인 중이거나 실패했을 때만 화면이 필요하다. 결론이 났으면(Ready) 또는 아직 시작 전이면
+        // 들고 있을 이유가 없다. 남겨두면 이 화면의 커서 박스가 메인 메뉴 것과 겹친다.
+        if (ESaveCheckState.Checking != _state && ESaveCheckState.Failed != _state)
         {
-            view.RetryRequestedEvent -= OnRetryRequested;
-            view.AbandonConfirmedEvent -= OnAbandonConfirmed;
-            Destroy(view.gameObject);
-            view = null;
+            DestroyViewIfAny();
             return;
         }
 
-        view.ApplyState(saveCheckSystem.SaveCheckState, saveCheckSystem.SaveCheckElapsedSeconds);
+        if (false == EnsureView()) return;
+
+        view.ApplyState(_state, saveCheckSystem.SaveCheckElapsedSeconds);
     }
 
     private void OnRetryRequested()
