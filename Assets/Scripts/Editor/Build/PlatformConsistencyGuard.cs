@@ -184,6 +184,11 @@ public class PlatformConsistencyGuard : IPreprocessBuildWithReport
     /// 기본값이 Steam 링크 · Steam 로고 · "Steam 찜하기" 문구라 그대로 나가면
     /// <b>STOVE에서 받은 사람에게 Steam 상점으로 가라고 안내하게 됩니다.</b>
     ///
+    /// STOVE 데모는 <b>본편 상점으로 보내지 않기로 했습니다.</b> 상점 버튼을 통째로 끄고(코드),
+    /// 본문에서도 찜하기 안내를 뺍니다(번역문). 둘은 반드시 함께 맞아야 합니다 - 한쪽만 되면
+    /// "없는 버튼을 누르라고 말하는 화면" 또는 "Steam 버튼이 남은 STOVE 빌드"가 됩니다.
+    /// 그래서 여기서 두 가지를 봅니다: 버튼을 끌 참조가 있는가, 본문에 상점 안내가 없는가.
+    ///
     /// 프리팹 값과 번역문이라 디파인을 따라오지 않고, 잘못돼도 에러가 나지 않습니다.
     /// 유저가 바로 보는 종류의 사고라 빌드로 막습니다.
     /// </summary>
@@ -213,19 +218,15 @@ public class PlatformConsistencyGuard : IPreprocessBuildWithReport
             {
                 SerializedObject _so = new SerializedObject(_notice);
 
-                SerializedProperty _url = _so.FindProperty("stoveStoreUrl");
-                SerializedProperty _icon = _so.FindProperty("stoveStoreIcon");
+                SerializedProperty _storeBtn = _so.FindProperty("steamWishlistBtn");
 
-                if (null == _url || true == string.IsNullOrEmpty(_url.stringValue))
+                // STOVE에서 상점 버튼을 없애는 일은 코드가 합니다(ApplyStoreBranding). 그 코드는
+                // 이 참조를 통해서만 버튼에 닿으므로, 참조가 비면 끄지 못하고 조용히 지나갑니다.
+                // 그러면 Steam 로고에 Steam URL이 그대로 붙은 버튼이 STOVE 유저에게 노출됩니다.
+                if (null == _storeBtn || null == _storeBtn.objectReferenceValue)
                 {
-                    _errors.Add("데모 안내 팝업의 STOVE 상점 URL(stoveStoreUrl)이 비어 있습니다. " +
-                                "이대로 나가면 STOVE 유저에게 Steam 상점 링크가 노출됩니다.");
-                }
-
-                if (null == _icon || null == _icon.objectReferenceValue)
-                {
-                    _errors.Add("데모 안내 팝업의 STOVE 로고(stoveStoreIcon)가 비어 있습니다. " +
-                                "이대로 나가면 STOVE 유저에게 Steam 로고가 노출됩니다.");
+                    _errors.Add("데모 안내 팝업의 상점 버튼 참조(steamWishlistBtn)가 비어 있습니다. " +
+                                "STOVE 빌드는 이 참조로 버튼을 끄므로, 비어 있으면 Steam 상점 버튼이 그대로 노출됩니다.");
                 }
             }
         }
@@ -235,12 +236,51 @@ public class PlatformConsistencyGuard : IPreprocessBuildWithReport
         if (null == _loc)
         {
             _errors.Add($"데모 안내 번역 파일을 찾지 못했습니다: {LOC_PATH}");
+            return;
         }
-        else if (false == _loc.text.Contains("\"id\": 3") && false == _loc.text.Contains("\"id\":3"))
+
+        string _stoveEntry = ExtractLocalizationEntry(_loc.text, 3);
+
+        if (null == _stoveEntry)
         {
             _errors.Add("DemoNoticeUI.json 에 STOVE용 본문(entry id 3)이 없습니다. " +
                         "없으면 게임이 Steam 문구(\"Steam 찜하기\")를 그대로 보여줍니다.");
+            return;
         }
+
+        // 본문에서 상점 안내를 뺀 것은 상점 버튼이 없기 때문입니다. 나중에 누군가 Steam 본문을
+        // 복사해 채우면 버튼은 없는데 찜하기를 누르라고 말하는 화면이 됩니다. 번역 파일이라
+        // 컴파일도 테스트도 걸러주지 못하므로 여기서 봅니다.
+        string[] _banned = { "steam", "wishlist", "찜하기", "愿望单", "願望單", "ウィッシュ" };
+
+        for (int i = 0; i < _banned.Length; i++)
+        {
+            if (_stoveEntry.IndexOf(_banned[i], System.StringComparison.OrdinalIgnoreCase) < 0) continue;
+
+            _errors.Add($"DemoNoticeUI.json 의 STOVE 본문(entry id 3)에 \"{_banned[i]}\" 가 들어 있습니다. " +
+                        "STOVE 데모에는 상점 버튼이 없으므로, 본편 상점·찜하기를 안내하면 안 됩니다.");
+        }
+    }
+
+    /// <summary>
+    /// 번역 JSON에서 해당 id의 엔트리 본문만 잘라냅니다. 다음 "id" 가 나오기 직전까지가 한 엔트리입니다.
+    /// 없으면 null을 돌려줍니다.
+    ///
+    /// JsonUtility로 파싱하지 않는 이유는 이 검사가 <b>번역 파일이 깨졌을 때도</b> 돌아야 하기
+    /// 때문입니다. 파싱이 실패하면 검사 자체가 사라져, 정작 막아야 할 상황에서 조용히 통과합니다.
+    /// </summary>
+    private static string ExtractLocalizationEntry(string _json, int _id)
+    {
+        if (true == string.IsNullOrEmpty(_json)) return null;
+
+        int _start = _json.IndexOf($"\"id\": {_id}", System.StringComparison.Ordinal);
+
+        if (_start < 0) _start = _json.IndexOf($"\"id\":{_id}", System.StringComparison.Ordinal);
+        if (_start < 0) return null;
+
+        int _next = _json.IndexOf("\"id\"", _start + 4, System.StringComparison.Ordinal);
+
+        return (_next < 0) ? _json.Substring(_start) : _json.Substring(_start, _next - _start);
     }
 
     /// <summary>

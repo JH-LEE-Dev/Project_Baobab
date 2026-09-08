@@ -11,16 +11,8 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     [Header("External Links")]
     [Tooltip("Steam 상점 페이지 / 찜하기 URL")]
     [SerializeField] private string steamWishlistUrl = "https://store.steampowered.com/app/YOUR_APP_ID/";
-    [Tooltip("STOVE 상점 페이지 URL. STOVE 데모 빌드에서 이 값이 비어 있으면 빌드가 중단됩니다.")]
-    [SerializeField] private string stoveStoreUrl = "";
     [Tooltip("공식 디스코드 커뮤니티 URL")]
     [SerializeField] private string discordCommunityUrl = "https://discord.gg/your_invite_link";
-
-    [Header("Store Branding")]
-    [Tooltip("상점 버튼의 로고 이미지. 스토어에 따라 아이콘을 갈아끼우기 위해 참조합니다.")]
-    [SerializeField] private Image storeIconImage;
-    [Tooltip("STOVE 로고 스프라이트. STOVE 데모 빌드에서 비어 있으면 빌드가 중단됩니다.")]
-    [SerializeField] private Sprite stoveStoreIcon;
 
     [Header("Demo Notice UI References")]
     [Tooltip("데모 안내 오버레이 루트 오브젝트 (Dim 및 배너 포함)")]
@@ -80,6 +72,17 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     private bool isHiding = false;
     private Tween demoNoticeTween;
 
+    /// <summary>
+    /// 이 빌드에 상점 버튼이 있는지. <b>STOVE 데모에는 상점 버튼 자체가 없습니다</b>(ApplyStoreBranding 참고).
+    ///
+    /// 버튼을 끄는 쪽과 패드가 버튼을 잡는 쪽이 반드시 같은 값을 봐야 해서 판정을 여기 한 곳에만 둡니다.
+    /// 둘이 어긋나면 화면에 없는 버튼을 패드로만 누를 수 있는, 눈으로는 못 찾는 상태가 됩니다.
+    /// </summary>
+    private bool HasStoreButton => null != steamWishlistBtn && false == BuildInfo.IsStove;
+
+    /// <summary>패드로 갈 수 있는 마지막 칸입니다. 상점 버튼이 없으면 디스코드 한 칸뿐입니다.</summary>
+    private int MaxFocusIndex => HasStoreButton ? 1 : 0;
+
     public bool IsDemoNoticeShowing => isDemoNoticeShowing;
     public bool IsHiding => isHiding;
     public bool IsDemoNoticeActive => (true == isDemoNoticeShowing || true == isHiding);
@@ -92,7 +95,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     {
         if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
-        focusedButtonIndex = Mathf.Clamp(_index, 0, 1);
+        focusedButtonIndex = Mathf.Clamp(_index, 0, MaxFocusIndex);
 
         if (0 == focusedButtonIndex)
         {
@@ -133,7 +136,8 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
         }
         else if (_input.x >= 0.5f)
         {
-            if (0 == focusedButtonIndex)
+            // 상점 버튼이 없는 빌드(STOVE 데모)에서는 오른쪽 칸이 아예 없다.
+            if (0 == focusedButtonIndex && 1 <= MaxFocusIndex)
             {
                 FocusDemoButton(1, true);
                 return true;
@@ -168,41 +172,40 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     private const int DESC_ENTRY_STOVE = 3;
 
     /// <summary>
-    /// 상점 버튼의 링크와 로고를 현재 스토어에 맞춥니다.
+    /// 상점 버튼을 현재 스토어에 맞춥니다.
     ///
-    /// 이 팝업은 데모 빌드에서만 뜨므로(BuildInfo.IsDemo), STOVE 데모를 내면 유저가 실제로 봅니다.
-    /// 기본값이 Steam 링크·Steam 로고라, 갈아끼우지 않으면 STOVE에서 받은 사람에게
-    /// Steam 상점으로 가라고 안내하게 됩니다.
+    /// 이 팝업은 데모 빌드에서만 뜨므로(BuildInfo.IsDemo), 데모를 내는 스토어의 유저는 이 화면을
+    /// 반드시 봅니다. 그래서 링크와 로고가 스토어와 어긋나면 유저가 바로 알아챕니다.
     ///
-    /// 값이 비어 있어도 게임을 멈추지는 않습니다. 대신 크게 로그를 남기고, 출시를 막는 일은
-    /// PlatformConsistencyGuard가 빌드 시점에 합니다. (플레이 중에 죽이는 것보다 낫습니다)
+    /// [STOVE는 버튼을 통째로 끕니다]
+    /// STOVE 데모에서는 <b>본편 상점으로 보내지 않기로 했습니다.</b> URL도 로고도 넣지 않으므로,
+    /// 눌러도 아무 데도 가지 않는 버튼이나 Steam 로고가 붙은 버튼을 남기는 대신 버튼 자체를 끕니다.
+    /// 부모(ButtonField)가 HorizontalLayoutGroup + ContentSizeFitter라, 끄면 남은 디스코드 버튼이
+    /// 알아서 가운데로 옵니다. 프리팹을 STOVE용으로 따로 만들 필요가 없습니다.
+    ///
+    /// 문구도 같이 갈립니다. DemoNoticeUI.json entry 3(STOVE 본문)에는 찜하기 안내가 없습니다.
+    /// 버튼만 끄고 문구를 그대로 두면 <b>없는 버튼을 누르라고 말하는 화면</b>이 됩니다.
+    ///
+    /// 로고는 "이 빌드가 어느 스토어에서 왔는가"가 아니라 <b>"이 버튼이 어디를 여는가"</b>를
+    /// 나타냅니다. 버튼이 Steam을 열면 Steam 로고가 맞습니다. 스토어를 더 늘리더라도, 그 스토어의
+    /// 상점으로 보내지 않는 한 로고를 새로 만들면 <b>지금 맞는 화면이 오히려 틀어집니다.</b>
     /// </summary>
     private void ApplyStoreBranding()
     {
-        string _storeUrl = BuildInfo.IsStove ? stoveStoreUrl : steamWishlistUrl;
+        if (null == steamWishlistBtn) return;
 
-        if (true == BuildInfo.IsStove)
+        // 버튼의 존재 여부는 HasStoreButton 한 곳에서만 판정한다. 패드 이동 범위도 같은 값을 본다.
+        if (false == HasStoreButton)
         {
-            if (true == string.IsNullOrEmpty(_storeUrl))
-            {
-                Debug.LogError("[DemoNotice] STOVE 상점 URL이 비어 있습니다. 상점 버튼이 동작하지 않습니다. " +
-                               "프리팹의 stoveStoreUrl 을 채우십시오.");
-            }
-
-            if (null != storeIconImage && null != stoveStoreIcon)
-            {
-                storeIconImage.sprite = stoveStoreIcon;
-            }
-            else if (null == stoveStoreIcon)
-            {
-                Debug.LogError("[DemoNotice] STOVE 로고 스프라이트가 없어 Steam 로고가 그대로 표시됩니다. " +
-                               "프리팹의 stoveStoreIcon 을 채우십시오.");
-            }
+            steamWishlistBtn.gameObject.SetActive(false);
+            return;
         }
 
-        if (null != steamWishlistBtn && false == string.IsNullOrEmpty(_storeUrl))
+        steamWishlistBtn.gameObject.SetActive(true);
+
+        if (false == string.IsNullOrEmpty(steamWishlistUrl))
         {
-            steamWishlistBtn.SetUrl(_storeUrl);
+            steamWishlistBtn.SetUrl(steamWishlistUrl);
         }
     }
 
@@ -299,6 +302,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
             {
                 // 본문은 스토어 이름을 직접 말합니다("Steam 찜하기"). 단어만 바꿔서 될 일이 아니라
                 // (찜하기라는 개념이 스토어마다 없을 수 있어) 아예 다른 엔트리를 씁니다.
+                // STOVE 본문에는 본편 상점 안내가 통째로 빠져 있습니다 - 상점 버튼도 없기 때문입니다.
                 //   1 = 제목 / 2 = 본문(Steam) / 3 = 본문(STOVE)
                 string _desc = localizationManager.GetText(demoJsonId, BuildInfo.IsStove ? DESC_ENTRY_STOVE : DESC_ENTRY_STEAM);
 
@@ -308,7 +312,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
                     // Steam 문구라도 보여주되, 이 상태로 출시되지 않도록 크게 남긴다.
                     // (PlatformConsistencyGuard가 STOVE 데모 빌드에서 이 상태를 막는다)
                     Debug.LogError("[DemoNotice] STOVE 본문(DemoNoticeUI.json entry 3)이 없어 Steam 문구로 대체합니다. " +
-                                   "이 빌드를 STOVE에 올리면 유저에게 Steam 찜하기를 안내하게 됩니다.");
+                                   "이 빌드를 STOVE에 올리면 상점 버튼은 없는데 화면은 찜하기를 누르라고 말하게 됩니다.");
                     _desc = localizationManager.GetText(demoJsonId, DESC_ENTRY_STEAM);
                 }
 
