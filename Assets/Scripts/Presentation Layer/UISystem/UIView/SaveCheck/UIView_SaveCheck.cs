@@ -131,7 +131,6 @@ public class UIView_SaveCheck : UIView
 
         if (null != cursorBox)
         {
-            cursorBox.gameObject.SetActive(true);
             warningPopup.SetCursorBoxUI(cursorBox);
         }
 
@@ -151,6 +150,12 @@ public class UIView_SaveCheck : UIView
         }
 
         SetupWarningPopup();
+
+        if (null != cursorBox)
+        {
+            cursorBox.gameObject.SetActive(true);
+            cursorBox.HideImmediately();
+        }
 
         string _displayMsg = null != localizationManager ? localizationManager.GetText("FailedMessage") : null;
         if (true == string.IsNullOrEmpty(_displayMsg))
@@ -184,6 +189,12 @@ public class UIView_SaveCheck : UIView
         }
 
         SetupWarningPopup();
+
+        if (null != cursorBox)
+        {
+            cursorBox.gameObject.SetActive(true);
+            cursorBox.HideImmediately();
+        }
 
         string _displayMsg = null != localizationManager ? localizationManager.GetText("AbandonMessage") : null;
         if (true == string.IsNullOrEmpty(_displayMsg))
@@ -228,6 +239,12 @@ public class UIView_SaveCheck : UIView
             warningPopup.HideImmediately();
         }
 
+        if (null != cursorBox)
+        {
+            cursorBox.HideImmediately();
+            cursorBox.gameObject.SetActive(false);
+        }
+
         if (null != checkingPanel)
         {
             checkingPanel.SetActive(false);
@@ -263,6 +280,12 @@ public class UIView_SaveCheck : UIView
         if (null != warningPopup)
         {
             warningPopup.gameObject.SetActive(false);
+        }
+
+        if (null != cursorBox)
+        {
+            cursorBox.HideImmediately();
+            cursorBox.gameObject.SetActive(false);
         }
     }
 

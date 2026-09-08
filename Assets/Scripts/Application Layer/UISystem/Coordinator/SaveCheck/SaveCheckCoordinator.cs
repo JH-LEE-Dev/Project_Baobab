@@ -63,6 +63,15 @@ public class SaveCheckCoordinator : MonoBehaviour
     {
         if (null == view || null == saveCheckSystem) return;
 
+        if (ESaveCheckState.Ready == saveCheckSystem.SaveCheckState)
+        {
+            view.RetryRequestedEvent -= OnRetryRequested;
+            view.AbandonConfirmedEvent -= OnAbandonConfirmed;
+            Destroy(view.gameObject);
+            view = null;
+            return;
+        }
+
         view.ApplyState(saveCheckSystem.SaveCheckState, saveCheckSystem.SaveCheckElapsedSeconds);
     }
 

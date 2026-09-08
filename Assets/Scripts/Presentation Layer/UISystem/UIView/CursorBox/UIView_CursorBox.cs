@@ -39,6 +39,7 @@ public class UIView_CursorBox : UIView, ICursorBoxUI
         // Overlay 캔버스의 자식이 되도록 설정
         bOverlay = true;
         CacheReferences();
+        HideImmediately();
     }
 
     public override void Initialize(UIViewContext ctx)
