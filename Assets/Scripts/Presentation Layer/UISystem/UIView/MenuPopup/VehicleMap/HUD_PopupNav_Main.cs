@@ -1093,7 +1093,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
             if (MapType.None != _highestBeforeUnlock)
             {
-                HandleRegionSelected(_highestBeforeUnlock, true, false);
+                HandleRegionSelected(_highestBeforeUnlock, true, true);
                 return true;
             }
         }
@@ -1102,26 +1102,26 @@ public class HUD_PopupNav_Main : MonoBehaviour
         // 1번에서 저장한 마지막 Hover 위치에서 시작
         if (ENavFocusArea.SubRegionList == runtimeLastHoveredArea && MapType.None != runtimeLastHoveredMapType && false == IsDemoRestrictedMapType(runtimeLastHoveredMapType))
         {
-            HandleRegionSelected(runtimeLastHoveredMapType, true, false);
+            HandleRegionSelected(runtimeLastHoveredMapType, true, true);
             return true;
         }
 
         if (ENavFocusArea.RegionList == runtimeLastHoveredArea && MapType.None != runtimeLastHoveredMapType && false == IsDemoRestrictedMapType(runtimeLastHoveredMapType))
         {
-            HandleRegionSelected(runtimeLastHoveredMapType, true, false);
+            HandleRegionSelected(runtimeLastHoveredMapType, true, true);
             return true;
         }
 
         // 이전 방문 기록 폴백
         if (ForestType.None != runtimeLastVisitedForestType && MapType.None != runtimeLastVisitedMapType && false == IsDemoRestrictedMapType(runtimeLastVisitedMapType))
         {
-            HandleRegionSelected(runtimeLastVisitedMapType, true, false);
+            HandleRegionSelected(runtimeLastVisitedMapType, true, true);
             return true;
         }
 
         if (MapType.None != runtimeLastSelectedMapType && false == IsDemoRestrictedMapType(runtimeLastSelectedMapType))
         {
-            HandleRegionSelected(runtimeLastSelectedMapType, true, false);
+            HandleRegionSelected(runtimeLastSelectedMapType, true, true);
             return true;
         }
 
@@ -1130,7 +1130,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         MapType _highestPlayable = GetHighestPlayableUnlockedRegion(_excludePendingUnlocks: false);
         if (MapType.None != _highestPlayable)
         {
-            HandleRegionSelected(_highestPlayable, true, false);
+            HandleRegionSelected(_highestPlayable, true, true);
             return true;
         }
 
