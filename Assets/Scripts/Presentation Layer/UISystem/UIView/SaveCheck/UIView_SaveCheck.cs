@@ -163,6 +163,9 @@ public class UIView_SaveCheck : UIView
             _displayMsg = depth1FailedMessage;
         }
 
+        // 이 뎁스의 확인은 "다시 시도"라 되돌릴 수 없는 선택이 아니다. 기본 포커스를 그대로 둔다.
+        warningPopup.SetPreferCancelOnOpen(false);
+
         warningPopup.ShowWarning(
             _displayMsg,
             _onConfirm: cachedOnRetryClicked,
@@ -201,6 +204,10 @@ public class UIView_SaveCheck : UIView
         {
             _displayMsg = depth2AbandonMessage;
         }
+
+        // 이 뎁스의 확인은 세이브를 포기하는 되돌릴 수 없는 선택이다. 패드로 열었을 때 손가락이
+        // 얹혀 있는 자리가 파괴적인 쪽이면 안 되므로 취소를 먼저 잡게 한다.
+        warningPopup.SetPreferCancelOnOpen(true);
 
         warningPopup.ShowWarning(
             _displayMsg,
