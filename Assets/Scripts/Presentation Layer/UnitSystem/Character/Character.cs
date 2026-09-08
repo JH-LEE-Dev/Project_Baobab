@@ -1269,6 +1269,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public void EnableAim()
     {
         attackComponent.SetCursorEnable(true);
+        // 패드로 들어오면 마을에서 마지막으로 걷던 방향이 스프라이트 방향으로 남아 있어, 조준점(정면 아래)과
+        // 캐릭터가 서로 다른 곳을 보게 된다. 조준을 켜는 이 시점에 둘 다 정면 아래로 맞춰 준다.
+        attackComponent.ResetAimToDefaultPose();
         UpdateFacingByAttackPoint();
     }
 
@@ -1282,6 +1285,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             armComponent.ResetRotation();
             attackComponent.ResetAttackTransform();
             attackComponent.SetCursorEnable(true);
+            // EnableAim()을 거치지 않는 경로(튜토리얼 첫 진입, 사망 후 재시작)도 같은 어긋남이 생기므로 여기서도 맞춘다.
+            attackComponent.ResetAimToDefaultPose();
         }
 
         attackComponent.SetEnable(true);

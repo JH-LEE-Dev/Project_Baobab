@@ -987,4 +987,25 @@ public class AttackComponent : PComponent
             attackPointTransform.position = targetPos;
         }
     }
+
+    /// <summary>
+    /// 던전 입장처럼 "조준을 새로 시작하는" 시점에 패드 조준 상태를 기본 자세(정면 아래)로 되돌립니다.
+    ///
+    /// facingOverrideDirection은 마을에서 걸어다닐 때도 갱신되는데(UpdateGamepadAim은 던전 여부를
+    /// 가리지 않는다), 스틱에서 손을 떼도 마지막 값이 그대로 남습니다. 그 상태로 던전에 들어서면
+    /// 조준점은 정면 아래(ResetAttackTransform)인데 스프라이트만 마을에서 마지막으로 걷던 방향을
+    /// 보게 되어, 캐릭터는 옆을 보고 도끼는 아래를 보는 어긋난 자세가 됩니다.
+    /// </summary>
+    public void ResetAimToDefaultPose()
+    {
+        aimStickDirection = Vector2.zero;
+        aimStickIdleTime = 0f;
+        facingOverrideDirection = Vector2.zero;
+
+        // 마우스 조준은 SetCursorEnable이 이미 실제 커서 위치로 맞춰 두므로 정면 아래로 덮어쓰면 안 된다.
+        if (null == ctx || null == ctx.inputManager || EInputDeviceType.Gamepad != ctx.inputManager.CurrentDevice)
+            return;
+
+        ResetAttackTransform();
+    }
 }
