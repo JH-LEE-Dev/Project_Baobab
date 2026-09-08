@@ -51,6 +51,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     private TweenCallback cachedOnOpenProductionComplete;
 
     public bool IsActive => gameObject.activeSelf;
+    public float AnimationDuration => animationDuration;
     public InputManager InputManager => inputManager;
 
     /// <summary>ESC로 뎁스 스택에서 닫힐 때 호출됩니다. 확인(Confirm)이 아닌 취소(Cancel)로 처리해
@@ -144,6 +145,35 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
                 inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
                 inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
             }
+        }
+    }
+
+    public void Initialize(InputManager _inputManager, ICursorBoxUI _cursorBoxUI = null, UIDepthController _depthController = null)
+    {
+        if (true == isInitialized)
+        {
+            return;
+        }
+
+        if (null == cachedOnUICancel)
+        {
+            cachedOnUICancel = OnCancelButtonClicked;
+        }
+
+        if (null == cachedOnInputDeviceChanged)
+        {
+            cachedOnInputDeviceChanged = OnInputDeviceChanged;
+        }
+
+        inputManager = _inputManager;
+        cursorBoxUI = _cursorBoxUI;
+        depthController = _depthController;
+        isInitialized = true;
+
+        if (null != inputManager && null != inputManager.inputReader && null != cachedOnInputDeviceChanged)
+        {
+            inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+            inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
         }
     }
 

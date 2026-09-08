@@ -1,0 +1,27 @@
+{
+  "jsonId": 17,
+  "entries": [
+    {
+      "id": 1,
+      "key": "FailedMessage",
+      "kr": "저장 데이터를 불러오지 못했습니다.\n일시적인 오류일 수 있습니다. 다시 불러오시겠습니까?",
+      "en": "Failed to load save data.\nThis may be a temporary error. Would you like to try again?",
+      "zhHans": "未能加载存档数据。\n可能是临时错误。是否重试？",
+      "zhHant": "無法載入存檔資料。\n可能是暫時性錯誤。是否重試？",
+      "ja": "セーブデータを読み込めませんでした。\n一時的なエラーの可能性があります。再試行しますか？",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 2,
+      "key": "AbandonMessage",
+      "kr": "저장 데이터를 불러오지 않고 계속할까요?\n이후 새 게임을 시작하면 기존 진행 데이터가 덮어쓰일 수 있습니다.",
+      "en": "Continue without loading save data?\nStarting a new game later may overwrite existing progress.",
+      "zhHans": "不加载存档继续吗？\n之后如果开始新游戏，现有的进度数据可能会被覆盖。",
+      "zhHant": "不載入存檔繼續嗎？\n之後如果開始新遊戲，現有的進度資料可能會被覆蓋。",
+      "ja": "セーブデータを読み込まずに続行しますか？\n今後ニューゲームを始めると既存の進行データが上書きされる可能性があります。",
+      "enumType": "",
+      "enumValue": ""
+    }
+  ]
+}

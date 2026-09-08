@@ -1,4 +1,4 @@
-﻿using DG.Tweening;
+using DG.Tweening;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -83,11 +83,6 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         inputManager = GetComponent<InputManager>();
         saveManager = GetComponent<SaveManager>();
 
-        // 세이브 확인 화면은 메인 메뉴가 만들어지기 전에 떠야 해서 Installer/UIManager를 타지 않는다.
-        // 컴포넌트가 붙어 있지 않으면 확인은 그대로 돌되 화면만 안 뜬다. (SaveCheckCoordinator 참고)
-        saveCheckCoordinator = GetComponent<SaveCheckCoordinator>();
-        saveCheckCoordinator?.Initialize(saveManager);
-
         localizationManager = GetComponentInChildren<LocalizationManager>();
 
         if (null != localizationManager)
@@ -96,6 +91,11 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             LoadLocalizationData();
             SettingsManager.Instance.Bind(localizationManager);
         }
+
+        // 세이브 확인 화면은 메인 메뉴가 만들어지기 전에 떠야 해서 Installer/UIManager를 타지 않는다.
+        // 컴포넌트가 붙어 있지 않으면 확인은 그대로 돌되 화면만 안 뜬다. (SaveCheckCoordinator 참고)
+        saveCheckCoordinator = GetComponent<SaveCheckCoordinator>();
+        saveCheckCoordinator?.Initialize(saveManager, localizationManager);
 
         if (inputManager != null)
         {

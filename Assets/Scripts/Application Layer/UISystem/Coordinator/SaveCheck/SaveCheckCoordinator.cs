@@ -28,7 +28,7 @@ public class SaveCheckCoordinator : MonoBehaviour
     /// </summary>
     public bool IsPresenting => null != view;
 
-    public void Initialize(ISaveCheckSystem _saveCheckSystem)
+    public void Initialize(ISaveCheckSystem _saveCheckSystem, LocalizationManager _localizationManager = null)
     {
         saveCheckSystem = _saveCheckSystem;
 
@@ -44,27 +44,18 @@ public class SaveCheckCoordinator : MonoBehaviour
             view = Instantiate(saveCheckViewPrefab);
             DontDestroyOnLoad(view.gameObject);
 
+            InputManager _inputManager = GetComponent<InputManager>();
+            if (null == _localizationManager)
+            {
+                _localizationManager = GetComponentInChildren<LocalizationManager>();
+            }
+
+            view.InitializeDependencies(_inputManager, _localizationManager);
+
             view.RetryRequestedEvent += OnRetryRequested;
             view.AbandonConfirmedEvent += OnAbandonConfirmed;
-            view.QuitRequestedEvent += OnQuitRequested;
         }
 
-        PushState();
-    }
-
-    private void OnDestroy()
-    {
-        if (null == view) return;
-
-        view.RetryRequestedEvent -= OnRetryRequested;
-        view.AbandonConfirmedEvent -= OnAbandonConfirmed;
-        view.QuitRequestedEvent -= OnQuitRequested;
-    }
-
-    // 상태는 코루틴이 아니라 매 프레임 밀어 넣는다. 확인이 도는 동안에도, 실패 화면에서 유저가
-    // 다시 시도를 눌러 상태가 되돌아갈 때도 같은 경로로 반영되어 흐름이 하나로 유지된다.
-    private void Update()
-    {
         PushState();
     }
 
@@ -86,13 +77,19 @@ public class SaveCheckCoordinator : MonoBehaviour
         saveCheckSystem?.AbandonUnreadableSaveAndStartFresh();
     }
 
-    private void OnQuitRequested()
+    // // Unity 생명주기 메서드 (SW_Rules 준수)
+    // 상태는 코루틴이 아니라 매 프레임 밀어 넣는다. 확인이 도는 동안에도, 실패 화면에서 유저가
+    // 다시 시도를 눌러 상태가 되돌아갈 때도 같은 경로로 반영되어 흐름이 하나로 유지된다.
+    private void Update()
     {
-        // MainMenuUIInstaller.ExitGame과 같은 처리. 에디터에서는 플레이 모드를 끈다.
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-        Application.Quit();
-#endif
+        PushState();
+    }
+
+    private void OnDestroy()
+    {
+        if (null == view) return;
+
+        view.RetryRequestedEvent -= OnRetryRequested;
+        view.AbandonConfirmedEvent -= OnAbandonConfirmed;
     }
 }

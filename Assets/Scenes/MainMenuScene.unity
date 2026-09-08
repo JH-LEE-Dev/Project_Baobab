@@ -385,7 +385,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5393d71e1189310499eacfc4b9dccc08, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SaveCheckCoordinator
-  saveCheckViewPrefab: {fileID: 0}
+  saveCheckViewPrefab: {fileID: 7000000000000001, guid: eca5975b15124c0781844633a23091ae, type: 3}
 --- !u!114 &385195703
 MonoBehaviour:
   m_ObjectHideFlags: 0
