@@ -31,9 +31,15 @@ using UnityEngine;
 /// 확정할 수 없었으므로, <b>첫 빌드 때 로그에서 Sentry 업로드 줄이 아래 정리 줄보다 위에 있는지 한 번
 /// 눈으로 확인하십시오.</b> (아래 SUMMARY_TAG 로 검색하면 됩니다)
 ///
+/// [스토어에 따라 갈리는 항목이 하나 있습니다]
+/// 위 목록은 어느 빌드에서든 지우지만, steam_api64.dll 은 <b>Steam이 아닌 스토어에서만</b> 지웁니다.
+/// 네이티브 플러그인이라 DISABLESTEAMWORKS를 켜도 빠지지 않기 때문입니다.
+/// (RemoveSteamNativePluginIfNotSteam 참고 - 실패 방향에 주의할 점이 적혀 있습니다)
+///
 /// [개발 빌드는 건드리지 않습니다]
 /// Development Build는 프로파일링·디버깅이 목적이라 심볼이 있어야 합니다. 어차피 배포할 수 없는
 /// 물건이므로 그대로 두고 로그만 남깁니다. ReleaseScriptingBackendGuard와 같은 관용입니다.
+/// steam_api64.dll도 이때는 함께 남습니다. 배포하지 않는 빌드라 문제되지 않습니다.
 /// </summary>
 public class BuildOutputSanitizer : IPostprocessBuildWithReport
 {
@@ -61,6 +67,12 @@ public class BuildOutputSanitizer : IPostprocessBuildWithReport
         "Thumbs.db",
         "desktop.ini",
     };
+
+    /// <summary>
+    /// Steamworks의 네이티브 DLL입니다. 32비트(steam_api.dll)까지 함께 걸리도록 패턴으로 둡니다.
+    /// 위 FILE_PATTERNS와 달리 <b>스토어에 따라 조건부</b>라 별도로 다룹니다.
+    /// </summary>
+    private const string STEAM_NATIVE_PLUGIN_PATTERN = "steam_api*.dll";
 
     public void OnPostprocessBuild(BuildReport _report)
     {
@@ -103,6 +115,7 @@ public class BuildOutputSanitizer : IPostprocessBuildWithReport
         {
             _freed += RemoveDirectories(_root, _removed);
             _freed += RemoveFiles(_root, _removed);
+            _freed += RemoveSteamNativePluginIfNotSteam(_root, _removed);
         }
         catch (Exception _e)
         {
@@ -162,6 +175,54 @@ public class BuildOutputSanitizer : IPostprocessBuildWithReport
                 _removed.Add(ToRelative(_root, _file));
                 _freed += _size;
             }
+        }
+
+        return _freed;
+    }
+
+    /// <summary>
+    /// Steam이 아닌 스토어의 빌드에서 steam_api64.dll 을 지웁니다.
+    ///
+    /// [왜 디파인으로 안 되는가]
+    /// DISABLESTEAMWORKS는 <b>C# 코드만</b> 걷어냅니다. steam_api64.dll은 네이티브 플러그인이라
+    /// 포함 여부가 스크립팅 디파인이 아니라 임포터 설정을 따르는데, 그 .meta는 defineConstraints가
+    /// 비어 있고 Standalone Win64가 무조건 켜져 있습니다. 그래서 STOVE·itch 빌드에도 그대로 실립니다.
+    /// 첫 itch 데모 빌드에서 실제로 남아 있는 것을 확인했습니다.
+    ///
+    /// [왜 .meta를 건드리지 않는가]
+    /// 빌드 전에 임포터 설정을 껐다가 뒤에 되돌리는 방법도 있지만, 빌드가 중간에 멈추면 꺼진 채로
+    /// 남습니다. 그 상태로 Steam 빌드를 뽑으면 <b>DLL이 빠진 채 나가 Steam API가 통째로 죽습니다.</b>
+    /// DemoContentStripper가 DB를 되돌리지 못한 채 남는 것과 같은 사고인데, 이쪽은 대가가 훨씬 큽니다.
+    /// 출력 폴더에서 지우는 방식은 프로젝트 상태를 건드리지 않아 그 사고가 아예 없습니다.
+    ///
+    /// [실패 방향]
+    /// 스토어 판정이 어긋나면 <b>지우지 않는 쪽</b>으로 실패해야 합니다. CurrentStore는 디파인이
+    /// 없을 때 Steam을 돌려주므로, 판정이 흔들려도 기본값은 "남긴다"입니다. 조건을 뒤집어
+    /// "Steam일 때 지운다"로 쓰면 실패 방향이 정반대가 되니 주의하십시오.
+    ///
+    /// 남아도 게임은 멀쩡합니다(아무도 로드하지 않습니다). 지우는 이유는 신뢰입니다 -
+    /// itch나 STOVE에서 받은 빌드에 Steam DLL이 들어 있으면 유저가 의심합니다.
+    /// </summary>
+    private static long RemoveSteamNativePluginIfNotSteam(string _root, List<string> _removed)
+    {
+        if (BuildStore.Steam == PlatformBuildModeSwitcher.CurrentStore) return 0;
+
+        long _freed = 0;
+
+        string[] _files = Directory.GetFiles(_root, STEAM_NATIVE_PLUGIN_PATTERN, SearchOption.AllDirectories);
+
+        for (int i = 0; i < _files.Length; i++)
+        {
+            string _file = _files[i];
+
+            if (false == File.Exists(_file)) continue;
+
+            long _size = new FileInfo(_file).Length;
+
+            File.Delete(_file);
+
+            _removed.Add(ToRelative(_root, _file));
+            _freed += _size;
         }
 
         return _freed;
