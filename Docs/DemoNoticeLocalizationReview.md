@@ -72,16 +72,16 @@
 
 STOVE 데모 빌드를 생성하기 전 담당 프로그래머는 아래 항목을 반드시 교차 점검하십시오:
 
-- [ ] **1. 폰트 아틀라스 재베이킹 실행**:
+- [x] **1. 폰트 아틀라스 재베이킹 실행** — 완료 (2026-09-08):
   * Unity 에디터 상단 메뉴 `Tools > Localization > Generate Character Sets and Bake Atlases` 실행.
   * [Assets/TextMesh Pro/Font Character Sets](file:///d:/Unity/Project/LumberBoy/Assets/TextMesh%20Pro/Font%20Character%20Sets) 텍스트 파일들에 신규 문자가 반영되었는지 확인.
   * [Assets/TextMesh Pro/Fonts](file:///d:/Unity/Project/LumberBoy/Assets/TextMesh%20Pro/Fonts)의 `.asset` 폰트 아틀라스 파일들이 갱신(Dirty 플러시)되었는지 확인.
-- [ ] **2. 중국어 문구 태그 및 호칭 수정 반영**:
+- [x] **2. 중국어 문구 태그 및 호칭 수정 반영** — 완료 (2026-09-08):
   * [DemoNoticeUI.json](file:///d:/Unity/Project/LumberBoy/Assets/Resources/Localization/DemoNoticeUI.json)의 엔트리 3번 `zhHans`, `zhHant` 텍스트가 아래 권장 수정안으로 교체되었는지 확인.
-- [ ] **3. PlatformConsistencyGuard 검사 통과 여부 확인**:
+- [x] **3. PlatformConsistencyGuard 검사 통과 여부 확인** — 완료 (2026-09-08):
   * Unity 메뉴 `Tools > 빌드`에서 스토어를 `STOVE`, 배포를 `데모`로 선택 후 재컴파일 대기.
   * [PlatformConsistencyGuard.cs](file:///d:/Unity/Project/LumberBoy/Assets/Scripts/Editor/Build/PlatformConsistencyGuard.cs)에서 에러나 경고 없이 빌드 전처리 통과하는지 확인.
-- [ ] **4. 인게임 5개 언어 실기 렌더링 확인**:
+- [ ] **4. 인게임 5개 언어 실기 렌더링 확인** — **사람이 직접 해야 하는 유일한 항목**:
   * 타이틀 씬 또는 데모 완료 팝업 트리거 시 5개 언어(KR, EN, ZH_HANS, ZH_HANT, JA)로 각각 전환하여 확인:
     1. 깨진 글자(□)가 없는지.
     2. 버튼 텍스트와 본문 줄바꿈(`\n`)이 띠 배너 영역을 벗어나거나 어색하게 끊기지 않는지.
@@ -98,3 +98,37 @@ STOVE 데모 빌드를 생성하기 전 담당 프로그래머는 아래 항목�
 | **`zhHans`** | `衷心感谢各位<COLOR=7EEDBE>探险家</COLOR>，陪伴伐木少年迈出第一步。\n你们在<COLOR=7289DA>Discord</COLOR>留下的反馈是开发团队最大的动力。\n我们将带着<COLOR=54D86A>正式版</COLOR>再次与你相见，继续这场冒险！` | `衷心感谢各位<COLOR=7EEDBE>探险家</COLOR>，陪伴伐木少年迈出第一步。\n你们留下的<COLOR=7289DA>Discord反馈</COLOR>是开发团队最大的动力。\n我们将带着<COLOR=54D86A>正式版</COLOR>再次与大家相见，继续这场冒险！` | 태그 하이라이트 범위 통일 및 `大家` 호칭 수정 |
 | **`zhHant`** | `衷心感謝各位<COLOR=7EEDBE>探險家</COLOR>，陪伴伐木少年邁出第一步。\n你們在<COLOR=7289DA>Discord</COLOR>留下的反饋是開發團隊最大的動力。\n我們將帶著<COLOR=54D86A>正式版</COLOR>再次與你相見，繼續這場冒險！` | `衷心感謝各位<COLOR=7EEDBE>探險家</COLOR>，陪伴伐木少年邁出第一步。\n你們留下的<COLOR=7289DA>Discord反饋</COLOR>是開發團隊最大的動力。\n我們將帶著<COLOR=54D86A>正式版</COLOR>再次與大家相見，繼續這場冒險！` | 간체와 동일하게 태그 및 호칭 수정 |
 | **`ja`** | `<COLOR=7EEDBE>冒険者の皆さん</COLOR>、ランバーボーイの初めての冒険に\nお付き合いいただき、本当にありがとうございます。\n<COLOR=7289DA>Discordでのフィードバック</COLOR>が、\n開発チームの大きな励みになります。\n<COLOR=54D86A>製品版</COLOR>で、冒険の続きをお届けします！` | *(현재 텍스트 유지, 폰트 베이킹 필수)* | 문구 자연스러움. `届` 글리프 베이킹 필수 |
+
+---
+
+## 5. 조치 결과 (2026-09-08)
+
+### 1~3번 완료
+
+**순서를 지켰습니다.** 중국어 문구를 먼저 고치고 나서 베이킹했습니다. 반대로 하면 사라질 문구의
+글자(`你们在` 의 `在`)가 문자셋에 남고, 새로 생긴 `大家` 가 빠집니다.
+
+| 폰트 | 문자 수 | 요구 글리프 |
+|---|---|---|
+| `FusionPixel_JA` | 440 → **451** | `届` 포함 |
+| `FusionPixel_zh_hans` | 501 → **517** | `留着再相见场大家` 포함 |
+| `FusionPixel_zh_hant` | 510 → **525** | `留著再相見場大家` 포함 |
+
+문자셋 `.txt` 만이 아니라 **폰트 에셋의 `glyphTable` / `characterTable` 을 직접 조회해**
+확인했습니다. 셋 다 `Static` 모드이고 글리프 수와 문자 수가 일치하므로 런타임에 두부(□)가 날
+자리가 없습니다.
+
+3번은 **STOVE + 데모 릴리스 실빌드로 확인**했습니다 (2분 36초, 오류 0건, 242MB).
+가드가 빌드를 통과시켰다는 것은 엔트리 3의 금지어 검사와 상점 버튼 참조 검사가 모두 통과했다는
+뜻이며, 수정된 중국어 문구에 `愿望单` / `願望單` 이 들어가지 않았음도 함께 증명됩니다.
+
+산출물은 `C:\Unity Build\STOVE_DEMO` 이고, 정리 기록에 심볼 폴더 2건과 `steam_api64.dll` 이
+찍혔습니다.
+
+### 4번은 남아 있습니다
+
+실기 렌더링은 게임을 띄워 데모 완료 지점까지 가야 보입니다. 특히 볼 것:
+
+* 줄바꿈이 띠 배너를 벗어나지 않는지 — **중국어 2행은 태그 수정으로 길이가 바뀌었습니다.**
+* 5개 언어 모두 □ 없이 나오는지.
+* 상점 버튼이 숨겨지고 디스코드 버튼만 가운데 정렬되는지, 패드 오른쪽 입력이 빈 칸을 잡지 않는지.
