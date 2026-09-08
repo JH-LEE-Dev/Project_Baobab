@@ -250,7 +250,7 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
     {
         for (int i = 0; regionButtons.Count > i; i++)
         {
-            if (null != regionButtons[i] && true == regionButtons[i].gameObject.activeSelf && true == regionButtons[i].IsMouseOver())
+            if (null != regionButtons[i] && true == regionButtons[i].gameObject.activeSelf && (true == regionButtons[i].IsPointerOver || true == regionButtons[i].IsMouseOver()))
             {
                 return regionButtons[i];
             }

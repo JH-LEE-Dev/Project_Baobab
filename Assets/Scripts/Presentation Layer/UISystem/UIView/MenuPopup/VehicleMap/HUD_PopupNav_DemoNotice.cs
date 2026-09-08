@@ -228,10 +228,12 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
         if (null != steamWishlistBtn)
         {
             steamWishlistBtn.SetCursorBoxUI(cursorBoxUI, inputManager);
+            steamWishlistBtn.SetSyncWithEventSystem(false);
         }
         if (null != discordBtn)
         {
             discordBtn.SetCursorBoxUI(cursorBoxUI, inputManager);
+            discordBtn.SetSyncWithEventSystem(false);
         }
 
         if (null != discordBtn && null != steamWishlistBtn)

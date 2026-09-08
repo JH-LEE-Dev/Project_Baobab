@@ -1430,6 +1430,26 @@ public class HUD_PopupNav_Main : MonoBehaviour
         }
     }
 
+    public void HandleRegionHovered(MapType _mapType)
+    {
+        if (true == IsInputBlocked)
+        {
+            return;
+        }
+
+        runtimeLastHoveredArea = ENavFocusArea.RegionList;
+        runtimeLastHoveredMapType = _mapType;
+        runtimeLastHoveredForestType = ForestType.None;
+    }
+
+    public void HandleRegionUnhovered()
+    {
+        if (true == IsInputBlocked)
+        {
+            return;
+        }
+    }
+
     public void HandleSubRegionSelected(ForestType _forestType)
     {
         if (true == IsInputBlocked)
@@ -1657,6 +1677,10 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
                     regionGroup.FocusRegionButton(focusedRegionIndex);
                     if (null != subRegionGroup) subRegionGroup.StopAllHoverEffects();
+                    if (currentSelectedMapType != _targetMap)
+                    {
+                        HandleRegionSelected(_targetMap, _force: true, _playClickAnim: false);
+                    }
                     return;
                 }
             }
@@ -2090,7 +2114,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
                 int _subIdx = subRegionGroup.GetSubRegionIndex(_hoveredSubBtn.GetForestType());
                 focusedSubRegionIndex = (0 <= _subIdx) ? _subIdx : subRegionGroup.GetFirstUnlockedSubRegionIndex();
                 subRegionGroup.FocusSubRegionButton(focusedSubRegionIndex);
-                Sound.PlayUI(SoundID.NaviSubHover);
                 if (null != regionGroup) regionGroup.StopAllHoverEffects();
             }
             else if (null != _hoveredRegionBtn && true == _hoveredRegionBtn.IsUnlocked && false == IsDemoRestrictedMapType(_hoveredRegionBtn.GetMapType()))
@@ -2101,7 +2124,15 @@ public class HUD_PopupNav_Main : MonoBehaviour
                 focusedRegionIndex = (0 <= _regIdx) ? _regIdx : GetFirstUnlockedAndPlayableRegionIndex();
                 regionGroup.FocusRegionButton(focusedRegionIndex);
                 if (null != subRegionGroup) subRegionGroup.StopAllHoverEffects();
-                HandleRegionSelected(_hoveredRegionBtn.GetMapType(), false, false);
+
+                runtimeLastHoveredArea = ENavFocusArea.RegionList;
+                runtimeLastHoveredMapType = _hoveredRegionBtn.GetMapType();
+                runtimeLastHoveredForestType = ForestType.None;
+
+                if (currentSelectedMapType != _hoveredRegionBtn.GetMapType())
+                {
+                    HandleRegionSelected(_hoveredRegionBtn.GetMapType(), _force: true, _playClickAnim: false);
+                }
             }
             else
             {

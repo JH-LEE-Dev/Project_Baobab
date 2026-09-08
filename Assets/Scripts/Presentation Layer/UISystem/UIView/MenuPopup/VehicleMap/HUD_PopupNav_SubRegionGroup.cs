@@ -599,7 +599,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     {
         for (int i = 0; activeSubRegionButtons.Count > i; i++)
         {
-            if (null != activeSubRegionButtons[i] && true == activeSubRegionButtons[i].gameObject.activeSelf && true == activeSubRegionButtons[i].IsMouseOver())
+            if (null != activeSubRegionButtons[i] && true == activeSubRegionButtons[i].gameObject.activeSelf && (true == activeSubRegionButtons[i].IsPointerOver || true == activeSubRegionButtons[i].IsMouseOver()))
             {
                 return activeSubRegionButtons[i];
             }

@@ -55,6 +55,14 @@ public class UI_ExternalLinkButton : Selectable, ISubmitHandler, IPointerClickHa
     private bool isHovered = false;
     private ICursorBoxUI cursorBoxUI;
     private InputManager inputManager;
+    private float lastClickTime = -1f;
+    private const float CLICK_COOLDOWN = 0.5f;
+    private bool syncWithEventSystem = true;
+
+    public void SetSyncWithEventSystem(bool _sync)
+    {
+        syncWithEventSystem = _sync;
+    }
 
     private DOGetter<Color> getShadowColor;
     private DOSetter<Color> setShadowColor;
@@ -190,7 +198,7 @@ public class UI_ExternalLinkButton : Selectable, ISubmitHandler, IPointerClickHa
             Sound.PlayUI(SoundID.MainMenuDot01);
         }
 
-        if (null != EventSystem.current)
+        if (true == syncWithEventSystem && null != EventSystem.current)
         {
             if (EventSystem.current.currentSelectedGameObject != gameObject)
             {
@@ -278,6 +286,12 @@ public class UI_ExternalLinkButton : Selectable, ISubmitHandler, IPointerClickHa
 
     public void ExecuteClick()
     {
+        if (Time.unscaledTime - lastClickTime < CLICK_COOLDOWN)
+        {
+            return;
+        }
+        lastClickTime = Time.unscaledTime;
+
         Sound.PlayUI(SoundID.OptionClick);
 
         if (false == string.IsNullOrEmpty(targetUrl))
