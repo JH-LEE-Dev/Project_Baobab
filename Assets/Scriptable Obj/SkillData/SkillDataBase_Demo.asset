@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e9374a58acba8014c9fbbe9b619708df, type: 3}
-  m_Name: SkillDataBase
+  m_Name: SkillDataBase_Demo
   m_EditorClassIdentifier: Assembly-CSharp::SkillDataBase
   skills:
   - skillType: 15
