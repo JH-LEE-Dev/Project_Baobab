@@ -395,6 +395,20 @@ public class HUD_PopupNav_Main : MonoBehaviour
             appearTween.Kill();
             appearTween = null;
         }
+
+        // 이전 닫기의 퇴장 트윈이 아직 돌고 있으면 여기서 끊는다. ESC/패드B로 닫는 경로는
+        // UIDepthController.TryCloseTopView() → UIView_MenuPopup.OnHide()가 즉시 실행되어
+        // 입력 모드 복귀와 OffroadVehicleObj.SetUIActivated(false)까지 끝내버리는 반면, 이 팝업의
+        // 퇴장 트윈만 남아서 계속 돈다. 그 사이에 상호작용 키로 다시 열면 뒤늦게 도착한 이전 트윈의
+        // OnComplete(OnMainPopupDisappearComplete)가 방금 열린 UI를 그대로 닫아버린다.
+        // (상호작용 키로 닫을 때만 멀쩡했던 건 CloseNavigationUI()가 lastActivatedTime을 갱신해
+        //  차량의 0.5초 쿨다운이 재입력을 막아줬기 때문이고, 퇴장 트윈 길이와의 차이가 0.05초뿐이라
+        //  연출 시간을 조금만 늘려도 그쪽도 같이 깨지는 우연한 방어였다)
+        if (null != disappearTween && true == disappearTween.IsActive())
+        {
+            disappearTween.Kill();
+            disappearTween = null;
+        }
     }
 
     private void ForceUnlockAllMapsForDebug()
@@ -767,6 +781,15 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
     private void OnMainPopupDisappearComplete()
     {
+        // 퇴장 트윈이 도는 사이에 다시 열렸다면(Open()이 isClosing을 false로 되돌린다) 이 완료
+        // 콜백은 이미 취소된 닫기의 것이므로 그대로 흘려보낸다. ResetOpenState()에서 트윈을
+        // 죽이므로 정상 경로에선 도달하지 않지만, 즉시 닫기(_isInstant) 등 트윈을 거치지 않는
+        // 호출부도 있어 상태 기준으로 한 번 더 막는다.
+        if (false == isClosing)
+        {
+            return;
+        }
+
         if (null != subRegionGroup)
         {
             subRegionGroup.ResetState();
