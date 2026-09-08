@@ -180,6 +180,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     public ForestType GetForestType() => myInfo.forestType;
     public ForestEnvironmentInfo GetInfo() => myInfo;
     public bool IsUnlocked => (true == myInfo.isUnlocked);
+    public bool IsPointerOver => isPointerOver;
 
     /// <summary>
     /// 레이아웃 배치 시 사용될 실제 시각적 너비를 반환합니다.
@@ -447,6 +448,11 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     public void TriggerHover()
     {
+        if (null != mainController && true == mainController.IsClosing)
+        {
+            return;
+        }
+
         if (null != mainController)
         {
             mainController.StopAllRegionHoverEffects();

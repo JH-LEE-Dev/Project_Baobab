@@ -187,6 +187,11 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         inputManager = null;
     }
 
+    private void OnDisable()
+    {
+        UnsubscribeInputEvents();
+    }
+
     private void OnDestroy()
     {
         Release();
@@ -423,7 +428,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     {
         // 이미 파괴된 팝업이 이벤트에 남아 있다면(해제가 한 번 새어 나간 경우) 여기서 스스로 빠진다.
         // 가드만 두면 예외는 막아도 죽은 핸들러가 리스트에 영구히 쌓인다.
-        if (null == this)
+        if ((UnityEngine.Object)this == null)
         {
             UnsubscribeInputEvents();
             return;
@@ -579,6 +584,8 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         }
         isClosing = true;
 
+        UnsubscribeInputEvents();
+
         HideCursor();
 
         Action _confirm = onConfirmAction;
@@ -596,7 +603,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     private void OnCancelButtonClicked()
     {
         // UICancelEvent 구독분도 같은 이유로 죽은 채 남을 수 있다. (OnInputDeviceChanged와 동일한 처리)
-        if (null == this)
+        if ((UnityEngine.Object)this == null)
         {
             UnsubscribeInputEvents();
             return;
@@ -607,6 +614,8 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
             return;
         }
         isClosing = true;
+
+        UnsubscribeInputEvents();
 
         HideCursor();
 

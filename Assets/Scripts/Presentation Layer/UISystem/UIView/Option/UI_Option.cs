@@ -2525,5 +2525,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         cursorBoxUI?.HideImmediately();
         cursorBoxUI = null;
+
+        if (null != warningPopup)
+        {
+            warningPopup.Release();
+        }
     }
 }

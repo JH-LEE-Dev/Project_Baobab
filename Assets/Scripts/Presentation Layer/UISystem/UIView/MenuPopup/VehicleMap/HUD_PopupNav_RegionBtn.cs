@@ -155,6 +155,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     public MapType GetMapType() => (true == isInitialized ? myInfo.mapType : MapType.None);
     public bool IsUnlocked => (true == isInitialized && true == myInfo.isUnlocked);
     public bool IsSelected => isSelected;
+    public bool IsPointerOver => isPointerOver;
 
     private void Awake()
     {
@@ -435,9 +436,15 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public void TriggerHover()
     {
+        if (null != mainController && true == mainController.IsClosing)
+        {
+            return;
+        }
+
         if (null != mainController)
         {
             mainController.StopAllSubRegionHoverEffects();
+            mainController.HandleRegionHovered(GetMapType());
         }
 
         if (false == isSelected)

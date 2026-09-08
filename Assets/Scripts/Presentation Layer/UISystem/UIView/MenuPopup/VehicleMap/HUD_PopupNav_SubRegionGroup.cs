@@ -599,7 +599,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     {
         for (int i = 0; activeSubRegionButtons.Count > i; i++)
         {
-            if (null != activeSubRegionButtons[i] && true == activeSubRegionButtons[i].gameObject.activeSelf && true == activeSubRegionButtons[i].IsMouseOver())
+            if (null != activeSubRegionButtons[i] && true == activeSubRegionButtons[i].gameObject.activeSelf && (true == activeSubRegionButtons[i].IsPointerOver || true == activeSubRegionButtons[i].IsMouseOver()))
             {
                 return activeSubRegionButtons[i];
             }
@@ -631,8 +631,28 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         return 0;
     }
 
+    public void StopAllAnimations()
+    {
+        if (null != currentAppearSequence && true == currentAppearSequence.IsActive())
+        {
+            currentAppearSequence.Kill();
+            currentAppearSequence = null;
+        }
+
+        cachedOnComplete = null;
+        pendingOnComplete = null;
+        pendingDisappearComplete = null;
+
+        StopAllHoverEffects();
+    }
+
     public void FocusSubRegionButton(int _index)
     {
+        if (null != mainController && true == mainController.IsClosing)
+        {
+            return;
+        }
+
         for (int i = 0; activeSubRegionButtons.Count > i; i++)
         {
             if (null == activeSubRegionButtons[i]) continue;
@@ -656,6 +676,8 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             currentAppearSequence = null;
         }
 
+        cachedOnComplete = null;
+        pendingOnComplete = null;
         pendingDisappearComplete = null;
 
         for (int i = 0; i < activeSubRegionButtons.Count; i++)
@@ -673,6 +695,11 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
     public void EvaluateAllHoverStates()
     {
+        if (null != mainController && (true == mainController.IsClosing || true == mainController.IsInputBlocked))
+        {
+            return;
+        }
+
         for (int i = 0; i < activeSubRegionButtons.Count; i++)
         {
             if (null != activeSubRegionButtons[i])

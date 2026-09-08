@@ -228,10 +228,12 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
         if (null != steamWishlistBtn)
         {
             steamWishlistBtn.SetCursorBoxUI(cursorBoxUI, inputManager);
+            steamWishlistBtn.SetSyncWithEventSystem(false);
         }
         if (null != discordBtn)
         {
             discordBtn.SetCursorBoxUI(cursorBoxUI, inputManager);
+            discordBtn.SetSyncWithEventSystem(false);
         }
 
         if (null != discordBtn && null != steamWishlistBtn)
@@ -396,6 +398,25 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
         isHiding = true;
 
         Sound.PlayUI(SoundID.ResultUIClose);
+
+        if (null != steamWishlistBtn)
+        {
+            steamWishlistBtn.UnfocusButton();
+        }
+        if (null != discordBtn)
+        {
+            discordBtn.UnfocusButton();
+        }
+
+        if (null != EventSystem.current)
+        {
+            GameObject _curSelected = EventSystem.current.currentSelectedGameObject;
+            if ((null != discordBtn && _curSelected == discordBtn.gameObject) ||
+                (null != steamWishlistBtn && _curSelected == steamWishlistBtn.gameObject))
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+            }
+        }
 
         if (null != mainController)
         {

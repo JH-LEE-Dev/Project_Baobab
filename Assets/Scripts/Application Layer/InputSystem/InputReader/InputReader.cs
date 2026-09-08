@@ -412,7 +412,29 @@ public class InputReader
 
         if (0 < pauseUICancelCount) return;
 
-        UICancelEvent?.Invoke();
+        if (null == UICancelEvent) return;
+
+        Delegate[] _invocationList = UICancelEvent.GetInvocationList();
+        for (int i = 0; i < _invocationList.Length; i++)
+        {
+            Action _handler = _invocationList[i] as Action;
+            if (null == _handler) continue;
+
+            if (_handler.Target is UnityEngine.Object _unityObj && null == _unityObj)
+            {
+                UICancelEvent -= _handler;
+                continue;
+            }
+
+            try
+            {
+                _handler.Invoke();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
     }
 
     private void OnUITabLeft(InputAction.CallbackContext context)
@@ -521,17 +543,83 @@ public class InputReader
 
     private void OnInputDeviceChanged(EInputDeviceType _device)
     {
-        InputDeviceChangedEvent?.Invoke(_device);
+        if (null == InputDeviceChangedEvent) return;
+
+        Delegate[] _invocationList = InputDeviceChangedEvent.GetInvocationList();
+        for (int i = 0; i < _invocationList.Length; i++)
+        {
+            Action<EInputDeviceType> _handler = _invocationList[i] as Action<EInputDeviceType>;
+            if (null == _handler) continue;
+
+            if (_handler.Target is UnityEngine.Object _unityObj && null == _unityObj)
+            {
+                InputDeviceChangedEvent -= _handler;
+                continue;
+            }
+
+            try
+            {
+                _handler.Invoke(_device);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
     }
 
     private void OnGamepadIconSetChanged(EGamepadIconSet _iconSet)
     {
-        GamepadIconSetChangedEvent?.Invoke(_iconSet);
+        if (null == GamepadIconSetChangedEvent) return;
+
+        Delegate[] _invocationList = GamepadIconSetChangedEvent.GetInvocationList();
+        for (int i = 0; i < _invocationList.Length; i++)
+        {
+            Action<EGamepadIconSet> _handler = _invocationList[i] as Action<EGamepadIconSet>;
+            if (null == _handler) continue;
+
+            if (_handler.Target is UnityEngine.Object _unityObj && null == _unityObj)
+            {
+                GamepadIconSetChangedEvent -= _handler;
+                continue;
+            }
+
+            try
+            {
+                _handler.Invoke(_iconSet);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
     }
 
     private void OnGamepadConnectionChanged(bool _bConnected)
     {
-        GamepadConnectionChangedEvent?.Invoke(_bConnected);
+        if (null == GamepadConnectionChangedEvent) return;
+
+        Delegate[] _invocationList = GamepadConnectionChangedEvent.GetInvocationList();
+        for (int i = 0; i < _invocationList.Length; i++)
+        {
+            Action<bool> _handler = _invocationList[i] as Action<bool>;
+            if (null == _handler) continue;
+
+            if (_handler.Target is UnityEngine.Object _unityObj && null == _unityObj)
+            {
+                GamepadConnectionChangedEvent -= _handler;
+                continue;
+            }
+
+            try
+            {
+                _handler.Invoke(_bConnected);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
     }
 
     /// <summary>

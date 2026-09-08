@@ -159,6 +159,11 @@ public class UIView_ESC : UIView
         cachedMenuAppearCompleted = null;
         cachedReturnFromOptionCompleted = null;
 
+        if (null != warningPopup)
+        {
+            warningPopup.Release();
+        }
+
         base.OnDestroy();
     }
 
