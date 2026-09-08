@@ -305,6 +305,11 @@ public class UIView_SaveCheck : UIView
     {
         KillDelayedTween();
 
+        if (null != warningPopup)
+        {
+            warningPopup.Release();
+        }
+
         cachedOnRetryClicked = null;
         cachedOnDepth1CancelClicked = null;
         cachedOnAbandonConfirmed = null;

@@ -115,7 +115,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         }
     }
 
-    private void OnDestroy()
+    public void Release()
     {
         isInitialized = false;
         isClosing = false;
@@ -145,6 +145,11 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         inputManager = null;
     }
 
+    private void OnDestroy()
+    {
+        Release();
+    }
+
     public void Initialize(UIViewContext _ctx)
     {
         if (true == isInitialized)
@@ -168,12 +173,6 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
             depthController = _ctx.depthController;
             inputManager = _ctx.inputManager;
             isInitialized = true;
-
-            if (null != inputManager && null != inputManager.inputReader && null != cachedOnInputDeviceChanged)
-            {
-                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
-                inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
-            }
         }
     }
 
@@ -198,12 +197,6 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         cursorBoxUI = _cursorBoxUI;
         depthController = _depthController;
         isInitialized = true;
-
-        if (null != inputManager && null != inputManager.inputReader && null != cachedOnInputDeviceChanged)
-        {
-            inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
-            inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
-        }
     }
 
     public void SetCursorBoxUI(ICursorBoxUI _cursorBoxUI)
@@ -398,7 +391,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 
     private void OnInputDeviceChanged(EInputDeviceType _device)
     {
-        if (false == gameObject.activeInHierarchy || false == IsActive) return;
+        if (null == this || false == gameObject.activeInHierarchy || false == IsActive) return;
 
         if (EInputDeviceType.Gamepad == _device)
         {
@@ -486,9 +479,16 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 
     private void RestorePreviousFocus()
     {
-        if (null != inputManager && null != inputManager.inputReader && null != cachedOnUICancel)
+        if (null != inputManager && null != inputManager.inputReader)
         {
-            inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+            if (null != cachedOnUICancel)
+            {
+                inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+            }
+            if (null != cachedOnInputDeviceChanged)
+            {
+                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+            }
         }
 
         if (null != inputManager && true == inputManager.IsGamepadMode)
