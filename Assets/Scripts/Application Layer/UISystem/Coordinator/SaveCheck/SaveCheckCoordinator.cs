@@ -178,6 +178,9 @@ public class SaveCheckCoordinator : MonoBehaviour
         view.ApplyState(_state, saveCheckSystem.SaveCheckElapsedSeconds);
     }
 
+    // 실패 화면에서 나가는 길은 이 둘뿐이다. 게임 종료 버튼은 두지 않기로 했으므로, 창을 닫는 것
+    // 말고는 다시 시도해서 성공하거나 기존 세이브를 포기하는 것 중 하나를 골라야 한다.
+    // (다시 넣을 일이 생기면 뷰에 이벤트를 추가하고 MainMenuUIInstaller.ExitGame과 같은 처리를 붙인다)
     private void OnRetryRequested()
     {
         saveCheckSystem?.RetrySaveAvailabilityCheck();
@@ -187,16 +190,6 @@ public class SaveCheckCoordinator : MonoBehaviour
     {
         // 뷰가 확인 팝업까지 거친 뒤에만 올려보낸다. 여기서 한 번 더 묻지 않는다.
         saveCheckSystem?.AbandonUnreadableSaveAndStartFresh();
-    }
-
-    private void OnQuitRequested()
-    {
-        // MainMenuUIInstaller.ExitGame과 같은 처리. 에디터에서는 플레이 모드를 끈다.
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-        Application.Quit();
-#endif
     }
 
     // // Unity 생명주기 메서드 (SW_Rules 준수)
