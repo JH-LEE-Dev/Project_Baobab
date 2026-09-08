@@ -158,7 +158,7 @@ MonoBehaviour:
   keyGuideMagnificationText: {fileID: 3910435389249304132}
   keyGuideExitText: {fileID: 1881007374802015385}
   abilityNodePrefab: {fileID: 186751372433236867, guid: f50dc13d7e7439444b4bed2520b62d96, type: 3}
-  abilityNodeJson: {fileID: 4900000, guid: f2dada2f7a2657d44ac7174b4ee787ca, type: 3}
+  abilityBuildVariantData: {fileID: 11400000, guid: 435d117acee74a889a1c34c20d764a81, type: 2}
   gridCellSize: 32
   prewarmNodePoolCount: 64
   pictureBindings:

@@ -216,7 +216,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     [Header("Ability Node Setup")]
     [SerializeField] private AbilityNode abilityNodePrefab;
-    [SerializeField] private TextAsset abilityNodeJson;
+    [SerializeField] private AbilityBuildVariantData abilityBuildVariantData;
     [SerializeField] private float gridCellSize = 32f;
     [SerializeField] private int prewarmNodePoolCount = 64;
     [SerializeField] private List<AbilityPictureBinding> pictureBindings = new List<AbilityPictureBinding>();
@@ -518,8 +518,16 @@ public class UI_TentAbilityComponent : MonoBehaviour
         nodeDefinitionMap.Clear();
         nodeBuildOrder.Clear();
 
+        TextAsset abilityNodeJson = abilityBuildVariantData != null
+            ? abilityBuildVariantData.CurrentAbilityNodeDatabase
+            : null;
+
         if (abilityNodeJson == null || string.IsNullOrWhiteSpace(abilityNodeJson.text))
+        {
+            Debug.LogError(
+                $"[AbilityUI] {BuildInfo.Variant} AbilityNodeDatabase is not assigned.");
             return;
+        }
 
         AbilityNodeDatabaseJson databaseJson = JsonUtility.FromJson<AbilityNodeDatabaseJson>(abilityNodeJson.text);
         if (databaseJson == null || databaseJson.nodes == null)

@@ -64,6 +64,7 @@ public class AbilityToolManager : MonoBehaviour
     [SerializeField] private RectTransform pivotMarker;
     [SerializeField] private RectTransform lineParent;
     [SerializeField] private TMP_Text gridCoordinateText;
+    [SerializeField] private TMP_Text editingTargetText;
 
     [Header("ToolTip Setup")]
     [SerializeField] private AbilityToolTip toolTipPrefab;
@@ -87,10 +88,8 @@ public class AbilityToolManager : MonoBehaviour
     [SerializeField] private Sprite diagSWNE8Sprite;
 
     [Header("Json IO")]
-    [SerializeField] private TextAsset importJson;
+    [SerializeField] private AbilityBuildVariantData abilityBuildVariantData;
     [SerializeField] private TextAsset importLocalizationJson;
-    [SerializeField] private SkillDataBase skillDataBaseAsset;
-    [SerializeField] private string uiExportAssetPath = "Assets/Data/Ability/AbilityNodeDatabase.json";
     [SerializeField] private string localizationExportAssetPath = "Assets/Resources/Localization/AbilityUI.json";
 
 
@@ -120,6 +119,7 @@ public class AbilityToolManager : MonoBehaviour
         UpdateGridCursor();
         UpdatePivotMarker();
         UpdateGridCoordinateText();
+        UpdateEditingTargetText();
         ImportAbilityJson();
     }
 
@@ -709,6 +709,28 @@ public class AbilityToolManager : MonoBehaviour
         gridCoordinateText.text = $"X : {currentHoverGrid.x}  Y : {currentHoverGrid.y}";
     }
 
+    private void UpdateEditingTargetText()
+    {
+        if (editingTargetText == null)
+            return;
+
+        if (abilityBuildVariantData == null)
+        {
+            editingTargetText.text = "<color=#FF6666>EDITING : NOT CONFIGURED</color>";
+            return;
+        }
+
+        TextAsset nodeDatabase = abilityBuildVariantData.CurrentAbilityNodeDatabase;
+        SkillDataBase skillDatabase = abilityBuildVariantData.CurrentSkillDataBase;
+        string color = BuildInfo.IsDemo ? "#58D7F2" : "#54D86A";
+        string nodeName = nodeDatabase != null ? nodeDatabase.name : "(missing node database)";
+        string skillName = skillDatabase != null ? skillDatabase.name : "(missing skill database)";
+
+        editingTargetText.text =
+            $"EDITING : <color={color}>{abilityBuildVariantData.CurrentVariantLabel}</color>\n" +
+            $"{nodeName} / {skillName}";
+    }
+
     // 커서가 노드 컨텐츠와 같은 좌표계/스케일을 따르도록 MoveTarget 아래로 정렬한다.
     private void EnsureGridCursorFollowsMoveTarget()
     {
@@ -1010,6 +1032,24 @@ public class AbilityToolManager : MonoBehaviour
             return;
         }
 
+        if (abilityBuildVariantData == null || false == abilityBuildVariantData.HasCurrentDataSet)
+        {
+            Debug.LogError(
+                $"Ability tool export failed. {CurrentEditingVariantLabel} data set is not fully assigned.");
+            return;
+        }
+
+        TextAsset nodeDatabaseAsset = abilityBuildVariantData.CurrentAbilityNodeDatabase;
+        SkillDataBase skillDatabaseAsset = abilityBuildVariantData.CurrentSkillDataBase;
+        string uiExportAssetPath = AssetDatabase.GetAssetPath(nodeDatabaseAsset);
+
+        if (string.IsNullOrWhiteSpace(uiExportAssetPath))
+        {
+            Debug.LogError(
+                $"Ability tool export failed. Could not resolve {CurrentEditingVariantLabel} node database path.");
+            return;
+        }
+
         AbilityLocalizationExportContext localizationContext = LoadLocalizationExportContext();
         AbilityToolExportDatabaseJson databaseJson = new AbilityToolExportDatabaseJson
         {
@@ -1024,12 +1064,13 @@ public class AbilityToolManager : MonoBehaviour
         WriteJsonFile(uiAbsolutePath, uiJson);
         WriteJsonFile(localizationAbsolutePath, localizationJson);
         RefreshLocalizationEntryMap();
-        ExportSkillDataBaseAsset();
+        ExportSkillDataBaseAsset(skillDatabaseAsset);
         allowEmptyExport = false;
 
-        Debug.Log($"Ability tool exported UI json: {uiAbsolutePath}");
+        Debug.Log(
+            $"Ability tool exported {CurrentEditingVariantLabel} UI json: {uiAbsolutePath}");
         Debug.Log($"Ability tool exported localization json: {localizationAbsolutePath}");
-        ShowExportCompletedDialog();
+        ShowExportCompletedDialog(nodeDatabaseAsset, skillDatabaseAsset);
     }
 
     [ContextMenu("Import Ability Json")]
@@ -1132,27 +1173,28 @@ public class AbilityToolManager : MonoBehaviour
         return exportNodes.ToArray();
     }
 
-    private void ExportSkillDataBaseAsset()
+    private void ExportSkillDataBaseAsset(SkillDataBase _skillDataBaseAsset)
     {
-        if (skillDataBaseAsset == null)
+        if (_skillDataBaseAsset == null)
         {
             Debug.LogWarning("Ability tool skipped SkillDataBase export. Skill Data Base Asset is not assigned.");
             return;
         }
 
 #if UNITY_EDITOR
-        Undo.RecordObject(skillDataBaseAsset, "Export Ability Skill Data");
+        Undo.RecordObject(_skillDataBaseAsset, "Export Ability Skill Data");
 #endif
 
-        skillDataBaseAsset.skills = BuildExportSkills();
+        _skillDataBaseAsset.skills = BuildExportSkills();
 
 #if UNITY_EDITOR
-        EditorUtility.SetDirty(skillDataBaseAsset);
+        EditorUtility.SetDirty(_skillDataBaseAsset);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 #endif
 
-        Debug.Log($"Ability tool exported SkillDataBase asset: {skillDataBaseAsset.name}");
+        Debug.Log(
+            $"Ability tool exported {CurrentEditingVariantLabel} SkillDataBase asset: {_skillDataBaseAsset.name}");
     }
 
     private List<Skill> BuildExportSkills()
@@ -1448,6 +1490,10 @@ public class AbilityToolManager : MonoBehaviour
 
     private void ApplyImportedSkillLogic(Dictionary<SkillType, AbilityToolNode> _skillNodeMap)
     {
+        SkillDataBase skillDataBaseAsset = abilityBuildVariantData != null
+            ? abilityBuildVariantData.CurrentSkillDataBase
+            : null;
+
         if (skillDataBaseAsset == null || skillDataBaseAsset.skills == null)
             return;
 
@@ -1514,14 +1560,11 @@ public class AbilityToolManager : MonoBehaviour
 
     private string ResolveImportJsonText()
     {
-        if (importJson != null)
-            return importJson.text;
+        TextAsset nodeDatabase = abilityBuildVariantData != null
+            ? abilityBuildVariantData.CurrentAbilityNodeDatabase
+            : null;
 
-        string absolutePath = GetAbsolutePath(uiExportAssetPath);
-        if (File.Exists(absolutePath))
-            return File.ReadAllText(absolutePath, Encoding.UTF8);
-
-        return string.Empty;
+        return nodeDatabase != null ? nodeDatabase.text : string.Empty;
     }
 
     private string ResolveImportLocalizationJsonText()
@@ -1550,15 +1593,26 @@ public class AbilityToolManager : MonoBehaviour
 #endif
     }
 
-    private void ShowExportCompletedDialog()
+    private void ShowExportCompletedDialog(
+        TextAsset _nodeDatabaseAsset,
+        SkillDataBase _skillDataBaseAsset)
     {
 #if UNITY_EDITOR
+        string nodePath = AssetDatabase.GetAssetPath(_nodeDatabaseAsset);
+        string skillPath = AssetDatabase.GetAssetPath(_skillDataBaseAsset);
+
         EditorUtility.DisplayDialog(
             "Ability Tool Export",
-            "Ability data export completed.",
+            $"{CurrentEditingVariantLabel} ability data export completed.\n\n" +
+            $"{nodePath}\n{skillPath}",
             "OK");
 #endif
     }
+
+    private string CurrentEditingVariantLabel =>
+        abilityBuildVariantData != null
+            ? abilityBuildVariantData.CurrentVariantLabel
+            : (BuildInfo.IsDemo ? "DEMO" : "FULL");
 
     private string GetAbsolutePath(string _assetPath)
     {

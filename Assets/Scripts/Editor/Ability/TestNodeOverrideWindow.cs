@@ -4,8 +4,10 @@ using UnityEngine;
 
 public class TestNodeOverrideWindow : EditorWindow
 {
-    private const string SkillDataBasePath = "Assets/Scriptable Obj/SkillData/SkillDataBase.asset";
+    private const string VariantDataPath =
+        "Assets/Scriptable Obj/SkillData/AbilityBuildVariantData.asset";
 
+    private AbilityBuildVariantData abilityBuildVariantData;
     private SkillDataBase skillDataBase;
     private SkillCommandType skillCommandType = SkillCommandType.AxeDamage;
     private ProgressionType progressionType = ProgressionType.Constant;
@@ -33,6 +35,11 @@ public class TestNodeOverrideWindow : EditorWindow
 
         using (new EditorGUI.DisabledScope(true))
         {
+            EditorGUILayout.TextField(
+                "Editing Target",
+                abilityBuildVariantData != null
+                    ? abilityBuildVariantData.CurrentVariantLabel
+                    : "NOT CONFIGURED");
             EditorGUILayout.ObjectField("SkillDataBase", skillDataBase, typeof(SkillDataBase), false);
             EditorGUILayout.EnumPopup("SkillType", SkillType.TestNode);
         }
@@ -67,7 +74,11 @@ public class TestNodeOverrideWindow : EditorWindow
 
     private void LoadSkillDataBase()
     {
-        skillDataBase = AssetDatabase.LoadAssetAtPath<SkillDataBase>(SkillDataBasePath);
+        abilityBuildVariantData =
+            AssetDatabase.LoadAssetAtPath<AbilityBuildVariantData>(VariantDataPath);
+        skillDataBase = abilityBuildVariantData != null
+            ? abilityBuildVariantData.CurrentSkillDataBase
+            : null;
     }
 
     private void LoadCurrentTestNode()

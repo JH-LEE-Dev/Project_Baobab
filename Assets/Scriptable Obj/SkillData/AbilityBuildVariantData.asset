@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01ddfe14c2774044a10c0d657d6f72ea, type: 3}
+  m_Name: AbilityBuildVariantData
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityBuildVariantData
+  demoAbilityNodeDatabase: {fileID: 4900000, guid: f2dada2f7a2657d44ac7174b4ee787ca, type: 3}
+  demoSkillDataBase: {fileID: 11400000, guid: 18be1f05450331f449f0cd45a143e686, type: 2}
+  fullAbilityNodeDatabase: {fileID: 4900000, guid: 6a7f33009c8d4bf99c7eaa72499ca67e, type: 3}
+  fullSkillDataBase: {fileID: 11400000, guid: 8f90b08f492f4dbcb6be6c77a83f34ae, type: 2}
