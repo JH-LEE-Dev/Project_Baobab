@@ -1497,7 +1497,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b1fdae7ba70e084197b5f609d7e1e89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SkillManager
-  skillDataBase: {fileID: 11400000, guid: 18be1f05450331f449f0cd45a143e686, type: 2}
+  abilityBuildVariantData: {fileID: 11400000, guid: 435d117acee74a889a1c34c20d764a81, type: 2}
   prestigeLevel: 0
   skillExperience: 0
   experienceToLevelUp: 280000003200000046000000460000004600000050000000320000003200000032000000320000003200000032000000

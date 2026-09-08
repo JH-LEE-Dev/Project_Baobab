@@ -63,7 +63,16 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     public Action<SkillDispatchInfo> DispatchSkillsEvent;
 
     // 외부 의존성
-    [SerializeField] private SkillDataBase skillDataBase;
+    //
+    // SkillDataBase를 직접 물지 않고 한 단계 건너뛴다. 데모와 정식은 스킬 목록이 다른데,
+    // 프리팹이 특정 SkillDataBase를 직접 참조하면 그 한쪽이 빌드 종류와 무관하게 그대로 실린다.
+    // (실제로 GameInstaller가 SkillDataBase_Demo를 물고 있어 정식 빌드에도 데모 목록이 나갔다)
+    //
+    // UI(UI_TentAbilityComponent)와 AbilityTool은 이미 이 에셋을 통해 데이터를 고르므로,
+    // 여기만 따로 두면 화면에 그려지는 노드 트리와 실제 스킬 목록이 서로 엇갈린다.
+    // AbilityBuildVariantStripper가 빌드 시 반대 버전 참조를 끊는 것도 이 에셋 기준이라,
+    // 직접 참조는 미공개 스킬 데이터가 데모 빌드에 실릴 경로로도 남는다.
+    [SerializeField] private AbilityBuildVariantData abilityBuildVariantData;
 
     private IInventoryForSkill inventory;
 
@@ -81,9 +90,14 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     {
         inventory = _inventory;
 
-        if (skillDataBase == null)
+        SkillDataBase skillDataBase = abilityBuildVariantData != null
+            ? abilityBuildVariantData.CurrentSkillDataBase
+            : null;
+
+        if (skillDataBase == null || skillDataBase.skills == null)
         {
-            Debug.LogError("[SkillManager] SkillDataBase is null!");
+            Debug.LogError(
+                $"[SkillManager] {BuildInfo.Variant} SkillDataBase is not assigned.");
             return;
         }
 
