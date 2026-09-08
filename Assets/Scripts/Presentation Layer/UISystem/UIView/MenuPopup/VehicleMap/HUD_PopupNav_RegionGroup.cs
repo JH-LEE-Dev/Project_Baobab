@@ -282,8 +282,24 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
         return 0;
     }
 
+    public void StopAllAnimations()
+    {
+        if (null != appearSeq && appearSeq.IsActive())
+        {
+            appearSeq.Kill();
+            appearSeq = null;
+        }
+
+        StopAllHoverEffects();
+    }
+
     public void FocusRegionButton(int _index)
     {
+        if (null != mainController && true == mainController.IsClosing)
+        {
+            return;
+        }
+
         for (int i = 0; regionButtons.Count > i; i++)
         {
             if (null == regionButtons[i] || false == regionButtons[i].gameObject.activeSelf) continue;
@@ -301,6 +317,11 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
 
     public void EvaluateAllHoverStates()
     {
+        if (null != mainController && (true == mainController.IsClosing || true == mainController.IsInputBlocked))
+        {
+            return;
+        }
+
         for (int i = 0; i < regionButtons.Count; i++)
         {
             if (null == regionButtons[i]) continue;

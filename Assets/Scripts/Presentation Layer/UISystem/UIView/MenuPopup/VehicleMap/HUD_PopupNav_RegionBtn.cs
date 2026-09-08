@@ -435,6 +435,11 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public void TriggerHover()
     {
+        if (null != mainController && true == mainController.IsClosing)
+        {
+            return;
+        }
+
         if (null != mainController)
         {
             mainController.StopAllSubRegionHoverEffects();

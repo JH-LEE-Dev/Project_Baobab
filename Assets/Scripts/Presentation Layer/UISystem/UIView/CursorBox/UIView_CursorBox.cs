@@ -119,7 +119,7 @@ public class UIView_CursorBox : UIView, ICursorBoxUI
 
     public void Show(RectTransform _target, Vector2 _size, Vector2 _offset, CursorMotionSettings _customMotion)
     {
-        if (null == _target)
+        if (null == _target || false == _target.gameObject.activeInHierarchy)
             return;
 
         CacheReferences();

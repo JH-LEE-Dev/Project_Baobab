@@ -397,6 +397,25 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
 
         Sound.PlayUI(SoundID.ResultUIClose);
 
+        if (null != steamWishlistBtn)
+        {
+            steamWishlistBtn.UnfocusButton();
+        }
+        if (null != discordBtn)
+        {
+            discordBtn.UnfocusButton();
+        }
+
+        if (null != EventSystem.current)
+        {
+            GameObject _curSelected = EventSystem.current.currentSelectedGameObject;
+            if ((null != discordBtn && _curSelected == discordBtn.gameObject) ||
+                (null != steamWishlistBtn && _curSelected == steamWishlistBtn.gameObject))
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+            }
+        }
+
         if (null != mainController)
         {
             mainController.HandleDemoNoticeClosing();

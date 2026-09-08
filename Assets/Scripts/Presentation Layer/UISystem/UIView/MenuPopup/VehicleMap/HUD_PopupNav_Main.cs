@@ -170,6 +170,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private UnityEngine.Events.UnityAction onBackgroundDimClickedAction;
     private float demoNoticeClosedGraceTime = 0f;
     public bool IsInputBlocked => isInputBlocked || isUnlockingProductionActive || isClosing || IsTransitioning || (null != demoNotice && demoNotice.IsDemoNoticeActive) || (Time.unscaledTime < demoNoticeClosedGraceTime);
+    public bool IsClosing => isClosing;
     public bool IsUnlockingProductionActive => isUnlockingProductionActive;
     public bool IsDemoNoticeShowing => null != demoNotice && demoNotice.IsDemoNoticeActive;
     public bool IsTransitioning { get; private set; }
@@ -502,12 +503,14 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
     private void OnAppearMidway()
     {
+        if (true == isClosing) return;
         InitFirstPlayableRegionUnlock();
         OnMainPopupAppearCompleteForAnimation();
     }
 
     private void OnAppearComplete()
     {
+        if (true == isClosing) return;
         if (true == isUnlockingProductionActive || true == isPendingUnlockProcess || 0 < regionUnlockList.Count || 0 < subRegionUnlockList.Count)
         {
             return;
@@ -541,6 +544,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
     private void OnMainPopupAppearCompleteForAnimation()
     {
+        if (true == isClosing) return;
         BuildUnlockQueues();
         if (0 < regionUnlockList.Count || 0 < subRegionUnlockList.Count)
         {
@@ -655,6 +659,31 @@ public class HUD_PopupNav_Main : MonoBehaviour
         isInputBlocked = true;
         hasRegionUnlockProductionPlayed = false;
         highestRegionBeforeUnlock = MapType.None;
+
+        if (null != appearTween && true == appearTween.IsActive())
+        {
+            appearTween.Kill();
+            appearTween = null;
+        }
+
+        if (null != regionNameTween && true == regionNameTween.IsActive())
+        {
+            regionNameTween.Kill();
+            regionNameTween = null;
+        }
+
+        if (null != delayedCallTween && true == delayedCallTween.IsActive())
+        {
+            delayedCallTween.Kill();
+            delayedCallTween = null;
+        }
+
+        if (null != dungeonConfirmDelayTween && true == dungeonConfirmDelayTween.IsActive())
+        {
+            dungeonConfirmDelayTween.Kill();
+            dungeonConfirmDelayTween = null;
+        }
+
         if (null != cursorBoxUI)
         {
             cursorBoxUI.HideImmediately();
@@ -665,20 +694,16 @@ public class HUD_PopupNav_Main : MonoBehaviour
             demoNotice.ResetNotice();
         }
 
-        if (null != delayedCallTween && true == delayedCallTween.IsActive())
-        {
-            delayedCallTween.Kill();
-            delayedCallTween = null;
-        }
-
         if (null != subRegionGroup)
         {
+            subRegionGroup.StopAllAnimations();
             subRegionGroup.ClearAllNewIndicators();
             subRegionGroup.StopAllHoverEffects();
         }
 
         if (null != regionGroup)
         {
+            regionGroup.StopAllAnimations();
             regionGroup.ClearAllNewIndicators();
             regionGroup.StopAllHoverEffects();
         }
@@ -1200,6 +1225,11 @@ public class HUD_PopupNav_Main : MonoBehaviour
     // 퍼블릭 콜백 핸들러 (버튼들에서 호출)
     public void HandleRegionSelected(MapType _mapType, bool _force = false, bool _playClickAnim = true)
     {
+        if (true == isClosing)
+        {
+            return;
+        }
+
         if (false == _force && true == IsInputBlocked && false == isUnlockingProductionActive)
         {
             return;
@@ -1296,6 +1326,11 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private void OnSubRegionsShown()
     {
         IsTransitioning = false;
+
+        if (true == isClosing)
+        {
+            return;
+        }
 
         // 대기 중인 소지역 해금 연출이 있다면 지금 시작
         if (true == isPendingSubRegionUnlock)
