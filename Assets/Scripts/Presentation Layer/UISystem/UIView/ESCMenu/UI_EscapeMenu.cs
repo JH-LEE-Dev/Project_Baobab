@@ -135,6 +135,12 @@ public class UI_EscapeMenu : MonoBehaviour
         cachedOnCloseComplete = null;
         onOpenCompleteAction = null;
         onCloseCompleteAction = null;
+
+        if (null != warningPopup)
+        {
+            warningPopup.Release();
+        }
+
         inputManager = null;
     }
 

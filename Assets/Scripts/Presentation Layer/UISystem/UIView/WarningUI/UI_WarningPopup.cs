@@ -145,6 +145,21 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         inputManager = null;
     }
 
+    private void OnDisable()
+    {
+        if (null != inputManager && null != inputManager.inputReader)
+        {
+            if (null != cachedOnUICancel)
+            {
+                inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+            }
+            if (null != cachedOnInputDeviceChanged)
+            {
+                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+            }
+        }
+    }
+
     private void OnDestroy()
     {
         Release();
@@ -391,7 +406,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 
     private void OnInputDeviceChanged(EInputDeviceType _device)
     {
-        if (null == this || false == gameObject.activeInHierarchy || false == IsActive) return;
+        if ((UnityEngine.Object)this == null || false == gameObject.activeInHierarchy || false == IsActive) return;
 
         if (EInputDeviceType.Gamepad == _device)
         {
@@ -551,6 +566,18 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         }
         isClosing = true;
 
+        if (null != inputManager && null != inputManager.inputReader)
+        {
+            if (null != cachedOnUICancel)
+            {
+                inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+            }
+            if (null != cachedOnInputDeviceChanged)
+            {
+                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+            }
+        }
+
         HideCursor();
 
         Action _confirm = onConfirmAction;
@@ -572,6 +599,18 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
             return;
         }
         isClosing = true;
+
+        if (null != inputManager && null != inputManager.inputReader)
+        {
+            if (null != cachedOnUICancel)
+            {
+                inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+            }
+            if (null != cachedOnInputDeviceChanged)
+            {
+                inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+            }
+        }
 
         HideCursor();
 

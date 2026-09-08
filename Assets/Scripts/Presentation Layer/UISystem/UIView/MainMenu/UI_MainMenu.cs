@@ -705,6 +705,11 @@ public class UI_MainMenu : MonoBehaviour
         {
             creditButton.Release();
         }
+
+        if (null != warningPopup)
+        {
+            warningPopup.Release();
+        }
     }
 
     private MoveDirection GetTriggeringMoveDirection()
