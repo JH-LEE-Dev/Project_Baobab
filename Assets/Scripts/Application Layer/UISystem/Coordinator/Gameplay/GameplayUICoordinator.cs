@@ -733,11 +733,20 @@ public class GameplayUICoordinator
     // 아니라 카운터(InputReader.pauseInteractCount)라 짝을 반드시 맞춰야 한다. 재도전·MainMenu → Dungeon
     // 튜토리얼 경로는 내비게이션을 거치지 않아 DungeonConfirmStartedEvent 자체가 오지 않으므로
     // 불균형은 생기지 않는다.
+    //
+    // UI 취소(패드 B/○)도 ESC와 짝으로 함께 잠근다(아래 ESCUIInputLockChanged 주석과 같은 이유).
+    // ESC만 막으면 패드 유저는 B로 그대로 뚫고 들어오는데, 이 팝업은 bCloseableByESC라 뎁스 스택에
+    // 올라가 있어 B가 UIDepthController.TryCloseTopView() → UIView_MenuPopup.Hide()를 태운다.
+    // 그러면 확정 연출이 끝나기도 전에 OnHide()의 SetInputMode(Gameplay)와 ReleaseAudioDuck이
+    // 먼저 돌아, 내비가 아직 사라지는 중인데 입력 모드와 오디오 덕킹만 복구된다.
+    // (하차까지 가지 않는 건 UIView_MenuPopup.OnHide의 IsDungeonConfirmPending 가드가 막아주기
+    //  때문이다. 그 가드는 이 잠금이 생긴 뒤에도 패드 B 외의 경로를 위해 그대로 둔다)
     private void DungeonConfirmStarted()
     {
         inputManager.PauseESCKey(true);
         inputManager.PauseInventoryKey(true);
         inputManager.PauseInteractKey(true);
+        inputManager.PauseUICancelKey(true);
     }
 
     // ESC 메뉴의 등장/퇴장 연출 중에는 재입력을 막는다.
