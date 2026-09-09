@@ -410,6 +410,19 @@ public class HUD_PopupNav_Main : MonoBehaviour
             disappearTween.Kill();
             disappearTween = null;
         }
+
+        // 소지역 상태 초기화는 여는 쪽에서 한다. 원래는 퇴장 트윈의 완료 콜백
+        // (OnMainPopupDisappearComplete)에만 있었는데, 그러면 "닫힘 연출이 끝까지 재생된 경우"에만
+        // 정리가 돌아 위처럼 트윈을 끊고 다시 여는 경로에서 통째로 건너뛰어졌다. 그 상태로 다시 열면
+        // currentDisplayedMapType과 activeSubRegionButtons가 직전 값 그대로라, 같은 지역이 복원될 때
+        // ShowSubRegionsForMap이 조기 반환해 등장 시퀀스를 아예 재생하지 않는다. 버튼도 ResetState를
+        // 못 받아 죽은 트윈이 남긴 중간 스케일과 이전 선택 하이라이트를 그대로 달고 나온다.
+        // 여기서 하면 직전 닫기가 어떻게 끝났든(정상 완료 / 중간 취소 / 즉시 닫기) 항상 깨끗하게
+        // 시작한다. 이미 정리된 상태면 아무 일도 하지 않는 멱등 호출이다.
+        if (null != subRegionGroup)
+        {
+            subRegionGroup.ResetState();
+        }
     }
 
     private void ForceUnlockAllMapsForDebug()
@@ -813,11 +826,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (false == isClosing)
         {
             return;
-        }
-
-        if (null != subRegionGroup)
-        {
-            subRegionGroup.ResetState();
         }
 
         gameObject.SetActive(false);
