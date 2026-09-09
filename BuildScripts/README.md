@@ -39,23 +39,26 @@ Steamworks > 해당 앱 > SteamPipe > Depots 에서 실제 번호를 확인하�
 
 ```
 C:\Unity Build\                 <- 빌드 출력 루트 (프로젝트 밖, git 대상 아님)
-  Release\                      <- 정식 빌드 출력 (LumberBoy.exe 가 바로 아래)
-  Demo\                         <- 데모 빌드 출력
+  STEAM_FULL\                   <- Steam 정식 출력 (LumberBoy.exe 가 바로 아래)
+  STEAM_DEMO\                   <- Steam 데모 출력
+  STOVE_DEMO\  ITCH_DEMO\       <- 다른 스토어도 같은 규칙
   _SteamPipeOutput\             <- SteamPipe 로그·청크 캐시
 ```
 
-`Release` 와 `Demo` 는 **반드시 분리**하세요. 같은 폴더에 두 모드를 번갈아
+`STEAM_FULL` 과 `STEAM_DEMO` 는 **반드시 분리**하세요. 같은 폴더에 두 모드를 번갈아
 빌드하면 이전 모드의 잔여 파일이 섞입니다. 특히 두 모드는 Steam에서 서로 다른 앱이라,
 섞인 채로 올리면 데모 앱에 정식 콘텐츠가 실립니다.
 
-Unity에서 빌드할 때 출력 경로를 `C:\Unity Build\Demo` (또는 `\Release`) 로 지정하세요.
-`C:\Unity Build` 바로 아래에 빌드하면 `_SteamPipeOutput` 과 두 모드가 한 폴더에 섞입니다.
+폴더 이름은 `Tools > 빌드` 메뉴가 스토어와 배포에 맞춰 `<스토어>_<배포>` 로 정합니다.
+루트만 한 번 지정해 두면(`Tools > 빌드 > 빌드 출력 폴더 지정`) 나머지는 따라옵니다.
+손으로 다른 곳을 고르면 vdf 의 `contentroot` 와 어긋나고, 그 사실은 업로드할 때야 드러납니다.
 
 `_SteamPipeOutput` 이 `contentroot` **바깥**에 있는 것이 중요합니다. 안에 두면 로그와
 청크 캐시가 그대로 depot에 실립니다.
 
-폴더 이름을 바꾸시려면 `app_build_*.vdf` 의 `buildoutput` / `contentroot` 와
-`depot_build_*.vdf` 의 `contentroot` 를 모두 맞춰야 합니다.
+이름 규칙을 바꾸시려면 `PlatformBuildModeSwitcher.BuildFolderName` 과 함께
+`app_build_*.vdf` 의 `buildoutput` / `contentroot`, `depot_build_*.vdf` 의 `contentroot`
+를 **모두** 맞춰야 합니다. 한쪽만 고치면 steamcmd 가 없는 폴더를 가리킵니다.
 
 ---
 
@@ -87,14 +90,15 @@ Unity 에디터에서 `Tools > 빌드 > 스토어 - Steam` 과 `Tools > 빌드 >
 
 ### ③ 빌드
 
-`C:\Unity Build\Release` 또는 `C:\Unity Build\Demo` 로 출력합니다. 대상 폴더를 **비우고** 빌드하세요.
+`Tools > 빌드` 가 잡아준 경로(`C:\Unity Build\STEAM_DEMO` 등)로 출력합니다.
+대상 폴더를 **비우고** 빌드하세요.
 
 ### ④ 예행 연습 (제외 규칙을 고쳤거나 오랜만이라면)
 
 `app_build_*.vdf` 의 `preview` 를 `"1"` 로 바꾸고 한 번 돌립니다. 업로드는 일어나지 않고
 무엇이 올라갈지만 로그로 남습니다.
 
-`C:\Unity Build\_SteamPipeOutput\<모드>\` 의 로그에서 아래가 **없는지** 확인하세요.
+`C:\Unity Build\_SteamPipeOutput\<스토어>_<배포>\` 의 로그에서 아래가 **없는지** 확인하세요.
 
 - `steam_appid.txt`
 - `LumberBoy_BackUpThisFolder_ButDontShipItWithYourGame/`

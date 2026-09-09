@@ -16,14 +16,14 @@
 
 	// Steamworks 빌드 목록에 그대로 보이는 설명입니다. 나중에 어느 빌드가 무엇이었는지
 	// 되짚는 유일한 단서이므로, 매 업로드마다 버전과 커밋을 갱신하세요.
-	"desc"		"LumberBoy 1.0.0 (release)"
+	"desc"		"LumberBoy 1.0.0-steam"
 
 	// SteamPipe가 로그와 청크 캐시를 쌓는 곳입니다.
 	// contentroot 안에 두면 그 찌꺼기가 그대로 depot에 실리므로 반드시 바깥이어야 합니다.
-	"buildoutput"	"C:\Unity Build\_SteamPipeOutput\Release"
+	"buildoutput"	"C:\Unity Build\_SteamPipeOutput\STEAM_FULL"
 
 	// Unity가 정식 빌드를 출력하는 폴더입니다. (LumberBoy.exe 가 여기 바로 아래)
-	"contentroot"	"C:\Unity Build\Release"
+	"contentroot"	"C:\Unity Build\STEAM_FULL"
 
 	// 업로드와 동시에 어느 브랜치를 라이브로 만들지입니다.
 	//

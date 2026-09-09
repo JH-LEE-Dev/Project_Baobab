@@ -15,12 +15,12 @@
 {
 	"appid"		"5135490"
 
-	"desc"		"LumberBoy Demo 1.0.0-demo"
+	"desc"		"LumberBoy Demo 1.0.0-steam-demo"
 
-	"buildoutput"	"C:\Unity Build\_SteamPipeOutput\Demo"
+	"buildoutput"	"C:\Unity Build\_SteamPipeOutput\STEAM_DEMO"
 
 	// Unity가 데모 빌드를 출력하는 폴더입니다. 정식과 반드시 분리하세요.
-	"contentroot"	"C:\Unity Build\Demo"
+	"contentroot"	"C:\Unity Build\STEAM_DEMO"
 
 	// 정식과 같은 이유로 비워 둡니다. README의 setlive 항목 참고.
 	"setlive"	""
