@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -37,6 +37,10 @@ public class UIView_MenuPopup : UIView
     private HUD_PopupNav_Main popupNavMain;
 
     private bool isInitialOpen = false;
+
+    // OnHide()가 던전 확정 대기(IsDungeonConfirmPending) 때문에 TeleportUIClosedEvent 발행을
+    // 미뤘다는 표시. 이때만 뒤늦게 도착하는 HandlePopupNavClosed()가 대신 발행한다.
+    private bool hasPendingCloseEvent = false;
 
     [Header("Open Delay Settings")]
     [SerializeField] private float vehicleOpenDelay = 0f;
@@ -138,7 +142,16 @@ public class UIView_MenuPopup : UIView
 
     private void HandlePopupNavClosed()
     {
-        TeleportUIClosedEvent?.Invoke();
+        // 이 콜백은 내비가 닫힘 연출까지 끝낸 뒤 도착한다. 뷰가 아직 열려 있으면 아래 ForceHide()가
+        // OnHide()를 태워 거기서 발행하므로 여기서 발행하면 안 되고, 뷰가 이미 닫혔더라도 그때
+        // OnHide()가 이미 발행했으므로 마찬가지다. 유일한 예외가 던전 확정 대기로 발행을 건너뛴
+        // 경우이고, 그건 hasPendingCloseEvent로만 구분한다.
+        if (true == hasPendingCloseEvent)
+        {
+            hasPendingCloseEvent = false;
+            TeleportUIClosedEvent?.Invoke();
+        }
+
         ForceHide();
     }
 
@@ -165,6 +178,10 @@ public class UIView_MenuPopup : UIView
     protected override void OnShow()
     {
         base.OnShow();
+
+        // 확정 대기 중 내비가 파괴되는 등으로 콜백이 끝내 오지 않았을 때 플래그가 다음 세션까지
+        // 남아 엉뚱한 시점에 발행되는 것을 막는다.
+        hasPendingCloseEvent = false;
 
         viewCtx?.inputManager?.SetInputMode(EInputMode.UI);
 
@@ -273,7 +290,12 @@ public class UIView_MenuPopup : UIView
             // onNavigationClosedCallback(HandlePopupNavClosed)으로 같은 이벤트를 올바른 순서에 발행해준다.
             if (false == _isDungeonConfirmPending)
             {
+                hasPendingCloseEvent = false;
                 TeleportUIClosedEvent?.Invoke();
+            }
+            else
+            {
+                hasPendingCloseEvent = true;
             }
         }
     }
