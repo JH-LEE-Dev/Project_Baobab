@@ -18,6 +18,7 @@ public class UIView_Unit : UIView
     [SerializeField] private GameObject interactionUnitPrefab;
     [SerializeField] private GameObject speechBubbleUnitPrefab;
     [SerializeField] private float speechBubbleDuration = 3.5f;
+    [SerializeField] private float speechBubbleCooldown = 3.5f;
 
     [Header("Offset Settings")]
     [SerializeField] private Vector2 interactionYOffset = new Vector2(0.0f, 0.75f);
@@ -188,6 +189,7 @@ public class UIView_Unit : UIView
         if (null != speechBubble)
         {
             speechBubble.Initialize();
+            speechBubble.SetDuplicateCooldown(speechBubbleCooldown);
             speechBubble.Hide(true);
         }
     }
@@ -403,7 +405,7 @@ public class UIView_Unit : UIView
     private void SpeechBubblePlay(int _id, string _text)
     {
         if (null != speechBubble)
-            speechBubble.Play(_id, _text, speechBubbleDuration);
+            speechBubble.Play(_id, _text, speechBubbleDuration, speechBubbleCooldown);
     }
 
     public void TownStarted()

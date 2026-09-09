@@ -25,12 +25,14 @@ public class UI_SpeechBubble : MonoBehaviour
 
     [SerializeField] private string absolTag = "Absol";
     //[SerializeField] private string impactTag = "impact";
+    [SerializeField] private float duplicateCooldown = 3.5f;
 
     // 내부 의존성
     private Transform targetTransform;
     private RectTransform rootRect;
     private Vector2 offset;
     private HashSet<int> shownIds;
+    private Dictionary<int, float> lastShownTimeMap;
 
     private int currentId = -1;
     private float playDuration;
@@ -48,6 +50,11 @@ public class UI_SpeechBubble : MonoBehaviour
             shownIds = new HashSet<int>(32);
         else
             shownIds.Clear();
+
+        if (null == lastShownTimeMap)
+            lastShownTimeMap = new Dictionary<int, float>(32);
+        else
+            lastShownTimeMap.Clear();
             
         enableLock = true;
     }
@@ -57,6 +64,11 @@ public class UI_SpeechBubble : MonoBehaviour
         enableLock = _enable;
     }
 
+    public void SetDuplicateCooldown(float _cooldown)
+    {
+        duplicateCooldown = _cooldown;
+    }
+
     /// <summary>
     /// 특정 ID의 노출 기록을 삭제하여 다시 띄울 수 있도록 합니다.
     /// </summary>
@@ -64,6 +76,9 @@ public class UI_SpeechBubble : MonoBehaviour
     {
         if (null != shownIds)
             shownIds.Remove(_id);
+
+        if (null != lastShownTimeMap)
+            lastShownTimeMap.Remove(_id);
     }
 
     /// <summary>
@@ -71,11 +86,17 @@ public class UI_SpeechBubble : MonoBehaviour
     /// </summary>
     public void RemoveShownIds(IReadOnlyList<int> _ids)
     {
-        if (null == shownIds || null == _ids)
+        if (null == _ids)
             return;
 
         for (int _i = 0; _i < _ids.Count; _i++)
-            shownIds.Remove(_ids[_i]);
+        {
+            if (null != shownIds)
+                shownIds.Remove(_ids[_i]);
+
+            if (null != lastShownTimeMap)
+                lastShownTimeMap.Remove(_ids[_i]);
+        }
     }
 
     /// <summary>
@@ -85,6 +106,9 @@ public class UI_SpeechBubble : MonoBehaviour
     {
         if (null != shownIds)
             shownIds.Clear();
+
+        if (null != lastShownTimeMap)
+            lastShownTimeMap.Clear();
     }
 
     /// <summary>
@@ -153,14 +177,31 @@ public class UI_SpeechBubble : MonoBehaviour
         motionPlayer.PlayBackward(absolTag, bReset: true, _skip: _bSkip);
     }
 
-    public void Play(int _id, string _text, float _duration = 3f)
+    public void Play(int _id, string _text, float _duration = 3f, float _cooldown = -1f)
     {
-        if (true == enableLock && false == shownIds.Add(_id))
+        // 동일한 말풍선이 현재 노출 진행 중인 경우 연출 재시작 방지
+        if (true == isPlaying && currentId == _id)
             return;
+
+        // 같은 말풍선이 노출된 경우 N초 동안은 중복으로 다시 노출되지 않도록 쿨다운 검사
+        float _effectiveCooldown = _cooldown >= 0f ? _cooldown : duplicateCooldown;
+        if (null != lastShownTimeMap && lastShownTimeMap.TryGetValue(_id, out float _lastTime))
+        {
+            if (Time.time - _lastTime < _effectiveCooldown)
+                return;
+        }
 
         // 인벤토리 가득 참(ID 1)이 이미 표시 중일 때 하위 우선순위인 다른 품목 불가(ID 2)가 덮어쓰지 못하도록 방어
         if (true == isPlaying && (int)ESpeechBubbleId.InventoryFull == currentId && (int)ESpeechBubbleId.ItemCantAcquired == _id)
             return;
+
+        // 잠금 활성화 상태(던전 등)에서 이미 노출된 ID는 중복 노출 차단
+        if (true == enableLock && false == shownIds.Add(_id))
+            return;
+
+        // 노출 타임스탬프 기록
+        if (null != lastShownTimeMap)
+            lastShownTimeMap[_id] = Time.time;
 
         currentId = _id;
         SetText(_text);
