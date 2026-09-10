@@ -34,9 +34,14 @@ public class UI_PressAnyKey : MonoBehaviour
         }
     }
 
-    public void Show()
+    public void Show(bool _waitForInput = true)
     {
         gameObject.SetActive(true);
+        isWaitingForInput = _waitForInput;
+    }
+
+    public void ActivateInput()
+    {
         isWaitingForInput = true;
     }
 

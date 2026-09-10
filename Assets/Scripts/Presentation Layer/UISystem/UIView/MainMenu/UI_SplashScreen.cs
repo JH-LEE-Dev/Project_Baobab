@@ -46,11 +46,13 @@ public class UI_SplashScreen : MonoBehaviour
             return;
         }
 
-        // 스플래시 전용 배경이 있다면 검은색(알파 1)으로 초기화 후 활성화
+        // 스플래시 전용 배경이 있다면 검은색(알파 1)으로 초기화 후 활성화 및 레이캐스트 차단
         if (null != this.splashBackgroundGroup)
         {
             this.splashBackgroundGroup.alpha = 1f;
             this.splashBackgroundGroup.gameObject.SetActive(true);
+            this.splashBackgroundGroup.blocksRaycasts = true;
+            this.splashBackgroundGroup.interactable = false;
         }
 
         // 모든 타겟을 우선 투명하게 초기화 및 활성화
@@ -139,6 +141,7 @@ public class UI_SplashScreen : MonoBehaviour
 
         if (null != this.splashBackgroundGroup)
         {
+            this.splashBackgroundGroup.blocksRaycasts = false;
             this.splashBackgroundGroup.gameObject.SetActive(false);
         }
 

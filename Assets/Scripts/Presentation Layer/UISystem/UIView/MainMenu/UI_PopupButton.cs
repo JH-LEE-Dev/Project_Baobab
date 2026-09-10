@@ -79,6 +79,7 @@ public class UI_PopupButton : Selectable,
     private ICursorBoxUI cursorBoxUI;
     private InputManager inputManager;
     private Action onClickCallback;
+    private SoundID clickSoundId = SoundID.OptionClick;
 
     public RectTransform CachedRectTransform
     {
@@ -101,11 +102,12 @@ public class UI_PopupButton : Selectable,
         }
     }
 
-    public void Initialize(InputManager _inputManager, ICursorBoxUI _cursorBoxUI, Action _onClickCallback = null)
+    public void Initialize(InputManager _inputManager, ICursorBoxUI _cursorBoxUI, Action _onClickCallback = null, SoundID _clickSoundId = SoundID.OptionClick)
     {
         inputManager = _inputManager;
         cursorBoxUI = _cursorBoxUI;
         onClickCallback = _onClickCallback;
+        clickSoundId = _clickSoundId;
     }
 
     public void SetInteractable(bool _isInteractable, bool _instant = false)
@@ -174,7 +176,10 @@ public class UI_PopupButton : Selectable,
 
     public void ExecuteClick()
     {
-        Sound.PlayUI(SoundID.OptionClick);
+        if (SoundID.None != clickSoundId)
+        {
+            Sound.PlayUI(clickSoundId);
+        }
         PlayClickTwistAnimation();
 
         if (null != onClickCallback)
@@ -193,7 +198,7 @@ public class UI_PopupButton : Selectable,
 
         isHovered = true;
         isPointerHovered = true;
-        Sound.PlayUI(SoundID.MainMenuDot01);
+        Sound.PlayUI(SoundID.ResultUIHover);
         PlayHoverWiggleAnimation();
         ShowCursor();
     }
@@ -224,9 +229,10 @@ public class UI_PopupButton : Selectable,
         base.OnSelect(_eventData);
         if (false == IsInteractable()) return;
         if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (true == isHovered) return;
 
         isHovered = true;
-        Sound.PlayUI(SoundID.MainMenuDot01);
+        Sound.PlayUI(SoundID.ResultUIHover);
         PlayHoverWiggleAnimation();
         ShowCursor();
     }
@@ -235,6 +241,7 @@ public class UI_PopupButton : Selectable,
     {
         base.OnDeselect(_eventData);
         if (false == isHovered) return;
+        if (true == isPointerHovered) return;
 
         isHovered = false;
         HideCursor();
@@ -249,11 +256,15 @@ public class UI_PopupButton : Selectable,
         }
     }
 
-    public void ForceHover()
+    public void ForceHover(bool _playAudio = false)
     {
         if (false == IsInteractable()) return;
 
         isHovered = true;
+        if (true == _playAudio)
+        {
+            Sound.PlayUI(SoundID.ResultUIHover);
+        }
         PlayHoverWiggleAnimation();
         ShowCursor();
     }

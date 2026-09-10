@@ -281,14 +281,14 @@ public class UIView_MainMenu : UIView
             if (null != mainMenuUI) mainMenuUI.gameObject.SetActive(false);
             if (null != logoAnimUI) logoAnimUI.gameObject.SetActive(false);
 
-            initialSetupPopup.Show(OnInitialSetupPopupCompleted);
+            initialSetupPopup.Show(OnInitialSetupPopupCompleted, false);
             return;
         }
 
         // 시작 시 분기: Press Any Key 화면이 있으면 먼저 띄우고 메인 메뉴 숨김
         if (null != pressAnyKeyUI)
         {
-            pressAnyKeyUI.Show();
+            pressAnyKeyUI.Show(false);
             if (null != mainMenuUI) mainMenuUI.gameObject.SetActive(false);
             if (null != logoAnimUI) logoAnimUI.gameObject.SetActive(true); // 로고는 항상 먼저 보여야 함
         }
@@ -340,12 +340,17 @@ public class UIView_MainMenu : UIView
             splashScreenUI.gameObject.SetActive(false);
         }
 
-        if (null != initialSetupPopup && true == initialSetupPopup.IsActive)
+        if (null != initialSetupPopup && true == initialSetupPopup.gameObject.activeInHierarchy)
         {
+            initialSetupPopup.ActivateInput();
             return;
         }
 
-        if (null == pressAnyKeyUI)
+        if (null != pressAnyKeyUI && true == pressAnyKeyUI.gameObject.activeInHierarchy)
+        {
+            pressAnyKeyUI.ActivateInput();
+        }
+        else if (null == pressAnyKeyUI)
         {
             if (null != logoAnimUI)
             {

@@ -53,6 +53,11 @@ public class UI_InitialSetupPopup : MonoBehaviour
     private Action<EInputDeviceType> cachedOnDeviceChanged;
     private Sequence panelTransitionTween;
     private bool isConsentPhase = false;
+    private bool isInputAllowed = true;
+    private bool isClosing = false;
+    private bool isTransitioning = false;
+    private bool isInternalToggleUpdating = false;
+    private bool suppressNextConsentSelectAudio = false;
     private Toggle hoveredConsentToggle = null;
     private UI_PanelSelectButton lastFocusedLanguageButton;
     private Selectable lastFocusedConsentSelectable;
@@ -289,6 +294,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
     private void InitConsentPanel()
     {
+        isInternalToggleUpdating = true;
         if (null != consentToggle)
         {
             consentToggle.isOn = false;
@@ -304,10 +310,11 @@ public class UI_InitialSetupPopup : MonoBehaviour
             consentDisagreeToggle.onValueChanged.AddListener(HandleConsentDisagreeToggleValueChanged);
             BindConsentToggleTriggers(consentDisagreeToggle, consentDisagreeToggleLabel);
         }
+        isInternalToggleUpdating = false;
 
         if (null != confirmButton)
         {
-            confirmButton.Initialize(inputManager, cursorBoxUI, HandleConfirmButtonClicked);
+            confirmButton.Initialize(inputManager, cursorBoxUI, HandleConfirmButtonClicked, SoundID.None);
         }
 
         UpdateConfirmButtonState(true);
@@ -335,16 +342,34 @@ public class UI_InitialSetupPopup : MonoBehaviour
         {
             _trigger = _targetGo.AddComponent<EventTrigger>();
         }
+        else
+        {
+            _trigger.triggers.Clear();
+        }
 
         AddTriggerEntry(_trigger, EventTriggerType.PointerEnter, (_eventData) =>
         {
+            bool _isNewHover = (hoveredConsentToggle != _toggle);
             hoveredConsentToggle = _toggle;
             if (null != inputManager && true == inputManager.IsGamepadMode) return;
-            ShowConsentToggleCursor(_toggle, _label);
+            if (true == _isNewHover)
+            {
+                Sound.PlayUI(SoundID.ResultUIHover);
+                ShowConsentToggleCursor(_toggle, _label);
+            }
         });
 
         AddTriggerEntry(_trigger, EventTriggerType.PointerExit, (_eventData) =>
         {
+            if (_eventData is PointerEventData _ped && null != _ped.pointerCurrentRaycast.gameObject)
+            {
+                GameObject _nextGo = _ped.pointerCurrentRaycast.gameObject;
+                if (_nextGo == _toggle.gameObject || (null != _label && _nextGo == _label.gameObject) || _nextGo.transform.IsChildOf(_toggle.transform))
+                {
+                    return;
+                }
+            }
+
             if (hoveredConsentToggle == _toggle)
             {
                 hoveredConsentToggle = null;
@@ -358,7 +383,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
             AddTriggerEntry(_trigger, EventTriggerType.PointerClick, (_eventData) =>
             {
                 if (null != inputManager && true == inputManager.IsGamepadMode) return;
-                _toggle.isOn = true;
+                _toggle.isOn = !_toggle.isOn;
             });
         }
         else
@@ -366,6 +391,11 @@ public class UI_InitialSetupPopup : MonoBehaviour
             AddTriggerEntry(_trigger, EventTriggerType.Select, (_eventData) =>
             {
                 if (null != inputManager && false == inputManager.IsGamepadMode) return;
+                if (false == suppressNextConsentSelectAudio)
+                {
+                    Sound.PlayUI(SoundID.ResultUIHover);
+                }
+                suppressNextConsentSelectAudio = false;
                 ShowConsentToggleCursor(_toggle, _label);
             });
 
@@ -389,12 +419,16 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
     private void HandleConsentToggleValueChanged(bool _isOn)
     {
+        if (true == isInternalToggleUpdating) return;
+
+        Sound.PlayUI(SoundID.OptionClick);
         if (true == _isOn)
         {
-            Sound.PlayUI(SoundID.OptionClick);
             if (null != consentDisagreeToggle && true == consentDisagreeToggle.isOn)
             {
+                isInternalToggleUpdating = true;
                 consentDisagreeToggle.isOn = false;
+                isInternalToggleUpdating = false;
             }
         }
         UpdateConfirmButtonState();
@@ -402,12 +436,16 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
     private void HandleConsentDisagreeToggleValueChanged(bool _isOn)
     {
+        if (true == isInternalToggleUpdating) return;
+
+        Sound.PlayUI(SoundID.OptionClick);
         if (true == _isOn)
         {
-            Sound.PlayUI(SoundID.OptionClick);
             if (null != consentToggle && true == consentToggle.isOn)
             {
+                isInternalToggleUpdating = true;
                 consentToggle.isOn = false;
+                isInternalToggleUpdating = false;
             }
         }
         UpdateConfirmButtonState();
@@ -444,12 +482,25 @@ public class UI_InitialSetupPopup : MonoBehaviour
         }
     }
 
-    public void Show(Action _onCompleted)
+    public void Show(Action _onCompleted, bool _allowInput = true)
     {
         onCompletedCallback = _onCompleted;
         isConsentPhase = false;
+        isInputAllowed = _allowInput;
+        isClosing = false;
+        isTransitioning = false;
+        suppressNextConsentSelectAudio = false;
         gameObject.SetActive(true);
-        Sound.PlayUI(SoundID.ResultUIOpen);
+
+        if (true == _allowInput)
+        {
+            Sound.PlayUI(SoundID.ResultUIOpen);
+            SetInputInteractable(true);
+        }
+        else
+        {
+            SetInputInteractable(false);
+        }
 
         if (null != inputManager)
         {
@@ -461,19 +512,13 @@ public class UI_InitialSetupPopup : MonoBehaviour
             }
         }
 
-        if (null != rootCanvasGroup)
-        {
-            rootCanvasGroup.interactable = true;
-            rootCanvasGroup.blocksRaycasts = true;
-        }
-
         // 1단계 언어 패널 먼저 활성화
         if (null != languagePanel)
         {
             languagePanel.gameObject.SetActive(true);
             languagePanel.alpha = 1f;
-            languagePanel.interactable = true;
-            languagePanel.blocksRaycasts = true;
+            languagePanel.interactable = _allowInput;
+            languagePanel.blocksRaycasts = _allowInput;
         }
 
         if (null != consentPanel)
@@ -517,6 +562,53 @@ public class UI_InitialSetupPopup : MonoBehaviour
         _seq.OnComplete(HandleShowCompleted);
         _seq.SetTarget(this);
         panelTransitionTween = _seq;
+    }
+
+    public void ActivateInput()
+    {
+        if (true == isInputAllowed) return;
+
+        isInputAllowed = true;
+        Sound.PlayUI(SoundID.ResultUIOpen);
+        SetInputInteractable(true);
+
+        if (null != languagePanel && false == isConsentPhase)
+        {
+            languagePanel.interactable = true;
+            languagePanel.blocksRaycasts = true;
+        }
+        else if (null != consentPanel && true == isConsentPhase)
+        {
+            consentPanel.interactable = true;
+            consentPanel.blocksRaycasts = true;
+        }
+
+        if (null != inputManager && true == inputManager.IsGamepadMode)
+        {
+            if (false == isConsentPhase)
+            {
+                UI_PanelSelectButton.SuppressSelectAudio = true;
+                FocusLanguageButton(lastFocusedLanguageButton ?? GetKoreanLanguageButton() ?? GetFirstLanguageButton());
+                UI_PanelSelectButton.SuppressSelectAudio = false;
+            }
+            else
+            {
+                FocusConsentItem(lastFocusedConsentSelectable ?? (Selectable)consentToggle);
+            }
+        }
+        else if (null != EventSystem.current)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
+    }
+
+    private void SetInputInteractable(bool _interactable)
+    {
+        if (null != rootCanvasGroup)
+        {
+            rootCanvasGroup.interactable = _interactable;
+            rootCanvasGroup.blocksRaycasts = _interactable;
+        }
     }
 
     /// <summary>
@@ -565,6 +657,8 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
     private void HandleShowCompleted()
     {
+        if (false == isInputAllowed) return;
+
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
             FocusLanguageButton(lastFocusedLanguageButton ?? GetKoreanLanguageButton() ?? GetFirstLanguageButton());
@@ -640,7 +734,10 @@ public class UI_InitialSetupPopup : MonoBehaviour
         else if (_target == confirmButton)
         {
             HideConsentToggleCursor();
-            if (null != confirmButton) confirmButton.ForceHover();
+            if (null != confirmButton && null != EventSystem.current && EventSystem.current.currentSelectedGameObject == _target.gameObject)
+            {
+                confirmButton.ForceHover();
+            }
         }
 
         if (null != EventSystem.current)
@@ -694,7 +791,8 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
     private void HandleLanguageButtonClicked(UI_PanelSelectButton _btn)
     {
-        if (null == _btn) return;
+        if (null == _btn || true == isTransitioning || true == isClosing) return;
+        isTransitioning = true;
 
         // 1. 선택한 언어 적용
         EOptionLanguage _selected = _btn.BoundLanguage;
@@ -714,11 +812,16 @@ public class UI_InitialSetupPopup : MonoBehaviour
         KillTransition();
         isConsentPhase = true;
 
+        if (null != languagePanel)
+        {
+            languagePanel.interactable = false;
+            languagePanel.blocksRaycasts = false;
+        }
+
         Sequence _seq = DOTween.Sequence();
 
         if (null != languagePanel)
         {
-            languagePanel.blocksRaycasts = false;
             _seq.Append(languagePanel.DOFade(0f, fadeDuration * 0.7f).SetEase(Ease.InQuad));
         }
 
@@ -749,15 +852,22 @@ public class UI_InitialSetupPopup : MonoBehaviour
             confirmButton.gameObject.SetActive(true);
         }
 
+        isInternalToggleUpdating = true;
         if (null != consentToggle) consentToggle.isOn = false;
         if (null != consentDisagreeToggle) consentDisagreeToggle.isOn = false;
+        isInternalToggleUpdating = false;
+
         UpdateConfirmButtonState(true);
 
         SnapConsentTogglesPixelPerfect();
+
+        suppressNextConsentSelectAudio = true;
+        Sound.PlayUI(SoundID.ResultUIOpen);
     }
 
     private void HandleConsentPanelShown()
     {
+        isTransitioning = false;
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
             FocusConsentItem(lastFocusedConsentSelectable ?? (Selectable)consentToggle);
@@ -766,6 +876,8 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
     private void HandleConfirmButtonClicked()
     {
+        if (true == isClosing) return;
+
         if (null != consentToggle && true == consentToggle.isOn)
         {
             SettingsManager.Instance.SetDataConsent(EDataConsent.Granted);
@@ -784,11 +896,15 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
     public void Close()
     {
+        if (true == isClosing) return;
+        isClosing = true;
+
         KillTransition();
 
-        if (null != rootCanvasGroup)
+        SetInputInteractable(false);
+        if (null != confirmButton)
         {
-            rootCanvasGroup.blocksRaycasts = false;
+            confirmButton.SetInteractable(false);
         }
 
         if (null != cursorBoxUI)
@@ -974,7 +1090,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
     private void OnDeviceChanged(EInputDeviceType _device)
     {
-        if (false == IsActive) return;
+        if (false == IsActive || false == isInputAllowed) return;
 
         if (EInputDeviceType.Gamepad == _device)
         {

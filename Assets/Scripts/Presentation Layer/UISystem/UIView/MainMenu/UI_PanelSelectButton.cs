@@ -41,6 +41,7 @@ public class UI_PanelSelectButton : Selectable,
     [SerializeField] private Vector2 cursorOffset = Vector2.zero;
 
     // 내부 상태
+    private static bool suppressSelectAudio = false;
     private bool isHovered = false;
     private bool isPointerHovered = false;
     private bool isSelectedState = false;
@@ -53,6 +54,12 @@ public class UI_PanelSelectButton : Selectable,
     private InputManager inputManager;
     private Action onClickCallback;
     private EOptionLanguage boundLanguage = EOptionLanguage.Korean;
+
+    public static bool SuppressSelectAudio
+    {
+        get => suppressSelectAudio;
+        set => suppressSelectAudio = value;
+    }
 
     public RectTransform CachedRectTransform
     {
@@ -151,7 +158,7 @@ public class UI_PanelSelectButton : Selectable,
 
         isHovered = true;
         isPointerHovered = true;
-        Sound.PlayUI(SoundID.MainMenuDot01);
+        Sound.PlayUI(SoundID.ResultUIHover);
         ApplyVisualState(true);
         ShowCursor();
     }
@@ -170,9 +177,19 @@ public class UI_PanelSelectButton : Selectable,
     public override void OnSelect(BaseEventData _eventData)
     {
         base.OnSelect(_eventData);
+        if (false == IsInteractable()) return;
+        if (null != inputManager && false == inputManager.IsGamepadMode) return;
+        if (true == isHovered)
+        {
+            ShowCursor();
+            return;
+        }
 
         isHovered = true;
-        Sound.PlayUI(SoundID.MainMenuDot01);
+        if (false == suppressSelectAudio)
+        {
+            Sound.PlayUI(SoundID.ResultUIHover);
+        }
         ApplyVisualState(true);
         ShowCursor();
     }
@@ -180,6 +197,7 @@ public class UI_PanelSelectButton : Selectable,
     public override void OnDeselect(BaseEventData _eventData)
     {
         base.OnDeselect(_eventData);
+        if (true == isPointerHovered) return;
 
         isHovered = false;
         ApplyVisualState(true);
@@ -190,7 +208,7 @@ public class UI_PanelSelectButton : Selectable,
         isHovered = true;
         if (true == _playAudio)
         {
-            Sound.PlayUI(SoundID.MainMenuDot01);
+            Sound.PlayUI(SoundID.ResultUIHover);
         }
         ApplyVisualState(false);
         if (null != inputManager && true == inputManager.IsGamepadMode)
