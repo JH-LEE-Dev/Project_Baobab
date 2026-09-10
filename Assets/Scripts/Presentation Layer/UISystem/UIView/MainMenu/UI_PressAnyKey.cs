@@ -68,12 +68,17 @@ public class UI_PressAnyKey : MonoBehaviour
 
         bool _anyInputReceived = false;
 
+        // 여기서 인정하는 것은 "유저가 직접 누른 입력"뿐이다. 마우스 이동과 휠 스크롤은 제외한다.
+        // 책상 위에서 마우스가 스치기만 해도 넘어가면, 유저는 아무것도 누르지 않았는데 스플래시
+        // 페이드가 갑자기 잘린 것처럼 느낀다. (같은 기준의 공용 판정은 InputDeviceTracker의
+        // AnyButtonInputThisFrame이며, 이쪽은 프레임 지연 없이 보려고 직접 폴링한다)
+
         // 1. 키보드 아무 키 입력 감지 (New Input System)
         if (null != Keyboard.current && true == Keyboard.current.anyKey.wasPressedThisFrame)
         {
             _anyInputReceived = true;
         }
-        // 2. 마우스 버튼 클릭 감지 (좌클릭, 우클릭, 휠클릭) - 마우스 단순 이동(delta)은 제외
+        // 2. 마우스 버튼 클릭 감지 (좌클릭, 우클릭, 휠클릭) - 단순 이동(delta)과 휠 스크롤은 제외
         else if (null != Mouse.current && (true == Mouse.current.leftButton.wasPressedThisFrame
                                         || true == Mouse.current.rightButton.wasPressedThisFrame
                                         || true == Mouse.current.middleButton.wasPressedThisFrame))

@@ -219,8 +219,11 @@ public class InputManager : MonoBehaviour
     /// <summary>수동 지정과 무관한 자동 판별 결과입니다. 옵션에서 "자동 (Xbox)"처럼 보여줄 때 씁니다.</summary>
     public EGamepadIconSet DetectedGamepadIconSet => null != inputReader ? inputReader.DetectedGamepadIconSet : EGamepadIconSet.Generic;
 
-    /// <summary>이번 프레임에 어느 장치에서든 조작이 들어왔는지입니다. ("아무 키나 누르세요" 화면 등)</summary>
+    /// <summary>이번 프레임에 어느 장치에서든 조작이 들어왔는지입니다. (마우스 이동·휠 스크롤 포함)</summary>
     public bool AnyInputThisFrame => null != inputReader && inputReader.AnyInputThisFrame;
+
+    /// <summary>이번 프레임에 키나 버튼이 실제로 눌렸는지입니다. ("아무 키나 누르세요" 화면 등)</summary>
+    public bool AnyButtonInputThisFrame => null != inputReader && inputReader.AnyButtonInputThisFrame;
 
     public void SetGamepadIconSetOverride(bool _bUseOverride, EGamepadIconSet _iconSet)
     {

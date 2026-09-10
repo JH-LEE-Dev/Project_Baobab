@@ -328,14 +328,22 @@ public class InputReader
     public EGamepadIconSet DetectedGamepadIconSet => null != deviceTracker ? deviceTracker.DetectedIconSet : EGamepadIconSet.Generic;
 
     /// <summary>
-    /// 이번 프레임에 어느 장치에서든 "의도적인 조작"이 들어왔는지입니다.
-    /// "아무 키나 누르세요" 화면이나 유휴 타이머 해제처럼, 무슨 키인지는 상관없고
-    /// 입력이 있었다는 사실만 필요한 곳에서 씁니다.
+    /// 이번 프레임에 어느 장치에서든 "의도적인 조작"이 들어왔는지입니다. 유휴 타이머 해제처럼
+    /// 무슨 키인지는 상관없고 입력이 있었다는 사실만 필요한 곳에서 씁니다.
+    /// (마우스 이동과 휠 스크롤도 포함되므로 "아무 키나 누르세요"에는 쓰지 마세요)
     ///
     /// 주의: InputManager.Update에서 갱신되므로 스크립트 실행 순서에 따라 최대 1프레임 늦게
     /// 보일 수 있습니다. 위 용도에서는 문제가 되지 않지만, 프레임 정확도가 필요한 곳에는 쓰지 마세요.
     /// </summary>
     public bool AnyInputThisFrame => null != deviceTracker && deviceTracker.AnyInputThisFrame;
+
+    /// <summary>
+    /// 이번 프레임에 키나 버튼이 실제로 눌렸는지입니다. AnyInputThisFrame과 달리 마우스 이동,
+    /// 휠 스크롤, 스틱 기울임은 포함하지 않으므로 "아무 키나 누르세요" 화면에는 이쪽을 씁니다.
+    ///
+    /// 주의: AnyInputThisFrame과 같은 갱신 시점을 쓰므로 최대 1프레임 늦게 보일 수 있습니다.
+    /// </summary>
+    public bool AnyButtonInputThisFrame => null != deviceTracker && deviceTracker.AnyButtonInputThisFrame;
 
     /// <summary>
     /// 패드 아이콘 표기를 수동으로 고정합니다. _bUseOverride가 false면 자동 판별로 되돌립니다.

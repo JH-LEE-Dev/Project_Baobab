@@ -44,6 +44,7 @@ public class InputDeviceTracker
 
     private bool bGamepadConnected = false;
     private bool bAnyInputThisFrame = false;
+    private bool bAnyButtonInputThisFrame = false;
 
     private float switchCooldownRemain = 0f;
     private float mouseTravelAccum = 0f;
@@ -71,9 +72,23 @@ public class InputDeviceTracker
     /// <summary>
     /// 이번 프레임에 키보드/마우스/패드 중 어디서든 "의도적인 조작"이 들어왔는지입니다.
     /// 장치 전환 판정과 같은 문턱값을 쓰므로, 책상 진동으로 인한 마우스 지터나 스틱 드리프트는
-    /// 여기서도 입력으로 치지 않습니다. ("아무 키나 누르세요" 화면, 유휴 타이머 해제 등에 씁니다)
+    /// 여기서도 입력으로 치지 않습니다. (유휴 타이머 해제, 어트랙트 모드 복귀 등에 씁니다)
+    ///
+    /// 여기에는 마우스 이동과 휠 스크롤도 포함됩니다. "아무 키나 누르세요"처럼 유저가 직접
+    /// 누른 것만 인정해야 하는 곳에는 이 값이 아니라 AnyButtonInputThisFrame을 쓰세요.
     /// </summary>
     public bool AnyInputThisFrame => bAnyInputThisFrame;
+
+    /// <summary>
+    /// 이번 프레임에 키나 버튼이 실제로 "눌렸는지"입니다. AnyInputThisFrame과 달리 마우스 이동,
+    /// 휠 스크롤, 스틱 기울임은 포함하지 않습니다. (트리거는 손가락으로 당기는 명시적 조작이라
+    /// 눌림으로 칩니다)
+    ///
+    /// "아무 키나 누르세요" 화면처럼 유저가 누르겠다고 마음먹은 입력만 인정해야 하는 곳에 씁니다.
+    /// 책상 위에서 마우스가 조금 움직인 것만으로 넘어가 버리면, 유저는 자기가 아무것도 누르지
+    /// 않았는데 연출이 잘린 것처럼 느낍니다.
+    /// </summary>
+    public bool AnyButtonInputThisFrame => bAnyButtonInputThisFrame;
 
     public void Initialize(InputDeviceSettings _settings)
     {
@@ -122,10 +137,11 @@ public class InputDeviceTracker
 
         // 두 쪽 모두 폴링한다. 마우스 판정은 누적값을 갱신하는 부작용이 있어서
         // 패드가 활성일 때 건너뛰면 누적치가 낡은 채로 남는다.
-        bool bKeyboardMouseActive = PollKeyboardMouseActivity(_unscaledDeltaTime);
-        bool bGamepadActive = PollGamepadActivity();
+        bool bKeyboardMouseActive = PollKeyboardMouseActivity(_unscaledDeltaTime, out bool _bKeyboardMousePressed);
+        bool bGamepadActive = PollGamepadActivity(out bool _bGamepadPressed);
 
         bAnyInputThisFrame = bKeyboardMouseActive || bGamepadActive;
+        bAnyButtonInputThisFrame = _bKeyboardMousePressed || _bGamepadPressed;
 
         // 같은 프레임에 둘 다 들어오면 패드를 우선한다. 패드 조작은 문턱값이 높아
         // 오탐 가능성이 낮은 반면, 마우스는 손이 스치기만 해도 잡히기 때문이다.
@@ -184,17 +200,28 @@ public class InputDeviceTracker
         DeviceChangedEvent?.Invoke(currentDevice);
     }
 
-    private bool PollKeyboardMouseActivity(float _unscaledDeltaTime)
+    /// <param name="_bPressed">키나 마우스 버튼이 실제로 눌렸는지입니다. 이동/스크롤은 제외됩니다.</param>
+    private bool PollKeyboardMouseActivity(float _unscaledDeltaTime, out bool _bPressed)
     {
+        _bPressed = false;
+
         Keyboard _keyboard = Keyboard.current;
-        if (null != _keyboard && true == _keyboard.anyKey.wasPressedThisFrame) return true;
+        if (null != _keyboard && true == _keyboard.anyKey.wasPressedThisFrame)
+        {
+            _bPressed = true;
+            return true;
+        }
 
         Mouse _mouse = Mouse.current;
         if (null == _mouse) return false;
 
-        if (true == _mouse.leftButton.wasPressedThisFrame) return true;
-        if (true == _mouse.rightButton.wasPressedThisFrame) return true;
-        if (true == _mouse.middleButton.wasPressedThisFrame) return true;
+        if (true == _mouse.leftButton.wasPressedThisFrame ||
+            true == _mouse.rightButton.wasPressedThisFrame ||
+            true == _mouse.middleButton.wasPressedThisFrame)
+        {
+            _bPressed = true;
+            return true;
+        }
 
         if (_mouse.scroll.ReadValue().sqrMagnitude > 0f) return true;
 
@@ -224,42 +251,52 @@ public class InputDeviceTracker
         return true;
     }
 
-    private bool PollGamepadActivity()
+    /// <param name="_bPressed">패드의 버튼이나 트리거가 눌렸는지입니다. 스틱 기울임은 제외됩니다.</param>
+    private bool PollGamepadActivity(out bool _bPressed)
     {
+        _bPressed = false;
+
         // Gamepad.current는 Input System이 "가장 최근에 입력이 들어온 패드"로 알아서 갱신하므로,
         // 여러 개가 꽂혀 있어도 싱글플레이에서는 이것만 보면 된다.
         Gamepad _gamepad = Gamepad.current;
         if (null == _gamepad) return false;
 
+        // 눌림(트리거·버튼)을 스틱보다 먼저 본다. 스틱을 기울인 채로 버튼을 누른 프레임에서
+        // 스틱 쪽이 먼저 빠져나가면 _bPressed가 false로 남아, "아무 키나 누르세요"가 그 입력을 놓친다.
+        // 트리거는 아날로그라 눌림 판정 대신 깊이로 본다.
+        if (_gamepad.leftTrigger.ReadValue() >= settings.triggerActuationThreshold ||
+            _gamepad.rightTrigger.ReadValue() >= settings.triggerActuationThreshold)
+        {
+            _bPressed = true;
+            return true;
+        }
+
+        // 표준 게임패드의 디지털 버튼 전체. 바인딩과 무관하게 "패드를 만졌는지"만 보므로
+        // 액션이 하나도 연결되지 않은 지금 상태에서도 그대로 동작한다.
+        if (true == _gamepad.buttonSouth.wasPressedThisFrame ||
+            true == _gamepad.buttonEast.wasPressedThisFrame ||
+            true == _gamepad.buttonWest.wasPressedThisFrame ||
+            true == _gamepad.buttonNorth.wasPressedThisFrame ||
+            true == _gamepad.leftShoulder.wasPressedThisFrame ||
+            true == _gamepad.rightShoulder.wasPressedThisFrame ||
+            true == _gamepad.leftStickButton.wasPressedThisFrame ||
+            true == _gamepad.rightStickButton.wasPressedThisFrame ||
+            true == _gamepad.startButton.wasPressedThisFrame ||
+            true == _gamepad.selectButton.wasPressedThisFrame ||
+            true == _gamepad.dpad.up.wasPressedThisFrame ||
+            true == _gamepad.dpad.down.wasPressedThisFrame ||
+            true == _gamepad.dpad.left.wasPressedThisFrame ||
+            true == _gamepad.dpad.right.wasPressedThisFrame)
+        {
+            _bPressed = true;
+            return true;
+        }
+
+        // 스틱 기울임은 조작으로는 치되 눌림으로는 치지 않는다. 문턱값 아래의 드리프트는 여기서 걸러진다.
         float _stickThresholdSqr = settings.stickActuationThreshold * settings.stickActuationThreshold;
 
         if (_gamepad.leftStick.ReadValue().sqrMagnitude >= _stickThresholdSqr) return true;
         if (_gamepad.rightStick.ReadValue().sqrMagnitude >= _stickThresholdSqr) return true;
-
-        // 트리거는 아날로그라 눌림 판정 대신 깊이로 본다.
-        if (_gamepad.leftTrigger.ReadValue() >= settings.triggerActuationThreshold) return true;
-        if (_gamepad.rightTrigger.ReadValue() >= settings.triggerActuationThreshold) return true;
-
-        // 표준 게임패드의 디지털 버튼 전체. 바인딩과 무관하게 "패드를 만졌는지"만 보므로
-        // 액션이 하나도 연결되지 않은 지금 상태에서도 그대로 동작한다.
-        if (true == _gamepad.buttonSouth.wasPressedThisFrame) return true;
-        if (true == _gamepad.buttonEast.wasPressedThisFrame) return true;
-        if (true == _gamepad.buttonWest.wasPressedThisFrame) return true;
-        if (true == _gamepad.buttonNorth.wasPressedThisFrame) return true;
-
-        if (true == _gamepad.leftShoulder.wasPressedThisFrame) return true;
-        if (true == _gamepad.rightShoulder.wasPressedThisFrame) return true;
-
-        if (true == _gamepad.leftStickButton.wasPressedThisFrame) return true;
-        if (true == _gamepad.rightStickButton.wasPressedThisFrame) return true;
-
-        if (true == _gamepad.startButton.wasPressedThisFrame) return true;
-        if (true == _gamepad.selectButton.wasPressedThisFrame) return true;
-
-        if (true == _gamepad.dpad.up.wasPressedThisFrame) return true;
-        if (true == _gamepad.dpad.down.wasPressedThisFrame) return true;
-        if (true == _gamepad.dpad.left.wasPressedThisFrame) return true;
-        if (true == _gamepad.dpad.right.wasPressedThisFrame) return true;
 
         return false;
     }

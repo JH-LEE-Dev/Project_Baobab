@@ -74,6 +74,7 @@ public class InputDeviceTrackerTests
         Assert.AreEqual(EInputDeviceType.KeyboardMouse, tracker.CurrentDevice);
         Assert.IsFalse(tracker.IsGamepadMode);
         Assert.IsFalse(tracker.AnyInputThisFrame);
+        Assert.IsFalse(tracker.AnyButtonInputThisFrame);
     }
 
     [Test]
@@ -284,6 +285,75 @@ public class InputDeviceTrackerTests
         tracker.Tick(Dt);
 
         Assert.AreEqual(EInputDeviceType.KeyboardMouse, tracker.CurrentDevice);
+    }
+
+    // "아무 키나 누르세요" 판정 — 누른 것만 인정해야 한다
+
+    [Test]
+    public void MouseDeliberateMove_IsInput_ButNotButtonInput()
+    {
+        MoveMouse(new Vector2(40f, 0f));
+        tracker.Tick(Dt);
+
+        // 이동은 "장치를 쓰고 있다"는 신호이므로 조작으로는 친다.
+        Assert.IsTrue(tracker.AnyInputThisFrame);
+
+        // 하지만 누른 것은 아니므로 "아무 키나 누르세요"는 넘어가면 안 된다.
+        Assert.IsFalse(tracker.AnyButtonInputThisFrame);
+    }
+
+    [Test]
+    public void MouseScroll_IsInput_ButNotButtonInput()
+    {
+        InputSystem.QueueDeltaStateEvent(mouse.scroll, new Vector2(0f, 1f));
+        InputSystem.Update();
+
+        tracker.Tick(Dt);
+
+        Assert.IsTrue(tracker.AnyInputThisFrame);
+        Assert.IsFalse(tracker.AnyButtonInputThisFrame);
+    }
+
+    [Test]
+    public void Stick_AboveThreshold_IsInput_ButNotButtonInput()
+    {
+        Gamepad _pad = AddGamepad("Gamepad");
+
+        SetLeftStick(_pad, new Vector2(1f, 0f));
+        tracker.Tick(Dt);
+
+        Assert.IsTrue(tracker.AnyInputThisFrame);
+        Assert.IsFalse(tracker.AnyButtonInputThisFrame);
+    }
+
+    [Test]
+    public void Trigger_AboveThreshold_IsButtonInput()
+    {
+        Gamepad _pad = AddGamepad("Gamepad");
+
+        InputSystem.QueueStateEvent(_pad, new GamepadState { rightTrigger = 1f });
+        InputSystem.Update();
+
+        tracker.Tick(Dt);
+
+        Assert.IsTrue(tracker.AnyButtonInputThisFrame);
+    }
+
+    [Test]
+    public void ButtonInput_ClearsOnNextQuietFrame()
+    {
+        Gamepad _pad = AddGamepad("Gamepad");
+
+        InputSystem.QueueStateEvent(_pad, new GamepadState { rightTrigger = 1f });
+        InputSystem.Update();
+        tracker.Tick(Dt);
+        Assert.IsTrue(tracker.AnyButtonInputThisFrame);
+
+        InputSystem.QueueStateEvent(_pad, new GamepadState { rightTrigger = 0f });
+        InputSystem.Update();
+        tracker.Tick(Dt);
+
+        Assert.IsFalse(tracker.AnyButtonInputThisFrame);
     }
 
     [Test]

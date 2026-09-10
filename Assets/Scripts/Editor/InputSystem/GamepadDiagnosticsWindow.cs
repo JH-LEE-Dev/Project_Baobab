@@ -162,6 +162,7 @@ public class GamepadDiagnosticsWindow : EditorWindow
                 EditorGUILayout.LabelField("현재 장치", _live.CurrentDevice.ToString());
                 EditorGUILayout.LabelField("아이콘 세트", _live.CurrentGamepadIconSet + "  (자동 판별: " + _live.DetectedGamepadIconSet + ")");
                 EditorGUILayout.LabelField("이번 프레임 입력", _live.AnyInputThisFrame ? "있음" : "없음");
+                EditorGUILayout.LabelField("이번 프레임 눌림", _live.AnyButtonInputThisFrame ? "있음" : "없음");
             }
             else
             {
