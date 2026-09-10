@@ -51,6 +51,10 @@ public class InputDeviceTracker
     private float mouseTravelAccum = 0f;
     private float mouseIdleAccum = 0f;
 
+    // 트리거의 엣지 검출용: 이전 프레임에서 문턱값을 넘었는지 기억한다.
+    private bool bLeftTriggerWasDown = false;
+    private bool bRightTriggerWasDown = false;
+
     // 이벤트 구독/해제에 같은 델리게이트 인스턴스를 써야 하므로 캐싱한다. (메서드 그룹 변환은 매번 할당)
     private Action<InputDevice, InputDeviceChange> cachedDeviceChangeHandler;
 
@@ -275,11 +279,27 @@ public class InputDeviceTracker
 
         // 눌림(트리거·버튼)을 스틱보다 먼저 본다. 스틱을 기울인 채로 버튼을 누른 프레임에서
         // 스틱 쪽이 먼저 빠져나가면 _bPressed가 false로 남아, "아무 키나 누르세요"가 그 입력을 놓친다.
-        // 트리거는 아날로그라 눌림 판정 대신 깊이로 본다.
-        if (_gamepad.leftTrigger.ReadValue() >= settings.triggerActuationThreshold ||
-            _gamepad.rightTrigger.ReadValue() >= settings.triggerActuationThreshold)
+        // 트리거는 아날로그라 wasPressedThisFrame이 없다. 이전 프레임 값과 비교하여 엣지를 직접 검출한다.
+        bool _bLeftTriggerDown  = _gamepad.leftTrigger.ReadValue() >= settings.triggerActuationThreshold;
+        bool _bRightTriggerDown = _gamepad.rightTrigger.ReadValue() >= settings.triggerActuationThreshold;
+
+        // 엣지 검출: 이전 프레임에 눌려 있지 않았고, 이번 프레임에 눌린 경우만 "새로 눌림"으로 판정한다.
+        bool _bLeftTriggerPressed  = _bLeftTriggerDown && false == bLeftTriggerWasDown;
+        bool _bRightTriggerPressed = _bRightTriggerDown && false == bRightTriggerWasDown;
+
+        bLeftTriggerWasDown  = _bLeftTriggerDown;
+        bRightTriggerWasDown = _bRightTriggerDown;
+
+        if (_bLeftTriggerPressed || _bRightTriggerPressed)
         {
             _bPressed = true;
+            return true;
+        }
+
+        // 트리거가 누르고 있는 상태라면 활동은 있지만 "새로 눌림"은 아니다.
+        // 장치 전환 판정(return true)은 유지하되, _bPressed는 false로 남긴다.
+        if (_bLeftTriggerDown || _bRightTriggerDown)
+        {
             return true;
         }
 
