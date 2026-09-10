@@ -59,7 +59,7 @@ public class UI_EscapeMenuButton : Selectable,
     private bool isAppearing = false;
 
     public bool IsPointerHovered => isPointerHovered;
-    public bool IsInteractable => isInteractable && interactable;
+    public new bool IsInteractable => isInteractable && interactable;
 
     private Vector3 originalScale = Vector3.one;
 
