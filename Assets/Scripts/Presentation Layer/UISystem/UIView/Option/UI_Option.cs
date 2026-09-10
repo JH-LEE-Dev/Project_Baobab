@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -211,6 +212,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private SettingsManager settings;
     private InputManager inputManager;
     private UIDepthController depthController;
+    private int lastHideFrame = -1;
 
     public bool IsActive => gameObject.activeSelf;
     private System.Collections.Generic.List<UI_OptionKeyBindRow> keyBindRows 
@@ -285,6 +287,22 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private Coroutine rebindCoroutine;
     private ICursorBoxUI cursorBoxUI;
 
+    // 키 스왑 관련 내부 의존성
+    private delegate bool TryGetBindingTargetDelegate(
+        ERebindableAction _action,
+        EInputDeviceType _device,
+        out InputAction _inputAction,
+        out int _bindingIndex);
+
+    private TryGetBindingTargetDelegate tryGetBindingTargetDelegate;
+    private MethodInfo tryGetBindingTargetMethod;
+    private readonly object[] tryGetBindingTargetArgs = new object[4];
+    private FieldInfo keyBindingsChangedEventField;
+
+    private ERebindableAction lastRebindingAction;
+    private EInputDeviceType lastRebindingDevice;
+    private string lastRebindingOldPath;
+
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize(UIViewContext _ctx)
     {
@@ -303,6 +321,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         CacheDelegates();
         CacheControlDelegates();
+        EnsureInputReaderReflection();
 
         settings.OnLanguageChangedEvent -= onSettingsLanguageChanged;
         settings.OnLanguageChangedEvent += onSettingsLanguageChanged;
@@ -327,7 +346,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         if (null != closeButton)
         {
-            closeButton.Initialize(hideAction, SoundID.MainButtonHover, SoundID.MainClick);
+            closeButton.Initialize(hideAction, SoundID.MainButtonHover, SoundID.None);
             closeButton.SetCursorBoxUI(cursorBoxUI, inputManager);
         }
 
@@ -357,6 +376,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         }
 
         onCloseAction = _onCloseCallback;
+        lastHideFrame = -1;
 
         if (null != settings)
         {
@@ -414,6 +434,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     public void Hide()
     {
+        lastHideFrame = Time.frameCount;
+
         // 키 바인딩 오버레이 또는 리바인딩 코루틴/오퍼레이션이 활성화되어 있으면 오버레이만 닫고 조기 반환 (옵션 패널 유지)
         if ((null != rebindOverlay && true == rebindOverlay.activeSelf)
             || null != rebindCoroutine
@@ -433,6 +455,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         if (true == IsDirty())
         {
+            if (null != closeButton)
+            {
+                closeButton.PlayClickFeedback();
+            }
+
             if (null != warningPopup && null != locManager)
             {
                 string _warningMsg = locManager.GetText(LocKeys.OptionUI.unsavedChangesWarning);
@@ -456,12 +483,21 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         }
         else
         {
-            ForceHide();
+            ForceHide(true);
         }
     }
 
-    private void ForceHide()
+    private void ForceHide(bool _playSound = true)
     {
+        if (true == _playSound)
+        {
+            Sound.PlayUI(SoundID.MainClick);
+            if (null != closeButton)
+            {
+                closeButton.PlayClickFeedback();
+            }
+        }
+
         depthController?.UnregisterView(this);
         cursorBoxUI?.HideImmediately();
 
@@ -514,18 +550,15 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     private void OnDiscardAndCloseConfirmed()
     {
-        Sound.PlayUI(SoundID.ResultUIClose);
-
         RestoreSnapshot(savedSnapshot);
 
         RefreshAllUIFromSettings();
 
-        ForceHide();
+        ForceHide(false);
     }
 
     private void OnDiscardAndCloseCancelled()
     {
-        Sound.PlayUI(SoundID.ResultUIClose);
     }
 
     private void OnApplyClicked()
@@ -888,6 +921,9 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         if (false == gameObject.activeInHierarchy || false == IsActive) return;
 
+        // 이미 같은 프레임에서 UIDepthController 등을 통해 Hide()가 실행되었다면 중복 처리 방지
+        if (Time.frameCount == lastHideFrame) return;
+
         // 키 바인딩 오버레이 또는 리바인딩 진행 중이면 오버레이만 닫고 조기 반환
         if ((null != rebindOverlay && true == rebindOverlay.activeSelf)
             || null != rebindCoroutine
@@ -897,27 +933,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             return;
         }
 
-        // 경고 팝업이 열려 있으면 팝업 닫기 처리
+        // 경고 팝업이 열려 있으면 팝업 자체의 Cancel/DepthController 처리에 맡기고 조기 반환
         if (null != warningPopup && true == warningPopup.IsActive)
         {
-            warningPopup.Hide();
             return;
-        }
-
-        // 패드 모드이고 현재 포커스가 탭 버튼이 아닌 하위 옵션에 위치해 있다면 ➔ 상단 탭 버튼으로 포커스 복귀
-        if (null != inputManager && true == inputManager.IsGamepadMode && null != EventSystem.current && null != tabGroup)
-        {
-            GameObject _selected = EventSystem.current.currentSelectedGameObject;
-            UI_OptionTabButton _currentTabBtn = tabGroup.GetTabButton(tabGroup.CurrentTabIndex);
-            if (null != _selected && (null == _currentTabBtn || _selected != _currentTabBtn.gameObject))
-            {
-                if (null != _currentTabBtn && true == _currentTabBtn.gameObject.activeInHierarchy)
-                {
-                    EventSystem.current.SetSelectedGameObject(_currentTabBtn.gameObject);
-                    Sound.PlayUI(SoundID.MainButtonHover);
-                    return;
-                }
-            }
         }
 
         Hide();
@@ -1178,7 +1197,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         // 전체 초기화 버튼
         if (null != resetAllBindingsButton)
         {
-            resetAllBindingsButton.Initialize(cachedOnResetAllClicked);
+            resetAllBindingsButton.Initialize(cachedOnResetAllClicked, SoundID.MainButtonHover, SoundID.MainClick);
             resetAllBindingsButton.SetCursorBoxUI(cursorBoxUI, inputManager);
         }
 
@@ -1827,6 +1846,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             {
                 if (null != resetAllBindingsButton && true == resetAllBindingsButton.gameObject.activeSelf && true == resetAllBindingsButton.IsInteractable)
                 {
+                    Sound.PlayUI(SoundID.MainClick);
+                    resetAllBindingsButton.PlayClickFeedback();
                     OnResetAllClicked();
                 }
             }
@@ -1834,6 +1855,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             {
                 if (null != applyButton && true == applyButton.gameObject.activeSelf && true == applyButton.IsInteractable)
                 {
+                    Sound.PlayUI(SoundID.MainClick);
+                    applyButton.PlayClickFeedback();
                     OnApplyClicked();
                 }
             }
@@ -2130,6 +2153,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         if (null == inputManager || true == inputManager.IsRebinding) return;
 
+        lastRebindingAction = _action;
+        lastRebindingDevice = EInputDeviceType.KeyboardMouse;
+        lastRebindingOldPath = inputManager.GetBindingPath(_action, EInputDeviceType.KeyboardMouse);
+
         string _prompt = GetText(LocKeys.OptionUI.pressKeyPrompt, "변경할 키를 입력하세요.\n(ESC: 취소)");
         PlayRebindOpenProduction(_prompt);
 
@@ -2140,6 +2167,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         if (null == inputManager || true == inputManager.IsRebinding) return;
         if (false == GamepadDefaultBindings.IsRebindableOnGamepad(_action)) return;
+
+        lastRebindingAction = _action;
+        lastRebindingDevice = EInputDeviceType.Gamepad;
+        lastRebindingOldPath = inputManager.GetBindingPath(_action, EInputDeviceType.Gamepad);
 
         string _prompt = GetText(LocKeys.OptionUI.pressGamepadPrompt, "변경할 패드 버튼을 입력하세요.");
         PlayRebindOpenProduction(_prompt);
@@ -2165,6 +2196,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         if (null != inputManager)
         {
+            lastRebindingAction = _action;
+            lastRebindingDevice = EInputDeviceType.Gamepad;
+            lastRebindingOldPath = inputManager.GetBindingPath(_action, EInputDeviceType.Gamepad);
+
             inputManager.StartRebind(_action, EInputDeviceType.Gamepad, OnRebindFinished);
         }
     }
@@ -2177,12 +2212,126 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             rebindCoroutine = null;
         }
 
+        // 중복 충돌 발생 시 기존 키와 새로 입력한 키를 서로 맞바꿈(스왑)
+        if (ERebindResult.Duplicate == _result && true == _conflict.HasValue)
+        {
+            SwapConflictingBinding(_conflict.Value);
+        }
+
         // 오버레이 닫기 연출 재생
         PlayRebindCloseProduction();
 
         if (null != inputManager && false == inputManager.HasAnyConflict())
         {
             inputManager.CommitEditSession();
+        }
+
+        RefreshKeyBindRows();
+    }
+
+    private void SwapConflictingBinding(ERebindableAction _conflictAction)
+    {
+        if (null == inputManager || null == inputManager.inputReader) return;
+
+        if (true == TryGetBindingTarget(_conflictAction, lastRebindingDevice, out InputAction _conflictInputAction, out int _conflictBindingIndex))
+        {
+            if (false == string.IsNullOrEmpty(lastRebindingOldPath))
+            {
+                _conflictInputAction.ApplyBindingOverride(_conflictBindingIndex, lastRebindingOldPath);
+            }
+            else
+            {
+                _conflictInputAction.RemoveBindingOverride(_conflictBindingIndex);
+            }
+
+            NotifyKeyBindingsChanged();
+        }
+    }
+
+    private bool TryGetBindingTarget(
+        ERebindableAction _action,
+        EInputDeviceType _device,
+        out InputAction _inputAction,
+        out int _bindingIndex)
+    {
+        EnsureInputReaderReflection();
+
+        if (null != tryGetBindingTargetDelegate)
+        {
+            return tryGetBindingTargetDelegate(_action, _device, out _inputAction, out _bindingIndex);
+        }
+
+        if (null != tryGetBindingTargetMethod && null != inputManager && null != inputManager.inputReader)
+        {
+            tryGetBindingTargetArgs[0] = _action;
+            tryGetBindingTargetArgs[1] = _device;
+            tryGetBindingTargetArgs[2] = null;
+            tryGetBindingTargetArgs[3] = null;
+
+            bool _result = (bool)tryGetBindingTargetMethod.Invoke(inputManager.inputReader, tryGetBindingTargetArgs);
+            _inputAction = (InputAction)tryGetBindingTargetArgs[2];
+            _bindingIndex = (int)tryGetBindingTargetArgs[3];
+            return _result;
+        }
+
+        _inputAction = null;
+        _bindingIndex = -1;
+        return false;
+    }
+
+    private void EnsureInputReaderReflection()
+    {
+        if (null != tryGetBindingTargetDelegate || null != tryGetBindingTargetMethod) return;
+        if (null == inputManager || null == inputManager.inputReader) return;
+
+        try
+        {
+            MethodInfo _method = typeof(InputReader).GetMethod(
+                "TryGetBindingTarget",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            if (null != _method)
+            {
+                tryGetBindingTargetMethod = _method;
+                try
+                {
+                    tryGetBindingTargetDelegate = (TryGetBindingTargetDelegate)Delegate.CreateDelegate(
+                        typeof(TryGetBindingTargetDelegate),
+                        inputManager.inputReader,
+                        _method);
+                }
+                catch
+                {
+                    tryGetBindingTargetDelegate = null;
+                }
+            }
+        }
+        catch (Exception _ex)
+        {
+            Debug.LogWarning($"[UI_Option] EnsureInputReaderReflection failed: {_ex.Message}");
+        }
+
+        if (null == keyBindingsChangedEventField)
+        {
+            try
+            {
+                keyBindingsChangedEventField = typeof(InputReader).GetField(
+                    "KeyBindingsChangedEvent",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+            }
+            catch (Exception _ex)
+            {
+                Debug.LogWarning($"[UI_Option] KeyBindingsChangedEvent reflection failed: {_ex.Message}");
+            }
+        }
+    }
+
+    private void NotifyKeyBindingsChanged()
+    {
+        if (null != keyBindingsChangedEventField && null != inputManager && null != inputManager.inputReader)
+        {
+            Action _handler = keyBindingsChangedEventField.GetValue(inputManager.inputReader) as Action;
+            _handler?.Invoke();
         }
     }
 
@@ -2510,6 +2659,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         cachedOnTabShift = null;
         cachedOnUICancel = null;
         cachedOnInputDeviceChanged = null;
+
+        tryGetBindingTargetDelegate = null;
+        tryGetBindingTargetMethod = null;
+        keyBindingsChangedEventField = null;
+        lastRebindingOldPath = null;
 
         keyBindRows.Clear();
         gamepadKeyBindRows.Clear();
