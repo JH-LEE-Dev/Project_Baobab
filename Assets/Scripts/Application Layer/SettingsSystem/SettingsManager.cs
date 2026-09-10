@@ -225,8 +225,19 @@ public class SettingsManager : MonoBehaviour
         if (_next == current.language) return;
 
         current.language = _next;
-        isDirty = true;
         ApplyLanguage();
+
+        // 언어는 적용 버튼 없이 즉시 반영되는 항목이라 여기서 바로 기록한다.
+        // CommitChanges를 쓰면 안 된다. 아직 적용을 누르지 않은 화면 변경분(해상도·창모드)까지
+        // 같이 적용되어, 언어만 바꿨는데 창 크기가 그 자리에서 튄다.
+        // SetDataConsent와 같은 방식으로, 저장 전 isDirty를 기억했다가 되돌린다.
+        // (Save가 isDirty를 내려버리면 이후 유저가 적용을 눌러도 CommitChanges가 그냥 반환한다)
+        bool _wasDirty = isDirty;
+
+        isDirty = true;
+        Save();
+
+        isDirty = _wasDirty;
     }
 
     /// <summary>데이터 수집 동의 상태입니다. (NotAsked = 아직 묻지 않음)</summary>
@@ -541,7 +552,27 @@ public class SettingsManager : MonoBehaviour
         EnsureLoaded();
         ApplyDisplaySettings();
 
+        // 화면을 방금 적용했으므로 미적용 표시를 내린다. 이걸 내리지 않으면 이후 CommitChanges가
+        // 볼륨만 바꾼 경우에도 화면을 다시 적용해 창 크기가 튄다.
+        isDisplayDirty = false;
+
         // 하위 시스템이 자기 몫을 가져가도록 알린다. (구독자가 없으면 아무 일도 일어나지 않음)
+        OnAudioSettingsAppliedEvent?.Invoke(current);
+        OnGraphicsSettingsAppliedEvent?.Invoke(current);
+        OnInputSettingsAppliedEvent?.Invoke(current);
+    }
+
+    /// <summary>
+    /// 화면(해상도·창모드·FPS)은 건드리지 않고, 하위 시스템에만 현재 값을 다시 알립니다.
+    ///
+    /// 옵션 창을 닫으며 실시간 미리보기(밝기·크로스헤어·패드 감도 등)를 원래 값으로 되돌릴 때처럼
+    /// "값은 다시 반영해야 하지만 화면은 그대로여야 하는" 경우를 위한 경로입니다.
+    /// ApplySettings를 쓰면 화면이 바뀐 게 없어도 Screen.SetResolution까지 실행됩니다.
+    /// </summary>
+    public void ApplyNonDisplaySettings()
+    {
+        EnsureLoaded();
+
         OnAudioSettingsAppliedEvent?.Invoke(current);
         OnGraphicsSettingsAppliedEvent?.Invoke(current);
         OnInputSettingsAppliedEvent?.Invoke(current);

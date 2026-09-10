@@ -516,10 +516,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         Sound.PlayUI(SoundID.ResultUIClose);
 
-        RestoreSnapshot(savedSnapshot);
-
-        RefreshAllUIFromSettings();
-
+        // 되돌리기는 ForceHide 안의 RestoreSnapshot이 담당한다. 여기서 한 번 더 부르면
+        // 같은 프레임에 Screen.SetResolution이 두 번 실행된다.
+        // 패널은 곧바로 비활성화되고 UI 갱신은 다음 Show가 처음부터 다시 하므로
+        // 여기서의 RefreshAllUIFromSettings도 필요 없다.
         ForceHide();
     }
 
@@ -1873,8 +1873,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     }
 
     // 명시적 델리게이트 바인딩 메서드들 (GC 할당 방지)
-    private void OnLanguageLeft() { settings.CycleLanguage(-1); settings.CommitChanges(); }
-    private void OnLanguageRight() { settings.CycleLanguage(1); settings.CommitChanges(); }
+    // CycleLanguage가 적용과 저장까지 직접 처리한다. 여기서 CommitChanges를 부르면
+    // 아직 적용을 누르지 않은 해상도·창모드 변경분까지 같이 확정되어 화면이 튄다.
+    private void OnLanguageLeft() { settings.CycleLanguage(-1); }
+    private void OnLanguageRight() { settings.CycleLanguage(1); }
 
     // 표기 규칙(전체화면 강제 표기, 표시 불가 해상도 강등)이 한 곳에만 있도록 갱신을 위임한다.
     private void OnResolutionLeft()
@@ -2405,6 +2407,16 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         if (null == settings) return;
 
+        // 화면 항목이 실제로 달라졌는지 되돌리기 전에 먼저 판정해 둔다. 아래 while 루프가
+        // 값을 스냅샷과 같게 만들어버리므로, 그 뒤에는 비교해도 항상 "같음"이 나온다.
+        // 전체화면끼리는 해상도 값이 화면에 영향을 주지 않으므로 Equals와 같은 기준으로 무시한다.
+        SettingsData _before = settings.Current;
+        bool _bothFullscreen = (EWindowMode.Fullscreen == _before.windowMode)
+            && (EWindowMode.Fullscreen == _snapshot.windowMode);
+        bool _displayChanged = (_before.windowMode != _snapshot.windowMode)
+            || (false == _bothFullscreen && _before.resolution != _snapshot.resolution)
+            || (_before.fps != _snapshot.fps);
+
         settings.SetCameraShake(_snapshot.cameraShake);
         settings.SetCrosshairBrightness(_snapshot.crosshairBrightness);
         settings.SetHapticStrength(_snapshot.hapticStrength);
@@ -2441,7 +2453,18 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             settings.CyclePauseOnUnfocus(1);
         }
 
-        settings.ApplySettings();
+        // 옵션 창의 해상도·창모드 셀렉터는 실시간 적용이 아니라 값만 바꾼다. 즉 화면은 애초에
+        // 바뀐 적이 없으므로, 화면 항목을 건드리지 않았다면 되돌릴 것도 없다. 그런데도
+        // ApplySettings를 부르면 창을 열었다 닫기만 해도 Screen.SetResolution이 실행된다.
+        if (true == _displayChanged)
+        {
+            settings.ApplySettings();
+        }
+        else
+        {
+            settings.ApplyNonDisplaySettings();
+        }
+
         Application.runInBackground = (EOnOff.Off == _snapshot.pauseOnUnfocus);
     }
 
