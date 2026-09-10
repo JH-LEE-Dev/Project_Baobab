@@ -12,28 +12,20 @@ public enum TreeVisualState
 
 public class HUD_PopupNav_TreeProp : MonoBehaviour
 {
+    // 내부 의존성 (인스펙터 바인딩 및 렌더링 필드)
     [Header("UI References")]
-    [Tooltip("?�무 ???��?지")]
     [SerializeField] private Image leafImage;
-    [Tooltip("?�무 기둥 ?��?지")]
     [SerializeField] private Image trunkImage;
-    [Tooltip("?�드 ???��?지")]
     [SerializeField] private Image shieldLeafImage;
-    [Tooltip("?�드 기둥 ?��?지")]
     [SerializeField] private Image shieldTrunkImage;
-    [Tooltip("?�이?�이?????��?지")]
     [SerializeField] private Image highlightLeafImage;
-    [Tooltip("?�이?�이??기둥 ?��?지")]
     [SerializeField] private Image highlightTrunkImage;
 
     [Header("HDR Material Support")]
-    [Tooltip("?�드 ??기둥???�용???�텐?�티 �?(머테리얼 Float ?�로?�티???�이?�트 반영)")]
     [SerializeField] private float shieldHdrIntensity = 1.0f;
-    [Tooltip("?�이?�이????기둥???�용???�텐?�티 �?(머테리얼 Float ?�로?�티???�이?�트 반영)")]
     [SerializeField] private float highlightHdrIntensity = 1.0f;
 
     [Header("Hover Effect")]
-    [Tooltip("호버 시 재생할 파티클 이펙트")]
     [SerializeField] private ParticleSystem hoverEffectParticle;
 
     [Header("Appear Animation")]
@@ -80,7 +72,6 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
 
         CacheOriginalMaterialsAndColors();
         
-        // 그림???기?? ?해 EnvironmentSystem 찾기
         if (null == cachedPlayChildParticles) cachedPlayChildParticles = PlayChildParticles;
         isInitialized = true;
     }

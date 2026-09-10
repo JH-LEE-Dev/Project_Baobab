@@ -1,16 +1,14 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 using DG.Tweening;
 
 public class UIView_MenuPopup : UIView
 {
     public event Action<MapType, ForestType> DungeonSelectedEvent;
     public event Action TeleportUIClosedEvent;
-    public event Action PrevButtonClickedEvent;
-    public event Action HomeButtonClickedEvent;
-    public event Action CancelButtonClickedEvent;
 
     // popupNavMain.OnUnlockProductionStarted/Ended를 그대로 상위로 릴레이하는 이벤트.
     // (popupNavMain이 private 필드라 외부에서 직접 구독할 방법이 없어 최소한의 릴레이만 추가)
@@ -23,15 +21,9 @@ public class UIView_MenuPopup : UIView
 
     // 외부 의존성
     private IMapDataProvider mapDataProvider;
-    private IWeatherProvider weatherProvider;
-    private ITimeDataProvider timeDataProvider;
 
     // 내부 의존성
     [Header("Sub UI Prefabs")]
-    // [기존 3-Depth Vehicle UI 주석 처리]
-    // [SerializeField] private GameObject vehiclePrefab;
-    // private HUD_Vehicle vehicle;
-
     [Tooltip("신규 1-Depth 내비게이션 팝업 프리팹")]
     [SerializeField] private GameObject popupNavPrefab;
     private HUD_PopupNav_Main popupNavMain;
@@ -43,9 +35,10 @@ public class UIView_MenuPopup : UIView
     private bool hasPendingCloseEvent = false;
 
     [Header("Open Delay Settings")]
-    [SerializeField] private float vehicleOpenDelay = 0f;
+    [FormerlySerializedAs("vehicleOpenDelay")]
+    [SerializeField] private float popupNavOpenDelay = 0f;
 
-    private Coroutine vehicleOpenCoroutine;
+    private Coroutine popupNavOpenCoroutine;
     private readonly Dictionary<float, WaitForSeconds> waitCache = new Dictionary<float, WaitForSeconds>(4);
 
     private WaitForSeconds GetWaitForSeconds(float _seconds)
@@ -62,10 +55,6 @@ public class UIView_MenuPopup : UIView
     {
         base.Initialize(_ctx);
 
-        // [기존 시스템 주석 처리]
-        // if (null == vehicle && null != vehiclePrefab)
-        //    vehicle = Instantiate(vehiclePrefab, _ctx.screenSpaceCanvas.transform).GetComponent<HUD_Vehicle>();
-
         // [신규 1-Depth 내비게이션 동기화]
         if (null == popupNavMain && null != popupNavPrefab)
         {
@@ -77,22 +66,9 @@ public class UIView_MenuPopup : UIView
         }
     }
 
-    public void DependencyInjection(IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider)
+    public void DependencyInjection(IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider = null, ITimeDataProvider _timeDataProvider = null)
     {
-        weatherProvider = _weatherProvider;
-        timeDataProvider = _timeDataProvider;
         mapDataProvider = _mapDataProvider;
-
-        // [기존 시스템 주석 처리]
-        /*
-        if (null != vehicle)
-        {
-            vehicle.Initialize(mapDataProvider, HandlePrev, HandleHome, HandleCancelClicked, viewCtx.localizationManager);
-            vehicle.mapSelectedEvent -= HandleEnterDungeon;
-            vehicle.mapSelectedEvent += HandleEnterDungeon;
-            vehicle.Close(true);
-        }
-        */
 
         // [신규 1-Depth 내비게이션 동기화]
         if (null != popupNavMain)
@@ -123,21 +99,6 @@ public class UIView_MenuPopup : UIView
     private void HandleDungeonConfirmStarted()
     {
         DungeonConfirmStartedEvent?.Invoke();
-    }
-
-    private void HandlePrev()
-    {
-        PrevButtonClickedEvent?.Invoke();
-    }
-
-    private void HandleHome()
-    {
-        HomeButtonClickedEvent?.Invoke();
-    }
-
-    private void HandleCancelClicked()
-    {
-        CancelButtonClickedEvent?.Invoke();
     }
 
     private void HandlePopupNavClosed()
@@ -193,33 +154,18 @@ public class UIView_MenuPopup : UIView
             return;
         }
 
-        if (null != vehicleOpenCoroutine)
+        if (null != popupNavOpenCoroutine)
         {
-            StopCoroutine(vehicleOpenCoroutine);
-            vehicleOpenCoroutine = null;
+            StopCoroutine(popupNavOpenCoroutine);
+            popupNavOpenCoroutine = null;
         }
-
-        // [기존 시스템 주석 처리]
-        /*
-        if (null != vehicle)
-        {
-            if (vehicleOpenDelay > 0f)
-            {
-                vehicleOpenCoroutine = StartCoroutine(CoOpenVehicle());
-            }
-            else
-            {
-                vehicle.Open();
-            }
-        }
-        */
 
         // [신규 1-Depth 내비게이션 동기화]
         if (null != popupNavMain)
         {
-            if (0f < vehicleOpenDelay)
+            if (0f < popupNavOpenDelay)
             {
-                vehicleOpenCoroutine = StartCoroutine(CoOpenPopupNav());
+                popupNavOpenCoroutine = StartCoroutine(CoOpenPopupNav());
             }
             else
             {
@@ -230,21 +176,16 @@ public class UIView_MenuPopup : UIView
 
     private IEnumerator CoOpenPopupNav()
     {
-        yield return GetWaitForSeconds(vehicleOpenDelay);
+        yield return GetWaitForSeconds(popupNavOpenDelay);
         if (null != popupNavMain)
         {
             popupNavMain.Open();
         }
-        vehicleOpenCoroutine = null;
+        popupNavOpenCoroutine = null;
     }
 
     public override void Hide()
     {
-        // [기존 시스템 주석 처리]
-        // if (null != vehicle && vehicle.IsUnlockingProductionActive)
-        //     return;
-
-        // [신규 1-Depth 내비게이션 동기화]
         if (null != popupNavMain && true == popupNavMain.IsUnlockingProductionActive)
         {
             return;
@@ -261,24 +202,20 @@ public class UIView_MenuPopup : UIView
 
         Sound.ReleaseAudioDuck();
 
-        if (null != vehicleOpenCoroutine)
+        if (null != popupNavOpenCoroutine)
         {
-            StopCoroutine(vehicleOpenCoroutine);
-            vehicleOpenCoroutine = null;
+            StopCoroutine(popupNavOpenCoroutine);
+            popupNavOpenCoroutine = null;
         }
-
-        // [기존 시스템 주석 처리]
-        /*
-        if (null != vehicle)
-        {
-            vehicle.Close();
-            TeleportUIClosedEvent?.Invoke();
-        }
-        */
 
         // [신규 1-Depth 내비게이션 동기화]
         if (null != popupNavMain)
         {
+            if (true == popupNavMain.IsUnlockingProductionActive)
+            {
+                popupNavMain.AbortUnlockProduction();
+            }
+
             bool _isDungeonConfirmPending = popupNavMain.IsDungeonConfirmPending;
 
             popupNavMain.Close();
@@ -300,34 +237,31 @@ public class UIView_MenuPopup : UIView
         }
     }
 
+    public override void Refresh()
+    {
+        base.Refresh();
+    }
+
     public override void OnDestroy()
     {
-        base.OnDestroy();
-
-        if (null != vehicleOpenCoroutine)
+        if (null != popupNavOpenCoroutine)
         {
-            StopCoroutine(vehicleOpenCoroutine);
-            vehicleOpenCoroutine = null;
+            StopCoroutine(popupNavOpenCoroutine);
+            popupNavOpenCoroutine = null;
         }
 
         if (null != popupNavMain)
         {
+            if (true == popupNavMain.IsUnlockingProductionActive)
+            {
+                popupNavMain.AbortUnlockProduction();
+            }
+
             popupNavMain.OnUnlockProductionStarted -= HandleUnlockProductionStarted;
             popupNavMain.OnUnlockProductionEnded -= HandleUnlockProductionEnded;
             popupNavMain.DungeonConfirmStartedEvent -= HandleDungeonConfirmStarted;
         }
 
-        // [기존 시스템 주석 처리]
-        // if (null != vehicle)
-        //     vehicle.mapSelectedEvent -= HandleEnterDungeon;
-    }
-
-    public override void Refresh()
-    {
-        base.Refresh();
-
-        // [기존 시스템 주석 처리]
-        // if (null != vehicle)
-        //     vehicle.SyncUnlockStates();
+        base.OnDestroy();
     }
 }

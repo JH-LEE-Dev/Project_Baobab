@@ -105,7 +105,11 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     [Tooltip("호버 시 커서 모션 세팅")]
     [SerializeField] private CursorMotionSettings hoverCursorMotion = CursorMotionSettings.RowSubtle;
 
+    // 외부 의존성
     private ICursorBoxUI cursorBoxUI;
+    private HUD_PopupNav_Main mainController;
+
+    // 내부 의존성
     private RectTransform cachedRectTransform;
     private RectTransform CachedRectTransform
     {
@@ -119,6 +123,10 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         }
     }
 
+    private Canvas cachedCanvas;
+    private Camera cachedWorldCamera;
+    private Material instancedParticleMat;
+
     private Tween unlockTween;
     private Tween hoverTween;
     private Tween clearNewTween;
@@ -129,7 +137,6 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     private System.Collections.Generic.List<Transform> visualChildren = new System.Collections.Generic.List<Transform>();
     private float[] originalLocalX;
 
-    private HUD_PopupNav_Main mainController;
     private MapEnvironmentDataInfo myInfo;
     private int appearSoundIndex = -1;
     
@@ -156,27 +163,6 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     public bool IsUnlocked => (true == isInitialized && true == myInfo.isUnlocked);
     public bool IsSelected => isSelected;
     public bool IsPointerOver => isPointerOver;
-
-    private void Awake()
-    {
-        if (null == cachedRectTransform)
-        {
-            cachedRectTransform = GetComponent<RectTransform>();
-        }
-
-        CachedActivate = ActivateObject;
-        cachedPlayParticle = PlayNewIndicatorParticle;
-        cachedClearNewComplete = OnClearNewComplete;
-        cachedUnlockStep1 = OnUnlockStep1;
-        cachedUnlockStep2 = OnUnlockStep2;
-        cachedUnlockMotionComplete = OnUnlockMotionComplete;
-        if (null == cachedGetShadowColor) cachedGetShadowColor = GetShadowColor;
-        if (null == cachedSetShadowColor) cachedSetShadowColor = SetShadowColor;
-        if (null == cachedDisableUIEffectIfUnlocked) cachedDisableUIEffectIfUnlocked = DisableUIEffectIfUnlocked;
-        if (null == cachedUnlockPlayParticle) cachedUnlockPlayParticle = PlayUnlockParticle;
-
-        CacheVisualChildren();
-    }
 
     private void CacheVisualChildren()
     {
@@ -221,7 +207,19 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
         SetupVisualState(_isLocked, _info);
 
-        NavParticleHelper.ApplyInstancedColor(unlockDestructionParticle, unlockParticleColor, ref hasInstantiatedParticleMat);
+        if (null == cachedCanvas)
+        {
+            cachedCanvas = GetComponentInParent<Canvas>();
+        }
+        cachedWorldCamera = (null != cachedCanvas && RenderMode.ScreenSpaceOverlay != cachedCanvas.renderMode)
+            ? cachedCanvas.worldCamera
+            : null;
+
+        Material _mat = NavParticleHelper.ApplyInstancedColor(unlockDestructionParticle, unlockParticleColor, ref hasInstantiatedParticleMat);
+        if (null != _mat)
+        {
+            instancedParticleMat = _mat;
+        }
 
         SetSelectedState(false);
     }
@@ -545,12 +543,15 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             _mousePos = Input.mousePosition;
         }
 
-        Canvas _canvas = GetComponentInParent<Canvas>();
-        Camera _cam = (null != _canvas && RenderMode.ScreenSpaceOverlay != _canvas.renderMode)
-            ? _canvas.worldCamera
-            : null;
+        if (null == cachedCanvas)
+        {
+            cachedCanvas = GetComponentInParent<Canvas>();
+            cachedWorldCamera = (null != cachedCanvas && RenderMode.ScreenSpaceOverlay != cachedCanvas.renderMode)
+                ? cachedCanvas.worldCamera
+                : null;
+        }
 
-        return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, _cam);
+        return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, cachedWorldCamera);
     }
 
     private void TweenColors(Color _targetShadow, Color _targetBg, bool _isIdle = false)
@@ -936,9 +937,9 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         return Color.clear;
     }
     
-    private void SetShadowColor(Color c) 
+    private void SetShadowColor(Color _c) 
     { 
-        if (null != uiEffect) uiEffect.shadowColor = c; 
+        if (null != uiEffect) uiEffect.shadowColor = _c; 
     }
 
     private void DisableUIEffectIfUnlocked() 
@@ -949,6 +950,26 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         }
     }
 
+    private void Awake()
+    {
+        if (null == cachedRectTransform)
+        {
+            cachedRectTransform = GetComponent<RectTransform>();
+        }
+
+        CachedActivate = ActivateObject;
+        cachedPlayParticle = PlayNewIndicatorParticle;
+        cachedClearNewComplete = OnClearNewComplete;
+        cachedUnlockStep1 = OnUnlockStep1;
+        cachedUnlockStep2 = OnUnlockStep2;
+        cachedUnlockMotionComplete = OnUnlockMotionComplete;
+        if (null == cachedGetShadowColor) cachedGetShadowColor = GetShadowColor;
+        if (null == cachedSetShadowColor) cachedSetShadowColor = SetShadowColor;
+        if (null == cachedDisableUIEffectIfUnlocked) cachedDisableUIEffectIfUnlocked = DisableUIEffectIfUnlocked;
+        if (null == cachedUnlockPlayParticle) cachedUnlockPlayParticle = PlayUnlockParticle;
+
+        CacheVisualChildren();
+    }
 
     private void OnDestroy()
     {
@@ -957,5 +978,11 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         if (null != unlockTween && true == unlockTween.IsActive()) { unlockTween.Kill(); unlockTween = null; }
         if (null != selectTween && true == selectTween.IsActive()) { selectTween.Kill(); selectTween = null; }
         if (null != clearNewTween && true == clearNewTween.IsActive()) { clearNewTween.Kill(); clearNewTween = null; }
+
+        if (null != instancedParticleMat)
+        {
+            Destroy(instancedParticleMat);
+            instancedParticleMat = null;
+        }
     }
 }

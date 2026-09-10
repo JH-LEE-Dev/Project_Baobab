@@ -17,7 +17,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
     [Header("Demo Notice Group")]
     [Tooltip("데모 버전 제한 시 노출되는 안내 UI 컴포넌트")]
     [SerializeField] private HUD_PopupNav_DemoNotice demoNotice;
-    // 외부 의존성
+    // 내부 의존성 (인스펙터 바인딩 및 애니메이션 필드)
     [Header("Nav Image Animation")]
     [Tooltip("내비게이션 이미지 전체를 묶는 컨테이너 (아래에서 위로 등장)")]
     [SerializeField] private RectTransform navImageContainer;
@@ -92,7 +92,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
     [Header("Debug")]
     [Tooltip("체크 시 내비게이션을 열 때 모든 지역 및 서브지역을 강제로 해금 처리합니다.")]
     [SerializeField] private bool debugForceUnlockAll = false;
-    // 내부 의존성
+    // 외부 의존성 (외부 주입 인터페이스 및 매니저)
     private IMapDataProvider mapDataProvider;
     private LocalizationManager localizationManager;
     private ICursorBoxUI cursorBoxUI;
@@ -210,30 +210,39 @@ public class HUD_PopupNav_Main : MonoBehaviour
         Sound.PlayUI(SoundID.NaviUnLockStart);
     }
 
-    private void EndUnlockProduction()
+    public void AbortUnlockProduction()
     {
         if (true == isUnlockingProductionActive)
         {
             isUnlockingProductionActive = false;
             isRegionUnlockActive = false;
             isPendingSubRegionUnlock = false;
-            isInputBlocked = false;
             OnUnlockProductionEnded?.Invoke();
-            if (null != regionGroup)
-            {
-                regionGroup.EvaluateAllHoverStates();
-            }
 
-            if (null != subRegionGroup)
+            if (false == isClosing && true == gameObject.activeInHierarchy)
             {
-                subRegionGroup.EvaluateAllHoverStates();
-            }
+                isInputBlocked = false;
+                if (null != regionGroup)
+                {
+                    regionGroup.EvaluateAllHoverStates();
+                }
 
-            if (null != inputManager && true == inputManager.IsGamepadMode)
-            {
-                SetupInitialGamepadFocus();
+                if (null != subRegionGroup)
+                {
+                    subRegionGroup.EvaluateAllHoverStates();
+                }
+
+                if (null != inputManager && true == inputManager.IsGamepadMode)
+                {
+                    SetupInitialGamepadFocus();
+                }
             }
         }
+    }
+
+    private void EndUnlockProduction()
+    {
+        AbortUnlockProduction();
     }
 
     // 퍼블릭 초기화 및 제어 메서드
@@ -315,7 +324,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
     public class SimpleClickHandler : MonoBehaviour, IPointerClickHandler
     {
         public UnityEngine.Events.UnityAction onClick;
-        public void OnPointerClick(PointerEventData eventData) { onClick?.Invoke(); }
+        public void OnPointerClick(PointerEventData _eventData) { onClick?.Invoke(); }
     }
 
     private void AddClickListener(GameObject _go, UnityEngine.Events.UnityAction _action)
@@ -354,6 +363,16 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
     private void ResetOpenState()
     {
+        if (true == isUnlockingProductionActive)
+        {
+            AbortUnlockProduction();
+        }
+        else
+        {
+            isRegionUnlockActive = false;
+            isPendingSubRegionUnlock = false;
+        }
+
         if (null != demoNotice)
         {
             demoNotice.ResetNotice();
@@ -364,9 +383,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
             cursorBoxUI.HideImmediately();
         }
 
-        isUnlockingProductionActive = false;
-        isRegionUnlockActive = false;
-        isPendingSubRegionUnlock = false;
         hasPendingDungeonConfirm = false;
         hasRegionUnlockProductionPlayed = false;
         highestRegionBeforeUnlock = MapType.None;
@@ -686,11 +702,16 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
     private void CloseMainPopup(bool _isInstant = false, bool _playCloseSound = true)
     {
+        isClosing = true;
+        isInputBlocked = true;
+        if (true == isUnlockingProductionActive)
+        {
+            AbortUnlockProduction();
+        }
+
         SaveLastHoverState();
         MarkCurrentRegionAsRead();
         MarkAllUnlockedAsRead();
-        isClosing = true;
-        isInputBlocked = true;
         hasRegionUnlockProductionPlayed = false;
         highestRegionBeforeUnlock = MapType.None;
 
@@ -799,16 +820,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
             return;
         }
 
-        if (true == IsInputBlocked)
-        {
-            return;
-        }
-
-        Close();
-    }
-
-    private void OnCloseButtonClicked()
-    {
         if (true == IsInputBlocked)
         {
             return;
@@ -1268,7 +1279,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
             return;
         }
 
-        if (false == _force && true == IsInputBlocked && false == isUnlockingProductionActive)
+        if (false == _force && true == IsInputBlocked)
         {
             return;
         }
@@ -1760,63 +1771,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (null != subRegionGroup)
         {
             subRegionGroup.StopAllHoverEffects();
-        }
-    }
-
-    private void Update()
-    {
-        if (false == gameObject.activeInHierarchy || true == isClosing) return;
-        if (null == inputManager || false == inputManager.IsGamepadMode) return;
-
-        // 1. 방향 입력 (LeftStick & D-Pad & Keyboard)
-        Vector2 _dir = Vector2.zero;
-        if (null != Gamepad.current)
-        {
-            Vector2 _stick = Gamepad.current.leftStick.ReadValue();
-            Vector2 _dpad = Gamepad.current.dpad.ReadValue();
-            if (Mathf.Abs(_stick.x) >= 0.5f || Mathf.Abs(_stick.y) >= 0.5f)
-            {
-                _dir = _stick;
-            }
-            else if (Mathf.Abs(_dpad.x) >= 0.5f || Mathf.Abs(_dpad.y) >= 0.5f)
-            {
-                _dir = _dpad;
-            }
-        }
-
-        if (Vector2.zero == _dir && null != Keyboard.current)
-        {
-            if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) _dir.y = 1f;
-            else if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) _dir.y = -1f;
-            if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) _dir.x = -1f;
-            else if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) _dir.x = 1f;
-        }
-
-        ProcessDirectionalInput(_dir);
-        // 2. 선택/확정 버튼: 리바인딩된 상호작용 키(Interaction Action) 또는 UI/Submit 키 검사
-        bool _submitPressed = false;
-        if (null != inputManager && true == inputManager.WasInteractionPressedThisFrame)
-        {
-            _submitPressed = true;
-        }
-        else if (null != Gamepad.current && Gamepad.current.buttonSouth.wasPressedThisFrame)
-        {
-            _submitPressed = true;
-        }
-        else if (null != Keyboard.current && (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame))
-        {
-            _submitPressed = true;
-        }
-
-        if (true == _submitPressed)
-        {
-            OnInteractionKeyPressed();
-        }
-
-        // 3. 취소/뒤로가기 버튼 (B / East)
-        if (null != Gamepad.current && Gamepad.current.buttonEast.wasPressedThisFrame)
-        {
-            OnUICancelPressed();
         }
     }
 
@@ -2336,8 +2290,78 @@ public class HUD_PopupNav_Main : MonoBehaviour
         runtimeLastSelectedMapType = _targetMap;
     }
 
+    private void Update()
+    {
+        if (false == gameObject.activeInHierarchy || true == isClosing) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
+
+        // 1. 방향 입력 (LeftStick & D-Pad & Keyboard)
+        Vector2 _dir = Vector2.zero;
+        if (null != Gamepad.current)
+        {
+            Vector2 _stick = Gamepad.current.leftStick.ReadValue();
+            Vector2 _dpad = Gamepad.current.dpad.ReadValue();
+            if (Mathf.Abs(_stick.x) >= 0.5f || Mathf.Abs(_stick.y) >= 0.5f)
+            {
+                _dir = _stick;
+            }
+            else if (Mathf.Abs(_dpad.x) >= 0.5f || Mathf.Abs(_dpad.y) >= 0.5f)
+            {
+                _dir = _dpad;
+            }
+        }
+
+        if (Vector2.zero == _dir && null != Keyboard.current)
+        {
+            if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) _dir.y = 1f;
+            else if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) _dir.y = -1f;
+            if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) _dir.x = -1f;
+            else if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) _dir.x = 1f;
+        }
+
+        ProcessDirectionalInput(_dir);
+        // 2. 선택/확정 버튼: 리바인딩된 상호작용 키(Interaction Action) 또는 UI/Submit 키 검사
+        bool _submitPressed = false;
+        if (null != inputManager && true == inputManager.WasInteractionPressedThisFrame)
+        {
+            _submitPressed = true;
+        }
+        else if (null != Gamepad.current && Gamepad.current.buttonSouth.wasPressedThisFrame)
+        {
+            _submitPressed = true;
+        }
+        else if (null != Keyboard.current && (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame))
+        {
+            _submitPressed = true;
+        }
+
+        if (true == _submitPressed)
+        {
+            OnInteractionKeyPressed();
+        }
+
+        // 3. 취소/뒤로가기 버튼 (B / East)
+        if (null != Gamepad.current && Gamepad.current.buttonEast.wasPressedThisFrame)
+        {
+            OnUICancelPressed();
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (true == isUnlockingProductionActive)
+        {
+            AbortUnlockProduction();
+        }
+    }
+
     private void OnDestroy()
     {
+        if (true == isUnlockingProductionActive)
+        {
+            AbortUnlockProduction();
+        }
+
         if (null != appearTween && appearTween.IsActive()) { appearTween.Kill(); appearTween = null; }
         if (null != disappearTween && disappearTween.IsActive()) { disappearTween.Kill(); disappearTween = null; }
         if (null != delayedCallTween && delayedCallTween.IsActive()) { delayedCallTween.Kill(); delayedCallTween = null; }

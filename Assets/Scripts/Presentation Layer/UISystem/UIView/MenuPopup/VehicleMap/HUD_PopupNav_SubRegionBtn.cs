@@ -125,7 +125,16 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         hideEase = Ease.OutQuad
     };
 
+    // 외부 의존성
     private ICursorBoxUI cursorBoxUI;
+    private HUD_PopupNav_Main mainController;
+
+    // 내부 의존성
+    private RectTransform cachedRectTransform;
+    private Canvas cachedCanvas;
+    private Camera cachedWorldCamera;
+    private Material instancedParticleMat;
+
     private Tween appearTween;
     private Tween disappearTween;
     private Tween unlockTween;
@@ -134,7 +143,6 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     private Tween clearNewTween;
     private Tween lockIconTween;
     
-    private RectTransform cachedRectTransform;
     private Image lockIconImage;
 
     public RectTransform CachedRectTransform
@@ -151,7 +159,6 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     // 비주얼 연출을 적용할 자식 트랜스폼 목록 (clickImage 제외)
     private System.Collections.Generic.List<Transform> visualChildren = new System.Collections.Generic.List<Transform>();
 
-    private HUD_PopupNav_Main mainController;
     private ForestEnvironmentInfo myInfo;
     private MapType parentMapType;
     private int appearSoundIndex = -1;
@@ -224,7 +231,19 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         CollectVisualChildren();
         CacheDelegates();
 
-        NavParticleHelper.ApplyInstancedColor(unlockDestructionParticle, unlockParticleColor, ref hasInstantiatedParticleMat);
+        if (null == cachedCanvas)
+        {
+            cachedCanvas = GetComponentInParent<Canvas>();
+        }
+        cachedWorldCamera = (null != cachedCanvas && RenderMode.ScreenSpaceOverlay != cachedCanvas.renderMode)
+            ? cachedCanvas.worldCamera
+            : null;
+
+        Material _mat = NavParticleHelper.ApplyInstancedColor(unlockDestructionParticle, unlockParticleColor, ref hasInstantiatedParticleMat);
+        if (null != _mat)
+        {
+            instancedParticleMat = _mat;
+        }
 
         SetSelectedState(false);
     }
@@ -629,12 +648,15 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             _mousePos = Input.mousePosition;
         }
 
-        Canvas _canvas = GetComponentInParent<Canvas>();
-        Camera _cam = (null != _canvas && RenderMode.ScreenSpaceOverlay != _canvas.renderMode)
-            ? _canvas.worldCamera
-            : null;
+        if (null == cachedCanvas)
+        {
+            cachedCanvas = GetComponentInParent<Canvas>();
+            cachedWorldCamera = (null != cachedCanvas && RenderMode.ScreenSpaceOverlay != cachedCanvas.renderMode)
+                ? cachedCanvas.worldCamera
+                : null;
+        }
 
-        return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, _cam);
+        return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, cachedWorldCamera);
     }
 
     public void StopAllTreePropHoverEffects()
@@ -708,18 +730,6 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         }
         
         gameObject.SetActive(false);
-    }
-
-    public void PlayAppearMotion()
-    {
-        if (null != appearTween && true == appearTween.IsActive())
-        {
-            appearTween.Kill();
-            appearTween = null;
-        }
-
-        // [TODO] 추후 DOTween 연출 작성
-        // appearTween = ...
     }
 
     public void PlayDisappearMotion(Action _onComplete)
@@ -973,5 +983,11 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         if (null != hoverTween && true == hoverTween.IsActive()) { hoverTween.Kill(); hoverTween = null; }
         if (null != clearNewTween && true == clearNewTween.IsActive()) { clearNewTween.Kill(); clearNewTween = null; }
         if (null != lockIconTween && true == lockIconTween.IsActive()) { lockIconTween.Kill(); lockIconTween = null; }
+
+        if (null != instancedParticleMat)
+        {
+            Destroy(instancedParticleMat);
+            instancedParticleMat = null;
+        }
     }
 }

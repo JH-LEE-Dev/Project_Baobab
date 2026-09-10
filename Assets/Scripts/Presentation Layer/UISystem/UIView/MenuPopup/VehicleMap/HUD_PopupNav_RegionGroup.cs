@@ -34,10 +34,14 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
     [Tooltip("쫙 펼쳐지는 연출 이즈(Ease)")]
     [SerializeField] private Ease appearEase = Ease.OutBack;
 
+    // 외부 의존성
     private HUD_PopupNav_Main mainController;
     private LocalizationManager localizationManager;
     private ICursorBoxUI cursorBoxUI;
+
+    // 내부 의존성
     private readonly List<HUD_PopupNav_RegionBtn> regionButtons = new List<HUD_PopupNav_RegionBtn>(8);
+    private readonly List<MapEnvironmentDataInfo> validRegions = new List<MapEnvironmentDataInfo>(4);
 
     private Sequence appearSeq;
 
@@ -86,20 +90,20 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
             regionButtons[i].gameObject.SetActive(false);
         }
 
-        // 1. 유효한 대지역 목록 추출 (Town 제외)
-        List<MapEnvironmentDataInfo> _validRegions = new List<MapEnvironmentDataInfo>(4);
+        // 1. 유효한 대지역 목록 추출 (Town 제외) - Zero GC
+        validRegions.Clear();
         for (int i = 0; i < _db.mapDatas.Count; i++)
         {
             if (MapType.Town == _db.mapDatas[i].mapType)
             {
                 continue;
             }
-            _validRegions.Add(_db.mapDatas[i]);
+            validRegions.Add(_db.mapDatas[i]);
         }
 
         // 3. 버튼 생성 및 노출
         int _btnIndex = 0;
-        for (int i = 0; i < _validRegions.Count; i++)
+        for (int i = 0; i < validRegions.Count; i++)
         {
 
             if (regionButtons.Count > _btnIndex)
@@ -110,14 +114,14 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
                 Sprite _bgSprite = null;
                 for (int j = 0; j < regionBackgrounds.Count; j++)
                 {
-                    if (_validRegions[i].mapType == regionBackgrounds[j].mapType)
+                    if (validRegions[i].mapType == regionBackgrounds[j].mapType)
                     {
                         _bgSprite = regionBackgrounds[j].backgroundImage;
                         break;
                     }
                 }
 
-                _btn.Initialize(mainController, _validRegions[i], localizationManager, cursorBoxUI, _bgSprite, _btnIndex);
+                _btn.Initialize(mainController, validRegions[i], localizationManager, cursorBoxUI, _bgSprite, _btnIndex);
                 
                 // 연출을 위해 임시로 꺼두거나 초기 스케일 세팅
                 _btn.gameObject.SetActive(false);
