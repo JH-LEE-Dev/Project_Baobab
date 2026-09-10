@@ -1,3 +1,8 @@
+// 이 파일은 BenchmarkHarness 전용입니다. 하네스와 컴파일 조건을 반드시 같이 가야 합니다
+// (조건이 갈리면 하네스 없는 빌드에 쓰이지 않는 클래스만 남습니다).
+// 조건을 바꾸는 이유와 빌드에 넣는 방법은 BenchmarkHarness.cs 맨 위 주석을 보십시오.
+#if UNITY_EDITOR || BAOBAB_BENCHMARK
+
 using System.Text;
 using UnityEngine;
 
@@ -145,3 +150,5 @@ public static class SystemSpecReport
         return $"{_level / 10}.{_level % 10} ({_level})";
     }
 }
+
+#endif
