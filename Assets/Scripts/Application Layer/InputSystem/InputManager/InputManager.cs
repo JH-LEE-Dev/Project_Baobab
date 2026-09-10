@@ -385,6 +385,37 @@ public class InputManager : MonoBehaviour
         inputReader?.PauseUICancelKey(_boolean);
     }
 
+    // UI 전용 패드 확인/취소 (A / B)
+    //
+    // UI 작업자용 통로다. 패드만 읽고(키보드·마우스는 섞이지 않는다) 키 설정(리바인딩)에도
+    // 영향받지 않는다. "확인 = A, 취소 = B"는 콘솔 관례라서 유저가 바꿀 값이 아니기 때문이다.
+    // 자세한 사용법과 주의사항은 InputReader의 각 프로퍼티 주석을 보라.
+
+    /// <summary>
+    /// UI 확인(패드 A/×)이 이번 프레임에 눌렸는지입니다. Update에서 폴링해서 쓰세요.
+    /// <code>
+    /// if (true == viewCtx.inputManager.WasGamepadUIConfirmPressedThisFrame) { Confirm(); }
+    /// </code>
+    /// 잠금(PauseUICancelKey 등)을 거치지 않는 원시 입력이고, 취소는 UICancelEvent와 같은
+    /// 물리 버튼(B)이므로 한 화면에서 두 경로를 같이 쓰지 마세요.
+    /// </summary>
+    public bool WasGamepadUIConfirmPressedThisFrame => null != inputReader && inputReader.WasGamepadUIConfirmPressedThisFrame;
+
+    /// <summary>UI 확인(패드 A/×)이 이번 프레임에 떼어졌는지입니다.</summary>
+    public bool WasGamepadUIConfirmReleasedThisFrame => null != inputReader && inputReader.WasGamepadUIConfirmReleasedThisFrame;
+
+    /// <summary>UI 확인(패드 A/×)을 지금 누르고 있는지입니다. (꾹 눌러 확인 등)</summary>
+    public bool IsGamepadUIConfirmHeld => null != inputReader && inputReader.IsGamepadUIConfirmHeld;
+
+    /// <summary>UI 취소(패드 B/○)가 이번 프레임에 눌렸는지입니다.</summary>
+    public bool WasGamepadUICancelPressedThisFrame => null != inputReader && inputReader.WasGamepadUICancelPressedThisFrame;
+
+    /// <summary>UI 취소(패드 B/○)가 이번 프레임에 떼어졌는지입니다.</summary>
+    public bool WasGamepadUICancelReleasedThisFrame => null != inputReader && inputReader.WasGamepadUICancelReleasedThisFrame;
+
+    /// <summary>UI 취소(패드 B/○)를 지금 누르고 있는지입니다.</summary>
+    public bool IsGamepadUICancelHeld => null != inputReader && inputReader.IsGamepadUICancelHeld;
+
     public void PauseInventoryKey(bool _boolean)
     {
         inputReader.PauseInventoryKey(_boolean);

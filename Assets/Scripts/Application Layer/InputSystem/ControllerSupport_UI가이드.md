@@ -302,6 +302,46 @@ viewCtx.inputManager.inputReader.InputModeChangedEvent += OnModeChanged;
 
 키보드 ESC는 **기존대로** `ESCButtonPressedEvent`로 옵니다. UI 맵의 Cancel에는 일부러 ESC를 넣지 않았습니다 — 넣으면 같은 키가 두 경로로 동시에 처리됩니다.
 
+#### 패드 확인/취소 버튼 직접 읽기 (A / B)
+
+이벤트 구독 없이 **"이번 프레임에 A/B가 눌렸는지"** 만 보고 싶을 때 쓰는 패드 전용 통로입니다.
+`inputManager`에서 바로 읽습니다. (`inputReader`까지 들어가지 않아도 됩니다)
+
+| 멤버 | 버튼 | 설명 |
+|---|---|---|
+| `WasGamepadUIConfirmPressedThisFrame` | A/× (`buttonSouth`) | 확인이 이번 프레임에 눌렸는지 |
+| `WasGamepadUIConfirmReleasedThisFrame` | A/× | 확인이 이번 프레임에 떼어졌는지 |
+| `IsGamepadUIConfirmHeld` | A/× | 확인을 지금 누르고 있는지 |
+| `WasGamepadUICancelPressedThisFrame` | B/○ (`buttonEast`) | 취소가 이번 프레임에 눌렸는지 |
+| `WasGamepadUICancelReleasedThisFrame` | B/○ | 취소가 이번 프레임에 떼어졌는지 |
+| `IsGamepadUICancelHeld` | B/○ | 취소를 지금 누르고 있는지 |
+
+```csharp
+private void Update()
+{
+    if (true == viewCtx.inputManager.WasGamepadUIConfirmPressedThisFrame)
+    {
+        Confirm();
+    }
+    else if (true == viewCtx.inputManager.WasGamepadUICancelPressedThisFrame)
+    {
+        Close();
+    }
+}
+```
+
+- **패드만 읽습니다.** 키보드·마우스는 전혀 섞이지 않으므로, 키보드 쪽 확인/취소는 각 화면이 기존대로
+  처리해야 합니다. (Enter는 EventSystem의 `UI.Submit`, ESC는 `ESCButtonPressedEvent`)
+- **키 설정(리바인딩)으로 바뀌지 않습니다.** "UI의 확인은 A, 취소는 B"는 콘솔 관례라서 유저가 바꿀
+  대상이 아닙니다. 게임플레이의 상호작용 키를 A로 바꾸든 말든 이 값은 그대로입니다.
+- 어디서 읽어도 **그 프레임의 값**입니다. (장치를 매번 직접 읽으므로 스크립트 실행 순서와 무관합니다)
+- **잠금을 거치지 않는 원시 입력입니다.** `PauseUICancelKey` / `SetESCKeyLock`과 무관하므로,
+  연출 중 재입력을 막아야 하면 화면 쪽에서 자체 플래그로 걸러주세요.
+- 취소는 `UICancelEvent`와 **같은 물리 버튼(B)** 입니다. 한 화면에서 둘을 같이 쓰면 취소가 두 번
+  처리되므로 화면마다 한쪽만 고르세요.
+- 키 설정 화면에서 **입력 대기 중(리바인딩 중)** 에는 두 값 모두 `false`로 죽습니다. 그 구간의 A는
+  "새로 할당할 버튼", B는 "리바인딩 취소"라서 UI까지 같이 반응하면 안 되기 때문입니다.
+
 ### EventSystem
 
 씬 5개(Town / Dungeon / MainMenu / AbilityTool / [Test]Motion)의 `InputSystemUIInputModule`이 **패키지의 `DefaultInputActions` → 프로젝트의 `InputActionSystem`** 으로 교체되었습니다. 이제 UI 네비게이션 바인딩을 프로젝트에서 직접 관리합니다.

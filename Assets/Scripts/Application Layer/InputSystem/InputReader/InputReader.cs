@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 public class InputReader
 {
@@ -442,6 +443,58 @@ public class InputReader
     {
         UITabShiftEvent?.Invoke(1);
     }
+
+    // UI 전용 패드 확인/취소 (A / B)
+
+    /// <summary>
+    /// UI가 "확인"으로 쓰는 패드 버튼입니다. (A/×, <c>buttonSouth</c>)
+    ///
+    /// 읽는 쪽은 아래 6개 프로퍼티를 쓰고, 이 게터는 그 구현을 한곳에 모아두기 위한 것입니다.
+    ///
+    /// 리바인딩 대기 중에는 일부러 null을 돌려줍니다. 그 구간의 A는 "새로 할당할 버튼"이고
+    /// B는 "리바인딩 취소"(UpdateGamepadRebindCancel)라서, UI까지 같이 반응하면 키를 바꾸는
+    /// 순간 뒤에 있는 화면이 함께 닫히거나 확인이 눌립니다.
+    /// </summary>
+    private ButtonControl GamepadUIConfirmButton => (true == IsRebinding) ? null : Gamepad.current?.buttonSouth;
+
+    /// <summary>UI가 "취소"로 쓰는 패드 버튼입니다. (B/○, <c>buttonEast</c>) 자세한 설명은 GamepadUIConfirmButton 참고.</summary>
+    private ButtonControl GamepadUICancelButton => (true == IsRebinding) ? null : Gamepad.current?.buttonEast;
+
+    /// <summary>
+    /// UI 확인(패드 A/×)이 이번 프레임에 눌렸는지입니다.
+    ///
+    /// 패드 전용 통로입니다. 키보드·마우스 입력은 전혀 섞이지 않고, 키 설정(리바인딩)으로 바뀌지도
+    /// 않습니다 - "UI의 확인은 A, 취소는 B"는 콘솔 관례라서 유저가 바꿀 대상이 아닙니다.
+    /// 키보드에서의 확인/취소는 각 화면이 기존대로 처리하세요. (Enter는 EventSystem의 UI.Submit,
+    /// ESC는 ESCButtonPressedEvent)
+    ///
+    /// 매번 장치를 직접 읽으므로 스크립트 실행 순서와 무관하게 언제 읽어도 그 프레임의 값입니다.
+    /// Update에서 폴링해서 쓰세요.
+    /// <code>
+    /// if (true == viewCtx.inputManager.WasGamepadUIConfirmPressedThisFrame) { Confirm(); }
+    /// </code>
+    ///
+    /// 주의 1: 잠금(PauseUICancelKey / SetESCKeyLock)을 거치지 않는 원시 입력입니다. 연출 중
+    /// 재입력을 막아야 하면 화면 쪽에서 자체 플래그로 걸러주세요.
+    /// 주의 2: 취소는 UICancelEvent와 같은 물리 버튼(B)입니다. 한 화면에서 둘을 같이 쓰면 취소가
+    /// 두 번 처리되므로 화면마다 한쪽만 고르세요.
+    /// </summary>
+    public bool WasGamepadUIConfirmPressedThisFrame => true == GamepadUIConfirmButton?.wasPressedThisFrame;
+
+    /// <summary>UI 확인(패드 A/×)이 이번 프레임에 떼어졌는지입니다. 누르고 있는 동안 차오르는 게이지 등에 씁니다.</summary>
+    public bool WasGamepadUIConfirmReleasedThisFrame => true == GamepadUIConfirmButton?.wasReleasedThisFrame;
+
+    /// <summary>UI 확인(패드 A/×)을 지금 누르고 있는지입니다. (꾹 눌러 확인, 연속 증감 등)</summary>
+    public bool IsGamepadUIConfirmHeld => true == GamepadUIConfirmButton?.isPressed;
+
+    /// <summary>UI 취소(패드 B/○)가 이번 프레임에 눌렸는지입니다. 나머지 설명은 WasGamepadUIConfirmPressedThisFrame 참고.</summary>
+    public bool WasGamepadUICancelPressedThisFrame => true == GamepadUICancelButton?.wasPressedThisFrame;
+
+    /// <summary>UI 취소(패드 B/○)가 이번 프레임에 떼어졌는지입니다.</summary>
+    public bool WasGamepadUICancelReleasedThisFrame => true == GamepadUICancelButton?.wasReleasedThisFrame;
+
+    /// <summary>UI 취소(패드 B/○)를 지금 누르고 있는지입니다. (꾹 눌러 되돌리기 등)</summary>
+    public bool IsGamepadUICancelHeld => true == GamepadUICancelButton?.isPressed;
 
     /// <summary>
     /// 휠 한 칸에 해당하는 원시 델타 크기입니다.

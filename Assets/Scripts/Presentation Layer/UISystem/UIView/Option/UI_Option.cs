@@ -1968,19 +1968,23 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     ///
     /// 고를 수 있는 값이 동의/거부 둘뿐이라 좌우 방향은 결과가 같습니다. 그래서 _delta는 쓰지 않습니다.
     ///
-    /// NotAsked를 Declined와 같이 취급하는 것이 중요합니다. 표기가 이미 "동의 안 함"으로 같으므로
-    /// (GetDataConsentText 참고) 여기서 NotAsked를 Declined로 보내면 화살표를 눌러도 글자가 그대로인데
-    /// '적용' 버튼만 켜져, 유저 눈에는 아무 일도 없이 버튼이 활성화된 것처럼 보입니다.
+    /// 아직 묻지 않은 상태(NotAsked)에서 첫 입력은 반드시 거부 쪽으로 갑니다.
+    /// 무심코 누른 것이 동의가 되면 안 되기 때문이며, SettingsManager.CycleDataConsent에
+    /// 적힌 것과 같은 규칙입니다. 두 곳의 규칙이 갈리지 않도록 여기서도 그대로 지킵니다.
     ///
-    /// 무심코 누른 것이 동의가 되지는 않습니다. 여기서는 대기값만 바꾸고, 실제 기록은 유저가
-    /// '적용'을 눌러야 일어납니다. (SettingsManager.CycleDataConsent와 규칙이 다른 이유입니다.
-    ///  그쪽은 즉시 반영되는 경로라 첫 입력이 동의 쪽으로 가면 안 됩니다)
+    /// 그 결과 NotAsked에서 화살표를 처음 누르면 표기("동의 안 함")는 그대로인데 '적용'만 켜집니다.
+    /// 알고 두는 것입니다. 옵션 창에 도달할 무렵이면 최초 팝업에서 이미 동의/거부가 정해져 있어
+    /// (UIView_MainMenu가 NotAsked일 때 팝업을 강제합니다) 정상 경로에서는 나오지 않는 상태이고,
+    /// 이걸 없애자고 첫 입력 방향을 동의 쪽으로 돌리는 것은 기본값을 바꾸는 일이라 하지 않습니다.
     /// </summary>
     private void ApplyDataConsentCycle(int _delta)
     {
-        pendingDataConsent = (EDataConsent.Granted == pendingDataConsent)
+        EDataConsent _next = (EDataConsent.Granted == pendingDataConsent)
             ? EDataConsent.Declined
             : EDataConsent.Granted;
+
+        if (EDataConsent.NotAsked == pendingDataConsent) _next = EDataConsent.Declined;
+        pendingDataConsent = _next;
 
         if (null != dataConsentSelector)
         {
