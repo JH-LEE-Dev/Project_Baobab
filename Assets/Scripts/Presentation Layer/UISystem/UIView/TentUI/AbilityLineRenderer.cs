@@ -391,8 +391,8 @@ public sealed class AbilityLineRenderer
         float remainingDistance = Mathf.Max(0f, primaryDistance - coveredDistance);
         float leadingOffset = remainingDistance * 0.5f;
         Vector2 segmentAxisStep = new Vector2(stepX * _segmentSize, stepY * _segmentSize);
-        Vector2 firstSegmentCenter = SnapToPixel(
-            _startCenter + new Vector2(stepX, stepY) * (leadingOffset + _segmentSize * 0.5f));
+        Vector2 firstSegmentCenter =
+            _startCenter + new Vector2(stepX, stepY) * (leadingOffset + _segmentSize * 0.5f);
         Vector2 nativeSize = GetSpriteNativeSize(sprite);
 
         int revealSegmentCount = Mathf.CeilToInt(segmentCount * Mathf.Clamp01(_progress));
@@ -427,13 +427,13 @@ public sealed class AbilityLineRenderer
         float _shineProgressEnd)
     {
         _progress = Mathf.Clamp01(_progress);
-        Vector2 snappedStart = SnapToPixel(_startCenter);
-        Vector2 snappedEnd = SnapToPixel(_endCenter);
+        Vector2 start = _startCenter;
+        Vector2 end = _endCenter;
 
         if (_hasCornerAnchor)
         {
-            Vector2 pivotCenter = _isStartCornerAnchor ? snappedStart : snappedEnd;
-            Vector2 farCenter = _isStartCornerAnchor ? snappedEnd : snappedStart;
+            Vector2 pivotCenter = _isStartCornerAnchor ? start : end;
+            Vector2 farCenter = _isStartCornerAnchor ? end : start;
             Vector2 cornerAxisDirection = (farCenter - pivotCenter).normalized;
             float baseLength = _isHorizontal
                 ? Mathf.Abs(farCenter.x - pivotCenter.x)
@@ -441,15 +441,14 @@ public sealed class AbilityLineRenderer
             if (baseLength <= 0.001f)
                 return;
 
-            float length = Mathf.Round((baseLength + StraightLineOverlap) * _progress);
+            float length = (baseLength + StraightLineOverlap) * _progress;
             if (length <= 0f)
                 return;
 
             bool anchorAtStart = _isHorizontal
                 ? farCenter.x >= pivotCenter.x
                 : farCenter.y >= pivotCenter.y;
-            Vector2 anchoredPosition = SnapToPixel(
-                pivotCenter - cornerAxisDirection * StraightLineOverlap);
+            Vector2 anchoredPosition = pivotCenter - cornerAxisDirection * StraightLineOverlap;
             AddAnchoredStraightQuad(
                 _spriteType,
                 _sprite,
@@ -459,29 +458,28 @@ public sealed class AbilityLineRenderer
                 anchorAtStart,
                 _color,
                 _shineColorIndex,
-                snappedStart,
-                snappedEnd,
+                start,
+                end,
                 _shineProgressStart,
                 _shineProgressEnd);
             return;
         }
 
         float directLength = _isHorizontal
-            ? Mathf.Abs(snappedEnd.x - snappedStart.x)
-            : Mathf.Abs(snappedEnd.y - snappedStart.y);
+            ? Mathf.Abs(end.x - start.x)
+            : Mathf.Abs(end.y - start.y);
         if (directLength <= 0.001f)
             return;
 
-        Vector2 axisDirection = (snappedEnd - snappedStart).normalized;
-        float lineLength = Mathf.Round((directLength + StraightLineOverlap) * _progress);
+        Vector2 axisDirection = (end - start).normalized;
+        float lineLength = (directLength + StraightLineOverlap) * _progress;
         if (lineLength <= 0f)
             return;
 
         bool directAnchorAtStart = _isHorizontal
-            ? snappedEnd.x >= snappedStart.x
-            : snappedEnd.y >= snappedStart.y;
-        Vector2 anchoredStartPosition = SnapToPixel(
-            snappedStart - axisDirection * StraightLineOverlap);
+            ? end.x >= start.x
+            : end.y >= start.y;
+        Vector2 anchoredStartPosition = start - axisDirection * StraightLineOverlap;
         AddAnchoredStraightQuad(
             _spriteType,
             _sprite,
@@ -491,8 +489,8 @@ public sealed class AbilityLineRenderer
             directAnchorAtStart,
             _color,
             _shineColorIndex,
-            snappedStart,
-            snappedEnd,
+            start,
+            end,
             _shineProgressStart,
             _shineProgressEnd);
     }
@@ -540,7 +538,7 @@ public sealed class AbilityLineRenderer
         float _shineProgressEnd)
     {
         Vector2 nativeSize = GetSpriteNativeSize(_sprite);
-        float length = Mathf.Max(Mathf.Round(_length), 1f);
+        float length = Mathf.Max(_length, 1f);
         Rect rect;
 
         if (_isHorizontal)
@@ -677,18 +675,8 @@ public sealed class AbilityLineRenderer
         if (_nodeRect == null || lineParent == null)
             return Vector2.zero;
 
-        Vector3[] corners = new Vector3[4];
-        _nodeRect.GetWorldCorners(corners);
-        Vector3 worldCenter = (corners[0] + corners[2]) * 0.5f;
-        Camera eventCamera = GetCanvasEventCamera();
-
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            lineParent,
-            RectTransformUtility.WorldToScreenPoint(eventCamera, worldCenter),
-            eventCamera,
-            out Vector2 localPoint);
-
-        return SnapToPixel(localPoint);
+        Vector3 worldCenter = _nodeRect.TransformPoint(_nodeRect.rect.center);
+        return lineParent.InverseTransformPoint(worldCenter);
     }
 
     private Vector2 GetGridPointCenterInRectangle(Vector2Int _gridPoint)
@@ -698,31 +686,7 @@ public sealed class AbilityLineRenderer
 
         Vector3 worldPoint = moveTarget.TransformPoint(
             new Vector3(_gridPoint.x * gridCellSize, _gridPoint.y * gridCellSize, 0f));
-        Camera eventCamera = GetCanvasEventCamera();
-
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            lineParent,
-            RectTransformUtility.WorldToScreenPoint(eventCamera, worldPoint),
-            eventCamera,
-            out Vector2 localPoint);
-
-        return SnapToPixel(localPoint);
-    }
-
-    private static Vector2 SnapToPixel(Vector2 _position)
-    {
-        return new Vector2(Mathf.Round(_position.x), Mathf.Round(_position.y));
-    }
-
-    private Camera GetCanvasEventCamera()
-    {
-        Canvas targetCanvas = rootCanvas != null && rootCanvas.rootCanvas != null
-            ? rootCanvas.rootCanvas
-            : rootCanvas;
-        if (targetCanvas == null || targetCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
-            return null;
-
-        return targetCanvas.worldCamera;
+        return lineParent.InverseTransformPoint(worldPoint);
     }
 
     private bool ShouldCullLineConnection(
