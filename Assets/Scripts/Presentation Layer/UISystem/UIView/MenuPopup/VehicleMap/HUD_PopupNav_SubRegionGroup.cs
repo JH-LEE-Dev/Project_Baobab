@@ -55,14 +55,12 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     
 
 
-    // 외부 의존성
     private HUD_PopupNav_Main mainController;
     private LocalizationManager localizationManager;
     private TreeVisualDataBase treeVisualDataBase;
     private IMapDataProvider mapDataProvider;
     private ICursorBoxUI cursorBoxUI;
     
-    // 내부 의존성
     private readonly List<HUD_PopupNav_SubRegionBtn> subRegionButtons = new List<HUD_PopupNav_SubRegionBtn>(16);
     private readonly List<HUD_PopupNav_SubRegionBtn> activeSubRegionButtons = new List<HUD_PopupNav_SubRegionBtn>(8);
 
@@ -278,8 +276,9 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         float _containerHeight = container.rect.height;
         float _usableWidth = _containerWidth - paddingLeft - paddingRight;
 
-        // 대지역별 고유 Seed 기반의 결정적(Deterministic) LCG 난수기 초기화 (Zero GC)
-        uint _lcgState = (uint)(((int)_mapType * 10007) + (_count * 389) + 48271);
+        // 대지역별 고유 Seed 기반의 결정적(Deterministic) 레이아웃 산출기 초기화
+        int _seed = ((int)_mapType * 10007) + (_count * 389) + 48271;
+        System.Random _rng = new System.Random(_seed);
 
         // Y축 상/하한선 계산 및 역전 방지 (패딩이 컨테이너보다 크더라도 최소 50px의 안전 높이 마진 확보)
         float _topLimit = (_containerHeight * (1f - container.pivot.y)) - paddingTop;
@@ -342,9 +341,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             float _sumWeights = 0f;
             for (int i = 0; i < _count + 1; i++)
             {
-                _lcgState = (_lcgState * 1664525u) + 1013904223u;
-                float _rand01 = (float)(_lcgState >> 8) / 16777216f;
-                cachedGaps[i] = (_rand01 * 0.7f) + 0.3f;
+                cachedGaps[i] = (float)(_rng.NextDouble() * 0.7 + 0.3);
                 _sumWeights += cachedGaps[i];
             }
 

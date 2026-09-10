@@ -27,7 +27,6 @@ public class GameplayUICoordinator
     private bool bInventoryOpened = false;
     private bool bIsTutorialQuestHiding = false;
     private bool bPendingGameEnd = false;
-    private bool isMenuPopupUnlockInteractPaused = false;
 
     // ESC 일시정지를 열기 직전의 이동 잠금 상태. 닫을 때 false를 박는 대신 이 값으로 되돌린다.
     //
@@ -212,6 +211,9 @@ public class GameplayUICoordinator
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
         menuPopupUI.DungeonSelectedEvent += DungeonSelected;
 
+        menuPopupUI.CancelButtonClickedEvent -= CancelMenuPopup;
+        menuPopupUI.CancelButtonClickedEvent += CancelMenuPopup;
+
         inputManager.inputReader.ESCButtonPressedEvent -= EscButtonPressed;
         inputManager.inputReader.ESCButtonPressedEvent += EscButtonPressed;
 
@@ -281,6 +283,7 @@ public class GameplayUICoordinator
         inputManager.inputReader.InventoryKeyEvent -= OnInventoryKeyPressed;
         popUpUI.sendDeleteItemEvent -= SendDeleteItem;
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
+        menuPopupUI.CancelButtonClickedEvent -= CancelMenuPopup;
         inputManager.inputReader.ESCButtonPressedEvent -= EscButtonPressed;
         inputManager.inputReader.UICancelEvent -= OnUICancelPressed;
         escUI.ResumeButtonClickedEvent -= ResumeGame;
@@ -454,7 +457,6 @@ public class GameplayUICoordinator
 
     private void CancelMenuPopup()
     {
-        CleanupMenuPopupUnlockLock();
         menuPopupUI.ForceHide();
     }
 
@@ -683,7 +685,6 @@ public class GameplayUICoordinator
 
     private void TeleportUIClosed()
     {
-        CleanupMenuPopupUnlockLock();
         // 뷰를 닫는 호출(ForceHide/Hide)은 항상 이 이벤트를 발행하는 쪽(ESC의 UIDepthController,
         // PortalDeActivated, DungeonSelected, CancelMenuPopup)에서 이미 끝낸 뒤이므로 여기서는
         // 후속 신호만 발행한다.
@@ -707,25 +708,12 @@ public class GameplayUICoordinator
     // 않기로 했으므로 이번 방어는 해금 연출이 겹치는 케이스로 한정된다.
     private void MenuPopupUnlockProductionStarted()
     {
-        if (false == isMenuPopupUnlockInteractPaused)
-        {
-            isMenuPopupUnlockInteractPaused = true;
-            inputManager.PauseInteractKey(true);
-        }
+        inputManager.PauseInteractKey(true);
     }
 
     private void MenuPopupUnlockProductionEnded()
     {
-        CleanupMenuPopupUnlockLock();
-    }
-
-    private void CleanupMenuPopupUnlockLock()
-    {
-        if (true == isMenuPopupUnlockInteractPaused)
-        {
-            isMenuPopupUnlockInteractPaused = false;
-            inputManager.PauseInteractKey(false);
-        }
+        inputManager.PauseInteractKey(false);
     }
 
     // 플레이어가 들어갈 던전을 클릭해 선택을 확정한 바로 그 시점(HUD_PopupNav_Main.HandleSubRegionSelected)에

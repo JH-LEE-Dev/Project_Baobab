@@ -2,11 +2,11 @@ using UnityEngine;
 
 public static class NavParticleHelper
 {
-    public static Material ApplyInstancedColor(ParticleSystem _particle, Color _color, ref bool _hasInstantiated)
+    public static void ApplyInstancedColor(ParticleSystem _particle, Color _color, ref bool _hasInstantiated)
     {
         if (true == _hasInstantiated || null == _particle)
         {
-            return null;
+            return;
         }
 
         ParticleSystemRenderer _psr = _particle.GetComponent<ParticleSystemRenderer>();
@@ -27,9 +27,6 @@ public static class NavParticleHelper
             }
             _psr.material = _instancedMat;
             _hasInstantiated = true;
-            return _instancedMat;
         }
-
-        return null;
     }
 }
