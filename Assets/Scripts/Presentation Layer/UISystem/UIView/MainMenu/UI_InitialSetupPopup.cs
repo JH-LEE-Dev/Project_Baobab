@@ -794,13 +794,19 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
     private void HandleLanguageButtonClicked(UI_PanelSelectButton _btn)
     {
-        if (null == _btn || true == isTransitioning || true == isClosing) return;
-        isTransitioning = true;
-
         // 동의 패널로 넘어가는 연출이 도는 동안에는 무시한다. 이 구간에서 언어 버튼은 아직
         // 살아 있어서 게임패드 Submit이 그대로 들어오고, 그때마다 전환 시퀀스가 Kill되고
         // 처음부터 다시 재생되어 화면이 넘어가지 않는다.
-        if (true == isConsentPhase) return;
+        //
+        // isConsentPhase까지 한 줄에 모아 둔다. isTransitioning을 세운 뒤에 따로 검사하면
+        // 그 경로로 빠져나갈 때 플래그가 true로 남고, 되돌리는 곳이 Show와
+        // HandleConsentPanelShown뿐이라 복구되지 않는다.
+        if (null == _btn
+            || true == isTransitioning
+            || true == isClosing
+            || true == isConsentPhase) return;
+
+        isTransitioning = true;
 
         // 1. 선택한 언어 적용
         EOptionLanguage _selected = _btn.BoundLanguage;
@@ -871,7 +877,6 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
         SnapConsentTogglesPixelPerfect();
 
-        suppressNextConsentSelectAudio = true;
         Sound.PlayUI(SoundID.ResultUIOpen);
     }
 
@@ -880,7 +885,14 @@ public class UI_InitialSetupPopup : MonoBehaviour
         isTransitioning = false;
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
+            // 패널이 열리며 자동으로 잡는 첫 포커스에서는 hover음을 내지 않는다.
+            // SetSelectedGameObject가 Select 이벤트를 동기로 발생시키므로 이 구간만 감싸면 된다.
+            // 미리 세워 두면 Select 트리거가 마우스 모드에서 플래그를 소비하기 전에 반환해
+            // true로 남고, 나중에 패드로 바꿨을 때 첫 hover음이 대신 사라진다.
+            // (ActivateInput의 UI_PanelSelectButton.SuppressSelectAudio와 같은 방식)
+            suppressNextConsentSelectAudio = true;
             FocusConsentItem(lastFocusedConsentSelectable ?? (Selectable)consentToggle);
+            suppressNextConsentSelectAudio = false;
         }
     }
 
