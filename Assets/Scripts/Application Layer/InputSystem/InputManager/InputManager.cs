@@ -225,6 +225,9 @@ public class InputManager : MonoBehaviour
     /// <summary>이번 프레임에 키나 버튼이 실제로 눌렸는지입니다. ("아무 키나 누르세요" 화면 등)</summary>
     public bool AnyButtonInputThisFrame => null != inputReader && inputReader.AnyButtonInputThisFrame;
 
+    /// <summary>이번 프레임에 키나 버튼이 눌려 있는지입니다. (크레딧 배속처럼 "누르고 있는 동안"이 조건인 곳)</summary>
+    public bool AnyButtonHeldThisFrame => null != inputReader && inputReader.AnyButtonHeldThisFrame;
+
     public void SetGamepadIconSetOverride(bool _bUseOverride, EGamepadIconSet _iconSet)
     {
         inputReader?.SetGamepadIconSetOverride(_bUseOverride, _iconSet);

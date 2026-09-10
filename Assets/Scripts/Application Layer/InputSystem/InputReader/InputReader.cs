@@ -346,6 +346,13 @@ public class InputReader
     public bool AnyButtonInputThisFrame => null != deviceTracker && deviceTracker.AnyButtonInputThisFrame;
 
     /// <summary>
+    /// 이번 프레임에 키나 버튼이 눌려 있는지입니다. AnyButtonInputThisFrame이 눌린 순간만 잡는 것과
+    /// 달리 누르고 있는 동안 계속 true이며, 마우스 이동·휠 스크롤·스틱 기울임은 포함하지 않습니다.
+    /// (크레딧 배속처럼 "누르고 있는 동안"이 조건인 곳에 씁니다)
+    /// </summary>
+    public bool AnyButtonHeldThisFrame => null != deviceTracker && deviceTracker.AnyButtonHeldThisFrame;
+
+    /// <summary>
     /// 패드 아이콘 표기를 수동으로 고정합니다. _bUseOverride가 false면 자동 판별로 되돌립니다.
     /// (Steam Input이나 서드파티 어댑터 때문에 자동 판별이 틀리는 경우가 반드시 생기므로 필요합니다)
     /// </summary>

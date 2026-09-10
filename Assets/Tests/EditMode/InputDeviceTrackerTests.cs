@@ -75,6 +75,7 @@ public class InputDeviceTrackerTests
         Assert.IsFalse(tracker.IsGamepadMode);
         Assert.IsFalse(tracker.AnyInputThisFrame);
         Assert.IsFalse(tracker.AnyButtonInputThisFrame);
+        Assert.IsFalse(tracker.AnyButtonHeldThisFrame);
     }
 
     [Test]
@@ -354,6 +355,81 @@ public class InputDeviceTrackerTests
         tracker.Tick(Dt);
 
         Assert.IsFalse(tracker.AnyButtonInputThisFrame);
+    }
+
+    // "누르고 있는 동안" 판정 — 마우스 이동은 누름이 아니다
+
+    [Test]
+    public void MouseDeliberateMove_IsNotButtonHeld()
+    {
+        MoveMouse(new Vector2(40f, 0f));
+        tracker.Tick(Dt);
+
+        // 크레딧 배속이 마우스를 스치는 것만으로 걸리면 안 된다.
+        Assert.IsFalse(tracker.AnyButtonHeldThisFrame);
+    }
+
+    [Test]
+    public void MouseScroll_IsNotButtonHeld()
+    {
+        InputSystem.QueueDeltaStateEvent(mouse.scroll, new Vector2(0f, 1f));
+        InputSystem.Update();
+
+        tracker.Tick(Dt);
+
+        Assert.IsFalse(tracker.AnyButtonHeldThisFrame);
+    }
+
+    [Test]
+    public void Stick_AboveThreshold_IsNotButtonHeld()
+    {
+        Gamepad _pad = AddGamepad("Gamepad");
+
+        SetLeftStick(_pad, new Vector2(1f, 0f));
+        tracker.Tick(Dt);
+
+        Assert.IsFalse(tracker.AnyButtonHeldThisFrame);
+    }
+
+    [Test]
+    public void Trigger_StaysHeldAcrossFrames()
+    {
+        Gamepad _pad = AddGamepad("Gamepad");
+
+        InputSystem.QueueStateEvent(_pad, new GamepadState { rightTrigger = 1f });
+        InputSystem.Update();
+
+        // 눌림(엣지)과 달리 누르고 있는 동안에는 계속 true여야 한다.
+        for (int i = 0; i < 3; i++)
+        {
+            tracker.Tick(Dt);
+            Assert.IsTrue(tracker.AnyButtonHeldThisFrame, "누르고 있는데 " + i + "번째 프레임에 풀렸습니다.");
+        }
+
+        InputSystem.QueueStateEvent(_pad, new GamepadState { rightTrigger = 0f });
+        InputSystem.Update();
+        tracker.Tick(Dt);
+
+        Assert.IsFalse(tracker.AnyButtonHeldThisFrame);
+    }
+
+    [Test]
+    public void GamepadButton_StaysHeldAcrossFrames()
+    {
+        Gamepad _pad = AddGamepad("Gamepad");
+
+        // 디지털 버튼의 눌림 엣지는 EditMode에서 잡히지 않지만 isPressed는 정상 동작한다.
+        InputSystem.QueueStateEvent(_pad, new GamepadState().WithButton(GamepadButton.South));
+        InputSystem.Update();
+
+        tracker.Tick(Dt);
+        Assert.IsTrue(tracker.AnyButtonHeldThisFrame);
+
+        InputSystem.QueueStateEvent(_pad, new GamepadState());
+        InputSystem.Update();
+        tracker.Tick(Dt);
+
+        Assert.IsFalse(tracker.AnyButtonHeldThisFrame);
     }
 
     [Test]

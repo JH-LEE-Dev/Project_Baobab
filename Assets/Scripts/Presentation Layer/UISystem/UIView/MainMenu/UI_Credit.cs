@@ -113,10 +113,13 @@ public class UI_Credit : MonoBehaviour, IUIDepthCloseable
             return;
         }
 
-        // 취소 키를 제외한 모든 입력 감지 시 스크롤 배속 적용
+        // 취소 키를 제외한 모든 "눌림" 감지 시 스크롤 배속 적용.
+        // 마우스 이동과 휠 스크롤은 배속 조건이 아니다. AnyInputThisFrame은 장치 전환 판정용이라
+        // 일정 거리 이상의 마우스 이동까지 조작으로 치므로, 그걸 쓰면 마우스를 스치기만 해도
+        // 크레딧이 제멋대로 빨라진다. 그래서 눌림만 보는 AnyButtonHeldThisFrame을 쓴다.
         if (null != scrollTween && true == scrollTween.IsActive())
         {
-            bool _speedUpHeld = (null != inputManager && true == inputManager.AnyInputThisFrame && false == inputManager.WasGamepadUICancelPressedThisFrame)
+            bool _speedUpHeld = (null != inputManager && true == inputManager.AnyButtonHeldThisFrame && false == inputManager.WasGamepadUICancelPressedThisFrame)
                 || (null != Keyboard.current && true == Keyboard.current.anyKey.isPressed && false == Keyboard.current.escapeKey.isPressed)
                 || (null != Mouse.current && (Mouse.current.leftButton.isPressed || Mouse.current.rightButton.isPressed || Mouse.current.middleButton.isPressed));
 

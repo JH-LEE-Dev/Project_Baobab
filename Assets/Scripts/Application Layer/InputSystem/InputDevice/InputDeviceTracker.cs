@@ -45,6 +45,7 @@ public class InputDeviceTracker
     private bool bGamepadConnected = false;
     private bool bAnyInputThisFrame = false;
     private bool bAnyButtonInputThisFrame = false;
+    private bool bAnyButtonHeldThisFrame = false;
 
     private float switchCooldownRemain = 0f;
     private float mouseTravelAccum = 0f;
@@ -89,6 +90,16 @@ public class InputDeviceTracker
     /// 않았는데 연출이 잘린 것처럼 느낍니다.
     /// </summary>
     public bool AnyButtonInputThisFrame => bAnyButtonInputThisFrame;
+
+    /// <summary>
+    /// 이번 프레임에 키나 버튼이 "눌려 있는지"입니다. AnyButtonInputThisFrame이 눌린 순간(엣지)만
+    /// 잡는 것과 달리, 누르고 있는 동안 계속 true입니다. 마우스 이동, 휠 스크롤, 스틱 기울임은
+    /// 여기서도 포함하지 않습니다.
+    ///
+    /// 크레딧 배속처럼 "누르고 있는 동안"이라는 조건이 필요한 곳에 씁니다. 이런 곳에서 마우스
+    /// 이동까지 조작으로 치면, 마우스를 스치기만 해도 연출이 제멋대로 빨라집니다.
+    /// </summary>
+    public bool AnyButtonHeldThisFrame => bAnyButtonHeldThisFrame;
 
     public void Initialize(InputDeviceSettings _settings)
     {
@@ -142,6 +153,7 @@ public class InputDeviceTracker
 
         bAnyInputThisFrame = bKeyboardMouseActive || bGamepadActive;
         bAnyButtonInputThisFrame = _bKeyboardMousePressed || _bGamepadPressed;
+        bAnyButtonHeldThisFrame = PollAnyButtonHeld();
 
         // 같은 프레임에 둘 다 들어오면 패드를 우선한다. 패드 조작은 문턱값이 높아
         // 오탐 가능성이 낮은 반면, 마우스는 손이 스치기만 해도 잡히기 때문이다.
@@ -299,6 +311,53 @@ public class InputDeviceTracker
         if (_gamepad.rightStick.ReadValue().sqrMagnitude >= _stickThresholdSqr) return true;
 
         return false;
+    }
+
+    /// <summary>
+    /// 키/버튼이 눌려 있는지를 봅니다. 위의 두 폴링이 "이번 프레임에 눌렸는가"(엣지)를 보는 것과
+    /// 달리 여기서는 "지금 눌려 있는가"(레벨)를 봅니다.
+    ///
+    /// 마우스 델타와 휠은 아예 읽지 않습니다. 이동은 애초에 누르고 있을 수 있는 입력이 아니고,
+    /// 여기에 섞이면 마우스가 스칠 때마다 "누르고 있다"로 잘못 잡힙니다.
+    /// 스틱 기울임도 같은 이유로 제외합니다. (누름이 아니라 기울임입니다)
+    /// </summary>
+    private bool PollAnyButtonHeld()
+    {
+        Keyboard _keyboard = Keyboard.current;
+        if (null != _keyboard && true == _keyboard.anyKey.isPressed) return true;
+
+        Mouse _mouse = Mouse.current;
+        if (null != _mouse && (true == _mouse.leftButton.isPressed
+                            || true == _mouse.rightButton.isPressed
+                            || true == _mouse.middleButton.isPressed))
+        {
+            return true;
+        }
+
+        Gamepad _gamepad = Gamepad.current;
+        if (null == _gamepad) return false;
+
+        // 트리거는 눌림 판정 대신 깊이로 본다. (위 폴링과 같은 기준)
+        if (_gamepad.leftTrigger.ReadValue() >= settings.triggerActuationThreshold ||
+            _gamepad.rightTrigger.ReadValue() >= settings.triggerActuationThreshold)
+        {
+            return true;
+        }
+
+        return _gamepad.buttonSouth.isPressed ||
+               _gamepad.buttonEast.isPressed ||
+               _gamepad.buttonWest.isPressed ||
+               _gamepad.buttonNorth.isPressed ||
+               _gamepad.leftShoulder.isPressed ||
+               _gamepad.rightShoulder.isPressed ||
+               _gamepad.leftStickButton.isPressed ||
+               _gamepad.rightStickButton.isPressed ||
+               _gamepad.startButton.isPressed ||
+               _gamepad.selectButton.isPressed ||
+               _gamepad.dpad.up.isPressed ||
+               _gamepad.dpad.down.isPressed ||
+               _gamepad.dpad.left.isPressed ||
+               _gamepad.dpad.right.isPressed;
     }
 
     private void OnDeviceChange(InputDevice _device, InputDeviceChange _change)
