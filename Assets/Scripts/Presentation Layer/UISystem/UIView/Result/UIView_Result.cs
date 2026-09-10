@@ -321,6 +321,7 @@ public class UIView_Result : UIView
     private float blackBGTargetAlpha;
     private bool hasCachedProductionStartState;
     private bool isClosingProduction;
+    private bool isResultContentsActive;
     private Action pendingCloseCompletedEvent;
     private UISelectionCursor selectionCursorInstance;
     private UIHoverSelectionTarget goHomeHoverTarget;
@@ -440,6 +441,18 @@ public class UIView_Result : UIView
 
     #region Unity Event Functions
 
+    public override void Update()
+    {
+        base.Update();
+
+        if (false == isResultContentsActive || true == isClosingProduction ||
+            null == inputManager || false == inputManager.IsGamepadMode ||
+            false == inputManager.WasGamepadUIConfirmPressedThisFrame)
+            return;
+
+        ActivateSelectedButtonWithGamepadConfirm();
+    }
+
     public override void OnDestroy()
     {
         KillResultProductionSequences();
@@ -463,6 +476,8 @@ public class UIView_Result : UIView
 
     private void SetResultContentsActive(bool active)
     {
+        isResultContentsActive = active;
+
         if (resultContentsRoot != null)
         {
             resultContentsRoot.SetActive(active);
@@ -876,6 +891,40 @@ public class UIView_Result : UIView
         {
             targetHover?.ForceSelect();
         }
+    }
+
+    private void ActivateSelectedButtonWithGamepadConfirm()
+    {
+        if (null == EventSystem.current)
+            return;
+
+        GameObject selected = EventSystem.current.currentSelectedGameObject;
+
+        if (IsSelectedInteractableButton(selected, goHomeTouchAreaButton))
+        {
+            ClearButtonSelection();
+            OnGoHomeButtonClicked();
+            return;
+        }
+
+        if (IsSelectedInteractableButton(selected, retryTouchAreaButton))
+        {
+            ClearButtonSelection();
+            OnRetryButtonClicked();
+            return;
+        }
+
+        if (IsSelectedInteractableButton(selected, tutorialGoHomeTouchAreaButton))
+        {
+            ClearButtonSelection();
+            OnGoHomeButtonClicked();
+        }
+    }
+
+    private static bool IsSelectedInteractableButton(GameObject selected, Button button)
+    {
+        return null != selected && null != button && selected == button.gameObject &&
+               true == button.isActiveAndEnabled && true == button.IsInteractable();
     }
 
     private void OnInputDeviceChanged(EInputDeviceType device)
