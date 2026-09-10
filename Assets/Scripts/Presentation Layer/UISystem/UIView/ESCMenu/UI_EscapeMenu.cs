@@ -72,6 +72,10 @@ public class UI_EscapeMenu : MonoBehaviour
     private Sequence openSequence;
     private Sequence closeSequence;
     private bool isClosing = false;
+    private bool isMenuOpen = false;
+    private UIView_ESC parentESCView;
+
+    public bool IsMenuOpen => isMenuOpen;
 
     private CanvasGroup menuCanvasGroup;
     private CanvasGroup bgCanvasGroup;
@@ -103,9 +107,20 @@ public class UI_EscapeMenu : MonoBehaviour
         cachedOnOpenComplete = HandleOpenComplete;
         cachedOnCloseComplete = HandleCloseComplete;
 
+        if (null == parentESCView)
+        {
+            parentESCView = GetComponentInParent<UIView_ESC>();
+        }
+
         CacheCanvasGroups();
         CacheBGPieces();
         CacheButtons();
+    }
+
+    private void OnDisable()
+    {
+        isMenuOpen = false;
+        isClosing = false;
     }
 
     private void OnDestroy()
@@ -142,6 +157,8 @@ public class UI_EscapeMenu : MonoBehaviour
         }
 
         inputManager = null;
+        isMenuOpen = false;
+        parentESCView = null;
     }
 
     public void Initialize(
@@ -176,9 +193,14 @@ public class UI_EscapeMenu : MonoBehaviour
             warningPopup = _warningPopup;
         }
 
+        if (null == parentESCView)
+        {
+            parentESCView = GetComponentInParent<UIView_ESC>();
+        }
+
         if (null == warningPopup)
         {
-            warningPopup = GetComponentInParent<UIView_ESC>()?.GetComponentInChildren<UI_WarningPopup>(true)
+            warningPopup = parentESCView?.GetComponentInChildren<UI_WarningPopup>(true)
                 ?? GetComponentInChildren<UI_WarningPopup>(true);
         }
 
@@ -324,6 +346,7 @@ public class UI_EscapeMenu : MonoBehaviour
     private void HandleOpenComplete()
     {
         openSequence = null;
+        isMenuOpen = true;
         SelectFirstButton();
         if (null != onOpenCompleteAction)
         {
@@ -339,7 +362,7 @@ public class UI_EscapeMenu : MonoBehaviour
         for (int i = 0; allButtons.Length > i; i++)
         {
             UI_EscapeMenuButton _btn = allButtons[i];
-            if (null != _btn && true == _btn.gameObject.activeInHierarchy)
+            if (null != _btn && true == _btn.gameObject.activeInHierarchy && true == _btn.IsInteractable)
             {
                 return _btn;
             }
@@ -439,7 +462,8 @@ public class UI_EscapeMenu : MonoBehaviour
 
     private void OnDeviceChanged(EInputDeviceType _device)
     {
-        if (false == gameObject.activeInHierarchy || true == isClosing) return;
+        if (false == gameObject.activeInHierarchy || false == isMenuOpen || true == isClosing) return;
+        if (null != parentESCView && true == parentESCView.IsOptionOpen) return;
         if (null != warningPopup && true == warningPopup.IsActive) return;
 
         if (EInputDeviceType.Gamepad == _device)
@@ -528,6 +552,27 @@ public class UI_EscapeMenu : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (false == gameObject.activeInHierarchy || false == isMenuOpen || true == isClosing) return;
+        if (null != parentESCView && true == parentESCView.IsOptionOpen) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
+        if (null != warningPopup && true == warningPopup.IsActive) return;
+
+        if (null != EventSystem.current)
+        {
+            GameObject _selected = EventSystem.current.currentSelectedGameObject;
+            if (null == _selected || false == _selected.activeInHierarchy)
+            {
+                UI_EscapeMenuButton _firstBtn = GetFirstActiveButton();
+                if (null != _firstBtn)
+                {
+                    EventSystem.current.SetSelectedGameObject(_firstBtn.gameObject);
+                    _firstBtn.ForceHover();
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// 버튼과 백그라운드를 되감기(Rewind)하듯이 역순으로 축소/퇴장시키는 역모션 연출을 재생합니다.
@@ -535,6 +580,7 @@ public class UI_EscapeMenu : MonoBehaviour
     public void PlayCloseProduction(Action _onComplete)
     {
         KillProductionSequences();
+        isMenuOpen = false;
         isClosing = true;
         SetButtonsInteractable(false);
 
@@ -602,6 +648,7 @@ public class UI_EscapeMenu : MonoBehaviour
     {
         closeSequence = null;
         isClosing = false;
+        isMenuOpen = false;
         if (null != onCloseCompleteAction)
         {
             Action _cb = onCloseCompleteAction;
@@ -995,19 +1042,19 @@ public class UI_EscapeMenu : MonoBehaviour
 
     private void OnResumeButtonClicked()
     {
-        if (true == isClosing) return;
+        if (false == isMenuOpen || true == isClosing) return;
         if (null != onResumeCallback) onResumeCallback.Invoke();
     }
 
     private void OnOptionButtonClicked()
     {
-        if (true == isClosing) return;
+        if (false == isMenuOpen || true == isClosing) return;
         if (null != onOptionCallback) onOptionCallback.Invoke();
     }
 
     private void OnMainMenuButtonClicked()
     {
-        if (true == isClosing) return;
+        if (false == isMenuOpen || true == isClosing) return;
 
         if (null != warningPopup && null != localizationManager)
         {
@@ -1029,7 +1076,7 @@ public class UI_EscapeMenu : MonoBehaviour
 
     private void OnExitButtonClicked()
     {
-        if (true == isClosing) return;
+        if (false == isMenuOpen || true == isClosing) return;
 
         if (null != warningPopup && null != localizationManager)
         {
@@ -1056,6 +1103,7 @@ public class UI_EscapeMenu : MonoBehaviour
 
     private void ConfirmMainMenu()
     {
+        isMenuOpen = false;
         isClosing = true;
         if (null != onMainMenuCallback)
         {
@@ -1065,6 +1113,7 @@ public class UI_EscapeMenu : MonoBehaviour
 
     private void ConfirmExit()
     {
+        isMenuOpen = false;
         isClosing = true;
         if (null != onExitCallback)
         {

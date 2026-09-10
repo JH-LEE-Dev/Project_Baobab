@@ -66,22 +66,33 @@ public class UI_PressAnyKey : MonoBehaviour
     {
         if (false == isWaitingForInput) return;
 
-        bool _anyInputReceived = false;
+        bool _anyInputReceived = CheckAnyInput();
 
-        // 1. 키보드 아무 키 입력 감지 (New Input System)
-        if (null != Keyboard.current && true == Keyboard.current.anyKey.wasPressedThisFrame)
+        // 입력이 감지되면 메인 메뉴로 전환
+        if (true == _anyInputReceived)
         {
-            _anyInputReceived = true;
+            isWaitingForInput = false;
+            if (null != parentView)
+            {
+                parentView.OnPressAnyKeyCompleted();
+            }
         }
-        // 2. 마우스 버튼 클릭 감지 (좌클릭, 우클릭, 휠클릭) - 마우스 단순 이동(delta)은 제외
-        else if (null != Mouse.current && (true == Mouse.current.leftButton.wasPressedThisFrame
-                                        || true == Mouse.current.rightButton.wasPressedThisFrame
-                                        || true == Mouse.current.middleButton.wasPressedThisFrame))
+    }
+
+    private bool CheckAnyInput()
+    {
+        if (null != inputManager && true == inputManager.AnyInputThisFrame) return true;
+
+        if (null != Keyboard.current && true == Keyboard.current.anyKey.wasPressedThisFrame) return true;
+
+        if (null != Mouse.current && (true == Mouse.current.leftButton.wasPressedThisFrame
+                                   || true == Mouse.current.rightButton.wasPressedThisFrame
+                                   || true == Mouse.current.middleButton.wasPressedThisFrame))
         {
-            _anyInputReceived = true;
+            return true;
         }
-        // 3. 게임패드 아무 버튼 입력 감지
-        else if (null != Gamepad.current)
+
+        if (null != Gamepad.current)
         {
             Gamepad _pad = Gamepad.current;
             if (true == _pad.buttonSouth.wasPressedThisFrame ||
@@ -101,19 +112,11 @@ public class UI_PressAnyKey : MonoBehaviour
                 _pad.leftTrigger.wasPressedThisFrame ||
                 _pad.rightTrigger.wasPressedThisFrame)
             {
-                _anyInputReceived = true;
+                return true;
             }
         }
 
-        // 입력이 감지되면 메인 메뉴로 전환
-        if (true == _anyInputReceived)
-        {
-            isWaitingForInput = false;
-            if (null != parentView)
-            {
-                parentView.OnPressAnyKeyCompleted();
-            }
-        }
+        return false;
     }
 
     private void OnDestroy()

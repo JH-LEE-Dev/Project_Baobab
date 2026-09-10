@@ -147,7 +147,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
         return false;
     }
 
-    public void HandleInteractionKey()
+    public void HandleConfirmKey()
     {
         if (false == isDemoNoticeShowing || true == isHiding) return;
 
@@ -166,6 +166,8 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
             }
         }
     }
+
+    public void HandleInteractionKey() => HandleConfirmKey();
 
     /// <summary>DemoNoticeUI.json 의 본문 엔트리 id 입니다. 스토어마다 문구가 다릅니다.</summary>
     private const int DESC_ENTRY_STEAM = 2;

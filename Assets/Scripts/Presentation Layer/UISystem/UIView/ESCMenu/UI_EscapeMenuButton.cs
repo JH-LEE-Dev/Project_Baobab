@@ -59,6 +59,7 @@ public class UI_EscapeMenuButton : Selectable,
     private bool isAppearing = false;
 
     public bool IsPointerHovered => isPointerHovered;
+    public bool IsInteractable => isInteractable && interactable;
 
     private Vector3 originalScale = Vector3.one;
 
@@ -456,6 +457,7 @@ public class UI_EscapeMenuButton : Selectable,
     public bool IsMouseOver()
     {
         if (false == isInteractable || false == gameObject.activeInHierarchy || true == isAppearing) return false;
+        if (null != inputManager && true == inputManager.IsGamepadMode) return false;
         if (true == isPointerHovered) return true;
 
         RectTransform _rect = null != raycastImage ? raycastImage.rectTransform : RectTransform;
@@ -468,7 +470,7 @@ public class UI_EscapeMenuButton : Selectable,
         }
         else
         {
-            _mousePos = Input.mousePosition;
+            return false;
         }
 
         if (null == cachedCanvas)

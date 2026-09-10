@@ -89,11 +89,13 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     public float AnimationDuration => animationDuration;
     public InputManager InputManager => inputManager;
 
+    private bool CanCancel => null != cancelButton && true == cancelButton.gameObject.activeInHierarchy && null != onCancelAction;
+
     /// <summary>ESC로 뎁스 스택에서 닫힐 때 호출됩니다. 확인(Confirm)이 아닌 취소(Cancel)로 처리해
     /// 파괴적인 동작이 실수로 실행되지 않게 합니다.</summary>
     public void Hide()
     {
-        if (true == isClosing)
+        if (true == isClosing || false == CanCancel)
         {
             return;
         }
@@ -400,8 +402,32 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         }
     }
 
+    private void Update()
+    {
+        if (false == gameObject.activeInHierarchy || true == isClosing) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
+
+        if (null != EventSystem.current)
+        {
+            GameObject _selected = EventSystem.current.currentSelectedGameObject;
+            bool _isOurButton = (null != _selected &&
+                                 true == _selected.activeInHierarchy &&
+                                 ((null != confirmButton && _selected == confirmButton.gameObject) ||
+                                  (null != cancelButton && _selected == cancelButton.gameObject)));
+            if (false == _isOurButton)
+            {
+                UI_WarningPopupButton _defaultButton = DefaultSelectedButton;
+                if (null != _defaultButton && true == _defaultButton.gameObject.activeInHierarchy)
+                {
+                    EventSystem.current.SetSelectedGameObject(_defaultButton.gameObject);
+                }
+            }
+        }
+    }
+
     private bool IsMouseOverButton(UI_WarningPopupButton _button)
     {
+        if (null != inputManager && true == inputManager.IsGamepadMode) return false;
         if (null == _button || false == _button.gameObject.activeInHierarchy) return false;
         if (true == _button.IsPointerHovered) return true;
 
@@ -415,7 +441,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         }
         else
         {
-            _mousePos = Input.mousePosition;
+            return false;
         }
 
         Canvas _canvas = _button.GetComponentInParent<Canvas>();
@@ -438,8 +464,6 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 
         if (EInputDeviceType.Gamepad == _device)
         {
-            Cursor.visible = false;
-
             if (null != confirmButton) confirmButton.ResetHoverState();
             if (null != cancelButton) cancelButton.ResetHoverState();
 
@@ -609,7 +633,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
             return;
         }
 
-        if (true == isClosing)
+        if (true == isClosing || false == CanCancel)
         {
             return;
         }

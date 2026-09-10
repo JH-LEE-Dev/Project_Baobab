@@ -840,6 +840,9 @@ public class UIView_Warning : UIView
         if (false == IsVisible || true == isClosing || false == gameObject.activeInHierarchy)
             return;
 
+        if (null == cancelTouchAreaButton || false == cancelTouchAreaButton.gameObject.activeInHierarchy)
+            return;
+
         OnCancelButtonClicked();
     }
 

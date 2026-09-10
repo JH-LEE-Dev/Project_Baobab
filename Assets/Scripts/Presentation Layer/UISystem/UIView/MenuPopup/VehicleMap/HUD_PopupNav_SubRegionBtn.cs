@@ -615,6 +615,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     public bool IsMouseOver()
     {
         if (false == gameObject.activeInHierarchy) return false;
+        if (null != mainController && true == mainController.IsGamepadMode) return false;
 
         RectTransform _rect = null != clickImage ? clickImage.rectTransform : CachedRectTransform;
         if (null == _rect) return false;
