@@ -54,6 +54,9 @@ public class UI_InitialSetupPopup : MonoBehaviour
     private Sequence panelTransitionTween;
     private bool isConsentPhase = false;
     private bool isInputAllowed = true;
+
+    // 닫기 연출이 도는 동안 확인 버튼이 다시 눌리는 것을 막는다. blocksRaycasts는 마우스만
+    // 막고 게임패드 Submit은 그대로 통과하므로, 플래그와 interactable을 함께 써야 한다.
     private bool isClosing = false;
     private bool isTransitioning = false;
     private bool isInternalToggleUpdating = false;
@@ -794,6 +797,11 @@ public class UI_InitialSetupPopup : MonoBehaviour
         if (null == _btn || true == isTransitioning || true == isClosing) return;
         isTransitioning = true;
 
+        // 동의 패널로 넘어가는 연출이 도는 동안에는 무시한다. 이 구간에서 언어 버튼은 아직
+        // 살아 있어서 게임패드 Submit이 그대로 들어오고, 그때마다 전환 시퀀스가 Kill되고
+        // 처음부터 다시 재생되어 화면이 넘어가지 않는다.
+        if (true == isConsentPhase) return;
+
         // 1. 선택한 언어 적용
         EOptionLanguage _selected = _btn.BoundLanguage;
         SettingsManager.Instance.SetLanguage(_selected);
@@ -814,6 +822,8 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
         if (null != languagePanel)
         {
+            // blocksRaycasts는 마우스 클릭만 막는다. 게임패드 Submit은 Selectable의
+            // IsInteractable()만 보므로 interactable까지 꺼야 실제로 입력이 차단된다.
             languagePanel.interactable = false;
             languagePanel.blocksRaycasts = false;
         }
@@ -876,6 +886,8 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
     private void HandleConfirmButtonClicked()
     {
+        // 닫기 연출 중 재입력 무시. 그냥 두면 확인음이 겹쳐 울리고 닫기 시퀀스가 매번
+        // 다시 시작되어 팝업이 사라지지 않는다.
         if (true == isClosing) return;
 
         if (null != consentToggle && true == consentToggle.isOn)
@@ -901,6 +913,8 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
         KillTransition();
 
+        // 확인 버튼은 연출이 끝나는 HandleCloseCompleted에서야 비활성화된다. 그때까지
+        // 게임패드 Submit이 들어오지 않도록 interactable도 함께 내린다.
         SetInputInteractable(false);
         if (null != confirmButton)
         {
@@ -957,6 +971,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
         }
 
         isConsentPhase = false;
+        isClosing = false;
         gameObject.SetActive(false);
 
         Action _cb = onCompletedCallback;

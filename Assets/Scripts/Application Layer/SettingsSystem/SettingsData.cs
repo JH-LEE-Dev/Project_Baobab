@@ -473,10 +473,14 @@ public struct SettingsData
         bool _corrected = false;
 
         // 제네릭 헬퍼로 묶으면 enum→int 변환에 박싱이 생기므로 구체 타입으로 직접 검사한다.
+        //
+        // 폴백 값은 반드시 CreateDefault()와 같아야 한다. 여기만 다르게 두면 "설정 파일이 손상된
+        // 유저"와 "파일이 아예 없는 유저"가 서로 다른 상태로 시작한다. 특히 fps를 Unlimited로
+        // 떨어뜨리면 파일이 한 번 깨진 것만으로 프레임 제한이 풀려 발열·팬 소음이 생긴다.
         if ((int)language < 0 || (int)language >= SUPPORTED_LANGUAGE_COUNT) { language = EOptionLanguage.Korean; _corrected = true; }
         if ((int)resolution < 0 || (int)resolution >= ResolutionCount) { resolution = EResolution.Res1920x1080; _corrected = true; }
-        if ((int)windowMode < 0 || (int)windowMode >= WINDOW_MODE_COUNT) { windowMode = EWindowMode.Windowed; _corrected = true; }
-        if ((int)fps < 0 || (int)fps >= FPS_COUNT) { fps = EFPS.Unlimited; _corrected = true; }
+        if ((int)windowMode < 0 || (int)windowMode >= WINDOW_MODE_COUNT) { windowMode = EWindowMode.Fullscreen; _corrected = true; }
+        if ((int)fps < 0 || (int)fps >= FPS_COUNT) { fps = EFPS.FPS60; _corrected = true; }
         if ((int)pauseOnUnfocus < 0 || (int)pauseOnUnfocus >= ON_OFF_COUNT) { pauseOnUnfocus = EOnOff.Off; _corrected = true; }
         if ((int)gamepadIconPreference < 0 || (int)gamepadIconPreference >= GAMEPAD_ICON_PREFERENCE_COUNT) { gamepadIconPreference = EGamepadIconPreference.Auto; _corrected = true; }
 
