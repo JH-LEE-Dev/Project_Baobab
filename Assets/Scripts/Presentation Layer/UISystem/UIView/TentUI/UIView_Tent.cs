@@ -1,7 +1,6 @@
 using System;
 using PresentationLayer.UISystem.CustomNumber;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class UIView_Tent : UIView
 {
@@ -29,6 +28,7 @@ public class UIView_Tent : UIView
 
     private bool isInitialOpen = false;
     private bool playSoundsForCurrentPresentation;
+    private bool isUICancelPausedForPresentation;
 
     // 이 창을 열기 직전의 입력 모드/이동 잠금 상태. 닫을 때 Gameplay·false를 박는 대신 이 값으로 되돌린다.
     //
@@ -91,29 +91,22 @@ public class UIView_Tent : UIView
     {
         abilityUIComponent?.Tick();
         UpdateTutorialHUDPresentation();
-    }
 
-    public override void Hide()
-    {
-        // UI Cancel 이벤트는 입력 장치 자동 판별보다 먼저 전달될 수 있다. 키마 모드에서 처음 누른
-        // B/○라면 이 TentUI 안에서 즉시 패드 모드로 바꾸고, 닫기 요청은 한 번만 소비한다.
-        Gamepad _gamepad = Gamepad.current;
-        if (true == IsVisible &&
-            null != viewCtx?.inputManager &&
-            false == viewCtx.inputManager.IsGamepadMode &&
-            null != _gamepad &&
-            true == _gamepad.buttonEast.wasPressedThisFrame)
+        InputManager _inputManager = viewCtx?.inputManager;
+        bool _canProcessCancel = null == abilityUIComponent ||
+                                 true == abilityUIComponent.CanProcessGamepadUICancelThisFrame;
+
+        if (true == IsVisible && null != _inputManager && true == _inputManager.IsGamepadMode &&
+            true == _canProcessCancel && true == _inputManager.WasGamepadUICancelPressedThisFrame)
         {
-            viewCtx.inputManager.ForceInputDevice(EInputDeviceType.Gamepad);
-            return;
+            Hide();
         }
-
-        base.Hide();
     }
 
     protected override void OnShow()
     {
         base.OnShow();
+        PauseSharedUICancelForPresentation();
 
         // 반드시 아래의 조기 return과 SetInputMode(UI)/PauseMove(true)보다 먼저 읽는다.
         // (inputModeBeforeShow 주석 참고)
@@ -143,6 +136,7 @@ public class UIView_Tent : UIView
     protected override void OnHide()
     {
         base.OnHide();
+        ResumeSharedUICancelAfterPresentation();
 
         Sound.ReleaseAudioDuck();
 
@@ -160,6 +154,26 @@ public class UIView_Tent : UIView
         abilityUIComponent?.Close();
 
         TentUIClosedEvent?.Invoke();
+    }
+
+    private void PauseSharedUICancelForPresentation()
+    {
+        if (true == isUICancelPausedForPresentation || null == viewCtx?.inputManager)
+            return;
+
+        // B는 이 뷰의 Update에서 전용 입력으로 처리한다. 공용 UICancelEvent까지 살아 있으면
+        // UIDepthController가 먼저 Hide를 호출하여 전환 프레임 방어와 포커스 판정을 우회한다.
+        viewCtx.inputManager.PauseUICancelKey(true);
+        isUICancelPausedForPresentation = true;
+    }
+
+    private void ResumeSharedUICancelAfterPresentation()
+    {
+        if (false == isUICancelPausedForPresentation)
+            return;
+
+        viewCtx?.inputManager?.PauseUICancelKey(false);
+        isUICancelPausedForPresentation = false;
     }
 
     #endregion
@@ -273,6 +287,8 @@ public class UIView_Tent : UIView
     // Tent UI 정리 시 확장 포인트로 남겨둔다.
     public override void OnDestroy()
     {
+        ResumeSharedUICancelAfterPresentation();
+
         // TentUI는 ESC 뎁스 스택에 등록되는 뷰(bCloseableByESC)라, 파괴 시 등록 해제를
         // 담당하는 base.OnDestroy()를 반드시 거쳐야 한다.
         base.OnDestroy();

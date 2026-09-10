@@ -68,10 +68,10 @@ public class UIView_Warning : UIView
     private RectTransform cancelButtonVisual;
     private LocalizationManager localizationManager;
     private InputManager inputManager;
-    private Action cachedOnUICancel;
     private Action<EInputDeviceType> cachedOnInputDeviceChanged;
     private bool isClosing;
     private bool playSoundsForCurrentPresentation;
+    private bool isUICancelPausedForPresentation;
 
     private sealed class WarningBGPiece
     {
@@ -87,7 +87,6 @@ public class UIView_Warning : UIView
         base.Initialize(_ctx);
         localizationManager = _ctx?.localizationManager;
         inputManager = _ctx?.inputManager;
-        cachedOnUICancel ??= OnUICancelPressed;
         cachedOnInputDeviceChanged ??= OnInputDeviceChanged;
 
         if (localizationManager != null)
@@ -111,14 +110,26 @@ public class UIView_Warning : UIView
     public void ShowWarning()
     {
         playSoundsForCurrentPresentation = true;
+        PauseSharedUICancelForPresentation();
+        Show();
+    }
 
-        if (null != inputManager?.inputReader && null != cachedOnUICancel)
+    public override void Update()
+    {
+        base.Update();
+
+        if (false == IsVisible || true == isClosing || false == gameObject.activeInHierarchy ||
+            null == inputManager || false == inputManager.IsGamepadMode)
+            return;
+
+        if (true == inputManager.WasGamepadUICancelPressedThisFrame)
         {
-            inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
-            inputManager.inputReader.UICancelEvent += cachedOnUICancel;
+            OnCancelButtonClicked();
+            return;
         }
 
-        Show();
+        if (true == inputManager.WasGamepadUIConfirmPressedThisFrame)
+            ActivateSelectedButtonWithGamepadConfirm();
     }
 
     public override void Hide()
@@ -178,8 +189,7 @@ public class UIView_Warning : UIView
         if (playSoundsForCurrentPresentation)
             Sound.ReleaseAudioDuck();
 
-        if (null != inputManager?.inputReader && null != cachedOnUICancel)
-            inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+        ResumeSharedUICancelAfterPresentation();
 
         DeActivateWarningUI();
         bApproved = false;
@@ -197,11 +207,9 @@ public class UIView_Warning : UIView
         if (null != inputManager?.inputReader && null != cachedOnInputDeviceChanged)
             inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
 
-        if (null != inputManager?.inputReader && null != cachedOnUICancel)
-            inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
+        ResumeSharedUICancelAfterPresentation();
 
         DeActivateWarningUIEvent = null;
-        cachedOnUICancel = null;
         cachedOnInputDeviceChanged = null;
         inputManager = null;
         base.OnDestroy();
@@ -817,6 +825,33 @@ public class UIView_Warning : UIView
         }
     }
 
+    private void ActivateSelectedButtonWithGamepadConfirm()
+    {
+        if (null == EventSystem.current)
+            return;
+
+        GameObject selected = EventSystem.current.currentSelectedGameObject;
+
+        if (IsSelectedInteractableButton(selected, okTouchAreaButton))
+        {
+            ClearButtonSelection();
+            OnOKButtonClicked();
+            return;
+        }
+
+        if (IsSelectedInteractableButton(selected, cancelTouchAreaButton))
+        {
+            ClearButtonSelection();
+            OnCancelButtonClicked();
+        }
+    }
+
+    private static bool IsSelectedInteractableButton(GameObject selected, Button button)
+    {
+        return null != selected && null != button && selected == button.gameObject &&
+               true == button.isActiveAndEnabled && true == button.IsInteractable();
+    }
+
     private void OnInputDeviceChanged(EInputDeviceType device)
     {
         if (false == IsVisible || true == isClosing || false == gameObject.activeInHierarchy)
@@ -835,12 +870,22 @@ public class UIView_Warning : UIView
         }
     }
 
-    private void OnUICancelPressed()
+    private void PauseSharedUICancelForPresentation()
     {
-        if (false == IsVisible || true == isClosing || false == gameObject.activeInHierarchy)
+        if (true == isUICancelPausedForPresentation || null == inputManager)
             return;
 
-        OnCancelButtonClicked();
+        inputManager.PauseUICancelKey(true);
+        isUICancelPausedForPresentation = true;
+    }
+
+    private void ResumeSharedUICancelAfterPresentation()
+    {
+        if (false == isUICancelPausedForPresentation)
+            return;
+
+        inputManager?.PauseUICancelKey(false);
+        isUICancelPausedForPresentation = false;
     }
 
     private void ClearButtonSelection()

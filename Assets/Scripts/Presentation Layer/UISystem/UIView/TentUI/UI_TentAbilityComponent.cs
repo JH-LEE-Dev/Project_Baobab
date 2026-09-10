@@ -180,6 +180,23 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     public bool IsMouseKeyboardControlMode => TentAbilityControlMode.MouseKeyboard == currentControlMode;
 
+    public bool CanProcessGamepadUICancelThisFrame
+    {
+        get
+        {
+            if (TentAbilityControlMode.Pad != currentControlMode || Time.frameCount == padInputSuppressedFrame)
+                return false;
+
+            EventSystem _eventSystem = EventSystem.current;
+            if (null == _eventSystem)
+                return true;
+
+            GameObject _selectedObject = _eventSystem.currentSelectedGameObject;
+            return null == _selectedObject || false == _selectedObject.activeInHierarchy ||
+                   _selectedObject == gameObject;
+        }
+    }
+
     private struct PrestigeHUDState
     {
         public static PrestigeHUDState Invalid => new PrestigeHUDState(false, 0, 0, 1);
@@ -3147,8 +3164,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (Time.frameCount == padInputSuppressedFrame || false == IsViewInputEnabled())
             return;
 
-        Gamepad _gamepad = Gamepad.current;
-        if (_gamepad == null || false == _gamepad.buttonSouth.wasPressedThisFrame)
+        if (null == inputManager || false == inputManager.WasGamepadUIConfirmPressedThisFrame)
             return;
 
         AbilityNode _targetNode = currentPadCursorNode;
