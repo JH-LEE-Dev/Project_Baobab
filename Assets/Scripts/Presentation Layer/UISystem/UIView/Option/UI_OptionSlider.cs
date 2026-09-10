@@ -124,7 +124,13 @@ public class UI_OptionSlider : Selectable, IMoveHandler
         {
             slider.minValue = _minValue;
             slider.maxValue = _maxValue;
-            slider.value = _initialValue;
+
+            // 알림 없이 초기값을 넣는다. 그냥 slider.value에 대입하면 프리팹에 저장된 값과
+            // 다를 때 onValueChanged가 발화하는데, 이 콜백은 "유저가 값을 바꿨다"는 뜻이라
+            // 옵션 창을 한 번도 열지 않아도 설정이 변경·저장되고 효과음 미리듣기까지 울린다.
+            // (UI 생성 시점에 Initialize가 호출되므로 메인메뉴 진입만으로 발생한다)
+            slider.SetValueWithoutNotify(_initialValue);
+
             Navigation _noneNav = new Navigation();
             _noneNav.mode = Navigation.Mode.None;
             slider.navigation = _noneNav;
@@ -135,7 +141,8 @@ public class UI_OptionSlider : Selectable, IMoveHandler
             titleText.text = _title;
         }
 
-        UpdateValueDisplay(_initialValue);
+        // 슬라이더가 클램프·정수화한 뒤의 값을 표기해야 눈금과 숫자가 어긋나지 않는다.
+        UpdateValueDisplay(null != slider ? slider.value : _initialValue);
     }
 
     public void SetCustomScroll(UI_CustomScroll _scroll)
@@ -143,11 +150,19 @@ public class UI_OptionSlider : Selectable, IMoveHandler
         customScroll = _scroll;
     }
 
+    /// <summary>
+    /// 바깥(설정값)의 현재 상태를 UI에 반영합니다.
+    ///
+    /// 유저 조작이 아니므로 onValueChanged를 발화시키지 않습니다. 여기서 콜백이 돌면 UI가 방금
+    /// 읽어온 값을 그대로 되돌려 써서 "변경됨"으로 취급되고, 창을 열기만 해도 설정이 저장됩니다.
+    /// 대신 내부 리스너가 돌지 않으므로 표기는 직접 갱신합니다.
+    /// </summary>
     public void UpdateValue(float _value)
     {
         if (null != slider)
         {
-            slider.value = _value;
+            slider.SetValueWithoutNotify(_value);
+            UpdateValueDisplay(slider.value);
         }
         else
         {

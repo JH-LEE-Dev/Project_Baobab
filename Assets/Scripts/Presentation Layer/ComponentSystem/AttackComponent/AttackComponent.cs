@@ -151,6 +151,12 @@ public class AttackComponent : PComponent
             }
         }
 
+        // 옵션의 "캐릭터 조준 인디케이터 밝기"를 따라간다. 값을 매 프레임 읽는 것이 아니라
+        // 적용 시점에만 머티리얼에 반영하면 되므로 이벤트를 구독한다.
+        SettingsManager.Instance.OnGraphicsSettingsAppliedEvent -= HandleGraphicsSettingsApplied;
+        SettingsManager.Instance.OnGraphicsSettingsAppliedEvent += HandleGraphicsSettingsApplied;
+        HandleGraphicsSettingsApplied(SettingsManager.Instance.Current);
+
         BindEvents();
     }
 
@@ -786,6 +792,13 @@ public class AttackComponent : PComponent
 
     private void OnDestroy()
     {
+        // ReleaseEvents는 ctx가 없으면 조기 반환하므로 설정 구독은 따로 끊는다.
+        // 종료 중에 Instance 게터를 쓰면 싱글턴이 되살아나므로 HasInstance로 확인한다.
+        if (true == SettingsManager.HasInstance)
+        {
+            SettingsManager.Instance.OnGraphicsSettingsAppliedEvent -= HandleGraphicsSettingsApplied;
+        }
+
         ReleaseEvents();
     }
 
@@ -955,6 +968,36 @@ public class AttackComponent : PComponent
         }
     }
 
+    /// <summary>
+    /// 인디케이터가 도달해야 할 알파값입니다.
+    /// 머티리얼에 작성된 원래 알파(indicatorFullAlpha)에 옵션의 밝기 설정을 곱한 값이며,
+    /// 설정이 0이면 완전히 보이지 않습니다.
+    ///
+    /// 페이드인의 목표값과 페이드가 끊겼을 때 되돌릴 값이 모두 이 값이어야 하므로,
+    /// indicatorFullAlpha를 직접 쓰지 말고 반드시 이 메서드를 거쳐야 합니다.
+    /// </summary>
+    private float GetIndicatorTargetAlpha()
+    {
+        float _scale = SettingsManager.Instance.Current.crosshairBrightness / SettingsData.SLIDER_MAX;
+        return indicatorFullAlpha * Mathf.Clamp01(_scale);
+    }
+
+    /// <summary>
+    /// 밝기 설정이 적용되면 지금 떠 있는 인디케이터에도 곧바로 반영합니다.
+    /// (옵션 창에서 슬라이더를 움직이는 동안의 실시간 미리보기 포함)
+    /// </summary>
+    private void HandleGraphicsSettingsApplied(SettingsData _data)
+    {
+        if (null == ellipseIndicatorMat) return;
+
+        // 페이드 중이면 코루틴이 매 프레임 목표값을 다시 읽으므로 여기서 건드리면 연출이 튄다.
+        if (null != indicatorFadeCoroutine) return;
+
+        Color _color = ellipseIndicatorMat.GetColor(BaseColorID);
+        _color.a = GetIndicatorTargetAlpha();
+        ellipseIndicatorMat.SetColor(BaseColorID, _color);
+    }
+
     public void SetEnable(bool _boolean)
     {
         ellipseRadiusIndicator.gameObject.SetActive(_boolean);
@@ -976,7 +1019,7 @@ public class AttackComponent : PComponent
             // 페이드 도중 꺼졌다면(예: 던전→마을 이동) 머티리얼에 중간 알파값이 남아있을 수 있으므로,
             // 다음 SetEnable(true)이 항상 0에서 시작할 수 있도록 즉시 원래 알파로 되돌려 둔다.
             Color color = ellipseIndicatorMat.GetColor(BaseColorID);
-            color.a = indicatorFullAlpha;
+            color.a = GetIndicatorTargetAlpha();
             ellipseIndicatorMat.SetColor(BaseColorID, color);
         }
     }
@@ -991,12 +1034,12 @@ public class AttackComponent : PComponent
         while (elapsed < IndicatorFadeInDuration)
         {
             elapsed += Time.deltaTime;
-            color.a = Mathf.Lerp(0f, indicatorFullAlpha, elapsed / IndicatorFadeInDuration);
+            color.a = Mathf.Lerp(0f, GetIndicatorTargetAlpha(), elapsed / IndicatorFadeInDuration);
             ellipseIndicatorMat.SetColor(BaseColorID, color);
             yield return null;
         }
 
-        color.a = indicatorFullAlpha;
+        color.a = GetIndicatorTargetAlpha();
         ellipseIndicatorMat.SetColor(BaseColorID, color);
         indicatorFadeCoroutine = null;
     }

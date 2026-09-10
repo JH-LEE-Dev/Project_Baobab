@@ -113,12 +113,33 @@ public class SettingsManager : MonoBehaviour
     // 유저가 실제로 값을 바꿨을 때만 파일에 기록한다.
     // 이 플래그가 없으면 옵션 창을 한 번도 열지 않고 종료해도 기본값이 저장되어,
     // 다음 실행부터 Player Settings의 시작 해상도가 덮어써진다.
+    // 뜻은 "파일이 최신이 아님" 하나뿐이며, Save()가 내린다.
     private bool isDirty = false;
 
+    /// <summary>
+    /// 아직 하위 시스템에 반영(적용)되지 않은 변경분이 있는지입니다.
+    ///
+    /// isDirty("파일이 최신이 아님")와 반드시 분리해야 합니다. 볼륨·밝기처럼 조작 즉시
+    /// 저장되는 항목이 하나라도 있으면 그 Save()가 isDirty를 내려버리는데, CommitChanges가
+    /// 그 플래그로 할 일을 판단하면 "해상도를 바꾼 뒤 볼륨을 건드리고 적용을 누르면 화면이
+    /// 그대로"인 증상이 됩니다. 적용 여부와 저장 여부는 서로 독립이므로 플래그도 따로 둡니다.
+    /// </summary>
+    private bool isApplyPending = false;
+
     // 화면(해상도·창모드·FPS) 항목이 바뀌었는지를 따로 추적한다.
-    // isDirty는 "무언가 바뀜"일 뿐이라, 이걸 구분하지 않으면 볼륨만 조정하고 창을 닫아도
+    // isApplyPending은 "무언가 바뀜"일 뿐이라, 이걸 구분하지 않으면 볼륨만 조정하고 창을 닫아도
     // 해상도가 다시 적용되어 창 크기가 튄다.
     private bool isDisplayDirty = false;
+
+    /// <summary>
+    /// 값이 바뀌었음을 기록합니다. 값을 수정하는 모든 경로는 isDirty를 직접 세우지 말고
+    /// 이 메서드를 거쳐야 합니다. (한쪽만 세우면 저장은 되는데 적용이 안 되거나 그 반대가 됩니다)
+    /// </summary>
+    private void MarkDirty()
+    {
+        isDirty = true;
+        isApplyPending = true;
+    }
 
     /// <summary>현재 설정값 스냅샷입니다. (구조체이므로 복사본이 반환됩니다)</summary>
     public SettingsData Current
@@ -213,8 +234,13 @@ public class SettingsManager : MonoBehaviour
         if (current.language == _lang) return;
 
         current.language = _lang;
-        isDirty = true;
+        MarkDirty();
         ApplyLanguage();
+
+        // 언어는 '적용' 없이 즉시 반영되는 항목이므로 CycleLanguage와 동일하게 여기서 바로 기록한다.
+        // 이 저장이 없으면 유일한 호출부인 초기 설정 팝업에서, 뒤이어 동의를 저장하는 SetDataConsent에
+        // 언어까지 얹혀가는 암묵적 결합에 기대게 된다. 팝업에 취소 경로가 생기는 순간 조용히 깨진다.
+        Save();
     }
 
     public void CycleLanguage(int _delta)
@@ -225,19 +251,16 @@ public class SettingsManager : MonoBehaviour
         if (_next == current.language) return;
 
         current.language = _next;
+        MarkDirty();
         ApplyLanguage();
 
         // 언어는 적용 버튼 없이 즉시 반영되는 항목이라 여기서 바로 기록한다.
         // CommitChanges를 쓰면 안 된다. 아직 적용을 누르지 않은 화면 변경분(해상도·창모드)까지
         // 같이 적용되어, 언어만 바꿨는데 창 크기가 그 자리에서 튄다.
-        // SetDataConsent와 같은 방식으로, 저장 전 isDirty를 기억했다가 되돌린다.
-        // (Save가 isDirty를 내려버리면 이후 유저가 적용을 눌러도 CommitChanges가 그냥 반환한다)
-        bool _wasDirty = isDirty;
-
-        isDirty = true;
+        //
+        // Save()는 isDirty만 내리고 isApplyPending은 건드리지 않으므로, 여기서 저장해도
+        // 아직 적용을 누르지 않은 다른 변경분의 "미적용" 표시는 그대로 남는다.
         Save();
-
-        isDirty = _wasDirty;
     }
 
     /// <summary>데이터 수집 동의 상태입니다. (NotAsked = 아직 묻지 않음)</summary>
@@ -265,19 +288,14 @@ public class SettingsManager : MonoBehaviour
         if (current.dataConsent == _consent) return;
 
         // 설정은 파일 하나에 통째로 직렬화되므로, 여기서 저장하면 아직 "적용"을 누르지 않은
-        // 다른 변경분(해상도·볼륨 등)까지 같이 기록된다. 그것 자체는 큰 문제가 아니지만,
-        // Save()가 isDirty를 내려버리는 것은 문제다. 그 상태로 유저가 적용을 누르면
-        // CommitChanges가 맨 앞의 isDirty 검사에서 그냥 돌아가버려, 해상도를 바꾸고 적용을
-        // 눌러도 화면이 그대로인 증상이 된다. 그래서 저장 전 상태를 복원해준다.
-        bool _wasDirty = isDirty;
-
+        // 다른 변경분(해상도·볼륨 등)까지 같이 기록된다. 그것 자체는 문제가 되지 않는다.
+        // Save()는 isDirty("파일이 최신이 아님")만 내리고 isApplyPending("아직 적용되지 않음")은
+        // 건드리지 않으므로, 이후 유저가 적용을 눌렀을 때 CommitChanges가 정상적으로 동작한다.
         current.dataConsent = _consent;
-        isDirty = true;
+        MarkDirty();
 
         // 화면 설정과 무관하므로 isDisplayDirty는 세우지 않는다. (세우면 동의만 바꿔도 창 크기가 튄다)
         Save();
-
-        isDirty = _wasDirty;
 
         OnDataConsentChangedEvent?.Invoke(current.dataConsent);
     }
@@ -336,6 +354,11 @@ public class SettingsManager : MonoBehaviour
         get
         {
             EnsureLoaded();
+
+            // 상한은 모니터 전체 크기다. 작업 표시줄을 뺀 작업 영역이 아니다.
+            // 창모드에서 창이 작업 표시줄에 가려지거나 화면 밖으로 밀려나는 것은 허용한다.
+            // (작업 영역을 상한으로 쓰면 1920x1080 모니터에서 창모드 최대값이 1280x800으로
+            //  떨어져, 흔한 환경에서 고를 수 있는 해상도가 크게 줄어든다)
             DisplayUtil.GetMainDisplaySize(out int _maxWidth, out int _maxHeight);
             return SettingsData.ClampResolution(current.resolution, _maxWidth, _maxHeight);
         }
@@ -351,6 +374,7 @@ public class SettingsManager : MonoBehaviour
         EnsureLoaded();
 
         // 디스플레이 조회는 루프 밖에서 한 번만 수행한다.
+        // 상한 기준은 EffectiveResolution과 같아야 한다. (모니터 전체 크기)
         DisplayUtil.GetMainDisplaySize(out int _maxWidth, out int _maxHeight);
 
         // enum 인덱스가 아니라 표시 순서를 순환한다. 유저가 화면에서 보는 나열 순서와
@@ -402,8 +426,56 @@ public class SettingsManager : MonoBehaviour
         MarkDisplayDirty();
     }
 
+    // 화면 항목 직접 지정 (되돌리기처럼 "이 값으로 만들어라"가 필요한 경로용)
+    //
+    // Cycle 계열을 목표값에 닿을 때까지 반복 호출하는 방식으로 대신하면 안 된다.
+    // CycleResolution은 현재 모니터에서 표시 가능한 값만 고르는데, 저장된 값은 표시 불가능한
+    // 값일 수 있기 때문이다(큰 모니터에서 맞춘 설정을 작은 모니터에서 실행한 경우).
+    // 그 상태에서 반복 호출하면 목표에 영영 닿지 못해 메인 스레드가 무한 루프에 빠진다.
+    //
+    // 표시 불가능한 값도 그대로 받는 것이 맞다. 저장값은 유저의 원래 선택이고, 현재 모니터에
+    // 맞춘 강등은 적용 시점에만 수행하기 때문이다. (SettingsData.ClampResolution 주석 참고)
+
+    /// <summary>해상도를 직접 지정합니다. 현재 모니터에서 표시 불가능한 값도 그대로 보존합니다.</summary>
+    public void SetResolution(EResolution _res)
+    {
+        EnsureLoaded();
+        if (current.resolution == _res) return;
+
+        current.resolution = _res;
+        MarkDisplayDirty();
+    }
+
+    public void SetWindowMode(EWindowMode _mode)
+    {
+        EnsureLoaded();
+        if (current.windowMode == _mode) return;
+
+        current.windowMode = _mode;
+        MarkDisplayDirty();
+        OnWindowModeChangedEvent?.Invoke(current.windowMode);
+    }
+
+    public void SetFps(EFPS _fps)
+    {
+        EnsureLoaded();
+        if (current.fps == _fps) return;
+
+        current.fps = _fps;
+        MarkDisplayDirty();
+    }
+
+    public void SetPauseOnUnfocus(EOnOff _val)
+    {
+        EnsureLoaded();
+        if (current.pauseOnUnfocus == _val) return;
+
+        current.pauseOnUnfocus = _val;
+        MarkDisplayDirty();
+    }
+
     /// <summary>
-    /// 패드 아이콘 표기를 순환시킵니다. 화면 항목이 아니므로 MarkDisplayDirty가 아니라 isDirty만 세웁니다.
+    /// 패드 아이콘 표기를 순환시킵니다. 화면 항목이 아니므로 MarkDisplayDirty가 아니라 MarkDirty만 부릅니다.
     /// (여기서 화면 dirty를 세우면 표기만 바꿔도 해상도가 다시 적용되어 창 크기가 튑니다)
     ///
     /// 선택 즉시 화면의 아이콘이 바뀌어야 유저가 무엇을 고르는지 알 수 있으므로,
@@ -417,7 +489,7 @@ public class SettingsManager : MonoBehaviour
         if (_next == current.gamepadIconPreference) return;
 
         current.gamepadIconPreference = _next;
-        isDirty = true;
+        MarkDirty();
 
         ApplyInputSettingsLive();
     }
@@ -434,7 +506,7 @@ public class SettingsManager : MonoBehaviour
         if (Mathf.Approximately(_val, current.hapticStrength)) return;
 
         current.hapticStrength = _val;
-        isDirty = true;
+        MarkDirty();
 
         ApplyInputSettingsLive();
     }
@@ -453,7 +525,7 @@ public class SettingsManager : MonoBehaviour
         if (Mathf.Approximately(_val, current.virtualCursorSensitivity)) return;
 
         current.virtualCursorSensitivity = _val;
-        isDirty = true;
+        MarkDirty();
 
         ApplyInputSettingsLive();
     }
@@ -466,20 +538,20 @@ public class SettingsManager : MonoBehaviour
         if (_preference == current.gamepadIconPreference) return;
 
         current.gamepadIconPreference = _preference;
-        isDirty = true;
+        MarkDirty();
 
         ApplyInputSettingsLive();
     }
 
-    public void SetCameraShake(float _val) { EnsureLoaded(); current.cameraShake = _val; isDirty = true; }
-    public void SetCrosshairBrightness(float _val) { EnsureLoaded(); current.crosshairBrightness = _val; isDirty = true; }
-    public void SetChromaticAberration(float _val) { EnsureLoaded(); current.chromaticAberration = _val; isDirty = true; }
-    public void SetBrightness(float _val) { EnsureLoaded(); current.brightness = _val; isDirty = true; }
-    public void SetSaturation(float _val) { EnsureLoaded(); current.saturation = _val; isDirty = true; }
+    public void SetCameraShake(float _val) { EnsureLoaded(); current.cameraShake = _val; MarkDirty(); }
+    public void SetCrosshairBrightness(float _val) { EnsureLoaded(); current.crosshairBrightness = _val; MarkDirty(); }
+    public void SetChromaticAberration(float _val) { EnsureLoaded(); current.chromaticAberration = _val; MarkDirty(); }
+    public void SetBrightness(float _val) { EnsureLoaded(); current.brightness = _val; MarkDirty(); }
+    public void SetSaturation(float _val) { EnsureLoaded(); current.saturation = _val; MarkDirty(); }
 
-    public void SetMasterVolume(float _val) { EnsureLoaded(); current.masterVolume = _val; isDirty = true; }
-    public void SetBgmVolume(float _val) { EnsureLoaded(); current.bgmVolume = _val; isDirty = true; }
-    public void SetSfxVolume(float _val) { EnsureLoaded(); current.sfxVolume = _val; isDirty = true; }
+    public void SetMasterVolume(float _val) { EnsureLoaded(); current.masterVolume = _val; MarkDirty(); }
+    public void SetBgmVolume(float _val) { EnsureLoaded(); current.bgmVolume = _val; MarkDirty(); }
+    public void SetSfxVolume(float _val) { EnsureLoaded(); current.sfxVolume = _val; MarkDirty(); }
 
     /// <summary>
     /// 볼륨을 조작하는 즉시 소리에 반영합니다. (슬라이더를 드래그하는 동안 실시간 피드백용)
@@ -513,7 +585,7 @@ public class SettingsManager : MonoBehaviour
 
     private void MarkDisplayDirty()
     {
-        isDirty = true;
+        MarkDirty();
         isDisplayDirty = true;
     }
 
@@ -552,9 +624,10 @@ public class SettingsManager : MonoBehaviour
         EnsureLoaded();
         ApplyDisplaySettings();
 
-        // 화면을 방금 적용했으므로 미적용 표시를 내린다. 이걸 내리지 않으면 이후 CommitChanges가
+        // 방금 전부 적용했으므로 미적용 표시를 내린다. 이걸 내리지 않으면 이후 CommitChanges가
         // 볼륨만 바꾼 경우에도 화면을 다시 적용해 창 크기가 튄다.
         isDisplayDirty = false;
+        isApplyPending = false;
 
         // 하위 시스템이 자기 몫을 가져가도록 알린다. (구독자가 없으면 아무 일도 일어나지 않음)
         OnAudioSettingsAppliedEvent?.Invoke(current);
@@ -582,10 +655,14 @@ public class SettingsManager : MonoBehaviour
     /// 유저가 값을 바꾼 경우에만 적용하고 저장합니다. (옵션 창을 닫을 때 호출)
     /// 바꾼 게 없으면 아무 일도 하지 않으므로, 창을 열었다 닫기만 해서
     /// 화면 해상도가 임의로 바뀌는 일이 없습니다.
+    ///
+    /// 판단 기준은 isDirty("파일이 최신이 아님")가 아니라 isApplyPending("아직 적용되지 않음")이다.
+    /// 볼륨·밝기 슬라이더는 조작 즉시 Save()까지 하므로, isDirty를 보면 "해상도를 바꾼 뒤
+    /// 볼륨을 만지고 적용을 누르면 화면이 그대로"인 증상이 된다.
     /// </summary>
     public void CommitChanges()
     {
-        if (false == isDirty) return;
+        if (false == isApplyPending && false == isDisplayDirty) return;
 
         EnsureLoaded();
 
@@ -597,8 +674,13 @@ public class SettingsManager : MonoBehaviour
             isDisplayDirty = false;
         }
 
+        // 세 계열을 모두 알린다. ApplySettings/ApplyNonDisplaySettings와 통지 범위가 달라지면
+        // "적용을 눌렀는데 이 항목만 반영이 안 된다"는 경로가 생긴다.
         OnAudioSettingsAppliedEvent?.Invoke(current);
         OnGraphicsSettingsAppliedEvent?.Invoke(current);
+        OnInputSettingsAppliedEvent?.Invoke(current);
+
+        isApplyPending = false;
 
         Save();
     }
@@ -649,6 +731,13 @@ public class SettingsManager : MonoBehaviour
             // 해상도를 알아내지 못했더라도 전체화면 여부는 반영해야 한다.
             // (그냥 return하면 유저가 전체화면을 골라도 아무 반응이 없다)
             Screen.fullScreen = _isFullscreen;
+
+            // 크기는 몰라도 화면은 실제로 바뀌었으므로 구독자에게 알린다. 이 통지를 건너뛰면
+            // 줌 연출이 꺼둔 CinemachinePixelPerfect가 복구되지 않는다.
+            // (CameraMoveController.HandleScreenTargetResolved가 유일한 런타임 복구 경로다)
+            // 이 시점의 Screen 값은 아직 변경 전이지만, 구독자들은 "바뀌었다"는 사실만 쓰거나
+            // 다음 프레임에 실제 값으로 스스로 보정한다.
+            OnScreenTargetResolvedEvent?.Invoke(Screen.width, Screen.height);
             return;
         }
 
@@ -793,8 +882,10 @@ public class SettingsManager : MonoBehaviour
         isDirty = (ESettingsLoadResult.Discarded == _result)
                || (ESettingsLoadResult.Loaded == _result && true == _corrected);
 
-        // 로드 직후의 화면 적용은 Bootstrap이 담당하므로 여기서는 세우지 않는다.
+        // 로드 직후의 적용은 Bootstrap이 담당하므로 여기서는 세우지 않는다.
+        // (여기서 세우면 유저가 아무것도 바꾸지 않았는데 옵션 창을 닫는 것만으로 화면이 다시 적용된다)
         isDisplayDirty = false;
+        isApplyPending = false;
     }
 
     /// <summary>
@@ -803,24 +894,68 @@ public class SettingsManager : MonoBehaviour
     /// </summary>
     public void Save(bool _force = false)
     {
+        // 예약된 지연 저장이 있었다면 지금 기록으로 갈음된다.
+        pendingSaveTime = NO_PENDING_SAVE;
+
         if (false == isDirty && false == _force) return;
 
         SettingsRepository.Save(current);
         isDirty = false;
     }
 
+    private const float NO_PENDING_SAVE = -1f;
+
+    /// <summary>
+    /// 마지막 호출로부터 이 시간(초)만큼 조용해지면 실제로 파일에 기록합니다.
+    /// 드래그 중에는 계속 뒤로 밀리고, 손을 뗀 뒤 한 번만 기록됩니다.
+    /// </summary>
+    private const float SAVE_DEBOUNCE_SECONDS = 0.5f;
+
+    /// <summary>다음 지연 저장 시각(unscaled). NO_PENDING_SAVE면 예약 없음.</summary>
+    private float pendingSaveTime = NO_PENDING_SAVE;
+
+    /// <summary>
+    /// 저장을 조금 뒤로 미룹니다. 슬라이더처럼 값이 연속으로 쏟아지는 조작에 씁니다.
+    ///
+    /// 매 변화마다 Save()를 부르면 드래그하는 동안 프레임당 한 번씩
+    /// JSON 직렬화 + 임시 파일 쓰기 + File.Replace가 돌아 프레임이 끊긴다.
+    ///
+    /// 미뤄둔 사이에 게임이 죽어도 값을 잃지 않는다. isDirty가 그대로 서 있어서
+    /// OnApplicationQuit의 Save()가 기록하고, 옵션 창을 닫을 때의 CommitChanges도 마찬가지다.
+    /// </summary>
+    public void SaveDeferred()
+    {
+        EnsureLoaded();
+        if (false == isDirty) return;
+
+        pendingSaveTime = Time.unscaledTime + SAVE_DEBOUNCE_SECONDS;
+    }
+
+    // 예약된 지연 저장을 흘려보내는 곳. 예약이 없으면 비교 한 번으로 끝난다.
+    private void Update()
+    {
+        if (NO_PENDING_SAVE == pendingSaveTime) return;
+        if (Time.unscaledTime < pendingSaveTime) return;
+
+        Save();
+    }
+
     // 유틸리티
     private static int IterateEnum(int _current, int _length, int _delta)
     {
-        int _newVal = _current + _delta;
-        if (_newVal < 0) return _length - 1;
-        if (_newVal >= _length) return 0;
+        if (_length <= 0) return 0;
+
+        // 나머지 연산으로 감싼다. 한 칸씩 이동(_delta = ±1)에서는 이전 구현과 결과가 같고,
+        // 두 칸 이상 이동해도 양 끝으로 튀지 않고 제대로 순환한다.
+        int _newVal = (_current + _delta) % _length;
+        if (_newVal < 0) _newVal += _length;
         return _newVal;
     }
 
     /// <summary>
     /// 옵션 창을 닫지 않고 게임을 종료해도 변경분이 남도록 보강합니다.
     /// 바꾼 게 없으면 Save()가 스스로 스킵하므로 빈 파일이 생기지 않습니다.
+    /// (SaveDeferred로 미뤄둔 변경분도 여기서 함께 기록됩니다)
     /// </summary>
     private void OnApplicationQuit()
     {
@@ -833,6 +968,7 @@ public class SettingsManager : MonoBehaviour
         OnWindowModeChangedEvent = null;
         OnAudioSettingsAppliedEvent = null;
         OnGraphicsSettingsAppliedEvent = null;
+        OnInputSettingsAppliedEvent = null;
         OnScreenTargetResolvedEvent = null;
         OnDataConsentChangedEvent = null;
 

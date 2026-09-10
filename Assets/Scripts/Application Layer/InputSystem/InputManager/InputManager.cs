@@ -442,16 +442,6 @@ public class InputManager : MonoBehaviour
         return inputReader.IsRebindable(_action, _device);
     }
 
-    public void BeginEditSession()
-    {
-        inputReader.BeginEditSession();
-    }
-
-    public void DiscardEditSession()
-    {
-        inputReader.DiscardEditSession();
-    }
-
     public bool CommitEditSession()
     {
         return inputReader.CommitEditSession();

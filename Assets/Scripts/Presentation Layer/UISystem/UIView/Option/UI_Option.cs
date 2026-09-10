@@ -405,7 +405,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         if (null != inputManager)
         {
-            inputManager.BeginEditSession();
             inputManager.inputReader.KeyBindingsChangedEvent -= cachedRefreshKeyBindRows;
             inputManager.inputReader.KeyBindingsChangedEvent += cachedRefreshKeyBindRows;
             inputManager.inputReader.GamepadConnectionChangedEvent -= cachedOnGamepadConnectionChanged;
@@ -1966,12 +1965,22 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     /// <summary>
     /// 데이터 수집 동의를 바꿉니다.
     /// 즉각 반영하지 않고, 다른 설정들처럼 유저가 '적용' 버튼을 누를 때 반영되도록 변경 사항을 대기시킵니다.
+    ///
+    /// 고를 수 있는 값이 동의/거부 둘뿐이라 좌우 방향은 결과가 같습니다. 그래서 _delta는 쓰지 않습니다.
+    ///
+    /// NotAsked를 Declined와 같이 취급하는 것이 중요합니다. 표기가 이미 "동의 안 함"으로 같으므로
+    /// (GetDataConsentText 참고) 여기서 NotAsked를 Declined로 보내면 화살표를 눌러도 글자가 그대로인데
+    /// '적용' 버튼만 켜져, 유저 눈에는 아무 일도 없이 버튼이 활성화된 것처럼 보입니다.
+    ///
+    /// 무심코 누른 것이 동의가 되지는 않습니다. 여기서는 대기값만 바꾸고, 실제 기록은 유저가
+    /// '적용'을 눌러야 일어납니다. (SettingsManager.CycleDataConsent와 규칙이 다른 이유입니다.
+    ///  그쪽은 즉시 반영되는 경로라 첫 입력이 동의 쪽으로 가면 안 됩니다)
     /// </summary>
     private void ApplyDataConsentCycle(int _delta)
     {
-        EDataConsent _next = (EDataConsent.Granted == pendingDataConsent) ? EDataConsent.Declined : EDataConsent.Granted;
-        if (EDataConsent.NotAsked == pendingDataConsent) _next = EDataConsent.Declined;
-        pendingDataConsent = _next;
+        pendingDataConsent = (EDataConsent.Granted == pendingDataConsent)
+            ? EDataConsent.Declined
+            : EDataConsent.Granted;
 
         if (null != dataConsentSelector)
         {
@@ -2031,43 +2040,53 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     }
 
     private void OnCameraShakeChanged(float _val) { settings.SetCameraShake(_val); UpdateApplyButtonState(); }
-    private void OnCrosshairBrightnessChanged(float _val) { settings.SetCrosshairBrightness(_val); UpdateApplyButtonState(); }
 
-    // 화면 효과는 조작 즉시 실시간 반영 및 자동 저장된다.
+    // 밝기는 숫자로 가늠이 안 되므로 조작하는 동안 인디케이터에 바로 비춘다. 저장은 '적용'에서 하고,
+    // 적용하지 않고 닫으면 스냅샷 복원이 원래 값으로 되돌린다. (진동 세기·커서 감도와 같은 방식)
+    private void OnCrosshairBrightnessChanged(float _val)
+    {
+        settings.SetCrosshairBrightness(_val);
+        settings.ApplyGraphicsSettingsLive();
+        UpdateApplyButtonState();
+    }
+
+    // 화면 효과와 볼륨은 조작 즉시 실시간 반영되고 자동 저장된다.
+    // 저장은 SaveDeferred로 미룬다. 슬라이더를 드래그하는 동안에는 값이 프레임마다 쏟아지는데,
+    // 그때마다 Save()를 부르면 프레임당 한 번씩 파일을 새로 쓰게 되어 드래그가 끊긴다.
+    // 미뤄둔 사이에 게임이 죽어도 값은 남는다. (SettingsManager.SaveDeferred 주석 참고)
     private void OnChromaticAberrationChanged(float _val)
     {
         settings.SetChromaticAberration(_val);
         settings.ApplyGraphicsSettingsLive();
-        settings.Save();
+        settings.SaveDeferred();
     }
 
     private void OnBrightnessChanged(float _val)
     {
         settings.SetBrightness(_val);
         settings.ApplyGraphicsSettingsLive();
-        settings.Save();
+        settings.SaveDeferred();
     }
 
     private void OnSaturationChanged(float _val)
     {
         settings.SetSaturation(_val);
         settings.ApplyGraphicsSettingsLive();
-        settings.Save();
+        settings.SaveDeferred();
     }
 
-    // 볼륨은 조작 즉시 실시간 반영 및 자동 저장된다.
     private void OnMasterVolumeChanged(float _val)
     {
         settings.SetMasterVolume(_val);
         settings.ApplyAudioSettingsLive();
-        settings.Save();
+        settings.SaveDeferred();
     }
 
     private void OnBgmVolumeChanged(float _val)
     {
         settings.SetBgmVolume(_val);
         settings.ApplyAudioSettingsLive();
-        settings.Save();
+        settings.SaveDeferred();
     }
 
     private void OnSfxVolumeChanged(float _val)
@@ -2075,7 +2094,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         settings.SetSfxVolume(_val);
         settings.ApplyAudioSettingsLive();
         PlaySfxVolumePreview(_val);
-        settings.Save();
+        settings.SaveDeferred();
     }
 
     // 효과음은 BGM과 달리 조작하는 동안 계속 울리는 소리가 없어서, 슬라이더를 움직여도 지금
@@ -2224,10 +2243,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         // 오버레이 닫기 연출 재생
         PlayRebindCloseProduction();
 
-        if (null != inputManager && false == inputManager.HasAnyConflict())
-        {
-            inputManager.CommitEditSession();
-        }
+        CommitKeyBindingsIfResolved();
 
         RefreshKeyBindRows();
     }
@@ -2485,11 +2501,29 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != inputManager)
         {
             inputManager.ResetAllBindings();
-            if (false == inputManager.HasAnyConflict())
-            {
-                inputManager.CommitEditSession();
-            }
+            CommitKeyBindingsIfResolved();
         }
+    }
+
+    /// <summary>
+    /// 중복이 남아 있지 않을 때만 키 바인딩을 파일에 기록합니다.
+    ///
+    /// 중복이 남는 것은 정상 경로가 아닙니다. 리바인딩에서 충돌이 나면 SwapConflictingBinding이
+    /// 기존 키와 맞바꿔 해소하게 되어 있어서, 여기까지 중복이 남아 왔다면 그 스왑이 실패한 것입니다.
+    /// 그대로 조용히 넘기면 유저 눈에는 키가 바뀐 것처럼 보이는데 다음 실행에 원래대로 돌아옵니다.
+    /// 원인을 추적할 수 있도록 경고를 남깁니다.
+    /// </summary>
+    private void CommitKeyBindingsIfResolved()
+    {
+        if (null == inputManager) return;
+
+        if (true == inputManager.HasAnyConflict())
+        {
+            Debug.LogWarning("[UI_Option] 키 중복이 남아 있어 바인딩을 저장하지 않았습니다. 변경분은 다음 실행에 사라집니다.");
+            return;
+        }
+
+        inputManager.CommitEditSession();
     }
 
     private void CancelResetAllBindings()
@@ -2583,25 +2617,14 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             dataConsentSelector.UpdateValue(GetDataConsentText(pendingDataConsent));
         }
 
-        while (settings.Current.windowMode != _snapshot.windowMode)
-        {
-            settings.CycleWindowMode(1);
-        }
-
-        while (settings.Current.resolution != _snapshot.resolution)
-        {
-            settings.CycleResolution(1);
-        }
-
-        while (settings.Current.fps != _snapshot.fps)
-        {
-            settings.CycleFps(1);
-        }
-
-        while (settings.Current.pauseOnUnfocus != _snapshot.pauseOnUnfocus)
-        {
-            settings.CyclePauseOnUnfocus(1);
-        }
+        // 화면 항목은 Cycle을 반복 호출하지 않고 값을 직접 되돌린다.
+        // CycleResolution은 현재 모니터에서 표시 가능한 값만 고르는데, 스냅샷에 담긴 값은
+        // 표시 불가능한 값일 수 있어서(큰 모니터에서 맞춘 설정을 작은 모니터에서 연 경우)
+        // 반복 호출하면 목표에 영영 닿지 못하고 무한 루프에 빠진다.
+        settings.SetWindowMode(_snapshot.windowMode);
+        settings.SetResolution(_snapshot.resolution);
+        settings.SetFps(_snapshot.fps);
+        settings.SetPauseOnUnfocus(_snapshot.pauseOnUnfocus);
 
         // 옵션 창의 해상도·창모드 셀렉터는 실시간 적용이 아니라 값만 바꾼다. 즉 화면은 애초에
         // 바뀐 적이 없으므로, 화면 항목을 건드리지 않았다면 되돌릴 것도 없다. 그런데도

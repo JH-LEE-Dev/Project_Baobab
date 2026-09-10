@@ -87,10 +87,6 @@ public class InputReader
 
     private InputActionRebindingExtensions.RebindingOperation rebindOperation;
 
-    // 키 설정 UI가 열려 있는 동안의 편집 세션 스냅샷. "취소"로 닫으면 이 시점으로 되돌린다.
-    // null이면 편집 세션이 시작되지 않은 것이다.
-    private string editSessionSnapshotJson;
-
     private bool bPauseMove = false;
 
     private Vector2 keyboardMoveInput;
@@ -1200,49 +1196,30 @@ public class InputReader
     }
 
     /// <summary>
-    /// 키 설정 UI를 열 때 호출합니다. 이 시점의 바인딩 상태를 스냅샷으로 남겨,
-    /// 저장하지 않고 닫았을 때 DiscardEditSession으로 되돌릴 수 있게 합니다.
-    /// </summary>
-    public void BeginEditSession()
-    {
-        editSessionSnapshotJson = actions.asset.SaveBindingOverridesAsJson();
-    }
-
-    /// <summary>
-    /// 편집 세션 동안의 변경분을 모두 버리고 BeginEditSession 시점 상태로 되돌립니다. ("취소"/저장 없이 닫기)
-    /// </summary>
-    public void DiscardEditSession()
-    {
-        if (null == editSessionSnapshotJson) return;
-
-        actions.asset.RemoveAllBindingOverrides();
-        actions.asset.LoadBindingOverridesFromJson(editSessionSnapshotJson);
-        editSessionSnapshotJson = null;
-
-        KeyBindingsChangedEvent?.Invoke();
-    }
-
-    /// <summary>
-    /// 편집 세션 동안의 변경분을 파일에 실제로 기록합니다. ("저장" 버튼)
-    /// 중복된 키가 남아 있으면 저장하지 않고 false를 반환합니다. (UI는 HasAnyConflict로 버튼 자체를 미리 비활성화해야 함)
+    /// 현재 바인딩을 파일에 기록합니다.
+    /// 중복된 키가 남아 있으면 저장하지 않고 false를 반환합니다.
+    ///
+    /// 키 설정에는 "저장하지 않고 닫기"가 없습니다. 리바인딩과 기본값 초기화는 끝나는 즉시
+    /// 이 메서드로 확정됩니다(UI_Option.CommitKeyBindingsIfResolved). 옵션 창의 다른 항목처럼
+    /// '적용'을 기다리지 않는 것은, 컨트롤 탭에 '적용' 버튼이 없고 바뀐 키가 곧바로 행에
+    /// 표시되어 유저가 이미 확정된 것으로 읽기 때문입니다.
+    ///
+    /// 그래서 편집 세션 스냅샷과 되돌리기(Discard)는 두지 않습니다. 예전에 있었지만 호출하는
+    /// 곳이 없어 옵션 창을 열 때마다 바인딩 전체를 직렬화하기만 했고, 키 설정이 취소 가능한
+    /// 것처럼 오해를 부르는 코드였습니다. 되돌리기가 필요해지면 저장 시점을 여기서 미루는 것부터
+    /// 다시 설계해야 합니다.
     /// </summary>
     public bool CommitEditSession()
     {
         if (true == HasAnyConflict()) return false;
 
-        string _json = actions.asset.SaveBindingOverridesAsJson();
-        KeyBindingRepository.Save(_json);
-
-        // 저장 시점을 새 기준점으로 삼는다. 저장 후 추가로 리바인딩하다가 취소해도
-        // "마지막 저장 상태"로는 돌아가야 하므로, 스냅샷을 비우지 않고 갱신한다.
-        editSessionSnapshotJson = _json;
-
+        KeyBindingRepository.Save(actions.asset.SaveBindingOverridesAsJson());
         return true;
     }
 
     /// <summary>
     /// 지정한 액션의 키 입력을 기다리기 시작합니다. 완료/취소/중복 여부는 _onFinished로 통지됩니다.
-    /// Duplicate여도 키는 그대로 적용되며(편집 세션 동안은 중복 허용), UI는 경고만 표시하면 됩니다.
+    /// Duplicate여도 키는 그대로 적용되며(스왑으로 해소하기 전까지는 중복 허용), UI는 경고만 표시하면 됩니다.
     /// 리바인딩 중에는 대상 액션이 비활성화되어 게임플레이에 반영되지 않습니다.
     /// </summary>
     public void StartRebind(ERebindableAction _action, Action<ERebindResult, ERebindableAction?> _onFinished)
@@ -1409,13 +1386,13 @@ public class InputReader
         return false;
     }
 
-    /// <summary>지정한 액션을 기본 바인딩으로 되돌립니다. (편집 세션 내 변경일 뿐, 저장은 CommitEditSession에서 이뤄집니다)</summary>
+    /// <summary>지정한 액션을 기본 바인딩으로 되돌립니다. (메모리상 변경일 뿐, 파일 기록은 CommitEditSession에서 이뤄집니다)</summary>
     public void ResetBinding(ERebindableAction _action)
     {
         ResetBinding(_action, EInputDeviceType.KeyboardMouse);
     }
 
-    /// <summary>지정한 장치의 바인딩만 기본값으로 되돌립니다. (편집 세션 내 변경일 뿐, 저장은 CommitEditSession에서)</summary>
+    /// <summary>지정한 장치의 바인딩만 기본값으로 되돌립니다. (메모리상 변경일 뿐, 파일 기록은 CommitEditSession에서)</summary>
     public void ResetBinding(ERebindableAction _action, EInputDeviceType _device)
     {
         if (false == TryGetBindingTarget(_action, _device, out InputAction _inputAction, out int _bindingIndex)) return;
@@ -1425,7 +1402,7 @@ public class InputReader
         KeyBindingsChangedEvent?.Invoke();
     }
 
-    /// <summary>모든 리바인딩 가능한 액션을 기본 바인딩으로 되돌립니다. (편집 세션 내 변경일 뿐, 저장은 CommitEditSession에서 이뤄집니다)</summary>
+    /// <summary>모든 리바인딩 가능한 액션을 기본 바인딩으로 되돌립니다. (메모리상 변경일 뿐, 파일 기록은 CommitEditSession에서 이뤄집니다)</summary>
     public void ResetAllBindings()
     {
         actions.asset.RemoveAllBindingOverrides();
