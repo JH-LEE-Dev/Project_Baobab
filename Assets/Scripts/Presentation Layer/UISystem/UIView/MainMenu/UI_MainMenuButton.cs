@@ -430,6 +430,7 @@ public class UI_MainMenuButton : Selectable,
     public bool IsMouseOver()
     {
         if (false == gameObject.activeInHierarchy) return false;
+        if (null != inputManager && true == inputManager.IsGamepadMode) return false;
         if (true == isPointerHovered) return true;
 
         RectTransform _rect = (null != targetGraphic)
@@ -445,7 +446,7 @@ public class UI_MainMenuButton : Selectable,
         }
         else
         {
-            _mousePos = Input.mousePosition;
+            return false;
         }
 
         Canvas _canvas = GetComponentInParent<Canvas>();

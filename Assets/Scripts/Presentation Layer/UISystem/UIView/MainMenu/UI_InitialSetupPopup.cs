@@ -11,7 +11,7 @@ using UnityEngine.InputSystem;
 /// 게임 최초 실행 시 스플래시 직후 언어 설정 및 데이터 수집 약관 동의를 진행하는 팝업 컨트롤러입니다.
 /// 1단계: 언어 선택 패널 -> 2단계: 약관 동의 패널 순으로 진행됩니다.
 /// </summary>
-public class UI_InitialSetupPopup : MonoBehaviour
+public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
 {
     private const int MAIN_MENU_JSON_ID = 8;
 
@@ -47,6 +47,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
     private InputManager inputManager;
     private LocalizationManager localizationManager;
     private ICursorBoxUI cursorBoxUI;
+    private UIDepthController depthController;
 
     // 내부 상태
     private Action onCompletedCallback;
@@ -86,6 +87,13 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
     public bool IsActive => gameObject.activeInHierarchy && (null == rootCanvasGroup || 0f < rootCanvasGroup.alpha);
 
+    public void Hide()
+    {
+        // 초기 언어 설정 및 약관 동의는 게임 진입 전 필수 완료 단계이므로 취소 키(ESC / 패드 B)로 닫힐 수 없습니다.
+        // 아무런 동작을 하지 않고 입력을 소비하여 하위 뷰로 관통되는 것을 완벽히 방어합니다.
+        return;
+    }
+
     private void Awake()
     {
         EnsureRootCanvasGroup();
@@ -107,12 +115,13 @@ public class UI_InitialSetupPopup : MonoBehaviour
         }
     }
 
-    public void Initialize(InputManager _inputManager, LocalizationManager _locManager, ICursorBoxUI _cursorBoxUI)
+    public void Initialize(InputManager _inputManager, LocalizationManager _locManager, ICursorBoxUI _cursorBoxUI, UIDepthController _depthController = null)
     {
         EnsureRootCanvasGroup();
         inputManager = _inputManager;
         localizationManager = _locManager;
         cursorBoxUI = _cursorBoxUI;
+        depthController = _depthController;
         cachedOnDeviceChanged = OnDeviceChanged;
 
         if (null != rootCanvasGroup)
@@ -494,6 +503,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
         isTransitioning = false;
         suppressNextConsentSelectAudio = false;
         gameObject.SetActive(true);
+        depthController?.RegisterView(this);
 
         if (true == _allowInput)
         {
@@ -660,7 +670,11 @@ public class UI_InitialSetupPopup : MonoBehaviour
 
     private void HandleShowCompleted()
     {
-        if (false == isInputAllowed) return;
+        if (false == isInputAllowed)
+        {
+            ActivateInput();
+            return;
+        }
 
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
@@ -922,6 +936,7 @@ public class UI_InitialSetupPopup : MonoBehaviour
     {
         if (true == isClosing) return;
         isClosing = true;
+        depthController?.UnregisterView(this);
 
         KillTransition();
 

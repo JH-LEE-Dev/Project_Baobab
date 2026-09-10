@@ -8,7 +8,7 @@ using DG.Tweening;
 /// <summary>
 /// 메인 메뉴 크레딧 연출을 담당하는 UI 스크립트입니다.
 /// </summary>
-public class UI_Credit : MonoBehaviour
+public class UI_Credit : MonoBehaviour, IUIDepthCloseable
 {
     [Header("Scroll Settings")]
     [SerializeField, Tooltip("크레딧 텍스트/이미지들이 들어있는 부모 렉트 (ContentSizeFitter 필수)")] 
@@ -22,17 +22,25 @@ public class UI_Credit : MonoBehaviour
     [SerializeField] private CanvasGroup canvasGroup;
 
     private Action onCloseAction;
+    private InputManager inputManager;
+    private UIDepthController depthController;
     private Tween scrollTween;
     private bool isPlaying = false;
+
+    // IUIDepthCloseable 구현
+    public bool IsActive => isPlaying && gameObject.activeInHierarchy;
+    public void Hide() => CloseCredit();
 
     // 델리게이트 캐싱 (GC 차단)
     private TweenCallback onScrollCompleteCallback;
     private TweenCallback onCloseFadeCompleteCallback;
     private UnityEngine.Events.UnityAction onCloseButtonClickedAction;
 
-    public void Initialize(Action _onClose)
+    public void Initialize(Action _onClose, InputManager _inputManager = null, UIDepthController _depthController = null)
     {
         onCloseAction = _onClose;
+        inputManager = _inputManager;
+        depthController = _depthController;
         
         onScrollCompleteCallback = OnScrollComplete;
         onCloseFadeCompleteCallback = OnCloseFadeComplete;
@@ -47,6 +55,8 @@ public class UI_Credit : MonoBehaviour
     public void PlayCredit()
     {
         gameObject.SetActive(true);
+        depthController?.RegisterView(this);
+
         if (null != canvasGroup)
         {
             canvasGroup.DOKill();
@@ -93,9 +103,9 @@ public class UI_Credit : MonoBehaviour
     {
         if (false == isPlaying) return;
 
-        // ESC 키 또는 게임패드 B(buttonEast)/Start 버튼으로 강제 닫기
-        bool _cancelPressed = (null != Keyboard.current && true == Keyboard.current.escapeKey.wasPressedThisFrame)
-            || (null != Gamepad.current && (true == Gamepad.current.buttonEast.wasPressedThisFrame || true == Gamepad.current.startButton.wasPressedThisFrame));
+        // 취소 키(ESC 또는 패드 B/Start)로 닫기
+        bool _cancelPressed = (null != inputManager && true == inputManager.WasGamepadUICancelPressedThisFrame)
+            || (null != Keyboard.current && true == Keyboard.current.escapeKey.wasPressedThisFrame);
 
         if (true == _cancelPressed)
         {
@@ -103,12 +113,12 @@ public class UI_Credit : MonoBehaviour
             return;
         }
 
-        // 종료 키를 제외한 모든 키보드/마우스/게임패드 입력 감지 시 배속 적용
+        // 취소 키를 제외한 모든 입력 감지 시 스크롤 배속 적용
         if (null != scrollTween && true == scrollTween.IsActive())
         {
-            bool _speedUpHeld = IsKeyboardSpeedUpPressed(Keyboard.current)
-                || IsMouseSpeedUpPressed(Mouse.current)
-                || IsGamepadSpeedUpPressed(Gamepad.current);
+            bool _speedUpHeld = (null != inputManager && true == inputManager.AnyInputThisFrame && false == inputManager.WasGamepadUICancelPressedThisFrame)
+                || (null != Keyboard.current && true == Keyboard.current.anyKey.isPressed && false == Keyboard.current.escapeKey.isPressed)
+                || (null != Mouse.current && (Mouse.current.leftButton.isPressed || Mouse.current.rightButton.isPressed || Mouse.current.middleButton.isPressed));
 
             if (true == _speedUpHeld)
             {
@@ -119,42 +129,6 @@ public class UI_Credit : MonoBehaviour
                 scrollTween.timeScale = 1f;
             }
         }
-    }
-
-    private bool IsKeyboardSpeedUpPressed(Keyboard _keyboard)
-    {
-        if (null == _keyboard) return false;
-        return true == _keyboard.anyKey.isPressed && false == _keyboard.escapeKey.isPressed;
-    }
-
-    private bool IsMouseSpeedUpPressed(Mouse _mouse)
-    {
-        if (null == _mouse) return false;
-        return true == _mouse.leftButton.isPressed
-            || true == _mouse.rightButton.isPressed
-            || true == _mouse.middleButton.isPressed;
-    }
-
-    private bool IsGamepadSpeedUpPressed(Gamepad _gamepad)
-    {
-        if (null == _gamepad) return false;
-
-        return true == _gamepad.buttonSouth.isPressed
-            || true == _gamepad.buttonWest.isPressed
-            || true == _gamepad.buttonNorth.isPressed
-            || true == _gamepad.leftShoulder.isPressed
-            || true == _gamepad.rightShoulder.isPressed
-            || true == _gamepad.leftTrigger.isPressed
-            || true == _gamepad.rightTrigger.isPressed
-            || true == _gamepad.leftStickButton.isPressed
-            || true == _gamepad.rightStickButton.isPressed
-            || true == _gamepad.selectButton.isPressed
-            || true == _gamepad.dpad.up.isPressed
-            || true == _gamepad.dpad.down.isPressed
-            || true == _gamepad.dpad.left.isPressed
-            || true == _gamepad.dpad.right.isPressed
-            || 0.25f <= _gamepad.leftStick.ReadValue().sqrMagnitude
-            || 0.25f <= _gamepad.rightStick.ReadValue().sqrMagnitude;
     }
 
     private void OnScrollComplete()
@@ -171,6 +145,7 @@ public class UI_Credit : MonoBehaviour
     {
         if (false == isPlaying) return;
         isPlaying = false;
+        depthController?.UnregisterView(this);
 
         if (null != scrollTween)
         {

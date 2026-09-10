@@ -66,27 +66,42 @@ public class UI_PressAnyKey : MonoBehaviour
     {
         if (false == isWaitingForInput) return;
 
-        bool _anyInputReceived = false;
+        bool _anyInputReceived = CheckAnyInput();
 
-        // 여기서 인정하는 것은 "유저가 직접 누른 입력"뿐이다. 마우스 이동과 휠 스크롤은 제외한다.
-        // 책상 위에서 마우스가 스치기만 해도 넘어가면, 유저는 아무것도 누르지 않았는데 스플래시
-        // 페이드가 갑자기 잘린 것처럼 느낀다. (같은 기준의 공용 판정은 InputDeviceTracker의
-        // AnyButtonInputThisFrame이며, 이쪽은 프레임 지연 없이 보려고 직접 폴링한다)
+        // 입력이 감지되면 메인 메뉴로 전환
+        if (true == _anyInputReceived)
+        {
+            isWaitingForInput = false;
+            if (null != parentView)
+            {
+                parentView.OnPressAnyKeyCompleted();
+            }
+        }
+    }
 
-        // 1. 키보드 아무 키 입력 감지 (New Input System)
-        if (null != Keyboard.current && true == Keyboard.current.anyKey.wasPressedThisFrame)
+    /// <summary>
+    /// 여기서 인정하는 것은 "유저가 직접 누른 입력"뿐입니다. 마우스 이동과 휠 스크롤은 제외합니다.
+    /// 책상 위에서 마우스가 스치기만 해도 넘어가면, 유저는 아무것도 누르지 않았는데 스플래시
+    /// 페이드가 갑자기 잘린 것처럼 느낍니다.
+    /// (그래서 AnyInputThisFrame이 아니라 AnyButtonInputThisFrame을 봅니다. 전자는 장치 전환용이라
+    ///  일정 거리 이상의 마우스 이동과 휠 스크롤까지 조작으로 칩니다)
+    /// </summary>
+    private bool CheckAnyInput()
+    {
+        if (null != inputManager && true == inputManager.AnyButtonInputThisFrame) return true;
+
+        // 아래는 InputManager가 없거나 갱신이 한 프레임 늦는 경우를 위한 직접 폴링입니다.
+        if (null != Keyboard.current && true == Keyboard.current.anyKey.wasPressedThisFrame) return true;
+
+        // 마우스는 버튼만 봅니다. delta(이동)와 scroll(휠)은 의도적으로 읽지 않습니다.
+        if (null != Mouse.current && (true == Mouse.current.leftButton.wasPressedThisFrame
+                                   || true == Mouse.current.rightButton.wasPressedThisFrame
+                                   || true == Mouse.current.middleButton.wasPressedThisFrame))
         {
-            _anyInputReceived = true;
+            return true;
         }
-        // 2. 마우스 버튼 클릭 감지 (좌클릭, 우클릭, 휠클릭) - 단순 이동(delta)과 휠 스크롤은 제외
-        else if (null != Mouse.current && (true == Mouse.current.leftButton.wasPressedThisFrame
-                                        || true == Mouse.current.rightButton.wasPressedThisFrame
-                                        || true == Mouse.current.middleButton.wasPressedThisFrame))
-        {
-            _anyInputReceived = true;
-        }
-        // 3. 게임패드 아무 버튼 입력 감지
-        else if (null != Gamepad.current)
+
+        if (null != Gamepad.current)
         {
             Gamepad _pad = Gamepad.current;
             if (true == _pad.buttonSouth.wasPressedThisFrame ||
@@ -106,19 +121,11 @@ public class UI_PressAnyKey : MonoBehaviour
                 _pad.leftTrigger.wasPressedThisFrame ||
                 _pad.rightTrigger.wasPressedThisFrame)
             {
-                _anyInputReceived = true;
+                return true;
             }
         }
 
-        // 입력이 감지되면 메인 메뉴로 전환
-        if (true == _anyInputReceived)
-        {
-            isWaitingForInput = false;
-            if (null != parentView)
-            {
-                parentView.OnPressAnyKeyCompleted();
-            }
-        }
+        return false;
     }
 
     private void OnDestroy()

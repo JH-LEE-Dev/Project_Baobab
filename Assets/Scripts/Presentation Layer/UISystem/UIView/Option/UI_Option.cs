@@ -1836,6 +1836,15 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != rebindOverlay && true == rebindOverlay.activeSelf) return;
         if (null != warningPopup && true == warningPopup.IsActive) return;
 
+        if (null != EventSystem.current)
+        {
+            GameObject _selected = EventSystem.current.currentSelectedGameObject;
+            if (null == _selected || false == _selected.activeInHierarchy)
+            {
+                SelectDefaultFocusElement();
+            }
+        }
+
         Gamepad _pad = Gamepad.current;
         if (null == _pad) return;
 
@@ -2211,7 +2220,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private IEnumerator CoStartGamepadRebind(ERebindableAction _action)
     {
         // 1) 행 선택을 위해 누른 Submit 버튼(A 버튼 / South)이 완전히 떼어질 때까지 대기
-        while (null != UnityEngine.InputSystem.Gamepad.current && true == UnityEngine.InputSystem.Gamepad.current.buttonSouth.isPressed)
+        while (null != inputManager && true == inputManager.IsGamepadUIConfirmHeld)
         {
             yield return null;
         }

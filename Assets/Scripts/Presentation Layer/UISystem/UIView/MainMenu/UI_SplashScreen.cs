@@ -27,12 +27,14 @@ public class UI_SplashScreen : MonoBehaviour
     private Action currentOnFirstFadeInStart;
     private TweenCallback onBeforeLastFadeOutCallback;
     private TweenCallback onFirstFadeInStartCallback;
+    private TweenCallback onDisableBackgroundRaycastsCallback;
     private Sequence currentSequence;
 
     public void PlaySequence(Action _onComplete, Action _onBeforeLastFadeOut = null, Action _onFirstFadeInStart = null)
     {
         if (null == onBeforeLastFadeOutCallback) onBeforeLastFadeOutCallback = InvokeBeforeLastFadeOut;
         if (null == onFirstFadeInStartCallback) onFirstFadeInStartCallback = InvokeOnFirstFadeInStart;
+        if (null == onDisableBackgroundRaycastsCallback) onDisableBackgroundRaycastsCallback = DisableBackgroundRaycasts;
         currentBeforeLastFadeOut = _onBeforeLastFadeOut;
         currentOnFirstFadeInStart = _onFirstFadeInStart;
 
@@ -102,6 +104,7 @@ public class UI_SplashScreen : MonoBehaviour
                     {
                         this.currentSequence.AppendCallback(onBeforeLastFadeOutCallback);
                     }
+                    this.currentSequence.AppendCallback(this.onDisableBackgroundRaycastsCallback);
                     this.currentSequence.Append(this.splashBackgroundGroup.DOFade(0f, this.backgroundFadeOutDuration).SetEase(Ease.OutQuad));
                 }
                 else
@@ -112,6 +115,14 @@ public class UI_SplashScreen : MonoBehaviour
         }
 
         this.currentSequence.OnComplete(this.OnSequenceFinished);
+    }
+
+    private void DisableBackgroundRaycasts()
+    {
+        if (null != this.splashBackgroundGroup)
+        {
+            this.splashBackgroundGroup.blocksRaycasts = false;
+        }
     }
 
     private void InvokeBeforeLastFadeOut()
@@ -151,11 +162,21 @@ public class UI_SplashScreen : MonoBehaviour
         }
     }
 
+    private void OnDisable()
+    {
+        if (null != this.currentSequence && true == this.currentSequence.IsActive())
+        {
+            this.currentSequence.Kill();
+            this.currentSequence = null;
+        }
+    }
+
     private void OnDestroy()
     {
         if (null != this.currentSequence)
         {
             this.currentSequence.Kill();
+            this.currentSequence = null;
         }
     }
 }

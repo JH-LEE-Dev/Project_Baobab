@@ -133,12 +133,12 @@ public class UIView_MainMenu : UIView
 
         if (null != creditUI)
         {
-            creditUI.Initialize(HideCredit);
+            creditUI.Initialize(HideCredit, _ctx?.inputManager, _ctx?.depthController);
         }
 
         if (null != initialSetupPopup)
         {
-            initialSetupPopup.Initialize(_ctx?.inputManager, _ctx?.localizationManager, _ctx?.cursorBoxUI);
+            initialSetupPopup.Initialize(_ctx?.inputManager, _ctx?.localizationManager, _ctx?.cursorBoxUI, _ctx?.depthController);
         }
     }
 
@@ -288,7 +288,7 @@ public class UIView_MainMenu : UIView
         // 시작 시 분기: Press Any Key 화면이 있으면 먼저 띄우고 메인 메뉴 숨김
         if (null != pressAnyKeyUI)
         {
-            pressAnyKeyUI.Show(false);
+            pressAnyKeyUI.Show(true);
             if (null != mainMenuUI) mainMenuUI.gameObject.SetActive(false);
             if (null != logoAnimUI) logoAnimUI.gameObject.SetActive(true); // 로고는 항상 먼저 보여야 함
         }
@@ -382,6 +382,11 @@ public class UIView_MainMenu : UIView
     public void OnPressAnyKeyCompleted()
     {
         Sound.PlayUI(SoundID.MainClick);
+
+        if (null != splashScreenUI && true == splashScreenUI.gameObject.activeInHierarchy)
+        {
+            splashScreenUI.gameObject.SetActive(false);
+        }
 
         if (null != pressAnyKeyUI) pressAnyKeyUI.Hide();
         
@@ -625,6 +630,10 @@ public class UIView_MainMenu : UIView
         {
             // pressAnyKeyUI가 활성화되면 사용자가 키를 입력할 때 OnPressAnyKeyCompleted()에서 
             // logoAnimUI.PlayRevealSequence(ShowMainMenu)가 진행되므로 여기선 콜백만 호출합니다.
+            if (null != this.pressAnyKeyUI)
+            {
+                this.pressAnyKeyUI.ActivateInput();
+            }
             _onComplete?.Invoke();
         }
     }

@@ -164,7 +164,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private TweenCallback onAdditionalElementsAppearStartedCallback;
     private TweenCallback onNavImageDownStartedCallback;
     private Action<Vector2> cachedOnMoveEvent;
-    private Action cachedOnInteractionKeyPressed;
     private Action cachedOnUICancel;
     private Action<EInputDeviceType> cachedOnInputDeviceChanged;
     private UnityEngine.Events.UnityAction onBackgroundDimClickedAction;
@@ -274,15 +273,12 @@ public class HUD_PopupNav_Main : MonoBehaviour
         onNavImageDownStartedCallback = PlayNavImageDownSound;
         onBackgroundDimClickedAction = OnBackgroundDimClicked;
         if (null == cachedOnMoveEvent) cachedOnMoveEvent = OnMoveInputReceived;
-        if (null == cachedOnInteractionKeyPressed) cachedOnInteractionKeyPressed = OnInteractionKeyPressed;
         if (null == cachedOnUICancel) cachedOnUICancel = OnUICancelPressed;
         if (null == cachedOnInputDeviceChanged) cachedOnInputDeviceChanged = OnInputDeviceChanged;
         if (null != inputManager && null != inputManager.inputReader)
         {
             inputManager.inputReader.MoveEvent -= cachedOnMoveEvent;
             inputManager.inputReader.MoveEvent += cachedOnMoveEvent;
-            inputManager.inputReader.InteractionKeyPressedEvent -= cachedOnInteractionKeyPressed;
-            inputManager.inputReader.InteractionKeyPressedEvent += cachedOnInteractionKeyPressed;
             inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
             inputManager.inputReader.UICancelEvent += cachedOnUICancel;
             inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
@@ -1793,30 +1789,20 @@ public class HUD_PopupNav_Main : MonoBehaviour
         }
 
         ProcessDirectionalInput(_dir);
-        // 2. 선택/확정 버튼: 리바인딩된 상호작용 키(Interaction Action) 또는 UI/Submit 키 검사
-        bool _submitPressed = false;
-        if (null != inputManager && true == inputManager.WasInteractionPressedThisFrame)
+        // 2. 선택/확정 버튼: 게임패드 UI 확인(A) 또는 키보드 Enter/Space
+        bool _confirmPressed = false;
+        if (null != inputManager && true == inputManager.WasGamepadUIConfirmPressedThisFrame)
         {
-            _submitPressed = true;
-        }
-        else if (null != Gamepad.current && Gamepad.current.buttonSouth.wasPressedThisFrame)
-        {
-            _submitPressed = true;
+            _confirmPressed = true;
         }
         else if (null != Keyboard.current && (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame))
         {
-            _submitPressed = true;
+            _confirmPressed = true;
         }
 
-        if (true == _submitPressed)
+        if (true == _confirmPressed)
         {
-            OnInteractionKeyPressed();
-        }
-
-        // 3. 취소/뒤로가기 버튼 (B / East)
-        if (null != Gamepad.current && Gamepad.current.buttonEast.wasPressedThisFrame)
-        {
-            OnUICancelPressed();
+            OnUIConfirmPressed();
         }
     }
 
@@ -2039,15 +2025,14 @@ public class HUD_PopupNav_Main : MonoBehaviour
         runtimeLastVisitedForestType = runtimeLastHoveredForestType;
     }
 
-    private void OnInteractionKeyPressed()
+    private void OnUIConfirmPressed()
     {
         if (false == gameObject.activeInHierarchy || true == isClosing) return;
-        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
         // 데모 안내 패널이 열려있는 경우: IsInputBlocked 검사 전에 팝업에 입력 위임
         if (null != demoNotice && true == demoNotice.IsDemoNoticeShowing)
         {
-            demoNotice.HandleInteractionKey();
+            demoNotice.HandleConfirmKey();
             return;
         }
 
@@ -2347,13 +2332,11 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (null != inputManager && null != inputManager.inputReader)
         {
             if (null != cachedOnMoveEvent) inputManager.inputReader.MoveEvent -= cachedOnMoveEvent;
-            if (null != cachedOnInteractionKeyPressed) inputManager.inputReader.InteractionKeyPressedEvent -= cachedOnInteractionKeyPressed;
             if (null != cachedOnUICancel) inputManager.inputReader.UICancelEvent -= cachedOnUICancel;
             if (null != cachedOnInputDeviceChanged) inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
         }
 
         cachedOnMoveEvent = null;
-        cachedOnInteractionKeyPressed = null;
         cachedOnUICancel = null;
         cachedOnInputDeviceChanged = null;
         inputManager = null;
