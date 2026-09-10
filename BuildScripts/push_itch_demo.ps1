@@ -233,9 +233,27 @@ if ($LASTEXITCODE -ne 0) {
     Stop-WithReason "butler push 가 실패했습니다. (종료 코드 $LASTEXITCODE)"
 }
 
-Write-Step '반영 확인'
+<#
+    여기서 butler status 를 바로 부르지 않습니다.
 
-Invoke-Native { & $ButlerExe status $Target }
+    push 가 끝나도 itch 서버가 빌드를 처리하는 동안에는 채널이 만들어지지 않습니다.
+    그래서 업로드 직후의 status 는 거의 항상 "No channel found" 를 돌려주는데,
+    성공했는데 실패한 것처럼 보여 사람을 헷갈리게 합니다. (실제로 그렇게 한 번 겪었습니다)
+
+    기다렸다 자동으로 다시 묻는 방법도 있지만, 처리 시간이 빌드 크기와 서버 사정에 따라
+    달라서 얼마를 기다려야 할지 정할 수가 없습니다. 명령만 알려주고 사람이 확인하게 둡니다.
+#>
+
+Write-Step '다음'
 
 Write-Host ''
-Write-Host '끝났습니다. itch 페이지에서 파일이 보이는지, 플랫폼이 Windows로 잡혔는지 확인하십시오.' -ForegroundColor Green
+Write-Host '  업로드는 끝났습니다. itch 서버가 빌드를 처리하는 데 몇 분 걸립니다.'
+Write-Host '  처리가 끝나야 채널이 생기므로, 지금 확인하면 비어 있는 것이 정상입니다.'
+Write-Host ''
+Write-Host '  잠시 뒤 아래 명령으로 확인하십시오:'
+Write-Host ''
+Write-Host "    $ButlerExe status $Target" -ForegroundColor Cyan
+Write-Host ''
+Write-Host '  BUILD 칸에 체크 표시가 뜨면 처리가 끝난 것입니다.'
+Write-Host '  그 뒤 itch 페이지에서 파일이 보이는지, 플랫폼이 Windows로 잡혔는지 확인하십시오.'
+Write-Host ''
