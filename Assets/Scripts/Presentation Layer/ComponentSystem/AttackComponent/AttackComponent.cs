@@ -114,6 +114,14 @@ public class AttackComponent : PComponent
     private Coroutine indicatorFadeCoroutine;
     private float indicatorFullAlpha = 1f; // Initialize에서 1회만 캐싱되는 인디케이터의 원래 알파값(페이드인의 목표값)
 
+    // 옵션 "캐릭터 조준 인디케이터 밝기"의 배율(0~1). 설정 적용 이벤트가 올 때만 갱신한다.
+    // 값이 필요할 때마다 SettingsManager.Instance를 타지 않는 이유가 두 가지다.
+    //  - SetEnable(false)는 씬 정리 경로에서도 불리는데, 그 시점의 Instance 게터는 이미 파괴된
+    //    싱글턴을 되살려 정리되지 못한 오브젝트를 남긴다. (SettingsManager.HasInstance 주석 참고)
+    //  - 페이드인 루틴이 매 프레임 목표값을 다시 계산하므로, 그때마다 SettingsData 구조체를
+    //    통째로 복사해 오는 것을 피한다.
+    private float crosshairBrightnessScale = 1f;
+
     [Header("Whirlwind VFX")]
     [SerializeField] private Sprite[] whirlwindFrames; // Whirlwind 스프라이트 시트의 프레임들 (인스펙터에서 직접 연결)
 
@@ -978,8 +986,7 @@ public class AttackComponent : PComponent
     /// </summary>
     private float GetIndicatorTargetAlpha()
     {
-        float _scale = SettingsManager.Instance.Current.crosshairBrightness / SettingsData.SLIDER_MAX;
-        return indicatorFullAlpha * Mathf.Clamp01(_scale);
+        return indicatorFullAlpha * crosshairBrightnessScale;
     }
 
     /// <summary>
@@ -988,6 +995,8 @@ public class AttackComponent : PComponent
     /// </summary>
     private void HandleGraphicsSettingsApplied(SettingsData _data)
     {
+        crosshairBrightnessScale = Mathf.Clamp01(_data.crosshairBrightness / SettingsData.SLIDER_MAX);
+
         if (null == ellipseIndicatorMat) return;
 
         // 페이드 중이면 코루틴이 매 프레임 목표값을 다시 읽으므로 여기서 건드리면 연출이 튄다.
