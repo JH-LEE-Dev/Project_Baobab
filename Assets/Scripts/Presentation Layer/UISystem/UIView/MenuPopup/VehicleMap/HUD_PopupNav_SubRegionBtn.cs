@@ -226,6 +226,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         NavParticleHelper.ApplyInstancedColor(unlockDestructionParticle, unlockParticleColor, ref hasInstantiatedParticleMat);
 
+        isPointerOver = false; // 풀링 재사용 시 이전 포인터 오버 상태 잔재 초기화
         SetSelectedState(false);
     }
 
@@ -399,20 +400,27 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
+        // 게임패드 모드이거나 UI 입력이 차단된 상태, 또는 등장 애니메이션 진행 중일 때는 포커스를 즉시 전환하지 않음
         if (null != mainController && true == mainController.IsGamepadMode) return;
-
-        isPointerOver = true;
-
         if (null == mainController || true == mainController.IsInputBlocked || true == mainController.IsTransitioning)
         {
             return;
         }
+
+        // 이미 호버 상태인 경우 중복 트리거 방지
+        if (true == isPointerOver)
+        {
+            return;
+        }
+
+        isPointerOver = true;
 
         if (null != mainController)
         {
             mainController.StopAllRegionHoverEffects();
         }
 
+        // 해금 상태에 따른 소지역 호버 효과음 재생
         Sound.PlayUI(true == myInfo.isUnlocked ? SoundID.NaviSubHover : SoundID.NaviLockHover);
 
         TriggerHover();
@@ -420,8 +428,8 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     public void EvaluateHoverState()
     {
+        // 게임패드 모드이거나 등장/퇴장 연출 전환 중일 때는 호버 상태 재평가를 유보
         if (null != mainController && true == mainController.IsGamepadMode) return;
-
         if (null == mainController || true == mainController.IsInputBlocked || true == mainController.IsTransitioning)
         {
             return;
@@ -429,6 +437,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         if (true == IsMouseOver())
         {
+            // 등장 애니메이션 완료 또는 포커스 복귀 시점에 마우스가 이미 위에 있는 경우 사운드 재생
             if (false == isPointerOver)
             {
                 Sound.PlayUI(true == myInfo.isUnlocked ? SoundID.NaviSubHover : SoundID.NaviLockHover);
@@ -674,6 +683,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     public void ResetState()
     {
         isSelected = false;
+        isPointerOver = false; // 풀링 및 재사용 시 이전 포인터 오버 상태 잔재 초기화
         
         if (null != hoverTween && true == hoverTween.IsActive()) { hoverTween.Kill(); hoverTween = null; }
         if (null != appearTween && true == appearTween.IsActive()) { appearTween.Kill(); appearTween = null; }
