@@ -75,6 +75,12 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private bool useWaterTileBloom = false;
     [SerializeField] private float waterTileHDRIntensity = 1f;
 
+    [Header("데코 타일맵 오프셋 설정")]
+    // DecoTilemap 오브젝트의 로컬 Y 위치. Grid 프리팹에 저장된 값은 0.5지만 스테이지마다 타일 아트의
+    // 기준선이 달라서, 그대로 두면 데코가 한 칸 떠 보이는 스테이지가 있다(Stage1이 그렇다).
+    // Grid는 던전마다 새로 만들지 않고 재사용하므로 GenerateMap()이 던전 진입마다 이 값을 다시 적용한다.
+    [SerializeField] private float decoTilemapYOffset = 0.5f;
+
     [Header("오브젝트 밀도 설정")]
     [SerializeField, Range(0f, 0.1f)] [FormerlySerializedAs("rockDecoDensity")] private float grassStaticObjDensity = 0.0005f;
     [SerializeField, Range(0f, 0.1f)] [FormerlySerializedAs("rockDecoDensity")] private float sandStaticObjDensity = 0.0005f;
@@ -124,6 +130,7 @@ public class StageTileDataSO : ScriptableObject
     public float BloomGrassDecoDensity => bloomGrassDecoDensity;
     public bool UseBloomWaterDecoDensity => useBloomWaterDecoDensity;
     public float BloomWaterDecoDensity => bloomWaterDecoDensity;
+    public float DecoTilemapYOffset => decoTilemapYOffset;
     public float BloomDecoHDRIntensity => bloomDecoHDRIntensity;
     public float BloomWaterDecoHDRIntensity => bloomWaterDecoHDRIntensity;
     public bool UseWaterTileBloom => useWaterTileBloom;

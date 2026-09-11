@@ -271,6 +271,16 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             animatedObjGenerator.SetPrefabs(stageTileData.AnimatedObjPrefabs, stageTileData.WaterAnimatedObjPrefabs, stageTileData.GrassStaticObjPrefabs, stageTileData.SandStaticObjPrefabs, stageTileData.ShorelineStaticObjPrefabs, stageTileData.ShorelineAnimatedObjPrefabs, stageTileData.WaterAnimatedOtherTypeObjPrefabs);
         }
 
+        // DecoTilemap의 Y 오프셋은 스테이지마다 다르다(Stage1은 0, 나머지는 프리팹 값인 0.5).
+        // Grid는 InitializeMapData가 한 번만 Instantiate해서 던전 사이에 재사용하므로, 값이 다른
+        // 스테이지를 거쳐 들어와도 어긋나지 않도록 진입할 때마다 무조건 다시 써준다.
+        if (stageTileData != null)
+        {
+            Vector3 decoLocalPos = decoTilemap.transform.localPosition;
+            decoLocalPos.y = stageTileData.DecoTilemapYOffset;
+            decoTilemap.transform.localPosition = decoLocalPos;
+        }
+
         if (bloomDecoTilemap != null && stageTileData != null)
         {
             TilemapRenderer tr = bloomDecoTilemap.GetComponent<TilemapRenderer>();
