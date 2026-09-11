@@ -458,7 +458,9 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
         if (null != mainController)
         {
+            // 소지역 그룹 전체 호버 해제 + 동일 대지역 그룹 내 자신을 제외한 나머지 호버 해제 (상호 배타성 보장)
             mainController.StopAllSubRegionHoverEffects();
+            mainController.StopAllRegionHoverEffectsExcept(this);
             mainController.HandleRegionHovered(GetMapType());
         }
 
