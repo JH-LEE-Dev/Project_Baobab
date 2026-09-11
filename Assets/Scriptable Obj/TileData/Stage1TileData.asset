@@ -91,6 +91,7 @@ MonoBehaviour:
   useWaterTileBloom: 0
   waterTileHDRIntensity: 1
   decoTilemapYOffset: 0
+  useGroundTilemapForDeco: 1
   grassStaticObjDensity: 0.0025
   sandStaticObjDensity: 0.0025
   shorelineStaticObjDensity: 0.0005
