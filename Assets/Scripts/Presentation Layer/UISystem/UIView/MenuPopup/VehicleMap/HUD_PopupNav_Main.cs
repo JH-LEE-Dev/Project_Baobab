@@ -2190,7 +2190,10 @@ public class HUD_PopupNav_Main : MonoBehaviour
             }
             else
             {
-                // 마우스가 어떤 버튼에도 올라가 있지 않으면 마우스 좌표 기준으로 재평가
+                // 조이스틱 호버 비주얼 잔재를 선행 정리한 뒤, 마우스 좌표 기준으로 호버 상태 재평가
+                if (null != subRegionGroup) subRegionGroup.StopAllHoverEffects();
+                if (null != regionGroup) regionGroup.StopAllHoverEffects();
+
                 if (null != regionGroup) regionGroup.EvaluateAllHoverStates();
                 if (null != subRegionGroup) subRegionGroup.EvaluateAllHoverStates();
                 if (null != subRegionGroup && null == subRegionGroup.GetHoveredSubRegionButton() &&
@@ -2247,6 +2250,24 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (null != regionGroup)
         {
             regionGroup.StopAllHoverEffects();
+        }
+    }
+
+    // 지정된 소지역 버튼을 제외한 나머지 소지역 호버 효과 강제 종료 (동일 그룹 내 상호 배타성 보장)
+    public void StopAllSubRegionHoverEffectsExcept(HUD_PopupNav_SubRegionBtn _exceptBtn)
+    {
+        if (null != subRegionGroup)
+        {
+            subRegionGroup.StopAllHoverEffectsExcept(_exceptBtn);
+        }
+    }
+
+    // 지정된 대지역 버튼을 제외한 나머지 대지역 호버 효과 강제 종료 (동일 그룹 내 상호 배타성 보장)
+    public void StopAllRegionHoverEffectsExcept(HUD_PopupNav_RegionBtn _exceptBtn)
+    {
+        if (null != regionGroup)
+        {
+            regionGroup.StopAllHoverEffectsExcept(_exceptBtn);
         }
     }
 
