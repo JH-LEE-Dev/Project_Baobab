@@ -23,6 +23,14 @@ public interface ITilemapDataProvider
     void BeginTreeCollisionTileBatch();
     void EndTreeCollisionTileBatch();
 
+    // 나무가 들어선 칸의 데코 타일 처리. 데코 배치(ApplyTiles)는 나무 스폰보다 먼저 끝나고
+    // 나무 후보 칸은 바위 데코만 걸러내므로, 잔디/그라운드 데코가 깔린 칸에도 나무가 들어선다.
+    // Clear가 걷어낸 타일은 보관해 뒀다가 Restore가 같은 칸에 되돌린다 - 그냥 버리면 나무가
+    // 자라고 죽기를 반복하는 동안 데코가 영구히 줄어들어 맵이 점점 휑해진다.
+    // Restore도 Begin~End 배치 구간에서는 Tilemap 쓰기를 End까지 미룬다.
+    void ClearDecoTileForTree(Vector3 _worldPos);
+    void RestoreDecoTileForTree(Vector3 _worldPos);
+
     // 길찾기 지원
     int GridWidth { get; }
     int GridHeight { get; }
