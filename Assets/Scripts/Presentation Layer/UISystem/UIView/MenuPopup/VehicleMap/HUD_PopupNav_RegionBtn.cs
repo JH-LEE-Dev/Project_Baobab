@@ -223,6 +223,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
         NavParticleHelper.ApplyInstancedColor(unlockDestructionParticle, unlockParticleColor, ref hasInstantiatedParticleMat);
 
+        isPointerOver = false; // 초기화 시 포인터 오버 상태 리셋
         SetSelectedState(false);
     }
 
@@ -332,14 +333,20 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
+        // 게임패드 모드이거나 UI 입력이 차단된 상태일 때는 포커스를 즉시 전환하지 않음
         if (null != mainController && true == mainController.IsGamepadMode) return;
-
-        isPointerOver = true;
-
         if (null == mainController || true == mainController.IsInputBlocked)
         {
             return;
         }
+
+        // 이미 호버 상태인 경우 중복 트리거 방지
+        if (true == isPointerOver)
+        {
+            return;
+        }
+
+        isPointerOver = true;
 
         if (null != mainController)
         {
@@ -351,6 +358,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             return;
         }
 
+        // 대지역 호버 효과음 재생
         Sound.PlayUI(SoundID.NaviMainHover);
         
         TriggerHover();
@@ -413,6 +421,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public void EvaluateHoverState()
     {
+        // 게임패드 모드이거나 UI 입력이 차단된 상태일 때는 호버 상태 재평가를 유보
         if (null != mainController && true == mainController.IsGamepadMode) return;
         if (null == mainController || true == mainController.IsInputBlocked)
         {
@@ -421,6 +430,12 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
         if (true == IsMouseOver())
         {
+            // 팝업 오픈 또는 포커스 복귀 시점에 마우스가 이미 위에 있고 미선택된 대지역이면 사운드 재생
+            if (false == isPointerOver && false == isSelected)
+            {
+                Sound.PlayUI(SoundID.NaviMainHover);
+            }
+
             isPointerOver = true;
             TriggerHover();
         }
