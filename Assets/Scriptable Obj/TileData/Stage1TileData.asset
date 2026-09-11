@@ -55,11 +55,23 @@ MonoBehaviour:
   grassDecoTiles:
   - {fileID: 11400000, guid: 1043092fe96ccc94ea76fda62df777da, type: 2}
   - {fileID: 11400000, guid: ccd7fb38aa58b7b428313de20eacc3cb, type: 2}
+  - {fileID: 11400000, guid: 6fc1918ca54c91141915cb94c0f7aba8, type: 2}
+  - {fileID: 11400000, guid: d2207db2d99bb5d47bb6837224cc230d, type: 2}
+  - {fileID: 11400000, guid: d2207db2d99bb5d47bb6837224cc230d, type: 2}
   - {fileID: 11400000, guid: d2207db2d99bb5d47bb6837224cc230d, type: 2}
   - {fileID: 11400000, guid: e5585c2b3086f0c48a39921dc7603478, type: 2}
+  - {fileID: 11400000, guid: e5585c2b3086f0c48a39921dc7603478, type: 2}
+  - {fileID: 11400000, guid: e5585c2b3086f0c48a39921dc7603478, type: 2}
+  - {fileID: 11400000, guid: 0e7f890ed756be948946c5643a726e3d, type: 2}
+  - {fileID: 11400000, guid: 0e7f890ed756be948946c5643a726e3d, type: 2}
   - {fileID: 11400000, guid: 0e7f890ed756be948946c5643a726e3d, type: 2}
   - {fileID: 11400000, guid: 41a543f29b925bb4695ecbcb32db7718, type: 2}
-  - {fileID: 11400000, guid: 6fc1918ca54c91141915cb94c0f7aba8, type: 2}
+  - {fileID: 11400000, guid: 41a543f29b925bb4695ecbcb32db7718, type: 2}
+  - {fileID: 11400000, guid: cbabf09df4d23bb45842f99b29a06290, type: 2}
+  - {fileID: 11400000, guid: cbabf09df4d23bb45842f99b29a06290, type: 2}
+  - {fileID: 11400000, guid: 4a9debc5573b55542b57feff2e8884b0, type: 2}
+  - {fileID: 11400000, guid: 4a9debc5573b55542b57feff2e8884b0, type: 2}
+  - {fileID: 11400000, guid: 41a543f29b925bb4695ecbcb32db7718, type: 2}
   groundDecoTiles:
   - {fileID: 11400000, guid: fdc019016a4f3464ea80a49432ad0ef7, type: 2}
   bloomGrassDecoTiles: []
@@ -104,7 +116,7 @@ MonoBehaviour:
   waterDecoDensity: 0
   sandDecoDensity: 0.05
   groundDecoDensity: 0.01
-  grassDecoDensity: 0.25
+  grassDecoDensity: 0.18
   bloomSandDecoDensity: 0.01
   bloomGroundDecoDensity: 0.002
   bloomGrassDecoDensity: 0.07
