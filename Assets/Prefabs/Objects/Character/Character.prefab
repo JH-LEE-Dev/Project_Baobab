@@ -1958,7 +1958,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 540974064dcf14d49998bc5b8872a2c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StatComponent
-  money: 0
+  bOverrideStartMoney: 0
+  startMoney: 0
   pickupRangeMultiplier: 1
   originalSpeed: 1
   sourceOfSpeedAmount: 0
