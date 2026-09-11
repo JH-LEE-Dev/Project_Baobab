@@ -80,6 +80,10 @@ public class StageTileDataSO : ScriptableObject
     // 기준선이 달라서, 그대로 두면 데코가 한 칸 떠 보이는 스테이지가 있다(Stage1이 그렇다).
     // Grid는 던전마다 새로 만들지 않고 재사용하므로 GenerateMap()이 던전 진입마다 이 값을 다시 적용한다.
     [SerializeField] private float decoTilemapYOffset = 0.5f;
+    // true면 GroundDecoTiles/GrassDecoTiles를 DecoTilemap에 얹지 않고 GroundTilemap의 타일 자체로 깐다.
+    // 데코가 그라운드 위에 겹쳐 그려지는 대신 그라운드를 대체한다(Stage1이 이 방식).
+    // 블룸 데코(BloomGroundDecoTiles/BloomGrassDecoTiles)는 이 설정과 무관하게 BloomDecoTilemap으로 간다.
+    [SerializeField] private bool useGroundTilemapForDeco = false;
 
     [Header("오브젝트 밀도 설정")]
     [SerializeField, Range(0f, 0.1f)] [FormerlySerializedAs("rockDecoDensity")] private float grassStaticObjDensity = 0.0005f;
@@ -131,6 +135,7 @@ public class StageTileDataSO : ScriptableObject
     public bool UseBloomWaterDecoDensity => useBloomWaterDecoDensity;
     public float BloomWaterDecoDensity => bloomWaterDecoDensity;
     public float DecoTilemapYOffset => decoTilemapYOffset;
+    public bool UseGroundTilemapForDeco => useGroundTilemapForDeco;
     public float BloomDecoHDRIntensity => bloomDecoHDRIntensity;
     public float BloomWaterDecoHDRIntensity => bloomWaterDecoHDRIntensity;
     public bool UseWaterTileBloom => useWaterTileBloom;

@@ -107,6 +107,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     // 걷어낸 칸은 그쪽을 null로 비우고 원본을 이 배열로 옮긴다.
     private TileBase[] suppressedDecoTiles;
     private TileBase[] suppressedBloomDecoTiles;
+    // UseGroundTilemapForDeco 스테이지에서 데코가 GroundTilemap의 타일을 대체한 칸의, 대체되기 전 타일.
+    // IsGrassTile 같은 "이 칸이 잔디냐" 판정이 데코 타일을 보고 잔디가 아니라고 답하면 안 되기 때문에 남겨둔다.
+    private TileBase[] decoReplacedGroundTiles;
     private TileBase[] waterDecoTilesToApply;
     private TileBase[] bloomWaterDecoTilesToApply;
     private TileBase[] waterStencilTiles;
@@ -184,13 +187,13 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         // 이 배열들은 던전에 들어올 때마다 다시 만들 필요가 없다. width/height가 직렬화 상수라
         // 크기가 변하지 않고, 내용도 전부 하류에서 초기화되기 때문이다.
-        //   - TileBase 14종 + deepWaterTileFlags + cellToIndex : ApplyTiles()가 Array.Clear/-1 대입
+        //   - TileBase 15종 + deepWaterTileFlags + cellToIndex : ApplyTiles()가 Array.Clear/-1 대입
         //   - noiseValues                                      : GenerateNoiseMap()이 전 칸을 덮어씀
         //   - isMainland / isShoreline                         : MarkMainland() / DetermineSpawns()
         //   - isOceanConnectedWater / puddleVisited            : ApplyInnerPuddleDensity()
         //   - forceGrassOverride / sandPatchVisited            : ApplySmallInlandSandPatches()
         //   - waterCompVisited                                 : PlaceWaterAnimatedObjects()
-        // 190x190 기준 한 번에 약 4.9MB(TileBase 배열 14개만 4.0MB)라, 매번 새로 만들면 던전
+        // 190x190 기준 한 번에 약 5.2MB(TileBase 배열 15개만 4.3MB)라, 매번 새로 만들면 던전
         // 진입마다 그만큼이 그대로 가비지가 된다. 크기가 실제로 달라졌을 때만 다시 할당한다.
         if (noiseValues == null || noiseValues.Length != size)
         {
@@ -206,6 +209,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             bloomDecoTilesToApply = new TileBase[size];
             suppressedDecoTiles = new TileBase[size];
             suppressedBloomDecoTiles = new TileBase[size];
+            decoReplacedGroundTiles = new TileBase[size];
             waterDecoTilesToApply = new TileBase[size];
             bloomWaterDecoTilesToApply = new TileBase[size];
             waterStencilTiles = new TileBase[size];
@@ -394,7 +398,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         if (groundTiles == null) return false;
         if (_cellPos.x < 0 || _cellPos.x >= width || _cellPos.y < 0 || _cellPos.y >= height) return false;
 
-        TileBase tile = groundTiles[_cellPos.x + _cellPos.y * width];
+        int flatIdx = _cellPos.x + _cellPos.y * width;
+
+        // 데코가 그라운드 타일을 대체한 칸(UseGroundTilemapForDeco)은 대체 전 타일로 판정한다.
+        // 그러지 않으면 Stage1에서 데코가 깔린 잔디 칸이 전부 "잔디 아님"이 되어 발소리가 흙으로 바뀐다.
+        TileBase tile = decoReplacedGroundTiles[flatIdx] != null ? decoReplacedGroundTiles[flatIdx] : groundTiles[flatIdx];
         if (tile == null || stageTileData == null || stageTileData.GrassTiles == null) return false;
 
         return stageTileData.GrassTiles.Contains(tile);
@@ -589,6 +597,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     ///
     /// 데코와 블룸 데코는 ApplyTiles에서 한 칸에 둘 중 하나만 깔리므로 실제로 타일맵을 건드리는
     /// 것은 많아야 한 번이고, 데코가 없는 칸이면 아예 쓰지 않는다.
+    ///
+    /// UseGroundTilemapForDeco 스테이지(Stage1)에서는 데코가 그라운드 타일 자체가 되어
+    /// decoTilesToApply가 비어 있으므로 이 경로를 타지 않는다. 의도한 동작이다 - 그라운드로 내려간
+    /// 데코는 나무보다 아래에 그려져 밑동을 가리지 않으니 걷어낼 이유가 없고, 걷어내면 오히려
+    /// 나무 밑만 다른 타일로 도려낸 자국이 남는다. 블룸 데코는 여전히 겹쳐 그려지므로 그대로 걷어낸다.
     /// </summary>
     public void ClearDecoTileForTree(Vector3 _worldPos)
     {
@@ -1083,6 +1096,29 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         sandPatchQueue.Enqueue(idx);
     }
 
+    /// <summary>
+    /// 데코 타일을 어느 타일맵 배열에 넣을지 정한다.
+    ///
+    /// 기본은 GroundTilemap 위에 겹쳐 그리는 DecoTilemap이고, _bReplaceGround(Stage1)일 때는
+    /// GroundTilemap의 타일을 아예 대체한다. 대체한 칸은 원래 그라운드 타일을
+    /// decoReplacedGroundTiles에 남겨 IsGrassTile이 계속 잔디로 판정하게 한다.
+    ///
+    /// 블룸 데코는 이 경로를 타지 않는다. 겹쳐 그리는 것이 목적이라 BloomDecoTilemap에 그대로 간다.
+    /// </summary>
+    private void PlaceDecoTile(int _idx, TileBase _decoTile, bool _bReplaceGround)
+    {
+        if (_decoTile == null) return;
+
+        if (false == _bReplaceGround)
+        {
+            decoTilesToApply[_idx] = _decoTile;
+            return;
+        }
+
+        decoReplacedGroundTiles[_idx] = groundTiles[_idx];
+        groundTiles[_idx] = _decoTile;
+    }
+
     private void ApplyTiles()
     {
         int size = width * height;
@@ -1096,6 +1132,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         Array.Clear(bloomDecoTilesToApply, 0, size);
         Array.Clear(suppressedDecoTiles, 0, size);
         Array.Clear(suppressedBloomDecoTiles, 0, size);
+        Array.Clear(decoReplacedGroundTiles, 0, size);
         Array.Clear(waterDecoTilesToApply, 0, size);
         Array.Clear(bloomWaterDecoTilesToApply, 0, size);
         Array.Clear(waterStencilTiles, 0, size);
@@ -1108,6 +1145,10 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         for (int i = 0; i < size; i++) cellToIndex[i] = -1;
 
         float sandThreshold = ComputeSandThreshold();
+
+        // Stage1처럼 데코가 그라운드를 대체하는 스테이지에서는 DecoTilemap을 아예 쓰지 않는다.
+        // 칸마다 다시 물어볼 값이 아니라 루프 밖에서 한 번만 읽는다.
+        bool bDecoReplacesGround = stageTileData != null && stageTileData.UseGroundTilemapForDeco;
 
         Vector3 portalPos = GetPortalSpawnPosition();
         Vector3 playerPos = GetPlayerSpawnPosition();
@@ -1283,7 +1324,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
                     if (stageTileData.GroundDecoTiles != null && stageTileData.GroundDecoTiles.Count > 0 && UnityEngine.Random.value < _groundDecoProb)
                     {
-                        decoTilesToApply[i] = stageTileData.GroundDecoTiles[UnityEngine.Random.Range(0, stageTileData.GroundDecoTiles.Count)];
+                        PlaceDecoTile(i, stageTileData.GroundDecoTiles[UnityEngine.Random.Range(0, stageTileData.GroundDecoTiles.Count)], bDecoReplacesGround);
                         _hasGroundDeco = true;
                     }
                     else if (stageTileData.BloomGroundDecoTiles != null && stageTileData.BloomGroundDecoTiles.Count > 0 && UnityEngine.Random.value < _bloomDecoProb)
@@ -1297,7 +1338,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 {
                     if (stageTileData.GrassDecoTiles != null && stageTileData.GrassDecoTiles.Count > 0 && UnityEngine.Random.value < stageTileData.GrassDecoDensity)
                     {
-                        decoTilesToApply[i] = stageTileData.GrassDecoTiles[UnityEngine.Random.Range(0, stageTileData.GrassDecoTiles.Count)];
+                        PlaceDecoTile(i, stageTileData.GrassDecoTiles[UnityEngine.Random.Range(0, stageTileData.GrassDecoTiles.Count)], bDecoReplacesGround);
                     }
                     else if (stageTileData.BloomGrassDecoTiles != null && stageTileData.BloomGrassDecoTiles.Count > 0 && UnityEngine.Random.value < stageTileData.BloomGrassDecoDensity)
                     {
