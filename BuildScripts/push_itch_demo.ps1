@@ -49,7 +49,9 @@ $Target = 'hiddenstagegames/lumberboy'
 # 채널 이름이 플랫폼 태그를 결정합니다. windows 가 들어가야 itch 앱이 설치 대상으로 인식합니다.
 $Channel = 'windows'
 
-$BaseVersion = '1.0.0'
+# 버전은 여기 적지 않습니다. ProjectSettings 의 bundleVersion 을 그대로 읽습니다.
+# 하드코딩하면 버전을 올렸을 때 실제 빌드와 itch 에 기록되는 값이 조용히 어긋납니다.
+# (실제로 1.0.1 빌드를 1.0.0 으로 올릴 뻔했습니다)
 
 # 이 폴더가 어느 스토어의 빌드여야 하는지. 세이브 폴더 이름이 스토어마다 달라 구분자가 됩니다.
 $MustContain    = 'LumberBoy_ITCH'
@@ -97,6 +99,30 @@ function Invoke-Native {
 
     try   { & $Script }
     finally { $ErrorActionPreference = $previous }
+}
+
+<#
+    ProjectSettings 에서 bundleVersion 을 읽습니다.
+
+    읽지 못하면 멈춥니다. itch 에는 SteamPipe 의 desc 에 해당하는 자리가 없어서 userversion 이
+    "이 빌드가 어느 코드였나"를 아는 유일한 단서입니다. 틀린 값으로 올리느니 올리지 않는 편이 낫습니다.
+#>
+function Get-BundleVersion {
+    param([Parameter(Mandatory = $true)] [string] $ProjectRoot)
+
+    $settingsPath = Join-Path $ProjectRoot 'ProjectSettings\ProjectSettings.asset'
+
+    if (-not (Test-Path -LiteralPath $settingsPath)) {
+        Stop-WithReason "ProjectSettings.asset 을 찾지 못했습니다: $settingsPath"
+    }
+
+    $match = Select-String -LiteralPath $settingsPath -Pattern '^\s*bundleVersion:\s*(.+?)\s*$' | Select-Object -First 1
+
+    if ($null -eq $match) {
+        Stop-WithReason "ProjectSettings.asset 에서 bundleVersion 을 읽지 못했습니다: $settingsPath"
+    }
+
+    return $match.Matches[0].Groups[1].Value
 }
 
 # 바이너리에서 ASCII 문자열을 찾습니다. global-metadata.dat 는 12MB 정도라 통째로 읽어도 됩니다.
@@ -181,13 +207,16 @@ foreach ($rule in $Forbidden) {
 Write-Step '버전'
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$userVersion = $BaseVersion
+$baseVersion = Get-BundleVersion -ProjectRoot $projectRoot
+$userVersion = $baseVersion
+
+Write-Ok "bundleVersion = $baseVersion  (ProjectSettings 에서 읽음)"
 
 try {
     $commit = (Invoke-Native { & git -C $projectRoot rev-parse --short HEAD 2>$null })
 
     if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($commit)) {
-        $userVersion = "$BaseVersion-$($commit.Trim())"
+        $userVersion = "$baseVersion-$($commit.Trim())"
 
         $dirty = (Invoke-Native { & git -C $projectRoot status --porcelain 2>$null })
 
