@@ -872,7 +872,6 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     public void SetMoney(long _money)
     {
         money = _money;
-        SpendMoneyEvent?.Invoke();
     }
 
     private void UpdateInventoryEmptyState()
