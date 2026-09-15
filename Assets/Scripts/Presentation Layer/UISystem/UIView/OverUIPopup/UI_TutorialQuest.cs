@@ -358,7 +358,10 @@ public class UI_TutorialQuest : MonoBehaviour
         // 교체해(LocalizationManager.SetLanguage) 그 폰트로 옛 문구를 한 번 다시 조판하게 된다.
         // 새 폰트에 없는 글자면 TMP가 글리프 누락 경고를 남기고 □로 그린다.
         // (언어 선택은 ESC 메뉴에서 하므로 튜토리얼 중이라면 거의 항상 이 경로로 들어온다)
-        if (false == bIsShowing)
+        //
+        // 단, 일시정지로 잠시 내려간 퀘스트(isSuspendedByPause)는 예외다. 복원할 내용이
+        // 살아 있는 상태이므로 지우는 대신 아래에서 바꾼 언어로 다시 채운다.
+        if (false == bIsShowing && false == isSuspendedByPause)
         {
             ClearQuestTexts();
             return;
