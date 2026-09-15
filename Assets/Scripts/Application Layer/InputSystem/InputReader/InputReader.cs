@@ -140,6 +140,34 @@ public class InputReader
     // 0.99998이라 이 여유가 없으면 한 칸이 영원히 한 번씩 밀린다.
     private const float UI_SCROLL_NOTCH_EPSILON_RATIO = 0.001f;
 
+    // ──────────────────────────────────────────────────────────────────────────────
+    // [수명 규약] 아래 잠금 상태들은 전부 "앱이 켜져 있는 내내" 살아남는다.
+    //
+    // InputReader는 InputManager(BootStrap 컴포넌트)가 new로 한 번 만들어 들고 있고,
+    // Release()는 InputManager.OnDestroy = 앱 종료 때만 불린다. 즉 escLockOwners /
+    // inventoryLockOwners / pauseInteractCount / pauseUICancelCount / bPauseMove /
+    // currentInputMode는 씬 전환은 물론 메인 메뉴 복귀로도 초기화되지 않는다.
+    //
+    // 그래서 잠금 하나가 짝을 놓치면 증상이 "이번 판에서 키가 안 먹는다"가 아니라
+    // "게임을 껐다 켤 때까지 그 키가 죽는다"가 된다.
+    //
+    // 이걸 일괄로 되돌려주는 그물은 없고, 앞으로도 만들지 않는다. 블랭킷 해제는 아래
+    // IsMovePaused 주석이 PauseMove에 대해 적어둔 것과 같은 문제를 일으킨다 - 실패를
+    // 감추고, 아직 잠가야 하는 쪽까지 같이 풀어버린다.
+    //
+    // 대신 지키는 규약은 이것이다:
+    //   잠금을 거는 쪽이 자기 OnDestroy에서도 반납할 것.
+    //   (Hide/OnHide만으로는 부족하다. UIManager.ReleaseAllUIView()는 view.Release()만 부르고
+    //    OnHide를 타지 않으므로, 뷰가 열린 채 파괴되면 OnHide 반납은 실행되지 않는다)
+    //
+    // 이미 이 규약을 따르고 있는 선례:
+    //   UIView_ESC.ReleaseInputLock()      - OnDestroy에서, 이벤트를 비우기 전에
+    //   UIView_Tent / UIView_Warning       - OnDestroy에서 ResumeSharedUICancelAfterPresentation()
+    //   GameplayUICoordinator.Release()    - 인벤토리 소유자 3종을 명시적으로 반납
+    //   HUD_PopupNav_Main.OnDestroy        - 해금 연출이 올린 pauseInteractCount 반납
+    //   UI_Option.OnDestroy                - 진행 중이던 리바인딩을 CancelRebindSilently()로 정리
+    // ──────────────────────────────────────────────────────────────────────────────
+
     // 단순 bool이 아닌 카운터인 이유: 던전 진입 연출(TownProductionManager.StartSkyProduction 등)과
     // 내비게이션 팝업 해금 연출(GameplayUICoordinator) 등 서로 다른 시스템이 겹치는 타이밍에 각자
     // Pause(true/false)를 걸 수 있는데, bool이면 한쪽이 먼저 false를 걸어 다른 쪽이 아직 막아야 하는
@@ -242,9 +270,9 @@ public class InputReader
 
     public void Release()
     {
-        // 리바인딩 도중 씬이 정리되는 상황(예: 옵션 창을 닫지 않고 씬 전환)에서 콜백을 태우지 않고 조용히 정리한다.
-        rebindOperation?.Dispose();
-        rebindOperation = null;
+        // 리바인딩이 걸린 채 종료되는 상황에서 콜백을 태우지 않고 조용히 정리한다.
+        // (Dispose만으로는 StartRebind가 꺼둔 액션이 꺼진 채로 남으므로 아래 헬퍼를 쓴다)
+        CancelRebindSilently();
 
         // Release가 두 번 불릴 수 있어(InputManager.Release + OnDestroy) 구독 해제는 멱등해야 한다.
         deviceTracker?.Release();
@@ -1389,6 +1417,38 @@ public class InputReader
     public void CancelRebind()
     {
         rebindOperation?.Cancel();
+    }
+
+    /// <summary>
+    /// 진행 중인 리바인딩을 <b>완료 콜백 없이</b> 정리합니다. 원래 키는 그대로 유지됩니다.
+    ///
+    /// CancelRebind()와 다른 점은 _onFinished를 태우지 않는다는 것뿐입니다. 파괴 중인 쪽에서
+    /// 쓰라고 있는 통로입니다 - CancelRebind()는 OnCancel → CancelRebindInternal을 거쳐
+    /// 콜백을 되돌려 주는데, 그 콜백의 주인(UI_Option 등)이 이미 정리되는 중이면 이미
+    /// 파괴된 UI를 다시 만지게 됩니다.
+    ///
+    /// Dispose()만으로 끝내면 안 되는 이유: StartRebind()가 대상 액션을 Disable()해 두는데
+    /// RebindingOperation.Dispose()는 그걸 되돌리지 않습니다. 정리만 하고 넘어가면 그 키가
+    /// 꺼진 채로 남고, InputReader는 앱 수명이라 <b>게임을 껐다 켤 때까지</b> 돌아오지 않습니다.
+    /// 같은 이유로 IsRebinding도 true로 굳어 패드 UI 확인/취소(GamepadUIConfirmButton /
+    /// GamepadUICancelButton)가 통째로 null을 반환하게 됩니다.
+    /// </summary>
+    public void CancelRebindSilently()
+    {
+        if (null == rebindOperation)
+        {
+            return;
+        }
+
+        InputAction _rebindingAction = rebindOperation.action;
+
+        rebindOperation.Dispose();
+        rebindOperation = null;
+
+        if (null != _rebindingAction)
+        {
+            _rebindingAction.Enable();
+        }
     }
 
     private void CompleteRebind(ERebindableAction _action, EInputDeviceType _device, InputAction _inputAction, int _bindingIndex, Action<ERebindResult, ERebindableAction?> _onFinished)

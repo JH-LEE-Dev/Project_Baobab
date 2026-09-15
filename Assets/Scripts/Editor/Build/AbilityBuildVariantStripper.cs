@@ -65,6 +65,16 @@ public class AbilityBuildVariantStripper : IPreprocessBuildWithReport, IPostproc
     }
 
     private static string ProjectRoot => Directory.GetParent(Application.dataPath).FullName;
+    /// <summary>
+    /// 백업 위치입니다. <b>Library 아래는 .gitignore 대상(/[Ll]ibrary/)입니다.</b>
+    ///
+    /// 빌드가 비정상 종료돼 백업이 남은 상태에서 Library를 지우면(유니티 문제 해결의 기본 수순)
+    /// 여기서의 복구는 불가능해지고, 원본 에셋은 <b>수정된 채</b> 남습니다.
+    /// 다만 대상 에셋은 전부 버전 관리 대상이라 그때는 git 쪽에서 되돌리면 됩니다 —
+    /// 빌드가 중간에 죽었다면 Library를 지우기 전에 git status를 먼저 보십시오.
+    ///
+    /// 백업을 Assets 아래로 옮기지 마십시오. 그 순간 백업 파일 자체가 빌드에 실립니다.
+    /// </summary>
     private static string BackupDirectory => Path.Combine(ProjectRoot, "Library", BACKUP_FOLDER);
     private static string BackupFilePath =>
         Path.Combine(BackupDirectory, Path.GetFileName(VARIANT_DATA_PATH));

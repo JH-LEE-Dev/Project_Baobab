@@ -9,6 +9,14 @@ public class KnockBackState : CharacterState
     private Vector2 targetPos;
     private float timer;
 
+    // 넉백 중에도 캐릭터가 선 칸을 계속 점유한다.
+    //
+    // IdleState/RunState는 Enter에서 Occupy하고 Exit에서 Release하는데, ChangeState가 Exit를 먼저
+    // 부르므로 넉백에 들어오는 순간 직전 상태가 점유를 반납한다. 여기서 다시 잡아주지 않으면
+    // TotalLockDuration(1초) 동안 아무 칸도 점유되지 않은 상태가 되고, 그 사이 InDungeonObjectManager가
+    // IsOccupied를 false로 보고 기절해 있는 플레이어 위에 나무를 심을 수 있다.
+    private Vector3Int currentReservedPos;
+
     // 넉백에 들어가기 직전의 이동 잠금 상태. 나갈 때 false를 박는 대신 이 값으로 되돌린다.
     //
     // PauseMove는 소유자별 잠금이 아니라 단일 bool이라(InputReader.IsMovePaused 참고), 넉백처럼
@@ -42,6 +50,11 @@ public class KnockBackState : CharacterState
         bActivated = true;
         timer = 0f;
 
+        // 직전 상태(Idle/Run)의 Exit가 이미 점유를 반납한 뒤다. 넉백 구간에도 공백이 생기지 않도록
+        // 여기서 현재 칸을 다시 잡는다. (Exit에서 반납하고, 이어지는 IdleState.Enter가 다시 잡는다)
+        currentReservedPos = ctx.tilemapDataProvider.WorldToCell(character.transform.position);
+        ctx.pathfindGridProvider.Occupy(currentReservedPos);
+
         character.rb.linearVelocity = Vector2.zero;
         ctx.moveInput = Vector2.zero;
 
@@ -72,6 +85,10 @@ public class KnockBackState : CharacterState
         character.SetFacingLocked(false);
         character.SetTreeHeatImmune(false);
         character.StopStunVisual();
+
+        // 점유 해제. 타이머 만료로 IdleState에 넘어가는 경우든 사망 등으로 다른 State가 끼어드는
+        // 경우든 ChangeState가 반드시 이 Exit를 먼저 부르므로, 어느 경로에서도 칸이 남지 않는다.
+        ctx.pathfindGridProvider.Release(currentReservedPos);
     }
 
     public override void Update()
@@ -90,6 +107,8 @@ public class KnockBackState : CharacterState
             character.rb.MovePosition(Vector2.Lerp(startPos, targetPos, t));
         }
 
+        UpdateOccupation();
+
         if (timer >= TotalLockDuration)
         {
             stateMachine.ChangeState<IdleState>(); // 내부적으로 Exit()이 호출되어 각종 잠금이 풀린다
@@ -99,6 +118,18 @@ public class KnockBackState : CharacterState
             // 다시 한번 호출해야 그 입력이 유실되지 않고 바로 반영된다.
             // (Exit()과 마찬가지로 false가 아니라 넉백 직전 값으로 되돌린다)
             character.inputManager.PauseMove(bMovePausedBeforeKnockBack);
+        }
+    }
+
+    // IdleState/RunState와 같은 방식으로, 밀려나면서 칸이 바뀌면 점유도 따라 옮긴다.
+    private void UpdateOccupation()
+    {
+        Vector3Int newCell = ctx.tilemapDataProvider.WorldToCell(character.transform.position);
+        if (newCell != currentReservedPos)
+        {
+            ctx.pathfindGridProvider.Release(currentReservedPos);
+            ctx.pathfindGridProvider.Occupy(newCell);
+            currentReservedPos = newCell;
         }
     }
 

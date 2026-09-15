@@ -102,6 +102,19 @@ public class CameraMoveController : MonoBehaviour
             float _scale = SettingsManager.Instance.Current.cameraShake / SettingsData.SLIDER_MAX;
             float _scaledIntensity = _intensity * _scale;
 
+            // 지속시간이 0 이하면 "흔들지 않는다"로 처리하고 즉시 멎게 한다.
+            // 아래 대입만 하고 넘어가면 Update의 감쇠 블록이 if (shakeTimer > 0)라 한 번도 돌지
+            // 않아 AmplitudeGain이 그대로 남고, 다음 셰이크가 올 때까지 계속 흔들린다.
+            // (현재 호출부 8곳은 전부 0.08~0.45라 여기 걸리지 않는다 - 새 호출부를 위한 가드다)
+            if (_time <= 0f)
+            {
+                multiChannelPerlin.AmplitudeGain = 0f;
+                startingIntensity = 0f;
+                shakeTimerTotal = 0f;
+                shakeTimer = 0f;
+                return;
+            }
+
             multiChannelPerlin.AmplitudeGain = _scaledIntensity;
             startingIntensity = _scaledIntensity;
             shakeTimerTotal = _time;
