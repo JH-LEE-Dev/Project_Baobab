@@ -461,6 +461,11 @@ public class AttackComponent : PComponent
         IStaticCollidable nearestDamageable = null;
         float minDistanceSqr = float.MaxValue;
 
+        // 이번 공격에서 실제로 타격한 나무 중 가장 가까운 것. 충격파는 공격당 한 번만 나가야 하므로
+        // (아래 "공격당 1회 충격파" 주석 참고) 판정 기준이 될 나무 하나를 여기에 모은다.
+        TreeObj shockWaveSourceTree = null;
+        float shockWaveSourceDistSq = float.MaxValue;
+
         for (int i = 0; i < hitCount; i++)
         {
             var target = collisionResults[i];
@@ -514,6 +519,16 @@ public class AttackComponent : PComponent
                 {
                     ProcessAxeHit(damageable, centerPos);
                     bAnyHit = true;
+
+                    if (target is TreeObj hitTree)
+                    {
+                        float hitTreeDistSq = GetIsometricDistSq(target.Position + target.Offset, centerPos);
+                        if (hitTreeDistSq < shockWaveSourceDistSq)
+                        {
+                            shockWaveSourceDistSq = hitTreeDistSq;
+                            shockWaveSourceTree = hitTree;
+                        }
+                    }
                 }
             }
 
@@ -534,11 +549,34 @@ public class AttackComponent : PComponent
             ProcessAxeHit(damageable, centerPos);
             successfulAttackCount++;
             AttackSuccessEvent?.Invoke();
+
+            if (nearestDamageable is TreeObj singleHitTree)
+            {
+                shockWaveSourceTree = singleHitTree;
+            }
         }
         else if (bShockWaveTriggered)
         {
             // 허공을 공격했더라도 마스터리로 충격파가 발생했다면 나무를 타격했을 때와 동일하게 도끼 내구도 감소 (콤보는 미적용)
             ShockWaveMissEvent?.Invoke();
+        }
+
+        // [공격당 1회 충격파]
+        // 마스터리가 없을 때의 충격파 판정이다. 원래 설계도 "가장 가까운 나무 하나를 기준으로
+        // 공격당 한 번"이었다 - 다중 공격이 들어오기 전에는 이 판정이 nearestDamageable 블록 안에
+        // 있었다. 다중 공격을 넣으면서 타격 처리가 ProcessAxeHit으로 묶여 대상마다 호출되자,
+        // 이 판정도 함께 딸려 들어가 N그루를 때리면 충격파가 N번 굴러갔다. 생성 위치와 방향이
+        // centerPos/마우스 방향으로 모두 같아서 같은 자리에 겹친 충격파 N개가 나가고 피해도
+        // N배로 들어갔다. 판정을 여기로 올려 원래 의도대로 되돌린다.
+        //
+        // 마스터리 쪽(Attack 진입부)은 "스윙당 1회"라 원래부터 중복이 없었고, 그대로 둔다.
+        if (false == ctx.characterStat.bShockWaveMastery && shockWaveSourceTree != null && axeExtraAttackCreator != null)
+        {
+            if (UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance)
+            {
+                Vector3 direction = (mouseTransform - centerPos).normalized;
+                StartCoroutine(CreateShockWaveRoutine(centerPos, direction));
+            }
         }
     }
 
@@ -586,15 +624,8 @@ public class AttackComponent : PComponent
             overheatTarget.ApplyOverheatDot(OverheatDotDamagePerTick, OverheatDotTickCount, OverheatDotTickInterval);
         }
 
-        // 나무 타격 시 (마스터리가 없을 때만) 확률적으로 충격파 생성
-        if (!ctx.characterStat.bShockWaveMastery && damageable is TreeObj && axeExtraAttackCreator != null)
-        {
-            if (UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance)
-            {
-                Vector3 direction = (mouseTransform - centerPos).normalized;
-                StartCoroutine(CreateShockWaveRoutine(centerPos, direction));
-            }
-        }
+        // 충격파 판정은 여기에 두지 않는다. 이 메서드는 타격 대상마다 호출되므로 여기서 굴리면
+        // 다중 공격 때 충격파가 대상 수만큼 생긴다. Attack()의 "[공격당 1회 충격파]"를 참고.
     }
 
     private System.Collections.IEnumerator CreateShockWaveRoutine(Vector3 _position, Vector3 _direction)

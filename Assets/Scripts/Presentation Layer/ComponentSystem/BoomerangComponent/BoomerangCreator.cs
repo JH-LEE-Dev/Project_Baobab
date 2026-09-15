@@ -61,13 +61,16 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
             finalSpeedMul = 3f;
         }
 
-        // 치명타는 최종적으로 증폭된 기본 데미지를 바탕으로 계산됨
-        if (statComponent.bBoomerangCritical && UnityEngine.Random.value < statComponent.criticalChance)
-        {
-            finalDamage *= statComponent.ciriticalDamageMul;
-        }
-
         boomerang.SetDamage(finalDamage);
+
+        // 치명타는 여기서 굴리지 않는다. 판정이 왕복 내내 damageInterval마다 반복되는데 발사 시점에
+        // 한 번만 굴려 데미지에 곱해두면 한 부메랑이 통째로 치명타이거나 통째로 아니게 되어 편차가
+        // 지나치게 커진다. 확률/배율만 넘기고 실제 판정은 Boomerang이 틱마다 한다.
+        // (도끼 치명타 확률·배율을 그대로 계승한다 - bBoomerangCritical은 그 적용 여부를 여는 스위치일 뿐이다)
+        boomerang.SetCritical(
+            statComponent.bBoomerangCritical,
+            statComponent.criticalChance,
+            statComponent.ciriticalDamageMul);
         boomerang.SetHitRadius(finalHitRadius);
         boomerang.SetSpeedMultiplier(finalSpeedMul);
         // damageInterval은 변동 없음
