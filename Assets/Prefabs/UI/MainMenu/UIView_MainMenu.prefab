@@ -3934,6 +3934,9 @@ MonoBehaviour:
   backgroundUI: {fileID: 2437174153227353739}
   otherCanvasGroup: {fileID: 3288313713963843237}
   discordButton: {fileID: 0}
+  gameVersionText: {fileID: 5991195431232774398}
+  demoVersionFormat: Demo V{0}
+  releaseVersionFormat: Release V{0}
   optionUI: {fileID: 2449127132447428641}
   creditUI: {fileID: 2020525936145470140}
   initialSetupPopup: {fileID: 8489015403838556601}

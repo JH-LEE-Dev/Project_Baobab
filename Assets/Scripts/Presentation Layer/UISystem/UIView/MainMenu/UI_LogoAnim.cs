@@ -21,6 +21,10 @@ public class UI_LogoAnim : MonoBehaviour
     [SerializeField] private Ease moveEase = Ease.OutBack; // 찰진 튕김 효과 (뽀잉)
     [SerializeField] private float fadeInDuration = 0.8f; // 로고 페이드인 기본 시간
 
+    [Header("Demo Badge")]
+    [SerializeField, Tooltip("데모 버전 표시 뱃지 오브젝트 (Title > Demo)")]
+    private GameObject demoBadge;
+
     private Vector2 initialPosition;
 
     private Action currentRevealComplete;
@@ -46,6 +50,15 @@ public class UI_LogoAnim : MonoBehaviour
             isInitialPositionSet = true;
         }
 
+        if (null == demoBadge && null != logoTransform)
+        {
+            Transform _demoTransform = logoTransform.Find("Demo");
+            if (null != _demoTransform)
+            {
+                demoBadge = _demoTransform.gameObject;
+            }
+        }
+
         if (null == canvasGroup)
         {
             canvasGroup = GetComponent<CanvasGroup>();
@@ -53,6 +66,27 @@ public class UI_LogoAnim : MonoBehaviour
             {
                 canvasGroup = gameObject.AddComponent<CanvasGroup>();
             }
+        }
+    }
+
+    /// <summary>
+    /// 데모 버전 표시 뱃지(Title > Demo)의 활성화 상태를 설정합니다.
+    /// 정식 버전 빌드 시 비활성화하여 데모 표기를 숨깁니다.
+    /// </summary>
+    public void SetDemoBadgeActive(bool _isActive)
+    {
+        if (null == demoBadge && null != logoTransform)
+        {
+            Transform _demoTransform = logoTransform.Find("Demo");
+            if (null != _demoTransform)
+            {
+                demoBadge = _demoTransform.gameObject;
+            }
+        }
+
+        if (null != demoBadge)
+        {
+            demoBadge.SetActive(_isActive);
         }
     }
 
