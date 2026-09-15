@@ -130,6 +130,8 @@ public class GameInstaller : MonoBehaviour
     public void LoadGame()
     {
         saveManager.LoadGameData();
+        // 세이브 로드가 소지금을 덮어쓰므로, 캐릭터 프리팹의 디버그 소지금은 로드 후 한 번 더 적용해야 한다.
+        unitSystem.ApplyDebugStartMoney();
         gameplayUIInstaller.Refresh();
     }
 

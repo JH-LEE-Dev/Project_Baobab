@@ -24372,6 +24372,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Rock
       objectReference: {fileID: 0}
+    - target: {fileID: 861993711761315240, guid: 89dbc82bee51d2c44973784844018b54, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 5e931ad8ba91b4945803a228e781614d, type: 3}
     - target: {fileID: 5185511937662474008, guid: 89dbc82bee51d2c44973784844018b54, type: 3}
       propertyPath: m_LocalPosition.x
       value: 11
@@ -81132,6 +81136,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Rock (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 861993711761315240, guid: 89dbc82bee51d2c44973784844018b54, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 5e931ad8ba91b4945803a228e781614d, type: 3}
     - target: {fileID: 5185511937662474008, guid: 89dbc82bee51d2c44973784844018b54, type: 3}
       propertyPath: m_LocalPosition.x
       value: 5.5
@@ -82179,6 +82187,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Rock (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 861993711761315240, guid: 89dbc82bee51d2c44973784844018b54, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 5e931ad8ba91b4945803a228e781614d, type: 3}
     - target: {fileID: 5185511937662474008, guid: 89dbc82bee51d2c44973784844018b54, type: 3}
       propertyPath: m_LocalPosition.x
       value: -12

@@ -820,6 +820,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
 
             environmentProvider.tilemapDataProvider.SetTreeCollisionTile(_spawnPos);
+            // 나무 밑동에 데코가 겹치지 않도록 이 칸의 데코 타일을 걷어낸다.
+            // 걷어낸 타일은 제공자가 보관하고 있다가 나무가 사라질 때 되돌린다.
+            environmentProvider.tilemapDataProvider.ClearDecoTileForTree(_spawnPos);
             environmentProvider.densityProvider.UpdateTreeCnt(true);
 
             if (enableCulling && cullingGroup != null)
@@ -916,6 +919,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 if (activeTrees[i] != null)
                 {
                     environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(activeTrees[i].transform.position);
+                    // 나무를 치웠으니 이 칸에서 걷어냈던 데코를 되돌린다. 아래에서 위치를 맵 밖으로
+                    // 옮기므로 반드시 그 전에 호출해야 한다. 배치 구간이라 Tilemap 쓰기는 End에서 한 번에 반영된다.
+                    environmentProvider.tilemapDataProvider.RestoreDecoTileForTree(activeTrees[i].transform.position);
                     environmentProvider.densityProvider.UpdateTreeCnt(false);
 
                     activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
@@ -1119,6 +1125,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(_treeObj.transform.position);
+        environmentProvider.tilemapDataProvider.RestoreDecoTileForTree(_treeObj.transform.position);
         environmentProvider.densityProvider.UpdateTreeCnt(false);
 
         float dropMultiplier = 1f;

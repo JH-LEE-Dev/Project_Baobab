@@ -6,7 +6,12 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public event Action CanHuntEvent;
 
     [Header("For Debugging")]
-    public int money = 0;
+    // 에디터에서 플레이를 누르기 전에 캐릭터 소지금을 원하는 값으로 맞춰두기 위한 치트 값이다.
+    // bOverrideStartMoney를 켰을 때만 적용되며, UnitSystem이 에디터에서만 반영하므로 빌드에는 영향이 없다.
+    [Tooltip("체크하면 게임 시작 시 캐릭터 소지금을 아래 값으로 강제한다. (에디터 전용)")]
+    public bool bOverrideStartMoney = false;
+    [Tooltip("bOverrideStartMoney가 켜져 있을 때 적용할 소지금. 이어하기로 들어가도 세이브 값 대신 이 값이 들어간다.")]
+    public long startMoney = 0;
 
     [Header("Character Stat")]
     public float pickupRangeMultiplier = 1f;

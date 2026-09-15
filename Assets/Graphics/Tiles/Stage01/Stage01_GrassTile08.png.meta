@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 0d7bdf330f50c7d40ba5ee86a05794a7
+guid: f91d48c12a457d44993f46b7b46bfde6
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -8048234804981473262
-    second: Stage01_Deco10_0
+      213: 2524427765285732661
+    second: Stage01_GrassTile08_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Stage01_Deco10_0
+      name: Stage01_GrassTile08_0
       rect:
         serializedVersion: 2
         x: 0
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 210e424161dee4090800000000000000
-      internalID: -8048234804981473262
+      spriteID: 5314df27da1980320800000000000000
+      internalID: 2524427765285732661
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Stage01_Deco10_0: -8048234804981473262
+      Stage01_GrassTile08_0: 2524427765285732661
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

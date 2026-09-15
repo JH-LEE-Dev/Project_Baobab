@@ -1,4 +1,4 @@
-
+using UnityEngine;
 
 public class UnitSystem
 {
@@ -167,7 +167,25 @@ public class UnitSystem
     {
         signalHub.Publish(new CharacterSpawnedSignal(_character));
         unitLogicManager.SetCharacter(_character);
-        inventoryManager.SetMoney(_character.statComponent.money);
+        ApplyDebugStartMoney();
+    }
+
+    /// <summary>
+    /// 캐릭터 프리팹의 StatComponent에 지정해 둔 디버그 소지금을 인벤토리에 반영한다.
+    /// 새 게임은 캐릭터 스폰 직후 한 번, 이어하기는 세이브 로드가 소지금을 덮어쓴 뒤 GameInstaller가 한 번 더 호출한다.
+    /// (호출 순서: UnitSystem.CreateCharacter -> SaveManager.LoadGameData -> GameInstaller.LoadGame)
+    /// 에디터 전용 치트라 빌드에서는 아무 일도 하지 않는다.
+    /// </summary>
+    public void ApplyDebugStartMoney()
+    {
+#if UNITY_EDITOR
+        Character character = unitSpawner.character;
+        if (character == null || character.statComponent == null) return;
+        if (character.statComponent.bOverrideStartMoney == false) return;
+
+        inventoryManager.SetMoney(character.statComponent.startMoney);
+        Debug.Log($"[UnitSystem] 디버그 소지금 적용: {character.statComponent.startMoney}");
+#endif
     }
 
     private void DungeonReady(DungeonReadySignal dungeonReadySignal)
