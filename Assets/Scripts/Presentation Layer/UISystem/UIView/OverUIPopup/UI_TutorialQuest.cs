@@ -353,7 +353,7 @@ public class UI_TutorialQuest : MonoBehaviour
 
     public void RefreshLocalizedTexts()
     {
-        if (false == bIsShowing)
+        if (false == bIsShowing && false == isSuspendedByPause)
             return;
 
         GetQuestTitleAndDesc(currentStep, out string _title, out string _desc);
