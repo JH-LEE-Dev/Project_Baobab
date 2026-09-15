@@ -593,6 +593,21 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 지정된 소지역 버튼을 제외한 나머지 활성 소지역 버튼의 호버 효과를 강제 종료합니다.
+    /// 동일 그룹 내 상호 배타적 호버를 보장하여 중복 점등을 방지합니다.
+    /// </summary>
+    public void StopAllHoverEffectsExcept(HUD_PopupNav_SubRegionBtn _exceptBtn)
+    {
+        for (int i = 0; i < activeSubRegionButtons.Count; i++)
+        {
+            if (null != activeSubRegionButtons[i] && activeSubRegionButtons[i] != _exceptBtn && true == activeSubRegionButtons[i].gameObject.activeSelf)
+            {
+                activeSubRegionButtons[i].ForceStopHoverEffect();
+            }
+        }
+    }
+
     public IReadOnlyList<HUD_PopupNav_SubRegionBtn> GetActiveSubRegionButtons() => activeSubRegionButtons;
 
     public HUD_PopupNav_SubRegionBtn GetHoveredSubRegionButton()

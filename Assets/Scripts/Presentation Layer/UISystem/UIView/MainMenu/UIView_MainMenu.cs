@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
 using System;
+using TMPro;
 
 
 public class UIView_MainMenu : UIView
@@ -19,6 +20,14 @@ public class UIView_MainMenu : UIView
     [SerializeField] private UI_MainMenuBackground backgroundUI; // 동적 배경 관리 객체
     [SerializeField] private CanvasGroup otherCanvasGroup; // 게임 버전 등 기타 UI 최상위 캔버스 그룹
     [SerializeField] private UI_ExternalLinkButton discordButton; // 디스코드 바로가기 버튼
+
+    [Header("Game Version UI")]
+    [SerializeField, Tooltip("게임 버전 표시 TextMeshProUGUI (UI_Other > GameVersion > Text (TMP))")]
+    private TextMeshProUGUI gameVersionText;
+    [SerializeField, Tooltip("데모 버전 표기 포맷")]
+    private string demoVersionFormat = "Demo V{0}";
+    [SerializeField, Tooltip("정식 버전 표기 포맷")]
+    private string releaseVersionFormat = "Release V{0}";
 
     [Header("Sub Views")]
     [SerializeField] private UI_Option optionUI; // 공용 옵션 UI
@@ -140,6 +149,31 @@ public class UIView_MainMenu : UIView
         {
             initialSetupPopup.Initialize(_ctx?.inputManager, _ctx?.localizationManager, _ctx?.cursorBoxUI, _ctx?.depthController);
         }
+
+        ApplyBuildVariantState();
+    }
+
+    /// <summary>
+    /// BuildInfo.IsDemo에 따라 로고 데모 뱃지 표시 여부 및 하단 게임 버전 텍스트를 갱신합니다.
+    /// Tools > 빌드 메뉴(PlatformBuildModeSwitcher)의 배포 모드 전환 상태와 직접 연동됩니다.
+    /// </summary>
+    public void ApplyBuildVariantState()
+    {
+        if (null == gameVersionText && null != otherCanvasGroup)
+        {
+            gameVersionText = otherCanvasGroup.GetComponentInChildren<TextMeshProUGUI>(true);
+        }
+
+        if (null != gameVersionText)
+        {
+            string _format = true == BuildInfo.IsDemo ? demoVersionFormat : releaseVersionFormat;
+            gameVersionText.text = string.Format(_format, Application.version);
+        }
+
+        if (null != logoAnimUI)
+        {
+            logoAnimUI.SetDemoBadgeActive(true == BuildInfo.IsDemo);
+        }
     }
 
     private void HandleLanguageOptionChanged(EOptionLanguage _lang)
@@ -183,6 +217,8 @@ public class UIView_MainMenu : UIView
     {
         base.OnShow();
         gameObject.SetActive(true);
+
+        ApplyBuildVariantState();
 
         // 초기화 시 딤 처리 초기화 (투명하게 숨김)
         if (null != backgroundDimmer)
@@ -580,6 +616,8 @@ public class UIView_MainMenu : UIView
     // PlayGameStartSequence()의 반대 방향: 씬 진입 후 스플래시 연출(팀 로고) 직후의 연출부터 다시 시작합니다.
     public void PlayButtonsRevealAnimation(Action _onComplete = null)
     {
+        ApplyBuildVariantState();
+
         // 1. PlayGameStartSequence에서 페이드 아웃 시켰던 상태를 리셋합니다.
         if (null != backgroundDimmer)
         {
