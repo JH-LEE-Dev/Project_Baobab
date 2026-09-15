@@ -23,5 +23,6 @@ MonoBehaviour:
     fontAsset: {fileID: 11400000, guid: fe9c262ce5b3f90439c4508228c9555c, type: 2}
   - language: 4
     fontAsset: {fileID: 11400000, guid: 19b4e33d5de41244ea1b9ef098e7b84e, type: 2}
-  excludedFonts: []
+  excludedFonts:
+  - {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   trackRuntimeCreatedText: 1

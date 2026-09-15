@@ -353,11 +353,35 @@ public class UI_TutorialQuest : MonoBehaviour
 
     public void RefreshLocalizedTexts()
     {
+        // 숨어 있어도 텍스트 컴포넌트에는 이전 언어의 문구가 그대로 남아 있다. 이 UI는 알파만
+        // 0으로 내려 감추므로 오브젝트가 계속 활성이고, 언어를 바꾸면 FontLocalizer가 폰트부터
+        // 교체해(LocalizationManager.SetLanguage) 그 폰트로 옛 문구를 한 번 다시 조판하게 된다.
+        // 새 폰트에 없는 글자면 TMP가 글리프 누락 경고를 남기고 □로 그린다.
+        // (언어 선택은 ESC 메뉴에서 하므로 튜토리얼 중이라면 거의 항상 이 경로로 들어온다)
         if (false == bIsShowing)
+        {
+            ClearQuestTexts();
             return;
+        }
 
         GetQuestTitleAndDesc(currentStep, out string _title, out string _desc);
         SetQuestContent(_title, _desc);
+    }
+
+    /// <summary>
+    /// 숨은 상태에서 들고 있던 문구를 버립니다. 다음에 다시 띄울 때 현재 언어로 새로 채워집니다.
+    ///
+    /// 캐시(currentQuestTitle/Desc)까지 비우는 이유: 일시정지 복원(ResumeQuest)이 캐시가 있으면
+    /// 그대로 되살리기 때문에, 남겨두면 일시정지 중에 언어를 바꿔도 이전 언어 문구가 돌아옵니다.
+    /// 비워두면 currentStep으로 다시 조회해 바뀐 언어가 반영됩니다.
+    /// </summary>
+    private void ClearQuestTexts()
+    {
+        currentQuestTitle = null;
+        currentQuestDesc = null;
+
+        if (null != questTitleText) questTitleText.text = string.Empty;
+        if (null != questDescText) questDescText.text = string.Empty;
     }
 
     public void PlayCustomSequence(string _title, string _desc = "", float _initialDuration = -1f, float _completedHoldDuration = -1f)
