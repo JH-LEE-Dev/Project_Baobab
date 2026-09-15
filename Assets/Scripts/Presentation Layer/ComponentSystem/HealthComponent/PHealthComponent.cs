@@ -74,11 +74,13 @@ public class PHealthComponent : PComponent, IPHealthComponent
     /// <summary>
     /// 환경 위험 지형(용암 등)으로 인한 스태미나 추가 소모. 캐릭터 스탯 보정(staminaDecreaseAlpha)의
     /// 영향을 받지 않는 고정값으로, 최종 소모량에 그대로 더해진다.
+    ///
+    /// DecreaseStamina와 동일하게 bStaminaDecrease를 따른다. (아래 [소모 정지와 환경 피해] 참고)
     /// </summary>
     public void ApplyEnvironmentalStaminaDrain(float _drainPerSecond)
     {
         float floor = minStaminaRatio * maxStamina;
-        if (currentStamina <= floor || _drainPerSecond <= 0f)
+        if (currentStamina <= floor || _drainPerSecond <= 0f || bStaminaDecrease == false)
             return;
 
         float amount = _drainPerSecond * Time.deltaTime;
@@ -92,11 +94,25 @@ public class PHealthComponent : PComponent, IPHealthComponent
 
     /// <summary>
     /// 단발성 스태미나 피해 (나무 열기 발산 등). Time.deltaTime과 무관하게 고정값을 즉시 차감한다.
+    ///
+    /// [소모 정지와 환경 피해]
+    /// 환경 피해(용암 지속 피해 · 나무 열기)도 일반 소모와 똑같이 bStaminaDecrease를 따른다.
+    /// 예전에는 이 두 경로만 플래그를 보지 않아, "던전의 위협을 전부 얼리는" 구간에서도 혼자 계속 깎았다.
+    ///   · GameEnd(경고 UI) / HandleGameEnd(귀환 확정)는 NPC · 비행 아이템 · 부메랑 · 나무 성장 ·
+    ///     이동 · 공격을 모두 멈추고 SetStaminaDecrease(false)까지 부른다. 그런데 PauseCharacter는
+    ///     공격/커서만 끌 뿐 Character.Update()를 멈추지 않고, 나무 열기는 나무별 코루틴이라
+    ///     StopGrowth()로도 멈추지 않아서 이 둘만 살아남았다.
+    ///   · 그 구간은 PauseMove(true)로 이동이 잠겨 있어 플레이어가 용암에서 비켜설 수 없다.
+    ///     minStaminaRatio는 기본 0이라 그대로 0까지 닿아 사망 시퀀스가 귀환 시퀀스와 겹쳤다.
+    ///     (입장 쪽은 Character.Update의 bWhileReset 가드가 같은 사고를 이미 막고 있다)
+    ///
+    /// 차량 휴식 구역(StaminaRecoverCircle)도 같은 플래그로 소모를 멈추므로, 원 안에서는
+    /// 환경 피해까지 함께 멈춘다. <b>휴식 구역은 회복만 하고 어떤 피해도 받지 않는 것이 기획 의도다.</b>
     /// </summary>
     public void DecreaseStaminaFlat(float _damage)
     {
         float floor = minStaminaRatio * maxStamina;
-        if (currentStamina <= floor || _damage <= 0f)
+        if (currentStamina <= floor || _damage <= 0f || bStaminaDecrease == false)
             return;
 
         currentStamina = Mathf.Max(floor, currentStamina - _damage);
@@ -190,6 +206,12 @@ public class PHealthComponent : PComponent, IPHealthComponent
     {
         minStaminaRatio = Mathf.Clamp01(_percent / 100f);
     }
+
+    /// <summary>
+    /// 현재 스태미나 소모가 켜져 있는지. 남의 잠금 위에 겹쳐 잠그는 쪽이 "원래 값"을 저장해 두었다가
+    /// 되돌리기 위해 읽는다. (선례: KnockBackState.bMovePausedBeforeKnockBack)
+    /// </summary>
+    public bool IsStaminaDecreasing => bStaminaDecrease;
 
     public void SetStaminaDecrease(bool _boolean)
     {

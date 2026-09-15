@@ -357,6 +357,12 @@ public class HUD_PopupNav_Main : MonoBehaviour
             cursorBoxUI.HideImmediately();
         }
 
+        // 아래 직접 대입으로 플래그를 지우기 전에, 짝을 잃은 잠금이 있으면 먼저 갚는다.
+        // 그냥 지우면 EndUnlockProduction()의 자체 가드(isUnlockingProductionActive)에 걸려
+        // 그 +1을 갚을 방법이 영영 사라진다 - 재오픈해도 회수되지 않는다는 뜻이다.
+        // (정상 흐름에서는 플래그가 이미 false라 아무 일도 하지 않는다)
+        ReleaseStrandedUnlockProductionLock();
+
         isUnlockingProductionActive = false;
         isRegionUnlockActive = false;
         isPendingSubRegionUnlock = false;
@@ -2341,8 +2347,49 @@ public class HUD_PopupNav_Main : MonoBehaviour
         runtimeLastSelectedMapType = _targetMap;
     }
 
+    /// <summary>
+    /// 해금 연출이 걸어둔 상호작용 키 잠금 중 <b>짝을 잃은 것</b>을 반납합니다.
+    /// 파괴(OnDestroy)와 재오픈(ResetOpenState) 두 곳에서 부릅니다.
+    ///
+    /// StartUnlockProduction()이 올린 +1은 EndUnlockProduction()이 내려야 짝이 맞는데,
+    /// 이 컴포넌트가 연출 도중 파괴되면 그 호출이 영영 오지 않습니다. InputReader는
+    /// InputManager(BootStrap)가 들고 있어 씬보다 오래 살기 때문에, 그 +1은 메인 메뉴를 거쳐
+    /// 다음 세션까지 따라가 상호작용 키를 통째로 죽입니다.
+    /// (같은 실패를 막는 코드가 InDungeonSystem/TownSystem의 귀환 코루틴에도 들어 있습니다)
+    ///
+    /// EndUnlockProduction()을 그대로 부르지 않는 이유가 둘 있습니다.
+    ///  1. 그쪽은 OnUnlockProductionEnded 이벤트로 잠금을 되돌리는데, 그 구독자(UIView_MenuPopup)는
+    ///     자기 OnDestroy에서 구독을 끊습니다. 두 컴포넌트의 OnDestroy 순서는 보장되지 않으므로
+    ///     이벤트에 기대면 반납이 조용히 유실될 수 있습니다.
+    ///  2. 그쪽은 호버/패드 포커스 재평가까지 하는데, 파괴 중에는 그 대상들이 이미 없을 수 있습니다.
+    ///
+    /// 그래서 여기서는 잠금만 직접 갚습니다. 현재 OnUnlockProductionEnded의 구독자는
+    /// GameplayUICoordinator 하나이고 그 핸들러가 하는 일도 PauseInteractKey(false) 하나뿐이라
+    /// 결과가 같습니다. 구독자가 늘어나면 이 메서드도 함께 손봐야 합니다.
+    ///
+    /// 평상시에는 아무 일도 하지 않습니다(연출 중 닫기가 UIView_MenuPopup.Hide()의 조기 return과
+    /// IsInputBlocked 가드로 막혀 있어, 실제로 플래그가 선 채 이 지점에 오는 경로는 현재 없습니다).
+    /// </summary>
+    private void ReleaseStrandedUnlockProductionLock()
+    {
+        if (false == isUnlockingProductionActive)
+        {
+            return;
+        }
+
+        isUnlockingProductionActive = false;
+
+        if (null != inputManager)
+        {
+            inputManager.PauseInteractKey(false);
+        }
+    }
+
     private void OnDestroy()
     {
+        // inputManager를 null로 비우는 아래 정리보다 반드시 먼저 부른다.
+        ReleaseStrandedUnlockProductionLock();
+
         if (null != appearTween && appearTween.IsActive()) { appearTween.Kill(); appearTween = null; }
         if (null != disappearTween && disappearTween.IsActive()) { disappearTween.Kill(); disappearTween = null; }
         if (null != delayedCallTween && delayedCallTween.IsActive()) { delayedCallTween.Kill(); delayedCallTween = null; }

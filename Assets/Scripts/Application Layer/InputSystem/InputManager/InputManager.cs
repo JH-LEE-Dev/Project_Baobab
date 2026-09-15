@@ -499,6 +499,15 @@ public class InputManager : MonoBehaviour
         inputReader.CancelRebind();
     }
 
+    /// <summary>
+    /// 진행 중인 리바인딩을 완료 콜백 없이 정리합니다. 파괴 중인 쪽(OnDestroy)에서 쓰십시오.
+    /// 자세한 이유는 InputReader.CancelRebindSilently() 주석을 참고하세요.
+    /// </summary>
+    public void CancelRebindSilently()
+    {
+        inputReader?.CancelRebindSilently();
+    }
+
     public void ResetBinding(ERebindableAction _action)
     {
         inputReader.ResetBinding(_action);

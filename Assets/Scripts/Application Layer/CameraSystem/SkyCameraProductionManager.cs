@@ -21,6 +21,18 @@ public class SkyCameraProductionManager : MonoBehaviour
     // 참조할 수 있도록 외부에 노출한다.
     public float MoveDuration => moveDuration;
     [SerializeField] private float yOffset = 5.0f;
+
+    /// <summary>
+    /// 하강 연출이 시작되는 높이를 정하는 거리입니다. 카메라는 yOffset까지 올라가지만 하강은
+    /// 그 높이를 그대로 되짚지 않고 "캐릭터 + (yOffset - RollbackDistance)" 지점으로 먼저
+    /// 스냅한 뒤 내려옵니다. 하강 시간(moveDuration * RollbackDistance / yOffset)과 폰트 팝
+    /// 볼륨의 정규화 기준도 여기에 물려 있습니다.
+    ///
+    /// 예전에는 이 값이 PlayCameraMove / PlayIntroDescend의 지역변수와 ResetCameraPos의
+    /// 리터럴(yOffset - 40f)로 세 군데에 따로 적혀 있었습니다. 셋이 어긋나면 하강 시작 높이와
+    /// 시간 비율이 경고 없이 틀어지므로 한 곳으로 모았습니다. 값은 종전과 동일한 40입니다.
+    /// </summary>
+    private const float RollbackDistance = 40.0f;
     [SerializeField] private bool useCustomCurve = false;
     [SerializeField] private AnimationCurve moveCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
     [SerializeField] private Ease moveEase = Ease.OutCubic;
@@ -40,7 +52,7 @@ public class SkyCameraProductionManager : MonoBehaviour
     //
     // 정규화 기준을 yOffset이 아니라 "이번 연출의 실제 시작/끝 높이"로 잡는 것이 중요하다.
     // 하강은 상승(+yOffset)을 그대로 되짚지 않고 ResetCameraPos()가 스냅시킨 +10 지점에서
-    // 시작하므로(rollbackDistance 주석 참고), yOffset으로 나누면 0이 아니라 0.8쯤에서 살아난다.
+    // 시작하므로(RollbackDistance 주석 참고), yOffset으로 나누면 0이 아니라 0.8쯤에서 살아난다.
     private float skyVolumeGroundY;
     private float skyVolumeApexY;
     private bool bSkyVolumeTracking;
@@ -183,10 +195,9 @@ public class SkyCameraProductionManager : MonoBehaviour
             ResetCameraPos();
 
             // 하강은 상승(yOffset=50)을 그대로 되짚지 않는다. ResetCameraPos()가 카메라를 캐릭터 기준
-            // +10(= yOffset - rollbackDistance) 지점으로 먼저 스냅시키므로, 실제로 내려가는 거리는 10이다.
-            // rollbackDistance는 그 시작 높이를 정하는 값이자 하강 시간을 정하는 기준값으로만 쓰인다.
-            float rollbackDistance = 40.0f;
-            float rollbackDuration = moveDuration * (rollbackDistance / yOffset);
+            // +10(= yOffset - RollbackDistance) 지점으로 먼저 스냅시키므로, 실제로 내려가는 거리는 10이다.
+            // RollbackDistance는 그 시작 높이를 정하는 값이자 하강 시간을 정하는 기준값으로만 쓰인다.
+            float rollbackDuration = moveDuration * (RollbackDistance / yOffset);
 
             // 최종 도착지 = 캐릭터 위치 (ResetCameraPos에서 cameraStartPos에 대입해 둔 값)
             Vector3 targetRollbackPos = cameraStartPos;
@@ -344,11 +355,10 @@ public class SkyCameraProductionManager : MonoBehaviour
         cachedLookAtTarget = virtualCamera.LookAt;
 
         // 메인 메뉴 -> 타운 진입 시에도 타운 -> 던전과 동일하게 +10 위치에서 시작해 하강하도록 변경
-        float rollbackDistance = 40.0f;
-        float rollbackDuration = moveDuration * (rollbackDistance / yOffset);
+        float rollbackDuration = moveDuration * (RollbackDistance / yOffset);
 
         Vector3 startPos = _characterTransform.position;
-        startPos.y += (yOffset - rollbackDistance); // +10 위치에서 시작
+        startPos.y += (yOffset - RollbackDistance); // +10 위치에서 시작
 
         dummyTarget.position = startPos;
         virtualCamera.Follow = dummyTarget;
@@ -519,7 +529,7 @@ public class SkyCameraProductionManager : MonoBehaviour
         {
             // 더미 타겟을 캐릭터 머리 위에 셋업
             Vector3 dummyPos = characterTransform.position;
-            dummyPos.y += yOffset-40f;
+            dummyPos.y += yOffset - RollbackDistance;
             dummyTarget.position = dummyPos;
 
             // 카메라도 즉시 더미 타겟 위치를 비추도록 설정
