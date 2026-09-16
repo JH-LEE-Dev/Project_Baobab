@@ -25,6 +25,14 @@ using UnityEngine;
     menuName = "LumberBoy/Privacy/Sentry Consent Options Configuration")]
 public class SentryConsentOptionsConfiguration : SentryOptionsConfiguration
 {
+#if UNITY_EDITOR
+    /// <summary>
+    /// 에디터 플레이 세션이 보고될 환경 이름입니다. 배포 환경(steam-production / steam-demo 등)과
+    /// 겹치지 않기만 하면 되며, Sentry에서 environment 로 걸러내기 쉽도록 짧게 둡니다.
+    /// </summary>
+    private const string EDITOR_ENVIRONMENT = "editor";
+#endif
+
     public override void Configure(SentryUnityOptions _options)
     {
         if (null == _options) return;
@@ -43,6 +51,27 @@ public class SentryConsentOptionsConfiguration : SentryOptionsConfiguration
         // 동의 여부는 게임이 실제로 실행될 때만 의미가 있으므로, 플레이 중이 아니면 건드리지 않습니다.
         // 플레이어 빌드에서는 이 블록이 컴파일되지 않으므로 동의 차단은 그대로 동작합니다.
         if (false == Application.isPlaying) return;
+
+        // 여기까지 왔다면 "에디터에서 플레이 중"입니다.
+        //
+        // Tools > 빌드 메뉴는 SentryOptions.asset의 EnvironmentOverride를 배포용 값으로
+        // 바꿔놓습니다(steam-production / itch-demo 등). 그 값을 그대로 두고 에디터에서
+        // 리포트가 나가면 검토하다 낸 에러가 실제 출시 환경 지표에 섞이고, 한 번 섞이면
+        // 갈라낼 수 없습니다(PlatformConsistencyGuard.CheckAnalytics 주석 참고).
+        //
+        // [지금은 그 일이 일어나지 않습니다 - 그래도 여기서 갈라두는 이유]
+        // SentryOptions.asset의 CaptureInEditor가 0이라 ShouldInitializeSdk()가 거짓을 돌려주고,
+        // 에디터에서는 SDK 자체가 켜지지 않습니다. 이 훅은 옵션을 만들 때 불릴 뿐입니다.
+        // 하지만 그 한 줄은 에셋의 체크박스라 누구든 Sentry 동작을 확인하려고 켤 수 있고,
+        // 켜는 사람이 환경 오염까지 같이 떠올릴 것이라고 기대할 수는 없습니다.
+        // 그때 자동으로 안전해지도록 미리 갈라둡니다. 켜져 있지 않은 동안은 아무 효과가 없습니다.
+        //
+        // Sentry를 통째로 끄는 방식은 쓰지 않습니다. 그러면 CaptureInEditor를 켜도 확인이
+        // 불가능해져, 이 파일이 막으려는 "에디터에서 한 번도 시험되지 않는 경로"가 됩니다.
+        //
+        // 에셋 값이 아니라 이번 실행의 옵션만 덮어씁니다. 에셋을 건드리면 빌드 전 정합성
+        // 검사가 어긋난 값을 보고 다음 빌드를 중단시킵니다.
+        _options.Environment = EDITOR_ENVIRONMENT;
 #endif
 
         // SettingsManager의 인스턴스를 만들지 않고 파일만 읽는다. 이 시점에는 씬이 아직 없어서
