@@ -17,28 +17,32 @@ public class GemOreItemController : MonoBehaviour
     // 외부 의존성
     [SerializeField] private GemOreItem gemOreItemPrefab;
 
-    [Header("원석 종류별 외형/재화량")]
-    [SerializeField]
-    private List<GemOreTypeData> gemOreTypeDatas = new List<GemOreTypeData>
-    {
-        new GemOreTypeData { gemOreType = GemOreType.Gold,    color = Color.white, currencyAmount = 1 },
-        new GemOreTypeData { gemOreType = GemOreType.Diamond, color = Color.white, currencyAmount = 1 },
-        new GemOreTypeData { gemOreType = GemOreType.Prism,   color = Color.white, currencyAmount = 1 },
-    };
+    [Header("원석 종류별 외형 (크기별 그림)")]
+    [SerializeField] private List<GemOreTypeData> gemOreTypeDatas = new List<GemOreTypeData>();
 
-    [Header("보석 단계별 드랍 개수")]
-    [SerializeField]
-    private List<GemOreDropCntData> gemOreDropCntDatas = new List<GemOreDropCntData>
-    {
-        new GemOreDropCntData { gemOreType = GemOreType.Gold,    minCnt = 4, maxCnt = 7 },
-        new GemOreDropCntData { gemOreType = GemOreType.Diamond, minCnt = 4, maxCnt = 7 },
-        new GemOreDropCntData { gemOreType = GemOreType.Prism,   minCnt = 4, maxCnt = 7 },
-    };
+    [Header("나무 종류 x 보석 단계별 드랍 테이블")]
+    [Tooltip("총 재화량이 기준이고, 알갱이 개수는 그 총량을 어떻게 나눠 보여줄지를 정한다.")]
+    [SerializeField] private List<GemOreDropData> gemOreDropDatas = new List<GemOreDropData>();
+
+    [Header("크기별 재화 분배 가중치")]
+    [Tooltip("총 재화량을 알갱이들에 나눌 때 쓰는 비중. S:M:L = 1:3:9면 M 하나가 S 셋, L 하나가 S 아홉 몫을 가져간다.")]
+    [SerializeField] private float smallWeight = 1f;
+    [SerializeField] private float mediumWeight = 3f;
+    [SerializeField] private float largeWeight = 9f;
 
     // 내부 의존성
     private IObjectPool<GemOreItem> gemOrePool;
     private readonly List<GemOreItem> activeItemsList = new List<GemOreItem>(64);
     private readonly List<GemOreItem> cleanupList = new List<GemOreItem>(64);
+
+    // 드랍 1회 계산용 재사용 버퍼 (매 그루 할당을 피한다)
+    private readonly List<GemOreSize> sizeBuffer = new List<GemOreSize>(32);
+    private readonly List<long> amountBuffer = new List<long>(32);
+    private readonly List<float> weightBuffer = new List<float>(32);
+    private readonly List<float> fractionBuffer = new List<float>(32);
+
+    // 값이 비어 있는 조합을 만났을 때 한 번만 알리기 위한 기록
+    private readonly HashSet<int> warnedCombinations = new HashSet<int>();
 
     private ICharacter character;
     private ITilemapDataProvider tilemapDataProvider;
@@ -172,8 +176,13 @@ public class GemOreItemController : MonoBehaviour
 
     /// <summary>
     /// 보석 나무가 쓰러진 자리에 원석을 뿌린다.
+    ///
+    /// 기준은 <b>총 재화량</b>이다. 먼저 이 나무 한 그루가 줄 총량을 굴리고, 알갱이 개수를 따로 굴린 뒤,
+    /// 총량을 알갱이들에 크기 비중대로 쪼개 담는다. 알갱이마다 고정값을 주는 방식으로는 기획 표의
+    /// 범위를 재현할 수 없다 (자작나무 S 4~6 + M 2~3에 총 36~50이라면, 최소 조합의 1.5배가
+    /// 최대 조합인데 36의 1.5배는 54라서 50과 맞지 않는다).
     /// </summary>
-    /// <param name="_treeObj">쓰러진 나무. 마지막 보석 단계(gemStage)로 원석 종류를 정한다.</param>
+    /// <param name="_treeObj">쓰러진 나무. 나무 종류와 마지막 보석 단계(gemStage)로 드랍 줄을 고른다.</param>
     /// <param name="_multiplier">등급 드랍 배율(원목과 동일하게 적용)</param>
     public void SpawnGemOre(TreeObj _treeObj, float _multiplier)
     {
@@ -182,31 +191,74 @@ public class GemOreItemController : MonoBehaviour
         GemOreType oreType = GemStageToOreType(_treeObj.gemStage);
         if (oreType == GemOreType.None) return;
 
+        TreeType treeType = _treeObj.treeData.type;
+
+        if (!TryGetDropData(treeType, oreType, out GemOreDropData dropData))
+        {
+            // 아직 값을 안 채운 조합. 조용히 아무것도 안 떨어뜨리면 버그로 오해하기 쉬우므로 알린다.
+            WarnMissingDropData(treeType, oreType);
+            return;
+        }
+
         if (!tileWorldSizeMeasured)
         {
             MeasureTileWorldSize();
         }
 
+        // 1. 알갱이 개수를 굴린다 (배율은 원목과 같은 의미로 개수에 적용)
+        int smallCnt = RollCount(dropData.minSmallCnt, dropData.maxSmallCnt, _multiplier);
+        int mediumCnt = RollCount(dropData.minMediumCnt, dropData.maxMediumCnt, _multiplier);
+        int largeCnt = RollCount(dropData.minLargeCnt, dropData.maxLargeCnt, _multiplier);
+
+        int totalCnt = smallCnt + mediumCnt + largeCnt;
+        if (totalCnt <= 0) return;
+
+        // 2. 총 재화량을 굴린다. 개수와 같은 배율을 총량에도 먹여야 "2배 드랍"이 실제로 2배 이득이 된다.
+        int totalCurrency = Mathf.RoundToInt(
+            UnityEngine.Random.Range(dropData.minTotalCurrency, dropData.maxTotalCurrency + 1) * _multiplier);
+        if (totalCurrency <= 0) return;
+
+        // 3. 알갱이가 총 재화량보다 많으면 재화 0짜리 알갱이가 생긴다. 총량이 기준이므로
+        //    개수 쪽을 줄이되, 큰 알갱이부터 남겨 눈에 보이는 무게감은 지킨다.
+        if (totalCnt > totalCurrency)
+        {
+            int excess = totalCnt - totalCurrency;
+
+            int cut = Mathf.Min(excess, smallCnt);
+            smallCnt -= cut; excess -= cut;
+
+            cut = Mathf.Min(excess, mediumCnt);
+            mediumCnt -= cut; excess -= cut;
+
+            cut = Mathf.Min(excess, largeCnt);
+            largeCnt -= cut;
+
+            totalCnt = smallCnt + mediumCnt + largeCnt;
+            if (totalCnt <= 0) return;
+        }
+
+        // 4. 크기 목록을 만들고 총량을 비중대로 나눈다
+        sizeBuffer.Clear();
+        for (int i = 0; i < largeCnt; i++) sizeBuffer.Add(GemOreSize.Large);
+        for (int i = 0; i < mediumCnt; i++) sizeBuffer.Add(GemOreSize.Medium);
+        for (int i = 0; i < smallCnt; i++) sizeBuffer.Add(GemOreSize.Small);
+
+        DistributeCurrency(sizeBuffer, totalCurrency, amountBuffer);
+
         GemOreTypeData typeData = GetTypeData(oreType);
-        GemOreDropCntData dropCntData = GetDropCntData(oreType);
-
-        int spawnCount = Mathf.RoundToInt(
-            UnityEngine.Random.Range(dropCntData.minCnt, dropCntData.maxCnt + 1) * _multiplier);
-        if (spawnCount <= 0) return;
-
         Vector3 spawnPos = _treeObj.transform.position;
 
         // 보석 등급 원목과 마찬가지로, 개수만큼 겹쳐 울리면 뭉개지므로 드랍 묶음당 한 번만 울린다.
         Sound.Play(SoundID.NiceItem, spawnPos);
         Rumble.Play(EHapticEvent.RareLogSpawn);
 
-        for (int i = 0; i < spawnCount; i++)
+        for (int i = 0; i < sizeBuffer.Count; i++)
         {
             GemOreItem oreItem = gemOrePool.Get();
             if (oreItem == null) continue;
 
             oreItem.transform.position = spawnPos;
-            oreItem.Initialize(typeData, character);
+            oreItem.Initialize(typeData, sizeBuffer[i], amountBuffer[i], character);
 
             // 포물선 운동 설정 (LogItemController.SpawnLogItem과 동일한 값)
             Vector3 startPos = spawnPos;
@@ -229,6 +281,160 @@ public class GemOreItemController : MonoBehaviour
 
             oreItem.Launch(startPos, endPos, height, randomRotation);
         }
+    }
+
+    public static int RollCount(int _min, int _max, float _multiplier)
+    {
+        if (_max <= 0) return 0;
+
+        int rolled = UnityEngine.Random.Range(Mathf.Max(0, _min), _max + 1);
+        return Mathf.Max(0, Mathf.RoundToInt(rolled * _multiplier));
+    }
+
+    /// <summary>
+    /// 이 드랍의 크기 목록을 가중치로 바꿔 총 재화량을 쪼갠다.
+    /// </summary>
+    private void DistributeCurrency(List<GemOreSize> _sizes, int _totalCurrency, List<long> _outAmounts)
+    {
+        weightBuffer.Clear();
+        for (int i = 0; i < _sizes.Count; i++)
+        {
+            weightBuffer.Add(GetSizeWeight(_sizes[i]));
+        }
+
+        DistributeByWeight(weightBuffer, _totalCurrency, _outAmounts, fractionBuffer);
+    }
+
+    /// <summary>
+    /// 총량을 가중치 비율대로 정수로 쪼갠다. 상태에 기대지 않는 순수 계산이다.
+    ///
+    /// 비중대로 나누면 소수점이 남는데 그냥 버리면 합이 총량에 못 미친다. 그래서 최대잉여법을 쓴다
+    /// (몫의 소수부가 큰 것부터 남은 1씩을 가져간다). <b>합계는 항상 정확히 총량과 같아진다.</b>
+    /// 모든 몫에 최소 1을 먼저 떼어주므로, 주웠는데 0이 들어오는 알갱이는 생기지 않는다
+    /// (총량이 개수보다 적으면 호출 전에 개수를 줄여둔다).
+    /// </summary>
+    /// <param name="_scratch">소수부 계산용 임시 버퍼. 매 호출 할당을 피하려고 밖에서 받는다.</param>
+    public static void DistributeByWeight(List<float> _weights, int _totalCurrency, List<long> _outAmounts, List<float> _scratch)
+    {
+        _outAmounts.Clear();
+
+        int count = _weights.Count;
+        if (count <= 0) return;
+
+        // 모든 몫에 최소 1을 보장하고, 남은 양만 비중대로 나눈다
+        int remaining = _totalCurrency - count;
+
+        if (remaining <= 0)
+        {
+            for (int i = 0; i < count; i++) _outAmounts.Add(1);
+            return;
+        }
+
+        float totalWeight = 0f;
+        for (int i = 0; i < count; i++)
+        {
+            totalWeight += Mathf.Max(0f, _weights[i]);
+        }
+
+        // 가중치를 전부 0으로 꺼두면 균등 분배로 되돌린다
+        bool uniform = totalWeight <= 0f;
+        if (uniform) totalWeight = count;
+
+        int assigned = 0;
+        _scratch.Clear();
+
+        for (int i = 0; i < count; i++)
+        {
+            float w = uniform ? 1f : Mathf.Max(0f, _weights[i]);
+            float exact = remaining * (w / totalWeight);
+            int floor = Mathf.FloorToInt(exact);
+
+            _outAmounts.Add(1 + floor);
+            _scratch.Add(exact - floor);
+            assigned += floor;
+        }
+
+        // 최대잉여법: 소수부가 큰 것부터 남은 1씩 배분
+        int leftover = remaining - assigned;
+        int guard = 0;
+        while (leftover > 0 && guard++ < 100000)
+        {
+            int bestIdx = -1;
+            float bestFraction = -1f;
+
+            for (int i = 0; i < count; i++)
+            {
+                if (_scratch[i] > bestFraction)
+                {
+                    bestFraction = _scratch[i];
+                    bestIdx = i;
+                }
+            }
+
+            if (bestIdx < 0) break;
+
+            _outAmounts[bestIdx] += 1;
+            _scratch[bestIdx] = -1f; // 한 바퀴에 같은 몫이 두 번 받지 않도록
+            leftover--;
+
+            // 잉여가 개수보다 많이 남았다면 소수부를 비중으로 되돌리고 한 바퀴 더 돈다
+            if (leftover > 0)
+            {
+                bool allConsumed = true;
+                for (int i = 0; i < count; i++)
+                {
+                    if (_scratch[i] >= 0f) { allConsumed = false; break; }
+                }
+
+                if (allConsumed)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        _scratch[i] = uniform ? 1f : Mathf.Max(0f, _weights[i]);
+                    }
+                }
+            }
+        }
+    }
+
+    public float GetSizeWeight(GemOreSize _size)
+    {
+        switch (_size)
+        {
+            case GemOreSize.Large: return Mathf.Max(0f, largeWeight);
+            case GemOreSize.Medium: return Mathf.Max(0f, mediumWeight);
+            default: return Mathf.Max(0f, smallWeight);
+        }
+    }
+
+    private bool TryGetDropData(TreeType _treeType, GemOreType _gemOreType, out GemOreDropData _data)
+    {
+        _data = default;
+        if (gemOreDropDatas == null) return false;
+
+        for (int i = 0; i < gemOreDropDatas.Count; i++)
+        {
+            if (gemOreDropDatas[i].treeType == _treeType &&
+                gemOreDropDatas[i].gemOreType == _gemOreType &&
+                !gemOreDropDatas[i].IsEmpty)
+            {
+                _data = gemOreDropDatas[i];
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // 값이 비어 있는 조합을 만났을 때 한 번만 알린다. 매 그루마다 찍으면 콘솔이 잠긴다.
+    private void WarnMissingDropData(TreeType _treeType, GemOreType _gemOreType)
+    {
+        int key = ((int)_treeType << 8) | (int)_gemOreType;
+        if (!warnedCombinations.Add(key)) return;
+
+        Debug.LogWarning("[GemOreItemController] " + _treeType + " x " + _gemOreType +
+                         " 드랍 값이 비어 있어 원석이 떨어지지 않습니다. " +
+                         "GameInstaller > ItemManager > GemOreItemController의 드랍 테이블을 채워주세요.", this);
     }
 
     /// <summary>
@@ -257,22 +463,8 @@ public class GemOreItemController : MonoBehaviour
             }
         }
 
-        // 데이터를 채워두지 않았을 때도 원석 자체는 떨어지도록 기본값을 돌려준다.
-        return new GemOreTypeData { gemOreType = _type, color = Color.white, currencyAmount = 1 };
-    }
-
-    private GemOreDropCntData GetDropCntData(GemOreType _type)
-    {
-        if (gemOreDropCntDatas != null)
-        {
-            for (int i = 0; i < gemOreDropCntDatas.Count; i++)
-            {
-                if (gemOreDropCntDatas[i].gemOreType == _type)
-                    return gemOreDropCntDatas[i];
-            }
-        }
-
-        return new GemOreDropCntData { gemOreType = _type, minCnt = 4, maxCnt = 7 };
+        // 외형을 채워두지 않았어도 재화는 들어와야 하므로 그림 없는 기본값을 돌려준다.
+        return new GemOreTypeData { gemOreType = _type, color = Color.white };
     }
 
     // Initialize() 시점엔 던전 타일맵이 아직 생성 전이라 측정이 불가능하므로,

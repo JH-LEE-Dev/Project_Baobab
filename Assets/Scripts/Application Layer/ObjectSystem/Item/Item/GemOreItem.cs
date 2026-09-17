@@ -28,8 +28,12 @@ public class GemOreItem : Item, IStaticCollidable
     // 이 원석이 어떤 보석 종류인지. 획득 시 어느 재화로 들어갈지를 결정한다.
     public GemOreType gemOreType { get; private set; } = GemOreType.None;
 
-    // 이 원석 1개가 지급할 재화량.
+    // 이 알갱이 하나가 지급할 재화량. 나무 한 그루의 총 재화량을 크기 비율로 나눠 받은 몫이라
+    // 같은 종류·같은 크기라도 그루마다 값이 다를 수 있다.
     public long currencyAmount { get; private set; } = 1;
+
+    // 이 알갱이의 크기. 외형(스프라이트)과 재화 분배 비중을 함께 결정한다.
+    public GemOreSize gemOreSize { get; private set; } = GemOreSize.Small;
 
     public ItemMoveState MoveState => state;
     public bool IsMoving => state != ItemMoveState.Dropped && state != ItemMoveState.None;
@@ -127,16 +131,17 @@ public class GemOreItem : Item, IStaticCollidable
         CacheRenderers();
     }
 
-    public void Initialize(GemOreTypeData _typeData, ICharacter _character)
+    public void Initialize(GemOreTypeData _typeData, GemOreSize _size, long _currencyAmount, ICharacter _character)
     {
         base.Initialize(ItemType.GemOre);
 
         character = _character;
         gemOreType = _typeData.gemOreType;
-        // 데이터에 값을 안 채워둔 채로 붙였을 때 원석을 주워도 재화가 0이 되는 것을 막는다.
-        currencyAmount = _typeData.currencyAmount > 0 ? _typeData.currencyAmount : 1;
+        gemOreSize = _size;
+        // 분배 결과가 0 이하로 떨어져도 주웠을 때 아무것도 안 들어오는 일은 없어야 한다.
+        currencyAmount = _currencyAmount > 0 ? _currencyAmount : 1;
 
-        sprite = _typeData.sprite;
+        sprite = _typeData.GetSprite(_size);
         color = _typeData.color;
 
         state = ItemMoveState.None;
