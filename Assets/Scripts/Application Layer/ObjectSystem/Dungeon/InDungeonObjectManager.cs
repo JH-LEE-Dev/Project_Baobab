@@ -17,6 +17,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public event Action PortalActivatedEvent;
     public event Action<Item> ItemAcquiredEvent;
     public event Action<CarrotItem> CarrotItemAcquiredEvent;
+    public event Action<GemOreItem> GemOreItemAcquiredEvent;
     public event Action LostAndFoundBoxAcquiredEvent;
     public event Action<TreeObj> TreeGetHitEvent;
     // 나무가 보석 단계로 변했을 때 발생. InDungeonSystem이 받아 신호로 발행한다.
@@ -349,6 +350,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
             itemManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
             itemManager.CarrotItemAcquiredEvent += CarrotItemAcquired;
+
+            itemManager.GemOreItemAcquiredEvent -= GemOreItemAcquired;
+            itemManager.GemOreItemAcquiredEvent += GemOreItemAcquired;
         }
     }
 
@@ -378,6 +382,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         itemManager.LogItemAcquiredEvent -= OnItemAcquired;
 
         itemManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
+        itemManager.GemOreItemAcquiredEvent -= GemOreItemAcquired;
 
         if (lootManager != null)
         {
@@ -1141,7 +1146,16 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
         }
 
-        itemManager.SpawnLogItem(_treeObj, dropMultiplier);
+        // 보석 단계를 거쳐 쓰러진 나무는 원목 대신 원석을 떨어뜨린다.
+        // (원석은 인벤토리가 아니라 재화로 들어가므로, 원목 드랍과 배타적으로 처리한다)
+        if (_treeObj.bIsGemStage)
+        {
+            itemManager.SpawnGemOre(_treeObj, dropMultiplier);
+        }
+        else
+        {
+            itemManager.SpawnLogItem(_treeObj, dropMultiplier);
+        }
 
         // 죽은 위치 재사용 준비
         Vector3 deadPos = _treeObj.transform.position;
@@ -1595,6 +1609,16 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private void CarrotItemAcquired(CarrotItem _item)
     {
         CarrotItemAcquiredEvent?.Invoke(_item);
+    }
+
+    private void GemOreItemAcquired(GemOreItem _item)
+    {
+        // 원목 획득과 동일한 획득 피드백(사운드 + 캐릭터 뽀잉 연출)
+        Sound.PlayUI(SoundID.GetItem);
+        character?.PlayItemAcquireBounce();
+        character?.PlayItemAcquireFlash();
+
+        GemOreItemAcquiredEvent?.Invoke(_item);
     }
 
     public void SetHiddenMapGrade(HiddenMapGrade _hiddenMapGrade)

@@ -182,6 +182,9 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.CarrotItemAcquiredEvent += CarrotItemAcquired;
 
+        inDungeonObjectManager.GemOreItemAcquiredEvent -= GemOreItemAcquired;
+        inDungeonObjectManager.GemOreItemAcquiredEvent += GemOreItemAcquired;
+
         inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
         inDungeonObjectManager.TreeDeadEvent += TreeIsDead;
 
@@ -248,6 +251,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.TreeGemTransformedEvent -= TreeGemTransformed;
         inDungeonObjectManager.TreeShieldRecoveringEvent -= TreeShieldRecovering;
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
+        inDungeonObjectManager.GemOreItemAcquiredEvent -= GemOreItemAcquired;
         inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
         inDungeonObjectManager.OffroadSpawnedEvent -= OffroadSpawned;
         inDungeonObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
@@ -428,6 +432,11 @@ public class InDungeonSystem : MonoBehaviour
             inDungeonObjectManager.offroadVehicle.col.enabled = false;
 
         signalHub.Publish(new StartSkyProductionSignal());
+    }
+
+    private void GemOreItemAcquired(GemOreItem _gemOreItem)
+    {
+        signalHub.Publish(new GemOreAcquiredSignal(_gemOreItem.gemOreType, _gemOreItem.currencyAmount));
     }
 
     private void CarrotItemAcquired(CarrotItem _carrotItem)

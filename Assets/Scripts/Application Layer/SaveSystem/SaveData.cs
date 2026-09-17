@@ -117,6 +117,13 @@ public struct InventorySaveData
 {
     public long money;
     public long carrot;
+
+    // 보석 나무 원석 재화. 기존 세이브 파일에는 이 필드들이 없어 0으로 읽히는데,
+    // 아직 한 번도 캐지 않은 상태와 같으므로 그대로 안전하다.
+    public long goldOre;
+    public long diamondOre;
+    public long prismOre;
+
     public List<InventorySlotSaveData> slots;
 
     public void Initialize(int _capacity)

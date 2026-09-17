@@ -6,6 +6,7 @@ public class ItemManager : MonoBehaviour
     // 내부 의존성
     public LogItemController logItemController { get; private set; }
     public CarrotItemController carrrotItemController { get; private set; }
+    public GemOreItemController gemOreItemController { get; private set; }
     private IInventoryChecker inventoryChecker;
     private ICharacter character;
 
@@ -16,10 +17,16 @@ public class ItemManager : MonoBehaviour
 
         logItemController = GetComponentInChildren<LogItemController>();
         carrrotItemController = GetComponentInChildren<CarrotItemController>();
+        gemOreItemController = GetComponentInChildren<GemOreItemController>();
 
         if (logItemController != null)
         {
             logItemController.Initialize(inventoryChecker, character, _tilemapDataProvider);
+        }
+
+        if (gemOreItemController != null)
+        {
+            gemOreItemController.Initialize(character, _tilemapDataProvider);
         }
 
         BindEvents();
@@ -35,6 +42,7 @@ public class ItemManager : MonoBehaviour
         character = _character;
 
         logItemController?.SetCharacter(_character);
+        gemOreItemController?.SetCharacter(_character);
     }
 
     public void Release()
@@ -63,6 +71,11 @@ public class ItemManager : MonoBehaviour
         {
             carrrotItemController.SetupCullingGroup();
         }
+
+        if (gemOreItemController != null)
+        {
+            gemOreItemController.SetupCullingGroup();
+        }
     }
 
     // 외부에서 접근하기 위한 래퍼 메서드 (필요한 경우)
@@ -74,6 +87,26 @@ public class ItemManager : MonoBehaviour
     public void ReturnLogToPool(LogItem _item)
     {
         logItemController?.ReturnToPool(_item);
+    }
+
+    /// <summary>
+    /// 보석 나무가 쓰러진 자리에 원석을 뿌린다. 원목 대신 떨어지므로 SpawnLogItem과는 배타적으로 호출한다.
+    /// </summary>
+    public void SpawnGemOre(TreeObj _treeObj, float _multiplier)
+    {
+        if (gemOreItemController == null) return;
+
+        // 잭팟 스킬은 LogItemController 하나에만 걸리므로(ILogItemCH), 그 값을 그대로 읽어 넘긴다.
+        // 보석 나무는 원목 대신 원석을 주기 때문에, 전달하지 않으면 그 나무에서만 스킬이 조용히 무력해진다.
+        float jackPotChance = logItemController != null ? logItemController.JackPotChance : 0f;
+        float jackPotAmount = logItemController != null ? logItemController.JackPotAmount : 1f;
+
+        gemOreItemController.SpawnGemOre(_treeObj, _multiplier, jackPotChance, jackPotAmount);
+    }
+
+    public void ReturnGemOreToPool(GemOreItem _item)
+    {
+        gemOreItemController?.ReturnToPool(_item);
     }
 
     public void SpawnCarrotItem(Vector3 _position, AnimalType _animalType)
@@ -99,14 +132,22 @@ public class ItemManager : MonoBehaviour
         remove { if (carrrotItemController != null) carrrotItemController.CarrotItemAcquiredEvent -= value; }
     }
 
+    public event Action<GemOreItem> GemOreItemAcquiredEvent
+    {
+        add { if (gemOreItemController != null) gemOreItemController.GemOreItemAcquiredEvent += value; }
+        remove { if (gemOreItemController != null) gemOreItemController.GemOreItemAcquiredEvent -= value; }
+    }
+
     public void ReleaseAllItems()
     {
         //carrrotItemController.ClearAll();
         logItemController.ClearAll();
+        gemOreItemController?.ClearAll();
     }
 
     public void CancelActiveSucking()
     {
         logItemController?.CancelActiveSucking();
+        gemOreItemController?.CancelActiveSucking();
     }
 }

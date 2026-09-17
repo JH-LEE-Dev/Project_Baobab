@@ -12,6 +12,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     public event Action InventorySpecChangedEvent;
     public event Action LoosAllInventoryItemEvent;
     public event Action InventoryIsFullEvent;
+    // 원석 재화가 늘거나 줄었을 때 발생. HUD가 이 이벤트만 구독하면 어느 재화가 바뀌었는지 알 수 있다.
+    public event Action<MoneyType> GemOreChangedEvent;
 
     // 내부 의존성
     [SerializeField] private int currentSlotCount = 2; // 기본 슬롯 2개
@@ -20,6 +22,11 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     private long money = 0;
     private long carrot = 0;
+
+    // 보석 나무 원석 재화. money/carrot과 동일하게 세이브에 영구 저장된다.
+    private long goldOre = 0;
+    private long diamondOre = 0;
+    private long prismOre = 0;
     [SerializeField] private long sunEssence;
     [SerializeField] private long moonEssence;
     [SerializeField] private long lightningEssence;
@@ -68,6 +75,17 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     long IMoneyData.moonEssence => moonEssence;
 
     long IMoneyData.lightningEssence => lightningEssence;
+
+    long IMoneyData.goldOre => goldOre;
+
+    long IMoneyData.diamondOre => diamondOre;
+
+    long IMoneyData.prismOre => prismOre;
+
+    long IMoneyData.GetMoney(MoneyType _moneyType)
+    {
+        return GetMoney(_moneyType);
+    }
 
     public int maxItemCntPerSlot => maxItemsPerSlot;
 
@@ -228,6 +246,9 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     {
         _saveData.money = money;
         _saveData.carrot = carrot;
+        _saveData.goldOre = goldOre;
+        _saveData.diamondOre = diamondOre;
+        _saveData.prismOre = prismOre;
 
         // 리스트 초기화 (구조체 내의 Initialize 활용)
         _saveData.Initialize(currentSlotCount);
@@ -357,6 +378,82 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         money -= _amount;
         if (money < 0) money = 0;
         SpendMoneyEvent?.Invoke();
+    }
+
+    /// <summary>
+    /// 보석 원석을 주웠을 때 해당 재화를 올린다. 인벤토리 슬롯은 건드리지 않는다
+    /// (원석은 칸을 차지하지 않고 돈처럼 쌓이는 재화다).
+    /// </summary>
+    public void GemOreEarned(GemOreType _gemOreType, long _amount)
+    {
+        if (_amount <= 0) return;
+
+        switch (_gemOreType)
+        {
+            case GemOreType.Gold: goldOre += _amount; break;
+            case GemOreType.Diamond: diamondOre += _amount; break;
+            case GemOreType.Prism: prismOre += _amount; break;
+            default: return;
+        }
+
+        GemOreChangedEvent?.Invoke(GemOreTypeToMoneyType(_gemOreType));
+    }
+
+    public void DecreaseGemOre(GemOreType _gemOreType, long _amount)
+    {
+        if (_amount <= 0) return;
+
+        switch (_gemOreType)
+        {
+            case GemOreType.Gold: goldOre = Math.Max(0, goldOre - _amount); break;
+            case GemOreType.Diamond: diamondOre = Math.Max(0, diamondOre - _amount); break;
+            case GemOreType.Prism: prismOre = Math.Max(0, prismOre - _amount); break;
+            default: return;
+        }
+
+        GemOreChangedEvent?.Invoke(GemOreTypeToMoneyType(_gemOreType));
+        SpendMoneyEvent?.Invoke();
+    }
+
+    public long GetCurrentGemOre(GemOreType _gemOreType)
+    {
+        switch (_gemOreType)
+        {
+            case GemOreType.Gold: return goldOre;
+            case GemOreType.Diamond: return diamondOre;
+            case GemOreType.Prism: return prismOre;
+            default: return 0;
+        }
+    }
+
+    /// <summary>
+    /// 재화 종류로 현재 보유량을 돌려준다. HUD가 MoneyType 하나만 들고 값을 읽어갈 수 있게 하는 통합 진입점.
+    /// </summary>
+    public long GetMoney(MoneyType _moneyType)
+    {
+        switch (_moneyType)
+        {
+            case MoneyType.Coin: return money;
+            case MoneyType.Carrot: return carrot;
+            case MoneyType.SunEssence: return sunEssence;
+            case MoneyType.MoonEssence: return moonEssence;
+            case MoneyType.LightningEssnece: return lightningEssence;
+            case MoneyType.GoldOre: return goldOre;
+            case MoneyType.DiamondOre: return diamondOre;
+            case MoneyType.PrismOre: return prismOre;
+            default: return 0;
+        }
+    }
+
+    public static MoneyType GemOreTypeToMoneyType(GemOreType _gemOreType)
+    {
+        switch (_gemOreType)
+        {
+            case GemOreType.Gold: return MoneyType.GoldOre;
+            case GemOreType.Diamond: return MoneyType.DiamondOre;
+            case GemOreType.Prism: return MoneyType.PrismOre;
+            default: return MoneyType.None;
+        }
     }
 
     private List<LogItem> reservedItems = new List<LogItem>(32);
@@ -493,6 +590,9 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     {
         money = _data.money;
         carrot = _data.carrot;
+        goldOre = _data.goldOre;
+        diamondOre = _data.diamondOre;
+        prismOre = _data.prismOre;
 
         // 기존 슬롯 초기화 (풀 반환)
         for (int i = 0; i < inventorySlots.Count; i++)

@@ -86,6 +86,22 @@ public struct CarrotItemAcquiredSignal
     }
 }
 
+/// <summary>
+/// 보석 나무 원석을 주웠을 때 발생. 인벤토리가 아니라 재화로 들어가므로
+/// ItemAcquiredSignal이 아닌 전용 시그널을 쓴다(당근 재화와 같은 방식).
+/// </summary>
+public struct GemOreAcquiredSignal
+{
+    public GemOreType gemOreType;
+    public long amount;
+
+    public GemOreAcquiredSignal(GemOreType _gemOreType, long _amount)
+    {
+        gemOreType = _gemOreType;
+        amount = _amount;
+    }
+}
+
 public struct AnimalHitSignal
 {
     public IAnimalObj animal;

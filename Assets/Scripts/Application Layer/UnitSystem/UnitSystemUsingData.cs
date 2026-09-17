@@ -238,6 +238,11 @@ public enum MoneyType
     SunEssence,
     MoonEssence,
     LightningEssnece,
+    // 보석 나무 원석을 주워 쌓이는 재화. 기존 값들 뒤에 붙여야 이미 저장된
+    // 스킬 비용/HUD 아이콘 매핑의 열거형 값이 밀리지 않는다.
+    GoldOre,
+    DiamondOre,
+    PrismOre,
     Max
 }
 

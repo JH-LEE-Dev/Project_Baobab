@@ -53,6 +53,7 @@ public class UnitSystem
         signalHub.Subscribe<DeleteItemSignal>(ItemDeleted);
         signalHub.Subscribe<MoneyEarnedSignal>(MoneyEarned);
         signalHub.Subscribe<CarrotItemAcquiredSignal>(CarrotItemAcquired);
+        signalHub.Subscribe<GemOreAcquiredSignal>(GemOreAcquired);
         signalHub.Subscribe<SleepSignal>(CharacterSleep);
         signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.Subscribe<StartDecreaseStaminaSignal>(StartDecreaseStamina);
@@ -75,6 +76,7 @@ public class UnitSystem
         signalHub.UnSubscribe<DeleteItemSignal>(ItemDeleted);
         signalHub.UnSubscribe<MoneyEarnedSignal>(MoneyEarned);
         signalHub.UnSubscribe<CarrotItemAcquiredSignal>(CarrotItemAcquired);
+        signalHub.UnSubscribe<GemOreAcquiredSignal>(GemOreAcquired);
         signalHub.UnSubscribe<SleepSignal>(CharacterSleep);
         signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.UnSubscribe<StartDecreaseStaminaSignal>(StartDecreaseStamina);
@@ -261,6 +263,17 @@ public class UnitSystem
     {
         inventoryManager.CarrotEarned(carrotItemAcquiredSignal.amount);
         signalHub.Publish(new CharacterEarnMoneySignal(MoneyType.Carrot));
+    }
+
+    /// <summary>
+    /// 보석 원석을 주웠을 때. 인벤토리 슬롯을 쓰지 않고 해당 재화만 올린 뒤,
+    /// HUD가 갱신할 수 있도록 CharacterEarnMoneySignal로 어떤 재화가 늘었는지 알린다.
+    /// </summary>
+    private void GemOreAcquired(GemOreAcquiredSignal gemOreAcquiredSignal)
+    {
+        inventoryManager.GemOreEarned(gemOreAcquiredSignal.gemOreType, gemOreAcquiredSignal.amount);
+        signalHub.Publish(new CharacterEarnMoneySignal(
+            InventoryManager.GemOreTypeToMoneyType(gemOreAcquiredSignal.gemOreType)));
     }
 
     private void CharacterSleep(SleepSignal sleepSignal)
