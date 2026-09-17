@@ -59,9 +59,16 @@ public class UI_ExternalLinkButton : Selectable, ISubmitHandler, IPointerClickHa
     private const float CLICK_COOLDOWN = 0.5f;
     private bool syncWithEventSystem = true;
 
+    private UI_MainMenu parentMainMenu;
+
     public void SetSyncWithEventSystem(bool _sync)
     {
         syncWithEventSystem = _sync;
+    }
+
+    public void SetParentMainMenu(UI_MainMenu _mainMenu)
+    {
+        parentMainMenu = _mainMenu;
     }
 
     private DOGetter<Color> getShadowColor;
@@ -286,6 +293,11 @@ public class UI_ExternalLinkButton : Selectable, ISubmitHandler, IPointerClickHa
 
     public void ExecuteClick()
     {
+        if (null != parentMainMenu && true == parentMainMenu.IsInputBlocked)
+        {
+            return;
+        }
+
         if (Time.unscaledTime - lastClickTime < CLICK_COOLDOWN)
         {
             return;

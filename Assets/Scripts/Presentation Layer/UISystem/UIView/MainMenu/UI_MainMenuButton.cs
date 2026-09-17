@@ -110,6 +110,11 @@ public class UI_MainMenuButton : Selectable,
 
     public bool IsPointerHovered => isPointerHovered;
 
+    // 지연 호출 트윈 핸들 (중복 실행 방지 및 킬 관리용)
+    private Tween delayedDisappearTween;
+    private Tween delayedClickActionTween;
+    private Tween delayedManualDisappearTween;
+
     // 델리게이트 캐싱 (GC Alloc 방지)
     private TweenCallback onAppearCompleteCallback;
     private TweenCallback onDisappearCompleteCallback;
@@ -288,8 +293,40 @@ public class UI_MainMenuButton : Selectable,
         KillAllTweens();
     }
 
+    /// <summary>
+    /// 버튼의 클릭 락 및 호버/연출 상태를 기본값으로 안전하게 리셋합니다.
+    /// </summary>
+    public void ResetButtonState()
+    {
+        isClicked = false;
+        isDisappearing = false;
+        isAppearing = false;
+        isMaintained = false;
+        isHovered = false;
+        isPointerHovered = false;
+        KillAllTweens();
+
+        if (null != dotTarget) dotTarget.localEulerAngles = dotOriginalRot;
+        if (null != textTarget)
+        {
+            textTarget.localScale = Vector3.one;
+            textTarget.anchoredPosition = textOriginalPos;
+        }
+
+        EvaluatePointerState();
+    }
+
     private void KillAllTweens()
     {
+        if (null != delayedDisappearTween && true == delayedDisappearTween.IsActive()) delayedDisappearTween.Kill();
+        delayedDisappearTween = null;
+
+        if (null != delayedClickActionTween && true == delayedClickActionTween.IsActive()) delayedClickActionTween.Kill();
+        delayedClickActionTween = null;
+
+        if (null != delayedManualDisappearTween && true == delayedManualDisappearTween.IsActive()) delayedManualDisappearTween.Kill();
+        delayedManualDisappearTween = null;
+
         transform.DOKill();
         if (null != dotTarget) dotTarget.DOKill();
         if (null != textTarget) textTarget.DOKill();
@@ -608,7 +645,8 @@ public class UI_MainMenuButton : Selectable,
 
             if (true == _hasDisappearTargets)
             {
-                DOVirtual.DelayedCall(_currentDisappearDelay, playDisappearImmediateCallback);
+                if (null != delayedDisappearTween && true == delayedDisappearTween.IsActive()) delayedDisappearTween.Kill();
+                delayedDisappearTween = DOVirtual.DelayedCall(_currentDisappearDelay, playDisappearImmediateCallback);
 
                 float _disappearTime = _currentDisappearDelay + disappearSuckDuration + disappearDotShrinkDuration;
                 if (_maxDelay < _disappearTime)
@@ -627,7 +665,8 @@ public class UI_MainMenuButton : Selectable,
         
         if (true == autoDisappearOnClick && true == _hasDisappearTargets)
         {
-            DOVirtual.DelayedCall(_maxDelay, invokeOnClickActionCallback);
+            if (null != delayedClickActionTween && true == delayedClickActionTween.IsActive()) delayedClickActionTween.Kill();
+            delayedClickActionTween = DOVirtual.DelayedCall(_maxDelay, invokeOnClickActionCallback);
         }
         else
         {
@@ -693,7 +732,8 @@ public class UI_MainMenuButton : Selectable,
 
         if (true == _hasDisappearTargets)
         {
-            DOVirtual.DelayedCall(_currentDisappearDelay, playDisappearImmediateCallback);
+            if (null != delayedDisappearTween && true == delayedDisappearTween.IsActive()) delayedDisappearTween.Kill();
+            delayedDisappearTween = DOVirtual.DelayedCall(_currentDisappearDelay, playDisappearImmediateCallback);
 
             float _disappearTime = _currentDisappearDelay + disappearSuckDuration + disappearDotShrinkDuration;
             if (_maxDelay < _disappearTime)
@@ -709,7 +749,8 @@ public class UI_MainMenuButton : Selectable,
             _maxDelay = disappearSuckDuration + disappearDotShrinkDuration;
         }
 
-        DOVirtual.DelayedCall(_maxDelay, invokeManualDisappearCallback);
+        if (null != delayedManualDisappearTween && true == delayedManualDisappearTween.IsActive()) delayedManualDisappearTween.Kill();
+        delayedManualDisappearTween = DOVirtual.DelayedCall(_maxDelay, invokeManualDisappearCallback);
     }
 
     private void PlayMaintainMotion()
@@ -816,7 +857,8 @@ public class UI_MainMenuButton : Selectable,
         }
         else
         {
-            isClicked = false;
+            // 클릭 액션 및 씬/팝업 연출이 진행 중이므로 isClicked를 조기에 해제하지 않고 유지하여 광클을 방지합니다.
+            // 버튼 상태 복구는 팝업 취소나 메인메뉴 복귀 시 ResetButtonState() 또는 PlayAppearMotion()을 통해 수행됩니다.
             EvaluatePointerState();
         }
     }

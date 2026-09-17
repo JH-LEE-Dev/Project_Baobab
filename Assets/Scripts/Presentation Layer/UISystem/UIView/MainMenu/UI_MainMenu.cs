@@ -49,6 +49,9 @@ public class UI_MainMenu : MonoBehaviour
     private System.Action<UI_MainMenuButton> cachedHandleButtonSelected;
 
     private bool isNewGameConfirmationOpen;
+    private bool isInputBlocked;
+
+    public bool IsInputBlocked => isInputBlocked;
     
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize(UIView_MainMenu _parentView, UIViewContext _uIViewContext)
@@ -123,11 +126,16 @@ public class UI_MainMenu : MonoBehaviour
         }
 
         SetLocalization();
+        isInputBlocked = false;
     }
 
     public void SetDiscordButton(UI_ExternalLinkButton _discordButton)
     {
         discordButton = _discordButton;
+        if (null != discordButton)
+        {
+            discordButton.SetParentMainMenu(this);
+        }
         UpdateButtonLayout();
     }
 
@@ -250,10 +258,12 @@ public class UI_MainMenu : MonoBehaviour
     }
 
     /// <summary>
-    /// 게임 씬에서 다시 돌아왔을 때, 이전에 꺼진 버튼들을 다시 활성화하고 등장 연출을 재생합니다.
+    /// 메인 메뉴 화면으로 복귀하거나 창이 닫혔을 때, 버튼들을 활성화하고 등장 연출을 1회 재생합니다.
+    /// 전역 입력 락을 해제하고 모든 버튼의 내부 클릭 락을 안전하게 초기화합니다.
     /// </summary>
     public void ResetAndShowButtons()
     {
+        isInputBlocked = false;
         InitButtonsInOrder();
 
         bool _hasSaveData = false;
@@ -262,23 +272,9 @@ public class UI_MainMenu : MonoBehaviour
             _hasSaveData = parentView.HasSaveData();
         }
 
-        for (int i = 0; i < buttonsInOrder.Length; i++)
+        if (null != loadGameButton)
         {
-            UI_MainMenuButton _btn = buttonsInOrder[i];
-            if (null != _btn)
-            {
-                // LoadGame 버튼은 세이브 데이터가 없으면 활성화하지 않음
-                if (_btn == loadGameButton)
-                {
-                    _btn.gameObject.SetActive(_hasSaveData);
-                    continue;
-                }
-
-                if (false == _btn.gameObject.activeSelf)
-                {
-                    _btn.gameObject.SetActive(true);
-                }
-            }
+            loadGameButton.gameObject.SetActive(_hasSaveData);
         }
 
         UpdateButtonLayout();
@@ -287,8 +283,14 @@ public class UI_MainMenu : MonoBehaviour
         for (int i = 0; i < buttonsInOrder.Length; i++)
         {
             UI_MainMenuButton _btn = buttonsInOrder[i];
-            if (null != _btn && true == _btn.gameObject.activeSelf)
+            if (null != _btn)
             {
+                if (_btn == loadGameButton && false == _hasSaveData)
+                {
+                    continue;
+                }
+
+                _btn.ResetButtonState();
                 _btn.ResetAndPlayAppear(_appearSoundIndex);
                 _appearSoundIndex++;
             }
@@ -520,25 +522,33 @@ public class UI_MainMenu : MonoBehaviour
         }
     }
     
+    private void UnhoverAllButtons()
+    {
+        if (null != buttonsInOrder)
+        {
+            for (int i = 0; buttonsInOrder.Length > i; i++)
+            {
+                if (null != buttonsInOrder[i]) buttonsInOrder[i].ForceUnhover();
+            }
+        }
+        if (null != discordButton)
+        {
+            discordButton.ForceUnhover();
+        }
+    }
+    
     private void OnNewGameClicked()
     {
+        if (true == isInputBlocked) return;
+        isInputBlocked = true;
+
         if (null != parentView)
         {
             if (ShouldConfirmNewGame())
             {
                 isNewGameConfirmationOpen = true;
 
-                if (null != buttonsInOrder)
-                {
-                    for (int i = 0; buttonsInOrder.Length > i; i++)
-                    {
-                        if (null != buttonsInOrder[i]) buttonsInOrder[i].ForceUnhover();
-                    }
-                }
-                if (null != discordButton)
-                {
-                    discordButton.ForceUnhover();
-                }
+                UnhoverAllButtons();
 
                 string _warnMsg = viewCtx.localizationManager.GetText("NewGameWarning");
                 warningPopup.ShowWarning(
@@ -599,6 +609,13 @@ public class UI_MainMenu : MonoBehaviour
             Sound.PlayUI(SoundID.MainClick);
         }
 
+        isInputBlocked = false;
+
+        if (null != newGameButton)
+        {
+            newGameButton.ResetButtonState();
+        }
+
         if (null != viewCtx && null != viewCtx.inputManager && true == viewCtx.inputManager.IsGamepadMode)
         {
             if (null != newGameButton && null != EventSystem.current)
@@ -611,6 +628,10 @@ public class UI_MainMenu : MonoBehaviour
     
     private void OnLoadGameClicked()
     {
+        if (true == isInputBlocked) return;
+        isInputBlocked = true;
+        UnhoverAllButtons();
+
         if (null != parentView)
         {
             parentView.OnLoadGameButtonClicked();
@@ -619,6 +640,10 @@ public class UI_MainMenu : MonoBehaviour
     
     private void OnExitClicked()
     {
+        if (true == isInputBlocked) return;
+        isInputBlocked = true;
+        UnhoverAllButtons();
+
         if (null != parentView)
         {
             parentView.OnExitButtonClicked();
@@ -627,6 +652,10 @@ public class UI_MainMenu : MonoBehaviour
     
     private void OnOptionClicked()
     {
+        if (true == isInputBlocked) return;
+        isInputBlocked = true;
+        UnhoverAllButtons();
+
         if (null != parentView)
         {
             parentView.OnOptionButtonClicked();
@@ -635,6 +664,8 @@ public class UI_MainMenu : MonoBehaviour
     
     public void ReleaseOptionButtonState()
     {
+        isInputBlocked = false;
+
         if (null != optionButton)
         {
             optionButton.ReleaseMaintainState();
@@ -651,6 +682,10 @@ public class UI_MainMenu : MonoBehaviour
     
     private void OnCreditClicked()
     {
+        if (true == isInputBlocked) return;
+        isInputBlocked = true;
+        UnhoverAllButtons();
+
         if (null != parentView)
         {
             parentView.OnCreditButtonClicked();
