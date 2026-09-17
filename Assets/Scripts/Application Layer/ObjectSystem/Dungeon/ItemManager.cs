@@ -71,6 +71,11 @@ public class ItemManager : MonoBehaviour
         {
             carrrotItemController.SetupCullingGroup();
         }
+
+        if (gemOreItemController != null)
+        {
+            gemOreItemController.SetupCullingGroup();
+        }
     }
 
     // 외부에서 접근하기 위한 래퍼 메서드 (필요한 경우)
@@ -89,20 +94,19 @@ public class ItemManager : MonoBehaviour
     /// </summary>
     public void SpawnGemOre(TreeObj _treeObj, float _multiplier)
     {
-        gemOreItemController?.SpawnGemOre(_treeObj, _multiplier);
+        if (gemOreItemController == null) return;
+
+        // 잭팟 스킬은 LogItemController 하나에만 걸리므로(ILogItemCH), 그 값을 그대로 읽어 넘긴다.
+        // 보석 나무는 원목 대신 원석을 주기 때문에, 전달하지 않으면 그 나무에서만 스킬이 조용히 무력해진다.
+        float jackPotChance = logItemController != null ? logItemController.JackPotChance : 0f;
+        float jackPotAmount = logItemController != null ? logItemController.JackPotAmount : 1f;
+
+        gemOreItemController.SpawnGemOre(_treeObj, _multiplier, jackPotChance, jackPotAmount);
     }
 
     public void ReturnGemOreToPool(GemOreItem _item)
     {
         gemOreItemController?.ReturnToPool(_item);
-    }
-
-    /// <summary>
-    /// 흡입 도중 던전이 끝날 때 아직 남아있는 원석을 확정 지급한다.
-    /// </summary>
-    public void ForceAcquireAllGemOre()
-    {
-        gemOreItemController?.ForceAcquireAllActive();
     }
 
     public void SpawnCarrotItem(Vector3 _position, AnimalType _animalType)
@@ -144,5 +148,6 @@ public class ItemManager : MonoBehaviour
     public void CancelActiveSucking()
     {
         logItemController?.CancelActiveSucking();
+        gemOreItemController?.CancelActiveSucking();
     }
 }

@@ -53,6 +53,11 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
     private float jackPotChance = 0f;
     private float jackPotAmount = 2f;
 
+    // 보석 나무는 원목 대신 원석을 떨어뜨리므로, 같은 잭팟 스킬이 원석에도 그대로 적용되어야 한다.
+    // 스킬 커맨드는 이 컨트롤러 하나만 바라보므로(ILogItemCH), 값은 여기에 두고 ItemManager가 읽어 전달한다.
+    public float JackPotChance => jackPotChance;
+    public float JackPotAmount => jackPotAmount;
+
     public void Initialize(IInventoryChecker _inventoryChecker, ICharacter _character, ITilemapDataProvider _tilemapDataProvider)
     {
         inventoryChecker = _inventoryChecker;

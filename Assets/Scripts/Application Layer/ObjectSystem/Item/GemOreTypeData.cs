@@ -80,3 +80,14 @@ public struct GemOreDropData
         maxTotalCurrency <= 0 &&
         maxSmallCnt <= 0 && maxMediumCnt <= 0 && maxLargeCnt <= 0;
 }
+
+/// <summary>
+/// 원석에 붙일 아우라 프리셋 매핑. 원목의 LogStateAuraData와 같은 구조이고,
+/// 열쇠만 LogState 대신 GemOreType이다.
+/// </summary>
+[System.Serializable]
+public struct GemOreAuraData
+{
+    public GemOreType gemOreType;
+    public ItemAuraEffectController auraPrefab;
+}

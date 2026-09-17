@@ -10,7 +10,7 @@ using UnityEngine.Pool;
 /// 같은 값을 쓴다. 원목과 원석이 나란히 떨어지는 장면이 없더라도, 같은 나무에서 나오는 것들이
 /// 서로 다른 느낌으로 흩어지면 어색하기 때문이다.
 /// </summary>
-public class GemOreItemController : MonoBehaviour
+public class GemOreItemController : MonoBehaviour, IGemOreAuraProvider
 {
     public event Action<GemOreItem> GemOreItemAcquiredEvent;
 
@@ -24,16 +24,30 @@ public class GemOreItemController : MonoBehaviour
     [Tooltip("총 재화량이 기준이고, 알갱이 개수는 그 총량을 어떻게 나눠 보여줄지를 정한다.")]
     [SerializeField] private List<GemOreDropData> gemOreDropDatas = new List<GemOreDropData>();
 
+    [Header("Gem Aura")]
+    [Tooltip("원석에 붙는 아우라. 원석 종류별로 프리셋 프리팹을 연결한다(원목의 보석 등급 아우라와 동일).")]
+    [SerializeField] private List<GemOreAuraData> gemOreAuraDatas = new List<GemOreAuraData>();
+    [SerializeField] private int auraPoolDefaultCapacity = 8;
+    [SerializeField] private int auraPoolMaxSize = 64;
+
     [Header("크기별 재화 분배 가중치")]
     [Tooltip("총 재화량을 알갱이들에 나눌 때 쓰는 비중. S:M:L = 1:3:9면 M 하나가 S 셋, L 하나가 S 아홉 몫을 가져간다.")]
     [SerializeField] private float smallWeight = 1f;
     [SerializeField] private float mediumWeight = 3f;
     [SerializeField] private float largeWeight = 9f;
 
+    [Header("Optimization")]
+    [SerializeField] private bool enableCulling = true;
+    [SerializeField] private float cullingUpdateInterval = 0.05f;
+
     // 내부 의존성
     private IObjectPool<GemOreItem> gemOrePool;
-    private readonly List<GemOreItem> activeItemsList = new List<GemOreItem>(64);
-    private readonly List<GemOreItem> cleanupList = new List<GemOreItem>(64);
+    private readonly List<GemOreItem> activeItemsList = new List<GemOreItem>(256);      // 마스터 리스트 (컬링 그룹용)
+    private readonly List<GemOreItem> activeItemsForUpdate = new List<GemOreItem>(256); // 업데이트 리스트 (가시성 기준)
+
+    private float cullingUpdateTimer = 0f;
+    private CullingGroup cullingGroup;
+    private BoundingSphere[] spheres;
 
     // 드랍 1회 계산용 재사용 버퍼 (매 그루 할당을 피한다)
     private readonly List<GemOreSize> sizeBuffer = new List<GemOreSize>(32);
@@ -47,6 +61,9 @@ public class GemOreItemController : MonoBehaviour
     private ICharacter character;
     private ITilemapDataProvider tilemapDataProvider;
 
+    private VFXComponent vfxComponent;
+    private Dictionary<GemOreType, IObjectPool<ItemAuraEffectController>> auraPools;
+
     // 물 타일 폴백 시 "몇 월드 유닛 = 1타일"인지 알아야 해서 실제 그리드 셀 크기를 한 번만 계산해 캐싱한다.
     // Initialize() 시점엔 아직 던전 타일맵이 생성되기 전이라 첫 드랍 때 지연 계산한다.
     private float tileWorldSize = 1f;
@@ -58,14 +75,21 @@ public class GemOreItemController : MonoBehaviour
         tilemapDataProvider = _tilemapDataProvider;
         tileWorldSizeMeasured = false;
 
+        // 반짝임 파티클("Shiny")은 이 컴포넌트가 풀로 들고 있다가 원석마다 빌려준다.
+        vfxComponent = GetComponent<VFXComponent>();
+        if (vfxComponent != null) vfxComponent.Initialize();
+
+        BuildAuraPools();
+
         gemOrePool = new ObjectPool<GemOreItem>(
             createFunc: CreateGemOreItem,
             actionOnGet: OnGetGemOreItem,
             actionOnRelease: OnReleaseGemOreItem,
             actionOnDestroy: OnDestroyGemOreItem,
             collectionCheck: PoolSettings.CollectionCheck,
-            defaultCapacity: 32,
-            maxSize: 200
+            // 게임 중후반에는 보석 나무가 맵마다 여러 그루 뜨므로 원목과 같은 규모로 잡는다.
+            defaultCapacity: 200,
+            maxSize: 1000
         );
     }
 
@@ -85,14 +109,138 @@ public class GemOreItemController : MonoBehaviour
 
     private void Update()
     {
-        if (activeItemsList.Count == 0) return;
-
         float deltaTime = Time.deltaTime;
 
-        // ManualUpdate 중 아이템이 획득되어 리스트가 변형될 수 있으므로 역순 순회
-        for (int i = activeItemsList.Count - 1; i >= 0; i--)
+        // 가시 영역 안에서 움직이는 원석만 갱신한다
+        if (activeItemsForUpdate.Count > 0)
         {
-            activeItemsList[i].ManualUpdate(deltaTime);
+            // ManualUpdate 중 아이템이 해제(Release)되어 리스트가 변형될 수 있으므로 역순 순회
+            for (int i = activeItemsForUpdate.Count - 1; i >= 0; i--)
+            {
+                activeItemsForUpdate[i].ManualUpdate(deltaTime);
+            }
+        }
+
+        // 컬링 구체 위치 업데이트 (스로틀링) - 마스터 리스트 기반
+        if (enableCulling && cullingGroup != null && activeItemsList.Count > 0)
+        {
+            cullingUpdateTimer += deltaTime;
+            if (cullingUpdateTimer >= cullingUpdateInterval)
+            {
+                UpdateCullingSpheres();
+                cullingUpdateTimer = 0f;
+            }
+        }
+    }
+
+    // ── 컬링 (LogItemController와 동일한 구조) ──
+
+    public void SetupCullingGroup()
+    {
+        if (!enableCulling) return;
+
+        if (cullingGroup == null)
+        {
+            cullingGroup = new CullingGroup();
+            cullingGroup.onStateChanged = OnCullingStateChanged;
+        }
+
+        cullingGroup.targetCamera = Camera.main;
+        spheres = new BoundingSphere[1000];
+        cullingGroup.SetBoundingSpheres(spheres);
+    }
+
+    private void OnCullingStateChanged(CullingGroupEvent _ev)
+    {
+        if (!enableCulling) return;
+        if (_ev.index >= activeItemsList.Count) return;
+
+        UpdateItemVisibility(activeItemsList[_ev.index], _ev.isVisible);
+    }
+
+    private void UpdateItemVisibility(GemOreItem _item, bool _isVisible)
+    {
+        if (_item.gameObject.activeSelf != _isVisible)
+        {
+            _item.gameObject.SetActive(_isVisible);
+        }
+
+        if (_isVisible)
+        {
+            if (_item.UpdateIndex == -1 && _item.IsMoving)
+            {
+                _item.UpdateIndex = activeItemsForUpdate.Count;
+                activeItemsForUpdate.Add(_item);
+                _item.bCanGetSortingOrder = true;
+            }
+        }
+        else
+        {
+            int idx = _item.UpdateIndex;
+            if (idx != -1)
+            {
+                int lastIdx = activeItemsForUpdate.Count - 1;
+                if (idx != lastIdx)
+                {
+                    GemOreItem lastItem = activeItemsForUpdate[lastIdx];
+                    activeItemsForUpdate[idx] = lastItem;
+                    lastItem.UpdateIndex = idx;
+                }
+                activeItemsForUpdate.RemoveAt(lastIdx);
+                _item.UpdateIndex = -1;
+                _item.bCanGetSortingOrder = false;
+            }
+        }
+    }
+
+    private void UpdateCullingSpheres()
+    {
+        int count = activeItemsForUpdate.Count;
+        for (int i = 0; i < count; i++)
+        {
+            GemOreItem item = activeItemsForUpdate[i];
+            if (item.IsMoving && item.PoolIndex != -1)
+            {
+                spheres[item.PoolIndex].position = item.transform.position;
+            }
+        }
+    }
+
+    // 원석이 움직이기 시작하면 업데이트 목록에 넣고, 완전히 안착하면 뺀다.
+    private void GemOreItemActivated(GemOreItem _item)
+    {
+        if (_item.UpdateIndex == -1)
+        {
+            _item.UpdateIndex = activeItemsForUpdate.Count;
+            activeItemsForUpdate.Add(_item);
+            _item.bCanGetSortingOrder = true;
+        }
+    }
+
+    private void GemOreItemDeActivated(GemOreItem _item)
+    {
+        int idx = _item.UpdateIndex;
+        if (idx == -1) return;
+
+        int lastIdx = activeItemsForUpdate.Count - 1;
+        if (idx != lastIdx)
+        {
+            GemOreItem lastItem = activeItemsForUpdate[lastIdx];
+            activeItemsForUpdate[idx] = lastItem;
+            lastItem.UpdateIndex = idx;
+        }
+        activeItemsForUpdate.RemoveAt(lastIdx);
+        _item.UpdateIndex = -1;
+        _item.bCanGetSortingOrder = false;
+    }
+
+    private void OnDestroy()
+    {
+        if (cullingGroup != null)
+        {
+            cullingGroup.onStateChanged = null;
+            cullingGroup.Dispose();
+            cullingGroup = null;
         }
     }
 
@@ -105,6 +253,15 @@ public class GemOreItemController : MonoBehaviour
         GemOreItem newItem = Instantiate(gemOreItemPrefab, transform);
         newItem.GemOreItemAcquired -= OnGemOreItemAcquired;
         newItem.GemOreItemAcquired += OnGemOreItemAcquired;
+
+        newItem.GemOreItemActivatedEvent -= GemOreItemActivated;
+        newItem.GemOreItemActivatedEvent += GemOreItemActivated;
+
+        newItem.GemOreItemDeActivatedEvent -= GemOreItemDeActivated;
+        newItem.GemOreItemDeActivatedEvent += GemOreItemDeActivated;
+
+        newItem.SetVfxComponent(vfxComponent);
+        newItem.SetAuraProvider(this);
 
         return newItem;
     }
@@ -124,10 +281,42 @@ public class GemOreItemController : MonoBehaviour
     private void OnGetGemOreItem(GemOreItem _item)
     {
         _item.IsPooled = false;
-        _item.UpdateIndex = activeItemsList.Count;
+        // 마스터 리스트 추가 및 인덱스 설정 (O(1))
+        _item.PoolIndex = activeItemsList.Count;
         activeItemsList.Add(_item);
 
-        _item.gameObject.SetActive(true);
+        // BoundingSphere 즉시 동기화
+        if (enableCulling)
+        {
+            if (spheres == null)
+            {
+                spheres = new BoundingSphere[1000];
+                if (cullingGroup != null) cullingGroup.SetBoundingSpheres(spheres);
+            }
+
+            if (spheres.Length <= _item.PoolIndex)
+            {
+                Array.Resize(ref spheres, Mathf.Max(spheres.Length * 2, _item.PoolIndex + 1));
+                if (cullingGroup != null) cullingGroup.SetBoundingSpheres(spheres);
+            }
+            spheres[_item.PoolIndex] = new BoundingSphere(_item.transform.position, 1f);
+        }
+
+        if (enableCulling && cullingGroup != null)
+        {
+            cullingGroup.SetBoundingSphereCount(activeItemsList.Count);
+            // 즉시 가시성 체크하여 활성화 및 업데이트 등록 여부 결정
+            UpdateItemVisibility(_item, cullingGroup.IsVisible(_item.PoolIndex));
+        }
+        else
+        {
+            _item.gameObject.SetActive(true);
+            // 컬링이 꺼져 있거나 컬링 그룹이 없으면 무조건 업데이트 리스트에 추가
+            _item.UpdateIndex = activeItemsForUpdate.Count;
+            activeItemsForUpdate.Add(_item);
+            _item.bCanGetSortingOrder = true;
+        }
+
         _item.ResetItem();
     }
 
@@ -135,8 +324,19 @@ public class GemOreItemController : MonoBehaviour
     {
         _item.IsPooled = true;
 
-        // Swap-with-last 방식을 이용한 리스트 삭제 (O(1))
-        int idx = _item.UpdateIndex;
+        // 빌려간 아우라를 여기서 바로 회수한다. ResetItem은 다음 획득 때 호출되므로,
+        // 그때까지 기다리면 풀에서 쉬고 있는 원석들이 아우라를 붙든 채로 남는다.
+        _item.ReleaseGemAura();
+
+        // 반짝임 파티클도 같은 이유로 여기서 회수한다. 자식으로 매달린 채 부모가 꺼지면
+        // 파티클의 activeSelf는 true로 남아 VFX 풀이 "사용 중"으로 오인하고 영영 누수된다.
+        _item.StopGemShiny();
+
+        // 업데이트 리스트에서 제거
+        UpdateItemVisibility(_item, false);
+
+        // 마스터 리스트에서 Swap-with-last 방식을 이용한 제거 (O(1))
+        int idx = _item.PoolIndex;
         if (idx != -1 && idx < activeItemsList.Count)
         {
             int lastIdx = activeItemsList.Count - 1;
@@ -144,10 +344,16 @@ public class GemOreItemController : MonoBehaviour
             {
                 GemOreItem lastItem = activeItemsList[lastIdx];
                 activeItemsList[idx] = lastItem;
-                lastItem.UpdateIndex = idx;
+                lastItem.PoolIndex = idx;
+                if (enableCulling && spheres != null) spheres[idx] = spheres[lastIdx];
             }
             activeItemsList.RemoveAt(lastIdx);
-            _item.UpdateIndex = -1;
+            _item.PoolIndex = -1;
+
+            if (enableCulling && cullingGroup != null)
+            {
+                cullingGroup.SetBoundingSphereCount(activeItemsList.Count);
+            }
         }
 
         _item.gameObject.SetActive(false);
@@ -158,6 +364,9 @@ public class GemOreItemController : MonoBehaviour
         if (_item == null) return;
 
         _item.GemOreItemAcquired -= OnGemOreItemAcquired;
+        _item.GemOreItemActivatedEvent -= GemOreItemActivated;
+        _item.GemOreItemDeActivatedEvent -= GemOreItemDeActivated;
+
         OnReleaseGemOreItem(_item);
         Destroy(_item.gameObject);
     }
@@ -184,9 +393,18 @@ public class GemOreItemController : MonoBehaviour
     /// </summary>
     /// <param name="_treeObj">쓰러진 나무. 나무 종류와 마지막 보석 단계(gemStage)로 드랍 줄을 고른다.</param>
     /// <param name="_multiplier">등급 드랍 배율(원목과 동일하게 적용)</param>
-    public void SpawnGemOre(TreeObj _treeObj, float _multiplier)
+    /// <param name="_jackPotChance">잭팟 발생 확률(0~1). 원목과 같은 스킬 값을 그대로 받는다.</param>
+    /// <param name="_jackPotAmount">잭팟이 터졌을 때 곱해질 배율</param>
+    public void SpawnGemOre(TreeObj _treeObj, float _multiplier, float _jackPotChance, float _jackPotAmount)
     {
         if (_treeObj == null || gemOreItemPrefab == null) return;
+
+        // 잭팟 스킬은 원목과 동일하게 동작해야 한다. 원목은 드랍 개수에만 곱하지만 원석은
+        // 총 재화량이 실제 보상이므로, 개수와 총량 양쪽에 같은 배율이 걸리도록 _multiplier에 합친다.
+        if (UnityEngine.Random.value < _jackPotChance)
+        {
+            _multiplier *= _jackPotAmount;
+        }
 
         GemOreType oreType = GemStageToOreType(_treeObj.gemStage);
         if (oreType == GemOreType.None) return;
@@ -486,43 +704,118 @@ public class GemOreItemController : MonoBehaviour
     // ── 정리 ──
 
     /// <summary>
-    /// 흡입이 끝나기 전에 던전이 종료되는 경우, 아직 활성 상태인 원석을 전부 획득 처리한다.
-    /// 재화는 놓치면 그대로 손해이므로 확정 지급한다(LootManager.ForceAcquireAllActive와 같은 취지).
+    /// 타운 귀환(DropAllItem/오프로드 탑승) 확정 시점에 호출한다. 원목(LogItemController.CancelActiveSucking)과
+    /// 완전히 같은 처리다: 이미 캐릭터를 향해 흡입 중이던 것은 습득 처리 없이 그대로 풀로 반환해
+    /// 자연스럽게 사라지게 하고, 아직 흡입을 시작하지 않은 것은 bCanAcquired를 꺼서 더 이상 습득되지 않게 한다.
     /// </summary>
-    public void ForceAcquireAllActive()
+    public void CancelActiveSucking()
     {
-        if (activeItemsList.Count == 0) return;
-
-        cleanupList.Clear();
-        cleanupList.AddRange(activeItemsList);
-
-        for (int i = 0; i < cleanupList.Count; i++)
+        for (int i = activeItemsList.Count - 1; i >= 0; i--)
         {
-            GemOreItemAcquiredEvent?.Invoke(cleanupList[i]);
-            TryReleaseGemOreItem(cleanupList[i]);
-        }
+            GemOreItem item = activeItemsList[i];
 
-        cleanupList.Clear();
+            if (item.MoveState == ItemMoveState.Sucking)
+            {
+                TryReleaseGemOreItem(item);
+            }
+            else
+            {
+                item.SetbCanAcquired(false);
+            }
+        }
     }
 
     public void ClearAll()
     {
-        if (activeItemsList.Count == 0) return;
+        int count = activeItemsList.Count;
+        if (count == 0) return;
 
-        cleanupList.Clear();
-        cleanupList.AddRange(activeItemsList);
-
-        for (int i = 0; i < cleanupList.Count; i++)
+        for (int i = count - 1; i >= 0; i--)
         {
-            TryReleaseGemOreItem(cleanupList[i]);
+            TryReleaseGemOreItem(activeItemsList[i]);
         }
 
         activeItemsList.Clear();
-        cleanupList.Clear();
+        activeItemsForUpdate.Clear();
+
+        if (enableCulling && cullingGroup != null)
+        {
+            cullingGroup.SetBoundingSphereCount(0);
+        }
     }
 
     public void ReturnToPool(GemOreItem _item)
     {
         TryReleaseGemOreItem(_item);
+    }
+
+    // ── 아우라 풀 (LogItemController의 같은 구조) ──
+
+    private void BuildAuraPools()
+    {
+        if (auraPools != null) return;
+
+        auraPools = new Dictionary<GemOreType, IObjectPool<ItemAuraEffectController>>();
+        if (gemOreAuraDatas == null) return;
+
+        for (int i = 0; i < gemOreAuraDatas.Count; i++)
+        {
+            GemOreAuraData data = gemOreAuraDatas[i];
+            if (data.auraPrefab == null || auraPools.ContainsKey(data.gemOreType)) continue;
+
+            // 루프 변수를 그대로 캡처하면 모든 풀이 마지막 프리팹을 쓰게 되므로 지역 변수로 고정한다.
+            ItemAuraEffectController prefab = data.auraPrefab;
+
+            auraPools.Add(data.gemOreType, new ObjectPool<ItemAuraEffectController>(
+                createFunc: () => Instantiate(prefab, transform),
+                actionOnGet: OnGetAura,
+                actionOnRelease: OnReleaseAura,
+                actionOnDestroy: OnDestroyAura,
+                collectionCheck: true,
+                defaultCapacity: auraPoolDefaultCapacity,
+                maxSize: auraPoolMaxSize
+            ));
+        }
+    }
+
+    public ItemAuraEffectController GetAura(GemOreType _gemOreType)
+    {
+        if (auraPools != null && auraPools.TryGetValue(_gemOreType, out IObjectPool<ItemAuraEffectController> pool))
+        {
+            return pool.Get();
+        }
+        return null;
+    }
+
+    public void ReleaseAura(GemOreType _gemOreType, ItemAuraEffectController _aura)
+    {
+        if (_aura == null) return;
+
+        if (auraPools != null && auraPools.TryGetValue(_gemOreType, out IObjectPool<ItemAuraEffectController> pool))
+        {
+            pool.Release(_aura);
+            return;
+        }
+
+        // 풀을 못 찾으면(설정 변경 등) 고아로 남기지 않도록 파기한다.
+        Destroy(_aura.gameObject);
+    }
+
+    private void OnGetAura(ItemAuraEffectController _aura)
+    {
+        _aura.gameObject.SetActive(true);
+    }
+
+    private void OnReleaseAura(ItemAuraEffectController _aura)
+    {
+        // 원석에 붙어 있던 것을 떼어내 컨트롤러 아래로 되돌린다. 원석이 비활성화돼도 아우라가 함께 사라지지 않게 한다.
+        _aura.transform.SetParent(transform, false);
+        _aura.transform.localPosition = Vector3.zero;
+        _aura.gameObject.SetActive(false);
+    }
+
+    private void OnDestroyAura(ItemAuraEffectController _aura)
+    {
+        if (_aura != null) Destroy(_aura.gameObject);
     }
 }

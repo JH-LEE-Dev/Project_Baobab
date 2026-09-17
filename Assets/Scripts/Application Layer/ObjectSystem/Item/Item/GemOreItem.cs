@@ -19,6 +19,11 @@ public class GemOreItem : Item, IStaticCollidable
     // 이벤트
     public event Action<GemOreItem> GemOreItemAcquired;
 
+    // 움직이기 시작/멈춤을 소유자(GemOreItemController)에게 알려 업데이트 목록 출입을 관리하게 한다.
+    // 바닥에 완전히 안착한 원석까지 매 프레임 돌릴 이유가 없다(원목과 동일한 구조).
+    public event Action<GemOreItem> GemOreItemActivatedEvent;
+    public event Action<GemOreItem> GemOreItemDeActivatedEvent;
+
     // IStaticCollidable 구현 - 캐릭터의 아이템 감지(Character.OnItemDetected)가 이 등록을 보고 흡입을 건다
     public Vector2 Position => transform.position;
     public Vector2 Offset => Vector2.zero;
@@ -66,7 +71,7 @@ public class GemOreItem : Item, IStaticCollidable
     private float totalRotation;
     private float suckSpeed;
     private bool bSuckAccelerating;
-    private const float SuckAccel = 12f;
+    private const float SuckAccel = 16f;
     private const float MinAcquireDist = 0.2f;
 
     // 착지 스프링 연출
@@ -109,6 +114,17 @@ public class GemOreItem : Item, IStaticCollidable
     private static readonly int OutlineColorPropertyID = Shader.PropertyToID("_OutlineColor");
 
     private MaterialPropertyBlock mpb;
+
+    // ── 보석 연출 (LogItem의 보석 등급 원목과 동일한 3종) ──
+    // 1) Shiny 파티클, 2) 종류별 아우라, 3) 셰이더 샤이니(_ShinyEnabled)
+    private static readonly int ShinyEnabledPropertyID = Shader.PropertyToID("_ShinyEnabled");
+
+    private VFXComponent vfxComponent;
+    private ParticleSystem particleEffect;
+
+    // 원석에 붙는 아우라. 소유자(GemOreItemController)가 풀로 관리하며 여기서는 빌려 쓴다.
+    private IGemOreAuraProvider auraProvider;
+    private ItemAuraEffectController gemAura;
 
     private Color originalColor;
     private Color originalOutlineColor;
@@ -213,6 +229,16 @@ public class GemOreItem : Item, IStaticCollidable
         character = _character;
     }
 
+    public void SetVfxComponent(VFXComponent _vfxComponent)
+    {
+        vfxComponent = _vfxComponent;
+    }
+
+    public void SetAuraProvider(IGemOreAuraProvider _auraProvider)
+    {
+        auraProvider = _auraProvider;
+    }
+
     public void SetbCanAcquired(bool _boolean)
     {
         bCanAcquired = _boolean;
@@ -239,6 +265,7 @@ public class GemOreItem : Item, IStaticCollidable
         totalRotation = _totalRotation;
         elapsed = 0f;
         state = ItemMoveState.Launching;
+        GemOreItemActivatedEvent?.Invoke(this);
         transform.localScale = Vector3.zero;
 
         if (outlineObj != null)
@@ -257,6 +284,9 @@ public class GemOreItem : Item, IStaticCollidable
         {
             CollisionSystem.Instance?.Register(this, false);
         }
+
+        // 아우라는 착지가 아니라 생성(발사) 시점부터 붙어, 포물선 비행 내내 보인다.
+        PlayGemAura();
     }
 
     private void OnEnable()
@@ -288,6 +318,9 @@ public class GemOreItem : Item, IStaticCollidable
         base.ResetItem();
 
         CacheRenderers();
+
+        StopGemShiny();
+        StopGemAura();
 
         state = ItemMoveState.None;
         suckTarget = null;
@@ -343,6 +376,8 @@ public class GemOreItem : Item, IStaticCollidable
         {
             shadowTransform.localScale = Vector3.one;
         }
+
+        SetShaderShiny(false);
     }
 
     public void ManualUpdate(float _deltaTime)
@@ -361,6 +396,9 @@ public class GemOreItem : Item, IStaticCollidable
         }
 
         UpdateSortingOrder();
+
+        SyncGemAura();
+        SyncParticleSorting();
     }
 
     public void UpdateSortingOrder()
@@ -459,6 +497,9 @@ public class GemOreItem : Item, IStaticCollidable
             landingDampTime = 0f;
             state = ItemMoveState.Dropped;
 
+            SetShaderShiny(true);
+            PlayShinyEffect();
+
             // 착지 시점에 이미 흡입 예약이 걸려 있었다면 바로 이어서 빨려간다
             if (suckTarget != null)
             {
@@ -497,6 +538,7 @@ public class GemOreItem : Item, IStaticCollidable
                 if (landingDampTime >= landingDampDuration)
                 {
                     visualTransform.localScale = Vector3.one;
+                    GemOreItemDeActivatedEvent?.Invoke(this);
                 }
             }
             else
@@ -529,6 +571,11 @@ public class GemOreItem : Item, IStaticCollidable
             transform.localScale = Vector3.one;
             if (visualTransform != null) visualTransform.localScale = Vector3.one;
             state = ItemMoveState.Dropped;
+
+            // 다른 착지 경로와 맞춰 반짝임과 아우라를 되살린다
+            SetShaderShiny(true);
+            PlayShinyEffect();
+            PlayGemAura();
             return;
         }
 
@@ -612,30 +659,39 @@ public class GemOreItem : Item, IStaticCollidable
 
     /// <summary>
     /// 캐릭터의 아이템 감지(Character.OnItemDetected)가 Item 기반으로 호출한다.
-    /// 원목과 달리 인벤토리 여유를 보지 않으므로, 착지만 끝났다면 무조건 빨려간다.
+    /// 원목과 동일하게 착지(Dropped)한 뒤에만 흡입을 받는다. 비행 중에 미리 예약되지 않으므로
+    /// 착지 후 다음 감지 주기(Character.itemDetectionInterval)에 걸려 빨려간다.
+    ///
+    /// 원목의 인벤토리 여유 검사(CheckAcquireCondition)에 대응하는 것은 없다.
+    /// 원석은 칸을 쓰지 않아 거절될 조건 자체가 없기 때문이다.
     /// </summary>
     public override void SetSuckTarget(Transform _target)
     {
-        if (bCanAcquired == false) return;
-        if (state != ItemMoveState.Dropped && state != ItemMoveState.Launching) return;
+        if (state != ItemMoveState.Dropped || bCanAcquired == false) return;
 
         suckTarget = _target;
-
-        if (state == ItemMoveState.Dropped)
-        {
-            StartSucking(suckTarget);
-        }
+        StartSucking(suckTarget);
     }
 
     private void StartSucking(Transform _target)
     {
         if (state == ItemMoveState.Sucking) return;
 
+        if (vfxComponent != null && particleEffect != null)
+        {
+            vfxComponent.Stop(particleEffect, false);
+            particleEffect = null;
+        }
+
+        StopGemAura();
+        SetShaderShiny(false);
+
         suckTarget = _target;
         suckSpeed = -5.0f; // 뒤로 튕기는 동작
         elapsed = 0f;
         bSuckAccelerating = false;
         state = ItemMoveState.Sucking;
+        GemOreItemActivatedEvent?.Invoke(this);
     }
 
     // ── 그림자 (LogItem과 동일) ──
@@ -697,6 +753,154 @@ public class GemOreItem : Item, IStaticCollidable
         float texHeight = _sprite.texture.height;
 
         return new Vector4(r.xMin / texWidth, r.yMin / texHeight, r.xMax / texWidth, r.yMax / texHeight);
+    }
+
+    // ── 보석 연출 (LogItem의 같은 이름 메서드들과 동작이 동일하다) ──
+
+    /// <summary>
+    /// 외부에서 원석을 직접 배치했을 때 반짝임을 붙인다.
+    /// 포물선 발사(Launch)를 타지 않는 경로를 위한 공개 진입점이다.
+    /// </summary>
+    public void PlayGemShiny()
+    {
+        PlayShinyEffect();
+    }
+
+    private void PlayShinyEffect()
+    {
+        if (null == vfxComponent || gemOreType == GemOreType.None) return;
+
+        // 이전 재생분이 남아 있으면 정리하고 새로 붙인다(중복 부착 방지).
+        if (null != particleEffect)
+        {
+            vfxComponent.Stop(particleEffect, false);
+            particleEffect = null;
+        }
+
+        particleEffect = vfxComponent.Play("Shiny", transform.position, transform.rotation, transform);
+        if (null == particleEffect) return;
+
+        particleEffect.transform.localScale = Vector3.one;
+        SyncParticleSorting();
+    }
+
+    /// <summary>
+    /// 붙어 있는 반짝임 파티클을 즉시 풀로 회수한다.
+    /// 오브젝트를 비활성화하기 전에 반드시 호출해야 한다. 자식으로 매달린 채 부모가 꺼지면
+    /// 파티클의 activeSelf는 true로 남아 풀이 "사용 중"으로 오인하고, 그 인스턴스는 영영
+    /// 재사용되지 못한 채 누수된다.
+    /// </summary>
+    public void StopGemShiny()
+    {
+        if (null == particleEffect) return;
+
+        if (null != vfxComponent && particleEffect.transform.IsChildOf(transform))
+            vfxComponent.Stop(particleEffect, true);
+
+        particleEffect = null;
+    }
+
+    /// <summary>
+    /// 반짝임 파티클을 원석 본체 바로 앞에 그린다.
+    /// sortingOrder는 CustomSortable이 위치에 따라 매 프레임 다시 계산하므로 계속 따라가야 한다.
+    /// </summary>
+    private void SyncParticleSorting()
+    {
+        if (vfxComponent == null || particleEffect == null || spriteRenderer == null) return;
+
+        if (!particleEffect.transform.IsChildOf(transform))
+        {
+            particleEffect = null;
+            return;
+        }
+
+        vfxComponent.SetSortingSettings(particleEffect, spriteRenderer.sortingLayerName, spriteRenderer.sortingOrder + 1);
+    }
+
+    /// <summary>
+    /// 원석 종류별 아우라를 붙인다. 발사 시점부터 붙어 비행 내내 보이고,
+    /// 흡입이 시작되거나 풀로 반환될 때 회수된다.
+    /// </summary>
+    private void PlayGemAura()
+    {
+        // 이미 붙어 있으면 중복 부착하지 않는다(착지 -> 흡입취소 -> 재착지 경로에서 새는 것을 막는다).
+        if (auraProvider == null || gemAura != null) return;
+        if (gemOreType == GemOreType.None) return;
+
+        gemAura = auraProvider.GetAura(gemOreType);
+        if (gemAura == null) return;
+
+        Transform auraTransform = gemAura.transform;
+        auraTransform.SetParent(transform, false);
+        auraTransform.localPosition = Vector3.zero;
+
+        SyncGemAura();
+        gemAura.Play();
+    }
+
+    /// <summary>
+    /// 아우라를 원석 그림에 맞춰 따라가게 한다. 매 프레임 호출된다.
+    ///
+    /// 위치: 본체 transform은 지면 좌표를 선형 보간할 뿐이고(그림자가 그 자리에 있다),
+    /// 포물선 높이는 visualTransform.localPosition이 들고 있다. visualTransform에 직접 붙이지 않는
+    /// 이유는 착지 스쿼시(비균등 스케일)까지 상속받아 방사형 아우라가 타원으로 찌그러지기 때문이다.
+    ///
+    /// 정렬: 프리셋 프리팹은 Default 레이어(맨 뒤)라 맞추지 않으면 가려지고,
+    /// sortingOrder는 CustomSortable이 매 프레임 다시 계산하므로 한 번만 설정하면 어긋난다.
+    /// </summary>
+    private void SyncGemAura()
+    {
+        if (gemAura == null) return;
+
+        if (visualTransform != null)
+        {
+            gemAura.transform.localPosition = visualTransform.localPosition;
+        }
+
+        if (spriteRenderer == null) return;
+
+        gemAura.SetSortingLayer(spriteRenderer.sortingLayerID);
+        // 원석 뒤에 그린다. 본체 렌더러들이 order와 order-1(아웃라인 스텐실)을 이미 쓰고 있어,
+        // -1로 두면 스텐실과 순서가 같아져 그리기 순서가 불안정해지므로 한 칸 더 뒤로 뺀다.
+        gemAura.SetSortingOrder(spriteRenderer.sortingOrder - 2);
+    }
+
+    /// <summary>
+    /// 풀로 반환될 때 빌려온 아우라만 즉시 돌려준다.
+    /// ResetItem은 다음 획득 시점에 호출되므로, 그대로 두면 원석이 풀에서 쉬는 동안에도
+    /// 아우라가 대여 상태로 묶여 실제 동시 사용량보다 풀이 크게 잡힌다.
+    /// </summary>
+    public void ReleaseGemAura()
+    {
+        StopGemAura();
+    }
+
+    private void StopGemAura()
+    {
+        if (gemAura == null) return;
+
+        gemAura.Stop();
+        // gemOreType은 다음 Initialize 전까지 바뀌지 않으므로, 꺼낸 풀로 정확히 되돌아간다.
+        auraProvider?.ReleaseAura(gemOreType, gemAura);
+        gemAura = null;
+    }
+
+    /// <summary>
+    /// 스프라이트 셰이더의 반짝임(_ShinyEnabled)을 켜고 끈다.
+    /// 원석은 전부 보석이므로 원목과 달리 등급 조건이 따로 없다 - 바닥에 놓여 있는 동안 항상 켜진다.
+    /// </summary>
+    private void SetShaderShiny(bool _enable)
+    {
+        if (spriteRenderer == null) return;
+
+        bool shinyEnabled = _enable && gemOreType != GemOreType.None;
+
+        if (mpb == null) mpb = new MaterialPropertyBlock();
+        spriteRenderer.GetPropertyBlock(mpb);
+        mpb.SetFloat(ShinyEnabledPropertyID, shinyEnabled ? 1f : 0f);
+        spriteRenderer.SetPropertyBlock(mpb);
+
+        if (outlineStencilSR != null) outlineStencilSR.SetPropertyBlock(null);
     }
 
     private void ApplyOutlineColor()

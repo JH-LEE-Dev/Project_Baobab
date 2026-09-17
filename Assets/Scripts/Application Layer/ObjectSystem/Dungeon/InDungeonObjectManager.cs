@@ -637,11 +637,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             offroadVehicle.gameObject.SetActive(false);
         }
 
-        // 흡입 도중 던전이 끝나도 재화를 놓치지 않도록, 아이템을 버리기 전에 원석부터 확정 지급한다.
-        // (바로 아래 ReleaseAllItems가 남은 원석을 전부 풀로 돌려보내므로 순서가 뒤바뀌면 유실된다)
-        if (itemManager != null)
-            itemManager.ForceAcquireAllGemOre();
-
         if (itemManager != null)
             itemManager.ReleaseAllItems();
 
