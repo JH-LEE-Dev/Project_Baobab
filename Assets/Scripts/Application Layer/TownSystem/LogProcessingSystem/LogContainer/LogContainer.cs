@@ -124,6 +124,9 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     [SerializeField] private Sprite MiddleLogSprite;
     [SerializeField] private Sprite ManyLogSprite;
 
+    // 캐릭터가 이 컨테이너로 납품하는 속도 배율(ItemTransferSpeedUP 스킬). 적용되는 곳은
+    // 납품 경로뿐이며, 제재소가 원목을 꺼내가는 주기에는 곱하지 않는다.
+    // 이유는 GetEffectiveTransferInterval()의 주석 참고.
     public float itemTransferSpeedMul = 1f;
     private float globalSpeedMultiplier = 1f;
 
@@ -257,10 +260,26 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     /// <summary>
     /// 속도 배율이 반영된 실제 출고 간격. 각 라인이 자기 타이머를 이 간격과 비교해
     /// TakeFirstItem() 호출 시점을 판단한다.
+    ///
+    /// [itemTransferSpeedMul을 여기에 곱하지 않는다 - 되돌리지 마십시오]
+    /// 이 값은 <b>제재소가 컨테이너에서 원목을 꺼내오는 주기</b>다. 캐릭터가 컨테이너로 넣는
+    /// 속도와는 다른 축이며, ItemTransferSpeedUP 스킬은 <b>넣는 쪽만</b> 빠르게 하는 것이 의도다.
+    ///
+    /// 예전엔 여기에도 itemTransferSpeedMul이 곱해져 있었다. 그러면 "아이템 전송 속도" 스킬
+    /// 하나가 제재소 공급 속도까지 함께 올려서, 5레벨(amount 20 x 5 = +100%)이면 반출 주기가
+    /// 1.0초에서 0.5초로 줄었다. 라인을 하나 더 여는 ProcessLineExpand(30만원)와 비슷한 효과를
+    /// 10만원에 얻는 셈이라 의도와 달랐다.
+    ///
+    /// itemTransferSpeedMul이 적용되어야 하는 곳은 <b>캐릭터 납품 경로뿐</b>이다:
+    ///   TransferRoutine의 transferSlotInterval 대기 / TransferOneSlotVisualRoutine의 FLY_INTERVAL.
+    /// (NPCTransferRoutine에도 남아 있지만 운반 NPC를 쓰지 않기로 해 실행되지 않는다)
+    ///
+    /// globalSpeedMultiplier는 그대로 둔다. 이쪽은 가공 콤보 배속(LogProcessorSpeedUp)이 거는
+    /// 전역 배율이라 제재소 속도 축이 맞다. 다만 그 커맨드가 아직 미배선이라 현재는 항상 1이다.
     /// </summary>
     public float GetEffectiveTransferInterval()
     {
-        return transferInterval / (Mathf.Max(0.01f, itemTransferSpeedMul) * Mathf.Max(0.01f, globalSpeedMultiplier));
+        return transferInterval / Mathf.Max(0.01f, globalSpeedMultiplier);
     }
 
     private void LateUpdate()

@@ -6,9 +6,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 {
     public event Action<bool> LogProcessorIsActiveEvent;
     public event Action<bool> ShopInteracteStateChangedEvent;
-    public event Action<int> ShopMoneyChangedEvent;
+    public event Action<long> ShopMoneyChangedEvent;
     public event Action LogContainerSpecChangedEvent;
-    public event Action<int> EarnMoneyEvent;
+    public event Action<long> EarnMoneyEvent;
     public event Action ContainerUpdatedEvent;
     public event Action ItemAddedToLogContainerEvent;
     public event Action<bool> InteractStateChangedEvent;
@@ -388,7 +388,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         _line.Evaluator.EvaluateLog(_itemData);
     }
 
-    private void LogEvaluated(int _money)
+    private void LogEvaluated(long _money)
     {
         if (bRemoteDepositActive)
         {
@@ -412,7 +412,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         shopNPC.SetRemoteDepositLock(_bActive);
     }
 
-    private void EarnMoney(int _money)
+    private void EarnMoney(long _money)
     {
         EarnMoneyEvent?.Invoke(_money);
     }
