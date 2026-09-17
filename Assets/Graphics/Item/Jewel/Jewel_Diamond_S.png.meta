@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 0d96e1d3a916a214cbbbd4e1e5afeb17
+guid: 53418c19aaec70c4aa1de14547df986a
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 1978462126523037530
-    second: Jewel_Gold_0
+      213: -4199022402223720386
+    second: Jewel_Gold_S_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Jewel_Gold_0
+      name: Jewel_Gold_S_0
       rect:
         serializedVersion: 2
-        x: 9
-        y: 10
-        width: 15
-        height: 13
+        x: 10
+        y: 12
+        width: 12
+        height: 10
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: a5738fc52d8e47b10800000000000000
-      internalID: 1978462126523037530
+      spriteID: e383c8f5f531ab5c0800000000000000
+      internalID: -4199022402223720386
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Jewel_Gold_0: 1978462126523037530
+      Jewel_Gold_S_0: -4199022402223720386
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
