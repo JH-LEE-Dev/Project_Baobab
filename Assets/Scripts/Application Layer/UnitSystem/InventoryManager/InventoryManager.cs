@@ -325,7 +325,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         return transform;
     }
 
-    public void MoneyEarned(int _money)
+    public void MoneyEarned(long _money)
     {
         money += _money;
     }

@@ -444,8 +444,23 @@ public class UI_Inventory : MonoBehaviour
         isOpenAnimated = false;
     }
 
+    /// <summary>
+    /// 파괴 전용 정리입니다. 호출부는 이 클래스의 OnDestroy와 UIView_Popup.OnDestroy 둘뿐이며,
+    /// 둘 다 파괴 경로라 "정리 후에도 계속 살아서 동작해야 하는" 경우가 없습니다.
+    /// (두 번 불려도 -= 와 Clear()가 모두 멱등이라 문제되지 않습니다)
+    /// </summary>
     public void Release()
     {
+        // LocalizationManager는 BootStrap의 자식이라 앱이 켜져 있는 내내 살아남는다.
+        // 여기서 반납하지 않으면 이 뷰가 파괴돼도 구독이 남아, 메인 메뉴를 왕복할 때마다
+        // 죽은 구독자가 하나씩 쌓이고 그만큼의 오브젝트 그래프가 회수되지 않는다.
+        // (RefreshLocalizedTexts가 전부 null 가드라 증상은 없지만, 같은 이벤트를 쓰는
+        //  나머지 10개 뷰는 전부 파괴 시 반납하고 있어 여기만 예외였다)
+        if (null != locManager)
+        {
+            locManager.OnLanguageChanged -= RefreshLocalizedTexts;
+        }
+
         for (int _i = 0; _i < inventorySlots.Count; _i++)
         {
             UI_InventorySlot _slot = inventorySlots[_i];

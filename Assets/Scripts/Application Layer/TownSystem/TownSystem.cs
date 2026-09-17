@@ -404,7 +404,7 @@ public class TownSystem : MonoBehaviour
         signalHub.Publish(new ContainerInteractStateChangedSignal(_boolean));
     }
 
-    private void EarnMoney(int _money)
+    private void EarnMoney(long _money)
     {
         signalHub.Publish(new MoneyEarnedSignal(_money));
     }
@@ -531,7 +531,7 @@ public class TownSystem : MonoBehaviour
         signalHub.Publish(new LogItemProcessorActiveStateSignal(_boolean));
     }
 
-    private void ShopMoneyChanged(int _money)
+    private void ShopMoneyChanged(long _money)
     {
         signalHub.Publish(new ShopMoneyUpdatedSignal(_money));
     }

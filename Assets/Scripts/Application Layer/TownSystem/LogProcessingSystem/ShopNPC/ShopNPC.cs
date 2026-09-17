@@ -9,9 +9,9 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     private struct FlyingCoin
     {
         public Coin coin;
-        public int value;
+        public long value;
 
-        public FlyingCoin(Coin _coin, int _value)
+        public FlyingCoin(Coin _coin, long _value)
         {
             coin = _coin;
             value = _value;
@@ -21,9 +21,9 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     private struct CoinSpawnInfo
     {
         public CoinType type;
-        public int value;
+        public long value;
 
-        public CoinSpawnInfo(CoinType _type, int _value)
+        public CoinSpawnInfo(CoinType _type, long _value)
         {
             type = _type;
             value = _value;
@@ -32,7 +32,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
     public event Action ShopMoneyChangedEvent;
     public event Action<bool> InteractStateEvent;
-    public event Action<int> EarnMoneyEvent;
+    public event Action<long> EarnMoneyEvent;
     public event Action<bool> RemoteDepositModeChangedEvent;
 
     // 외부 의존성
@@ -50,7 +50,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
     public bool isPhysicalOverlapped => bPhysicalOverlapped;
     private InputManager inputManager;
-    private int money;
+    private long money;
     private bool bFirstTimeEarnMoney = true;
     private CustomSortable customSortable;
     private Transform characterTransform;
@@ -62,7 +62,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
     // 코인은 개별적으로 날아가 보이지만, 실제 재화 지급은 연출과 무관하게 첫 번째 코인이
     // 캐릭터에 도착하는 순간 전액 한 번에 처리한다(뒤이어 도착하는 코인들은 시각 연출일 뿐).
-    private int pendingBatchMoney = 0;
+    private long pendingBatchMoney = 0;
     private bool bAwaitingFirstArrival = false;
 
     // 상호작용 키는 Input System 콜백(해당 프레임의 모든 Update()보다 먼저 실행됨)에서 바로 들어온다.
@@ -113,7 +113,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
     Transform IShopNPC.npcTransform => npcTransform;
 
-    public int currentMoney => money;
+    public long currentMoney => money;
 
     [SerializeField] private List<Sprite> animationSprite;
 
@@ -182,13 +182,13 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         }
     }
 
-    public void InsertMoney(int _money)
+    public void InsertMoney(long _money)
     {
         money += _money;
         ShopMoneyChangedEvent?.Invoke();
     }
 
-    public int GetMoney()
+    public long GetMoney()
     {
         return money;
     }
@@ -198,12 +198,12 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     /// 이 구간의 돈은 상점 잔액(money)에도 캐릭터 소지금에도 존재하지 않으므로,
     /// 저장 시 이 값을 함께 적어두지 않으면 통째로 사라진다(LogProcessingManager.AppendTransitToSaveData).
     /// </summary>
-    public int GetPendingBatchMoney()
+    public long GetPendingBatchMoney()
     {
         return pendingBatchMoney;
     }
 
-    public void LoadSaveData(int _money, bool _bFirstTime)
+    public void LoadSaveData(long _money, bool _bFirstTime)
     {
         money = _money;
         bFirstTimeEarnMoney = _bFirstTime;
@@ -254,7 +254,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
     public void ClearMoneyToPlayer()
     {
-        int leftover = money;
+        long leftover = money;
         money = 0;
         ShopMoneyChangedEvent?.Invoke();
 
@@ -322,7 +322,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
         bInteractRequested = false;
 
-        int tempMoney = money;
+        long tempMoney = money;
         money = 0;
         ShopMoneyChangedEvent?.Invoke();
 
@@ -336,7 +336,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
         // 동전 개수 계산 (최대 20개 제한). 등급 구분 없이 항상 골드 동전만 생성하며,
         // 예전에 Bronze(동화)를 나누던 것과 동일하게 10 단위로만 쪼갠다.
-        int remainingMoney = tempMoney;
+        long remainingMoney = tempMoney;
         List<CoinSpawnInfo> coinsToSpawn = new List<CoinSpawnInfo>(20);
 
         while (0 < remainingMoney)

@@ -53,11 +53,34 @@ public static class DataConsentGate
         isSentryAllowedByBuild = _isSentryAllowedByBuild;
         isGameAnalyticsAllowedByBuild = _isGameAnalyticsAllowedByBuild;
 
+#if UNITY_EDITOR
+        // 에디터 플레이는 GameAnalytics에 보내지 않습니다.
+        //
+        // GameAnalytics의 build 태그는 GameAnalytics.SettingsGA(= Assets/Resources 아래 에셋)에서
+        // 읽습니다. Tools > 빌드 메뉴가 그 값을 "1.0.0-steam"처럼 배포용으로 바꿔놓으므로,
+        // 정식 모드로 전환해 검토하는 동안의 세션이 그 배포 빌드의 지표로 집계됩니다.
+        //
+        // Sentry처럼 "환경만 갈라두기"를 할 수 없습니다. 런타임에 build를 바꾸는 유일한 API인
+        // GameAnalytics.SetBuildAllPlatforms()가 그 <b>에셋 자체</b>를 고치기 때문입니다.
+        // 에디터에서 부르면 값이 에셋에 남아, 다음 빌드 때 PlatformConsistencyGuard가 어긋난
+        // 값을 보고 빌드를 중단시킵니다. 고치려던 것보다 나쁜 결과라 그 길은 쓰지 않습니다.
+        //
+        // 그래서 여기서는 아예 켜지 않습니다. Sentry와 달리 잃는 것도 적습니다 - 이쪽은
+        // 크래시 처리 같은 게임 동작이 아니라 집계 파이프라인이라, 에디터에서 켜둔다고
+        // 확인되는 것이 없습니다. 동의 흐름 자체는 아래 로그로 그대로 따라갈 수 있습니다.
+        if (true == isGameAnalyticsAllowedByBuild)
+        {
+            isGameAnalyticsAllowedByBuild = false;
+            Debug.Log("[DataConsentGate] 에디터 플레이라 GameAnalytics를 켜지 않습니다. " +
+                "(배포 빌드의 지표에 섞이지 않게 하기 위함이며, 빌드에서는 정상 동작합니다)");
+        }
+#endif
+
         EDataConsent _consent = SettingsManager.ReadPersistedConsent();
         bool _isGranted = (EDataConsent.Granted == _consent);
 
         Debug.Log($"[DataConsentGate] 부팅 시 데이터 수집 동의 상태 = {_consent} " +
-            $"(빌드 토글: Sentry={_isSentryAllowedByBuild}, GameAnalytics={_isGameAnalyticsAllowedByBuild})");
+            $"(빌드 토글: Sentry={isSentryAllowedByBuild}, GameAnalytics={isGameAnalyticsAllowedByBuild})");
 
         ApplySentry(_isGranted, true);
         ApplyGameAnalytics(_isGranted);

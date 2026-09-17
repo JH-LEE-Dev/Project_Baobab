@@ -45,7 +45,7 @@ public class TutorialSystem
     // SignalHub.Publish가 구독자를 등록 역순으로 호출해 UnitSystem이 실제로 money를 반영하기 전에
     // 이 시스템의 MoneyEarned가 먼저 실행될 수 있기 때문이다 - 신호에 담긴 금액을 직접 누적해야
     // 이번 정산이 곧바로 반영된 값으로 정확히 판정할 수 있다.
-    private int moneyEarnedSinceReceiveMoney;
+    private long moneyEarnedSinceReceiveMoney;
     private const int RequiredMoneyForUpgradeAxe = 5;
 
     // UpgradeAxe는 "돈이 기준치에 도달"과 "ReceiveMoney 안내 UI가 완전히 사라짐" 두 조건을 모두

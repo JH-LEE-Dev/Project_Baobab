@@ -318,8 +318,18 @@ public class LogInBelt : MonoBehaviour
 
     public void IncreaseSpeed(float _percentage)
     {
+        // 기준점을 여기서도 잡아둔다. Initialize()에도 같은 캐싱이 있지만, 스킬 효과는 아직
+        // 활성화되지 않은 라인에까지 미리 뿌려지므로(LogProcessingManager는 allLines 전체에
+        // 브로드캐스트한다) 이 메서드가 그 라인의 첫 Initialize()보다 먼저 올 수 있다.
+        // 그 경우 Initialize()는 "이미 빨라진 값"을 기본 속도로 잡아버리고, 그러면
+        // UpdateLoopSound의 beltSpeed / baseBeltSpeed가 늘 1이 되어 그 라인만 소리 피치가
+        // 올라가지 않는다(컨베이어 스킬을 증설보다 먼저 산 경우에만 나타나 재현이 까다롭다).
+        if (baseBeltSpeed < 0f)
+        {
+            baseBeltSpeed = beltSpeed;
+        }
+
         _percentage *= 0.01f;
-        Debug.Log(_percentage);
         // 0.1(10%) 증가 시 기존 속도에 1.1을 곱함
         beltSpeed *= (1f + _percentage);
     }
