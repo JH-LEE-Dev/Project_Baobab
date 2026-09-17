@@ -15,6 +15,10 @@ public class EHealthComponent : EComponent, IHealthComponent
     //외부 의존성
     [SerializeField] private float maxHealth;
 
+    // 보석 단계 체력 배율. maxHealth는 항상 일반 상태의 기준값 그대로 두고 이 배율만 갈아끼우므로,
+    // 단계가 올라가도(황금 -> 다이아 -> 프리즘) 배율이 누적되지 않고 기준값이 오염되지도 않는다.
+    private float gemHealthMultiplier = 1f;
+
     //내부 의존성
     private float currentHealth;
     private float prevHealth;
@@ -51,6 +55,7 @@ public class EHealthComponent : EComponent, IHealthComponent
     public void Setup(TreeType _treeType, float _maxHealth, float _maxSP, float _spRegen, SPRegenStrategySO _regenStrategy)
     {
         maxHealth = _maxHealth;
+        gemHealthMultiplier = 1f;
         currentHealth = maxHealth;
         prevHealth = maxHealth;
 
@@ -77,6 +82,7 @@ public class EHealthComponent : EComponent, IHealthComponent
     {
         shieldStatProvider = _shieldStatProvider;
 
+        gemHealthMultiplier = 1f;
         currentHealth = maxHealth;
         prevHealth = maxHealth;
         currentSP = maxSP;
@@ -90,6 +96,8 @@ public class EHealthComponent : EComponent, IHealthComponent
 
     public void Reset()
     {
+        // 풀에서 재사용될 때 보석 단계 배율이 남아 있으면 안 되므로 1배로 되돌린다.
+        gemHealthMultiplier = 1f;
         currentHealth = maxHealth;
         prevHealth = maxHealth;
         currentSP = maxSP;
@@ -159,17 +167,24 @@ public class EHealthComponent : EComponent, IHealthComponent
         }
     }
 
-    // 나무 등급별 셰이더 단계 전환용: 실제로 죽이지 않고 체력만 100%로 되돌린다.
+    // 나무 등급별 셰이더 단계 전환용: 실제로 죽이지 않고 체력을 되살린다.
+    // _maxHealthMultiplier는 그 나무의 일반 상태 최대 체력에 곱해지는 배율로, 보석 단계마다 다르다
+    // (황금 2배, 다이아 3배, 프리즘 3.5배). 배율은 누적되지 않고 항상 기준값에 다시 곱해진다.
+    //
+    // 체력 바를 비롯한 소비처는 전부 현재 체력/최대 체력 비율로 계산하므로, 회복량만 늘리면 비율이
+    // 1을 넘어 깨진다. 그래서 최대 체력(GetMaxHealth)도 함께 배율만큼 올리고 그 값으로 가득 채운다.
+    //
     // currentSP/isShieldBroken은 건드리지 않는다 - 실드가 깨진 상태였다면 단계가 전환돼도 깨진 채로 유지되어야 한다.
-    public void ReviveFullHealth()
+    public void ReviveFullHealth(float _maxHealthMultiplier = 1f)
     {
-        currentHealth = maxHealth;
-        prevHealth = maxHealth;
+        gemHealthMultiplier = Mathf.Max(0f, _maxHealthMultiplier);
+        currentHealth = GetMaxHealth();
+        prevHealth = currentHealth;
     }
 
     public float GetMaxHealth()
     {
-        return maxHealth;
+        return maxHealth * gemHealthMultiplier;
     }
 
     public float GetCurrentHealth()

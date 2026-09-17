@@ -73,3 +73,6 @@ MonoBehaviour:
     sp: 0
     spRegen: 0
     regenStrategy: {fileID: 0}
+  demoHpOverrides:
+  - treeType: 3
+    hp: 40
