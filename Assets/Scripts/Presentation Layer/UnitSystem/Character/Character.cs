@@ -1300,6 +1300,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         healthComponent.SetStaminaDecrease(true);
     }
 
+    /// <summary>현재 스태미나 소모 상태. 겹쳐 잠그는 쪽이 원래 값을 저장해 두기 위해 읽는다.</summary>
+    public bool IsStaminaDecreasing => healthComponent != null && healthComponent.IsStaminaDecreasing;
+
     public void SetMinStaminaPercent(float _percent)
     {
         healthComponent.SetMinStaminaPercent(_percent);

@@ -16,7 +16,7 @@ public class UI_MainMenu : MonoBehaviour
     [SerializeField] private UI_MainMenuButton loadGameButton;
     [SerializeField] private UI_MainMenuButton exitButton;
     
-    [Header("Additional Features (Upcoming)")]
+    [Header("Sub Views")]
     [SerializeField] private UI_MainMenuButton optionButton;
     [SerializeField] private UI_MainMenuButton creditButton;
 
@@ -39,16 +39,20 @@ public class UI_MainMenu : MonoBehaviour
     private UIView_MainMenu parentView;
     private UIViewContext viewCtx;
     private UI_MainMenuButton lastFocusedMainMenuButton;
+    private UI_MainMenuButton[] buttonsInOrder;
+    private readonly List<UI_MainMenuButton> activeButtonsCache = new List<UI_MainMenuButton>(5);
     
     // 캐싱 델리게이트
     private System.Action cachedExecuteNewGame;
     private System.Action cachedCancelNewGame;
     private System.Action cachedOnNewGameDisappearComplete;
-    private System.Action cachedSetLocalization;
     private System.Action<EInputDeviceType> cachedOnDeviceChanged;
     private System.Action<UI_MainMenuButton> cachedHandleButtonSelected;
 
     private bool isNewGameConfirmationOpen;
+    private bool isInputBlocked;
+
+    public bool IsInputBlocked => isInputBlocked;
     
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize(UIView_MainMenu _parentView, UIViewContext _uIViewContext)
@@ -59,16 +63,9 @@ public class UI_MainMenu : MonoBehaviour
         cachedExecuteNewGame = ExecuteNewGame;
         cachedCancelNewGame = CancelNewGame;
         cachedOnNewGameDisappearComplete = OnNewGameDisappearComplete;
-        cachedSetLocalization = SetLocalization;
         cachedOnDeviceChanged = OnDeviceChanged;
         cachedHandleButtonSelected = HandleButtonSelected;
         
-        if (null != viewCtx && null != viewCtx.localizationManager)
-        {
-            viewCtx.localizationManager.OnLanguageChanged -= cachedSetLocalization;
-            viewCtx.localizationManager.OnLanguageChanged += cachedSetLocalization;
-        }
-
         if (null != viewCtx && null != viewCtx.inputManager && null != viewCtx.inputManager.inputReader)
         {
             viewCtx.inputManager.inputReader.InputDeviceChangedEvent -= cachedOnDeviceChanged;
@@ -85,7 +82,7 @@ public class UI_MainMenu : MonoBehaviour
         if (null != loadGameButton)
         {
             loadGameButton.Initialize(OnLoadGameClicked, null, _inputMgr);
-            // 이곳에서의 초기 판단은 saveSystem 주입 전일 수 있으므로 제거하거나 둡니다. (안전하게 의존성 주입 후 다시 업데이트함)
+            // saveSystem 의존성 주입 후 UpdateLoadGameButtonState()를 통해 상태가 갱신됩니다.
         }
         
         if (null != exitButton)
@@ -112,7 +109,7 @@ public class UI_MainMenu : MonoBehaviour
 
         if (null != buttonsInOrder)
         {
-            for (int i = 0; i < buttonsInOrder.Length; i++)
+            for (int i = 0; buttonsInOrder.Length > i; i++)
             {
                 if (null != buttonsInOrder[i])
                 {
@@ -123,11 +120,16 @@ public class UI_MainMenu : MonoBehaviour
         }
 
         SetLocalization();
+        isInputBlocked = false;
     }
 
     public void SetDiscordButton(UI_ExternalLinkButton _discordButton)
     {
         discordButton = _discordButton;
+        if (null != discordButton)
+        {
+            discordButton.SetParentMainMenu(this);
+        }
         UpdateButtonLayout();
     }
 
@@ -152,8 +154,6 @@ public class UI_MainMenu : MonoBehaviour
             discordButton.navigation = _discordNav;
         }
     }
-
-    private UI_MainMenuButton[] buttonsInOrder;
 
     private void InitButtonsInOrder()
     {
@@ -198,7 +198,7 @@ public class UI_MainMenu : MonoBehaviour
 
         // 버튼들이 기존에 하이어라키에서 가지고 있던 최소 Sibling Index를 찾습니다 (다른 배경 이미지 뒤로 숨지 않도록 방지)
         int _minSiblingIndex = int.MaxValue;
-        for (int i = 0; i < buttonsInOrder.Length; i++)
+        for (int i = 0; buttonsInOrder.Length > i; i++)
         {
             if (null != buttonsInOrder[i])
             {
@@ -207,15 +207,15 @@ public class UI_MainMenu : MonoBehaviour
             }
         }
 
-        List<UI_MainMenuButton> _activeButtons = new List<UI_MainMenuButton>();
+        activeButtonsCache.Clear();
 
-        for (int i = 0; i < buttonsInOrder.Length; i++)
+        for (int i = 0; buttonsInOrder.Length > i; i++)
         {
             UI_MainMenuButton _btn = buttonsInOrder[i];
             
-            if (null != _btn && _btn.gameObject.activeSelf)
+            if (null != _btn && true == _btn.gameObject.activeSelf)
             {
-                _activeButtons.Add(_btn);
+                activeButtonsCache.Add(_btn);
                 RectTransform _rect = _btn.GetComponent<RectTransform>();
                 if (null != _rect)
                 {
@@ -230,19 +230,18 @@ public class UI_MainMenu : MonoBehaviour
             }
         }
 
-        if (0 < _activeButtons.Count)
+        if (0 < activeButtonsCache.Count)
         {
-            for (int i = 0; _activeButtons.Count > i; i++)
+            for (int i = 0; activeButtonsCache.Count > i; i++)
             {
-                Navigation _nav = new Navigation();
-                _nav.mode = Navigation.Mode.Explicit;
-                _nav.selectOnUp = _activeButtons[(i - 1 + _activeButtons.Count) % _activeButtons.Count];
-                _nav.selectOnDown = _activeButtons[(i + 1) % _activeButtons.Count];
-                if (null != discordButton && true == discordButton.gameObject.activeInHierarchy)
+                Navigation _nav = new Navigation
                 {
-                    _nav.selectOnRight = discordButton;
-                }
-                _activeButtons[i].navigation = _nav;
+                    mode = Navigation.Mode.Explicit,
+                    selectOnUp = activeButtonsCache[(i - 1 + activeButtonsCache.Count) % activeButtonsCache.Count],
+                    selectOnDown = activeButtonsCache[(i + 1) % activeButtonsCache.Count],
+                    selectOnRight = (null != discordButton && true == discordButton.gameObject.activeInHierarchy) ? discordButton : null
+                };
+                activeButtonsCache[i].navigation = _nav;
             }
         }
 
@@ -250,10 +249,12 @@ public class UI_MainMenu : MonoBehaviour
     }
 
     /// <summary>
-    /// 게임 씬에서 다시 돌아왔을 때, 이전에 꺼진 버튼들을 다시 활성화하고 등장 연출을 재생합니다.
+    /// 메인 메뉴 화면으로 복귀하거나 창이 닫혔을 때, 버튼들을 활성화하고 등장 연출을 1회 재생합니다.
+    /// 전역 입력 락을 해제하고 모든 버튼의 내부 클릭 락을 안전하게 초기화합니다.
     /// </summary>
     public void ResetAndShowButtons()
     {
+        isInputBlocked = false;
         InitButtonsInOrder();
 
         bool _hasSaveData = false;
@@ -262,33 +263,25 @@ public class UI_MainMenu : MonoBehaviour
             _hasSaveData = parentView.HasSaveData();
         }
 
-        for (int i = 0; i < buttonsInOrder.Length; i++)
+        if (null != loadGameButton)
         {
-            UI_MainMenuButton _btn = buttonsInOrder[i];
-            if (null != _btn)
-            {
-                // LoadGame 버튼은 세이브 데이터가 없으면 활성화하지 않음
-                if (_btn == loadGameButton)
-                {
-                    _btn.gameObject.SetActive(_hasSaveData);
-                    continue;
-                }
-
-                if (false == _btn.gameObject.activeSelf)
-                {
-                    _btn.gameObject.SetActive(true);
-                }
-            }
+            loadGameButton.gameObject.SetActive(_hasSaveData);
         }
 
         UpdateButtonLayout();
 
         int _appearSoundIndex = 0;
-        for (int i = 0; i < buttonsInOrder.Length; i++)
+        for (int i = 0; buttonsInOrder.Length > i; i++)
         {
             UI_MainMenuButton _btn = buttonsInOrder[i];
-            if (null != _btn && true == _btn.gameObject.activeSelf)
+            if (null != _btn)
             {
+                if (_btn == loadGameButton && false == _hasSaveData)
+                {
+                    continue;
+                }
+
+                _btn.ResetButtonState();
                 _btn.ResetAndPlayAppear(_appearSoundIndex);
                 _appearSoundIndex++;
             }
@@ -348,134 +341,118 @@ public class UI_MainMenu : MonoBehaviour
     {
         if (EInputDeviceType.Gamepad == _device)
         {
-            if (null != discordButton && true == discordButton.gameObject.activeInHierarchy && true == discordButton.IsMouseOver())
-            {
-                MoveDirection _dir = GetTriggeringMoveDirection();
-                if (MoveDirection.Left == _dir)
-                {
-                    UI_MainMenuButton _target = (null != lastFocusedMainMenuButton && true == lastFocusedMainMenuButton.gameObject.activeInHierarchy)
-                        ? lastFocusedMainMenuButton
-                        : GetFirstActiveButton();
-
-                    if (null != buttonsInOrder)
-                    {
-                        for (int i = 0; buttonsInOrder.Length > i; i++)
-                        {
-                            if (null != buttonsInOrder[i] && buttonsInOrder[i] != _target) buttonsInOrder[i].ForceUnhover();
-                        }
-                    }
-                    if (null != _target && null != EventSystem.current)
-                    {
-                        EventSystem.current.SetSelectedGameObject(_target.gameObject);
-                    }
-                    return;
-                }
-                else
-                {
-                    if (null != buttonsInOrder)
-                    {
-                        for (int i = 0; buttonsInOrder.Length > i; i++)
-                        {
-                            if (null != buttonsInOrder[i]) buttonsInOrder[i].ForceUnhover();
-                        }
-                    }
-                    if (null != EventSystem.current)
-                    {
-                        EventSystem.current.SetSelectedGameObject(discordButton.gameObject);
-                    }
-                    return;
-                }
-            }
-
-            UI_MainMenuButton _hoveredBtn = null;
-            if (null != buttonsInOrder)
-            {
-                for (int i = 0; buttonsInOrder.Length > i; i++)
-                {
-                    UI_MainMenuButton _btn = buttonsInOrder[i];
-                    if (null != _btn && true == _btn.gameObject.activeInHierarchy && true == _btn.IsMouseOver())
-                    {
-                        _hoveredBtn = _btn;
-                        break;
-                    }
-                }
-            }
-
-            UI_MainMenuButton _targetBtn = _hoveredBtn;
-            if (null != _hoveredBtn)
-            {
-                MoveDirection _dir = GetTriggeringMoveDirection();
-                if (MoveDirection.Down == _dir && null != _hoveredBtn.navigation.selectOnDown && _hoveredBtn.navigation.selectOnDown is UI_MainMenuButton _downBtn && true == _downBtn.gameObject.activeInHierarchy)
-                {
-                    _targetBtn = _downBtn;
-                }
-                else if (MoveDirection.Up == _dir && null != _hoveredBtn.navigation.selectOnUp && _hoveredBtn.navigation.selectOnUp is UI_MainMenuButton _upBtn && true == _upBtn.gameObject.activeInHierarchy)
-                {
-                    _targetBtn = _upBtn;
-                }
-                else if (MoveDirection.Right == _dir && null != discordButton && true == discordButton.gameObject.activeInHierarchy)
-                {
-                    lastFocusedMainMenuButton = _hoveredBtn;
-                    if (null != buttonsInOrder)
-                    {
-                        for (int i = 0; buttonsInOrder.Length > i; i++)
-                        {
-                            if (null != buttonsInOrder[i]) buttonsInOrder[i].ForceUnhover();
-                        }
-                    }
-                    if (null != EventSystem.current)
-                    {
-                        EventSystem.current.SetSelectedGameObject(discordButton.gameObject);
-                    }
-                    return;
-                }
-            }
-            else
-            {
-                _targetBtn = GetFirstActiveButton();
-            }
-
-            if (null != buttonsInOrder)
-            {
-                for (int i = 0; buttonsInOrder.Length > i; i++)
-                {
-                    UI_MainMenuButton _btn = buttonsInOrder[i];
-                    if (null != _btn && _btn != _targetBtn)
-                    {
-                        _btn.ForceUnhover();
-                    }
-                }
-            }
-
-            if (null != _targetBtn && null != EventSystem.current)
-            {
-                if (EventSystem.current.currentSelectedGameObject == _targetBtn.gameObject)
-                {
-                    _targetBtn.ForceHover();
-                }
-                else
-                {
-                    EventSystem.current.SetSelectedGameObject(_targetBtn.gameObject);
-                }
-            }
+            HandleGamepadDeviceTransition();
         }
         else if (EInputDeviceType.KeyboardMouse == _device)
         {
+            HandleKeyboardMouseDeviceTransition();
+        }
+    }
+
+    private void HandleGamepadDeviceTransition()
+    {
+        if (null != discordButton && true == discordButton.gameObject.activeInHierarchy && true == discordButton.IsMouseOver())
+        {
+            MoveDirection _dir = GetTriggeringMoveDirection();
+            if (MoveDirection.Left == _dir)
+            {
+                UI_MainMenuButton _target = (null != lastFocusedMainMenuButton && true == lastFocusedMainMenuButton.gameObject.activeInHierarchy)
+                    ? lastFocusedMainMenuButton
+                    : GetFirstActiveButton();
+
+                UnhoverAllButtonsExcept(_target);
+                if (null != _target && null != EventSystem.current)
+                {
+                    EventSystem.current.SetSelectedGameObject(_target.gameObject);
+                }
+                return;
+            }
+
+            UnhoverAllButtons();
             if (null != EventSystem.current)
             {
-                EventSystem.current.SetSelectedGameObject(null);
+                EventSystem.current.SetSelectedGameObject(discordButton.gameObject);
             }
+            return;
+        }
 
-            if (null != discordButton)
+        UI_MainMenuButton _hoveredBtn = null;
+        if (null != buttonsInOrder)
+        {
+            for (int i = 0; buttonsInOrder.Length > i; i++)
             {
-                discordButton.ForceUnhover();
-            }
-
-            if (null != buttonsInOrder)
-            {
-                for (int i = 0; buttonsInOrder.Length > i; i++)
+                UI_MainMenuButton _btn = buttonsInOrder[i];
+                if (null != _btn && true == _btn.gameObject.activeInHierarchy && true == _btn.IsMouseOver())
                 {
-                    if (null != buttonsInOrder[i]) buttonsInOrder[i].ForceUnhover();
+                    _hoveredBtn = _btn;
+                    break;
+                }
+            }
+        }
+
+        UI_MainMenuButton _targetBtn = _hoveredBtn;
+        if (null != _hoveredBtn)
+        {
+            MoveDirection _dir = GetTriggeringMoveDirection();
+            if (MoveDirection.Down == _dir && null != _hoveredBtn.navigation.selectOnDown && _hoveredBtn.navigation.selectOnDown is UI_MainMenuButton _downBtn && true == _downBtn.gameObject.activeInHierarchy)
+            {
+                _targetBtn = _downBtn;
+            }
+            else if (MoveDirection.Up == _dir && null != _hoveredBtn.navigation.selectOnUp && _hoveredBtn.navigation.selectOnUp is UI_MainMenuButton _upBtn && true == _upBtn.gameObject.activeInHierarchy)
+            {
+                _targetBtn = _upBtn;
+            }
+            else if (MoveDirection.Right == _dir && null != discordButton && true == discordButton.gameObject.activeInHierarchy)
+            {
+                lastFocusedMainMenuButton = _hoveredBtn;
+                UnhoverAllButtons();
+                if (null != EventSystem.current)
+                {
+                    EventSystem.current.SetSelectedGameObject(discordButton.gameObject);
+                }
+                return;
+            }
+        }
+        else
+        {
+            _targetBtn = GetFirstActiveButton();
+        }
+
+        UnhoverAllButtonsExcept(_targetBtn);
+
+        if (null != _targetBtn && null != EventSystem.current)
+        {
+            if (EventSystem.current.currentSelectedGameObject == _targetBtn.gameObject)
+            {
+                _targetBtn.ForceHover();
+            }
+            else
+            {
+                EventSystem.current.SetSelectedGameObject(_targetBtn.gameObject);
+            }
+        }
+    }
+
+    private void HandleKeyboardMouseDeviceTransition()
+    {
+        if (null != EventSystem.current)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
+
+        UnhoverAllButtons();
+    }
+
+    private void UnhoverAllButtonsExcept(UI_MainMenuButton _excludeButton)
+    {
+        if (null != buttonsInOrder)
+        {
+            for (int i = 0; buttonsInOrder.Length > i; i++)
+            {
+                UI_MainMenuButton _btn = buttonsInOrder[i];
+                if (null != _btn && _btn != _excludeButton)
+                {
+                    _btn.ForceUnhover();
                 }
             }
         }
@@ -520,25 +497,33 @@ public class UI_MainMenu : MonoBehaviour
         }
     }
     
+    private void UnhoverAllButtons()
+    {
+        if (null != buttonsInOrder)
+        {
+            for (int i = 0; buttonsInOrder.Length > i; i++)
+            {
+                if (null != buttonsInOrder[i]) buttonsInOrder[i].ForceUnhover();
+            }
+        }
+        if (null != discordButton)
+        {
+            discordButton.ForceUnhover();
+        }
+    }
+    
     private void OnNewGameClicked()
     {
+        if (true == isInputBlocked) return;
+        isInputBlocked = true;
+
         if (null != parentView)
         {
             if (ShouldConfirmNewGame())
             {
                 isNewGameConfirmationOpen = true;
 
-                if (null != buttonsInOrder)
-                {
-                    for (int i = 0; buttonsInOrder.Length > i; i++)
-                    {
-                        if (null != buttonsInOrder[i]) buttonsInOrder[i].ForceUnhover();
-                    }
-                }
-                if (null != discordButton)
-                {
-                    discordButton.ForceUnhover();
-                }
+                UnhoverAllButtons();
 
                 string _warnMsg = viewCtx.localizationManager.GetText("NewGameWarning");
                 warningPopup.ShowWarning(
@@ -599,6 +584,13 @@ public class UI_MainMenu : MonoBehaviour
             Sound.PlayUI(SoundID.MainClick);
         }
 
+        isInputBlocked = false;
+
+        if (null != newGameButton)
+        {
+            newGameButton.ResetButtonState();
+        }
+
         if (null != viewCtx && null != viewCtx.inputManager && true == viewCtx.inputManager.IsGamepadMode)
         {
             if (null != newGameButton && null != EventSystem.current)
@@ -611,6 +603,10 @@ public class UI_MainMenu : MonoBehaviour
     
     private void OnLoadGameClicked()
     {
+        if (true == isInputBlocked) return;
+        isInputBlocked = true;
+        UnhoverAllButtons();
+
         if (null != parentView)
         {
             parentView.OnLoadGameButtonClicked();
@@ -619,6 +615,10 @@ public class UI_MainMenu : MonoBehaviour
     
     private void OnExitClicked()
     {
+        if (true == isInputBlocked) return;
+        isInputBlocked = true;
+        UnhoverAllButtons();
+
         if (null != parentView)
         {
             parentView.OnExitButtonClicked();
@@ -627,44 +627,75 @@ public class UI_MainMenu : MonoBehaviour
     
     private void OnOptionClicked()
     {
+        if (true == isInputBlocked) return;
+        isInputBlocked = true;
+        UnhoverAllButtons();
+
         if (null != parentView)
         {
             parentView.OnOptionButtonClicked();
         }
     }
     
-    public void ReleaseOptionButtonState()
+    /// <summary>
+    /// 옵션 또는 크레딧 등 서브 뷰가 닫혔을 때 메인 메뉴 버튼들을 다시 활성화하고 상태를 복원합니다.
+    /// </summary>
+    public void OnSubViewClosed()
     {
+        isInputBlocked = false;
+
         if (null != optionButton)
         {
             optionButton.ReleaseMaintainState();
         }
         
-        // 옵션 창이 닫히면 모든 메인 메뉴 버튼을 다시 활성화하고 등장 연출을 재생
         ResetAndShowButtons();
 
         if (null != viewCtx && null != viewCtx.inputManager && true == viewCtx.inputManager.IsGamepadMode && null != optionButton)
         {
-            EventSystem.current?.SetSelectedGameObject(optionButton.gameObject);
+            if (null != EventSystem.current)
+            {
+                EventSystem.current.SetSelectedGameObject(optionButton.gameObject);
+            }
         }
+    }
+
+    /// <summary>
+    /// 하위 호환성을 위해 유지되는 메서드입니다. OnSubViewClosed()를 호출합니다.
+    /// </summary>
+    public void ReleaseOptionButtonState()
+    {
+        OnSubViewClosed();
     }
     
     private void OnCreditClicked()
     {
+        if (true == isInputBlocked) return;
+        isInputBlocked = true;
+        UnhoverAllButtons();
+
         if (null != parentView)
         {
             parentView.OnCreditButtonClicked();
         }
     }
     
+    private MoveDirection GetTriggeringMoveDirection()
+    {
+        Gamepad _pad = Gamepad.current;
+        if (null == _pad) return MoveDirection.None;
+
+        if (true == _pad.dpad.down.isPressed || _pad.leftStick.y.ReadValue() < -0.5f) return MoveDirection.Down;
+        if (true == _pad.dpad.up.isPressed || _pad.leftStick.y.ReadValue() > 0.5f) return MoveDirection.Up;
+        if (true == _pad.dpad.left.isPressed || _pad.leftStick.x.ReadValue() < -0.5f) return MoveDirection.Left;
+        if (true == _pad.dpad.right.isPressed || _pad.leftStick.x.ReadValue() > 0.5f) return MoveDirection.Right;
+
+        return MoveDirection.None;
+    }
+
     // 유니티 이벤트 함수
     private void OnDestroy()
     {
-        if (null != viewCtx && null != viewCtx.localizationManager && null != cachedSetLocalization)
-        {
-            viewCtx.localizationManager.OnLanguageChanged -= cachedSetLocalization;
-        }
-
         if (null != viewCtx && null != viewCtx.inputManager && null != viewCtx.inputManager.inputReader && null != cachedOnDeviceChanged)
         {
             viewCtx.inputManager.inputReader.InputDeviceChangedEvent -= cachedOnDeviceChanged;
@@ -672,7 +703,7 @@ public class UI_MainMenu : MonoBehaviour
 
         if (null != buttonsInOrder && null != cachedHandleButtonSelected)
         {
-            for (int i = 0; i < buttonsInOrder.Length; i++)
+            for (int i = 0; buttonsInOrder.Length > i; i++)
             {
                 if (null != buttonsInOrder[i])
                 {
@@ -710,18 +741,5 @@ public class UI_MainMenu : MonoBehaviour
         {
             warningPopup.Release();
         }
-    }
-
-    private MoveDirection GetTriggeringMoveDirection()
-    {
-        Gamepad _pad = Gamepad.current;
-        if (null == _pad) return MoveDirection.None;
-
-        if (true == _pad.dpad.down.isPressed || _pad.leftStick.y.ReadValue() < -0.5f) return MoveDirection.Down;
-        if (true == _pad.dpad.up.isPressed || _pad.leftStick.y.ReadValue() > 0.5f) return MoveDirection.Up;
-        if (true == _pad.dpad.left.isPressed || _pad.leftStick.x.ReadValue() < -0.5f) return MoveDirection.Left;
-        if (true == _pad.dpad.right.isPressed || _pad.leftStick.x.ReadValue() > 0.5f) return MoveDirection.Right;
-
-        return MoveDirection.None;
     }
 }

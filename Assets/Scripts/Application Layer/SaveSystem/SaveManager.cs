@@ -957,11 +957,14 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
         TryDeleteFile(GamePaths.GameSaveCloudTombstoneFile);
     }
 
-    // 데모 빌드는 정식 빌드가 남긴 세이브를 덮어쓰기 직전에 한 번만 따로 복사해둔다.
-    // 데모와 정식은 같은 폴더의 같은 파일(SaveData.dat)을 쓰므로, 정식을 플레이하던 유저가
-    // PC에 남아있는 데모를 잠깐 켜기만 해도 진행도가 사라질 수 있기 때문이다.
-    // (반대 방향 - 정식이 데모 세이브를 덮어쓰는 것 - 은 의도된 동작이라 보존하지 않는다.
-    //  덮어쓰기 직전 상태는 File.Replace가 SaveData.dat.bak에 남긴다.)
+    // 데모 빌드가 정식 빌드의 세이브를 덮어쓰기 직전에 한 번만 따로 복사해두는 안전망이다.
+    //
+    // 예전에는 데모와 정식이 같은 폴더의 같은 파일(SaveData.dat)을 썼기 때문에 실제로 필요했다.
+    // 지금은 GamePaths가 파일 이름을 변형별로 가르므로(GAME_SAVE_FILE_NAME) 두 빌드가 서로의
+    // 파일을 만나지 않고, 이 경로는 사실상 돌지 않는다. 그래도 남겨두는 이유는 두 가지다.
+    //   1) 파일이 갈리기 전에 배포된 데모가 여전히 돌아다닌다. 그 빌드에는 이 코드가 들어 있다.
+    //   2) 언젠가 파일 이름을 되돌리거나 합치면, 이 안전망이 없는 쪽이 조용히 진행도를 덮는다.
+    //
     // 첫 저장 이후에는 메인 파일이 우리 것이 되므로 세션당 한 번만 확인하면 충분하다.
     private void PreserveForeignSaveOnce()
     {

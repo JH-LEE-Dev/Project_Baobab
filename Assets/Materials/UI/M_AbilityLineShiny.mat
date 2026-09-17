@@ -44,7 +44,7 @@ Material:
     m_Colors:
     - _BlueShineColor: {r: 0.7607843, g: 0.95686275, b: 0.99607843, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _GreenShineColor: {r: 0.6862745, g: 0.84705883, b: 0.7137255, a: 1}
+    - _GreenShineColor: {r: 0, g: 1, b: 0, a: 1}
     - _RedShineColor: {r: 0.7607843, g: 0.42745098, b: 0.40392157, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

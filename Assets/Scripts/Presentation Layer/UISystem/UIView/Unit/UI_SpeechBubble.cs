@@ -55,7 +55,16 @@ public class UI_SpeechBubble : MonoBehaviour
             lastShownTimeMap = new Dictionary<int, float>(32);
         else
             lastShownTimeMap.Clear();
-            
+
+        // 프리팹에 편집용으로 박아둔 더미 문구를 첫 Play() 전에 비운다.
+        // 이 오브젝트는 Hide()가 모션으로만 감추므로 세션 내내 활성 상태로 남는데,
+        // 그동안 언어를 바꾸면 FontLocalizer가 폰트만 교체해 더미 문구를 그 폰트로
+        // 다시 조판한다. 중국어/일본어 아틀라스에는 한글이 없어 TMP가 글리프 누락
+        // 경고를 남기고 □로 그린다. (ContentSizeFitter가 붙어 있어 화면에 안 보여도
+        //  preferredHeight 계산 과정에서 조판이 일어난다)
+        if (null != speechText)
+            speechText.text = string.Empty;
+
         enableLock = true;
     }
     

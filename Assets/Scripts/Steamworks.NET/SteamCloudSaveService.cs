@@ -27,7 +27,11 @@ using Steamworks;
 public static class SteamCloudSaveService
 {
 #if !DISABLESTEAMWORKS
-    private const string CloudFileName = "SaveData.dat"; // GamePaths의 GAME_SAVE_FILE_NAME과 동일 문자열 유지
+    // 클라우드 안에서의 이름이며, 로컬 파일 이름과 같을 필요가 없습니다. Remote Storage의 저장
+    // 공간은 실행 중인 앱 ID에 묶이고 데모와 정식은 스팀에서 서로 다른 앱이라, 이 이름이 같아도
+    // 두 빌드의 클라우드 세이브는 애초에 만나지 않습니다. (로컬은 GamePaths가 변형별로 가릅니다)
+    // 이미 배포된 데모가 이 이름으로 올려둔 파일이 있으므로 <b>바꾸지 마십시오.</b>
+    private const string CloudFileName = "SaveData.dat";
 
     public static bool IsAvailable =>
         SteamManager.Initialized

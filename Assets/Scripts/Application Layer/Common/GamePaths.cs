@@ -25,12 +25,15 @@ public static class GamePaths
     /// 두 데모를 다 받은 사람이 진행도를 이어받지 못하는 것이 그 대가인데, 통제하지 못하는
     /// 동기화가 세이브를 덮는 쪽이 훨씬 비쌉니다.
     ///
-    /// itch 데모와 itch 정식은 이 폴더를 함께 씁니다. 스토어가 폴더를 가르고 변형이 파일 안을
-    /// 가르는 구조 그대로이며, Steam에서 이미 그렇게 돌고 있습니다.
+    /// 데모와 정식은 스토어와 무관하게 이 폴더를 함께 씁니다. <b>스토어가 폴더를 가르고 변형이
+    /// 파일 이름을 가릅니다</b>(GAME_SAVE_FILE_NAME). 그래서 여기에 변형을 더하지 마십시오 -
+    /// 조합이 스토어×변형으로 늘어나면 STOVE 파트너 사이트 설정을 그만큼 맞춰야 하고, 한 글자만
+    /// 어긋나도 런처가 빈 폴더를 조용히 동기화합니다. 대신 Settings.json과 KeyBindings.json이
+    /// 폴더에 그대로 남아, 데모를 하던 유저가 정식을 켤 때 설정과 키 배치가 유지됩니다.
     ///
-    /// 세이브 변형(SaveBuildVariant)은 건드리지 않습니다. 폴더가 이미 갈라져 있어 서로 만날 일이
-    /// 없고, 출시 후에 enum에 값을 더하면 배포된 구버전 빌드가 그 값을 "모르는 미래 값"으로 보고
-    /// 세이브를 덮어씁니다. 데모/정식 구분은 지금처럼 변형이 계속 담당합니다.
+    /// 파일 이름이 갈린 뒤에도 SaveBuildVariant는 그대로 둡니다. 파일이 갈렸으니 두 변형이 서로를
+    /// 만날 일은 없지만, 출시 후에 enum에 값을 더하면 배포된 구버전 빌드가 그 값을 "모르는 미래
+    /// 값"으로 보고 세이브를 덮어쓰는 위험은 남아 있습니다. 즉 <b>enum에 값을 더하지 마십시오.</b>
     ///
     /// [극성 주의 - 디파인이 없는 쪽이 Steam입니다]
     /// 루트는 두 플랫폼이 공유하므로(ResolveRootFolder) 갈리는 것은 이 폴더 이름 하나뿐입니다.
@@ -55,11 +58,54 @@ public static class GamePaths
 #else
     private const string FOLDER_NAME = "LumberBoy";
 #endif
+    /// <summary>
+    /// 세이브 파일 이름입니다. <b>데모와 정식이 서로 다른 파일을 씁니다.</b>
+    ///
+    /// [왜 파일을 가르는가]
+    /// 폴더는 스토어가 가르지만(FOLDER_NAME) 같은 스토어의 데모와 정식은 한 폴더를 씁니다.
+    /// 예전에는 파일도 하나를 공유하고 <b>파일 안의 SaveBuildVariant</b>로만 구분했습니다. 그래서
+    /// 정식이 데모 세이브를 "호환되지 않는 세이브 = 없는 세이브"로 보고 <b>그대로 덮어썼습니다.</b>
+    /// 덮어쓰기 직전 상태는 File.Replace가 .bak에 남기지만 그건 매 저장마다 갱신되는 롤링
+    /// 백업이라, 저장을 한 번 더 하면 그것도 사라집니다. 즉 유예가 한 번뿐이었습니다.
+    ///
+    /// 데모는 이미 출시되어 있고 그 유저의 진행도를 잃게 할 수는 없으므로, 아예 만나지 않게
+    /// 파일을 나눕니다. 폴더를 나누지 않는 이유는 FOLDER_NAME 쪽 설명과 같습니다 - 폴더를 가르면
+    /// 스토어×변형 조합마다 STOVE 파트너 사이트 설정을 맞춰야 하고, 한 글자만 어긋나도 런처가
+    /// 빈 폴더를 조용히 동기화합니다. 파일만 가르면 Settings.json과 KeyBindings.json은 그대로
+    /// 공유되어, 데모를 하던 유저가 정식을 켤 때 설정과 키 배치가 유지됩니다.
+    ///
+    /// [극성 주의 - 디파인이 없는 쪽이 데모이며, 그 이름은 절대 바꾸지 마십시오]
+    /// 출시된 데모가 쓰고 있는 이름이 "SaveData.dat"입니다. 이 값을 바꾸면 <b>기존 데모 유저의
+    /// 진행도가 통째로 사라집니다</b>(게임이 새 설치처럼 보입니다). 새 이름은 반드시
+    /// BAOBAB_FULL_RELEASE 쪽에만 둡니다. 이 방향 덕분에 데모 빌드는 이 변경 이후에도
+    /// 컴파일 결과가 같아서, 이미 배포된 데모에 패치를 낼 필요가 없습니다.
+    ///
+    /// [스팀 클라우드는 이 이름과 무관합니다]
+    /// SteamCloudSaveService는 Remote Storage API를 쓰고, 그 저장 공간은 실행 중인 앱 ID에
+    /// 묶입니다. 데모와 정식은 스팀에서 서로 다른 앱이라 클라우드는 이미 갈라져 있습니다.
+    ///
+    /// [진행도 승계는 하지 않기로 했습니다]
+    /// 정식은 항상 새로 시작합니다. 데모 파일이 지워지지 않고 남는 것은 유저의 데모 진행도를
+    /// 보존하기 위함이지, 정식이 읽기 위함이 아닙니다. <b>정식에서 데모 파일을 읽지 마십시오.</b>
+    /// </summary>
+#if BAOBAB_FULL_RELEASE
+    private const string GAME_SAVE_FILE_NAME = "SaveData_Full.dat";
+    private const string GAME_SAVE_BACKUP_FILE_NAME = "SaveData_Full.dat.bak";
+    private const string GAME_SAVE_TEMP_FILE_NAME = "SaveData_Full.dat.tmp";
+    private const string GAME_SAVE_CLOUD_TOMBSTONE_FILE_NAME = "SaveData_Full.cloud-deleted";
+#else
     private const string GAME_SAVE_FILE_NAME = "SaveData.dat";
     private const string GAME_SAVE_BACKUP_FILE_NAME = "SaveData.dat.bak";
     private const string GAME_SAVE_TEMP_FILE_NAME = "SaveData.dat.tmp";
-    private const string GAME_SAVE_FOREIGN_BACKUP_FILE_NAME = "SaveData.other-build.bak";
     private const string GAME_SAVE_CLOUD_TOMBSTONE_FILE_NAME = "SaveData.cloud-deleted";
+#endif
+
+    /// <summary>
+    /// 파일이 갈리기 전, 데모 빌드가 정식 세이브를 덮어쓰기 직전에 보존하던 파일입니다.
+    /// 이제 두 변형이 서로의 파일을 만나지 않으므로 새로 만들어질 일은 없지만, <b>이미 배포된
+    /// 데모가 이 파일을 만들어 둔 유저가 있을 수 있어</b> 이름을 그대로 둡니다. (변형 무관)
+    /// </summary>
+    private const string GAME_SAVE_FOREIGN_BACKUP_FILE_NAME = "SaveData.other-build.bak";
     private const string SETTINGS_FILE_NAME = "Settings.json";
     private const string KEY_BINDINGS_FILE_NAME = "KeyBindings.json";
 

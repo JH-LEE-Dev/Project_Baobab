@@ -2657,6 +2657,21 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     // 유니티 이벤트 함수
     private void OnDestroy()
     {
+        // 리바인딩이 걸린 채 파괴되면 그 상태가 InputReader(앱 수명)에 그대로 남는다.
+        // 증상은 두 가지이고 둘 다 게임을 껐다 켤 때까지 풀리지 않는다.
+        //   - IsRebinding이 true로 굳어 패드 UI 확인/취소가 전부 죽는다
+        //   - StartRebind()가 꺼둔 대상 액션이 꺼진 채로 남아 그 키가 죽는다
+        // Hide()는 리바인딩 중이면 조기 return으로 닫기를 거부하므로(위 Hide 참고) 지금은
+        // 이 상태로 파괴되는 경로가 없지만, InputReader의 [수명 규약] 주석대로
+        // "잠금을 거는 쪽이 자기 OnDestroy에서도 반납한다"를 여기서도 지킨다.
+        //
+        // CancelRebind()가 아니라 Silently인 이유: 그쪽은 완료 콜백(OnRebindFinished)을
+        // 되돌려 주는데, 지금은 이 뷰가 정리되는 중이라 이미 파괴된 UI를 다시 만지게 된다.
+        if (null != inputManager)
+        {
+            inputManager.CancelRebindSilently();
+        }
+
         depthController?.UnregisterView(this);
 
         if (null != tabGroup)

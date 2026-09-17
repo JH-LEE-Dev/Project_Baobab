@@ -136,6 +136,22 @@ public class UI_OptionButton : Selectable,
         clickSoundId = _clickSoundId;
     }
 
+    // 닫기 버튼처럼 의도적으로 소리를 비워둔(SoundID.None) 버튼이 있어, 그대로 재생을 요청하면
+    // AudioManager가 DB 조회에 실패해 매 클릭마다 경고를 남긴다. 재생 전에 여기서 걸러낸다.
+    private void PlayHoverSound()
+    {
+        if (SoundID.None == hoverSoundId) return;
+
+        Sound.PlayUI(hoverSoundId);
+    }
+
+    private void PlayClickSound()
+    {
+        if (SoundID.None == clickSoundId) return;
+
+        Sound.PlayUI(clickSoundId);
+    }
+
     public new bool IsInteractable => isInteractable && interactable;
 
     public void SetInteractable(bool _isInteractable)
@@ -232,7 +248,7 @@ public class UI_OptionButton : Selectable,
         isHovered = true;
         if (false == isInteractable) return;
 
-        Sound.PlayUI(hoverSoundId);
+        PlayHoverSound();
         
         KillTween();
         if (true == isPointerDown)
@@ -303,7 +319,7 @@ public class UI_OptionButton : Selectable,
         }
 
         isHovered = true;
-        Sound.PlayUI(hoverSoundId);
+        PlayHoverSound();
         
         KillTween();
         ApplyVisualState(hoverScale, hoverColor, hoverSprite, hoverTextColor, hoverEffectColor, true);
@@ -339,7 +355,7 @@ public class UI_OptionButton : Selectable,
     {
         if (false == isInteractable) return;
 
-        Sound.PlayUI(clickSoundId);
+        PlayClickSound();
         PlayClickFeedback();
 
         if (null != onClickAction)
@@ -357,7 +373,7 @@ public class UI_OptionButton : Selectable,
                 // < 버튼에서 Left 입력 ➔ 값 감소 / 이전 선택지 실행 + 클릭 피드백
                 if (true == isInteractable)
                 {
-                    Sound.PlayUI(clickSoundId);
+                    PlayClickSound();
                     PlayClickFeedback();
                     onClickAction?.Invoke();
                 }
@@ -382,7 +398,7 @@ public class UI_OptionButton : Selectable,
                 // > 버튼에서 Right 입력 ➔ 값 증가 / 다음 선택지 실행 + 클릭 피드백
                 if (true == isInteractable)
                 {
-                    Sound.PlayUI(clickSoundId);
+                    PlayClickSound();
                     PlayClickFeedback();
                     onClickAction?.Invoke();
                 }
@@ -451,7 +467,7 @@ public class UI_OptionButton : Selectable,
     {
         if (false == isInteractable) return;
 
-        Sound.PlayUI(clickSoundId);
+        PlayClickSound();
         PlayClickFeedback();
 
         if (null != onClickAction)

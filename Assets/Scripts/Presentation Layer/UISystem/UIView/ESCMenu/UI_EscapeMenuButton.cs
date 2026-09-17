@@ -240,6 +240,7 @@ public class UI_EscapeMenuButton : Selectable,
         isInteractable = false;
         isAppearing = true;
         isHovered = false;
+        isPointerHovered = false;
 
         if (null != CanvasGroup)
         {
@@ -400,7 +401,7 @@ public class UI_EscapeMenuButton : Selectable,
             _mousePos = Mouse.current.position.ReadValue();
         }
 
-        RectTransform _hitRect = null != raycastImage ? raycastImage.rectTransform : RectTransform;
+        RectTransform _hitRect = RectTransform;
         if (null == _hitRect) return;
 
         if (null == cachedCanvas)
@@ -410,10 +411,11 @@ public class UI_EscapeMenuButton : Selectable,
             ? cachedCanvas.worldCamera
             : null;
 
-        bool _contains = RectTransformUtility.RectangleContainsScreenPoint(_hitRect, _mousePos, _cam);
+        bool _contains = true == isPointerHovered || RectTransformUtility.RectangleContainsScreenPoint(_hitRect, _mousePos, _cam);
 
         if (true == _contains)
         {
+            isPointerHovered = true;
             if (false == isHovered)
             {
                 isHovered = true;
@@ -422,6 +424,7 @@ public class UI_EscapeMenuButton : Selectable,
         }
         else
         {
+            isPointerHovered = false;
             if (true == isHovered)
             {
                 isHovered = false;
@@ -435,10 +438,10 @@ public class UI_EscapeMenuButton : Selectable,
         base.OnPointerEnter(_eventData);
         if (null != inputManager && true == inputManager.IsGamepadMode) return;
 
-        isHovered = true;
         isPointerHovered = true;
         if (false == isInteractable || true == isAppearing) return;
 
+        isHovered = true;
         PlayHoverAnimation();
     }
 
@@ -447,10 +450,10 @@ public class UI_EscapeMenuButton : Selectable,
         base.OnPointerExit(_eventData);
         if (null != inputManager && true == inputManager.IsGamepadMode) return;
 
-        isHovered = false;
         isPointerHovered = false;
         if (false == isInteractable || true == isAppearing) return;
 
+        isHovered = false;
         PlayUnhoverAnimation();
     }
 
@@ -460,7 +463,7 @@ public class UI_EscapeMenuButton : Selectable,
         if (null != inputManager && true == inputManager.IsGamepadMode) return false;
         if (true == isPointerHovered) return true;
 
-        RectTransform _rect = null != raycastImage ? raycastImage.rectTransform : RectTransform;
+        RectTransform _rect = RectTransform;
         if (null == _rect) return false;
 
         Vector2 _mousePos = Vector2.zero;
@@ -487,8 +490,8 @@ public class UI_EscapeMenuButton : Selectable,
 
     public void ForceHover()
     {
-        isHovered = true;
         if (false == isInteractable || true == isAppearing) return;
+        isHovered = true;
         PlayHoverAnimation();
     }
 
@@ -505,9 +508,9 @@ public class UI_EscapeMenuButton : Selectable,
         base.OnSelect(_eventData);
         if (null != inputManager && false == inputManager.IsGamepadMode) return;
 
-        isHovered = true;
         if (false == isInteractable || true == isAppearing) return;
 
+        isHovered = true;
         PlayHoverAnimation();
     }
 
@@ -516,9 +519,9 @@ public class UI_EscapeMenuButton : Selectable,
         base.OnDeselect(_eventData);
         if (null != inputManager && false == inputManager.IsGamepadMode) return;
 
-        isHovered = false;
         if (false == isInteractable || true == isAppearing) return;
 
+        isHovered = false;
         PlayUnhoverAnimation();
     }
 

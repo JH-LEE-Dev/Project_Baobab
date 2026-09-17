@@ -347,7 +347,26 @@ public class UI_EscapeMenu : MonoBehaviour
     {
         openSequence = null;
         isMenuOpen = true;
-        SelectFirstButton();
+
+        if (null != inputManager && true == inputManager.IsGamepadMode)
+        {
+            SelectFirstButton();
+        }
+        else
+        {
+            if (null != allButtons)
+            {
+                for (int i = 0; allButtons.Length > i; i++)
+                {
+                    UI_EscapeMenuButton _btn = allButtons[i];
+                    if (null != _btn && true == _btn.gameObject.activeInHierarchy && true == _btn.IsInteractable)
+                    {
+                        _btn.CheckCursorHover();
+                    }
+                }
+            }
+        }
+
         if (null != onOpenCompleteAction)
         {
             Action _cb = onOpenCompleteAction;

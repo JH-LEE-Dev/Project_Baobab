@@ -16,7 +16,7 @@ public class LogProcessLine : MonoBehaviour
     public event Action<LogProcessLine> LineBusyEvent;
     public event Action<LogProcessLine> LineFreedEvent;
     public event Action<LogProcessLine, LogItem, ILogItemData> LogReadyForEvaluationEvent;
-    public event Action<int> LineMoneyEarnedEvent;
+    public event Action<long> LineMoneyEarnedEvent;
 
     private bool isBusy = false;
 
@@ -99,7 +99,7 @@ public class LogProcessLine : MonoBehaviour
         LogReadyForEvaluationEvent?.Invoke(this, _item, _itemData);
     }
 
-    private void OnLogEvaluated(int _money)
+    private void OnLogEvaluated(long _money)
     {
         LineMoneyEarnedEvent?.Invoke(_money);
     }

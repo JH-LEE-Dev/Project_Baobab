@@ -130,7 +130,7 @@ public struct InventorySaveData
 public struct LogProcessingSaveData
 {
     public InventorySaveData containerInventoryData;
-    public int shopMoney;
+    public long shopMoney;
     public bool bFirstTimeEarnMoney;
     public bool bStop;
     public float transferInterval;

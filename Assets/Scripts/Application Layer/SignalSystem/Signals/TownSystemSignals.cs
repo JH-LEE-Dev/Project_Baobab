@@ -19,8 +19,8 @@ public struct TownOffroadVehicleActivatedSignal { }
 
 public struct ShopMoneyUpdatedSignal
 {
-    public int money;
-    public ShopMoneyUpdatedSignal(int _money)
+    public long money;
+    public ShopMoneyUpdatedSignal(long _money)
     {
         money = _money;
     }
@@ -28,8 +28,8 @@ public struct ShopMoneyUpdatedSignal
 
 public struct MoneyEarnedSignal
 {
-    public int money;
-    public MoneyEarnedSignal(int _money)
+    public long money;
+    public MoneyEarnedSignal(long _money)
     {
         money = _money;
     }

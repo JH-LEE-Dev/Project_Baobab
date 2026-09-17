@@ -10,7 +10,7 @@ using Coffee.UIEffects;
 public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler, IPointerClickHandler
 {
     private const float AbilityBarMaxHeight = 26f;
-    private static readonly Color32 CanApplyShinyColor = new Color32(184, 255, 243, 255);
+    private static readonly Color32 CanApplyHighlightColor = new Color32(0, 255, 0, 255);
     private static readonly Color32 CannotApplyShinyColor = new Color32(255, 106, 98, 255);
     private static readonly Color32 CompletedShinyColor = new Color32(136, 145, 255, 255);
 
@@ -399,7 +399,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         return completedVisual
             ? CompletedShinyColor
             : canApplyVisual
-                ? CanApplyShinyColor
+                ? CanApplyHighlightColor
                 : CannotApplyShinyColor;
     }
 
@@ -818,16 +818,16 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void PlayClickRequestMotion()
     {
         PlayClickMotion();
-        PlayApprovedNodeEffect(currentNodeFrameColor);
+        PlayApprovedNodeEffect();
     }
 
     // 특성 찍기에 성공했을 때 노드 이펙트를 재생하는 자리.
-    private void PlayApprovedNodeEffect(Color _nodeFrameColor)
+    private void PlayApprovedNodeEffect()
     {
         owner?.PlaySharedNodeEffect(
             levelUpImpactTag,
             transform,
-            _nodeFrameColor,
+            CanApplyHighlightColor,
             effectLayerTag,
             2);
     }

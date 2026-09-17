@@ -205,3 +205,4 @@ MonoBehaviour:
   moveDistanceY: 70
   moveDuration: 1
   moveEase: 27
+  demoBadge: {fileID: 4217061467562224316}

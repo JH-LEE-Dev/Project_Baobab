@@ -351,6 +351,19 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         }
     }
 
+    /// <summary>
+    /// 현재 커터 속도입니다.
+    ///
+    /// [전력공급(PowerSupply)이 마을에서 안 먹는 것은 의도입니다 - 지우지 마십시오]
+    /// 아래 mapType != MapType.Town 조건은 <b>자리비움 생산 보너스</b>입니다. 플레이어가 던전에
+    /// 나가 있는 동안에만 제재소가 bPowerSupplyValue배로 돌고, 마을에 서서 지켜보는 동안에는
+    /// 배율이 붙지 않습니다. 그래서 스킬을 찍고 마을에서 커터를 보면 "돈만 나가고 아무 변화가
+    /// 없는" 것처럼 보이는데, 그것이 정상입니다.
+    ///
+    /// 같은 파일의 GetSoundVolume()도 똑같은 mapType == Town 검사를 쓰지만 목적이 다릅니다
+    /// (던전에 있는 동안 제재소 소리를 끈다). 두 조건이 닮아서 한쪽을 다른 쪽에 맞추고 싶어
+    /// 보이지만, 서로 아무 관계가 없습니다.
+    /// </summary>
     private float GetCurrentSpeed()
     {
         float speed = totalSpeedMultiplier;

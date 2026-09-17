@@ -58,6 +58,14 @@ public class Boomerang : MonoBehaviour
     private bool isStartFinished;
 
     private float damage;
+
+    // 치명타는 발사 시점이 아니라 판정 틱마다 새로 굴린다. 확률과 배율은 발사 시점의 값을 스냅샷으로
+    // 들고 있는데(과열 배율과 같은 이유), 비행 중 스킬 레벨이 올라도 이미 날아간 부메랑의 기대값이
+    // 도중에 바뀌지 않게 하기 위해서다.
+    private bool bCriticalEnabled;
+    private float criticalChance;
+    private float criticalDamageMul;
+
     private float damageCheckTimer;
     private Vector2 lastDamageCheckPosition; // 터널링 방지: 직전 판정 시점의 위치. 이 위치~현재 위치 사이 선분 전체를 검사한다.
     private readonly List<IStaticCollidable> hitScanResults = new List<IStaticCollidable>(16);
@@ -86,6 +94,19 @@ public class Boomerang : MonoBehaviour
     public void SetDamage(float _damage)
     {
         damage = _damage;
+    }
+
+    /// <summary>
+    /// 치명타 설정을 넘긴다. 예전에는 BoomerangCreator가 발사 시점에 한 번만 굴려 damage에 곱해
+    /// 넣었는데, 판정은 왕복 내내 damageInterval마다 계속 일어나므로 <b>한 부메랑이 왕복 전체를
+    /// 통째로 치명타이거나 통째로 아니거나</b>가 되어 편차가 지나치게 컸다. 이제 판정 틱마다
+    /// 새로 굴린다(ApplyDamageInRange 참고).
+    /// </summary>
+    public void SetCritical(bool _enabled, float _chance, float _damageMul)
+    {
+        bCriticalEnabled = _enabled;
+        criticalChance = _chance;
+        criticalDamageMul = _damageMul;
     }
 
     /// <summary>
@@ -276,6 +297,14 @@ public class Boomerang : MonoBehaviour
 
         float hitRadiusSqr = hitRadius * hitRadius;
 
+        // 치명타는 이 틱에 대해 한 번만 굴리고, 이번 틱에 맞은 나무 전체에 같은 결과를 적용한다.
+        // (나무 하나하나에 따로 굴리고 싶다면 이 두 줄을 아래 루프 안으로 옮기면 된다)
+        float tickDamage = damage;
+        if (bCriticalEnabled && UnityEngine.Random.value < criticalChance)
+        {
+            tickDamage *= criticalDamageMul;
+        }
+
         for (int i = 0; i < hitScanResults.Count; i++)
         {
             if (hitScanResults[i] is TreeObj treeObj && !treeObj.bDead)
@@ -288,7 +317,7 @@ public class Boomerang : MonoBehaviour
 
                 if (isHit)
                 {
-                    treeObj.TakeDamage(damage);
+                    treeObj.TakeDamage(tickDamage);
                 }
             }
         }
