@@ -45,7 +45,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const string ToolTipCostUnavailableColor = "B94A42";
     private const string ToolTipCostMaxLevelColor = "58D7F2";
     private const string ToolTipValueColor = "54D86A";
-    private static readonly Color CanApplyNodeColor = new Color32(84, 216, 106, 255);
+    private static readonly Color ToolTipBackgroundAvailableColor = new Color32(84, 216, 106, 255);
+    private static readonly Color CanApplyNodeColor = new Color32(0, 255, 0, 255);
     private static readonly Color CompletedColor = new Color32(88, 215, 242, 255);
     private static readonly Color CannotApplyNodeColor = new Color32(185, 74, 66, 255);
     private static readonly Color DefaultLineColor = new Color32(255, 255, 255, 255);
@@ -1646,7 +1647,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         string costText = BuildToolTipCostText(_skillInfo, _applyReason, out MoneyType costMoneyType);
         string descriptionFormat = GetToolTipDescriptionFormat(_previewData.type);
-        toolTipInstance.SetBackgroundColor(_node.CurrentNodeFrameColor);
+        Color toolTipBackgroundColor = _node.CanApplyVisual && _node.CompletedVisual == false
+            ? ToolTipBackgroundAvailableColor
+            : _node.CurrentNodeFrameColor;
+        toolTipInstance.SetBackgroundColor(toolTipBackgroundColor);
         toolTipInstance.SetContent(
             BuildToolTipTitleText(_node),
             BuildToolTipLevelText(_skillInfo),
