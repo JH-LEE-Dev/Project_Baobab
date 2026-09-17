@@ -290,6 +290,7 @@ public class UI_MainMenuButton : Selectable,
         OnButtonSelectedEvent = null;
         _siblingButtons = null;
         _siblingsCached = false;
+        KillDelayedActionTweens();
         KillAllTweens();
     }
 
@@ -304,6 +305,7 @@ public class UI_MainMenuButton : Selectable,
         isMaintained = false;
         isHovered = false;
         isPointerHovered = false;
+        KillDelayedActionTweens();
         KillAllTweens();
 
         if (null != dotTarget) dotTarget.localEulerAngles = dotOriginalRot;
@@ -316,7 +318,11 @@ public class UI_MainMenuButton : Selectable,
         EvaluatePointerState();
     }
 
-    private void KillAllTweens()
+    /// <summary>
+    /// 예약된 지연 호출 액션 트윈들을 안전하게 취소하고 null 처리합니다.
+    /// 비주얼 연출 중단 시(KillAllTweens)에는 클릭 액션이 취소되지 않도록 이 메서드와 분리 관리됩니다.
+    /// </summary>
+    public void KillDelayedActionTweens()
     {
         if (null != delayedDisappearTween && true == delayedDisappearTween.IsActive()) delayedDisappearTween.Kill();
         delayedDisappearTween = null;
@@ -326,7 +332,10 @@ public class UI_MainMenuButton : Selectable,
 
         if (null != delayedManualDisappearTween && true == delayedManualDisappearTween.IsActive()) delayedManualDisappearTween.Kill();
         delayedManualDisappearTween = null;
+    }
 
+    private void KillAllTweens()
+    {
         transform.DOKill();
         if (null != dotTarget) dotTarget.DOKill();
         if (null != textTarget) textTarget.DOKill();
@@ -890,11 +899,13 @@ public class UI_MainMenuButton : Selectable,
 
     private void InvokeOnClickAction()
     {
+        delayedClickActionTween = null;
         if (null != onClickAction) onClickAction();
     }
 
     private void InvokeManualDisappearAction()
     {
+        delayedManualDisappearTween = null;
         if (null != manualDisappearCallback)
         {
             manualDisappearCallback();
@@ -904,6 +915,7 @@ public class UI_MainMenuButton : Selectable,
 
     private void PlayDisappearImmediate()
     {
+        delayedDisappearTween = null;
         PlayDisappearMotion(0f);
     }
 
