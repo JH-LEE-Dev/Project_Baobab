@@ -68,7 +68,20 @@ public enum ItemType
     Log,
     Loot,
     Carrot,
+    GemOre,
     Max,
+}
+
+/// <summary>
+/// 보석 나무가 최종적으로 쓰러질 때 떨어지는 원석의 종류.
+/// TreeObj의 보석 단계(gemStage 1/2/3)와 1:1로 대응한다.
+/// </summary>
+public enum GemOreType
+{
+    None,
+    Gold,    // 황금 (gemStage 1)
+    Diamond, // 다이아 (gemStage 2)
+    Prism,   // 프리즘 (gemStage 3)
 }
 
 

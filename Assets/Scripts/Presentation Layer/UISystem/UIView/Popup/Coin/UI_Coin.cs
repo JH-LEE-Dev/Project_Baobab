@@ -31,10 +31,9 @@ public class UI_Coin : MonoBehaviour
         if (null == moneyData || null == moneyText)
             return;
 
-        if (MoneyType.Coin == moneyType)
-            moneyText.text = moneyData.money.ToString();
-        else
-            moneyText.text = moneyData.carrot.ToString();
+        // 재화 종류가 늘어도 여기에 if 사슬이 쌓이지 않도록 통합 진입점으로 읽는다.
+        // (예전에는 Coin이 아니면 무조건 carrot을 보여줘서, 새 재화를 붙이는 순간 엉뚱한 값이 나왔다)
+        moneyText.text = moneyData.GetMoney(moneyType).ToString();
     }
 
     public void UpdateMoneyText(int _money)

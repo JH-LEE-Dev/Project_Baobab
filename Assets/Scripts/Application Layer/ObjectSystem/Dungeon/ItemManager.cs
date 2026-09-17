@@ -6,6 +6,7 @@ public class ItemManager : MonoBehaviour
     // 내부 의존성
     public LogItemController logItemController { get; private set; }
     public CarrotItemController carrrotItemController { get; private set; }
+    public GemOreItemController gemOreItemController { get; private set; }
     private IInventoryChecker inventoryChecker;
     private ICharacter character;
 
@@ -16,10 +17,16 @@ public class ItemManager : MonoBehaviour
 
         logItemController = GetComponentInChildren<LogItemController>();
         carrrotItemController = GetComponentInChildren<CarrotItemController>();
+        gemOreItemController = GetComponentInChildren<GemOreItemController>();
 
         if (logItemController != null)
         {
             logItemController.Initialize(inventoryChecker, character, _tilemapDataProvider);
+        }
+
+        if (gemOreItemController != null)
+        {
+            gemOreItemController.Initialize(character, _tilemapDataProvider);
         }
 
         BindEvents();
@@ -35,6 +42,7 @@ public class ItemManager : MonoBehaviour
         character = _character;
 
         logItemController?.SetCharacter(_character);
+        gemOreItemController?.SetCharacter(_character);
     }
 
     public void Release()
@@ -76,6 +84,27 @@ public class ItemManager : MonoBehaviour
         logItemController?.ReturnToPool(_item);
     }
 
+    /// <summary>
+    /// 보석 나무가 쓰러진 자리에 원석을 뿌린다. 원목 대신 떨어지므로 SpawnLogItem과는 배타적으로 호출한다.
+    /// </summary>
+    public void SpawnGemOre(TreeObj _treeObj, float _multiplier)
+    {
+        gemOreItemController?.SpawnGemOre(_treeObj, _multiplier);
+    }
+
+    public void ReturnGemOreToPool(GemOreItem _item)
+    {
+        gemOreItemController?.ReturnToPool(_item);
+    }
+
+    /// <summary>
+    /// 흡입 도중 던전이 끝날 때 아직 남아있는 원석을 확정 지급한다.
+    /// </summary>
+    public void ForceAcquireAllGemOre()
+    {
+        gemOreItemController?.ForceAcquireAllActive();
+    }
+
     public void SpawnCarrotItem(Vector3 _position, AnimalType _animalType)
     {
         carrrotItemController?.SpawnCarrotItem(_position, _animalType);
@@ -99,10 +128,17 @@ public class ItemManager : MonoBehaviour
         remove { if (carrrotItemController != null) carrrotItemController.CarrotItemAcquiredEvent -= value; }
     }
 
+    public event Action<GemOreItem> GemOreItemAcquiredEvent
+    {
+        add { if (gemOreItemController != null) gemOreItemController.GemOreItemAcquiredEvent += value; }
+        remove { if (gemOreItemController != null) gemOreItemController.GemOreItemAcquiredEvent -= value; }
+    }
+
     public void ReleaseAllItems()
     {
         //carrrotItemController.ClearAll();
         logItemController.ClearAll();
+        gemOreItemController?.ClearAll();
     }
 
     public void CancelActiveSucking()
