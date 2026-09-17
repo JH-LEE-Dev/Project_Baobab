@@ -6,7 +6,7 @@ Shader "UI/AbilityLineShiny"
         _Color ("Tint", Color) = (1, 1, 1, 1)
 
         _RedShineColor ("Red Line Shine", Color) = (0.760784, 0.427451, 0.403922, 1)
-        _GreenShineColor ("Green Line Shine", Color) = (0.686275, 0.847059, 0.713726, 1)
+        _GreenShineColor ("Green Line Shine", Color) = (0, 1, 0, 1)
         _BlueShineColor ("Blue Line Shine", Color) = (0.760784, 0.956863, 0.996078, 1)
         _ShineSpeed ("Shine Cycles Per Second", Range(0, 2)) = 0.35
         _ShineWidth ("Shine Width", Range(0.01, 1)) = 0.24
