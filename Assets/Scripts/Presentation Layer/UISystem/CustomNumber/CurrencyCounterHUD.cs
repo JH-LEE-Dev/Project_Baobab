@@ -35,6 +35,12 @@ namespace PresentationLayer.UISystem.CustomNumber
         [SerializeField] private MoneyType defaultMoneyType = MoneyType.Coin;
         [SerializeField] private long defaultValue;
 
+        [Header("Zero Dim Settings")]
+        [SerializeField] private bool dimWhenZero = false;
+        [SerializeField] [Range(0.0f, 1.0f)] private float zeroAlpha = 0.35f;
+        [SerializeField] [Range(0.0f, 1.0f)] private float normalAlpha = 1.0f;
+        [SerializeField] private CanvasGroup canvasGroup;
+
         [Header("Debug")]
         [SerializeField] private long debugIncreaseAmount = 100;
         [SerializeField] private long debugDecreaseAmount = 100;
@@ -55,6 +61,22 @@ namespace PresentationLayer.UISystem.CustomNumber
 
             initialized = true;
 
+            if (null == canvasGroup)
+                canvasGroup = GetComponent<CanvasGroup>();
+
+            if (null == canvasGroup && dimWhenZero)
+                canvasGroup = gameObject.AddComponent<CanvasGroup>();
+
+            LayoutElement _layoutElement = GetComponent<LayoutElement>();
+            if (null == _layoutElement)
+            {
+                _layoutElement = gameObject.AddComponent<LayoutElement>();
+                _layoutElement.minHeight = 16.0f;
+                _layoutElement.preferredHeight = 16.0f;
+                _layoutElement.minWidth = 50.0f;
+                _layoutElement.preferredWidth = 50.0f;
+            }
+
             if (null == currencyIcon)
                 currencyIcon = transform.Find("CurrencyIcon")?.GetComponent<Image>();
 
@@ -66,6 +88,7 @@ namespace PresentationLayer.UISystem.CustomNumber
             currencyFontHUD?.Initialize();
             SetMoneyType(defaultMoneyType);
             SetNumber(defaultValue);
+            UpdateDimState(defaultValue);
             RefreshLayout();
         }
 
@@ -73,6 +96,38 @@ namespace PresentationLayer.UISystem.CustomNumber
         {
             if (null != currencyFontHUD)
                 currencyFontHUD.VisibleContentBoundsChanged -= RefreshLayout;
+        }
+
+        public void SetDimWhenZero(bool _enable, float _zeroAlpha = 0.35f, float _normalAlpha = 1.0f)
+        {
+            InitializeIfNeeded();
+
+            dimWhenZero = _enable;
+            zeroAlpha = _zeroAlpha;
+            normalAlpha = _normalAlpha;
+
+            if (dimWhenZero && null == canvasGroup)
+            {
+                canvasGroup = GetComponent<CanvasGroup>();
+                if (null == canvasGroup)
+                    canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            }
+
+            UpdateDimState(currentValue);
+        }
+
+        private void UpdateDimState(long _value)
+        {
+            if (null == canvasGroup)
+                return;
+
+            if (false == dimWhenZero)
+            {
+                canvasGroup.alpha = normalAlpha;
+                return;
+            }
+
+            canvasGroup.alpha = 0 >= _value ? zeroAlpha : normalAlpha;
         }
 
         public void SetMoneyType(MoneyType _moneyType)
@@ -101,6 +156,7 @@ namespace PresentationLayer.UISystem.CustomNumber
             // (표시값 + 활성 트윈 여부까지 확인함)에 맡긴다.
             currentValue = _value;
             currencyFontHUD?.SetNumber(currentValue);
+            UpdateDimState(currentValue);
         }
 
         public void SetNumberAnimated(long _value, bool _useAmountPivotB = false)
@@ -113,6 +169,7 @@ namespace PresentationLayer.UISystem.CustomNumber
             long _previousValue = currentValue;
             currentValue = _value;
             currencyFontHUD?.SetNumberAnimated(currentValue, currentValue - _previousValue, _useAmountPivotB);
+            UpdateDimState(currentValue);
         }
 
         public void SetMode(CurrencyFontAlignmentMode _mode)
