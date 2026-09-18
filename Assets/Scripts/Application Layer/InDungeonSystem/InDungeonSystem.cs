@@ -436,6 +436,10 @@ public class InDungeonSystem : MonoBehaviour
 
     private void GemOreItemAcquired(GemOreItem _gemOreItem)
     {
+        // 결과창이 "이번 런에서 얻은 원석"을 보여줄 수 있도록 여기서 함께 집계한다.
+        // 재화를 실제로 올리는 것은 이 시그널을 받는 UnitSystem이고, 이쪽은 집계만 한다.
+        inDungeonResultManager.AddAcquiredGemOre(_gemOreItem.gemOreType, _gemOreItem.currencyAmount);
+
         signalHub.Publish(new GemOreAcquiredSignal(_gemOreItem.gemOreType, _gemOreItem.currencyAmount));
     }
 

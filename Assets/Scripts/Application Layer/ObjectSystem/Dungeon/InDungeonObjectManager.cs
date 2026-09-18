@@ -505,6 +505,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             currentOwnedLoots.Add(_item.LootType);
         }
 
+        // currentOwnedLoots는 "영구 소지 목록"이라 예전 런에서 얻은 것도 들어 있다.
+        // 결과창은 "이번 런에서 얻은 것"만 보여줘야 하므로 런 단위 집계를 따로 남긴다.
+        inDungeonResultManager?.AddAcquiredLoot(_item.LootType);
+
         // LogItem 획득과 동일한 획득 피드백(사운드 + 캐릭터 뽀잉 연출)을 LootItem 획득 시에도 재생한다.
         Sound.PlayUI(SoundID.GetItem);
         character?.PlayItemAcquireBounce();
