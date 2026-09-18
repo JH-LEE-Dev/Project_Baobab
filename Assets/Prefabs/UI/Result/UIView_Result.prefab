@@ -2108,7 +2108,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uC774\uBC88 \uC6D0\uC815\uC5D0\uC11C \uD68D\uB4DD\uD55C \uC6D0\uBAA9"
+  m_text: "\uC774\uBC88 \uC6D0\uC815\uC5D0\uC11C \uD68D\uB4DD\uD55C \uC544\uC774\uD15C"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4909044e3da435245a063b33ac595034, type: 2}
   m_sharedMaterial: {fileID: -4971463764404031913, guid: 4909044e3da435245a063b33ac595034, type: 2}
