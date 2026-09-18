@@ -171,8 +171,10 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
         return bInTown ? 1f : 0f;
     }
 
-    // 상호작용 키를 누르고 있는 동안만 원석이 들어간다.
-    private bool bInsertKeyHeld = false;
+    // 자동 투입 "세션"이 살아 있는지. 상호작용 키를 누르는 순간 true가 되고, 키를 떼도 유지된다
+    // (LogContainer/OffroadContainer와 동일하게 한 번 누르면 계속 들어간다). 더 넣을 원석이 없거나
+    // 상호작용 범위를 벗어나면 false가 되어 즉시 멈춘다.
+    private bool bAutoInsertActive = false;
     private float oreFlyTimer = 0f;
 
     // 날아다니는 원석/주괴
@@ -242,9 +244,6 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
 
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
         inputManager.inputReader.InteractionKeyPressedEvent += InteractionKeyPressed;
-
-        inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
-        inputManager.inputReader.InteractionKeyCanceledEvent += InteractionKeyCanceled;
     }
 
     public void Release()
@@ -252,20 +251,22 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
         if (inputManager == null || inputManager.inputReader == null) return;
 
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
-        inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
     }
 
+    /// <summary>
+    /// 상호작용 키는 "한 번 누르면 자동 투입 시작"이다(보관함과 동일). 키를 떼도 계속 들어가고,
+    /// 넣을 원석이 없거나 열린 용광로가 전부 가득 차면 스스로 끝난다. 도중에 상호작용 범위를
+    /// 벗어나면 UpdateOreInsertion에서 즉시 취소된다.
+    /// </summary>
     private void InteractionKeyPressed()
     {
-        bInsertKeyHeld = true;
+        // 용광로 앞이 아닐 때 누른 키로 세션이 켜지지 않도록 시작 시점에도 한 번 확인한다.
+        if (false == IsInteractable()) return;
+
+        bAutoInsertActive = true;
 
         // 누르자마자 한 개는 바로 들어가도록(원목 납품도 첫 개는 즉시 나간다)
         oreFlyTimer = OreFlyInterval;
-    }
-
-    private void InteractionKeyCanceled()
-    {
-        bInsertKeyHeld = false;
     }
 
     // ── 특성 (IBlastFurnaceCH) ────────────────────────────────────────────
@@ -507,6 +508,11 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
             if (i >= homePositions.Count) continue;
 
             furnaces[i].transform.position = homePositions[i] + (Vector3)placementOffset;
+
+            // 자리에 놓인 뒤에 가동 상태를 한 번 더 물려준다. 세이브 로드는 용광로가 아직 화면
+            // 밖에 있을 때 제련을 복원하는데, 파티클은 화면 밖에서 멈추므로 그때 건 Play()가
+            // 살아나지 않는다. 여기서 다시 걸지 않으면 돌고 있는데도 불길이 없는 채로 남는다.
+            furnaces[i].RefreshRunningVisual();
         }
     }
 
@@ -535,6 +541,9 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
             bLastInteractState = false;
             InteractStateChangedEvent?.Invoke(false);
         }
+
+        // 상호작용 대상이 사라졌으므로 진행 중이던 자동 투입도 끝낸다.
+        bAutoInsertActive = false;
 
         // 날아가던 원석은 도착할 곳이 사라지므로 재화를 돌려주고 치운다.
         RefundAndClearFlyingOre();
@@ -707,19 +716,27 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
     }
 
     /// <summary>
-    /// 상호작용 키를 누르고 있는 동안에만 원석이 들어간다. 열려 있는 용광로들을 돌면서 자기 등급
+    /// 자동 투입 세션이 살아 있는 동안 원석이 들어간다. 열려 있는 용광로들을 돌면서 자기 등급
     /// 원석을 한 개씩 날려보낸다(가진 재화가 있고, 아직 받을 자리가 있는 용광로만).
+    ///
+    /// 보관함(LogContainer/OffroadContainer)과 동작을 맞춘다. 키를 한 번 누르면 계속 들어가고,
+    /// 넣을 원석을 다 쓰면 세션이 끝난다. 상호작용 범위를 벗어나면 발사 간격을 기다리는 중이더라도
+    /// 그 프레임에 바로 취소된다.
     ///
     /// 재화 차감은 발사 시점에 한다. 원목 납품은 착지 시점에 컨테이너에 커밋하지만, 원석은 슬롯이
     /// 아니라 숫자라서 "날아가는 중에도 또 쓸 수 있는" 문제를 막으려면 먼저 빼는 편이 안전하다.
     /// </summary>
     private void UpdateOreInsertion(float _deltaTime)
     {
-        if (false == bInsertKeyHeld) return;
-        if (inventory == null || flyingItemPrefab == null) return;
+        if (false == bAutoInsertActive) return;
 
-        // 상호작용이 열려 있을 때만(= 플레이어가 용광로 앞에 서 있고 경합에서도 이겼을 때)
-        if (false == IsInteractable()) return;
+        // 상호작용이 열려 있을 때만(= 플레이어가 용광로 앞에 서 있고 경합에서도 이겼을 때).
+        // 발사 간격 대기보다 먼저 확인해서, 범위를 벗어나는 즉시 세션을 끊는다.
+        if (inventory == null || flyingItemPrefab == null || false == IsInteractable())
+        {
+            bAutoInsertActive = false;
+            return;
+        }
 
         oreFlyTimer += _deltaTime;
         if (oreFlyTimer < OreFlyInterval / GetTransferSpeedMultiplier()) return;
@@ -729,14 +746,44 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
         // 한 틱에 한 개만 보낸다(원목도 한 개씩 직렬로 나간다). 어느 용광로 차례인지는 커서로 돌려서
         // 세 등급을 다 갖고 있으면 번갈아 들어가게 한다.
         int count = Mathf.Min(unlockedCount, furnaces.Count);
-        if (count <= 0) return;
-
         for (int i = 0; i < count; i++)
         {
             oreSendCursor = (oreSendCursor + 1) % count;
 
             if (TrySendOre(furnaces[oreSendCursor])) return;
         }
+
+        // 한 바퀴를 다 돌았는데 아무 데도 못 보냈다. 여기서 곧바로 끝내면, 날아가는 중인 원석이
+        // 잡아둔 자리(pendingOre)나 저장 한도(oreCapacity) 때문에 "잠깐" 막힌 것까지 "더 넣을 것이
+        // 없다"로 오인해서, 원석을 잔뜩 들고 있는데도 투입이 멈춘다(발사 간격 0.075초 / 비행 0.5초
+        // 라 한 번에 예닐곱 개가 예약 상태로 잡힌다). 그래서 "가진 원석이 없다"일 때만 세션을 끝내고,
+        // 자리가 없어서 막힌 것이면 가공이 진행되어 자리가 날 때까지 기다린다.
+        if (false == HasAnyOreToInsert())
+        {
+            bAutoInsertActive = false;
+        }
+    }
+
+    /// <summary>
+    /// 열려 있는 용광로 중에 지금 넣을 원석을 실제로 갖고 있는 곳이 하나라도 있는지.
+    /// 용광로가 가득 찼는지는 일부러 보지 않는다 - 가공이 진행되면 자리는 다시 나기 때문이다.
+    /// </summary>
+    private bool HasAnyOreToInsert()
+    {
+        if (inventory == null) return false;
+
+        int count = Mathf.Min(unlockedCount, furnaces.Count);
+        for (int i = 0; i < count; i++)
+        {
+            if (furnaces[i] == null) continue;
+
+            BlastFurnaceRecipe recipe = furnaces[i].Recipe;
+            if (false == recipe.IsValid) continue;
+
+            if (inventory.GetCurrentGemOre(recipe.gemOreType) > 0) return true;
+        }
+
+        return false;
     }
 
     /// <summary>

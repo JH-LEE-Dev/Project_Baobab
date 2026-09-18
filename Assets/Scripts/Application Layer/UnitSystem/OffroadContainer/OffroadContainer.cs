@@ -136,11 +136,19 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private float closeTimer = -1f;
 
     private bool bContainerVisualOpened = false;
+    // 플레이어의 자동 전송 "세션"이 살아 있는지. 상호작용 키를 누르는 순간 true가 되고, 키를 떼도
+    // 유지된다(한 번 누르면 슬롯이 하나씩 자동으로 이어서 빠진다). 트리거를 실제로 벗어나거나
+    // ResetState/DisableCollision으로 상호작용이 끊기면 false가 되어 전송이 즉시 취소된다.
+    //
+    // 전송 코루틴들은 bCanInteract가 아니라 이 플래그만 본다. bCanInteract에는 bCanReach(차량/수리상자
+    // 와의 근접 경합 결과, OffroadVehicleObj.CalcDistForCanReach가 매 프레임 승자 한 곳에만 준다)가
+    // 섞여 있어서, 플레이어가 컨테이너 앞에 그대로 서 있어도 한 프레임 뒤집힐 수 있다. 그것까지
+    // 범위 이탈로 치면 슬롯이 반만 옮겨진 채 전송이 끊긴다.
     private bool bIsInteracting = false;
     // 지금 진행 중인 "닫힘->열림" 연출이 플레이어의 상호작용 키 입력으로 시작된 것인지 표시하는 1회성
-    // 플래그. bIsInteracting(키를 누르고 있는 동안만 true)을 대신 쓰면, 연출이 끝나기 전에 키를 놓아도
-    // (짧게 탭만 해도) SetContainerVisualOpened(true) 시점엔 이미 false가 되어 전송이 시작되지 않는
-    // 문제가 있었다. 이 플래그는 SetContainerVisualOpened(true)에서 한 번 소비되면 즉시 false로 리셋된다.
+    // 플래그. 뚜껑이 열리는 연출은 운반 NPC 활동(flyingItems)만으로도 발생할 수 있어서, 이 플래그가
+    // 없으면 캐릭터가 근처에 서 있기만 해도 전송이 자동으로 시작되어 버린다.
+    // 이 플래그는 SetContainerVisualOpened(true)에서 한 번 소비되면 즉시 false로 리셋된다.
     private bool bPlayerOpenRequested = false;
 
     public Collider2D col;
@@ -498,16 +506,19 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     {
         if (characterInventory == null) yield break;
 
-        while (true)
+        // 키를 한 번 누르면 슬롯 하나가 다 빠진 뒤 자동으로 다음 슬롯이 이어진다. 키를 떼도 멈추지
+        // 않고, 더 보낼 것이 없으면 스스로 끝난다. 모든 대기 루프에 bIsInteracting을 걸어 두어
+        // 범위를 벗어나면 대기 중이더라도 다음 프레임에 빠져나온다.
+        while (bIsInteracting)
         {
             // 이전 전송으로부터 인터벌이 지날 때까지 대기
-            while (Time.time - lastTransferTime < (transferInterval / Mathf.Max(0.01f, itemTransferSpeedMul)))
+            while (bIsInteracting && Time.time - lastTransferTime < (transferInterval / Mathf.Max(0.01f, itemTransferSpeedMul)))
             {
                 yield return null;
             }
 
             // 현재 전송 중인 슬롯이 있다면 완료될 때까지 대기
-            while (transferringSlots.Count > 0)
+            while (bIsInteracting && transferringSlots.Count > 0)
             {
                 yield return null;
             }
@@ -518,15 +529,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             }
 
             // 방금 시작한 슬롯의 전송이 끝날 때까지 대기
-            while (transferringSlots.Count > 0)
+            while (bIsInteracting && transferringSlots.Count > 0)
             {
                 yield return null;
-            }
-
-            // 한 슬롯이 비워진 시점에 키 입력을 뗀 상태라면 중단
-            if (!bIsInteracting)
-            {
-                break;
             }
         }
         transferCoroutine = null;
@@ -534,7 +539,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private bool TryTransferOneSlot()
     {
-        if (!bCanInteract || characterInventory == null) return false;
+        if (!bIsInteracting || characterInventory == null) return false;
 
         if (bInTown)
         {
@@ -596,6 +601,11 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             // 반환하므로 존재하지 않는 아이템이 날아가는(복제되는) 결과가 된다.
             while (_sourceSlot.count > 0)
             {
+                // 상호작용 범위를 벗어나면 슬롯을 다 비우지 못했더라도 그 자리에서 중단한다(넣기/꺼내기
+                // 모두 동일). StopCoroutine으로 끊으면 finally가 실행되지 않아 transferringSlots에 유령
+                // 항목이 남으므로, 반드시 이렇게 루프 안에서 스스로 빠져나와야 한다.
+                if (!bIsInteracting) break;
+
                 if (_toCharacter)
                 {
                     if (!CanAddToCharacterInventory(sourceData)) break;
@@ -967,6 +977,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         return visualTransform;
     }
 
+    // 상호작용 키는 "한 번 누르면 자동 전송 시작"이다. 키를 떼도 전송은 계속되고, 슬롯이 하나 다
+    // 빠지면 자동으로 다음 슬롯이 이어진다. 더 보낼 것이 없으면 스스로 끝나고, 상호작용 범위를
+    // 벗어나면 진행 중인 슬롯까지 포함해 즉시 취소된다.
     private void InteractionKeyPressed()
     {
         if (!bCanInteract || characterInventory == null) return;
@@ -995,26 +1008,17 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
     }
 
-    private void InteractionKeyCanceled()
-    {
-        bIsInteracting = false;
-    }
-
     private void BindEvents()
     {
         if (inputManager == null) return;
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
         inputManager.inputReader.InteractionKeyPressedEvent += InteractionKeyPressed;
-
-        inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
-        inputManager.inputReader.InteractionKeyCanceledEvent += InteractionKeyCanceled;
     }
 
     private void ReleaseEvents()
     {
         if (inputManager == null) return;
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
-        inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
     }
 
     private void OnDestroy()
@@ -1031,6 +1035,37 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             bLastInteractState = currentState;
             bCanInteract = currentState;
             InteractStateEvent?.Invoke(currentState);
+        }
+
+        // 진행 중인 자동 전송은 "정말로 범위를 벗어났을 때"만 취소한다. bCanReach는 차량/수리상자와의
+        // 근접 경합 결과라서 플레이어가 컨테이너 앞에 그대로 서 있어도 한 프레임 뒤집힐 수 있는데,
+        // 그것까지 이탈로 치면 슬롯이 반만 옮겨진 채 전송이 끊긴다. 경합에서 지는 동안에는
+        // bCanInteract가 false라 새 상호작용이 시작되지 않을 뿐, 이미 시작한 전송은 계속된다.
+        if (!bPhysicalOverlapped || !bCollisionEnabled)
+        {
+            CancelPlayerTransfer();
+        }
+    }
+
+    /// <summary>
+    /// 플레이어의 자동 전송 세션을 끝낸다. 진행 중인 슬롯 코루틴(TransferOneSlotVisualRoutine)은
+    /// 여기서 StopCoroutine으로 끊지 않는다 - finally가 실행되지 않아 transferringSlots에 유령 항목이
+    /// 남기 때문이다. bIsInteracting을 내리면 각 코루틴이 다음 반복에서 스스로 빠져나온다.
+    ///
+    /// 범위 이탈(UpdateInteractState) 외에, 차량 상호작용이 받아들여지는 순간에도 외부에서 불린다
+    /// (OffroadVehicleObj.InteractionKeyPressed). 차량과 이 컨테이너는 트리거가 겹쳐 있어서 플레이어가
+    /// 차량에 E를 눌러도 컨테이너 트리거 안에 그대로 서 있는 경우가 많은데, 그때 전송이 계속되면
+    /// 목적지를 고르는 내비게이션 UI 뒤에서 아이템이 계속 오가게 된다.
+    /// </summary>
+    public void CancelPlayerTransfer()
+    {
+        bIsInteracting = false;
+        bPlayerOpenRequested = false;
+
+        if (transferCoroutine != null)
+        {
+            StopCoroutine(transferCoroutine);
+            transferCoroutine = null;
         }
     }
 
@@ -1066,15 +1101,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         if (_other.CompareTag(PLAYER_TAG))
         {
             bPhysicalOverlapped = false;
-            bIsInteracting = false;
-            bPlayerOpenRequested = false;
-            UpdateInteractState();
 
-            if (transferCoroutine != null)
-            {
-                StopCoroutine(transferCoroutine);
-                transferCoroutine = null;
-            }
+            // UpdateInteractState가 범위 이탈을 보고 CancelPlayerTransfer까지 처리한다.
+            UpdateInteractState();
         }
     }
 
@@ -1262,13 +1291,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     public void DisableCollision()
     {
         bCollisionEnabled = false;
-        bIsInteracting = false;
+
+        // UpdateInteractState가 상호작용 불가를 보고 CancelPlayerTransfer까지 처리한다.
         UpdateInteractState();
-
-        if (transferCoroutine != null)
-            StopCoroutine(transferCoroutine);
-
-        transferCoroutine = null;
     }
 
     public void EnableCollision()
@@ -1792,9 +1817,18 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
     }
 
+    /// <summary>
+    /// 지금 이 세션에서 옮길 것이 하나라도 있는지.
+    ///
+    /// bCanInteract가 아니라 bIsInteracting을 본다. 이 메서드는 InteractionKeyPressed(이미 bCanInteract를
+    /// 확인하고 들어온다)와, 마을에서 뚜껑 열림 연출이 끝난 뒤의 SetContainerVisualOpened에서 불린다.
+    /// 후자는 키 입력보다 몇 프레임 뒤라, bCanInteract를 보면 그 사이 차량/수리상자와의 근접 경합이
+    /// 한 프레임 뒤집힌 것만으로 이미 받아들인 키 입력이 조용히 버려진다
+    /// (bPlayerOpenRequested는 그 직전에 이미 소비된 뒤라 복구되지 않는다).
+    /// </summary>
     private bool HasAnyItemToTransfer()
     {
-        if (!bCanInteract || characterInventory == null) return false;
+        if (!bIsInteracting || characterInventory == null) return false;
 
         if (bInTown)
         {
@@ -1841,8 +1875,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         // 연출 -> 이 메서드까지 이어질 수 있다. bPlayerOpenRequested(이번 열림이 플레이어의 상호작용
         // 키 입력으로 시작됐는지)를 확인하지 않으면, 캐릭터가 우연히 근처에 서 있기만 해도 NPC 활동으로
         // 열린 뚜껑에 반응해 캐릭터 전송이 자동으로 시작되어 버린다(운반 NPC가 가져가려던 로그를
-        // 가로채는 문제). bIsInteracting(키를 누르고 있는 동안만 true) 대신 이 플래그를 쓰는 이유는,
-        // 연출이 끝나기 전에 키를 놓아도(짧게 탭만 해도) 정상적으로 전송이 시작되어야 하기 때문이다.
+        // 가로채는 문제).
         if (bInTown && bContainerVisualOpened && bPlayerOpenRequested && transferCoroutine == null)
         {
             bPlayerOpenRequested = false;
