@@ -175,6 +175,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
   isUIComponent: 0
+  initializeOnAwake: 1
   vfxPoolDataList:
   - vfxTag: OverheatLoopEffect
     effectPrefab: {fileID: 7006864300503741061, guid: b9f6f8f30a201c84688f5a455ed86d3e, type: 3}
@@ -982,19 +983,6 @@ Transform:
   - {fileID: 5601304583361212893}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4472830195621847503
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3341736304246452574}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6f2b8e41d95a4c7e8b3f1027ad6c5e93, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::GemLightSource
-  offset: {x: 0, y: 0.5}
 --- !u!114 &8662941010871122232
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1005,7 +993,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 699ec30f180d36a479ce2da0a2a41340, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Character
   shadowObject: {fileID: 8695531816826255951}
   animatorObject: {fileID: 3984376963687474699}
@@ -1144,6 +1132,19 @@ MonoBehaviour:
   dronePrefab: {fileID: 9034721650183742004, guid: 0e79947bcebfd59728411dfcb91811af, type: 3}
   defaultCapacity: 4
   maxSize: 8
+--- !u!114 &4472830195621847503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3341736304246452574}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f2b8e41d95a4c7e8b3f1027ad6c5e93, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GemLightSource
+  offset: {x: 0, y: 0.5}
 --- !u!1 &3418504347255478067
 GameObject:
   m_ObjectHideFlags: 0
@@ -1391,6 +1392,31 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  itemAcquireFlashDuration: 0.12
+  itemAcquireFlashCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0.6
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -1666,6 +1692,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
   isUIComponent: 0
+  initializeOnAwake: 1
   vfxPoolDataList:
   - vfxTag: Dust
     effectPrefab: {fileID: 2164660391435094963, guid: f1dbff2c09d037a48b1cc41a85157b5c, type: 3}
@@ -1978,7 +2005,7 @@ MonoBehaviour:
   axeAttackRangeMultiplier: 1
   axeDurabilityDecIgnoreChance: 0
   shockWaveChance: 0
-  shockWaveDamage: 1
+  shockWaveDamage: 2
   shockWaveSpeed: 3
   shockWaveDuration: 0.25
   shockWaveCreateDelay: 0
@@ -2482,11 +2509,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   shockWaveSpawnOffset: 0
-  aimCorrectionRadius: 1
-  aimCorrectionLayer:
-    serializedVersion: 2
-    m_Bits: 0
   attackPointTransform: {fileID: 5107539740188412055}
+  gamepadAimRadius: 1.25
+  gamepadAimTurnSpeed: 900
   ellipseRadiusIndicator: {fileID: 1626089898589853428}
   whirlwindFrames:
   - {fileID: -5408193984500294317, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}

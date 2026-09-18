@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 02eb89527ae3b654c8d00d971b123fb5
+guid: ea483f093bd8e4d448031ada5b548f96
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -4359298588173740082
-    second: Icon_Prizm_0
+      213: 1601481662888542178
+    second: SmallCurrencyNum_Line_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Icon_Prizm_0
+      name: SmallCurrencyNum_Line_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 1
-        width: 15
-        height: 13
+        y: 0
+        width: 8
+        height: 8
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: ec7da06d709a083c0800000000000000
-      internalID: -4359298588173740082
+      spriteID: 2eff5ce561b993610800000000000000
+      internalID: 1601481662888542178
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Icon_Prizm_0: -4359298588173740082
+      SmallCurrencyNum_Line_0: 1601481662888542178
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

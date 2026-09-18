@@ -59,11 +59,11 @@
     {
       "id": 6,
       "key": "acquiredLogsHeader",
-      "kr": "이번 원정에서 획득한 원목",
-      "en": "Logs Collected",
-      "zhHans": "本次远征获得的原木",
-      "zhHant": "本次遠征獲得的原木",
-      "ja": "今回の遠征で手に入れた丸太",
+      "kr": "이번 원정에서 획득한 아이템",
+      "en": "Items Collected on This Expedition",
+      "zhHans": "本次远征获得的物品",
+      "zhHant": "本次遠征獲得的物品",
+      "ja": "今回の遠征で手に入れたアイテム",
       "enumType": "",
       "enumValue": ""
     },
