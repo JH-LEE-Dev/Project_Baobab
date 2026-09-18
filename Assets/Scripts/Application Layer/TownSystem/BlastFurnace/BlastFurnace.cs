@@ -5,6 +5,7 @@ using UnityEngine.Rendering;
 /// <summary>
 /// 마을 용광로. 지금은 보이는 것과 상호작용 범위까지만 담당한다.
 ///   - 불꽃 애니메이션(AnimatedObj에 위임). 멈춰 있을 때와 도는 동안이 시트의 서로 다른 구간을 쓴다.
+///   - 이펙트: 도는 동안 계속 나오는 LoopVFX + 아지랑이, 주괴를 쏠 때 한 번 터지는 FireImpact
 ///   - 아이소메트릭 정렬(CustomSortable + SortingGroup)
 ///   - 아웃라인은 자기가 켜지 않는다. 세 대가 한 덩어리로 같이 빛나야 해서 BlastFurnaceManager가 켠다.
 ///
@@ -56,6 +57,16 @@ public class BlastFurnace : MonoBehaviour
     [Tooltip("멈춰 있을 때의 초당 프레임 수. 가동보다 느리게 둬서 쉬고 있는 느낌을 준다.")]
     [SerializeField] private float idleFrameRate = 6f;
 
+    [Header("VFX")]
+    [Tooltip("제련이 도는 동안 계속 나오는 이펙트. Visual 아래에 프리팹에 저장된 좌표 그대로 붙는다.")]
+    [SerializeField] private ParticleSystem loopVfxPrefab;
+
+    [Tooltip("주괴를 쏘아 보낼 때 한 번 터지는 이펙트. 붙는 방식은 LoopVFX와 같다.")]
+    [SerializeField] private ParticleSystem fireImpactPrefab;
+
+    [Tooltip("아지랑이 디스토션. 가동 이펙트와 함께 켜고 끈다. 비워두면 자식에서 찾는다.")]
+    [SerializeField] private BlastFurnaceHeatHaze heatHaze;
+
     [Tooltip("원석이 날아와 꽂히는 지점. 원목이 LogContainer의 inputTransform으로 들어가는 것과 같다.")]
     [SerializeField] private Transform inPoint;
 
@@ -91,6 +102,10 @@ public class BlastFurnace : MonoBehaviour
 
     // 가공 속도 배율(가속 특성). 1이면 초당 1.
     private float speedMultiplier = 1f;
+
+    // 프리팹에서 한 번만 찍어두고 계속 재사용한다. 단발 이펙트도 매번 새로 만들지 않고 되감아 다시 튼다.
+    private ParticleSystem loopVfx;
+    private ParticleSystem fireImpactVfx;
 
     private bool bPlayerInRange = false;
 
@@ -277,6 +292,9 @@ public class BlastFurnace : MonoBehaviour
         remainingWork = 0f;
         SetRunning(false);
 
+        // 주괴가 튀어나가는 순간. 아래 이벤트를 받은 BlastFurnaceManager가 곧바로 발사한다.
+        PlayFireImpact();
+
         IngotCompletedEvent?.Invoke(this);
 
         // 남은 원석으로 이어서 돌린다.
@@ -301,7 +319,7 @@ public class BlastFurnace : MonoBehaviour
     public float RemainingWork => remainingWork;
 
     /// <summary>
-    /// 제련 가동 여부. 돌 때만 불꽃이 움직이고, 멈추면 첫 프레임에서 정지한다.
+    /// 제련 가동 여부. 프레임 구간과 가동 이펙트(LoopVFX + 아지랑이)가 여기에 맞춰 함께 바뀐다.
     /// </summary>
     public void SetRunning(bool _bRunning)
     {
@@ -326,6 +344,7 @@ public class BlastFurnace : MonoBehaviour
     private void Awake()
     {
         SetupVisual();
+        SetupVfx();
         ApplyRunningState();
 
         bPlayerInRange = false;
@@ -356,13 +375,38 @@ public class BlastFurnace : MonoBehaviour
     }
 
     /// <summary>
+    /// 이펙트를 Visual 아래에 붙인다. <b>반드시 SetupVisual() 뒤에 부른다.</b>
+    /// CustomSortable.Initialize()가 그 시점의 자식 SpriteRenderer를 전부 걷어가므로, 먼저 붙이면
+    /// 스프라이트를 쓰는 이펙트가 딸려 들어가 정렬 순서를 용광로에 빼앗긴다.
+    /// (지금 두 프리팹은 파티클뿐이라 걸릴 것이 없지만, 나중에 스프라이트 이펙트가 추가돼도 안전하도록 순서를 고정해 둔다.)
+    /// </summary>
+    private void SetupVfx()
+    {
+        loopVfx = SpawnVfx(loopVfxPrefab);
+        fireImpactVfx = SpawnVfx(fireImpactPrefab);
+
+        // 둘 다 Play On Awake라 붙자마자 한 번 터진다. 상태를 반영하기 전에 꺼서 지운다.
+        StopVfx(loopVfx, true);
+        StopVfx(fireImpactVfx, true);
+
+        if (heatHaze == null) heatHaze = GetComponentInChildren<BlastFurnaceHeatHaze>(true);
+    }
+
+    /// <summary>보이는 것 전부(프레임 애니메이션 + 가동 이펙트)를 지금 상태에 맞춘다.</summary>
+    private void ApplyRunningState()
+    {
+        ApplyFrameAnimation();
+        ApplyRunningVfx();
+    }
+
+    /// <summary>
     /// 지금 상태에 맞는 프레임 구간과 재생 속도를 애니메이터에 알려준다.
     ///
     /// 멈춰 있을 때도 애니메이션은 계속 돈다(예전처럼 컴포넌트를 끄지 않는다). 대기와 가동이
     /// 시트의 서로 다른 구간을 쓰고, 대기 쪽만 조금 느리게 돌려 쉬고 있는 느낌을 준다.
     /// SetFrameRange는 구간이 실제로 바뀔 때만 처음으로 되감으므로 같은 상태에서 여러 번 불려도 괜찮다.
     /// </summary>
-    private void ApplyRunningState()
+    private void ApplyFrameAnimation()
     {
         if (animatedObj == null) return;
 
@@ -378,6 +422,54 @@ public class BlastFurnace : MonoBehaviour
             animatedObj.SetFrameRate(idleFrameRate);
             animatedObj.SetFrameRange(idleFrameStart, idleFrameCount);
         }
+    }
+
+    /// <summary>
+    /// 가동 이펙트와 아지랑이를 지금 상태에 맞춘다. 둘은 항상 같이 켜지고 같이 꺼진다.
+    ///
+    /// 끌 때 남은 입자까지 지우지는 않는다(StopEmitting). 주괴가 완성되는 순간에는 가공이 한 번
+    /// 꺼졌다가 남은 원석으로 곧바로 다시 켜지는데, 여기서 지워버리면 그 한 프레임 때문에 불길이
+    /// 끊겼다 되살아나는 것처럼 보인다.
+    /// </summary>
+    private void ApplyRunningVfx()
+    {
+        if (loopVfx != null)
+        {
+            if (true == bRunning) loopVfx.Play(true);
+            else StopVfx(loopVfx, false);
+        }
+
+        if (heatHaze != null) heatHaze.SetRunning(bRunning);
+    }
+
+    /// <summary>주괴가 튀어나가는 순간의 단발 이펙트. 재생 중이어도 처음부터 다시 튼다.</summary>
+    private void PlayFireImpact()
+    {
+        if (fireImpactVfx == null) return;
+
+        StopVfx(fireImpactVfx, true);
+        fireImpactVfx.Play(true);
+    }
+
+    /// <summary>
+    /// 이펙트 프리팹을 Visual 아래에 붙인다.
+    /// worldPositionStays를 false로 줘야 프리팹에 저장된 로컬 좌표가 그대로 쓰인다
+    /// (true면 지금 서 있는 월드 위치를 유지하려고 로컬 좌표를 다시 계산해버린다).
+    /// </summary>
+    private ParticleSystem SpawnVfx(ParticleSystem _prefab)
+    {
+        if (_prefab == null) return null;
+
+        Transform _parent = visualTransform != null ? visualTransform : transform;
+
+        return Instantiate(_prefab, _parent, false);
+    }
+
+    private static void StopVfx(ParticleSystem _vfx, bool _bClear)
+    {
+        if (_vfx == null) return;
+
+        _vfx.Stop(true, _bClear ? ParticleSystemStopBehavior.StopEmittingAndClear : ParticleSystemStopBehavior.StopEmitting);
     }
 
     private void OnTriggerEnter2D(Collider2D _other)

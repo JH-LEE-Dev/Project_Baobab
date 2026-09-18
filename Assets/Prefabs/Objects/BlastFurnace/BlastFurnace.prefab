@@ -450,6 +450,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BlastFurnace
   gemOreType: 1
   animatedObj: {fileID: 3601323084132055792}
+  loopVfxPrefab: {fileID: 3945750783020943169, guid: ce903d2310da2fc4a9d19bf14d06292b, type: 3}
+  fireImpactPrefab: {fileID: 2911934347387074514, guid: 61c75b9b52a2fec4dbadf33ecb7bcc14, type: 3}
+  heatHaze: {fileID: 8100000000000000004}
   inPoint: {fileID: 4899149006651441188}
   visualTransform: {fileID: 7252409457724696007}
   customSortable: {fileID: 6986695396408734483}
