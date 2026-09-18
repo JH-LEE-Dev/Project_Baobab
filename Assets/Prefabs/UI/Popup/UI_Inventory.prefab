@@ -3936,6 +3936,14 @@ PrefabInstance:
       propertyPath: defaultMoneyType
       value: 8
       objectReference: {fileID: 0}
+    - target: {fileID: 4932331130887984204, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 16
+      objectReference: {fileID: 0}
+    - target: {fileID: 4932331130887984204, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 16
+      objectReference: {fileID: 0}
     - target: {fileID: 5109068317126577165, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
       propertyPath: m_Layer
       value: 18
@@ -4049,6 +4057,14 @@ PrefabInstance:
       propertyPath: defaultMoneyType
       value: 7
       objectReference: {fileID: 0}
+    - target: {fileID: 4932331130887984204, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 16
+      objectReference: {fileID: 0}
+    - target: {fileID: 4932331130887984204, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 16
+      objectReference: {fileID: 0}
     - target: {fileID: 5109068317126577165, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
       propertyPath: m_Layer
       value: 18
@@ -4161,6 +4177,14 @@ PrefabInstance:
     - target: {fileID: 4161069215367419048, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
       propertyPath: defaultMoneyType
       value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 4932331130887984204, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 16
+      objectReference: {fileID: 0}
+    - target: {fileID: 4932331130887984204, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 16
       objectReference: {fileID: 0}
     - target: {fileID: 5109068317126577165, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
       propertyPath: m_Layer
