@@ -1015,12 +1015,29 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
         }
 
         // 경합 상대가 없을 때는 집을 건드리지 않아야 한다(항상 true로 되돌려 둔다).
-        if (tent != null)
-        {
-            tent.SetCanReach(nearestFurnace == null || tentWins);
-        }
+        bool tentCanReach = nearestFurnace == null || tentWins;
 
-        UpdateGroupOutline();
+        // 꺼지는 쪽을 먼저, 켜지는 쪽을 나중에 알린다.
+        //
+        // 캐릭터 위 E 안내는 대상마다 따로 세지 않고 마지막 알림을 그대로 따른다(UIView_Unit.InteractionStateChange).
+        // 그래서 집이 "켜짐"을 보낸 뒤에 용광로가 "꺼짐"을 보내면, 집 앞에 서 있는데 안내가 사라진다.
+        // 용광로에서 집 쪽으로 걸어 넘어가는 프레임이 정확히 그 순서였다.
+        if (tent == null)
+        {
+            UpdateGroupOutline();
+        }
+        else if (true == tentCanReach)
+        {
+            // 집이 켜지는 차례. 용광로 쪽은 꺼지거나 그대로이므로 먼저 보낸다.
+            UpdateGroupOutline();
+            tent.SetCanReach(true);
+        }
+        else
+        {
+            // 용광로가 켜지는 차례. 집을 먼저 꺼야 용광로의 "켜짐"이 마지막에 남는다.
+            tent.SetCanReach(false);
+            UpdateGroupOutline();
+        }
     }
 
     /// <summary>
