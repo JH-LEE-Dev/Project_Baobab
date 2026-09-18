@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 /// <summary>
 /// 마을 용광로. 지금은 보이는 것과 상호작용 범위까지만 담당한다.
-///   - 불꽃 애니메이션(AnimatedObj에 위임). 제련이 도는 동안에만 재생하고, 멈춰 있으면 첫 프레임 고정.
+///   - 불꽃 애니메이션(AnimatedObj에 위임). 멈춰 있을 때와 도는 동안이 시트의 서로 다른 구간을 쓴다.
 ///   - 아이소메트릭 정렬(CustomSortable + SortingGroup)
 ///   - 아웃라인은 자기가 켜지 않는다. 세 대가 한 덩어리로 같이 빛나야 해서 BlastFurnaceManager가 켠다.
 ///
@@ -36,11 +36,25 @@ public class BlastFurnace : MonoBehaviour
     [Tooltip("불꽃 프레임 애니메이션. 타일맵 데코가 쓰는 것과 같은 컴포넌트를 그대로 쓴다.")]
     [SerializeField] private AnimatedObj animatedObj;
 
-    [Tooltip("본체 SpriteRenderer. 멈춰 있을 때 첫 프레임으로 되돌리는 데 쓴다.")]
-    [SerializeField] private SpriteRenderer bodyRenderer;
+    // Blast Furnace 시트 한 장에 두 상태가 들어 있다. 앞쪽이 대기, 뒤쪽이 가동이다.
+    // 두 구간 모두 핑퐁으로 돈다(0 1 2 3 2 1 0 1 2 3...). 그림이 바뀌면 여기 숫자만 고치면 된다.
+    [Tooltip("멈춰 있을 때 쓸 구간의 첫 프레임 번호.")]
+    [SerializeField] private int idleFrameStart = 0;
 
-    [Tooltip("멈춰 있을 때 보여줄 그림. 불꽃 애니메이션의 첫 프레임이다.")]
-    [SerializeField] private Sprite idleSprite;
+    [Tooltip("멈춰 있을 때 쓸 프레임 수.")]
+    [SerializeField] private int idleFrameCount = 4;
+
+    [Tooltip("제련이 도는 동안 쓸 구간의 첫 프레임 번호.")]
+    [SerializeField] private int runFrameStart = 4;
+
+    [Tooltip("제련이 도는 동안 쓸 프레임 수.")]
+    [SerializeField] private int runFrameCount = 5;
+
+    [Tooltip("제련이 도는 동안의 초당 프레임 수.")]
+    [SerializeField] private float runFrameRate = 10f;
+
+    [Tooltip("멈춰 있을 때의 초당 프레임 수. 가동보다 느리게 둬서 쉬고 있는 느낌을 준다.")]
+    [SerializeField] private float idleFrameRate = 6f;
 
     [Tooltip("원석이 날아와 꽂히는 지점. 원목이 LogContainer의 inputTransform으로 들어가는 것과 같다.")]
     [SerializeField] private Transform inPoint;
@@ -326,6 +340,9 @@ public class BlastFurnace : MonoBehaviour
         if (animatedObj != null)
         {
             animatedObj.Initialize();
+
+            // 두 구간 모두 왕복 재생이다. 프리팹 값에 기대지 않고 여기서 켜둔다.
+            animatedObj.SetPingPong(true);
         }
 
         if (customSortable == null) return;
@@ -339,20 +356,27 @@ public class BlastFurnace : MonoBehaviour
     }
 
     /// <summary>
-    /// AnimatedObj는 활성화되어 있는 동안 계속 프레임을 넘긴다. 멈춰 있어야 할 때는 컴포넌트를 꺼서
-    /// Update 자체를 돌지 않게 하고, 그림을 첫 프레임으로 되돌린다.
-    /// (AnimatedObj.Initialize()가 시작 프레임을 무작위로 잡으므로 되돌리는 과정이 반드시 필요하다)
+    /// 지금 상태에 맞는 프레임 구간과 재생 속도를 애니메이터에 알려준다.
+    ///
+    /// 멈춰 있을 때도 애니메이션은 계속 돈다(예전처럼 컴포넌트를 끄지 않는다). 대기와 가동이
+    /// 시트의 서로 다른 구간을 쓰고, 대기 쪽만 조금 느리게 돌려 쉬고 있는 느낌을 준다.
+    /// SetFrameRange는 구간이 실제로 바뀔 때만 처음으로 되감으므로 같은 상태에서 여러 번 불려도 괜찮다.
     /// </summary>
     private void ApplyRunningState()
     {
-        if (animatedObj != null)
-        {
-            animatedObj.enabled = bRunning;
-        }
+        if (animatedObj == null) return;
 
-        if (false == bRunning && bodyRenderer != null && idleSprite != null)
+        animatedObj.enabled = true;
+
+        if (true == bRunning)
         {
-            bodyRenderer.sprite = idleSprite;
+            animatedObj.SetFrameRate(runFrameRate);
+            animatedObj.SetFrameRange(runFrameStart, runFrameCount);
+        }
+        else
+        {
+            animatedObj.SetFrameRate(idleFrameRate);
+            animatedObj.SetFrameRange(idleFrameStart, idleFrameCount);
         }
     }
 

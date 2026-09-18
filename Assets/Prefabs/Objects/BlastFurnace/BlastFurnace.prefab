@@ -449,8 +449,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BlastFurnace
   gemOreType: 1
   animatedObj: {fileID: 3601323084132055792}
-  bodyRenderer: {fileID: 6105784415098846363}
-  idleSprite: {fileID: -2455103700055406647, guid: 11e2346cbe398b648b2c0ead4fbdd42b, type: 3}
   inPoint: {fileID: 4899149006651441188}
   visualTransform: {fileID: 7252409457724696007}
   customSortable: {fileID: 6986695396408734483}
