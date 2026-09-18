@@ -23,6 +23,13 @@ public class TownProductionManager : MonoBehaviour
 
     [SerializeField] private Transform offroadDriveEndPoint;
 
+    [Tooltip("컨테이너가 차 위에 안착한 뒤 하늘(카메라 상승) 연출이 시작되기까지의 대기 시간")]
+    [SerializeField] private float skyProductionDelayAfterLanding = 0.5f;
+
+    // 하늘 연출을 예약해 둔 주행이 진행 중인지. 컨테이너 안착 이벤트는 주행 연출에서만 오지만,
+    // 예약 없이 들어온 안착에 반응해 연출이 제멋대로 시작되는 일이 없도록 명시적으로 잠근다.
+    private bool bSkyProductionPending = false;
+
     private Transform characterRidePoint;
     private Coroutine characterRideCoroutine;
     private SkyCameraProductionManager skyCameraProductionManager;
@@ -70,7 +77,10 @@ public class TownProductionManager : MonoBehaviour
         if (offroadVehicleObj != null)
         {
             offroadVehicleObj.OffroadDriveEndEvent -= DriveEnd;
+            offroadVehicleObj.ContainerLandedOnVehicleEvent -= ContainerLandedOnVehicle;
         }
+
+        bSkyProductionPending = false;
 
         if (characterRideCoroutine != null)
         {
@@ -85,6 +95,9 @@ public class TownProductionManager : MonoBehaviour
 
         offroadVehicleObj.OffroadDriveEndEvent -= DriveEnd;
         offroadVehicleObj.OffroadDriveEndEvent += DriveEnd;
+
+        offroadVehicleObj.ContainerLandedOnVehicleEvent -= ContainerLandedOnVehicle;
+        offroadVehicleObj.ContainerLandedOnVehicleEvent += ContainerLandedOnVehicle;
 
         characterRidePoint = offroadVehicleObj.CharacterRidePoint;
 
@@ -110,6 +123,18 @@ public class TownProductionManager : MonoBehaviour
         StartSkyProduction();
         offroadVehicleObj.StartDrive(offroadDriveEndPoint);
         StartCoroutine(PopupUIDown());
+    }
+
+    /// <summary>
+    /// 주행 연출에서 컨테이너가 차 위에 안착한 순간. 여기서부터
+    /// skyProductionDelayAfterLanding만큼 뒤에 카메라가 하늘로 올라가기 시작한다.
+    /// </summary>
+    private void ContainerLandedOnVehicle()
+    {
+        if (bSkyProductionPending == false) return;
+
+        bSkyProductionPending = false;
+        StartCoroutine(StartSkyProductionRoutine());
     }
 
     public void StartCharacterRide()
@@ -208,7 +233,10 @@ public class TownProductionManager : MonoBehaviour
 
     private IEnumerator StartSkyProductionRoutine()
     {
-        yield return new WaitForSeconds(3.75f);
+        // 기준점은 컨테이너가 차 위에 안착한 순간(ContainerLandedOnVehicle). 예전엔 StartDrive
+        // 시점부터 3.75초를 세는 고정 타이머라, 도약 · 시동 연출 길이를 손대면 하늘 연출이
+        // 차량 연출의 아무 지점에서나 시작됐다.
+        yield return new WaitForSeconds(skyProductionDelayAfterLanding);
 
         // 카메라가 실제로 하늘로 올라가기 시작하는 이 시점에 맞춰 타운 BGM을 페이드아웃한다.
         Sound.FadeOutBGM(skyCameraProductionManager.MoveDuration);
@@ -321,10 +349,15 @@ public class TownProductionManager : MonoBehaviour
         CameraUpDownEndEvent?.Invoke();
     }
 
+    /// <summary>
+    /// 하늘 연출을 예약한다. 실제 시작은 컨테이너가 차 위에 안착한 뒤
+    /// skyProductionDelayAfterLanding만큼 지난 시점이다(ContainerLandedOnVehicle).
+    /// 상호작용 키 잠금은 연출을 기다리는 동안에도 유지되어야 하므로 예약 시점에 곧바로 건다.
+    /// </summary>
     public void StartSkyProduction()
     {
         inputManager.PauseInteractKey(true);
-        StartCoroutine(StartSkyProductionRoutine());
+        bSkyProductionPending = true;
     }
 
     private IEnumerator PopupUIDown()
