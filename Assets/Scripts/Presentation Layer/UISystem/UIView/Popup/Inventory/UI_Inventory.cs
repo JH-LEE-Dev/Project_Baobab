@@ -334,13 +334,13 @@ public class UI_Inventory : MonoBehaviour
 
     private void InitCoins()
     {
-        InitCurrencyHUD(uiPrism, MoneyType.PrismOre, true);
-        InitCurrencyHUD(uiDiamond, MoneyType.DiamondOre, true);
-        InitCurrencyHUD(uiGold, MoneyType.GoldOre, true);
-        InitCurrencyHUD(uiCoin, MoneyType.Coin, false);
+        InitCurrencyHUD(uiPrism, MoneyType.PrismOre, true, 0);
+        InitCurrencyHUD(uiDiamond, MoneyType.DiamondOre, true, 1);
+        InitCurrencyHUD(uiGold, MoneyType.GoldOre, true, 2);
+        InitCurrencyHUD(uiCoin, MoneyType.Coin, false, 3);
     }
 
-    private void InitCurrencyHUD(CurrencyCounterHUD _hud, MoneyType _moneyType, bool _dimWhenZero)
+    private void InitCurrencyHUD(CurrencyCounterHUD _hud, MoneyType _moneyType, bool _dimWhenZero, int _siblingIndex)
     {
         if (null == _hud)
             return;
@@ -348,6 +348,7 @@ public class UI_Inventory : MonoBehaviour
         _hud.Initialize();
         _hud.SetMoneyType(_moneyType);
         _hud.SetDimWhenZero(_dimWhenZero, 0.35f);
+        _hud.transform.SetSiblingIndex(_siblingIndex);
 
         if (_dimWhenZero)
         {
