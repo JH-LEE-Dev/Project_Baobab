@@ -230,10 +230,29 @@ public class BlastFurnace : MonoBehaviour
     }
 
     /// <summary>가공 규칙을 넣어준다. 등급도 규칙을 따라간다.</summary>
+    /// <summary>
+    /// 이 용광로가 쓸 가공 규칙을 넣습니다.
+    ///
+    /// 종류(gemOreType)를 레시피에서 <b>조건부로만</b> 받는 이유:
+    /// BlastFurnaceRecipe는 struct라 BlastFurnaceManager.FindRecipe()가 못 찾으면 default를
+    /// 돌려주고, 그 gemOreType은 None이다. 그걸 그대로 대입하면 <b>바로 앞줄에서 부른
+    /// SetGemOreType()이 정해준 종류가 덮여</b> 용광로가 무종류가 된다. 이 클래스에는
+    /// recipe/gemOreType에 대한 null·None 가드가 없어서 그 뒤로는 조용히 어긋난다.
+    ///
+    /// 지금 이 경우가 없는 것은 DemoContentStripper가 레시피 <b>항목을 지우지 않고
+    /// 스프라이트 참조만 끊기</b> 때문이다. 그 전제가 바뀌는 순간(= 안 쓰는 항목을 배열에서
+    /// 빼는 순간) 깨지므로, 전제에 기대지 않도록 여기서 막는다.
+    ///
+    /// None이 아닌 값이 올 때의 동작은 종전과 완전히 동일하다.
+    /// </summary>
     public void SetRecipe(BlastFurnaceRecipe _recipe)
     {
         recipe = _recipe;
-        gemOreType = _recipe.gemOreType;
+
+        if (GemOreType.None != _recipe.gemOreType)
+        {
+            gemOreType = _recipe.gemOreType;
+        }
     }
 
     /// <summary>가공 속도 배율. 1이면 초당 1씩 가공량이 준다(가속 특성이 이 값을 올린다).</summary>

@@ -61,6 +61,24 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
     private const string BACKUP_FOLDER = "DemoContentStripBackup";
 
+    /// <summary>
+    /// 백업/복원이 추적하는 에셋 전부. 새 대상을 추가하면 <b>여기에도 반드시 넣어야</b>
+    /// 복원이 걸립니다(안 넣으면 그 에셋은 잘린 채로 남습니다).
+    ///
+    /// 백업 파일명이 원본의 <b>파일명</b>이라, 이 목록에 같은 파일명이 둘 생기면 백업이 서로
+    /// 덮어써지고 복원도 엉뚱한 경로로 갑니다. 경로 전체를 키로 쓰지 않는 이유는, 그렇게 바꾸면
+    /// 중단된 빌드가 남긴 <b>기존 백업을 못 찾아 복원이 통째로 건너뛰어지기</b> 때문입니다.
+    /// 대신 아래 AssertNoDuplicateFileNames()가 빌드 시작 시 충돌을 잡아 즉시 멈춥니다.
+    /// </summary>
+    private static readonly string[] TRACKED_ASSET_PATHS =
+    {
+        AUDIO_DB_PATH,
+        TREE_VISUAL_DB_PATH,
+        INSTALLER_PREFAB_PATH,
+        FURNACE_HUD_PREFAB_PATH,
+        CURRENCY_HUD_PREFAB_PATH,
+    };
+
     public void OnPreprocessBuild(BuildReport _report)
     {
         // 이전 빌드가 비정상 종료돼 백업이 남아 있을 수 있다. 무엇을 하든 먼저 원본으로 맞춘다.
@@ -76,6 +94,9 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
                              "미공개 콘텐츠 제외를 건너뜁니다. 빌드는 그대로 진행됩니다.");
             return;
         }
+
+        // 백업을 한 장이라도 뜨기 전에 확인한다. 뜬 뒤에 터뜨리면 이미 덮어써진 뒤다.
+        AssertNoDuplicateFileNames();
 
         Directory.CreateDirectory(BackupDirectory);
 
@@ -548,13 +569,34 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
     private static string FindAssetPathByFileName(string _fileName)
     {
-        if (Path.GetFileName(AUDIO_DB_PATH) == _fileName) return AUDIO_DB_PATH;
-        if (Path.GetFileName(TREE_VISUAL_DB_PATH) == _fileName) return TREE_VISUAL_DB_PATH;
-        if (Path.GetFileName(INSTALLER_PREFAB_PATH) == _fileName) return INSTALLER_PREFAB_PATH;
-        if (Path.GetFileName(FURNACE_HUD_PREFAB_PATH) == _fileName) return FURNACE_HUD_PREFAB_PATH;
-        if (Path.GetFileName(CURRENCY_HUD_PREFAB_PATH) == _fileName) return CURRENCY_HUD_PREFAB_PATH;
+        for (int i = 0; i < TRACKED_ASSET_PATHS.Length; i++)
+        {
+            if (Path.GetFileName(TRACKED_ASSET_PATHS[i]) == _fileName) return TRACKED_ASSET_PATHS[i];
+        }
 
         return null;
+    }
+
+    /// <summary>
+    /// 추적 대상에 같은 파일명이 둘 이상이면 빌드를 멈춥니다.
+    ///
+    /// 백업 키가 파일명이라, 충돌하면 한쪽 백업이 다른 쪽에 덮어써지고 복원 시 원본이 뒤바뀝니다.
+    /// 그 결과는 "빌드는 성공했는데 에셋이 조용히 잘린 채로 남는 것"이라 늦게 발견됩니다.
+    /// 여기서 터뜨리는 편이 훨씬 싸므로 예외로 올립니다.
+    /// </summary>
+    private static void AssertNoDuplicateFileNames()
+    {
+        for (int i = 0; i < TRACKED_ASSET_PATHS.Length; i++)
+        {
+            for (int j = i + 1; j < TRACKED_ASSET_PATHS.Length; j++)
+            {
+                if (Path.GetFileName(TRACKED_ASSET_PATHS[i]) != Path.GetFileName(TRACKED_ASSET_PATHS[j])) continue;
+
+                throw new BuildFailedException(
+                    $"[DemoStrip] 백업 대상 파일명이 겹칩니다: {TRACKED_ASSET_PATHS[i]} / {TRACKED_ASSET_PATHS[j]}. " +
+                    "백업 키가 파일명이라 한쪽이 덮어써지고 복원이 어긋납니다. 둘 중 하나의 파일명을 바꾸십시오.");
+            }
+        }
     }
 
     /// <summary>
