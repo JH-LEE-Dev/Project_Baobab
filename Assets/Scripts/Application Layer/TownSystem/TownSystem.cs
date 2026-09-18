@@ -207,6 +207,12 @@ public class TownSystem : MonoBehaviour
         {
             blastFurnaceManager.InteractStateChangedEvent -= BlastFurnaceInteractStateChanged;
             blastFurnaceManager.InteractStateChangedEvent += BlastFurnaceInteractStateChanged;
+
+            blastFurnaceManager.FurnaceStateChangedEvent -= BlastFurnaceStateChanged;
+            blastFurnaceManager.FurnaceStateChangedEvent += BlastFurnaceStateChanged;
+
+            // 구독이 Initialize 뒤라 최초 목록을 놓친다. 지금 상태를 한 번 받아둔다.
+            blastFurnaceManager.NotifyUIState();
         }
 
         townObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
@@ -280,7 +286,10 @@ public class TownSystem : MonoBehaviour
         tentManager.TentInteractStateChangedEvent -= TentInteractStateChanged;
 
         if (blastFurnaceManager != null)
+        {
             blastFurnaceManager.InteractStateChangedEvent -= BlastFurnaceInteractStateChanged;
+            blastFurnaceManager.FurnaceStateChangedEvent -= BlastFurnaceStateChanged;
+        }
 
         townObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         logProcessingManager.ShopInteracteStateChangedEvent -= ShopInteractStateChanged;
@@ -532,6 +541,11 @@ public class TownSystem : MonoBehaviour
     private void BlastFurnaceInteractStateChanged(bool _boolean)
     {
         signalHub.Publish(new BlastFurnaceInteractStateChangedSignal(_boolean));
+    }
+
+    private void BlastFurnaceStateChanged(System.Collections.Generic.IReadOnlyList<BlastFurnaceUIData> _datas)
+    {
+        signalHub.Publish(new BlastFurnaceStateChangedSignal(_datas));
     }
 
     private void OffroadInteractStateChanged(bool _boolean)

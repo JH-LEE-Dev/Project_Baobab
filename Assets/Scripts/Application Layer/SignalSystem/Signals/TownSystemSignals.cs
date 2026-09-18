@@ -74,6 +74,19 @@ public struct BlastFurnaceInteractStateChangedSignal
     }
 }
 
+/// <summary>
+/// 용광로 구성이 바뀌었을 때(해금/가공 시작·종료/쌓인 원석 변화). UI가 위젯을 다시 짜는 시점이다.
+/// datas는 BlastFurnaceManager가 재사용하는 목록이라, 받아서 들고 있으면 진행도가 실시간으로 따라온다.
+/// </summary>
+public struct BlastFurnaceStateChangedSignal
+{
+    public System.Collections.Generic.IReadOnlyList<BlastFurnaceUIData> datas;
+    public BlastFurnaceStateChangedSignal(System.Collections.Generic.IReadOnlyList<BlastFurnaceUIData> _datas)
+    {
+        datas = _datas;
+    }
+}
+
 public struct LootPillarInteractStateChangedSignal
 {
     public bool state;

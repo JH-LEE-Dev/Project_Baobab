@@ -32,6 +32,13 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
     /// </summary>
     public event System.Action<bool> InteractStateChangedEvent;
 
+    /// <summary>
+    /// 용광로 구성이 바뀌었을 때(해금/가공 시작·종료/쌓인 원석 변화) 한 번 알린다.
+    /// UI가 위젯을 다시 짜야 하는 시점이며, 진행도처럼 매 프레임 변하는 값은 이 이벤트가 아니라
+    /// 넘겨준 목록(UIDatas)을 그대로 읽으면 된다.
+    /// </summary>
+    public event System.Action<System.Collections.Generic.IReadOnlyList<BlastFurnaceUIData>> FurnaceStateChangedEvent;
+
     // 아래 값들은 전부 LogContainer가 원목을 날릴 때 쓰는 것과 같은 값이다.
     // 원목 납품과 눈에 보이는 것도 손맛도 같아야 해서 숫자를 새로 잡지 않고 그대로 맞췄다.
     private const float OreFlyInterval = 0.075f;    // LogContainer.FLY_INTERVAL
@@ -93,6 +100,21 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
 
     // 타일에서 읽어온 원본 자리. 여기서 용광로 수에 맞춰 고르게 나눈 결과가 homePositions다.
     private readonly List<Vector3> tilePositions = new List<Vector3>(4);
+
+    // UI에 넘길 상태 묶음. 매 프레임 갱신하되 목록 자체는 재사용하므로 할당이 생기지 않고,
+    // UI가 참조를 들고 있으면 진행도가 실시간으로 따라 움직인다.
+    private readonly List<BlastFurnaceUIData> uiDatas = new List<BlastFurnaceUIData>(3);
+
+    /// <summary>
+    /// 각 용광로의 위치 / 원석 등급 / 해금 여부 / 가공 상태. UI는 이것만 읽으면 된다.
+    /// 목록 길이는 용광로 수로 고정이고, 잠긴 것도 unlocked=false로 들어 있다.
+    /// </summary>
+    public IReadOnlyList<BlastFurnaceUIData> UIDatas => uiDatas;
+
+    // 위 이벤트를 언제 쏠지 판단하기 위한 직전 상태
+    private int lastNotifiedUnlockCount = -1;
+    private int lastNotifiedStoredSum = -1;
+    private int lastNotifiedRunningMask = -1;
 
     // 타일 물리 도형을 읽을 때 쓰는 재사용 버퍼.
     private static readonly List<Vector2> physicsShapeBuffer = new List<Vector2>(8);
@@ -378,6 +400,10 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
         }
 
         UpdateGroupOutline();
+
+        // 해금 상태가 바뀐 직후에도 UI가 바로 최신 값을 읽을 수 있게 한 번 갱신한다
+        // (Update를 기다리면 한 프레임 동안 옛 값이 보인다).
+        UpdateUIDatas();
     }
 
     /// <summary>
@@ -613,6 +639,71 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
         UpdateNearestInteractable();
         UpdateOreInsertion(Time.deltaTime);
         UpdateFlyingItems(Time.deltaTime);
+        UpdateUIDatas();
+    }
+
+    /// <summary>
+    /// 지금 상태를 구독자에게 한 번 다시 보낸다.
+    ///
+    /// Initialize()가 이미 UpdateUIDatas()를 한 번 돌려 "직전 상태"를 채워두기 때문에, 그 뒤에 구독한
+    /// 쪽(TownSystem.BindEvents는 Initialize 다음에 불린다)은 다음에 무언가 바뀔 때까지 목록을
+    /// 한 번도 못 받는다. 구독 직후 이걸 불러 최초 1회를 보장한다.
+    /// </summary>
+    public void NotifyUIState()
+    {
+        lastNotifiedUnlockCount = -1;
+        lastNotifiedStoredSum = -1;
+        lastNotifiedRunningMask = -1;
+
+        UpdateUIDatas();
+    }
+
+    /// <summary>
+    /// UI에 넘길 상태를 갱신한다. 목록은 재사용하므로 매 프레임 돌아도 할당이 없다.
+    /// 구성이 실제로 바뀐 프레임에만 FurnaceStateChangedEvent를 쏜다(진행도는 매 프레임 변하므로 제외).
+    /// </summary>
+    private void UpdateUIDatas()
+    {
+        if (uiDatas.Count != furnaces.Count)
+        {
+            uiDatas.Clear();
+            for (int i = 0; i < furnaces.Count; i++) uiDatas.Add(default);
+        }
+
+        int storedSum = 0;
+        int runningMask = 0;
+
+        for (int i = 0; i < furnaces.Count; i++)
+        {
+            BlastFurnace furnace = furnaces[i];
+            if (furnace == null) continue;
+
+            bool unlocked = i < unlockedCount;
+
+            uiDatas[i] = new BlastFurnaceUIData
+            {
+                position = furnace.transform.position,
+                gemOreType = furnace.GemOreType,
+                unlocked = unlocked,
+                running = furnace.Running,
+                progress01 = furnace.WorkProgress01,
+                storedOre = furnace.StoredOre,
+                orePerIngot = furnace.Recipe.orePerIngot,
+            };
+
+            storedSum += furnace.StoredOre;
+            if (furnace.Running) runningMask |= 1 << i;
+        }
+
+        if (unlockedCount == lastNotifiedUnlockCount
+            && storedSum == lastNotifiedStoredSum
+            && runningMask == lastNotifiedRunningMask) return;
+
+        lastNotifiedUnlockCount = unlockedCount;
+        lastNotifiedStoredSum = storedSum;
+        lastNotifiedRunningMask = runningMask;
+
+        FurnaceStateChangedEvent?.Invoke(uiDatas);
     }
 
     /// <summary>
@@ -627,8 +718,8 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
         if (false == bInsertKeyHeld) return;
         if (inventory == null || flyingItemPrefab == null) return;
 
-        // 상호작용 창구가 열려 있을 때만(= 플레이어가 용광로 앞에 서 있고 경합에서도 이겼을 때)
-        if (interactionOwner == null || false == interactionOwner.Interactable) return;
+        // 상호작용이 열려 있을 때만(= 플레이어가 용광로 앞에 서 있고 경합에서도 이겼을 때)
+        if (false == IsInteractable()) return;
 
         oreFlyTimer += _deltaTime;
         if (oreFlyTimer < OreFlyInterval / GetTransferSpeedMultiplier()) return;
@@ -646,6 +737,25 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
 
             if (TrySendOre(furnaces[oreSendCursor])) return;
         }
+    }
+
+    /// <summary>
+    /// 지금 원석을 넣을 수 있는 상태인지.
+    ///
+    /// 창구를 하나로 모으는 설정에서는 그 한 대만 보면 되지만, 그 설정을 끄면(bSingleInteractionCollider
+    /// = false) 창구가 없어 interactionOwner가 null이 된다. 그때 창구만 보면 원석이 영영 안 들어가므로,
+    /// 열려 있는 용광로 중 하나라도 상호작용 가능하면 받는다.
+    /// </summary>
+    private bool IsInteractable()
+    {
+        if (interactionOwner != null) return interactionOwner.Interactable;
+
+        for (int i = 0; i < unlockedCount && i < furnaces.Count; i++)
+        {
+            if (furnaces[i] != null && furnaces[i].Interactable) return true;
+        }
+
+        return false;
     }
 
     private bool TrySendOre(BlastFurnace _furnace)
