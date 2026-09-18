@@ -15,4 +15,5 @@ public interface ICommandHandleSystem
     public IInDungeonObjManagerCH inDungeonObjManagerCH { get; }
     public IInDungeonUnitSpawnerCH inDungeonUnitSpawnerCH { get; }
     public ITownUnitSpawnerCH townUnitSpawnerCH { get; }
+    public IBlastFurnaceCH blastFurnaceCH { get; }
 }

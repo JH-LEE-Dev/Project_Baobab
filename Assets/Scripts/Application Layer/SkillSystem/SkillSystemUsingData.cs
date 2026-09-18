@@ -377,6 +377,10 @@ public enum SkillCommandType
     OverheatPermanent,
     RecoveryPower,
     RemoteDeposit,
+    // 용광로 계열. 기존 값이 밀리지 않도록 반드시 맨 뒤에 붙인다
+    // (저장된 특성 데이터가 열거형 정수값으로 남아 있기 때문).
+    BlastFurnace,
+    BlastFurnaceSpeed,
 }
 
 public enum AbilityLevelUpRejectReason

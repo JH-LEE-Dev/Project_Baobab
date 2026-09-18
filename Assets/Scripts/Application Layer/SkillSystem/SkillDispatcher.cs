@@ -21,6 +21,7 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
     private IInDungeonObjManagerCH inDungeonObjManagerCH;
     private IInDungeonUnitSpawnerCH inDungeonUnitSpawnerCH;
     private ITownUnitSpawnerCH townUnitSpawnerCH;
+    private IBlastFurnaceCH blastFurnaceCH;
     [SerializeField] private List<SkillCommand> skillCommands;
     private Dictionary<SkillCommandType, SkillCommand> skillDic;
     private Dictionary<SkillCommandType, float> accumulatedAmounts;
@@ -53,11 +54,15 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
 
     ITownUnitSpawnerCH ICommandHandleSystem.townUnitSpawnerCH => townUnitSpawnerCH;
 
+    IBlastFurnaceCH ICommandHandleSystem.blastFurnaceCH => blastFurnaceCH;
+
     public void Initialize(SignalHub _signalHub, IInventoryCH _inventoryCH, IContainerCH _containerCH, ICutterCH _cutterCH,
     ILogEvaluatorCH _logEvaluatorCH, IDensityCH _densityCH,ICarrotItemCH _carrotItemCH, ITownObjSystemCH _townObjSystemCH,
     ILogProcessingSystemCH _logProcessingSystemCH, ILogItemControllerCH _logItemCH, IOffroadContainerCH _offroadContainerCH,
-    IInDungeonObjManagerCH _inDungeonObjManagerCH, IInDungeonUnitSpawnerCH _inDungeonUnitSpawnerCH, ITownUnitSpawnerCH _townUnitSpawnerCH)
+    IInDungeonObjManagerCH _inDungeonObjManagerCH, IInDungeonUnitSpawnerCH _inDungeonUnitSpawnerCH, ITownUnitSpawnerCH _townUnitSpawnerCH,
+    IBlastFurnaceCH _blastFurnaceCH)
     {
+        blastFurnaceCH = _blastFurnaceCH;
         offroadContainerCH = _offroadContainerCH;
         signalHub = _signalHub;
         inventoryCH = _inventoryCH;

@@ -27,6 +27,7 @@ public class TownSystem : MonoBehaviour
     private TownTileManager townTileManager;
     public TownUnitSpawner townUnitSpawner { get; private set; }
     public LootPillarManager lootPillarManager { get; private set; }
+    public BlastFurnaceManager blastFurnaceManager { get; private set; }
 
     /// <summary>
     /// 게임이 처음 시작됐을 때(던전에서 돌아온 것이 아닐 때) 캐릭터가 생성되는 위치.
@@ -81,6 +82,7 @@ public class TownSystem : MonoBehaviour
         townTileManager = GetComponentInChildren<TownTileManager>();
         townUnitSpawner = GetComponentInChildren<TownUnitSpawner>();
         lootPillarManager = GetComponentInChildren<LootPillarManager>();
+        blastFurnaceManager = GetComponentInChildren<BlastFurnaceManager>();
         skyCameraProductionManager = _skyCameraProductionManager;
 
         townProductionManager.Initialize(inputManager, _skyCameraProductionManager);
@@ -93,6 +95,12 @@ public class TownSystem : MonoBehaviour
         townUnitSpawner?.Initialize(environmentProvider);
         lootPillarManager?.Initialize(inputManager);
 
+        // 용광로 자리가 집 바로 옆이라 상호작용 범위가 겹친다. 가장 가까운 하나만 반응하도록
+        // 집(Tent)도 경합 후보로 넘겨준다.
+        blastFurnaceManager?.SetTent(tentManager.Tent);
+        blastFurnaceManager?.SetDependencies(inputManager, characterInventory as InventoryManager, logProcessingManager.shopNPC, logProcessingManager);
+        blastFurnaceManager?.Initialize();
+
         BindEvents();
         SubscribeSignals();
     }
@@ -102,6 +110,7 @@ public class TownSystem : MonoBehaviour
         logProcessingManager.Release();
         townObjectManager.Release();
         tentManager.Release();
+        blastFurnaceManager?.Release();
         townProductionManager.Release();
 
         ReleaseEvents();
@@ -112,6 +121,9 @@ public class TownSystem : MonoBehaviour
     {
         bTownSystemStarted = true;
         townTileManager.CreateGrid();
+
+        // 용광로 자리는 BlastColliderTilemap이 정하므로, Grid가 새로 생긴 뒤에 배치한다.
+        blastFurnaceManager?.ApplyPlacement(townTileManager.BlastColliderTilemap);
 
         // Grid는 매번 새로 생성되므로, 제재소 증설 단계(가공 라인 수)를 여기서 다시 반영해준다.
         // 세이브 로드나 던전 안에서의 증설이 이벤트보다 먼저 끝나 있어도 이 동기화로 항상 맞춰진다.
@@ -191,6 +203,12 @@ public class TownSystem : MonoBehaviour
         tentManager.TentInteractStateChangedEvent -= TentInteractStateChanged;
         tentManager.TentInteractStateChangedEvent += TentInteractStateChanged;
 
+        if (blastFurnaceManager != null)
+        {
+            blastFurnaceManager.InteractStateChangedEvent -= BlastFurnaceInteractStateChanged;
+            blastFurnaceManager.InteractStateChangedEvent += BlastFurnaceInteractStateChanged;
+        }
+
         townObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         townObjectManager.OffroadInteractStateChangedEvent += OffroadInteractStateChanged;
 
@@ -260,6 +278,10 @@ public class TownSystem : MonoBehaviour
         townObjectManager.PortalDeActivatedEvent -= PortalDeActivated;
         townProductionManager.OffroadDriveEndEvent -= OffroadDriveEnd;
         tentManager.TentInteractStateChangedEvent -= TentInteractStateChanged;
+
+        if (blastFurnaceManager != null)
+            blastFurnaceManager.InteractStateChangedEvent -= BlastFurnaceInteractStateChanged;
+
         townObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         logProcessingManager.ShopInteracteStateChangedEvent -= ShopInteractStateChanged;
         logProcessingManager.LogProcessorIsActiveEvent -= LogItemProcessorActiveState;
@@ -473,6 +495,7 @@ public class TownSystem : MonoBehaviour
     {
         character = _signal.character;
         logProcessingManager.SetCharacter(character);
+        blastFurnaceManager?.SetCharacter(character);
         townProductionManager.Character_DI(character);
         townObjectManager.SetCharacter(character);
     }
@@ -504,6 +527,11 @@ public class TownSystem : MonoBehaviour
     private void TentInteractStateChanged(bool _boolean)
     {
         signalHub.Publish(new TentInteractStateChangedSignal(_boolean));
+    }
+
+    private void BlastFurnaceInteractStateChanged(bool _boolean)
+    {
+        signalHub.Publish(new BlastFurnaceInteractStateChangedSignal(_boolean));
     }
 
     private void OffroadInteractStateChanged(bool _boolean)
@@ -563,6 +591,7 @@ public class TownSystem : MonoBehaviour
 
         logProcessingManager.DisableShopObj();
         tentManager.DisableTent();
+        blastFurnaceManager?.MoveOffscreen();
         townProductionManager.SetCharacterTransform();
 
         if (bRetryGame == false)

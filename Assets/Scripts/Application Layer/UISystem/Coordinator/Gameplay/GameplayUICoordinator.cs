@@ -119,6 +119,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<ItemAddedToInventorySignal>(ItemAddedToInventory);
         signalHub.Subscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
         signalHub.Subscribe<TentInteractStateChangedSignal>(TentInteractStateChanged);
+        signalHub.Subscribe<BlastFurnaceInteractStateChangedSignal>(BlastFurnaceInteractStateChanged);
         signalHub.Subscribe<OffroadInteractStateChangedSignal>(OffroadInteractStateChanged);
         signalHub.Subscribe<ShopInteractStateChangedSignal>(ShopInteractStateChanged);
         signalHub.Subscribe<LogItemProcessorActiveStateSignal>(LogItemProcessorIsActive);
@@ -175,6 +176,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<ItemAddedToInventorySignal>(ItemAddedToInventory);
         signalHub.UnSubscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
         signalHub.UnSubscribe<TentInteractStateChangedSignal>(TentInteractStateChanged);
+        signalHub.UnSubscribe<BlastFurnaceInteractStateChangedSignal>(BlastFurnaceInteractStateChanged);
         signalHub.UnSubscribe<OffroadInteractStateChangedSignal>(OffroadInteractStateChanged);
         signalHub.UnSubscribe<ShopInteractStateChangedSignal>(ShopInteractStateChanged);
         signalHub.UnSubscribe<LogItemProcessorActiveStateSignal>(LogItemProcessorIsActive);
@@ -804,6 +806,11 @@ public class GameplayUICoordinator
     private void TentInteractStateChanged(TentInteractStateChangedSignal _tentInteractStateChangedSignal)
     {
         unitUI.TentInteractStateChanged(_tentInteractStateChangedSignal.state);
+    }
+
+    private void BlastFurnaceInteractStateChanged(BlastFurnaceInteractStateChangedSignal _signal)
+    {
+        unitUI.BlastFurnaceInteractStateChanged(_signal.state);
     }
 
     private void OffroadInteractStateChanged(OffroadInteractStateChangedSignal _offroadInteractStateChangedSignal)

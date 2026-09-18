@@ -101,7 +101,8 @@ public class GameInstaller : MonoBehaviour
              offroadContainer,
              inDungeonSystem.inDungeonObjectManager,
              inDungeonSystem.inDungeonUnitSpawner,
-             townSystem.townUnitSpawner);
+             townSystem.townUnitSpawner,
+             townSystem.blastFurnaceManager);
 
         unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager, inventoryManager, offroadContainer, inDungeonSystem.inDungeonResultManager,
         environmentSystem);
@@ -116,7 +117,7 @@ public class GameInstaller : MonoBehaviour
 
         _saveManager.Initialize(signalHub, tutorialSystem, skillSystem, inventoryManager, townSystem.logProcessingManager,
         environmentSystem.densityManager, inDungeonSystem.inDungeonObjectManager, townSystem.townObjectManager, offroadContainer,
-        townSystem.townUnitSpawner);
+        townSystem.townUnitSpawner, townSystem.blastFurnaceManager);
 
         unitSystem.CreateCharacter();
         environmentSystem.DI(environmentSystem, townSystem.townObjectManager, inDungeonSystem.inDungeonObjectManager,

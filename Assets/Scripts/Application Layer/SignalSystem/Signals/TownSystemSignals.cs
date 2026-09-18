@@ -64,6 +64,16 @@ public struct TentInteractStateChangedSignal
     }
 }
 
+/// <summary>용광로 상호작용 범위 진입/이탈. 캐릭터 위 E키 안내를 켜고 끈다.</summary>
+public struct BlastFurnaceInteractStateChangedSignal
+{
+    public bool state;
+    public BlastFurnaceInteractStateChangedSignal(bool _state)
+    {
+        state = _state;
+    }
+}
+
 public struct LootPillarInteractStateChangedSignal
 {
     public bool state;

@@ -38,6 +38,12 @@ public class TownTileManager : MonoBehaviour
     public Tilemap LootPillarColliderTilemap { get; private set; }
 
     /// <summary>
+    /// 용광로 자리를 찍어둔 타일맵. 충돌뿐 아니라 배치 위치 자체를 이 타일이 정한다
+    /// (BlastFurnaceManager가 여기 찍힌 칸의 중심에 용광로를 세운다).
+    /// </summary>
+    public Tilemap BlastColliderTilemap { get; private set; }
+
+    /// <summary>
     /// 제재소 증설분 건물 충돌 타일맵들. 아직 증설되지 않은 것은 GameObject가 꺼져 있으므로,
     /// 길찾기 등에서 조회할 때는 반드시 활성 여부를 함께 확인해야 한다.
     /// </summary>
@@ -71,6 +77,7 @@ public class TownTileManager : MonoBehaviour
         WaterStencilTilemap = null;
         GroundStencilTilemap = null;
         LootPillarColliderTilemap = null;
+        BlastColliderTilemap = null;
 
         // buildingExpansionCount는 유지한다(다음 CreateGrid에서 같은 단계로 복원하기 위함).
         buildingColliderExpansions.Clear();
@@ -113,6 +120,7 @@ public class TownTileManager : MonoBehaviour
                 case "WaterStencilTilemap": WaterStencilTilemap = tilemap; break;
                 case "GroundStencilTilemap": GroundStencilTilemap = tilemap; break;
                 case "LootPhillarColliderTilemap": LootPillarColliderTilemap = tilemap; break;
+                case "BlastColliderTilemap": BlastColliderTilemap = tilemap; break;
                 default:
                     if (tilemap.gameObject.name.StartsWith(BuildingColliderExpansionPrefix))
                         buildingColliderExpansions.Add(tilemap);

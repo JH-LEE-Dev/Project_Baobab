@@ -20,8 +20,20 @@ public class Tent : MonoBehaviour, IShadowCaster
     // 재강화 비용에 못 미쳐 그 퀘스트를 영영 완료할 수 없게 되므로 구간 자체를 열지 않는다.
     private bool bTutorialLocked = false;
 
+    // 겹쳐 있는 다른 상호작용 대상(용광로 등)보다 이쪽이 가까운지. BlastFurnaceManager가 정해준다.
+    // ShopNPC.SetCanReach와 같은 역할이며, 경합 상대가 없으면 계속 true다.
+    private bool bCanReach = true;
+
     private bool bCanInteract = false;
     private bool bInteract = false;
+
+    private Collider2D interactionCollider;
+
+    /// <summary>플레이어가 상호작용 트리거 안에 들어와 있는지. 가장 가까운 대상을 고를 때 후보 판정에 쓴다.</summary>
+    public bool PlayerInRange => bPlayerInRange;
+
+    /// <summary>거리 비교에 쓸 상호작용 트리거.</summary>
+    public Collider2D InteractionCollider => interactionCollider;
 
     private SpriteRenderer sr;
 
@@ -86,6 +98,7 @@ public class Tent : MonoBehaviour, IShadowCaster
     {
         inputManager = _inputManager;
         sr = basicObject.GetComponent<SpriteRenderer>();
+        interactionCollider = GetComponent<Collider2D>();
 
         customSortable = GetComponentInChildren<CustomSortable>();
         customSortable.Initialize(transform);
@@ -179,13 +192,33 @@ public class Tent : MonoBehaviour, IShadowCaster
     // 상호작용 안내(TentInteractStateChangedEvent)도 이 결과 하나만 따라간다.
     private void UpdateInteractState()
     {
-        bool _canInteract = bPlayerInRange && false == bTutorialLocked;
+        bool _canInteract = bPlayerInRange && false == bTutorialLocked && bCanReach;
         if (_canInteract == bCanInteract)
             return;
 
         bCanInteract = _canInteract;
         outLineObject.SetActive(_canInteract);
         TentInteractStateChangedEvent?.Invoke(_canInteract);
+    }
+
+    /// <summary>
+    /// 겹쳐 있는 상호작용 대상들 중 집이 가장 가까운지. BlastFurnaceManager가 매 프레임 알려준다.
+    /// 경합에서 지면 특성 창 상호작용이 잠기고 아웃라인도 꺼진다.
+    /// </summary>
+    public void SetCanReach(bool _bCanReach)
+    {
+        if (bCanReach == _bCanReach) return;
+
+        bCanReach = _bCanReach;
+
+        // 상호작용이 막히는 순간 열려 있던 특성 창은 함께 닫는다(튜토리얼 잠금과 같은 처리).
+        if (false == bCanReach && true == bInteract)
+        {
+            bInteract = false;
+            TentInteractEvent?.Invoke(false);
+        }
+
+        UpdateInteractState();
     }
 
     // 튜토리얼 "도끼를 강화하세요"가 시작될 때까지 특성 창을 잠근다(TownSystem이 호출).

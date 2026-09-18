@@ -416,11 +416,44 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         }
     }
 
+    /// <summary>
+    /// 무언가 꽂혔을 때의 "뽀잉". 용광로에서 날아온 주괴가 박힐 때 BlastFurnaceManager가 부른다.
+    /// 수식과 지속시간은 LogContainer가 원목을 받을 때와 같다.
+    /// </summary>
+    public void TriggerBounce()
+    {
+        bounceTime = 0f;
+    }
+
+    private const float BOUNCE_DURATION_SHOP = 0.4f;
+    private float bounceTime = BOUNCE_DURATION_SHOP;
+
+    private void UpdateBounce(float _deltaTime)
+    {
+        if (null == animatorObject) return;
+
+        Transform visual = animatorObject.transform;
+
+        if (bounceTime >= BOUNCE_DURATION_SHOP)
+        {
+            if (visual.localScale != Vector3.one) visual.localScale = Vector3.one;
+            return;
+        }
+
+        bounceTime += _deltaTime;
+        float t = bounceTime / BOUNCE_DURATION_SHOP;
+
+        float curve = Mathf.Sin(t * Mathf.PI * 3f) * Mathf.Exp(-t * 4f) * 0.25f;
+
+        visual.localScale = new Vector3(1f + curve, 1f - curve, 1f);
+    }
+
     private void Update()
     {
         if (null != customSortable)
             customSortable.SetHeight(0f);
 
+        UpdateBounce(Time.deltaTime);
         ResetCoinPitchAfterIdle();
         UpdateFlyingCoins(Time.deltaTime);
     }
