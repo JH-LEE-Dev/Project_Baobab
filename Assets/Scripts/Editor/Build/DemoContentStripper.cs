@@ -19,6 +19,8 @@ using UnityEngine;
 ///   - 미공개 나무 그림 -> TreeVisualDataBase.treeVisualDatas
 ///   - 미공개 원석/주괴 그림 -> GameInstaller 프리팹의 GemOreItemController.gemOreTypeDatas
 ///                              + 같은 프리팹의 BlastFurnaceManager.recipes
+///   - 미공개 원석 재화 아이콘 -> UI_BlastFurnaceStatus 프리팹(용광로 HUD)
+///                              + CurrencyCounterHUD 프리팹(재화 카운터)의 iconEntries
 /// 그래서 빌드 직전에 이 에셋들에서 해당 항목만 지우면, 스프라이트와 오디오 클립이 아무에게도
 /// 참조되지 않아 빌드에서 자연히 빠집니다. 빌드가 끝나면 원본으로 되돌립니다.
 ///
@@ -54,6 +56,8 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     private const string DENSITY_DB_PATH = "Assets/Scriptable Obj/DensityData/Density Data Base.asset";
     private const string NAV_PREFAB_PATH = "Assets/Prefabs/UI/MenuPopup/Map/NewNav/HUD_PopupNav_Main.prefab";
     private const string INSTALLER_PREFAB_PATH = "Assets/Prefabs/Installer/Installer/GameInstaller.prefab";
+    private const string FURNACE_HUD_PREFAB_PATH = "Assets/Prefabs/UI/WorldPopup/BlastFurnaceUI/UI_BlastFurnaceStatus.prefab";
+    private const string CURRENCY_HUD_PREFAB_PATH = "Assets/Prefabs/UI/HUD/Common/CurrencyCounterHUD.prefab";
 
     private const string BACKUP_FOLDER = "DemoContentStripBackup";
 
@@ -77,12 +81,20 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         int _removedBgm = StripAudio(_maxPlayableMap);
         int _removedTree = StripTreeVisuals(_maxPlayableMap);
-        int _removedGemOre = StripGemOreSprites(_maxPlayableMap, out int _removedFurnaceRecipe);
+        int _removedGemOre = StripGemOreSprites(_maxPlayableMap, out int _removedFurnaceRecipe, out HashSet<GemOreType> _keepGemOre);
+
+        // 원석 그림과 같은 판정으로 재화 아이콘도 끊는다. 판정을 못 내린 경우(_keepGemOre == null)는 건너뛴다.
+        int _removedIcon = 0;
+        if (null != _keepGemOre)
+        {
+            _removedIcon += StripFurnaceHudIcons(_keepGemOre);
+            _removedIcon += StripCurrencyHudIcons(_keepGemOre);
+        }
 
         AssetDatabase.SaveAssets();
 
         Debug.Log($"[DemoStrip] 데모 빌드 - 미공개 콘텐츠 제외 (최대 플레이 맵: {_maxPlayableMap})\n" +
-                  $"  BGM {_removedBgm}곡, 나무 비주얼 {_removedTree}종, 원석 그림 {_removedGemOre}종, 용광로 레시피 {_removedFurnaceRecipe}종\n" +
+                  $"  BGM {_removedBgm}곡, 나무 비주얼 {_removedTree}종, 원석 그림 {_removedGemOre}종, 용광로 레시피 {_removedFurnaceRecipe}종, 재화 아이콘 {_removedIcon}개\n" +
                   "  빌드가 끝나면 원본으로 자동 복구됩니다.");
     }
 
@@ -234,9 +246,10 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     /// 원석 프리팹(GemOreItem.prefab) 자체는 건드리지 않습니다. 그림자/머티리얼을 원목과 공유할 뿐
     /// 자기 그림은 런타임에 이 테이블에서 받아 쓰므로, 참조를 끊으면 그림만 빌드에서 빠집니다.
     /// </summary>
-    private static int StripGemOreSprites(MapType _maxPlayableMap, out int _removedFurnaceRecipes)
+    private static int StripGemOreSprites(MapType _maxPlayableMap, out int _removedFurnaceRecipes, out HashSet<GemOreType> _keepOut)
     {
         _removedFurnaceRecipes = 0;
+        _keepOut = null;
 
         GameObject _installer = AssetDatabase.LoadAssetAtPath<GameObject>(INSTALLER_PREFAB_PATH);
 
@@ -267,6 +280,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         SerializedObject _controllerSo = new SerializedObject(_controller);
 
         HashSet<GemOreType> _keep = CollectDemoGemOreTypes(_controllerSo, _demoTrees);
+        _keepOut = _keep;
 
         // SerializedProperty에 값을 넣는 것만으로는 에셋이 바뀌지 않는다(Apply를 해야 반영된다).
         // 그래서 두 곳을 먼저 다 훑어 끊을 것을 정해두고, 백업을 뜬 뒤에 한꺼번에 적용한다.
@@ -366,6 +380,101 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         return 0 == _removed ? null : _so;
     }
 
+    /// <summary>
+    /// 용광로 HUD(UI_BlastFurnaceStatus)의 등급별 재화 아이콘에서 제외 대상 원석의 참조를 끊습니다.
+    /// 필드가 배열이 아니라 등급마다 하나씩(goldIcon/diamondIcon/prismIcon)이라 짝을 직접 적어둡니다.
+    /// 이 프리팹은 자기 파일이므로 백업도 따로 뜨고, 끊을 것이 있을 때만 백업하고 적용합니다.
+    /// </summary>
+    private static int StripFurnaceHudIcons(HashSet<GemOreType> _keep)
+    {
+        GameObject _prefab = AssetDatabase.LoadAssetAtPath<GameObject>(FURNACE_HUD_PREFAB_PATH);
+        if (null == _prefab) return 0;
+
+        UI_BlastFurnaceStatus _hud = _prefab.GetComponentInChildren<UI_BlastFurnaceStatus>(true);
+
+        // 용광로 HUD가 아직 없는 브랜치일 수 있다. 빠뜨렸다고 빌드를 막을 일은 아니다.
+        if (null == _hud) return 0;
+
+        SerializedObject _so = new SerializedObject(_hud);
+        int _removed = 0;
+
+        if (false == _keep.Contains(GemOreType.Gold) && ClearSpriteRef(_so, "goldIcon")) _removed++;
+        if (false == _keep.Contains(GemOreType.Diamond) && ClearSpriteRef(_so, "diamondIcon")) _removed++;
+        if (false == _keep.Contains(GemOreType.Prism) && ClearSpriteRef(_so, "prismIcon")) _removed++;
+
+        if (0 == _removed) return 0;
+
+        Backup(FURNACE_HUD_PREFAB_PATH);
+
+        _so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(_hud);
+
+        return _removed;
+    }
+
+    /// <summary>
+    /// 재화 카운터(CurrencyCounterHUD)의 iconEntries에서 제외 대상 원석 재화의 아이콘 참조를 끊습니다.
+    /// 항목은 MoneyType으로 적혀 있으므로 GemOreType으로 되짚어 판정합니다. 원석이 아닌 재화(코인/당근 등)는 건드리지 않습니다.
+    /// </summary>
+    private static int StripCurrencyHudIcons(HashSet<GemOreType> _keep)
+    {
+        GameObject _prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CURRENCY_HUD_PREFAB_PATH);
+        if (null == _prefab) return 0;
+
+        PresentationLayer.UISystem.CustomNumber.CurrencyCounterHUD _hud =
+            _prefab.GetComponentInChildren<PresentationLayer.UISystem.CustomNumber.CurrencyCounterHUD>(true);
+        if (null == _hud) return 0;
+
+        SerializedObject _so = new SerializedObject(_hud);
+
+        SerializedProperty _entries = _so.FindProperty("iconEntries");
+        if (null == _entries) return 0;
+
+        int _removed = 0;
+
+        for (int i = 0; i < _entries.arraySize; i++)
+        {
+            SerializedProperty _entry = _entries.GetArrayElementAtIndex(i);
+
+            GemOreType _ore = MoneyTypeToGemOreType((MoneyType)_entry.FindPropertyRelative("moneyType").enumValueIndex);
+            if (GemOreType.None == _ore) continue;          // 원석 재화가 아니다
+            if (true == _keep.Contains(_ore)) continue;
+
+            if (true == ClearSpriteRef(_entry, "icon")) _removed++;
+        }
+
+        if (0 == _removed) return 0;
+
+        Backup(CURRENCY_HUD_PREFAB_PATH);
+
+        _so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(_hud);
+
+        return _removed;
+    }
+
+    /// <summary>InventoryManager.GemOreTypeToMoneyType의 역방향. 원석 재화가 아니면 None.</summary>
+    private static GemOreType MoneyTypeToGemOreType(MoneyType _moneyType)
+    {
+        switch (_moneyType)
+        {
+            case MoneyType.GoldOre: return GemOreType.Gold;
+            case MoneyType.DiamondOre: return GemOreType.Diamond;
+            case MoneyType.PrismOre: return GemOreType.Prism;
+            default: return GemOreType.None;
+        }
+    }
+
+    /// <summary>SerializedObject 최상위 필드용 오버로드. 참조가 있었으면 끊고 true를 돌려줍니다.</summary>
+    private static bool ClearSpriteRef(SerializedObject _so, string _fieldName)
+    {
+        SerializedProperty _sprite = _so.FindProperty(_fieldName);
+        if (null == _sprite || null == _sprite.objectReferenceValue) return false;
+
+        _sprite.objectReferenceValue = null;
+        return true;
+    }
+
     /// <summary>드랍 테이블을 읽어 데모에서 실제로 떨어질 수 있는 원석 종류를 모읍니다.</summary>
     private static HashSet<GemOreType> CollectDemoGemOreTypes(SerializedObject _controllerSo, HashSet<TreeType> _demoTrees)
     {
@@ -442,6 +551,8 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         if (Path.GetFileName(AUDIO_DB_PATH) == _fileName) return AUDIO_DB_PATH;
         if (Path.GetFileName(TREE_VISUAL_DB_PATH) == _fileName) return TREE_VISUAL_DB_PATH;
         if (Path.GetFileName(INSTALLER_PREFAB_PATH) == _fileName) return INSTALLER_PREFAB_PATH;
+        if (Path.GetFileName(FURNACE_HUD_PREFAB_PATH) == _fileName) return FURNACE_HUD_PREFAB_PATH;
+        if (Path.GetFileName(CURRENCY_HUD_PREFAB_PATH) == _fileName) return CURRENCY_HUD_PREFAB_PATH;
 
         return null;
     }
