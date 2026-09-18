@@ -508,6 +508,11 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
             if (i >= homePositions.Count) continue;
 
             furnaces[i].transform.position = homePositions[i] + (Vector3)placementOffset;
+
+            // 자리에 놓인 뒤에 가동 상태를 한 번 더 물려준다. 세이브 로드는 용광로가 아직 화면
+            // 밖에 있을 때 제련을 복원하는데, 파티클은 화면 밖에서 멈추므로 그때 건 Play()가
+            // 살아나지 않는다. 여기서 다시 걸지 않으면 돌고 있는데도 불길이 없는 채로 남는다.
+            furnaces[i].RefreshRunningVisual();
         }
     }
 

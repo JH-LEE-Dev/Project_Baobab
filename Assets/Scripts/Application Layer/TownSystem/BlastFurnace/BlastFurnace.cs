@@ -392,6 +392,18 @@ public class BlastFurnace : MonoBehaviour
         if (heatHaze == null) heatHaze = GetComponentInChildren<BlastFurnaceHeatHaze>(true);
     }
 
+    /// <summary>
+    /// 보이는 것을 지금 상태에 다시 맞춘다. 마을 자리에 놓인 직후에 BlastFurnaceManager가 부른다.
+    ///
+    /// 세이브 로드는 용광로가 아직 화면 밖(대기 자리)에 있을 때 가동 상태를 복원한다. 파티클이
+    /// 화면 밖에서는 멈추도록(Culling Mode: Pause) 되어 있어 그때 건 Play()는 살아나지 않고,
+    /// 이후 아무도 다시 물려주지 않으면 돌고 있는 용광로가 불길 없이 서 있게 된다.
+    /// </summary>
+    public void RefreshRunningVisual()
+    {
+        ApplyRunningState();
+    }
+
     /// <summary>보이는 것 전부(프레임 애니메이션 + 가동 이펙트)를 지금 상태에 맞춘다.</summary>
     private void ApplyRunningState()
     {
