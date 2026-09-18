@@ -67,9 +67,6 @@ public class UI_Inventory : MonoBehaviour
     private bool isOpenAnimated = false;
     private int previousLogCount = 0;
     private bool isFirstDataBind = true;
-    private bool hasDiscoveredPrism = false;
-    private bool hasDiscoveredDiamond = false;
-    private bool hasDiscoveredGold = false;
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -383,15 +380,15 @@ public class UI_Inventory : MonoBehaviour
                 uiCoin?.SetNumberAnimated(moneyData.money);
                 break;
             case MoneyType.GoldOre:
-                DiscoverAndShowCurrency(uiGold, ref hasDiscoveredGold);
+                DiscoverAndShowCurrency(uiGold);
                 uiGold?.SetNumberAnimated(moneyData.goldOre);
                 break;
             case MoneyType.DiamondOre:
-                DiscoverAndShowCurrency(uiDiamond, ref hasDiscoveredDiamond);
+                DiscoverAndShowCurrency(uiDiamond);
                 uiDiamond?.SetNumberAnimated(moneyData.diamondOre);
                 break;
             case MoneyType.PrismOre:
-                DiscoverAndShowCurrency(uiPrism, ref hasDiscoveredPrism);
+                DiscoverAndShowCurrency(uiPrism);
                 uiPrism?.SetNumberAnimated(moneyData.prismOre);
                 break;
         }
@@ -404,49 +401,45 @@ public class UI_Inventory : MonoBehaviour
 
         uiCoin?.SetNumber(moneyData.money);
 
-        UpdateCurrencyState(uiPrism, moneyData.prismOre, ref hasDiscoveredPrism);
-        UpdateCurrencyState(uiDiamond, moneyData.diamondOre, ref hasDiscoveredDiamond);
-        UpdateCurrencyState(uiGold, moneyData.goldOre, ref hasDiscoveredGold);
+        UpdateCurrencyState(uiPrism, MoneyType.PrismOre, moneyData.prismOre);
+        UpdateCurrencyState(uiDiamond, MoneyType.DiamondOre, moneyData.diamondOre);
+        UpdateCurrencyState(uiGold, MoneyType.GoldOre, moneyData.goldOre);
     }
 
-    private void DiscoverAndShowCurrency(CurrencyCounterHUD _hud, ref bool _hasDiscovered)
+    /// <summary>
+    /// 방금 얻은 재화의 칸을 즉시 띄운다. 획득 이력은 InventoryManager가 이미 기록한 뒤에
+    /// 이 호출이 오므로(UnitSystem.GemOreAcquired), 여기서는 보이기만 하면 된다.
+    /// </summary>
+    private void DiscoverAndShowCurrency(CurrencyCounterHUD _hud)
     {
         if (null == _hud)
             return;
 
-        if (false == _hasDiscovered)
+        if (true == _hud.gameObject.activeSelf)
+            return;
+
+        _hud.gameObject.SetActive(true);
+        RebuildItemsLayout();
+    }
+
+    /// <summary>
+    /// 한 번이라도 얻은 적이 있는 재화만 보여준다.
+    ///
+    /// 판정은 세이브에 저장되는 획득 이력(IMoneyData.HasEverAcquired)을 그대로 따른다.
+    /// 예전처럼 보유량으로 판정하면 원석을 전부 용광로에 넣은 순간 칸이 다시 숨겨지고,
+    /// 게임을 껐다 켜면 발견 사실 자체가 사라진다.
+    /// </summary>
+    private void UpdateCurrencyState(CurrencyCounterHUD _hud, MoneyType _moneyType, long _amount)
+    {
+        if (null == _hud)
+            return;
+
+        bool _bDiscovered = null != moneyData && moneyData.HasEverAcquired(_moneyType);
+
+        if (_bDiscovered != _hud.gameObject.activeSelf)
         {
-            _hasDiscovered = true;
-            _hud.gameObject.SetActive(true);
+            _hud.gameObject.SetActive(_bDiscovered);
             RebuildItemsLayout();
-        }
-    }
-
-    private void UpdateCurrencyState(CurrencyCounterHUD _hud, long _amount, ref bool _hasDiscovered)
-    {
-        if (null == _hud)
-            return;
-
-        if (0 < _amount)
-        {
-            _hasDiscovered = true;
-        }
-
-        if (_hasDiscovered)
-        {
-            if (false == _hud.gameObject.activeSelf)
-            {
-                _hud.gameObject.SetActive(true);
-                RebuildItemsLayout();
-            }
-        }
-        else
-        {
-            if (true == _hud.gameObject.activeSelf)
-            {
-                _hud.gameObject.SetActive(false);
-                RebuildItemsLayout();
-            }
         }
 
         _hud.SetNumber(_amount);

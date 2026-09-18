@@ -124,6 +124,16 @@ public struct InventorySaveData
     public long diamondOre;
     public long prismOre;
 
+    // 각 원석을 한 번이라도 얻은 적이 있는지. 보유량이 0으로 돌아가도(전부 용광로에 넣어도)
+    // 이 값은 남으므로, HUD가 "이미 발견한 재화"를 계속 보여줄 수 있다.
+    //
+    // 기존 세이브 파일에는 이 필드들이 없어 false로 읽힌다. 그대로 두면 이미 원석을 캐 둔
+    // 유저의 HUD가 초기화된 것처럼 보이므로, 읽는 쪽(InventoryManager.LoadSaveData)에서
+    // 보유량이 0보다 크면 얻은 적이 있는 것으로 함께 판정한다.
+    public bool bHasEverAcquiredGoldOre;
+    public bool bHasEverAcquiredDiamondOre;
+    public bool bHasEverAcquiredPrismOre;
+
     public List<InventorySlotSaveData> slots;
 
     public void Initialize(int _capacity)

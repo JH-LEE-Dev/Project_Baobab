@@ -27,6 +27,12 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     private long goldOre = 0;
     private long diamondOre = 0;
     private long prismOre = 0;
+
+    // 각 원석을 한 번이라도 얻은 적이 있는지. 보유량이 0이 되어도 유지되며 세이브에 저장된다.
+    // HUD가 "발견한 재화만 표시"를 판정하는 데 쓴다(IMoneyData.HasEverAcquired).
+    private bool bHasEverAcquiredGoldOre = false;
+    private bool bHasEverAcquiredDiamondOre = false;
+    private bool bHasEverAcquiredPrismOre = false;
     [SerializeField] private long sunEssence;
     [SerializeField] private long moonEssence;
     [SerializeField] private long lightningEssence;
@@ -85,6 +91,11 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     long IMoneyData.GetMoney(MoneyType _moneyType)
     {
         return GetMoney(_moneyType);
+    }
+
+    bool IMoneyData.HasEverAcquired(MoneyType _moneyType)
+    {
+        return HasEverAcquired(_moneyType);
     }
 
     public int maxItemCntPerSlot => maxItemsPerSlot;
@@ -249,6 +260,9 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         _saveData.goldOre = goldOre;
         _saveData.diamondOre = diamondOre;
         _saveData.prismOre = prismOre;
+        _saveData.bHasEverAcquiredGoldOre = bHasEverAcquiredGoldOre;
+        _saveData.bHasEverAcquiredDiamondOre = bHasEverAcquiredDiamondOre;
+        _saveData.bHasEverAcquiredPrismOre = bHasEverAcquiredPrismOre;
 
         // 리스트 초기화 (구조체 내의 Initialize 활용)
         _saveData.Initialize(currentSlotCount);
@@ -390,9 +404,9 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
         switch (_gemOreType)
         {
-            case GemOreType.Gold: goldOre += _amount; break;
-            case GemOreType.Diamond: diamondOre += _amount; break;
-            case GemOreType.Prism: prismOre += _amount; break;
+            case GemOreType.Gold: goldOre += _amount; bHasEverAcquiredGoldOre = true; break;
+            case GemOreType.Diamond: diamondOre += _amount; bHasEverAcquiredDiamondOre = true; break;
+            case GemOreType.Prism: prismOre += _amount; bHasEverAcquiredPrismOre = true; break;
             default: return;
         }
 
@@ -443,6 +457,27 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             case MoneyType.PrismOre: return prismOre;
             default: return 0;
         }
+    }
+
+    /// <summary>
+    /// 이 재화를 한 번이라도 얻은 적이 있는지. 다 써서 보유량이 0이 되어도 true로 남는다.
+    /// 원석이 아닌 재화는 숨기는 개념이 없으므로 항상 true다.
+    /// </summary>
+    public bool HasEverAcquired(MoneyType _moneyType)
+    {
+        switch (_moneyType)
+        {
+            case MoneyType.GoldOre: return bHasEverAcquiredGoldOre;
+            case MoneyType.DiamondOre: return bHasEverAcquiredDiamondOre;
+            case MoneyType.PrismOre: return bHasEverAcquiredPrismOre;
+            default: return true;
+        }
+    }
+
+    /// <summary>원석 종류로 묻는 편의 오버로드. HasEverAcquired(MoneyType)와 같은 값을 돌려준다.</summary>
+    public bool HasEverAcquiredGemOre(GemOreType _gemOreType)
+    {
+        return HasEverAcquired(GemOreTypeToMoneyType(_gemOreType));
     }
 
     public static MoneyType GemOreTypeToMoneyType(GemOreType _gemOreType)
@@ -593,6 +628,13 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         goldOre = _data.goldOre;
         diamondOre = _data.diamondOre;
         prismOre = _data.prismOre;
+
+        // 이 필드가 없던 예전 세이브는 false로 읽힌다. 그때는 보유량으로 되짚어, 이미 캐 둔
+        // 원석이 HUD에서 사라지지 않게 한다. 용광로가 없던 시절의 세이브라 "원석이 용광로에
+        // 들어가 있어 보유량만 0"인 경우가 존재할 수 없으므로, 보유량만 봐도 판정이 정확하다.
+        bHasEverAcquiredGoldOre = _data.bHasEverAcquiredGoldOre || goldOre > 0;
+        bHasEverAcquiredDiamondOre = _data.bHasEverAcquiredDiamondOre || diamondOre > 0;
+        bHasEverAcquiredPrismOre = _data.bHasEverAcquiredPrismOre || prismOre > 0;
 
         // 기존 슬롯 초기화 (풀 반환)
         for (int i = 0; i < inventorySlots.Count; i++)
