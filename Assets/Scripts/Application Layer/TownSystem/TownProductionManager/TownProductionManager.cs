@@ -321,7 +321,7 @@ public class TownProductionManager : MonoBehaviour
 
     private IEnumerator RollbackCameraMoveRoutine(bool _bNoDelay)
     {
-        if (!_bNoDelay) yield return new WaitForSeconds(0.75f);
+        if (!_bNoDelay) yield return new WaitForSeconds(0.375f);
 
         RollbackSkyProductionEvent?.Invoke();
         skyCameraProductionManager.StartCameraMove();
