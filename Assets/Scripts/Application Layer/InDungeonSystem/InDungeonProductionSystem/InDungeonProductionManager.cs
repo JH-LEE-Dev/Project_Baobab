@@ -198,7 +198,7 @@ public class InDungeonProductionManager : MonoBehaviour
 
     private IEnumerator RollbackCameraMoveRoutine()
     {
-        yield return new WaitForSeconds(0.75f);
+        yield return new WaitForSeconds(0.375f);
 
         RollbackSkyProductionEvent?.Invoke();
         skyCameraProductionManager.StartCameraMove();

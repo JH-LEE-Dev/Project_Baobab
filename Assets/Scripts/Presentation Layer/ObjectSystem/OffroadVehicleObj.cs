@@ -9,6 +9,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     // 이벤트
     public event Action GameEndEvent;
     public event Action OffroadDriveEndEvent;
+    /// <summary>주행 연출에서 컨테이너가 차 위에 안착하는 순간.</summary>
+    public event Action ContainerLandedOnVehicleEvent;
     public event Action PortalActivated;
     public event Action PortalDeActivatedEvent;
     public event Action<bool> OffroadInteractStateChangedEvent;
@@ -118,6 +120,9 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private bool bOverlapped = false;
     private bool bUIActivated = false;
     private Coroutine driveCoroutine;
+    // 도약 시퀀스가 DriveRoutine과 나란히 도는 별도 코루틴이 되면서, driveCoroutine만 멈추면
+    // 상자가 혼자 계속 날아간다. 주행을 새로 시작할 때 둘 다 정리하기 위해 들고 있는다.
+    private Coroutine containerJumpCoroutine;
     private AudioHandle engineStartHandle;
     private AudioHandle idleLoopHandle;
     private float colRadius;
@@ -125,6 +130,24 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private bool bCanInteract = false;
     private bool bPhysicalOverlapped = false;
     private bool bLastInteractState = false;
+
+    // 상자가 떠오르는 순간(ContainerJumpStartEvent)을 DriveRoutine이 기다리기 위한 플래그.
+    // 도약 시퀀스 앞에는 0.15초 예비동작 + 0.02초 튕김이 있어, 시퀀스 시작과 동시에 시동을 걸면
+    // 상자가 아직 웅크리고 있는 동안 엔진이 먼저 걸려버린다.
+    private bool bContainerLifted = false;
+
+    // 위 이벤트를 기다리는 최대 시간. JumpSequence의 예비동작(0.15초) + 튕김(0.02초)보다 넉넉하다.
+    private const float ContainerLiftWaitTimeout = 0.5f;
+
+    // visualObject의 스케일을 건드리는 연출이 이제 서로 겹친다(상자 안착 임팩트와 시동 임팩트가
+    // 동시에 돈다). 각자 자기가 캡처해 둔 초기 스케일에 절대값을 덮어쓰면 늦게 쓴 쪽만 보이고
+    // 먼저 쓴 연출은 그 프레임에 통째로 사라지므로, 두 연출은 자기 몫의 오프셋만 남기고
+    // 실제 반영은 ApplyVisualScale()에서 합산해 한 번에 한다.
+    private Vector3 visualScaleBase;
+    private Vector3 landingScaleOffset;
+    private Vector3 ignitionScaleOffset;
+    private int visualScaleOwners = 0;
+
     private Transform charTransform;
     private Sprite originalBaseSprite;
     private Sprite originalWheelSprite;
@@ -544,6 +567,17 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             StopCoroutine(driveCoroutine);
         }
 
+        if (containerJumpCoroutine != null)
+        {
+            StopCoroutine(containerJumpCoroutine);
+            containerJumpCoroutine = null;
+        }
+
+        // 위 두 코루틴이 스케일 오프셋을 반납(PopVisualScaleOwner)하지 못한 채 중단됐을 수 있다.
+        // 그대로 두면 소유자 수가 0으로 안 내려가 다음 연출이 기준 스케일을 새로 잡지 못하고,
+        // 차체가 찌그러진 크기에 눌러붙는다.
+        ResetVisualScale();
+
         Sound.StopTracked(engineStartHandle);
 
         driveCoroutine = StartCoroutine(DriveRoutine(_endPoint));
@@ -640,10 +674,21 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private IEnumerator DriveRoutine(Transform _endPoint)
     {
         Vector3 jitterVisualObjectInitialLocalPos = jitterVisualObject.transform.localPosition;
-        Vector3 visualObjectInitialScale = visualObject.transform.localScale;
 
-        // 0. 컨테이너 점프 시퀀스
-        yield return ContainerJumpSequence();
+        // 0. 컨테이너 점프 시퀀스. 시동과 나란히 진행되어야 하므로 별도 코루틴으로 돌리고,
+        //    여기서는 상자가 실제로 떠오르는 순간(ContainerJumpStart)까지만 기다린다.
+        bContainerLifted = false;
+        Coroutine jumpCoroutine = StartCoroutine(ContainerJumpSequence());
+        containerJumpCoroutine = jumpCoroutine;
+
+        // 도약 오브젝트가 없어 시퀀스가 곧바로 빠져나가는 등 이벤트가 오지 않는 경우에도 주행이
+        // 영영 멈추지 않도록, 예비동작 길이만큼만 기다리고 시동으로 넘어간다.
+        float liftWaited = 0f;
+        while (bContainerLifted == false && liftWaited < ContainerLiftWaitTimeout)
+        {
+            liftWaited += Time.deltaTime;
+            yield return null;
+        }
 
         // 시동 임팩트(먼지 파티클)보다 엔진 캐치 지점만큼 앞서 엔진 사운드를 재생한다.
         engineStartHandle = Sound.PlayTracked(SoundID.OffroadNonEdit, transform.position);
@@ -657,7 +702,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         yield return new WaitForSeconds(ignitionCatchTime);
 
         // 1. 시동 임팩트 시퀀스 (스프링 댐퍼) - 사운드의 엔진 캐치 지점과 동시에 재생된다.
-        yield return IgnitionImpactSequence(jitterVisualObjectInitialLocalPos, visualObjectInitialScale);
+        yield return IgnitionImpactSequence(jitterVisualObjectInitialLocalPos);
 
         // 시동이 걸린 뒤(=이후 출발하는 구간) 남은 재생 시간 동안 피치를 서서히 올린다.
         float remainingClipTime = runStartClipLength - ignitionCatchTime;
@@ -669,6 +714,11 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         // 2. 시동 유지 시퀀스 (공회전)
         yield return IgnitionIdleSequence(jitterVisualObjectInitialLocalPos);
 
+        // 시동 쪽이 먼저 끝나더라도 상자가 아직 안착 중이면 그게 끝난 뒤에 출발한다.
+        // (도약 · 안착 연출이 주행 중에 이어지면 상자가 달리는 차를 쫓아가는 그림이 된다)
+        yield return jumpCoroutine;
+        containerJumpCoroutine = null;
+
         // 3. 주행 시퀀스
         yield return TravelSequence(_endPoint.position, jitterVisualObjectInitialLocalPos);
 
@@ -678,7 +728,13 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     private IEnumerator ContainerJumpSequence()
     {
-        if (offroadContainerVComponent == null || containerCarryPoint == null) yield break;
+        if (offroadContainerVComponent == null || containerCarryPoint == null)
+        {
+            // 도약 연출을 못 하더라도 안착 이벤트는 반드시 발행한다. 마을 → 던전 하늘 연출이
+            // 이 시점을 기다리고 있어, 건너뛰면 씬 전환이 일어나지 않고 마을에 갇힌다.
+            ContainerLandedOnVehicleEvent?.Invoke();
+            yield break;
+        }
 
 
         containerShadowObj.SetActive(false);
@@ -702,7 +758,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     {
         if (visualObject == null) yield break;
 
-        Vector3 initialScale = visualObject.transform.localScale;
+        PushVisualScaleOwner();
+
         float elapsed = 0f;
         float duration = 0.5f;
 
@@ -712,13 +769,15 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             float spring = Mathf.Exp(-containerSpringDamping * t) * Mathf.Sin(containerSpringFrequency * t);
 
             // 아래로 눌리면서 양옆으로 퍼지는 쫀득한 연출
-            visualObject.transform.localScale = initialScale + new Vector3(spring * 0.15f, -spring * 0.15f, 0);
+            landingScaleOffset = new Vector3(spring * 0.15f, -spring * 0.15f, 0);
+            ApplyVisualScale();
 
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        visualObject.transform.localScale = initialScale;
+        landingScaleOffset = Vector3.zero;
+        PopVisualScaleOwner();
     }
 
     public IEnumerator CharacterRideLandingImpactSequence(Action _onHalfway = null)
@@ -754,9 +813,11 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         visualObject.transform.localScale = initialScale;
     }
 
-    private IEnumerator IgnitionImpactSequence(Vector3 _initialPos, Vector3 _initialScale)
+    private IEnumerator IgnitionImpactSequence(Vector3 _initialPos)
     {
         PlayStartUpEffect();
+
+        PushVisualScaleOwner();
 
         float elapsed = 0f;
         while (elapsed < ignitionSquashDuration)
@@ -765,7 +826,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             float spring = Mathf.Exp(-ignitionSpringDamping * progress) * Mathf.Sin(ignitionSpringFrequency * progress);
             float pulse = spring * ignitionScaleIntensity;
 
-            visualObject.transform.localScale = _initialScale + new Vector3(pulse, -pulse * 0.7f, 0);
+            ignitionScaleOffset = new Vector3(pulse, -pulse * 0.7f, 0);
+            ApplyVisualScale();
 
             float shakeProgress = Mathf.Exp(-ignitionSpringDamping * progress);
             float currentShakeIntensity = shakeIntensity * ignitionShakeMultiplier * shakeProgress;
@@ -774,7 +836,9 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             elapsed += Time.deltaTime;
             yield return null;
         }
-        visualObject.transform.localScale = _initialScale;
+
+        ignitionScaleOffset = Vector3.zero;
+        PopVisualScaleOwner();
     }
 
     private IEnumerator IgnitionIdleSequence(Vector3 _initialPos)
@@ -808,6 +872,63 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             }
 
             yield return null;
+        }
+    }
+
+    /// <summary>
+    /// visualObject 스케일 오프셋을 쓰기 시작할 때 호출한다. 첫 번째 소유자가 들어올 때만
+    /// 기준 스케일을 캡처하므로, 이미 다른 연출이 오프셋을 걸어둔 상태에서 들어와도
+    /// 그 오프셋이 반영된 값을 기준으로 착각하지 않는다.
+    /// </summary>
+    private void PushVisualScaleOwner()
+    {
+        if (visualScaleOwners == 0)
+        {
+            visualScaleBase = visualObject.transform.localScale;
+        }
+
+        visualScaleOwners++;
+    }
+
+    /// <summary>
+    /// 마지막 소유자가 빠질 때만 기준 스케일로 되돌린다.
+    /// </summary>
+    private void PopVisualScaleOwner()
+    {
+        visualScaleOwners = Mathf.Max(0, visualScaleOwners - 1);
+
+        if (visualScaleOwners == 0)
+        {
+            landingScaleOffset = Vector3.zero;
+            ignitionScaleOffset = Vector3.zero;
+            visualObject.transform.localScale = visualScaleBase;
+        }
+        else
+        {
+            ApplyVisualScale();
+        }
+    }
+
+    private void ApplyVisualScale()
+    {
+        visualObject.transform.localScale = visualScaleBase + landingScaleOffset + ignitionScaleOffset;
+    }
+
+    /// <summary>
+    /// 오프셋을 쓰던 코루틴이 중단되어 반납이 누락된 경우를 위한 강제 원복.
+    /// 소유자가 없으면(정상 종료) 아무것도 하지 않는다.
+    /// </summary>
+    private void ResetVisualScale()
+    {
+        if (visualScaleOwners == 0) return;
+
+        visualScaleOwners = 0;
+        landingScaleOffset = Vector3.zero;
+        ignitionScaleOffset = Vector3.zero;
+
+        if (visualObject != null)
+        {
+            visualObject.transform.localScale = visualScaleBase;
         }
     }
 
@@ -980,6 +1101,9 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     private void ContainerJumpStart(Vector3 _position)
     {
+        // DriveRoutine이 이 시점에 맞춰 시동을 건다.
+        bContainerLifted = true;
+
         Vector3 effectPos = _position + new Vector3(0, boxJumpEffectYOffset, 0);
         OffroadPlayEffect("Box", effectPos, Quaternion.identity, BoxEffectSortingOrder(_position));
     }
@@ -988,6 +1112,10 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     {
         Vector3 effectPos = _position + new Vector3(0, boxLandEffectYOffset, 0);
         OffroadPlayEffect("Box", effectPos, Quaternion.identity, BoxEffectSortingOrder(_position));
+
+        // 상자가 차 위에 안착한 시점. 마을 → 던전 하늘 연출이 이 시점을 기준으로 시작된다.
+        // (컨테이너 도약은 DriveRoutine에서만 일어나므로 주행 연출 외에는 발행되지 않는다)
+        ContainerLandedOnVehicleEvent?.Invoke();
     }
 
     // 착지 시 컨테이너가 차량 지붕 높이(currentHeight)만큼 정렬 순서가 앞으로 밀려 있어,
