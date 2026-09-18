@@ -12,6 +12,56 @@ using UnityEngine.UI;
 
 public class UIView_Result : UIView
 {
+    private enum ResultItemKind
+    {
+        Log,
+        GemOre,
+        Loot,
+    }
+
+    private readonly struct ResultItemCount
+    {
+        public readonly ResultItemKind kind;
+        public readonly TreeType treeType;
+        public readonly GemOreType gemOreType;
+        public readonly LootType lootType;
+        public readonly long count;
+
+        public ResultItemCount(TreeType treeType, int count)
+        {
+            kind = ResultItemKind.Log;
+            this.treeType = treeType;
+            gemOreType = GemOreType.None;
+            lootType = LootType.None;
+            this.count = count;
+        }
+
+        public ResultItemCount(GemOreType gemOreType, long count)
+        {
+            kind = ResultItemKind.GemOre;
+            treeType = TreeType.None;
+            this.gemOreType = gemOreType;
+            lootType = LootType.None;
+            this.count = count;
+        }
+
+        public ResultItemCount(LootType lootType)
+        {
+            kind = ResultItemKind.Loot;
+            treeType = TreeType.None;
+            gemOreType = GemOreType.None;
+            this.lootType = lootType;
+            count = 1L;
+        }
+    }
+
+    private static readonly GemOreType[] GemOreDisplayOrder =
+    {
+        GemOreType.Gold,
+        GemOreType.Diamond,
+        GemOreType.Prism,
+    };
+
     private readonly struct ResultLogCount
     {
         public readonly TreeType key;
@@ -28,7 +78,7 @@ public class UIView_Result : UIView
     {
         private readonly UIView_Result owner;
         private UI_ResultLogRow row;
-        private TreeType key;
+        private ResultItemCount item;
         private int targetCount;
         private int currentCount;
         private RectTransform rowRect;
@@ -51,15 +101,14 @@ public class UIView_Result : UIView
 
         public void Configure(
             UI_ResultLogRow _row,
-            TreeType _key,
-            int _targetCount,
+            ResultItemCount _item,
             RectTransform _rowRect,
             CanvasGroup _rowCanvasGroup,
             Vector2 _targetPosition)
         {
             row = _row;
-            key = _key;
-            targetCount = _targetCount;
+            item = _item;
+            targetCount = _item.kind == ResultItemKind.Log ? (int)_item.count : 1;
             currentCount = 1;
             rowRect = _rowRect;
             rowCanvasGroup = _rowCanvasGroup;
@@ -77,8 +126,10 @@ public class UIView_Result : UIView
                 owner.SetCanvasGroupRaycast(rowCanvasGroup, false);
             }
 
-            row.SetDataVisible(key, 1);
-            owner.SetLogDisplayProgress(key, targetCount <= 0 ? 1f : 1f / targetCount);
+            owner.SetResultRowData(row, item, item.kind == ResultItemKind.Log ? 1L : item.count);
+
+            if (item.kind == ResultItemKind.Log)
+                owner.SetLogDisplayProgress(item.treeType, targetCount <= 0 ? 1f : 1f / targetCount);
         }
 
         private int GetCurrentCount()
@@ -88,18 +139,21 @@ public class UIView_Result : UIView
 
         private void SetCurrentCount(int _value)
         {
-            if (_value == currentCount)
+            if (item.kind != ResultItemKind.Log || _value == currentCount)
                 return;
 
             currentCount = _value;
-            row.SetDataVisible(key, currentCount);
-            owner.SetLogDisplayProgress(key, targetCount <= 0 ? 1f : (float)currentCount / targetCount);
+            owner.SetResultRowData(row, item, currentCount);
+            owner.SetLogDisplayProgress(item.treeType, targetCount <= 0 ? 1f : (float)currentCount / targetCount);
         }
 
         private void Complete()
         {
-            row.SetDataVisible(key, targetCount);
-            owner.SetLogDisplayProgress(key, 1f);
+            owner.SetResultRowData(row, item, item.count);
+
+            if (item.kind == ResultItemKind.Log)
+                owner.SetLogDisplayProgress(item.treeType, 1f);
+
             owner.SetCanvasGroupRaycast(rowCanvasGroup, false);
         }
     }
@@ -349,9 +403,9 @@ public class UIView_Result : UIView
         dungeonResultProvider = _dungeonResultProvider;
     }
 
-    #region 이번 런 성과 데이터 (그리는 코드는 아직 없음)
+    #region 이번 런 성과 데이터
 
-    // 아래 셋은 결과창이 이번 런의 원석/전리품을 표시할 수 있도록 데이터만 열어둔 것이다.
+    // 이번 런의 원석/전리품 획득량을 결과창에 제공한다.
     // 값의 출처는 InDungeonResultManager이고, 던전에 들어갈 때마다 0에서 다시 시작한다.
 
     /// <summary>
@@ -1265,7 +1319,7 @@ public class UIView_Result : UIView
         {
             ApplyDisplayOffroadSlotsFromProgress(false);
 
-            if (HasAcquiredLogs() == false)
+            if (HasAcquiredItems() == false)
                 SetCanvasGroupVisible(resultLogContentCanvasGroup, true);
         });
 
@@ -1280,49 +1334,85 @@ public class UIView_Result : UIView
 
         sequence.AppendCallback(() => SetCanvasGroupRaycast(slotBackgroundCanvasGroup, false));
         sequence.AppendInterval(resultLogRowOpenDelay);
-        sequence.Append(CreateResultLogRowsProductionSequence());
+        sequence.Append(CreateResultItemRowsProductionSequence());
 
         return sequence;
     }
 
-    private Sequence CreateResultLogRowsProductionSequence()
+    private Sequence CreateResultItemRowsProductionSequence()
     {
         Sequence sequence = DOTween.Sequence();
-        List<ResultLogCount> acquiredLogs = GetAcquiredLogCounts();
+        List<ResultItemCount> acquiredItems = GetAcquiredItemCounts();
         resultLogRowProductionStateCursor = 0;
 
-        EnsureResultLogRowCount(acquiredLogs.Count);
+        EnsureResultLogRowCount(acquiredItems.Count);
 
-        if (acquiredLogs.Count <= 0)
+        int rowCount = Mathf.Min(acquiredItems.Count, resultLogRows.Count);
+        if (rowCount <= 0)
             return sequence;
 
         sequence.AppendCallback(() => SetCanvasGroupVisible(resultLogContentCanvasGroup, true));
 
-        for (int i = 0; i < acquiredLogs.Count && i < resultLogRows.Count; i++)
+        int logCount = 0;
+        while (logCount < rowCount && acquiredItems[logCount].kind == ResultItemKind.Log)
         {
-            UI_ResultLogRow row = resultLogRows[i];
-            ResultLogCount logCount = acquiredLogs[i];
+            UI_ResultLogRow row = resultLogRows[logCount];
+            if (row != null)
+            {
+                Vector2 targetPosition = GetResultLogRowTargetPosition(row, logCount, acquiredItems.Count);
+                sequence.Insert(logCount * resultLogRowInterval,
+                    CreateResultItemRowProductionSequence(row, acquiredItems[logCount], targetPosition));
+            }
 
-            if (row == null || logCount.count <= 0)
+            logCount++;
+        }
+
+        float categoryStart = logCount > 0
+            ? ((logCount - 1) * resultLogRowInterval) + Mathf.Max(slotBackgroundOpenDuration, resultLogRowCountUpDuration)
+            : 0f;
+
+        int categoryIndex = 0;
+        int itemIndex = logCount;
+        while (itemIndex < rowCount && acquiredItems[itemIndex].kind == ResultItemKind.GemOre)
+        {
+            UI_ResultLogRow row = resultLogRows[itemIndex];
+            if (row != null)
+            {
+                Vector2 targetPosition = GetResultLogRowTargetPosition(row, itemIndex, acquiredItems.Count);
+                sequence.Insert(categoryStart + (categoryIndex * resultLogRowInterval),
+                    CreateResultItemRowProductionSequence(row, acquiredItems[itemIndex], targetPosition));
+            }
+
+            categoryIndex++;
+            itemIndex++;
+        }
+
+        if (categoryIndex > 0)
+            categoryStart += ((categoryIndex - 1) * resultLogRowInterval) + slotBackgroundOpenDuration;
+
+        categoryIndex = 0;
+        for (; itemIndex < rowCount; itemIndex++)
+        {
+            UI_ResultLogRow row = resultLogRows[itemIndex];
+            if (row == null)
                 continue;
 
-            Vector2 targetPosition = GetResultLogRowTargetPosition(row, i, acquiredLogs.Count);
-            float startTime = i * resultLogRowInterval;
-            sequence.Insert(startTime, CreateResultLogRowProductionSequence(row, logCount, targetPosition));
+            Vector2 targetPosition = GetResultLogRowTargetPosition(row, itemIndex, acquiredItems.Count);
+            sequence.Insert(categoryStart + (categoryIndex * resultLogRowInterval),
+                CreateResultItemRowProductionSequence(row, acquiredItems[itemIndex], targetPosition));
+            categoryIndex++;
         }
 
         return sequence;
     }
 
-    private Sequence CreateResultLogRowProductionSequence(UI_ResultLogRow row, ResultLogCount logCount, Vector2 targetPosition)
+    private Sequence CreateResultItemRowProductionSequence(UI_ResultLogRow row, ResultItemCount item, Vector2 targetPosition)
     {
-        TreeType key = logCount.key;
-        int targetCount = logCount.count;
         Sequence sequence = DOTween.Sequence();
         CanvasGroup rowCanvasGroup = GetOrAddCanvasGroup(row.transform as RectTransform);
         RectTransform rowRect = row.transform as RectTransform;
         ResultLogRowProductionState productionState = GetResultLogRowProductionState();
-        productionState.Configure(row, key, targetCount, rowRect, rowCanvasGroup, targetPosition);
+        productionState.Configure(row, item, rowRect, rowCanvasGroup, targetPosition);
 
         sequence.AppendCallback(productionState.BeginCallback);
 
@@ -1335,15 +1425,17 @@ public class UIView_Result : UIView
         if (rowCanvasGroup != null)
             sequence.Join(rowCanvasGroup.DOFade(1f, slotBackgroundOpenDuration));
 
-        sequence.Join(DOTween.To(
-                productionState.CountGetter,
-                productionState.CountSetter,
-                targetCount,
-                resultLogRowCountUpDuration)
-            .SetEase(Ease.OutQuad));
+        if (item.kind == ResultItemKind.Log)
+        {
+            sequence.Join(DOTween.To(
+                    productionState.CountGetter,
+                    productionState.CountSetter,
+                    (int)item.count,
+                    resultLogRowCountUpDuration)
+                .SetEase(Ease.OutQuad));
+        }
 
         sequence.OnComplete(productionState.CompleteCallback);
-
         return sequence;
     }
 
@@ -1405,7 +1497,7 @@ public class UIView_Result : UIView
     {
         RefreshLocalizedStaticTexts();
         RefreshTreeKillCount();
-        RefreshAcquiredLogs();
+        RefreshAcquiredItems();
         RefreshContainerSlots();
     }
 
@@ -1474,15 +1566,15 @@ public class UIView_Result : UIView
         return string.Format(format, args);
     }
 
-    private void RefreshAcquiredLogs()
+    private void RefreshAcquiredItems()
     {
-        List<ResultLogCount> acquiredLogs = GetAcquiredLogCounts();
-        bool hasAcquiredLogs = 0 < acquiredLogs.Count;
+        List<ResultItemCount> acquiredItems = GetAcquiredItemCounts();
+        bool hasAcquiredItems = 0 < acquiredItems.Count;
 
-        EnsureResultLogRowCount(acquiredLogs.Count);
+        EnsureResultLogRowCount(acquiredItems.Count);
 
         if (emptyLogText != null)
-            emptyLogText.gameObject.SetActive(!hasAcquiredLogs);
+            emptyLogText.gameObject.SetActive(!hasAcquiredItems);
 
         for (int i = 0; i < resultLogRows.Count; i++)
         {
@@ -1490,17 +1582,61 @@ public class UIView_Result : UIView
             if (row == null)
                 continue;
 
-            if (i < acquiredLogs.Count)
+            if (i < acquiredItems.Count)
             {
-                ResultLogCount logCount = acquiredLogs[i];
-                row.SetData(logCount.key, logCount.count);
-                SetResultLogRowPosition(row, i, acquiredLogs.Count);
+                SetResultRowData(row, acquiredItems[i], acquiredItems[i].count);
+                SetResultLogRowPosition(row, i, acquiredItems.Count);
             }
             else
             {
                 row.gameObject.SetActive(false);
             }
         }
+    }
+
+    private void SetResultRowData(UI_ResultLogRow row, ResultItemCount item, long count)
+    {
+        switch (item.kind)
+        {
+            case ResultItemKind.Log:
+                row.SetDataVisible(item.treeType, (int)count);
+                break;
+            case ResultItemKind.GemOre:
+                row.SetGemOreDataVisible(item.gemOreType, count);
+                break;
+            case ResultItemKind.Loot:
+                row.SetLootDataVisible(item.lootType);
+                break;
+        }
+    }
+
+    private List<ResultItemCount> GetAcquiredItemCounts()
+    {
+        List<ResultLogCount> acquiredLogs = GetAcquiredLogCounts();
+        IReadOnlyList<LootType> acquiredLoots = AcquiredLoots;
+        List<ResultItemCount> acquiredItems = new List<ResultItemCount>(acquiredLogs.Count + GemOreDisplayOrder.Length + acquiredLoots.Count);
+
+        for (int i = 0; i < acquiredLogs.Count; i++)
+            acquiredItems.Add(new ResultItemCount(acquiredLogs[i].key, acquiredLogs[i].count));
+
+        for (int i = 0; i < GemOreDisplayOrder.Length; i++)
+        {
+            GemOreType gemOreType = GemOreDisplayOrder[i];
+            long amount = GetAcquiredGemOreAmount(gemOreType);
+            if (amount > 0L)
+                acquiredItems.Add(new ResultItemCount(gemOreType, amount));
+        }
+
+        for (int i = 0; i < acquiredLoots.Count; i++)
+        {
+            LootType lootType = acquiredLoots[i];
+            if (lootType <= LootType.WelcomeNoob || lootType >= LootType.Max)
+                continue;
+
+            acquiredItems.Add(new ResultItemCount(lootType));
+        }
+
+        return acquiredItems;
     }
 
     private void RemoveInvalidResultLogRows()
@@ -1706,7 +1842,7 @@ public class UIView_Result : UIView
         if (count == 2)
             x = index == 0 ? -12f : 12f;
         else if (2 < count)
-            x = (index - ((count - 1) * 0.5f)) * 24f;
+            x = (index - ((count - 1) * 0.5f)) * 40f;
 
         return new Vector2(x, GetResultLogRowBaseY(row, index));
     }
@@ -1839,9 +1975,9 @@ public class UIView_Result : UIView
         }
     }
 
-    private bool HasAcquiredLogs()
+    private bool HasAcquiredItems()
     {
-        return 0 < GetAcquiredLogCounts().Count;
+        return 0 < GetAcquiredItemCounts().Count;
     }
 
     private void ApplyContainerSlotLayout()

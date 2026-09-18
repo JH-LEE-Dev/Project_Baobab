@@ -77,6 +77,22 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 8b0526a04f2b8184dae2a8f293711260, type: 3}
   - treeType: 12
     sprite: {fileID: 21300000, guid: 6ea3431f24c5c464e88ec17d4852cc33, type: 3}
+  gemOreSpriteMappings:
+  - gemOreType: 1
+    sprite: {fileID: 21300000, guid: 38aa3b138f41cc342928b2b43e04e5f0, type: 3}
+  - gemOreType: 2
+    sprite: {fileID: 21300000, guid: 9e07063275de3154bb23ef2e66a2383f, type: 3}
+  - gemOreType: 3
+    sprite: {fileID: 21300000, guid: b68b9169df3bdf945a071d054f3fe108, type: 3}
+  lootSpriteMappings:
+  - lootType: 2
+    sprite: {fileID: -5931985335208768119, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
+  - lootType: 3
+    sprite: {fileID: 6479773223036287334, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
+  - lootType: 4
+    sprite: {fileID: 6139783936273432520, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
+  - lootType: 5
+    sprite: {fileID: -3259025338804959706, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
 --- !u!1 &1891985346121398742
 GameObject:
   m_ObjectHideFlags: 0

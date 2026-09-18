@@ -13,12 +13,28 @@ public class UI_ResultLogRow : MonoBehaviour
         public Sprite sprite;
     }
 
+    [Serializable]
+    private struct GemOreSpriteMapping
+    {
+        public GemOreType gemOreType;
+        public Sprite sprite;
+    }
+
+    [Serializable]
+    private struct LootSpriteMapping
+    {
+        public LootType lootType;
+        public Sprite sprite;
+    }
+
     [Header("UI References")]
     [SerializeField] private Image logImage;
     [SerializeField] private CurrencyFontHUD countFont;
 
     [Header("Log Sprite Mapping")]
     [SerializeField] private List<LogSpriteMapping> logSpriteMappings = new List<LogSpriteMapping>();
+    [SerializeField] private List<GemOreSpriteMapping> gemOreSpriteMappings = new List<GemOreSpriteMapping>();
+    [SerializeField] private List<LootSpriteMapping> lootSpriteMappings = new List<LootSpriteMapping>();
 
     public void Initialize()
     {
@@ -49,13 +65,37 @@ public class UI_ResultLogRow : MonoBehaviour
         SetDataInternal(treeType, count);
     }
 
+    public void SetGemOreDataVisible(GemOreType gemOreType, long amount)
+    {
+        gameObject.SetActive(true);
+        SetItemData(GetGemOreSprite(gemOreType), amount);
+    }
+
+    public void SetLootDataVisible(LootType lootType)
+    {
+        gameObject.SetActive(true);
+        SetItemData(GetLootSprite(lootType), 0L, false);
+    }
+
     private void SetDataInternal(TreeType treeType, int count)
     {
+        SetItemData(GetSprite(treeType), count);
+    }
+
+    private void SetItemData(Sprite sprite, long count, bool showCount = true)
+    {
         if (logImage != null)
-            logImage.sprite = GetSprite(treeType);
+        {
+            logImage.sprite = sprite;
+            logImage.enabled = sprite != null;
+        }
 
         if (countFont != null)
-            countFont.SetNumber(count);
+        {
+            countFont.gameObject.SetActive(showCount);
+            if (showCount)
+                countFont.SetNumber(count);
+        }
     }
 
     private Sprite GetSprite(TreeType treeType)
@@ -66,6 +106,28 @@ public class UI_ResultLogRow : MonoBehaviour
                 return logSpriteMappings[i].sprite;
         }
 
-        return logImage != null ? logImage.sprite : null;
+        return null;
+    }
+
+    private Sprite GetGemOreSprite(GemOreType gemOreType)
+    {
+        for (int i = 0; i < gemOreSpriteMappings.Count; i++)
+        {
+            if (gemOreSpriteMappings[i].gemOreType == gemOreType)
+                return gemOreSpriteMappings[i].sprite;
+        }
+
+        return null;
+    }
+
+    private Sprite GetLootSprite(LootType lootType)
+    {
+        for (int i = 0; i < lootSpriteMappings.Count; i++)
+        {
+            if (lootSpriteMappings[i].lootType == lootType)
+                return lootSpriteMappings[i].sprite;
+        }
+
+        return null;
     }
 }
