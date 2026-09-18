@@ -81,18 +81,6 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
     [Tooltip("비행 그림이 그려질 정렬 레이어. 원목 납품 연출과 같은 곳에 둔다.")]
     [SerializeField] private string flyingSortingLayer = "FlyingItem";
 
-    // ──────────────────────────────────────────────────────────────────────
-    // 테스트용 임시 값. 정식 빌드 전에 둘 다 0으로 되돌릴 것.
-    // 특성을 찍지 않고도 용광로를 굴려보기 위한 것이며, 0이면 아무 일도 하지 않으므로
-    // 되돌릴 때 코드를 지울 필요 없이 인스펙터 값만 0으로 두면 된다.
-    // ──────────────────────────────────────────────────────────────────────
-    [Header("디버그 (테스트용 - 배포 전 0으로)")]
-    [Tooltip("특성과 무관하게 처음부터 열어둘 용광로 수. 0이면 특성대로만 열린다.")]
-    [SerializeField] private int debugUnlockedFurnaceCount = 0;
-
-    [Tooltip("마을에 처음 들어올 때 한 번 지급할 황금 원석. 0이면 지급하지 않는다.")]
-    [SerializeField] private int debugStartGoldOre = 0;
-
     private readonly List<BlastFurnace> furnaces = new List<BlastFurnace>(3);
 
     // 타일이 정해준 마을에서의 자리. 던전에 다녀와도 여기로 되돌아온다.
@@ -147,9 +135,6 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
 
     // 한 번에 한 개씩만 날리기 위한 회전 인덱스. 원목도 슬롯 하나씩 직렬로 보내므로 같은 방식으로 맞췄다.
     private int oreSendCursor = 0;
-
-    // 테스트용 황금 원석을 이미 줬는지. 마을에 들어올 때마다 다시 주지 않도록 한 번만 켠다.
-    private bool bDebugOreGranted = false;
 
     // 착지 사운드의 피치/볼륨 상승. 값과 규칙 모두 LogContainer가 원목을 받을 때와 같다.
     private const float DepositPitchMin = 1.0f;
@@ -348,12 +333,6 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
             furnaces.Add(furnace);
         }
 
-        // 테스트용 선해금. 0이면 건드리지 않으므로 특성대로만 열린다.
-        if (debugUnlockedFurnaceCount > 0)
-        {
-            unlockedCount = Mathf.Clamp(debugUnlockedFurnaceCount, 0, furnaces.Count);
-        }
-
         ApplyUnlockState();
     }
 
@@ -439,8 +418,6 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
 
         // 자리가 정해진 뒤에 "가운데"가 확정되므로 여기서 다시 고른다.
         ApplyUnlockState();
-
-        GrantDebugOre();
     }
 
     /// <summary>
@@ -477,22 +454,6 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
         int high = Mathf.Clamp(low + 1, 0, _tilePositions.Count - 1);
 
         return Vector3.Lerp(_tilePositions[low], _tilePositions[high], _index - low);
-    }
-
-    /// <summary>
-    /// 테스트용 황금 원석 지급. 세이브 로드가 끝난 뒤(마을 진입 시점)에 한 번만 준다.
-    /// Initialize에서 주면 곧바로 세이브 로드가 덮어써서 사라지기 때문이다.
-    /// debugStartGoldOre가 0이면 아무 일도 하지 않는다.
-    /// </summary>
-    private void GrantDebugOre()
-    {
-        if (debugStartGoldOre <= 0 || true == bDebugOreGranted) return;
-        if (inventory == null) return;
-
-        bDebugOreGranted = true;
-        inventory.GemOreEarned(GemOreType.Gold, debugStartGoldOre);
-
-        Debug.Log($"[BlastFurnace] 테스트용 황금 원석 {debugStartGoldOre}개 지급. 배포 전 debugStartGoldOre를 0으로 되돌릴 것.");
     }
 
     /// <summary>마을에 도착했을 때. 타일이 정해준 자리로 되돌린다.</summary>

@@ -2884,8 +2884,6 @@ MonoBehaviour:
     ingotSprite: {fileID: 21300000, guid: bb935119d314ff1418bf9fc1b7e3b427, type: 3}
   flyingItemPrefab: {fileID: 4194290704363804404, guid: 0fdc9709225e3d34baae691d2078341d, type: 3}
   flyingSortingLayer: FlyingItem
-  debugUnlockedFurnaceCount: 1
-  debugStartGoldOre: 100
 --- !u!1 &8319344316240393611
 GameObject:
   m_ObjectHideFlags: 0
