@@ -489,11 +489,22 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new AnimalIsDeadSignal(_animal.animalType));
     }
 
+    /// <summary>
+    /// <b>[미사용 확정] 호출부가 없습니다. 히든맵은 쓰지 않기로 확정된 기능입니다.</b>
+    ///
+    /// public이라 언뜻 살아 있는 진입점처럼 보이지만 이 메서드를 부르는 곳은 프로젝트에 하나도 없고,
+    /// 그래서 InDungeonObjectManager.hiddenMapGrade는 영원히 None입니다.
+    /// 되살리기 전에 HiddenmapManager 클래스 주석의 경고 두 가지를 먼저 읽을 것.
+    /// </summary>
     public void SetHiddenMapGrade()
     {
         inDungeonObjectManager.SetHiddenMapGrade(hiddenmapManager.CalcHiddenMapGrade());
     }
 
+    /// <summary>
+    /// <b>[미사용 확정] 위 SetHiddenMapGrade()와 짝이며 마찬가지로 호출부가 없습니다.</b>
+    /// hiddenMapGrade의 초기값이 이미 None이라, 불리지 않아도 결과는 같습니다.
+    /// </summary>
     public void ResetHiddenMapGrade()
     {
         inDungeonObjectManager.SetHiddenMapGrade(HiddenMapGrade.None);
