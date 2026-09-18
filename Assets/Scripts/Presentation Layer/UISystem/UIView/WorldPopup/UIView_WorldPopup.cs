@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class UIView_WorldPopup : UIView
@@ -23,11 +24,18 @@ public class UIView_WorldPopup : UIView
     [SerializeField] private GameObject uiCarStoragePrefab;
     [SerializeField] private GameObject uiCutterPrefab;
     [SerializeField] private GameObject uiTraderCoinPrefab;
+    [SerializeField] private UI_BlastFurnaceStatus blastFurnaceStatusPrefab;
+    [SerializeField] private Vector2 blastFurnaceStatusOffset = new Vector2(0f, 1.5f);
 
     private UI_Storage ui_Storage;
     private UI_Storage ui_CarStorage;
     private UI_TreeCutter ui_Cutter;
     private UI_TraderCoin ui_TraderCoin;
+    private readonly List<UI_BlastFurnaceStatus> blastFurnaceStatuses = new List<UI_BlastFurnaceStatus>(3);
+    private IReadOnlyList<BlastFurnaceUIData> blastFurnaceDatas;
+    private bool hasCurrentMapType;
+    private bool worldPopupDown;
+    private const float WorldPixelsPerUnit = 32f;
 
     private MapType currentMapType;
     private ForestType currentForestType;
@@ -45,6 +53,7 @@ public class UIView_WorldPopup : UIView
         Init_UICarStorage();
         Init_UICutter();
         Init_UITraderCoin();
+        RefreshBlastFurnaceStatuses();
     }
 
     private void BindEvents()
@@ -75,6 +84,8 @@ public class UIView_WorldPopup : UIView
         base.Release();
 
         ReleaseEvents();
+        blastFurnaceDatas = null;
+        RefreshBlastFurnaceStatuses();
     }
 
     private void Init_UIStorage()
@@ -196,11 +207,13 @@ public class UIView_WorldPopup : UIView
     protected override void OnShow()
     {
         base.OnShow();
+        RefreshBlastFurnaceStatuses();
     }
 
     protected override void OnHide()
     {
         base.OnHide();
+        RefreshBlastFurnaceStatuses();
     }
 
     public override void OnDestroy()
@@ -323,23 +336,64 @@ public class UIView_WorldPopup : UIView
         ui_CarStorage?.BindPlayer(character.GetTransform());
     }
 
-    // ──────────────────────────────────────────────────────────────────────
-    // 용광로 상태
-    //
-    // blastFurnaceDatas는 BlastFurnaceManager가 재사용하는 목록이라 참조를 그대로 들고 있으면
-    // 진행도(progress01)가 매 프레임 실시간으로 따라온다. 이 메서드는 구성이 바뀔 때만 불린다
-    // (해금 / 가공 시작·종료 / 쌓인 원석 변화).
-    //
-    // 각 항목이 들고 있는 것: 위치, 원석 등급, 해금 여부, 가공 중 여부, 진행도, 쌓인 원석 / 필요 원석.
-    // 아직 그리는 쪽은 붙어 있지 않다. UI 작업자가 이 목록만 보고 위젯을 구성하면 된다.
-    // ──────────────────────────────────────────────────────────────────────
-    private System.Collections.Generic.IReadOnlyList<BlastFurnaceUIData> blastFurnaceDatas;
+    // BlastFurnaceManager reuses this list and replaces its entries each frame.
+    // Configuration changes arrive by signal; progress and position are read every frame.
+    public IReadOnlyList<BlastFurnaceUIData> BlastFurnaceDatas => blastFurnaceDatas;
 
-    public System.Collections.Generic.IReadOnlyList<BlastFurnaceUIData> BlastFurnaceDatas => blastFurnaceDatas;
-
-    public void BlastFurnaceStateChanged(System.Collections.Generic.IReadOnlyList<BlastFurnaceUIData> _datas)
+    public void BlastFurnaceStateChanged(IReadOnlyList<BlastFurnaceUIData> datas)
     {
-        blastFurnaceDatas = _datas;
+        blastFurnaceDatas = datas;
+        RefreshBlastFurnaceStatuses();
+    }
+
+    private void LateUpdate()
+    {
+        if (false == IsVisible || false == hasCurrentMapType
+            || MapType.Town != currentMapType || true == worldPopupDown)
+            return;
+        RefreshBlastFurnaceStatuses();
+    }
+
+    private void RefreshBlastFurnaceStatuses()
+    {
+        bool show = true == IsVisible && true == hasCurrentMapType
+            && MapType.Town == currentMapType && false == worldPopupDown
+            && null != blastFurnaceDatas;
+        int count = show ? blastFurnaceDatas.Count : 0;
+
+        for (int i = 0; i < count; i++)
+        {
+            BlastFurnaceUIData data = blastFurnaceDatas[i];
+            if (false == data.unlocked)
+            {
+                if (i < blastFurnaceStatuses.Count && null != blastFurnaceStatuses[i])
+                    blastFurnaceStatuses[i].gameObject.SetActive(false);
+                continue;
+            }
+
+            if (null == blastFurnaceStatusPrefab || null == uiRoot)
+                continue;
+            while (blastFurnaceStatuses.Count <= i)
+                blastFurnaceStatuses.Add(null);
+            if (null == blastFurnaceStatuses[i])
+                blastFurnaceStatuses[i] = Instantiate(blastFurnaceStatusPrefab, uiRoot);
+
+            UI_BlastFurnaceStatus status = blastFurnaceStatuses[i];
+            if (false == status.gameObject.activeSelf)
+                status.gameObject.SetActive(true);
+            status.SetData(data);
+
+            Vector3 target = data.position + (Vector3)blastFurnaceStatusOffset;
+            target.x = Mathf.Round(target.x * WorldPixelsPerUnit) / WorldPixelsPerUnit;
+            target.y = Mathf.Round(target.y * WorldPixelsPerUnit) / WorldPixelsPerUnit;
+            status.transform.position = target;
+        }
+
+        for (int i = count; i < blastFurnaceStatuses.Count; i++)
+        {
+            if (null != blastFurnaceStatuses[i])
+                blastFurnaceStatuses[i].gameObject.SetActive(false);
+        }
     }
 
     //true -> 제재소 동작중 , false -> 제재소 동작 끝
@@ -377,6 +431,8 @@ public class UIView_WorldPopup : UIView
 
     public void WorldPopupGoDown()
     {
+        worldPopupDown = true;
+        RefreshBlastFurnaceStatuses();
         if (true == ui_Storage.IsOpen)
             ui_Storage.OnHide();
         if (true == ui_CarStorage.IsOpen)
@@ -387,6 +443,8 @@ public class UIView_WorldPopup : UIView
 
     public void WorldPopupGoUp()
     {
+        worldPopupDown = false;
+        RefreshBlastFurnaceStatuses();
         if (MapType.Town == currentMapType)
             ui_TraderCoin?.OnShow();
 
@@ -398,5 +456,16 @@ public class UIView_WorldPopup : UIView
     {
         currentMapType = _currentMapType;
         currentForestType = _currentForestType;
+        hasCurrentMapType = true;
+
+        // The first state signal can precede UI subscription. Read the existing list once.
+        if (MapType.Town == currentMapType && null == blastFurnaceDatas)
+        {
+            BlastFurnaceManager manager = FindAnyObjectByType<BlastFurnaceManager>(FindObjectsInactive.Include);
+            if (null != manager)
+                blastFurnaceDatas = manager.UIDatas;
+        }
+
+        RefreshBlastFurnaceStatuses();
     }
 }

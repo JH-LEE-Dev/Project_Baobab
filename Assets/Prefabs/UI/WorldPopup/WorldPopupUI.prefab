@@ -63,3 +63,5 @@ MonoBehaviour:
   uiCarStoragePrefab: {fileID: 3579267283983008013, guid: 62d003f331ce92949ac569b751d18b1e, type: 3}
   uiCutterPrefab: {fileID: 4703071890517338714, guid: 55cdbd122cb3875469e8e6869abd4998, type: 3}
   uiTraderCoinPrefab: {fileID: 9012121178195185827, guid: 73bf9e469d831bb49a9a5e46599dd5df, type: 3}
+  blastFurnaceStatusPrefab: {fileID: 9001, guid: 36ff2a9e420643469c3fa53cdba22586, type: 3}
+  blastFurnaceStatusOffset: {x: 0, y: 1.5}
