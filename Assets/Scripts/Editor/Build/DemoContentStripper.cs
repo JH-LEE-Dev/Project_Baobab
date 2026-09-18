@@ -17,7 +17,8 @@ using UnityEngine;
 /// 이 에셋들은 데이터베이스 ScriptableObject 한 곳에서만 참조됩니다.
 ///   - Stage2/3/4 BGM  -> AudioDatabase.sounds
 ///   - 미공개 나무 그림 -> TreeVisualDataBase.treeVisualDatas
-///   - 미공개 원석 그림 -> GameInstaller 프리팹의 GemOreItemController.gemOreTypeDatas
+///   - 미공개 원석/주괴 그림 -> GameInstaller 프리팹의 GemOreItemController.gemOreTypeDatas
+///                              + 같은 프리팹의 BlastFurnaceManager.recipes
 /// 그래서 빌드 직전에 이 에셋들에서 해당 항목만 지우면, 스프라이트와 오디오 클립이 아무에게도
 /// 참조되지 않아 빌드에서 자연히 빠집니다. 빌드가 끝나면 원본으로 되돌립니다.
 ///
@@ -34,6 +35,11 @@ using UnityEngine;
 /// 드랍 테이블(gemOreDropDatas)이 정하므로, "데모에서 갈 수 있는 맵의 나무"에 대한 줄이 하나도
 /// 없는 원석 종류는 데모에서 나올 수 없습니다. 그 종류의 그림만 참조를 끊습니다.
 /// 나중에 다이아/프리즘 줄을 채우면 그 그림은 자동으로 다시 남습니다.
+///
+/// 원석 그림은 용광로 레시피(BlastFurnaceManager.recipes)에도 한 번 더 걸려 있습니다. 한쪽만
+/// 끊으면 다른 쪽이 붙잡고 있어 그림이 그대로 빌드에 실리므로 둘을 함께 끊습니다. 주괴 그림은
+/// 레시피에만 있어 여기서만 걸러집니다. 용광로 본체 그림은 세 대가 같은 것을 쓰므로(원석 종류와
+/// 무관) 제외 대상이 아닙니다.
 ///
 /// [빌드가 도중에 죽으면]
 /// 원본은 Library 아래에 바이트 그대로 백업해 둡니다. 빌드 후 복구가 원칙이고, 빌드가 비정상
@@ -71,12 +77,12 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         int _removedBgm = StripAudio(_maxPlayableMap);
         int _removedTree = StripTreeVisuals(_maxPlayableMap);
-        int _removedGemOre = StripGemOreSprites(_maxPlayableMap);
+        int _removedGemOre = StripGemOreSprites(_maxPlayableMap, out int _removedFurnaceRecipe);
 
         AssetDatabase.SaveAssets();
 
         Debug.Log($"[DemoStrip] 데모 빌드 - 미공개 콘텐츠 제외 (최대 플레이 맵: {_maxPlayableMap})\n" +
-                  $"  BGM {_removedBgm}곡, 나무 비주얼 {_removedTree}종, 원석 그림 {_removedGemOre}종\n" +
+                  $"  BGM {_removedBgm}곡, 나무 비주얼 {_removedTree}종, 원석 그림 {_removedGemOre}종, 용광로 레시피 {_removedFurnaceRecipe}종\n" +
                   "  빌드가 끝나면 원본으로 자동 복구됩니다.");
     }
 
@@ -220,11 +226,18 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     /// 줄이 하나라도 있으면 그 원석은 데모에서 떨어질 수 있습니다. 값이 비어 있는 줄(IsEmpty)은
     /// 드랍 자체가 일어나지 않으므로 세지 않습니다.
     ///
+    /// 같은 그림을 참조하는 곳이 둘이라 두 군데를 함께 끊습니다 - 원석이 떨어질 때 쓰는
+    /// GemOreItemController.gemOreTypeDatas와, 용광로가 원석/주괴를 날릴 때 쓰는
+    /// BlastFurnaceManager.recipes입니다. 한쪽만 끊으면 다른 쪽이 붙잡고 있어 그림이 빌드에
+    /// 그대로 실립니다. 반환값은 앞쪽 개수이고, 뒤쪽은 _removedFurnaceRecipes로 나갑니다.
+    ///
     /// 원석 프리팹(GemOreItem.prefab) 자체는 건드리지 않습니다. 그림자/머티리얼을 원목과 공유할 뿐
     /// 자기 그림은 런타임에 이 테이블에서 받아 쓰므로, 참조를 끊으면 그림만 빌드에서 빠집니다.
     /// </summary>
-    private static int StripGemOreSprites(MapType _maxPlayableMap)
+    private static int StripGemOreSprites(MapType _maxPlayableMap, out int _removedFurnaceRecipes)
     {
+        _removedFurnaceRecipes = 0;
+
         GameObject _installer = AssetDatabase.LoadAssetAtPath<GameObject>(INSTALLER_PREFAB_PATH);
 
         if (null == _installer)
@@ -238,6 +251,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         if (null == _controller)
         {
             // 원석 기능이 아직 없는 브랜치일 수 있다. 빠뜨렸다고 빌드를 막을 일은 아니다.
+            // 드랍 테이블이 여기 있으므로, 없으면 용광로 쪽도 무엇을 남길지 정할 수 없다.
             return 0;
         }
 
@@ -250,11 +264,42 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
             return 0;
         }
 
-        SerializedObject _so = new SerializedObject(_controller);
+        SerializedObject _controllerSo = new SerializedObject(_controller);
 
-        HashSet<GemOreType> _keep = CollectDemoGemOreTypes(_so, _demoTrees);
+        HashSet<GemOreType> _keep = CollectDemoGemOreTypes(_controllerSo, _demoTrees);
 
-        SerializedProperty _typeDatas = _so.FindProperty("gemOreTypeDatas");
+        // SerializedProperty에 값을 넣는 것만으로는 에셋이 바뀌지 않는다(Apply를 해야 반영된다).
+        // 그래서 두 곳을 먼저 다 훑어 끊을 것을 정해두고, 백업을 뜬 뒤에 한꺼번에 적용한다.
+        int _removed = ClearGemOreTypeDataSprites(_controllerSo, _keep);
+
+        SerializedObject _furnaceSo = PrepareBlastFurnaceRecipeStrip(_installer, _keep, out _removedFurnaceRecipes);
+
+        if (0 == _removed && 0 == _removedFurnaceRecipes) return 0;
+
+        Backup(INSTALLER_PREFAB_PATH);
+
+        if (_removed > 0)
+        {
+            _controllerSo.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(_controller);
+        }
+
+        if (null != _furnaceSo)
+        {
+            _furnaceSo.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(_furnaceSo.targetObject);
+        }
+
+        return _removed;
+    }
+
+    /// <summary>
+    /// 원석이 떨어질 때 쓰는 그림(GemOreItemController.gemOreTypeDatas)에서 제외 대상의 참조를 끊습니다.
+    /// 아직 Apply하지 않으므로 이 호출만으로는 에셋이 바뀌지 않습니다.
+    /// </summary>
+    private static int ClearGemOreTypeDataSprites(SerializedObject _controllerSo, HashSet<GemOreType> _keep)
+    {
+        SerializedProperty _typeDatas = _controllerSo.FindProperty("gemOreTypeDatas");
         if (null == _typeDatas) return 0;
 
         int _removed = 0;
@@ -274,14 +319,51 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
             if (true == _hadAny) _removed++;
         }
 
-        if (0 == _removed) return 0;
-
-        Backup(INSTALLER_PREFAB_PATH);
-
-        _so.ApplyModifiedPropertiesWithoutUndo();
-        EditorUtility.SetDirty(_controller);
-
         return _removed;
+    }
+
+    /// <summary>
+    /// 용광로 레시피(BlastFurnaceManager.recipes)에서 제외 대상 원석의 원석/주괴 그림 참조를 끊습니다.
+    ///
+    /// 여기를 끊지 않으면 gemOreTypeDatas에서 끊어도 레시피가 같은 그림을 붙잡고 있어 빌드에 그대로
+    /// 실립니다. 주괴 그림(ingotSprite)은 레시피에만 있어 이 함수가 유일한 통로입니다.
+    ///
+    /// 용광로 프리팹 자체(본체 그림)는 건드리지 않습니다. 세 대가 같은 그림을 쓰므로 원석 종류를
+    /// 가릴 수 있는 정보가 아니고, 레시피는 런타임에 여기서 그림을 받아 쓰기 때문에 참조만 끊으면
+    /// 그림 파일만 빌드에서 빠집니다.
+    ///
+    /// <b>아직 Apply하지 않은</b> SerializedObject를 돌려줍니다. 백업(Backup)을 뜨기 전에 에셋이
+    /// 바뀌면 안 되므로 적용 시점은 호출부가 정합니다. 끊을 것이 없으면 null입니다.
+    /// </summary>
+    private static SerializedObject PrepareBlastFurnaceRecipeStrip(GameObject _installer, HashSet<GemOreType> _keep, out int _removed)
+    {
+        _removed = 0;
+
+        BlastFurnaceManager _manager = _installer.GetComponentInChildren<BlastFurnaceManager>(true);
+
+        // 용광로가 아직 없는 브랜치일 수 있다. 빠뜨렸다고 빌드를 막을 일은 아니다.
+        if (null == _manager) return null;
+
+        SerializedObject _so = new SerializedObject(_manager);
+
+        SerializedProperty _recipes = _so.FindProperty("recipes");
+        if (null == _recipes) return null;
+
+        for (int i = 0; i < _recipes.arraySize; i++)
+        {
+            SerializedProperty _entry = _recipes.GetArrayElementAtIndex(i);
+            GemOreType _type = (GemOreType)_entry.FindPropertyRelative("gemOreType").enumValueIndex;
+
+            if (true == _keep.Contains(_type)) continue;
+
+            bool _hadAny = false;
+            _hadAny |= ClearSpriteRef(_entry, "oreSprite");
+            _hadAny |= ClearSpriteRef(_entry, "ingotSprite");
+
+            if (true == _hadAny) _removed++;
+        }
+
+        return 0 == _removed ? null : _so;
     }
 
     /// <summary>드랍 테이블을 읽어 데모에서 실제로 떨어질 수 있는 원석 종류를 모읍니다.</summary>
