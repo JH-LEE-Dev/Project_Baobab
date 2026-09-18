@@ -652,11 +652,12 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
     }
 
     /// <summary>
-    /// 지금 상태를 구독자에게 한 번 다시 보낸다.
+    /// 지금 상태를 구독자에게 한 번 다시 보낸다. 변화가 없어도 강제로 보낸다.
     ///
-    /// Initialize()가 이미 UpdateUIDatas()를 한 번 돌려 "직전 상태"를 채워두기 때문에, 그 뒤에 구독한
-    /// 쪽(TownSystem.BindEvents는 Initialize 다음에 불린다)은 다음에 무언가 바뀔 때까지 목록을
-    /// 한 번도 못 받는다. 구독 직후 이걸 불러 최초 1회를 보장한다.
+    /// UpdateUIDatas는 구성이 바뀐 프레임에만 이벤트를 쏘고 "직전 상태"를 기억하므로, 늦게 구독한
+    /// 쪽은 다음 변화까지 목록을 한 번도 못 받는다. TownSystem.StartTownSystem이 배치를 끝낸 뒤
+    /// 이걸 불러 최초 1회(그리고 던전 복귀마다 1회)를 보장한다. 그 시점에는 UI가 시그널 구독을
+    /// 끝냈고 위치도 확정돼 있다.
     /// </summary>
     public void NotifyUIState()
     {

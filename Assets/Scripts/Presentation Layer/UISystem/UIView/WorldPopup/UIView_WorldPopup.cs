@@ -458,14 +458,8 @@ public class UIView_WorldPopup : UIView
         currentForestType = _currentForestType;
         hasCurrentMapType = true;
 
-        // The first state signal can precede UI subscription. Read the existing list once.
-        if (MapType.Town == currentMapType && null == blastFurnaceDatas)
-        {
-            BlastFurnaceManager manager = FindAnyObjectByType<BlastFurnaceManager>(FindObjectsInactive.Include);
-            if (null != manager)
-                blastFurnaceDatas = manager.UIDatas;
-        }
-
+        // 용광로 목록은 시그널(BlastFurnaceStateChanged)로만 받는다. 마을이 시작될 때
+        // TownSystem이 반드시 한 번 보내주므로 여기서 따로 찾아올 필요가 없다.
         RefreshBlastFurnaceStatuses();
     }
 }
