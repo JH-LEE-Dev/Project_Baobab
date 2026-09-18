@@ -552,6 +552,11 @@ public class BlastFurnace : MonoBehaviour
         if (visualTransform.gameObject.activeSelf == _bVisible) return;
 
         visualTransform.gameObject.SetActive(_bVisible);
+
+        // 이펙트가 Visual 아래에 있어서 여기서 함께 꺼지고 켜진다. 파티클은 Play On Awake라
+        // 다시 켜지는 순간 저절로 재생되므로, 지금 상태를 다시 물려주지 않으면 멈춰 있어야 할
+        // 용광로에서 불길이 올라온다. (특성으로 잠긴 용광로가 해금되는 순간이 이 경로다)
+        if (true == _bVisible) ApplyRunningVfx();
     }
 
     /// <summary>
