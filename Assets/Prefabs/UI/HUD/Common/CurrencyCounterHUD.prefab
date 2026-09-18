@@ -63,10 +63,20 @@ MonoBehaviour:
     icon: {fileID: 21300000, guid: 7501affa499263b4ca8f176cb9ba49d6, type: 3}
   - moneyType: 5
     icon: {fileID: 21300000, guid: d7f19eb1ded11344898e27c05237c2b4, type: 3}
+  - moneyType: 6
+    icon: {fileID: 21300000, guid: 3c7aac112c169aa4e80d4be4fa086dee, type: 3}
+  - moneyType: 7
+    icon: {fileID: 21300000, guid: 7237f82d38828fd478f8bfbbe77a4190, type: 3}
+  - moneyType: 8
+    icon: {fileID: 21300000, guid: 02eb89527ae3b654c8d00d971b123fb5, type: 3}
   layoutMode: 0
   contentSpacing: 2
   defaultMoneyType: 1
   defaultValue: 0
+  dimWhenZero: 0
+  zeroAlpha: 0.35
+  normalAlpha: 1
+  canvasGroup: {fileID: 0}
   debugIncreaseAmount: 100
   debugDecreaseAmount: 100
 --- !u!1 &5613791140173978126

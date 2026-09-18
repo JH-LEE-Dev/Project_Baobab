@@ -18,6 +18,10 @@ public class UI_Inventory : MonoBehaviour
     [Header("Binding Obj")]
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private GameObject invBackground;
+    [SerializeField] private RectTransform itemsRoot;
+    [SerializeField] private CurrencyCounterHUD uiPrism;
+    [SerializeField] private CurrencyCounterHUD uiDiamond;
+    [SerializeField] private CurrencyCounterHUD uiGold;
     [SerializeField] private CurrencyCounterHUD uiCoin;
     [SerializeField] private UI_Backpack uiBackpack;
     [SerializeField] private UI_InventoryCapacityBar capacityBar;
@@ -63,6 +67,9 @@ public class UI_Inventory : MonoBehaviour
     private bool isOpenAnimated = false;
     private int previousLogCount = 0;
     private bool isFirstDataBind = true;
+    private bool hasDiscoveredPrism = false;
+    private bool hasDiscoveredDiamond = false;
+    private bool hasDiscoveredGold = false;
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -125,6 +132,15 @@ public class UI_Inventory : MonoBehaviour
     {
         inventory = _inventory;
         moneyData = _moneyData;
+
+        if (null != uiPrism)
+            uiPrism.SetMoneyType(MoneyType.PrismOre);
+
+        if (null != uiDiamond)
+            uiDiamond.SetMoneyType(MoneyType.DiamondOre);
+
+        if (null != uiGold)
+            uiGold.SetMoneyType(MoneyType.GoldOre);
 
         if (null != uiCoin)
             uiCoin.SetMoneyType(MoneyType.Coin);
@@ -318,8 +334,30 @@ public class UI_Inventory : MonoBehaviour
 
     private void InitCoins()
     {
-        if (null != uiCoin) 
-            uiCoin.Initialize();
+        InitCurrencyHUD(uiPrism, MoneyType.PrismOre, true, 0);
+        InitCurrencyHUD(uiDiamond, MoneyType.DiamondOre, true, 1);
+        InitCurrencyHUD(uiGold, MoneyType.GoldOre, true, 2);
+        InitCurrencyHUD(uiCoin, MoneyType.Coin, false, 3);
+    }
+
+    private void InitCurrencyHUD(CurrencyCounterHUD _hud, MoneyType _moneyType, bool _dimWhenZero, int _siblingIndex)
+    {
+        if (null == _hud)
+            return;
+
+        _hud.Initialize();
+        _hud.SetMoneyType(_moneyType);
+        _hud.SetDimWhenZero(_dimWhenZero, 0.35f);
+        _hud.transform.SetSiblingIndex(_siblingIndex);
+
+        if (_dimWhenZero)
+        {
+            _hud.gameObject.SetActive(false);
+        }
+        else
+        {
+            _hud.gameObject.SetActive(true);
+        }
     }
 
     private void InitBackpack()
@@ -339,8 +377,24 @@ public class UI_Inventory : MonoBehaviour
         if (null == moneyData)
             return;
 
-        if (MoneyType.Coin == _moneyType)
-            uiCoin?.SetNumberAnimated(moneyData.money);
+        switch (_moneyType)
+        {
+            case MoneyType.Coin:
+                uiCoin?.SetNumberAnimated(moneyData.money);
+                break;
+            case MoneyType.GoldOre:
+                DiscoverAndShowCurrency(uiGold, ref hasDiscoveredGold);
+                uiGold?.SetNumberAnimated(moneyData.goldOre);
+                break;
+            case MoneyType.DiamondOre:
+                DiscoverAndShowCurrency(uiDiamond, ref hasDiscoveredDiamond);
+                uiDiamond?.SetNumberAnimated(moneyData.diamondOre);
+                break;
+            case MoneyType.PrismOre:
+                DiscoverAndShowCurrency(uiPrism, ref hasDiscoveredPrism);
+                uiPrism?.SetNumberAnimated(moneyData.prismOre);
+                break;
+        }
     }
 
     public void CharactersMoneyChanged()
@@ -349,6 +403,61 @@ public class UI_Inventory : MonoBehaviour
             return;
 
         uiCoin?.SetNumber(moneyData.money);
+
+        UpdateCurrencyState(uiPrism, moneyData.prismOre, ref hasDiscoveredPrism);
+        UpdateCurrencyState(uiDiamond, moneyData.diamondOre, ref hasDiscoveredDiamond);
+        UpdateCurrencyState(uiGold, moneyData.goldOre, ref hasDiscoveredGold);
+    }
+
+    private void DiscoverAndShowCurrency(CurrencyCounterHUD _hud, ref bool _hasDiscovered)
+    {
+        if (null == _hud)
+            return;
+
+        if (false == _hasDiscovered)
+        {
+            _hasDiscovered = true;
+            _hud.gameObject.SetActive(true);
+            RebuildItemsLayout();
+        }
+    }
+
+    private void UpdateCurrencyState(CurrencyCounterHUD _hud, long _amount, ref bool _hasDiscovered)
+    {
+        if (null == _hud)
+            return;
+
+        if (0 < _amount)
+        {
+            _hasDiscovered = true;
+        }
+
+        if (_hasDiscovered)
+        {
+            if (false == _hud.gameObject.activeSelf)
+            {
+                _hud.gameObject.SetActive(true);
+                RebuildItemsLayout();
+            }
+        }
+        else
+        {
+            if (true == _hud.gameObject.activeSelf)
+            {
+                _hud.gameObject.SetActive(false);
+                RebuildItemsLayout();
+            }
+        }
+
+        _hud.SetNumber(_amount);
+    }
+
+    private void RebuildItemsLayout()
+    {
+        if (null != itemsRoot)
+        {
+            UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(itemsRoot);
+        }
     }
 
     public void InventoryShowEvent()
