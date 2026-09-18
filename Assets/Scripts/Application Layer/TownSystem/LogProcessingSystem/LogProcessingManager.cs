@@ -666,6 +666,14 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     }
 
     // ILogEvaluatorCH - 스킬 효과를 (비활성 포함) 모든 라인의 평가기에 브로드캐스트
+    /// <summary>
+    /// "원목 판매 가치" 특성 배율. 모든 라인의 평가기에 같은 값이 들어가므로 첫 라인 값을 대표로 돌려준다.
+    /// 용광로가 주괴 가격에 같은 배율을 걸 때 읽는다.
+    /// </summary>
+    public float LogValueMultiplier => allLines.Count > 0 && allLines[0].Evaluator != null
+        ? allLines[0].Evaluator.LogValueMultiplier
+        : 1f;
+
     public void IncreaseLogValueMultiplier(float _amount)
     {
         for (int i = 0; i < allLines.Count; i++) allLines[i].Evaluator.IncreaseLogValueMultiplier(_amount);

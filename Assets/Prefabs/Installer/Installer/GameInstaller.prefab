@@ -2663,6 +2663,7 @@ Transform:
   - {fileID: 3279444899425718996}
   - {fileID: 2112430069709630900}
   - {fileID: 2394091770785061486}
+  - {fileID: 7439228434502376222}
   m_Father: {fileID: 1821968231370692703}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2035583621322038210
@@ -2814,6 +2815,77 @@ MonoBehaviour:
   characterSpawnPoint: {fileID: 5004496044835778804, guid: e8c773d61d82f3b4086ee1131624cecc, type: 3}
   characterPrefab: {fileID: 8662941010871122232, guid: e73742882640a0d4787ce81c60e7198b, type: 3}
   character: {fileID: 0}
+--- !u!1 &8252942539283479462
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7439228434502376222}
+  - component: {fileID: 106880215694525439}
+  m_Layer: 0
+  m_Name: BlastFurnaceManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7439228434502376222
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8252942539283479462}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7167910169251179437}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &106880215694525439
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8252942539283479462}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6202c10a9d9f53644b08265fbb902a85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BlastFurnaceManager
+  blastFurnacePrefab: {fileID: 6085826552097990200, guid: 39bb0c2411fa88a4391848f5020c8376, type: 3}
+  oreOrder: 010000000200000003000000
+  placementOffset: {x: 0, y: 0}
+  bSingleInteractionCollider: 1
+  recipes:
+  - gemOreType: 1
+    orePerIngot: 10
+    workPerIngot: 40
+    ingotValue: 100
+    oreSprite: {fileID: 21300000, guid: 38aa3b138f41cc342928b2b43e04e5f0, type: 3}
+    ingotSprite: {fileID: 21300000, guid: f2e63e8015a96414ab1234165ac3065b, type: 3}
+  - gemOreType: 2
+    orePerIngot: 20
+    workPerIngot: 0
+    ingotValue: 0
+    oreSprite: {fileID: 21300000, guid: 9e07063275de3154bb23ef2e66a2383f, type: 3}
+    ingotSprite: {fileID: 21300000, guid: c345a40cd71f87e4bb0aa8e28dc25382, type: 3}
+  - gemOreType: 3
+    orePerIngot: 30
+    workPerIngot: 0
+    ingotValue: 0
+    oreSprite: {fileID: 21300000, guid: b68b9169df3bdf945a071d054f3fe108, type: 3}
+    ingotSprite: {fileID: 21300000, guid: bb935119d314ff1418bf9fc1b7e3b427, type: 3}
+  flyingItemPrefab: {fileID: 4194290704363804404, guid: 0fdc9709225e3d34baae691d2078341d, type: 3}
+  flyingSortingLayer: FlyingItem
+  debugUnlockedFurnaceCount: 1
+  debugStartGoldOre: 100
 --- !u!1 &8319344316240393611
 GameObject:
   m_ObjectHideFlags: 0
@@ -3038,6 +3110,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3b6e1e574bc04fd382a462165559c487, type: 2}
   - {fileID: 11400000, guid: 8f41ed9331c14045842f319417aa182b, type: 2}
   - {fileID: 11400000, guid: f8726d6fea6c49c6880542e0e29b713b, type: 2}
+  - {fileID: 11400000, guid: 826fa287a7af56346a151fc60ebe3eb3, type: 2}
+  - {fileID: 11400000, guid: ec788717b5cb9274ba5e8d735dfce8e9, type: 2}
 --- !u!1 &8962706255023184329
 GameObject:
   m_ObjectHideFlags: 0

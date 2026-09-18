@@ -78,6 +78,12 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
         yield return new WaitForSeconds(evaluationDelay);
     }
 
+    /// <summary>
+    /// "원목 판매 가치" 특성이 쌓아올린 배율(1.0 = 증가 없음).
+    /// 용광로 주괴 판매에도 같은 배율이 걸려야 해서 밖에서 읽을 수 있게 열어둔다.
+    /// </summary>
+    public float LogValueMultiplier => logValueMultiplier;
+
     public void IncreaseLogValueMultiplier(float _amount)
     {
         // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)

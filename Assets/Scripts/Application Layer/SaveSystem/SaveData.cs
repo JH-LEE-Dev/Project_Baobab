@@ -124,6 +124,16 @@ public struct InventorySaveData
     public long diamondOre;
     public long prismOre;
 
+    // 각 원석을 한 번이라도 얻은 적이 있는지. 보유량이 0으로 돌아가도(전부 용광로에 넣어도)
+    // 이 값은 남으므로, HUD가 "이미 발견한 재화"를 계속 보여줄 수 있다.
+    //
+    // 기존 세이브 파일에는 이 필드들이 없어 false로 읽힌다. 그대로 두면 이미 원석을 캐 둔
+    // 유저의 HUD가 초기화된 것처럼 보이므로, 읽는 쪽(InventoryManager.LoadSaveData)에서
+    // 보유량이 0보다 크면 얻은 적이 있는 것으로 함께 판정한다.
+    public bool bHasEverAcquiredGoldOre;
+    public bool bHasEverAcquiredDiamondOre;
+    public bool bHasEverAcquiredPrismOre;
+
     public List<InventorySlotSaveData> slots;
 
     public void Initialize(int _capacity)
@@ -159,6 +169,23 @@ public struct LogProcessingSaveData
         if (lineDatas == null) lineDatas = new List<LogProcessLineSaveData>(3);
         else lineDatas.Clear();
     }
+}
+
+/// <summary>
+/// 용광로 한 대의 저장 상태. 넣어둔 원석과 진행 중인 가공량만 담는다.
+///
+/// 몇 대가 열려 있는지는 저장하지 않는다. 그건 특성(스킬 트리)이 정하고 스킬 트리는 이미 저장되므로,
+/// 여기에 또 적으면 두 값이 어긋날 수 있다.
+///
+/// 배열 순서가 아니라 gemOreType으로 찾아 복원한다. 나중에 용광로 순서가 바뀌거나 종류가 늘어도
+/// 엉뚱한 용광로에 남의 원석이 들어가지 않는다.
+/// </summary>
+[Serializable]
+public struct BlastFurnaceSaveData
+{
+    public GemOreType gemOreType;
+    public int storedOre;
+    public float remainingWork;
 }
 
 [Serializable]
@@ -238,6 +265,10 @@ public class GameSaveData
     public bool bHasAcquiredObsidianCharm;
     public List<LootType> currentOwnedLoots;
 
+    // 용광로 상태. 이 키가 없는 예전 세이브를 읽으면 JsonUtility가 null로 두므로, 읽는 쪽에서
+    // null을 "용광로에 아무것도 없음"으로 처리한다(기존 세이브는 용광로 자체가 없던 시절이라 그게 맞다).
+    public List<BlastFurnaceSaveData> blastFurnaceSaveDatas;
+
     public void Clear()
     {
         skillTreeSaveData.Initialize();
@@ -248,6 +279,9 @@ public class GameSaveData
 
         if (currentOwnedLoots == null) currentOwnedLoots = new List<LootType>(10);
         else currentOwnedLoots.Clear();
+
+        if (blastFurnaceSaveDatas == null) blastFurnaceSaveDatas = new List<BlastFurnaceSaveData>(3);
+        else blastFurnaceSaveDatas.Clear();
 
         // 이 객체는 SaveManager(DontDestroyOnLoad)에 캐싱되어 세션이 바뀌어도 살아남는다.
         // 아래 플래그들은 SaveGameData()에서 inDungeonObjectManager가 있을 때만 덮어써지므로,

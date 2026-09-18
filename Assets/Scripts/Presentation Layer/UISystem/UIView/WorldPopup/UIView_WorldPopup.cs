@@ -323,6 +323,25 @@ public class UIView_WorldPopup : UIView
         ui_CarStorage?.BindPlayer(character.GetTransform());
     }
 
+    // ──────────────────────────────────────────────────────────────────────
+    // 용광로 상태
+    //
+    // blastFurnaceDatas는 BlastFurnaceManager가 재사용하는 목록이라 참조를 그대로 들고 있으면
+    // 진행도(progress01)가 매 프레임 실시간으로 따라온다. 이 메서드는 구성이 바뀔 때만 불린다
+    // (해금 / 가공 시작·종료 / 쌓인 원석 변화).
+    //
+    // 각 항목이 들고 있는 것: 위치, 원석 등급, 해금 여부, 가공 중 여부, 진행도, 쌓인 원석 / 필요 원석.
+    // 아직 그리는 쪽은 붙어 있지 않다. UI 작업자가 이 목록만 보고 위젯을 구성하면 된다.
+    // ──────────────────────────────────────────────────────────────────────
+    private System.Collections.Generic.IReadOnlyList<BlastFurnaceUIData> blastFurnaceDatas;
+
+    public System.Collections.Generic.IReadOnlyList<BlastFurnaceUIData> BlastFurnaceDatas => blastFurnaceDatas;
+
+    public void BlastFurnaceStateChanged(System.Collections.Generic.IReadOnlyList<BlastFurnaceUIData> _datas)
+    {
+        blastFurnaceDatas = _datas;
+    }
+
     //true -> 제재소 동작중 , false -> 제재소 동작 끝
     public void LogItemProcessorActiveStateChange(bool _boolean)
     {

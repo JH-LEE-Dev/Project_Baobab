@@ -18,6 +18,10 @@ public class UI_Inventory : MonoBehaviour
     [Header("Binding Obj")]
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private GameObject invBackground;
+    [SerializeField] private RectTransform itemsRoot;
+    [SerializeField] private CurrencyCounterHUD uiPrism;
+    [SerializeField] private CurrencyCounterHUD uiDiamond;
+    [SerializeField] private CurrencyCounterHUD uiGold;
     [SerializeField] private CurrencyCounterHUD uiCoin;
     [SerializeField] private UI_Backpack uiBackpack;
     [SerializeField] private UI_InventoryCapacityBar capacityBar;
@@ -125,6 +129,15 @@ public class UI_Inventory : MonoBehaviour
     {
         inventory = _inventory;
         moneyData = _moneyData;
+
+        if (null != uiPrism)
+            uiPrism.SetMoneyType(MoneyType.PrismOre);
+
+        if (null != uiDiamond)
+            uiDiamond.SetMoneyType(MoneyType.DiamondOre);
+
+        if (null != uiGold)
+            uiGold.SetMoneyType(MoneyType.GoldOre);
 
         if (null != uiCoin)
             uiCoin.SetMoneyType(MoneyType.Coin);
@@ -318,8 +331,30 @@ public class UI_Inventory : MonoBehaviour
 
     private void InitCoins()
     {
-        if (null != uiCoin) 
-            uiCoin.Initialize();
+        InitCurrencyHUD(uiPrism, MoneyType.PrismOre, true, 0);
+        InitCurrencyHUD(uiDiamond, MoneyType.DiamondOre, true, 1);
+        InitCurrencyHUD(uiGold, MoneyType.GoldOre, true, 2);
+        InitCurrencyHUD(uiCoin, MoneyType.Coin, false, 3);
+    }
+
+    private void InitCurrencyHUD(CurrencyCounterHUD _hud, MoneyType _moneyType, bool _dimWhenZero, int _siblingIndex)
+    {
+        if (null == _hud)
+            return;
+
+        _hud.Initialize();
+        _hud.SetMoneyType(_moneyType);
+        _hud.SetDimWhenZero(_dimWhenZero, 0.35f);
+        _hud.transform.SetSiblingIndex(_siblingIndex);
+
+        if (_dimWhenZero)
+        {
+            _hud.gameObject.SetActive(false);
+        }
+        else
+        {
+            _hud.gameObject.SetActive(true);
+        }
     }
 
     private void InitBackpack()
@@ -339,8 +374,24 @@ public class UI_Inventory : MonoBehaviour
         if (null == moneyData)
             return;
 
-        if (MoneyType.Coin == _moneyType)
-            uiCoin?.SetNumberAnimated(moneyData.money);
+        switch (_moneyType)
+        {
+            case MoneyType.Coin:
+                uiCoin?.SetNumberAnimated(moneyData.money);
+                break;
+            case MoneyType.GoldOre:
+                DiscoverAndShowCurrency(uiGold);
+                uiGold?.SetNumberAnimated(moneyData.goldOre);
+                break;
+            case MoneyType.DiamondOre:
+                DiscoverAndShowCurrency(uiDiamond);
+                uiDiamond?.SetNumberAnimated(moneyData.diamondOre);
+                break;
+            case MoneyType.PrismOre:
+                DiscoverAndShowCurrency(uiPrism);
+                uiPrism?.SetNumberAnimated(moneyData.prismOre);
+                break;
+        }
     }
 
     public void CharactersMoneyChanged()
@@ -349,6 +400,57 @@ public class UI_Inventory : MonoBehaviour
             return;
 
         uiCoin?.SetNumber(moneyData.money);
+
+        UpdateCurrencyState(uiPrism, MoneyType.PrismOre, moneyData.prismOre);
+        UpdateCurrencyState(uiDiamond, MoneyType.DiamondOre, moneyData.diamondOre);
+        UpdateCurrencyState(uiGold, MoneyType.GoldOre, moneyData.goldOre);
+    }
+
+    /// <summary>
+    /// 방금 얻은 재화의 칸을 즉시 띄운다. 획득 이력은 InventoryManager가 이미 기록한 뒤에
+    /// 이 호출이 오므로(UnitSystem.GemOreAcquired), 여기서는 보이기만 하면 된다.
+    /// </summary>
+    private void DiscoverAndShowCurrency(CurrencyCounterHUD _hud)
+    {
+        if (null == _hud)
+            return;
+
+        if (true == _hud.gameObject.activeSelf)
+            return;
+
+        _hud.gameObject.SetActive(true);
+        RebuildItemsLayout();
+    }
+
+    /// <summary>
+    /// 한 번이라도 얻은 적이 있는 재화만 보여준다.
+    ///
+    /// 판정은 세이브에 저장되는 획득 이력(IMoneyData.HasEverAcquired)을 그대로 따른다.
+    /// 예전처럼 보유량으로 판정하면 원석을 전부 용광로에 넣은 순간 칸이 다시 숨겨지고,
+    /// 게임을 껐다 켜면 발견 사실 자체가 사라진다.
+    /// </summary>
+    private void UpdateCurrencyState(CurrencyCounterHUD _hud, MoneyType _moneyType, long _amount)
+    {
+        if (null == _hud)
+            return;
+
+        bool _bDiscovered = null != moneyData && moneyData.HasEverAcquired(_moneyType);
+
+        if (_bDiscovered != _hud.gameObject.activeSelf)
+        {
+            _hud.gameObject.SetActive(_bDiscovered);
+            RebuildItemsLayout();
+        }
+
+        _hud.SetNumber(_amount);
+    }
+
+    private void RebuildItemsLayout()
+    {
+        if (null != itemsRoot)
+        {
+            UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(itemsRoot);
+        }
     }
 
     public void InventoryShowEvent()

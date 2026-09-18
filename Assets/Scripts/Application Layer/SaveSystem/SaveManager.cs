@@ -37,6 +37,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
     private Character character;
     private InventoryManager inventoryManager;
     private LogProcessingManager logProcessingManager;
+    private BlastFurnaceManager blastFurnaceManager;
     private DensityManager densityManager;
     private InDungeonObjectManager inDungeonObjectManager;
     private TownObjectManager townObjectManager;
@@ -109,8 +110,9 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
 
     public void Initialize(SignalHub _signalHub, TutorialSystem _tutorialSystem, SkillSystem _skillSystem, InventoryManager _inventoryManager, LogProcessingManager _logProcessingManager,
     DensityManager _densityManager, InDungeonObjectManager _inDungeonObjectManager,TownObjectManager _townObjectManager, OffroadContainer _offroadContainer,
-    TownUnitSpawner _townUnitSpawner)
+    TownUnitSpawner _townUnitSpawner, BlastFurnaceManager _blastFurnaceManager)
     {
+        blastFurnaceManager = _blastFurnaceManager;
         signalHub = _signalHub;
         tutorialSystem = _tutorialSystem;
         inDungeonObjectManager = _inDungeonObjectManager;
@@ -338,6 +340,12 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
         if (null != logProcessingManager)
         {
             logProcessingManager.PopulateSaveData(ref cachedSaveData.logProcessingSaveData);
+        }
+
+        // 4-1. 용광로 상태 추출(넣어둔 원석 / 진행 중인 가공량)
+        if (null != blastFurnaceManager)
+        {
+            blastFurnaceManager.PopulateSaveData(ref cachedSaveData.blastFurnaceSaveDatas);
         }
 
         // 5. 환경 밀도 데이터 추출
@@ -777,6 +785,12 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
         if (logProcessingManager != null)
         {
             logProcessingManager.LoadSaveData(_data.logProcessingSaveData);
+        }
+
+        // 4-1. 용광로 상태 복구. 이 키가 없는 예전 세이브는 null이 들어오고, 그때는 빈 상태로 둔다.
+        if (blastFurnaceManager != null)
+        {
+            blastFurnaceManager.LoadSaveData(_data.blastFurnaceSaveDatas);
         }
 
         // 5. 환경 밀도 데이터 복구

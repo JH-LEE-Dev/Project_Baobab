@@ -349,6 +349,32 @@ public class UIView_Result : UIView
         dungeonResultProvider = _dungeonResultProvider;
     }
 
+    #region 이번 런 성과 데이터 (그리는 코드는 아직 없음)
+
+    // 아래 셋은 결과창이 이번 런의 원석/전리품을 표시할 수 있도록 데이터만 열어둔 것이다.
+    // 값의 출처는 InDungeonResultManager이고, 던전에 들어갈 때마다 0에서 다시 시작한다.
+
+    /// <summary>
+    /// 이번 런에서 이 등급의 원석으로 얻은 재화량. 인벤토리 HUD의 원석 숫자와 같은 단위다
+    /// (떨어진 알갱이 개수가 아니라 그 알갱이들이 담고 있던 재화의 합).
+    /// </summary>
+    public long GetAcquiredGemOreAmount(GemOreType _gemOreType)
+    {
+        return null != dungeonResultProvider ? dungeonResultProvider.GetAcquiredGemOreAmount(_gemOreType) : 0L;
+    }
+
+    /// <summary>이번 런에서 원석을 조금이라도 주웠는지. 원석 칸 자체를 띄울지 말지 판단할 때 쓴다.</summary>
+    public bool HasAcquiredAnyGemOre => null != dungeonResultProvider && dungeonResultProvider.HasAcquiredAnyGemOre();
+
+    /// <summary>
+    /// 이번 런에서 얻은 전리품 목록. 얻은 순서대로 들어 있고 중복이 없다. 없으면 빈 목록이다(null 아님).
+    /// 읽기만 할 것 - 다음 런이 시작되면 이 목록은 비워진다.
+    /// </summary>
+    public IReadOnlyList<LootType> AcquiredLoots =>
+        null != dungeonResultProvider ? dungeonResultProvider.GetAcquiredLoots() : Array.Empty<LootType>();
+
+    #endregion
+
     /// <summary>
     /// 이번에 열릴 결과창이 튜토리얼 퀘스트 체인 도중(GoHomeBeforeExhausted 완료 ~ UpgradeAxe 완료 전)인지 알려준다.
     /// OpenResultUI()보다 먼저 호출되어야 하며, 튜토리얼 중에는 Retry를 막는 등의 판단에 쓰인다.

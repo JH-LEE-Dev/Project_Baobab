@@ -194,8 +194,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private float treeGrowTime = 10f;
 
+    // [미사용 확정] 히든맵은 쓰지 않기로 확정됐습니다. 이 값을 None 밖으로 바꾸는 유일한 경로인
+    // InDungeonSystem.SetHiddenMapGrade()는 호출부가 0이라, 이 필드는 영원히 None입니다.
+    // 아래 hiddenMapTreeGradeDatas를 읽는 분기(CalculateRandomTreeData)도 따라서 죽어 있습니다.
+    // 되살리기 전 주의사항은 HiddenmapManager 클래스 주석에 정리해 뒀습니다.
     private HiddenMapGrade hiddenMapGrade = HiddenMapGrade.None;
 
+    // [미사용 확정] 위 hiddenMapGrade가 None으로 고정이라 인스펙터 값이 읽히지 않습니다.
+    // 값은 채워져 있으나(Advanced 등급 맵이면 Advanced 나무 20% 등) 지금은 아무 효과도 없습니다.
     [SerializeField] private List<HiddenMapTreeGradeProbData> hiddenMapTreeGradeDatas;
 
     private Character character;
@@ -498,6 +504,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             currentOwnedLoots.Add(_item.LootType);
         }
+
+        // currentOwnedLoots는 "영구 소지 목록"이라 예전 런에서 얻은 것도 들어 있다.
+        // 결과창은 "이번 런에서 얻은 것"만 보여줘야 하므로 런 단위 집계를 따로 남긴다.
+        inDungeonResultManager?.AddAcquiredLoot(_item.LootType);
 
         // LogItem 획득과 동일한 획득 피드백(사운드 + 캐릭터 뽀잉 연출)을 LootItem 획득 시에도 재생한다.
         Sound.PlayUI(SoundID.GetItem);
@@ -1309,6 +1319,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         TreeGrade grade = TreeGrade.Normal;
 
         // 1. 등급 결정 (히든 맵 또는 일반 던전 데이터 기반)
+        //
+        // [미사용 확정] 첫 갈래(히든맵)는 죽은 길입니다. hiddenMapGrade를 None 밖으로 바꾸는
+        // InDungeonSystem.SetHiddenMapGrade()에 호출부가 없어, 실제로는 항상 아래 else 갈래
+        // (treeGradeProbs = 특성이 올려주는 확률)만 탑니다.
         if (hiddenMapGrade != HiddenMapGrade.None && hiddenMapTreeGradeDatas != null)
         {
             for (int i = 0; i < hiddenMapTreeGradeDatas.Count; i++)
@@ -1621,6 +1635,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         GemOreItemAcquiredEvent?.Invoke(_item);
     }
 
+    /// <summary>
+    /// <b>[미사용 확정] 히든맵 기능은 쓰지 않습니다.</b> 이 세터를 부르는 InDungeonSystem의
+    /// SetHiddenMapGrade() / ResetHiddenMapGrade()가 둘 다 호출부 0이라, 실제로는 불리지 않습니다.
+    /// </summary>
     public void SetHiddenMapGrade(HiddenMapGrade _hiddenMapGrade)
     {
         hiddenMapGrade = _hiddenMapGrade;
