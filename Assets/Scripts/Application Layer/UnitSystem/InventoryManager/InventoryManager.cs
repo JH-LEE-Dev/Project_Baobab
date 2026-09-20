@@ -40,8 +40,15 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private ItemDataPool itemDataPool;
 
-    // "분실물 보관함" 루트 아이템 효과 보유 상태 (세션 한정, 리타이어 1회 소모)
+    // "원목 보험 증서" 전리품 효과 보유 상태. 영구 획득 여부(InDungeonObjectManager.bHasAcquiredLostAndFoundBox)를
+    // 매 던전 진입마다 SetupForForestType()이 여기에 다시 밀어넣어주고, 탈진 1회로 소모된다.
     private bool hasLostAndFoundBoxEffect;
+
+    // "원목 보험 증서"가 탈진 시 구제하는 비율. 전체 합이 아니라 나무 종류별로 각각 이 비율만큼 구제한다.
+    private const float LostAndFoundRescueRatio = 0.3f;
+    // 나무 종류별 유실 예정 수량 / 구제 목표 집계용 버퍼(탈진마다 새로 할당하지 않도록 재사용한다)
+    private readonly int[] rescueAtRiskCountsByTreeType = new int[Enum.GetValues(typeof(TreeType)).Length];
+    private readonly int[] rescueTargetsByTreeType = new int[Enum.GetValues(typeof(TreeType)).Length];
 
     public bool bInventoryIsEmpty { get; private set; }
 
@@ -703,10 +710,20 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     }
 
     /// <summary>
-    /// "분실물 보관함" 효과: 리타이어로 유실되기 직전, 유실 예정 원목의 30%를 오프로드 컨테이너로
-    /// 미리 빼낸다(연출 없이 즉시 커밋). 반드시 DropAllItem보다 먼저 호출해야 한다 - 여기서 미리 빼낸
-    /// 만큼 슬롯 수량이 줄어든 상태로 DropAllItem이 나머지만 정상 유실 처리하게 된다. 1회성 효과이므로
-    /// 호출 시점에 성공 여부와 무관하게 플래그를 소모한다.
+    /// "원목 보험 증서" 효과: 탈진으로 유실되기 직전, 유실 예정 원목의 <b>총 30%</b>를 나무 종류별로
+    /// 나눠 담아 오프로드 컨테이너로 미리 빼낸다(연출 없이 즉시 커밋). 30%가 정확히 떨어지지 않아 생기는
+    /// 잔여분은 고가 원목이 먼저 가져가므로, 종류별 비율은 30%보다 높거나 낮을 수 있고 합계만 30%다.
+    /// 반드시 DropAllItem보다 먼저 호출해야 한다 - 여기서 미리 빼낸 만큼 슬롯 수량이 줄어든 상태로
+    /// DropAllItem이 나머지만 정상 유실 처리하게 된다.
+    ///
+    /// 전체 합의 30%를 슬롯 앞에서부터 긁어오면 안 된다. 슬롯은 (나무 종류, 로그 상태) 단위로 쪼개지고
+    /// 슬롯당 상한(maxItemsPerSlot)도 있어서 같은 종류가 여러 슬롯에 흩어지는데, 그러면 A 10개 + B 20개를
+    /// 들고 있을 때 앞쪽 A 슬롯만 통째로 9개 빠지고 B는 한 개도 구제되지 않는다. 종류별로 목표치를 따로
+    /// 잡아 A 3개 / B 6개가 담기게 한다.
+    ///
+    /// 단, 종류별로 각각 반올림하면 합계가 30%를 넘어버린다(2종류 x 5개 = 총 10개인데 종류별
+    /// RoundToInt(1.5) = 2개씩, 합 4개 = 40%). 그래서 합계 목표를 먼저 확정하고, 종류별로는 내림만 한 뒤
+    /// 모자란 잔여분을 한 개씩 나눠주는 방식으로 합을 30%에 맞춘다.
     /// </summary>
     public int RescueItemsToOffroadContainer(OffroadContainer _container)
     {
@@ -715,38 +732,110 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             return 0;
         }
 
-        hasLostAndFoundBoxEffect = false;
-
         if (_container == null) return 0;
 
+        // 결과와 무관하게 이번 런의 효과를 소모한다. 탈진은 런당 한 번뿐이고, 다음 던전 진입 때
+        // InDungeonObjectManager.SetupForForestType()이 영구 획득 여부를 보고 다시 무장해준다.
+        hasLostAndFoundBoxEffect = false;
+
+        // 나무 종류별 유실 예정 수량 집계
+        Array.Clear(rescueAtRiskCountsByTreeType, 0, rescueAtRiskCountsByTreeType.Length);
         int totalLogsAtRisk = 0;
         for (int i = 0; i < currentSlotCount; i++)
         {
             InventorySlot slot = inventorySlots[i];
-            if (slot.itemData is LogItemData && slot.totalCount > 0)
-            {
-                totalLogsAtRisk += slot.totalCount;
-            }
+            if (!(slot.itemData is LogItemData logData) || slot.totalCount <= 0) continue;
+
+            rescueAtRiskCountsByTreeType[(int)logData.treeType] += slot.totalCount;
+            totalLogsAtRisk += slot.totalCount;
         }
 
         if (totalLogsAtRisk <= 0) return 0;
 
-        int rescueTarget = Mathf.RoundToInt(totalLogsAtRisk * 0.3f);
-        int rescuedCount = 0;
-        bool containerFull = false;
+        BuildRescueTargets(totalLogsAtRisk);
 
-        for (int i = 0; i < currentSlotCount && rescuedCount < rescueTarget && !containerFull; i++)
+        // 구제 실행도 고가 원목부터. 운반상자 여유가 모자랄 때 값싼 원목이 남은 슬롯을 선점해
+        // 비싼 원목이 한 개도 구제되지 못하는 상황을 막는다.
+        int rescuedCount = 0;
+        for (int treeType = rescueTargetsByTreeType.Length - 1; treeType >= 0; treeType--)
+        {
+            if (rescueTargetsByTreeType[treeType] <= 0) continue;
+
+            rescuedCount += RescueLogsOfTreeType(_container, (TreeType)treeType, rescueTargetsByTreeType[treeType]);
+        }
+
+        return rescuedCount;
+    }
+
+    /// <summary>
+    /// rescueAtRiskCountsByTreeType(종류별 유실 예정 수량)을 보고 rescueTargetsByTreeType(종류별 구제
+    /// 목표)을 채운다. 종류별 목표의 합은 항상 전체의 30%(반올림)와 정확히 일치한다.
+    ///
+    /// 종류별로 내림을 먼저 깔고, 합계 목표에 모자란 잔여분을 <b>고가 원목부터</b> 한 개씩 배분한다.
+    /// 가치 순서는 TreeType enum 인덱스와 같다 - LogItemValueDataBase.asset의 기본 가치가 enum 순서대로
+    /// 단조 증가한다(OakTree 4 → ObsidianTree 3천만). 그래서 인덱스를 내려가며 훑는 것이 곧 고가 순이다.
+    /// (이 전제가 깨지면, 즉 enum 순서와 가치 순서가 어긋나게 되면 이 배분도 함께 고쳐야 한다)
+    /// </summary>
+    private void BuildRescueTargets(int _totalLogsAtRisk)
+    {
+        Array.Clear(rescueTargetsByTreeType, 0, rescueTargetsByTreeType.Length);
+
+        int totalRescueTarget = Mathf.RoundToInt(_totalLogsAtRisk * LostAndFoundRescueRatio);
+        int assigned = 0;
+
+        for (int treeType = 0; treeType < rescueAtRiskCountsByTreeType.Length; treeType++)
+        {
+            int atRisk = rescueAtRiskCountsByTreeType[treeType];
+            if (atRisk <= 0) continue;
+
+            int floored = Mathf.FloorToInt(atRisk * LostAndFoundRescueRatio);
+            rescueTargetsByTreeType[treeType] = floored;
+            assigned += floored;
+        }
+
+        // 잔여분 배분. 한 바퀴에 종류마다 한 개씩만 얹으므로 특정 종류가 보유량을 넘겨 받지 않는다.
+        // 모든 종류가 보유량 상한에 걸려 더 얹을 곳이 없으면 그 자리에서 멈춘다(무한 루프 방지).
+        int remaining = totalRescueTarget - assigned;
+        while (remaining > 0)
+        {
+            bool bProgressed = false;
+
+            for (int treeType = rescueTargetsByTreeType.Length - 1; treeType >= 0 && remaining > 0; treeType--)
+            {
+                if (rescueTargetsByTreeType[treeType] >= rescueAtRiskCountsByTreeType[treeType]) continue;
+
+                rescueTargetsByTreeType[treeType]++;
+                remaining--;
+                bProgressed = true;
+            }
+
+            if (!bProgressed) break;
+        }
+    }
+
+    /// <summary>
+    /// 지정한 나무 종류를 들고 있는 슬롯들을 훑어 _rescueTarget개를 컨테이너로 옮긴다.
+    ///
+    /// 컨테이너가 가득 차 거절당하면 그 슬롯만 포기하고 다음 슬롯으로 넘어간다. 컨테이너의 여유는
+    /// (나무 종류, 로그 상태) 조합별로 판정되므로(OffroadContainer.CanAddItemByData) 한 조합이 막혀도
+    /// 다른 조합은 아직 들어갈 수 있고, 여기서 전부 포기하면 뒤쪽 종류가 이유 없이 구제받지 못한다.
+    /// </summary>
+    private int RescueLogsOfTreeType(OffroadContainer _container, TreeType _treeType, int _rescueTarget)
+    {
+        int rescuedCount = 0;
+
+        for (int i = 0; i < currentSlotCount && rescuedCount < _rescueTarget; i++)
         {
             InventorySlot slot = inventorySlots[i];
             if (!(slot.itemData is LogItemData logData) || slot.totalCount <= 0) continue;
+            if (logData.treeType != _treeType) continue;
 
-            while (rescuedCount < rescueTarget && slot.totalCount > 0)
+            while (rescuedCount < _rescueTarget && slot.totalCount > 0)
             {
                 // 컨테이너 쪽에 자리가 있는지 먼저 확인 후 성공했을 때만 캐릭터 슬롯에서 차감한다.
                 // 순서를 반대로 하면(먼저 차감 후 실패 시 롤백) 데이터가 증발할 위험이 있다.
                 if (!_container.TryAddLogItemDataDirect(logData, logData.logState, false))
                 {
-                    containerFull = true;
                     break;
                 }
 
