@@ -910,14 +910,19 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             int count = slot.totalCount;
             totalDroppedCount += count;
 
+            // 슬롯 비우기 및 데이터 반환. 반드시 ItemRemoved()보다 먼저 해야 한다 - ItemRemoved()는
+            // 인벤토리 UI 전체 갱신(UIView_Popup.ItemRemovedFromInventory → UI_Inventory.UpdateSlots)을
+            // 유발하고 UI는 그때그때 슬롯 데이터를 다시 읽으므로, 비우기 전에 알리면 UI가 아직 안 비워진
+            // 데이터를 그린다. 그러면 마지막으로 처리한 슬롯은 비워진 뒤 갱신을 유발할 이벤트가 더 없어
+            // 화면에 그대로 남는다. 루프 뒤의 LoosAllInventoryItemSignal이 한 번 더 UI를 맞춰주지만
+            // (UIView_Popup.LoosAllInventoryItems) 그건 안전망일 뿐이고, 근본 순서는 여기서 지킨다.
+            itemDataPool.Release((ItemData)slot.itemData);
+            slot.Setup(null, 0);
+
             for (int j = 0; j < count; j++)
             {
                 ItemRemoved();
             }
-
-            // 슬롯 비우기 및 데이터 반환
-            itemDataPool.Release((ItemData)slot.itemData);
-            slot.Setup(null, 0);
         }
 
         UpdateInventoryEmptyState();

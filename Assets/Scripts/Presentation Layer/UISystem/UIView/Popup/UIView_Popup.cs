@@ -224,7 +224,11 @@ public class UIView_Popup : UIView
 
     public void LoosAllInventoryItems()
     {
-        // uiInventory?.ClearNotification();
+        // 인벤토리를 한 번에 통째로 비우는 경로(DropAllItem)의 최종 동기화 안전망.
+        // 슬롯별 ItemRemoved() 알림만으로는 알림 시점과 실제 비우기 시점이 어긋나면 마지막 슬롯이
+        // 화면에 남을 수 있다(실제로 그런 버그가 있었다). 전량 유실이 끝난 뒤 한 번 더 데이터를
+        // 다시 읽어 UI를 맞춘다.
+        InventoryShowEvent();
     }
 
     public void ItemAddedToInventory()
