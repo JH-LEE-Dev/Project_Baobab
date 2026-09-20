@@ -409,8 +409,13 @@ public class UI_Inventory : MonoBehaviour
     public long TotalGemOre => null != moneyData ? moneyData.TotalGemOre : 0L;
 
     /// <summary>
-    /// 주머니가 가득 찼는지. 가득 차면 바닥의 원석을 아예 줍지 않으므로, 경고 표시를 띄울 때 쓰면 된다.
+    /// 주머니가 가득 찼는지. 경고 표시를 띄울 때 쓰면 된다.
     /// 한도보다 많이 들고 있는 상태(주머니 이전 세이브 등)에서도 true다.
+    ///
+    /// 보유량만 보고 판정한다(빨려오는 중이라 자리만 잡아둔 몫은 세지 않는다). 실제로 원석을
+    /// 더 주울 수 있는지는 InventoryManager.GemOrePouchSpace가 예약분까지 빼고 따로 판정하는데,
+    /// 그 기준으로 표시하면 알갱이가 날아오는 0.3초 동안 화면에 "0 / 30 인데 가득 참"이 뜬다.
+    /// 표시는 플레이어가 보는 숫자를 따르는 편이 맞다.
     ///
     /// 참고: 가득 찬 순간의 말풍선은 지금 원목 인벤토리 것과 같은 ID를 쓰고 있어 문구도 어긋나고
     /// 둘 중 하나만 뜬다. 자세한 사정과 분리 방법은 UIView_Unit.InventoryIsFull() 주석에 있다.

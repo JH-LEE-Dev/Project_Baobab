@@ -581,6 +581,12 @@ public class GemOreItem : Item, IStaticCollidable
         if (suckTarget == null || (character != null && character.bDead))
         {
             suckTarget = null;
+
+            // 흡입이 취소되고 다시 바닥으로 돌아간다. 잡아둔 자리를 여기서 돌려주지 않으면
+            // 주머니가 그만큼 줄어든 채로 남고, 나중에 이 알갱이가 다시 빨려갈 때 자리를 새로
+            // 잡으면서 예전 몫이 영영 묶인다(InventoryManager는 판이 바뀌어도 살아남는다).
+            ReleaseGemOreReservation();
+
             transform.localScale = Vector3.one;
             if (visualTransform != null) visualTransform.localScale = Vector3.one;
             state = ItemMoveState.Dropped;
