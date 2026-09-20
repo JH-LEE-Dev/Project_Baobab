@@ -394,6 +394,28 @@ public class UI_Inventory : MonoBehaviour
         }
     }
 
+    #region 원석 주머니 데이터 (그리는 코드는 아직 없음)
+
+    // 아래 셋은 "12 / 30" 같은 주머니 표시를 붙일 수 있도록 데이터만 열어둔 것이다.
+    // 값을 캐싱하지 않고 그때그때 읽으므로 언제 불러도 최신이다. 갱신 시점은 기존 경로를 그대로 쓰면 된다.
+    //   원석을 주웠을 때        CharacterEarnMoney(MoneyType)
+    //   용광로에 넣어 줄었을 때  CharactersMoneyChanged()
+    //   특성으로 한도가 커졌을 때 Refresh() (InventorySpecChangedSignal 경유)
+
+    /// <summary>주머니 한도. 황금/다이아/프리즘을 <b>합친</b> 총량의 상한이다.</summary>
+    public long GemOrePouchCapacity => null != moneyData ? moneyData.GemOrePouchCapacity : 0L;
+
+    /// <summary>지금 주머니에 든 원석 총량(세 종류 합). 한도와 함께 "12 / 30"처럼 쓰면 된다.</summary>
+    public long TotalGemOre => null != moneyData ? moneyData.TotalGemOre : 0L;
+
+    /// <summary>
+    /// 주머니가 가득 찼는지. 가득 차면 바닥의 원석을 아예 줍지 않으므로, 경고 표시를 띄울 때 쓰면 된다.
+    /// 한도보다 많이 들고 있는 상태(주머니 이전 세이브 등)에서도 true다.
+    /// </summary>
+    public bool IsGemOrePouchFull => null != moneyData && moneyData.TotalGemOre >= moneyData.GemOrePouchCapacity;
+
+    #endregion
+
     public void CharactersMoneyChanged()
     {
         if (null == moneyData)

@@ -682,6 +682,11 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     public void IncreaseGemOrePouchCapacity(float _amount)
     {
         gemOrePouchCapacity = Math.Max(0, gemOrePouchCapacity + (long)_amount);
+
+        // 슬롯 증설(ExpandInventorySlotCnt)과 같은 통로로 알린다. 이 이벤트는
+        // InventorySpecChangedSignal -> UIView_Popup.InventorySpecChanged -> UI_Inventory.Refresh로
+        // 이어지므로, 특성으로 주머니가 커지는 즉시 HUD가 새 한도를 읽어간다.
+        InventorySpecChangedEvent?.Invoke();
     }
 
     public void LoadSaveData(InventorySaveData _data)
