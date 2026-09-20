@@ -36,9 +36,9 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     // 원석 주머니 한도. 세 종류를 합친 총량이 이 값을 넘지 못한다.
     //
-    // 세이브에 담지 않는다. currentSlotCount/maxItemsPerSlot과 같은 이유로, 이 값은 특성이 정하고
-    // 특성 트리는 이미 저장되므로 여기에 또 적으면 두 값이 어긋난다.
-    [Tooltip("원석 주머니 한도. 황금/다이아/프리즘을 합친 총량이 이 값을 넘지 못한다. 특성으로 늘어난다.")]
+    // 세이브에 저장된다. 특성은 이 값을 올려줄 뿐이고 한도 자체가 상태이기 때문이다.
+    // 인스펙터 값은 "주머니를 아직 한 번도 늘리지 않았을 때"의 시작 한도다.
+    [Tooltip("원석 주머니의 시작 한도. 황금/다이아/프리즘을 합친 총량이 이 값을 넘지 못한다. 특성으로 늘어난다.")]
     [SerializeField] private long gemOrePouchCapacity = 30;
     [SerializeField] private long sunEssence;
     [SerializeField] private long moonEssence;
@@ -281,6 +281,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         _saveData.bHasEverAcquiredGoldOre = bHasEverAcquiredGoldOre;
         _saveData.bHasEverAcquiredDiamondOre = bHasEverAcquiredDiamondOre;
         _saveData.bHasEverAcquiredPrismOre = bHasEverAcquiredPrismOre;
+        _saveData.gemOrePouchCapacity = gemOrePouchCapacity;
 
         // 리스트 초기화 (구조체 내의 Initialize 활용)
         _saveData.Initialize(currentSlotCount);
@@ -697,6 +698,21 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         bHasEverAcquiredGoldOre = _data.bHasEverAcquiredGoldOre || goldOre > 0;
         bHasEverAcquiredDiamondOre = _data.bHasEverAcquiredDiamondOre || diamondOre > 0;
         bHasEverAcquiredPrismOre = _data.bHasEverAcquiredPrismOre || prismOre > 0;
+
+        // 주머니 한도. 저장된 값이 곧 기준이므로 그대로 덮어쓴다.
+        //
+        // 0 이하면 이 필드가 없던 시절의 세이브다. 그때는 인스펙터의 시작 한도를 그대로 둔다
+        // (0을 그대로 쓰면 주머니가 0칸이 되어 원석을 한 톨도 못 줍는다).
+        // 한도는 특성이 올려주기만 하고 시작 한도 아래로는 내려가지 않으므로, 정상 저장본이
+        // 0으로 적히는 경우는 없다.
+        //
+        // <b>이 대입은 특성 적용보다 뒤에 와야 한다.</b> SaveManager.ApplyLoadedData가 스킬 트리를
+        // 먼저 복원하고(특성이 한도를 올린다) 그다음 인벤토리를 복원하므로, 여기서 덮어써야
+        // 저장 당시의 한도가 그대로 남는다. 순서가 뒤집히면 특성 몫이 두 번 더해진다.
+        if (_data.gemOrePouchCapacity > 0)
+        {
+            gemOrePouchCapacity = _data.gemOrePouchCapacity;
+        }
 
         // 기존 슬롯 초기화 (풀 반환)
         for (int i = 0; i < inventorySlots.Count; i++)
