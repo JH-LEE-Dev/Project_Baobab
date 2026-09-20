@@ -174,6 +174,10 @@ public class GemOreItem : Item, IStaticCollidable
         elapsed = 0f;
         landingDampTime = landingDampDuration;
 
+        // 풀에서 꺼내 쓰는 것이므로 이전 사용의 예약이 남아 있으면 안 된다. 반환 시점에
+        // 이미 돌려주지만(OnReleaseGemOreItem), 새로 시작하는 자리에서 한 번 더 못 박는다.
+        reservedGemOre = 0;
+
         CacheRenderers();
 
         if (spriteRenderer != null)
@@ -695,6 +699,11 @@ public class GemOreItem : Item, IStaticCollidable
     public override void SetSuckTarget(Transform _target)
     {
         if (state != ItemMoveState.Dropped || bCanAcquired == false) return;
+
+        // 바닥에 있는 상태이므로 예전 흡입의 자리가 남아 있을 이유가 없지만, 남아 있다면
+        // 아래에서 덮어써 영영 묶인다. 해제를 빠뜨린 경로가 생겨도 영구 누수로 번지지 않도록
+        // 여기서 무조건 먼저 돌려준다(이미 0이면 아무 일도 하지 않는다).
+        ReleaseGemOreReservation();
 
         // checker가 없는 경로(주입 전)는 예전처럼 그냥 받는다. 주머니 판정만 못 할 뿐 동작은 유지된다.
         if (inventoryChecker != null)
