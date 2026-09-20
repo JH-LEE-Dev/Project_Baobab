@@ -268,10 +268,19 @@ public class UnitSystem
     /// <summary>
     /// 보석 원석을 주웠을 때. 인벤토리 슬롯을 쓰지 않고 해당 재화만 올린 뒤,
     /// HUD가 갱신할 수 있도록 CharacterEarnMoneySignal로 어떤 재화가 늘었는지 알린다.
+    ///
+    /// 주머니 한도 때문에 알갱이가 담고 있던 양을 다 못 받을 수 있으므로, 결과창 집계도
+    /// 시그널이 실어온 양이 아니라 <b>실제로 받은 양</b>으로 한다.
     /// </summary>
     private void GemOreAcquired(GemOreAcquiredSignal gemOreAcquiredSignal)
     {
-        inventoryManager.GemOreEarned(gemOreAcquiredSignal.gemOreType, gemOreAcquiredSignal.amount);
+        long accepted = inventoryManager.GemOreEarned(gemOreAcquiredSignal.gemOreType, gemOreAcquiredSignal.amount);
+
+        // 주머니가 가득 차 한 톨도 못 받았으면 바뀐 것이 없다.
+        if (accepted <= 0) return;
+
+        inDungeonResultManager.AddAcquiredGemOre(gemOreAcquiredSignal.gemOreType, accepted);
+
         signalHub.Publish(new CharacterEarnMoneySignal(
             InventoryManager.GemOreTypeToMoneyType(gemOreAcquiredSignal.gemOreType)));
     }
