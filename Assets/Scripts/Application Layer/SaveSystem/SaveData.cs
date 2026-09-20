@@ -134,14 +134,6 @@ public struct InventorySaveData
     public bool bHasEverAcquiredDiamondOre;
     public bool bHasEverAcquiredPrismOre;
 
-    // 원석 주머니 한도(세 종류를 합친 총량의 상한). 특성은 이 값을 올려줄 뿐이고,
-    // 한도 자체는 여기 저장된 것이 기준이다.
-    //
-    // 기존 세이브 파일에는 이 필드가 없어 0으로 읽힌다. 0을 그대로 쓰면 주머니가 0칸이 되어
-    // 원석을 한 톨도 못 줍게 되므로, 읽는 쪽(InventoryManager.LoadSaveData)에서
-    // 0 이하이면 "주머니가 없던 시절의 세이브"로 보고 기본 한도를 유지한다.
-    public long gemOrePouchCapacity;
-
     public List<InventorySlotSaveData> slots;
 
     public void Initialize(int _capacity)

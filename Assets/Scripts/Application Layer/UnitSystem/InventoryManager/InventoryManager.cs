@@ -35,9 +35,16 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     private bool bHasEverAcquiredPrismOre = false;
 
     // 원석 주머니 한도. 세 종류를 합친 총량이 이 값을 넘지 못한다.
+    // 인스펙터 값은 특성을 하나도 찍지 않았을 때의 시작 한도다.
     //
-    // 세이브에 저장된다. 특성은 이 값을 올려줄 뿐이고 한도 자체가 상태이기 때문이다.
-    // 인스펙터 값은 "주머니를 아직 한 번도 늘리지 않았을 때"의 시작 한도다.
+    // <b>세이브에 담지 않는다.</b> 한도를 올리는 것은 특성뿐이고 특성 트리는 이미 저장되므로,
+    // 로드할 때 스킬 트리 복원이 이 시작 한도 위에 특성 몫을 그대로 다시 얹어 같은 값이 나온다.
+    // currentSlotCount/maxItemsPerSlot을 저장하지 않는 것과 같은 이유다.
+    //
+    // 한 번 더 적으면 값이 겹칠 뿐 아니라 복원 순서에 매이게 된다. 인벤토리를 스킬 트리보다
+    // 먼저 복원하도록 바뀌는 순간 특성 몫이 매 로드마다 누적되는데, 저장하지 않으면 그 함정이
+    // 아예 없다. 나중에 특성 말고 다른 것(아이템/퀘스트 등)이 주머니를 키우게 되면 그때는
+    // 저장해야 하므로, 그 시점에 이 주석과 함께 다시 판단할 것.
     [Tooltip("원석 주머니의 시작 한도. 황금/다이아/프리즘을 합친 총량이 이 값을 넘지 못한다. 특성으로 늘어난다.")]
     [SerializeField] private long gemOrePouchCapacity = 30;
     [SerializeField] private long sunEssence;
@@ -281,7 +288,6 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         _saveData.bHasEverAcquiredGoldOre = bHasEverAcquiredGoldOre;
         _saveData.bHasEverAcquiredDiamondOre = bHasEverAcquiredDiamondOre;
         _saveData.bHasEverAcquiredPrismOre = bHasEverAcquiredPrismOre;
-        _saveData.gemOrePouchCapacity = gemOrePouchCapacity;
 
         // 리스트 초기화 (구조체 내의 Initialize 활용)
         _saveData.Initialize(currentSlotCount);
@@ -704,20 +710,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         bHasEverAcquiredDiamondOre = _data.bHasEverAcquiredDiamondOre || diamondOre > 0;
         bHasEverAcquiredPrismOre = _data.bHasEverAcquiredPrismOre || prismOre > 0;
 
-        // 주머니 한도. 저장된 값이 곧 기준이므로 그대로 덮어쓴다.
-        //
-        // 0 이하면 이 필드가 없던 시절의 세이브다. 그때는 인스펙터의 시작 한도를 그대로 둔다
-        // (0을 그대로 쓰면 주머니가 0칸이 되어 원석을 한 톨도 못 줍는다).
-        // 한도는 특성이 올려주기만 하고 시작 한도 아래로는 내려가지 않으므로, 정상 저장본이
-        // 0으로 적히는 경우는 없다.
-        //
-        // <b>이 대입은 특성 적용보다 뒤에 와야 한다.</b> SaveManager.ApplyLoadedData가 스킬 트리를
-        // 먼저 복원하고(특성이 한도를 올린다) 그다음 인벤토리를 복원하므로, 여기서 덮어써야
-        // 저장 당시의 한도가 그대로 남는다. 순서가 뒤집히면 특성 몫이 두 번 더해진다.
-        if (_data.gemOrePouchCapacity > 0)
-        {
-            gemOrePouchCapacity = _data.gemOrePouchCapacity;
-        }
+        // 주머니 한도는 복원하지 않는다. 스킬 트리 복원이 시작 한도 위에 특성 몫을 다시 얹어
+        // 이미 맞는 값이 들어와 있다(필드 선언부 주석 참고).
 
         // 기존 슬롯 초기화 (풀 반환)
         for (int i = 0; i < inventorySlots.Count; i++)

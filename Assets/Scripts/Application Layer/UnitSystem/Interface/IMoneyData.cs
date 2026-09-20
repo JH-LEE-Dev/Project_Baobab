@@ -32,7 +32,7 @@ public interface IMoneyData
 
     /// <summary>
     /// 원석 주머니 한도. 황금/다이아/프리즘을 <b>합친</b> 총량이 이 값을 넘지 못한다.
-    /// 특성으로 늘어나고 세이브에 저장된다.
+    /// 특성으로 늘어난다. 세이브에는 담지 않고, 로드할 때 특성 트리가 다시 얹어 복원된다.
     /// </summary>
     long GemOrePouchCapacity { get; }
 
