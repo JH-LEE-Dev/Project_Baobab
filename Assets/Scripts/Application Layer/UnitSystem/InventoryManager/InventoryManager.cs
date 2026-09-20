@@ -33,6 +33,13 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     private bool bHasEverAcquiredGoldOre = false;
     private bool bHasEverAcquiredDiamondOre = false;
     private bool bHasEverAcquiredPrismOre = false;
+
+    // 원석 주머니 한도. 세 종류를 합친 총량이 이 값을 넘지 못한다.
+    //
+    // 세이브에 담지 않는다. currentSlotCount/maxItemsPerSlot과 같은 이유로, 이 값은 특성이 정하고
+    // 특성 트리는 이미 저장되므로 여기에 또 적으면 두 값이 어긋난다.
+    [Tooltip("원석 주머니 한도. 황금/다이아/프리즘을 합친 총량이 이 값을 넘지 못한다. 특성으로 늘어난다.")]
+    [SerializeField] private long gemOrePouchCapacity = 30;
     [SerializeField] private long sunEssence;
     [SerializeField] private long moonEssence;
     [SerializeField] private long lightningEssence;
@@ -104,6 +111,10 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     {
         return HasEverAcquired(_moneyType);
     }
+
+    long IMoneyData.GemOrePouchCapacity => gemOrePouchCapacity;
+
+    long IMoneyData.TotalGemOre => TotalGemOre;
 
     public int maxItemCntPerSlot => maxItemsPerSlot;
 
@@ -401,23 +412,58 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         SpendMoneyEvent?.Invoke();
     }
 
+    /// <summary>지금 주머니에 든 원석 총량(세 종류 합).</summary>
+    public long TotalGemOre => goldOre + diamondOre + prismOre;
+
+    /// <summary>
+    /// 주머니에 더 담을 수 있는 양. 가득 찼으면 0이다.
+    ///
+    /// 한도보다 많이 들고 있는 경우(예: 주머니가 없던 시절의 세이브를 읽었거나, 특성 Undo로 한도가
+    /// 줄어든 경우)에도 음수가 되지 않는다. 그때는 더 담지 못할 뿐, 갖고 있던 것을 뺏지는 않는다.
+    /// </summary>
+    public long GemOrePouchSpace => Math.Max(0, gemOrePouchCapacity - TotalGemOre);
+
+    /// <summary>원석 주머니 한도. 세 종류를 합친 총량의 상한이다.</summary>
+    public long GemOrePouchCapacity => gemOrePouchCapacity;
+
     /// <summary>
     /// 보석 원석을 주웠을 때 해당 재화를 올린다. 인벤토리 슬롯은 건드리지 않는다
     /// (원석은 칸을 차지하지 않고 돈처럼 쌓이는 재화다).
+    ///
+    /// 주머니 한도를 넘는 만큼은 받지 않는다. 알갱이 하나가 통째로 거절되는 것이 아니라
+    /// <b>남는 자리만큼만 담고 나머지는 버린다</b>(자투리 용량이 영영 안 쓰이는 것을 막기 위함).
+    /// 자리가 아예 없을 때는 애초에 줍지 않으므로(CanAcquireGemOre) 이 경로로 버려지는 일은 드물다.
     /// </summary>
-    public void GemOreEarned(GemOreType _gemOreType, long _amount)
+    /// <returns>실제로 담긴 양. 한 톨도 못 담았으면 0.</returns>
+    public long GemOreEarned(GemOreType _gemOreType, long _amount)
     {
-        if (_amount <= 0) return;
+        if (_amount <= 0) return 0;
+
+        long accepted = Math.Min(_amount, GemOrePouchSpace);
+        if (accepted <= 0) return 0;
 
         switch (_gemOreType)
         {
-            case GemOreType.Gold: goldOre += _amount; bHasEverAcquiredGoldOre = true; break;
-            case GemOreType.Diamond: diamondOre += _amount; bHasEverAcquiredDiamondOre = true; break;
-            case GemOreType.Prism: prismOre += _amount; bHasEverAcquiredPrismOre = true; break;
-            default: return;
+            case GemOreType.Gold: goldOre += accepted; bHasEverAcquiredGoldOre = true; break;
+            case GemOreType.Diamond: diamondOre += accepted; bHasEverAcquiredDiamondOre = true; break;
+            case GemOreType.Prism: prismOre += accepted; bHasEverAcquiredPrismOre = true; break;
+            default: return 0;
         }
 
         GemOreChangedEvent?.Invoke(GemOreTypeToMoneyType(_gemOreType));
+
+        return accepted;
+    }
+
+    /// <summary>
+    /// 주머니에 자리가 있는지. 없으면 가득 찼다는 알림을 띄운다(원목의 CanAcquired와 같은 처리).
+    /// </summary>
+    public bool CanAcquireGemOre()
+    {
+        if (GemOrePouchSpace > 0) return true;
+
+        InventoryIsFullEvent?.Invoke();
+        return false;
     }
 
     public void DecreaseGemOre(GemOreType _gemOreType, long _amount)
@@ -626,6 +672,15 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     public void LogCapacityIncrease(float _amount)
     {
         maxItemsPerSlot += (int)_amount;
+    }
+
+    /// <summary>
+    /// 원석 주머니 한도를 늘린다. 아직 이걸 부르는 특성은 없고, 나중에 붙일 자리다.
+    /// 한도가 줄어도(특성 Undo) 갖고 있던 원석을 깎지는 않는다 - 더 담지 못할 뿐이다.
+    /// </summary>
+    public void IncreaseGemOrePouchCapacity(float _amount)
+    {
+        gemOrePouchCapacity = Math.Max(0, gemOrePouchCapacity + (long)_amount);
     }
 
     public void LoadSaveData(InventorySaveData _data)

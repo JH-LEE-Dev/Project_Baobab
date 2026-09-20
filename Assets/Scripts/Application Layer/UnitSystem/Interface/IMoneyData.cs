@@ -29,4 +29,13 @@ public interface IMoneyData
     /// 원석이 아닌 재화(코인/당근 등)는 숨기는 개념이 없으므로 항상 true다.
     /// </summary>
     bool HasEverAcquired(MoneyType _moneyType);
+
+    /// <summary>
+    /// 원석 주머니 한도. 황금/다이아/프리즘을 <b>합친</b> 총량이 이 값을 넘지 못한다.
+    /// 특성으로 늘어나며 세이브에는 담지 않는다(특성 트리가 복원하면 따라온다).
+    /// </summary>
+    long GemOrePouchCapacity { get; }
+
+    /// <summary>지금 주머니에 든 원석 총량(세 종류 합). 한도와 함께 "12 / 30"처럼 쓰면 된다.</summary>
+    long TotalGemOre { get; }
 }

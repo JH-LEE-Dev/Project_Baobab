@@ -26,7 +26,7 @@ public class ItemManager : MonoBehaviour
 
         if (gemOreItemController != null)
         {
-            gemOreItemController.Initialize(character, _tilemapDataProvider);
+            gemOreItemController.Initialize(character, _tilemapDataProvider, inventoryChecker);
         }
 
         BindEvents();

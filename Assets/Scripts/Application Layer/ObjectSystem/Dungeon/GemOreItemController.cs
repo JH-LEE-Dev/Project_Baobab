@@ -69,10 +69,14 @@ public class GemOreItemController : MonoBehaviour, IGemOreAuraProvider
     private float tileWorldSize = 1f;
     private bool tileWorldSizeMeasured = false;
 
-    public void Initialize(ICharacter _character, ITilemapDataProvider _tilemapDataProvider)
+    // 주머니에 자리가 있는지 물어볼 곳. 가득 차 있으면 원석이 바닥에 그대로 남는다.
+    private IInventoryChecker inventoryChecker;
+
+    public void Initialize(ICharacter _character, ITilemapDataProvider _tilemapDataProvider, IInventoryChecker _inventoryChecker)
     {
         character = _character;
         tilemapDataProvider = _tilemapDataProvider;
+        inventoryChecker = _inventoryChecker;
         tileWorldSizeMeasured = false;
 
         // 반짝임 파티클("Shiny")은 이 컴포넌트가 풀로 들고 있다가 원석마다 빌려준다.
@@ -476,7 +480,7 @@ public class GemOreItemController : MonoBehaviour, IGemOreAuraProvider
             if (oreItem == null) continue;
 
             oreItem.transform.position = spawnPos;
-            oreItem.Initialize(typeData, sizeBuffer[i], amountBuffer[i], character);
+            oreItem.Initialize(typeData, sizeBuffer[i], amountBuffer[i], character, inventoryChecker);
 
             // 포물선 운동 설정 (LogItemController.SpawnLogItem과 동일한 값)
             Vector3 startPos = spawnPos;

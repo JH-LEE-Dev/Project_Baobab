@@ -62,6 +62,9 @@ public class GemOreItem : Item, IStaticCollidable
     private Transform suckTarget;
     private bool bCanAcquired = true;
 
+    // 주머니 여유를 물어볼 곳. 가득 차 있으면 흡입 자체가 시작되지 않는다.
+    private IInventoryChecker inventoryChecker;
+
     // 이동 관련
     private Vector3 startPos;
     private Vector3 endPos;
@@ -147,11 +150,13 @@ public class GemOreItem : Item, IStaticCollidable
         CacheRenderers();
     }
 
-    public void Initialize(GemOreTypeData _typeData, GemOreSize _size, long _currencyAmount, ICharacter _character)
+    public void Initialize(GemOreTypeData _typeData, GemOreSize _size, long _currencyAmount, ICharacter _character,
+                           IInventoryChecker _inventoryChecker)
     {
         base.Initialize(ItemType.GemOre);
 
         character = _character;
+        inventoryChecker = _inventoryChecker;
         gemOreType = _typeData.gemOreType;
         gemOreSize = _size;
         // 분배 결과가 0 이하로 떨어져도 주웠을 때 아무것도 안 들어오는 일은 없어야 한다.
@@ -662,12 +667,17 @@ public class GemOreItem : Item, IStaticCollidable
     /// 원목과 동일하게 착지(Dropped)한 뒤에만 흡입을 받는다. 비행 중에 미리 예약되지 않으므로
     /// 착지 후 다음 감지 주기(Character.itemDetectionInterval)에 걸려 빨려간다.
     ///
-    /// 원목의 인벤토리 여유 검사(CheckAcquireCondition)에 대응하는 것은 없다.
-    /// 원석은 칸을 쓰지 않아 거절될 조건 자체가 없기 때문이다.
+    /// 원목이 인벤토리 여유를 보는 것처럼(CheckAcquireCondition) 원석은 주머니 여유를 본다.
+    /// 자리가 아예 없으면 빨려가지 않고 바닥에 그대로 남는다 - 빨아들인 뒤 한 톨도 못 담고
+    /// 사라지면 플레이어 눈에는 원석이 그냥 증발한 것으로 보이기 때문이다.
+    /// 자리가 조금이라도 있으면 빨려가고, 담을 수 있는 만큼만 담긴다(GemOreEarned).
     /// </summary>
     public override void SetSuckTarget(Transform _target)
     {
         if (state != ItemMoveState.Dropped || bCanAcquired == false) return;
+
+        // checker가 없는 경로(주입 전)는 예전처럼 그냥 받는다. 주머니 판정만 못 할 뿐 동작은 유지된다.
+        if (inventoryChecker != null && false == inventoryChecker.CanAcquireGemOre()) return;
 
         suckTarget = _target;
         StartSucking(suckTarget);

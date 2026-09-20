@@ -524,7 +524,7 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
             if (false == (item.Payload is BlastFurnace furnace)) continue;
 
             furnace.CancelOreReservation();
-            inventory?.GemOreEarned(furnace.GemOreType, 1);
+            RefundOre(furnace.GemOreType, 1);
 
             flyingItems.RemoveAt(i);
             ReturnFlyingItem(item);
@@ -870,7 +870,7 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
             // 빠진 재화가 조용히 사라지는 것만은 막는다.
             if (furnace.InsertOre(1) <= 0)
             {
-                inventory?.GemOreEarned(furnace.GemOreType, 1);
+                RefundOre(furnace.GemOreType, 1);
                 return;
             }
 
@@ -917,6 +917,23 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
 
         // 0.075초 간격으로 연달아 들어오므로 연속 전용(약한) 파형을 쓴다(LogContainer와 동일).
         Rumble.Play(EHapticEvent.ItemStream);
+    }
+
+    /// <summary>
+    /// 발사 시점에 주머니에서 뺀 원석을 되돌린다.
+    ///
+    /// 뺀 만큼만 돌려주는 것이고 마을에서는 원석이 새로 들어올 일이 없으므로 자리는 항상 있다.
+    /// 그래도 주머니 한도에 막히면 재화가 조용히 사라지는 것이라, 그 경우만 눈에 띄게 남긴다.
+    /// </summary>
+    private void RefundOre(GemOreType _gemOreType, long _amount)
+    {
+        if (inventory == null) return;
+
+        long accepted = inventory.GemOreEarned(_gemOreType, _amount);
+        if (accepted >= _amount) return;
+
+        Debug.LogWarning($"[BlastFurnace] 원석 환불이 주머니 한도에 막혔습니다({accepted}/{_amount}). " +
+                         "발사할 때 뺀 만큼 돌려주는 것이라 이 경우는 없어야 합니다.");
     }
 
     private FlyingSpriteItem GetFlyingItem()
