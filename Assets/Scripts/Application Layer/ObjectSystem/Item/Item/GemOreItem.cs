@@ -65,6 +65,10 @@ public class GemOreItem : Item, IStaticCollidable
     // 주머니 여유를 물어볼 곳. 가득 차 있으면 흡입 자체가 시작되지 않는다.
     private IInventoryChecker inventoryChecker;
 
+    // 흡입을 시작하면서 주머니에 잡아둔 자리. 도착해서 담기 직전이나, 도착하지 못하고
+    // 사라질 때(ReleaseGemOreReservation) 반드시 그대로 돌려줘야 한다.
+    private long reservedGemOre = 0;
+
     // 이동 관련
     private Vector3 startPos;
     private Vector3 endPos;
@@ -335,6 +339,10 @@ public class GemOreItem : Item, IStaticCollidable
         bSuckAccelerating = false;
         bCanAcquired = true;
         landingDampTime = landingDampDuration;
+
+        // 풀에 돌아갈 때 이미 돌려줬어야 하지만, 남아 있으면 다음 사용에서 엉뚱한 양을
+        // 돌려주게 되므로 여기서도 못 박는다.
+        reservedGemOre = 0;
 
         transform.DOKill();
         transform.localScale = Vector3.one;
@@ -667,20 +675,42 @@ public class GemOreItem : Item, IStaticCollidable
     /// 원목과 동일하게 착지(Dropped)한 뒤에만 흡입을 받는다. 비행 중에 미리 예약되지 않으므로
     /// 착지 후 다음 감지 주기(Character.itemDetectionInterval)에 걸려 빨려간다.
     ///
-    /// 원목이 인벤토리 여유를 보는 것처럼(CheckAcquireCondition) 원석은 주머니 여유를 본다.
-    /// 자리가 아예 없으면 빨려가지 않고 바닥에 그대로 남는다 - 빨아들인 뒤 한 톨도 못 담고
+    /// 원목이 인벤토리 여유를 보는 것처럼(CheckAcquireCondition) 원석은 주머니 자리를 잡는다.
+    /// 자리를 한 톨도 못 잡으면 빨려가지 않고 바닥에 그대로 남는다 - 빨아들인 뒤 아무것도 못 담고
     /// 사라지면 플레이어 눈에는 원석이 그냥 증발한 것으로 보이기 때문이다.
-    /// 자리가 조금이라도 있으면 빨려가고, 담을 수 있는 만큼만 담긴다(GemOreEarned).
+    ///
+    /// 잡아두는 것이 핵심이다. 알갱이는 한 번에 여러 개가 동시에 빨려오므로, 남은 자리만 보고
+    /// 보내면 먼저 도착한 것이 자리를 다 채워 뒤따라온 것들이 빈손으로 사라진다.
+    /// 잡은 자리는 도착 시점(ReleaseGemOreReservation)에 풀고 그 자리에 담는다.
+    ///
+    /// 이 메서드는 감지 주기마다 불리지만, 흡입이 시작되면 state가 Dropped가 아니게 되어
+    /// 위에서 걸리므로 자리를 두 번 잡지 않는다.
     /// </summary>
     public override void SetSuckTarget(Transform _target)
     {
         if (state != ItemMoveState.Dropped || bCanAcquired == false) return;
 
         // checker가 없는 경로(주입 전)는 예전처럼 그냥 받는다. 주머니 판정만 못 할 뿐 동작은 유지된다.
-        if (inventoryChecker != null && false == inventoryChecker.CanAcquireGemOre()) return;
+        if (inventoryChecker != null)
+        {
+            reservedGemOre = inventoryChecker.ReserveGemOre(currencyAmount);
+            if (reservedGemOre <= 0) return;
+        }
 
         suckTarget = _target;
         StartSucking(suckTarget);
+    }
+
+    /// <summary>
+    /// 잡아둔 주머니 자리를 돌려준다. 도착해서 담기 직전과, 도착하지 못하고 풀로 돌아갈 때
+    /// 모두 불린다. 이미 돌려준 뒤에는 아무 일도 하지 않으므로 두 번 불려도 안전하다.
+    /// </summary>
+    public void ReleaseGemOreReservation()
+    {
+        if (reservedGemOre <= 0) return;
+
+        inventoryChecker?.CancelGemOreReservation(reservedGemOre);
+        reservedGemOre = 0;
     }
 
     private void StartSucking(Transform _target)

@@ -196,15 +196,20 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
     }
 
     /// <summary>
-    /// 일꾼 NPC는 원석 주머니를 갖지 않으므로 원석을 줍지 않는다.
+    /// 일꾼 NPC는 원석 주머니를 갖지 않으므로 자리를 내주지 않는다(항상 0).
     ///
     /// 실제로 불릴 일은 없다. 원석(GemOreItem)은 GemOreItemController가 넘겨준 플레이어 쪽
     /// 판정기만 보고, 이 컴포넌트는 원목을 NPC에게 귀속시킬 때만 checker로 넘어간다
     /// (LogItem.SetSuckTarget의 소비자 지정 오버로드). 인터페이스 계약을 채우기 위한 구현이다.
     /// </summary>
-    public bool CanAcquireGemOre()
+    public long ReserveGemOre(long _amount)
     {
-        return false;
+        return 0;
+    }
+
+    /// <summary>위와 같은 이유로 잡아둘 자리가 없으므로 돌려줄 것도 없다.</summary>
+    public void CancelGemOreReservation(long _amount)
+    {
     }
 
     public bool CanAcquired(LogItem _item)

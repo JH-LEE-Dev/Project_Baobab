@@ -375,6 +375,21 @@ public class UIView_Unit : UIView
         }
     }
 
+    /// <summary>
+    /// 인벤토리가 가득 차 아이템을 못 받았을 때의 말풍선.
+    ///
+    /// <b>원목 인벤토리와 원석 주머니가 이 하나를 같이 쓴다.</b> 원석 주머니가 가득 차
+    /// 바닥의 원석을 못 줍는 순간에도 InventoryManager가 같은 InventoryIsFullEvent를 쏜다
+    /// (InventoryManager.ReserveGemOre). 그래서 지금은 두 가지 한계가 있다.
+    ///
+    ///   - 문구가 "인벤토리가 가득 찼어요"라 원석 상황에는 어긋난다.
+    ///   - 던전 안에서는 ID당 한 번만 노출되므로(UI_SpeechBubble.Play의 enableLock + shownIds),
+    ///     원목 인벤토리가 먼저 찼으면 주머니 안내는 그 런 내내 뜨지 않는다. 반대도 마찬가지다.
+    ///   - 아래 AddShownId 때문에 "아이템을 못 주웠어요"(ItemCantAcquired)까지 함께 막힌다.
+    ///
+    /// 주머니 전용 안내가 필요하면 ESpeechBubbleId에 항목을 하나 더 만들고 번역문을 채운 뒤,
+    /// ReserveGemOre가 쏘는 이벤트를 그쪽으로 갈라주면 된다.
+    /// </summary>
     public void InventoryIsFull()
     {
         lastInventoryFullFrame = Time.frameCount;

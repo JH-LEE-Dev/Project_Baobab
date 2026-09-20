@@ -411,6 +411,9 @@ public class UI_Inventory : MonoBehaviour
     /// <summary>
     /// 주머니가 가득 찼는지. 가득 차면 바닥의 원석을 아예 줍지 않으므로, 경고 표시를 띄울 때 쓰면 된다.
     /// 한도보다 많이 들고 있는 상태(주머니 이전 세이브 등)에서도 true다.
+    ///
+    /// 참고: 가득 찬 순간의 말풍선은 지금 원목 인벤토리 것과 같은 ID를 쓰고 있어 문구도 어긋나고
+    /// 둘 중 하나만 뜬다. 자세한 사정과 분리 방법은 UIView_Unit.InventoryIsFull() 주석에 있다.
     /// </summary>
     public bool IsGemOrePouchFull => null != moneyData && moneyData.TotalGemOre >= moneyData.GemOrePouchCapacity;
 

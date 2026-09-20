@@ -47,6 +47,12 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     // 저장해야 하므로, 그 시점에 이 주석과 함께 다시 판단할 것.
     [Tooltip("원석 주머니의 시작 한도. 황금/다이아/프리즘을 합친 총량이 이 값을 넘지 못한다. 특성으로 늘어난다.")]
     [SerializeField] private long gemOrePouchCapacity = 30;
+
+    // 빨려오는 중이라 아직 도착하지 않은 원석이 잡아둔 자리.
+    // 알갱이는 한 번에 여러 개가 동시에 날아오므로, 자리를 미리 잡아두지 않으면 먼저 도착한 것이
+    // 주머니를 다 채워 뒤따라온 것들이 한 톨도 못 받고 사라진다.
+    // (용광로의 pendingOre와 같은 장치)
+    private long pendingGemOre = 0;
     [SerializeField] private long sunEssence;
     [SerializeField] private long moonEssence;
     [SerializeField] private long lightningEssence;
@@ -424,11 +430,16 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     /// <summary>
     /// 주머니에 더 담을 수 있는 양. 가득 찼으면 0이다.
+    /// 빨려오는 중인 원석이 잡아둔 자리(pendingGemOre)까지 빼므로, 동시에 날아오는 것들끼리
+    /// 같은 자리를 두고 겹치지 않는다.
     ///
     /// 한도보다 많이 들고 있는 경우(예: 주머니가 없던 시절의 세이브를 읽었거나, 특성 Undo로 한도가
     /// 줄어든 경우)에도 음수가 되지 않는다. 그때는 더 담지 못할 뿐, 갖고 있던 것을 뺏지는 않는다.
     /// </summary>
-    public long GemOrePouchSpace => Math.Max(0, gemOrePouchCapacity - TotalGemOre);
+    public long GemOrePouchSpace => Math.Max(0, gemOrePouchCapacity - TotalGemOre - pendingGemOre);
+
+    /// <summary>빨려오는 중인 원석이 잡아둔 자리.</summary>
+    public long PendingGemOre => pendingGemOre;
 
     /// <summary>원석 주머니 한도. 세 종류를 합친 총량의 상한이다.</summary>
     public long GemOrePouchCapacity => gemOrePouchCapacity;
@@ -439,7 +450,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     ///
     /// 주머니 한도를 넘는 만큼은 받지 않는다. 알갱이 하나가 통째로 거절되는 것이 아니라
     /// <b>남는 자리만큼만 담고 나머지는 버린다</b>(자투리 용량이 영영 안 쓰이는 것을 막기 위함).
-    /// 자리가 아예 없을 때는 애초에 줍지 않으므로(CanAcquireGemOre) 이 경로로 버려지는 일은 드물다.
+    /// 흡입 전에 자리를 잡아두므로(ReserveGemOre) 주운 원석이 여기서 통째로 거절되는 일은 없다.
+    /// 잡은 자리보다 알갱이가 큰 경우에만 그 차액이 버려진다.
     /// </summary>
     /// <returns>실제로 담긴 양. 한 톨도 못 담았으면 0.</returns>
     public long GemOreEarned(GemOreType _gemOreType, long _amount)
@@ -463,14 +475,37 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     }
 
     /// <summary>
-    /// 주머니에 자리가 있는지. 없으면 가득 찼다는 알림을 띄운다(원목의 CanAcquired와 같은 처리).
+    /// 빨려올 원석의 자리를 미리 잡는다. 실제로 잡힌 양을 돌려주며, 0이면 흡입을 시작하면 안 된다.
+    /// 남은 자리보다 많이 요청하면 남은 만큼만 잡힌다.
+    ///
+    /// 자리가 없어 0을 돌려줄 때는 가득 찼다는 알림을 띄운다(원목의 CanAcquired와 같은 처리).
     /// </summary>
-    public bool CanAcquireGemOre()
+    public long ReserveGemOre(long _amount)
     {
-        if (GemOrePouchSpace > 0) return true;
+        if (_amount <= 0) return 0;
 
-        InventoryIsFullEvent?.Invoke();
-        return false;
+        long reserved = Math.Min(_amount, GemOrePouchSpace);
+
+        if (reserved <= 0)
+        {
+            InventoryIsFullEvent?.Invoke();
+            return 0;
+        }
+
+        pendingGemOre += reserved;
+        return reserved;
+    }
+
+    /// <summary>
+    /// 잡아둔 자리를 돌려준다. 도착해서 담기 직전(그 자리에 실제로 담기도록), 또는 도착하지
+    /// 못하고 사라질 때 부른다. 잡은 쪽이 잡은 만큼만 돌려주므로 음수로 내려갈 일은 없지만,
+    /// 혹시 어긋나도 0 아래로는 가지 않게 막아둔다.
+    /// </summary>
+    public void CancelGemOreReservation(long _amount)
+    {
+        if (_amount <= 0) return;
+
+        pendingGemOre = Math.Max(0, pendingGemOre - _amount);
     }
 
     public void DecreaseGemOre(GemOreType _gemOreType, long _amount)
