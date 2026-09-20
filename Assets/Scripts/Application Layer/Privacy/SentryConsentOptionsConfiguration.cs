@@ -33,6 +33,11 @@ public class SentryConsentOptionsConfiguration : SentryOptionsConfiguration
     private const string EDITOR_ENVIRONMENT = "editor";
 #endif
 
+    /// <summary>
+    /// GameAnalytics의 윈도우 네이티브 계층이 남기는 로그의 머리말입니다.
+    /// </summary>
+    private const string GAMEANALYTICS_NATIVE_MARKER = "[GameAnalytics Native]";
+
     public override void Configure(SentryUnityOptions _options)
     {
         if (null == _options) return;
@@ -74,6 +79,10 @@ public class SentryConsentOptionsConfiguration : SentryOptionsConfiguration
         _options.Environment = EDITOR_ENVIRONMENT;
 #endif
 
+        // 동의 여부와 무관하게 걸어둡니다. 동의하지 않았다면 어차피 아무것도 나가지 않고,
+        // 동의한 유저에게서만 의미가 생기는 필터라 순서를 신경 쓸 필요가 없습니다.
+        FilterOutGameAnalyticsNativeNoise(_options);
+
         // SettingsManager의 인스턴스를 만들지 않고 파일만 읽는다. 이 시점에는 씬이 아직 없어서
         // 여기서 만든 GameObject는 DontDestroyOnLoad 보호를 받지 못한 채 첫 씬 로드에서
         // 파괴될 수 있다. (SettingsManager.ReadPersistedConsent 주석 참고)
@@ -87,5 +96,53 @@ public class SentryConsentOptionsConfiguration : SentryOptionsConfiguration
 
         _options.Enabled = false;
         Debug.Log($"[Sentry] 데이터 수집 동의가 없어(상태={_consent}) 크래시 리포트를 비활성화합니다.");
+    }
+
+    /// <summary>
+    /// GameAnalytics 네이티브 계층이 남기는 로그를 Sentry로 보내지 않습니다.
+    ///
+    /// 유저 이름이 비ASCII인 PC(예: C:\Users\병훈\...)에서 GA의 윈도우 네이티브 계층이 자기
+    /// 저장 폴더를 만들지 못하고 Debug.LogError를 남깁니다. GA 자신의 워커 스레드 안에서 끝나는
+    /// 실패라 게임 동작에는 영향이 없고(잃는 것은 그 유저의 플레이 통계뿐입니다), 원인이 GA SDK
+    /// 내부라 우리가 고칠 수도 없습니다. 그대로 두면 해당 유저가 게임을 켤 때마다 이벤트가 올라와
+    /// Sentry 할당량을 갉아먹고, 정작 고쳐야 할 리포트가 그 사이에 묻힙니다.
+    ///
+    /// 특정 문구(create_directory 등)가 아니라 머리말 전체를 거릅니다. GA 네이티브가 무엇을
+    /// 호소하든 우리가 코드로 대응할 수 있는 것은 없기 때문입니다. 대신 GA를 의심해야 할 일이
+    /// 생기면 Sentry가 아니라 유저의 player.log를 봐야 한다는 뜻이기도 합니다.
+    ///
+    /// 문자열 대조라 GA가 머리말을 바꾸면 조용히 다시 새어 들어옵니다. 그 경우 시끄러워질 뿐
+    /// 진짜 리포트가 사라지지는 않으므로, 실패하더라도 이쪽으로 실패하게 둡니다.
+    ///
+    /// BeforeSend는 C# 쪽 이벤트에만 걸립니다. 네이티브 크래시는 네이티브 SDK가 직접 보내 이
+    /// 콜백을 거치지 않지만, 여기서 거르려는 것은 Debug.LogError를 타고 올라온 이벤트라 무방합니다.
+    /// </summary>
+    private static void FilterOutGameAnalyticsNativeNoise(SentryUnityOptions _options)
+    {
+        _options.SetBeforeSend((Sentry.SentryEvent _event) =>
+        {
+            if (true == IsGameAnalyticsNativeLog(_event)) return null;
+
+            return _event;
+        });
+    }
+
+    private static bool IsGameAnalyticsNativeLog(Sentry.SentryEvent _event)
+    {
+        if (null == _event) return false;
+
+        // Debug.LogError는 버전에 따라 Message로도, 예외로도 올라옵니다. 둘 다 봅니다.
+        if (true == ContainsNativeMarker(_event.Message?.Formatted)) return true;
+        if (true == ContainsNativeMarker(_event.Message?.Message)) return true;
+        if (true == ContainsNativeMarker(_event.Exception?.Message)) return true;
+
+        return false;
+    }
+
+    private static bool ContainsNativeMarker(string _text)
+    {
+        if (true == string.IsNullOrEmpty(_text)) return false;
+
+        return _text.Contains(GAMEANALYTICS_NATIVE_MARKER);
     }
 }

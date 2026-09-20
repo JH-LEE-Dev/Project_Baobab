@@ -32,20 +32,45 @@ public static class SentryUserContextTagger
     private const string USER_ID_SALT = "becb6dc823667a956016a307b64b4511";
 #endif
 
+    /// <summary>
+    /// 현재 유저의 해시된 식별자를 Sentry 스코프에 붙입니다.
+    ///
+    /// 실패해도 예외를 밖으로 내보내지 않습니다. 이 메서드는 Bootstrap.Start와 동의 변경 경로
+    /// (DataConsentGate)에서 불리는데, 두 곳 다 뒤에 게임을 세우는 작업이 이어집니다.
+    /// Steamworks 네이티브(GetSteamID)와 Sentry SDK를 한 자리에서 건드리는 만큼 남의 코드에
+    /// 기대는 폭이 넓은데, "리포트에 붙는 부가 정보"가 그 뒤를 멈춰 세울 자격은 없습니다.
+    /// 태그가 빠진 크래시 리포트는 여전히 쓸모가 있지만, 뜨지 않는 게임은 그렇지 않습니다.
+    ///
+    /// 호출하는 쪽이 아니라 여기서 막는 이유는, 부르는 자리가 둘이고 앞으로 늘 수도 있기
+    /// 때문입니다. 한 곳이라도 감싸는 것을 잊으면 같은 사고가 그대로 돌아옵니다.
+    /// </summary>
     public static void TagCurrentUser()
     {
 #if !DISABLESTEAMWORKS
-        if (!SteamManager.Initialized)
+        try
         {
-            return;
+            if (!SteamManager.Initialized)
+            {
+                return;
+            }
+
+            ulong steamId64 = SteamUser.GetSteamID().m_SteamID;
+
+            SentrySdk.ConfigureScope(scope =>
+            {
+                scope.User = new SentryUser { Id = HashSteamId(steamId64) };
+            });
         }
-
-        ulong steamId64 = SteamUser.GetSteamID().m_SteamID;
-
-        SentrySdk.ConfigureScope(scope =>
+        catch (System.Exception exception)
         {
-            scope.User = new SentryUser { Id = HashSteamId(steamId64) };
-        });
+            // LogError는 쓰지 않는다. Sentry가 켜져 있으면 그 자체로 이벤트가 되고,
+            // GameAnalytics의 로그 훅도 에러 이벤트를 하나 더 만든다.
+            // (DataConsentGate.TryCallSdk와 같은 판단)
+            // 예외 객체를 통째로 붙인다. 메시지만 남기면 스택 트레이스가 사라져,
+            // 나중에 이 경고를 본 사람이 어디서 터졌는지 되짚을 수 없다.
+            UnityEngine.Debug.LogWarning("[SentryUserContextTagger] 유저 태깅에 실패해 이번 실행의 " +
+                "리포트에는 유저 식별자가 붙지 않습니다. 게임 동작에는 영향이 없습니다.\n" + exception);
+        }
 #endif
     }
 
