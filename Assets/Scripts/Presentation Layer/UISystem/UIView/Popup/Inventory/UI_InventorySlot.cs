@@ -5,6 +5,8 @@ using UnityEngine.UI;
 using PresentationLayer.DOTweenAnimationSystem;
 using PresentationLayer.UISystem.CustomNumber;
 using Coffee.UIEffects;
+using DG.Tweening;
+using DG.Tweening.Core;
 
 /// <summary>
 /// 인벤토리의 개별 아이템 슬롯을 관리하는 클래스입니다.
@@ -16,6 +18,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     [SerializeField] private Image uiImage;
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private UIEffect uiEffect;
+    [SerializeField] private UIEffect slotImgEffect;
 
     [SerializeField] private Sprite emptySprite;
 
@@ -34,6 +37,12 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     [SerializeField] private float rainbowSaturation = 0.85f;
     [SerializeField] private float rainbowBrightness = 1.0f;
 
+    [Header("Swap Outline Blink Settings")]
+    [Tooltip("아웃라인 점멸 시 최소 알파 (0: 완전 소등, 0.25: 은은한 잔상 유지)")]
+    [SerializeField] private float outlineBlinkMinAlpha = 0.25f;
+    [Tooltip("아웃라인 점멸 1회 주기 시간 (초)")]
+    [SerializeField] private float outlineBlinkDuration = 0.65f;
+
     public Action<UI_InventorySlot, IItemData, Vector2> enterSlot;
     public Action exitSlot;
     public Action<IInventorySlot> deleteItem;
@@ -48,6 +57,13 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private bool isRainbowActive = false;
     private float currentRainbowHue = 0.0f;
 
+    // 스마트 스왑 아웃라인 점멸 제어 및 무할당(Zero GC) 캐싱
+    private Tween outlineBlinkTween = null;
+    private Color baseOutlineColor = Color.red;
+    private bool isOutlineColorCached = false;
+    private DOGetter<Color> getOutlineColor;
+    private DOSetter<Color> setOutlineColor;
+
     public IItemData ShowItemData => showItemData;
     public IInventorySlot InvSlotRef => invSlotRef;
     public int ShowCnt => showCnt;
@@ -61,6 +77,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         UpdateImage(null, Color.white);
         SetEffectActive(false);
         SetShinyEffectActive(false);
+        SetSlotOutlineActive(false);
         
         if (null != uiImage && null != uiImage.sprite && true == uiImage.sprite.texture.isReadable)
             uiImage.alphaHitTestMinimumThreshold = 0.1f;
@@ -110,23 +127,15 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         }
     }
 
-    private void OnEnable()
-    {
-        if (true == bNeedSorting)
-        {
-            StartCoroutine(ApplySortingRoutine());
-        }
-    }
-
     private System.Collections.IEnumerator ApplySortingRoutine()
     {
         bNeedSorting = false; 
         
         Canvas _canvas = currencyFont.GetComponent<Canvas>();
         
-        int retryCount = 0;
+        int _retryCount = 0;
         
-        while (null != _canvas && 10 > retryCount)
+        while (null != _canvas && 10 > _retryCount)
         {
             if (null != _canvas.rootCanvas && null != _canvas.rootCanvas.worldCamera)
             {
@@ -140,14 +149,15 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
                 }
             }
             
-            retryCount++;
+            _retryCount++;
             yield return null; 
         }
     }
 
     private void ExecuteSorting()
     {
-        if (null == currencyFont) return;
+        if (null == currencyFont)
+            return;
         
         Canvas _canvas = currencyFont.GetComponent<Canvas>();
         if (null != _canvas && null != _canvas.rootCanvas && null != _canvas.rootCanvas.worldCamera)
@@ -167,11 +177,109 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         UpdateImage(null, Color.white);
         SetEffectActive(false);
         SetShinyEffectActive(false);
+        SetSlotOutlineActive(false);
         UpdateItemCount(0);
 
         invSlotRef = null;
         showItemData = null;
         maxItemCntPerSlot = 99;
+    }
+
+    /// <summary>
+    /// 스마트 스왑 대상 슬롯임을 나타내는 SlotImg 아웃라인을 켜거나 끕니다.
+    /// (인디케이터는 UI 최상단 단일 공동 프리팹에서 제어되므로 슬롯은 아웃라인만 전담)
+    /// </summary>
+    /// <param name="_active">노출 여부</param>
+    /// <param name="_immediate">애니메이션 없이 즉시 상태를 바꿀지 여부 (아웃라인 즉시 토글)</param>
+    public void SetSwapIndicator(bool _active, bool _immediate = false)
+    {
+        SetSlotOutlineActive(_active, _immediate);
+    }
+
+    /// <summary>
+    /// SlotImg의 UIEffect 컴포넌트를 활성화하고 부드러운 펄스 점멸(Blink Loop) 애니메이션을 재생하거나 종료합니다.
+    /// </summary>
+    public void SetSlotOutlineActive(bool _active, bool _immediate = false)
+    {
+        EnsureSlotImgEffectBound();
+        CacheBaseOutlineColorIfNeeded();
+        KillOutlineBlinkTween();
+
+        if (null == slotImgEffect)
+            return;
+
+        if (true == _active)
+        {
+            slotImgEffect.enabled = true;
+            slotImgEffect.shadowColor = baseOutlineColor;
+
+            if (false == _immediate)
+            {
+                Color _targetMinColor = baseOutlineColor;
+                _targetMinColor.a = outlineBlinkMinAlpha;
+
+                outlineBlinkTween = DOTween.To(getOutlineColor, setOutlineColor, _targetMinColor, outlineBlinkDuration)
+                    .SetEase(Ease.InOutSine)
+                    .SetLoops(-1, LoopType.Yoyo)
+                    .SetLink(gameObject);
+            }
+        }
+        else
+        {
+            slotImgEffect.shadowColor = baseOutlineColor;
+            slotImgEffect.enabled = false;
+        }
+    }
+
+    private void CacheBaseOutlineColorIfNeeded()
+    {
+        if (true == isOutlineColorCached)
+            return;
+
+        if (null != slotImgEffect)
+        {
+            baseOutlineColor = slotImgEffect.shadowColor;
+            isOutlineColorCached = true;
+        }
+    }
+
+    private Color GetOutlineShadowColor()
+    {
+        if (null != slotImgEffect)
+            return slotImgEffect.shadowColor;
+
+        return baseOutlineColor;
+    }
+
+    private void SetOutlineShadowColor(Color _color)
+    {
+        if (null != slotImgEffect)
+            slotImgEffect.shadowColor = _color;
+    }
+
+    private void KillOutlineBlinkTween()
+    {
+        if (null != outlineBlinkTween && true == outlineBlinkTween.IsActive())
+        {
+            outlineBlinkTween.Kill();
+        }
+
+        outlineBlinkTween = null;
+    }
+
+    private void EnsureSlotImgEffectBound()
+    {
+        if (null != slotImgEffect)
+            return;
+
+        Transform _slotImgTrans = transform.Find("Visual/SlotImg");
+        if (null == _slotImgTrans)
+            _slotImgTrans = transform.Find("SlotImg");
+
+        if (null != _slotImgTrans)
+        {
+            slotImgEffect = _slotImgTrans.GetComponent<UIEffect>();
+        }
     }
 
     public void UpdateItemCount(int _newCnt)
@@ -188,7 +296,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             ExecuteSorting();
         }
 
-        if (showCnt != _newCnt)
+        if (_newCnt != showCnt)
         {
             showCnt = _newCnt;
             currencyFont.SetNumber(_newCnt);
@@ -250,7 +358,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         UpdateItemCount(invSlotRef.count);
         UpdateRarityEffect(showItemData);
 
-        if (_playInteraction)
+        if (true == _playInteraction)
             PlayItemInteraction();
     }
 
@@ -258,16 +366,6 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         if (null != uiImage)
             uiImage.raycastTarget = false;
-    }
- 
-    private void Update()
-    {
-        if (true == isRainbowActive && null != uiEffect)
-        {
-            currentRainbowHue = Mathf.Repeat(currentRainbowHue + Time.deltaTime * rainbowSpeed, 1.0f);
-            Color rainbowColor = Color.HSVToRGB(currentRainbowHue, rainbowSaturation, rainbowBrightness);
-            uiEffect.edgeColor = rainbowColor;
-        }
     }
 
     public void SetEffectActive(bool _active)
@@ -386,9 +484,9 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
         _obj.layer = _layer;
         int _childCount = _obj.transform.childCount;
-        for (int i = 0; i < _childCount; i++)
+        for (int _i = 0; _i < _childCount; _i++)
         {
-            Transform _child = _obj.transform.GetChild(i);
+            Transform _child = _obj.transform.GetChild(_i);
             if (null != _child)
             {
                 SetLayerRecursive(_child.gameObject, _layer);
@@ -422,7 +520,35 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         }
     }
 
-    // //유니티 이벤트 함수 및 인터페이스 구현
+    // //유니티 이벤트 함수 및 인터페이스 구현 (Awake, Start, OnDestroy 등 최하단 배치)
+
+    private void Awake()
+    {
+        getOutlineColor = GetOutlineShadowColor;
+        setOutlineColor = SetOutlineShadowColor;
+
+        EnsureSlotImgEffectBound();
+        CacheBaseOutlineColorIfNeeded();
+        SetSlotOutlineActive(false);
+    }
+
+    private void OnEnable()
+    {
+        if (true == bNeedSorting)
+        {
+            StartCoroutine(ApplySortingRoutine());
+        }
+    }
+
+    private void Update()
+    {
+        if (true == isRainbowActive && null != uiEffect)
+        {
+            currentRainbowHue = Mathf.Repeat(currentRainbowHue + Time.deltaTime * rainbowSpeed, 1.0f);
+            Color rainbowColor = Color.HSVToRGB(currentRainbowHue, rainbowSaturation, rainbowBrightness);
+            uiEffect.edgeColor = rainbowColor;
+        }
+    }
 
     public virtual void OnPointerClick(PointerEventData _eventData)
     {
@@ -442,8 +568,15 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             exitSlot.Invoke();
     }
 
+    private void OnDisable()
+    {
+        KillOutlineBlinkTween();
+    }
+
     private void OnDestroy()
     {
+        KillOutlineBlinkTween();
+
         if (null != CameraFinder.Instance)
         {
             CameraFinder.Instance.HandleCameraFindingEvent -= ApplySorting;
