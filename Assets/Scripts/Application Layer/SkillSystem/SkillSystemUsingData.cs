@@ -253,7 +253,11 @@ public enum SkillType
     GoldTreeChance, // 황금 나무 확률
     DiamondTreeChance,  // 다이아 나무 확률
     RainbowTreeChance,  // 무지개 나무 확률
-    
+
+    BlastFurnace1, // 용광로1
+    BlastFurnaceSpeed1, // 용광로 가속1
+    GemOrePouchExpansion1, // 원석 주머니 확장1
+    SpeciesImprovement, //수종 개량
 
     TestNode,  // TestNode
     MAX
