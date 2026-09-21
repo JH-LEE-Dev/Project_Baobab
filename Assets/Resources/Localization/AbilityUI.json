@@ -1223,50 +1223,6 @@
             "enumValue": ""
         },
         {
-            "id": 251,
-            "key": "SpeciesImprovement_Name",
-            "kr": "<COLOR=7EEDBE,EDD87E><Wave>수종 개량</Wave></COLOR>",
-            "en": "<COLOR=7EEDBE,EDD87E><Wave>Species Upgrade</Wave></COLOR>",
-            "zhHans": "<COLOR=7EEDBE,EDD87E><Wave>树种改良</Wave></COLOR>",
-            "zhHant": "<COLOR=7EEDBE,EDD87E><Wave>樹種改良</Wave></COLOR>",
-            "ja": "<COLOR=7EEDBE,EDD87E><Wave>樹種改良</Wave></COLOR>",
-            "enumType": "",
-            "enumValue": ""
-        },
-        {
-            "id": 252,
-            "key": "BlastFurnaceSpeed1_Name",
-            "kr": "광물 가공 속도 I",
-            "en": "Ore Processing Speed I",
-            "zhHans": "矿石加工速度 I",
-            "zhHant": "礦石加工速度 I",
-            "ja": "鉱石加工速度 I",
-            "enumType": "",
-            "enumValue": ""
-        },
-        {
-            "id": 253,
-            "key": "BlastFurnace1_Name",
-            "kr": "<COLOR=7EEDBE,EDD87E><Wave>용광로 I</Wave></COLOR>",
-            "en": "<COLOR=7EEDBE,EDD87E><Wave>Blast Furnace I</Wave></COLOR>",
-            "zhHans": "<COLOR=7EEDBE,EDD87E><Wave>高炉 I</Wave></COLOR>",
-            "zhHant": "<COLOR=7EEDBE,EDD87E><Wave>高爐 I</Wave></COLOR>",
-            "ja": "<COLOR=7EEDBE,EDD87E><Wave>溶鉱炉 I</Wave></COLOR>",
-            "enumType": "",
-            "enumValue": ""
-        },
-        {
-            "id": 254,
-            "key": "GemOrePouchExpansion1_Name",
-            "kr": "광물 주머니 확장 I",
-            "en": "Ore Pouch Expansion I",
-            "zhHans": "矿石袋扩容 I",
-            "zhHant": "礦石袋擴容 I",
-            "ja": "鉱石ポーチ拡張 I",
-            "enumType": "",
-            "enumValue": ""
-        },
-        {
             "id": 9000,
             "key": "Common_Level",
             "kr": "레벨",
@@ -2013,50 +1969,6 @@
             "ja": "",
             "enumType": "SkillCommandType",
             "enumValue": "ConstellationDamage"
-        },
-        {
-            "id": 9158,
-            "key": "AbilityDescription_SpeciesImprovement",
-            "kr": "<COLOR=8bbeff>획득하는 모든 원목</COLOR>이 해당 구역에서\n<COLOR=54D86A>가장 가치가 높은 수종의 원목</COLOR>으로 바뀝니다.",
-            "en": "Every <COLOR=8bbeff>log you collect</COLOR> becomes\n<COLOR=54D86A>the most valuable log type in that area</COLOR>.",
-            "zhHans": "<COLOR=8bbeff>拾取的所有原木</COLOR>都会变为该区域中\n<COLOR=54D86A>价值最高的原木</COLOR>。",
-            "zhHant": "<COLOR=8bbeff>拾取的所有原木</COLOR>都會變為該區域中\n<COLOR=54D86A>價值最高的原木</COLOR>。",
-            "ja": "<COLOR=8bbeff>入手した原木</COLOR>はすべて、そのエリアで\n<COLOR=54D86A>最も価値の高い樹種の原木</COLOR>に変わります。",
-            "enumType": "SkillCommandType",
-            "enumValue": "SpeciesImprovement"
-        },
-        {
-            "id": 9159,
-            "key": "AbilityDescription_BlastFurnaceSpeed",
-            "kr": "<COLOR=8bbeff>광물 가공 속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
-            "en": "Increases <COLOR=8bbeff>ore processing speed</COLOR> by <COLOR=54D86A>{0}%</COLOR>.",
-            "zhHans": "<COLOR=8bbeff>矿石加工速度</COLOR>提高<COLOR=54D86A>{0}%</COLOR>。",
-            "zhHant": "<COLOR=8bbeff>礦石加工速度</COLOR>提高<COLOR=54D86A>{0}%</COLOR>。",
-            "ja": "<COLOR=8bbeff>鉱石の加工速度</COLOR>が<COLOR=54D86A>{0}%</COLOR>上昇します。",
-            "enumType": "SkillCommandType",
-            "enumValue": "BlastFurnaceSpeed"
-        },
-        {
-            "id": 9160,
-            "key": "AbilityDescription_BlastFurnace",
-            "kr": "<COLOR=7EEDBE,EDD87E><Wave>용광로</Wave></COLOR>가 <COLOR=54D86A>{0}개</COLOR> 추가됩니다.",
-            "en": "Increases the number of <COLOR=7EEDBE,EDD87E><Wave>Blast Furnaces</Wave></COLOR> by <COLOR=54D86A>{0}</COLOR>.",
-            "zhHans": "增加<COLOR=54D86A>{0}</COLOR>座<COLOR=7EEDBE,EDD87E><Wave>高炉</Wave></COLOR>。",
-            "zhHant": "增加<COLOR=54D86A>{0}</COLOR>座<COLOR=7EEDBE,EDD87E><Wave>高爐</Wave></COLOR>。",
-            "ja": "<COLOR=7EEDBE,EDD87E><Wave>溶鉱炉</Wave></COLOR>が<COLOR=54D86A>{0}基</COLOR>増加します。",
-            "enumType": "SkillCommandType",
-            "enumValue": "BlastFurnace"
-        },
-        {
-            "id": 9161,
-            "key": "AbilityDescription_GemOrePouchExpansion",
-            "kr": "<COLOR=8bbeff>광물 주머니의 용량</COLOR>을 <COLOR=54D86A>{0}</COLOR>만큼 늘립니다.",
-            "en": "Increases <COLOR=8bbeff>ore pouch capacity</COLOR> by <COLOR=54D86A>{0}</COLOR>.",
-            "zhHans": "<COLOR=8bbeff>矿石袋容量</COLOR>增加<COLOR=54D86A>{0}</COLOR>。",
-            "zhHant": "<COLOR=8bbeff>礦石袋容量</COLOR>增加<COLOR=54D86A>{0}</COLOR>。",
-            "ja": "<COLOR=8bbeff>鉱石ポーチの容量</COLOR>が<COLOR=54D86A>{0}</COLOR>増加します。",
-            "enumType": "SkillCommandType",
-            "enumValue": "GemOrePouchExpansion"
         }
     ]
 }

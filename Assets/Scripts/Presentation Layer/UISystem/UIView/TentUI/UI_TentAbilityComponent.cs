@@ -1686,8 +1686,6 @@ public class UI_TentAbilityComponent : MonoBehaviour
                 return 1f;
             case SkillCommandType.StaminaMaxIncrease:
                 return 100f;
-            case SkillCommandType.GemOrePouchExpansion:
-                return 30f;
             default:
                 return 0f;
         }
@@ -1751,7 +1749,6 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.FascinatingLogChance:
             case SkillCommandType.AdvancedLogChance:
             case SkillCommandType.PerfectLogChance:
-            case SkillCommandType.SpeciesImprovement:
 
                 return true;
             default:
