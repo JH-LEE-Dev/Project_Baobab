@@ -51,6 +51,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   currencyIcon: {fileID: 2594104716317165818}
+  currencyIconShinyEffect: {fileID: 2594104716317165900}
   currencyFontHUD: {fileID: 5954802501018501914}
   iconEntries:
   - moneyType: 1
@@ -90,6 +91,7 @@ GameObject:
   - component: {fileID: 4932331130887984204}
   - component: {fileID: 6931738027112249500}
   - component: {fileID: 2594104716317165818}
+  - component: {fileID: 2594104716317165900}
   m_Layer: 5
   m_Name: CurrencyIcon
   m_TagString: Untagged
@@ -154,6 +156,40 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &2594104716317165900
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5613791140173978126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67c094942956bdb4481657b7a3fbf13b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ShinyEffectComponent
+  _useShinyEffect: 1
+  _shinyOriginalMaterial: {fileID: 2100000, guid: b7de3cc27b99cc2428225e2f4365f663, type: 2}
+  _shinyColor: {r: 1, g: 1, b: 1, a: 0.5}
+  _shinyWidth: 0.103
+  _shinySoftness: 0.05
+  _shinyAngle: 45
+  _playOnEnable: 1
+  _duration: 2
+  _delay: 0.5
+  _loopCount: 1
+  _useVfxEffect: 0
+  _vfxPrefab: {fileID: 2164660391435094963, guid: e7fbc58d37dba1640a273b065a7b985f, type: 3}
+  _vfxTag: ShinyVFX
+  _vfxColor: {r: 1, g: 1, b: 1, a: 1}
+  _isUIVfx: 1
+  _vfxUiScale: 32
+  _initialPoolSize: 1
+  _allowDynamicExpansion: 0
+  _maxPoolSize: 10
+  _autoSorting: 1
+  _vfxSortingLayer: Default
+  _vfxSortingOrder: 1
 --- !u!1001 &8783388427630611070
 PrefabInstance:
   m_ObjectHideFlags: 0

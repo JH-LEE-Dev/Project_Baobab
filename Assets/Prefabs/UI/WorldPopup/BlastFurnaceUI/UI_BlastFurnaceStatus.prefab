@@ -30,9 +30,9 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1011}
-  - {fileID: 1021}
   - {fileID: 1061}
   - {fileID: 1071}
+  - {fileID: 1021}
   - {fileID: 1101}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -54,6 +54,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_BlastFurnaceStatus
   oreIcon: {fileID: 1013}
+  oreIconShinyEffect: {fileID: 1014}
   goldIcon: {fileID: 21300000, guid: 3c7aac112c169aa4e80d4be4fa086dee, type: 3}
   diamondIcon: {fileID: 21300000, guid: 7237f82d38828fd478f8bfbbe77a4190, type: 3}
   prismIcon: {fileID: 21300000, guid: 02eb89527ae3b654c8d00d971b123fb5, type: 3}
@@ -88,6 +89,7 @@ GameObject:
   - component: {fileID: 1011}
   - component: {fileID: 1012}
   - component: {fileID: 1013}
+  - component: {fileID: 1014}
   m_Layer: 5
   m_Name: OreIcon
   m_TagString: Untagged
@@ -152,6 +154,40 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &1014
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67c094942956bdb4481657b7a3fbf13b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ShinyEffectComponent
+  _useShinyEffect: 1
+  _shinyOriginalMaterial: {fileID: 2100000, guid: b7de3cc27b99cc2428225e2f4365f663, type: 2}
+  _shinyColor: {r: 1, g: 1, b: 1, a: 0.5}
+  _shinyWidth: 0.103
+  _shinySoftness: 0.05
+  _shinyAngle: 45
+  _playOnEnable: 1
+  _duration: 2
+  _delay: 0.5
+  _loopCount: 1
+  _useVfxEffect: 0
+  _vfxPrefab: {fileID: 2164660391435094963, guid: e7fbc58d37dba1640a273b065a7b985f, type: 3}
+  _vfxTag: ShinyVFX
+  _vfxColor: {r: 1, g: 1, b: 1, a: 1}
+  _isUIVfx: 1
+  _vfxUiScale: 32
+  _initialPoolSize: 1
+  _allowDynamicExpansion: 0
+  _maxPoolSize: 10
+  _autoSorting: 1
+  _vfxSortingLayer: Default
+  _vfxSortingOrder: 1
 --- !u!1 &1020
 GameObject:
   m_ObjectHideFlags: 0
