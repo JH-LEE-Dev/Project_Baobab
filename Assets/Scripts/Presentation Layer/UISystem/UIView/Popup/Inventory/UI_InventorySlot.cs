@@ -64,6 +64,9 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private DOGetter<Color> getOutlineColor;
     private DOSetter<Color> setOutlineColor;
 
+    private bool bNeedSorting = false;
+    private Coroutine sortingCoroutine = null;
+
     public IItemData ShowItemData => showItemData;
     public IInventorySlot InvSlotRef => invSlotRef;
     public int ShowCnt => showCnt;
@@ -108,8 +111,6 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             omp.Initialize();
     }
 
-    private bool bNeedSorting = false;
-
     private void ApplySorting()
     {
         if (null == currencyFont) 
@@ -117,12 +118,11 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
         if (true == gameObject.activeInHierarchy)
         {
-            // 객체가 켜져 있다면 에러 없이 코루틴을 돌릴 수 있으므로 즉시 1프레임 대기 루틴 실행
-            StartCoroutine(ApplySortingRoutine());
+            StopSortingCoroutine();
+            sortingCoroutine = StartCoroutine(ApplySortingRoutine());
         }
         else
         {
-            // 객체가 꺼져 있다면 코루틴 실행 시 에러가 나므로, 나중에 켜질 때 실행하도록 플래그만 저장
             bNeedSorting = true;
         }
     }
@@ -132,26 +132,23 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         bNeedSorting = false; 
         
         Canvas _canvas = currencyFont.GetComponent<Canvas>();
-        
         int _retryCount = 0;
         
         while (null != _canvas && 10 > _retryCount)
         {
-            if (null != _canvas.rootCanvas && null != _canvas.rootCanvas.worldCamera)
-            {
-                _canvas.overrideSorting = true;
-                _canvas.sortingOrder = 10;
-                _canvas.sortingLayerName = "HUD";
+            ApplyCanvasSortingInternal(_canvas);
 
-                if (true == _canvas.overrideSorting)
-                {
-                    yield break;
-                }
+            if (true == _canvas.overrideSorting)
+            {
+                sortingCoroutine = null;
+                yield break;
             }
             
             _retryCount++;
             yield return null; 
         }
+
+        sortingCoroutine = null;
     }
 
     private void ExecuteSorting()
@@ -160,11 +157,25 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             return;
         
         Canvas _canvas = currencyFont.GetComponent<Canvas>();
+        ApplyCanvasSortingInternal(_canvas);
+    }
+
+    private static void ApplyCanvasSortingInternal(Canvas _canvas)
+    {
         if (null != _canvas && null != _canvas.rootCanvas && null != _canvas.rootCanvas.worldCamera)
         {
             _canvas.overrideSorting = true;
             _canvas.sortingOrder = 10;
             _canvas.sortingLayerName = "HUD";
+        }
+    }
+
+    private void StopSortingCoroutine()
+    {
+        if (null != sortingCoroutine)
+        {
+            StopCoroutine(sortingCoroutine);
+            sortingCoroutine = null;
         }
     }
 
@@ -316,7 +327,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             currencyFont.SetGlyphColor(defaultColor);
     }
 
-    public void UpdateImage(Sprite _sprite, Color _color)
+    public void UpdateImage(Sprite _sprite, Color _color = default)
     {
         if (null == uiImage)
             return;
@@ -326,10 +337,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null == _sprite)
             uiImage.sprite = emptySprite;
         else
-        {
             uiImage.sprite = _sprite;
-            //uiImage.color = _color;
-        }
     }
 
     public void UpdateBindSlotData(IInventorySlot _newSlot, int _maxCount = 99, bool _playInteraction = false)
@@ -484,7 +492,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
         _obj.layer = _layer;
         int _childCount = _obj.transform.childCount;
-        for (int _i = 0; _i < _childCount; _i++)
+        for (int _i = 0; _childCount > _i; _i++)
         {
             Transform _child = _obj.transform.GetChild(_i);
             if (null != _child)
@@ -570,11 +578,13 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     private void OnDisable()
     {
+        StopSortingCoroutine();
         KillOutlineBlinkTween();
     }
 
     private void OnDestroy()
     {
+        StopSortingCoroutine();
         KillOutlineBlinkTween();
 
         if (null != CameraFinder.Instance)

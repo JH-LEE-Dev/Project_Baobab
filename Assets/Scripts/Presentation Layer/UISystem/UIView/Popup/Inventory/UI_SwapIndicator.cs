@@ -93,7 +93,7 @@ public class UI_SwapIndicator : MonoBehaviour
         _obj.layer = _layer;
         Transform _t = _obj.transform;
         int _childCount = _t.childCount;
-        for (int _i = 0; _i < _childCount; ++_i)
+        for (int _i = 0; _childCount > _i; ++_i)
         {
             SetLayerRecursively(_t.GetChild(_i).gameObject, _layer);
         }
@@ -192,18 +192,12 @@ public class UI_SwapIndicator : MonoBehaviour
 
         while (null != indicatorCanvas && 10 > _retryCount)
         {
-            Canvas _rootCanvas = indicatorCanvas.rootCanvas;
-            if (null != _rootCanvas && (null != _rootCanvas.worldCamera || RenderMode.ScreenSpaceOverlay == _rootCanvas.renderMode))
-            {
-                indicatorCanvas.overrideSorting = true;
-                indicatorCanvas.sortingLayerName = sortingLayerName;
-                indicatorCanvas.sortingOrder = sortingOrder;
+            ApplyCanvasSortingInternal(indicatorCanvas, sortingLayerName, sortingOrder);
 
-                if (true == indicatorCanvas.overrideSorting)
-                {
-                    sortingCoroutine = null;
-                    yield break;
-                }
+            if (true == indicatorCanvas.overrideSorting)
+            {
+                sortingCoroutine = null;
+                yield break;
             }
 
             _retryCount++;
@@ -215,15 +209,20 @@ public class UI_SwapIndicator : MonoBehaviour
 
     private void ExecuteSortingDirect()
     {
-        if (null == indicatorCanvas)
+        ApplyCanvasSortingInternal(indicatorCanvas, sortingLayerName, sortingOrder);
+    }
+
+    private static void ApplyCanvasSortingInternal(Canvas _canvas, string _layerName, int _order)
+    {
+        if (null == _canvas)
             return;
 
-        Canvas _rootCanvas = indicatorCanvas.rootCanvas;
+        Canvas _rootCanvas = _canvas.rootCanvas;
         if (null != _rootCanvas && (null != _rootCanvas.worldCamera || RenderMode.ScreenSpaceOverlay == _rootCanvas.renderMode))
         {
-            indicatorCanvas.overrideSorting = true;
-            indicatorCanvas.sortingLayerName = sortingLayerName;
-            indicatorCanvas.sortingOrder = sortingOrder;
+            _canvas.overrideSorting = true;
+            _canvas.sortingLayerName = _layerName;
+            _canvas.sortingOrder = _order;
         }
     }
 
@@ -324,7 +323,6 @@ public class UI_SwapIndicator : MonoBehaviour
 
         baseAnchoredPosition = motionTarget.anchoredPosition;
 
-        ApplySorting();
         currentState = IndicatorState.Appearing;
 
         // 초기 연출 상태 설정
@@ -396,7 +394,7 @@ public class UI_SwapIndicator : MonoBehaviour
         }
 
         // 2. 하강 스텝 (1단계 ~ 마지막 직전 단계)
-        for (int _i = 1; _i < _validSteps; ++_i)
+        for (int _i = 1; _validSteps > _i; ++_i)
         {
             float _y = baseAnchoredPosition.y - (_stepDistance * _i);
             currentSequence.Append(motionTarget.DOAnchorPosY(_y, STEP_SNAP_DURATION).SetEase(Ease.Linear));
@@ -412,7 +410,7 @@ public class UI_SwapIndicator : MonoBehaviour
         if (BobbingStepMode.PingPong == stepMode)
         {
             // 상향 스텝 (최하단 바로 위 ~ 1단계)
-            for (int _i = _validSteps - 1; _i >= 1; --_i)
+            for (int _i = _validSteps - 1; 1 <= _i; --_i)
             {
                 float _y = baseAnchoredPosition.y - (_stepDistance * _i);
                 currentSequence.Append(motionTarget.DOAnchorPosY(_y, STEP_SNAP_DURATION).SetEase(Ease.Linear));
