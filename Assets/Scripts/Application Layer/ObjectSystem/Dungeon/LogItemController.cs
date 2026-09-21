@@ -416,6 +416,17 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         TreeData treeData = _treeObj.treeData;
         LogState logType = GetLogStateFromTreeGrade(treeData.grade);
 
+        // 이 수종의 원목 데이터가 없으면 드랍할 수 없다. 가드가 없던 시절에는 아래 루프 한가운데서
+        // info.color가 NRE를 내며 드랍이 통째로 끊겼는데, 원인이 "데이터베이스에 행 하나 누락"이라
+        // 스택만 보고는 알아채기 어려웠다. 수종을 새로 추가하면서 빠뜨리는 실수를 로그로 잡는다.
+        // (수종 개량 쪽 조회도 같은 이유로 반환값 null을 확인한다)
+        LogItemTypeData typeData = logItemTypeDataBase.Get(treeData.type);
+        if (typeData == null)
+        {
+            Debug.LogError($"[LogItemController] {treeData.type}의 원목 데이터가 LogItemTypeDataBase에 없습니다. 드랍을 건너뜁니다.");
+            return;
+        }
+
         int minCnt, maxCnt;
         if (treeData.grade >= TreeGrade.Fascinating)
         {
@@ -454,8 +465,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
             LogItem logItem = logPool.Get();
 
             logItem.transform.position = spawnPos;
-            var info = logItemTypeDataBase.Get(treeData.type);
-            logItem.Initialize(info, info.color, logType, character);
+            logItem.Initialize(typeData, typeData.color, logType, character);
             logItem.SetInventoryChecker(inventoryChecker);
 
             // 포물선 운동 설정
