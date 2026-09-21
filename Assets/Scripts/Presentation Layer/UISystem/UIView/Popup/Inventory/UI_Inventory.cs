@@ -18,10 +18,6 @@ public class UI_Inventory : MonoBehaviour
     [Header("Binding Obj")]
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private GameObject invBackground;
-    [SerializeField] private RectTransform itemsRoot;
-    [SerializeField] private CurrencyCounterHUD uiPrism;
-    [SerializeField] private CurrencyCounterHUD uiDiamond;
-    [SerializeField] private CurrencyCounterHUD uiGold;
     [SerializeField] private CurrencyCounterHUD uiCoin;
     [SerializeField] private UI_Backpack uiBackpack;
     [SerializeField] private UI_InventoryCapacityBar capacityBar;
@@ -129,15 +125,6 @@ public class UI_Inventory : MonoBehaviour
     {
         inventory = _inventory;
         moneyData = _moneyData;
-
-        if (null != uiPrism)
-            uiPrism.SetMoneyType(MoneyType.PrismOre);
-
-        if (null != uiDiamond)
-            uiDiamond.SetMoneyType(MoneyType.DiamondOre);
-
-        if (null != uiGold)
-            uiGold.SetMoneyType(MoneyType.GoldOre);
 
         if (null != uiCoin)
             uiCoin.SetMoneyType(MoneyType.Coin);
@@ -331,30 +318,8 @@ public class UI_Inventory : MonoBehaviour
 
     private void InitCoins()
     {
-        InitCurrencyHUD(uiPrism, MoneyType.PrismOre, true, 0);
-        InitCurrencyHUD(uiDiamond, MoneyType.DiamondOre, true, 1);
-        InitCurrencyHUD(uiGold, MoneyType.GoldOre, true, 2);
-        InitCurrencyHUD(uiCoin, MoneyType.Coin, false, 3);
-    }
-
-    private void InitCurrencyHUD(CurrencyCounterHUD _hud, MoneyType _moneyType, bool _dimWhenZero, int _siblingIndex)
-    {
-        if (null == _hud)
-            return;
-
-        _hud.Initialize();
-        _hud.SetMoneyType(_moneyType);
-        _hud.SetDimWhenZero(_dimWhenZero, 0.35f);
-        _hud.transform.SetSiblingIndex(_siblingIndex);
-
-        if (_dimWhenZero)
-        {
-            _hud.gameObject.SetActive(false);
-        }
-        else
-        {
-            _hud.gameObject.SetActive(true);
-        }
+        if (null != uiCoin) 
+            uiCoin.Initialize();
     }
 
     private void InitBackpack()
@@ -374,58 +339,9 @@ public class UI_Inventory : MonoBehaviour
         if (null == moneyData)
             return;
 
-        switch (_moneyType)
-        {
-            case MoneyType.Coin:
-                uiCoin?.SetNumberAnimated(moneyData.money);
-                break;
-            case MoneyType.GoldOre:
-                DiscoverAndShowCurrency(uiGold);
-                uiGold?.SetNumberAnimated(moneyData.goldOre);
-                break;
-            case MoneyType.DiamondOre:
-                DiscoverAndShowCurrency(uiDiamond);
-                uiDiamond?.SetNumberAnimated(moneyData.diamondOre);
-                break;
-            case MoneyType.PrismOre:
-                DiscoverAndShowCurrency(uiPrism);
-                uiPrism?.SetNumberAnimated(moneyData.prismOre);
-                break;
-        }
+        if (MoneyType.Coin == _moneyType)
+            uiCoin?.SetNumberAnimated(moneyData.money);
     }
-
-    #region 원석 주머니 데이터 (그리는 코드는 아직 없음)
-
-    // [죽은 코드] SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED 가 false 라 원석이 들어올 일이 없어
-    // 아래 셋은 항상 (보유 0 / 한도 30 / 가득참 false)을 돌려준다. 버그 검토 대상이 아니다.
-
-    // 아래 셋은 "12 / 30" 같은 주머니 표시를 붙일 수 있도록 데이터만 열어둔 것이다.
-    // 값을 캐싱하지 않고 그때그때 읽으므로 언제 불러도 최신이다. 갱신 시점은 기존 경로를 그대로 쓰면 된다.
-    //   원석을 주웠을 때        CharacterEarnMoney(MoneyType)
-    //   용광로에 넣어 줄었을 때  CharactersMoneyChanged()
-    //   특성으로 한도가 커졌을 때 Refresh() (InventorySpecChangedSignal 경유)
-
-    /// <summary>주머니 한도. 황금/다이아/프리즘을 <b>합친</b> 총량의 상한이다.</summary>
-    public long GemOrePouchCapacity => null != moneyData ? moneyData.GemOrePouchCapacity : 0L;
-
-    /// <summary>지금 주머니에 든 원석 총량(세 종류 합). 한도와 함께 "12 / 30"처럼 쓰면 된다.</summary>
-    public long TotalGemOre => null != moneyData ? moneyData.TotalGemOre : 0L;
-
-    /// <summary>
-    /// 주머니가 가득 찼는지. 경고 표시를 띄울 때 쓰면 된다.
-    /// 한도보다 많이 들고 있는 상태(주머니 이전 세이브 등)에서도 true다.
-    ///
-    /// 보유량만 보고 판정한다(빨려오는 중이라 자리만 잡아둔 몫은 세지 않는다). 실제로 원석을
-    /// 더 주울 수 있는지는 InventoryManager.GemOrePouchSpace가 예약분까지 빼고 따로 판정하는데,
-    /// 그 기준으로 표시하면 알갱이가 날아오는 0.3초 동안 화면에 "0 / 30 인데 가득 참"이 뜬다.
-    /// 표시는 플레이어가 보는 숫자를 따르는 편이 맞다.
-    ///
-    /// 참고: 가득 찬 순간의 말풍선은 지금 원목 인벤토리 것과 같은 ID를 쓰고 있어 문구도 어긋나고
-    /// 둘 중 하나만 뜬다. 자세한 사정과 분리 방법은 UIView_Unit.InventoryIsFull() 주석에 있다.
-    /// </summary>
-    public bool IsGemOrePouchFull => null != moneyData && moneyData.TotalGemOre >= moneyData.GemOrePouchCapacity;
-
-    #endregion
 
     public void CharactersMoneyChanged()
     {
@@ -433,74 +349,6 @@ public class UI_Inventory : MonoBehaviour
             return;
 
         uiCoin?.SetNumber(moneyData.money);
-
-        UpdateCurrencyState(uiPrism, MoneyType.PrismOre, moneyData.prismOre);
-        UpdateCurrencyState(uiDiamond, MoneyType.DiamondOre, moneyData.diamondOre);
-        UpdateCurrencyState(uiGold, MoneyType.GoldOre, moneyData.goldOre);
-    }
-
-    /// <summary>
-    /// 방금 얻은 재화의 칸을 즉시 띄운다. 획득 이력은 InventoryManager가 이미 기록한 뒤에
-    /// 이 호출이 오므로(UnitSystem.GemOreAcquired), 여기서는 보이기만 하면 된다.
-    /// </summary>
-    private void DiscoverAndShowCurrency(CurrencyCounterHUD _hud)
-    {
-        if (null == _hud)
-            return;
-
-        if (true == _hud.gameObject.activeSelf)
-            return;
-
-        _hud.gameObject.SetActive(true);
-        RebuildItemsLayout();
-    }
-
-    /// <summary>
-    /// 한 번이라도 얻은 적이 있는 재화만 보여준다.
-    ///
-    /// 판정은 세이브에 저장되는 획득 이력(IMoneyData.HasEverAcquired)을 그대로 따른다.
-    /// 예전처럼 보유량으로 판정하면 원석을 전부 용광로에 넣은 순간 칸이 다시 숨겨지고,
-    /// 게임을 껐다 켜면 발견 사실 자체가 사라진다.
-    /// </summary>
-    private void UpdateCurrencyState(CurrencyCounterHUD _hud, MoneyType _moneyType, long _amount)
-    {
-        if (null == _hud)
-            return;
-
-        bool _bDiscovered = null != moneyData && moneyData.HasEverAcquired(_moneyType);
-
-        // 원석 계열이 꺼져 있으면 세이브에 획득 이력이 남아 있어도 칸을 내보내지 않는다.
-        // (시스템을 쓰던 동안 만들어진 개발용 세이브에 값이 남아 있을 수 있다.
-        //  세이브의 값 자체는 지우지 않으므로 스위치를 다시 켜면 그대로 돌아온다)
-        if (false == SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED && true == IsGemOreMoneyType(_moneyType))
-            _bDiscovered = false;
-
-        if (_bDiscovered != _hud.gameObject.activeSelf)
-        {
-            _hud.gameObject.SetActive(_bDiscovered);
-            RebuildItemsLayout();
-        }
-
-        if (true == _hud.gameObject.activeSelf && _hud.GetNumber() == _amount)
-            return;
-
-        _hud.SetNumber(_amount);
-    }
-
-    // 원석 재화 세 종류인지 여부. SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED 판정에만 쓴다.
-    private static bool IsGemOreMoneyType(MoneyType _moneyType)
-    {
-        return MoneyType.GoldOre == _moneyType
-            || MoneyType.DiamondOre == _moneyType
-            || MoneyType.PrismOre == _moneyType;
-    }
-
-    private void RebuildItemsLayout()
-    {
-        if (null != itemsRoot)
-        {
-            UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(itemsRoot);
-        }
     }
 
     public void InventoryShowEvent()
