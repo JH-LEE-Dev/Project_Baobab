@@ -91,6 +91,9 @@ public class ItemManager : MonoBehaviour
 
     /// <summary>
     /// 보석 나무가 쓰러진 자리에 원석을 뿌린다. 원목 대신 떨어지므로 SpawnLogItem과는 배타적으로 호출한다.
+    ///
+    /// <b>[죽은 코드]</b> SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED 가 false 라 유일한 호출부인
+    /// InDungeonObjectManager.OnTreeDead 가 이 길로 들어오지 않는다. 버그 검토 대상이 아니다.
     /// </summary>
     public void SpawnGemOre(TreeObj _treeObj, float _multiplier)
     {

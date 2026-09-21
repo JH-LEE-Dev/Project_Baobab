@@ -396,6 +396,9 @@ public class UI_Inventory : MonoBehaviour
 
     #region 원석 주머니 데이터 (그리는 코드는 아직 없음)
 
+    // [죽은 코드] SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED 가 false 라 원석이 들어올 일이 없어
+    // 아래 셋은 항상 (보유 0 / 한도 30 / 가득참 false)을 돌려준다. 버그 검토 대상이 아니다.
+
     // 아래 셋은 "12 / 30" 같은 주머니 표시를 붙일 수 있도록 데이터만 열어둔 것이다.
     // 값을 캐싱하지 않고 그때그때 읽으므로 언제 불러도 최신이다. 갱신 시점은 기존 경로를 그대로 쓰면 된다.
     //   원석을 주웠을 때        CharacterEarnMoney(MoneyType)
@@ -466,6 +469,12 @@ public class UI_Inventory : MonoBehaviour
 
         bool _bDiscovered = null != moneyData && moneyData.HasEverAcquired(_moneyType);
 
+        // 원석 계열이 꺼져 있으면 세이브에 획득 이력이 남아 있어도 칸을 내보내지 않는다.
+        // (시스템을 쓰던 동안 만들어진 개발용 세이브에 값이 남아 있을 수 있다.
+        //  세이브의 값 자체는 지우지 않으므로 스위치를 다시 켜면 그대로 돌아온다)
+        if (false == SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED && true == IsGemOreMoneyType(_moneyType))
+            _bDiscovered = false;
+
         if (_bDiscovered != _hud.gameObject.activeSelf)
         {
             _hud.gameObject.SetActive(_bDiscovered);
@@ -476,6 +485,14 @@ public class UI_Inventory : MonoBehaviour
             return;
 
         _hud.SetNumber(_amount);
+    }
+
+    // 원석 재화 세 종류인지 여부. SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED 판정에만 쓴다.
+    private static bool IsGemOreMoneyType(MoneyType _moneyType)
+    {
+        return MoneyType.GoldOre == _moneyType
+            || MoneyType.DiamondOre == _moneyType
+            || MoneyType.PrismOre == _moneyType;
     }
 
     private void RebuildItemsLayout()

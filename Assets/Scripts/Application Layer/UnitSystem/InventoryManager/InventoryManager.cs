@@ -28,6 +28,16 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     private long diamondOre = 0;
     private long prismOre = 0;
 
+    // ── [죽은 코드] 여기부터 아래 원석/주머니 관련 멤버는 전부 동작하지 않는다 ──────────────
+    //
+    // SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED 가 false 라 원석 아이템이 생성되지 않으므로
+    // GemOreEarned / ReserveGemOre / CancelGemOreReservation 이 호출되지 않고, 보유량과
+    // 획득 이력은 0/false 로 고정된다. 주머니 한도(30)도 걸릴 일이 없다.
+    // 버그 / 회귀 검토 대상에서 제외한다.
+    //
+    // 세이브 필드는 그대로 두므로 스위치를 다시 켜면 저장해 둔 값이 이어진다.
+    // ───────────────────────────────────────────────────────────────────────────────
+
     // 각 원석을 한 번이라도 얻은 적이 있는지. 보유량이 0이 되어도 유지되며 세이브에 저장된다.
     // HUD가 "발견한 재화만 표시"를 판정하는 데 쓴다(IMoneyData.HasEverAcquired).
     private bool bHasEverAcquiredGoldOre = false;

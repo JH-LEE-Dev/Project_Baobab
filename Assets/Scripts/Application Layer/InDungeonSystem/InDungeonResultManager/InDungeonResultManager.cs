@@ -43,6 +43,10 @@ public class InDungeonResultManager : MonoBehaviour, IDungeonResultProvider
     ///
     /// 여기 쌓이는 값은 "주운 것"만이다. 마을에서 용광로가 원석을 되돌려주는 환불 경로는
     /// 이 집계를 거치지 않으므로(InventoryManager.GemOreEarned를 직접 부른다) 섞이지 않는다.
+    ///
+    /// <b>[죽은 코드]</b> SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED 가 false 라 호출되지 않는다.
+    /// 집계는 항상 0이고 결과창에도 원석 줄이 서지 않는다(UIView_Result가 0은 건너뛴다).
+    /// 버그 검토 대상이 아니다.
     /// </summary>
     public void AddAcquiredGemOre(GemOreType _gemOreType, long _amount)
     {
