@@ -19,6 +19,26 @@ public class ItemDetector
     private const int LOG_STATE_COUNT = 6;
     private static readonly int[] visibleCounts = new int[(int)TreeType.Max * LOG_STATE_COUNT];
 
+    // 정렬 작업 버퍼. 원목마다 우선순위를 한 번만 계산해 sortKeys에 담고, Array.Sort(keys, items)로
+    // 두 배열을 함께 정렬한 뒤 리스트에 되돌린다. 비교마다 우선순위를 다시 계산하던 삽입 정렬은
+    // 반경 안 원목이 수십 개일 때는 괜찮았지만 n²이라, 흡입 반경을 키우는 특성이 생기면 감지 틱마다
+    // 수만 번의 가치 조회가 도는 구조였다. 지금은 원목당 계산 1회 + O(n log n) 비교이고, 버퍼는
+    // 모자랄 때만 두 배로 키우므로 정상 플레이 중에는 할당이 없다.
+    private const int SORT_BUFFER_INITIAL = 64;
+    private static long[] sortKeys = new long[SORT_BUFFER_INITIAL];
+    private static IStaticCollidable[] sortItems = new IStaticCollidable[SORT_BUFFER_INITIAL];
+
+    // 정렬 키에 원래 순서를 함께 실어 안정 정렬을 흉내낸다. Array.Sort는 안정 정렬이 아니라서 우선순위가
+    // 같은 원목끼리 스캔 순서가 뒤섞일 수 있는데, 그러면 같은 무리 안에서 어느 원목이 먼저 흡입되는지가
+    // 틱마다 달라져 보인다. key = -(우선순위 × 2^16) + 인덱스 로 두면 오름차순 정렬이 곧 "우선순위
+    // 내림차순, 같으면 스캔 순서 유지"가 된다. 한 스캔에 2^16개를 넘길 일은 없다.
+    private const int SORT_INDEX_BITS = 16;
+    private const int SORT_MAX_ITEMS = 1 << SORT_INDEX_BITS;
+
+    // 원목이 아닌 아이템(원석 등)의 우선순위. 어떤 원목 무리보다 커야 하고(최우선), 2^16을 곱해도
+    // long을 넘지 않아야 한다. 흑요목 프리즘(6억) × 슬롯 용량 100개여도 6e10 < 2^40이다.
+    private const long NON_LOG_PRIORITY = 1L << 40;
+
     public ItemDetector(Transform _sensorTransform, LayerMask _itemLayer)
     {
         sensorTransform = _sensorTransform;
@@ -87,30 +107,51 @@ public class ItemDetector
     /// 순서를 잘못 예측해도 예약이 어긋나지는 않는다. 공간 판정(CanAcquired)은 개량이 끝난 실제
     /// 수종으로 이뤄지므로, 이 정렬은 "누가 먼저 물어보는가"만 정할 뿐이다.
     ///
-    /// 삽입 정렬을 직접 돌린다. 리스트가 반경 안의 아이템 수(보통 수십 개 이하)라 충분히 빠르고,
-    /// List.Sort(Comparison)과 달리 비교자 래퍼를 할당하지 않는다 - 이 정렬은 아이템 감지 틱마다
-    /// (초당 5회) 돈다. 안정 정렬이라 우선순위가 같은 아이템끼리는 스캔 순서가 그대로 유지된다.
+    /// 원목마다 우선순위를 한 번만 계산해 정적 버퍼에 담고 Array.Sort(keys, items)로 정렬한다.
+    /// List.Sort(Comparison)과 달리 비교자 래퍼를 할당하지 않고, 버퍼는 모자랄 때만 키우므로 이 정렬이
+    /// 아이템 감지 틱마다(초당 5회) 돌아도 정상 플레이 중 할당이 없다. 키에 스캔 순서를 함께 실어
+    /// 우선순위가 같은 아이템끼리는 순서가 그대로 유지된다(안정 정렬과 같은 결과).
     /// </summary>
     public static void SortByPickupPriority(List<IStaticCollidable> _results)
     {
+        int count = _results.Count;
+        if (count < 2) return;
+
         TreeType speciesFloor = FindSpeciesImprovementFloor(_results);
 
         CountVisibleLogs(_results, speciesFloor);
 
-        for (int i = 1; i < _results.Count; i++)
+        EnsureSortBuffers(count);
+
+        // 원목당 한 번만 계산한다. 키가 작을수록 앞에 오도록 부호를 뒤집고, 같은 우선순위끼리는
+        // 스캔 순서(인덱스)가 낮은 쪽이 앞에 오도록 인덱스를 더한다.
+        int keyed = Mathf.Min(count, SORT_MAX_ITEMS);
+        for (int i = 0; i < keyed; i++)
         {
-            IStaticCollidable current = _results[i];
-            long currentPriority = GetPickupPriority(current, speciesFloor);
-
-            int j = i - 1;
-            while (j >= 0 && GetPickupPriority(_results[j], speciesFloor) < currentPriority)
-            {
-                _results[j + 1] = _results[j];
-                j--;
-            }
-
-            _results[j + 1] = current;
+            IStaticCollidable item = _results[i];
+            sortItems[i] = item;
+            sortKeys[i] = -(GetPickupPriority(item, speciesFloor) << SORT_INDEX_BITS) + i;
         }
+
+        Array.Sort(sortKeys, sortItems, 0, keyed);
+
+        for (int i = 0; i < keyed; i++)
+        {
+            _results[i] = sortItems[i];
+            sortItems[i] = null;   // 풀로 돌아간 아이템을 정적 버퍼가 붙들고 있지 않게 한다
+        }
+    }
+
+    /// <summary>정렬 버퍼가 모자라면 두 배씩 키운다. 정상 플레이에서는 초기 크기 안에서 끝나 할당이 없다.</summary>
+    private static void EnsureSortBuffers(int _count)
+    {
+        if (sortKeys.Length >= _count) return;
+
+        int newSize = sortKeys.Length;
+        while (newSize < _count) newSize *= 2;
+
+        sortKeys = new long[newSize];
+        sortItems = new IStaticCollidable[newSize];
     }
 
     /// <summary>
@@ -170,7 +211,8 @@ public class ItemDetector
     /// </summary>
     private static long GetPickupPriority(IStaticCollidable _collidable, TreeType _speciesFloor)
     {
-        if (!(_collidable is LogItem logItem)) return long.MaxValue;
+        // long.MaxValue를 쓰면 정렬 키를 만들 때(<< 16) 넘친다. 어떤 원목 무리보다 크면서 시프트에 안전한 값을 쓴다.
+        if (!(_collidable is LogItem logItem)) return NON_LOG_PRIORITY;
 
         TreeType treeType = EffectiveTreeType(logItem, _speciesFloor);
 
