@@ -1,6 +1,6 @@
 # 원목 교체 시스템 - UI 연동 가이드
 
-로직/데이터는 전부 들어가 있습니다. **UI에서 할 일은 "어느 슬롯이 버려질 예정인지"를 표시하고,
+로직/데이터는 전부 들어가 있습니다. **UI에서 할 일은 "어느 슬롯이 무엇과 바뀌는지"를 환율로 보여주고,
 "교체가 일어났을 때" 연출을 붙이는 것**입니다. 이 문서는 그 두 가지에 필요한 값이 어디로 오는지만
 설명합니다.
 
@@ -9,18 +9,37 @@
 ## 1. 기능 한 줄 요약
 
 가방(또는 운반 상자)에 자리가 없어 원목을 더 못 담을 때, **교체 키(기본 Tab / 패드 Y)** 를 누르면
-가장 값싼 슬롯 하나를 통째로 버려 자리를 만듭니다.
+값싼 슬롯 하나를 통째로 내려놓아 자리를 만듭니다.
 
-- 버려질 슬롯은 시스템이 자동으로 고릅니다(유저가 고르지 않습니다).
+- 버려질 슬롯은 시스템이 고릅니다(유저가 고르지 않습니다). 누를지는 유저가 정합니다.
 - **교체는 인벤토리가 열려 있을 때만 동작합니다.** 무엇이 버려지는지 눈으로 볼 수 없는 상태에서
   슬롯이 사라지면 안 되기 때문입니다.
-- 버려질 슬롯이 없으면(=버릴 만큼 싼 슬롯이 없으면) 교체는 활성화되지 않습니다.
+- 버릴 슬롯이 없으면 교체는 활성화되지 않습니다.
 
-버려질 슬롯을 고르는 기준(참고용, UI가 계산할 필요는 없습니다):
+### 시스템이 보장하는 것 (UI 문구의 근거)
 
-1. 지금 못 담고 있는 원목보다 **싼** 슬롯만 후보
-2. 그중 **가장 싼 것**(TreeType → LogState 순으로 비교)
-3. 같은 값이면 **가장 적게 쌓인 것**
+> **(1) 손해인 거래는 아예 제안하지 않는다.  (2) 제안은 환율 한 줄로 설명된다.**
+
+버튼이 떠 있다는 것 자체가 "이건 손해 아님"이라는 보증입니다. 그래서 UI는 이득이라고 **주장할 필요가
+없고**, 유저가 셀 수 있는 두 가지(개수·종류)와 환율만 보여주면 됩니다.
+
+시스템이 지키는 규칙(참고용, UI가 계산할 필요는 없습니다):
+
+| 규칙 | 내용 |
+|---|---|
+| 자격 | 버릴 슬롯의 개당 가치 < 들어올 원목의 개당 가치. **보석 등급(황금/다이아/프리즘) 슬롯은 절대 버리지 않음** |
+| 상한 | 버릴 슬롯의 총 가치 ≤ 들어올 원목 개당 가치 × min(지금 보이는 개수, 슬롯 최대 중첩). **"지금 눈에 보이는 만큼"만 이득으로 침** |
+| 선정 | 자격·상한을 통과한 슬롯 중 총 가치가 가장 낮은 것("가장 싸게 살 수 있는 칸"). 같으면 더 싼 수종 |
+
+가장 싼 수종이 들어올 때는 자격을 만족하는 슬롯이 없어 제안이 없습니다 — "잡템 자리를 만들라"는
+제안은 구조적으로 나오지 않습니다.
+
+### 제안이 튀지 않도록
+
+- **한 번 띄운 제안은 그것이 무효가 될 때까지 바뀌지 않습니다**(sticky). 0.2초마다 강조 슬롯이
+  튀어다니면 "뜬 걸 눌렀는데 그 사이 바뀌어 있었다"가 생기기 때문입니다.
+- **교체 직후 1초 동안은 다음 제안이 뜨지 않습니다.** 버린 원목이 내려앉고 새 원목이 들어오는 결과를
+  눈으로 확인할 시간입니다.
 
 ---
 
@@ -29,13 +48,13 @@
 ### 2-1. 인벤토리 (`UI_Inventory`)
 
 ```csharp
-// 교체 대상 슬롯이 달라졌을 때(생김 / 사라짐 / 다른 슬롯으로 이동 / 개수 변화)
+// 교체 대상이 달라졌을 때(생김 / 사라짐 / 다른 슬롯으로 이동 / 개수 변화 / 들어올 원목 변화)
 public event Action LogSwapInfoChangedEvent;
 
 // 교체가 실제로 일어나 슬롯 하나가 비워졌을 때. 인자는 "방금 버려진 슬롯"의 내용
 public event Action<LogSwapSlotInfo> LogSwapExecutedEvent;
 
-public LogSwapSlotInfo LogSwapInfo { get; }          // 지금 버려질 예정인 슬롯
+public LogSwapSlotInfo LogSwapInfo { get; }          // 지금 버려질 예정인 슬롯 + 들어올 원목
 public ELogSwapTarget ActiveLogSwapTarget { get; }   // 교체 키가 실제로 건드릴 쪽
 public bool IsLogSwapReady { get; }                  // 위 둘을 합친 판정(아래 참고)
 ```
@@ -58,52 +77,97 @@ public bool IsLogSwapReady { get; }
 
 ---
 
-## 3. `LogSwapSlotInfo` — 버려질 슬롯 한 건
+## 3. `LogSwapSlotInfo` — 버려질 슬롯과 들어올 원목
 
 `Assets/Scripts/Application Layer/UnitSystem/LogSwap/LogSwapTypes.cs`
+
+**버릴 쪽**
 
 | 필드 | 설명 |
 |---|---|
 | `target` | `ELogSwapTarget.Inventory` / `OffroadContainer` / `None`(대상 없음) |
 | `slotIndex` | **버려질 슬롯의 인덱스.** 없으면 `-1` |
-| `treeType` | 그 슬롯의 수종 |
-| `logState` | 그 슬롯의 등급 |
+| `treeType` / `logState` | 버려질 원목의 수종 / 등급 |
 | `count` | 쌓여 있는 개수 = **교체하면 버려지는 원목 수** |
-| `bHasSlot` | 버릴 슬롯이 정해져 있는지(프로퍼티) |
+| `unitValue` | 개당 가치(코인 단위, 기본 가치 × 등급 배율). 코인 환산을 보여주고 싶을 때 |
+
+**들어올 쪽**
+
+| 필드 | 설명 |
+|---|---|
+| `incomingTreeType` / `incomingLogState` | 비운 자리에 들어올 원목의 수종 / 등급 |
+| `incomingCount` | 지금 대기 중인 개수. 인벤토리면 **바닥에서 못 먹고 있는 개수**, 운반 상자면 **가방에 든 개수**. 슬롯 최대 중첩을 넘지 않게 잘라서 옴 |
+| `incomingUnitValue` | 들어올 원목의 개당 가치 |
+
+**프로퍼티**
+
+| 이름 | 설명 |
+|---|---|
+| `bHasSlot` | 버릴 슬롯이 정해져 있는지 |
+| `exchangeRate` | **환율** = `incomingUnitValue / unitValue`. "들어올 원목 1개 = 버릴 원목 몇 개" |
 
 **`slotIndex`는 UI가 이미 그리고 있는 슬롯 목록과 같은 인덱스입니다.**
 
-- `UI_Inventory` → `inventory.inventorySlots[slotIndex]` (= `inventorySlots` 리스트의 같은 번째 칸)
+- `UI_Inventory` → `inventory.inventorySlots[slotIndex]`
 - `UI_Storage` → `storage.inventorySlots[slotIndex]`
 
-그래서 `slotIndex`만으로 화면의 어떤 칸인지 바로 찾을 수 있습니다. `treeType/logState/count`는 그
-시점의 사본이라, **교체가 끝나 슬롯이 비워진 뒤에도**(`LogSwapExecutedEvent`) 무엇이 몇 개 버려졌는지
-그대로 읽을 수 있습니다.
+버릴 쪽의 `treeType/logState/count`는 그 시점의 사본이라, **교체가 끝나 슬롯이 비워진 뒤에도**
+(`LogSwapExecutedEvent`) 무엇이 몇 개 버려졌는지 그대로 읽을 수 있습니다.
 
 ---
 
-## 4. `ActiveLogSwapTarget` — 왜 필요한가
+## 4. 화면에 무엇을 보여주나 — 환율
+
+이득이라고 **주장하지 말고**, 유저가 셀 수 있는 것만 나란히 놓습니다.
+
+```
+  내려놓기                자리 만들기
+  소나무  ×3      ↔       자작나무  ×5          환율 3.3 : 1
+  (슬롯 하이라이트)        (바닥에서 못 먹고 있는 것)
+```
+
+- 왼쪽: `treeType` / `count` — 실제 슬롯을 하이라이트해서 "저 3개구나"를 확인시킵니다.
+- 오른쪽: `incomingTreeType` / `incomingCount` — 지금 못 먹고 있는 그 원목입니다.
+- 환율: `exchangeRate` — "자작 하나가 소나무 셋 값". **숲마다 수종이 둘뿐이라 환율은 숲당 사실상
+  하나**입니다. 한 번 보면 외워지는 숫자라, 유저가 시스템을 믿는 게 아니라 자기가 아는 사실로 판단하게
+  됩니다.
+- 보석이 끼면 환율이 커집니다("소나무 20개 ↔ 프리즘 자작 5개, 환율 67 : 1"). 숫자가 크지만 정직하고,
+  그 크기 자체가 "이건 엄청난 거래"를 전달합니다.
+- "이득입니다" 같은 문구는 쓰지 마세요. 종류와 개수와 환율만 보여주면 판단은 유저 몫이고, 그래서
+  결과에 배신감이 없습니다.
+
+`unitValue` / `incomingUnitValue`로 코인 환산도 붙일 수 있습니다. 제재소에서 본 숫자와 같은 단위입니다.
+환율만으로 충분하면 생략해도 됩니다.
+
+### 등급 표시
+
+`logState`가 `Normal`보다 높으면 보석 원목(황금 = Fascinating / 다이아 = Advanced / 프리즘 = Perfect)
+입니다. 들어올 쪽이 보석이면 그걸 눈에 띄게 해주세요 — 게임 안에서 보석 원목은 아우라와 전용 효과음으로
+"특별한 것"으로 학습되어 있어, 같은 언어를 쓰면 환율의 큰 숫자가 자연스럽게 읽힙니다.
+(버릴 쪽은 보석이 절대 오지 않습니다.)
+
+---
+
+## 5. `ActiveLogSwapTarget` — 왜 필요한가
 
 인벤토리와 운반 상자 **양쪽 모두** 교체 후보를 가질 수 있습니다(상자 앞에 서 있는데 가방도 꽉 찬
 경우). 이때 교체 키는 **운반 상자를 우선**으로 처리합니다.
 
-그래서 각 UI는 두 가지를 구분할 수 있습니다.
-
 - `LogSwapInfo.bHasSlot` → "이 창 기준으로 버려질 후보는 이 슬롯이다"
 - `IsLogSwapReady` → "지금 키를 누르면 **이 창의** 그 슬롯이 실제로 버려진다"
 
-가장 단순하게 가려면 `IsLogSwapReady`만 보고 켜고 끄면 됩니다. 후보는 있지만 지금 키가 다른 쪽을
-건드리는 상태를 흐리게 표시하고 싶다면 `LogSwapInfo.bHasSlot`과 `ActiveLogSwapTarget`을 따로 보세요.
+가장 단순하게 가려면 `IsLogSwapReady`만 보고 켜고 끄면 됩니다.
 
 ---
 
-## 5. 사용 예
+## 6. 사용 예
 
 ```csharp
-public class UI_LogSwapHighlight : MonoBehaviour
+public class UI_LogSwapPrompt : MonoBehaviour
 {
     [SerializeField] private UI_Inventory uiInventory;
-    [SerializeField] private GameObject highlight;   // 슬롯 위에 얹을 테두리 등
+    [SerializeField] private GameObject highlight;      // 버려질 슬롯 위에 얹을 테두리
+    [SerializeField] private TextMeshProUGUI rateText;  // "소나무 ×3 ↔ 자작나무 ×5  (3.3 : 1)"
 
     private void OnEnable()
     {
@@ -129,8 +193,10 @@ public class UI_LogSwapHighlight : MonoBehaviour
         LogSwapSlotInfo _info = uiInventory.LogSwapInfo;
 
         // _info.slotIndex 번째 슬롯 위로 하이라이트를 옮기고 켠다
-        // _info.count 로 "N개가 버려집니다" 같은 안내도 붙일 수 있다
         highlight.SetActive(true);
+
+        // 환율 한 줄. 종류 이름은 기존 로컬라이징 매핑을 쓰면 된다.
+        rateText.text = $"{Name(_info.treeType)} ×{_info.count}  ↔  {Name(_info.incomingTreeType)} ×{_info.incomingCount}   ({_info.exchangeRate:0.#} : 1)";
     }
 
     private void OnLogSwapExecuted(LogSwapSlotInfo _info)
@@ -143,23 +209,23 @@ public class UI_LogSwapHighlight : MonoBehaviour
 
 ---
 
-## 6. 타이밍과 주의사항
+## 7. 타이밍과 주의사항
 
 - **`LogSwapInfoChangedEvent`는 내용이 실제로 달라졌을 때만** 발생합니다. 매 프레임 오지 않습니다.
-  같은 슬롯이라도 그 안의 개수가 바뀌면(원목을 더 주워 담는 등) 한 번 더 옵니다.
+  들어올 원목의 개수(`incomingCount`)가 바뀌어도 한 번 더 옵니다.
 - 이벤트를 **구독하는 시점에는 이미 값이 들어와 있을 수 있으므로**, 위 예시처럼 `OnEnable`에서 현재
   값을 한 번 직접 읽어 반영하세요.
-- **교체가 일어나면 슬롯 데이터는 즉시 사라집니다.** 버린 원목이 바닥으로 흩뿌려지는 연출
-  (`DropAllItem`과 같은 연출)은 그 뒤에 따라붙을 뿐이고, 데이터는 연출을 기다리지 않습니다.
+- **교체가 일어나면 슬롯 데이터는 즉시 사라집니다.** 버린 원목이 바닥으로 흩뿌려지는 연출은 그 뒤에
+  따라붙을 뿐이고, 데이터는 연출을 기다리지 않습니다.
 - 슬롯 목록 자체의 갱신은 기존 경로(`ItemRemovedFromInventorySignal` / `OffroadContainerUpdatedSignal`)로
   이미 오고 있습니다. `LogSwapExecutedEvent`는 **"그 변화가 교체 때문이었다"** 를 구분해 연출을 붙이고
-  싶을 때만 쓰면 됩니다. 목록을 다시 그리려고 쓸 필요는 없습니다.
+  싶을 때만 쓰면 됩니다.
 - 인벤토리를 닫아도 값은 그대로 남아 있습니다. "닫혀 있으면 안 보여준다"는 판단은 UI가 하세요
   (`UI_Inventory.IsOpening`).
 
 ---
 
-## 7. 교체 키 아이콘
+## 8. 교체 키 아이콘
 
 교체 키는 리바인딩 가능한 액션으로 등록되어 있습니다.
 
@@ -175,7 +241,7 @@ public class UI_LogSwapHighlight : MonoBehaviour
 
 ---
 
-## 8. 신호 흐름 (참고)
+## 9. 신호 흐름 (참고)
 
 ```
 InputReader.LogSwapKeyPressedEvent
@@ -200,14 +266,31 @@ UI에서 신호를 직접 구독할 일은 없습니다. `UI_Inventory` / `UI_St
 
 ---
 
-## 9. 관련 파일
+## 10. 함께 바뀐 것 — 흡입 선점 (UI 무관, 참고)
+
+가방이 거의 찼을 때 **어느 원목이 마지막 칸을 가져가는지**도 같은 원칙으로 돌아갑니다.
+
+> 칸의 가치 = 개당 가치 × min(지금 보이는 개수, 슬롯 최대 중첩)
+
+개당 가치만 보면 보석 **한 개**(황금 소나무 60)가 마지막 칸을 잠그고, 뒤따르는 일반 자작 15개(600)를
+통째로 튕겨냈습니다. 지금은 "보이는 만큼"이 더 큰 쪽이 칸을 가져갑니다. 선점과 교체가 같은 값을 보고
+움직이므로 "비싸다고 먼저 먹어놓고 싸다고 버리는" 모순이 생기지 않습니다.
+
+개당 가치는 **기본 가치 × 등급 배율**의 실제 값입니다(`LogValue`). 등급 배율(황금 ×5 / 다이아 ×10 /
+프리즘 ×20)은 `LogItemValueDataBase`가 단일 출처이고, 제재소 평가(`LogEvaluator`)도 같은 표를 봅니다.
+
+---
+
+## 11. 관련 파일
 
 | 파일 | 역할 |
 |---|---|
-| `Application Layer/UnitSystem/LogSwap/LogSwapTypes.cs` | `LogSwapSlotInfo`, `ELogSwapTarget`, 가치 비교 기준 |
+| `Application Layer/UnitSystem/LogSwap/LogSwapTypes.cs` | `LogSwapSlotInfo`, `ELogSwapTarget`, `LogValue`(실제 가치 창구) |
+| `Application Layer/ObjectSystem/Item/LogItemValueDataBase.cs` | 기본 가치 + 등급 배율의 단일 출처 |
 | `Application Layer/UnitSystem/InventoryManager/InventoryManager.cs` | 인벤토리 쪽 교체 판정/실행 (`교체 시스템(인벤토리)` 구역) |
 | `Application Layer/UnitSystem/OffroadContainer/OffroadContainer.cs` | 운반 상자 쪽 교체 판정/실행 (`교체 시스템(이동식 운반 상자)` 구역) |
 | `Application Layer/UnitSystem/UnitSystem.cs` | 두 쪽 중 어디를 쓸지 결정하고 신호 발행 |
 | `Application Layer/UISystem/Coordinator/Gameplay/GameplayUICoordinator.cs` | 키 입력 게이트 + UI로 전달 |
+| `Presentation Layer/UnitSystem/ItemDetector.cs` | 흡입 선점 정렬 |
 | `Presentation Layer/UISystem/UIView/Popup/Inventory/UI_Inventory.cs` | 인벤토리 UI가 받는 값 |
 | `Presentation Layer/UISystem/UIView/WorldPopup/WoodenStorage/UI_Storage.cs` | 운반 상자 UI가 받는 값 |

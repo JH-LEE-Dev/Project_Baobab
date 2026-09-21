@@ -459,8 +459,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         transferringSlots.Clear();
         bIsInteracting = false;
-        swapBlockedOrder = LogSlotPriority.NONE;
-        swapValidateTimer = 0f;
+        ClearLogSwapRequest();
         lastTransferTime = -transferInterval;
         currentDepositPitch = DEPOSIT_PITCH_MIN;
         lastDepositPitchTime = -999f;
@@ -563,15 +562,16 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
         else
         {
-            // 인벤토리 -> 운반 상자 방향은 값비싼 슬롯부터 옮긴다(TreeType + LogState가 높은 순,
-            // 같으면 많이 쌓인 순). 상자가 도중에 가득 차더라도 값싼 원목만 가방에 남게 하기 위해서다.
-            // 슬롯 순서대로 옮기면 어느 원목이 살아남는지가 "가방에 먼저 들어온 순서"에 달리게 된다.
+            // 인벤토리 -> 운반 상자 방향은 값비싼 슬롯부터 옮긴다(개당 가치 높은 순, 같으면 많이 쌓인 순).
+            // 상자가 도중에 가득 차더라도 값싼 원목만 가방에 남게 하기 위해서다. 슬롯 순서대로 옮기면
+            // 어느 원목이 살아남는지가 "가방에 먼저 들어온 순서"에 달리게 된다.
             InventorySlot bestSlot = null;
-            int bestOrder = LogSlotPriority.NONE;
+            long bestUnitValue = LogValue.NONE;
             int bestCount = 0;
 
             // 자리가 없어 거절당한 슬롯 중 가장 비싼 것. 하나라도 있으면 교체 발동 조건 1이 성립한다.
-            int blockedOrder = LogSlotPriority.NONE;
+            LogItemData blockedData = null;
+            long blockedUnitValue = LogValue.NONE;
 
             var charSlots = characterInventory.inventorySlots;
             for (int i = 0; i < characterInventory.currentSlotCnt; i++)
@@ -581,18 +581,22 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     if (transferringSlots.Contains(charSlot)) continue;
                     if (!(charSlot.itemData is LogItemData logSourceData)) continue;
 
-                    int order = LogSlotPriority.GetOrder(logSourceData.treeType, logSourceData.logState);
+                    long unitValue = LogValue.GetUnitValue(logSourceData.treeType, logSourceData.logState);
 
                     if (!CanAddItemByData(logSourceData))
                     {
-                        if (order > blockedOrder) blockedOrder = order;
+                        if (unitValue > blockedUnitValue)
+                        {
+                            blockedUnitValue = unitValue;
+                            blockedData = logSourceData;
+                        }
                         continue;
                     }
 
-                    if (order > bestOrder || (order == bestOrder && charSlot.count > bestCount))
+                    if (unitValue > bestUnitValue || (unitValue == bestUnitValue && charSlot.count > bestCount))
                     {
                         bestSlot = charSlot;
-                        bestOrder = order;
+                        bestUnitValue = unitValue;
                         bestCount = charSlot.count;
                     }
                 }
@@ -601,7 +605,14 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             // 교체 발동 조건 1은 "더 이상 넣을 수 없는 상황"이다. 한 종류라도 아직 들어갈 자리가
             // 있으면(bestSlot != null) 전송이 계속되는 중이므로 교체를 켜지 않는다 - 비행 중인
             // 물량 때문에 잠깐 거절되는 경우까지 교체로 오해하지 않도록 한다.
-            SetLogSwapBlockedOrder(bestSlot != null ? LogSlotPriority.NONE : blockedOrder);
+            if (bestSlot != null || blockedData == null)
+            {
+                ClearLogSwapRequest();
+            }
+            else
+            {
+                SetLogSwapBlocked(blockedData.treeType, blockedData.logState, blockedUnitValue);
+            }
 
             if (bestSlot != null)
             {
@@ -1789,24 +1800,28 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     // ── 교체 시스템(이동식 운반 상자) ───────────────────────────────────────────────
     //
-    // 인벤토리의 원목을 상자에 넣으려는데 상자에 자리가 없을 때, 상자 안의 값싼 슬롯 하나를 버려
-    // 자리를 만드는 기능이다. 발동 조건은 둘 다 만족해야 한다.
-    //   1) 상자가 가득 차서(여유 슬롯이 없어서) 더 넣지 못한다.
-    //   2) 버릴 상자 슬롯이 지금 넣으려는 원목보다 싸다. 상자 안의 모든 슬롯 중에서도 가장 싸고,
-    //      같은 값이면 가장 적게 쌓인 것.
-    // 둘째 조건을 만족하는 슬롯이 없으면 교체는 활성화되지 않는다.
+    // 인벤토리의 원목을 상자에 넣으려는데 상자에 자리가 없을 때, 상자 안의 값싼 슬롯 하나를 내려놓아
+    // 자리를 만드는 기능이다. 규칙은 인벤토리 쪽(InventoryManager의 교체 시스템 주석)과 같다 -
+    // 자격(개당 더 싸야 함, 보석 보호) / 상한(총 가치 ≤ 들어올 원목 개당 가치 × min(개수, 최대 중첩)) /
+    // 선정(총 가치 최소, 같으면 더 싼 수종) / sticky / 교체 후 쿨다운.
+    //
+    // 다른 점은 "들어올 원목이 몇 개인가"다. 인벤토리 교체에서는 바닥에 보이는 개수를 추정치로 쓰지만,
+    // 여기서는 <b>가방에 든 개수</b>라 정확한 값이다.
     //
     // 방향은 인벤토리 -> 상자일 때만이다. 마을에서는 상자 -> 인벤토리로 흐르므로(bInTown) 교체가
     // 성립하지 않는다.
 
     /// <summary>
-    /// 버려질 슬롯이 바뀌었을 때(생김 / 사라짐 / 다른 슬롯으로 옮겨감 / 개수 변화) 발생한다.
-    /// 최신 내용은 GetLogSwapInfo()로 읽는다.
+    /// 버려질 슬롯이나 들어올 원목이 바뀌었을 때(생김 / 사라짐 / 다른 슬롯으로 옮겨감 / 개수 변화)
+    /// 발생한다. 최신 내용은 GetLogSwapInfo()로 읽는다.
     /// </summary>
     public event Action SwapStateChangedEvent;
 
-    /// <summary>상자가 받아주지 못한 원목 중 가장 비싼 것의 가치 순위(LogSlotPriority). 없으면 NONE.</summary>
-    private int swapBlockedOrder = LogSlotPriority.NONE;
+    // 상자가 받아주지 못한 원목 중 가장 비싼 종류와, 그 종류가 가방에 몇 개 있는지.
+    private TreeType swapBlockedTreeType = TreeType.None;
+    private LogState swapBlockedLogState = LogState.Normal;
+    private long swapBlockedUnitValue = LogValue.NONE;
+    private int swapBlockedCount = 0;
 
     private float swapValidateTimer = 0f;
 
@@ -1821,11 +1836,19 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     /// </summary>
     private const float SWAP_VALIDATE_INTERVAL = 0.25f;
 
+    /// <summary>교체 직후 다음 제안을 띄우지 않는 시간. 결과를 눈으로 확인할 여유다.</summary>
+    private const float SWAP_COOLDOWN = 1.0f;
+
+    /// <summary>현재 띄워 둔 제안의 슬롯. 무효가 되기 전까지는 더 나은 후보가 생겨도 바꾸지 않는다.</summary>
+    private int stickyVictimSlotIndex = -1;
+
+    private float swapCooldownUntil = -999f;
+
     /// <summary>마지막으로 알린 내용. 같은 내용을 거듭 알리지 않기 위한 것이다.</summary>
     private LogSwapSlotInfo lastNotifiedSwapInfo = LogSwapSlotInfo.None;
 
     /// <summary>
-    /// 지금 교체하면 버려질 운반 상자 슬롯. 없으면 LogSwapSlotInfo.None(bHasSlot == false).
+    /// 지금 교체하면 버려질 운반 상자 슬롯과 그 자리에 들어올 원목. 없으면 LogSwapSlotInfo.None.
     ///
     /// UI는 slotIndex로 자기 슬롯 뷰를 찾으면 된다(UI_Storage가 바인딩한 IInventory.inventorySlots와
     /// 같은 인덱스).
@@ -1843,26 +1866,66 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             treeType = logData.treeType,
             logState = logData.logState,
             count = inventorySlots[slotIndex].totalCount,
+            unitValue = LogValue.GetUnitValue(logData.treeType, logData.logState),
+            incomingTreeType = swapBlockedTreeType,
+            incomingLogState = swapBlockedLogState,
+            incomingCount = Mathf.Min(swapBlockedCount, maxItemsPerSlot),
+            incomingUnitValue = swapBlockedUnitValue,
         };
     }
 
     /// <summary>
-    /// 전송 시도에서 "상자가 못 받아준 원목 중 가장 비싼 것"을 기록한다(TryTransferOneSlot이 부른다).
-    /// NONE이면 전부 받아줄 수 있었다는 뜻이라 기록을 지운다.
+    /// 전송 시도에서 "상자가 못 받아준 원목 중 가장 비싼 것"을 기록한다. 그 종류가 가방에 몇 개
+    /// 있는지도 함께 센다 - 상한은 "들어올 만큼"이기 때문이다.
     /// </summary>
-    private void SetLogSwapBlockedOrder(int _order)
+    private void SetLogSwapBlocked(TreeType _treeType, LogState _logState, long _unitValue)
     {
-        swapBlockedOrder = _order;
+        swapBlockedTreeType = _treeType;
+        swapBlockedLogState = _logState;
+        swapBlockedUnitValue = _unitValue;
+        swapBlockedCount = CountCharacterLogs(_treeType, _logState);
         swapValidateTimer = 0f;
+    }
+
+    /// <summary>기록을 지운다. lastNotifiedSwapInfo는 건드리지 않는다 - 그래야 "사라졌다"는 전이가 알려진다.</summary>
+    private void ClearLogSwapRequest()
+    {
+        swapBlockedTreeType = TreeType.None;
+        swapBlockedLogState = LogState.Normal;
+        swapBlockedUnitValue = LogValue.NONE;
+        swapBlockedCount = 0;
+        swapValidateTimer = 0f;
+        stickyVictimSlotIndex = -1;
+    }
+
+    /// <summary>가방에 든 (수종, 등급) 원목의 개수. 지금 옮기는 중인 슬롯은 빼고 센다.</summary>
+    private int CountCharacterLogs(TreeType _treeType, LogState _logState)
+    {
+        if (characterInventory == null) return 0;
+
+        int count = 0;
+        var charSlots = characterInventory.inventorySlots;
+        for (int i = 0; i < characterInventory.currentSlotCnt; i++)
+        {
+            if (!(charSlots[i] is InventorySlot charSlot) || charSlot.count <= 0) continue;
+            if (transferringSlots.Contains(charSlot)) continue;
+            if (!(charSlot.itemData is LogItemData logData)) continue;
+            if (logData.treeType != _treeType || logData.logState != _logState) continue;
+
+            count += charSlot.count;
+        }
+
+        return count;
     }
 
     /// <summary>
     /// 상자에 아직 못 넣는 원목이 남아있는지 인벤토리를 다시 훑어 기록을 갱신한다.
-    /// 상자에 자리가 생겼다면 기록이 지워지고 교체 안내도 함께 꺼진다.
+    /// 상자에 자리가 생겼거나 가방 사정이 바뀌었으면 그에 맞게 기록이 바뀌고 안내도 따라간다.
     /// </summary>
     private void RevalidateLogSwapBlockedOrder()
     {
-        int blockedOrder = LogSlotPriority.NONE;
+        LogItemData blockedData = null;
+        long blockedUnitValue = LogValue.NONE;
 
         if (characterInventory != null)
         {
@@ -1876,16 +1939,27 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 // 한 종류라도 들어갈 자리가 있으면 상자가 가득 찬 것이 아니다(TryTransferOneSlot과 같은 판정).
                 if (CanAddItemByData(logSourceData))
                 {
-                    swapBlockedOrder = LogSlotPriority.NONE;
+                    ClearLogSwapRequest();
                     return;
                 }
 
-                int order = LogSlotPriority.GetOrder(logSourceData.treeType, logSourceData.logState);
-                if (order > blockedOrder) blockedOrder = order;
+                long unitValue = LogValue.GetUnitValue(logSourceData.treeType, logSourceData.logState);
+                if (unitValue > blockedUnitValue)
+                {
+                    blockedUnitValue = unitValue;
+                    blockedData = logSourceData;
+                }
             }
         }
 
-        swapBlockedOrder = blockedOrder;
+        if (blockedData == null)
+        {
+            ClearLogSwapRequest();
+        }
+        else
+        {
+            SetLogSwapBlocked(blockedData.treeType, blockedData.logState, blockedUnitValue);
+        }
     }
 
     private void UpdateLogSwapState(float _deltaTime)
@@ -1893,9 +1967,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         // 상자에 손이 닿지 않거나(멀어짐) 마을이면 넣는 상황 자체가 아니다.
         if (bInTown || !bCanInteract || characterInventory == null)
         {
-            swapBlockedOrder = LogSlotPriority.NONE;
+            ClearLogSwapRequest();
         }
-        else if (swapBlockedOrder != LogSlotPriority.NONE)
+        else if (swapBlockedUnitValue != LogValue.NONE)
         {
             swapValidateTimer += _deltaTime;
             if (swapValidateTimer >= SWAP_VALIDATE_INTERVAL)
@@ -1913,39 +1987,68 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     }
 
     /// <summary>
-    /// 버릴 상자 슬롯을 고른다. 못 넣은 원목보다 싼 슬롯 중 <b>가장 싼 것</b>, 같은 값이면
-    /// <b>가장 적게 쌓인 것</b>이다. 조건을 만족하는 슬롯이 없으면 false.
+    /// 이 상자 슬롯이 지금의 기록에 대해 자격과 상한을 모두 통과하는지. 통과하면 총 가치와 개당 가치를 준다.
+    /// </summary>
+    private bool IsLogSwapCandidate(int _slotIndex, out long _totalValue, out long _unitValue)
+    {
+        _totalValue = 0;
+        _unitValue = 0;
+
+        if (_slotIndex < 0 || _slotIndex >= currentSlotCount) return false;
+
+        InventorySlot slot = inventorySlots[_slotIndex];
+        if (!(slot.itemData is LogItemData logData) || slot.totalCount <= 0) return false;
+
+        // 지금 이 슬롯에서 꺼내 옮기는 중이라면 건드리지 않는다.
+        if (transferringSlots.Contains(slot)) return false;
+
+        // 보석 보호
+        if (LogValue.IsGemGrade(logData.logState)) return false;
+
+        // 자격: 들어올 원목보다 개당 싸야 한다
+        _unitValue = LogValue.GetUnitValue(logData.treeType, logData.logState);
+        if (_unitValue >= swapBlockedUnitValue) return false;
+
+        // 상한: 잃는 총 가치가 "들어올 만큼"을 넘지 않아야 한다
+        _totalValue = _unitValue * slot.totalCount;
+        long gainBound = swapBlockedUnitValue * Mathf.Min(swapBlockedCount, maxItemsPerSlot);
+
+        return _totalValue <= gainBound;
+    }
+
+    /// <summary>
+    /// 버릴 상자 슬롯을 고른다. 현재 제안이 아직 유효하면 그대로 유지하고(sticky), 아니면 후보 중
+    /// 총 가치가 가장 낮은 것을(같으면 개당 가치가 낮은 쪽) 새로 고른다. 없으면 false.
     /// </summary>
     private bool TryFindLogSwapVictimSlot(out int _slotIndex)
     {
         _slotIndex = -1;
 
-        if (swapBlockedOrder == LogSlotPriority.NONE) return false;
+        if (swapBlockedUnitValue == LogValue.NONE) return false;
+        if (Time.time < swapCooldownUntil) return false;
 
-        int bestOrder = int.MaxValue;
-        int bestCount = int.MaxValue;
+        if (stickyVictimSlotIndex >= 0 && IsLogSwapCandidate(stickyVictimSlotIndex, out _, out _))
+        {
+            _slotIndex = stickyVictimSlotIndex;
+            return true;
+        }
+
+        long bestTotalValue = long.MaxValue;
+        long bestUnitValue = long.MaxValue;
 
         for (int i = 0; i < currentSlotCount; i++)
         {
-            if (!(inventorySlots[i].itemData is LogItemData logData) || inventorySlots[i].totalCount <= 0) continue;
+            if (!IsLogSwapCandidate(i, out long totalValue, out long unitValue)) continue;
 
-            // 지금 이 슬롯에서 꺼내 옮기는 중이라면 건드리지 않는다.
-            if (transferringSlots.Contains(inventorySlots[i])) continue;
-
-            int order = LogSlotPriority.GetOrder(logData.treeType, logData.logState);
-
-            // 교체 발동 조건 2: 버릴 슬롯은 지금 넣어야 할 원목보다 싸야 한다.
-            if (order >= swapBlockedOrder) continue;
-
-            int count = inventorySlots[i].totalCount;
-            if (order < bestOrder || (order == bestOrder && count < bestCount))
+            if (totalValue < bestTotalValue || (totalValue == bestTotalValue && unitValue < bestUnitValue))
             {
-                bestOrder = order;
-                bestCount = count;
+                bestTotalValue = totalValue;
+                bestUnitValue = unitValue;
                 _slotIndex = i;
             }
         }
 
+        stickyVictimSlotIndex = _slotIndex;
         return _slotIndex >= 0;
     }
 
@@ -1963,7 +2066,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         ItemDeleted(inventorySlots[info.slotIndex]);
         ContainerUpdatedEvent?.Invoke();
 
-        swapBlockedOrder = LogSlotPriority.NONE;
+        swapCooldownUntil = Time.time + SWAP_COOLDOWN;
+        ClearLogSwapRequest();
         UpdateLogSwapState(0f);
 
         if (characterInventoryManager != null)

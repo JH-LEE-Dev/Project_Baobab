@@ -143,6 +143,10 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
 
+    // 원목의 실제 가치(기본 가치 × 등급 배율)의 단일 출처. 흡입 정렬·교체 판정·전송 순서가 전부
+    // LogValue(정적 창구)를 통해 이 표를 읽는다. Initialize에서 한 번 등록한다.
+    [SerializeField] private LogItemValueDataBase logItemValueDataBase;
+
     private LogItemPoolingManager logItemPoolingManager;
     private List<LogItem> activeDroppedItems = new List<LogItem>(64);
 
@@ -188,6 +192,11 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
         // 3. 모든 아이템 타입에 대해 풀 미리 생성
         itemDataPool.WarmAll();
+
+        // 흡입 정렬(ItemDetector)과 교체 판정이 같은 가치 표를 보도록 정적 창구에 등록한다.
+        // Presentation 계층의 정적 정렬에는 인벤토리 참조를 흘려보낼 통로가 없어 Rumble과 같은 방식을 쓴다.
+        LogValue.SetDataBase(logItemValueDataBase);
+        LogValue.SetSlotCapacity(maxItemsPerSlot);
 
         ClearLogSwapRequest();
         lastNotifiedSwapInfo = LogSwapSlotInfo.None;
@@ -733,27 +742,50 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     // ── 교체 시스템(인벤토리) ────────────────────────────────────────────────────────
     //
-    // 가방이 꽉 차 바닥의 원목을 먹지 못할 때, 값싼 슬롯 하나를 버려서 자리를 만드는 기능이다.
-    // 발동 조건은 둘 다 만족해야 한다.
-    //   1) 지금 먹으려는 원목이 안 먹어진다(CanAcquired 실패 - 꽉 찼거나 빈 슬롯이 없다).
-    //   2) 버릴 슬롯이 그 원목보다 싸다. 그런 슬롯 중에서도 가장 싸고, 같은 값이면 가장 적게 쌓인 것.
-    // 둘째 조건을 만족하는 슬롯이 하나도 없으면 교체는 아예 활성화되지 않는다(더 비싼 걸 버리는
-    // 교체는 없다).
+    // 가방이 꽉 차 바닥의 원목을 먹지 못할 때, 값싼 슬롯 하나를 내려놓아 자리를 만드는 기능이다.
+    // 누를지는 유저가 정한다. 시스템은 두 가지만 보장한다.
+    //   (1) 손해인 거래는 아예 제안하지 않는다.
+    //   (2) 제안은 환율 한 줄로 설명된다 - "소나무 3개 ↔ 자작나무 5개 (환율 3.3 : 1)".
     //
-    // 실제 버리기는 교체 키를 눌렀을 때만 일어난다(ExecuteLogSwap). 여기서는 "지금 버려질 슬롯이
-    // 어느 것인가"(GetLogSwapInfo)를 계속 갱신하고, 그 내용이 달라질 때마다 SwapStateChangedEvent로
-    // 알린다. UI는 그 인덱스의 슬롯에 안내를 붙이면 된다.
+    // 제안 규칙 (셋 다 만족해야 한다)
+    //   자격 : 버릴 슬롯의 개당 가치 < 들어올 원목의 개당 가치. 보석 등급 슬롯은 절대 버리지 않는다
+    //          - 게임이 아우라와 효과음으로 "보석은 특별하다"고 가르쳐 놨는데 시스템이 버리면
+    //          계산이 맞더라도 유저에겐 엉뚱한 슬롯이 된다.
+    //   상한 : 버릴 슬롯의 총 가치 ≤ 들어올 원목의 개당 가치 × min(바닥에 보이는 개수, 슬롯 최대 중첩)
+    //          - "지금 눈에 보이는 만큼"만 이득으로 친다. 미래 습득량을 추정하는 더 정확한 공식은
+    //          만들 수 있지만 유저가 검증할 수 없고, 검증 못 하는 이득은 이득으로 느껴지지 않는다.
+    //   선정 : 자격·상한을 통과한 슬롯 중 총 가치가 가장 낮은 것("가장 싸게 살 수 있는 칸").
+    //          같으면 개당 가치가 낮은 쪽(더 싼 수종)을 골라 직관과 맞춘다.
+    //
+    // 가장 싼 수종이 들어올 때는 자격을 만족하는 슬롯이 없어 제안이 없다. "잡템 자리를 만들라"는
+    // 제안은 구조적으로 나오지 않는다.
+    //
+    // 한 번 띄운 제안은 그것이 무효가 될 때까지 바꾸지 않는다(sticky). 0.2초마다 "못 먹은 원목"이
+    // 바뀌면서 강조 슬롯이 튀어다니면 "뜬 걸 눌렀는데 그 사이 바뀌어 있었다"가 생긴다.
+    // 교체 직후에는 잠시(SwapCooldown) 다음 제안을 띄우지 않아, 버린 원목이 내려앉고 새 원목이
+    // 들어오는 결과를 눈으로 확인할 시간을 준다. 그 시간이 곧 신뢰가 쌓이는 시간이다.
 
     /// <summary>
-    /// 버려질 슬롯이 바뀌었을 때(생김 / 사라짐 / 다른 슬롯으로 옮겨감 / 개수 변화) 발생한다.
-    /// 최신 내용은 GetLogSwapInfo()로 읽는다.
+    /// 버려질 슬롯이나 들어올 원목이 바뀌었을 때(생김 / 사라짐 / 다른 슬롯으로 옮겨감 / 개수 변화)
+    /// 발생한다. 최신 내용은 GetLogSwapInfo()로 읽는다.
     /// </summary>
     public event Action SwapStateChangedEvent;
 
-    /// <summary>먹지 못한 원목 중 가장 비싼 것의 가치 순위(LogSlotPriority). 없으면 NONE.</summary>
-    private int swapRequestOrder = LogSlotPriority.NONE;
-
+    // 들어올 원목(요청): 최근 감지 틱에서 못 먹은 원목 중 가장 비싼 종류와, 그 종류가 몇 개 보였는지.
+    private TreeType swapRequestTreeType = TreeType.None;
+    private LogState swapRequestLogState = LogState.Normal;
+    private long swapRequestUnitValue = LogValue.NONE;
+    private int swapRequestCount = 0;
     private float swapRequestTime = -999f;
+
+    // 같은 프레임(= 같은 감지 틱) 안에서 거절된 원목을 종류별로 묶기 위한 누적기.
+    // 캐릭터의 감지 틱은 반경 안의 원목 전부에 한 프레임 안에서 SetSuckTarget을 걸므로,
+    // 프레임 번호가 같으면 같은 틱이다.
+    private int rejectFrame = -1;
+    private TreeType rejectBestTreeType = TreeType.None;
+    private LogState rejectBestLogState = LogState.Normal;
+    private long rejectBestUnitValue = LogValue.NONE;
+    private int rejectBestCount = 0;
 
     /// <summary>
     /// "못 먹었다" 기록의 유효 시간. 캐릭터의 아이템 감지는 0.2초(5Hz)마다 돌면서 못 먹을 때마다
@@ -761,13 +793,22 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     /// </summary>
     private const float SwapRequestLifetime = 0.5f;
 
+    /// <summary>교체 직후 다음 제안을 띄우지 않는 시간. 결과를 눈으로 확인할 여유다.</summary>
+    private const float SwapCooldown = 1.0f;
+
+    /// <summary>현재 띄워 둔 제안의 슬롯. 무효가 되기 전까지는 더 나은 후보가 생겨도 바꾸지 않는다.</summary>
+    private int stickyVictimSlotIndex = -1;
+
+    private float swapCooldownUntil = -999f;
+
     /// <summary>마지막으로 알린 내용. 같은 내용을 거듭 알리지 않기 위한 것이다.</summary>
     private LogSwapSlotInfo lastNotifiedSwapInfo = LogSwapSlotInfo.None;
 
     /// <summary>
-    /// 지금 교체하면 버려질 인벤토리 슬롯. 없으면 LogSwapSlotInfo.None(bHasSlot == false).
+    /// 지금 교체하면 버려질 인벤토리 슬롯과 그 자리에 들어올 원목. 없으면 LogSwapSlotInfo.None.
     ///
-    /// UI는 slotIndex로 자기 슬롯 뷰를 찾으면 된다(IInventory.inventorySlots와 같은 인덱스).
+    /// UI는 slotIndex로 자기 슬롯 뷰를 찾고(IInventory.inventorySlots와 같은 인덱스), 나머지로
+    /// "소나무 3개 ↔ 자작나무 5개 (환율 3.3 : 1)"을 그리면 된다.
     /// </summary>
     public LogSwapSlotInfo GetLogSwapInfo()
     {
@@ -782,45 +823,72 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             treeType = logData.treeType,
             logState = logData.logState,
             count = inventorySlots[slotIndex].totalCount,
+            unitValue = LogValue.GetUnitValue(logData.treeType, logData.logState),
+            incomingTreeType = swapRequestTreeType,
+            incomingLogState = swapRequestLogState,
+            incomingCount = Mathf.Min(swapRequestCount, maxItemsPerSlot),
+            incomingUnitValue = swapRequestUnitValue,
         };
     }
 
     /// <summary>
     /// 원목을 담지 못했음을 교체 시스템에 알린다(CanAcquired 실패 경로에서 부른다).
-    /// 한 번의 감지 틱에 여러 원목이 거절될 수 있으므로 그중 가장 비싼 것을 기준으로 삼는다 -
-    /// 교체는 "제일 아쉬운 원목을 위해" 자리를 만드는 기능이기 때문이다.
+    /// 한 번의 감지 틱에 여러 원목이 거절될 수 있으므로 그중 가장 비싼 종류를 기준으로 삼고, 그 종류가
+    /// 몇 개 보였는지 함께 센다 - 교체는 "제일 아쉬운 원목을 위해" 자리를 만드는 기능이고, 상한은
+    /// "지금 보이는 만큼"이기 때문이다.
     /// </summary>
     private void RequestLogSwap(TreeType _treeType, LogState _logState)
     {
-        int order = LogSlotPriority.GetOrder(_treeType, _logState);
+        long unitValue = LogValue.GetUnitValue(_treeType, _logState);
+        int frame = Time.frameCount;
 
-        bool expired = swapRequestOrder == LogSlotPriority.NONE
+        // 1. 같은 프레임 안에서 종류별로 묶는다. 더 비싼 종류가 나타나면 그쪽으로 갈아타고 개수를 다시 센다.
+        if (frame != rejectFrame || unitValue > rejectBestUnitValue)
+        {
+            rejectFrame = frame;
+            rejectBestTreeType = _treeType;
+            rejectBestLogState = _logState;
+            rejectBestUnitValue = unitValue;
+            rejectBestCount = 1;
+        }
+        else if (_treeType == rejectBestTreeType && _logState == rejectBestLogState)
+        {
+            rejectBestCount++;
+        }
+
+        // 2. 요청에 반영한다. 유효 시간은 "기록된 그 원목을 마지막으로 본 시각"부터 센다. 더 싼 원목이
+        //    거절됐다고 시각을 갱신하면 안 된다 - 원목 더미 위를 계속 걷는 동안 기록이 영원히 살아남아,
+        //    한 번 스쳐간 흑요목 때문에 참나무를 먹으려고 소나무를 버리는 손해 교체가 성립한다.
+        bool expired = swapRequestUnitValue == LogValue.NONE
             || Time.time - swapRequestTime > SwapRequestLifetime;
 
-        // 유효 시간은 "기록된 그 원목을 마지막으로 본 시각"부터 센다. 더 싼 원목이 거절됐다고 해서
-        // 시각을 갱신하면 안 된다 - 그렇게 하면 원목 더미 위를 계속 걷는 동안 기록이 영원히 살아남아,
-        // 한 번 스쳐간 흑요목 때문에 참나무를 먹으려고 소나무를 버리는 손해 교체가 성립한다.
-        // (그때는 "버릴 슬롯이 지금 먹어야 할 원목보다 싸다"는 발동 조건 2가 깨진 상태다)
-        if (expired || order >= swapRequestOrder)
+        if (expired || rejectBestUnitValue >= swapRequestUnitValue)
         {
-            swapRequestOrder = order;
+            swapRequestTreeType = rejectBestTreeType;
+            swapRequestLogState = rejectBestLogState;
+            swapRequestUnitValue = rejectBestUnitValue;
+            swapRequestCount = rejectBestCount;
             swapRequestTime = Time.time;
         }
     }
 
     private void ClearLogSwapRequest()
     {
-        swapRequestOrder = LogSlotPriority.NONE;
+        swapRequestTreeType = TreeType.None;
+        swapRequestLogState = LogState.Normal;
+        swapRequestUnitValue = LogValue.NONE;
+        swapRequestCount = 0;
         swapRequestTime = -999f;
+        stickyVictimSlotIndex = -1;
     }
 
     /// <summary>
-    /// 버려질 슬롯이 달라졌으면 한 번만 알린다. Update에서 매 프레임 호출된다.
+    /// 제안 내용이 달라졌으면 한 번만 알린다. Update에서 매 프레임 호출된다.
     /// (슬롯 수가 10칸 상한이라 매 프레임 훑어도 부담이 없고, 요청이 없으면 곧바로 빠져나온다)
     /// </summary>
     private void UpdateLogSwapState()
     {
-        if (swapRequestOrder != LogSlotPriority.NONE && Time.time - swapRequestTime > SwapRequestLifetime)
+        if (swapRequestUnitValue != LogValue.NONE && Time.time - swapRequestTime > SwapRequestLifetime)
         {
             ClearLogSwapRequest();
         }
@@ -833,37 +901,66 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     }
 
     /// <summary>
-    /// 버릴 슬롯을 고른다. 못 먹은 원목보다 싼 슬롯 중 <b>가장 싼 것</b>, 같은 값이면
-    /// <b>가장 적게 쌓인 것</b>이다. 조건을 만족하는 슬롯이 없으면 false.
+    /// 이 슬롯이 지금의 요청에 대해 자격과 상한을 모두 통과하는지. 통과하면 총 가치와 개당 가치를 준다.
+    /// </summary>
+    private bool IsLogSwapCandidate(int _slotIndex, out long _totalValue, out long _unitValue)
+    {
+        _totalValue = 0;
+        _unitValue = 0;
+
+        if (_slotIndex < 0 || _slotIndex >= Mathf.Min(currentSlotCount, inventorySlots.Count)) return false;
+
+        InventorySlot slot = inventorySlots[_slotIndex];
+        if (!(slot.itemData is LogItemData logData) || slot.totalCount <= 0) return false;
+
+        // 보석 보호
+        if (LogValue.IsGemGrade(logData.logState)) return false;
+
+        // 자격: 들어올 원목보다 개당 싸야 한다
+        _unitValue = LogValue.GetUnitValue(logData.treeType, logData.logState);
+        if (_unitValue >= swapRequestUnitValue) return false;
+
+        // 상한: 잃는 총 가치가 "보이는 만큼"을 넘지 않아야 한다
+        _totalValue = _unitValue * slot.totalCount;
+        long gainBound = swapRequestUnitValue * Mathf.Min(swapRequestCount, maxItemsPerSlot);
+
+        return _totalValue <= gainBound;
+    }
+
+    /// <summary>
+    /// 버릴 슬롯을 고른다. 현재 제안이 아직 유효하면 그대로 유지하고(sticky), 아니면 후보 중
+    /// 총 가치가 가장 낮은 것을(같으면 개당 가치가 낮은 쪽) 새로 고른다. 없으면 false.
     /// </summary>
     private bool TryFindLogSwapVictimSlot(out int _slotIndex)
     {
         _slotIndex = -1;
 
-        if (swapRequestOrder == LogSlotPriority.NONE) return false;
+        if (swapRequestUnitValue == LogValue.NONE) return false;
+        if (Time.time < swapCooldownUntil) return false;
 
-        int bestOrder = int.MaxValue;
-        int bestCount = int.MaxValue;
+        if (stickyVictimSlotIndex >= 0 && IsLogSwapCandidate(stickyVictimSlotIndex, out _, out _))
+        {
+            _slotIndex = stickyVictimSlotIndex;
+            return true;
+        }
+
+        long bestTotalValue = long.MaxValue;
+        long bestUnitValue = long.MaxValue;
 
         int slotCount = Mathf.Min(currentSlotCount, inventorySlots.Count);
         for (int i = 0; i < slotCount; i++)
         {
-            if (!(inventorySlots[i].itemData is LogItemData logData) || inventorySlots[i].totalCount <= 0) continue;
+            if (!IsLogSwapCandidate(i, out long totalValue, out long unitValue)) continue;
 
-            int order = LogSlotPriority.GetOrder(logData.treeType, logData.logState);
-
-            // 교체 발동 조건 2: 버릴 슬롯은 지금 먹어야 할 원목보다 싸야 한다.
-            if (order >= swapRequestOrder) continue;
-
-            int count = inventorySlots[i].totalCount;
-            if (order < bestOrder || (order == bestOrder && count < bestCount))
+            if (totalValue < bestTotalValue || (totalValue == bestTotalValue && unitValue < bestUnitValue))
             {
-                bestOrder = order;
-                bestCount = count;
+                bestTotalValue = totalValue;
+                bestUnitValue = unitValue;
                 _slotIndex = i;
             }
         }
 
+        stickyVictimSlotIndex = _slotIndex;
         return _slotIndex >= 0;
     }
 
@@ -891,7 +988,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
         UpdateInventoryEmptyState();
 
-        // 자리가 생겼으니 이번 요청은 끝났다. 여전히 못 먹는 상황이면 다음 감지 틱이 곧바로 다시 찍는다.
+        // 자리가 생겼으니 이번 요청은 끝났다. 잠시 쉬었다가, 여전히 못 먹는 상황이면 감지 틱이 다시 찍는다.
+        swapCooldownUntil = Time.time + SwapCooldown;
         ClearLogSwapRequest();
         UpdateLogSwapState();
 
@@ -910,6 +1008,9 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     public void LogCapacityIncrease(float _amount)
     {
         maxItemsPerSlot += (int)_amount;
+
+        // "보이는 만큼"의 상한이 슬롯 용량이므로, 특성으로 용량이 바뀌면 흡입 정렬 쪽에도 알린다.
+        LogValue.SetSlotCapacity(maxItemsPerSlot);
     }
 
     /// <summary>
