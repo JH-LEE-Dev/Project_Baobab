@@ -1,3 +1,15 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// [죽은 코드] 원석 / 용광로 계열.
+//
+// SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED 가 false 라서 이 파일의 코드는 한 줄도 실행되지
+// 않는다. 원석이 게임에 들어오는 입구(InDungeonObjectManager.OnTreeDead)가 막혀 있어
+// 원석 아이템이 생성되지 않고, 용광로도 열리지 않는다.
+//
+// 버그 / 회귀 검토 대상에서 제외한다. 동작하지 않는 코드라 여기서 나오는 지적은 의미가 없다.
+// 되살릴 때는 Assets/Scripts/Global/System.cs 의 그 스위치를 true 로 바꾸면 되고,
+// 그 시점에 이 헤더들도 같이 지워야 한다.
+// ─────────────────────────────────────────────────────────────────────────────
+
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -262,6 +274,11 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
     /// </summary>
     public void IncreaseFurnaceCount(float _amount)
     {
+        // 원석 계열이 꺼져 있으면 특성을 찍어도 용광로가 열리지 않는다.
+        // 현재는 어느 특성 노드도 이 커맨드를 주지 않아 어차피 0이지만,
+        // 나중에 노드가 붙었을 때 스위치를 되돌리지 않고 용광로만 살아나는 일이 없도록 여기서 막는다.
+        if (false == SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED) return;
+
         unlockedCount = Mathf.Clamp(unlockedCount + Mathf.RoundToInt(_amount), 0, furnaces.Count);
         ApplyUnlockState();
     }
@@ -883,8 +900,10 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
             shopNPC.InsertMoney(ingotValue);
 
             // 상점NPC에 꽂히는 순간. 원목이 컨테이너에 박힐 때와 같은 뽀잉/소리를 쓴다.
+            // 판매가 성사되는 순간이므로 원목 평가가 끝날 때와 같은 ConvayerPrize도 같이 울린다.
             shopNPC.TriggerBounce();
             Sound.Play(SoundID.GetItem, shopNPC.transform.position, GetSoundVolume());
+            Sound.Play(SoundID.ConvayerPrize, shopNPC.transform.position, GetSoundVolume());
         }
     }
 

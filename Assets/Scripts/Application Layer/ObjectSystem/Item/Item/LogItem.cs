@@ -87,7 +87,6 @@ public class LogItem : Item, IStaticCollidable
 
     private bool bDisableCustomSortable = false;
     private float originalDurability;
-    private float inventoryCheckTimer = 0f;
     private static readonly int UseFloatingPropertyID = Shader.PropertyToID("_UseFloating");
     private static readonly int FloatingOffsetPropertyID = Shader.PropertyToID("_FloatingOffset");
     private static readonly int ShinyEnabledPropertyID = Shader.PropertyToID("_ShinyEnabled");
@@ -696,7 +695,6 @@ public class LogItem : Item, IStaticCollidable
         transform.localScale = Vector3.one;
         landingDampTime = landingDampDuration;
         durability = originalDurability;
-        inventoryCheckTimer = 0.15f; // 스폰 시 즉시 검사하도록 설정
 
         if (null != outlineObj)
             outlineObj.SetActive(false);
@@ -1330,17 +1328,17 @@ public class LogItem : Item, IStaticCollidable
                 outlineObj.transform.localRotation = visualTransform.localRotation;
             }
         }
-
-        if (!bDrop || suckTarget == null) return;
-
-        inventoryCheckTimer += _deltaTime;
-        if (inventoryCheckTimer >= 0.15f)
-        {
-            inventoryCheckTimer = 0f;
-            CheckAcquireCondition();
-        }
     }
 
+    /// <summary>
+    /// 흡입 가능 여부를 판정하고, 가능하면 그 자리에서 흡입을 시작한다.
+    ///
+    /// <b>재시도 주기는 이 아이템이 아니라 Character가 쥐고 있다.</b> 여기서 실패하면 suckTarget을
+    /// 비우므로 아이템이 스스로 다시 검사하는 일은 없고, Character의 아이템 감지 틱
+    /// (itemDetectionInterval = 0.2초)이 반경 안의 원목 전부에 SetSuckTarget을 다시 걸어준다.
+    /// 예전에 UpdateDropped 꼬리에 있던 0.15초 자체 재검사 타이머는 그래서 죽은 코드였다 -
+    /// Dropped인 동안 suckTarget이 항상 null이라 그 앞의 가드에서 100% 조기 반환했다. 지웠다.
+    /// </summary>
     private void CheckAcquireCondition()
     {
         IInventoryChecker checker = suckerChecker ?? inventoryChecker;

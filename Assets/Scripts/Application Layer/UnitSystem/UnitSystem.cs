@@ -271,6 +271,10 @@ public class UnitSystem
     ///
     /// 주머니 한도 때문에 알갱이가 담고 있던 양을 다 못 받을 수 있으므로, 결과창 집계도
     /// 시그널이 실어온 양이 아니라 <b>실제로 받은 양</b>으로 한다.
+    ///
+    /// <b>[죽은 코드]</b> SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED 가 false 라 원석 아이템이 아예
+    /// 생성되지 않는다. GemOreAcquiredSignal 이 발행될 일이 없어 이 함수는 호출되지 않는다.
+    /// 버그 검토 대상이 아니다.
     /// </summary>
     private void GemOreAcquired(GemOreAcquiredSignal gemOreAcquiredSignal)
     {

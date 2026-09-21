@@ -1167,7 +1167,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         // 보석 단계를 거쳐 쓰러진 나무는 원목 대신 원석을 떨어뜨린다.
         // (원석은 인벤토리가 아니라 재화로 들어가므로, 원목 드랍과 배타적으로 처리한다)
-        if (_treeObj.bIsGemStage)
+        //
+        // SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED가 꺼져 있으면 이 분기를 타지 않는다.
+        // 원석 계열이 들어오기 전에는 보석 나무도 그냥 원목을 떨궜으므로, 그때의 동작 그대로다.
+        // 여기가 원석이 게임에 들어오는 유일한 입구라, 이 한 줄만 막으면 원석은 생성 자체가 없다.
+        if (SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED && _treeObj.bIsGemStage)
         {
             itemManager.SpawnGemOre(_treeObj, dropMultiplier);
         }

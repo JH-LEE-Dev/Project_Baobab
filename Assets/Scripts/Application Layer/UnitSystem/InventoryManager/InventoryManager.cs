@@ -28,6 +28,16 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     private long diamondOre = 0;
     private long prismOre = 0;
 
+    // ── [죽은 코드] 여기부터 아래 원석/주머니 관련 멤버는 전부 동작하지 않는다 ──────────────
+    //
+    // SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED 가 false 라 원석 아이템이 생성되지 않으므로
+    // GemOreEarned / ReserveGemOre / CancelGemOreReservation 이 호출되지 않고, 보유량과
+    // 획득 이력은 0/false 로 고정된다. 주머니 한도(30)도 걸릴 일이 없다.
+    // 버그 / 회귀 검토 대상에서 제외한다.
+    //
+    // 세이브 필드는 그대로 두므로 스위치를 다시 켜면 저장해 둔 값이 이어진다.
+    // ───────────────────────────────────────────────────────────────────────────────
+
     // 각 원석을 한 번이라도 얻은 적이 있는지. 보유량이 0이 되어도 유지되며 세이브에 저장된다.
     // HUD가 "발견한 재화만 표시"를 판정하는 데 쓴다(IMoneyData.HasEverAcquired).
     private bool bHasEverAcquiredGoldOre = false;
@@ -613,8 +623,13 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         }
 
         // 2. 실제 슬롯 상태를 가상 슬롯으로 복사
+        //    힙이 아니라 스택에 잡는다. 이 판정은 바닥의 원목 하나당 초당 5회(Character의 아이템
+        //    감지 틱) 돌고 그게 반경 안의 원목 수만큼 곱해지므로, 매번 배열을 새로 잡으면 가방이
+        //    꽉 찬 채 원목 더미 위에 서 있는 동안 계속 쓰레기가 쌓인다.
+        //    슬롯은 SYSTEM_VAR.MAX_INVENTORY_CNT개가 상한이라 최악이어도 20B * 10 = 200B다.
         int slotCount = Mathf.Min(currentSlotCount, inventorySlots.Count);
-        var virtualSlots = new VirtualSlot[slotCount];
+        Span<VirtualSlot> virtualSlots = stackalloc VirtualSlot[slotCount];
+
         for (int i = 0; i < slotCount; i++)
         {
             var data = inventorySlots[i].itemData as ItemData;
@@ -675,7 +690,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     // ItemAcquired()와 동일한 순서(같은 종류 슬롯에 여유가 있으면 그곳에, 없으면 첫 빈 슬롯에)로
     // 가상 슬롯에 배치를 시도한다. CanAcquired()의 판정과 ItemAcquired()의 실제 결과가
     // 항상 일치하도록 두 곳의 배치 규칙을 반드시 동일하게 유지해야 한다.
-    private bool TryPlaceVirtual(LogItem _item, VirtualSlot[] _virtualSlots)
+    private bool TryPlaceVirtual(LogItem _item, Span<VirtualSlot> _virtualSlots)
     {
         for (int i = 0; i < _virtualSlots.Length; i++)
         {
