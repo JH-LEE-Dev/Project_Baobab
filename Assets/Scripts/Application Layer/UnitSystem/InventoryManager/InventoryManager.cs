@@ -156,6 +156,11 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     [SerializeField] private float dropVisualInterval = 0.08f;
     private Coroutine dropVisualsCoroutine;
 
+    // 교체(PlayLogDropVisuals)가 쓰는 연출 순서 버퍼. 새 연출을 시작하기 전에 진행 중인 코루틴을
+    // 먼저 멈추므로, 코루틴이 읽는 도중에 이 리스트가 바뀌는 일은 없다. 교체마다 새로 잡지 않는다.
+    private readonly List<(TreeType treeType, LogState logState)> swapDropVisualPlan =
+        new List<(TreeType, LogState)>(MaxDropVisualCount);
+
     private VFXComponent vfxComponent;
 
     public void Initialize()
@@ -1357,21 +1362,22 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     {
         if (_count <= 0) return;
 
-        List<(TreeType treeType, LogState logState)> plan = new List<(TreeType, LogState)>(MaxDropVisualCount);
-
-        int visualCount = Mathf.Min(MaxDropVisualCount, _count);
-        for (int i = 0; i < visualCount; i++)
-        {
-            plan.Add((_treeType, _logState));
-        }
-
+        // 버퍼를 다시 채우기 전에 진행 중인 연출을 먼저 멈춘다 - 그 코루틴이 같은 버퍼를 읽고 있을 수 있다.
         if (dropVisualsCoroutine != null)
         {
             StopCoroutine(dropVisualsCoroutine);
             dropVisualsCoroutine = null;
         }
 
-        dropVisualsCoroutine = StartCoroutine(SpawnDropVisualsRoutine(plan, _startPos));
+        swapDropVisualPlan.Clear();
+
+        int visualCount = Mathf.Min(MaxDropVisualCount, _count);
+        for (int i = 0; i < visualCount; i++)
+        {
+            swapDropVisualPlan.Add((_treeType, _logState));
+        }
+
+        dropVisualsCoroutine = StartCoroutine(SpawnDropVisualsRoutine(swapDropVisualPlan, _startPos));
     }
 
     public float GetDropVisualDuration()

@@ -1967,7 +1967,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         // 상자에 손이 닿지 않거나(멀어짐) 마을이면 넣는 상황 자체가 아니다.
         if (bInTown || !bCanInteract || characterInventory == null)
         {
-            ClearLogSwapRequest();
+            // 마을이나 사정권 밖에서는 매 프레임 여기로 오므로, 지울 것이 있을 때만 쓴다.
+            if (swapBlockedUnitValue != LogValue.NONE) ClearLogSwapRequest();
         }
         else if (swapBlockedUnitValue != LogValue.NONE)
         {
