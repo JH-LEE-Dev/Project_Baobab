@@ -1844,6 +1844,15 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     // 데이터는 ExecuteLogSwap에서 이미 지웠으므로 여기 남는 것은 연출용 사본뿐이다.
     private bool bSwapDropPending = false;
     private LogSwapSlotInfo pendingSwapDrop = LogSwapSlotInfo.None;
+    private float swapDropPendingSince = -999f;
+
+    /// <summary>
+    /// 뚜껑 콜백(SetContainerVisualOpened)이 오지 않을 때의 안전망. VComponent.Open()은 비활성 상태면
+    /// 아무것도 하지 않고 돌아가므로, 그 경우 pending이 영영 남아 흘리기도 전송도 시작되지 않는다
+    /// (데이터는 이미 지워진 뒤라 유저는 슬롯만 잃는다). 뚜껑 연출은 0.15초면 입을 벌리니 이보다 훨씬 긴
+    /// 시간이 지나도 소식이 없으면 그냥 진행한다.
+    /// </summary>
+    private const float SWAP_DROP_PENDING_TIMEOUT = 0.6f;
 
     /// <summary>
     /// 막힌 기록을 다시 확인하는 주기. 전송 코루틴은 더 옮길 것이 없으면 멈춰버리므로, 그 뒤에
@@ -2030,11 +2039,28 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             }
         }
 
+        // 뚜껑 콜백이 끝내 오지 않으면 안전망으로 진행한다(SWAP_DROP_PENDING_TIMEOUT 주석 참고).
+        if (bSwapDropPending && Time.time - swapDropPendingSince > SWAP_DROP_PENDING_TIMEOUT)
+        {
+            PlayPendingSwapDrop();
+        }
+
         LogSwapSlotInfo info = GetLogSwapInfo();
         if (LogSwapSlotInfo.IsSame(in info, in lastNotifiedSwapInfo)) return;
 
         lastNotifiedSwapInfo = info;
         SwapStateChangedEvent?.Invoke();
+    }
+
+    /// <summary>상자로 날아오는 중인(아직 착지하지 않은) 원목이 있는지. 캐릭터/NPC 납품 모두 포함한다.</summary>
+    private bool HasItemsFlyingIntoContainer()
+    {
+        for (int i = 0; i < flyingItems.Count; i++)
+        {
+            if (!flyingItems[i].toCharacter) return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -2047,6 +2073,13 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         if (swapBlockedUnitValue == LogValue.NONE) return false;
         if (Time.time < swapCooldownUntil) return false;
+
+        // 날아오는 원목이 다 착지할 때까지는 제안하지 않는다. 전송 루프는 마지막 슬롯의 발사가 끝나는
+        // 순간 종료되고 그때 막힘 기록이 잡히는데, 발사된 원목은 ~1초 더 날아간다. 그 사이 버릴 슬롯을
+        // 비우면 날아오던 (싼) 원목이 착지하면서 그 빈 칸을 먼저 차지해, 약속한 가방 슬롯은 자리가 없어
+        // 넘어가지 못하고 유저는 버린 슬롯만 잃는다. 착지 뒤에는 주기 재검증이 기록을 그대로 두므로
+        // 제안은 최대 1초쯤 늦게 뜰 뿐 사라지지 않는다.
+        if (HasItemsFlyingIntoContainer()) return false;
 
         _slotIndex = LogSwapRule.SelectVictim(inventorySlots, currentSlotCount,
             swapBlockedUnitValue, swapBlockedCount, maxItemsPerSlot, transferringSlots, stickyVictimSlotIndex);
@@ -2078,6 +2111,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         // SetContainerVisualOpened(true)를 부를 때 PlayPendingSwapDrop이 이어받는다.
         pendingSwapDrop = info;
         bSwapDropPending = true;
+        swapDropPendingSince = Time.time;
         OpenContainerImmediately();
 
         if (bContainerVisualOpened)
