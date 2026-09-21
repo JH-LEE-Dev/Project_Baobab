@@ -96,21 +96,6 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // 전용 타격음/사망음 분기에 쓴다. 인스펙터 토글인 bIsGem(bGemVisual)과는 별개다.
     public bool bIsGemStage => currentGemStage > 0;
 
-    [Header("Gem Stage Health")]
-    [Tooltip("보석 단계로 회생할 때 체력을 일반 상태 최대 체력의 몇 배로 되살릴지. 순서대로 1단계(황금)/2단계(다이아)/3단계(프리즘).")]
-    [SerializeField] private float[] gemStageHealthMultipliers = { 2f, 3f, 3.5f };
-
-    // 해당 보석 단계의 체력 배율. 배열이 비어 있거나 단계가 범위를 벗어나면 1배(기존 동작)로 돌아간다.
-    private float GetGemStageHealthMultiplier(int _stage)
-    {
-        if (gemStageHealthMultipliers == null) return 1f;
-
-        int index = _stage - 1;
-        if (index < 0 || index >= gemStageHealthMultipliers.Length) return 1f;
-
-        return gemStageHealthMultipliers[index];
-    }
-
     // 여러 NPC가 같은 나무를 동시에 타겟팅하지 못하도록 하는 예약 플래그
     public bool bReserved { get; set; } = false;
 
@@ -670,7 +655,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         if (currentGemStage < maxGemStage)
         {
             currentGemStage++;
-            healthComponent.ReviveFullHealth(GetGemStageHealthMultiplier(currentGemStage));
+            healthComponent.ReviveFullHealth();
 
             if (treeVisualComponent != null)
             {

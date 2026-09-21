@@ -784,10 +784,6 @@ MonoBehaviour:
   collisionOffset: {x: 0, y: 0}
   bGemVisual: 0
   bDead: 0
-  gemStageHealthMultipliers:
-  - 2
-  - 3
-  - 3.5
   alphaDownRadius: 0.6
   adColliderOffset: {x: 0, y: 0.7}
   topShadowRadius: 0.3
