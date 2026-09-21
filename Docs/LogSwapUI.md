@@ -70,9 +70,11 @@ public bool IsOutgoingSwapReady { get; }             // 지금 키를 누르면 
 | 인벤토리 교체 (`IsLogSwapReady`) | `LogSwapInfo.slotIndex` | 이 칸이 **버려짐** |
 | 운반 상자 교체 (`IsOutgoingSwapReady`) | `OutgoingSlotIndex` | 이 칸이 **상자로 넘어감** (버려지는 건 상자 쪽 슬롯) |
 
-둘은 동시에 true가 되지 않습니다(`ActiveLogSwapTarget`이 한쪽만 가리킵니다). 운반 상자 교체는 **Tab 한 번으로
-끝납니다** — 상자 슬롯을 비운 뒤 표시된 가방 슬롯이 곧바로 상자로 날아가며, E를 다시 누를 필요가 없습니다.
-비운 자리에 여유가 남고 같은 종류의 가방 슬롯이 더 있으면 그것까지 이어서 들어갑니다. 상자 앞에 서면 상자 UI와
+둘은 동시에 true가 되지 않습니다(`ActiveLogSwapTarget`이 한쪽만 가리킵니다).
+
+**교체 한 번 = 슬롯 하나가 빠지고 슬롯 하나가 들어옵니다.** 인벤토리 교체면 비운 칸에 바닥의 원목이 곧바로
+흡입되고, 운반 상자 교체면 상자 슬롯을 비운 뒤 "넘어감"으로 표시된 가방 슬롯 하나가 곧바로 상자로
+날아갑니다. 어느 쪽도 E를 다시 누를 필요가 없습니다. 상자 앞에 서면 상자 UI와
 가방이 자동으로 열리는 그 순간 이 값들이 함께 들어옵니다 — **E를 누르기 전에** 뜹니다.
 
 ### 2-2. 이동식 운반 상자 (`UI_Storage` — `UIView_WorldPopup.ui_CarStorage` 인스턴스)

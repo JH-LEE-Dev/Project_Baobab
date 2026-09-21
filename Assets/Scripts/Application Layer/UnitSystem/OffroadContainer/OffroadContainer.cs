@@ -502,14 +502,12 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     }
 
     /// <summary>
-    /// 슬롯 단위로 전송을 이어간다.
-    ///
-    /// _bUntilNothingFits: 상호작용 키와 무관하게 <b>더 넣을 것이 없을 때까지</b> 계속한다. 교체(Tab)로
-    /// 시작된 전송이 이 모드다 - 유저는 Tab 한 번으로 "상자 비우기 → 원목 넣기"가 끝나기를 기대하지,
-    /// 비운 뒤 E를 다시 누르라는 요구를 받지 않는다. 비운 자리의 용량이 다 차면 TryTransferOneSlot이
-    /// false를 돌려 스스로 멈춘다. false면 기존 동작 - 키를 뗀 상태에서 한 슬롯이 끝나면 중단한다.
+    /// 슬롯 단위로 전송을 이어간다. 상호작용 키를 누르고 있는 동안 계속하고, 키를 뗀 상태에서 한 슬롯이
+    /// 끝나면 멈춘다. 교체(Tab)로 시작된 전송도 같은 규칙을 탄다 - 그래서 Tab만 눌렀으면 정확히 한 슬롯
+    /// (교체 안내에 "넘어감"으로 표시된 것)이 넘어가고 멈춘다. "슬롯 하나가 빠지고 슬롯 하나가 들어온다"가
+    /// 교체 한 번의 정의다.
     /// </summary>
-    private IEnumerator TransferAllItemsRoutine(bool _bUntilNothingFits = false)
+    private IEnumerator TransferAllItemsRoutine()
     {
         if (characterInventory == null) yield break;
 
@@ -538,8 +536,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 yield return null;
             }
 
-            // 한 슬롯이 비워진 시점에 키 입력을 뗀 상태라면 중단 (교체로 시작된 전송은 예외 - 위 주석 참고)
-            if (!bIsInteracting && !_bUntilNothingFits)
+            // 한 슬롯이 비워진 시점에 키 입력을 뗀 상태라면 중단
+            if (!bIsInteracting)
             {
                 break;
             }
@@ -2074,15 +2072,14 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 transform.position + new Vector3(0f, 0.2f, 0f));
         }
 
-        // 교체 키를 눌렀다는 것 자체가 "이 원목을 상자에 넣겠다"는 뜻이므로, E를 누르고 있지 않아도 전송을
-        // 시작하고 더 넣을 것이 없을 때까지 이어간다(_bUntilNothingFits). Tab 한 번으로 "상자 비우기 →
-        // 원목 넣기"가 끝나야지, 비운 뒤 E를 다시 누르라고 요구하면 안 된다. 비운 자리는 방금 버린
-        // 슬롯 하나뿐이라, 그 자리가 차면 TryTransferOneSlot이 false를 돌려 스스로 멈춘다 - 가장 비싼
-        // 종류(= 교체 안내에 "넘어감"으로 표시된 것)가 먼저 들어가고, 같은 종류의 다른 슬롯이 있고 자리가
-        // 남으면 그것까지 들어간다.
+        // 교체 한 번 = 슬롯 하나가 빠지고 슬롯 하나가 들어온다. 방금 상자 슬롯을 비웠으니, 교체 안내에
+        // "넘어감"으로 표시된 가방 슬롯을 곧바로 넣는다 - E를 다시 누르라고 요구하지 않는다.
+        // TransferAllItemsRoutine은 키를 뗀 상태면 한 슬롯 뒤 스스로 멈추므로 정확히 그 슬롯 하나만 넘어간다
+        // (TryTransferOneSlot이 가장 비싼 종류 = 방금 막혀 있던 그 종류를 먼저 고른다). E를 누른 채였다면
+        // 그건 E의 동작이라 평소처럼 이어진다.
         if (bCanInteract && transferCoroutine == null && HasAnyItemToTransfer())
         {
-            transferCoroutine = StartCoroutine(TransferAllItemsRoutine(true));
+            transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
         }
 
         return info;
