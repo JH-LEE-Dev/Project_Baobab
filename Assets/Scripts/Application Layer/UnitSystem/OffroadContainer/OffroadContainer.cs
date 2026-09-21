@@ -2079,6 +2079,11 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         // 그건 E의 동작이라 평소처럼 이어진다.
         if (bCanInteract && transferCoroutine == null && HasAnyItemToTransfer())
         {
+            // 상자 슬롯이 비워지는 것과 가방 원목이 출발하는 것이 같은 순간이어야 한다. 전송 루프의 첫 대기
+            // (transferInterval, E 연타 완충용)는 여기선 뜻이 없으므로 직전 전송 시각을 밀어 첫 스텝이 즉시
+            // 나가게 한다 - 이걸 안 하면 E로 상자를 채우다 막힌 직후 Tab을 눌렀을 때 가방 쪽이 최대 0.5초
+            // 멈춘 것처럼 보인다.
+            lastTransferTime = -transferInterval;
             transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
         }
 
