@@ -81,18 +81,6 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
     [Tooltip("비행 그림이 그려질 정렬 레이어. 원목 납품 연출과 같은 곳에 둔다.")]
     [SerializeField] private string flyingSortingLayer = "FlyingItem";
 
-    // ──────────────────────────────────────────────────────────────────────
-    // 테스트용 임시 값. 정식 빌드 전에 둘 다 0으로 되돌릴 것.
-    // 특성을 찍지 않고도 용광로를 굴려보기 위한 것이며, 0이면 아무 일도 하지 않으므로
-    // 되돌릴 때 코드를 지울 필요 없이 인스펙터 값만 0으로 두면 된다.
-    // ──────────────────────────────────────────────────────────────────────
-    [Header("디버그 (테스트용 - 배포 전 0으로)")]
-    [Tooltip("특성과 무관하게 처음부터 열어둘 용광로 수. 0이면 특성대로만 열린다.")]
-    [SerializeField] private int debugUnlockedFurnaceCount = 0;
-
-    [Tooltip("마을에 처음 들어올 때 한 번 지급할 황금 원석. 0이면 지급하지 않는다.")]
-    [SerializeField] private int debugStartGoldOre = 0;
-
     private readonly List<BlastFurnace> furnaces = new List<BlastFurnace>(3);
 
     // 타일이 정해준 마을에서의 자리. 던전에 다녀와도 여기로 되돌아온다.
@@ -147,9 +135,6 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
 
     // 한 번에 한 개씩만 날리기 위한 회전 인덱스. 원목도 슬롯 하나씩 직렬로 보내므로 같은 방식으로 맞췄다.
     private int oreSendCursor = 0;
-
-    // 테스트용 황금 원석을 이미 줬는지. 마을에 들어올 때마다 다시 주지 않도록 한 번만 켠다.
-    private bool bDebugOreGranted = false;
 
     // 착지 사운드의 피치/볼륨 상승. 값과 규칙 모두 LogContainer가 원목을 받을 때와 같다.
     private const float DepositPitchMin = 1.0f;
@@ -348,12 +333,6 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
             furnaces.Add(furnace);
         }
 
-        // 테스트용 선해금. 0이면 건드리지 않으므로 특성대로만 열린다.
-        if (debugUnlockedFurnaceCount > 0)
-        {
-            unlockedCount = Mathf.Clamp(debugUnlockedFurnaceCount, 0, furnaces.Count);
-        }
-
         ApplyUnlockState();
     }
 
@@ -439,8 +418,6 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
 
         // 자리가 정해진 뒤에 "가운데"가 확정되므로 여기서 다시 고른다.
         ApplyUnlockState();
-
-        GrantDebugOre();
     }
 
     /// <summary>
@@ -477,22 +454,6 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
         int high = Mathf.Clamp(low + 1, 0, _tilePositions.Count - 1);
 
         return Vector3.Lerp(_tilePositions[low], _tilePositions[high], _index - low);
-    }
-
-    /// <summary>
-    /// 테스트용 황금 원석 지급. 세이브 로드가 끝난 뒤(마을 진입 시점)에 한 번만 준다.
-    /// Initialize에서 주면 곧바로 세이브 로드가 덮어써서 사라지기 때문이다.
-    /// debugStartGoldOre가 0이면 아무 일도 하지 않는다.
-    /// </summary>
-    private void GrantDebugOre()
-    {
-        if (debugStartGoldOre <= 0 || true == bDebugOreGranted) return;
-        if (inventory == null) return;
-
-        bDebugOreGranted = true;
-        inventory.GemOreEarned(GemOreType.Gold, debugStartGoldOre);
-
-        Debug.Log($"[BlastFurnace] 테스트용 황금 원석 {debugStartGoldOre}개 지급. 배포 전 debugStartGoldOre를 0으로 되돌릴 것.");
     }
 
     /// <summary>마을에 도착했을 때. 타일이 정해준 자리로 되돌린다.</summary>
@@ -563,7 +524,7 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
             if (false == (item.Payload is BlastFurnace furnace)) continue;
 
             furnace.CancelOreReservation();
-            inventory?.GemOreEarned(furnace.GemOreType, 1);
+            RefundOre(furnace.GemOreType, 1);
 
             flyingItems.RemoveAt(i);
             ReturnFlyingItem(item);
@@ -652,11 +613,12 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
     }
 
     /// <summary>
-    /// 지금 상태를 구독자에게 한 번 다시 보낸다.
+    /// 지금 상태를 구독자에게 한 번 다시 보낸다. 변화가 없어도 강제로 보낸다.
     ///
-    /// Initialize()가 이미 UpdateUIDatas()를 한 번 돌려 "직전 상태"를 채워두기 때문에, 그 뒤에 구독한
-    /// 쪽(TownSystem.BindEvents는 Initialize 다음에 불린다)은 다음에 무언가 바뀔 때까지 목록을
-    /// 한 번도 못 받는다. 구독 직후 이걸 불러 최초 1회를 보장한다.
+    /// UpdateUIDatas는 구성이 바뀐 프레임에만 이벤트를 쏘고 "직전 상태"를 기억하므로, 늦게 구독한
+    /// 쪽은 다음 변화까지 목록을 한 번도 못 받는다. TownSystem.StartTownSystem이 배치를 끝낸 뒤
+    /// 이걸 불러 최초 1회(그리고 던전 복귀마다 1회)를 보장한다. 그 시점에는 UI가 시그널 구독을
+    /// 끝냈고 위치도 확정돼 있다.
     /// </summary>
     public void NotifyUIState()
     {
@@ -908,7 +870,7 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
             // 빠진 재화가 조용히 사라지는 것만은 막는다.
             if (furnace.InsertOre(1) <= 0)
             {
-                inventory?.GemOreEarned(furnace.GemOreType, 1);
+                RefundOre(furnace.GemOreType, 1);
                 return;
             }
 
@@ -955,6 +917,23 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
 
         // 0.075초 간격으로 연달아 들어오므로 연속 전용(약한) 파형을 쓴다(LogContainer와 동일).
         Rumble.Play(EHapticEvent.ItemStream);
+    }
+
+    /// <summary>
+    /// 발사 시점에 주머니에서 뺀 원석을 되돌린다.
+    ///
+    /// 뺀 만큼만 돌려주는 것이고 마을에서는 원석이 새로 들어올 일이 없으므로 자리는 항상 있다.
+    /// 그래도 주머니 한도에 막히면 재화가 조용히 사라지는 것이라, 그 경우만 눈에 띄게 남긴다.
+    /// </summary>
+    private void RefundOre(GemOreType _gemOreType, long _amount)
+    {
+        if (inventory == null) return;
+
+        long accepted = inventory.GemOreEarned(_gemOreType, _amount);
+        if (accepted >= _amount) return;
+
+        Debug.LogWarning($"[BlastFurnace] 원석 환불이 주머니 한도에 막혔습니다({accepted}/{_amount}). " +
+                         "발사할 때 뺀 만큼 돌려주는 것이라 이 경우는 없어야 합니다.");
     }
 
     private FlyingSpriteItem GetFlyingItem()
@@ -1015,12 +994,29 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
         }
 
         // 경합 상대가 없을 때는 집을 건드리지 않아야 한다(항상 true로 되돌려 둔다).
-        if (tent != null)
-        {
-            tent.SetCanReach(nearestFurnace == null || tentWins);
-        }
+        bool tentCanReach = nearestFurnace == null || tentWins;
 
-        UpdateGroupOutline();
+        // 꺼지는 쪽을 먼저, 켜지는 쪽을 나중에 알린다.
+        //
+        // 캐릭터 위 E 안내는 대상마다 따로 세지 않고 마지막 알림을 그대로 따른다(UIView_Unit.InteractionStateChange).
+        // 그래서 집이 "켜짐"을 보낸 뒤에 용광로가 "꺼짐"을 보내면, 집 앞에 서 있는데 안내가 사라진다.
+        // 용광로에서 집 쪽으로 걸어 넘어가는 프레임이 정확히 그 순서였다.
+        if (tent == null)
+        {
+            UpdateGroupOutline();
+        }
+        else if (true == tentCanReach)
+        {
+            // 집이 켜지는 차례. 용광로 쪽은 꺼지거나 그대로이므로 먼저 보낸다.
+            UpdateGroupOutline();
+            tent.SetCanReach(true);
+        }
+        else
+        {
+            // 용광로가 켜지는 차례. 집을 먼저 꺼야 용광로의 "켜짐"이 마지막에 남는다.
+            tent.SetCanReach(false);
+            UpdateGroupOutline();
+        }
     }
 
     /// <summary>

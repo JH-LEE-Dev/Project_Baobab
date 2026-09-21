@@ -381,6 +381,8 @@ public enum SkillCommandType
     // (저장된 특성 데이터가 열거형 정수값으로 남아 있기 때문).
     BlastFurnace,
     BlastFurnaceSpeed,
+    SpeciesImprovement, // 수종 개량
+    GemOrePouchExpansion, // 원석 주머니 확장
 }
 
 public enum AbilityLevelUpRejectReason

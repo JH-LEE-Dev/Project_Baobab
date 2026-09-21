@@ -69,10 +69,14 @@ public class GemOreItemController : MonoBehaviour, IGemOreAuraProvider
     private float tileWorldSize = 1f;
     private bool tileWorldSizeMeasured = false;
 
-    public void Initialize(ICharacter _character, ITilemapDataProvider _tilemapDataProvider)
+    // 주머니에 자리가 있는지 물어볼 곳. 가득 차 있으면 원석이 바닥에 그대로 남는다.
+    private IInventoryChecker inventoryChecker;
+
+    public void Initialize(ICharacter _character, ITilemapDataProvider _tilemapDataProvider, IInventoryChecker _inventoryChecker)
     {
         character = _character;
         tilemapDataProvider = _tilemapDataProvider;
+        inventoryChecker = _inventoryChecker;
         tileWorldSizeMeasured = false;
 
         // 반짝임 파티클("Shiny")은 이 컴포넌트가 풀로 들고 있다가 원석마다 빌려준다.
@@ -324,6 +328,11 @@ public class GemOreItemController : MonoBehaviour, IGemOreAuraProvider
     {
         _item.IsPooled = true;
 
+        // 도착하지 못하고 사라지는 경우(던전 이탈/정리/사망)에 잡아둔 자리를 돌려준다.
+        // 활성 원석이 사라지는 길은 전부 TryReleaseGemOreItem을 지나므로 여기 하나로 덮인다.
+        // 도착해서 이미 돌려준 경우에는 아무 일도 하지 않는다.
+        _item.ReleaseGemOreReservation();
+
         // 빌려간 아우라를 여기서 바로 회수한다. ResetItem은 다음 획득 때 호출되므로,
         // 그때까지 기다리면 풀에서 쉬고 있는 원석들이 아우라를 붙든 채로 남는다.
         _item.ReleaseGemAura();
@@ -375,6 +384,11 @@ public class GemOreItemController : MonoBehaviour, IGemOreAuraProvider
     {
         // 원목 획득과 동일한 손맛(짧은 톡 하는 진동)
         Rumble.Play(EHapticEvent.ItemPickup);
+
+        // 도착했으므로 흡입을 시작할 때 잡아둔 자리를 먼저 돌려준다.
+        // 이걸 아래 이벤트보다 먼저 해야 그 자리에 실제로 담긴다(순서가 뒤집히면 자기가 잡아둔
+        // 자리에 막혀 한 톨도 못 담는다).
+        _item.ReleaseGemOreReservation();
 
         GemOreItemAcquiredEvent?.Invoke(_item);
 
@@ -476,7 +490,7 @@ public class GemOreItemController : MonoBehaviour, IGemOreAuraProvider
             if (oreItem == null) continue;
 
             oreItem.transform.position = spawnPos;
-            oreItem.Initialize(typeData, sizeBuffer[i], amountBuffer[i], character);
+            oreItem.Initialize(typeData, sizeBuffer[i], amountBuffer[i], character, inventoryChecker);
 
             // 포물선 운동 설정 (LogItemController.SpawnLogItem과 동일한 값)
             Vector3 startPos = spawnPos;

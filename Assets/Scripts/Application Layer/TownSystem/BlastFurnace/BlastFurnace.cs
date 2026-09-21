@@ -89,7 +89,8 @@ public class BlastFurnace : MonoBehaviour
     // 가공 규칙(필요 원석/가공량/주괴 가치). BlastFurnaceManager가 생성 직후 넣어준다.
     private BlastFurnaceRecipe recipe;
 
-    // 넣어둔 원석. 레시피 개수만큼 차면 한 번에 차감되고 가공이 시작된다.
+    // 넣어둔 원석. 레시피 개수만큼 차면 가공이 시작되고, 그 몫은 가공이 끝날 때 한 번에 빠진다.
+    // 도는 동안에도 남아 있으므로 숫자가 중간에 줄지 않는다.
     private int storedOre = 0;
 
     // 날아오는 중이라 아직 도착하지 않은 원석. 재화는 발사 시점에 이미 빠졌으므로,
@@ -124,16 +125,21 @@ public class BlastFurnace : MonoBehaviour
 
     public BlastFurnaceRecipe Recipe => recipe;
 
-    /// <summary>넣어둔 원석 수(아직 가공에 들어가지 않은 것).</summary>
+    /// <summary>
+    /// 용광로에 들어 있는 원석 수. <b>가공 중인 배치도 여기 그대로 남아 있다.</b>
+    /// 한 배치에 들어간 원석은 가공이 끝나는 순간에 한 번에 빠진다.
+    /// </summary>
     public int StoredOre => storedOre;
 
     /// <summary>
     /// 더 받을 수 있는 원석 수.
     ///
     /// 한도는 "주괴 하나에 드는 원석 수"가 아니라 <b>용광로의 저장 한도</b>다. 둘을 같게 묶으면
-    /// 10개가 차는 즉시 가공에 들어가 보관이 비고, 다시 10개만 받은 뒤 그게 가공 중이라 막혀서
-    /// 아무리 많이 들고 있어도 20개(가공 중 10 + 대기 10)에서 멈춰버린다.
+    /// 10개를 받은 뒤로는 영영 더 받지 못한다.
     /// 한도가 0이면 무제한이라 가진 원석을 전부 쌓아둘 수 있다.
+    ///
+    /// 가공 중인 배치도 storedOre에 남아 있으므로 그동안 자리를 계속 차지한다. 지금은 모든
+    /// 레시피가 무제한(0)이라 차이가 없지만, 한도를 두게 되면 이 점을 감안해 잡아야 한다.
     ///
     /// 날아오는 중인 것(pendingOre)까지 빼야 과발사로 재화가 새지 않는다.
     /// </summary>
@@ -224,10 +230,29 @@ public class BlastFurnace : MonoBehaviour
     }
 
     /// <summary>가공 규칙을 넣어준다. 등급도 규칙을 따라간다.</summary>
+    /// <summary>
+    /// 이 용광로가 쓸 가공 규칙을 넣습니다.
+    ///
+    /// 종류(gemOreType)를 레시피에서 <b>조건부로만</b> 받는 이유:
+    /// BlastFurnaceRecipe는 struct라 BlastFurnaceManager.FindRecipe()가 못 찾으면 default를
+    /// 돌려주고, 그 gemOreType은 None이다. 그걸 그대로 대입하면 <b>바로 앞줄에서 부른
+    /// SetGemOreType()이 정해준 종류가 덮여</b> 용광로가 무종류가 된다. 이 클래스에는
+    /// recipe/gemOreType에 대한 null·None 가드가 없어서 그 뒤로는 조용히 어긋난다.
+    ///
+    /// 지금 이 경우가 없는 것은 DemoContentStripper가 레시피 <b>항목을 지우지 않고
+    /// 스프라이트 참조만 끊기</b> 때문이다. 그 전제가 바뀌는 순간(= 안 쓰는 항목을 배열에서
+    /// 빼는 순간) 깨지므로, 전제에 기대지 않도록 여기서 막는다.
+    ///
+    /// None이 아닌 값이 올 때의 동작은 종전과 완전히 동일하다.
+    /// </summary>
     public void SetRecipe(BlastFurnaceRecipe _recipe)
     {
         recipe = _recipe;
-        gemOreType = _recipe.gemOreType;
+
+        if (GemOreType.None != _recipe.gemOreType)
+        {
+            gemOreType = _recipe.gemOreType;
+        }
     }
 
     /// <summary>가공 속도 배율. 1이면 초당 1씩 가공량이 준다(가속 특성이 이 값을 올린다).</summary>
@@ -259,7 +284,11 @@ public class BlastFurnace : MonoBehaviour
     }
 
     /// <summary>
-    /// 원석이 다 모였고 놀고 있으면 한 배치를 시작한다. 원석은 여기서 한 번에 차감된다.
+    /// 원석이 다 모였고 놀고 있으면 한 배치를 시작한다.
+    ///
+    /// <b>여기서 원석을 빼지 않는다.</b> 넣자마자 숫자가 줄어버리면 원석이 사라진 것처럼 보이므로,
+    /// 이번 배치에 들어간 몫은 가공이 끝나는 순간(UpdateSmelting)에 한 번에 뺀다.
+    /// 그래서 가공이 도는 동안에는 필요 개수만큼이 계속 차 있는 상태로 보인다.
     /// </summary>
     private void TryStartSmelting()
     {
@@ -267,7 +296,6 @@ public class BlastFurnace : MonoBehaviour
         if (false == recipe.IsValid) return;
         if (storedOre < recipe.orePerIngot) return;
 
-        storedOre -= recipe.orePerIngot;
         remainingWork = recipe.workPerIngot;
 
         SetRunning(true);
@@ -291,6 +319,10 @@ public class BlastFurnace : MonoBehaviour
 
         remainingWork = 0f;
         SetRunning(false);
+
+        // 이번 배치에 들어간 원석을 여기서 비로소 뺀다(시작할 때가 아니라).
+        // Max로 감싸는 것은 배치 시작 시점에 이미 빼두던 시절의 세이브를 읽었을 때를 위한 보호다.
+        storedOre = Mathf.Max(0, storedOre - recipe.orePerIngot);
 
         // 주괴가 튀어나가는 순간. 아래 이벤트를 받은 BlastFurnaceManager가 곧바로 발사한다.
         PlayFireImpact();

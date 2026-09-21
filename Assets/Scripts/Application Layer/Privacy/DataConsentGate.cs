@@ -1,3 +1,4 @@
+using System;
 using GameAnalyticsSDK;
 using Sentry.Unity;
 using UnityEngine;
@@ -34,6 +35,18 @@ public static class DataConsentGate
     private static bool isGameAnalyticsAllowedByBuild = true;
 
     /// <summary>
+    /// 이 실행에서 Sentry 호출이 예외를 던진 적이 있는지입니다.
+    ///
+    /// GameAnalytics 쪽의 hasGameAnalyticsFailed와 같은 역할입니다.
+    /// 참이 되면 실행 중에 다시 켜려 하지 않습니다(TryCallSdk 주석 참고).
+    ///
+    /// 단 SentrySdk.Close() 실패는 여기에 반영하지 않습니다. 그 호출은 동의 전 유저의 부팅
+    /// 경로에서도 불리므로, 거기서 한 번 실패했다고 직후에 동의한 유저의 크래시 수집까지
+    /// 막아서는 안 됩니다. (ApplySentry 주석 참고)
+    /// </summary>
+    private static bool hasSentryFailed = false;
+
+    /// <summary>
     /// GameAnalytics.Initialize()를 이 실행에서 이미 호출했는지입니다.
     ///
     /// GameAnalytics.Initialized를 그대로 쓰지 않는 이유는, 그 플래그가 지원되지 않는
@@ -41,6 +54,16 @@ public static class DataConsentGate
     /// 알아야 하는 것은 "SDK가 살아 있는가"가 아니라 "내가 Initialize를 불렀는가"입니다.
     /// </summary>
     private static bool hasInitializedGameAnalytics = false;
+
+    /// <summary>
+    /// 이 실행에서 GameAnalytics 호출이 예외를 던진 적이 있는지입니다.
+    ///
+    /// 참이 되면 통계 수집을 다시 켜지 않습니다(TryCallSdk 주석 참고).
+    /// 빌드 토글(isGameAnalyticsAllowedByBuild)과 구분해 두는 이유는, 그쪽은 "쓰기로 했는가"라는
+    /// 설정이고 이쪽은 "쓸 수 있는 상태인가"라는 이번 실행의 사실이기 때문입니다. 한 변수에
+    /// 몰아넣으면 다음에 로그를 읽는 사람이 둘 중 어느 이유로 꺼졌는지 알 수 없게 됩니다.
+    /// </summary>
+    private static bool hasGameAnalyticsFailed = false;
 
     private static bool isSubscribed = false;
 
@@ -120,23 +143,36 @@ public static class DataConsentGate
     /// </param>
     private static void ApplySentry(bool _isGranted, bool _isStartup)
     {
-        bool _shouldRun = (true == _isGranted && true == isSentryAllowedByBuild);
+        bool _shouldRun = (true == _isGranted && true == isSentryAllowedByBuild
+            && false == hasSentryFailed);
 
         if (false == _shouldRun)
         {
             // 이미 꺼져 있어도 Close는 무해하다. 동의 없이 초기화된 경로가 어딘가에 남아 있더라도
             // 여기서 확실히 끊기도록 조건 없이 부른다.
-            SentrySdk.Close();
+            //
+            // 이 호출만은 앞서 실패한 적이 있어도 매번 다시 시도한다. GameAnalytics의 전송 중단과
+            // 같은 이유다 - "그만 보내라"는 요구를 SDK에 전달할 유일한 수단이기 때문이다.
+            //
+            // 나아가 실패해도 "이번 실행에서 Sentry를 포기"로 치지 않는다(_marksSdkUnusable: false).
+            // 여기는 아직 동의하지 않은 모든 유저의 부팅 경로이기도 해서, 그 순간의 실패로 플래그를
+            // 세우면 몇 초 뒤 팝업에서 "동의"를 누른 유저가 그 세션 내내 크래시 수집 없이 남는다.
+            // 첫 실행 -> 동의는 이 게임에서 가장 흔한 흐름이라 그 대가가 너무 크다.
+            if (false == TryCallSentry(() => SentrySdk.Close(), "종료", _marksSdkUnusable: false))
+            {
+                // 이 실패만은 결과를 따로 적어 둔다. 크래시 리포트가 계속 나갈 수 있다는 뜻인데,
+                // 공통 경고문만 보면 그 사실이 드러나지 않는다.
+                Debug.LogWarning("[DataConsentGate] Sentry를 닫지 못했습니다. 이번 실행 동안 크래시 " +
+                    "리포트가 계속 나갈 수 있습니다. 다음 동의 변경 때 다시 시도합니다.");
+            }
+
             return;
         }
 
         // 부팅 경로에서는 SentryConsentOptionsConfiguration이 이미 판단을 끝냈다.
         if (true == _isStartup) return;
 
-        // 이미 켜져 있으면(부팅 때 동의 상태였다가 껐다 다시 켠 것이 아니라면) 할 일이 없다.
-        if (true == SentrySdk.IsEnabled) return;
-
-        TryInitSentryMidSession();
+        TryCallSentry(() => TryInitSentryMidSession(), "실행 중 활성화");
     }
 
     /// <summary>
@@ -154,6 +190,10 @@ public static class DataConsentGate
     /// </summary>
     private static void TryInitSentryMidSession()
     {
+        // 이미 켜져 있으면(부팅 때 동의 상태였다가 껐다 다시 켠 것이 아니라면) 할 일이 없다.
+        // SDK를 건드리는 호출이라 예외 보호 안쪽에 둔다.
+        if (true == SentrySdk.IsEnabled) return;
+
         SentryUnityOptions _options = ScriptableSentryUnityOptions.LoadSentryUnityOptions();
 
         // LoadSentryUnityOptions는 SentryConsentOptionsConfiguration.Configure를 다시 부른다.
@@ -177,7 +217,8 @@ public static class DataConsentGate
 
     private static void ApplyGameAnalytics(bool _isGranted)
     {
-        bool _shouldRun = (true == _isGranted && true == isGameAnalyticsAllowedByBuild);
+        bool _shouldRun = (true == _isGranted && true == isGameAnalyticsAllowedByBuild
+            && false == hasGameAnalyticsFailed);
 
         if (false == _shouldRun)
         {
@@ -187,14 +228,31 @@ public static class DataConsentGate
 
             // GameAnalytics의 GDPR 권장 경로다. 세션은 건드리지 않는다 - EndSession은 수동 세션
             // 관리 모드를 전제로 한 API라, 자동 세션 모드에서 부르면 SDK 내부 상태가 어긋난다.
-            GameAnalytics.SetEnabledEventSubmission(false);
-            Debug.Log("[DataConsentGate] GameAnalytics 이벤트 전송을 중단했습니다.");
+            //
+            // 이 호출만은 앞서 실패한 적이 있어도 매번 다시 시도한다. "그만 보내라"는 유저의 요구를
+            // SDK에 전달하는 유일한 수단이라, 한 번 실패했다고 다음 철회까지 포기할 수는 없다.
+            if (false == TryCallGameAnalytics(() => GameAnalytics.SetEnabledEventSubmission(false),
+                "이벤트 전송 중단"))
+            {
+                // Sentry의 Close 실패와 같은 이유로 결과를 따로 적어 둔다.
+                Debug.LogWarning("[DataConsentGate] GameAnalytics 전송을 멈추지 못했습니다. 이번 실행 " +
+                    "동안 이벤트가 계속 나갈 수 있습니다. 다음 동의 변경 때 다시 시도합니다.");
+                return;
+            }
+
+            // 동의는 했는데 여기까지 왔다면 동의가 아니라 SDK 쪽 사정으로 끄는 것이다.
+            // 로그만 보고 "동의를 철회했구나"로 잘못 읽히지 않도록 문장을 갈라둔다.
+            Debug.Log(true == _isGranted
+                ? "[DataConsentGate] 동의와 무관하게 GameAnalytics를 쓸 수 없는 상태라 " +
+                  "이벤트 전송을 중단했습니다."
+                : "[DataConsentGate] GameAnalytics 이벤트 전송을 중단했습니다.");
             return;
         }
 
         if (false == hasInitializedGameAnalytics)
         {
-            GameAnalytics.Initialize();
+            if (false == TryCallGameAnalytics(() => GameAnalytics.Initialize(), "초기화")) return;
+
             hasInitializedGameAnalytics = true;
             Debug.Log("[DataConsentGate] GameAnalytics를 초기화했습니다.");
             return;
@@ -202,7 +260,86 @@ public static class DataConsentGate
 
         // 실행 중에 껐다가 다시 켠 경우. Initialize를 두 번 부르면 SDK가 세션을 다시 열어
         // 통계가 어긋나므로, 전송 스위치만 되돌린다.
-        GameAnalytics.SetEnabledEventSubmission(true);
+        if (false == TryCallGameAnalytics(() => GameAnalytics.SetEnabledEventSubmission(true),
+            "이벤트 전송 재개")) return;
+
         Debug.Log("[DataConsentGate] GameAnalytics 이벤트 전송을 재개했습니다.");
+    }
+
+    private static bool TryCallGameAnalytics(Action _call, string _what)
+    {
+        return TryCallSdk(_call, "GameAnalytics", _what, ref hasGameAnalyticsFailed, true);
+    }
+
+    /// <summary>
+    /// Sentry 호출을 예외 보호 안에서 실행합니다. (TryCallSdk 주석 참고)
+    /// </summary>
+    /// <param name="_marksSdkUnusable">
+    /// 실패했을 때 "이번 실행에서는 Sentry를 쓸 수 없다"고 볼지입니다.
+    /// SentrySdk.Close()처럼 동의하지 않은 유저의 부팅 경로에서도 불리는 호출은 false로 넘깁니다.
+    /// (ApplySentry의 주석 참고)
+    /// </param>
+    private static bool TryCallSentry(Action _call, string _what, bool _marksSdkUnusable = true)
+    {
+        return TryCallSdk(_call, "Sentry", _what, ref hasSentryFailed, _marksSdkUnusable);
+    }
+
+    /// <summary>
+    /// 데이터 수집 SDK 호출을 감싸, 예외가 이 클래스 밖으로 새어 나가지 않게 합니다.
+    ///
+    /// 이 클래스로 들어오는 길은 두 개뿐이고 둘 다 뒤에 중요한 일이 줄줄이 붙어 있습니다.
+    ///   - BootStrap.Awake: 이 호출 아래에서 씬/입력/세이브 매니저와 로컬라이제이션이 초기화됩니다.
+    ///     여기서 예외가 올라오면 게임이 통째로 서지 않습니다.
+    ///   - 설정 화면의 동의 변경 이벤트: 예외가 나가면 같은 이벤트를 듣는 다른 구독자에게
+    ///     동의 변경이 전달되지 않습니다.
+    /// 어느 쪽이든 "크래시 리포트"나 "플레이 통계"가 망가뜨릴 자격이 있는 범위를 한참 넘습니다.
+    ///
+    /// 실제로 GameAnalytics의 윈도우 네이티브 계층은 유저 이름이 비ASCII인 PC(예: C:\Users\병훈\...)
+    /// 에서 저장 폴더 생성에 실패하는 것이 확인되었습니다. 그 실패는 GA 자신의 워커 스레드에서
+    /// 로그로 끝났지만, 같은 종류의 문제가 매니지드 쪽으로 올라오지 않는다는 보장은 없습니다.
+    /// Sentry 쪽도 실행 중 활성화 경로에서 에셋을 읽고 네이티브 계층을 건드리므로 사정이 같습니다.
+    ///
+    /// _marksSdkUnusable이 참인 호출이 한 번 실패하면 이번 실행에서는 그 SDK를 다시 켜지 않습니다.
+    /// 상태를 알 수 없게 된 SDK를 계속 켜려 드는 것보다, 수집을 잃고 게임을 정상으로 두는 편이
+    /// 낫습니다. 다음 실행은 평소대로 다시 시도합니다.
+    ///
+    /// 끄는 호출(GameAnalytics 전송 중단 / SentrySdk.Close)은 실패한 뒤에도 매번 다시 시도합니다.
+    /// 그중 SentrySdk.Close는 플래그도 세우지 않습니다 - 동의 전 유저의 부팅 경로에서도 불리는
+    /// 호출이라, 거기서의 실패를 "이번 실행은 포기"로 읽으면 직후에 동의한 유저까지 말려듭니다.
+    /// (ApplyGameAnalytics, ApplySentry 참고)
+    ///
+    /// LogError가 아니라 LogWarning으로 남깁니다. 이 실패는 사람이 손댈 것이 없는 종류이고,
+    /// 에러로 남기면 Sentry 이벤트와 GameAnalytics 자체 에러 이벤트를 또 만들어냅니다.
+    /// </summary>
+    /// <param name="_hasFailed">해당 SDK의 "이번 실행에서 실패했다" 플래그입니다.</param>
+    /// <param name="_marksSdkUnusable">거짓이면 실패해도 _hasFailed를 건드리지 않습니다.</param>
+    /// <returns>호출이 예외 없이 끝났으면 true.</returns>
+    private static bool TryCallSdk(Action _call, string _sdkName, string _what, ref bool _hasFailed,
+        bool _marksSdkUnusable)
+    {
+        try
+        {
+            _call();
+            return true;
+        }
+        catch (Exception _exception)
+        {
+            // 포기하지 않는 호출에까지 "다시 켜지 않습니다"라고 적으면 로그가 거짓말을 한다.
+            string _policy = string.Empty;
+
+            if (true == _marksSdkUnusable)
+            {
+                _hasFailed = true;
+                _policy = $"이번 실행에서는 {_sdkName}를 다시 켜지 않습니다. ";
+            }
+
+            // 예외 객체를 통째로 붙인다. 삼킨 예외는 스택 트레이스가 남지 않으면 나중에
+            // 어디서 터졌는지 되짚을 방법이 없어서, 메시지만 남기면 조용한 실패가 된다.
+            // 끄는 호출이 실패한 경우의 결과(계속 나갈 수 있음)는 이 문장으로 덮이지 않으므로,
+            // 그쪽 호출 지점에서 한 줄 더 남긴다.
+            Debug.LogWarning($"[DataConsentGate] {_sdkName} {_what}에 실패했습니다. " +
+                $"{_policy}게임 동작에는 영향이 없습니다.\n{_exception}");
+            return false;
+        }
     }
 }

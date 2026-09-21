@@ -125,6 +125,11 @@ public class TownSystem : MonoBehaviour
         // 용광로 자리는 BlastColliderTilemap이 정하므로, Grid가 새로 생긴 뒤에 배치한다.
         blastFurnaceManager?.ApplyPlacement(townTileManager.BlastColliderTilemap);
 
+        // UI에 용광로 목록을 건네는 자리. 마을 시작 시점에는 UI가 시그널 구독을 끝냈고 자리도
+        // 확정됐으므로, 여기서 한 번 보내면 위치까지 맞는 목록이 처음부터 도착한다.
+        // (던전에서 돌아올 때도 지나가므로 그때도 다시 맞춰진다)
+        blastFurnaceManager?.NotifyUIState();
+
         // Grid는 매번 새로 생성되므로, 제재소 증설 단계(가공 라인 수)를 여기서 다시 반영해준다.
         // 세이브 로드나 던전 안에서의 증설이 이벤트보다 먼저 끝나 있어도 이 동기화로 항상 맞춰진다.
         ApplyProcessLineCountToGrid(logProcessingManager.ActiveLineCount);
@@ -211,8 +216,9 @@ public class TownSystem : MonoBehaviour
             blastFurnaceManager.FurnaceStateChangedEvent -= BlastFurnaceStateChanged;
             blastFurnaceManager.FurnaceStateChangedEvent += BlastFurnaceStateChanged;
 
-            // 구독이 Initialize 뒤라 최초 목록을 놓친다. 지금 상태를 한 번 받아둔다.
-            blastFurnaceManager.NotifyUIState();
+            // 여기서 최초 목록을 밀어 보내면 안 된다. 이 시점(TownSystem.Initialize)에는 UI 쪽
+            // (GameplayUICoordinator)이 아직 시그널을 구독하지 않아 그대로 버려진다.
+            // 최초 전달은 StartTownSystem에서 한다.
         }
 
         townObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;

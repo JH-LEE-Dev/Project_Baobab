@@ -394,6 +394,36 @@ public class UI_Inventory : MonoBehaviour
         }
     }
 
+    #region 원석 주머니 데이터 (그리는 코드는 아직 없음)
+
+    // 아래 셋은 "12 / 30" 같은 주머니 표시를 붙일 수 있도록 데이터만 열어둔 것이다.
+    // 값을 캐싱하지 않고 그때그때 읽으므로 언제 불러도 최신이다. 갱신 시점은 기존 경로를 그대로 쓰면 된다.
+    //   원석을 주웠을 때        CharacterEarnMoney(MoneyType)
+    //   용광로에 넣어 줄었을 때  CharactersMoneyChanged()
+    //   특성으로 한도가 커졌을 때 Refresh() (InventorySpecChangedSignal 경유)
+
+    /// <summary>주머니 한도. 황금/다이아/프리즘을 <b>합친</b> 총량의 상한이다.</summary>
+    public long GemOrePouchCapacity => null != moneyData ? moneyData.GemOrePouchCapacity : 0L;
+
+    /// <summary>지금 주머니에 든 원석 총량(세 종류 합). 한도와 함께 "12 / 30"처럼 쓰면 된다.</summary>
+    public long TotalGemOre => null != moneyData ? moneyData.TotalGemOre : 0L;
+
+    /// <summary>
+    /// 주머니가 가득 찼는지. 경고 표시를 띄울 때 쓰면 된다.
+    /// 한도보다 많이 들고 있는 상태(주머니 이전 세이브 등)에서도 true다.
+    ///
+    /// 보유량만 보고 판정한다(빨려오는 중이라 자리만 잡아둔 몫은 세지 않는다). 실제로 원석을
+    /// 더 주울 수 있는지는 InventoryManager.GemOrePouchSpace가 예약분까지 빼고 따로 판정하는데,
+    /// 그 기준으로 표시하면 알갱이가 날아오는 0.3초 동안 화면에 "0 / 30 인데 가득 참"이 뜬다.
+    /// 표시는 플레이어가 보는 숫자를 따르는 편이 맞다.
+    ///
+    /// 참고: 가득 찬 순간의 말풍선은 지금 원목 인벤토리 것과 같은 ID를 쓰고 있어 문구도 어긋나고
+    /// 둘 중 하나만 뜬다. 자세한 사정과 분리 방법은 UIView_Unit.InventoryIsFull() 주석에 있다.
+    /// </summary>
+    public bool IsGemOrePouchFull => null != moneyData && moneyData.TotalGemOre >= moneyData.GemOrePouchCapacity;
+
+    #endregion
+
     public void CharactersMoneyChanged()
     {
         if (null == moneyData)
@@ -441,6 +471,9 @@ public class UI_Inventory : MonoBehaviour
             _hud.gameObject.SetActive(_bDiscovered);
             RebuildItemsLayout();
         }
+
+        if (true == _hud.gameObject.activeSelf && _hud.GetNumber() == _amount)
+            return;
 
         _hud.SetNumber(_amount);
     }

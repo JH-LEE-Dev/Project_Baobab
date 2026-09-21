@@ -24,7 +24,10 @@ public struct BlastFurnaceUIData
     /// <summary>가공 진행도 0~1. 가공 중이 아니면 0.</summary>
     public float progress01;
 
-    /// <summary>다음 배치를 기다리며 쌓여 있는 원석 수(가공에 들어간 것은 빠진 값).</summary>
+    /// <summary>
+    /// 용광로에 들어 있는 원석 수. <b>가공 중인 배치도 포함된 값이다.</b>
+    /// 한 배치 몫은 가공이 끝나는 순간에 한 번에 빠지므로, 도는 동안에는 숫자가 줄지 않는다.
+    /// </summary>
     public int storedOre;
 
     /// <summary>주괴 하나를 만드는 데 필요한 원석 수. storedOre와 함께 "3 / 10"처럼 쓰면 된다.</summary>

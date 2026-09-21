@@ -317,7 +317,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         inDungeonResultManager = _inDungeonResultManager;
 
         itemManager = GetComponentInChildren<ItemManager>();
-        itemManager.Initialize(_inventoryChecker, character, environmentProvider.tilemapDataProvider);
+        itemManager.Initialize(_inventoryChecker, character, environmentProvider);
 
         lootManager = GetComponentInChildren<LootManager>();
         lootManager.Initialize();
@@ -453,6 +453,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         bLostAndFoundBoxSpawnedThisRun = false;
         lostAndFoundBoxPityTreeKillCount = 0;
         lostAndFoundBoxWideGreenTreeKillCount = 0;
+
+        // "원목 보험 증서"는 세이브에 영구 저장되는 전리품이므로, 매 런 시작마다 영구 획득 여부를 기준으로
+        // 탈진 구제 효과를 다시 무장한다. 예전엔 획득 시그널(LostAndFoundBoxAcquiredSignal) 한 곳에서만
+        // 켜고 탈진 1회로 소모해서, 획득한 런이 지나거나 게임을 다시 켜면(세이브 로드는 효과 플래그를
+        // 복원하지 않는다) 마을에 필러는 서 있는데 효과는 영구히 발동하지 않았다.
+        if (characterInventory is InventoryManager invMgr)
+        {
+            invMgr.SetLostAndFoundBoxEffect(bHasAcquiredLostAndFoundBox);
+        }
 
         if (_forestType == ForestType.FluffySporeForest_1)
         {
