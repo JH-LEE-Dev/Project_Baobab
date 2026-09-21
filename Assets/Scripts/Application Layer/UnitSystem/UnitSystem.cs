@@ -65,6 +65,7 @@ public class UnitSystem
         signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.Subscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.Subscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
+        signalHub.Subscribe<LogSwapRequestedSignal>(LogSwapRequested);
     }
 
     private void UnSubscribeSignals()
@@ -88,6 +89,7 @@ public class UnitSystem
         signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.UnSubscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.UnSubscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
+        signalHub.UnSubscribe<LogSwapRequestedSignal>(LogSwapRequested);
     }
 
     private void BindEvents()
@@ -142,6 +144,12 @@ public class UnitSystem
 
         offroadContainer.ItemStoredFromCharacterEvent -= ItemStoredInOffroadContainer;
         offroadContainer.ItemStoredFromCharacterEvent += ItemStoredInOffroadContainer;
+
+        inventoryManager.SwapStateChangedEvent -= LogSwapStateChanged;
+        inventoryManager.SwapStateChangedEvent += LogSwapStateChanged;
+
+        offroadContainer.SwapStateChangedEvent -= LogSwapStateChanged;
+        offroadContainer.SwapStateChangedEvent += LogSwapStateChanged;
     }
 
     private void ReleaseEvents()
@@ -163,6 +171,8 @@ public class UnitSystem
         unitLogicManager.GameEndEvent -= GameEnd;
         offroadContainer.ItemTransferToContainerEvent -= InventoryItemTransferToOffroadContainer;
         offroadContainer.ItemStoredFromCharacterEvent -= ItemStoredInOffroadContainer;
+        inventoryManager.SwapStateChangedEvent -= LogSwapStateChanged;
+        offroadContainer.SwapStateChangedEvent -= LogSwapStateChanged;
     }
 
     private void CharacterSpawned(Character _character)
@@ -225,6 +235,83 @@ public class UnitSystem
     private void ItemDeleted(DeleteItemSignal deleteItemSignal)
     {
         inventoryManager.ItemDeleted(deleteItemSignal.slot);
+    }
+
+    // ── 교체 시스템 ─────────────────────────────────────────────────────────────────
+    //
+    // 인벤토리와 운반 상자가 각자 "지금 내 쪽에서 버릴 슬롯이 있는가"를 판단하고, 여기서는 둘 중
+    // 어느 쪽을 쓸지만 정한다. 유저에게 보이는 교체 키는 하나뿐이기 때문이다.
+
+    // 마지막으로 UI에 알린 내용. 같은 내용을 거듭 발행하지 않기 위한 것이다.
+    private LogSwapSlotInfo lastNotifiedInventorySwapInfo = LogSwapSlotInfo.None;
+    private LogSwapSlotInfo lastNotifiedContainerSwapInfo = LogSwapSlotInfo.None;
+
+    /// <summary>
+    /// 지금 교체 키를 누르면 어느 쪽 슬롯이 버려지는지.
+    ///
+    /// 운반 상자를 먼저 본다 - 상자 앞에 서서 넣으려다 막힌 상황이 더 분명한 의도이고, 그때 가방을
+    /// 비워봐야 상자에 넣지 못하는 것은 그대로이기 때문이다.
+    /// </summary>
+    private ELogSwapTarget GetActiveLogSwapTarget(in LogSwapSlotInfo _inventoryInfo, in LogSwapSlotInfo _containerInfo)
+    {
+        if (_containerInfo.bHasSlot) return ELogSwapTarget.OffroadContainer;
+        if (_inventoryInfo.bHasSlot) return ELogSwapTarget.Inventory;
+
+        return ELogSwapTarget.None;
+    }
+
+    /// <summary>
+    /// 양쪽에서 "지금 버려질 슬롯"을 모아 UI로 흘려보낸다. 인벤토리/운반 상자 중 한쪽이라도 달라지면
+    /// 두 쪽 모두를 실어 한 번에 발행하므로, UI는 이 신호 하나로 표시를 통째로 다시 맞출 수 있다.
+    /// </summary>
+    private void LogSwapStateChanged()
+    {
+        LogSwapSlotInfo inventoryInfo = inventoryManager != null ? inventoryManager.GetLogSwapInfo() : LogSwapSlotInfo.None;
+        LogSwapSlotInfo containerInfo = offroadContainer != null ? offroadContainer.GetLogSwapInfo() : LogSwapSlotInfo.None;
+
+        if (LogSwapSlotInfo.IsSame(in inventoryInfo, in lastNotifiedInventorySwapInfo) &&
+            LogSwapSlotInfo.IsSame(in containerInfo, in lastNotifiedContainerSwapInfo))
+        {
+            return;
+        }
+
+        lastNotifiedInventorySwapInfo = inventoryInfo;
+        lastNotifiedContainerSwapInfo = containerInfo;
+
+        signalHub.Publish(new LogSwapAvailabilityChangedSignal(in inventoryInfo, in containerInfo,
+            GetActiveLogSwapTarget(in inventoryInfo, in containerInfo)));
+    }
+
+    /// <summary>
+    /// 교체 키가 눌렸다(인벤토리가 열려 있는 경우에만 여기까지 온다 - GameplayUICoordinator가 거른다).
+    /// 버릴 슬롯이 없으면 아무 일도 일어나지 않는다.
+    /// </summary>
+    private void LogSwapRequested(LogSwapRequestedSignal _logSwapRequestedSignal)
+    {
+        LogSwapSlotInfo inventoryInfo = inventoryManager.GetLogSwapInfo();
+        LogSwapSlotInfo containerInfo = offroadContainer.GetLogSwapInfo();
+
+        LogSwapSlotInfo executed = LogSwapSlotInfo.None;
+
+        switch (GetActiveLogSwapTarget(in inventoryInfo, in containerInfo))
+        {
+            case ELogSwapTarget.OffroadContainer:
+                executed = offroadContainer.ExecuteLogSwap();
+                break;
+
+            case ELogSwapTarget.Inventory:
+                Character character = unitSpawner.character;
+                executed = inventoryManager.ExecuteLogSwap(character != null ? character.centerTransform : null);
+                break;
+        }
+
+        if (executed.bHasSlot)
+        {
+            signalHub.Publish(new LogSwapExecutedSignal(in executed));
+        }
+
+        // 버린 직후의 상태를 UI에 바로 반영한다(자리가 생겨 교체가 더 이상 필요 없어졌을 수 있다).
+        LogSwapStateChanged();
     }
 
     private void InventoryInitialized()

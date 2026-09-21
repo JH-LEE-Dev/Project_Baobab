@@ -136,10 +136,11 @@ public class ItemDetector
         // 이걸 빼먹으면, 개량으로 어차피 같은 수종이 될 원목들을 원래 수종 순서로 줄 세우게 된다.
         // 그러면 등급이 뒤집힌다 - 바닥 수종이 자작나무일 때 Normal 소나무와 Perfect 참나무는 둘 다
         // 자작나무가 되는데, 원래 수종만 보면 소나무가 앞서므로 20배 싼 쪽이 마지막 칸을 가져간다.
-        int treeType = (int)logItem.treeType;
-        if ((int)_speciesFloor > treeType) treeType = (int)_speciesFloor;
+        TreeType treeType = logItem.treeType;
+        if (_speciesFloor > treeType) treeType = _speciesFloor;
 
-        // 수종이 1순위, 같은 수종 안에서 상태가 2순위. LogState는 6종(0~5)이라 3비트면 충분하다.
-        return (treeType << 3) | (int)logItem.logState;
+        // 수종이 1순위, 같은 수종 안에서 상태가 2순위. 교체 시스템(버릴 슬롯 선정)과 운반 상자
+        // 전송 순서가 같은 기준을 봐야 하므로 비교식은 LogSlotPriority 한 곳에 모아둔다.
+        return LogSlotPriority.GetOrder(treeType, logItem.logState);
     }
 }

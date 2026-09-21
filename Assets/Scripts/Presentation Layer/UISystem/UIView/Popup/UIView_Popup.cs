@@ -59,6 +59,30 @@ public class UIView_Popup : UIView
             uiInventory.InventoryShowEvent();
     }
 
+    /// <summary>
+    /// 지금 교체하면 버려질 <b>인벤토리 슬롯</b>이 달라졌습니다.
+    ///
+    /// _activeTarget은 교체 키가 실제로 건드릴 쪽입니다. 운반 상자 앞에 서 있으면 상자가 우선이라,
+    /// 인벤토리에 후보가 있어도 _activeTarget이 OffroadContainer일 수 있습니다(표시를 흐리게 할지
+    /// 아예 숨길지는 UI가 정합니다).
+    /// (교체 키 입력을 실제로 처리하는 곳은 GameplayUICoordinator이고, 여기는 표시 전용입니다)
+    /// </summary>
+    public void LogSwapTargetChanged(in LogSwapSlotInfo _info, ELogSwapTarget _activeTarget)
+    {
+        if (null != uiInventory)
+            uiInventory.SetLogSwapInfo(in _info, _activeTarget);
+    }
+
+    /// <summary>
+    /// 인벤토리 슬롯 하나가 교체로 실제로 버려졌습니다. _info에는 방금 버려진 내용이 담겨 있습니다
+    /// (데이터는 이미 지워진 뒤라 슬롯을 다시 읽으면 비어 있습니다).
+    /// </summary>
+    public void LogSwapExecuted(in LogSwapSlotInfo _info)
+    {
+        if (null != uiInventory)
+            uiInventory.LogSwapExecuted(in _info);
+    }
+
     public void InventorySpecChanged()
     {
         if (null != uiInventory)

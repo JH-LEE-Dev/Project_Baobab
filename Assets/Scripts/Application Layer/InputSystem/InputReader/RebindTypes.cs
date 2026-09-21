@@ -20,6 +20,12 @@ public enum ERebindableAction
     Attack,
 
     PotionKey,
+
+    /// <summary>
+    /// 원목 교체. 가방이나 운반 상자에 자리가 없을 때, 가장 값싼 슬롯을 버려 자리를 만듭니다.
+    /// 기본값은 키보드 Tab / 패드 buttonNorth(Y/△)입니다.
+    /// </summary>
+    LogSwap,
 }
 
 /// <summary>
@@ -33,6 +39,7 @@ public enum ERebindableAction
 /// | Interaction| buttonSouth (A/×)    |
 /// | Inventory  | leftTrigger (LT/L2)  |
 /// | PotionKey  | buttonWest (X/□)     |
+/// | LogSwap    | buttonNorth (Y/△)    |
 /// | ESC(메뉴)   | start                |
 ///
 /// buttonEast(B/○)는 비워 둡니다. 리바인딩 취소이자 "뒤로가기"라는 보편 관례라

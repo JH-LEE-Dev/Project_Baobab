@@ -211,6 +211,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         UpdateFlyingItems(Time.deltaTime);
         UpdateBounce(Time.deltaTime);
         UpdateContainerState(Time.deltaTime);
+        UpdateLogSwapState(Time.deltaTime);
     }
 
     private void UpdateFlyingItems(float _deltaTime)
@@ -458,6 +459,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         transferringSlots.Clear();
         bIsInteracting = false;
+        swapBlockedOrder = LogSlotPriority.NONE;
+        swapValidateTimer = 0f;
+        lastNotifiedSwapInfo = LogSwapSlotInfo.None;
         lastTransferTime = -transferInterval;
         currentDepositPitch = DEPOSIT_PITCH_MIN;
         lastDepositPitchTime = -999f;
@@ -555,6 +559,16 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
         else
         {
+            // 인벤토리 -> 운반 상자 방향은 값비싼 슬롯부터 옮긴다(TreeType + LogState가 높은 순,
+            // 같으면 많이 쌓인 순). 상자가 도중에 가득 차더라도 값싼 원목만 가방에 남게 하기 위해서다.
+            // 슬롯 순서대로 옮기면 어느 원목이 살아남는지가 "가방에 먼저 들어온 순서"에 달리게 된다.
+            InventorySlot bestSlot = null;
+            int bestOrder = LogSlotPriority.NONE;
+            int bestCount = 0;
+
+            // 자리가 없어 거절당한 슬롯 중 가장 비싼 것. 하나라도 있으면 교체 발동 조건 1이 성립한다.
+            int blockedOrder = LogSlotPriority.NONE;
+
             var charSlots = characterInventory.inventorySlots;
             for (int i = 0; i < characterInventory.currentSlotCnt; i++)
             {
@@ -563,12 +577,33 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     if (transferringSlots.Contains(charSlot)) continue;
                     if (!(charSlot.itemData is LogItemData logSourceData)) continue;
 
-                    if (!CanAddItemByData(logSourceData)) continue;
+                    int order = LogSlotPriority.GetOrder(logSourceData.treeType, logSourceData.logState);
 
-                    StartCoroutine(TransferOneSlotVisualRoutine(charSlot, false));
-                    lastTransferTime = Time.time;
-                    return true;
+                    if (!CanAddItemByData(logSourceData))
+                    {
+                        if (order > blockedOrder) blockedOrder = order;
+                        continue;
+                    }
+
+                    if (order > bestOrder || (order == bestOrder && charSlot.count > bestCount))
+                    {
+                        bestSlot = charSlot;
+                        bestOrder = order;
+                        bestCount = charSlot.count;
+                    }
                 }
+            }
+
+            // 교체 발동 조건 1은 "더 이상 넣을 수 없는 상황"이다. 한 종류라도 아직 들어갈 자리가
+            // 있으면(bestSlot != null) 전송이 계속되는 중이므로 교체를 켜지 않는다 - 비행 중인
+            // 물량 때문에 잠깐 거절되는 경우까지 교체로 오해하지 않도록 한다.
+            SetLogSwapBlockedOrder(bestSlot != null ? LogSlotPriority.NONE : blockedOrder);
+
+            if (bestSlot != null)
+            {
+                StartCoroutine(TransferOneSlotVisualRoutine(bestSlot, false));
+                lastTransferTime = Time.time;
+                return true;
             }
         }
 
@@ -975,6 +1010,14 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         if (transferCoroutine == null)
         {
+            // 상자가 가득 차서 아무것도 못 옮기는 경우, 전송 코루틴이 아예 시작되지 않아
+            // TryTransferOneSlot이 돌지 못한다. 유저 입장에서는 "키를 눌렀는데 아무 일도 없는" 바로
+            // 그 순간이므로, 교체가 가능한 상황인지 여기서 직접 따져 안내를 띄운다.
+            if (!bInTown)
+            {
+                RevalidateLogSwapBlockedOrder();
+            }
+
             if (HasAnyItemToTransfer())
             {
                 if (bInTown)
@@ -1738,6 +1781,197 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
 
         return false;
+    }
+
+    // ── 교체 시스템(이동식 운반 상자) ───────────────────────────────────────────────
+    //
+    // 인벤토리의 원목을 상자에 넣으려는데 상자에 자리가 없을 때, 상자 안의 값싼 슬롯 하나를 버려
+    // 자리를 만드는 기능이다. 발동 조건은 둘 다 만족해야 한다.
+    //   1) 상자가 가득 차서(여유 슬롯이 없어서) 더 넣지 못한다.
+    //   2) 버릴 상자 슬롯이 지금 넣으려는 원목보다 싸다. 상자 안의 모든 슬롯 중에서도 가장 싸고,
+    //      같은 값이면 가장 적게 쌓인 것.
+    // 둘째 조건을 만족하는 슬롯이 없으면 교체는 활성화되지 않는다.
+    //
+    // 방향은 인벤토리 -> 상자일 때만이다. 마을에서는 상자 -> 인벤토리로 흐르므로(bInTown) 교체가
+    // 성립하지 않는다.
+
+    /// <summary>
+    /// 버려질 슬롯이 바뀌었을 때(생김 / 사라짐 / 다른 슬롯으로 옮겨감 / 개수 변화) 발생한다.
+    /// 최신 내용은 GetLogSwapInfo()로 읽는다.
+    /// </summary>
+    public event Action SwapStateChangedEvent;
+
+    /// <summary>상자가 받아주지 못한 원목 중 가장 비싼 것의 가치 순위(LogSlotPriority). 없으면 NONE.</summary>
+    private int swapBlockedOrder = LogSlotPriority.NONE;
+
+    private float swapValidateTimer = 0f;
+
+    /// <summary>
+    /// 막힌 기록을 다시 확인하는 주기. 전송 코루틴은 더 옮길 것이 없으면 멈춰버리므로, 그 뒤에
+    /// 상황이 바뀌어도(운반 NPC가 상자를 비워줌 등) 알려줄 사람이 없다. 그래서 기록이 살아 있는
+    /// 동안만 이 주기로 직접 다시 따져본다.
+    /// </summary>
+    private const float SWAP_VALIDATE_INTERVAL = 0.25f;
+
+    /// <summary>마지막으로 알린 내용. 같은 내용을 거듭 알리지 않기 위한 것이다.</summary>
+    private LogSwapSlotInfo lastNotifiedSwapInfo = LogSwapSlotInfo.None;
+
+    /// <summary>
+    /// 지금 교체하면 버려질 운반 상자 슬롯. 없으면 LogSwapSlotInfo.None(bHasSlot == false).
+    ///
+    /// UI는 slotIndex로 자기 슬롯 뷰를 찾으면 된다(UI_Storage가 바인딩한 IInventory.inventorySlots와
+    /// 같은 인덱스).
+    /// </summary>
+    public LogSwapSlotInfo GetLogSwapInfo()
+    {
+        if (!TryFindLogSwapVictimSlot(out int slotIndex)) return LogSwapSlotInfo.None;
+
+        LogItemData logData = (LogItemData)inventorySlots[slotIndex].itemData;
+
+        return new LogSwapSlotInfo
+        {
+            target = ELogSwapTarget.OffroadContainer,
+            slotIndex = slotIndex,
+            treeType = logData.treeType,
+            logState = logData.logState,
+            count = inventorySlots[slotIndex].totalCount,
+        };
+    }
+
+    /// <summary>
+    /// 전송 시도에서 "상자가 못 받아준 원목 중 가장 비싼 것"을 기록한다(TryTransferOneSlot이 부른다).
+    /// NONE이면 전부 받아줄 수 있었다는 뜻이라 기록을 지운다.
+    /// </summary>
+    private void SetLogSwapBlockedOrder(int _order)
+    {
+        swapBlockedOrder = _order;
+        swapValidateTimer = 0f;
+    }
+
+    /// <summary>
+    /// 상자에 아직 못 넣는 원목이 남아있는지 인벤토리를 다시 훑어 기록을 갱신한다.
+    /// 상자에 자리가 생겼다면 기록이 지워지고 교체 안내도 함께 꺼진다.
+    /// </summary>
+    private void RevalidateLogSwapBlockedOrder()
+    {
+        int blockedOrder = LogSlotPriority.NONE;
+
+        if (characterInventory != null)
+        {
+            var charSlots = characterInventory.inventorySlots;
+            for (int i = 0; i < characterInventory.currentSlotCnt; i++)
+            {
+                if (!(charSlots[i] is InventorySlot charSlot) || charSlot.itemData == null || charSlot.count <= 0) continue;
+                if (transferringSlots.Contains(charSlot)) continue;
+                if (!(charSlot.itemData is LogItemData logSourceData)) continue;
+
+                // 한 종류라도 들어갈 자리가 있으면 상자가 가득 찬 것이 아니다(TryTransferOneSlot과 같은 판정).
+                if (CanAddItemByData(logSourceData))
+                {
+                    swapBlockedOrder = LogSlotPriority.NONE;
+                    return;
+                }
+
+                int order = LogSlotPriority.GetOrder(logSourceData.treeType, logSourceData.logState);
+                if (order > blockedOrder) blockedOrder = order;
+            }
+        }
+
+        swapBlockedOrder = blockedOrder;
+    }
+
+    private void UpdateLogSwapState(float _deltaTime)
+    {
+        // 상자에 손이 닿지 않거나(멀어짐) 마을이면 넣는 상황 자체가 아니다.
+        if (bInTown || !bCanInteract || characterInventory == null)
+        {
+            swapBlockedOrder = LogSlotPriority.NONE;
+        }
+        else if (swapBlockedOrder != LogSlotPriority.NONE)
+        {
+            swapValidateTimer += _deltaTime;
+            if (swapValidateTimer >= SWAP_VALIDATE_INTERVAL)
+            {
+                swapValidateTimer = 0f;
+                RevalidateLogSwapBlockedOrder();
+            }
+        }
+
+        LogSwapSlotInfo info = GetLogSwapInfo();
+        if (LogSwapSlotInfo.IsSame(in info, in lastNotifiedSwapInfo)) return;
+
+        lastNotifiedSwapInfo = info;
+        SwapStateChangedEvent?.Invoke();
+    }
+
+    /// <summary>
+    /// 버릴 상자 슬롯을 고른다. 못 넣은 원목보다 싼 슬롯 중 <b>가장 싼 것</b>, 같은 값이면
+    /// <b>가장 적게 쌓인 것</b>이다. 조건을 만족하는 슬롯이 없으면 false.
+    /// </summary>
+    private bool TryFindLogSwapVictimSlot(out int _slotIndex)
+    {
+        _slotIndex = -1;
+
+        if (swapBlockedOrder == LogSlotPriority.NONE) return false;
+
+        int bestOrder = int.MaxValue;
+        int bestCount = int.MaxValue;
+
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (!(inventorySlots[i].itemData is LogItemData logData) || inventorySlots[i].totalCount <= 0) continue;
+
+            // 지금 이 슬롯에서 꺼내 옮기는 중이라면 건드리지 않는다.
+            if (transferringSlots.Contains(inventorySlots[i])) continue;
+
+            int order = LogSlotPriority.GetOrder(logData.treeType, logData.logState);
+
+            // 교체 발동 조건 2: 버릴 슬롯은 지금 넣어야 할 원목보다 싸야 한다.
+            if (order >= swapBlockedOrder) continue;
+
+            int count = inventorySlots[i].totalCount;
+            if (order < bestOrder || (order == bestOrder && count < bestCount))
+            {
+                bestOrder = order;
+                bestCount = count;
+                _slotIndex = i;
+            }
+        }
+
+        return _slotIndex >= 0;
+    }
+
+    /// <summary>
+    /// 교체를 실행한다. 고른 상자 슬롯의 <b>데이터는 즉시 사라지고</b>(ContainerUpdatedEvent로 UI도
+    /// 곧바로 갱신된다), 흘리는 연출만 뒤따라 재생된다. 연출은 인벤토리 쪽(DropAllItem)과 같은
+    /// 구현을 쓰고 시작 위치만 상자로 준다.
+    /// </summary>
+    /// <returns>실제로 버린 슬롯의 내용. 교체할 것이 없었으면 LogSwapSlotInfo.None.</returns>
+    public LogSwapSlotInfo ExecuteLogSwap()
+    {
+        LogSwapSlotInfo info = GetLogSwapInfo();
+        if (!info.bHasSlot) return LogSwapSlotInfo.None;
+
+        ItemDeleted(inventorySlots[info.slotIndex]);
+        ContainerUpdatedEvent?.Invoke();
+
+        swapBlockedOrder = LogSlotPriority.NONE;
+        UpdateLogSwapState(0f);
+
+        if (characterInventoryManager != null)
+        {
+            characterInventoryManager.PlayLogDropVisuals(info.treeType, info.logState, info.count,
+                transform.position + new Vector3(0f, 0.2f, 0f));
+        }
+
+        // 상호작용 키를 계속 누르고 있었다면 전송을 이어서 재개한다. 자리가 없어 멈춘 전송 코루틴은
+        // 이미 끝나 있으므로, 여기서 다시 걸어주지 않으면 유저가 키를 뗐다 다시 눌러야 한다.
+        if (bIsInteracting && bCanInteract && transferCoroutine == null && HasAnyItemToTransfer())
+        {
+            transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
+        }
+
+        return info;
     }
 
     public void SetCanReach(bool _bCanReach)

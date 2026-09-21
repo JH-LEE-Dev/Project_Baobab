@@ -189,11 +189,16 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         // 3. 모든 아이템 타입에 대해 풀 미리 생성
         itemDataPool.WarmAll();
 
+        ClearLogSwapRequest();
+        lastNotifiedSwapInfo = LogSwapSlotInfo.None;
+
         UpdateInventoryEmptyState();
     }
 
     private void Update()
     {
+        UpdateLogSwapState();
+
         if (activeDroppedItems.Count > 0)
         {
             float deltaTime = Time.deltaTime;
@@ -665,6 +670,12 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         // 5. 들어올 수 없을 때 인벤토리 공간 상태 분석 및 이벤트 호출
         //    이 지점에 도달했다면 모든 슬롯이 이미 점유된 상태라는 뜻이다 - 비어있는 슬롯이
         //    하나라도 있었다면 TryPlaceVirtual()이 그 자리에 배치하고 true를 반환했을 것이다.
+        //
+        //    "원목이 안 먹어진다"가 곧 교체 발동 조건 1이므로, 교체 시스템에도 이 원목을 알려둔다.
+        //    수종 개량이 이미 끝난 뒤에 불리는 경로라(LogItem.CheckAcquireCondition) 여기서 보는
+        //    수종은 실제로 담겼을 수종이다.
+        RequestLogSwap(_item.treeType, _item.logState);
+
         bool hasSpaceRemaining = false;
         for (int i = 0; i < slotCount; i++)
         {
@@ -718,6 +729,175 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         }
 
         return false;
+    }
+
+    // ── 교체 시스템(인벤토리) ────────────────────────────────────────────────────────
+    //
+    // 가방이 꽉 차 바닥의 원목을 먹지 못할 때, 값싼 슬롯 하나를 버려서 자리를 만드는 기능이다.
+    // 발동 조건은 둘 다 만족해야 한다.
+    //   1) 지금 먹으려는 원목이 안 먹어진다(CanAcquired 실패 - 꽉 찼거나 빈 슬롯이 없다).
+    //   2) 버릴 슬롯이 그 원목보다 싸다. 그런 슬롯 중에서도 가장 싸고, 같은 값이면 가장 적게 쌓인 것.
+    // 둘째 조건을 만족하는 슬롯이 하나도 없으면 교체는 아예 활성화되지 않는다(더 비싼 걸 버리는
+    // 교체는 없다).
+    //
+    // 실제 버리기는 교체 키를 눌렀을 때만 일어난다(ExecuteLogSwap). 여기서는 "지금 버려질 슬롯이
+    // 어느 것인가"(GetLogSwapInfo)를 계속 갱신하고, 그 내용이 달라질 때마다 SwapStateChangedEvent로
+    // 알린다. UI는 그 인덱스의 슬롯에 안내를 붙이면 된다.
+
+    /// <summary>
+    /// 버려질 슬롯이 바뀌었을 때(생김 / 사라짐 / 다른 슬롯으로 옮겨감 / 개수 변화) 발생한다.
+    /// 최신 내용은 GetLogSwapInfo()로 읽는다.
+    /// </summary>
+    public event Action SwapStateChangedEvent;
+
+    /// <summary>먹지 못한 원목 중 가장 비싼 것의 가치 순위(LogSlotPriority). 없으면 NONE.</summary>
+    private int swapRequestOrder = LogSlotPriority.NONE;
+
+    private float swapRequestTime = -999f;
+
+    /// <summary>
+    /// "못 먹었다" 기록의 유효 시간. 캐릭터의 아이템 감지는 0.2초(5Hz)마다 돌면서 못 먹을 때마다
+    /// 이 기록을 새로 찍으므로, 원목 위에 서 있는 동안은 계속 살아 있고 자리를 뜨면 곧 꺼진다.
+    /// </summary>
+    private const float SwapRequestLifetime = 0.5f;
+
+    /// <summary>마지막으로 알린 내용. 같은 내용을 거듭 알리지 않기 위한 것이다.</summary>
+    private LogSwapSlotInfo lastNotifiedSwapInfo = LogSwapSlotInfo.None;
+
+    /// <summary>
+    /// 지금 교체하면 버려질 인벤토리 슬롯. 없으면 LogSwapSlotInfo.None(bHasSlot == false).
+    ///
+    /// UI는 slotIndex로 자기 슬롯 뷰를 찾으면 된다(IInventory.inventorySlots와 같은 인덱스).
+    /// </summary>
+    public LogSwapSlotInfo GetLogSwapInfo()
+    {
+        if (!TryFindLogSwapVictimSlot(out int slotIndex)) return LogSwapSlotInfo.None;
+
+        LogItemData logData = (LogItemData)inventorySlots[slotIndex].itemData;
+
+        return new LogSwapSlotInfo
+        {
+            target = ELogSwapTarget.Inventory,
+            slotIndex = slotIndex,
+            treeType = logData.treeType,
+            logState = logData.logState,
+            count = inventorySlots[slotIndex].totalCount,
+        };
+    }
+
+    /// <summary>
+    /// 원목을 담지 못했음을 교체 시스템에 알린다(CanAcquired 실패 경로에서 부른다).
+    /// 한 번의 감지 틱에 여러 원목이 거절될 수 있으므로 그중 가장 비싼 것을 기준으로 삼는다 -
+    /// 교체는 "제일 아쉬운 원목을 위해" 자리를 만드는 기능이기 때문이다.
+    /// </summary>
+    private void RequestLogSwap(TreeType _treeType, LogState _logState)
+    {
+        int order = LogSlotPriority.GetOrder(_treeType, _logState);
+
+        // 기록이 이미 만료됐다면 이전 값은 버리고 이번 원목으로 새로 시작한다.
+        if (swapRequestOrder != LogSlotPriority.NONE && Time.time - swapRequestTime <= SwapRequestLifetime)
+        {
+            if (order > swapRequestOrder) swapRequestOrder = order;
+        }
+        else
+        {
+            swapRequestOrder = order;
+        }
+
+        swapRequestTime = Time.time;
+    }
+
+    private void ClearLogSwapRequest()
+    {
+        swapRequestOrder = LogSlotPriority.NONE;
+        swapRequestTime = -999f;
+    }
+
+    /// <summary>
+    /// 버려질 슬롯이 달라졌으면 한 번만 알린다. Update에서 매 프레임 호출된다.
+    /// (슬롯 수가 10칸 상한이라 매 프레임 훑어도 부담이 없고, 요청이 없으면 곧바로 빠져나온다)
+    /// </summary>
+    private void UpdateLogSwapState()
+    {
+        if (swapRequestOrder != LogSlotPriority.NONE && Time.time - swapRequestTime > SwapRequestLifetime)
+        {
+            ClearLogSwapRequest();
+        }
+
+        LogSwapSlotInfo info = GetLogSwapInfo();
+        if (LogSwapSlotInfo.IsSame(in info, in lastNotifiedSwapInfo)) return;
+
+        lastNotifiedSwapInfo = info;
+        SwapStateChangedEvent?.Invoke();
+    }
+
+    /// <summary>
+    /// 버릴 슬롯을 고른다. 못 먹은 원목보다 싼 슬롯 중 <b>가장 싼 것</b>, 같은 값이면
+    /// <b>가장 적게 쌓인 것</b>이다. 조건을 만족하는 슬롯이 없으면 false.
+    /// </summary>
+    private bool TryFindLogSwapVictimSlot(out int _slotIndex)
+    {
+        _slotIndex = -1;
+
+        if (swapRequestOrder == LogSlotPriority.NONE) return false;
+
+        int bestOrder = int.MaxValue;
+        int bestCount = int.MaxValue;
+
+        int slotCount = Mathf.Min(currentSlotCount, inventorySlots.Count);
+        for (int i = 0; i < slotCount; i++)
+        {
+            if (!(inventorySlots[i].itemData is LogItemData logData) || inventorySlots[i].totalCount <= 0) continue;
+
+            int order = LogSlotPriority.GetOrder(logData.treeType, logData.logState);
+
+            // 교체 발동 조건 2: 버릴 슬롯은 지금 먹어야 할 원목보다 싸야 한다.
+            if (order >= swapRequestOrder) continue;
+
+            int count = inventorySlots[i].totalCount;
+            if (order < bestOrder || (order == bestOrder && count < bestCount))
+            {
+                bestOrder = order;
+                bestCount = count;
+                _slotIndex = i;
+            }
+        }
+
+        return _slotIndex >= 0;
+    }
+
+    /// <summary>
+    /// 교체를 실행한다. 고른 슬롯의 <b>데이터는 즉시 사라지고</b>(UI도 ItemRemoved로 곧바로 갱신된다),
+    /// 흘리는 연출만 뒤따라 재생된다. 비워진 자리에는 다음 감지 틱에 바닥의 원목이 알아서 들어온다.
+    /// </summary>
+    /// <returns>실제로 버린 슬롯의 내용. 교체할 것이 없었으면 LogSwapSlotInfo.None.</returns>
+    public LogSwapSlotInfo ExecuteLogSwap(Transform _dropOriginTransform)
+    {
+        LogSwapSlotInfo info = GetLogSwapInfo();
+        if (!info.bHasSlot) return LogSwapSlotInfo.None;
+
+        InventorySlot slot = inventorySlots[info.slotIndex];
+
+        // DropAllItem과 같은 순서를 지킨다 - 슬롯을 먼저 비우고 나서 알려야 UI가 이미 비워진 데이터를
+        // 읽는다. 알림을 먼저 하면 UI가 아직 남아 있는 데이터를 그린 채로 굳는다.
+        itemDataPool.Release((ItemData)slot.itemData);
+        slot.Setup(null, 0);
+
+        for (int i = 0; i < info.count; i++)
+        {
+            ItemRemoved();
+        }
+
+        UpdateInventoryEmptyState();
+
+        // 자리가 생겼으니 이번 요청은 끝났다. 여전히 못 먹는 상황이면 다음 감지 틱이 곧바로 다시 찍는다.
+        ClearLogSwapRequest();
+        UpdateLogSwapState();
+
+        Vector3 dropPos = _dropOriginTransform != null ? _dropOriginTransform.position : transform.position;
+        PlayLogDropVisuals(info.treeType, info.logState, info.count, dropPos);
+
+        return info;
     }
 
     public void ExpandInventorySlotCnt(float _amount)
@@ -1061,6 +1241,35 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         }
 
         return totalDroppedCount;
+    }
+
+    /// <summary>
+    /// 같은 종류의 원목 여러 개를 "흘리는" 연출만 재생한다(데이터는 건드리지 않는다).
+    ///
+    /// 교체 시스템이 버린 슬롯을 DropAllItem과 같은 모습으로 흘리기 위해 쓴다. 운반 상자 쪽 교체도
+    /// 이 통로를 쓰므로(연출 시작 위치만 상자 위치로 준다) 흘리는 연출의 구현은 한 곳에만 있다.
+    ///
+    /// 진행 중이던 흘리기 연출이 있으면 DropAllItem과 마찬가지로 끊고 새로 시작한다.
+    /// </summary>
+    public void PlayLogDropVisuals(TreeType _treeType, LogState _logState, int _count, Vector3 _startPos)
+    {
+        if (_count <= 0) return;
+
+        List<(TreeType treeType, LogState logState)> plan = new List<(TreeType, LogState)>(MaxDropVisualCount);
+
+        int visualCount = Mathf.Min(MaxDropVisualCount, _count);
+        for (int i = 0; i < visualCount; i++)
+        {
+            plan.Add((_treeType, _logState));
+        }
+
+        if (dropVisualsCoroutine != null)
+        {
+            StopCoroutine(dropVisualsCoroutine);
+            dropVisualsCoroutine = null;
+        }
+
+        dropVisualsCoroutine = StartCoroutine(SpawnDropVisualsRoutine(plan, _startPos));
     }
 
     public float GetDropVisualDuration()

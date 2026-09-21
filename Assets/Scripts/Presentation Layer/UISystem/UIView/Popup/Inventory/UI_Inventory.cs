@@ -57,12 +57,48 @@ public class UI_Inventory : MonoBehaviour
     public MapType CurrentMapType { get; set; } = MapType.Town;
     public bool IsOpening { get; private set; } = false;
 
+    // //원목 교체(교체 시스템)
+    //
+    // 표시는 하지 않고 데이터만 들고 있는다. 실제 연출/강조는 이 이벤트를 구독해서 아래 값들을 읽어
+    // 그리면 된다. 자세한 사용법은 Docs/LogSwapUI.md 참고.
+
+    /// <summary>
+    /// 교체 대상 슬롯 정보가 달라졌을 때 발생합니다(생김 / 사라짐 / 다른 슬롯으로 이동 / 개수 변화).
+    /// LogSwapInfo와 ActiveLogSwapTarget을 다시 읽어 표시를 맞추세요.
+    /// </summary>
+    public event Action LogSwapInfoChangedEvent;
+
+    /// <summary>
+    /// 교체가 실제로 일어나 인벤토리 슬롯 하나가 비워졌을 때 발생합니다. 인자는 방금 버려진 슬롯의
+    /// 내용(slotIndex / treeType / logState / count)입니다 - 데이터는 이미 지워진 뒤입니다.
+    /// </summary>
+    public event Action<LogSwapSlotInfo> LogSwapExecutedEvent;
+
+    /// <summary>
+    /// 지금 교체하면 버려질 인벤토리 슬롯입니다. bHasSlot이 false면 교체 대상이 없습니다.
+    /// slotIndex는 inventory.inventorySlots(= 이 UI가 그리는 슬롯 목록)와 같은 인덱스입니다.
+    /// </summary>
+    public LogSwapSlotInfo LogSwapInfo => logSwapInfo;
+
+    /// <summary>
+    /// 교체 키를 누르면 실제로 버려지는 쪽입니다. Inventory가 아니면(운반 상자가 우선인 상황 등)
+    /// 이 창의 후보는 "예정"일 뿐 지금 키를 눌러도 버려지지 않습니다.
+    /// </summary>
+    public ELogSwapTarget ActiveLogSwapTarget => activeLogSwapTarget;
+
+    /// <summary>교체 키가 이 인벤토리의 슬롯을 버리게 되는 상태인지입니다(안내를 켜는 기본 조건).</summary>
+    public bool IsLogSwapReady => logSwapInfo.bHasSlot && ELogSwapTarget.Inventory == activeLogSwapTarget;
+
     public Action inventoryHoverEvent;
     public Action inventoryUnHoverEvent;
 
     private bool isOpenAnimated = false;
     private int previousLogCount = 0;
     private bool isFirstDataBind = true;
+
+    // 교체 대상 슬롯 정보. 가방이 닫혀 있는 동안에도 값은 그대로 유지한다.
+    private LogSwapSlotInfo logSwapInfo = LogSwapSlotInfo.None;
+    private ELogSwapTarget activeLogSwapTarget = ELogSwapTarget.None;
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -380,6 +416,28 @@ public class UI_Inventory : MonoBehaviour
         omp.PlayBackward(backpackTag, bReset: true, _skip: true);
         omp.PlayBackward(coinsTag, bReset: true, _skip: true);
         omp.PlayBackward(popupTag, bReset: true, _skip: true);
+    }
+
+    /// <summary>
+    /// 교체 대상 슬롯 정보를 갱신합니다(UIView_Popup이 호출). 내용이 실제로 달라졌을 때만
+    /// LogSwapInfoChangedEvent를 발생시킵니다.
+    /// </summary>
+    public void SetLogSwapInfo(in LogSwapSlotInfo _info, ELogSwapTarget _activeTarget)
+    {
+        bool _bChanged = false == LogSwapSlotInfo.IsSame(in _info, in logSwapInfo)
+            || _activeTarget != activeLogSwapTarget;
+
+        logSwapInfo = _info;
+        activeLogSwapTarget = _activeTarget;
+
+        if (true == _bChanged)
+            LogSwapInfoChangedEvent?.Invoke();
+    }
+
+    /// <summary>교체로 슬롯 하나가 버려졌습니다(UIView_Popup이 호출).</summary>
+    public void LogSwapExecuted(in LogSwapSlotInfo _info)
+    {
+        LogSwapExecutedEvent?.Invoke(_info);
     }
 
     public void OnHide()

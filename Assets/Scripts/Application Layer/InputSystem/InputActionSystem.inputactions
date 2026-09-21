@@ -115,6 +115,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "LogSwap",
+                    "type": "Button",
+                    "id": "c7a41f30-5b62-4e88-9a37-2d6e81f4c905",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Aim",
                     "type": "Value",
                     "id": "3c1f5b7a-9d24-4e18-b6c0-5a2e7f0d1b93",
@@ -303,6 +312,17 @@
                 },
                 {
                     "name": "",
+                    "id": "b1d94e27-3af5-45c0-8e19-6c72d0af5e14",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LogSwap",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "6e4a0c92-1f38-4d75-8a1b-2c9e5b7f4a60",
                     "path": "<Gamepad>/rightStick",
                     "interactions": "",
@@ -408,6 +428,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "PotionKey",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e5b3708c-94d1-4a62-b7f8-31c06d9a2f7b",
+                    "path": "<Gamepad>/buttonNorth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LogSwap",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
