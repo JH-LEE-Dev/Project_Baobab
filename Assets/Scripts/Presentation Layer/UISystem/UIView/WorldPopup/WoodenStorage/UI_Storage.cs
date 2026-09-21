@@ -52,6 +52,7 @@ public class UI_Storage : MonoBehaviour
     private bool isPendingHide = false;
 
     private bool isOnShow = false;
+    private bool isOpenAnimated = false;
 
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -183,6 +184,9 @@ public class UI_Storage : MonoBehaviour
             return;
         }
 
+        if (true == isOpenAnimated)
+            return;
+
         int _slotIndex = logSwapInfo.slotIndex;
         if (0 <= _slotIndex && storageSlots.Count > _slotIndex)
         {
@@ -286,6 +290,7 @@ public class UI_Storage : MonoBehaviour
                 }
             }
 
+            bool _isSameSlot = (currentSwapSlotIndex == _slotIndex);
             currentSwapSlotIndex = _slotIndex;
             _slot.SetSwapIndicator(true, _immediate);
 
@@ -293,7 +298,14 @@ public class UI_Storage : MonoBehaviour
             {
                 sharedSwapIndicator.transform.SetAsLastSibling();
                 Vector3 _targetWorldPos = _slot.transform.TransformPoint(indicatorOffset);
-                sharedSwapIndicator.Show(_targetWorldPos);
+                if (true == _isSameSlot && true == sharedSwapIndicator.IsActiveAndShowing)
+                {
+                    sharedSwapIndicator.UpdateTargetPosition(_targetWorldPos);
+                }
+                else
+                {
+                    sharedSwapIndicator.Show(_targetWorldPos);
+                }
             }
         }
         else
@@ -378,6 +390,7 @@ public class UI_Storage : MonoBehaviour
 
         if (null != omp)
         {
+            isOpenAnimated = true;
             omp.SettingEntryMotion(popdown, true, true);
             popup = omp.Play(popupTag, _onComplete: OnShowCompletedAnimation, bReset: true);
         }
@@ -389,12 +402,14 @@ public class UI_Storage : MonoBehaviour
 
     private void OnShowCompletedAnimation()
     {
+        isOpenAnimated = false;
         Canvas.ForceUpdateCanvases();
         HandleLogSwapInfoChanged();
     }
 
     public void OnHide()
     {
+        isOpenAnimated = false;
         ClearAllSwapIndicators(false);
         isOnShow = false;
 

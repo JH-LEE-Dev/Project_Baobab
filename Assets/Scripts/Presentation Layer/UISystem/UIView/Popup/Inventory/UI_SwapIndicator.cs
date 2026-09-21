@@ -83,11 +83,33 @@ public class UI_SwapIndicator : MonoBehaviour
     // //퍼블릭 초기화 및 제어 메서드
 
     /// <summary>
+    /// 대상 게임오브젝트와 모든 자식 계층의 Layer를 지정된 레이어로 재귀 동기화합니다.
+    /// </summary>
+    private static void SetLayerRecursively(GameObject _obj, int _layer)
+    {
+        if (null == _obj)
+            return;
+
+        _obj.layer = _layer;
+        Transform _t = _obj.transform;
+        int _childCount = _t.childCount;
+        for (int _i = 0; _i < _childCount; ++_i)
+        {
+            SetLayerRecursively(_t.GetChild(_i).gameObject, _layer);
+        }
+    }
+
+    /// <summary>
     /// 인디케이터 및 키 바인딩 이미지를 초기화합니다.
     /// </summary>
     public void Initialize(InputManager _inputManager)
     {
         InitializeIfNeeded();
+
+        if (null != transform.parent)
+        {
+            SetLayerRecursively(gameObject, transform.parent.gameObject.layer);
+        }
 
         if (null != keyboardImage && null != _inputManager)
         {
@@ -109,6 +131,11 @@ public class UI_SwapIndicator : MonoBehaviour
         if (null == indicatorCanvas)
             indicatorCanvas = GetComponent<Canvas>();
 
+        if (null != transform.parent)
+        {
+            SetLayerRecursively(gameObject, transform.parent.gameObject.layer);
+        }
+
         BindCameraFinderEvent();
         ApplySorting();
 
@@ -125,7 +152,7 @@ public class UI_SwapIndicator : MonoBehaviour
             CameraFinder.Instance.HandleCameraFindingEvent -= ApplySorting;
             CameraFinder.Instance.HandleCameraFindingEvent += ApplySorting;
 
-            if (null != CameraFinder.Instance.PPUiCamera)
+            if (null != CameraFinder.Instance.PPMainCamera || null != CameraFinder.Instance.PPUiCamera)
             {
                 ApplySorting();
             }
@@ -166,30 +193,18 @@ public class UI_SwapIndicator : MonoBehaviour
         while (null != indicatorCanvas && 10 > _retryCount)
         {
             Canvas _rootCanvas = indicatorCanvas.rootCanvas;
-            if (null != _rootCanvas)
+            if (null != _rootCanvas && (null != _rootCanvas.worldCamera || RenderMode.ScreenSpaceOverlay == _rootCanvas.renderMode))
             {
-                Camera _targetCamera = _rootCanvas.worldCamera;
-                if (null == _targetCamera && null != CameraFinder.Instance)
+                string _targetSortingLayer = !string.IsNullOrEmpty(_rootCanvas.sortingLayerName) ? _rootCanvas.sortingLayerName : sortingLayerName;
+
+                indicatorCanvas.overrideSorting = true;
+                indicatorCanvas.sortingLayerName = _targetSortingLayer;
+                indicatorCanvas.sortingOrder = sortingOrder;
+
+                if (true == indicatorCanvas.overrideSorting)
                 {
-                    _targetCamera = CameraFinder.Instance.PPUiCamera;
-                }
-
-                if (null != _targetCamera || RenderMode.ScreenSpaceOverlay == _rootCanvas.renderMode)
-                {
-                    if (null != _targetCamera)
-                    {
-                        indicatorCanvas.worldCamera = _targetCamera;
-                    }
-
-                    indicatorCanvas.overrideSorting = true;
-                    indicatorCanvas.sortingLayerName = sortingLayerName;
-                    indicatorCanvas.sortingOrder = sortingOrder;
-
-                    if (true == indicatorCanvas.overrideSorting)
-                    {
-                        sortingCoroutine = null;
-                        yield break;
-                    }
+                    sortingCoroutine = null;
+                    yield break;
                 }
             }
 
@@ -206,41 +221,40 @@ public class UI_SwapIndicator : MonoBehaviour
             return;
 
         Canvas _rootCanvas = indicatorCanvas.rootCanvas;
-        if (null != _rootCanvas)
+        if (null != _rootCanvas && (null != _rootCanvas.worldCamera || RenderMode.ScreenSpaceOverlay == _rootCanvas.renderMode))
         {
-            Camera _targetCamera = _rootCanvas.worldCamera;
-            if (null == _targetCamera && null != CameraFinder.Instance)
-            {
-                _targetCamera = CameraFinder.Instance.PPUiCamera;
-            }
-
-            if (null != _targetCamera)
-            {
-                indicatorCanvas.worldCamera = _targetCamera;
-            }
+            string _targetSortingLayer = !string.IsNullOrEmpty(_rootCanvas.sortingLayerName) ? _rootCanvas.sortingLayerName : sortingLayerName;
 
             indicatorCanvas.overrideSorting = true;
-            indicatorCanvas.sortingLayerName = sortingLayerName;
+            indicatorCanvas.sortingLayerName = _targetSortingLayer;
             indicatorCanvas.sortingOrder = sortingOrder;
         }
     }
 
-    /// <summary>
-    /// 대상 슬롯의 월드 좌표로 인디케이터 위치를 이동시키고, 바운스 기준 위치를 동기화합니다.
-    /// </summary>
-    /// <param name="_worldPosition">대상 슬롯 위치</param>
-    public void SetTargetWorldPosition(Vector3 _worldPosition)
-    {
-        InitializeIfNeeded();
+    public bool IsActiveAndShowing => true == gameObject.activeInHierarchy && (IndicatorState.Appearing == currentState || IndicatorState.Looping == currentState);
 
-        KillCurrentAnimation();
-        currentState = IndicatorState.Hidden;
+    /// <summary>
+    /// 인디케이터가 이미 활성화된 상태에서 부모 팝업의 오픈 연출 완료 등으로 슬롯의 최종 월드 좌표가 안착되었을 때,
+    /// 애니메이션을 중단하지 않고 기준 위치(baseAnchoredPosition)만 정확하게 재동기화합니다.
+    /// </summary>
+    /// <param name="_worldPosition">대상 슬롯의 갱신된 월드 좌표</param>
+    public void UpdateTargetPosition(Vector3 _worldPosition)
+    {
+        if (null == motionTarget)
+            return;
+
+        Vector2 _currentOffset = motionTarget.anchoredPosition - baseAnchoredPosition;
 
         transform.position = _worldPosition;
+        baseAnchoredPosition = motionTarget.anchoredPosition;
 
-        if (null != motionTarget)
+        if (IndicatorState.Looping == currentState)
         {
-            baseAnchoredPosition = motionTarget.anchoredPosition;
+            motionTarget.anchoredPosition = baseAnchoredPosition + _currentOffset;
+        }
+        else
+        {
+            motionTarget.anchoredPosition = baseAnchoredPosition;
         }
     }
 
@@ -250,7 +264,37 @@ public class UI_SwapIndicator : MonoBehaviour
     /// <param name="_worldPosition">대상 슬롯 위치</param>
     public void Show(Vector3 _worldPosition)
     {
-        SetTargetWorldPosition(_worldPosition);
+        InitializeIfNeeded();
+
+        KillCurrentAnimation();
+        currentState = IndicatorState.Hidden;
+
+        // 1. 이전 잔여 프레임의 위치/스케일 깜빡임을 원천 차단하기 위해 알파와 스케일을 먼저 0으로 초기화
+        if (null != canvasGroup)
+        {
+            canvasGroup.alpha = 0.0f;
+        }
+
+        if (null != motionTarget)
+        {
+            motionTarget.localScale = Vector3.zero;
+        }
+
+        // 2. 대상 월드 좌표 적용 및 기준 앵커 좌표 동기화
+        transform.position = _worldPosition;
+
+        if (null != motionTarget)
+        {
+            baseAnchoredPosition = motionTarget.anchoredPosition;
+            motionTarget.anchoredPosition = baseAnchoredPosition;
+        }
+
+        // 3. 좌표와 초기 스케일/알파가 완전히 설정된 상태에서 활성화
+        if (false == gameObject.activeInHierarchy)
+        {
+            gameObject.SetActive(true);
+        }
+
         Show();
     }
 
@@ -261,6 +305,13 @@ public class UI_SwapIndicator : MonoBehaviour
     {
         InitializeIfNeeded();
 
+        if (null != transform.parent)
+        {
+            SetLayerRecursively(gameObject, transform.parent.gameObject.layer);
+        }
+
+        ApplySorting();
+
         // 이미 등장 중이거나 루프 중인 경우 중복 실행 방지
         if (IndicatorState.Appearing == currentState || IndicatorState.Looping == currentState)
             return;
@@ -270,7 +321,13 @@ public class UI_SwapIndicator : MonoBehaviour
         if (null == motionTarget || null == canvasGroup)
             return;
 
-        gameObject.SetActive(true);
+        if (false == gameObject.activeInHierarchy)
+        {
+            gameObject.SetActive(true);
+        }
+
+        baseAnchoredPosition = motionTarget.anchoredPosition;
+
         ApplySorting();
         currentState = IndicatorState.Appearing;
 

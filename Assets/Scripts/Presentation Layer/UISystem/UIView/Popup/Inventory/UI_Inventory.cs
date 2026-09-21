@@ -439,6 +439,7 @@ public class UI_Inventory : MonoBehaviour
                 }
             }
 
+            bool _isSameSlot = (currentSwapSlotIndex == _slotIndex);
             currentSwapSlotIndex = _slotIndex;
             _slot.SetSwapIndicator(true, _immediate);
 
@@ -446,7 +447,14 @@ public class UI_Inventory : MonoBehaviour
             {
                 sharedSwapIndicator.transform.SetAsLastSibling();
                 Vector3 _targetWorldPos = _slot.transform.TransformPoint(indicatorOffset);
-                sharedSwapIndicator.Show(_targetWorldPos);
+                if (true == _isSameSlot && true == sharedSwapIndicator.IsActiveAndShowing)
+                {
+                    sharedSwapIndicator.UpdateTargetPosition(_targetWorldPos);
+                }
+                else
+                {
+                    sharedSwapIndicator.Show(_targetWorldPos);
+                }
             }
         }
         else
@@ -527,7 +535,7 @@ public class UI_Inventory : MonoBehaviour
             return;
 
         HandleExitPopup();
-        IsOpening = false;
+        IsOpening = isOpenAnimated = false;
         ClearAllSwapIndicators(true);
 
         omp.PlayBackward(backpackTag, bReset: true, _skip: true);
@@ -564,6 +572,9 @@ public class UI_Inventory : MonoBehaviour
             ClearAllSwapIndicators(false);
             return;
         }
+
+        if (true == isOpenAnimated)
+            return;
 
         int _slotIndex = logSwapInfo.slotIndex;
         if (0 <= _slotIndex && inventorySlots.Count > _slotIndex)
