@@ -2227,6 +2227,8 @@ MonoBehaviour:
   uiSlotLayerName: ScreenSpaceUI
   maxSlotPrewarmCount: 32
   inventorySlots: []
+  swapIndicatorPrefab: {fileID: 1000000000000001, guid: 7a8bee6e9b33b884398c013461309abc, type: 3}
+  indicatorOffset: {x: 0, y: 24}
 --- !u!1 &7268536504453633950
 GameObject:
   m_ObjectHideFlags: 0
