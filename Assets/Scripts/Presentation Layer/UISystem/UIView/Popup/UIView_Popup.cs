@@ -67,10 +67,10 @@ public class UIView_Popup : UIView
     /// 아예 숨길지는 UI가 정합니다).
     /// (교체 키 입력을 실제로 처리하는 곳은 GameplayUICoordinator이고, 여기는 표시 전용입니다)
     /// </summary>
-    public void LogSwapTargetChanged(in LogSwapSlotInfo _info, ELogSwapTarget _activeTarget)
+    public void LogSwapTargetChanged(in LogSwapSlotInfo _info, in LogSwapSlotInfo _containerInfo, ELogSwapTarget _activeTarget)
     {
         if (null != uiInventory)
-            uiInventory.SetLogSwapInfo(in _info, _activeTarget);
+            uiInventory.SetLogSwapInfo(in _info, in _containerInfo, _activeTarget);
     }
 
     /// <summary>

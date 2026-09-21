@@ -59,6 +59,13 @@ public struct LogSwapSlotInfo
     /// <summary>들어올 원목의 개당 가치.</summary>
     public long incomingUnitValue;
 
+    /// <summary>
+    /// 들어올 원목이 <b>지금 어느 슬롯에 있는지</b>. 운반 상자 교체면 "교체 뒤 상자로 전송될 가방 슬롯"의
+    /// 인덱스(IInventory.inventorySlots 기준)라, 가방 UI가 그 칸에 "이게 넘어갑니다" 표시를 붙일 수 있다.
+    /// 인벤토리 교체면 들어올 원목이 바닥에 있으므로 -1.
+    /// </summary>
+    public int incomingSlotIndex;
+
     /// <summary>버릴 슬롯이 정해져 있는지. false면 지금은 교체가 되지 않는 상태다.</summary>
     public bool bHasSlot => target != ELogSwapTarget.None && slotIndex >= 0;
 
@@ -80,6 +87,7 @@ public struct LogSwapSlotInfo
         incomingLogState = LogState.Normal,
         incomingCount = 0,
         incomingUnitValue = 0,
+        incomingSlotIndex = -1,
     };
 
     public static bool IsSame(in LogSwapSlotInfo _a, in LogSwapSlotInfo _b)
@@ -91,7 +99,8 @@ public struct LogSwapSlotInfo
             && _a.count == _b.count
             && _a.incomingTreeType == _b.incomingTreeType
             && _a.incomingLogState == _b.incomingLogState
-            && _a.incomingCount == _b.incomingCount;
+            && _a.incomingCount == _b.incomingCount
+            && _a.incomingSlotIndex == _b.incomingSlotIndex;
     }
 }
 

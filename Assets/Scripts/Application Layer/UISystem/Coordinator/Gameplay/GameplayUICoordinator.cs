@@ -393,7 +393,10 @@ public class GameplayUICoordinator
     /// </summary>
     private void LogSwapAvailabilityChanged(LogSwapAvailabilityChangedSignal _logSwapAvailabilityChangedSignal)
     {
+        // 가방 UI에는 양쪽을 다 준다. 운반 상자 교체가 잡혀 있을 때 "어느 가방 슬롯이 상자로 넘어가는지"
+        // (containerInfo.incomingSlotIndex)를 가방 쪽에도 표시해야 하기 때문이다.
         popUpUI.LogSwapTargetChanged(_logSwapAvailabilityChangedSignal.inventoryInfo,
+            _logSwapAvailabilityChangedSignal.containerInfo,
             _logSwapAvailabilityChangedSignal.activeTarget);
 
         worldPopupUI.LogSwapTargetChanged(_logSwapAvailabilityChangedSignal.containerInfo,

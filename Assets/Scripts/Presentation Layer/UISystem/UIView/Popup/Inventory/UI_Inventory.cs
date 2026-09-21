@@ -89,6 +89,23 @@ public class UI_Inventory : MonoBehaviour
     /// <summary>교체 키가 이 인벤토리의 슬롯을 버리게 되는 상태인지입니다(안내를 켜는 기본 조건).</summary>
     public bool IsLogSwapReady => logSwapInfo.bHasSlot && ELogSwapTarget.Inventory == activeLogSwapTarget;
 
+    /// <summary>
+    /// <b>운반 상자 쪽</b> 교체 제안입니다. 상자 앞에서 상자가 가득 차 있을 때 잡히며, 이때 가방 UI가
+    /// 보여줄 것은 "버려질 슬롯"이 아니라 <b>"상자로 넘어갈 슬롯"</b>입니다 -
+    /// <c>OutgoingSwapInfo.incomingSlotIndex</c>가 그 가방 슬롯의 인덱스입니다.
+    /// 상자 쪽 제안이 없으면 bHasSlot == false.
+    /// </summary>
+    public LogSwapSlotInfo OutgoingSwapInfo => outgoingSwapInfo;
+
+    /// <summary>
+    /// 교체 키를 누르면 상자로 넘어갈 가방 슬롯의 인덱스. 없으면 -1.
+    /// <c>inventory.inventorySlots</c>(= 이 UI가 그리는 슬롯 목록)와 같은 인덱스입니다.
+    /// </summary>
+    public int OutgoingSlotIndex => outgoingSwapInfo.bHasSlot ? outgoingSwapInfo.incomingSlotIndex : -1;
+
+    /// <summary>교체 키가 운반 상자의 슬롯을 버리고 이 가방의 슬롯을 넘기게 되는 상태인지입니다.</summary>
+    public bool IsOutgoingSwapReady => outgoingSwapInfo.bHasSlot && ELogSwapTarget.OffroadContainer == activeLogSwapTarget;
+
     public Action inventoryHoverEvent;
     public Action inventoryUnHoverEvent;
 
@@ -97,7 +114,8 @@ public class UI_Inventory : MonoBehaviour
     private bool isFirstDataBind = true;
 
     // 교체 대상 슬롯 정보. 가방이 닫혀 있는 동안에도 값은 그대로 유지한다.
-    private LogSwapSlotInfo logSwapInfo = LogSwapSlotInfo.None;
+    private LogSwapSlotInfo logSwapInfo = LogSwapSlotInfo.None;          // 인벤토리 쪽: 버려질 가방 슬롯
+    private LogSwapSlotInfo outgoingSwapInfo = LogSwapSlotInfo.None;     // 상자 쪽: 상자로 넘어갈 가방 슬롯
     private ELogSwapTarget activeLogSwapTarget = ELogSwapTarget.None;
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -422,12 +440,14 @@ public class UI_Inventory : MonoBehaviour
     /// 교체 대상 슬롯 정보를 갱신합니다(UIView_Popup이 호출). 내용이 실제로 달라졌을 때만
     /// LogSwapInfoChangedEvent를 발생시킵니다.
     /// </summary>
-    public void SetLogSwapInfo(in LogSwapSlotInfo _info, ELogSwapTarget _activeTarget)
+    public void SetLogSwapInfo(in LogSwapSlotInfo _info, in LogSwapSlotInfo _containerInfo, ELogSwapTarget _activeTarget)
     {
         bool _bChanged = false == LogSwapSlotInfo.IsSame(in _info, in logSwapInfo)
+            || false == LogSwapSlotInfo.IsSame(in _containerInfo, in outgoingSwapInfo)
             || _activeTarget != activeLogSwapTarget;
 
         logSwapInfo = _info;
+        outgoingSwapInfo = _containerInfo;
         activeLogSwapTarget = _activeTarget;
 
         if (true == _bChanged)

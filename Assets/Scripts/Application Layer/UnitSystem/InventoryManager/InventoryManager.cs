@@ -833,6 +833,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             incomingLogState = swapRequestLogState,
             incomingCount = Mathf.Min(swapRequestCount, maxItemsPerSlot),
             incomingUnitValue = swapRequestUnitValue,
+            incomingSlotIndex = -1,   // 들어올 원목은 바닥에 있다
         };
     }
 

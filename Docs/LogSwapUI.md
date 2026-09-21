@@ -54,10 +54,24 @@ public event Action LogSwapInfoChangedEvent;
 // 교체가 실제로 일어나 슬롯 하나가 비워졌을 때. 인자는 "방금 버려진 슬롯"의 내용
 public event Action<LogSwapSlotInfo> LogSwapExecutedEvent;
 
-public LogSwapSlotInfo LogSwapInfo { get; }          // 지금 버려질 예정인 슬롯 + 들어올 원목
+public LogSwapSlotInfo LogSwapInfo { get; }          // [인벤토리 교체] 버려질 가방 슬롯 + 들어올 원목
 public ELogSwapTarget ActiveLogSwapTarget { get; }   // 교체 키가 실제로 건드릴 쪽
-public bool IsLogSwapReady { get; }                  // 위 둘을 합친 판정(아래 참고)
+public bool IsLogSwapReady { get; }                  // 위 둘을 합친 판정(5장 참고)
+
+public LogSwapSlotInfo OutgoingSwapInfo { get; }     // [운반 상자 교체] 상자로 넘어갈 가방 슬롯 (아래 참고)
+public int OutgoingSlotIndex { get; }                // = OutgoingSwapInfo.incomingSlotIndex, 없으면 -1
+public bool IsOutgoingSwapReady { get; }             // 지금 키를 누르면 이 가방 슬롯이 상자로 넘어가는지
 ```
+
+가방 UI는 **두 가지 상황을 다르게 그려야 합니다.**
+
+| 상황 | 가방 UI가 강조할 슬롯 | 뜻 |
+|---|---|---|
+| 인벤토리 교체 (`IsLogSwapReady`) | `LogSwapInfo.slotIndex` | 이 칸이 **버려짐** |
+| 운반 상자 교체 (`IsOutgoingSwapReady`) | `OutgoingSlotIndex` | 이 칸이 **상자로 넘어감** (버려지는 건 상자 쪽 슬롯) |
+
+둘은 동시에 true가 되지 않습니다(`ActiveLogSwapTarget`이 한쪽만 가리킵니다). 상자 앞에 서면 상자 UI와
+가방이 자동으로 열리는 그 순간 이 값들이 함께 들어옵니다 — **E를 누르기 전에** 뜹니다.
 
 ### 2-2. 이동식 운반 상자 (`UI_Storage` — `UIView_WorldPopup.ui_CarStorage` 인스턴스)
 
@@ -98,6 +112,7 @@ public bool IsLogSwapReady { get; }
 | `incomingTreeType` / `incomingLogState` | 비운 자리에 들어올 원목의 수종 / 등급 |
 | `incomingCount` | 지금 대기 중인 개수. 인벤토리면 **바닥에서 못 먹고 있는 개수**, 운반 상자면 **가방에 든 개수**. 슬롯 최대 중첩을 넘지 않게 잘라서 옴 |
 | `incomingUnitValue` | 들어올 원목의 개당 가치 |
+| `incomingSlotIndex` | 들어올 원목이 **지금 있는 가방 슬롯**. 운반 상자 교체면 "교체 뒤 상자로 넘어갈 가방 슬롯"의 인덱스, 인벤토리 교체면 `-1`(바닥에 있음) |
 
 **프로퍼티**
 
@@ -184,6 +199,18 @@ public class UI_LogSwapPrompt : MonoBehaviour
 
     private void OnLogSwapInfoChanged()
     {
+        // 1) 운반 상자 교체: 이 가방의 슬롯이 "넘어가는" 쪽이다. 버려지는 건 상자 슬롯(상자 UI가 그린다).
+        if (true == uiInventory.IsOutgoingSwapReady)
+        {
+            LogSwapSlotInfo _out = uiInventory.OutgoingSwapInfo;
+
+            // uiInventory.OutgoingSlotIndex 번째 슬롯에 "상자로 넘어감" 표시 (버림 표시와 다른 색/아이콘으로)
+            highlight.SetActive(true);
+            rateText.text = $"{Name(_out.incomingTreeType)} ×{_out.incomingCount} → 상자   (상자의 {Name(_out.treeType)} ×{_out.count} 내려놓음, {_out.exchangeRate:0.#} : 1)";
+            return;
+        }
+
+        // 2) 인벤토리 교체: 이 가방의 슬롯이 "버려지는" 쪽이다.
         if (false == uiInventory.IsLogSwapReady)
         {
             highlight.SetActive(false);
@@ -211,6 +238,8 @@ public class UI_LogSwapPrompt : MonoBehaviour
 
 ## 7. 타이밍과 주의사항
 
+- **운반 상자 교체 안내는 사정권에 들어오는 순간 뜹니다.** E를 누르기 전에, 상자 UI와 가방이 자동으로 열리는
+  그 프레임에 값이 들어옵니다. 사정권 안에 서 있는 동안은 가방 사정이 바뀔 때마다(0.25초 주기) 따라갑니다.
 - **`LogSwapInfoChangedEvent`는 내용이 실제로 달라졌을 때만** 발생합니다. 매 프레임 오지 않습니다.
   들어올 원목의 개수(`incomingCount`)가 바뀌어도 한 번 더 옵니다.
 - 이벤트를 **구독하는 시점에는 이미 값이 들어와 있을 수 있으므로**, 위 예시처럼 `OnEnable`에서 현재
