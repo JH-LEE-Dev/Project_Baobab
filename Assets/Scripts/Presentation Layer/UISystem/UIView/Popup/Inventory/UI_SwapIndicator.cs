@@ -195,10 +195,8 @@ public class UI_SwapIndicator : MonoBehaviour
             Canvas _rootCanvas = indicatorCanvas.rootCanvas;
             if (null != _rootCanvas && (null != _rootCanvas.worldCamera || RenderMode.ScreenSpaceOverlay == _rootCanvas.renderMode))
             {
-                string _targetSortingLayer = !string.IsNullOrEmpty(_rootCanvas.sortingLayerName) ? _rootCanvas.sortingLayerName : sortingLayerName;
-
                 indicatorCanvas.overrideSorting = true;
-                indicatorCanvas.sortingLayerName = _targetSortingLayer;
+                indicatorCanvas.sortingLayerName = sortingLayerName;
                 indicatorCanvas.sortingOrder = sortingOrder;
 
                 if (true == indicatorCanvas.overrideSorting)
@@ -223,10 +221,8 @@ public class UI_SwapIndicator : MonoBehaviour
         Canvas _rootCanvas = indicatorCanvas.rootCanvas;
         if (null != _rootCanvas && (null != _rootCanvas.worldCamera || RenderMode.ScreenSpaceOverlay == _rootCanvas.renderMode))
         {
-            string _targetSortingLayer = !string.IsNullOrEmpty(_rootCanvas.sortingLayerName) ? _rootCanvas.sortingLayerName : sortingLayerName;
-
             indicatorCanvas.overrideSorting = true;
-            indicatorCanvas.sortingLayerName = _targetSortingLayer;
+            indicatorCanvas.sortingLayerName = sortingLayerName;
             indicatorCanvas.sortingOrder = sortingOrder;
         }
     }
