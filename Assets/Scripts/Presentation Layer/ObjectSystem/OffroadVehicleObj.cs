@@ -475,19 +475,6 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         }
         else if (bOverlapped == true)
         {
-            // 차량 상호작용이 받아들여지는 순간 오프로드 컨테이너의 자동 전송을 끝낸다.
-            //
-            // 차량/컨테이너/수리상자는 트리거가 겹쳐 있고 근접 경합으로 한 곳만 고르는 구조라,
-            // 차량이 이겨서 여기까지 왔더라도 플레이어는 여전히 컨테이너 트리거 안에 서 있다
-            // (= OffroadContainer.bPhysicalOverlapped가 true라 전송 세션이 살아 있다).
-            // 그대로 두면 마을에서는 목적지를 아직 확정하지 않았는데도 내비게이션 UI 뒤에서 인출이
-            // 계속되고, 던전에서는 귀환 연출이 시작된 뒤에도 납품이 이어진다.
-            // (StartDrive의 DisableCollision도 결국 같은 일을 하지만 목적지 확정 이후라 너무 늦다.)
-            if (offroadContainer != null)
-            {
-                offroadContainer.CancelPlayerTransfer();
-            }
-
             if (type == PortalType.ToDungeonPortal)
             {
                 lastActivatedTime = Time.time;

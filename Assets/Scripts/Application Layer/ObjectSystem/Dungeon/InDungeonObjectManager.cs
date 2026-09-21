@@ -1467,8 +1467,25 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (_treeObj == null) return;
         if (!bGoldTreePityArmed || bGoldTreePityDone) return;
 
-        // 이미 보석 단계인 나무는 이번이 "두 번째 이후 쓰러짐"이다. 여기서 또 세면 한 그루를
-        // 두 번 센 셈이 되므로 건너뛴다(어차피 아래에서 곧 보장이 소모된다).
+        // 이미 풀로 돌아간 나무는 세지도, 승급시키지도 않는다.
+        //
+        // 풀에 들어간 나무도 TreeIsDead가 다시 돌 수 있다. healthComponent.EnemyIsDeadEvent 구독은
+        // 풀 반환 때 끊기지 않고(OnDestroy에서만 끊는다), 다음 스폰의 Setup() 전까지 체력이 0으로
+        // 남아 있어서, 들고 있던 참조로 한 번 더 때리면 그대로 사망 분기를 탄다.
+        // ResetTree가 bDead/currentGemStage/bLastHitByPlayer는 되돌리지만 treeData.grade는 그대로
+        // 두기 때문에, 그런 유령 나무도 이 아래 판정을 멀쩡히 통과한다.
+        //
+        // 데모에 실리는 콘텐츠(1-1~1-3, 도끼/셰이크웨이브)만 놓고 보면 그렇게 때릴 수 있는 호출부를
+        // 찾지 못했다. 연쇄 포자막 폭발은 뭉글 포자 숲 전용이고 셰이크웨이브 과열 폭발은 "셰이크웨이브
+        // 과부하" 특성이 있어야 하는데 둘 다 데모에 없으며, 평범한 셰이크웨이브는 hitTargets로 같은
+        // 나무를 두 번 때리지 않는다. 그래도 가드를 두는 이유는 실패가 조용하고 영구적이기 때문이다.
+        // 한 번 유령 나무에 소모되면 bGoldTreePityDone이 서고, 그 세이브에서는 황금 나무가 영영 안 뜬다.
+        // (OnReleaseTree에서 이 이벤트를 끊어두므로 평소엔 여기까지 오지 않는다 - 이중 안전장치다)
+        if (_treeObj.IsPooled) return;
+
+        // 이미 보석 단계인 나무는 이번이 "두 번째 이후 쓰러짐"이라 한 그루를 두 번 세게 된다.
+        // 보통은 여기까지 오지 않는다 - 그 나무의 첫 번째 쓰러짐(= 황금으로 변한 순간)에서
+        // 아래 "등급이 Normal보다 높다" 갈래를 타고 이미 보장이 소모되었기 때문이다.
         if (_treeObj.bIsGemStage) return;
 
         // 순수 확률로 황금(이상) 등급을 뽑은 나무라면, 이 타격으로 황금 나무가 눈앞에 뜬다.
@@ -1583,6 +1600,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeHeatEmitEvent -= OnTreeHeatEmit;
         _tree.TreeOverheatExplosionEvent -= OnTreeOverheatExplosion;
         _tree.TreeGemTransformedEvent -= OnTreeGemTransformed;
+        _tree.TreeAboutToDieEvent -= OnTreeAboutToDie;
         //_tree.transform.position = new Vector2(-10000f, -10000f);
         _tree.gameObject.SetActive(false);
     }
