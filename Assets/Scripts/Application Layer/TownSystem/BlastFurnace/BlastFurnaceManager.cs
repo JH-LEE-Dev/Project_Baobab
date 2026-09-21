@@ -900,8 +900,10 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
             shopNPC.InsertMoney(ingotValue);
 
             // 상점NPC에 꽂히는 순간. 원목이 컨테이너에 박힐 때와 같은 뽀잉/소리를 쓴다.
+            // 판매가 성사되는 순간이므로 원목 평가가 끝날 때와 같은 ConvayerPrize도 같이 울린다.
             shopNPC.TriggerBounce();
             Sound.Play(SoundID.GetItem, shopNPC.transform.position, GetSoundVolume());
+            Sound.Play(SoundID.ConvayerPrize, shopNPC.transform.position, GetSoundVolume());
         }
     }
 
