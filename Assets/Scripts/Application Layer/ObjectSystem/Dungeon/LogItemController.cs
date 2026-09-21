@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
-public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAuraProvider
+public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAuraProvider, ILogSpeciesImprovementProvider
 {
     public event Action<Item> LogItemAcquiredEvent;
 
@@ -41,6 +41,9 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
     private ICharacter character;
 
     private ITilemapDataProvider tilemapDataProvider;
+
+    // "수종 개량" 특성이 변환 목표(지역 최고 수종)를 물어볼 곳.
+    private IDensityProvider densityProvider;
     // 물 타일 폴백 시 "몇 월드 유닛 = 1타일"인지 알아야 해서, 실제 그리드 셀 크기를 한 번만 계산해 캐싱한다.
     // Initialize() 시점엔 아직 던전 타일맵이 생성되기 전이라 여기서는 측정할 수 없고, 나무가 실제로
     // 존재하는(= 맵 생성이 끝난) SpawnLogItem 최초 호출 시점에 지연 계산한다.
@@ -53,16 +56,21 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
     private float jackPotChance = 0f;
     private float jackPotAmount = 2f;
 
+    // "수종 개량" 특성. 켜지면 습득하는 모든 원목이 현재 지역에서 가장 가치가 높은 수종으로 바뀐다.
+    private bool bSpeciesImprovement = false;
+
     // 보석 나무는 원목 대신 원석을 떨어뜨리므로, 같은 잭팟 스킬이 원석에도 그대로 적용되어야 한다.
     // 스킬 커맨드는 이 컨트롤러 하나만 바라보므로(ILogItemCH), 값은 여기에 두고 ItemManager가 읽어 전달한다.
     public float JackPotChance => jackPotChance;
     public float JackPotAmount => jackPotAmount;
 
-    public void Initialize(IInventoryChecker _inventoryChecker, ICharacter _character, ITilemapDataProvider _tilemapDataProvider)
+    public void Initialize(IInventoryChecker _inventoryChecker, ICharacter _character, IEnvironmentProvider _environmentProvider)
     {
         inventoryChecker = _inventoryChecker;
         character = _character;
-        tilemapDataProvider = _tilemapDataProvider;
+        // 핫패스에서 매번 집합체를 거치지 않도록 필요한 프로바이더만 꺼내 들고 있는다.
+        tilemapDataProvider = _environmentProvider != null ? _environmentProvider.tilemapDataProvider : null;
+        densityProvider = _environmentProvider != null ? _environmentProvider.densityProvider : null;
         tileWorldSizeMeasured = false;
 
         vfxComponent = GetComponent<VFXComponent>();
@@ -236,6 +244,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
         newItem.SetVfxComponent(vfxComponent);
         newItem.SetAuraProvider(this);
+        newItem.SetSpeciesImprovementProvider(this);
 
         return newItem;
     }
@@ -564,6 +573,29 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
     public void IncreaseJackPotAmount(float _amount)
     {
         jackPotAmount = _amount;
+    }
+
+    public void SetSpeciesImprovement(bool _boolean)
+    {
+        bSpeciesImprovement = _boolean;
+    }
+
+    // // 수종 개량 (ILogSpeciesImprovementProvider)
+
+    void ILogSpeciesImprovementProvider.ApplySpeciesImprovement(LogItem _logItem)
+    {
+        if (!bSpeciesImprovement || _logItem == null || densityProvider == null) return;
+
+        TreeType bestType = densityProvider.GetMostValuableTreeType();
+
+        // 가치 순서는 TreeType enum 인덱스와 같다. 이미 그 지역 최고 수종이면 그대로 둔다.
+        if (bestType == TreeType.None || bestType <= _logItem.treeType) return;
+
+        // 밀도 데이터에만 있고 원목 데이터가 아직 없는 수종이면(데이터 누락) 원래 수종을 유지한다.
+        LogItemTypeData typeData = logItemTypeDataBase != null ? logItemTypeDataBase.Get(bestType) : null;
+        if (typeData == null) return;
+
+        _logItem.ChangeSpecies(typeData);
     }
 
     // // 보석 아우라 (ILogItemAuraProvider)

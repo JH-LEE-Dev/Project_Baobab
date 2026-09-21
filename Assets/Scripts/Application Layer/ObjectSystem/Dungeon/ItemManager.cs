@@ -10,7 +10,7 @@ public class ItemManager : MonoBehaviour
     private IInventoryChecker inventoryChecker;
     private ICharacter character;
 
-    public void Initialize(IInventoryChecker _inventoryChecker, ICharacter _character, ITilemapDataProvider _tilemapDataProvider)
+    public void Initialize(IInventoryChecker _inventoryChecker, ICharacter _character, IEnvironmentProvider _environmentProvider)
     {
         inventoryChecker = _inventoryChecker;
         character = _character;
@@ -21,12 +21,12 @@ public class ItemManager : MonoBehaviour
 
         if (logItemController != null)
         {
-            logItemController.Initialize(inventoryChecker, character, _tilemapDataProvider);
+            logItemController.Initialize(inventoryChecker, character, _environmentProvider);
         }
 
         if (gemOreItemController != null)
         {
-            gemOreItemController.Initialize(character, _tilemapDataProvider, inventoryChecker);
+            gemOreItemController.Initialize(character, _environmentProvider.tilemapDataProvider, inventoryChecker);
         }
 
         BindEvents();
