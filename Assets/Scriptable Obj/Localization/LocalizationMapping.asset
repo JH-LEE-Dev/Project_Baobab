@@ -245,6 +245,22 @@ MonoBehaviour:
     enumValueName: ConstellationDamage
     enumIntValue: 98
     compositeKey: 4203461
+  - enumTypeName: SkillCommandType
+    enumValueName: SpeciesImprovement
+    enumIntValue: 118
+    compositeKey: 4203462
+  - enumTypeName: SkillCommandType
+    enumValueName: BlastFurnaceSpeed
+    enumIntValue: 117
+    compositeKey: 4203463
+  - enumTypeName: SkillCommandType
+    enumValueName: BlastFurnace
+    enumIntValue: 116
+    compositeKey: 4203464
+  - enumTypeName: SkillCommandType
+    enumValueName: GemOrePouchExpansion
+    enumIntValue: 119
+    compositeKey: 4203465
   - enumTypeName: MapType
     enumValueName: None
     enumIntValue: 0
