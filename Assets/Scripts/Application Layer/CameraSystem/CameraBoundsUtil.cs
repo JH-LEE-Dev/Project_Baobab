@@ -55,6 +55,26 @@ public static class CameraBoundsUtil
     /// 창모드 프리셋 8종은 모두 보이는 가로가 정확히 640이라 이 변경으로 값이 달라지지 않습니다.
     /// 달라지는 것은 전체화면에서 16:9·16:10이 아닌 모니터를 쓸 때뿐입니다.
     /// </summary>
+    /// <summary>
+    /// "화면에 보이는" 범위를 원으로 근사할 때의 반지름 = 기준 해상도(640 × 360, 16:9) 반대각선의 월드
+    /// 거리. 교체·흡입 선점이 "지금 눈에 보이는 만큼"을 셀 때 쓴다. GetReferenceHalfWidth와 같은 이유로
+    /// 실제 화면비가 아니라 기준 해상도를 쓴다 - 모니터가 넓다고 판정이 달라지면 안 된다.
+    /// 원이 화면 직사각형보다 조금 넓게 잡히지만(모서리 밖까지 포함), 상한이 슬롯 용량으로 잘리므로
+    /// 실제 판정에는 영향이 없다. 카메라를 찾을 수 없거나 원근 카메라면 0을 반환한다.
+    /// </summary>
+    public static float GetReferenceHalfDiagonal()
+    {
+        Camera cam = CameraFinder.Instance != null ? CameraFinder.Instance.PPMainCamera : null;
+        if (cam == null || !cam.orthographic) return 0f;
+
+        float halfWidth = GetReferenceHalfWidth(cam);
+        float halfHeight = halfWidth * ReferenceHalfHeightRatio;
+        return Mathf.Sqrt(halfWidth * halfWidth + halfHeight * halfHeight);
+    }
+
+    /// <summary>기준 해상도의 세로/가로 비(360/640). 창모드 프리셋과 16:9 전체화면이 모두 이 비율이다.</summary>
+    private const float ReferenceHalfHeightRatio = 9f / 16f;
+
     private static float GetReferenceHalfWidth(Camera _cam)
     {
         float _ppu = FallbackAssetsPPU;

@@ -14,6 +14,13 @@ public class ItemDetector
     private readonly List<IStaticCollidable> results = new List<IStaticCollidable>(16);
     private float timer;
 
+    // "지금 눈에 보이는 만큼"(LogVisibleCounts)을 화면 전체에서 세는지. 플레이어의 감지기만 켠다.
+    // 흡입 반경(0.35 × 배율)은 워낙 작아 좋은 원목 위에 서 있어도 1~3개만 들어오는데, 그걸로 교체 상한을
+    // 잡으면 20개짜리 스택은 영영 후보가 못 된다. 화면 안의 개수로 세면 유저가 보는 것과 판정이 같아진다.
+    // 발동 조건(흡입 반경에서 실제로 거절됨)은 그대로다 - 그래서 비운 칸은 발밑의 그 원목이 채운다.
+    private readonly bool bTrackVisibleCounts;
+    private readonly List<IStaticCollidable> screenResults = new List<IStaticCollidable>(64);
+
     // 정렬 작업 버퍼. 원목마다 우선순위를 한 번만 계산해 sortKeys에 담고, Array.Sort(keys, items)로
     // 두 배열을 함께 정렬한 뒤 리스트에 되돌린다. 비교마다 우선순위를 다시 계산하던 삽입 정렬은
     // 반경 안 원목이 수십 개일 때는 괜찮았지만 n²이라, 흡입 반경을 키우는 특성이 생기면 감지 틱마다
@@ -34,10 +41,11 @@ public class ItemDetector
     // long을 넘지 않아야 한다. 흑요목 프리즘(6억) × 슬롯 용량 100개여도 6e10 < 2^40이다.
     private const long NON_LOG_PRIORITY = 1L << 40;
 
-    public ItemDetector(Transform _sensorTransform, LayerMask _itemLayer)
+    public ItemDetector(Transform _sensorTransform, LayerMask _itemLayer, bool _bTrackVisibleCounts = false)
     {
         sensorTransform = _sensorTransform;
         itemLayer = _itemLayer;
+        bTrackVisibleCounts = _bTrackVisibleCounts;
     }
 
     /// <summary>
@@ -78,7 +86,45 @@ public class ItemDetector
         timer = 0f;
 
         CollisionSystem.Instance.GetCollidablesInRadius(sensorTransform.position, _radius, itemLayer.value, results);
+
+        if (bTrackVisibleCounts)
+        {
+            CountVisibleLogsOnScreen();
+        }
+
         return true;
+    }
+
+    /// <summary>
+    /// 화면(기준 해상도 반대각선 원, 카메라 중심) 안의 원목을 (수종, 등급)별로 세어 LogVisibleCounts에 채운다.
+    /// 같은 틱의 흡입 정렬과 교체 요청이 이 표를 읽는다. 카메라를 못 찾으면 흡입 반경 결과로 센다(예전 동작).
+    /// 공중에 떠 있는 원목도 센다. 수종은 개량이 끝난 값으로 묶는다.
+    /// </summary>
+    private void CountVisibleLogsOnScreen()
+    {
+        List<IStaticCollidable> source = results;
+
+        float screenRadius = CameraBoundsUtil.GetReferenceHalfDiagonal();
+        Camera cam = CameraFinder.Instance != null ? CameraFinder.Instance.PPMainCamera : null;
+        if (screenRadius > 0f && cam != null)
+        {
+            CollisionSystem.Instance.GetCollidablesInRadius(cam.transform.position, screenRadius, itemLayer.value, screenResults);
+            source = screenResults;
+        }
+
+        TreeType speciesFloor = FindSpeciesImprovementFloor(source);
+
+        LogVisibleCounts.Clear();
+
+        for (int i = 0; i < source.Count; i++)
+        {
+            if (!(source[i] is LogItem logItem)) continue;
+
+            LogVisibleCounts.Add(EffectiveTreeType(logItem, speciesFloor), logItem.logState);
+        }
+
+        // 화면 목록은 개수만 세면 볼일이 끝난다. 풀로 돌아간 아이템을 붙들고 있지 않게 비운다.
+        screenResults.Clear();
     }
 
     /// <summary>
@@ -89,8 +135,8 @@ public class ItemDetector
     /// 하나뿐인데 반경 안에 수종이 다른 원목이 섞여 있으면, 마지막 한 칸을 참나무가 가져가고 흑요목이
     /// 튕겨나가는 일이 생겼다. 흡입을 걸기 전에 여기서 순서를 잡아주면 값비싼 쪽이 그 칸을 선점한다.
     ///
-    /// <b>기준은 "지금 보이는 만큼의 가치"</b> = 개당 가치 × min(보이는 개수, 슬롯 최대 중첩)이다
-    /// (LogValue.GetGroupValue). 개당 가치만 보면 보석 <b>한 개</b>(황금 소나무 60)가 마지막 칸을
+    /// <b>기준은 "지금 보이는 만큼의 가치"</b> = 개당 가치 × min(화면 안에 보이는 개수, 슬롯 최대 중첩)이다
+    /// (LogValue.GetGroupValue). 개수는 흡입 반경이 아니라 <b>화면 전체</b>에서 센다(CountVisibleLogsOnScreen). 개당 가치만 보면 보석 <b>한 개</b>(황금 소나무 60)가 마지막 칸을
     /// 잠그고, 뒤따르는 일반 자작 15개(600)를 통째로 튕겨낸다. 칸의 가치는 그 칸을 채울 수 있는
     /// 만큼이지 원목 하나의 가치가 아니다. 교체 시스템의 상한도 같은 식을 쓰므로, 선점과 교체가
     /// 같은 값을 보고 움직인다.
@@ -109,14 +155,11 @@ public class ItemDetector
     /// </summary>
     public static void SortByPickupPriority(List<IStaticCollidable> _results)
     {
+        // 개수 표(LogVisibleCounts)는 Scan이 화면 전체를 세어 이미 채워 뒀다. 여기서는 읽기만 한다.
         int count = _results.Count;
-        TreeType speciesFloor = FindSpeciesImprovementFloor(_results);
-
-        // 개수 표는 정렬이 필요 없을 때(0~1개)도 매 틱 새로 채운다. 같은 틱의 교체 요청이 이 표를
-        // 읽으므로, 여기서 건너뛰면 지난 틱의 개수가 남아 상한이 실제보다 크게 잡힌다.
-        CountVisibleLogs(_results, speciesFloor);
-
         if (count < 2) return;
+
+        TreeType speciesFloor = FindSpeciesImprovementFloor(_results);
 
         EnsureSortBuffers(count);
 
@@ -165,23 +208,6 @@ public class ItemDetector
         }
 
         return TreeType.None;
-    }
-
-    /// <summary>
-    /// 이번 스캔에 (수종, 등급)별로 원목이 몇 개 보이는지 센다. 수종은 개량이 끝난 값으로 묶는다.
-    /// 표는 LogVisibleCounts(공용)에 채운다 - 같은 틱의 교체 요청(InventoryManager.RequestLogSwap)이
-    /// 같은 표를 읽어, 선점과 교체가 "보이는 만큼"을 같은 뜻으로 쓴다.
-    /// </summary>
-    private static void CountVisibleLogs(List<IStaticCollidable> _results, TreeType _speciesFloor)
-    {
-        LogVisibleCounts.Clear();
-
-        for (int i = 0; i < _results.Count; i++)
-        {
-            if (!(_results[i] is LogItem logItem)) continue;
-
-            LogVisibleCounts.Add(EffectiveTreeType(logItem, _speciesFloor), logItem.logState);
-        }
     }
 
     /// <summary>

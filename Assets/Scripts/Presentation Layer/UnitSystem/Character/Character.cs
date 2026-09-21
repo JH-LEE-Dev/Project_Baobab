@@ -194,7 +194,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             characterVisualObjectsOriginalScale = characterVisualObjects.transform.localScale;
         }
 
-        itemDetector = new ItemDetector(transform, itemLayer);
+        // 플레이어의 감지기만 "화면에 보이는 만큼"(LogVisibleCounts)을 센다 - 교체 상한과 흡입 선점이 읽는다.
+        itemDetector = new ItemDetector(transform, itemLayer, true);
 
         // 컴포넌트 할당
         characterVisualComponent = animatorObject.GetComponent<CharacterVisualComponent>();
