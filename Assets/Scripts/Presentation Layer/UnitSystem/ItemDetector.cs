@@ -14,6 +14,26 @@ public class ItemDetector
     private readonly List<IStaticCollidable> results = new List<IStaticCollidable>(16);
     private float timer;
 
+    // 정렬 작업 버퍼. 원목마다 우선순위를 한 번만 계산해 sortKeys에 담고, Array.Sort(keys, items)로
+    // 두 배열을 함께 정렬한 뒤 리스트에 되돌린다. 비교마다 우선순위를 다시 계산하던 삽입 정렬은
+    // 반경 안 원목이 수십 개일 때는 괜찮았지만 n²이라, 흡입 반경을 키우는 특성이 생기면 감지 틱마다
+    // 수만 번의 가치 조회가 도는 구조였다. 지금은 원목당 계산 1회 + O(n log n) 비교이고, 버퍼는
+    // 모자랄 때만 두 배로 키우므로 정상 플레이 중에는 할당이 없다.
+    private const int SORT_BUFFER_INITIAL = 64;
+    private static long[] sortKeys = new long[SORT_BUFFER_INITIAL];
+    private static IStaticCollidable[] sortItems = new IStaticCollidable[SORT_BUFFER_INITIAL];
+
+    // 정렬 키에 원래 순서를 함께 실어 안정 정렬을 흉내낸다. Array.Sort는 안정 정렬이 아니라서 우선순위가
+    // 같은 원목끼리 스캔 순서가 뒤섞일 수 있는데, 그러면 같은 무리 안에서 어느 원목이 먼저 흡입되는지가
+    // 틱마다 달라져 보인다. key = -(우선순위 × 2^16) + 인덱스 로 두면 오름차순 정렬이 곧 "우선순위
+    // 내림차순, 같으면 스캔 순서 유지"가 된다. 한 스캔에 2^16개를 넘길 일은 없다.
+    private const int SORT_INDEX_BITS = 16;
+    private const int SORT_MAX_ITEMS = 1 << SORT_INDEX_BITS;
+
+    // 원목이 아닌 아이템(원석 등)의 우선순위. 어떤 원목 무리보다 커야 하고(최우선), 2^16을 곱해도
+    // long을 넘지 않아야 한다. 흑요목 프리즘(6억) × 슬롯 용량 100개여도 6e10 < 2^40이다.
+    private const long NON_LOG_PRIORITY = 1L << 40;
+
     public ItemDetector(Transform _sensorTransform, LayerMask _itemLayer)
     {
         sensorTransform = _sensorTransform;
@@ -69,38 +89,66 @@ public class ItemDetector
     /// 하나뿐인데 반경 안에 수종이 다른 원목이 섞여 있으면, 마지막 한 칸을 참나무가 가져가고 흑요목이
     /// 튕겨나가는 일이 생겼다. 흡입을 걸기 전에 여기서 순서를 잡아주면 값비싼 쪽이 그 칸을 선점한다.
     ///
-    /// 가치 순서는 TreeType enum 인덱스와 같다 - LogItemValueDataBase.asset의 기본 가치가 enum 순서대로
-    /// 단조 증가한다(OakTree 4 → ObsidianTree 3천만). 같은 수종끼리는 LogState로 가른다. 이쪽도 평가
-    /// 배율이 enum 순서대로 단조 증가한다(Normal x1 → Perfect x20).
+    /// <b>기준은 "지금 보이는 만큼의 가치"</b> = 개당 가치 × min(보이는 개수, 슬롯 최대 중첩)이다
+    /// (LogValue.GetGroupValue). 개당 가치만 보면 보석 <b>한 개</b>(황금 소나무 60)가 마지막 칸을
+    /// 잠그고, 뒤따르는 일반 자작 15개(600)를 통째로 튕겨낸다. 칸의 가치는 그 칸을 채울 수 있는
+    /// 만큼이지 원목 하나의 가치가 아니다. 교체 시스템의 상한도 같은 식을 쓰므로, 선점과 교체가
+    /// 같은 값을 보고 움직인다.
+    ///
+    /// 개당 가치는 기본 가치 × 등급 배율의 실제 값이다(LogValue). 수종 순서만으로 비교하면 황금
+    /// 소나무(60)를 일반 자작(40) 아래로 잘못 두게 된다.
     /// 수종은 "수종 개량"이 끝난 뒤의 값으로 본다(GetPickupPriority 참고).
     ///
     /// 순서를 잘못 예측해도 예약이 어긋나지는 않는다. 공간 판정(CanAcquired)은 개량이 끝난 실제
     /// 수종으로 이뤄지므로, 이 정렬은 "누가 먼저 물어보는가"만 정할 뿐이다.
-    /// (이 전제가 깨지면, 즉 enum 순서와 가치 순서가 어긋나게 되면 이 정렬도 함께 고쳐야 한다.
-    ///  DensityManager.CalculateMostValuableTreeType / InventoryManager.BuildRescueTargets와 같은 전제다)
     ///
-    /// 삽입 정렬을 직접 돌린다. 리스트가 반경 안의 아이템 수(보통 수십 개 이하)라 충분히 빠르고,
-    /// List.Sort(Comparison)과 달리 비교자 래퍼를 할당하지 않는다 - 이 정렬은 아이템 감지 틱마다
-    /// (초당 5회) 돈다. 안정 정렬이라 우선순위가 같은 아이템끼리는 스캔 순서가 그대로 유지된다.
+    /// 원목마다 우선순위를 한 번만 계산해 정적 버퍼에 담고 Array.Sort(keys, items)로 정렬한다.
+    /// List.Sort(Comparison)과 달리 비교자 래퍼를 할당하지 않고, 버퍼는 모자랄 때만 키우므로 이 정렬이
+    /// 아이템 감지 틱마다(초당 5회) 돌아도 정상 플레이 중 할당이 없다. 키에 스캔 순서를 함께 실어
+    /// 우선순위가 같은 아이템끼리는 순서가 그대로 유지된다(안정 정렬과 같은 결과).
     /// </summary>
     public static void SortByPickupPriority(List<IStaticCollidable> _results)
     {
+        int count = _results.Count;
         TreeType speciesFloor = FindSpeciesImprovementFloor(_results);
 
-        for (int i = 1; i < _results.Count; i++)
+        // 개수 표는 정렬이 필요 없을 때(0~1개)도 매 틱 새로 채운다. 같은 틱의 교체 요청이 이 표를
+        // 읽으므로, 여기서 건너뛰면 지난 틱의 개수가 남아 상한이 실제보다 크게 잡힌다.
+        CountVisibleLogs(_results, speciesFloor);
+
+        if (count < 2) return;
+
+        EnsureSortBuffers(count);
+
+        // 원목당 한 번만 계산한다. 키가 작을수록 앞에 오도록 부호를 뒤집고, 같은 우선순위끼리는
+        // 스캔 순서(인덱스)가 낮은 쪽이 앞에 오도록 인덱스를 더한다.
+        int keyed = Mathf.Min(count, SORT_MAX_ITEMS);
+        for (int i = 0; i < keyed; i++)
         {
-            IStaticCollidable current = _results[i];
-            int currentPriority = GetPickupPriority(current, speciesFloor);
-
-            int j = i - 1;
-            while (j >= 0 && GetPickupPriority(_results[j], speciesFloor) < currentPriority)
-            {
-                _results[j + 1] = _results[j];
-                j--;
-            }
-
-            _results[j + 1] = current;
+            IStaticCollidable item = _results[i];
+            sortItems[i] = item;
+            sortKeys[i] = -(GetPickupPriority(item, speciesFloor) << SORT_INDEX_BITS) + i;
         }
+
+        Array.Sort(sortKeys, sortItems, 0, keyed);
+
+        for (int i = 0; i < keyed; i++)
+        {
+            _results[i] = sortItems[i];
+            sortItems[i] = null;   // 풀로 돌아간 아이템을 정적 버퍼가 붙들고 있지 않게 한다
+        }
+    }
+
+    /// <summary>정렬 버퍼가 모자라면 두 배씩 키운다. 정상 플레이에서는 초기 크기 안에서 끝나 할당이 없다.</summary>
+    private static void EnsureSortBuffers(int _count)
+    {
+        if (sortKeys.Length >= _count) return;
+
+        int newSize = sortKeys.Length;
+        while (newSize < _count) newSize *= 2;
+
+        sortKeys = new long[newSize];
+        sortItems = new IStaticCollidable[newSize];
     }
 
     /// <summary>
@@ -120,27 +168,49 @@ public class ItemDetector
     }
 
     /// <summary>
+    /// 이번 스캔에 (수종, 등급)별로 원목이 몇 개 보이는지 센다. 수종은 개량이 끝난 값으로 묶는다.
+    /// 표는 LogVisibleCounts(공용)에 채운다 - 같은 틱의 교체 요청(InventoryManager.RequestLogSwap)이
+    /// 같은 표를 읽어, 선점과 교체가 "보이는 만큼"을 같은 뜻으로 쓴다.
+    /// </summary>
+    private static void CountVisibleLogs(List<IStaticCollidable> _results, TreeType _speciesFloor)
+    {
+        LogVisibleCounts.Clear();
+
+        for (int i = 0; i < _results.Count; i++)
+        {
+            if (!(_results[i] is LogItem logItem)) continue;
+
+            LogVisibleCounts.Add(EffectiveTreeType(logItem, _speciesFloor), logItem.logState);
+        }
+    }
+
+    /// <summary>
+    /// "수종 개량"은 흡입 직전에 원목을 바닥 수종까지 끌어올린다(LogItem.CheckAcquireCondition이
+    /// CanAcquired보다 먼저 부른다). 그래서 바닥에 보이는 수종이 아니라 실제로 담길 수종으로
+    /// 줄을 세워야 한다. 개량이 꺼져 있으면 _speciesFloor가 None이라 아무 영향이 없다.
+    ///
+    /// 이걸 빼먹으면, 개량으로 어차피 같은 수종이 될 원목들을 원래 수종 순서로 줄 세우게 된다.
+    /// 그러면 등급이 뒤집힌다 - 바닥 수종이 자작나무일 때 Normal 소나무와 Perfect 참나무는 둘 다
+    /// 자작나무가 되는데, 원래 수종만 보면 소나무가 앞서므로 20배 싼 쪽이 마지막 칸을 가져간다.
+    /// </summary>
+    private static TreeType EffectiveTreeType(LogItem _logItem, TreeType _speciesFloor)
+    {
+        return _speciesFloor > _logItem.treeType ? _speciesFloor : _logItem.treeType;
+    }
+
+    /// <summary>
     /// 정렬 기준값. 클수록 먼저 흡입을 건다.
     ///
     /// 원목이 아닌 아이템(원석 등)은 원목 슬롯을 두고 경쟁하지 않으므로 최우선으로 두어 앞쪽에
     /// 모아둔다. 원목끼리의 순서만 바뀌고 나머지는 하던 대로 처리된다.
     /// </summary>
-    private static int GetPickupPriority(IStaticCollidable _collidable, TreeType _speciesFloor)
+    private static long GetPickupPriority(IStaticCollidable _collidable, TreeType _speciesFloor)
     {
-        if (!(_collidable is LogItem logItem)) return int.MaxValue;
+        // long.MaxValue를 쓰면 정렬 키를 만들 때(<< 16) 넘친다. 어떤 원목 무리보다 크면서 시프트에 안전한 값을 쓴다.
+        if (!(_collidable is LogItem logItem)) return NON_LOG_PRIORITY;
 
-        // "수종 개량"은 흡입 직전에 원목을 바닥 수종까지 끌어올린다(LogItem.CheckAcquireCondition이
-        // CanAcquired보다 먼저 부른다). 그래서 바닥에 보이는 수종이 아니라 실제로 담길 수종으로
-        // 줄을 세워야 한다. 개량이 꺼져 있으면 _speciesFloor가 None이라 아무 영향이 없다.
-        //
-        // 이걸 빼먹으면, 개량으로 어차피 같은 수종이 될 원목들을 원래 수종 순서로 줄 세우게 된다.
-        // 그러면 등급이 뒤집힌다 - 바닥 수종이 자작나무일 때 Normal 소나무와 Perfect 참나무는 둘 다
-        // 자작나무가 되는데, 원래 수종만 보면 소나무가 앞서므로 20배 싼 쪽이 마지막 칸을 가져간다.
-        TreeType treeType = logItem.treeType;
-        if (_speciesFloor > treeType) treeType = _speciesFloor;
+        TreeType treeType = EffectiveTreeType(logItem, _speciesFloor);
 
-        // 수종이 1순위, 같은 수종 안에서 상태가 2순위. 교체 시스템(버릴 슬롯 선정)과 운반 상자
-        // 전송 순서가 같은 기준을 봐야 하므로 비교식은 LogSlotPriority 한 곳에 모아둔다.
-        return LogSlotPriority.GetOrder(treeType, logItem.logState);
+        return LogValue.GetGroupValue(treeType, logItem.logState, LogVisibleCounts.Get(treeType, logItem.logState));
     }
 }
