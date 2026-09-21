@@ -13,6 +13,7 @@ namespace PresentationLayer.UISystem.CustomNumber
 
     public class CurrencyCounterHUD : MonoBehaviour
     {
+        private const float ShinyEffectInterval = 3.0f;
         [Serializable]
         private struct CurrencyIconEntry
         {
@@ -22,6 +23,7 @@ namespace PresentationLayer.UISystem.CustomNumber
 
         [Header("UI References")]
         [SerializeField] private Image currencyIcon;
+        [SerializeField] private ShinyEffectComponent currencyIconShinyEffect;
         [SerializeField] private CurrencyFontHUD currencyFontHUD;
 
         [Header("Currency Icons")]
@@ -83,6 +85,9 @@ namespace PresentationLayer.UISystem.CustomNumber
             if (null == currencyFontHUD)
                 currencyFontHUD = GetComponentInChildren<CurrencyFontHUD>(true);
 
+            if (null == currencyIconShinyEffect && null != currencyIcon)
+                currencyIconShinyEffect = currencyIcon.GetComponent<ShinyEffectComponent>();
+
             CacheLayout();
             SubscribeFontBoundsChanged();
             currencyFontHUD?.Initialize();
@@ -90,6 +95,16 @@ namespace PresentationLayer.UISystem.CustomNumber
             SetNumber(defaultValue);
             UpdateDimState(defaultValue);
             RefreshLayout();
+        }
+
+        private void OnEnable()
+        {
+            RefreshCurrencyIconShinySchedule();
+        }
+
+        private void OnDisable()
+        {
+            CancelInvoke(nameof(ReplayCurrencyIconShinyEffect));
         }
 
         private void OnDestroy()
@@ -142,6 +157,11 @@ namespace PresentationLayer.UISystem.CustomNumber
 
             currencyIcon.sprite = _icon;
             currencyIcon.gameObject.SetActive(null != _icon);
+
+            if (null != currencyIconShinyEffect)
+                currencyIconShinyEffect.UseShinyEffect = null != _icon && IsGemOreCurrency(_moneyType);
+
+            RefreshCurrencyIconShinySchedule();
             RefreshLayout();
         }
 
@@ -202,6 +222,29 @@ namespace PresentationLayer.UISystem.CustomNumber
         public long GetNumber()
         {
             return currentValue;
+        }
+
+        private void RefreshCurrencyIconShinySchedule()
+        {
+            CancelInvoke(nameof(ReplayCurrencyIconShinyEffect));
+
+            if (true == isActiveAndEnabled && null != currencyIconShinyEffect &&
+                true == currencyIconShinyEffect.UseShinyEffect)
+            {
+                InvokeRepeating(nameof(ReplayCurrencyIconShinyEffect),
+                    ShinyEffectInterval, ShinyEffectInterval);
+            }
+        }
+
+        private void ReplayCurrencyIconShinyEffect()
+        {
+            if (null == currencyIconShinyEffect || false == currencyIconShinyEffect.UseShinyEffect)
+            {
+                CancelInvoke(nameof(ReplayCurrencyIconShinyEffect));
+                return;
+            }
+
+            currencyIconShinyEffect.PlayEffect();
         }
 
         private void InitializeIfNeeded()
@@ -291,6 +334,13 @@ namespace PresentationLayer.UISystem.CustomNumber
 
             if (null != currencyFontRect)
                 currencyFontRect.anchoredPosition = defaultFontPosition;
+        }
+
+        private static bool IsGemOreCurrency(MoneyType _moneyType)
+        {
+            return MoneyType.GoldOre == _moneyType
+                || MoneyType.DiamondOre == _moneyType
+                || MoneyType.PrismOre == _moneyType;
         }
 
         private Sprite GetIcon(MoneyType _moneyType)

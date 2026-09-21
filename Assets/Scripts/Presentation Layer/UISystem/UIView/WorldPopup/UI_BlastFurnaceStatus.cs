@@ -1,4 +1,5 @@
 using System.Globalization;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,9 +12,16 @@ public sealed class UI_BlastFurnaceStatus : MonoBehaviour
     private const float IconVisibleLeft = 1f;
     private const float IconVisibleWidth = 13f;
     private const float IconToFractionGap = 1f;
+    private const float StoredOrePulseScale = 2f;
+    private const float StoredOrePulseDuration = 0.2f;
+    private const float StoredOreColorDuration = 0.5f;
+    private const float ShinyEffectInterval = 3.0f;
+    private static readonly Color StoredOreIncreaseColor = new Color(0.35f, 1f, 0.45f, 1f);
+    private static readonly Color StoredOreDecreaseColor = new Color(1f, 0.32f, 0.28f, 1f);
 
     [Header("Ore")]
     [SerializeField] private Image oreIcon;
+    [SerializeField] private ShinyEffectComponent oreIconShinyEffect;
     [SerializeField] private Sprite goldIcon;
     [SerializeField] private Sprite diamondIcon;
     [SerializeField] private Sprite prismIcon;
@@ -36,6 +44,29 @@ public sealed class UI_BlastFurnaceStatus : MonoBehaviour
     private bool hasDisplayedType;
     private int displayedStoredOre = -1;
     private int displayedRequiredOre = -1;
+    private Vector3 storedOreDigitsBaseScale = Vector3.one;
+    private Tween storedOrePulseTween;
+    private Tween storedOreColorTween;
+
+    private void Awake()
+    {
+        if (null == oreIconShinyEffect && null != oreIcon)
+            oreIconShinyEffect = oreIcon.GetComponent<ShinyEffectComponent>();
+
+        if (null != storedOreDigits)
+        {
+            storedOreDigitsBaseScale = storedOreDigits.localScale;
+
+            // Later siblings render in front in the same Canvas.
+            if (null != fractionLine && storedOreDigits.GetSiblingIndex() < fractionLine.GetSiblingIndex())
+                storedOreDigits.SetSiblingIndex(fractionLine.GetSiblingIndex());
+        }
+    }
+
+    private void OnEnable()
+    {
+        RefreshOreIconShinySchedule();
+    }
 
     public void SetData(BlastFurnaceUIData data)
     {
@@ -54,22 +85,133 @@ public sealed class UI_BlastFurnaceStatus : MonoBehaviour
                 oreIcon.sprite = GetOreIcon(oreType);
                 oreIcon.enabled = null != oreIcon.sprite;
             }
+
+            if (null != oreIconShinyEffect)
+                oreIconShinyEffect.UseShinyEffect = null != oreIcon && null != oreIcon.sprite;
+
+            RefreshOreIconShinySchedule();
         }
 
         if (displayedStoredOre != storedOre || displayedRequiredOre != requiredOre)
         {
+            bool hasPreviousStoredOre = 0 <= displayedStoredOre;
+            bool storedOreIncreased = hasPreviousStoredOre && displayedStoredOre < storedOre;
+            bool storedOreDecreased = hasPreviousStoredOre && storedOre < displayedStoredOre;
             displayedStoredOre = storedOre;
             displayedRequiredOre = requiredOre;
 
             float topWidth = SetNumber(storedOreDigits, Mathf.Max(0, storedOre));
             float bottomWidth = SetNumber(requiredOreDigits, Mathf.Max(0, requiredOre));
             UpdateLayout(Mathf.Max(topWidth, bottomWidth));
+
+            if (true == storedOreIncreased)
+            {
+                PlayStoredOrePulse();
+                PlayStoredOreColor(StoredOreIncreaseColor);
+            }
+            else if (true == storedOreDecreased)
+            {
+                PlayStoredOreColor(StoredOreDecreaseColor);
+            }
         }
 
         if (null != progressFill)
             progressFill.color = progressColor;
         if (null != progressSlider)
             progressSlider.SetValueWithoutNotify(Mathf.Clamp01(progress01));
+    }
+
+
+    private void PlayStoredOrePulse()
+    {
+        if (null == storedOreDigits)
+            return;
+
+        if (null != storedOrePulseTween && true == storedOrePulseTween.IsActive())
+            storedOrePulseTween.Kill();
+
+        storedOreDigits.localScale = storedOreDigitsBaseScale * StoredOrePulseScale;
+        storedOrePulseTween = storedOreDigits
+            .DOScale(storedOreDigitsBaseScale, StoredOrePulseDuration)
+            .SetEase(Ease.OutQuad)
+            .SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+    }
+
+    private void PlayStoredOreColor(Color motionColor)
+    {
+        if (null == storedOreDigits)
+            return;
+
+        if (null != storedOreColorTween && true == storedOreColorTween.IsActive())
+            storedOreColorTween.Kill();
+
+        Color currentColor = motionColor;
+        SetStoredOreDigitsColor(currentColor);
+        storedOreColorTween = DOTween.To(
+                () => currentColor,
+                value =>
+                {
+                    currentColor = value;
+                    SetStoredOreDigitsColor(currentColor);
+                },
+                Color.white,
+                StoredOreColorDuration)
+            .SetEase(Ease.InExpo)
+            .SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+    }
+
+    private void SetStoredOreDigitsColor(Color color)
+    {
+        if (null == storedOreDigits)
+            return;
+
+        for (int i = 0; i < storedOreDigits.childCount; i++)
+        {
+            Image glyph = storedOreDigits.GetChild(i).GetComponent<Image>();
+            if (null != glyph)
+                glyph.color = color;
+        }
+    }
+
+    private void RefreshOreIconShinySchedule()
+    {
+        CancelInvoke(nameof(ReplayOreIconShinyEffect));
+
+        if (true == isActiveAndEnabled && null != oreIconShinyEffect &&
+            true == oreIconShinyEffect.UseShinyEffect)
+        {
+            InvokeRepeating(nameof(ReplayOreIconShinyEffect),
+                ShinyEffectInterval, ShinyEffectInterval);
+        }
+    }
+
+    private void ReplayOreIconShinyEffect()
+    {
+        if (null == oreIconShinyEffect || false == oreIconShinyEffect.UseShinyEffect)
+        {
+            CancelInvoke(nameof(ReplayOreIconShinyEffect));
+            return;
+        }
+
+        oreIconShinyEffect.PlayEffect();
+    }
+
+    private void OnDisable()
+    {
+        CancelInvoke(nameof(ReplayOreIconShinyEffect));
+
+        if (null != storedOrePulseTween && true == storedOrePulseTween.IsActive())
+            storedOrePulseTween.Kill();
+        storedOrePulseTween = null;
+
+        if (null != storedOreColorTween && true == storedOreColorTween.IsActive())
+            storedOreColorTween.Kill();
+        storedOreColorTween = null;
+        displayedStoredOre = -1;
+
+        if (null != storedOreDigits)
+            storedOreDigits.localScale = storedOreDigitsBaseScale;
+        SetStoredOreDigitsColor(Color.white);
     }
 
     private void UpdateLayout(float numberWidth)

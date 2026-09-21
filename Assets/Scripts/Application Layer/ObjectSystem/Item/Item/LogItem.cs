@@ -147,6 +147,15 @@ public class LogItem : Item, IStaticCollidable
 
     // 보석 등급 원목에 붙는 아우라. 소유자(LogItemController)가 풀로 관리하며 여기서는 빌려 쓴다.
     private ILogItemAuraProvider auraProvider;
+
+    // "수종 개량" 특성이 습득 직전에 수종을 바꿔줄 통로. 공급자가 없으면 수종은 그대로 간다.
+    private ILogSpeciesImprovementProvider speciesImprovementProvider;
+
+    // 지금 적용 중인 수종 데이터와, 드랍될 때의 원래 수종 데이터.
+    // 개량을 되돌리는 데 원래 데이터가 필요한데, 그건 이미 Initialize가 인자로 받은 값이다.
+    // (수종을 TreeType으로 납작하게 만들어 소유자에게 되묻지 않고 여기서 바로 복구한다)
+    private LogItemTypeData currentTypeData;
+    private LogItemTypeData originalTypeData;
     private ItemAuraEffectController gemAura;
 
     //private string objectSortingLayerName = "Objects";
@@ -176,6 +185,8 @@ public class LogItem : Item, IStaticCollidable
         logState = _logState;
         ApplyOutlineColor();
         treeType = _logItemTypeData.treeType;
+        currentTypeData = _logItemTypeData;
+        originalTypeData = _logItemTypeData;
         state = ItemMoveState.None;
         suckTarget = null;
         suckerChecker = null;
@@ -270,6 +281,52 @@ public class LogItem : Item, IStaticCollidable
     public void SetAuraProvider(ILogItemAuraProvider _auraProvider)
     {
         auraProvider = _auraProvider;
+    }
+
+    public void SetSpeciesImprovementProvider(ILogSpeciesImprovementProvider _provider)
+    {
+        speciesImprovementProvider = _provider;
+    }
+
+    /// <summary>
+    /// 원목의 수종을 갈아끼운다("수종 개량" 특성). 등급(logState)과 이동 상태는 건드리지 않는다.
+    ///
+    /// <b>여기서는 데이터만 바꾸고 겉모습은 건드리지 않는다.</b> 습득 판정은 담지 못할 때마다
+    /// 바꿨다 되돌리기를 반복하는데(CheckAcquireCondition), 그때마다 렌더러를 칠했다 지우면
+    /// 화면에 한 프레임도 나타나지 않는 스프라이트 쓰기만 쌓인다. 겉모습은 흡입이 확정된 뒤
+    /// ApplySpeciesVisual()이 한 번만 반영한다.
+    /// </summary>
+    public void ChangeSpecies(LogItemTypeData _logItemTypeData)
+    {
+        if (_logItemTypeData == null) return;
+
+        currentTypeData = _logItemTypeData;
+        treeType = _logItemTypeData.treeType;
+        color = _logItemTypeData.color;
+    }
+
+    /// <summary>
+    /// 바뀐 수종의 겉모습을 실제로 반영한다. 수종이 진짜로 바뀌었고 습득이 확정된 뒤에만 부른다.
+    ///
+    /// 스프라이트 해석(GetSprite/GetTimberSprite는 stateSprites를 선형 탐색한다)도 여기로 모았다.
+    /// 그림자는 모든 원목이 같은 스프라이트시트를 공유하고, 보석 아우라는 수종이 아니라 logState를
+    /// 따르므로 둘 다 다시 잡을 필요가 없다.
+    /// </summary>
+    private void ApplySpeciesVisual()
+    {
+        if (currentTypeData == null) return;
+
+        sprite = currentTypeData.GetSprite(logState);
+        timberSprite = currentTypeData.GetTimberSprite(logState);
+
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.sprite = sprite;
+            if (outlineStencilSR != null)
+                outlineStencilSR.sprite = sprite;
+            if (outlineSR != null)
+                outlineSR.sprite = sprite;
+        }
     }
 
     /// <summary>
@@ -1287,11 +1344,36 @@ public class LogItem : Item, IStaticCollidable
     private void CheckAcquireCondition()
     {
         IInventoryChecker checker = suckerChecker ?? inventoryChecker;
-        if (suckTarget != null && checker != null && checker.CanAcquired(this) && bCanAcquired == true)
-        {
-            StartSucking(suckTarget);
 
-            return;
+        if (suckTarget != null && checker != null)
+        {
+            // 수종 개량("수종 개량" 특성)은 반드시 CanAcquired()보다 먼저 끝나야 한다. 공간 검사와
+            // 자리 예약이 수종을 보고 이뤄지므로, 검사 뒤에 바꾸면 "소나무 자리를 예약해두고
+            // 자작나무를 담는" 어긋남이 생겨 예약이 샌다.
+            // 바닥에 떨어져 있는 동안은 원래 수종 그대로 보이고, 흡입이 시작되는(= 먹는) 순간에
+            // 겉모습까지 바뀐다.
+            TreeType originalTreeType = treeType;
+            speciesImprovementProvider?.ApplySpeciesImprovement(this);
+
+            if (checker.CanAcquired(this) && bCanAcquired == true)
+            {
+                if (treeType != originalTreeType)
+                {
+                    ApplySpeciesVisual();
+                }
+
+                StartSucking(suckTarget);
+
+                return;
+            }
+
+            // 못 담았다면 아직 먹은 게 아니다. 인벤토리가 꽉 찬 채로 옆을 스쳐 지나갔을 뿐인데
+            // 바닥의 원목이 다른 수종으로 변해 있으면 안 되므로 원래 수종으로 되돌린다.
+            // 겉모습은 애초에 손대지 않았으므로 데이터만 되돌리면 끝이다.
+            if (treeType != originalTreeType)
+            {
+                ChangeSpecies(originalTypeData);
+            }
         }
 
         suckTarget = null;

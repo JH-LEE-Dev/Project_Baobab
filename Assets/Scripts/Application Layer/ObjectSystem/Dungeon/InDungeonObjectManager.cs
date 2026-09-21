@@ -317,7 +317,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         inDungeonResultManager = _inDungeonResultManager;
 
         itemManager = GetComponentInChildren<ItemManager>();
-        itemManager.Initialize(_inventoryChecker, character, environmentProvider.tilemapDataProvider);
+        itemManager.Initialize(_inventoryChecker, character, environmentProvider);
 
         lootManager = GetComponentInChildren<LootManager>();
         lootManager.Initialize();

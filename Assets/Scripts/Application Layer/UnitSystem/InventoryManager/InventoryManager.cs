@@ -717,7 +717,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     }
 
     /// <summary>
-    /// 원석 주머니 한도를 늘린다. 아직 이걸 부르는 특성은 없고, 나중에 붙일 자리다.
+    /// 원석 주머니 한도를 늘린다("원석 주머니 확장" 특성 - SC_GemOrePouchExpansion).
     /// 한도가 줄어도(특성 Undo) 갖고 있던 원석을 깎지는 않는다 - 더 담지 못할 뿐이다.
     /// </summary>
     public void IncreaseGemOrePouchCapacity(float _amount)

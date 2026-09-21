@@ -32,6 +32,10 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
     private MapType currentMapType;
     private DensityData currentDensityData;
 
+    // 현재 지역에서 가치가 가장 높은 수종("수종 개량" 특성의 변환 목표).
+    // 지역이 바뀔 때만 달라지므로 SetDensityData에서 한 번 계산해 들고 있는다.
+    private TreeType currentMostValuableTreeType = TreeType.None;
+
     private Dictionary<ForestType, MapHiddenGaugeSaveData> hiddenGaugeData;
     public List<AnimalHiddenGaugeAmountData> animalHiddenGaugeAmounts;
     public List<TreeHiddenGaugeAmountData> treeHiddenGaugeAmounts;
@@ -66,6 +70,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
     {
         currentMapType = _mapType;
         currentDensityData = densityDataBase.Get(_mapType, _forestType);
+        currentMostValuableTreeType = CalculateMostValuableTreeType();
     }
 
     public float GetTreeRegenTime()
@@ -106,6 +111,39 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         }
 
         return currentDensityData.spawnTreeTypes[0].treeType;
+    }
+
+    public TreeType GetMostValuableTreeType()
+    {
+        return currentMostValuableTreeType;
+    }
+
+    /// <summary>
+    /// 현재 지역에 실제로 자라는 수종(regenProb가 0보다 큰 것) 중 가치가 가장 높은 것을 고른다.
+    /// 가치 순서는 TreeType enum 인덱스와 같다 - LogItemValueDataBase.asset의 가치가 enum 순서대로
+    /// 매겨져 있으므로, 별도의 가치 테이블을 들고 있지 않아도 인덱스 비교만으로 판정할 수 있다.
+    /// (InventoryManager의 "원목 보험 증서" 구제 순서와 같은 전제를 쓴다)
+    ///
+    /// 결과는 지역이 바뀔 때만 달라지므로 SetDensityData에서 한 번만 계산해 캐싱한다.
+    /// "수종 개량" 특성이 원목을 습득할 때마다 물어보는 값이라 그때마다 리스트를 훑을 이유가 없다.
+    /// </summary>
+    private TreeType CalculateMostValuableTreeType()
+    {
+        if (currentDensityData == null || currentDensityData.spawnTreeTypes == null) return TreeType.None;
+
+        TreeType bestType = TreeType.None;
+
+        for (int i = 0; i < currentDensityData.spawnTreeTypes.Count; i++)
+        {
+            TreeDensityData data = currentDensityData.spawnTreeTypes[i];
+
+            // 확률이 0이면 이 지역에 실제로는 나오지 않는 수종이다. 변환 목표로 삼지 않는다.
+            if (data.regenProb <= 0) continue;
+
+            if (data.treeType > bestType) bestType = data.treeType;
+        }
+
+        return bestType;
     }
 
     public AnimalType GetAnimalTypeToSpawn()
