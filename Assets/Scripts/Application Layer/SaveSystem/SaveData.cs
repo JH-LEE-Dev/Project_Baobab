@@ -263,6 +263,9 @@ public class GameSaveData
     public float sporePotionCharge;
     public bool bHasAcquiredStarCompass;
     public bool bHasAcquiredObsidianCharm;
+    // 데모 전용 "황금 나무" 보장을 이미 소진했는지. 이 키가 없는 예전 세이브는 false로 읽히고,
+    // 그러면 특성을 찍어둔 상태에서 한 번 더 보장이 무장된다(데모 한정이라 그대로 둔다).
+    public bool bGoldTreePityDone;
     public List<LootType> currentOwnedLoots;
 
     // 용광로 상태. 이 키가 없는 예전 세이브를 읽으면 JsonUtility가 null로 두므로, 읽는 쪽에서
@@ -291,6 +294,7 @@ public class GameSaveData
         sporePotionCharge = 0f;
         bHasAcquiredStarCompass = false;
         bHasAcquiredObsidianCharm = false;
+        bGoldTreePityDone = false;
     }
 }
 

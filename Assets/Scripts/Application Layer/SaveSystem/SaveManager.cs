@@ -368,6 +368,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
             cachedSaveData.sporePotionCharge = inDungeonObjectManager.sporePotionCharge;
             cachedSaveData.bHasAcquiredStarCompass = inDungeonObjectManager.bHasAcquiredStarCompass;
             cachedSaveData.bHasAcquiredObsidianCharm = inDungeonObjectManager.bHasAcquiredObsidianCharm;
+            cachedSaveData.bGoldTreePityDone = inDungeonObjectManager.bGoldTreePityDone;
             
             cachedSaveData.currentOwnedLoots.Clear();
             if (null != inDungeonObjectManager.CurrentOwnedLoots)
@@ -813,6 +814,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
             inDungeonObjectManager.sporePotionCharge = _data.sporePotionCharge;
             inDungeonObjectManager.bHasAcquiredStarCompass = _data.bHasAcquiredStarCompass;
             inDungeonObjectManager.bHasAcquiredObsidianCharm = _data.bHasAcquiredObsidianCharm;
+            inDungeonObjectManager.bGoldTreePityDone = _data.bGoldTreePityDone;
 
             inDungeonObjectManager.RestoreOwnedLoots(_data.currentOwnedLoots);
         }
