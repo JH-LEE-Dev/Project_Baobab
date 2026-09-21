@@ -2106,7 +2106,22 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         ClearLogSwapRequest();
         UpdateLogSwapState(0f);
 
-        // 흘리는 연출과 가방 원목의 출발은 상자가 입을 벌린 순간에 맞춘다 - 마을에서 상자에서 원목을 꺼낼 때
+        // 가방 원목의 출발은 E로 그냥 넣을 때와 똑같이 지금 당장이다 - 던전의 E 전송은 뚜껑을 기다리지 않고
+        // 시작하고, 뚜껑은 그 사이에 열린다(UpdateContainerState). 교체도 "상자 슬롯 하나가 빠지고 가방 슬롯
+        // 하나가 들어오는" 것 말고는 그 흐름과 같아야 한다. E를 다시 누르라고 요구하지 않는다.
+        // TransferAllItemsRoutine은 키를 뗀 상태면 한 슬롯 뒤 스스로 멈추므로 정확히 그 슬롯 하나만 넘어간다
+        // (TryTransferOneSlot이 가장 비싼 종류 = 방금 막혀 있던 그 종류를 먼저 고른다). E를 누른 채였다면
+        // 그건 E의 동작이라 평소처럼 이어진다.
+        if (bCanInteract && transferCoroutine == null && HasAnyItemToTransfer())
+        {
+            // 전송 루프의 첫 대기(transferInterval, E 연타 완충용)는 여기선 뜻이 없으므로 직전 전송 시각을 밀어
+            // 첫 스텝이 즉시 나가게 한다 - 안 하면 E로 상자를 채우다 막힌 직후 Tab을 눌렀을 때 가방 쪽이
+            // 최대 0.5초 멈춘 것처럼 보인다.
+            lastTransferTime = -transferInterval;
+            transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
+        }
+
+        // 버린 원목을 흘리는 연출만 상자가 입을 벌린 순간에 맞춘다 - 마을에서 상자에서 원목을 꺼낼 때
         // (InteractionKeyPressed의 bInTown 분기)와 같은 시점이다. 이미 열려 있으면 바로, 아니면 뚜껑 연출이
         // SetContainerVisualOpened(true)를 부를 때 PlayPendingSwapDrop이 이어받는다.
         pendingSwapDrop = info;
@@ -2123,11 +2138,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     }
 
     /// <summary>
-    /// 상자가 입을 벌린 순간에 교체로 버린 원목을 흘리고, "넘어감"으로 표시된 가방 슬롯의 전송을 시작한다.
-    /// 교체 한 번 = 슬롯 하나가 빠지고 슬롯 하나가 들어온다. E를 다시 누르라고 요구하지 않는다.
-    /// TransferAllItemsRoutine은 키를 뗀 상태면 한 슬롯 뒤 스스로 멈추므로 정확히 그 슬롯 하나만 넘어간다
-    /// (TryTransferOneSlot이 가장 비싼 종류 = 방금 막혀 있던 그 종류를 먼저 고른다). E를 누른 채였다면
-    /// 그건 E의 동작이라 평소처럼 이어진다.
+    /// 상자가 입을 벌린 순간에 교체로 버린 원목을 흘린다. 흘리기<b>만</b> 담당한다 - 가방 원목의 전송은
+    /// ExecuteLogSwap이 Tab 프레임에 이미 시작했다(E로 그냥 넣을 때와 같은 흐름).
     /// </summary>
     private void PlayPendingSwapDrop()
     {
@@ -2138,16 +2150,6 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         {
             characterInventoryManager.PlayLogDropVisuals(pendingSwapDrop.treeType, pendingSwapDrop.logState,
                 pendingSwapDrop.count, transform.position + new Vector3(0f, 0.2f, 0f), _bFlyingSortingLayer: true);
-        }
-
-        if (bCanInteract && transferCoroutine == null && HasAnyItemToTransfer())
-        {
-            // 상자에서 빠지는 것과 가방에서 들어오는 것이 같은 순간이어야 한다. 전송 루프의 첫 대기
-            // (transferInterval, E 연타 완충용)는 여기선 뜻이 없으므로 직전 전송 시각을 밀어 첫 스텝이 즉시
-            // 나가게 한다 - 이걸 안 하면 E로 상자를 채우다 막힌 직후 Tab을 눌렀을 때 가방 쪽이 최대 0.5초
-            // 멈춘 것처럼 보인다.
-            lastTransferTime = -transferInterval;
-            transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
         }
     }
 
