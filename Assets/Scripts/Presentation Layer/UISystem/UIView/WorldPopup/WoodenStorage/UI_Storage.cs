@@ -17,8 +17,16 @@ public class UI_Storage : MonoBehaviour
     [SerializeField] private float tweenDuration = 0.3f;
     [SerializeField] private Ease easeType = Ease.OutQuad;
 
+    [Header("Smart Swap Settings")]
+    [Tooltip("스마트 스왑 단일 인디케이터 프리팹 (Visuals 하위에 1회 인스턴스화)")]
+    [SerializeField] private GameObject swapIndicatorPrefab;
+    [Tooltip("인디케이터가 대상 슬롯 머리 위를 가리키는 로컬 오프셋")]
+    [SerializeField] private Vector2 indicatorOffset = new Vector2(0f, 24f);
+
+    private UI_SwapIndicator sharedSwapIndicator;
+    private int currentSwapSlotIndex = -1;
+
     // //내부 의존성
-    private const int defaultCap = 2;
 
     // 캐릭터가 보관함과 X축상 거의 같은 위치(예: 바로 위/아래)에 있을 때, 여유(deadzone) 없이 딱 붙은
     // 부등호로만 좌/우를 판정하면 아주 미세한 위치 변화만으로도 판정이 계속 뒤바뀌어 UI가 좌우로
@@ -44,11 +52,12 @@ public class UI_Storage : MonoBehaviour
     private bool isPendingHide = false;
 
     private bool isOnShow = false;
+    private bool isOpenAnimated = false;
 
 
     // //퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(Vector2 _offset)
+    public void Initialize(Vector2 _offset, InputManager _inputManager = null)
     {
         storageSlots = new List<UI_InventorySlot>(SYSTEM_VAR.MAX_STORAGE_CNT);
         gameObject.SetActive(false);
@@ -60,6 +69,44 @@ public class UI_Storage : MonoBehaviour
         rect = GetComponent<RectTransform>();
 
         SnapToPerfectPixel();
+
+        InitSwapIndicator(_inputManager);
+
+        LogSwapInfoChangedEvent -= HandleLogSwapInfoChanged;
+        LogSwapInfoChangedEvent += HandleLogSwapInfoChanged;
+
+        LogSwapExecutedEvent -= HandleLogSwapExecuted;
+        LogSwapExecutedEvent += HandleLogSwapExecuted;
+    }
+
+    private void InitSwapIndicator(InputManager _inputManager)
+    {
+        if (null == sharedSwapIndicator && null != swapIndicatorPrefab)
+        {
+            Transform _parent = transform.Find("Visuals");
+            if (null == _parent)
+            {
+                _parent = transform;
+            }
+
+            GameObject _inst = Instantiate(swapIndicatorPrefab, _parent);
+            if (null != _inst)
+            {
+                sharedSwapIndicator = _inst.GetComponent<UI_SwapIndicator>();
+                if (null != sharedSwapIndicator)
+                {
+                    sharedSwapIndicator.Initialize(_inputManager);
+                    sharedSwapIndicator.transform.SetAsLastSibling();
+                    sharedSwapIndicator.HideImmediate();
+                }
+            }
+        }
+        else if (null != sharedSwapIndicator)
+        {
+            sharedSwapIndicator.Initialize(_inputManager);
+            sharedSwapIndicator.transform.SetAsLastSibling();
+            sharedSwapIndicator.HideImmediate();
+        }
     }
 
     public void BindStorage(IInventory _storage)
@@ -129,14 +176,41 @@ public class UI_Storage : MonoBehaviour
         LogSwapExecutedEvent?.Invoke(_info);
     }
 
+    private void HandleLogSwapInfoChanged()
+    {
+        if (false == IsOpening || false == IsLogSwapReady)
+        {
+            ClearAllSwapIndicators(false);
+            return;
+        }
+
+        if (true == isOpenAnimated)
+            return;
+
+        int _slotIndex = logSwapInfo.slotIndex;
+        if (0 <= _slotIndex && storageSlots.Count > _slotIndex)
+        {
+            SetSwapCandidateSlot(_slotIndex, true);
+        }
+        else
+        {
+            ClearAllSwapIndicators(false);
+        }
+    }
+
+    private void HandleLogSwapExecuted(LogSwapSlotInfo _info)
+    {
+        HandleLogSwapInfoChanged();
+    }
+
     public void UpdateMaxSlotCount(int _cnt)
     {
         if (null == uiSlotPrefab)
             return;
 
-        int needCount = _cnt - storageSlots.Count;
+        int _needCount = _cnt - storageSlots.Count;
 
-        while (0 < needCount--)
+        while (0 < _needCount--)
         {
             UI_InventorySlot slot = Instantiate(uiSlotPrefab, slotBackground.transform).GetComponent<UI_InventorySlot>();
 
@@ -175,15 +249,118 @@ public class UI_Storage : MonoBehaviour
         if (null == _items)
             _items = storage.inventorySlots;
 
-        int itemCount = storage.currentSlotCnt;
+        int _itemCount = storage.currentSlotCnt;
 
-        for (int i = 0; i < storageSlots.Count; ++i)
+        for (int _i = 0; _i < storageSlots.Count; ++_i)
         {
-            UI_InventorySlot slot = storageSlots[i];
-            IInventorySlot item = _items[i];
+            UI_InventorySlot slot = storageSlots[_i];
+            IInventorySlot item = _items[_i];
 
-            slot.gameObject.SetActive(i < itemCount);
+            slot.gameObject.SetActive(_i < _itemCount);
             slot.UpdateBindSlotData(item, storage.maxItemCntPerSlot);
+        }
+
+        if (true == IsOpening)
+        {
+            HandleLogSwapInfoChanged();
+        }
+    }
+
+    /// <summary>
+    /// 특정 저장소 슬롯의 스마트 스왑 아웃라인을 켜고, 공유 인디케이터를 대상 슬롯 위치로 이동시켜 활성화합니다.
+    /// </summary>
+    public void SetSwapCandidateSlot(int _slotIndex, bool _active, bool _immediate = false)
+    {
+        if (null == storageSlots || 0 > _slotIndex || storageSlots.Count <= _slotIndex)
+            return;
+
+        UI_InventorySlot _slot = storageSlots[_slotIndex];
+        if (null == _slot)
+            return;
+
+        if (true == _active)
+        {
+            // 이전에 켜져 있던 슬롯이 있다면 아웃라인 해제
+            if (-1 != currentSwapSlotIndex && _slotIndex != currentSwapSlotIndex && storageSlots.Count > currentSwapSlotIndex)
+            {
+                UI_InventorySlot _prevSlot = storageSlots[currentSwapSlotIndex];
+                if (null != _prevSlot)
+                {
+                    _prevSlot.SetSwapIndicator(false, _immediate);
+                }
+            }
+
+            bool _isSameSlot = (currentSwapSlotIndex == _slotIndex);
+            currentSwapSlotIndex = _slotIndex;
+            _slot.SetSwapIndicator(true, _immediate);
+
+            if (null != sharedSwapIndicator)
+            {
+                sharedSwapIndicator.transform.SetAsLastSibling();
+                Vector3 _targetWorldPos = _slot.transform.TransformPoint(indicatorOffset);
+                if (true == _isSameSlot && true == sharedSwapIndicator.IsActiveAndShowing)
+                {
+                    sharedSwapIndicator.UpdateTargetPosition(_targetWorldPos);
+                }
+                else
+                {
+                    sharedSwapIndicator.Show(_targetWorldPos);
+                }
+            }
+        }
+        else
+        {
+            if (_slotIndex == currentSwapSlotIndex)
+            {
+                currentSwapSlotIndex = -1;
+            }
+
+            _slot.SetSwapIndicator(false, _immediate);
+
+            if (null != sharedSwapIndicator)
+            {
+                if (true == _immediate)
+                {
+                    sharedSwapIndicator.HideImmediate();
+                }
+                else
+                {
+                    sharedSwapIndicator.Hide();
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 모든 저장소 슬롯의 스마트 스왑 아웃라인 및 공유 인디케이터를 해제합니다.
+    /// </summary>
+    public void ClearAllSwapIndicators(bool _immediate = false)
+    {
+        currentSwapSlotIndex = -1;
+
+        if (null == storageSlots)
+            return;
+
+        int _count = storageSlots.Count;
+        for (int _i = 0; _i < _count; ++_i)
+        {
+            UI_InventorySlot _slot = storageSlots[_i];
+            if (null != _slot)
+            {
+                _slot.SetSwapIndicator(false, _immediate);
+            }
+        }
+
+        if (null != sharedSwapIndicator)
+        {
+            if (true == _immediate)
+            {
+                sharedSwapIndicator.HideImmediate();
+            }
+            else
+            {
+                sharedSwapIndicator.Hide();
+            }
         }
     }
 
@@ -204,22 +381,36 @@ public class UI_Storage : MonoBehaviour
         {
             Vector3 _storagePos = storage.GetTransform().position;
             if (null != playerTransform)
-                isPlayerOnLeft = (playerTransform.position.x < _storagePos.x);
+                isPlayerOnLeft = (_storagePos.x > playerTransform.position.x);
 
             rect.position = GetTargetWorldPosition();
         }
 
         SnapToPerfectPixel();
 
-        if (null == omp)
-            return;
+        if (null != omp)
+        {
+            isOpenAnimated = true;
+            omp.SettingEntryMotion(popdown, true, true);
+            popup = omp.Play(popupTag, _onComplete: OnShowCompletedAnimation, bReset: true);
+        }
+        else
+        {
+            OnShowCompletedAnimation();
+        }
+    }
 
-        omp.SettingEntryMotion(popdown, true, true);
-        popup = omp.Play(popupTag, bReset: true);
+    private void OnShowCompletedAnimation()
+    {
+        isOpenAnimated = false;
+        Canvas.ForceUpdateCanvases();
+        HandleLogSwapInfoChanged();
     }
 
     public void OnHide()
     {
+        isOpenAnimated = false;
+        ClearAllSwapIndicators(false);
         isOnShow = false;
 
         if (true == useDynamicPositioning && null != positioningTween && true == positioningTween.IsActive() && true == positioningTween.IsPlaying())
@@ -235,6 +426,7 @@ public class UI_Storage : MonoBehaviour
 
     private void OnCompleteAnim()
     {
+        ClearAllSwapIndicators(true);
         gameObject.SetActive(IsOpening = false);
     }
 
@@ -406,9 +598,9 @@ public class UI_Storage : MonoBehaviour
             if (Mathf.Abs(_deltaX) < POSITION_DEADZONE)
                 return;
 
-            bool _currentLeft = _deltaX < 0f;
+            bool _currentLeft = 0f > _deltaX;
 
-            if (_currentLeft != isPlayerOnLeft)
+            if (isPlayerOnLeft != _currentLeft)
             {
                 isPlayerOnLeft = _currentLeft;
                 TriggerPositioningTween();
@@ -418,7 +610,13 @@ public class UI_Storage : MonoBehaviour
 
     private void OnDestroy()
     {
+        LogSwapInfoChangedEvent -= HandleLogSwapInfoChanged;
+        LogSwapExecutedEvent -= HandleLogSwapExecuted;
+        ClearAllSwapIndicators(true);
+
         if (null != positioningTween && true == positioningTween.IsActive())
             positioningTween.Kill();
+
+        storageSlots?.Clear();
     }
 }

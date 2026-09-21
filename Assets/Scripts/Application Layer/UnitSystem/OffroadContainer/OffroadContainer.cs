@@ -460,6 +460,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         transferringSlots.Clear();
         bIsInteracting = false;
         ClearLogSwapRequest();
+        bSwapDropPending = false;
         lastTransferTime = -transferInterval;
         currentDepositPitch = DEPOSIT_PITCH_MIN;
         lastDepositPitchTime = -999f;
@@ -1838,6 +1839,21 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     // 판정이 돌면 유저는 "신호를 받고서야 어느 원목이 교체되는지 표기된다"고 느낀다.
     private bool bSwapRangeActive = false;
 
+    // 교체로 버린 원목을 아직 흘리지 않은 상태. 흘리는 연출과 가방 원목의 출발은 상자가 입을 벌린 순간
+    // (SetContainerVisualOpened(true))에 맞춘다 - 마을에서 상자에서 원목을 꺼낼 때와 같은 시점이다.
+    // 데이터는 ExecuteLogSwap에서 이미 지웠으므로 여기 남는 것은 연출용 사본뿐이다.
+    private bool bSwapDropPending = false;
+    private LogSwapSlotInfo pendingSwapDrop = LogSwapSlotInfo.None;
+    private float swapDropPendingSince = -999f;
+
+    /// <summary>
+    /// 뚜껑 콜백(SetContainerVisualOpened)이 오지 않을 때의 안전망. VComponent.Open()은 비활성 상태면
+    /// 아무것도 하지 않고 돌아가므로, 그 경우 pending이 영영 남아 흘리기도 전송도 시작되지 않는다
+    /// (데이터는 이미 지워진 뒤라 유저는 슬롯만 잃는다). 뚜껑 연출은 0.15초면 입을 벌리니 이보다 훨씬 긴
+    /// 시간이 지나도 소식이 없으면 그냥 진행한다.
+    /// </summary>
+    private const float SWAP_DROP_PENDING_TIMEOUT = 0.6f;
+
     /// <summary>
     /// 막힌 기록을 다시 확인하는 주기. 전송 코루틴은 더 옮길 것이 없으면 멈춰버리므로, 그 뒤에
     /// 상황이 바뀌어도 알려줄 사람이 없다. 그래서 기록이 살아 있는 동안만 이 주기로 직접 다시
@@ -2023,11 +2039,28 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             }
         }
 
+        // 뚜껑 콜백이 끝내 오지 않으면 안전망으로 진행한다(SWAP_DROP_PENDING_TIMEOUT 주석 참고).
+        if (bSwapDropPending && Time.time - swapDropPendingSince > SWAP_DROP_PENDING_TIMEOUT)
+        {
+            PlayPendingSwapDrop();
+        }
+
         LogSwapSlotInfo info = GetLogSwapInfo();
         if (LogSwapSlotInfo.IsSame(in info, in lastNotifiedSwapInfo)) return;
 
         lastNotifiedSwapInfo = info;
         SwapStateChangedEvent?.Invoke();
+    }
+
+    /// <summary>상자로 날아오는 중인(아직 착지하지 않은) 원목이 있는지. 캐릭터/NPC 납품 모두 포함한다.</summary>
+    private bool HasItemsFlyingIntoContainer()
+    {
+        for (int i = 0; i < flyingItems.Count; i++)
+        {
+            if (!flyingItems[i].toCharacter) return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -2040,6 +2073,13 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         if (swapBlockedUnitValue == LogValue.NONE) return false;
         if (Time.time < swapCooldownUntil) return false;
+
+        // 날아오는 원목이 다 착지할 때까지는 제안하지 않는다. 전송 루프는 마지막 슬롯의 발사가 끝나는
+        // 순간 종료되고 그때 막힘 기록이 잡히는데, 발사된 원목은 ~1초 더 날아간다. 그 사이 버릴 슬롯을
+        // 비우면 날아오던 (싼) 원목이 착지하면서 그 빈 칸을 먼저 차지해, 약속한 가방 슬롯은 자리가 없어
+        // 넘어가지 못하고 유저는 버린 슬롯만 잃는다. 착지 뒤에는 주기 재검증이 기록을 그대로 두므로
+        // 제안은 최대 1초쯤 늦게 뜰 뿐 사라지지 않는다.
+        if (HasItemsFlyingIntoContainer()) return false;
 
         _slotIndex = LogSwapRule.SelectVictim(inventorySlots, currentSlotCount,
             swapBlockedUnitValue, swapBlockedCount, maxItemsPerSlot, transferringSlots, stickyVictimSlotIndex);
@@ -2066,28 +2106,49 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         ClearLogSwapRequest();
         UpdateLogSwapState(0f);
 
-        if (characterInventoryManager != null)
+        // 흘리는 연출과 가방 원목의 출발은 상자가 입을 벌린 순간에 맞춘다 - 마을에서 상자에서 원목을 꺼낼 때
+        // (InteractionKeyPressed의 bInTown 분기)와 같은 시점이다. 이미 열려 있으면 바로, 아니면 뚜껑 연출이
+        // SetContainerVisualOpened(true)를 부를 때 PlayPendingSwapDrop이 이어받는다.
+        pendingSwapDrop = info;
+        bSwapDropPending = true;
+        swapDropPendingSince = Time.time;
+        OpenContainerImmediately();
+
+        if (bContainerVisualOpened)
         {
-            characterInventoryManager.PlayLogDropVisuals(info.treeType, info.logState, info.count,
-                transform.position + new Vector3(0f, 0.2f, 0f));
+            PlayPendingSwapDrop();
         }
 
-        // 교체 한 번 = 슬롯 하나가 빠지고 슬롯 하나가 들어온다. 방금 상자 슬롯을 비웠으니, 교체 안내에
-        // "넘어감"으로 표시된 가방 슬롯을 곧바로 넣는다 - E를 다시 누르라고 요구하지 않는다.
-        // TransferAllItemsRoutine은 키를 뗀 상태면 한 슬롯 뒤 스스로 멈추므로 정확히 그 슬롯 하나만 넘어간다
-        // (TryTransferOneSlot이 가장 비싼 종류 = 방금 막혀 있던 그 종류를 먼저 고른다). E를 누른 채였다면
-        // 그건 E의 동작이라 평소처럼 이어진다.
+        return info;
+    }
+
+    /// <summary>
+    /// 상자가 입을 벌린 순간에 교체로 버린 원목을 흘리고, "넘어감"으로 표시된 가방 슬롯의 전송을 시작한다.
+    /// 교체 한 번 = 슬롯 하나가 빠지고 슬롯 하나가 들어온다. E를 다시 누르라고 요구하지 않는다.
+    /// TransferAllItemsRoutine은 키를 뗀 상태면 한 슬롯 뒤 스스로 멈추므로 정확히 그 슬롯 하나만 넘어간다
+    /// (TryTransferOneSlot이 가장 비싼 종류 = 방금 막혀 있던 그 종류를 먼저 고른다). E를 누른 채였다면
+    /// 그건 E의 동작이라 평소처럼 이어진다.
+    /// </summary>
+    private void PlayPendingSwapDrop()
+    {
+        if (!bSwapDropPending) return;
+        bSwapDropPending = false;
+
+        if (characterInventoryManager != null)
+        {
+            characterInventoryManager.PlayLogDropVisuals(pendingSwapDrop.treeType, pendingSwapDrop.logState,
+                pendingSwapDrop.count, transform.position + new Vector3(0f, 0.2f, 0f));
+        }
+
         if (bCanInteract && transferCoroutine == null && HasAnyItemToTransfer())
         {
-            // 상자 슬롯이 비워지는 것과 가방 원목이 출발하는 것이 같은 순간이어야 한다. 전송 루프의 첫 대기
+            // 상자에서 빠지는 것과 가방에서 들어오는 것이 같은 순간이어야 한다. 전송 루프의 첫 대기
             // (transferInterval, E 연타 완충용)는 여기선 뜻이 없으므로 직전 전송 시각을 밀어 첫 스텝이 즉시
             // 나가게 한다 - 이걸 안 하면 E로 상자를 채우다 막힌 직후 Tab을 눌렀을 때 가방 쪽이 최대 0.5초
             // 멈춘 것처럼 보인다.
             lastTransferTime = -transferInterval;
             transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
         }
-
-        return info;
     }
 
     public void SetCanReach(bool _bCanReach)
@@ -2186,6 +2247,12 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     public void SetContainerVisualOpened(bool _boolean)
     {
         bContainerVisualOpened = _boolean;
+
+        // 교체로 버린 원목은 상자가 입을 벌린 이 순간에 흘린다(마을 인출과 같은 시점). 던전/마을과 무관하다.
+        if (bContainerVisualOpened && bSwapDropPending)
+        {
+            PlayPendingSwapDrop();
+        }
 
         // flyingItems(운반 NPC 인출 등)만으로도 bContainerOpen -> ContainerOpenedEvent -> 뚜껑 열림
         // 연출 -> 이 메서드까지 이어질 수 있다. bPlayerOpenRequested(이번 열림이 플레이어의 상호작용

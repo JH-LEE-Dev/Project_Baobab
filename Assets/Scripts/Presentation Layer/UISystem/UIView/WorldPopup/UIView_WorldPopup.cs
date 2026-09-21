@@ -97,7 +97,7 @@ public class UIView_WorldPopup : UIView
         if (null == ui_Storage)
             return;
 
-        ui_Storage.Initialize(storageOffset);
+        ui_Storage.Initialize(storageOffset, viewCtx?.inputManager);
     }
 
     private void Init_UICarStorage()
@@ -109,7 +109,7 @@ public class UIView_WorldPopup : UIView
         if (null == ui_CarStorage)
             return;
 
-        ui_CarStorage.Initialize(carStorageOffset);
+        ui_CarStorage.Initialize(carStorageOffset, viewCtx?.inputManager);
     }
 
 
