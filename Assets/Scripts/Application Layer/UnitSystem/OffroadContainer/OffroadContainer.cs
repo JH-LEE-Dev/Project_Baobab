@@ -501,7 +501,15 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
     }
 
-    private IEnumerator TransferAllItemsRoutine()
+    /// <summary>
+    /// 슬롯 단위로 전송을 이어간다.
+    ///
+    /// _bUntilNothingFits: 상호작용 키와 무관하게 <b>더 넣을 것이 없을 때까지</b> 계속한다. 교체(Tab)로
+    /// 시작된 전송이 이 모드다 - 유저는 Tab 한 번으로 "상자 비우기 → 원목 넣기"가 끝나기를 기대하지,
+    /// 비운 뒤 E를 다시 누르라는 요구를 받지 않는다. 비운 자리의 용량이 다 차면 TryTransferOneSlot이
+    /// false를 돌려 스스로 멈춘다. false면 기존 동작 - 키를 뗀 상태에서 한 슬롯이 끝나면 중단한다.
+    /// </summary>
+    private IEnumerator TransferAllItemsRoutine(bool _bUntilNothingFits = false)
     {
         if (characterInventory == null) yield break;
 
@@ -530,8 +538,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 yield return null;
             }
 
-            // 한 슬롯이 비워진 시점에 키 입력을 뗀 상태라면 중단
-            if (!bIsInteracting)
+            // 한 슬롯이 비워진 시점에 키 입력을 뗀 상태라면 중단 (교체로 시작된 전송은 예외 - 위 주석 참고)
+            if (!bIsInteracting && !_bUntilNothingFits)
             {
                 break;
             }
@@ -2067,13 +2075,14 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
 
         // 교체 키를 눌렀다는 것 자체가 "이 원목을 상자에 넣겠다"는 뜻이므로, E를 누르고 있지 않아도 전송을
-        // 시작한다. 교체 안내가 사정권 진입 즉시 뜨기 때문에 E를 한 번도 안 누르고 Tab만 누르는 경로가
-        // 정상 흐름이고, 그때 전송이 시작되지 않으면 상자 슬롯만 버려지고 "상자로 넘어감"이라고 표시한
-        // 가방 슬롯은 그대로 남는다. TransferAllItemsRoutine은 키를 뗀 상태면 한 슬롯을 다 옮긴 뒤
-        // 스스로 멈추므로, 약속한 슬롯 하나만 넘어간다.
+        // 시작하고 더 넣을 것이 없을 때까지 이어간다(_bUntilNothingFits). Tab 한 번으로 "상자 비우기 →
+        // 원목 넣기"가 끝나야지, 비운 뒤 E를 다시 누르라고 요구하면 안 된다. 비운 자리는 방금 버린
+        // 슬롯 하나뿐이라, 그 자리가 차면 TryTransferOneSlot이 false를 돌려 스스로 멈춘다 - 가장 비싼
+        // 종류(= 교체 안내에 "넘어감"으로 표시된 것)가 먼저 들어가고, 같은 종류의 다른 슬롯이 있고 자리가
+        // 남으면 그것까지 들어간다.
         if (bCanInteract && transferCoroutine == null && HasAnyItemToTransfer())
         {
-            transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
+            transferCoroutine = StartCoroutine(TransferAllItemsRoutine(true));
         }
 
         return info;
