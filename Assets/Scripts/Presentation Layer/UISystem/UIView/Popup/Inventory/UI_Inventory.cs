@@ -472,6 +472,9 @@ public class UI_Inventory : MonoBehaviour
             RebuildItemsLayout();
         }
 
+        if (true == _hud.gameObject.activeSelf && _hud.GetNumber() == _amount)
+            return;
+
         _hud.SetNumber(_amount);
     }
 

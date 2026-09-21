@@ -56,7 +56,7 @@ public class UIView_Popup : UIView
     public void InventoryShowEvent()
     {
         if (null != uiInventory)
-            uiInventory.Refresh();
+            uiInventory.InventoryShowEvent();
     }
 
     public void InventorySpecChanged()
