@@ -427,7 +427,7 @@ MonoBehaviour:
   effectMode: 1
   targetVisualImage: {fileID: 611300313363725636}
   targetUIEffect: {fileID: 1464487018908966266}
-  targetUrl: https://discord.gg/JtaVpyUkU
+  targetUrl: https://discord.gg/hvFdXMNUVX
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   hoverColor: {r: 0.5613208, g: 0.7780667, b: 1, a: 1}
   clickColor: {r: 0.5254902, g: 0.6634194, b: 1, a: 1}
