@@ -213,11 +213,139 @@ public static class LogValue
 
             for (int state = 0; state < LOG_STATE_COUNT; state++)
             {
+                // 표에 없는 등급(Destoyed/Damaged - 풀 리셋 값이라 드랍되지 않는다)은 1로 둔다.
                 float multiplier = dataBase.GetStateMultiplier((LogState)state);
                 unitValueCache[tree * LOG_STATE_COUNT + state] = (long)Math.Round(baseValue * (double)multiplier);
             }
         }
 
         bCacheBuilt = true;
+    }
+}
+
+/// <summary>
+/// 이번 감지 틱에 캐릭터의 흡입 반경 안에 (수종, 등급)별로 원목이 몇 개 보이는지. <b>공중에 떠 있는
+/// 것도 센다.</b>
+///
+/// 흡입 선점(ItemDetector.SortByPickupPriority)이 틱 첫머리에 채우고, 같은 틱 안에서 교체 요청
+/// (InventoryManager.RequestLogSwap)이 읽는다. 둘이 같은 표를 보므로 "지금 보이는 만큼"이 선점과
+/// 교체에서 같은 뜻이 된다 - 예전엔 선점은 공중 원목까지 세고 교체는 착지해서 거절된 것만 세서,
+/// 나무가 쓰러진 뒤 원목이 떨어지는 1초 동안 선점은 이미 그쪽으로 기울어 있는데 교체 안내는 뜨지 않았다.
+///
+/// 수종은 "수종 개량"이 끝난 뒤의 값으로 묶는다. 거절 경로(CanAcquired)가 보는 수종도 개량된 값이라
+/// 같은 칸을 가리킨다.
+/// </summary>
+public static class LogVisibleCounts
+{
+    private const int LOG_STATE_COUNT = 6;
+    private static readonly int[] counts = new int[(int)TreeType.Max * LOG_STATE_COUNT];
+
+    public static void Clear()
+    {
+        Array.Clear(counts, 0, counts.Length);
+    }
+
+    public static void Add(TreeType _treeType, LogState _logState)
+    {
+        int index = Index(_treeType, _logState);
+        if (index >= 0 && index < counts.Length) counts[index]++;
+    }
+
+    public static int Get(TreeType _treeType, LogState _logState)
+    {
+        int index = Index(_treeType, _logState);
+        return (index >= 0 && index < counts.Length) ? counts[index] : 0;
+    }
+
+    private static int Index(TreeType _treeType, LogState _logState)
+    {
+        return (int)_treeType * LOG_STATE_COUNT + (int)_logState;
+    }
+}
+
+/// <summary>
+/// 교체에서 <b>어느 슬롯을 버릴지</b>를 정하는 규칙. 인벤토리와 운반 상자가 같은 규칙을 쓰므로 한 곳에만
+/// 둔다 - 규칙을 바꿀 때(예: 기대 개수 하한 도입) 한쪽만 고쳐 선점·교체가 어긋나는 일을 막기 위해서다.
+///
+/// 시스템은 두 가지만 보장한다. (1) 손해인 거래는 아예 제안하지 않는다. (2) 제안은 환율 한 줄로
+/// 설명된다. 누를지는 유저가 정한다.
+///
+///   자격 : 버릴 슬롯의 개당 가치 < 들어올 원목의 개당 가치. 보석 등급 슬롯은 절대 버리지 않는다
+///          - 게임이 아우라와 효과음으로 "보석은 특별하다"고 가르쳐 놨는데 시스템이 버리면
+///          계산이 맞더라도 유저에겐 엉뚱한 슬롯이 된다.
+///   상한 : 버릴 슬롯의 총 가치 ≤ 들어올 원목의 개당 가치 × min(지금 보이는 개수, 슬롯 최대 중첩)
+///          - "지금 눈에 보이는 만큼"만 이득으로 친다. 미래 습득량을 추정하는 더 정확한 공식은
+///          만들 수 있지만 유저가 검증할 수 없고, 검증 못 하는 이득은 이득으로 느껴지지 않는다.
+///   선정 : 자격·상한을 통과한 슬롯 중 총 가치가 가장 낮은 것("가장 싸게 살 수 있는 칸").
+///          같으면 개당 가치가 낮은 쪽(더 싼 수종)을 골라 직관과 맞춘다.
+///
+/// 가장 싼 수종이 들어올 때는 자격을 만족하는 슬롯이 없어 제안이 없다. "잡템 자리를 만들라"는
+/// 제안은 구조적으로 나오지 않는다.
+/// </summary>
+public static class LogSwapRule
+{
+    /// <summary>이 슬롯이 자격과 상한을 모두 통과하는지. 통과하면 총 가치와 개당 가치를 준다.</summary>
+    public static bool IsCandidate(InventorySlot _slot, long _incomingUnitValue, int _incomingCount, int _slotCapacity,
+        out long _totalValue, out long _unitValue)
+    {
+        _totalValue = 0;
+        _unitValue = 0;
+
+        if (_slot == null || !(_slot.itemData is LogItemData logData) || _slot.totalCount <= 0) return false;
+
+        // 보석 보호
+        if (LogValue.IsGemGrade(logData.logState)) return false;
+
+        // 자격: 들어올 원목보다 개당 싸야 한다
+        _unitValue = LogValue.GetUnitValue(logData.treeType, logData.logState);
+        if (_unitValue >= _incomingUnitValue) return false;
+
+        // 상한: 잃는 총 가치가 "보이는 만큼"을 넘지 않아야 한다
+        _totalValue = _unitValue * _slot.totalCount;
+        long gainBound = _incomingUnitValue * Mathf.Min(_incomingCount, _slotCapacity);
+
+        return _totalValue <= gainBound;
+    }
+
+    /// <summary>
+    /// 버릴 슬롯을 고른다. _stickyIndex가 아직 후보라면 그대로 유지하고(한 번 띄운 제안은 무효가 되기
+    /// 전까지 바꾸지 않는다), 아니면 후보 중 총 가치 최소(같으면 개당 최소)를 새로 고른다. 없으면 -1.
+    /// _excluded는 지금 옮기는 중이라 건드리면 안 되는 슬롯(없으면 null).
+    /// </summary>
+    public static int SelectVictim(System.Collections.Generic.List<InventorySlot> _slots, int _slotCount,
+        long _incomingUnitValue, int _incomingCount, int _slotCapacity,
+        System.Collections.Generic.HashSet<InventorySlot> _excluded, int _stickyIndex)
+    {
+        int count = Mathf.Min(_slotCount, _slots.Count);
+
+        if (_stickyIndex >= 0 && _stickyIndex < count && !IsExcluded(_slots[_stickyIndex], _excluded)
+            && IsCandidate(_slots[_stickyIndex], _incomingUnitValue, _incomingCount, _slotCapacity, out _, out _))
+        {
+            return _stickyIndex;
+        }
+
+        int bestIndex = -1;
+        long bestTotalValue = long.MaxValue;
+        long bestUnitValue = long.MaxValue;
+
+        for (int i = 0; i < count; i++)
+        {
+            if (IsExcluded(_slots[i], _excluded)) continue;
+            if (!IsCandidate(_slots[i], _incomingUnitValue, _incomingCount, _slotCapacity, out long totalValue, out long unitValue)) continue;
+
+            if (totalValue < bestTotalValue || (totalValue == bestTotalValue && unitValue < bestUnitValue))
+            {
+                bestTotalValue = totalValue;
+                bestUnitValue = unitValue;
+                bestIndex = i;
+            }
+        }
+
+        return bestIndex;
+    }
+
+    private static bool IsExcluded(InventorySlot _slot, System.Collections.Generic.HashSet<InventorySlot> _excluded)
+    {
+        return _excluded != null && _excluded.Contains(_slot);
     }
 }

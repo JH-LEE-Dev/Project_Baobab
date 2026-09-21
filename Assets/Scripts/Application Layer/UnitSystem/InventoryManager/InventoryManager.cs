@@ -200,6 +200,13 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
         // 흡입 정렬(ItemDetector)과 교체 판정이 같은 가치 표를 보도록 정적 창구에 등록한다.
         // Presentation 계층의 정적 정렬에는 인벤토리 참조를 흘려보낼 통로가 없어 Rumble과 같은 방식을 쓴다.
+        if (logItemValueDataBase == null)
+        {
+            // 없으면 LogValue가 예전 사전순으로 조용히 폴백해 환율·상한·선점이 전부 인덱스 값으로 계산된다.
+            // 컴파일도 되고 예외도 없어 발견이 늦으므로 여기서 바로 드러낸다.
+            Debug.LogError("[InventoryManager] logItemValueDataBase가 비어 있습니다. GameInstaller 프리팹에서 LogItemValueDataBase를 연결하세요. 교체·흡입 우선순위가 실제 가치 대신 수종 순서로 동작합니다.");
+        }
+
         LogValue.SetDataBase(logItemValueDataBase);
         LogValue.SetSlotCapacity(maxItemsPerSlot);
 
@@ -783,10 +790,11 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     private int swapRequestCount = 0;
     private float swapRequestTime = -999f;
 
-    // 같은 프레임(= 같은 감지 틱) 안에서 거절된 원목을 종류별로 묶기 위한 누적기.
-    // 캐릭터의 감지 틱은 반경 안의 원목 전부에 한 프레임 안에서 SetSuckTarget을 걸므로,
-    // 프레임 번호가 같으면 같은 틱이다.
-    private int rejectFrame = -1;
+    // 같은 감지 틱 안에서 거절된 원목을 종류별로 묶기 위한 누적기.
+    // 감지 틱은 FixedUpdate에서 돌고 반경 안의 원목 전부에 한 스텝 안에서 SetSuckTarget을 걸므로,
+    // Time.fixedTime이 같으면 같은 틱이다. Time.frameCount로 묶으면 프레임 히치 때 한 렌더 프레임에
+    // 두 틱이 들어와 개수가 두 배로 세어지고, 상한이 부풀어 "손해 아님" 약속이 깨진 제안이 잠깐 뜬다.
+    private float rejectTick = -1f;
     private TreeType rejectBestTreeType = TreeType.None;
     private LogState rejectBestLogState = LogState.Normal;
     private long rejectBestUnitValue = LogValue.NONE;
@@ -846,12 +854,12 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     private void RequestLogSwap(TreeType _treeType, LogState _logState)
     {
         long unitValue = LogValue.GetUnitValue(_treeType, _logState);
-        int frame = Time.frameCount;
+        float tick = Time.fixedTime;
 
-        // 1. 같은 프레임 안에서 종류별로 묶는다. 더 비싼 종류가 나타나면 그쪽으로 갈아타고 개수를 다시 센다.
-        if (frame != rejectFrame || unitValue > rejectBestUnitValue)
+        // 1. 같은 틱 안에서 종류별로 묶는다. 더 비싼 종류가 나타나면 그쪽으로 갈아타고 개수를 다시 센다.
+        if (tick != rejectTick || unitValue > rejectBestUnitValue)
         {
-            rejectFrame = frame;
+            rejectTick = tick;
             rejectBestTreeType = _treeType;
             rejectBestLogState = _logState;
             rejectBestUnitValue = unitValue;
@@ -870,10 +878,14 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
         if (expired || rejectBestUnitValue >= swapRequestUnitValue)
         {
+            // 상한에 쓸 개수는 "이번 틱에 거절된 개수"와 "반경 안에 보이는 개수(공중 포함)" 중 큰 쪽이다.
+            // 선점 정렬이 이 틱 첫머리에 채운 표(LogVisibleCounts)를 그대로 읽으므로 선점과 교체가 같은
+            // 값을 본다. 공중의 원목은 아직 거절 판정을 받지 않았을 뿐 곧 떨어질 것이라, 이걸 빼면 나무가
+            // 쓰러진 뒤 1초 동안 선점은 이미 그쪽으로 기울어 있는데 교체 안내만 늦게 뜬다.
             swapRequestTreeType = rejectBestTreeType;
             swapRequestLogState = rejectBestLogState;
             swapRequestUnitValue = rejectBestUnitValue;
-            swapRequestCount = rejectBestCount;
+            swapRequestCount = Mathf.Max(rejectBestCount, LogVisibleCounts.Get(rejectBestTreeType, rejectBestLogState));
             swapRequestTime = Time.time;
         }
     }
@@ -907,35 +919,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     }
 
     /// <summary>
-    /// 이 슬롯이 지금의 요청에 대해 자격과 상한을 모두 통과하는지. 통과하면 총 가치와 개당 가치를 준다.
-    /// </summary>
-    private bool IsLogSwapCandidate(int _slotIndex, out long _totalValue, out long _unitValue)
-    {
-        _totalValue = 0;
-        _unitValue = 0;
-
-        if (_slotIndex < 0 || _slotIndex >= Mathf.Min(currentSlotCount, inventorySlots.Count)) return false;
-
-        InventorySlot slot = inventorySlots[_slotIndex];
-        if (!(slot.itemData is LogItemData logData) || slot.totalCount <= 0) return false;
-
-        // 보석 보호
-        if (LogValue.IsGemGrade(logData.logState)) return false;
-
-        // 자격: 들어올 원목보다 개당 싸야 한다
-        _unitValue = LogValue.GetUnitValue(logData.treeType, logData.logState);
-        if (_unitValue >= swapRequestUnitValue) return false;
-
-        // 상한: 잃는 총 가치가 "보이는 만큼"을 넘지 않아야 한다
-        _totalValue = _unitValue * slot.totalCount;
-        long gainBound = swapRequestUnitValue * Mathf.Min(swapRequestCount, maxItemsPerSlot);
-
-        return _totalValue <= gainBound;
-    }
-
-    /// <summary>
-    /// 버릴 슬롯을 고른다. 현재 제안이 아직 유효하면 그대로 유지하고(sticky), 아니면 후보 중
-    /// 총 가치가 가장 낮은 것을(같으면 개당 가치가 낮은 쪽) 새로 고른다. 없으면 false.
+    /// 버릴 슬롯을 고른다. 규칙(자격·상한·선정·sticky)은 LogSwapRule 한 곳에 있다. 없으면 false.
     /// </summary>
     private bool TryFindLogSwapVictimSlot(out int _slotIndex)
     {
@@ -944,27 +928,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         if (swapRequestUnitValue == LogValue.NONE) return false;
         if (Time.time < swapCooldownUntil) return false;
 
-        if (stickyVictimSlotIndex >= 0 && IsLogSwapCandidate(stickyVictimSlotIndex, out _, out _))
-        {
-            _slotIndex = stickyVictimSlotIndex;
-            return true;
-        }
-
-        long bestTotalValue = long.MaxValue;
-        long bestUnitValue = long.MaxValue;
-
-        int slotCount = Mathf.Min(currentSlotCount, inventorySlots.Count);
-        for (int i = 0; i < slotCount; i++)
-        {
-            if (!IsLogSwapCandidate(i, out long totalValue, out long unitValue)) continue;
-
-            if (totalValue < bestTotalValue || (totalValue == bestTotalValue && unitValue < bestUnitValue))
-            {
-                bestTotalValue = totalValue;
-                bestUnitValue = unitValue;
-                _slotIndex = i;
-            }
-        }
+        _slotIndex = LogSwapRule.SelectVictim(inventorySlots, currentSlotCount,
+            swapRequestUnitValue, swapRequestCount, maxItemsPerSlot, null, stickyVictimSlotIndex);
 
         stickyVictimSlotIndex = _slotIndex;
         return _slotIndex >= 0;

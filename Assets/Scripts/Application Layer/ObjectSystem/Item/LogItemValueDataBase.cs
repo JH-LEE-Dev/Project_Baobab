@@ -22,19 +22,35 @@ public class LogItemValueDataBase : ScriptableObject
     }
 
     /// <summary>
-    /// 등급 배율. 표에 없는 등급(Destoyed/Damaged처럼 드랍되지 않는 것)은 1로 본다 - 순서를
-    /// 매기는 쪽에서 0이 되어 "가치 없음"으로 뭉개지는 것을 막기 위해서다.
+    /// 등급 배율. 표에 없는 등급이면 false를 돌려주고 배율은 1로 채운다.
+    ///
+    /// 표에 없는 등급을 어떻게 볼지는 부르는 쪽이 정한다 - 순서를 매기는 LogValue는 조용히 1로 쓰고
+    /// (Destoyed/Damaged는 풀 리셋 값이라 드랍되지 않는다), 실제로 돈을 매기는 LogEvaluator는 false를
+    /// 오류로 드러낸다. 예전엔 Find가 기본 구조체(배율 0)를 돌려줘 조용히 0원에 팔렸는데, 둘 다
+    /// 데이터 누락을 숨기는 동작이라 어느 쪽도 그대로 두지 않는다.
     /// </summary>
-    public float GetStateMultiplier(LogState _logState)
+    public bool TryGetStateMultiplier(LogState _logState, out float _multiplier)
     {
-        if (stateValueDatas == null) return 1f;
+        _multiplier = 1f;
+        if (stateValueDatas == null) return false;
 
         for (int i = 0; i < stateValueDatas.Count; i++)
         {
-            if (stateValueDatas[i].logState == _logState) return stateValueDatas[i].valueMultiplier;
+            if (stateValueDatas[i].logState == _logState)
+            {
+                _multiplier = stateValueDatas[i].valueMultiplier;
+                return true;
+            }
         }
 
-        return 1f;
+        return false;
+    }
+
+    /// <summary>표에 없는 등급은 1로 보는 편의 버전(순서 매기기용).</summary>
+    public float GetStateMultiplier(LogState _logState)
+    {
+        TryGetStateMultiplier(_logState, out float multiplier);
+        return multiplier;
     }
 }
 

@@ -54,9 +54,20 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
 
         // 등급 배율은 LogItemValueDataBase가 단일 출처다(교체 시스템의 환율과 같은 표). 이 프리팹의
         // 사본(logItemStateValueDatas)은 DB에 표가 없는 예전 에셋을 위한 폴백으로만 남긴다.
-        float stateMultiplier = (logItemValueDataBase.stateValueDatas != null && logItemValueDataBase.stateValueDatas.Count > 0)
-            ? logItemValueDataBase.GetStateMultiplier(_itemData.logState)
-            : logItemStateValueDatas.Find(x => x.logState == _itemData.logState).valueMultiplier;
+        float stateMultiplier;
+        if (logItemValueDataBase.stateValueDatas != null && logItemValueDataBase.stateValueDatas.Count > 0)
+        {
+            // 표에 없는 등급은 데이터 누락이다. 예전 Find 경로는 기본 구조체(배율 0)로 조용히 0원에
+            // 팔았고, 지금 폴백은 1(정가)이다 - 어느 쪽이든 조용히 지나가면 안 되므로 오류로 드러낸다.
+            if (!logItemValueDataBase.TryGetStateMultiplier(_itemData.logState, out stateMultiplier))
+            {
+                Debug.LogError($"LogEvaluator: {_itemData.logState} 등급의 가치 배율이 LogItemValueDataBase.stateValueDatas에 없습니다. 배율 1로 평가합니다.");
+            }
+        }
+        else
+        {
+            stateMultiplier = logItemStateValueDatas.Find(x => x.logState == _itemData.logState).valueMultiplier;
+        }
 
         // 최종 가격 = 기본 가치 * 가치 배율 * 내구도 배율 * 스킬 배율
         // double로 계산한 뒤 long으로 반올림한다. 예전에는 Mathf.RoundToInt였는데,

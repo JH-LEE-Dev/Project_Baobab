@@ -1891,8 +1891,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         swapBlockedTreeType = _treeType;
         swapBlockedLogState = _logState;
         swapBlockedUnitValue = _unitValue;
-        swapBlockedCount = CountCharacterLogs(_treeType, _logState);
-        swapBlockedSlotIndex = FindCharacterSlotToTransfer(_treeType, _logState);
+        CollectCharacterLogs(_treeType, _logState, out swapBlockedCount, out swapBlockedSlotIndex);
         swapValidateTimer = 0f;
     }
 
@@ -1909,15 +1908,18 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     }
 
     /// <summary>
-    /// 교체로 상자에 자리가 생기면 TryTransferOneSlot이 어느 가방 슬롯을 먼저 옮길지 미리 찾는다.
-    /// 규칙을 그대로 따른다 - 같은 (수종, 등급) 슬롯 중 <b>가장 많이 쌓인 것</b>, 같으면 앞쪽 인덱스.
-    /// 옮기는 중인 슬롯은 제외. 가방 UI는 이 인덱스에 "상자로 넘어감" 표시를 붙인다.
+    /// 가방에 든 (수종, 등급) 원목의 총 개수와, 교체로 상자에 자리가 생기면 TryTransferOneSlot이 먼저 옮길
+    /// 가방 슬롯을 한 패스로 구한다. 옮길 슬롯은 TryTransferOneSlot의 규칙 그대로 - 같은 종류 중 <b>가장
+    /// 많이 쌓인 것</b>, 같으면 앞쪽 인덱스. 옮기는 중인 슬롯은 둘 다에서 제외한다.
+    /// 가방 UI는 이 인덱스에 "상자로 넘어감" 표시를 붙인다.
     /// </summary>
-    private int FindCharacterSlotToTransfer(TreeType _treeType, LogState _logState)
+    private void CollectCharacterLogs(TreeType _treeType, LogState _logState, out int _count, out int _slotIndex)
     {
-        if (characterInventory == null) return -1;
+        _count = 0;
+        _slotIndex = -1;
 
-        int bestIndex = -1;
+        if (characterInventory == null) return;
+
         int bestCount = 0;
 
         var charSlots = characterInventory.inventorySlots;
@@ -1928,34 +1930,14 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             if (!(charSlot.itemData is LogItemData logData)) continue;
             if (logData.treeType != _treeType || logData.logState != _logState) continue;
 
+            _count += charSlot.count;
+
             if (charSlot.count > bestCount)
             {
                 bestCount = charSlot.count;
-                bestIndex = i;
+                _slotIndex = i;
             }
         }
-
-        return bestIndex;
-    }
-
-    /// <summary>가방에 든 (수종, 등급) 원목의 개수. 지금 옮기는 중인 슬롯은 빼고 센다.</summary>
-    private int CountCharacterLogs(TreeType _treeType, LogState _logState)
-    {
-        if (characterInventory == null) return 0;
-
-        int count = 0;
-        var charSlots = characterInventory.inventorySlots;
-        for (int i = 0; i < characterInventory.currentSlotCnt; i++)
-        {
-            if (!(charSlots[i] is InventorySlot charSlot) || charSlot.count <= 0) continue;
-            if (transferringSlots.Contains(charSlot)) continue;
-            if (!(charSlot.itemData is LogItemData logData)) continue;
-            if (logData.treeType != _treeType || logData.logState != _logState) continue;
-
-            count += charSlot.count;
-        }
-
-        return count;
     }
 
     /// <summary>
@@ -2043,38 +2025,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     }
 
     /// <summary>
-    /// 이 상자 슬롯이 지금의 기록에 대해 자격과 상한을 모두 통과하는지. 통과하면 총 가치와 개당 가치를 준다.
-    /// </summary>
-    private bool IsLogSwapCandidate(int _slotIndex, out long _totalValue, out long _unitValue)
-    {
-        _totalValue = 0;
-        _unitValue = 0;
-
-        if (_slotIndex < 0 || _slotIndex >= currentSlotCount) return false;
-
-        InventorySlot slot = inventorySlots[_slotIndex];
-        if (!(slot.itemData is LogItemData logData) || slot.totalCount <= 0) return false;
-
-        // 지금 이 슬롯에서 꺼내 옮기는 중이라면 건드리지 않는다.
-        if (transferringSlots.Contains(slot)) return false;
-
-        // 보석 보호
-        if (LogValue.IsGemGrade(logData.logState)) return false;
-
-        // 자격: 들어올 원목보다 개당 싸야 한다
-        _unitValue = LogValue.GetUnitValue(logData.treeType, logData.logState);
-        if (_unitValue >= swapBlockedUnitValue) return false;
-
-        // 상한: 잃는 총 가치가 "들어올 만큼"을 넘지 않아야 한다
-        _totalValue = _unitValue * slot.totalCount;
-        long gainBound = swapBlockedUnitValue * Mathf.Min(swapBlockedCount, maxItemsPerSlot);
-
-        return _totalValue <= gainBound;
-    }
-
-    /// <summary>
-    /// 버릴 상자 슬롯을 고른다. 현재 제안이 아직 유효하면 그대로 유지하고(sticky), 아니면 후보 중
-    /// 총 가치가 가장 낮은 것을(같으면 개당 가치가 낮은 쪽) 새로 고른다. 없으면 false.
+    /// 버릴 상자 슬롯을 고른다. 규칙(자격·상한·선정·sticky)은 LogSwapRule 한 곳에 있다. 지금 이 슬롯에서
+    /// 꺼내 옮기는 중인 것(transferringSlots)은 건드리지 않는다. 없으면 false.
     /// </summary>
     private bool TryFindLogSwapVictimSlot(out int _slotIndex)
     {
@@ -2083,26 +2035,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         if (swapBlockedUnitValue == LogValue.NONE) return false;
         if (Time.time < swapCooldownUntil) return false;
 
-        if (stickyVictimSlotIndex >= 0 && IsLogSwapCandidate(stickyVictimSlotIndex, out _, out _))
-        {
-            _slotIndex = stickyVictimSlotIndex;
-            return true;
-        }
-
-        long bestTotalValue = long.MaxValue;
-        long bestUnitValue = long.MaxValue;
-
-        for (int i = 0; i < currentSlotCount; i++)
-        {
-            if (!IsLogSwapCandidate(i, out long totalValue, out long unitValue)) continue;
-
-            if (totalValue < bestTotalValue || (totalValue == bestTotalValue && unitValue < bestUnitValue))
-            {
-                bestTotalValue = totalValue;
-                bestUnitValue = unitValue;
-                _slotIndex = i;
-            }
-        }
+        _slotIndex = LogSwapRule.SelectVictim(inventorySlots, currentSlotCount,
+            swapBlockedUnitValue, swapBlockedCount, maxItemsPerSlot, transferringSlots, stickyVictimSlotIndex);
 
         stickyVictimSlotIndex = _slotIndex;
         return _slotIndex >= 0;
@@ -2132,9 +2066,12 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 transform.position + new Vector3(0f, 0.2f, 0f));
         }
 
-        // 상호작용 키를 계속 누르고 있었다면 전송을 이어서 재개한다. 자리가 없어 멈춘 전송 코루틴은
-        // 이미 끝나 있으므로, 여기서 다시 걸어주지 않으면 유저가 키를 뗐다 다시 눌러야 한다.
-        if (bIsInteracting && bCanInteract && transferCoroutine == null && HasAnyItemToTransfer())
+        // 교체 키를 눌렀다는 것 자체가 "이 원목을 상자에 넣겠다"는 뜻이므로, E를 누르고 있지 않아도 전송을
+        // 시작한다. 교체 안내가 사정권 진입 즉시 뜨기 때문에 E를 한 번도 안 누르고 Tab만 누르는 경로가
+        // 정상 흐름이고, 그때 전송이 시작되지 않으면 상자 슬롯만 버려지고 "상자로 넘어감"이라고 표시한
+        // 가방 슬롯은 그대로 남는다. TransferAllItemsRoutine은 키를 뗀 상태면 한 슬롯을 다 옮긴 뒤
+        // 스스로 멈추므로, 약속한 슬롯 하나만 넘어간다.
+        if (bCanInteract && transferCoroutine == null && HasAnyItemToTransfer())
         {
             transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
         }

@@ -14,11 +14,6 @@ public class ItemDetector
     private readonly List<IStaticCollidable> results = new List<IStaticCollidable>(16);
     private float timer;
 
-    // 한 번의 스캔에서 (수종, 등급)별로 몇 개가 보이는지 세는 표. 13 × 6 = 78칸.
-    // 정렬이 감지 틱마다(초당 5회) 돌므로 매번 새로 잡지 않고 정적으로 두고 지워 쓴다.
-    private const int LOG_STATE_COUNT = 6;
-    private static readonly int[] visibleCounts = new int[(int)TreeType.Max * LOG_STATE_COUNT];
-
     // 정렬 작업 버퍼. 원목마다 우선순위를 한 번만 계산해 sortKeys에 담고, Array.Sort(keys, items)로
     // 두 배열을 함께 정렬한 뒤 리스트에 되돌린다. 비교마다 우선순위를 다시 계산하던 삽입 정렬은
     // 반경 안 원목이 수십 개일 때는 괜찮았지만 n²이라, 흡입 반경을 키우는 특성이 생기면 감지 틱마다
@@ -115,11 +110,13 @@ public class ItemDetector
     public static void SortByPickupPriority(List<IStaticCollidable> _results)
     {
         int count = _results.Count;
-        if (count < 2) return;
-
         TreeType speciesFloor = FindSpeciesImprovementFloor(_results);
 
+        // 개수 표는 정렬이 필요 없을 때(0~1개)도 매 틱 새로 채운다. 같은 틱의 교체 요청이 이 표를
+        // 읽으므로, 여기서 건너뛰면 지난 틱의 개수가 남아 상한이 실제보다 크게 잡힌다.
         CountVisibleLogs(_results, speciesFloor);
+
+        if (count < 2) return;
 
         EnsureSortBuffers(count);
 
@@ -170,23 +167,21 @@ public class ItemDetector
         return TreeType.None;
     }
 
-    /// <summary>이번 스캔에 (수종, 등급)별로 원목이 몇 개 보이는지 센다. 수종은 개량이 끝난 값으로 묶는다.</summary>
+    /// <summary>
+    /// 이번 스캔에 (수종, 등급)별로 원목이 몇 개 보이는지 센다. 수종은 개량이 끝난 값으로 묶는다.
+    /// 표는 LogVisibleCounts(공용)에 채운다 - 같은 틱의 교체 요청(InventoryManager.RequestLogSwap)이
+    /// 같은 표를 읽어, 선점과 교체가 "보이는 만큼"을 같은 뜻으로 쓴다.
+    /// </summary>
     private static void CountVisibleLogs(List<IStaticCollidable> _results, TreeType _speciesFloor)
     {
-        Array.Clear(visibleCounts, 0, visibleCounts.Length);
+        LogVisibleCounts.Clear();
 
         for (int i = 0; i < _results.Count; i++)
         {
             if (!(_results[i] is LogItem logItem)) continue;
 
-            int index = VisibleIndex(EffectiveTreeType(logItem, _speciesFloor), logItem.logState);
-            if (index >= 0 && index < visibleCounts.Length) visibleCounts[index]++;
+            LogVisibleCounts.Add(EffectiveTreeType(logItem, _speciesFloor), logItem.logState);
         }
-    }
-
-    private static int VisibleIndex(TreeType _treeType, LogState _logState)
-    {
-        return (int)_treeType * LOG_STATE_COUNT + (int)_logState;
     }
 
     /// <summary>
@@ -216,9 +211,6 @@ public class ItemDetector
 
         TreeType treeType = EffectiveTreeType(logItem, _speciesFloor);
 
-        int index = VisibleIndex(treeType, logItem.logState);
-        int visibleCount = (index >= 0 && index < visibleCounts.Length) ? visibleCounts[index] : 1;
-
-        return LogValue.GetGroupValue(treeType, logItem.logState, visibleCount);
+        return LogValue.GetGroupValue(treeType, logItem.logState, LogVisibleCounts.Get(treeType, logItem.logState));
     }
 }
