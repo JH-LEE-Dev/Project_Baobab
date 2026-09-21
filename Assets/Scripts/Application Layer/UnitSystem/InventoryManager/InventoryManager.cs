@@ -794,17 +794,18 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     {
         int order = LogSlotPriority.GetOrder(_treeType, _logState);
 
-        // 기록이 이미 만료됐다면 이전 값은 버리고 이번 원목으로 새로 시작한다.
-        if (swapRequestOrder != LogSlotPriority.NONE && Time.time - swapRequestTime <= SwapRequestLifetime)
-        {
-            if (order > swapRequestOrder) swapRequestOrder = order;
-        }
-        else
+        bool expired = swapRequestOrder == LogSlotPriority.NONE
+            || Time.time - swapRequestTime > SwapRequestLifetime;
+
+        // 유효 시간은 "기록된 그 원목을 마지막으로 본 시각"부터 센다. 더 싼 원목이 거절됐다고 해서
+        // 시각을 갱신하면 안 된다 - 그렇게 하면 원목 더미 위를 계속 걷는 동안 기록이 영원히 살아남아,
+        // 한 번 스쳐간 흑요목 때문에 참나무를 먹으려고 소나무를 버리는 손해 교체가 성립한다.
+        // (그때는 "버릴 슬롯이 지금 먹어야 할 원목보다 싸다"는 발동 조건 2가 깨진 상태다)
+        if (expired || order >= swapRequestOrder)
         {
             swapRequestOrder = order;
+            swapRequestTime = Time.time;
         }
-
-        swapRequestTime = Time.time;
     }
 
     private void ClearLogSwapRequest()

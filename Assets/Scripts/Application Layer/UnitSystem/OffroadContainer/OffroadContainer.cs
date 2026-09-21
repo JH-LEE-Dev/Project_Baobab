@@ -461,13 +461,17 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         bIsInteracting = false;
         swapBlockedOrder = LogSlotPriority.NONE;
         swapValidateTimer = 0f;
-        lastNotifiedSwapInfo = LogSwapSlotInfo.None;
         lastTransferTime = -transferInterval;
         currentDepositPitch = DEPOSIT_PITCH_MIN;
         lastDepositPitchTime = -999f;
         currentWithdrawPitchCharacter = DEPOSIT_PITCH_MIN;
         lastWithdrawPitchTimeCharacter = -999f;
         carrierWithdrawPitches.Clear();
+
+        // 교체 후보가 잡힌 채로 맵을 옮기는 경우가 있으므로, 사라졌다는 사실을 반드시 알리고 끝낸다.
+        // lastNotifiedSwapInfo를 여기서 직접 None으로 덮어쓰면 안 된다 - 그러면 다음 Update가
+        // "바뀐 게 없다"고 보고 조용히 넘어가, UI와 UnitSystem의 캐시에 지워진 슬롯 표시가 남는다.
+        UpdateLogSwapState(0f);
     }
 
     private void TriggerBounce()
@@ -1808,8 +1812,12 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     /// <summary>
     /// 막힌 기록을 다시 확인하는 주기. 전송 코루틴은 더 옮길 것이 없으면 멈춰버리므로, 그 뒤에
-    /// 상황이 바뀌어도(운반 NPC가 상자를 비워줌 등) 알려줄 사람이 없다. 그래서 기록이 살아 있는
-    /// 동안만 이 주기로 직접 다시 따져본다.
+    /// 상황이 바뀌어도 알려줄 사람이 없다. 그래서 기록이 살아 있는 동안만 이 주기로 직접 다시
+    /// 따져본다.
+    ///
+    /// 상자 앞에 선 채로도 가방 사정은 계속 바뀐다. 예를 들어 빈 슬롯에 흑요목을 주우면 "못 넣는
+    /// 원목 중 가장 비싼 것"이 참나무에서 흑요목으로 올라가고, 그제서야 상자의 소나무 슬롯이
+    /// 버릴 후보가 된다. 다시 따져보지 않으면 그 순간을 영영 놓친다.
     /// </summary>
     private const float SWAP_VALIDATE_INTERVAL = 0.25f;
 
