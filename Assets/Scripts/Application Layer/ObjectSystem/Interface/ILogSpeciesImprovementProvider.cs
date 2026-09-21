@@ -17,4 +17,15 @@ public interface ILogSpeciesImprovementProvider
     /// Initialize가 이미 인자로 받아 들고 있으므로 여기로 되물을 필요가 없다.
     /// </summary>
     void ApplySpeciesImprovement(LogItem _logItem);
+
+    /// <summary>
+    /// 수종 개량이 원목을 끌어올리는 "바닥 수종". 특성이 꺼져 있거나 올릴 곳이 없으면 TreeType.None.
+    /// 아무것도 바꾸지 않고 물어보기만 한다.
+    ///
+    /// 지역마다 하나로 정해지는 값이라 어느 원목에게 물어도 답이 같다. 흡입 순서를 정하는 쪽
+    /// (ItemDetector.SortByPickupPriority)이 "바닥에 보이는 수종"이 아니라 "실제로 담길 수종"으로
+    /// 줄을 세우기 위해 쓴다 - ApplySpeciesImprovement와 같은 규칙을 봐야 하므로 판정은 이 메서드
+    /// 하나에 모아두고 양쪽이 함께 쓴다.
+    /// </summary>
+    TreeType GetImprovementFloor();
 }

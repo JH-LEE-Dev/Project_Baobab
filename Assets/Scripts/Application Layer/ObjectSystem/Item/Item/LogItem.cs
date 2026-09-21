@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
@@ -288,12 +288,22 @@ public class LogItem : Item, IStaticCollidable
     }
 
     /// <summary>
+    /// 이 원목이 습득되는 순간 수종 개량이 끌어올릴 "바닥 수종". 개량이 꺼져 있거나 공급자가 없는
+    /// 경로(마을 등)에서는 TreeType.None이다. 물어보기만 할 뿐 아무것도 바꾸지 않는다.
+    ///
+    /// 흡입 순서를 정하는 쪽(ItemDetector.SortByPickupPriority)이 쓴다. 바닥에 떨어져 있는 수종만
+    /// 보고 줄을 세우면, 개량으로 어차피 같은 수종이 될 원목들을 원래 수종 순서로 잘못 줄 세우게 된다.
+    /// </summary>
+    public TreeType SpeciesImprovementFloor =>
+        speciesImprovementProvider != null ? speciesImprovementProvider.GetImprovementFloor() : TreeType.None;
+
+    /// <summary>
     /// 원목의 수종을 갈아끼운다("수종 개량" 특성). 등급(logState)과 이동 상태는 건드리지 않는다.
     ///
     /// <b>여기서는 데이터만 바꾸고 겉모습은 건드리지 않는다.</b> 습득 판정은 담지 못할 때마다
     /// 바꿨다 되돌리기를 반복하는데(CheckAcquireCondition), 그때마다 렌더러를 칠했다 지우면
-    /// 화면에 한 프레임도 나타나지 않는 스프라이트 쓰기만 쌓인다. 겉모습은 흡입이 확정된 뒤
-    /// ApplySpeciesVisual()이 한 번만 반영한다.
+    /// 화면에 한 프레임도 나타나지 않는 스프라이트 쓰기만 쌓인다. 겉모습은 캐릭터에게 흡수되어
+    /// 사라지는 순간(NotifyAcquired) ApplySpeciesVisual()이 한 번만 반영한다.
     /// </summary>
     public void ChangeSpecies(LogItemTypeData _logItemTypeData)
     {
@@ -305,7 +315,8 @@ public class LogItem : Item, IStaticCollidable
     }
 
     /// <summary>
-    /// 바뀐 수종의 겉모습을 실제로 반영한다. 수종이 진짜로 바뀌었고 습득이 확정된 뒤에만 부른다.
+    /// 바뀐 수종의 겉모습을 실제로 반영한다. <b>흡수되어 사라지는 순간(NotifyAcquired)에만
+    /// 부른다</b> - 바닥에 있는 동안은 물론 캐릭터로 날아오는 동안에도 원래 수종으로 보여야 한다.
     ///
     /// 스프라이트 해석(GetSprite/GetTimberSprite는 stateSprites를 선형 탐색한다)도 여기로 모았다.
     /// 그림자는 모든 원목이 같은 스프라이트시트를 공유하고, 보석 아우라는 수종이 아니라 logState를
@@ -1174,6 +1185,31 @@ public class LogItem : Item, IStaticCollidable
         }
     }
 
+    /// <summary>
+    /// 캐릭터(또는 NPC)에게 흡수되어 사라지는 순간. 소유자에게 알리기 직전에, "수종 개량"으로
+    /// 바뀐 수종의 겉모습을 여기서야 반영한다.
+    ///
+    /// <b>겉모습을 이 시점까지 미루는 이유</b> - 바닥에 떨어져 있는 동안은 물론이고 캐릭터로 빨려
+    /// 들어오는 동안에도 원래 수종 그대로 보여야 한다. 여기서의 렌더러 쓰기는 화면에 나타나지
+    /// 않는다. 알림을 받은 LogItemController가 곧바로 풀에 반납하므로(TryReleaseLogItem) 같은
+    /// 프레임 안에 사라지고, 그 사이에 렌더링되는 프레임이 없다.
+    ///
+    /// <b>그래도 스프라이트는 갱신해야 한다</b> - 인벤토리에 담기는 ItemData가 이 값을 그대로
+    /// 복사해 가므로(ItemData.CopyFrom이 sprite/color를 가져간다), 건너뛰면 가방과 UI에 개량 전
+    /// 수종이 남는다. 그래서 "안 보이는 렌더러 쓰기"가 아니라 "데이터 갱신"이 본체다.
+    /// </summary>
+    private void NotifyAcquired()
+    {
+        // currentTypeData가 originalTypeData와 다르면 개량이 실제로 일어난 것이다
+        // (담지 못해 되돌린 경우 ChangeSpecies(originalTypeData)로 다시 같아진다).
+        if (currentTypeData != originalTypeData)
+        {
+            ApplySpeciesVisual();
+        }
+
+        LogItemAcquired?.Invoke(this);
+    }
+
     private void UpdateSucking(float _deltaTime)
     {
         if (suckTarget == null || (character != null && character.bDead))
@@ -1182,6 +1218,16 @@ public class LogItem : Item, IStaticCollidable
             transform.localScale = Vector3.one;
             if (visualTransform != null) visualTransform.localScale = Vector3.one;
             state = ItemMoveState.Dropped;
+
+            // 흡수되기 전에 중단됐으므로 아직 먹은 게 아니다. "수종 개량"은 흡수되는 순간에만
+            // 확정되어야 하므로(NotifyAcquired) 여기서 원래 수종으로 되돌린다. 되돌리지 않으면
+            // 바닥에 원래 수종으로 보이면서 속은 개량된 원목이 남는다.
+            // 겉모습은 애초에 손대지 않았으므로 데이터만 되돌리면 끝이다.
+            if (currentTypeData != originalTypeData)
+            {
+                ChangeSpecies(originalTypeData);
+            }
+
             // 다른 착지 경로와 맞춰, 보석 등급이면 셰이더 샤이니를 다시 켜준다
             SetShaderFloating(true);
 
@@ -1209,7 +1255,7 @@ public class LogItem : Item, IStaticCollidable
             if (nextMoveStep * nextMoveStep >= sqrDistance)
             {
                 transform.position = targetPos;
-                LogItemAcquired?.Invoke(this);
+                NotifyAcquired();
 
                 return;
             }
@@ -1218,7 +1264,7 @@ public class LogItem : Item, IStaticCollidable
         // 도착 조건: 거리가 가깝고 타겟을 향해 이동 중일 때
         if (suckSpeed > 0f && sqrDistance < (MinAcquireDist * MinAcquireDist))
         {
-            LogItemAcquired?.Invoke(this);
+            NotifyAcquired();
 
             return;
         }
@@ -1348,18 +1394,14 @@ public class LogItem : Item, IStaticCollidable
             // 수종 개량("수종 개량" 특성)은 반드시 CanAcquired()보다 먼저 끝나야 한다. 공간 검사와
             // 자리 예약이 수종을 보고 이뤄지므로, 검사 뒤에 바꾸면 "소나무 자리를 예약해두고
             // 자작나무를 담는" 어긋남이 생겨 예약이 샌다.
-            // 바닥에 떨어져 있는 동안은 원래 수종 그대로 보이고, 흡입이 시작되는(= 먹는) 순간에
-            // 겉모습까지 바뀐다.
+            // 겉모습은 여기서 건드리지 않는다. 바닥에 있는 동안은 물론이고 캐릭터로 날아오는
+            // 동안에도 원래 수종 그대로 보여야 하며, 실제로 흡수되어 사라지는 순간에야 바뀐다
+            // (NotifyAcquired).
             TreeType originalTreeType = treeType;
             speciesImprovementProvider?.ApplySpeciesImprovement(this);
 
             if (checker.CanAcquired(this) && bCanAcquired == true)
             {
-                if (treeType != originalTreeType)
-                {
-                    ApplySpeciesVisual();
-                }
-
                 StartSucking(suckTarget);
 
                 return;
