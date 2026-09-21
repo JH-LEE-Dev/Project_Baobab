@@ -2137,7 +2137,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         if (characterInventoryManager != null)
         {
             characterInventoryManager.PlayLogDropVisuals(pendingSwapDrop.treeType, pendingSwapDrop.logState,
-                pendingSwapDrop.count, transform.position + new Vector3(0f, 0.2f, 0f));
+                pendingSwapDrop.count, transform.position + new Vector3(0f, 0.2f, 0f), _bFlyingSortingLayer: true);
         }
 
         if (bCanInteract && transferCoroutine == null && HasAnyItemToTransfer())

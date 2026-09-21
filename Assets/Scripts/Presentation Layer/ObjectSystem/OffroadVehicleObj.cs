@@ -411,14 +411,16 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             repairBox.RepairBoxInteractStateChangedEvent += RepairBoxInteractStateChanged;
         }
 
-        if (type == PortalType.ToDungeonPortal)
-        {
-            offroadContainerVComponent.ContainerOpenedEvent -= ContainerVisualOpened;
-            offroadContainerVComponent.ContainerOpenedEvent += ContainerVisualOpened;
+        // 뚜껑이 실제로 입을 벌린/닫은 순간(bContainerVisualOpened)은 던전 차량에도 필요하다. 예전엔 마을의
+        // E 인출만 이 시점을 기다려서 마을 차량(ToDungeonPortal)에만 묶어 뒀는데, 던전의 교체(Tab)도 버린
+        // 원목을 이 시점에 흘리고 가방 원목을 출발시킨다. 던전에서 묶지 않으면 플래그가 영영 false라
+        // "이미 열려 있으면 바로"가 성립하지 않고 안전망 타임아웃(0.6초)만 매번 발동한다.
+        // SetContainerVisualOpened 안의 전송 시작은 bInTown으로 걸려 있어 던전 E 흐름은 바뀌지 않는다.
+        offroadContainerVComponent.ContainerOpenedEvent -= ContainerVisualOpened;
+        offroadContainerVComponent.ContainerOpenedEvent += ContainerVisualOpened;
 
-            offroadContainerVComponent.ContainerClosedEvent -= ContainerVisualClosed;
-            offroadContainerVComponent.ContainerClosedEvent += ContainerVisualClosed;
-        }
+        offroadContainerVComponent.ContainerClosedEvent -= ContainerVisualClosed;
+        offroadContainerVComponent.ContainerClosedEvent += ContainerVisualClosed;
     }
 
     public void ReleaseEvents()
@@ -437,11 +439,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             repairBox.RepairBoxInteractStateChangedEvent -= RepairBoxInteractStateChanged;
         }
 
-        if (type == PortalType.ToDungeonPortal)
-        {
-            offroadContainerVComponent.ContainerOpenedEvent -= ContainerVisualOpened;
-            offroadContainerVComponent.ContainerClosedEvent -= ContainerVisualClosed;
-        }
+        offroadContainerVComponent.ContainerOpenedEvent -= ContainerVisualOpened;
+        offroadContainerVComponent.ContainerClosedEvent -= ContainerVisualClosed;
     }
 
     private void RepairBoxInteractStateChanged(bool _state)
