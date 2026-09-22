@@ -15,32 +15,49 @@ public class UIView_Result : UIView
     private enum ResultItemKind
     {
         Log,
-        GemOre,
         Loot,
+    }
+
+    private readonly struct LogVariantKey : IEquatable<LogVariantKey>
+    {
+        public readonly TreeType treeType;
+        public readonly LogState logState;
+
+        public LogVariantKey(TreeType treeType, LogState logState)
+        {
+            this.treeType = treeType;
+            this.logState = logState;
+        }
+
+        public bool Equals(LogVariantKey other)
+        {
+            return treeType == other.treeType && logState == other.logState;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is LogVariantKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return ((int)treeType * 397) ^ (int)logState;
+        }
     }
 
     private readonly struct ResultItemCount
     {
         public readonly ResultItemKind kind;
         public readonly TreeType treeType;
-        public readonly GemOreType gemOreType;
+        public readonly LogState logState;
         public readonly LootType lootType;
         public readonly long count;
 
-        public ResultItemCount(TreeType treeType, int count)
+        public ResultItemCount(TreeType treeType, LogState logState, int count)
         {
             kind = ResultItemKind.Log;
             this.treeType = treeType;
-            gemOreType = GemOreType.None;
-            lootType = LootType.None;
-            this.count = count;
-        }
-
-        public ResultItemCount(GemOreType gemOreType, long count)
-        {
-            kind = ResultItemKind.GemOre;
-            treeType = TreeType.None;
-            this.gemOreType = gemOreType;
+            this.logState = logState;
             lootType = LootType.None;
             this.count = count;
         }
@@ -49,31 +66,23 @@ public class UIView_Result : UIView
         {
             kind = ResultItemKind.Loot;
             treeType = TreeType.None;
-            gemOreType = GemOreType.None;
+            logState = LogState.Normal;
             this.lootType = lootType;
             count = 1L;
         }
     }
 
-    private static readonly GemOreType[] GemOreDisplayOrder =
-    {
-        GemOreType.Gold,
-        GemOreType.Diamond,
-        GemOreType.Prism,
-    };
-
     private readonly struct ResultLogCount
     {
-        public readonly TreeType key;
+        public readonly LogVariantKey key;
         public readonly int count;
 
-        public ResultLogCount(TreeType key, int count)
+        public ResultLogCount(LogVariantKey key, int count)
         {
             this.key = key;
             this.count = count;
         }
     }
-
     private sealed class ResultLogRowProductionState
     {
         private readonly UIView_Result owner;
@@ -129,7 +138,7 @@ public class UIView_Result : UIView
             owner.SetResultRowData(row, item, item.kind == ResultItemKind.Log ? 1L : item.count);
 
             if (item.kind == ResultItemKind.Log)
-                owner.SetLogDisplayProgress(item.treeType, targetCount <= 0 ? 1f : 1f / targetCount);
+                owner.SetLogDisplayProgress(new LogVariantKey(item.treeType, item.logState), targetCount <= 0 ? 1f : 1f / targetCount);
         }
 
         private int GetCurrentCount()
@@ -144,7 +153,7 @@ public class UIView_Result : UIView
 
             currentCount = _value;
             owner.SetResultRowData(row, item, currentCount);
-            owner.SetLogDisplayProgress(item.treeType, targetCount <= 0 ? 1f : (float)currentCount / targetCount);
+            owner.SetLogDisplayProgress(new LogVariantKey(item.treeType, item.logState), targetCount <= 0 ? 1f : (float)currentCount / targetCount);
         }
 
         private void Complete()
@@ -152,7 +161,7 @@ public class UIView_Result : UIView
             owner.SetResultRowData(row, item, item.count);
 
             if (item.kind == ResultItemKind.Log)
-                owner.SetLogDisplayProgress(item.treeType, 1f);
+                owner.SetLogDisplayProgress(new LogVariantKey(item.treeType, item.logState), 1f);
 
             owner.SetCanvasGroupRaycast(rowCanvasGroup, false);
         }
@@ -208,7 +217,9 @@ public class UIView_Result : UIView
             changed |= previousCount != count;
             changed |= previousItemData != itemData;
 
-            logStateCounts[0].state = LogState.Normal;
+            logStateCounts[0].state = sourceItemData is LogItemData logItemData
+                ? logItemData.logState
+                : LogState.Normal;
             logStateCounts[0].count = count;
             HasChanged = changed;
         }
@@ -319,11 +330,11 @@ public class UIView_Result : UIView
     [SerializeField] private float resultCloseDuration = 0.3f;
     [SerializeField] private float resultCloseYOffset = -20f;
 
-    private Dictionary<TreeType, int> startOffroadLogCounts;
+    private Dictionary<LogVariantKey, int> startOffroadLogCounts;
     private DisplayInventorySlot[] startOffroadSlots;
     private DisplayInventorySlot[] currentOffroadSlots;
     private DisplayInventorySlot[] displayOffroadSlots;
-    private readonly Dictionary<TreeType, float> logDisplayProgress = new Dictionary<TreeType, float>();
+    private readonly Dictionary<LogVariantKey, float> logDisplayProgress = new Dictionary<LogVariantKey, float>();
     private readonly List<UI_InventorySlot> containerSlots = new List<UI_InventorySlot>();
     private readonly List<Vector2> resultLogRowBasePositions = new List<Vector2>(2);
     private readonly List<ResultLogRowProductionState> resultLogRowProductionStates = new List<ResultLogRowProductionState>(2);
@@ -405,21 +416,6 @@ public class UIView_Result : UIView
 
     #region 이번 런 성과 데이터
 
-    // 이번 런의 원석/전리품 획득량을 결과창에 제공한다.
-    // 값의 출처는 InDungeonResultManager이고, 던전에 들어갈 때마다 0에서 다시 시작한다.
-
-    /// <summary>
-    /// 이번 런에서 이 등급의 원석으로 얻은 재화량. 인벤토리 HUD의 원석 숫자와 같은 단위다
-    /// (떨어진 알갱이 개수가 아니라 그 알갱이들이 담고 있던 재화의 합).
-    /// </summary>
-    public long GetAcquiredGemOreAmount(GemOreType _gemOreType)
-    {
-        return null != dungeonResultProvider ? dungeonResultProvider.GetAcquiredGemOreAmount(_gemOreType) : 0L;
-    }
-
-    /// <summary>이번 런에서 원석을 조금이라도 주웠는지. 원석 칸 자체를 띄울지 말지 판단할 때 쓴다.</summary>
-    public bool HasAcquiredAnyGemOre => null != dungeonResultProvider && dungeonResultProvider.HasAcquiredAnyGemOre();
-
     /// <summary>
     /// 이번 런에서 얻은 전리품 목록. 얻은 순서대로 들어 있고 중복이 없다. 없으면 빈 목록이다(null 아님).
     /// 읽기만 할 것 - 다음 런이 시작되면 이 목록은 비워진다.
@@ -428,7 +424,6 @@ public class UIView_Result : UIView
         null != dungeonResultProvider ? dungeonResultProvider.GetAcquiredLoots() : Array.Empty<LootType>();
 
     #endregion
-
     /// <summary>
     /// 이번에 열릴 결과창이 튜토리얼 퀘스트 체인 도중(GoHomeBeforeExhausted 완료 ~ UpgradeAxe 완료 전)인지 알려준다.
     /// OpenResultUI()보다 먼저 호출되어야 하며, 튜토리얼 중에는 Retry를 막는 등의 판단에 쓰인다.
@@ -1283,7 +1278,7 @@ public class UIView_Result : UIView
         for (int logIndex = 0; logIndex < acquiredLogs.Count; logIndex++)
         {
             ResultLogCount acquiredLog = acquiredLogs[logIndex];
-            TreeType key = acquiredLog.key;
+            LogVariantKey key = acquiredLog.key;
             if (acquiredLog.count <= 0)
                 continue;
 
@@ -1292,12 +1287,12 @@ public class UIView_Result : UIView
 
             for (int slotIndex = 0; slotIndex < slotCount && remainingAddCount > 0; slotIndex++)
             {
-                int startCount = GetSlotTreeCount(startOffroadSlots, slotIndex, (int)key);
-                int currentCount = GetSlotTreeCount(currentOffroadSlots, slotIndex, (int)key);
+                int startCount = GetSlotLogVariantCount(startOffroadSlots, slotIndex, key);
+                int currentCount = GetSlotLogVariantCount(currentOffroadSlots, slotIndex, key);
                 int slotDeltaCount = Mathf.Max(0, currentCount - startCount);
                 int addCount = Mathf.Min(slotDeltaCount, remainingAddCount);
 
-                displayCounts[slotIndex, (int)key] += addCount;
+                displayCounts[slotIndex, (int)key.treeType] += addCount;
                 remainingAddCount -= addCount;
             }
         }
@@ -1305,12 +1300,11 @@ public class UIView_Result : UIView
         return displayCounts;
     }
 
-    private void SetLogDisplayProgress(TreeType key, float progress)
+    private void SetLogDisplayProgress(LogVariantKey key, float progress)
     {
         logDisplayProgress[key] = Mathf.Clamp01(progress);
         ApplyDisplayOffroadSlotsFromProgress(true);
     }
-
     private Sequence CreateSlotBackgroundProductionSequence()
     {
         Sequence sequence = DOTween.Sequence();
@@ -1367,45 +1361,25 @@ public class UIView_Result : UIView
             logCount++;
         }
 
-        float categoryStart = logCount > 0
+        float lootStart = logCount > 0
             ? ((logCount - 1) * resultLogRowInterval) + Mathf.Max(slotBackgroundOpenDuration, resultLogRowCountUpDuration)
             : 0f;
 
-        int categoryIndex = 0;
-        int itemIndex = logCount;
-        while (itemIndex < rowCount && acquiredItems[itemIndex].kind == ResultItemKind.GemOre)
-        {
-            UI_ResultLogRow row = resultLogRows[itemIndex];
-            if (row != null)
-            {
-                Vector2 targetPosition = GetResultLogRowTargetPosition(row, itemIndex, acquiredItems.Count);
-                sequence.Insert(categoryStart + (categoryIndex * resultLogRowInterval),
-                    CreateResultItemRowProductionSequence(row, acquiredItems[itemIndex], targetPosition));
-            }
-
-            categoryIndex++;
-            itemIndex++;
-        }
-
-        if (categoryIndex > 0)
-            categoryStart += ((categoryIndex - 1) * resultLogRowInterval) + slotBackgroundOpenDuration;
-
-        categoryIndex = 0;
-        for (; itemIndex < rowCount; itemIndex++)
+        int lootIndex = 0;
+        for (int itemIndex = logCount; itemIndex < rowCount; itemIndex++)
         {
             UI_ResultLogRow row = resultLogRows[itemIndex];
             if (row == null)
                 continue;
 
             Vector2 targetPosition = GetResultLogRowTargetPosition(row, itemIndex, acquiredItems.Count);
-            sequence.Insert(categoryStart + (categoryIndex * resultLogRowInterval),
+            sequence.Insert(lootStart + (lootIndex * resultLogRowInterval),
                 CreateResultItemRowProductionSequence(row, acquiredItems[itemIndex], targetPosition));
-            categoryIndex++;
+            lootIndex++;
         }
 
         return sequence;
     }
-
     private Sequence CreateResultItemRowProductionSequence(UI_ResultLogRow row, ResultItemCount item, Vector2 targetPosition)
     {
         Sequence sequence = DOTween.Sequence();
@@ -1599,10 +1573,7 @@ public class UIView_Result : UIView
         switch (item.kind)
         {
             case ResultItemKind.Log:
-                row.SetDataVisible(item.treeType, (int)count);
-                break;
-            case ResultItemKind.GemOre:
-                row.SetGemOreDataVisible(item.gemOreType, count);
+                row.SetDataVisible(item.treeType, item.logState, (int)count);
                 break;
             case ResultItemKind.Loot:
                 row.SetLootDataVisible(item.lootType);
@@ -1614,17 +1585,12 @@ public class UIView_Result : UIView
     {
         List<ResultLogCount> acquiredLogs = GetAcquiredLogCounts();
         IReadOnlyList<LootType> acquiredLoots = AcquiredLoots;
-        List<ResultItemCount> acquiredItems = new List<ResultItemCount>(acquiredLogs.Count + GemOreDisplayOrder.Length + acquiredLoots.Count);
+        List<ResultItemCount> acquiredItems = new List<ResultItemCount>(acquiredLogs.Count + acquiredLoots.Count);
 
         for (int i = 0; i < acquiredLogs.Count; i++)
-            acquiredItems.Add(new ResultItemCount(acquiredLogs[i].key, acquiredLogs[i].count));
-
-        for (int i = 0; i < GemOreDisplayOrder.Length; i++)
         {
-            GemOreType gemOreType = GemOreDisplayOrder[i];
-            long amount = GetAcquiredGemOreAmount(gemOreType);
-            if (amount > 0L)
-                acquiredItems.Add(new ResultItemCount(gemOreType, amount));
+            LogVariantKey key = acquiredLogs[i].key;
+            acquiredItems.Add(new ResultItemCount(key.treeType, key.logState, acquiredLogs[i].count));
         }
 
         for (int i = 0; i < acquiredLoots.Count; i++)
@@ -1638,7 +1604,6 @@ public class UIView_Result : UIView
 
         return acquiredItems;
     }
-
     private void RemoveInvalidResultLogRows()
     {
         for (int i = resultLogRows.Count - 1; i >= 0; i--)
@@ -1684,23 +1649,30 @@ public class UIView_Result : UIView
 
     private List<ResultLogCount> GetAcquiredLogCounts()
     {
-        Dictionary<TreeType, int> currentCounts = GetOffroadLogCounts();
+        Dictionary<LogVariantKey, int> currentCounts = GetOffroadLogCounts();
         List<ResultLogCount> acquiredLogs = new List<ResultLogCount>();
+        Array logStates = Enum.GetValues(typeof(LogState));
 
         for (int treeIndex = (int)TreeType.None + 1; treeIndex < (int)TreeType.Max; treeIndex++)
         {
-            TreeType key = (TreeType)treeIndex;
-            int acquiredCount = GetLogCount(currentCounts, key) - GetLogCount(startOffroadLogCounts, key);
+            for (int stateIndex = 0; stateIndex < logStates.Length; stateIndex++)
+            {
+                LogState logState = (LogState)logStates.GetValue(stateIndex);
+                if (logState < LogState.Normal)
+                    continue;
 
-            if (acquiredCount <= 0)
-                continue;
+                LogVariantKey key = new LogVariantKey((TreeType)treeIndex, logState);
+                int acquiredCount = GetLogVariantCount(currentCounts, key) - GetLogVariantCount(startOffroadLogCounts, key);
 
-            acquiredLogs.Add(new ResultLogCount(key, acquiredCount));
+                if (acquiredCount <= 0)
+                    continue;
+
+                acquiredLogs.Add(new ResultLogCount(key, acquiredCount));
+            }
         }
 
         return acquiredLogs;
     }
-
     private void SnapshotOffroadContainer()
     {
         startOffroadLogCounts = GetOffroadLogCounts();
@@ -1771,6 +1743,19 @@ public class UIView_Result : UIView
         return 0;
     }
 
+    private int GetSlotLogVariantCount(DisplayInventorySlot[] slots, int slotIndex, LogVariantKey key)
+    {
+        if (slots == null || slotIndex < 0 || slotIndex >= slots.Length)
+            return 0;
+
+        if (!(slots[slotIndex].itemData is LogItemData logItemData))
+            return 0;
+
+        if (logItemData.treeType != key.treeType || logItemData.logState != key.logState)
+            return 0;
+
+        return GetSlotTreeCount(slots, slotIndex, (int)key.treeType);
+    }
     private IItemData GetDisplaySlotItemData(int slotIndex, int[] counts)
     {
         IItemData sourceItemData = GetSlotItemDataForCounts(currentOffroadSlots, slotIndex, counts);
@@ -1796,9 +1781,9 @@ public class UIView_Result : UIView
         return null;
     }
 
-    private Dictionary<TreeType, int> GetOffroadLogCounts()
+    private Dictionary<LogVariantKey, int> GetOffroadLogCounts()
     {
-        Dictionary<TreeType, int> counts = new Dictionary<TreeType, int>();
+        Dictionary<LogVariantKey, int> counts = new Dictionary<LogVariantKey, int>();
 
         if (offroadContainer == null || offroadContainer.inventorySlots == null)
             return counts;
@@ -1816,17 +1801,17 @@ public class UIView_Result : UIView
             if (treeType <= TreeType.None || treeType >= TreeType.Max)
                 continue;
 
-            counts[treeType] = GetLogCount(counts, treeType) + Mathf.Max(0, slot.count);
+            LogVariantKey key = new LogVariantKey(treeType, logItemData.logState);
+            counts[key] = GetLogVariantCount(counts, key) + Mathf.Max(0, slot.count);
         }
 
         return counts;
     }
 
-    private static int GetLogCount(Dictionary<TreeType, int> counts, TreeType key)
+    private static int GetLogVariantCount(Dictionary<LogVariantKey, int> counts, LogVariantKey key)
     {
         return counts != null && counts.TryGetValue(key, out int count) ? count : 0;
     }
-
     private void SetResultLogRowPosition(UI_ResultLogRow row, int index, int count)
     {
         RectTransform rectTransform = row.transform as RectTransform;
