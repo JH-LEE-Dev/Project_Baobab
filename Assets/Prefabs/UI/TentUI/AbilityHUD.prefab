@@ -1165,6 +1165,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5013499772108075681, guid: e648b462cdf126e4d8d057eb47d9f2de, type: 3}
+      propertyPath: m_SortingLayer
+      value: 17
+      objectReference: {fileID: 0}
     - target: {fileID: 5965358582667558920, guid: e648b462cdf126e4d8d057eb47d9f2de, type: 3}
       propertyPath: looping
       value: 1
@@ -1176,6 +1180,10 @@ PrefabInstance:
     - target: {fileID: 5965358582667558920, guid: e648b462cdf126e4d8d057eb47d9f2de, type: 3}
       propertyPath: useUnscaledTime
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7461858078636552214, guid: e648b462cdf126e4d8d057eb47d9f2de, type: 3}
+      propertyPath: m_SortingLayer
+      value: 17
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1497,6 +1505,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5013499772108075681, guid: e648b462cdf126e4d8d057eb47d9f2de, type: 3}
+      propertyPath: m_SortingLayer
+      value: 17
+      objectReference: {fileID: 0}
     - target: {fileID: 5965358582667558920, guid: e648b462cdf126e4d8d057eb47d9f2de, type: 3}
       propertyPath: looping
       value: 1
@@ -1508,6 +1520,10 @@ PrefabInstance:
     - target: {fileID: 5965358582667558920, guid: e648b462cdf126e4d8d057eb47d9f2de, type: 3}
       propertyPath: useUnscaledTime
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7461858078636552214, guid: e648b462cdf126e4d8d057eb47d9f2de, type: 3}
+      propertyPath: m_SortingLayer
+      value: 17
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
