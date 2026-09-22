@@ -826,9 +826,9 @@
       "zhHant": "確定要將所有按鍵設定恢復為默認值嗎？", 
       "ja": "すべてのキー設定を初期設定に戻しますか？",
       "de": "Alle Tastenbelegungen zurücksetzen?",
-      "fr": "Rétablir toutes les touches par défaut ?",
-      "pt": "Restaurar todos os controles ao padrão?",
-      "es": "¿Restablecer todas las teclas a sus valores predeterminados?",
+      "fr": "Rétablir l'affectation des touches par défaut ?",
+      "pt": "Restaurar a configuração padrão das teclas?",
+      "es": "¿Restablecer la asignación de teclas predeterminada?",
       "ru": "Сбросить все назначения клавиш?",
       "enumType": "",
       "enumValue": ""

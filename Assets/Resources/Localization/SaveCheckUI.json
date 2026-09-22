@@ -9,7 +9,7 @@
       "zhHans": "未能加载存档数据。\n可能是临时错误。是否重试？",
       "zhHant": "無法載入存檔資料。\n可能是暫時性錯誤。是否重試？",
       "ja": "セーブデータを読み込めませんでした。\n一時的なエラーの可能性があります。再試行しますか？",
-      "de": "Die Speicherdaten konnten nicht geladen werden.\nMöglicherweise handelt es sich um einen vorübergehenden Fehler. Erneut versuchen?",
+      "de": "Die Speicherdaten konnten nicht geladen werden.\nVielleicht ist der Fehler nur vorübergehend. Erneut versuchen?",
       "fr": "Impossible de charger les données de sauvegarde.\nIl peut s'agir d'une erreur temporaire. Réessayer ?",
       "pt": "Não foi possível carregar os dados salvos.\nTalvez seja um erro temporário. Deseja tentar novamente?",
       "es": "No se han podido cargar los datos guardados.\nPuede que se trate de un error temporal. ¿Quieres volver a intentarlo?",

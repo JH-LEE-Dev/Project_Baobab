@@ -28,7 +28,7 @@ MonoBehaviour:
     - skillCommandType: 5
       amountCurve:
         type: 3
-        baseValue: 7
+        baseValue: 6
         manualValues: []
     prerequisiteSkills: 
   - skillType: 18

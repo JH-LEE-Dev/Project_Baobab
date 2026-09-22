@@ -52,7 +52,7 @@
         {
             "id": 107,
             "key": "LogValue1_Name",
-            "kr": "판매 가치 I",
+            "kr": "원목 가치 I",
             "en": "Log Value I",
             "zhHans": "原木价值 I",
             "zhHant": "原木價值 I",
@@ -388,7 +388,7 @@
         {
             "id": 149,
             "key": "LogValue2_Name",
-            "kr": "판매 가치 II",
+            "kr": "원목 가치 II",
             "en": "Log Value II",
             "zhHans": "原木价值 II",
             "zhHant": "原木價值 II",
@@ -1961,7 +1961,7 @@
             "zhHans": "每格可收纳的<COLOR=8bbeff>原木数量</COLOR>增加<COLOR=54D86A>{0}</COLOR>",
             "zhHant": "每格可收納的<COLOR=8bbeff>原木數量</COLOR>增加<COLOR=54D86A>{0}</COLOR>",
             "ja": "1枠に収納できる<COLOR=8bbeff>丸太の数</COLOR>が<COLOR=54D86A>{0}</COLOR>増加します。",
-            "de": "Erhöht die Anzahl der <COLOR=8bbeff>Holzstämme pro Inventarplatz</COLOR> um <COLOR=54D86A>{0}</COLOR>.",
+            "de": "Erhöht die Anzahl der <COLOR=8bbeff>Holzstämme pro Platz</COLOR> um <COLOR=54D86A>{0}</COLOR>.",
             "fr": "Augmente de <COLOR=54D86A>{0}</COLOR> le <COLOR=8bbeff>nombre de bûches par emplacement</COLOR>.",
             "pt": "Aumenta em <COLOR=54D86A>{0}</COLOR> a <COLOR=8bbeff>quantidade de toras por espaço</COLOR>.",
             "es": "Aumenta en <COLOR=54D86A>{0}</COLOR> la <COLOR=8bbeff>cantidad de troncos por espacio</COLOR>.",
