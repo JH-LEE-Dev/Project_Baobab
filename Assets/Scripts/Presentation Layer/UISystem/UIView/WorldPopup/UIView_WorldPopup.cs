@@ -97,7 +97,7 @@ public class UIView_WorldPopup : UIView
         if (null == ui_Storage)
             return;
 
-        ui_Storage.Initialize(storageOffset);
+        ui_Storage.Initialize(storageOffset, viewCtx?.inputManager);
     }
 
     private void Init_UICarStorage()
@@ -109,7 +109,7 @@ public class UIView_WorldPopup : UIView
         if (null == ui_CarStorage)
             return;
 
-        ui_CarStorage.Initialize(carStorageOffset);
+        ui_CarStorage.Initialize(carStorageOffset, viewCtx?.inputManager);
     }
 
 
@@ -318,6 +318,27 @@ public class UIView_WorldPopup : UIView
             return;
 
         ui_CarStorage?.UpdateMaxSlotCount(offroadContainer.inventorySlots.Count);
+    }
+
+    /// <summary>
+    /// 지금 교체하면 버려질 <b>운반 상자 슬롯</b>이 달라졌습니다.
+    ///
+    /// _activeTarget은 교체 키가 실제로 건드릴 쪽입니다. 상자 쪽에 후보가 있으면 상자가 우선이므로
+    /// 보통 OffroadContainer지만, 후보가 없어지면 인벤토리 쪽으로 넘어갑니다.
+    /// (교체 키 입력을 실제로 처리하는 곳은 GameplayUICoordinator이고, 여기는 표시 전용입니다)
+    /// </summary>
+    public void LogSwapTargetChanged(in LogSwapSlotInfo _info, ELogSwapTarget _activeTarget)
+    {
+        ui_CarStorage?.SetLogSwapInfo(in _info, _activeTarget);
+    }
+
+    /// <summary>
+    /// 운반 상자 슬롯 하나가 교체로 실제로 버려졌습니다. _info에는 방금 버려진 내용이 담겨 있습니다
+    /// (데이터는 이미 지워진 뒤라 슬롯을 다시 읽으면 비어 있습니다).
+    /// </summary>
+    public void LogSwapExecuted(in LogSwapSlotInfo _info)
+    {
+        ui_CarStorage?.LogSwapExecuted(in _info);
     }
 
     //오프로드 박스가 최신화됨.

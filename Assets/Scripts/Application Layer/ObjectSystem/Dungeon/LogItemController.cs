@@ -592,20 +592,35 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
     // // 수종 개량 (ILogSpeciesImprovementProvider)
 
-    void ILogSpeciesImprovementProvider.ApplySpeciesImprovement(LogItem _logItem)
+    TreeType ILogSpeciesImprovementProvider.GetImprovementFloor()
     {
-        if (!bSpeciesImprovement || _logItem == null || densityProvider == null) return;
+        if (!bSpeciesImprovement || densityProvider == null) return TreeType.None;
 
         TreeType bestType = densityProvider.GetMostValuableTreeType();
+        if (bestType == TreeType.None) return TreeType.None;
 
-        // 가치 순서는 TreeType enum 인덱스와 같다. 이미 그 지역 최고 수종이면 그대로 둔다.
-        if (bestType == TreeType.None || bestType <= _logItem.treeType) return;
+        // 밀도 데이터에만 있고 원목 데이터가 아직 없는 수종이면(데이터 누락) 개량이 일어나지 않으므로
+        // 바닥 수종도 없는 것으로 친다. (LogItemTypeDataBase.Get은 인덱스 캐시라 할당 없이 O(1)다)
+        if (logItemTypeDataBase == null || logItemTypeDataBase.Get(bestType) == null) return TreeType.None;
 
-        // 밀도 데이터에만 있고 원목 데이터가 아직 없는 수종이면(데이터 누락) 원래 수종을 유지한다.
-        LogItemTypeData typeData = logItemTypeDataBase != null ? logItemTypeDataBase.Get(bestType) : null;
-        if (typeData == null) return;
+        return bestType;
+    }
 
-        _logItem.ChangeSpecies(typeData);
+    void ILogSpeciesImprovementProvider.ApplySpeciesImprovement(LogItem _logItem)
+    {
+        if (_logItem == null) return;
+
+        // 판정은 GetImprovementFloor 한 곳에만 둔다. 흡입 순서를 정하는 쪽도 같은 값을 보고 줄을
+        // 세우므로, 두 곳의 규칙이 갈라지면 "비쌀 거라 예상하고 자리를 준 원목"과 "실제로 담기는
+        // 원목"이 어긋난다.
+        TreeType floor = ((ILogSpeciesImprovementProvider)this).GetImprovementFloor();
+
+        // 가치 순서는 TreeType enum 인덱스와 같다. 이미 그 지역 최고 수종이면(또는 개량이 꺼져 있어
+        // floor가 None이면) 그대로 둔다.
+        if (floor <= _logItem.treeType) return;
+
+        // floor가 None이 아니라는 것은 GetImprovementFloor가 원목 데이터까지 확인했다는 뜻이다.
+        _logItem.ChangeSpecies(logItemTypeDataBase.Get(floor));
     }
 
     // // 보석 아우라 (ILogItemAuraProvider)

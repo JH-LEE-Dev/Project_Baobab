@@ -37,3 +37,12 @@ MonoBehaviour:
     value: 5000000
   - treeType: 12
     value: 30000000
+  stateValueDatas:
+  - logState: 2
+    valueMultiplier: 1
+  - logState: 3
+    valueMultiplier: 5
+  - logState: 4
+    valueMultiplier: 10
+  - logState: 5
+    valueMultiplier: 20

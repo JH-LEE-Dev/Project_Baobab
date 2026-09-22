@@ -118,6 +118,8 @@ public class GameplayUICoordinator
         signalHub.Subscribe<OffroadSpawnedSignal>(OffroadSpawned);
         signalHub.Subscribe<ItemAddedToInventorySignal>(ItemAddedToInventory);
         signalHub.Subscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
+        signalHub.Subscribe<LogSwapAvailabilityChangedSignal>(LogSwapAvailabilityChanged);
+        signalHub.Subscribe<LogSwapExecutedSignal>(LogSwapExecuted);
         signalHub.Subscribe<TentInteractStateChangedSignal>(TentInteractStateChanged);
         signalHub.Subscribe<BlastFurnaceInteractStateChangedSignal>(BlastFurnaceInteractStateChanged);
         signalHub.Subscribe<BlastFurnaceStateChangedSignal>(BlastFurnaceStateChanged);
@@ -176,6 +178,8 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<OffroadSpawnedSignal>(OffroadSpawned);
         signalHub.UnSubscribe<ItemAddedToInventorySignal>(ItemAddedToInventory);
         signalHub.UnSubscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
+        signalHub.UnSubscribe<LogSwapAvailabilityChangedSignal>(LogSwapAvailabilityChanged);
+        signalHub.UnSubscribe<LogSwapExecutedSignal>(LogSwapExecuted);
         signalHub.UnSubscribe<TentInteractStateChangedSignal>(TentInteractStateChanged);
         signalHub.UnSubscribe<BlastFurnaceInteractStateChangedSignal>(BlastFurnaceInteractStateChanged);
         signalHub.UnSubscribe<BlastFurnaceStateChangedSignal>(BlastFurnaceStateChanged);
@@ -208,6 +212,9 @@ public class GameplayUICoordinator
     {
         inputManager.inputReader.InventoryKeyEvent -= OnInventoryKeyPressed;
         inputManager.inputReader.InventoryKeyEvent += OnInventoryKeyPressed;
+
+        inputManager.inputReader.LogSwapKeyPressedEvent -= OnLogSwapKeyPressed;
+        inputManager.inputReader.LogSwapKeyPressedEvent += OnLogSwapKeyPressed;
 
         popUpUI.sendDeleteItemEvent -= SendDeleteItem;
         popUpUI.sendDeleteItemEvent += SendDeleteItem;
@@ -285,6 +292,7 @@ public class GameplayUICoordinator
     private void ReleaseEvents()
     {
         inputManager.inputReader.InventoryKeyEvent -= OnInventoryKeyPressed;
+        inputManager.inputReader.LogSwapKeyPressedEvent -= OnLogSwapKeyPressed;
         popUpUI.sendDeleteItemEvent -= SendDeleteItem;
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
         menuPopupUI.CancelButtonClickedEvent -= CancelMenuPopup;
@@ -355,6 +363,58 @@ public class GameplayUICoordinator
         {
             bInventoryOpened = false;
             popUpUI.Hide();
+        }
+    }
+
+    /// <summary>
+    /// 원목 교체 키입니다. <b>인벤토리가 열려 있을 때만</b> 동작합니다 - 무엇이 버려지는지 눈으로
+    /// 확인할 수 없는 상태에서 슬롯이 사라지면 안 되기 때문입니다.
+    ///
+    /// 실제로 버릴 슬롯이 있는지는 UnitSystem이 판단하므로, 여기서는 "열려 있는가"만 보고 넘긴다.
+    /// </summary>
+    private void OnLogSwapKeyPressed()
+    {
+        if (false == bInventoryOpened)
+            return;
+
+        if (bHUDDown)
+            return;
+
+        if (LoadingManager.Instance != null && LoadingManager.Instance.IsLoading)
+            return;
+
+        signalHub.Publish(new LogSwapRequestedSignal());
+    }
+
+    /// <summary>
+    /// 지금 교체하면 어느 슬롯이 버려지는지가 달라졌습니다. 인벤토리 쪽은 가방 UI로, 운반 상자 쪽은
+    /// 상자 UI로 각각 내려줍니다. activeTarget(교체 키가 실제로 건드릴 쪽)도 함께 넘겨, 양쪽 모두
+    /// 후보가 있을 때 어느 쪽을 강조할지 UI가 고를 수 있게 한다.
+    /// </summary>
+    private void LogSwapAvailabilityChanged(LogSwapAvailabilityChangedSignal _logSwapAvailabilityChangedSignal)
+    {
+        // 가방 UI에는 양쪽을 다 준다. 운반 상자 교체가 잡혀 있을 때 "어느 가방 슬롯이 상자로 넘어가는지"
+        // (containerInfo.incomingSlotIndex)를 가방 쪽에도 표시해야 하기 때문이다.
+        popUpUI.LogSwapTargetChanged(_logSwapAvailabilityChangedSignal.inventoryInfo,
+            _logSwapAvailabilityChangedSignal.containerInfo,
+            _logSwapAvailabilityChangedSignal.activeTarget);
+
+        worldPopupUI.LogSwapTargetChanged(_logSwapAvailabilityChangedSignal.containerInfo,
+            _logSwapAvailabilityChangedSignal.activeTarget);
+    }
+
+    /// <summary>
+    /// 교체가 실제로 일어났습니다(슬롯 하나가 비워진 뒤). 버려진 쪽 UI에만 알린다.
+    /// </summary>
+    private void LogSwapExecuted(LogSwapExecutedSignal _logSwapExecutedSignal)
+    {
+        if (ELogSwapTarget.Inventory == _logSwapExecutedSignal.info.target)
+        {
+            popUpUI.LogSwapExecuted(_logSwapExecutedSignal.info);
+        }
+        else if (ELogSwapTarget.OffroadContainer == _logSwapExecutedSignal.info.target)
+        {
+            worldPopupUI.LogSwapExecuted(_logSwapExecutedSignal.info);
         }
     }
 

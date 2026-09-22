@@ -11,8 +11,23 @@ using PresentationLayer.UISystem.CustomNumber;
 /// </summary>
 public class UI_Inventory : MonoBehaviour
 {
-    // //이벤트
+    // //이벤트 및 대리자
     public event Action<IInventorySlot> sendDeleteItemEvent;
+
+    /// <summary>
+    /// 교체 대상 슬롯 정보가 달라졌을 때 발생합니다(생김 / 사라짐 / 다른 슬롯으로 이동 / 개수 변화).
+    /// LogSwapInfo와 ActiveLogSwapTarget을 다시 읽어 표시를 맞추세요.
+    /// </summary>
+    public event Action LogSwapInfoChangedEvent;
+
+    /// <summary>
+    /// 교체가 실제로 일어나 인벤토리 슬롯 하나가 비워졌을 때 발생합니다. 인자는 방금 버려진 슬롯의
+    /// 내용(slotIndex / treeType / logState / count)입니다 - 데이터는 이미 지워진 뒤입니다.
+    /// </summary>
+    public event Action<LogSwapSlotInfo> LogSwapExecutedEvent;
+
+    public Action inventoryHoverEvent;
+    public Action inventoryUnHoverEvent;
 
     // //외부 의존성
     [Header("Binding Obj")]
@@ -43,26 +58,69 @@ public class UI_Inventory : MonoBehaviour
     [SerializeField] private int maxSlotPrewarmCount = 32;
     [SerializeField] private List<UI_InventorySlot> inventorySlots = new List<UI_InventorySlot>(32);
 
+    [Header("Smart Swap Settings")]
+    [Tooltip("스마트 스왑 단일 인디케이터 프리팹 (Icons 하위에 1회 인스턴스화)")]
+    [SerializeField] private GameObject swapIndicatorPrefab;
+    [Tooltip("인디케이터가 대상 슬롯 머리 위를 가리키는 로컬 오프셋")]
+    [SerializeField] private Vector2 indicatorOffset = new Vector2(0f, 24f);
+
     // //내부 의존성
-    private const int defaultPopupCap = 12;
     private const string backpackTag = "Backpack";
     private const string coinsTag = "Coins";
     private const string popupTag = "Popup";
+
+    private UI_SwapIndicator sharedSwapIndicator;
+    private int currentSwapSlotIndex = -1;
 
     private IInventory inventory;
     private IMoneyData moneyData;
     private UI_InventoryPopup invPopup;
     private LocalizationManager locManager;
 
-    public MapType CurrentMapType { get; set; } = MapType.Town;
-    public bool IsOpening { get; private set; } = false;
-
-    public Action inventoryHoverEvent;
-    public Action inventoryUnHoverEvent;
-
     private bool isOpenAnimated = false;
     private int previousLogCount = 0;
     private bool isFirstDataBind = true;
+
+    // 교체 대상 슬롯 정보. 가방이 닫혀 있는 동안에도 값은 그대로 유지한다.
+    private LogSwapSlotInfo logSwapInfo = LogSwapSlotInfo.None;          // 인벤토리 쪽: 버려질 가방 슬롯
+    private LogSwapSlotInfo outgoingSwapInfo = LogSwapSlotInfo.None;     // 상자 쪽: 상자로 넘어갈 가방 슬롯
+    private ELogSwapTarget activeLogSwapTarget = ELogSwapTarget.None;
+
+    // //프로퍼티
+    public MapType CurrentMapType { get; set; } = MapType.Town;
+    public bool IsOpening { get; private set; } = false;
+
+    /// <summary>
+    /// 지금 교체하면 버려질 인벤토리 슬롯입니다. bHasSlot이 false면 교체 대상이 없습니다.
+    /// slotIndex는 inventory.inventorySlots(= 이 UI가 그리는 슬롯 목록)와 같은 인덱스입니다.
+    /// </summary>
+    public LogSwapSlotInfo LogSwapInfo => logSwapInfo;
+
+    /// <summary>
+    /// 교체 키를 누르면 실제로 버려지는 쪽입니다. Inventory가 아니면(운반 상자가 우선인 상황 등)
+    /// 이 창의 후보는 "예정"일 뿐 지금 키를 눌러도 버려지지 않습니다.
+    /// </summary>
+    public ELogSwapTarget ActiveLogSwapTarget => activeLogSwapTarget;
+
+    /// <summary>교체 키가 이 인벤토리의 슬롯을 버리게 되는 상태인지입니다(안내를 켜는 기본 조건).</summary>
+    public bool IsLogSwapReady => logSwapInfo.bHasSlot && ELogSwapTarget.Inventory == activeLogSwapTarget;
+
+    /// <summary>
+    /// <b>운반 상자 쪽</b> 교체 제안입니다. 상자 앞에서 상자가 가득 차 있을 때 잡히며, 이때 가방 UI가
+    /// 보여줄 것은 "버려질 슬롯"이 아니라 <b>"상자로 넘어갈 슬롯"</b>입니다 -
+    /// <c>OutgoingSwapInfo.incomingSlotIndex</c>가 그 가방 슬롯의 인덱스입니다.
+    /// 상자 쪽 제안이 없으면 bHasSlot == false.
+    /// </summary>
+    public LogSwapSlotInfo OutgoingSwapInfo => outgoingSwapInfo;
+
+    /// <summary>
+    /// 교체 키를 누르면 상자로 넘어갈 가방 슬롯의 인덱스. 없으면 -1.
+    /// <c>inventory.inventorySlots</c>(= 이 UI가 그리는 슬롯 목록)와 같은 인덱스입니다.
+    /// </summary>
+    public int OutgoingSlotIndex => outgoingSwapInfo.bHasSlot ? outgoingSwapInfo.incomingSlotIndex : -1;
+
+    /// <summary>교체 키가 운반 상자의 슬롯을 버리고 이 가방의 슬롯을 넘기게 되는 상태인지입니다.</summary>
+    public bool IsOutgoingSwapReady => outgoingSwapInfo.bHasSlot && ELogSwapTarget.OffroadContainer == activeLogSwapTarget;
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -91,7 +149,7 @@ public class UI_Inventory : MonoBehaviour
         
         if (null != keyboardImages)
         {
-            for (int i = 0; i < keyboardImages.Length; i++)
+            for (int i = 0; keyboardImages.Length > i; i++)
             {
                 if (null != keyboardImages[i]) keyboardImages[i].Initialize(_inputManager);
             }
@@ -103,21 +161,64 @@ public class UI_Inventory : MonoBehaviour
         if (null != uiSlotPrefab && null != invBackground)
         {
             int _needPrewarm = maxSlotPrewarmCount - inventorySlots.Count;
-            for (int i = 0; i < _needPrewarm; i++)
+            for (int i = 0; _needPrewarm > i; i++)
             {
-                GameObject _slotObj = Instantiate(uiSlotPrefab, invBackground.transform);
-                UI_InventorySlot _slot = _slotObj.GetComponent<UI_InventorySlot>();
+                CreateSlotInstance();
+            }
+        }
 
-                if (null != _slot)
+        InitSwapIndicator(_inputManager);
+
+        LogSwapInfoChangedEvent -= HandleLogSwapInfoChanged;
+        LogSwapInfoChangedEvent += HandleLogSwapInfoChanged;
+
+        LogSwapExecutedEvent -= HandleLogSwapExecuted;
+        LogSwapExecutedEvent += HandleLogSwapExecuted;
+    }
+
+    private UI_InventorySlot CreateSlotInstance()
+    {
+        if (null == uiSlotPrefab || null == invBackground)
+            return null;
+
+        GameObject _slotObj = Instantiate(uiSlotPrefab, invBackground.transform);
+        UI_InventorySlot _slot = _slotObj.GetComponent<UI_InventorySlot>();
+
+        if (null != _slot)
+        {
+            _slot.Initialize();
+            _slot.SetLayer(uiSlotLayerName);
+            _slot.exitSlot -= inventoryUnHoverEvent;
+            _slot.exitSlot += inventoryUnHoverEvent;
+            _slot.gameObject.SetActive(false);
+            inventorySlots.Add(_slot);
+        }
+
+        return _slot;
+    }
+
+    private void InitSwapIndicator(InputManager _inputManager)
+    {
+        if (null == sharedSwapIndicator && null != swapIndicatorPrefab)
+        {
+            Transform _parent = transform;
+            GameObject _inst = Instantiate(swapIndicatorPrefab, _parent);
+            if (null != _inst)
+            {
+                sharedSwapIndicator = _inst.GetComponent<UI_SwapIndicator>();
+                if (null != sharedSwapIndicator)
                 {
-                    _slot.Initialize();
-                    _slot.SetLayer(uiSlotLayerName);
-                    _slot.exitSlot -= inventoryUnHoverEvent;
-                    _slot.exitSlot += inventoryUnHoverEvent;
-                    _slot.gameObject.SetActive(false);
-                    inventorySlots.Add(_slot);
+                    sharedSwapIndicator.Initialize(_inputManager);
+                    sharedSwapIndicator.transform.SetAsLastSibling();
+                    sharedSwapIndicator.HideImmediate();
                 }
             }
+        }
+        else if (null != sharedSwapIndicator)
+        {
+            sharedSwapIndicator.Initialize(_inputManager);
+            sharedSwapIndicator.transform.SetAsLastSibling();
+            sharedSwapIndicator.HideImmediate();
         }
     }
 
@@ -143,22 +244,9 @@ public class UI_Inventory : MonoBehaviour
         if (0 < _needCount)
         {
             Debug.LogWarning($"[UI_Inventory] maxSlotPrewarmCount({maxSlotPrewarmCount}) 부족으로 런타임 동적 생성됨.");
-            for (int _i = 0; _i < _needCount; _i++)
+            for (int _i = 0; _needCount > _i; _i++)
             {
-                GameObject _slotObj = Instantiate(uiSlotPrefab, invBackground.transform);
-                UI_InventorySlot _slot = _slotObj.GetComponent<UI_InventorySlot>();
-
-                if (null == _slot)
-                    continue;
-
-                _slot.Initialize();
-                _slot.SetLayer(uiSlotLayerName);
-
-                _slot.exitSlot -= inventoryUnHoverEvent;
-                _slot.exitSlot += inventoryUnHoverEvent;
-                _slot.gameObject.SetActive(false);
-
-                inventorySlots.Add(_slot);
+                CreateSlotInstance();
             }
         }
     }
@@ -193,12 +281,12 @@ public class UI_Inventory : MonoBehaviour
 
         int currentLogCount = 0;
 
-        for (int _i = 0; _i < _maxSlots; ++_i)
+        for (int _i = 0; _maxSlots > _i; ++_i)
         {
             UI_InventorySlot _slot = inventorySlots[_i];
-            IInventorySlot _item = _i < _items.Count ? _items[_i] : null;
+            IInventorySlot _item = _items.Count > _i ? _items[_i] : null;
             
-            if (_i < _itemCount && null != _item && null != _item.itemData && ItemType.Log == _item.itemData.itemType)
+            if (_itemCount > _i && null != _item && null != _item.itemData && ItemType.Log == _item.itemData.itemType)
             {
                 currentLogCount += _item.count;
             }
@@ -206,13 +294,13 @@ public class UI_Inventory : MonoBehaviour
             if (null == _slot)
                 continue;
 
-            _slot.gameObject.SetActive(_i < _itemCount);
+            _slot.gameObject.SetActive(_itemCount > _i);
             _slot.UpdateBindSlotData(_item, inventory.maxItemCntPerSlot);
         }
 
         if (false == isFirstDataBind)
         {
-            if (previousLogCount < currentLogCount && false == IsOpening)
+            if (currentLogCount > previousLogCount && false == IsOpening)
             {
                 if (null != newAlertRedDot)
                     newAlertRedDot.Activate();
@@ -235,6 +323,11 @@ public class UI_Inventory : MonoBehaviour
         previousLogCount = currentLogCount;
 
         UpdateCapacityBar();
+
+        if (true == IsOpening)
+        {
+            HandleLogSwapInfoChanged();
+        }
     }
 
     private void UpdateCapacityBar()
@@ -275,18 +368,6 @@ public class UI_Inventory : MonoBehaviour
             iconsRoot.SetAsLastSibling();
     }
 
-    private void OnEnable()
-    {
-        UpdateIconsPosition();
-        if (null != iconsRoot)
-            iconsRoot.SetAsLastSibling();
-    }
-
-    private void LateUpdate()
-    {
-        UpdateIconsPosition();
-    }
-
     private void UpdateIconsPosition()
     {
         if (null != iconsRoot && null != iconsAnchor)
@@ -294,13 +375,6 @@ public class UI_Inventory : MonoBehaviour
             iconsRoot.position = iconsAnchor.position;
         }
     }
-
-#if UNITY_EDITOR
-    private void OnValidate()
-    {
-        UpdateIconsPosition();
-    }
-#endif
 
     private void HandleExitPopup()
     {
@@ -351,6 +425,102 @@ public class UI_Inventory : MonoBehaviour
         uiCoin?.SetNumber(moneyData.money);
     }
 
+    /// <summary>
+    /// 특정 인벤토리 슬롯의 스마트 스왑 아웃라인을 켜고, 공유 인디케이터를 대상 슬롯 위치로 이동시켜 활성화합니다.
+    /// </summary>
+    public void SetSwapCandidateSlot(int _slotIndex, bool _active, bool _immediate = false)
+    {
+        if (0 > _slotIndex || inventorySlots.Count <= _slotIndex)
+            return;
+
+        UI_InventorySlot _slot = inventorySlots[_slotIndex];
+        if (null == _slot)
+            return;
+
+        if (true == _active)
+        {
+            // 이전에 켜져 있던 슬롯이 있다면 아웃라인 해제
+            if (-1 != currentSwapSlotIndex && _slotIndex != currentSwapSlotIndex && inventorySlots.Count > currentSwapSlotIndex)
+            {
+                UI_InventorySlot _prevSlot = inventorySlots[currentSwapSlotIndex];
+                if (null != _prevSlot)
+                {
+                    _prevSlot.SetSwapIndicator(false, _immediate);
+                }
+            }
+
+            bool _isSameSlot = (currentSwapSlotIndex == _slotIndex);
+            currentSwapSlotIndex = _slotIndex;
+            _slot.SetSwapIndicator(true, _immediate);
+
+            if (null != sharedSwapIndicator)
+            {
+                sharedSwapIndicator.transform.SetAsLastSibling();
+                Vector3 _targetWorldPos = _slot.transform.TransformPoint(indicatorOffset);
+                if (true == _isSameSlot && true == sharedSwapIndicator.IsActiveAndShowing)
+                {
+                    sharedSwapIndicator.UpdateTargetPosition(_targetWorldPos);
+                }
+                else
+                {
+                    sharedSwapIndicator.Show(_targetWorldPos);
+                }
+            }
+        }
+        else
+        {
+            if (_slotIndex == currentSwapSlotIndex)
+            {
+                currentSwapSlotIndex = -1;
+            }
+
+            _slot.SetSwapIndicator(false, _immediate);
+
+            if (null != sharedSwapIndicator)
+            {
+                if (true == _immediate)
+                {
+                    sharedSwapIndicator.HideImmediate();
+                }
+                else
+                {
+                    sharedSwapIndicator.Hide();
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 모든 인벤토리 슬롯의 스마트 스왑 아웃라인 및 공유 인디케이터를 해제합니다.
+    /// </summary>
+    public void ClearAllSwapIndicators(bool _immediate = false)
+    {
+        currentSwapSlotIndex = -1;
+
+        int _count = inventorySlots.Count;
+        for (int _i = 0; _i < _count; ++_i)
+        {
+            UI_InventorySlot _slot = inventorySlots[_i];
+            if (null != _slot)
+            {
+                _slot.SetSwapIndicator(false, _immediate);
+            }
+        }
+
+        if (null != sharedSwapIndicator)
+        {
+            if (true == _immediate)
+            {
+                sharedSwapIndicator.HideImmediate();
+            }
+            else
+            {
+                sharedSwapIndicator.Hide();
+            }
+        }
+    }
+
+
     public void InventoryShowEvent()
     {
         if (null != inventory)
@@ -375,15 +545,69 @@ public class UI_Inventory : MonoBehaviour
             return;
 
         HandleExitPopup();
-        IsOpening = false;
+        IsOpening = isOpenAnimated = false;
+        ClearAllSwapIndicators(true);
 
         omp.PlayBackward(backpackTag, bReset: true, _skip: true);
         omp.PlayBackward(coinsTag, bReset: true, _skip: true);
         omp.PlayBackward(popupTag, bReset: true, _skip: true);
     }
 
+    /// <summary>
+    /// 교체 대상 슬롯 정보를 갱신합니다(UIView_Popup이 호출). 내용이 실제로 달라졌을 때만
+    /// LogSwapInfoChangedEvent를 발생시킵니다.
+    /// </summary>
+    public void SetLogSwapInfo(in LogSwapSlotInfo _info, in LogSwapSlotInfo _containerInfo, ELogSwapTarget _activeTarget)
+    {
+        bool _bChanged = false == LogSwapSlotInfo.IsSame(in _info, in logSwapInfo)
+            || false == LogSwapSlotInfo.IsSame(in _containerInfo, in outgoingSwapInfo)
+            || _activeTarget != activeLogSwapTarget;
+
+        logSwapInfo = _info;
+        outgoingSwapInfo = _containerInfo;
+        activeLogSwapTarget = _activeTarget;
+
+        if (true == _bChanged)
+            LogSwapInfoChangedEvent?.Invoke();
+    }
+
+    /// <summary>교체로 슬롯 하나가 버려졌습니다(UIView_Popup이 호출).</summary>
+    public void LogSwapExecuted(in LogSwapSlotInfo _info)
+    {
+        LogSwapExecutedEvent?.Invoke(_info);
+    }
+
+    private void HandleLogSwapInfoChanged()
+    {
+        if (false == IsOpening || false == IsLogSwapReady)
+        {
+            ClearAllSwapIndicators(false);
+            return;
+        }
+
+        if (true == isOpenAnimated)
+            return;
+
+        int _slotIndex = logSwapInfo.slotIndex;
+        if (0 <= _slotIndex && inventorySlots.Count > _slotIndex)
+        {
+            SetSwapCandidateSlot(_slotIndex, true);
+        }
+        else
+        {
+            ClearAllSwapIndicators(false);
+        }
+    }
+
+    private void HandleLogSwapExecuted(LogSwapSlotInfo _info)
+    {
+        HandleLogSwapInfoChanged();
+    }
+
     public void OnHide()
     {
+        ClearAllSwapIndicators(false);
+
         bool _wasOpening = IsOpening || isOpenAnimated;
         IsOpening = isOpenAnimated = false;
 
@@ -426,6 +650,10 @@ public class UI_Inventory : MonoBehaviour
             omp.Play(backpackTag, bReset: true, _onComplete: OnShowCompletedAnimation);
             omp.Play(popupTag, bReset: true);
         }
+        else
+        {
+            OnShowCompletedAnimation();
+        }
 
         uiBackpack?.OpenInventory();
         InventoryShowEvent();
@@ -442,6 +670,9 @@ public class UI_Inventory : MonoBehaviour
     private void OnShowCompletedAnimation()
     {
         isOpenAnimated = false;
+
+        Canvas.ForceUpdateCanvases();
+        HandleLogSwapInfoChanged();
     }
 
     /// <summary>
@@ -451,6 +682,10 @@ public class UI_Inventory : MonoBehaviour
     /// </summary>
     public void Release()
     {
+        LogSwapInfoChangedEvent -= HandleLogSwapInfoChanged;
+        LogSwapExecutedEvent -= HandleLogSwapExecuted;
+        ClearAllSwapIndicators(true);
+
         // LocalizationManager는 BootStrap의 자식이라 앱이 켜져 있는 내내 살아남는다.
         // 여기서 반납하지 않으면 이 뷰가 파괴돼도 구독이 남아, 메인 메뉴를 왕복할 때마다
         // 죽은 구독자가 하나씩 쌓이고 그만큼의 오브젝트 그래프가 회수되지 않는다.
@@ -461,7 +696,7 @@ public class UI_Inventory : MonoBehaviour
             locManager.OnLanguageChanged -= RefreshLocalizedTexts;
         }
 
-        for (int _i = 0; _i < inventorySlots.Count; _i++)
+        for (int _i = 0; inventorySlots.Count > _i; _i++)
         {
             UI_InventorySlot _slot = inventorySlots[_i];
             
@@ -475,6 +710,25 @@ public class UI_Inventory : MonoBehaviour
     }
 
     // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+
+    private void OnEnable()
+    {
+        UpdateIconsPosition();
+        if (null != iconsRoot)
+            iconsRoot.SetAsLastSibling();
+    }
+
+    private void LateUpdate()
+    {
+        UpdateIconsPosition();
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        UpdateIconsPosition();
+    }
+#endif
 
     private void OnDestroy()
     {

@@ -15,6 +15,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // 보석 단계로 변한 순간 발생. VFX 생성은 InDungeonObjectManager가 이 이벤트를 받아 처리한다
     // (나무가 풀로 반환되어도 연출이 끊기지 않도록 나무 바깥에서 재생한다).
     public event Action<TreeObj> TreeGemTransformedEvent;
+    // HP가 0이 되어 "그냥 죽을지 / 보석 단계로 회생할지"를 가르기 직전에 발생.
+    // 구독자가 이 시점에 PromoteGrade로 등급을 올리면 그 나무는 곧바로 보석 단계로 회생한다
+    // (데모 황금 나무 보장이 이 틈을 쓴다). 회생 여부만 바꾸므로 드랍/킬 집계는 그대로다.
+    public event Action<TreeObj> TreeAboutToDieEvent;
 
     [SerializeField] private Shadow topShadowObject;
     [SerializeField] private Shadow bottomShadowObject;
@@ -78,6 +82,19 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     }
 
     public TreeData treeData { get; private set; }
+
+    /// <summary>
+    /// 이미 스폰된 나무의 등급을 올린다. 체력/스탯/비주얼은 건드리지 않으므로,
+    /// 실제로 달라지는 것은 회생 가능한 최대 보석 단계(GetMaxGemStage)와 드랍 배율뿐이다.
+    /// 등급을 내리는 용도는 아니라서 현재보다 낮거나 같은 등급은 무시한다.
+    /// </summary>
+    public void PromoteGrade(TreeGrade _grade)
+    {
+        if (_grade <= treeData.grade) return;
+
+        treeData = new TreeData(treeData.type, _grade, treeData.treeVisualData, treeData.treeStatData);
+    }
+
     public IHealthComponent health => healthComponent;
     IBaseHealthComponent IDamageable.health => healthComponent;
 
@@ -666,6 +683,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     private void TreeIsDead()
     {
+        // 회생 단계를 계산하기 전에 알린다. 구독자가 등급을 올려주면 아래 GetMaxGemStage()가
+        // 그 등급을 바로 반영한다.
+        TreeAboutToDieEvent?.Invoke(this);
+
         int maxGemStage = GetMaxGemStage();
         if (currentGemStage < maxGemStage)
         {

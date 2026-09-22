@@ -201,6 +201,15 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
+                    ""name"": ""LogSwap"",
+                    ""type"": ""Button"",
+                    ""id"": ""c7a41f30-5b62-4e88-9a37-2d6e81f4c905"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
                     ""name"": ""Aim"",
                     ""type"": ""Value"",
                     ""id"": ""3c1f5b7a-9d24-4e18-b6c0-5a2e7f0d1b93"",
@@ -389,6 +398,17 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
+                    ""id"": ""b1d94e27-3af5-45c0-8e19-6c72d0af5e14"",
+                    ""path"": ""<Keyboard>/tab"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""LogSwap"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
                     ""id"": ""6e4a0c92-1f38-4d75-8a1b-2c9e5b7f4a60"",
                     ""path"": ""<Gamepad>/rightStick"",
                     ""interactions"": """",
@@ -494,6 +514,17 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""PotionKey"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e5b3708c-94d1-4a62-b7f8-31c06d9a2f7b"",
+                    ""path"": ""<Gamepad>/buttonNorth"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""LogSwap"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -834,6 +865,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         m_Normal_Reload = m_Normal.FindAction("Reload", throwIfNotFound: true);
         m_Normal_AimCorrection = m_Normal.FindAction("AimCorrection", throwIfNotFound: true);
         m_Normal_PotionKey = m_Normal.FindAction("PotionKey", throwIfNotFound: true);
+        m_Normal_LogSwap = m_Normal.FindAction("LogSwap", throwIfNotFound: true);
         m_Normal_Aim = m_Normal.FindAction("Aim", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
@@ -940,6 +972,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
     private readonly InputAction m_Normal_Reload;
     private readonly InputAction m_Normal_AimCorrection;
     private readonly InputAction m_Normal_PotionKey;
+    private readonly InputAction m_Normal_LogSwap;
     private readonly InputAction m_Normal_Aim;
     /// <summary>
     /// Provides access to input actions defined in input action map "Normal".
@@ -1000,6 +1033,10 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Normal/PotionKey".
         /// </summary>
         public InputAction @PotionKey => m_Wrapper.m_Normal_PotionKey;
+        /// <summary>
+        /// Provides access to the underlying input action "Normal/LogSwap".
+        /// </summary>
+        public InputAction @LogSwap => m_Wrapper.m_Normal_LogSwap;
         /// <summary>
         /// Provides access to the underlying input action "Normal/Aim".
         /// </summary>
@@ -1066,6 +1103,9 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
             @PotionKey.started += instance.OnPotionKey;
             @PotionKey.performed += instance.OnPotionKey;
             @PotionKey.canceled += instance.OnPotionKey;
+            @LogSwap.started += instance.OnLogSwap;
+            @LogSwap.performed += instance.OnLogSwap;
+            @LogSwap.canceled += instance.OnLogSwap;
             @Aim.started += instance.OnAim;
             @Aim.performed += instance.OnAim;
             @Aim.canceled += instance.OnAim;
@@ -1116,6 +1156,9 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
             @PotionKey.started -= instance.OnPotionKey;
             @PotionKey.performed -= instance.OnPotionKey;
             @PotionKey.canceled -= instance.OnPotionKey;
+            @LogSwap.started -= instance.OnLogSwap;
+            @LogSwap.performed -= instance.OnLogSwap;
+            @LogSwap.canceled -= instance.OnLogSwap;
             @Aim.started -= instance.OnAim;
             @Aim.performed -= instance.OnAim;
             @Aim.canceled -= instance.OnAim;
@@ -1438,6 +1481,13 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnPotionKey(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "LogSwap" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnLogSwap(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "Aim" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>

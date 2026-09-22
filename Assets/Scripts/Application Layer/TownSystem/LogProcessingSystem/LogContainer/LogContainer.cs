@@ -78,15 +78,6 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     private bool bCanReach = true;
     private bool bLastInteractState = false;
 
-    // 플레이어의 자동 전송 "세션"이 살아 있는지. 상호작용 키를 누르는 순간 true가 되고, 키를 떼도
-    // 유지된다. 트리거를 실제로 벗어나면 false가 되어 전송이 즉시 취소된다.
-    //
-    // 전송 코루틴들은 bCanInteract가 아니라 이 플래그만 본다. bCanInteract에는 bCanReach(상점NPC와의
-    // 근접 경합 결과, LogProcessingManager.CalcDistForInteraction이 매 프레임 승자 한 곳에만 준다)가
-    // 섞여 있어서, 플레이어가 컨테이너 앞에 그대로 서 있어도 한 프레임 뒤집힐 수 있다. 그것까지
-    // 범위 이탈로 치면 슬롯이 반만 옮겨진 채 전송이 끊긴다.
-    private bool bIsInteracting = false;
-
     public bool isPhysicalOverlapped => bPhysicalOverlapped;
     private Coroutine transferCoroutine;
     private WaitForSeconds transferWait;
@@ -231,23 +222,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         // (OffroadContainer.ResetState의 transferringSlots.Clear()와 동일한 방어.)
         transferringSlots.Clear();
         transferCoroutine = null;
-        bIsInteracting = false;
         currentDepositPitch = DEPOSIT_PITCH_MIN;
         lastDepositPitchTime = -999f;
-
-        // "범위 안"이라는 상태도 함께 푼다. 비활성화된 오브젝트에는 OnTriggerExit2D가 보장되지 않아서
-        // (BlastFurnace.ResetInteractState / BlastFurnaceManager.MoveOffscreen이 같은 이유로 두는 방어),
-        // 플레이어가 트리거 안에 서 있는 채로 꺼졌다가 다른 자리에서 다시 켜지면 bPhysicalOverlapped와
-        // bCanInteract가 true로 남는다. 그 상태로 상호작용 키를 누르면 멀리 떨어져 있는데도 자동 전송이
-        // 시작되어 인벤토리가 통째로 들어가 버린다.
-        // 이벤트는 쏘지 않고 필드만 되돌린다(비활성화 중에 구독자를 건드리지 않기 위해). 다시 켜진 뒤
-        // 실제로 겹쳐 있으면 OnTriggerStay2D가, 아니면 매 프레임 도는 SetCanReach -> UpdateInteractState가
-        // 올바른 상태로 복구한다.
-        bPhysicalOverlapped = false;
-        bCanInteract = false;
-        bLastInteractState = false;
-
-        if (outLineObject != null) outLineObject.SetActive(false);
     }
 
     public void DI_Inventory(IInventory _inventory)
@@ -424,14 +400,9 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         return containerSlots;
     }
 
-    // 상호작용 키는 "한 번 누르면 자동 전송 시작"이다. 키를 떼도 전송은 계속되고, 캐릭터 인벤토리가
-    // 비거나 컨테이너가 가득 차면 스스로 끝난다. 도중에 트리거 범위를 벗어나면(UpdateInteractState가
-    // CancelPlayerTransfer를 부르는 순간) 진행 중인 슬롯까지 포함해 즉시 취소된다.
     private void InteractionKeyPressed()
     {
         if (!bCanInteract || characterInventory == null) return;
-
-        bIsInteracting = true;
 
         if (transferCoroutine == null)
         {
@@ -441,32 +412,28 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     private IEnumerator TransferRoutine()
     {
-        // 모든 대기 루프에 bIsInteracting을 걸어, 범위를 벗어나면 대기 중이더라도 다음 프레임에
-        // 빠져나온다(UpdateInteractState의 StopCoroutine이 이미 처리하지만, 그 경로를 타지 않는
-        // 경우까지 방어).
-        while (bIsInteracting)
+        while (true)
         {
             // 이전 전송으로부터 인터벌이 지날 때까지 대기 (연타 대응)
-            while (bIsInteracting && Time.time - lastTransferTime < (transferSlotInterval / Mathf.Max(0.01f, itemTransferSpeedMul)))
+            while (Time.time - lastTransferTime < (transferSlotInterval / Mathf.Max(0.01f, itemTransferSpeedMul)))
             {
                 yield return null;
             }
 
             // 현재 전송 중인 슬롯이 있다면 완료될 때까지 대기 (OffroadContainer.TransferAllItemsRoutine과
             // 동일하게, 슬롯 하나의 전송이 모두 끝나야 다음 슬롯을 시작하도록 직렬화)
-            while (bIsInteracting && transferringSlots.Count > 0)
+            while (transferringSlots.Count > 0)
             {
                 yield return null;
             }
 
-            // 더 보낼 슬롯이 없으면 자연 종료. 있으면 슬롯이 다 빠진 뒤 곧바로 다음 슬롯으로 이어진다.
             if (!TryTransferOneItem())
             {
                 break;
             }
 
             // 방금 시작한 슬롯의 전송이 끝날 때까지 대기
-            while (bIsInteracting && transferringSlots.Count > 0)
+            while (transferringSlots.Count > 0)
             {
                 yield return null;
             }
@@ -477,7 +444,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     private bool TryTransferOneItem()
     {
-        if (!bIsInteracting || characterInventory == null) return false;
+        if (!bCanInteract || characterInventory == null) return false;
 
         var charSlots = characterInventory.inventorySlots;
         for (int i = 0; i < characterInventory.currentSlotCnt; i++)
@@ -513,21 +480,12 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         try
         {
             LogItemData sourceData = _charSlot.itemData as LogItemData;
-
-            // 시작 시점의 개수를 스냅샷으로 떠서 루프 조건으로 쓰면 안 된다 - 이 슬롯을 외부에서
-            // 동시에 비울 수 있기 때문이다(던전 입장 시 InventoryManager.TransferAllLogItemsToOffroad
-            // Container, 스태미나 소진 시 RescueItemsToOffroadContainer/DropAllItem 등이 캐릭터 슬롯을
-            // 통째로 드레인한다). 그러면 실제로는 이미 빈 슬롯인데도 정해진 횟수만큼 TakeOneItem()을
-            // 계속 호출하게 되는데, TakeOneItem()은 빈 슬롯에서 실패를 알리지 않고 기본값만 돌려주므로
-            // 존재하지 않는 아이템이 날아가 착지 시점에 커밋되는(복제되는) 결과가 된다.
-            // (OffroadContainer.TransferOneSlotVisualRoutine과 동일한 방어.)
+            // 시작 시점의 개수를 스냅샷으로 떠서 루프 조건으로 쓰지 않는다 - 외부에서 이 슬롯을 동시에
+            // 비우면(인벤토리 전량 이관/유실 경로) 이미 빈 슬롯에 TakeOneItem()을 계속 부르게 되는데,
+            // TakeOneItem()은 실패를 알리지 않고 기본값만 돌려주므로 존재하지 않는 아이템이 날아가
+            // 착지 시점에 커밋된다(복제). OffroadContainer.TransferOneSlotVisualRoutine과 동일한 방어.
             while (_charSlot.count > 0)
             {
-                // 상호작용 범위를 벗어나면 슬롯을 다 비우지 못했더라도 그 자리에서 중단한다.
-                // (StopCoroutine으로 끊으면 finally가 실행되지 않아 transferringSlots에 유령 항목이
-                //  남으므로, 반드시 이렇게 루프 안에서 스스로 빠져나와야 한다.)
-                if (!bIsInteracting) break;
-
                 // 컨테이너가 꽉 찼는지 매번 체크 (비행 중인 아이템까지 고려)
                 if (!CanAddItemByData(sourceData)) break;
 
@@ -799,10 +757,22 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         Debug.Log(sb.ToString());
     }
 
+    private void InteractionKeyCanceled()
+    {
+        if (transferCoroutine != null)
+        {
+            StopCoroutine(transferCoroutine);
+            transferCoroutine = null;
+        }
+    }
+
     private void BindEvents()
     {
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
         inputManager.inputReader.InteractionKeyPressedEvent += InteractionKeyPressed;
+
+        inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
+        inputManager.inputReader.InteractionKeyCanceledEvent += InteractionKeyCanceled;
 
         ContainerUpdatedEvent -= UpdateSprite;
         ContainerUpdatedEvent += UpdateSprite;
@@ -810,6 +780,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     private void ReleaseEvents()
     {
+        inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
         ContainerUpdatedEvent -= UpdateSprite;
     }
@@ -861,31 +832,15 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             bCanInteract = currentState;
             InteractStateEvent?.Invoke(currentState);
             outLineObject.SetActive(currentState);
-        }
 
-        // 진행 중인 자동 전송은 "정말로 범위를 벗어났을 때"만 취소한다. bCanReach는 상점NPC와의 근접
-        // 경합 결과라서 플레이어가 컨테이너 앞에 그대로 서 있어도 한 프레임 뒤집힐 수 있는데, 그것까지
-        // 이탈로 치면 슬롯이 반만 옮겨진 채 전송이 끊긴다. 경합에서 지는 동안에는 bCanInteract가
-        // false라 새 상호작용이 시작되지 않을 뿐, 이미 시작한 전송은 계속된다.
-        if (!bPhysicalOverlapped)
-        {
-            CancelPlayerTransfer();
-        }
-    }
-
-    /// <summary>
-    /// 플레이어의 자동 전송 세션을 끝낸다. 진행 중인 슬롯 코루틴(TransferOneSlotVisualRoutine)은
-    /// 여기서 StopCoroutine으로 끊지 않는다 - finally가 실행되지 않아 transferringSlots에 유령 항목이
-    /// 남기 때문이다. bIsInteracting을 내리면 각 코루틴이 다음 반복에서 스스로 빠져나온다.
-    /// </summary>
-    private void CancelPlayerTransfer()
-    {
-        bIsInteracting = false;
-
-        if (transferCoroutine != null)
-        {
-            StopCoroutine(transferCoroutine);
-            transferCoroutine = null;
+            if (!currentState)
+            {
+                if (transferCoroutine != null)
+                {
+                    StopCoroutine(transferCoroutine);
+                    transferCoroutine = null;
+                }
+            }
         }
     }
 

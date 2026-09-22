@@ -143,6 +143,10 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
 
+    // 원목의 실제 가치(기본 가치 × 등급 배율)의 단일 출처. 흡입 정렬·교체 판정·전송 순서가 전부
+    // LogValue(정적 창구)를 통해 이 표를 읽는다. Initialize에서 한 번 등록한다.
+    [SerializeField] private LogItemValueDataBase logItemValueDataBase;
+
     private LogItemPoolingManager logItemPoolingManager;
     private List<LogItem> activeDroppedItems = new List<LogItem>(64);
 
@@ -151,6 +155,16 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     // 연출이 한꺼번에 터지지 않고 하나씩 연달아 발사되도록 하는 간격
     [SerializeField] private float dropVisualInterval = 0.08f;
     private Coroutine dropVisualsCoroutine;
+
+    // 교체(PlayLogDropVisuals)가 쓰는 연출 순서 버퍼. 새 연출을 시작하기 전에 진행 중인 코루틴을
+    // 먼저 멈추므로, 코루틴이 읽는 도중에 이 리스트가 바뀌는 일은 없다. 교체마다 새로 잡지 않는다.
+    private readonly List<(TreeType treeType, LogState logState)> swapDropVisualPlan =
+        new List<(TreeType, LogState)>(MaxDropVisualCount);
+
+    // 이번 흘리기 연출의 원목을 FlyingItem 정렬 레이어로 올릴지. 운반 상자에서 버리는 원목은 상자 스프라이트
+    // 위로 튀어나와야 해서 켜고(상자 전송 연출과 같은 레이어), 캐릭터가 흘리는 것(DropAllItem·인벤토리 교체)은
+    // 예전대로 둔다. 풀로 돌아간 원목은 다음 Get의 ResetItem이 Objects 레이어로 되돌린다.
+    private bool bDropVisualFlyingLayer = false;
 
     private VFXComponent vfxComponent;
 
@@ -189,11 +203,28 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         // 3. 모든 아이템 타입에 대해 풀 미리 생성
         itemDataPool.WarmAll();
 
+        // 흡입 정렬(ItemDetector)과 교체 판정이 같은 가치 표를 보도록 정적 창구에 등록한다.
+        // Presentation 계층의 정적 정렬에는 인벤토리 참조를 흘려보낼 통로가 없어 Rumble과 같은 방식을 쓴다.
+        if (logItemValueDataBase == null)
+        {
+            // 없으면 LogValue가 예전 사전순으로 조용히 폴백해 환율·상한·선점이 전부 인덱스 값으로 계산된다.
+            // 컴파일도 되고 예외도 없어 발견이 늦으므로 여기서 바로 드러낸다.
+            Debug.LogError("[InventoryManager] logItemValueDataBase가 비어 있습니다. GameInstaller 프리팹에서 LogItemValueDataBase를 연결하세요. 교체·흡입 우선순위가 실제 가치 대신 수종 순서로 동작합니다.");
+        }
+
+        LogValue.SetDataBase(logItemValueDataBase);
+        LogValue.SetSlotCapacity(maxItemsPerSlot);
+
+        ClearLogSwapRequest();
+        lastNotifiedSwapInfo = LogSwapSlotInfo.None;
+
         UpdateInventoryEmptyState();
     }
 
     private void Update()
     {
+        UpdateLogSwapState();
+
         if (activeDroppedItems.Count > 0)
         {
             float deltaTime = Time.deltaTime;
@@ -665,6 +696,12 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         // 5. 들어올 수 없을 때 인벤토리 공간 상태 분석 및 이벤트 호출
         //    이 지점에 도달했다면 모든 슬롯이 이미 점유된 상태라는 뜻이다 - 비어있는 슬롯이
         //    하나라도 있었다면 TryPlaceVirtual()이 그 자리에 배치하고 true를 반환했을 것이다.
+        //
+        //    "원목이 안 먹어진다"가 곧 교체 발동 조건 1이므로, 교체 시스템에도 이 원목을 알려둔다.
+        //    수종 개량이 이미 끝난 뒤에 불리는 경로라(LogItem.CheckAcquireCondition) 여기서 보는
+        //    수종은 실제로 담겼을 수종이다.
+        RequestLogSwap(_item.treeType, _item.logState);
+
         bool hasSpaceRemaining = false;
         for (int i = 0; i < slotCount; i++)
         {
@@ -720,6 +757,224 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         return false;
     }
 
+    // ── 교체 시스템(인벤토리) ────────────────────────────────────────────────────────
+    //
+    // 가방이 꽉 차 바닥의 원목을 먹지 못할 때, 값싼 슬롯 하나를 내려놓아 자리를 만드는 기능이다.
+    // 누를지는 유저가 정한다. 시스템은 두 가지만 보장한다.
+    //   (1) 손해인 거래는 아예 제안하지 않는다.
+    //   (2) 제안은 환율 한 줄로 설명된다 - "소나무 3개 ↔ 자작나무 5개 (환율 3.3 : 1)".
+    //
+    // 제안 규칙 (셋 다 만족해야 한다)
+    //   자격 : 버릴 슬롯의 개당 가치 < 들어올 원목의 개당 가치. 보석 등급 슬롯은 절대 버리지 않는다
+    //          - 게임이 아우라와 효과음으로 "보석은 특별하다"고 가르쳐 놨는데 시스템이 버리면
+    //          계산이 맞더라도 유저에겐 엉뚱한 슬롯이 된다.
+    //   상한 : 버릴 슬롯의 총 가치 ≤ 들어올 원목의 개당 가치 × min(바닥에 보이는 개수, 슬롯 최대 중첩)
+    //          - "지금 눈에 보이는 만큼"만 이득으로 친다. 미래 습득량을 추정하는 더 정확한 공식은
+    //          만들 수 있지만 유저가 검증할 수 없고, 검증 못 하는 이득은 이득으로 느껴지지 않는다.
+    //   선정 : 자격·상한을 통과한 슬롯 중 총 가치가 가장 낮은 것("가장 싸게 살 수 있는 칸").
+    //          같으면 개당 가치가 낮은 쪽(더 싼 수종)을 골라 직관과 맞춘다.
+    //
+    // 가장 싼 수종이 들어올 때는 자격을 만족하는 슬롯이 없어 제안이 없다. "잡템 자리를 만들라"는
+    // 제안은 구조적으로 나오지 않는다.
+    //
+    // 한 번 띄운 제안은 그것이 무효가 될 때까지 바꾸지 않는다(sticky). 0.2초마다 "못 먹은 원목"이
+    // 바뀌면서 강조 슬롯이 튀어다니면 "뜬 걸 눌렀는데 그 사이 바뀌어 있었다"가 생긴다.
+    // 교체 직후에는 잠시(SwapCooldown) 다음 제안을 띄우지 않아, 버린 원목이 내려앉고 새 원목이
+    // 들어오는 결과를 눈으로 확인할 시간을 준다. 그 시간이 곧 신뢰가 쌓이는 시간이다.
+
+    /// <summary>
+    /// 버려질 슬롯이나 들어올 원목이 바뀌었을 때(생김 / 사라짐 / 다른 슬롯으로 옮겨감 / 개수 변화)
+    /// 발생한다. 최신 내용은 GetLogSwapInfo()로 읽는다.
+    /// </summary>
+    public event Action SwapStateChangedEvent;
+
+    // 들어올 원목(요청): 최근 감지 틱에서 못 먹은 원목 중 가장 비싼 종류와, 그 종류가 몇 개 보였는지.
+    private TreeType swapRequestTreeType = TreeType.None;
+    private LogState swapRequestLogState = LogState.Normal;
+    private long swapRequestUnitValue = LogValue.NONE;
+    private int swapRequestCount = 0;
+    private float swapRequestTime = -999f;
+
+    // 같은 감지 틱 안에서 거절된 원목을 종류별로 묶기 위한 누적기.
+    // 감지 틱은 FixedUpdate에서 돌고 반경 안의 원목 전부에 한 스텝 안에서 SetSuckTarget을 걸므로,
+    // Time.fixedTime이 같으면 같은 틱이다. Time.frameCount로 묶으면 프레임 히치 때 한 렌더 프레임에
+    // 두 틱이 들어와 개수가 두 배로 세어지고, 상한이 부풀어 "손해 아님" 약속이 깨진 제안이 잠깐 뜬다.
+    private float rejectTick = -1f;
+    private TreeType rejectBestTreeType = TreeType.None;
+    private LogState rejectBestLogState = LogState.Normal;
+    private long rejectBestUnitValue = LogValue.NONE;
+    private int rejectBestCount = 0;
+
+    /// <summary>
+    /// "못 먹었다" 기록의 유효 시간. 캐릭터의 아이템 감지는 0.2초(5Hz)마다 돌면서 못 먹을 때마다
+    /// 이 기록을 새로 찍으므로, 원목 위에 서 있는 동안은 계속 살아 있고 자리를 뜨면 곧 꺼진다.
+    /// </summary>
+    private const float SwapRequestLifetime = 0.5f;
+
+    /// <summary>교체 직후 다음 제안을 띄우지 않는 시간. 결과를 눈으로 확인할 여유다.</summary>
+    private const float SwapCooldown = 1.0f;
+
+    /// <summary>현재 띄워 둔 제안의 슬롯. 무효가 되기 전까지는 더 나은 후보가 생겨도 바꾸지 않는다.</summary>
+    private int stickyVictimSlotIndex = -1;
+
+    private float swapCooldownUntil = -999f;
+
+    /// <summary>마지막으로 알린 내용. 같은 내용을 거듭 알리지 않기 위한 것이다.</summary>
+    private LogSwapSlotInfo lastNotifiedSwapInfo = LogSwapSlotInfo.None;
+
+    /// <summary>
+    /// 지금 교체하면 버려질 인벤토리 슬롯과 그 자리에 들어올 원목. 없으면 LogSwapSlotInfo.None.
+    ///
+    /// UI는 slotIndex로 자기 슬롯 뷰를 찾고(IInventory.inventorySlots와 같은 인덱스), 나머지로
+    /// "소나무 3개 ↔ 자작나무 5개 (환율 3.3 : 1)"을 그리면 된다.
+    /// </summary>
+    public LogSwapSlotInfo GetLogSwapInfo()
+    {
+        if (!TryFindLogSwapVictimSlot(out int slotIndex)) return LogSwapSlotInfo.None;
+
+        LogItemData logData = (LogItemData)inventorySlots[slotIndex].itemData;
+
+        return new LogSwapSlotInfo
+        {
+            target = ELogSwapTarget.Inventory,
+            slotIndex = slotIndex,
+            treeType = logData.treeType,
+            logState = logData.logState,
+            count = inventorySlots[slotIndex].totalCount,
+            unitValue = LogValue.GetUnitValue(logData.treeType, logData.logState),
+            incomingTreeType = swapRequestTreeType,
+            incomingLogState = swapRequestLogState,
+            incomingCount = Mathf.Min(swapRequestCount, maxItemsPerSlot),
+            incomingUnitValue = swapRequestUnitValue,
+            incomingSlotIndex = -1,   // 들어올 원목은 바닥에 있다
+        };
+    }
+
+    /// <summary>
+    /// 원목을 담지 못했음을 교체 시스템에 알린다(CanAcquired 실패 경로에서 부른다).
+    /// 한 번의 감지 틱에 여러 원목이 거절될 수 있으므로 그중 가장 비싼 종류를 기준으로 삼고, 그 종류가
+    /// 몇 개 보였는지 함께 센다 - 교체는 "제일 아쉬운 원목을 위해" 자리를 만드는 기능이고, 상한은
+    /// "지금 보이는 만큼"이기 때문이다.
+    /// </summary>
+    private void RequestLogSwap(TreeType _treeType, LogState _logState)
+    {
+        long unitValue = LogValue.GetUnitValue(_treeType, _logState);
+        float tick = Time.fixedTime;
+
+        // 1. 같은 틱 안에서 종류별로 묶는다. 더 비싼 종류가 나타나면 그쪽으로 갈아타고 개수를 다시 센다.
+        if (tick != rejectTick || unitValue > rejectBestUnitValue)
+        {
+            rejectTick = tick;
+            rejectBestTreeType = _treeType;
+            rejectBestLogState = _logState;
+            rejectBestUnitValue = unitValue;
+            rejectBestCount = 1;
+        }
+        else if (_treeType == rejectBestTreeType && _logState == rejectBestLogState)
+        {
+            rejectBestCount++;
+        }
+
+        // 2. 요청에 반영한다. 유효 시간은 "기록된 그 원목을 마지막으로 본 시각"부터 센다. 더 싼 원목이
+        //    거절됐다고 시각을 갱신하면 안 된다 - 원목 더미 위를 계속 걷는 동안 기록이 영원히 살아남아,
+        //    한 번 스쳐간 흑요목 때문에 참나무를 먹으려고 소나무를 버리는 손해 교체가 성립한다.
+        bool expired = swapRequestUnitValue == LogValue.NONE
+            || Time.time - swapRequestTime > SwapRequestLifetime;
+
+        if (expired || rejectBestUnitValue >= swapRequestUnitValue)
+        {
+            // 상한에 쓸 개수는 "이번 틱에 거절된 개수"와 "반경 안에 보이는 개수(공중 포함)" 중 큰 쪽이다.
+            // 선점 정렬이 이 틱 첫머리에 채운 표(LogVisibleCounts)를 그대로 읽으므로 선점과 교체가 같은
+            // 값을 본다. 공중의 원목은 아직 거절 판정을 받지 않았을 뿐 곧 떨어질 것이라, 이걸 빼면 나무가
+            // 쓰러진 뒤 1초 동안 선점은 이미 그쪽으로 기울어 있는데 교체 안내만 늦게 뜬다.
+            swapRequestTreeType = rejectBestTreeType;
+            swapRequestLogState = rejectBestLogState;
+            swapRequestUnitValue = rejectBestUnitValue;
+            swapRequestCount = Mathf.Max(rejectBestCount, LogVisibleCounts.Get(rejectBestTreeType, rejectBestLogState));
+            swapRequestTime = Time.time;
+        }
+    }
+
+    private void ClearLogSwapRequest()
+    {
+        swapRequestTreeType = TreeType.None;
+        swapRequestLogState = LogState.Normal;
+        swapRequestUnitValue = LogValue.NONE;
+        swapRequestCount = 0;
+        swapRequestTime = -999f;
+        stickyVictimSlotIndex = -1;
+    }
+
+    /// <summary>
+    /// 제안 내용이 달라졌으면 한 번만 알린다. Update에서 매 프레임 호출된다.
+    /// (슬롯 수가 10칸 상한이라 매 프레임 훑어도 부담이 없고, 요청이 없으면 곧바로 빠져나온다)
+    /// </summary>
+    private void UpdateLogSwapState()
+    {
+        if (swapRequestUnitValue != LogValue.NONE && Time.time - swapRequestTime > SwapRequestLifetime)
+        {
+            ClearLogSwapRequest();
+        }
+
+        LogSwapSlotInfo info = GetLogSwapInfo();
+        if (LogSwapSlotInfo.IsSame(in info, in lastNotifiedSwapInfo)) return;
+
+        lastNotifiedSwapInfo = info;
+        SwapStateChangedEvent?.Invoke();
+    }
+
+    /// <summary>
+    /// 버릴 슬롯을 고른다. 규칙(자격·상한·선정·sticky)은 LogSwapRule 한 곳에 있다. 없으면 false.
+    /// </summary>
+    private bool TryFindLogSwapVictimSlot(out int _slotIndex)
+    {
+        _slotIndex = -1;
+
+        if (swapRequestUnitValue == LogValue.NONE) return false;
+        if (Time.time < swapCooldownUntil) return false;
+
+        _slotIndex = LogSwapRule.SelectVictim(inventorySlots, currentSlotCount,
+            swapRequestUnitValue, swapRequestCount, maxItemsPerSlot, null, stickyVictimSlotIndex);
+
+        stickyVictimSlotIndex = _slotIndex;
+        return _slotIndex >= 0;
+    }
+
+    /// <summary>
+    /// 교체를 실행한다. 고른 슬롯의 <b>데이터는 즉시 사라지고</b>(UI도 ItemRemoved로 곧바로 갱신된다),
+    /// 흘리는 연출만 뒤따라 재생된다. 비워진 자리에는 다음 감지 틱에 바닥의 원목이 알아서 들어온다.
+    /// </summary>
+    /// <returns>실제로 버린 슬롯의 내용. 교체할 것이 없었으면 LogSwapSlotInfo.None.</returns>
+    public LogSwapSlotInfo ExecuteLogSwap(Transform _dropOriginTransform)
+    {
+        LogSwapSlotInfo info = GetLogSwapInfo();
+        if (!info.bHasSlot) return LogSwapSlotInfo.None;
+
+        InventorySlot slot = inventorySlots[info.slotIndex];
+
+        // DropAllItem과 같은 순서를 지킨다 - 슬롯을 먼저 비우고 나서 알려야 UI가 이미 비워진 데이터를
+        // 읽는다. 알림을 먼저 하면 UI가 아직 남아 있는 데이터를 그린 채로 굳는다.
+        itemDataPool.Release((ItemData)slot.itemData);
+        slot.Setup(null, 0);
+
+        for (int i = 0; i < info.count; i++)
+        {
+            ItemRemoved();
+        }
+
+        UpdateInventoryEmptyState();
+
+        // 자리가 생겼으니 이번 요청은 끝났다. 잠시 쉬었다가, 여전히 못 먹는 상황이면 감지 틱이 다시 찍는다.
+        swapCooldownUntil = Time.time + SwapCooldown;
+        ClearLogSwapRequest();
+        UpdateLogSwapState();
+
+        Vector3 dropPos = _dropOriginTransform != null ? _dropOriginTransform.position : transform.position;
+        PlayLogDropVisuals(info.treeType, info.logState, info.count, dropPos);
+
+        return info;
+    }
+
     public void ExpandInventorySlotCnt(float _amount)
     {
         currentSlotCount = Mathf.Min(currentSlotCount + (int)_amount, SYSTEM_VAR.MAX_INVENTORY_CNT);
@@ -729,6 +984,9 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     public void LogCapacityIncrease(float _amount)
     {
         maxItemsPerSlot += (int)_amount;
+
+        // "보이는 만큼"의 상한이 슬롯 용량이므로, 특성으로 용량이 바뀌면 흡입 정렬 쪽에도 알린다.
+        LogValue.SetSlotCapacity(maxItemsPerSlot);
     }
 
     /// <summary>
@@ -1057,10 +1315,44 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
         if (dropVisualPlan.Count > 0)
         {
+            bDropVisualFlyingLayer = false;
             dropVisualsCoroutine = StartCoroutine(SpawnDropVisualsRoutine(dropVisualPlan, startPos));
         }
 
         return totalDroppedCount;
+    }
+
+    /// <summary>
+    /// 같은 종류의 원목 여러 개를 "흘리는" 연출만 재생한다(데이터는 건드리지 않는다).
+    ///
+    /// 교체 시스템이 버린 슬롯을 DropAllItem과 같은 모습으로 흘리기 위해 쓴다. 운반 상자 쪽 교체도
+    /// 이 통로를 쓰므로(연출 시작 위치만 상자 위치로 준다) 흘리는 연출의 구현은 한 곳에만 있다.
+    ///
+    /// 진행 중이던 흘리기 연출이 있으면 DropAllItem과 마찬가지로 끊고 새로 시작한다.
+    /// </summary>
+    public void PlayLogDropVisuals(TreeType _treeType, LogState _logState, int _count, Vector3 _startPos,
+        bool _bFlyingSortingLayer = false)
+    {
+        if (_count <= 0) return;
+
+        bDropVisualFlyingLayer = _bFlyingSortingLayer;
+
+        // 버퍼를 다시 채우기 전에 진행 중인 연출을 먼저 멈춘다 - 그 코루틴이 같은 버퍼를 읽고 있을 수 있다.
+        if (dropVisualsCoroutine != null)
+        {
+            StopCoroutine(dropVisualsCoroutine);
+            dropVisualsCoroutine = null;
+        }
+
+        swapDropVisualPlan.Clear();
+
+        int visualCount = Mathf.Min(MaxDropVisualCount, _count);
+        for (int i = 0; i < visualCount; i++)
+        {
+            swapDropVisualPlan.Add((_treeType, _logState));
+        }
+
+        dropVisualsCoroutine = StartCoroutine(SpawnDropVisualsRoutine(swapDropVisualPlan, _startPos));
     }
 
     public float GetDropVisualDuration()
@@ -1148,6 +1440,13 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         logItem.transform.position = _startPos;
         logItem.SetInventoryChecker(this);
         logItem.IsDropItem(true);
+
+        if (bDropVisualFlyingLayer)
+        {
+            // 상자 전송 연출(TransferOneSlotVisualRoutine)과 같은 레이어/순서 - 상자 스프라이트 위로 보인다.
+            logItem.SetFlyingItemSortingLayer();
+            logItem.spriteRenderer.sortingOrder = 100;
+        }
 
         // 포물선 비행 도중 서서히 알파가 0이 되어, 착지하지 않고 공중에서 사라지는 연출
         logItem.SetFadeAndVanish(true);

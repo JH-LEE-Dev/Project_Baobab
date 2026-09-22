@@ -357,6 +357,7 @@ public static class LocKeys
         public const int resetToDefault = 18874684;
         public const int apply = 18874685;
         public const int unsavedChangesWarning = 18874686;
+        public const int logSwap = 18874687;
     }
 
     public static class ResultUI

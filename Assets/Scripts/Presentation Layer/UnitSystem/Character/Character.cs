@@ -194,7 +194,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             characterVisualObjectsOriginalScale = characterVisualObjects.transform.localScale;
         }
 
-        itemDetector = new ItemDetector(transform, itemLayer);
+        // 플레이어의 감지기만 "화면에 보이는 만큼"(LogVisibleCounts)을 센다 - 교체 상한과 흡입 선점이 읽는다.
+        itemDetector = new ItemDetector(transform, itemLayer, true);
 
         // 컴포넌트 할당
         characterVisualComponent = animatorObject.GetComponent<CharacterVisualComponent>();
@@ -580,14 +581,30 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (bCanAcquiredItem == false) return;
 
         float finalRadius = itemSensorRadius * statComponent.pickupRangeMultiplier;
-        itemDetector.Tick(Time.fixedDeltaTime, itemDetectionInterval, finalRadius, OnItemDetected);
+        itemDetector.Tick(Time.fixedDeltaTime, itemDetectionInterval, finalRadius, OnItemsDetected);
     }
 
-    private void OnItemDetected(IStaticCollidable _collidable)
+    /// <summary>
+    /// 이번 감지 틱에 걸린 아이템 전부를 한 번에 받아, <b>비싼 원목부터</b> 흡입을 건다.
+    ///
+    /// SetSuckTarget은 그 자리에서 인벤토리 공간을 묻고(CanAcquired) 통과하면 슬롯을 예약해버리는
+    /// 선착순이다. 감지된 순서대로 그냥 돌리면 빈 슬롯이 하나 남았을 때 그 칸을 누가 가져갈지가
+    /// CollisionSystem이 훑은 순서에 달리게 되므로, 흡입을 걸기 전에 가치 순으로 줄을 세운다.
+    ///
+    /// "수종 개량" 특성이 흡입 직전에 수종을 올려주므로, 줄을 세우는 기준은 바닥에 보이는 수종이
+    /// 아니라 <b>개량까지 끝난 뒤 실제로 담길 수종</b>이다(ItemDetector.SortByPickupPriority가
+    /// 같은 판정을 미리 물어본다). 수종을 실제로 바꾸는 건 여전히 흡입이 확정된 원목 하나뿐이다.
+    /// </summary>
+    private void OnItemsDetected(List<IStaticCollidable> _detectedItems)
     {
-        if (_collidable is Item item)
+        ItemDetector.SortByPickupPriority(_detectedItems);
+
+        for (int i = 0; i < _detectedItems.Count; i++)
         {
-            item.SetSuckTarget(transform);
+            if (_detectedItems[i] is Item item)
+            {
+                item.SetSuckTarget(transform);
+            }
         }
     }
 

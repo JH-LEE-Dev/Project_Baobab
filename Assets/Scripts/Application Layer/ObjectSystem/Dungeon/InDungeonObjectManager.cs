@@ -99,6 +99,27 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private int obsidianCharmPityThreshold;
     private int obsidianCharmPityTreeKillCount;
 
+    // "황금 나무" 보장 (데모 빌드 전용)
+    //
+    // 데모에서 "황금 나무 확률"(SkillType.GoldTreeChance) 특성을 찍으면, 붙어 있는 확률(현재 1.5%)만
+    // 믿고 기다리게 두지 않고 "나무 min~max그루를 베는 사이에 황금 나무를 한 번은 본다"를 보장한다.
+    // 임계값은 특성을 찍는 순간 한 번만 뽑고, 벌목 수는 던전을 몇 번 드나들든 이어서 센다
+    // (다른 전리품 구제와 달리 SetupForForestType에서 리셋하지 않는다).
+    //
+    // 임계값에 닿기 전에 순수 확률로 황금 나무가 먼저 떠 주면 보장은 그대로 소모되고 끝난다.
+    // 즉 이 장치가 황금 나무를 "한 번 더" 얹어주는 일은 없다.
+    [Header("황금 나무 보장 (데모 전용)")]
+    [Tooltip("데모에서 '황금 나무 확률' 특성을 찍은 뒤, 나무를 이 범위 안의 그루째 벨 때 황금 나무를 한 번 보장한다. 임계값은 특성을 찍는 순간 이 범위에서 뽑는다.")]
+    [SerializeField] private int goldTreePityMinKills = 3;
+    [SerializeField] private int goldTreePityMaxKills = 7;
+    // 보장이 대기 중인지(특성을 찍었고 아직 황금 나무를 못 봤는지). 런타임 전용.
+    private bool bGoldTreePityArmed;
+    private int goldTreePityThreshold;
+    private int goldTreePityTreeKillCount;
+    // 보장이 이미 끝났는지(보장으로 띄웠든 순수 확률로 떴든). 세이브 데이터와 연동되는 영구 플래그라,
+    // 게임을 다시 켜서 특성 효과가 재적용되어도 두 번 무장되지 않는다.
+    public bool bGoldTreePityDone { get; set; }
+
     // // 내부 의존성
     [Header("Tree Settings")]
     [SerializeField] private TreeObj treePrefab;
@@ -1433,6 +1454,85 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeOverheatExplosionEvent += OnTreeOverheatExplosion;
         _tree.TreeGemTransformedEvent -= OnTreeGemTransformed;
         _tree.TreeGemTransformedEvent += OnTreeGemTransformed;
+        _tree.TreeAboutToDieEvent -= OnTreeAboutToDie;
+        _tree.TreeAboutToDieEvent += OnTreeAboutToDie;
+    }
+
+    /// <summary>
+    /// 나무가 HP 0에 도달해 "죽을지 / 보석 단계로 회생할지"가 갈리기 직전에 호출된다.
+    /// 데모 황금 나무 보장이 여기서 등급을 올려, 그 나무가 곧바로 황금으로 회생하게 만든다.
+    /// </summary>
+    private void OnTreeAboutToDie(TreeObj _treeObj)
+    {
+        if (_treeObj == null) return;
+        if (!bGoldTreePityArmed || bGoldTreePityDone) return;
+
+        // 이미 풀로 돌아간 나무는 세지도, 승급시키지도 않는다.
+        //
+        // 풀에 들어간 나무도 TreeIsDead가 다시 돌 수 있다. healthComponent.EnemyIsDeadEvent 구독은
+        // 풀 반환 때 끊기지 않고(OnDestroy에서만 끊는다), 다음 스폰의 Setup() 전까지 체력이 0으로
+        // 남아 있어서, 들고 있던 참조로 한 번 더 때리면 그대로 사망 분기를 탄다.
+        // ResetTree가 bDead/currentGemStage/bLastHitByPlayer는 되돌리지만 treeData.grade는 그대로
+        // 두기 때문에, 그런 유령 나무도 이 아래 판정을 멀쩡히 통과한다.
+        //
+        // 데모에 실리는 콘텐츠(1-1~1-3, 도끼/셰이크웨이브)만 놓고 보면 그렇게 때릴 수 있는 호출부를
+        // 찾지 못했다. 연쇄 포자막 폭발은 뭉글 포자 숲 전용이고 셰이크웨이브 과열 폭발은 "셰이크웨이브
+        // 과부하" 특성이 있어야 하는데 둘 다 데모에 없으며, 평범한 셰이크웨이브는 hitTargets로 같은
+        // 나무를 두 번 때리지 않는다. 그래도 가드를 두는 이유는 실패가 조용하고 영구적이기 때문이다.
+        // 한 번 유령 나무에 소모되면 bGoldTreePityDone이 서고, 그 세이브에서는 황금 나무가 영영 안 뜬다.
+        // (OnReleaseTree에서 이 이벤트를 끊어두므로 평소엔 여기까지 오지 않는다 - 이중 안전장치다)
+        if (_treeObj.IsPooled) return;
+
+        // 이미 보석 단계인 나무는 이번이 "두 번째 이후 쓰러짐"이라 한 그루를 두 번 세게 된다.
+        // 보통은 여기까지 오지 않는다 - 그 나무의 첫 번째 쓰러짐(= 황금으로 변한 순간)에서
+        // 아래 "등급이 Normal보다 높다" 갈래를 타고 이미 보장이 소모되었기 때문이다.
+        if (_treeObj.bIsGemStage) return;
+
+        // 순수 확률로 황금(이상) 등급을 뽑은 나무라면, 이 타격으로 황금 나무가 눈앞에 뜬다.
+        // 보장은 할 일이 없어졌으니 그대로 소모하고 끝낸다.
+        if (_treeObj.treeData.grade > TreeGrade.Normal)
+        {
+            FinishGoldTreePity();
+            return;
+        }
+
+        // 벌목 수는 플레이어가 직접 벤 나무만 센다. 보장으로 띄우는 황금 나무는 플레이어 도끼
+        // 밑에서 떠야 의미가 있으므로, 럼버잭 NPC가 벤 나무로는 카운트가 오르지 않는다.
+        if (!_treeObj.bLastHitByPlayer) return;
+
+        goldTreePityTreeKillCount++;
+        if (goldTreePityTreeKillCount < goldTreePityThreshold) return;
+
+        // 임계값에 닿았다. 등급만 올려 주면 TreeObj가 이 나무를 황금 단계로 회생시킨다.
+        _treeObj.PromoteGrade(TreeGrade.Fascinating);
+        FinishGoldTreePity();
+    }
+
+    /// <summary>
+    /// 데모 황금 나무 보장을 무장한다. "황금 나무 확률" 특성을 찍는 순간(세이브 로드로 효과가
+    /// 재적용되는 순간 포함) 한 번만 임계값을 뽑는다.
+    /// </summary>
+    private void TryArmGoldTreePity(TreeGrade _grade, float _amount)
+    {
+        if (!BuildInfo.IsDemo) return;
+        if (_grade != TreeGrade.Fascinating) return;
+        // Undo(-amount)로 들어온 호출은 무장 대상이 아니다.
+        if (_amount <= 0f) return;
+        if (bGoldTreePityArmed || bGoldTreePityDone) return;
+
+        int min = Mathf.Max(1, goldTreePityMinKills);
+        int max = Mathf.Max(min, goldTreePityMaxKills);
+
+        bGoldTreePityArmed = true;
+        goldTreePityThreshold = UnityEngine.Random.Range(min, max + 1);
+        goldTreePityTreeKillCount = 0;
+    }
+
+    private void FinishGoldTreePity()
+    {
+        bGoldTreePityArmed = false;
+        bGoldTreePityDone = true;
+        goldTreePityTreeKillCount = 0;
     }
 
     // 나무가 보석 단계(황금/다이아/무지개)로 변할 때마다 전용 이펙트를 재생한다.
@@ -1500,6 +1600,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeHeatEmitEvent -= OnTreeHeatEmit;
         _tree.TreeOverheatExplosionEvent -= OnTreeOverheatExplosion;
         _tree.TreeGemTransformedEvent -= OnTreeGemTransformed;
+        _tree.TreeAboutToDieEvent -= OnTreeAboutToDie;
         //_tree.transform.position = new Vector2(-10000f, -10000f);
         _tree.gameObject.SetActive(false);
     }
@@ -2219,6 +2320,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         // Normal 이하는 나머지 확률로 자동 계산되는 몫이라 직접 올릴 대상이 아니다.
         if (_grade <= TreeGrade.Normal) return;
+
+        // 데모에서는 이 호출이 곧 "황금 나무 확률" 특성을 찍었다는 신호다(데모 어빌리티 트리에서
+        // Fascinating 확률을 올리는 노드는 GoldTreeChance 하나뿐이다).
+        TryArmGoldTreePity(_grade, _amount);
 
         if (treeGradeProbs == null) treeGradeProbs = new List<TreeGradeProb>();
 

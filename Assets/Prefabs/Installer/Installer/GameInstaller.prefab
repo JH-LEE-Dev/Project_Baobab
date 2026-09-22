@@ -835,6 +835,7 @@ MonoBehaviour:
   moonEssence: 0
   lightningEssence: 0
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
+  logItemValueDataBase: {fileID: 11400000, guid: 96c8bda64fb8fc74cb463aa0998e679b, type: 2}
   dropVisualInterval: 0.08
 --- !u!114 &28769940137761721
 MonoBehaviour:

@@ -36,6 +36,12 @@ public class InputReader
     public event Action InteractionKeyCanceledEvent;
     public event Action PotionKeyPressedEvent;
 
+    /// <summary>
+    /// 원목 교체 키(기본 Tab / 패드 Y)가 눌렸습니다. 실제로 교체가 가능한 상황인지, 인벤토리가
+    /// 열려 있는지는 받는 쪽(GameplayUICoordinator)이 판단합니다.
+    /// </summary>
+    public event Action LogSwapKeyPressedEvent;
+
     /// <summary>키 바인딩이 실제로 변경(리바인딩 완료/리셋)될 때 발생합니다. UI가 표시 문자열을 다시 조회하도록 알리는 용도입니다.</summary>
     public event Action KeyBindingsChangedEvent;
 
@@ -251,6 +257,7 @@ public class InputReader
             actions.Normal.Interaction.performed += InteractionKeyPressed;
             actions.Normal.Interaction.canceled += InteractionKeyCanceled;
             actions.Normal.PotionKey.performed += PotionKeyPressed;
+            actions.Normal.LogSwap.performed += LogSwapKeyPressed;
 
             actions.Normal.Aim.performed += OnAim;
             actions.Normal.Aim.canceled += OnAim;
@@ -291,6 +298,7 @@ public class InputReader
         actions.Normal.Interaction.performed -= InteractionKeyPressed;
         actions.Normal.Interaction.canceled -= InteractionKeyCanceled;
         actions.Normal.PotionKey.performed -= PotionKeyPressed;
+        actions.Normal.LogSwap.performed -= LogSwapKeyPressed;
 
         actions.Normal.Aim.performed -= OnAim;
         actions.Normal.Aim.canceled -= OnAim;
@@ -1071,6 +1079,18 @@ public class InputReader
         PotionKeyPressedEvent?.Invoke();
     }
 
+    /// <summary>
+    /// 원목 교체 키입니다. 게임플레이 입력이 살아 있는 구간에서만 전달합니다 - 인벤토리 팝업은
+    /// 입력 모드를 UI로 바꾸지 않으므로(가방을 연 채로 계속 움직일 수 있다) 이 조건으로 막히지
+    /// 않고, ESC 메뉴나 특성 창처럼 진짜 UI 모드인 구간에서만 걸러진다.
+    /// </summary>
+    public void LogSwapKeyPressed(InputAction.CallbackContext context)
+    {
+        if (false == CanDispatchGameplay) return;
+
+        LogSwapKeyPressedEvent?.Invoke();
+    }
+
     // 키 리바인딩
     public bool IsRebinding => null != rebindOperation;
 
@@ -1563,6 +1583,7 @@ public class InputReader
             case ERebindableAction.Interaction: _inputAction = actions.Normal.Interaction; _bindingIndex = 0; break;
             case ERebindableAction.Attack: _inputAction = actions.Normal.Click; _bindingIndex = 0; break;
             case ERebindableAction.PotionKey: _inputAction = actions.Normal.PotionKey; _bindingIndex = 0; break;
+            case ERebindableAction.LogSwap: _inputAction = actions.Normal.LogSwap; _bindingIndex = 0; break;
             default: throw new ArgumentOutOfRangeException(nameof(_action), _action, null);
         }
     }
