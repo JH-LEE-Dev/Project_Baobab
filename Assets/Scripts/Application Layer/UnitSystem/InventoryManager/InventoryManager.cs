@@ -957,10 +957,11 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         itemDataPool.Release((ItemData)slot.itemData);
         slot.Setup(null, 0);
 
-        for (int i = 0; i < info.count; i++)
-        {
-            ItemRemoved();
-        }
+        // 알림은 한 번이면 된다. ItemRemovedFromInventorySignal은 개수를 싣지 않고 구독자도
+        // "인벤토리 UI를 다시 읽어라" 하나뿐이라, count번 부르면 같은 프레임에 슬롯 전체 재바인딩과
+        // 용량바 연출이 count번 되풀이될 뿐 결과는 같다. 교체는 한 슬롯을 통째로 버리는 기능이라
+        // count가 슬롯 최대 중첩까지 커진다.
+        ItemRemoved();
 
         UpdateInventoryEmptyState();
 

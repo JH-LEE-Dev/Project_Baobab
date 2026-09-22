@@ -69,6 +69,9 @@ public class UI_SwapIndicator : MonoBehaviour
     // //내부 의존성
     private const float STEP_SNAP_DURATION = 0.001f;
 
+    // 기준 위치가 "실제로" 움직였다고 볼 최소 이동량(제곱 거리). 같은 자리 재갱신과 구분하기 위한 값이다.
+    private const float BASE_MOVE_SQR_EPSILON = 0.0001f;
+
     private IndicatorState currentState = IndicatorState.Hidden;
     private Sequence currentSequence = null;
     private Vector2 baseAnchoredPosition = Vector2.zero;
@@ -238,19 +241,28 @@ public class UI_SwapIndicator : MonoBehaviour
         if (null == motionTarget)
             return;
 
-        Vector2 _currentOffset = motionTarget.anchoredPosition - baseAnchoredPosition;
+        Vector2 _previousBase = baseAnchoredPosition;
+        Vector2 _currentOffset = motionTarget.anchoredPosition - _previousBase;
 
         transform.position = _worldPosition;
         baseAnchoredPosition = motionTarget.anchoredPosition;
 
-        if (IndicatorState.Looping == currentState)
-        {
-            motionTarget.anchoredPosition = baseAnchoredPosition + _currentOffset;
-        }
-        else
+        if (IndicatorState.Looping != currentState)
         {
             motionTarget.anchoredPosition = baseAnchoredPosition;
+            return;
         }
+
+        // 기준 위치가 실제로 움직였다면 루프를 다시 만든다. 스텝 트윈은 시퀀스를 만들던 시점의
+        // "절대" 앵커 좌표로 구워져 있어서, 기준만 바꾸고 두면 다음 스텝에서 옛 좌표로 되돌아가
+        // 그 자리에 눌러앉는다(예: 상자 슬롯이 늘어 그리드가 2행이 되며 같은 칸의 Y가 바뀔 때).
+        if (BASE_MOVE_SQR_EPSILON < (baseAnchoredPosition - _previousBase).sqrMagnitude)
+        {
+            StartBobbingLoop();
+            return;
+        }
+
+        motionTarget.anchoredPosition = baseAnchoredPosition + _currentOffset;
     }
 
     /// <summary>
@@ -443,8 +455,19 @@ public class UI_SwapIndicator : MonoBehaviour
     /// </summary>
     public void Hide()
     {
-        if (IndicatorState.Hidden == currentState || IndicatorState.Disappearing == currentState)
+        if (IndicatorState.Disappearing == currentState)
             return;
+
+        if (IndicatorState.Hidden == currentState)
+        {
+            // 부모가 꺼지면서 OnDisable이 상태만 Hidden으로 되돌린 경우, 오브젝트는 아직 켜진 채로
+            // 남아 있다. 그대로 두면 부모가 다시 켜질 때 옛 슬롯 위에 인디케이터가 그대로 떠오르고
+            // 이후 Hide()로는 영영 지워지지 않으므로, 여기서 확실히 정리한다.
+            if (true == gameObject.activeSelf)
+                HideImmediate();
+
+            return;
+        }
 
         KillCurrentAnimation();
 
@@ -538,6 +561,19 @@ public class UI_SwapIndicator : MonoBehaviour
 
         KillCurrentAnimation();
         currentState = IndicatorState.Hidden;
+
+        // 상태만 되돌리고 연출 값을 그대로 두면, 부모가 다시 켜질 때 페이드 중간 알파로 굳은
+        // 인디케이터가 옛 자리에 나타난다. 숨김 상태와 화면을 항상 같이 맞춰 둔다.
+        if (null != canvasGroup)
+        {
+            canvasGroup.alpha = 0.0f;
+        }
+
+        if (null != motionTarget)
+        {
+            motionTarget.localScale = Vector3.one;
+            motionTarget.anchoredPosition = baseAnchoredPosition;
+        }
     }
 
     private void OnDestroy()

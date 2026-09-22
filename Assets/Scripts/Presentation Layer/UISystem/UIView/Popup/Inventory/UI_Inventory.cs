@@ -437,6 +437,17 @@ public class UI_Inventory : MonoBehaviour
         if (null == _slot)
             return;
 
+        // 꺼져 있는 슬롯은 레이아웃이 잡히지 않아 좌표가 낡아 있다. 그 위에 인디케이터를 붙이면
+        // 허공을 가리키게 되므로, 켜 달라는 요청이어도 받지 않고 전부 끈다. 지금 배선으로는
+        // 여기에 걸릴 일이 없으니(SelectVictim이 currentSlotCnt 안에서만 고른다), 걸렸다면
+        // 교체 판정과 슬롯 뷰가 어긋났다는 뜻이라 흔적을 남긴다.
+        if (true == _active && false == _slot.gameObject.activeInHierarchy)
+        {
+            Debug.LogWarning($"[UI_Inventory] 교체 대상 슬롯({_slotIndex})이 꺼져 있어 인디케이터를 띄우지 않습니다. 교체 판정과 슬롯 뷰가 어긋났습니다.");
+            ClearAllSwapIndicators(_immediate);
+            return;
+        }
+
         if (true == _active)
         {
             // 이전에 켜져 있던 슬롯이 있다면 아웃라인 해제
@@ -455,14 +466,16 @@ public class UI_Inventory : MonoBehaviour
 
             if (null != sharedSwapIndicator)
             {
-                sharedSwapIndicator.transform.SetAsLastSibling();
                 Vector3 _targetWorldPos = _slot.transform.TransformPoint(indicatorOffset);
                 if (true == _isSameSlot && true == sharedSwapIndicator.IsActiveAndShowing)
                 {
+                    // 같은 슬롯을 계속 가리키는 중이면 위치만 맞춘다. 여기서 SetAsLastSibling까지
+                    // 부르면 제안이 갱신될 때마다 캔버스 계층이 더럽혀져 매번 리빌드가 걸린다.
                     sharedSwapIndicator.UpdateTargetPosition(_targetWorldPos);
                 }
                 else
                 {
+                    sharedSwapIndicator.transform.SetAsLastSibling();
                     sharedSwapIndicator.Show(_targetWorldPos);
                 }
             }
@@ -579,7 +592,31 @@ public class UI_Inventory : MonoBehaviour
 
     private void HandleLogSwapInfoChanged()
     {
-        if (false == IsOpening || false == IsLogSwapReady)
+        if (false == IsOpening)
+        {
+            ClearAllSwapIndicators(false);
+            return;
+        }
+
+        // 가방이 강조할 칸은 지금이 어느 쪽 교체인지에 따라 뜻이 다르다.
+        //   - 인벤토리 교체: logSwapInfo.slotIndex     = "이 칸이 바닥으로 버려진다"
+        //   - 운반 상자 교체: OutgoingSlotIndex        = "이 칸이 상자로 넘어간다"(버려지는 건 상자 슬롯)
+        // activeTarget이 한쪽만 가리키므로 두 조건이 동시에 참이 되는 일은 없다. 상자 쪽이 우선이라
+        // 같은 순서로 따진다. 표시는 양쪽 다 같은 아웃라인이라, 무엇이 일어나는지는 함께 뜨는
+        // 상자 UI가 구분해 준다.
+        int _slotIndex = -1;
+
+        if (true == IsOutgoingSwapReady)
+        {
+            // 상자로 넘어갈 가방 슬롯을 아직 못 고른 상태면(-1) 강조할 칸이 없다.
+            _slotIndex = OutgoingSlotIndex;
+        }
+        else if (true == IsLogSwapReady)
+        {
+            _slotIndex = logSwapInfo.slotIndex;
+        }
+
+        if (0 > _slotIndex)
         {
             ClearAllSwapIndicators(false);
             return;
@@ -588,8 +625,7 @@ public class UI_Inventory : MonoBehaviour
         if (true == isOpenAnimated)
             return;
 
-        int _slotIndex = logSwapInfo.slotIndex;
-        if (0 <= _slotIndex && inventorySlots.Count > _slotIndex)
+        if (inventorySlots.Count > _slotIndex)
         {
             SetSwapCandidateSlot(_slotIndex, true);
         }

@@ -59,6 +59,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     // 스마트 스왑 아웃라인 점멸 제어 및 무할당(Zero GC) 캐싱
     private Tween outlineBlinkTween = null;
+    private bool bOutlineActive = false;
     private Color baseOutlineColor = Color.red;
     private bool isOutlineColorCached = false;
     private DOGetter<Color> getOutlineColor;
@@ -214,10 +215,25 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         EnsureSlotImgEffectBound();
         CacheBaseOutlineColorIfNeeded();
+
+        // 이미 같은 상태로 점멸 중이면 아무것도 하지 않는다. 교체 제안은 "지금 보이는 개수"가 바뀔
+        // 때마다 갱신되므로(나무가 쓰러지는 동안 초당 여러 번) 매번 트윈을 새로 만들면 알파가 계속
+        // 기준색으로 스냅되고, 점멸 주기가 한 번도 완주하지 못한 채 덜컥거린다.
+        if (true == _active && true == bOutlineActive && false == _immediate
+            && null != outlineBlinkTween && true == outlineBlinkTween.IsActive())
+        {
+            return;
+        }
+
         KillOutlineBlinkTween();
 
         if (null == slotImgEffect)
+        {
+            bOutlineActive = false;
             return;
+        }
+
+        bOutlineActive = _active;
 
         if (true == _active)
         {
@@ -546,6 +562,12 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         {
             StartCoroutine(ApplySortingRoutine());
         }
+
+        // 비활성화되는 동안 점멸 트윈이 죽었으므로, 아웃라인이 켜져 있던 슬롯이면 다시 이어 붙인다.
+        if (true == bOutlineActive)
+        {
+            SetSlotOutlineActive(true);
+        }
     }
 
     private void Update()
@@ -580,6 +602,13 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         StopSortingCoroutine();
         KillOutlineBlinkTween();
+
+        // 트윈이 중간 알파에서 죽으므로 기준색으로 되돌려 둔다. 그대로 두면 이 슬롯이 다시 켜질 때
+        // 흐릿하게 굳은 아웃라인이 남는다. (켜져 있었다는 사실은 bOutlineActive가 들고 OnEnable이 잇는다)
+        if (null != slotImgEffect && true == isOutlineColorCached)
+        {
+            slotImgEffect.shadowColor = baseOutlineColor;
+        }
     }
 
     private void OnDestroy()
