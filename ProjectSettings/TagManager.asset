@@ -56,14 +56,8 @@ TagManager:
   - name: OnWaterGround
     uniqueID: 3609783183
     locked: 0
-  - name: TreeShadow
-    uniqueID: 2456909477
-    locked: 0
   - name: BloomTile
     uniqueID: 1617079569
-    locked: 0
-  - name: ItemShadow
-    uniqueID: 1330461129
     locked: 0
   - name: Character
     uniqueID: 1559392995
@@ -73,6 +67,15 @@ TagManager:
     locked: 0
   - name: OnWater_First
     uniqueID: 2538142585
+    locked: 0
+  - name: Bridge
+    uniqueID: 726854235
+    locked: 0
+  - name: ItemShadow
+    uniqueID: 1330461129
+    locked: 0
+  - name: TreeShadow
+    uniqueID: 2456909477
     locked: 0
   - name: ShockWave
     uniqueID: 3747463003
