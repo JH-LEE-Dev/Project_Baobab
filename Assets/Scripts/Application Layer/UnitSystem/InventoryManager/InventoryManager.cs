@@ -161,6 +161,11 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     private readonly List<(TreeType treeType, LogState logState)> swapDropVisualPlan =
         new List<(TreeType, LogState)>(MaxDropVisualCount);
 
+    // 이번 흘리기 연출의 원목을 FlyingItem 정렬 레이어로 올릴지. 운반 상자에서 버리는 원목은 상자 스프라이트
+    // 위로 튀어나와야 해서 켜고(상자 전송 연출과 같은 레이어), 캐릭터가 흘리는 것(DropAllItem·인벤토리 교체)은
+    // 예전대로 둔다. 풀로 돌아간 원목은 다음 Get의 ResetItem이 Objects 레이어로 되돌린다.
+    private bool bDropVisualFlyingLayer = false;
+
     private VFXComponent vfxComponent;
 
     public void Initialize()
@@ -1310,6 +1315,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
         if (dropVisualPlan.Count > 0)
         {
+            bDropVisualFlyingLayer = false;
             dropVisualsCoroutine = StartCoroutine(SpawnDropVisualsRoutine(dropVisualPlan, startPos));
         }
 
@@ -1324,9 +1330,12 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     ///
     /// 진행 중이던 흘리기 연출이 있으면 DropAllItem과 마찬가지로 끊고 새로 시작한다.
     /// </summary>
-    public void PlayLogDropVisuals(TreeType _treeType, LogState _logState, int _count, Vector3 _startPos)
+    public void PlayLogDropVisuals(TreeType _treeType, LogState _logState, int _count, Vector3 _startPos,
+        bool _bFlyingSortingLayer = false)
     {
         if (_count <= 0) return;
+
+        bDropVisualFlyingLayer = _bFlyingSortingLayer;
 
         // 버퍼를 다시 채우기 전에 진행 중인 연출을 먼저 멈춘다 - 그 코루틴이 같은 버퍼를 읽고 있을 수 있다.
         if (dropVisualsCoroutine != null)
@@ -1431,6 +1440,13 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         logItem.transform.position = _startPos;
         logItem.SetInventoryChecker(this);
         logItem.IsDropItem(true);
+
+        if (bDropVisualFlyingLayer)
+        {
+            // 상자 전송 연출(TransferOneSlotVisualRoutine)과 같은 레이어/순서 - 상자 스프라이트 위로 보인다.
+            logItem.SetFlyingItemSortingLayer();
+            logItem.spriteRenderer.sortingOrder = 100;
+        }
 
         // 포물선 비행 도중 서서히 알파가 0이 되어, 착지하지 않고 공중에서 사라지는 연출
         logItem.SetFadeAndVanish(true);
