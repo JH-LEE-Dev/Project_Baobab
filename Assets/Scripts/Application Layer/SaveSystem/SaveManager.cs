@@ -369,7 +369,10 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
             cachedSaveData.bHasAcquiredStarCompass = inDungeonObjectManager.bHasAcquiredStarCompass;
             cachedSaveData.bHasAcquiredObsidianCharm = inDungeonObjectManager.bHasAcquiredObsidianCharm;
             cachedSaveData.bGoldTreePityDone = inDungeonObjectManager.bGoldTreePityDone;
-            
+            cachedSaveData.bGoldTreePityArmed = inDungeonObjectManager.IsGoldTreePityArmed;
+            cachedSaveData.goldTreePityThreshold = inDungeonObjectManager.GoldTreePityThreshold;
+            cachedSaveData.goldTreePityTreeKillCount = inDungeonObjectManager.GoldTreePityKillCount;
+
             cachedSaveData.currentOwnedLoots.Clear();
             if (null != inDungeonObjectManager.CurrentOwnedLoots)
             {
@@ -815,6 +818,12 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
             inDungeonObjectManager.bHasAcquiredStarCompass = _data.bHasAcquiredStarCompass;
             inDungeonObjectManager.bHasAcquiredObsidianCharm = _data.bHasAcquiredObsidianCharm;
             inDungeonObjectManager.bGoldTreePityDone = _data.bGoldTreePityDone;
+
+            // 이 복원은 스킬 재적용(1단계)보다 뒤라, 1단계의 TryArmGoldTreePity가 방금 새로
+            // 뽑아둔 임계값·벌목 수를 저장값으로 덮어쓴다. 그래야 보장 진행도가 세션을 넘어
+            // 누적되어 "영구히 한 번"이 된다. 진행도 키가 없는 예전 세이브는 안에서 걸러진다.
+            inDungeonObjectManager.RestoreGoldTreePity(
+                _data.bGoldTreePityArmed, _data.goldTreePityThreshold, _data.goldTreePityTreeKillCount);
 
             inDungeonObjectManager.RestoreOwnedLoots(_data.currentOwnedLoots);
         }
