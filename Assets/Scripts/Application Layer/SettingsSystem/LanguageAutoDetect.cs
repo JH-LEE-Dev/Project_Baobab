@@ -67,6 +67,15 @@ public static class LanguageAutoDetect
         else if (MatchesAny(_code, "schinese")) _mapped = EOptionLanguage.ChineseSimplified;
         else if (MatchesAny(_code, "tchinese")) _mapped = EOptionLanguage.ChineseTraditional;
         else if (MatchesAny(_code, "japanese")) _mapped = EOptionLanguage.Japanese;
+        else if (MatchesAny(_code, "german")) _mapped = EOptionLanguage.German;
+        else if (MatchesAny(_code, "french")) _mapped = EOptionLanguage.French;
+
+        // 포르투갈어·스페인어는 Steam에 지역 변종이 따로 있다(브라질 포르투갈어 "brazilian",
+        // 중남미 스페인어 "latam"). 우리는 변종별 번역을 따로 두지 않으므로 같은 항목으로 모은다.
+        // 여기서 빠뜨리면 브라질·중남미 유저가 번역이 있는데도 영어로 시작한다.
+        else if (MatchesAny(_code, "portuguese", "brazilian")) _mapped = EOptionLanguage.Portuguese;
+        else if (MatchesAny(_code, "spanish", "latam")) _mapped = EOptionLanguage.Spanish;
+        else if (MatchesAny(_code, "russian")) _mapped = EOptionLanguage.Russian;
         else return false;
 
         return Accept(_mapped, out _language);
@@ -103,6 +112,28 @@ public static class LanguageAutoDetect
                 _mapped = EOptionLanguage.Japanese;
                 break;
 
+            case SystemLanguage.German:
+                _mapped = EOptionLanguage.German;
+                break;
+
+            case SystemLanguage.French:
+                _mapped = EOptionLanguage.French;
+                break;
+
+            // SystemLanguage는 포르투갈/브라질, 스페인/중남미를 구분하지 않는다.
+            // 구분이 필요해지면 번역을 나눈 뒤 Steam 코드 쪽부터 갈라야 한다.
+            case SystemLanguage.Portuguese:
+                _mapped = EOptionLanguage.Portuguese;
+                break;
+
+            case SystemLanguage.Spanish:
+                _mapped = EOptionLanguage.Spanish;
+                break;
+
+            case SystemLanguage.Russian:
+                _mapped = EOptionLanguage.Russian;
+                break;
+
             default:
                 _language = FALLBACK_LANGUAGE;
                 return false;
@@ -114,8 +145,8 @@ public static class LanguageAutoDetect
     /// <summary>
     /// 매핑 결과가 지금 실제로 지원되는 언어일 때만 통과시킵니다.
     ///
-    /// EOptionLanguage에는 아직 지원하지 않는 항목(Russian)이 선언되어 있고, 앞으로도 번역보다
-    /// enum이 먼저 늘어날 수 있습니다. 이 관문이 없으면 "선택기에는 없는 언어로 게임이 시작되는"
+    /// 지금은 선언된 항목이 모두 지원되지만, 앞으로도 번역보다 enum이 먼저 늘어날 수 있습니다.
+    /// 이 관문이 없으면 "선택기에는 없는 언어로 게임이 시작되는"
     /// 상태가 되고, SettingsData.Validate가 그걸 한국어로 되돌려 원인을 찾기 어려워집니다.
     /// (지원 언어가 enum 앞쪽에 연속으로 온다는 전제는 Validate·CycleLanguage와 동일합니다)
     /// </summary>

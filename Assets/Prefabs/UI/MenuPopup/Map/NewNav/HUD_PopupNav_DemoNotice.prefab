@@ -50,7 +50,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD_PopupNav_DemoNotice
   steamWishlistUrl: https://store.steampowered.com/app/5129170/LumberBoy/
-  discordCommunityUrl: https://discord.gg/JtaVpyUkU
+  discordCommunityUrl: https://discord.gg/hvFdXMNUVX
   demoNoticeOverlay: {fileID: 1239516781622017439}
   demoDimCanvasGroup: {fileID: 3272230724093129031}
   demoBandTransform: {fileID: 7318809068908883743}
@@ -1782,7 +1782,7 @@ MonoBehaviour:
   effectMode: 1
   targetVisualImage: {fileID: 633821695696335160}
   targetUIEffect: {fileID: 6802175797008771381}
-  targetUrl: https://discord.gg/JtaVpyUkU
+  targetUrl: https://discord.gg/hvFdXMNUVX
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   hoverColor: {r: 0.5613208, g: 0.7780667, b: 1, a: 1}
   clickColor: {r: 0.5254902, g: 0.6634194, b: 1, a: 1}

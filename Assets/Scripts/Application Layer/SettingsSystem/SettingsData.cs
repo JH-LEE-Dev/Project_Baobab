@@ -5,17 +5,33 @@ using UnityEngine;
 // 따라서 기존 항목의 순서를 바꾸거나 중간에 삽입하면 저장된 설정이 다른 값으로 읽힌다.
 
 /// <summary>
-/// 주의: 현재 실제로 지원되는 항목은 Korean, English, ChineseSimplified, ChineseTraditional, Japanese 다섯입니다.
-/// (SettingsData.SUPPORTED_LANGUAGE_COUNT 참고. 나머지(Russian)는 선택될 수 없으며 영어로 처리됩니다)
+/// 주의: 현재 실제로 지원되는 항목은 선언된 열 개 전부입니다.
+/// (SettingsData.SUPPORTED_LANGUAGE_COUNT 참고)
 /// 지원 항목은 반드시 맨 앞에서부터 인덱스 0..SUPPORTED_LANGUAGE_COUNT-1로 연속되어야 합니다.
 /// (CycleLanguage와 Validate가 이 구간만 순환·허용하기 때문입니다)
 /// 언어를 늘리려면 그 상수와 SettingsManager의 언어 매핑·라벨을 함께 손봐야 합니다.
 ///
-/// ChineseSimplified/ChineseTraditional/Japanese는 선택은 가능하지만, 아직 실제 번역 텍스트가 없어
-/// LocalizationEntry.zhHans/zhHant/ja가 비어 있으면 영어 텍스트로 폴백합니다.
+/// 이 enum의 나열 순서가 곧 옵션 화면에서 좌우 키로 넘길 때의 순서입니다.
+/// 기존 항목의 값은 Settings.json에 정수로 저장되므로 순서를 바꾸거나 중간에 끼워 넣지 마세요.
+/// (Russian이 맨 뒤로 간 것은 예외입니다. 지원 대상이 아니어서 저장된 적이 없는 값이었습니다)
+///
+/// 한국어·영어를 제외한 언어는 선택은 가능하지만, 아직 실제 번역 텍스트가 없어
+/// LocalizationEntry의 해당 열이 비어 있으면 영어 텍스트로 폴백합니다.
 /// (LocalizationManager.ParseJson 참고)
 /// </summary>
-public enum EOptionLanguage { Korean, English, ChineseSimplified, ChineseTraditional, Japanese, Russian }
+public enum EOptionLanguage
+{
+    Korean,
+    English,
+    ChineseSimplified,
+    ChineseTraditional,
+    Japanese,
+    German,
+    French,
+    Portuguese,
+    Spanish,
+    Russian
+}
 
 public enum EWindowMode { Windowed, Fullscreen }
 public enum EOnOff { Off, On }
@@ -193,10 +209,11 @@ public struct SettingsData
 
     /// <summary>
     /// LocalizationManager가 실제로 처리할 수 있는 언어 수입니다.
-    /// EOptionLanguage에는 더 많은 항목이 선언되어 있지만, 지원되지 않는 값을 허용하면
-    /// 선택기에는 "日本語"가 뜨는데 게임은 영어로 도는 불일치가 생깁니다.
+    /// EOptionLanguage에 항목만 선언해두고 이 값을 올리지 않으면 그 언어는 선택기에 뜨지 않고,
+    /// 반대로 매핑 없이 이 값만 올리면 선택기에는 "日本語"가 뜨는데 게임은 영어로 도는
+    /// 불일치가 생깁니다. SettingsManager 상단의 체크리스트를 모두 처리한 뒤에 올리세요.
     /// </summary>
-    public const int SUPPORTED_LANGUAGE_COUNT = 5;
+    public const int SUPPORTED_LANGUAGE_COUNT = 10;
 
     public static SettingsData CreateDefault()
     {

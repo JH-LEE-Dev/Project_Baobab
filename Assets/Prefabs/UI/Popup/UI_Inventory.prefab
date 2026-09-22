@@ -2209,10 +2209,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UI_Inventory
   omp: {fileID: 9061330992110133810}
   invBackground: {fileID: 6124027667205108777}
-  itemsRoot: {fileID: 6456015435980945757}
-  uiPrism: {fileID: 0}
-  uiDiamond: {fileID: 0}
-  uiGold: {fileID: 0}
   uiCoin: {fileID: 5965780456493334224}
   uiBackpack: {fileID: 6177818820070488920}
   capacityBar: {fileID: 1720922484221799132}
@@ -2228,7 +2224,7 @@ MonoBehaviour:
   maxSlotPrewarmCount: 32
   inventorySlots: []
   swapIndicatorPrefab: {fileID: 1000000000000001, guid: 7a8bee6e9b33b884398c013461309abc, type: 3}
-  indicatorOffset: {x: 0, y: 24}
+  indicatorOffset: {x: 0, y: 12}
 --- !u!1 &7268536504453633950
 GameObject:
   m_ObjectHideFlags: 0

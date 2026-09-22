@@ -12,7 +12,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour, IUIDepthCloseable
     [Tooltip("Steam 상점 페이지 / 찜하기 URL")]
     [SerializeField] private string steamWishlistUrl = "https://store.steampowered.com/app/YOUR_APP_ID/";
     [Tooltip("공식 디스코드 커뮤니티 URL")]
-    [SerializeField] private string discordCommunityUrl = "https://discord.gg/your_invite_link";
+    [SerializeField] private string discordCommunityUrl = "https://discord.gg/hvFdXMNUVX";
 
     [Header("Demo Notice UI References")]
     [Tooltip("데모 안내 오버레이 루트 오브젝트 (Dim 및 배너 포함)")]

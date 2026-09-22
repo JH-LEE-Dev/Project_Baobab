@@ -15,6 +15,14 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
 {
     private const int MAIN_MENU_JSON_ID = 8;
 
+    // 언어 버튼 격자 버퍼의 초기 용량입니다. 지원 언어 수보다 넉넉히 잡아두면 언어가 늘어도
+    // 리스트 내부 배열이 다시 할당되지 않습니다. (넘어가도 동작에는 문제가 없습니다)
+    private const int MAX_LANGUAGE_BUTTONS = 16;
+
+    // 오브젝트 이름으로 언어를 가려내지 못한 버튼에 물릴 언어입니다. 어떤 버튼도 눌리지 않는
+    // 상태만은 피해야 하므로(첫 실행 팝업은 반드시 하나를 골라야 넘어간다) 원문 언어로 둡니다.
+    private const EOptionLanguage FALLBACK_BUTTON_LANGUAGE = EOptionLanguage.Korean;
+
     [Header("Root & Background")]
     [SerializeField] private CanvasGroup rootCanvasGroup;
     [SerializeField] private RectTransform windowRoot;
@@ -67,23 +75,59 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
     private Selectable lastFocusedConsentSelectable;
     private Vector2 originalWindowPos = Vector2.zero;
 
-    private readonly EOptionLanguage[] supportedLanguages = new EOptionLanguage[]
+    // 언어 버튼 격자 배선에 쓰는 재사용 버퍼입니다. Initialize에서 한 번만 쓰이지만,
+    // 멤버로 두어 호출 때마다 배열이 새로 생기지 않게 합니다.
+    private readonly List<UI_PanelSelectButton> gridOrderedButtons = new List<UI_PanelSelectButton>(MAX_LANGUAGE_BUTTONS);
+    private readonly List<int> gridRowStarts = new List<int>(MAX_LANGUAGE_BUTTONS);
+
+    /// <summary>
+    /// 버튼 오브젝트 이름을 언어로 옮기는 표입니다.
+    ///
+    /// 프리팹의 버튼이 어느 언어인지 코드가 알아보는 유일한 단서가 오브젝트 이름이므로,
+    /// 언어를 늘릴 때는 여기에 한 줄을 넣고 프리팹에 그 이름을 포함하는 버튼을 만들어
+    /// languageButtons 배열에 넣으면 됩니다. 배선(격자 이동)은 버튼의 화면 위치에서
+    /// 자동으로 계산되므로 따로 손볼 곳이 없습니다.
+    ///
+    /// 위에서부터 순서대로 검사하므로, 다른 항목의 이름을 부분 문자열로 포함하는 항목
+    /// ("ChineseTrad"는 "Chinese"를 포함)은 반드시 더 위에 두어야 합니다.
+    /// </summary>
+    private static readonly LanguageButtonBinding[] languageButtonBindings = new LanguageButtonBinding[]
     {
-        EOptionLanguage.Korean,
-        EOptionLanguage.English,
-        EOptionLanguage.Japanese,
-        EOptionLanguage.ChineseSimplified,
-        EOptionLanguage.ChineseTraditional
+        // "KoreanTrad"는 예전 프리팹에서 쓰던 이름입니다. 지금은 쓰이지 않지만, 남아 있는
+        // 버튼이 조용히 한국어로 떨어지는 사고를 막기 위해 별칭으로 남겨둡니다.
+        new LanguageButtonBinding(EOptionLanguage.ChineseTraditional, LocKeys.OptionUI.languageChineseTraditional, "繁體中文", "ChineseTrad", "KoreanTrad"),
+        new LanguageButtonBinding(EOptionLanguage.ChineseSimplified, LocKeys.OptionUI.languageChineseSimplified, "简体中文", "ChineseSim", "Chinese"),
+        new LanguageButtonBinding(EOptionLanguage.Japanese, LocKeys.OptionUI.languageJapanese, "日本語", "Japan"),
+        new LanguageButtonBinding(EOptionLanguage.English, LocKeys.OptionUI.languageEnglish, "English", "English"),
+        new LanguageButtonBinding(EOptionLanguage.German, LocKeys.OptionUI.languageGerman, "Deutsch", "German", "Deutsch"),
+        new LanguageButtonBinding(EOptionLanguage.French, LocKeys.OptionUI.languageFrench, "Français", "French", "Francais"),
+        new LanguageButtonBinding(EOptionLanguage.Portuguese, LocKeys.OptionUI.languagePortuguese, "Português", "Portug"),
+        new LanguageButtonBinding(EOptionLanguage.Spanish, LocKeys.OptionUI.languageSpanish, "Español", "Spanish", "Espanol"),
+        new LanguageButtonBinding(EOptionLanguage.Russian, LocKeys.OptionUI.languageRussian, "Русский", "Russia"),
+        new LanguageButtonBinding(EOptionLanguage.Korean, LocKeys.OptionUI.languageKorean, "한국어", "Korean")
     };
 
-    private readonly string[] languageDisplayNames = new string[]
+    private readonly struct LanguageButtonBinding
     {
-        "한국어",
-        "English",
-        "日本語",
-        "简体中文",
-        "繁體中文"
-    };
+        public readonly EOptionLanguage Language;
+
+        /// <summary>표시 이름을 읽어올 로컬라이징 키입니다.</summary>
+        public readonly int LocKey;
+
+        /// <summary>로컬라이징 데이터가 아직 로드되지 않았을 때 쓰는 표기입니다.</summary>
+        public readonly string FallbackName;
+
+        /// <summary>버튼 오브젝트 이름에 이 중 하나가 들어 있으면 이 언어로 봅니다.</summary>
+        public readonly string[] NameTokens;
+
+        public LanguageButtonBinding(EOptionLanguage _language, int _locKey, string _fallbackName, params string[] _nameTokens)
+        {
+            Language = _language;
+            LocKey = _locKey;
+            FallbackName = _fallbackName;
+            NameTokens = _nameTokens;
+        }
+    }
 
     public bool IsActive => gameObject.activeInHierarchy && (null == rootCanvasGroup || 0f < rootCanvasGroup.alpha);
 
@@ -140,83 +184,155 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
 
     private void SetupSpatialNavigations()
     {
-        // 1. 5개 언어 버튼 2D 그리드 네비게이션 직결
-        // 상단 행: Korean(좌) <-> English(중) <-> Japanese(우)
-        // 하단 행: ChineseSimplified(좌) <-> ChineseTraditional(우)
-        UI_PanelSelectButton _btnKr = null;
-        UI_PanelSelectButton _btnEn = null;
-        UI_PanelSelectButton _btnJp = null;
-        UI_PanelSelectButton _btnSim = null;
-        UI_PanelSelectButton _btnTrad = null;
-
-        if (null != languageButtons)
-        {
-            for (int i = 0; i < languageButtons.Length; i++)
-            {
-                UI_PanelSelectButton _b = languageButtons[i];
-                if (null == _b) continue;
-
-                switch (_b.BoundLanguage)
-                {
-                    case EOptionLanguage.Korean: _btnKr = _b; break;
-                    case EOptionLanguage.English: _btnEn = _b; break;
-                    case EOptionLanguage.Japanese: _btnJp = _b; break;
-                    case EOptionLanguage.ChineseSimplified: _btnSim = _b; break;
-                    case EOptionLanguage.ChineseTraditional: _btnTrad = _b; break;
-                }
-            }
-        }
-
-        if (null != _btnKr && null != _btnEn && null != _btnJp && null != _btnSim && null != _btnTrad)
-        {
-            _btnKr.navigation = new Navigation
-            {
-                mode = Navigation.Mode.Explicit,
-                selectOnUp = _btnKr,
-                selectOnDown = _btnSim,
-                selectOnLeft = _btnTrad,
-                selectOnRight = _btnEn
-            };
-
-            _btnEn.navigation = new Navigation
-            {
-                mode = Navigation.Mode.Explicit,
-                selectOnUp = _btnEn,
-                selectOnDown = _btnTrad,
-                selectOnLeft = _btnKr,
-                selectOnRight = _btnJp
-            };
-
-            _btnJp.navigation = new Navigation
-            {
-                mode = Navigation.Mode.Explicit,
-                selectOnUp = _btnJp,
-                selectOnDown = _btnTrad,
-                selectOnLeft = _btnEn,
-                selectOnRight = _btnSim
-            };
-
-            _btnSim.navigation = new Navigation
-            {
-                mode = Navigation.Mode.Explicit,
-                selectOnUp = _btnKr,
-                selectOnDown = _btnSim,
-                selectOnLeft = _btnJp,
-                selectOnRight = _btnTrad
-            };
-
-            _btnTrad.navigation = new Navigation
-            {
-                mode = Navigation.Mode.Explicit,
-                selectOnUp = _btnEn,
-                selectOnDown = _btnTrad,
-                selectOnLeft = _btnSim,
-                selectOnRight = _btnKr
-            };
-        }
+        // 1. 언어 버튼 2D 격자 네비게이션 직결
+        SetupLanguageGridNavigation();
 
         // 2. Consent 패널 상하 네비게이션 연결 (Toggle <-> DisagreeToggle <-> ConfirmButton)
         UpdateConsentNavigations();
+    }
+
+    /// <summary>
+    /// 언어 버튼들을 화면에 놓인 대로 격자로 읽어 상하좌우 이동을 직접 배선합니다.
+    ///
+    /// 언어마다 버튼을 손으로 이어 붙이던 것을 위치 기반으로 바꾼 이유는, 언어가 늘 때마다
+    /// 배선을 다시 짜야 했고 한 곳만 빠뜨려도 패드로 닿지 못하는 버튼이 생기기 때문입니다.
+    /// 이제 프리팹에 버튼을 어떻게 배치하든(3+2든 5+5든) 보이는 대로 이동합니다.
+    ///
+    /// 이동 규칙은 기존 배선과 같습니다.
+    ///  - 좌우: 읽는 순서대로 전체를 한 바퀴 돕니다. (줄 끝에서 다음 줄 첫 버튼으로 넘어감)
+    ///  - 상하: 위/아래 줄의 같은 칸으로 갑니다. 그 줄이 더 짧으면 마지막 칸으로 붙고,
+    ///          위/아래에 줄이 없으면 제자리에 머무릅니다. (목록 밖으로 포커스가 빠지지 않게)
+    /// </summary>
+    private void SetupLanguageGridNavigation()
+    {
+        BuildLanguageGrid();
+
+        int _count = gridOrderedButtons.Count;
+        if (0 == _count || 0 == gridRowStarts.Count) return;
+
+        int _rowCount = gridRowStarts.Count;
+
+        for (int i = 0; i < _count; i++)
+        {
+            UI_PanelSelectButton _btn = gridOrderedButtons[i];
+
+            int _row = FindRowIndex(i);
+            int _column = i - gridRowStarts[_row];
+
+            _btn.navigation = new Navigation
+            {
+                mode = Navigation.Mode.Explicit,
+                selectOnLeft = gridOrderedButtons[(i - 1 + _count) % _count],
+                selectOnRight = gridOrderedButtons[(i + 1) % _count],
+                selectOnUp = (0 == _row) ? _btn : GetButtonInRow(_row - 1, _column, _rowCount, _count),
+                selectOnDown = (_rowCount - 1 == _row) ? _btn : GetButtonInRow(_row + 1, _column, _rowCount, _count)
+            };
+        }
+    }
+
+    /// <summary>
+    /// 언어 버튼을 화면에 보이는 순서(위에서 아래로, 왼쪽에서 오른쪽으로)로 정렬하고
+    /// 각 줄이 시작되는 인덱스를 기록합니다.
+    ///
+    /// 인스펙터 배열 순서가 아니라 실제 위치를 기준으로 삼는 이유는, 배열에 넣은 순서와
+    /// 화면 배치가 어긋나 있어도 패드 이동이 보이는 대로 동작해야 하기 때문입니다.
+    /// </summary>
+    private void BuildLanguageGrid()
+    {
+        gridOrderedButtons.Clear();
+        gridRowStarts.Clear();
+
+        if (null == languageButtons) return;
+
+        for (int i = 0; i < languageButtons.Length; i++)
+        {
+            UI_PanelSelectButton _btn = languageButtons[i];
+            if (null == _btn) continue;
+
+            gridOrderedButtons.Add(_btn);
+        }
+
+        int _count = gridOrderedButtons.Count;
+        if (0 == _count) return;
+
+        // 버튼 배치는 GridLayoutGroup이 정한다. 레이아웃 갱신은 프레임 끝에 몰아서 도므로,
+        // 여기서 그대로 위치를 읽으면 아직 반영되지 않은 좌표를 보고 줄을 잘못 나눌 수 있다.
+        // 버튼을 새로 추가한 직후가 특히 그렇다. 한 번 강제로 계산시켜 놓고 읽는다.
+        RectTransform _layoutRoot = gridOrderedButtons[0].transform.parent as RectTransform;
+        if (null != _layoutRoot && true == _layoutRoot.gameObject.activeInHierarchy)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_layoutRoot);
+        }
+
+        // 같은 줄로 볼 Y 오차입니다. 버튼 높이의 절반을 쓰면 줄 간격이 아무리 좁아도
+        // 두 줄이 한 줄로 뭉치지 않고, 같은 줄이 미세하게 어긋나 있어도 갈라지지 않습니다.
+        float _rowTolerance = GetRowTolerance(gridOrderedButtons[0]);
+
+        // 삽입 정렬로 직접 정렬합니다. List.Sort는 비교자가 엄밀한 순서 관계여야 하는데,
+        // 오차를 허용하는 "같은 줄" 판정은 그 조건을 만족하지 않아 결과가 뒤틀릴 수 있습니다.
+        // (버튼은 많아야 십여 개라 비용도 문제가 되지 않습니다)
+        for (int i = 1; i < _count; i++)
+        {
+            UI_PanelSelectButton _current = gridOrderedButtons[i];
+            Vector3 _currentPos = _current.transform.position;
+
+            int j = i - 1;
+            while (j >= 0 && true == ComesAfter(gridOrderedButtons[j].transform.position, _currentPos, _rowTolerance))
+            {
+                gridOrderedButtons[j + 1] = gridOrderedButtons[j];
+                j--;
+            }
+            gridOrderedButtons[j + 1] = _current;
+        }
+
+        gridRowStarts.Add(0);
+        float _rowY = gridOrderedButtons[0].transform.position.y;
+
+        for (int i = 1; i < _count; i++)
+        {
+            float _y = gridOrderedButtons[i].transform.position.y;
+            if (Mathf.Abs(_y - _rowY) <= _rowTolerance) continue;
+
+            gridRowStarts.Add(i);
+            _rowY = _y;
+        }
+    }
+
+    /// <summary>_a가 읽는 순서에서 _b보다 뒤에 오는지 여부입니다. (위 → 아래, 왼쪽 → 오른쪽)</summary>
+    private static bool ComesAfter(Vector3 _a, Vector3 _b, float _rowTolerance)
+    {
+        if (Mathf.Abs(_a.y - _b.y) > _rowTolerance) return _a.y < _b.y;
+        return _a.x > _b.x;
+    }
+
+    private static float GetRowTolerance(UI_PanelSelectButton _button)
+    {
+        const float DEFAULT_TOLERANCE = 1f;
+
+        RectTransform _rect = _button.transform as RectTransform;
+        if (null == _rect) return DEFAULT_TOLERANCE;
+
+        float _height = _rect.rect.height * Mathf.Abs(_rect.lossyScale.y);
+        return (_height > 0f) ? (_height * 0.5f) : DEFAULT_TOLERANCE;
+    }
+
+    private int FindRowIndex(int _buttonIndex)
+    {
+        for (int i = gridRowStarts.Count - 1; i >= 0; i--)
+        {
+            if (_buttonIndex >= gridRowStarts[i]) return i;
+        }
+        return 0;
+    }
+
+    /// <summary>_row번째 줄의 _column번째 버튼입니다. 그 줄이 더 짧으면 마지막 칸으로 붙습니다.</summary>
+    private UI_PanelSelectButton GetButtonInRow(int _row, int _column, int _rowCount, int _buttonCount)
+    {
+        int _start = gridRowStarts[_row];
+        int _end = (_row + 1 < _rowCount) ? gridRowStarts[_row + 1] : _buttonCount;
+        int _index = Mathf.Min(_start + _column, _end - 1);
+
+        return gridOrderedButtons[_index];
     }
 
     private void UpdateConsentNavigations()
@@ -267,41 +383,83 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
             UI_PanelSelectButton _btn = languageButtons[i];
             if (null == _btn) continue;
 
-            EOptionLanguage _lang = EOptionLanguage.Korean;
-            string _name = "한국어";
-
-            string _btnName = _btn.gameObject.name;
-            if (_btnName.Contains("KoreanTrad") || _btnName.Contains("ChineseTrad"))
-            {
-                _lang = EOptionLanguage.ChineseTraditional;
-                _name = "繁體中文";
-            }
-            else if (_btnName.Contains("ChineseSim") || _btnName.Contains("Chinese"))
-            {
-                _lang = EOptionLanguage.ChineseSimplified;
-                _name = "简体中文";
-            }
-            else if (_btnName.Contains("Japan") || _btnName.Contains("Japanese"))
-            {
-                _lang = EOptionLanguage.Japanese;
-                _name = "日本語";
-            }
-            else if (_btnName.Contains("English"))
-            {
-                _lang = EOptionLanguage.English;
-                _name = "English";
-            }
-            else
-            {
-                _lang = EOptionLanguage.Korean;
-                _name = "한국어";
-            }
+            ResolveLanguageBinding(_btn.gameObject.name, out EOptionLanguage _lang, out string _name);
 
             _btn.Initialize(inputManager, cursorBoxUI, null);
             _btn.SetBoundLanguage(_lang, _name);
             _btn.OnClickedEvent -= HandleLanguageButtonClicked;
             _btn.OnClickedEvent += HandleLanguageButtonClicked;
         }
+    }
+
+    /// <summary>
+    /// 버튼 오브젝트 이름으로 어느 언어의 버튼인지 가려냅니다.
+    ///
+    /// 표기는 로컬라이징 데이터에서 읽습니다. 언어 이름은 어느 언어로 봐도 같은 값이
+    /// 나오도록 OptionUI.json의 모든 열에 자기 표기가 들어 있고, 코드에 박아두면 폰트
+    /// 문자셋 생성기가 그 글자를 수집하지 못해 CJK 폰트에서 통째로 깨지기 때문입니다.
+    /// (UI_Option.GetLanguageText와 같은 방식)
+    /// </summary>
+    private void ResolveLanguageBinding(string _buttonName, out EOptionLanguage _language, out string _displayName)
+    {
+        for (int i = 0; i < languageButtonBindings.Length; i++)
+        {
+            LanguageButtonBinding _binding = languageButtonBindings[i];
+            if (false == MatchesAnyToken(_buttonName, _binding.NameTokens)) continue;
+
+            _language = _binding.Language;
+            _displayName = GetLocalizedName(_binding);
+            return;
+        }
+
+        // 어느 이름에도 걸리지 않았다. 예전에는 조용히 한국어가 되었는데, 그러면 새 언어
+        // 버튼을 추가하고 이름만 어긋났을 때 "한국어 버튼이 두 개"인 화면이 원인 없이 나온다.
+        // 동작은 그대로 두고(선택 자체는 가능해야 하므로) 경고만 남긴다.
+        Debug.LogWarning("[UI_InitialSetupPopup] '" + _buttonName + "' 버튼의 언어를 알 수 없어 " +
+            FALLBACK_BUTTON_LANGUAGE + "로 둡니다. languageButtonBindings의 이름 조각 중 하나를 " +
+            "오브젝트 이름에 포함시키세요.", this);
+
+        _language = FALLBACK_BUTTON_LANGUAGE;
+        _displayName = GetLocalizedName(FALLBACK_BUTTON_LANGUAGE);
+    }
+
+    /// <summary>
+    /// 해당 언어의 표기입니다.
+    ///
+    /// 표에서 언어로 직접 찾습니다. 예전에는 "표의 마지막 항목이 곧 한국어"라고 보고 끝에서
+    /// 꺼냈는데, 바로 위 표의 주석이 "언어를 늘릴 때는 여기에 한 줄을 넣으라"고 안내하는 터라
+    /// 그 말대로 끝에 추가하는 순간 버튼에 엉뚱한 언어 이름이 찍히게 됩니다.
+    /// (고른 언어와 표기가 어긋나는 셈이라, 유저는 Italiano를 눌렀는데 한국어가 켜집니다)
+    /// </summary>
+    private string GetLocalizedName(EOptionLanguage _language)
+    {
+        for (int i = 0; i < languageButtonBindings.Length; i++)
+        {
+            if (languageButtonBindings[i].Language != _language) continue;
+            return GetLocalizedName(languageButtonBindings[i]);
+        }
+
+        // 표에 없는 언어. 표기는 투박해지지만 어느 언어인지는 드러나고 버튼도 계속 눌립니다.
+        return _language.ToString();
+    }
+
+    private static bool MatchesAnyToken(string _buttonName, string[] _tokens)
+    {
+        if (true == string.IsNullOrEmpty(_buttonName) || null == _tokens) return false;
+
+        for (int i = 0; i < _tokens.Length; i++)
+        {
+            if (true == _buttonName.Contains(_tokens[i])) return true;
+        }
+        return false;
+    }
+
+    private string GetLocalizedName(in LanguageButtonBinding _binding)
+    {
+        if (null == localizationManager) return _binding.FallbackName;
+
+        string _text = localizationManager.GetText(_binding.LocKey);
+        return string.IsNullOrEmpty(_text) ? _binding.FallbackName : _text;
     }
 
     private void InitConsentPanel()
