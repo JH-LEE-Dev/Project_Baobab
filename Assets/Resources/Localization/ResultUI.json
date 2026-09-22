@@ -60,7 +60,7 @@
       "de": "<COLOR=FF833D>Bäume</COLOR> gefällt: <COLOR=58D7F2>{0}</COLOR>!",
       "fr": "<COLOR=FF833D>Arbres</COLOR> abattus : <COLOR=58D7F2>{0}</COLOR> !",
       "pt": "<COLOR=FF833D>Árvores</COLOR> cortadas: <COLOR=58D7F2>{0}</COLOR>!",
-      "es": "<COLOR=FF833D>Árboles</COLOR> talados: <COLOR=58D7F2>{0}</COLOR>!",
+      "es": "¡<COLOR=FF833D>Árboles</COLOR> talados: <COLOR=58D7F2>{0}</COLOR>!",
       "ru": "Срублено <COLOR=FF833D>деревьев</COLOR>: <COLOR=58D7F2>{0}</COLOR>!",
       "enumType": "",
       "enumValue": ""
@@ -76,7 +76,7 @@
       "de": "<COLOR=FF833D>Bäume</COLOR> gefällt: <COLOR=7EEDBE,EDD87E>{0}</COLOR>!!",
       "fr": "<COLOR=FF833D>Arbres</COLOR> abattus : <COLOR=7EEDBE,EDD87E>{0}</COLOR> !!",
       "pt": "<COLOR=FF833D>Árvores</COLOR> cortadas: <COLOR=7EEDBE,EDD87E>{0}</COLOR>!!",
-      "es": "<COLOR=FF833D>Árboles</COLOR> talados: <COLOR=7EEDBE,EDD87E>{0}</COLOR>!!",
+      "es": "¡¡<COLOR=FF833D>Árboles</COLOR> talados: <COLOR=7EEDBE,EDD87E>{0}</COLOR>!!",
       "ru": "Срублено <COLOR=FF833D>деревьев</COLOR>: <COLOR=7EEDBE,EDD87E>{0}</COLOR>!!",
       "enumType": "",
       "enumValue": ""
