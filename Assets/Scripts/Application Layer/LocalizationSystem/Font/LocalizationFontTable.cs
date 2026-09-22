@@ -14,6 +14,15 @@ using UnityEngine;
 /// Galmuri11_Optimum으로 제작되어 있으므로, 한국어·영어는 비워두는 것이 곧
 /// "갈무리11 사용"이면서 숫자 전용 폰트 같은 예외를 건드리지 않는 가장 안전한 설정입니다.
 /// 반대로 어떤 언어에서 무조건 한 폰트로 통일하고 싶다면 그 폰트를 직접 지정하면 됩니다.
+///
+/// 독일어·프랑스어·포르투갈어·스페인어·러시아어도 비워둡니다. 갈무리11은 라틴 확장(ä, ç, ã,
+/// ñ, œ …)과 키릴 문자를 모두 갖고 있고, Galmuri11_Optimum은 동적(Dynamic) 아틀라스라
+/// 구워두지 않은 글리프도 런타임에 원본 TTF에서 채워 넣습니다. 그래서 CJK와 달리
+/// 폰트를 갈아끼울 이유가 없습니다.
+/// (반대로 CJK 폰트는 정적(Static) 아틀라스라, 구워두지 않은 글자는 두부로 나옵니다.
+///  그래서 로컬라이징 텍스트에 새 글자가 생기면 한 자라도
+///  Tools/Localization/Generate Character Sets and Bake Atlases를 돌려야 합니다.
+///  Generate Keys는 문자셋 목록만 다시 쓰고 아틀라스는 굽지 않습니다)
 /// </summary>
 [CreateAssetMenu(fileName = "LocalizationFontTable", menuName = "Localization/Font Table")]
 public class LocalizationFontTable : ScriptableObject

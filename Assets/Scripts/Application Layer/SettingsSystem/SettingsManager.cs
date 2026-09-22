@@ -68,12 +68,22 @@ public class SettingsManager : MonoBehaviour
     // 정적 아틀라스로 구운 CJK 폰트에서 언어 이름이 통째로 깨진다. 실제로 그런 상태였다.
     //
     // 언어를 추가하려면 다음을 함께 손봐야 한다:
-    //   1) SettingsData.SUPPORTED_LANGUAGE_COUNT
-    //   2) ApplyLanguageToLocalization의 Language 매핑 (매핑되지 않은 항목은 모두 EN이 된다)
-    //   3) LocalizationManager가 읽는 로컬라이징 데이터 (OptionUI.json의 언어 이름 항목 포함)
-    //   4) UI_Option.GetLanguageText의 분기
-    //   5) LocalizationFontTable의 해당 언어 폰트
-    //   6) LanguageAutoDetect의 매핑 두 곳 (빠뜨리면 그 언어권 유저가 첫 실행에 영어로 시작한다)
+    //   1) EOptionLanguage 항목 추가 + SettingsData.SUPPORTED_LANGUAGE_COUNT
+    //      (기존 항목의 정수값이 Settings.json에 저장되어 있으므로 반드시 뒤에 붙인다)
+    //   2) Language 항목 추가 + LocalizationEntry의 언어 열 + LocalizationManager.ResolveText
+    //   3) ApplyLanguageToLocalization의 Language 매핑 (매핑되지 않은 항목은 모두 EN이 된다)
+    //   4) LocalizationManager가 읽는 로컬라이징 데이터 (OptionUI.json의 언어 이름 항목 포함)
+    //   5) UI_Option.GetLanguageText의 분기
+    //   6) UI_InitialSetupPopup의 언어 버튼 (버튼 이름 규칙은 그 파일의 languageButtonBindings 참고)
+    //   7) LocalizationFontTable의 해당 언어 폰트
+    //      (라틴 확장·키릴은 Galmuri11이 모두 갖고 있고 동적 아틀라스라, 비워두면 그대로 쓰인다.
+    //       글리프가 없는 문자 계열을 쓰는 언어일 때만 전용 폰트를 등록하면 된다)
+    //   8) LanguageAutoDetect의 매핑 두 곳 (빠뜨리면 그 언어권 유저가 첫 실행에 영어로 시작한다)
+    //   9) Tools/Localization/Generate Keys 실행 (LocKeys 갱신)
+    //  10) Tools/Localization/Generate Character Sets and Bake Atlases 실행
+    //      언어 이름(Français, Русский …)은 OptionUI.json의 모든 열에 같은 값으로 들어가므로
+    //      CJK 폰트에도 그 글자가 필요하다. CJK 폰트는 정적 아틀라스라 구워 넣지 않으면 두부로 나온다.
+    //      Generate Keys는 문자셋 txt만 다시 쓰고 아틀라스는 굽지 않으므로, 이 항목을 따로 돌려야 한다.
 
     // 표기 문자열은 SettingsData의 해상도 목록에서 파생해 1회만 생성한다.
     // (손으로 관리하면 크기와 표기가 어긋날 수 있고, 컴파일러가 잡아주지 못한다)
@@ -848,6 +858,11 @@ public class SettingsManager : MonoBehaviour
             EOptionLanguage.ChineseSimplified => Language.ZH_HANS,
             EOptionLanguage.ChineseTraditional => Language.ZH_HANT,
             EOptionLanguage.Japanese => Language.JA,
+            EOptionLanguage.German => Language.DE,
+            EOptionLanguage.French => Language.FR,
+            EOptionLanguage.Portuguese => Language.PT,
+            EOptionLanguage.Spanish => Language.ES,
+            EOptionLanguage.Russian => Language.RU,
             _ => Language.EN
         };
         locManager.SetLanguage(_langToSet);

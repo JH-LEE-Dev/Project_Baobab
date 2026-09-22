@@ -1286,6 +1286,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             case EOptionLanguage.ChineseSimplified: return GetText(LocKeys.OptionUI.languageChineseSimplified, "简体中文");
             case EOptionLanguage.ChineseTraditional: return GetText(LocKeys.OptionUI.languageChineseTraditional, "繁體中文");
             case EOptionLanguage.Japanese: return GetText(LocKeys.OptionUI.languageJapanese, "日本語");
+            case EOptionLanguage.German: return GetText(LocKeys.OptionUI.languageGerman, "Deutsch");
+            case EOptionLanguage.French: return GetText(LocKeys.OptionUI.languageFrench, "Français");
+            case EOptionLanguage.Portuguese: return GetText(LocKeys.OptionUI.languagePortuguese, "Português");
+            case EOptionLanguage.Spanish: return GetText(LocKeys.OptionUI.languageSpanish, "Español");
+            case EOptionLanguage.Russian: return GetText(LocKeys.OptionUI.languageRussian, "Русский");
         }
         return _lang.ToString();
     }
