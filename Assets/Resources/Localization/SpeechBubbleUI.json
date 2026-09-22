@@ -9,6 +9,11 @@
       "zhHans": "背包没有空位",
       "zhHant": "背包沒有空位",
       "ja": "バッグに空きがない",
+      "de": "",
+      "fr": "",
+      "pt": "",
+      "es": "",
+      "ru": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -20,6 +25,11 @@
       "zhHans": "无法装入其他物品",
       "zhHant": "無法裝入其他物品",
       "ja": "これ以上は持てない",
+      "de": "",
+      "fr": "",
+      "pt": "",
+      "es": "",
+      "ru": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -31,6 +41,11 @@
       "zhHans": "斧头<COLOR=FF0000><CHAR_SHAKE>坏掉了！</CHAR_SHAKE></COLOR>",
       "zhHant": "斧頭<COLOR=FF0000><CHAR_SHAKE>壞掉了！</CHAR_SHAKE></COLOR>",
       "ja": "斧が<COLOR=FF0000><CHAR_SHAKE>壊れた！</CHAR_SHAKE></COLOR>",
+      "de": "",
+      "fr": "",
+      "pt": "",
+      "es": "",
+      "ru": "",
       "enumType": "",
       "enumValue": ""
     }

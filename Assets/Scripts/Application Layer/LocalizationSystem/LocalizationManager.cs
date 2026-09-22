@@ -131,8 +131,12 @@ public class LocalizationManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 현재 언어에 맞는 텍스트를 고른다. 중국어(간체/번체)는 아직 번역 데이터가 없는 항목이
-    /// 많으므로, 해당 필드가 비어 있으면 조용히 영어로 폴백한다.
+    /// 현재 언어에 맞는 텍스트를 고른다. 한국어·영어를 제외한 언어는 아직 번역 데이터가 없는
+    /// 항목이 많으므로, 해당 필드가 비어 있으면 조용히 영어로 폴백한다.
+    ///
+    /// 폴백을 KR이 아니라 EN으로 두는 이유는, 번역이 비어 있는 항목만 읽을 수 없는 글자로
+    /// 튀는 것보다 문장 전체가 영어로 일관되게 보이는 편이 낫기 때문이다.
+    /// (KR에 폴백이 없는 것도 같은 이유다. kr은 원문이라 항상 채워져 있다)
     /// </summary>
     private string ResolveText(in LocalizationEntry _entry)
     {
@@ -142,6 +146,11 @@ public class LocalizationManager : MonoBehaviour
             case Language.ZH_HANS: return string.IsNullOrEmpty(_entry.zhHans) ? _entry.en : _entry.zhHans;
             case Language.ZH_HANT: return string.IsNullOrEmpty(_entry.zhHant) ? _entry.en : _entry.zhHant;
             case Language.JA: return string.IsNullOrEmpty(_entry.ja) ? _entry.en : _entry.ja;
+            case Language.DE: return string.IsNullOrEmpty(_entry.de) ? _entry.en : _entry.de;
+            case Language.FR: return string.IsNullOrEmpty(_entry.fr) ? _entry.en : _entry.fr;
+            case Language.PT: return string.IsNullOrEmpty(_entry.pt) ? _entry.en : _entry.pt;
+            case Language.ES: return string.IsNullOrEmpty(_entry.es) ? _entry.en : _entry.es;
+            case Language.RU: return string.IsNullOrEmpty(_entry.ru) ? _entry.en : _entry.ru;
             default: return _entry.en;
         }
     }
