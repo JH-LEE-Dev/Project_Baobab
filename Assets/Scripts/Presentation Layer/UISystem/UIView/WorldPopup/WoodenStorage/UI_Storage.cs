@@ -178,7 +178,10 @@ public class UI_Storage : MonoBehaviour
 
     private void HandleLogSwapInfoChanged()
     {
-        if (false == IsOpening || false == IsLogSwapReady)
+        // IsOpening은 퇴장 모션이 끝나야 false가 되므로, 닫히는 도중에 도착한 갱신이 인디케이터를
+        // 다시 띄우는 일이 있었다(상자 제안은 사정권 안에서 0.25초마다 갱신된다). isOnShow는 OnHide에서
+        // 즉시 내려가므로 "지금 그려도 되는 창인지"는 이쪽을 봐야 한다.
+        if (false == IsOpening || false == isOnShow || false == IsLogSwapReady)
         {
             ClearAllSwapIndicators(false);
             return;
@@ -251,10 +254,21 @@ public class UI_Storage : MonoBehaviour
 
         int _itemCount = storage.currentSlotCnt;
 
+        // 슬롯 뷰는 늘어나기만 하므로(UpdateMaxSlotCount), 더 작은 보관함으로 다시 바인드되면
+        // 뷰가 데이터보다 많아진다. 범위를 넘는 칸은 빈 칸으로 그려 예외를 막되, 조용히 넘어가면
+        // 나중에 원인을 찾기 어려우므로 흔적은 남긴다. (슬롯마다 찍으면 도배되니 루프 밖에서 한 번)
+        if (storageSlots.Count > _items.Count)
+        {
+            Debug.LogWarning($"[UI_Storage] 슬롯 뷰({storageSlots.Count})가 데이터({_items.Count})보다 많습니다. 범위를 넘는 칸은 빈 칸으로 그립니다.");
+        }
+
         for (int _i = 0; _i < storageSlots.Count; ++_i)
         {
             UI_InventorySlot slot = storageSlots[_i];
-            IInventorySlot item = _items[_i];
+            if (null == slot)
+                continue;
+
+            IInventorySlot item = _items.Count > _i ? _items[_i] : null;
 
             slot.gameObject.SetActive(_i < _itemCount);
             slot.UpdateBindSlotData(item, storage.maxItemCntPerSlot);
@@ -278,6 +292,17 @@ public class UI_Storage : MonoBehaviour
         if (null == _slot)
             return;
 
+        // 꺼져 있는 슬롯은 레이아웃이 잡히지 않아 좌표가 낡아 있다. 그 위에 인디케이터를 붙이면
+        // 허공을 가리키게 되므로, 켜 달라는 요청이어도 받지 않고 전부 끈다. 지금 배선으로는
+        // 여기에 걸릴 일이 없으니(SelectVictim이 currentSlotCnt 안에서만 고른다), 걸렸다면
+        // 교체 판정과 슬롯 뷰가 어긋났다는 뜻이라 흔적을 남긴다.
+        if (true == _active && false == _slot.gameObject.activeInHierarchy)
+        {
+            Debug.LogWarning($"[UI_Storage] 교체 대상 슬롯({_slotIndex})이 꺼져 있어 인디케이터를 띄우지 않습니다. 교체 판정과 슬롯 뷰가 어긋났습니다.");
+            ClearAllSwapIndicators(_immediate);
+            return;
+        }
+
         if (true == _active)
         {
             // 이전에 켜져 있던 슬롯이 있다면 아웃라인 해제
@@ -296,14 +321,16 @@ public class UI_Storage : MonoBehaviour
 
             if (null != sharedSwapIndicator)
             {
-                sharedSwapIndicator.transform.SetAsLastSibling();
                 Vector3 _targetWorldPos = _slot.transform.TransformPoint(indicatorOffset);
                 if (true == _isSameSlot && true == sharedSwapIndicator.IsActiveAndShowing)
                 {
+                    // 같은 슬롯을 계속 가리키는 중이면 위치만 맞춘다. 여기서 SetAsLastSibling까지
+                    // 부르면 제안이 갱신될 때마다 캔버스 계층이 더럽혀져 매번 리빌드가 걸린다.
                     sharedSwapIndicator.UpdateTargetPosition(_targetWorldPos);
                 }
                 else
                 {
+                    sharedSwapIndicator.transform.SetAsLastSibling();
                     sharedSwapIndicator.Show(_targetWorldPos);
                 }
             }

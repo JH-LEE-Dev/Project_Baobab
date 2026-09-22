@@ -118,14 +118,18 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     [SerializeField] private List<Sprite> animationSprite;
 
     [Header("Shadow")]
-    // 그림자 판정 타원. SpriteRenderer.bounds는 쓰지 않는다 - 그림자 스프라이트(Market_Shadow, 64x80px)에
+    // 그림자 판정 타원. SpriteRenderer.bounds는 쓰지 않는다 - 그림자 스프라이트(NewMarket_Shadow, 128x128px)에
     // 투명 여백이 많아 bounds가 실제로 보이는 그림자보다 한참 크기 때문이다.
-    // 아래 값은 실제 불투명 픽셀 영역(x 3~61, y 12~47 / PPU 32)에서 측정한 것이다.
-    //   보이는 그림자 중심 = ShopBuildingShadow 상대 위치(-0.65,-0.15) + 픽셀 중심 보정(0.016, -0.313) = (-0.63, -0.46)
-    //   보이는 그림자 반경 = (0.92, 0.56) -> 회전된 타원이 이 안에 들어오도록 단축 0.46 / 장축배율 1.5
+    // 아래 값은 실제 불투명 픽셀 영역에서 측정한 것이다(PPU 32). 스프라이트에는 건물 밑변을 따라
+    // 오른쪽 위로 뻗는 2~3px 두께의 대각선 꼬리가 하나 더 있지만, 건물 스프라이트(Sorting Layer 13)에
+    // 완전히 가려져 화면에 보이지 않으므로 측정에서 제외했다(3x3 opening으로 제거 -> 본체 429px).
+    //   본체 불투명 영역 = x 33~69, y(아래에서) 48~68 -> 중심 픽셀 (51.5, 58.3)
+    //   보이는 그림자 중심 = ShopBuildingShadow 상대 위치(-0.435,-0.328) + 픽셀 중심 보정(-0.391, -0.178) = (-0.83, -0.50)
+    //   보이는 그림자 반경 = (0.58, 0.33) / 그림자축(34도) 기준 폭은 단축 0.28, 길이 0.53
+    //     -> 끝이 뾰족한 평행사변형이라 장축은 실측보다 짧게 잡는다: 단축 0.28 / 장축배율 1.5
     // Scene 뷰에서 이 오브젝트를 선택하면 판정 타원이 그려지니 눈으로 보고 조절하면 된다.
-    [SerializeField] private Vector2 shadowEllipseCenter = new Vector2(-0.63f, -0.46f);
-    [SerializeField, Min(0f)] private float shadowEllipseRadius = 0.46f;
+    [SerializeField] private Vector2 shadowEllipseCenter = new Vector2(-0.83f, -0.5f);
+    [SerializeField, Min(0f)] private float shadowEllipseRadius = 0.28f;
     [SerializeField, Min(1f)] private float shadowEllipseLengthScale = 1.5f;
 
     // 타원 중심을 Position에 직접 담으므로 TopShadowOffset은 항상 0이다.

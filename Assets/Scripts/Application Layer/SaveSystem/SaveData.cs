@@ -266,6 +266,15 @@ public class GameSaveData
     // 데모 전용 "황금 나무" 보장을 이미 소진했는지. 이 키가 없는 예전 세이브는 false로 읽히고,
     // 그러면 특성을 찍어둔 상태에서 한 번 더 보장이 무장된다(데모 한정이라 그대로 둔다).
     public bool bGoldTreePityDone;
+    // 같은 보장의 진행도. 보장은 "영구히 한 번"이어야 하므로 무장 여부와 임계값 · 지금까지 센
+    // 벌목 수를 함께 저장해 세션을 넘어 누적시킨다. 저장하지 않으면 게임을 다시 켤 때마다
+    // 임계값이 새로 뽑히고 벌목 수가 0으로 돌아가, 짧게 끊어 플레이하면 영영 터지지 않는다.
+    //
+    // goldTreePityThreshold는 무장 시 반드시 1 이상이므로, 0은 "이 키가 없는 예전 세이브"를
+    // 뜻하는 신호로 쓰인다(InDungeonObjectManager.RestoreGoldTreePity 참고).
+    public bool bGoldTreePityArmed;
+    public int goldTreePityThreshold;
+    public int goldTreePityTreeKillCount;
     public List<LootType> currentOwnedLoots;
 
     // 용광로 상태. 이 키가 없는 예전 세이브를 읽으면 JsonUtility가 null로 두므로, 읽는 쪽에서
@@ -295,6 +304,9 @@ public class GameSaveData
         bHasAcquiredStarCompass = false;
         bHasAcquiredObsidianCharm = false;
         bGoldTreePityDone = false;
+        bGoldTreePityArmed = false;
+        goldTreePityThreshold = 0;
+        goldTreePityTreeKillCount = 0;
     }
 }
 

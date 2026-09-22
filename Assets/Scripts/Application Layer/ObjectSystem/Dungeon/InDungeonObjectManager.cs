@@ -112,13 +112,40 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [Tooltip("데모에서 '황금 나무 확률' 특성을 찍은 뒤, 나무를 이 범위 안의 그루째 벨 때 황금 나무를 한 번 보장한다. 임계값은 특성을 찍는 순간 이 범위에서 뽑는다.")]
     [SerializeField] private int goldTreePityMinKills = 3;
     [SerializeField] private int goldTreePityMaxKills = 7;
-    // 보장이 대기 중인지(특성을 찍었고 아직 황금 나무를 못 봤는지). 런타임 전용.
+    // 보장이 대기 중인지(특성을 찍었고 아직 황금 나무를 못 봤는지)와 그 진행도.
+    //
+    // 세 값 모두 세이브와 연동된다. 예전엔 런타임 전용이라 게임을 다시 켤 때마다
+    // TryArmGoldTreePity가 임계값을 새로 뽑고 벌목 수를 0으로 되돌렸다. 그러면 보장이
+    // "영구히 한 번"이 아니라 "한 세션 안에 임계값만큼 베면 한 번"이 되어, 짧게 끊어
+    // 플레이하는 유저에게는 영영 터지지 않는다. 진행도를 저장해 세션을 넘어 누적시킨다.
     private bool bGoldTreePityArmed;
     private int goldTreePityThreshold;
     private int goldTreePityTreeKillCount;
     // 보장이 이미 끝났는지(보장으로 띄웠든 순수 확률로 떴든). 세이브 데이터와 연동되는 영구 플래그라,
     // 게임을 다시 켜서 특성 효과가 재적용되어도 두 번 무장되지 않는다.
     public bool bGoldTreePityDone { get; set; }
+
+    /// <summary>세이브에 적을 보장 진행도. 셋을 함께 저장해야 세션을 넘어 누적된다.</summary>
+    public bool IsGoldTreePityArmed => bGoldTreePityArmed;
+    public int GoldTreePityThreshold => goldTreePityThreshold;
+    public int GoldTreePityKillCount => goldTreePityTreeKillCount;
+
+    /// <summary>
+    /// 세이브에서 보장 진행도를 되돌린다. 세이브 로드는 스킬 재적용(1단계)이 먼저 돌고 이 복원이
+    /// 뒤(8-2단계)라, 방금 TryArmGoldTreePity가 새로 뽑아둔 임계값을 저장값으로 덮어써 준다.
+    /// </summary>
+    public void RestoreGoldTreePity(bool _armed, int _threshold, int _killCount)
+    {
+        // 임계값은 무장될 때 반드시 1 이상이 되므로(TryArmGoldTreePity의 Mathf.Max(1, ...)),
+        // 0이라는 것은 이 세이브에 진행도 키가 아예 없다는 뜻이다 - 이 기능보다 먼저 저장된
+        // 세이브다. 그때는 아무것도 덮어쓰지 않고 1단계가 방금 무장해 둔 상태를 그대로 살린다.
+        // 덮어쓰면 이미 특성을 찍어둔 기존 데모 유저의 보장이 통째로 사라진다.
+        if (_threshold <= 0) return;
+
+        bGoldTreePityArmed = _armed;
+        goldTreePityThreshold = _threshold;
+        goldTreePityTreeKillCount = _killCount;
+    }
 
     // // 내부 의존성
     [Header("Tree Settings")]
@@ -1533,6 +1560,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         bGoldTreePityArmed = false;
         bGoldTreePityDone = true;
         goldTreePityTreeKillCount = 0;
+
+        // goldTreePityThreshold는 일부러 0으로 되돌리지 않는다. 0은 RestoreGoldTreePity에서
+        // "진행도 키가 없는 예전 세이브"를 뜻하는 신호라, 여기서 비우면 다음 로드에서 복원이
+        // 통째로 건너뛰어진다(bGoldTreePityDone이 따로 막아주긴 하지만 신호를 흐리지 않는다).
     }
 
     // 나무가 보석 단계(황금/다이아/무지개)로 변할 때마다 전용 이펙트를 재생한다.
