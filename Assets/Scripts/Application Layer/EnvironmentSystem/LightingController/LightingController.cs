@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 [ExecuteAlways]
 public class LightingController : MonoBehaviour, IShadowDataProvider
@@ -168,7 +168,6 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
 
         if (logItemMaterial != null)
         {
-            targetColor.a += 0.2f;
             logItemMaterial.SetColor(BaseColorId, targetColor);
         }
     }

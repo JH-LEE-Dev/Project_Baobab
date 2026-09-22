@@ -71,11 +71,11 @@ TagManager:
   - name: Bridge
     uniqueID: 726854235
     locked: 0
-  - name: ItemShadow
-    uniqueID: 1330461129
-    locked: 0
   - name: TreeShadow
     uniqueID: 2456909477
+    locked: 0
+  - name: ItemShadow
+    uniqueID: 1330461129
     locked: 0
   - name: ShockWave
     uniqueID: 3747463003
