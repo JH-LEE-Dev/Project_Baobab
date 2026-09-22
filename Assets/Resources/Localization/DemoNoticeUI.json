@@ -9,11 +9,11 @@
       "zhHans": "<COLOR=7EEDBE,EDD87E><Wave>Demo试玩完成</Wave></COLOR>",
       "zhHant": "<COLOR=7EEDBE,EDD87E><Wave>Demo試玩完成</Wave></COLOR>",
       "ja": "<COLOR=7EEDBE,EDD87E><Wave>体験版クリア</Wave></COLOR>",
-      "de": "",
-      "fr": "",
-      "pt": "",
-      "es": "",
-      "ru": ""
+      "de": "<COLOR=7EEDBE,EDD87E><Wave>Demo abgeschlossen</Wave></COLOR>",
+      "fr": "<COLOR=7EEDBE,EDD87E><Wave>Démo terminée</Wave></COLOR>",
+      "pt": "<COLOR=7EEDBE,EDD87E><Wave>Demo concluída</Wave></COLOR>",
+      "es": "<COLOR=7EEDBE,EDD87E><Wave>Demo completada</Wave></COLOR>",
+      "ru": "<COLOR=7EEDBE,EDD87E><Wave>Демо пройдено</Wave></COLOR>"
     },
     {
       "id": 2,
@@ -23,11 +23,11 @@
       "zhHans": "衷心感谢各位<COLOR=7EEDBE>探险家</COLOR>，陪伴伐木少年迈出第一步。\n你们的<COLOR=FFD700,FFA500><Wave>Steam愿望单</Wave></COLOR>和<COLOR=7289DA>Discord反馈</COLOR>是开发团队最大的动力。\n现在就将游戏加入愿望单，在<COLOR=54D86A>正式版</COLOR>中继续你的冒险吧！",
       "zhHant": "衷心感謝各位<COLOR=7EEDBE>探險家</COLOR>，陪伴伐木少年邁出第一步。\n你們的<COLOR=FFD700,FFA500><Wave>Steam願望單</Wave></COLOR>和<COLOR=7289DA>Discord反饋</COLOR>是開發團隊最大的動力。\n現在就將遊戲加入願望單，在<COLOR=54D86A>正式版</COLOR>中繼續你的冒險吧！",
       "ja": "<COLOR=7EEDBE>冒険者の皆さん</COLOR>、ランバーボーイの初めての冒険に\nお付き合いいただき、本当にありがとうございます。\n<COLOR=FFD700,FFA500><Wave>Steamのウィッシュリスト登録</Wave></COLOR>や<COLOR=7289DA>Discordでのフィードバック</COLOR>が、\n開発チームの大きな励みになります。\n今すぐウィッシュリストに登録して、<COLOR=54D86A>製品版</COLOR>でも冒険の続きをお楽しみください！",
-      "de": "",
-      "fr": "",
-      "pt": "",
-      "es": "",
-      "ru": ""
+      "de": "Vielen Dank, <COLOR=7EEDBE>ihr Entdecker</COLOR>, dass ihr Lumber Boy auf seinem ersten Abenteuer begleitet habt.\nMit einem Eintrag auf eurer <COLOR=FFD700,FFA500><Wave>Steam-Wunschliste</Wave></COLOR> und eurem <COLOR=7289DA>Feedback auf Discord</COLOR> unterstützt ihr unser Entwicklerteam ungemein.\nSetzt das Spiel jetzt auf eure Wunschliste und führt das Abenteuer in der <COLOR=54D86A>Vollversion</COLOR> fort!",
+      "fr": "Merci du fond du cœur à vous, <COLOR=7EEDBE>explorateurs</COLOR>, d'avoir accompagné Lumber Boy dans sa toute première aventure.\nAjouter le jeu à votre <COLOR=FFD700,FFA500><Wave>liste de souhaits Steam</Wave></COLOR> et nous faire part de vos <COLOR=7289DA>retours sur Discord</COLOR> est d'un immense soutien pour notre équipe.\nAjoutez le jeu à votre liste de souhaits et poursuivez l'aventure dans la <COLOR=54D86A>version complète</COLOR> !",
+      "pt": "Agradecemos de coração a todos os <COLOR=7EEDBE>exploradores</COLOR> que acompanharam o Lumber Boy em sua primeira aventura.\nAdicionar o jogo à <COLOR=FFD700,FFA500><Wave>lista de desejos da Steam</Wave></COLOR> e enviar seu <COLOR=7289DA>feedback pelo Discord</COLOR> ajudam demais a nossa equipe.\nAdicione o jogo à sua lista de desejos e continue a aventura na <COLOR=54D86A>versão completa</COLOR>!",
+      "es": "Gracias de corazón, <COLOR=7EEDBE>exploradores</COLOR>, por acompañar a Lumber Boy en su primera aventura.\nAñadir el juego a vuestra <COLOR=FFD700,FFA500><Wave>lista de deseados de Steam</Wave></COLOR> y dejarnos vuestros <COLOR=7289DA>comentarios en Discord</COLOR> ayuda muchísimo al equipo de desarrollo.\n¡Añadid el juego a vuestra lista de deseados y continuad la aventura en la <COLOR=54D86A>versión completa</COLOR>!",
+      "ru": "Спасибо вам, <COLOR=7EEDBE>исследователи</COLOR>, что разделили с Lumber Boy его первое приключение.\nДобавление игры в <COLOR=FFD700,FFA500><Wave>желаемое Steam</Wave></COLOR> и ваши <COLOR=7289DA>отзывы в Discord</COLOR> невероятно помогают нашей команде.\nДобавьте игру в желаемое и продолжите приключение в <COLOR=54D86A>полной версии</COLOR>!"
     },
     {
       "id": 3,
@@ -37,11 +37,11 @@
       "zhHans": "衷心感谢各位<COLOR=7EEDBE>探险家</COLOR>，陪伴伐木少年迈出第一步。\n你们留下的<COLOR=7289DA>Discord反馈</COLOR>是开发团队最大的动力。\n我们将带着<COLOR=54D86A>正式版</COLOR>再次与大家相见，继续这场冒险！",
       "zhHant": "衷心感謝各位<COLOR=7EEDBE>探險家</COLOR>，陪伴伐木少年邁出第一步。\n你們留下的<COLOR=7289DA>Discord反饋</COLOR>是開發團隊最大的動力。\n我們將帶著<COLOR=54D86A>正式版</COLOR>再次與大家相見，繼續這場冒險！",
       "ja": "<COLOR=7EEDBE>冒険者の皆さん</COLOR>、ランバーボーイの初めての冒険に\nお付き合いいただき、本当にありがとうございます。\n<COLOR=7289DA>Discordでのフィードバック</COLOR>が、\n開発チームの大きな励みになります。\n<COLOR=54D86A>製品版</COLOR>で、冒険の続きをお届けします！",
-      "de": "",
-      "fr": "",
-      "pt": "",
-      "es": "",
-      "ru": ""
+      "de": "Vielen Dank, <COLOR=7EEDBE>ihr Entdecker</COLOR>, dass ihr Lumber Boy auf seinem ersten Abenteuer begleitet habt.\nEuer <COLOR=7289DA>Feedback auf Discord</COLOR> unterstützt unser Entwicklerteam ungemein.\nWir sehen uns zur Fortsetzung des Abenteuers in der <COLOR=54D86A>Vollversion</COLOR>!",
+      "fr": "Merci du fond du cœur à vous, <COLOR=7EEDBE>explorateurs</COLOR>, d'avoir accompagné Lumber Boy dans sa toute première aventure.\nVos <COLOR=7289DA>retours sur Discord</COLOR> sont d'un immense soutien pour notre équipe.\nRendez-vous dans la <COLOR=54D86A>version complète</COLOR> pour la suite de l'aventure !",
+      "pt": "Agradecemos de coração a todos os <COLOR=7EEDBE>exploradores</COLOR> que acompanharam o Lumber Boy em sua primeira aventura.\nSeu <COLOR=7289DA>feedback pelo Discord</COLOR> ajuda demais a nossa equipe.\nNos vemos na <COLOR=54D86A>versão completa</COLOR> para continuar essa aventura!",
+      "es": "Gracias de corazón, <COLOR=7EEDBE>exploradores</COLOR>, por acompañar a Lumber Boy en su primera aventura.\nVuestros <COLOR=7289DA>comentarios en Discord</COLOR> ayudan muchísimo al equipo de desarrollo.\n¡Nos vemos en la <COLOR=54D86A>versión completa</COLOR> para continuar la aventura!",
+      "ru": "Спасибо вам, <COLOR=7EEDBE>исследователи</COLOR>, что разделили с Lumber Boy его первое приключение.\nВаши <COLOR=7289DA>отзывы в Discord</COLOR> невероятно помогают нашей команде.\nДо встречи в <COLOR=54D86A>полной версии</COLOR>, где приключение продолжится!"
     }
   ]
 }
