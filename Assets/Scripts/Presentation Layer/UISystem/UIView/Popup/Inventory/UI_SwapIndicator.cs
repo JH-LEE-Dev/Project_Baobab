@@ -75,6 +75,8 @@ public class UI_SwapIndicator : MonoBehaviour
     private IndicatorState currentState = IndicatorState.Hidden;
     private Sequence currentSequence = null;
     private Vector2 baseAnchoredPosition = Vector2.zero;
+    private Vector2 initialMotionTargetPos = Vector2.zero;
+    private bool isInitialPosCached = false;
     private bool isInitialized = false;
 
     // 무할당(Zero GC)을 위한 OnComplete 대리자 캐싱
@@ -82,6 +84,32 @@ public class UI_SwapIndicator : MonoBehaviour
     private TweenCallback cachedOnDisappearComplete;
 
     private Coroutine sortingCoroutine = null;
+
+    private void CacheInitialMotionTargetPosition()
+    {
+        if (false == isInitialPosCached && null != motionTarget)
+        {
+            initialMotionTargetPos = motionTarget.anchoredPosition;
+            baseAnchoredPosition = initialMotionTargetPos;
+            isInitialPosCached = true;
+        }
+    }
+
+    private void ResetMotionTargetPosition()
+    {
+        if (null != motionTarget)
+        {
+            if (true == isInitialPosCached)
+            {
+                motionTarget.anchoredPosition = initialMotionTargetPos;
+                baseAnchoredPosition = initialMotionTargetPos;
+            }
+            else
+            {
+                CacheInitialMotionTargetPosition();
+            }
+        }
+    }
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -143,7 +171,10 @@ public class UI_SwapIndicator : MonoBehaviour
         ApplySorting();
 
         if (null != motionTarget)
-            baseAnchoredPosition = motionTarget.anchoredPosition;
+        {
+            CacheInitialMotionTargetPosition();
+            ResetMotionTargetPosition();
+        }
 
         isInitialized = true;
     }
@@ -175,6 +206,8 @@ public class UI_SwapIndicator : MonoBehaviour
         if (null == indicatorCanvas)
             return;
 
+        ExecuteSortingDirect();
+
         if (true == gameObject.activeInHierarchy)
         {
             if (null != sortingCoroutine)
@@ -182,10 +215,6 @@ public class UI_SwapIndicator : MonoBehaviour
                 StopCoroutine(sortingCoroutine);
             }
             sortingCoroutine = StartCoroutine(ApplySortingRoutine());
-        }
-        else
-        {
-            ExecuteSortingDirect();
         }
     }
 
@@ -220,13 +249,9 @@ public class UI_SwapIndicator : MonoBehaviour
         if (null == _canvas)
             return;
 
-        Canvas _rootCanvas = _canvas.rootCanvas;
-        if (null != _rootCanvas && (null != _rootCanvas.worldCamera || RenderMode.ScreenSpaceOverlay == _rootCanvas.renderMode))
-        {
-            _canvas.overrideSorting = true;
-            _canvas.sortingLayerName = _layerName;
-            _canvas.sortingOrder = _order;
-        }
+        _canvas.overrideSorting = true;
+        _canvas.sortingLayerName = _layerName;
+        _canvas.sortingOrder = _order;
     }
 
     public bool IsActiveAndShowing => true == gameObject.activeInHierarchy && (IndicatorState.Appearing == currentState || IndicatorState.Looping == currentState);
@@ -241,28 +266,12 @@ public class UI_SwapIndicator : MonoBehaviour
         if (null == motionTarget)
             return;
 
-        Vector2 _previousBase = baseAnchoredPosition;
-        Vector2 _currentOffset = motionTarget.anchoredPosition - _previousBase;
-
         transform.position = _worldPosition;
-        baseAnchoredPosition = motionTarget.anchoredPosition;
 
         if (IndicatorState.Looping != currentState)
         {
-            motionTarget.anchoredPosition = baseAnchoredPosition;
-            return;
+            ResetMotionTargetPosition();
         }
-
-        // 기준 위치가 실제로 움직였다면 루프를 다시 만든다. 스텝 트윈은 시퀀스를 만들던 시점의
-        // "절대" 앵커 좌표로 구워져 있어서, 기준만 바꾸고 두면 다음 스텝에서 옛 좌표로 되돌아가
-        // 그 자리에 눌러앉는다(예: 상자 슬롯이 늘어 그리드가 2행이 되며 같은 칸의 Y가 바뀔 때).
-        if (BASE_MOVE_SQR_EPSILON < (baseAnchoredPosition - _previousBase).sqrMagnitude)
-        {
-            StartBobbingLoop();
-            return;
-        }
-
-        motionTarget.anchoredPosition = baseAnchoredPosition + _currentOffset;
     }
 
     /// <summary>
@@ -289,12 +298,7 @@ public class UI_SwapIndicator : MonoBehaviour
 
         // 2. 대상 월드 좌표 적용 및 기준 앵커 좌표 동기화
         transform.position = _worldPosition;
-
-        if (null != motionTarget)
-        {
-            baseAnchoredPosition = motionTarget.anchoredPosition;
-            motionTarget.anchoredPosition = baseAnchoredPosition;
-        }
+        ResetMotionTargetPosition();
 
         // 3. 좌표와 초기 스케일/알파가 완전히 설정된 상태에서 활성화
         if (false == gameObject.activeInHierarchy)
@@ -333,7 +337,7 @@ public class UI_SwapIndicator : MonoBehaviour
             gameObject.SetActive(true);
         }
 
-        baseAnchoredPosition = motionTarget.anchoredPosition;
+        ResetMotionTargetPosition();
 
         currentState = IndicatorState.Appearing;
 
@@ -377,8 +381,8 @@ public class UI_SwapIndicator : MonoBehaviour
 
         KillCurrentAnimation();
 
+        ResetMotionTargetPosition();
         motionTarget.localScale = Vector3.one;
-        motionTarget.anchoredPosition = baseAnchoredPosition;
 
         currentSequence = DOTween.Sequence().SetLink(gameObject);
 
@@ -492,10 +496,11 @@ public class UI_SwapIndicator : MonoBehaviour
         currentState = IndicatorState.Hidden;
         KillCurrentAnimation();
 
+        ResetMotionTargetPosition();
+
         if (null != motionTarget)
         {
             motionTarget.localScale = Vector3.one;
-            motionTarget.anchoredPosition = baseAnchoredPosition;
         }
 
         if (null != canvasGroup)
@@ -516,10 +521,11 @@ public class UI_SwapIndicator : MonoBehaviour
         currentState = IndicatorState.Hidden;
         KillCurrentAnimation();
 
+        ResetMotionTargetPosition();
+
         if (null != motionTarget)
         {
             motionTarget.localScale = Vector3.one;
-            motionTarget.anchoredPosition = baseAnchoredPosition;
         }
 
         if (null != canvasGroup)
@@ -538,6 +544,7 @@ public class UI_SwapIndicator : MonoBehaviour
         }
 
         currentSequence = null;
+        ResetMotionTargetPosition();
     }
 
     // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
@@ -569,10 +576,11 @@ public class UI_SwapIndicator : MonoBehaviour
             canvasGroup.alpha = 0.0f;
         }
 
+        ResetMotionTargetPosition();
+
         if (null != motionTarget)
         {
             motionTarget.localScale = Vector3.one;
-            motionTarget.anchoredPosition = baseAnchoredPosition;
         }
     }
 
