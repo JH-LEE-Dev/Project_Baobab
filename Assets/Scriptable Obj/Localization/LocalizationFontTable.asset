@@ -24,15 +24,15 @@ MonoBehaviour:
   - language: 4
     fontAsset: {fileID: 11400000, guid: 19b4e33d5de41244ea1b9ef098e7b84e, type: 2}
   - language: 5
-    fontAsset: {fileID: 0}
+    fontAsset: {fileID: 11400000, guid: 37e25419c80146947b6a80fe87f309b3, type: 2}
   - language: 6
-    fontAsset: {fileID: 0}
+    fontAsset: {fileID: 11400000, guid: 37e25419c80146947b6a80fe87f309b3, type: 2}
   - language: 7
-    fontAsset: {fileID: 0}
+    fontAsset: {fileID: 11400000, guid: 37e25419c80146947b6a80fe87f309b3, type: 2}
   - language: 8
-    fontAsset: {fileID: 0}
+    fontAsset: {fileID: 11400000, guid: 37e25419c80146947b6a80fe87f309b3, type: 2}
   - language: 9
-    fontAsset: {fileID: 0}
+    fontAsset: {fileID: 11400000, guid: 37e25419c80146947b6a80fe87f309b3, type: 2}
   excludedFonts:
   - {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   trackRuntimeCreatedText: 1

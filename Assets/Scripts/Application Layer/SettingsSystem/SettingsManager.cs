@@ -75,9 +75,10 @@ public class SettingsManager : MonoBehaviour
     //   4) LocalizationManager가 읽는 로컬라이징 데이터 (OptionUI.json의 언어 이름 항목 포함)
     //   5) UI_Option.GetLanguageText의 분기
     //   6) UI_InitialSetupPopup의 언어 버튼 (버튼 이름 규칙은 그 파일의 languageButtonBindings 참고)
-    //   7) LocalizationFontTable의 해당 언어 폰트
-    //      (라틴 확장·키릴은 Galmuri11이 모두 갖고 있고 동적 아틀라스라, 비워두면 그대로 쓰인다.
-    //       글리프가 없는 문자 계열을 쓰는 언어일 때만 전용 폰트를 등록하면 된다)
+    //   7) LocalizationFontTable의 해당 언어 폰트 +
+    //      LocalizationFontCharacterSetGenerator의 Languages/베이킹 경로 세 배열
+    //      (폰트를 새로 쓰면 그 폰트의 문자셋을 만들고 구울 경로까지 같이 등록해야 한다.
+    //       기존 폰트를 공유한다면 그 항목의 열 목록에 한 줄 추가하면 된다)
     //   8) LanguageAutoDetect의 매핑 두 곳 (빠뜨리면 그 언어권 유저가 첫 실행에 영어로 시작한다)
     //   9) Tools/Localization/Generate Keys 실행 (LocKeys 갱신)
     //  10) Tools/Localization/Generate Character Sets and Bake Atlases 실행

@@ -15,14 +15,20 @@ using UnityEngine;
 /// "갈무리11 사용"이면서 숫자 전용 폰트 같은 예외를 건드리지 않는 가장 안전한 설정입니다.
 /// 반대로 어떤 언어에서 무조건 한 폰트로 통일하고 싶다면 그 폰트를 직접 지정하면 됩니다.
 ///
-/// 독일어·프랑스어·포르투갈어·스페인어·러시아어도 비워둡니다. 갈무리11은 라틴 확장(ä, ç, ã,
-/// ñ, œ …)과 키릴 문자를 모두 갖고 있고, Galmuri11_Optimum은 동적(Dynamic) 아틀라스라
-/// 구워두지 않은 글리프도 런타임에 원본 TTF에서 채워 넣습니다. 그래서 CJK와 달리
-/// 폰트를 갈아끼울 이유가 없습니다.
-/// (반대로 CJK 폰트는 정적(Static) 아틀라스라, 구워두지 않은 글자는 두부로 나옵니다.
-///  그래서 로컬라이징 텍스트에 새 글자가 생기면 한 자라도
-///  Tools/Localization/Generate Character Sets and Bake Atlases를 돌려야 합니다.
+/// 독일어·프랑스어·포르투갈어·스페인어·러시아어는 Lorem_Optimum 하나를 공유합니다.
+/// 갈무리11도 라틴 확장과 키릴을 갖고 있어 비워두는 선택지가 있었지만, 다섯 언어의
+/// 자형을 한곳에서 관리할 수 있도록 전용 폰트를 둡니다.
+///
+/// Lorem_Optimum은 정적(Static) 아틀라스이고 원본 TTF 참조도 비어 있어, 런타임에
+/// 글리프를 채우지 못합니다. 따라서 이 다섯 언어의 번역문에 새 글자가 생기면 한 자라도
+/// Tools/Localization/Generate Character Sets and Bake Atlases를 돌려야 합니다.
+/// (CJK 폰트도 같은 이유로 같은 제약을 받습니다.
 ///  Generate Keys는 문자셋 목록만 다시 쓰고 아틀라스는 굽지 않습니다)
+///
+/// Lorem에는 한글·CJK 글리프가 없습니다. 첫 실행 팝업은 모든 언어 이름을 한 화면에
+/// 띄우는데, 이때 화면 전체가 Lorem으로 교체되면서 "한국어/日本語/简体中文/繁體中文"
+/// 네 라벨만 글리프를 못 찾습니다. 그래서 Lorem_Optimum의 폴백에 FusionPixel_zh_hans를
+/// 걸어두었습니다. (이 네 라벨에 필요한 12자를 모두 갖고 있는 유일한 폰트입니다)
 /// </summary>
 [CreateAssetMenu(fileName = "LocalizationFontTable", menuName = "Localization/Font Table")]
 public class LocalizationFontTable : ScriptableObject

@@ -18,23 +18,38 @@ public static class LocalizationFontCharacterSetGenerator
     private static readonly Regex RichTextTagRegex = new Regex(@"<[^>]+>", RegexOptions.Compiled);
     private static readonly Regex CompositeFormatRegex = new Regex(@"\{\d+(?:[^{}]*)\}", RegexOptions.Compiled);
 
+    // 폰트 하나당 한 줄이다. 여러 언어가 한 폰트를 공유하면 열을 나란히 적어 합집합을 굽는다.
+    // (LocalizationFontTable에서 그 언어들이 어떤 폰트를 가리키는지와 반드시 맞춰야 한다)
     private static readonly LanguageDefinition[] Languages =
     {
         new LanguageDefinition(
             "JA",
             "FusionPixel_JA_Characters.txt",
-            entry => entry.ja,
-            "、。！？「」『』（）［］【】・ー〜…※"),
+            "、。！？「」『』（）［］【】・ー〜…※",
+            entry => entry.ja),
         new LanguageDefinition(
             "ZH_HANS",
             "FusionPixel_ZH_HANS_Characters.txt",
-            entry => entry.zhHans,
-            "，。！？：；（）【】《》、“”‘’…—·"),
+            "，。！？：；（）【】《》、“”‘’…—·",
+            entry => entry.zhHans),
         new LanguageDefinition(
             "ZH_HANT",
             "FusionPixel_ZH_HANT_Characters.txt",
-            entry => entry.zhHant,
-            "，。！？：；（）【】《》、「」『』“”‘’…—·")
+            "，。！？：；（）【】《》、「」『』“”‘’…—·",
+            entry => entry.zhHant),
+
+        // 독일어·프랑스어·포르투갈어·스페인어·러시아어는 Lorem 하나로 처리하므로 다섯 열을 합쳐 굽는다.
+        // 안전 문자는 스페인어의 여는 물음표·느낌표와 러시아어·독일어의 인용부호다. 번역문에
+        // 아직 안 나타났더라도 번역이 들어오는 순간 쓰이는데, 그때 굽기를 잊으면 그 글자만 깨진다.
+        new LanguageDefinition(
+            "LATIN_CYRILLIC",
+            "Lorem_Characters.txt",
+            "¿¡«»‹›„“”‘’–—…·",
+            entry => entry.de,
+            entry => entry.fr,
+            entry => entry.pt,
+            entry => entry.es,
+            entry => entry.ru)
     };
 
     [MenuItem("Tools/Localization/Generate Font Character Sets", false, 1)]
@@ -58,25 +73,30 @@ public static class LocalizationFontCharacterSetGenerator
 
     public static void BakeAllFontAtlases()
     {
+        // 세 배열은 같은 순서로 짝을 이룬다. 폰트를 늘릴 때 한 줄만 빠뜨리면 엉뚱한 TTF로
+        // 구워지므로, 위 Languages의 FileName과 여기 문자셋 경로가 맞는지 함께 확인할 것.
         string[] _fontAssetPaths = new string[]
         {
             "Assets/TextMesh Pro/Fonts/FusionPixel_JA.asset",
             "Assets/TextMesh Pro/Fonts/FusionPixel_zh_hans.asset",
-            "Assets/TextMesh Pro/Fonts/FusionPixel_zh_hant.asset"
+            "Assets/TextMesh Pro/Fonts/FusionPixel_zh_hant.asset",
+            "Assets/TextMesh Pro/Fonts/Lorem_Optimum.asset"
         };
 
         string[] _ttfPaths = new string[]
         {
             "Assets/TextMesh Pro/Fonts/fusion-pixel-12px-proportional-ja.ttf",
             "Assets/TextMesh Pro/Fonts/fusion-pixel-12px-proportional-zh_hans.ttf",
-            "Assets/TextMesh Pro/Fonts/fusion-pixel-12px-proportional-zh_hant.ttf"
+            "Assets/TextMesh Pro/Fonts/fusion-pixel-12px-proportional-zh_hant.ttf",
+            "Assets/TextMesh Pro/Fonts/Lorem.ttf"
         };
 
         string[] _charSetPaths = new string[]
         {
             Path.Combine(ExportDirectory, "FusionPixel_JA_Characters.txt").Replace('\\', '/'),
             Path.Combine(ExportDirectory, "FusionPixel_ZH_HANS_Characters.txt").Replace('\\', '/'),
-            Path.Combine(ExportDirectory, "FusionPixel_ZH_HANT_Characters.txt").Replace('\\', '/')
+            Path.Combine(ExportDirectory, "FusionPixel_ZH_HANT_Characters.txt").Replace('\\', '/'),
+            Path.Combine(ExportDirectory, "Lorem_Characters.txt").Replace('\\', '/')
         };
 
         for (int i = 0; i < _fontAssetPaths.Length; i++)
@@ -222,21 +242,29 @@ public static class LocalizationFontCharacterSetGenerator
                 for (int entryIndex = 0; entryIndex < entries.Length; entryIndex++)
                 {
                     LocalizationEntry entry = entries[entryIndex];
-                    string localizedText = language.SelectText(entry);
-                    string runtimeText;
 
-                    if (!string.IsNullOrWhiteSpace(localizedText))
+                    // 이 폰트를 쓰는 언어를 모두 돌면서, 실제로 화면에 나갈 문자열을 모은다.
+                    // 번역이 비어 있으면 런타임이 영어로 폴백하므로(LocalizationManager.ResolveText)
+                    // 여기서도 똑같이 영어를 집어넣어야 한다. 안 그러면 아직 번역하지 않은 항목이
+                    // 그 언어에서 통째로 두부가 된다.
+                    for (int columnIndex = 0; columnIndex < language.SelectTexts.Length; columnIndex++)
                     {
-                        runtimeText = localizedText;
-                        localizedEntryCount++;
-                    }
-                    else
-                    {
-                        runtimeText = entry.en;
-                        if (!string.IsNullOrWhiteSpace(runtimeText)) englishFallbackEntryCount++;
-                    }
+                        string localizedText = language.SelectTexts[columnIndex](entry);
+                        string runtimeText;
 
-                    AddVisibleCharacters(runtimeText, codePoints);
+                        if (!string.IsNullOrWhiteSpace(localizedText))
+                        {
+                            runtimeText = localizedText;
+                            localizedEntryCount++;
+                        }
+                        else
+                        {
+                            runtimeText = entry.en;
+                            if (!string.IsNullOrWhiteSpace(runtimeText)) englishFallbackEntryCount++;
+                        }
+
+                        AddVisibleCharacters(runtimeText, codePoints);
+                    }
                 }
             }
 
@@ -324,19 +352,21 @@ public static class LocalizationFontCharacterSetGenerator
     {
         public readonly string Label;
         public readonly string FileName;
-        public readonly Func<LocalizationEntry, string> SelectText;
         public readonly string SafetyCharacters;
+
+        /// <summary>이 폰트가 담당하는 언어 열들입니다. 여러 언어가 한 폰트를 쓰면 둘 이상이 됩니다.</summary>
+        public readonly Func<LocalizationEntry, string>[] SelectTexts;
 
         public LanguageDefinition(
             string _label,
             string _fileName,
-            Func<LocalizationEntry, string> _selectText,
-            string _safetyCharacters)
+            string _safetyCharacters,
+            params Func<LocalizationEntry, string>[] _selectTexts)
         {
             Label = _label;
             FileName = _fileName;
-            SelectText = _selectText;
             SafetyCharacters = _safetyCharacters;
+            SelectTexts = _selectTexts;
         }
     }
 }
