@@ -122,6 +122,8 @@ public class LogItem : Item, IStaticCollidable
     private Color originalColor;
     private Color originalOutlineColor;
     private Color originalShadowColor;
+    // Shadow 오브젝트의 프리팹 기본 활성 상태. LogItem은 항상 켜져 있고, LogItem_ToCut은 꺼져 있다.
+    private bool originalShadowActive = true;
     // CacheRenderers()가 렌더러와 원본 색을 확보했는지. 프리팹에 spriteRenderer가 바인딩되어 있지 않아
     // 런타임에 찾아야 하므로, 중복 탐색과 원본 색 재캡처를 함께 막는다.
     private bool bRenderersCached = false;
@@ -262,7 +264,12 @@ public class LogItem : Item, IStaticCollidable
         if (shadow != null && shadowTransform == null)
         {
             shadowTransform = shadow.transform;
-            shadowRenderer = shadow.GetComponentInChildren<SpriteRenderer>();
+            // includeInactive가 필요하다. 그림자를 비활성으로 두고 비행 중에만 켜는 프리팹
+            // (LogItem_ToCut - 벨트/재단기 위에서는 그림자를 쓰지 않는다)에서는 이 시점에 Shadow가
+            // 꺼져 있어서, 빼면 shadowRenderer가 영영 null로 남는다.
+            shadowRenderer = shadow.GetComponentInChildren<SpriteRenderer>(true);
+            // 프리팹이 정한 기본 노출 여부. 비행 때 켠 그림자를 풀 반납 시 이 값으로 되돌린다.
+            originalShadowActive = shadow.activeSelf;
         }
 
         originalColor = spriteRenderer.color;
@@ -547,6 +554,8 @@ public class LogItem : Item, IStaticCollidable
         rotationSpeed = 0f;
         totalRotation = _totalRotation;
         elapsed = 0f;
+        // 포물선 비행 중에만 그림자를 쓰는 프리팹(LogItem_ToCut)을 위해 여기서 켠다.
+        SetShadowVisible(true);
         state = ItemMoveState.Launching;
         LogItemActivatedEvent?.Invoke(this);
         transform.localScale = Vector3.zero;
@@ -587,6 +596,8 @@ public class LogItem : Item, IStaticCollidable
         trajectoryJitter = _jitter;
         rotationSpeed = _rotationSpeed;
         elapsed = 0f;
+        // 포물선 비행 중에만 그림자를 쓰는 프리팹(LogItem_ToCut)을 위해 여기서 켠다.
+        SetShadowVisible(true);
         state = ItemMoveState.Transferring;
         LogItemActivatedEvent?.Invoke(this);
         transform.localScale = Vector3.zero;
@@ -606,6 +617,8 @@ public class LogItem : Item, IStaticCollidable
         trajectoryJitter = _jitter;
         rotationSpeed = _rotationSpeed;
         elapsed = 0f;
+        // 포물선 비행 중에만 그림자를 쓰는 프리팹(LogItem_ToCut)을 위해 여기서 켠다.
+        SetShadowVisible(true);
         state = ItemMoveState.ContainerTransferring;
         LogItemActivatedEvent?.Invoke(this);
         transform.localScale = Vector3.zero;
@@ -626,6 +639,8 @@ public class LogItem : Item, IStaticCollidable
         trajectoryJitter = _jitter;
         rotationSpeed = _rotationSpeed;
         elapsed = 0f;
+        // 포물선 비행 중에만 그림자를 쓰는 프리팹(LogItem_ToCut)을 위해 여기서 켠다.
+        SetShadowVisible(true);
         state = ItemMoveState.DynamicTransferring;
         LogItemActivatedEvent?.Invoke(this);
         transform.localScale = Vector3.zero;
@@ -719,6 +734,15 @@ public class LogItem : Item, IStaticCollidable
         if (null != shadowRenderer)
         {
             shadowRenderer.color = originalShadowColor; // FadeAndVanish 연출로 줄어든 알파 복구
+        }
+
+        // 비행 연출로 켰던 그림자를 프리팹 기본값으로 되돌린다. 이게 없으면 LogContainer로 날아갔던
+        // 인스턴스가 풀에서 재사용될 때 벨트 위에서도 그림자를 달고 나온다.
+        // bRenderersCached 가드: 아직 CacheRenderers()가 성공하지 못했다면 originalShadowActive는
+        // 필드 초기값(true)일 뿐 프리팹 기본값이 아니므로, 그 값으로 덮어써서는 안 된다.
+        if (bRenderersCached)
+        {
+            SetShadowVisible(originalShadowActive);
         }
 
         if (null != spriteRenderer)
@@ -1545,6 +1569,18 @@ public class LogItem : Item, IStaticCollidable
     public void SetHeight(float _height)
     {
         customSortable.SetHeight(_height);
+    }
+
+    /// <summary>
+    /// 그림자 노출을 켜고 끈다. 그림자를 비활성으로 두는 프리팹(LogItem_ToCut)이 포물선 비행 동안에만
+    /// 그림자를 쓰기 위한 것으로, 각 Launch에서 켜고 ResetItem()이 프리팹 기본값으로 되돌린다.
+    /// 그림자가 항상 켜져 있는 LogItem 프리팹에서는 사실상 아무 일도 하지 않는다.
+    /// </summary>
+    public void SetShadowVisible(bool _visible)
+    {
+        if (shadow == null || shadow.activeSelf == _visible) return;
+
+        shadow.SetActive(_visible);
     }
 
     public void SetFlyingItemSortingLayer()
