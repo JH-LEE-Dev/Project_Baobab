@@ -1673,7 +1673,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         switch (_type)
         {
             case SkillCommandType.AxeDurability:
-                return 40f;
+                return 32f;
             case SkillCommandType.InventoryExpansion:
                 return 2f;
             case SkillCommandType.SawmillLogStorageExpansion:
