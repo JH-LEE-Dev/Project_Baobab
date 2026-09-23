@@ -15,6 +15,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     [Header("Character Stat")]
     public float pickupRangeMultiplier = 1f;
+    private PercentAccumulator pickupRangeAccum;
 
     [Header("Movement")]
     public float originalSpeed = 1f;
@@ -34,7 +35,9 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     }
     public float baseSpeed { get; private set; }
     public float speedMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator speedAccum;
     public float sourceOfSpeedAmount = 0f;
+    private PercentAccumulator sourceOfSpeedAmountAccum;
 
     [Header("Stamina")]
     public float maxStamina = 100f;
@@ -52,19 +55,24 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public bool bCanHunting = false;
     public float baseWeaponChangeCoolTime { get; private set; }
     public float switchSpeedMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator switchSpeedAccum;
 
     [Header("Axe Settings")]
     public float axeDamage = 1f;
     public float speedDecreaseWhileAction = 0.5f;
+    private PercentAccumulator speedDecreaseWhileActionAccum;
     public float axeDurability = 30f;
     public float axeDurabilityDecAmount = 1f;
     public float axeAttackCoolTime = 1.2f;
     public float axeAttackRangeMultiplier = 1f;
+    private PercentAccumulator axeAttackRangeAccum;
     public float axeDurabilityDecIgnoreChance = 0f;
     public float baseAxeDamage { get; private set; }
     public float axeDamageMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator axeDamageAccum;
     public float baseAxeAttackCoolTime { get; private set; }
     public float axeAttackSpeedMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator axeAttackSpeedAccum;
 
     [Header("Axe - Shockwave")]
     public float shockWaveChance = 0f;
@@ -74,8 +82,10 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public float shockWaveCreateDelay = 0f;
     public float baseShockWaveDamage { get; private set; }
     public float shockWaveDamageMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator shockWaveDamageAccum;
     public float baseShockWaveSpeed { get; private set; }
     public float shockWaveSpeedMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator shockWaveSpeedAccum;
     public bool bShockWaveCritical = false;
     public bool bShockWaveEnforcement = false;
     public bool bShockWaveMastery = false;
@@ -93,14 +103,18 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public bool bBoomerangOverheatBoost = false; // "화염 부메랑" 특성 - 과열 상태에서 부메랑 강화 적용 여부
     public float baseBoomerangDamage { get; private set; }
     public float boomerangDamageMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator boomerangDamageAccum;
     public float baseBoomerangHitRadius { get; private set; }
     public float boomerangRangeMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator boomerangRangeAccum;
     public float baseBoomerangMajorAxisRatio { get; private set; }
     public float boomerangDistanceMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator boomerangDistanceAccum;
     public float baseBoomerangCooldown { get; private set; }
     public float boomerangCooldownReductionAlpha = 0f;
     public float baseBoomerangDamageInterval { get; private set; }
     public float boomerangAttackSpeedMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator boomerangAttackSpeedAccum;
 
     [Header("Axe - Drone")]
     public int droneCount = 0; // "드론" 스킬 레벨 = 던전 입장 시 캐릭터를 따라다니는 드론 개수 (0이면 미해금 상태로 소환되지 않음)
@@ -110,16 +124,21 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public float droneDamageInterval = 1f; // "공격 속도"가 반영되는 판정 주기
     public float baseDroneDamage { get; private set; }
     public float droneDamageMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator droneDamageAccum;
     public float baseDroneAttackRange { get; private set; }
     public float droneRangeMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator droneRangeAccum;
     public float baseDroneActiveDuration { get; private set; }
     public float droneDurationMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator droneDurationAccum;
     public float baseDroneDamageInterval { get; private set; }
     public float droneAttackSpeedMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator droneAttackSpeedAccum;
     public int droneChainCount = 0; // "연쇄공격" - 드론의 공격이 주변 나무로 전이되는 횟수 (0이면 전이 없음)
     public float droneChainRange = 1.5f; // "연쇄공격 범위" - 전이 대상을 찾는 반경
     public float baseDroneChainRange { get; private set; }
     public float droneChainRangeMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator droneChainRangeAccum;
     public bool bDroneOverheatBoost = false; // "드론 과부하" 특성 - 과열 상태에서 드론 강화 적용 여부
 
     [Header("Overheat")]
@@ -142,20 +161,26 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public float gunPenetrationChance = 0f;
     public float baseRifleDamage { get; private set; }
     public float rifleDamageMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator rifleDamageAccum;
     public float baseShotDelay { get; private set; }
     public float rifleAttackSpeedMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator rifleAttackSpeedAccum;
     public float baseReloadDuration { get; private set; }
     public float reloadSpeedMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator reloadSpeedAccum;
 
     [Header("Rifle - Ricochet")]
     public int ricochetCnt = 0;
     public float ricochetAngle = 90f;
     public float ricochetDist = 0.5f;
     public float ricochetDamage = 1f;
+    private ValueAccumulator ricochetDamageAccum;
 
     [Header("Attack")]
     public float weakPointDamageMul = 0f;
+    private ValueAccumulator weakPointDamageAccum;
     public float helloDamageMul = 0f;
+    private ValueAccumulator helloDamageAccum;
     public bool bMultiAttack = false;
     public float finalAttackHealthPercent = 0f;
     public float attackRythmSpeedMul = 0f;
@@ -163,7 +188,9 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     [Header("Critical")]
     public float criticalChance = 0f;
+    private PercentAccumulator criticalChanceAccum;
     public float ciriticalDamageMul = 2f;
+    private PercentAccumulator ciriticalDamageMulAccum;
 
     // 인터페이스 구현 프로퍼티들
     float IStatComponent.speed => speed;
@@ -223,7 +250,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreaseAxeDamage(float _amount)
     {
-        axeDamageMultiplier += (_amount / 100.0f);
+        axeDamageMultiplier = axeDamageAccum.Add(axeDamageMultiplier, _amount);
         axeDamage = baseAxeDamage * axeDamageMultiplier;
     }
 
@@ -235,13 +262,13 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreaseSwitchSpeed(float _amount)
     {
-        switchSpeedMultiplier += (_amount / 100.0f);
+        switchSpeedMultiplier = switchSpeedAccum.Add(switchSpeedMultiplier, _amount);
         weaponChangeCoolTime = baseWeaponChangeCoolTime / switchSpeedMultiplier;
     }
 
     public void IncreaseGunDamage(float _amount)
     {
-        rifleDamageMultiplier += (_amount / 100.0f);
+        rifleDamageMultiplier = rifleDamageAccum.Add(rifleDamageMultiplier, _amount);
         rifleDamage = baseRifleDamage * rifleDamageMultiplier;
     }
 
@@ -288,7 +315,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreaseSpeedWhileAction(float _amount)
     {
-        speedDecreaseWhileAction += (_amount / 100.0f);
+        speedDecreaseWhileAction = speedDecreaseWhileActionAccum.Add(speedDecreaseWhileAction, _amount);
     }
 
     public void IncreaseShockWaveChance(float _amount)
@@ -298,19 +325,19 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreaseShockWaveDamage(float _amount)
     {
-        shockWaveDamageMultiplier += (_amount / 100.0f);
+        shockWaveDamageMultiplier = shockWaveDamageAccum.Add(shockWaveDamageMultiplier, _amount);
         shockWaveDamage = baseShockWaveDamage * shockWaveDamageMultiplier;
     }
 
     public void IncreaseShockWaveSpeed(float _amount)
     {
-        shockWaveSpeedMultiplier += (_amount / 100.0f);
+        shockWaveSpeedMultiplier = shockWaveSpeedAccum.Add(shockWaveSpeedMultiplier, _amount);
         shockWaveSpeed = baseShockWaveSpeed * shockWaveSpeedMultiplier;
     }
 
     public void IncreaseAxeRangeMultiplier(float _amount)
     {
-        axeAttackRangeMultiplier += (_amount / 100.0f);
+        axeAttackRangeMultiplier = axeAttackRangeAccum.Add(axeAttackRangeMultiplier, _amount);
     }
 
     public void IncreaseAxeDurability(float _amount)
@@ -325,7 +352,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreasePickupRange(float _amount)
     {
-        pickupRangeMultiplier += (_amount / 100.0f);
+        pickupRangeMultiplier = pickupRangeAccum.Add(pickupRangeMultiplier, _amount);
     }
 
     public void IncreaseRicochetRange(float _amount)
@@ -336,41 +363,41 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreaseRicochetDamage(float _amount)
     {
-        ricochetDamage += _amount;
+        ricochetDamage = ricochetDamageAccum.Add(ricochetDamage, _amount);
     }
 
     public void IncreaseReloadSpeed(float _amount)
     {
-        reloadSpeedMultiplier += (_amount / 100.0f);
+        reloadSpeedMultiplier = reloadSpeedAccum.Add(reloadSpeedMultiplier, _amount);
         reloadDuration = baseReloadDuration / reloadSpeedMultiplier;
     }
 
     public void IncreaseRifleAttackSpeed(float _amount)
     {
-        rifleAttackSpeedMultiplier += (_amount / 100.0f);
+        rifleAttackSpeedMultiplier = rifleAttackSpeedAccum.Add(rifleAttackSpeedMultiplier, _amount);
         shotDelay = baseShotDelay / rifleAttackSpeedMultiplier;
     }
 
     public void IncreaseMovementSpeed(float _amount)
     {
-        speedMultiplier += (_amount / 100.0f);
+        speedMultiplier = speedAccum.Add(speedMultiplier, _amount);
         originalSpeed = baseSpeed * speedMultiplier;
     }
 
     public void IncreaseAxeAttackSpeed(float _amount)
     {
-        axeAttackSpeedMultiplier += (_amount / 100.0f);
+        axeAttackSpeedMultiplier = axeAttackSpeedAccum.Add(axeAttackSpeedMultiplier, _amount);
         axeAttackCoolTime = baseAxeAttackCoolTime / axeAttackSpeedMultiplier;
     }
 
     public void IncreaseWeakPointDamageMul(float _amount)
     {
-        weakPointDamageMul += _amount;
+        weakPointDamageMul = weakPointDamageAccum.Add(weakPointDamageMul, _amount);
     }
 
     public void IncreaseHelloDamage(float _amount)
     {
-        helloDamageMul += _amount;
+        helloDamageMul = helloDamageAccum.Add(helloDamageMul, _amount);
     }
 
     public void SetMultiAttack(bool _boolean)
@@ -395,12 +422,12 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreaseCriticalChance(float _amount)
     {
-        criticalChance += (_amount / 100.0f);
+        criticalChance = criticalChanceAccum.Add(criticalChance, _amount);
     }
 
     public void IncreaseCriticalDamage(float _amount)
     {
-        ciriticalDamageMul += (_amount / 100.0f);
+        ciriticalDamageMul = ciriticalDamageMulAccum.Add(ciriticalDamageMul, _amount);
     }
 
     public void ActivateShockWaveCritical(bool _boolean)
@@ -465,7 +492,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreaseSourceOfSpeedAmount(float _amount)
     {
-        sourceOfSpeedAmount += (_amount / 100.0f);
+        sourceOfSpeedAmount = sourceOfSpeedAmountAccum.Add(sourceOfSpeedAmount, _amount);
     }
 
     private float sourceOfSpeedTimer = 0f;
@@ -519,13 +546,14 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     // 별길 걸음 - 별 표식 나무 벌목 시 일정 시간 이동속도 증가 (SourceOfSpeed와 별개의 타이머로 관리)
     public float starPathSpeedBoostAmount = 0f;
+    private PercentAccumulator starPathSpeedBoostAmountAccum;
     private float starPathSpeedTimer = 0f;
     private float currentStarPathSpeedBonus = 0f;
     private Coroutine starPathSpeedCoroutine;
 
     public void IncreaseStarPathSpeedBoost(float _amount)
     {
-        starPathSpeedBoostAmount += (_amount / 100.0f);
+        starPathSpeedBoostAmount = starPathSpeedBoostAmountAccum.Add(starPathSpeedBoostAmount, _amount);
     }
 
     public void ActivateStarPathSpeedBoost()
@@ -569,19 +597,19 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreaseBoomerangDamage(float _amount)
     {
-        boomerangDamageMultiplier += (_amount / 100.0f);
+        boomerangDamageMultiplier = boomerangDamageAccum.Add(boomerangDamageMultiplier, _amount);
         boomerangDamage = baseBoomerangDamage * boomerangDamageMultiplier;
     }
 
     public void IncreaseBoomerangRange(float _amount)
     {
-        boomerangRangeMultiplier += (_amount / 100.0f);
+        boomerangRangeMultiplier = boomerangRangeAccum.Add(boomerangRangeMultiplier, _amount);
         boomerangHitRadius = baseBoomerangHitRadius * boomerangRangeMultiplier;
     }
 
     public void IncreaseBoomerangDistance(float _amount)
     {
-        boomerangDistanceMultiplier += (_amount / 100.0f);
+        boomerangDistanceMultiplier = boomerangDistanceAccum.Add(boomerangDistanceMultiplier, _amount);
         boomerangMajorAxisRatio = baseBoomerangMajorAxisRatio * boomerangDistanceMultiplier;
     }
 
@@ -593,7 +621,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreaseBoomerangAttackSpeed(float _amount)
     {
-        boomerangAttackSpeedMultiplier += (_amount / 100.0f);
+        boomerangAttackSpeedMultiplier = boomerangAttackSpeedAccum.Add(boomerangAttackSpeedMultiplier, _amount);
         boomerangDamageInterval = baseBoomerangDamageInterval / boomerangAttackSpeedMultiplier;
     }
 
@@ -614,25 +642,25 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreaseDroneDamage(float _amount)
     {
-        droneDamageMultiplier += (_amount / 100.0f);
+        droneDamageMultiplier = droneDamageAccum.Add(droneDamageMultiplier, _amount);
         droneDamage = baseDroneDamage * droneDamageMultiplier;
     }
 
     public void IncreaseDroneRange(float _amount)
     {
-        droneRangeMultiplier += (_amount / 100.0f);
+        droneRangeMultiplier = droneRangeAccum.Add(droneRangeMultiplier, _amount);
         droneAttackRange = baseDroneAttackRange * droneRangeMultiplier;
     }
 
     public void IncreaseDroneDuration(float _amount)
     {
-        droneDurationMultiplier += (_amount / 100.0f);
+        droneDurationMultiplier = droneDurationAccum.Add(droneDurationMultiplier, _amount);
         droneActiveDuration = baseDroneActiveDuration * droneDurationMultiplier;
     }
 
     public void IncreaseDroneAttackSpeed(float _amount)
     {
-        droneAttackSpeedMultiplier += (_amount / 100.0f);
+        droneAttackSpeedMultiplier = droneAttackSpeedAccum.Add(droneAttackSpeedMultiplier, _amount);
         droneDamageInterval = baseDroneDamageInterval / droneAttackSpeedMultiplier;
     }
 
@@ -643,7 +671,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreaseDroneChainRange(float _amount)
     {
-        droneChainRangeMultiplier += (_amount / 100.0f);
+        droneChainRangeMultiplier = droneChainRangeAccum.Add(droneChainRangeMultiplier, _amount);
         droneChainRange = baseDroneChainRange * droneChainRangeMultiplier;
     }
 

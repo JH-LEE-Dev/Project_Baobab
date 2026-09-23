@@ -16,9 +16,11 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
     private readonly int startHash = Animator.StringToHash("bStart");
 
     private float logValueMultiplier = 1.0f;
+    private PercentAccumulator logValueAccum;
 
     private CustomSortable customSortable;
     private float topgradeAssessmentChance = 0f;
+    private PercentAccumulator topgradeAssessmentAccum;
     private MapType mapType;
 
     // LogCutter.GetSoundVolume()과 동일한 규칙: 마을이 아니면(=던전에 있는 동안 배경에서 계속
@@ -101,12 +103,12 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
     public void IncreaseLogValueMultiplier(float _amount)
     {
         // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)
-        logValueMultiplier += (_amount / 100.0f);
+        logValueMultiplier = logValueAccum.Add(logValueMultiplier, _amount);
     }
 
     public void IncreaseTopgradeAssessmentChance(float _amount)
     {
         // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)
-        topgradeAssessmentChance += (_amount / 100.0f);
+        topgradeAssessmentChance = topgradeAssessmentAccum.Add(topgradeAssessmentChance, _amount);
     }
 }

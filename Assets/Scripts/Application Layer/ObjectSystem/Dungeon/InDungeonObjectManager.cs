@@ -4,6 +4,23 @@ using System.Collections.Generic;
 using System.Collections;
 using System;
 
+/// <summary>
+/// 이번 원정이 어떻게 끝나는 중인지. 원정을 끝내는 진입점은 사망(MarkRunEndedByDeath)과
+/// 귀환 확정(HandleGameEnd) 둘뿐이고, 하나가 선점하면 다른 쪽과 그 뒤에 따라오는 트리거
+/// (차량 상호작용, 경고창 답, 지연된 탑승)는 전부 거부된다.
+///
+/// 예전엔 이 둘이 서로를 몰라 각자 플래그(bDead / bRide / bRetryGame …)만 봤다. 그래서 사망 직후
+/// 상호작용 키로 띄운 귀환 경고창이 결과창 뒤에 그대로 남았다가, 재도전 연출 도중 "예"로 닫히면
+/// 이미 끝난 원정의 귀환 탑승(HandleGameEnd → RideOffroad)이 새 원정 위에서 실행되어 캐릭터가
+/// 비활성화되고, 0.7초 뒤 ActivateCharacterSignal이 꺼진 캐릭터에 도착했다.
+/// </summary>
+public enum ERunEndState
+{
+    None,
+    EndingByDeath,
+    EndingByReturn,
+}
+
 public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInDungeonObjManagerCH, IPathfindTreeProvider, ISporeShieldStatProvider, ILootDataProvider
 {
     // // 이벤트
@@ -261,12 +278,16 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private InDungeonVFXManager inDungeonVFXManager;
 
     private float growthSpeedMul = 0f;
+    private PercentAccumulator growthSpeedAccum;
     public float GrowthSpeedMul => growthSpeedMul;
 
     // 포자막(Shield) 관련 스킬 스탯 - EHealthComponent가 ISporeShieldStatProvider로 읽어감
     private float shieldDamageMultiplier = 1f;   // 포자 절단
+    private ValueAccumulator shieldDamageAccum;
     private float shieldPenetrationPercent = 0f; // 포자 관통력
+    private PercentAccumulator shieldPenetrationAccum;
     private float shieldRegenReductionMul = 0f;  // 포자 회복 억제
+    private PercentAccumulator shieldRegenReductionAccum;
 
     public float ShieldDamageMultiplier => shieldDamageMultiplier;
     public float ShieldPenetrationPercent => shieldPenetrationPercent;
@@ -279,8 +300,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private bool bShieldExplosionUnlocked = false;
     private float shieldExplosionDamageMultiplier = 1f;
+    private PercentAccumulator shieldExplosionDamageAccum;
     private float shieldExplosionRangeMultiplier = 1f;
+    private PercentAccumulator shieldExplosionRangeAccum;
     private float shieldExplosionResearchChance = 0f;
+    private PercentAccumulator shieldExplosionResearchAccum;
 
     // 포자막 폭발 VFX - top/bottom 주변에서 인터벌을 두고 연쇄적으로 재생
     private const int SporeExplosionVfxMinCount = 4;
@@ -310,9 +334,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private bool bConstellationManifestUnlocked = false;
     private float starMarkDamageMultiplier = 1f;          // 별표식 베기
+    private ValueAccumulator starMarkDamageAccum;
     private float constellationDamageMultiplier = 1f;     // 별자리 데미지
+    private PercentAccumulator constellationDamageAccum;
     private int constellationHitCount = 1;                // 별자리 잔상
     private float manifestationBrandBonusMultiplier = 0f; // 발현 낙인
+    private ValueAccumulator manifestationBrandBonusAccum;
 
     // 그룹별 재진입 방지 가드 - groupStarPositions[groupId]와 동일한 List<Vector3> 참조를 키로 쓴다.
     // 광선 자신의 데미지가 같은 그룹의 다른 별 표식 나무를 맞혀 재귀적으로 재트리거하는 것만 막고,
@@ -350,6 +377,19 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // NPCPauseRequestedEvent / FlyingItemPauseRequestedEvent와 완전히 같은 생애주기를 따른다.
     // (GameEnd에서 세우고, 경고창을 취소한 경우에만 AbortGameEnd에서 되돌린다)
     private bool bStarGazeSuspendedByGameEnd = false;
+
+    /// <summary>이번 원정의 종료 상태. 진입점/거부 규칙은 ERunEndState 주석 참조. ResetRunEnd()로 되돌린다.</summary>
+    public ERunEndState RunEndState { get; private set; } = ERunEndState.None;
+
+    // GameEnd()가 경고창을 띄우며 걸어둔 PauseInteractKey(+1)가 아직 답을 못 받은 상태인지.
+    // 사망으로 원정이 먼저 끝나면 그 답은 오지 않으므로(결과창이 경고창을 결과 신호 없이 닫는다)
+    // MarkRunEndedByDeath()가 대신 상쇄한다. PauseInteractKey는 카운터라 짝이 안 맞으면
+    // 상호작용 키가 다음 세션까지 죽는다.
+    private bool bWarningPending = false;
+
+    // HandleGameEnd()의 "아이템 떨구기 → 탑승" 지연 타이머. 이 매니저는 씬을 넘어 살아남으므로
+    // (GameInstaller 소속) 원정이 리셋될 때 반드시 같이 멈춰야 새 원정에서 뒤늦게 탑승이 터지지 않는다.
+    private Coroutine gameEndRoutine;
 
     // // 퍼블릭 초기화 및 제어 메서드
 
@@ -697,6 +737,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 이번 원정의 귀환 절차는 여기서 끝난다. 다음 던전은 다시 별똥별이 떨어져야 하므로
         // 플래그를 반드시 되돌린다. (starGazeCoroutine 자체는 매니저 생애주기 동안 계속 돈다)
         bStarGazeSuspendedByGameEnd = false;
+
+        // 원정 종료 상태도 같은 지점에서 끝난다(재도전은 카메라 상승 완료, 귀환은 마을 셋업).
+        ResetRunEnd();
 
         if (offroadVehicle != null)
         {
@@ -1802,6 +1845,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void GameEnd()
     {
+        // 원정이 이미 끝나는 중이면(사망 / 귀환 확정) 차량 상호작용은 무시한다.
+        // 사망은 0.5초 뒤에야 신호로 도착하므로(Character.StaminaIsEmptyRoutine → CharacterStaminaIsEmptySignal)
+        // 그 사이는 bDead로 직접 막는다. 예전엔 둘 다 없어서 시체 옆 차량에 상호작용 키가 먹혔다.
+        if (RunEndState != ERunEndState.None) return;
+        if (character != null && character.bDead == true) return;
+
         if (CheckWarningUIActivate() == false)
         {
             NPCPauseRequestedEvent?.Invoke(true);
@@ -1822,12 +1871,77 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         character.PauseCharacter(true);
         inputManager.PauseMove(true);
         inputManager.PauseInteractKey(true);
+        bWarningPending = true;
 
         ActivateWarningUIEvent?.Invoke();
     }
 
+    /// <summary>
+    /// 사망으로 원정이 끝났음을 기록한다(InDungeonSystem이 CharacterStaminaIsEmptySignal로 호출).
+    /// 이후의 차량 상호작용 / 경고창 답 / 귀환 확정은 전부 거부된다.
+    /// </summary>
+    public void MarkRunEndedByDeath()
+    {
+        // 귀환이 이미 확정된 뒤의 사망: 원정 종료는 귀환 쪽이 선점했으므로 상태는 그대로 두되,
+        // Character.StaminaIsEmpty가 걸어둔 상호작용 잠금(+1)은 HandleGameEnd의 잠금과 중복이라 여기서 상쇄한다
+        // (다음 원정 진입은 원정당 한 번의 잠금만 풀어준다). 지금은 HandleGameEnd/GameEnd()가
+        // SetStaminaDecrease(false)를 걸고 모든 피로도 감소/피해 경로가 그 값을 보므로 도달하지 않지만,
+        // 그 전제가 깨져도 카운터가 어긋나지 않도록 막아 둔다.
+        if (RunEndState == ERunEndState.EndingByReturn)
+        {
+            inputManager.PauseInteractKey(false);
+            return;
+        }
+
+        if (RunEndState != ERunEndState.None) return;
+
+        RunEndState = ERunEndState.EndingByDeath;
+
+        // 답을 받지 못한 채 닫히는 경고창의 상호작용 잠금(+1)을 여기서 상쇄한다.
+        // 나머지(NPC 정지, 성장 정지, 이동 잠금)는 사망 상태에서 그대로 유지되는 것이 맞다.
+        if (bWarningPending == true)
+        {
+            bWarningPending = false;
+            inputManager.PauseInteractKey(false);
+        }
+    }
+
+    /// <summary>
+    /// 원정 종료 상태와 그 잔여물(지연 탑승 타이머, 미답 경고창 표시)을 비운다.
+    /// 새 원정이 시작되는 모든 지점(재도전 카메라 상승 완료 → ClearObjManager, StartDungeonSystem)에서 부른다.
+    /// </summary>
+    public void ResetRunEnd()
+    {
+        RunEndState = ERunEndState.None;
+        bWarningPending = false;
+
+        if (gameEndRoutine != null)
+        {
+            StopCoroutine(gameEndRoutine);
+            gameEndRoutine = null;
+        }
+    }
+
     public void AbortGameEnd(bool _bAbort)
     {
+        // 사망으로 원정이 끝난 뒤에 도착한 경고창의 답은 무시한다. 잠금 카운터 정리는
+        // MarkRunEndedByDeath()가 하므로 여기서 손대지 않는다.
+        if (RunEndState == ERunEndState.EndingByDeath) return;
+
+        // 사망 신호(0.5초 지연)보다 답이 먼저 온 경우 - 경고창이 걸어둔 상호작용 잠금만 상쇄하고
+        // 나머지(이동 잠금 해제, 피로도 감소 재개 등)는 시체에 적용하면 안 되므로 건너뛴다.
+        if (character != null && character.bDead == true)
+        {
+            if (bWarningPending == true)
+            {
+                bWarningPending = false;
+                inputManager.PauseInteractKey(false);
+            }
+            return;
+        }
+
+        bWarningPending = false;
+
         if (_bAbort == true)
         {
             character.SetStaminaDecrease(true);
@@ -1855,6 +1969,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public void HandleGameEnd()
     {
+        // 귀환 확정은 원정당 한 번, 그리고 사망보다 먼저일 때만 유효하다(ERunEndState 주석 참조).
+        // 경고창의 "예"가 결과창/재도전 이후에 뒤늦게 도착하는 경우가 여기서 걸러진다.
+        if (RunEndState != ERunEndState.None) return;
+        if (character != null && character.bDead == true) return;
+
+        RunEndState = ERunEndState.EndingByReturn;
+
         FlyingItemDismissRequestedEvent?.Invoke();
         character.DismissBoomerangsWithShrink();
 
@@ -1889,7 +2010,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 dropDuration = invMgr.GetDropVisualDuration();
             }
             DropAllItemEvent?.Invoke();
-            StartCoroutine(GameEndRoutine(dropDuration + 0.1f));
+            gameEndRoutine = StartCoroutine(GameEndRoutine(dropDuration + 0.1f));
         }
         else
             RideOffroadEvent?.Invoke();
@@ -1899,6 +2020,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         yield return new WaitForSeconds(_delay);
 
+        gameEndRoutine = null;
         RideOffroadEvent?.Invoke();
     }
 
@@ -1944,22 +2066,22 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public void IncreaseGrowthSpeed(float _amount)
     {
-        growthSpeedMul += (_amount / 100f);
+        growthSpeedMul = growthSpeedAccum.Add(growthSpeedMul, _amount);
     }
 
     public void IncreaseShieldDamageMultiplier(float _amount)
     {
-        shieldDamageMultiplier += _amount;
+        shieldDamageMultiplier = shieldDamageAccum.Add(shieldDamageMultiplier, _amount);
     }
 
     public void IncreaseShieldPenetration(float _amount)
     {
-        shieldPenetrationPercent += (_amount / 100f);
+        shieldPenetrationPercent = shieldPenetrationAccum.Add(shieldPenetrationPercent, _amount);
     }
 
     public void IncreaseShieldRegenReduction(float _amount)
     {
-        shieldRegenReductionMul += (_amount / 100f);
+        shieldRegenReductionMul = shieldRegenReductionAccum.Add(shieldRegenReductionMul, _amount);
     }
 
     public void UnlockShieldExplosion(bool _boolean)
@@ -1969,17 +2091,17 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public void IncreaseShieldExplosionDamage(float _amount)
     {
-        shieldExplosionDamageMultiplier += (_amount / 100f);
+        shieldExplosionDamageMultiplier = shieldExplosionDamageAccum.Add(shieldExplosionDamageMultiplier, _amount);
     }
 
     public void IncreaseShieldExplosionRange(float _amount)
     {
-        shieldExplosionRangeMultiplier += (_amount / 100f);
+        shieldExplosionRangeMultiplier = shieldExplosionRangeAccum.Add(shieldExplosionRangeMultiplier, _amount);
     }
 
     public void IncreaseShieldExplosionResearchChance(float _amount)
     {
-        shieldExplosionResearchChance += (_amount / 100f);
+        shieldExplosionResearchChance = shieldExplosionResearchAccum.Add(shieldExplosionResearchChance, _amount);
     }
 
     private void OnTreeShieldBroken(TreeObj _treeObj)
@@ -2114,12 +2236,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public void IncreaseStarMarkDamage(float _amount)
     {
-        starMarkDamageMultiplier += _amount;
+        starMarkDamageMultiplier = starMarkDamageAccum.Add(starMarkDamageMultiplier, _amount);
     }
 
     public void IncreaseConstellationDamage(float _amount)
     {
-        constellationDamageMultiplier += (_amount / 100f);
+        constellationDamageMultiplier = constellationDamageAccum.Add(constellationDamageMultiplier, _amount);
     }
 
     public void IncreaseConstellationHitCount(float _amount)
@@ -2129,7 +2251,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public void IncreaseManifestationBrandBonus(float _amount)
     {
-        manifestationBrandBonusMultiplier += _amount;
+        manifestationBrandBonusMultiplier = manifestationBrandBonusAccum.Add(manifestationBrandBonusMultiplier, _amount);
     }
 
     // 별길 걸음 - 별 표식 나무 벌목 시 Stage3TreeGenerationStrategySO가 호출

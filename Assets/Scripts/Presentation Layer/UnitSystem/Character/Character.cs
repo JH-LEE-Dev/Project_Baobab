@@ -544,6 +544,16 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // InDungeonProductionManager.CameraDownIsEnd()가 풀어준다.
         inputManager.PauseESCKey(true);
 
+        // 상호작용 키도 같이 잠근다. 예전엔 이동/ESC만 잠가서, 차량 트리거 안에서 쓰러진 시체가
+        // 결과창이 뜨기 전 1.5초 동안 차량과 상호작용해 귀환 경고창을 띄울 수 있었다.
+        //
+        // PauseInteractKey는 카운터이므로 해제와 짝이 맞아야 한다. 해제 지점은 차량 귀환 잠금
+        // (InDungeonObjectManager.HandleGameEnd)과 동일하다 - 다음 원정 진입의 StaminaDecreaseCoroutine 끝,
+        // 또는 마을 도착 시 InDungeonSystem.PopupUIGoUPCoroutine의 귀환 분기. 그쪽은 원정당 한 번의
+        // 잠금만 상쇄하므로, "사망과 귀환 확정 중 하나만 일어난다"는 전제가 필요하고 그 전제는
+        // InDungeonObjectManager.RunEndState가 보장한다.
+        inputManager.PauseInteractKey(true);
+
         StartCoroutine(StaminaIsEmptyRoutine());
     }
 
@@ -1294,6 +1304,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public void ActivateCharacter()
     {
+        // 지연 발행되는 ActivateCharacterSignal(입장 연출 0.7초 뒤)이 도착했을 때 이미 차량에 타 있거나
+        // 꺼져 있다면 활성화하지 않는다. 원정 종료 상태(InDungeonObjectManager.RunEndState)가 정상적으로는
+        // 이 상황을 만들지 않지만, 꺼진 오브젝트에서 AttackComponent가 코루틴을 시작하려다 에러를
+        // 남기는 일만은 마지막 방어선으로 막는다.
+        if (bRide == true || gameObject.activeInHierarchy == false) return;
+
         // 조준이 아직 꺼져 있을 때만 초기 자세로 리셋한다. EnableAim()으로 이미 조준이 켜져
         // 마우스를 따라가는 중인데 리셋하면, 팔이 정면 아래로 튕겼다가 다시 마우스 쪽으로
         // 돌아가는 움직임이 눈에 보인다.

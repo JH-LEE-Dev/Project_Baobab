@@ -12,6 +12,14 @@ public class EHealthComponent : EComponent, IHealthComponent
     private const float shieldRecoverNotifyInterval = 0.15f;
     private float lastShieldRecoverNotifyTime = -100f;
 
+    // 8hp 나무를 1.6 데미지로 5대 때리면 결과가 정확히 0이 아니라 0.00000024가 남아, 엄격한
+    // <= 0f 판정을 통과하지 못하고 6대째에야 죽었다. 이 비율 이하로 남은 티끌 체력은 죽은 것으로 본다.
+    //
+    // 아래 totalDamageTaken 방식 덕분에 오차가 타수에 비례해 커지지 않으므로, 실제로 필요한
+    // 최소 기준은 전 구간(체력 13종 x 보석 4단계 x 타수 2~500) 통틀어 5.8e-08이다. 여기에 17배
+    // 남겨 잡은 값이다. 최대 체력이 아주 작은 나무에서도 기준이 0으로 무너지지 않도록 하한 1을 둔다.
+    private const float deathThresholdRatio = 0.000001f;
+
     //외부 의존성
     [SerializeField] private float maxHealth;
 
@@ -22,6 +30,15 @@ public class EHealthComponent : EComponent, IHealthComponent
     //내부 의존성
     private float currentHealth;
     private float prevHealth;
+
+    // 지금까지 체력에 들어온 데미지의 누계. 체력을 float로 매번 빼면 반올림 오차가 타수만큼
+    // 쌓여서(500대면 최대 체력의 5.8e-06), "다 깎았는데 안 죽는" 상황을 막으려면 사망 기준을
+    // 그만큼 헐겁게 잡아야 한다. 누계를 double로 들고 남은 체력을 매번 다시 만들면 오차가
+    // 타수와 무관하게 5.8e-08로 떨어져서, 기준을 100배 빡빡하게 잡을 수 있다.
+    //
+    // 체력을 가득 채우는 곳(Setup / Initialize / Reset / ReviveFullHealth)에서는 반드시 0으로
+    // 되돌려야 한다. 안 그러면 이전 생애에 받은 데미지가 남아 되살아나자마자 죽는다.
+    private double totalDamageTaken;
 
     private float maxSP;
     private float spRegen;
@@ -58,6 +75,7 @@ public class EHealthComponent : EComponent, IHealthComponent
         gemHealthMultiplier = 1f;
         currentHealth = maxHealth;
         prevHealth = maxHealth;
+        totalDamageTaken = 0.0;
 
         treeType = _treeType;
 
@@ -85,6 +103,7 @@ public class EHealthComponent : EComponent, IHealthComponent
         gemHealthMultiplier = 1f;
         currentHealth = maxHealth;
         prevHealth = maxHealth;
+        totalDamageTaken = 0.0;
         currentSP = maxSP;
         prevSP = maxSP;
         isShieldBroken = (maxSP <= 0f);
@@ -100,6 +119,7 @@ public class EHealthComponent : EComponent, IHealthComponent
         gemHealthMultiplier = 1f;
         currentHealth = maxHealth;
         prevHealth = maxHealth;
+        totalDamageTaken = 0.0;
         currentSP = maxSP;
         prevSP = maxSP;
         isShieldBroken = (maxSP <= 0f);
@@ -156,15 +176,30 @@ public class EHealthComponent : EComponent, IHealthComponent
 
         if (remainingDamage > 0f)
         {
-            if (currentHealth - remainingDamage <= 0f)
+            totalDamageTaken += remainingDamage;
+
+            float maxHp = GetMaxHealth();
+
+            if (totalDamageTaken >= maxHp - GetDeathThreshold())
             {
                 currentHealth = 0f;
                 EnemyIsDeadEvent?.Invoke();
                 return;
             }
 
-            currentHealth -= remainingDamage;
+            // 남은 체력은 빼서 이어가는 게 아니라 누계에서 매번 다시 만든다. 이래야 오차가
+            // 타수만큼 쌓이지 않는다.
+            currentHealth = (float)(maxHp - totalDamageTaken);
         }
+    }
+
+    /// <summary>
+    /// 남은 체력이 이 값 이하면 0으로 간주한다. 데미지 누계와 최대 체력이 정확히 맞아떨어져야 할
+    /// 때(8hp를 1.6씩 5대) 부동소수 표현 오차로 "분명 다 깎았는데 안 죽는" 일이 없도록 하는 여유값이다.
+    /// </summary>
+    private float GetDeathThreshold()
+    {
+        return Mathf.Max(GetMaxHealth(), 1f) * deathThresholdRatio;
     }
 
     // 나무 등급별 셰이더 단계 전환용: 실제로 죽이지 않고 체력을 되살린다.
@@ -180,6 +215,8 @@ public class EHealthComponent : EComponent, IHealthComponent
         gemHealthMultiplier = Mathf.Max(0f, _maxHealthMultiplier);
         currentHealth = GetMaxHealth();
         prevHealth = currentHealth;
+        // 최대 체력이 새 배율로 바뀌면서 체력도 가득 찼으므로 데미지 누계도 함께 비운다.
+        totalDamageTaken = 0.0;
     }
 
     public float GetMaxHealth()

@@ -1095,6 +1095,12 @@ public class GameplayUICoordinator
 
     private void GameEnd(GameEndSignal _gameEndSignal)
     {
+        // 사망 결과창이 열릴 때 차량 귀환 경고창이 아직 떠 있을 수 있다(사망 직후 상호작용 키 - 지금은
+        // 입력 잠금과 InDungeonObjectManager.RunEndState가 막지만, UI 층에서도 두 모달이 겹치지 않게 한다).
+        // 결과 신호 없이 닫는다 - 잠금 카운터 정리는 InDungeonObjectManager.MarkRunEndedByDeath()가 맡는다.
+        if (null != warningUI && true == warningUI.IsVisible)
+            warningUI.HideSilently();
+
         if (bIsTutorialQuestHiding)
         {
             bPendingGameEnd = true;
@@ -1133,6 +1139,11 @@ public class GameplayUICoordinator
         }
 
         inputManager.SetInventoryKeyLock(InputReader.INVENTORY_LOCK_OWNER_WARNINGUI, false);
+
+        // HideSilently()로 닫힌 경우(사망 결과창이 열리며 정리된 경고창)엔 답이 없으므로 신호를 내지 않는다.
+        // 위 잠금 해제까지는 닫힌 이유와 무관하게 반드시 해야 해서, 이벤트를 막지 않고 여기서 가른다.
+        if (true == warningUI.bSilentClose)
+            return;
 
         signalHub.Publish(new WarningUIClosedSignal(warningUI.bApproved));
     }

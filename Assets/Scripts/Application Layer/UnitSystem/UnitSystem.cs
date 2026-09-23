@@ -397,6 +397,10 @@ public class UnitSystem
         inventoryManager.RescueItemsToOffroadContainer(offroadContainer);
         inDungeonResultManager.IncreaseLostLogItemCnt(inventoryManager.DropAllItem(unitSpawner.character.centerTransform));
         signalHub.Publish(new PopupUIDownSignal());
+
+        // 던전 쪽이 "이번 원정은 사망으로 끝났다"를 기록해(InDungeonObjectManager.RunEndState) 이후의
+        // 차량 상호작용/귀환 경고창 답/지연 탑승을 거부할 수 있도록 알린다.
+        signalHub.Publish(new CharacterStaminaIsEmptySignal());
     }
 
     private void LostAndFoundBoxAcquired(LostAndFoundBoxAcquiredSignal _signal)

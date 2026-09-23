@@ -17,6 +17,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
 
     private Dictionary<MapType, float> treeDensityMultipliers = new Dictionary<MapType, float>();
     private float rabbitDensityMultiplier = 1.0f;
+    private PercentAccumulator rabbitDensityAccum;
 
     private float GetTreeDensityMultiplier(MapType _mapType)
     {
@@ -285,7 +286,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
     public void IncreaseRabbitDensity(float _amount)
     {
         // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)
-        rabbitDensityMultiplier += (_amount / 100.0f);
+        rabbitDensityMultiplier = rabbitDensityAccum.Add(rabbitDensityMultiplier, _amount);
     }
 
     public void PopulateSaveData(ref EnvironmentSaveData _data)
