@@ -87,6 +87,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a35b63faf2488dc4593afe4323a98d35, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_MainMenuButton
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 0
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 0}
   buttonImage: {fileID: 4399130264765692810}
   dotTarget: {fileID: 7054994348241041646}
   textTarget: {fileID: 1199516035136246397}
@@ -133,9 +162,6 @@ MonoBehaviour:
   disappearDotShrinkDuration: 0.15
   disappearSuckEase: 8
   disappearShrinkEase: 26
-  isInteractable: 1
-  disabledDotColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  disabledTextColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
 --- !u!1 &756522547902201911
 GameObject:
   m_ObjectHideFlags: 0
@@ -1293,6 +1319,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a35b63faf2488dc4593afe4323a98d35, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_MainMenuButton
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 0
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 0}
   buttonImage: {fileID: 5184734663022450210}
   dotTarget: {fileID: 1592435927672888130}
   textTarget: {fileID: 8104278274265621445}
@@ -1339,9 +1394,6 @@ MonoBehaviour:
   disappearDotShrinkDuration: 0.15
   disappearSuckEase: 8
   disappearShrinkEase: 26
-  isInteractable: 1
-  disabledDotColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  disabledTextColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
 --- !u!1 &2520236218404064942
 GameObject:
   m_ObjectHideFlags: 0
@@ -2690,6 +2742,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a35b63faf2488dc4593afe4323a98d35, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_MainMenuButton
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 0
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 0}
   buttonImage: {fileID: 5991875604697520443}
   dotTarget: {fileID: 6046497701183674064}
   textTarget: {fileID: 8371264093573616747}
@@ -2736,9 +2817,6 @@ MonoBehaviour:
   disappearDotShrinkDuration: 0.15
   disappearSuckEase: 8
   disappearShrinkEase: 26
-  isInteractable: 1
-  disabledDotColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  disabledTextColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
 --- !u!1 &4801692238040536187
 GameObject:
   m_ObjectHideFlags: 0
@@ -2789,6 +2867,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a35b63faf2488dc4593afe4323a98d35, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_MainMenuButton
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 0
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 0}
   buttonImage: {fileID: 2154107272205497143}
   dotTarget: {fileID: 2452098752167529511}
   textTarget: {fileID: 6003075653827868177}
@@ -2835,9 +2942,6 @@ MonoBehaviour:
   disappearDotShrinkDuration: 0.15
   disappearSuckEase: 8
   disappearShrinkEase: 26
-  isInteractable: 0
-  disabledDotColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  disabledTextColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
 --- !u!1 &4861665099988072023
 GameObject:
   m_ObjectHideFlags: 0
@@ -3311,6 +3415,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a35b63faf2488dc4593afe4323a98d35, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_MainMenuButton
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 0
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 0}
   buttonImage: {fileID: 866607101097628106}
   dotTarget: {fileID: 6655604308340127982}
   textTarget: {fileID: 1440460823462806909}
@@ -3357,9 +3490,6 @@ MonoBehaviour:
   disappearDotShrinkDuration: 0.15
   disappearSuckEase: 8
   disappearShrinkEase: 26
-  isInteractable: 1
-  disabledDotColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  disabledTextColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
 --- !u!1 &6010935162215986361
 GameObject:
   m_ObjectHideFlags: 0
@@ -3414,6 +3544,7 @@ MonoBehaviour:
   exitButton: {fileID: 6252450808567929106}
   optionButton: {fileID: 1366216819725002085}
   creditButton: {fileID: 5869770144812342062}
+  discordButton: {fileID: 0}
   warningPopup: {fileID: 0}
   mainMenuUIJsonId: 8
   startPoint: {fileID: 4517743712231703071}

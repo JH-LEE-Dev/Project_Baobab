@@ -531,6 +531,7 @@ public class UI_TutorialQuest : MonoBehaviour
 
         stepTransitionSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
+        EnsureBGReachedTarget(stepTransitionSequence);
         AppendCompletionEffect(stepTransitionSequence);
         AppendFadeOutEffect(stepTransitionSequence);
         AppendNextQuestAppearEffect(stepTransitionSequence);
@@ -598,6 +599,7 @@ public class UI_TutorialQuest : MonoBehaviour
 
         completedSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
+        EnsureBGReachedTarget(completedSequence);
         AppendCompletionEffect(completedSequence);
 
         completedSequence.AppendCallback(cachedOnCompleteHideCallback);
@@ -773,6 +775,98 @@ public class UI_TutorialQuest : MonoBehaviour
                 w => SetBGPieceWidth(_piece, w),
                 HiddenBGWidth,
                 bgCloseDuration).SetEase(bgCloseEase));
+        }
+    }
+
+    /// <summary>
+    /// 퀘스트 등장 연출 도중 완료되거나 스텝이 전환될 때,
+    /// 배경 알파와 너비가 중간에서 멈추지 않고 목표 수치까지 부드럽게 완주하도록 보장합니다.
+    /// </summary>
+    private void EnsureBGReachedTarget(Sequence _seq)
+    {
+        if (null == _seq) return;
+
+        if (0 < bgPieces.Length)
+        {
+            SetCanvasGroupAlpha(bgCanvasGroup, 1f);
+
+            float _currentAlpha = GetBGPiecesAlpha();
+            float _remainingAlpha = Mathf.Max(0f, 1f - _currentAlpha);
+            float _alphaDuration = 0.001f < _remainingAlpha
+                ? Mathf.Max(0.05f, _remainingAlpha * bgOpenDuration)
+                : 0f;
+
+            if (0.001f < _remainingAlpha)
+            {
+                _seq.Insert(0f, DOTween.To(
+                    GetBGPiecesAlpha,
+                    SetBGPiecesAlpha,
+                    1f,
+                    _alphaDuration).SetEase(Ease.Linear));
+            }
+            else
+            {
+                SetBGPiecesAlpha(1f);
+            }
+
+            int _count = Mathf.Clamp(activeBGCount, 1, bgPieces.Length);
+            for (int i = 0; _count > i; i++)
+            {
+                TutorialQuestBGPiece _piece = bgPieces[i];
+                if (null == _piece) continue;
+
+                float _targetW = 0f < bgTargetWidth ? bgTargetWidth : _piece.targetWidth;
+                float _currentW = GetBGPieceWidth(_piece);
+                if (_targetW > _currentW + 1f)
+                {
+                    float _remainingRatio = Mathf.Clamp01((_targetW - _currentW) / Mathf.Max(_targetW, 1f));
+                    float _wDuration = Mathf.Max(0.05f, _remainingRatio * bgOpenDuration);
+
+                    _seq.Insert(0f, DOTween.To(
+                        () => GetBGPieceWidth(_piece),
+                        w => SetBGPieceWidth(_piece, w),
+                        _targetW,
+                        _wDuration).SetEase(bgOpenEase));
+                }
+                else
+                {
+                    SetBGPieceWidth(_piece, _targetW);
+                }
+            }
+
+            for (int i = _count; bgPieces.Length > i; i++)
+            {
+                SetBGPieceWidth(bgPieces[i], HiddenBGWidth);
+                SetGraphicAlpha(bgPieces[i].graphic, 0f);
+            }
+        }
+        else if (null != bgRoot)
+        {
+            float _currentW = GetBGWidth();
+            if (bgTargetWidth > _currentW + 1f)
+            {
+                float _remainingRatio = Mathf.Clamp01((bgTargetWidth - _currentW) / Mathf.Max(bgTargetWidth, 1f));
+                float _wDuration = Mathf.Max(0.05f, _remainingRatio * bgOpenDuration);
+                _seq.Insert(0f, DOTween.To(GetBGWidth, SetBGWidth, bgTargetWidth, _wDuration).SetEase(bgOpenEase));
+            }
+            else
+            {
+                SetBGWidth(bgTargetWidth);
+            }
+
+            if (null != bgCanvasGroup)
+            {
+                float _cgAlpha = bgCanvasGroup.alpha;
+                if (0.999f > _cgAlpha)
+                {
+                    float _cgDuration = Mathf.Max(0.05f, (1f - _cgAlpha) * bgOpenDuration);
+                    _seq.Insert(0f, bgCanvasGroup.DOFade(1f, _cgDuration).SetEase(bgOpenEase));
+                }
+                else
+                {
+                    bgCanvasGroup.alpha = 1f;
+                }
+            }
         }
     }
 

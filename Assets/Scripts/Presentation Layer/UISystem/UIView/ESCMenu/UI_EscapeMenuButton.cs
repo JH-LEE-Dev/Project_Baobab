@@ -57,9 +57,11 @@ public class UI_EscapeMenuButton : Selectable,
     private bool isHovered = false;
     private bool isPointerHovered = false;
     private bool isAppearing = false;
+    private bool isClickLocked = false;
 
     public bool IsPointerHovered => isPointerHovered;
     public new bool IsInteractable => isInteractable && interactable;
+    public bool IsClickLocked => isClickLocked;
 
     private Vector3 originalScale = Vector3.one;
 
@@ -143,6 +145,7 @@ public class UI_EscapeMenuButton : Selectable,
         isHovered = false;
         isPointerHovered = false;
         isAppearing = false;
+        isClickLocked = false;
 
         KillTweens();
 
@@ -234,11 +237,17 @@ public class UI_EscapeMenuButton : Selectable,
         }
     }
 
+    public void SetClickLocked(bool _locked)
+    {
+        isClickLocked = _locked;
+    }
+
     public void PrepareAppearState()
     {
         KillTweens();
         isInteractable = false;
         isAppearing = true;
+        isClickLocked = true;
         isHovered = false;
         isPointerHovered = false;
 
@@ -268,6 +277,7 @@ public class UI_EscapeMenuButton : Selectable,
         KillTweens();
         isInteractable = false;
         isAppearing = true;
+        isClickLocked = true;
         isHovered = false;
 
         if (null == motionTarget)
@@ -297,8 +307,6 @@ public class UI_EscapeMenuButton : Selectable,
 
     private void OnAppearMotionStart()
     {
-        isInteractable = true;
-
         if (null != CanvasGroup)
         {
             CanvasGroup.alpha = 1f;
@@ -333,6 +341,7 @@ public class UI_EscapeMenuButton : Selectable,
         KillTweens();
         isInteractable = false;
         isAppearing = false;
+        isClickLocked = false;
         isHovered = false;
 
         if (null == motionTarget)
@@ -532,7 +541,9 @@ public class UI_EscapeMenuButton : Selectable,
 
     public void OnPointerClick(PointerEventData _eventData)
     {
-        if (false == isInteractable || true == isAppearing) return;
+        if (false == isInteractable || true == isAppearing || true == isClickLocked) return;
+
+        isClickLocked = true;
 
         PlayClickAnimation();
 
