@@ -284,7 +284,7 @@
       "de": "Die Waldluft ist herrlich frisch!",
       "fr": "L'air de la forêt est si vivifiant !",
       "pt": "O ar da floresta está tão fresco!",
-      "es": "¡Qué fresco se siente el aire del bosque!",
+      "es": "¡Qué aire tan fresco se respira en el bosque!",
       "ru": "Какой же свежий воздух в лесу!",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle2"
@@ -297,11 +297,11 @@
       "zhHans": "今天也是和平伐木的一天！",
       "zhHant": "今天也是和平伐木的一天！",
       "ja": "今日も平和な伐採日和！",
-      "de": "Ein weiterer friedlicher Tag zum Holzfällen!",
+      "de": "Wieder ein ruhiger Tag zum Holzfällen!",
       "fr": "Encore une belle journée paisible pour couper du bois !",
       "pt": "Mais um dia tranquilo para cortar madeira!",
       "es": "¡Otro día tranquilo para talar árboles!",
-      "ru": "Ещё один мирный день для рубки леса!",
+      "ru": "Ещё один спокойный день за рубкой деревьев!",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle3"
     },

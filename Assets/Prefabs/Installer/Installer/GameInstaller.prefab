@@ -831,6 +831,7 @@ MonoBehaviour:
   currentSlotCount: 2
   maxItemsPerSlot: 5
   inventorySlots: []
+  gemOrePouchCapacity: 30
   sunEssence: 0
   moonEssence: 0
   lightningEssence: 0
@@ -2726,6 +2727,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownProductionManager
   offroadDriveEndPoint: {fileID: 7909126257907575581, guid: 7b37f70e1b67e4040843e9414c6e3527, type: 3}
+  skyProductionDelayAfterLanding: 0.5
   bCanGetOff: 1
   bCurrentlyTownScene: 1
   bRetryGame: 0
@@ -2778,9 +2780,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnitLogicManager
   staminaData:
   - forestType: 2
-    decAmount: 2
+    decAmount: 3
   - forestType: 3
-    decAmount: 4
+    decAmount: 6
   - forestType: 4
     decAmount: 12
   - forestType: 5
@@ -2864,21 +2866,25 @@ MonoBehaviour:
   oreOrder: 010000000200000003000000
   placementOffset: {x: 0, y: 0}
   bSingleInteractionCollider: 1
+  interactionAnchorType: 2
   recipes:
   - gemOreType: 1
     orePerIngot: 10
+    oreCapacity: 0
     workPerIngot: 40
     ingotValue: 100
     oreSprite: {fileID: 21300000, guid: 38aa3b138f41cc342928b2b43e04e5f0, type: 3}
     ingotSprite: {fileID: 21300000, guid: f2e63e8015a96414ab1234165ac3065b, type: 3}
   - gemOreType: 2
     orePerIngot: 20
+    oreCapacity: 0
     workPerIngot: 0
     ingotValue: 0
     oreSprite: {fileID: 21300000, guid: 9e07063275de3154bb23ef2e66a2383f, type: 3}
     ingotSprite: {fileID: 21300000, guid: c345a40cd71f87e4bb0aa8e28dc25382, type: 3}
   - gemOreType: 3
     orePerIngot: 30
+    oreCapacity: 0
     workPerIngot: 0
     ingotValue: 0
     oreSprite: {fileID: 21300000, guid: b68b9169df3bdf945a071d054f3fe108, type: 3}
@@ -3225,6 +3231,8 @@ MonoBehaviour:
   obsidianCharmDropChanceIncreasePerKill: 0.005
   obsidianCharmPityMinKills: 4
   obsidianCharmPityMaxKills: 5
+  goldTreePityMinKills: 3
+  goldTreePityMaxKills: 7
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}
   enableCulling: 0
   cullingDistance: 25
