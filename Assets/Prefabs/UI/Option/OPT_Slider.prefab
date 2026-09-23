@@ -108,7 +108,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
   m_AnchoredPosition: {x: 10, y: 0}
-  m_SizeDelta: {x: 140, y: 24}
+  m_SizeDelta: {x: 160, y: 24}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &6654239094860682271
 CanvasRenderer:
@@ -310,6 +310,7 @@ MonoBehaviour:
   targetGraphic: {fileID: 710871896274368002}
   buttonText: {fileID: 0}
   targetEffect: {fileID: 0}
+  shortcutIconImage: {fileID: 0}
   enableScaleMotion: 0
   visualMode: 1
   hoverScale: {x: 1.1, y: 1.1, z: 1}
@@ -608,8 +609,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -175, y: 0}
-  m_SizeDelta: {x: 40, y: 24}
+  m_AnchoredPosition: {x: -174, y: 0}
+  m_SizeDelta: {x: 52, y: 24}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!222 &5796565964056166082
 CanvasRenderer:
@@ -1354,6 +1355,7 @@ MonoBehaviour:
   targetGraphic: {fileID: 1773658156321198879}
   buttonText: {fileID: 0}
   targetEffect: {fileID: 0}
+  shortcutIconImage: {fileID: 0}
   enableScaleMotion: 0
   visualMode: 1
   hoverScale: {x: 1.1, y: 1.1, z: 1}
