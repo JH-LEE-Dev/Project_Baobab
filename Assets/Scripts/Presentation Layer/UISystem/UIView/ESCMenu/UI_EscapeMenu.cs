@@ -73,6 +73,7 @@ public class UI_EscapeMenu : MonoBehaviour
     private Sequence closeSequence;
     private bool isClosing = false;
     private bool isMenuOpen = false;
+    private bool isButtonClicked = false;
     private UIView_ESC parentESCView;
 
     public bool IsMenuOpen => isMenuOpen;
@@ -158,6 +159,7 @@ public class UI_EscapeMenu : MonoBehaviour
 
         inputManager = null;
         isMenuOpen = false;
+        isButtonClicked = false;
         parentESCView = null;
     }
 
@@ -273,6 +275,8 @@ public class UI_EscapeMenu : MonoBehaviour
     {
         KillProductionSequences();
         isClosing = false;
+        isButtonClicked = false;
+        LockAllButtonsClick();
 
         if (soundsEnabled)
             Sound.PlayUI(SoundID.ResultUIOpen);
@@ -347,6 +351,8 @@ public class UI_EscapeMenu : MonoBehaviour
     {
         openSequence = null;
         isMenuOpen = true;
+        isButtonClicked = false;
+        UnlockAllButtonsClick();
 
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
@@ -1021,11 +1027,33 @@ public class UI_EscapeMenu : MonoBehaviour
 
     private void SetButtonsInteractable(bool _interactable)
     {
-        for (int i = 0; i < allButtons.Length; i++)
+        for (int i = 0; allButtons.Length > i; i++)
         {
             if (null != allButtons[i])
             {
                 allButtons[i].SetInteractable(_interactable);
+            }
+        }
+    }
+
+    private void LockAllButtonsClick()
+    {
+        for (int i = 0; allButtons.Length > i; i++)
+        {
+            if (null != allButtons[i])
+            {
+                allButtons[i].SetClickLocked(true);
+            }
+        }
+    }
+
+    private void UnlockAllButtonsClick()
+    {
+        for (int i = 0; allButtons.Length > i; i++)
+        {
+            if (null != allButtons[i])
+            {
+                allButtons[i].SetClickLocked(false);
             }
         }
     }
@@ -1061,19 +1089,25 @@ public class UI_EscapeMenu : MonoBehaviour
 
     private void OnResumeButtonClicked()
     {
-        if (false == isMenuOpen || true == isClosing) return;
+        if (false == isMenuOpen || true == isClosing || true == isButtonClicked) return;
+        isButtonClicked = true;
+        LockAllButtonsClick();
         if (null != onResumeCallback) onResumeCallback.Invoke();
     }
 
     private void OnOptionButtonClicked()
     {
-        if (false == isMenuOpen || true == isClosing) return;
+        if (false == isMenuOpen || true == isClosing || true == isButtonClicked) return;
+        isButtonClicked = true;
+        LockAllButtonsClick();
         if (null != onOptionCallback) onOptionCallback.Invoke();
     }
 
     private void OnMainMenuButtonClicked()
     {
-        if (false == isMenuOpen || true == isClosing) return;
+        if (false == isMenuOpen || true == isClosing || true == isButtonClicked) return;
+        isButtonClicked = true;
+        LockAllButtonsClick();
 
         if (null != warningPopup && null != localizationManager)
         {
@@ -1095,7 +1129,9 @@ public class UI_EscapeMenu : MonoBehaviour
 
     private void OnExitButtonClicked()
     {
-        if (false == isMenuOpen || true == isClosing) return;
+        if (false == isMenuOpen || true == isClosing || true == isButtonClicked) return;
+        isButtonClicked = true;
+        LockAllButtonsClick();
 
         if (null != warningPopup && null != localizationManager)
         {
@@ -1117,6 +1153,8 @@ public class UI_EscapeMenu : MonoBehaviour
 
     private void CancelWarningAndRestoreMenu()
     {
+        isButtonClicked = false;
+        UnlockAllButtonsClick();
         PlayOpenProduction();
     }
 

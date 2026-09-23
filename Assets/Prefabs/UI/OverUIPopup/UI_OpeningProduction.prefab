@@ -1697,7 +1697,7 @@ MonoBehaviour:
   - targetRect: {fileID: 2697610182744890865}
     canvasGroup: {fileID: 4308406717777855290}
     orderIndex: 0
-    duration: 5
+    duration: 6
     delay: 0
     motionType: 0
     motionDuration: 0.15
@@ -1717,7 +1717,7 @@ MonoBehaviour:
   - targetRect: {fileID: 7257029016086754949}
     canvasGroup: {fileID: 1815364945040713372}
     orderIndex: 1
-    duration: 3
+    duration: 4
     delay: 1
     motionType: 0
     motionDuration: 0.15

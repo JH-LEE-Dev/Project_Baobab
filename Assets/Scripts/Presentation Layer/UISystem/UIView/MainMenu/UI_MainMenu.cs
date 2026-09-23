@@ -177,15 +177,22 @@ public class UI_MainMenu : MonoBehaviour
         if (null != parentView)
         {
             bool _hasSaveData = parentView.HasSaveData();
-            
-            if (null != loadGameButton)
-            {
-                // 세이브 데이터가 없으면 버튼 자체를 비활성화(숨김) 처리
-                loadGameButton.gameObject.SetActive(_hasSaveData);
-            }
-
+            UpdateButtonsActiveState(_hasSaveData);
             UpdateButtonLayout();
         }
+    }
+
+    private void UpdateButtonsActiveState(bool _hasSaveData)
+    {
+        if (null != loadGameButton)
+        {
+            loadGameButton.gameObject.SetActive(_hasSaveData);
+        }
+
+        if (null != newGameButton) newGameButton.gameObject.SetActive(true);
+        if (null != optionButton) optionButton.gameObject.SetActive(true);
+        if (null != creditButton) creditButton.gameObject.SetActive(true);
+        if (null != exitButton) exitButton.gameObject.SetActive(true);
     }
 
     private void UpdateButtonLayout()
@@ -263,24 +270,20 @@ public class UI_MainMenu : MonoBehaviour
             _hasSaveData = parentView.HasSaveData();
         }
 
-        if (null != loadGameButton)
-        {
-            loadGameButton.gameObject.SetActive(_hasSaveData);
-        }
+        // 1. 모든 버튼의 활성화 상태를 먼저 확정합니다.
+        //    (새 게임 진입 시 퇴장 연출로 비활성화되었던 버튼들을 켜주어야 UpdateButtonLayout이 전체 슬롯을 정확히 계산함)
+        UpdateButtonsActiveState(_hasSaveData);
 
+        // 2. 활성화된 버튼들을 기준으로 위치(anchoredPosition), SiblingIndex, Navigation을 재배치합니다.
         UpdateButtonLayout();
 
+        // 3. 활성화된 버튼들의 상태를 리셋하고 순차 등장 연출 및 사운드를 재생합니다.
         int _appearSoundIndex = 0;
         for (int i = 0; buttonsInOrder.Length > i; i++)
         {
             UI_MainMenuButton _btn = buttonsInOrder[i];
-            if (null != _btn)
+            if (null != _btn && true == _btn.gameObject.activeSelf)
             {
-                if (_btn == loadGameButton && false == _hasSaveData)
-                {
-                    continue;
-                }
-
                 _btn.ResetButtonState();
                 _btn.ResetAndPlayAppear(_appearSoundIndex);
                 _appearSoundIndex++;
