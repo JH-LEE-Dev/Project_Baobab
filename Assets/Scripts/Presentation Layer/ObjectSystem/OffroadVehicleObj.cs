@@ -169,6 +169,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     [Header("Repair Box Settings")]
     public float repairBoxCount = 0f;
     public float repairAmount = 0.25f;
+    private PercentAccumulator repairAmountAccum;
 
     // 차량+컨테이너 발밑에 깔린(RepairBox 소유가 아닌) ColliderTilemap - 길찾기 상 이동 불가 타일로 등록하기 위함
     private TilemapFootprintCollider footprintCollider;
@@ -1214,6 +1215,6 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     public void IncreaseRepairAmount(float _amount)
     {
-        repairAmount += (_amount / 100f);
+        repairAmount = repairAmountAccum.Add(repairAmount, _amount);
     }
 }

@@ -829,6 +829,22 @@ public class AttackComponent : PComponent
             TreeDetectionClearedEvent?.Invoke();
     }
 
+    private void OnDisable()
+    {
+        // GameObject가 꺼지면 Unity가 코루틴을 강제로 끝내지만 핸들은 그대로 남는다. 그대로 두면
+        // 아직 페이드 중인 것으로 오인되어(HandleGraphicsSettingsApplied) 밝기 설정이 먹지 않고,
+        // 머티리얼에도 중간 알파가 남은 채로 다시 켜진다.
+        if (null == indicatorFadeCoroutine) return;
+
+        indicatorFadeCoroutine = null;
+
+        if (null == ellipseIndicatorMat) return;
+
+        Color color = ellipseIndicatorMat.GetColor(BaseColorID);
+        color.a = GetIndicatorTargetAlpha();
+        ellipseIndicatorMat.SetColor(BaseColorID, color);
+    }
+
     private void OnDestroy()
     {
         // ReleaseEvents는 ctx가 없으면 조기 반환하므로 설정 구독은 따로 끊는다.
@@ -1050,7 +1066,9 @@ public class AttackComponent : PComponent
 
         if (null == ellipseIndicatorMat) return;
 
-        if (_boolean)
+        // 꺼진 오브젝트에서는 StartCoroutine이 시작되지 못하고 에러만 남으므로(원정 종료 상태의 방어가
+        // 뚫렸을 때의 마지막 안전망), 어차피 보이지도 않는 페이드는 건너뛰고 목표 알파를 바로 써 둔다.
+        if (_boolean && true == gameObject.activeInHierarchy)
         {
             indicatorFadeCoroutine = StartCoroutine(IndicatorFadeInRoutine());
         }

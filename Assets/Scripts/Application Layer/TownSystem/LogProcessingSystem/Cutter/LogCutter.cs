@@ -46,6 +46,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     // 내부 상태 및 컴포넌트 참조
     private LogItem cuttingItem;
     private float totalSpeedMultiplier = 1.0f;
+    private PercentAccumulator totalSpeedAccum;
     private float globalSpeedMultiplier = 1.0f;
 
     public void SetGlobalSpeedMultiplier(float _mul)
@@ -206,7 +207,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     public void IncreaseCutSpeed(float _amount)
     {
         // _amount는 0보다 큰 수이고 퍼센트 (예: 10.0f는 10% 속도 증가)
-        totalSpeedMultiplier += (_amount / 100.0f);
+        totalSpeedMultiplier = totalSpeedAccum.Add(totalSpeedMultiplier, _amount);
     }
 
     public CutterSaveData GetSaveData()

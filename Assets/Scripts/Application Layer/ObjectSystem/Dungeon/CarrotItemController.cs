@@ -38,6 +38,7 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
     private List<CarrotItem> activeItemsForUpdate = new List<CarrotItem>(128); // 업데이트 리스트 (가시성 기준)
     private List<CarrotItem> cleanupList = new List<CarrotItem>(128); // ClearAll용 재사용 리스트
     private float dropMultiplier = 1.0f;
+    private PercentAccumulator dropAccum;
 
     [Header("Optimization")]
     [SerializeField] private float cullingUpdateInterval = 0.05f;
@@ -343,7 +344,7 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
     public void IncreaseCarrotDrop(float _amount)
     {
-        dropMultiplier += (_amount / 100.0f);
+        dropMultiplier = dropAccum.Add(dropMultiplier, _amount);
     }
 
     private void OnDestroy()

@@ -116,6 +116,9 @@ public class InDungeonSystem : MonoBehaviour
     public void StartDungeonSystem(SceneChangeData _sceneChangeData)
     {
         inDungeonResultManager.Reset();
+        // 새 원정의 시작 - 이전 원정의 종료 상태/지연 탑승 타이머가 남아 있으면 여기서 반드시 비운다.
+        // (재도전은 ClearObjManager에서 이미 비웠지만, 이 메서드가 "원정 시작"의 단일 지점이므로 한 번 더 보장)
+        inDungeonObjectManager.ResetRunEnd();
         bCharacterActivated = false;
         bTutorialRideExitPending = false;
         bDungeonBGMPlayed = false;
@@ -281,6 +284,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Subscribe<RetryButtonClickedSignal>(RetryButtonClicked);
         signalHub.Subscribe<DungeonSelectedSignal>(DungeonSelected);
         signalHub.Subscribe<WarningUIClosedSignal>(WarningUIClosed);
+        signalHub.Subscribe<CharacterStaminaIsEmptySignal>(CharacterStaminaIsEmpty);
         signalHub.Subscribe<ActivateCharacterSignal>(CharacterActivated);
         signalHub.Subscribe<TownStartedSignal>(TownStarted);
         signalHub.Subscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
@@ -299,6 +303,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryButtonClicked);
         signalHub.UnSubscribe<DungeonSelectedSignal>(DungeonSelected);
         signalHub.UnSubscribe<WarningUIClosedSignal>(WarningUIClosed);
+        signalHub.UnSubscribe<CharacterStaminaIsEmptySignal>(CharacterStaminaIsEmpty);
         signalHub.UnSubscribe<ActivateCharacterSignal>(CharacterActivated);
         signalHub.UnSubscribe<TownStartedSignal>(TownStarted);
         signalHub.UnSubscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
@@ -554,6 +559,12 @@ public class InDungeonSystem : MonoBehaviour
         // (상승 카메라가 추적하던 대상이 사라진다), 0.25초 뒤 CharacterRideEndEvent → GameEnd()로
         // 결과창까지 씬 전환 위에 떠버린다. PopupUIGoUPCoroutine과 같은 이유의 가드다.
         if (bCurrentlyDungeonScene == false || bGoingToMainMenu == true)
+            return;
+
+        // 탑승은 "이번 원정의 귀환이 확정된 상태"에서만 의미가 있다. HandleGameEnd()가 그 상태를 세우고,
+        // 원정이 리셋되면(재도전/마을 도착) None으로 돌아가므로, 이전 원정에서 지연되어 넘어온 탑승 요청은
+        // 여기서 끊긴다. (예: 사망 결과창 뒤에 남은 귀환 경고창을 재도전 연출 중에 "예"로 닫은 경우)
+        if (inDungeonObjectManager.RunEndState != ERunEndState.EndingByReturn)
             return;
 
         signalHub.Publish(new PopupUIDownSignal());
@@ -965,6 +976,15 @@ public class InDungeonSystem : MonoBehaviour
     private void ActivateWarningUI()
     {
         signalHub.Publish(new ActivateWarningUISignal());
+    }
+
+    // 사망은 Character.StaminaIsEmpty에서 0.5초 뒤에 이벤트로 올라온다(StaminaIsEmptyRoutine).
+    // 그 사이의 차량 상호작용은 InDungeonObjectManager.GameEnd()가 bDead로 직접 막는다.
+    private void CharacterStaminaIsEmpty(CharacterStaminaIsEmptySignal _signal)
+    {
+        if (bCurrentlyDungeonScene == false) return;
+
+        inDungeonObjectManager.MarkRunEndedByDeath();
     }
 
     private void WarningUIClosed(WarningUIClosedSignal _warningUIClosedSignal)

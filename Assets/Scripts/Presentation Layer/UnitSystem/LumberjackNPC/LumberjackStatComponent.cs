@@ -32,6 +32,7 @@ public class LumberjackStatComponent : MonoBehaviour
     private float totalAttackSpeedBonus = 0f;
     // 누적된 공격력 증가량 (퍼센트 단위)
     private float totalDamageBonus = 0f;
+    private ValueAccumulator totalDamageAccum;
     // 누적된 이동 속도 증가량 (퍼센트 단위)
     private float totalMoveSpeedBonus = 0f;
 
@@ -58,7 +59,7 @@ public class LumberjackStatComponent : MonoBehaviour
     public void IncreaseDamage(float _amount)
     {
         // 공격력 증가 수치를 합산하여 누적합니다. (예: 5, 10 연속 적용 시 총 15퍼센트 증가)
-        totalDamageBonus += _amount;
+        totalDamageBonus = totalDamageAccum.Add(totalDamageBonus, _amount);
         
         // 원래의 기본 공격력을 기준으로 누적된 퍼센트만큼 증가시킨 값을 계산합니다.
         attackDamage = baseAttackDamage * (1f + (totalDamageBonus / 100f));

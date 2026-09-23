@@ -157,6 +157,33 @@ public class UIView_Warning : UIView
     }
 
     /// <summary>
+    /// 결과 신호 없이 닫히는 중인지. 일반 Hide()는 OnHide에서 DeActivateWarningUIEvent를 쏘고, 코디네이터가
+    /// 그걸 WarningUIClosedSignal(bApproved)로 바꿔 InDungeonSystem에 넘기므로, 닫힌 이유와 무관하게
+    /// HandleGameEnd/AbortGameEnd 중 하나가 실행된다. 이 답이 더 이상 의미 없는 상황(사망 결과창이 열릴 때)
+    /// 에는 그 신호만 빠져야 한다 - 이벤트 자체는 그대로 나간다. 코디네이터가 같은 콜백에서 인벤토리 키
+    /// 잠금(INVENTORY_LOCK_OWNER_WARNINGUI)도 풀기 때문에, 이벤트를 통째로 막으면 그 잠금이 영영 남는다.
+    /// OnHide의 이벤트 호출 동안만 true이고, 코디네이터는 이 값을 보고 신호 발행만 건너뛴다.
+    /// </summary>
+    public bool bSilentClose { get; private set; } = false;
+
+    /// <summary>
+    /// 답(예/아니오) 신호를 발행하지 않고 닫는다. 사망 결과창이 열릴 때 아직 떠 있는 귀환 경고창에 쓴다 -
+    /// 그대로 두면 결과창이 닫힌 뒤(재도전 연출 중)에도 남아, 그때 "예"를 누르면 이미 끝난 원정의
+    /// 귀환 절차가 새 원정 위에서 실행된다. 경고창이 걸어둔 잠금 카운터의 정리는
+    /// InDungeonObjectManager.MarkRunEndedByDeath()가 맡는다.
+    /// 이미 사용자가 답을 골라 닫히는 중(isClosing)이면 그 답은 그대로 나가되,
+    /// InDungeonObjectManager의 원정 종료 상태가 걸러낸다.
+    /// </summary>
+    public void HideSilently()
+    {
+        if (IsVisible == false || isClosing)
+            return;
+
+        bSilentClose = true;
+        Hide();
+    }
+
+    /// <summary>
     /// 닫기 연출을 건너뛰고 그 자리에서 즉시 닫습니다. (UIView_ESC.HideImmediately와 같은 목적)
     ///
     /// Hide()는 PlayCloseProduction()을 태우는 비동기라 실제 SetActive(false)가 연출이 끝난 뒤에 옵니다.
@@ -181,6 +208,9 @@ public class UIView_Warning : UIView
     {
         base.OnShow();
         bApproved = false;
+        // HideSilently()로 시작한 닫기 연출이 OnHide까지 못 가고 끊긴 경우(KillProductionSequences)
+        // 플래그가 남아 다음 정상 닫힘의 답까지 삼키지 않도록, 열릴 때마다 되돌린다.
+        bSilentClose = false;
         gameObject.SetActive(true);
 
         // 설치 시점(GameplayUIInstaller)에도 UIManager.Open()이 Show()를 부르지만, 그때의 Hide는
@@ -207,7 +237,10 @@ public class UIView_Warning : UIView
 
         ResumeSharedUICancelAfterPresentation();
 
+        // 이벤트는 항상 쏜다(코디네이터가 인벤토리 키 잠금 해제를 여기서 한다). 조용히 닫는 경우엔
+        // 코디네이터가 bSilentClose를 보고 WarningUIClosedSignal 발행만 건너뛴다.
         DeActivateWarningUI();
+        bSilentClose = false;
         bApproved = false;
         playSoundsForCurrentPresentation = false;
     }

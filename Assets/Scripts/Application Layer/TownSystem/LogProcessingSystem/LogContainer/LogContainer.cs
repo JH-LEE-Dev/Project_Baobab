@@ -128,6 +128,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     // 납품 경로뿐이며, 제재소가 원목을 꺼내가는 주기에는 곱하지 않는다.
     // 이유는 GetEffectiveTransferInterval()의 주석 참고.
     public float itemTransferSpeedMul = 1f;
+    private PercentAccumulator itemTransferSpeedAccum;
     private float globalSpeedMultiplier = 1f;
 
     private MapType mapType;
@@ -1245,6 +1246,6 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     public void ItemTransferSpeedUP(float _amount)
     {
-        itemTransferSpeedMul += (_amount / 100f);
+        itemTransferSpeedMul = itemTransferSpeedAccum.Add(itemTransferSpeedMul, _amount);
     }
 }

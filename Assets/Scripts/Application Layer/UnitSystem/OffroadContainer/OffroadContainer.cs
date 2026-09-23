@@ -146,7 +146,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     public Collider2D col;
 
     public float itemTransferSpeedMul = 1f;
+    private PercentAccumulator itemTransferSpeedAccum;
     public float colliderRangeMul =1f;
+    private PercentAccumulator colliderRangeAccum;
 
     public void Initialize(IInventory _characterInventory, InputManager _inputManager)
     {
@@ -2275,13 +2277,13 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     public void ItemTransferSpeedUP(float _amount)
     {
-        itemTransferSpeedMul += (_amount / 100f);
+        itemTransferSpeedMul = itemTransferSpeedAccum.Add(itemTransferSpeedMul, _amount);
     }
 
     public void ColliderRangeIncrease(float _amount)
     {
         float previousMul = colliderRangeMul;
-        colliderRangeMul += (_amount / 100f);
+        colliderRangeMul = colliderRangeAccum.Add(colliderRangeMul, _amount);
         
         if (col == null || previousMul <= 0f) return;
 
