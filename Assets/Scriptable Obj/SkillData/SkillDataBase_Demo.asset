@@ -308,7 +308,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 80
+        baseValue: 50
         manualValues: []
       carrotCurve:
         type: 3
