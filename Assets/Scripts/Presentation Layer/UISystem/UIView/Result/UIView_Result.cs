@@ -1823,11 +1823,10 @@ public class UIView_Result : UIView
 
     private Vector2 GetResultLogRowTargetPosition(UI_ResultLogRow row, int index, int count)
     {
-        float x = 0f;
-        if (count == 2)
-            x = index == 0 ? -12f : 12f;
-        else if (2 < count)
-            x = (index - ((count - 1) * 0.5f)) * 40f;
+        const float spacing = 24f;
+        float x = count <= 1
+            ? 0f
+            : (index - ((count - 1) * 0.5f)) * spacing;
 
         return new Vector2(x, GetResultLogRowBaseY(row, index));
     }
