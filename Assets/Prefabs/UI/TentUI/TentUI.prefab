@@ -466,6 +466,11 @@ MonoBehaviour:
   viewShakeStrength: 2.8
   viewShakeFrequency: 50
   viewShakeVerticalRatio: 0.45
+  levelUpWaveDisplacement: 8
+  levelUpWaveMaxDelay: 0.3
+  levelUpWaveImpulseDuration: 0.15
+  levelUpWaveReturnDuration: 0.4
+  levelUpWaveReturnOvershoot: 3
   circleMaskImage: {fileID: 5797742601171897013}
   circleRevealDimImage: {fileID: 8725945788285546174}
   circleRevealDimMaterial: {fileID: 2100000, guid: becfe4ca6d4d51443b5ea2e7e1c9ff3e, type: 2}
