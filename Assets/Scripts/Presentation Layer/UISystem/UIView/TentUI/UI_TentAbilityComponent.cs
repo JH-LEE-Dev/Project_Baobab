@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using NaughtyAttributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -310,6 +311,13 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField] private float viewShakeStrength = 5.6f;
     [SerializeField] private float viewShakeFrequency = 72f;
     [SerializeField, Range(0f, 1f)] private float viewShakeVerticalRatio = 0.45f;
+
+    [Header("Level Up Wave Settings")]
+    [SerializeField, Min(0f)] private float levelUpWaveDisplacement = 8f;
+    [SerializeField, Min(0f)] private float levelUpWaveMaxDelay = 0.3f;
+    [SerializeField, Min(0.01f)] private float levelUpWaveImpulseDuration = 0.15f;
+    [SerializeField, Min(0.01f)] private float levelUpWaveReturnDuration = 0.4f;
+    [SerializeField, Min(0f)] private float levelUpWaveReturnOvershoot = 3f;
 
     [Header("Open/Close Animation")]
     [SerializeField] private Image circleMaskImage;
@@ -1268,6 +1276,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         StopAllAutoLevelUps();
 #endif
         StopAllNodeEffects();
+        StopLevelUpWavePresentation();
         EndCircleRevealImmediately();
         StopViewShake();
         currentToolTipNode = null;
@@ -3700,7 +3709,134 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
 
         PlayViewShake();
+        if (prestigeIncreased)
+            PlayLevelUpWavePresentation();
+
         PlayAbilityHUDEffect(_previousHUDState, _currentHUDState);
+    }
+
+    private void PlayLevelUpWavePresentation()
+    {
+        if (abilityBackground == null || moveTarget == null || abilityHUD == null)
+            return;
+
+        RefreshNodeViewportCullingIfNeeded();
+
+        RectTransform hudRect = abilityHUD.transform as RectTransform;
+        if (hudRect == null)
+            return;
+
+        Vector3 hudWorldCenter = hudRect.TransformPoint(hudRect.rect.center);
+        Vector2 hudCenter = abilityBackground.InverseTransformPoint(hudWorldCenter);
+        float minimumDistance = float.PositiveInfinity;
+        float maximumDistance = 0f;
+
+        for (int i = 0; i < spawnedNodes.Count; i++)
+        {
+            AbilityNode node = spawnedNodes[i];
+            if (IsLevelUpWaveNodeEligible(node) == false)
+                continue;
+
+            RectTransform nodeRect = node.RectTransform;
+            Vector3 nodeWorldCenter = nodeRect.TransformPoint(nodeRect.rect.center);
+            Vector2 nodeCenter = abilityBackground.InverseTransformPoint(nodeWorldCenter);
+            float distance = Vector2.Distance(hudCenter, nodeCenter);
+            minimumDistance = Mathf.Min(minimumDistance, distance);
+            maximumDistance = Mathf.Max(maximumDistance, distance);
+        }
+
+        if (float.IsPositiveInfinity(minimumDistance))
+            return;
+
+        float localDisplacement = levelUpWaveDisplacement / Mathf.Max(currentZoom, 0.0001f);
+        float distanceRange = maximumDistance - minimumDistance;
+        float maximumDelay = Mathf.Max(0f, levelUpWaveMaxDelay);
+        for (int i = 0; i < spawnedNodes.Count; i++)
+        {
+            AbilityNode node = spawnedNodes[i];
+            if (IsLevelUpWaveNodeEligible(node) == false)
+                continue;
+
+            RectTransform nodeRect = node.RectTransform;
+            Vector3 nodeWorldCenter = nodeRect.TransformPoint(nodeRect.rect.center);
+            Vector2 nodeCenter = abilityBackground.InverseTransformPoint(nodeWorldCenter);
+            Vector2 fromHud = nodeCenter - hudCenter;
+            float distance = fromHud.magnitude;
+            float distanceDelay = distanceRange > 0.0001f
+                ? Mathf.InverseLerp(minimumDistance, maximumDistance, distance) * maximumDelay
+                : 0f;
+            float delay = Mathf.Max(distanceDelay, GetUnlockRevealRemainingDuration(node));
+
+            node.PlayLevelUpWave(
+                fromHud,
+                delay,
+                localDisplacement,
+                levelUpWaveImpulseDuration,
+                levelUpWaveReturnDuration,
+                levelUpWaveReturnOvershoot);
+        }
+    }
+
+    [Button("Play Prestige Level Up Wave")]
+    private void DebugPlayPrestigeLevelUpWave()
+    {
+        if (Application.isPlaying == false ||
+            abilityBackground == null ||
+            abilityBackground.gameObject.activeInHierarchy == false)
+            return;
+
+        PlayLevelUpWavePresentation();
+    }
+
+    private bool IsLevelUpWaveNodeEligible(AbilityNode _node)
+    {
+        return _node != null &&
+               _node.gameObject.activeInHierarchy &&
+               _node.IsProgressionVisible &&
+               _node.IsViewportVisible &&
+               (_node.IsVisualVisible || IsUnlockRevealPending(_node));
+    }
+
+    private bool IsUnlockRevealPending(AbilityNode _node)
+    {
+        if (_node == null)
+            return false;
+
+        for (int i = 0; i < activeUnlockReveals.Count; i++)
+        {
+            AbilityNodeUnlockReveal reveal = activeUnlockReveals[i];
+            if (reveal != null && reveal.Node == _node)
+                return true;
+        }
+
+        return false;
+    }
+
+    private float GetUnlockRevealRemainingDuration(AbilityNode _node)
+    {
+        if (_node == null)
+            return 0f;
+
+        for (int i = 0; i < activeUnlockReveals.Count; i++)
+        {
+            AbilityNodeUnlockReveal reveal = activeUnlockReveals[i];
+            if (reveal == null || reveal.Node != _node)
+                continue;
+
+            return Mathf.Max(0f, reveal.Delay + UnlockRevealDuration - reveal.Elapsed);
+        }
+
+        return 0f;
+    }
+
+    private void StopLevelUpWavePresentation()
+    {
+        for (int i = 0; i < spawnedNodes.Count; i++)
+        {
+            AbilityNode node = spawnedNodes[i];
+            if (node != null)
+                node.StopLevelUpWave();
+        }
     }
 
     // 상위 로직에서 거절 및 이유 (연출을 위함임)

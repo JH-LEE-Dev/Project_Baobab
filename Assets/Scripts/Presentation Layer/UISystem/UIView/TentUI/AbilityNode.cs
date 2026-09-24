@@ -86,6 +86,16 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private Tween maxLevelUpEffectTween;
     private float maxLevelUpEffectActiveFrameRate;
     private int maxLevelUpEffectLastFrameIndex;
+    private RectTransform levelUpWaveRoot;
+    private Vector2 levelUpWaveDirection;
+    private Vector2 levelUpWaveStartOffset;
+    private float levelUpWaveDelay;
+    private float levelUpWaveDistance;
+    private float levelUpWaveImpulseDuration;
+    private float levelUpWaveReturnDuration;
+    private float levelUpWaveReturnOvershoot;
+    private float levelUpWaveElapsed;
+    private bool isLevelUpWavePlaying;
 
     public SkillType SkillType => skillType;
     public string DisplayName => displayName;
@@ -100,12 +110,14 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public Color CurrentNodeFrameColor => currentNodeFrameColor;
     public bool IsPointerInside => isPointerInside || isPadCursorInside;
     public bool IsProgressionVisible => progressionVisible;
+    public bool IsViewportVisible => viewportVisible;
     public bool IsVisualVisible => visualHidden == false;
     public VFXComponent VfxTemplate => vfxComponent;
 
     private void Awake()
     {
         CacheInteractionReferences();
+        EnsureLevelUpWaveRoot();
         CacheAbilityBaseEffectReference();
         CacheImportantNodeLoopEffectReferences();
         SortImportantNodeLoopEffectFrames();
@@ -122,6 +134,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private void OnEnable()
     {
         CacheInteractionReferences();
+        EnsureLevelUpWaveRoot();
         CacheAbilityBaseEffectReference();
         CacheImportantNodeLoopEffectReferences();
         RefreshImportantNodeEffect();
@@ -131,6 +144,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     private void OnDisable()
     {
+        StopLevelUpWave();
         StopImportantNodeLoopEffect();
         StopMaxLevelUpEffect();
         CancelHoverState();
@@ -140,6 +154,141 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private void Update()
     {
         UpdateImportantNodeLoopEffect();
+        UpdateLevelUpWave();
+    }
+
+    public void PlayLevelUpWave(
+        Vector2 _direction,
+        float _delay,
+        float _distance,
+        float _impulseDuration,
+        float _returnDuration,
+        float _returnOvershoot)
+    {
+        EnsureLevelUpWaveRoot();
+        if (levelUpWaveRoot == null)
+            return;
+
+        levelUpWaveDirection = _direction.sqrMagnitude > 0.0001f
+            ? _direction.normalized
+            : Vector2.down;
+        levelUpWaveStartOffset = levelUpWaveRoot.anchoredPosition;
+        levelUpWaveDelay = Mathf.Max(0f, _delay);
+        levelUpWaveDistance = Mathf.Max(0f, _distance);
+        levelUpWaveImpulseDuration = Mathf.Max(0.0001f, _impulseDuration);
+        levelUpWaveReturnDuration = Mathf.Max(0.0001f, _returnDuration);
+        levelUpWaveReturnOvershoot = Mathf.Max(0f, _returnOvershoot);
+        levelUpWaveElapsed = 0f;
+        isLevelUpWavePlaying = true;
+    }
+
+    public void StopLevelUpWave()
+    {
+        isLevelUpWavePlaying = false;
+        levelUpWaveElapsed = 0f;
+
+        if (levelUpWaveRoot != null)
+            levelUpWaveRoot.anchoredPosition = Vector2.zero;
+    }
+
+    private void UpdateLevelUpWave()
+    {
+        if (isLevelUpWavePlaying == false || levelUpWaveRoot == null)
+            return;
+
+        levelUpWaveElapsed += Time.unscaledDeltaTime;
+        if (levelUpWaveElapsed < levelUpWaveDelay)
+        {
+            float delayProgress = levelUpWaveDelay > 0.0001f
+                ? Mathf.Clamp01(levelUpWaveElapsed / levelUpWaveDelay)
+                : 1f;
+            levelUpWaveRoot.anchoredPosition = Vector2.LerpUnclamped(
+                levelUpWaveStartOffset,
+                Vector2.zero,
+                EaseOutCubic(delayProgress));
+            return;
+        }
+
+        float motionElapsed = levelUpWaveElapsed - levelUpWaveDelay;
+        Vector2 peakOffset = levelUpWaveDirection * levelUpWaveDistance;
+        if (motionElapsed < levelUpWaveImpulseDuration)
+        {
+            float impulseProgress = Mathf.Clamp01(motionElapsed / levelUpWaveImpulseDuration);
+            levelUpWaveRoot.anchoredPosition = Vector2.LerpUnclamped(
+                Vector2.zero,
+                peakOffset,
+                EaseOutCubic(impulseProgress));
+            return;
+        }
+
+        float returnElapsed = motionElapsed - levelUpWaveImpulseDuration;
+        float returnProgress = Mathf.Clamp01(returnElapsed / levelUpWaveReturnDuration);
+        levelUpWaveRoot.anchoredPosition = Vector2.LerpUnclamped(
+            peakOffset,
+            Vector2.zero,
+            EaseOutBack(returnProgress, levelUpWaveReturnOvershoot));
+
+        if (returnProgress >= 1f)
+            StopLevelUpWave();
+    }
+
+    private void EnsureLevelUpWaveRoot()
+    {
+        if (levelUpWaveRoot != null)
+            return;
+
+        Transform existingRoot = transform.Find("LevelUpWaveRoot");
+        if (existingRoot != null)
+            levelUpWaveRoot = existingRoot as RectTransform;
+
+        if (levelUpWaveRoot == null)
+        {
+            GameObject waveRootObject = new GameObject("LevelUpWaveRoot", typeof(RectTransform));
+            waveRootObject.layer = gameObject.layer;
+            levelUpWaveRoot = waveRootObject.GetComponent<RectTransform>();
+            levelUpWaveRoot.SetParent(transform, false);
+            levelUpWaveRoot.anchorMin = new Vector2(0.5f, 0.5f);
+            levelUpWaveRoot.anchorMax = new Vector2(0.5f, 0.5f);
+            levelUpWaveRoot.pivot = new Vector2(0.5f, 0.5f);
+            levelUpWaveRoot.anchoredPosition = Vector2.zero;
+            levelUpWaveRoot.sizeDelta = Vector2.one;
+
+            if (abilityVisualRoot != null)
+                levelUpWaveRoot.SetSiblingIndex(abilityVisualRoot.GetSiblingIndex());
+        }
+
+        ReparentWaveVisual(abilityVisualRoot);
+
+        if (vfxComponent == null)
+            return;
+
+        Transform vfxPresentationRoot = vfxComponent.transform;
+        while (vfxPresentationRoot.parent != null && vfxPresentationRoot.parent != transform)
+            vfxPresentationRoot = vfxPresentationRoot.parent;
+
+        ReparentWaveVisual(vfxPresentationRoot as RectTransform);
+    }
+
+    private void ReparentWaveVisual(RectTransform _visualRoot)
+    {
+        if (_visualRoot == null || levelUpWaveRoot == null || _visualRoot == levelUpWaveRoot)
+            return;
+
+        if (_visualRoot.parent == transform)
+            _visualRoot.SetParent(levelUpWaveRoot, false);
+    }
+
+    private static float EaseOutCubic(float _progress)
+    {
+        float inverse = 1f - Mathf.Clamp01(_progress);
+        return 1f - inverse * inverse * inverse;
+    }
+
+    private static float EaseOutBack(float _progress, float _overshoot)
+    {
+        float shifted = Mathf.Clamp01(_progress) - 1f;
+        return 1f + (_overshoot + 1f) * shifted * shifted * shifted +
+               _overshoot * shifted * shifted;
     }
 
     // 특성 노드의 내부 그림을 외부에서 교체한다.
