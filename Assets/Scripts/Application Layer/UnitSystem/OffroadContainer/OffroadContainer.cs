@@ -554,19 +554,57 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         if (bInTown)
         {
+            // 운반 상자 -> 인벤토리 방향도 아래 인벤토리 -> 운반 상자 방향과 완전히 같은 기준으로 고른다:
+            // 개당 가치(LogValue.GetUnitValue = 수종 + 등급) 높은 슬롯부터, 같으면 많이 쌓인 슬롯부터.
+            // 예전엔 슬롯 순서대로 꺼내서, 가방이 도중에 가득 차면 어떤 원목이 넘어오는지가
+            // "상자에 먼저 들어간 순서"에 달려 있었다.
+            InventorySlot bestSlot = null;
+            long bestUnitValue = LogValue.NONE;
+            int bestCount = 0;
+
+            // 가방에 자리가 없어 거절당한 슬롯 중 가장 비싼 것. 아무것도 못 넘길 때만 이걸로 경고 UI를 한 번 띄운다.
+            LogItemData blockedData = null;
+            long blockedUnitValue = LogValue.NONE;
+
             for (int i = 0; i < currentSlotCount; i++)
             {
-                if (inventorySlots[i].itemData != null && inventorySlots[i].count > 0)
+                InventorySlot slot = inventorySlots[i];
+                if (slot.itemData == null || slot.count <= 0) continue;
+                if (transferringSlots.Contains(slot)) continue;
+                if (!(slot.itemData is LogItemData logSourceData)) continue;
+
+                long unitValue = LogValue.GetUnitValue(logSourceData.treeType, logSourceData.logState);
+
+                // 선별 단계에서는 경고 UI를 쏘지 않는다(다른 슬롯이 넘어갈 수 있는 상황에서 매 틱 경고가 뜨는 것을 막는다).
+                if (!CanAddToCharacterInventory(logSourceData, false))
                 {
-                    if (transferringSlots.Contains(inventorySlots[i])) continue;
-                    if (!(inventorySlots[i].itemData is LogItemData logSourceData)) continue;
-
-                    if (!CanAddToCharacterInventory(logSourceData)) continue;
-
-                    StartCoroutine(TransferOneSlotVisualRoutine(inventorySlots[i], true));
-                    lastTransferTime = Time.time;
-                    return true;
+                    if (unitValue > blockedUnitValue)
+                    {
+                        blockedUnitValue = unitValue;
+                        blockedData = logSourceData;
+                    }
+                    continue;
                 }
+
+                if (unitValue > bestUnitValue || (unitValue == bestUnitValue && slot.count > bestCount))
+                {
+                    bestSlot = slot;
+                    bestUnitValue = unitValue;
+                    bestCount = slot.count;
+                }
+            }
+
+            if (bestSlot != null)
+            {
+                StartCoroutine(TransferOneSlotVisualRoutine(bestSlot, true));
+                lastTransferTime = Time.time;
+                return true;
+            }
+
+            // 넘길 수 있는 슬롯이 하나도 없을 때만 "가방 가득 참/습득 불가" 이벤트를 발행한다(기존 동작 유지).
+            if (blockedData != null)
+            {
+                CanAddToCharacterInventory(blockedData);
             }
         }
         else
@@ -754,7 +792,11 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     // 종류) 슬롯 여유로 충분한지 먼저 보고, 부족하면 "물리적으로 남은 빈 슬롯 수"와 "이미 다른
     // 종류가 빈 슬롯을 예약 중인 개수"를 정확히 비교한다(OffroadContainer/LogContainer의
     // CanAddItemByData와 동일한 방식).
-    private bool CanAddToCharacterInventory(ItemData _sourceData)
+    //
+    // _bNotifyOnFail: 넣을 수 없을 때 "가방 가득 참/습득 불가" UI 이벤트를 발행할지. 여러 슬롯을 훑어
+    // 최적 슬롯을 고르는 TryTransferOneSlot의 선별 단계에서는 false로 호출해야 한다 - 거절된 슬롯마다
+    // 이벤트를 쏘면 다른 슬롯이 멀쩡히 넘어가는 중에도 매 틱 경고가 뜬다.
+    private bool CanAddToCharacterInventory(ItemData _sourceData, bool _bNotifyOnFail = true)
     {
         if (!(_sourceData is LogItemData logSource) || characterInventoryManager == null) return false;
 
@@ -850,7 +892,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         bool isSuccess = pendingSameType < totalCapacity;
 
-        if (!isSuccess)
+        if (!isSuccess && _bNotifyOnFail)
         {
             bool isFull = true;
             bool hasSpaceRemaining = false;
