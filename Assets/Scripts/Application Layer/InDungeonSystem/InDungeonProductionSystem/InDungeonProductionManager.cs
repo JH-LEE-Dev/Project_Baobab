@@ -107,8 +107,13 @@ public class InDungeonProductionManager : MonoBehaviour
         // 탑승과 동시에 캐릭터 GameObject가 비활성화되어 Character.Update()가 멈추므로, 매 프레임
         // 갱신되던 피로도 기반 Cutoff(오디오 먹먹함/색수차)가 탑승 순간 값에 그대로 고정된 채
         // ResultUI까지 이어진다. 죽지 않고 탑승했다면 더 이상 위험 상태가 아니므로 여기서 풀어준다.
+        //
+        // 색수차는 UpdateLowStaminaChromaticAberration(1f)이 아니라 Clear로 즉시 꺼야 한다. Update 쪽은
+        // MoveTowards 완충이라 한 번 호출로는 세기가 거의 줄지 않고, 바로 아래에서 캐릭터가 꺼져 후속
+        // 갱신이 없기 때문이다(실제로 이 줄이 있어도 결과창까지 색수차가 남던 원인).
+        // 같은 처리를 Character.OnDisable에도 두었으므로 SetActive(false)만으로도 풀리지만, 의도를 남긴다.
         Sound.SetFatigueRatio(1f);
-        PostProcessSettingsApplier.Instance?.UpdateLowStaminaChromaticAberration(1f);
+        PostProcessSettingsApplier.Instance?.ClearLowStaminaChromaticAberration();
 
         character.gameObject.SetActive(false);
         offroadVehicleObj.PlayShinyEffect();

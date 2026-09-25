@@ -148,6 +148,21 @@ public class PostProcessSettingsApplier : MonoBehaviour
     }
 
     /// <summary>
+    /// 저피로도 색수차를 즉시 0으로 끕니다. UpdateLowStaminaChromaticAberration(1f)은 한 번 호출로는
+    /// 세기가 lowStaminaSmoothSpeed * deltaTime 만큼만 줄어들 뿐이라(매 프레임 호출을 전제로 한 완충),
+    /// 호출 직후 Character가 비활성화되어 매 프레임 갱신이 끊기는 경우(차량 탑승 등)에는 그 순간의
+    /// 세기가 그대로 남습니다. 그런 "이후 갱신이 없을" 지점에서는 이 메서드로 즉시 원복해야 합니다.
+    /// 사망 펄스가 재생 중이면 건드리지 않습니다 - 펄스는 스스로 0으로 원복하며 끝나기 때문입니다.
+    /// </summary>
+    public void ClearLowStaminaChromaticAberration()
+    {
+        if (null == chromaticAberration || isDeathPulsePlaying) return;
+
+        chromaticAberration.intensity.overrideState = true;
+        chromaticAberration.intensity.value = 0f;
+    }
+
+    /// <summary>
     /// 사망 순간 색수차를 짧고 강하게 튀웠다가(0→최고조) 다시 0으로 원복하는 연출입니다.
     /// 재생 중에는 UpdateLowStaminaChromaticAberration의 매 프레임 갱신을 무시시켜 서로
     /// 충돌하지 않게 합니다. 색수차 옵션이 0%면(효과를 원치 않는 유저) 재생하지 않습니다.

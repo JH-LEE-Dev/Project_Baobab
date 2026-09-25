@@ -58,7 +58,11 @@ public class HUD_ScreenBlood : MonoBehaviour
     /// </summary>
     public void PlayBloodEffect(bool _active)
     {
-        if (_active == isEffectPlaying)
+        // 끄기 요청은 isEffectPlaying 플래그가 아니라 실제 모션 재생 여부까지 본다. 플래그만 믿으면
+        // 플래그는 false인데 깜빡임 모션(무한 Yoyo)은 살아 있는 상태에 빠졌을 때 영영 끌 수 없다.
+        bool _bMotionPlaying = null != motionPlayer && motionPlayer.IsPlaying(bloodTag);
+
+        if (_active == isEffectPlaying && (true == _active || false == _bMotionPlaying))
             return;
 
         isEffectPlaying = _active;

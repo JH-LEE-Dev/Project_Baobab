@@ -177,6 +177,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private bool bCanAcquiredItem = false;
 
+    // 귀환 확정(DisableAttackComponent) 이후 저피로도 경고 연출(오디오 먹먹함·색수차)을 끄기 위한 플래그.
+    // HandleGameEnd는 스태미나 감소만 멈추고 값은 낮은 채로 두므로, bInDungeon/bDead만으로는
+    // "아직 위험한 상태"와 "귀환이 확정돼 더는 위험하지 않은 상태"를 구분할 수 없다.
+    // SetWhereIsCharacter(다음 씬 진입)와 ActivateCharacter(실제 플레이 시작)에서 해제된다.
+    private bool bLowStaminaWarningSuppressed = false;
+
     [SerializeField] private GameObject characterVisualObjects;
     private Vector3 characterVisualObjectsOriginalScale = Vector3.one;
     private float itemAcquireBounceTime = 1f;
@@ -312,6 +318,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         }
 
         bDead = false;
+        bLowStaminaWarningSuppressed = false;
 
         bInDungeon = _bInDungeon;
         characterVisualComponent.SetHubState(!bInDungeon);
@@ -1202,12 +1209,19 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 타운에서는 적용하지 않으므로 던전을 벗어나면 매 프레임 1f(먹먹함 없음)로 되돌린다.
         // 스태미나 고갈로 사망한 뒤에도 꺼준다 - 그대로 두면 사망/결과창이 거는 별도의 덕킹과
         // 겹쳐 지나치게 먹먹해진다(ApplyCombinedCutoff가 둘 중 더 낮은 값을 취하기 때문).
-        Sound.SetFatigueRatio(bInDungeon && !bDead ? staminaRatio : 1f);
+        //
+        // 귀환이 확정된 뒤(bLowStaminaWarningSuppressed)와 차량 탑승 중(bRide)에도 꺼준다. 귀환 경로는
+        // 탑승 시 캐릭터가 꺼졌다가 카메라 상승 완료(InDungeonProductionManager.CameraUpIsEnd)에 다시
+        // 켜지는데, 그 시점에도 bInDungeon은 true이고 스태미나는 낮은 값 그대로라(HandleGameEnd가
+        // 감소만 멈춤) 여기서 경고 연출이 다시 켜졌다. 그 상태로 타운 씬이 로드되면 새 타운 카메라의
+        // Volume에까지 색수차가 쓰이고, 타운 도착 탑승으로 캐릭터가 다시 꺼지면 갱신이 끊겨 그대로 남는다.
+        float _fatigueRatio = (bInDungeon && !bDead && !bRide && !bLowStaminaWarningSuppressed) ? staminaRatio : 1f;
+        Sound.SetFatigueRatio(_fatigueRatio);
 
         // 피로도가 낮을수록(임계 비율 이하 구간에서) 색수차가 연속적으로 짙어진다. Sound.SetFatigueRatio와
-        // 같은 이유로 던전 밖/사망 후에는 1f(임계 비율보다 항상 커서 목표 세기가 0)를 넘겨 꺼둔다.
+        // 같은 이유로 던전 밖/사망 후/귀환 확정 후에는 1f(임계 비율보다 항상 커서 목표 세기가 0)를 넘겨 꺼둔다.
         // 사망 순간의 강한 펄스는 여기가 아니라 StaminaIsEmpty()의 PlayDeathChromaticAberrationPulse가 담당한다.
-        PostProcessSettingsApplier.Instance?.UpdateLowStaminaChromaticAberration(bInDungeon && !bDead ? staminaRatio : 1f);
+        PostProcessSettingsApplier.Instance?.UpdateLowStaminaChromaticAberration(_fatigueRatio);
 
         // 용암 등 위험 지형 인접 시 추가 소모. 단, 일반 스태미나 소모(DecreaseStamina)와 마찬가지로
         // "실제 플레이가 시작된 이후"에만 적용해야 한다. bWhileReset(입장 카메라 연출 중, 조작 불가) 또는
@@ -1249,6 +1263,15 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         customSortable.SetHeight(visualHeight);
     }
 
+    private void OnDisable()
+    {
+        // 저피로도 경고 연출(오디오 먹먹함·색수차)은 Update에서 매 프레임 갱신되는 값이라, 이 오브젝트가
+        // 꺼지면(차량 탑승 등) 그 순간의 세기로 얼어붙는다. 색수차는 완충(MoveTowards) 때문에 1f를 한 번
+        // 넘기는 것으로는 풀리지 않으므로 즉시 0으로 원복한다. 씬 전환·파괴 시에는 Instance가 없을 수 있다.
+        Sound.SetFatigueRatio(1f);
+        PostProcessSettingsApplier.Instance?.ClearLowStaminaChromaticAberration();
+    }
+
     private void OnDestroy()
     {
         stateMachine?.ReleaseAllState();
@@ -1276,6 +1299,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public void DisableAttackComponent()
     {
+        // 귀환 확정(HandleGameEnd) 또는 플레이 시작 전 대기 상태. 스태미나는 낮은 값 그대로 남을 수
+        // 있으므로 Update의 저피로도 경고 연출은 여기서부터 끈다(자세한 이유는 Update 참고).
+        bLowStaminaWarningSuppressed = true;
+
         healthComponent.SetStaminaDecrease(false);
         attackComponent.SetCursorEnable(false);
         attackComponent.SetEnable(false);
@@ -1326,6 +1353,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         attackComponent.SetbCanAttack(true);
         armComponent.SetbCanAttack(true);
         bWhileReset = false;
+        bLowStaminaWarningSuppressed = false; // 실제 플레이 시작 - 저피로도 경고 연출을 다시 허용한다
     }
 
     public void StartDecreaseStamina()
