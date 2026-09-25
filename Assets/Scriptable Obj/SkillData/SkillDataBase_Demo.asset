@@ -408,7 +408,7 @@ MonoBehaviour:
     - skillCommandType: 29
       amountCurve:
         type: 3
-        baseValue: 1
+        baseValue: 1.2
         manualValues: []
     prerequisiteSkills: 27000000
   - skillType: 30
@@ -578,7 +578,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 2000
+        baseValue: 1500
         manualValues: []
       carrotCurve:
         type: 3
@@ -596,7 +596,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 2000
+        baseValue: 1500
         manualValues: []
       carrotCurve:
         type: 3
