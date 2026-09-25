@@ -554,45 +554,10 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         if (bInTown)
         {
-            // 운반 상자 -> 인벤토리 방향도 아래 인벤토리 -> 운반 상자 방향과 완전히 같은 기준으로 고른다:
-            // 개당 가치(LogValue.GetUnitValue = 수종 + 등급) 높은 슬롯부터, 같으면 많이 쌓인 슬롯부터.
-            // 예전엔 슬롯 순서대로 꺼내서, 가방이 도중에 가득 차면 어떤 원목이 넘어오는지가
-            // "상자에 먼저 들어간 순서"에 달려 있었다.
-            InventorySlot bestSlot = null;
-            long bestUnitValue = LogValue.NONE;
-            int bestCount = 0;
-
-            // 가방에 자리가 없어 거절당한 슬롯 중 가장 비싼 것. 아무것도 못 넘길 때만 이걸로 경고 UI를 한 번 띄운다.
-            LogItemData blockedData = null;
-            long blockedUnitValue = LogValue.NONE;
-
-            for (int i = 0; i < currentSlotCount; i++)
-            {
-                InventorySlot slot = inventorySlots[i];
-                if (slot.itemData == null || slot.count <= 0) continue;
-                if (transferringSlots.Contains(slot)) continue;
-                if (!(slot.itemData is LogItemData logSourceData)) continue;
-
-                long unitValue = LogValue.GetUnitValue(logSourceData.treeType, logSourceData.logState);
-
-                // 선별 단계에서는 경고 UI를 쏘지 않는다(다른 슬롯이 넘어갈 수 있는 상황에서 매 틱 경고가 뜨는 것을 막는다).
-                if (!CanAddToCharacterInventory(logSourceData, false))
-                {
-                    if (unitValue > blockedUnitValue)
-                    {
-                        blockedUnitValue = unitValue;
-                        blockedData = logSourceData;
-                    }
-                    continue;
-                }
-
-                if (unitValue > bestUnitValue || (unitValue == bestUnitValue && slot.count > bestCount))
-                {
-                    bestSlot = slot;
-                    bestUnitValue = unitValue;
-                    bestCount = slot.count;
-                }
-            }
+            // 운반 상자 -> 인벤토리 방향도 아래 인벤토리 -> 운반 상자 방향과 완전히 같은 기준으로 고른다
+            // (FindBestSlotToCharacter 참고). 예전엔 슬롯 순서대로 꺼내서, 가방이 도중에 가득 차면
+            // 어떤 원목이 넘어오는지가 "상자에 먼저 들어간 순서"에 달려 있었다.
+            InventorySlot bestSlot = FindBestSlotToCharacter(out LogItemData blockedData);
 
             if (bestSlot != null)
             {
@@ -2249,24 +2214,72 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
     }
 
+    /// <summary>
+    /// 운반 상자 -> 캐릭터 방향으로 다음에 넘길 슬롯을 고른다. 인벤토리 -> 운반 상자 방향
+    /// (TryTransferOneSlot의 던전 분기)과 완전히 같은 기준이다: 개당 가치(LogValue.GetUnitValue = 수종 + 등급)
+    /// 높은 슬롯부터, 같으면 많이 쌓인 슬롯부터. 전송 중인 슬롯·원목이 아닌 슬롯·가방에 넣을 수 없는 슬롯은 제외한다.
+    ///
+    /// 선별 중에는 CanAddToCharacterInventory의 "가방 가득 참/습득 불가" UI 이벤트를 발행하지 않는다.
+    /// 거절당한 슬롯 중 가장 비싼 것을 _blockedData로 돌려주므로, 호출자는 넘길 슬롯이 하나도 없을 때만
+    /// 그 데이터로 CanAddToCharacterInventory(_blockedData)를 한 번 더 불러 경고를 띄우면 된다.
+    /// </summary>
+    private InventorySlot FindBestSlotToCharacter(out LogItemData _blockedData)
+    {
+        InventorySlot bestSlot = null;
+        long bestUnitValue = LogValue.NONE;
+        int bestCount = 0;
+
+        _blockedData = null;
+        long blockedUnitValue = LogValue.NONE;
+
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            if (slot.itemData == null || slot.count <= 0) continue;
+            if (transferringSlots.Contains(slot)) continue;
+            if (!(slot.itemData is LogItemData logSourceData)) continue;
+
+            long unitValue = LogValue.GetUnitValue(logSourceData.treeType, logSourceData.logState);
+
+            if (!CanAddToCharacterInventory(logSourceData, false))
+            {
+                if (unitValue > blockedUnitValue)
+                {
+                    blockedUnitValue = unitValue;
+                    _blockedData = logSourceData;
+                }
+                continue;
+            }
+
+            if (unitValue > bestUnitValue || (unitValue == bestUnitValue && slot.count > bestCount))
+            {
+                bestSlot = slot;
+                bestUnitValue = unitValue;
+                bestCount = slot.count;
+            }
+        }
+
+        return bestSlot;
+    }
+
     private bool HasAnyItemToTransfer()
     {
         if (!bCanInteract || characterInventory == null) return false;
 
         if (bInTown)
         {
-            for (int _i = 0; _i < currentSlotCount; _i++)
+            // TryTransferOneSlot의 마을 분기와 같은 선별을 거쳐, 넘길 슬롯이 있을 때만 true.
+            // 예전엔 슬롯 순서대로 훑으며 거절된 슬롯마다 경고 UI를 쏴서, 넘길 수 있는 슬롯이 뒤에 있어도
+            // 키를 누르는 순간 "습득 불가"가 떴다. 이제 하나도 못 넘길 때만 가장 비싼 거절 슬롯 기준으로 한 번 띄운다.
+            InventorySlot bestSlot = FindBestSlotToCharacter(out LogItemData blockedData);
+            if (bestSlot != null)
             {
-                if (inventorySlots[_i].itemData != null && inventorySlots[_i].count > 0)
-                {
-                    if (transferringSlots.Contains(inventorySlots[_i])) continue;
-                    if (!(inventorySlots[_i].itemData is LogItemData _logSourceData)) continue;
+                return true;
+            }
 
-                    if (CanAddToCharacterInventory(_logSourceData))
-                    {
-                        return true;
-                    }
-                }
+            if (blockedData != null)
+            {
+                CanAddToCharacterInventory(blockedData);
             }
         }
         else
