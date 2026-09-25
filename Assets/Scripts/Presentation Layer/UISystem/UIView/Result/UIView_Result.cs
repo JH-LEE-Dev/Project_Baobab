@@ -1620,11 +1620,13 @@ public class UIView_Result : UIView
             return;
 
         UI_ResultLogRow template = null;
+        int templateIndex = -1;
         for (int i = 0; i < resultLogRows.Count; i++)
         {
             if (resultLogRows[i] != null)
             {
                 template = resultLogRows[i];
+                templateIndex = i;
                 break;
             }
         }
@@ -1633,9 +1635,15 @@ public class UIView_Result : UIView
             return;
 
         Transform parent = resultLogRowPivot != null ? resultLogRowPivot : template.transform.parent;
-        float baseY = template.transform is RectTransform templateRect
-            ? templateRect.anchoredPosition.y
-            : 0f;
+
+        // 새 Row의 기준 Y는 템플릿의 "현재" 위치가 아니라 Awake 때 캐시한 기준 위치를 쓴다.
+        // 템플릿이 오픈 연출(슬라이드 인) 도중 Kill 되어 중간 높이에 멈춘 상태로 여기 들어오면,
+        // 현재 위치를 그대로 쓸 경우 그 어긋난 Y가 새 Row의 기준값으로 영구 캐시되기 때문이다.
+        float baseY = 0 <= templateIndex && templateIndex < resultLogRowBasePositions.Count
+            ? resultLogRowBasePositions[templateIndex].y
+            : template.transform is RectTransform templateRect
+                ? templateRect.anchoredPosition.y
+                : 0f;
 
         while (resultLogRows.Count < count)
         {
