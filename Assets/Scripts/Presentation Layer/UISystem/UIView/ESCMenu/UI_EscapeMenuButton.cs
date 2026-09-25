@@ -86,6 +86,13 @@ public class UI_EscapeMenuButton : Selectable,
         }
     }
 
+    /// <summary>
+    /// 수동 호버 판정에 쓰는 영역입니다. EventSystem이 실제로 포인터 이벤트를 발생시키는 레이캐스트 이미지와
+    /// 같은 영역이어야 합니다. 루트(레이아웃 슬롯)는 레이캐스트 이미지보다 넓어서, 루트로 판정하면
+    /// OnPointerEnter 없이 호버가 켜지고 OnPointerExit가 오지 않아 호버가 해제되지 않습니다.
+    /// </summary>
+    private RectTransform HitRectTransform => null != raycastImage ? raycastImage.rectTransform : RectTransform;
+
     public CanvasGroup CanvasGroup
     {
         get
@@ -410,7 +417,7 @@ public class UI_EscapeMenuButton : Selectable,
             _mousePos = Mouse.current.position.ReadValue();
         }
 
-        RectTransform _hitRect = RectTransform;
+        RectTransform _hitRect = HitRectTransform;
         if (null == _hitRect) return;
 
         if (null == cachedCanvas)
@@ -472,7 +479,7 @@ public class UI_EscapeMenuButton : Selectable,
         if (null != inputManager && true == inputManager.IsGamepadMode) return false;
         if (true == isPointerHovered) return true;
 
-        RectTransform _rect = RectTransform;
+        RectTransform _rect = HitRectTransform;
         if (null == _rect) return false;
 
         Vector2 _mousePos = Vector2.zero;
