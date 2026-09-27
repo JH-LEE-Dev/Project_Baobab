@@ -19,6 +19,31 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         "바로 Town으로 진입한다(튜토리얼 도입 이전의 기존 새 게임 경로).")]
     [SerializeField] private bool enableTutorial = true;
 
+    [Header("Save")]
+    [Tooltip("개발용 스위치입니다. 끄면 자동저장(마을 도착/숲 출발/메인메뉴 복귀/포커스 상실/종료)이 전부 멈추고, " +
+        "대신 F4(또는 ESC 메뉴의 저장 버튼)를 누른 시점에만 저장됩니다. 던전·튜토리얼·씬 전환 중에는 F4로도 저장되지 않습니다.\n" +
+        "에디터 전용입니다. 꺼진 채로는 빌드가 실패하며(AutoSaveBuildGuard), 빌드된 게임에서는 이 값과 무관하게 항상 켜집니다.")]
+    // 빌드에서는 IsAutoSaveEnabled가 이 값을 읽지 않으므로 CS0414(대입만 되고 쓰이지 않음) 경고가 난다. 의도된 것이다.
+#pragma warning disable 0414
+    [SerializeField] private bool enableAutoSave = true;
+#pragma warning restore 0414
+
+    /// <summary>
+    /// 자동저장 사용 여부입니다. 빌드에서는 인스펙터 값과 무관하게 항상 true입니다.
+    /// (빌드 가드가 막지만, 가드를 우회한 빌드가 나가더라도 유저 진행이 저장되지 않는 사고는 없게 한다)
+    /// </summary>
+    public bool IsAutoSaveEnabled
+    {
+        get
+        {
+#if UNITY_EDITOR
+            return enableAutoSave;
+#else
+            return true;
+#endif
+        }
+    }
+
     private static BootStrap instance;
     private SceneManager sceneManager;
     private InputManager inputManager;
@@ -53,6 +78,9 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     // gameInstaller를 해제하며 두 번째 요청의 경로를 끊어놓는 덕에 우연히 문제가 없었지만,
     // 해제가 도중에 실패하면 그 보호가 사라져 LoadSceneAsync가 두 번 걸린다.
     private bool bIsSceneTransitioning = false;
+
+    /// <summary>씬 전환 코루틴이 도는 중인지 여부입니다. (F4 수동 저장이 전환 도중의 반쯤 정리된 상태를 쓰지 않도록 막는 데 씁니다)</summary>
+    public bool IsSceneTransitioning => bIsSceneTransitioning;
 
     // 유니티 이벤트 함수
     private void Awake()

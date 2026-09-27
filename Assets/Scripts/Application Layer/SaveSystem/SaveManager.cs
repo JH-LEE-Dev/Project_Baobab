@@ -152,6 +152,12 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
     // 마을 도착 / 숲 출발 시점에 발행되는 자동저장 요청. (게임 종료 시 자동저장은 OnApplicationQuit에서 별도 처리)
     private void AutoSaveRequested(AutoSaveRequestedSignal _signal)
     {
+        if (false == IsAutoSaveEnabled())
+        {
+            Debug.Log($"[SaveManager] Auto save skipped ({_signal.reason}) - auto save is disabled on BootStrap. Press F4 to save manually.");
+            return;
+        }
+
         Debug.Log($"[SaveManager] Auto save triggered ({_signal.reason})");
         SaveGameData();
     }
@@ -174,6 +180,12 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
         if (null != bootstrap && SceneType.DungeonScene == bootstrap.CurrentSceneType)
         {
             Debug.Log("[SaveManager] Currently in DungeonScene; skipping auto-save on ApplicationQuit.");
+            return;
+        }
+
+        if (false == IsAutoSaveEnabled())
+        {
+            Debug.Log("[SaveManager] Auto save skipped (ApplicationQuit) - auto save is disabled on BootStrap.");
             return;
         }
 
@@ -225,9 +237,68 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
         // 던전에서는 어차피 SaveGameData가 저장하지 않는다. 여기서 미리 걸러 로그만이라도 줄인다.
         if (null != bootstrap && SceneType.DungeonScene == bootstrap.CurrentSceneType) return;
 
+        // 자동저장을 끈 개발 세션에서는 포커스 상실 저장도 하지 않는다. (에디터에서 창을 오갈 때마다 저장되는 것이 이 스위치를 끄는 이유다)
+        if (false == IsAutoSaveEnabled()) return;
+
         lastFocusSaveTime = Time.unscaledTime;
 
         Debug.Log("[SaveManager] Auto save triggered (LostFocus)");
+        SaveGameData();
+    }
+
+    /// <summary>
+    /// BootStrap의 자동저장 스위치를 읽습니다. 빌드에서는 항상 true입니다. (BootStrap.IsAutoSaveEnabled 참고)
+    /// </summary>
+    private bool IsAutoSaveEnabled()
+    {
+        if (null == bootstrap)
+        {
+            bootstrap = GetComponent<BootStrap>();
+        }
+
+        return null == bootstrap || bootstrap.IsAutoSaveEnabled;
+    }
+
+    /// <summary>
+    /// 자동저장을 끈 개발 세션에서 F4로 그 시점에 저장합니다.
+    /// 저장 경로는 SaveGameData 그대로라 던전/튜토리얼/세션 밖/저장 차단 가드가 모두 적용됩니다.
+    /// 즉 던전에서 F4를 눌러도 저장되지 않습니다.
+    /// 자동저장이 켜져 있으면(빌드 포함) 아무 일도 하지 않습니다.
+    /// </summary>
+    private void Update()
+    {
+        if (true == IsAutoSaveEnabled()) return;
+
+        UnityEngine.InputSystem.Keyboard _keyboard = UnityEngine.InputSystem.Keyboard.current;
+
+        if (null == _keyboard) return;
+        if (false == _keyboard.f4Key.wasPressedThisFrame) return;
+
+        // Alt+F4는 종료 입력이다. 저장 요청으로 받지 않는다.
+        if (true == _keyboard.altKey.isPressed) return;
+
+        if (null != bootstrap && SceneType.DungeonScene == bootstrap.CurrentSceneType)
+        {
+            Debug.LogWarning("[SaveManager] F4 manual save ignored - saving is not allowed in DungeonScene.");
+            return;
+        }
+
+        // 전환 도중에는 CurrentSceneType이 아직 이전 씬(Town)을 가리키지만, 마을 → 숲 출발은 DepartToForest 저장 직후
+        // townObjectManager를 비운 채로 전환을 시작한다. 이때 저장하면 마을 오브젝트가 빈 세이브가 된다.
+        if (null != bootstrap && true == bootstrap.IsSceneTransitioning)
+        {
+            Debug.LogWarning("[SaveManager] F4 manual save ignored - scene transition in progress.");
+            return;
+        }
+
+        // 세션 밖(메인 메뉴)에서는 SaveGameData가 조용히 돌아간다. "저장됨"으로 오해하지 않게 여기서 알린다.
+        if (null == character)
+        {
+            Debug.LogWarning("[SaveManager] F4 manual save ignored - no game session (main menu).");
+            return;
+        }
+
+        Debug.Log("[SaveManager] Manual save triggered (F4)");
         SaveGameData();
     }
 
