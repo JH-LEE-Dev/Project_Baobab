@@ -13,6 +13,8 @@ public class AttackComponent : PComponent
     // 공격 범위 안에 나무가 하나도 없다가 처음 감지되었을 때/감지되어 있다가 전부 사라졌을 때만 발생(매 프레임, 감지 대상 교체 시엔 발생하지 않음)
     public event Action TreeDetectedEvent;
     public event Action TreeDetectionClearedEvent;
+    // 회전 베기(Whirlwind)가 발동된 순간 - 캐릭터 스프라이트 360도 회전 연출용
+    public event Action WhirlwindStrikeEvent;
     //외부 의존성
     private Camera mainCamera;
 
@@ -456,6 +458,7 @@ public class AttackComponent : PComponent
         if (bIsWhirlwindStrike)
         {
             WhirlwindVFX.Spawn(centerPos, effectiveEllipseRadius, whirlwindFrames);
+            WhirlwindStrikeEvent?.Invoke();
         }
 
         IStaticCollidable nearestDamageable = null;

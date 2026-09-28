@@ -90,6 +90,17 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private bool bFacingLocked = false;
     public void SetFacingLocked(bool _locked) => bFacingLocked = _locked;
 
+    // 회전 베기(Whirlwind) 발동 시 스프라이트를 바라보던 방향 기준으로 한 바퀴 돌리는 연출.
+    // 도는 동안은 스프라이트/팔 모두 마우스를 따라가지 않고, 끝나면 스프라이트는 즉시 마우스 방향을,
+    // 팔(ArmComponent)은 기존 회전 보간으로 마우스 방향을 따라간다.
+    // SerializeField로 두면 처음 저장된 값(인스펙터)이 코드 기본값을 덮어써서 수정이 반영되지 않으므로 상수로 둔다.
+    private const float WhirlwindSpinDuration = 0.25f;
+    [SerializeField, Tooltip("1이면 반시계, -1이면 시계 방향으로 돈다.")]
+    private float whirlwindSpinDirection = 1f;
+    private bool bWhirlwindSpinning = false;
+    private float whirlwindSpinElapsed = 0f;
+    private float whirlwindSpinStartAngle = 0f;
+
     public void PlayStunVisual() => stunVisualComponent?.Play();
     public void StopStunVisual() => stunVisualComponent?.Stop();
 
@@ -324,6 +335,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         characterVisualComponent.SetHubState(!bInDungeon);
         characterVisualComponent.CharacterIsDead(false);
         armComponent.SetActivate(bInDungeon);
+        StopWhirlwindSpin();
         SetFacingDirection(Vector2.down);
 
         statComponent.Reset();
@@ -401,6 +413,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         attackComponent.TreeDetectionClearedEvent -= TreeDetectionCleared;
         attackComponent.TreeDetectionClearedEvent += TreeDetectionCleared;
 
+        attackComponent.WhirlwindStrikeEvent -= StartWhirlwindSpin;
+        attackComponent.WhirlwindStrikeEvent += StartWhirlwindSpin;
+
         if (armComponent.axeComponent != null)
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
@@ -429,6 +444,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         {
             attackComponent.TreeDetectedEvent -= TreeDetected;
             attackComponent.TreeDetectionClearedEvent -= TreeDetectionCleared;
+            attackComponent.WhirlwindStrikeEvent -= StartWhirlwindSpin;
         }
 
         if (armComponent != null && armComponent.axeComponent != null)
@@ -453,7 +469,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void UpdateFacingByAttackPoint()
     {
-        if (true == bFacingLocked || 0f == Time.timeScale) return;
+        if (true == bFacingLocked || true == bWhirlwindSpinning || 0f == Time.timeScale) return;
         if (null == attackComponent || false == bInDungeon || false == attackComponent.IsCursorEnabled) return;
 
         Transform attackTarget = attackComponent.GetAttackPointTransform();
@@ -469,6 +485,41 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         }
 
         SetFacingDirection(dir);
+    }
+
+    private void StartWhirlwindSpin()
+    {
+        if (null == characterVisualComponent || WhirlwindSpinDuration <= 0f) return;
+
+        // 연출 도중 다시 발동되면 지금 보이는 각도에서 새로 한 바퀴를 시작한다.
+        whirlwindSpinStartAngle = characterVisualComponent.CurrentFacingAngle;
+        whirlwindSpinElapsed = 0f;
+        bWhirlwindSpinning = true;
+        armComponent.BeginWhirlwindSpin();
+    }
+
+    private void UpdateWhirlwindSpin()
+    {
+        if (false == bWhirlwindSpinning || 0f == Time.timeScale) return;
+
+        whirlwindSpinElapsed += Time.deltaTime;
+        float t = Mathf.Clamp01(whirlwindSpinElapsed / WhirlwindSpinDuration);
+        float spinDegrees = 360f * t * Mathf.Sign(whirlwindSpinDirection);
+        characterVisualComponent.SetFacingAngle(whirlwindSpinStartAngle + spinDegrees);
+        armComponent.ApplyWhirlwindSpin(spinDegrees);
+
+        if (t >= 1f)
+        {
+            StopWhirlwindSpin();
+        }
+    }
+
+    private void StopWhirlwindSpin()
+    {
+        if (false == bWhirlwindSpinning) return;
+
+        bWhirlwindSpinning = false;
+        armComponent.EndWhirlwindSpin();
     }
 
     private void ConnectAttackToArm()
@@ -1191,6 +1242,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         UpdateDroneSeparation(Time.deltaTime); // 드론끼리 겹치지 않도록 매 프레임 살짝 밀어냄(안전망)
 
         // 조준점 및 무기 방향을 먼저 갱신한 뒤 비주얼을 렌더링하여 1프레임 지연을 제거
+        // 회전 베기가 끝나는 프레임에는 곧바로 마우스 방향을 보도록 회전 갱신을 먼저 한다.
+        UpdateWhirlwindSpin();
         UpdateFacingByAttackPoint();
         ConnectAttackToArm();
 

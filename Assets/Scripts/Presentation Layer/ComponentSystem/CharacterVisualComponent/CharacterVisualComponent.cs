@@ -265,6 +265,14 @@ public class CharacterVisualComponent : MonoBehaviour
         currentFacingAngle = angle;
     }
 
+    public float CurrentFacingAngle => currentFacingAngle;
+
+    // 회전 베기처럼 방향 벡터가 아닌 각도로 직접 스프라이트 방향을 돌려야 할 때 사용 (0~360으로 정규화)
+    public void SetFacingAngle(float _angle)
+    {
+        currentFacingAngle = Mathf.Repeat(_angle, 360f);
+    }
+
     public void SetInShadow(bool _isInShadow, float _duration)
     {
         bIsUnderShadow = _isInShadow;

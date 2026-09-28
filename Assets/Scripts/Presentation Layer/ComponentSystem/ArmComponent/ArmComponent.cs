@@ -31,6 +31,41 @@ public class ArmComponent : PComponent, IArmComponent
         bRotationLocked = _locked;
     }
 
+    // 회전 베기 연출 중에는 팔이 마우스를 따라가지 않고 캐릭터 스프라이트와 함께 한 바퀴 돈다.
+    // 넉백 잠금과 서로 풀어버리지 않도록 별도 플래그로 둔다.
+    // 연출이 끝나면 UpdateRotation의 Lerp가 그대로 마우스 방향으로 보간해 준다.
+    private bool bWhirlwindSpinning = false;
+    private float whirlwindSpinStartZ = 0f;
+
+    public void BeginWhirlwindSpin()
+    {
+        bWhirlwindSpinning = true;
+        whirlwindSpinStartZ = transform.eulerAngles.z;
+    }
+
+    // _degrees: 시작 각도로부터 누적 회전량 (반시계 +)
+    public void ApplyWhirlwindSpin(float _degrees)
+    {
+        if (false == bWhirlwindSpinning || bRotationLocked) return;
+
+        float z = whirlwindSpinStartZ + _degrees;
+        transform.rotation = Quaternion.Euler(0f, 0f, z);
+
+        // 팔 회전값은 아래(0,-1)를 0도로 삼으므로(UpdateRotation 참고) 조준 각도로 되돌려 쓴다.
+        // 좌우 반전(localScale.x)은 시작할 때 그대로 두어야 한 방향으로 매끄럽게 돈다.
+        float aimAngle = z - 90f;
+        ApplyPositionOffset(aimAngle);
+        if (axeComponent != null && ReferenceEquals(currentWeapon, axeComponent))
+        {
+            axeComponent.SetSortingByAngle(aimAngle);
+        }
+    }
+
+    public void EndWhirlwindSpin()
+    {
+        bWhirlwindSpinning = false;
+    }
+
     IAxeComponent IArmComponent.axeComponent => axeComponent;
 
     IRifleComponent IArmComponent.rifleComponent => rifleComponent;
@@ -75,7 +110,7 @@ public class ArmComponent : PComponent, IArmComponent
 
     private void Update()
     {
-        if (bRotationLocked || Time.timeScale == 0f) return;
+        if (bRotationLocked || bWhirlwindSpinning || Time.timeScale == 0f) return;
 
         UpdateRotation();
         UpdateFacingDirection();
@@ -132,8 +167,13 @@ public class ArmComponent : PComponent, IArmComponent
         Vector2 direction = (attackTransform.position - transform.position);
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
 
+        ApplyPositionOffset(angle);
+    }
+
+    private void ApplyPositionOffset(float angle)
+    {
         // 0~360도로 변환 (0: 우, 90: 상, 180: 좌, 270: 하)
-        if (angle < 0) angle += 360f;
+        angle = Mathf.Repeat(angle, 360f);
 
         // 0~180도(상단 반원) 범위일 때만 Sin 곡선을 따라 오프셋 적용
         if (angle >= 0f && angle <= 180f)

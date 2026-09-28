@@ -67,8 +67,15 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         //if (bAttacked == false)
         //anim.SetFloat(facingDirHash, dirIndex);
 
-        // 정렬 레이어 처리
-        sortingOrder = (angle > 0 && angle < 180) ? -1 : 1;
+        SetSortingByAngle(angle);
+    }
+
+    // 정렬 레이어 처리 - 위쪽(0~180도)을 볼 때는 도끼가 몸 뒤로 간다.
+    // 회전 베기처럼 조준점 없이 각도만으로 팔을 돌릴 때도 같은 기준을 쓰기 위해 분리했다.
+    public void SetSortingByAngle(float _angle)
+    {
+        _angle = Mathf.Repeat(_angle, 360f);
+        sortingOrder = (_angle > 0 && _angle < 180) ? -1 : 1;
     }
 
     public override void LeftButtonClicked()
