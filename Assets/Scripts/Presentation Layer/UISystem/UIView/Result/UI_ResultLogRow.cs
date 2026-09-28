@@ -6,6 +6,9 @@ using UnityEngine.UI;
 
 public class UI_ResultLogRow : MonoBehaviour
 {
+    private static readonly Vector2 LogIconSize = new Vector2(32f, 32f);
+    private static readonly Vector2 LootIconSize = new Vector2(16f, 16f);
+
     [Serializable]
     private struct LogSpriteMapping
     {
@@ -61,20 +64,21 @@ public class UI_ResultLogRow : MonoBehaviour
     public void SetLootDataVisible(LootType lootType)
     {
         gameObject.SetActive(true);
-        SetItemData(GetLootSprite(lootType), 0L, false);
+        SetItemData(GetLootSprite(lootType), 0L, false, LootIconSize);
     }
 
     private void SetDataInternal(TreeType treeType, LogState logState, int count)
     {
-        SetItemData(GetSprite(treeType, logState), count);
+        SetItemData(GetSprite(treeType, logState), count, true, LogIconSize);
     }
 
-    private void SetItemData(Sprite sprite, long count, bool showCount = true)
+    private void SetItemData(Sprite sprite, long count, bool showCount, Vector2 iconSize)
     {
         if (logImage != null)
         {
             logImage.sprite = sprite;
             logImage.enabled = sprite != null;
+            logImage.rectTransform.sizeDelta = iconSize;
         }
 
         if (countFont != null)
