@@ -62,6 +62,8 @@ public class KnockBackState : CharacterState
         bMovePausedBeforeKnockBack = character.inputManager.IsMovePaused;
 
         character.inputManager.PauseMove(true);
+        // 회전 베기 중이었다면 즉시 취소하고 원래 자세로 되돌린다. 아래 잠금들이 걸리면 복원된 자세가 넉백 동안 유지된다.
+        character.CancelWhirlwindSpin();
         character.SetArmRotationLocked(true);
         character.SetAttackIndicatorLocked(true);
         character.SetFacingLocked(true);

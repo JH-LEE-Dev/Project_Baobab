@@ -489,7 +489,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void StartWhirlwindSpin()
     {
-        if (null == characterVisualComponent || WhirlwindSpinDuration <= 0f) return;
+        // 넉백 중(bFacingLocked)에는 시작하지 않는다. 스윙 도중 넉백되면 타격 판정이 넉백 이후에 도착할 수 있다.
+        if (true == bDead || true == bFacingLocked || null == characterVisualComponent || WhirlwindSpinDuration <= 0f) return;
 
         // 연출 도중 다시 발동되면 지금 보이는 각도에서 새로 한 바퀴를 시작한다.
         whirlwindSpinStartAngle = characterVisualComponent.CurrentFacingAngle;
@@ -520,6 +521,16 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         bWhirlwindSpinning = false;
         armComponent.EndWhirlwindSpin();
+    }
+
+    // 넉백 시 회전 베기 연출을 즉시 취소하고 스프라이트/팔을 회전 시작 전 방향으로 되돌린다.
+    public void CancelWhirlwindSpin()
+    {
+        if (false == bWhirlwindSpinning) return;
+
+        bWhirlwindSpinning = false;
+        characterVisualComponent.SetFacingAngle(whirlwindSpinStartAngle);
+        armComponent.CancelWhirlwindSpin();
     }
 
     private void ConnectAttackToArm()
@@ -565,6 +576,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         stateMachine.ChangeState<DeadState>();
         armComponent.SetActivate(false);
         attackComponent.SetEnable(false);
+        // 사망 애니메이션은 방향이 바뀌면 처음 프레임부터 다시 재생되므로(CharacterAnimator), 회전 베기 도중
+        // 쓰러지면 회전이 방향을 계속 바꿔 쓰러지는 연출이 여러 번 재시작된다. 여기서 회전을 끊는다.
+        StopWhirlwindSpin();
         characterVisualComponent.CharacterIsDead(true);
         characterVisualComponent.PlayDeathFlash(GetArmFlashRenderer());
         CameraMoveController.Instance?.ShakeCamera(5f, 0.3f);

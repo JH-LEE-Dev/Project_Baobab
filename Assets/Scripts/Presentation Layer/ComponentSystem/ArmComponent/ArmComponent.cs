@@ -66,6 +66,24 @@ public class ArmComponent : PComponent, IArmComponent
         bWhirlwindSpinning = false;
     }
 
+    // 넉백 등으로 연출을 중간에 끊을 때 - 회전 시작 전 자세로 되돌린다.
+    // 넉백 잠금이 걸리기 전에 불려야 복원된 자세가 넉백 동안 그대로 유지된다.
+    public void CancelWhirlwindSpin()
+    {
+        if (false == bWhirlwindSpinning) return;
+
+        transform.rotation = Quaternion.Euler(0f, 0f, whirlwindSpinStartZ);
+
+        float aimAngle = whirlwindSpinStartZ - 90f;
+        ApplyPositionOffset(aimAngle);
+        if (axeComponent != null && ReferenceEquals(currentWeapon, axeComponent))
+        {
+            axeComponent.SetSortingByAngle(aimAngle);
+        }
+
+        bWhirlwindSpinning = false;
+    }
+
     IAxeComponent IArmComponent.axeComponent => axeComponent;
 
     IRifleComponent IArmComponent.rifleComponent => rifleComponent;
