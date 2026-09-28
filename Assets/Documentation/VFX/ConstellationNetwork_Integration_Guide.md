@@ -228,3 +228,36 @@ public class ConstellationManagerExample : MonoBehaviour
    - 본 프로젝트의 코딩 규칙에 따라 모든 조건문은 Yoda 표기법(`true == isClosed`, `null != activeLine`, `0 < nodes.Count`)을 엄격히 준수해야 합니다.
 5. **에디터 프리팹 수정 금지**:
    - 프리팹 원본([`VFX_ConstellationDottedLine.prefab`](file:///d:/Unity/Project/Project_Baobab/Assets/Prefabs/VFX/Constellation/VFX_ConstellationDottedLine.prefab))의 인스펙터 기본값은 테스트용 5각 별자리로 세팅되어 있으므로, 런타임에서는 반드시 `SetNodes()`를 통해 실제 나무 위치를 주입하십시오.
+
+---
+
+## 7. 신규 별자리 픽셀 레이저 (ConstellationPixelLaser) 연쇄반응 연동 가이드
+
+기존의 거친 지그재그 번개([`VFX_LightningLaser.prefab`](file:///d:/Unity/Project/Project_Baobab/Assets/Prefabs/VFX/Lightning/VFX_LightningLaser.prefab))를 대체하여, **처음 생성된 별부터 마지막 별까지 도미노처럼 삐용- 찍- 뻗어나가며 별들이 연쇄 폭발하는 신규 픽셀 레이저**입니다.
+
+### 1) 핵심 리소스
+- 프리팹: [`VFX_ConstellationPixelLaser.prefab`](file:///d:/Unity/Project/Project_Baobab/Assets/Prefabs/VFX/Constellation/VFX_ConstellationPixelLaser.prefab)
+- 컴포넌트: [`ConstellationPixelLaser.cs`](file:///d:/Unity/Project/Project_Baobab/Assets/Scripts/Presentation%20Layer/VFX/ConstellationLine/ConstellationPixelLaser.cs)
+- 셰이더: [`ConstellationPixelLaser.shader`](file:///d:/Unity/Project/Project_Baobab/Assets/Shaders/VFX/ConstellationPixelLaser.shader)
+
+### 2) 순차 연쇄 발사 연동 코드 (InDungeonObjectManager 교체용)
+```csharp
+    // 별들이 시간 순서대로 보관된 리스트를 넘겨주면, 처음 별 -> 마지막 별까지 순서대로 찍- 가며 연쇄 폭발
+    [SerializeField] private ConstellationPixelLaser pixelLaserPrefab;
+
+    public void TriggerSequentialStarLaser(List<Vector3> _chronologicalStarPositions)
+    {
+        ConstellationPixelLaser laser = Instantiate(pixelLaserPrefab);
+        
+        // 레이저 헤드가 다음 별에 닿는 정밀한 순간마다 해당 별 폭발 연출 동기화
+        laser.OnStarReachedEvent += (starIndex, starWorldPos) =>
+        {
+            // starIndex 번째 큰 별(TreeStarMarkGroundAnimator)의 소멸 연출 즉시 발동!
+            // PlayStarExplosionVFX(starIndex);
+        };
+
+        // 도미노 연쇄 발사 시작 (폐곡선 여부 true/false)
+        laser.PlaySequentialDominoLaser(_chronologicalStarPositions, _isClosedLoop: true);
+    }
+```
+

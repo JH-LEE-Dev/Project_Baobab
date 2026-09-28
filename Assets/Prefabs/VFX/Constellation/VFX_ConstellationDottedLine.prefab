@@ -86,8 +86,8 @@ MeshRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: -1266786427
-  m_SortingLayer: 13
+  m_SortingLayerID: 1613316897
+  m_SortingLayer: 14
   m_SortingOrder: 10
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
@@ -111,7 +111,7 @@ MonoBehaviour:
   segmentLength: 0.8
   zigzagAmplitudePixels: 6
   randomSeed: 0
-  sortingLayerName: Objects
+  sortingLayerName: FlyingItem
   sortingOrderOffset: 10
   previewInEditor: 1
   editorNodes:
