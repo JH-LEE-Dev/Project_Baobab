@@ -88,7 +88,7 @@ MeshRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
   m_SortingLayer: 13
-  m_SortingOrder: 1
+  m_SortingOrder: 10
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!114 &114000001
@@ -103,14 +103,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0afa7aa05c5d4f67b9904c182d392280, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isClosedLoop: 1
+  dotShape: 4
   dotPixelSize: 1
   minDotSpacingPixels: 3
   maxDotSpacingPixels: 7
   segmentLength: 0.8
-  zigzagAmplitudePixels: 16
+  zigzagAmplitudePixels: 6
   randomSeed: 0
   sortingLayerName: Objects
-  sortingOrderOffset: 1
+  sortingOrderOffset: 10
   previewInEditor: 1
-  editorStartPos: {x: -2, y: 0, z: 0}
-  editorEndPos: {x: 2, y: 0, z: 0}
+  editorNodes:
+  - position: {x: 0.9, y: -1.8, z: 0}
+    target: {fileID: 0}
+    isBigStar: 0
+  - position: {x: 0.8, y: -0.4, z: 0}
+    target: {fileID: 0}
+    isBigStar: 0
+  - position: {x: 2.8, y: -0.2, z: 0}
+    target: {fileID: 0}
+    isBigStar: 0
+  - position: {x: 0.5, y: 1.3, z: 0}
+    target: {fileID: 0}
+    isBigStar: 0
+  - position: {x: -3.2, y: 0.2, z: 0}
+    target: {fileID: 0}
+    isBigStar: 0
