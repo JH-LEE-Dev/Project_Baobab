@@ -17,6 +17,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
         _HDRIntensity("HDR Intensity", Float) = 1
 
         _FlashAmount("Flash Amount", Range(0,1)) = 0
+        _FlashColor("Flash Color", Color) = (1,1,1,1)
 
         [Header(Wind Sway)]
         _EnableWindSway("Enable Wind Sway", Float) = 0
@@ -82,6 +83,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _FlashColor)
                 UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayPositionAmplitude)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayRotationAmplitude)
@@ -141,7 +143,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 half4 color = CommonLitFragment(input, input.color);
                 clip(color.a - 0.01);
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
-                color.rgb = lerp(color.rgb, half3(1,1,1), UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
+                color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
                 return color;
             }
             ENDHLSL
@@ -182,6 +184,8 @@ Shader "Custom/Custom-Sprite-Default-Tree"
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
+                UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _FlashColor)
                 UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayPositionAmplitude)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayRotationAmplitude)
@@ -281,6 +285,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _FlashColor)
                 UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayPositionAmplitude)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayRotationAmplitude)
@@ -338,7 +343,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
 
                 half4 color = CommonUnlitFragment(input, input.color);
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
-                color.rgb = lerp(color.rgb, half3(1,1,1), UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
+                color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
                 return color;
             }
             ENDHLSL

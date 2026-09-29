@@ -17,6 +17,7 @@ Shader "Custom/2D/Custom-Sprite-Default"
         [HideInInspector] _EnableExternalAlpha("Enable External Alpha", Float) = 0
 
         _FlashAmount("Flash Amount", Range(0,1)) = 0
+        _FlashColor("Flash Color", Color) = (1,1,1,1)
     }
 
     SubShader
@@ -73,6 +74,7 @@ Shader "Custom/2D/Custom-Sprite-Default"
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _FlashColor)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings LitVertex(Attributes input)
@@ -113,7 +115,7 @@ Shader "Custom/2D/Custom-Sprite-Default"
                 half4 color = CommonLitFragment(input, input.color);
                 clip(color.a - 0.01);
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
-                color.rgb = lerp(color.rgb, half3(1,1,1), UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
+                color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
                 return color;
             }
             ENDHLSL
@@ -153,6 +155,8 @@ Shader "Custom/2D/Custom-Sprite-Default"
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
+                UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _FlashColor)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings NormalsRenderingVertex(Attributes input)
@@ -232,6 +236,7 @@ Shader "Custom/2D/Custom-Sprite-Default"
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _FlashColor)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings UnlitVertex(Attributes input)
@@ -270,7 +275,7 @@ Shader "Custom/2D/Custom-Sprite-Default"
 
                 half4 color = CommonUnlitFragment(input, input.color);
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
-                color.rgb = lerp(color.rgb, half3(1,1,1), UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
+                color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
                 return color;
             }
             ENDHLSL

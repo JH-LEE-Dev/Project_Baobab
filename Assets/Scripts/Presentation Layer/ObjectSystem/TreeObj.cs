@@ -396,17 +396,18 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     public void TakeDamage(float _damage)
     {
-        TakeDamageInternal(_damage, true);
+        TakeDamageInternal(_damage, true, false);
     }
 
     /// <summary>
     /// 타격/파괴 진동(TreeImpact/TreeDestroy)을 호출부가 직접 관리하고 싶을 때 쓴다. 부메랑처럼 자동으로
     /// 계속 들어오는 공격이 도끼용 묵직한 진동을 매번 울리지 않고 자기 전용 진동을 쓰기 위한 용도다.
     /// (사운드/이펙트는 TakeDamage와 동일하게 그대로 재생된다)
+    /// 치명타 여부(_bCritical)를 넘기면 피격 플래시가 흰색 대신 빨간색으로 번쩍인다.
     /// </summary>
-    public void TakeDamage(float _damage, bool _bPlayHaptic)
+    public void TakeDamage(float _damage, bool _bPlayHaptic, bool _bCritical = false)
     {
-        TakeDamageInternal(_damage, _bPlayHaptic);
+        TakeDamageInternal(_damage, _bPlayHaptic, _bCritical);
     }
 
     /// <summary>
@@ -416,10 +417,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     /// </summary>
     private void TakeDamageWithoutHaptic(float _damage)
     {
-        TakeDamageInternal(_damage, false);
+        TakeDamageInternal(_damage, false, false);
     }
 
-    private void TakeDamageInternal(float _damage, bool _bPlayHaptic)
+    private void TakeDamageInternal(float _damage, bool _bPlayHaptic, bool _bCritical)
     {
         if (!bCanApplyDamage) return;
 
@@ -447,7 +448,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         if (treeVisualComponent != null)
         {
             treeVisualComponent.PlayHitFeedback();
-            treeVisualComponent.PlayHitFlash();
+            treeVisualComponent.PlayHitFlash(_bCritical);
         }
 
         PlayHitSound(wasGemBeforeHit, gemStageBeforeHit, hadShieldBeforeHit);

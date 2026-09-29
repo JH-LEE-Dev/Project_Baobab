@@ -623,12 +623,20 @@ public class AttackComponent : PComponent
             }
         }
 
-        if (UnityEngine.Random.value < ctx.characterStat.criticalChance)
+        bool bCritical = UnityEngine.Random.value < ctx.characterStat.criticalChance;
+        if (bCritical)
         {
             damage *= ctx.characterStat.ciriticalDamageMul;
         }
 
-        damageable.TakeDamage(damage);
+        if (damageable is TreeObj hitTree)
+        {
+            hitTree.TakeDamage(damage, true, bCritical);
+        }
+        else
+        {
+            damageable.TakeDamage(damage);
+        }
 
         // 과열 버프 활성 중 도끼 평타로 나무를 맞히면 지속 피해 부여 (충격파/드론/부메랑 제외, 도끼 평타만)
         if (ctx.overheatComponent != null && ctx.overheatComponent.IsActive && damageable is TreeObj overheatTarget)
