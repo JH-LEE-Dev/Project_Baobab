@@ -867,6 +867,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  hitFlashColor: {r: 1, g: 1, b: 1, a: 1}
+  criticalHitFlashColor: {r: 1, g: 0, b: 0, a: 1}
   growUpFlashDuration: 0.35
   growUpFlashCurve:
     serializedVersion: 2
