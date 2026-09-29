@@ -58,12 +58,27 @@ MonoBehaviour:
   laserStartColor: {r: 0.5, g: 0.85, b: 1.2, a: 1}
   laserEndColor: {r: 0.4, g: 0.75, b: 1.1, a: 1}
   laserTailColor: {r: 0.15, g: 0.35, b: 0.7, a: 1}
-  emissionBoost: 2
-  headExtraThickness: 1
+  emissionBoost: 2.7
   tailLength: 0.5
   segmentShootDuration: 0.45
   fullAreaSustainDuration: 0.2
   starReachProgressThreshold: 0.98
+  headSizePx: 6
+  headTaperLengthPx: 30
+  headZonePx: 7
+  headShape: 1.25
+  waveAmplitudePx: 4
+  waveLengthPx: 44
+  wavePeriodPx: 10
+  waveAnchorPx: 14
+  warheadGlow: 0.2
+  sparkDensity: 0.2
+  sparkDistancePx: 9
+  sparkLifePx: 28
+  arriveDuration: 0.2
+  burstRadiusPx: 16
+  starPulsePx: 2
+  starJitterPx: 1
   zigzagAmplitude: 0.065
   zigzagStepLength: 0.1
   curveRoundness: 0

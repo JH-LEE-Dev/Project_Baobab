@@ -56,6 +56,46 @@ namespace PresentationLayer.VFX
             "선단은 감속 곡선(ease-out)으로 날아가 끝부분 몇 픽셀을 오래 채우므로, 1.0이면 눈에 보이는 도착보다 이벤트가 늦습니다. (1.0 = 비행 완료 시점)")]
         private float starReachProgressThreshold = 1.0f;
 
+        [Header("탄두 / 파동 (빔 선단 연출, 전부 정점 셰이더에서 정수 픽셀 단위로 처리)")]
+        [SerializeField, Range(1, 11), Tooltip("선단 탄두의 최대 굵기(px, 홀수로 반올림). 선단에서 꼬리 쪽으로 갈수록 1px 점선으로 가늘어집니다")]
+        private int headSizePx = 7;
+        [SerializeField, Tooltip("탄두 굵기가 1px로 가늘어지는 데 걸리는 선단 뒤쪽 거리(px)")]
+        private float headTaperLengthPx = 30.0f;
+        [SerializeField, Tooltip("선단 뒤 이 거리(px) 안의 도트는 마름모 모양 탄두(흰 코어 + 테두리)로 그립니다")]
+        private float headZonePx = 7.0f;
+        [SerializeField, Range(0.5f, 2.0f), Tooltip("탄두 도트의 마름모 마스크 한계(|x|+|y|). 1.0 = 정마름모, 2.0 = 정사각형")]
+        private float headShape = 1.25f;
+        [SerializeField, Tooltip("선단 뒤 파동 묶음의 최대 꺾임 폭(px). 선단 자체는 곧게 나가고 그 뒤에서 가장 크게 출렁입니다")]
+        private float waveAmplitudePx = 4.0f;
+        [SerializeField, Tooltip("선단 뒤로 파동이 이어지는 길이(px). 이 거리에서 진폭이 0으로 수렴합니다")]
+        private float waveLengthPx = 44.0f;
+        [SerializeField, Tooltip("파동 한 주기의 길이(px)")]
+        private float wavePeriodPx = 10.0f;
+        [SerializeField, Tooltip("양 끝 별에서 이 거리(px) 안은 진폭을 0으로 눌러 빔이 별 중심에 정확히 붙게 합니다")]
+        private float waveAnchorPx = 14.0f;
+        [SerializeField, Range(0.05f, 1.0f), Tooltip("가장 굵은 도트의 발광 배율(1px 도트 대비). 낮출수록 탄두 블룸이 줄어 픽셀 형태가 또렷해집니다")]
+        private float warheadGlow = 0.4f;
+        [SerializeField, Range(0.0f, 1.0f), Tooltip("도트마다 스파크(옆으로 튀었다 사라지는 잔해)가 붙을 확률")]
+        private float sparkDensity = 0.2f;
+        [SerializeField, Tooltip("스파크가 튀어나가는 최대 거리(px)")]
+        private float sparkDistancePx = 9.0f;
+        [SerializeField, Tooltip("선단이 지난 뒤 스파크가 살아있는 거리(px)")]
+        private float sparkLifePx = 28.0f;
+
+        [Header("도착 연출 (빔이 끝 별에 닿은 뒤: 탄두 소멸 + 별 요동 + 스파크 터짐)")]
+        [SerializeField, Range(0.8f, 1.0f), Tooltip("선단이 이 진행도에 닿는 순간 도착 연출을 시작합니다. 선단은 끝에서 감속해 오래 기어가므로 1.0보다 낮게 잡아야 도착하자마자 터집니다. 바닥 별 폭발(starReachProgressThreshold)과 맞추려면 그 값과 같게 두세요")]
+        private float arriveStartProgress = 0.97f;
+        [SerializeField, Range(0.1f, 1.0f), Tooltip("도착 연출 전체 길이(초). 도착 후 유지+페이드가 끝나기 전에 별이 다 꺼지도록 0.4 이하를 권장합니다")]
+        private float arriveDuration = 0.4f;
+        [SerializeField, Tooltip("도착 순간 끝 별에서 8방향으로 터져 나가는 스파크의 최대 반경(px)")]
+        private float burstRadiusPx = 10.0f;
+        [SerializeField, Tooltip("도착한 끝 별 십자가 맥동하며 팔이 늘어나는 최대 길이(px)")]
+        private float starPulsePx = 2.0f;
+        [SerializeField, Tooltip("도착한 끝 별이 떨리는 폭(px). 시간이 지나며 잦아듭니다")]
+        private float starJitterPx = 1.0f;
+        [SerializeField, Tooltip("도착 후 끝 별 주변 이 반경(px) 안의 도트/별이 도착 진행 20~70% 사이에 하나씩 꺼집니다(먼 도트부터). 0이면 끝점 잔재를 따로 정리하지 않습니다")]
+        private float arriveClearZonePx = 48.0f;
+
         [Header("지그재그 (Zigzag) 형태 세팅")]
         [SerializeField, Tooltip("지그재그 꺾임 폭 (월드 단위, 32 PPU 기준 0.09375 = 3픽셀)")]
         private float zigzagAmplitude = 0.09375f;
@@ -195,6 +235,11 @@ namespace PresentationLayer.VFX
         private static readonly int PropHeadColor = Shader.PropertyToID("_HeadColor");
         private static readonly int PropTailColor = Shader.PropertyToID("_TailColor");
         private static readonly int PropEmissionBoost = Shader.PropertyToID("_EmissionBoost");
+        private static readonly int PropHeadParams = Shader.PropertyToID("_HeadParams");
+        private static readonly int PropWaveParams = Shader.PropertyToID("_WaveParams");
+        private static readonly int PropSparkParams = Shader.PropertyToID("_SparkParams");
+        private static readonly int PropArrive = Shader.PropertyToID("_Arrive");
+        private static readonly int PropArriveParams = Shader.PropertyToID("_ArriveParams");
 
         #region Unity Lifecycle
 
@@ -447,6 +492,7 @@ namespace PresentationLayer.VFX
                 ComputeBezierControlPoints(activePointsBuffer, i, bLoop, curveRoundness, out Vector3 pStart, out Vector3 pEnd, out Vector3 c0, out Vector3 c1);
 
                 PixelLaserSegment segment = segmentPool[i];
+                ConfigureSegment(segment);
                 segment.Setup(
                     this.transform,
                     pStart,
@@ -494,9 +540,27 @@ namespace PresentationLayer.VFX
             public float elapsed;
             public bool reached;
             public bool starEventFired;
+            public bool arrived; // 선단이 arriveStartProgress에 닿아 도착 연출이 시작됐는지(비행 완료 reached보다 먼저 켜진다)
+            public float arriveElapsed; // 도착 연출 시작 이후 흐른 시간(초). 도착 연출 진행도(0~1)의 원천
         }
 
         private readonly List<SimultaneousStep> simultaneousSteps = new List<SimultaneousStep>(16);
+
+        // 도착한 빔마다 도착 후 경과 시간을 0~1(arriveDuration 기준)로 셰이더에 전달한다. 탄두 소멸, 별 요동, 스파크 터짐이
+        // 이 값으로 진행되므로 유지(Phase 2)/페이드(Phase 3) 구간에도 계속 호출해 도착한 빔이 얼어붙지 않게 한다.
+        private void TickArrivals(float _dt)
+        {
+            float duration = Mathf.Max(0.05f, arriveDuration);
+            for (int i = 0; i < simultaneousSteps.Count; i++)
+            {
+                SimultaneousStep step = simultaneousSteps[i];
+                if (false == step.arrived) continue;
+
+                step.arriveElapsed += _dt;
+                step.segment.SetArrival(Mathf.Clamp01(step.arriveElapsed / duration));
+                simultaneousSteps[i] = step;
+            }
+        }
 
         private void StopCurrentRoutine()
         {
@@ -553,6 +617,7 @@ namespace PresentationLayer.VFX
                 // 1) 정방향 빔: A -> B (목표: idxB)
                 float durForward = Mathf.Max(0.04f, segmentShootDuration * UnityEngine.Random.Range(0.9f, 1.1f));
                 PixelLaserSegment segForward = segmentPool[segIndex++];
+                ConfigureSegment(segForward);
                 segForward.Setup(
                     this.transform,
                     pA,
@@ -590,6 +655,7 @@ namespace PresentationLayer.VFX
                 // 2) 역방향 빔: B -> A (목표: idxA)
                 float durBackward = Mathf.Max(0.04f, segmentShootDuration * UnityEngine.Random.Range(0.9f, 1.1f));
                 PixelLaserSegment segBackward = segmentPool[segIndex++];
+                ConfigureSegment(segBackward);
                 segBackward.Setup(
                     this.transform,
                     pB,
@@ -631,6 +697,7 @@ namespace PresentationLayer.VFX
             {
                 float dt = Time.deltaTime;
                 allReached = true;
+                TickArrivals(dt);
 
                 for (int i = 0; i < simultaneousSteps.Count; i++)
                 {
@@ -651,6 +718,16 @@ namespace PresentationLayer.VFX
                         else
                         {
                             allReached = false;
+                        }
+
+                        // 도착 연출은 비행 완료를 기다리지 않고 선단이 끝 별 근처(arriveStartProgress)에 닿는 순간 시작한다.
+                        // 선단은 감속 곡선이라 마지막 몇 픽셀을 오래 기어가므로, 완료를 기다리면 도착한 채 머무는 시간이 생긴다.
+                        // 시작 프레임부터 스파크가 보이도록 도착 값을 0이 아닌 아주 작은 값으로 미리 넣는다.
+                        if (false == step.arrived && (true == bFlightDone || arriveStartProgress <= progress))
+                        {
+                            step.arrived = true;
+                            step.arriveElapsed = 0.0f;
+                            step.segment.SetArrival(0.001f);
                         }
 
                         // 도달 이벤트는 비행 완료와 별개로, 선단이 눈에 보이게 별에 닿는 진행도에서 한 번만 보낸다.
@@ -681,7 +758,9 @@ namespace PresentationLayer.VFX
                 float sustainElapsed = 0.0f;
                 while (sustainElapsed < fullAreaSustainDuration)
                 {
-                    sustainElapsed += Time.deltaTime;
+                    float sustainDt = Time.deltaTime;
+                    sustainElapsed += sustainDt;
+                    TickArrivals(sustainDt);
                     yield return null;
                 }
             }
@@ -691,7 +770,9 @@ namespace PresentationLayer.VFX
             float fadeDuration = Mathf.Max(0.05f, segmentShootDuration * tailLength);
             while (fadeElapsed < fadeDuration)
             {
-                fadeElapsed += Time.deltaTime;
+                float fadeDt = Time.deltaTime;
+                fadeElapsed += fadeDt;
+                TickArrivals(fadeDt);
                 float tFade = Mathf.Clamp01(fadeElapsed / fadeDuration);
                 float tailProgress = 1.0f + tFade * tailLength;
 
@@ -945,6 +1026,21 @@ namespace PresentationLayer.VFX
 
         #region Internal Segment Pool & Builder
 
+        /// <summary>
+        /// 세그먼트 메쉬를 만들기 전에 탄두/파동/스파크 세팅을 전달합니다. 스파크 밀도는 메쉬 생성 시점에,
+        /// 나머지는 셰이더 프로퍼티로 쓰이므로 반드시 Setup 이전에 호출해야 합니다.
+        /// </summary>
+        private void ConfigureSegment(PixelLaserSegment _segment)
+        {
+            _segment.SetHeadParams(
+                sparkDensity,
+                new Vector4(headSizePx, headTaperLengthPx, headZonePx, headShape),
+                new Vector4(waveAmplitudePx, waveLengthPx, wavePeriodPx, waveAnchorPx),
+                new Vector4(sparkDistancePx, sparkLifePx, warheadGlow, 0.0f),
+                new Vector4(burstRadiusPx, starPulsePx, starJitterPx, arriveClearZonePx));
+            _segment.SetArrival(0.0f); // 풀에서 재사용될 때 이전 발사의 도착 연출이 남지 않게 초기화
+        }
+
         private void EnsureSegmentsPrewarmed(int _requiredCount)
         {
             // 1. 이미 하이라키(자식)에 존재하는 LaserSegment 오브젝트가 있다면 먼저 풀에 수집 및 바인딩
@@ -991,9 +1087,25 @@ namespace PresentationLayer.VFX
 
             // Zero GC 무할당 정적 메쉬 캐시 버퍼
             private static readonly List<Vector3> segVertices = new List<Vector3>(256);
-            private static readonly List<Vector2> segUVs = new List<Vector2>(256);
+            private static readonly List<Vector2> segUVs = new List<Vector2>(256); // x = 변 위 진행 위치(0~1), y = 도트별 난수 시드
+            private static readonly List<Vector2> segCorners = new List<Vector2>(256); // 셰이더가 굵기 배율을 곱해 쿼드를 펼치는 코너 오프셋(1픽셀 기준)
+            private static readonly List<Vector4> segAux = new List<Vector4>(256); // xy = 진행 방향 법선, z = 변 호 길이(px), w = 종류(0 몸통 도트, 1 십자별 팔, 2 스파크)
             private static readonly List<Color> segColors = new List<Color>(256);
             private static readonly List<int> segTriangles = new List<int>(384);
+
+            private const float KindDot = 0.0f;
+            private const float KindCrossArm = 1.0f;
+            private const float KindSpark = 2.0f;
+            private const float KindBurst = 3.0f; // 도착 순간 끝 별에서 8방향으로 터지는 스파크
+
+            private static readonly Vector2[] BurstDirections =
+            {
+                new Vector2(1.0f, 0.0f), new Vector2(0.7071f, 0.7071f), new Vector2(0.0f, 1.0f), new Vector2(-0.7071f, 0.7071f),
+                new Vector2(-1.0f, 0.0f), new Vector2(-0.7071f, -0.7071f), new Vector2(0.0f, -1.0f), new Vector2(0.7071f, -0.7071f)
+            };
+
+            // 스파크 밀도는 메쉬 생성 시점에 쓰인다. ConfigureSegment가 Setup 이전에 채운다.
+            private float sparkDensity;
 
             public PixelLaserSegment(GameObject _go, Material _material)
             {
@@ -1042,20 +1154,33 @@ namespace PresentationLayer.VFX
                 }
             }
 
-            private static void AddQuad(Vector3 _center, float _halfW, float _halfH, float _progress, Color _color)
+            // 쿼드 4개 정점이 전부 같은 중심(_center)을 갖고, 코너 오프셋은 별도 UV 채널로 보낸다 - 정점 셰이더가 선단과의
+            // 거리에 따라 굵기(정수 픽셀 배율)와 파동 변위를 정한 뒤 월드 픽셀 격자에 스냅해 쿼드를 펼친다.
+            private static void AddQuad(Vector3 _center, float _halfW, float _halfH, float _normT, float _seed, Color _color, Vector2 _normal, float _arcPx, float _kind)
             {
                 int vIndex = segVertices.Count;
 
-                segVertices.Add(new Vector3(_center.x - _halfW, _center.y - _halfH, 0.0f));
-                segVertices.Add(new Vector3(_center.x - _halfW, _center.y + _halfH, 0.0f));
-                segVertices.Add(new Vector3(_center.x + _halfW, _center.y + _halfH, 0.0f));
-                segVertices.Add(new Vector3(_center.x + _halfW, _center.y - _halfH, 0.0f));
+                segVertices.Add(_center);
+                segVertices.Add(_center);
+                segVertices.Add(_center);
+                segVertices.Add(_center);
 
-                Vector2 uv = new Vector2(_progress, 0.0f);
+                segCorners.Add(new Vector2(-_halfW, -_halfH));
+                segCorners.Add(new Vector2(-_halfW, _halfH));
+                segCorners.Add(new Vector2(_halfW, _halfH));
+                segCorners.Add(new Vector2(_halfW, -_halfH));
+
+                Vector2 uv = new Vector2(_normT, _seed);
                 segUVs.Add(uv);
                 segUVs.Add(uv);
                 segUVs.Add(uv);
                 segUVs.Add(uv);
+
+                Vector4 aux = new Vector4(_normal.x, _normal.y, _arcPx, _kind);
+                segAux.Add(aux);
+                segAux.Add(aux);
+                segAux.Add(aux);
+                segAux.Add(aux);
 
                 segColors.Add(_color);
                 segColors.Add(_color);
@@ -1071,16 +1196,58 @@ namespace PresentationLayer.VFX
                 segTriangles.Add(vIndex + 3);
             }
 
-            private static void AddDot(Vector3 _center, float _progress, Color _color)
+            private static float SnapToPixelCenter(float _value)
             {
-                AddQuad(_center, HalfPixel, HalfPixel, _progress, _color);
+                return (Mathf.Floor(_value / PixelUnit) + 0.5f) * PixelUnit;
             }
 
-            private static void AddCrossStar(Vector3 _center, float _progress, Color _color)
+            private static void AddDot(Vector3 _center, float _normT, float _seed, Color _color, Vector2 _normal, float _arcPx)
             {
-                // 3x3 픽셀 십자별 (가로바 + 세로바)
-                AddQuad(_center, HalfPixel * 2.5f, HalfPixel, _progress, _color);
-                AddQuad(_center, HalfPixel, HalfPixel * 2.5f, _progress, _color);
+                AddQuad(_center, HalfPixel, HalfPixel, _normT, _seed, _color, _normal, _arcPx, KindDot);
+            }
+
+            private static void AddCrossStar(Vector3 _center, float _normT, float _seed, Color _color, Vector2 _normal, float _arcPx)
+            {
+                // 5x1 가로바 + 1x5 세로바 십자별. 굵기 배율이 곱해지지 않는 고정 크기다.
+                AddQuad(_center, HalfPixel * 2.5f, HalfPixel, _normT, _seed, _color, _normal, _arcPx, KindCrossArm);
+                AddQuad(_center, HalfPixel, HalfPixel * 2.5f, _normT, _seed, _color, _normal, _arcPx, KindCrossArm);
+            }
+
+            // 선단이 지나간 뒤 옆으로 튀었다 사라지는 1px 스파크. 위치는 셰이더가 선단 뒤 거리로 정한다(평소엔 크기 0으로 숨는다).
+            private static void AddSpark(Vector3 _center, float _normT, float _seed, Vector2 _normal, float _arcPx)
+            {
+                AddQuad(_center, HalfPixel, HalfPixel, _normT, _seed, Color.white, _normal, _arcPx, KindSpark);
+            }
+
+            // 도착 스파크. 방향(_direction)은 8방향 단위벡터이며, 위치/크기/수명은 셰이더가 도착 진행도로 정한다(평소엔 크기 0으로 숨는다).
+            private static void AddBurst(Vector3 _center, float _seed, Vector2 _direction, float _arcPx)
+            {
+                AddQuad(_center, HalfPixel, HalfPixel, 1.0f, _seed, Color.white, _direction, _arcPx, KindBurst);
+            }
+
+            /// <summary>
+            /// 스파크 밀도(메쉬 생성용)와 탄두/파동/스파크/도착 연출 셰이더 파라미터를 지정합니다.
+            /// </summary>
+            public void SetHeadParams(float _sparkDensity, Vector4 _head, Vector4 _wave, Vector4 _spark, Vector4 _arriveParams)
+            {
+                sparkDensity = _sparkDensity;
+
+                meshRenderer.GetPropertyBlock(propBlock);
+                propBlock.SetVector(PropHeadParams, _head);
+                propBlock.SetVector(PropWaveParams, _wave);
+                propBlock.SetVector(PropSparkParams, _spark);
+                propBlock.SetVector(PropArriveParams, _arriveParams);
+                meshRenderer.SetPropertyBlock(propBlock);
+            }
+
+            /// <summary>
+            /// 도착 연출 진행도(0 = 비행 중, 0~1 = 도착 후 경과). 셰이더가 탄두 소멸/별 요동/스파크 터짐에 쓴다.
+            /// </summary>
+            public void SetArrival(float _arrive)
+            {
+                meshRenderer.GetPropertyBlock(propBlock);
+                propBlock.SetFloat(PropArrive, _arrive);
+                meshRenderer.SetPropertyBlock(propBlock);
             }
 
             public void SetColors(Color _core, Color _head, Color _tail, float _boost = 1.0f)
@@ -1142,8 +1309,13 @@ namespace PresentationLayer.VFX
 
                 segVertices.Clear();
                 segUVs.Clear();
+                segCorners.Clear();
+                segAux.Clear();
                 segColors.Clear();
                 segTriangles.Clear();
+
+                // 셰이더가 선단 뒤 거리(px)를 계산할 수 있도록 변의 호 길이를 픽셀 단위로 넘긴다
+                float arcPx = length / PixelUnit;
 
                 // 2픽셀 간격(PixelUnit * 2.0f)으로 촘촘하고 팽팽한 성좌 도트 실선 배치
                 float stepDist = PixelUnit * 2.0f;
@@ -1184,21 +1356,30 @@ namespace PresentationLayer.VFX
                     // 32 PPU 픽셀 격자 정수 스냅 강제 (도트 깨짐 원천 차단)
                     perpOffset = Mathf.Round(perpOffset / PixelUnit) * PixelUnit;
 
+                    // 도트 중심은 픽셀 칸의 정중앙에 둔다 - 굵기 배율이 홀수 픽셀(1/3/5/7)이라 칸 경계에 정확히 맞물린다.
                     Vector3 dotPos = curvePt + curPerp * perpOffset;
-                    dotPos.x = Mathf.Round(dotPos.x / PixelUnit) * PixelUnit;
-                    dotPos.y = Mathf.Round(dotPos.y / PixelUnit) * PixelUnit;
+                    dotPos.x = SnapToPixelCenter(dotPos.x);
+                    dotPos.y = SnapToPixelCenter(dotPos.y);
                     dotPos.z = 0.0f;
 
                     Color col = Color.Lerp(_startCol, _endCol, normT);
+                    Vector2 normal = new Vector2(curPerp.x, curPerp.y);
+                    float seed = UnityEngine.Random.value;
 
                     // 5개 도트마다 은은한 십자별(+) 배치, 나머지는 1x1 도트(.)
                     if (0 == (dotIndex % 5))
                     {
-                        AddCrossStar(dotPos, normT, col);
+                        AddCrossStar(dotPos, normT, seed, col, normal, arcPx);
                     }
                     else
                     {
-                        AddDot(dotPos, normT, col);
+                        AddDot(dotPos, normT, seed, col, normal, arcPx);
+                    }
+
+                    // 선단이 지나간 뒤 옆으로 튀는 스파크 - 도트 중심에 겹쳐 두고 셰이더가 평소엔 숨긴다
+                    if (UnityEngine.Random.value < sparkDensity)
+                    {
+                        AddSpark(dotPos, normT, UnityEngine.Random.value, normal, arcPx);
                     }
 
                     currentDist += stepDist;
@@ -1209,15 +1390,28 @@ namespace PresentationLayer.VFX
                 if (currentDist - stepDist < length)
                 {
                     Vector3 finalPos = localEnd;
-                    finalPos.x = Mathf.Round(finalPos.x / PixelUnit) * PixelUnit;
-                    finalPos.y = Mathf.Round(finalPos.y / PixelUnit) * PixelUnit;
+                    finalPos.x = SnapToPixelCenter(finalPos.x);
+                    finalPos.y = SnapToPixelCenter(finalPos.y);
                     finalPos.z = 0.0f;
-                    AddCrossStar(finalPos, 1.0f, _endCol);
+                    // 시드가 음수인 십자별이 "끝 별"이다 - 셰이더가 도착 후 맥동/떨림/소멸을 이 별에만 적용한다(양 팔은 같은 시드를 공유)
+                    AddCrossStar(finalPos, 1.0f, -(1.0f + UnityEngine.Random.value), _endCol, new Vector2(-defaultDir.y, defaultDir.x), arcPx);
+                }
+
+                // 도착 스파크 8방향 - 끝 별 중심에서 출발한다
+                Vector3 burstPos = localEnd;
+                burstPos.x = SnapToPixelCenter(burstPos.x);
+                burstPos.y = SnapToPixelCenter(burstPos.y);
+                burstPos.z = 0.0f;
+                for (int b = 0; b < BurstDirections.Length; b++)
+                {
+                    AddBurst(burstPos, UnityEngine.Random.value, BurstDirections[b], arcPx);
                 }
 
                 proceduralMesh.Clear();
                 proceduralMesh.SetVertices(segVertices);
                 proceduralMesh.SetUVs(0, segUVs);
+                proceduralMesh.SetUVs(1, segCorners);
+                proceduralMesh.SetUVs(2, segAux);
                 proceduralMesh.SetColors(segColors);
                 proceduralMesh.SetTriangles(segTriangles, 0);
                 proceduralMesh.RecalculateBounds();
