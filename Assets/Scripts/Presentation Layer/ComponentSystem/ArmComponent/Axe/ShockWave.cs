@@ -18,6 +18,7 @@ public class ShockWave : MonoBehaviour
     private Vector3 moveDirection = Vector3.right;
     private bool bIsEnforced = false;
     private bool bIsOverheat = false;
+    private bool bIsCritical = false;
     private float maxEffectiveDistance = 0f;
 
     // 이 충격파가 처음으로 나무를 맞췄을 때 한 번만 호출된다. 풀에서 재사용되므로 Reset에서 비운다.
@@ -89,6 +90,11 @@ public class ShockWave : MonoBehaviour
         bIsOverheat = _bIsOverheat;
     }
 
+    public void SetCritical(bool _bIsCritical)
+    {
+        bIsCritical = _bIsCritical;
+    }
+
     public void SetDirection(Vector3 _dir)
     {
         moveDirection = _dir.normalized;
@@ -112,6 +118,7 @@ public class ShockWave : MonoBehaviour
         moveDirection = Vector3.right;
         bIsEnforced = false;
         bIsOverheat = false;
+        bIsCritical = false;
         firstTreeHitCallback = null;
 
         // 리셋 시 스케일과 범위를 초기 상태로 복구
@@ -196,7 +203,7 @@ public class ShockWave : MonoBehaviour
                         TriggerOverheatExplosion(treeObj);
                     }
 
-                    treeObj.TakeDamage(finalDamage);
+                    treeObj.TakeDamage(finalDamage, true, bIsCritical);
                     hitTargets.Add(target);
 
                     if (firstTreeHitCallback != null)

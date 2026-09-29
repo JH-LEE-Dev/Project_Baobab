@@ -60,6 +60,8 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private float hitElasticity = 1f;
     [SerializeField] private float hitFlashDuration = 0.15f;
     [SerializeField] private AnimationCurve hitFlashCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
+    [SerializeField] private Color hitFlashColor = Color.white;
+    [SerializeField] private Color criticalHitFlashColor = Color.red;
 
     [Header("Grow Up Flash")]
     [SerializeField] private float growUpFlashDuration = 0.35f;
@@ -134,6 +136,11 @@ public class TreeVisualComponent : MonoBehaviour
 
     // Hit Flash
     private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
+    private static readonly int FlashColorID = Shader.PropertyToID("_FlashColor");
+    // 치명타(빨간색) 점멸이 끝나는 시각. 이 시각 전까지 들어온 일반 타격은 점멸을 덮어쓰지 않는다.
+    // bool 플래그 대신 시각으로 들고 있는 이유: 점멸 도중 오브젝트가 꺼지면 코루틴이 끝을 못 봐서
+    // 플래그가 켜진 채 남을 수 있는데, 시각은 시간이 지나면 저절로 풀린다.
+    private float criticalFlashEndTime = 0f;
     private MaterialPropertyBlock _flashMPB;
     private Coroutine hitFlashCoroutine;
 
@@ -653,18 +660,27 @@ public class TreeVisualComponent : MonoBehaviour
     }
 
     // 피격 시 나무 스프라이트가 짧게 흰색으로 번쩍였다가 원래 색으로 돌아오도록 한다.
-    public void PlayHitFlash()
+    // 치명타로 맞았다면 흰색 대신 빨간색으로 번쩍인다.
+    public void PlayHitFlash(bool _bCritical = false)
     {
-        PlayFlash(hitFlashDuration, hitFlashCurve);
+        // 빨간 점멸이 진행 중일 때 들어온 일반 타격은 무시하고 빨간 점멸을 끝까지 보여준다.
+        // 그러지 않으면 치명타 직후 충격파·드론 타격이 곧바로 흰색으로 덮어써 빨간색이 거의 안 보인다.
+        // (새로 시작하지 않고 남은 시간만 이어가므로, 연타가 계속 들어와도 빨간 상태가 늘어나지 않는다)
+        if (!_bCritical && Time.time < criticalFlashEndTime)
+        {
+            return;
+        }
+
+        PlayFlash(hitFlashDuration, hitFlashCurve, _bCritical ? criticalHitFlashColor : hitFlashColor, _bCritical);
     }
 
     // 묘목이 다 자라 스케일이 최대가 되는 순간, 피격 플래시와 같은 셰이더로 한 번 하얗게 반짝인다.
     public void PlayGrowUpFlash()
     {
-        PlayFlash(growUpFlashDuration, growUpFlashCurve);
+        PlayFlash(growUpFlashDuration, growUpFlashCurve, Color.white, false);
     }
 
-    private void PlayFlash(float _duration, AnimationCurve _curve)
+    private void PlayFlash(float _duration, AnimationCurve _curve, Color _color, bool _bCritical)
     {
         if (!gameObject.activeInHierarchy)
         {
@@ -676,6 +692,9 @@ public class TreeVisualComponent : MonoBehaviour
             StopCoroutine(hitFlashCoroutine);
         }
 
+        // 색은 점멸 동안 바뀌지 않으므로 시작할 때 한 번만 넣고, 루프에서는 세기만 갱신한다.
+        ApplyFlashColorToRenderers(_color);
+        criticalFlashEndTime = _bCritical ? Time.time + _duration : 0f;
         hitFlashCoroutine = StartCoroutine(FlashRoutine(_duration, _curve));
     }
 
@@ -720,6 +739,26 @@ public class TreeVisualComponent : MonoBehaviour
         sr.SetPropertyBlock(_flashMPB);
     }
 
+    private void ApplyFlashColorToRenderers(Color _color)
+    {
+        if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+
+        SetFlashColorToRenderer(topRenderer, _color);
+        SetFlashColorToRenderer(bottomRenderer, _color);
+        SetFlashColorToRenderer(topShieldRenderer, _color);
+        SetFlashColorToRenderer(bottomShieldRenderer, _color);
+        SetFlashColorToRenderer(topHighlightRenderer, _color);
+        SetFlashColorToRenderer(bottomHighlightRenderer, _color);
+    }
+
+    private void SetFlashColorToRenderer(SpriteRenderer sr, Color _color)
+    {
+        if (sr == null) return;
+        sr.GetPropertyBlock(_flashMPB);
+        _flashMPB.SetColor(FlashColorID, _color);
+        sr.SetPropertyBlock(_flashMPB);
+    }
+
     // VFX 재생에 필요한 위치/회전/색상 데이터를 외부(InDungeonVFXManager)에 제공한다.
     public Vector3 GetTopRootPosition() => topRoot != null ? topRoot.position : transform.position;
     public Vector3 GetBottomRootPosition() => bottomRoot != null ? bottomRoot.position : transform.position;
@@ -757,6 +796,7 @@ public class TreeVisualComponent : MonoBehaviour
             StopCoroutine(hitFlashCoroutine);
             hitFlashCoroutine = null;
         }
+        criticalFlashEndTime = 0f;
 
         if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
         ApplyFlashAmountToRenderers(0f);

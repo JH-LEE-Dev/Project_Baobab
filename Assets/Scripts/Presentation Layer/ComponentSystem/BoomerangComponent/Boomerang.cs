@@ -475,7 +475,8 @@ public class Boomerang : MonoBehaviour
         // 치명타는 이 틱에 대해 한 번만 굴리고, 이번 틱에 맞은 나무 전체에 같은 결과를 적용한다.
         // (나무 하나하나에 따로 굴리고 싶다면 이 두 줄을 아래 루프 안으로 옮기면 된다)
         float tickDamage = damage;
-        if (bCriticalEnabled && UnityEngine.Random.value < criticalChance)
+        bool bCritical = bCriticalEnabled && UnityEngine.Random.value < criticalChance;
+        if (bCritical)
         {
             tickDamage *= criticalDamageMul;
         }
@@ -496,7 +497,7 @@ public class Boomerang : MonoBehaviour
 
                 if (isHit && treeObj.bCanApplyDamage) // 묘목은 TakeDamage가 무시하므로 진동도 울리지 않게 미리 거른다
                 {
-                    treeObj.TakeDamage(tickDamage, false);
+                    treeObj.TakeDamage(tickDamage, false, bCritical);
                     bHitAny = true;
                 }
             }

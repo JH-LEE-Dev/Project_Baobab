@@ -39,6 +39,8 @@ public class Drone : MonoBehaviour
 
     [Header("Attack Timing")]
     [SerializeField] private float firstShotDelay = 0.2f; // 새 타겟을 물었을 때 첫 스윙까지의 짧은 예열 시간(초). 180도 회전(facingTargetTurnSpeed 900 기준 0.2초)이 충전 이펙트가 켜지기 전에 끝나도록 맞춘 값. 예전엔 damageInterval(기본 1초)을 꽉 채워 기다렸다
+    [SerializeField] private float attackStaggerJitter = 0.05f; // 새 타겟을 물 때마다 첫 발에 0~이 값(초)의 무작위 지연을 더한다. 드론별 고정 위상(attackPhaseOffset)에 얹혀 사격 리듬이 매번 미세하게 달라진다
+    private float attackPhaseOffset; // 드론별 고정 첫 발 지연(초). Character가 소환 시 슬롯 순서대로 계단식으로 지정해 여러 대가 같은 프레임에 쏘지 않게 한다. 이후 사격은 damageInterval 주기를 그대로 따르므로 이 위상 차가 계속 유지된다
     [SerializeField] private float targetReleaseRangeMultiplier = 1.2f; // 타겟 해제 거리 = attackRange × 이 값. 획득(attackRange)보다 넉넉하게 잡아 사거리 경계에 걸린 나무가 프레임마다 들락날락하지 않게 한다(히스테리시스)
 
     [Header("Hover Bob")]
@@ -219,6 +221,7 @@ public class Drone : MonoBehaviour
         followTarget = _followTarget;
         followOffset = Vector3.zero;
         hoverHeight = 0f;
+        attackPhaseOffset = 0f;
         currentFollowSpeed = 0f;
         followSpeedVelocity = 0f;
         lastFollowTargetPos = _followTarget != null ? _followTarget.position : _position;
@@ -422,7 +425,20 @@ public class Drone : MonoBehaviour
     // facingTargetTurnSpeed로 타겟을 향해 돌아서므로(180도에 약 0.125초) 예열 시간 안에 방향은 맞춰진다.
     private float GetFirstShotTickTimer()
     {
-        return Mathf.Max(damageInterval - Mathf.Max(firstShotDelay, 0f), 0f);
+        // 첫 발 지연 = 공통 예열 + 드론별 고정 위상 + 이번 활성화의 무작위 지터. 판정 주기(DPS)는 그대로 두고 위상만
+        // 어긋나게 해서, 같은 프레임에 활성화된 드론들이 기계적으로 동시에 쏘지 않고 차례로 리듬을 타며 쏘게 한다.
+        float delay = Mathf.Max(firstShotDelay, 0f)
+                    + Mathf.Max(attackPhaseOffset, 0f)
+                    + Random.Range(0f, Mathf.Max(attackStaggerJitter, 0f));
+        return Mathf.Max(damageInterval - delay, 0f);
+    }
+
+    /// <summary>
+    /// 드론별 고정 첫 발 지연(초). Character가 소환 시 슬롯 순서(0번 꼭짓점부터)로 계단식 값을 넘겨준다.
+    /// </summary>
+    public void SetAttackPhaseOffset(float _seconds)
+    {
+        attackPhaseOffset = Mathf.Max(_seconds, 0f);
     }
 
     /// <summary>

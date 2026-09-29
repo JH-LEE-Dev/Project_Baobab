@@ -14,6 +14,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
         [HideInInspector] _EnableExternalAlpha("Enable External Alpha", Float) = 0
 
         _FlashAmount("Flash Amount", Range(0,1)) = 0
+        _FlashColor("Flash Color", Color) = (1,1,1,1)
     }
 
     SubShader
@@ -68,6 +69,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
                 half _FlashAmount;
+                half4 _FlashColor;
             CBUFFER_END
 
             Varyings LitVertex(Attributes input)
@@ -85,7 +87,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             half4 LitFragment(Varyings input) : SV_Target
             {
                 half4 col = CommonLitFragment(input, input.color);
-                col.rgb = lerp(col.rgb, half3(1,1,1), _FlashAmount * col.a);
+                col.rgb = lerp(col.rgb, _FlashColor.rgb, _FlashAmount * col.a);
                 return col;
             }
             ENDHLSL
@@ -124,6 +126,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             CBUFFER_START( UnityPerMaterial )
                 half4 _Color;
                 half _FlashAmount;
+                half4 _FlashColor;
             CBUFFER_END
 
             Varyings NormalsRenderingVertex(Attributes input)
@@ -178,6 +181,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
                 half _FlashAmount;
+                half4 _FlashColor;
             CBUFFER_END
 
             Varyings UnlitVertex(Attributes input)
@@ -194,7 +198,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             half4 UnlitFragment(Varyings input) : SV_Target
             {
                 half4 col = CommonUnlitFragment(input, input.color);
-                col.rgb = lerp(col.rgb, half3(1,1,1), _FlashAmount * col.a);
+                col.rgb = lerp(col.rgb, _FlashColor.rgb, _FlashAmount * col.a);
                 return col;
             }
             ENDHLSL
