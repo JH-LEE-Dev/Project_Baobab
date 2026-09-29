@@ -30,12 +30,15 @@ public class Drone : MonoBehaviour
     [SerializeField] private float minMoveSqrForFacing = 0.0004f; // 방향 벡터 크기가 이 값보다 작으면 갱신하지 않고 직전 방향을 유지(제자리 떨림 방지)
 
     [Header("Facing Turn (8방향 스프라이트가 한 번에 튀지 않고 중간 방향을 거쳐 돌아가도록 각도를 보간)")]
-    [SerializeField] private float facingReturnTurnSpeed = 540f; // 공격이 끝나 캐릭터 조준 방향으로 되돌아올 때 각속도(도/초). 180도 회전에 약 0.33초
-    [SerializeField] private float facingTargetTurnSpeed = 1440f; // 공격 대상을 향해 돌아설 때 각속도(도/초). 타격 프레임(스윙 시작 후 약 0.4초) 전에 확실히 돌아서야 하므로 빠르게 잡는다
+    [SerializeField] private float facingReturnTurnSpeed = 900f; // 공격이 끝나 캐릭터 조준 방향으로 되돌아올 때 각속도(도/초). 900 = 45도(한 섹터)에 0.05초, 60fps에서 한 장당 3프레임 - 중간 방향이 눈에 읽히는 상한
+    [SerializeField] private float facingTargetTurnSpeed = 900f; // 공격 대상을 향해 돌아설 때 각속도(도/초). 기본은 복귀와 같은 '읽히는 최대 속도'이고, 타격 시점이 촉박할 때만 GetTimeUntilImpact 기준으로 자동으로 빨라진다
     [SerializeField] private float facingDirHysteresisDeg = 6f; // 45도 섹터 경계에서 이만큼 더 넘어가야 dirIndex를 바꾼다(경계 근처에서 두 스프라이트 사이를 떨지 않게)
+    [SerializeField] private float facingMinDwellTime = 0.05f; // 한 방향 스프라이트를 최소 이 시간(초)은 유지한다. 어떤 회전 속도에서도 중간 방향이 최소 3프레임은 보이도록 보장(타격이 촉박할 때는 무시)
+    [SerializeField] private float facingImpactSafetyMargin = 0.05f; // 타격 프레임보다 이만큼(초) 먼저 총구 방향이 맞도록 회전을 마친다
+    private float facingDwellTimer; // 현재 dirIndex를 보여준 시간(초)
 
     [Header("Attack Timing")]
-    [SerializeField] private float firstShotDelay = 0.15f; // 새 타겟을 물었을 때 첫 스윙까지의 짧은 예열 시간(초). 예전엔 damageInterval(기본 1초)을 꽉 채워 기다려서 공격 키를 눌러도 한참 바라보기만 했다
+    [SerializeField] private float firstShotDelay = 0.2f; // 새 타겟을 물었을 때 첫 스윙까지의 짧은 예열 시간(초). 180도 회전(facingTargetTurnSpeed 900 기준 0.2초)이 충전 이펙트가 켜지기 전에 끝나도록 맞춘 값. 예전엔 damageInterval(기본 1초)을 꽉 채워 기다렸다
     [SerializeField] private float targetReleaseRangeMultiplier = 1.2f; // 타겟 해제 거리 = attackRange × 이 값. 획득(attackRange)보다 넉넉하게 잡아 사거리 경계에 걸린 나무가 프레임마다 들락날락하지 않게 한다(히스테리시스)
 
     [Header("Hover Bob")]
@@ -227,6 +230,7 @@ public class Drone : MonoBehaviour
 
         lastFacingDir = Vector2.down;
         facingAngle = 270f;
+        facingDwellTimer = facingMinDwellTime; // 첫 방향 전환이 유지 시간에 걸려 늦어지지 않게
         characterAimDir = Vector2.down;
         dirIndex = 6;
         isOverheat = false;
@@ -510,6 +514,7 @@ public class Drone : MonoBehaviour
     {
         lastFacingDir = Vector2.down;
         facingAngle = 270f;
+        facingDwellTimer = facingMinDwellTime;
         characterAimDir = Vector2.down;
         lastMoveDir = Vector2.down;
         dirIndex = 6;
@@ -733,16 +738,67 @@ public class Drone : MonoBehaviour
 
         float targetAngle = Mathf.Atan2(lastFacingDir.y, lastFacingDir.x) * Mathf.Rad2Deg;
         float turnSpeed = lookAtTarget ? facingTargetTurnSpeed : facingReturnTurnSpeed * varTurnMul;
+
+        // 타격 시점 안전장치: 타겟을 향해 도는 중이면 "남은 각도 / (타격까지 남은 시간 - 여유)"를 최소 속도로 삼는다.
+        // 평소엔 읽히는 속도로 느긋하게 돌고, 스윙 도중 재타겟팅처럼 시간이 촉박할 때만 필요한 만큼 빨라져서
+        // 레이저 시작점(총구)이 타격 프레임에 반드시 타겟 방향을 향한다. 촉박할 때는 최소 유지 시간도 무시한다.
+        bool bUrgent = false;
+        if (lookAtTarget)
+        {
+            float remainingDeg = Mathf.Abs(Mathf.DeltaAngle(facingAngle, targetAngle));
+            float timeBudget = GetTimeUntilImpact() - facingImpactSafetyMargin;
+            float requiredSpeed = remainingDeg / Mathf.Max(timeBudget, 0.02f);
+            if (requiredSpeed > turnSpeed)
+            {
+                turnSpeed = requiredSpeed;
+                bUrgent = true;
+            }
+        }
+
         facingAngle = Mathf.MoveTowardsAngle(facingAngle, targetAngle, turnSpeed * _deltaTime);
         facingAngle = Mathf.Repeat(facingAngle, 360f);
 
         // 45도 섹터 경계에 히스테리시스를 둔다: 현재 dirIndex 섹터의 중심에서 (22.5 + 여유) 이상 벗어났을 때만
         // 새 섹터로 넘어간다. 보간 중 각도가 경계 근처를 천천히 지나갈 때 두 스프라이트가 번갈아 깜빡이는 것을 막는다.
-        float offsetFromCurrentSector = Mathf.Abs(Mathf.DeltaAngle(facingAngle, dirIndex * 45f));
-        if (offsetFromCurrentSector > 22.5f + facingDirHysteresisDeg)
+        // 여기에 최소 유지 시간을 더해, 한 방향 스프라이트가 facingMinDwellTime보다 짧게 스치고 지나가지 않게 한다
+        // - 회전 속도가 어떻든 중간 방향이 최소 몇 프레임은 보이므로 "휙" 하고 바뀌는 인상이 사라진다.
+        facingDwellTimer += _deltaTime;
+        float sectorDelta = Mathf.DeltaAngle(dirIndex * 45f, facingAngle); // 현재 섹터 중심 -> 실제 각도(부호 = 회전 방향)
+        if (Mathf.Abs(sectorDelta) > 22.5f + facingDirHysteresisDeg && (bUrgent || facingDwellTimer >= facingMinDwellTime))
         {
-            dirIndex = Mathf.RoundToInt(facingAngle / 45f) % 8;
+            if (bUrgent)
+            {
+                dirIndex = Mathf.RoundToInt(facingAngle / 45f) % 8; // 촉박하면 중간 단계를 건너뛰고 바로 맞춘다
+            }
+            else
+            {
+                // 각도가 유지 시간 동안 한 섹터 이상 앞서갔더라도 스프라이트는 회전 방향으로 한 섹터씩만 넘긴다.
+                // 그래야 어떤 속도에서도 중간 방향이 빠지지 않고 차례로 보인다(표시가 각도를 잠시 뒤따라가다 따라잡는다).
+                dirIndex = (dirIndex + (sectorDelta > 0f ? 1 : 7)) % 8;
+            }
+            facingDwellTimer = 0f;
         }
+    }
+
+    // 다음 타격 판정(임팩트 프레임)까지 남은 시간(초). 스윙 중이면 임팩트 프레임까지, 아직 스윙 전이면 다음 스윙
+    // 시작(damageInterval - damageTickTimer)에 임팩트 프레임 도달 시간을 더한 값이다. 이번 스윙의 타격이 이미
+    // 끝났거나 비활성이면 제한이 없는 것으로 본다. UpdateFacingDirection이 회전 속도의 하한을 정하는 데 쓴다.
+    private float GetTimeUntilImpact()
+    {
+        List<Sprite> attackSprites = GetAttackSprites(dirIndex, out _);
+        int frameCount = attackSprites != null ? attackSprites.Count : 0;
+        if (frameCount <= 0) return float.MaxValue;
+
+        float frameTime = 1f / GetEffectiveSampleRate(frameCount);
+        float impactOffset = Mathf.Min(ImpactFrameIndex, frameCount - 1) * frameTime;
+
+        if (isSwinging)
+        {
+            return damageAppliedThisSwing ? float.MaxValue : Mathf.Max(impactOffset - swingTimer, 0f);
+        }
+
+        if (!isActive) return float.MaxValue;
+        return Mathf.Max(damageInterval - damageTickTimer, 0f) + impactOffset;
     }
 
     // 공격 모션(attackSprites)은 damageInterval마다 한 번, 재생 시간(프레임 수 / attackSampleRate)만큼
