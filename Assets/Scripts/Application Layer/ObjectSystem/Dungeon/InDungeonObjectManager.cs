@@ -332,65 +332,32 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [UnityEngine.Serialization.FormerlySerializedAs("lightningZapCreator")]
     [SerializeField] private ConstellationPixelLaserCreator constellationLaserCreator;
 
-    // 발사 중인 별자리 레이저 1발의 문맥. OnStarReachedEvent는 어느 레이저/그룹의 이벤트인지 알려주지 않으므로,
-    // 풀 인스턴스마다 이 바인딩을 한 번만 만들어 이벤트를 구독해두고 발사할 때마다 문맥만 갈아끼운다(무할당).
-    private sealed class ConstellationLaserBinding
-    {
-        public readonly PresentationLayer.VFX.ConstellationPixelLaser laser;
-        private readonly InDungeonObjectManager owner;
-
-        public int groupId;
-        public List<Vector3> path;
-        public float damage;
-        public bool bActive;
-        public bool bDamageApplied;
-
-        // 상호 양방향 발사라 한 별에 인접한 두 변의 빔이 모두 도착한다 - 레이저 1발 안에서 starIndex로 중복을 거른다.
-        public readonly HashSet<int> reachedStarIndices = new HashSet<int>();
-
-        public ConstellationLaserBinding(PresentationLayer.VFX.ConstellationPixelLaser _laser, InDungeonObjectManager _owner)
-        {
-            laser = _laser;
-            owner = _owner;
-            laser.OnStarReachedEvent += HandleStarReached;
-            laser.ReturnToPoolEvent += HandleReturnToPool;
-        }
-
-        // 두 핸들러 모두 레이저 쪽 코드(비행 코루틴 / ReturnToPool) 안에서 동기로 불린다. 여기서 예외가 새어 나가면
-        // 도달 이벤트에서는 레이저 코루틴이 멈춰 풀로 돌아오지 않고, 반환 이벤트에서는 호출부(ClearTrees의 강제
-        // 반환 루프 등)가 중간에 끊긴다. 데미지 판정이 연쇄로 여러 시스템을 거치므로, 예외는 여기서 로그만 남기고 삼킨다.
-        private void HandleStarReached(int _starIndex, Vector3 _worldPos)
-        {
-            try
-            {
-                owner.OnConstellationStarReached(this, _starIndex, _worldPos);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError("[InDungeonObjectManager] 별자리 레이저 도달 처리 중 예외가 발생했습니다. 레이저 연출은 계속 진행합니다.");
-                Debug.LogException(e);
-            }
-        }
-
-        private void HandleReturnToPool(PresentationLayer.VFX.ConstellationPixelLaser _laser)
-        {
-            try
-            {
-                owner.OnConstellationLaserReturned(this);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError("[InDungeonObjectManager] 별자리 레이저 반환 처리 중 예외가 발생했습니다.");
-                Debug.LogException(e);
-            }
-        }
-    }
-
-    private readonly Dictionary<PresentationLayer.VFX.ConstellationPixelLaser, ConstellationLaserBinding> constellationLaserBindings
-        = new Dictionary<PresentationLayer.VFX.ConstellationPixelLaser, ConstellationLaserBinding>();
+    // 히트박스 계산 시 레이저의 베지에 곡선 한 변을 몇 구간으로 잘라 근사할지.
+    private const int ConstellationBeamCurveSamples = 16;
 
     // 현재 비행/발광 중인 레이저들 - 던전 이탈 시(ClearObjManager) 강제 반환하기 위해 추적한다.
-    private readonly List<ConstellationLaserBinding> activeConstellationLasers = new List<ConstellationLaserBinding>();
+    private readonly List<PresentationLayer.VFX.ConstellationPixelLaser> activeConstellationLasers = new List<PresentationLayer.VFX.ConstellationPixelLaser>();
+
+    // 반환 이벤트를 이미 구독한 레이저 인스턴스(풀 인스턴스당 한 번만 구독한다).
+    private readonly HashSet<PresentationLayer.VFX.ConstellationPixelLaser> subscribedConstellationLasers = new HashSet<PresentationLayer.VFX.ConstellationPixelLaser>();
+
+    // 별자리 히트박스 - 레이저 발광부(빔 선단)가 지나가는 순간 그 자리의 나무를 맞힌다.
+    // 레이저를 쏠 때 경로 주변 나무마다 "선단이 닿는 시각"을 미리 계산해 두고, 시간 순으로 적용한다.
+    private struct ConstellationBeamHit
+    {
+        public TreeObj tree;
+        public Vector3 rootPos;   // 계산 시점의 위치 - 그 사이 풀로 반환/재사용된 나무를 걸러내는 데 쓴다.
+        public float hitTime;     // 레이저 발사 후 선단이 닿는 시각(초)
+    }
+
+    private static readonly Comparison<ConstellationBeamHit> ConstellationBeamHitTimeComparison = (a, b) => a.hitTime.CompareTo(b.hitTime);
+
+    // 스윕마다 쓰는 타격 목록 - 잔상으로 여러 스윕이 동시에 돌 수 있어 스윕별로 하나씩 빌려 쓰고 돌려놓는다.
+    private readonly Stack<List<ConstellationBeamHit>> spareConstellationBeamHitLists = new Stack<List<ConstellationBeamHit>>();
+
+    // 히트박스 계산용 버퍼 - 계산은 콜백 없이 동기로 끝나므로 하나를 공유해도 안전하다.
+    private readonly List<IStaticCollidable> constellationScanBuffer = new List<IStaticCollidable>(64);
+    private readonly List<Vector3> constellationCurveSampleBuffer = new List<Vector3>(96);
 
     private bool bConstellationManifestUnlocked = false;
     private float starMarkDamageMultiplier = 1f;          // 별표식 베기
@@ -405,6 +372,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 광선 자신의 데미지가 같은 그룹의 다른 별 표식 나무를 맞혀 재귀적으로 재트리거하는 것만 막고,
     // 서로 다른 그룹(다른 List 인스턴스)은 동시에 진행돼도 서로 막지 않는다.
     private readonly HashSet<List<Vector3>> activeConstellationGroups = new HashSet<List<Vector3>>();
+
+    // 그룹의 별이 전부 안착 -> 사라짐 연출을 마쳐 InDungeonVFXManager.ConstellationManifestReadyEvent가
+    // 발생할 때까지, 별자리 VFX에 필요한 별 위치 목록을 groupId 기준으로 보관해둔다.
+    private readonly Dictionary<int, List<Vector3>> pendingConstellationStarPositions = new Dictionary<int, List<Vector3>>();
 
     // ClearTrees마다 증가 - 대기 중이던 ConstellationBeamRoutine이 이전 런의 발현을 이어서 쏘지 않게 한다.
     private int constellationManifestVersion = 0;
@@ -473,6 +444,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         inDungeonVFXManager = GetComponentInChildren<InDungeonVFXManager>();
         inDungeonVFXManager.Initialize();
+        inDungeonVFXManager.ConstellationManifestReadyEvent -= OnConstellationManifestReady;
+        inDungeonVFXManager.ConstellationManifestReadyEvent += OnConstellationManifestReady;
+
+        // "별자리 발현" 특성이 매니저 초기화보다 먼저 적용됐을 수도 있으므로 점선 표시 여부를 현재 상태로 맞춘다.
+        inDungeonVFXManager.SetConstellationDottedLinesVisible(bConstellationManifestUnlocked);
 
         if (constellationLaserCreator != null)
         {
@@ -548,6 +524,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (constellationLaserCreator != null)
         {
             constellationLaserCreator.LaserDestroyedEvent -= OnConstellationLaserDestroyed;
+        }
+
+        if (inDungeonVFXManager != null)
+        {
+            inDungeonVFXManager.ConstellationManifestReadyEvent -= OnConstellationManifestReady;
         }
     }
 
@@ -1134,19 +1115,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         // 비행/발광 중이던 별자리 레이저도 강제로 풀에 반환한다. 반환 이벤트(OnConstellationLaserReturned)가
-        // activeConstellationLasers에서 스스로를 빼므로 뒤에서부터 순회한다. 이 경로로 반환된 레이저는
-        // 이미 bActive가 꺼진 상태라 남은 데미지/마크 정리를 하지 않는다(던전을 나가는 중이므로).
+        // activeConstellationLasers에서 스스로를 빼므로 뒤에서부터 순회한다.
         // 한 인스턴스의 반환이 예외로 실패해도 나머지 레이저 회수와 아래 정리(버전 증가 등)는 반드시 진행되게 한다.
         for (int i = activeConstellationLasers.Count - 1; i >= 0; i--)
         {
             if (i >= activeConstellationLasers.Count) continue;
 
-            ConstellationLaserBinding binding = activeConstellationLasers[i];
-            binding.bActive = false;
-
             try
             {
-                binding.laser.ReturnToPool();
+                activeConstellationLasers[i].ReturnToPool();
             }
             catch (Exception e)
             {
@@ -1156,10 +1133,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
         activeConstellationLasers.Clear();
 
-        // 별자리 잔상(ConstellationBeamRoutine)이 다음 발사를 기다리는 중이었다면, 버전이 바뀐 것을 보고
-        // 더 쏘지 않고 끝난다. (그 finally가 뒤늦게 activeConstellationGroups.Remove를 호출해도 무해하다)
+        // 별자리 잔상(ConstellationBeamRoutine)이 다음 발사를 기다리는 중이었거나 히트박스 스윕
+        // (ConstellationBeamSweepRoutine)이 진행 중이었다면, 버전이 바뀐 것을 보고 더 쏘거나 때리지 않고 끝난다.
+        // (그 finally가 뒤늦게 activeConstellationGroups.Remove를 호출해도 무해하다)
         constellationManifestVersion++;
         activeConstellationGroups.Clear();
+
+        // 마크를 강제 회수한 위 호출은 ConstellationManifestReadyEvent를 발생시키지 않으므로, 별 사라짐을
+        // 기다리던 발현 대기 목록도 짝을 맞춰 비운다(이전 런의 별 위치 리스트를 붙들고 있지 않도록).
+        pendingConstellationStarPositions.Clear();
     }
 
     private void StopGrowth()
@@ -1319,18 +1301,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         if (_treeObj.bStarMarked && _treeObj.treeVisualComponent != null)
         {
-            // 별자리 경로(Stage3TreeGenerationStrategySO.groupStarPositions)와 같은 top 좌표 - 레이저 도달 좌표와
-            // 그라운드 마크, 점선 노드를 공간 매칭할 때 기준으로 쓴다.
-            Vector3 starAnchorPos = _treeObj.treeVisualComponent.GetTopRootPosition();
+            // 점선에서 벌목된 나무 노드를 푸른 큰 별 색으로 기록한다. 점선 노드는 별자리 경로
+            // (Stage3TreeGenerationStrategySO.groupStarPositions)와 같은 top 좌표라 이 좌표로 짝을 맞춘다.
+            // 특성이 아직 없어 점선이 숨겨져 있어도 기록해 두어, 나중에 보이게 될 때 그대로 반영된다.
+            inDungeonVFXManager.SetConstellationDottedLineNodeFelled(
+                _treeObj.StarGroupId,
+                _treeObj.treeVisualComponent.GetTopRootPosition());
 
-            // 평상시 점선에서 벌목된 나무 노드를 푸른 큰 별 색으로 전환
-            inDungeonVFXManager.SetConstellationDottedLineNodeFelled(_treeObj.StarGroupId, starAnchorPos);
-
+            // 별은 "별자리 발현" 특성이 있을 때만 등장한다.
             if (bConstellationManifestUnlocked)
             {
                 inDungeonVFXManager.PlayConstellationGroundMarkVFX(
                     _treeObj.transform.position,
-                    starAnchorPos,
                     _treeObj.treeVisualComponent.GetTopSortingOrder(),
                     _treeObj.StarGroupId);
             }
@@ -2335,6 +2317,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public void UnlockConstellationManifest(bool _boolean)
     {
         bConstellationManifestUnlocked = _boolean;
+
+        // 별자리 점선은 이 특성이 있을 때만 보인다. 이어하기 로드처럼 나무 스폰 뒤에 특성이 적용되는 경우에도
+        // 이미 등록된 점선이 즉시 나타나도록 여기서 바로 반영한다.
+        if (inDungeonVFXManager != null) inDungeonVFXManager.SetConstellationDottedLinesVisible(_boolean);
     }
 
     public void IncreaseStarMarkDamage(float _amount)
@@ -2363,38 +2349,60 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         character?.statComponent?.ActivateStarPathSpeedBoost();
     }
 
-    // 평상시 별자리 점선 이음선 - Stage3TreeGenerationStrategySO가 별자리 그룹 스폰을 마칠 때 호출
-    public void ShowConstellationDottedLine(int _groupId, List<Vector3> _starPositions)
+    // 별자리 점선 이음선 등록 - Stage3TreeGenerationStrategySO가 별자리 그룹 스폰을 마칠 때 호출.
+    // 점선은 "별자리 발현" 특성이 있을 때만 보인다(UnlockConstellationManifest). 특성이 없을 때도 등록은 해 두어,
+    // 이어하기 로드처럼 나무 스폰 뒤에 특성이 적용되는 경우에도 곧바로 그려지게 한다.
+    public void RegisterConstellationDottedLine(int _groupId, List<Vector3> _starPositions)
     {
-        inDungeonVFXManager?.ShowConstellationDottedLine(_groupId, _starPositions);
+        inDungeonVFXManager?.RegisterConstellationDottedLine(_groupId, _starPositions);
     }
 
     // 별자리 발현 - 그룹의 모든 별 표식 나무가 벌목되면 Stage3TreeGenerationStrategySO가 호출
     public void TriggerConstellationManifestation(int _groupId, List<Vector3> _starPositions)
     {
-        // 그룹의 별이 모두 벌목되었으므로 평상시 점선은 발현 여부와 무관하게 거둔다
-        // (발현되면 픽셀 레이저가 같은 외곽선을 대신 그린다).
-        inDungeonVFXManager.HideConstellationDottedLine(_groupId);
+        // 특성 없이 그룹을 전부 벤 경우 등 - 발현(레이저)은 없으므로 점선 기록을 거둔다.
+        // (발현되는 경우 점선은 별이 모두 사라진 뒤 레이저가 같은 외곽선을 그릴 때 거둔다)
+        // 그룹 도중 특성이 해제됐다면 이미 나와 있던 별이 있을 수 있으므로, 별 사라짐 연출은 그대로 돌려
+        // 바닥에 영원히 남지 않게 한다. 발현 대기 목록에 넣지 않았으니 연출이 끝나도 레이저는 나가지 않는다.
+        if (!bConstellationManifestUnlocked || _starPositions == null || _starPositions.Count < 2)
+        {
+            inDungeonVFXManager.RemoveConstellationDottedLine(_groupId);
+            inDungeonVFXManager.BeginConstellationGroundMarkManifest(_groupId);
+            return;
+        }
 
-        if (!bConstellationManifestUnlocked) return;
-        if (_starPositions == null || _starPositions.Count < 2) return;
-
-        // 광선 자체의 데미지(ApplyConstellationBeamDamage -> TakeDamage)가 같은 그룹의 다른 별 표식
-        // 나무를 맞히면 TreeGetHitEvent가 다시 발생해 OnTreeGetHit -> TriggerConstellationManifestation을
-        // 재귀적으로 다시 호출하는 문제가 있었다(같은 프레임 안에서 StartCoroutine이 첫 yield 전까지
-        // 동기 실행되므로 재귀가 그대로 쌓임). _starPositions(그룹별로 항상 같은 List 인스턴스)를 키로
-        // 재진입만 막아서, 같은 그룹의 자기 재트리거는 막되 서로 다른 그룹은 동시에 진행되게 둔다.
+        // 광선 자체의 데미지가 같은 그룹의 다른 별 표식 나무를 맞혀 이 발현을 재귀적으로 다시 트리거하는 것을
+        // 막는다. _starPositions(그룹별로 항상 같은 List 인스턴스)를 키로 재진입만 막아서, 같은 그룹의 자기
+        // 재트리거는 막되 서로 다른 그룹은 동시에 진행되게 둔다.
         if (activeConstellationGroups.Contains(_starPositions)) return;
         activeConstellationGroups.Add(_starPositions);
 
-        // 예전에는 그라운드 마크가 전부 소멸한 뒤(ConstellationManifestReadyEvent) 빈 땅에 광선을 쐈지만,
-        // 이제는 발현 확정 즉시 레이저를 쏘고, 레이저가 각 별에 닿는 순간 그 자리의 마크를 터뜨린다
-        // (OnConstellationStarReached). 마크는 그때까지 제자리에서 대기한다.
+        pendingConstellationStarPositions[_groupId] = _starPositions;
+
+        // 그룹의 별이 전부 땅에 안착하면 -> 전부 회전하며 작아지고 -> 모두 사라진 뒤에야 InDungeonVFXManager가
+        // ConstellationManifestReadyEvent를 보낸다. 별자리 VFX(레이저)는 그때 OnConstellationManifestReady에서 시작한다.
+        inDungeonVFXManager.BeginConstellationGroundMarkManifest(_groupId);
+    }
+
+    // 그룹의 별 사라짐 연출이 전부 끝났을 때 InDungeonVFXManager가 호출한다 - 비로소 별자리 VFX를 시작한다.
+    private void OnConstellationManifestReady(int _groupId)
+    {
+        if (!pendingConstellationStarPositions.TryGetValue(_groupId, out List<Vector3> _starPositions)) return;
+        pendingConstellationStarPositions.Remove(_groupId);
+
+        // 이제 레이저가 같은 외곽선을 그리므로 점선을 거둔다.
+        inDungeonVFXManager.RemoveConstellationDottedLine(_groupId);
+
         List<Vector3> path = BuildSimplePolygonPath(_starPositions);
+
+        // 레이저는 받은 좌표를 내부에서 꼬임 풀기(UntanglePoints)로 한 번 더 정돈한다. 히트박스가 레이저와 똑같은
+        // 곡선을 따라가도록 같은 정돈을 미리 적용해 둔다(이미 정돈된 순서에 다시 적용해도 결과가 같다).
+        PresentationLayer.VFX.ConstellationPixelLaser.UntanglePoints(path, 0);
+
         float damage = BaseConstellationDamage * Mathf.Max(0f, constellationDamageMultiplier);
         int hitCount = Mathf.Max(1, constellationHitCount);
 
-        StartCoroutine(ConstellationBeamRoutine(_groupId, _starPositions, path, damage, hitCount));
+        StartCoroutine(ConstellationBeamRoutine(_starPositions, path, damage, hitCount));
     }
 
     // 중심점(centroid) 기준 각도 순으로 정렬해서 폐곡선을 만든다. 최근접 이웃(greedy) 방식과 달리,
@@ -2432,9 +2440,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         return 3 <= _path.Count ? _path.Count : _path.Count - 1;
     }
 
-    // 별자리 잔상(hitCount)만큼 인터벌을 두고 레이저를 발사한다. 각 레이저의 데미지는 빔이 별에 처음
-    // 닿는 순간(궤적이 완성되는 순간) OnConstellationStarReached에서 적용된다.
-    private IEnumerator ConstellationBeamRoutine(int _groupId, List<Vector3> _groupKey, List<Vector3> _path, float _damagePerHit, int _hitCount)
+    // 별자리 잔상(hitCount)만큼 인터벌을 두고 레이저를 발사한다. 각 레이저의 데미지는 발광부(빔 선단)가
+    // 지나가는 순간 그 자리의 나무에 적용된다(ConstellationBeamSweepRoutine).
+    private IEnumerator ConstellationBeamRoutine(List<Vector3> _groupKey, List<Vector3> _path, float _damagePerHit, int _hitCount)
     {
         int version = constellationManifestVersion;
 
@@ -2442,7 +2450,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             for (int hit = 0; hit < _hitCount; hit++)
             {
-                FireConstellationLaser(_groupId, _path, _damagePerHit);
+                FireConstellationLaser(_path, _damagePerHit);
 
                 if (hit < _hitCount - 1)
                 {
@@ -2459,147 +2467,217 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
     }
 
-    private void FireConstellationLaser(int _groupId, List<Vector3> _path, float _damage)
+    private void FireConstellationLaser(List<Vector3> _path, float _damage)
     {
         PresentationLayer.VFX.ConstellationPixelLaser laser = null != constellationLaserCreator ? constellationLaserCreator.Get() : null;
 
-        // 레이저 풀러/프리팹이 없으면 연출 없이 판정만 즉시 처리한다 - 마크가 영원히 대기하지 않도록 함께 정리.
-        if (null == laser)
+        // 레이저 풀러/프리팹이 없으면 연출이 없으므로 히트박스도 기다리지 않고 즉시(비행 시간 0) 적용한다.
+        float flightDuration = 0f;
+        float curveRoundness = 0f;
+
+        if (null != laser)
         {
-            inDungeonVFXManager.ClearConstellationGroundMarks(_groupId);
-            ApplyConstellationBeamDamage(_path, _damage);
-            return;
+            // 반환 이벤트는 풀 인스턴스당 한 번만 구독한다.
+            if (subscribedConstellationLasers.Add(laser))
+            {
+                laser.ReturnToPoolEvent += OnConstellationLaserReturned;
+            }
+
+            activeConstellationLasers.Add(laser);
+            flightDuration = laser.SegmentShootDuration;
+            curveRoundness = laser.CurveRoundness;
+            laser.PlayLaser(_path, true);
         }
 
-        // 풀 인스턴스마다 바인딩은 한 번만 만들고(이벤트 구독 포함) 이후에는 문맥만 갈아끼운다.
-        if (!constellationLaserBindings.TryGetValue(laser, out ConstellationLaserBinding binding))
-        {
-            binding = new ConstellationLaserBinding(laser, this);
-            constellationLaserBindings[laser] = binding;
-        }
-
-        binding.groupId = _groupId;
-        binding.path = _path;
-        binding.damage = _damage;
-        binding.bDamageApplied = false;
-        binding.reachedStarIndices.Clear();
-        binding.bActive = true;
-        activeConstellationLasers.Add(binding);
-
-        laser.PlayLaser(_path, true);
+        StartCoroutine(ConstellationBeamSweepRoutine(_path, _damage, flightDuration, curveRoundness));
     }
 
-    // 레이저 빔의 선단이 별에 도달한 프레임에 호출된다(ConstellationPixelLaser.OnStarReachedEvent).
-    private void OnConstellationStarReached(ConstellationLaserBinding _binding, int _starIndex, Vector3 _worldPos)
+    // 레이저가 연출(비행 -> 서스테인 -> 페이드아웃)을 마치거나 강제 회수되어 풀로 반환될 때 호출된다.
+    private void OnConstellationLaserReturned(PresentationLayer.VFX.ConstellationPixelLaser _laser)
     {
-        if (!_binding.bActive) return;
-
-        // 빔이 처음 별에 닿는 순간 = 모든 빔이 거의 동시에 궤적을 완성한 순간이므로, 레이저 1발당 데미지는 이때 한 번만 준다.
-        // (마크 폭발보다 먼저 판정한다 - 판정 중 다른 그룹이 발현되어도 이 레이저의 문맥에는 영향이 없다)
-        if (!_binding.bDamageApplied)
-        {
-            _binding.bDamageApplied = true;
-            ApplyConstellationBeamDamage(_binding.path, _binding.damage);
-        }
-
-        // 한 별에는 인접한 두 변의 빔이 모두 도착하므로 같은 별은 한 번만 처리한다.
-        if (!_binding.reachedStarIndices.Add(_starIndex)) return;
-
-        // starIndex(원주 각도 순)는 마크 목록(벌목 순)의 인덱스와 다르므로 좌표로 공간 매칭한다.
-        inDungeonVFXManager.ManifestConstellationGroundMarkAt(_binding.groupId, _worldPos);
-    }
-
-    // 레이저가 연출(비행 -> 서스테인 -> 페이드아웃)을 마치고 풀로 반환될 때 호출된다.
-    private void OnConstellationLaserReturned(ConstellationLaserBinding _binding)
-    {
-        activeConstellationLasers.Remove(_binding);
-
-        // 강제 회수(ClearTrees)로 반환된 경우에는 bActive가 이미 꺼져 있다 - 던전을 나가는 중이므로 아무것도 하지 않는다.
-        if (!_binding.bActive) return;
-        _binding.bActive = false;
-
-        // 이 시점엔 레이저가 이미 풀에 돌아가 있다. 아래 데미지 판정이 다른 그룹의 발현을 연쇄로 일으키면
-        // 방금 반환된 이 레이저(= 같은 바인딩)가 다시 대여되어 문맥이 덮어써질 수 있으므로,
-        // 필요한 문맥은 먼저 꺼내두고 마크 정리 -> 데미지 순으로 처리한 뒤 바인딩을 더 읽지 않는다.
-        int groupId = _binding.groupId;
-        List<Vector3> path = _binding.path;
-        float damage = _binding.damage;
-        bool bNeedDamage = !_binding.bDamageApplied;
-        _binding.bDamageApplied = true;
-
-        // 레이저와 짝이 맞지 않아 남은 마크가 있다면 여기서 소멸시켜 바닥에 영원히 남지 않게 한다.
-        inDungeonVFXManager.ClearConstellationGroundMarks(groupId);
-
-        // 빔이 한 번도 별에 닿지 못하고 끝났다면(비정상) 판정만이라도 보장한다.
-        if (bNeedDamage)
-        {
-            ApplyConstellationBeamDamage(path, damage);
-        }
+        activeConstellationLasers.Remove(_laser);
     }
 
     // 풀이 maxSize를 넘은 레이저를 파괴할 때 호출된다(ReturnToPoolEvent 안에서 풀러가 Release할 때). 같은
-    // 이벤트에 걸린 바인딩의 반환 처리(OnConstellationLaserReturned)는 이 뒤에 이어서 정상 실행되므로, 여기서는
-    // 캐싱해둔 바인딩만 지운다 - 그대로 두면 파괴된 인스턴스와 바인딩이 계속 쌓인다.
+    // 이벤트에 걸린 OnConstellationLaserReturned는 이 뒤에 이어서 정상 실행되므로, 여기서는 구독 기록만 지운다.
     private void OnConstellationLaserDestroyed(PresentationLayer.VFX.ConstellationPixelLaser _laser)
     {
-        constellationLaserBindings.Remove(_laser);
+        subscribedConstellationLasers.Remove(_laser);
+        _laser.ReturnToPoolEvent -= OnConstellationLaserReturned;
     }
 
-    private void ApplyConstellationBeamDamage(List<Vector3> _path, float _damage)
+    // 별자리 히트박스 스윕 - 레이저 발광부(빔 선단)가 지나가는 순간에 맞춰 그 자리의 나무를 때린다.
+    // 발사 시점에 경로 주변 나무마다 선단이 닿는 시각을 계산해 두고, 시간이 흐르는 대로 순서대로 적용한다.
+    private IEnumerator ConstellationBeamSweepRoutine(List<Vector3> _path, float _damage, float _flightDuration, float _curveRoundness)
     {
-        if (CollisionSystem.Instance == null) return;
+        int version = constellationManifestVersion;
+        List<ConstellationBeamHit> hits = 0 < spareConstellationBeamHitLists.Count
+            ? spareConstellationBeamHitLists.Pop()
+            : new List<ConstellationBeamHit>(32);
 
-        bool bBrandActive = manifestationBrandBonusMultiplier > 0f;
+        try
+        {
+            CollectConstellationBeamHits(_path, _curveRoundness, _flightDuration, hits);
 
-        // 광선은 나무 8~13그루짜리 국지적 군집에만 영향을 주므로, 던전 전체 activeTrees(최대 2500개)를
-        // 매 타격 틱마다 통째로 복사/순회하지 않도록 경로를 감싸는 반경만 CollisionSystem으로 조회한다.
+            float elapsed = 0f;
+            int next = 0;
+            while (true)
+            {
+                while (next < hits.Count && hits[next].hitTime <= elapsed)
+                {
+                    ApplyConstellationBeamHit(hits[next], _damage);
+                    next++;
+                }
+
+                if (next >= hits.Count) yield break;
+
+                yield return null;
+
+                // 스윕 도중 던전을 나갔다면(ClearTrees) 이전 런의 나무를 계속 때리지 않는다.
+                if (version != constellationManifestVersion) yield break;
+
+                elapsed += Time.deltaTime;
+            }
+        }
+        finally
+        {
+            hits.Clear();
+            spareConstellationBeamHitLists.Push(hits);
+        }
+    }
+
+    // 경로 주변 나무 중 레이저 곡선의 두께(ConstellationBeamHalfThickness) 안에 드는 나무를 모아, 빔 선단이
+    // 그 나무에 닿는 시각 순으로 정렬해 _hits에 채운다.
+    //
+    // 레이저는 각 변마다 양 끝 별에서 서로를 향해 빔 두 줄기를 동시에 쏘고, 선단은 감속 곡선
+    // (진행도 = 1 - (1 - t)^4, ConstellationPixelLaser.MutualSimultaneousRoutine)을 따른다. 그래서 두 선단은
+    // 비행 시간의 약 16%만에 변의 가운데에서 교차하고, 이후 남은 시간 동안 천천히 반대편 꼭짓점으로 향한다.
+    // 눈에 띄는 발광부는 이 "가운데 -> 꼭짓점" 구간이므로, 각 지점은 그쪽으로 다가오는(가운데를 이미 지난)
+    // 선단이 닿을 때 맞는 것으로 처리한다 - 변 위의 위치 u(0~1)에 필요한 진행도는 max(u, 1 - u)이다.
+    // 즉 변의 가운데가 먼저 맞고, 꼭짓점 쪽으로 갈수록 늦게 맞는다.
+    private void CollectConstellationBeamHits(List<Vector3> _path, float _curveRoundness, float _flightDuration, List<ConstellationBeamHit> _hits)
+    {
+        if (CollisionSystem.Instance == null || 2 > _path.Count) return;
+
+        int edgeCount = GetConstellationEdgeCount(_path);
+        bool bLoop = 3 <= _path.Count;
+        int stride = ConstellationBeamCurveSamples + 1;
+
+        // 1. 레이저와 똑같은 베지에 곡선을 변마다 샘플링한다(ConstellationPixelLaser와 같은 제어점 계산).
+        constellationCurveSampleBuffer.Clear();
+        for (int edge = 0; edge < edgeCount; edge++)
+        {
+            PresentationLayer.VFX.ConstellationPixelLaser.ComputeBezierControlPoints(
+                _path, edge, bLoop, _curveRoundness,
+                out Vector3 p0, out Vector3 p1, out Vector3 c0, out Vector3 c1);
+
+            for (int k = 0; k < stride; k++)
+            {
+                float u = (float)k / ConstellationBeamCurveSamples;
+                float oneMinusU = 1f - u;
+                constellationCurveSampleBuffer.Add(
+                    oneMinusU * oneMinusU * oneMinusU * p0
+                    + 3f * oneMinusU * oneMinusU * u * c0
+                    + 3f * oneMinusU * u * u * c1
+                    + u * u * u * p1);
+            }
+        }
+
+        // 2. 광선은 나무 8~13그루짜리 국지적 군집에만 영향을 주므로, 던전 전체 activeTrees(최대 2500개)를
+        //    순회하지 않도록 곡선 전체를 감싸는 반경만 CollisionSystem으로 조회한다.
         Vector3 center = Vector3.zero;
         for (int i = 0; i < _path.Count; i++) center += _path[i];
         center /= _path.Count;
 
         float maxDistSq = 0f;
-        for (int i = 0; i < _path.Count; i++)
+        for (int i = 0; i < constellationCurveSampleBuffer.Count; i++)
         {
-            float distSq = (_path[i] - center).sqrMagnitude;
+            float distSq = (constellationCurveSampleBuffer[i] - center).sqrMagnitude;
             if (distSq > maxDistSq) maxDistSq = distSq;
         }
         float scanRadius = Mathf.Sqrt(maxDistSq) + ConstellationBeamHalfThickness + 1f;
 
-        List<IStaticCollidable> scanResults = new List<IStaticCollidable>(64);
-        CollisionSystem.Instance.GetCollidablesInRadius(center, scanRadius, treeLayerForExplosion.value, scanResults);
+        constellationScanBuffer.Clear();
+        CollisionSystem.Instance.GetCollidablesInRadius(center, scanRadius, treeLayerForExplosion.value, constellationScanBuffer);
 
-        int edgeCount = GetConstellationEdgeCount(_path);
-
-        for (int i = 0; i < scanResults.Count; i++)
+        // 3. 나무마다 밑둥/top 중 하나라도 곡선 두께 안에 들어오는 가장 이른 시각을 구한다
+        //    (여러 변에 걸친 나무는 가장 먼저 닿는 선단 기준, Boomerang과 동일하게 밑둥/top 둘 다 판정).
+        for (int i = 0; i < constellationScanBuffer.Count; i++)
         {
-            if (!(scanResults[i] is TreeObj tree) || !tree.bCanApplyDamage) continue;
+            if (!(constellationScanBuffer[i] is TreeObj tree) || !tree.bCanApplyDamage) continue;
 
             Vector3 rootPos = tree.transform.position;
             Vector3 topPos = tree.treeVisualComponent != null ? tree.treeVisualComponent.GetTopRootPosition() : rootPos;
-            bool bHit = false;
+            float earliest = float.MaxValue;
 
-            // 밑둥/top 둘 중 하나라도 광선(선분) 두께 안에 들어오면 타격으로 처리 (Boomerang과 동일한 판정 방식)
-            // 경로에는 고유 꼭짓점만 있으므로 폐곡선의 닫는 변은 (seg + 1) % Count로 잇는다.
-            for (int seg = 0; seg < edgeCount && !bHit; seg++)
+            for (int edge = 0; edge < edgeCount; edge++)
             {
-                Vector3 segStart = _path[seg];
-                Vector3 segEnd = _path[(seg + 1) % _path.Count];
-                bHit = DistancePointToSegment(topPos, segStart, segEnd) <= ConstellationBeamHalfThickness
-                    || DistancePointToSegment(rootPos, segStart, segEnd) <= ConstellationBeamHalfThickness;
-            }
-
-            if (bHit)
-            {
-                tree.TakeDamage(_damage);
-
-                // TakeDamage로 나무가 죽으면 즉시 풀로 반환되며 ResetTree()가 브랜드 배율을 1로 되돌리므로,
-                // 죽지 않고 살아남은 나무에만 낙인을 적용한다.
-                if (bBrandActive && !tree.bDead)
+                int baseIndex = edge * stride;
+                for (int k = 0; k < ConstellationBeamCurveSamples; k++)
                 {
-                    tree.health.ApplyDamageBrand(1f + manifestationBrandBonusMultiplier);
-                    StartManifestationBrandVfx(tree);
+                    Vector3 a = constellationCurveSampleBuffer[baseIndex + k];
+                    Vector3 b = constellationCurveSampleBuffer[baseIndex + k + 1];
+
+                    float hitTime = GetConstellationBeamHitTime(topPos, a, b, k, _flightDuration);
+                    if (hitTime < earliest) earliest = hitTime;
+
+                    hitTime = GetConstellationBeamHitTime(rootPos, a, b, k, _flightDuration);
+                    if (hitTime < earliest) earliest = hitTime;
                 }
             }
+
+            if (float.MaxValue > earliest)
+            {
+                _hits.Add(new ConstellationBeamHit { tree = tree, rootPos = rootPos, hitTime = earliest });
+            }
+        }
+
+        _hits.Sort(ConstellationBeamHitTimeComparison);
+    }
+
+    // _point가 곡선 샘플 구간 [a, b](변의 k번째 구간) 두께 안에 있으면 빔 선단이 그 지점에 닿는 시각을,
+    // 아니면 float.MaxValue를 돌려준다.
+    private static float GetConstellationBeamHitTime(Vector3 _point, Vector3 _a, Vector3 _b, int _sampleIndex, float _flightDuration)
+    {
+        Vector3 ab = _b - _a;
+        float abLenSq = ab.sqrMagnitude;
+        float segT = abLenSq < 0.0001f ? 0f : Mathf.Clamp01(Vector3.Dot(_point - _a, ab) / abLenSq);
+
+        if (Vector3.Distance(_point, _a + ab * segT) > ConstellationBeamHalfThickness) return float.MaxValue;
+
+        // 변 위의 위치(0~1)와, 그 지점으로 다가오는 선단이 필요로 하는 진행도(가운데 0.5 ~ 꼭짓점 1.0)
+        float edgeU = (_sampleIndex + segT) / ConstellationBeamCurveSamples;
+        float requiredProgress = Mathf.Max(edgeU, 1f - edgeU);
+
+        // 진행도 = 1 - (1 - t)^4 의 역함수: t = 1 - (1 - 진행도)^(1/4)
+        return _flightDuration * (1f - Mathf.Pow(1f - requiredProgress, 0.25f));
+    }
+
+    private void ApplyConstellationBeamHit(ConstellationBeamHit _hit, float _damage)
+    {
+        TreeObj tree = _hit.tree;
+        if (tree == null || !tree.bCanApplyDamage) return;
+
+        // 계산 이후 다른 원인으로 죽어 풀로 돌아갔다가 다른 자리에 재사용된 나무는 건너뛴다.
+        if ((tree.transform.position - _hit.rootPos).sqrMagnitude > 0.0001f) return;
+
+        // 한 그루의 타격이 연쇄(사망 처리, 다른 그룹 발현 등) 중 예외로 실패해도 스윕의 나머지 나무는 계속 맞힌다.
+        try
+        {
+            tree.TakeDamage(_damage);
+
+            // TakeDamage로 나무가 죽으면 즉시 풀로 반환되며 ResetTree()가 브랜드 배율을 1로 되돌리므로,
+            // 죽지 않고 살아남은 나무에만 낙인을 적용한다.
+            if (manifestationBrandBonusMultiplier > 0f && !tree.bDead)
+            {
+                tree.health.ApplyDamageBrand(1f + manifestationBrandBonusMultiplier);
+                StartManifestationBrandVfx(tree);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("[InDungeonObjectManager] 별자리 광선 타격 처리 중 예외가 발생했습니다. 나머지 타격은 계속 진행합니다.");
+            Debug.LogException(e);
         }
     }
 

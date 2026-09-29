@@ -34,9 +34,37 @@ public class InDungeonVFXManager : MonoBehaviour
     // 이 목록도 함께 정리해야 던전 이탈 시 연출 도중이던 마크가 풀로 반환되지 않고 고아로 남는 것을 막는다.
     private readonly List<TreeStarMarkGroundAnimator> pendingManifestInstances = new List<TreeStarMarkGroundAnimator>();
 
-    // 픽셀 레이저 도달 좌표와 그라운드 마크 기준 좌표(AnchorPosition)의 공간 매칭 허용 거리(제곱, 1m 이내).
-    // 레이저의 starIndex는 원주 각도 순이고 마크 목록은 벌목 순이라 인덱스로는 짝을 맞출 수 없다.
-    private const float GroundMarkMatchMaxSqrDistance = 1.0f;
+    // 발현이 요청됐지만 그룹의 별 중 아직 낙하(Spawn) 연출 중인 것이 있어, 전부 안착하기를 기다리는 그룹들.
+    // 마지막 별 표식 나무를 베는 순간 발현이 요청되므로 마지막 별은 거의 항상 이 대기를 거친다.
+    private readonly Dictionary<int, List<TreeStarMarkGroundAnimator>> landingWaitMarksByGroup = new Dictionary<int, List<TreeStarMarkGroundAnimator>>();
+
+    // 그룹별로 아직 사라짐 연출이 끝나지 않은 그라운드 마크 개수. 0이 되면(그룹의 모든 별이 사라지면)
+    // ConstellationManifestReadyEvent를 발생시켜 그때 비로소 별자리 VFX(레이저)를 시작하게 한다.
+    private readonly Dictionary<int, int> pendingManifestCountByGroup = new Dictionary<int, int>();
+
+    // 그룹의 별이 전부 안착 -> 전부 사라짐 연출을 마쳤을 때 발생 - InDungeonObjectManager가 구독해 별자리 레이저를 쏜다.
+    public event Action<int> ConstellationManifestReadyEvent;
+
+    // 점선 노드 매칭 허용 거리(제곱, 1m 이내). 벌목된 나무의 top 좌표와 점선 노드(같은 top 좌표)를 짝짓는다.
+    private const float DottedLineNodeMatchMaxSqrDistance = 1.0f;
+
+    [Header("Constellation Star Appear Aura")]
+    // 별이 등장할 때 한 번 터지는 아우라 - 보석 원목이 땅에 놓일 때 쓰는 아우라 프리셋(Gold/Diamond/RainbowPreset)을
+    // 그대로 빌려 쓴다. 원목 쪽(LogItemController) 풀과 섞이지 않도록 여기서 별도 풀로 관리한다.
+    [SerializeField] private ItemAuraEffectController starAppearAuraPrefab;
+    [SerializeField] private int starAppearAuraPoolDefaultCapacity = 4;
+    [SerializeField] private int starAppearAuraPoolMaxSize = 16;
+
+    private IObjectPool<ItemAuraEffectController> starAppearAuraPool;
+
+    // 재생 중인 등장 아우라와 끝나는 시각 - 버스트가 끝나면 Update에서 풀로 돌려놓는다.
+    private struct ActiveStarAppearAura
+    {
+        public ItemAuraEffectController aura;
+        public float endTime;
+    }
+
+    private readonly List<ActiveStarAppearAura> activeStarAppearAuras = new List<ActiveStarAppearAura>(8);
 
     [Header("Constellation Dotted Line")]
     [SerializeField] private ConstellationDottedLine constellationDottedLinePrefab;
@@ -47,13 +75,23 @@ public class InDungeonVFXManager : MonoBehaviour
 
     private IObjectPool<ConstellationDottedLine> constellationDottedLinePool;
 
-    // 그룹(별자리)별로 평상시 표시 중인 점선 이음선과, 그 점선이 잇고 있는 노드 좌표(정돈된 순서).
-    // 노드 좌표는 별 표식 나무가 벌목될 때 해당 노드를 푸른 큰 별 색으로 바꾸기 위한 공간 매칭에 쓴다.
-    private readonly Dictionary<int, ConstellationDottedLine> activeDottedLinesByGroup = new Dictionary<int, ConstellationDottedLine>();
-    private readonly Dictionary<int, List<Vector3>> dottedLineNodesByGroup = new Dictionary<int, List<Vector3>>();
+    // 별자리 그룹 하나의 점선 정보. 점선은 "별자리 발현" 특성이 있을 때만 보이지만, 특성은 이어하기 로드처럼
+    // 나무 스폰보다 늦게 적용될 수도 있으므로, 표시 여부와 무관하게 노드 좌표와 벌목 여부를 기록해 두었다가
+    // 보이게 되는 순간 그대로 그린다.
+    private sealed class DottedLineGroup
+    {
+        public readonly List<Vector3> nodes = new List<Vector3>(8);   // 정돈된 순서의 노드(나무 top) 좌표
+        public readonly List<bool> felled = new List<bool>(8);        // 노드별 벌목 여부(푸른 큰 별 노드)
+        public ConstellationDottedLine line;                           // 표시 중일 때만 존재
+    }
 
-    // 점선을 거둘 때 반납된 노드 좌표 리스트 - 다음 런의 점선이 재사용해 런마다 새로 할당하지 않는다.
-    private readonly Stack<List<Vector3>> spareDottedLineNodeLists = new Stack<List<Vector3>>();
+    private readonly Dictionary<int, DottedLineGroup> dottedLineGroups = new Dictionary<int, DottedLineGroup>();
+
+    // 그룹을 거둘 때 반납된 기록 - 다음 런의 그룹이 재사용해 런마다 새로 할당하지 않는다.
+    private readonly Stack<DottedLineGroup> spareDottedLineGroups = new Stack<DottedLineGroup>();
+
+    // 점선 표시 여부 - InDungeonObjectManager가 "별자리 발현" 특성 해금 상태에 맞춰 설정한다.
+    private bool bConstellationDottedLinesVisible = false;
 
     [Header("Shooting Star")]
     [SerializeField] private ShootingStarVFX shootingStarVfxPrefab;
@@ -101,6 +139,19 @@ public class InDungeonVFXManager : MonoBehaviour
                 collectionCheck: true,
                 defaultCapacity: treeStarMarkGroundPoolDefaultCapacity,
                 maxSize: treeStarMarkGroundPoolMaxSize
+            );
+        }
+
+        if (starAppearAuraPool == null && starAppearAuraPrefab != null)
+        {
+            starAppearAuraPool = new ObjectPool<ItemAuraEffectController>(
+                createFunc: CreateStarAppearAura,
+                actionOnGet: OnGetStarAppearAura,
+                actionOnRelease: OnReleaseStarAppearAura,
+                actionOnDestroy: OnDestroyStarAppearAura,
+                collectionCheck: true,
+                defaultCapacity: starAppearAuraPoolDefaultCapacity,
+                maxSize: starAppearAuraPoolMaxSize
             );
         }
 
@@ -314,13 +365,12 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 별 표식 나무가 죽은 자리에 TreeStarMark_Ground 마크를 스폰합니다. Instantiate/Destroy 대신
+    /// 별 표식 나무가 죽은 자리에 TreeStarMark_Ground 마크(별)를 스폰합니다. Instantiate/Destroy 대신
     /// ObjectPool로 재사용되며, sortingOrder는 죽은 나무의 topRenderer 값을 그대로 물려받습니다.
     /// HDR 강도는 TreeStarMarkGroundAnimator 자체 인스펙터 값을 사용합니다.
-    /// 소속 그룹(_groupId)의 별자리 픽셀 레이저가 이 마크에 도달하기 전까지는 사라지지 않고 Loop 재생됩니다.
-    /// _anchorPosition은 레이저 도달 좌표와 짝을 맞출 기준 좌표(별자리 경로에 들어간 나무 top 좌표)입니다.
+    /// 소속 그룹(_groupId)의 별자리 발현이 요청되기 전까지는 사라지지 않고 Loop 재생됩니다.
     /// </summary>
-    public void PlayConstellationGroundMarkVFX(Vector3 _position, Vector3 _anchorPosition, int _sortingOrder, int _groupId)
+    public void PlayConstellationGroundMarkVFX(Vector3 _position, int _sortingOrder, int _groupId)
     {
         if (treeStarMarkGroundPool == null) return;
 
@@ -328,8 +378,9 @@ public class InDungeonVFXManager : MonoBehaviour
         _instance.transform.position = _position;
         _instance.SetSortingOrder(_sortingOrder);
         _instance.SetGroupId(_groupId);
-        _instance.SetAnchorPosition(_anchorPosition);
         _instance.Play();
+
+        PlayStarAppearAura(_instance);
 
         if (!activeGroundMarksByGroup.TryGetValue(_groupId, out List<TreeStarMarkGroundAnimator> _list))
         {
@@ -340,56 +391,45 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 별자리 픽셀 레이저의 선단이 별에 도달한 순간(OnStarReachedEvent) 호출되어, 그 좌표에 있는 그룹의
-    /// 그라운드 마크 하나를 즉시 폭발(PlayManifestEffect)시킵니다. starIndex가 아니라 좌표로 짝을 맞추며
-    /// (공간 매칭), 폭발시킨 마크는 대기 목록에서 빠지므로 같은 별에 두 번째 빔이 도착해도 다시 터지지 않습니다.
-    /// 매칭되는 마크가 없으면(이미 터졌거나, 스킬 해금 전에 벌목되어 마크가 없던 별) false를 반환합니다.
+    /// 그룹의 별자리 발현이 확정되면 호출됩니다. 그룹의 별이 전부 땅에 안착할 때까지 기다렸다가(방금 벤
+    /// 마지막 별은 아직 떨어지는 중이다), 전부 한꺼번에 회전하며 작아지는 사라짐 연출을 재생시킵니다.
+    /// 모든 별의 사라짐 연출이 끝나면 ConstellationManifestReadyEvent가 발생해 그때 별자리 VFX가 시작됩니다.
+    /// 그룹에 별이 하나도 없으면(스킬 해금 전에 벌목된 경우 등) 기다릴 대상이 없으므로 즉시 이벤트를 보냅니다.
     /// </summary>
-    public bool ManifestConstellationGroundMarkAt(int _groupId, Vector3 _worldPos)
+    public void BeginConstellationGroundMarkManifest(int _groupId)
     {
-        if (!activeGroundMarksByGroup.TryGetValue(_groupId, out List<TreeStarMarkGroundAnimator> _list)) return false;
-
-        int _bestIndex = -1;
-        float _bestSqrDistance = GroundMarkMatchMaxSqrDistance;
-        for (int i = 0; i < _list.Count; i++)
+        // 여기서 조용히 리턴하면 ConstellationManifestReadyEvent가 영원히 발생하지 않아 발현이 멈춰버린다.
+        if (!activeGroundMarksByGroup.TryGetValue(_groupId, out List<TreeStarMarkGroundAnimator> _list) || _list.Count == 0)
         {
-            Vector2 _delta = _list[i].AnchorPosition - _worldPos;
-            float _sqrDistance = _delta.sqrMagnitude;
-            if (_sqrDistance <= _bestSqrDistance)
-            {
-                _bestSqrDistance = _sqrDistance;
-                _bestIndex = i;
-            }
+            activeGroundMarksByGroup.Remove(_groupId);
+            ConstellationManifestReadyEvent?.Invoke(_groupId);
+            return;
         }
 
-        if (0 > _bestIndex) return false;
+        activeGroundMarksByGroup.Remove(_groupId);
+        landingWaitMarksByGroup[_groupId] = _list;
 
-        TreeStarMarkGroundAnimator _instance = _list[_bestIndex];
-        _list.RemoveAt(_bestIndex);
-        if (0 == _list.Count) activeGroundMarksByGroup.Remove(_groupId);
-
-        // 대기 목록에서는 빠지지만, 연출이 끝나기 전에 던전을 나가는 경우를 대비해
-        // pendingManifestInstances로 계속 추적해야 ClearAllConstellationGroundMarks가 강제로 회수할 수 있다.
-        pendingManifestInstances.Add(_instance);
-        // 레이저가 닿는 순간에 맞춰야 하므로 랜덤 지연 없이 즉시 터뜨린다. (한꺼번에 정리하는
-        // ClearConstellationGroundMarks는 동시에 터지는 것을 흩뜨리도록 기존 랜덤 지연을 유지한다)
-        _instance.PlayManifestEffectImmediate();
-        return true;
+        // 이미 전부 안착해 있으면 바로 시작, 아니면 마지막 별의 LandedEvent(OnGroundMarkLanded)에서 다시 확인한다.
+        TryStartGroupManifest(_groupId);
     }
 
-    /// <summary>
-    /// 그룹에서 아직 대기 중인 그라운드 마크를 전부 소멸 연출로 보냅니다. 별자리 레이저 연출이 끝났는데도
-    /// 레이저와 짝이 맞지 않아 남은 마크가 있거나, 레이저 프리팹이 없어 광선을 쏘지 못한 경우의 정리용입니다.
-    /// 풀 반환은 각 인스턴스가 연출을 마치고 ManifestFinishedEvent를 발생시킬 때 처리됩니다.
-    /// </summary>
-    public void ClearConstellationGroundMarks(int _groupId)
+    // 그룹의 별이 전부 안착했으면 한꺼번에 사라짐 연출을 시작한다.
+    private void TryStartGroupManifest(int _groupId)
     {
-        if (!activeGroundMarksByGroup.TryGetValue(_groupId, out List<TreeStarMarkGroundAnimator> _list)) return;
-
-        activeGroundMarksByGroup.Remove(_groupId);
+        if (!landingWaitMarksByGroup.TryGetValue(_groupId, out List<TreeStarMarkGroundAnimator> _list)) return;
 
         for (int i = 0; i < _list.Count; i++)
         {
+            if (!_list[i].IsLanded) return;
+        }
+
+        landingWaitMarksByGroup.Remove(_groupId);
+        pendingManifestCountByGroup[_groupId] = _list.Count;
+
+        for (int i = 0; i < _list.Count; i++)
+        {
+            // 연출이 끝나기 전에 던전을 나가는 경우를 대비해 pendingManifestInstances로 계속 추적해야
+            // ClearAllConstellationGroundMarks가 강제로 회수할 수 있다.
             pendingManifestInstances.Add(_list[i]);
             _list[i].PlayManifestEffect();
         }
@@ -400,8 +440,7 @@ public class InDungeonVFXManager : MonoBehaviour
     /// 새 스테이지로 나무를 재생성(SpawnInitialTrees)할 때 호출되어야 합니다 - Stage3TreeGenerationStrategySO의
     /// groupId 카운터가 매번 0부터 다시 시작되므로, 이전 런에서 미발현 상태로 남은 마크를 여기서 정리해두지
     /// 않으면 다음 런의 그룹이 같은 groupId를 받았을 때 서로 다른 런의 마크가 뒤섞이게 된다.
-    /// 아직 발현되지 않은 마크(activeGroundMarksByGroup)뿐 아니라, 발현 연출이 끝나지 않은 채 남아있는
-    /// 마크(pendingManifestInstances)도 함께 강제 회수한다.
+    /// 대기 중인 마크, 안착을 기다리는 마크, 사라짐 연출 중인 마크를 모두 강제 회수한다.
     /// </summary>
     public void ClearAllConstellationGroundMarks()
     {
@@ -414,11 +453,83 @@ public class InDungeonVFXManager : MonoBehaviour
         }
         activeGroundMarksByGroup.Clear();
 
+        foreach (List<TreeStarMarkGroundAnimator> _list in landingWaitMarksByGroup.Values)
+        {
+            for (int i = 0; i < _list.Count; i++)
+            {
+                _list[i].ForceReturnToPool();
+            }
+        }
+        landingWaitMarksByGroup.Clear();
+
         for (int i = 0; i < pendingManifestInstances.Count; i++)
         {
             pendingManifestInstances[i].ForceReturnToPool();
         }
         pendingManifestInstances.Clear();
+
+        // 강제 회수는 OnGroundMarkManifestFinished를 거치지 않으므로, 남아있던 카운트도 직접 정리한다.
+        // 이 시점에는 ConstellationManifestReadyEvent를 발생시키지 않는다(던전을 나가는 중이므로
+        // 별자리 VFX/데미지를 시작하면 안 된다).
+        pendingManifestCountByGroup.Clear();
+
+        // 재생 중이던 별 등장 아우라도 함께 회수한다.
+        for (int i = 0; i < activeStarAppearAuras.Count; i++)
+        {
+            starAppearAuraPool?.Release(activeStarAppearAuras[i].aura);
+        }
+        activeStarAppearAuras.Clear();
+    }
+
+    // 별이 등장하는 순간 별 중심에서 보석 원목 아우라를 한 번 터뜨린다(원목처럼 별 뒤에 그린다).
+    private void PlayStarAppearAura(TreeStarMarkGroundAnimator _star)
+    {
+        if (starAppearAuraPool == null) return;
+
+        ItemAuraEffectController _aura = starAppearAuraPool.Get();
+        _aura.transform.position = _star.VisualWorldPosition;
+
+        // 프리셋 프리팹은 Default 레이어(맨 뒤)라 맞추지 않으면 가려진다. 별 바로 뒤에 그린다.
+        _aura.SetSortingLayer(_star.SortingLayerID);
+        _aura.SetSortingOrder(_star.SortingOrder - 1);
+        _aura.Play();
+
+        activeStarAppearAuras.Add(new ActiveStarAppearAura { aura = _aura, endTime = Time.time + _aura.BurstDuration });
+    }
+
+    private void Update()
+    {
+        // 버스트가 끝난 등장 아우라를 풀로 돌려놓는다(끝나면 아우라가 스스로 렌더러를 끄므로 보이지 않는 상태다).
+        for (int i = activeStarAppearAuras.Count - 1; i >= 0; i--)
+        {
+            if (Time.time < activeStarAppearAuras[i].endTime) continue;
+
+            starAppearAuraPool?.Release(activeStarAppearAuras[i].aura);
+            int _last = activeStarAppearAuras.Count - 1;
+            activeStarAppearAuras[i] = activeStarAppearAuras[_last];
+            activeStarAppearAuras.RemoveAt(_last);
+        }
+    }
+
+    private ItemAuraEffectController CreateStarAppearAura()
+    {
+        return Instantiate(starAppearAuraPrefab, transform);
+    }
+
+    private void OnGetStarAppearAura(ItemAuraEffectController _aura)
+    {
+        _aura.gameObject.SetActive(true);
+    }
+
+    private void OnReleaseStarAppearAura(ItemAuraEffectController _aura)
+    {
+        _aura.Stop();
+        _aura.gameObject.SetActive(false);
+    }
+
+    private void OnDestroyStarAppearAura(ItemAuraEffectController _aura)
+    {
+        if (_aura != null) Destroy(_aura.gameObject);
     }
 
     private TreeStarMarkGroundAnimator CreateTreeStarMarkGround()
@@ -429,15 +540,41 @@ public class InDungeonVFXManager : MonoBehaviour
         // 이벤트 바인딩 (생성 시 한 번만) - LootManager.CreateLootItem과 동일한 패턴
         _instance.ManifestFinishedEvent -= OnGroundMarkManifestFinished;
         _instance.ManifestFinishedEvent += OnGroundMarkManifestFinished;
+        _instance.LandedEvent -= OnGroundMarkLanded;
+        _instance.LandedEvent += OnGroundMarkLanded;
 
         return _instance;
     }
 
-    // 그라운드 마크의 소멸 연출이 끝났을 때 호출되어 풀로 반환한다.
+    // 별이 낙하를 마치고 안착했을 때 - 그 그룹이 안착 대기 중이면 전부 안착했는지 다시 확인한다.
+    private void OnGroundMarkLanded(TreeStarMarkGroundAnimator _instance)
+    {
+        if (landingWaitMarksByGroup.ContainsKey(_instance.GroupId))
+        {
+            TryStartGroupManifest(_instance.GroupId);
+        }
+    }
+
+    // 그라운드 마크의 사라짐 연출이 끝났을 때 호출되어 풀로 반환하고, 그룹의 남은 개수를 갱신한다.
+    // 그룹의 모든 별이 연출을 마치면 ConstellationManifestReadyEvent를 발생시켜 별자리 VFX를 시작하게 한다.
     private void OnGroundMarkManifestFinished(TreeStarMarkGroundAnimator _instance)
     {
         pendingManifestInstances.Remove(_instance);
+        int _groupId = _instance.GroupId;
         _instance.ForceReturnToPool();
+
+        if (!pendingManifestCountByGroup.TryGetValue(_groupId, out int _remaining)) return;
+
+        _remaining--;
+        if (_remaining <= 0)
+        {
+            pendingManifestCountByGroup.Remove(_groupId);
+            ConstellationManifestReadyEvent?.Invoke(_groupId);
+        }
+        else
+        {
+            pendingManifestCountByGroup[_groupId] = _remaining;
+        }
     }
 
     private void OnGetTreeStarMarkGround(TreeStarMarkGroundAnimator _instance)
@@ -455,52 +592,58 @@ public class InDungeonVFXManager : MonoBehaviour
         if (_instance != null)
         {
             _instance.ManifestFinishedEvent -= OnGroundMarkManifestFinished;
+            _instance.LandedEvent -= OnGroundMarkLanded;
             Destroy(_instance.gameObject);
         }
     }
 
     /// <summary>
-    /// 별자리 그룹의 별 표식 나무들(top 좌표)을 잇는 평상시 점선 이음선을 표시합니다.
-    /// 픽셀 레이저와 같은 꼬임 풀기(UntanglePoints)로 정돈해, 평상시 점선과 발현 레이저가 같은 외곽선을 그리게 합니다.
-    /// 같은 그룹에 다시 호출되면 기존 점선을 반환하고 새로 그립니다.
+    /// 별자리 그룹의 별 표식 나무들(top 좌표)을 잇는 점선 이음선을 등록합니다. 점선은 "별자리 발현" 특성이
+    /// 있을 때만 보이며(SetConstellationDottedLinesVisible), 지금 보이지 않더라도 등록해 두면 특성이 적용되는
+    /// 순간 그려집니다. 픽셀 레이저와 같은 꼬임 풀기(UntanglePoints)로 정돈해 레이저와 같은 외곽선을 그립니다.
+    /// 같은 그룹에 다시 호출되면 기존 등록을 거두고 새로 등록합니다.
     /// </summary>
-    public void ShowConstellationDottedLine(int _groupId, IReadOnlyList<Vector3> _points)
+    public void RegisterConstellationDottedLine(int _groupId, IReadOnlyList<Vector3> _points)
     {
-        if (null == constellationDottedLinePool || null == _points || 2 > _points.Count) return;
+        if (null == _points || 2 > _points.Count) return;
 
-        HideConstellationDottedLine(_groupId);
+        RemoveConstellationDottedLine(_groupId);
 
-        List<Vector3> _nodes = 0 < spareDottedLineNodeLists.Count ? spareDottedLineNodeLists.Pop() : new List<Vector3>(_points.Count);
-        _nodes.Clear();
+        DottedLineGroup _group = 0 < spareDottedLineGroups.Count ? spareDottedLineGroups.Pop() : new DottedLineGroup();
+        _group.nodes.Clear();
+        _group.felled.Clear();
+        _group.line = null;
+
         for (int i = 0; i < _points.Count; i++)
         {
-            _nodes.Add(_points[i]);
+            _group.nodes.Add(_points[i]);
         }
-        PresentationLayer.VFX.ConstellationPixelLaser.UntanglePoints(_nodes, 0);
+        PresentationLayer.VFX.ConstellationPixelLaser.UntanglePoints(_group.nodes, 0);
 
-        ConstellationDottedLine _line = constellationDottedLinePool.Get();
-        // 점선 메쉬는 노드 월드 좌표를 그대로 정점으로 쓰므로, 인스턴스 자체는 월드 원점에 둔다.
-        _line.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-        _line.SetPoints(_nodes, true);
+        for (int i = 0; i < _group.nodes.Count; i++)
+        {
+            _group.felled.Add(false);
+        }
 
-        activeDottedLinesByGroup[_groupId] = _line;
-        dottedLineNodesByGroup[_groupId] = _nodes;
+        dottedLineGroups[_groupId] = _group;
+
+        if (bConstellationDottedLinesVisible) ShowDottedLine(_group);
     }
 
     /// <summary>
-    /// 별 표식 나무가 벌목되었을 때 호출되어, 점선에서 그 나무(_worldPos와 가장 가까운 노드)를
-    /// 푸른색 큰 별 노드로 전환합니다. 연결선이 황금빛 ↔ 푸른빛 그라데이션으로 바뀝니다.
+    /// 별 표식 나무가 벌목되었을 때 호출되어, 점선에서 그 나무(_worldPos와 가장 가까운 노드)를 푸른색 큰 별
+    /// 노드로 기록합니다. 점선이 보이는 중이면 즉시 황금빛 ↔ 푸른빛 그라데이션으로 바뀌고, 숨겨져 있으면
+    /// 나중에 보이게 될 때 반영됩니다.
     /// </summary>
     public void SetConstellationDottedLineNodeFelled(int _groupId, Vector3 _worldPos)
     {
-        if (!activeDottedLinesByGroup.TryGetValue(_groupId, out ConstellationDottedLine _line)) return;
-        if (!dottedLineNodesByGroup.TryGetValue(_groupId, out List<Vector3> _nodes)) return;
+        if (!dottedLineGroups.TryGetValue(_groupId, out DottedLineGroup _group)) return;
 
         int _bestIndex = -1;
-        float _bestSqrDistance = GroundMarkMatchMaxSqrDistance;
-        for (int i = 0; i < _nodes.Count; i++)
+        float _bestSqrDistance = DottedLineNodeMatchMaxSqrDistance;
+        for (int i = 0; i < _group.nodes.Count; i++)
         {
-            Vector2 _delta = _nodes[i] - _worldPos;
+            Vector2 _delta = _group.nodes[i] - _worldPos;
             float _sqrDistance = _delta.sqrMagnitude;
             if (_sqrDistance <= _bestSqrDistance)
             {
@@ -511,45 +654,75 @@ public class InDungeonVFXManager : MonoBehaviour
 
         if (0 > _bestIndex) return;
 
-        _line.SetNodeAsBigStar(_bestIndex, true);
+        _group.felled[_bestIndex] = true;
+        if (null != _group.line) _group.line.SetNodeAsBigStar(_bestIndex, true);
     }
 
     /// <summary>
-    /// 그룹의 점선 이음선을 풀로 반환합니다. 발현 레이저가 발사되거나(레이저가 점선을 대체),
-    /// 발현 스킬 없이 그룹의 별 표식 나무가 모두 벌목되었을 때 호출됩니다.
+    /// 그룹의 점선 등록을 거두고 표시 중이면 풀로 반환합니다. 별자리 VFX가 시작되거나(레이저가 점선을 대체),
+    /// 발현 특성 없이 그룹의 별 표식 나무가 모두 벌목되었을 때 호출됩니다.
     /// </summary>
-    public void HideConstellationDottedLine(int _groupId)
+    public void RemoveConstellationDottedLine(int _groupId)
     {
-        if (activeDottedLinesByGroup.TryGetValue(_groupId, out ConstellationDottedLine _line))
-        {
-            activeDottedLinesByGroup.Remove(_groupId);
-            _line.ReturnToPool();
-        }
+        if (!dottedLineGroups.TryGetValue(_groupId, out DottedLineGroup _group)) return;
 
-        if (dottedLineNodesByGroup.TryGetValue(_groupId, out List<Vector3> _nodes))
+        dottedLineGroups.Remove(_groupId);
+        HideDottedLine(_group);
+        spareDottedLineGroups.Push(_group);
+    }
+
+    /// <summary>
+    /// 점선 표시 여부를 바꿉니다. "별자리 발현" 특성이 적용/해제될 때 호출되며, 등록된 그룹 전체에 즉시 반영됩니다.
+    /// </summary>
+    public void SetConstellationDottedLinesVisible(bool _visible)
+    {
+        if (bConstellationDottedLinesVisible == _visible) return;
+        bConstellationDottedLinesVisible = _visible;
+
+        foreach (DottedLineGroup _group in dottedLineGroups.Values)
         {
-            dottedLineNodesByGroup.Remove(_groupId);
-            spareDottedLineNodeLists.Push(_nodes);
+            if (_visible) ShowDottedLine(_group);
+            else HideDottedLine(_group);
         }
     }
 
     /// <summary>
-    /// 그룹 구분 없이 표시 중인 점선 이음선을 전부 회수합니다. ClearAllConstellationGroundMarks와 같은
+    /// 그룹 구분 없이 등록된 점선을 전부 회수합니다. ClearAllConstellationGroundMarks와 같은
     /// 시점(던전 이탈/나무 재생성)에 호출되어야 다음 런의 같은 groupId와 뒤섞이지 않습니다.
     /// </summary>
     public void ClearAllConstellationDottedLines()
     {
-        foreach (ConstellationDottedLine _line in activeDottedLinesByGroup.Values)
+        foreach (DottedLineGroup _group in dottedLineGroups.Values)
         {
-            _line.ReturnToPool();
+            HideDottedLine(_group);
+            spareDottedLineGroups.Push(_group);
         }
-        activeDottedLinesByGroup.Clear();
+        dottedLineGroups.Clear();
+    }
 
-        foreach (List<Vector3> _nodes in dottedLineNodesByGroup.Values)
+    private void ShowDottedLine(DottedLineGroup _group)
+    {
+        if (null != _group.line || null == constellationDottedLinePool) return;
+
+        ConstellationDottedLine _line = constellationDottedLinePool.Get();
+        // 점선 메쉬는 노드 월드 좌표를 그대로 정점으로 쓰므로, 인스턴스 자체는 월드 원점에 둔다.
+        _line.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+        _line.SetPoints(_group.nodes, true);
+
+        for (int i = 0; i < _group.felled.Count; i++)
         {
-            spareDottedLineNodeLists.Push(_nodes);
+            if (_group.felled[i]) _line.SetNodeAsBigStar(i, true);
         }
-        dottedLineNodesByGroup.Clear();
+
+        _group.line = _line;
+    }
+
+    private void HideDottedLine(DottedLineGroup _group)
+    {
+        if (null == _group.line) return;
+
+        _group.line.ReturnToPool();
+        _group.line = null;
     }
 
     private ConstellationDottedLine CreateConstellationDottedLine()

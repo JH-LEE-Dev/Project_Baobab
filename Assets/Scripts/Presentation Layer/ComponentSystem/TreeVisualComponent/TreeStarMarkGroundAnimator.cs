@@ -69,6 +69,10 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
 
     public event Action<TreeStarMarkGroundAnimator> ManifestFinishedEvent;
 
+    // Spawn 연출(낙하·안착)을 마치고 Idle에 들어선 순간 발생 - 별자리 그룹의 별이 전부 땅에 안착한 뒤에
+    // 한꺼번에 사라짐 연출을 시작해야 하므로, InDungeonVFXManager가 이 신호로 안착 완료를 집계한다.
+    public event Action<TreeStarMarkGroundAnimator> LandedEvent;
+
     private static readonly int HDRIntensityID = Shader.PropertyToID("_HDRIntensity");
     private const float TwoPi = Mathf.PI * 2f;
 
@@ -87,9 +91,21 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
 
     public int GroupId { get; private set; } = -1;
 
-    // 별자리 픽셀 레이저가 도달한 좌표(OnStarReachedEvent의 worldPos)와 공간 매칭할 때 쓰는 기준 좌표.
-    // 마크 자체는 나무 밑동에 놓이지만 레이저는 나무 top 좌표를 잇기 때문에, 스폰 시점에 그 top 좌표를 받아둔다.
-    public Vector3 AnchorPosition { get; private set; }
+    // 별 그림의 기준 월드 위치(루트 + visualLocalOffset, 흔들림 제외). 등장 이펙트를 별 중심에 맞출 때 쓴다.
+    public Vector3 VisualWorldPosition => transform.TransformPoint(visualLocalOffset);
+
+    // 별이 그려지는 정렬 레이어/순서. 별 뒤에 붙일 이펙트의 정렬을 맞출 때 쓴다.
+    public int SortingLayerID =>
+        sortingGroup != null ? sortingGroup.sortingLayerID : (starRenderer != null ? starRenderer.sortingLayerID : 0);
+    public int SortingOrder =>
+        sortingGroup != null ? sortingGroup.sortingOrder : (starRenderer != null ? starRenderer.sortingOrder : 0);
+
+    // Spawn 연출을 마치고 땅에 안착했는지(Idle 이후 상태). 아직 떨어지는 중이면 false.
+    public bool IsLanded =>
+        state == AnimationState.Idle
+        || state == AnimationState.ManifestDelay
+        || state == AnimationState.Manifest
+        || state == AnimationState.ManifestComplete;
 
     private MaterialPropertyBlock PropertyBlock =>
         materialPropertyBlock ??= new MaterialPropertyBlock();
@@ -114,11 +130,6 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
     public void SetGroupId(int _groupId)
     {
         GroupId = _groupId;
-    }
-
-    public void SetAnchorPosition(Vector3 _anchorPosition)
-    {
-        AnchorPosition = _anchorPosition;
     }
 
     public void SetSortingOrder(int _order)
@@ -206,16 +217,6 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 랜덤 지연 없이 즉시 발현합니다. 별자리 픽셀 레이저가 이 별에 닿는 순간처럼 외부 타이밍에 정확히
-    /// 맞춰야 할 때 사용합니다(별마다 도착 시각이 달라 자연스럽게 흩어지므로 지연을 더할 필요가 없다).
-    /// 이미 발현 중이거나 끝났으면 무시하고, 지연 대기 중이었다면 대기를 끊고 바로 발현합니다.
-    /// </summary>
-    public void PlayManifestEffectImmediate()
-    {
-        StartManifest();
-    }
-
     public void NotifyManifestFinished()
     {
         if (isReturned)
@@ -282,6 +283,8 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
         stateTimer = 0f;
         idleTimer = 0f;
         ApplyIdlePose();
+
+        LandedEvent?.Invoke(this);
     }
 
     private void UpdateIdle(float _deltaTime)
