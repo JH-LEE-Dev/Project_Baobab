@@ -92,6 +92,9 @@ public class Boomerang : MonoBehaviour
     // HapticPresets의 묶음 간격이 한 번으로 묶어준다.
     private bool bPlayHaptic;
 
+    // 날아가는 동안 부메랑 위치를 따라다니는 3D 루프 사운드(SpinLoop). 볼륨은 AudioDatabase에서 작게 잡아 둔다.
+    private AudioHandle spinLoopHandle = AudioHandle.Invalid;
+
     private CustomSortable customSortable;
 
     // 그림자는 본체 자식이라 본체 스케일에 오프셋까지 같이 줄어든다. 오프셋은 "공중에 떠 있는 높이"라
@@ -196,6 +199,18 @@ public class Boomerang : MonoBehaviour
         isDismissing = false;
         dismissRoutine = null;
         ApplyVisualScale();
+
+        Sound.Play(SoundID.SpinStart, _origin);
+        StopSpinLoop(); // 풀 재사용 시 이전 비행의 루프가 남아 있지 않도록
+        spinLoopHandle = Sound.PlayTracked(SoundID.SpinLoop, _origin);
+    }
+
+    private void StopSpinLoop()
+    {
+        if (!spinLoopHandle.IsValid) return;
+
+        Sound.StopTracked(spinLoopHandle);
+        spinLoopHandle = AudioHandle.Invalid;
     }
 
     // hitRadius는 BoomerangCreator가 Launch 직전에 SetHitRadius로 넣어주므로(스킬/과열 반영), 여기서 매 발사마다
@@ -238,6 +253,7 @@ public class Boomerang : MonoBehaviour
         if (!IsActive || isDismissing) return;
         isPaused = true;
         SetAfterimagesPaused(true);
+        Sound.SetTrackedVolume(spinLoopHandle, 0f); // 제자리에 멈춰 있는 동안 회전음이 계속 나면 어색하므로 잠시 끈다
     }
 
     /// <summary>
@@ -248,6 +264,7 @@ public class Boomerang : MonoBehaviour
         if (!IsActive || isDismissing) return;
         isPaused = false;
         SetAfterimagesPaused(false);
+        Sound.SetTrackedVolume(spinLoopHandle, 1f);
     }
 
     /// <summary>
@@ -260,6 +277,7 @@ public class Boomerang : MonoBehaviour
         isDismissing = true;
         isPaused = true; // 축소되는 동안 이동/판정/애니메이션은 멈춘 상태를 유지
         SetAfterimagesPaused(false); // Pause()로 멈춰있던 잔상은 본체가 줄어드는 동안 마저 사라지게 둔다
+        Sound.RampTrackedVolume(spinLoopHandle, 0f, _duration); // 본체가 줄어드는 만큼 회전음도 잦아들고, Finish에서 정지한다
         dismissRoutine = StartCoroutine(DismissRoutine(_duration));
     }
 
@@ -301,6 +319,8 @@ public class Boomerang : MonoBehaviour
 
     private void OnDestroy()
     {
+        StopSpinLoop();
+
         if (afterimages == null) return;
 
         for (int i = 0; i < afterimages.Length; i++)
@@ -337,6 +357,12 @@ public class Boomerang : MonoBehaviour
     // 수행한다(그 프레임의 최종 이동이 끝난 뒤 정렬해야 한 프레임 밀리는 현상이 없다).
     private void LateUpdate()
     {
+        // 이번 프레임 이동이 끝난 위치로 3D 회전음을 옮긴다.
+        if (IsActive)
+        {
+            Sound.UpdateTrackedPosition(spinLoopHandle, transform.position);
+        }
+
         if (customSortable != null)
         {
             customSortable.ManualLateUpdate();
@@ -601,6 +627,7 @@ public class Boomerang : MonoBehaviour
 
     private void Finish()
     {
+        StopSpinLoop();
         IsActive = false;
         returnTarget = null;
 

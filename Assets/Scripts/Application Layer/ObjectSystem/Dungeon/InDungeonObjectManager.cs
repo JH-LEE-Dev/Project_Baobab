@@ -2184,6 +2184,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 0f);
 
             inDungeonVFXManager.PlaySporeExplosionVFX(basePos + randomOffset, randomOffset);
+            // 폭발 VFX가 SporeExplosionVfxInterval 간격으로 "타타탕" 연달아 터지므로, 터질 때마다 그 자리에서 한 번씩 울린다.
+            Sound.Play(SoundID.SporeExplosion, basePos + randomOffset);
 
             yield return sporeExplosionVfxWait;
         }

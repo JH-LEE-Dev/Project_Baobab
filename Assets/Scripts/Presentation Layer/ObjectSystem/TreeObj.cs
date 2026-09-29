@@ -432,6 +432,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         bool wasGemBeforeHit = bIsGemStage;
         int gemStageBeforeHit = currentGemStage;
 
+        // 포자막 타격음도 "맞는 순간 포자막이 있었는지"로 갈라진다. 이 타격으로 포자막이 깨지면
+        // DecreaseHealth 안에서 SP가 0이 되므로 역시 미리 기억해 둔다.
+        bool hadShieldBeforeHit = healthComponent.GetCurrentSP() > 0f;
+
         // 별표식 베기 - 별 표식을 가진 나무에게 배율 적용
         if (bStarMarked)
         {
@@ -446,7 +450,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
             treeVisualComponent.PlayHitFlash();
         }
 
-        PlayHitSound(wasGemBeforeHit, gemStageBeforeHit);
+        PlayHitSound(wasGemBeforeHit, gemStageBeforeHit, hadShieldBeforeHit);
 
         // 진동은 플레이어가 때린 경우에만 낸다. 벌목 NPC가 베는 것까지 울리면 아무것도 안 하고
         // 서 있어도 패드가 계속 떤다. (bLastHitByPlayer는 LumberjackNPC가 때리기 직전에 false로
@@ -500,7 +504,13 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // 보석 나무는 Pitch_Hit 자리에 전용 사운드(Pitch_Hit_Mine)를 대신 재생하며,
     // 보석 단계에 따라 피치 범위가 1.0~2.0 구간으로 나뉘어 누적 상승한다 (1: 황금 1~1.33, 2: 다이아 1.33~1.66, 3: 프리즘 1.66~2.0).
     // 피치/볼륨 계산과 함께 울리는 Tree_Hit은 일반 나무와 동일하게 유지한다.
-    private void PlayHitSound(bool _bGemTree, int _gemStage)
+    //
+    // 포자막이 있는 상태로 맞으면 위 나무 타격음(Tree_Hit, Pitch_Hit/Pitch_Hit_Mine)은 피치 로직을 그대로 둔 채
+    // 볼륨만 0.7배로 줄이고, 그 위에 Spore_Hit을 얹는다. Spore_Hit은 체력 대신 포자막이 깎인 비율로
+    // Pitch_Hit과 같은 곡선(1.0 -> 1.6)을 따라 올라가며, 이 타격으로 포자막이 깨졌으면 최고 피치로 친다.
+    private const float ShieldedTreeHitVolumeMul = 0.7f;
+
+    private void PlayHitSound(bool _bGemTree, int _gemStage, bool _bHadShield)
     {
         float maxHealth = health.GetMaxHealth();
         // 이번 타격으로 보석 단계가 전환되어 체력이 즉시 풀피로 회복되었거나 완전히 죽은 경우,
@@ -511,9 +521,19 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
             : (maxHealth > 0f ? Mathf.Clamp01(1f - health.GetCurrentHealth() / maxHealth) : 0f);
 
         float treeHitPitch = Mathf.Lerp(1.0f, 1.3f, damageRatio);
-        float pitchHitVolume = Mathf.Lerp(1.0f, 1.4f, damageRatio);
+        float treeHitVolumeMul = _bHadShield ? ShieldedTreeHitVolumeMul : 1f;
+        float pitchHitVolume = Mathf.Lerp(1.0f, 1.4f, damageRatio) * treeHitVolumeMul;
 
-        Sound.Play(SoundID.TreeHit, cachedTransform.position, 1f, true, treeHitPitch);
+        Sound.Play(SoundID.TreeHit, cachedTransform.position, treeHitVolumeMul, true, treeHitPitch);
+
+        if (_bHadShield)
+        {
+            float maxSP = healthComponent.GetMaxSP();
+            float currentSP = healthComponent.GetCurrentSP();
+            float shieldDamageRatio = (currentSP <= 0f || maxSP <= 0f) ? 1.0f : Mathf.Clamp01(1f - currentSP / maxSP);
+
+            Sound.Play(SoundID.SporeHit, cachedTransform.position, 1f, true, Mathf.Lerp(1.0f, 1.6f, shieldDamageRatio));
+        }
 
         if (true == _bGemTree)
         {
@@ -652,6 +672,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     private void OnShieldBroken()
     {
+        // 파괴 VFX(InDungeonObjectManager.OnTreeShieldBroken)와 마찬가지로 포자막 폭발 스킬/맵 여부와 무관하게 항상 재생한다.
+        Sound.Play(SoundID.SporeShieldBreak, cachedTransform.position);
+
         TreeShieldBrokenEvent?.Invoke(this);
     }
 
