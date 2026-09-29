@@ -1018,7 +1018,7 @@ MonoBehaviour:
   droneRowDistanceStep: 0.32
   droneArrivalTolerance: 0.15
   droneCenterHoverHeight: 0.3
-  droneSeparationDistance: 0.4
+  droneSeparationDistance: 0.18
   droneSeparationSpeed: 3
   centerTransform: {fileID: 4602724895061784125}
   bRide: 0

@@ -1960,6 +1960,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         bStarGazeSuspendedByGameEnd = true;
         FlyingItemPauseRequestedEvent?.Invoke();
         character.PauseBoomerangs();
+        character.PauseDrones();
 
         StopGrowth();
 
@@ -2045,6 +2046,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             bStarGazeSuspendedByGameEnd = false;
             FlyingItemResumeRequestedEvent?.Invoke();
             character.ResumeBoomerangs();
+            character.ResumeDrones();
 
             // 성장 루틴 재개도 "진짜 취소"일 때만 한다.
             //
