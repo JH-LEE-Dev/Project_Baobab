@@ -36,6 +36,13 @@ public class Boomerang : MonoBehaviour
     [SerializeField] private List<Sprite> effectSprites; // baseSprites와 같은 인덱스로 동시에 재생
     [SerializeField] private float sampleRate = 24f;
 
+    [Header("Visual Size (공격 범위에 맞춤)")]
+    // 스케일 1일 때 Boomerang_Base의 실제로 보이는(불투명) 가로폭(월드 유닛). 128x64 칸 안에서 그림이
+    // 차지하는 폭은 프레임마다 89~96px인데, 가장 넓은 96px / 32PPU = 3.0. 리소스가 바뀌면 이 값만 다시 잰다.
+    // 발사할 때 이 폭이 판정 지름(hitRadius * 2)과 같아지도록 스케일을 맞춰서, 눈에 보이는 부메랑 끝이
+    // 곧 나무가 맞는 경계가 되게 한다("부메랑 범위" 스킬/과열로 hitRadius가 커지면 부메랑도 같이 커진다).
+    [SerializeField] private float visualWidthAtUnitScale = 3f;
+
     [Header("Afterimage (잔상)")]
     [SerializeField] private float afterimageInterval = 0.28f; // 초당 약 3.5회
     [SerializeField] private float afterimageFadeDuration = 0.45f;
@@ -48,7 +55,6 @@ public class Boomerang : MonoBehaviour
     [SerializeField] private LayerMask targetLayer; // 나무(Tree) 레이어
     [SerializeField] private float hitRadius = 0.5f; // 현재 위치 기준 판정 반경. 타일 1칸(Grid CellSize x=1)의 지름과 맞도록 반지름 0.5로 설정.
     [SerializeField] private float damageInterval = 0.3f; // 왕복 전 구간(가는 길/오는 길 모두) 동안 이 주기로 판정
-    [SerializeField] private float hitStaggerMax = 0.15f; // 한 틱에 맞은 나무들이 동시에 맞지 않도록, 나무마다 0~이 값 사이의 랜덤 지연 후 실제 데미지를 준다
 
     private Phase phase;
     private Vector3 originPosition;
@@ -81,25 +87,16 @@ public class Boomerang : MonoBehaviour
     private Vector2 lastDamageCheckPosition; // 터널링 방지: 직전 판정 시점의 위치. 이 위치~현재 위치 사이 선분 전체를 검사한다.
     private readonly List<IStaticCollidable> hitScanResults = new List<IStaticCollidable>(16);
 
-    // 판정은 틱 시점에 끝내고(맞을 나무/데미지 확정), 실제 TakeDamage만 나무마다 랜덤 시각까지 미룬다.
-    // 시각은 Time.time이 아니라 activeTime(일시정지 중에는 흐르지 않는 부메랑 자체 시계) 기준이라
-    // WarningUI로 멈춘 동안에는 대기 중인 타격도 같이 멈춘다.
-    private struct PendingHit
-    {
-        public TreeObj tree;
-        public int treeGeneration; // 예약 시점의 TreeObj.SpawnGeneration. 적용 시점과 다르면 그 사이 죽어서 풀로 갔거나 재스폰된 것이다.
-        public float damage;
-        public float applyAt;
-    }
-    private readonly List<PendingHit> pendingHits = new List<PendingHit>(16);
-    private float activeTime;
-
     // 캐릭터가 던진 부메랑만 true(BoomerangCreator가 발사마다 덮어씀). 나무의 도끼용 진동(TreeImpact/TreeDestroy)은
-    // 항상 끄고, 대신 가벼운 BoomerangImpact를 울린다 - 판정 한 번에 흩어져 들어오는 타격들은
+    // 항상 끄고, 대신 가벼운 BoomerangImpact를 울린다 - 판정 한 번에 여러 그루가 맞아도
     // HapticPresets의 묶음 간격이 한 번으로 묶어준다.
     private bool bPlayHaptic;
 
     private CustomSortable customSortable;
+
+    // 그림자는 본체 자식이라 본체 스케일에 오프셋까지 같이 줄어든다. 오프셋은 "공중에 떠 있는 높이"라
+    // 크기와 무관하게 월드 기준으로 유지해야 하므로, 프리팹의 원래 위치를 기억해 두고 스케일로 나눠 보정한다.
+    private Vector3 shadowBaseLocalPosition;
 
     private bool isPaused; // WarningUI가 떠 있는 동안 그 자리에서 완전히 멈춘다 (이동/애니메이션/데미지 판정 전부 정지)
     private bool isDismissing; // 마을로 돌아가기 확정 시 축소 애니메이션 재생 중 (Update의 나머지 로직과 무관하게 별도 코루틴으로 처리)
@@ -194,13 +191,25 @@ public class Boomerang : MonoBehaviour
 
         damageCheckTimer = 0f;
         lastDamageCheckPosition = _origin;
-        activeTime = 0f;
-        pendingHits.Clear();
 
         isPaused = false;
         isDismissing = false;
         dismissRoutine = null;
-        transform.localScale = Vector3.one;
+        ApplyVisualScale();
+    }
+
+    // hitRadius는 BoomerangCreator가 Launch 직전에 SetHitRadius로 넣어주므로(스킬/과열 반영), 여기서 매 발사마다
+    // 다시 계산한다. DismissRoutine은 이 스케일에서 0으로 줄이고, 잔상은 lossyScale을 그대로 복사한다.
+    private void ApplyVisualScale()
+    {
+        float scale = visualWidthAtUnitScale > 0f ? (hitRadius * 2f) / visualWidthAtUnitScale : 1f;
+        scale = Mathf.Max(scale, 0.01f);
+        transform.localScale = new Vector3(scale, scale, 1f);
+
+        if (shadowSpriteRenderer != null)
+        {
+            shadowSpriteRenderer.transform.localPosition = shadowBaseLocalPosition / scale;
+        }
     }
 
     /// <summary>
@@ -216,10 +225,8 @@ public class Boomerang : MonoBehaviour
             dismissRoutine = null;
         }
 
-        // 정상 회수(Finish)와 달리 강제 회수는 캐릭터 사망/던전 이탈 등이라 남은 잔상도 바로 지우고,
-        // 아직 들어가지 않은 지연 타격도 버린다.
+        // 정상 회수(Finish)와 달리 강제 회수는 캐릭터 사망/던전 이탈 등이라 남은 잔상도 바로 지운다.
         HideAllAfterimages();
-        pendingHits.Clear();
         Finish();
     }
 
@@ -271,7 +278,6 @@ public class Boomerang : MonoBehaviour
 
         transform.localScale = Vector3.zero;
         dismissRoutine = null;
-        pendingHits.Clear(); // 마을로 돌아가는 중이라 남은 지연 타격은 버린다
         Finish();
     }
 
@@ -283,6 +289,11 @@ public class Boomerang : MonoBehaviour
             // Effect 렌더러는 본체와 같은 order면 그리는 순서가 보장되지 않으므로 여기서 빼고,
             // LateUpdate에서 본체 order + 1로 따로 맞춘다.
             customSortable.Initialize(transform, new[] { spriteRenderer, shadowSpriteRenderer });
+        }
+
+        if (shadowSpriteRenderer != null)
+        {
+            shadowBaseLocalPosition = shadowSpriteRenderer.transform.localPosition;
         }
 
         CreateAfterimages();
@@ -305,11 +316,8 @@ public class Boomerang : MonoBehaviour
     {
         if (!IsActive || isPaused) return;
 
-        activeTime += Time.deltaTime;
-
         UpdateAnimationFrame(Time.deltaTime);
         UpdateDamageTick(Time.deltaTime); // 가는 길/오는 길 구분 없이 왕복 내내 동일하게 판정
-        UpdatePendingHits(); // 틱에서 예약한 것 중 지연 0인 타격도 같은 프레임에 바로 들어가도록 틱 다음에 처리
 
         switch (phase)
         {
@@ -446,9 +454,13 @@ public class Boomerang : MonoBehaviour
             tickDamage *= criticalDamageMul;
         }
 
+        bool bHitAny = false;
+
         for (int i = 0; i < hitScanResults.Count; i++)
         {
-            if (hitScanResults[i] is TreeObj treeObj && !treeObj.bDead)
+            // 이 루프 안에서 앞의 나무가 죽으며 연쇄(과열 폭발 등)로 뒤쪽 후보가 먼저 죽어 풀로 반납될 수 있다.
+            // 반납 시 ResetTree가 bDead를 false로 되돌리므로 IsPooled로 함께 거른다.
+            if (hitScanResults[i] is TreeObj treeObj && !treeObj.bDead && !treeObj.IsPooled)
             {
                 // topRoot/밑둥 둘 중 하나라도 이동 경로(선분)에 판정 반경만큼 가까웠으면 맞은 것으로
                 // 처리한다. ||는 short-circuit이라 topRoot에서 이미 맞았으면 밑동 거리는 계산하지
@@ -456,55 +468,21 @@ public class Boomerang : MonoBehaviour
                 bool isHit = DistancePointToSegmentSqr(GetTreeTopPosition(treeObj), segStart, segEnd) <= hitRadiusSqr
                     || DistancePointToSegmentSqr(treeObj.Position, segStart, segEnd) <= hitRadiusSqr;
 
-                if (isHit)
+                if (isHit && treeObj.bCanApplyDamage) // 묘목은 TakeDamage가 무시하므로 진동도 울리지 않게 미리 거른다
                 {
-                    // 같은 틱에 맞은 나무들이 한 프레임에 동시에 흔들리면 어색해서, 나무마다 따로 랜덤 지연을 준다.
-                    pendingHits.Add(new PendingHit
-                    {
-                        tree = treeObj,
-                        treeGeneration = treeObj.SpawnGeneration,
-                        damage = tickDamage,
-                        applyAt = activeTime + UnityEngine.Random.Range(0f, hitStaggerMax),
-                    });
+                    treeObj.TakeDamage(tickDamage, false);
+                    bHitAny = true;
                 }
             }
         }
 
-        lastDamageCheckPosition = segEnd;
-    }
-
-    private void UpdatePendingHits()
-    {
-        // 순서는 상관없으므로 swap-remove로 할당/시프트 없이 제거한다.
-        for (int i = pendingHits.Count - 1; i >= 0; i--)
-        {
-            if (activeTime < pendingHits[i].applyAt) continue;
-
-            ApplyPendingHit(pendingHits[i]);
-
-            int last = pendingHits.Count - 1;
-            pendingHits[i] = pendingHits[last];
-            pendingHits.RemoveAt(last);
-        }
-    }
-
-    // 예약~적용 사이(최대 hitStaggerMax)에 다른 공격(다른 부메랑, 도끼 등)으로 이미 쓰러졌을 수 있으므로
-    // 적용 시점에 다시 확인한다. 나무는 쓰러지는 그 프레임에 풀로 반납되며 ResetTree가 bDead를 false로
-    // 되돌리기 때문에 bDead만으로는 못 거른다 - 풀에 있는지(IsPooled)와, 예약 뒤 재스폰되어 다른 나무가
-    // 된 것은 아닌지(SpawnGeneration)를 함께 본다. activeInHierarchy는 카메라 컬링으로 살아있는 나무도
-    // 꺼지므로 쓰지 않는다.
-    private void ApplyPendingHit(PendingHit _hit)
-    {
-        TreeObj tree = _hit.tree;
-        if (tree == null || tree.IsPooled || tree.bDead || tree.SpawnGeneration != _hit.treeGeneration) return;
-        if (!tree.bCanApplyDamage) return; // 묘목은 TakeDamage가 무시하므로 진동도 울리지 않게 미리 거른다
-
-        tree.TakeDamage(_hit.damage, false);
-
-        if (bPlayHaptic)
+        // 여러 그루가 맞아도 판정 한 번에 진동 한 번.
+        if (bHitAny && bPlayHaptic)
         {
             Rumble.Play(EHapticEvent.BoomerangImpact);
         }
+
+        lastDamageCheckPosition = segEnd;
     }
 
     private static Vector2 GetTreeTopPosition(TreeObj _treeObj)
@@ -623,14 +601,6 @@ public class Boomerang : MonoBehaviour
 
     private void Finish()
     {
-        // 정상 회수 직전 틱에서 예약된 타격은 풀로 돌아가며 사라지지 않도록 남은 것을 즉시 적용한다.
-        // (ForceStop/Dismiss는 그 전에 목록을 비워두므로 여기서 적용되는 것이 없다)
-        for (int i = 0; i < pendingHits.Count; i++)
-        {
-            ApplyPendingHit(pendingHits[i]);
-        }
-        pendingHits.Clear();
-
         IsActive = false;
         returnTarget = null;
 

@@ -168,11 +168,6 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // 풀의 actionOnGet/actionOnRelease에서만 갱신한다. (자세한 배경은 PoolSettings 참조)
     public bool IsPooled { get; set; } = false;
 
-    // ResetTree(스폰/사망 반납 시점에만 호출)마다 1씩 오른다. bDead는 사망 즉시 풀 반납 -> ResetTree로 같은
-    // 프레임에 false로 돌아가므로, 참조를 잠깐 들고 있다가 나중에 때리는 쪽(예: Boomerang의 지연 타격)은
-    // 예약 시점의 값과 비교해 "그 사이 죽었다가 풀로 갔거나, 다른 나무로 재스폰됐는지"를 판별한다.
-    public int SpawnGeneration { get; private set; } = 0;
-
     private bool bWaterNearBy = false;
     private bool bTreeShadowSet = false;
 
@@ -356,7 +351,6 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     public void ResetTree()
     {
-        SpawnGeneration++;
         bDead = false;
         currentGemStage = 0;
         bReserved = false;

@@ -147,6 +147,7 @@ MonoBehaviour:
   - {fileID: -8768910487179800965, guid: e893a4d947f5c8a4ebf38f0ec97ef1a9, type: 3}
   - {fileID: 7064556852939130128, guid: e893a4d947f5c8a4ebf38f0ec97ef1a9, type: 3}
   sampleRate: 24
+  visualWidthAtUnitScale: 3
   afterimageInterval: 0.28
   afterimageFadeDuration: 0.45
   afterimageStartAlpha: 0.5
@@ -156,7 +157,6 @@ MonoBehaviour:
     m_Bits: 1024
   hitRadius: 0.5
   damageInterval: 0.3
-  hitStaggerMax: 0.15
 --- !u!114 &4821309571048291005
 MonoBehaviour:
   m_ObjectHideFlags: 0
