@@ -359,6 +359,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private readonly List<IStaticCollidable> constellationScanBuffer = new List<IStaticCollidable>(64);
     private readonly List<Vector3> constellationCurveSampleBuffer = new List<Vector3>(96);
 
+    // 변마다 곡선 샘플을 감싸는 상자(판정 두께만큼 넓힘). 상자 밖의 점은 그 변의 어느 구간과도 두께보다 멀어서
+    // 결과가 같으므로 구간별 거리 계산을 건너뛴다 - 한 나무는 보통 1~2개 변에만 가까워 계산량이 크게 준다.
+    private readonly List<Vector3> constellationEdgeBoundsMin = new List<Vector3>(8);
+    private readonly List<Vector3> constellationEdgeBoundsMax = new List<Vector3>(8);
+
     private bool bConstellationManifestUnlocked = false;
     private float starMarkDamageMultiplier = 1f;          // 별표식 베기
     private ValueAccumulator starMarkDamageAccum;
@@ -2565,22 +2570,36 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         // 1. 레이저와 똑같은 베지에 곡선을 변마다 샘플링한다(ConstellationPixelLaser와 같은 제어점 계산).
         constellationCurveSampleBuffer.Clear();
+        constellationEdgeBoundsMin.Clear();
+        constellationEdgeBoundsMax.Clear();
+        Vector3 thickness = new Vector3(ConstellationBeamHalfThickness, ConstellationBeamHalfThickness, ConstellationBeamHalfThickness);
+
         for (int edge = 0; edge < edgeCount; edge++)
         {
             PresentationLayer.VFX.ConstellationPixelLaser.ComputeBezierControlPoints(
                 _path, edge, bLoop, _curveRoundness,
                 out Vector3 p0, out Vector3 p1, out Vector3 c0, out Vector3 c1);
 
+            Vector3 boundsMin = p0;
+            Vector3 boundsMax = p0;
+
             for (int k = 0; k < stride; k++)
             {
                 float u = (float)k / ConstellationBeamCurveSamples;
                 float oneMinusU = 1f - u;
-                constellationCurveSampleBuffer.Add(
+                Vector3 sample =
                     oneMinusU * oneMinusU * oneMinusU * p0
                     + 3f * oneMinusU * oneMinusU * u * c0
                     + 3f * oneMinusU * u * u * c1
-                    + u * u * u * p1);
+                    + u * u * u * p1;
+
+                constellationCurveSampleBuffer.Add(sample);
+                boundsMin = Vector3.Min(boundsMin, sample);
+                boundsMax = Vector3.Max(boundsMax, sample);
             }
+
+            constellationEdgeBoundsMin.Add(boundsMin - thickness);
+            constellationEdgeBoundsMax.Add(boundsMax + thickness);
         }
 
         // 2. 광선은 나무 8~13그루짜리 국지적 군집에만 영향을 주므로, 던전 전체 activeTrees(최대 2500개)를
@@ -2612,17 +2631,27 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
             for (int edge = 0; edge < edgeCount; edge++)
             {
+                bool bTopNear = IsInsideBounds(topPos, constellationEdgeBoundsMin[edge], constellationEdgeBoundsMax[edge]);
+                bool bRootNear = IsInsideBounds(rootPos, constellationEdgeBoundsMin[edge], constellationEdgeBoundsMax[edge]);
+                if (!bTopNear && !bRootNear) continue;
+
                 int baseIndex = edge * stride;
                 for (int k = 0; k < ConstellationBeamCurveSamples; k++)
                 {
                     Vector3 a = constellationCurveSampleBuffer[baseIndex + k];
                     Vector3 b = constellationCurveSampleBuffer[baseIndex + k + 1];
 
-                    float hitTime = GetConstellationBeamHitTime(topPos, a, b, k, _flightDuration);
-                    if (hitTime < earliest) earliest = hitTime;
+                    if (bTopNear)
+                    {
+                        float hitTime = GetConstellationBeamHitTime(topPos, a, b, k, _flightDuration);
+                        if (hitTime < earliest) earliest = hitTime;
+                    }
 
-                    hitTime = GetConstellationBeamHitTime(rootPos, a, b, k, _flightDuration);
-                    if (hitTime < earliest) earliest = hitTime;
+                    if (bRootNear)
+                    {
+                        float hitTime = GetConstellationBeamHitTime(rootPos, a, b, k, _flightDuration);
+                        if (hitTime < earliest) earliest = hitTime;
+                    }
                 }
             }
 
@@ -2633,6 +2662,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         _hits.Sort(ConstellationBeamHitTimeComparison);
+    }
+
+    private static bool IsInsideBounds(Vector3 _point, Vector3 _min, Vector3 _max)
+    {
+        return _point.x >= _min.x && _point.x <= _max.x
+            && _point.y >= _min.y && _point.y <= _max.y
+            && _point.z >= _min.z && _point.z <= _max.z;
     }
 
     // _point가 곡선 샘플 구간 [a, b](변의 k번째 구간) 두께 안에 있으면 빔 선단이 그 지점에 닿는 시각을,

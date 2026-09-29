@@ -57,6 +57,9 @@ public class InDungeonVFXManager : MonoBehaviour
 
     private IObjectPool<ItemAuraEffectController> starAppearAuraPool;
 
+    // 초기화 시 미리 만들어 둘 등장 아우라 수 - 별은 보통 한 번에 하나씩 등장하므로 몇 개면 충분하다.
+    private const int StarAppearAuraPrewarmCount = 2;
+
     // 재생 중인 등장 아우라와 끝나는 시각 - 버스트가 끝나면 Update에서 풀로 돌려놓는다.
     private struct ActiveStarAppearAura
     {
@@ -92,6 +95,9 @@ public class InDungeonVFXManager : MonoBehaviour
 
     // 점선 표시 여부 - InDungeonObjectManager가 "별자리 발현" 특성 해금 상태에 맞춰 설정한다.
     private bool bConstellationDottedLinesVisible = false;
+
+    // 점선을 그릴 때 노드(좌표 + 벌목 여부)를 한 번에 넘기기 위한 버퍼 - SetNodes가 내부로 복사하므로 공유해도 안전하다.
+    private readonly List<ConstellationNode> dottedLineNodeBuffer = new List<ConstellationNode>(8);
 
     [Header("Shooting Star")]
     [SerializeField] private ShootingStarVFX shootingStarVfxPrefab;
@@ -153,6 +159,8 @@ public class InDungeonVFXManager : MonoBehaviour
                 defaultCapacity: starAppearAuraPoolDefaultCapacity,
                 maxSize: starAppearAuraPoolMaxSize
             );
+
+            PrewarmStarAppearAuras();
         }
 
         if (constellationDottedLinePool == null && constellationDottedLinePrefab != null)
@@ -511,6 +519,24 @@ public class InDungeonVFXManager : MonoBehaviour
         }
     }
 
+    // ObjectPool은 미리 만들어두지 않으므로, 첫 별이 등장하는 프레임에 아우라 생성이 몰리지 않도록 초기화 시점에
+    // 몇 개를 미리 꺼냈다가 돌려놓는다. (꺼낸 동안 동시에 들고 있어야 서로 다른 인스턴스가 생성된다)
+    private void PrewarmStarAppearAuras()
+    {
+        int _count = Mathf.Min(StarAppearAuraPrewarmCount, starAppearAuraPoolMaxSize);
+        if (0 >= _count) return;
+
+        ItemAuraEffectController[] _prewarmed = new ItemAuraEffectController[_count];
+        for (int i = 0; i < _prewarmed.Length; i++)
+        {
+            _prewarmed[i] = starAppearAuraPool.Get();
+        }
+        for (int i = 0; i < _prewarmed.Length; i++)
+        {
+            starAppearAuraPool.Release(_prewarmed[i]);
+        }
+    }
+
     private ItemAuraEffectController CreateStarAppearAura()
     {
         return Instantiate(starAppearAuraPrefab, transform);
@@ -707,12 +733,15 @@ public class InDungeonVFXManager : MonoBehaviour
         ConstellationDottedLine _line = constellationDottedLinePool.Get();
         // 점선 메쉬는 노드 월드 좌표를 그대로 정점으로 쓰므로, 인스턴스 자체는 월드 원점에 둔다.
         _line.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-        _line.SetPoints(_group.nodes, true);
 
-        for (int i = 0; i < _group.felled.Count; i++)
+        // 벌목된 노드(푸른 큰 별)까지 담아 메쉬를 한 번에 빌드한다. 좌표 설정 후 노드마다 SetNodeAsBigStar를
+        // 부르면 그때마다 메쉬 전체를 다시 빌드하게 된다.
+        dottedLineNodeBuffer.Clear();
+        for (int i = 0; i < _group.nodes.Count; i++)
         {
-            if (_group.felled[i]) _line.SetNodeAsBigStar(i, true);
+            dottedLineNodeBuffer.Add(new ConstellationNode(_group.nodes[i], _group.felled[i]));
         }
+        _line.SetNodes(dottedLineNodeBuffer, true);
 
         _group.line = _line;
     }
