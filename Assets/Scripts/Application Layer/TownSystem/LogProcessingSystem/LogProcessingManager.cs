@@ -503,18 +503,22 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     {
         if (logContainer == null || lineElapsedTime == null) return;
 
-        float interval = logContainer.GetEffectiveTransferInterval();
+        float baseInterval = logContainer.GetEffectiveTransferInterval();
 
         for (int i = 0; i < activeLineCount; i++)
         {
             // 커터가 가공 중(라인이 바쁨)인 동안은 타이머 진행 자체를 멈춘다. 가공이 오래
             // 걸려도 그동안 쌓인 경과시간이 인터벌을 이미 채워버려 가공 완료 즉시 다음 원목이
             // 튀어나오는 것을 막기 위함.
+            //
+            // 이 정지 덕분에 라인의 실제 처리 주기는 "절단 시간 + max(출고 간격, 벨트 이동 시간)"
+            // 아래로 내려가지 않는다. 그래서 컨베이어 특성으로 출고 간격이 줄어도 처리량은 절단
+            // 시간에 수렴할 뿐 라인 증설(ProcessLineExpand)을 대체하지 못한다. 정지를 없애지 말 것.
             if (allLines[i].IsBusy) continue;
 
             lineElapsedTime[i] += Time.deltaTime;
 
-            if (lineElapsedTime[i] < interval) continue;
+            if (lineElapsedTime[i] < GetLineSupplyInterval(baseInterval, i)) continue;
             if (!logContainer.HasAvailableItem()) continue;
 
             pendingRequestLine = allLines[i];
@@ -525,15 +529,23 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         }
     }
 
+    // 라인 i의 실제 출고 간격. 컨테이너의 기본 간격(가공 콤보 전역 배율 반영)을 그 라인 입고벨트의
+    // 컨베이어 특성 배율로 나눈다. 배율은 모든 라인에 같은 값이 브로드캐스트되지만, 라인이 자기
+    // 벨트 상태를 기준으로 삼아야 나중에 라인별 차등이 생겨도 벨트 위 간격이 항상 일정하게 유지된다.
+    private float GetLineSupplyInterval(float _baseInterval, int _lineIdx)
+    {
+        return _baseInterval / Mathf.Max(0.01f, allLines[_lineIdx].SupplyRateMultiplier);
+    }
+
     private void ResetLineTimers(int _fromIdx, int _toIdxExclusive)
     {
         if (lineElapsedTime == null) return;
 
-        float interval = logContainer != null ? logContainer.GetEffectiveTransferInterval() : 0f;
+        float baseInterval = logContainer != null ? logContainer.GetEffectiveTransferInterval() : 0f;
         for (int i = _fromIdx; i < _toIdxExclusive && i < lineElapsedTime.Length; i++)
         {
-            // 즉시 출고 가능하도록 경과시간을 인터벌만큼 채워둔다.
-            lineElapsedTime[i] = interval;
+            // 즉시 출고 가능하도록 경과시간을 그 라인의 인터벌만큼 채워둔다.
+            lineElapsedTime[i] = GetLineSupplyInterval(baseInterval, i);
         }
     }
 
