@@ -158,10 +158,14 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         DecreaseDurabilityInternal(true);
     }
 
-    // ShockWaveMastery로 허공에 충격파만 나갔을 때 사용 - 내구도는 나무를 벨 때와 동일하게 깎이지만,
-    // 실제로 맞춘 대상이 없으므로 공격 리듬 콤보는 쌓이지 않아야 한다.
+    // ShockWaveMastery로 도끼는 헛치고 충격파만 나무를 맞췄을 때 사용 - 내구도는 나무를 벨 때와 동일하게 깎이지만,
+    // 도끼로 맞춘 것은 아니므로 공격 리듬 콤보는 쌓이지 않아야 한다.
     public void DecreaseDurabilityWithoutCombo()
     {
+        // 충격파는 생성 딜레이 + 이동 시간 뒤에 맞으므로, 그 사이 다른 스윙으로 내구도가 이미 0이 됐을 수 있다.
+        // 이때 다시 깎으면 DurabilityEmptyEvent가 중복 발생하므로 건너뛴다.
+        if (durability <= 0f) return;
+
         DecreaseDurabilityInternal(false);
     }
 

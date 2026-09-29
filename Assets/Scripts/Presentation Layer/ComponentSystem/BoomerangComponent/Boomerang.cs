@@ -44,7 +44,7 @@ public class Boomerang : MonoBehaviour
     [SerializeField] private float visualWidthAtUnitScale = 3f;
 
     [Header("Afterimage (잔상)")]
-    [SerializeField] private float afterimageInterval = 0.28f; // 초당 약 3.5회
+    [SerializeField] private float afterimageInterval = 0.15f; // 초당 약 6.7회. 기본 속도(7)에서 잔상 간격이 부메랑 폭(약 1유닛)과 비슷해 끊김 없이 이어져 보인다
     [SerializeField] private float afterimageFadeDuration = 0.45f;
     [SerializeField, Range(0f, 1f)] private float afterimageStartAlpha = 0.5f;
 

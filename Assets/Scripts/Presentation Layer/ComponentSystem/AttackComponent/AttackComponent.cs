@@ -7,8 +7,8 @@ public class AttackComponent : PComponent
     [SerializeField] private GameObject componentCenterPoint;
 
     public event Action AttackSuccessEvent;
-    // ShockWaveMastery로 허공에 충격파만 나갔을 때(실제 타격 없음) - 내구도만 감소시키고 콤보는 쌓지 않기 위해 별도 이벤트로 분리
-    public event Action ShockWaveMissEvent;
+    // ShockWaveMastery로 도끼는 헛치고 충격파만 나무를 맞췄을 때 - 내구도만 감소시키고 콤보는 쌓지 않기 위해 별도 이벤트로 분리
+    public event Action ShockWaveOnlyHitEvent;
     public event Action<WeaponMode> WeaponModeChangedEvent;
     // 공격 범위 안에 나무가 하나도 없다가 처음 감지되었을 때/감지되어 있다가 전부 사라졌을 때만 발생(매 프레임, 감지 대상 교체 시엔 발생하지 않음)
     public event Action TreeDetectedEvent;
@@ -129,7 +129,14 @@ public class AttackComponent : PComponent
 
     private bool bCursorEnable = false;
     private bool bCanAttack = false;
-    private int successfulAttackCount = 0;
+    // 회전 베기(Whirlwind) 판정용 도끼 스윙 횟수. 나무를 실제로 맞췄는지와 무관하게
+    // 스킬을 얻은 뒤 Attack()이 호출될 때마다 1씩 오르고, 3번째 스윙마다 회전 베기가 나간다.
+    // 스킬을 얻기 전에는 세지 않으므로 획득 시점부터 정확히 3번째 스윙에 첫 회전 베기가 나온다.
+    // (스킬은 한 번 얻으면 해제되지 않는다 - SkillCommand.Undo는 이 게임에서 쓰지 않는다.)
+    // (예전에는 타격 성공 횟수 기준이라 회전 베기 스윙이 헛치면 카운터가 소비되지 않아
+    //  다음 스윙에도 회전 베기가 연속으로 나가는 문제가 있었다.)
+    private int whirlwindSwingCount = 0;
+    private const int WhirlwindSwingInterval = 3;
 
     // 넉백 등으로 공격 범위 인디케이터가 조준 방향을 따라 도는 것을 일시적으로 막아야 할 때 사용
     private bool bIndicatorRotationLocked = false;
@@ -415,20 +422,31 @@ public class AttackComponent : PComponent
     {
         if (CollisionSystem.Instance == null || bCanAttack == false) return;
 
-        Vector3 centerPos = transform.position;
-
-        bool bShockWaveTriggered = false;
-        if (ctx.characterStat.bShockWaveMastery && axeExtraAttackCreator != null)
+        // 회전 베기: 타격 성공 여부와 상관없이 도끼 스윙 3회마다 한 번. 헛스윙도 카운트에 포함된다.
+        bool bIsWhirlwindStrike = false;
+        if (ctx.characterStat.bWhirlWind)
         {
-            if (UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance)
-            {
-                Vector3 direction = (mouseTransform - centerPos).normalized;
-                StartCoroutine(CreateShockWaveRoutine(centerPos, direction));
-                bShockWaveTriggered = true;
-            }
+            whirlwindSwingCount = (whirlwindSwingCount + 1) % WhirlwindSwingInterval;
+            bIsWhirlwindStrike = (whirlwindSwingCount == 0);
         }
 
+        Vector3 centerPos = transform.position;
+
+        // 마스터리 충격파는 나무를 맞추지 않아도 스윙당 1회 굴린다. 실제 생성은 도끼 타격 여부가
+        // 정해진 뒤(FireMasteryShockWave)에 한다 - 도끼가 헛쳤을 때만 "충격파가 나무를 맞추면 내구도 감소"를 걸어야 하기 때문.
+        bool bShockWaveTriggered = ctx.characterStat.bShockWaveMastery && axeExtraAttackCreator != null
+            && UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance;
+
         float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
+
+        // 회전 베기 연출(VFX·360도 회전·카메라 흔들림)은 범위 안에 아무것도 없어도(헛스윙) 나가야 하므로
+        // 탐색보다 먼저 발동한다. 타격 분기의 흔들림은 회전 베기일 때 건너뛰어 중복되지 않게 한다.
+        if (bIsWhirlwindStrike)
+        {
+            WhirlwindVFX.Spawn(centerPos, effectiveEllipseRadius, whirlwindFrames);
+            WhirlwindStrikeEvent?.Invoke();
+            CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
+        }
 
         // 1단계: 타원 판정 범위를 모두 포함할 수 있도록 타원의 장반경(effectiveEllipseRadius)으로 1차 탐색
         CollisionSystem.Instance.GetCollidablesInRadius(transform.position, effectiveEllipseRadius, targetLayer, collisionResults);
@@ -436,8 +454,7 @@ public class AttackComponent : PComponent
         int hitCount = collisionResults.Count;
         if (hitCount <= 0)
         {
-            // 허공을 공격했더라도 마스터리로 충격파가 발생했다면 나무를 타격했을 때와 동일하게 도끼 내구도 감소 (콤보는 미적용)
-            if (bShockWaveTriggered) ShockWaveMissEvent?.Invoke();
+            if (bShockWaveTriggered) FireMasteryShockWave(centerPos, false);
             return;
         }
 
@@ -452,14 +469,7 @@ public class AttackComponent : PComponent
         float radiusSq = effectiveEllipseRadius * effectiveEllipseRadius;
 
         bool bMultiAttack = ctx.characterStat.bMultiAttack;
-        bool bIsWhirlwindStrike = ctx.characterStat.bWhirlWind && (successfulAttackCount % 3 == 2);
         multiAttackResults.Clear();
-
-        if (bIsWhirlwindStrike)
-        {
-            WhirlwindVFX.Spawn(centerPos, effectiveEllipseRadius, whirlwindFrames);
-            WhirlwindStrikeEvent?.Invoke();
-        }
 
         IStaticCollidable nearestDamageable = null;
         float minDistanceSqr = float.MaxValue;
@@ -469,9 +479,16 @@ public class AttackComponent : PComponent
         TreeObj shockWaveSourceTree = null;
         float shockWaveSourceDistSq = float.MaxValue;
 
+        bool bAxeHit = false;
+
         for (int i = 0; i < hitCount; i++)
         {
             var target = collisionResults[i];
+
+            // 묘목은 어떤 상호작용도 받지 않는다. 대상 후보에서 아예 빼야 가장 가까운 대상으로 묘목이 뽑혀
+            // 그 뒤의 나무가 가려지거나, 묘목만 맞았는데 카메라가 흔들리는 일이 없다.
+            if (target is IDamageable targetDamageable && !targetDamageable.bCanApplyDamage) continue;
+
             Vector3 targetPos = target.Position + target.Offset;
 
             // 2단계: 타원형 반지름(ellipseAttackRadius)으로 2차 필터링
@@ -512,7 +529,7 @@ public class AttackComponent : PComponent
 
         if ((bMultiAttack || bIsWhirlwindStrike) && multiAttackResults.Count > 0)
         {
-            CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
+            if (!bIsWhirlwindStrike) CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
             bool bAnyHit = false;
 
             for (int i = 0; i < multiAttackResults.Count; i++)
@@ -537,32 +554,24 @@ public class AttackComponent : PComponent
 
             if (bAnyHit)
             {
-                successfulAttackCount++;
                 AttackSuccessEvent?.Invoke();
-            }
-            else if (bShockWaveTriggered)
-            {
-                // 허공을 공격했더라도 마스터리로 충격파가 발생했다면 나무를 타격했을 때와 동일하게 도끼 내구도 감소 (콤보는 미적용)
-                ShockWaveMissEvent?.Invoke();
+                bAxeHit = true;
             }
         }
         else if (nearestDamageable != null && nearestDamageable is IDamageable damageable && damageable.bCanApplyDamage)
         {
             CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
             ProcessAxeHit(damageable, centerPos);
-            successfulAttackCount++;
             AttackSuccessEvent?.Invoke();
+            bAxeHit = true;
 
             if (nearestDamageable is TreeObj singleHitTree)
             {
                 shockWaveSourceTree = singleHitTree;
             }
         }
-        else if (bShockWaveTriggered)
-        {
-            // 허공을 공격했더라도 마스터리로 충격파가 발생했다면 나무를 타격했을 때와 동일하게 도끼 내구도 감소 (콤보는 미적용)
-            ShockWaveMissEvent?.Invoke();
-        }
+
+        if (bShockWaveTriggered) FireMasteryShockWave(centerPos, bAxeHit);
 
         // [공격당 1회 충격파]
         // 마스터리가 없을 때의 충격파 판정이다. 원래 설계도 "가장 가까운 나무 하나를 기준으로
@@ -572,7 +581,7 @@ public class AttackComponent : PComponent
         // centerPos/마우스 방향으로 모두 같아서 같은 자리에 겹친 충격파 N개가 나가고 피해도
         // N배로 들어갔다. 판정을 여기로 올려 원래 의도대로 되돌린다.
         //
-        // 마스터리 쪽(Attack 진입부)은 "스윙당 1회"라 원래부터 중복이 없었고, 그대로 둔다.
+        // 마스터리 쪽(FireMasteryShockWave)은 "스윙당 1회"라 원래부터 중복이 없었고, 그대로 둔다.
         if (false == ctx.characterStat.bShockWaveMastery && shockWaveSourceTree != null && axeExtraAttackCreator != null)
         {
             if (UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance)
@@ -631,7 +640,20 @@ public class AttackComponent : PComponent
         // 다중 공격 때 충격파가 대상 수만큼 생긴다. Attack()의 "[공격당 1회 충격파]"를 참고.
     }
 
-    private System.Collections.IEnumerator CreateShockWaveRoutine(Vector3 _position, Vector3 _direction)
+    // 도끼 내구도는 "나무를 실제로 맞췄을 때"만 깎인다. 도끼가 맞췄다면 AttackSuccessEvent에서 이미 깎였으므로
+    // 충격파는 추가로 깎지 않고, 도끼가 헛쳤다면 충격파가 나무를 처음 맞추는 순간 한 번 깎는다(콤보는 미적용).
+    private void FireMasteryShockWave(Vector3 _centerPos, bool _bAxeHit)
+    {
+        Vector3 direction = (mouseTransform - _centerPos).normalized;
+        StartCoroutine(CreateShockWaveRoutine(_centerPos, direction, _bAxeHit ? null : RaiseShockWaveOnlyHit));
+    }
+
+    private void RaiseShockWaveOnlyHit()
+    {
+        ShockWaveOnlyHitEvent?.Invoke();
+    }
+
+    private System.Collections.IEnumerator CreateShockWaveRoutine(Vector3 _position, Vector3 _direction, Action _onFirstTreeHit = null)
     {
         yield return new WaitForSeconds(ctx.characterStat.shockWaveCreateDelay);
 
@@ -642,6 +664,7 @@ public class AttackComponent : PComponent
             if (sw != null)
             {
                 sw.SetDirection(_direction);
+                sw.SetFirstTreeHitCallback(_onFirstTreeHit);
                 axeExtraAttackCreator.PlayShockWaveVisual(sw);
             }
         }
@@ -735,6 +758,10 @@ public class AttackComponent : PComponent
         for (int i = 0; i < hitCount; i++)
         {
             var target = detectionResults[i];
+
+            // 묘목은 감지(아웃라인) 대상도 아니다. Attack()의 대상 선택과 같은 기준.
+            if (target is IDamageable targetDamageable && !targetDamageable.bCanApplyDamage) continue;
+
             Vector3 targetPos = target.Position + target.Offset;
 
             // 2단계: 타원형 반지름(ellipseAttackRadius)으로 2차 필터링
@@ -998,6 +1025,10 @@ public class AttackComponent : PComponent
 
         ClearDetectedTreeOutlines();
         nearestTarget = null;
+
+        // 캐릭터는 DontDestroyOnLoad로 Town/Dungeon을 오가며 살아남으므로, 던전을 나가거나
+        // 재시작할 때 회전 베기 스윙 카운터를 여기서 되돌려야 다음 던전이 항상 1번째 스윙부터 시작한다.
+        whirlwindSwingCount = 0;
     }
 
     public void Refresh()

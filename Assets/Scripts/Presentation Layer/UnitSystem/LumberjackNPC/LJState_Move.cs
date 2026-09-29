@@ -36,7 +36,7 @@ public class LJState_Move : LumberjackState
         if (treeCheckTimer >= TREE_CHECK_INTERVAL)
         {
             treeCheckTimer = 0f;
-            if (npc.targetTree == null || !npc.targetTree.GetTransform().gameObject.activeInHierarchy || npc.targetTree.bDead)
+            if (npc.targetTree == null || !npc.targetTree.GetTransform().gameObject.activeInHierarchy || npc.targetTree.bDead || npc.IsTargetTreeSapling)
             {
                 // TEMP DEBUG
                 LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={npc.name}({npc.GetEntityId()}) LJState_Move: 타겟 나무 죽음/비활성 감지 -> Idle로 복귀");
