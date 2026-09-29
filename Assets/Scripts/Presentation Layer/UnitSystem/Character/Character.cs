@@ -156,6 +156,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     [SerializeField] private float droneCenterHoverHeight = 0.3f; // 대형 꼭짓점(0번, 캐릭터 바로 뒤) 드론만 이만큼 더 높이 띄운다
     [SerializeField] private float droneSeparationDistance = 0.18f; // 드론끼리 이 거리보다 가까워지면 서로 밀어낸다(안전망). 타원 대형(세로 0.5배 압축)에서 조준이 좌우일 때 인접 슬롯 간격이 약 0.21까지 줄어들므로, 그보다 작아야 슬롯 추종과 싸우지 않는다
     [SerializeField] private float droneSeparationSpeed = 3f; // 밀어내는 속도
+    [SerializeField] private float droneAttackStaggerStep = 0.08f; // 드론 사격 위상 계단 간격(초). i번째 드론의 첫 발이 i×이 값만큼 늦게 나가 여러 대가 같은 프레임에 쏘지 않는다(주기는 동일하므로 이 간격이 계속 유지된다)
     [SerializeField] private float droneFormationTurnSpeed = 360f; // 대형 기준 방향("뒤")이 조준 방향을 따라 도는 각속도(도/초). 조준이 반대편으로 튀어도 대형이 한 번에 점프하지 않고 타원 위를 미끄러지듯 회전한다
     private const float DroneFormationMinorAxisRatio = 0.5f; // 타원 궤도의 단축/장축 비율(아이소메트릭 2:1 압축). 1.0이면 원, 0.5면 위아래가 절반으로 눌린 타원
 
@@ -887,6 +888,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             drone.SetFollowOffset(spawnOffset);
             drone.SetArrivalTolerance(droneArrivalTolerance);
             drone.SetHoverHeight(i == 0 ? droneCenterHoverHeight : 0f); // 꼭짓점(캐릭터 바로 뒤) 슬롯만 더 높이 띄운다
+            drone.SetAttackPhaseOffset(i * droneAttackStaggerStep); // 꼭짓점 드론이 먼저, 양옆이 차례로 쏘는 계단식 사격 위상
             drone.SetRetargetCallback(RequestDroneRetarget);
             drone.SetChainAttackCallback(OnDroneChainAttack);
             activeDrones.Add(drone);
