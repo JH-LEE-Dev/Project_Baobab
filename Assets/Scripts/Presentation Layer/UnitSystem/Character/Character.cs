@@ -890,6 +890,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             drone.SetRetargetCallback(RequestDroneRetarget);
             drone.SetChainAttackCallback(OnDroneChainAttack);
             activeDrones.Add(drone);
+
+            // Town → Dungeon 진입은 캐릭터가 차량 탑승으로 비활성화된 채 SetupGameInstaller까지 오므로, 이 시점에 소환되는
+            // 드론은 캐릭터와 함께 숨겨둔다. 캐릭터가 다시 켜질 때(OnEnable) 슬롯 스냅 + 스케일 인으로 함께 등장한다.
+            if (!gameObject.activeInHierarchy)
+            {
+                drone.SetVisible(false);
+            }
         }
     }
 
@@ -1014,6 +1021,21 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         {
             if (activeDrones[i] == null) continue; // Unity null 비교 - 종료/씬 해제 순서에 따라 이미 파괴된 드론일 수 있다
             activeDrones[i].SetVisible(_visible);
+        }
+    }
+
+    // 대형 기준 방향을 기본(아래 = 캐릭터 뒤)으로 되돌리고, 각 드론의 슬롯을 그 기준으로 다시 배정한 뒤 시선도 아래로
+    // 초기화한다(다음 Update에서 슬롯으로 즉시 스냅). 드론을 재소환하지 않는 리셋 경로에서 SpawnDrones 초기화를 대신한다.
+    private void ResetDroneFormationToDefault()
+    {
+        droneBehindDir = Vector2.down;
+        droneBehindAngleDeg = 270f;
+
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            if (activeDrones[i] == null) continue;
+            activeDrones[i].SetFollowOffset(GetDroneWedgeOffset(i, droneBehindDir));
+            activeDrones[i].ResetFacingToDefault(); // 시선 기본값(아래)은 Spawn과 동일. 실제 조준 방향은 다음 UpdateDroneFormation이 갱신한다
         }
     }
 
@@ -1542,6 +1564,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         {
             DeactivateDrones();
             SetDronesPoweredDown(false);
+            ResetDroneFormationToDefault(); // 예전 재소환이 해주던 초기화 - 캐릭터가 아래를 보고 서는 것과 대형/시선을 맞춘다
         }
         else
         {

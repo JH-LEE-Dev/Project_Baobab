@@ -114,6 +114,8 @@ public class Drone : MonoBehaviour
     [SerializeField] private VFXComponent vfxComponent;
     [SerializeField] private string chargingVfxTag = "DroneCharging";
     private ParticleSystem chargingVfx;
+    private Transform chargingVfxParent; // 재생 시 붙인 부모(Visual). 풀이 회수해 다른 곳에 재발급한 인스턴스를 우리 것으로 착각하지 않도록 소유 확인에 쓴다
+    private float chargingVfxMaxLifetime; // 재생 시 한 번 계산한 파티클(자식 포함) 최대 수명(초). 취소 페이드 대기 시간의 기준
     private bool bChargingVfxFading; // 취소로 방출만 멈춘 채 남은 입자가 사라지길 기다리는 중. 풀 반환은 chargingVfxFadeTimer가 끝나면 드론이 직접 한다
     private float chargingVfxFadeTimer; // 페이드 잔여 시간(초). 파티클(자식 포함) 최대 수명 + 여유
     private ParticleSystemRenderer[] chargingVfxRenderers; // chargingVfx 본체 + 자식(VFX_OverHeating 등) 렌더러 전부 - Muzzle Y좌표 기준으로 매 프레임 정렬 순서를 맞춘다
@@ -238,6 +240,9 @@ public class Drone : MonoBehaviour
         swingTimer = 0f;
         damageTickTimer = 0f;
         currentTarget = null;
+        // 경고 UI에서 귀환을 확정하면 Pause만 걸린 채 풀로 돌아온다(Resume은 취소 시에만 호출). 여기서 풀지 않으면
+        // 다음 던전에서 같은 인스턴스가 Update 첫 줄에서 계속 빠져나가 스케일 0으로 이전 좌표에 갇힌다.
+        isPaused = false;
         StopChargingVfx();
 
         frameTimer = 0f;
@@ -490,9 +495,28 @@ public class Drone : MonoBehaviour
         isActive = false;
         isSwinging = false;
         bDrySwing = false;
+        isPaused = false;
         currentTarget = null;
         followTarget = null;
         StopChargingVfx(true); // 풀로 돌아가므로 페이드 없이 즉시 정리
+    }
+
+    /// <summary>
+    /// 시선과 이동 방향 기준을 기본(아래)으로 되돌리고 다음 Update에서 슬롯 위치로 즉시 스냅한다.
+    /// 던전 안 리셋(사망 후 재시작)에서 드론을 재소환하지 않고 유지할 때, 예전 재소환이 해주던 초기화를
+    /// 대신한다 - 캐릭터가 아래를 보고 서는 것과 대형/시선이 어긋나지 않게 한다.
+    /// </summary>
+    public void ResetFacingToDefault()
+    {
+        lastFacingDir = Vector2.down;
+        facingAngle = 270f;
+        characterAimDir = Vector2.down;
+        lastMoveDir = Vector2.down;
+        dirIndex = 6;
+        currentFollowSpeed = 0f;
+        followSpeedVelocity = 0f;
+        bSnapToSlotPending = true;
+        ApplyCurrentFrame();
     }
 
     private void Awake()
@@ -879,13 +903,34 @@ public class Drone : MonoBehaviour
         // 못하고 뒤에 남는 현상이 있었다.
         Transform parent = spriteRenderer != null ? spriteRenderer.transform : transform;
         chargingVfx = vfxComponent.Play(new VFXPlaySettings(chargingVfxTag, GetMuzzlePosition(), Quaternion.identity, parent));
+        chargingVfxParent = parent;
 
         // 본체 + 자식(VFX_OverHeating 등)의 ParticleSystemRenderer를 전부 캐싱해둔다 - CustomSortable이
         // SpriteRenderer만 자동 수집하므로(Drone.Awake), 파티클 렌더러는 정렬 순서를 직접 챙겨줘야 한다.
+        // 취소 페이드에 쓸 최대 수명도 같은 자리에서 한 번만 계산해둔다(취소마다 자식을 다시 훑지 않도록).
         if (chargingVfx != null)
         {
             chargingVfxRenderers = chargingVfx.GetComponentsInChildren<ParticleSystemRenderer>(true);
+            chargingVfxMaxLifetime = ComputeChargingVfxMaxLifetime();
         }
+    }
+
+    // 지금 들고 있는 충전 이펙트가 아직 이 드론 소유인지. 풀(VFXPoolInstanceHelper)이 OnParticleSystemStopped나
+    // StopAll로 먼저 회수했다면 비활성화되거나 다른 부모로 옮겨져 있으므로, 그 인스턴스의 위치/정렬을 건드리거나
+    // Stop을 다시 호출하면 안 된다(재발급된 다른 재생을 가로채게 된다).
+    private bool IsChargingVfxOwned()
+    {
+        if (chargingVfx == null) return false;
+        if (!chargingVfx.gameObject.activeSelf) return false;
+        return chargingVfxParent != null && chargingVfx.transform.IsChildOf(chargingVfxParent);
+    }
+
+    private void ClearChargingVfxRefs()
+    {
+        chargingVfx = null;
+        chargingVfxRenderers = null;
+        chargingVfxParent = null;
+        bChargingVfxFading = false;
     }
 
     // _immediate가 true면 남은 입자까지 즉시 지우고 풀로 돌려보낸다(타격 순간에 충전이 "소모"되는 연출, 풀 반환, 숨김).
@@ -897,12 +942,17 @@ public class Drone : MonoBehaviour
     {
         if (vfxComponent == null || chargingVfx == null) return;
 
+        // 풀이 먼저 회수한 인스턴스면 우리 손을 이미 떠났다 - Stop을 다시 부르지 않고 참조만 정리한다
+        if (!IsChargingVfxOwned())
+        {
+            ClearChargingVfxRefs();
+            return;
+        }
+
         if (_immediate || !gameObject.activeInHierarchy)
         {
             vfxComponent.Stop(chargingVfx, true);
-            chargingVfx = null;
-            chargingVfxRenderers = null;
-            bChargingVfxFading = false;
+            ClearChargingVfxRefs();
             return;
         }
 
@@ -910,13 +960,19 @@ public class Drone : MonoBehaviour
 
         chargingVfx.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         bChargingVfxFading = true;
-        chargingVfxFadeTimer = GetChargingVfxMaxLifetime() + 0.2f;
+        chargingVfxFadeTimer = chargingVfxMaxLifetime + 0.2f;
     }
 
-    // 페이드가 끝난 뒤(남은 입자가 모두 사라진 뒤) 이펙트를 풀로 돌려보낸다.
+    // 페이드가 끝난 뒤(남은 입자가 모두 사라진 뒤) 이펙트를 풀로 돌려보낸다. 그 전에 풀이 회수했다면 참조만 버린다.
     private void UpdateChargingVfxFade(float _deltaTime)
     {
         if (!bChargingVfxFading || chargingVfx == null) return;
+
+        if (!IsChargingVfxOwned())
+        {
+            ClearChargingVfxRefs();
+            return;
+        }
 
         chargingVfxFadeTimer -= _deltaTime;
         if (chargingVfxFadeTimer <= 0f)
@@ -926,7 +982,8 @@ public class Drone : MonoBehaviour
     }
 
     // 본체 + 자식 파티클 중 가장 긴 startLifetime. VFXPoolInstanceHelper.CoWaitAndReturnToPool과 같은 기준이다.
-    private float GetChargingVfxMaxLifetime()
+    // PlayChargingVfx에서 한 번만 호출해 chargingVfxMaxLifetime에 보관한다.
+    private float ComputeChargingVfxMaxLifetime()
     {
         if (chargingVfx == null) return 0f;
 
@@ -948,6 +1005,11 @@ public class Drone : MonoBehaviour
     private void UpdateChargingVfxPosition()
     {
         if (chargingVfx == null) return;
+        if (!IsChargingVfxOwned())
+        {
+            ClearChargingVfxRefs(); // 풀이 먼저 회수한 인스턴스의 위치/정렬을 건드리지 않는다
+            return;
+        }
 
         Vector3 muzzlePos = GetMuzzlePosition();
         chargingVfx.transform.position = muzzlePos;
