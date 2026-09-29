@@ -1108,7 +1108,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: abb67d84874c0fe43957b9ba1d83b505, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 24300200, guid: 865ed13951834138be11bea38be7fea0, type: 2}
-    defaultVolume: 0.05
+    defaultVolume: 0.03
     is3D: 1
     loop: 1
     maxConcurrentVoices: 0
@@ -1138,17 +1138,17 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: bce839927c7b91d44bc4aba613519ad0, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 24300200, guid: 865ed13951834138be11bea38be7fea0, type: 2}
-    defaultVolume: 0.3
+    defaultVolume: 0.18
     is3D: 1
     loop: 0
-    maxConcurrentVoices: 6
+    maxConcurrentVoices: 5
     polyphonyAttenuationStrength: 0.6
   - id: -32659337
     mixerId: 0
     clip: {fileID: 8300000, guid: 39e31ce4dbcc4f645a80a141696a2b81, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 24300200, guid: 865ed13951834138be11bea38be7fea0, type: 2}
-    defaultVolume: 0.4
+    defaultVolume: 0.5
     is3D: 1
     loop: 0
     maxConcurrentVoices: 4
