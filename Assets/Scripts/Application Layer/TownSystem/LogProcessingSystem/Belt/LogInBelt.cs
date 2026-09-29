@@ -82,6 +82,8 @@ public class LogInBelt : MonoBehaviour
              "1장뿐이라 간격을 알아낼 수 없을 때만 이 값을 쓴다.")]
     [SerializeField] private Vector2 beltGridStep = new Vector2(0.5f, 0.25f);
 
+    // 인스펙터에서 잡은 기본 속도. 컨베이어 특성은 이 값을 직접 건드리지 않고 speedMultiplier에만
+    // 쌓이며, 실제 주행 속도는 EffectiveBeltSpeed(= beltSpeed * speedMultiplier)다.
     [SerializeField] private float beltSpeed = 0.1f;
     [SerializeField] private float acceleration = 2.5f;
     [SerializeField] private float beltAnimationSpeedMultiplier = 1f;
@@ -98,7 +100,20 @@ public class LogInBelt : MonoBehaviour
     [SerializeField] private float loopMaxSpeedPitch = 1.6f;
 
     private AudioHandle loopSoundHandle = AudioHandle.Invalid;
-    private float baseBeltSpeed = -1f;
+
+    // 컨베이어 특성(ConveyorSpeed) 누적 배율. 예전엔 beltSpeed에 레벨마다 (1 + p)를 곱해 쌓아서
+    // 5레벨(+10% x 5)이 1.61배가 됐고, 스킬 UI가 보여주는 누적치(+50%)나 커터의 가산 방식과
+    // 어긋났다. 커터와 같은 PercentAccumulator로 가산 누적해 +50%면 정확히 1.5배가 되게 한다.
+    // 이 배율은 원목 주행 속도뿐 아니라 LogProcessingManager의 라인별 출고 주기에도 쓰인다
+    // (SpeedMultiplier 참고).
+    private float speedMultiplier = 1f;
+    private PercentAccumulator speedAccum;
+
+    /// <summary>컨베이어 특성으로 기본 속도 대비 몇 배 빨라졌는지(1 = 기본).</summary>
+    public float SpeedMultiplier => speedMultiplier;
+
+    /// <summary>특성이 반영된 실제 주행 속도.</summary>
+    private float EffectiveBeltSpeed => beltSpeed * speedMultiplier;
 
     // 내부 상태
     private List<BeltItem> activeItems = new List<BeltItem>(10);
@@ -149,12 +164,9 @@ public class LogInBelt : MonoBehaviour
         isMoving = false;
         currentSpeed = 0f;
 
-        // 가속 특성(IncreaseSpeed)으로 beltSpeed가 이미 오른 상태에서 재초기화될 수 있으므로,
-        // "기본 속도 대비 몇 배 빨라졌는지"의 기준점은 최초 1회만 캐싱한다.
-        if (baseBeltSpeed < 0f)
-        {
-            baseBeltSpeed = beltSpeed;
-        }
+        // speedMultiplier는 여기서 리셋하지 않는다. 컨베이어 특성은 아직 비활성인 라인에도 미리
+        // 뿌려지므로(LogProcessingManager가 allLines 전체에 브로드캐스트) 이 Initialize()보다
+        // 먼저 IncreaseSpeed()가 와 있을 수 있고, 그 값은 유지돼야 한다.
 
         for (int i = 0; i < belts.Count; ++i)
         {
@@ -318,20 +330,9 @@ public class LogInBelt : MonoBehaviour
 
     public void IncreaseSpeed(float _percentage)
     {
-        // 기준점을 여기서도 잡아둔다. Initialize()에도 같은 캐싱이 있지만, 스킬 효과는 아직
-        // 활성화되지 않은 라인에까지 미리 뿌려지므로(LogProcessingManager는 allLines 전체에
-        // 브로드캐스트한다) 이 메서드가 그 라인의 첫 Initialize()보다 먼저 올 수 있다.
-        // 그 경우 Initialize()는 "이미 빨라진 값"을 기본 속도로 잡아버리고, 그러면
-        // UpdateLoopSound의 beltSpeed / baseBeltSpeed가 늘 1이 되어 그 라인만 소리 피치가
-        // 올라가지 않는다(컨베이어 스킬을 증설보다 먼저 산 경우에만 나타나 재현이 까다롭다).
-        if (baseBeltSpeed < 0f)
-        {
-            baseBeltSpeed = beltSpeed;
-        }
-
-        _percentage *= 0.01f;
-        // 0.1(10%) 증가 시 기존 속도에 1.1을 곱함
-        beltSpeed *= (1f + _percentage);
+        // _percentage는 퍼센트(10 = +10%). 순서/분할과 무관하게 같은 합은 같은 배율이 되고,
+        // +x 뒤 -x(Undo)도 정확히 1로 돌아온다.
+        speedMultiplier = speedAccum.Add(speedMultiplier, _percentage);
     }
 
     public void LogIn(LogItem _item)
@@ -370,7 +371,7 @@ public class LogInBelt : MonoBehaviour
         UpdateDeactivatingItems(deltaTime);
 
         // 1. 목표 속도 결정 (움직임 명령이 있고 아이템이 있는 경우에만 목표 속도 유지)
-        float targetSpeedValue = (isMoving && activeItems.Count > 0) ? beltSpeed : 0f;
+        float targetSpeedValue = (isMoving && activeItems.Count > 0) ? EffectiveBeltSpeed : 0f;
 
         // 2. 현재 속도를 목표 속도로 부드럽게 이동 및 애니메이션 적용
         if (!Mathf.Approximately(currentSpeed, targetSpeedValue))
@@ -448,11 +449,11 @@ public class LogInBelt : MonoBehaviour
             loopSoundHandle = Sound.PlayTracked(SoundID.ConvayerLoop, transform.position, 0f);
         }
 
-        float ratio = beltSpeed > 0f ? Mathf.Clamp01(currentSpeed / beltSpeed) : 0f;
+        float effectiveSpeed = EffectiveBeltSpeed;
+        float ratio = effectiveSpeed > 0f ? Mathf.Clamp01(currentSpeed / effectiveSpeed) : 0f;
 
-        // 가속 특성으로 beltSpeed가 기본 속도 대비 올라간 만큼, 정상 주행 시 도달하는 피치도
+        // 가속 특성으로 기본 속도 대비 올라간 만큼(speedMultiplier), 정상 주행 시 도달하는 피치도
         // 1.0에서 loopMaxSpeedPitch(기본 1.6)까지 함께 올라간다.
-        float speedMultiplier = baseBeltSpeed > 0f ? beltSpeed / baseBeltSpeed : 1f;
         float runningPitch = loopMaxSpeedMultiplier > 1f
             ? Mathf.Lerp(1f, loopMaxSpeedPitch, Mathf.InverseLerp(1f, loopMaxSpeedMultiplier, speedMultiplier))
             : 1f;
@@ -714,7 +715,7 @@ public class LogInBelt : MonoBehaviour
         if (isMoving)
         {
             StartBelt();
-            currentSpeed = beltSpeed;
+            currentSpeed = EffectiveBeltSpeed;
         }
         else
         {

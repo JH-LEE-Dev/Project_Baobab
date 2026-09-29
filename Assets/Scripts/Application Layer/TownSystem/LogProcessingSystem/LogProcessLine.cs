@@ -117,6 +117,13 @@ public class LogProcessLine : MonoBehaviour
         outBelt.IncreaseSpeed(_percentage);
     }
 
+    /// <summary>
+    /// 이 라인이 컨테이너에서 원목을 꺼내오는 주기에 곱할 배율. 입고벨트의 컨베이어 특성 배율을
+    /// 그대로 쓴다. 출고 주기가 벨트 속도에 반비례해야 벨트 위 원목 사이 "거리"가 특성과 무관하게
+    /// 일정하게 유지된다(빨라진 벨트 뒤로 빈 구간만 길어지는 것을 막는다).
+    /// </summary>
+    public float SupplyRateMultiplier => inBelt.SpeedMultiplier;
+
     public void SetMapType(MapType _mapType)
     {
         cutter.SetMapType(_mapType);

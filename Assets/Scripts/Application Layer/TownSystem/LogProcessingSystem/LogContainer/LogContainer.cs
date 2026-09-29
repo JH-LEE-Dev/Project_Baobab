@@ -277,6 +277,11 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     ///
     /// globalSpeedMultiplier는 그대로 둔다. 이쪽은 가공 콤보 배속(LogProcessorSpeedUp)이 거는
     /// 전역 배율이라 제재소 속도 축이 맞다. 다만 그 커맨드가 아직 미배선이라 현재는 항상 1이다.
+    ///
+    /// 컨베이어 특성(ConveyorSpeed) 배율은 여기서 곱하지 않고 LogProcessingManager가 라인별로
+    /// 나눈다(GetLineSupplyInterval). 벨트 속도에 출고 주기가 반비례해야 벨트 위 원목 간격이
+    /// 일정하게 유지되며, 라인 타이머가 절단 중에는 멈추므로 처리량이 절단 시간 아래로는
+    /// 내려가지 않아 라인 증설의 가치를 깎지 않는다.
     /// </summary>
     public float GetEffectiveTransferInterval()
     {
