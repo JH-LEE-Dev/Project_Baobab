@@ -29,9 +29,7 @@ public class UIView_WorldPopup : UIView
 
     private UI_Storage ui_Storage;
     private UI_Storage ui_CarStorage;
-    // 가공 라인 번호와 1:1로 대응한다. 증설로 라인이 늘어날 때 필요한 만큼만 생성하고,
-    // 철거로 줄어든 라인의 UI는 파괴하지 않고 숨겨둔다.
-    private readonly List<UI_TreeCutter> ui_Cutters = new List<UI_TreeCutter>(3);
+    private UI_TreeCutter ui_Cutter;
     private UI_TraderCoin ui_TraderCoin;
     private readonly List<UI_BlastFurnaceStatus> blastFurnaceStatuses = new List<UI_BlastFurnaceStatus>(3);
     private IReadOnlyList<BlastFurnaceUIData> blastFurnaceDatas;
@@ -54,6 +52,7 @@ public class UIView_WorldPopup : UIView
 
         Init_UIStorage();
         Init_UICarStorage();
+        Init_UICutter();
         Init_UITraderCoin();
         RefreshBlastFurnaceStatuses();
     }
@@ -74,8 +73,8 @@ public class UIView_WorldPopup : UIView
         if (null != logCutterProvider)
             logCutterProvider.ActiveLineCountChangedEvent -= ActiveLineCountChanged;
 
-        for (int i = 0; i < ui_Cutters.Count; i++)
-            ui_Cutters[i]?.UnbindLogCutter();
+        if (null != ui_Cutter)
+            ui_Cutter.UnbindLogCutter();
 
         if (null != shopNPC)
         {
@@ -118,83 +117,34 @@ public class UIView_WorldPopup : UIView
     }
 
 
-    // 활성 라인 수에 맞춰 커터 UI를 생성/표시하고, 나머지(철거된 라인)는 숨긴다.
-    private void RefreshCutterUIs()
+    private void Init_UICutter()
     {
-        int activeCount = null != logCutterProvider ? logCutterProvider.ActiveLineCount : 0;
+        if (null == uiCutterPrefab)
+            return;
 
-        for (int i = 0; i < activeCount; i++)
-        {
-            UI_TreeCutter cutterUI = GetOrCreateCutterUI(i);
-            if (null == cutterUI)
-                continue;
+        ui_Cutter = Instantiate(uiCutterPrefab, uiRoot).GetComponent<UI_TreeCutter>();
+        if (null == ui_Cutter)
+            return;
 
-            // 커터 이벤트 구독은 멱등이다. Release 후 다시 주입된 경우에도 여기서 재구독된다.
-            cutterUI.BindLogCutter(logCutterProvider.GetCutter(i));
-
-            if (true == bLogProcessorShown)
-                cutterUI.OnShow();
-
-            cutterUI.SyncWithCutter();
-        }
-
-        for (int i = activeCount; i < ui_Cutters.Count; i++)
-        {
-            if (null == ui_Cutters[i])
-                continue;
-
-            ui_Cutters[i].ResetCutter();
-            ui_Cutters[i].OnHide();
-        }
-    }
-
-    private UI_TreeCutter GetOrCreateCutterUI(int _lineIdx)
-    {
-        while (ui_Cutters.Count <= _lineIdx)
-            ui_Cutters.Add(null);
-
-        if (null != ui_Cutters[_lineIdx])
-            return ui_Cutters[_lineIdx];
-
-        if (null == uiCutterPrefab || null == logCutterProvider)
-            return null;
-
-        ILogCutter cutter = logCutterProvider.GetCutter(_lineIdx);
-        if (null == cutter)
-            return null;
-
-        UI_TreeCutter cutterUI = Instantiate(uiCutterPrefab, uiRoot).GetComponent<UI_TreeCutter>();
-        if (null == cutterUI)
-            return null;
-
-        cutterUI.Initialize(cutterOffset);
-        cutterUI.BindPosition(cutter.GetTransform().position);
-
-        ui_Cutters[_lineIdx] = cutterUI;
-        return cutterUI;
+        ui_Cutter.Initialize(cutterOffset);
     }
 
     // 던전에 있는 동안 제재소는 화면 밖(DisableShopObj)으로 치워지므로, 그때 증설되어 생성된
     // 커터 UI는 엉뚱한 위치에 붙는다. 마을로 돌아와 제재소가 제자리로 온 뒤 위치를 다시 맞춘다.
     private void RebindCutterPositions()
     {
-        if (null == logCutterProvider)
+        if (null == logCutterProvider || null == ui_Cutter)
             return;
 
-        for (int i = 0; i < ui_Cutters.Count; i++)
-        {
-            if (null == ui_Cutters[i])
-                continue;
-
-            ILogCutter cutter = logCutterProvider.GetCutter(i);
-            if (null != cutter)
-                ui_Cutters[i].BindPosition(cutter.GetTransform().position);
-        }
+        ILogCutter primaryCutter = logCutterProvider.GetCutter(0);
+        if (null != primaryCutter && null != primaryCutter.GetTransform())
+            ui_Cutter.BindPosition(primaryCutter.GetTransform().position);
     }
 
     private void ActiveLineCountChanged(int _activeLineCount)
     {
-        RefreshCutterUIs();
+        if (null != ui_Cutter)
+            ui_Cutter.UpdateLineCount(_activeLineCount);
     }
 
     private void Init_UITraderCoin()
@@ -270,7 +220,15 @@ public class UIView_WorldPopup : UIView
 
         ui_Storage?.BindStorage(container);
         ui_CarStorage?.BindStorage(offroadContainer);
-        RefreshCutterUIs();
+
+        if (null != ui_Cutter && null != logCutterProvider)
+        {
+            ILogCutter primaryCutter = logCutterProvider.GetCutter(0);
+            if (null != primaryCutter && null != primaryCutter.GetTransform())
+                ui_Cutter.BindPosition(primaryCutter.GetTransform().position);
+
+            ui_Cutter.BindCutterProvider(logCutterProvider);
+        }
 
         BindEvents();
     }
@@ -342,9 +300,8 @@ public class UIView_WorldPopup : UIView
 
     private void ResetLogCutterUIs()
     {
-        int activeCount = null != logCutterProvider ? logCutterProvider.ActiveLineCount : 0;
-        for (int i = 0; i < activeCount && i < ui_Cutters.Count; i++)
-            ui_Cutters[i]?.SyncWithCutter();
+        if (null != ui_Cutter)
+            ui_Cutter.SyncWithCutters();
     }
 
     //true -> 오프로드 박스에 진입, false -> 그 반대.
@@ -490,18 +447,16 @@ public class UIView_WorldPopup : UIView
                 ui_Storage.Refresh();
             }
 
-            int activeCount = null != logCutterProvider ? logCutterProvider.ActiveLineCount : 0;
-            for (int i = 0; i < activeCount && i < ui_Cutters.Count; i++)
-                ui_Cutters[i]?.OnShow();
-
-            ResetLogCutterUIs();
+            if (null != ui_Cutter)
+            {
+                ui_Cutter.OnShow();
+                ui_Cutter.SyncWithCutters();
+            }
         }
         else
         {
             ui_Storage?.OnHide();
-
-            for (int i = 0; i < ui_Cutters.Count; i++)
-                ui_Cutters[i]?.OnHide();
+            ui_Cutter?.OnHide();
         }
     }
 

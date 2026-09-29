@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using PresentationLayer.DOTweenAnimationSystem;
 
@@ -11,11 +13,23 @@ public class UI_TreeCutter : MonoBehaviour
     [SerializeField] private Vector3 offset;
 
     // //내부 의존성
-    private ILogItemData cachedItemData;
-    private ILogCutter logCutter;
+    private const float SLOT_Y_STEP = 27f;
+    private const float BASE_TOP_Y = 35f;
 
-    private UI_InventorySlot slot;
-    public UI_InventorySlot Slot { get { return slot; } set { slot = value; } }
+    private readonly List<CutterSlotUnit> slotUnits = new List<CutterSlotUnit>(3);
+    private ILogCutterProvider cutterProvider;
+    private Vector2 initialProgressBarPos;
+
+    // 하위 호환성 프로퍼티
+    public UI_InventorySlot Slot
+    {
+        get
+        {
+            if (0 < slotUnits.Count && null != slotUnits[0])
+                return slotUnits[0].slot;
+            return null;
+        }
+    }
 
     [SerializeField] private string popupTag = "Popup";
     [SerializeField] private string popdownTag = "Popdown";
@@ -30,101 +44,114 @@ public class UI_TreeCutter : MonoBehaviour
 
     public void Initialize(Vector2 _offset)
     {
-        if (null != uiSlotPrefab)
-        {
-            slot = Instantiate(uiSlotPrefab, mainVisual.transform).GetComponent<UI_InventorySlot>();
+        offset = _offset;
+        rect = GetComponent<RectTransform>();
 
-            if (null != slot)
+        if (null != mainVisual)
+        {
+            RectTransform bgRect = mainVisual.GetComponent<RectTransform>();
+            if (null != bgRect)
             {
-                slot.Initialize();
-                slot.DisableRayCast();
+                // 상단 위치를 고정하고 아래쪽으로 슬롯이 늘어나도록 피봇 설정
+                bgRect.pivot = new Vector2(0.5f, 1f);
+                bgRect.anchoredPosition = new Vector2(bgRect.anchoredPosition.x, BASE_TOP_Y);
             }
         }
 
-        offset = _offset;
-
-        rect = GetComponent<RectTransform>();
-
-        if (null != omp)
-            omp.Initialize();
-
         if (null != progressBar)
         {
+            RectTransform pbRect = progressBar.GetComponent<RectTransform>();
+            if (null != pbRect)
+                initialProgressBarPos = pbRect.anchoredPosition;
+
             progressBar.Initialize();
             progressBar.SetActivate(false);
         }
 
-        SnapToPerfectPixel();
+        // 기본 0번 라인 슬롯 유닛 구성
+        EnsureSlotUnits(1);
 
+        if (null != omp)
+            omp.Initialize();
+
+        SnapToPerfectPixel();
         OnHide(true);
+    }
+
+    public void BindCutterProvider(ILogCutterProvider _provider)
+    {
+        cutterProvider = _provider;
+        int lineCount = null != cutterProvider ? cutterProvider.ActiveLineCount : 1;
+        UpdateLineCount(lineCount);
+    }
+
+    public void UpdateLineCount(int _lineCount)
+    {
+        int targetCount = Mathf.Clamp(_lineCount, 1, 3);
+        EnsureSlotUnits(targetCount);
+
+        for (int i = 0; i < slotUnits.Count; i++)
+        {
+            bool bActive = i < targetCount;
+            slotUnits[i].SetActive(bActive);
+
+            if (false == bActive)
+            {
+                slotUnits[i].ResetData();
+                slotUnits[i].UnbindLogCutter();
+            }
+            else if (null != cutterProvider)
+            {
+                slotUnits[i].BindLogCutter(cutterProvider.GetCutter(i));
+                slotUnits[i].SyncWithCutter();
+            }
+        }
+
+        SnapToPerfectPixel();
+    }
+
+    // 단일 라인 바인딩 (하위 호환성 유지)
+    public void BindLogCutter(ILogCutter _logCutter)
+    {
+        EnsureSlotUnits(1);
+        if (0 < slotUnits.Count && null != slotUnits[0])
+            slotUnits[0].BindLogCutter(_logCutter);
+    }
+
+    public void UnbindLogCutter()
+    {
+        for (int i = 0; i < slotUnits.Count; i++)
+            slotUnits[i]?.UnbindLogCutter();
     }
 
     public void BindItemData(ILogItemData _itemData)
     {
-        cachedItemData = _itemData;
+        EnsureSlotUnits(1);
+        if (0 < slotUnits.Count && null != slotUnits[0])
+            slotUnits[0].BindItemData(_itemData);
 
-        if (null != slot)
-        {
-            if (null != _itemData)
-            {
-                // 원목 스프라이트는 이미 색이 입혀진 그림이라 틴트를 걸지 않는다.
-                // (황금/다이아/무지개 원목에 나무 종류 색을 곱하면 색이 죽는다)
-                slot.UpdateImage(_itemData.sprite, Color.white);
-                slot.UpdateRarityEffect(_itemData);
-            }
-            else
-            {
-                slot.ResetData();
-            }
-        }
+        SnapToPerfectPixel();
+    }
 
-        if (null != progressBar)
-            progressBar.SetActivate(null != _itemData);
+    public void SyncWithCutter()
+    {
+        SyncWithCutters();
+    }
+
+    public void SyncWithCutters()
+    {
+        for (int i = 0; i < slotUnits.Count; i++)
+            slotUnits[i]?.SyncWithCutter();
 
         SnapToPerfectPixel();
     }
 
     public void Refresh()
     {
-        if (null != slot && null != cachedItemData)
-        {
-            slot.UpdateImage(cachedItemData.sprite, Color.white);
-            slot.UpdateRarityEffect(cachedItemData);
-        }
+        for (int i = 0; i < slotUnits.Count; i++)
+            slotUnits[i]?.Refresh();
 
         SnapToPerfectPixel();
-    }
-
-    // 가공 라인마다 UI가 하나씩 붙으므로, 자기 라인 커터의 시작/완료 이벤트는 이 UI가 직접 구독한다.
-    public void BindLogCutter(ILogCutter _logCutter)
-    {
-        UnbindLogCutter();
-
-        logCutter = _logCutter;
-        if (null == logCutter)
-            return;
-
-        logCutter.CuttingStartEvent += OnCuttingStart;
-        logCutter.CuttingDoneEvent += OnCuttingDone;
-    }
-
-    public void UnbindLogCutter()
-    {
-        if (null == logCutter)
-            return;
-
-        logCutter.CuttingStartEvent -= OnCuttingStart;
-        logCutter.CuttingDoneEvent -= OnCuttingDone;
-        logCutter = null;
-    }
-
-    // 세이브 로드 직후나 다시 표시될 때, 커터의 현재 상태(가공 중인 원목)에 맞춰 슬롯을 맞춘다.
-    public void SyncWithCutter()
-    {
-        if (null != logCutter && null != logCutter.logToCut && true == logCutter.bIsCutting)
-            BindItemData(logCutter.logToCut);
-        else
-            ResetCutter();
     }
 
     public void BindPosition(Vector3 _newPos)
@@ -137,13 +164,8 @@ public class UI_TreeCutter : MonoBehaviour
 
     public void ResetCutter()
     {
-        cachedItemData = null;
-
-        if (null != slot)
-            slot.ResetData();
-
-        if (null != progressBar)
-            progressBar.SetActivate(false);
+        for (int i = 0; i < slotUnits.Count; i++)
+            slotUnits[i]?.ResetData();
     }
 
     public void OnShow()
@@ -168,23 +190,83 @@ public class UI_TreeCutter : MonoBehaviour
     {
         if (null == omp)
             return;
-        
+
         bOpen = false;
 
         omp.SettingEntryMotion(popup, true, true);
         popdown = omp.Play(popdownTag, bReset: true, _skip: _bSkip, _onComplete: OnCompletedAnimation);
     }
 
+
     // //내부 로직
 
-    private void OnCuttingStart(ILogItemData _itemData)
+    private void EnsureSlotUnits(int _count)
     {
-        BindItemData(logCutter.logToCut);
+        int safeCount = Mathf.Clamp(_count, 1, 3);
+        while (slotUnits.Count < safeCount)
+        {
+            int lineIdx = slotUnits.Count;
+            CutterSlotUnit unit = CreateSlotUnit(lineIdx);
+            if (null != unit)
+                slotUnits.Add(unit);
+            else
+                break;
+        }
     }
 
-    private void OnCuttingDone()
+    private CutterSlotUnit CreateSlotUnit(int _lineIdx)
     {
-        ResetCutter();
+        UI_InventorySlot slotInstance = null;
+        if (null != uiSlotPrefab && null != mainVisual)
+        {
+            GameObject slotObj = Instantiate(uiSlotPrefab, mainVisual.transform);
+            if (null != slotObj)
+            {
+                slotInstance = slotObj.GetComponent<UI_InventorySlot>();
+                if (null != slotInstance)
+                {
+                    slotInstance.Initialize();
+                    slotInstance.DisableRayCast();
+                }
+            }
+        }
+
+        HUD_ProgressBar progressBarInstance = null;
+        if (0 == _lineIdx)
+        {
+            progressBarInstance = progressBar;
+        }
+        else if (null != progressBar)
+        {
+            GameObject pbObj = Instantiate(progressBar.gameObject, progressBar.transform.parent);
+            if (null != pbObj)
+            {
+                progressBarInstance = pbObj.GetComponent<HUD_ProgressBar>();
+                RectTransform pbRect = pbObj.GetComponent<RectTransform>();
+                if (null != pbRect)
+                {
+                    pbRect.anchoredPosition = new Vector2(
+                        initialProgressBarPos.x,
+                        initialProgressBarPos.y - (_lineIdx * SLOT_Y_STEP)
+                    );
+                }
+
+                if (null != progressBarInstance)
+                {
+                    progressBarInstance.Initialize();
+                    progressBarInstance.SetActivate(false);
+                }
+            }
+        }
+
+        CutterSlotUnit unit = new CutterSlotUnit
+        {
+            lineIndex = _lineIdx,
+            slot = slotInstance,
+            progressBar = progressBarInstance
+        };
+
+        return unit;
     }
 
     private void OnCompletedAnimation()
@@ -201,7 +283,7 @@ public class UI_TreeCutter : MonoBehaviour
         if (null == mainVisual)
             return;
 
-        // 캔버스를 즉각 강제 갱신하여 비활성화 ➡️ 활성화 전환 직후 프레임 지연으로 크기(Width/Height)가 0으로 잡히는 버그를 완벽히 해결합니다.
+        // 캔버스를 즉각 강제 갱신하여 비활성화 ➡️ 활성화 전환 직후 프레임 지연으로 크기(Width/Height)가 0으로 잡히는 버그를 해결합니다.
         Canvas.ForceUpdateCanvases();
 
         RectTransform _bgRect = mainVisual.GetComponent<RectTransform>();
@@ -258,27 +340,143 @@ public class UI_TreeCutter : MonoBehaviour
     }
 
 
-    // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+    // //유니티 이벤트 함수
 
     private void Update()
     {
         if (true == bOpen)
         {
-            float _ratio = 0f;
-            if (null != logCutter)
+            for (int i = 0; i < slotUnits.Count; i++)
             {
-                float _total = logCutter.totalProcessingTime;
-                if (0f < _total)
-                    _ratio = Mathf.Clamp01(logCutter.elapsedProcessingTime / _total);
+                slotUnits[i]?.UpdateProgress();
             }
-
-            if (null != progressBar)
-                progressBar.UpdateValue(_ratio);
         }
     }
 
     private void OnDestroy()
     {
         UnbindLogCutter();
+    }
+
+
+    // //내부 라인 슬롯 단위 관리 클래스
+
+    private class CutterSlotUnit
+    {
+        public int lineIndex;
+        public UI_InventorySlot slot;
+        public HUD_ProgressBar progressBar;
+        public ILogCutter logCutter;
+        public ILogItemData cachedItemData;
+
+        public void BindLogCutter(ILogCutter _logCutter)
+        {
+            UnbindLogCutter();
+
+            logCutter = _logCutter;
+            if (null == logCutter)
+                return;
+
+            logCutter.CuttingStartEvent += OnCuttingStart;
+            logCutter.CuttingDoneEvent += OnCuttingDone;
+        }
+
+        public void UnbindLogCutter()
+        {
+            if (null == logCutter)
+                return;
+
+            logCutter.CuttingStartEvent -= OnCuttingStart;
+            logCutter.CuttingDoneEvent -= OnCuttingDone;
+            logCutter = null;
+        }
+
+        private void OnCuttingStart(ILogItemData _itemData)
+        {
+            ILogItemData targetData = (null != _itemData) ? _itemData : (null != logCutter ? logCutter.logToCut : null);
+            BindItemData(targetData);
+        }
+
+        private void OnCuttingDone()
+        {
+            ResetData();
+        }
+
+        public void BindItemData(ILogItemData _itemData)
+        {
+            cachedItemData = _itemData;
+
+            if (null != slot)
+            {
+                if (null != _itemData)
+                {
+                    slot.UpdateImage(_itemData.sprite, Color.white);
+                    slot.UpdateRarityEffect(_itemData);
+                }
+                else
+                {
+                    slot.ResetData();
+                }
+            }
+
+            if (null != progressBar)
+                progressBar.SetActivate(null != _itemData);
+        }
+
+        public void ResetData()
+        {
+            cachedItemData = null;
+
+            if (null != slot)
+                slot.ResetData();
+
+            if (null != progressBar)
+                progressBar.SetActivate(false);
+        }
+
+        public void Refresh()
+        {
+            if (null != slot && null != cachedItemData)
+            {
+                slot.UpdateImage(cachedItemData.sprite, Color.white);
+                slot.UpdateRarityEffect(cachedItemData);
+            }
+        }
+
+        public void SyncWithCutter()
+        {
+            if (null != logCutter && null != logCutter.logToCut && true == logCutter.bIsCutting)
+                BindItemData(logCutter.logToCut);
+            else
+                ResetData();
+        }
+
+        public void UpdateProgress()
+        {
+            if (null == progressBar || null == cachedItemData || null == logCutter)
+                return;
+
+            if (false == logCutter.bIsCutting)
+                return;
+
+            float _total = logCutter.totalProcessingTime;
+            float _ratio = (0f < _total) ? Mathf.Clamp01(logCutter.elapsedProcessingTime / _total) : 0f;
+
+            progressBar.UpdateValue(_ratio);
+        }
+
+        public void SetActive(bool _isActive)
+        {
+            if (null != slot)
+                slot.gameObject.SetActive(_isActive);
+
+            if (null != progressBar)
+            {
+                if (false == _isActive)
+                    progressBar.SetActivate(false);
+                else
+                    progressBar.SetActivate(null != cachedItemData);
+            }
+        }
     }
 }
