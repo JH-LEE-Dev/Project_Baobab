@@ -782,7 +782,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             boomerangCooldownTimer = bIsOverheat ? statComponent.boomerangCooldown * 0.5f : statComponent.boomerangCooldown;
         };
 
-        thrownBoomerang = boomerangCreator.ThrowBoomerang(origin, dir, maxDistance, transform, onFinished, bIsOverheat);
+        thrownBoomerang = boomerangCreator.ThrowBoomerang(origin, dir, maxDistance, transform, onFinished, bIsOverheat, true);
 
         if (thrownBoomerang == null)
         {

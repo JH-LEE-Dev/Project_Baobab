@@ -7,7 +7,9 @@ using UnityEngine;
 /// 다시 가속하며 소유자에게 돌아오는 투사체. ShockWave.cs와 동일하게 오브젝트 풀에서
 /// 재사용된다(BoomerangCreator). 회전 스프라이트는 Animator/애니메이션 클립이 아니라
 /// CharacterAnimator처럼 스크립트에서 프레임 리스트를 직접 재생하는 방식으로 처리한다
-/// (Start 프레임 1회 → Loop 프레임 반복).
+/// (Boomerang_Base 본체 + Boomerang_Effect 덧그림을 같은 인덱스로 24fps 동시 반복).
+/// 비행 중에는 afterimageInterval마다 그 순간의 Base 프레임을 그 자리에 잔상으로 남기고
+/// 알파를 서서히 줄인다(BoomerangAfterimage).
 ///
 /// Outbound(감속)와 Returning(가속)은 완전히 대칭이다: 같은 시간(outboundDuration) 동안
 /// 같은 최고 속도(throwSpeed)를 기준으로 선형으로 감속/가속한다. Returning은 최고 속도에
@@ -28,11 +30,16 @@ public class Boomerang : MonoBehaviour
     [SerializeField] private float catchRadius = 0.25f;
 
     [Header("Sprite Animation (CharacterAnimator와 동일한 프레임 리스트 재생 방식)")]
-    [SerializeField] private SpriteRenderer spriteRenderer;
-    [SerializeField] private List<Sprite> startSprites; // 던지는 순간 1회 재생
-    [SerializeField] private List<Sprite> loopSprites;   // 비행 내내(왕복 전 구간) 반복 재생
-    [SerializeField] private float startSampleRate = 16f;
-    [SerializeField] private float loopSampleRate = 16f;
+    [SerializeField] private SpriteRenderer spriteRenderer; // Boomerang_Base
+    [SerializeField] private SpriteRenderer effectSpriteRenderer; // Boomerang_Effect. 본체 바로 위에 덧그린다.
+    [SerializeField] private List<Sprite> baseSprites;   // 비행 내내(왕복 전 구간) 반복 재생
+    [SerializeField] private List<Sprite> effectSprites; // baseSprites와 같은 인덱스로 동시에 재생
+    [SerializeField] private float sampleRate = 24f;
+
+    [Header("Afterimage (잔상)")]
+    [SerializeField] private float afterimageInterval = 0.28f; // 초당 약 3.5회
+    [SerializeField] private float afterimageFadeDuration = 0.45f;
+    [SerializeField, Range(0f, 1f)] private float afterimageStartAlpha = 0.5f;
 
     [Header("Shadow (LogItem과 동일한 방식)")]
     [SerializeField] private SpriteRenderer shadowSpriteRenderer; // Shadow Material을 쓰는 별도 렌더러. 본체와 동일한 프레임을 매 프레임 그대로 따라간다.
@@ -41,6 +48,7 @@ public class Boomerang : MonoBehaviour
     [SerializeField] private LayerMask targetLayer; // 나무(Tree) 레이어
     [SerializeField] private float hitRadius = 0.5f; // 현재 위치 기준 판정 반경. 타일 1칸(Grid CellSize x=1)의 지름과 맞도록 반지름 0.5로 설정.
     [SerializeField] private float damageInterval = 0.3f; // 왕복 전 구간(가는 길/오는 길 모두) 동안 이 주기로 판정
+    [SerializeField] private float hitStaggerMax = 0.15f; // 한 틱에 맞은 나무들이 동시에 맞지 않도록, 나무마다 0~이 값 사이의 랜덤 지연 후 실제 데미지를 준다
 
     private Phase phase;
     private Vector3 originPosition;
@@ -55,7 +63,10 @@ public class Boomerang : MonoBehaviour
 
     private float frameTimer;
     private int currentFrameIndex;
-    private bool isStartFinished;
+
+    private BoomerangAfterimage[] afterimages; // 링 버퍼. 페이드 시간 동안 동시에 보일 수 있는 최대 장수만큼 미리 만든다.
+    private int nextAfterimageIndex;
+    private float afterimageTimer;
 
     private float damage;
 
@@ -69,6 +80,24 @@ public class Boomerang : MonoBehaviour
     private float damageCheckTimer;
     private Vector2 lastDamageCheckPosition; // 터널링 방지: 직전 판정 시점의 위치. 이 위치~현재 위치 사이 선분 전체를 검사한다.
     private readonly List<IStaticCollidable> hitScanResults = new List<IStaticCollidable>(16);
+
+    // 판정은 틱 시점에 끝내고(맞을 나무/데미지 확정), 실제 TakeDamage만 나무마다 랜덤 시각까지 미룬다.
+    // 시각은 Time.time이 아니라 activeTime(일시정지 중에는 흐르지 않는 부메랑 자체 시계) 기준이라
+    // WarningUI로 멈춘 동안에는 대기 중인 타격도 같이 멈춘다.
+    private struct PendingHit
+    {
+        public TreeObj tree;
+        public int treeGeneration; // 예약 시점의 TreeObj.SpawnGeneration. 적용 시점과 다르면 그 사이 죽어서 풀로 갔거나 재스폰된 것이다.
+        public float damage;
+        public float applyAt;
+    }
+    private readonly List<PendingHit> pendingHits = new List<PendingHit>(16);
+    private float activeTime;
+
+    // 캐릭터가 던진 부메랑만 true(BoomerangCreator가 발사마다 덮어씀). 나무의 도끼용 진동(TreeImpact/TreeDestroy)은
+    // 항상 끄고, 대신 가벼운 BoomerangImpact를 울린다 - 판정 한 번에 흩어져 들어오는 타격들은
+    // HapticPresets의 묶음 간격이 한 번으로 묶어준다.
+    private bool bPlayHaptic;
 
     private CustomSortable customSortable;
 
@@ -126,6 +155,14 @@ public class Boomerang : MonoBehaviour
     }
 
     /// <summary>
+    /// 타격 진동을 울릴지. 플레이어(캐릭터)가 던진 부메랑만 true다.
+    /// </summary>
+    public void SetPlayHaptic(bool _bPlayHaptic)
+    {
+        bPlayHaptic = _bPlayHaptic;
+    }
+
+    /// <summary>
     /// 부메랑을 발사한다. _returnTarget은 매 프레임 위치를 다시 읽으므로, 캐릭터가 이동 중이어도
     /// 그 방향으로 자연스럽게 돌아온다. _onFinished는 왕복이 끝나 풀로 돌아가기 직전에 1회 호출된다.
     /// </summary>
@@ -151,11 +188,14 @@ public class Boomerang : MonoBehaviour
 
         frameTimer = 0f;
         currentFrameIndex = 0;
-        isStartFinished = startSprites == null || startSprites.Count == 0;
         ApplyCurrentFrame();
+
+        afterimageTimer = 0f;
 
         damageCheckTimer = 0f;
         lastDamageCheckPosition = _origin;
+        activeTime = 0f;
+        pendingHits.Clear();
 
         isPaused = false;
         isDismissing = false;
@@ -176,6 +216,10 @@ public class Boomerang : MonoBehaviour
             dismissRoutine = null;
         }
 
+        // 정상 회수(Finish)와 달리 강제 회수는 캐릭터 사망/던전 이탈 등이라 남은 잔상도 바로 지우고,
+        // 아직 들어가지 않은 지연 타격도 버린다.
+        HideAllAfterimages();
+        pendingHits.Clear();
         Finish();
     }
 
@@ -186,6 +230,7 @@ public class Boomerang : MonoBehaviour
     {
         if (!IsActive || isDismissing) return;
         isPaused = true;
+        SetAfterimagesPaused(true);
     }
 
     /// <summary>
@@ -195,6 +240,7 @@ public class Boomerang : MonoBehaviour
     {
         if (!IsActive || isDismissing) return;
         isPaused = false;
+        SetAfterimagesPaused(false);
     }
 
     /// <summary>
@@ -206,6 +252,7 @@ public class Boomerang : MonoBehaviour
 
         isDismissing = true;
         isPaused = true; // 축소되는 동안 이동/판정/애니메이션은 멈춘 상태를 유지
+        SetAfterimagesPaused(false); // Pause()로 멈춰있던 잔상은 본체가 줄어드는 동안 마저 사라지게 둔다
         dismissRoutine = StartCoroutine(DismissRoutine(_duration));
     }
 
@@ -224,6 +271,7 @@ public class Boomerang : MonoBehaviour
 
         transform.localScale = Vector3.zero;
         dismissRoutine = null;
+        pendingHits.Clear(); // 마을로 돌아가는 중이라 남은 지연 타격은 버린다
         Finish();
     }
 
@@ -232,7 +280,24 @@ public class Boomerang : MonoBehaviour
         customSortable = GetComponent<CustomSortable>();
         if (customSortable != null)
         {
-            customSortable.Initialize(transform);
+            // Effect 렌더러는 본체와 같은 order면 그리는 순서가 보장되지 않으므로 여기서 빼고,
+            // LateUpdate에서 본체 order + 1로 따로 맞춘다.
+            customSortable.Initialize(transform, new[] { spriteRenderer, shadowSpriteRenderer });
+        }
+
+        CreateAfterimages();
+    }
+
+    private void OnDestroy()
+    {
+        if (afterimages == null) return;
+
+        for (int i = 0; i < afterimages.Length; i++)
+        {
+            if (afterimages[i] != null)
+            {
+                Destroy(afterimages[i].gameObject);
+            }
         }
     }
 
@@ -240,14 +305,23 @@ public class Boomerang : MonoBehaviour
     {
         if (!IsActive || isPaused) return;
 
+        activeTime += Time.deltaTime;
+
         UpdateAnimationFrame(Time.deltaTime);
         UpdateDamageTick(Time.deltaTime); // 가는 길/오는 길 구분 없이 왕복 내내 동일하게 판정
+        UpdatePendingHits(); // 틱에서 예약한 것 중 지연 0인 타격도 같은 프레임에 바로 들어가도록 틱 다음에 처리
 
         switch (phase)
         {
             case Phase.Outbound: UpdateOutbound(); break;
             case Phase.Holding: UpdateHolding(); break;
             case Phase.Returning: UpdateReturning(); break;
+        }
+
+        // Finish()로 이번 프레임에 회수됐으면 잔상을 찍지 않는다.
+        if (IsActive)
+        {
+            UpdateAfterimage(Time.deltaTime);
         }
     }
 
@@ -258,6 +332,73 @@ public class Boomerang : MonoBehaviour
         if (customSortable != null)
         {
             customSortable.ManualLateUpdate();
+
+            if (effectSpriteRenderer != null)
+            {
+                effectSpriteRenderer.sortingOrder = customSortable.CurrentSortingOrder + 1;
+            }
+        }
+    }
+
+    // 잔상은 본체가 풀로 돌아가 비활성화돼도 끝까지 페이드돼야 하므로 자식이 아닌 루트 오브젝트로 만든다.
+    // 본체(BoomerangCreator)와 같은 이유로 DontDestroyOnLoad, 수명은 OnDestroy에서 본체와 함께 정리한다.
+    private void CreateAfterimages()
+    {
+        int count = Mathf.CeilToInt(afterimageFadeDuration / Mathf.Max(afterimageInterval, 0.01f)) + 1;
+        afterimages = new BoomerangAfterimage[count];
+
+        for (int i = 0; i < count; i++)
+        {
+            afterimages[i] = BoomerangAfterimage.Create(spriteRenderer, "BoomerangAfterimage");
+            DontDestroyOnLoad(afterimages[i].gameObject);
+        }
+
+        nextAfterimageIndex = 0;
+    }
+
+    private void UpdateAfterimage(float _deltaTime)
+    {
+        if (afterimages == null || afterimages.Length == 0 || spriteRenderer == null) return;
+
+        afterimageTimer += _deltaTime;
+        if (afterimageTimer < afterimageInterval) return;
+        afterimageTimer -= afterimageInterval;
+
+        // 찍히는 순간 본체 바로 뒤에 깔리도록 현재 위치 기준 정렬값 - 1. 잔상은 제자리에 머무므로 이후 갱신하지 않는다.
+        int sortingOrder = customSortable != null
+            ? customSortable.ComputeSortingOrder(transform.position.y) - 1
+            : spriteRenderer.sortingOrder - 1;
+
+        BoomerangAfterimage afterimage = afterimages[nextAfterimageIndex];
+        nextAfterimageIndex = (nextAfterimageIndex + 1) % afterimages.Length;
+
+        afterimage.Show(
+            spriteRenderer.sprite,
+            spriteRenderer.color,
+            spriteRenderer.transform.position,
+            spriteRenderer.transform.lossyScale,
+            sortingOrder,
+            afterimageStartAlpha,
+            afterimageFadeDuration);
+    }
+
+    private void SetAfterimagesPaused(bool _paused)
+    {
+        if (afterimages == null) return;
+
+        for (int i = 0; i < afterimages.Length; i++)
+        {
+            afterimages[i].SetPaused(_paused);
+        }
+    }
+
+    private void HideAllAfterimages()
+    {
+        if (afterimages == null) return;
+
+        for (int i = 0; i < afterimages.Length; i++)
+        {
+            afterimages[i].Hide();
         }
     }
 
@@ -317,12 +458,53 @@ public class Boomerang : MonoBehaviour
 
                 if (isHit)
                 {
-                    treeObj.TakeDamage(tickDamage);
+                    // 같은 틱에 맞은 나무들이 한 프레임에 동시에 흔들리면 어색해서, 나무마다 따로 랜덤 지연을 준다.
+                    pendingHits.Add(new PendingHit
+                    {
+                        tree = treeObj,
+                        treeGeneration = treeObj.SpawnGeneration,
+                        damage = tickDamage,
+                        applyAt = activeTime + UnityEngine.Random.Range(0f, hitStaggerMax),
+                    });
                 }
             }
         }
 
         lastDamageCheckPosition = segEnd;
+    }
+
+    private void UpdatePendingHits()
+    {
+        // 순서는 상관없으므로 swap-remove로 할당/시프트 없이 제거한다.
+        for (int i = pendingHits.Count - 1; i >= 0; i--)
+        {
+            if (activeTime < pendingHits[i].applyAt) continue;
+
+            ApplyPendingHit(pendingHits[i]);
+
+            int last = pendingHits.Count - 1;
+            pendingHits[i] = pendingHits[last];
+            pendingHits.RemoveAt(last);
+        }
+    }
+
+    // 예약~적용 사이(최대 hitStaggerMax)에 다른 공격(다른 부메랑, 도끼 등)으로 이미 쓰러졌을 수 있으므로
+    // 적용 시점에 다시 확인한다. 나무는 쓰러지는 그 프레임에 풀로 반납되며 ResetTree가 bDead를 false로
+    // 되돌리기 때문에 bDead만으로는 못 거른다 - 풀에 있는지(IsPooled)와, 예약 뒤 재스폰되어 다른 나무가
+    // 된 것은 아닌지(SpawnGeneration)를 함께 본다. activeInHierarchy는 카메라 컬링으로 살아있는 나무도
+    // 꺼지므로 쓰지 않는다.
+    private void ApplyPendingHit(PendingHit _hit)
+    {
+        TreeObj tree = _hit.tree;
+        if (tree == null || tree.IsPooled || tree.bDead || tree.SpawnGeneration != _hit.treeGeneration) return;
+        if (!tree.bCanApplyDamage) return; // 묘목은 TakeDamage가 무시하므로 진동도 울리지 않게 미리 거른다
+
+        tree.TakeDamage(_hit.damage, false);
+
+        if (bPlayHaptic)
+        {
+            Rumble.Play(EHapticEvent.BoomerangImpact);
+        }
     }
 
     private static Vector2 GetTreeTopPosition(TreeObj _treeObj)
@@ -399,65 +581,56 @@ public class Boomerang : MonoBehaviour
         transform.position += (toTarget / Mathf.Max(dist, 0.0001f)) * step;
     }
 
-    // CharacterAnimator.UpdateAnimation()과 동일한 패턴: Start 프레임을 끝까지 재생한 뒤
-    // isStartFinished를 켜고 Loop 프레임으로 넘어가, 왕복이 끝날 때까지 계속 반복한다.
+    // CharacterAnimator.UpdateAnimation()과 같은 프레임 리스트 재생. Base/Effect는 같은 인덱스로
+    // 묶여 있어서(둘 다 16프레임) 한 타이머로 동시에 넘긴다. 왕복이 끝날 때까지 계속 반복한다.
     private void UpdateAnimationFrame(float _deltaTime)
     {
-        List<Sprite> currentSprites = !isStartFinished ? startSprites : loopSprites;
-        if (currentSprites == null || currentSprites.Count == 0) return;
+        if (baseSprites == null || baseSprites.Count == 0) return;
 
-        float sampleRate = !isStartFinished ? startSampleRate : loopSampleRate;
         float frameTime = sampleRate > 0f ? 1f / sampleRate : 0.1f;
 
         frameTimer += _deltaTime;
-        if (frameTimer >= frameTime)
+        if (frameTimer < frameTime) return;
+
+        while (frameTimer >= frameTime)
         {
             frameTimer -= frameTime;
-
-            if (!isStartFinished)
-            {
-                if (currentFrameIndex < startSprites.Count - 1)
-                {
-                    currentFrameIndex++;
-                }
-                else
-                {
-                    isStartFinished = true;
-                    currentFrameIndex = 0;
-                    currentSprites = loopSprites;
-                }
-            }
-            else
-            {
-                currentFrameIndex = (currentFrameIndex + 1) % currentSprites.Count;
-            }
+            currentFrameIndex = (currentFrameIndex + 1) % baseSprites.Count;
         }
 
-        ApplyFrame(currentSprites);
+        ApplyCurrentFrame();
     }
 
     private void ApplyCurrentFrame()
     {
-        List<Sprite> currentSprites = !isStartFinished ? startSprites : loopSprites;
-        ApplyFrame(currentSprites);
-    }
-
-    private void ApplyFrame(List<Sprite> _sprites)
-    {
-        if (spriteRenderer == null || _sprites == null || _sprites.Count == 0) return;
-
-        Sprite currentSprite = _sprites[Mathf.Clamp(currentFrameIndex, 0, _sprites.Count - 1)];
-        spriteRenderer.sprite = currentSprite;
-
-        // TreeVisualComponent.SyncShadowSprite와 동일한 방식: 그림자는 본체와 항상 같은 프레임을 보여준다.
-        if (shadowSpriteRenderer != null)
+        if (spriteRenderer != null && baseSprites != null && baseSprites.Count > 0)
         {
-            shadowSpriteRenderer.sprite = currentSprite;
+            Sprite baseSprite = baseSprites[currentFrameIndex % baseSprites.Count];
+            spriteRenderer.sprite = baseSprite;
+
+            // TreeVisualComponent.SyncShadowSprite와 동일한 방식: 그림자는 본체와 항상 같은 프레임을 보여준다.
+            if (shadowSpriteRenderer != null)
+            {
+                shadowSpriteRenderer.sprite = baseSprite;
+            }
+        }
+
+        if (effectSpriteRenderer != null && effectSprites != null && effectSprites.Count > 0)
+        {
+            effectSpriteRenderer.sprite = effectSprites[currentFrameIndex % effectSprites.Count];
         }
     }
 
     private void Finish()
     {
+        // 정상 회수 직전 틱에서 예약된 타격은 풀로 돌아가며 사라지지 않도록 남은 것을 즉시 적용한다.
+        // (ForceStop/Dismiss는 그 전에 목록을 비워두므로 여기서 적용되는 것이 없다)
+        for (int i = 0; i < pendingHits.Count; i++)
+        {
+            ApplyPendingHit(pendingHits[i]);
+        }
+        pendingHits.Clear();
+
         IsActive = false;
         returnTarget = null;
 

@@ -42,7 +42,7 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
         );
     }
 
-    public Boomerang ThrowBoomerang(Vector3 _origin, Vector3 _direction, float _maxDistance, Transform _returnTarget, Action _onFinished, bool _bIsOverheat = false)
+    public Boomerang ThrowBoomerang(Vector3 _origin, Vector3 _direction, float _maxDistance, Transform _returnTarget, Action _onFinished, bool _bIsOverheat = false, bool _bPlayHaptic = false)
     {
         if (boomerangPool == null || statComponent == null) return null;
 
@@ -75,6 +75,8 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
         boomerang.SetSpeedMultiplier(finalSpeedMul);
         // damageInterval은 변동 없음
         boomerang.SetDamageInterval(statComponent.boomerangDamageInterval);
+        // 풀에서 재사용되므로 이전 소유자(캐릭터/NPC)의 값이 남지 않도록 매번 덮어쓴다.
+        boomerang.SetPlayHaptic(_bPlayHaptic);
 
         boomerang.Launch(_origin, _direction, _maxDistance, _returnTarget, _onFinished);
         return boomerang;

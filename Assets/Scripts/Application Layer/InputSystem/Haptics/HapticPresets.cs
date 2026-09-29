@@ -123,6 +123,14 @@ public static class HapticPresets
         new HapticStep(0f, 0.38f, 0.022f),
         new HapticStep(0f, 0.15f, 0.030f));
 
+    // 부메랑 타격 - 멀리서 "톡" 스치는 가벼운 손맛. 도끼(treeImpact)보다 확실히 한 단계 아래여야 한다.
+    // 왕복 내내 0.3초마다 반복되므로 굵은 모터는 킥에서만 살짝 거들고, 가는 모터 위주로 또렷하게 준다.
+    // 길이는 0.1초로, 모터가 겨우 잡히는 최소 길이다(itemPickup과 같은 이유). 다음 판정(0.3초)
+    // 전에 완전히 멎어서 틱마다 따로따로 끊어져 느껴진다.
+    private static readonly HapticPattern boomerangImpact = new HapticPattern(
+        new HapticStep(0.30f, 0.75f, 0.035f),
+        new HapticStep(0.10f, 0.35f, 0.065f));
+
     private static readonly HapticPattern[] patterns = BuildPatterns();
 
     /// <summary>
@@ -176,6 +184,7 @@ public static class HapticPresets
         _table[(int)EHapticEvent.StaminaDeath] = staminaDeath;
         _table[(int)EHapticEvent.RareLogSpawn] = rareLogSpawn;
         _table[(int)EHapticEvent.ItemDropped] = itemDropped;
+        _table[(int)EHapticEvent.BoomerangImpact] = boomerangImpact;
 
         return _table;
     }
@@ -202,6 +211,12 @@ public static class HapticPresets
         // 한 덩어리의 센 진동이 되므로, 지나치게 촘촘한 것만 솎아내 0.05초 간격을 보장한다.
         // (상자 입출고는 0.075초라 이 값에 걸리지 않고 하나하나 그대로 울린다)
         _table[(int)EHapticEvent.ItemStream] = 0.05f;
+
+        // 부메랑은 한 번의 판정에 맞은 나무들이 0~0.15초에 흩어져 들어온다(Boomerang.hitStaggerMax).
+        // 그 흩어짐보다 넉넉한 0.2초로 묶어 "판정 한 번 = 진동 한 번"이 되게 하고, 판정 주기(기본 0.3초)
+        // 보다는 짧게 둬서 틱마다 톡톡 끊어 느껴지게 한다. 부메랑 여러 개가 겹쳐 날아도 초당 5회를
+        // 넘지 않아 연속 진동으로 뭉개지지 않는다.
+        _table[(int)EHapticEvent.BoomerangImpact] = 0.2f;
 
         // 나머지(스킬, 프레스티지, 필드 습득, 원목 유실)는 하나하나 느껴져야 하므로 묶지 않는다.
 

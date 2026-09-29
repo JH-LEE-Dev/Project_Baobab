@@ -7,5 +7,6 @@ using UnityEngine;
 /// </summary>
 public interface IBoomerangCreator
 {
-    Boomerang ThrowBoomerang(Vector3 _origin, Vector3 _direction, float _maxDistance, Transform _returnTarget, Action _onFinished, bool _bIsOverheat = false);
+    // _bPlayHaptic: 플레이어(캐릭터)가 던진 부메랑만 true. NPC 부메랑이 진동을 울리면 가만히 있어도 패드가 떤다.
+    Boomerang ThrowBoomerang(Vector3 _origin, Vector3 _direction, float _maxDistance, Transform _returnTarget, Action _onFinished, bool _bIsOverheat = false, bool _bPlayHaptic = false);
 }
