@@ -206,6 +206,16 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 랜덤 지연 없이 즉시 발현합니다. 별자리 픽셀 레이저가 이 별에 닿는 순간처럼 외부 타이밍에 정확히
+    /// 맞춰야 할 때 사용합니다(별마다 도착 시각이 달라 자연스럽게 흩어지므로 지연을 더할 필요가 없다).
+    /// 이미 발현 중이거나 끝났으면 무시하고, 지연 대기 중이었다면 대기를 끊고 바로 발현합니다.
+    /// </summary>
+    public void PlayManifestEffectImmediate()
+    {
+        StartManifest();
+    }
+
     public void NotifyManifestFinished()
     {
         if (isReturned)

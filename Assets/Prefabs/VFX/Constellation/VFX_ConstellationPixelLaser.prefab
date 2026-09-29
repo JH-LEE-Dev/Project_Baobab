@@ -64,6 +64,7 @@ MonoBehaviour:
   segmentShootDuration: 0.7
   segmentChainDelay: 0
   fullAreaSustainDuration: 0
+  starReachProgressThreshold: 0.98
   zigzagAmplitude: 0
   zigzagStepLength: 0.2
   curveRoundness: 0.65

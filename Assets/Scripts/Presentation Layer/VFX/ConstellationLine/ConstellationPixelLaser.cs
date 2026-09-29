@@ -52,6 +52,9 @@ namespace PresentationLayer.VFX
         private float segmentShootDuration = 0.14f;
         [SerializeField, Tooltip("전면 동시 발사 후 전체 별자리 영역 형태가 환하게 유지되는 시간(초)")]
         private float fullAreaSustainDuration = 0.15f;
+        [SerializeField, Range(0.5f, 1.0f), Tooltip("빔 선단이 이 진행도에 이르면 별에 도달한 것으로 보고 OnStarReachedEvent를 발생시킵니다. " +
+            "선단은 감속 곡선(ease-out)으로 날아가 끝부분 몇 픽셀을 오래 채우므로, 1.0이면 눈에 보이는 도착보다 이벤트가 늦습니다. (1.0 = 비행 완료 시점)")]
+        private float starReachProgressThreshold = 1.0f;
 
         [Header("지그재그 (Zigzag) 형태 세팅")]
         [SerializeField, Tooltip("지그재그 꺾임 폭 (월드 단위, 32 PPU 기준 0.09375 = 3픽셀)")]
@@ -115,6 +118,12 @@ namespace PresentationLayer.VFX
         {
             get => fullAreaSustainDuration;
             set => fullAreaSustainDuration = value;
+        }
+
+        public float StarReachProgressThreshold
+        {
+            get => starReachProgressThreshold;
+            set => starReachProgressThreshold = Mathf.Clamp(value, 0.5f, 1.0f);
         }
 
         public Color LaserCoreColor
@@ -484,6 +493,7 @@ namespace PresentationLayer.VFX
             public float duration;
             public float elapsed;
             public bool reached;
+            public bool starEventFired;
         }
 
         private readonly List<SimultaneousStep> simultaneousSteps = new List<SimultaneousStep>(16);
@@ -573,7 +583,8 @@ namespace PresentationLayer.VFX
                     targetStarIndex = idxB,
                     duration = durForward,
                     elapsed = 0.0f,
-                    reached = false
+                    reached = false,
+                    starEventFired = false
                 });
 
                 // 2) 역방향 빔: B -> A (목표: idxA)
@@ -609,7 +620,8 @@ namespace PresentationLayer.VFX
                     targetStarIndex = idxA,
                     duration = durBackward,
                     elapsed = 0.0f,
-                    reached = false
+                    reached = false,
+                    starEventFired = false
                 });
             }
 
@@ -630,15 +642,25 @@ namespace PresentationLayer.VFX
                         float progress = 1.0f - Mathf.Pow(1.0f - t, 4.0f);
                         step.segment.SetProgress(progress, tailLength);
 
-                        if (step.duration <= step.elapsed)
+                        bool bFlightDone = step.duration <= step.elapsed;
+                        if (true == bFlightDone)
                         {
                             step.reached = true;
                             step.segment.SetProgress(1.0f, tailLength);
-                            OnStarReachedEvent?.Invoke(step.targetStarIndex, step.endPt);
                         }
                         else
                         {
                             allReached = false;
+                        }
+
+                        // 도달 이벤트는 비행 완료와 별개로, 선단이 눈에 보이게 별에 닿는 진행도에서 한 번만 보낸다.
+                        // 임계값이 1.0이면 비행 완료 시점에만 보낸다 - float 반올림으로 t ≈ 0.987부터 progress가
+                        // 이미 1.0f가 되므로, 진행도 비교에 맡기면 기존보다 한 프레임가량 먼저 나갈 수 있다.
+                        bool bReachedByProgress = 1.0f > starReachProgressThreshold && starReachProgressThreshold <= progress;
+                        if (false == step.starEventFired && (true == bFlightDone || true == bReachedByProgress))
+                        {
+                            step.starEventFired = true;
+                            OnStarReachedEvent?.Invoke(step.targetStarIndex, step.endPt);
                         }
                         simultaneousSteps[i] = step;
                     }

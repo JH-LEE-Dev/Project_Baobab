@@ -371,7 +371,9 @@ public class InDungeonVFXManager : MonoBehaviour
         // 대기 목록에서는 빠지지만, 연출이 끝나기 전에 던전을 나가는 경우를 대비해
         // pendingManifestInstances로 계속 추적해야 ClearAllConstellationGroundMarks가 강제로 회수할 수 있다.
         pendingManifestInstances.Add(_instance);
-        _instance.PlayManifestEffect();
+        // 레이저가 닿는 순간에 맞춰야 하므로 랜덤 지연 없이 즉시 터뜨린다. (한꺼번에 정리하는
+        // ClearConstellationGroundMarks는 동시에 터지는 것을 흩뜨리도록 기존 랜덤 지연을 유지한다)
+        _instance.PlayManifestEffectImmediate();
         return true;
     }
 
