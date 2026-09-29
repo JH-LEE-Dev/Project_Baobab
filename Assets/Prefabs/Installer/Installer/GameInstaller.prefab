@@ -1554,6 +1554,9 @@ MonoBehaviour:
   treeStarMarkGroundPrefab: {fileID: 114000001, guid: 7d2b9f4a1c6e48b3a5d9e0f1b2c3d4e5, type: 3}
   treeStarMarkGroundPoolDefaultCapacity: 50
   treeStarMarkGroundPoolMaxSize: 200
+  constellationDottedLinePrefab: {fileID: 114000001, guid: 1a15ca6257e64fcbb114dca83a896054, type: 3}
+  constellationDottedLinePoolDefaultCapacity: 8
+  constellationDottedLinePoolMaxSize: 128
   shootingStarVfxPrefab: {fileID: 114000001, guid: bf3f757d5c97d6270249f5019d78d46f, type: 3}
   shootingStarVfxPoolDefaultCapacity: 4
   shootingStarVfxPoolMaxSize: 16
@@ -3299,7 +3302,7 @@ MonoBehaviour:
   treeLayerForExplosion:
     serializedVersion: 2
     m_Bits: 1024
-  lightningZapCreator: {fileID: 3643444765331575717}
+  constellationLaserCreator: {fileID: 3643444765331575717}
 --- !u!114 &3643444765331575717
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3309,14 +3312,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 9097579308778333852}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0e4eef7b6783248438bb56cbc56461c6, type: 3}
+  m_Script: {fileID: 11500000, guid: 03a06cb4d68a4932ae1925762c2e0dee, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::LightningZapCreator
-  lightningZapPrefab: {fileID: -5490508266515913148, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
+  m_EditorClassIdentifier: Assembly-CSharp::ConstellationPixelLaserCreator
+  laserPrefab: {fileID: 114000001, guid: 7e4689a4a74e42f186e315496c7da503, type: 3}
   defaultCapacity: 2
   maxSize: 8
-  zapColor: {r: 0, g: 0, b: 1, a: 1}
-  zapIntensity: 1
 --- !u!1001 &2841926554770617575
 PrefabInstance:
   m_ObjectHideFlags: 0

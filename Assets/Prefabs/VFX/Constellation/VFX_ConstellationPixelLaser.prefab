@@ -71,7 +71,7 @@ MonoBehaviour:
   precursorTrailAlpha: 0.4
   leadFollowDelay: 0.04
   autoUntangle: 1
-  maxPrewarmedSegments: 8
+  maxPrewarmedSegments: 10
   disableObjectOnComplete: 1
   testNodes:
   - {x: -1.4718232, y: 54.40645, z: 0}

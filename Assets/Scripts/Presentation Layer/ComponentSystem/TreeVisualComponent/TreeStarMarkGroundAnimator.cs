@@ -87,6 +87,10 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
 
     public int GroupId { get; private set; } = -1;
 
+    // 별자리 픽셀 레이저가 도달한 좌표(OnStarReachedEvent의 worldPos)와 공간 매칭할 때 쓰는 기준 좌표.
+    // 마크 자체는 나무 밑동에 놓이지만 레이저는 나무 top 좌표를 잇기 때문에, 스폰 시점에 그 top 좌표를 받아둔다.
+    public Vector3 AnchorPosition { get; private set; }
+
     private MaterialPropertyBlock PropertyBlock =>
         materialPropertyBlock ??= new MaterialPropertyBlock();
 
@@ -110,6 +114,11 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
     public void SetGroupId(int _groupId)
     {
         GroupId = _groupId;
+    }
+
+    public void SetAnchorPosition(Vector3 _anchorPosition)
+    {
+        AnchorPosition = _anchorPosition;
     }
 
     public void SetSortingOrder(int _order)
