@@ -225,7 +225,7 @@ Transform:
   m_Children:
   - {fileID: 9034721650183742007}
   - {fileID: 9034721650183742010}
-  - {fileID: 8788852293945945524}
+  - {fileID: 8795580763337370783}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &9034721650183742004
@@ -242,9 +242,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Drone
   followMaxSpeed: 4
   followSmoothTime: 0.35
+  teleportSnapDistance: 3
   minMoveSqrForFacing: 0.0004
+  facingReturnTurnSpeed: 900
+  facingTargetTurnSpeed: 900
+  facingDirHysteresisDeg: 6
+  facingMinDwellTime: 0.05
+  facingImpactSafetyMargin: 0.05
+  firstShotDelay: 0.2
+  targetReleaseRangeMultiplier: 1.2
   bobAmplitude: 0.08
   bobFrequency: 0.5
+  shadowShrinkAltitude: 0.5
+  shadowMinScale: 0.55
+  spawnScaleDuration: 0.2
+  spawnScaleOvershoot: 1.15
+  powerDownHoverMultiplier: 0.35
+  powerDownBobMultiplier: 0.3
+  powerTransitionSpeed: 2
+  individualVariation: 0.15
+  faceMoveSpeedThreshold: 1.2
   spriteRenderer: {fileID: 9034721650183742011}
   attackR:
   - {fileID: 8228949730740926054, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
@@ -333,7 +350,10 @@ MonoBehaviour:
   muzzleUp: {fileID: 2641599930859101676}
   muzzleRightDown: {fileID: 6395071232482829789}
   muzzleDown: {fileID: 8354047403373967797}
-  chainZap: {fileID: 8205622560500571532}
+  chainZap: {fileID: 3104194317465411757}
+  chainZapNormalColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  chainZapOverheatColor: {r: 1, g: 0, b: 0, a: 1}
+  chainZapIntensity: 1
   vfxComponent: {fileID: 9034721650183742012}
   chargingVfxTag: DroneCharging
   atkHitVfxTag: DroneAtkHit
@@ -366,6 +386,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
   isUIComponent: 0
+  initializeOnAwake: 1
   vfxPoolDataList:
   - vfxTag: DroneCharging
     effectPrefab: {fileID: 3687614857192216124, guid: 5a7db7e738c592d44a3ec5eb91ec9777, type: 3}
@@ -457,7 +478,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1838057819
-  m_SortingLayer: 5
+  m_SortingLayer: 10
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -3675159549374260432, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
@@ -549,7 +570,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 12
+  m_SortingLayer: 13
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 2056274229838913570, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
@@ -562,7 +583,7 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!1001 &4768733576477309896
+--- !u!1001 &6336242843178887069
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -570,68 +591,68 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 9034721650183742002}
     m_Modifications:
-    - target: {fileID: 3252813044223097272, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
-      propertyPath: m_Name
-      value: VFX_LightningLaser
-      objectReference: {fileID: 0}
-    - target: {fileID: 4311553929577895548, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
+    - target: {fileID: 3314356107953195778, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.13929
       objectReference: {fileID: 0}
-    - target: {fileID: 4311553929577895548, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
+    - target: {fileID: 3314356107953195778, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
       propertyPath: m_LocalPosition.y
       value: -0.02098
       objectReference: {fileID: 0}
-    - target: {fileID: 4311553929577895548, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
+    - target: {fileID: 3314356107953195778, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
       propertyPath: m_LocalPosition.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4311553929577895548, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
+    - target: {fileID: 3314356107953195778, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
       propertyPath: m_LocalRotation.w
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 4311553929577895548, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
+    - target: {fileID: 3314356107953195778, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
       propertyPath: m_LocalRotation.x
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4311553929577895548, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
+    - target: {fileID: 3314356107953195778, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
       propertyPath: m_LocalRotation.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4311553929577895548, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
+    - target: {fileID: 3314356107953195778, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
       propertyPath: m_LocalRotation.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4311553929577895548, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
+    - target: {fileID: 3314356107953195778, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4311553929577895548, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
+    - target: {fileID: 3314356107953195778, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4311553929577895548, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
+    - target: {fileID: 3314356107953195778, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5816460578440912811, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
+      propertyPath: m_Name
+      value: VFX_DroneLaser
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
---- !u!114 &8205622560500571532 stripped
+  m_SourcePrefab: {fileID: 100100000, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
+--- !u!114 &3104194317465411757 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: -5490508266515913148, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
-  m_PrefabInstance: {fileID: 4768733576477309896}
+  m_CorrespondingSourceObject: {fileID: 9005663251761334064, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
+  m_PrefabInstance: {fileID: 6336242843178887069}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 525e92c2988ec6d4bb2f582aa8c96ceb, type: 3}
+  m_Script: {fileID: 11500000, guid: d12034751fa03cd4bb3130f14f7791d3, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.VFX.VFX_LightningZap
---- !u!4 &8788852293945945524 stripped
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.VFX.VFX_DroneLaser
+--- !u!4 &8795580763337370783 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 4311553929577895548, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
-  m_PrefabInstance: {fileID: 4768733576477309896}
+  m_CorrespondingSourceObject: {fileID: 3314356107953195778, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
+  m_PrefabInstance: {fileID: 6336242843178887069}
   m_PrefabAsset: {fileID: 0}

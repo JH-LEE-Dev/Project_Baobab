@@ -108,7 +108,7 @@ public class Drone : MonoBehaviour
     [SerializeField] private Transform muzzleDown;
 
     [Header("Chain Attack VFX")]
-    [SerializeField] private PresentationLayer.VFX.VFX_LightningZap chainZap; // 드론 전용 인스턴스(풀링 없이 상시 보유) - 연쇄 타격 시 muzzle에서 각 나무 top으로 이어지는 번개 연출
+    [SerializeField] private PresentationLayer.VFX.VFX_DroneLaser chainZap; // 드론 전용 인스턴스(풀링 없이 상시 보유) - 연쇄 타격 시 muzzle에서 각 나무 top으로 이어지는 픽셀 번개 연출
     [SerializeField] private Color chainZapNormalColor = Color.yellow;
     [SerializeField] private Color chainZapOverheatColor = Color.red; // 과열 상태(isOverheat)일 때 레이저 색상
     [SerializeField] private float chainZapIntensity = 1f; // HDR Intensity (Inspector HDR 컬러 피커의 Intensity 슬라이더와 동일)

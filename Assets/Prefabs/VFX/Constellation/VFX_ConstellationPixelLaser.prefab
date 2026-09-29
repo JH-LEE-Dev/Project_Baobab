@@ -51,26 +51,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   laserMaterial: {fileID: 2100000, guid: a98445bb83fc40bb8d44a65f843a0904, type: 2}
   sortingLayerName: FlyingItem
-  sortingOrder: 10
+  sortingOrder: 12
   beamHalfWidth: 0.035
-  laserCoreColor: {r: 1.2, g: 1.35, b: 1.5, a: 1}
-  laserHeadColor: {r: 1.3, g: 1.5, b: 1.8, a: 1}
+  laserCoreColor: {r: 1.2, g: 1.4, b: 1.7, a: 1}
+  laserHeadColor: {r: 1.5, g: 2, b: 2.6, a: 1}
   laserStartColor: {r: 0.5, g: 0.85, b: 1.2, a: 1}
   laserEndColor: {r: 0.4, g: 0.75, b: 1.1, a: 1}
   laserTailColor: {r: 0.15, g: 0.35, b: 0.7, a: 1}
-  emissionBoost: 3
-  propagationMode: 0
-  tailLength: 0.9
-  segmentShootDuration: 0.7
-  segmentChainDelay: 0
-  fullAreaSustainDuration: 0
+  emissionBoost: 2
+  headExtraThickness: 1
+  tailLength: 0.5
+  segmentShootDuration: 0.45
+  fullAreaSustainDuration: 0.2
   starReachProgressThreshold: 0.98
-  zigzagAmplitude: 0
-  zigzagStepLength: 0.2
-  curveRoundness: 0.65
-  precursorDuration: 0.22
-  precursorTrailAlpha: 0.4
-  leadFollowDelay: 0.04
+  zigzagAmplitude: 0.065
+  zigzagStepLength: 0.1
+  curveRoundness: 0
   autoUntangle: 1
   maxPrewarmedSegments: 10
   disableObjectOnComplete: 1
