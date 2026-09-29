@@ -43,7 +43,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public event Action<bool> NPCPauseRequestedEvent;
     public event Action FlyingItemPauseRequestedEvent;
     public event Action FlyingItemResumeRequestedEvent;
-    public event Action FlyingItemDismissRequestedEvent;
     public event Action<LootType> LootAcquiredEvent;
 
     // // 외부 의존성
@@ -1855,7 +1854,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             NPCPauseRequestedEvent?.Invoke(true);
             bStarGazeSuspendedByGameEnd = true;
-            FlyingItemDismissRequestedEvent?.Invoke();
             HandleGameEnd();
             return;
         }
@@ -1976,7 +1974,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         RunEndState = ERunEndState.EndingByReturn;
 
-        FlyingItemDismissRequestedEvent?.Invoke();
+        // 이미 발사되어 공중에 있는 원목은 소멸시키지 않고 그대로 운반 상자에 착지시킨다.
+        // 경고창을 거친 경로라면 GameEnd()에서 멈춰 둔 상태이므로 여기서 다시 날려 보낸다.
+        // 탑승 연출 동안 스스로 착지하며, 혹시 남은 것은 결과창 직전(InDungeonSystem.GameEnd)에 확정한다.
+        FlyingItemResumeRequestedEvent?.Invoke();
         character.DismissBoomerangsWithShrink();
 
         AbortGameEnd(false);

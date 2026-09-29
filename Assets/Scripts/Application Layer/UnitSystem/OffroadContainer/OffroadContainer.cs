@@ -77,6 +77,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private const float FLYING_TIMEOUT = 5f;
     private List<FlyingTransferItem> flyingItems = new List<FlyingTransferItem>(32);
     private List<FlyingTransferItem> dismissingItems = new List<FlyingTransferItem>(16);
+    // 데이터는 이미 목적지에 커밋됐고 비행/착지 연출만 남은 아이템(CommitAllFlyingItemsNow 참고).
+    // flyingItems와 분리해 두어야 여유공간 계산이나 저장 정산에서 중복으로 세어지지 않는다.
+    private List<FlyingTransferItem> committedFlyingItems = new List<FlyingTransferItem>(16);
     private bool bFlyingPaused = false;
 
     [Header("Get/Out 아이템 사운드")]
@@ -220,100 +223,200 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     {
         UpdateDismissingItems(_deltaTime);
 
+        // 데이터는 이미 커밋됐고 연출만 남은 아이템은 일시정지와 무관하게 끝까지 날아가 착지한다.
+        UpdateCommittedFlyingItems(_deltaTime);
+
         if (bFlyingPaused) return;
 
         for (int i = flyingItems.Count - 1; i >= 0; i--)
         {
             var flyingData = flyingItems[i];
-            LogItem item = flyingData.item;
-            item.ManualUpdate(_deltaTime);
-            flyingData.elapsedTime += _deltaTime;
 
-            // ContainerTransferring 및 DynamicTransferring 상태도 비행 중인 상태로 간주
-            bool bStillFlying = item.MoveState == ItemMoveState.Transferring ||
-                item.MoveState == ItemMoveState.ContainerTransferring ||
-                item.MoveState == ItemMoveState.DynamicTransferring;
-
-            if (bStillFlying && flyingData.elapsedTime < FLYING_TIMEOUT)
+            if (AdvanceFlight(ref flyingData, _deltaTime))
             {
                 flyingItems[i] = flyingData;
                 continue;
             }
 
-            if (bStillFlying)
-            {
-                // 방어 코드: 정상적인 비행은 몇 초 안에 끝나야 한다. 어떤 이유로든 비행 상태가
-                // 비정상적으로 오래 지속되면, 던전이 끝날 때까지 flyingItems에 남아 같은 조합의
-                // 납품/인출 여유공간 계산(예: CanAddToCharacterInventory의 pendingCount)을 영구히
-                // 막는 것을 방지하기 위해 여기서 강제로 도착 처리한다.
-                Debug.LogWarning($"[OffroadContainer] 비행 아이템이 {FLYING_TIMEOUT}초 넘게 도착하지 않아 강제로 도착 처리합니다. state={item.MoveState}");
-            }
-
             // 도착 연출 완료(정상 도착 또는 타임아웃 강제 처리) - 실제 데이터 추가
+            // 커밋보다 먼저 flyingItems에서 빼야 한다 - 커밋 중 발행되는 이벤트를 받은 쪽이 여유공간
+            // 계산(pendingCount)을 다시 하더라도 이미 커밋된 이 아이템이 중복으로 잡히지 않게 하기 위해서다.
+            flyingItems.RemoveAt(i);
+            CommitFlyingItemData(flyingData);
+            PlayArrivalFeedback(flyingData);
+            logItemPoolManager.ReturnLogItem(flyingData.item);
+        }
+    }
+
+    /// <summary>
+    /// 데이터 커밋이 끝난 아이템(committedFlyingItems)의 남은 비행 연출을 진행하고, 착지하면 피드백만
+    /// 재생한 뒤 풀로 돌려보낸다. 데이터는 CommitAllFlyingItemsNow에서 이미 들어갔으므로 여기서 다시
+    /// 커밋하지 않는다.
+    /// </summary>
+    private void UpdateCommittedFlyingItems(float _deltaTime)
+    {
+        for (int i = committedFlyingItems.Count - 1; i >= 0; i--)
+        {
+            var flyingData = committedFlyingItems[i];
+
+            if (AdvanceFlight(ref flyingData, _deltaTime))
             {
-                arrivalDataBuffer.itemType = item.itemType;
-                arrivalDataBuffer.sprite = item.sprite;
-                arrivalDataBuffer.color = item.color;
-                arrivalDataBuffer.treeType = item.treeType;
-                arrivalDataBuffer.logState = item.logState;
-
-                if (flyingData.toCharacter)
-                {
-                    // 착지 시점에 실제로 커밋한다(발사 시점엔 여유공간 계산에서 pendingCount로만
-                    // 반영됨 - CanAcquireData/CanAddToCharacterInventory 호출부 참고).
-                    if (flyingData.toCarrier != null)
-                    {
-                        flyingData.toCarrier.AddItemByData(arrivalDataBuffer, item.logState);
-
-                        // 인출은 가져가는 주체별로 독립된 흐름이므로, 이 운반 NPC 전용 카운터를 쓴다.
-                        WithdrawPitchState carrierPitch = GetCarrierWithdrawPitch(flyingData.toCarrier);
-                        PlayDepositPitchSound(ref carrierPitch.pitch, ref carrierPitch.lastTime);
-                    }
-                    else
-                    {
-                        AddToCharacterInventory(arrivalDataBuffer, item.logState);
-                        character?.PlayItemAcquireBounce();
-                        character?.PlayItemAcquireFlash();
-
-                        // 원목이 상자에서 나와 캐릭터에 박히는 순간. 위쪽 toCarrier 분기(운반 NPC가
-                        // 가져가는 경로)와 갈라진 뒤라, 여기는 항상 캐릭터가 받는 흐름이다.
-                        // 0.075초 간격으로 연달아 들어오므로 연속 전용(약한) 파형을 쓴다.
-                        Rumble.Play(EHapticEvent.ItemStream);
-
-                        PlayDepositPitchSound(ref currentWithdrawPitchCharacter, ref lastWithdrawPitchTimeCharacter);
-                    }
-                }
-                else
-                {
-                    // 컨테이너로 들어오는 납품도 착지 시점에 커밋한다(발사 시점엔 CanAddItemByData의
-                    // pendingCount로만 반영됨).
-                    bool _bStored = AddItemByData(arrivalDataBuffer, item.logState);
-                    TriggerBounce();
-
-                    if (flyingData.fromCharacter)
-                    {
-                        CameraMoveController.Instance?.ShakeCamera(1f, 0.08f);
-
-                        // 원목이 상자에 박히는 순간. fromCharacter 가드가 곧 "캐릭터가 넣은 것"이라,
-                        // 벌목 NPC가 납품하는 동안에는 울리지 않는다.
-                        // 0.075초 간격으로 연달아 들어오므로 연속 전용(약한) 파형을 쓴다.
-                        Rumble.Play(EHapticEvent.ItemStream);
-
-                        // "플레이어가 넣은 아이템 하나가 실제로 적재됨"이 확정되는 유일한 지점.
-                        // 슬롯이 가득 차 커밋에 실패했다면(_bStored == false) 세지 않는다.
-                        if (_bStored)
-                        {
-                            ItemStoredFromCharacterEvent?.Invoke(arrivalDataBuffer.itemType, 1);
-                        }
-                    }
-
-                    // 납품은 캐릭터/NPC 구분 없이 하나의 흐름(currentDepositPitch)을 공유한다.
-                    PlayDepositPitchSound(ref currentDepositPitch, ref lastDepositPitchTime);
-                }
-
-                logItemPoolManager.ReturnLogItem(item);
-                flyingItems.RemoveAt(i);
+                committedFlyingItems[i] = flyingData;
+                continue;
             }
+
+            committedFlyingItems.RemoveAt(i);
+
+            // 이 목록은 결과창 직전(CommitAllFlyingItemsNow)에만 채워지므로, 여기서 착지하는 원목은
+            // 결과창이 떠 있는 동안 떨어지는 것이다. 결과창 위에서 화면이 흔들리지 않도록 셰이크만 끈다.
+            PlayArrivalFeedback(flyingData, false);
+            logItemPoolManager.ReturnLogItem(flyingData.item);
+        }
+    }
+
+    /// <summary>
+    /// 비행 연출을 한 프레임 진행한다. 아직 날아가는 중이면 true, 도착했으면(또는 타임아웃) false.
+    /// </summary>
+    private bool AdvanceFlight(ref FlyingTransferItem _flyingData, float _deltaTime)
+    {
+        LogItem item = _flyingData.item;
+        item.ManualUpdate(_deltaTime);
+        _flyingData.elapsedTime += _deltaTime;
+
+        // ContainerTransferring 및 DynamicTransferring 상태도 비행 중인 상태로 간주
+        bool bStillFlying = item.MoveState == ItemMoveState.Transferring ||
+            item.MoveState == ItemMoveState.ContainerTransferring ||
+            item.MoveState == ItemMoveState.DynamicTransferring;
+
+        if (bStillFlying && _flyingData.elapsedTime < FLYING_TIMEOUT)
+        {
+            return true;
+        }
+
+        if (bStillFlying)
+        {
+            // 방어 코드: 정상적인 비행은 몇 초 안에 끝나야 한다. 어떤 이유로든 비행 상태가
+            // 비정상적으로 오래 지속되면, 던전이 끝날 때까지 flyingItems에 남아 같은 조합의
+            // 납품/인출 여유공간 계산(예: CanAddToCharacterInventory의 pendingCount)을 영구히
+            // 막는 것을 방지하기 위해 여기서 강제로 도착 처리한다.
+            Debug.LogWarning($"[OffroadContainer] 비행 아이템이 {FLYING_TIMEOUT}초 넘게 도착하지 않아 강제로 도착 처리합니다. state={item.MoveState}");
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 비행 중이던 아이템 하나를 목적지 인벤토리에 실제로 커밋한다(피드백/풀 반환은 하지 않는다).
+    /// 호출 전에 flyingItems에서 먼저 빼 두어야 한다.
+    /// </summary>
+    private void CommitFlyingItemData(FlyingTransferItem _flyingData)
+    {
+        LogItem item = _flyingData.item;
+
+        arrivalDataBuffer.itemType = item.itemType;
+        arrivalDataBuffer.sprite = item.sprite;
+        arrivalDataBuffer.color = item.color;
+        arrivalDataBuffer.treeType = item.treeType;
+        arrivalDataBuffer.logState = item.logState;
+
+        if (_flyingData.toCharacter)
+        {
+            // 착지 시점에 실제로 커밋한다(발사 시점엔 여유공간 계산에서 pendingCount로만
+            // 반영됨 - CanAcquireData/CanAddToCharacterInventory 호출부 참고).
+            if (_flyingData.toCarrier != null)
+            {
+                _flyingData.toCarrier.AddItemByData(arrivalDataBuffer, item.logState);
+            }
+            else
+            {
+                AddToCharacterInventory(arrivalDataBuffer, item.logState);
+            }
+        }
+        else
+        {
+            // 컨테이너로 들어오는 납품도 착지 시점에 커밋한다(발사 시점엔 CanAddItemByData의
+            // pendingCount로만 반영됨).
+            bool _bStored = AddItemByData(arrivalDataBuffer, item.logState);
+
+            // "플레이어가 넣은 아이템 하나가 실제로 적재됨"이 확정되는 유일한 지점.
+            // 슬롯이 가득 차 커밋에 실패했다면(_bStored == false) 세지 않는다.
+            if (_flyingData.fromCharacter && _bStored)
+            {
+                ItemStoredFromCharacterEvent?.Invoke(arrivalDataBuffer.itemType, 1);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 아이템이 목적지에 닿는 순간의 피드백(사운드/카메라 셰이크/진동/바운스)을 재생한다.
+    /// _bAllowCameraShake가 false면 카메라 셰이크만 생략한다(결과창이 떠 있는 동안의 착지).
+    /// </summary>
+    private void PlayArrivalFeedback(FlyingTransferItem _flyingData, bool _bAllowCameraShake = true)
+    {
+        if (_flyingData.toCharacter)
+        {
+            if (_flyingData.toCarrier != null)
+            {
+                // 인출은 가져가는 주체별로 독립된 흐름이므로, 이 운반 NPC 전용 카운터를 쓴다.
+                WithdrawPitchState carrierPitch = GetCarrierWithdrawPitch(_flyingData.toCarrier);
+                PlayDepositPitchSound(ref carrierPitch.pitch, ref carrierPitch.lastTime);
+            }
+            else
+            {
+                character?.PlayItemAcquireBounce();
+                character?.PlayItemAcquireFlash();
+
+                // 원목이 상자에서 나와 캐릭터에 박히는 순간. 위쪽 toCarrier 분기(운반 NPC가
+                // 가져가는 경로)와 갈라진 뒤라, 여기는 항상 캐릭터가 받는 흐름이다.
+                // 0.075초 간격으로 연달아 들어오므로 연속 전용(약한) 파형을 쓴다.
+                Rumble.Play(EHapticEvent.ItemStream);
+
+                PlayDepositPitchSound(ref currentWithdrawPitchCharacter, ref lastWithdrawPitchTimeCharacter);
+            }
+        }
+        else
+        {
+            TriggerBounce();
+
+            if (_flyingData.fromCharacter)
+            {
+                if (_bAllowCameraShake)
+                {
+                    CameraMoveController.Instance?.ShakeCamera(1f, 0.08f);
+                }
+
+                // 원목이 상자에 박히는 순간. fromCharacter 가드가 곧 "캐릭터가 넣은 것"이라,
+                // 벌목 NPC가 납품하는 동안에는 울리지 않는다.
+                // 0.075초 간격으로 연달아 들어오므로 연속 전용(약한) 파형을 쓴다.
+                Rumble.Play(EHapticEvent.ItemStream);
+            }
+
+            // 납품은 캐릭터/NPC 구분 없이 하나의 흐름(currentDepositPitch)을 공유한다.
+            PlayDepositPitchSound(ref currentDepositPitch, ref lastDepositPitchTime);
+        }
+    }
+
+    /// <summary>
+    /// 아직 착지하지 않은 비행 아이템의 데이터를 지금 전부 목적지에 커밋한다. 비행 연출은 멈추지 않고
+    /// 그대로 이어지며(committedFlyingItems), 착지하는 순간 피드백만 재생된다.
+    ///
+    /// 결과창(InDungeonSystem.GameEnd)은 상자 내용을 읽어 표시하므로, 그 직전에 공중의 원목까지
+    /// 전부 들어간 상태를 확정하되 화면에서는 원목이 끝까지 날아가 착지하는 모습을 보여주기 위함이다.
+    /// 커밋된 아이템은 flyingItems에서 빠지므로 여유공간 계산(pendingCount)이나 저장 정산
+    /// (AppendTransitToSaveData)에서 다시 세어지지 않는다.
+    /// </summary>
+    public void CommitAllFlyingItemsNow()
+    {
+        bFlyingPaused = false;
+
+        // 커밋 중 발행되는 이벤트가 flyingItems를 건드릴 수 있으므로, 인덱스를 들고 순회하지 않고
+        // 발사된 순서대로 하나씩 빼내며 처리한다.
+        while (flyingItems.Count > 0)
+        {
+            FlyingTransferItem flyingData = flyingItems[0];
+            flyingItems.RemoveAt(0);
+            CommitFlyingItemData(flyingData);
+            committedFlyingItems.Add(flyingData);
         }
     }
 
@@ -402,41 +505,28 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     }
 
     /// <summary>
-    /// 아직 도착하지 않은(공중에 떠 있는) 아이템을 전부 소멸 연출로 넘긴다.
-    /// 반환값은 그중 실제로 사라진 원목(LogItem)의 개수다.
+    /// 아직 도착하지 않은(공중에 떠 있는) 아이템을 커밋 없이 전부 소멸 연출로 넘긴다.
     ///
-    /// 이 개수를 호출부에 넘겨야 하는 이유: 비행 중인 원목은 발사 시점에 출발지에서 이미 빠졌고
-    /// (TransferOneSlotVisualRoutine의 TakeOneItem) 목적지에는 착지 시점에야 커밋되므로
-    /// (UpdateFlyingItems), 소멸하는 순간 어느 인벤토리에도 존재하지 않는다. 따라서 인벤토리를
-    /// 훑는 DropAllItem 기반 집계로는 절대 잡히지 않고, 여기서 세어 넘기는 방법밖에 없다.
-    ///
-    /// 이중 계산 걱정은 없다 - 이미 착지한 것은 커밋과 동시에 flyingItems에서 제거되므로
-    /// 여기 남아 있지 않고, 아직 발사되지 않은 것은 출발지 슬롯에 그대로 있어 DropAllItem이 센다.
-    ///
-    /// 집계에 쓸지 여부는 호출부가 정한다. 결과 집계가 의미 없는 시점(ResetState의 던전 재진입 등)에서는
-    /// 반환값을 그냥 무시하면 된다.
+    /// 비행 중인 원목은 발사 시점에 출발지에서 이미 빠졌고 목적지에는 착지 시점에야 커밋되므로,
+    /// 여기서 소멸시키면 데이터가 그대로 사라진다. 그래서 던전 귀환 경로에서는 쓰지 않고
+    /// (CommitAllFlyingItemsNow로 데이터를 확정한다), 결과가 이미 확정된 뒤의 강제 초기화(ResetState)
+    /// 에서만 쓴다. 데이터 커밋이 끝나 연출만 남은 아이템(committedFlyingItems)도 함께 치운다.
     /// </summary>
-    public int DismissAllFlyingItems()
+    public void DismissAllFlyingItems()
     {
         bFlyingPaused = false;
 
-        int _dismissedLogCount = 0;
-
         for (int i = flyingItems.Count - 1; i >= 0; i--)
         {
-            LogItem _item = flyingItems[i].item;
-
-            // 집계는 원목만. (AppendTransitToSaveData의 정산 대상 판정과 같은 기준)
-            if (null != _item && ItemType.Log == _item.itemType)
-            {
-                _dismissedLogCount++;
-            }
-
             dismissingItems.Add(flyingItems[i]);
         }
         flyingItems.Clear();
 
-        return _dismissedLogCount;
+        for (int i = committedFlyingItems.Count - 1; i >= 0; i--)
+        {
+            dismissingItems.Add(committedFlyingItems[i]);
+        }
+        committedFlyingItems.Clear();
     }
 
     /// <summary>
@@ -450,7 +540,6 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         // 던전 재진입 시점의 강제 초기화라 결과 집계와 무관하다(이번 원정의 결과는 이미 확정됐고,
         // 진입 시 인벤토리 이관은 연출 없는 즉시 커밋 경로라 애초에 비행 중인 항목이 없다).
-        // 반환되는 소멸 개수는 의도적으로 무시한다.
         DismissAllFlyingItems();
 
         if (transferCoroutine != null)
@@ -2170,7 +2259,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private void UpdateContainerState(float _deltaTime)
     {
-        bool _isTransferring = (transferCoroutine != null) || (flyingItems.Count > 0);
+        // 데이터만 먼저 커밋되고 아직 날아오는 중인 원목(committedFlyingItems)도 착지 전까지는 전송 중으로 본다.
+        // 빼면 착지 연출이 끝나기 전에 닫힘 타이머가 돌기 시작한다.
+        bool _isTransferring = (transferCoroutine != null) || (flyingItems.Count > 0) || (committedFlyingItems.Count > 0);
 
         if (_isTransferring)
         {
