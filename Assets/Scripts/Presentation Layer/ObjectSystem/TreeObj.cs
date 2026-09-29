@@ -215,7 +215,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         {
             yield return new WaitForSeconds(_tickInterval);
             if (!bCanApplyDamage) break;
-            TakeDamageWithoutHaptic(_damagePerTick);
+            // 드론 레이저가 건 지속 피해는 도끼로 맞은 게 아니므로 도끼 타격음을 내지 않는다
+            TakeDamageInternal(_damagePerTick, false, false, !_isDrone);
         }
         if (_isDrone)
         {
@@ -411,16 +412,15 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     }
 
     /// <summary>
-    /// 진동 없이 데미지를 넣습니다. 과열 지속 피해(DoT)처럼 "때린 순간"이 아닌 데미지에 씁니다.
-    /// 매 틱마다 패드가 울리면 나무 한 그루가 타는 내내 손이 떨리기 때문입니다.
-    /// (사운드/이펙트는 지금까지와 동일하게 그대로 재생됩니다)
+    /// 드론 레이저 타격. 레이저는 발사와 동시에 맞으므로 드론이 발사음을 직접 내고, 여기서는 도끼 타격음
+    /// (Tree_Hit/Pitch_Hit 등)을 내지 않는다. 진동/이펙트는 TakeDamage와 동일하다.
     /// </summary>
-    private void TakeDamageWithoutHaptic(float _damage)
+    public void TakeDamageFromDrone(float _damage)
     {
-        TakeDamageInternal(_damage, false, false);
+        TakeDamageInternal(_damage, true, false, false);
     }
 
-    private void TakeDamageInternal(float _damage, bool _bPlayHaptic, bool _bCritical)
+    private void TakeDamageInternal(float _damage, bool _bPlayHaptic, bool _bCritical, bool _bPlayHitSound = true)
     {
         if (!bCanApplyDamage) return;
 
@@ -451,7 +451,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
             treeVisualComponent.PlayHitFlash(_bCritical);
         }
 
-        PlayHitSound(wasGemBeforeHit, gemStageBeforeHit, hadShieldBeforeHit);
+        if (_bPlayHitSound)
+        {
+            PlayHitSound(wasGemBeforeHit, gemStageBeforeHit, hadShieldBeforeHit);
+        }
 
         // 진동은 플레이어가 때린 경우에만 낸다. 벌목 NPC가 베는 것까지 울리면 아무것도 안 하고
         // 서 있어도 패드가 계속 떤다. (bLastHitByPlayer는 LumberjackNPC가 때리기 직전에 false로

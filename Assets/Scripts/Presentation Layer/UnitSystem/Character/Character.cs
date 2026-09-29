@@ -1287,11 +1287,18 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
                 ITreeObj next = FindNearestChainTarget(origin, finalChainRange);
                 if (next == null) break;
 
-                (next as IDamageable)?.TakeDamage(statComponent.droneDamage);
-
-                if (bIsOverheat && next is TreeObj nextTree)
+                if (next is TreeObj nextTree)
                 {
-                    nextTree.ApplyDroneOverheatDot(10000f, 6, 0.5f);
+                    nextTree.TakeDamageFromDrone(statComponent.droneDamage); // 레이저 전이 - 도끼 타격음 없이 드론 발사음만
+
+                    if (bIsOverheat)
+                    {
+                        nextTree.ApplyDroneOverheatDot(10000f, 6, 0.5f);
+                    }
+                }
+                else
+                {
+                    (next as IDamageable)?.TakeDamage(statComponent.droneDamage);
                 }
 
                 Vector3 nextTopPos = GetTreeTopPosition(next);

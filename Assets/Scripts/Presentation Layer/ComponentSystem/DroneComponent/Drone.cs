@@ -128,6 +128,12 @@ public class Drone : MonoBehaviour
     [Header("Attack Hit VFX (주 타겟/연쇄 타겟 각각 맞은 자리에 1회성 재생)")]
     [SerializeField] private string atkHitVfxTag = "DroneAtkHit";
 
+    [Header("Charge / Fire Sound")]
+    [SerializeField] private float chargeSoundStartPitch = 0.25f; // 충전 시작 피치. 매우 낮게 깔고 시작해서
+    [SerializeField] private float chargeSoundEndPitch = 0.6f; // 임팩트 프레임에 이 피치에 도달하도록 계속 올린다
+    [SerializeField] private float chargeSoundCancelFadeTime = 0.15f; // 헛스윙 취소 시 충전음이 전원 꺼지듯 잦아드는 시간(초)
+    private AudioHandle chargeSoundHandle = AudioHandle.Invalid; // 총구를 따라다니는 3D 충전음(SFX_ChargeUp). 볼륨은 AudioDatabase에서 잡는다
+
     private Transform followTarget;
     private Vector3 followOffset; // 캐릭터 기준 목표 슬롯(타원 대형 위치). Character가 매 프레임 갱신해준다.
     private float arrivalTolerance = 0.15f; // 슬롯과 이 거리 이내면 도착한 것으로 보고 멈춘다.
@@ -251,6 +257,7 @@ public class Drone : MonoBehaviour
         // 다음 던전에서 같은 인스턴스가 Update 첫 줄에서 계속 빠져나가 스케일 0으로 이전 좌표에 갇힌다.
         isPaused = false;
         StopChargingVfx();
+        StopChargeSound(false);
 
         frameTimer = 0f;
         currentFrameIndex = 0;
@@ -408,6 +415,7 @@ public class Drone : MonoBehaviour
             {
                 StopChargingVfx(true);
                 PlayChargingVfx();
+                PlayChargeSound();
                 damageTickTimer = 0f;
                 return;
             }
@@ -415,6 +423,7 @@ public class Drone : MonoBehaviour
             return;
         }
 
+        StopChargeSound(true);
         isSwinging = false;
         swingTimer = 0f;
         damageTickTimer = GetFirstShotTickTimer();
@@ -478,9 +487,17 @@ public class Drone : MonoBehaviour
     /// 귀환 경고 UI가 떠 있는 동안 NPC/FlyingItem/부메랑과 함께 그 자리에서 멈춘다. Update 전체를 건너뛰므로
     /// 이동·애니메이션·타이머가 모두 얼어붙고, Resume 시 멈춘 지점부터 그대로 이어진다.
     /// </summary>
-    public void Pause() => isPaused = true;
+    public void Pause()
+    {
+        isPaused = true;
+        Sound.SetTrackedVolume(chargeSoundHandle, 0f); // 멈춰 있는 동안 충전음이 계속 나면 어색하므로 잠시 끈다
+    }
 
-    public void Resume() => isPaused = false;
+    public void Resume()
+    {
+        isPaused = false;
+        Sound.SetTrackedVolume(chargeSoundHandle, 1f);
+    }
 
     /// <summary>
     /// 캐릭터가 차량에 탑승해 숨겨지는 동안(Character.OnDisable) 드론도 함께 숨기고, 하차해 다시 나타나면
@@ -496,6 +513,7 @@ public class Drone : MonoBehaviour
         {
             // 숨겨진 동안 자식 이펙트의 페이드/재생이 이어질 수 없으므로 여기서 즉시 풀로 돌려보낸다(누수 방지)
             StopChargingVfx(true);
+            StopChargeSound(false);
         }
 
         gameObject.SetActive(_visible);
@@ -519,6 +537,7 @@ public class Drone : MonoBehaviour
         currentTarget = null;
         followTarget = null;
         StopChargingVfx(true); // 풀로 돌아가므로 페이드 없이 즉시 정리
+        StopChargeSound(false);
     }
 
     /// <summary>
@@ -571,6 +590,7 @@ public class Drone : MonoBehaviour
         UpdateAnimationFrame(Time.deltaTime);
         UpdateChargingVfxPosition(); // dirIndex가 이번 프레임에 바뀌었을 수 있으므로 UpdateFacingDirection 이후에 위치를 갱신한다
         UpdateChargingVfxFade(Time.deltaTime);
+        if (chargeSoundHandle.IsValid) Sound.UpdateTrackedPosition(chargeSoundHandle, GetMuzzlePosition());
 
         if (isActive)
         {
@@ -835,6 +855,7 @@ public class Drone : MonoBehaviour
             isSwinging = false;
             bDrySwing = false;
             if (!bChargingVfxFading) StopChargingVfx(true); // 정상적으로는 임팩트 프레임에서 이미 꺼졌겠지만, 만약을 대비한 안전망(취소 페이드 중이면 페이드 타이머가 정리한다)
+            StopChargeSound(true);
 
             // 지속시간이 끝난 뒤 "마지막 한 발"을 마저 쏘도록 남겨뒀던 타겟은 스윙이 끝난 지금 놓아준다.
             if (!isActive)
@@ -918,6 +939,7 @@ public class Drone : MonoBehaviour
         prevIsSwinging = true;
 
         PlayChargingVfx(); // 공격 모션이 시작되는 이 시점부터 임팩트 프레임 직전까지 Muzzle에서 루프 재생
+        PlayChargeSound();
     }
 
     // 공격 속도 업그레이드로 damageInterval이 기본 스윙 길이(프레임 수 / attackSampleRate, 기본 0.5초)보다
@@ -944,14 +966,65 @@ public class Drone : MonoBehaviour
 
         bDrySwing = true;
         StopChargingVfx(false);
+        StopChargeSound(true);
     }
 
     private void ApplyDamageToCurrentTarget()
     {
         if (currentTarget == null || currentTarget.bDead) return;
 
-        (currentTarget as IDamageable)?.TakeDamage(damage);
+        PlayFireSound();
+
+        // 레이저라 발사와 동시에 맞는다 - 도끼 타격음 대신 위의 발사음만 들리게 한다
+        if (currentTarget is TreeObj tree)
+        {
+            tree.TakeDamageFromDrone(damage);
+        }
+        else
+        {
+            (currentTarget as IDamageable)?.TakeDamage(damage);
+        }
         requestChainAttack?.Invoke(this, currentTarget);
+    }
+
+    // 레이저 발사음. 발사/타격/전기 세 사운드를 같은 프레임에 겹쳐 한 번의 "레이저 적중"으로 들리게 한다.
+    // 연쇄로 여러 그루가 맞아도 발사는 한 번이므로 여기서 한 번만 울린다.
+    private void PlayFireSound()
+    {
+        Vector3 muzzlePos = GetMuzzlePosition();
+        Sound.Play(SoundID.SFXBeamFire, muzzlePos);
+        Sound.Play(SoundID.SFXPunchImpact, muzzlePos);
+        Sound.Play(SoundID.SFXVoltageImpact, muzzlePos);
+    }
+
+    // 충전음(SFX_ChargeUp)을 매우 낮은 피치에서 시작해 임팩트 프레임까지 계속 끌어올린다. 헛스윙이 되살아나는
+    // 경우처럼 스윙 도중 다시 불려도 남은 시간 기준으로 새로 올린다.
+    private void PlayChargeSound()
+    {
+        StopChargeSound(false);
+
+        chargeSoundHandle = Sound.PlayTracked(SoundID.SFXChargeUp, GetMuzzlePosition(), 1f, true, chargeSoundStartPitch);
+        float timeUntilImpact = GetTimeUntilImpact();
+        if (timeUntilImpact < float.MaxValue)
+        {
+            Sound.RampTrackedPitch(chargeSoundHandle, chargeSoundEndPitch, timeUntilImpact);
+        }
+    }
+
+    // _powerDown이 true면 헛스윙 취소처럼 전원 꺼지듯 잦아들며 멈추고, false면 즉시 끊는다(발사 순간, 숨김, 풀 반환).
+    private void StopChargeSound(bool _powerDown)
+    {
+        if (!chargeSoundHandle.IsValid) return;
+
+        if (_powerDown)
+        {
+            Sound.StopTrackedWithPowerDown(chargeSoundHandle, chargeSoundCancelFadeTime, chargeSoundStartPitch * 0.5f);
+        }
+        else
+        {
+            Sound.StopTracked(chargeSoundHandle);
+        }
+        chargeSoundHandle = AudioHandle.Invalid;
     }
 
     // Character.SetChainAttackCallback으로 등록된 requestChainAttack과 별개로, 드론 자신이 실제로
@@ -1132,6 +1205,7 @@ public class Drone : MonoBehaviour
             if (!damageAppliedThisSwing && currentFrameIndex >= impactFrame)
             {
                 if (!bChargingVfxFading) StopChargingVfx(true); // 실제로 "공격하는" 순간 - 충전이 소모되는 연출로 즉시 끈다(헛스윙 취소로 페이드 중이면 그대로 페이드를 마치게 둔다)
+                StopChargeSound(false); // 충전음도 발사음에 자리를 넘기며 끊는다
                 if (!bDrySwing)
                 {
                     ApplyDamageToCurrentTarget(); // 헛스윙이면 모션만 마무리하고 데미지/연쇄는 건너뛴다
