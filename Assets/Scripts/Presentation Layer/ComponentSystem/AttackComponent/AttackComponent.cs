@@ -7,8 +7,8 @@ public class AttackComponent : PComponent
     [SerializeField] private GameObject componentCenterPoint;
 
     public event Action AttackSuccessEvent;
-    // ShockWaveMastery로 허공에 충격파만 나갔을 때(실제 타격 없음) - 내구도만 감소시키고 콤보는 쌓지 않기 위해 별도 이벤트로 분리
-    public event Action ShockWaveMissEvent;
+    // ShockWaveMastery로 도끼는 헛치고 충격파만 나무를 맞췄을 때 - 내구도만 감소시키고 콤보는 쌓지 않기 위해 별도 이벤트로 분리
+    public event Action ShockWaveOnlyHitEvent;
     public event Action<WeaponMode> WeaponModeChangedEvent;
     // 공격 범위 안에 나무가 하나도 없다가 처음 감지되었을 때/감지되어 있다가 전부 사라졌을 때만 발생(매 프레임, 감지 대상 교체 시엔 발생하지 않음)
     public event Action TreeDetectedEvent;
@@ -417,16 +417,10 @@ public class AttackComponent : PComponent
 
         Vector3 centerPos = transform.position;
 
-        bool bShockWaveTriggered = false;
-        if (ctx.characterStat.bShockWaveMastery && axeExtraAttackCreator != null)
-        {
-            if (UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance)
-            {
-                Vector3 direction = (mouseTransform - centerPos).normalized;
-                StartCoroutine(CreateShockWaveRoutine(centerPos, direction));
-                bShockWaveTriggered = true;
-            }
-        }
+        // 마스터리 충격파는 나무를 맞추지 않아도 스윙당 1회 굴린다. 실제 생성은 도끼 타격 여부가
+        // 정해진 뒤(FireMasteryShockWave)에 한다 - 도끼가 헛쳤을 때만 "충격파가 나무를 맞추면 내구도 감소"를 걸어야 하기 때문.
+        bool bShockWaveTriggered = ctx.characterStat.bShockWaveMastery && axeExtraAttackCreator != null
+            && UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance;
 
         float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
 
@@ -436,8 +430,7 @@ public class AttackComponent : PComponent
         int hitCount = collisionResults.Count;
         if (hitCount <= 0)
         {
-            // 허공을 공격했더라도 마스터리로 충격파가 발생했다면 나무를 타격했을 때와 동일하게 도끼 내구도 감소 (콤보는 미적용)
-            if (bShockWaveTriggered) ShockWaveMissEvent?.Invoke();
+            if (bShockWaveTriggered) FireMasteryShockWave(centerPos, false);
             return;
         }
 
@@ -468,6 +461,8 @@ public class AttackComponent : PComponent
         // (아래 "공격당 1회 충격파" 주석 참고) 판정 기준이 될 나무 하나를 여기에 모은다.
         TreeObj shockWaveSourceTree = null;
         float shockWaveSourceDistSq = float.MaxValue;
+
+        bool bAxeHit = false;
 
         for (int i = 0; i < hitCount; i++)
         {
@@ -539,11 +534,7 @@ public class AttackComponent : PComponent
             {
                 successfulAttackCount++;
                 AttackSuccessEvent?.Invoke();
-            }
-            else if (bShockWaveTriggered)
-            {
-                // 허공을 공격했더라도 마스터리로 충격파가 발생했다면 나무를 타격했을 때와 동일하게 도끼 내구도 감소 (콤보는 미적용)
-                ShockWaveMissEvent?.Invoke();
+                bAxeHit = true;
             }
         }
         else if (nearestDamageable != null && nearestDamageable is IDamageable damageable && damageable.bCanApplyDamage)
@@ -552,17 +543,15 @@ public class AttackComponent : PComponent
             ProcessAxeHit(damageable, centerPos);
             successfulAttackCount++;
             AttackSuccessEvent?.Invoke();
+            bAxeHit = true;
 
             if (nearestDamageable is TreeObj singleHitTree)
             {
                 shockWaveSourceTree = singleHitTree;
             }
         }
-        else if (bShockWaveTriggered)
-        {
-            // 허공을 공격했더라도 마스터리로 충격파가 발생했다면 나무를 타격했을 때와 동일하게 도끼 내구도 감소 (콤보는 미적용)
-            ShockWaveMissEvent?.Invoke();
-        }
+
+        if (bShockWaveTriggered) FireMasteryShockWave(centerPos, bAxeHit);
 
         // [공격당 1회 충격파]
         // 마스터리가 없을 때의 충격파 판정이다. 원래 설계도 "가장 가까운 나무 하나를 기준으로
@@ -572,7 +561,7 @@ public class AttackComponent : PComponent
         // centerPos/마우스 방향으로 모두 같아서 같은 자리에 겹친 충격파 N개가 나가고 피해도
         // N배로 들어갔다. 판정을 여기로 올려 원래 의도대로 되돌린다.
         //
-        // 마스터리 쪽(Attack 진입부)은 "스윙당 1회"라 원래부터 중복이 없었고, 그대로 둔다.
+        // 마스터리 쪽(FireMasteryShockWave)은 "스윙당 1회"라 원래부터 중복이 없었고, 그대로 둔다.
         if (false == ctx.characterStat.bShockWaveMastery && shockWaveSourceTree != null && axeExtraAttackCreator != null)
         {
             if (UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance)
@@ -631,7 +620,20 @@ public class AttackComponent : PComponent
         // 다중 공격 때 충격파가 대상 수만큼 생긴다. Attack()의 "[공격당 1회 충격파]"를 참고.
     }
 
-    private System.Collections.IEnumerator CreateShockWaveRoutine(Vector3 _position, Vector3 _direction)
+    // 도끼 내구도는 "나무를 실제로 맞췄을 때"만 깎인다. 도끼가 맞췄다면 AttackSuccessEvent에서 이미 깎였으므로
+    // 충격파는 추가로 깎지 않고, 도끼가 헛쳤다면 충격파가 나무를 처음 맞추는 순간 한 번 깎는다(콤보는 미적용).
+    private void FireMasteryShockWave(Vector3 _centerPos, bool _bAxeHit)
+    {
+        Vector3 direction = (mouseTransform - _centerPos).normalized;
+        StartCoroutine(CreateShockWaveRoutine(_centerPos, direction, _bAxeHit ? null : RaiseShockWaveOnlyHit));
+    }
+
+    private void RaiseShockWaveOnlyHit()
+    {
+        ShockWaveOnlyHitEvent?.Invoke();
+    }
+
+    private System.Collections.IEnumerator CreateShockWaveRoutine(Vector3 _position, Vector3 _direction, Action _onFirstTreeHit = null)
     {
         yield return new WaitForSeconds(ctx.characterStat.shockWaveCreateDelay);
 
@@ -642,6 +644,7 @@ public class AttackComponent : PComponent
             if (sw != null)
             {
                 sw.SetDirection(_direction);
+                sw.SetFirstTreeHitCallback(_onFirstTreeHit);
                 axeExtraAttackCreator.PlayShockWaveVisual(sw);
             }
         }
