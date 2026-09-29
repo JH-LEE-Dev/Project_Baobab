@@ -129,7 +129,14 @@ public class AttackComponent : PComponent
 
     private bool bCursorEnable = false;
     private bool bCanAttack = false;
-    private int successfulAttackCount = 0;
+    // 회전 베기(Whirlwind) 판정용 도끼 스윙 횟수. 나무를 실제로 맞췄는지와 무관하게
+    // 스킬을 얻은 뒤 Attack()이 호출될 때마다 1씩 오르고, 3번째 스윙마다 회전 베기가 나간다.
+    // 스킬을 얻기 전에는 세지 않으므로 획득 시점부터 정확히 3번째 스윙에 첫 회전 베기가 나온다.
+    // (스킬은 한 번 얻으면 해제되지 않는다 - SkillCommand.Undo는 이 게임에서 쓰지 않는다.)
+    // (예전에는 타격 성공 횟수 기준이라 회전 베기 스윙이 헛치면 카운터가 소비되지 않아
+    //  다음 스윙에도 회전 베기가 연속으로 나가는 문제가 있었다.)
+    private int whirlwindSwingCount = 0;
+    private const int WhirlwindSwingInterval = 3;
 
     // 넉백 등으로 공격 범위 인디케이터가 조준 방향을 따라 도는 것을 일시적으로 막아야 할 때 사용
     private bool bIndicatorRotationLocked = false;
@@ -415,6 +422,14 @@ public class AttackComponent : PComponent
     {
         if (CollisionSystem.Instance == null || bCanAttack == false) return;
 
+        // 회전 베기: 타격 성공 여부와 상관없이 도끼 스윙 3회마다 한 번. 헛스윙도 카운트에 포함된다.
+        bool bIsWhirlwindStrike = false;
+        if (ctx.characterStat.bWhirlWind)
+        {
+            whirlwindSwingCount = (whirlwindSwingCount + 1) % WhirlwindSwingInterval;
+            bIsWhirlwindStrike = (whirlwindSwingCount == 0);
+        }
+
         Vector3 centerPos = transform.position;
 
         // 마스터리 충격파는 나무를 맞추지 않아도 스윙당 1회 굴린다. 실제 생성은 도끼 타격 여부가
@@ -423,6 +438,15 @@ public class AttackComponent : PComponent
             && UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance;
 
         float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
+
+        // 회전 베기 연출(VFX·360도 회전·카메라 흔들림)은 범위 안에 아무것도 없어도(헛스윙) 나가야 하므로
+        // 탐색보다 먼저 발동한다. 타격 분기의 흔들림은 회전 베기일 때 건너뛰어 중복되지 않게 한다.
+        if (bIsWhirlwindStrike)
+        {
+            WhirlwindVFX.Spawn(centerPos, effectiveEllipseRadius, whirlwindFrames);
+            WhirlwindStrikeEvent?.Invoke();
+            CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
+        }
 
         // 1단계: 타원 판정 범위를 모두 포함할 수 있도록 타원의 장반경(effectiveEllipseRadius)으로 1차 탐색
         CollisionSystem.Instance.GetCollidablesInRadius(transform.position, effectiveEllipseRadius, targetLayer, collisionResults);
@@ -445,14 +469,7 @@ public class AttackComponent : PComponent
         float radiusSq = effectiveEllipseRadius * effectiveEllipseRadius;
 
         bool bMultiAttack = ctx.characterStat.bMultiAttack;
-        bool bIsWhirlwindStrike = ctx.characterStat.bWhirlWind && (successfulAttackCount % 3 == 2);
         multiAttackResults.Clear();
-
-        if (bIsWhirlwindStrike)
-        {
-            WhirlwindVFX.Spawn(centerPos, effectiveEllipseRadius, whirlwindFrames);
-            WhirlwindStrikeEvent?.Invoke();
-        }
 
         IStaticCollidable nearestDamageable = null;
         float minDistanceSqr = float.MaxValue;
@@ -512,7 +529,7 @@ public class AttackComponent : PComponent
 
         if ((bMultiAttack || bIsWhirlwindStrike) && multiAttackResults.Count > 0)
         {
-            CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
+            if (!bIsWhirlwindStrike) CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
             bool bAnyHit = false;
 
             for (int i = 0; i < multiAttackResults.Count; i++)
@@ -537,7 +554,6 @@ public class AttackComponent : PComponent
 
             if (bAnyHit)
             {
-                successfulAttackCount++;
                 AttackSuccessEvent?.Invoke();
                 bAxeHit = true;
             }
@@ -546,7 +562,6 @@ public class AttackComponent : PComponent
         {
             CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
             ProcessAxeHit(damageable, centerPos);
-            successfulAttackCount++;
             AttackSuccessEvent?.Invoke();
             bAxeHit = true;
 
@@ -1010,6 +1025,10 @@ public class AttackComponent : PComponent
 
         ClearDetectedTreeOutlines();
         nearestTarget = null;
+
+        // 캐릭터는 DontDestroyOnLoad로 Town/Dungeon을 오가며 살아남으므로, 던전을 나가거나
+        // 재시작할 때 회전 베기 스윙 카운터를 여기서 되돌려야 다음 던전이 항상 1번째 스윙부터 시작한다.
+        whirlwindSwingCount = 0;
     }
 
     public void Refresh()
