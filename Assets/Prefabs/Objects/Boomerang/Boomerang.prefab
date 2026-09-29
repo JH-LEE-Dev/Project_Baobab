@@ -148,7 +148,7 @@ MonoBehaviour:
   - {fileID: 7064556852939130128, guid: e893a4d947f5c8a4ebf38f0ec97ef1a9, type: 3}
   sampleRate: 24
   visualWidthAtUnitScale: 3
-  afterimageInterval: 0.28
+  afterimageInterval: 0.15
   afterimageFadeDuration: 0.45
   afterimageStartAlpha: 0.5
   shadowSpriteRenderer: {fileID: 4821309571048291008}

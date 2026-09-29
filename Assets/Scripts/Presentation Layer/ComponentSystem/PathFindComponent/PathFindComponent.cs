@@ -396,6 +396,10 @@ public class PathFindComponent : MonoBehaviour
                     if (tree.bReserved)
                         continue;
 
+                    // 묘목은 어떤 상호작용도 받지 않으므로 벌목 대상이 아니다(나무 타일이라 지나갈 수도 없다).
+                    if (!((tree as IDamageable)?.bCanApplyDamage ?? true))
+                        continue;
+
                     _targetTree = tree;
                     // 나무가 있는 타일로는 이동할 수 없으므로, 현재 타일(currentIndex)까지의 경로를 반환
                     RetracePath(startIndex, currentIndex, _pathResult);

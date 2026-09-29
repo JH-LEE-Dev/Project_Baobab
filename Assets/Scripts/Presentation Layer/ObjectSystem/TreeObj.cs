@@ -188,8 +188,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     public void ApplyOverheatDot(float _damagePerTick, int _tickCount, float _tickInterval)
     {
         // 이 타격 자체가 치명타였다면 TakeDamage 안에서 이미 죽어 풀로 반환되어 비활성화된 뒤이므로,
-        // 그 상태에서 StartCoroutine을 시도하면 안 된다.
-        if (bDead) return;
+        // 그 상태에서 StartCoroutine을 시도하면 안 된다. 묘목은 어떤 상호작용도 받지 않는다.
+        if (bDead || !bCanApplyDamage) return;
 
         if (overheatDotCoroutine != null)
         {
@@ -200,7 +200,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     public void ApplyDroneOverheatDot(float _damagePerTick, int _tickCount, float _tickInterval)
     {
-        if (bDead) return;
+        if (bDead || !bCanApplyDamage) return;
 
         if (droneOverheatDotCoroutine != null)
         {
@@ -682,6 +682,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // InDungeonObjectManager가 TreeOverheatExplosionEvent를 받아 처리한다(포자막 폭발과 동일한 방식).
     public void RaiseOverheatExplosion()
     {
+        if (!bCanApplyDamage) return; // 묘목은 어떤 상호작용도 받지 않는다
+
         TreeOverheatExplosionEvent?.Invoke(this);
     }
 

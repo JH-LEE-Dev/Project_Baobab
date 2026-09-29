@@ -154,11 +154,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     [SerializeField] private float droneRowDistanceStep = 0.32f; // 첫 3대(row 0~1)는 같은 타원, 4대째(row 2)부터 타원 반지름이 이 값씩 늘어난다
     [SerializeField] private float droneArrivalTolerance = 0.15f; // 슬롯과 이 거리 이내면 도착한 것으로 본다
     [SerializeField] private float droneCenterHoverHeight = 0.3f; // 대형 꼭짓점(0번, 캐릭터 바로 뒤) 드론만 이만큼 더 높이 띄운다
-    [SerializeField] private float droneSeparationDistance = 0.4f; // 드론끼리 이 거리보다 가까워지면 서로 밀어낸다(안전망)
+    [SerializeField] private float droneSeparationDistance = 0.18f; // 드론끼리 이 거리보다 가까워지면 서로 밀어낸다(안전망). 타원 대형(세로 0.5배 압축)에서 조준이 좌우일 때 인접 슬롯 간격이 약 0.21까지 줄어들므로, 그보다 작아야 슬롯 추종과 싸우지 않는다
     [SerializeField] private float droneSeparationSpeed = 3f; // 밀어내는 속도
+    [SerializeField] private float droneFormationTurnSpeed = 360f; // 대형 기준 방향("뒤")이 조준 방향을 따라 도는 각속도(도/초). 조준이 반대편으로 튀어도 대형이 한 번에 점프하지 않고 타원 위를 미끄러지듯 회전한다
     private const float DroneFormationMinorAxisRatio = 0.5f; // 타원 궤도의 단축/장축 비율(아이소메트릭 2:1 압축). 1.0이면 원, 0.5면 위아래가 절반으로 눌린 타원
 
-    private Vector2 droneBehindDir = Vector2.down; // 조준 방향의 반대("뒤"). 조준 지점을 못 구하면 마지막 방향을 유지한다.
+    private Vector2 droneBehindDir = Vector2.down; // 조준 방향의 반대("뒤"). droneBehindAngleDeg에서 매 프레임 파생된다.
+    private float droneBehindAngleDeg = 270f; // 대형 기준 방향의 현재 각도(도). 목표(조준 반대 방향) 각도로 MoveTowardsAngle 보간된다. 270 = Down
 
     private readonly List<Drone> activeDrones = new List<Drone>(4);
     private readonly List<IStaticCollidable> droneScanResults = new List<IStaticCollidable>(16);
@@ -166,6 +168,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private readonly List<ITreeObj> droneChainHitTrees = new List<ITreeObj>(8); // 한 번의 연쇄공격 전이 동안 이미 맞은 나무(중복 전이 방지)
     private readonly List<Vector3> droneChainZapPoints = new List<Vector3>(8); // muzzle -> 각 나무 top 위치. 연쇄공격 VFX(LightningZap) 재생용
     private float droneRetargetTimer = 0f;
+    private bool bDronesPaused = false; // WarningUI로 드론을 멈춘 동안 Character 쪽 대형 갱신/분리 밀어내기/재타겟팅도 함께 건너뛴다
     private const float DroneRetargetInterval = 0.15f; // 타겟을 잃은 드론에게 새 나무를 물 흐르듯 이어서 배정하는 주기
 
     private CharacterVisualComponent characterVisualComponent;
@@ -301,6 +304,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         boomerangCooldownTimer = 0f;
         bBoomerangSystemPaused = false; // 다음 던전 입장 때는 다시 발사 가능해야 하므로 여기서 해제
 
+        bDronesPaused = false;
         ClearActiveDrones();
 
         if (_bInDungeon == false)
@@ -427,8 +431,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             attackComponent.AttackSuccessEvent -= armComponent.axeComponent.DecreaseDurability;
             attackComponent.AttackSuccessEvent += armComponent.axeComponent.DecreaseDurability;
 
-            attackComponent.ShockWaveMissEvent -= armComponent.axeComponent.DecreaseDurabilityWithoutCombo;
-            attackComponent.ShockWaveMissEvent += armComponent.axeComponent.DecreaseDurabilityWithoutCombo;
+            attackComponent.ShockWaveOnlyHitEvent -= armComponent.axeComponent.DecreaseDurabilityWithoutCombo;
+            attackComponent.ShockWaveOnlyHitEvent += armComponent.axeComponent.DecreaseDurabilityWithoutCombo;
 
             healthComponent.StaminaIsEmptyEvent -= StaminaIsEmpty;
             healthComponent.StaminaIsEmptyEvent += StaminaIsEmpty;
@@ -451,7 +455,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
             attackComponent.AttackSuccessEvent -= armComponent.axeComponent.DecreaseDurability;
-            attackComponent.ShockWaveMissEvent -= armComponent.axeComponent.DecreaseDurabilityWithoutCombo;
+            attackComponent.ShockWaveOnlyHitEvent -= armComponent.axeComponent.DecreaseDurabilityWithoutCombo;
             armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
             healthComponent.StaminaIsEmptyEvent -= StaminaIsEmpty;
         }
@@ -576,6 +580,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         stateMachine.ChangeState<DeadState>();
         armComponent.SetActivate(false);
         attackComponent.SetEnable(false);
+        DeactivateDrones(); // 쓰러진 뒤에도 지속시간이 남은 드론이 계속 레이저를 쏘지 않도록 공격만 끝낸다(따라다니기는 유지)
+        SetDronesPoweredDown(true); // 호버를 낮추고 흔들림을 줄여 사망 연출과 톤을 맞춘다(ResetStatus에서 되살린다)
         // 사망 애니메이션은 방향이 바뀌면 처음 프레임부터 다시 재생되므로(CharacterAnimator), 회전 베기 도중
         // 쓰러지면 회전이 방향을 계속 바꿔 쓰러지는 연출이 여러 번 재시작된다. 여기서 회전을 끊는다.
         StopWhirlwindSpin();
@@ -732,7 +738,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         {
             // 이미 다른 부메랑이 향하고 있는 나무는 제외해서, 동시에 여러 개가 날아갈 때 서로
             // 다른 나무를 노리도록 한다.
-            if (treeScanResults[i] is ITreeObj treeObj && !treeObj.bDead && !activeBoomerangTargets.Contains(treeObj))
+            // 묘목(bCanApplyDamage == false)은 어떤 상호작용도 받지 않으므로 부메랑 조준 대상에서도 뺀다.
+            if (treeScanResults[i] is ITreeObj treeObj && !treeObj.bDead && !activeBoomerangTargets.Contains(treeObj)
+                && ((treeObj as IDamageable)?.bCanApplyDamage ?? true))
             {
                 // 순수 유클리드 거리로 고르면, 아이소메트릭 시점에서는 세로로 떨어진 나무가
                 // 실제로 화면상 더 가까운 나무보다 먼저 뽑히는 경우가 있었다(세로 이동이 화면에서
@@ -867,6 +875,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (droneCreator == null || statComponent == null) return;
 
         droneBehindDir = Vector2.down;
+        droneBehindAngleDeg = 270f;
 
         for (int i = 0; i < statComponent.droneCount; i++)
         {
@@ -881,6 +890,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             drone.SetRetargetCallback(RequestDroneRetarget);
             drone.SetChainAttackCallback(OnDroneChainAttack);
             activeDrones.Add(drone);
+
+            // Town → Dungeon 진입은 캐릭터가 차량 탑승으로 비활성화된 채 SetupGameInstaller까지 오므로, 이 시점에 소환되는
+            // 드론은 캐릭터와 함께 숨겨둔다. 캐릭터가 다시 켜질 때(OnEnable) 슬롯 스냅 + 스케일 인으로 함께 등장한다.
+            if (!gameObject.activeInHierarchy)
+            {
+                drone.SetVisible(false);
+            }
         }
     }
 
@@ -893,16 +909,25 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         if (activeDrones.Count == 0) return;
 
+        // 목표 각도(조준 반대 방향)는 즉시 읽되, 실제 대형 각도는 MoveTowardsAngle로 서서히 돌린다.
+        // 마우스 조준이 한 프레임에 반대편으로 넘어가도 슬롯이 캐릭터 반대쪽으로 점프하지 않고 타원 곡선을
+        // 따라 회전하므로, 드론들이 캐릭터를 가로질러 긴 추격을 하거나 서로 뒤엉키는 일이 없다.
         Transform aimTarget = attackComponent != null ? attackComponent.GetAttackPointTransform() : null;
+        float targetBehindAngleDeg = droneBehindAngleDeg;
         if (aimTarget != null)
         {
             Vector2 centerPos = centerTransform != null ? (Vector2)centerTransform.position : (Vector2)transform.position;
             Vector2 rawAimDir = (Vector2)aimTarget.position - centerPos;
             if (rawAimDir.sqrMagnitude > 0.0001f)
             {
-                droneBehindDir = -rawAimDir.normalized;
+                Vector2 targetBehindDir = -rawAimDir.normalized;
+                targetBehindAngleDeg = Mathf.Atan2(targetBehindDir.y, targetBehindDir.x) * Mathf.Rad2Deg;
             }
         }
+
+        droneBehindAngleDeg = Mathf.Repeat(Mathf.MoveTowardsAngle(droneBehindAngleDeg, targetBehindAngleDeg, droneFormationTurnSpeed * Time.deltaTime), 360f);
+        float behindRad = droneBehindAngleDeg * Mathf.Deg2Rad;
+        droneBehindDir = new Vector2(Mathf.Cos(behindRad), Mathf.Sin(behindRad));
 
         Vector2 aimDir = -droneBehindDir; // 대형은 "뒤" 기준, 드론 개별 Idle 방향은 "조준" 기준이라 부호가 반대다
 
@@ -978,12 +1003,85 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         }
     }
 
+    // 캐릭터가 쓰러졌거나 귀환이 확정되어 더는 공격하면 안 될 때, 활성 상태(타겟/스윙/충전 VFX)만 끝낸다.
+    // 드론 자체는 계속 캐릭터 옆에 남아 따라다닌다. 새 활성화는 ActivateDrones의 bDead/공격 불가 조건이 막는다.
+    private void DeactivateDrones()
+    {
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            if (activeDrones[i] == null) continue; // Unity null 비교 - 종료/씬 해제 순서에 따라 이미 파괴된 드론일 수 있다
+            activeDrones[i].Deactivate();
+        }
+    }
+
+    // 캐릭터 GameObject가 꺼지고 켜질 때(차량 탑승/하차) 드론도 함께 숨기고 보인다(OnDisable/OnEnable).
+    private void SetDronesVisible(bool _visible)
+    {
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            if (activeDrones[i] == null) continue; // Unity null 비교 - 종료/씬 해제 순서에 따라 이미 파괴된 드론일 수 있다
+            activeDrones[i].SetVisible(_visible);
+        }
+    }
+
+    // 대형 기준 방향을 기본(아래 = 캐릭터 뒤)으로 되돌리고, 각 드론의 슬롯을 그 기준으로 다시 배정한 뒤 시선도 아래로
+    // 초기화한다(다음 Update에서 슬롯으로 즉시 스냅). 드론을 재소환하지 않는 리셋 경로에서 SpawnDrones 초기화를 대신한다.
+    private void ResetDroneFormationToDefault()
+    {
+        droneBehindDir = Vector2.down;
+        droneBehindAngleDeg = 270f;
+
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            if (activeDrones[i] == null) continue;
+            activeDrones[i].SetFollowOffset(GetDroneWedgeOffset(i, droneBehindDir));
+            activeDrones[i].ResetFacingToDefault(); // 시선 기본값(아래)은 Spawn과 동일. 실제 조준 방향은 다음 UpdateDroneFormation이 갱신한다
+        }
+    }
+
+    // 캐릭터 사망 시 true - 드론 호버가 낮아지고 흔들림이 줄어 "전원이 약해진" 상태가 된다. 재시작 시 false.
+    private void SetDronesPoweredDown(bool _poweredDown)
+    {
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            if (activeDrones[i] == null) continue; // Unity null 비교 - 종료/씬 해제 순서에 따라 이미 파괴된 드론일 수 있다
+            activeDrones[i].SetPoweredDown(_poweredDown);
+        }
+    }
+
+    // WarningUI가 뜨는 동안 NPC/FlyingItem/부메랑과 동일하게 드론도 그 자리에서 멈춘다
+    // (InDungeonObjectManager.GameEnd에서 PauseBoomerangs와 함께 호출).
+    public void PauseDrones()
+    {
+        bDronesPaused = true;
+
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            if (activeDrones[i] == null) continue; // Unity null 비교 - 종료/씬 해제 순서에 따라 이미 파괴된 드론일 수 있다
+            activeDrones[i].Pause();
+        }
+    }
+
+    // WarningUI를 취소했을 때(계속 진행) 멈춰있던 드론을 그 자리에서 다시 이어서 움직이게 한다
+    // (InDungeonObjectManager.AbortGameEnd에서 _bAbort == true일 때 ResumeBoomerangs와 함께 호출).
+    public void ResumeDrones()
+    {
+        bDronesPaused = false;
+
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            if (activeDrones[i] == null) continue; // Unity null 비교 - 종료/씬 해제 순서에 따라 이미 파괴된 드론일 수 있다
+            activeDrones[i].Resume();
+        }
+    }
+
     // 던전을 나가거나 리셋할 때 소환되어 있던 드론을 전부 풀로 되돌린다.
     private void ClearActiveDrones()
     {
         for (int i = 0; i < activeDrones.Count; i++)
         {
-            activeDrones[i]?.Despawn();
+            if (activeDrones[i] == null) continue; // Unity null 비교 - 이미 파괴된 드론은 건너뛴다
+            activeDrones[i].Despawn();
             droneCreator?.DespawnDrone(activeDrones[i]);
         }
 
@@ -1252,8 +1350,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         stateMachine?.Update();
 
-        UpdateDroneFormation(); // 캐릭터 이동 방향에 맞춰 드론 대형 슬롯을 매 프레임 회전/갱신
-        UpdateDroneSeparation(Time.deltaTime); // 드론끼리 겹치지 않도록 매 프레임 살짝 밀어냄(안전망)
+        if (!bDronesPaused)
+        {
+            UpdateDroneFormation(); // 캐릭터 이동 방향에 맞춰 드론 대형 슬롯을 매 프레임 회전/갱신
+            UpdateDroneSeparation(Time.deltaTime); // 드론끼리 겹치지 않도록 매 프레임 살짝 밀어냄(안전망)
+        }
 
         // 조준점 및 무기 방향을 먼저 갱신한 뒤 비주얼을 렌더링하여 1프레임 지연을 제거
         // 회전 베기가 끝나는 프레임에는 곧바로 마우스 방향을 보도록 회전 갱신을 먼저 한다.
@@ -1319,7 +1420,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         UpdateItemDetection(); // 내부적으로 itemDetectionInterval마다만 실제 스캔을 수행함
         UpdateTreeBoomerang(); // 내부적으로 treeDetectionInterval마다만 실제 스캔을 수행함
-        UpdateDroneRetargeting(); // 내부적으로 DroneRetargetInterval마다만 실제 재타겟팅을 수행함
+        if (!bDronesPaused)
+        {
+            UpdateDroneRetargeting(); // 내부적으로 DroneRetargetInterval마다만 실제 재타겟팅을 수행함
+        }
 
         // 커스텀 충돌 시스템 격자 정보 갱신
         CollisionSystem.Instance?.UpdatePosition(this, transform.position);
@@ -1330,8 +1434,17 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         customSortable.SetHeight(visualHeight);
     }
 
+    private void OnEnable()
+    {
+        // 차량에서 내려 캐릭터가 다시 나타나는 순간 드론도 함께 나타난다(슬롯 스냅 + 스케일 인).
+        SetDronesVisible(true);
+    }
+
     private void OnDisable()
     {
+        // 차량 탑승 등으로 캐릭터가 숨겨지면 드론도 함께 숨긴다. 캐릭터 없이 차량 옆에 드론만 떠 있지 않게 한다.
+        SetDronesVisible(false);
+
         // 저피로도 경고 연출(오디오 먹먹함·색수차)은 Update에서 매 프레임 갱신되는 값이라, 이 오브젝트가
         // 꺼지면(차량 탑승 등) 그 순간의 세기로 얼어붙는다. 색수차는 완충(MoveTowards) 때문에 1f를 한 번
         // 넘기는 것으로는 풀리지 않으므로 즉시 0으로 원복한다. 씬 전환·파괴 시에는 Instance가 없을 수 있다.
@@ -1376,6 +1489,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         attackComponent.SetbCanAttack(false);
         armComponent.SetbCanAttack(false);
         bCanAcquiredItem = false;
+        DeactivateDrones(); // 귀환 확정 뒤에는 캐릭터도 공격할 수 없으므로 드론 공격도 함께 끝낸다
     }
 
     public void SetStaminaDecrease(bool _boolean)
@@ -1442,9 +1556,21 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         treeScanTimer = 0f;
         boomerangCooldownTimer = 0f;
         bBoomerangSystemPaused = false;
+        bDronesPaused = false;
 
-        ClearActiveDrones();
-        SpawnDrones(); // 던전 안에서의 리셋(사망 등)이므로 드론은 그대로 다시 소환해 계속 따라다니게 한다
+        // 던전 안에서의 리셋(사망 등). 이미 떠 있는 드론을 풀로 보냈다가 다시 소환하면 한 프레임 깜빡이므로,
+        // 개수가 그대로면 공격 상태만 정리하고 전원을 되살려 그 자리에 그대로 둔다. 개수가 달라졌을 때만 다시 소환한다.
+        if (activeDrones.Count > 0 && activeDrones.Count == statComponent.droneCount)
+        {
+            DeactivateDrones();
+            SetDronesPoweredDown(false);
+            ResetDroneFormationToDefault(); // 예전 재소환이 해주던 초기화 - 캐릭터가 아래를 보고 서는 것과 대형/시선을 맞춘다
+        }
+        else
+        {
+            ClearActiveDrones();
+            SpawnDrones();
+        }
 
         attackComponent.ResetAttackTransform();
         armComponent.ResetRotation();

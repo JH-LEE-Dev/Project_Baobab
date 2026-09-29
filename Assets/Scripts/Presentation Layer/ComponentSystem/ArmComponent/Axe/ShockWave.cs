@@ -20,6 +20,10 @@ public class ShockWave : MonoBehaviour
     private bool bIsOverheat = false;
     private float maxEffectiveDistance = 0f;
 
+    // 이 충격파가 처음으로 나무를 맞췄을 때 한 번만 호출된다. 풀에서 재사용되므로 Reset에서 비운다.
+    // (ShockWaveMastery로 도끼는 헛치고 충격파만 나간 경우, 충격파가 실제로 나무를 맞췄을 때만 도끼 내구도를 깎기 위해 사용)
+    private Action firstTreeHitCallback;
+
     [Header("Sector Ring Settings")]
     public float minDist = 0f;
     public float maxDist = 2f;
@@ -91,6 +95,11 @@ public class ShockWave : MonoBehaviour
         transform.rotation = Quaternion.FromToRotation(Vector3.right, moveDirection) * InitialRotation;
     }
 
+    public void SetFirstTreeHitCallback(Action _callback)
+    {
+        firstTreeHitCallback = _callback;
+    }
+
     public void Reset()
     {
         angle = 45f; // 각도 고정 유지
@@ -103,6 +112,7 @@ public class ShockWave : MonoBehaviour
         moveDirection = Vector3.right;
         bIsEnforced = false;
         bIsOverheat = false;
+        firstTreeHitCallback = null;
 
         // 리셋 시 스케일과 범위를 초기 상태로 복구
         transform.localScale = initialScale;
@@ -146,6 +156,9 @@ public class ShockWave : MonoBehaviour
             // 2. 타입 체크 (레이어 필터링이 잘 되어 있다면 무시 가능하지만 안전을 위해 유지)
             if (!(target is TreeObj treeObj)) continue;
 
+            // 묘목은 어떤 상호작용도 받지 않는다(피해, 과열 폭발, 첫 타격 콜백 모두).
+            if (!treeObj.bCanApplyDamage) continue;
+
             Vector3 targetPos = treeObj.Position + treeObj.Offset;
             float isoDistSq = GetIsometricDistSq(targetPos, centerPos);
 
@@ -185,6 +198,13 @@ public class ShockWave : MonoBehaviour
 
                     treeObj.TakeDamage(finalDamage);
                     hitTargets.Add(target);
+
+                    if (firstTreeHitCallback != null)
+                    {
+                        Action callback = firstTreeHitCallback;
+                        firstTreeHitCallback = null;
+                        callback.Invoke();
+                    }
                 }
             }
         }
