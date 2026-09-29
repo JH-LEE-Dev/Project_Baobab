@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutterCH, ILogEvaluatorCH
+public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutterCH, ILogEvaluatorCH, ILogCutterProvider
 {
     public event Action<bool> LogProcessorIsActiveEvent;
     public event Action<bool> ShopInteracteStateChangedEvent;
@@ -41,11 +41,14 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     private float[] lineElapsedTime;
     private LogProcessLine pendingRequestLine;
 
-    // "대표 라인"의 커터 - UI(가공 진행률 표시 등)가 단일 대상을 필요로 하는 곳에서만 사용
-    public LogCutter logCutter => allLines.Count > 0 ? allLines[0].Cutter : null;
-
     /// <summary>현재 가동 중인 가공 라인 수(1~3). 제재소 건물 증설 단계와 1:1로 대응한다.</summary>
     public int ActiveLineCount => activeLineCount;
+
+    // ILogCutterProvider - UI가 라인마다 커터 진행률을 따로 표시할 수 있도록 라인 번호로 커터를 꺼내준다.
+    public ILogCutter GetCutter(int _lineIdx)
+    {
+        return (_lineIdx >= 0 && _lineIdx < allLines.Count) ? allLines[_lineIdx].Cutter : null;
+    }
 
     public LogContainer logContainer { get; private set; }
 

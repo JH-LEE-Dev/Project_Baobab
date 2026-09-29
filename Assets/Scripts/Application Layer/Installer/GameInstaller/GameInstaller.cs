@@ -84,7 +84,7 @@ public class GameInstaller : MonoBehaviour
         , skyCameraProductionManager, inDungeonResultManager);
         skillManager.Initialize(inventoryManager);
         gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager, inventoryManager, inDungeonSystem.inDungeonObjectManager,
-        townSystem.logProcessingManager.logContainer, townSystem.logProcessingManager.logCutter, skillManager, townSystem.logProcessingManager.shopNPC,
+        townSystem.logProcessingManager.logContainer, townSystem.logProcessingManager, skillManager, townSystem.logProcessingManager.shopNPC,
         inventoryManager, localizationManager, environmentSystem.densityManager, environmentSystem.weatherManager, environmentSystem.timeController,
         offroadContainer, inDungeonSystem.inDungeonResultManager);
 

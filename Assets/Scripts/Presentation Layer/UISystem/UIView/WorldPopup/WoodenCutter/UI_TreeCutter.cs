@@ -95,15 +95,44 @@ public class UI_TreeCutter : MonoBehaviour
         SnapToPerfectPixel();
     }
 
+    // 가공 라인마다 UI가 하나씩 붙으므로, 자기 라인 커터의 시작/완료 이벤트는 이 UI가 직접 구독한다.
     public void BindLogCutter(ILogCutter _logCutter)
     {
+        UnbindLogCutter();
+
         logCutter = _logCutter;
+        if (null == logCutter)
+            return;
+
+        logCutter.CuttingStartEvent += OnCuttingStart;
+        logCutter.CuttingDoneEvent += OnCuttingDone;
+    }
+
+    public void UnbindLogCutter()
+    {
+        if (null == logCutter)
+            return;
+
+        logCutter.CuttingStartEvent -= OnCuttingStart;
+        logCutter.CuttingDoneEvent -= OnCuttingDone;
+        logCutter = null;
+    }
+
+    // 세이브 로드 직후나 다시 표시될 때, 커터의 현재 상태(가공 중인 원목)에 맞춰 슬롯을 맞춘다.
+    public void SyncWithCutter()
+    {
+        if (null != logCutter && null != logCutter.logToCut && true == logCutter.bIsCutting)
+            BindItemData(logCutter.logToCut);
+        else
+            ResetCutter();
     }
 
     public void BindPosition(Vector3 _newPos)
     {
         if (null != rect)
             rect.position = _newPos + offset;
+
+        SnapToPerfectPixel();
     }
 
     public void ResetCutter()
@@ -147,6 +176,16 @@ public class UI_TreeCutter : MonoBehaviour
     }
 
     // //내부 로직
+
+    private void OnCuttingStart(ILogItemData _itemData)
+    {
+        BindItemData(logCutter.logToCut);
+    }
+
+    private void OnCuttingDone()
+    {
+        ResetCutter();
+    }
 
     private void OnCompletedAnimation()
     {
@@ -240,5 +279,6 @@ public class UI_TreeCutter : MonoBehaviour
 
     private void OnDestroy()
     {
+        UnbindLogCutter();
     }
 }

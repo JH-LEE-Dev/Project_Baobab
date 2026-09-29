@@ -44,7 +44,7 @@ public class GameplayUIInstaller : MonoBehaviour
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, SignalHub _signalHub,
         InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider, IInventory _container,
-        ILogCutter _logCutter, ISkillSystemProvider _skillSystemProvider, IShopNPC _shopNPC,
+        ILogCutterProvider _logCutterProvider, ISkillSystemProvider _skillSystemProvider, IShopNPC _shopNPC,
         IMoneyData _moneyData, LocalizationManager _localizeManager, IMapDataProvider _mapDataProvider,
         IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider, IInventory _offroadContainer,
         IDungeonResultProvider _dungeonResultProvider)
@@ -73,7 +73,7 @@ public class GameplayUIInstaller : MonoBehaviour
         }
         uICoordinator = new GameplayUICoordinator();
 
-        uiManager.Initialize(inputManager, inventory, inDungeonObjProvider, container, _logCutter, _skillSystemProvider,
+        uiManager.Initialize(inputManager, inventory, inDungeonObjProvider, container, _logCutterProvider, _skillSystemProvider,
          shopNPC, moneyData, localizationManager, mapDataProvider, weatherProvider, timeDataProvider, offroadContainer, depthController,
          dungeonResultProvider);
 

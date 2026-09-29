@@ -5,7 +5,7 @@ public class GameplayUIManager : UIManager
     private IInventory inventory;
     private IInventory container;
     private IInDungeonObjProvider inDungeonObjProvider;
-    private ILogCutter logCutter;
+    private ILogCutterProvider logCutterProvider;
     private ISkillSystemProvider skillSystemProvider;
     private IShopNPC shopNPC;
     private IMoneyData moneyData;
@@ -16,7 +16,7 @@ public class GameplayUIManager : UIManager
     private IInventory offroadContainer;
     private IDungeonResultProvider dungeonResultProvider;
     public void Initialize(InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider, IInventory _container,
-    ILogCutter _logCutter, ISkillSystemProvider _skillSystemProvider, IShopNPC _shopNPC, IMoneyData _moneyData, LocalizationManager _localizeManager,
+    ILogCutterProvider _logCutterProvider, ISkillSystemProvider _skillSystemProvider, IShopNPC _shopNPC, IMoneyData _moneyData, LocalizationManager _localizeManager,
     IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider, IInventory _offroadContainer,
      UIDepthController _depthController, IDungeonResultProvider _dungeonResultProvider)
     {
@@ -30,7 +30,7 @@ public class GameplayUIManager : UIManager
         inventory = _inventory;
         inDungeonObjProvider = _inDungeonObjProvider;
         container = _container;
-        logCutter = _logCutter;
+        logCutterProvider = _logCutterProvider;
         skillSystemProvider = _skillSystemProvider;
         shopNPC = _shopNPC;
         moneyData = _moneyData;
@@ -46,7 +46,7 @@ public class GameplayUIManager : UIManager
             unitUI.DependencyInjection(inDungeonObjProvider.trees);
 
         if (view is UIView_WorldPopup worldUI)
-            worldUI.DependencyInjection(container, logCutter, shopNPC, offroadContainer);
+            worldUI.DependencyInjection(container, logCutterProvider, shopNPC, offroadContainer);
 
         if (view is UIView_Tent tentUI)
             tentUI.DependencyInjection(skillSystemProvider, moneyData);
