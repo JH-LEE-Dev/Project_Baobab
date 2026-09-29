@@ -367,6 +367,8 @@ namespace PresentationLayer.UISystem.CustomNumber
             currencyFontHUD?.PlayDecreaseMotion();
         }
 
+        // 인스펙터 테스트 버튼 - 에디터에서 사람이 눌러야만 실행되므로 빌드에는 넣지 않는다.
+#if UNITY_EDITOR
         [Button("SetCurrencyText")]
         private void SetCurrencyText()
         {
@@ -423,6 +425,7 @@ namespace PresentationLayer.UISystem.CustomNumber
             InitializeIfNeeded();
             PlayMinusMotion();
         }
+#endif
 
     }
 }

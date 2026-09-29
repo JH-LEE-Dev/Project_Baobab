@@ -141,6 +141,8 @@ public class BlastFurnaceHeatHaze : MonoBehaviour
         isTestMode = false;
     }
 
+    // 인스펙터 테스트 버튼 - 에디터에서 사람이 눌러야만 실행되므로 빌드에는 넣지 않는다.
+#if UNITY_EDITOR
     // //기존 테스트 메서드 호환용 별칭 (인스펙터 우클릭 메뉴)
 
     [ContextMenu("Test - Start Smelting (Fade In)")]
@@ -160,6 +162,7 @@ public class BlastFurnaceHeatHaze : MonoBehaviour
     {
         ResetToFurnace();
     }
+#endif
 
     // //프라이빗 메서드
 

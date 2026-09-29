@@ -372,6 +372,8 @@ namespace PresentationLayer.VFX
             PlayLaser(_startPos, _endPos);
         }
 
+        // 인스펙터 테스트 버튼 - 에디터에서 사람이 눌러야만 실행되므로 빌드에는 넣지 않는다.
+#if UNITY_EDITOR
         /// <summary>
         /// 상호 양방향 전면 동시 발사(1<>2<>3 상호 교차 발사)를 즉시 테스트합니다.
         /// </summary>
@@ -386,9 +388,12 @@ namespace PresentationLayer.VFX
 
         /// <summary> (호환용 테스트 트리거) </summary>
         public void TestFireMutualSimultaneousLaser() => TestFireLaser();
+#endif
 
         #endregion
 
+        // 인스펙터 테스트 버튼 - 에디터에서 사람이 눌러야만 실행되므로 빌드에는 넣지 않는다.
+#if UNITY_EDITOR
         /// <summary>
         /// 테스트로 켜진 레이저 표시를 화면에서 즉시 정리합니다.
         /// </summary>
@@ -402,6 +407,7 @@ namespace PresentationLayer.VFX
             UnityEditor.EditorUtility.SetDirty(this);
 #endif
         }
+#endif
 
         /// <summary>
         /// 플레이 모드가 아닌 에디터 편집 모드(Edit Mode)에서도 씬 뷰에 즉시 레이저를 고정 렌더링합니다.
