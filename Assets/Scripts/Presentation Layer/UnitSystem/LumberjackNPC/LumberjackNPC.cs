@@ -501,9 +501,13 @@ public class LumberjackNPC : MonoBehaviour
         }
     }
 
+    // 타겟 나무가 그 자리에서 묘목으로 리셋됐으면(TreeObj.ResetTree/SetIsSapling) 더 이상 벨 수 없다.
+    // 묘목은 어떤 상호작용도 받지 않으므로 LJState_Move/Chop이 이 값으로 타겟을 놓아준다.
+    public bool IsTargetTreeSapling => targetTree != null && !((targetTree as IDamageable)?.bCanApplyDamage ?? true);
+
     private void OnAxeImpact()
     {
-        if (targetTree != null)
+        if (targetTree != null && !IsTargetTreeSapling)
         {
             // 데미지 전달 로직 (나무 객체에 맞게 수정 가능)
             if (targetTree is TreeObj treeObj)
@@ -587,7 +591,8 @@ public class LumberjackNPC : MonoBehaviour
         {
             // 이미 다른 부메랑이 향하고 있는 나무는 제외해서, 동시에 여러 개가 날아갈 때 서로
             // 다른 나무를 노리도록 한다(Character.FindNearestTree와 동일한 규칙).
-            if (boomerangTreeScanResults[i] is ITreeObj treeObj && !treeObj.bDead && !activeBoomerangTargets.Contains(treeObj))
+            if (boomerangTreeScanResults[i] is ITreeObj treeObj && !treeObj.bDead && !activeBoomerangTargets.Contains(treeObj)
+                && ((treeObj as IDamageable)?.bCanApplyDamage ?? true))
             {
                 float isoSqr = GetIsometricDistSq(boomerangTreeScanResults[i].Position, myPos);
                 if (isoSqr < nearestIsoSqr)

@@ -738,7 +738,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         {
             // 이미 다른 부메랑이 향하고 있는 나무는 제외해서, 동시에 여러 개가 날아갈 때 서로
             // 다른 나무를 노리도록 한다.
-            if (treeScanResults[i] is ITreeObj treeObj && !treeObj.bDead && !activeBoomerangTargets.Contains(treeObj))
+            // 묘목(bCanApplyDamage == false)은 어떤 상호작용도 받지 않으므로 부메랑 조준 대상에서도 뺀다.
+            if (treeScanResults[i] is ITreeObj treeObj && !treeObj.bDead && !activeBoomerangTargets.Contains(treeObj)
+                && ((treeObj as IDamageable)?.bCanApplyDamage ?? true))
             {
                 // 순수 유클리드 거리로 고르면, 아이소메트릭 시점에서는 세로로 떨어진 나무가
                 // 실제로 화면상 더 가까운 나무보다 먼저 뽑히는 경우가 있었다(세로 이동이 화면에서

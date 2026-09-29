@@ -156,6 +156,9 @@ public class ShockWave : MonoBehaviour
             // 2. 타입 체크 (레이어 필터링이 잘 되어 있다면 무시 가능하지만 안전을 위해 유지)
             if (!(target is TreeObj treeObj)) continue;
 
+            // 묘목은 어떤 상호작용도 받지 않는다(피해, 과열 폭발, 첫 타격 콜백 모두).
+            if (!treeObj.bCanApplyDamage) continue;
+
             Vector3 targetPos = treeObj.Position + treeObj.Offset;
             float isoDistSq = GetIsometricDistSq(targetPos, centerPos);
 
@@ -196,8 +199,7 @@ public class ShockWave : MonoBehaviour
                     treeObj.TakeDamage(finalDamage);
                     hitTargets.Add(target);
 
-                    // 묘목은 TakeDamage가 무시하므로 "실제로 맞춘 것"으로 치지 않는다(도끼 판정의 bCanApplyDamage 조건과 동일).
-                    if (firstTreeHitCallback != null && treeObj.bCanApplyDamage)
+                    if (firstTreeHitCallback != null)
                     {
                         Action callback = firstTreeHitCallback;
                         firstTreeHitCallback = null;

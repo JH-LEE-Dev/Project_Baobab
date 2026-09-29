@@ -10,7 +10,7 @@ public class LJState_Chop : LumberjackState
         chopTimer = npc.stat.attackInterval; // 입장하자마자 1회 타격하기 위해 타이머 꽉 채움
         npc.SetVisualMoving(false);
 
-        if (npc.targetTree == null || !npc.targetTree.GetTransform().gameObject.activeInHierarchy)
+        if (npc.targetTree == null || !npc.targetTree.GetTransform().gameObject.activeInHierarchy || npc.IsTargetTreeSapling)
         {
             // TEMP DEBUG
             LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={npc.name}({npc.GetEntityId()}) LJState_Chop.Enter: 타겟 나무가 이미 null/비활성 -> Idle로 복귀");
@@ -40,8 +40,8 @@ public class LJState_Chop : LumberjackState
     {
         base.Update();
 
-        // 나무가 파괴되었거나 비활성화되었는지 검사
-        if (npc.targetTree == null || !npc.targetTree.GetTransform().gameObject.activeInHierarchy)
+        // 나무가 파괴되었거나 비활성화되었는지, 그 자리에서 묘목으로 리셋됐는지 검사
+        if (npc.targetTree == null || !npc.targetTree.GetTransform().gameObject.activeInHierarchy || npc.IsTargetTreeSapling)
         {
             // TEMP DEBUG
             LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={npc.name}({npc.GetEntityId()}) LJState_Chop.Update: 타겟 나무 죽음/비활성 감지 -> Idle로 복귀");

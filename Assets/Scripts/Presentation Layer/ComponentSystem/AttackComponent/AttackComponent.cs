@@ -467,6 +467,11 @@ public class AttackComponent : PComponent
         for (int i = 0; i < hitCount; i++)
         {
             var target = collisionResults[i];
+
+            // 묘목은 어떤 상호작용도 받지 않는다. 대상 후보에서 아예 빼야 가장 가까운 대상으로 묘목이 뽑혀
+            // 그 뒤의 나무가 가려지거나, 묘목만 맞았는데 카메라가 흔들리는 일이 없다.
+            if (target is IDamageable targetDamageable && !targetDamageable.bCanApplyDamage) continue;
+
             Vector3 targetPos = target.Position + target.Offset;
 
             // 2단계: 타원형 반지름(ellipseAttackRadius)으로 2차 필터링
@@ -738,6 +743,10 @@ public class AttackComponent : PComponent
         for (int i = 0; i < hitCount; i++)
         {
             var target = detectionResults[i];
+
+            // 묘목은 감지(아웃라인) 대상도 아니다. Attack()의 대상 선택과 같은 기준.
+            if (target is IDamageable targetDamageable && !targetDamageable.bCanApplyDamage) continue;
+
             Vector3 targetPos = target.Position + target.Offset;
 
             // 2단계: 타원형 반지름(ellipseAttackRadius)으로 2차 필터링
