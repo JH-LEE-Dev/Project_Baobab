@@ -1,7 +1,8 @@
 # 별자리 VFX 올인원 통합 연동 가이드 (Constellation Complete Integration Guide)
 
 > **문서 대상자**: 본 프로젝트의 별자리 이음선 및 레이저 발현 시스템을 연동/유지보수할 클라이언트 프로그래머 및 AI 코딩 에이전트.  
-> **문서 목적**: 평상시 표시되는 **별자리 점선 이음선([`VFX_ConstellationDottedLine`](file:///d:/Unity/Project/Project_Baobab/Assets/Prefabs/VFX/Constellation/VFX_ConstellationDottedLine.prefab))**부터 나무 군집 벌목 시 발동하는 **별자리 픽셀 레이저([`VFX_ConstellationPixelLaser`](file:///d:/Unity/Project/Project_Baobab/Assets/Prefabs/VFX/Constellation/VFX_ConstellationPixelLaser.prefab))**와 바닥 큰 별([`TreeStarMarkGroundAnimator`](file:///d:/Unity/Project/Project_Baobab/Assets/Scripts/Presentation%20Layer/ComponentSystem/TreeVisualComponent/TreeStarMarkGroundAnimator.cs))의 연쇄 폭발까지, 전체 라이프사이클의 **기능별 호출 장소 및 시점(When & Where)**과 **설계 시 추론해야 할 제약조건**을 명세합니다. (특정 코드 복사-붙여넣기를 강제하지 않으며, 각 시스템의 역할과 인터페이스를 기반으로 최선의 설계를 도출하도록 안내합니다.)
+> **문서 목적**: 평상시 표시되는 **별자리 점선 이음선([`VFX_ConstellationDottedLine`](file:///d:/Unity/Project/Project_Baobab/Assets/Prefabs/VFX/Constellation/VFX_ConstellationDottedLine.prefab))**부터 나무 군집 벌목 시 발동하는 **별자리 픽셀 레이저([`VFX_ConstellationPixelLaser`](file:///d:/Unity/Project/Project_Baobab/Assets/Prefabs/VFX/Constellation/VFX_ConstellationPixelLaser.prefab))**와 바닥 큰 별([`TreeStarMarkGroundAnimator`](file:///d:/Unity/Project/Project_Baobab/Assets/Scripts/Presentation%20Layer/ComponentSystem/TreeVisualComponent/TreeStarMarkGroundAnimator.cs))의 연쇄 폭발까지, 전체 라이프사이클의 **기능별 호출 장소 및 시점(When & Where)**과 **설계 시 추론해야 할 제약조건**을 명세합니다.  
+> ⚠️ **문서 수명 주기 안내**: 본 문서는 연동 완료 및 인게임 정상 동작 검증 시점까지만 유지되는 기술 가이드이며, **적용 및 검증 완료 후 사용자에게 파기(삭제) 승인을 요청하도록 설계**되어 있습니다.
 
 ---
 
@@ -204,3 +205,28 @@ sequenceDiagram
 - [ ] **코딩 컨벤션 및 최적화 준수**:
   - 모든 조건문이 Yoda 표기법(`true == isClosed`, `null != laser` 등)을 준수하는가?
   - 프레임 루프 및 이벤트 핸들러에서 힙 메모리 할당(GC Alloc)이 발생하지 않도록 캐싱/무할당 구조로 설계되었는가?
+- [ ] **작업 완료 후 파기 질의**:
+  - 아래 7번 항목에 따라 모든 동작 검증 완료 후 사용자에게 본 문서의 파기 여부를 확인/요청하였는가?
+
+---
+
+## 7. 최종 검증 및 문서 파기 확인 절차 (Final Verification & Decommissioning Gate)
+
+본 문서는 다른 프로그래머 또는 AI 에이전트가 별자리 VFX 시스템을 완벽하게 연동하고 정상 작동을 확인할 때까지 사용되는 **임시 기술 가이드**입니다.
+
+### 1) 필수 동작 검증 체크리스트
+연동 작업을 수행한 에이전트는 인게임 실행 후 다음 항목이 모두 정상 작동하는지 전수 검증해야 합니다:
+- [ ] 던전 진입 및 별 표식 나무 스폰 시 점선 이음선([`ConstellationDottedLine`](file:///d:/Unity/Project/Project_Baobab/Assets/Scripts/Presentation%20Layer/VFX/ConstellationLine/ConstellationDottedLine.cs))이 노드들을 바르게 잇고 있는가?
+- [ ] 별 표식 나무 벌목 시 바닥 큰 별([`TreeStarMarkGroundAnimator`](file:///d:/Unity/Project/Project_Baobab/Assets/Scripts/Presentation%20Layer/ComponentSystem/TreeVisualComponent/TreeStarMarkGroundAnimator.cs))이 제자리에서 회전/발광 대기하는가?
+- [ ] 해당 그룹의 마지막 별 표식 나무 벌목 완료 시 픽셀 레이저([`ConstellationPixelLaser`](file:///d:/Unity/Project/Project_Baobab/Assets/Scripts/Presentation%20Layer/VFX/ConstellationLine/ConstellationPixelLaser.cs))가 상호 양방향으로 동시 발사되는가?
+- [ ] 레이저 선단이 각 별에 도달하는 순간, 바닥 큰 별이 오차 없이 즉각 폭발(`PlayManifestEffect`)하는가?
+- [ ] 레이저 발광 완료 후 정상적으로 풀에 반환되며, 던전 퇴장/플레이어 사망 시 댕글링 오브젝트 없이 깨끗이 정리되는가?
+
+### 2) 문서 파기 승인 요청 의무화 (Mandatory User Decommissioning Prompt)
+위 검증 체크리스트가 모두 통과되어 시스템의 정상 동작이 확인되면, **문서를 임의로 방치하거나 무단 삭제하지 말고 반드시 사용자에게 다음과 같이 명시적으로 질의하여 파기 여부를 승인받으십시오**:
+
+> **질의 양식**:  
+> *"별자리 이음선 및 픽셀 레이저의 연동과 인게임 정상 동작 검증이 모두 완료되었습니다. 본 연동 가이드 문서([`Constellation_Complete_Integration_Guide.md`](file:///d:/Unity/Project/Project_Baobab/Assets/Documentation/VFX/Constellation_Complete_Integration_Guide.md))를 파기(삭제)하시겠습니까?"*
+
+- **사용자가 "파기", "삭제", "승인" 등의 승인을 내린 경우**: 본 파일([`Constellation_Complete_Integration_Guide.md`](file:///d:/Unity/Project/Project_Baobab/Assets/Documentation/VFX/Constellation_Complete_Integration_Guide.md)) 및 메타 파일을 삭제하고 작업을 최종 종료합니다.
+- **사용자가 "보존" 또는 추가 수정을 요청한 경우**: 해당 요구사항에 맞춰 보존하거나 문서를 갱신합니다.
