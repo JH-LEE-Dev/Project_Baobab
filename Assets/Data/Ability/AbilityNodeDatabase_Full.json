@@ -1820,6 +1820,15 @@
                     "pivotY": 0
                 }
             ]
+        },
+        {
+            "skillType": "TestNode",
+            "nameLocId": 180,
+            "levelBadge": "None",
+            "requiredPrestigeLevel": 0,
+            "gridX": -1,
+            "gridY": -1,
+            "parents": []
         }
     ]
 }
