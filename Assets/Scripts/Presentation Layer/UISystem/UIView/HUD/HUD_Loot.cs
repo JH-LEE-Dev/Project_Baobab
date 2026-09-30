@@ -21,6 +21,7 @@ public class HUD_Loot : MonoBehaviour
     private Tween transitionTween;
     private Sequence motionSequence;
     private bool hasAcquired = false;
+    public bool HasAcquired => hasAcquired;
 
     public void Initialize(InputManager _inputManager = null)
     {
@@ -177,16 +178,25 @@ public class HUD_Loot : MonoBehaviour
     /// </summary>
     public void OnHUDGoDown()
     {
-        if (null == slotCanvasGroup)
+        if (false == hasAcquired || null == slotCanvasGroup)
         {
             return;
         }
-        
+
         if (null != transitionTween && true == transitionTween.IsActive())
         {
             transitionTween.Kill();
         }
-        
+
+        if (null != motionSequence && true == motionSequence.IsActive())
+        {
+            motionSequence.Kill();
+            if (null != motionTarget)
+            {
+                motionTarget.localScale = Vector3.one;
+            }
+        }
+
         transitionTween = slotCanvasGroup.DOFade(0f, 0.3f);
     }
 
@@ -195,16 +205,16 @@ public class HUD_Loot : MonoBehaviour
     /// </summary>
     public void OnHUDGoUp()
     {
-        if (null == slotCanvasGroup)
+        if (false == hasAcquired || null == slotCanvasGroup || false == gameObject.activeInHierarchy)
         {
             return;
         }
-        
+
         if (null != transitionTween && true == transitionTween.IsActive())
         {
             transitionTween.Kill();
         }
-        
+
         transitionTween = slotCanvasGroup.DOFade(1f, 0.3f);
     }
 

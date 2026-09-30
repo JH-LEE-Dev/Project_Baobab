@@ -250,10 +250,10 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
                 }
             }
 
-            // 그룹의 별 표식 나무가 모두 스폰되었으므로 평상시 별자리 점선 이음선을 표시한다.
+            // 그룹의 별 표식 나무가 모두 스폰되었으므로 별자리 점선 이음선을 등록한다("별자리 발현" 특성이 있을 때만 보인다).
             if (groupStarPositions.TryGetValue(groupId, out List<Vector3> starPositions) && starPositions.Count >= 2)
             {
-                _manager.ShowConstellationDottedLine(groupId, starPositions);
+                _manager.RegisterConstellationDottedLine(groupId, starPositions);
             }
         }
     }

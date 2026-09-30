@@ -21,6 +21,7 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
         _HDRIntensity("HDR Intensity", Float) = 1
 
         _FlashAmount("Flash Amount", Range(0,1)) = 0
+        _FlashColor("Flash Color", Color) = (1,1,1,1)
 
         [Header(Wind Sway)]
         _EnableWindSway("Enable Wind Sway", Float) = 0
@@ -137,6 +138,7 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
                 UNITY_DEFINE_INSTANCED_PROP(float, _GemAlpha)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _FlashColor)
                 UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayPositionAmplitude)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayRotationAmplitude)
@@ -256,7 +258,7 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
                 color.rgb = ApplyTreeGem(color.rgb, worldPos, input.worldPos.zw, ppu, BuildGemParams());
 
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
-                color.rgb = lerp(color.rgb, half3(1,1,1), UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
+                color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
 
                 // 살짝 비치게 해서 뒤가 은은히 보이도록 한다. 피격 플래시가 color.a를 참조하므로
                 // 반드시 그 뒤에서 곱해야 플래시 세기가 알파에 휘둘리지 않는다.
@@ -312,6 +314,7 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
                 UNITY_DEFINE_INSTANCED_PROP(float, _GemAlpha)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _FlashColor)
                 UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayPositionAmplitude)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayRotationAmplitude)
@@ -442,6 +445,7 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
                 UNITY_DEFINE_INSTANCED_PROP(float, _GemAlpha)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _FlashColor)
                 UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayPositionAmplitude)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayRotationAmplitude)
@@ -559,7 +563,7 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
                 color.rgb = ApplyTreeGem(color.rgb, worldPos, input.worldPos.zw, ppu, BuildGemParams());
 
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
-                color.rgb = lerp(color.rgb, half3(1,1,1), UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
+                color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
 
                 // 살짝 비치게 해서 뒤가 은은히 보이도록 한다. 피격 플래시가 color.a를 참조하므로
                 // 반드시 그 뒤에서 곱해야 플래시 세기가 알파에 휘둘리지 않는다.

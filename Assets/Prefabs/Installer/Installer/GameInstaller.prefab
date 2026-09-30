@@ -1554,6 +1554,9 @@ MonoBehaviour:
   treeStarMarkGroundPrefab: {fileID: 114000001, guid: 7d2b9f4a1c6e48b3a5d9e0f1b2c3d4e5, type: 3}
   treeStarMarkGroundPoolDefaultCapacity: 50
   treeStarMarkGroundPoolMaxSize: 200
+  starAppearAuraPrefab: {fileID: 3283926341122803745, guid: 6aff2bb5a7a5fb0498f00515f0370f7c, type: 3}
+  starAppearAuraPoolDefaultCapacity: 4
+  starAppearAuraPoolMaxSize: 16
   constellationDottedLinePrefab: {fileID: 114000001, guid: 1a15ca6257e64fcbb114dca83a896054, type: 3}
   constellationDottedLinePoolDefaultCapacity: 8
   constellationDottedLinePoolMaxSize: 128

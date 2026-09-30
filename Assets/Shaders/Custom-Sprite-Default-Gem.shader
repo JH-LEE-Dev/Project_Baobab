@@ -21,6 +21,7 @@ Shader "Custom/2D/Custom-Sprite-Default-Gem"
         _HDRIntensity("HDR Intensity", Float) = 1
 
         _FlashAmount("Flash Amount", Range(0,1)) = 0
+        _FlashColor("Flash Color", Color) = (1,1,1,1)
 
         [Header(Gem Facets)]
         _GemAmount("Gem Amount", Range(0,1)) = 1
@@ -127,6 +128,7 @@ Shader "Custom/2D/Custom-Sprite-Default-Gem"
                 UNITY_DEFINE_INSTANCED_PROP(float, _GemAlpha)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _FlashColor)
                 UNITY_DEFINE_INSTANCED_PROP(float, _GemAmount)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FacetSize)
                 UNITY_DEFINE_INSTANCED_PROP(float, _ShadeSteps)
@@ -228,7 +230,7 @@ Shader "Custom/2D/Custom-Sprite-Default-Gem"
                 color.rgb = ApplyTreeGem(color.rgb, worldPos, input.worldPos.zw, ppu, BuildGemParams());
 
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
-                color.rgb = lerp(color.rgb, half3(1,1,1), UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
+                color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
 
                 // 살짝 비치게 하여 투명도 적용. 피격 플래시가 color.a를 참조하므로 플래시 뒤에 곱연산
                 color.a *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _GemAlpha);
@@ -282,6 +284,7 @@ Shader "Custom/2D/Custom-Sprite-Default-Gem"
                 UNITY_DEFINE_INSTANCED_PROP(float, _GemAlpha)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _FlashColor)
                 UNITY_DEFINE_INSTANCED_PROP(float, _GemAmount)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FacetSize)
                 UNITY_DEFINE_INSTANCED_PROP(float, _ShadeSteps)
@@ -392,6 +395,7 @@ Shader "Custom/2D/Custom-Sprite-Default-Gem"
                 UNITY_DEFINE_INSTANCED_PROP(float, _GemAlpha)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _FlashColor)
                 UNITY_DEFINE_INSTANCED_PROP(float, _GemAmount)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FacetSize)
                 UNITY_DEFINE_INSTANCED_PROP(float, _ShadeSteps)
@@ -491,7 +495,7 @@ Shader "Custom/2D/Custom-Sprite-Default-Gem"
                 color.rgb = ApplyTreeGem(color.rgb, worldPos, input.worldPos.zw, ppu, BuildGemParams());
 
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
-                color.rgb = lerp(color.rgb, half3(1,1,1), UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
+                color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
 
                 // 살짝 비치게 하여 투명도 적용. 피격 플래시가 color.a를 참조하므로 플래시 뒤에 곱연산
                 color.a *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _GemAlpha);

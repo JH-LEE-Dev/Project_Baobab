@@ -112,6 +112,11 @@ public class UIView_HUD : UIView
         if (null != hudLoot && LootType.SporePotion == newlyAcquiredType)
         {
             hudLoot.AcquireLoot(newlyAcquiredType);
+
+            if (MapType.Town == currentMapType)
+            {
+                ChangedActiveStateLoot(true);
+            }
         }
     }
 
@@ -189,7 +194,7 @@ public class UIView_HUD : UIView
     private void Init_HUDLoot()
     {
         if (null == hudLoot)
-            hudLoot = Instantiate(hudLootPrefab, uiRoot.transform).GetComponent<HUD_Loot>();
+            hudLoot = Instantiate(hudLootPrefab, moveHUD.transform).GetComponent<HUD_Loot>();
 
         if (null != hudLoot)
             hudLoot.Initialize(viewCtx?.inputManager);
@@ -234,6 +239,8 @@ public class UIView_HUD : UIView
                 }
             }
         }
+
+        ChangedActiveStateLoot(MapType.Town == currentMapType);
     }
 
     public void SetCurrentMapType(MapType _currentMapType, ForestType _currentForestType)
@@ -250,6 +257,7 @@ public class UIView_HUD : UIView
 
         ChangedActiveStateEquipment(bTown);
         ChangedActiveStateStemina(bTown);
+        ChangedActiveStateLoot(bTown);
     }
 
     private void ChangedActiveStateEquipment(bool _isTwon)
@@ -270,6 +278,21 @@ public class UIView_HUD : UIView
             return;
 
         hudStaminaBar.SetActivate(!_isTwon);
+    }
+
+    private void ChangedActiveStateLoot(bool _isTown)
+    {
+        if (null == hudLoot)
+            return;
+
+        if (true == _isTown)
+        {
+            hudLoot.gameObject.SetActive(false);
+        }
+        else
+        {
+            hudLoot.gameObject.SetActive(true == hudLoot.HasAcquired);
+        }
     }
 
     public void OffroadSpawned(IOffroadProvider _offroadProvider)
@@ -314,10 +337,10 @@ public class UIView_HUD : UIView
             _onCompleted?.Invoke();
         }
 
-        hudLoot?.OnHUDGoUp();
-
         if (MapType.Town != currentMapType)
         {
+            hudLoot?.OnHUDGoUp();
+
             if (false == _bSuppressDungeonStateBanner)
                 hudMessage?.Play();
 
