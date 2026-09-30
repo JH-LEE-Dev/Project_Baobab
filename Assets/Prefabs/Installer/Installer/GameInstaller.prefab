@@ -1127,6 +1127,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AxeExtraAttackCreator
   shockWavePrefab: {fileID: 1065524423041008248, guid: c2e7f28940e13bc4ea336ffed68402b6, type: 3}
+  overheatShockWavePrefab: {fileID: 0}
 --- !u!114 &845993863184817069
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1573,6 +1574,12 @@ MonoBehaviour:
   treeTransformVfxPoolDefaultCapacity: 4
   treeTransformVfxPoolMaxSize: 32
   treeTransformVfxYOffset: -0.25
+  treeHeatIndicatorMaterial: {fileID: 2100000, guid: 99ad1c090a4d5164bb3764cc601c74cc, type: 2}
+  treeHeatIndicatorRadius: 1.5
+  treeHeatIndicatorLeadTime: 1.5
+  treeHeatIndicatorSortingOrder: -1
+  treeHeatIndicatorPoolDefaultCapacity: 4
+  treeHeatIndicatorPoolMaxSize: 32
   brandStarWrapPrefab: {fileID: 137350371921299027, guid: 8929e93c80181374cba3211c79d18a0f, type: 3}
   brandStarWrapPoolDefaultCapacity: 8
   brandStarWrapPoolMaxSize: 32

@@ -9,6 +9,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     public event Action<TreeObj> TreeShieldBrokenEvent;
     public event Action<TreeObj> TreeShieldRecoveringEvent;
     public event Action<TreeObj> TreeHeatEmitEvent;
+    // 열기 카운트다운이 시작된 순간 발생. float는 방출까지 남은 시간(초)으로, 예고 인디케이터가 이 값을 쓴다.
+    public event Action<TreeObj, float> TreeHeatCountdownStartedEvent;
     // 과열 강화된 ShockWave에 맞았을 때 발생. 실제 폭발 이펙트 생성은 InDungeonObjectManager가
     // 이 이벤트를 구독해서 처리한다(포자막 폭발과 동일한 신호 흐름).
     public event Action<TreeObj> TreeOverheatExplosionEvent;
@@ -177,6 +179,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     private float heatDamageAmount = 0f;
     private bool bHeatCounting = false;
     private Coroutine heatCoroutine;
+    // 카운트다운을 시작하거나 끊을(ResetTree) 때마다 1씩 오른다. 예고 인디케이터는 자기가 붙은 카운트다운의
+    // 값을 기억해 두었다가 달라지면 사라진다(나무가 풀에서 재사용되어 새 카운트다운을 시작한 경우 포함).
+    public int HeatSequence { get; private set; } = 0;
 
     // 과열 버프 중 도끼 평타에 맞았을 때의 지속 피해. 이 나무 자신이 코루틴을 들고 있어야,
     // 나무가 죽어 풀에서 재사용되어도(ResetTree) 엉뚱한 새 나무에 데미지가 잘못 들어가지 않는다.
@@ -372,6 +377,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
             heatCoroutine = null;
         }
         bHeatCounting = false;
+        HeatSequence++;
 
         if (overheatDotCoroutine != null)
         {
@@ -572,12 +578,16 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         if (bDead || bHeatCounting || heatDamageAmount <= 0f) return;
 
         bHeatCounting = true;
+        HeatSequence++;
         heatCoroutine = StartCoroutine(HeatEmitRoutine());
     }
 
     private IEnumerator HeatEmitRoutine()
     {
-        yield return new WaitForSeconds(UnityEngine.Random.Range(3f, 5f));
+        float delay = UnityEngine.Random.Range(3f, 5f);
+        TreeHeatCountdownStartedEvent?.Invoke(this, delay);
+
+        yield return new WaitForSeconds(delay);
 
         TreeHeatEmitEvent?.Invoke(this);
 
