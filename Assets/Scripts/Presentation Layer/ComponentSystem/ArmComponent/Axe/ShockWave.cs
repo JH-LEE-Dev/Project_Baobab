@@ -52,6 +52,8 @@ public class ShockWave : MonoBehaviour
     private Transform visualOrigin;
     public Transform VisualOrigin => visualOrigin;
     public float EffectiveExpandSpeed => moveSpeed * (1f + initialMaxDist * scaleFactor);
+    // 과열 등으로 늘어난 값까지 반영된 실제 타격 지속 시간. 비주얼도 이 시간에 맞춰 재생한다.
+    public float LifeTime => lifeTime;
 
     // 공격마다 GetComponent를 반복 호출하지 않도록 생성 시 1회 캐싱한다.
     private ShockWaveVisualComponent visualComponent;
