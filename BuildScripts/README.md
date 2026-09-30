@@ -129,6 +129,8 @@ LZ4HC 로 포장됐는지(`data.unity3d`), 빌드된 커밋이 지금 HEAD 인�
 Steam 빌드에는 마지막 방어가 하나 더 있습니다. `WrongStoreGuard` 가 exe 옆에 STOVE DRM Maker 가
 주입하는 DLL(`DrmCheckerV3.dll` 등)이 있는지 보고, 있으면 Steam 을 켜는 대신 "잘못된 빌드"
 안내를 띄우고 종료합니다. 사고를 없애 주지는 않지만 증상을 한눈에 알 수 있게 바꿔 줍니다.
+2026-09-30 에 Steam 빌드 옆에 빈 `DrmCheckerV3.dll` 을 놓고 실행해 확인했습니다 — "잘못된 빌드" 메시지
+상자가 뜨고 `Player.log` 에 `[WrongStoreGuard]` 만 남으며, `RestartAppIfNecessary` 는 호출되지 않았습니다.
 
 ### ④ 예행 연습 (제외 규칙을 고쳤거나 오랜만이라면)
 
