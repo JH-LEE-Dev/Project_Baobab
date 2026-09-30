@@ -58,6 +58,12 @@ public class ConstellationDottedLine : MonoBehaviour
     public static readonly Color TreeGoldenColor = new Color(1.8f, 0.85f, 0.05f, 1.0f);
     public static readonly Color BigStarBlueColor = new Color(0.0f, 0.65f, 2.4f, 1.0f);
 
+    // 벌목 전환 앞선이 지나가는 도트에 섞는 밝은 색(살짝 따뜻한 흰빛)
+    private static readonly Color TransitionGlowColor = new Color(1.6f, 1.5f, 1.3f, 1.0f);
+
+    // 전환 앞선의 경계 폭(선분 길이 대비). 클수록 황금빛과 푸른빛이 넓고 부드럽게 섞인다.
+    private const float SweepSoftness = 0.6f;
+
     [Header("Network & Topology Settings")]
     [Tooltip("마지막 노드와 첫 번째 노드를 연결하여 닫힌 다각형(폐곡선)을 형성할지 여부")]
     [SerializeField] private bool isClosedLoop = true;
@@ -89,6 +95,16 @@ public class ConstellationDottedLine : MonoBehaviour
     [SerializeField] private string sortingLayerName = "Objects";
     [SerializeField] private int sortingOrderOffset = 10;
 
+    [Header("Felled Node Transition (나무 벌목 시 황금빛 → 푸른빛 전환)")]
+    [Tooltip("벌목된 노드에서 푸른빛이 선을 따라 번지는 데 걸리는 시간(초). 0이면 즉시 전환")]
+    [SerializeField] private float felledTransitionSeconds = 1.4f;
+
+    [Tooltip("벌목 후 전환이 시작되기 전 대기 시간(초)")]
+    [SerializeField] private float felledTransitionDelay = 0.15f;
+
+    [Tooltip("전환 앞선이 지나가는 도트의 밝기 강조 정도(0~1). 0이면 강조 없음")]
+    [SerializeField] [Range(0.0f, 1.0f)] private float felledTransitionGlow = 0.2f;
+
     [Header("Editor Preview & Multi-Node Testing")]
     [Tooltip("에디터 인스펙터 및 씬 뷰에서 실시간 프리뷰 활성화")]
     [SerializeField] private bool previewInEditor = true;
@@ -113,6 +129,10 @@ public class ConstellationDottedLine : MonoBehaviour
     private readonly List<Vector2> cachedUV1s = new List<Vector2>(512);
     private readonly List<Vector3> cachedWaypoints = new List<Vector3>(64);
     private readonly List<ConstellationNode> activeNodes = new List<ConstellationNode>(16);
+
+    // activeNodes와 같은 인덱스의 푸른빛 전환 진행도(0: 황금빛, 1: 푸른빛)와 시작 전 남은 대기 시간
+    private readonly List<float> nodeBlendRaw = new List<float>(16);
+    private readonly List<float> nodeBlendDelay = new List<float>(16);
 
     // 런타임 추적 상태
     private bool bHasDynamicTargets = false;
@@ -167,6 +187,9 @@ public class ConstellationDottedLine : MonoBehaviour
 
     private void LateUpdate()
     {
+        // 벌목된 노드의 푸른빛 전환이 진행 중이면 그 프레임만 무할당 재빌드(전환이 끝나면 다시 정적 상태)
+        bool bBlendChanged = AdvanceNodeBlends(Time.deltaTime);
+
         // 타겟 Transform을 추적 중이고 위치가 변경되었을 때만 무할당 재빌드
         if (true == bHasDynamicTargets && 0 < activeNodes.Count)
         {
@@ -189,7 +212,13 @@ public class ConstellationDottedLine : MonoBehaviour
             if (true == bMoved)
             {
                 BuildConstellationMesh(activeNodes, isClosedLoop);
+                return;
             }
+        }
+
+        if (true == bBlendChanged && 0 < activeNodes.Count)
+        {
+            BuildConstellationMesh(activeNodes, isClosedLoop);
         }
     }
 
@@ -220,6 +249,8 @@ public class ConstellationDottedLine : MonoBehaviour
         Clear();
         bHasDynamicTargets = false;
         activeNodes.Clear();
+        nodeBlendRaw.Clear();
+        nodeBlendDelay.Clear();
 
         if (null != pool)
         {
@@ -262,6 +293,7 @@ public class ConstellationDottedLine : MonoBehaviour
         }
 
         isClosedLoop = _isClosed;
+        ResetNodeBlends();
         EnsureMeshInitialized();
         BuildConstellationMesh(activeNodes, isClosedLoop);
     }
@@ -283,6 +315,7 @@ public class ConstellationDottedLine : MonoBehaviour
         }
 
         isClosedLoop = _isClosed;
+        ResetNodeBlends();
         EnsureMeshInitialized();
         BuildConstellationMesh(activeNodes, isClosedLoop);
     }
@@ -307,19 +340,22 @@ public class ConstellationDottedLine : MonoBehaviour
         }
 
         isClosedLoop = _isClosed;
+        ResetNodeBlends();
         EnsureMeshInitialized();
         BuildConstellationMesh(activeNodes, isClosedLoop);
     }
 
     /// <summary>
     /// 특정 인덱스의 노드를 '푸른색 큰 별'로 전환하거나 타겟을 갱신합니다.
-    /// 나무가 파괴되어 큰 별이 소환되었을 때 호출하면, 즉시 해당 노드 연결선이 황금빛 ↔ 푸른빛 그라데이션으로 자동 전환됩니다.
+    /// 나무가 파괴되어 큰 별이 소환되었을 때 호출하면, 해당 노드 연결선이 황금빛 ↔ 푸른빛 그라데이션으로 전환됩니다.
+    /// 재생 중에는 색이 한 번에 바뀌지 않고, 벌목된 노드에서 푸른빛이 선을 따라 부드럽게 번집니다(felledTransitionSeconds).
     /// </summary>
     public void SetNodeAsBigStar(int _nodeIndex, bool _isBigStar, Transform _newTarget = null)
     {
         if (0 <= _nodeIndex && activeNodes.Count > _nodeIndex)
         {
             ConstellationNode node = activeNodes[_nodeIndex];
+            bool bWasBigStar = node.isBigStar;
             node.isBigStar = _isBigStar;
             if (null != _newTarget)
             {
@@ -328,6 +364,20 @@ public class ConstellationDottedLine : MonoBehaviour
                 bHasDynamicTargets = true;
             }
             activeNodes[_nodeIndex] = node;
+
+            SyncNodeBlendCount();
+            if (false == _isBigStar)
+            {
+                nodeBlendRaw[_nodeIndex] = 0.0f;
+                nodeBlendDelay[_nodeIndex] = 0.0f;
+            }
+            else if (false == bWasBigStar)
+            {
+                // 보이는 상태에서 새로 벌목된 노드만 애니메이션한다. 그 외(에디터 프리뷰 등)는 즉시 푸른빛이다.
+                bool bAnimate = true == Application.isPlaying && 0.0f < felledTransitionSeconds && true == gameObject.activeInHierarchy;
+                nodeBlendRaw[_nodeIndex] = true == bAnimate ? 0.0f : 1.0f;
+                nodeBlendDelay[_nodeIndex] = true == bAnimate ? Mathf.Max(0.0f, felledTransitionDelay) : 0.0f;
+            }
 
             BuildConstellationMesh(activeNodes, isClosedLoop);
         }
@@ -344,6 +394,7 @@ public class ConstellationDottedLine : MonoBehaviour
         activeNodes.Add(new ConstellationNode(_endPos, false));
         isClosedLoop = false;
 
+        ResetNodeBlends();
         EnsureMeshInitialized();
         BuildConstellationMesh(activeNodes, isClosedLoop);
     }
@@ -359,6 +410,7 @@ public class ConstellationDottedLine : MonoBehaviour
         activeNodes.Add(new ConstellationNode(null != _endTr ? _endTr.position : Vector3.zero, false, _endTr));
         isClosedLoop = false;
 
+        ResetNodeBlends();
         EnsureMeshInitialized();
         BuildConstellationMesh(activeNodes, isClosedLoop);
     }
@@ -426,6 +478,66 @@ public class ConstellationDottedLine : MonoBehaviour
     }
 
     #endregion
+
+    // nodeBlendRaw/Delay 길이를 activeNodes에 맞춘다(모자란 칸은 큰 별 여부에 따라 채운다).
+    private void SyncNodeBlendCount()
+    {
+        while (nodeBlendRaw.Count < activeNodes.Count)
+        {
+            int index = nodeBlendRaw.Count;
+            nodeBlendRaw.Add(true == activeNodes[index].isBigStar ? 1.0f : 0.0f);
+            nodeBlendDelay.Add(0.0f);
+        }
+
+        while (nodeBlendRaw.Count > activeNodes.Count)
+        {
+            nodeBlendRaw.RemoveAt(nodeBlendRaw.Count - 1);
+            nodeBlendDelay.RemoveAt(nodeBlendDelay.Count - 1);
+        }
+    }
+
+    // 노드 목록을 새로 채운 직후: 이미 큰 별인 노드는 애니메이션 없이 곧바로 푸른빛으로 시작한다.
+    private void ResetNodeBlends()
+    {
+        nodeBlendRaw.Clear();
+        nodeBlendDelay.Clear();
+        SyncNodeBlendCount();
+    }
+
+    // 큰 별 노드의 전환 진행도를 시간에 따라 올린다. 값이 바뀌었으면(메쉬 재빌드 필요) true.
+    private bool AdvanceNodeBlends(float _deltaTime)
+    {
+        bool bChanged = false;
+        if (nodeBlendRaw.Count != activeNodes.Count) return false;
+
+        float duration = Mathf.Max(0.0001f, felledTransitionSeconds);
+        for (int i = 0; i < activeNodes.Count; i++)
+        {
+            if (false == activeNodes[i].isBigStar || 1.0f <= nodeBlendRaw[i]) continue;
+
+            if (0.0f < nodeBlendDelay[i])
+            {
+                nodeBlendDelay[i] -= _deltaTime;
+                continue;
+            }
+
+            nodeBlendRaw[i] = Mathf.Min(1.0f, nodeBlendRaw[i] + _deltaTime / duration);
+            bChanged = true;
+        }
+
+        return bChanged;
+    }
+
+    // 노드의 푸른빛 정도(0~1, 처음과 끝이 느린 완만한 곡선). 프리뷰용 editorNodes는 애니메이션 없이 즉시 값이다.
+    private float GetNodeBlend(int _nodeIndex, IReadOnlyList<ConstellationNode> _nodes)
+    {
+        if (true == ReferenceEquals(_nodes, activeNodes) && _nodeIndex < nodeBlendRaw.Count)
+        {
+            return Mathf.SmoothStep(0.0f, 1.0f, nodeBlendRaw[_nodeIndex]);
+        }
+
+        return true == _nodes[_nodeIndex].isBigStar ? 1.0f : 0.0f;
+    }
 
     private void UpdateSortingOrder()
     {
@@ -522,9 +634,9 @@ public class ConstellationDottedLine : MonoBehaviour
             Vector3 rawNormal = new Vector3(-segDir.y, segDir.x, 0.0f);
             Vector3 lineNormal = 0.0001f < rawNormal.sqrMagnitude ? rawNormal.normalized : Vector3.up;
 
-            // 시작/끝 노드의 고유 색상 결정 (나무 = 황금빛, 큰 별 = 푸른빛)
-            Color colorA = true == nodeA.isBigStar ? BigStarBlueColor : TreeGoldenColor;
-            Color colorB = true == nodeB.isBigStar ? BigStarBlueColor : TreeGoldenColor;
+            // 시작/끝 노드의 푸른빛 정도 (나무 = 0: 황금빛, 큰 별 = 1: 푸른빛). 벌목 직후에는 0에서 1로 서서히 올라간다.
+            float blendA = GetNodeBlend(s, _nodes);
+            float blendB = GetNodeBlend((s + 1) % nodeCount, _nodes);
 
             // 꺾임점(Waypoints) 생성 (노드 결착부는 편차 0으로 완벽 앵커링)
             cachedWaypoints.Clear();
@@ -571,20 +683,27 @@ public class ConstellationDottedLine : MonoBehaviour
                     float globalProgress = Mathf.Clamp01((accumulatedNetworkDist + currentSegDist) / totalNetworkDist);
 
                     // 노드 간 색상 보간 (황금빛 나무 ↔ 푸른색 큰 별 그라데이션)
-                    // 푸른색 영역이 노란색에 묻히지 않도록, 큰 별과 연결된 구간에서는 푸른색이 선분의 65% 이상을 시원하게 장악하는 비대칭 곡선 적용
-                    float colorT = progressAlongSeg;
-                    if (false == nodeA.isBigStar && true == nodeB.isBigStar)
-                    {
-                        // 나무(A) -> 큰별(B): 푸른빛이 빠르게 치고 올라옴
-                        colorT = Mathf.Pow(progressAlongSeg, 0.55f);
-                    }
-                    else if (true == nodeA.isBigStar && false == nodeB.isBigStar)
-                    {
-                        // 큰별(A) -> 나무(B): 푸른빛이 오랫동안 유지되다가 나무 쪽에서 전환
-                        colorT = 1.0f - Mathf.Pow(1.0f - progressAlongSeg, 0.55f);
-                    }
+                    // 푸른색 영역이 노란색에 묻히지 않도록, 큰 별과 연결된 구간에서는 푸른색이 선분의 65% 이상을 시원하게 장악하는 비대칭 곡선을 쓴다.
+                    // 벌목 전환 중에는 각 노드의 푸른빛이 그 노드에서 선분 안쪽으로 번지는 앞선(sweep)을 따라 드러난다.
+                    // 앞선이 완전히 지나간 뒤(blend = 1)의 색은 기존 최종 색과 정확히 같다.
+                    float sweepA = Mathf.Clamp01((blendA * (1.0f + SweepSoftness) - progressAlongSeg) / SweepSoftness);
+                    float sweepB = Mathf.Clamp01((blendB * (1.0f + SweepSoftness) - (1.0f - progressAlongSeg)) / SweepSoftness);
+                    float reachA = Mathf.SmoothStep(0.0f, 1.0f, sweepA);
+                    float reachB = Mathf.SmoothStep(0.0f, 1.0f, sweepB);
 
-                    Color dotBaseColor = Color.Lerp(colorA, colorB, colorT);
+                    // 나무(A) <- 큰별(B): 푸른빛이 B 쪽에서 빠르게 치고 올라옴 / 큰별(A) -> 나무(B): A 쪽에서 오래 유지되다가 나무 쪽에서 전환
+                    float weightFromA = Mathf.Pow(1.0f - progressAlongSeg, 0.55f);
+                    float weightFromB = Mathf.Pow(progressAlongSeg, 0.55f);
+                    float blueAmount = reachA * (1.0f - reachB) * weightFromA + (1.0f - reachA) * reachB * weightFromB + reachA * reachB;
+
+                    Color dotBaseColor = Color.Lerp(TreeGoldenColor, BigStarBlueColor, blueAmount);
+
+                    // 전환 앞선이 지나가는 도트만 살짝 밝게 (앞선의 중앙에서 최대, 앞선 앞뒤에서는 0)
+                    if (0.0f < felledTransitionGlow)
+                    {
+                        float frontBump = Mathf.Max(4.0f * sweepA * (1.0f - sweepA), 4.0f * sweepB * (1.0f - sweepB));
+                        dotBaseColor = Color.Lerp(dotBaseColor, TransitionGlowColor, felledTransitionGlow * frontBump);
+                    }
 
                     // 트윙클 및 색상 시프트 위상
                     float twinklePhase = Mathf.Repeat(GetPseudoRandom(segBaseSeed + dotGlobalIndex * 17) * 0.5f + 0.5f, 1.0f);
