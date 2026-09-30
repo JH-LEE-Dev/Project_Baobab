@@ -12,13 +12,14 @@ Shader "Custom/VFX/ConstellationPixelLaser"
         _TailLength ("Tail Length (유성 꼬리 길이)", Range(0.05, 1.5)) = 0.85
 
         [Header(Warhead Wave Spark Settings)]
-        _HeadParams ("Head: x=최대굵기px y=테이퍼길이px z=탄두구간px w=마름모한계", Vector) = (7, 30, 7, 1.25)
+        _HeadParams ("Head: x=몸통최대굵기px y=테이퍼길이px z=탄두구간px w=별탄두크기px", Vector) = (5, 30, 7, 11)
         _WaveParams ("Wave: x=진폭px y=파동길이px z=주기px w=끝점앵커px", Vector) = (4, 44, 10, 14)
-        _SparkParams ("Spark: x=튀는거리px y=수명px z=굵은도트발광배율", Vector) = (9, 28, 0.4, 0)
+        _SparkParams ("Spark: x=튀는거리px y=수명px z=굵은도트발광배율 w=금색비율", Vector) = (9, 16, 0.4, 0.3)
 
         [Header(Arrival Settings)]
         _Arrive ("Arrive (도착 후 경과 0~1, 스크립트가 지정)", Range(0.0, 1.0)) = 0.0
         _ArriveParams ("Arrive: x=스파크반경px y=별맥동px z=별떨림px w=끝점잔재정리반경px", Vector) = (10, 2, 1, 48)
+        _RippleParams ("Ripple: x=진폭px y=파장px z=파도묶음길이px w=앞머리가한변훑는도착비율", Vector) = (4, 28, 56, 0.6)
 
         [Header(Emission and Alpha Control)]
         _EmissionBoost ("Emission Boost (전체 발광 배율)", Float) = 1.0
@@ -85,6 +86,7 @@ Shader "Custom/VFX/ConstellationPixelLaser"
                 float4 _WaveParams;
                 float4 _SparkParams;
                 float4 _ArriveParams;
+                float4 _RippleParams;
 
                 float _Arrive;
                 float _Progress;
@@ -113,6 +115,7 @@ Shader "Custom/VFX/ConstellationPixelLaser"
                 float2 cornerPx = input.corner;     // 십자별 팔은 이 값을 도착 연출로 늘였다 줄인다
                 float armScale = 1.0;               // 십자별 팔의 숨김(0)/표시(1)
                 float headFactor = 0.0;
+                float headDot = 0.0;                // 선단에 가장 가까운 도트 하나(별 탄두가 되는 도트)
 
                 // 도착 후 경과(0~1). 0이면 비행 중이라 아래 도착 연출이 전부 꺼진다.
                 float arrive = _Arrive;
@@ -140,8 +143,18 @@ Shader "Custom/VFX/ConstellationPixelLaser"
                     }
                     sizePx = (bCollapseHidden || bClearHidden) ? 0.0 : 1.0 + 2.0 * halfSteps;
 
-                    // 선단 바로 뒤 몇 픽셀은 마름모 탄두(흰 코어 + 테두리)
+                    // 선단 바로 뒤 몇 픽셀은 탄두 색으로 덮는다
                     headFactor = saturate(1.0 - dist / max(_HeadParams.z, 0.001));
+
+                    // 별 탄두: 도트 간격(2px) 덕분에 dist가 [0, 2)인 도트는 항상 하나뿐이다. 이 도트를 큰 4방향 별로 키운다.
+                    // 도착 소멸(collapse) 때는 홀수 픽셀 단위로 줄어들어 끝 별에 안착하며 작아진다.
+                    if (dist >= 0.0 && dist < 2.0)
+                    {
+                        headDot = 1.0;
+                        float starHalf = floor(max(_HeadParams.w, 1.0) * 0.5);
+                        starHalf = floor(starHalf * (1.0 - collapse) + 0.5);
+                        sizePx = bClearHidden ? 0.0 : 1.0 + 2.0 * starHalf;
+                    }
 
                     // 파동: 선단 뒤로만 이어지는 진폭 묶음(패킷). 선단에 고정된 위상이라 묶음이 선단과 함께 달린다.
                     // 진폭은 선단에서 0(탄두는 곧게 날아간다) -> 파동 길이 중간에서 최대 -> 끝에서 0으로 수렴하는 sin 엔벨로프다.
@@ -150,7 +163,22 @@ Shader "Custom/VFX/ConstellationPixelLaser"
                     float anchor = saturate(min(normT, 1.0 - normT) * arcPx / max(_WaveParams.w, 0.001));
                     float phase = dist / max(_WaveParams.z, 0.001);
                     float tri = abs(frac(phase) * 2.0 - 1.0) * 2.0 - 1.0;
-                    offsetPx = input.aux.xy * round(tri * waveEnv * anchor * _WaveParams.x * (1.0 - collapse));
+                    float waveOffset = tri * waveEnv * anchor * _WaveParams.x * (1.0 - collapse);
+
+                    // 도착 파도: 끝 별에서 터지는 순간 출발점 쪽으로 밀려가는 부드러운 사인파 묶음. 앞머리(front)가 빔 한 변을
+                    // 훑는 동안 그 뒤 _RippleParams.z px 구간이 sin 엔벨로프(앞머리/꼬리 가장자리에서 0)로 출렁이고,
+                    // 도착 연출 후반에는 잔물결이 가라앉는다. 양 끝은 위의 anchor로 별 중심에 붙는다.
+                    float rippleOffset = 0.0;
+                    if (arrive > 0.0 && _RippleParams.x > 0.0)
+                    {
+                        float front = saturate(arrive / max(_RippleParams.w, 0.05)) * (arcPx + _RippleParams.z);
+                        float rel = front - distToEnd;
+                        float ru = rel / max(_RippleParams.z, 0.001);
+                        float rippleEnv = (ru >= 0.0 && ru <= 1.0) ? sin(ru * 3.14159265) : 0.0;
+                        float rippleFade = 1.0 - smoothstep(0.7, 1.0, arrive);
+                        rippleOffset = sin(rel / max(_RippleParams.y, 0.001) * 6.2831853) * rippleEnv * anchor * _RippleParams.x * rippleFade;
+                    }
+                    offsetPx = input.aux.xy * round(waveOffset + rippleOffset);
                 }
                 else if (kind < 1.5)
                 {
@@ -200,16 +228,23 @@ Shader "Custom/VFX/ConstellationPixelLaser"
                 }
                 else
                 {
-                    // 스파크: 선단이 지난 직후부터 옆으로 튀어나가며 도트마다 다른 수명으로 사라진다. 그 외에는 크기 0으로 숨긴다.
+                    // 스파클러: 선단이 지난 직후부터 조각이 옆(과 약간 뒤)으로 이즈 아웃으로 튀어나가며, 생애가 진행될수록
+                    // 5px -> 3px -> 1px로 계단식으로 작아지다 사라진다(알파 페이드 없음). 그 외에는 크기 0으로 숨긴다.
                     float life = max(_SparkParams.y, 0.001);
                     // 도착 후에는 선단이 끝점에 멈춰 dist가 얼어붙으므로, 도착 경과를 수명 진행에 더해 스파크가 튀어나가며 꺼지게 한다.
                     float p = dist / life + arrive * 1.7;
-                    float lifeLimit = 0.35 + 0.65 * frac(seed * 7.13);
+                    float lifeLimit = 0.5 + 0.5 * frac(seed * 7.13);
                     if (dist >= 0.0 && p < lifeLimit)
                     {
+                        float q = saturate(p / lifeLimit);
+                        float ease = 1.0 - (1.0 - q) * (1.0 - q);
+                        // 탄두 주변에 뭉친 구름으로 보이도록 튀는 거리 편차를 좁히고(0.7~1.15배), 뒤로 밀리는 양을 줄이고(0.2배),
+                        // 크기 단계를 빨리 내려서(5px 20%까지, 3px 45%까지) 멀어지기 전에 `.` 점이 되어 사라지게 한다.
+                        float maxDist = _SparkParams.x * (0.7 + 0.45 * frac(seed * 3.7));
                         float side = seed < 0.5 ? -1.0 : 1.0;
-                        float rise = p * _SparkParams.x * (0.5 + frac(seed * 3.7));
-                        offsetPx = input.aux.xy * side * round(rise + 1.0);
+                        float2 travel = float2(input.aux.y, -input.aux.x);          // 법선을 -90도 돌린 값 = 선단이 나아가는 방향
+                        offsetPx = round(input.aux.xy * side * (1.0 + ease * maxDist) - travel * (ease * maxDist * 0.2));
+                        sizePx = q < 0.2 ? 5.0 : (q < 0.45 ? 3.0 : 1.0);
                     }
                     else
                     {
@@ -228,7 +263,7 @@ Shader "Custom/VFX/ConstellationPixelLaser"
                 output.positionHCS = TransformWorldToHClip(centerWS + cornerWS);
                 output.uv = input.uv;
                 output.shape = sign(input.corner);
-                output.info = float4(headFactor, sizePx, kind, 0.0);
+                output.info = float4(headFactor, sizePx, kind, headDot > 0.5 ? 2.0 : saturate(seed));
                 output.color = input.color;
                 return output;
             }
@@ -260,18 +295,72 @@ Shader "Custom/VFX/ConstellationPixelLaser"
                 float sizePx = input.info.y;
                 float kind = input.info.z;
 
-                // 2. 스파크는 선단 코어 색 1픽셀 점
-                if (kind > 1.5)
+                // 2. 도착 스파크(종류 3)는 선단 코어 색 정사각 점
+                if (kind > 2.5)
                 {
                     return half4(_HeadColor.rgb * (half)_EmissionBoost, 1.0h);
                 }
 
-                // 3. 탄두 구간의 굵은 도트는 마름모로 깎는다(작은 도트/꼬리는 정사각형 그대로)
-                float diamond = abs(input.shape.x) + abs(input.shape.y);
-                bool bWarhead = kind < 0.5 && headFactor > 0.0 && sizePx > 3.5;
-                if (bWarhead && diamond > _HeadParams.w)
+                // 2-1. 스파클러 조각(종류 2): 생애 단계에 따라 5px `+`/`x` -> 3px `x`/`+` -> 1px `.`로 문양이 바뀌고,
+                //      약 _SparkParams.w 비율은 금색, 나머지는 탄두 코어 색이다.
+                if (kind > 1.5)
                 {
-                    discard;
+                    float sparkSeed = input.info.w;
+                    float sx = abs(round(input.shape.x * sizePx * 0.5));
+                    float sy = abs(round(input.shape.y * sizePx * 0.5));
+                    if (sizePx > 1.5)
+                    {
+                        bool startsPlus = frac(sparkSeed * 5.31) < 0.5;
+                        bool usePlus = (sizePx > 4.0) ? startsPlus : (false == startsPlus);
+                        bool sparkFill = usePlus ? (min(sx, sy) < 0.5) : (abs(sx - sy) < 0.5);
+                        if (false == sparkFill)
+                        {
+                            discard;
+                        }
+                    }
+                    bool bGold = frac(sparkSeed * 11.3) < _SparkParams.w;
+                    half3 sparkRgb = bGold ? half3(1.0h, 0.62h, 0.10h) : _HeadColor.rgb;
+                    // 조각이 많아 블룸이 쌓이기 쉬우므로 굵은 조각은 굵은 도트 발광 배율(_SparkParams.z), 1px 점은 0.7배로 낮춘다
+                    half sparkGlow = (sizePx > 1.5) ? (half)_SparkParams.z : 0.7h;
+                    return half4(sparkRgb * (half)_EmissionBoost * sparkGlow, 1.0h);
+                }
+
+                // 3. 도트를 정사각형이 아니라 도트 문양으로 깎는다.
+                //    - 선단 도트: 오목한 4방향 별. `+` 방향과 `x`(45도) 방향을 번갈아 깜빡인다.
+                //    - 3/5px 몸통 도트: `+` 또는 `x` (도트별 난수), 1px는 `.` 점
+                float seedV = input.info.w;
+                bool bHeadStar = kind < 0.5 && seedV > 1.5;
+                float ix = round(input.shape.x * sizePx * 0.5);
+                float iy = round(input.shape.y * sizePx * 0.5);
+                float ax = abs(ix);
+                float ay = abs(iy);
+                float mx = max(ax, ay);
+                float mn = min(ax, ay);
+                float coreDist = ax + ay;
+                if (kind < 0.5 && sizePx > 1.5)
+                {
+                    bool bFill = true;
+                    if (bHeadStar)
+                    {
+                        float hs = (sizePx - 1.0) * 0.5;
+                        if (frac(_Time.y * 5.0) <= 0.5)
+                        {
+                            bFill = (mn < 0.5) || (mn <= floor((hs - mx) * 0.55));
+                        }
+                        else
+                        {
+                            // 45도 방향 별(x): 대각선 팔 길이는 hs*0.8칸, 팔 굵기는 중심으로 갈수록 두꺼워진다(|ax-ay|가 굵기)
+                            bFill = (mx <= floor(hs * 0.8)) && (abs(ax - ay) <= floor((hs - mx) * 0.4 + 0.1));
+                        }
+                    }
+                    else
+                    {
+                        bFill = (seedV < 0.5) ? (mn < 0.5) : (abs(ax - ay) < 0.5);
+                    }
+                    if (false == bFill)
+                    {
+                        discard;
+                    }
                 }
 
                 // 4. 도트 기본 성좌 발광 색상 + 꼬리 구간(tailPos ~ headPos) 점진적 페이드아웃 알파
@@ -285,11 +374,15 @@ Shader "Custom/VFX/ConstellationPixelLaser"
                 half3 bodyRgb = lerp(gradientRgb, _CoreColor.rgb, 0.25h);
                 half bodyAlpha = finalAlpha * (half)softTrail;
 
-                // 5. 탄두: 중심부는 코어 색, 바깥은 테두리 색으로 선단에 가까울수록 진하게 덮는다
-                if (bWarhead)
+                // 5. 별 탄두는 2색 면(흰 코어 + 연한 몸통), 그 뒤 선단 구간 도트는 선단에 가까울수록 코어 색으로 덮는다
+                if (bHeadStar)
                 {
-                    half3 warheadRgb = diamond < 0.55 ? _HeadColor.rgb : _CoreColor.rgb;
-                    finalRgb = lerp(bodyRgb, warheadRgb, (half)headFactor);
+                    finalRgb = (coreDist <= 2.0) ? _HeadColor.rgb : _CoreColor.rgb;
+                    finalAlpha = 1.0h;
+                }
+                else if (kind < 0.5 && headFactor > 0.0)
+                {
+                    finalRgb = lerp(bodyRgb, _CoreColor.rgb, (half)headFactor);
                     finalAlpha = lerp(bodyAlpha, 1.0h, (half)headFactor);
                 }
                 else

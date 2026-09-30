@@ -63,22 +63,29 @@ MonoBehaviour:
   segmentShootDuration: 0.45
   fullAreaSustainDuration: 0.2
   starReachProgressThreshold: 0.98
-  headSizePx: 6
+  headSizePx: 8
   headTaperLengthPx: 30
-  headZonePx: 7
-  headShape: 1.25
+  headZonePx: 10
+  headStarPx: 12
   waveAmplitudePx: 4
   waveLengthPx: 44
   wavePeriodPx: 10
   waveAnchorPx: 14
-  warheadGlow: 0.2
-  sparkDensity: 0.2
+  warheadGlow: 0.35
+  sparkDensity: 0.7
   sparkDistancePx: 9
-  sparkLifePx: 28
+  sparkLifePx: 16
+  sparkGoldRatio: 0.3
+  arriveStartProgress: 0.97
   arriveDuration: 0.2
   burstRadiusPx: 16
   starPulsePx: 2
   starJitterPx: 1
+  arriveClearZonePx: 48
+  rippleAmplitudePx: 4
+  rippleWavelengthPx: 28
+  ripplePacketPx: 56
+  rippleSweep: 0.6
   zigzagAmplitude: 0.065
   zigzagStepLength: 0.1
   curveRoundness: 0
@@ -89,8 +96,6 @@ MonoBehaviour:
   - {x: -1.4718232, y: 54.40645, z: 0}
   - {x: -4.7103558, y: 51.505264, z: 0}
   - {x: -4.21558, y: 50.110897, z: 0}
-  - {x: 2.823731, y: 51.95506, z: 0}
-  - {x: 1.3618932, y: 54.743797, z: 0}
   testIsClosedLoop: 1
 --- !u!1 &1914308673955077846
 GameObject:

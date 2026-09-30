@@ -1,0 +1,663 @@
+fileFormatVersion: 2
+guid: e7eadf1d5aa108441a6b95eeef037868
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 7254370333278452692
+    second: BrandStamp_0
+  - first:
+      213: 1105256675017131915
+    second: BrandStamp_1
+  - first:
+      213: 7598509739731410592
+    second: BrandStamp_2
+  - first:
+      213: 927271442055366745
+    second: BrandStamp_3
+  - first:
+      213: 6014908287806028195
+    second: BrandStamp_4
+  - first:
+      213: -6686045933842170038
+    second: BrandStamp_5
+  - first:
+      213: 2881872614571503515
+    second: BrandStamp_6
+  - first:
+      213: -3119274013451181223
+    second: BrandStamp_7
+  - first:
+      213: -7987884069564996488
+    second: BrandStamp_8
+  - first:
+      213: -704512531414656316
+    second: BrandStamp_9
+  - first:
+      213: -645436005940759587
+    second: BrandStamp_10
+  - first:
+      213: 567474917705410950
+    second: BrandStamp_11
+  - first:
+      213: 3666714645156906191
+    second: BrandStamp_12
+  - first:
+      213: 7539919634435162012
+    second: BrandStamp_13
+  - first:
+      213: -249781986171529800
+    second: BrandStamp_14
+  - first:
+      213: -4718581633254293865
+    second: BrandStamp_15
+  - first:
+      213: -5116990312816075749
+    second: BrandStamp_16
+  - first:
+      213: -5868264739354261926
+    second: BrandStamp_17
+  - first:
+      213: -2173287336616009263
+    second: BrandStamp_18
+  - first:
+      213: 5823841945126037887
+    second: BrandStamp_19
+  - first:
+      213: -2051802147551688209
+    second: BrandStamp_20
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 32
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 0
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: BrandStamp_0
+      rect:
+        serializedVersion: 2
+        x: 9
+        y: 9
+        width: 23
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4dbb1300263bca460800000000000000
+      internalID: 7254370333278452692
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_1
+      rect:
+        serializedVersion: 2
+        x: 46
+        y: 5
+        width: 31
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b87860c0719a65f00800000000000000
+      internalID: 1105256675017131915
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_2
+      rect:
+        serializedVersion: 2
+        x: 84
+        y: 2
+        width: 37
+        height: 37
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0ae59038954537960800000000000000
+      internalID: 7598509739731410592
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_3
+      rect:
+        serializedVersion: 2
+        x: 123
+        y: 0
+        width: 41
+        height: 41
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9580312b6745edc00800000000000000
+      internalID: 927271442055366745
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_4
+      rect:
+        serializedVersion: 2
+        x: 166
+        y: 2
+        width: 37
+        height: 37
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3a93b3b283f397350800000000000000
+      internalID: 6014908287806028195
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_5
+      rect:
+        serializedVersion: 2
+        x: 207
+        y: 7
+        width: 35
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a4f7469b5a46633a0800000000000000
+      internalID: -6686045933842170038
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_6
+      rect:
+        serializedVersion: 2
+        x: 248
+        y: 8
+        width: 36
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b9fe577cfd77ef720800000000000000
+      internalID: 2881872614571503515
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_7
+      rect:
+        serializedVersion: 2
+        x: 289
+        y: 9
+        width: 35
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 953a227bfcc16b4d0800000000000000
+      internalID: -3119274013451181223
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_8
+      rect:
+        serializedVersion: 2
+        x: 295
+        y: 26
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 874a396a2c5552190800000000000000
+      internalID: -7987884069564996488
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_9
+      rect:
+        serializedVersion: 2
+        x: 319
+        y: 13
+        width: 6
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4cad739d5911936f0800000000000000
+      internalID: -704512531414656316
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_10
+      rect:
+        serializedVersion: 2
+        x: 330
+        y: 8
+        width: 35
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dd377ac4f53fa07f0800000000000000
+      internalID: -645436005940759587
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_11
+      rect:
+        serializedVersion: 2
+        x: 335
+        y: 26
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 68966c85e6310e700800000000000000
+      internalID: 567474917705410950
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_12
+      rect:
+        serializedVersion: 2
+        x: 360
+        y: 13
+        width: 7
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fc4cc4dea89c2e230800000000000000
+      internalID: 3666714645156906191
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_13
+      rect:
+        serializedVersion: 2
+        x: 374
+        y: 18
+        width: 9
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c9f308595fc23a860800000000000000
+      internalID: 7539919634435162012
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_14
+      rect:
+        serializedVersion: 2
+        x: 379
+        y: 10
+        width: 23
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8b554f26b98988cf0800000000000000
+      internalID: -249781986171529800
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_15
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 31
+        width: 14
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 79ef132310b348eb0800000000000000
+      internalID: -4718581633254293865
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_16
+      rect:
+        serializedVersion: 2
+        x: 401
+        y: 17
+        width: 6
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b1c9b75eb6cccf8b0800000000000000
+      internalID: -5116990312816075749
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_17
+      rect:
+        serializedVersion: 2
+        x: 413
+        y: 10
+        width: 34
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a56c6da9f4cbf8ea0800000000000000
+      internalID: -5868264739354261926
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_18
+      rect:
+        serializedVersion: 2
+        x: 460
+        y: 15
+        width: 96
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1d1e5229eaee6d1e0800000000000000
+      internalID: -2173287336616009263
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_19
+      rect:
+        serializedVersion: 2
+        x: 370
+        y: 10
+        width: 7
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f79e14f946172d050800000000000000
+      internalID: 5823841945126037887
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BrandStamp_20
+      rect:
+        serializedVersion: 2
+        x: 400
+        y: 8
+        width: 7
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fe94cc551d88683e0800000000000000
+      internalID: -2051802147551688209
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      BrandStamp_0: 7254370333278452692
+      BrandStamp_1: 1105256675017131915
+      BrandStamp_10: -645436005940759587
+      BrandStamp_11: 567474917705410950
+      BrandStamp_12: 3666714645156906191
+      BrandStamp_13: 7539919634435162012
+      BrandStamp_14: -249781986171529800
+      BrandStamp_15: -4718581633254293865
+      BrandStamp_16: -5116990312816075749
+      BrandStamp_17: -5868264739354261926
+      BrandStamp_18: -2173287336616009263
+      BrandStamp_19: 5823841945126037887
+      BrandStamp_2: 7598509739731410592
+      BrandStamp_20: -2051802147551688209
+      BrandStamp_3: 927271442055366745
+      BrandStamp_4: 6014908287806028195
+      BrandStamp_5: -6686045933842170038
+      BrandStamp_6: 2881872614571503515
+      BrandStamp_7: -3119274013451181223
+      BrandStamp_8: -7987884069564996488
+      BrandStamp_9: -704512531414656316
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -57,14 +57,14 @@ namespace PresentationLayer.VFX
         private float starReachProgressThreshold = 1.0f;
 
         [Header("탄두 / 파동 (빔 선단 연출, 전부 정점 셰이더에서 정수 픽셀 단위로 처리)")]
-        [SerializeField, Range(1, 11), Tooltip("선단 탄두의 최대 굵기(px, 홀수로 반올림). 선단에서 꼬리 쪽으로 갈수록 1px 점선으로 가늘어집니다")]
-        private int headSizePx = 7;
-        [SerializeField, Tooltip("탄두 굵기가 1px로 가늘어지는 데 걸리는 선단 뒤쪽 거리(px)")]
+        [SerializeField, Range(1, 11), Tooltip("탄두 뒤 몸통 도트(`+`/`x` 문양)의 최대 크기(px, 홀수로 반올림). 선단에서 꼬리 쪽으로 갈수록 1px `.` 점선으로 가늘어집니다")]
+        private int headSizePx = 5;
+        [SerializeField, Tooltip("몸통 도트 크기가 1px로 가늘어지는 데 걸리는 선단 뒤쪽 거리(px)")]
         private float headTaperLengthPx = 30.0f;
-        [SerializeField, Tooltip("선단 뒤 이 거리(px) 안의 도트는 마름모 모양 탄두(흰 코어 + 테두리)로 그립니다")]
+        [SerializeField, Tooltip("선단 뒤 이 거리(px) 안의 도트는 탄두 코어 색으로 덮습니다")]
         private float headZonePx = 7.0f;
-        [SerializeField, Range(0.5f, 2.0f), Tooltip("탄두 도트의 마름모 마스크 한계(|x|+|y|). 1.0 = 정마름모, 2.0 = 정사각형")]
-        private float headShape = 1.25f;
+        [SerializeField, Range(5, 15), Tooltip("별 탄두 크기(px, 홀수로 반올림). 선단의 큰 4방향 별이 `+`와 `x` 방향으로 번갈아 반짝입니다")]
+        private int headStarPx = 11;
         [SerializeField, Tooltip("선단 뒤 파동 묶음의 최대 꺾임 폭(px). 선단 자체는 곧게 나가고 그 뒤에서 가장 크게 출렁입니다")]
         private float waveAmplitudePx = 4.0f;
         [SerializeField, Tooltip("선단 뒤로 파동이 이어지는 길이(px). 이 거리에서 진폭이 0으로 수렴합니다")]
@@ -75,12 +75,14 @@ namespace PresentationLayer.VFX
         private float waveAnchorPx = 14.0f;
         [SerializeField, Range(0.05f, 1.0f), Tooltip("가장 굵은 도트의 발광 배율(1px 도트 대비). 낮출수록 탄두 블룸이 줄어 픽셀 형태가 또렷해집니다")]
         private float warheadGlow = 0.4f;
-        [SerializeField, Range(0.0f, 1.0f), Tooltip("도트마다 스파크(옆으로 튀었다 사라지는 잔해)가 붙을 확률")]
-        private float sparkDensity = 0.2f;
-        [SerializeField, Tooltip("스파크가 튀어나가는 최대 거리(px)")]
+        [SerializeField, Range(0.0f, 1.0f), Tooltip("도트마다 스파클러 조각(선단 뒤로 튀는 `+`/`x`/`.` 별 조각)이 붙을 확률")]
+        private float sparkDensity = 0.7f;
+        [SerializeField, Tooltip("스파클러 조각이 튀어나가는 최대 거리(px)")]
         private float sparkDistancePx = 9.0f;
-        [SerializeField, Tooltip("선단이 지난 뒤 스파크가 살아있는 거리(px)")]
-        private float sparkLifePx = 28.0f;
+        [SerializeField, Tooltip("선단이 지난 뒤 스파클러 조각이 살아있는 거리(px). 이 동안 5px -> 3px -> 1px로 작아지다 사라집니다")]
+        private float sparkLifePx = 16.0f;
+        [SerializeField, Range(0.0f, 1.0f), Tooltip("스파클러 조각 중 금색으로 나오는 비율(나머지는 탄두 코어 색)")]
+        private float sparkGoldRatio = 0.3f;
 
         [Header("도착 연출 (빔이 끝 별에 닿은 뒤: 탄두 소멸 + 별 요동 + 스파크 터짐)")]
         [SerializeField, Range(0.8f, 1.0f), Tooltip("선단이 이 진행도에 닿는 순간 도착 연출을 시작합니다. 선단은 끝에서 감속해 오래 기어가므로 1.0보다 낮게 잡아야 도착하자마자 터집니다. 바닥 별 폭발(starReachProgressThreshold)과 맞추려면 그 값과 같게 두세요")]
@@ -95,6 +97,16 @@ namespace PresentationLayer.VFX
         private float starJitterPx = 1.0f;
         [SerializeField, Tooltip("도착 후 끝 별 주변 이 반경(px) 안의 도트/별이 도착 진행 20~70% 사이에 하나씩 꺼집니다(먼 도트부터). 0이면 끝점 잔재를 따로 정리하지 않습니다")]
         private float arriveClearZonePx = 48.0f;
+
+        [Header("도착 파도 (터지는 순간 끝 별에서 출발점 쪽으로 밀려가는 부드러운 물결)")]
+        [SerializeField, Tooltip("파도 진폭(px). 0이면 파도를 끕니다. 히트박스 폭(32px)보다 훨씬 작게 유지하세요")]
+        private float rippleAmplitudePx = 4.0f;
+        [SerializeField, Tooltip("파도 한 주기의 길이(px). 클수록 완만한 너울이 됩니다")]
+        private float rippleWavelengthPx = 28.0f;
+        [SerializeField, Tooltip("파도 묶음의 길이(px). 앞머리 뒤로 이 구간만 출렁이고 양 가장자리는 0으로 부드럽게 시작/끝납니다")]
+        private float ripplePacketPx = 56.0f;
+        [SerializeField, Range(0.1f, 1.0f), Tooltip("파도 앞머리가 빔 한 변을 다 훑는 데 걸리는 시간(도착 연출 길이 대비 비율). 작을수록 빠르게 싸악 지나갑니다")]
+        private float rippleSweep = 0.6f;
 
         [Header("지그재그 (Zigzag) 형태 세팅")]
         [SerializeField, Tooltip("지그재그 꺾임 폭 (월드 단위, 32 PPU 기준 0.09375 = 3픽셀)")]
@@ -240,6 +252,7 @@ namespace PresentationLayer.VFX
         private static readonly int PropSparkParams = Shader.PropertyToID("_SparkParams");
         private static readonly int PropArrive = Shader.PropertyToID("_Arrive");
         private static readonly int PropArriveParams = Shader.PropertyToID("_ArriveParams");
+        private static readonly int PropRippleParams = Shader.PropertyToID("_RippleParams");
 
         #region Unity Lifecycle
 
@@ -1034,10 +1047,11 @@ namespace PresentationLayer.VFX
         {
             _segment.SetHeadParams(
                 sparkDensity,
-                new Vector4(headSizePx, headTaperLengthPx, headZonePx, headShape),
+                new Vector4(headSizePx, headTaperLengthPx, headZonePx, headStarPx),
                 new Vector4(waveAmplitudePx, waveLengthPx, wavePeriodPx, waveAnchorPx),
-                new Vector4(sparkDistancePx, sparkLifePx, warheadGlow, 0.0f),
-                new Vector4(burstRadiusPx, starPulsePx, starJitterPx, arriveClearZonePx));
+                new Vector4(sparkDistancePx, sparkLifePx, warheadGlow, sparkGoldRatio),
+                new Vector4(burstRadiusPx, starPulsePx, starJitterPx, arriveClearZonePx),
+                new Vector4(rippleAmplitudePx, rippleWavelengthPx, ripplePacketPx, rippleSweep));
             _segment.SetArrival(0.0f); // 풀에서 재사용될 때 이전 발사의 도착 연출이 남지 않게 초기화
         }
 
@@ -1228,7 +1242,7 @@ namespace PresentationLayer.VFX
             /// <summary>
             /// 스파크 밀도(메쉬 생성용)와 탄두/파동/스파크/도착 연출 셰이더 파라미터를 지정합니다.
             /// </summary>
-            public void SetHeadParams(float _sparkDensity, Vector4 _head, Vector4 _wave, Vector4 _spark, Vector4 _arriveParams)
+            public void SetHeadParams(float _sparkDensity, Vector4 _head, Vector4 _wave, Vector4 _spark, Vector4 _arriveParams, Vector4 _rippleParams)
             {
                 sparkDensity = _sparkDensity;
 
@@ -1237,6 +1251,7 @@ namespace PresentationLayer.VFX
                 propBlock.SetVector(PropWaveParams, _wave);
                 propBlock.SetVector(PropSparkParams, _spark);
                 propBlock.SetVector(PropArriveParams, _arriveParams);
+                propBlock.SetVector(PropRippleParams, _rippleParams);
                 meshRenderer.SetPropertyBlock(propBlock);
             }
 
