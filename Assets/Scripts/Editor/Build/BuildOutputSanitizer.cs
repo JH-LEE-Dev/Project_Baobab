@@ -246,7 +246,7 @@ public class BuildOutputSanitizer : IPostprocessBuildWithReport
     /// 빌드 출력의 루트 폴더입니다. summary.outputPath는 실행 파일 경로이므로 그 상위를 씁니다.
     /// (플랫폼에 따라 폴더가 넘어오기도 해서 둘 다 처리합니다)
     /// </summary>
-    private static string ResolveOutputRoot(BuildReport _report)
+    public static string ResolveOutputRoot(BuildReport _report)
     {
         string _output = _report.summary.outputPath;
 
