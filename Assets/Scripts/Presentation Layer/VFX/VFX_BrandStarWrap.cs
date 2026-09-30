@@ -116,6 +116,13 @@ namespace PresentationLayer.VFX
         private Matrix4x4 worldToLocal;
         private float meshZ;
 
+        // 컬링으로 이미 숨긴 상태인지 - 숨기는 처리(가루 비우기/렌더러 끄기)는 보이다가 꺼지는 순간 한 번이면 충분하다
+        private bool bHiddenByCulling;
+
+        // 마지막으로 렌더러에 넣은 소팅 오더 - 값이 바뀔 때만 다시 넣는다(Begin에서 초기화)
+        private int appliedBackSortingOrder;
+        private int appliedFrontSortingOrder;
+
         public TreeVisualComponent Visual => visual;
 
         /// <summary>
@@ -137,6 +144,11 @@ namespace PresentationLayer.VFX
                 meshRenderers[i].sortingLayerName = _sortingLayerName;
                 meshRenderers[i].enabled = false;
             }
+
+            // 방금 가루를 비우고 렌더러를 껐으므로 "숨긴 상태"로 시작한다. 소팅 오더는 첫 빌드에서 반드시 넣도록 무효값으로 둔다.
+            bHiddenByCulling = true;
+            appliedBackSortingOrder = int.MinValue;
+            appliedFrontSortingOrder = int.MinValue;
 
             gameObject.SetActive(true);
         }
@@ -360,9 +372,20 @@ namespace PresentationLayer.VFX
 
             DrawDust();
 
-            int topOrder = visual.GetTopSortingOrder();
-            meshRenderers[BackLayer].sortingOrder = topOrder + backSortingOffset;
-            meshRenderers[FrontLayer].sortingOrder = visual.GetTopHighlightSortingOrder() + frontSortingOffset;
+            // 나무 소팅 오더는 거의 바뀌지 않으므로 값이 달라졌을 때만 렌더러에 넣는다
+            int backOrder = visual.GetTopSortingOrder() + backSortingOffset;
+            if (backOrder != appliedBackSortingOrder)
+            {
+                meshRenderers[BackLayer].sortingOrder = backOrder;
+                appliedBackSortingOrder = backOrder;
+            }
+
+            int frontOrder = visual.GetTopHighlightSortingOrder() + frontSortingOffset;
+            if (frontOrder != appliedFrontSortingOrder)
+            {
+                meshRenderers[FrontLayer].sortingOrder = frontOrder;
+                appliedFrontSortingOrder = frontOrder;
+            }
 
             for (int i = 0; i < 2; i++)
             {
@@ -500,12 +523,18 @@ namespace PresentationLayer.VFX
             // 카메라 컬링으로 나무가 꺼져 있는 동안은 그리지 않는다(시간은 계속 흘러 다시 보일 때 자연스럽게 이어진다)
             if (false == visual.gameObject.activeInHierarchy)
             {
-                // 다시 보일 때 허공에 굳은 가루가 남지 않도록 비운다
-                ClearDust();
-                HideRenderers();
+                // 다시 보일 때 허공에 굳은 가루가 남지 않도록 비운다. 꺼져 있는 동안은 가루가 새로 생기지 않으므로
+                // 보이다가 꺼지는 순간 한 번만 처리하면 된다.
+                if (false == bHiddenByCulling)
+                {
+                    ClearDust();
+                    HideRenderers();
+                    bHiddenByCulling = true;
+                }
                 return;
             }
 
+            bHiddenByCulling = false;
             UpdateDust(dt);
             RebuildMeshes();
         }
