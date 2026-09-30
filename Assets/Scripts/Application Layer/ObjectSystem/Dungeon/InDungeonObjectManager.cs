@@ -1607,6 +1607,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeShieldRecoveringEvent += OnTreeShieldRecovering;
         _tree.TreeHeatEmitEvent -= OnTreeHeatEmit;
         _tree.TreeHeatEmitEvent += OnTreeHeatEmit;
+        _tree.TreeHeatCountdownStartedEvent -= OnTreeHeatCountdownStarted;
+        _tree.TreeHeatCountdownStartedEvent += OnTreeHeatCountdownStarted;
         _tree.TreeOverheatExplosionEvent -= OnTreeOverheatExplosion;
         _tree.TreeOverheatExplosionEvent += OnTreeOverheatExplosion;
         _tree.TreeGemTransformedEvent -= OnTreeGemTransformed;
@@ -1768,6 +1770,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeShieldBrokenEvent -= OnTreeShieldBroken;
         _tree.TreeShieldRecoveringEvent -= OnTreeShieldRecovering;
         _tree.TreeHeatEmitEvent -= OnTreeHeatEmit;
+        _tree.TreeHeatCountdownStartedEvent -= OnTreeHeatCountdownStarted;
         _tree.TreeOverheatExplosionEvent -= OnTreeOverheatExplosion;
         _tree.TreeGemTransformedEvent -= OnTreeGemTransformed;
         _tree.TreeAboutToDieEvent -= OnTreeAboutToDie;
@@ -1862,6 +1865,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         new Vector3Int(-1, 0, 0), new Vector3Int(1, 0, 0),
         new Vector3Int(-1, 1, 0), new Vector3Int(0, 1, 0), new Vector3Int(1, 1, 0),
     };
+
+    // 나무가 열기 카운트다운을 시작한 순간 호출된다. 방출 범위(인접 8타일)를 바닥에 미리 보여준다.
+    private void OnTreeHeatCountdownStarted(TreeObj _tree, float _delay)
+    {
+        if (inDungeonVFXManager == null || _tree == null) return;
+
+        inDungeonVFXManager.PlayTreeHeatIndicator(_tree, _delay);
+    }
 
     // 나무의 열기 타이머가 만료된 순간 호출된다. 나무 자신의 타일은 제외하고 8방향 인접 타일에
     // 캐릭터가 있을 때만 스태미나 피해를 준다.

@@ -58,7 +58,14 @@ public static class BuildRunner
 
         if (false == _ok) return;
 
-        Run();
+        BuildReport _report = Run();
+
+        if (null == _report || BuildResult.Succeeded != _report.summary.result) return;
+
+        // 빌드가 끝난 폴더를 곧바로 검사하고, 통과하면 경로를 클립보드에 올린다.
+        // 업로더의 폴더 선택 창에서 옆 폴더(STEAM_DEMO ↔ STOVE_DEMO)를 집는 사고가 실제로 있었다.
+        // 붙여넣을 경로를 손에 쥐어 주는 것이 그 창을 열지 않게 하는 가장 확실한 방법이다.
+        UploadPreflightCheck.RunAndShow(_store, _release, System.IO.Path.GetDirectoryName(_location));
     }
 
     /// <summary>

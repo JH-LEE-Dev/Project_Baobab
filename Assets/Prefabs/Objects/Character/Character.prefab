@@ -2537,6 +2537,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AxeExtraAttackCreator
   shockWavePrefab: {fileID: 1065524423041008248, guid: c2e7f28940e13bc4ea336ffed68402b6, type: 3}
+  overheatShockWavePrefab: {fileID: 1065524423041008248, guid: 00c08a3c5db847be8741e6d11ec1b270, type: 3}
 --- !u!1 &9085878736383911498
 GameObject:
   m_ObjectHideFlags: 0

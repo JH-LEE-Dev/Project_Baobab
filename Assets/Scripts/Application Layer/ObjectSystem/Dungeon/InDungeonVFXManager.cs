@@ -130,6 +130,23 @@ public class InDungeonVFXManager : MonoBehaviour
 
     private IObjectPool<TreeTransformVFX> treeTransformVfxPool;
 
+    [Header("Tree Heat Indicator (열기 방출 예고)")]
+    [SerializeField] private Material treeHeatIndicatorMaterial;
+    // 열기 판정은 나무를 둘러싼 인접 8타일(3x3)이다. 등각 타일(1 x 0.5) 기준으로 그 마름모의 꼭짓점을
+    // 지나는 타원(가로 반지름 1.5, 세로 0.75)이면 판정 범위 전체를 덮는다.
+    [SerializeField] private float treeHeatIndicatorRadius = 1.5f;
+    // 방출 몇 초 전부터 보여줄지. 카운트다운(3~5초)보다 길게 잡으면 카운트다운 내내 보인다.
+    [SerializeField] private float treeHeatIndicatorLeadTime = 1.5f;
+    // 캐릭터 도끼 인디케이터(Indicators 레이어, order 0)가 위에 그려지도록 한 칸 아래에 둔다.
+    [SerializeField] private int treeHeatIndicatorSortingOrder = -1;
+    [SerializeField] private int treeHeatIndicatorPoolDefaultCapacity = 4;
+    [SerializeField] private int treeHeatIndicatorPoolMaxSize = 32;
+
+    // 캐릭터 도끼 인디케이터(RadiusIndicator)와 같은 정렬 레이어
+    private const string IndicatorSortingLayerName = "Indicators";
+
+    private IObjectPool<TreeHeatIndicator> treeHeatIndicatorPool;
+
     [Header("Manifestation Brand Star Wrap (낙인 나무를 감싸는 별)")]
     [SerializeField] private PresentationLayer.VFX.VFX_BrandStarWrap brandStarWrapPrefab;
     [SerializeField] private int brandStarWrapPoolDefaultCapacity = 8;
@@ -256,6 +273,68 @@ public class InDungeonVFXManager : MonoBehaviour
                 maxSize: treeTransformVfxPoolMaxSize
             );
         }
+
+        if (treeHeatIndicatorPool == null && treeHeatIndicatorMaterial != null)
+        {
+            treeHeatIndicatorPool = new ObjectPool<TreeHeatIndicator>(
+                createFunc: CreateTreeHeatIndicator,
+                actionOnGet: OnGetTreeHeatIndicator,
+                actionOnRelease: OnReleaseTreeHeatIndicator,
+                actionOnDestroy: OnDestroyTreeHeatIndicator,
+                collectionCheck: true,
+                defaultCapacity: treeHeatIndicatorPoolDefaultCapacity,
+                maxSize: treeHeatIndicatorPoolMaxSize
+            );
+        }
+    }
+
+    /// <summary>
+    /// 나무가 열기 카운트다운을 시작하면 방출 범위를 바닥에 예고합니다. 방출 _delay초 전에 붙지만
+    /// 실제로는 마지막 treeHeatIndicatorLeadTime초 동안만 보이며, 나무가 먼저 죽으면 스스로 사라집니다.
+    /// </summary>
+    public void PlayTreeHeatIndicator(TreeObj _tree, float _delay)
+    {
+        if (treeHeatIndicatorPool == null || _tree == null) return;
+
+        float showDuration = Mathf.Min(Mathf.Max(0.01f, treeHeatIndicatorLeadTime), _delay);
+        float hiddenDuration = Mathf.Max(0f, _delay - showDuration);
+
+        TreeHeatIndicator instance = treeHeatIndicatorPool.Get();
+        instance.Play(_tree, hiddenDuration, showDuration, treeHeatIndicatorRadius);
+    }
+
+    private TreeHeatIndicator CreateTreeHeatIndicator()
+    {
+        GameObject indicatorObject = new GameObject("TreeHeatIndicator");
+        indicatorObject.transform.SetParent(transform, false);
+        indicatorObject.AddComponent<SpriteRenderer>();
+        TreeHeatIndicator instance = indicatorObject.AddComponent<TreeHeatIndicator>();
+        instance.Initialize(
+            treeHeatIndicatorMaterial,
+            SortingLayer.NameToID(IndicatorSortingLayerName),
+            treeHeatIndicatorSortingOrder,
+            ReleaseTreeHeatIndicator);
+        return instance;
+    }
+
+    private void ReleaseTreeHeatIndicator(TreeHeatIndicator _instance)
+    {
+        treeHeatIndicatorPool?.Release(_instance);
+    }
+
+    private void OnGetTreeHeatIndicator(TreeHeatIndicator _instance)
+    {
+        _instance.gameObject.SetActive(true);
+    }
+
+    private void OnReleaseTreeHeatIndicator(TreeHeatIndicator _instance)
+    {
+        _instance.gameObject.SetActive(false);
+    }
+
+    private void OnDestroyTreeHeatIndicator(TreeHeatIndicator _instance)
+    {
+        if (_instance != null) Destroy(_instance.gameObject);
     }
 
     /// <summary>

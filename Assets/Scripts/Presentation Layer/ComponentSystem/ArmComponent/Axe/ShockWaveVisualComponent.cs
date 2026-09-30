@@ -15,7 +15,7 @@ public class ShockWaveVisualComponent : MonoBehaviour
     private SpriteRenderer sourceRenderer;
     private Quaternion initialRotation;
 
-    public void Initialize(ShockWave _shockWave)
+    public virtual void Initialize(ShockWave _shockWave)
     {
         shockWave = _shockWave;
         sourceRenderer = GetComponent<SpriteRenderer>();
@@ -28,7 +28,7 @@ public class ShockWaveVisualComponent : MonoBehaviour
 
     }
 
-    public void Play(float _duration)
+    public virtual void Play(float _duration)
     {
         if (shockWave == null)
         {
