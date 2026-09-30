@@ -250,6 +250,7 @@ MonoBehaviour:
   facingMinDwellTime: 0.05
   facingImpactSafetyMargin: 0.05
   firstShotDelay: 0.2
+  attackStaggerJitter: 0.05
   targetReleaseRangeMultiplier: 1.2
   bobAmplitude: 0.08
   bobFrequency: 0.5
@@ -352,11 +353,15 @@ MonoBehaviour:
   muzzleDown: {fileID: 8354047403373967797}
   chainZap: {fileID: 3104194317465411757}
   chainZapNormalColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  chainZapOverheatColor: {r: 1, g: 0, b: 0, a: 1}
-  chainZapIntensity: 1
+  chainZapOverheatColor: {r: 0, g: 0.5019608, b: 1, a: 1}
+  chainZapIntensity: 1.35
   vfxComponent: {fileID: 9034721650183742012}
   chargingVfxTag: DroneCharging
+  overheatAuraTag: DroneOverheatAura
   atkHitVfxTag: DroneAtkHit
+  chargeSoundStartPitch: 0.25
+  chargeSoundEndPitch: 0.6
+  chargeSoundCancelFadeTime: 0.15
 --- !u!114 &9034721650183742005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -399,6 +404,12 @@ MonoBehaviour:
     initialPoolSize: 10
     allowDynamicExpansion: 1
     maxPoolSize: 20
+    uiParticleScale: 0
+  - vfxTag: DroneOverheatAura
+    effectPrefab: {fileID: 7006864300503741061, guid: e2029e8854a13fa4393e320b807ad136, type: 3}
+    initialPoolSize: 4
+    allowDynamicExpansion: 1
+    maxPoolSize: 8
     uiParticleScale: 0
 --- !u!1 &9034721650183742006
 GameObject:

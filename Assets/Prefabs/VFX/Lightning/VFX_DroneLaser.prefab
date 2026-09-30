@@ -123,6 +123,6 @@ MonoBehaviour:
   flashRadiusPx: 5
   dimBand: 0.18
   defaultColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  defaultIntensity: 1
+  defaultIntensity: 1.3
   coreWhiteMix: 0.85
   outerBrightness: 0.5

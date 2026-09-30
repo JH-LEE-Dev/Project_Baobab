@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace PresentationLayer.VFX
@@ -42,9 +41,7 @@ namespace PresentationLayer.VFX
         [SerializeField, Tooltip("별이 퍼지는 반지름 최대(px)")] private float constellationRadiusMax = 46.0f;
 
         private const float PixelsPerUnit = 32.0f;
-        private const float PixelUnit = 1.0f / PixelsPerUnit;
         private const float TwoPi = Mathf.PI * 2.0f;
-        private const int MaxVertices = 60000;
         private const int DustCapacity = 96;
         private const int ConstellationStarCount = 6;
 
@@ -95,9 +92,8 @@ namespace PresentationLayer.VFX
         }
 
         // 메쉬 버퍼는 매 프레임 Clear 후 채우므로 인스턴스끼리 공유해도 안전하다(메인 스레드 단일 실행)
-        private static readonly List<Vector3> meshVertices = new List<Vector3>(2048);
-        private static readonly List<Color32> meshColors = new List<Color32>(2048);
-        private static readonly List<int> meshTriangles = new List<int>(3072);
+        private static readonly PixelQuadBuffer quadBuffer = new PixelQuadBuffer(512);
+        private static readonly Vector3 MeshBoundsSize = new Vector3(200.0f, 200.0f, 10.0f);
 
         //내부 의존성
         private MeshFilter meshFilter;
@@ -120,8 +116,6 @@ namespace PresentationLayer.VFX
         private bool bInitialized;
         private int dustCursor;
         private uint randomState;
-        private Matrix4x4 worldToLocal;
-        private float meshZ;
         private int centerX;
         private int centerY;
 
@@ -257,10 +251,11 @@ namespace PresentationLayer.VFX
 
         private void UpdateConstellation()
         {
+            // 별 6개가 같은 비행 진행도를 쓰므로 루프 밖에서 한 번만 계산한다
+            float flight = Mathf.Clamp01((elapsed - ConstellationStart) / ConstellationFlightTime);
+            float ease = EaseOut(flight);
             for (int i = 0; i < ConstellationStarCount; i++)
             {
-                float flight = Mathf.Clamp01((elapsed - ConstellationStart) / ConstellationFlightTime);
-                float ease = EaseOut(flight);
                 starCurrentX[i] = starTargetX[i] * ease;
                 starCurrentY[i] = starTargetY[i] * ease;
 
@@ -286,13 +281,9 @@ namespace PresentationLayer.VFX
 
         private void RebuildMesh()
         {
-            meshVertices.Clear();
-            meshColors.Clear();
-            meshTriangles.Clear();
-
-            worldToLocal = transform.worldToLocalMatrix;
             Vector3 pos = transform.position;
-            meshZ = pos.z;
+            quadBuffer.Clear();
+            quadBuffer.SetWorldTransform(transform.worldToLocalMatrix, pos.z);
             centerX = Mathf.FloorToInt(pos.x * PixelsPerUnit);
             centerY = Mathf.FloorToInt(pos.y * PixelsPerUnit);
 
@@ -301,11 +292,7 @@ namespace PresentationLayer.VFX
             DrawDust();
             DrawFlash();
 
-            mesh.Clear();
-            mesh.SetVertices(meshVertices);
-            mesh.SetColors(meshColors);
-            mesh.SetTriangles(meshTriangles, 0, false);
-            mesh.bounds = new Bounds(Vector3.zero, new Vector3(200.0f, 200.0f, 10.0f));
+            quadBuffer.Upload(mesh, MeshBoundsSize);
             meshRenderer.enabled = true;
         }
 
@@ -470,11 +457,11 @@ namespace PresentationLayer.VFX
                 }
             }
 
+            float flight = Mathf.Clamp01((elapsed - ConstellationStart) / ConstellationFlightTime);
             for (int i = 0; i < ConstellationStarCount; i++)
             {
                 if (false == starAlive[i]) continue;
 
-                float flight = Mathf.Clamp01((elapsed - ConstellationStart) / ConstellationFlightTime);
                 float exitStart = ConstellationExitBase + i * ConstellationExitStagger;
                 float exitU = Mathf.Clamp01((elapsed - exitStart) / ConstellationExitTime);
 
@@ -512,28 +499,10 @@ namespace PresentationLayer.VFX
             }
         }
 
-        // 픽셀 좌표 직사각형 [x0,x1) x [y0,y1)를 쿼드로 추가한다. 월드 -> 로컬은 행렬 하나로 변환한다.
+        // 월드 픽셀 좌표 직사각형 [x0,x1) x [y0,y1)를 공용 버퍼에 쿼드로 추가한다.
         private void AddRect(int _x0, int _y0, int _x1, int _y1, Color32 _color)
         {
-            if (MaxVertices <= meshVertices.Count + 4) return;
-
-            int v = meshVertices.Count;
-            meshVertices.Add(worldToLocal.MultiplyPoint3x4(new Vector3(_x0 * PixelUnit, _y0 * PixelUnit, meshZ)));
-            meshVertices.Add(worldToLocal.MultiplyPoint3x4(new Vector3(_x0 * PixelUnit, _y1 * PixelUnit, meshZ)));
-            meshVertices.Add(worldToLocal.MultiplyPoint3x4(new Vector3(_x1 * PixelUnit, _y1 * PixelUnit, meshZ)));
-            meshVertices.Add(worldToLocal.MultiplyPoint3x4(new Vector3(_x1 * PixelUnit, _y0 * PixelUnit, meshZ)));
-
-            meshColors.Add(_color);
-            meshColors.Add(_color);
-            meshColors.Add(_color);
-            meshColors.Add(_color);
-
-            meshTriangles.Add(v);
-            meshTriangles.Add(v + 1);
-            meshTriangles.Add(v + 2);
-            meshTriangles.Add(v);
-            meshTriangles.Add(v + 2);
-            meshTriangles.Add(v + 3);
+            quadBuffer.AddWorldRect(_x0, _y0, _x1, _y1, _color);
         }
 
         private void Awake()

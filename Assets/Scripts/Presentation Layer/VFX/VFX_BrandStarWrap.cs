@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace PresentationLayer.VFX
@@ -55,13 +54,12 @@ namespace PresentationLayer.VFX
         [SerializeField, Tooltip("나무 앞 메쉬: 캐노피 하이라이트 소팅 오더 + 이 값")] private int frontSortingOffset = 2;
 
         private const float PixelsPerUnit = 32.0f;
-        private const float PixelUnit = 1.0f / PixelsPerUnit;
         private const float TwoPi = Mathf.PI * 2.0f;
-        private const int MaxVerticesPerMesh = 60000;
         private const int BackLayer = 0;
         private const int FrontLayer = 1;
         private const int DustCapacity = 48;
         private const int MaxStarCount = 16;
+        private static readonly Vector3 MeshBoundsSize = new Vector3(200.0f, 200.0f, 10.0f);
 
         private enum WrapPhase
         {
@@ -85,10 +83,8 @@ namespace PresentationLayer.VFX
             public Color32 color;
         }
 
-        // 메쉬 버퍼는 매 프레임 Clear 후 채우므로 인스턴스끼리 공유해도 안전하다(메인 스레드 단일 실행)
-        private static readonly List<Vector3>[] meshVertices = { new List<Vector3>(512), new List<Vector3>(512) };
-        private static readonly List<Color32>[] meshColors = { new List<Color32>(512), new List<Color32>(512) };
-        private static readonly List<int>[] meshTriangles = { new List<int>(768), new List<int>(768) };
+        // 메쉬 버퍼(뒤/앞 두 층)는 매 프레임 Clear 후 채우므로 인스턴스끼리 공유해도 안전하다(메인 스레드 단일 실행)
+        private static readonly PixelQuadBuffer[] quadBuffers = { new PixelQuadBuffer(128), new PixelQuadBuffer(128) };
 
         // 팔레트: 흰색 / 하늘색 2색 / 금색 2색 (낙인 각인과 같은 5색)
         private static readonly Color32 ColorWhite = new Color32(255, 255, 255, 255);
@@ -113,8 +109,6 @@ namespace PresentationLayer.VFX
         private float exitElapsed;
         private bool bInitialized;
         private bool bReleased = true;
-        private Matrix4x4 worldToLocal;
-        private float meshZ;
 
         // 컬링으로 이미 숨긴 상태인지 - 숨기는 처리(가루 비우기/렌더러 끄기)는 보이다가 꺼지는 순간 한 번이면 충분하다
         private bool bHiddenByCulling;
@@ -301,16 +295,14 @@ namespace PresentationLayer.VFX
 
         private void RebuildMeshes()
         {
+            Vector3 top = visual.GetTopRootPosition();
+
+            Matrix4x4 worldToLocal = transform.worldToLocalMatrix;
             for (int i = 0; i < 2; i++)
             {
-                meshVertices[i].Clear();
-                meshColors[i].Clear();
-                meshTriangles[i].Clear();
+                quadBuffers[i].Clear();
+                quadBuffers[i].SetWorldTransform(worldToLocal, top.z);
             }
-
-            worldToLocal = transform.worldToLocalMatrix;
-            Vector3 top = visual.GetTopRootPosition();
-            meshZ = top.z;
 
             Vector3 bottom = visual.GetBottomRootPosition();
             float centerX = top.x;
@@ -320,16 +312,20 @@ namespace PresentationLayer.VFX
             float exitU = WrapPhase.Exiting == phase ? Mathf.Clamp01(exitElapsed / Mathf.Max(exitDuration, 0.0001f)) : 0.0f;
             float shrink = 1.0f - exitU * exitU;
 
+            // 별마다 바뀌지 않는 값은 루프 밖에서 한 번만 계산한다
             int count = Mathf.Max(1, starCount);
+            float enterSpan = Mathf.Max(enterDuration * 0.6f, 0.0001f);
+            float dustInterval = Mathf.Max(dustSpawnInterval, 0.01f);
+            float orbitAngleOffset = elapsed * orbitRevolutionsPerSec * TwoPi;
             for (int s = 0; s < count; s++)
             {
                 // 별마다 등장 시작을 조금씩 어긋나게 해서 나선으로 이어 올라오는 모양을 만든다
                 float stagger = 0.4f * s / count;
-                float enterU = Mathf.Clamp01((elapsed - stagger) / Mathf.Max(enterDuration * 0.6f, 0.0001f));
+                float enterU = Mathf.Clamp01((elapsed - stagger) / enterSpan);
                 float enterEase = EaseOut(enterU);
 
                 float baseAngle = TwoPi * s / count;
-                float angle = baseAngle + elapsed * orbitRevolutionsPerSec * TwoPi + (1.0f - enterEase) * enterSpiralTurns * TwoPi;
+                float angle = baseAngle + orbitAngleOffset + (1.0f - enterEase) * enterSpiralTurns * TwoPi;
 
                 float radiusScale = enterEase * shrink;
                 float cy = Mathf.Lerp(baseY, centerY, enterEase);
@@ -354,7 +350,7 @@ namespace PresentationLayer.VFX
                 // 궤도에 안착한 별만 가루를 흘린다(퇴장 중에는 새로 흘리지 않는다)
                 if (2 == sizeStage && 0.0f == exitU && s < MaxStarCount)
                 {
-                    int tick = (int)((elapsed + s * 0.037f) / Mathf.Max(dustSpawnInterval, 0.01f));
+                    int tick = (int)((elapsed + s * 0.037f) / dustInterval);
                     if (tick != dustLastTick[s])
                     {
                         dustLastTick[s] = tick;
@@ -389,11 +385,7 @@ namespace PresentationLayer.VFX
 
             for (int i = 0; i < 2; i++)
             {
-                meshes[i].Clear();
-                meshes[i].SetVertices(meshVertices[i]);
-                meshes[i].SetColors(meshColors[i]);
-                meshes[i].SetTriangles(meshTriangles[i], 0, false);
-                meshes[i].bounds = new Bounds(Vector3.zero, new Vector3(200.0f, 200.0f, 10.0f));
+                quadBuffers[i].Upload(meshes[i], MeshBoundsSize);
                 meshRenderers[i].enabled = true;
             }
         }
@@ -452,31 +444,10 @@ namespace PresentationLayer.VFX
             }
         }
 
-        // 픽셀 좌표 직사각형 [x0,x1) x [y0,y1)를 쿼드로 추가한다. 월드 -> 로컬은 행렬 하나로 변환한다.
+        // 픽셀 좌표 직사각형 [x0,x1) x [y0,y1)를 해당 층의 버퍼에 쿼드로 추가한다.
         private void AddPixelRect(int _layer, int _x0, int _y0, int _x1, int _y1, Color32 _color)
         {
-            List<Vector3> vertices = meshVertices[_layer];
-            if (MaxVerticesPerMesh <= vertices.Count + 4) return;
-
-            int v = vertices.Count;
-            vertices.Add(worldToLocal.MultiplyPoint3x4(new Vector3(_x0 * PixelUnit, _y0 * PixelUnit, meshZ)));
-            vertices.Add(worldToLocal.MultiplyPoint3x4(new Vector3(_x0 * PixelUnit, _y1 * PixelUnit, meshZ)));
-            vertices.Add(worldToLocal.MultiplyPoint3x4(new Vector3(_x1 * PixelUnit, _y1 * PixelUnit, meshZ)));
-            vertices.Add(worldToLocal.MultiplyPoint3x4(new Vector3(_x1 * PixelUnit, _y0 * PixelUnit, meshZ)));
-
-            List<Color32> colors = meshColors[_layer];
-            colors.Add(_color);
-            colors.Add(_color);
-            colors.Add(_color);
-            colors.Add(_color);
-
-            List<int> triangles = meshTriangles[_layer];
-            triangles.Add(v);
-            triangles.Add(v + 1);
-            triangles.Add(v + 2);
-            triangles.Add(v);
-            triangles.Add(v + 2);
-            triangles.Add(v + 3);
+            quadBuffers[_layer].AddWorldRect(_x0, _y0, _x1, _y1, _color);
         }
 
         private void HideRenderers()
