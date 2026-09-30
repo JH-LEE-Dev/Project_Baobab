@@ -355,7 +355,7 @@
         },
         {
             "id": 145,
-            "key": "GoldTreeChance_Name",
+            "key": "FascinatingLogChance1_Name",
             "kr": "황금 나무",
             "en": "Golden Trees",
             "zhHans": "黄金树",
@@ -2864,6 +2864,22 @@
             "ru": "",
             "enumType": "SkillCommandType",
             "enumValue": "ConstellationDamage"
+        },
+        {
+            "id": 9158,
+            "key": "AbilityDescription_ManifestationBrand",
+            "kr": "",
+            "en": "",
+            "zhHans": "",
+            "zhHant": "",
+            "ja": "",
+            "de": "",
+            "fr": "",
+            "pt": "",
+            "es": "",
+            "ru": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "ManifestationBrand"
         }
     ]
 }
