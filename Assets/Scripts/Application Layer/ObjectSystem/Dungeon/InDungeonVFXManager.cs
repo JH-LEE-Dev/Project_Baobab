@@ -568,8 +568,17 @@ public class InDungeonVFXManager : MonoBehaviour
         _instance.ManifestFinishedEvent += OnGroundMarkManifestFinished;
         _instance.LandedEvent -= OnGroundMarkLanded;
         _instance.LandedEvent += OnGroundMarkLanded;
+        _instance.ManifestStartedEvent -= OnGroundMarkManifestStarted;
+        _instance.ManifestStartedEvent += OnGroundMarkManifestStarted;
 
         return _instance;
+    }
+
+    // 별이 실제로 회전하며 작아지기 시작한 순간 - 별자리 발현 직전 별 사라짐 사운드(Stardisappear1/2 중 랜덤)를
+    // 그 별 자리에서 울린다. 별마다 사라짐 시작 시각이 조금씩 달라(랜덤 지연) 소리도 자연스럽게 흩어진다.
+    private void OnGroundMarkManifestStarted(TreeStarMarkGroundAnimator _instance)
+    {
+        Sound.Play(SoundID.Stardisappear, _instance.VisualWorldPosition);
     }
 
     // 별이 낙하를 마치고 안착했을 때 - 그 그룹이 안착 대기 중이면 전부 안착했는지 다시 확인한다.
@@ -619,6 +628,7 @@ public class InDungeonVFXManager : MonoBehaviour
         {
             _instance.ManifestFinishedEvent -= OnGroundMarkManifestFinished;
             _instance.LandedEvent -= OnGroundMarkLanded;
+            _instance.ManifestStartedEvent -= OnGroundMarkManifestStarted;
             Destroy(_instance.gameObject);
         }
     }

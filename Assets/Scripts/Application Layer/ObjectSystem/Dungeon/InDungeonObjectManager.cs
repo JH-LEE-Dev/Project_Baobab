@@ -1320,6 +1320,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                     _treeObj.transform.position,
                     _treeObj.treeVisualComponent.GetTopSortingOrder(),
                     _treeObj.StarGroupId);
+                Sound.Play(SoundID.Starappear, _treeObj.transform.position);
             }
         }
 
@@ -2406,6 +2407,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         float damage = BaseConstellationDamage * Mathf.Max(0f, constellationDamageMultiplier);
         int hitCount = Mathf.Max(1, constellationHitCount);
+
+        // 별자리 발현음은 발현 1회당 한 번, 별자리 중심에서 울린다. 별자리 잔상으로 레이저가 0.2초 간격으로
+        // 여러 발 나가도 긴(약 2.8초) 발현음을 겹쳐 틀지 않는다.
+        Vector3 constellationCenter = Vector3.zero;
+        for (int i = 0; i < path.Count; i++) constellationCenter += path[i];
+        constellationCenter /= path.Count;
+        Sound.Play(SoundID.StarExplosion, constellationCenter);
 
         StartCoroutine(ConstellationBeamRoutine(_starPositions, path, damage, hitCount));
     }

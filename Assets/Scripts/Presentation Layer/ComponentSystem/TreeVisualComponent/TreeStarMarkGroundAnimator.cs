@@ -73,6 +73,10 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
     // 한꺼번에 사라짐 연출을 시작해야 하므로, InDungeonVFXManager가 이 신호로 안착 완료를 집계한다.
     public event Action<TreeStarMarkGroundAnimator> LandedEvent;
 
+    // 사라짐(Manifest) 연출이 실제로 시작된 순간 발생 - Idle에서는 0~manifestRandomDelayMax초 지연 뒤라
+    // PlayManifestEffect 호출 시점과 다를 수 있다. 사라짐 사운드를 연출 시작에 정확히 맞출 때 쓴다.
+    public event Action<TreeStarMarkGroundAnimator> ManifestStartedEvent;
+
     private static readonly int HDRIntensityID = Shader.PropertyToID("_HDRIntensity");
     private const float TwoPi = Mathf.PI * 2f;
 
@@ -333,6 +337,8 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
         ApplyPosition(manifestLocalPosition);
         ApplyStarRotation(manifestStartAngle);
         ApplyUniformScale(1f);
+
+        ManifestStartedEvent?.Invoke(this);
     }
 
     private void UpdateManifest(float _deltaTime)
