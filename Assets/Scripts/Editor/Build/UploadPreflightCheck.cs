@@ -195,8 +195,63 @@ public static class UploadPreflightCheck
         CheckSteamTraces(_r);
         CheckForbiddenFiles(_r);
         CheckCompression(_r);
+        CheckPackedDevArtifacts(_r);
 
         return _r;
+    }
+
+    /// <summary>에디터에서 나온 산출물 중 배포물에 들어가면 안 되는 에셋 경로 조각입니다.</summary>
+    private static readonly string[] PACKED_DENY_FRAGMENTS =
+    {
+        "Assets/Resources/PerformanceTestRun",   // Performance Testing 패키지가 빌드 PC 사양을 적어 넣는 JSON
+        "Assets/_Recovery/",                     // 에디터 복구 씬
+        "/[Test]",                               // 테스트 씬
+    };
+
+    /// <summary>
+    /// 폴더 안의 파일만 보면 LZ4 로 포장된 data.unity3d 안쪽은 볼 수 없습니다. 대신 이 폴더를 만든
+    /// 빌드 리포트(Library/LastBuild.buildreport)의 packedAssets 목록을 봅니다. 리포트가 다른 폴더의
+    /// 것이면(마지막 빌드가 이 폴더가 아니면) 판단하지 않고 그 사실만 경고합니다.
+    /// </summary>
+    private static void CheckPackedDevArtifacts(Result _r)
+    {
+        UnityEditor.Build.Reporting.BuildReport _report;
+
+        try { _report = UnityEditor.Build.Reporting.BuildReport.GetLatestReport(); }
+        catch (Exception) { return; }
+
+        if (null == _report) return;
+
+        string _reportRoot = Path.GetDirectoryName(Path.GetFullPath(_report.summary.outputPath));
+        string _thisRoot = Path.GetFullPath(_r.Root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        if (false == string.Equals(_reportRoot, _thisRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            _r.Warnings.Add("마지막 빌드 리포트가 이 폴더의 것이 아니라, 포장된 에셋 안쪽(개발용 산출물 유무)은 확인하지 못했습니다.");
+            return;
+        }
+
+        HashSet<string> _hit = new HashSet<string>();
+
+        foreach (UnityEditor.Build.Reporting.PackedAssets _pa in _report.packedAssets)
+        {
+            foreach (UnityEditor.Build.Reporting.PackedAssetInfo _c in _pa.contents)
+            {
+                string _p = _c.sourceAssetPath;
+
+                if (true == string.IsNullOrEmpty(_p)) continue;
+
+                for (int i = 0; i < PACKED_DENY_FRAGMENTS.Length; i++)
+                {
+                    if (0 <= _p.IndexOf(PACKED_DENY_FRAGMENTS[i], StringComparison.OrdinalIgnoreCase)) _hit.Add(_p);
+                }
+            }
+        }
+
+        foreach (string _p in _hit)
+        {
+            _r.Errors.Add($"개발용 산출물이 빌드 안에 포장돼 있습니다: {_p}");
+        }
     }
 
     private static void CheckStamp(Result _r)

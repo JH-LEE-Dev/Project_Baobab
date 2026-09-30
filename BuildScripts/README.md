@@ -121,6 +121,11 @@ LZ4HC 로 포장됐는지(`data.unity3d`), 빌드된 커밋이 지금 HEAD 인�
 반려됐습니다. 코드는 전부 맞았고 폴더 하나를 잘못 고른 것이 전부였습니다. 이 검사와 클립보드
 복사는 그 사고를 다시 내지 않기 위한 것입니다.
 
+검사는 폴더 안의 파일 외에 **마지막 빌드 리포트의 포장 목록**도 봅니다. LZ4 로 묶인 `data.unity3d`
+안쪽은 파일로는 볼 수 없어서입니다. Performance Testing 패키지가 빌드마다 `Resources` 에 넣는
+`PerformanceTestRunInfo.json`(빌드 PC 이름·사양)이 출시 빌드에 실리고 있던 것을 이 방법으로
+찾았고, 지금은 `PerformanceTestArtifactStripper` 가 포장 전에 걷어냅니다.
+
 Steam 빌드에는 마지막 방어가 하나 더 있습니다. `WrongStoreGuard` 가 exe 옆에 STOVE DRM Maker 가
 주입하는 DLL(`DrmCheckerV3.dll` 등)이 있는지 보고, 있으면 Steam 을 켜는 대신 "잘못된 빌드"
 안내를 띄우고 종료합니다. 사고를 없애 주지는 않지만 증상을 한눈에 알 수 있게 바꿔 줍니다.

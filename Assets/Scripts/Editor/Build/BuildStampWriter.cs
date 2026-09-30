@@ -173,12 +173,53 @@ public class BuildStampWriter : IPostprocessBuildWithReport
 
         _commit = _head.Trim();
 
-        if (true == TryRunGit(_projectRoot, "status --porcelain", out string _status))
-        {
-            _dirty = false == string.IsNullOrWhiteSpace(_status);
-        }
+        // status --porcelain 은 줄바꿈(LF/CRLF)만 다른 파일도 M 으로 올려, 이 프로젝트에서는 빌드마다
+        // 프리팹 몇 개가 늘 걸린다. 내용이 실제로 다른 파일만 세기 위해 diff(정규화 후 비교)를 쓴다.
+        //   diff --name-only         : 작업 트리 ↔ 인덱스
+        //   diff --cached --name-only: 인덱스 ↔ HEAD
+        //   ls-files --others        : 추적되지 않은 새 파일
+        string _changed = string.Empty;
+
+        if (true == TryRunGit(_projectRoot, "diff --name-only", out string _wt)) _changed += _wt + "\n";
+        if (true == TryRunGit(_projectRoot, "diff --cached --name-only", out string _idx)) _changed += _idx + "\n";
+        if (true == TryRunGit(_projectRoot, "ls-files --others --exclude-standard", out string _new)) _changed += _new;
+
+        _dirty = HasChangesOutsideSwitcherFiles(_changed);
 
         return true;
+    }
+
+    /// <summary>
+    /// 스위처(PlatformBuildModeSwitcher)가 스토어·배포에 맞춰 바꾸는 파일은 dirty 로 치지 않습니다.
+    /// 그 셋은 STOVE 로 전환하면 반드시 바뀌므로, 세면 STOVE·itch 빌드가 전부 "커밋 안 된 변경이 섞였다"로
+    /// 나와 경고가 의미를 잃습니다. 그 파일들이 기대값과 맞는지는 PlatformConsistencyGuard 가 따로 봅니다.
+    /// </summary>
+    private static readonly string[] SWITCHER_MANAGED_FILES =
+    {
+        "ProjectSettings/ProjectSettings.asset",
+        "Assets/Resources/Sentry/SentryOptions.asset",
+        "Assets/Resources/GameAnalytics/Settings.asset",
+    };
+
+    private static bool HasChangesOutsideSwitcherFiles(string _pathsOnePerLine)
+    {
+        foreach (string _raw in _pathsOnePerLine.Split('\n'))
+        {
+            string _path = _raw.Trim().Trim('"').Replace('\\', '/');
+
+            if (0 == _path.Length) continue;
+
+            bool _managed = false;
+
+            for (int i = 0; i < SWITCHER_MANAGED_FILES.Length; i++)
+            {
+                if (string.Equals(_path, SWITCHER_MANAGED_FILES[i], StringComparison.OrdinalIgnoreCase)) { _managed = true; break; }
+            }
+
+            if (false == _managed) return true;
+        }
+
+        return false;
     }
 
     private static bool TryRunGit(string _workingDir, string _args, out string _stdout)
