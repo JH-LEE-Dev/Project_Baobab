@@ -2700,9 +2700,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private void ApplyConstellationBeamHit(ConstellationBeamHit _hit, float _damage)
     {
         TreeObj tree = _hit.tree;
-        if (tree == null || !tree.bCanApplyDamage) return;
+        if (tree == null || tree.IsPooled || !tree.bCanApplyDamage) return;
 
         // 계산 이후 다른 원인으로 죽어 풀로 돌아갔다가 다른 자리에 재사용된 나무는 건너뛴다.
+        // (풀에 들어간 채 아직 재사용되지 않은 나무는 위치가 그대로라 이 검사를 통과하므로 위의 IsPooled로 거른다)
         if ((tree.transform.position - _hit.rootPos).sqrMagnitude > 0.0001f) return;
 
         // 한 그루의 타격이 연쇄(사망 처리, 다른 그룹 발현 등) 중 예외로 실패해도 스윕의 나머지 나무는 계속 맞힌다.
@@ -2710,9 +2711,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             tree.TakeDamage(_damage);
 
-            // TakeDamage로 나무가 죽으면 즉시 풀로 반환되며 ResetTree()가 브랜드 배율을 1로 되돌리므로,
-            // 죽지 않고 살아남은 나무에만 낙인을 적용한다.
-            if (manifestationBrandBonusMultiplier > 0f && !tree.bDead)
+            // 죽지 않고 살아남은 나무에만 낙인을 적용한다. TakeDamage로 나무가 죽으면 같은 프레임 안에서
+            // 풀로 반환되고 ResetTree()가 bDead를 다시 false로 되돌리므로, bDead로는 사망을 판별할 수 없다.
+            // bDead로 거르면 방금 죽어 풀에 들어간 나무에 낙인이 찍혀, 그 자리에서 스파크 VFX가 계속 재생된다.
+            if (manifestationBrandBonusMultiplier > 0f && !tree.IsPooled)
             {
                 tree.health.ApplyDamageBrand(1f + manifestationBrandBonusMultiplier);
                 StartManifestationBrandVfx(tree);
@@ -2739,7 +2741,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     }
 
     // 낙인이 찍힌 나무 위에서 [ManifestationBrandVfxIntervalMin, Max] 사이로 랜덤화된 인터벌마다
-    // VFX_Spark를 재생한다. 종료 조건은 반드시 health.IsBranded(실제 낙인 배율 상태)로만 판단해야 한다 -
+    // VFX_Spark를 재생한다. 종료 조건은 health.IsBranded(실제 낙인 배율 상태)와 IsPooled로 판단해야 한다 -
     // bDead는 나무가 죽는 순간 OnTreeDead -> treePool.Release -> ResetTree()가 같은 프레임 안에서 다시
     // false로 되돌리고, gameObject.activeInHierarchy도 죽음뿐 아니라 카메라 컬링(UpdateTreeVisibility)으로
     // 살아있는 동안에도 꺼졌다 켜졌다 하므로 둘 다 "이 나무가 여전히 낙인 상태인지"를 판단하는 데 쓸 수
@@ -2749,7 +2751,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         try
         {
-            while (_tree != null && _tree.health != null && _tree.health.IsBranded)
+            // IsPooled는 이중 안전장치 - 어떤 경로로든 풀에 들어간 나무에 낙인이 남아 있어도 재생을 멈춘다.
+            while (_tree != null && !_tree.IsPooled && _tree.health != null && _tree.health.IsBranded)
             {
                 if (_tree.treeVisualComponent != null)
                 {
