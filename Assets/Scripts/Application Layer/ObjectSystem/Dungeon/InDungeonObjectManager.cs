@@ -385,13 +385,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // ClearTrees마다 증가 - 대기 중이던 ConstellationBeamRoutine이 이전 런의 발현을 이어서 쏘지 않게 한다.
     private int constellationManifestVersion = 0;
 
-    // 발현 낙인이 찍힌 나무 위에서 반복 재생되는 스파크 VFX(VFX_Spark) - 낙인은 나무가 죽어 리셋될 때까지
-    // 유지되므로(EHealthComponent.brandedDamageMultiplier), 그동안 인터벌마다 계속 재생한다. 매번 똑같은
-    // 박자로 반짝이면 기계적으로 보이므로 인터벌 자체를 매번 랜덤화한다.
-    private const float ManifestationBrandVfxIntervalMin = 0.5f;
-    private const float ManifestationBrandVfxIntervalMax = 0.75f;
-    // 나무 한 그루에 낙인 코루틴이 중복으로 여러 개 돌지 않도록(같은 나무가 여러 발현/여러 선분에 맞을 수 있음) 추적
-    private readonly HashSet<TreeObj> manifestationBrandVfxTrees = new HashSet<TreeObj>();
+    // 발현 낙인이 찍힌 나무와, 그 나무를 감싸고 도는 별 이펙트(VFX_BrandStarWrap). 동시 개수 상한에 걸려 별을
+    // 띄우지 못한 나무는 null로 들어간다 - 그래도 키가 있어야 같은 나무가 다시 맞았을 때 각인이 반복되지 않는다.
+    // 낙인은 나무가 풀로 돌아갈 때(ResetTree)만 풀리므로, 별 이펙트도 OnReleaseTree에서 함께 걷는다.
+    private readonly Dictionary<TreeObj, PresentationLayer.VFX.VFX_BrandStarWrap> manifestationBrandWraps
+        = new Dictionary<TreeObj, PresentationLayer.VFX.VFX_BrandStarWrap>();
 
     public float StarMarkDamageMultiplier => starMarkDamageMultiplier;
 
@@ -1117,7 +1115,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             inDungeonVFXManager.ClearAllConstellationGroundMarks();
             inDungeonVFXManager.ClearAllConstellationDottedLines();
+
+            // 위에서 나무를 풀로 돌리며 OnReleaseTree가 이미 하나씩 걷었지만, 혹시 남은 별 감쌈이 있으면 전부 회수한다.
+            inDungeonVFXManager.ReleaseAllBrandStarWraps();
         }
+        manifestationBrandWraps.Clear();
 
         // 비행/발광 중이던 별자리 레이저도 강제로 풀에 반환한다. 반환 이벤트(OnConstellationLaserReturned)가
         // activeConstellationLasers에서 스스로를 빼므로 뒤에서부터 순회한다.
@@ -1715,6 +1717,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         // 최적화: 업데이트 리스트에서 제거
         UpdateTreeVisibility(_tree, false);
+
+        // 풀로 돌아가면 아래 ResetTree()가 낙인을 풀므로, 이 나무를 감싸던 별도 여기서 걷는다. 나무는 이미 사라지는
+        // 중이라 퇴장 연출은 보이지 않으므로 즉시 회수한다 - 퇴장 연출을 기다리는 사이 이 나무가 풀에서 다른 자리로
+        // 재사용되면 별이 그 나무를 따라가 버린다.
+        if (manifestationBrandWraps.TryGetValue(_tree, out PresentationLayer.VFX.VFX_BrandStarWrap brandWrap))
+        {
+            manifestationBrandWraps.Remove(_tree);
+            inDungeonVFXManager?.ReleaseBrandStarWrap(brandWrap);
+        }
 
         Vector3Int cellPos = environmentProvider.tilemapDataProvider.WorldToCell(_tree.transform.position);
         int flatIdx = cellPos.x + cellPos.y * gridWidth;
@@ -2713,7 +2724,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
             // 죽지 않고 살아남은 나무에만 낙인을 적용한다. TakeDamage로 나무가 죽으면 같은 프레임 안에서
             // 풀로 반환되고 ResetTree()가 bDead를 다시 false로 되돌리므로, bDead로는 사망을 판별할 수 없다.
-            // bDead로 거르면 방금 죽어 풀에 들어간 나무에 낙인이 찍혀, 그 자리에서 스파크 VFX가 계속 재생된다.
+            // bDead로 거르면 방금 죽어 풀에 들어간 나무에 낙인이 찍혀, 풀에서 재사용된 나무에 낙인과 별이 따라간다.
             if (manifestationBrandBonusMultiplier > 0f && !tree.IsPooled)
             {
                 tree.health.ApplyDamageBrand(1f + manifestationBrandBonusMultiplier);
@@ -2727,45 +2738,19 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
     }
 
-    // 낙인이 찍힌 나무에 대해 주기 재생 VFX 루틴을 시작한다(이미 이 나무에 루틴이 돌고 있다면 무시).
-    // HashSet.Add가 처음 추가될 때만 true를 반환하므로 자연스러운 가드가 된다. Stage3TreeGenerationStrategySO
-    // 등 외부에서도(테스트용 강제 낙인 등) 재사용할 수 있도록 public으로 둔다.
+    // 나무에 발현 낙인이 처음 찍히는 순간 각인 VFX(VFX_BrandStamp)를 한 번 재생하고, 낙인이 유지되는 동안 나무를
+    // 감싸고 도는 별(VFX_BrandStarWrap)을 띄운다. 이미 낙인 연출 중인 나무(별자리 잔상 등으로 다시 맞은 경우)는 무시한다.
+    // 별은 나무가 풀로 돌아갈 때(= 낙인이 풀릴 때) OnReleaseTree에서 걷으므로 매 프레임 낙인 상태를 확인할 필요가 없다.
+    // Stage3TreeGenerationStrategySO 등 외부에서도(테스트용 강제 낙인 등) 재사용할 수 있도록 public으로 둔다.
     public void StartManifestationBrandVfx(TreeObj _tree)
     {
-        if (_tree == null) return;
+        if (_tree == null || _tree.IsPooled || _tree.treeVisualComponent == null) return;
+        if (manifestationBrandWraps.ContainsKey(_tree)) return;
 
-        if (manifestationBrandVfxTrees.Add(_tree))
-        {
-            StartCoroutine(PlayManifestationBrandVfxRoutine(_tree));
-        }
-    }
+        inDungeonVFXManager.PlayManifestationBrandStampVFX(_tree.treeVisualComponent);
 
-    // 낙인이 찍힌 나무 위에서 [ManifestationBrandVfxIntervalMin, Max] 사이로 랜덤화된 인터벌마다
-    // VFX_Spark를 재생한다. 종료 조건은 health.IsBranded(실제 낙인 배율 상태)와 IsPooled로 판단해야 한다 -
-    // bDead는 나무가 죽는 순간 OnTreeDead -> treePool.Release -> ResetTree()가 같은 프레임 안에서 다시
-    // false로 되돌리고, gameObject.activeInHierarchy도 죽음뿐 아니라 카메라 컬링(UpdateTreeVisibility)으로
-    // 살아있는 동안에도 꺼졌다 켜졌다 하므로 둘 다 "이 나무가 여전히 낙인 상태인지"를 판단하는 데 쓸 수
-    // 없다. 나무가 죽으면 ResetTree()가 브랜드 배율을 1로 되돌리므로 IsBranded가 정확히 false가 되고,
-    // 풀에서 재사용되어 전혀 다른 나무가 되어도(재낙인되지 않는 한) 계속 false를 유지한다.
-    private IEnumerator PlayManifestationBrandVfxRoutine(TreeObj _tree)
-    {
-        try
-        {
-            // IsPooled는 이중 안전장치 - 어떤 경로로든 풀에 들어간 나무에 낙인이 남아 있어도 재생을 멈춘다.
-            while (_tree != null && !_tree.IsPooled && _tree.health != null && _tree.health.IsBranded)
-            {
-                if (_tree.treeVisualComponent != null)
-                {
-                    inDungeonVFXManager.PlayManifestationBrandVFX(_tree.treeVisualComponent);
-                }
-
-                yield return new WaitForSeconds(UnityEngine.Random.Range(ManifestationBrandVfxIntervalMin, ManifestationBrandVfxIntervalMax));
-            }
-        }
-        finally
-        {
-            manifestationBrandVfxTrees.Remove(_tree);
-        }
+        // 동시 개수 상한을 넘으면 null - 낙인은 그대로 걸리고 별만 생략된다(의도된 동작).
+        manifestationBrandWraps[_tree] = inDungeonVFXManager.BeginBrandStarWrap(_tree.treeVisualComponent);
     }
 
     // 광선은 두 지점을 잇는 고정 폭 캡슐 형태라, 원형 AoE(ShockWave 등)와 달리 등각 보정이 필요 없다.

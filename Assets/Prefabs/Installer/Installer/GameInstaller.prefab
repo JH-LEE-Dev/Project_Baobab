@@ -1573,6 +1573,10 @@ MonoBehaviour:
   treeTransformVfxPoolDefaultCapacity: 4
   treeTransformVfxPoolMaxSize: 32
   treeTransformVfxYOffset: -0.25
+  brandStarWrapPrefab: {fileID: 137350371921299027, guid: 8929e93c80181374cba3211c79d18a0f, type: 3}
+  brandStarWrapPoolDefaultCapacity: 8
+  brandStarWrapPoolMaxSize: 32
+  brandStarWrapMaxActive: 20
 --- !u!114 &777467232540049004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1654,11 +1658,11 @@ MonoBehaviour:
     allowDynamicExpansion: 1
     maxPoolSize: 5
     uiParticleScale: 0
-  - vfxTag: ManifestationBrandSparkEffect
-    effectPrefab: {fileID: 4414206344302795060, guid: ae8dfa960fb2f644f89d0e6dd44ea1da, type: 3}
-    initialPoolSize: 40
+  - vfxTag: ManifestationBrandStampEffect
+    effectPrefab: {fileID: 2504916916603310124, guid: 38080eb86596a2d47ad5ffd15146ba9d, type: 3}
+    initialPoolSize: 12
     allowDynamicExpansion: 1
-    maxPoolSize: 70
+    maxPoolSize: 40
     uiParticleScale: 0
   - vfxTag: TreeHeatEmitEffect
     effectPrefab: {fileID: 8248180672793769683, guid: cede68a0b11b75141b13e1c24e9e404f, type: 3}

@@ -130,6 +130,16 @@ public class InDungeonVFXManager : MonoBehaviour
 
     private IObjectPool<TreeTransformVFX> treeTransformVfxPool;
 
+    [Header("Manifestation Brand Star Wrap (낙인 나무를 감싸는 별)")]
+    [SerializeField] private PresentationLayer.VFX.VFX_BrandStarWrap brandStarWrapPrefab;
+    [SerializeField] private int brandStarWrapPoolDefaultCapacity = 8;
+    [SerializeField] private int brandStarWrapPoolMaxSize = 32;
+    // 화면 가득 낙인 나무일 때도 부하가 커지지 않도록 동시에 별이 감싸는 나무 수의 상한
+    [SerializeField] private int brandStarWrapMaxActive = 20;
+
+    private IObjectPool<PresentationLayer.VFX.VFX_BrandStarWrap> brandStarWrapPool;
+    private readonly List<PresentationLayer.VFX.VFX_BrandStarWrap> activeBrandStarWraps = new List<PresentationLayer.VFX.VFX_BrandStarWrap>(32);
+
     public void Initialize()
     {
         if (vfxComponent != null)
@@ -173,6 +183,19 @@ public class InDungeonVFXManager : MonoBehaviour
                 collectionCheck: true,
                 defaultCapacity: constellationDottedLinePoolDefaultCapacity,
                 maxSize: constellationDottedLinePoolMaxSize
+            );
+        }
+
+        if (brandStarWrapPool == null && brandStarWrapPrefab != null)
+        {
+            brandStarWrapPool = new ObjectPool<PresentationLayer.VFX.VFX_BrandStarWrap>(
+                createFunc: CreateBrandStarWrap,
+                actionOnGet: OnGetBrandStarWrap,
+                actionOnRelease: OnReleaseBrandStarWrap,
+                actionOnDestroy: OnDestroyBrandStarWrap,
+                collectionCheck: true,
+                defaultCapacity: brandStarWrapPoolDefaultCapacity,
+                maxSize: brandStarWrapPoolMaxSize
             );
         }
 
@@ -263,6 +286,79 @@ public class InDungeonVFXManager : MonoBehaviour
     private void OnDestroyTreeTransformVfx(TreeTransformVFX _instance)
     {
         if (_instance != null) Destroy(_instance.gameObject);
+    }
+
+    /// <summary>
+    /// 낙인이 찍힌 나무를 별들이 감싸고 도는 유지 이펙트를 시작합니다. 동시 개수 상한을 넘거나 풀/프리팹이 없으면 null을
+    /// 반환합니다. 반환된 인스턴스는 낙인이 풀릴 때(나무가 풀로 돌아갈 때) ReleaseBrandStarWrap으로 회수해야 합니다.
+    /// </summary>
+    public PresentationLayer.VFX.VFX_BrandStarWrap BeginBrandStarWrap(TreeVisualComponent _visual)
+    {
+        if (brandStarWrapPool == null || _visual == null) return null;
+        if (activeBrandStarWraps.Count >= brandStarWrapMaxActive) return null;
+
+        PresentationLayer.VFX.VFX_BrandStarWrap _wrap = brandStarWrapPool.Get();
+        activeBrandStarWraps.Add(_wrap);
+        _wrap.Begin(_visual, TreeSortingLayerName);
+        return _wrap;
+    }
+
+    /// <summary>
+    /// 별 감싸기를 즉시 회수합니다. 감싸던 나무가 이미 사라지는 중이라 퇴장 연출은 보이지 않으므로 연출 없이 반환합니다.
+    /// </summary>
+    public void ReleaseBrandStarWrap(PresentationLayer.VFX.VFX_BrandStarWrap _wrap)
+    {
+        if (_wrap != null) _wrap.ForceRelease();
+    }
+
+    /// <summary>
+    /// 던전 이탈 등으로 재생 중인 별 감싸기를 연출 없이 전부 풀에 되돌립니다.
+    /// </summary>
+    public void ReleaseAllBrandStarWraps()
+    {
+        // ForceRelease -> ReturnToPoolEvent -> OnBrandStarWrapReturned가 순회 중인 리스트에서 원소를 빼므로 뒤에서부터 돈다.
+        for (int i = activeBrandStarWraps.Count - 1; i >= 0; i--)
+        {
+            if (i >= activeBrandStarWraps.Count) continue;
+
+            PresentationLayer.VFX.VFX_BrandStarWrap _wrap = activeBrandStarWraps[i];
+            if (_wrap != null) _wrap.ForceRelease();
+        }
+        activeBrandStarWraps.Clear();
+    }
+
+    private PresentationLayer.VFX.VFX_BrandStarWrap CreateBrandStarWrap()
+    {
+        PresentationLayer.VFX.VFX_BrandStarWrap _instance = Instantiate(brandStarWrapPrefab, transform);
+        _instance.ReturnToPoolEvent -= OnBrandStarWrapReturned;
+        _instance.ReturnToPoolEvent += OnBrandStarWrapReturned;
+        return _instance;
+    }
+
+    private void OnGetBrandStarWrap(PresentationLayer.VFX.VFX_BrandStarWrap _instance)
+    {
+        _instance.gameObject.SetActive(true);
+    }
+
+    private void OnReleaseBrandStarWrap(PresentationLayer.VFX.VFX_BrandStarWrap _instance)
+    {
+        _instance.gameObject.SetActive(false);
+    }
+
+    private void OnDestroyBrandStarWrap(PresentationLayer.VFX.VFX_BrandStarWrap _instance)
+    {
+        if (_instance != null)
+        {
+            _instance.ReturnToPoolEvent -= OnBrandStarWrapReturned;
+            Destroy(_instance.gameObject);
+        }
+    }
+
+    // 별 감싸기가 반환될 때(강제 회수, 또는 감싸던 비주얼이 사라져 스스로 반환) 활성 목록에서 빼고 풀에 되돌린다.
+    private void OnBrandStarWrapReturned(PresentationLayer.VFX.VFX_BrandStarWrap _instance)
+    {
+        activeBrandStarWraps.Remove(_instance);
+        brandStarWrapPool?.Release(_instance);
     }
 
     /// <summary>
@@ -925,17 +1021,18 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 발현 낙인이 찍힌 나무 위에서 일정 인터벌마다 재생되는 스파크 VFX(VFX_Spark)입니다.
-    /// parent는 null로 고정하여 나무 오브젝트와 완전히 분리합니다.
+    /// 발현 낙인이 나무에 처음 찍히는 순간 1회 재생되는 각인 VFX(VFX_BrandStamp)입니다. 이후 낙인이 유지되는 동안은
+    /// BeginBrandStarWrap의 별 감싸기가 이어받는다. parent는 null로 고정하여 나무 오브젝트와 완전히 분리합니다.
     /// </summary>
-    public void PlayManifestationBrandVFX(TreeVisualComponent _visual)
+    public void PlayManifestationBrandStampVFX(TreeVisualComponent _visual)
     {
         if (vfxComponent == null || _visual == null) return;
 
-        int sortingOrder = _visual.GetTopHighlightSortingOrder() + 1;
+        // 각인이 캐노피 하이라이트 위에 확실히 보이도록 한 단계 더 올린다(자식 폭발 메쉬는 VFX_BrandStampBurst가 +1로 따라온다).
+        int sortingOrder = _visual.GetTopHighlightSortingOrder() + 2;
 
         vfxComponent.Play(new VFXPlaySettings(
-            "ManifestationBrandSparkEffect",
+            "ManifestationBrandStampEffect",
             _visual.GetTopRootPosition(),
             _visual.GetTopRootRotation(),
             sortingOrder,
