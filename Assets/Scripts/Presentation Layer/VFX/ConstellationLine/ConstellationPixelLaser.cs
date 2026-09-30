@@ -364,44 +364,6 @@ namespace PresentationLayer.VFX
             activePlayRoutine = StartCoroutine(MutualSimultaneousRoutine(activePointsBuffer, _isClosedLoop));
         }
 
-        #region Compatibility Forwarders (기존 외부 연동 호환성 100% 보장)
-
-        /// <summary> (호환용) 상호 양방향 전면 동시 발사 </summary>
-        public void PlayMutualSimultaneousLaser(IReadOnlyList<Vector3> _points, bool _isClosedLoop = true)
-        {
-            PlayLaser(_points, _isClosedLoop);
-        }
-
-        /// <summary> (호환용) 도미노 레이저 발사 API </summary>
-        public void PlayDominoLaser(IReadOnlyList<Vector3> _points, bool _isClosedLoop = false)
-        {
-            PlayLaser(_points, _isClosedLoop);
-        }
-
-        /// <summary> (호환용) 전면 동시 발사 </summary>
-        public void PlaySimultaneousLaser(IReadOnlyList<Vector3> _points, bool _isClosedLoop = true)
-        {
-            PlayLaser(_points, _isClosedLoop);
-        }
-
-        /// <summary> (호환용) 순차 발사 </summary>
-        public void PlaySequentialDominoLaser(IReadOnlyList<Vector3> _points, bool _isClosedLoop = false)
-        {
-            PlayLaser(_points, _isClosedLoop);
-        }
-
-        /// <summary> (호환용) 양방향 발사 </summary>
-        public void PlayBidirectionalDominoLaser(IReadOnlyList<Vector3> _points, bool _isClosedLoop = true)
-        {
-            PlayLaser(_points, _isClosedLoop);
-        }
-
-        /// <summary> (호환용) 궤도 선행 빔 발사 </summary>
-        public void PlayOrbitGuideMeteorLaser(IReadOnlyList<Vector3> _points, bool _isClosedLoop = true)
-        {
-            PlayLaser(_points, _isClosedLoop);
-        }
-
         /// <summary>
         /// 시작점(A)과 끝점(B) 단일 선분 레이저를 양방향 상호 교차 발사합니다.
         /// </summary>
@@ -456,8 +418,6 @@ namespace PresentationLayer.VFX
         /// <summary> (호환용 테스트 트리거) </summary>
         public void TestFireMutualSimultaneousLaser() => TestFireLaser();
 #endif
-
-        #endregion
 
         // 인스펙터 테스트 버튼 - 에디터에서 사람이 눌러야만 실행되므로 빌드에는 넣지 않는다.
 #if UNITY_EDITOR
@@ -1246,7 +1206,6 @@ namespace PresentationLayer.VFX
             {
                 sparkDensity = _sparkDensity;
 
-                meshRenderer.GetPropertyBlock(propBlock);
                 propBlock.SetVector(PropHeadParams, _head);
                 propBlock.SetVector(PropWaveParams, _wave);
                 propBlock.SetVector(PropSparkParams, _spark);
@@ -1260,14 +1219,12 @@ namespace PresentationLayer.VFX
             /// </summary>
             public void SetArrival(float _arrive)
             {
-                meshRenderer.GetPropertyBlock(propBlock);
                 propBlock.SetFloat(PropArrive, _arrive);
                 meshRenderer.SetPropertyBlock(propBlock);
             }
 
             public void SetColors(Color _core, Color _head, Color _tail, float _boost = 1.0f)
             {
-                meshRenderer.GetPropertyBlock(propBlock);
                 propBlock.SetColor(PropCoreColor, _core);
                 propBlock.SetColor(PropHeadColor, _head);
                 propBlock.SetColor(PropTailColor, _tail);
@@ -1513,7 +1470,6 @@ namespace PresentationLayer.VFX
 
             public void SetProgress(float _progress, float _tailLength = 0.4f)
             {
-                meshRenderer.GetPropertyBlock(propBlock);
                 propBlock.SetFloat(PropProgress, _progress);
                 propBlock.SetFloat(PropTailLength, _tailLength);
                 meshRenderer.SetPropertyBlock(propBlock);

@@ -113,6 +113,9 @@ MonoBehaviour:
   randomSeed: 0
   sortingLayerName: FlyingItem
   sortingOrderOffset: 10
+  felledTransitionSeconds: 1.4
+  felledTransitionDelay: 0.15
+  felledTransitionGlow: 0.2
   previewInEditor: 1
   editorNodes:
   - position: {x: 0.9, y: -1.8, z: 0}

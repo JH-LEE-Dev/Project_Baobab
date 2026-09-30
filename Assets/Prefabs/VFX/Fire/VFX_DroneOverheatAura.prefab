@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 7006864300503741061}
   - component: {fileID: 6509270631852307149}
   m_Layer: 19
-  m_Name: VFX_OverHeating
+  m_Name: VFX_DroneOverheatAura
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4881,31 +4881,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe907633079864c4c82d18705f6643cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.VFX.VFX_OverheatAura
-  auraMaterial: {fileID: 2100000, guid: 8996e5a86a1ee704a895dcf1065a99d0, type: 2}
+  auraMaterial: {fileID: 2100000, guid: 576fedf32338cda4d818a170ab2933cb, type: 2}
   backSortingOffset: -2
   frontSortingOffset: 1
   sourceSortingLayerName: Objects
-  bodyCenterYPx: 8
-  ringThicknessPx: 2
-  ringGlow: 0.4
-  crownExtraThicknessPx: 5.5
-  crownStartYPx: 8
-  crownRampPx: 4
+  useFirstSourceAsOrigin: 1
+  snapToPixelGrid: 0
+  bodyCenterYPx: 0
+  ringThicknessPx: 1.5
+  ringGlow: 0.25
+  crownExtraThicknessPx: 2.5
+  crownStartYPx: 1
+  crownRampPx: 3
   noiseScrollSpeed: 2
   flickerFps: 12
   dissolveStart: 0.6
-  gradientSpeed: 0.25
+  gradientSpeed: 0.15
   gradientCycles: 1.5
   gradientNoise: 0.2
   gradientSteps: 12
-  sweepInterval: 6
+  sweepInterval: 0
   sweepDuration: 1.1
   sweepWidth: 0.18
-  sparkleCount: 2
-  ambientEmberInterval: 0.055
+  sparkleCount: 0
+  ambientEmberInterval: 0.16
   emberSwayAmplitude: 9
   emberTrailFullSpeedPx: 100
   emberTrailLifeScale: 0.6
+  igniteRingScale: 0.6
+  igniteEmberCount: 6
   extinguishDuration: 0.45
-  glowScale: 1
+  glowScale: 0.55
   backGlowScale: 1

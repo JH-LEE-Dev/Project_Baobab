@@ -666,7 +666,7 @@ MonoBehaviour:
   additionalAnimDurationOverride: 0
   multiRegionUnlockSpeedRate: 2
   dungeonConfirmDelay: 0.25
-  debugForceUnlockAll: 0
+  debugForceUnlockAll: 1
 --- !u!1 &4120266162391270121
 GameObject:
   m_ObjectHideFlags: 0
@@ -1992,7 +1992,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4245086217066709360, guid: 422e9101ddd5c3641b972278d838fce5, type: 3}
       propertyPath: m_SortingLayer
-      value: 16
+      value: 17
       objectReference: {fileID: 0}
     - target: {fileID: 6222412122325269930, guid: 422e9101ddd5c3641b972278d838fce5, type: 3}
       propertyPath: m_Name
@@ -2098,7 +2098,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4245086217066709360, guid: 422e9101ddd5c3641b972278d838fce5, type: 3}
       propertyPath: m_SortingLayer
-      value: 16
+      value: 17
       objectReference: {fileID: 0}
     - target: {fileID: 6222412122325269930, guid: 422e9101ddd5c3641b972278d838fce5, type: 3}
       propertyPath: m_Name
@@ -2429,7 +2429,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4245086217066709360, guid: 422e9101ddd5c3641b972278d838fce5, type: 3}
       propertyPath: m_SortingLayer
-      value: 16
+      value: 17
       objectReference: {fileID: 0}
     - target: {fileID: 6222412122325269930, guid: 422e9101ddd5c3641b972278d838fce5, type: 3}
       propertyPath: m_Name
@@ -2535,7 +2535,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4245086217066709360, guid: 422e9101ddd5c3641b972278d838fce5, type: 3}
       propertyPath: m_SortingLayer
-      value: 16
+      value: 17
       objectReference: {fileID: 0}
     - target: {fileID: 6222412122325269930, guid: 422e9101ddd5c3641b972278d838fce5, type: 3}
       propertyPath: m_Name

@@ -125,6 +125,11 @@ public class Drone : MonoBehaviour
     private float chargingVfxFadeTimer; // 페이드 잔여 시간(초). 파티클(자식 포함) 최대 수명 + 여유
     private ParticleSystemRenderer[] chargingVfxRenderers; // chargingVfx 본체 + 자식(VFX_OverHeating 등) 렌더러 전부 - Muzzle Y좌표 기준으로 매 프레임 정렬 순서를 맞춘다
 
+    [Header("Overheat Aura VFX (과열 상태 - 드론 몸 실루엣을 따라 감싸는 은은한 푸른 아우라)")]
+    [SerializeField] private string overheatAuraTag = "DroneOverheatAura";
+    private ParticleSystem overheatAuraVfx;
+    private ParticleSystemRenderer overheatAuraRenderer; // 소화 연출 중에도 참조를 유지해서 끝날 때까지 위치/정렬 추적을 계속한다
+
     [Header("Attack Hit VFX (주 타겟/연쇄 타겟 각각 맞은 자리에 1회성 재생)")]
     [SerializeField] private string atkHitVfxTag = "DroneAtkHit";
 
@@ -257,6 +262,7 @@ public class Drone : MonoBehaviour
         // 다음 던전에서 같은 인스턴스가 Update 첫 줄에서 계속 빠져나가 스케일 0으로 이전 좌표에 갇힌다.
         isPaused = false;
         StopChargingVfx();
+        StopOverheatAura(true);
         StopChargeSound(false);
 
         frameTimer = 0f;
@@ -355,7 +361,14 @@ public class Drone : MonoBehaviour
     /// </summary>
     public void SetOverheatState(bool _isOverheat)
     {
+        bool bChanged = isOverheat != _isOverheat;
         isOverheat = _isOverheat;
+
+        // 상태가 바뀔 때만 아우라를 켜고 끈다(Character가 매 프레임 같은 값을 넘겨주므로)
+        if (!bChanged) return;
+
+        if (isOverheat) StartOverheatAura();
+        else StopOverheatAura(false);
     }
 
     /// <summary>
@@ -513,6 +526,7 @@ public class Drone : MonoBehaviour
         {
             // 숨겨진 동안 자식 이펙트의 페이드/재생이 이어질 수 없으므로 여기서 즉시 풀로 돌려보낸다(누수 방지)
             StopChargingVfx(true);
+            StopOverheatAura(true);
             StopChargeSound(false);
         }
 
@@ -522,6 +536,9 @@ public class Drone : MonoBehaviour
         {
             bSnapToSlotPending = true;
             BeginSpawnScale();
+
+            // 숨겨진 동안 과열 상태가 그대로였다면 다시 보일 때 아우라도 다시 켠다
+            if (isOverheat) StartOverheatAura();
         }
     }
 
@@ -537,6 +554,7 @@ public class Drone : MonoBehaviour
         currentTarget = null;
         followTarget = null;
         StopChargingVfx(true); // 풀로 돌아가므로 페이드 없이 즉시 정리
+        StopOverheatAura(true);
         StopChargeSound(false);
     }
 
@@ -603,6 +621,64 @@ public class Drone : MonoBehaviour
         if (customSortable != null)
         {
             customSortable.ManualLateUpdate();
+        }
+
+        UpdateOverheatAura();
+    }
+
+    // 과열 아우라를 켠다. 드론이 스폰 연출로 스케일이 바뀌므로 자식으로 붙이지 않고 월드에서 따로 재생하며, 위치/정렬은 UpdateOverheatAura가
+    // 매 프레임 따라간다. 실루엣을 읽을 대상은 SetSourceRoot로 이 드론을 알려 준다.
+    private void StartOverheatAura()
+    {
+        if (vfxComponent == null || !gameObject.activeInHierarchy) return;
+
+        // 직전 소화 연출이 아직 남아 있으면 즉시 정리하고 새로 켠다(두 개가 겹치지 않게)
+        if (overheatAuraVfx != null) StopOverheatAura(true);
+
+        int sortingOrder = customSortable != null ? customSortable.CurrentSortingOrder + 1 : 0;
+        overheatAuraVfx = vfxComponent.Play(new VFXPlaySettings(overheatAuraTag, transform.position, Quaternion.identity, sortingOrder, null));
+        if (overheatAuraVfx == null) return;
+
+        overheatAuraRenderer = overheatAuraVfx.GetComponent<ParticleSystemRenderer>();
+
+        PresentationLayer.VFX.VFX_OverheatAura aura = overheatAuraVfx.GetComponentInChildren<PresentationLayer.VFX.VFX_OverheatAura>(true);
+        if (aura != null) aura.SetSourceRoot(transform);
+    }
+
+    // _immediate가 true면 즉시 지우고 풀로 돌려보낸다(숨김, 풀 반환, 재시작). false면 방출만 멈추고 소화 연출이 끝날 때까지 위치를 따라간다.
+    private void StopOverheatAura(bool _immediate)
+    {
+        if (overheatAuraVfx == null) return;
+
+        if (vfxComponent != null && overheatAuraVfx.gameObject.activeSelf)
+        {
+            vfxComponent.Stop(overheatAuraVfx, _immediate);
+        }
+
+        // 즉시 정리면 참조를 놓고, 아니면 소화 연출이 끝날 때까지(UpdateOverheatAura가 비활성을 감지할 때까지) 참조를 유지한다
+        if (_immediate)
+        {
+            overheatAuraVfx = null;
+            overheatAuraRenderer = null;
+        }
+    }
+
+    // 아우라가 이 드론을 매 프레임 따라가게 한다(위치 + 드론 본체보다 한 칸 위의 정렬 순서). 풀이 이미 회수한 인스턴스(비활성)면 참조를 놓는다.
+    private void UpdateOverheatAura()
+    {
+        if (overheatAuraVfx == null) return;
+
+        if (!overheatAuraVfx.gameObject.activeSelf)
+        {
+            overheatAuraVfx = null;
+            overheatAuraRenderer = null;
+            return;
+        }
+
+        overheatAuraVfx.transform.position = transform.position;
+        if (overheatAuraRenderer != null && customSortable != null)
+        {
+            overheatAuraRenderer.sortingOrder = customSortable.CurrentSortingOrder + 1;
         }
     }
 
