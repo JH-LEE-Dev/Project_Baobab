@@ -140,6 +140,10 @@ public class InDungeonVFXManager : MonoBehaviour
     private IObjectPool<PresentationLayer.VFX.VFX_BrandStarWrap> brandStarWrapPool;
     private readonly List<PresentationLayer.VFX.VFX_BrandStarWrap> activeBrandStarWraps = new List<PresentationLayer.VFX.VFX_BrandStarWrap>(32);
 
+    // 초기화 시 미리 만들어 둘 별 감싸기 수 - 광선 한 번에 여러 나무가 낙인이 찍히므로, 첫 광선 도중에
+    // 인스턴스(자식 오브젝트 2개 + 메쉬 2개) 생성이 몰리지 않도록 몇 개를 미리 만든다.
+    private const int BrandStarWrapPrewarmCount = 4;
+
     public void Initialize()
     {
         if (vfxComponent != null)
@@ -197,6 +201,8 @@ public class InDungeonVFXManager : MonoBehaviour
                 defaultCapacity: brandStarWrapPoolDefaultCapacity,
                 maxSize: brandStarWrapPoolMaxSize
             );
+
+            PrewarmBrandStarWraps();
         }
 
         if (shootingStarVfxPool == null && shootingStarVfxPrefab != null)
@@ -325,6 +331,24 @@ public class InDungeonVFXManager : MonoBehaviour
             if (_wrap != null) _wrap.ForceRelease();
         }
         activeBrandStarWraps.Clear();
+    }
+
+    // ObjectPool은 미리 만들어두지 않으므로 초기화 시점에 몇 개를 꺼냈다가 돌려놓는다.
+    // (꺼낸 동안 동시에 들고 있어야 서로 다른 인스턴스가 생성된다. Begin 전이라 아무것도 그리지 않는다)
+    private void PrewarmBrandStarWraps()
+    {
+        int _count = Mathf.Min(BrandStarWrapPrewarmCount, brandStarWrapPoolMaxSize);
+        if (0 >= _count) return;
+
+        PresentationLayer.VFX.VFX_BrandStarWrap[] _prewarmed = new PresentationLayer.VFX.VFX_BrandStarWrap[_count];
+        for (int i = 0; i < _prewarmed.Length; i++)
+        {
+            _prewarmed[i] = brandStarWrapPool.Get();
+        }
+        for (int i = 0; i < _prewarmed.Length; i++)
+        {
+            brandStarWrapPool.Release(_prewarmed[i]);
+        }
     }
 
     private PresentationLayer.VFX.VFX_BrandStarWrap CreateBrandStarWrap()
