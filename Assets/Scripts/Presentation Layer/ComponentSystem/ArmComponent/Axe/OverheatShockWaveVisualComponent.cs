@@ -22,44 +22,44 @@ public class OverheatShockWaveVisualComponent : ShockWaveVisualComponent
     [SerializeField, ColorUsage(true, true)] private Color violet = new Color(0.85f, 0.12f, 1.25f, 1f);
     [SerializeField, ColorUsage(true, true)] private Color ember = new Color(1.6f, 0.16f, 0.03f, 1f);
 
-    private ShockWave shockWave;
-    private SpriteRenderer sourceRenderer;
-    private Quaternion initialRotation;
+    private ShockWave overheatShockWave;
+    private SpriteRenderer overheatSourceRenderer;
+    private Quaternion overheatInitialRotation;
 
     public override void Initialize(ShockWave _shockWave)
     {
         base.Initialize(_shockWave);
-        shockWave = _shockWave;
-        sourceRenderer = GetComponent<SpriteRenderer>();
-        initialRotation = transform.rotation;
+        overheatShockWave = _shockWave;
+        overheatSourceRenderer = GetComponent<SpriteRenderer>();
+        overheatInitialRotation = transform.rotation;
     }
 
     public override void Play(float _duration)
     {
         base.Play(_duration);
 
-        if (shockWave == null) shockWave = GetComponent<ShockWave>();
-        if (sourceRenderer == null) sourceRenderer = GetComponent<SpriteRenderer>();
-        if (shockWave == null || particleMaterial == null) return;
+        if (overheatShockWave == null) overheatShockWave = GetComponent<ShockWave>();
+        if (overheatSourceRenderer == null) overheatSourceRenderer = GetComponent<SpriteRenderer>();
+        if (overheatShockWave == null || particleMaterial == null) return;
 
         OverheatShockWaveParticleRunner runner = GetParticleRunner();
         runner.SetOnStopped(ReturnParticleRunner);
         runner.Play(new OverheatShockWaveParticleRunner.PlayData
         {
             Owner = transform,
-            Origin = shockWave.VisualOrigin,
-            InitialRotation = initialRotation,
+            Origin = overheatShockWave.VisualOrigin,
+            InitialRotation = overheatInitialRotation,
             StartPosition = transform.position,
             Material = particleMaterial,
             DustFrames = dustFrames,
             StarFrames = starFrames,
-            SortingLayerID = sourceRenderer != null ? sourceRenderer.sortingLayerID : 0,
-            SortingOrder = sourceRenderer != null ? sourceRenderer.sortingOrder + 1 : 1,
-            ExpandSpeed = shockWave.EffectiveExpandSpeed,
+            SortingLayerID = overheatSourceRenderer != null ? overheatSourceRenderer.sortingLayerID : 0,
+            SortingOrder = overheatSourceRenderer != null ? overheatSourceRenderer.sortingOrder + 1 : 1,
+            ExpandSpeed = overheatShockWave.EffectiveExpandSpeed,
             Duration = _duration,
-            InitialMinDist = shockWave.minDist,
-            InitialMaxDist = shockWave.maxDist,
-            HalfAngle = shockWave.angle,
+            InitialMinDist = overheatShockWave.minDist,
+            InitialMaxDist = overheatShockWave.maxDist,
+            HalfAngle = overheatShockWave.angle,
             DustPoolSize = dustPoolSize,
             StarPoolSize = starPoolSize,
             DustBurstCount = dustBurstCount,
