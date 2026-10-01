@@ -115,6 +115,10 @@ public class UIView_Unit : UIView
         {
             _bar.Setup(_tf.gameObject, treesYOffset, hpBarShowDuration);
             _bar.PlayTreeRevivalPresentation(_treeObj.gemStage, 1.0f);
+
+            // 한 방에 변환되는 나무는 여기서 바가 새로 만들어지므로 반환 콜백이 없다. 이후 숨김이 끝나도 풀로 돌아가지 못하고
+            // activeHpBars에 죽은 나무 키로 남는 것을 막기 위해 항상 콜백을 걸어 둔다.
+            _bar.TriggerActive(returnToPoolAction);
         }
     }
 
@@ -221,7 +225,8 @@ public class UIView_Unit : UIView
             if (_owner is ITreeObj _treeObj)
                 _bar.SetGradeByGemStage(_treeObj.gemStage);
 
-            if (Time.frameCount == _bar.LastRevivalFrame)
+            // 변환 직후 같은 프레임의 중복 갱신은 건너뛰되, 같은 프레임에 죽은 경우에는 숨김 처리를 건너뛰면 안 된다.
+            if (false == _bDead && Time.frameCount == _bar.LastRevivalFrame)
                 return;
 
             UpdateHPBarState(_bar, _health, _bDead, _tf, _yOffset);
@@ -271,6 +276,8 @@ public class UIView_Unit : UIView
 
         if (true == _isDead)
         {
+            // 반환 콜백이 비어 있는 바(변환 시점에 새로 만들어진 바 등)도 숨김이 끝나면 풀로 돌아가도록 보장한다.
+            _bar.TriggerActive(returnToPoolAction);
             _bar.OnHide(hpBarDeadShowDelay);
             return;
         }
