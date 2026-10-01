@@ -2015,7 +2015,7 @@ MonoBehaviour:
   bShockWaveCritical: 0
   bShockWaveEnforcement: 0
   bShockWaveMastery: 0
-  bOverheat: 1
+  bOverheat: 0
   bShockWaveOverheatBoost: 0
   boomerangCount: 0
   boomerangDamage: 10
@@ -2033,12 +2033,12 @@ MonoBehaviour:
   droneDamageInterval: 1
   droneChainCount: 0
   droneChainRange: 1.5
-  bDroneOverheatBoost: 1
+  bDroneOverheatBoost: 0
   overheatEfficiencyBonus: 0
   overheatConsumptionReductionAlpha: 0
   overheatGainBonusAlpha: 0
   heatRecoveryAmount: 0
-  bOverheatPermanent: 1
+  bOverheatPermanent: 0
   recoveryPowerBonus: 0
   rifleDamage: 1
   rifleReadyTime: 0.25

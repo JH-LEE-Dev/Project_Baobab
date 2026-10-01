@@ -145,10 +145,13 @@ MonoBehaviour:
   - {fileID: -1371190704192314837, guid: 4ec7f0cbae9acef4d9d935e1f00a9687, type: 3}
   - {fileID: 4822583191586089253, guid: 4ec7f0cbae9acef4d9d935e1f00a9687, type: 3}
   - {fileID: -114878817, guid: 4ec7f0cbae9acef4d9d935e1f00a9687, type: 3}
-  dustPoolSize: 28
-  starPoolSize: 14
+  dustPoolSize: 40
+  starPoolSize: 18
   dustBurstCount: 3
   starBurstCount: 2
+  maxDustBurstCount: 9
+  maxStarBurstCount: 6
+  maxParticleDensityMultiplier: 3
   dustSpawnInterval: 0.04
   starSpawnInterval: 0.06
   particleTailDuration: 0.42

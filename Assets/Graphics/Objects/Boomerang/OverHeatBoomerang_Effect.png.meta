@@ -1,0 +1,766 @@
+fileFormatVersion: 2
+guid: 59338e1d8493c9e43bccb59e211785d6
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -2310573701740108275
+    second: OverHeatBoomerang_Effect_0
+  - first:
+      213: -7639377779581297367
+    second: OverHeatBoomerang_Effect_1
+  - first:
+      213: -6368359173947204830
+    second: OverHeatBoomerang_Effect_2
+  - first:
+      213: 598314781511018925
+    second: OverHeatBoomerang_Effect_3
+  - first:
+      213: -3550619912195684722
+    second: OverHeatBoomerang_Effect_4
+  - first:
+      213: 4735271680173756121
+    second: OverHeatBoomerang_Effect_5
+  - first:
+      213: 7544218502165129929
+    second: OverHeatBoomerang_Effect_6
+  - first:
+      213: -7106128485344918568
+    second: OverHeatBoomerang_Effect_7
+  - first:
+      213: -4644278902380787915
+    second: OverHeatBoomerang_Effect_8
+  - first:
+      213: 3519415441713106565
+    second: OverHeatBoomerang_Effect_9
+  - first:
+      213: -5392828019092874885
+    second: OverHeatBoomerang_Effect_10
+  - first:
+      213: -7928443276185185425
+    second: OverHeatBoomerang_Effect_11
+  - first:
+      213: 338304083470807661
+    second: OverHeatBoomerang_Effect_12
+  - first:
+      213: 5102352301347335188
+    second: OverHeatBoomerang_Effect_13
+  - first:
+      213: 4557475396279378249
+    second: OverHeatBoomerang_Effect_14
+  - first:
+      213: -1404088334739578557
+    second: OverHeatBoomerang_Effect_15
+  - first:
+      213: -373931644567984778
+    second: OverHeatBoomerang_Effect_16
+  - first:
+      213: -7513771003262176686
+    second: OverHeatBoomerang_Effect_17
+  - first:
+      213: -6708940643156941501
+    second: OverHeatBoomerang_Effect_18
+  - first:
+      213: 1124939139566640683
+    second: OverHeatBoomerang_Effect_19
+  - first:
+      213: -6563560596494281336
+    second: OverHeatBoomerang_Effect_20
+  - first:
+      213: 1213911327895828797
+    second: OverHeatBoomerang_Effect_21
+  - first:
+      213: 1474890486838321029
+    second: OverHeatBoomerang_Effect_22
+  - first:
+      213: -1476099192642242735
+    second: OverHeatBoomerang_Effect_23
+  - first:
+      213: -6430852127866059141
+    second: OverHeatBoomerang_Effect_24
+  - first:
+      213: 7645327972418211321
+    second: OverHeatBoomerang_Effect_25
+  - first:
+      213: 6866718892560752951
+    second: OverHeatBoomerang_Effect_26
+  - first:
+      213: -167105547316193021
+    second: OverHeatBoomerang_Effect_27
+  - first:
+      213: -2034971438266164656
+    second: OverHeatBoomerang_Effect_28
+  - first:
+      213: -920130295586331884
+    second: OverHeatBoomerang_Effect_29
+  - first:
+      213: -5210497341356566506
+    second: OverHeatBoomerang_Effect_30
+  - first:
+      213: 8929902010086879006
+    second: OverHeatBoomerang_Effect_31
+  - first:
+      213: 3184506489960100993
+    second: OverHeatBoomerang_Effect_32
+  - first:
+      213: 2302302384732252134
+    second: OverHeatBoomerang_Effect_33
+  - first:
+      213: 9196856763957577494
+    second: OverHeatBoomerang_Effect_34
+  - first:
+      213: 6490542834608689143
+    second: OverHeatBoomerang_Effect_35
+  - first:
+      213: -9131917189037444296
+    second: OverHeatBoomerang_Effect_36
+  - first:
+      213: -3456528435207397991
+    second: OverHeatBoomerang_Effect_37
+  - first:
+      213: 6711864369978122650
+    second: OverHeatBoomerang_Effect_38
+  - first:
+      213: -1537416181574242303
+    second: OverHeatBoomerang_Effect_39
+  - first:
+      213: 9041228667359165032
+    second: OverHeatBoomerang_Effect_40
+  - first:
+      213: 1714939147417149690
+    second: OverHeatBoomerang_Effect_41
+  - first:
+      213: 5828784423970376825
+    second: OverHeatBoomerang_Effect_42
+  - first:
+      213: -2811044021968574157
+    second: OverHeatBoomerang_Effect_43
+  - first:
+      213: 3385637374781274525
+    second: OverHeatBoomerang_Effect_44
+  - first:
+      213: -465318919873201638
+    second: OverHeatBoomerang_Effect_45
+  - first:
+      213: 1096923834809611911
+    second: OverHeatBoomerang_Effect_46
+  - first:
+      213: -6174262582125269776
+    second: OverHeatBoomerang_Effect_47
+  - first:
+      213: 7618979996735143835
+    second: OverHeatBoomerang_Effect_48
+  - first:
+      213: -3965303985898022144
+    second: OverHeatBoomerang_Effect_49
+  - first:
+      213: -761313805589065677
+    second: OverHeatBoomerang_Effect_50
+  - first:
+      213: -7809205263896808034
+    second: OverHeatBoomerang_Effect_51
+  - first:
+      213: 5950087601141744811
+    second: OverHeatBoomerang_Effect_52
+  - first:
+      213: 4420907836972154594
+    second: OverHeatBoomerang_Effect_53
+  - first:
+      213: 5112877568895558703
+    second: OverHeatBoomerang_Effect_54
+  - first:
+      213: -5166659455341656748
+    second: OverHeatBoomerang_Effect_55
+  - first:
+      213: -1601281512730200708
+    second: OverHeatBoomerang_Effect_56
+  - first:
+      213: 8769578213800001940
+    second: OverHeatBoomerang_Effect_57
+  - first:
+      213: -2304766188944209129
+    second: OverHeatBoomerang_Effect_58
+  - first:
+      213: 8562399335685041139
+    second: OverHeatBoomerang_Effect_59
+  - first:
+      213: -5715987792790867041
+    second: OverHeatBoomerang_Effect_60
+  - first:
+      213: 6580320099443505950
+    second: OverHeatBoomerang_Effect_61
+  - first:
+      213: 6424687551718708915
+    second: OverHeatBoomerang_Effect_62
+  - first:
+      213: -1292667639998087832
+    second: OverHeatBoomerang_Effect_63
+  - first:
+      213: -2207663081752301500
+    second: OverHeatBoomerang_Effect_64
+  - first:
+      213: 4656163650226782208
+    second: OverHeatBoomerang_Effect_65
+  - first:
+      213: 3709956655291690782
+    second: OverHeatBoomerang_Effect_66
+  - first:
+      213: 5868827804825308711
+    second: OverHeatBoomerang_Effect_67
+  - first:
+      213: -8583724297347901458
+    second: OverHeatBoomerang_Effect_68
+  - first:
+      213: -8235569783874710306
+    second: OverHeatBoomerang_Effect_69
+  - first:
+      213: -5477437264526124742
+    second: OverHeatBoomerang_Effect_70
+  - first:
+      213: -4906433416011679742
+    second: OverHeatBoomerang_Effect_71
+  - first:
+      213: 3903388184297404576
+    second: OverHeatBoomerang_Effect_72
+  - first:
+      213: 4094868334606702723
+    second: OverHeatBoomerang_Effect_73
+  - first:
+      213: 8900343458005407863
+    second: OverHeatBoomerang_Effect_74
+  - first:
+      213: -1511348790374484808
+    second: OverHeatBoomerang_Effect_75
+  - first:
+      213: 8471724819008766306
+    second: OverHeatBoomerang_Effect_76
+  - first:
+      213: 1037772962387406273
+    second: OverHeatBoomerang_Effect_77
+  - first:
+      213: 1337888453042444284
+    second: OverHeatBoomerang_Effect_78
+  - first:
+      213: 90694770282114031
+    second: OverHeatBoomerang_Effect_79
+  - first:
+      213: 8821860402764415415
+    second: OverHeatBoomerang_Effect_80
+  - first:
+      213: 418498710506772871
+    second: OverHeatBoomerang_Effect_81
+  - first:
+      213: -2188879102399561033
+    second: OverHeatBoomerang_Effect_82
+  - first:
+      213: 3076220219745332016
+    second: OverHeatBoomerang_Effect_83
+  - first:
+      213: 2152528645544710234
+    second: OverHeatBoomerang_Effect_84
+  - first:
+      213: 5445378737658563770
+    second: OverHeatBoomerang_Effect_85
+  - first:
+      213: 2960735406380444637
+    second: OverHeatBoomerang_Effect_86
+  - first:
+      213: 4870279312280504036
+    second: OverHeatBoomerang_Effect_87
+  - first:
+      213: 7304957868034171751
+    second: OverHeatBoomerang_Effect_88
+  - first:
+      213: -662963111943950761
+    second: OverHeatBoomerang_Effect_89
+  - first:
+      213: -8000878198334902309
+    second: OverHeatBoomerang_Effect_90
+  - first:
+      213: -7341213025050325680
+    second: OverHeatBoomerang_Effect_91
+  - first:
+      213: -3738937511180511603
+    second: OverHeatBoomerang_Effect_92
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 32
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 192
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d06eb60d5713fefd0800000000000000
+      internalID: -2310573701740108275
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_1
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 192
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 92d5b07726a7bf590800000000000000
+      internalID: -7639377779581297367
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_2
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 192
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 22bd6c2821b0f97a0800000000000000
+      internalID: -6368359173947204830
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_3
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 192
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: da964dfaf14ad4800800000000000000
+      internalID: 598314781511018925
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_4
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 128
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e86c529700aa9bec0800000000000000
+      internalID: -3550619912195684722
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_5
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 128
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9de49bb218017b140800000000000000
+      internalID: 4735271680173756121
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_6
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 128
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9ca6b79b1c272b860800000000000000
+      internalID: 7544218502165129929
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_7
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 128
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8d34bbedac5f16d90800000000000000
+      internalID: -7106128485344918568
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_8
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 64
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 53780c9d1f43c8fb0800000000000000
+      internalID: -4644278902380787915
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_9
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 64
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 58e855492b977d030800000000000000
+      internalID: 3519415441713106565
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_10
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 64
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b7912333d73d825b0800000000000000
+      internalID: -5392828019092874885
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_11
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 64
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f63d525d8d288f190800000000000000
+      internalID: -7928443276185185425
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_12
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d62775185c5e1b400800000000000000
+      internalID: 338304083470807661
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_13
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 0
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 41c64b872623fc640800000000000000
+      internalID: 5102352301347335188
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_14
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 0
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 941a0d3f9b76f3f30800000000000000
+      internalID: 4557475396279378249
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: OverHeatBoomerang_Effect_15
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 0
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 341e396491da38ce0800000000000000
+      internalID: -1404088334739578557
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: a24dfc941e3922242848e51bb4a56a7c
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":4.0,"y":4.0},"gridSpriteSize":{"x":128.0,"y":64.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
+    nameFileIdTable:
+      OverHeatBoomerang_Effect_0: -2310573701740108275
+      OverHeatBoomerang_Effect_1: -7639377779581297367
+      OverHeatBoomerang_Effect_10: -5392828019092874885
+      OverHeatBoomerang_Effect_11: -7928443276185185425
+      OverHeatBoomerang_Effect_12: 338304083470807661
+      OverHeatBoomerang_Effect_13: 5102352301347335188
+      OverHeatBoomerang_Effect_14: 4557475396279378249
+      OverHeatBoomerang_Effect_15: -1404088334739578557
+      OverHeatBoomerang_Effect_2: -6368359173947204830
+      OverHeatBoomerang_Effect_3: 598314781511018925
+      OverHeatBoomerang_Effect_4: -3550619912195684722
+      OverHeatBoomerang_Effect_5: 4735271680173756121
+      OverHeatBoomerang_Effect_6: 7544218502165129929
+      OverHeatBoomerang_Effect_7: -7106128485344918568
+      OverHeatBoomerang_Effect_8: -4644278902380787915
+      OverHeatBoomerang_Effect_9: 3519415441713106565
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
