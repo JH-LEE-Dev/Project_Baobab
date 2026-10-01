@@ -308,6 +308,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         bDronesPaused = false;
         ClearActiveDrones();
 
+        // 씬 전환마다 과열 버프를 강제 종료한다. 던전을 나갈 때(MagmaForest 전용 효과가 다른 곳까지 이어지지 않도록)뿐 아니라,
+        // 재도전(결과창 → 재도전)은 타운을 거치지 않고 던전 → 던전으로 직행하므로 여기서 끊지 않으면 이전 판에 쌓은
+        // 과열 시간과 버프가 새 판까지 그대로 이어진다. "화신"은 아래 TryActivatePermanent가 다시 켠다.
+        EndOverheatBuff();
+
         if (_bInDungeon == false)
         {
             armComponent.ResetWeaponStatus();
@@ -319,7 +324,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             stateMachine.ChangeState<IdleState>();
             attackComponent.SetEnable(false);
             attackComponent.SetCursorEnable(false);
-            EndOverheatBuff(); // 던전을 나가면 과열 버프도 강제 종료 (MagmaForest 전용 효과가 다른 곳까지 이어지지 않도록)
         }
         else
         {
