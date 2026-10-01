@@ -238,6 +238,28 @@ public class VFXComponent : MonoBehaviour
     }
 
     /// <summary>
+    /// 태그에 바인딩된 프리팹과 풀 상한을 돌려줍니다. 공유 이미터(SharedBurstEmitter)가 같은 프리팹을 인스턴스 하나로 재생할 때 씁니다.
+    /// </summary>
+    public bool TryGetPoolConfig(string _tag, out ParticleSystem _prefab, out int _maxPoolSize)
+    {
+        _prefab = null;
+        _maxPoolSize = 0;
+
+        if (false == isInitialized)
+            Initialize();
+
+        if (null == configDictionary || string.IsNullOrEmpty(_tag))
+            return false;
+
+        if (false == configDictionary.TryGetValue(_tag, out VFXPoolData _config) || null == _config)
+            return false;
+
+        _prefab = _config.EffectPrefab;
+        _maxPoolSize = _config.AllowDynamicExpansion ? _config.MaxPoolSize : _config.InitialPoolSize;
+        return null != _prefab;
+    }
+
+    /// <summary>
     /// 지정한 태그의 풀에서 사용 가능한(비활성화된) 이펙트 컴포넌트를 반환합니다.
     /// 해당 태그의 모든 이펙트가 사용 중일 경우, 설정을 확인하여 동적으로 풀을 늘립니다.
     /// </summary>

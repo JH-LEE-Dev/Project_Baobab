@@ -19,6 +19,18 @@ public class InDungeonVFXManager : MonoBehaviour
     // 나무가 그려지는 정렬 레이어. 보석 임팩트 VFX를 나무와 같은 레이어에 명시적으로 올릴 때 쓴다.
     private const string TreeSortingLayerName = "Objects";
 
+    // 피격/사망 이펙트 공유 이미터. 타격마다 풀 인스턴스를 꺼내 SetParent/SetActive/Play 하던 것을 인스턴스 하나에 Emit으로 대체한다
+    // (활성화 비용 0, 드로우콜은 이펙트 종류당 1개). 이 네 태그는 소팅 오버라이드 없이 위치/회전/색만 받으므로 공유해도 결과가 같다.
+    // 프리팹이 공유 조건(SharedBurstEmitter.IsCompatible)에 맞지 않으면 null로 남아 예전 풀 경로를 그대로 쓴다.
+    // 공유 이미터가 겹쳐서 재생할 수 있는 횟수. 시스템별 최대 입자 수 = 버스트 개수 × 이 값(풀 상한 70보다 작으면 풀 상한을 쓴다).
+    // 이 값을 넘는 순간에만 새 입자가 누락되므로 예전 풀 상한보다 넉넉히 잡는다. 메모리는 네 태그 합산 입자 약 480개 × 이 값만큼 든다.
+    [SerializeField] private int sharedBurstEmitterCapacity = 120;
+
+    private PresentationLayer.VFX.SharedBurstEmitter sharedTreeHitTopEmitter;
+    private PresentationLayer.VFX.SharedBurstEmitter sharedTreeHitBottomEmitter;
+    private PresentationLayer.VFX.SharedBurstEmitter sharedTreeDeadTopEmitter;
+    private PresentationLayer.VFX.SharedBurstEmitter sharedTreeDeadBottomEmitter;
+
     [Header("Constellation Ground Mark")]
     [SerializeField] private TreeStarMarkGroundAnimator treeStarMarkGroundPrefab;
     [SerializeField] private int treeStarMarkGroundPoolDefaultCapacity = 8;
@@ -166,7 +178,14 @@ public class InDungeonVFXManager : MonoBehaviour
     public void Initialize()
     {
         if (vfxComponent != null)
+        {
             vfxComponent.Initialize();
+
+            if (sharedTreeHitTopEmitter == null) sharedTreeHitTopEmitter = CreateSharedBurstEmitter("TreeHitEffect_Top");
+            if (sharedTreeHitBottomEmitter == null) sharedTreeHitBottomEmitter = CreateSharedBurstEmitter("TreeHitEffect_Bottom");
+            if (sharedTreeDeadTopEmitter == null) sharedTreeDeadTopEmitter = CreateSharedBurstEmitter("TreeDeadEffect_Top");
+            if (sharedTreeDeadBottomEmitter == null) sharedTreeDeadBottomEmitter = CreateSharedBurstEmitter("TreeDeadEffect_Bottom");
+        }
 
         if (treeStarMarkGroundPool == null && treeStarMarkGroundPrefab != null)
         {
@@ -1005,6 +1024,36 @@ public class InDungeonVFXManager : MonoBehaviour
         if (vfxComponent == null) return;
 
         vfxComponent.StopAll();
+
+        // 공유 이미터에 살아있는 입자도 같은 시점에 지운다(풀 인스턴스를 Stop+Clear 하던 것과 동일)
+        sharedTreeHitTopEmitter?.Clear();
+        sharedTreeHitBottomEmitter?.Clear();
+        sharedTreeDeadTopEmitter?.Clear();
+        sharedTreeDeadBottomEmitter?.Clear();
+    }
+
+    // 태그의 풀 프리팹이 공유 조건에 맞으면 공유 이미터를 만든다. 최대 입자 수는 예전 풀 상한만큼 겹칠 수 있도록 잡는다.
+    private PresentationLayer.VFX.SharedBurstEmitter CreateSharedBurstEmitter(string _tag)
+    {
+        if (vfxComponent == null) return null;
+        if (!vfxComponent.TryGetPoolConfig(_tag, out ParticleSystem prefab, out int maxPoolSize)) return null;
+        if (!PresentationLayer.VFX.SharedBurstEmitter.IsCompatible(prefab)) return null;
+
+        int capacity = Mathf.Max(1, Mathf.Max(maxPoolSize, sharedBurstEmitterCapacity));
+        return new PresentationLayer.VFX.SharedBurstEmitter(prefab, capacity, "SharedEmitter_" + _tag);
+    }
+
+    private void OnDestroy()
+    {
+        // 공유 이미터는 부모 없이 DontDestroyOnLoad로 살아가므로 이 매니저가 사라질 때 직접 지운다
+        sharedTreeHitTopEmitter?.Dispose();
+        sharedTreeHitBottomEmitter?.Dispose();
+        sharedTreeDeadTopEmitter?.Dispose();
+        sharedTreeDeadBottomEmitter?.Dispose();
+        sharedTreeHitTopEmitter = null;
+        sharedTreeHitBottomEmitter = null;
+        sharedTreeDeadTopEmitter = null;
+        sharedTreeDeadBottomEmitter = null;
     }
 
     /// <summary>
@@ -1016,24 +1065,38 @@ public class InDungeonVFXManager : MonoBehaviour
         if (vfxComponent == null || _visual == null) return;
 
         ParticleColorSet topColor = _visual.GetTopVfxColor();
-        vfxComponent.Play(new VFXPlaySettings(
-            "TreeHitEffect_Top",
-            _visual.GetTopRootPosition(),
-            _visual.GetTopRootRotation(),
-            topColor.startColor,
-            topColor.overrideChildrenColor,
-            null
-        ));
+        if (sharedTreeHitTopEmitter != null
+            && sharedTreeHitTopEmitter.Emit(_visual.GetTopRootPosition(), _visual.GetTopRootRotation(), true, topColor.startColor, topColor.overrideChildrenColor))
+        {
+        }
+        else
+        {
+            vfxComponent.Play(new VFXPlaySettings(
+                "TreeHitEffect_Top",
+                _visual.GetTopRootPosition(),
+                _visual.GetTopRootRotation(),
+                topColor.startColor,
+                topColor.overrideChildrenColor,
+                null
+            ));
+        }
 
         ParticleColorSet bottomColor = _visual.GetBottomVfxColor();
-        vfxComponent.Play(new VFXPlaySettings(
-            "TreeHitEffect_Bottom",
-            _visual.GetBottomRootPosition(),
-            _visual.GetBottomRootRotation(),
-            bottomColor.startColor,
-            bottomColor.overrideChildrenColor,
-            null
-        ));
+        if (sharedTreeHitBottomEmitter != null
+            && sharedTreeHitBottomEmitter.Emit(_visual.GetBottomRootPosition(), _visual.GetBottomRootRotation(), true, bottomColor.startColor, bottomColor.overrideChildrenColor))
+        {
+        }
+        else
+        {
+            vfxComponent.Play(new VFXPlaySettings(
+                "TreeHitEffect_Bottom",
+                _visual.GetBottomRootPosition(),
+                _visual.GetBottomRootRotation(),
+                bottomColor.startColor,
+                bottomColor.overrideChildrenColor,
+                null
+            ));
+        }
     }
 
     /// <summary>
@@ -1080,24 +1143,38 @@ public class InDungeonVFXManager : MonoBehaviour
         if (vfxComponent == null || _visual == null) return;
 
         ParticleColorSet topColor = _visual.GetTopVfxColor();
-        vfxComponent.Play(new VFXPlaySettings(
-            "TreeDeadEffect_Top",
-            _visual.GetTopRootPosition(),
-            _visual.GetTopRootRotation(),
-            topColor.startColor,
-            topColor.overrideChildrenColor,
-            null
-        ));
+        if (sharedTreeDeadTopEmitter != null
+            && sharedTreeDeadTopEmitter.Emit(_visual.GetTopRootPosition(), _visual.GetTopRootRotation(), true, topColor.startColor, topColor.overrideChildrenColor))
+        {
+        }
+        else
+        {
+            vfxComponent.Play(new VFXPlaySettings(
+                "TreeDeadEffect_Top",
+                _visual.GetTopRootPosition(),
+                _visual.GetTopRootRotation(),
+                topColor.startColor,
+                topColor.overrideChildrenColor,
+                null
+            ));
+        }
 
         ParticleColorSet bottomColor = _visual.GetBottomVfxColor();
-        vfxComponent.Play(new VFXPlaySettings(
-            "TreeDeadEffect_Bottom",
-            _visual.GetBottomRootPosition(),
-            _visual.GetBottomRootRotation(),
-            bottomColor.startColor,
-            bottomColor.overrideChildrenColor,
-            null
-        ));
+        if (sharedTreeDeadBottomEmitter != null
+            && sharedTreeDeadBottomEmitter.Emit(_visual.GetBottomRootPosition(), _visual.GetBottomRootRotation(), true, bottomColor.startColor, bottomColor.overrideChildrenColor))
+        {
+        }
+        else
+        {
+            vfxComponent.Play(new VFXPlaySettings(
+                "TreeDeadEffect_Bottom",
+                _visual.GetBottomRootPosition(),
+                _visual.GetBottomRootRotation(),
+                bottomColor.startColor,
+                bottomColor.overrideChildrenColor,
+                null
+            ));
+        }
     }
 
     /// <summary>

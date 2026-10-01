@@ -1396,13 +1396,14 @@ public class Drone : MonoBehaviour
 
         if (customSortable == null) return;
 
-        int order = customSortable.ComputeSortingOrder(muzzlePos.y);
-
-        // 아래를 볼 때(5 좌하, 6 하, 7 우하) 총구는 떠 있는 본체 Visual에 붙어 있어 정렬 기준(루트)보다 Y가 높다 -
-        // 그대로 두면 순서가 본체보다 낮게 나와 드론 앞쪽 총구의 이펙트가 본체 뒤에 깔리므로 본체보다 한 칸 위로 끌어올린다.
-        // 본체 순서는 CurrentSortingOrder(직전 LateUpdate 값)가 아니라 이번 프레임 위치로 직접 계산한다 - 아래로 이동 중이면
-        // 직전 값이 이번 프레임 본체 순서보다 작아 이펙트가 본체 뒤로 깔린다(CustomSortable의 정렬 기준점이 이 드론 루트다).
-        if (dirIndex >= 5 && dirIndex <= 7) order = Mathf.Max(order, customSortable.ComputeSortingOrder(transform.position.y) + 1);
+        // 총구 이펙트의 앞뒤는 총구 Y가 아니라 "보는 방향"으로 정한다. 총구가 화면 안쪽을 향하는 위쪽 세 방향(1 우상, 2 상, 3 좌상)에서만
+        // 본체 뒤에 가려지고, 수평(0 우, 4 좌)과 아래쪽(5 좌하, 6 하, 7 우하)에서는 본체 앞에 보여야 자연스럽다.
+        // (예전엔 총구 Y로만 계산해 수평일 때 총구가 떠 있는 본체 Visual에 붙어 루트보다 Y가 높다는 이유로 본체 뒤에 깔렸다)
+        // 본체 순서는 CurrentSortingOrder(직전 LateUpdate 값)가 아니라 이번 프레임 위치로 직접 계산한다 - 이동 중이면
+        // 직전 값이 이번 프레임 본체 순서와 달라 한 프레임 어긋난다(CustomSortable의 정렬 기준점이 이 드론 루트다).
+        int bodyOrder = customSortable.ComputeSortingOrder(transform.position.y);
+        bool bFacingUp = dirIndex >= 1 && dirIndex <= 3;
+        int order = bFacingUp ? bodyOrder - 1 : bodyOrder + 1;
 
         ApplySortingOrder(chargingVfxRenderers, order);
         ApplySortingOrder(retiredChargingVfxRenderers, order);

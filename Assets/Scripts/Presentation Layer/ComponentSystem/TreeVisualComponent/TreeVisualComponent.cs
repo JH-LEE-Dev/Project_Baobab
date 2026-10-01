@@ -145,7 +145,7 @@ public class TreeVisualComponent : MonoBehaviour
     // 플래그가 켜진 채 남을 수 있는데, 시각은 시간이 지나면 저절로 풀린다.
     private float criticalFlashEndTime = 0f;
     private MaterialPropertyBlock _flashMPB;
-    private Coroutine hitFlashCoroutine;
+    // 플래시 진행은 TreeFlashSystem이 한 곳에서 틱한다(나무마다 코루틴을 만들지 않는다)
 
     // Gem Visual - 보석 머티리얼로 갈아끼우기 전의 원본 머티리얼.
     // 에디터에서 인스펙터로 토글하면 스크립트 재컴파일(도메인 리로드)로 런타임 필드가 날아가는데,
@@ -695,36 +695,19 @@ public class TreeVisualComponent : MonoBehaviour
             return;
         }
 
-        if (hitFlashCoroutine != null)
-        {
-            StopCoroutine(hitFlashCoroutine);
-        }
+        TreeFlashSystem.Cancel(this);
 
-        // 색은 점멸 동안 바뀌지 않으므로 시작할 때 한 번만 넣고, 루프에서는 세기만 갱신한다.
+        // 색은 점멸 동안 바뀌지 않으므로 시작할 때 한 번만 넣고, 진행 중에는 세기만 갱신한다.
         ApplyFlashColorToRenderers(_color);
         criticalFlashEndTime = _bCritical ? Time.time + _duration : 0f;
-        hitFlashCoroutine = StartCoroutine(FlashRoutine(_duration, _curve));
+        TreeFlashSystem.Begin(this, _curve, _duration);
     }
 
-    private IEnumerator FlashRoutine(float _duration, AnimationCurve _curve)
+    // TreeFlashSystem이 프레임마다 호출한다(예전 FlashRoutine의 ApplyFlashAmountToRenderers 호출과 동일).
+    internal void ApplyFlashAmountFromSystem(float _flash)
     {
         if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
-
-        float elapsed = 0f;
-        while (elapsed < _duration)
-        {
-            float t = elapsed / _duration;
-            float flash = _curve.Evaluate(t);
-
-            ApplyFlashAmountToRenderers(flash);
-
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        ApplyFlashAmountToRenderers(0f);
-
-        hitFlashCoroutine = null;
+        ApplyFlashAmountToRenderers(_flash);
     }
 
     private void ApplyFlashAmountToRenderers(float flash)
@@ -799,11 +782,7 @@ public class TreeVisualComponent : MonoBehaviour
         SetAlpha(1.0f);
 
         // 4. 피격 Flash 연출 초기화 (풀 반환 시 흰색 상태로 남는 것을 방지)
-        if (hitFlashCoroutine != null)
-        {
-            StopCoroutine(hitFlashCoroutine);
-            hitFlashCoroutine = null;
-        }
+        TreeFlashSystem.Cancel(this);
         criticalFlashEndTime = 0f;
 
         if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
