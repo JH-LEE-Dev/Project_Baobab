@@ -274,17 +274,72 @@ public class VFXComponent : MonoBehaviour
             }
         }
 
+        // 확장을 끈 풀은 설계상 하드 캡이다(OverheatLoop 1개, DroneCharging 3개 등). 예전처럼 null을 돌려준다.
         if (false == _config.AllowDynamicExpansion)
             return null;
 
-        if (_poolList.Count >= _config.MaxPoolSize)
+        if (_poolList.Count < _config.MaxPoolSize)
+        {
+            ParticleSystem _dynamicInstance = CreateNewInstance(_config);
+            if (null != _dynamicInstance)
+                _poolList.Add(_dynamicInstance);
+
+            return _dynamicInstance;
+        }
+
+        // 루프 이펙트(LogItem의 Shiny, 드론 과열 아우라 등)는 호출부가 인스턴스를 들고 있다가 나중에 Stop한다.
+        // 여기서 뺏어오면 새 주인에게 붙은 이펙트를 옛 주인의 Stop이 꺼버리므로, 예전처럼 null을 돌려준다.
+        if (true == _config.EffectPrefab.main.loop)
             return null;
 
-        ParticleSystem _dynamicInstance = CreateNewInstance(_config);
-        if (null != _dynamicInstance)
-            _poolList.Add(_dynamicInstance);
+        // 단발 이펙트 풀이 전부 재생 중이고 상한까지 찼으면 가장 오래 재생 중인 인스턴스를 회수해 재사용한다.
+        // 예전엔 여기서 null을 돌려줬는데, 호출부가 전부 반환값을 버리고 로그도 없어서 광역 공격으로
+        // 벌목 이펙트가 한꺼번에 몰리는 순간(과열 쇼크웨이브의 인접 즉사, 부메랑 반복 타격 등)
+        // 상한을 넘는 이펙트가 아무 표시 없이 사라졌다. 단발 이펙트라 가장 오래된 것이 조금 일찍
+        // 끊기는 쪽이 새 이펙트가 통째로 빠지는 것보다 낫다.
+        return RecycleOldestActive(_poolList);
+    }
 
-        return _dynamicInstance;
+    /// <summary>
+    /// 풀에서 가장 오래전에 재생을 시작한 활성 인스턴스를 즉시 풀로 되돌리고 반환합니다.
+    /// 회수된 인스턴스는 비활성 + 풀 부모 상태라 바로 Play로 넘길 수 있습니다.
+    /// </summary>
+    private ParticleSystem RecycleOldestActive(List<ParticleSystem> _poolList)
+    {
+        ParticleSystem _oldest = null;
+        VFXPoolInstanceHelper _oldestHelper = null;
+        float _oldestTime = float.MaxValue;
+
+        int _count = _poolList.Count;
+        for (int i = 0; i < _count; i++)
+        {
+            ParticleSystem _effect = _poolList[i];
+            if (null == _effect)
+                continue;
+
+            VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
+            if (null == _helper)
+                continue;
+
+            if (_helper.LastPlayTime < _oldestTime)
+            {
+                _oldestTime = _helper.LastPlayTime;
+                _oldest = _effect;
+                _oldestHelper = _helper;
+            }
+        }
+
+        if (null == _oldest)
+            return null;
+
+        _oldestHelper.ReturnToPool();
+
+        // ReturnToPool이 비활성 상태에서 재부모화를 지연 예약했을 수 있으니 대여 시점에 취소한다(위 루프와 동일).
+        _oldestHelper.CancelPendingReparent();
+        if (null != _oldestHelper.TargetTransform)
+            _oldestHelper.TargetTransform.SetParent(transform);
+
+        return _oldest;
     }
 
     /// <summary>
@@ -335,6 +390,9 @@ public class VFXComponent : MonoBehaviour
         if (_target != _effect.transform)
             _effect.gameObject.SetActive(true);
 
+        if (null != _helper)
+            _helper.MarkPlayed();
+
         _effect.Play(true);
     }
 
@@ -357,6 +415,9 @@ public class VFXComponent : MonoBehaviour
         _target.gameObject.SetActive(true);
         if (_target != _effect.transform)
             _effect.gameObject.SetActive(true);
+
+        if (null != _helper)
+            _helper.MarkPlayed();
 
         // 소팅 오버라이드 처리 (재생 전에 먼저 적용)
         if (true == _settings.OverrideSorting)
@@ -631,8 +692,7 @@ public class VFXComponent : MonoBehaviour
             if (null != _helper)
                 _helper.Initialize(transform, _uiParentGo.transform);
 
-            var _main = _newInstance.main;
-            _main.stopAction = ParticleSystemStopAction.Callback;
+            ApplyPoolInstanceSettings(_newInstance);
 
             if (null != masterList)
                 masterList.Add(_newInstance);
@@ -651,13 +711,45 @@ public class VFXComponent : MonoBehaviour
             if (null != _helper)
                 _helper.Initialize(transform);
 
-            var _main = _newInstance.main;
-            _main.stopAction = ParticleSystemStopAction.Callback;
+            ApplyPoolInstanceSettings(_newInstance);
 
             if (null != masterList)
                 masterList.Add(_newInstance);
 
             return _newInstance;
+        }
+    }
+
+    /// <summary>
+    /// 풀 인스턴스가 반드시 풀로 돌아오도록 파티클 설정을 보정합니다.
+    ///
+    /// 반납 경로는 루트의 OnParticleSystemStopped 콜백 하나뿐이다. 그런데 프리팹의 컬링 모드가
+    /// Pause면 화면 밖에서 재생 중인 이펙트는 시뮬레이션이 멈춰 끝나지 않고, 콜백도 오지 않아
+    /// 활성 상태로 영원히 남는다(카메라가 우연히 그 자리를 다시 비추기 전까지). 그 인스턴스는
+    /// 풀 상한을 잠식해 다른 이펙트가 못 나오게 만든다.
+    ///
+    /// 단발(비루프) 이펙트는 수명이 1초 안팎이라 화면 밖에서도 끝까지 돌리는 비용이 사실상 없다.
+    /// 루프 이펙트는 화면 밖 일시정지가 의도된 절약이므로 프리팹 설정을 그대로 둔다.
+    /// </summary>
+    private static void ApplyPoolInstanceSettings(ParticleSystem _root)
+    {
+        var _rootMain = _root.main;
+        _rootMain.stopAction = ParticleSystemStopAction.Callback;
+
+        ParticleSystem[] _systems = _root.GetComponentsInChildren<ParticleSystem>(true);
+        if (null == _systems)
+            return;
+
+        int _count = _systems.Length;
+        for (int i = 0; i < _count; i++)
+        {
+            ParticleSystem _system = _systems[i];
+            if (null == _system)
+                continue;
+
+            var _main = _system.main;
+            if (false == _main.loop)
+                _main.cullingMode = ParticleSystemCullingMode.AlwaysSimulate;
         }
     }
 
@@ -770,9 +862,21 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     private DG.Tweening.Tween deferredReparentTween;
     private Vector3 originalLocalScale = Vector3.one;
     private bool hasOriginalLocalScale = false;
+    // 마지막으로 재생을 시작한 시각. 풀이 가득 찼을 때 가장 오래된 인스턴스를 골라 회수하는 기준이다.
+    private float lastPlayTime = float.MinValue;
 
 
     // 퍼블릭 초기화 및 제어 메서드
+
+    public float LastPlayTime => lastPlayTime;
+
+    /// <summary>
+    /// 재생 시작 시각을 기록합니다. VFXComponent.Play가 실제 Play 직전에 호출합니다.
+    /// </summary>
+    public void MarkPlayed()
+    {
+        lastPlayTime = Time.time;
+    }
 
     public void Initialize(Transform _parent, Transform _target = null)
     {
@@ -780,6 +884,7 @@ public class VFXPoolInstanceHelper : MonoBehaviour
         targetTransform = (null != _target) ? _target : transform;
         particleSys = GetComponent<ParticleSystem>();
         isReturning = false;
+        lastPlayTime = float.MinValue;
 
         // 이 시점의 로컬 스케일은 아직 아무 재부모화도 거치지 않은 프리팹 원본 값이다
         // (CreateNewInstance가 Instantiate(..., worldPositionStays:false) 직후에 이 메서드를 호출한다).
@@ -947,6 +1052,11 @@ public class VFXPoolInstanceHelper : MonoBehaviour
 
     private void OnParticleSystemStopped()
     {
+        // 풀이 가득 차 강제 회수(ReturnToPool의 Stop+Clear)된 직후 같은 프레임에 다시 대여되어 재생 중이면,
+        // 그 Stop에 대한 콜백이 뒤늦게 도착할 수 있다. 지금 재생 중인 새 주인의 이펙트를 꺼버리면 안 된다.
+        if (null != particleSys && true == particleSys.isPlaying)
+            return;
+
         ReturnToPool();
     }
 

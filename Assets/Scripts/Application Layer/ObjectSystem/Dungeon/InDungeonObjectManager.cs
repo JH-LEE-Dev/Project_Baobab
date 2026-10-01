@@ -1118,6 +1118,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
             // 위에서 나무를 풀로 돌리며 OnReleaseTree가 이미 하나씩 걷었지만, 혹시 남은 별 감쌈이 있으면 전부 회수한다.
             inDungeonVFXManager.ReleaseAllBrandStarWraps();
+
+            // 재생 중이던 피격/사망 등 단발 VFX도 전부 풀로 되돌린다. 나무가 사라진 자리에 남을 이유가 없고,
+            // 남겨두면 다음 런의 풀 상한을 잠식한다.
+            inDungeonVFXManager.StopAllPooledVFX();
         }
         manifestationBrandWraps.Clear();
 
