@@ -135,6 +135,9 @@ public class Drone : MonoBehaviour
     private readonly Dictionary<ParticleSystem, ChargingVfxCacheEntry> chargingVfxCache = new Dictionary<ParticleSystem, ChargingVfxCacheEntry>(4);
     // 피격 이펙트 풀 인스턴스별 VFX_LaserHit 조회 결과(연쇄 타격마다 GetComponentInChildren을 반복하지 않도록).
     private readonly Dictionary<ParticleSystem, PresentationLayer.VFX.VFX_LaserHit> atkHitVfxCache = new Dictionary<ParticleSystem, PresentationLayer.VFX.VFX_LaserHit>(16);
+    // ApplyFrame이 마지막으로 렌더러에 넣은 프레임/반전 - 같으면 세터 호출을 건너뛴다
+    private Sprite appliedFrameSprite;
+    private bool appliedFrameFlipX;
     private bool bChargingVfxReleased; // 페이드 원인이 발사(흡수 연출)인지. 다음 충전이 시작될 때 발사 연출은 끝까지 재생하게 은퇴 슬롯으로 넘기고, 취소 소화는 즉시 끊는다
     private ParticleSystem retiredChargingVfx; // 새 충전에 자리를 넘기고 발사 연출을 마무리 중인 직전 이펙트(은퇴 슬롯, 하나만 쓴다)
     private Transform retiredChargingVfxParent; // 은퇴 이펙트의 소유 확인용 부모(chargingVfxParent와 같은 역할)
@@ -1477,14 +1480,21 @@ public class Drone : MonoBehaviour
     private void ApplyFrame(Sprite _sprite, bool _flipX)
     {
         if (spriteRenderer == null || _sprite == null) return;
-        spriteRenderer.sprite = _sprite;
-        spriteRenderer.flipX = _flipX;
+        // 대기 중에는 같은 프레임이 반복되므로 바뀐 경우에만 세터를 호출한다(이 메서드만 본체/그림자 스프라이트를 쓴다).
+        bool bFrameChanged = !ReferenceEquals(_sprite, appliedFrameSprite) || _flipX != appliedFrameFlipX;
+        if (bFrameChanged)
+        {
+            appliedFrameSprite = _sprite;
+            appliedFrameFlipX = _flipX;
+            spriteRenderer.sprite = _sprite;
+            spriteRenderer.flipX = _flipX;
+        }
 
         // Shadow Material이 SpriteRenderer.flipX를 무시하므로 localScale.x 부호로 뒤집는다 - 실제 스케일 적용은
         // 고도 기반 크기 조절과 함께 ApplyShadowScale이 한 곳에서 처리한다.
         if (shadowSpriteRenderer != null)
         {
-            shadowSpriteRenderer.sprite = _sprite;
+            if (bFrameChanged) shadowSpriteRenderer.sprite = _sprite;
             shadowFlipX = _flipX;
             ApplyShadowScale();
         }

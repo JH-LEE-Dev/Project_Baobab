@@ -24,6 +24,9 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
     [SerializeField] private SortingGroup sortingGroup;
     [SerializeField] private SpriteRenderer starRenderer;
     [SerializeField] private SpriteRenderer sparkleRenderer;
+    // 렌더러의 transform 프로퍼티(네이티브 호출)를 매 프레임 6회 반복하지 않도록 Awake에서 캐싱
+    private Transform starTransform;
+    private Transform sparkleTransform;
 
     [Header("Sparkle Animation")]
     [Tooltip("StarMark_2의 두 번째 스프라이트부터 순서대로 할당합니다.")]
@@ -116,6 +119,8 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
 
     private void Awake()
     {
+        if (starRenderer != null) starTransform = starRenderer.transform;
+        if (sparkleRenderer != null) sparkleTransform = sparkleRenderer.transform;
         ApplyVisualDefaults();
         ResetVisualPose();
     }
@@ -424,19 +429,19 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
     private void ApplyPosition(Vector3 _localPosition)
     {
         if (starRenderer != null)
-            starRenderer.transform.localPosition = _localPosition;
+            (starTransform != null ? starTransform : starRenderer.transform).localPosition = _localPosition;
 
         if (sparkleRenderer != null)
-            sparkleRenderer.transform.localPosition = _localPosition;
+            (sparkleTransform != null ? sparkleTransform : sparkleRenderer.transform).localPosition = _localPosition;
     }
 
     private void ApplyStarRotation(float _angle)
     {
         if (starRenderer != null)
-            starRenderer.transform.localRotation = Quaternion.Euler(0f, 0f, _angle);
+            (starTransform != null ? starTransform : starRenderer.transform).localRotation = Quaternion.Euler(0f, 0f, _angle);
 
         if (sparkleRenderer != null)
-            sparkleRenderer.transform.localRotation = Quaternion.identity;
+            (sparkleTransform != null ? sparkleTransform : sparkleRenderer.transform).localRotation = Quaternion.identity;
     }
 
     private void ApplyUniformScale(float _scale)
@@ -444,10 +449,10 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
         Vector3 _localScale = Vector3.one * _scale;
 
         if (starRenderer != null)
-            starRenderer.transform.localScale = _localScale;
+            (starTransform != null ? starTransform : starRenderer.transform).localScale = _localScale;
 
         if (sparkleRenderer != null)
-            sparkleRenderer.transform.localScale = _localScale;
+            (sparkleTransform != null ? sparkleTransform : sparkleRenderer.transform).localScale = _localScale;
     }
 
     private void ApplyVisualDefaults()

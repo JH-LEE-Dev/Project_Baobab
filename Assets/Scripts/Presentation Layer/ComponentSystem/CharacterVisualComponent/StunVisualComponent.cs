@@ -46,12 +46,14 @@ public class StunVisualComponent : MonoBehaviour
     {
         float frameDuration = frameRate > 0f ? 1f / frameRate : 0.1f;
         int index = 0;
+        // 프레임 간격은 루틴 동안 불변이라 대기 객체를 한 번만 만든다(이 루틴은 동시에 하나만 돈다).
+        WaitForSeconds frameWait = new WaitForSeconds(frameDuration);
 
         while (true)
         {
             spriteRenderer.sprite = frames[index];
             index = (index + 1) % frames.Length;
-            yield return new WaitForSeconds(frameDuration);
+            yield return frameWait;
         }
     }
 }

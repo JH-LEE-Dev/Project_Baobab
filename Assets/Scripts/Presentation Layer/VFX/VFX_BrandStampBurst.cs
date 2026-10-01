@@ -23,6 +23,9 @@ namespace PresentationLayer.VFX
         [Header("전체 길이 (루트 ParticleSystem 수명 이하여야 한다)")]
         [SerializeField] private float totalDuration = 0.95f;
         [SerializeField, Tooltip("스탬프 스프라이트보다 이 값만큼 위에 그린다")] private int sortingOrderOffset = 1;
+        // 마지막으로 메쉬 렌더러에 적용한 루트 소팅 값. 같으면 매 프레임 세터 호출을 건너뛴다(OnEnable에서 무효화 - 풀 재생 시 VFXComponent가 자식 소팅을 덮어쓰기 때문).
+        private int appliedRootSortingLayerID = int.MinValue;
+        private int appliedRootSortingOrder = int.MinValue;
 
         [Header("점선 충격파")]
         [SerializeField, Tooltip("고리 최대 반지름(px)")] private float ringMaxRadius = 36.0f;
@@ -512,6 +515,8 @@ namespace PresentationLayer.VFX
 
         private void OnEnable()
         {
+            appliedRootSortingLayerID = int.MinValue;
+            appliedRootSortingOrder = int.MinValue;
             Begin();
         }
 
@@ -540,8 +545,15 @@ namespace PresentationLayer.VFX
             // 소팅은 VFXComponent가 자식 렌더러 전체에 같은 값으로 덮어쓰므로, 스탬프 스프라이트(루트 렌더러) 기준으로 다시 맞춘다
             if (null != rootParticleRenderer)
             {
-                meshRenderer.sortingLayerID = rootParticleRenderer.sortingLayerID;
-                meshRenderer.sortingOrder = rootParticleRenderer.sortingOrder + sortingOrderOffset;
+                int rootLayer = rootParticleRenderer.sortingLayerID;
+                int rootOrder = rootParticleRenderer.sortingOrder;
+                if (rootLayer != appliedRootSortingLayerID || rootOrder != appliedRootSortingOrder)
+                {
+                    appliedRootSortingLayerID = rootLayer;
+                    appliedRootSortingOrder = rootOrder;
+                    meshRenderer.sortingLayerID = rootLayer;
+                    meshRenderer.sortingOrder = rootOrder + sortingOrderOffset;
+                }
             }
 
             RebuildMesh();

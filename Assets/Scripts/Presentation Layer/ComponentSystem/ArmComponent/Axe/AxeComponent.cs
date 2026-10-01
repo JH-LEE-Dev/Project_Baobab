@@ -24,6 +24,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     private int sortingOrder = 0;
     private Sprite originalSprite;
     private Sprite targetSprite;
+    private Sprite appliedSprite; // LateUpdate가 마지막으로 렌더러에 넣은 스프라이트(이 컴포넌트만 도끼 스프라이트를 쓴다)
+    private Transform armRootTransform; // transform.parent.parent(캐릭터 팔 기준점) - 계층은 런타임에 바뀌지 않으므로 1회 캐싱
 
     // 공격 리듬 콤보
     private int attackComboStack = 0;
@@ -60,7 +62,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     public override void SetFacingDir(Transform _attackTransform)
     {
         // Arm 위치에서 attackTransform까지의 방향 벡터 계산
-        Vector2 direction = (_attackTransform.position - transform.parent.parent.position);
+        if (armRootTransform == null) armRootTransform = transform.parent.parent;
+        Vector2 direction = (_attackTransform.position - armRootTransform.position);
 
         if (direction.sqrMagnitude < 0.01f)
             return;
@@ -371,8 +374,10 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     private void LateUpdate()
     {
-        if (null != spriteRenderer && null != targetSprite)
+        // 내구도 구간이 바뀔 때만 스프라이트가 달라지므로 같은 값이면 세터를 건너뛴다(도끼 스프라이트는 이 컴포넌트만 쓴다).
+        if (null != spriteRenderer && null != targetSprite && !ReferenceEquals(targetSprite, appliedSprite))
         {
+            appliedSprite = targetSprite;
             spriteRenderer.sprite = targetSprite;
         }
     }

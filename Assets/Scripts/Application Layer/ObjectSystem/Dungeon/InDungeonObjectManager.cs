@@ -1040,10 +1040,16 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
             else
             {
+                // 풀에서 꺼낸(비활성) 나무는 SetActive(true)의 OnEnable이 이미 올바른 셀에 등록하므로 다시 등록하지 않는다
+                // (예전엔 여기서 한 번 더 Register → 내부 Unregister+Register로 같은 자리에 다시 넣는 중복 작업이었다).
+                // Instantiate로 처음 생성된 나무는 이미 active 상태라 SetActive(true)가 OnEnable을 재실행하지 않으므로
+                // 그 경우에만 수동으로 올바른 위치에 재등록한다 (Register 내부에서 중복 등록은 안전하게 처리됨).
+                bool bWasActive = tree.gameObject.activeSelf;
                 tree.gameObject.SetActive(true);
-                // Instantiate로 처음 생성된 나무는 이미 active 상태라 SetActive(true)가 OnEnable을 재실행하지 않음
-                // 따라서 수동으로 올바른 위치에 재등록 (Register 내부에서 중복 등록은 안전하게 처리됨)
-                CollisionSystem.Instance?.Register(tree, true);
+                if (bWasActive)
+                {
+                    CollisionSystem.Instance?.Register(tree, true);
+                }
 
                 if (tree.UpdateIndex == -1)
                 {
@@ -1112,10 +1118,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             {
                 if (activeTrees[i] != null)
                 {
-                    environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(activeTrees[i].transform.position);
+                    Vector3 treePos = activeTrees[i].transform.position;
+                    environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(treePos);
                     // 나무를 치웠으니 이 칸에서 걷어냈던 데코를 되돌린다. 아래에서 위치를 맵 밖으로
                     // 옮기므로 반드시 그 전에 호출해야 한다. 배치 구간이라 Tilemap 쓰기는 End에서 한 번에 반영된다.
-                    environmentProvider.tilemapDataProvider.RestoreDecoTileForTree(activeTrees[i].transform.position);
+                    environmentProvider.tilemapDataProvider.RestoreDecoTileForTree(treePos);
                     environmentProvider.densityProvider.UpdateTreeCnt(false);
 
                     activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
@@ -1787,7 +1794,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             inDungeonVFXManager?.ReleaseBrandStarWrap(brandWrap);
         }
 
-        Vector3Int cellPos = environmentProvider.tilemapDataProvider.WorldToCell(_tree.transform.position);
+        // 나무는 스폰 뒤 이동하지 않으므로 스폰 때 기록한 셀(SetCellPos)을 그대로 쓴다 - Tilemap.WorldToCell 네이티브 호출 생략.
+        // (ClearTrees는 반환 전에 위치를 맵 밖으로 옮겨 예전엔 음수 셀로 건너뛰었지만, 어차피 직후 treeGridMap 전체를 비우므로 결과는 같다)
+        Vector3Int cellPos = _tree.CellPos;
         int flatIdx = cellPos.x + cellPos.y * gridWidth;
         if (flatIdx >= 0 && flatIdx < treeGridMap.Length)
         {

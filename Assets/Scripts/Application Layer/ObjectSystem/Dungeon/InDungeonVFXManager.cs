@@ -28,6 +28,8 @@ public class InDungeonVFXManager : MonoBehaviour
 
     // 그룹(별자리)별로 아직 발현되지 않아 살아있는 그라운드 마크 인스턴스들을 추적한다.
     private readonly Dictionary<int, List<TreeStarMarkGroundAnimator>> activeGroundMarksByGroup = new Dictionary<int, List<TreeStarMarkGroundAnimator>>();
+    // 발현이 끝나 사전에서 빠진 그룹 리스트를 모아 뒀다가 새 groupId에 재사용한다(그룹마다 새 List를 만들지 않는다).
+    private readonly Stack<List<TreeStarMarkGroundAnimator>> spareGroundMarkLists = new Stack<List<TreeStarMarkGroundAnimator>>();
 
     // 발현이 트리거되어 소멸 연출 중이지만 아직 NotifyManifestFinished가 호출되지 않은 인스턴스들.
     // activeGroundMarksByGroup에서는 이미 제거된 상태이므로, ClearAllConstellationGroundMarks가
@@ -591,7 +593,7 @@ public class InDungeonVFXManager : MonoBehaviour
 
         if (!activeGroundMarksByGroup.TryGetValue(_groupId, out List<TreeStarMarkGroundAnimator> _list))
         {
-            _list = new List<TreeStarMarkGroundAnimator>();
+            _list = 0 < spareGroundMarkLists.Count ? spareGroundMarkLists.Pop() : new List<TreeStarMarkGroundAnimator>();
             activeGroundMarksByGroup[_groupId] = _list;
         }
         _list.Add(_instance);
@@ -609,6 +611,7 @@ public class InDungeonVFXManager : MonoBehaviour
         if (!activeGroundMarksByGroup.TryGetValue(_groupId, out List<TreeStarMarkGroundAnimator> _list) || _list.Count == 0)
         {
             activeGroundMarksByGroup.Remove(_groupId);
+            if (_list != null) spareGroundMarkLists.Push(_list); // 빈 리스트는 다음 그룹에 재사용
             ConstellationManifestReadyEvent?.Invoke(_groupId);
             return;
         }
@@ -640,6 +643,10 @@ public class InDungeonVFXManager : MonoBehaviour
             pendingManifestInstances.Add(_list[i]);
             _list[i].PlayManifestEffect();
         }
+
+        // 이 리스트는 더 참조되지 않으므로(개수는 pendingManifestCountByGroup, 인스턴스는 pendingManifestInstances가 든다) 비워서 재사용한다.
+        _list.Clear();
+        spareGroundMarkLists.Push(_list);
     }
 
     /// <summary>
@@ -657,6 +664,8 @@ public class InDungeonVFXManager : MonoBehaviour
             {
                 _list[i].ForceReturnToPool();
             }
+            _list.Clear();
+            spareGroundMarkLists.Push(_list);
         }
         activeGroundMarksByGroup.Clear();
 

@@ -31,6 +31,8 @@ public class DecoSpritePatternAnimator : MonoBehaviour
     [SerializeField] private bool hideBetweenPatterns;
 
     private static readonly int HDRIntensityID = Shader.PropertyToID("_HDRIntensity");
+    // Get→Set은 블록 내용을 복사해 쓰므로 인스턴스마다 새로 만들지 않고 하나를 공유한다(메인 스레드 단일 실행).
+    private static readonly MaterialPropertyBlock SharedMpb = new MaterialPropertyBlock();
 
     private Coroutine routine;
     private readonly FramePattern fallbackFramePattern = new FramePattern();
@@ -63,7 +65,7 @@ public class DecoSpritePatternAnimator : MonoBehaviour
             customSortable.ManualLateUpdate();
         }
 
-        var mpb = new MaterialPropertyBlock();
+        MaterialPropertyBlock mpb = SharedMpb;
         targetRenderer.GetPropertyBlock(mpb);
         mpb.SetFloat(HDRIntensityID, hdrIntensity);
         targetRenderer.SetPropertyBlock(mpb);

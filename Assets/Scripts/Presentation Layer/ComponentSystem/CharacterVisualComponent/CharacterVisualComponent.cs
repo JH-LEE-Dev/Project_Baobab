@@ -28,6 +28,9 @@ public class CharacterVisualComponent : MonoBehaviour
     // 상태 및 데이터
     private bool bIsUnderShadow = false;
     private float shadowLerp = 0f;
+    // UpdateCharacterColor가 마지막으로 적용한 색/얼굴 레이어 상태. 같으면 렌더러 세터를 건너뛴다(색은 이 메서드만, 얼굴 레이어는 이 컴포넌트만 쓴다).
+    private Color appliedShadowColor = new Color(float.NaN, float.NaN, float.NaN, float.NaN);
+    private int appliedFaceLayerState = -1;
     private float currentFadeDuration = 0.3f;
     private Color normalColor = Color.white;
     private Color shadowTint = new Color(0.6f, 0.6f, 0.7f, 1f);
@@ -213,9 +216,14 @@ public class CharacterVisualComponent : MonoBehaviour
         // 수면 반사/얼굴 정렬 제어
         int dirIndex = Mathf.RoundToInt(currentFacingAngle / 45f) % 8;
         bool isFaceActive = !_isDead && (dirIndex == 0 || dirIndex == 4 || dirIndex == 5 || dirIndex == 6 || dirIndex == 7);
+        // 소팅 레이어는 isFaceActive가 바뀐 프레임에만 다시 쓴다. enabled=false는 애니메이터가 매 프레임 enabled를 되돌릴 수 있으므로 그대로 매 프레임 유지한다.
+        int faceLayerState = isFaceActive ? 1 : 0;
+        bool bFaceLayerChanged = faceLayerState != appliedFaceLayerState;
+        appliedFaceLayerState = faceLayerState;
+
         if (faceSR != null)
         {
-            faceSR.sortingLayerID = isFaceActive ? originalFaceSortingLayer : defaultSortingLayerId;
+            if (bFaceLayerChanged) faceSR.sortingLayerID = isFaceActive ? originalFaceSortingLayer : defaultSortingLayerId;
             if (!isFaceActive)
             {
                 faceSR.enabled = false;
@@ -223,7 +231,7 @@ public class CharacterVisualComponent : MonoBehaviour
         }
         if (faceBlinkSR != null)
         {
-            faceBlinkSR.sortingLayerID = isFaceActive ? originalFaceBlinkSortingLayer : defaultSortingLayerId;
+            if (bFaceLayerChanged) faceBlinkSR.sortingLayerID = isFaceActive ? originalFaceBlinkSortingLayer : defaultSortingLayerId;
             if (!isFaceActive)
             {
                 faceBlinkSR.enabled = false;
@@ -231,7 +239,7 @@ public class CharacterVisualComponent : MonoBehaviour
         }
         if (onWaterFaceSR != null)
         {
-            onWaterFaceSR.sortingLayerID = isFaceActive ? originalOnWaterFaceSortingLayer : defaultSortingLayerId;
+            if (bFaceLayerChanged) onWaterFaceSR.sortingLayerID = isFaceActive ? originalOnWaterFaceSortingLayer : defaultSortingLayerId;
             if (!isFaceActive)
             {
                 onWaterFaceSR.enabled = false;
@@ -239,7 +247,7 @@ public class CharacterVisualComponent : MonoBehaviour
         }
         if (onWaterFaceBlinkSR != null)
         {
-            onWaterFaceBlinkSR.sortingLayerID = isFaceActive ? originalOnWaterFaceBlinkSortingLayer : defaultSortingLayerId;
+            if (bFaceLayerChanged) onWaterFaceBlinkSR.sortingLayerID = isFaceActive ? originalOnWaterFaceBlinkSortingLayer : defaultSortingLayerId;
             if (!isFaceActive)
             {
                 onWaterFaceBlinkSR.enabled = false;
@@ -321,7 +329,12 @@ public class CharacterVisualComponent : MonoBehaviour
         float speed = currentFadeDuration > 0 ? 1.0f / currentFadeDuration : 100f;
         shadowLerp = Mathf.MoveTowards(shadowLerp, target, Time.deltaTime * speed);
         Color finalColor = Color.Lerp(normalColor, shadowTint, shadowLerp);
-        
+
+        // 그림자 보간이 목표에 도달한 뒤에도 매 프레임 렌더러 6개에 같은 색을 쓰던 것을 건너뛴다(정확히 같은 값일 때만).
+        if (finalColor.r == appliedShadowColor.r && finalColor.g == appliedShadowColor.g
+            && finalColor.b == appliedShadowColor.b && finalColor.a == appliedShadowColor.a) return;
+        appliedShadowColor = finalColor;
+
         if (sr != null) sr.color = finalColor;
         if (onWaterSR != null) onWaterSR.color = finalColor;
         if (faceSR != null) faceSR.color = finalColor;

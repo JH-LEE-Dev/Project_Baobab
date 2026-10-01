@@ -114,6 +114,10 @@ public class AttackComponent : PComponent
     private Material ellipseIndicatorMat;
     private static readonly int EllipseRadiusID = Shader.PropertyToID("_EllipseRadius");
     private static readonly int AttackDirID = Shader.PropertyToID("_AttackDir");
+    // 인디케이터에 마지막으로 적용한 값. 같으면 머티리얼/Transform 세터를 건너뛴다(이 메서드만 인디케이터를 갱신한다).
+    private float appliedIndicatorRadius = float.NaN;
+    private Vector2 appliedIndicatorDir = new Vector2(float.NaN, float.NaN);
+    private Vector3 appliedIndicatorPos = new Vector3(float.NaN, float.NaN, float.NaN);
     private static readonly int BaseColorID = Shader.PropertyToID("_BaseColor");
 
     private const float IndicatorFadeInDuration = 1f; // 인디케이터 활성화 시 알파가 0에서 복원되는 데 걸리는 시간
@@ -709,14 +713,28 @@ public class AttackComponent : PComponent
             }
 
             float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
+            Vector2 attackDir2D = (Vector2)isoAttackDir;
 
-            // 셰이더 프로퍼티 업데이트
-            ellipseIndicatorMat.SetFloat(EllipseRadiusID, effectiveEllipseRadius);
-            ellipseIndicatorMat.SetVector(AttackDirID, (Vector2)isoAttackDir);
+            // 셰이더 프로퍼티 업데이트(값이 바뀐 프레임에만)
+            if (effectiveEllipseRadius != appliedIndicatorRadius)
+            {
+                appliedIndicatorRadius = effectiveEllipseRadius;
+                ellipseIndicatorMat.SetFloat(EllipseRadiusID, effectiveEllipseRadius);
+                ellipseRadiusIndicator.transform.localScale = new Vector3((effectiveEllipseRadius + 0.5f) * 2f, effectiveEllipseRadius + 0.5f, 1f);
+            }
 
-            // 인디케이터 위치 및 스케일 업데이트
-            ellipseRadiusIndicator.transform.position = centerPos;
-            ellipseRadiusIndicator.transform.localScale = new Vector3((effectiveEllipseRadius + 0.5f) * 2f, effectiveEllipseRadius + 0.5f, 1f);
+            if (attackDir2D.x != appliedIndicatorDir.x || attackDir2D.y != appliedIndicatorDir.y)
+            {
+                appliedIndicatorDir = attackDir2D;
+                ellipseIndicatorMat.SetVector(AttackDirID, attackDir2D);
+            }
+
+            // 인디케이터 위치 업데이트(값이 바뀐 프레임에만)
+            if (centerPos.x != appliedIndicatorPos.x || centerPos.y != appliedIndicatorPos.y || centerPos.z != appliedIndicatorPos.z)
+            {
+                appliedIndicatorPos = centerPos;
+                ellipseRadiusIndicator.transform.position = centerPos;
+            }
         }
     }
 

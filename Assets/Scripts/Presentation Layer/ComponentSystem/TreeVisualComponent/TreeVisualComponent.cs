@@ -663,7 +663,8 @@ public class TreeVisualComponent : MonoBehaviour
 
         visualRoot.DOKill();
         visualRoot.localPosition = Vector3.zero;
-        visualRoot.DOPunchPosition(new Vector3(hitPunchX, 0f, 0f), hitDuration, hitVibrato, hitElasticity);
+        // 피격마다 새 Tweener를 만들지 않도록 재활용한다. 참조를 들고 있지 않고 타깃(visualRoot)으로만 Kill하므로 재활용 트윈을 잘못 죽일 일이 없다.
+        visualRoot.DOPunchPosition(new Vector3(hitPunchX, 0f, 0f), hitDuration, hitVibrato, hitElasticity).SetRecyclable(true);
     }
 
     // 피격 시 나무 스프라이트가 짧게 흰색으로 번쩍였다가 원래 색으로 돌아오도록 한다.

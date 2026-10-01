@@ -28,6 +28,11 @@ namespace PresentationLayer.VFX
         [SerializeField] private Material auraMaterial;
         [SerializeField, Tooltip("캐릭터 뒤쪽 층: 루트 렌더러(캐릭터 +1) 기준 상대 소팅 오더. 아우라 본체가 여기에 그려진다")] private int backSortingOffset = -2;
         [SerializeField, Tooltip("캐릭터 앞쪽 층: 루트 렌더러(캐릭터 +1) 기준 상대 소팅 오더. 표면 불씨와 불씨가 여기에 그려진다")] private int frontSortingOffset = 1;
+        // 마지막으로 메쉬 렌더러에 적용한 루트 소팅 값. 같으면 매 프레임 세터 호출을 건너뛴다(OnEnable에서 무효화 - 풀 재생 시 VFXComponent가 자식 소팅을 덮어쓰기 때문).
+        private int appliedRootSortingLayerID = int.MinValue;
+        private int appliedRootSortingOrder = int.MinValue;
+        private int sourceSortingLayerID;
+        private bool bSourceSortingLayerIDCached;
         [SerializeField, Tooltip("실루엣을 읽을 스프라이트 렌더러의 소팅 레이어 이름(그림자, 사거리 표시 등은 제외)")] private string sourceSortingLayerName = "Objects";
 
         [Header("원점 / 스냅")]
@@ -298,7 +303,12 @@ namespace PresentationLayer.VFX
                 root = null != character ? character.transform : (null != drone ? drone.transform : transform.root);
             }
 
-            silhouette.CollectSources(root, sourceSortingLayerName);
+            if (false == bSourceSortingLayerIDCached)
+            {
+                sourceSortingLayerID = SortingLayer.NameToID(sourceSortingLayerName);
+                bSourceSortingLayerIDCached = true;
+            }
+            silhouette.CollectSources(root, sourceSortingLayerID);
         }
 
         // 아우라의 원점 월드 위치. 기본은 이 컴포넌트의 위치(캐릭터 발밑)이고, useFirstSourceAsOrigin이 켜져 있으면 켜진 첫 소스 스프라이트의 정확한 위치다.
@@ -511,10 +521,16 @@ namespace PresentationLayer.VFX
             if (null != rootParticleRenderer)
             {
                 int rootOrder = rootParticleRenderer.sortingOrder;
-                for (int i = 0; i < LayerCount; i++)
+                int rootLayer = rootParticleRenderer.sortingLayerID;
+                if (rootOrder != appliedRootSortingOrder || rootLayer != appliedRootSortingLayerID)
                 {
-                    meshRenderers[i].sortingLayerID = rootParticleRenderer.sortingLayerID;
-                    meshRenderers[i].sortingOrder = rootOrder + (FrontLayer == i ? frontSortingOffset : backSortingOffset);
+                    appliedRootSortingOrder = rootOrder;
+                    appliedRootSortingLayerID = rootLayer;
+                    for (int i = 0; i < LayerCount; i++)
+                    {
+                        meshRenderers[i].sortingLayerID = rootLayer;
+                        meshRenderers[i].sortingOrder = rootOrder + (FrontLayer == i ? frontSortingOffset : backSortingOffset);
+                    }
                 }
             }
 
@@ -881,6 +897,8 @@ namespace PresentationLayer.VFX
 
         private void OnEnable()
         {
+            appliedRootSortingLayerID = int.MinValue;
+            appliedRootSortingOrder = int.MinValue;
             Begin();
         }
 

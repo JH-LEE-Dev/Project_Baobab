@@ -22,6 +22,9 @@ namespace PresentationLayer.VFX
         [Header("렌더링")]
         [SerializeField] private Material hitMaterial;
         [SerializeField, Tooltip("루트 렌더러 기준 상대 소팅 오더")] private int sortingOffset = 0;
+        // 마지막으로 메쉬 렌더러에 적용한 루트 소팅 값. 같으면 매 프레임 세터 호출을 건너뛴다(OnEnable에서 무효화 - 풀 재생 시 VFXComponent가 자식 소팅을 덮어쓰기 때문).
+        private int appliedRootSortingLayerID = int.MinValue;
+        private int appliedRootSortingOrder = int.MinValue;
 
         [Header("시간")]
         [SerializeField, Tooltip("이펙트 전체 길이(초)")] private float totalDuration = 0.55f;
@@ -352,8 +355,15 @@ namespace PresentationLayer.VFX
 
             if (null != rootParticleRenderer)
             {
-                meshRenderer.sortingLayerID = rootParticleRenderer.sortingLayerID;
-                meshRenderer.sortingOrder = rootParticleRenderer.sortingOrder + sortingOffset;
+                int rootLayer = rootParticleRenderer.sortingLayerID;
+                int rootOrder = rootParticleRenderer.sortingOrder;
+                if (rootLayer != appliedRootSortingLayerID || rootOrder != appliedRootSortingOrder)
+                {
+                    appliedRootSortingLayerID = rootLayer;
+                    appliedRootSortingOrder = rootOrder;
+                    meshRenderer.sortingLayerID = rootLayer;
+                    meshRenderer.sortingOrder = rootOrder + sortingOffset;
+                }
             }
 
             bool bEmpty = 0 == quadBuffer.VertexCount;
@@ -597,6 +607,8 @@ namespace PresentationLayer.VFX
 
         private void OnEnable()
         {
+            appliedRootSortingLayerID = int.MinValue;
+            appliedRootSortingOrder = int.MinValue;
             Begin();
         }
 

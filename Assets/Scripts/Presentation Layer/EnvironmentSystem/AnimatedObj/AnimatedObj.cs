@@ -38,6 +38,7 @@ public class AnimatedObj : MonoBehaviour
     // 한 주기(stepPeriod)로 감싸두므로 오래 돌아도 값이 넘치지 않는다.
     private int step;
     private int stepPeriod = 1;
+    private static readonly MaterialPropertyBlock SharedMpb = new MaterialPropertyBlock();
 
     // // 퍼블릭 초기화 및 제어 메서드
 
@@ -50,7 +51,8 @@ public class AnimatedObj : MonoBehaviour
             customSortable.AddSpriteRenderer(sr);
         }
 
-        var mpb = new MaterialPropertyBlock();
+        // Get→Set은 블록 내용을 복사해 쓰므로 인스턴스마다 새로 만들지 않고 하나를 공유한다(메인 스레드 단일 실행).
+        MaterialPropertyBlock mpb = SharedMpb;
         sr.GetPropertyBlock(mpb);
         mpb.SetFloat(HDRIntensityID, hdrIntensity);
         sr.SetPropertyBlock(mpb);

@@ -530,8 +530,18 @@ namespace PresentationLayer.VFX
                 if (false == step.arrived) continue;
 
                 step.arriveElapsed += _dt;
-                step.segment.SetArrival(Mathf.Clamp01(step.arriveElapsed / duration));
+                // 같은 프레임의 SetProgress가 블록을 함께 올리도록 값만 적어 두고, 올리지 않은 세그먼트는 FlushStagedArrivals가 처리한다.
+                step.segment.StageArrival(Mathf.Clamp01(step.arriveElapsed / duration));
                 simultaneousSteps[i] = step;
+            }
+        }
+
+        // TickArrivals가 적어 둔 도착 값 중 아직 렌더러에 올라가지 않은 것을 한 번에 올린다. 매 프레임 끝에 호출한다.
+        private void FlushStagedArrivals()
+        {
+            for (int i = 0; i < simultaneousSteps.Count; i++)
+            {
+                simultaneousSteps[i].segment.FlushPropertyBlock();
             }
         }
 
@@ -716,6 +726,7 @@ namespace PresentationLayer.VFX
                     }
                 }
 
+                FlushStagedArrivals();
                 yield return null;
             }
 
@@ -734,6 +745,7 @@ namespace PresentationLayer.VFX
                     float sustainDt = Time.deltaTime;
                     sustainElapsed += sustainDt;
                     TickArrivals(sustainDt);
+                    FlushStagedArrivals();
                     yield return null;
                 }
             }
@@ -753,6 +765,7 @@ namespace PresentationLayer.VFX
                 {
                     simultaneousSteps[i].segment.SetProgress(tailProgress, tailLength);
                 }
+                FlushStagedArrivals();
                 yield return null;
             }
 
@@ -1221,6 +1234,23 @@ namespace PresentationLayer.VFX
             {
                 propBlock.SetFloat(PropArrive, _arrive);
                 meshRenderer.SetPropertyBlock(propBlock);
+                bPropBlockStaged = false;
+            }
+
+            // 블록에 도착 값만 적어 두고 렌더러에는 올리지 않는다. 같은 프레임의 SetProgress/SetArrival이 올리거나 FlushPropertyBlock이 올린다.
+            private bool bPropBlockStaged;
+
+            public void StageArrival(float _arrive)
+            {
+                propBlock.SetFloat(PropArrive, _arrive);
+                bPropBlockStaged = true;
+            }
+
+            public void FlushPropertyBlock()
+            {
+                if (false == bPropBlockStaged) return;
+                meshRenderer.SetPropertyBlock(propBlock);
+                bPropBlockStaged = false;
             }
 
             public void SetColors(Color _core, Color _head, Color _tail, float _boost = 1.0f)
@@ -1473,6 +1503,7 @@ namespace PresentationLayer.VFX
                 propBlock.SetFloat(PropProgress, _progress);
                 propBlock.SetFloat(PropTailLength, _tailLength);
                 meshRenderer.SetPropertyBlock(propBlock);
+                bPropBlockStaged = false;
             }
 
             public void UpdateSorting(string _layerName, int _order)

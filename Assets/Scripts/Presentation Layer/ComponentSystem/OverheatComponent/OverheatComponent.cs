@@ -22,6 +22,7 @@ public class OverheatComponent : PComponent
     
     private ParticleSystem activeVfx;
     private ParticleSystemRenderer activeVfxRenderer;
+    private int appliedVfxSortingOrder = int.MinValue; // Update가 마지막으로 적용한 소팅 오더(같으면 세터 생략)
     // 버프 종료 후 페이드아웃 중인 오라. 풀이 1개짜리 하드 캡이라, 페이드 도중 다시 과열되면
     // 이 인스턴스를 즉시 회수해야 새 오라를 재생할 수 있다.
     private ParticleSystem fadingVfx;
@@ -81,10 +82,15 @@ public class OverheatComponent : PComponent
     {
         if (!bActive) return;
 
-        // 매 프레임 캐릭터 본체의 SortingOrder를 추적하여 동기화
+        // 매 프레임 캐릭터 본체의 SortingOrder를 추적하여 동기화(값이 바뀐 프레임에만 세터 호출)
         if (activeVfxRenderer != null && customSortable != null)
         {
-            activeVfxRenderer.sortingOrder = customSortable.CurrentSortingOrder + 1;
+            int targetOrder = customSortable.CurrentSortingOrder + 1;
+            if (targetOrder != appliedVfxSortingOrder)
+            {
+                appliedVfxSortingOrder = targetOrder;
+                activeVfxRenderer.sortingOrder = targetOrder;
+            }
         }
 
         if (ctx.characterStat.bOverheatPermanent) return; // "화신" - 지속시간이 소모되지 않는다
@@ -136,6 +142,7 @@ public class OverheatComponent : PComponent
             if (activeVfx != null)
             {
                 activeVfxRenderer = activeVfx.GetComponent<ParticleSystemRenderer>();
+                appliedVfxSortingOrder = int.MinValue; // 새 인스턴스이므로 첫 프레임에 반드시 적용
             }
         }
     }

@@ -121,6 +121,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private TileBase[] extBloomWaterDecoTilesCache;
     private TileBase[] extWaterDecoTilesCache;
     private int extTilesCacheSize = -1;
+    // 물 애니메이션 오브젝트 배치 콜백. 람다가 this(필드)를 캡처해 호출마다 새로 만들어지므로 한 번만 만들어 둔다.
+    private Action<Vector3> spawnWaterAnimatedObjAction;
+    private Action<Vector3> spawnWaterAnimatedOtherTypeObjAction;
     private int[] cellToIndex;
     private bool[] isShoreline;
     private float halfCellY;
@@ -1433,8 +1436,14 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 TryEnqueueWaterCompCell(cx, cy - 1);
             }
 
-            SpawnTwoWaterAnimatedTypes(pondDeepBuffer, waterAnimatedObjDensity, pos => animatedObjGenerator.SpawnWaterAnimatedObj(pos), waterAnimatedOtherTypeObjDensity, pos => animatedObjGenerator.SpawnWaterAnimatedOtherTypeObj(pos));
-            SpawnTwoWaterAnimatedTypes(seaDeepBuffer, waterAnimatedObjSeaDensity, pos => animatedObjGenerator.SpawnWaterAnimatedObj(pos), waterAnimatedOtherTypeObjSeaDensity, pos => animatedObjGenerator.SpawnWaterAnimatedOtherTypeObj(pos));
+            if (spawnWaterAnimatedObjAction == null)
+            {
+                spawnWaterAnimatedObjAction = pos => animatedObjGenerator.SpawnWaterAnimatedObj(pos);
+                spawnWaterAnimatedOtherTypeObjAction = pos => animatedObjGenerator.SpawnWaterAnimatedOtherTypeObj(pos);
+            }
+
+            SpawnTwoWaterAnimatedTypes(pondDeepBuffer, waterAnimatedObjDensity, spawnWaterAnimatedObjAction, waterAnimatedOtherTypeObjDensity, spawnWaterAnimatedOtherTypeObjAction);
+            SpawnTwoWaterAnimatedTypes(seaDeepBuffer, waterAnimatedObjSeaDensity, spawnWaterAnimatedObjAction, waterAnimatedOtherTypeObjSeaDensity, spawnWaterAnimatedOtherTypeObjAction);
         }
     }
 

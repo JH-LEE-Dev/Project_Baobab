@@ -114,6 +114,13 @@ public class ItemAuraOrbitController : MonoBehaviour
     private bool isPlaying = false;
     private bool isInitialized = false;
     private Gradient cachedTrailGradient;
+    // 트레일 그라데이션 캐시가 어떤 입력으로 만들어졌는지. 입력이 같으면 Play마다 Gradient/키 배열을 다시 만들지 않는다.
+    private Gradient cachedTrailGradientSource;
+    private float cachedTrailGradientMultiplier = float.NaN;
+    // 중앙 글로우 렌더러(런타임 생성) - GetComponent를 반복하지 않도록 생성 시 보관
+    private SpriteRenderer centerGlowRenderer;
+    // ApplySortingToAll이 현재 위성 집합에 적용된 뒤 true. RebaseSortingOrder가 같은 값으로 매 프레임 불리면 건너뛴다.
+    private bool bSortingApplied;
 
     private static readonly int CenterIntensityPropertyId = Shader.PropertyToID("_Intensity");
 
@@ -123,6 +130,7 @@ public class ItemAuraOrbitController : MonoBehaviour
     private class SatelliteData
     {
         public GameObject gameObject;
+        public Transform transform; // gameObject.transform 프로퍼티(네이티브 호출)를 매 프레임 반복하지 않도록 캐싱
         public SpriteRenderer spriteRenderer;
         public TrailRenderer[] trailPool = new TrailRenderer[2]; // 위성당 2개의 사전 할당 트레일
         public int activeTrailIndex = 0;
@@ -308,6 +316,9 @@ public class ItemAuraOrbitController : MonoBehaviour
     /// </summary>
     public void RebaseSortingOrder(int _satelliteOrder)
     {
+        // 흡입 중 매 프레임 같은 값으로 불린다. 이미 적용된 값과 같으면 렌더러 순회를 건너뛴다(오프셋 유지라 결과 동일).
+        if (bSortingApplied && _satelliteOrder == satelliteSortingOrder) return;
+
         int trailOffset = trailSortingOrder - satelliteSortingOrder;
         int centerGlowOffset = centerGlowSortingOrder - satelliteSortingOrder;
 
@@ -383,6 +394,7 @@ public class ItemAuraOrbitController : MonoBehaviour
             centerGlowObject.transform.localScale = Vector3.one * centerGlowScale;
 
             SpriteRenderer sr = centerGlowObject.AddComponent<SpriteRenderer>();
+            centerGlowRenderer = sr;
             sr.sprite = centerGlowSprite != null ? centerGlowSprite : satelliteSprite;
             sr.color = centerGlowColor;
             if (null != centerGlowMaterial)
@@ -433,6 +445,8 @@ public class ItemAuraOrbitController : MonoBehaviour
 
         if (null == cachedTrailGradient)
         {
+            cachedTrailGradientSource = trailColorGradient;
+            cachedTrailGradientMultiplier = trailBloomMultiplier;
             cachedTrailGradient = new Gradient();
             if (null != trailColorGradient && 0 < trailColorGradient.colorKeys.Length)
             {
@@ -485,9 +499,12 @@ public class ItemAuraOrbitController : MonoBehaviour
         float speedHash = Mathf.Abs(Mathf.Sin(_index * 127.1f + 311.7f));
         float speedMult = Mathf.Lerp(1f - orbitSpeedVariation, 1f + orbitSpeedVariation, speedHash);
 
+        bSortingApplied = false; // 새 위성이 생겼으니 소팅을 다시 적용해야 한다
+
         SatelliteData data = new SatelliteData
         {
             gameObject = satObj,
+            transform = satObj.transform,
             spriteRenderer = sr,
             angleOffset = (float)_index * (Mathf.PI * 2f / countF),
             tiltAngleRad = baseTilt + jitter,
@@ -541,7 +558,7 @@ public class ItemAuraOrbitController : MonoBehaviour
                 ? CalculateScrewPosition(sat, sat.currentProgress, out _)
                 : CalculateSatellitePosition(sat, 0f, out _);
 
-            sat.gameObject.transform.localPosition = pos;
+            sat.transform.localPosition = pos;
 
             for (int t = 0; t < sat.trailPool.Length; t++)
             {
@@ -636,21 +653,25 @@ public class ItemAuraOrbitController : MonoBehaviour
 
     private void UpdateBloomSettings()
     {
-        cachedTrailGradient = null; // 인스펙터 변경 등에 의해 갱신될 수 있도록 캐시 무효화
+        // 그라데이션 원본/배율이 바뀌었을 때만 캐시를 버린다(인스펙터 변경 반영). 같으면 Play마다 Gradient/키 배열을 다시 만들지 않는다.
+        if (!ReferenceEquals(cachedTrailGradientSource, trailColorGradient) || cachedTrailGradientMultiplier != trailBloomMultiplier)
+        {
+            cachedTrailGradient = null;
+        }
 
         // 1. 중앙 원형 글로우 블룸 반영
         if (null != centerGlowObject)
         {
             if (null == centerGlowPropertyBlock) centerGlowPropertyBlock = new MaterialPropertyBlock();
-            Renderer r = centerGlowObject.GetComponent<Renderer>();
+            Renderer r = centerGlowRenderer;
             if (null != r)
             {
                 r.GetPropertyBlock(centerGlowPropertyBlock);
                 centerGlowPropertyBlock.SetFloat(CenterIntensityPropertyId, centerGlowBloomMultiplier);
                 r.SetPropertyBlock(centerGlowPropertyBlock);
             }
-            
-            SpriteRenderer sr = centerGlowObject.GetComponent<SpriteRenderer>();
+
+            SpriteRenderer sr = centerGlowRenderer;
             if (null != sr)
             {
                 sr.color = centerGlowColor; // 블룸 업데이트 시 컬러도 갱신
@@ -702,9 +723,11 @@ public class ItemAuraOrbitController : MonoBehaviour
 
     private void ApplySortingToAll()
     {
+        bSortingApplied = true;
+
         if (null != centerGlowObject)
         {
-            SpriteRenderer csr = centerGlowObject.GetComponent<SpriteRenderer>();
+            SpriteRenderer csr = centerGlowRenderer;
             if (null != csr)
             {
                 csr.sortingLayerName = sortingLayerName;
@@ -838,7 +861,7 @@ public class ItemAuraOrbitController : MonoBehaviour
             }
 
             Vector3 resetPos = CalculateScrewPosition(sat, sat.currentProgress, out _);
-            sat.gameObject.transform.localPosition = resetPos;
+            sat.transform.localPosition = resetPos;
 
             sat.activeTrailIndex = (sat.activeTrailIndex + 1) % 2;
             TrailRenderer nextTrail = sat.trailPool[sat.activeTrailIndex];
@@ -862,7 +885,7 @@ public class ItemAuraOrbitController : MonoBehaviour
         }
 
         Vector3 pos = CalculateScrewPosition(sat, sat.currentProgress, out float depthZ);
-        sat.gameObject.transform.localPosition = pos;
+        sat.transform.localPosition = pos;
 
         TrailRenderer activeTrail = sat.trailPool[sat.activeTrailIndex];
         if (null != activeTrail)
@@ -875,13 +898,13 @@ public class ItemAuraOrbitController : MonoBehaviour
         sat.spriteRenderer.color = c;
 
         float scaleFactor = (1.0f + depthZ * depthScaleAmount) * fade;
-        sat.gameObject.transform.localScale = Vector3.one * (satelliteSize * Mathf.Max(0.01f, scaleFactor));
+        sat.transform.localScale = Vector3.one * (satelliteSize * Mathf.Max(0.01f, scaleFactor));
     }
 
     private void UpdateStandardOrbit(SatelliteData sat, float time)
     {
         Vector3 pos = CalculateSatellitePosition(sat, time, out float depthZ);
-        sat.gameObject.transform.localPosition = pos;
+        sat.transform.localPosition = pos;
 
         TrailRenderer tr = sat.trailPool[0];
         if (null != tr) tr.transform.localPosition = pos;
@@ -892,7 +915,7 @@ public class ItemAuraOrbitController : MonoBehaviour
         if (0.001f < depthScaleAmount)
         {
             float scaleFactor = 1.0f + depthZ * depthScaleAmount;
-            sat.gameObject.transform.localScale = Vector3.one * (satelliteSize * Mathf.Max(0.1f, scaleFactor));
+            sat.transform.localScale = Vector3.one * (satelliteSize * Mathf.Max(0.1f, scaleFactor));
         }
     }
 
@@ -941,6 +964,7 @@ public class ItemAuraOrbitController : MonoBehaviour
             ApplySortingToAll();
             UpdateTiltAngles();
             UpdateSpeedMultipliers();
+            cachedTrailGradient = null; // 인스펙터에서 Gradient 키만 바꾸면 참조/배율이 같아 캐시가 유지되므로 에디터 경로에서는 강제로 다시 만든다
             UpdateBloomSettings();
         }
     }

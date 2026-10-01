@@ -81,13 +81,21 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void CollectSources(Transform _root, string _sortingLayerName)
         {
+            CollectSources(_root, SortingLayer.NameToID(_sortingLayerName));
+        }
+
+        /// <summary>
+        /// 레이어를 ID로 받는 오버로드. Renderer.sortingLayerName 게터는 렌더러마다 string을 새로 만들므로 ID로 비교한다.
+        /// </summary>
+        public void CollectSources(Transform _root, int _sortingLayerID)
+        {
             sources.Clear();
             if (null == _root) return;
 
             _root.GetComponentsInChildren<SpriteRenderer>(true, collectBuffer);
             for (int i = 0; i < collectBuffer.Count && sources.Count < MaxSources; i++)
             {
-                if (collectBuffer[i].sortingLayerName != _sortingLayerName) continue;
+                if (collectBuffer[i].sortingLayerID != _sortingLayerID) continue;
                 sources.Add(collectBuffer[i]);
             }
 

@@ -45,6 +45,9 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
     private float cullingUpdateTimer = 0f;
     private CullingGroup cullingGroup;
     private BoundingSphere[] spheres;
+    // 당근은 스폰되지 않는 시스템인데도 던전 진입마다 BoundingSphere[500] + CullingGroup을 새로 만들었다.
+    // LogItemController와 같은 가드. cullingGroup 사용처는 전부 null 가드가 있어 꺼져 있어도 안전하다.
+    [SerializeField] private bool enableCulling = false;
 
     [SerializeField] private List<CarrotSpawnData> carrotSpawnData;
 
@@ -63,6 +66,8 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
     public void SetupCullingGroup()
     {
+        if (!enableCulling) return;
+
         if (cullingGroup == null)
         {
             cullingGroup = new CullingGroup();

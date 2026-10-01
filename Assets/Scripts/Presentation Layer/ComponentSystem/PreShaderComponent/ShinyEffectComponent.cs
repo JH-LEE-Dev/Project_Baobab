@@ -83,6 +83,8 @@ public class ShinyEffectComponent : MonoBehaviour
     private Graphic _graphic;
     private Renderer _renderer;
     private Tween _shinyTween;
+    // OnKill 콜백 - 재생마다 람다를 새로 만들지 않도록 1회 캐싱(캡처 대상이 this뿐이라 인스턴스 메서드로 대체 가능)
+    private TweenCallback _cachedOnShinyTweenKilled;
 
     private VFXComponent _vfxComponent;
     private ParticleSystem _activeVfxParticle;
@@ -143,17 +145,13 @@ public class ShinyEffectComponent : MonoBehaviour
 
             _instanceMaterial.SetFloat(_shinyLocationId, -1f);
             
-            _shinyTween = _instanceMaterial.DOFloat(2f, "_ShinyLocation", _duration)
+            if (null == _cachedOnShinyTweenKilled)
+                _cachedOnShinyTweenKilled = OnShinyTweenKilled;
+
+            _shinyTween = _instanceMaterial.DOFloat(2f, _shinyLocationId, _duration)
                 .SetDelay(_delay)
                 .SetEase(Ease.Linear)
-                .OnKill(() => 
-                {
-                    if (true == Application.isPlaying && null != _vfxComponent && null != _activeVfxParticle)
-                    {
-                        _vfxComponent.Stop(_activeVfxParticle, true);
-                        _activeVfxParticle = null;
-                    }
-                });
+                .OnKill(_cachedOnShinyTweenKilled);
 
             if (-1 == _loopCount)
                 _shinyTween.SetLoops(-1, LoopType.Restart);
@@ -322,24 +320,34 @@ public class ShinyEffectComponent : MonoBehaviour
         _vfxComponent.SetStartColorOfTag(_vfxTag, _vfxColor);
     }
 
+    private void OnShinyTweenKilled()
+    {
+        if (true == Application.isPlaying && null != _vfxComponent && null != _activeVfxParticle)
+        {
+            _vfxComponent.Stop(_activeVfxParticle, true);
+            _activeVfxParticle = null;
+        }
+    }
+
     private void ApplyAutoSorting(ParticleSystem _vfxParticle)
     {
-        string _targetLayer = "Default";
+        // sortingLayerName 게터는 호출마다 string을 만들므로 레이어 ID로 넘긴다("Default" 레이어의 ID는 0)
+        int _targetLayerID = 0;
         int _targetOrder = 1;
 
         if (null != _renderer)
         {
-            _targetLayer = _renderer.sortingLayerName;
+            _targetLayerID = _renderer.sortingLayerID;
             _targetOrder = _renderer.sortingOrder + 1;
         }
         else if (null != _graphic && null != _graphic.canvas)
         {
-            _targetLayer = _graphic.canvas.sortingLayerName;
+            _targetLayerID = _graphic.canvas.sortingLayerID;
             _targetOrder = _graphic.canvas.sortingOrder + 1;
         }
 
         if (null != _vfxComponent)
-            _vfxComponent.SetSortingSettings(_vfxParticle, _targetLayer, _targetOrder);
+            _vfxComponent.SetSortingSettings(_vfxParticle, _targetLayerID, _targetOrder);
     }
 
     private void CreateUIOverlay()

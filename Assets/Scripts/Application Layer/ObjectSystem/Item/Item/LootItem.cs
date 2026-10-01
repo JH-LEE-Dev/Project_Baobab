@@ -10,6 +10,9 @@ public class LootItem : Item
     public LootType LootType => lootType;
 
     private SpriteRenderer spriteRenderer;
+    // VFX 중계 대기 객체(지연 값이 바뀔 때만 재생성) - 풀 인스턴스가 재사용될 때마다 새로 만들지 않는다
+    private WaitForSeconds vfxRelayWait;
+    private float vfxRelayWaitSeconds = -1f;
     private Transform visualTransform;
 
     // 상태 변수
@@ -77,7 +80,9 @@ public class LootItem : Item
         sprite = _lootItemTypeData.sprite;
         elapsed = 0;
 
-        spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        // 풀 인스턴스라 자식 구조가 고정이므로 처음 한 번만 찾는다
+        if (spriteRenderer == null)
+            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         if (spriteRenderer != null)
         {
             spriteRenderer.sprite = sprite;
@@ -238,7 +243,14 @@ public class LootItem : Item
         }
 
         if (0f < delay)
-            yield return new WaitForSeconds(delay);
+        {
+            if (vfxRelayWait == null || vfxRelayWaitSeconds != delay)
+            {
+                vfxRelayWait = new WaitForSeconds(delay);
+                vfxRelayWaitSeconds = delay;
+            }
+            yield return vfxRelayWait;
+        }
 
         if (null != vfxOrbit)
             vfxOrbit.gameObject.SetActive(true);

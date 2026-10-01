@@ -139,6 +139,7 @@ public class LogItem : Item, IStaticCollidable
     private static int flyingItemSortingLayerID = -1;
 
     [SerializeField] private GameObject outlineObj;
+    private Transform outlineTransform; // outlineObj.transform 프로퍼티(네이티브 호출)를 매 프레임 반복하지 않도록 캐싱
     [SerializeField] private SpriteRenderer outlineStencilSR;
     [SerializeField] private SpriteRenderer outlineSR;
 
@@ -265,6 +266,8 @@ public class LogItem : Item, IStaticCollidable
             return;
 
         visualTransform = spriteRenderer.transform;
+        if (outlineObj != null && outlineTransform == null)
+            outlineTransform = outlineObj.transform;
 
         if (shadow != null && shadowTransform == null)
         {
@@ -580,14 +583,13 @@ public class LogItem : Item, IStaticCollidable
 
         if (outlineObj != null && visualTransform != null)
         {
-            outlineObj.transform.localPosition = visualTransform.localPosition;
-            outlineObj.transform.localRotation = visualTransform.localRotation;
-            outlineObj.transform.localScale = visualTransform.localScale;
+            if (outlineTransform == null) outlineTransform = outlineObj.transform;
+            outlineTransform.localPosition = visualTransform.localPosition;
+            outlineTransform.localRotation = visualTransform.localRotation;
+            outlineTransform.localScale = visualTransform.localScale;
         }
 
-        if (mpb == null) mpb = new MaterialPropertyBlock();
-        spriteRenderer.GetPropertyBlock(mpb);
-        spriteRenderer.SetPropertyBlock(mpb);
+        // (예전엔 여기서 GetPropertyBlock→SetPropertyBlock을 그대로 되돌려 쓰는 no-op이 있었다. 실제 값은 바로 아래 SetShaderFloating/UpdateShadowScale이 쓴다)
 
         // 활성화 상태라면 등록 (OnEnable에서도 처리됨)
         if (gameObject.activeInHierarchy)
@@ -897,9 +899,9 @@ public class LogItem : Item, IStaticCollidable
 
             if (outlineObj != null)
             {
-                outlineObj.transform.localPosition = visualTransform.localPosition;
-                outlineObj.transform.localRotation = visualTransform.localRotation;
-                outlineObj.transform.localScale = visualTransform.localScale;
+                outlineTransform.localPosition = visualTransform.localPosition;
+                outlineTransform.localRotation = visualTransform.localRotation;
+                outlineTransform.localScale = visualTransform.localScale;
             }
         }
         else
@@ -1370,9 +1372,9 @@ public class LogItem : Item, IStaticCollidable
 
             if (outlineObj != null)
             {
-                outlineObj.transform.localPosition = visualTransform.localPosition;
-                outlineObj.transform.localScale = visualTransform.localScale;
-                outlineObj.transform.localRotation = visualTransform.localRotation;
+                outlineTransform.localPosition = visualTransform.localPosition;
+                outlineTransform.localScale = visualTransform.localScale;
+                outlineTransform.localRotation = visualTransform.localRotation;
             }
         }
 
@@ -1393,6 +1395,7 @@ public class LogItem : Item, IStaticCollidable
         if (visualTransform != null)
         {
             // 셰이더 연동용 기본값 설정 (CPU 연산 없음)
+            // 흡입 취소/동적 전송 실패 등 착지 블록을 거치지 않고 Dropped로 들어오는 경로가 있어 매 프레임 되돌리는 동작을 유지한다.
             visualTransform.localPosition = Vector3.zero;
             if (customSortable != null)
             {
@@ -1428,9 +1431,9 @@ public class LogItem : Item, IStaticCollidable
 
             if (outlineObj != null)
             {
-                outlineObj.transform.localPosition = visualTransform.localPosition;
-                outlineObj.transform.localScale = visualTransform.localScale;
-                outlineObj.transform.localRotation = visualTransform.localRotation;
+                outlineTransform.localPosition = visualTransform.localPosition;
+                outlineTransform.localScale = visualTransform.localScale;
+                outlineTransform.localRotation = visualTransform.localRotation;
             }
         }
     }

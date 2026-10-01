@@ -32,6 +32,9 @@ namespace PresentationLayer.VFX
         [Header("렌더링")]
         [SerializeField] private Material vortexMaterial;
         [SerializeField, Tooltip("루트 렌더러(드론 총구 기준 정렬 순서) 기준 상대 소팅 오더")] private int frontSortingOffset = 1;
+        // 마지막으로 메쉬 렌더러에 적용한 루트 소팅 값. 같으면 매 프레임 세터 호출을 건너뛴다(OnEnable에서 무효화 - 풀 재생 시 VFXComponent가 자식 소팅을 덮어쓰기 때문).
+        private int appliedRootSortingLayerID = int.MinValue;
+        private int appliedRootSortingOrder = int.MinValue;
 
         [Header("충전")]
         [SerializeField, Tooltip("충전이 끝나기까지의 기본 시간(초). Drone이 임팩트까지 남은 시간을 SetChargeDuration으로 덮어쓴다")] private float defaultChargeDuration = 0.6f;
@@ -364,8 +367,15 @@ namespace PresentationLayer.VFX
 
             if (null != rootParticleRenderer)
             {
-                meshRenderer.sortingLayerID = rootParticleRenderer.sortingLayerID;
-                meshRenderer.sortingOrder = rootParticleRenderer.sortingOrder + frontSortingOffset;
+                int rootLayer = rootParticleRenderer.sortingLayerID;
+                int rootOrder = rootParticleRenderer.sortingOrder;
+                if (rootLayer != appliedRootSortingLayerID || rootOrder != appliedRootSortingOrder)
+                {
+                    appliedRootSortingLayerID = rootLayer;
+                    appliedRootSortingOrder = rootOrder;
+                    meshRenderer.sortingLayerID = rootLayer;
+                    meshRenderer.sortingOrder = rootOrder + frontSortingOffset;
+                }
             }
 
             // 그릴 것이 없고 메쉬도 이미 비어 있으면 올리지 않는다
@@ -560,6 +570,8 @@ namespace PresentationLayer.VFX
 
         private void OnEnable()
         {
+            appliedRootSortingLayerID = int.MinValue;
+            appliedRootSortingOrder = int.MinValue;
             Begin();
         }
 

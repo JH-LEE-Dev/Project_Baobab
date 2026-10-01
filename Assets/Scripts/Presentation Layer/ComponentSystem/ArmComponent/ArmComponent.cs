@@ -21,6 +21,10 @@ public class ArmComponent : PComponent, IArmComponent
     public AxeComponent axeComponent { get; private set; }
     public RifleComponent rifleComponent { get; private set; }
     private Vector3 initialLocalPosition;
+    // 마지막으로 적용한 Y 오프셋/좌우 부호. 값이 같으면 Transform 세터(계층 dirty)를 건너뛴다.
+    private float appliedYOffset = float.NaN;
+    private float appliedFlipSign = 0f;
+    private Transform parentTransform; // transform.parent(네이티브 호출) 1회 캐싱 - 계층은 런타임에 바뀌지 않는다
 
     public WeaponComponent currentWeapon { get; private set; }
 
@@ -157,7 +161,8 @@ public class ArmComponent : PComponent, IArmComponent
         if (attackTransform == null) return;
 
         // 타겟을 바라보는 방향 계산
-        Vector2 dirToTarget = (Vector2)attackTransform.position - (Vector2)transform.parent.position;
+        if (parentTransform == null) parentTransform = transform.parent;
+        Vector2 dirToTarget = (Vector2)attackTransform.position - (Vector2)parentTransform.position;
 
         if (dirToTarget.sqrMagnitude > 0.001f)
         {
@@ -194,16 +199,18 @@ public class ArmComponent : PComponent, IArmComponent
         angle = Mathf.Repeat(angle, 360f);
 
         // 0~180도(상단 반원) 범위일 때만 Sin 곡선을 따라 오프셋 적용
+        float targetOffset = 0f;
         if (angle >= 0f && angle <= 180f)
         {
             // Mathf.Sin은 라디안 값을 사용하므로 Deg2Rad 변환
             float offsetMultiplier = Mathf.Sin(angle * Mathf.Deg2Rad);
-            float offset = offsetMultiplier * maxYOffset;
-            transform.localPosition = initialLocalPosition + Vector3.down * offset;
+            targetOffset = offsetMultiplier * maxYOffset;
         }
-        else
+
+        if (targetOffset != appliedYOffset)
         {
-            transform.localPosition = initialLocalPosition;
+            appliedYOffset = targetOffset;
+            transform.localPosition = initialLocalPosition + Vector3.down * targetOffset;
         }
     }
 
@@ -219,8 +226,12 @@ public class ArmComponent : PComponent, IArmComponent
         if (Mathf.Abs(_distanceX) < FlipDeadband) return;
 
         // 타겟의 x 위치가 Arm의 x 위치보다 작으면 왼쪽(-1), 크면 오른쪽(1)
+        float sign = (_distanceX < 0f) ? -1f : 1f;
+        if (sign == appliedFlipSign) return;
+        appliedFlipSign = sign;
+
         Vector3 localScale = transform.localScale;
-        localScale.x = (_distanceX < 0f) ? -1f : 1f;
+        localScale.x = sign;
         transform.localScale = localScale;
     }
 
