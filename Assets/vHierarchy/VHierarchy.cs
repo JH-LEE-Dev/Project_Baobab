@@ -1817,6 +1817,13 @@ namespace VHierarchy
                 catch { }
 
             }
+            void enableLegacyHierarchy()
+            {
+#if UNITY_6000_6_OR_NEWER
+                EditorApplication.delayCall += () => typeof(EditorSettings).SetMemberValue("useLegacyHierarchy", true);
+#endif
+            }
+
             // void removeDeletedBookmarks()
             // {
             //     if (!data) return;
@@ -1843,6 +1850,7 @@ namespace VHierarchy
             loadPalette();
             loadDataAndPaletteDelayed();
             migrateDataFromV1();
+            enableLegacyHierarchy();
 
             // EditorApplication.delayCall += () => removeDeletedBookmarks();
 
@@ -1881,7 +1889,7 @@ namespace VHierarchy
 
 
 
-        public const string version = "2.1.10";
+        public const string version = "2.1.11";
 
     }
 
