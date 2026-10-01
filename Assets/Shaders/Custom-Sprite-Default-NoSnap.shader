@@ -7,6 +7,9 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
         _NormalMap("Normal Map", 2D) = "bump" {}
         [MaterialToggle] _ZWrite("ZWrite", Float) = 0
 
+        [Header(HDR)]
+        _HDRIntensity("HDR Intensity", Float) = 1
+
         // Legacy properties. They're here so that materials using this shader can gracefully fallback to the legacy sprite shader.
         [HideInInspector] _Color("Tint", Color) = (1,1,1,1)
         [HideInInspector] _RendererColor("RendererColor", Color) = (1,1,1,1)
@@ -68,6 +71,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
+                float _HDRIntensity;
                 half _FlashAmount;
                 half4 _FlashColor;
             CBUFFER_END
@@ -87,6 +91,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             half4 LitFragment(Varyings input) : SV_Target
             {
                 half4 col = CommonLitFragment(input, input.color);
+                col.rgb *= _HDRIntensity;
                 col.rgb = lerp(col.rgb, _FlashColor.rgb, _FlashAmount * col.a);
                 return col;
             }
@@ -125,6 +130,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             CBUFFER_START( UnityPerMaterial )
                 half4 _Color;
+                float _HDRIntensity;
                 half _FlashAmount;
                 half4 _FlashColor;
             CBUFFER_END
@@ -180,6 +186,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
+                float _HDRIntensity;
                 half _FlashAmount;
                 half4 _FlashColor;
             CBUFFER_END
@@ -198,6 +205,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             half4 UnlitFragment(Varyings input) : SV_Target
             {
                 half4 col = CommonUnlitFragment(input, input.color);
+                col.rgb *= _HDRIntensity;
                 col.rgb = lerp(col.rgb, _FlashColor.rgb, _FlashAmount * col.a);
                 return col;
             }

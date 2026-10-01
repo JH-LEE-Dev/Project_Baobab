@@ -202,9 +202,13 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     public void ApplyOverheatDot(float _damagePerTick, int _tickCount, float _tickInterval)
     {
-        // 이 타격 자체가 치명타였다면 TakeDamage 안에서 이미 죽어 풀로 반환되어 비활성화된 뒤이므로,
+        // 이 타격이 막타였다면 TakeDamage 안에서 이미 죽어 풀로 반환되어 비활성화된 뒤이므로,
         // 그 상태에서 StartCoroutine을 시도하면 안 된다. 묘목은 어떤 상호작용도 받지 않는다.
-        if (bDead || !bCanApplyDamage) return;
+        //
+        // bDead만으로는 걸러지지 않는다. 풀 반환(OnReleaseTree -> ResetTree)이 bDead를 false로 되돌린 뒤라
+        // 죽은 나무도 살아 있는 것처럼 보이므로, 풀 상태(IsPooled)와 활성 여부로 함께 판단한다.
+        // bDead는 풀을 거치지 않아 죽은 채로 활성 상태에 남은 나무를 거르기 위해 그대로 둔다.
+        if (bDead || IsPooled || !gameObject.activeInHierarchy || !bCanApplyDamage) return;
 
         if (overheatDotCoroutine != null)
         {
@@ -216,7 +220,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     public void ApplyDroneOverheatDot(float _damagePerTick, int _tickCount, float _tickInterval)
     {
-        if (bDead || !bCanApplyDamage) return;
+        // ApplyOverheatDot과 같은 이유로 bDead에 더해 풀 상태/활성 여부로도 거른다
+        if (bDead || IsPooled || !gameObject.activeInHierarchy || !bCanApplyDamage) return;
 
         if (droneOverheatDotCoroutine != null)
         {
@@ -226,14 +231,43 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         RefreshBurnVfx();
     }
 
+    // 화상 틱이 타격음/피격 이펙트를 낼 수 있는 최소 간격(초). 모든 나무가 이 간격 하나를 같이 쓴다.
+    // 과열 충격파는 한 번에 여러 그루에 화상을 걸어 틱이 짧은 시간에 몰린다. 타격음(Tree_Hit 0.44초, 동시 재생 상한 6)과
+    // 피격 이펙트 풀은 상한에 걸리면 가장 오래된 것을 빼앗아 재생하므로, 틱이 몰리면 실제 도끼 타격의 소리/이펙트가 끊긴다.
+    // 0.15초 간격이면 Tree_Hit 한 번이 울리는 동안 화상 틱은 최대 3개라 상한 6 중 절반은 항상 실제 타격 몫으로 남는다.
+    // 프레임 단위가 아니라 시간 단위라 프레임레이트와 무관하다. 한 그루만 탈 때는 틱 간격(0.5초)이 더 길어 매 틱 그대로 울린다.
+    // 간격 안에 들어온 틱은 소리/이펙트만 생략한다(데미지, 체력바, 피격 플래시, 화상 루프 이펙트는 그대로).
+    private const float DotTickFeedbackMinInterval = 0.15f;
+    private static float lastDotTickFeedbackTime = float.NegativeInfinity;
+
+    // 이번 피격에서 피격 이펙트를 생략할지. 간격에 걸린 화상 틱의 TakeDamageInternal 동안에만 켜지며,
+    // InDungeonObjectManager.OnTreeHit가 TreeGetHitEvent를 받을 때 읽는다.
+    public bool bSkipHitVfx { get; private set; } = false;
+
+    private static bool TryConsumeDotTickFeedback()
+    {
+        float now = Time.time;
+
+        // now < last는 플레이 모드를 다시 시작해 Time.time이 0부터 다시 흐르는데 static 값이 남은 경우다
+        // (도메인 리로드를 끈 에디터 설정). 이전 세션 값 때문에 피드백이 막히지 않도록 그대로 허용한다.
+        if (now >= lastDotTickFeedbackTime && now - lastDotTickFeedbackTime < DotTickFeedbackMinInterval) return false;
+
+        lastDotTickFeedbackTime = now;
+        return true;
+    }
+
     private IEnumerator OverheatDotRoutine(float _damagePerTick, int _tickCount, float _tickInterval, bool _isDrone)
     {
         for (int i = 0; i < _tickCount; i++)
         {
             yield return new WaitForSeconds(_tickInterval);
             if (!bCanApplyDamage) break;
+
+            bool bPlayFeedback = TryConsumeDotTickFeedback();
+            bSkipHitVfx = !bPlayFeedback;
             // 드론 레이저가 건 지속 피해는 도끼로 맞은 게 아니므로 도끼 타격음을 내지 않는다
-            TakeDamageInternal(_damagePerTick, false, false, !_isDrone);
+            TakeDamageInternal(_damagePerTick, false, false, !_isDrone && bPlayFeedback);
+            bSkipHitVfx = false;
         }
         if (_isDrone)
         {
@@ -375,6 +409,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         currentGemStage = 0;
         bReserved = false;
         bLastHitByPlayer = true;
+        bSkipHitVfx = false;
         SetStarMarked(false);
         SetStarGroupId(-1);
         healthComponent.Reset();

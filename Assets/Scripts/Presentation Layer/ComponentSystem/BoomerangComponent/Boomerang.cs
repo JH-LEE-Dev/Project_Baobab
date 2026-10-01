@@ -34,7 +34,16 @@ public class Boomerang : MonoBehaviour
     [SerializeField] private SpriteRenderer effectSpriteRenderer; // Boomerang_Effect. 본체 바로 위에 덧그린다.
     [SerializeField] private List<Sprite> baseSprites;   // 비행 내내(왕복 전 구간) 반복 재생
     [SerializeField] private List<Sprite> effectSprites; // baseSprites와 같은 인덱스로 동시에 재생
+    // 과열 상태로 던진 부메랑 전용(OverHeatBoomerang_Base/Effect). 비어 있으면 일반 리스트로 대체한다.
+    [SerializeField] private List<Sprite> overheatBaseSprites;
+    [SerializeField] private List<Sprite> overheatEffectSprites;
     [SerializeField] private float sampleRate = 24f;
+
+    [Header("Effect 블룸 (HDR)")]
+    // Effect 렌더러의 머티리얼(_HDRIntensity)에 곱하는 밝기. 1이면 원본 그대로, 1보다 크면 블룸이 은은하게 번진다.
+    // 본체(Base)·잔상·그림자에는 적용하지 않는다. 플레이 중 인스펙터에서 바꾸면 바로 반영된다.
+    [SerializeField, Min(0f)] private float effectHDRIntensity = 1.15f;
+    [SerializeField, Min(0f)] private float overheatEffectHDRIntensity = 1.25f;
 
     [Header("Visual Size (공격 범위에 맞춤)")]
     // 스케일 1일 때 Boomerang_Base의 실제로 보이는(불투명) 가로폭(월드 유닛). 128x64 칸 안에서 그림이
@@ -69,6 +78,14 @@ public class Boomerang : MonoBehaviour
 
     private float frameTimer;
     private int currentFrameIndex;
+
+    // 이번 비행에서 재생할 프레임 리스트. SetOverheat로 일반/과열 중 하나를 고른다.
+    private List<Sprite> activeBaseSprites;
+    private List<Sprite> activeEffectSprites;
+    private bool bOverheatVisual;
+
+    private static readonly int HDRIntensityID = Shader.PropertyToID("_HDRIntensity");
+    private MaterialPropertyBlock effectMpb;
 
     private BoomerangAfterimage[] afterimages; // 링 버퍼. 페이드 시간 동안 동시에 보일 수 있는 최대 장수만큼 미리 만든다.
     private int nextAfterimageIndex;
@@ -116,6 +133,45 @@ public class Boomerang : MonoBehaviour
     {
         currentThrowSpeed = throwSpeed * _multiplier;
     }
+
+    /// <summary>
+    /// 과열 상태로 던졌는지에 따라 재생할 스프라이트(일반/과열 전용)를 고른다.
+    /// 풀에서 재사용되므로 BoomerangCreator가 발사마다 덮어쓴다. 과열 리스트가 비어 있으면 일반 리스트를 쓴다.
+    /// </summary>
+    public void SetOverheat(bool _bIsOverheat)
+    {
+        bool bUseOverheat = _bIsOverheat && overheatBaseSprites != null && overheatBaseSprites.Count > 0;
+        activeBaseSprites = bUseOverheat ? overheatBaseSprites : baseSprites;
+        activeEffectSprites = bUseOverheat && overheatEffectSprites != null && overheatEffectSprites.Count > 0
+            ? overheatEffectSprites
+            : effectSprites;
+
+        bOverheatVisual = bUseOverheat;
+        ApplyEffectHDR();
+    }
+
+    // TreeVisualComponent.ApplyHDRToRenderer와 같은 방식: 공유 머티리얼은 건드리지 않고 Effect 렌더러에만 덮어쓴다.
+    private void ApplyEffectHDR()
+    {
+        if (effectSpriteRenderer == null) return;
+
+        effectMpb ??= new MaterialPropertyBlock();
+        effectSpriteRenderer.GetPropertyBlock(effectMpb);
+        effectMpb.SetFloat(HDRIntensityID, bOverheatVisual ? overheatEffectHDRIntensity : effectHDRIntensity);
+        effectSpriteRenderer.SetPropertyBlock(effectMpb);
+    }
+
+#if UNITY_EDITOR
+    // 플레이 중 인스펙터에서 HDR 값을 조절하면 날아가는 중인 부메랑에도 바로 보이게 한다.
+    private void OnValidate()
+    {
+        // 프리팹 에셋 자체(scene 무효)에는 쓰지 않고, 씬에 떠 있는 인스턴스만 갱신한다.
+        if (Application.isPlaying && gameObject.scene.IsValid())
+        {
+            ApplyEffectHDR();
+        }
+    }
+#endif
 
     /// <summary>
     /// BoomerangCreator가 풀에서 꺼낼 때(OnGet) 설정하는 공격력. 도끼 스탯과 무관한 부메랑 전용 값이다.
@@ -301,6 +357,8 @@ public class Boomerang : MonoBehaviour
 
     private void Awake()
     {
+        SetOverheat(false); // SetOverheat 없이 Launch돼도 일반 스프라이트로 재생되도록 기본값
+
         customSortable = GetComponent<CustomSortable>();
         if (customSortable != null)
         {
@@ -590,7 +648,7 @@ public class Boomerang : MonoBehaviour
     // 묶여 있어서(둘 다 16프레임) 한 타이머로 동시에 넘긴다. 왕복이 끝날 때까지 계속 반복한다.
     private void UpdateAnimationFrame(float _deltaTime)
     {
-        if (baseSprites == null || baseSprites.Count == 0) return;
+        if (activeBaseSprites == null || activeBaseSprites.Count == 0) return;
 
         float frameTime = sampleRate > 0f ? 1f / sampleRate : 0.1f;
 
@@ -600,7 +658,7 @@ public class Boomerang : MonoBehaviour
         while (frameTimer >= frameTime)
         {
             frameTimer -= frameTime;
-            currentFrameIndex = (currentFrameIndex + 1) % baseSprites.Count;
+            currentFrameIndex = (currentFrameIndex + 1) % activeBaseSprites.Count;
         }
 
         ApplyCurrentFrame();
@@ -608,9 +666,9 @@ public class Boomerang : MonoBehaviour
 
     private void ApplyCurrentFrame()
     {
-        if (spriteRenderer != null && baseSprites != null && baseSprites.Count > 0)
+        if (spriteRenderer != null && activeBaseSprites != null && activeBaseSprites.Count > 0)
         {
-            Sprite baseSprite = baseSprites[currentFrameIndex % baseSprites.Count];
+            Sprite baseSprite = activeBaseSprites[currentFrameIndex % activeBaseSprites.Count];
             spriteRenderer.sprite = baseSprite;
 
             // TreeVisualComponent.SyncShadowSprite와 동일한 방식: 그림자는 본체와 항상 같은 프레임을 보여준다.
@@ -620,9 +678,9 @@ public class Boomerang : MonoBehaviour
             }
         }
 
-        if (effectSpriteRenderer != null && effectSprites != null && effectSprites.Count > 0)
+        if (effectSpriteRenderer != null && activeEffectSprites != null && activeEffectSprites.Count > 0)
         {
-            effectSpriteRenderer.sprite = effectSprites[currentFrameIndex % effectSprites.Count];
+            effectSpriteRenderer.sprite = activeEffectSprites[currentFrameIndex % activeEffectSprites.Count];
         }
     }
 

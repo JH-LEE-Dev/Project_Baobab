@@ -208,6 +208,14 @@ public class ShockWave : MonoBehaviour
                     treeObj.TakeDamage(finalDamage, true, bIsCritical);
                     hitTargets.Add(target);
 
+                    // 과열 충격파에 맞은 나무에도 도끼 평타와 같은 화상(지속 피해)을 건다. 평타와 같은 슬롯을 쓰므로
+                    // 한 번 휘둘러 평타와 충격파에 모두 맞아도 화상이 겹치지 않고 새로 걸린다.
+                    // 이 타격으로 죽어 풀로 반환됐으면 ApplyOverheatDot이 IsPooled/활성 여부 가드로 알아서 무시한다.
+                    if (bIsOverheat)
+                    {
+                        treeObj.ApplyOverheatDot(AttackComponent.OverheatDotDamagePerTick, AttackComponent.OverheatDotTickCount, AttackComponent.OverheatDotTickInterval);
+                    }
+
                     if (firstTreeHitCallback != null)
                     {
                         Action callback = firstTreeHitCallback;
