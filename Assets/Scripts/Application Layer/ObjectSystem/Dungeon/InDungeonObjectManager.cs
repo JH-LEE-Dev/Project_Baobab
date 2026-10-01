@@ -765,6 +765,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             // (지금은 아래 루틴이 곧 ClearTrees()를 거치며 finally로 되돌려주지만, 그 간접 의존을
             //  믿지 않고 중단 지점에서 바로 불변식을 복구한다)
             deferCullingSync = false;
+
+            // 같은 이유로 스폰 타일 배치도 여기서 닫는다. 이미 심은 나무의 충돌/데코 타일을 반영해 두어야
+            // 중단 전 상태가 "나무마다 즉시 SetTile 하던 때"와 같아진다(바로 뒤 루틴의 ClearTrees가 그 위에서 정리한다).
+            environmentProvider?.tilemapDataProvider?.EndTreeSpawnTileBatch();
         }
         spawnTreesCoroutine = StartCoroutine(SpawnInitialTreesRoutine(_onSpawnComplete));
     }
@@ -852,6 +856,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             // ReadyTrees()와 같은 이유. 중단된 코루틴의 finally 실행은 보장되지 않으므로,
             // 일괄 스폰용 플래그를 중단 지점에서 직접 되돌린다.
             deferCullingSync = false;
+            // 스폰 타일 배치도 같은 이유로 여기서 닫는다(이미 심은 나무의 타일을 반영한 뒤 아래 ClearTrees가 정리한다).
+            environmentProvider?.tilemapDataProvider?.EndTreeSpawnTileBatch();
         }
 
         StopGrowth();
@@ -874,6 +880,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             // RefreshCullingGroup()이 개수 설정과 전체 가시성 재계산을 한 번에 처리한다.
             // (이 코루틴이 끝나야 던전이 플레이어에게 공개되므로 중간에 안 보여도 문제없다)
             deferCullingSync = true;
+            // 초기 스폰 구간에서는 나무마다 Tilemap.SetTile을 부르지 않고 모아 뒀다가 End에서 SetTiles로 한 번에 심는다.
+            // 스폰이 끝나야 던전이 공개되고 캐릭터가 켜지므로 그 사이 타일맵을 읽는 쪽이 없다. 성장/별똥별 등 이후 개별 스폰은 배치 밖이라 즉시 반영된다.
+            environmentProvider.tilemapDataProvider.BeginTreeSpawnTileBatch();
             try
             {
                 if (currentTreeGenerationStrategy != null)
@@ -884,6 +893,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             finally
             {
                 deferCullingSync = false;
+                environmentProvider.tilemapDataProvider.EndTreeSpawnTileBatch();
             }
 
             RefreshCullingGroup();

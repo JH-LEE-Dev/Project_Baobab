@@ -177,6 +177,8 @@ public class TownTilemapDataProvider : ITilemapDataProvider
     public void ClearTreeCollisionTile(Vector3 _worldPos) { }
     public void BeginTreeCollisionTileBatch() { }
     public void EndTreeCollisionTileBatch() { }
+    public void BeginTreeSpawnTileBatch() { }
+    public void EndTreeSpawnTileBatch() { }
     public void ClearDecoTileForTree(Vector3 _worldPos) { }
     public void RestoreDecoTileForTree(Vector3 _worldPos) { }
 }

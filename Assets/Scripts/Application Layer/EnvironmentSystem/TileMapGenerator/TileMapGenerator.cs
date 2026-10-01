@@ -338,6 +338,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             }
         }
 
+        // 이전 던전의 초기 스폰 코루틴이 아직 돌던 중(스폰 배치가 열린 채)에 새 맵을 만드는 경우,
+        // 모아둔 충돌 타일 심기/데코 걷어내기는 옛 맵에 대한 것이므로 새 맵 위에 반영되면 안 된다.
+        // 예전(나무마다 즉시 SetTile)에는 아래 ClearAllTiles/ApplyTiles가 그 흔적을 덮어썼으므로, 같은 결과가 되도록 버린다.
+        DiscardTreeSpawnTileBatch();
+
         groundTilemap.ClearAllTiles();
         collisionTilemap.ClearAllTiles();
         decoTilemap.ClearAllTiles();
@@ -480,7 +485,17 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         adjustedPos.y -= halfCellY;
 
         Vector3Int cellPos = collisionTilemap.WorldToCell(adjustedPos);
-        collisionTilemap.SetTile(cellPos, stageTileData.TreeCollisionTile);
+
+        // 스폰 배치 중에는 Tilemap 쓰기만 미룬다. 아래 cellToIndex/walkablePositions 부기는
+        // 배치 여부와 상관없이 지금 그대로 반영되므로 호출부가 보는 상태는 달라지지 않는다.
+        if (true == bBatchingTreeTileSets)
+        {
+            pendingTreeTileSets.Add(cellPos);
+        }
+        else
+        {
+            collisionTilemap.SetTile(cellPos, stageTileData.TreeCollisionTile);
+        }
 
         if (cellPos.x < 0 || cellPos.x >= width || cellPos.y < 0 || cellPos.y >= height) return;
 
@@ -514,6 +529,17 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private readonly List<Vector3Int> pendingTreeTileClears = new List<Vector3Int>(256);
     private bool bBatchingTreeTileClears = false;
 
+    /// <summary>
+    /// 초기 스폰 배치 구간 동안 심을 충돌 타일 셀과 걷어낼 데코 셀을 모아두는 버퍼.
+    /// 수천 그루를 프레임 분산으로 심는 동안 나무마다 SetTile을 부르면 호출 비용과 TilemapCollider2D 재빌드 예약이
+    /// 스폰 프레임마다 반복된다. 스폰 중에는 던전이 가려져 있고 캐릭터도 비활성이라(InDungeonSystem.OnTreesReady에서 켠다)
+    /// 타일맵을 읽는 쪽이 없으므로 End에서 SetTiles 한 번으로 모아 반영해도 결과가 같다.
+    /// </summary>
+    private readonly List<Vector3Int> pendingTreeTileSets = new List<Vector3Int>(2560);
+    private readonly List<Vector3Int> pendingDecoClearCells = new List<Vector3Int>(256);
+    private readonly List<Vector3Int> pendingBloomDecoClearCells = new List<Vector3Int>(256);
+    private bool bBatchingTreeTileSets = false;
+
     // 데코 복원도 같은 이유로 모아서 쓴다. 충돌 타일 지우기와 달리 되돌릴 타일이 칸마다 달라서
     // 좌표와 타일을 짝지어 보관한다(SetTiles가 두 배열을 같은 인덱스로 읽는다).
     private readonly List<Vector3Int> pendingDecoRestoreCells = new List<Vector3Int>(256);
@@ -521,8 +547,71 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private readonly List<Vector3Int> pendingBloomDecoRestoreCells = new List<Vector3Int>(64);
     private readonly List<TileBase> pendingBloomDecoRestoreTiles = new List<TileBase>(64);
 
+    public void BeginTreeSpawnTileBatch()
+    {
+        // 중첩 호출 방어: 이미 열려 있으면 모아둔 것을 먼저 반영하고 새로 연다
+        if (true == bBatchingTreeTileSets) FlushTreeSpawnTileBatch();
+
+        bBatchingTreeTileSets = true;
+        pendingTreeTileSets.Clear();
+        pendingDecoClearCells.Clear();
+        pendingBloomDecoClearCells.Clear();
+    }
+
+    public void EndTreeSpawnTileBatch()
+    {
+        if (false == bBatchingTreeTileSets) return;
+
+        bBatchingTreeTileSets = false;
+        FlushTreeSpawnTileBatch();
+    }
+
+    // 모아둔 스폰 쓰기를 반영하지 않고 버린다(맵 재생성 직전 전용).
+    private void DiscardTreeSpawnTileBatch()
+    {
+        bBatchingTreeTileSets = false;
+        pendingTreeTileSets.Clear();
+        pendingDecoClearCells.Clear();
+        pendingBloomDecoClearCells.Clear();
+    }
+
+    // 스폰 배치에 모아둔 충돌 타일 심기와 데코 걷어내기를 Tilemap에 반영한다(배치 플래그는 건드리지 않는다).
+    private void FlushTreeSpawnTileBatch()
+    {
+        int count = pendingTreeTileSets.Count;
+        if (collisionTilemap != null && count > 0 && stageTileData != null && stageTileData.TreeCollisionTile != null)
+        {
+            // SetTiles는 positionArray.Length만큼 순회하므로 정확한 길이의 배열이어야 한다(정리 배치와 같은 이유로 진입당 1회 할당을 감수한다).
+            Vector3Int[] cells = pendingTreeTileSets.ToArray();
+            TileBase[] tiles = new TileBase[count];
+            TileBase collisionTile = stageTileData.TreeCollisionTile;
+            for (int i = 0; i < count; i++) tiles[i] = collisionTile;
+
+            collisionTilemap.SetTiles(cells, tiles);
+        }
+        pendingTreeTileSets.Clear();
+
+        FlushPendingDecoClears(decoTilemap, pendingDecoClearCells);
+        FlushPendingDecoClears(bloomDecoTilemap, pendingBloomDecoClearCells);
+    }
+
+    private static void FlushPendingDecoClears(Tilemap _tilemap, List<Vector3Int> _cells)
+    {
+        int count = _cells.Count;
+        if (_tilemap != null && count > 0)
+        {
+            // null로 채운 배열 = 해당 칸을 전부 지운다
+            _tilemap.SetTiles(_cells.ToArray(), new TileBase[count]);
+        }
+
+        _cells.Clear();
+    }
+
     public void BeginTreeCollisionTileBatch()
     {
+        // 스폰 배치가 열려 있는 상태에서 정리가 시작되면 먼저 심어둔 것을 반영해 "심고 → 지우는" 순서를 지킨다
+        if (true == bBatchingTreeTileSets) FlushTreeSpawnTileBatch();
+
         bBatchingTreeTileClears = true;
         pendingTreeTileClears.Clear();
         pendingDecoRestoreCells.Clear();
@@ -575,6 +664,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         Vector3Int cellPos = collisionTilemap.WorldToCell(adjustedPos);
 
+        // 스폰 배치 구간 안에서 지우기가 들어오면 모아둔 심기를 먼저 반영해 순서를 지킨다
+        if (true == bBatchingTreeTileSets) FlushTreeSpawnTileBatch();
+
         // 배치 중에는 Tilemap 쓰기만 미룬다. 아래 cellToIndex/walkablePositions 부기는
         // 배치 여부와 상관없이 지금 그대로 반영되므로 호출부가 보는 상태는 달라지지 않는다.
         if (true == bBatchingTreeTileClears)
@@ -620,18 +712,21 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         int flatIdx = cellPos.x + cellPos.y * width;
 
+        // 걷어낸 타일의 보관(suppressed*)은 배치 여부와 무관하게 즉시 한다. 미루면 그 사이 들어온 Restore가 되돌릴 타일을 모른다.
         if (decoTilesToApply[flatIdx] != null)
         {
             suppressedDecoTiles[flatIdx] = decoTilesToApply[flatIdx];
             decoTilesToApply[flatIdx] = null;
-            if (decoTilemap != null) decoTilemap.SetTile(cellPos, null);
+            if (true == bBatchingTreeTileSets) pendingDecoClearCells.Add(cellPos);
+            else if (decoTilemap != null) decoTilemap.SetTile(cellPos, null);
         }
 
         if (bloomDecoTilesToApply[flatIdx] != null)
         {
             suppressedBloomDecoTiles[flatIdx] = bloomDecoTilesToApply[flatIdx];
             bloomDecoTilesToApply[flatIdx] = null;
-            if (bloomDecoTilemap != null) bloomDecoTilemap.SetTile(cellPos, null);
+            if (true == bBatchingTreeTileSets) pendingBloomDecoClearCells.Add(cellPos);
+            else if (bloomDecoTilemap != null) bloomDecoTilemap.SetTile(cellPos, null);
         }
     }
 
@@ -643,6 +738,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     {
         Vector3Int cellPos = WorldToCell(_worldPos);
         if (cellPos.x < 0 || cellPos.x >= width || cellPos.y < 0 || cellPos.y >= height) return;
+
+        // 스폰 배치 구간 안에서 되돌리기가 들어오면 모아둔 걷어내기를 먼저 반영해 "걷어내고 → 되돌리는" 순서를 지킨다
+        if (true == bBatchingTreeTileSets) FlushTreeSpawnTileBatch();
 
         int flatIdx = cellPos.x + cellPos.y * width;
 

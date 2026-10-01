@@ -23,6 +23,13 @@ public interface ITilemapDataProvider
     void BeginTreeCollisionTileBatch();
     void EndTreeCollisionTileBatch();
 
+    // 나무를 한꺼번에 심을 때(초기 스폰) 쓰는 배치 구간. Begin~End 사이의 SetTreeCollisionTile과
+    // ClearDecoTileForTree는 Tilemap 쓰기만 모아 뒀다가 End에서 SetTiles로 한 번에 반영한다.
+    // 위 정리 배치와 마찬가지로 cellToIndex/walkablePositions/suppressed* 부기는 즉시 반영되므로
+    // 호출하는 쪽에서 보이는 상태는 동일하다. 구간 안에서 Clear/Restore가 들어오면 그 전에 모아둔 쓰기를 먼저 반영해 순서를 지킨다.
+    void BeginTreeSpawnTileBatch();
+    void EndTreeSpawnTileBatch();
+
     // 나무가 들어선 칸의 데코 타일 처리. 데코 배치(ApplyTiles)는 나무 스폰보다 먼저 끝나고
     // 나무 후보 칸은 바위 데코만 걸러내므로, 잔디/그라운드 데코가 깔린 칸에도 나무가 들어선다.
     // Clear가 걷어낸 타일은 보관해 뒀다가 Restore가 같은 칸에 되돌린다 - 그냥 버리면 나무가
