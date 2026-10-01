@@ -73,6 +73,8 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
             statComponent.ciriticalDamageMul);
         boomerang.SetHitRadius(finalHitRadius);
         boomerang.SetSpeedMultiplier(finalSpeedMul);
+        // 과열 상태면 과열 전용 스프라이트(OverHeatBoomerang_Base/Effect)로 재생한다.
+        boomerang.SetOverheat(_bIsOverheat);
         // damageInterval은 변동 없음
         boomerang.SetDamageInterval(statComponent.boomerangDamageInterval);
         // 풀에서 재사용되므로 이전 소유자(캐릭터/NPC)의 값이 남지 않도록 매번 덮어쓴다.

@@ -146,7 +146,43 @@ MonoBehaviour:
   - {fileID: 1935588821772203417, guid: e893a4d947f5c8a4ebf38f0ec97ef1a9, type: 3}
   - {fileID: -8768910487179800965, guid: e893a4d947f5c8a4ebf38f0ec97ef1a9, type: 3}
   - {fileID: 7064556852939130128, guid: e893a4d947f5c8a4ebf38f0ec97ef1a9, type: 3}
+  overheatBaseSprites:
+  - {fileID: 8173700890839890252, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  - {fileID: 3101296056318316904, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  - {fileID: 4810547310820849181, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  - {fileID: -2188314963526713202, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  - {fileID: 2023609064995319137, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  - {fileID: -8346157711237991627, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  - {fileID: -8667549232225593542, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  - {fileID: 6331784846059402830, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  - {fileID: -478064210641522682, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  - {fileID: -835632611048563532, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  - {fileID: 4188220178838294874, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  - {fileID: 1427774520137956074, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  - {fileID: 4608614010848786294, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  - {fileID: 3503449958725604621, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  - {fileID: 948118785124462630, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  - {fileID: -584413117378118573, guid: 257c90d007b384d48ba50ccbba4b844e, type: 3}
+  overheatEffectSprites:
+  - {fileID: -2310573701740108275, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
+  - {fileID: -7639377779581297367, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
+  - {fileID: -6368359173947204830, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
+  - {fileID: 598314781511018925, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
+  - {fileID: -3550619912195684722, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
+  - {fileID: 4735271680173756121, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
+  - {fileID: 7544218502165129929, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
+  - {fileID: -7106128485344918568, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
+  - {fileID: -4644278902380787915, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
+  - {fileID: 3519415441713106565, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
+  - {fileID: -5392828019092874885, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
+  - {fileID: -7928443276185185425, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
+  - {fileID: 338304083470807661, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
+  - {fileID: 5102352301347335188, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
+  - {fileID: 4557475396279378249, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
+  - {fileID: -1404088334739578557, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
   sampleRate: 24
+  effectHDRIntensity: 1.15
+  overheatEffectHDRIntensity: 1.25
   visualWidthAtUnitScale: 3
   afterimageInterval: 0.15
   afterimageFadeDuration: 0.45
