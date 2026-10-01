@@ -202,9 +202,13 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     public void ApplyOverheatDot(float _damagePerTick, int _tickCount, float _tickInterval)
     {
-        // 이 타격 자체가 치명타였다면 TakeDamage 안에서 이미 죽어 풀로 반환되어 비활성화된 뒤이므로,
+        // 이 타격이 막타였다면 TakeDamage 안에서 이미 죽어 풀로 반환되어 비활성화된 뒤이므로,
         // 그 상태에서 StartCoroutine을 시도하면 안 된다. 묘목은 어떤 상호작용도 받지 않는다.
-        if (bDead || !bCanApplyDamage) return;
+        //
+        // bDead만으로는 걸러지지 않는다. 풀 반환(OnReleaseTree -> ResetTree)이 bDead를 false로 되돌린 뒤라
+        // 죽은 나무도 살아 있는 것처럼 보이므로, 풀 상태(IsPooled)와 활성 여부로 함께 판단한다.
+        // bDead는 풀을 거치지 않아 죽은 채로 활성 상태에 남은 나무를 거르기 위해 그대로 둔다.
+        if (bDead || IsPooled || !gameObject.activeInHierarchy || !bCanApplyDamage) return;
 
         if (overheatDotCoroutine != null)
         {
@@ -216,7 +220,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     public void ApplyDroneOverheatDot(float _damagePerTick, int _tickCount, float _tickInterval)
     {
-        if (bDead || !bCanApplyDamage) return;
+        // ApplyOverheatDot과 같은 이유로 bDead에 더해 풀 상태/활성 여부로도 거른다
+        if (bDead || IsPooled || !gameObject.activeInHierarchy || !bCanApplyDamage) return;
 
         if (droneOverheatDotCoroutine != null)
         {
