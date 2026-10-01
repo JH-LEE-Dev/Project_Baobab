@@ -1672,8 +1672,8 @@ MonoBehaviour:
     maxPoolSize: 40
     uiParticleScale: 0
   - vfxTag: TreeHeatEmitEffect
-    effectPrefab: {fileID: 8248180672793769683, guid: cede68a0b11b75141b13e1c24e9e404f, type: 3}
-    initialPoolSize: 40
+    effectPrefab: {fileID: 1756730158619410561, guid: 0b4dfdc4125c11049a49ce079e1b18b1, type: 3}
+    initialPoolSize: 16
     allowDynamicExpansion: 1
     maxPoolSize: 100
     uiParticleScale: 0
