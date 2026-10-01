@@ -793,6 +793,7 @@ MonoBehaviour:
   topShadowRadius: 0.3
   topShadowOffset: {x: 0, y: 0.6}
   bIsSapling: 0
+  burnVfx: {fileID: 5181458758004607594}
   bLastHitByPlayer: 1
 --- !u!114 &7941305713547832146
 MonoBehaviour:
@@ -1109,6 +1110,7 @@ Transform:
   - {fileID: 6678741940421909089}
   - {fileID: 617128361773259236}
   - {fileID: 3993460315790235935}
+  - {fileID: 4672503381611423248}
   m_Father: {fileID: 5074767916962781381}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!210 &1655148195158419423
@@ -1553,6 +1555,73 @@ Transform:
   - {fileID: 3026278503823795546}
   m_Father: {fileID: 8807973435922821681}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &5015414583481590492
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4672503381611423248}
+  - component: {fileID: 5181458758004607594}
+  m_Layer: 0
+  m_Name: VFX_TreeBurn
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &4672503381611423248
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5015414583481590492}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8807973435922821681}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5181458758004607594
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5015414583481590492}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb23a9f80403ddd4683744c7c3c682cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.VFX.VFX_TreeBurn
+  burnMaterial: {fileID: 2100000, guid: d8ad609845fea474fa07ae56672c3606, type: 2}
+  sortingLayerName: Objects
+  backSortingOrder: -1
+  frontSortingOrder: 10
+  wispCount: 3
+  backWispCount: 1
+  canopyHalfWidthPx: 11
+  canopyMinYPx: 12
+  canopyMaxYPx: 38
+  hoverRadiusPx: 1.2
+  bobAmplitudePx: 1.5
+  bobPeriodMin: 1.2
+  bobPeriodMax: 2
+  tipMinPx: 4
+  tipMaxPx: 8
+  trailInterval: 0.04
+  tongueCount: 4
+  tongueMaxPx: 9
+  emberRate: 14
+  igniteDuration: 0.15
+  extinguishDuration: 0.35
+  heavyLoadCount: 8
+  glowScale: 1
 --- !u!1 &7060879601644615028
 GameObject:
   m_ObjectHideFlags: 0

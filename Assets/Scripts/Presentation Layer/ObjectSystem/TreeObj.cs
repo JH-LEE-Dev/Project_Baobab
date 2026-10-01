@@ -190,6 +190,16 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // 과열 버프 중 드론 전이에 맞았을 때의 지속 피해 (평타와 중첩 가능)
     private Coroutine droneOverheatDotCoroutine;
 
+    // 화상(위 두 지속 피해 중 하나라도 돌고 있는 상태)을 보여 주는 푸른 여우불 루프 이펙트. 나무 프리팹의 비활성 자식이고 이 나무가 켜고 끈다.
+    [SerializeField] private PresentationLayer.VFX.VFX_TreeBurn burnVfx;
+
+    private void RefreshBurnVfx()
+    {
+        if (burnVfx == null) return;
+
+        burnVfx.SetBurning(overheatDotCoroutine != null || droneOverheatDotCoroutine != null);
+    }
+
     public void ApplyOverheatDot(float _damagePerTick, int _tickCount, float _tickInterval)
     {
         // 이 타격 자체가 치명타였다면 TakeDamage 안에서 이미 죽어 풀로 반환되어 비활성화된 뒤이므로,
@@ -201,6 +211,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
             StopCoroutine(overheatDotCoroutine); // 같은 나무 재타격 시 리셋
         }
         overheatDotCoroutine = StartCoroutine(OverheatDotRoutine(_damagePerTick, _tickCount, _tickInterval, false));
+        RefreshBurnVfx();
     }
 
     public void ApplyDroneOverheatDot(float _damagePerTick, int _tickCount, float _tickInterval)
@@ -212,6 +223,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
             StopCoroutine(droneOverheatDotCoroutine); // 같은 나무 드론 재타격 시 리셋
         }
         droneOverheatDotCoroutine = StartCoroutine(OverheatDotRoutine(_damagePerTick, _tickCount, _tickInterval, true));
+        RefreshBurnVfx();
     }
 
     private IEnumerator OverheatDotRoutine(float _damagePerTick, int _tickCount, float _tickInterval, bool _isDrone)
@@ -231,6 +243,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         {
             overheatDotCoroutine = null;
         }
+
+        RefreshBurnVfx(); // 두 지속 피해가 모두 끝났다면 화상 이펙트가 꺼지는 연출을 시작한다
     }
 
     public void SetCellPos(Vector3Int _cellPos)
@@ -390,6 +404,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
             StopCoroutine(droneOverheatDotCoroutine);
             droneOverheatDotCoroutine = null;
         }
+
+        // 지속 피해를 끊은 만큼 화상 이펙트도 연출 없이 즉시 끈다(풀 재사용 시 새 나무에 남지 않게)
+        if (burnVfx != null) burnVfx.StopImmediate();
 
         if (treeVisualComponent != null)
         {
@@ -754,6 +771,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         }
 
         bDead = true;
+        if (burnVfx != null) burnVfx.StopImmediate(); // 죽은 나무에는 화상 이펙트가 남지 않는다
     }
 
     // 이 나무의 등급이 회생으로 도달할 수 있는 최대 셰이더 단계.
