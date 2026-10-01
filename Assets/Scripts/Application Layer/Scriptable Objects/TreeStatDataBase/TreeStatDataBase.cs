@@ -32,14 +32,28 @@ public class TreeStatDataBase : ScriptableObject
     /// </summary>
     public TreeStatData Get(TreeType _type)
     {
-        TreeStatData data = treeStatDatas.Find(x => x.treeType == _type);
+        // 나무 스폰마다 호출되므로 클로저를 만드는 List.Find 대신 인덱스 루프를 쓴다(첫 일치 항목, 없으면 default).
+        TreeStatData data = default;
+        int statCount = treeStatDatas.Count;
+        for (int i = 0; i < statCount; i++)
+        {
+            if (treeStatDatas[i].treeType == _type)
+            {
+                data = treeStatDatas[i];
+                break;
+            }
+        }
 
         if (BuildInfo.IsDemo && demoHpOverrides != null)
         {
-            int overrideIndex = demoHpOverrides.FindIndex(x => x.treeType == _type);
-            if (overrideIndex >= 0)
+            int overrideCount = demoHpOverrides.Count;
+            for (int i = 0; i < overrideCount; i++)
             {
-                data.hp = demoHpOverrides[overrideIndex].hp;
+                if (demoHpOverrides[i].treeType == _type)
+                {
+                    data.hp = demoHpOverrides[i].hp;
+                    break;
+                }
             }
         }
 

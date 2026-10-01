@@ -419,7 +419,7 @@ public class CharacterAnimator : MonoBehaviour
             ParticleSystem effect = vfxComponent.Play("Dust", spawnPosition, Quaternion.identity);
             if (effect != null && baseSR != null)
             {
-                vfxComponent.SetSortingSettings(effect, baseSR.sortingLayerName, baseSR.sortingOrder);
+                vfxComponent.SetSortingSettings(effect, baseSR.sortingLayerID, baseSR.sortingOrder);
             }
         }
 

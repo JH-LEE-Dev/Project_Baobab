@@ -21,6 +21,7 @@ public class EnvironmentInteractionManager : MonoBehaviour
     private readonly List<IStaticCollidable> nearbyCollidables = new List<IStaticCollidable>(16);
     private readonly HashSet<TreeObj> currentlyFadedTrees = new HashSet<TreeObj>();
     private readonly List<TreeObj> treesToReset = new List<TreeObj>(8);
+    private readonly List<IStaticCollidable> shadowScanResults = new List<IStaticCollidable>(32);
 
     private const float FADED_ALPHA = 0.5f;
     private const float NORMAL_ALPHA = 1.0f;
@@ -188,14 +189,20 @@ public class EnvironmentInteractionManager : MonoBehaviour
             }
         }
 
-        // 던전 나무
-        if (!_isInShadow && inDungeonObjectManager != null)
+        // 던전 나무 - 활성 나무 전체(최대 수천 그루)를 돌지 않고, 그림자가 닿을 수 있는 최대 거리 안의 후보만 공간 해시로 모은다.
+        // 탐색 반경은 IsUnderShadow의 조기 탈출 조건(반경 × max(1, 장축배율) + 0.5)에 충돌 오프셋 상한까지 더한 보수적 값이라
+        // 후보 집합이 "조기 탈출을 통과할 수 있는 나무"의 상위 집합이 되고, 결과(bool)는 전체 순회와 같다.
+        // (TreeObj.ShadowLengthScaleOverride는 0이라 장축배율은 전역 값에서 유도된다 - IsUnderShadow와 같은 식)
+        if (!_isInShadow && inDungeonObjectManager != null && inDungeonObjectManager.ActiveTrees.Count > 0 && CollisionSystem.Instance != null)
         {
-            var _activeTrees = inDungeonObjectManager.ActiveTrees;
-            for (int i = 0; i < _activeTrees.Count; i++)
+            float _treeScaleY = Mathf.Lerp(1.0f, _shadowScaleY * 3.0f, shadowLengthDamping);
+            float _scanRadius = inDungeonObjectManager.MaxTreeTopShadowRadius * Mathf.Max(1.0f, _treeScaleY) + 0.5f
+                + inDungeonObjectManager.MaxTreeCollisionOffsetMagnitude;
+
+            CollisionSystem.Instance.GetCollidablesInRadius(_unitPos, _scanRadius, treeLayer, shadowScanResults);
+            for (int i = 0; i < shadowScanResults.Count; i++)
             {
-                if (_activeTrees[i] == null) continue;
-                if (IsUnderShadow(_unitPos, _activeTrees[i], _invShadowRot, _shadowScaleY))
+                if (shadowScanResults[i] is TreeObj _tree && IsUnderShadow(_unitPos, _tree, _invShadowRot, _shadowScaleY))
                 {
                     _isInShadow = true;
                     break;

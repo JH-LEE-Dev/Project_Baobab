@@ -44,6 +44,28 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
 
     public Boomerang ThrowBoomerang(Vector3 _origin, Vector3 _direction, float _maxDistance, Transform _returnTarget, Action _onFinished, bool _bIsOverheat = false, bool _bPlayHaptic = false)
     {
+        Boomerang boomerang = PrepareBoomerang(_bIsOverheat, _bPlayHaptic);
+        if (boomerang == null) return null;
+
+        boomerang.Launch(_origin, _direction, _maxDistance, _returnTarget, _onFinished);
+        return boomerang;
+    }
+
+    /// <summary>
+    /// 완료 콜백으로 부메랑 자신을 넘기는 오버로드. 호출자가 발사마다 클로저를 만들지 않고 캐싱된 핸들러 하나를 재사용할 수 있다.
+    /// </summary>
+    public Boomerang ThrowBoomerang(Vector3 _origin, Vector3 _direction, float _maxDistance, Transform _returnTarget, Action<Boomerang> _onFinished, bool _bIsOverheat = false, bool _bPlayHaptic = false)
+    {
+        Boomerang boomerang = PrepareBoomerang(_bIsOverheat, _bPlayHaptic);
+        if (boomerang == null) return null;
+
+        boomerang.Launch(_origin, _direction, _maxDistance, _returnTarget, _onFinished);
+        return boomerang;
+    }
+
+    // 풀에서 꺼내 스탯/상태를 세팅한다(발사 직전 공통 처리).
+    private Boomerang PrepareBoomerang(bool _bIsOverheat, bool _bPlayHaptic)
+    {
         if (boomerangPool == null || statComponent == null) return null;
 
         Boomerang boomerang = boomerangPool.Get();
@@ -80,7 +102,6 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
         // 풀에서 재사용되므로 이전 소유자(캐릭터/NPC)의 값이 남지 않도록 매번 덮어쓴다.
         boomerang.SetPlayHaptic(_bPlayHaptic);
 
-        boomerang.Launch(_origin, _direction, _maxDistance, _returnTarget, _onFinished);
         return boomerang;
     }
 

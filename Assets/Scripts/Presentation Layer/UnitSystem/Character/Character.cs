@@ -130,6 +130,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     [SerializeField] private float itemSensorRadius = 0.35f;
     private float itemDetectionInterval = 0.2f; // 최적화: 0.2초 간격 (5Hz)
     private ItemDetector itemDetector;
+    // ItemDetector.Tick에 메서드 그룹을 그대로 넘기면 FixedUpdate마다 델리게이트가 새로 할당되므로 한 번만 만들어 둔다.
+    private Action<List<IStaticCollidable>> onItemsDetectedHandler;
 
     [SerializeField] private LayerMask itemLayer; // 아이템 레이어
 
@@ -143,6 +145,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private readonly List<IStaticCollidable> treeScanResults = new List<IStaticCollidable>(16);
     private readonly List<ITreeObj> activeBoomerangTargets = new List<ITreeObj>(4); // 동시에 날아가는 부메랑들이 각자 다른 나무를 노리도록 이미 타겟팅된 나무를 추적
     private readonly List<Boomerang> activeBoomerangs = new List<Boomerang>(4);
+    // 부메랑 완료 콜백. 발사마다 클로저를 만들지 않도록 하나만 캐싱한다(타겟 나무/발사 시점 과열 여부는 Boomerang이 들고 있다).
+    private Action<Boomerang> onBoomerangFinishedHandler;
     private float treeScanTimer = 0f;
     private float boomerangCooldownTimer = 0f;
     private bool bBoomerangSystemPaused = false; // WarningUI가 떠 있거나 마을로 돌아가는 동안 새로 발사되지 않도록 막는다
@@ -217,6 +221,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         // 플레이어의 감지기만 "화면에 보이는 만큼"(LogVisibleCounts)을 센다 - 교체 상한과 흡입 선점이 읽는다.
         itemDetector = new ItemDetector(transform, itemLayer, true);
+        onItemsDetectedHandler = OnItemsDetected;
 
         // 컴포넌트 할당
         characterVisualComponent = animatorObject.GetComponent<CharacterVisualComponent>();
@@ -674,7 +679,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (bCanAcquiredItem == false) return;
 
         float finalRadius = itemSensorRadius * statComponent.pickupRangeMultiplier;
-        itemDetector.Tick(Time.fixedDeltaTime, itemDetectionInterval, finalRadius, OnItemsDetected);
+        itemDetector.Tick(Time.fixedDeltaTime, itemDetectionInterval, finalRadius, onItemsDetectedHandler);
     }
 
     /// <summary>
@@ -783,19 +788,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         activeBoomerangTargets.Add(_tree);
 
-        Boomerang thrownBoomerang = null;
         // "화염 부메랑" 특성을 찍어야만 과열 상태의 부메랑 강화 효과가 적용된다.
         bool bIsOverheat = overheatComponent != null && overheatComponent.IsActive && statComponent.bBoomerangOverheatBoost;
 
-        Action onFinished = () =>
-        {
-            activeBoomerangTargets.Remove(_tree);
-            activeBoomerangs.Remove(thrownBoomerang);
-            // 과열 상태에서 발사되었다면 쿨타임 50% 감소
-            boomerangCooldownTimer = bIsOverheat ? statComponent.boomerangCooldown * 0.5f : statComponent.boomerangCooldown;
-        };
+        if (onBoomerangFinishedHandler == null) onBoomerangFinishedHandler = OnBoomerangFinished;
 
-        thrownBoomerang = boomerangCreator.ThrowBoomerang(origin, dir, maxDistance, transform, onFinished, bIsOverheat, true);
+        Boomerang thrownBoomerang = boomerangCreator.ThrowBoomerang(origin, dir, maxDistance, transform, onBoomerangFinishedHandler, bIsOverheat, true);
 
         if (thrownBoomerang == null)
         {
@@ -804,7 +802,19 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             return;
         }
 
+        // 완료 콜백이 읽을 문맥. 왕복은 Update에서 진행되므로 여기서 기록해도 콜백보다 항상 먼저다.
+        thrownBoomerang.TargetTree = _tree;
+        thrownBoomerang.LaunchedOverheat = bIsOverheat;
         activeBoomerangs.Add(thrownBoomerang);
+    }
+
+    // 부메랑 왕복이 끝나 풀로 돌아가기 직전에 1회 호출된다(예전의 발사별 클로저와 같은 처리).
+    private void OnBoomerangFinished(Boomerang _boomerang)
+    {
+        activeBoomerangTargets.Remove(_boomerang.TargetTree);
+        activeBoomerangs.Remove(_boomerang);
+        // 과열 상태에서 발사되었다면 쿨타임 50% 감소
+        boomerangCooldownTimer = _boomerang.LaunchedOverheat ? statComponent.boomerangCooldown * 0.5f : statComponent.boomerangCooldown;
     }
 
     // 캐릭터가 죽거나 던전을 나가는 등 왕복이 끝나기 전에 상태를 리셋해야 할 때, 날아가고 있던

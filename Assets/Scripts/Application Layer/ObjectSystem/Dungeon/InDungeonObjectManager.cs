@@ -195,6 +195,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     
     public IReadOnlyList<LootType> CurrentOwnedLoots => currentOwnedLoots;
 
+    // 나무 이벤트 핸들러 델리게이트 캐시. 메서드 그룹을 그대로 += / -= 하면 Get/Release마다
+    // 델리게이트가 새로 할당되므로(생애당 27개) 처음 한 번만 만들어 재사용한다.
+    private Action<TreeObj> onTreeDeadHandler;
+    private Action<TreeObj> onTreeHitHandler;
+    private Action<TreeObj> onTreeShieldBrokenHandler;
+    private Action<TreeObj> onTreeShieldRecoveringHandler;
+    private Action<TreeObj> onTreeHeatEmitHandler;
+    private Action<TreeObj, float> onTreeHeatCountdownStartedHandler;
+    private Action<TreeObj> onTreeOverheatExplosionHandler;
+    private Action<TreeObj> onTreeGemTransformedHandler;
+    private Action<TreeObj> onTreeAboutToDieHandler;
+
     // 최적화: 인덱스 기반 관리로 HashSet 제거
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(2500);
     public IReadOnlyList<TreeObj> ActiveTrees => activeTrees;
@@ -354,6 +366,27 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // 스윕마다 쓰는 타격 목록 - 잔상으로 여러 스윕이 동시에 돌 수 있어 스윕별로 하나씩 빌려 쓰고 돌려놓는다.
     private readonly Stack<List<ConstellationBeamHit>> spareConstellationBeamHitLists = new Stack<List<ConstellationBeamHit>>();
+
+    // 포자막 연쇄 폭발/별똥별 착탄 범위 판정용 결과 리스트 풀. 연쇄 폭발은 재귀로 중첩되므로 호출마다 하나씩 빌려 쓰고 돌려준다.
+    private readonly Stack<List<IStaticCollidable>> spareExplosionScanLists = new Stack<List<IStaticCollidable>>();
+
+    private List<IStaticCollidable> RentExplosionScanList()
+    {
+        return 0 < spareExplosionScanLists.Count ? spareExplosionScanLists.Pop() : new List<IStaticCollidable>(32);
+    }
+
+    private void ReturnExplosionScanList(List<IStaticCollidable> _list)
+    {
+        _list.Clear();
+        spareExplosionScanLists.Push(_list);
+    }
+
+    // 활성 나무의 그림자 반경/충돌 오프셋 상한. EnvironmentInteractionManager가 그림자 판정 후보를 공간 해시로 모을 때
+    // 보수적인 탐색 반경을 잡는 데 쓴다. 한 번 커지면 줄이지 않는다(상한이므로 결과에 영향 없음).
+    private float maxTreeTopShadowRadius = 0f;
+    private float maxTreeCollisionOffsetMagnitude = 0f;
+    public float MaxTreeTopShadowRadius => maxTreeTopShadowRadius;
+    public float MaxTreeCollisionOffsetMagnitude => maxTreeCollisionOffsetMagnitude;
 
     // 히트박스 계산용 버퍼 - 계산은 콜백 없이 동기로 끝나므로 하나를 공유해도 안전하다.
     private readonly List<IStaticCollidable> constellationScanBuffer = new List<IStaticCollidable>(64);
@@ -1597,28 +1630,49 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         return new TreeData(type, grade, treeVisualDataBase.Get(type), statData);
     }
 
+    private void EnsureTreeEventHandlers()
+    {
+        if (onTreeDeadHandler != null) return;
+
+        onTreeDeadHandler = OnTreeDead;
+        onTreeHitHandler = OnTreeHit;
+        onTreeShieldBrokenHandler = OnTreeShieldBroken;
+        onTreeShieldRecoveringHandler = OnTreeShieldRecovering;
+        onTreeHeatEmitHandler = OnTreeHeatEmit;
+        onTreeHeatCountdownStartedHandler = OnTreeHeatCountdownStarted;
+        onTreeOverheatExplosionHandler = OnTreeOverheatExplosion;
+        onTreeGemTransformedHandler = OnTreeGemTransformed;
+        onTreeAboutToDieHandler = OnTreeAboutToDie;
+    }
+
     private void OnGetTree(TreeObj _tree)
     {
+        EnsureTreeEventHandlers();
+
         _tree.IsPooled = false;
         _tree.ApplyData(CalculateRandomTreeData());
-        _tree.TreeDeadEvent -= OnTreeDead;
-        _tree.TreeDeadEvent += OnTreeDead;
-        _tree.TreeGetHitEvent -= OnTreeHit;
-        _tree.TreeGetHitEvent += OnTreeHit;
-        _tree.TreeShieldBrokenEvent -= OnTreeShieldBroken;
-        _tree.TreeShieldBrokenEvent += OnTreeShieldBroken;
-        _tree.TreeShieldRecoveringEvent -= OnTreeShieldRecovering;
-        _tree.TreeShieldRecoveringEvent += OnTreeShieldRecovering;
-        _tree.TreeHeatEmitEvent -= OnTreeHeatEmit;
-        _tree.TreeHeatEmitEvent += OnTreeHeatEmit;
-        _tree.TreeHeatCountdownStartedEvent -= OnTreeHeatCountdownStarted;
-        _tree.TreeHeatCountdownStartedEvent += OnTreeHeatCountdownStarted;
-        _tree.TreeOverheatExplosionEvent -= OnTreeOverheatExplosion;
-        _tree.TreeOverheatExplosionEvent += OnTreeOverheatExplosion;
-        _tree.TreeGemTransformedEvent -= OnTreeGemTransformed;
-        _tree.TreeGemTransformedEvent += OnTreeGemTransformed;
-        _tree.TreeAboutToDieEvent -= OnTreeAboutToDie;
-        _tree.TreeAboutToDieEvent += OnTreeAboutToDie;
+
+        if (_tree.TopShadowRadius > maxTreeTopShadowRadius) maxTreeTopShadowRadius = _tree.TopShadowRadius;
+        float treeOffsetMagnitude = _tree.Offset.magnitude;
+        if (treeOffsetMagnitude > maxTreeCollisionOffsetMagnitude) maxTreeCollisionOffsetMagnitude = treeOffsetMagnitude;
+        _tree.TreeDeadEvent -= onTreeDeadHandler;
+        _tree.TreeDeadEvent += onTreeDeadHandler;
+        _tree.TreeGetHitEvent -= onTreeHitHandler;
+        _tree.TreeGetHitEvent += onTreeHitHandler;
+        _tree.TreeShieldBrokenEvent -= onTreeShieldBrokenHandler;
+        _tree.TreeShieldBrokenEvent += onTreeShieldBrokenHandler;
+        _tree.TreeShieldRecoveringEvent -= onTreeShieldRecoveringHandler;
+        _tree.TreeShieldRecoveringEvent += onTreeShieldRecoveringHandler;
+        _tree.TreeHeatEmitEvent -= onTreeHeatEmitHandler;
+        _tree.TreeHeatEmitEvent += onTreeHeatEmitHandler;
+        _tree.TreeHeatCountdownStartedEvent -= onTreeHeatCountdownStartedHandler;
+        _tree.TreeHeatCountdownStartedEvent += onTreeHeatCountdownStartedHandler;
+        _tree.TreeOverheatExplosionEvent -= onTreeOverheatExplosionHandler;
+        _tree.TreeOverheatExplosionEvent += onTreeOverheatExplosionHandler;
+        _tree.TreeGemTransformedEvent -= onTreeGemTransformedHandler;
+        _tree.TreeGemTransformedEvent += onTreeGemTransformedHandler;
+        _tree.TreeAboutToDieEvent -= onTreeAboutToDieHandler;
+        _tree.TreeAboutToDieEvent += onTreeAboutToDieHandler;
     }
 
     /// <summary>
@@ -1769,15 +1823,16 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 전제로 코드를 덧붙이면 바로 깨지는 함정이라, 오해를 남기지 않도록 지운다.
         // 풀 안에 있는지는 IsPooled로 판단한다.
         _tree.ResetTree();
-        _tree.TreeDeadEvent -= OnTreeDead;
-        _tree.TreeGetHitEvent -= OnTreeHit;
-        _tree.TreeShieldBrokenEvent -= OnTreeShieldBroken;
-        _tree.TreeShieldRecoveringEvent -= OnTreeShieldRecovering;
-        _tree.TreeHeatEmitEvent -= OnTreeHeatEmit;
-        _tree.TreeHeatCountdownStartedEvent -= OnTreeHeatCountdownStarted;
-        _tree.TreeOverheatExplosionEvent -= OnTreeOverheatExplosion;
-        _tree.TreeGemTransformedEvent -= OnTreeGemTransformed;
-        _tree.TreeAboutToDieEvent -= OnTreeAboutToDie;
+        EnsureTreeEventHandlers();
+        _tree.TreeDeadEvent -= onTreeDeadHandler;
+        _tree.TreeGetHitEvent -= onTreeHitHandler;
+        _tree.TreeShieldBrokenEvent -= onTreeShieldBrokenHandler;
+        _tree.TreeShieldRecoveringEvent -= onTreeShieldRecoveringHandler;
+        _tree.TreeHeatEmitEvent -= onTreeHeatEmitHandler;
+        _tree.TreeHeatCountdownStartedEvent -= onTreeHeatCountdownStartedHandler;
+        _tree.TreeOverheatExplosionEvent -= onTreeOverheatExplosionHandler;
+        _tree.TreeGemTransformedEvent -= onTreeGemTransformedHandler;
+        _tree.TreeAboutToDieEvent -= onTreeAboutToDieHandler;
         //_tree.transform.position = new Vector2(-10000f, -10000f);
         _tree.gameObject.SetActive(false);
     }
@@ -2249,27 +2304,34 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (CollisionSystem.Instance == null) return;
 
         // 재귀적인 연쇄 폭발(TakeDamage -> ShieldBrokenEvent -> TriggerShieldExplosion) 도중
-        // 공유 버퍼가 덮어써지는 것을 막기 위해 매 호출마다 로컬 리스트를 사용한다.
-        List<IStaticCollidable> scanResults = new List<IStaticCollidable>(32);
-        CollisionSystem.Instance.GetCollidablesInRadius(_source.Position, range, treeLayerForExplosion.value, scanResults);
-
-        Vector3 centerPos = _source.transform.position;
-        float rangeSq = range * range;
-
-        for (int i = 0; i < scanResults.Count; i++)
+        // 공유 버퍼가 덮어써지지 않도록 호출마다 풀에서 리스트를 하나씩 빌려 쓴다(중첩 호출은 각자 다른 리스트를 받는다).
+        List<IStaticCollidable> scanResults = RentExplosionScanList();
+        try
         {
-            if (scanResults[i] is TreeObj tree && tree != _source && tree.bCanApplyDamage)
-            {
-                Vector3 targetPos = tree.transform.position;
-                float dx = targetPos.x - centerPos.x;
-                float dy = (targetPos.y - centerPos.y) * 2f; // 등각 타원 보정 (ShockWave와 동일 공식)
-                float isoDistSq = dx * dx + dy * dy;
+            CollisionSystem.Instance.GetCollidablesInRadius(_source.Position, range, treeLayerForExplosion.value, scanResults);
 
-                if (isoDistSq <= rangeSq)
+            Vector3 centerPos = _source.transform.position;
+            float rangeSq = range * range;
+
+            for (int i = 0; i < scanResults.Count; i++)
+            {
+                if (scanResults[i] is TreeObj tree && tree != _source && tree.bCanApplyDamage)
                 {
-                    tree.TakeDamage(damage);
+                    Vector3 targetPos = tree.transform.position;
+                    float dx = targetPos.x - centerPos.x;
+                    float dy = (targetPos.y - centerPos.y) * 2f; // 등각 타원 보정 (ShockWave와 동일 공식)
+                    float isoDistSq = dx * dx + dy * dy;
+
+                    if (isoDistSq <= rangeSq)
+                    {
+                        tree.TakeDamage(damage);
+                    }
                 }
             }
+        }
+        finally
+        {
+            ReturnExplosionScanList(scanResults);
         }
     }
 
@@ -2892,25 +2954,32 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         if (CollisionSystem.Instance == null) return;
 
-        List<IStaticCollidable> scanResults = new List<IStaticCollidable>(32);
-        CollisionSystem.Instance.GetCollidablesInRadius(_landingPos, StarGazeImpactRange, treeLayerForExplosion.value, scanResults);
-
-        float rangeSq = StarGazeImpactRange * StarGazeImpactRange;
-
-        for (int i = 0; i < scanResults.Count; i++)
+        List<IStaticCollidable> scanResults = RentExplosionScanList();
+        try
         {
-            if (scanResults[i] is TreeObj tree && tree.bCanApplyDamage)
-            {
-                Vector3 targetPos = tree.transform.position;
-                float dx = targetPos.x - _landingPos.x;
-                float dy = (targetPos.y - _landingPos.y) * 2f; // 등각 타원 보정
-                float isoDistSq = dx * dx + dy * dy;
+            CollisionSystem.Instance.GetCollidablesInRadius(_landingPos, StarGazeImpactRange, treeLayerForExplosion.value, scanResults);
 
-                if (isoDistSq <= rangeSq)
+            float rangeSq = StarGazeImpactRange * StarGazeImpactRange;
+
+            for (int i = 0; i < scanResults.Count; i++)
+            {
+                if (scanResults[i] is TreeObj tree && tree.bCanApplyDamage)
                 {
-                    tree.TakeDamage(StarGazeDamage);
+                    Vector3 targetPos = tree.transform.position;
+                    float dx = targetPos.x - _landingPos.x;
+                    float dy = (targetPos.y - _landingPos.y) * 2f; // 등각 타원 보정
+                    float isoDistSq = dx * dx + dy * dy;
+
+                    if (isoDistSq <= rangeSq)
+                    {
+                        tree.TakeDamage(StarGazeDamage);
+                    }
                 }
             }
+        }
+        finally
+        {
+            ReturnExplosionScanList(scanResults);
         }
     }
 

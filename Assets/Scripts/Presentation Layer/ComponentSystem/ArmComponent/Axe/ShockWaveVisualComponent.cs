@@ -14,6 +14,8 @@ public class ShockWaveVisualComponent : MonoBehaviour
     private ShockWave shockWave;
     private SpriteRenderer sourceRenderer;
     private Quaternion initialRotation;
+    // 정적 메서드 그룹도 델리게이트 변환마다 할당되므로(C# 9) 한 번만 만들어 둔다.
+    private static readonly Action<ShockWaveVisualRunner> cachedReturnVisualRunner = ReturnVisualRunner;
 
     public virtual void Initialize(ShockWave _shockWave)
     {
@@ -49,7 +51,7 @@ public class ShockWaveVisualComponent : MonoBehaviour
 
         if (visualRunner == null || shockWave == null) return;
 
-        visualRunner.SetOnStopped(ReturnVisualRunner);
+        visualRunner.SetOnStopped(cachedReturnVisualRunner);
         visualRunner.Play(new ShockWaveVisualRunner.PlayData
         {
             Owner = transform,

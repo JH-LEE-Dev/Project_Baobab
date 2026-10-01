@@ -114,6 +114,13 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private TileBase[] bloomWaterDecoTilesToApply;
     private TileBase[] waterStencilTiles;
     private TileBase[] groundStencilTiles;
+    // 외부 바다 확장 영역 배열(5종, 약 41k칸) - 던전 진입마다 약 1.6MB를 새로 할당하지 않도록 크기가 같으면 재사용한다.
+    private TileBase[] extWaterTilesCache;
+    private TileBase[] extWaterCollisionTilesCache;
+    private TileBase[] extWaterStencilTilesCache;
+    private TileBase[] extBloomWaterDecoTilesCache;
+    private TileBase[] extWaterDecoTilesCache;
+    private int extTilesCacheSize = -1;
     private int[] cellToIndex;
     private bool[] isShoreline;
     private float halfCellY;
@@ -1601,11 +1608,30 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         int extSize = extW * extH;
 
         // 확장 영역 타일 배열 (Corner 제외, Corner는 원본 범위 150x150에서만 ApplyTiles를 통해 적용됨)
-        TileBase[] extWaterTiles = new TileBase[extSize];
-        TileBase[] extWaterCollisionTiles = new TileBase[extSize];
-        TileBase[] extWaterStencilTiles = new TileBase[extSize];
-        TileBase[] extBloomWaterDecoTiles = new TileBase[extSize];
-        TileBase[] extWaterDecoTiles = new TileBase[extSize];
+        // 크기가 같으면 재사용하고 비운다(새 배열과 똑같이 전부 null에서 시작해야 continue로 건너뛴 칸이 비어 있다).
+        if (extTilesCacheSize != extSize)
+        {
+            extWaterTilesCache = new TileBase[extSize];
+            extWaterCollisionTilesCache = new TileBase[extSize];
+            extWaterStencilTilesCache = new TileBase[extSize];
+            extBloomWaterDecoTilesCache = new TileBase[extSize];
+            extWaterDecoTilesCache = new TileBase[extSize];
+            extTilesCacheSize = extSize;
+        }
+        else
+        {
+            Array.Clear(extWaterTilesCache, 0, extSize);
+            Array.Clear(extWaterCollisionTilesCache, 0, extSize);
+            Array.Clear(extWaterStencilTilesCache, 0, extSize);
+            Array.Clear(extBloomWaterDecoTilesCache, 0, extSize);
+            Array.Clear(extWaterDecoTilesCache, 0, extSize);
+        }
+
+        TileBase[] extWaterTiles = extWaterTilesCache;
+        TileBase[] extWaterCollisionTiles = extWaterCollisionTilesCache;
+        TileBase[] extWaterStencilTiles = extWaterStencilTilesCache;
+        TileBase[] extBloomWaterDecoTiles = extBloomWaterDecoTilesCache;
+        TileBase[] extWaterDecoTiles = extWaterDecoTilesCache;
 
         TileBase collisionTile = stageTileData.TreeCollisionTile;
         TileBase stencilTile = stageTileData.StencilTile;

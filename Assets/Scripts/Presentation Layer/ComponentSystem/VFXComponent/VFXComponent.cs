@@ -159,6 +159,8 @@ public class VFXComponent : MonoBehaviour
     private Dictionary<string, List<ParticleSystem>> poolDictionary;
     private Dictionary<string, VFXPoolData> configDictionary;
     private List<ParticleSystem> masterList;
+    // 풀 인스턴스 → 헬퍼 조회표. Get/Play/Stop마다 GetComponent를 다시 하지 않도록 생성 시 한 번만 채운다.
+    private Dictionary<ParticleSystem, VFXPoolInstanceHelper> helperLookup;
     private bool isInitialized = false;
 
 
@@ -179,6 +181,7 @@ public class VFXComponent : MonoBehaviour
         poolDictionary = new Dictionary<string, List<ParticleSystem>>(_dataCount);
         configDictionary = new Dictionary<string, VFXPoolData>(_dataCount);
         masterList = new List<ParticleSystem>();
+        helperLookup = new Dictionary<ParticleSystem, VFXPoolInstanceHelper>();
 
         for (int i = 0; i < _dataCount; i++)
         {
@@ -261,7 +264,7 @@ public class VFXComponent : MonoBehaviour
             ParticleSystem _effect = _poolList[i];
             if (null != _effect && false == _effect.gameObject.activeSelf)
             {
-                VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
+                VFXPoolInstanceHelper _helper = GetHelper(_effect);
                 if (null != _helper && null != _helper.TargetTransform)
                 {
                     // 직전 반납이 비활성 상태에서 일어났다면 재부모화가 지연 예약되어 있을 수 있다.
@@ -320,7 +323,7 @@ public class VFXComponent : MonoBehaviour
             if (null == _effect)
                 continue;
 
-            VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
+            VFXPoolInstanceHelper _helper = GetHelper(_effect);
             if (null == _helper)
                 continue;
 
@@ -381,7 +384,7 @@ public class VFXComponent : MonoBehaviour
         if (null == _effect || true == VFXPoolInstanceHelper.IsQuitting)
             return;
 
-        VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
+        VFXPoolInstanceHelper _helper = GetHelper(_effect);
         Transform _target = (null != _helper && null != _helper.TargetTransform) ? _helper.TargetTransform : _effect.transform;
 
         _target.SetParent(_parent);
@@ -407,7 +410,7 @@ public class VFXComponent : MonoBehaviour
         if (null == _effect || true == VFXPoolInstanceHelper.IsQuitting)
             return;
 
-        VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
+        VFXPoolInstanceHelper _helper = GetHelper(_effect);
         Transform _target = (null != _helper && null != _helper.TargetTransform) ? _helper.TargetTransform : _effect.transform;
 
         _target.SetParent(_settings.Parent);
@@ -437,7 +440,7 @@ public class VFXComponent : MonoBehaviour
             // 자식 파티클 색상 덮어쓰기 여부 판정
             if (true == _settings.OverrideChildrenColor)
             {
-                ParticleSystem[] _children = _effect.GetComponentsInChildren<ParticleSystem>(true);
+                ParticleSystem[] _children = (null != _helper && null != _helper.ChildSystems) ? _helper.ChildSystems : _effect.GetComponentsInChildren<ParticleSystem>(true);
                 if (null != _children)
                 {
                     int _len = _children.Length;
@@ -469,9 +472,16 @@ public class VFXComponent : MonoBehaviour
         if (null == masterList)
             return;
 
-        if (true == masterList.Contains(_effect))
+        // 조회표에 있으면 풀 인스턴스가 확실하므로 masterList 선형 탐색을 건너뛴다.
+        VFXPoolInstanceHelper _helper = null;
+        bool _isPooled = (null != helperLookup && true == helperLookup.TryGetValue(_effect, out _helper))
+            || true == masterList.Contains(_effect);
+
+        if (true == _isPooled)
         {
-            VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
+            if (null == _helper)
+                _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
+
             if (null != _helper)
             {
                 _helper.Stop(_immediate);
@@ -507,7 +517,7 @@ public class VFXComponent : MonoBehaviour
             ParticleSystem _effect = masterList[i];
             if (null != _effect && true == _effect.gameObject.activeSelf)
             {
-                VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
+                VFXPoolInstanceHelper _helper = GetHelper(_effect);
                 if (null != _helper)
                     _helper.ReturnToPool();
                 else
@@ -535,7 +545,7 @@ public class VFXComponent : MonoBehaviour
             ParticleSystem _effect = masterList[i];
             if (null != _effect)
             {
-                VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
+                VFXPoolInstanceHelper _helper = GetHelper(_effect);
                 if (null != _helper && null != _helper.TargetTransform && _helper.TargetTransform != _effect.transform)
                     Destroy(_helper.TargetTransform.gameObject);
                 else
@@ -545,6 +555,9 @@ public class VFXComponent : MonoBehaviour
 
         if (null != masterList)
             masterList.Clear();
+
+        if (null != helperLookup)
+            helperLookup.Clear();
 
         if (null != poolDictionary)
             poolDictionary.Clear();
@@ -561,6 +574,16 @@ public class VFXComponent : MonoBehaviour
     public void SetSortingSettings(ParticleSystem _effect, string _layerName, int _order)
     {
         ApplySortingSettings(_effect, _layerName, _order);
+    }
+
+    /// <summary>
+    /// 소팅 레이어를 ID로 지정하는 오버로드.
+    /// 매 프레임 동기화하는 호출부(LogItem의 Shiny, 발소리 먼지 등)는 Renderer.sortingLayerName 게터가
+    /// 호출마다 새 string을 만들기 때문에 이쪽을 사용한다.
+    /// </summary>
+    public void SetSortingSettings(ParticleSystem _effect, int _layerID, int _order)
+    {
+        ApplySortingSettings(_effect, _layerID, _order);
     }
 
     /// <summary>
@@ -695,10 +718,8 @@ public class VFXComponent : MonoBehaviour
             if (null != _helper)
                 _helper.Initialize(transform, _uiParentGo.transform);
 
-            ApplyPoolInstanceSettings(_newInstance);
-
-            if (null != masterList)
-                masterList.Add(_newInstance);
+            ApplyPoolInstanceSettings(_newInstance, _helper);
+            RegisterInstance(_newInstance, _helper);
 
             return _newInstance;
         }
@@ -714,10 +735,8 @@ public class VFXComponent : MonoBehaviour
             if (null != _helper)
                 _helper.Initialize(transform);
 
-            ApplyPoolInstanceSettings(_newInstance);
-
-            if (null != masterList)
-                masterList.Add(_newInstance);
+            ApplyPoolInstanceSettings(_newInstance, _helper);
+            RegisterInstance(_newInstance, _helper);
 
             return _newInstance;
         }
@@ -734,12 +753,12 @@ public class VFXComponent : MonoBehaviour
     /// 단발(비루프) 이펙트는 수명이 1초 안팎이라 화면 밖에서도 끝까지 돌리는 비용이 사실상 없다.
     /// 루프 이펙트는 화면 밖 일시정지가 의도된 절약이므로 프리팹 설정을 그대로 둔다.
     /// </summary>
-    private static void ApplyPoolInstanceSettings(ParticleSystem _root)
+    private static void ApplyPoolInstanceSettings(ParticleSystem _root, VFXPoolInstanceHelper _helper)
     {
         var _rootMain = _root.main;
         _rootMain.stopAction = ParticleSystemStopAction.Callback;
 
-        ParticleSystem[] _systems = _root.GetComponentsInChildren<ParticleSystem>(true);
+        ParticleSystem[] _systems = (null != _helper && null != _helper.ChildSystems) ? _helper.ChildSystems : _root.GetComponentsInChildren<ParticleSystem>(true);
         if (null == _systems)
             return;
 
@@ -754,6 +773,30 @@ public class VFXComponent : MonoBehaviour
             if (false == _main.loop)
                 _main.cullingMode = ParticleSystemCullingMode.AlwaysSimulate;
         }
+    }
+
+    /// <summary>
+    /// 새 풀 인스턴스를 전체 목록과 헬퍼 조회표에 등록합니다.
+    /// </summary>
+    private void RegisterInstance(ParticleSystem _instance, VFXPoolInstanceHelper _helper)
+    {
+        if (null != masterList)
+            masterList.Add(_instance);
+
+        if (null != helperLookup && null != _helper)
+            helperLookup[_instance] = _helper;
+    }
+
+    /// <summary>
+    /// 풀 인스턴스의 헬퍼를 조회표에서 찾습니다. 풀 밖에서 주입된 인스턴스(또는 Initialize 전)는
+    /// 예전과 같이 컴포넌트 조회로 대응합니다.
+    /// </summary>
+    private VFXPoolInstanceHelper GetHelper(ParticleSystem _effect)
+    {
+        if (null != helperLookup && true == helperLookup.TryGetValue(_effect, out VFXPoolInstanceHelper _helper))
+            return _helper;
+
+        return _effect.GetComponent<VFXPoolInstanceHelper>();
     }
 
     /// <summary>
@@ -793,7 +836,15 @@ public class VFXComponent : MonoBehaviour
         if (null == _effect)
             return;
 
-        Renderer[] _renderers = _effect.GetComponentsInChildren<Renderer>(true);
+        bool _setLayer = false == string.IsNullOrEmpty(_layerName);
+        int _layerID = _setLayer ? SortingLayer.NameToID(_layerName) : -1;
+
+        // 마지막으로 적용한 값과 같으면(매 프레임 동기화 호출부) 렌더러 순회를 통째로 건너뛴다.
+        VFXPoolInstanceHelper _helper = GetHelper(_effect);
+        if (null != _helper && true == _helper.IsSortingAlreadyApplied(_setLayer, _layerID, _order))
+            return;
+
+        Renderer[] _renderers = ResolveChildRenderers(_effect, _helper);
         if (null == _renderers)
             return;
 
@@ -803,13 +854,59 @@ public class VFXComponent : MonoBehaviour
             Renderer _renderer = _renderers[i];
             if (null != _renderer)
             {
-                if (false == string.IsNullOrEmpty(_layerName))
+                if (true == _setLayer)
                 {
                     _renderer.sortingLayerName = _layerName;
                 }
                 _renderer.sortingOrder = _order;
             }
         }
+
+        if (null != _helper)
+            _helper.MarkSortingApplied(_setLayer, _layerID, _order);
+    }
+
+    /// <summary>
+    /// 이펙트 및 하위 자식들의 모든 렌더러 소팅 레이어 ID와 순서를 설정합니다. (문자열 할당 없음)
+    /// </summary>
+    private void ApplySortingSettings(ParticleSystem _effect, int _layerID, int _order)
+    {
+        if (null == _effect)
+            return;
+
+        VFXPoolInstanceHelper _helper = GetHelper(_effect);
+        if (null != _helper && true == _helper.IsSortingAlreadyApplied(true, _layerID, _order))
+            return;
+
+        Renderer[] _renderers = ResolveChildRenderers(_effect, _helper);
+        if (null == _renderers)
+            return;
+
+        int _count = _renderers.Length;
+        for (int i = 0; i < _count; i++)
+        {
+            Renderer _renderer = _renderers[i];
+            if (null != _renderer)
+            {
+                _renderer.sortingLayerID = _layerID;
+                _renderer.sortingOrder = _order;
+            }
+        }
+
+        if (null != _helper)
+            _helper.MarkSortingApplied(true, _layerID, _order);
+    }
+
+    /// <summary>
+    /// 소팅 적용 대상 렌더러 배열을 돌려줍니다. 헬퍼가 캐시를 갖고 있으면 그것을, 없으면 예전처럼 새로 수집합니다.
+    /// </summary>
+    private static Renderer[] ResolveChildRenderers(ParticleSystem _effect, VFXPoolInstanceHelper _helper)
+    {
+        Renderer[] _renderers = (null != _helper) ? _helper.GetChildRenderers() : null;
+        if (null == _renderers)
+            _renderers = _effect.GetComponentsInChildren<Renderer>(true);
+
+        return _renderers;
     }
 
     /// <summary>
@@ -869,11 +966,67 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     private bool hasOriginalLocalScale = false;
     // 마지막으로 재생을 시작한 시각. 풀이 가득 찼을 때 가장 오래된 인스턴스를 골라 회수하는 기준이다.
     private float lastPlayTime = float.MinValue;
+    // 풀 인스턴스의 계층은 생성 후 바뀌지 않으므로 자식 파티클 시스템은 Initialize에서 한 번만 수집한다.
+    private ParticleSystem[] childSystems;
+    // 자식 렌더러는 일부 VFX 스크립트(VFX_LaserHit, VFX_ChargeVortex 등)가 Awake에서 메쉬 자식을 만들기 때문에
+    // 루트가 한 번이라도 활성화된 뒤 첫 사용 시점에 수집한다.
+    private Renderer[] childRenderers;
+    // 마지막으로 적용한 소팅 값. 같은 값이 다시 들어오면 렌더러 순회를 건너뛴다. 재생/반납 시 무효화된다.
+    private bool bSortingApplied;
+    private bool bSortingLayerApplied;
+    private int lastSortingLayerID = -1;
+    private int lastSortingOrder;
+    private WaitForSeconds cachedReturnWait;
+    private float cachedReturnWaitSeconds = -1f;
 
 
     // 퍼블릭 초기화 및 제어 메서드
 
     public float LastPlayTime => lastPlayTime;
+
+    /// <summary>자기 자신을 포함한 모든 자식 ParticleSystem(비활성 포함). Initialize에서 한 번 수집된다.</summary>
+    public ParticleSystem[] ChildSystems => childSystems;
+
+    /// <summary>
+    /// 자기 자신을 포함한 모든 자식 Renderer(비활성 포함)를 돌려줍니다.
+    /// 아직 한 번도 활성화되지 않았으면(Awake 미실행 → 런타임 생성 자식이 없을 수 있음) null을 돌려주고 캐시하지 않습니다.
+    /// </summary>
+    public Renderer[] GetChildRenderers()
+    {
+        if (null == childRenderers && true == gameObject.activeInHierarchy)
+            childRenderers = GetComponentsInChildren<Renderer>(true);
+
+        return childRenderers;
+    }
+
+    /// <summary>
+    /// 직전에 적용한 소팅 값과 동일한지 확인합니다. 레이어를 지정하지 않는 호출(_setLayer=false)은 순서만 비교합니다.
+    /// </summary>
+    public bool IsSortingAlreadyApplied(bool _setLayer, int _layerID, int _order)
+    {
+        if (false == bSortingApplied)
+            return false;
+
+        if (lastSortingOrder != _order)
+            return false;
+
+        if (true == _setLayer && (false == bSortingLayerApplied || lastSortingLayerID != _layerID))
+            return false;
+
+        return true;
+    }
+
+    public void MarkSortingApplied(bool _setLayer, int _layerID, int _order)
+    {
+        bSortingApplied = true;
+        lastSortingOrder = _order;
+
+        if (true == _setLayer)
+        {
+            bSortingLayerApplied = true;
+            lastSortingLayerID = _layerID;
+        }
+    }
 
     public static bool IsQuitting => isQuitting;
 
@@ -896,6 +1049,9 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     public void MarkPlayed()
     {
         lastPlayTime = Time.time;
+        // 새 주인에게 넘어가는 시점이므로 소팅 캐시를 무효화해 첫 적용은 반드시 수행되게 한다.
+        bSortingApplied = false;
+        bSortingLayerApplied = false;
     }
 
     public void Initialize(Transform _parent, Transform _target = null)
@@ -905,6 +1061,10 @@ public class VFXPoolInstanceHelper : MonoBehaviour
         particleSys = GetComponent<ParticleSystem>();
         isReturning = false;
         lastPlayTime = float.MinValue;
+        childSystems = GetComponentsInChildren<ParticleSystem>(true);
+        childRenderers = null;
+        bSortingApplied = false;
+        bSortingLayerApplied = false;
 
         // 이 시점의 로컬 스케일은 아직 아무 재부모화도 거치지 않은 프리팹 원본 값이다
         // (CreateNewInstance가 Instantiate(..., worldPositionStays:false) 직후에 이 메서드를 호출한다).
@@ -955,7 +1115,7 @@ public class VFXPoolInstanceHelper : MonoBehaviour
             var _main = particleSys.main;
             _maxLifetime = _main.startLifetime.constantMax;
 
-            ParticleSystem[] _children = particleSys.GetComponentsInChildren<ParticleSystem>(true);
+            ParticleSystem[] _children = (null != childSystems) ? childSystems : particleSys.GetComponentsInChildren<ParticleSystem>(true);
             if (null != _children)
             {
                 int _len = _children.Length;
@@ -973,7 +1133,15 @@ public class VFXPoolInstanceHelper : MonoBehaviour
             }
         }
 
-        yield return new WaitForSeconds(_maxLifetime + 0.2f);
+        // 이 헬퍼의 정지 코루틴은 동시에 하나만 돌므로 대기 객체를 재사용해도 안전하다.
+        float _waitSeconds = _maxLifetime + 0.2f;
+        if (null == cachedReturnWait || cachedReturnWaitSeconds != _waitSeconds)
+        {
+            cachedReturnWait = new WaitForSeconds(_waitSeconds);
+            cachedReturnWaitSeconds = _waitSeconds;
+        }
+
+        yield return cachedReturnWait;
         ReturnToPool();
         stopCoroutine = null;
     }
@@ -991,6 +1159,8 @@ public class VFXPoolInstanceHelper : MonoBehaviour
         }
 
         isReturning = true;
+        bSortingApplied = false;
+        bSortingLayerApplied = false;
 
         if (null != stopCoroutine)
         {

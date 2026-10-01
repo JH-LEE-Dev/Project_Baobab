@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class AxeComponent : WeaponComponent, IAxeComponent
@@ -32,6 +33,12 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     float IAxeComponent.durability => durability;
 
     private bool bCanAttack = false;
+
+    // 쿨다운 코루틴 핸들 - 문자열(nameof) 기반 Start/StopCoroutine은 리플렉션 조회를 하므로 핸들로 다룬다.
+    private Coroutine attackCoolDownCoroutine;
+    // 쿨타임은 콤보 스택(0~10) × 스킬 레벨 조합의 유한한 값만 가지므로 값별로 WaitForSeconds를 한 번만 만든다.
+    private readonly Dictionary<float, WaitForSeconds> coolTimeWaitCache = new Dictionary<float, WaitForSeconds>(16);
+    private const int CoolTimeWaitCacheLimit = 64;
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -124,7 +131,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
         AttackEvent?.Invoke();
         axeAnimation.PlayReturn(OnAttackFinish);
-        StartCoroutine(nameof(AttackCoolDownRoutine));
+        attackCoolDownCoroutine = StartCoroutine(AttackCoolDownRoutine());
     }
 
     private void OnAttackFinish()
@@ -135,7 +142,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     private System.Collections.IEnumerator AttackCoolDownRoutine()
     {
         float currentCoolTime = GetEffectiveAxeAttackCoolTime();
-        yield return new WaitForSeconds(currentCoolTime);
+        yield return GetCoolTimeWait(currentCoolTime);
 
         bAttacked = false;
 
@@ -247,7 +254,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
         if (!_boolean)
         {
-            StopCoroutine(nameof(AttackCoolDownRoutine));
+            StopAttackCoolDown();
             if (bIsSpeedReduced)
             {
                 bIsSpeedReduced = false;
@@ -278,7 +285,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     /// </summary>
     private void ResetAttackState()
     {
-        StopCoroutine(nameof(AttackCoolDownRoutine));
+        StopAttackCoolDown();
 
         if (null != axeAnimation)
         {
@@ -314,6 +321,29 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     public void SortingOrder()
     {
         spriteRenderer.sortingOrder += sortingOrder;
+    }
+
+    private void StopAttackCoolDown()
+    {
+        if (attackCoolDownCoroutine != null)
+        {
+            StopCoroutine(attackCoolDownCoroutine);
+            attackCoolDownCoroutine = null;
+        }
+    }
+
+    private WaitForSeconds GetCoolTimeWait(float _seconds)
+    {
+        if (coolTimeWaitCache.TryGetValue(_seconds, out WaitForSeconds wait))
+            return wait;
+
+        // 스탯이 연속적으로 바뀌는 비정상 상황을 대비한 상한 - 넘으면 비우고 다시 채운다.
+        if (coolTimeWaitCache.Count >= CoolTimeWaitCacheLimit)
+            coolTimeWaitCache.Clear();
+
+        wait = new WaitForSeconds(_seconds);
+        coolTimeWaitCache[_seconds] = wait;
+        return wait;
     }
 
     private float GetEffectiveAxeAttackCoolTime()

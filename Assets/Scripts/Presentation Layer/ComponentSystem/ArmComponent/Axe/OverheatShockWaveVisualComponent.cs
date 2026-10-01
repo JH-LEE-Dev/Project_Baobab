@@ -28,6 +28,8 @@ public class OverheatShockWaveVisualComponent : ShockWaveVisualComponent
     private ShockWave overheatShockWave;
     private SpriteRenderer overheatSourceRenderer;
     private Quaternion overheatInitialRotation;
+    // 정적 메서드 그룹도 델리게이트 변환마다 할당되므로(C# 9) 한 번만 만들어 둔다.
+    private static readonly Action<OverheatShockWaveParticleRunner> cachedReturnParticleRunner = ReturnParticleRunner;
 
     public override void Initialize(ShockWave _shockWave)
     {
@@ -46,7 +48,7 @@ public class OverheatShockWaveVisualComponent : ShockWaveVisualComponent
         if (overheatShockWave == null || particleMaterial == null) return;
 
         OverheatShockWaveParticleRunner runner = GetParticleRunner();
-        runner.SetOnStopped(ReturnParticleRunner);
+        runner.SetOnStopped(cachedReturnParticleRunner);
         runner.Play(new OverheatShockWaveParticleRunner.PlayData
         {
             Owner = transform,
@@ -142,6 +144,7 @@ public class OverheatShockWaveParticleRunner : MonoBehaviour
     private sealed class Particle
     {
         public SpriteRenderer Renderer;
+        public Transform Tf; // Renderer.transform 프로퍼티(네이티브 호출)를 매 프레임 반복하지 않도록 캐싱
         public Sprite[] Frames;
         public int StartFrame;
         public float Age;
@@ -180,6 +183,9 @@ public class OverheatShockWaveParticleRunner : MonoBehaviour
         EnsurePool(dust, Mathf.Max(1, data.DustPoolSize), "Dust");
         EnsurePool(stars, Mathf.Max(1, data.StarPoolSize), "Star");
         StopAllParticles();
+        // 머티리얼/소팅은 한 번의 Play 동안 상수이므로 입자가 스폰될 때마다 대입하지 않고 여기서 풀 전체에 한 번만 적용한다.
+        ApplyRendererSettings(dust);
+        ApplyRendererSettings(stars);
         timer = 0f;
         dustTimer = 0f;
         starTimer = 0f;
@@ -288,14 +294,12 @@ public class OverheatShockWaveParticleRunner : MonoBehaviour
         _particle.Active = true;
 
         SpriteRenderer renderer = _particle.Renderer;
-        renderer.sharedMaterial = data.Material;
+        Transform tf = _particle.Tf;
         renderer.sprite = _frames[_particle.StartFrame];
-        renderer.sortingLayerID = data.SortingLayerID;
-        renderer.sortingOrder = data.SortingOrder;
         renderer.enabled = true;
-        renderer.transform.position = Snap(_position);
-        renderer.transform.localScale = Vector3.one * _particle.InitialScale;
-        renderer.transform.rotation = Quaternion.Euler(0f, 0f, UnityEngine.Random.Range(0, 4) * 90f);
+        tf.position = Snap(_position);
+        tf.localScale = Vector3.one * _particle.InitialScale;
+        tf.rotation = Quaternion.Euler(0f, 0f, UnityEngine.Random.Range(0, 4) * 90f);
         ApplyColor(_particle, 1f);
     }
 
@@ -310,11 +314,12 @@ public class OverheatShockWaveParticleRunner : MonoBehaviour
             float progress = Mathf.Clamp01(particle.Age / particle.Lifetime);
             int remainingFrames = particle.Frames.Length - particle.StartFrame;
             int frameOffset = Mathf.Min(remainingFrames - 1, Mathf.FloorToInt(progress * remainingFrames));
+            Transform tf = particle.Tf;
             particle.Renderer.sprite = particle.Frames[particle.StartFrame + frameOffset];
-            particle.Renderer.transform.position = Snap(particle.Renderer.transform.position + particle.Velocity * Time.deltaTime);
-            particle.Renderer.transform.Rotate(0f, 0f, particle.Spin * Time.deltaTime);
+            tf.position = Snap(tf.position + particle.Velocity * Time.deltaTime);
+            tf.Rotate(0f, 0f, particle.Spin * Time.deltaTime);
             float fade = 1f - Mathf.SmoothStep(0.12f, 1f, progress);
-            particle.Renderer.transform.localScale = Vector3.one * particle.InitialScale * Mathf.Lerp(1f, 0.35f, progress);
+            tf.localScale = Vector3.one * particle.InitialScale * Mathf.Lerp(1f, 0.35f, progress);
             ApplyColor(particle, fade);
 
             if (progress >= 1f)
@@ -334,7 +339,7 @@ public class OverheatShockWaveParticleRunner : MonoBehaviour
 
         Color color = _particle.Color;
         color.a *= _alpha;
-        propertyBlock.Clear();
+        // 블록에는 _TintColor 하나만 쓰므로 Clear 없이 덮어써도 결과가 같다.
         propertyBlock.SetColor(TintColorID, color);
         _particle.Renderer.SetPropertyBlock(propertyBlock);
     }
@@ -347,7 +352,18 @@ public class OverheatShockWaveParticleRunner : MonoBehaviour
             child.transform.SetParent(transform, false);
             SpriteRenderer renderer = child.AddComponent<SpriteRenderer>();
             renderer.enabled = false;
-            _pool.Add(new Particle { Renderer = renderer });
+            _pool.Add(new Particle { Renderer = renderer, Tf = child.transform });
+        }
+    }
+
+    private void ApplyRendererSettings(List<Particle> _pool)
+    {
+        for (int i = 0; i < _pool.Count; i++)
+        {
+            SpriteRenderer renderer = _pool[i].Renderer;
+            renderer.sharedMaterial = data.Material;
+            renderer.sortingLayerID = data.SortingLayerID;
+            renderer.sortingOrder = data.SortingOrder;
         }
     }
 

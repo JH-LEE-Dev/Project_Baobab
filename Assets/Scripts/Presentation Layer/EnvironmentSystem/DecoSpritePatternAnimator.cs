@@ -34,6 +34,9 @@ public class DecoSpritePatternAnimator : MonoBehaviour
 
     private Coroutine routine;
     private readonly FramePattern fallbackFramePattern = new FramePattern();
+    // 프레임 간격은 런타임에 바뀌지 않으므로 대기 객체를 한 번만 만든다(인스턴스당 코루틴 1개라 재사용 안전).
+    private WaitForSeconds frameWait;
+    private float frameWaitDuration = -1f;
 
     private CustomSortable customSortable;
 
@@ -136,8 +139,12 @@ public class DecoSpritePatternAnimator : MonoBehaviour
     {
         if (patterns == null || patterns.Length == 0)
         {
-            fallbackFramePattern.name = "Fallback";
-            fallbackFramePattern.frameIndices = ParsePattern(fallbackPattern);
+            // 폴백 패턴 문자열은 고정이므로 한 번만 파싱한다.
+            if (fallbackFramePattern.frameIndices == null)
+            {
+                fallbackFramePattern.name = "Fallback";
+                fallbackFramePattern.frameIndices = ParsePattern(fallbackPattern);
+            }
             return fallbackFramePattern;
         }
 
@@ -178,10 +185,16 @@ public class DecoSpritePatternAnimator : MonoBehaviour
             yield break;
         }
 
+        if (frameWait == null || frameWaitDuration != frameDuration)
+        {
+            frameWait = new WaitForSeconds(frameDuration);
+            frameWaitDuration = frameDuration;
+        }
+
         for (int i = 0; i < pattern.frameIndices.Length; i++)
         {
             SetFrame(pattern.frameIndices[i]);
-            yield return new WaitForSeconds(frameDuration);
+            yield return frameWait;
         }
     }
 

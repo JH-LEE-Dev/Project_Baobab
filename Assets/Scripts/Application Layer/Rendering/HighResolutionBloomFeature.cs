@@ -38,6 +38,11 @@ public sealed class HighResolutionBloomFeature : ScriptableRendererFeature
 
     private HighResolutionBloomPass bloomPass;
 
+    // Object.name 게터는 호출마다 managed string을 새로 만들고 AddRenderPasses는 카메라마다 매 프레임 불리므로
+    // 카메라별 이름 판정 결과를 캐싱한다. 대상 이름 문자열이 바뀌면(인스펙터 편집) 캐시를 비운다.
+    private readonly Dictionary<Camera, bool> cameraNameMatchCache = new Dictionary<Camera, bool>(4);
+    private string cachedTargetCameraName;
+
     public override void Create()
     {
         if (settings.bloomLayerMask == 0)
@@ -81,8 +86,7 @@ public sealed class HighResolutionBloomFeature : ScriptableRendererFeature
             return;
         }
 
-        if (!string.IsNullOrWhiteSpace(settings.targetCameraName) &&
-            !string.Equals(camera.name, settings.targetCameraName, StringComparison.Ordinal))
+        if (!string.IsNullOrWhiteSpace(settings.targetCameraName) && !IsTargetCamera(camera))
         {
             return;
         }
@@ -91,6 +95,23 @@ public sealed class HighResolutionBloomFeature : ScriptableRendererFeature
         bloomPass.requiresIntermediateTexture = true;
         bloomPass.Setup(settings);
         renderer.EnqueuePass(bloomPass);
+    }
+
+    private bool IsTargetCamera(Camera camera)
+    {
+        if (!ReferenceEquals(cachedTargetCameraName, settings.targetCameraName))
+        {
+            cachedTargetCameraName = settings.targetCameraName;
+            cameraNameMatchCache.Clear();
+        }
+
+        if (!cameraNameMatchCache.TryGetValue(camera, out bool matches))
+        {
+            matches = string.Equals(camera.name, settings.targetCameraName, StringComparison.Ordinal);
+            cameraNameMatchCache[camera] = matches;
+        }
+
+        return matches;
     }
 
     private sealed class HighResolutionBloomPass : ScriptableRenderPass

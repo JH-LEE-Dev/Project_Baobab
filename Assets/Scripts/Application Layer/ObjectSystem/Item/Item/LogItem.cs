@@ -451,7 +451,8 @@ public class LogItem : Item, IStaticCollidable
             return;
         }
 
-        vfxComponent.SetSortingSettings(particleEffect, spriteRenderer.sortingLayerName, spriteRenderer.sortingOrder + 1);
+        // sortingLayerName 게터는 호출마다 string을 할당하므로 ID 오버로드를 사용한다(매 프레임 호출됨).
+        vfxComponent.SetSortingSettings(particleEffect, spriteRenderer.sortingLayerID, spriteRenderer.sortingOrder + 1);
     }
 
     /// <summary>

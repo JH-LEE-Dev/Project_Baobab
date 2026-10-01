@@ -75,6 +75,11 @@ public class Boomerang : MonoBehaviour
     private float returnTimer;
     private Transform returnTarget;
     private Action onFinished;
+    private Action<Boomerang> onFinishedWithSelf;
+
+    // 발사자(Character)가 기록해 두는 추적 문맥. 완료 콜백(Action<Boomerang>)에서 클로저 없이 읽는다.
+    public ITreeObj TargetTree { get; set; }
+    public bool LaunchedOverheat { get; set; }
 
     private float frameTimer;
     private int currentFrameIndex;
@@ -219,6 +224,15 @@ public class Boomerang : MonoBehaviour
     }
 
     /// <summary>
+    /// 완료 콜백으로 부메랑 자신을 넘기는 오버로드. 호출자가 발사마다 클로저를 만들지 않고 캐싱된 핸들러 하나를 재사용할 수 있다.
+    /// </summary>
+    public void Launch(Vector3 _origin, Vector3 _direction, float _maxDistance, Transform _returnTarget, Action<Boomerang> _onFinished)
+    {
+        Launch(_origin, _direction, _maxDistance, _returnTarget, (Action)null);
+        onFinishedWithSelf = _onFinished;
+    }
+
+    /// <summary>
     /// 부메랑을 발사한다. _returnTarget은 매 프레임 위치를 다시 읽으므로, 캐릭터가 이동 중이어도
     /// 그 방향으로 자연스럽게 돌아온다. _onFinished는 왕복이 끝나 풀로 돌아가기 직전에 1회 호출된다.
     /// </summary>
@@ -230,6 +244,7 @@ public class Boomerang : MonoBehaviour
         maxDistance = Mathf.Max(_maxDistance, 0.1f);
         returnTarget = _returnTarget;
         onFinished = _onFinished;
+        onFinishedWithSelf = null;
 
         if (currentThrowSpeed <= 0f) currentThrowSpeed = throwSpeed;
 
@@ -691,8 +706,12 @@ public class Boomerang : MonoBehaviour
         returnTarget = null;
 
         Action callback = onFinished;
+        Action<Boomerang> callbackWithSelf = onFinishedWithSelf;
         onFinished = null;
+        onFinishedWithSelf = null;
         callback?.Invoke();
+        callbackWithSelf?.Invoke(this);
+        TargetTree = null;
 
         ReturnToPoolEvent?.Invoke(this);
     }

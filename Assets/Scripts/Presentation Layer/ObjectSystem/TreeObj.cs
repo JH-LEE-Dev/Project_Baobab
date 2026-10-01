@@ -186,6 +186,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // 과열 버프 중 도끼 평타에 맞았을 때의 지속 피해. 이 나무 자신이 코루틴을 들고 있어야,
     // 나무가 죽어 풀에서 재사용되어도(ResetTree) 엉뚱한 새 나무에 데미지가 잘못 들어가지 않는다.
     private Coroutine overheatDotCoroutine;
+    // 화상 틱 대기 객체. 틱 간격은 호출부 상수(0.5초)라 모든 나무가 하나를 공유한다(간격이 바뀌면 재생성).
+    private static WaitForSeconds cachedDotTickWait;
+    private static float cachedDotTickWaitInterval = -1f;
 
     // 과열 버프 중 드론 전이에 맞았을 때의 지속 피해 (평타와 중첩 가능)
     private Coroutine droneOverheatDotCoroutine;
@@ -258,9 +261,16 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     private IEnumerator OverheatDotRoutine(float _damagePerTick, int _tickCount, float _tickInterval, bool _isDrone)
     {
+        if (cachedDotTickWait == null || cachedDotTickWaitInterval != _tickInterval)
+        {
+            cachedDotTickWait = new WaitForSeconds(_tickInterval);
+            cachedDotTickWaitInterval = _tickInterval;
+        }
+        WaitForSeconds tickWait = cachedDotTickWait;
+
         for (int i = 0; i < _tickCount; i++)
         {
-            yield return new WaitForSeconds(_tickInterval);
+            yield return tickWait;
             if (!bCanApplyDamage) break;
 
             bool bPlayFeedback = TryConsumeDotTickFeedback();

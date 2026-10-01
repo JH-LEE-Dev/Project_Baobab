@@ -62,6 +62,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     // 시각적 연출을 위한 변수
     private Coroutine transferCoroutine;
     private const float FLY_INTERVAL = 0.075f;
+    // 전송 연출 간격 대기 객체 - itemTransferSpeedMul이 바뀔 때만 재생성한다(아이템마다 new WaitForSeconds를 피한다).
+    private WaitForSeconds flyIntervalWait;
+    private float flyIntervalWaitSeconds = -1f;
 
     private struct FlyingTransferItem
     {
@@ -726,6 +729,17 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         return false;
     }
 
+    private WaitForSeconds GetFlyIntervalWait()
+    {
+        float seconds = FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul);
+        if (flyIntervalWait == null || flyIntervalWaitSeconds != seconds)
+        {
+            flyIntervalWait = new WaitForSeconds(seconds);
+            flyIntervalWaitSeconds = seconds;
+        }
+        return flyIntervalWait;
+    }
+
     private IEnumerator TransferOneSlotVisualRoutine(InventorySlot _sourceSlot, bool _toCharacter)
     {
         transferringSlots.Add(_sourceSlot);
@@ -771,14 +785,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     // 같은 빈 슬롯을 이중으로 예약하는 것을 막아준다.
                 }
 
-                LogItemData visualData = new LogItemData
-                {
-                    treeType = sourceData.treeType,
-                    logState = takenState,
-                    color = sourceData.color
-                };
-
-                LogItem flyingItem = logItemPoolManager.GetLogItem(visualData);
+                // GetLogItem(LogItemData)는 treeType/logState만 읽으므로 임시 LogItemData를 만들지 않고 값 오버로드를 쓴다.
+                LogItem flyingItem = logItemPoolManager.GetLogItem(sourceData.treeType, takenState);
                 flyingItem.SetFlyingItemSortingLayer();
                 flyingItem.IsDropItem(false);
                 flyingItem.spriteRenderer.sortingOrder = 100;
@@ -810,7 +818,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
                 flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = _toCharacter, fromCharacter = !_toCharacter });
 
-                yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
+                yield return GetFlyIntervalWait();
             }
 
             if (_sourceSlot.count == 0)
@@ -1564,7 +1572,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     _npcInventory.ItemDeleted(slot);
                 }
 
-                yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
+                yield return GetFlyIntervalWait();
             }
 
             if (slotTransferredAny)
@@ -1699,14 +1707,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 LogState takenState = slot.TakeOneItem();
                 Sound.PlayUI(SoundID.OutItem);
 
-                LogItemData visualData = new LogItemData
-                {
-                    treeType = sourceData.treeType,
-                    logState = takenState,
-                    color = sourceData.color
-                };
-
-                LogItem flyingItem = logItemPoolManager.GetLogItem(visualData);
+                // GetLogItem(LogItemData)는 treeType/logState만 읽으므로 임시 LogItemData를 만들지 않고 값 오버로드를 쓴다.
+                LogItem flyingItem = logItemPoolManager.GetLogItem(sourceData.treeType, takenState);
                 flyingItem.SetFlyingItemSortingLayer();
                 flyingItem.IsDropItem(false);
                 flyingItem.spriteRenderer.sortingOrder = 100;
@@ -1740,7 +1742,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     ContainerUpdatedEvent?.Invoke();
                 }
 
-                yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
+                yield return GetFlyIntervalWait();
             }
 
             if (transferredAny)

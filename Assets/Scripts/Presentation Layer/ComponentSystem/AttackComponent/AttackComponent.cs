@@ -105,6 +105,10 @@ public class AttackComponent : PComponent
     public IStaticCollidable nearestTarget { get; private set; }
 
     private AxeExtraAttackCreator axeExtraAttackCreator;
+    // 충격파 생성 지연 대기 객체(값이 바뀔 때만 재생성)와 마스터리 "충격파만 적중" 콜백 - 공격마다 재할당하지 않는다.
+    private WaitForSeconds shockWaveCreateDelayWait;
+    private float shockWaveCreateDelayWaitSeconds = -1f;
+    private Action raiseShockWaveOnlyHitHandler;
 
     [SerializeField] private GameObject ellipseRadiusIndicator;
     private Material ellipseIndicatorMat;
@@ -653,7 +657,8 @@ public class AttackComponent : PComponent
     private void FireMasteryShockWave(Vector3 _centerPos, bool _bAxeHit)
     {
         Vector3 direction = (mouseTransform - _centerPos).normalized;
-        StartCoroutine(CreateShockWaveRoutine(_centerPos, direction, _bAxeHit ? null : RaiseShockWaveOnlyHit));
+        if (raiseShockWaveOnlyHitHandler == null) raiseShockWaveOnlyHitHandler = RaiseShockWaveOnlyHit;
+        StartCoroutine(CreateShockWaveRoutine(_centerPos, direction, _bAxeHit ? null : raiseShockWaveOnlyHitHandler));
     }
 
     private void RaiseShockWaveOnlyHit()
@@ -663,7 +668,13 @@ public class AttackComponent : PComponent
 
     private System.Collections.IEnumerator CreateShockWaveRoutine(Vector3 _position, Vector3 _direction, Action _onFirstTreeHit = null)
     {
-        yield return new WaitForSeconds(ctx.characterStat.shockWaveCreateDelay);
+        float createDelay = ctx.characterStat.shockWaveCreateDelay;
+        if (shockWaveCreateDelayWait == null || shockWaveCreateDelayWaitSeconds != createDelay)
+        {
+            shockWaveCreateDelayWait = new WaitForSeconds(createDelay);
+            shockWaveCreateDelayWaitSeconds = createDelay;
+        }
+        yield return shockWaveCreateDelayWait;
 
         if (axeExtraAttackCreator != null)
         {

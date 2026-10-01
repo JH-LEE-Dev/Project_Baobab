@@ -125,6 +125,16 @@ public class Drone : MonoBehaviour
     private float chargingVfxFadeTimer; // 페이드 잔여 시간(초). 파티클(자식 포함) 최대 수명 + 여유
     private ParticleSystemRenderer[] chargingVfxRenderers; // chargingVfx 루트 렌더러 - Muzzle Y좌표 기준으로 매 프레임 정렬 순서를 맞춘다(픽셀 소용돌이 메쉬가 이 값 + 1로 그려진다)
     private PresentationLayer.VFX.VFX_ChargeVortex chargingVortex; // 충전 이펙트의 픽셀 소용돌이. 과열 색 전환과 발사 연출(Release)을 전달한다
+    // 풀 인스턴스(DroneCharging 하드 캡 3개)별 자식 조회 결과. 계층이 고정이라 처음 한 번만 훑고 재사용한다(스윙마다 배열 2개 + 계층 탐색 3회 절약).
+    private struct ChargingVfxCacheEntry
+    {
+        public ParticleSystemRenderer[] renderers;
+        public PresentationLayer.VFX.VFX_ChargeVortex vortex;
+        public float maxLifetime;
+    }
+    private readonly Dictionary<ParticleSystem, ChargingVfxCacheEntry> chargingVfxCache = new Dictionary<ParticleSystem, ChargingVfxCacheEntry>(4);
+    // 피격 이펙트 풀 인스턴스별 VFX_LaserHit 조회 결과(연쇄 타격마다 GetComponentInChildren을 반복하지 않도록).
+    private readonly Dictionary<ParticleSystem, PresentationLayer.VFX.VFX_LaserHit> atkHitVfxCache = new Dictionary<ParticleSystem, PresentationLayer.VFX.VFX_LaserHit>(16);
     private bool bChargingVfxReleased; // 페이드 원인이 발사(흡수 연출)인지. 다음 충전이 시작될 때 발사 연출은 끝까지 재생하게 은퇴 슬롯으로 넘기고, 취소 소화는 즉시 끊는다
     private ParticleSystem retiredChargingVfx; // 새 충전에 자리를 넘기고 발사 연출을 마무리 중인 직전 이펙트(은퇴 슬롯, 하나만 쓴다)
     private Transform retiredChargingVfxParent; // 은퇴 이펙트의 소유 확인용 부모(chargingVfxParent와 같은 역할)
@@ -333,7 +343,11 @@ public class Drone : MonoBehaviour
         if (hitVfx == null) return;
 
         // Play가 같은 프레임에 활성화(OnEnable에서 색 초기화)한 뒤이므로 여기서 과열 색(평소 노랑, 과열 파랑)을 덮어쓴다
-        PresentationLayer.VFX.VFX_LaserHit laserHit = hitVfx.GetComponentInChildren<PresentationLayer.VFX.VFX_LaserHit>(true);
+        if (!atkHitVfxCache.TryGetValue(hitVfx, out PresentationLayer.VFX.VFX_LaserHit laserHit))
+        {
+            laserHit = hitVfx.GetComponentInChildren<PresentationLayer.VFX.VFX_LaserHit>(true);
+            atkHitVfxCache[hitVfx] = laserHit;
+        }
         if (laserHit != null) laserHit.SetOverheat(isOverheat);
     }
 
@@ -1161,11 +1175,18 @@ public class Drone : MonoBehaviour
         // ParticleSystemRenderer를 캐싱해둔다 - CustomSortable이 SpriteRenderer만 자동 수집하므로(Drone.Awake),
         // 파티클 렌더러는 정렬 순서를 직접 챙겨줘야 한다. 픽셀 소용돌이 메쉬는 이 루트 렌더러의 정렬 순서를 따라 그린다.
         // 페이드에 쓸 최대 수명도 같은 자리에서 한 번만 계산해둔다(취소마다 자식을 다시 훑지 않도록).
-        chargingVfxRenderers = chargingVfx.GetComponentsInChildren<ParticleSystemRenderer>(true);
-        chargingVfxMaxLifetime = ComputeChargingVfxMaxLifetime();
+        if (!chargingVfxCache.TryGetValue(chargingVfx, out ChargingVfxCacheEntry cacheEntry))
+        {
+            cacheEntry.renderers = chargingVfx.GetComponentsInChildren<ParticleSystemRenderer>(true);
+            cacheEntry.vortex = chargingVfx.GetComponentInChildren<PresentationLayer.VFX.VFX_ChargeVortex>(true);
+            cacheEntry.maxLifetime = ComputeChargingVfxMaxLifetime(chargingVfx);
+            chargingVfxCache[chargingVfx] = cacheEntry;
+        }
+        chargingVfxRenderers = cacheEntry.renderers;
+        chargingVfxMaxLifetime = cacheEntry.maxLifetime;
 
         // 소용돌이의 충전 진행도(원 크기, 입자 수)가 임팩트 순간 꽉 차도록 남은 시간과 현재 과열 색을 넘긴다
-        chargingVortex = chargingVfx.GetComponentInChildren<PresentationLayer.VFX.VFX_ChargeVortex>(true);
+        chargingVortex = cacheEntry.vortex;
         if (chargingVortex != null)
         {
             chargingVortex.SetOverheat(isOverheat);
@@ -1340,12 +1361,12 @@ public class Drone : MonoBehaviour
 
     // 본체 + 자식 파티클 중 가장 긴 startLifetime. VFXPoolInstanceHelper.CoWaitAndReturnToPool과 같은 기준이다.
     // PlayChargingVfx에서 한 번만 호출해 chargingVfxMaxLifetime에 보관한다.
-    private float ComputeChargingVfxMaxLifetime()
+    private static float ComputeChargingVfxMaxLifetime(ParticleSystem _vfx)
     {
-        if (chargingVfx == null) return 0f;
+        if (_vfx == null) return 0f;
 
-        float maxLifetime = chargingVfx.main.startLifetime.constantMax;
-        ParticleSystem[] children = chargingVfx.GetComponentsInChildren<ParticleSystem>(true);
+        float maxLifetime = _vfx.main.startLifetime.constantMax;
+        ParticleSystem[] children = _vfx.GetComponentsInChildren<ParticleSystem>(true);
         for (int i = 0; i < children.Length; i++)
         {
             if (children[i] == null) continue;

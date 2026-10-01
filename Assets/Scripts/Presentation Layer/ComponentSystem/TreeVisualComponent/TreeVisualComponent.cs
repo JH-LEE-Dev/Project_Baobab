@@ -114,6 +114,9 @@ public class TreeVisualComponent : MonoBehaviour
     private bool isOutlineActive = false;
     private bool bDisableOutline = false;
     private float currentAlpha;
+    // FadeAlpha의 DOTween.To에 메서드 그룹을 넘기면 호출마다 getter/setter 델리게이트가 할당되므로 한 번만 만든다.
+    private DG.Tweening.Core.DOGetter<float> alphaGetter;
+    private DG.Tweening.Core.DOSetter<float> alphaSetter;
     private bool isShieldActive = false;
     private bool isOnWaterActive = false;
 
@@ -235,6 +238,10 @@ public class TreeVisualComponent : MonoBehaviour
     {
         if (constellationRenderer != null)
         {
+            // ResetTree가 스폰/반환마다 false로 호출한다. 이미 같은 상태면 HDR 재적용(렌더러 7개 MPB 갱신)까지 전부 생략한다.
+            // HDR 입력값(스프라이트/실드/물 위 상태)이 바뀌는 경로는 각자 UpdateHDRStates를 호출하므로 결과는 동일하다.
+            if (constellationRenderer.gameObject.activeSelf == _active) return;
+
             constellationRenderer.gameObject.SetActive(_active);
             UpdateHDRStates();
         }
@@ -859,16 +866,9 @@ public class TreeVisualComponent : MonoBehaviour
 
     public void SetAlpha(float _alpha)
     {
+        // 투명도 트윈은 이 컴포넌트(this)를 타깃으로만 건다. 렌더러 개별 DOKill은 걸린 트윈이 없는데도
+        // DOTween의 활성 트윈 전체를 선형 탐색하므로(ResetTree마다 8회) 제거했다.
         this.DOKill(this); // 현재 스크립트 기반 float 트윈 정지
-
-        topRenderer.DOKill();
-        bottomRenderer.DOKill();
-        if (topShadowRenderer != null) topShadowRenderer.DOKill();
-        if (bottomShadowRenderer != null) bottomShadowRenderer.DOKill();
-        if (topShieldRenderer != null) topShieldRenderer.DOKill();
-        if (bottomShieldRenderer != null) bottomShieldRenderer.DOKill();
-        if (topHighlightRenderer != null) topHighlightRenderer.DOKill();
-        if (bottomHighlightRenderer != null) bottomHighlightRenderer.DOKill();
 
         ApplyAlpha(_alpha);
     }
@@ -886,20 +886,17 @@ public class TreeVisualComponent : MonoBehaviour
 
     public void FadeAlpha(float _targetAlpha, float _duration)
     {
-        this.DOKill(this); // 기존 트윈 취소
-
-        topRenderer.DOKill();
-        bottomRenderer.DOKill();
-        if (topShadowRenderer != null) topShadowRenderer.DOKill();
-        if (bottomShadowRenderer != null) bottomShadowRenderer.DOKill();
-        if (topShieldRenderer != null) topShieldRenderer.DOKill();
-        if (bottomShieldRenderer != null) bottomShieldRenderer.DOKill();
-        if (topHighlightRenderer != null) topHighlightRenderer.DOKill();
-        if (bottomHighlightRenderer != null) bottomHighlightRenderer.DOKill();
+        this.DOKill(this); // 기존 트윈 취소 (렌더러 개별 DOKill은 SetAlpha와 같은 이유로 제거)
 
         currentAlpha = topRenderer != null ? topRenderer.color.a : 1f;
 
-        DOTween.To(GetCurrentAlpha, SetCurrentAlpha, _targetAlpha, _duration).SetTarget(this);
+        if (alphaGetter == null)
+        {
+            alphaGetter = GetCurrentAlpha;
+            alphaSetter = SetCurrentAlpha;
+        }
+
+        DOTween.To(alphaGetter, alphaSetter, _targetAlpha, _duration).SetTarget(this);
     }
 
     public void SetOutline(bool _boolean)
