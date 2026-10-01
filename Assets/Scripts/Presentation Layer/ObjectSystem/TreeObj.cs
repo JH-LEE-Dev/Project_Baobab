@@ -231,14 +231,45 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         RefreshBurnVfx();
     }
 
+    // 화상 틱이 한 프레임에 타격음/피격 이펙트를 낼 수 있는 최대 그루 수.
+    // 과열 충격파는 한 번에 여러 그루에 화상을 걸어 틱이 같은 프레임에 몰린다. 타격음(동시 재생 상한 6)과 피격 이펙트
+    // 풀은 상한에 걸리면 가장 오래된 것을 빼앗아 재생하므로, 틱이 몰리면 실제 도끼 타격의 소리/이펙트가 끊긴다.
+    // 그래서 상한을 넘은 틱은 소리/이펙트만 생략한다(데미지, 체력바, 피격 플래시는 그대로).
+    private const int MaxDotTickFeedbackPerFrame = 2;
+    private static int dotTickFeedbackFrame = -1;
+    private static int dotTickFeedbackCount = 0;
+
+    // 이번 피격에서 피격 이펙트를 생략할지. 상한을 넘은 화상 틱의 TakeDamageInternal 동안에만 켜지며,
+    // InDungeonObjectManager.OnTreeHit가 TreeGetHitEvent를 받을 때 읽는다.
+    public bool bSkipHitVfx { get; private set; } = false;
+
+    private static bool TryConsumeDotTickFeedback()
+    {
+        int frame = Time.frameCount;
+        if (frame != dotTickFeedbackFrame)
+        {
+            dotTickFeedbackFrame = frame;
+            dotTickFeedbackCount = 0;
+        }
+
+        if (dotTickFeedbackCount >= MaxDotTickFeedbackPerFrame) return false;
+
+        dotTickFeedbackCount++;
+        return true;
+    }
+
     private IEnumerator OverheatDotRoutine(float _damagePerTick, int _tickCount, float _tickInterval, bool _isDrone)
     {
         for (int i = 0; i < _tickCount; i++)
         {
             yield return new WaitForSeconds(_tickInterval);
             if (!bCanApplyDamage) break;
+
+            bool bPlayFeedback = TryConsumeDotTickFeedback();
+            bSkipHitVfx = !bPlayFeedback;
             // 드론 레이저가 건 지속 피해는 도끼로 맞은 게 아니므로 도끼 타격음을 내지 않는다
-            TakeDamageInternal(_damagePerTick, false, false, !_isDrone);
+            TakeDamageInternal(_damagePerTick, false, false, !_isDrone && bPlayFeedback);
+            bSkipHitVfx = false;
         }
         if (_isDrone)
         {
@@ -380,6 +411,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         currentGemStage = 0;
         bReserved = false;
         bLastHitByPlayer = true;
+        bSkipHitVfx = false;
         SetStarMarked(false);
         SetStarGroupId(-1);
         healthComponent.Reset();

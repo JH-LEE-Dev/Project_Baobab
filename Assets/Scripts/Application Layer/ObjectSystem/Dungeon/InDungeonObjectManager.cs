@@ -1845,14 +1845,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void OnTreeHit(TreeObj _treeObj)
     {
-        // 보석 단계 나무는 전용 임팩트 이펙트만 단독 재생하고, 일반 나무는 기본 피격 이펙트를 재생한다.
-        if (true == _treeObj.bIsGemStage)
+        // 한 프레임에 몰린 화상 틱은 TreeObj가 bSkipHitVfx로 피격 이펙트 생략을 요청한다(아래 이벤트 전달은 그대로).
+        if (false == _treeObj.bSkipHitVfx)
         {
-            inDungeonVFXManager.PlayTreeGemHitVFX(_treeObj.treeVisualComponent, _treeObj.gemStage);
-        }
-        else
-        {
-            inDungeonVFXManager.PlayTreeHitVFX(_treeObj.treeVisualComponent);
+            // 보석 단계 나무는 전용 임팩트 이펙트만 단독 재생하고, 일반 나무는 기본 피격 이펙트를 재생한다.
+            if (true == _treeObj.bIsGemStage)
+            {
+                inDungeonVFXManager.PlayTreeGemHitVFX(_treeObj.treeVisualComponent, _treeObj.gemStage);
+            }
+            else
+            {
+                inDungeonVFXManager.PlayTreeHitVFX(_treeObj.treeVisualComponent);
+            }
         }
 
         if (null != currentTreeGenerationStrategy)
