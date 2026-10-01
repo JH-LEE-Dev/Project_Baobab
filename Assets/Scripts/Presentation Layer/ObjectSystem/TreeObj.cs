@@ -231,30 +231,28 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         RefreshBurnVfx();
     }
 
-    // 화상 틱이 한 프레임에 타격음/피격 이펙트를 낼 수 있는 최대 그루 수.
-    // 과열 충격파는 한 번에 여러 그루에 화상을 걸어 틱이 같은 프레임에 몰린다. 타격음(동시 재생 상한 6)과 피격 이펙트
-    // 풀은 상한에 걸리면 가장 오래된 것을 빼앗아 재생하므로, 틱이 몰리면 실제 도끼 타격의 소리/이펙트가 끊긴다.
-    // 그래서 상한을 넘은 틱은 소리/이펙트만 생략한다(데미지, 체력바, 피격 플래시는 그대로).
-    private const int MaxDotTickFeedbackPerFrame = 2;
-    private static int dotTickFeedbackFrame = -1;
-    private static int dotTickFeedbackCount = 0;
+    // 화상 틱이 타격음/피격 이펙트를 낼 수 있는 최소 간격(초). 모든 나무가 이 간격 하나를 같이 쓴다.
+    // 과열 충격파는 한 번에 여러 그루에 화상을 걸어 틱이 짧은 시간에 몰린다. 타격음(Tree_Hit 0.44초, 동시 재생 상한 6)과
+    // 피격 이펙트 풀은 상한에 걸리면 가장 오래된 것을 빼앗아 재생하므로, 틱이 몰리면 실제 도끼 타격의 소리/이펙트가 끊긴다.
+    // 0.15초 간격이면 Tree_Hit 한 번이 울리는 동안 화상 틱은 최대 3개라 상한 6 중 절반은 항상 실제 타격 몫으로 남는다.
+    // 프레임 단위가 아니라 시간 단위라 프레임레이트와 무관하다. 한 그루만 탈 때는 틱 간격(0.5초)이 더 길어 매 틱 그대로 울린다.
+    // 간격 안에 들어온 틱은 소리/이펙트만 생략한다(데미지, 체력바, 피격 플래시, 화상 루프 이펙트는 그대로).
+    private const float DotTickFeedbackMinInterval = 0.15f;
+    private static float lastDotTickFeedbackTime = float.NegativeInfinity;
 
-    // 이번 피격에서 피격 이펙트를 생략할지. 상한을 넘은 화상 틱의 TakeDamageInternal 동안에만 켜지며,
+    // 이번 피격에서 피격 이펙트를 생략할지. 간격에 걸린 화상 틱의 TakeDamageInternal 동안에만 켜지며,
     // InDungeonObjectManager.OnTreeHit가 TreeGetHitEvent를 받을 때 읽는다.
     public bool bSkipHitVfx { get; private set; } = false;
 
     private static bool TryConsumeDotTickFeedback()
     {
-        int frame = Time.frameCount;
-        if (frame != dotTickFeedbackFrame)
-        {
-            dotTickFeedbackFrame = frame;
-            dotTickFeedbackCount = 0;
-        }
+        float now = Time.time;
 
-        if (dotTickFeedbackCount >= MaxDotTickFeedbackPerFrame) return false;
+        // now < last는 플레이 모드를 다시 시작해 Time.time이 0부터 다시 흐르는데 static 값이 남은 경우다
+        // (도메인 리로드를 끈 에디터 설정). 이전 세션 값 때문에 피드백이 막히지 않도록 그대로 허용한다.
+        if (now >= lastDotTickFeedbackTime && now - lastDotTickFeedbackTime < DotTickFeedbackMinInterval) return false;
 
-        dotTickFeedbackCount++;
+        lastDotTickFeedbackTime = now;
         return true;
     }
 
