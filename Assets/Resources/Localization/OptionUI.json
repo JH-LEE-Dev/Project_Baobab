@@ -93,7 +93,7 @@
       "fr": "Illimité",
       "pt": "Sem limite",
       "es": "Sin límite",
-      "ru": "Без ограничений",
+      "ru": "Без лимита",
       "enumType": "",
       "enumValue": ""
     },
@@ -265,10 +265,10 @@
       "zhHans": "自动",
       "zhHant": "自動",
       "ja": "自動",
-      "de": "Automatisch",
+      "de": "Auto",
       "fr": "Auto",
-      "pt": "Automático",
-      "es": "Automático",
+      "pt": "Auto",
+      "es": "Auto",
       "ru": "Авто",
       "enumType": "",
       "enumValue": ""
@@ -285,7 +285,7 @@
       "fr": "Générique",
       "pt": "Genérico",
       "es": "Genérico",
-      "ru": "Универсальные",
+      "ru": "Стандарт",
       "enumType": "",
       "enumValue": ""
     },
