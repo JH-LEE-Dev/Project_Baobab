@@ -8,10 +8,13 @@ public class OverheatShockWaveVisualComponent : ShockWaveVisualComponent
     [SerializeField] private Material particleMaterial;
     [SerializeField] private Sprite[] dustFrames = Array.Empty<Sprite>();
     [SerializeField] private Sprite[] starFrames = Array.Empty<Sprite>();
-    [SerializeField] private int dustPoolSize = 28;
-    [SerializeField] private int starPoolSize = 14;
+    [SerializeField] private int dustPoolSize = 40;
+    [SerializeField] private int starPoolSize = 18;
     [SerializeField] private int dustBurstCount = 3;
     [SerializeField] private int starBurstCount = 2;
+    [SerializeField] private int maxDustBurstCount = 9;
+    [SerializeField] private int maxStarBurstCount = 6;
+    [SerializeField] private float maxParticleDensityMultiplier = 3f;
     [SerializeField] private float dustSpawnInterval = 0.04f;
     [SerializeField] private float starSpawnInterval = 0.06f;
     [SerializeField] private float particleTailDuration = 0.42f;
@@ -64,6 +67,9 @@ public class OverheatShockWaveVisualComponent : ShockWaveVisualComponent
             StarPoolSize = starPoolSize,
             DustBurstCount = dustBurstCount,
             StarBurstCount = starBurstCount,
+            MaxDustBurstCount = maxDustBurstCount,
+            MaxStarBurstCount = maxStarBurstCount,
+            MaxDensityMultiplier = maxParticleDensityMultiplier,
             DustSpawnInterval = dustSpawnInterval,
             StarSpawnInterval = starSpawnInterval,
             TailDuration = particleTailDuration,
@@ -119,6 +125,9 @@ public class OverheatShockWaveParticleRunner : MonoBehaviour
         public int StarPoolSize;
         public int DustBurstCount;
         public int StarBurstCount;
+        public int MaxDustBurstCount;
+        public int MaxStarBurstCount;
+        public float MaxDensityMultiplier;
         public float DustSpawnInterval;
         public float StarSpawnInterval;
         public float TailDuration;
@@ -157,6 +166,8 @@ public class OverheatShockWaveParticleRunner : MonoBehaviour
     private float starTimer;
     private float cachedDustInterval;
     private float cachedStarInterval;
+    private float dustCountRemainder;
+    private float starCountRemainder;
     private Vector2 cachedDirection = Vector2.right;
     private Action<OverheatShockWaveParticleRunner> onStopped;
     private bool isPlaying;
@@ -174,6 +185,8 @@ public class OverheatShockWaveParticleRunner : MonoBehaviour
         starTimer = 0f;
         cachedDustInterval = Mathf.Max(0.01f, data.DustSpawnInterval);
         cachedStarInterval = Mathf.Max(0.01f, data.StarSpawnInterval);
+        dustCountRemainder = 0f;
+        starCountRemainder = 0f;
         isPlaying = true;
         gameObject.SetActive(true);
         UpdateDirection();
@@ -223,12 +236,12 @@ public class OverheatShockWaveParticleRunner : MonoBehaviour
     private void SpawnDustBurst()
     {
         if (data.DustFrames == null || data.DustFrames.Length == 0) return;
-        int count = Mathf.Max(1, data.DustBurstCount);
+        float radius = data.InitialMaxDist + data.ExpandSpeed * Mathf.Min(timer, data.Duration);
+        int count = GetScaledBurstCount(data.DustBurstCount, data.MaxDustBurstCount, radius, ref dustCountRemainder);
         for (int i = 0; i < count; i++)
         {
             // 풀이 거의 찼을 때도 항상 같은 한쪽 각도만 살아남지 않도록 각 입자의 각도를 독립 추첨한다.
             float angle = UnityEngine.Random.Range(-data.HalfAngle, data.HalfAngle);
-            float radius = data.InitialMaxDist + data.ExpandSpeed * Mathf.Min(timer, data.Duration);
             Vector2 isoDirection = Rotate(cachedDirection, angle);
             Vector3 position = GetOrigin() + FromIso(isoDirection * (radius + UnityEngine.Random.Range(-0.06f, 0.09f)));
             // 파면보다 조금 느리게 따라가게 하여 끝 검기에 붙어 나가다가 뒤로 흩어지는 불꽃 꼬리를 만든다.
@@ -243,10 +256,11 @@ public class OverheatShockWaveParticleRunner : MonoBehaviour
     private void SpawnStarBurst()
     {
         if (data.StarFrames == null || data.StarFrames.Length == 0) return;
-        for (int i = 0; i < Mathf.Max(1, data.StarBurstCount); i++)
+        float front = data.InitialMaxDist + data.ExpandSpeed * Mathf.Min(timer, data.Duration);
+        int count = GetScaledBurstCount(data.StarBurstCount, data.MaxStarBurstCount, front, ref starCountRemainder);
+        for (int i = 0; i < count; i++)
         {
             float angle = UnityEngine.Random.Range(-data.HalfAngle * 0.85f, data.HalfAngle * 0.85f);
-            float front = data.InitialMaxDist + data.ExpandSpeed * Mathf.Min(timer, data.Duration);
             float trailStart = Mathf.Max(data.InitialMinDist, front - 0.55f);
             float trailEnd = Mathf.Max(trailStart + 0.01f, front * 0.96f);
             float radius = UnityEngine.Random.Range(trailStart, trailEnd);
@@ -359,6 +373,29 @@ public class OverheatShockWaveParticleRunner : MonoBehaviour
 
     private static Vector3 FromIso(Vector2 _position) => new Vector3(_position.x, _position.y * 0.5f, 0f);
     private static Vector3 Snap(Vector3 _position) => new Vector3(Mathf.Round(_position.x * PixelsPerUnit) / PixelsPerUnit, Mathf.Round(_position.y * PixelsPerUnit) / PixelsPerUnit, _position.z);
+
+    private int GetScaledBurstCount(int _baseCount, int _maxCount, float _frontRadius, ref float _remainder)
+    {
+        float initialRadius = Mathf.Max(data.InitialMaxDist, 0.01f);
+        float radiusMultiplier = Mathf.Clamp(
+            _frontRadius / initialRadius,
+            1f,
+            Mathf.Max(1f, data.MaxDensityMultiplier)
+        );
+
+        float desiredCount = Mathf.Min(Mathf.Max(1, _maxCount), Mathf.Max(1, _baseCount) * radiusMultiplier);
+        int count = Mathf.FloorToInt(desiredCount);
+
+        // 소수 부분을 다음 버스트로 이월하여 3→4처럼 갑자기 뛰지 않고 시간 평균상 점진적으로 증가시킨다.
+        _remainder += desiredCount - count;
+        if (_remainder >= 1f && count < _maxCount)
+        {
+            count++;
+            _remainder -= 1f;
+        }
+
+        return Mathf.Clamp(count, 1, Mathf.Max(1, _maxCount));
+    }
 
     private void StopAllParticles()
     {
