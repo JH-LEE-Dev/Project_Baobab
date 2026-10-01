@@ -240,6 +240,9 @@ public class VFXComponent : MonoBehaviour
     /// </summary>
     public ParticleSystem Get(string _tag)
     {
+        if (true == VFXPoolInstanceHelper.IsQuitting)
+            return null;
+
         if (false == isInitialized)
             Initialize();
 
@@ -375,7 +378,7 @@ public class VFXComponent : MonoBehaviour
     /// </summary>
     public void Play(ParticleSystem _effect, Vector3 _position, Quaternion _rotation, Transform _parent = null)
     {
-        if (null == _effect)
+        if (null == _effect || true == VFXPoolInstanceHelper.IsQuitting)
             return;
 
         VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
@@ -401,7 +404,7 @@ public class VFXComponent : MonoBehaviour
     /// </summary>
     public void Play(ParticleSystem _effect, VFXPlaySettings _settings)
     {
-        if (null == _effect)
+        if (null == _effect || true == VFXPoolInstanceHelper.IsQuitting)
             return;
 
         VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
@@ -857,6 +860,8 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     private bool isReturning;
     private Coroutine stopCoroutine;
     private DG.Tweening.TweenCallback cachedDeferredSetParent;
+    // 앱 종료/플레이 모드 종료가 시작된 뒤에는 풀 인스턴스의 부모를 바꾸지 않는다(파괴 중인 계층에 SetParent하면 엔진이 Transform 계층 어서션을 낸다).
+    private static bool isQuitting = false;
     // 비활성 상태에서 반납될 때 예약해두는 재부모화 트윈. 예약이 살아있는 동안 이 인스턴스가
     // 다시 대여되면 반드시 취소해야 한다(CancelPendingReparent).
     private DG.Tweening.Tween deferredReparentTween;
@@ -869,6 +874,21 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     // 퍼블릭 초기화 및 제어 메서드
 
     public float LastPlayTime => lastPlayTime;
+
+    public static bool IsQuitting => isQuitting;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void RegisterQuitGuard()
+    {
+        isQuitting = false;
+        Application.quitting -= HandleQuitting;
+        Application.quitting += HandleQuitting;
+    }
+
+    private static void HandleQuitting()
+    {
+        isQuitting = true;
+    }
 
     /// <summary>
     /// 재생 시작 시각을 기록합니다. VFXComponent.Play가 실제 Play 직전에 호출합니다.
@@ -963,6 +983,13 @@ public class VFXPoolInstanceHelper : MonoBehaviour
         if (true == isReturning)
             return;
 
+        // 종료 중에는 파티클 정지 콜백(OnParticleSystemStopped)이 파괴 중인 계층에 SetParent/SetActive를 시도하지 않도록 통째로 건너뛴다.
+        if (true == isQuitting)
+        {
+            UnityEngine.Debug.LogWarning("[VFXPoolInstanceHelper] 종료 중 ReturnToPool 호출을 건너뜀: " + name);
+            return;
+        }
+
         isReturning = true;
 
         if (null != stopCoroutine)
@@ -1033,6 +1060,9 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     private void ExecuteDeferredSetParent()
     {
         deferredReparentTween = null;
+
+        if (true == isQuitting)
+            return;
 
         if (null == targetTransform || null == originalParent)
             return;
