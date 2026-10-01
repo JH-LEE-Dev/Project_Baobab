@@ -110,6 +110,10 @@ public class HUD_LootReveal : MonoBehaviour
     // ─── 런타임 상태 ──────────────────────────────────────────────────────────
     private Coroutine revealCoroutine;
     private bool isShowing = false;
+
+    // 닫힘 페이드가 진행 중인지. isShowing은 페이드가 끝나야 false가 되므로 그 사이 들어온 Hide()(ESC/E 광클)를
+    // 걸러내지 못한다. 걸러내지 않으면 매번 닫힘 SFX가 다시 울리고 페이드 트윈이 처음부터 재시작돼 닫힘이 계속 밀린다.
+    private bool isHiding = false;
     private Material runtimeDissolveMat;
 
     private TweenCallback cachedOnHideFadeComplete;
@@ -235,6 +239,7 @@ public class HUD_LootReveal : MonoBehaviour
     {
         // 광클 락 해제: 완전히 켜져있는 상태라도 닫히는 중일 수 있으므로 무조건 초기화하고 다시 연출합니다.
         isShowing = true;
+        isHiding = false;
         gameObject.SetActive(true);
         Sound.PlayUI(SoundID.ResultUIOpen);
 
@@ -268,6 +273,14 @@ public class HUD_LootReveal : MonoBehaviour
             return;
         }
 
+        // 이미 닫히는 중이면 진행 중인 페이드를 그대로 둔다. 그 페이드의 완료 콜백이 OnHideCompleted를 보내므로
+        // 호출자(UIView_ScreenModal)의 대기 카운트도 정상적으로 풀린다.
+        if (true == isHiding)
+        {
+            return;
+        }
+
+        isHiding = true;
         Sound.PlayUI(SoundID.ResultUIClose);
 
         if (null != revealCoroutine)
@@ -284,6 +297,7 @@ public class HUD_LootReveal : MonoBehaviour
         else
         {
             isShowing = false;
+            isHiding = false;
             gameObject.SetActive(false);
             OnHideCompleted?.Invoke();
         }
@@ -295,6 +309,7 @@ public class HUD_LootReveal : MonoBehaviour
         if (0.05f >= rootCanvasGroup.alpha) 
         {
             isShowing = false;
+            isHiding = false;
             gameObject.SetActive(false);
             OnHideCompleted?.Invoke();
         }

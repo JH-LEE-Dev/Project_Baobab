@@ -986,6 +986,19 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 풀링된 단발 VFX(피격/사망/포자막 파괴 등)를 전부 즉시 멈추고 풀로 되돌립니다.
+    /// 이 VFXComponent는 GameInstaller(DontDestroyOnLoad) 하위라 던전을 나가도 살아남는다. 재생 도중
+    /// 던전을 나가거나 나무를 재생성하면 끝까지 돌지 못한 인스턴스가 활성 상태로 남아 다음 런의 풀
+    /// 상한을 잠식하므로, 나무를 전량 걷는 시점에 함께 비운다.
+    /// </summary>
+    public void StopAllPooledVFX()
+    {
+        if (vfxComponent == null) return;
+
+        vfxComponent.StopAll();
+    }
+
+    /// <summary>
     /// 나무 피격 VFX를 재생합니다. parent는 null로 고정하여 나무 오브젝트와 완전히 분리합니다.
     /// Top/Bottom 이펙트는 각각 설정된 컬러를 공유합니다.
     /// </summary>

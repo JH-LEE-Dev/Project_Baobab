@@ -22,6 +22,9 @@ public class OverheatComponent : PComponent
     
     private ParticleSystem activeVfx;
     private ParticleSystemRenderer activeVfxRenderer;
+    // 버프 종료 후 페이드아웃 중인 오라. 풀이 1개짜리 하드 캡이라, 페이드 도중 다시 과열되면
+    // 이 인스턴스를 즉시 회수해야 새 오라를 재생할 수 있다.
+    private ParticleSystem fadingVfx;
     private CustomSortable customSortable;
 
     public bool IsActive => bActive;
@@ -111,6 +114,15 @@ public class OverheatComponent : PComponent
 
         if (vfxComponent != null && !string.IsNullOrEmpty(overheatVfxTag))
         {
+            if (fadingVfx != null)
+            {
+                if (fadingVfx.gameObject.activeSelf)
+                {
+                    vfxComponent.Stop(fadingVfx, true);
+                }
+                fadingVfx = null;
+            }
+
             int sortingOrder = customSortable != null ? customSortable.CurrentSortingOrder + 1 : 0;
 
             activeVfx = vfxComponent.Play(new VFXPlaySettings(
@@ -139,6 +151,7 @@ public class OverheatComponent : PComponent
         if (vfxComponent != null && activeVfx != null)
         {
             vfxComponent.Stop(activeVfx, false);
+            fadingVfx = activeVfx;
             activeVfx = null;
             activeVfxRenderer = null;
         }

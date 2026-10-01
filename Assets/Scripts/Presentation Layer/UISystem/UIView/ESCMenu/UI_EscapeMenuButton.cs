@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DG.Tweening;
 using DG.Tweening.Core;
 using UnityEngine;
@@ -87,11 +88,15 @@ public class UI_EscapeMenuButton : Selectable,
     }
 
     /// <summary>
-    /// 수동 호버 판정에 쓰는 영역입니다. EventSystem이 실제로 포인터 이벤트를 발생시키는 레이캐스트 이미지와
-    /// 같은 영역이어야 합니다. 루트(레이아웃 슬롯)는 레이캐스트 이미지보다 넓어서, 루트로 판정하면
-    /// OnPointerEnter 없이 호버가 켜지고 OnPointerExit가 오지 않아 호버가 해제되지 않습니다.
+    /// EventSystem이 없을 때의 폴백 판정에 쓰는 영역입니다. EventSystem이 실제로 포인터 이벤트를 발생시키는
+    /// 레이캐스트 이미지와 같은 영역이어야 합니다. 루트(레이아웃 슬롯)는 레이캐스트 이미지보다 넓어서, 루트로
+    /// 판정하면 OnPointerEnter 없이 호버가 켜지고 OnPointerExit가 오지 않아 호버가 해제되지 않습니다.
     /// </summary>
     private RectTransform HitRectTransform => null != raycastImage ? raycastImage.rectTransform : RectTransform;
+
+    // 수동 호버 판정용 레이캐스트 버퍼. 매 호출마다 할당하지 않도록 재사용한다.
+    private static readonly List<RaycastResult> sharedRaycastResults = new List<RaycastResult>(16);
+    private PointerEventData cachedPointerEventData;
 
     public CanvasGroup CanvasGroup
     {
@@ -401,6 +406,67 @@ public class UI_EscapeMenuButton : Selectable,
     }
 
     /// <summary>
+    /// 마우스 커서가 "EventSystem 기준으로" 이 버튼 위에 있는지 판정합니다.
+    ///
+    /// 단순히 자기 레이캐스트 사각형에 커서 좌표가 들어오는지만 보면 안 된다. 버튼 슬롯(25px)보다 레이캐스트
+    /// 이미지가 큰 폰트(유럽어 Lorem_Optimum은 30px)에서는 인접 버튼의 레이캐스트 영역이 서로 겹치는데,
+    /// 겹친 띠에서 EventSystem은 위에 그려지는 한 버튼에만 OnPointerEnter/Exit를 보낸다. 그 띠에서 사각형
+    /// 포함 검사로 호버를 켠 다른 버튼은 OnPointerExit를 영영 받지 못해 호버가 풀리지 않는다.
+    /// 따라서 EventSystem이 실제로 최상위로 히트하는 오브젝트가 이 버튼 아래에 있을 때만 true를 돌려,
+    /// 수동 판정과 EventSystem의 포인터 Enter/Exit가 항상 같은 버튼을 가리키게 한다.
+    /// </summary>
+    private bool IsCursorOverThisButton()
+    {
+        if (null == Mouse.current) return false;
+        Vector2 _mousePos = Mouse.current.position.ReadValue();
+
+        EventSystem _eventSystem = EventSystem.current;
+        if (null != _eventSystem)
+        {
+            if (null == cachedPointerEventData)
+            {
+                cachedPointerEventData = new PointerEventData(_eventSystem);
+            }
+
+            cachedPointerEventData.Reset();
+            cachedPointerEventData.position = _mousePos;
+
+            sharedRaycastResults.Clear();
+            _eventSystem.RaycastAll(cachedPointerEventData, sharedRaycastResults);
+
+            // RaycastAll은 정렬된 결과를 돌려주므로 "gameObject가 살아 있는 첫 항목"이 실제로 포인터 이벤트를
+            // 받는 최상위 오브젝트다. 입력 모듈(BaseInputModule.FindFirstRaycast)과 같은 규칙으로, 같은 프레임에
+            // 파괴된 오브젝트가 맨 앞에 남아 있어도 건너뛴다.
+            GameObject _topHit = null;
+            for (int i = 0; sharedRaycastResults.Count > i; i++)
+            {
+                if (null != sharedRaycastResults[i].gameObject)
+                {
+                    _topHit = sharedRaycastResults[i].gameObject;
+                    break;
+                }
+            }
+            sharedRaycastResults.Clear();
+
+            if (null == _topHit) return false;
+            return _topHit.transform.IsChildOf(transform);
+        }
+
+        // EventSystem이 없으면 종전처럼 레이캐스트 이미지 사각형으로 폴백한다.
+        RectTransform _hitRect = HitRectTransform;
+        if (null == _hitRect) return false;
+
+        if (null == cachedCanvas)
+            cachedCanvas = GetComponentInParent<Canvas>();
+
+        Camera _cam = (null != cachedCanvas && RenderMode.ScreenSpaceOverlay != cachedCanvas.renderMode)
+            ? cachedCanvas.worldCamera
+            : null;
+
+        return RectTransformUtility.RectangleContainsScreenPoint(_hitRect, _mousePos, _cam);
+    }
+
+    /// <summary>
     /// 마우스 커서가 이미 버튼 영역에 놓여져 있는지 수동 검사하여 호버 애니메이션을 즉시 트리거합니다.
     /// </summary>
     public void CheckCursorHover()
@@ -411,23 +477,7 @@ public class UI_EscapeMenuButton : Selectable,
         if (null != inputManager && true == inputManager.IsGamepadMode)
             return;
 
-        Vector2 _mousePos = Vector2.zero;
-        if (null != Mouse.current)
-        {
-            _mousePos = Mouse.current.position.ReadValue();
-        }
-
-        RectTransform _hitRect = HitRectTransform;
-        if (null == _hitRect) return;
-
-        if (null == cachedCanvas)
-            cachedCanvas = GetComponentInParent<Canvas>();
-
-        Camera _cam = (null != cachedCanvas && RenderMode.ScreenSpaceOverlay != cachedCanvas.renderMode)
-            ? cachedCanvas.worldCamera
-            : null;
-
-        bool _contains = true == isPointerHovered || RectTransformUtility.RectangleContainsScreenPoint(_hitRect, _mousePos, _cam);
+        bool _contains = true == isPointerHovered || IsCursorOverThisButton();
 
         if (true == _contains)
         {
@@ -449,12 +499,16 @@ public class UI_EscapeMenuButton : Selectable,
         }
     }
 
+    // isPointerHovered는 "EventSystem이 이 버튼을 포인터 아래로 보고 있는가"의 기록이다. 입력 모드와 무관하게
+    // Enter/Exit 그대로 따라가야 한다. 게임패드 모드에서 Exit를 무시해 true로 남겨두면, 나중에 마우스 모드로
+    // 돌아올 때 IsMouseOver()가 그 묵은 값으로 커서가 없는 버튼에 호버를 켜고, EventSystem은 이미 떠난 버튼이라
+    // Exit를 다시 보내지 않아 호버가 풀리지 않는다.
     public override void OnPointerEnter(PointerEventData _eventData)
     {
         base.OnPointerEnter(_eventData);
-        if (null != inputManager && true == inputManager.IsGamepadMode) return;
-
         isPointerHovered = true;
+
+        if (null != inputManager && true == inputManager.IsGamepadMode) return;
         if (false == isInteractable || true == isAppearing) return;
 
         isHovered = true;
@@ -464,9 +518,9 @@ public class UI_EscapeMenuButton : Selectable,
     public override void OnPointerExit(PointerEventData _eventData)
     {
         base.OnPointerExit(_eventData);
-        if (null != inputManager && true == inputManager.IsGamepadMode) return;
-
         isPointerHovered = false;
+
+        if (null != inputManager && true == inputManager.IsGamepadMode) return;
         if (false == isInteractable || true == isAppearing) return;
 
         isHovered = false;
@@ -479,29 +533,7 @@ public class UI_EscapeMenuButton : Selectable,
         if (null != inputManager && true == inputManager.IsGamepadMode) return false;
         if (true == isPointerHovered) return true;
 
-        RectTransform _rect = HitRectTransform;
-        if (null == _rect) return false;
-
-        Vector2 _mousePos = Vector2.zero;
-        if (null != Mouse.current)
-        {
-            _mousePos = Mouse.current.position.ReadValue();
-        }
-        else
-        {
-            return false;
-        }
-
-        if (null == cachedCanvas)
-        {
-            cachedCanvas = GetComponentInParent<Canvas>();
-        }
-
-        Camera _cam = (null != cachedCanvas && RenderMode.ScreenSpaceOverlay != cachedCanvas.renderMode)
-            ? cachedCanvas.worldCamera
-            : null;
-
-        return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, _cam);
+        return IsCursorOverThisButton();
     }
 
     public void ForceHover()
