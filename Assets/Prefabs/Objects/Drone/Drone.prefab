@@ -394,13 +394,13 @@ MonoBehaviour:
   initializeOnAwake: 1
   vfxPoolDataList:
   - vfxTag: DroneCharging
-    effectPrefab: {fileID: 3687614857192216124, guid: 5a7db7e738c592d44a3ec5eb91ec9777, type: 3}
-    initialPoolSize: 1
+    effectPrefab: {fileID: 7006864300503741061, guid: 7a482d111a2444d4db1dd0071d0e4df9, type: 3}
+    initialPoolSize: 3
     allowDynamicExpansion: 0
-    maxPoolSize: 1
+    maxPoolSize: 3
     uiParticleScale: 0
   - vfxTag: DroneAtkHit
-    effectPrefab: {fileID: 4414206344302795060, guid: 9a9fb228c74b39f4f872c5d7d6ba19e9, type: 3}
+    effectPrefab: {fileID: 7006864300503741061, guid: fe5b879de8801ec4caa46d202f7bbf9a, type: 3}
     initialPoolSize: 10
     allowDynamicExpansion: 1
     maxPoolSize: 20
