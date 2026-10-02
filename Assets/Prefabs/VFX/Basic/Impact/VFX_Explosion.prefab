@@ -4861,7 +4861,7 @@ ParticleSystemRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1613316897
-  m_SortingLayer: 13
+  m_SortingLayer: 14
   m_SortingOrder: 2
   m_MaskInteraction: 0
   m_RenderMode: 0
@@ -9755,7 +9755,7 @@ ParticleSystemRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1613316897
-  m_SortingLayer: 13
+  m_SortingLayer: 14
   m_SortingOrder: 2
   m_MaskInteraction: 0
   m_RenderMode: 0
@@ -9800,6 +9800,7 @@ GameObject:
   - component: {fileID: 2906778402451412124}
   - component: {fileID: 8318707871092513370}
   - component: {fileID: 7053284083918582805}
+  - component: {fileID: 2780554961323803437}
   m_Layer: 19
   m_Name: VFX_Explosion
   m_TagString: Untagged
@@ -14655,7 +14656,7 @@ ParticleSystemRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1613316897
-  m_SortingLayer: 13
+  m_SortingLayer: 14
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_RenderMode: 1
@@ -14689,6 +14690,19 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
+--- !u!114 &2780554961323803437
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2586997889449776060}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f6e7281b5bace346975b5c3c0c5bdd3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.VFX.SortingLayerTextureUser
+  targetRenderer: {fileID: 7053284083918582805}
 --- !u!1 &3753532676566896198
 GameObject:
   m_ObjectHideFlags: 0
@@ -19549,7 +19563,7 @@ ParticleSystemRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1613316897
-  m_SortingLayer: 13
+  m_SortingLayer: 14
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_RenderMode: 0
@@ -24385,7 +24399,7 @@ ParticleSystemRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1613316897
-  m_SortingLayer: 13
+  m_SortingLayer: 14
   m_SortingOrder: 1
   m_MaskInteraction: 0
   m_RenderMode: 0
@@ -29279,7 +29293,7 @@ ParticleSystemRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1613316897
-  m_SortingLayer: 13
+  m_SortingLayer: 14
   m_SortingOrder: 1
   m_MaskInteraction: 0
   m_RenderMode: 0
@@ -34173,7 +34187,7 @@ ParticleSystemRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1613316897
-  m_SortingLayer: 13
+  m_SortingLayer: 14
   m_SortingOrder: 1
   m_MaskInteraction: 0
   m_RenderMode: 0
@@ -39067,7 +39081,7 @@ ParticleSystemRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1613316897
-  m_SortingLayer: 13
+  m_SortingLayer: 14
   m_SortingOrder: 1
   m_MaskInteraction: 0
   m_RenderMode: 0

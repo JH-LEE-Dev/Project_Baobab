@@ -18,6 +18,8 @@ namespace PresentationLayer.VFX
     ///
     /// 최적화: 꺼져 있을 때는 오브젝트가 비활성이라 비용이 0이고 메쉬는 처음 켜질 때 한 번만 만든다. 모든 데이터는 고정 배열/구조체이고 쿼드는 공유 정적 버퍼에 모아 올리므로 런타임 할당이 없다.
     /// 동시에 타는 나무가 많으면 여우불 수와 꼬리 해상도를 줄이고, 화면 밖이면 메쉬 재구성을 건너뛴다.
+    /// 움직임 폭이 1~2px이라 앞 프레임과 같은 그림이 자주 나오므로 내용 해시가 같으면 업로드를 건너뛴다. 메쉬 경계는 실제로 그린 픽셀 범위로 좁게 잡고,
+    /// 화면 안/밖은 이번 프레임 메인 카메라 절두체로 판단한다(PixelVfxCulling). 고정 발광 세기의 색은 켜질 때 미리 계산한다.
     /// </summary>
     [DisallowMultipleComponent]
     public class VFX_TreeBurn : MonoBehaviour
@@ -68,7 +70,10 @@ namespace PresentationLayer.VFX
         private const int EmberCapacity = 28;
         private const int MaxLinePixels = 48;
         private const float TrunkHalfWidthPx = 5.0f; // 줄기 불꽃 혀가 붙는 가로 범위
-        private static readonly Vector3 MeshBoundsSize = new Vector3(40.0f, 40.0f, 10.0f);
+        private const float PixelUnit = 1.0f / 32.0f;
+        private const float BoundsDepth = 10.0f;
+        private const float EmberShapeMarginPx = 2.0f;   // 불씨 모양(최대 3x3)이 위치에서 벗어나는 폭
+        private const float CullingMarginUnits = 1.0f;   // 화면 안/밖 판단 여유(새로 생기거나 움직이는 조각, 카메라 이동)
 
         // 파랑 3색[진한 색, 중간 색, 밝은 색]. 드론 과열 이펙트와 같은 팔레트이며, HDR 배율이 곱해져도 흰색으로 날아가지 않도록 기본 색은 어둡게 잡았다.
         private const int ToneDeep = 0;
@@ -120,6 +125,18 @@ namespace PresentationLayer.VFX
             public bool bFront;
         }
 
+        // 층(뒤/앞) 메쉬마다 마지막으로 올린 내용과 경계
+        private struct LayerUploadState
+        {
+            public int vertexCount;      // -1이면 아직 안 올렸다
+            public ulong hash;
+            public bool bHasBounds;
+            public Vector2 boundsMin;
+            public Vector2 boundsMax;
+            public Vector3 appliedCenter;
+            public Vector3 appliedSize;
+        }
+
         private static int activeCount;
 
         // 화면에 그릴 쿼드를 모으는 공유 버퍼(매 프레임 Clear 후 채우고 곧바로 업로드하므로 인스턴스끼리 겹치지 않는다)
@@ -132,6 +149,8 @@ namespace PresentationLayer.VFX
         private readonly float[] historyY = new float[MaxWisps * HistoryLength];
         private readonly Tongue[] tongues = new Tongue[MaxTongues];
         private readonly Ember[] embers = new Ember[EmberCapacity];
+        private readonly Color32[] toneColors = new Color32[3];   // 톤마다 GlowOf 세기를 실은 색(켜질 때 미리 계산)
+        private readonly Color32[] tongueColors = new Color32[3]; // 줄기 불꽃 혀용(GlowOf * 0.85)
         private MeshFilter backFilter;
         private MeshRenderer backRenderer;
         private Mesh backMesh;
@@ -144,8 +163,14 @@ namespace PresentationLayer.VFX
         private bool bInitialized;
         private bool bFirstFrame;
         private bool bCounted;
-        private bool bBackHasGeometry;
-        private bool bFrontHasGeometry;
+        private bool bTransformSynced;
+        private bool bEmberSimHasBounds;
+        private LayerUploadState backUpload;
+        private LayerUploadState frontUpload;
+        private Vector2 emberSimMinPx;       // 시뮬레이션 중인 불씨 위치 범위(px). 화면 밖이라 그리지 않은 프레임에도 갱신된다
+        private Vector2 emberSimMaxPx;
+        private Vector3 syncedParentScale;
+        private Quaternion syncedParentRotation;
         private float elapsed;
         private float stateTime;
         private float emberAccumulator;
@@ -239,13 +264,17 @@ namespace PresentationLayer.VFX
             framesSinceEnable = 0;
             emberCursor = 0;
             bFirstFrame = true;
-            bBackHasGeometry = false;
-            bFrontHasGeometry = false;
+            bTransformSynced = false;
+            bEmberSimHasBounds = false;
+            ResetUploadState(ref backUpload);  // 메쉬에 지난번 그림이 남아 있을 수 있으므로 첫 프레임은 무조건 올린다
+            ResetUploadState(ref frontUpload);
 
             Vector3 pos = transform.position;
             randomState = unchecked((uint)(Time.frameCount * 2654435761u) ^ (uint)Mathf.FloorToInt(pos.x * 131.0f + pos.y * 57.0f));
             if (0u == randomState) randomState = 1u;
             seedBase = (int)(Rand01() * 10000.0f);
+
+            BuildToneColors();
 
             for (int i = 0; i < EmberCapacity; i++) embers[i].bActive = false;
 
@@ -355,6 +384,16 @@ namespace PresentationLayer.VFX
             return ToneLight == _tone ? 1.0f : (ToneMid == _tone ? 0.8f : 0.5f);
         }
 
+        // 고정 발광 세기 색을 미리 만든다(머리, 불씨: GlowOf / 줄기 불꽃 혀: GlowOf * 0.85). 세기가 거리에 따라 바뀌는 꼬리만 Tint를 직접 부른다.
+        private void BuildToneColors()
+        {
+            for (int tone = 0; tone < toneColors.Length; tone++)
+            {
+                toneColors[tone] = Tint(tone, GlowOf(tone));
+                tongueColors[tone] = Tint(tone, GlowOf(tone) * 0.85f);
+            }
+        }
+
         private static void AddPixel(PixelQuadBuffer _buffer, int _x, int _y, Color32 _color)
         {
             _buffer.AddLocalRect(_x, _y, _x + 1, _y + 1, _color);
@@ -444,9 +483,13 @@ namespace PresentationLayer.VFX
             }
         }
 
-        // 불씨는 위로 뜨면서 노이즈 바람에 좌우로 휘날린다
+        // 불씨는 위로 뜨면서 노이즈 바람에 좌우로 휘날린다. 화면 안/밖 판단을 위해 살아 있는 불씨 위치의 범위(px)도 함께 모은다.
         private void UpdateEmbers(float _dt)
         {
+            float minX = float.MaxValue;
+            float minY = float.MaxValue;
+            float maxX = float.MinValue;
+            float maxY = float.MinValue;
             for (int i = 0; i < EmberCapacity; i++)
             {
                 if (false == embers[i].bActive) continue;
@@ -462,6 +505,18 @@ namespace PresentationLayer.VFX
                 embers[i].vx = embers[i].vx * 0.96f + flow * 40.0f * _dt;
                 embers[i].x += embers[i].vx * _dt;
                 embers[i].y += embers[i].vy * _dt;
+
+                if (embers[i].x < minX) minX = embers[i].x;
+                if (embers[i].y < minY) minY = embers[i].y;
+                if (embers[i].x > maxX) maxX = embers[i].x;
+                if (embers[i].y > maxY) maxY = embers[i].y;
+            }
+
+            bEmberSimHasBounds = minX <= maxX;
+            if (true == bEmberSimHasBounds)
+            {
+                emberSimMinPx = new Vector2(minX - EmberShapeMarginPx, minY - EmberShapeMarginPx);
+                emberSimMaxPx = new Vector2(maxX + EmberShapeMarginPx, maxY + EmberShapeMarginPx);
             }
         }
 
@@ -578,8 +633,8 @@ namespace PresentationLayer.VFX
             if (0.1f > scale) return;
 
             // 코어(3x3 밝은 색)와 테두리
-            Color32 light = Tint(ToneLight, 1.0f);
-            Color32 mid = Tint(ToneMid, 0.8f);
+            Color32 light = toneColors[ToneLight]; // GlowOf(ToneLight) = 1.0
+            Color32 mid = toneColors[ToneMid];     // GlowOf(ToneMid) = 0.8
             _buffer.AddLocalRect(_headX - 1, _headY - 1, _headX + 2, _headY + 2, light);
             AddPixel(_buffer, _headX - 2, _headY, mid);
             AddPixel(_buffer, _headX + 2, _headY, mid);
@@ -593,11 +648,11 @@ namespace PresentationLayer.VFX
                 float fraction = (float)(k - 1) / (tip + 1);
                 int offset = Mathf.RoundToInt(bend * fraction * fraction);
                 int tone = fraction < 0.45f ? ToneLight : (fraction < 0.8f ? ToneMid : ToneDeep);
-                AddPixel(_buffer, _headX + offset, _headY + k, Tint(tone, GlowOf(tone)));
+                AddPixel(_buffer, _headX + offset, _headY + k, toneColors[tone]);
                 if (k <= 3) // 밑동은 두 칸 폭으로 굵게
                 {
-                    AddPixel(_buffer, _headX + offset - 1, _headY + k, Tint(ToneMid, 0.8f));
-                    AddPixel(_buffer, _headX + offset + 1, _headY + k, Tint(ToneMid, 0.8f));
+                    AddPixel(_buffer, _headX + offset - 1, _headY + k, mid);
+                    AddPixel(_buffer, _headX + offset + 1, _headY + k, mid);
                 }
             }
 
@@ -610,7 +665,7 @@ namespace PresentationLayer.VFX
                 for (int k = 1; k <= lick; k++)
                 {
                     int tone = k <= lick / 2 ? ToneMid : ToneDeep;
-                    AddPixel(_buffer, _headX + side * 2 + sway * (k / 2), _headY + k, Tint(tone, GlowOf(tone)));
+                    AddPixel(_buffer, _headX + side * 2 + sway * (k / 2), _headY + k, toneColors[tone]);
                 }
             }
         }
@@ -634,7 +689,7 @@ namespace PresentationLayer.VFX
                     float fraction = (float)k / length;
                     int offset = Mathf.RoundToInt(sway * fraction * fraction);
                     int tone = fraction < 0.3f ? ToneLight : (fraction < 0.7f ? ToneMid : ToneDeep);
-                    Color32 color = Tint(tone, GlowOf(tone) * 0.85f);
+                    Color32 color = tongueColors[tone];
                     AddPixel(frontBuffer, baseX + offset, baseY + k, color);
                     if (fraction < 0.5f) AddPixel(frontBuffer, baseX + offset + 1, baseY + k, color);
                 }
@@ -653,7 +708,7 @@ namespace PresentationLayer.VFX
 
                 PixelQuadBuffer buffer = true == embers[i].bFront ? frontBuffer : backBuffer;
                 int tone = u < 0.35f ? ToneLight : (u < 0.7f ? ToneMid : ToneDeep);
-                Color32 color = Tint(tone, GlowOf(tone));
+                Color32 color = toneColors[tone];
                 int px = Mathf.RoundToInt(embers[i].x);
                 int py = Mathf.RoundToInt(embers[i].y);
 
@@ -692,24 +747,83 @@ namespace PresentationLayer.VFX
         private void RebuildMeshes()
         {
             DrawAll();
-            UploadBuffer(backBuffer, backMesh, ref bBackHasGeometry);
-            UploadBuffer(frontBuffer, frontMesh, ref bFrontHasGeometry);
+            UploadLayer(backBuffer, backMesh, ref backUpload);
+            UploadLayer(frontBuffer, frontMesh, ref frontUpload);
         }
 
-        // 그릴 것이 없고 메쉬도 이미 비어 있으면 올리지 않는다
-        private static void UploadBuffer(PixelQuadBuffer _buffer, Mesh _mesh, ref bool _bHasGeometry)
+        private static void ResetUploadState(ref LayerUploadState _state)
         {
-            bool bEmpty = 0 == _buffer.VertexCount;
-            if (true == bEmpty && false == _bHasGeometry) return;
-
-            _buffer.Upload(_mesh, MeshBoundsSize);
-            _bHasGeometry = false == bEmpty;
+            _state.vertexCount = -1;
+            _state.hash = 0UL;
+            _state.bHasBounds = false;
         }
 
-        // 부모(나무)의 스케일/회전을 지우고 도트 크기가 항상 1px이 되게 한다
+        // 직전에 올린 그림과 같으면(정점 수와 내용 해시가 같으면) 올리지 않는다. 올릴 때는 메쉬 경계를 실제로 그린 픽셀 범위(1px 여유)로 좁게 잡는다.
+        private static void UploadLayer(PixelQuadBuffer _buffer, Mesh _mesh, ref LayerUploadState _state)
+        {
+            if (_buffer.VertexCount == _state.vertexCount && _buffer.ContentHash == _state.hash) return;
+
+            _buffer.Upload(_mesh, 0);
+            _state.vertexCount = _buffer.VertexCount;
+            _state.hash = _buffer.ContentHash;
+            _state.bHasBounds = _buffer.TryGetLocalBounds(out _state.boundsMin, out _state.boundsMax);
+            if (false == _state.bHasBounds) return; // 그릴 것이 없으면 경계는 상관없다
+
+            Vector3 center = new Vector3((_state.boundsMin.x + _state.boundsMax.x) * 0.5f, (_state.boundsMin.y + _state.boundsMax.y) * 0.5f, 0.0f);
+            Vector3 size = new Vector3(_state.boundsMax.x - _state.boundsMin.x + 2.0f * PixelUnit, _state.boundsMax.y - _state.boundsMin.y + 2.0f * PixelUnit, BoundsDepth);
+            if (center == _state.appliedCenter && size == _state.appliedSize) return;
+
+            _state.appliedCenter = center;
+            _state.appliedSize = size;
+            _mesh.bounds = new Bounds(center, size);
+        }
+
+        // 이번 프레임 메인 카메라에 보이는지: 두 층 메쉬에 올라가 있는 그림과 시뮬레이션 중인 불씨 위치를 합친 범위에 여유를 두고 절두체와 비교한다.
+        // 범위를 알 수 없으면(아직 아무것도 없으면) 보이는 것으로 본다.
+        private bool IsOnScreen()
+        {
+            bool bHas = false;
+            Vector2 min = Vector2.zero;
+            Vector2 max = Vector2.zero;
+            if (true == backUpload.bHasBounds) Encapsulate(ref bHas, ref min, ref max, backUpload.boundsMin, backUpload.boundsMax);
+            if (true == frontUpload.bHasBounds) Encapsulate(ref bHas, ref min, ref max, frontUpload.boundsMin, frontUpload.boundsMax);
+            if (true == bEmberSimHasBounds) Encapsulate(ref bHas, ref min, ref max, emberSimMinPx * PixelUnit, emberSimMaxPx * PixelUnit);
+            if (false == bHas) return true;
+
+            Vector3 center = transform.position + new Vector3((min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f, 0.0f);
+            Vector3 size = new Vector3(max.x - min.x + 2.0f * CullingMarginUnits, max.y - min.y + 2.0f * CullingMarginUnits, BoundsDepth);
+            return PixelVfxCulling.IsVisible(center, size);
+        }
+
+        private static void Encapsulate(ref bool _bHas, ref Vector2 _min, ref Vector2 _max, Vector2 _addMin, Vector2 _addMax)
+        {
+            if (false == _bHas)
+            {
+                _bHas = true;
+                _min = _addMin;
+                _max = _addMax;
+                return;
+            }
+
+            _min = Vector2.Min(_min, _addMin);
+            _max = Vector2.Max(_max, _addMax);
+        }
+
+        // 부모(나무)의 스케일/회전을 지우고 도트 크기가 항상 1px이 되게 한다. 부모 스케일/회전이 바뀌었을 때만 다시 쓴다.
         private void SyncTransforms()
         {
             Vector3 parentScale = transform.lossyScale;
+            Quaternion parentRotation = transform.rotation;
+            bool bChanged = false == bTransformSynced
+                || parentScale.x != syncedParentScale.x || parentScale.y != syncedParentScale.y || parentScale.z != syncedParentScale.z
+                || parentRotation.x != syncedParentRotation.x || parentRotation.y != syncedParentRotation.y
+                || parentRotation.z != syncedParentRotation.z || parentRotation.w != syncedParentRotation.w;
+            if (false == bChanged) return;
+
+            bTransformSynced = true;
+            syncedParentScale = parentScale;
+            syncedParentRotation = parentRotation;
+
             float inverseX = 0.0001f < Mathf.Abs(parentScale.x) ? 1.0f / parentScale.x : 1.0f;
             float inverseY = 0.0001f < Mathf.Abs(parentScale.y) ? 1.0f / parentScale.y : 1.0f;
             Vector3 inverse = new Vector3(inverseX, inverseY, 1.0f);
@@ -764,16 +878,16 @@ namespace PresentationLayer.VFX
             SpawnEmbers(dt);
             UpdateEmbers(dt);
 
-            // 화면 밖이면(첫 몇 프레임은 렌더 전이라 보이는 것으로 본다) 메쉬 재구성을 건너뛴다. 시간은 계속 흐르므로 다시 보일 때 어긋나지 않는다.
-            bool bVisible = 3 > framesSinceEnable || true == backRenderer.isVisible || true == frontRenderer.isVisible;
+            // 화면 밖이면(첫 몇 프레임은 보이는 것으로 본다) 메쉬 재구성을 건너뛴다. 시간은 계속 흐르므로 다시 보일 때 어긋나지 않는다.
+            bool bVisible = 3 > framesSinceEnable || true == IsOnScreen();
             if (true == bVisible)
             {
                 RebuildMeshes();
                 SyncTransforms();
             }
 
-            backRenderer.enabled = true;
-            frontRenderer.enabled = true;
+            if (false == backRenderer.enabled) backRenderer.enabled = true;
+            if (false == frontRenderer.enabled) frontRenderer.enabled = true;
         }
 
         private void OnDisable()
@@ -800,5 +914,15 @@ namespace PresentationLayer.VFX
                 frontMesh = null;
             }
         }
+
+#if UNITY_EDITOR
+        // 플레이 중 인스펙터에서 밝기를 바꾸면 미리 계산해 둔 색을 다시 만든다
+        private void OnValidate()
+        {
+            if (false == bInitialized) return;
+
+            BuildToneColors();
+        }
+#endif
     }
 }

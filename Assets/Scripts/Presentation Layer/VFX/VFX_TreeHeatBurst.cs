@@ -20,6 +20,11 @@ namespace PresentationLayer.VFX
     ///
     /// 최적화: 몸통(파편, 소용돌이, 연기) 메쉬도 매 프레임 다시 만든다(저사양 모드에서는 30fps로 제한). 모든 조각은 구조체 배열에서 닫힌 식으로 위치를 계산하고
     /// 공유 정적 PixelQuadBuffer에 모아 올리므로 런타임 할당이 없다. 동시 재생 수가 많으면 불씨 수를 줄이고, 화면 밖이면 메쉬 재구성을 건너뛴다.
+    /// - 몸통과 불씨는 같은 머티리얼이라 한 메쉬에 몸통 -> 불씨 순서로 넣어 드로우를 줄인다(불씨가 몸통 위에 그려진다). 저사양 모드에서 몸통을 건너뛰는 프레임에는
+    ///   메쉬에 남아 있는 몸통 정점 뒤에 불씨만 다시 올린다. 직전과 같은 그림이면(내용 해시) 업로드를 건너뛴다.
+    /// - 메쉬 경계는 실제로 그린 픽셀 범위로 좁게 잡고, 화면 안/밖은 이번 프레임 메인 카메라 절두체로 판단한다(PixelVfxCulling).
+    /// - 연기는 원과 행의 교차 구간을 직접 구해서 칸마다 검사하지 않는다(경계 칸은 원래 부등식으로 다시 확인해 결과가 같다).
+    /// - 왜곡 쿼드가 켜져 있는 동안만 화면 캡처를 쓰도록 SortingLayerTextureGate에 알린다.
     /// 색은 불 3가지(진한 색, 중간 색, 밝은 색)와 연기 명도 4단계(입자 하나는 그중 단색 하나)만 쓴다. 밝기는 정점 알파에 실린 HDR 발광 세기(BrandWrapGlow 셰이더)로 내고, 연기는 발광이 없다.
     /// </summary>
     [DisallowMultipleComponent]
@@ -29,8 +34,7 @@ namespace PresentationLayer.VFX
         [Header("렌더링")]
         [SerializeField] private Material glowMaterial;
         [SerializeField] private Material distortionMaterial;
-        [SerializeField, Tooltip("몸통(파편, 소용돌이, 연기) 메쉬의 루트 렌더러 기준 상대 소팅 오더")] private int bodySortingOffset = 0;
-        [SerializeField, Tooltip("불씨 메쉬의 상대 소팅 오더(몸통 위)")] private int emberSortingOffset = 1;
+        [SerializeField, Tooltip("몸통(파편, 소용돌이, 연기)과 불씨를 담은 메쉬의 루트 렌더러 기준 상대 소팅 오더(불씨는 같은 메쉬 안에서 몸통 위에 그려진다)")] private int bodySortingOffset = 0;
         [SerializeField, Tooltip("왜곡 쿼드의 상대 소팅 오더(불 아래여야 불이 왜곡되지 않는다)")] private int distortionSortingOffset = -1;
 
         [Header("시간")]
@@ -112,7 +116,12 @@ namespace PresentationLayer.VFX
         private const float EmberBurstTime = 0.05f;            // 불씨가 터져 나가는 시간 폭(조각과 같은 타이밍)
         private const float EmberTrickleEnd = 0.8f;
         private const float LowQualityFps = 30.0f;
-        private static readonly Vector3 MeshBoundsSize = new Vector3(100.0f, 100.0f, 10.0f);
+        private const int BodyQuadCapacity = 1536;
+        private const int EmberQuadCapacity = 512;
+        private const float PixelUnit = 1.0f / 32.0f;
+        private const float BoundsDepth = 10.0f;
+        private const float EmberShapeMarginPx = 3.0f;         // 불씨 모양(최대 3x3)이 위치에서 벗어나는 폭
+        private const float CullingMarginUnits = 1.0f;         // 화면 안/밖 판단 여유(이번 프레임에 새로 생기거나 움직이는 조각, 카메라 이동)
 
         // 색 자리: 0~2는 불, 3~6은 연기 명도 4단계(발광 없음, 입자 하나는 그중 단색 하나). HDR 배율이 곱해져도 흰색으로 날아가지 않도록 기본 색은 어둡게 잡았다.
         private const int ToneFireDeep = 0;
@@ -186,9 +195,11 @@ namespace PresentationLayer.VFX
         private static int activeCount;
 
         // 화면에 그릴 쿼드를 모으는 공유 버퍼(매 프레임 Clear 후 채우고 곧바로 업로드하므로 인스턴스끼리 겹치지 않는다)
-        private static readonly PixelQuadBuffer bodyBuffer = new PixelQuadBuffer(1536);
-        private static readonly PixelQuadBuffer emberBuffer = new PixelQuadBuffer(512);
+        private static readonly PixelQuadBuffer bodyBuffer = new PixelQuadBuffer(BodyQuadCapacity);
+        private static readonly PixelQuadBuffer emberBuffer = new PixelQuadBuffer(EmberQuadCapacity);
         private static readonly byte[] rowTone = new byte[RowCapacity];
+        private static readonly int[] spanLo = new int[3];      // 연기 한 행에서 원마다 덮는 칸 구간(원 최대 3개)
+        private static readonly int[] spanHi = new int[3];
         private static readonly int ProgressId = Shader.PropertyToID("_Progress");
         private static readonly int IntensityId = Shader.PropertyToID("_Intensity");
         private static readonly int TimeSeedId = Shader.PropertyToID("_TimeSeed");
@@ -197,12 +208,11 @@ namespace PresentationLayer.VFX
         private readonly Ember[] embers = new Ember[EmberCapacity];
         private readonly Smoke[] smokes = new Smoke[MaxSmoke];
         private readonly Fragment[] fragments = new Fragment[MaxFragments];
+        private readonly Color32[] toneColors = new Color32[ToneSmokeFirst + SmokeShades]; // 톤마다 고정 발광 세기를 실은 색(Tint 결과를 재생 시작 때 미리 계산)
         private MeshFilter bodyFilter;
         private MeshRenderer bodyRenderer;
         private Mesh bodyMesh;
-        private MeshFilter emberFilter;
-        private MeshRenderer emberRenderer;
-        private Mesh emberMesh;
+        private Transform bodyTransform;
         private MeshRenderer distortionRenderer;
         private MaterialPropertyBlock distortionBlock;
         private ParticleSystemRenderer rootParticleRenderer;
@@ -211,8 +221,29 @@ namespace PresentationLayer.VFX
         private bool bInitialized;
         private bool bFirstFrame;
         private bool bCounted;
-        private bool bBodyHasGeometry;
-        private bool bEmberHasGeometry;
+        private bool bBodyUploaded;          // 이번 프레임에 몸통 정점을 다시 올렸다(불씨도 그 뒤에 다시 올려야 한다)
+        private bool bBodyHasBounds;
+        private bool bEmberHasBounds;
+        private bool bEmberSimHasBounds;
+        private bool bTransformSynced;
+        private bool bSortingSynced;
+        private bool bDistortionActive;
+        private int bodyVertexCount;         // 메쉬에 올라가 있는 몸통 정점 수(불씨는 이 자리부터 올린다). -1이면 아직 안 올렸다
+        private int emberVertexCount;
+        private ulong bodyHash;
+        private ulong emberHash;
+        private Vector2 bodyBoundsMin;
+        private Vector2 bodyBoundsMax;
+        private Vector2 emberBoundsMin;
+        private Vector2 emberBoundsMax;
+        private Vector2 emberSimMinPx;       // 시뮬레이션 중인 불씨 위치 범위(px). 화면 밖이라 그리지 않은 프레임에도 갱신된다
+        private Vector2 emberSimMaxPx;
+        private Vector3 appliedBoundsCenter;
+        private Vector3 appliedBoundsSize;
+        private Vector3 syncedParentScale;
+        private Quaternion syncedParentRotation;
+        private int syncedSortingLayerId;
+        private int syncedSortingOrder;
         private int fragmentTotal;
         private float elapsed;
         private float bodyTimer;
@@ -230,7 +261,8 @@ namespace PresentationLayer.VFX
             rootParticleRenderer = null != transform.parent ? transform.parent.GetComponent<ParticleSystemRenderer>() : null;
 
             bodyMesh = CreateMeshObject("HeatBurst_Body", glowMaterial, out bodyFilter, out bodyRenderer);
-            emberMesh = CreateMeshObject("HeatBurst_Embers", glowMaterial, out emberFilter, out emberRenderer);
+            bodyTransform = bodyRenderer.transform;
+            PixelQuadBuffer.ReserveMesh(bodyMesh, BodyQuadCapacity + EmberQuadCapacity);
 
             // 왜곡 쿼드: 모든 인스턴스가 같은 쿼드 메쉬를 공유하고 인스턴스마다 MaterialPropertyBlock으로 진행도만 다르게 준다
             GameObject distortionObject = new GameObject("HeatBurst_Distortion");
@@ -287,13 +319,22 @@ namespace PresentationLayer.VFX
             framesSinceEnable = 0;
             emberCursor = 0;
             bFirstFrame = true;
-            bBodyHasGeometry = false;
-            bEmberHasGeometry = false;
+            bBodyUploaded = false;
+            bBodyHasBounds = false;
+            bEmberHasBounds = false;
+            bEmberSimHasBounds = false;
+            bTransformSynced = false;
+            bSortingSynced = false;
+            bodyVertexCount = -1; // 메쉬에 지난 재생의 그림이 남아 있을 수 있으므로 첫 프레임은 무조건 올린다
+            emberVertexCount = -1;
 
             Vector3 pos = transform.position;
             randomState = unchecked((uint)(Time.frameCount * 2654435761u) ^ (uint)Mathf.FloorToInt(pos.x * 131.0f + pos.y * 57.0f));
             if (0u == randomState) randomState = 1u;
             bodySeed = (int)(Rand01() * 10000.0f);
+            distortionBlock.SetFloat(TimeSeedId, bodySeed * 0.01f);
+
+            BuildToneColors();
 
             for (int i = 0; i < EmberCapacity; i++) embers[i].bActive = false;
 
@@ -476,9 +517,14 @@ namespace PresentationLayer.VFX
         }
 
         // 불씨 이동: 터져 나가는 속도는 감속되고, 위로 뜨는 힘과 노이즈 흐름장(바람)이 곡선으로 휘날리게 한다
+        // 화면 안/밖 판단을 위해 살아 있는 불씨 위치의 범위(px)도 함께 모은다
         private void UpdateEmbers(float _dt)
         {
             float drag = Mathf.Max(0.0f, 1.0f - emberDrag * _dt);
+            float minX = float.MaxValue;
+            float minY = float.MaxValue;
+            float maxX = float.MinValue;
+            float maxY = float.MinValue;
             for (int i = 0; i < EmberCapacity; i++)
             {
                 if (false == embers[i].bActive) continue;
@@ -490,14 +536,27 @@ namespace PresentationLayer.VFX
                     continue;
                 }
 
-                if (0.0f > embers[i].age) continue;
+                if (0.0f <= embers[i].age)
+                {
+                    float flowX = ValueNoise(embers[i].x * windScale + elapsed * 0.9f, embers[i].y * windScale, 11) - 0.5f;
+                    float flowY = ValueNoise(embers[i].x * windScale, embers[i].y * windScale - elapsed * 0.7f, 29) - 0.5f;
+                    embers[i].vx = embers[i].vx * drag + flowX * 2.0f * windStrength * _dt;
+                    embers[i].vy = embers[i].vy * drag + (flowY * 2.0f * windStrength * 0.6f + emberBuoyancy) * _dt;
+                    embers[i].x += embers[i].vx * _dt;
+                    embers[i].y += embers[i].vy * _dt;
+                }
 
-                float flowX = ValueNoise(embers[i].x * windScale + elapsed * 0.9f, embers[i].y * windScale, 11) - 0.5f;
-                float flowY = ValueNoise(embers[i].x * windScale, embers[i].y * windScale - elapsed * 0.7f, 29) - 0.5f;
-                embers[i].vx = embers[i].vx * drag + flowX * 2.0f * windStrength * _dt;
-                embers[i].vy = embers[i].vy * drag + (flowY * 2.0f * windStrength * 0.6f + emberBuoyancy) * _dt;
-                embers[i].x += embers[i].vx * _dt;
-                embers[i].y += embers[i].vy * _dt;
+                if (embers[i].x < minX) minX = embers[i].x;
+                if (embers[i].y < minY) minY = embers[i].y;
+                if (embers[i].x > maxX) maxX = embers[i].x;
+                if (embers[i].y > maxY) maxY = embers[i].y;
+            }
+
+            bEmberSimHasBounds = minX <= maxX;
+            if (true == bEmberSimHasBounds)
+            {
+                emberSimMinPx = new Vector2(minX - EmberShapeMarginPx, minY - EmberShapeMarginPx);
+                emberSimMaxPx = new Vector2(maxX + EmberShapeMarginPx, maxY + EmberShapeMarginPx);
             }
         }
 
@@ -530,6 +589,15 @@ namespace PresentationLayer.VFX
             return ToneFireLight == _tone ? 1.0f : (ToneFireMid == _tone ? 0.75f : 0.45f);
         }
 
+        // 톤마다 고정 발광 세기(불은 FireGlow, 연기는 0)를 실은 색을 미리 만든다. 감쇠가 곱해지는 소용돌이만 Tint를 직접 부른다.
+        private void BuildToneColors()
+        {
+            for (int tone = 0; tone < toneColors.Length; tone++)
+            {
+                toneColors[tone] = Tint(tone, tone >= ToneSmokeFirst ? 0.0f : FireGlow(tone));
+            }
+        }
+
         // 한 줄(행)에 모아 둔 셀 색(rowTone: 255 = 비어 있음)을 같은 색끼리 가로로 합쳐 쿼드로 낸다
         private void FlushRow(PixelQuadBuffer _buffer, int _y, int _xStart, int _count)
         {
@@ -542,8 +610,7 @@ namespace PresentationLayer.VFX
                 {
                     if (255 != runTone)
                     {
-                        float glow = runTone >= ToneSmokeFirst ? 0.0f : FireGlow(runTone);
-                        _buffer.AddLocalRect(_xStart + runStart, _y, _xStart + i, _y + 1, Tint(runTone, glow));
+                        _buffer.AddLocalRect(_xStart + runStart, _y, _xStart + i, _y + 1, toneColors[runTone]);
                     }
 
                     runStart = i;
@@ -559,7 +626,7 @@ namespace PresentationLayer.VFX
 
         private void AddFirePixel(int _x, int _y, int _tone)
         {
-            bodyBuffer.AddLocalRect(_x, _y, _x + 1, _y + 1, Tint(_tone, FireGlow(_tone)));
+            bodyBuffer.AddLocalRect(_x, _y, _x + 1, _y + 1, toneColors[_tone]);
         }
 
         // ---------- 1. 중심 폭발(파편 발산) ----------
@@ -663,7 +730,7 @@ namespace PresentationLayer.VFX
             int x = Mathf.RoundToInt(Mathf.Cos(_f.angle) * distance);
             int y = Mathf.RoundToInt(Mathf.Sin(_f.angle) * distance);
             int tone = _t < 0.3f ? ToneFireLight : (_t < 0.65f ? ToneFireMid : ToneFireDeep);
-            Color32 color = Tint(tone, FireGlow(tone));
+            Color32 color = toneColors[tone];
 
             int variant = _f.variant;
             if (1 == variant) bodyBuffer.AddLocalRect(x, y, x + 2, y + 1, color);
@@ -841,32 +908,123 @@ namespace PresentationLayer.VFX
                 y3 = -_radius * 0.6f;
             }
 
-            bool bWisp = 3 == _variant;
+            if (3 == _variant)
+            {
+                DrawSmokeWisp(_cx, _cy, extent, width, _radius, cos, sin, _tone);
+                return;
+            }
+
+            // 원 합집합: 행마다 원이 덮는 칸 구간(원 최대 3개)을 구해 겹치거나 맞닿은 구간을 합쳐 왼쪽부터 쿼드로 낸다.
+            // 한 행의 칸은 모두 같은 색이라 FlushRow가 같은 색 연속 칸을 합치는 것과 결과(쿼드와 순서)가 같다.
+            Color32 color = toneColors[_tone];
+            int xStart = _cx - extent;
             for (int dy = -extent; dy <= extent; dy++)
             {
-                ClearRow(width);
-                for (int i = 0; i < width; i++)
+                int spanCount = 0;
+                int lo;
+                int hi;
+                if (true == CircleRowSpan(dy, extent, width, x1, y1, r1, out lo, out hi)) AddSpan(ref spanCount, lo, hi);
+                if (0.0f < r2 && true == CircleRowSpan(dy, extent, width, x2, y2, r2, out lo, out hi)) AddSpan(ref spanCount, lo, hi);
+                if (0.0f < r3 && true == CircleRowSpan(dy, extent, width, x3, y3, r3, out lo, out hi)) AddSpan(ref spanCount, lo, hi);
+                if (0 == spanCount) continue;
+
+                int runLo = spanLo[0];
+                int runHi = spanHi[0];
+                for (int k = 1; k < spanCount; k++)
                 {
-                    float dx = i - extent;
-                    bool bCovered;
-                    if (true == bWisp)
+                    if (spanLo[k] <= runHi + 1)
                     {
-                        // 초승달 자락: 반지름 근처의 얇은 띠 중 회전 방향 쪽 호만(두께 약 2.4px)
-                        float distance = Mathf.Sqrt(dx * dx + dy * dy);
-                        bCovered = Mathf.Abs(distance - _radius) <= 1.2f && dx * cos + dy * sin >= _radius * 0.25f - 0.5f * (distance - _radius);
-                    }
-                    else
-                    {
-                        bCovered = (dx - x1) * (dx - x1) + (dy - y1) * (dy - y1) <= r1 * r1
-                            || (0.0f < r2 && (dx - x2) * (dx - x2) + (dy - y2) * (dy - y2) <= r2 * r2)
-                            || (0.0f < r3 && (dx - x3) * (dx - x3) + (dy - y3) * (dy - y3) <= r3 * r3);
+                        if (spanHi[k] > runHi) runHi = spanHi[k];
+                        continue;
                     }
 
-                    if (true == bCovered) rowTone[i] = (byte)_tone;
+                    bodyBuffer.AddLocalRect(xStart + runLo, _cy + dy, xStart + runHi + 1, _cy + dy + 1, color);
+                    runLo = spanLo[k];
+                    runHi = spanHi[k];
                 }
 
-                FlushRow(bodyBuffer, _cy + dy, _cx - extent, width);
+                bodyBuffer.AddLocalRect(xStart + runLo, _cy + dy, xStart + runHi + 1, _cy + dy + 1, color);
             }
+        }
+
+        // 초승달 자락: 반지름 근처의 얇은 띠 중 회전 방향 쪽 호만(두께 약 2.4px). 띠(반지름 ±1.2px)에 들 수 있는 칸만 원래 조건으로 검사한다
+        // (띠 바깥 칸은 조건을 만족할 수 없으므로 결과가 같다. 제곱근 오차를 감안해 후보 범위를 한 칸씩 넓게 잡는다).
+        private void DrawSmokeWisp(int _cx, int _cy, int _extent, int _width, float _radius, float _cos, float _sin, int _tone)
+        {
+            float outerRadius = _radius + 1.2f;
+            float innerRadius = _radius - 1.2f;
+            for (int dy = -_extent; dy <= _extent; dy++)
+            {
+                if (Mathf.Abs(dy) > outerRadius + 1.0f) continue;
+
+                float dySq = dy * dy;
+                float outerHalf = Mathf.Sqrt(Mathf.Max(0.0f, outerRadius * outerRadius - dySq)) + 1.0f;
+                float innerSq = 0.0f < innerRadius ? innerRadius * innerRadius - dySq : -1.0f;
+                float innerHalf = 0.0f < innerSq ? Mathf.Sqrt(innerSq) - 1.0f : -1.0f;
+                int candidate = Mathf.Min(_extent, Mathf.CeilToInt(outerHalf));
+
+                ClearRow(_width);
+                for (int ix = -candidate; ix <= candidate; ix++)
+                {
+                    if (Mathf.Abs(ix) < innerHalf) continue;
+
+                    float dx = ix;
+                    float distance = Mathf.Sqrt(dx * dx + dy * dy);
+                    bool bCovered = Mathf.Abs(distance - _radius) <= 1.2f && dx * _cos + dy * _sin >= _radius * 0.25f - 0.5f * (distance - _radius);
+                    if (true == bCovered) rowTone[ix + _extent] = (byte)_tone;
+                }
+
+                FlushRow(bodyBuffer, _cy + dy, _cx - _extent, _width);
+            }
+        }
+
+        // 원 하나가 한 행(dy)에서 덮는 칸 인덱스 구간 [_lo, _hi](0 ~ _width-1). 제곱근으로 대략 잡은 뒤 경계 칸을 원래 부등식으로 넓히고 좁혀서
+        // 칸마다 검사한 것과 같은 결과를 낸다(원과 행의 교집합은 연속 구간이다).
+        private static bool CircleRowSpan(int _dy, int _extent, int _width, float _x, float _y, float _r, out int _lo, out int _hi)
+        {
+            float rowOffset = _dy - _y;
+            float remain = _r * _r - rowOffset * rowOffset;
+            float half = 0.0f < remain ? Mathf.Sqrt(remain) : 0.0f;
+            int lo = Mathf.Clamp(Mathf.CeilToInt(_x - half) + _extent, 0, _width - 1);
+            int hi = Mathf.Clamp(Mathf.FloorToInt(_x + half) + _extent, 0, _width - 1);
+            if (lo > hi)
+            {
+                int swap = lo;
+                lo = hi;
+                hi = swap;
+            }
+
+            while (0 < lo && true == CircleCovers(lo - 1 - _extent, _dy, _x, _y, _r)) lo--;
+            while (_width - 1 > hi && true == CircleCovers(hi + 1 - _extent, _dy, _x, _y, _r)) hi++;
+            while (lo <= hi && false == CircleCovers(lo - _extent, _dy, _x, _y, _r)) lo++;
+            while (hi >= lo && false == CircleCovers(hi - _extent, _dy, _x, _y, _r)) hi--;
+
+            _lo = lo;
+            _hi = hi;
+            return lo <= hi;
+        }
+
+        // 칸 (dx, dy)가 원 안인지: 칸마다 검사하던 원래 식과 같은 순서로 계산한다
+        private static bool CircleCovers(int _dx, int _dy, float _x, float _y, float _r)
+        {
+            float dx = _dx;
+            return (dx - _x) * (dx - _x) + (_dy - _y) * (_dy - _y) <= _r * _r;
+        }
+
+        // 구간을 시작 칸 순서로 끼워 넣는다(최대 3개)
+        private static void AddSpan(ref int _count, int _lo, int _hi)
+        {
+            int k = _count;
+            while (0 < k && spanLo[k - 1] > _lo)
+            {
+                spanLo[k] = spanLo[k - 1];
+                spanHi[k] = spanHi[k - 1];
+                k--;
+            }
+
+            spanLo[k] = _lo;
+            spanHi[k] = _hi;
+            _count++;
         }
 
         // ---------- 4. 불씨 ----------
@@ -881,7 +1039,7 @@ namespace PresentationLayer.VFX
                 if (0.72f < u && 0 != ((int)(embers[i].age * 30.0f) & 1)) continue; // 후반에는 깜빡이며 사라진다
 
                 int tone = u < 0.3f ? ToneFireLight : (u < 0.65f ? ToneFireMid : ToneFireDeep);
-                Color32 color = Tint(tone, FireGlow(tone));
+                Color32 color = toneColors[tone];
                 int px = Mathf.RoundToInt(embers[i].x);
                 int py = Mathf.RoundToInt(embers[i].y);
 
@@ -924,6 +1082,7 @@ namespace PresentationLayer.VFX
 
         // ---------- 메쉬 갱신 ----------
 
+        // 몸통을 다시 그려 메쉬 앞쪽(정점 0부터)에 올린다. 직전에 올린 그림과 같으면 올리지 않는다.
         private void RebuildBody()
         {
             bodyBuffer.Clear();
@@ -931,61 +1090,146 @@ namespace PresentationLayer.VFX
             DrawFragments();
             DrawFlash();
             DrawSwirls();     // 소용돌이 불꽃이 가장 앞
-            UploadBuffer(bodyBuffer, bodyMesh, ref bBodyHasGeometry);
+
+            if (bodyBuffer.VertexCount == bodyVertexCount && bodyBuffer.ContentHash == bodyHash) return;
+
+            bodyBuffer.Upload(bodyMesh, 0);
+            bodyVertexCount = bodyBuffer.VertexCount;
+            bodyHash = bodyBuffer.ContentHash;
+            bBodyHasBounds = bodyBuffer.TryGetLocalBounds(out bodyBoundsMin, out bodyBoundsMax);
+            bBodyUploaded = true;
         }
 
+        // 불씨를 다시 그려 메쉬의 몸통 정점 뒤에 올린다(같은 메쉬라 몸통 위에 그려진다). 몸통을 새로 올렸거나 불씨 그림이 바뀌었을 때만 올린다.
         private void RebuildEmbers()
         {
             emberBuffer.Clear();
             DrawEmbers();
-            UploadBuffer(emberBuffer, emberMesh, ref bEmberHasGeometry);
+
+            bool bChanged = true == bBodyUploaded || emberBuffer.VertexCount != emberVertexCount || emberBuffer.ContentHash != emberHash;
+            bBodyUploaded = false;
+            if (false == bChanged) return;
+
+            int offset = Mathf.Max(0, bodyVertexCount);
+            if (false == emberBuffer.Upload(bodyMesh, offset))
+            {
+                // 메쉬 용량을 다시 잡느라 앞쪽 몸통 정점이 지워졌다: 몸통을 다시 그려 올리고 불씨를 그 뒤에 다시 올린다
+                bodyVertexCount = -1;
+                RebuildBody();
+                bBodyUploaded = false;
+                emberBuffer.Upload(bodyMesh, Mathf.Max(0, bodyVertexCount));
+            }
+
+            emberVertexCount = emberBuffer.VertexCount;
+            emberHash = emberBuffer.ContentHash;
+            bEmberHasBounds = emberBuffer.TryGetLocalBounds(out emberBoundsMin, out emberBoundsMax);
+            ApplyMeshBounds();
         }
 
-        // 그릴 것이 없고 메쉬도 이미 비어 있으면 올리지 않는다
-        private static void UploadBuffer(PixelQuadBuffer _buffer, Mesh _mesh, ref bool _bHasGeometry)
+        // 메쉬 경계를 지금 올라가 있는 몸통 + 불씨 픽셀 범위(1px 여유)로 좁게 잡는다. 렌더러 컬링이 실제 그림 크기로 이루어진다.
+        private void ApplyMeshBounds()
         {
-            bool bEmpty = 0 == _buffer.VertexCount;
-            if (true == bEmpty && false == _bHasGeometry) return;
+            bool bHas = false;
+            Vector2 min = Vector2.zero;
+            Vector2 max = Vector2.zero;
+            if (true == bBodyHasBounds) Encapsulate(ref bHas, ref min, ref max, bodyBoundsMin, bodyBoundsMax);
+            if (true == bEmberHasBounds) Encapsulate(ref bHas, ref min, ref max, emberBoundsMin, emberBoundsMax);
+            if (false == bHas) return; // 그릴 것이 없으면 경계는 상관없다
 
-            _buffer.Upload(_mesh, MeshBoundsSize);
-            _bHasGeometry = false == bEmpty;
+            Vector3 center = new Vector3((min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f, 0.0f);
+            Vector3 size = new Vector3(max.x - min.x + 2.0f * PixelUnit, max.y - min.y + 2.0f * PixelUnit, BoundsDepth);
+            if (center == appliedBoundsCenter && size == appliedBoundsSize) return;
+
+            appliedBoundsCenter = center;
+            appliedBoundsSize = size;
+            bodyMesh.bounds = new Bounds(center, size);
         }
 
-        // 부모(풀 루트)의 스케일/회전을 지우고 도트 크기가 항상 1px이 되게 하며, 루트 렌더러(정렬 순서)를 따라간다
+        // 이번 프레임 메인 카메라에 보이는지: 지금 메쉬에 올라가 있는 그림과 시뮬레이션 중인 불씨 위치를 합친 범위에 여유를 두고 절두체와 비교한다.
+        // 범위를 알 수 없으면(아직 아무것도 없으면) 보이는 것으로 본다.
+        private bool IsOnScreen()
+        {
+            bool bHas = false;
+            Vector2 min = Vector2.zero;
+            Vector2 max = Vector2.zero;
+            if (true == bBodyHasBounds) Encapsulate(ref bHas, ref min, ref max, bodyBoundsMin, bodyBoundsMax);
+            if (true == bEmberHasBounds) Encapsulate(ref bHas, ref min, ref max, emberBoundsMin, emberBoundsMax);
+            if (true == bEmberSimHasBounds) Encapsulate(ref bHas, ref min, ref max, emberSimMinPx * PixelUnit, emberSimMaxPx * PixelUnit);
+            if (false == bHas) return true;
+
+            Vector3 center = bodyTransform.position + new Vector3((min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f, 0.0f);
+            Vector3 size = new Vector3(max.x - min.x + 2.0f * CullingMarginUnits, max.y - min.y + 2.0f * CullingMarginUnits, BoundsDepth);
+            return PixelVfxCulling.IsVisible(center, size);
+        }
+
+        private static void Encapsulate(ref bool _bHas, ref Vector2 _min, ref Vector2 _max, Vector2 _addMin, Vector2 _addMax)
+        {
+            if (false == _bHas)
+            {
+                _bHas = true;
+                _min = _addMin;
+                _max = _addMax;
+                return;
+            }
+
+            _min = Vector2.Min(_min, _addMin);
+            _max = Vector2.Max(_max, _addMax);
+        }
+
+        // 부모(풀 루트)의 스케일/회전을 지우고 도트 크기가 항상 1px이 되게 하며, 루트 렌더러(정렬 순서)를 따라간다.
+        // 부모 스케일/회전과 루트 정렬이 바뀌었을 때만 다시 쓴다(매 프레임 Transform 변경 전파를 일으키지 않는다).
         private void SyncTransformsAndSorting()
         {
             Vector3 parentScale = transform.lossyScale;
-            float inverseX = 0.0001f < Mathf.Abs(parentScale.x) ? 1.0f / parentScale.x : 1.0f;
-            float inverseY = 0.0001f < Mathf.Abs(parentScale.y) ? 1.0f / parentScale.y : 1.0f;
-            Vector3 inverse = new Vector3(inverseX, inverseY, 1.0f);
+            Quaternion parentRotation = transform.rotation;
+            bool bTransformChanged = false == bTransformSynced
+                || parentScale.x != syncedParentScale.x || parentScale.y != syncedParentScale.y || parentScale.z != syncedParentScale.z
+                || parentRotation.x != syncedParentRotation.x || parentRotation.y != syncedParentRotation.y
+                || parentRotation.z != syncedParentRotation.z || parentRotation.w != syncedParentRotation.w;
 
-            bodyRenderer.transform.rotation = Quaternion.identity;
-            bodyRenderer.transform.localScale = inverse;
-            emberRenderer.transform.rotation = Quaternion.identity;
-            emberRenderer.transform.localScale = inverse;
+            if (true == bTransformChanged)
+            {
+                bTransformSynced = true;
+                syncedParentScale = parentScale;
+                syncedParentRotation = parentRotation;
 
-            // 왜곡 쿼드는 월드 크기(유닛)를 그대로 쓰되 부모 스케일은 지운다
-            Transform distortionTransform = distortionRenderer.transform;
-            distortionTransform.rotation = Quaternion.identity;
-            distortionTransform.localScale = new Vector3(distortionSize.x * inverseX, distortionSize.y * inverseY, 1.0f);
-            distortionTransform.localPosition = new Vector3(0.0f, distortionCenterY * inverseY, 0.0f);
+                float inverseX = 0.0001f < Mathf.Abs(parentScale.x) ? 1.0f / parentScale.x : 1.0f;
+                float inverseY = 0.0001f < Mathf.Abs(parentScale.y) ? 1.0f / parentScale.y : 1.0f;
+                Vector3 inverse = new Vector3(inverseX, inverseY, 1.0f);
+
+                bodyTransform.rotation = Quaternion.identity;
+                bodyTransform.localScale = inverse;
+
+                // 왜곡 쿼드는 월드 크기(유닛)를 그대로 쓰되 부모 스케일은 지운다
+                Transform distortionTransform = distortionRenderer.transform;
+                distortionTransform.rotation = Quaternion.identity;
+                distortionTransform.localScale = new Vector3(distortionSize.x * inverseX, distortionSize.y * inverseY, 1.0f);
+                distortionTransform.localPosition = new Vector3(0.0f, distortionCenterY * inverseY, 0.0f);
+            }
 
             if (null != rootParticleRenderer)
             {
                 int layerId = rootParticleRenderer.sortingLayerID;
                 int order = rootParticleRenderer.sortingOrder;
+                if (true == bSortingSynced && layerId == syncedSortingLayerId && order == syncedSortingOrder) return;
+
+                bSortingSynced = true;
+                syncedSortingLayerId = layerId;
+                syncedSortingOrder = order;
                 bodyRenderer.sortingLayerID = layerId;
                 bodyRenderer.sortingOrder = order + bodySortingOffset;
-                emberRenderer.sortingLayerID = layerId;
-                emberRenderer.sortingOrder = order + emberSortingOffset;
                 distortionRenderer.sortingLayerID = layerId;
                 distortionRenderer.sortingOrder = order + distortionSortingOffset;
             }
         }
 
-        // 충격파 링 진행도와 아지랑이 세기를 시간으로 정해 왜곡 쿼드에 넘긴다
+        // 충격파 링 진행도와 아지랑이 세기를 시간으로 정해 왜곡 쿼드에 넘긴다(_TimeSeed는 재생 시작 때 한 번 넣었다)
         private void UpdateDistortion()
         {
+            bool bActive = elapsed < Mathf.Max(ringDuration, hazeDuration);
+            SetDistortionActive(bActive);
+            if (false == bActive) return;
+
             float ringProgress = Mathf.Clamp01(elapsed / Mathf.Max(0.05f, ringDuration));
             float hazeT = Mathf.Clamp01(elapsed / Mathf.Max(0.05f, hazeDuration));
             // 0.08초 만에 켜졌다가 서서히 사라진다
@@ -993,16 +1237,24 @@ namespace PresentationLayer.VFX
 
             distortionBlock.SetFloat(ProgressId, ringProgress);
             distortionBlock.SetFloat(IntensityId, hazeIntensity);
-            distortionBlock.SetFloat(TimeSeedId, bodySeed * 0.01f);
             distortionRenderer.SetPropertyBlock(distortionBlock);
-            distortionRenderer.enabled = elapsed < Mathf.Max(ringDuration, hazeDuration);
+        }
+
+        // 왜곡 쿼드를 켜고 끄며, 켜져 있는 동안만 화면 캡처(_CameraSortingLayerTexture) 사용자로 등록한다
+        private void SetDistortionActive(bool _bActive)
+        {
+            if (null == distortionRenderer || _bActive == bDistortionActive) return;
+
+            bDistortionActive = _bActive;
+            distortionRenderer.enabled = _bActive;
+            if (true == _bActive) SortingLayerTextureGate.Acquire();
+            else SortingLayerTextureGate.Release();
         }
 
         private void HideRenderers()
         {
-            if (null != bodyRenderer) bodyRenderer.enabled = false;
-            if (null != emberRenderer) emberRenderer.enabled = false;
-            if (null != distortionRenderer) distortionRenderer.enabled = false;
+            if (null != bodyRenderer && true == bodyRenderer.enabled) bodyRenderer.enabled = false;
+            SetDistortionActive(false);
         }
 
         private void Awake()
@@ -1040,10 +1292,10 @@ namespace PresentationLayer.VFX
 
             UpdateEmbers(dt);
 
-            // 몸통 메쉬는 매 프레임 다시 만들고(저사양 모드에서만 30fps로 제한), 화면 밖이면(첫 몇 프레임은 렌더 전이라 보이는 것으로 본다) 건너뛴다.
+            // 몸통 메쉬는 매 프레임 다시 만들고(저사양 모드에서만 30fps로 제한), 화면 밖이면(첫 몇 프레임은 보이는 것으로 본다) 건너뛴다.
             bodyTimer += dt;
             float bodyInterval = true == IsHeavyLoad() ? 1.0f / LowQualityFps : 0.0f;
-            bool bVisible = 3 > framesSinceEnable || true == bodyRenderer.isVisible || true == emberRenderer.isVisible || true == distortionRenderer.isVisible;
+            bool bVisible = 3 > framesSinceEnable || true == IsOnScreen();
             if (bodyTimer >= bodyInterval && true == bVisible)
             {
                 bodyTimer = 0.0f;
@@ -1055,8 +1307,7 @@ namespace PresentationLayer.VFX
             SyncTransformsAndSorting();
             UpdateDistortion();
 
-            bodyRenderer.enabled = true;
-            emberRenderer.enabled = true;
+            if (false == bodyRenderer.enabled) bodyRenderer.enabled = true;
         }
 
         private void OnDisable()
@@ -1076,12 +1327,17 @@ namespace PresentationLayer.VFX
                 Destroy(bodyMesh);
                 bodyMesh = null;
             }
-
-            if (null != emberMesh)
-            {
-                Destroy(emberMesh);
-                emberMesh = null;
-            }
         }
+
+#if UNITY_EDITOR
+        // 플레이 중 인스펙터에서 밝기나 왜곡 크기를 바꾸면 미리 계산해 둔 색과 Transform 동기화를 다시 한다
+        private void OnValidate()
+        {
+            if (false == bInitialized) return;
+
+            BuildToneColors();
+            bTransformSynced = false;
+        }
+#endif
     }
 }

@@ -83,7 +83,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 12
+  m_SortingLayer: 13
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -2455103700055406647, guid: 11e2346cbe398b648b2c0ead4fbdd42b, type: 3}
@@ -105,7 +105,7 @@ SortingGroup:
   m_GameObject: {fileID: 2146965103107229743}
   m_Enabled: 1
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 12
+  m_SortingLayer: 13
   m_SortingOrder: 0
   m_SortAtRoot: 0
   m_Sort3DAs2D: 0
@@ -150,6 +150,7 @@ MonoBehaviour:
   - {fileID: -8470075903737238529, guid: 11e2346cbe398b648b2c0ead4fbdd42b, type: 3}
   sr: {fileID: 6105784415098846363}
   frameRate: 10
+  bPingPong: 0
 --- !u!1 &3751804847116990708
 GameObject:
   m_ObjectHideFlags: 0
@@ -228,7 +229,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1838057819
-  m_SortingLayer: 5
+  m_SortingLayer: 10
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 52508ef822c588646a0024127ab8411a, type: 3}
@@ -351,7 +352,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 12
+  m_SortingLayer: 13
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -2455103700055406647, guid: 11e2346cbe398b648b2c0ead4fbdd42b, type: 3}
@@ -450,6 +451,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BlastFurnace
   gemOreType: 1
   animatedObj: {fileID: 3601323084132055792}
+  idleFrameStart: 0
+  idleFrameCount: 4
+  runFrameStart: 4
+  runFrameCount: 5
+  runFrameRate: 10
+  idleFrameRate: 6
   loopVfxPrefab: {fileID: 3945750783020943169, guid: ce903d2310da2fc4a9d19bf14d06292b, type: 3}
   fireImpactPrefab: {fileID: 2911934347387074514, guid: 61c75b9b52a2fec4dbadf33ecb7bcc14, type: 3}
   heatHaze: {fileID: 8100000000000000004}
@@ -537,7 +544,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 12
+  m_SortingLayer: 13
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -2455103700055406647, guid: 11e2346cbe398b648b2c0ead4fbdd42b, type: 3}
@@ -561,6 +568,7 @@ GameObject:
   - component: {fileID: 8100000000000000001}
   - component: {fileID: 8100000000000000003}
   - component: {fileID: 8100000000000000004}
+  - component: {fileID: 7469561011693387300}
   m_Layer: 16
   m_Name: HeatHaze
   m_TagString: Untagged
@@ -629,7 +637,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1613316897
-  m_SortingLayer: 13
+  m_SortingLayer: 14
   m_SortingOrder: 10
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 0a2a389269eff274d91363ee9e57c02f, type: 3}
@@ -662,3 +670,16 @@ MonoBehaviour:
   isTestMode: 0
   isTestRunning: 1
   showScreenTestButton: 0
+--- !u!114 &7469561011693387300
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8100000000000000002}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f6e7281b5bace346975b5c3c0c5bdd3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.VFX.SortingLayerTextureUser
+  targetRenderer: {fileID: 8100000000000000003}
