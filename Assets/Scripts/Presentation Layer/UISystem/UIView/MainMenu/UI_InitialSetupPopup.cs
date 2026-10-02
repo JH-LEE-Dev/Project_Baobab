@@ -142,8 +142,17 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
     public void Hide()
     {
         // 초기 언어 설정 및 약관 동의는 게임 진입 전 필수 완료 단계이므로 취소 키(ESC / 패드 B)로 닫힐 수 없습니다.
-        // 아무런 동작을 하지 않고 입력을 소비하여 하위 뷰로 관통되는 것을 완벽히 방어합니다.
-        return;
+        // 약관 단계에서는 한 단계 뒤인 언어 선택으로 되돌아가고, 언어 단계에서는 아무것도 하지 않고
+        // 입력만 소비하여 하위 뷰로 관통되는 것을 막습니다.
+        //
+        // 키보드 ESC는 ESCButtonPressedEvent와 UICancelEvent를 함께 태울 수 있어 같은 프레임에 두 번
+        // 들어올 수 있다. isTransitioning이 두 번째 호출을 걸러준다.
+        if (false == isConsentPhase
+            || true == isTransitioning
+            || true == isClosing
+            || false == isInputAllowed) return;
+
+        TransitionToLanguagePanel();
     }
 
     private void Awake()
@@ -1076,6 +1085,97 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         }
     }
 
+    /// <summary>
+    /// 약관 동의 패널에서 취소 키(ESC / 패드 B)를 눌렀을 때 언어 선택 패널로 되돌아갑니다.
+    /// TransitionToConsentPanel의 역순 연출이며, 이미 고른 언어는 선택 표시를 유지합니다.
+    /// </summary>
+    private void TransitionToLanguagePanel()
+    {
+        KillTransition();
+        isTransitioning = true;
+
+        // 페이드아웃 동안 약관 쪽 입력을 끊는다. 확인 버튼은 ConsentPanel의 자식이 아니라 형제라
+        // 패널의 CanvasGroup이 막아주지 않으므로 따로 내리고(내부에서 ForceUnhover까지 처리),
+        // 선택도 비워서 게임패드 Submit이 토글에 들어가지 않게 한다.
+        if (null != consentPanel)
+        {
+            consentPanel.interactable = false;
+            consentPanel.blocksRaycasts = false;
+        }
+        if (null != confirmButton)
+        {
+            confirmButton.SetInteractable(false);
+        }
+        if (null != EventSystem.current)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
+        hoveredConsentToggle = null;
+        HideConsentToggleCursor();
+
+        Sound.PlayUI(SoundID.ResultUIClose);
+
+        Sequence _seq = DOTween.Sequence();
+
+        if (null != consentPanel)
+        {
+            _seq.Append(consentPanel.DOFade(0f, fadeDuration * 0.7f).SetEase(Ease.InQuad));
+        }
+
+        _seq.AppendCallback(SetupLanguagePanelOnReturn);
+
+        if (null != languagePanel)
+        {
+            _seq.Append(languagePanel.DOFade(1f, fadeDuration * 0.7f).SetEase(Ease.OutQuad));
+        }
+
+        _seq.OnComplete(HandleLanguagePanelReturned);
+        _seq.SetTarget(this);
+        panelTransitionTween = _seq;
+    }
+
+    private void SetupLanguagePanelOnReturn()
+    {
+        // 약관 단계 표시를 여기서 내린다. 페이드아웃 도중에 내리면 그 사이 장치 전환(OnDeviceChanged)이
+        // 아직 꺼져 있는 언어 버튼에 포커스를 주려 든다.
+        isConsentPhase = false;
+
+        if (null != consentPanel) consentPanel.gameObject.SetActive(false);
+        if (null != confirmButton) confirmButton.gameObject.SetActive(false);
+
+        if (null != languagePanel)
+        {
+            // 입력은 페이드인이 끝난 HandleLanguagePanelReturned에서 연다. 여기서 열면 그 사이 클릭이
+            // isTransitioning에 막혀 클릭음만 나고 아무 일도 일어나지 않는다.
+            languagePanel.gameObject.SetActive(true);
+            languagePanel.alpha = 0f;
+            languagePanel.interactable = false;
+            languagePanel.blocksRaycasts = false;
+        }
+
+        // 다시 약관으로 넘어가면 토글이 모두 꺼진 상태로 초기화되므로(SetupConsentPanelOnTransition),
+        // 지난번 포커스가 비활성 확인 버튼에 남아 있으면 첫 포커스가 그리로 가 버린다.
+        lastFocusedConsentSelectable = null;
+    }
+
+    private void HandleLanguagePanelReturned()
+    {
+        isTransitioning = false;
+        if (null != languagePanel)
+        {
+            languagePanel.interactable = true;
+            languagePanel.blocksRaycasts = true;
+        }
+
+        if (null != inputManager && true == inputManager.IsGamepadMode)
+        {
+            // 되돌아오며 자동으로 잡는 포커스에서는 hover음을 내지 않는다. (HandleConsentPanelShown과 같은 이유)
+            UI_PanelSelectButton.SuppressSelectAudio = true;
+            FocusLanguageButton(lastFocusedLanguageButton ?? GetKoreanLanguageButton() ?? GetFirstLanguageButton());
+            UI_PanelSelectButton.SuppressSelectAudio = false;
+        }
+    }
+
     private void HandleConfirmButtonClicked()
     {
         // 닫기 연출 중 재입력 무시. 그냥 두면 확인음이 겹쳐 울리고 닫기 시퀀스가 매번
@@ -1302,6 +1402,13 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
 
         if (EInputDeviceType.Gamepad == _device)
         {
+            // 패널 전환 중에는 포커스를 잡지 않는다. 전환 완료 콜백(HandleConsentPanelShown /
+            // HandleLanguagePanelReturned)이 그 시점의 장치를 보고 포커스를 잡아준다.
+            // 특히 마우스 모드에서 패드 B로 되돌아갈 때는 취소 콜백(Input System 업데이트)이
+            // 장치 전환 폴링(InputManager.Update)보다 먼저 돌아서, 여기서 막지 않으면 사라지는
+            // 중인 약관 토글에 포커스·커서·hover음이 들어간다.
+            if (true == isTransitioning) return;
+
             if (false == isConsentPhase)
             {
                 UI_PanelSelectButton _hoveredBtn = null;
