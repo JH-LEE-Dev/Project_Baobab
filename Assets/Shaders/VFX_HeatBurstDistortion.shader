@@ -120,18 +120,31 @@ Shader "Custom/VFX/URP2D_HeatBurstDistortion"
                 p.x *= _Aspect;
                 float dist = length(p);
 
-                // 1. 충격파 링: 가운데가 가장 센 가우시안 고리가 퍼지며 약해진다
-                float ringRadius = _Progress * _RingMaxRadius;
-                float ringOffsetT = (dist - ringRadius) / max(_RingWidth, 0.0001);
-                float ring = exp(-ringOffsetT * ringOffsetT) * (1.0 - _Progress);
-                float2 radialDir = p / max(dist, 0.0001);
-                radialDir.x /= max(_Aspect, 0.0001);
-                float2 offset = radialDir * ring * _RingStrength;
+                // 1. 충격파 링: 가운데가 가장 센 가우시안 고리가 퍼지며 약해진다.
+                // 링이 다 퍼지면(_Progress >= 1) (1 - _Progress) = 0이라 링 값이 0이므로 계산을 건너뛴다(쿼드 전체가 같은 분기).
+                float ring = 0.0;
+                float2 offset = float2(0.0, 0.0);
+                if (_Progress < 1.0)
+                {
+                    float ringRadius = _Progress * _RingMaxRadius;
+                    float ringOffsetT = (dist - ringRadius) / max(_RingWidth, 0.0001);
+                    ring = exp(-ringOffsetT * ringOffsetT) * (1.0 - _Progress);
+                    float2 radialDir = p / max(dist, 0.0001);
+                    radialDir.x /= max(_Aspect, 0.0001);
+                    offset = radialDir * ring * _RingStrength;
+                }
 
-                // 2. 아지랑이: 중심 위쪽 기둥 안에서 세로로 흐르는 물결(노이즈로 위상을 흔든다). 위로 갈수록 옅어진다.
-                float column = exp(-pow(p.x / max(_HazeWidth, 0.0001), 2.0));
+                // 2. 아지랑이 마스크: 중심 위쪽 기둥 안에서만 일렁이고 위로 갈수록 옅어진다.
+                float columnT = p.x / max(_HazeWidth, 0.0001);
+                float column = exp(-columnT * columnT);
                 float rise = smoothstep(_CenterY, _CenterY + 0.12, i.uv.y) * (1.0 - smoothstep(0.55, 1.0, i.uv.y));
                 float hazeMask = column * rise * _Intensity;
+
+                // 왜곡이 사실상 없는 곳(알파가 8비트 한 단계의 절반 미만)은 노이즈와 화면 샘플 없이 버린다. 알파는 노이즈와 무관하게 링/마스크로만 정해진다.
+                float alpha = saturate(ring * 2.5 + hazeMask * 1.5);
+                if (alpha < 0.00196) discard;
+
+                // 아지랑이 물결(노이즈로 위상을 흔든다)
                 float phaseNoise = valueNoise(float2(i.uv.x * 7.0, i.uv.y * 4.0 - time * 1.4)) * 6.2831;
                 float wave = sin(i.uv.y * _HazeFrequency - time * _HazeSpeed + phaseNoise);
                 float lift = valueNoise(float2(i.uv.x * 5.0 + 17.0, i.uv.y * 3.0 - time * 1.1)) - 0.5;
@@ -148,7 +161,6 @@ Shader "Custom/VFX/URP2D_HeatBurstDistortion"
                 half4 bg = SAMPLE_TEXTURE2D(_CameraSortingLayerTexture, sampler_CameraSortingLayerTexture, screenUV);
 
                 // 왜곡이 일어나는 곳만 불투명하게 해서 나머지는 원래 화면이 보이게 한다
-                float alpha = saturate(ring * 2.5 + hazeMask * 1.5);
                 return half4(bg.rgb, alpha);
             }
             ENDHLSL
