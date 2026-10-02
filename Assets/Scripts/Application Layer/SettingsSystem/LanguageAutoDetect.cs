@@ -70,12 +70,22 @@ public static class LanguageAutoDetect
         else if (MatchesAny(_code, "german")) _mapped = EOptionLanguage.German;
         else if (MatchesAny(_code, "french")) _mapped = EOptionLanguage.French;
 
-        // 포르투갈어·스페인어는 Steam에 지역 변종이 따로 있다(브라질 포르투갈어 "brazilian",
-        // 중남미 스페인어 "latam"). 우리는 변종별 번역을 따로 두지 않으므로 같은 항목으로 모은다.
-        // 여기서 빠뜨리면 브라질·중남미 유저가 번역이 있는데도 영어로 시작한다.
+        // 포르투갈어는 Steam에 브라질 변종("brazilian")이 따로 있지만, 우리는 변종별 번역을 두지
+        // 않으므로 같은 항목으로 모은다. 여기서 빠뜨리면 브라질 유저가 번역이 있는데도 영어로 시작한다.
         else if (MatchesAny(_code, "portuguese", "brazilian")) _mapped = EOptionLanguage.Portuguese;
-        else if (MatchesAny(_code, "spanish", "latam")) _mapped = EOptionLanguage.Spanish;
+
+        // 스페인어는 중남미 번역을 따로 두므로 "latam"을 갈라 보낸다. (예전에는 스페인어로 모았다)
+        else if (MatchesAny(_code, "spanish")) _mapped = EOptionLanguage.Spanish;
+        else if (MatchesAny(_code, "latam")) _mapped = EOptionLanguage.SpanishLatAm;
         else if (MatchesAny(_code, "russian")) _mapped = EOptionLanguage.Russian;
+        else if (MatchesAny(_code, "polish")) _mapped = EOptionLanguage.Polish;
+        else if (MatchesAny(_code, "turkish")) _mapped = EOptionLanguage.Turkish;
+        else if (MatchesAny(_code, "italian")) _mapped = EOptionLanguage.Italian;
+        else if (MatchesAny(_code, "ukrainian")) _mapped = EOptionLanguage.Ukrainian;
+        else if (MatchesAny(_code, "czech")) _mapped = EOptionLanguage.Czech;
+        else if (MatchesAny(_code, "indonesian")) _mapped = EOptionLanguage.Indonesian;
+        else if (MatchesAny(_code, "vietnamese")) _mapped = EOptionLanguage.Vietnamese;
+        else if (MatchesAny(_code, "thai")) _mapped = EOptionLanguage.Thai;
         else return false;
 
         return Accept(_mapped, out _language);
@@ -121,7 +131,8 @@ public static class LanguageAutoDetect
                 break;
 
             // SystemLanguage는 포르투갈/브라질, 스페인/중남미를 구분하지 않는다.
-            // 구분이 필요해지면 번역을 나눈 뒤 Steam 코드 쪽부터 갈라야 한다.
+            // 스페인어는 원본 번역인 스페인(es)으로 본다. 중남미 유저는 대부분 Steam 언어("latam")에서
+            // 먼저 갈리고, 여기까지 내려온 경우에만 스페인 스페인어로 시작한다. (옵션에서 바꾸면 된다)
             case SystemLanguage.Portuguese:
                 _mapped = EOptionLanguage.Portuguese;
                 break;
@@ -132,6 +143,38 @@ public static class LanguageAutoDetect
 
             case SystemLanguage.Russian:
                 _mapped = EOptionLanguage.Russian;
+                break;
+
+            case SystemLanguage.Polish:
+                _mapped = EOptionLanguage.Polish;
+                break;
+
+            case SystemLanguage.Turkish:
+                _mapped = EOptionLanguage.Turkish;
+                break;
+
+            case SystemLanguage.Italian:
+                _mapped = EOptionLanguage.Italian;
+                break;
+
+            case SystemLanguage.Ukrainian:
+                _mapped = EOptionLanguage.Ukrainian;
+                break;
+
+            case SystemLanguage.Czech:
+                _mapped = EOptionLanguage.Czech;
+                break;
+
+            case SystemLanguage.Indonesian:
+                _mapped = EOptionLanguage.Indonesian;
+                break;
+
+            case SystemLanguage.Vietnamese:
+                _mapped = EOptionLanguage.Vietnamese;
+                break;
+
+            case SystemLanguage.Thai:
+                _mapped = EOptionLanguage.Thai;
                 break;
 
             default:
@@ -145,8 +188,9 @@ public static class LanguageAutoDetect
     /// <summary>
     /// 매핑 결과가 지금 실제로 지원되는 언어일 때만 통과시킵니다.
     ///
-    /// 지금은 선언된 항목이 모두 지원되지만, 앞으로도 번역보다 enum이 먼저 늘어날 수 있습니다.
-    /// 이 관문이 없으면 "선택기에는 없는 언어로 게임이 시작되는"
+    /// 지금은 Thai가 여기서 걸립니다(태국어 폰트가 없어 아직 지원 구간 밖). 태국어 Steam·OS 유저는
+    /// 다음 순위로 넘어가 결국 영어로 시작하고, 폰트가 들어와 SUPPORTED_LANGUAGE_COUNT가 오르면
+    /// 코드 수정 없이 태국어로 시작합니다. 이 관문이 없으면 "선택기에는 없는 언어로 게임이 시작되는"
     /// 상태가 되고, SettingsData.Validate가 그걸 한국어로 되돌려 원인을 찾기 어려워집니다.
     /// (지원 언어가 enum 앞쪽에 연속으로 온다는 전제는 Validate·CycleLanguage와 동일합니다)
     /// </summary>

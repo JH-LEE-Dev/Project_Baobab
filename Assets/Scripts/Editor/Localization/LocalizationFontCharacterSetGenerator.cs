@@ -38,9 +38,13 @@ public static class LocalizationFontCharacterSetGenerator
             "，。！？：；（）【】《》、「」『』“”‘’…—·",
             entry => entry.zhHant),
 
-        // 독일어·프랑스어·포르투갈어·스페인어·러시아어는 Lorem 하나로 처리하므로 다섯 열을 합쳐 굽는다.
-        // 안전 문자는 스페인어의 여는 물음표·느낌표와 러시아어·독일어의 인용부호다. 번역문에
+        // 독일어·프랑스어·포르투갈어·스페인어·러시아어·폴란드어·튀르키예어·중남미 스페인어·
+        // 이탈리아어·우크라이나어·체코어·인도네시아어는 Lorem 하나로 처리하므로 열두 열을 합쳐 굽는다.
+        // (베트남어는 Lorem에 성조 글자가 없어 동적 아틀라스인 갈무리11을 그대로 쓰므로 여기 없다.
+        //  태국어는 아직 폰트가 없다. 폰트를 넣으면 그 폰트용 항목을 따로 만들 것)
+        // 안전 문자는 스페인어의 여는 물음표·느낌표와 러시아어·독일어·폴란드어의 인용부호다. 번역문에
         // 아직 안 나타났더라도 번역이 들어오는 순간 쓰이는데, 그때 굽기를 잊으면 그 글자만 깨진다.
+        // 중남미 스페인어는 런타임처럼 es를 먼저 보고 그다음 en으로 폴백한다(LocalizationManager.ResolveText).
         new LanguageDefinition(
             "LATIN_CYRILLIC",
             "Lorem_Characters.txt",
@@ -49,7 +53,14 @@ public static class LocalizationFontCharacterSetGenerator
             entry => entry.fr,
             entry => entry.pt,
             entry => entry.es,
-            entry => entry.ru)
+            entry => entry.ru,
+            entry => entry.pl,
+            entry => entry.tr,
+            entry => string.IsNullOrWhiteSpace(entry.esLatam) ? entry.es : entry.esLatam,
+            entry => entry.it,
+            entry => entry.uk,
+            entry => entry.cs,
+            entry => entry.ind)
     };
 
     [MenuItem("Tools/Localization/Generate Font Character Sets", false, 1)]

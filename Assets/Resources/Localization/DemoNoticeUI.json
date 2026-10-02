@@ -13,7 +13,16 @@
       "fr": "<COLOR=7EEDBE,EDD87E><Wave>Démo terminée</Wave></COLOR>",
       "pt": "<COLOR=7EEDBE,EDD87E><Wave>Demo concluída</Wave></COLOR>",
       "es": "<COLOR=7EEDBE,EDD87E><Wave>Demo completada</Wave></COLOR>",
-      "ru": "<COLOR=7EEDBE,EDD87E><Wave>Демо пройдено</Wave></COLOR>"
+      "ru": "<COLOR=7EEDBE,EDD87E><Wave>Демо пройдено</Wave></COLOR>",
+      "pl": "",
+      "tr": "",
+      "esLatam": "",
+      "it": "",
+      "uk": "",
+      "cs": "",
+      "ind": "",
+      "vi": "",
+      "th": ""
     },
     {
       "id": 2,
@@ -27,7 +36,16 @@
       "fr": "Un grand merci à vous, <COLOR=7EEDBE>explorateurs</COLOR>, d'avoir accompagné\nLumber Boy dans sa toute première aventure.\nAjoutez le jeu à votre <COLOR=FFD700,FFA500><Wave>liste de souhaits Steam</Wave></COLOR> et partagez\nvos <COLOR=7289DA>retours sur Discord</COLOR> pour soutenir notre équipe.\nPoursuivez l'aventure dans la <COLOR=54D86A>version complète</COLOR> !",
       "pt": "Muito obrigado a todos os <COLOR=7EEDBE>exploradores</COLOR>\nque acompanharam o Lumber Boy nesta primeira aventura!\nAdicionem o jogo à <COLOR=FFD700,FFA500><Wave>lista de desejos do Steam</Wave></COLOR> e compartilhem\nsuas <COLOR=7289DA>opiniões no Discord</COLOR> para apoiar nossa equipe.\nContinuem a aventura na <COLOR=54D86A>versão completa</COLOR>!",
       "es": "Gracias de corazón, <COLOR=7EEDBE>exploradores</COLOR>,\npor acompañar a Lumber Boy en su primera aventura.\nAñadid el juego a vuestra <COLOR=FFD700,FFA500><Wave>lista de deseados de Steam</Wave></COLOR> y compartid\nvuestros <COLOR=7289DA>comentarios en Discord</COLOR> para apoyar al equipo.\n¡Continuad la aventura en la <COLOR=54D86A>versión completa</COLOR>!",
-      "ru": "Спасибо вам, <COLOR=7EEDBE>путешественники</COLOR>, за то, что отправились\nс Lumber Boy в его первое приключение!\nДобавьте игру в <COLOR=FFD700,FFA500><Wave>список желаемого в Steam</Wave></COLOR> и оставьте\n<COLOR=7289DA>отзыв в Discord</COLOR> — это очень поможет нашей команде.\nПродолжите приключение в <COLOR=54D86A>полной версии</COLOR>!"
+      "ru": "Спасибо вам, <COLOR=7EEDBE>путешественники</COLOR>, за то, что отправились\nс Lumber Boy в его первое приключение!\nДобавьте игру в <COLOR=FFD700,FFA500><Wave>список желаемого в Steam</Wave></COLOR> и оставьте\n<COLOR=7289DA>отзыв в Discord</COLOR> — это очень поможет нашей команде.\nПродолжите приключение в <COLOR=54D86A>полной версии</COLOR>!",
+      "pl": "",
+      "tr": "",
+      "esLatam": "",
+      "it": "",
+      "uk": "",
+      "cs": "",
+      "ind": "",
+      "vi": "",
+      "th": ""
     },
     {
       "id": 3,
@@ -41,7 +59,16 @@
       "fr": "Un grand merci à vous, <COLOR=7EEDBE>explorateurs</COLOR>, d'avoir accompagné\nLumber Boy dans sa toute première aventure.\nVos <COLOR=7289DA>retours sur Discord</COLOR> sont une aide précieuse pour notre équipe.\nRendez-vous dans la <COLOR=54D86A>version complète</COLOR> pour la suite de l'aventure !",
       "pt": "Muito obrigado a todos os <COLOR=7EEDBE>exploradores</COLOR>\nque acompanharam o Lumber Boy nesta primeira aventura!\nSuas <COLOR=7289DA>opiniões no Discord</COLOR> dão uma força enorme à nossa equipe.\nNos vemos na <COLOR=54D86A>versão completa</COLOR> para continuar essa aventura!",
       "es": "Gracias de corazón, <COLOR=7EEDBE>exploradores</COLOR>,\npor acompañar a Lumber Boy en su primera aventura.\nVuestros <COLOR=7289DA>comentarios en Discord</COLOR> ayudan muchísimo al equipo de desarrollo.\n¡Nos vemos en la <COLOR=54D86A>versión completa</COLOR> para continuar la aventura!",
-      "ru": "Спасибо вам, <COLOR=7EEDBE>путешественники</COLOR>, за то, что отправились\nс Lumber Boy в его первое приключение!\nВаши <COLOR=7289DA>отзывы в Discord</COLOR> очень помогают нашей команде.\nДо встречи в <COLOR=54D86A>полной версии</COLOR>, где приключение продолжится!"
+      "ru": "Спасибо вам, <COLOR=7EEDBE>путешественники</COLOR>, за то, что отправились\nс Lumber Boy в его первое приключение!\nВаши <COLOR=7289DA>отзывы в Discord</COLOR> очень помогают нашей команде.\nДо встречи в <COLOR=54D86A>полной версии</COLOR>, где приключение продолжится!",
+      "pl": "",
+      "tr": "",
+      "esLatam": "",
+      "it": "",
+      "uk": "",
+      "cs": "",
+      "ind": "",
+      "vi": "",
+      "th": ""
     }
   ]
 }

@@ -137,6 +137,10 @@ public class LocalizationManager : MonoBehaviour
     /// 폴백을 KR이 아니라 EN으로 두는 이유는, 번역이 비어 있는 항목만 읽을 수 없는 글자로
     /// 튀는 것보다 문장 전체가 영어로 일관되게 보이는 편이 낫기 때문이다.
     /// (KR에 폴백이 없는 것도 같은 이유다. kr은 원문이라 항상 채워져 있다)
+    ///
+    /// 중남미 스페인어만 영어보다 스페인(es) 번역을 먼저 본다. 중남미 번역은 기존 스페인어를
+    /// 다듬는 방식으로 채워지므로, 아직 손대지 않은 항목도 스페인어로 읽히는 편이 낫기 때문이다.
+    /// (LocalizationFontCharacterSetGenerator가 같은 순서로 문자를 모으므로, 바꿀 때는 함께 바꿀 것)
     /// </summary>
     private string ResolveText(in LocalizationEntry _entry)
     {
@@ -151,6 +155,17 @@ public class LocalizationManager : MonoBehaviour
             case Language.PT: return string.IsNullOrEmpty(_entry.pt) ? _entry.en : _entry.pt;
             case Language.ES: return string.IsNullOrEmpty(_entry.es) ? _entry.en : _entry.es;
             case Language.RU: return string.IsNullOrEmpty(_entry.ru) ? _entry.en : _entry.ru;
+            case Language.PL: return string.IsNullOrEmpty(_entry.pl) ? _entry.en : _entry.pl;
+            case Language.TR: return string.IsNullOrEmpty(_entry.tr) ? _entry.en : _entry.tr;
+            case Language.ES_LATAM:
+                if (false == string.IsNullOrEmpty(_entry.esLatam)) return _entry.esLatam;
+                return string.IsNullOrEmpty(_entry.es) ? _entry.en : _entry.es;
+            case Language.IT: return string.IsNullOrEmpty(_entry.it) ? _entry.en : _entry.it;
+            case Language.UK: return string.IsNullOrEmpty(_entry.uk) ? _entry.en : _entry.uk;
+            case Language.CS: return string.IsNullOrEmpty(_entry.cs) ? _entry.en : _entry.cs;
+            case Language.ID: return string.IsNullOrEmpty(_entry.ind) ? _entry.en : _entry.ind;
+            case Language.VI: return string.IsNullOrEmpty(_entry.vi) ? _entry.en : _entry.vi;
+            case Language.TH: return string.IsNullOrEmpty(_entry.th) ? _entry.en : _entry.th;
             default: return _entry.en;
         }
     }

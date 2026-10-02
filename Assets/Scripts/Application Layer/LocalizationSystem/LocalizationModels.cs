@@ -15,6 +15,15 @@ public struct LocalizationEntry
     public string pt;     // 포르투갈어. 비어 있으면 en으로 폴백한다 (LocalizationManager.ParseJson)
     public string es;     // 스페인어. 비어 있으면 en으로 폴백한다 (LocalizationManager.ParseJson)
     public string ru;     // 러시아어. 비어 있으면 en으로 폴백한다 (LocalizationManager.ParseJson)
+    public string pl;     // 폴란드어. 비어 있으면 en으로 폴백한다 (LocalizationManager.ParseJson)
+    public string tr;     // 튀르키예어. 비어 있으면 en으로 폴백한다 (LocalizationManager.ParseJson)
+    public string esLatam; // 중남미 스페인어. 비어 있으면 es → en 순으로 폴백한다 (LocalizationManager.ResolveText)
+    public string it;     // 이탈리아어. 비어 있으면 en으로 폴백한다 (LocalizationManager.ParseJson)
+    public string uk;     // 우크라이나어. 비어 있으면 en으로 폴백한다 (LocalizationManager.ParseJson)
+    public string cs;     // 체코어. 비어 있으면 en으로 폴백한다 (LocalizationManager.ParseJson)
+    public string ind;    // 인도네시아어. "id"는 항목 식별자와 겹치므로 ISO 639-2 코드를 쓴다. 비어 있으면 en으로 폴백한다
+    public string vi;     // 베트남어. 비어 있으면 en으로 폴백한다 (LocalizationManager.ParseJson)
+    public string th;     // 태국어. 비어 있으면 en으로 폴백한다 (LocalizationManager.ParseJson)
     public string enumType;  // 연결하고자 하는 Enum의 이름 (예: "ForestType")
     public string enumValue; // 연결하고자 하는 Enum 값의 이름 (예: "DeepForest")
 }
@@ -45,5 +54,14 @@ public enum Language
     FR,
     PT,
     ES,
-    RU
+    RU,
+    PL,
+    TR,
+    ES_LATAM,
+    IT,
+    UK,
+    CS,
+    ID,
+    VI,
+    TH
 }

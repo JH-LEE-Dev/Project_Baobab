@@ -5,8 +5,10 @@ using UnityEngine;
 // 따라서 기존 항목의 순서를 바꾸거나 중간에 삽입하면 저장된 설정이 다른 값으로 읽힌다.
 
 /// <summary>
-/// 주의: 현재 실제로 지원되는 항목은 선언된 열 개 전부입니다.
+/// 주의: 현재 실제로 지원되는 항목은 맨 뒤의 Thai를 뺀 열여덟 개입니다.
 /// (SettingsData.SUPPORTED_LANGUAGE_COUNT 참고)
+/// Thai는 번역 열과 매핑은 모두 연결되어 있지만, 태국 문자를 가진 폰트가 프로젝트에 없어서
+/// 고르는 순간 화면 전체가 두부가 됩니다. 폰트를 넣은 뒤 그 상수를 올리면 열립니다.
 /// 지원 항목은 반드시 맨 앞에서부터 인덱스 0..SUPPORTED_LANGUAGE_COUNT-1로 연속되어야 합니다.
 /// (CycleLanguage와 Validate가 이 구간만 순환·허용하기 때문입니다)
 /// 언어를 늘리려면 그 상수와 SettingsManager의 언어 매핑·라벨을 함께 손봐야 합니다.
@@ -14,6 +16,7 @@ using UnityEngine;
 /// 이 enum의 나열 순서가 곧 옵션 화면에서 좌우 키로 넘길 때의 순서입니다.
 /// 기존 항목의 값은 Settings.json에 정수로 저장되므로 순서를 바꾸거나 중간에 끼워 넣지 마세요.
 /// (Russian이 맨 뒤로 간 것은 예외입니다. 지원 대상이 아니어서 저장된 적이 없는 값이었습니다)
+/// 그래서 SpanishLatAm도 Spanish 옆이 아니라 맨 뒤 무리에 붙어 있습니다.
 ///
 /// 한국어·영어를 제외한 언어는 선택은 가능하지만, 아직 실제 번역 텍스트가 없어
 /// LocalizationEntry의 해당 열이 비어 있으면 영어 텍스트로 폴백합니다.
@@ -30,7 +33,16 @@ public enum EOptionLanguage
     French,
     Portuguese,
     Spanish,
-    Russian
+    Russian,
+    Polish,
+    Turkish,
+    SpanishLatAm,
+    Italian,
+    Ukrainian,
+    Czech,
+    Indonesian,
+    Vietnamese,
+    Thai
 }
 
 public enum EWindowMode { Windowed, Fullscreen }
@@ -213,7 +225,10 @@ public struct SettingsData
     /// 반대로 매핑 없이 이 값만 올리면 선택기에는 "日本語"가 뜨는데 게임은 영어로 도는
     /// 불일치가 생깁니다. SettingsManager 상단의 체크리스트를 모두 처리한 뒤에 올리세요.
     /// </summary>
-    public const int SUPPORTED_LANGUAGE_COUNT = 10;
+    ///
+    /// 지금은 맨 뒤의 Thai만 막혀 있습니다(태국어 폰트 부재). 폰트를 LocalizationFontTable에 연결하고
+    /// 첫 실행 팝업 버튼까지 만든 뒤 19로 올리세요. (Docs/LocalizationLanguageGuide.md의 태국어 항목 참고)
+    public const int SUPPORTED_LANGUAGE_COUNT = 18;
 
     public static SettingsData CreateDefault()
     {

@@ -1289,8 +1289,17 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             case EOptionLanguage.German: return GetText(LocKeys.OptionUI.languageGerman, "Deutsch");
             case EOptionLanguage.French: return GetText(LocKeys.OptionUI.languageFrench, "Français");
             case EOptionLanguage.Portuguese: return GetText(LocKeys.OptionUI.languagePortuguese, "Português");
-            case EOptionLanguage.Spanish: return GetText(LocKeys.OptionUI.languageSpanish, "Español");
+            case EOptionLanguage.Spanish: return GetText(LocKeys.OptionUI.languageSpanish, "Español (España)");
             case EOptionLanguage.Russian: return GetText(LocKeys.OptionUI.languageRussian, "Русский");
+            case EOptionLanguage.Polish: return GetText(LocKeys.OptionUI.languagePolish, "Polski");
+            case EOptionLanguage.Turkish: return GetText(LocKeys.OptionUI.languageTurkish, "Türkçe");
+            case EOptionLanguage.SpanishLatAm: return GetText(LocKeys.OptionUI.languageSpanishLatAm, "Español (Latinoamérica)");
+            case EOptionLanguage.Italian: return GetText(LocKeys.OptionUI.languageItalian, "Italiano");
+            case EOptionLanguage.Ukrainian: return GetText(LocKeys.OptionUI.languageUkrainian, "Українська");
+            case EOptionLanguage.Czech: return GetText(LocKeys.OptionUI.languageCzech, "Čeština");
+            case EOptionLanguage.Indonesian: return GetText(LocKeys.OptionUI.languageIndonesian, "Bahasa Indonesia");
+            case EOptionLanguage.Vietnamese: return GetText(LocKeys.OptionUI.languageVietnamese, "Tiếng Việt");
+            case EOptionLanguage.Thai: return GetText(LocKeys.OptionUI.languageThai, "ไทย");
         }
         return _lang.ToString();
     }

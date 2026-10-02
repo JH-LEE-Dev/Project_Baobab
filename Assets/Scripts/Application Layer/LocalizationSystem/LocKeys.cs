@@ -322,6 +322,15 @@ public static class LocKeys
         public const int languagePortuguese = 18874486;
         public const int languageSpanish = 18874487;
         public const int languageRussian = 18874488;
+        public const int languagePolish = 18874489;
+        public const int languageTurkish = 18874490;
+        public const int languageSpanishLatAm = 18874491;
+        public const int languageItalian = 18874492;
+        public const int languageUkrainian = 18874493;
+        public const int languageCzech = 18874494;
+        public const int languageIndonesian = 18874495;
+        public const int languageVietnamese = 18874496;
+        public const int languageThai = 18874497;
         public const int gamepadIconAuto = 18874480;
         public const int gamepadIconGeneric = 18874481;
         public const int dataConsentGranted = 18874482;

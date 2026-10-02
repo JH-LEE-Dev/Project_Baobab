@@ -89,7 +89,7 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
     /// 자동으로 계산되므로 따로 손볼 곳이 없습니다.
     ///
     /// 위에서부터 순서대로 검사하므로, 다른 항목의 이름을 부분 문자열로 포함하는 항목
-    /// ("ChineseTrad"는 "Chinese"를 포함)은 반드시 더 위에 두어야 합니다.
+    /// ("ChineseTrad"는 "Chinese"를 포함, "SpanishLatAm"은 "Spanish"를 포함)은 반드시 더 위에 두어야 합니다.
     /// </summary>
     private static readonly LanguageButtonBinding[] languageButtonBindings = new LanguageButtonBinding[]
     {
@@ -102,8 +102,18 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         new LanguageButtonBinding(EOptionLanguage.German, LocKeys.OptionUI.languageGerman, "Deutsch", "German", "Deutsch"),
         new LanguageButtonBinding(EOptionLanguage.French, LocKeys.OptionUI.languageFrench, "Français", "French", "Francais"),
         new LanguageButtonBinding(EOptionLanguage.Portuguese, LocKeys.OptionUI.languagePortuguese, "Português", "Portug"),
-        new LanguageButtonBinding(EOptionLanguage.Spanish, LocKeys.OptionUI.languageSpanish, "Español", "Spanish", "Espanol"),
+        new LanguageButtonBinding(EOptionLanguage.SpanishLatAm, LocKeys.OptionUI.languageSpanishLatAm, "Español (Latinoamérica)", "LatAm", "Latam"),
+        new LanguageButtonBinding(EOptionLanguage.Spanish, LocKeys.OptionUI.languageSpanish, "Español (España)", "Spanish", "Espanol"),
         new LanguageButtonBinding(EOptionLanguage.Russian, LocKeys.OptionUI.languageRussian, "Русский", "Russia"),
+        new LanguageButtonBinding(EOptionLanguage.Polish, LocKeys.OptionUI.languagePolish, "Polski", "Polish", "Polski"),
+        new LanguageButtonBinding(EOptionLanguage.Turkish, LocKeys.OptionUI.languageTurkish, "Türkçe", "Turk"),
+        new LanguageButtonBinding(EOptionLanguage.Italian, LocKeys.OptionUI.languageItalian, "Italiano", "Italian"),
+        new LanguageButtonBinding(EOptionLanguage.Ukrainian, LocKeys.OptionUI.languageUkrainian, "Українська", "Ukrain"),
+        new LanguageButtonBinding(EOptionLanguage.Czech, LocKeys.OptionUI.languageCzech, "Čeština", "Czech", "Cestina"),
+        new LanguageButtonBinding(EOptionLanguage.Indonesian, LocKeys.OptionUI.languageIndonesian, "Bahasa Indonesia", "Indones"),
+        new LanguageButtonBinding(EOptionLanguage.Vietnamese, LocKeys.OptionUI.languageVietnamese, "Tiếng Việt", "Vietnam"),
+        // 태국어(Thai)는 아직 넣지 않습니다. SUPPORTED_LANGUAGE_COUNT 밖이라 고르면 다음 실행에 한국어로
+        // 되돌아가고, 폰트가 없어 그 사이 화면도 두부가 됩니다. 폰트를 넣고 언어를 열 때 함께 추가하세요.
         new LanguageButtonBinding(EOptionLanguage.Korean, LocKeys.OptionUI.languageKorean, "한국어", "Korean")
     };
 
