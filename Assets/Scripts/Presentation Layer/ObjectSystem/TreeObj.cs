@@ -526,6 +526,11 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     {
         if (!bCanApplyDamage) return;
 
+        // 호출부가 미리 뽑아 둔 대상 목록을 도는 사이 같은 프레임에 죽어 풀로 반환된 나무가 다시 맞는 경우를 막는다.
+        // 풀 반환 시 ResetTree가 bDead/HP를 되돌려 산 나무처럼 보이므로, 그대로 진행하면 유령 타격음/진동이 나고
+        // 비활성 오브젝트에 열기 타이머 코루틴(TryStartHeatTimer)을 걸려다 에러가 난다.
+        if (IsPooled || !gameObject.activeInHierarchy) return;
+
         // 죽음 판정 직전 상태를 기억해, 이미 죽은 나무가 정리되기 전 다시 타격당해도
         // TreeDeadEvent가 중복 발생하지 않도록 false->true 전이 시점에만 이벤트를 발생시킨다.
         bool wasAlreadyDead = bDead;

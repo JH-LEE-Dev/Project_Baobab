@@ -168,6 +168,11 @@ public class ShockWave : MonoBehaviour
             // 묘목은 어떤 상호작용도 받지 않는다(피해, 과열 폭발, 첫 타격 콜백 모두).
             if (!treeObj.bCanApplyDamage) continue;
 
+            // targetsInRange는 루프 시작 전에 뽑아 둔 목록이라, 앞 대상의 과열 폭발 등으로 같은 프레임에
+            // 이미 죽어 풀로 반환된 나무가 섞여 있을 수 있다. 풀 반환 시 ResetTree가 bDead/HP를 되돌려
+            // 산 나무처럼 보이므로 풀 상태와 활성 여부로 거른다.
+            if (treeObj.IsPooled || !treeObj.gameObject.activeInHierarchy) continue;
+
             Vector3 targetPos = treeObj.Position + treeObj.Offset;
             float isoDistSq = GetIsometricDistSq(targetPos, centerPos);
 
@@ -244,7 +249,8 @@ public class ShockWave : MonoBehaviour
 
         for (int i = 0; i < explosionTargets.Count; i++)
         {
-            if (explosionTargets[i] is TreeObj tree && tree != _source && tree.bCanApplyDamage)
+            if (explosionTargets[i] is TreeObj tree && tree != _source && tree.bCanApplyDamage
+                && !tree.IsPooled && tree.gameObject.activeInHierarchy)
             {
                 Vector3 targetPos = tree.transform.position;
                 float dx = targetPos.x - centerPos.x;
