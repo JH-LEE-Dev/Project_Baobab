@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
@@ -24,6 +25,10 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
     private StatComponent statComponent;
 
     private IObjectPool<Boomerang> boomerangPool;
+
+    // 지금 날아가는 중인 부메랑. 풀의 Clear()는 풀 안에 들어 있는 것만 지우므로,
+    // 이 생성기가 파괴될 때 비행 중인 것까지 지우려고 따로 들고 있는다(OnDestroy 참고).
+    private readonly HashSet<Boomerang> activeBoomerangs = new HashSet<Boomerang>();
 
     public void Initialize(StatComponent _statComponent)
     {
@@ -117,15 +122,31 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
         return newBoomerang;
     }
 
-    private void ReturnBoomerang(Boomerang _boomerang) => boomerangPool.Release(_boomerang);
+    private void ReturnBoomerang(Boomerang _boomerang)
+    {
+        // 생성기가 파괴된 뒤에 돌아온 부메랑은 돌려보낼 풀이 없다. 그대로 두면 DontDestroyOnLoad라
+        // 고아로 남으므로 지운다. (OnDestroy가 반환 이벤트를 먼저 끊으므로 평소에는 오지 않는다)
+        if (boomerangPool == null)
+        {
+            if (_boomerang != null) Destroy(_boomerang.gameObject);
+            return;
+        }
+
+        boomerangPool.Release(_boomerang);
+    }
 
     private void OnGetBoomerang(Boomerang _boomerang)
     {
+        activeBoomerangs.Add(_boomerang);
         // 스탯 세팅은 _bIsOverheat 상태를 알 수 있는 ThrowBoomerang 내부로 이동됨.
         _boomerang.gameObject.SetActive(true);
     }
 
-    private void OnReleaseBoomerang(Boomerang _boomerang) => _boomerang.gameObject.SetActive(false);
+    private void OnReleaseBoomerang(Boomerang _boomerang)
+    {
+        activeBoomerangs.Remove(_boomerang);
+        _boomerang.gameObject.SetActive(false);
+    }
 
     private void OnDestroyBoomerang(Boomerang _boomerang)
     {
@@ -134,5 +155,30 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
             _boomerang.ReturnToPoolEvent -= ReturnBoomerang;
             Destroy(_boomerang.gameObject);
         }
+    }
+
+    // 부메랑은 DontDestroyOnLoad로 띄우므로 이 생성기(캐릭터 소속 또는 GameInstaller의 NPC 공용)가 파괴돼도
+    // 그대로 남는다. 메인 메뉴 이탈 후 새 게임마다 새 풀이 생기므로, 여기서 지우지 않으면 왕복할 때마다 풀 한 벌
+    // (최대 maxSize개)과 부메랑마다 딸린 열기 꼬리·잔상이 고아로 쌓인다. 게임 중 동작은 그대로 두고 생성기가
+    // 파괴되는 순간에만 정리한다(AxeExtraAttackCreator.OnDestroy와 같은 이유 - 자식 생성 방식은 쓰지 않는다).
+    //
+    // 함께 지워도 되는 근거: 열기 꼬리·잔상·오라는 부메랑이 직접 만든 것이라 Boomerang.OnDestroy가 함께 지우고
+    // 회전 루프음도 거기서 끈다. CollisionSystem은 조회만 하고 등록하지 않는다.
+    // OnDisable이 아니라 OnDestroy인 이유: 캐릭터는 차량 탑승 때 꺼졌다 켜지므로 그때 지우면 안 된다.
+    private void OnDestroy()
+    {
+        // 비행 중인 것 - 반환 이벤트를 먼저 끊어 이미 사라진 풀로 돌아오지 않게 한 뒤 지운다.
+        // (Destroy는 프레임 끝에 처리되므로 순회 중에 이 집합이 바뀌지 않는다)
+        foreach (Boomerang _boomerang in activeBoomerangs)
+        {
+            if (_boomerang == null) continue;
+            _boomerang.ReturnToPoolEvent -= ReturnBoomerang;
+            Destroy(_boomerang.gameObject);
+        }
+        activeBoomerangs.Clear();
+
+        // 풀 안에 쉬고 있는 것 - Clear가 actionOnDestroy(OnDestroyBoomerang)로 지운다.
+        boomerangPool?.Clear();
+        boomerangPool = null;
     }
 }
