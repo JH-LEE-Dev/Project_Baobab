@@ -177,8 +177,9 @@ Unity 상단 메뉴에서 **두 가지를 모두** 실행해야 합니다.
 - 현재 언어의 라벨만 켜고, 영어 부제·페이지 점·점 커서를 함께 갱신합니다.
 
 > 옵션 화면의 언어 선택기는 폭이 100px뿐이라 `Español (España)`, `Español (Latinoamérica)`,
-> `Bahasa Indonesia`만 `UI_Option`에 둔 짧은 표기(`Español`, `Español (LA)`, `Indonesia`)를 씁니다.
-> 첫 실행 팝업은 폭이 넉넉해 `OptionUI.json`의 전체 이름을 그대로 씁니다.
+> `Bahasa Indonesia`만 `OptionUI.json`의 짧은 표기 키(`LanguageSpanishShort`, `LanguageSpanishLatAmShort`,
+> `LanguageIndonesianShort` → `Español`, `Español (LA)`, `Indonesia`)를 씁니다.
+> 첫 실행 팝업은 폭이 넉넉해 전체 이름 키를 그대로 씁니다.
 
 ---
 
