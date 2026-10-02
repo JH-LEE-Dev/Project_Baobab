@@ -187,6 +187,7 @@ MonoBehaviour:
   afterimageInterval: 0.15
   afterimageFadeDuration: 0.45
   afterimageStartAlpha: 0.5
+  heatTrailMaterial: {fileID: 2100000, guid: eba7990807669bf4d9285f84c5a4922f, type: 2}
   shadowSpriteRenderer: {fileID: 4821309571048291008}
   targetLayer:
     serializedVersion: 2

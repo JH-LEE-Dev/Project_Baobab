@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PresentationLayer.VFX;
 using UnityEngine;
 
 /// <summary>
@@ -57,6 +58,13 @@ public class Boomerang : MonoBehaviour
     [SerializeField] private float afterimageFadeDuration = 0.45f;
     [SerializeField, Range(0f, 1f)] private float afterimageStartAlpha = 0.5f;
 
+    [Header("Overheat Heat Trail (과열 전용 푸른 열기 꼬리)")]
+    [SerializeField] private Material heatTrailMaterial; // BrandWrapGlow 머티리얼(M_BoomerangHeatTrail). 비어 있으면 이펙트를 만들지 않는다.
+    // 본체와 같은 스프라이트 프레임을 약간 크게 복사해 파랑 HDR로 칠한 발광 테두리(후광). 회전이 스프라이트와 항상 일치한다.
+    [SerializeField] private float heatAuraScale = 1.14f;
+    [SerializeField, Min(0f)] private float heatAuraHDR = 2.4f;
+    [SerializeField] private Color heatAuraColor = new Color(0.2f, 0.5f, 1f, 0.9f);
+
     [Header("Shadow (LogItem과 동일한 방식)")]
     [SerializeField] private SpriteRenderer shadowSpriteRenderer; // Shadow Material을 쓰는 별도 렌더러. 본체와 동일한 프레임을 매 프레임 그대로 따라간다.
 
@@ -90,11 +98,19 @@ public class Boomerang : MonoBehaviour
     private bool bOverheatVisual;
 
     private static readonly int HDRIntensityID = Shader.PropertyToID("_HDRIntensity");
+    private const float HeatAuraRiseUnits = 0.05f; // 후광이 일렁일 때 위로 치우치는 정도(본체 로컬 유닛)
     private MaterialPropertyBlock effectMpb;
 
     private BoomerangAfterimage[] afterimages; // 링 버퍼. 페이드 시간 동안 동시에 보일 수 있는 최대 장수만큼 미리 만든다.
     private int nextAfterimageIndex;
     private float afterimageTimer;
+
+    // 잔상과 같은 이유로 자식이 아닌 독립 루트 오브젝트다(부메랑이 회수돼도 꼬리가 끝까지 소멸). 과열로 던진 비행에서만 쓴다.
+    private VFX_BoomerangHeatTrail heatTrail;
+    private bool bHeatTrailActive;
+    private SpriteRenderer heatAuraRenderer;
+    private MaterialPropertyBlock heatAuraMpb;
+    private int appliedAuraFlickerFrame = -1;
 
     private float damage;
 
@@ -152,6 +168,7 @@ public class Boomerang : MonoBehaviour
             : effectSprites;
 
         bOverheatVisual = bUseOverheat;
+        bHeatTrailActive = _bIsOverheat; // 스프라이트 리스트 유무와 무관하게 과열로 던졌으면 열기 꼬리를 쓴다
         ApplyEffectHDR();
     }
 
@@ -271,6 +288,13 @@ public class Boomerang : MonoBehaviour
         dismissRoutine = null;
         ApplyVisualScale();
 
+        if (true == bHeatTrailActive && null != heatTrail)
+        {
+            heatTrail.Begin();
+        }
+
+        SetHeatAuraActive(bHeatTrailActive);
+
         Sound.Play(SoundID.SpinStart, _origin);
         StopSpinLoop(); // 풀 재사용 시 이전 비행의 루프가 남아 있지 않도록
         spinLoopHandle = Sound.PlayTracked(SoundID.SpinLoop, _origin);
@@ -313,6 +337,7 @@ public class Boomerang : MonoBehaviour
 
         // 정상 회수(Finish)와 달리 강제 회수는 캐릭터 사망/던전 이탈 등이라 남은 잔상도 바로 지운다.
         HideAllAfterimages();
+        if (null != heatTrail) heatTrail.Clear();
         Finish();
     }
 
@@ -324,6 +349,7 @@ public class Boomerang : MonoBehaviour
         if (!IsActive || isDismissing) return;
         isPaused = true;
         SetAfterimagesPaused(true);
+        if (null != heatTrail) heatTrail.SetPaused(true);
         Sound.SetTrackedVolume(spinLoopHandle, 0f); // 제자리에 멈춰 있는 동안 회전음이 계속 나면 어색하므로 잠시 끈다
     }
 
@@ -335,6 +361,7 @@ public class Boomerang : MonoBehaviour
         if (!IsActive || isDismissing) return;
         isPaused = false;
         SetAfterimagesPaused(false);
+        if (null != heatTrail) heatTrail.SetPaused(false);
         Sound.SetTrackedVolume(spinLoopHandle, 1f);
     }
 
@@ -348,6 +375,11 @@ public class Boomerang : MonoBehaviour
         isDismissing = true;
         isPaused = true; // 축소되는 동안 이동/판정/애니메이션은 멈춘 상태를 유지
         SetAfterimagesPaused(false); // Pause()로 멈춰있던 잔상은 본체가 줄어드는 동안 마저 사라지게 둔다
+        if (null != heatTrail)
+        {
+            heatTrail.SetPaused(false); // 방출만 멈추고 남은 꼬리는 마저 소멸시킨다
+            heatTrail.End();
+        }
         Sound.RampTrackedVolume(spinLoopHandle, 0f, _duration); // 본체가 줄어드는 만큼 회전음도 잦아들고, Finish에서 정지한다
         dismissRoutine = StartCoroutine(DismissRoutine(_duration));
     }
@@ -388,11 +420,18 @@ public class Boomerang : MonoBehaviour
         }
 
         CreateAfterimages();
+        CreateHeatTrail();
+        CreateHeatAura();
     }
 
     private void OnDestroy()
     {
         StopSpinLoop();
+
+        if (null != heatTrail)
+        {
+            Destroy(heatTrail.gameObject);
+        }
 
         if (afterimages == null) return;
 
@@ -445,6 +484,77 @@ public class Boomerang : MonoBehaviour
                 effectSpriteRenderer.sortingOrder = customSortable.CurrentSortingOrder + 1;
             }
         }
+
+        UpdateHeatAura();
+
+        // 정렬까지 끝난 이번 프레임의 최종 위치/소팅을 열기 꼬리에 넘긴다.
+        if (true == IsActive && true == bHeatTrailActive && null != heatTrail && null != spriteRenderer)
+        {
+            heatTrail.Feed(transform.position, spriteRenderer.sortingLayerID, spriteRenderer.sortingOrder, hitRadius);
+        }
+    }
+
+    // 후광은 본체의 자식 SpriteRenderer다(스케일을 따라간다). 본체와 같은 머티리얼/소팅 레이어를 쓰고 과열 비행에서만 켠다.
+    private void CreateHeatAura()
+    {
+        if (null == spriteRenderer) return;
+
+        GameObject go = new GameObject("HeatAura");
+        go.transform.SetParent(transform, false);
+        go.transform.localScale = new Vector3(heatAuraScale, heatAuraScale, 1f);
+
+        heatAuraRenderer = go.AddComponent<SpriteRenderer>();
+        heatAuraRenderer.sharedMaterial = spriteRenderer.sharedMaterial;
+        heatAuraRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
+        heatAuraRenderer.color = heatAuraColor;
+        heatAuraRenderer.enabled = false;
+    }
+
+    private void SetHeatAuraActive(bool _bActive)
+    {
+        if (null == heatAuraRenderer) return;
+
+        heatAuraRenderer.enabled = _bActive;
+        appliedAuraFlickerFrame = -1;
+        if (true == _bActive && null != spriteRenderer)
+        {
+            heatAuraRenderer.sprite = spriteRenderer.sprite;
+        }
+    }
+
+    // 후광은 본체 바로 뒤(-2)에 그리고, 12fps로 크기와 밝기가 일렁인다(도트 애니메이션). 값이 바뀌는 프레임에만 쓴다.
+    private void UpdateHeatAura()
+    {
+        if (null == heatAuraRenderer || false == heatAuraRenderer.enabled) return;
+
+        if (null != customSortable)
+        {
+            heatAuraRenderer.sortingOrder = customSortable.CurrentSortingOrder - 2;
+        }
+
+        int flickerFrame = (int)(Time.time * 12f);
+        if (flickerFrame == appliedAuraFlickerFrame) return;
+        appliedAuraFlickerFrame = flickerFrame;
+
+        // 위로 솟는 불길처럼 가로는 조금, 세로는 더 크게 일렁이고 위쪽으로 살짝 치우친다.
+        int phase = flickerFrame % 3; // 0, 1, 2
+        float scale = heatAuraScale * (1f + (phase - 1) * 0.04f);
+        heatAuraRenderer.transform.localScale = new Vector3(scale, scale * (1f + phase * 0.07f), 1f);
+        heatAuraRenderer.transform.localPosition = new Vector3(0f, phase * HeatAuraRiseUnits, 0f);
+
+        heatAuraMpb ??= new MaterialPropertyBlock();
+        heatAuraRenderer.GetPropertyBlock(heatAuraMpb);
+        heatAuraMpb.SetFloat(HDRIntensityID, heatAuraHDR * (1f + (phase - 1) * 0.12f));
+        heatAuraRenderer.SetPropertyBlock(heatAuraMpb);
+    }
+
+    // 열기 꼬리는 잔상과 같은 이유로 본체와 별개의 루트 오브젝트로 만든다. 머티리얼이 비어 있으면 만들지 않는다.
+    private void CreateHeatTrail()
+    {
+        if (null == heatTrailMaterial) return;
+
+        heatTrail = VFX_BoomerangHeatTrail.Create(heatTrailMaterial);
+        DontDestroyOnLoad(heatTrail.gameObject);
     }
 
     // 잔상은 본체가 풀로 돌아가 비활성화돼도 끝까지 페이드돼야 하므로 자식이 아닌 루트 오브젝트로 만든다.
@@ -691,6 +801,11 @@ public class Boomerang : MonoBehaviour
             {
                 shadowSpriteRenderer.sprite = baseSprite;
             }
+
+            if (null != heatAuraRenderer)
+            {
+                heatAuraRenderer.sprite = baseSprite;
+            }
         }
 
         if (effectSpriteRenderer != null && activeEffectSprites != null && activeEffectSprites.Count > 0)
@@ -703,6 +818,8 @@ public class Boomerang : MonoBehaviour
     {
         StopSpinLoop();
         IsActive = false;
+        if (null != heatTrail) heatTrail.End(); // 방출만 멈춘다. 남은 꼬리는 스스로 소멸한다
+        SetHeatAuraActive(false);
         returnTarget = null;
 
         Action callback = onFinished;
