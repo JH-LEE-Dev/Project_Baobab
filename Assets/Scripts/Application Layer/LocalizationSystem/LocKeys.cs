@@ -372,6 +372,9 @@ public static class LocKeys
         public const int apply = 18874685;
         public const int unsavedChangesWarning = 18874686;
         public const int logSwap = 18874687;
+        public const int languageSpanishShort = 18874688;
+        public const int languageSpanishLatAmShort = 18874689;
+        public const int languageIndonesianShort = 18874690;
     }
 
     public static class ResultUI

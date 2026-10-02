@@ -72,13 +72,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private float lastHapticPreviewTime = float.NegativeInfinity;
     private int lastHapticPreviewTick = int.MinValue;
 
-    // 언어 선택기의 값 텍스트는 폭이 100px뿐이라, 긴 언어명(OptionUI.json의 "Español (España)", "Español (Latinoamérica)",
-    // "Bahasa Indonesia")은 어느 폰트에서도 줄바꿈되어 행 밖으로 벗어난다. 그래서 이 선택기에서만 100px 안에 들어오는 짧은 표기를 쓴다.
-    // (초기 언어 설정 팝업은 폭이 넉넉해 JSON의 전체 이름을 그대로 쓴다. 글자는 모두 기존 폰트 문자셋에 들어 있다.)
-    private const string SelectorNameSpanish = "Español";
-    private const string SelectorNameSpanishLatAm = "Español (LA)";
-    private const string SelectorNameIndonesian = "Indonesia";
-
     [Header("Control Options")]
     [SerializeField] private Transform keyBindRowContainer;           // 키보드/마우스 행 부모 Transform (KeyMo_Contents)
     [SerializeField] private Transform gamepadKeyBindRowContainer;    // 게임패드 행 부모 Transform (Pad_Contents)
@@ -1284,6 +1277,9 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     /// 들어 있습니다. 값을 바꾸고 싶으면 OptionUI.json만 고치면 됩니다.
     /// 코드에 문자열을 박지 않는 이유는 그래야 폰트 문자셋 생성기가 이 글자들을 수집하기 때문입니다.
     /// </summary>
+    // 언어 선택기의 값 텍스트는 폭이 100px뿐이라, 긴 언어명("Español (España)", "Español (Latinoamérica)", "Bahasa Indonesia")은
+    // 줄바꿈되어 행 밖으로 벗어난다. 그래서 이 세 언어만 100px 안에 들어오는 설정 화면 전용 키(...Short)를 쓴다.
+    // (초기 언어 설정 팝업은 폭이 넉넉해 전체 이름 키를 그대로 쓴다)
     private string GetLanguageText(EOptionLanguage _lang)
     {
         switch (_lang)
@@ -1296,15 +1292,15 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             case EOptionLanguage.German: return GetText(LocKeys.OptionUI.languageGerman, "Deutsch");
             case EOptionLanguage.French: return GetText(LocKeys.OptionUI.languageFrench, "Français");
             case EOptionLanguage.Portuguese: return GetText(LocKeys.OptionUI.languagePortuguese, "Português");
-            case EOptionLanguage.Spanish: return SelectorNameSpanish;
+            case EOptionLanguage.Spanish: return GetText(LocKeys.OptionUI.languageSpanishShort, "Español");
             case EOptionLanguage.Russian: return GetText(LocKeys.OptionUI.languageRussian, "Русский");
             case EOptionLanguage.Polish: return GetText(LocKeys.OptionUI.languagePolish, "Polski");
             case EOptionLanguage.Turkish: return GetText(LocKeys.OptionUI.languageTurkish, "Türkçe");
-            case EOptionLanguage.SpanishLatAm: return SelectorNameSpanishLatAm;
+            case EOptionLanguage.SpanishLatAm: return GetText(LocKeys.OptionUI.languageSpanishLatAmShort, "Español (LA)");
             case EOptionLanguage.Italian: return GetText(LocKeys.OptionUI.languageItalian, "Italiano");
             case EOptionLanguage.Ukrainian: return GetText(LocKeys.OptionUI.languageUkrainian, "Українська");
             case EOptionLanguage.Czech: return GetText(LocKeys.OptionUI.languageCzech, "Čeština");
-            case EOptionLanguage.Indonesian: return SelectorNameIndonesian;
+            case EOptionLanguage.Indonesian: return GetText(LocKeys.OptionUI.languageIndonesianShort, "Indonesia");
             case EOptionLanguage.Vietnamese: return GetText(LocKeys.OptionUI.languageVietnamese, "Tiếng Việt");
             case EOptionLanguage.Thai: return GetText(LocKeys.OptionUI.languageThai, "ไทย");
         }
