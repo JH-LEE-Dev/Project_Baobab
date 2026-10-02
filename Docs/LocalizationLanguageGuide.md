@@ -3,8 +3,7 @@
 지원 언어에 **독일어 · 프랑스어 · 포르투갈어 · 스페인어 · 러시아어**를 추가했고,
 이어서 **폴란드어 · 튀르키예어 · 중남미 스페인어 · 이탈리아어**,
 **우크라이나어 · 체코어 · 인도네시아어 · 베트남어**를 추가했습니다.
-코드·설정·폰트 쪽 연결과 번역은 끝나 있으며, **남은 일은 첫 실행 팝업에 언어 버튼 13개를
-더 만드는 것**입니다.
+코드·설정·폰트 쪽 연결과 번역, 첫 실행 팝업의 언어 선택기까지 모두 끝나 있습니다.
 
 ---
 
@@ -145,8 +144,8 @@ Unity 상단 메뉴에서 **두 가지를 모두** 실행해야 합니다.
 베트남어는 `Lorem`에 성조 글자(ạ ế ợ …)가 없어서 한국어·영어처럼 **갈무리11을 그대로** 씁니다.
 갈무리11은 베트남어 글자를 전부 갖고 있고 동적 아틀라스라, 베트남어는 **굽기를 안 해도 됩니다.**
 
-`Lorem`에는 한글·CJK 글리프가 없습니다. 첫 실행 팝업은 언어 이름을 한 화면에 모두
-띄우는데 그때 화면 전체가 `Lorem`으로 교체되므로, 그 상태에서
+`Lorem`에는 한글·CJK 글리프가 없습니다. 첫 실행 팝업과 옵션 화면은 앱 언어가 바뀐 상태에서도
+다른 언어의 이름을 보여주는데, 앱 언어가 `Lorem` 언어면 화면 전체가 `Lorem`으로 교체되므로
 `한국어 / 日本語 / 简体中文 / 繁體中文` 네 라벨(12자)만 글리프를 못 찾습니다.
 그래서 `Lorem_Optimum`의 폴백에 `FusionPixel_zh_hans`를 걸어 두었습니다.
 **이 폴백을 지우면 그 네 라벨이 깨집니다.**
@@ -157,54 +156,29 @@ Unity 상단 메뉴에서 **두 가지를 모두** 실행해야 합니다.
 
 ---
 
-## 4. 첫 실행 언어 선택 팝업 (UI 작업 필요)
+## 4. 첫 실행 언어 선택 팝업
 
-`Assets/Prefabs/UI/MainMenu/UIView_MainMenu.prefab` 안
-`LanguagePanel/LanguageButtons` 아래에 지금 버튼이 5개 있습니다.
-여기에 **13개를 더 만들어 주세요.**
+`Assets/Prefabs/UI/MainMenu/UIView_MainMenu.prefab`의 `UI_InitialSetupPopup`은
+`< 현재 언어 >` 좌우 선택기와 체크 버튼으로 언어를 고릅니다. 18개 언어가 모두 들어가 있습니다.
+넘길 때마다 앱 언어가 바로 바뀌고, 체크 버튼을 누르면 약관 동의 화면으로 넘어갑니다.
+약관 동의 화면에서 ESC나 패드 B를 누르면 언어 선택으로 되돌아옵니다.
 
-### 하는 방법
+### 언어를 추가할 때
 
-1. 기존 `BTN_Korean`을 복제합니다.
-2. 오브젝트 이름에 아래 조각 중 하나가 **들어가게** 지읍니다. (접두사·접미사는 자유)
-
-   | 언어 | 이름에 들어가야 할 조각 | 예시 |
-   |---|---|---|
-   | 독일어 | `German` 또는 `Deutsch` | `BTN_German` |
-   | 프랑스어 | `French` 또는 `Francais` | `BTN_French` |
-   | 포르투갈어 | `Portug` | `BTN_Portuguese` |
-   | 스페인어 | `Spanish` 또는 `Espanol` | `BTN_Spanish` |
-   | 러시아어 | `Russia` | `BTN_Russian` |
-   | 폴란드어 | `Polish` 또는 `Polski` | `BTN_Polish` |
-   | 튀르키예어 | `Turk` | `BTN_Turkish` |
-   | 중남미 스페인어 | `LatAm` 또는 `Latam` | `BTN_SpanishLatAm` |
-   | 이탈리아어 | `Italian` | `BTN_Italian` |
-   | 우크라이나어 | `Ukrain` | `BTN_Ukrainian` |
-   | 체코어 | `Czech` 또는 `Cestina` | `BTN_Czech` |
-   | 인도네시아어 | `Indones` | `BTN_Indonesian` |
-   | 베트남어 | `Vietnam` | `BTN_Vietnamese` |
-
-   > 중남미 스페인어 버튼 이름에 `Spanish`가 들어가도 괜찮습니다. `LatAm`을 먼저 검사합니다.
-   > 반대로 `LatAm`/`Latam`이 빠지면 **스페인 스페인어 버튼으로 잡히니** 주의하세요.
-
-3. `UI_InitialSetupPopup`의 `Language Buttons` 배열에 추가합니다. (순서는 상관없습니다)
+1. `UI_InitialSetupPopup.languageBindings`에 한 줄을 넣습니다. 목록 순서가 곧 좌우 이동 순서입니다.
+2. 프리팹의 `LanguageBox/LanguageSelector/ValueFrame` 안에 그 언어의 이름 라벨(`TXT_...`)을 만듭니다.
+   라벨은 **그 언어를 표시할 폰트**(갈무리/FusionPixel/Lorem)와 `LocalizedFontTracker`를 갖고 있어야 합니다.
+3. `Language Labels` 배열에 언어와 라벨을 짝지어 넣고, `LanguageBox/PageDots`에 점을 하나 추가해
+   `Language Dots` 배열에 넣습니다. 점은 `languageBindings`와 **같은 순서**여야 합니다.
 
 ### 코드가 알아서 해주는 것
 
-- **버튼에 표시될 언어 이름** — `OptionUI.json`에서 읽어 넣습니다. 직접 타이핑하지 마세요.
-- **게임패드 상하좌우 이동 배선** — 버튼이 화면에 놓인 위치를 읽어 격자로 자동 계산합니다.
-  `GridLayoutGroup`이 3열로 흘려주므로 18개면 3줄 × 6으로 배치되고, 그대로 이동합니다.
-  좌우는 전체를 한 바퀴 돌고, 상하는 위아래 줄의 같은 칸으로 갑니다.
-- 배치를 몇 열로 바꾸든 코드는 손대지 않아도 됩니다.
+- **라벨에 표시될 언어 이름** — `OptionUI.json`에서 읽어 넣습니다. 직접 타이핑하지 마세요.
+- 현재 언어의 라벨만 켜고, 영어 부제·페이지 점·점 커서를 함께 갱신합니다.
 
-이름 조각이 하나도 걸리지 않으면 그 버튼은 한국어로 떨어지고 **콘솔에 경고가 뜹니다.**
-버튼을 만들었는데 한국어 버튼이 두 개로 보인다면 이름을 확인하세요.
-
-> `LanguageButtons` 오브젝트의 가로 크기(현재 220)는 3열 기준입니다.
-> 줄 수가 늘어나는 만큼 패널 세로 크기와 창 크기도 함께 조정해 주세요.
-> `Español (Latinoamérica)`, `Bahasa Indonesia`는 다른 언어 이름보다 꽤 깁니다. 버튼·옵션 칸에서 잘리면
-> `OptionUI.json`의 해당 `Language...` 항목 표기를 줄여도 됩니다.
-> (모든 열에 같은 값을 넣어야 합니다. 어느 언어로 보든 자기 표기가 나와야 하기 때문입니다)
+> 옵션 화면의 언어 선택기는 폭이 100px뿐이라 `Español (España)`, `Español (Latinoamérica)`,
+> `Bahasa Indonesia`만 `UI_Option`에 둔 짧은 표기(`Español`, `Español (LA)`, `Indonesia`)를 씁니다.
+> 첫 실행 팝업은 폭이 넉넉해 `OptionUI.json`의 전체 이름을 그대로 씁니다.
 
 ---
 

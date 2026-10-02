@@ -74,7 +74,8 @@ public class SettingsManager : MonoBehaviour
     //   3) ApplyLanguageToLocalization의 Language 매핑 (매핑되지 않은 항목은 모두 EN이 된다)
     //   4) LocalizationManager가 읽는 로컬라이징 데이터 (OptionUI.json의 언어 이름 항목 포함)
     //   5) UI_Option.GetLanguageText의 분기
-    //   6) UI_InitialSetupPopup의 언어 버튼 (버튼 이름 규칙은 그 파일의 languageButtonBindings 참고)
+    //   6) UI_InitialSetupPopup의 languageBindings + 프리팹의 언어 라벨·페이지 점
+    //      (Docs/LocalizationLanguageGuide.md 4장 참고)
     //   7) LocalizationFontTable의 해당 언어 폰트 +
     //      LocalizationFontCharacterSetGenerator의 Languages/베이킹 경로 세 배열
     //      (폰트를 새로 쓰면 그 폰트의 문자셋을 만들고 구울 경로까지 같이 등록해야 한다.
