@@ -76,6 +76,15 @@ public static class Sound
         AudioManager.Instance.StopTrackedWithPowerDown(handle, duration, minPitch);
     }
 
+    // 루프 사운드를 피치 변화 없이 볼륨만 서서히 줄이며 정지한다.
+    public static void StopTrackedWithFadeOut(AudioHandle handle, float duration)
+    {
+        if (AudioManager.Instance == null)
+            return;
+
+        AudioManager.Instance.StopTrackedWithFadeOut(handle, duration);
+    }
+
     // 예열음이 없는 시작 사운드를 낮은 피치에서 목표 피치로 서서히 올리며(전원 들어오듯) 재생한다.
     public static AudioHandle PlayTrackedWithPowerUp(SoundID id, Vector3 position, float volume = 1f, bool is3D = true, float duration = 0.4f, float minPitch = 0.1f, float targetPitch = 1f)
     {

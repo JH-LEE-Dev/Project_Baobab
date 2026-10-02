@@ -196,11 +196,44 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // 화상(위 두 지속 피해 중 하나라도 돌고 있는 상태)을 보여 주는 푸른 여우불 루프 이펙트. 나무 프리팹의 비활성 자식이고 이 나무가 켜고 끈다.
     [SerializeField] private PresentationLayer.VFX.VFX_TreeBurn burnVfx;
 
+    // 화상 동안 은은하게 깔리는 불 루프 사운드. 화상이 새로 시작될 때만 점화음과 함께 켜고(이미 타는 중에
+    // 재타격으로 지속 피해가 갱신될 때는 다시 울리지 않는다), 끝나면 이펙트가 꺼지는 시간에 맞춰 서서히 줄인다.
+    private AudioHandle burnLoopHandle = AudioHandle.Invalid;
+    private bool bBurnSoundOn = false;
+    private const float BurnLoopFadeOutDuration = 0.35f;
+
     private void RefreshBurnVfx()
     {
-        if (burnVfx == null) return;
+        bool bBurning = overheatDotCoroutine != null || droneOverheatDotCoroutine != null;
 
-        burnVfx.SetBurning(overheatDotCoroutine != null || droneOverheatDotCoroutine != null);
+        if (burnVfx != null) burnVfx.SetBurning(bBurning);
+
+        RefreshBurnSound(bBurning);
+    }
+
+    private void RefreshBurnSound(bool _bBurning)
+    {
+        if (_bBurning == bBurnSoundOn) return;
+
+        bBurnSoundOn = _bBurning;
+
+        if (true == _bBurning)
+        {
+            Sound.Play(SoundID.FireStart, cachedTransform.position);
+            burnLoopHandle = Sound.PlayTracked(SoundID.FireLoop, cachedTransform.position);
+        }
+        else
+        {
+            Sound.StopTrackedWithFadeOut(burnLoopHandle, BurnLoopFadeOutDuration);
+            burnLoopHandle = AudioHandle.Invalid;
+        }
+    }
+
+    private void StopBurnSoundImmediate()
+    {
+        bBurnSoundOn = false;
+        Sound.StopTracked(burnLoopHandle);
+        burnLoopHandle = AudioHandle.Invalid;
     }
 
     public void ApplyOverheatDot(float _damagePerTick, int _tickCount, float _tickInterval)
@@ -452,6 +485,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
         // 지속 피해를 끊은 만큼 화상 이펙트도 연출 없이 즉시 끈다(풀 재사용 시 새 나무에 남지 않게)
         if (burnVfx != null) burnVfx.StopImmediate();
+        StopBurnSoundImmediate();
 
         if (treeVisualComponent != null)
         {
@@ -817,6 +851,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
         bDead = true;
         if (burnVfx != null) burnVfx.StopImmediate(); // 죽은 나무에는 화상 이펙트가 남지 않는다
+        StopBurnSoundImmediate();
     }
 
     // 이 나무의 등급이 회생으로 도달할 수 있는 최대 셰이더 단계.

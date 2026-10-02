@@ -1967,6 +1967,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             inDungeonVFXManager.PlayTreeHeatEmitVFX(_tree.treeVisualComponent);
         }
 
+        // 피치 랜덤 범위와 볼륨은 TreeFireExplosion 큐/DB에서 조절한다
+        Sound.Play(SoundID.TreeFireExplosion, _tree.transform.position);
+
         if (character.bTreeHeatImmune || bHasAcquiredObsidianCharm) return; // 넉백/경직 중엔 열기 영향 없음 + 흑요 부적 획득 시 면역
 
         Vector3Int treeCell = _tree.CellPos;

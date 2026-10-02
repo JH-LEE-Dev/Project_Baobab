@@ -796,6 +796,37 @@ public class AudioManager : MonoBehaviour
         }
     }
 
+    // 피치는 그대로 두고 볼륨만 0으로 줄인 뒤 정지한다. 불이 사그라드는 루프처럼, 끊기지 않게
+    // 꺼져야 하지만 PowerDown의 피치 하강(기계가 꺼지는 느낌)은 어울리지 않는 소리에 쓴다.
+    public void StopTrackedWithFadeOut(AudioHandle handle, float duration)
+    {
+        if (!IsHandleValid(handle)) return;
+        StartCoroutine(FadeOutRoutine(handle, duration));
+    }
+
+    private System.Collections.IEnumerator FadeOutRoutine(AudioHandle handle, float duration)
+    {
+        int index = handle.sourceIndex;
+        // PowerDownRoutine과 같은 이유로 src.volume이 아니라 "의도한 볼륨"에서 시작한다.
+        float startTargetVolume = sourceTargetVolume[index];
+
+        float timer = 0f;
+        while (timer < duration)
+        {
+            if (!IsHandleValid(handle)) yield break;
+
+            timer += Time.deltaTime;
+            sourceTargetVolume[index] = Mathf.Lerp(startTargetVolume, 0f, timer / duration);
+            ApplySourceVolume(index);
+            yield return null;
+        }
+
+        if (IsHandleValid(handle))
+        {
+            sourcePool[index].Stop();
+        }
+    }
+
     // 별도의 "예열음"이 없는 루프 사운드용: 낮은 피치로 재생을 시작해 목표 피치까지 서서히
     // 올리며(전원이 들어오듯) 재생한다. targetPitch를 호출부에서 넘겨받아, 도달하는 정상 피치
     // 자체를 다르게 줄 수 있다(예: 장비 속도 비율만큼 높여서 시작).
