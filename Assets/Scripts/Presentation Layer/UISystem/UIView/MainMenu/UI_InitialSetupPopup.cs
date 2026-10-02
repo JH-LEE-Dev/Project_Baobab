@@ -5,7 +5,6 @@ using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// 게임 최초 실행 시 스플래시 직후 언어 설정 및 데이터 수집 약관 동의를 진행하는 팝업 컨트롤러입니다.
@@ -15,13 +14,17 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
 {
     private const int MAIN_MENU_JSON_ID = 8;
 
-    // 언어 버튼 격자 버퍼의 초기 용량입니다. 지원 언어 수보다 넉넉히 잡아두면 언어가 늘어도
-    // 리스트 내부 배열이 다시 할당되지 않습니다. (넘어가도 동작에는 문제가 없습니다)
-    private const int MAX_LANGUAGE_BUTTONS = 16;
-
-    // 오브젝트 이름으로 언어를 가려내지 못한 버튼에 물릴 언어입니다. 어떤 버튼도 눌리지 않는
-    // 상태만은 피해야 하므로(첫 실행 팝업은 반드시 하나를 골라야 넘어간다) 원문 언어로 둡니다.
-    private const EOptionLanguage FALLBACK_BUTTON_LANGUAGE = EOptionLanguage.Korean;
+    /// <summary>
+    /// 언어 이름 라벨 하나와 그 언어의 짝입니다. 라벨은 각자 그 언어를 표시할 폰트(갈무리/FusionPixel/Lorem)와
+    /// LocalizedFontTracker를 그대로 들고 있어서, 폰트를 코드로 바꿔 끼우지 않고 켜고 끄기만 합니다.
+    /// (FontLocalizer가 텍스트 갱신 때마다 현재 앱 언어 기준으로 폰트를 다시 맞추므로, 폰트를 코드로 바꾸면 덮어씌워집니다)
+    /// </summary>
+    [Serializable]
+    private struct LanguageLabelEntry
+    {
+        public EOptionLanguage language;
+        public TextMeshProUGUI label;
+    }
 
     [Header("Root & Background")]
     [SerializeField] private CanvasGroup rootCanvasGroup;
@@ -35,7 +38,17 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
 
     [Header("1. Language Panel")]
     [SerializeField] private CanvasGroup languagePanel;
-    [SerializeField] private UI_PanelSelectButton[] languageButtons;
+    [SerializeField] private UI_OptionSelector languageSelector;        // < 현재 언어 > 선택기 (좌우 입력/화살표 버튼으로 언어 순환)
+    [SerializeField] private UI_PopupButton languageConfirmButton;      // 선택한 언어로 확정하는 체크 버튼
+    [SerializeField] private LanguageLabelEntry[] languageLabels;       // 언어별 이름 라벨(선택기 중앙에 겹쳐 두고 현재 언어 것만 켠다)
+    [SerializeField] private TextMeshProUGUI languageTitleText;         // 지구본 아이콘 옆 제목("언어"). 앱 언어가 바뀔 때마다 그 언어 문구로 갱신된다
+    [SerializeField] private TextMeshProUGUI languageSubtitleText;      // 이름 아래의 영어 언어명(Korean, Japanese ...). 영어는 비워서 자리만 유지한다
+    [SerializeField] private Image[] languageDots;                      // 이름 아래의 페이지 점. 언어 목록과 같은 순서이고 현재 언어의 점만 밝다
+    [SerializeField] private Color languageDotActiveColor = Color.white;
+    [SerializeField] private Color languageDotInactiveColor = new Color(0.35f, 0.36f, 0.45f, 1.0f);
+    [SerializeField] private RectTransform languageDotCursor;           // 현재 언어의 점 위에서 미끄러지는 5x5 커서 (레이아웃 제외)
+    [SerializeField] private Color languageFlashColor = new Color(1.0f, 0.835f, 0.31f, 1.0f); // 이름이 바뀔 때 번쩍이는 색 (#FFD54F)
+    [SerializeField] private float languageSlideDistance = 12f;         // 이름이 들어오는 거리(px). 정수 스냅으로 움직여 픽셀이 뭉개지지 않는다
 
     [Header("2. Consent Panel")]
     [SerializeField] private CanvasGroup consentPanel;
@@ -71,53 +84,50 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
     private bool isInternalToggleUpdating = false;
     private bool suppressNextConsentSelectAudio = false;
     private Toggle hoveredConsentToggle = null;
-    private UI_PanelSelectButton lastFocusedLanguageButton;
+    private Action cachedOnLanguagePrev;
+    private Action cachedOnLanguageNext;
+    private Action cachedOnLanguageConfirm;
+    private int languageIndex = 0;
+    private Vector2[] languageLabelBasePositions;
+    private Color[] languageLabelBaseColors;
+    private Color languageTitleBaseColor = Color.white;
+    private Color languageSubtitleBaseColor = Color.white;
+    private Sequence languageFeedbackTween;
+    private Selectable lastFocusedLanguageSelectable;
     private Selectable lastFocusedConsentSelectable;
     private Vector2 originalWindowPos = Vector2.zero;
 
-    // 언어 버튼 격자 배선에 쓰는 재사용 버퍼입니다. Initialize에서 한 번만 쓰이지만,
-    // 멤버로 두어 호출 때마다 배열이 새로 생기지 않게 합니다.
-    private readonly List<UI_PanelSelectButton> gridOrderedButtons = new List<UI_PanelSelectButton>(MAX_LANGUAGE_BUTTONS);
-    private readonly List<int> gridRowStarts = new List<int>(MAX_LANGUAGE_BUTTONS);
-
     /// <summary>
-    /// 버튼 오브젝트 이름을 언어로 옮기는 표입니다.
+    /// 언어 선택기가 순환하는 언어 목록입니다. 목록 순서가 곧 좌우 이동 순서이고, 끝에서 처음으로 이어집니다.
     ///
-    /// 프리팹의 버튼이 어느 언어인지 코드가 알아보는 유일한 단서가 오브젝트 이름이므로,
-    /// 언어를 늘릴 때는 여기에 한 줄을 넣고 프리팹에 그 이름을 포함하는 버튼을 만들어
-    /// languageButtons 배열에 넣으면 됩니다. 배선(격자 이동)은 버튼의 화면 위치에서
-    /// 자동으로 계산되므로 따로 손볼 곳이 없습니다.
-    ///
-    /// 위에서부터 순서대로 검사하므로, 다른 항목의 이름을 부분 문자열로 포함하는 항목
-    /// ("ChineseTrad"는 "Chinese"를 포함, "SpanishLatAm"은 "Spanish"를 포함)은 반드시 더 위에 두어야 합니다.
+    /// 언어를 늘릴 때는 여기에 한 줄을 넣고, 프리팹의 선택기 프레임 안에 그 언어의 이름 라벨을
+    /// (그 언어를 표시할 폰트로) 만들어 languageLabels에 연결하면 됩니다.
     /// </summary>
-    private static readonly LanguageButtonBinding[] languageButtonBindings = new LanguageButtonBinding[]
+    private static readonly LanguageBinding[] languageBindings = new LanguageBinding[]
     {
-        // "KoreanTrad"는 예전 프리팹에서 쓰던 이름입니다. 지금은 쓰이지 않지만, 남아 있는
-        // 버튼이 조용히 한국어로 떨어지는 사고를 막기 위해 별칭으로 남겨둡니다.
-        new LanguageButtonBinding(EOptionLanguage.ChineseTraditional, LocKeys.OptionUI.languageChineseTraditional, "繁體中文", "ChineseTrad", "KoreanTrad"),
-        new LanguageButtonBinding(EOptionLanguage.ChineseSimplified, LocKeys.OptionUI.languageChineseSimplified, "简体中文", "ChineseSim", "Chinese"),
-        new LanguageButtonBinding(EOptionLanguage.Japanese, LocKeys.OptionUI.languageJapanese, "日本語", "Japan"),
-        new LanguageButtonBinding(EOptionLanguage.English, LocKeys.OptionUI.languageEnglish, "English", "English"),
-        new LanguageButtonBinding(EOptionLanguage.German, LocKeys.OptionUI.languageGerman, "Deutsch", "German", "Deutsch"),
-        new LanguageButtonBinding(EOptionLanguage.French, LocKeys.OptionUI.languageFrench, "Français", "French", "Francais"),
-        new LanguageButtonBinding(EOptionLanguage.Portuguese, LocKeys.OptionUI.languagePortuguese, "Português", "Portug"),
-        new LanguageButtonBinding(EOptionLanguage.SpanishLatAm, LocKeys.OptionUI.languageSpanishLatAm, "Español (Latinoamérica)", "LatAm", "Latam"),
-        new LanguageButtonBinding(EOptionLanguage.Spanish, LocKeys.OptionUI.languageSpanish, "Español (España)", "Spanish", "Espanol"),
-        new LanguageButtonBinding(EOptionLanguage.Russian, LocKeys.OptionUI.languageRussian, "Русский", "Russia"),
-        new LanguageButtonBinding(EOptionLanguage.Polish, LocKeys.OptionUI.languagePolish, "Polski", "Polish", "Polski"),
-        new LanguageButtonBinding(EOptionLanguage.Turkish, LocKeys.OptionUI.languageTurkish, "Türkçe", "Turk"),
-        new LanguageButtonBinding(EOptionLanguage.Italian, LocKeys.OptionUI.languageItalian, "Italiano", "Italian"),
-        new LanguageButtonBinding(EOptionLanguage.Ukrainian, LocKeys.OptionUI.languageUkrainian, "Українська", "Ukrain"),
-        new LanguageButtonBinding(EOptionLanguage.Czech, LocKeys.OptionUI.languageCzech, "Čeština", "Czech", "Cestina"),
-        new LanguageButtonBinding(EOptionLanguage.Indonesian, LocKeys.OptionUI.languageIndonesian, "Bahasa Indonesia", "Indones"),
-        new LanguageButtonBinding(EOptionLanguage.Vietnamese, LocKeys.OptionUI.languageVietnamese, "Tiếng Việt", "Vietnam"),
+        new LanguageBinding(EOptionLanguage.Korean, LocKeys.OptionUI.languageKorean, "한국어", "Korean"),
+        new LanguageBinding(EOptionLanguage.English, LocKeys.OptionUI.languageEnglish, "English", ""),
+        new LanguageBinding(EOptionLanguage.Japanese, LocKeys.OptionUI.languageJapanese, "日本語", "Japanese"),
+        new LanguageBinding(EOptionLanguage.ChineseSimplified, LocKeys.OptionUI.languageChineseSimplified, "简体中文", "Chinese (Simplified)"),
+        new LanguageBinding(EOptionLanguage.ChineseTraditional, LocKeys.OptionUI.languageChineseTraditional, "繁體中文", "Chinese (Traditional)"),
+        new LanguageBinding(EOptionLanguage.German, LocKeys.OptionUI.languageGerman, "Deutsch", "German"),
+        new LanguageBinding(EOptionLanguage.French, LocKeys.OptionUI.languageFrench, "Français", "French"),
+        new LanguageBinding(EOptionLanguage.Portuguese, LocKeys.OptionUI.languagePortuguese, "Português", "Portuguese"),
+        new LanguageBinding(EOptionLanguage.Spanish, LocKeys.OptionUI.languageSpanish, "Español (España)", "Spanish (Spain)"),
+        new LanguageBinding(EOptionLanguage.SpanishLatAm, LocKeys.OptionUI.languageSpanishLatAm, "Español (Latinoamérica)", "Spanish (Latin America)"),
+        new LanguageBinding(EOptionLanguage.Russian, LocKeys.OptionUI.languageRussian, "Русский", "Russian"),
+        new LanguageBinding(EOptionLanguage.Polish, LocKeys.OptionUI.languagePolish, "Polski", "Polish"),
+        new LanguageBinding(EOptionLanguage.Turkish, LocKeys.OptionUI.languageTurkish, "Türkçe", "Turkish"),
+        new LanguageBinding(EOptionLanguage.Italian, LocKeys.OptionUI.languageItalian, "Italiano", "Italian"),
+        new LanguageBinding(EOptionLanguage.Ukrainian, LocKeys.OptionUI.languageUkrainian, "Українська", "Ukrainian"),
+        new LanguageBinding(EOptionLanguage.Czech, LocKeys.OptionUI.languageCzech, "Čeština", "Czech"),
+        new LanguageBinding(EOptionLanguage.Indonesian, LocKeys.OptionUI.languageIndonesian, "Bahasa Indonesia", "Indonesian"),
+        new LanguageBinding(EOptionLanguage.Vietnamese, LocKeys.OptionUI.languageVietnamese, "Tiếng Việt", "Vietnamese")
         // 태국어(Thai)는 아직 넣지 않습니다. SUPPORTED_LANGUAGE_COUNT 밖이라 고르면 다음 실행에 한국어로
         // 되돌아가고, 폰트가 없어 그 사이 화면도 두부가 됩니다. 폰트를 넣고 언어를 열 때 함께 추가하세요.
-        new LanguageButtonBinding(EOptionLanguage.Korean, LocKeys.OptionUI.languageKorean, "한국어", "Korean")
     };
 
-    private readonly struct LanguageButtonBinding
+    private readonly struct LanguageBinding
     {
         public readonly EOptionLanguage Language;
 
@@ -127,15 +137,15 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         /// <summary>로컬라이징 데이터가 아직 로드되지 않았을 때 쓰는 표기입니다.</summary>
         public readonly string FallbackName;
 
-        /// <summary>버튼 오브젝트 이름에 이 중 하나가 들어 있으면 이 언어로 봅니다.</summary>
-        public readonly string[] NameTokens;
+        /// <summary>이름 아래에 작게 보여주는 영어 언어명입니다. 비어 있으면 부제를 비웁니다. (영문뿐이라 어느 폰트에서도 깨지지 않습니다)</summary>
+        public readonly string EnglishName;
 
-        public LanguageButtonBinding(EOptionLanguage _language, int _locKey, string _fallbackName, params string[] _nameTokens)
+        public LanguageBinding(EOptionLanguage _language, int _locKey, string _fallbackName, string _englishName)
         {
             Language = _language;
             LocKey = _locKey;
             FallbackName = _fallbackName;
-            NameTokens = _nameTokens;
+            EnglishName = _englishName;
         }
     }
 
@@ -177,6 +187,9 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         cursorBoxUI = _cursorBoxUI;
         depthController = _depthController;
         cachedOnDeviceChanged = OnDeviceChanged;
+        cachedOnLanguagePrev = HandleLanguagePrevClicked;
+        cachedOnLanguageNext = HandleLanguageNextClicked;
+        cachedOnLanguageConfirm = HandleLanguageConfirmClicked;
 
         if (null != rootCanvasGroup)
         {
@@ -185,7 +198,7 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
             rootCanvasGroup.blocksRaycasts = false;
         }
 
-        InitLanguageButtons();
+        InitLanguageSelector();
         InitConsentPanel();
         SetupSpatialNavigations();
 
@@ -194,155 +207,38 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
 
     private void SetupSpatialNavigations()
     {
-        // 1. 언어 버튼 2D 격자 네비게이션 직결
-        SetupLanguageGridNavigation();
+        // 1. 언어 단계: 선택기 행 <-> 체크 버튼 상하 연결 (좌우는 선택기가 직접 언어를 바꾼다)
+        SetupLanguageNavigation();
 
         // 2. Consent 패널 상하 네비게이션 연결 (Toggle <-> DisagreeToggle <-> ConfirmButton)
         UpdateConsentNavigations();
     }
 
-    /// <summary>
-    /// 언어 버튼들을 화면에 놓인 대로 격자로 읽어 상하좌우 이동을 직접 배선합니다.
-    ///
-    /// 언어마다 버튼을 손으로 이어 붙이던 것을 위치 기반으로 바꾼 이유는, 언어가 늘 때마다
-    /// 배선을 다시 짜야 했고 한 곳만 빠뜨려도 패드로 닿지 못하는 버튼이 생기기 때문입니다.
-    /// 이제 프리팹에 버튼을 어떻게 배치하든(3+2든 5+5든) 보이는 대로 이동합니다.
-    ///
-    /// 이동 규칙은 기존 배선과 같습니다.
-    ///  - 좌우: 읽는 순서대로 전체를 한 바퀴 돕니다. (줄 끝에서 다음 줄 첫 버튼으로 넘어감)
-    ///  - 상하: 위/아래 줄의 같은 칸으로 갑니다. 그 줄이 더 짧으면 마지막 칸으로 붙고,
-    ///          위/아래에 줄이 없으면 제자리에 머무릅니다. (목록 밖으로 포커스가 빠지지 않게)
-    /// </summary>
-    private void SetupLanguageGridNavigation()
+    private void SetupLanguageNavigation()
     {
-        BuildLanguageGrid();
-
-        int _count = gridOrderedButtons.Count;
-        if (0 == _count || 0 == gridRowStarts.Count) return;
-
-        int _rowCount = gridRowStarts.Count;
-
-        for (int i = 0; i < _count; i++)
+        if (null != languageSelector)
         {
-            UI_PanelSelectButton _btn = gridOrderedButtons[i];
-
-            int _row = FindRowIndex(i);
-            int _column = i - gridRowStarts[_row];
-
-            _btn.navigation = new Navigation
+            languageSelector.navigation = new Navigation
             {
                 mode = Navigation.Mode.Explicit,
-                selectOnLeft = gridOrderedButtons[(i - 1 + _count) % _count],
-                selectOnRight = gridOrderedButtons[(i + 1) % _count],
-                selectOnUp = (0 == _row) ? _btn : GetButtonInRow(_row - 1, _column, _rowCount, _count),
-                selectOnDown = (_rowCount - 1 == _row) ? _btn : GetButtonInRow(_row + 1, _column, _rowCount, _count)
+                selectOnUp = null,
+                selectOnDown = languageConfirmButton,
+                selectOnLeft = null,
+                selectOnRight = null
             };
         }
-    }
 
-    /// <summary>
-    /// 언어 버튼을 화면에 보이는 순서(위에서 아래로, 왼쪽에서 오른쪽으로)로 정렬하고
-    /// 각 줄이 시작되는 인덱스를 기록합니다.
-    ///
-    /// 인스펙터 배열 순서가 아니라 실제 위치를 기준으로 삼는 이유는, 배열에 넣은 순서와
-    /// 화면 배치가 어긋나 있어도 패드 이동이 보이는 대로 동작해야 하기 때문입니다.
-    /// </summary>
-    private void BuildLanguageGrid()
-    {
-        gridOrderedButtons.Clear();
-        gridRowStarts.Clear();
-
-        if (null == languageButtons) return;
-
-        for (int i = 0; i < languageButtons.Length; i++)
+        if (null != languageConfirmButton)
         {
-            UI_PanelSelectButton _btn = languageButtons[i];
-            if (null == _btn) continue;
-
-            gridOrderedButtons.Add(_btn);
-        }
-
-        int _count = gridOrderedButtons.Count;
-        if (0 == _count) return;
-
-        // 버튼 배치는 GridLayoutGroup이 정한다. 레이아웃 갱신은 프레임 끝에 몰아서 도므로,
-        // 여기서 그대로 위치를 읽으면 아직 반영되지 않은 좌표를 보고 줄을 잘못 나눌 수 있다.
-        // 버튼을 새로 추가한 직후가 특히 그렇다. 한 번 강제로 계산시켜 놓고 읽는다.
-        RectTransform _layoutRoot = gridOrderedButtons[0].transform.parent as RectTransform;
-        if (null != _layoutRoot && true == _layoutRoot.gameObject.activeInHierarchy)
-        {
-            LayoutRebuilder.ForceRebuildLayoutImmediate(_layoutRoot);
-        }
-
-        // 같은 줄로 볼 Y 오차입니다. 버튼 높이의 절반을 쓰면 줄 간격이 아무리 좁아도
-        // 두 줄이 한 줄로 뭉치지 않고, 같은 줄이 미세하게 어긋나 있어도 갈라지지 않습니다.
-        float _rowTolerance = GetRowTolerance(gridOrderedButtons[0]);
-
-        // 삽입 정렬로 직접 정렬합니다. List.Sort는 비교자가 엄밀한 순서 관계여야 하는데,
-        // 오차를 허용하는 "같은 줄" 판정은 그 조건을 만족하지 않아 결과가 뒤틀릴 수 있습니다.
-        // (버튼은 많아야 십여 개라 비용도 문제가 되지 않습니다)
-        for (int i = 1; i < _count; i++)
-        {
-            UI_PanelSelectButton _current = gridOrderedButtons[i];
-            Vector3 _currentPos = _current.transform.position;
-
-            int j = i - 1;
-            while (j >= 0 && true == ComesAfter(gridOrderedButtons[j].transform.position, _currentPos, _rowTolerance))
+            languageConfirmButton.navigation = new Navigation
             {
-                gridOrderedButtons[j + 1] = gridOrderedButtons[j];
-                j--;
-            }
-            gridOrderedButtons[j + 1] = _current;
+                mode = Navigation.Mode.Explicit,
+                selectOnUp = languageSelector,
+                selectOnDown = null,
+                selectOnLeft = null,
+                selectOnRight = null
+            };
         }
-
-        gridRowStarts.Add(0);
-        float _rowY = gridOrderedButtons[0].transform.position.y;
-
-        for (int i = 1; i < _count; i++)
-        {
-            float _y = gridOrderedButtons[i].transform.position.y;
-            if (Mathf.Abs(_y - _rowY) <= _rowTolerance) continue;
-
-            gridRowStarts.Add(i);
-            _rowY = _y;
-        }
-    }
-
-    /// <summary>_a가 읽는 순서에서 _b보다 뒤에 오는지 여부입니다. (위 → 아래, 왼쪽 → 오른쪽)</summary>
-    private static bool ComesAfter(Vector3 _a, Vector3 _b, float _rowTolerance)
-    {
-        if (Mathf.Abs(_a.y - _b.y) > _rowTolerance) return _a.y < _b.y;
-        return _a.x > _b.x;
-    }
-
-    private static float GetRowTolerance(UI_PanelSelectButton _button)
-    {
-        const float DEFAULT_TOLERANCE = 1f;
-
-        RectTransform _rect = _button.transform as RectTransform;
-        if (null == _rect) return DEFAULT_TOLERANCE;
-
-        float _height = _rect.rect.height * Mathf.Abs(_rect.lossyScale.y);
-        return (_height > 0f) ? (_height * 0.5f) : DEFAULT_TOLERANCE;
-    }
-
-    private int FindRowIndex(int _buttonIndex)
-    {
-        for (int i = gridRowStarts.Count - 1; i >= 0; i--)
-        {
-            if (_buttonIndex >= gridRowStarts[i]) return i;
-        }
-        return 0;
-    }
-
-    /// <summary>_row번째 줄의 _column번째 버튼입니다. 그 줄이 더 짧으면 마지막 칸으로 붙습니다.</summary>
-    private UI_PanelSelectButton GetButtonInRow(int _row, int _column, int _rowCount, int _buttonCount)
-    {
-        int _start = gridRowStarts[_row];
-        int _end = (_row + 1 < _rowCount) ? gridRowStarts[_row + 1] : _buttonCount;
-        int _index = Mathf.Min(_start + _column, _end - 1);
-
-        return gridOrderedButtons[_index];
     }
 
     private void UpdateConsentNavigations()
@@ -384,92 +280,263 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         }
     }
 
-    private void InitLanguageButtons()
+    private void InitLanguageSelector()
     {
-        if (null == languageButtons) return;
-
-        for (int i = 0; i < languageButtons.Length; i++)
+        // 라벨에 표기를 채운다. 언어 이름은 어느 언어로 봐도 같은 값이 나오도록 OptionUI.json의 모든 열에 들어 있고,
+        // 코드에 박아두면 폰트 문자셋 생성기가 그 글자를 수집하지 못해 CJK 폰트에서 통째로 깨진다. (UI_Option.GetLanguageText와 같은 방식)
+        if (null != languageLabels)
         {
-            UI_PanelSelectButton _btn = languageButtons[i];
-            if (null == _btn) continue;
+            for (int i = 0; i < languageLabels.Length; i++)
+            {
+                if (null == languageLabels[i].label) continue;
 
-            ResolveLanguageBinding(_btn.gameObject.name, out EOptionLanguage _lang, out string _name);
+                languageLabels[i].label.text = GetLocalizedName(languageLabels[i].language);
+            }
+        }
 
-            _btn.Initialize(inputManager, cursorBoxUI, null);
-            _btn.SetBoundLanguage(_lang, _name);
-            _btn.OnClickedEvent -= HandleLanguageButtonClicked;
-            _btn.OnClickedEvent += HandleLanguageButtonClicked;
+        if (null != languageSelector)
+        {
+            languageSelector.Initialize(string.Empty, string.Empty, cachedOnLanguagePrev, cachedOnLanguageNext);
+            languageSelector.SetCursorBoxUI(cursorBoxUI, inputManager);
+        }
+
+        CacheLanguageFeedbackBase();
+
+        if (null != languageConfirmButton)
+        {
+            languageConfirmButton.Initialize(inputManager, cursorBoxUI, cachedOnLanguageConfirm);
         }
     }
 
     /// <summary>
-    /// 버튼 오브젝트 이름으로 어느 언어의 버튼인지 가려냅니다.
-    ///
-    /// 표기는 로컬라이징 데이터에서 읽습니다. 언어 이름은 어느 언어로 봐도 같은 값이
-    /// 나오도록 OptionUI.json의 모든 열에 자기 표기가 들어 있고, 코드에 박아두면 폰트
-    /// 문자셋 생성기가 그 글자를 수집하지 못해 CJK 폰트에서 통째로 깨지기 때문입니다.
-    /// (UI_Option.GetLanguageText와 같은 방식)
-    /// </summary>
-    private void ResolveLanguageBinding(string _buttonName, out EOptionLanguage _language, out string _displayName)
-    {
-        for (int i = 0; i < languageButtonBindings.Length; i++)
-        {
-            LanguageButtonBinding _binding = languageButtonBindings[i];
-            if (false == MatchesAnyToken(_buttonName, _binding.NameTokens)) continue;
-
-            _language = _binding.Language;
-            _displayName = GetLocalizedName(_binding);
-            return;
-        }
-
-        // 어느 이름에도 걸리지 않았다. 예전에는 조용히 한국어가 되었는데, 그러면 새 언어
-        // 버튼을 추가하고 이름만 어긋났을 때 "한국어 버튼이 두 개"인 화면이 원인 없이 나온다.
-        // 동작은 그대로 두고(선택 자체는 가능해야 하므로) 경고만 남긴다.
-        Debug.LogWarning("[UI_InitialSetupPopup] '" + _buttonName + "' 버튼의 언어를 알 수 없어 " +
-            FALLBACK_BUTTON_LANGUAGE + "로 둡니다. languageButtonBindings의 이름 조각 중 하나를 " +
-            "오브젝트 이름에 포함시키세요.", this);
-
-        _language = FALLBACK_BUTTON_LANGUAGE;
-        _displayName = GetLocalizedName(FALLBACK_BUTTON_LANGUAGE);
-    }
-
-    /// <summary>
-    /// 해당 언어의 표기입니다.
-    ///
-    /// 표에서 언어로 직접 찾습니다. 예전에는 "표의 마지막 항목이 곧 한국어"라고 보고 끝에서
-    /// 꺼냈는데, 바로 위 표의 주석이 "언어를 늘릴 때는 여기에 한 줄을 넣으라"고 안내하는 터라
-    /// 그 말대로 끝에 추가하는 순간 버튼에 엉뚱한 언어 이름이 찍히게 됩니다.
-    /// (고른 언어와 표기가 어긋나는 셈이라, 유저는 Italiano를 눌렀는데 한국어가 켜집니다)
+    /// 해당 언어의 표기입니다. 표에서 언어로 직접 찾으므로 표 순서가 바뀌어도 어긋나지 않습니다.
     /// </summary>
     private string GetLocalizedName(EOptionLanguage _language)
     {
-        for (int i = 0; i < languageButtonBindings.Length; i++)
+        for (int i = 0; i < languageBindings.Length; i++)
         {
-            if (languageButtonBindings[i].Language != _language) continue;
-            return GetLocalizedName(languageButtonBindings[i]);
+            if (languageBindings[i].Language != _language) continue;
+            return GetLocalizedName(in languageBindings[i]);
         }
 
-        // 표에 없는 언어. 표기는 투박해지지만 어느 언어인지는 드러나고 버튼도 계속 눌립니다.
+        // 표에 없는 언어. 표기는 투박해지지만 어느 언어인지는 드러난다.
         return _language.ToString();
     }
 
-    private static bool MatchesAnyToken(string _buttonName, string[] _tokens)
-    {
-        if (true == string.IsNullOrEmpty(_buttonName) || null == _tokens) return false;
-
-        for (int i = 0; i < _tokens.Length; i++)
-        {
-            if (true == _buttonName.Contains(_tokens[i])) return true;
-        }
-        return false;
-    }
-
-    private string GetLocalizedName(in LanguageButtonBinding _binding)
+    private string GetLocalizedName(in LanguageBinding _binding)
     {
         if (null == localizationManager) return _binding.FallbackName;
 
         string _text = localizationManager.GetText(_binding.LocKey);
         return string.IsNullOrEmpty(_text) ? _binding.FallbackName : _text;
+    }
+
+    /// <summary>
+    /// 처음 보여줄 언어의 목록 위치입니다. 부팅 때 시스템 언어로 이미 적용된 현재 언어를 그대로 보여주므로,
+    /// 대부분의 유저는 체크만 누르면 됩니다. 목록에 없는 언어(태국어 등)는 첫 항목(한국어)으로 둡니다.
+    /// </summary>
+    private int ResolveInitialLanguageIndex()
+    {
+        EOptionLanguage _current = SettingsManager.Instance.CurrentLanguage;
+        for (int i = 0; i < languageBindings.Length; i++)
+        {
+            if (languageBindings[i].Language == _current) return i;
+        }
+
+        return 0;
+    }
+
+    /// <summary>현재 언어의 이름 라벨만 켜고 나머지는 끕니다. 영어 부제와 페이지 점도 함께 갱신합니다.</summary>
+    private void UpdateLanguageDisplay()
+    {
+        EOptionLanguage _current = languageBindings[languageIndex].Language;
+
+        if (null != languageLabels)
+        {
+            for (int i = 0; i < languageLabels.Length; i++)
+            {
+                TextMeshProUGUI _label = languageLabels[i].label;
+                if (null == _label) continue;
+
+                bool _isCurrent = (languageLabels[i].language == _current);
+                if (_label.gameObject.activeSelf != _isCurrent)
+                {
+                    _label.gameObject.SetActive(_isCurrent);
+                }
+            }
+        }
+
+        // 부제는 비활성화하지 않고 문구만 비운다. 켜고 끄면 레이아웃 높이가 언어마다 달라진다.
+        if (null != languageSubtitleText)
+        {
+            languageSubtitleText.text = languageBindings[languageIndex].EnglishName;
+        }
+
+        if (null != languageDots)
+        {
+            for (int i = 0; i < languageDots.Length; i++)
+            {
+                if (null == languageDots[i]) continue;
+
+                languageDots[i].color = (i == languageIndex) ? languageDotActiveColor : languageDotInactiveColor;
+            }
+        }
+    }
+
+    /// <summary>연출이 되돌아갈 기준 위치/색을 한 번만 저장합니다.</summary>
+    private void CacheLanguageFeedbackBase()
+    {
+        if (null != languageLabels)
+        {
+            languageLabelBasePositions = new Vector2[languageLabels.Length];
+            languageLabelBaseColors = new Color[languageLabels.Length];
+            for (int i = 0; i < languageLabels.Length; i++)
+            {
+                if (null == languageLabels[i].label) continue;
+
+                languageLabelBasePositions[i] = languageLabels[i].label.rectTransform.anchoredPosition;
+                languageLabelBaseColors[i] = languageLabels[i].label.color;
+            }
+        }
+
+        if (null != languageTitleText) languageTitleBaseColor = languageTitleText.color;
+        if (null != languageSubtitleText) languageSubtitleBaseColor = languageSubtitleText.color;
+    }
+
+    /// <summary>진행 중인 연출을 멈추고 모든 요소를 기준 위치/색으로 되돌립니다. 연타해도 최종 모습이 항상 같도록 하는 안전장치입니다.</summary>
+    private void ResetLanguageFeedback()
+    {
+        if (null != languageFeedbackTween && true == languageFeedbackTween.IsActive())
+        {
+            languageFeedbackTween.Kill();
+        }
+
+        languageFeedbackTween = null;
+
+        if (null != languageDotCursor) languageDotCursor.DOKill();
+
+        if (null != languageLabels && null != languageLabelBasePositions)
+        {
+            for (int i = 0; i < languageLabels.Length; i++)
+            {
+                TextMeshProUGUI _label = languageLabels[i].label;
+                if (null == _label) continue;
+
+                _label.rectTransform.DOKill();
+                _label.DOKill();
+                _label.rectTransform.anchoredPosition = languageLabelBasePositions[i];
+                _label.color = languageLabelBaseColors[i];
+            }
+        }
+
+        if (null != languageTitleText)
+        {
+            languageTitleText.DOKill();
+            languageTitleText.color = languageTitleBaseColor;
+        }
+
+        if (null != languageSubtitleText)
+        {
+            languageSubtitleText.DOKill();
+            languageSubtitleText.color = languageSubtitleBaseColor;
+        }
+    }
+
+    private bool HasLanguageDotCursorTarget()
+    {
+        return null != languageDotCursor && null != languageDots
+            && languageIndex < languageDots.Length && null != languageDots[languageIndex];
+    }
+
+    /// <summary>
+    /// 점 커서를 현재 언어의 점에 바로 붙입니다. (연출 없이)
+    /// 커서는 활성 점의 자식으로 로컬 (0, 0)에 놓이므로 레이아웃이 아직 안정되기 전이어도 점과 항상 겹칩니다.
+    /// 점 중심이 .5 픽셀이라 5x5 커서도 같은 중심에 놓여야 가장자리가 정수 픽셀에 떨어진다.
+    /// </summary>
+    private void SnapLanguageDotCursor()
+    {
+        if (false == HasLanguageDotCursorTarget()) return;
+
+        languageDotCursor.DOKill();
+        languageDotCursor.SetParent(languageDots[languageIndex].rectTransform, false);
+        languageDotCursor.anchoredPosition = Vector2.zero;
+    }
+
+    /// <summary>
+    /// 언어를 넘길 때의 피드백입니다. 이름은 누른 방향에서 정수 픽셀로 미끄러져 들어오며 금색에서 흰색으로 돌아오고,
+    /// 점 커서는 새 점으로 미끄러집니다. (화살표 밀기는 UI_OptionSelector가 담당합니다)
+    /// 텍스트에는 스케일과 알파 페이드를 쓰지 않습니다. (픽셀 폰트가 뭉개지고, 빠르게 넘길 때 화면이 깜빡임)
+    /// </summary>
+    private void PlayLanguageSwitchFeedback(int _direction)
+    {
+        ResetLanguageFeedback();
+
+        float _dir = (0 < _direction) ? 1f : -1f;
+        float _slide = Mathf.Round(languageSlideDistance);
+        Sequence _seq = DOTween.Sequence();
+
+        // 이름: 누른 방향에서 슬라이드 인 + 금색 -> 흰색 (알파는 항상 유지)
+        EOptionLanguage _current = languageBindings[languageIndex].Language;
+        for (int i = 0; i < languageLabels.Length; i++)
+        {
+            TextMeshProUGUI _label = languageLabels[i].label;
+            if (null == _label || _current != languageLabels[i].language) continue;
+
+            Vector2 _base = languageLabelBasePositions[i];
+            Color _from = languageFlashColor;
+            _from.a = languageLabelBaseColors[i].a;
+
+            _label.rectTransform.anchoredPosition = new Vector2(_base.x + _dir * _slide, _base.y);
+            _label.color = _from;
+            _seq.Join(_label.rectTransform.DOAnchorPosX(_base.x, 0.14f, true).SetEase(Ease.OutBack));
+            _seq.Join(_label.DOColor(languageLabelBaseColors[i], 0.22f).SetEase(Ease.OutQuad));
+        }
+
+        // 점 커서: 새 점의 자식으로 옮기되 월드 위치를 유지해 이전 위치에서 출발하고, 로컬 (0, 0)으로 미끄러진다
+        if (true == HasLanguageDotCursorTarget())
+        {
+            languageDotCursor.SetParent(languageDots[languageIndex].rectTransform, true);
+            _seq.Join(languageDotCursor.DOAnchorPos(Vector2.zero, 0.12f).SetEase(Ease.OutBack));
+        }
+
+        languageFeedbackTween = _seq;
+    }
+
+    private void CycleLanguage(int _delta)
+    {
+        int _count = languageBindings.Length;
+        languageIndex = (languageIndex + _delta + _count) % _count;
+        UpdateLanguageDisplay();
+
+        // 옵션 화면의 언어 선택과 같이, 넘길 때마다 앱 언어를 바로 바꾼다. 제목 문구와 폰트(FontLocalizer)는
+        // 기존 로컬라이징 시스템이 갱신하므로 선택한 언어로 실시간 표시된다.
+        // (같은 언어면 SetLanguage가 아무것도 하지 않고, 바뀌면 설정에 바로 저장한다)
+        SettingsManager.Instance.SetLanguage(languageBindings[languageIndex].Language);
+        RefreshLocalizedTexts();
+
+        PlayLanguageSwitchFeedback(_delta);
+    }
+
+    // 동의 패널로 넘어가는 연출이 도는 동안, 닫히는 동안, 이미 동의 단계인 동안에는 언어 입력을 무시한다.
+    // 이 구간에서 선택기와 체크 버튼은 아직 살아 있어서 게임패드 입력이 그대로 들어오고, 그때마다
+    // 전환 시퀀스가 Kill되고 처음부터 다시 재생되어 화면이 넘어가지 않는다.
+    private bool IsLanguageInputBlocked()
+    {
+        return true == isTransitioning || true == isClosing || true == isConsentPhase;
+    }
+
+    private void HandleLanguagePrevClicked()
+    {
+        if (true == IsLanguageInputBlocked()) return;
+
+        CycleLanguage(-1);
+    }
+
+    private void HandleLanguageNextClicked()
+    {
+        if (true == IsLanguageInputBlocked()) return;
+
+        CycleLanguage(1);
     }
 
     private void InitConsentPanel()
@@ -716,7 +783,18 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
 
         SetupSpatialNavigations();
         RefreshLocalizedTexts();
-        ClearLanguageSelection();
+
+        // 처음 보여줄 언어를 정한다. 선택은 체크 버튼을 눌러야 적용된다.
+        languageIndex = ResolveInitialLanguageIndex();
+        UpdateLanguageDisplay();
+        ResetLanguageFeedback();
+        SnapLanguageDotCursor();
+        lastFocusedLanguageSelectable = languageSelector;
+
+        if (null != languageConfirmButton)
+        {
+            languageConfirmButton.SetInteractable(true, true);
+        }
 
         // 루트 페이드인 및 슬라이드 연출
         KillTransition();
@@ -768,9 +846,7 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         {
             if (false == isConsentPhase)
             {
-                UI_PanelSelectButton.SuppressSelectAudio = true;
-                FocusLanguageButton(lastFocusedLanguageButton ?? GetKoreanLanguageButton() ?? GetFirstLanguageButton());
-                UI_PanelSelectButton.SuppressSelectAudio = false;
+                FocusLanguageSelectable(GetDefaultLanguageSelectable());
             }
             else
             {
@@ -792,50 +868,6 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         }
     }
 
-    /// <summary>
-    /// 처음 언어설정 진입 시에는 어떤 언어도 미리 선택되어 있지 않아야 합니다.
-    /// 모든 언어 버튼을 미선택(회색) 상태로 초기화하고, 게임패드 첫 포커스 대상만 한국어로 지정합니다.
-    /// </summary>
-    private void ClearLanguageSelection()
-    {
-        if (null == languageButtons) return;
-
-        for (int i = 0; i < languageButtons.Length; i++)
-        {
-            UI_PanelSelectButton _btn = languageButtons[i];
-            if (null == _btn) continue;
-
-            _btn.SetSelected(false);
-            _btn.ForceUnhover();
-        }
-
-        // 게임패드로 열었을 때 첫 포커스 대상은 한국어 버튼
-        lastFocusedLanguageButton = GetKoreanLanguageButton() ?? GetFirstLanguageButton();
-    }
-
-    /// <summary>
-    /// 유저가 언어 버튼을 클릭했을 때 선택 상태 비주얼을 반영합니다.
-    /// </summary>
-    private void ApplyLanguageSelection(EOptionLanguage _selected)
-    {
-        if (null == languageButtons) return;
-
-        for (int i = 0; i < languageButtons.Length; i++)
-        {
-            UI_PanelSelectButton _btn = languageButtons[i];
-            if (null == _btn) continue;
-
-            bool _isCurrent = (_btn.BoundLanguage == _selected);
-            _btn.SetSelected(_isCurrent);
-            _btn.ForceUnhover();
-
-            if (true == _isCurrent)
-            {
-                lastFocusedLanguageButton = _btn;
-            }
-        }
-    }
-
     private void HandleShowCompleted()
     {
         if (false == isInputAllowed)
@@ -846,7 +878,7 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
 
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
-            FocusLanguageButton(lastFocusedLanguageButton ?? GetKoreanLanguageButton() ?? GetFirstLanguageButton());
+            FocusLanguageSelectable(GetDefaultLanguageSelectable());
         }
         else if (null != EventSystem.current)
         {
@@ -854,48 +886,39 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         }
     }
 
-    private UI_PanelSelectButton GetKoreanLanguageButton()
+    /// <summary>패드 포커스를 둘 언어 단계의 기본 대상입니다. 마지막으로 포커스했던 것이 살아 있으면 그것, 아니면 선택기 행입니다.</summary>
+    private Selectable GetDefaultLanguageSelectable()
     {
-        if (null == languageButtons || 0 == languageButtons.Length) return null;
-        for (int i = 0; i < languageButtons.Length; i++)
+        if (null != lastFocusedLanguageSelectable && true == lastFocusedLanguageSelectable.gameObject.activeInHierarchy)
         {
-            UI_PanelSelectButton _btn = languageButtons[i];
-            if (null != _btn && _btn.BoundLanguage == EOptionLanguage.Korean && true == _btn.gameObject.activeInHierarchy)
-            {
-                return _btn;
-            }
+            return lastFocusedLanguageSelectable;
         }
-        return GetFirstLanguageButton();
+
+        return languageSelector;
     }
 
-    private UI_PanelSelectButton GetFirstLanguageButton()
-    {
-        if (null == languageButtons || 0 == languageButtons.Length) return null;
-        for (int i = 0; i < languageButtons.Length; i++)
-        {
-            if (null != languageButtons[i] && true == languageButtons[i].gameObject.activeInHierarchy)
-            {
-                return languageButtons[i];
-            }
-        }
-        return null;
-    }
-
-    private void FocusLanguageButton(UI_PanelSelectButton _target)
+    private void FocusLanguageSelectable(Selectable _target)
     {
         if (null == _target) return;
-        lastFocusedLanguageButton = _target;
+        lastFocusedLanguageSelectable = _target;
 
-        if (null != EventSystem.current)
+        if (null == EventSystem.current) return;
+
+        if (EventSystem.current.currentSelectedGameObject != _target.gameObject)
         {
-            if (EventSystem.current.currentSelectedGameObject == _target.gameObject)
-            {
-                _target.ForceHover();
-            }
-            else
-            {
-                EventSystem.current.SetSelectedGameObject(_target.gameObject);
-            }
+            EventSystem.current.SetSelectedGameObject(_target.gameObject);
+            return;
+        }
+
+        // 이미 선택된 대상이면 OnSelect가 다시 오지 않으므로 커서와 포커스 표시를 직접 다시 띄운다.
+        if (_target == languageSelector)
+        {
+            languageSelector.ShowCursor();
+            languageSelector.ApplyFocusVisual(true);
+        }
+        else if (_target == languageConfirmButton)
+        {
+            languageConfirmButton.ForceHover();
         }
     }
 
@@ -974,28 +997,16 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
     }
 
 
-    private void HandleLanguageButtonClicked(UI_PanelSelectButton _btn)
+    private void HandleLanguageConfirmClicked()
     {
-        // 동의 패널로 넘어가는 연출이 도는 동안에는 무시한다. 이 구간에서 언어 버튼은 아직
-        // 살아 있어서 게임패드 Submit이 그대로 들어오고, 그때마다 전환 시퀀스가 Kill되고
-        // 처음부터 다시 재생되어 화면이 넘어가지 않는다.
-        //
-        // isConsentPhase까지 한 줄에 모아 둔다. isTransitioning을 세운 뒤에 따로 검사하면
-        // 그 경로로 빠져나갈 때 플래그가 true로 남고, 되돌리는 곳이 Show와
-        // HandleConsentPanelShown뿐이라 복구되지 않는다.
-        if (null == _btn
-            || true == isTransitioning
-            || true == isClosing
-            || true == isConsentPhase) return;
+        if (true == IsLanguageInputBlocked()) return;
 
         isTransitioning = true;
+        ResetLanguageFeedback();
 
-        // 1. 선택한 언어 적용
-        EOptionLanguage _selected = _btn.BoundLanguage;
+        // 1. 선택한 언어 확정. 넘기는 동안 이미 적용되어 있으므로 보통은 아무 일도 하지 않는다.
+        EOptionLanguage _selected = languageBindings[languageIndex].Language;
         SettingsManager.Instance.SetLanguage(_selected);
-
-        // 선택 표시를 방금 누른 버튼으로 옮긴다.
-        ApplyLanguageSelection(_selected);
 
         RefreshLocalizedTexts();
 
@@ -1071,7 +1082,6 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
             // SetSelectedGameObject가 Select 이벤트를 동기로 발생시키므로 이 구간만 감싸면 된다.
             // 미리 세워 두면 Select 트리거가 마우스 모드에서 플래그를 소비하기 전에 반환해
             // true로 남고, 나중에 패드로 바꿨을 때 첫 hover음이 대신 사라진다.
-            // (ActivateInput의 UI_PanelSelectButton.SuppressSelectAudio와 같은 방식)
             suppressNextConsentSelectAudio = true;
             FocusConsentItem(lastFocusedConsentSelectable ?? (Selectable)consentToggle);
             suppressNextConsentSelectAudio = false;
@@ -1180,6 +1190,12 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
     private void RefreshLocalizedTexts()
     {
         if (null == localizationManager) return;
+
+        if (null != languageTitleText)
+        {
+            string _title = localizationManager.GetText(LocKeys.OptionUI.language);
+            if (false == string.IsNullOrEmpty(_title)) languageTitleText.text = _title;
+        }
 
         if (null != consentTitleText)
         {
@@ -1306,48 +1322,23 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         {
             if (false == isConsentPhase)
             {
-                UI_PanelSelectButton _hoveredBtn = null;
-                if (null != languageButtons)
+                // 마우스가 올라가 있던 대상으로 포커스를 옮긴다. 없으면 마지막 포커스(처음엔 선택기 행)다.
+                Selectable _targetLanguage;
+                if (null != languageConfirmButton && true == languageConfirmButton.IsMouseOver())
                 {
-                    for (int i = 0; i < languageButtons.Length; i++)
-                    {
-                        UI_PanelSelectButton _btn = languageButtons[i];
-                        if (null != _btn && true == _btn.gameObject.activeInHierarchy && true == _btn.IsMouseOver())
-                        {
-                            _hoveredBtn = _btn;
-                            break;
-                        }
-                    }
+                    _targetLanguage = languageConfirmButton;
                 }
-
-                UI_PanelSelectButton _targetBtn = _hoveredBtn;
-                if (null != _hoveredBtn)
+                else if (null != languageSelector && true == languageSelector.IsMouseOver())
                 {
-                    MoveDirection _dir = GetTriggeringMoveDirection();
-                    if (MoveDirection.Down == _dir && null != _hoveredBtn.navigation.selectOnDown && _hoveredBtn.navigation.selectOnDown is UI_PanelSelectButton _downBtn && true == _downBtn.gameObject.activeInHierarchy)
-                    {
-                        _targetBtn = _downBtn;
-                    }
-                    else if (MoveDirection.Up == _dir && null != _hoveredBtn.navigation.selectOnUp && _hoveredBtn.navigation.selectOnUp is UI_PanelSelectButton _upBtn && true == _upBtn.gameObject.activeInHierarchy)
-                    {
-                        _targetBtn = _upBtn;
-                    }
-                    else if (MoveDirection.Left == _dir && null != _hoveredBtn.navigation.selectOnLeft && _hoveredBtn.navigation.selectOnLeft is UI_PanelSelectButton _leftBtn && true == _leftBtn.gameObject.activeInHierarchy)
-                    {
-                        _targetBtn = _leftBtn;
-                    }
-                    else if (MoveDirection.Right == _dir && null != _hoveredBtn.navigation.selectOnRight && _hoveredBtn.navigation.selectOnRight is UI_PanelSelectButton _rightBtn && true == _rightBtn.gameObject.activeInHierarchy)
-                    {
-                        _targetBtn = _rightBtn;
-                    }
+                    _targetLanguage = languageSelector;
                 }
                 else
                 {
-                    _targetBtn = lastFocusedLanguageButton ?? GetKoreanLanguageButton() ?? GetFirstLanguageButton();
+                    _targetLanguage = GetDefaultLanguageSelectable();
                 }
 
                 ForceUnhoverAll();
-                FocusLanguageButton(_targetBtn);
+                FocusLanguageSelectable(_targetLanguage);
             }
             else
             {
@@ -1360,6 +1351,16 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         }
         else if (EInputDeviceType.KeyboardMouse == _device)
         {
+            // 마우스로 바꾸면 선택이 지워지므로, 패드로 돌아올 때 같은 자리에서 시작하도록 지금 포커스를 기억해 둔다.
+            if (false == isConsentPhase && null != EventSystem.current && null != EventSystem.current.currentSelectedGameObject)
+            {
+                GameObject _selectedGo = EventSystem.current.currentSelectedGameObject;
+                if (_selectedGo == languageSelector.gameObject || _selectedGo == languageConfirmButton.gameObject)
+                {
+                    lastFocusedLanguageSelectable = _selectedGo.GetComponent<Selectable>();
+                }
+            }
+
             if (null != EventSystem.current)
             {
                 EventSystem.current.SetSelectedGameObject(null);
@@ -1373,27 +1374,20 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         }
     }
 
-    private MoveDirection GetTriggeringMoveDirection()
-    {
-        Gamepad _pad = Gamepad.current;
-        if (null == _pad) return MoveDirection.None;
-
-        if (true == _pad.dpad.down.isPressed || _pad.leftStick.y.ReadValue() < -0.5f) return MoveDirection.Down;
-        if (true == _pad.dpad.up.isPressed || _pad.leftStick.y.ReadValue() > 0.5f) return MoveDirection.Up;
-        if (true == _pad.dpad.left.isPressed || _pad.leftStick.x.ReadValue() < -0.5f) return MoveDirection.Left;
-        if (true == _pad.dpad.right.isPressed || _pad.leftStick.x.ReadValue() > 0.5f) return MoveDirection.Right;
-
-        return MoveDirection.None;
-    }
-
     private void ForceUnhoverAll()
     {
-        if (null != languageButtons)
+        if (null != languageSelector)
         {
-            for (int i = 0; i < languageButtons.Length; i++)
-            {
-                if (null != languageButtons[i]) languageButtons[i].ForceUnhover();
-            }
+            languageSelector.HideCursor();
+            languageSelector.ApplyFocusVisual(false);
+
+            if (null != languageSelector.LeftArrowButton) languageSelector.LeftArrowButton.ForceUnhover();
+            if (null != languageSelector.RightArrowButton) languageSelector.RightArrowButton.ForceUnhover();
+        }
+
+        if (null != languageConfirmButton)
+        {
+            languageConfirmButton.ForceUnhover();
         }
 
         if (null != confirmButton)
@@ -1424,6 +1418,7 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
     private void OnDestroy()
     {
         KillTransition();
+        ResetLanguageFeedback();
         onCompletedCallback = null;
         if (null != inputManager && null != inputManager.inputReader && null != cachedOnDeviceChanged)
         {

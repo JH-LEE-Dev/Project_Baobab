@@ -34,6 +34,12 @@ public class UIView_MainMenu : UIView
     [SerializeField] private UI_Credit creditUI; // 크레딧 UI
     [SerializeField] private UI_InitialSetupPopup initialSetupPopup; // 초기 언어 및 약관 동의 팝업
 
+#if UNITY_EDITOR
+    [Header("Editor Debug (빌드에는 포함되지 않음)")]
+    [SerializeField, Tooltip("켜면 저장된 동의 상태와 무관하게 에디터 플레이마다 초기 설정(언어/약관 동의) 팝업을 항상 띄운다. 기본값은 켜짐이며, 끄면 일반 유저와 같은 조건(미동의일 때만)으로 동작한다.")]
+    private bool bForceShowInitialSetupPopup = true;
+#endif
+
     [Header("Background Overlay")]
     [SerializeField, Tooltip("메인 메뉴 뒤에 깔릴 검은색 셀로판지(Dimmer)")] 
     private Image backgroundDimmer; 
@@ -272,7 +278,12 @@ public class UIView_MainMenu : UIView
         // 예전에는 조건 없이 매 실행마다 띄웠는데, 선택이 저장되지 않던 시절에는 그럴 수밖에
         // 없었다. 이제 선택이 Settings.json에 남으므로, 한 번 답한 유저에게 다시 묻는 것은
         // 그 답을 무시하는 것과 같다. 마음이 바뀐 유저는 옵션 창에서 언제든 바꿀 수 있다.
-        if (null != initialSetupPopup && EDataConsent.NotAsked == SettingsManager.Instance.DataConsent)
+        bool bShowInitialSetupPopup = EDataConsent.NotAsked == SettingsManager.Instance.DataConsent;
+#if UNITY_EDITOR
+        if (true == bForceShowInitialSetupPopup) bShowInitialSetupPopup = true;
+#endif
+
+        if (null != initialSetupPopup && true == bShowInitialSetupPopup)
         {
             if (null != pressAnyKeyUI) pressAnyKeyUI.Hide();
             if (null != mainMenuUI) mainMenuUI.gameObject.SetActive(false);
