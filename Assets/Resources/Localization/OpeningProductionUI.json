@@ -22,7 +22,6 @@
       "cs": "Hm... To je ale <color=#FFE082,#FFB74D><wave>hezké</wave></color> počasí, co?\nV takový den to chce rozložit deku\na vyrazit na <color=#FFE082,#FFB74D><wave>piknik</wave></color>.",
       "ind": "Hmm... Cuacanya <color=#FFE082,#FFB74D><wave>bagus</wave></color> sekali, ya?\nHari seperti ini enaknya gelar tikar\nlalu <color=#FFE082,#FFB74D><wave>piknik</wave></color>.",
       "vi": "Ừm... Thời tiết <color=#FFE082,#FFB74D><wave>đẹp</wave></color> thật nhỉ?\nNgày như thế này thì phải trải thảm\nđi <color=#FFE082,#FFB74D><wave>dã ngoại</wave></color> mới đúng.",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -47,7 +46,6 @@
       "cs": "Tak jsem tady na pikniku.\n<color=#81C784,#4CAF50><b><wave>V lese.</wave></b></color>",
       "ind": "Jadi, aku datang untuk piknik.\n<color=#81C784,#4CAF50><b><wave>Di hutan.</wave></b></color>",
       "vi": "Thế nên mình đi dã ngoại đây.\n<color=#81C784,#4CAF50><b><wave>Trong rừng.</wave></b></color>",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -72,7 +70,6 @@
       "cs": "<color=#FF8A65><char_shake>...Cože?</char_shake></color> Mám přestat plácat nesmysly\na <color=#FFD54F>prostě kácet stromy?</color>",
       "ind": "<color=#FF8A65><char_shake>...Hah?</char_shake></color> Aku harus berhenti ngoceh\ndan <color=#FFD54F>tebang pohon saja?</color>",
       "vi": "<color=#FF8A65><char_shake>...Hả?</char_shake></color> Ý là mình phải ngừng nói linh tinh\nvà <color=#FFD54F>chỉ lo chặt cây thôi á?</color>",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -97,7 +94,6 @@
       "cs": "Ach jo... <color=#90CAF9><wave>S vámi není legrace</wave></color>.\n<color=#CFD8DC>Tak dobře.</color>",
       "ind": "Ah... <color=#90CAF9><wave>Kamu nggak asyik</wave></color>.\n<color=#CFD8DC>Ya sudah.</color>",
       "vi": "Ôi... <color=#90CAF9><wave>Chẳng vui gì cả</wave></color>.\n<color=#CFD8DC>Thôi được rồi.</color>",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     }

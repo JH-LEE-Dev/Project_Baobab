@@ -22,7 +22,6 @@
       "cs": "Při vyčerpání se <color=#FFA500,#FF4500><b>30%</b></color> klád z inventáře\nautomaticky uloží do přepravní bedny,\nmísto aby se ztratily.",
       "ind": "Saat kehabisan stamina, <color=#FFA500,#FF4500><b>30%</b></color> kayu gelondongan\ndi inventaris otomatis masuk ke peti angkut\nagar tidak hilang.",
       "vi": "Khi kiệt sức, <color=#FFA500,#FF4500><b>30%</b></color> gỗ tròn trong túi đồ\nđược tự động chuyển vào thùng vận chuyển\nthay vì bị mất.",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -47,7 +46,6 @@
       "cs": "",
       "ind": "",
       "vi": "",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -72,7 +70,6 @@
       "cs": "",
       "ind": "",
       "vi": "",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -97,7 +94,6 @@
       "cs": "<color=#E2C275,#FFF0BA>Pojistka na klády</color>",
       "ind": "<color=#E2C275,#FFF0BA>Polis Asuransi Kayu Gelondongan</color>",
       "vi": "<color=#E2C275,#FFF0BA>Giấy chứng nhận bảo hiểm gỗ tròn</color>",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -122,7 +118,6 @@
       "cs": "",
       "ind": "",
       "vi": "",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -147,7 +142,6 @@
       "cs": "",
       "ind": "",
       "vi": "",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -172,7 +166,6 @@
       "cs": "",
       "ind": "",
       "vi": "",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     }

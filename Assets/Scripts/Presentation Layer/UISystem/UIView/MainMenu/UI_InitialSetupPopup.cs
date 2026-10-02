@@ -112,8 +112,6 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         new LanguageButtonBinding(EOptionLanguage.Czech, LocKeys.OptionUI.languageCzech, "Čeština", "Czech", "Cestina"),
         new LanguageButtonBinding(EOptionLanguage.Indonesian, LocKeys.OptionUI.languageIndonesian, "Bahasa Indonesia", "Indones"),
         new LanguageButtonBinding(EOptionLanguage.Vietnamese, LocKeys.OptionUI.languageVietnamese, "Tiếng Việt", "Vietnam"),
-        // 태국어(Thai)는 아직 넣지 않습니다. SUPPORTED_LANGUAGE_COUNT 밖이라 고르면 다음 실행에 한국어로
-        // 되돌아가고, 폰트가 없어 그 사이 화면도 두부가 됩니다. 폰트를 넣고 언어를 열 때 함께 추가하세요.
         new LanguageButtonBinding(EOptionLanguage.Korean, LocKeys.OptionUI.languageKorean, "한국어", "Korean")
     };
 

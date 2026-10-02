@@ -22,7 +22,6 @@
       "cs": "Stromy v tomto lese",
       "ind": "Pohon di Hutan Ini",
       "vi": "Cây trong khu rừng này",
-      "th": "",
       "enumType": "MapType",
       "enumValue": "None"
     },
@@ -47,7 +46,6 @@
       "cs": "Vybrat cíl",
       "ind": "Pilih Tujuan",
       "vi": "Chọn điểm đến",
-      "th": "",
       "enumType": "MapType",
       "enumValue": "None"
     },
@@ -72,7 +70,6 @@
       "cs": "Les Zelené pláně",
       "ind": "Hutan Padang Hijau",
       "vi": "Rừng Đồng Xanh",
-      "th": "",
       "enumType": "MapType",
       "enumValue": "WideGreenForest"
     },
@@ -97,7 +94,6 @@
       "cs": "Les Nadýchaných spor",
       "ind": "Hutan Spora Empuk",
       "vi": "Rừng Bào Tử Bồng Bềnh",
-      "th": "",
       "enumType": "MapType",
       "enumValue": "FluffySporeForest"
     },
@@ -122,7 +118,6 @@
       "cs": "Les Hvězdných kořenů",
       "ind": "Hutan Akar Bintang",
       "vi": "Rừng Rễ Sao",
-      "th": "",
       "enumType": "MapType",
       "enumValue": "StarrootForest"
     },
@@ -147,7 +142,6 @@
       "cs": "Lávový les",
       "ind": "Hutan Lava",
       "vi": "Rừng Dung Nham",
-      "th": "",
       "enumType": "MapType",
       "enumValue": "MagmaForest"
     }

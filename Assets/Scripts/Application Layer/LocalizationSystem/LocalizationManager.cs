@@ -165,7 +165,6 @@ public class LocalizationManager : MonoBehaviour
             case Language.CS: return string.IsNullOrEmpty(_entry.cs) ? _entry.en : _entry.cs;
             case Language.ID: return string.IsNullOrEmpty(_entry.ind) ? _entry.en : _entry.ind;
             case Language.VI: return string.IsNullOrEmpty(_entry.vi) ? _entry.en : _entry.vi;
-            case Language.TH: return string.IsNullOrEmpty(_entry.th) ? _entry.en : _entry.th;
             default: return _entry.en;
         }
     }

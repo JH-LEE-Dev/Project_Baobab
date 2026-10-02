@@ -22,7 +22,6 @@
       "cs": "Nová hra",
       "ind": "Game Baru",
       "vi": "Trò chơi mới",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -47,7 +46,6 @@
       "cs": "Pokračovat",
       "ind": "Lanjutkan",
       "vi": "Tiếp tục",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -72,7 +70,6 @@
       "cs": "Nastavení",
       "ind": "Pengaturan",
       "vi": "Tùy chọn",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -97,7 +94,6 @@
       "cs": "Tvůrci",
       "ind": "Kredit",
       "vi": "Đội ngũ phát triển",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -122,7 +118,6 @@
       "cs": "Ukončit",
       "ind": "Keluar",
       "vi": "Thoát",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -147,7 +142,6 @@
       "cs": "Začni stiskem libovolné klávesy",
       "ind": "Tekan tombol apa saja untuk mulai",
       "vi": "Nhấn phím bất kỳ để bắt đầu",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -172,7 +166,6 @@
       "cs": "Veškerý uložený postup bude ztracen.\nZačít novou hru?",
       "ind": "Semua progres tersimpan akan hilang.\nMulai game baru?",
       "vi": "Toàn bộ tiến trình đã lưu sẽ bị mất.\nBắt đầu trò chơi mới?",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -197,7 +190,6 @@
       "cs": "◆",
       "ind": "◆",
       "vi": "◆",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -222,7 +214,6 @@
       "cs": "Jazyk",
       "ind": "Bahasa",
       "vi": "Ngôn ngữ",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -247,7 +238,6 @@
       "cs": "Sběr dat",
       "ind": "Pengumpulan Data",
       "vi": "Thu thập dữ liệu",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -272,7 +262,6 @@
       "cs": "Pro zlepšování hry sbíráme\n<color=#FFD54F>informace o zařízení, chybové protokoly a herní statistiky</color>.\nNesbíráme tvé jméno ani e-mailovou adresu.\nMůžeš hrát i bez souhlasu a toto nastavení kdykoli změnit\nv <color=#81C784>[Nastavení]</color>.",
       "ind": "Untuk meningkatkan kualitas game, kami mengumpulkan\n<color=#FFD54F>informasi perangkat, log kesalahan, dan statistik permainan</color>.\nKami tidak mengumpulkan nama atau alamat emailmu.\nKamu tetap bisa bermain meski tidak setuju.\nPilihan ini bisa diubah kapan saja di <color=#81C784>[Pengaturan]</color>.",
       "vi": "Để cải thiện trò chơi, chúng tôi thu thập\n<color=#FFD54F>thông tin thiết bị, nhật ký lỗi và thống kê chơi game</color>.\nChúng tôi không thu thập tên hay địa chỉ email của bạn.\nBạn vẫn có thể chơi dù không đồng ý.\nBạn có thể thay đổi lựa chọn này bất cứ lúc nào trong <color=#81C784>[Tùy chọn]</color>.",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -297,7 +286,6 @@
       "cs": "Souhlasím.",
       "ind": "Saya setuju.",
       "vi": "Tôi đồng ý.",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -322,7 +310,6 @@
       "cs": "Potvrdit",
       "ind": "Konfirmasi",
       "vi": "Xác nhận",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -347,7 +334,6 @@
       "cs": "Nesouhlasím.",
       "ind": "Saya tidak setuju.",
       "vi": "Tôi không đồng ý.",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     }

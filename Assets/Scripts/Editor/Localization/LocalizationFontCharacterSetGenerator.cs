@@ -40,8 +40,7 @@ public static class LocalizationFontCharacterSetGenerator
 
         // 독일어·프랑스어·포르투갈어·스페인어·러시아어·폴란드어·튀르키예어·중남미 스페인어·
         // 이탈리아어·우크라이나어·체코어·인도네시아어는 Lorem 하나로 처리하므로 열두 열을 합쳐 굽는다.
-        // (베트남어는 Lorem에 성조 글자가 없어 동적 아틀라스인 갈무리11을 그대로 쓰므로 여기 없다.
-        //  태국어는 아직 폰트가 없다. 폰트를 넣으면 그 폰트용 항목을 따로 만들 것)
+        // (베트남어는 Lorem에 성조 글자가 없어 동적 아틀라스인 갈무리11을 그대로 쓰므로 여기 없다)
         // 안전 문자는 스페인어의 여는 물음표·느낌표와 러시아어·독일어·폴란드어의 인용부호다. 번역문에
         // 아직 안 나타났더라도 번역이 들어오는 순간 쓰이는데, 그때 굽기를 잊으면 그 글자만 깨진다.
         // 중남미 스페인어는 런타임처럼 es를 먼저 보고 그다음 en으로 폴백한다(LocalizationManager.ResolveText).
@@ -171,8 +170,37 @@ public static class LocalizationFontCharacterSetGenerator
 
         if (null != _srcTex && null != _dstTex)
         {
-            Graphics.CopyTexture(_srcTex, _dstTex);
-            _dstTex.Apply(false, false);
+            if (true == _dstTex.isReadable)
+            {
+                Graphics.CopyTexture(_srcTex, _dstTex);
+                _dstTex.Apply(false, false);
+            }
+            else
+            {
+                // 읽기 불가 아틀라스(Lorem_Optimum)는 Apply가 예외를 던지고, CopyTexture도 GPU 쪽만
+                // 바꿔서 저장되는 픽셀은 그대로 남는다. 그래서 새로 구운 텍스처의 직렬화 데이터를
+                // 통째로 덮어쓴다. 객체는 그대로라 폰트 머티리얼의 _MainTex 참조는 유지된다.
+                // 단, 텍스처 설정까지 새 텍스처 것으로 바뀌므로(필터가 Bilinear가 되어 픽셀 폰트가
+                // 번진다) 원래 설정을 기억해 두었다가 되돌린다.
+                string _atlasName = _dstTex.name;
+                FilterMode _filterMode = _dstTex.filterMode;
+                TextureWrapMode _wrapU = _dstTex.wrapModeU;
+                TextureWrapMode _wrapV = _dstTex.wrapModeV;
+                int _anisoLevel = _dstTex.anisoLevel;
+                int _colorSpace = new SerializedObject(_dstTex).FindProperty("m_ColorSpace").intValue;
+
+                EditorUtility.CopySerialized(_srcTex, _dstTex);
+
+                _dstTex.name = _atlasName;
+                _dstTex.filterMode = _filterMode;
+                _dstTex.wrapModeU = _wrapU;
+                _dstTex.wrapModeV = _wrapV;
+                _dstTex.anisoLevel = _anisoLevel;
+
+                SerializedObject _dstSerialized = new SerializedObject(_dstTex);
+                _dstSerialized.FindProperty("m_ColorSpace").intValue = _colorSpace;
+                _dstSerialized.ApplyModifiedPropertiesWithoutUndo();
+            }
             EditorUtility.SetDirty(_dstTex);
         }
 

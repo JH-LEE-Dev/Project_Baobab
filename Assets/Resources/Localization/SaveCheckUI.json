@@ -22,7 +22,6 @@
       "cs": "Nepodařilo se načíst uloženou hru.\nMůže jít o dočasnou chybu. Zkusit to znovu?",
       "ind": "Gagal memuat data simpanan.\nMungkin hanya gangguan sementara. Coba lagi?",
       "vi": "Không thể tải dữ liệu đã lưu.\nCó thể đây là lỗi tạm thời. Thử lại?",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -47,7 +46,6 @@
       "cs": "Pokračovat bez načtení uložené hry?\nPozdější zahájení nové hry může přepsat dosavadní postup.",
       "ind": "Lanjutkan tanpa memuat data simpanan?\nMemulai game baru setelah ini dapat menimpa progres yang ada.",
       "vi": "Tiếp tục mà không tải dữ liệu đã lưu?\nBắt đầu trò chơi mới sau đó có thể ghi đè tiến trình hiện có.",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     }

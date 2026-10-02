@@ -22,7 +22,6 @@
             "cs": "Poškození sekery I",
             "ind": "Kerusakan Kapak I",
             "vi": "Sát thương rìu I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -47,7 +46,6 @@
             "cs": "Odolnost sekery I",
             "ind": "Ketahanan Kapak I",
             "vi": "Độ bền rìu I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -72,7 +70,6 @@
             "cs": "Výdrž I",
             "ind": "Daya Tahan I",
             "vi": "Sức bền I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -97,7 +94,6 @@
             "cs": "Hodnota klád I",
             "ind": "Nilai Gelondongan I",
             "vi": "Giá trị gỗ tròn I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -122,7 +118,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Rychlost pohybu I</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Kecepatan Gerak I</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Tốc độ di chuyển I</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -147,7 +142,6 @@
             "cs": "Výdrž II",
             "ind": "Daya Tahan II",
             "vi": "Sức bền II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -172,7 +166,6 @@
             "cs": "Max. výdrž I",
             "ind": "Stamina Maks. I",
             "vi": "Thể lực tối đa I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -197,7 +190,6 @@
             "cs": "Max. výdrž II",
             "ind": "Stamina Maks. II",
             "vi": "Thể lực tối đa II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -222,7 +214,6 @@
             "cs": "Max. výdrž III",
             "ind": "Stamina Maks. III",
             "vi": "Thể lực tối đa III",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -247,7 +238,6 @@
             "cs": "Příval rychlosti I",
             "ind": "Ledakan Kecepatan I",
             "vi": "Bứt tốc I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -272,7 +262,6 @@
             "cs": "Hustší zelený les",
             "ind": "Pertumbuhan Hutan Hijau",
             "vi": "Tăng cây rừng xanh",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -297,7 +286,6 @@
             "cs": "Větší přepravní bedna I",
             "ind": "Perluasan Peti Angkut I",
             "vi": "Mở rộng thùng vận chuyển I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -322,7 +310,6 @@
             "cs": "Větší inventář I",
             "ind": "Perluasan Inventaris I",
             "vi": "Mở rộng túi đồ I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -347,7 +334,6 @@
             "cs": "Větší přepravní bedna II",
             "ind": "Perluasan Peti Angkut II",
             "vi": "Mở rộng thùng vận chuyển II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -372,7 +358,6 @@
             "cs": "Větší stohy klád I",
             "ind": "Kapasitas Tumpukan I",
             "vi": "Sức chứa mỗi ô I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -397,7 +382,6 @@
             "cs": "Větší stohy klád II",
             "ind": "Kapasitas Tumpukan II",
             "vi": "Sức chứa mỗi ô II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -422,7 +406,6 @@
             "cs": "Větší sklad pily I",
             "ind": "Perluasan Gudang I",
             "vi": "Mở rộng kho xưởng cưa I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -447,7 +430,6 @@
             "cs": "Rychlost zpracování I",
             "ind": "Kecepatan Pengolahan I",
             "vi": "Tốc độ chế biến gỗ I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -472,7 +454,6 @@
             "cs": "Větší sklad pily II",
             "ind": "Perluasan Gudang II",
             "vi": "Mở rộng kho xưởng cưa II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -497,7 +478,6 @@
             "cs": "Pomocné napájení",
             "ind": "Daya Tambahan",
             "vi": "Nguồn điện phụ",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -522,7 +502,6 @@
             "cs": "Rychlost zpracování II",
             "ind": "Kecepatan Pengolahan II",
             "vi": "Tốc độ chế biến gỗ II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -547,7 +526,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Štědrý strom I</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Pohon Dermawan I</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Cây hào phóng I</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -572,7 +550,6 @@
             "cs": "Zlaté stromy",
             "ind": "Pohon Emas",
             "vi": "Cây vàng",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -597,7 +574,6 @@
             "cs": "Dosah sbírání I",
             "ind": "Jangkauan Pengambilan I",
             "vi": "Phạm vi nhặt đồ I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -622,7 +598,6 @@
             "cs": "Hodnota klád II",
             "ind": "Nilai Gelondongan II",
             "vi": "Giá trị gỗ tròn II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -647,7 +622,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Štědrý strom II</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Pohon Dermawan II</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Cây hào phóng II</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -672,7 +646,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Rázová vlna I</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Gelombang Kejut I</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Sóng xung kích I</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -697,7 +670,6 @@
             "cs": "Poškození sekery II",
             "ind": "Kerusakan Kapak II",
             "vi": "Sát thương rìu II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -722,7 +694,6 @@
             "cs": "Rychlost útoků sekery I",
             "ind": "Kecepatan Serangan Kapak I",
             "vi": "Tốc độ đánh của rìu I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -747,7 +718,6 @@
             "cs": "Poškození sekery III",
             "ind": "Kerusakan Kapak III",
             "vi": "Sát thương rìu III",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -772,7 +742,6 @@
             "cs": "Šance na krit. zásah sekery I",
             "ind": "Peluang Kritis Kapak I",
             "vi": "Tỷ lệ chí mạng của rìu I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -797,7 +766,6 @@
             "cs": "Poškození rázové vlny I",
             "ind": "Kerusakan Gelombang Kejut I",
             "vi": "Sát thương sóng xung kích I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -822,7 +790,6 @@
             "cs": "Dosah rázové vlny I",
             "ind": "Area Gelombang Kejut I",
             "vi": "Phạm vi sóng xung kích I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -847,7 +814,6 @@
             "cs": "Krit. poškození sekery I",
             "ind": "Kerusakan Kritis Kapak I",
             "vi": "Sát thương chí mạng của rìu I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -872,7 +838,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Rázová vlna II</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Gelombang Kejut II</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Sóng xung kích II</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -897,7 +862,6 @@
             "cs": "Poškození rázové vlny II",
             "ind": "Kerusakan Gelombang Kejut II",
             "vi": "Sát thương sóng xung kích II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -922,7 +886,6 @@
             "cs": "Dosah rázové vlny II",
             "ind": "Area Gelombang Kejut II",
             "vi": "Phạm vi sóng xung kích II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -947,7 +910,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Efektivní pohyb I</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Gerak Efisien I</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Di chuyển linh hoạt I</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -972,7 +934,6 @@
             "cs": "Potlačení obnovy štítu I",
             "ind": "Penghambat Regenerasi Perisai I",
             "vi": "Giảm hồi phục khiên bào tử I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -997,7 +958,6 @@
             "cs": "Ocelová sekera I",
             "ind": "Kapak Baja I",
             "vi": "Rìu thép I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1022,7 +982,6 @@
             "cs": "Testovací uzel",
             "ind": "Node Uji",
             "vi": "Nút thử nghiệm",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1047,7 +1006,6 @@
             "cs": "Poškození rázové vlny III",
             "ind": "Kerusakan Gelombang Kejut III",
             "vi": "Sát thương sóng xung kích III",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1072,7 +1030,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Posílená rázová vlna</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Penguatan Gelombang</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Cường hóa sóng xung kích</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1097,7 +1054,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Kritické rázové vlny</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Gelombang Kritis</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Sóng xung kích chí mạng</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1122,7 +1078,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Rázová vlna M</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Gelombang Kejut M</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Sóng xung kích M</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1147,7 +1102,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Mistrovství rázové vlny</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Penguasaan Gelombang</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Làm chủ sóng xung kích</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1172,7 +1126,6 @@
             "cs": "Dosah rázové vlny III",
             "ind": "Area Gelombang Kejut III",
             "vi": "Phạm vi sóng xung kích III",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1197,7 +1150,6 @@
             "cs": "Odolnost sekery II",
             "ind": "Ketahanan Kapak II",
             "vi": "Độ bền rìu II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1222,7 +1174,6 @@
             "cs": "Ocelová sekera II",
             "ind": "Kapak Baja II",
             "vi": "Rìu thép II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1247,7 +1198,6 @@
             "cs": "Dosah sekery I",
             "ind": "Jangkauan Kapak I",
             "vi": "Tầm đánh của rìu I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1272,7 +1222,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Vícenásobný zásah</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Tebasan Banyak Pohon</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Rìu đánh nhiều mục tiêu</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1297,7 +1246,6 @@
             "cs": "Poškození sekery IV",
             "ind": "Kerusakan Kapak IV",
             "vi": "Sát thương rìu IV",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1322,7 +1270,6 @@
             "cs": "Šance na krit. zásah sekery II",
             "ind": "Peluang Kritis Kapak II",
             "vi": "Tỷ lệ chí mạng của rìu II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1347,7 +1294,6 @@
             "cs": "Krit. poškození sekery II",
             "ind": "Kerusakan Kritis Kapak II",
             "vi": "Sát thương chí mạng của rìu II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1372,7 +1318,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Bumerang I</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Bumerang I</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Boomerang I</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1397,7 +1342,6 @@
             "cs": "Poškození bumerangu I",
             "ind": "Kerusakan Bumerang I",
             "vi": "Sát thương boomerang I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1422,7 +1366,6 @@
             "cs": "Dosah zásahu bumerangu I",
             "ind": "Area Bumerang I",
             "vi": "Phạm vi boomerang I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1447,7 +1390,6 @@
             "cs": "Hodnota klád III",
             "ind": "Nilai Gelondongan III",
             "vi": "Giá trị gỗ tròn III",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1472,7 +1414,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Štědrý strom III</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Pohon Dermawan III</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Cây hào phóng III</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1497,7 +1438,6 @@
             "cs": "Hustší sporový les",
             "ind": "Pertumbuhan Hutan Spora",
             "vi": "Tăng cây rừng bào tử",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1522,7 +1462,6 @@
             "cs": "Šance na vzácné klády II",
             "ind": "Peluang Kayu Langka II",
             "vi": "Tỷ lệ gỗ tròn hiếm II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1547,7 +1486,6 @@
             "cs": "Hnojivo pro stromy I",
             "ind": "Pupuk Pohon I",
             "vi": "Dưỡng chất cho cây I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1572,7 +1510,6 @@
             "cs": "Rychlost zpracování III",
             "ind": "Kecepatan Pengolahan III",
             "vi": "Tốc độ chế biến gỗ III",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1597,7 +1534,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Rozšíření pily I</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Perluasan Penggergajian I</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Mở rộng xưởng cưa I</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1622,7 +1558,6 @@
             "cs": "Rychlost dopravníku I",
             "ind": "Kecepatan Konveyor I",
             "vi": "Tốc độ băng chuyền I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1647,7 +1582,6 @@
             "cs": "Obratné ruce I",
             "ind": "Tangan Terampil I",
             "vi": "Đôi tay khéo léo I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1672,7 +1606,6 @@
             "cs": "Max. výdrž IV",
             "ind": "Stamina Maks. IV",
             "vi": "Thể lực tối đa IV",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1697,7 +1630,6 @@
             "cs": "Druhý dech I",
             "ind": "Napas Kedua I",
             "vi": "Tiếp sức I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1722,7 +1654,6 @@
             "cs": "Ničení štítu spor I",
             "ind": "Penghancur Perisai Spora I",
             "vi": "Phá khiên bào tử I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1747,7 +1678,6 @@
             "cs": "Potlačení obnovy štítu II",
             "ind": "Penghambat Regenerasi Perisai II",
             "vi": "Giảm hồi phục khiên bào tử II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1772,7 +1702,6 @@
             "cs": "Průraz štítu spor I",
             "ind": "Penetrasi Perisai Spora I",
             "vi": "Xuyên khiên bào tử I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1797,7 +1726,6 @@
             "cs": "Ničení štítu spor II",
             "ind": "Penghancur Perisai Spora II",
             "vi": "Phá khiên bào tử II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1822,7 +1750,6 @@
             "cs": "Průraz štítu spor II",
             "ind": "Penetrasi Perisai Spora II",
             "vi": "Xuyên khiên bào tử II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1847,7 +1774,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Výbuch spor</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Ledakan Spora</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Bùng nổ bào tử</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1872,7 +1798,6 @@
             "cs": "Poškození výbuchu spor",
             "ind": "Kerusakan Ledakan Spora",
             "vi": "Sát thương bùng nổ bào tử",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1897,7 +1822,6 @@
             "cs": "Dosah výbuchu spor I",
             "ind": "Area Ledakan Spora I",
             "vi": "Phạm vi bùng nổ bào tử I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1922,7 +1846,6 @@
             "cs": "Rychlost zpracování IV",
             "ind": "Kecepatan Pengolahan IV",
             "vi": "Tốc độ chế biến gỗ IV",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1947,7 +1870,6 @@
             "cs": "Ničení štítu spor M",
             "ind": "Penghancur Perisai Spora M",
             "vi": "Phá khiên bào tử M",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1972,7 +1894,6 @@
             "cs": "Průraz štítu spor M",
             "ind": "Penetrasi Perisai Spora M",
             "vi": "Xuyên khiên bào tử M",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -1997,7 +1918,6 @@
             "cs": "Potlačení obnovy štítu M",
             "ind": "Penghambat Regenerasi Perisai M",
             "vi": "Giảm hồi phục khiên bào tử M",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2022,7 +1942,6 @@
             "cs": "Zásah slabého místa I",
             "ind": "Serangan Titik Lemah I",
             "vi": "Đánh vào điểm yếu I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2047,7 +1966,6 @@
             "cs": "Poškození bumerangu II",
             "ind": "Kerusakan Bumerang II",
             "vi": "Sát thương boomerang II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2072,7 +1990,6 @@
             "cs": "Dosah zásahu bumerangu II",
             "ind": "Area Bumerang II",
             "vi": "Phạm vi boomerang II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2097,7 +2014,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Bumerang II</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Bumerang II</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Boomerang II</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2122,7 +2038,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Kritické bumerangy</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Bumerang Kritis</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Boomerang chí mạng</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2147,7 +2062,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Rychlost útoků bumerangu I</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Kecepatan Serangan Bumerang I</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Tốc độ đánh của boomerang I</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2172,7 +2086,6 @@
             "cs": "Max. výdrž V",
             "ind": "Stamina Maks. V",
             "vi": "Thể lực tối đa V",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2197,7 +2110,6 @@
             "cs": "Výdrž M",
             "ind": "Daya Tahan M",
             "vi": "Sức bền M",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2222,7 +2134,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Odpočinek M</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Istirahat M</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Nghỉ ngơi M</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2247,7 +2158,6 @@
             "cs": "Poškození bumerangu III",
             "ind": "Kerusakan Bumerang III",
             "vi": "Sát thương boomerang III",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2272,7 +2182,6 @@
             "cs": "Dosah zásahu bumerangu III",
             "ind": "Area Bumerang III",
             "vi": "Phạm vi boomerang III",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2297,7 +2206,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Delší let bumerangu</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Jarak Terbang Bumerang</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Tăng tầm bay boomerang</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2322,7 +2230,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Obnova bumerangu</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Jeda Bumerang</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Hồi chiêu boomerang</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2347,7 +2254,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Rychlost útoků bumerangu M</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Kecepatan Serangan Bumerang M</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Tốc độ đánh của boomerang M</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2372,7 +2278,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Výbuch spor</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Ledakan Spora</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Bùng nổ bào tử</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2397,7 +2302,6 @@
             "cs": "Hodnota klád IV",
             "ind": "Nilai Gelondongan IV",
             "vi": "Giá trị gỗ tròn IV",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2422,7 +2326,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Štědrý strom IV</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Pohon Dermawan IV</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Cây hào phóng IV</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2447,7 +2350,6 @@
             "cs": "Hustší hvězdný les",
             "ind": "Pertumbuhan Hutan Bintang",
             "vi": "Tăng cây rừng sao",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2472,7 +2374,6 @@
             "cs": "Poškození sekery V",
             "ind": "Kerusakan Kapak V",
             "vi": "Sát thương rìu V",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2497,7 +2398,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Bumerang M</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Bumerang M</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Boomerang M</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2522,7 +2422,6 @@
             "cs": "Rychlost útoků sekery II",
             "ind": "Kecepatan Serangan Kapak II",
             "vi": "Tốc độ đánh của rìu II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2547,7 +2446,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Rytmus kácení I</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Irama Menebang I</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Nhịp đốn cây I</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2572,7 +2470,6 @@
             "cs": "Odolnost sekery III",
             "ind": "Ketahanan Kapak III",
             "vi": "Độ bền rìu III",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2597,7 +2494,6 @@
             "cs": "Ocelová sekera III",
             "ind": "Kapak Baja III",
             "vi": "Rìu thép III",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2622,7 +2518,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Rychlost pohybu II</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Kecepatan Gerak II</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Tốc độ di chuyển II</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2647,7 +2542,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Efektivní pohyb II</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Gerak Efisien II</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Di chuyển linh hoạt II</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2672,7 +2566,6 @@
             "cs": "Dosah sbírání II",
             "ind": "Jangkauan Pengambilan II",
             "vi": "Phạm vi nhặt đồ II",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2697,7 +2590,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Probuzení souhvězdí</Wave></COLOR>",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Kebangkitan Rasi</Wave></COLOR>",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Thức tỉnh chòm sao</Wave></COLOR>",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2722,7 +2614,6 @@
             "cs": "Hvězdný krok I",
             "ind": "Langkah Bintang I",
             "vi": "Bước chân sao I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2747,7 +2638,6 @@
             "cs": "Zásah hvězdné značky I",
             "ind": "Serangan Tanda Bintang I",
             "vi": "Chém dấu sao I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2772,7 +2662,6 @@
             "cs": "Poškození souhvězdí I",
             "ind": "Kerusakan Rasi I",
             "vi": "Sát thương chòm sao I",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2797,7 +2686,6 @@
             "cs": "Úroveň",
             "ind": "Level",
             "vi": "Cấp",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2822,7 +2710,6 @@
             "cs": "Zdarma",
             "ind": "Gratis",
             "vi": "Miễn phí",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2847,7 +2734,6 @@
             "cs": "Max. úroveň",
             "ind": "Level Maks.",
             "vi": "Cấp tối đa",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2872,7 +2758,6 @@
             "cs": "Odemknout talent",
             "ind": "Buka Talenta",
             "vi": "Mở khóa thiên phú",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2897,7 +2782,6 @@
             "cs": "Odemčeno",
             "ind": "Terbuka",
             "vi": "Đã mở khóa",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2922,7 +2806,6 @@
             "cs": " Vylepšit talent",
             "ind": " Tingkatkan Talenta",
             "vi": " Nâng cấp thiên phú",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2947,7 +2830,6 @@
             "cs": " Přesunout tažením",
             "ind": " Geser untuk Memindahkan",
             "vi": " Kéo để di chuyển",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2972,7 +2854,6 @@
             "cs": " Oddálit / Přiblížit",
             "ind": " Perkecil / Perbesar",
             "vi": " Thu nhỏ / Phóng to",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -2997,7 +2878,6 @@
             "cs": " Pohyb / Rozhlížení",
             "ind": " Gerak / Lihat",
             "vi": " Di chuyển / Nhìn quanh",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -3022,7 +2902,6 @@
             "cs": " Zpět",
             "ind": " Keluar",
             "vi": " Thoát",
-            "th": "",
             "enumType": "",
             "enumValue": ""
         },
@@ -3047,7 +2926,6 @@
             "cs": "Zvyšuje <COLOR=8bbeff>počet míst v inventáři</COLOR>\no <COLOR=54D86A>{0}</COLOR>.",
             "ind": "Meningkatkan <COLOR=8bbeff>jumlah slot inventaris</COLOR>\nsebesar <COLOR=54D86A>{0}</COLOR>.",
             "vi": "Tăng <COLOR=8bbeff>số ô trong túi đồ</COLOR>\nthêm <COLOR=54D86A>{0}</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "InventoryExpansion"
         },
@@ -3072,7 +2950,6 @@
             "cs": "Zvyšuje <COLOR=8bbeff>počet klád na jedno místo</COLOR>\no <COLOR=54D86A>{0}</COLOR>.",
             "ind": "Meningkatkan <COLOR=8bbeff>kapasitas gelondongan per slot</COLOR>\nsebesar <COLOR=54D86A>{0}</COLOR>.",
             "vi": "Tăng <COLOR=8bbeff>số khúc gỗ tròn trong mỗi ô</COLOR>\nthêm <COLOR=54D86A>{0}</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "LogCapacityIncrease"
         },
@@ -3097,7 +2974,6 @@
             "cs": "Zvyšuje <COLOR=8bbeff>počet míst ve skladu pily</COLOR>\no <COLOR=54D86A>{0}</COLOR>.",
             "ind": "Meningkatkan <COLOR=8bbeff>jumlah slot gudang penggergajian</COLOR>\nsebesar <COLOR=54D86A>{0}</COLOR>.",
             "vi": "Tăng <COLOR=8bbeff>số ô kho xưởng cưa</COLOR>\nthêm <COLOR=54D86A>{0}</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "SawmillLogStorageExpansion"
         },
@@ -3122,7 +2998,6 @@
             "cs": "Zvyšuje <COLOR=8bbeff>rychlost zpracování klád</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=8bbeff>kecepatan pengolahan gelondongan</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=8bbeff>tốc độ chế biến gỗ tròn</COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "LogProcessingSpeed"
         },
@@ -3147,7 +3022,6 @@
             "cs": "Zvyšuje <COLOR=fca311>poškození sekery</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=fca311>kerusakan kapak</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=fca311>sát thương rìu</COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "AxeDamage"
         },
@@ -3172,7 +3046,6 @@
             "cs": "Zvyšuje <COLOR=8bbeff>prodejní hodnotu klád</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=8bbeff>nilai jual gelondongan</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=8bbeff>giá bán gỗ tròn</COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "LogValue"
         },
@@ -3197,7 +3070,6 @@
             "cs": "Zvyšuje <COLOR=8bbeff>hustotu stromů</COLOR>\nv Lese Zelené pláně o <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=8bbeff>kepadatan pohon</COLOR>\ndi Hutan Padang Hijau sebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=8bbeff>mật độ cây</COLOR>\nở Rừng Đồng Xanh thêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "WideGreenForestOvergrowth"
         },
@@ -3222,7 +3094,6 @@
             "cs": "Snižuje <COLOR=ff5d8f>spotřebu výdrže</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Mengurangi <COLOR=ff5d8f>penggunaan stamina</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Giảm <COLOR=ff5d8f>mức tiêu hao thể lực</COLOR>\nđi <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "Stamina"
         },
@@ -3247,7 +3118,6 @@
             "cs": "Zvyšuje <COLOR=ff5d8f>maximální výdrž</COLOR>\no <COLOR=54D86A>{0}</COLOR>.",
             "ind": "Meningkatkan <COLOR=ff5d8f>stamina maksimum</COLOR>\nsebesar <COLOR=54D86A>{0}</COLOR>.",
             "vi": "Tăng <COLOR=ff5d8f>thể lực tối đa</COLOR>\nthêm <COLOR=54D86A>{0}</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "StaminaMaxIncrease"
         },
@@ -3272,7 +3142,6 @@
             "cs": "Zvyšuje <COLOR=8bbeff>rychlost dopravníku pily</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=8bbeff>kecepatan konveyor penggergajian</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=8bbeff>tốc độ băng chuyền xưởng cưa</COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "ConveyorSpeed"
         },
@@ -3297,7 +3166,6 @@
             "cs": "Při kácení <COLOR=ff5d8f>rychlost pohybu</COLOR>\nvzroste o <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Saat menebang, <COLOR=ff5d8f>kecepatan gerak</COLOR>\nmeningkat sebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Khi đốn cây, <COLOR=ff5d8f>tốc độ di chuyển</COLOR>\ntăng thêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "EfficientMovement"
         },
@@ -3322,7 +3190,6 @@
             "cs": "Šance vyvolat <COLOR=7EEDBE,EDD87E><Wave>rázovou vlnu</Wave></COLOR>\núderem sekery vzroste\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Peluang memicu <COLOR=7EEDBE,EDD87E><Wave>gelombang kejut</Wave></COLOR>\ndengan kapak meningkat\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tỷ lệ tạo <COLOR=7EEDBE,EDD87E><Wave>sóng xung kích</Wave></COLOR>\nkhi đánh bằng rìu tăng thêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "Shockwave"
         },
@@ -3347,7 +3214,6 @@
             "cs": "Zvyšuje <COLOR=fca311>dosah sekery</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=fca311>jangkauan kapak</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=fca311>tầm đánh của rìu</COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "AxeRange"
         },
@@ -3372,7 +3238,6 @@
             "cs": "Zvyšuje <COLOR=fca311>odolnost sekery</COLOR>\no <COLOR=54D86A>{0}</COLOR>.",
             "ind": "Meningkatkan <COLOR=fca311>ketahanan kapak</COLOR>\nsebesar <COLOR=54D86A>{0}</COLOR>.",
             "vi": "Tăng <COLOR=fca311>độ bền rìu</COLOR>\nthêm <COLOR=54D86A>{0}</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "AxeDurability"
         },
@@ -3397,7 +3262,6 @@
             "cs": "Šance při úderu nespotřebovat\n<COLOR=fca311>odolnost sekery</COLOR>\nvzroste o <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Peluang menyerang tanpa mengurangi\n<COLOR=fca311>ketahanan kapak</COLOR>\nmeningkat sebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tỷ lệ không tiêu hao <COLOR=fca311>độ bền rìu</COLOR> khi đánh\ntăng thêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "SteelAxe"
         },
@@ -3422,7 +3286,6 @@
             "cs": "Během výprav se <COLOR=8bbeff>rychlost zpracování klád</COLOR>\nnásobí <COLOR=54D86A>{0}</COLOR>.",
             "ind": "Saat ekspedisi,\n<COLOR=8bbeff>kecepatan pengolahan gelondongan</COLOR>\nmenjadi <COLOR=54D86A>{0}x</COLOR> kecepatan normal.",
             "vi": "Trong chuyến thám hiểm,\n<COLOR=8bbeff>tốc độ chế biến gỗ tròn</COLOR>\ntăng gấp <COLOR=54D86A>{0}</COLOR> lần.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "PowerSupply"
         },
@@ -3447,7 +3310,6 @@
             "cs": "Zvyšuje <COLOR=8bbeff>dosah sbírání předmětů</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=8bbeff>jangkauan pengambilan item</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=8bbeff>phạm vi nhặt vật phẩm</COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "PickupRange"
         },
@@ -3472,7 +3334,6 @@
             "cs": "Pokácené stromy se <COLOR=54D86A>velmi zřídka</COLOR>\npromění ve <COLOR=8bbeff>zlaté stromy</COLOR>.",
             "ind": "Pohon yang ditebang <COLOR=54D86A>sangat jarang</COLOR>\nberubah menjadi <COLOR=8bbeff>pohon emas</COLOR>.",
             "vi": "Cây bị đốn hạ <COLOR=54D86A>rất hiếm khi</COLOR>\nbiến thành <COLOR=8bbeff>cây vàng</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "FascinatingLogChance"
         },
@@ -3497,7 +3358,6 @@
             "cs": "Zvyšuje <COLOR=ff5d8f>rychlost pohybu</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=ff5d8f>kecepatan gerak</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=ff5d8f>tốc độ di chuyển</COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "MovementSpeed"
         },
@@ -3522,7 +3382,6 @@
             "cs": "Zvyšuje <COLOR=fca311>poškození</COLOR> <COLOR=7EEDBE,EDD87E><Wave>rázové vlny</Wave></COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=fca311>kerusakan</COLOR> <COLOR=7EEDBE,EDD87E><Wave>gelombang kejut</Wave></COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=fca311>sát thương</COLOR> của <COLOR=7EEDBE,EDD87E><Wave>sóng xung kích</Wave></COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShockwaveDamage"
         },
@@ -3547,7 +3406,6 @@
             "cs": "Zvyšuje <COLOR=fca311>oblast účinku</COLOR> <COLOR=7EEDBE,EDD87E><Wave>rázové vlny</Wave></COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=fca311>area efek</COLOR> <COLOR=7EEDBE,EDD87E><Wave>gelombang kejut</Wave></COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=fca311>phạm vi tác động</COLOR> của <COLOR=7EEDBE,EDD87E><Wave>sóng xung kích</Wave></COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShockwaveRange"
         },
@@ -3572,7 +3430,6 @@
             "cs": "Zvyšuje <COLOR=fca311>rychlost útoků sekery</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=fca311>kecepatan serangan kapak</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=fca311>tốc độ đánh của rìu</COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "AxeAttackSpeed"
         },
@@ -3597,7 +3454,6 @@
             "cs": "Zvyšuje <COLOR=8bbeff>počet míst v přepravní bedně</COLOR>\no <COLOR=54D86A>{0}</COLOR>.",
             "ind": "Meningkatkan <COLOR=8bbeff>jumlah slot peti angkut</COLOR>\nsebesar <COLOR=54D86A>{0}</COLOR>.",
             "vi": "Tăng <COLOR=8bbeff>số ô thùng vận chuyển</COLOR>\nthêm <COLOR=54D86A>{0}</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "WoodenTransportBox"
         },
@@ -3622,7 +3478,6 @@
             "cs": "Zvyšuje <COLOR=fca311>šanci na kritický zásah sekerou</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=fca311>peluang serangan kritis kapak</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=fca311>tỷ lệ chí mạng của rìu</COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "AxeCriticalChance"
         },
@@ -3647,7 +3502,6 @@
             "cs": "Zvyšuje <COLOR=fca311>kritické poškození sekery</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=fca311>kerusakan kritis kapak</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=fca311>sát thương chí mạng của rìu</COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "AxeCriticalDamage"
         },
@@ -3672,7 +3526,6 @@
             "cs": "Pokácení stromu zvýší <COLOR=ff5d8f>rychlost pohybu</COLOR>\no <COLOR=54D86A>{0}%</COLOR> na 3 sekundy.",
             "ind": "Menebang pohon meningkatkan\n<COLOR=ff5d8f>kecepatan gerak</COLOR> sebesar <COLOR=54D86A>{0}%</COLOR>\nselama 3 detik.",
             "vi": "Đốn hạ cây giúp tăng\n<COLOR=ff5d8f>tốc độ di chuyển</COLOR> thêm <COLOR=54D86A>{0}%</COLOR>\ntrong 3 giây.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "SourceOfSpeed"
         },
@@ -3697,7 +3550,6 @@
             "cs": "Snižuje <COLOR=ff5d8f>rychlost obnovy štítů spor</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Mengurangi <COLOR=ff5d8f>kecepatan regenerasi perisai spora</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Giảm <COLOR=ff5d8f>tốc độ hồi phục khiên bào tử</COLOR>\nđi <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "SporeShieldRegenBlock"
         },
@@ -3722,7 +3574,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Rázová vlna</Wave></COLOR> způsobí více poškození\nblíže středu, nejvýše\n<COLOR=54D86A>1.5x</COLOR> běžné poškození.",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Gelombang kejut</Wave></COLOR> memberi lebih banyak\nkerusakan di dekat pusatnya,\nhingga <COLOR=54D86A>1.5x</COLOR> kerusakan normal.",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Sóng xung kích</Wave></COLOR> gây sát thương cao hơn\nkhi ở gần tâm sóng,\ntối đa <COLOR=54D86A>1.5 lần</COLOR> sát thương thường.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShockWaveEnforcement"
         },
@@ -3747,7 +3598,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Rázové vlny</Wave></COLOR> nyní mohou\nzpůsobit kritické zásahy.",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Gelombang kejut</Wave></COLOR> kini bisa\nmemberikan serangan kritis.",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Sóng xung kích</Wave></COLOR> giờ có thể\ngây sát thương chí mạng.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShockWaveCritical"
         },
@@ -3772,7 +3622,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Rázové vlny</Wave></COLOR> se nyní spustí\ni bez zásahu stromu.",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Gelombang kejut</Wave></COLOR> kini muncul\nmeski tidak mengenai pohon.",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Sóng xung kích</Wave></COLOR> vẫn xuất hiện\nkhi không đánh trúng cây.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShockWaveMastery"
         },
@@ -3797,7 +3646,6 @@
             "cs": "<COLOR=fca311>Sekera</COLOR> nyní může zasáhnout\nvíce stromů najednou.",
             "ind": "<COLOR=fca311>Kapak</COLOR> kini bisa menyerang\nbeberapa pohon sekaligus.",
             "vi": "<COLOR=fca311>Rìu</COLOR> giờ có thể đánh\nnhiều cây cùng lúc.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "MultiAttack"
         },
@@ -3822,7 +3670,6 @@
             "cs": "Počet <COLOR=7EEDBE,EDD87E><Wave>bumerangů</Wave></COLOR> útočících\nna blízké stromy vzroste o <COLOR=54D86A>{0}</COLOR>.",
             "ind": "Menambah <COLOR=54D86A>{0}</COLOR> <COLOR=7EEDBE,EDD87E><Wave>bumerang</Wave></COLOR>\nyang menyerang pohon di sekitar.",
             "vi": "Thêm <COLOR=54D86A>{0}</COLOR> <COLOR=7EEDBE,EDD87E><Wave>boomerang</Wave></COLOR>\ntấn công những cây xung quanh.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "Boomerang"
         },
@@ -3847,7 +3694,6 @@
             "cs": "Zvyšuje <COLOR=fca311>poškození</COLOR> <COLOR=7EEDBE,EDD87E><Wave>bumerangu</Wave></COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=fca311>kerusakan</COLOR> <COLOR=7EEDBE,EDD87E><Wave>bumerang</Wave></COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=fca311>sát thương</COLOR> của <COLOR=7EEDBE,EDD87E><Wave>boomerang</Wave></COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "BoomerangDamage"
         },
@@ -3872,7 +3718,6 @@
             "cs": "Zvyšuje <COLOR=fca311>oblast účinku</COLOR> <COLOR=7EEDBE,EDD87E><Wave>bumerangu</Wave></COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=fca311>area efek</COLOR> <COLOR=7EEDBE,EDD87E><Wave>bumerang</Wave></COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=fca311>phạm vi tác động</COLOR> của <COLOR=7EEDBE,EDD87E><Wave>boomerang</Wave></COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "BoomerangRange"
         },
@@ -3897,7 +3742,6 @@
             "cs": "Zvyšuje <COLOR=8bbeff>hustotu stromů</COLOR>\nv Lese Nadýchaných spor o <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=8bbeff>kepadatan pohon</COLOR>\ndi Hutan Spora Empuk sebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=8bbeff>mật độ cây</COLOR>\nở Rừng Bào Tử Bồng Bềnh thêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "FluffySporeForestOverGrowth"
         },
@@ -3922,7 +3766,6 @@
             "cs": "Zvyšuje <COLOR=8bbeff>rychlost růstu a obnovy stromů</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=8bbeff>kecepatan tumbuh\ndan muncul kembali pohon</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=8bbeff>tốc độ sinh trưởng và mọc lại của cây</COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "TreeVitamin"
         },
@@ -3947,7 +3790,6 @@
             "cs": "Počet <COLOR=7EEDBE,EDD87E><Wave>zpracovatelských linek pily</Wave></COLOR>\nvzroste o <COLOR=54D86A>{0}</COLOR>.",
             "ind": "Menambah jumlah\n<COLOR=7EEDBE,EDD87E><Wave>jalur pengolahan di penggergajian</Wave></COLOR> sebesar <COLOR=54D86A>{0}</COLOR>.",
             "vi": "Tăng số <COLOR=7EEDBE,EDD87E><Wave>dây chuyền chế biến tại xưởng cưa</Wave></COLOR>\nthêm <COLOR=54D86A>{0}</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "ProcessLineExpand"
         },
@@ -3972,7 +3814,6 @@
             "cs": "<COLOR=8bbeff>Již brzy</COLOR>",
             "ind": "<COLOR=8bbeff>Segera hadir</COLOR>",
             "vi": "<COLOR=8bbeff>Sắp ra mắt</COLOR>",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "LogProcessorSpeedUp"
         },
@@ -3997,7 +3838,6 @@
             "cs": "Každý pokácený strom obnoví\n<COLOR=54D86A>{0}</COLOR> <COLOR=ff5d8f>výdrže</COLOR>.",
             "ind": "Setiap pohon yang ditebang\nmemulihkan <COLOR=54D86A>{0}</COLOR> <COLOR=ff5d8f>stamina</COLOR>.",
             "vi": "Mỗi cây bị đốn hạ hồi\n<COLOR=54D86A>{0}</COLOR> <COLOR=ff5d8f>thể lực</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "SourceOfStamina"
         },
@@ -4022,7 +3862,6 @@
             "cs": "Násobitel poškození\n<COLOR=ff5d8f>štítu spor</COLOR> vzroste o <COLOR=54D86A>{0}</COLOR>.",
             "ind": "Menambah pengali kerusakan\npada <COLOR=ff5d8f>perisai spora</COLOR> sebesar <COLOR=54D86A>{0}</COLOR>.",
             "vi": "Tăng hệ số sát thương\nlên <COLOR=ff5d8f>khiên bào tử</COLOR> thêm <COLOR=54D86A>{0}</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "SporeShieldCut"
         },
@@ -4047,7 +3886,6 @@
             "cs": "Podíl poškození <COLOR=ff5d8f>štítu spor</COLOR>,\nkterý se navíc odečte ze zdraví stromu,\nvzroste o <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan bagian kerusakan\n<COLOR=ff5d8f>perisai spora</COLOR> yang juga mengurangi\nnyawa pohon sebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng tỷ lệ sát thương <COLOR=ff5d8f>khiên bào tử</COLOR>\nđồng thời trừ vào máu cây\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "SporeShieldPenetration"
         },
@@ -4072,7 +3910,6 @@
             "cs": "Zvyšuje <COLOR=8bbeff>rychlost ukládání a vybírání předmětů</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=8bbeff>kecepatan menyimpan\ndan mengambil item</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=8bbeff>tốc độ cất và lấy vật phẩm</COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "ItemTransferSpeedUP"
         },
@@ -4097,7 +3934,6 @@
             "cs": "Zničení <COLOR=ff5d8f>štítu spor</COLOR> vyvolá výbuch,\nkterý poškodí okolní stromy.",
             "ind": "Menghancurkan <COLOR=ff5d8f>perisai spora</COLOR> memicu\nledakan yang merusak pohon di sekitar.",
             "vi": "Phá <COLOR=ff5d8f>khiên bào tử</COLOR> tạo vụ nổ,\ngây sát thương cho cây xung quanh.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShieldExplosionUnlock"
         },
@@ -4122,7 +3958,6 @@
             "cs": "Zvyšuje poškození <COLOR=ff5d8f>výbuchu spor</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan kerusakan <COLOR=ff5d8f>ledakan spora</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng sát thương <COLOR=ff5d8f>bùng nổ bào tử</COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShieldExplosionDamage"
         },
@@ -4147,7 +3982,6 @@
             "cs": "Zvyšuje dosah <COLOR=ff5d8f>výbuchu spor</COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan radius <COLOR=ff5d8f>ledakan spora</COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng phạm vi <COLOR=ff5d8f>bùng nổ bào tử</COLOR>\nthêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShieldExplosionRange"
         },
@@ -4172,7 +4006,6 @@
             "cs": "Násobitel <COLOR=fca311>poškození stromů\ns nejvýše 50% zdraví</COLOR>\nvzroste o <COLOR=54D86A>{0}</COLOR>.",
             "ind": "Menambah pengali <COLOR=fca311>kerusakan pada pohon\ndengan nyawa 50% atau kurang</COLOR> sebesar <COLOR=54D86A>{0}</COLOR>.",
             "vi": "Tăng hệ số <COLOR=fca311>sát thương lên cây\ncòn tối đa 50% máu</COLOR> thêm <COLOR=54D86A>{0}</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "WeakPointHit"
         },
@@ -4197,7 +4030,6 @@
             "cs": "<COLOR=7EEDBE,EDD87E><Wave>Bumerangy</Wave></COLOR> nyní mohou\nzpůsobit kritické zásahy.",
             "ind": "<COLOR=7EEDBE,EDD87E><Wave>Bumerang</Wave></COLOR> kini bisa\nmemberikan serangan kritis.",
             "vi": "<COLOR=7EEDBE,EDD87E><Wave>Boomerang</Wave></COLOR> giờ có thể\ngây sát thương chí mạng.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "BoomerangCritical"
         },
@@ -4222,7 +4054,6 @@
             "cs": "Rychlost útoku <COLOR=7EEDBE,EDD87E><Wave>bumerangu</Wave></COLOR>\nvzroste o <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Kecepatan serang <COLOR=7EEDBE,EDD87E><Wave>bumerang</Wave></COLOR>\nmeningkat sebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tốc độ tấn công của <COLOR=7EEDBE,EDD87E><Wave>boomerang</Wave></COLOR>\ntăng thêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "BoomerangAttackSpeed"
         },
@@ -4247,7 +4078,6 @@
             "cs": "Poblíž <COLOR=ff5d8f>terénního vozu</COLOR>\nneustále obnovuješ <COLOR=54D86A>{0} výdrže</COLOR>.",
             "ind": "Di dekat <COLOR=ff5d8f>mobil off-road</COLOR>,\nmemulihkan <COLOR=54D86A>{0} stamina</COLOR> terus-menerus.",
             "vi": "Ở gần <COLOR=ff5d8f>xe địa hình</COLOR>,\nliên tục hồi <COLOR=54D86A>{0} thể lực</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "StaminaRecover"
         },
@@ -4272,7 +4102,6 @@
             "cs": "Dosah letu <COLOR=7EEDBE,EDD87E><Wave>bumerangu</Wave></COLOR>\nvzroste o <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Jangkauan terbang <COLOR=7EEDBE,EDD87E><Wave>bumerang</Wave></COLOR>\nmeningkat sebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Phạm vi bay của <COLOR=7EEDBE,EDD87E><Wave>boomerang</Wave></COLOR>\ntăng thêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "BoomerangDistance"
         },
@@ -4297,7 +4126,6 @@
             "cs": "Zkracuje dobu obnovení <COLOR=7EEDBE,EDD87E><Wave>bumerangu</Wave></COLOR>\no <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Mengurangi waktu jeda <COLOR=7EEDBE,EDD87E><Wave>bumerang</Wave></COLOR>\nsebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Giảm thời gian hồi của <COLOR=7EEDBE,EDD87E><Wave>boomerang</Wave></COLOR>\nđi <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "BoomerangCooldownReduction"
         },
@@ -4322,7 +4150,6 @@
             "cs": "<COLOR=54D86A>Výbuchy spor</COLOR> mohou nastat\ni mimo <COLOR=ff5d8f>Les Nadýchaných spor</COLOR>.",
             "ind": "<COLOR=54D86A>Ledakan spora</COLOR> juga bisa terjadi\ndi luar <COLOR=ff5d8f>Hutan Spora Empuk</COLOR>.",
             "vi": "<COLOR=54D86A>Bùng nổ bào tử</COLOR> cũng có thể xuất hiện\nngoài <COLOR=ff5d8f>Rừng Bào Tử Bồng Bềnh</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShieldExplosionResearch"
         },
@@ -4347,7 +4174,6 @@
             "cs": "Zvyšuje <COLOR=8bbeff>hustotu stromů</COLOR>\nv Lese Hvězdných kořenů o <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Meningkatkan <COLOR=8bbeff>kepadatan pohon</COLOR>\ndi Hutan Akar Bintang sebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Tăng <COLOR=8bbeff>mật độ cây</COLOR>\nở Rừng Rễ Sao thêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "StarrootForestOverGrowth"
         },
@@ -4372,7 +4198,6 @@
             "cs": "Zásahy střádají bonus\nk <COLOR=fca311>rychlosti útoku</COLOR>.\nKaždý stupeň přidá <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Serangan yang mengenai sasaran menumpuk\nbonus <COLOR=fca311>kecepatan serang</COLOR>.\nSetiap tumpukan menambah <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Đánh trúng giúp cộng dồn\n<COLOR=fca311>tốc độ tấn công</COLOR>.\nMỗi cộng dồn tăng thêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "AttackRythm"
         },
@@ -4397,7 +4222,6 @@
             "cs": "Dokončení souhvězdí spustí\n<COLOR=ff5d8f>probuzení souhvězdí</COLOR>.",
             "ind": "Melengkapi rasi bintang memicu\n<COLOR=ff5d8f>kebangkitan rasi bintang</COLOR>.",
             "vi": "Hoàn thành chòm sao kích hoạt\n<COLOR=ff5d8f>Thức tỉnh chòm sao</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "ConstellationManifestUnlock"
         },
@@ -4422,7 +4246,6 @@
             "cs": "Pokácení stromu s hvězdnou značkou\nzvýší rychlost pohybu\no <COLOR=54D86A>{0}%</COLOR> na 5 sekund.",
             "ind": "Menebang pohon bertanda bintang\nmeningkatkan kecepatan gerak\nsebesar <COLOR=54D86A>{0}%</COLOR> selama 5 detik.",
             "vi": "Đốn cây có dấu sao\ntăng tốc độ di chuyển thêm <COLOR=54D86A>{0}%</COLOR>\ntrong 5 giây.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "StarPathSpeedBoost"
         },
@@ -4447,7 +4270,6 @@
             "cs": "Násobitel poškození stromů\ns <COLOR=ff5d8f>hvězdnou značkou</COLOR> vzroste o <COLOR=54D86A>{0}</COLOR>.",
             "ind": "Menambah pengali kerusakan pada pohon\ndengan <COLOR=ff5d8f>tanda bintang</COLOR> sebesar <COLOR=54D86A>{0}</COLOR>.",
             "vi": "Tăng hệ số sát thương lên cây\ncó <COLOR=ff5d8f>dấu sao</COLOR> thêm <COLOR=54D86A>{0}</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "StarMarkDamage"
         },
@@ -4472,7 +4294,6 @@
             "cs": "Poškození <COLOR=ff5d8f>probuzení souhvězdí</COLOR>\nvzroste o <COLOR=54D86A>{0}%</COLOR>.",
             "ind": "Kerusakan <COLOR=ff5d8f>kebangkitan rasi bintang</COLOR>\nmeningkat sebesar <COLOR=54D86A>{0}%</COLOR>.",
             "vi": "Sát thương <COLOR=ff5d8f>Thức tỉnh chòm sao</COLOR>\ntăng thêm <COLOR=54D86A>{0}%</COLOR>.",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "ConstellationDamage"
         },
@@ -4497,7 +4318,6 @@
             "cs": "",
             "ind": "",
             "vi": "",
-            "th": "",
             "enumType": "SkillCommandType",
             "enumValue": "ManifestationBrand"
         }

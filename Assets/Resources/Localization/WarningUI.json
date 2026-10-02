@@ -22,7 +22,6 @@
       "cs": "Ukončit výpravu?",
       "ind": "Akhiri ekspedisi?",
       "vi": "Kết thúc chuyến thám hiểm?",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -47,7 +46,6 @@
       "cs": "<Color=E94A42>Klády v inventáři se ztratí.</Color>",
       "ind": "<Color=E94A42>Gelondongan di inventaris akan hilang.</Color>",
       "vi": "<Color=E94A42>Gỗ tròn trong túi đồ sẽ bị mất.</Color>",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     }

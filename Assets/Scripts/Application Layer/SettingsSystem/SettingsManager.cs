@@ -80,7 +80,8 @@ public class SettingsManager : MonoBehaviour
     //      (폰트를 새로 쓰면 그 폰트의 문자셋을 만들고 구울 경로까지 같이 등록해야 한다.
     //       기존 폰트를 공유한다면 그 항목의 열 목록에 한 줄 추가하면 된다)
     //   8) LanguageAutoDetect의 매핑 두 곳 (빠뜨리면 그 언어권 유저가 첫 실행에 영어로 시작한다)
-    //      (번역보다 폰트가 늦는 언어는 enum·매핑만 먼저 넣고 SUPPORTED_LANGUAGE_COUNT 밖에 둔다. 지금의 Thai)
+    //      (번역보다 폰트가 늦는 언어는 enum·매핑만 먼저 넣고 SUPPORTED_LANGUAGE_COUNT 밖에 둘 수 있다.
+    //       LanguageAutoDetect.Accept가 걸러내므로 그 언어권 유저는 영어로 시작한다)
     //   9) Tools/Localization/Generate Keys 실행 (LocKeys 갱신)
     //  10) Tools/Localization/Generate Character Sets and Bake Atlases 실행
     //      언어 이름(Français, Русский …)은 OptionUI.json의 모든 열에 같은 값으로 들어가므로
@@ -873,7 +874,6 @@ public class SettingsManager : MonoBehaviour
             EOptionLanguage.Czech => Language.CS,
             EOptionLanguage.Indonesian => Language.ID,
             EOptionLanguage.Vietnamese => Language.VI,
-            EOptionLanguage.Thai => Language.TH,
             _ => Language.EN
         };
         locManager.SetLanguage(_langToSet);

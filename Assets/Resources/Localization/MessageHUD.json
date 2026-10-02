@@ -22,7 +22,6 @@
       "cs": "None",
       "ind": "None",
       "vi": "None",
-      "th": "",
       "enumType": "ForestType",
       "enumValue": "None"
     },
@@ -47,7 +46,6 @@
       "cs": "None",
       "ind": "None",
       "vi": "None",
-      "th": "",
       "enumType": "ForestType",
       "enumValue": "InTown"
     },
@@ -72,7 +70,6 @@
       "cs": "Les Zelené pláně I",
       "ind": "Hutan Padang Hijau I",
       "vi": "Rừng Đồng Xanh I",
-      "th": "",
       "enumType": "ForestType",
       "enumValue": "WideGreenForest_1"
     },
@@ -97,7 +94,6 @@
       "cs": "Les Zelené pláně II",
       "ind": "Hutan Padang Hijau II",
       "vi": "Rừng Đồng Xanh II",
-      "th": "",
       "enumType": "ForestType",
       "enumValue": "WideGreenForest_2"
     },
@@ -122,7 +118,6 @@
       "cs": "Les Zelené pláně III",
       "ind": "Hutan Padang Hijau III",
       "vi": "Rừng Đồng Xanh III",
-      "th": "",
       "enumType": "ForestType",
       "enumValue": "WideGreenForest_3"
     },
@@ -147,7 +142,6 @@
       "cs": "Les Nadýchaných spor I",
       "ind": "Hutan Spora Empuk I",
       "vi": "Rừng Bào Tử Bồng Bềnh I",
-      "th": "",
       "enumType": "ForestType",
       "enumValue": "FluffySporeForest_1"
     },
@@ -172,7 +166,6 @@
       "cs": "Les Nadýchaných spor II",
       "ind": "Hutan Spora Empuk II",
       "vi": "Rừng Bào Tử Bồng Bềnh II",
-      "th": "",
       "enumType": "ForestType",
       "enumValue": "FluffySporeForest_2"
     },
@@ -197,7 +190,6 @@
       "cs": "Les Nadýchaných spor III",
       "ind": "Hutan Spora Empuk III",
       "vi": "Rừng Bào Tử Bồng Bềnh III",
-      "th": "",
       "enumType": "ForestType",
       "enumValue": "FluffySporeForest_3"
     },
@@ -222,7 +214,6 @@
       "cs": "Les Hvězdných kořenů I",
       "ind": "Hutan Akar Bintang I",
       "vi": "Rừng Rễ Sao I",
-      "th": "",
       "enumType": "ForestType",
       "enumValue": "StarrootForest_1"
     },
@@ -247,7 +238,6 @@
       "cs": "Les Hvězdných kořenů II",
       "ind": "Hutan Akar Bintang II",
       "vi": "Rừng Rễ Sao II",
-      "th": "",
       "enumType": "ForestType",
       "enumValue": "StarrootForest_2"
     },
@@ -272,7 +262,6 @@
       "cs": "Les Hvězdných kořenů III",
       "ind": "Hutan Akar Bintang III",
       "vi": "Rừng Rễ Sao III",
-      "th": "",
       "enumType": "ForestType",
       "enumValue": "StarrootForest_3"
     },
@@ -297,7 +286,6 @@
       "cs": "Lávový les I",
       "ind": "Hutan Lava I",
       "vi": "Rừng Dung Nham I",
-      "th": "",
       "enumType": "ForestType",
       "enumValue": "MagmaForest_1"
     },
@@ -322,7 +310,6 @@
       "cs": "Lávový les II",
       "ind": "Hutan Lava II",
       "vi": "Rừng Dung Nham II",
-      "th": "",
       "enumType": "ForestType",
       "enumValue": "MagmaForest_2"
     },
@@ -347,7 +334,6 @@
       "cs": "Lávový les III",
       "ind": "Hutan Lava III",
       "vi": "Rừng Dung Nham III",
-      "th": "",
       "enumType": "ForestType",
       "enumValue": "MagmaForest_3"
     },
@@ -372,7 +358,6 @@
       "cs": "None",
       "ind": "None",
       "vi": "None",
-      "th": "",
       "enumType": "DungeonState",
       "enumValue": "None"
     },
@@ -397,7 +382,6 @@
       "cs": "Dnes je krásně jasno!",
       "ind": "Langit cerah sekali hari ini!",
       "vi": "Hôm nay trời trong xanh quá!",
-      "th": "",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle0"
     },
@@ -422,7 +406,6 @@
       "cs": "Lesem vane lehký vánek.",
       "ind": "Angin sepoi-sepoi berembus di hutan.",
       "vi": "Gió nhẹ đang lướt qua khu rừng.",
-      "th": "",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle1"
     },
@@ -447,7 +430,6 @@
       "cs": "Ten lesní vzduch je tak svěží!",
       "ind": "Udara hutan terasa segar sekali!",
       "vi": "Không khí trong rừng thật trong lành!",
-      "th": "",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle2"
     },
@@ -472,7 +454,6 @@
       "cs": "Další poklidný den na kácení stromů!",
       "ind": "Hari yang damai untuk menebang pohon lagi!",
       "vi": "Lại một ngày đốn cây thật yên bình!",
-      "th": "",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle3"
     },
@@ -497,7 +478,6 @@
       "cs": "Jemná sladká vůně lesa mě lechtá v nose.",
       "ind": "Aroma manis hutan menggelitik hidungku.",
       "vi": "Hương rừng dịu ngọt làm nhột mũi.",
-      "th": "",
       "enumType": "DungeonState",
       "enumValue": "Stage2_Idle0"
     },
@@ -522,7 +502,6 @@
       "cs": "Země pod nohama je tak měkká.",
       "ind": "Tanahnya terasa empuk di bawah kaki.",
       "vi": "Mặt đất dưới chân mềm thật.",
-      "th": "",
       "enumType": "DungeonState",
       "enumValue": "Stage2_Idle1"
     },
@@ -547,7 +526,6 @@
       "cs": "Nadýchané spory se vznášejí všude!",
       "ind": "Spora empuk beterbangan di mana-mana!",
       "vi": "Bào tử bồng bềnh bay lên khắp nơi!",
-      "th": "",
       "enumType": "DungeonState",
       "enumValue": "Stage2_Idle2"
     },
@@ -572,7 +550,6 @@
       "cs": "Mezi kořeny prosvítá světlo hvězd.",
       "ind": "Cahaya bintang menyelinap di antara akar.",
       "vi": "Ánh sao đang len qua những rễ cây.",
-      "th": "",
       "enumType": "DungeonState",
       "enumValue": "Stage3_Idle0"
     },
@@ -597,7 +574,6 @@
       "cs": "Dnes mi cestu osvětlují hvězdy.",
       "ind": "Hari ini cahaya bintang menerangi jalanku.",
       "vi": "Hôm nay ánh sao soi đường cho mình.",
-      "th": "",
       "enumType": "DungeonState",
       "enumValue": "Stage3_Idle1"
     },
@@ -622,7 +598,6 @@
       "cs": "Les dnes působí trochu tajemně.",
       "ind": "Hutan terasa agak misterius hari ini.",
       "vi": "Hôm nay khu rừng có vẻ hơi huyền bí.",
-      "th": "",
       "enumType": "DungeonState",
       "enumValue": "Stage3_Idle2"
     },
@@ -647,7 +622,6 @@
       "cs": "Nad pěšinou se chvěje horký vzduch.",
       "ind": "Udara panas beriak di atas jalan setapak.",
       "vi": "Hơi nóng đang chập chờn trên lối mòn.",
-      "th": "",
       "enumType": "DungeonState",
       "enumValue": "Stage4_Idle0"
     },
@@ -672,7 +646,6 @@
       "cs": "Země je horká, radši opatrně!",
       "ind": "Tanahnya panas, harus hati-hati melangkah!",
       "vi": "Mặt đất nóng quá, phải bước cẩn thận thôi!",
-      "th": "",
       "enumType": "DungeonState",
       "enumValue": "Stage4_Idle1"
     },
@@ -697,7 +670,6 @@
       "cs": "V záři lávy tančí stíny stromů.",
       "ind": "Cahaya lava membuat bayangan pohon menari.",
       "vi": "Ánh dung nham khiến bóng cây nhảy múa.",
-      "th": "",
       "enumType": "DungeonState",
       "enumValue": "Stage4_Idle2"
     }

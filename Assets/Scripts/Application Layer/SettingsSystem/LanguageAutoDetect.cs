@@ -85,7 +85,6 @@ public static class LanguageAutoDetect
         else if (MatchesAny(_code, "czech")) _mapped = EOptionLanguage.Czech;
         else if (MatchesAny(_code, "indonesian")) _mapped = EOptionLanguage.Indonesian;
         else if (MatchesAny(_code, "vietnamese")) _mapped = EOptionLanguage.Vietnamese;
-        else if (MatchesAny(_code, "thai")) _mapped = EOptionLanguage.Thai;
         else return false;
 
         return Accept(_mapped, out _language);
@@ -173,10 +172,6 @@ public static class LanguageAutoDetect
                 _mapped = EOptionLanguage.Vietnamese;
                 break;
 
-            case SystemLanguage.Thai:
-                _mapped = EOptionLanguage.Thai;
-                break;
-
             default:
                 _language = FALLBACK_LANGUAGE;
                 return false;
@@ -188,9 +183,8 @@ public static class LanguageAutoDetect
     /// <summary>
     /// 매핑 결과가 지금 실제로 지원되는 언어일 때만 통과시킵니다.
     ///
-    /// 지금은 Thai가 여기서 걸립니다(태국어 폰트가 없어 아직 지원 구간 밖). 태국어 Steam·OS 유저는
-    /// 다음 순위로 넘어가 결국 영어로 시작하고, 폰트가 들어와 SUPPORTED_LANGUAGE_COUNT가 오르면
-    /// 코드 수정 없이 태국어로 시작합니다. 이 관문이 없으면 "선택기에는 없는 언어로 게임이 시작되는"
+    /// 지금은 선언된 항목이 모두 지원되지만, 앞으로도 번역보다 enum이 먼저 늘어날 수 있습니다.
+    /// 이 관문이 없으면 "선택기에는 없는 언어로 게임이 시작되는"
     /// 상태가 되고, SettingsData.Validate가 그걸 한국어로 되돌려 원인을 찾기 어려워집니다.
     /// (지원 언어가 enum 앞쪽에 연속으로 온다는 전제는 Validate·CycleLanguage와 동일합니다)
     /// </summary>

@@ -22,7 +22,6 @@
       "cs": "Pokračovat",
       "ind": "Lanjutkan",
       "vi": "Tiếp tục",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -47,7 +46,6 @@
       "cs": "Nastavení",
       "ind": "Pengaturan",
       "vi": "Tùy chọn",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -72,7 +70,6 @@
       "cs": "Hlavní menu",
       "ind": "Menu Utama",
       "vi": "Menu chính",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -97,7 +94,6 @@
       "cs": "Ukončit hru",
       "ind": "Keluar dari Game",
       "vi": "Thoát trò chơi",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -122,7 +118,6 @@
       "cs": "Opravdu ukončit hru?",
       "ind": "Yakin ingin keluar dari game?",
       "vi": "Bạn có chắc muốn thoát trò chơi?",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -147,7 +142,6 @@
       "cs": "Vrátit se do hlavního menu?",
       "ind": "Kembali ke menu utama?",
       "vi": "Quay về menu chính?",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     }

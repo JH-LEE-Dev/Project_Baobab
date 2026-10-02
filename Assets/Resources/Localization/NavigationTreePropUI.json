@@ -22,7 +22,6 @@
       "cs": "Dub",
       "ind": "Ek",
       "vi": "Sồi",
-      "th": "",
       "enumType": "TreeType",
       "enumValue": "OakTree"
     },
@@ -47,7 +46,6 @@
       "cs": "Borovice",
       "ind": "Pinus",
       "vi": "Thông",
-      "th": "",
       "enumType": "TreeType",
       "enumValue": "PineTree"
     },
@@ -72,7 +70,6 @@
       "cs": "Bříza",
       "ind": "Birch",
       "vi": "Bạch dương",
-      "th": "",
       "enumType": "TreeType",
       "enumValue": "BirchTree"
     },
@@ -97,7 +94,6 @@
       "cs": "Nadýchaná spora",
       "ind": "Spora Empuk",
       "vi": "Bào tử bồng bềnh",
-      "th": "",
       "enumType": "TreeType",
       "enumValue": "SporepuffTree"
     },
@@ -122,7 +118,6 @@
       "cs": "Plující spora",
       "ind": "Spora Melayang",
       "vi": "Bào tử lơ lửng",
-      "th": "",
       "enumType": "TreeType",
       "enumValue": "FluffyMyceliumTree"
     },
@@ -147,7 +142,6 @@
       "cs": "Bavlněná spora",
       "ind": "Spora Kapas",
       "vi": "Bào tử bông",
-      "th": "",
       "enumType": "TreeType",
       "enumValue": "BellpineTree"
     },
@@ -172,7 +166,6 @@
       "cs": "Hvězdný kořen",
       "ind": "Akar Bintang",
       "vi": "Rễ sao",
-      "th": "",
       "enumType": "TreeType",
       "enumValue": "StarrootTree"
     },
@@ -197,7 +190,6 @@
       "cs": "Měsíční halo",
       "ind": "Halo Bulan",
       "vi": "Quầng trăng",
-      "th": "",
       "enumType": "TreeType",
       "enumValue": "MoonhaloTree"
     },
@@ -222,7 +214,6 @@
       "cs": "Mlhovinové žilky",
       "ind": "Urat Nebula",
       "vi": "Vân tinh vân",
-      "th": "",
       "enumType": "TreeType",
       "enumValue": "GalaxygrainTree"
     },
@@ -247,7 +238,6 @@
       "cs": "Žhavé dřevo",
       "ind": "Kayu Bara",
       "vi": "Gỗ than hồng",
-      "th": "",
       "enumType": "TreeType",
       "enumValue": "CinderTree"
     },
@@ -272,7 +262,6 @@
       "cs": "Lávová míza",
       "ind": "Getah Lava",
       "vi": "Nhựa dung nham",
-      "th": "",
       "enumType": "TreeType",
       "enumValue": "LavasapTree"
     },
@@ -297,7 +286,6 @@
       "cs": "Obsidián",
       "ind": "Obsidian",
       "vi": "Hắc diện thạch",
-      "th": "",
       "enumType": "TreeType",
       "enumValue": "ObsidianTree"
     }

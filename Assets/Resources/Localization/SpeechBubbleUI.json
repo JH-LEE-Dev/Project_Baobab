@@ -22,7 +22,6 @@
       "cs": "Mám plnou tašku!",
       "ind": "Tasku penuh!",
       "vi": "Túi đầy rồi!",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -47,7 +46,6 @@
       "cs": "Další věc už se nevejde!",
       "ind": "Tidak bisa bawa barang lagi!",
       "vi": "Không mang thêm đồ được nữa!",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -72,7 +70,6 @@
       "cs": "Moje sekera <COLOR=FF0000><CHAR_SHAKE>praskla!</CHAR_SHAKE></COLOR>",
       "ind": "Kapakku <COLOR=FF0000><CHAR_SHAKE>patah!</CHAR_SHAKE></COLOR>",
       "vi": "Rìu của mình <COLOR=FF0000><CHAR_SHAKE>gãy rồi!</CHAR_SHAKE></COLOR>",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     }

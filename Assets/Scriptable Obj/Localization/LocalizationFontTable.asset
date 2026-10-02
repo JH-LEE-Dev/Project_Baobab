@@ -49,8 +49,6 @@ MonoBehaviour:
     fontAsset: {fileID: 11400000, guid: 37e25419c80146947b6a80fe87f309b3, type: 2}
   - language: 17
     fontAsset: {fileID: 0}
-  - language: 18
-    fontAsset: {fileID: 0}
   excludedFonts:
   - {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   trackRuntimeCreatedText: 1

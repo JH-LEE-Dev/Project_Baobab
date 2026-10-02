@@ -22,7 +22,6 @@
       "cs": "<COLOR=7EEDBE,EDD87E><Wave>Výprava dokončena</Wave></COLOR>",
       "ind": "<COLOR=7EEDBE,EDD87E><Wave>Ekspedisi Selesai</Wave></COLOR>",
       "vi": "<COLOR=7EEDBE,EDD87E><Wave>Hoàn thành chuyến thám hiểm</Wave></COLOR>",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -47,7 +46,6 @@
       "cs": "Dnes <COLOR=FF833D>stromy</COLOR> zůstaly celé!",
       "ind": "Hari ini <COLOR=FF833D>pohon-pohon</COLOR> selamat!",
       "vi": "Hôm nay <COLOR=FF833D>cây cối</COLOR> vẫn bình an!",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -72,7 +70,6 @@
       "cs": "Pokácené <COLOR=FF833D>stromy</COLOR>: <COLOR=54D86A>{0}</COLOR>",
       "ind": "<COLOR=FF833D>Pohon</COLOR> ditebang: <COLOR=54D86A>{0}</COLOR>",
       "vi": "Số <COLOR=FF833D>cây</COLOR> đã đốn: <COLOR=54D86A>{0}</COLOR>",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -97,7 +94,6 @@
       "cs": "Pokácené <COLOR=FF833D>stromy</COLOR>: <COLOR=58D7F2>{0}</COLOR>!",
       "ind": "<COLOR=FF833D>Pohon</COLOR> ditebang: <COLOR=58D7F2>{0}</COLOR>!",
       "vi": "Số <COLOR=FF833D>cây</COLOR> đã đốn: <COLOR=58D7F2>{0}</COLOR>!",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -122,7 +118,6 @@
       "cs": "Pokácené <COLOR=FF833D>stromy</COLOR>: <COLOR=7EEDBE,EDD87E>{0}</COLOR>!!",
       "ind": "<COLOR=FF833D>Pohon</COLOR> ditebang: <COLOR=7EEDBE,EDD87E>{0}</COLOR>!!",
       "vi": "Số <COLOR=FF833D>cây</COLOR> đã đốn: <COLOR=7EEDBE,EDD87E>{0}</COLOR>!!",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -147,7 +142,6 @@
       "cs": "Předměty získané na výpravě",
       "ind": "Barang yang Dikumpulkan saat Ekspedisi",
       "vi": "Vật phẩm thu được trong chuyến đi",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -172,7 +166,6 @@
       "cs": "<COLOR=FF833D><Wave>Žádné</Wave></COLOR>",
       "ind": "<COLOR=FF833D><Wave>Tidak Ada</Wave></COLOR>",
       "vi": "<COLOR=FF833D><Wave>Không có</Wave></COLOR>",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -197,7 +190,6 @@
       "cs": "Stav přepravní bedny",
       "ind": "Status Peti Angkut",
       "vi": "Tình trạng thùng vận chuyển",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     }

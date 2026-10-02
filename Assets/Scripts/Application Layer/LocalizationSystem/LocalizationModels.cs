@@ -23,7 +23,6 @@ public struct LocalizationEntry
     public string cs;     // 체코어. 비어 있으면 en으로 폴백한다 (LocalizationManager.ParseJson)
     public string ind;    // 인도네시아어. "id"는 항목 식별자와 겹치므로 ISO 639-2 코드를 쓴다. 비어 있으면 en으로 폴백한다
     public string vi;     // 베트남어. 비어 있으면 en으로 폴백한다 (LocalizationManager.ParseJson)
-    public string th;     // 태국어. 비어 있으면 en으로 폴백한다 (LocalizationManager.ParseJson)
     public string enumType;  // 연결하고자 하는 Enum의 이름 (예: "ForestType")
     public string enumValue; // 연결하고자 하는 Enum 값의 이름 (예: "DeepForest")
 }
@@ -62,6 +61,5 @@ public enum Language
     UK,
     CS,
     ID,
-    VI,
-    TH
+    VI
 }

@@ -22,7 +22,6 @@
       "cs": "V okně",
       "ind": "Jendela",
       "vi": "Cửa sổ",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -47,7 +46,6 @@
       "cs": "Celá obrazovka",
       "ind": "Layar Penuh",
       "vi": "Toàn màn hình",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -72,7 +70,6 @@
       "cs": "Zap.",
       "ind": "Aktif",
       "vi": "Bật",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -97,7 +94,6 @@
       "cs": "Vyp.",
       "ind": "Nonaktif",
       "vi": "Tắt",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -122,7 +118,6 @@
       "cs": "V-Sync",
       "ind": "V-Sync",
       "vi": "V-Sync",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -147,7 +142,6 @@
       "cs": "Bez limitu",
       "ind": "Tanpa Batas",
       "vi": "Vô hạn",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -172,7 +166,6 @@
       "cs": "한국어",
       "ind": "한국어",
       "vi": "한국어",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -197,7 +190,6 @@
       "cs": "English",
       "ind": "English",
       "vi": "English",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -222,7 +214,6 @@
       "cs": "简体中文",
       "ind": "简体中文",
       "vi": "简体中文",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -247,7 +238,6 @@
       "cs": "繁體中文",
       "ind": "繁體中文",
       "vi": "繁體中文",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -272,7 +262,6 @@
       "cs": "日本語",
       "ind": "日本語",
       "vi": "日本語",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -297,7 +286,6 @@
       "cs": "Deutsch",
       "ind": "Deutsch",
       "vi": "Deutsch",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -322,7 +310,6 @@
       "cs": "Français",
       "ind": "Français",
       "vi": "Français",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -347,7 +334,6 @@
       "cs": "Português",
       "ind": "Português",
       "vi": "Português",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -372,7 +358,6 @@
       "cs": "Español (España)",
       "ind": "Español (España)",
       "vi": "Español (España)",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -397,7 +382,6 @@
       "cs": "Русский",
       "ind": "Русский",
       "vi": "Русский",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -422,7 +406,6 @@
       "cs": "Polski",
       "ind": "Polski",
       "vi": "Polski",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -447,7 +430,6 @@
       "cs": "Türkçe",
       "ind": "Türkçe",
       "vi": "Türkçe",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -472,7 +454,6 @@
       "cs": "Español (Latinoamérica)",
       "ind": "Español (Latinoamérica)",
       "vi": "Español (Latinoamérica)",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -497,7 +478,6 @@
       "cs": "Italiano",
       "ind": "Italiano",
       "vi": "Italiano",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -522,7 +502,6 @@
       "cs": "Українська",
       "ind": "Українська",
       "vi": "Українська",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -547,7 +526,6 @@
       "cs": "Čeština",
       "ind": "Čeština",
       "vi": "Čeština",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -572,7 +550,6 @@
       "cs": "Bahasa Indonesia",
       "ind": "Bahasa Indonesia",
       "vi": "Bahasa Indonesia",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -597,32 +574,6 @@
       "cs": "Tiếng Việt",
       "ind": "Tiếng Việt",
       "vi": "Tiếng Việt",
-      "th": "",
-      "enumType": "",
-      "enumValue": ""
-    },
-    {
-      "id": 129,
-      "key": "LanguageThai",
-      "kr": "ไทย",
-      "en": "ไทย",
-      "zhHans": "ไทย",
-      "zhHant": "ไทย",
-      "ja": "ไทย",
-      "de": "ไทย",
-      "fr": "ไทย",
-      "pt": "ไทย",
-      "es": "ไทย",
-      "ru": "ไทย",
-      "pl": "ไทย",
-      "tr": "ไทย",
-      "esLatam": "ไทย",
-      "it": "ไทย",
-      "uk": "ไทย",
-      "cs": "ไทย",
-      "ind": "ไทย",
-      "vi": "ไทย",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -647,7 +598,6 @@
       "cs": "Auto",
       "ind": "Auto",
       "vi": "Tự động",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -672,7 +622,6 @@
       "cs": "Běžné",
       "ind": "Umum",
       "vi": "Chung",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -697,7 +646,6 @@
       "cs": "Souhlas",
       "ind": "Setuju",
       "vi": "Đồng ý",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -722,7 +670,6 @@
       "cs": "Nesouhlas",
       "ind": "Tidak Setuju",
       "vi": "Không đồng ý",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -747,7 +694,6 @@
       "cs": "Jazyk",
       "ind": "Bahasa",
       "vi": "Ngôn ngữ",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -772,7 +718,6 @@
       "cs": "Rozlišení",
       "ind": "Resolusi",
       "vi": "Độ phân giải",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -797,7 +742,6 @@
       "cs": "Režim zobrazení",
       "ind": "Mode Layar",
       "vi": "Chế độ hiển thị",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -822,7 +766,6 @@
       "cs": "FPS",
       "ind": "FPS",
       "vi": "FPS",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -847,7 +790,6 @@
       "cs": "Pozastavit na pozadí",
       "ind": "Jeda di Latar Belakang",
       "vi": "Tạm dừng khi chạy nền",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -872,7 +814,6 @@
       "cs": "Otřesy kamery",
       "ind": "Guncangan Kamera",
       "vi": "Rung camera",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -897,7 +838,6 @@
       "cs": "Jas zaměřovače",
       "ind": "Kecerahan Bidikan",
       "vi": "Độ sáng tâm ngắm",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -922,7 +862,6 @@
       "cs": "Chromatická aberace",
       "ind": "Aberasi Kromatik",
       "vi": "Quang sai màu",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -947,7 +886,6 @@
       "cs": "Jas",
       "ind": "Kecerahan",
       "vi": "Độ sáng",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -972,7 +910,6 @@
       "cs": "Sytost",
       "ind": "Saturasi",
       "vi": "Độ bão hòa",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -997,7 +934,6 @@
       "cs": "Celková hlasitost",
       "ind": "Volume Utama",
       "vi": "Âm lượng tổng",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1022,7 +958,6 @@
       "cs": "Hudba",
       "ind": "Musik",
       "vi": "Nhạc nền",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1047,7 +982,6 @@
       "cs": "Zvukové efekty",
       "ind": "Efek Suara",
       "vi": "Hiệu ứng âm thanh",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1072,7 +1006,6 @@
       "cs": "Ikony ovladače",
       "ind": "Ikon Kontroler",
       "vi": "Biểu tượng tay cầm",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1097,7 +1030,6 @@
       "cs": "Síla vibrací",
       "ind": "Kekuatan Getaran",
       "vi": "Độ rung",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1122,7 +1054,6 @@
       "cs": "Citlivost kurzoru",
       "ind": "Sensitivitas Kursor",
       "vi": "Độ nhạy con trỏ",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1147,7 +1078,6 @@
       "cs": "Hlášení chyb a statistiky",
       "ind": "Laporan Kesalahan dan Statistik",
       "vi": "Báo lỗi và thu thập thống kê",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1172,7 +1102,6 @@
       "cs": "Hratelnost",
       "ind": "Gameplay",
       "vi": "Lối chơi",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1197,7 +1126,6 @@
       "cs": "Zvuk",
       "ind": "Audio",
       "vi": "Âm thanh",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1222,7 +1150,6 @@
       "cs": "Grafika",
       "ind": "Grafis",
       "vi": "Đồ họa",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1247,7 +1174,6 @@
       "cs": "Ovládání",
       "ind": "Kontrol",
       "vi": "Điều khiển",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1272,7 +1198,6 @@
       "cs": "Pohyb nahoru",
       "ind": "Gerak ke Atas",
       "vi": "Đi lên",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1297,7 +1222,6 @@
       "cs": "Pohyb dolů",
       "ind": "Gerak ke Bawah",
       "vi": "Đi xuống",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1322,7 +1246,6 @@
       "cs": "Pohyb doleva",
       "ind": "Gerak ke Kiri",
       "vi": "Đi sang trái",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1347,7 +1270,6 @@
       "cs": "Pohyb doprava",
       "ind": "Gerak ke Kanan",
       "vi": "Đi sang phải",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1372,7 +1294,6 @@
       "cs": "Inventář",
       "ind": "Inventaris",
       "vi": "Túi đồ",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1397,7 +1318,6 @@
       "cs": "Interakce",
       "ind": "Interaksi",
       "vi": "Tương tác",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1422,7 +1342,6 @@
       "cs": "Útok",
       "ind": "Serang",
       "vi": "Tấn công",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1447,7 +1366,6 @@
       "cs": "Použít lektvar",
       "ind": "Gunakan Ramuan",
       "vi": "Dùng thuốc",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1472,7 +1390,6 @@
       "cs": "Stiskni klávesu, kterou chceš přiřadit.\n(ESC: Zrušit)",
       "ind": "Tekan tombol yang ingin ditetapkan.\n(ESC: Batal)",
       "vi": "Nhấn phím bạn muốn gán.\n(ESC: Hủy)",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1497,7 +1414,6 @@
       "cs": "Stiskni tlačítko ovladače, které chceš přiřadit.",
       "ind": "Tekan tombol kontroler yang ingin ditetapkan.",
       "vi": "Nhấn nút tay cầm bạn muốn gán.",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1522,7 +1438,6 @@
       "cs": "Obnovit výchozí přiřazení všech kláves?",
       "ind": "Kembalikan semua pengaturan tombol ke bawaan?",
       "vi": "Đặt lại toàn bộ phím về mặc định?",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1547,7 +1462,6 @@
       "cs": "Zavřít",
       "ind": "Tutup",
       "vi": "Đóng",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1572,7 +1486,6 @@
       "cs": "Obnovit výchozí",
       "ind": "Pulihkan Bawaan",
       "vi": "Đặt lại mặc định",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1597,7 +1510,6 @@
       "cs": "Použít",
       "ind": "Terapkan",
       "vi": "Áp dụng",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -1621,8 +1533,7 @@
       "uk": "Вийти без збереження змін?",
       "cs": "Odejít bez uložení změn?",
       "ind": "Keluar tanpa menyimpan perubahan?",
-      "vi": "Thoát mà không lưu thay đổi?",
-      "th": ""
+      "vi": "Thoát mà không lưu thay đổi?"
     },
     {
       "id": 319,
@@ -1645,7 +1556,6 @@
       "cs": "Vyměnit klády",
       "ind": "Tukar Gelondongan",
       "vi": "Đổi gỗ tròn",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     }  

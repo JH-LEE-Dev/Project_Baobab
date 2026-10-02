@@ -22,7 +22,6 @@
       "cs": "Pokácej strom",
       "ind": "Tebang pohon",
       "vi": "Đốn một cây",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -47,7 +46,6 @@
       "cs": "Dej klády do přepravní bedny,\nať je můžeš odvézt do města!",
       "ind": "Masukkan kayu gelondongan ke peti angkut\nuntuk dibawa ke kota!",
       "vi": "Cho gỗ tròn vào thùng vận chuyển\nđể mang về thị trấn!",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -72,7 +70,6 @@
       "cs": "Klády mimo bednu se při odchodu z lesa ztratí.",
       "ind": "Gelondongan di luar peti akan hilang saat meninggalkan hutan.",
       "vi": "Gỗ không được cất sẽ mất khi rời rừng.",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -97,7 +94,6 @@
       "cs": "Vrať se do města, než ti dojdou síly!",
       "ind": "Kembali ke kota sebelum kehabisan stamina!",
       "vi": "Về thị trấn trước khi kiệt sức!",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -122,7 +118,6 @@
       "cs": "Ulož přivezené klády\ndo skladu pily.",
       "ind": "Masukkan kayu gelondongan yang dibawa\nke gudang penggergajian.",
       "vi": "Cho gỗ tròn mang về\nvào kho của xưởng cưa.",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -147,7 +142,6 @@
       "cs": "Vyzvedni si výdělek!",
       "ind": "Ambil hasil penjualanmu!",
       "vi": "Nhận tiền thu được!",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -172,7 +166,6 @@
       "cs": "Vylepši sekeru",
       "ind": "Tingkatkan kapakmu",
       "vi": "Nâng cấp rìu",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -197,7 +190,6 @@
       "cs": "Vydej se na další výpravu za dřevem!",
       "ind": "Mulai ekspedisi penebangan baru!",
       "vi": "Bắt đầu chuyến đốn gỗ mới!",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     },
@@ -222,7 +214,6 @@
       "cs": "Nová oblast odemčena!",
       "ind": "Wilayah baru terbuka!",
       "vi": "Đã mở khóa khu vực mới!",
-      "th": "",
       "enumType": "",
       "enumValue": ""
     }

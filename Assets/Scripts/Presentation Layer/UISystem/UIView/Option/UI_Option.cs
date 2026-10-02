@@ -1299,7 +1299,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             case EOptionLanguage.Czech: return GetText(LocKeys.OptionUI.languageCzech, "Čeština");
             case EOptionLanguage.Indonesian: return GetText(LocKeys.OptionUI.languageIndonesian, "Bahasa Indonesia");
             case EOptionLanguage.Vietnamese: return GetText(LocKeys.OptionUI.languageVietnamese, "Tiếng Việt");
-            case EOptionLanguage.Thai: return GetText(LocKeys.OptionUI.languageThai, "ไทย");
         }
         return _lang.ToString();
     }
