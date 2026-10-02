@@ -327,6 +327,10 @@ public class UI_PopupButton : Selectable,
         return RectTransformUtility.RectangleContainsScreenPoint(_rect, _mousePos, _cam);
     }
 
+    // hover/unhover 연출은 UI_WarningPopupButton(경고·저장 확인·ESC 메뉴 팝업 버튼)과 같은 방식으로 만든다.
+    // 같은 수치를 넣어도 해석이 달라 이 버튼만 느낌이 달랐다. 특히 감쇠값(angleDamping, 기본 1.5)을
+    // 그대로 곱해 흔들 때마다 각도가 커졌는데(8° → 12° → 18°), 경고 팝업 버튼은 0~1로 잘라 쓴다.
+    // 수치를 바꿀 때는 두 버튼이 같은 느낌으로 남도록 함께 맞출 것.
     private void PlayHoverWiggleAnimation()
     {
         KillActiveTweens();
@@ -335,25 +339,18 @@ public class UI_PopupButton : Selectable,
         _targetT.localScale = Vector3.one;
         _targetT.localRotation = Quaternion.identity;
 
-        Sequence _seq = DOTween.Sequence();
-        float _dur = hoverSettings.duration;
-        float _shrinkT = _dur * hoverSettings.shrinkTimeRatio;
-        float _restoreT = _dur * hoverSettings.restoreTimeRatio;
+        Sequence _seq = DOTween.Sequence().SetUpdate(true);
 
-        _seq.Append(_targetT.DOScale(hoverSettings.shrinkScale, _shrinkT).SetEase(Ease.OutQuad));
-        _seq.Append(_targetT.DOScale(1f, _restoreT).SetEase(hoverSettings.scaleEase));
+        float _shrinkT = hoverSettings.duration * Mathf.Clamp01(hoverSettings.shrinkTimeRatio);
+        float _restoreT = hoverSettings.duration * Mathf.Clamp01(hoverSettings.restoreTimeRatio);
 
-        float _rotTotalT = _dur * hoverSettings.rotationTimeRatio;
-        float _rotStepT = _rotTotalT / Mathf.Max(1, hoverSettings.swingCount);
-        float _angle = hoverSettings.startAngle;
+        Sequence _scaleSeq = DOTween.Sequence();
+        _scaleSeq.Append(_targetT.DOScale(hoverSettings.shrinkScale, _shrinkT).SetEase(Ease.OutQuad));
+        _scaleSeq.Append(_targetT.DOScale(1f, _restoreT).SetEase(hoverSettings.scaleEase));
+        _seq.Join(_scaleSeq);
 
-        for (int i = 0; i < hoverSettings.swingCount; i++)
-        {
-            float _targetAngle = (0 == i % 2) ? -_angle : _angle;
-            if (i == hoverSettings.swingCount - 1) _targetAngle = 0f;
-            _seq.Insert(_shrinkT + (i * _rotStepT), _targetT.DOLocalRotate(new Vector3(0f, 0f, _targetAngle), _rotStepT).SetEase(hoverSettings.rotationEase));
-            _angle *= hoverSettings.angleDamping;
-        }
+        float _rotT = hoverSettings.duration * Mathf.Clamp01(hoverSettings.rotationTimeRatio);
+        _seq.Join(CreateSwingSequence(_targetT, hoverSettings.startAngle, hoverSettings.angleDamping, hoverSettings.swingCount, _rotT, hoverSettings.rotationEase, false));
 
         _seq.SetTarget(this);
         hoverSequence = _seq;
@@ -365,23 +362,39 @@ public class UI_PopupButton : Selectable,
 
         Transform _targetT = (null != targetGraphicOverride) ? targetGraphicOverride.transform : transform;
         _targetT.localScale = Vector3.one;
+        _targetT.localRotation = Quaternion.identity;
 
-        Sequence _seq = DOTween.Sequence();
-        float _dur = unhoverSettings.duration;
-        float _rotTotalT = _dur * unhoverSettings.rotationTimeRatio;
-        float _rotStepT = _rotTotalT / Mathf.Max(1, unhoverSettings.swingCount);
-        float _angle = unhoverSettings.startAngle;
+        Sequence _seq = DOTween.Sequence().SetUpdate(true);
 
-        for (int i = 0; i < unhoverSettings.swingCount; i++)
-        {
-            float _targetAngle = (0 == i % 2) ? -_angle : _angle;
-            if (i == unhoverSettings.swingCount - 1) _targetAngle = 0f;
-            _seq.Append(_targetT.DOLocalRotate(new Vector3(0f, 0f, _targetAngle), _rotStepT).SetEase(unhoverSettings.rotationEase));
-            _angle *= unhoverSettings.angleDamping;
-        }
+        float _rotT = unhoverSettings.duration * Mathf.Clamp01(unhoverSettings.rotationTimeRatio);
+        _seq.Join(CreateSwingSequence(_targetT, unhoverSettings.startAngle, unhoverSettings.angleDamping, unhoverSettings.swingCount, _rotT, unhoverSettings.rotationEase, true));
 
         _seq.SetTarget(this);
         hoverSequence = _seq;
+    }
+
+    /// <summary>
+    /// 좌우로 _swingCount번 흔든 뒤 제자리로 돌아오는 회전 시퀀스입니다. (UI_WarningPopupButton.CreateSwingSequence와 동일)
+    /// 감쇠는 0~1로 잘라 쓰므로 흔들림이 점점 커지는 일은 없습니다.
+    /// </summary>
+    private static Sequence CreateSwingSequence(Transform _target, float _startAngle, float _angleDamping, int _swingCount, float _rotDuration, Ease _rotationEase, bool _invertDirection)
+    {
+        Sequence _rotSeq = DOTween.Sequence();
+        float _angle = Mathf.Abs(_startAngle);
+        int _validSwingCount = Mathf.Max(_swingCount, 1);
+        float _swingDuration = _rotDuration / (_validSwingCount + 1);
+
+        for (int i = 0; i < _validSwingCount; i++)
+        {
+            float _direction = (0 == i % 2) ? -1f : 1f;
+            if (true == _invertDirection) _direction *= -1f;
+
+            _rotSeq.Append(_target.DOLocalRotate(new Vector3(0f, 0f, _angle * _direction), _swingDuration, RotateMode.Fast).SetEase(_rotationEase));
+            _angle *= Mathf.Clamp01(_angleDamping);
+        }
+
+        _rotSeq.Append(_target.DOLocalRotate(Vector3.zero, _swingDuration, RotateMode.Fast).SetEase(_rotationEase));
+        return _rotSeq;
     }
 
     private void PlayClickTwistAnimation()

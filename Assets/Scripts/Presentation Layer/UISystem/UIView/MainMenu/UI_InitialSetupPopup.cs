@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// 게임 최초 실행 시 스플래시 직후 언어 설정 및 데이터 수집 약관 동의를 진행하는 팝업 컨트롤러입니다.
@@ -13,6 +14,12 @@ using UnityEngine.EventSystems;
 public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
 {
     private const int MAIN_MENU_JSON_ID = 8;
+
+    // 마우스 휠로 언어를 넘길 때 한 칸 사이의 최소 간격(초)입니다. 터치패드처럼 한 번 쓸어도 휠 값이
+    // 여러 프레임에 잘게 들어오는 장치에서 언어가 순식간에 몇 칸씩 넘어가는 것을 막습니다.
+    // 한 칸마다 로컬라이징 전환·전체 텍스트 폰트 교체·설정 파일 저장이 돌므로, 패드 좌우를 길게 누를 때의
+    // 반복 간격(InputSystemUIInputModule.moveRepeatRate = 0.1)보다 자주 돌지 않게 같은 값으로 둡니다.
+    private const float LANGUAGE_SCROLL_INTERVAL = 0.1f;
 
     /// <summary>
     /// 언어 이름 라벨 하나와 그 언어의 짝입니다. 라벨은 각자 그 언어를 표시할 폰트(갈무리/FusionPixel/Lorem)와
@@ -96,6 +103,7 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
     private Selectable lastFocusedLanguageSelectable;
     private Selectable lastFocusedConsentSelectable;
     private Vector2 originalWindowPos = Vector2.zero;
+    private float nextLanguageScrollTime = 0f;
 
     /// <summary>
     /// 언어 선택기가 순환하는 언어 목록입니다. 목록 순서가 곧 좌우 이동 순서이고, 끝에서 처음으로 이어집니다.
@@ -543,6 +551,64 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         if (true == IsLanguageInputBlocked()) return;
 
         CycleLanguage(1);
+    }
+
+    private void Update()
+    {
+        HandleLanguageScroll();
+    }
+
+    /// <summary>
+    /// 언어 단계에서 마우스 휠로 언어를 넘깁니다. 휠을 위로 굴리면 이전(왼쪽), 아래로 굴리면 다음(오른쪽) 언어입니다.
+    /// 팝업이 화면을 덮는 모달이라 커서 위치와 상관없이 받습니다.
+    /// </summary>
+    private void HandleLanguageScroll()
+    {
+        if (false == isInputAllowed || true == IsLanguageInputBlocked()) return;
+
+        // 언어 패널은 되돌아오는 페이드인이 끝날 때까지 interactable이 꺼져 있다. (HandleLanguagePanelReturned)
+        if (null == languagePanel || false == languagePanel.interactable) return;
+
+        Mouse _mouse = Mouse.current;
+        if (null == _mouse) return;
+
+        float _scrollY = _mouse.scroll.ReadValue().y;
+        if (0f == _scrollY) return;
+
+        if (Time.unscaledTime < nextLanguageScrollTime) return;
+        nextLanguageScrollTime = Time.unscaledTime + LANGUAGE_SCROLL_INTERVAL;
+
+        StepLanguageByScroll((0f < _scrollY) ? -1 : 1);
+    }
+
+    /// <summary>
+    /// 선택기의 화살표 버튼을 누른 것과 똑같이 처리해, 클릭음·화살표 밀기·이름 슬라이드 연출이 키보드 좌우 입력과 같게 나오게 합니다.
+    /// (UI_OptionSelector.OnMove와 같은 경로)
+    /// </summary>
+    private void StepLanguageByScroll(int _direction)
+    {
+        UI_OptionButton _arrow = null;
+        if (null != languageSelector)
+        {
+            _arrow = (0 > _direction) ? languageSelector.LeftArrowButton : languageSelector.RightArrowButton;
+        }
+
+        if (null != _arrow && true == _arrow.IsInteractable)
+        {
+            _arrow.OnPointerClick(null);
+            return;
+        }
+
+        // 화살표 버튼이 없는 프리팹이면 선택기 콜백을 직접 부른다. (UI_OptionSelector.OnMove의 대체 경로와 같다)
+        Sound.PlayUI(SoundID.OptionClick);
+        if (0 > _direction)
+        {
+            HandleLanguagePrevClicked();
+        }
+        else
+        {
+            HandleLanguageNextClicked();
+        }
     }
 
     private void InitConsentPanel()
