@@ -51,19 +51,19 @@
         },
         {
             "item": "0b2eda5965a8af845b8e07e6b86168c8|RebindOverlay/PopupWindowRoot/Border/Message|OptionUI/pressGamepadPrompt",
-            "state": 2,
-            "hash": "97d86a31",
+            "state": 1,
+            "hash": "8a369b1f",
             "memo": "",
             "by": "void91112@gmail.com",
-            "at": "2026-10-05 15:16"
+            "at": "2026-10-05 16:34"
         },
         {
             "item": "0b2eda5965a8af845b8e07e6b86168c8|RebindOverlay/PopupWindowRoot/Border/Message|OptionUI/pressKeyPrompt",
-            "state": 2,
-            "hash": "d5445ebb",
+            "state": 1,
+            "hash": "8a255eb1",
             "memo": "",
             "by": "void91112@gmail.com",
-            "at": "2026-10-05 14:23"
+            "at": "2026-10-05 16:40"
         },
         {
             "item": "28f9903af375d014baa13e3c51fbc1d3|Visuals/NameGroup/TMP_Title|OptionUI/attack",
@@ -352,6 +352,14 @@
             "memo": "",
             "by": "void91112@gmail.com",
             "at": "2026-10-05 15:21"
+        },
+        {
+            "item": "7fac8189cec29354da87489252a0394e|Guide_Text|AbilityUI/KeyGuide_Zoom",
+            "state": 1,
+            "hash": "1a2dade1",
+            "memo": "",
+            "by": "ywy2arcaea@gmail.com",
+            "at": "2026-10-05 14:04"
         },
         {
             "item": "822e4581f49c2334db9d0c23560726c4|TextGroup/Desc|TutorialQuestUI/FillOffroadContainer_Desc",
@@ -896,14 +904,6 @@
             "memo": "",
             "by": "void91112@gmail.com",
             "at": "2026-10-05 15:23"
-        },
-        {
-            "item": "7fac8189cec29354da87489252a0394e|Guide_Text|AbilityUI/KeyGuide_Zoom",
-            "state": 1,
-            "hash": "1a2dade1",
-            "memo": "",
-            "by": "ywy2arcaea@gmail.com",
-            "at": "2026-10-05 14:04"
         }
     ]
 }
