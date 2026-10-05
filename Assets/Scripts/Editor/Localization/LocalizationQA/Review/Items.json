@@ -3229,6 +3229,17 @@
             "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
             "contextPath": "UI_InitialSetupPopup/Objets/LanguagePanel/LanguageBox/TitleRow/TXT_Title",
             "contextDepth": 0,
+            "entryId": "MainMenuUI/LanguageSelectTitle",
+            "source": "플레이",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "slotPath": "UI_InitialSetupPopup/Objets/LanguagePanel/LanguageBox/TitleRow/TXT_Title",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_InitialSetupPopup/Objets/LanguagePanel/LanguageBox/TitleRow/TXT_Title",
+            "contextDepth": 0,
             "entryId": "OptionUI/Language",
             "source": "코드분석",
             "template": "",

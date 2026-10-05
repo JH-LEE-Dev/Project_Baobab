@@ -94,6 +94,7 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
     private Action cachedOnLanguagePrev;
     private Action cachedOnLanguageNext;
     private Action cachedOnLanguageConfirm;
+    private UnityEngine.Events.UnityAction<BaseEventData> cachedOnLanguageSelectorSubmit;
     private int languageIndex = 0;
     private Vector2[] languageLabelBasePositions;
     private Color[] languageLabelBaseColors;
@@ -204,6 +205,7 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         cachedOnLanguagePrev = HandleLanguagePrevClicked;
         cachedOnLanguageNext = HandleLanguageNextClicked;
         cachedOnLanguageConfirm = HandleLanguageConfirmClicked;
+        cachedOnLanguageSelectorSubmit = HandleLanguageSelectorSubmit;
 
         if (null != rootCanvasGroup)
         {
@@ -312,6 +314,7 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         {
             languageSelector.Initialize(string.Empty, string.Empty, cachedOnLanguagePrev, cachedOnLanguageNext);
             languageSelector.SetCursorBoxUI(cursorBoxUI, inputManager);
+            BindLanguageSelectorSubmit();
         }
 
         CacheLanguageFeedbackBase();
@@ -539,6 +542,40 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         return true == isTransitioning || true == isClosing || true == isConsentPhase;
     }
 
+    /// <summary>
+    /// 선택기 행에서 A/Enter(UI.Submit)를 누르면 체크 버튼으로 포커스(호버)를 넘기도록 Submit 트리거를 붙입니다.
+    /// 공용 UI_OptionSelector는 Submit을 처리하지 않아 설정 화면의 선택기에는 영향이 없도록, 이 팝업의 선택기에만 붙입니다.
+    /// </summary>
+    private void BindLanguageSelectorSubmit()
+    {
+        EventTrigger _trigger = languageSelector.GetComponent<EventTrigger>();
+        if (null == _trigger)
+        {
+            _trigger = languageSelector.gameObject.AddComponent<EventTrigger>();
+        }
+
+        for (int i = 0; i < _trigger.triggers.Count; i++)
+        {
+            if (EventTriggerType.Submit == _trigger.triggers[i].eventID) return;
+        }
+
+        AddTriggerEntry(_trigger, EventTriggerType.Submit, cachedOnLanguageSelectorSubmit);
+    }
+
+    /// <summary>
+    /// 언어를 맞춘 뒤 선택기 행에서 A를 누르면 확정하지 않고 체크 버튼으로 호버만 옮깁니다. (확정은 체크 버튼에서 A를 한 번 더)
+    /// 아래 키로 체크 버튼에 내려가 A를 누르는 기존 경로와 함께 쓸 수 있습니다.
+    /// 체크 버튼이 꺼져 있거나 비활성이면 옮기지 않아, 선택이 null이 되어 패드가 먹통이 되는 일을 막습니다.
+    /// </summary>
+    private void HandleLanguageSelectorSubmit(BaseEventData _eventData)
+    {
+        if (null != _eventData) _eventData.Use();
+        if (true == IsLanguageInputBlocked()) return;
+        if (null == languageConfirmButton || false == languageConfirmButton.gameObject.activeInHierarchy || false == languageConfirmButton.interactable) return;
+
+        FocusLanguageSelectable(languageConfirmButton);
+    }
+
     private void HandleLanguagePrevClicked()
     {
         if (true == IsLanguageInputBlocked()) return;
@@ -556,6 +593,83 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
     private void Update()
     {
         HandleLanguageScroll();
+        TrackGamepadFocus();
+        RecoverLostGamepadFocus();
+    }
+
+    /// <summary>
+    /// 패드 모드에서 현재 선택을 매 프레임 기억합니다. (패드 내비게이션으로 옮긴 선택은 FocusXxx를 거치지 않아 기록되지 않음)
+    /// 마우스로 전환하는 순간에는 UI_MainMenu의 장치 전환 핸들러가 먼저 돌아 선택을 지워 버리므로,
+    /// 전환 이벤트 안에서는 이미 늦어 이렇게 미리 기억해 둬야 패드로 돌아올 때 같은 자리에서 시작할 수 있습니다.
+    /// 비활성인 확인 버튼은 기억하지 않습니다. (비활성 버튼에 포커스를 두면 패드 조작이 먹통이 됩니다)
+    /// </summary>
+    private void TrackGamepadFocus()
+    {
+        if (false == isInputAllowed || true == isTransitioning || true == isClosing) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
+        if (null == EventSystem.current) return;
+
+        GameObject _selected = EventSystem.current.currentSelectedGameObject;
+        if (null == _selected) return;
+
+        if (false == isConsentPhase)
+        {
+            if (null != languageSelector && _selected == languageSelector.gameObject)
+            {
+                lastFocusedLanguageSelectable = languageSelector;
+            }
+            else if (null != languageConfirmButton && _selected == languageConfirmButton.gameObject)
+            {
+                lastFocusedLanguageSelectable = languageConfirmButton;
+            }
+        }
+        else
+        {
+            if (null != consentToggle && _selected == consentToggle.gameObject)
+            {
+                lastFocusedConsentSelectable = consentToggle;
+            }
+            else if (null != consentDisagreeToggle && _selected == consentDisagreeToggle.gameObject)
+            {
+                lastFocusedConsentSelectable = consentDisagreeToggle;
+            }
+            else if (null != confirmButton && _selected == confirmButton.gameObject && true == confirmButton.interactable)
+            {
+                lastFocusedConsentSelectable = confirmButton;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 패드 모드에서 선택이 사라지면(null이거나 꺼진 오브젝트) 현재 단계의 기본 대상으로 포커스를 다시 잡습니다.
+    /// 선택이 없으면 패드 입력이 어디에도 닿지 않아 조작이 완전히 먹통이 되므로(게임패드 가이드 3-8), 매 프레임 확인합니다.
+    /// 전환 중이거나 닫는 중, 입력이 아직 열리지 않은 때는 각 전환 콜백이 포커스를 잡으므로 건드리지 않습니다.
+    /// </summary>
+    private void RecoverLostGamepadFocus()
+    {
+        if (false == isInputAllowed || true == isTransitioning || true == isClosing) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
+        if (null == EventSystem.current) return;
+
+        // 열기/전환 연출이 도는 동안은 연출 완료 콜백(HandleShowCompleted 등)이 포커스를 잡는다.
+        if (null != panelTransitionTween && true == panelTransitionTween.IsActive()) return;
+
+        GameObject _selected = EventSystem.current.currentSelectedGameObject;
+        if (null != _selected && true == _selected.activeInHierarchy) return;
+
+        if (false == IsActive) return;
+
+        if (false == isConsentPhase)
+        {
+            FocusLanguageSelectable(GetDefaultLanguageSelectable());
+        }
+        else
+        {
+            // 복구는 유저가 조작한 포커스 이동이 아니므로 hover음은 내지 않는다.
+            suppressNextConsentSelectAudio = true;
+            FocusConsentItem(GetDefaultConsentSelectable());
+            suppressNextConsentSelectAudio = false;
+        }
     }
 
     /// <summary>
@@ -994,6 +1108,21 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         {
             languageConfirmButton.ForceHover();
         }
+    }
+
+    /// <summary>
+    /// 패드 포커스를 둘 약관 단계의 기본 대상입니다. 마지막으로 포커스했던 것이 살아 있고 조작 가능하면 그것, 아니면 첫 토글입니다.
+    /// (비활성인 확인 버튼에 포커스를 두면 패드 조작이 먹통이 됩니다)
+    /// </summary>
+    private Selectable GetDefaultConsentSelectable()
+    {
+        Selectable _last = lastFocusedConsentSelectable;
+        if (null != _last && true == _last.gameObject.activeInHierarchy && true == _last.interactable)
+        {
+            return _last;
+        }
+
+        return consentToggle;
     }
 
     private void FocusConsentItem(Selectable _target)
@@ -1528,7 +1657,7 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
             {
                 Selectable _target = (null != hoveredConsentToggle)
                     ? (Selectable)hoveredConsentToggle
-                    : (lastFocusedConsentSelectable ?? (Selectable)consentToggle);
+                    : GetDefaultConsentSelectable();
                 ForceUnhoverAll();
                 FocusConsentItem(_target);
             }
