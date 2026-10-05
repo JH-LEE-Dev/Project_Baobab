@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace LocalizationQA
 {
@@ -135,7 +136,133 @@ namespace LocalizationQA
             ("UI_TentAbilityComponent", "EndCircleRevealImmediately"),
         };
 
+        // 앞 창이 열려 있으면 게임이 감추는 뒤 창. 칸이 앞 창 안에 있을 때만 뒤 창을 감춘다.
+        // 프리팹에는 둘 다 켜진 채 저장되어 있어서, 그대로 그리면 뒤 창이 비쳐 보인다.
+        private static readonly (string front, string hidden)[] CoverRules =
+        {
+            // ESC 화면: 옵션 창을 열면 ESC 메뉴는 닫힘 연출로 사라진다. (UIView_ESC.OnOptionButtonClicked → UI_EscapeMenu.PlayCloseProduction)
+            ("UI_Option", "UI_EscapeMenu"),
+        };
+
+        // 한 화면 안에서 단계별로 한 패널만 보이는 UI. (컴포넌트, 칸이 들어 있는 패널 필드, 그때 감춰지는 필드들)
+        // 프리팹에는 모든 단계의 패널이 켜진 채 저장되어 있어 겹쳐 보인다.
+        private static readonly (string type, string front, string[] hidden)[] PhaseRules =
+        {
+            // 첫 실행 팝업: 1단계 언어 선택 동안 동의 패널·동의 확인 버튼은 꺼져 있다. (UI_InitialSetupPopup.Show)
+            ("UI_InitialSetupPopup", "languagePanel", new[] { "consentPanel", "confirmButton" }),
+            // 2단계 동의로 넘어가면 언어 패널을 끈다. (UI_InitialSetupPopup.SetupConsentPanelOnTransition)
+            ("UI_InitialSetupPopup", "consentPanel", new[] { "languagePanel", "languageConfirmButton" }),
+        };
+
         private const BindingFlags FLAGS = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+        /// <summary>
+        /// 그릴 언어로 바뀐 게임 화면처럼 맞춘다. 언어를 넘길 때마다 앱 언어가 바로 바뀌고 그 언어의 이름 라벨만 켜지는 UI가 대상이다.
+        ///  - 첫 실행 팝업: 선택 위치를 그 언어로 옮기고 게임의 UpdateLanguageDisplay를 실행 (그 언어 이름 라벨만 켜고 영어 부제를 바꿈)
+        /// </summary>
+        public static void RunLanguage(GameObject _root, Language _lang)
+        {
+            MonoBehaviour[] _behaviours = _root.GetComponentsInChildren<MonoBehaviour>(true);
+            for (int i = 0; i < _behaviours.Length; i++)
+            {
+                MonoBehaviour _b = _behaviours[i];
+                if (null == _b || "UI_InitialSetupPopup" != _b.GetType().Name) continue;
+
+                try
+                {
+                    Type _type = _b.GetType();
+                    Array _bindings = _type.GetField("languageBindings", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)?.GetValue(null) as Array;
+                    FieldInfo _index = _type.GetField("languageIndex", FLAGS);
+                    MethodInfo _update = _type.GetMethod("UpdateLanguageDisplay", FLAGS, null, Type.EmptyTypes, null);
+                    if (null == _bindings || null == _index || null == _update) continue;
+
+                    EOptionLanguage _option = LocQALanguages.ToOption(_lang);
+                    for (int k = 0; k < _bindings.Length; k++)
+                    {
+                        object _binding = _bindings.GetValue(k);
+                        if (false == Equals(_binding.GetType().GetField("Language").GetValue(_binding), _option)) continue;
+                        _index.SetValue(_b, k);
+                        _update.Invoke(_b, null);
+
+                        // 점 커서도 현재 점 위로. (게임의 SnapLanguageDotCursor와 같다. 그 메서드는 DOTween을 건드려
+                        // 에디터에서 DOTween 오브젝트가 생길 수 있으므로 위치 맞추기만 따라 한다)
+                        RectTransform _cursor = _type.GetField("languageDotCursor", FLAGS)?.GetValue(_b) as RectTransform;
+                        Array _dots = _type.GetField("languageDots", FLAGS)?.GetValue(_b) as Array;
+                        if (null != _cursor && null != _dots && k < _dots.Length && _dots.GetValue(k) is Graphic _dot && null != _dot)
+                        {
+                            _cursor.SetParent(_dot.rectTransform, false);
+                            _cursor.anchoredPosition = Vector2.zero;
+                        }
+                        break;
+                    }
+                }
+                catch (Exception _e)
+                {
+                    Debug.LogWarning($"[LocalizationQA] UI_InitialSetupPopup 언어 표시 맞추기 실패: {_e.InnerException?.Message ?? _e.Message}");
+                }
+            }
+        }
+
+        /// <summary>칸(_target)이 들어 있는 창 때문에 게임에서 감춰지는 다른 창들.</summary>
+        public static List<GameObject> CoveredWindows(Transform _target, Transform _root)
+        {
+            List<GameObject> _result = new List<GameObject>(2);
+            for (int r = 0; r < CoverRules.Length; r++)
+            {
+                if (false == HasAncestorOfType(_target, _root, CoverRules[r].front)) continue;
+
+                MonoBehaviour[] _behaviours = _root.GetComponentsInChildren<MonoBehaviour>(true);
+                for (int i = 0; i < _behaviours.Length; i++)
+                {
+                    MonoBehaviour _b = _behaviours[i];
+                    if (null == _b || _b.GetType().Name != CoverRules[r].hidden) continue;
+                    if (true == _target.IsChildOf(_b.transform)) continue; // 칸을 품은 창은 감추지 않는다
+                    _result.Add(_b.gameObject);
+                }
+            }
+
+            for (int r = 0; r < PhaseRules.Length; r++)
+            {
+                MonoBehaviour[] _behaviours = _root.GetComponentsInChildren<MonoBehaviour>(true);
+                for (int i = 0; i < _behaviours.Length; i++)
+                {
+                    MonoBehaviour _b = _behaviours[i];
+                    if (null == _b || _b.GetType().Name != PhaseRules[r].type) continue;
+
+                    GameObject _front = FieldObject(_b, PhaseRules[r].front);
+                    if (null == _front || false == _target.IsChildOf(_front.transform)) continue;
+
+                    for (int h = 0; h < PhaseRules[r].hidden.Length; h++)
+                    {
+                        GameObject _hidden = FieldObject(_b, PhaseRules[r].hidden[h]);
+                        if (null != _hidden && false == _target.IsChildOf(_hidden.transform)) _result.Add(_hidden);
+                    }
+                }
+            }
+            return _result;
+        }
+
+        private static GameObject FieldObject(MonoBehaviour _owner, string _field)
+        {
+            object _value = _owner.GetType().GetField(_field, FLAGS)?.GetValue(_owner);
+            if (_value is Component _component && null != _component) return _component.gameObject;
+            if (_value is GameObject _go && null != _go) return _go;
+            return null;
+        }
+
+        private static bool HasAncestorOfType(Transform _target, Transform _root, string _typeName)
+        {
+            for (Transform _t = _target; null != _t; _t = _t.parent)
+            {
+                MonoBehaviour[] _behaviours = _t.GetComponents<MonoBehaviour>();
+                for (int i = 0; i < _behaviours.Length; i++)
+                {
+                    if (null != _behaviours[i] && _behaviours[i].GetType().Name == _typeName) return true;
+                }
+                if (_t == _root) break;
+            }
+            return false;
+        }
 
         /// <summary>화면을 띄운 직후 한 번 실행한다. (등장 연출 종료 상태)</summary>
         public static void RunSetup(GameObject _root)

@@ -8,7 +8,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/Common_Free",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -18,7 +19,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/Common_MaxLevel",
             "source": "코드분석",
-            "template": "<COLOR=58D7F2><WAVE>{text}</WAVE></COLOR>"
+            "template": "<COLOR=58D7F2><WAVE>{text}</WAVE></COLOR>",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -28,7 +30,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_AttackRythm",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -38,7 +41,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_AxeAttackSpeed",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -48,7 +52,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_AxeCriticalChance",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -58,7 +63,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_AxeCriticalDamage",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -68,7 +74,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_AxeDamage",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -78,7 +85,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_AxeDurability",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -88,7 +96,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_AxeRange",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -98,7 +107,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_Boomerang",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -108,7 +118,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_BoomerangAttackSpeed",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -118,7 +129,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_BoomerangCooldownReduction",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -128,7 +140,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_BoomerangCritical",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -138,7 +151,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_BoomerangDamage",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -148,7 +162,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_BoomerangDistance",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -158,7 +173,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_BoomerangRange",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -168,7 +184,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ConstellationDamage",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -178,7 +195,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ConstellationManifestUnlock",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -188,7 +206,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ConveyorSpeed",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -198,7 +217,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_EfficientMovement",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -208,7 +228,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_FascinatingLogChance",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -218,7 +239,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_FluffySporeForestOverGrowth",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -228,7 +250,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_InventoryExpansion",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -238,7 +261,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ItemTransferSpeedUP",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -248,7 +272,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_LogCapacityIncrease",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -258,7 +283,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_LogProcessingSpeed",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -268,7 +294,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_LogValue",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -278,7 +305,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ManifestationBrand",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -288,7 +316,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_MovementSpeed",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -298,7 +327,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_MultiAttack",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -308,7 +338,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_PickupRange",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -318,7 +349,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_PowerSupply",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -328,7 +360,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ProcessLineExpand",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -338,7 +371,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_SawmillLogStorageExpansion",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -348,7 +382,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ShieldExplosionDamage",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -358,7 +393,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ShieldExplosionResearch",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -368,7 +404,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ShieldExplosionUnlock",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -378,7 +415,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ShockWaveCritical",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -388,7 +426,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ShockWaveEnforcement",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -398,7 +437,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ShockWaveMastery",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -408,7 +448,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_Shockwave",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -418,7 +459,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ShockwaveDamage",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -428,7 +470,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ShockwaveRange",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -438,7 +481,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_SourceOfSpeed",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -448,7 +492,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_SourceOfStamina",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -458,7 +503,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_SporeShieldCut",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -468,7 +514,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_SporeShieldPenetration",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -478,7 +525,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_SporeShieldRegenBlock",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -488,7 +536,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_Stamina",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -498,7 +547,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_StaminaMaxIncrease",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -508,7 +558,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_StaminaRecover",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -518,7 +569,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_StarMarkDamage",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -528,7 +580,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_StarPathSpeedBoost",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -538,7 +591,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_StarrootForestOverGrowth",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -548,7 +602,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_SteelAxe",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -558,7 +613,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_TreeVitamin",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -568,7 +624,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_WeakPointHit",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -578,7 +635,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_WideGreenForestOvergrowth",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -588,7 +646,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_WoodenTransportBox",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -598,7 +657,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/Common_ToUnlock",
             "source": "코드분석",
-            "template": "<COLOR=54D86A>{text}</COLOR>"
+            "template": "<COLOR=54D86A>{text}</COLOR>",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -608,7 +668,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/Common_UnlockComplete",
             "source": "코드분석",
-            "template": "<COLOR=58D7F2>{text}</COLOR>"
+            "template": "<COLOR=58D7F2>{text}</COLOR>",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -618,7 +679,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/Common_Level",
             "source": "코드분석",
-            "template": "{text} : 3 / 5"
+            "template": "{text} : 3 / 5",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -628,7 +690,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AttackRythm1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -638,7 +701,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeAttackSpeed1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -648,7 +712,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeAttackSpeed2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -658,7 +723,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeCriticalChance1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -668,7 +734,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeCriticalChance2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -678,7 +745,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeCriticalDamage1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -688,7 +756,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeCriticalDamage2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -698,7 +767,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeDamage1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -708,7 +778,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeDamage2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -718,7 +789,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeDamage3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -728,7 +800,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeDamage4_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -738,7 +811,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeDamage5_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -748,7 +822,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeDurability1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -758,7 +833,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeDurability2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -768,7 +844,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeDurability3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -778,7 +855,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeRange1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -788,7 +866,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/Boomerang1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -798,7 +877,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/Boomerang2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -808,7 +888,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/Boomerang3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -818,7 +899,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/BoomerangAttackSpeed1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -828,7 +910,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/BoomerangAttackSpeed2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -838,7 +921,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/BoomerangCooldownReduction_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -848,7 +932,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/BoomerangCritical_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -858,7 +943,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/BoomerangDamage1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -868,7 +954,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/BoomerangDamage2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -878,7 +965,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/BoomerangDamage3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -888,7 +976,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/BoomerangDistance_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -898,7 +987,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/BoomerangRange1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -908,7 +998,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/BoomerangRange2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -918,7 +1009,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/BoomerangRange3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -928,7 +1020,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/BountifulTree1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -938,7 +1031,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/BountifulTree2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -948,7 +1042,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/BountifulTree3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -958,7 +1053,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/BountifulTree4_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -968,7 +1064,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ConstellationDamage1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -978,7 +1075,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ConstellationManifestUnlock_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -988,7 +1086,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ConveyorSpeed1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -998,7 +1097,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/EfficientMovement1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1008,7 +1108,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/EfficientMovement2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1018,7 +1119,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/FascinatingLogChance1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1028,7 +1130,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/FascinatingLogChance2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1038,7 +1141,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/FatigueMaxIncrease1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1048,7 +1152,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/FatigueMaxIncrease2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1058,7 +1163,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/FatigueMaxIncrease3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1068,7 +1174,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/FatigueMaxIncrease4_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1078,7 +1185,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/FatigueMaxIncrease5_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1088,7 +1196,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/FluffySporeForestOverGrowth_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1098,7 +1207,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/InventoryExpansion1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1108,7 +1218,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ItemTransferSpeedUP1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1118,7 +1229,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/LogCapacityIncrease1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1128,7 +1240,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/LogCapacityIncrease2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1138,7 +1251,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/LogProcessingSpeed1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1148,7 +1262,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/LogProcessingSpeed2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1158,7 +1273,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/LogProcessingSpeed3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1168,7 +1284,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/LogProcessingSpeed4_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1178,7 +1295,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/LogValue1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1188,7 +1306,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/LogValue2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1198,7 +1317,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/LogValue3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1208,7 +1328,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/LogValue4_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1218,7 +1339,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/MovementSpeed2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1228,7 +1350,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/MovementSpeed_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1238,7 +1361,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/MultiAttack_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1248,7 +1372,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/PickupRange1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1258,7 +1383,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/PickupRange2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1268,7 +1394,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/PowerSupply_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1278,7 +1405,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ProcessLineExpand1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1288,7 +1416,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SawmillLogStorageExpansion1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1298,7 +1427,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SawmillLogStorageExpansion2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1308,7 +1438,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ShieldExplosionDamage1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1318,7 +1449,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ShieldExplosionResearch_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1328,7 +1460,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ShieldExplosionUnlock_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1338,7 +1471,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ShockWaveCritical_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1348,7 +1482,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ShockWaveEnforcement_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1358,7 +1493,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ShockWaveMastery_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1368,7 +1504,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/Shockwave1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1378,7 +1515,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/Shockwave2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1388,7 +1526,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/Shockwave3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1398,7 +1537,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ShockwaveDamage1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1408,7 +1548,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ShockwaveDamage2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1418,7 +1559,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ShockwaveDamage3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1428,7 +1570,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ShockwaveRange1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1438,7 +1581,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ShockwaveRange2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1448,7 +1592,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/ShockwaveRange3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1458,7 +1603,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SourceOfSpeed1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1468,7 +1614,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SourceOfStamina1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1478,7 +1625,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SporeShieldCut1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1488,7 +1636,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SporeShieldCut2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1498,7 +1647,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SporeShieldCut3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1508,7 +1658,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SporeShieldPenetration1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1518,7 +1669,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SporeShieldPenetration2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1528,7 +1680,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SporeShieldPenetration3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1538,7 +1691,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SporeShieldRegenBlock1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1548,7 +1702,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SporeShieldRegenBlock2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1558,7 +1713,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SporeShieldRegenBlock3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1568,7 +1724,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/Stamina1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1578,7 +1735,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/Stamina2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1588,7 +1746,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/Stamina3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1598,7 +1757,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/StaminaRecover_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1608,7 +1768,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/StarMarkDamage1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1618,7 +1779,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/StarPathSpeedBoost1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1628,7 +1790,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/StarrootForestOverGrowth_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1638,7 +1801,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SteelAxe1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1648,7 +1812,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SteelAxe2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1658,7 +1823,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/SteelAxe3_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1668,7 +1834,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/TestNode_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1678,7 +1845,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/TreeVitamin1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1688,7 +1856,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/WeakPointHit1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1698,7 +1867,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/WideGreenForestOvergrowth_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1708,7 +1878,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/WoodenTransportBoxExpansion1_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -1718,7 +1889,8 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/WoodenTransportBoxExpansion2_Name",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0b2eda5965a8af845b8e07e6b86168c8",
@@ -1728,7 +1900,8 @@
             "contextDepth": 1,
             "entryId": "OptionUI/resetToDefault",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0b2eda5965a8af845b8e07e6b86168c8",
@@ -1738,7 +1911,8 @@
             "contextDepth": 1,
             "entryId": "OptionUI/apply",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0b2eda5965a8af845b8e07e6b86168c8",
@@ -1748,7 +1922,8 @@
             "contextDepth": 1,
             "entryId": "OptionUI/tabControl",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0b2eda5965a8af845b8e07e6b86168c8",
@@ -1758,7 +1933,8 @@
             "contextDepth": 1,
             "entryId": "OptionUI/tabGameplay",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0b2eda5965a8af845b8e07e6b86168c8",
@@ -1768,7 +1944,8 @@
             "contextDepth": 1,
             "entryId": "OptionUI/tabGraphic",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0b2eda5965a8af845b8e07e6b86168c8",
@@ -1778,7 +1955,8 @@
             "contextDepth": 1,
             "entryId": "OptionUI/tabSound",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "28f9903af375d014baa13e3c51fbc1d3",
@@ -1788,7 +1966,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/attack",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "28f9903af375d014baa13e3c51fbc1d3",
@@ -1798,7 +1977,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/interaction",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "28f9903af375d014baa13e3c51fbc1d3",
@@ -1808,7 +1988,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/inventory",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "28f9903af375d014baa13e3c51fbc1d3",
@@ -1818,7 +1999,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/logSwap",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "28f9903af375d014baa13e3c51fbc1d3",
@@ -1828,7 +2010,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/moveDown",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "28f9903af375d014baa13e3c51fbc1d3",
@@ -1838,7 +2021,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/moveLeft",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "28f9903af375d014baa13e3c51fbc1d3",
@@ -1848,7 +2032,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/moveRight",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "28f9903af375d014baa13e3c51fbc1d3",
@@ -1858,7 +2043,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/moveUp",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "28f9903af375d014baa13e3c51fbc1d3",
@@ -1868,7 +2054,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/potionKey",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "323645c365d430340bfb16e08f94f2f7",
@@ -1878,7 +2065,8 @@
             "contextDepth": 1,
             "entryId": "MainMenuUI/DotText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "323645c365d430340bfb16e08f94f2f7",
@@ -1888,7 +2076,8 @@
             "contextDepth": 1,
             "entryId": "MainMenuUI/Credits",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "323645c365d430340bfb16e08f94f2f7",
@@ -1898,7 +2087,8 @@
             "contextDepth": 1,
             "entryId": "MainMenuUI/DotText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "323645c365d430340bfb16e08f94f2f7",
@@ -1908,7 +2098,8 @@
             "contextDepth": 1,
             "entryId": "MainMenuUI/Exit",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "323645c365d430340bfb16e08f94f2f7",
@@ -1918,7 +2109,8 @@
             "contextDepth": 1,
             "entryId": "MainMenuUI/DotText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "323645c365d430340bfb16e08f94f2f7",
@@ -1928,7 +2120,8 @@
             "contextDepth": 1,
             "entryId": "MainMenuUI/LoadGame",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "323645c365d430340bfb16e08f94f2f7",
@@ -1938,7 +2131,8 @@
             "contextDepth": 1,
             "entryId": "MainMenuUI/DotText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "323645c365d430340bfb16e08f94f2f7",
@@ -1948,7 +2142,8 @@
             "contextDepth": 1,
             "entryId": "MainMenuUI/NewGame",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "323645c365d430340bfb16e08f94f2f7",
@@ -1958,7 +2153,8 @@
             "contextDepth": 1,
             "entryId": "MainMenuUI/DotText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "323645c365d430340bfb16e08f94f2f7",
@@ -1968,7 +2164,8 @@
             "contextDepth": 1,
             "entryId": "MainMenuUI/Options",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "380342ca825ed8643bdca4bd050d56c6",
@@ -1978,7 +2175,8 @@
             "contextDepth": 1000,
             "entryId": "SpeechBubbleUI/AxeDurabilityEmpty",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "380342ca825ed8643bdca4bd050d56c6",
@@ -1988,7 +2186,8 @@
             "contextDepth": 1000,
             "entryId": "SpeechBubbleUI/InventoryFull",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "380342ca825ed8643bdca4bd050d56c6",
@@ -1998,7 +2197,8 @@
             "contextDepth": 1000,
             "entryId": "SpeechBubbleUI/ItemCantAcquired",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "4ae2b0a891e214945add8961418fbea8",
@@ -2008,7 +2208,8 @@
             "contextDepth": 1000,
             "entryId": "DemoNoticeUI/Description",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "4ae2b0a891e214945add8961418fbea8",
@@ -2018,7 +2219,8 @@
             "contextDepth": 1000,
             "entryId": "DemoNoticeUI/DescriptionStove",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "4ae2b0a891e214945add8961418fbea8",
@@ -2028,7 +2230,8 @@
             "contextDepth": 1000,
             "entryId": "DemoNoticeUI/Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "520d4e0f53cfd9249aef204c9c7eb9a1",
@@ -2038,7 +2241,8 @@
             "contextDepth": 1,
             "entryId": "EscapeMenuUI/Resume",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "520d4e0f53cfd9249aef204c9c7eb9a1",
@@ -2048,7 +2252,8 @@
             "contextDepth": 1,
             "entryId": "EscapeMenuUI/Option",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "520d4e0f53cfd9249aef204c9c7eb9a1",
@@ -2058,7 +2263,8 @@
             "contextDepth": 1,
             "entryId": "EscapeMenuUI/MainMenu",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "520d4e0f53cfd9249aef204c9c7eb9a1",
@@ -2068,7 +2274,8 @@
             "contextDepth": 1,
             "entryId": "EscapeMenuUI/ExitGame",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "56ab1690e99457b42b9b057f319d65d9",
@@ -2078,7 +2285,8 @@
             "contextDepth": 0,
             "entryId": "ResultUI/acquiredLogsHeader",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "56ab1690e99457b42b9b057f319d65d9",
@@ -2088,7 +2296,8 @@
             "contextDepth": 0,
             "entryId": "ResultUI/emptyAcquiredLogs",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "56ab1690e99457b42b9b057f319d65d9",
@@ -2098,7 +2307,8 @@
             "contextDepth": 0,
             "entryId": "ResultUI/containerStateHeader",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "56ab1690e99457b42b9b057f319d65d9",
@@ -2108,7 +2318,8 @@
             "contextDepth": 0,
             "entryId": "ResultUI/treeKillCountHigh",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "56ab1690e99457b42b9b057f319d65d9",
@@ -2118,7 +2329,8 @@
             "contextDepth": 0,
             "entryId": "ResultUI/treeKillCountLow",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "56ab1690e99457b42b9b057f319d65d9",
@@ -2128,7 +2340,8 @@
             "contextDepth": 0,
             "entryId": "ResultUI/treeKillCountMiddle",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "56ab1690e99457b42b9b057f319d65d9",
@@ -2138,7 +2351,8 @@
             "contextDepth": 0,
             "entryId": "ResultUI/treeKillCountZero",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "56ab1690e99457b42b9b057f319d65d9",
@@ -2148,7 +2362,8 @@
             "contextDepth": 0,
             "entryId": "ResultUI/resultTitle",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "644c96ad309ba114f9743fd5b9c6d5eb",
@@ -2158,7 +2373,8 @@
             "contextDepth": 1,
             "entryId": "EscapeMenuUI/ExitGameWarning",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "644c96ad309ba114f9743fd5b9c6d5eb",
@@ -2168,7 +2384,8 @@
             "contextDepth": 1,
             "entryId": "EscapeMenuUI/MainMenuWarning",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "644c96ad309ba114f9743fd5b9c6d5eb",
@@ -2178,7 +2395,8 @@
             "contextDepth": 1,
             "entryId": "MainMenuUI/NewGameWarning",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "644c96ad309ba114f9743fd5b9c6d5eb",
@@ -2188,7 +2406,8 @@
             "contextDepth": 1,
             "entryId": "OptionUI/resetAllWarning",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "644c96ad309ba114f9743fd5b9c6d5eb",
@@ -2198,7 +2417,8 @@
             "contextDepth": 1,
             "entryId": "OptionUI/unsavedChangesWarning",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "644c96ad309ba114f9743fd5b9c6d5eb",
@@ -2208,7 +2428,8 @@
             "contextDepth": 1,
             "entryId": "SaveCheckUI/AbandonMessage",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "644c96ad309ba114f9743fd5b9c6d5eb",
@@ -2218,7 +2439,8 @@
             "contextDepth": 1,
             "entryId": "SaveCheckUI/FailedMessage",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2228,7 +2450,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/dungeonStateStage1Idle0SubText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2238,7 +2461,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/dungeonStateStage1Idle1SubText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2248,7 +2472,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/dungeonStateStage1Idle2SubText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2258,7 +2483,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/dungeonStateStage1Idle3SubText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2268,7 +2494,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/dungeonStateStage2Idle0SubText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2278,7 +2505,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/dungeonStateStage2Idle1SubText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2288,7 +2516,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/dungeonStateStage2Idle2SubText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2298,7 +2527,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/dungeonStateStage3Idle0SubText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2308,7 +2538,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/dungeonStateStage3Idle1SubText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2318,7 +2549,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/dungeonStateStage3Idle2SubText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2328,7 +2560,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/dungeonStateStage4Idle0SubText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2338,7 +2571,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/dungeonStateStage4Idle1SubText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2348,7 +2582,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/dungeonStateStage4Idle2SubText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2358,7 +2593,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/forestFluffySporeForest1Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2368,7 +2604,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/forestFluffySporeForest2Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2378,7 +2615,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/forestFluffySporeForest3Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2388,7 +2626,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/forestMagmaForest1Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2398,7 +2637,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/forestMagmaForest2Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2408,7 +2648,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/forestMagmaForest3Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2418,7 +2659,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/forestStarrootForest1Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2428,7 +2670,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/forestStarrootForest2Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2438,7 +2681,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/forestStarrootForest3Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2448,7 +2692,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/forestWideGreenForest1Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2458,7 +2703,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/forestWideGreenForest2Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -2468,7 +2714,8 @@
             "contextDepth": 1000,
             "entryId": "MessageHUD/forestWideGreenForest3Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7fac8189cec29354da87489252a0394e",
@@ -2478,47 +2725,52 @@
             "contextDepth": 1,
             "entryId": "AbilityUI/KeyGuide_AbilityUpgrade",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7fac8189cec29354da87489252a0394e",
             "slotPath": "Guide_Text",
             "contextGuid": "1896f9058a0bdab42ae4341930bfa21c",
-            "contextPath": "AbiliyBG/KeyGuideRoot/KeyGuideRow_Upgrade/Guide_Text",
+            "contextPath": "AbiliyBG/KeyGuideRoot/KeyGuideRow_Move/Guide_Text",
             "contextDepth": 1,
             "entryId": "AbilityUI/KeyGuide_DragToMove",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7fac8189cec29354da87489252a0394e",
             "slotPath": "Guide_Text",
             "contextGuid": "1896f9058a0bdab42ae4341930bfa21c",
-            "contextPath": "AbiliyBG/KeyGuideRoot/KeyGuideRow_Upgrade/Guide_Text",
+            "contextPath": "AbiliyBG/KeyGuideRoot/KeyGuideRow_Exit/Guide_Text",
             "contextDepth": 1,
             "entryId": "AbilityUI/KeyGuide_Exit",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7fac8189cec29354da87489252a0394e",
             "slotPath": "Guide_Text",
             "contextGuid": "1896f9058a0bdab42ae4341930bfa21c",
-            "contextPath": "AbiliyBG/KeyGuideRoot/KeyGuideRow_Upgrade/Guide_Text",
+            "contextPath": "AbiliyBG/KeyGuideRoot/KeyGuideRow_Move/Guide_Text",
             "contextDepth": 1,
             "entryId": "AbilityUI/KeyGuide_Move",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "7fac8189cec29354da87489252a0394e",
             "slotPath": "Guide_Text",
             "contextGuid": "1896f9058a0bdab42ae4341930bfa21c",
-            "contextPath": "AbiliyBG/KeyGuideRoot/KeyGuideRow_Upgrade/Guide_Text",
+            "contextPath": "AbiliyBG/KeyGuideRoot/KeyGuideRow_magnification/Guide_Text",
             "contextDepth": 1,
             "entryId": "AbilityUI/KeyGuide_Zoom",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "822e4581f49c2334db9d0c23560726c4",
@@ -2528,7 +2780,8 @@
             "contextDepth": 1,
             "entryId": "TutorialQuestUI/FillOffroadContainer_Desc",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "822e4581f49c2334db9d0c23560726c4",
@@ -2538,7 +2791,8 @@
             "contextDepth": 1,
             "entryId": "TutorialQuestUI/CutTree_Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "822e4581f49c2334db9d0c23560726c4",
@@ -2548,7 +2802,8 @@
             "contextDepth": 1,
             "entryId": "TutorialQuestUI/FillOffroadContainer_Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "822e4581f49c2334db9d0c23560726c4",
@@ -2558,7 +2813,8 @@
             "contextDepth": 1,
             "entryId": "TutorialQuestUI/GoHomeBeforeExhausted_Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "822e4581f49c2334db9d0c23560726c4",
@@ -2568,7 +2824,8 @@
             "contextDepth": 1,
             "entryId": "TutorialQuestUI/PutItemsInLogContainer_Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "822e4581f49c2334db9d0c23560726c4",
@@ -2578,7 +2835,8 @@
             "contextDepth": 1,
             "entryId": "TutorialQuestUI/ReceiveMoney_Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "822e4581f49c2334db9d0c23560726c4",
@@ -2588,7 +2846,8 @@
             "contextDepth": 1,
             "entryId": "TutorialQuestUI/StartNewLogging_Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "822e4581f49c2334db9d0c23560726c4",
@@ -2598,7 +2857,8 @@
             "contextDepth": 1,
             "entryId": "TutorialQuestUI/UnlockNewRegion_Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "822e4581f49c2334db9d0c23560726c4",
@@ -2608,7 +2868,8 @@
             "contextDepth": 1,
             "entryId": "TutorialQuestUI/UpgradeAxe_Title",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "8b5ca9580ec054340a2f53628082dcd7",
@@ -2618,7 +2879,8 @@
             "contextDepth": 1,
             "entryId": "OpeningProductionUI/Opening_Monologue_0",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "8b5ca9580ec054340a2f53628082dcd7",
@@ -2628,7 +2890,8 @@
             "contextDepth": 1,
             "entryId": "OpeningProductionUI/Opening_Monologue_1",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "8b5ca9580ec054340a2f53628082dcd7",
@@ -2638,7 +2901,8 @@
             "contextDepth": 1,
             "entryId": "OpeningProductionUI/Opening_Monologue_2",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "8b5ca9580ec054340a2f53628082dcd7",
@@ -2648,7 +2912,8 @@
             "contextDepth": 1,
             "entryId": "OpeningProductionUI/Opening_Monologue_3",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9e70dd265ec476441b020914870499a9",
@@ -2658,7 +2923,8 @@
             "contextDepth": 1000,
             "entryId": "MenuPopupUI/mapName_2",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9e70dd265ec476441b020914870499a9",
@@ -2668,7 +2934,8 @@
             "contextDepth": 1000,
             "entryId": "MenuPopupUI/mapName_3",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9e70dd265ec476441b020914870499a9",
@@ -2678,7 +2945,8 @@
             "contextDepth": 1000,
             "entryId": "MenuPopupUI/mapName_4",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9e70dd265ec476441b020914870499a9",
@@ -2688,7 +2956,8 @@
             "contextDepth": 1000,
             "entryId": "MenuPopupUI/mapName_5",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2698,7 +2967,8 @@
             "contextDepth": 0,
             "entryId": "MainMenuUI/ConsentDesc",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2708,7 +2978,8 @@
             "contextDepth": 0,
             "entryId": "MainMenuUI/ConsentTitle",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2718,7 +2989,8 @@
             "contextDepth": 0,
             "entryId": "MainMenuUI/ConsentAgree",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2728,7 +3000,8 @@
             "contextDepth": 0,
             "entryId": "MainMenuUI/ConsentDisagree",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2738,7 +3011,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageChineseSimplified",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2748,7 +3022,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageChineseTraditional",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2758,7 +3033,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageCzech",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2768,7 +3044,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageEnglish",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2778,7 +3055,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageFrench",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2788,7 +3066,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageGerman",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2798,7 +3077,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageIndonesian",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2808,7 +3088,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageItalian",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2818,7 +3099,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageJapanese",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2828,7 +3110,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageKorean",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2838,7 +3121,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguagePolish",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2848,7 +3132,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguagePortuguese",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2858,7 +3143,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageRussian",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2868,7 +3154,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageSpanishLatAm",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2878,7 +3165,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageSpanish",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2888,7 +3176,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageTurkish",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2898,7 +3187,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageUkrainian",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2908,7 +3198,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/LanguageVietnamese",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -2918,7 +3209,8 @@
             "contextDepth": 0,
             "entryId": "OptionUI/Language",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "a04d60f53f5cf234180a7e1bf8d4045d",
@@ -2928,7 +3220,8 @@
             "contextDepth": 2,
             "entryId": "OptionUI/BGMVolume",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "a04d60f53f5cf234180a7e1bf8d4045d",
@@ -2938,7 +3231,8 @@
             "contextDepth": 2,
             "entryId": "OptionUI/CameraShake",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "a04d60f53f5cf234180a7e1bf8d4045d",
@@ -2948,7 +3242,8 @@
             "contextDepth": 2,
             "entryId": "OptionUI/ChromaticAberration",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "a04d60f53f5cf234180a7e1bf8d4045d",
@@ -2958,37 +3253,41 @@
             "contextDepth": 2,
             "entryId": "OptionUI/CrosshairBrightness",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "a04d60f53f5cf234180a7e1bf8d4045d",
             "slotPath": "Visuals/TMP_Title",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_Sound/ViewRect/Contents/OPT_BGMVolume/Visuals/TMP_Title",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_ControllerHaptic/Visuals/TMP_Title",
             "contextDepth": 2,
             "entryId": "OptionUI/HapticStrength",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "a04d60f53f5cf234180a7e1bf8d4045d",
             "slotPath": "Visuals/TMP_Title",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_VirtualCursorSensitivity/Visuals/TMP_Title",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_Sound/ViewRect/Contents/OPT_MasterVolume/Visuals/TMP_Title",
             "contextDepth": 2,
             "entryId": "OptionUI/MasterVolume",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "a04d60f53f5cf234180a7e1bf8d4045d",
             "slotPath": "Visuals/TMP_Title",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_Sound/ViewRect/Contents/OPT_BGMVolume/Visuals/TMP_Title",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_Sound/ViewRect/Contents/OPT_SFXVolume/Visuals/TMP_Title",
             "contextDepth": 2,
             "entryId": "OptionUI/SFXVolume",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "a04d60f53f5cf234180a7e1bf8d4045d",
@@ -2998,7 +3297,8 @@
             "contextDepth": 2,
             "entryId": "OptionUI/ScreenBrightness",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "a04d60f53f5cf234180a7e1bf8d4045d",
@@ -3008,17 +3308,19 @@
             "contextDepth": 2,
             "entryId": "OptionUI/ScreenSaturation",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "a04d60f53f5cf234180a7e1bf8d4045d",
             "slotPath": "Visuals/TMP_Title",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_Sound/ViewRect/Contents/OPT_BGMVolume/Visuals/TMP_Title",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_VirtualCursorSensitivity/Visuals/TMP_Title",
             "contextDepth": 2,
             "entryId": "OptionUI/VirtualCursorSensitivity",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "a623ac0844e86ca4699b60b86e5a1ce4",
@@ -3028,7 +3330,8 @@
             "contextDepth": 1,
             "entryId": "OptionUI/pressGamepadPrompt",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "a623ac0844e86ca4699b60b86e5a1ce4",
@@ -3038,7 +3341,8 @@
             "contextDepth": 1,
             "entryId": "OptionUI/pressKeyPrompt",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "bd28f55901e93bd4aa5204630655ec49",
@@ -3048,7 +3352,8 @@
             "contextDepth": 1,
             "entryId": "MainMenuUI/PressAnyKey",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "c12e0ecbfef8767468e41930b0814944",
@@ -3058,7 +3363,19 @@
             "contextDepth": 1000,
             "entryId": "InventoryUI/Open",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "eca5975b15124c0781844633a23091ae",
+            "slotPath": "CheckingPanel/Text_Checking",
+            "contextGuid": "eca5975b15124c0781844633a23091ae",
+            "contextPath": "CheckingPanel/Text_Checking",
+            "contextDepth": 0,
+            "entryId": "SaveCheckUI/CheckingMessage",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "edc3b765b8e25be4a8ff664cf503693e",
@@ -3068,7 +3385,8 @@
             "contextDepth": 0,
             "entryId": "WarningUI/mainText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "edc3b765b8e25be4a8ff664cf503693e",
@@ -3078,7 +3396,8 @@
             "contextDepth": 0,
             "entryId": "WarningUI/subText",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "f9cf806ea42d58849800b366300ef44c",
@@ -3088,7 +3407,8 @@
             "contextDepth": 1,
             "entryId": "LootTooltipUI/foundbox",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "f9cf806ea42d58849800b366300ef44c",
@@ -3098,7 +3418,8 @@
             "contextDepth": 1,
             "entryId": "LootTooltipUI/sporepotion",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "f9cf806ea42d58849800b366300ef44c",
@@ -3108,7 +3429,8 @@
             "contextDepth": 1,
             "entryId": "LootTooltipUI/starcompass",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "f9cf806ea42d58849800b366300ef44c",
@@ -3118,7 +3440,8 @@
             "contextDepth": 1,
             "entryId": "LootTooltipUI/name_lostandfoundbox",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "f9cf806ea42d58849800b366300ef44c",
@@ -3128,7 +3451,8 @@
             "contextDepth": 1,
             "entryId": "LootTooltipUI/name_obsidiancharm",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "f9cf806ea42d58849800b366300ef44c",
@@ -3138,7 +3462,8 @@
             "contextDepth": 1,
             "entryId": "LootTooltipUI/name_sporepotion",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "f9cf806ea42d58849800b366300ef44c",
@@ -3148,7 +3473,8 @@
             "contextDepth": 1,
             "entryId": "LootTooltipUI/name_starcompass",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
@@ -3158,7 +3484,8 @@
             "contextDepth": 2,
             "entryId": "OptionUI/DataConsent",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
@@ -3168,37 +3495,41 @@
             "contextDepth": 2,
             "entryId": "OptionUI/FPS",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Title",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_WindowMode/Visuals/TMP_Title",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_ControllerSelector/Visuals/TMP_Title",
             "contextDepth": 2,
             "entryId": "OptionUI/GamepadIconPreference",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Title",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_WindowMode/Visuals/TMP_Title",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Title",
             "contextDepth": 2,
             "entryId": "OptionUI/Language",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Title",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_WindowMode/Visuals/TMP_Title",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_PauseOnUnfocus/Visuals/TMP_Title",
             "contextDepth": 2,
             "entryId": "OptionUI/PauseOnUnfocus",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
@@ -3208,7 +3539,8 @@
             "contextDepth": 2,
             "entryId": "OptionUI/Resolution",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
@@ -3218,7 +3550,8 @@
             "contextDepth": 2,
             "entryId": "OptionUI/WindowMode",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
@@ -3228,77 +3561,85 @@
             "contextDepth": 2,
             "entryId": "OptionUI/DataConsentDeclined",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_DataConsent/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/DataConsentGranted",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_WindowMode/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/Fullscreen",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_ControllerSelector/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/GamepadIconAuto",
             "source": "코드분석",
-            "template": "{text} (Xbox)"
+            "template": "{text} (Xbox)",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_ControllerSelector/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/GamepadIconGeneric",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageChineseSimplified",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageChineseTraditional",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageCzech",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
@@ -3308,147 +3649,162 @@
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageEnglish",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageFrench",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageGerman",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageIndonesianShort",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageItalian",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageJapanese",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageKorean",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguagePolish",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguagePortuguese",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageRussian",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageSpanishLatAmShort",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageSpanishShort",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageTurkish",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageUkrainian",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Language/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/LanguageVietnamese",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
@@ -3458,27 +3814,30 @@
             "contextDepth": 2,
             "entryId": "OptionUI/Off",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_PauseOnUnfocus/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/On",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
             "slotPath": "Visuals/TMP_Value",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_Resolution/Visuals/TMP_Value",
+            "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_FPS/Visuals/TMP_Value",
             "contextDepth": 2,
             "entryId": "OptionUI/Unlimited",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
@@ -3488,7 +3847,8 @@
             "contextDepth": 2,
             "entryId": "OptionUI/VSync",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fdd5be21d9568a442a2f5bf7d71f5414",
@@ -3498,7 +3858,8 @@
             "contextDepth": 2,
             "entryId": "OptionUI/Windowed",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fe8baa3bc073aaa459f4d803c40ee997",
@@ -3508,7 +3869,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/attack",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fe8baa3bc073aaa459f4d803c40ee997",
@@ -3518,7 +3880,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/interaction",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fe8baa3bc073aaa459f4d803c40ee997",
@@ -3528,7 +3891,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/inventory",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fe8baa3bc073aaa459f4d803c40ee997",
@@ -3538,7 +3902,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/logSwap",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fe8baa3bc073aaa459f4d803c40ee997",
@@ -3548,7 +3913,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/moveDown",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fe8baa3bc073aaa459f4d803c40ee997",
@@ -3558,7 +3924,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/moveLeft",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fe8baa3bc073aaa459f4d803c40ee997",
@@ -3568,7 +3935,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/moveRight",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fe8baa3bc073aaa459f4d803c40ee997",
@@ -3578,7 +3946,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/moveUp",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "fe8baa3bc073aaa459f4d803c40ee997",
@@ -3588,7 +3957,8 @@
             "contextDepth": 1000,
             "entryId": "OptionUI/potionKey",
             "source": "코드분석",
-            "template": ""
+            "template": "",
+            "samples": ""
         }
     ],
     "slots": [

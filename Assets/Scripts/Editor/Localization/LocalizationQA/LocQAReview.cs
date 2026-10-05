@@ -5,6 +5,7 @@ using System.Text;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace LocalizationQA
 {
@@ -81,6 +82,17 @@ namespace LocalizationQA
         // 사람이나 코드 분석이 "이 칸에는 이 문구가 안 나온다"고 뺀 항목. 자동 추론이 같은 연결을 되살리지 않게 기억한다.
         public List<string> rejected = new List<string>();
         public List<LocQAUnusedEntry> unused = new List<LocQAUnusedEntry>();
+    }
+
+    /// <summary>없어진 프리팹·칸 정리 결과. (LocQAReviewData.PruneMissing)</summary>
+    internal sealed class LocQAPruneReport
+    {
+        public readonly List<string> removedItems = new List<string>(); // "프리팹 / 칸 경로 · 키"
+        public int removedSlots;    // 문구가 연결되지 않은 칸 기록
+        public int removedMarks;    // 지워지는 연결에 걸려 있던 판정(언어별) 수
+        public int moved;           // 그리던 화면에서 빠져 원본 프리팹에서 그리게 된 칸
+
+        public bool HasRemovals => removedItems.Count > 0 || removedSlots > 0;
     }
 
     [Serializable]
@@ -380,11 +392,17 @@ namespace LocalizationQA
             return true;
         }
 
+        /// <summary>사람이 목록에서 뺀 연결. 자동 추론이 되살리지 않도록 기억해 둔다.</summary>
         public void Remove(LocQAReviewItem _item)
+        {
+            RemoveInternal(_item, true);
+        }
+
+        private void RemoveInternal(LocQAReviewItem _item, bool _reject)
         {
             if (null == _item || false == itemsFile.items.Remove(_item)) return;
             itemsByKey.Remove(_item.Key);
-            if (true == rejected.Add(_item.Key)) itemsFile.rejected.Add(_item.Key);
+            if (true == _reject && true == rejected.Add(_item.Key)) itemsFile.rejected.Add(_item.Key);
 
             filledSlots.Clear();
             for (int i = 0; i < itemsFile.items.Count; i++) filledSlots.Add(itemsFile.items[i].SlotKey);
@@ -397,6 +415,97 @@ namespace LocalizationQA
                 dirtyLanguages.Add(_pair.Key);
             }
             Touch(true);
+        }
+
+        /// <summary>
+        /// 지워졌거나 구조가 바뀐 프리팹을 기록에 반영한다. (목록 갱신·다시 읽기 때)
+        ///  - 칸이 원래 정의된 프리팹이나 그 안의 텍스트 오브젝트가 없어졌으면 그 칸의 문구 연결(과 판정)·칸 기록을 지운다.
+        ///  - 칸은 그대로인데 그리던 화면에서 빠졌으면 칸의 원본 프리팹에서 그리도록 옮긴다. (목록 갱신이 더 알맞은 화면을 다시 찾는다)
+        /// </summary>
+        /// <param name="_apply">false면 바꾸지 않고 무엇이 바뀔지만 알려준다.</param>
+        /// <param name="_remove">false면 지우는 것은 빼고 화면 옮기기만 한다.</param>
+        public LocQAPruneReport PruneMissing(bool _apply, bool _remove = true)
+        {
+            LocQAPruneReport _report = new LocQAPruneReport();
+            Dictionary<string, GameObject> _prefabs = new Dictionary<string, GameObject>(StringComparer.Ordinal);
+            bool _changed = false;
+
+            for (int i = itemsFile.items.Count - 1; i >= 0; i--)
+            {
+                LocQAReviewItem _item = itemsFile.items[i];
+                TMP_Text _slotText = TextAt(_prefabs, _item.slotGuid, _item.slotPath);
+                if (null == _slotText)
+                {
+                    _report.removedItems.Add($"{PrefabName(_item.slotGuid)} / {_item.slotPath} · {_item.entryId}");
+                    foreach (Dictionary<string, LocQAReviewMark> _map in marks.Values)
+                    {
+                        if (true == _map.ContainsKey(_item.Key)) _report.removedMarks++;
+                    }
+                    if (true == _apply && true == _remove)
+                    {
+                        RemoveInternal(_item, false);
+                        _changed = true;
+                    }
+                    continue;
+                }
+
+                if (null != TextAt(_prefabs, _item.contextGuid, _item.contextPath)) continue;
+                _report.moved++;
+                if (false == _apply) continue;
+                _item.contextGuid = _item.slotGuid;
+                _item.contextPath = _item.slotPath;
+                _item.contextDepth = LocQAReviewCollector.ContextScore(_slotText.transform.root.gameObject, _slotText.transform);
+                _changed = true;
+            }
+
+            for (int i = itemsFile.slots.Count - 1; i >= 0; i--)
+            {
+                LocQAReviewSlot _slot = itemsFile.slots[i];
+                TMP_Text _slotText = TextAt(_prefabs, _slot.slotGuid, _slot.slotPath);
+                if (null == _slotText)
+                {
+                    _report.removedSlots++;
+                    if (true == _apply && true == _remove)
+                    {
+                        itemsFile.slots.RemoveAt(i);
+                        slotsByKey.Remove(_slot.SlotKey);
+                        _changed = true;
+                    }
+                    continue;
+                }
+
+                if (null != TextAt(_prefabs, _slot.contextGuid, _slot.contextPath)) continue;
+                _report.moved++;
+                if (false == _apply) continue;
+                _slot.contextGuid = _slot.slotGuid;
+                _slot.contextPath = _slot.slotPath;
+                _slot.contextDepth = LocQAReviewCollector.ContextScore(_slotText.transform.root.gameObject, _slotText.transform);
+                _changed = true;
+            }
+
+            if (true == _changed) Touch(true);
+            return _report;
+        }
+
+        private static TMP_Text TextAt(Dictionary<string, GameObject> _cache, string _guid, string _path)
+        {
+            if (string.IsNullOrEmpty(_guid)) return null;
+            if (false == _cache.TryGetValue(_guid, out GameObject _prefab))
+            {
+                string _assetPath = AssetDatabase.GUIDToAssetPath(_guid);
+                _prefab = string.IsNullOrEmpty(_assetPath) ? null : AssetDatabase.LoadAssetAtPath<GameObject>(_assetPath);
+                _cache.Add(_guid, _prefab);
+            }
+            if (null == _prefab) return null;
+
+            Transform _target = LocQAPaths.Find(_prefab.transform, _path);
+            return null != _target ? _target.GetComponent<TMP_Text>() : null;
+        }
+
+        private static string PrefabName(string _guid)
+        {
+            string _assetPath = AssetDatabase.GUIDToAssetPath(_guid);
+            return string.IsNullOrEmpty(_assetPath) || false == File.Exists(_assetPath) ? "(지워진 프리팹)" : Path.GetFileNameWithoutExtension(_assetPath);
         }
 
         public void AddOrUpdateSlot(string _slotGuid, string _slotPath, string _contextGuid, string _contextPath, int _depth, string _defaultText)
@@ -845,6 +954,7 @@ namespace LocalizationQA
         public string text;
         public string hash;
         public bool fallback;       // 번역이 없어 다른 언어(영어·스페인어) 문구가 대신 나오는 칸
+        public bool invisible;      // 그렸지만 글자가 화면에 나타나지 않은 칸 (가려짐·잘림 등). 검수할 수 없으므로 표시한다.
         public Texture2D full;
         public Texture2D crop;
         public Rect fullBoxUv;
@@ -905,7 +1015,9 @@ namespace LocalizationQA
         private readonly LocQABindingSet bindings;
         private readonly LocQAFontResolver fonts;
         private readonly LocQAStage stage;
-        private readonly Dictionary<string, string> firstEntryOfSlot = new Dictionary<string, string>(StringComparer.Ordinal);
+        // 검수 대상이 아닌 주변 칸을 채울 문구 후보
+        private readonly Dictionary<string, List<string>> entriesAtPath = new Dictionary<string, List<string>>(StringComparer.Ordinal); // 화면|경로 → 그 자리에 기록된 문구들
+        private readonly Dictionary<string, List<string>> entriesOfSlot = new Dictionary<string, List<string>>(StringComparer.Ordinal); // 칸 → 연결된 문구들
 
         private string contextGuid;
         private GameObject instance;
@@ -915,10 +1027,16 @@ namespace LocalizationQA
         private List<LocQATextRecord> records;
         private LocQAEntry[] baseEntries;
 
+        // 언어 이름이 들어가는 주변 칸(옵션의 언어 행 값 등) → 언어별로 넣을 문구.
+        // 게임은 그 칸에 항상 "현재 언어의 이름"을 보여주므로, 중국어로 그릴 때는 简体中文을 넣는다. (English로 고정하면 게임과 다르다)
+        private readonly Dictionary<int, Dictionary<Language, LocQAEntry>> ownLanguageFill = new Dictionary<int, Dictionary<Language, LocQAEntry>>();
+
         // 되돌리기 기록
         private readonly List<GameObject> activated = new List<GameObject>(8);
         private readonly List<KeyValuePair<CanvasGroup, float>> alphas = new List<KeyValuePair<CanvasGroup, float>>(4);
         private readonly List<KeyValuePair<Transform, Vector3>> scales = new List<KeyValuePair<Transform, Vector3>>(4);
+        private readonly List<KeyValuePair<RectTransform, Vector2>> scrolled = new List<KeyValuePair<RectTransform, Vector2>>(2);
+        private readonly List<GameObject> hiddenOccluders = new List<GameObject>(4);
 
         public Vector2 CanvasSize { get; }
 
@@ -931,12 +1049,25 @@ namespace LocalizationQA
             CanvasSize = _settings.CanvasSize;
             stage = new LocQAStage(true, CanvasSize, 1);
 
-            // 검수 대상이 아닌 다른 칸에는 그 칸에 연결된 첫 문구를 넣어 실제 화면에 가깝게 그린다.
-            // (프리팹 임시 문구 "Title" 대신 실제 숲 이름이 위에 보이는 식)
+            // 검수 대상이 아닌 주변 칸도 실제 화면에 가깝게 채우기 위한 후보를 모아 둔다. (FillEntry 참고)
             List<LocQAReviewItem> _items = LocQAReviewData.Shared.Items;
             for (int i = 0; i < _items.Count; i++)
             {
-                if (false == firstEntryOfSlot.ContainsKey(_items[i].SlotKey)) firstEntryOfSlot.Add(_items[i].SlotKey, _items[i].entryId);
+                LocQAReviewItem _item = _items[i];
+                string _pathKey = _item.contextGuid + "|" + _item.contextPath;
+                if (false == entriesAtPath.TryGetValue(_pathKey, out List<string> _atPath))
+                {
+                    _atPath = new List<string>(2);
+                    entriesAtPath.Add(_pathKey, _atPath);
+                }
+                _atPath.Add(_item.entryId);
+
+                if (false == entriesOfSlot.TryGetValue(_item.SlotKey, out List<string> _list))
+                {
+                    _list = new List<string>(4);
+                    entriesOfSlot.Add(_item.SlotKey, _list);
+                }
+                _list.Add(_item.entryId);
             }
         }
 
@@ -965,7 +1096,7 @@ namespace LocalizationQA
             TMP_Text _text = null != _target ? _target.GetComponent<TMP_Text>() : null;
             if (null == _text)
             {
-                _error = "화면 프리팹에서 텍스트 칸을 찾지 못했습니다. (프리팹 구조가 바뀌었을 수 있습니다. '목록 갱신'을 해 보세요)";
+                _error = "화면 프리팹에서 텍스트 칸을 찾지 못했습니다. (프리팹이 지워졌거나 구조가 바뀌었습니다. '다시 읽기'를 누르면 정리됩니다)";
                 return _cells;
             }
 
@@ -976,12 +1107,31 @@ namespace LocalizationQA
 
             Reveal(_target);
 
+            // 칸이 있는 창이 열려 있을 때 게임이 감추는 다른 창을 감춘다. (ESC 메뉴 위에 옵션 창을 연 경우 등)
+            List<GameObject> _covered = LocQALayoutHooks.CoveredWindows(_target, instance.transform);
+            for (int i = 0; i < _covered.Count; i++)
+            {
+                if (false == _covered[i].activeSelf) continue;
+                _covered[i].SetActive(false);
+                hiddenOccluders.Add(_covered[i]);
+            }
+
             // 연출로 화면 밖에서 들어오는 UI(던전 상태 배너 등)는 프리팹 배치 그대로면 캔버스 밖에 있다.
             // 첫 언어로 배치를 잡은 뒤, 칸이 화면 밖이면 UI 전체를 옮겨 칸이 가운데 오게 한다.
             if (_langs.Count > 0)
             {
                 Apply(_request, _text, _langs[0]);
+
+                // 스크롤 목록 안의 칸이면, 게임에서 그 항목으로 이동했을 때처럼 스크롤해서 보이게 한다.
+                ScrollIntoView(_text);
                 if (true == BringIntoView(_text)) _note = "원래 화면 밖에 배치된 UI라(연출로 들어오는 UI 등) 칸이 가운데 오도록 옮겨서 그렸습니다.";
+
+                // 그래도 글자가 안 보이면, 그 위에 덮여 그려지는 다른 패널(겹쳐 있는 다른 탭 등)을 숨긴다.
+                // 게임에서는 한 번에 한 패널만 보이지만 프리팹에는 여러 패널이 켜진 채 겹쳐 저장된 경우다.
+                if (false == ProbeVisible(_text))
+                {
+                    if (true == HideOccluders(_text)) _note = (null == _note ? string.Empty : _note + " ") + "칸을 가리는 다른 패널을 숨기고 그렸습니다.";
+                }
             }
 
             Rect _union = default;
@@ -1006,6 +1156,7 @@ namespace LocalizationQA
                 _cell.hash = LocQAReviewData.Hash(_cell.text);
                 _cell.fallback = null != _request.entry && true == LocQALanguages.IsFallback(_request.entry.data, _lang);
                 _cell.findings.AddRange(_m.findings);
+                _cell.invisible = false == string.IsNullOrWhiteSpace(_text.text) && false == IsDrawn(_text, _cell.full, _cell.fullGlyphUv);
                 _cells.Add(_cell);
 
                 Rect _region = Union(_cell.fullBoxUv, _cell.fullGlyphUv);
@@ -1040,6 +1191,95 @@ namespace LocalizationQA
         }
 
         // //내부 로직
+        /// <summary>
+        /// 검수 대상이 아닌 주변 칸 중, 그 자리에 기록된 문구도 프리팹 문구로 찾은 키도 없는 칸에 넣을 문구.
+        /// 실제 화면과 다른 문구로 채우지 않도록 확실한 것만 고른다.
+        ///  1) 그 칸에 연결된 문구가 하나뿐이면 그것
+        ///  2) 그 칸에 연결된 문구 중 행 이름과 맞는 것 (옵션 행 OPT_WindowMode ↔ WindowMode)
+        ///  3) 없으면 null — 프리팹에 적힌 원래 문구를 그대로 둔다.
+        /// (같은 행 프리팹을 여러 번 재사용하는 칸에서 아무 문구나 채우면 "창모드" 행에 다른 제목이 나오는 식으로 틀린다)
+        /// </summary>
+        private LocQAEntry FillEntry(GameObject _prefab, LocQATextRecord _rec)
+        {
+            // 띄운 화면은 프리팹 연결이 없는 복사본이라, 같은 경로의 원본 에셋 텍스트로 칸을 찾는다.
+            Transform _source = LocQAPaths.Find(_prefab.transform, _rec.path);
+            TMP_Text _sourceText = null != _source ? _source.GetComponent<TMP_Text>() : null;
+            if (false == LocQAReviewCollector.GetSlot(_sourceText, out string _g, out string _p)) return null;
+            if (false == entriesOfSlot.TryGetValue(_g + "|" + _p, out List<string> _candidates)) return null;
+            if (1 == _candidates.Count) return table.Find(_candidates[0]);
+
+            // 행 이름(조상 오브젝트 이름)과 키가 맞는 문구
+            string _best = null;
+            int _bestLength = 0;
+            int _depth = 0;
+            for (Transform _t = _rec.text.transform; null != _t && _depth < 4; _t = _t.parent, _depth++)
+            {
+                string _name = SimplifyName(_t.name);
+                if (_name.Length < 3) continue;
+                for (int i = 0; i < _candidates.Count; i++)
+                {
+                    int _slash = _candidates[i].LastIndexOf('/');
+                    string _key = SimplifyName(_slash >= 0 ? _candidates[i].Substring(_slash + 1) : _candidates[i]);
+                    if (_key.Length < 3 || _key.Length <= _bestLength) continue;
+                    if (true == _name.Contains(_key) || true == _key.Contains(_name))
+                    {
+                        _best = _candidates[i];
+                        _bestLength = _key.Length;
+                    }
+                }
+                if (null != _best) break;
+            }
+            return null != _best ? table.Find(_best) : null;
+        }
+
+        /// <summary>
+        /// 주변 칸 중 언어 이름이 들어가는 칸을 찾아, 그릴 언어마다 넣을 "그 언어의 이름" 문구를 정해 둔다.
+        /// 그 자리에 연결된 언어 이름 문구가 있으면 그중에서(옵션 행은 짧은 이름 ...Short), 없으면 같은 종류(짧은/긴 이름)에서 고른다.
+        /// </summary>
+        private void BuildOwnLanguageFill(string _contextGuid)
+        {
+            ownLanguageFill.Clear();
+            for (int i = 0; i < records.Count; i++)
+            {
+                LocQAEntry _base = baseEntries[i];
+                if (null == _base || false == LocQALanguages.TryGetOwnLanguage(_base.id, out _)) continue;
+
+                List<string> _candidates = new List<string>(20);
+                if (true == entriesAtPath.TryGetValue(_contextGuid + "|" + records[i].path, out List<string> _atPath))
+                {
+                    for (int c = 0; c < _atPath.Count; c++)
+                    {
+                        if (true == LocQALanguages.TryGetOwnLanguage(_atPath[c], out _)) _candidates.Add(_atPath[c]);
+                    }
+                }
+                if (_candidates.Count < 2) _candidates = LocQALanguages.OwnLanguageEntryIds(_base.id.EndsWith("Short", StringComparison.Ordinal));
+
+                Dictionary<Language, LocQAEntry> _map = new Dictionary<Language, LocQAEntry>();
+                for (int c = 0; c < _candidates.Count; c++)
+                {
+                    if (false == LocQALanguages.TryGetOwnLanguage(_candidates[c], out Language _lang) || true == _map.ContainsKey(_lang)) continue;
+                    LocQAEntry _entry = table.Find(_candidates[c]);
+                    if (null != _entry) _map.Add(_lang, _entry);
+                }
+                if (_map.Count > 0) ownLanguageFill.Add(i, _map);
+            }
+        }
+
+        private static readonly string[] NameNoise = { "opt", "row", "tmp", "txt", "text", "visuals", "title", "value", "btn", "label" };
+
+        private static string SimplifyName(string _name)
+        {
+            StringBuilder _sb = new StringBuilder(_name.Length);
+            string _lower = _name.ToLowerInvariant();
+            for (int i = 0; i < _lower.Length; i++)
+            {
+                if (true == char.IsLetterOrDigit(_lower[i])) _sb.Append(_lower[i]);
+            }
+            string _result = _sb.ToString();
+            for (int i = 0; i < NameNoise.Length; i++) _result = _result.Replace(NameNoise[i], string.Empty);
+            return _result;
+        }
+
         private bool Prepare(string _contextGuid, out string _error)
         {
             _error = null;
@@ -1054,7 +1294,7 @@ namespace LocalizationQA
             GameObject _prefab = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(_contextGuid));
             if (null == _prefab)
             {
-                _error = "화면 프리팹을 찾을 수 없습니다.";
+                _error = "화면 프리팹을 찾을 수 없습니다. (지워졌다면 '다시 읽기'를 누르면 정리됩니다)";
                 return false;
             }
 
@@ -1067,15 +1307,23 @@ namespace LocalizationQA
             for (int i = 0; i < records.Count; i++)
             {
                 LocQATextRecord _rec = records[i];
+
+                // 이 자리에 연결된 문구가 있으면 그것이 우선이다. 스캐너가 프리팹 임시 문구로 찾은 키는 추측이라
+                // 틀릴 수 있다. (옵션 행들은 프리팹에 다른 행의 문구 "FPS", "Master Volume"이 적힌 채 저장되어 있다)
+                // 여러 개면 프리팹 문구와 같은 것을 고른다. (언어 행 값이 항상 "简体中文"로 나와 □로 보이는 일이 없게, "English"를 쓴다)
+                if (true == entriesAtPath.TryGetValue(_contextGuid + "|" + _rec.path, out List<string> _atPath))
+                {
+                    string _pick = (null != _rec.entry && true == _atPath.Contains(_rec.entry.id)) ? _rec.entry.id : _atPath[0];
+                    baseEntries[i] = table.Find(_pick);
+                    if (null != baseEntries[i]) continue;
+                }
+
                 baseEntries[i] = _rec.entry;
                 if (null != _rec.entry) continue;
 
-                // 띄운 화면은 프리팹 연결이 없는 복사본이라, 같은 경로의 원본 에셋 텍스트로 칸을 찾는다.
-                Transform _source = LocQAPaths.Find(_prefab.transform, _rec.path);
-                TMP_Text _sourceText = null != _source ? _source.GetComponent<TMP_Text>() : null;
-                if (false == LocQAReviewCollector.GetSlot(_sourceText, out string _g, out string _p)) continue;
-                if (true == firstEntryOfSlot.TryGetValue(_g + "|" + _p, out string _entryId)) baseEntries[i] = table.Find(_entryId);
+                baseEntries[i] = FillEntry(_prefab, _rec);
             }
+            BuildOwnLanguageFill(_contextGuid);
 
             pathMap.Clear();
             Transform[] _all = instance.GetComponentsInChildren<Transform>(true);
@@ -1089,7 +1337,13 @@ namespace LocalizationQA
 
         private void Apply(LocQARenderRequest _request, TMP_Text _text, Language _lang)
         {
+            foreach (KeyValuePair<int, Dictionary<Language, LocQAEntry>> _pair in ownLanguageFill)
+            {
+                if (records[_pair.Key].text == _text) continue;
+                records[_pair.Key].entry = true == _pair.Value.TryGetValue(_lang, out LocQAEntry _own) ? _own : baseEntries[_pair.Key];
+            }
             LocQAPrefabScanner.ApplyLanguage(records, _lang, fonts, settings);
+            LocQALayoutHooks.RunLanguage(instance, _lang);
 
             if (null != _request.entry)
             {
@@ -1145,10 +1399,185 @@ namespace LocalizationQA
             activated.Clear();
             alphas.Clear();
             scales.Clear();
+            for (int i = 0; i < scrolled.Count; i++)
+            {
+                if (null != scrolled[i].Key) scrolled[i].Key.anchoredPosition = scrolled[i].Value;
+            }
+            for (int i = 0; i < hiddenOccluders.Count; i++)
+            {
+                if (null != hiddenOccluders[i]) hiddenOccluders[i].SetActive(true);
+            }
+            scrolled.Clear();
+            hiddenOccluders.Clear();
             if (null != instance) instance.transform.position = instanceOrigin;
         }
 
         private static readonly Vector3[] cornerBuffer = new Vector3[4];
+
+        /// <summary>
+        /// 칸이 스크롤 목록의 보이는 영역 밖이면 목록을 스크롤해 보이게 한다. 안쪽 스크롤부터 차례로 맞춘다.
+        /// (옵션 창 아래쪽 항목처럼 프리팹 상태로는 스크롤 아래에 숨어 있는 칸)
+        ///
+        /// Unity ScrollRect뿐 아니라 마스크(Mask·RectMask2D)로 잘라 보여주는 모든 영역을 스크롤로 본다.
+        /// 게임의 옵션 창은 자체 스크롤(UI_CustomScroll)이 마스크 안의 내용 위치를 옮기는 방식이라서다.
+        /// 마스크 바로 아래에서 칸으로 이어지는 자식을 "내용"으로 보고 그 위치를 옮긴다.
+        /// </summary>
+        private void ScrollIntoView(TMP_Text _text)
+        {
+            bool _moved = false;
+            Transform _child = _text.transform;
+            for (Transform _t = _text.transform.parent; null != _t && _t != instance.transform; _child = _t, _t = _t.parent)
+            {
+                RectTransform _viewport = null;
+                RectTransform _content = null;
+                bool _vertical = true;
+                bool _horizontal = true;
+
+                if (true == _t.TryGetComponent(out ScrollRect _scroll) && null != _scroll.content)
+                {
+                    _viewport = null != _scroll.viewport ? _scroll.viewport : (RectTransform)_scroll.transform;
+                    _content = _scroll.content;
+                    _vertical = _scroll.vertical;
+                    _horizontal = _scroll.horizontal;
+                }
+                else if ((true == _t.TryGetComponent(out Mask _mask) && true == _mask.enabled)
+                    || (true == _t.TryGetComponent(out RectMask2D _rectMask) && true == _rectMask.enabled))
+                {
+                    _viewport = _t as RectTransform;
+                    _content = _child as RectTransform;
+                }
+                if (null == _viewport || null == _content) continue;
+
+                Rect _target = LocalRect(_viewport, _text.rectTransform);
+                Rect _view = _viewport.rect;
+
+                Vector2 _delta = Vector2.zero;
+                if (true == _vertical)
+                {
+                    if (_target.yMin < _view.yMin) _delta.y = _view.yMin - _target.yMin + 4f;
+                    else if (_target.yMax > _view.yMax) _delta.y = _view.yMax - _target.yMax - 4f;
+                }
+                if (true == _horizontal)
+                {
+                    if (_target.xMin < _view.xMin) _delta.x = _view.xMin - _target.xMin + 4f;
+                    else if (_target.xMax > _view.xMax) _delta.x = _view.xMax - _target.xMax - 4f;
+                }
+                if (Vector2.zero == _delta) continue;
+
+                // 뷰포트 기준 이동량을 내용 부모 기준으로 바꿔 적용한다.
+                Vector3 _world = _viewport.TransformVector(_delta);
+                Vector3 _local = null != _content.parent ? _content.parent.InverseTransformVector(_world) : _world;
+                scrolled.Add(new KeyValuePair<RectTransform, Vector2>(_content, _content.anchoredPosition));
+                _content.anchoredPosition += new Vector2(_local.x, _local.y);
+                _moved = true;
+            }
+            if (true == _moved) Canvas.ForceUpdateCanvases();
+        }
+
+        /// <summary>지금 상태로 그렸을 때 글자가 보이는지. (가림 처리 전에 한 번 확인하는 용도)</summary>
+        private bool ProbeVisible(TMP_Text _text)
+        {
+            LocQAMeasurement _m = LocQATextAnalyzer.Measure(_text, settings, true, false);
+            if (false == _m.hasGlyphs) return true;
+            Texture2D _with = stage.Render();
+            bool _drawn = IsDrawn(_text, _with, stage.WorldToUv(_m.glyphWorld));
+            UnityEngine.Object.DestroyImmediate(_with);
+            return _drawn;
+        }
+
+        /// <summary>
+        /// 글자가 실제로 그려졌는지 픽셀로 확인한다. 글자만 투명하게 한 그림과 비교해, 글자 영역에서 바뀐 픽셀이
+        /// 거의 없으면 다른 것에 가려졌거나 마스크 밖이라 안 보이는 것이다.
+        /// </summary>
+        private bool IsDrawn(TMP_Text _text, Texture2D _with, Rect _glyphUv)
+        {
+            if (null == _with) return true;
+            int _w = _with.width;
+            int _h = _with.height;
+            int _x0 = Mathf.Clamp(Mathf.FloorToInt(_glyphUv.xMin * _w) - 1, 0, _w);
+            int _x1 = Mathf.Clamp(Mathf.CeilToInt(_glyphUv.xMax * _w) + 1, 0, _w);
+            int _y0 = Mathf.Clamp(Mathf.FloorToInt(_glyphUv.yMin * _h) - 1, 0, _h);
+            int _y1 = Mathf.Clamp(Mathf.CeilToInt(_glyphUv.yMax * _h) + 1, 0, _h);
+            if (_x1 <= _x0 || _y1 <= _y0) return false;   // 화면 밖
+
+            // 글자(와 폴백 폰트용 하위 메시)만 투명하게 해서 한 번 더 찍는다.
+            CanvasRenderer[] _renderers = _text.GetComponentsInChildren<CanvasRenderer>(true);
+            float[] _alphas = new float[_renderers.Length];
+            for (int i = 0; i < _renderers.Length; i++)
+            {
+                _alphas[i] = _renderers[i].GetAlpha();
+                _renderers[i].SetAlpha(0f);
+            }
+            Texture2D _without = stage.Render();
+            for (int i = 0; i < _renderers.Length; i++) _renderers[i].SetAlpha(_alphas[i]);
+
+            Color[] _a = _with.GetPixels(_x0, _y0, _x1 - _x0, _y1 - _y0);
+            Color[] _b = _without.GetPixels(_x0, _y0, _x1 - _x0, _y1 - _y0);
+            UnityEngine.Object.DestroyImmediate(_without);
+
+            int _changed = 0;
+            for (int i = 0; i < _a.Length; i++)
+            {
+                if (Mathf.Abs(_a[i].r - _b[i].r) + Mathf.Abs(_a[i].g - _b[i].g) + Mathf.Abs(_a[i].b - _b[i].b) > 0.08f) _changed++;
+            }
+            return _changed >= Mathf.Max(3, (int)(_a.Length * 0.005f));
+        }
+
+        /// <summary>
+        /// 칸보다 나중에 그려지면서 글자 위를 덮는 그래픽이 속한 갈래(칸과 공통 조상 바로 아래의 자식)를 숨긴다.
+        /// 겹쳐 저장된 다른 탭 패널 같은 것이다. 칸의 조상·자손은 건드리지 않는다. 숨겼으면 true.
+        /// </summary>
+        private bool HideOccluders(TMP_Text _text)
+        {
+            LocQAMeasurement _m = LocQATextAnalyzer.Measure(_text, settings, true, false);
+            if (false == _m.hasGlyphs) return false;
+            Rect _glyph = WorldRect(_m.glyphWorld);
+
+            Graphic[] _all = instance.GetComponentsInChildren<Graphic>(false);
+            int _textIndex = Array.IndexOf(_all, _text);
+            if (_textIndex < 0) return false;
+
+            bool _hidAny = false;
+            for (int i = _textIndex + 1; i < _all.Length; i++)
+            {
+                Graphic _g = _all[i];
+                if (null == _g || false == _g.isActiveAndEnabled || _g.color.a < 0.3f) continue;
+                if (true == _g.transform.IsChildOf(_text.transform)) continue;
+                if (_g.canvasRenderer.GetInheritedAlpha() < 0.3f) continue;
+
+                _g.rectTransform.GetWorldCorners(cornerBuffer);
+                if (false == WorldRect(cornerBuffer).Overlaps(_glyph)) continue;
+
+                // 칸과 갈라지는 지점의 갈래를 찾는다.
+                Transform _branch = _g.transform;
+                while (null != _branch.parent && false == _text.transform.IsChildOf(_branch.parent)) _branch = _branch.parent;
+                if (null == _branch.parent || false == _branch.gameObject.activeSelf) continue;
+
+                _branch.gameObject.SetActive(false);
+                hiddenOccluders.Add(_branch.gameObject);
+                _hidAny = true;
+            }
+
+            if (true == _hidAny)
+            {
+                LocQAPrefabScanner.RebuildLayout(instance);
+                Canvas.ForceUpdateCanvases();
+            }
+            return _hidAny;
+        }
+
+        private static Rect WorldRect(Vector3[] _corners)
+        {
+            float _xMin = float.MaxValue, _yMin = float.MaxValue, _xMax = float.MinValue, _yMax = float.MinValue;
+            for (int i = 0; i < 4; i++)
+            {
+                _xMin = Mathf.Min(_xMin, _corners[i].x);
+                _yMin = Mathf.Min(_yMin, _corners[i].y);
+                _xMax = Mathf.Max(_xMax, _corners[i].x);
+                _yMax = Mathf.Max(_yMax, _corners[i].y);
+            }
+            return Rect.MinMaxRect(_xMin, _yMin, _xMax, _yMax);
+        }
 
         /// <summary>칸(과 그 배경)이 캔버스 밖에 있으면 UI 전체를 옮겨 칸을 가운데 둔다. 옮겼으면 true.</summary>
         private bool BringIntoView(TMP_Text _text)

@@ -48,6 +48,20 @@ namespace LocalizationQA
         }
 
         private static readonly string[] FilterLabels = { "전체", "할 일 남은 것", "NG 있는 것" };
+
+        private enum ELayout
+        {
+            Grid,
+            Horizontal,
+            Vertical
+        }
+
+        private static readonly GUIContent[] LayoutLabels =
+        {
+            new GUIContent("바둑판", "여러 칸을 바둑판처럼 나란히 봅니다."),
+            new GUIContent("가로 스크롤", "칸을 화면 높이에 꽉 차게 키워 가로로 넘겨 봅니다. ('전체 화면'과 함께 쓰면 UI 전체를 크게 볼 수 있습니다)"),
+            new GUIContent("세로 스크롤", "칸을 화면 폭에 꽉 차게 키워 세로로 넘겨 봅니다. ('전체 화면'과 함께 쓰면 UI 전체를 크게 볼 수 있습니다)")
+        };
         private static readonly GUIContent[] ModeLabels =
         {
             new GUIContent("문구별 비교", "문구 하나를 모든 언어로 나란히 봅니다."),
@@ -108,6 +122,7 @@ namespace LocalizationQA
         [SerializeField] private Vector2 rowScroll;
         [SerializeField] private Vector2 gridScroll;
         [SerializeField] private float cellWidth = 230f;   // 바둑판 칸 폭 (툴바 슬라이더)
+        [SerializeField] private ELayout layout = ELayout.Grid;
 
         private sealed class ContextRow
         {
@@ -138,6 +153,7 @@ namespace LocalizationQA
         private readonly List<ContextRow> contexts = new List<ContextRow>(64);
         private readonly List<Row> rows = new List<Row>(256);
         [NonSerialized] private string builtSignature;
+        [NonSerialized] private int seenAssetVersion;
         [NonSerialized] private int unconnectedEntries;
         [NonSerialized] private Language? pendingCellLanguage;
 
@@ -155,6 +171,7 @@ namespace LocalizationQA
         [NonSerialized] private int gridColumns = 1;
         [NonSerialized] private float gridCellHeight = 100f;
         [NonSerialized] private bool scrollToSelection;
+        [NonSerialized] private int firstVisibleRow;
 
         private GUIStyle rowStyle;
         private GUIStyle rowSelectedStyle;
@@ -170,6 +187,7 @@ namespace LocalizationQA
             settings = LocQASettings.Load();
             table = LocQAStringTable.Load();
             hashCache.Clear();
+            seenAssetVersion = LocQAAssetWatcher.Version;
             LocQAReviewData.Changed += OnDataChanged;
             builtSignature = null;
         }
@@ -198,6 +216,15 @@ namespace LocalizationQA
 
         private void Update()
         {
+            // 프리팹이나 번역 JSON이 저장되면 띄워 둔 화면을 버리고 새로 그린다.
+            if (seenAssetVersion != LocQAAssetWatcher.Version && false == EditorApplication.isCompiling && false == EditorApplication.isUpdating)
+            {
+                seenAssetVersion = LocQAAssetWatcher.Version;
+                LocQAScreenIndex.Invalidate();
+                ResetCaches();
+                Repaint();
+            }
+
             if (EMode.Language != mode || EditorApplication.isCompiling) return;
             if (true == RenderLanguageCellsStep()) Repaint();
         }
@@ -239,19 +266,25 @@ namespace LocalizationQA
             {
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
                 {
-                    if (GUILayout.Button(new GUIContent("목록 갱신", "UI 프리팹을 훑어 텍스트 칸과 문구를 모읍니다. 기존 연결과 판정은 그대로 유지됩니다."), EditorStyles.toolbarButton))
+                    if (GUILayout.Button(new GUIContent("목록 갱신", "UI 프리팹을 훑어 텍스트 칸과 문구를 모읍니다. 기존 연결과 판정은 그대로 유지됩니다.\n지워진 프리팹·텍스트 칸의 연결은 정리합니다. (지우기 전에 확인)"), EditorStyles.toolbarButton))
                     {
                         LocQAScreenIndex.Invalidate();
+                        string _pruned = PruneMissing();
                         LocQAReviewCollector.CollectFromPrefabs(settings);
+                        LocQAScreenIndex.Invalidate();
                         ResetCaches();
+                        if (null != _pruned) ShowNotification(new GUIContent(_pruned));
                         GUIUtility.ExitGUI();
                     }
                 }
-                if (GUILayout.Button(new GUIContent("다시 읽기", "git pull 등으로 다른 사람의 판정을 받은 뒤, 또는 번역 JSON이 바뀐 뒤 누르세요."), EditorStyles.toolbarButton))
+                if (GUILayout.Button(new GUIContent("다시 읽기", "판정·번역 JSON·프리팹을 디스크에서 다시 읽어 새로 그립니다. git pull 뒤에 누르세요.\n지워진 프리팹·텍스트 칸의 연결은 정리합니다. (지우기 전에 확인)"), EditorStyles.toolbarButton))
                 {
                     LocQAReviewData.Reload();
                     LocQAScreenIndex.Invalidate();
+                    string _pruned = PruneMissing();
                     ResetCaches();
+                    if (null != _pruned) ShowNotification(new GUIContent(_pruned));
+                    GUIUtility.ExitGUI();
                 }
 
                 GUILayout.Space(10f);
@@ -316,7 +349,22 @@ namespace LocalizationQA
 
                 GUILayout.Space(10f);
                 GUILayout.Label(new GUIContent("칸 크기", "바둑판 칸을 크게 하면 그림이 커집니다. (화면 폭에 들어가는 칸 수가 줄어듭니다)"), EditorStyles.miniLabel, GUILayout.Width(40f));
-                cellWidth = GUILayout.HorizontalSlider(cellWidth, 180f, 700f, GUILayout.Width(110f));
+                using (new EditorGUI.DisabledScope(ELayout.Grid != layout))
+                {
+                    cellWidth = GUILayout.HorizontalSlider(cellWidth, 180f, 900f, GUILayout.Width(110f));
+                }
+
+                GUILayout.Space(6f);
+                EditorGUI.BeginChangeCheck();
+                ELayout _layout = (ELayout)EditorGUILayout.Popup((int)layout, LayoutLabels, EditorStyles.toolbarPopup, GUILayout.Width(92f));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    layout = _layout;
+                    gridScroll = Vector2.zero;
+                    scrollToSelection = true;
+                }
+                bool _maximized = GUILayout.Toggle(maximized, new GUIContent("창 최대화", "검수 창을 에디터 전체 크기로 키웁니다. 다시 누르면 원래대로 돌아옵니다."), EditorStyles.toolbarButton, GUILayout.Width(64f));
+                if (_maximized != maximized) maximized = _maximized;
 
                 GUILayout.FlexibleSpace();
                 GUILayout.Label("검수자", EditorStyles.miniLabel, GUILayout.Width(38f));
@@ -326,6 +374,43 @@ namespace LocalizationQA
                 if (GUILayout.Button(new GUIContent("NG 목록 CSV", "NG로 판정한 칸을 사유와 함께 CSV로 내보냅니다."), EditorStyles.toolbarButton)) ExportNgCsv();
                 if (GUILayout.Button(new GUIContent("자동 검사 창", "칸 넘침 등을 자동으로 찾는 창"), EditorStyles.toolbarButton)) LocQAWindow.Open();
             }
+        }
+
+        /// <summary>
+        /// 지워진 프리팹·텍스트 칸을 기록에서 정리한다. 판정이 함께 지워지므로 지울 것이 있으면 먼저 묻는다.
+        /// (그리던 화면에서만 빠진 칸은 묻지 않고 원본 프리팹에서 그리도록 옮긴다)
+        /// </summary>
+        /// <returns>알림에 띄울 결과. 바뀐 것이 없으면 null</returns>
+        private string PruneMissing()
+        {
+            LocQAReviewData _data = LocQAReviewData.Shared;
+            LocQAPruneReport _plan = _data.PruneMissing(false);
+            if (false == _plan.HasRemovals && 0 == _plan.moved) return null;
+
+            bool _remove = false;
+            if (true == _plan.HasRemovals)
+            {
+                StringBuilder _sb = new StringBuilder();
+                _sb.AppendLine("프리팹이나 텍스트 오브젝트가 없어진 칸이 있습니다. 기록에서 지울까요?");
+                _sb.AppendLine();
+                if (_plan.removedItems.Count > 0) _sb.AppendLine($"· 문구 연결 {_plan.removedItems.Count}개 (판정 {_plan.removedMarks}개 함께 삭제)");
+                if (_plan.removedSlots > 0) _sb.AppendLine($"· 칸 기록 {_plan.removedSlots}개");
+                _sb.AppendLine();
+                int _shown = Mathf.Min(12, _plan.removedItems.Count);
+                for (int i = 0; i < _shown; i++) _sb.AppendLine(_plan.removedItems[i]);
+                if (_plan.removedItems.Count > _shown) _sb.AppendLine($"… 외 {_plan.removedItems.Count - _shown}개");
+                _sb.AppendLine();
+                _sb.Append("프리팹을 잠시 옮기거나 지운 중이라면 '그대로 두기'를 누르세요. 다음에 다시 묻습니다.");
+                _remove = EditorUtility.DisplayDialog("Localization QA · 없어진 칸 정리", _sb.ToString(), "지우기", "그대로 두기");
+            }
+
+            LocQAPruneReport _done = _data.PruneMissing(true, _remove);
+            _data.SaveNow();
+
+            List<string> _parts = new List<string>(2);
+            if (true == _remove && _done.removedItems.Count + _done.removedSlots > 0) _parts.Add($"없어진 칸 {_done.removedItems.Count + _done.removedSlots}개 정리");
+            if (_done.moved > 0) _parts.Add($"화면이 바뀐 칸 {_done.moved}개 다시 배치");
+            return _parts.Count > 0 ? string.Join(" · ", _parts) : null;
         }
 
         private void ResetCaches()
@@ -440,6 +525,8 @@ namespace LocalizationQA
                             float _x = _r.xMax - (_sq + 1f) * languages.Count - 4f;
                             for (int l = 0; l < languages.Count; l++)
                             {
+                                // 게임에서 그 언어 화면에 안 나오는 조합(언어 이름 문구)은 검수 대상이 아니라 비워 둔다.
+                                if (false == LocQALanguages.ShownIn(_row.item.entryId, languages[l])) continue;
                                 Color _c = StateColor(LocQAReviewData.Shared.GetEffective(_row.item, languages[l], _hashes[(int)languages[l]]));
                                 EditorGUI.DrawRect(new Rect(_x + l * (_sq + 1f), _r.y + 20f, _sq, _sq), _c);
                             }
@@ -517,10 +604,8 @@ namespace LocalizationQA
                 pendingCellLanguage = null;
             }
 
-            float _gridHeight = position.height - TOOLBAR_HEIGHT - DETAIL_HEIGHT - 120f;
-            gridScroll = EditorGUILayout.BeginScrollView(gridScroll, GUILayout.Height(Mathf.Max(120f, _gridHeight)));
-            DrawCompareGrid(_row, _width - 20f);
-            EditorGUILayout.EndScrollView();
+            float _viewHeight = Mathf.Max(140f, position.height - TOOLBAR_HEIGHT - DETAIL_HEIGHT - 120f);
+            DrawCompareGrid(_row, _width - 4f, _viewHeight);
 
             selectedCell = Mathf.Clamp(selectedCell, 0, Mathf.Max(0, cells.Count - 1));
             if (cells.Count > 0) DrawCellDetail(_row, cells[selectedCell]);
@@ -587,46 +672,132 @@ namespace LocalizationQA
             if (GUILayout.Button("프리팹 열기", GUILayout.Width(76f))) OpenContextPrefab(_row);
         }
 
-        private void DrawCompareGrid(Row _row, float _width)
+        private void DrawCompareGrid(Row _row, float _width, float _viewHeight)
         {
-            int _columns = Mathf.Clamp((int)(_width / cellWidth), 1, 6);
-            gridColumns = _columns;
-            float _cellWidth = _width / _columns;
-
             Texture2D _sample = null;
             for (int i = 0; i < cells.Count && null == _sample; i++) _sample = fullView ? cells[i].full : cells[i].crop;
             float _aspect = null != _sample ? (float)_sample.height / Mathf.Max(1, _sample.width) : 0.5625f;
-            float _imageHeight = Mathf.Clamp((_cellWidth - 10f) * _aspect, 50f, 260f);
-            float _cellHeight = _imageHeight + 46f;
 
+            CellLayout _l = ComputeLayout(cells.Count, _width - 16f, _viewHeight, _aspect, 46f);
+            gridColumns = ELayout.Grid == layout ? _l.columns : 1;
             string[] _hashes = null != _row.item ? Hashes(_row.entry) : null;
 
-            for (int start = 0; start < cells.Count; start += _columns)
+            Rect _view = GUILayoutUtility.GetRect(_width, _viewHeight, GUILayout.ExpandWidth(true));
+            if (true == scrollToSelection)
             {
-                Rect _line = GUILayoutUtility.GetRect(_width, _cellHeight);
-                for (int c = 0; c < _columns && start + c < cells.Count; c++)
+                ScrollTo(_l, selectedCell, new Vector2(_view.width - 16f, _view.height - 16f));
+                scrollToSelection = false;
+            }
+            HandleHorizontalWheel(_view);
+
+            gridScroll = GUI.BeginScrollView(_view, gridScroll, new Rect(0f, 0f, _l.contentW, _l.contentH));
+            for (int _index = 0; _index < cells.Count; _index++)
+            {
+                Rect _r = CellRect(_l, _index);
+                if (false == IsInView(_r, _view)) continue;
+
+                LocQAReviewCell _cell = cells[_index];
+                LocQAReviewData.EffectiveState _state = null != _row.item
+                    ? LocQAReviewData.Shared.GetEffective(_row.item, _cell.language, _hashes[(int)_cell.language])
+                    : LocQAReviewData.EffectiveState.Todo;
+
+                string _title = $"{_cell.language}  {LocQALanguages.Name(_cell.language)}";
+                if (true == DrawCell(_r, _l.imageH, _title, _cell, _state, _index == selectedCell, null != _row.item, out LocQAReviewState _clicked))
                 {
-                    int _index = start + c;
-                    LocQAReviewCell _cell = cells[_index];
-                    Rect _r = new Rect(_line.x + c * _cellWidth + 3f, _line.y + 3f, _cellWidth - 6f, _cellHeight - 6f);
+                    selectedCell = _index;
+                    if (LocQAReviewState.None != _clicked) SetState(_row, _cell.language, _clicked);
+                }
 
-                    LocQAReviewData.EffectiveState _state = null != _row.item
-                        ? LocQAReviewData.Shared.GetEffective(_row.item, _cell.language, _hashes[(int)_cell.language])
-                        : LocQAReviewData.EffectiveState.Todo;
-
-                    string _title = $"{_cell.language}  {LocQALanguages.Name(_cell.language)}";
-                    if (true == DrawCell(_r, _imageHeight, _title, _cell, _state, _index == selectedCell, null != _row.item, out LocQAReviewState _clicked))
-                    {
-                        selectedCell = _index;
-                        if (LocQAReviewState.None != _clicked) SetState(_row, _cell.language, _clicked);
-                    }
-
-                    if (true == DoubleClicked(_r) && null != _cell.full)
-                    {
-                        LocQAImageWindow.Show(_cell.full, true, _cell.fullBoxUv, _cell.fullGlyphUv, $"{LocQALanguages.Name(_cell.language)} · {_row.label}");
-                    }
+                if (true == DoubleClicked(_r) && null != _cell.full)
+                {
+                    LocQAImageWindow.Show(_cell.full, true, _cell.fullBoxUv, _cell.fullGlyphUv, $"{LocQALanguages.Name(_cell.language)} · {_row.label}");
                 }
             }
+            GUI.EndScrollView();
+        }
+
+        // //칸 배치 (바둑판 / 가로 스크롤 / 세로 스크롤)
+        private struct CellLayout
+        {
+            public int columns;
+            public float cellW;
+            public float cellH;
+            public float imageH;
+            public float contentW;
+            public float contentH;
+        }
+
+        /// <summary>
+        /// 칸 크기와 전체 내용 크기를 정한다. 가로 스크롤은 칸 높이를 보이는 높이에, 세로 스크롤은 칸 폭을 보이는 폭에 꽉 채운다.
+        /// _extra는 그림 위아래의 제목·버튼 줄 높이다.
+        /// </summary>
+        private CellLayout ComputeLayout(int _count, float _width, float _viewHeight, float _aspect, float _extra)
+        {
+            CellLayout _l = new CellLayout();
+            _aspect = Mathf.Max(0.05f, _aspect);
+            switch (layout)
+            {
+                case ELayout.Horizontal:
+                    _l.columns = Mathf.Max(1, _count);
+                    _l.imageH = Mathf.Max(60f, _viewHeight - _extra - 22f);
+                    _l.cellW = Mathf.Max(220f, _l.imageH / _aspect + 10f);
+                    _l.cellH = _l.imageH + _extra;
+                    _l.contentW = _count * _l.cellW;
+                    _l.contentH = _l.cellH;
+                    break;
+                case ELayout.Vertical:
+                    _l.columns = 1;
+                    _l.cellW = Mathf.Max(220f, _width);
+                    _l.imageH = Mathf.Clamp((_l.cellW - 10f) * _aspect, 60f, Mathf.Max(60f, _viewHeight - _extra - 6f));
+                    _l.cellH = _l.imageH + _extra;
+                    _l.contentW = _l.cellW;
+                    _l.contentH = _count * _l.cellH;
+                    break;
+                default:
+                    _l.columns = Mathf.Clamp((int)(_width / cellWidth), 1, 8);
+                    _l.cellW = _width / _l.columns;
+                    _l.imageH = Mathf.Clamp((_l.cellW - 10f) * _aspect, 50f, 1400f);
+                    _l.cellH = _l.imageH + _extra;
+                    _l.contentW = _width;
+                    _l.contentH = Mathf.Ceil((float)_count / _l.columns) * _l.cellH;
+                    break;
+            }
+            return _l;
+        }
+
+        private static Rect CellRect(CellLayout _l, int _index)
+        {
+            int _column = _index % _l.columns;
+            int _line = _index / _l.columns;
+            return new Rect(_column * _l.cellW + 3f, _line * _l.cellH + 3f, _l.cellW - 6f, _l.cellH - 6f);
+        }
+
+        /// <summary>스크롤 영역에 보이는 칸인지. (보이지 않는 칸은 그리지 않아 수백 개 문구에서도 가볍게)</summary>
+        private bool IsInView(Rect _cell, Rect _view)
+        {
+            return _cell.yMax >= gridScroll.y - 4f && _cell.y <= gridScroll.y + _view.height + 4f
+                && _cell.xMax >= gridScroll.x - 4f && _cell.x <= gridScroll.x + _view.width + 4f;
+        }
+
+        private void ScrollTo(CellLayout _l, int _index, Vector2 _viewSize)
+        {
+            if (_index < 0) return;
+            Rect _r = CellRect(_l, _index);
+            if (_r.y < gridScroll.y) gridScroll.y = _r.y - 3f;
+            else if (_r.yMax > gridScroll.y + _viewSize.y) gridScroll.y = _r.yMax - _viewSize.y + 3f;
+            if (_r.x < gridScroll.x) gridScroll.x = _r.x - 3f;
+            else if (_r.xMax > gridScroll.x + _viewSize.x) gridScroll.x = _r.xMax - _viewSize.x + 3f;
+            gridScroll = Vector2.Max(gridScroll, Vector2.zero);
+        }
+
+        /// <summary>가로 스크롤 배치에서는 마우스 휠을 가로 이동으로 쓴다.</summary>
+        private void HandleHorizontalWheel(Rect _view)
+        {
+            Event _e = Event.current;
+            if (ELayout.Horizontal != layout || EventType.ScrollWheel != _e.type || false == _view.Contains(_e.mousePosition)) return;
+            gridScroll.x = Mathf.Max(0f, gridScroll.x + (_e.delta.y + _e.delta.x) * 24f);
+            _e.Use();
+            Repaint();
         }
 
         // //오른쪽 (언어별 검수)
@@ -661,69 +832,71 @@ namespace LocalizationQA
             }
             EditorGUILayout.LabelField("단축키: ←→↑↓ 칸 이동 · 1/O OK · 2/X NG · 0 지우기 · Space/Enter OK 후 다음 칸 · PageUp/PageDown 이전/다음 언어 · 더블클릭 크게 보기", EditorStyles.miniLabel);
 
-            float _gridWidth = _width - 20f;
-            int _columns = Mathf.Clamp((int)(_gridWidth / cellWidth), 1, 6);
-            float _cellWidth = _gridWidth / _columns;
-            float _imageHeight = Mathf.Clamp((_cellWidth - 10f) * 0.42f, 60f, 180f);
-            float _cellHeight = _imageHeight + 62f;
-            gridColumns = _columns;
-            gridCellHeight = _cellHeight;
+            float _viewHeight = Mathf.Max(140f, position.height - TOOLBAR_HEIGHT - DETAIL_HEIGHT - 60f);
+            float _gridWidth = _width - 4f;
 
+            Texture2D _sample = null;
+            foreach (KeyValuePair<string, LocQAReviewCell> _pair in languageCells)
+            {
+                _sample = fullView && null != _pair.Value.full ? _pair.Value.full : _pair.Value.crop;
+                if (null != _sample) break;
+            }
+            float _aspect = null != _sample ? (float)_sample.height / Mathf.Max(1, _sample.width) : 0.42f;
+            if (ELayout.Grid == layout && false == fullView) _aspect = 0.42f;   // 바둑판에서는 칸 높이를 고르게 맞춘다
+
+            CellLayout _l = ComputeLayout(rows.Count, _gridWidth - 16f, _viewHeight, _aspect, 62f);
+            gridColumns = ELayout.Grid == layout ? _l.columns : 1;
+            gridCellHeight = _l.cellH;
+
+            Rect _view = GUILayoutUtility.GetRect(_gridWidth, _viewHeight, GUILayout.ExpandWidth(true));
             int _selectedIndex = rows.FindIndex(r => r.key == selectedRowKey);
-            float _viewHeight = position.height - TOOLBAR_HEIGHT - DETAIL_HEIGHT - 60f;
             if (true == scrollToSelection && _selectedIndex >= 0)
             {
-                float _y = (_selectedIndex / _columns) * _cellHeight;
-                if (_y < gridScroll.y || _y + _cellHeight > gridScroll.y + _viewHeight) gridScroll.y = Mathf.Max(0f, _y - _cellHeight);
+                ScrollTo(_l, _selectedIndex, new Vector2(_view.width - 16f, _view.height - 16f));
                 scrollToSelection = false;
             }
+            HandleHorizontalWheel(_view);
+            firstVisibleRow = Mathf.Clamp(ELayout.Horizontal == layout ? (int)(gridScroll.x / Mathf.Max(1f, _l.cellW)) : (int)(gridScroll.y / Mathf.Max(1f, _l.cellH)) * Mathf.Max(1, _l.columns), 0, Mathf.Max(0, rows.Count - 1));
 
-            gridScroll = EditorGUILayout.BeginScrollView(gridScroll, GUILayout.Height(Mathf.Max(120f, _viewHeight)));
-            for (int start = 0; start < rows.Count; start += _columns)
+            gridScroll = GUI.BeginScrollView(_view, gridScroll, new Rect(0f, 0f, _l.contentW, _l.contentH));
+            for (int _index = 0; _index < rows.Count; _index++)
             {
-                Rect _line = GUILayoutUtility.GetRect(_gridWidth, _cellHeight);
-                // 화면에 안 보이는 줄은 그리지 않는다. (수백 개 문구에서도 가볍게)
-                if (_line.yMax < gridScroll.y - _cellHeight || _line.y > gridScroll.y + _viewHeight + _cellHeight) continue;
+                Rect _r = CellRect(_l, _index);
+                if (false == IsInView(_r, _view)) continue;
 
-                for (int c = 0; c < _columns && start + c < rows.Count; c++)
+                Row _row = rows[_index];
+                string _key = LanguageKey(_row, _lang);
+                languageCells.TryGetValue(_key, out LocQAReviewCell _cell);
+                LocQAReviewData.EffectiveState _state = null != _row.item
+                    ? LocQAReviewData.Shared.GetEffective(_row.item, _lang, Hashes(_row.entry)[(int)_lang])
+                    : LocQAReviewData.EffectiveState.Todo;
+
+                if (null == _cell)
                 {
-                    int _index = start + c;
-                    Row _row = rows[_index];
-                    Rect _r = new Rect(_line.x + c * _cellWidth + 3f, _line.y + 3f, _cellWidth - 6f, _cellHeight - 6f);
-
-                    string _key = LanguageKey(_row, _lang);
-                    languageCells.TryGetValue(_key, out LocQAReviewCell _cell);
-                    LocQAReviewData.EffectiveState _state = null != _row.item
-                        ? LocQAReviewData.Shared.GetEffective(_row.item, _lang, Hashes(_row.entry)[(int)_lang])
-                        : LocQAReviewData.EffectiveState.Todo;
-
-                    if (null == _cell)
+                    if (EventType.Repaint == Event.current.type)
                     {
-                        if (EventType.Repaint == Event.current.type)
-                        {
-                            EditorGUI.DrawRect(_r, new Color(0f, 0f, 0f, 0.2f));
-                            DrawOutline(_r, _row.key == selectedRowKey ? ColorSelected : StateColor(_state), _row.key == selectedRowKey ? 3f : 1f);
-                        }
-                        languageErrors.TryGetValue(_key, out string _error);
-                        GUI.Label(new Rect(_r.x + 6f, _r.y + 3f, _r.width - 12f, 16f), new GUIContent(_row.label, _row.label), cellHeader);
-                        GUI.Label(new Rect(_r.x + 6f, _r.y + 24f, _r.width - 12f, 40f), _error ?? "그리는 중…", EditorStyles.wordWrappedMiniLabel);
-                        GUI.Label(new Rect(_r.x + 6f, _r.y + 20f + _imageHeight + 2f, _r.width - 12f, 14f), new GUIContent(_row.group, SlotTooltip(_row)), EditorStyles.miniLabel);
-                        if (true == Clicked(_r)) SelectRow(_row.key);
-                        continue;
+                        EditorGUI.DrawRect(_r, new Color(0f, 0f, 0f, 0.2f));
+                        DrawOutline(_r, _row.key == selectedRowKey ? ColorSelected : StateColor(_state), _row.key == selectedRowKey ? 3f : 1f);
                     }
-
-                    if (true == DrawCell(_r, _imageHeight, _row.label, _cell, _state, _row.key == selectedRowKey, null != _row.item, out LocQAReviewState _clicked))
-                    {
-                        SelectRow(_row.key);
-                        if (LocQAReviewState.None != _clicked) SetState(_row, _lang, _clicked);
-                    }
-                    // 어느 화면·칸의 문구인지. (칸 배경을 그린 뒤에 써야 가려지지 않는다)
-                    GUI.Label(new Rect(_r.x + 6f, _r.y + 20f + _imageHeight + 2f, _r.width - 12f, 14f), new GUIContent(_row.group, SlotTooltip(_row)), EditorStyles.miniLabel);
-
-                    if (true == DoubleClicked(_r)) ShowLarge(_row, _lang);
+                    languageErrors.TryGetValue(_key, out string _error);
+                    GUI.Label(new Rect(_r.x + 6f, _r.y + 3f, _r.width - 12f, 16f), new GUIContent(_row.label, _row.label), cellHeader);
+                    GUI.Label(new Rect(_r.x + 6f, _r.y + 24f, _r.width - 12f, 40f), _error ?? "그리는 중…", EditorStyles.wordWrappedMiniLabel);
+                    GUI.Label(new Rect(_r.x + 6f, _r.y + 20f + _l.imageH + 2f, _r.width - 12f, 14f), new GUIContent(_row.group, SlotTooltip(_row)), EditorStyles.miniLabel);
+                    if (true == Clicked(_r)) SelectRow(_row.key);
+                    continue;
                 }
+
+                if (true == DrawCell(_r, _l.imageH, _row.label, _cell, _state, _row.key == selectedRowKey, null != _row.item, out LocQAReviewState _clicked))
+                {
+                    SelectRow(_row.key);
+                    if (LocQAReviewState.None != _clicked) SetState(_row, _lang, _clicked);
+                }
+                // 어느 화면·칸의 문구인지. (칸 배경을 그린 뒤에 써야 가려지지 않는다)
+                GUI.Label(new Rect(_r.x + 6f, _r.y + 20f + _l.imageH + 2f, _r.width - 12f, 14f), new GUIContent(_row.group, SlotTooltip(_row)), EditorStyles.miniLabel);
+
+                if (true == DoubleClicked(_r)) ShowLarge(_row, _lang);
             }
-            EditorGUILayout.EndScrollView();
+            GUI.EndScrollView();
 
             Row _current = CurrentRow();
             if (null != _current)
@@ -742,7 +915,7 @@ namespace LocalizationQA
             if (null != session && sessionCanvas != settings.CanvasSize) DisposeSession();
 
             // 지금 보이는 줄부터 그리고, 그다음 나머지를 차례로.
-            int _first = Mathf.Clamp((int)(gridScroll.y / Mathf.Max(1f, gridCellHeight)) * Mathf.Max(1, gridColumns), 0, rows.Count - 1);
+            int _first = Mathf.Clamp(firstVisibleRow, 0, rows.Count - 1);
             double _start = EditorApplication.timeSinceStartup;
             bool _any = false;
 
@@ -761,7 +934,7 @@ namespace LocalizationQA
                 try
                 {
                     LocQARenderRequest _request = null != _row.item ? LocQARenderRequest.From(_row.item, _row.entry) : LocQARenderRequest.From(_row.slot);
-                    List<LocQAReviewCell> _result = session.Render(_request, new List<Language> { _lang }, false, false, out string _error, out string _note);
+                    List<LocQAReviewCell> _result = session.Render(_request, new List<Language> { _lang }, false, fullView, out string _error, out string _note);
                     if (_result.Count > 0) languageCells[_key] = _result[0];
                     else languageErrors[_key] = _error ?? "그리지 못했습니다.";
                 }
@@ -819,7 +992,7 @@ namespace LocalizationQA
         private string LanguageKey(Row _row, Language _lang)
         {
             StringBuilder _sb = new StringBuilder(_row.key.Length + 48);
-            _sb.Append(_row.key).Append('#').Append((int)_lang).Append('#').Append(settings.ResolutionIndex);
+            _sb.Append(_row.key).Append('#').Append((int)_lang).Append('#').Append(settings.ResolutionIndex).Append(true == fullView ? "#F" : string.Empty);
             if (null != _row.item) _sb.Append('#').Append(_row.item.contextGuid).Append(_row.item.contextPath).Append('#').Append(_row.item.template).Append('#').Append(_row.item.samples);
             return _sb.ToString();
         }
@@ -927,6 +1100,10 @@ namespace LocalizationQA
 
                 if (null != _cell)
                 {
+                    if (true == _cell.invisible)
+                    {
+                        EditorGUILayout.HelpBox("화면에 안 보임: 스크롤·가림막 처리를 해도 이 칸의 글자가 그려지지 않았습니다. 이 그림으로는 판정할 수 없으니 게임에서 직접 확인하세요.", MessageType.Warning);
+                    }
                     for (int i = 0; i < _cell.findings.Count; i++)
                     {
                         if (LocQASeverity.Info == LocQAKinds.Severity(_cell.findings[i].Key)) continue;
@@ -1061,6 +1238,7 @@ namespace LocalizationQA
                 case KeyCode.PageUp: StepRow(-1); break;
                 default: return;
             }
+            scrollToSelection = true;
             _e.Use();
             Repaint();
         }
@@ -1134,9 +1312,24 @@ namespace LocalizationQA
             renderedKey = _key;
             LocQARenderRequest _request = null != _current.item ? LocQARenderRequest.From(_current.item, _current.entry) : LocQARenderRequest.From(_current.slot);
 
+            // 언어 이름 문구는 그 언어 화면에서만 나오므로 그 언어 하나만 그린다.
+            List<Language> _langs = null != _current.item ? LocQALanguages.ShownLanguages(_current.item.entryId, languages) : languages;
+            if (null != _current.item && 0 == _langs.Count && true == LocQALanguages.TryGetOwnLanguage(_current.item.entryId, out Language _own))
+            {
+                cells = new List<LocQAReviewCell>();
+                renderError = $"이 문구는 게임에서 {LocQALanguages.Name(_own)} 화면에서만 나옵니다. 비교 언어에 {LocQALanguages.Name(_own)}를 넣으세요.";
+                renderNote = null;
+                return;
+            }
+
             try
             {
-                cells = LocQAReviewRenderer.Render(_request, languages, settings, out renderError, out renderNote);
+                cells = LocQAReviewRenderer.Render(_request, _langs, settings, out renderError, out renderNote);
+                if (null != _current.item && true == LocQALanguages.TryGetOwnLanguage(_current.item.entryId, out Language _onlyIn))
+                {
+                    string _why = $"언어 이름은 그 언어로 바뀐 화면에서만 나오므로 {LocQALanguages.Name(_onlyIn)} 화면 하나만 검수합니다.";
+                    renderNote = string.IsNullOrEmpty(renderNote) ? _why : renderNote + " " + _why;
+                }
             }
             catch (Exception _ex)
             {
@@ -1209,11 +1402,13 @@ namespace LocalizationQA
                 _referenced.Add(_item.entryId);
 
                 string[] _hashes = Hashes(table.Find(_item.entryId));
+                List<Language> _itemLanguages = LocQALanguages.ShownLanguages(_item.entryId, _progressLanguages);
+                if (0 == _itemLanguages.Count) continue;
                 int _done = 0;
                 int _ng = 0;
-                for (int l = 0; l < _progressLanguages.Count; l++)
+                for (int l = 0; l < _itemLanguages.Count; l++)
                 {
-                    LocQAReviewData.EffectiveState _state = _data.GetEffective(_item, _progressLanguages[l], _hashes[(int)_progressLanguages[l]]);
+                    LocQAReviewData.EffectiveState _state = _data.GetEffective(_item, _itemLanguages[l], _hashes[(int)_itemLanguages[l]]);
                     if (LocQAReviewData.EffectiveState.Ok == _state) _done++;
                     else if (LocQAReviewData.EffectiveState.Ng == _state) { _done++; _ng++; }
                 }
@@ -1224,7 +1419,7 @@ namespace LocalizationQA
                 {
                     ContextRow _c = GetContext(_contexts, _screens[s]);
                     _c.rows++;
-                    _c.total += _progressLanguages.Count;
+                    _c.total += _itemLanguages.Count;
                     _c.done += _done;
                     _c.ng += _ng;
                 }
@@ -1270,6 +1465,8 @@ namespace LocalizationQA
                 LocQAReviewItem _item = _data.Items[i];
                 if (false == LocQAScreenIndex.ScreensOfSlot(_item.contextGuid, _item.slotGuid, settings.prefabFolder).Contains(selectedContext)) continue;
 
+                if (EMode.Language == mode && false == LocQALanguages.ShownIn(_item.entryId, ReviewLanguage)) continue;
+
                 LocQAEntry _entry = table.Find(_item.entryId);
                 Row _row = new Row
                 {
@@ -1279,6 +1476,7 @@ namespace LocalizationQA
                     label = _item.entryId,
                     sub = null != _entry ? OneLine(_entry.data.kr, 50) : "(JSON에 없는 키)"
                 };
+                if (true == LocQALanguages.TryGetOwnLanguage(_item.entryId, out Language _ownLanguage)) _row.sub += $"  · {LocQALanguages.Name(_ownLanguage)} 화면에서만";
                 _row.group = GroupLabel(_row);
                 if (false == PassesFilter(_data, _row)) continue;
                 rows.Add(_row);
@@ -1332,7 +1530,7 @@ namespace LocalizationQA
             if (null != _row.slot) return EFilter.Todo == filter && false == _row.slot.ignored;
 
             string[] _hashes = Hashes(_row.entry);
-            List<Language> _langs = EMode.Language == mode ? new List<Language> { ReviewLanguage } : languages;
+            List<Language> _langs = LocQALanguages.ShownLanguages(_row.item.entryId, EMode.Language == mode ? new List<Language> { ReviewLanguage } : languages);
             bool _todo = false;
             bool _ng = false;
             for (int l = 0; l < _langs.Count; l++)
@@ -1547,7 +1745,8 @@ namespace LocalizationQA
 
         private static string AutoSummary(LocQAReviewCell _cell)
         {
-            string _summary = null;
+            // 글자가 그림에 나타나지 않은 칸은 검수할 수 없으므로 가장 먼저 알린다.
+            string _summary = true == _cell.invisible ? "화면에 안 보임" : null;
             for (int i = 0; i < _cell.findings.Count; i++)
             {
                 LocQAKind _kind = _cell.findings[i].Key;
@@ -1648,6 +1847,31 @@ namespace LocalizationQA
     /// 텍스트 칸에 들어갈 문구를 검색해 여러 개 고르는 창.
     /// 프리팹 이름과 닮은 JSON(예: HUD_Message ↔ MessageHUD)을 먼저 보여준다.
     /// </summary>
+    /// <summary>
+    /// 프리팹이나 번역 JSON이 저장·삭제·이동되면 번호를 올린다. 검수 창은 번호가 바뀌면 띄워 둔 화면을 버리고 새로 그린다.
+    /// (프리팹을 고친 뒤 '다시 읽기'를 누르지 않아도 그림이 바로 바뀌도록)
+    /// </summary>
+    internal sealed class LocQAAssetWatcher : AssetPostprocessor
+    {
+        public static int Version { get; private set; }
+
+        private static void OnPostprocessAllAssets(string[] _imported, string[] _deleted, string[] _moved, string[] _movedFrom)
+        {
+            if (true == Relevant(_imported) || true == Relevant(_deleted) || true == Relevant(_moved)) Version++;
+        }
+
+        private static bool Relevant(string[] _paths)
+        {
+            for (int i = 0; i < _paths.Length; i++)
+            {
+                string _path = _paths[i];
+                if (true == _path.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase)) return true;
+                if (true == _path.EndsWith(".json", StringComparison.OrdinalIgnoreCase) && _path.IndexOf("/Resources/Localization/", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            }
+            return false;
+        }
+    }
+
     internal sealed class LocQAKeyPickerWindow : EditorWindow
     {
         private LocQAStringTable table;
@@ -1930,6 +2154,7 @@ namespace LocalizationQA
                 for (int l = 0; l < _langCount; l++)
                 {
                     Language _lang = LocQALanguages.All[l];
+                    if (false == LocQALanguages.ShownIn(_item.entryId, _lang)) continue; // 게임에 없는 조합 (언어 이름 문구)
                     string _hash = null != _entry ? LocQAReviewData.Hash(LocQALanguages.Resolve(_entry.data, _lang)) : string.Empty;
                     LocQAReviewData.EffectiveState _state = _data.GetEffective(_item, _lang, _hash);
 
