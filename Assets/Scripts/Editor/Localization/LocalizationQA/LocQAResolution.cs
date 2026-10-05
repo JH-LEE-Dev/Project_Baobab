@@ -135,7 +135,49 @@ namespace LocalizationQA
             ("UI_TentAbilityComponent", "EndCircleRevealImmediately"),
         };
 
+        // 앞 창이 열려 있으면 게임이 감추는 뒤 창. 칸이 앞 창 안에 있을 때만 뒤 창을 감춘다.
+        // 프리팹에는 둘 다 켜진 채 저장되어 있어서, 그대로 그리면 뒤 창이 비쳐 보인다.
+        private static readonly (string front, string hidden)[] CoverRules =
+        {
+            // ESC 화면: 옵션 창을 열면 ESC 메뉴는 닫힘 연출로 사라진다. (UIView_ESC.OnOptionButtonClicked → UI_EscapeMenu.PlayCloseProduction)
+            ("UI_Option", "UI_EscapeMenu"),
+        };
+
         private const BindingFlags FLAGS = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+        /// <summary>칸(_target)이 들어 있는 창 때문에 게임에서 감춰지는 다른 창들.</summary>
+        public static List<GameObject> CoveredWindows(Transform _target, Transform _root)
+        {
+            List<GameObject> _result = new List<GameObject>(2);
+            for (int r = 0; r < CoverRules.Length; r++)
+            {
+                if (false == HasAncestorOfType(_target, _root, CoverRules[r].front)) continue;
+
+                MonoBehaviour[] _behaviours = _root.GetComponentsInChildren<MonoBehaviour>(true);
+                for (int i = 0; i < _behaviours.Length; i++)
+                {
+                    MonoBehaviour _b = _behaviours[i];
+                    if (null == _b || _b.GetType().Name != CoverRules[r].hidden) continue;
+                    if (true == _target.IsChildOf(_b.transform)) continue; // 칸을 품은 창은 감추지 않는다
+                    _result.Add(_b.gameObject);
+                }
+            }
+            return _result;
+        }
+
+        private static bool HasAncestorOfType(Transform _target, Transform _root, string _typeName)
+        {
+            for (Transform _t = _target; null != _t; _t = _t.parent)
+            {
+                MonoBehaviour[] _behaviours = _t.GetComponents<MonoBehaviour>();
+                for (int i = 0; i < _behaviours.Length; i++)
+                {
+                    if (null != _behaviours[i] && _behaviours[i].GetType().Name == _typeName) return true;
+                }
+                if (_t == _root) break;
+            }
+            return false;
+        }
 
         /// <summary>화면을 띄운 직후 한 번 실행한다. (등장 연출 종료 상태)</summary>
         public static void RunSetup(GameObject _root)
