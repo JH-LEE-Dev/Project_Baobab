@@ -179,8 +179,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Bosque de la Pradera Verde I
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 37e25419c80146947b6a80fe87f309b3, type: 2}
-  m_sharedMaterial: {fileID: 7589576482440360579, guid: 37e25419c80146947b6a80fe87f309b3, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 4909044e3da435245a063b33ac595034, type: 2}
+  m_sharedMaterial: {fileID: -4971463764404031913, guid: 4909044e3da435245a063b33ac595034, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -405,8 +405,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Encore une belle journ\xE9e paisible pour couper du bois !"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 37e25419c80146947b6a80fe87f309b3, type: 2}
-  m_sharedMaterial: {fileID: 7589576482440360579, guid: 37e25419c80146947b6a80fe87f309b3, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 4909044e3da435245a063b33ac595034, type: 2}
+  m_sharedMaterial: {fileID: -4971463764404031913, guid: 4909044e3da435245a063b33ac595034, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
