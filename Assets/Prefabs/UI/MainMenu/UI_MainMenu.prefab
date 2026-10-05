@@ -119,6 +119,8 @@ MonoBehaviour:
   buttonImage: {fileID: 4399130264765692810}
   dotTarget: {fileID: 7054994348241041646}
   textTarget: {fileID: 1199516035136246397}
+  raycastPaddingLeft: 5
+  raycastPaddingRight: 10
   dotUIEffect: {fileID: 2517419502627464056}
   textUIEffect: {fileID: 3891088760371017779}
   autoStaggerBySiblingIndex: 1
@@ -199,7 +201,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
   m_AnchoredPosition: {x: -80, y: 0}
-  m_SizeDelta: {x: 100, y: 20}
+  m_SizeDelta: {x: 300, y: 20}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &406774117198337820
 CanvasRenderer:
@@ -273,7 +275,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
@@ -692,7 +694,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
   m_AnchoredPosition: {x: -80, y: 0}
-  m_SizeDelta: {x: 100, y: 20}
+  m_SizeDelta: {x: 300, y: 20}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &8986055592310284452
 CanvasRenderer:
@@ -768,7 +770,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
@@ -1351,6 +1353,8 @@ MonoBehaviour:
   buttonImage: {fileID: 5184734663022450210}
   dotTarget: {fileID: 1592435927672888130}
   textTarget: {fileID: 8104278274265621445}
+  raycastPaddingLeft: 5
+  raycastPaddingRight: 10
   dotUIEffect: {fileID: 2697634502252019839}
   textUIEffect: {fileID: 2252734627931721102}
   autoStaggerBySiblingIndex: 1
@@ -2080,7 +2084,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
   m_AnchoredPosition: {x: -80, y: 0}
-  m_SizeDelta: {x: 100, y: 20}
+  m_SizeDelta: {x: 300, y: 20}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &5023046538388880378
 CanvasRenderer:
@@ -2154,7 +2158,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
@@ -2774,6 +2778,8 @@ MonoBehaviour:
   buttonImage: {fileID: 5991875604697520443}
   dotTarget: {fileID: 6046497701183674064}
   textTarget: {fileID: 8371264093573616747}
+  raycastPaddingLeft: 5
+  raycastPaddingRight: 10
   dotUIEffect: {fileID: 8143037376445558179}
   textUIEffect: {fileID: 4572979707382968882}
   autoStaggerBySiblingIndex: 1
@@ -2899,6 +2905,8 @@ MonoBehaviour:
   buttonImage: {fileID: 2154107272205497143}
   dotTarget: {fileID: 2452098752167529511}
   textTarget: {fileID: 6003075653827868177}
+  raycastPaddingLeft: 5
+  raycastPaddingRight: 10
   dotUIEffect: {fileID: 1961798941890216512}
   textUIEffect: {fileID: 570833240162801548}
   autoStaggerBySiblingIndex: 1
@@ -3019,7 +3027,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
   m_AnchoredPosition: {x: -80, y: 0}
-  m_SizeDelta: {x: 100, y: 20}
+  m_SizeDelta: {x: 300, y: 20}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &6511894973012832778
 CanvasRenderer:
@@ -3095,7 +3103,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
@@ -3447,6 +3455,8 @@ MonoBehaviour:
   buttonImage: {fileID: 866607101097628106}
   dotTarget: {fileID: 6655604308340127982}
   textTarget: {fileID: 1440460823462806909}
+  raycastPaddingLeft: 5
+  raycastPaddingRight: 10
   dotUIEffect: {fileID: 8251428065167696521}
   textUIEffect: {fileID: 8135886185790885639}
   autoStaggerBySiblingIndex: 1
@@ -4079,7 +4089,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
   m_AnchoredPosition: {x: -80, y: 0}
-  m_SizeDelta: {x: 100, y: 20}
+  m_SizeDelta: {x: 300, y: 20}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &6081859530209491546
 CanvasRenderer:
@@ -4153,7 +4163,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}

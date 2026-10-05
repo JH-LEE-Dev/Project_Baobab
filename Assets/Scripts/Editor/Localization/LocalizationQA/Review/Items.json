@@ -1959,6 +1959,28 @@
             "samples": ""
         },
         {
+            "slotGuid": "0b2eda5965a8af845b8e07e6b86168c8",
+            "slotPath": "RebindOverlay/PopupWindowRoot/Border/Message",
+            "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
+            "contextPath": "UI_Option/RebindOverlay/PopupWindowRoot/Border/Message",
+            "contextDepth": 1,
+            "entryId": "OptionUI/pressGamepadPrompt",
+            "source": "수동",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0b2eda5965a8af845b8e07e6b86168c8",
+            "slotPath": "RebindOverlay/PopupWindowRoot/Border/Message",
+            "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
+            "contextPath": "UI_Option/RebindOverlay/PopupWindowRoot/Border/Message",
+            "contextDepth": 1,
+            "entryId": "OptionUI/pressKeyPrompt",
+            "source": "수동",
+            "template": "",
+            "samples": ""
+        },
+        {
             "slotGuid": "28f9903af375d014baa13e3c51fbc1d3",
             "slotPath": "Visuals/NameGroup/TMP_Title",
             "contextGuid": "28f9903af375d014baa13e3c51fbc1d3",
@@ -3207,6 +3229,17 @@
             "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
             "contextPath": "UI_InitialSetupPopup/Objets/LanguagePanel/LanguageBox/TitleRow/TXT_Title",
             "contextDepth": 0,
+            "entryId": "MainMenuUI/LanguageSelectTitle",
+            "source": "플레이",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "slotPath": "UI_InitialSetupPopup/Objets/LanguagePanel/LanguageBox/TitleRow/TXT_Title",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_InitialSetupPopup/Objets/LanguagePanel/LanguageBox/TitleRow/TXT_Title",
+            "contextDepth": 0,
             "entryId": "OptionUI/Language",
             "source": "코드분석",
             "template": "",
@@ -3318,28 +3351,6 @@
             "contextPath": "UI_Option/InteractionRoot/Root_OptionPanel/OPT_GamePlay/ViewRect/GP_Contents/OPT_VirtualCursorSensitivity/Visuals/TMP_Title",
             "contextDepth": 2,
             "entryId": "OptionUI/VirtualCursorSensitivity",
-            "source": "코드분석",
-            "template": "",
-            "samples": ""
-        },
-        {
-            "slotGuid": "a623ac0844e86ca4699b60b86e5a1ce4",
-            "slotPath": "Border/RebindText",
-            "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_RebindOverlay/Border/RebindText",
-            "contextDepth": 1,
-            "entryId": "OptionUI/pressGamepadPrompt",
-            "source": "코드분석",
-            "template": "",
-            "samples": ""
-        },
-        {
-            "slotGuid": "a623ac0844e86ca4699b60b86e5a1ce4",
-            "slotPath": "Border/RebindText",
-            "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_RebindOverlay/Border/RebindText",
-            "contextDepth": 1,
-            "entryId": "OptionUI/pressKeyPrompt",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -4057,7 +4068,7 @@
             "contextPath": "UI_Option/RebindOverlay/PopupWindowRoot/Border/Message",
             "contextDepth": 1,
             "defaultText": "변경할 키를 입력하세요.\n(ESC: 취소)",
-            "ignored": true
+            "ignored": false
         },
         {
             "slotGuid": "11aa61b91ae75c34a824c806e706b635",
@@ -4737,11 +4748,11 @@
         {
             "slotGuid": "a623ac0844e86ca4699b60b86e5a1ce4",
             "slotPath": "Border/RebindText",
-            "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
-            "contextPath": "UI_RebindOverlay/Border/RebindText",
-            "contextDepth": 1,
+            "contextGuid": "a623ac0844e86ca4699b60b86e5a1ce4",
+            "contextPath": "Border/RebindText",
+            "contextDepth": 1000,
             "defaultText": "Rebind Waiting..",
-            "ignored": false
+            "ignored": true
         },
         {
             "slotGuid": "a79b591f980f19043b363b64099cb2e9",
@@ -5044,10 +5055,11 @@
     "rejected": [
         "323645c365d430340bfb16e08f94f2f7|BTNs/BTN_Exit/Visual/TMP_Text|AbilityUI/KeyGuide_Exit",
         "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Title|MainMenuUI/LanguageSelectTitle",
-        "0b2eda5965a8af845b8e07e6b86168c8|RebindOverlay/PopupWindowRoot/Border/Message|OptionUI/pressKeyPrompt",
         "e71a00c0d5a01db46b44ac77dab65ba8|ContentRoot/Music /Title|OptionUI/BGMVolume",
         "cd342e10fd24dc842b88530280f46250|Icons/TMP/Text (TMP)|EquipmentHUD/AxeUse",
-        "c12e0ecbfef8767468e41930b0814944|Icons/KeyIcon/OpenText|InventoryUI/Open"
+        "c12e0ecbfef8767468e41930b0814944|Icons/KeyIcon/OpenText|InventoryUI/Open",
+        "a623ac0844e86ca4699b60b86e5a1ce4|Border/RebindText|OptionUI/pressKeyPrompt",
+        "a623ac0844e86ca4699b60b86e5a1ce4|Border/RebindText|OptionUI/pressGamepadPrompt"
     ],
     "unused": [
         {

@@ -17,6 +17,10 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     [SerializeField] private UI_WarningPopupButton confirmButton;
     [SerializeField] private UI_WarningPopupButton cancelButton;
 
+    [Header("Message Width Settings")]
+    [SerializeField] private LayoutElement messageLayoutElement;  // 메시지(TMP)의 폭을 제어하는 LayoutElement. 글자 폭에 맞춰 팝업이 가로로 늘어난다
+    [SerializeField] private float maxMessageWidth = 280f;        // 메시지 최대 폭(px). 넘으면 이 폭에서 줄바꿈한다
+
     /// <summary>
     /// 패드로 팝업이 열렸을 때 처음 잡히는 버튼을 취소 쪽으로 돌릴지입니다.
     ///
@@ -38,6 +42,18 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 
             return confirmButton;
         }
+    }
+
+    /// <summary>
+    /// 메시지의 줄바꿈 없는 글자 폭만큼 팝업이 가로로 늘어나도록 메시지 폭을 정합니다.
+    /// 최대 폭을 넘으면 최대 폭에서 줄바꿈하고, 최소 폭은 프리팹(MainPop의 LayoutElement)이 보장합니다.
+    /// </summary>
+    private void ApplyMessageWidth(string _message)
+    {
+        if (null == messageLayoutElement || null == messageText) return;
+
+        float _naturalWidth = messageText.GetPreferredValues(_message, 10000f, 0f).x;
+        messageLayoutElement.preferredWidth = Mathf.Min(_naturalWidth, maxMessageWidth);
     }
 
     /// <summary>ShowWarning을 부르기 직전에 지정합니다. 지정하지 않으면 확인 버튼이 잡힙니다.</summary>
@@ -269,7 +285,10 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         SubscribeInputEvents();
 
         if (null != messageText)
+        {
             messageText.text = _message;
+            ApplyMessageWidth(_message);
+        }
 
         onConfirmAction = _onConfirm;
         onCancelAction = _onCancel;
