@@ -688,6 +688,13 @@ namespace LocalizationQA
         public string defaultUiFontGuid = "";
         public int resolutionIndex = -1;   // LocQAResolution.All의 인덱스. -1이면 기본(1920×1080)
 
+        // 사람 검수 창의 보기 방식
+        //  인게임: 게임이 실행 중에 붙이는 부품(툴팁·키 설정 행 등)을 실제 화면의 그 자리에, 게임과 같은 내용·탭 상태로 그린다.
+        //          화면에 걸친 UI는 옮기지 않아 화면 가장자리에서 잘리는 것도 게임처럼 보인다.
+        //  UI 집중: 부품을 단독으로 그리고, 화면 밖으로 조금이라도 나간 UI는 가운데로 옮겨 전체가 보이게 한다.
+        public int viewMode = 0;
+        public bool InGameView => 0 == viewMode;
+
         public int ResolutionIndex => resolutionIndex < 0 ? LocQAResolution.DefaultIndex : Mathf.Clamp(resolutionIndex, 0, LocQAResolution.All.Count - 1);
         public LocQAResolution.Preset Resolution => LocQAResolution.Get(ResolutionIndex);
         public Vector2 CanvasSize => Resolution.CanvasSize;

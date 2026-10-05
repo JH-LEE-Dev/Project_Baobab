@@ -56,6 +56,12 @@ namespace LocalizationQA
             Vertical
         }
 
+        private static readonly GUIContent[] ViewModeLabels =
+        {
+            new GUIContent("인게임 보기", "게임 화면 그대로 봅니다. 게임이 실행 중에 붙이는 부품(특성 툴팁·키 설정 행·데모 안내·말풍선)을 실제 화면의 그 자리에,\n게임과 같은 내용·탭 상태로 그리고, 화면 가장자리에서 잘리는 것도 게임처럼 보여줍니다."),
+            new GUIContent("UI 집중 보기", "UI 하나만 봅니다. 부품을 단독으로 그리고, 화면 밖으로 조금이라도 나간 UI는 가운데로 옮겨 전체가 보이게 합니다.\n(문구가 칸에 들어가는지만 빠르게 볼 때)"),
+        };
+
         private static readonly GUIContent[] LayoutLabels =
         {
             new GUIContent("바둑판", "여러 칸을 바둑판처럼 나란히 봅니다."),
@@ -362,6 +368,16 @@ namespace LocalizationQA
                     layout = _layout;
                     gridScroll = Vector2.zero;
                     scrollToSelection = true;
+                }
+                EditorGUI.BeginChangeCheck();
+                int _viewMode = EditorGUILayout.Popup(settings.viewMode, ViewModeLabels, EditorStyles.toolbarPopup, GUILayout.Width(92f));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    // 띄워 둔 화면에 붙인 부품·상태가 보기마다 다르므로 새로 띄운다.
+                    settings.viewMode = _viewMode;
+                    settings.Save();
+                    ResetCaches();
+                    GUIUtility.ExitGUI();
                 }
                 bool _maximized = GUILayout.Toggle(maximized, new GUIContent("창 최대화", "검수 창을 에디터 전체 크기로 키웁니다. 다시 누르면 원래대로 돌아옵니다."), EditorStyles.toolbarButton, GUILayout.Width(64f));
                 if (_maximized != maximized) maximized = _maximized;
@@ -992,7 +1008,7 @@ namespace LocalizationQA
         private string LanguageKey(Row _row, Language _lang)
         {
             StringBuilder _sb = new StringBuilder(_row.key.Length + 48);
-            _sb.Append(_row.key).Append('#').Append((int)_lang).Append('#').Append(settings.ResolutionIndex).Append(true == fullView ? "#F" : string.Empty);
+            _sb.Append(_row.key).Append('#').Append((int)_lang).Append('#').Append(settings.ResolutionIndex).Append('#').Append(settings.viewMode).Append(true == fullView ? "#F" : string.Empty);
             if (null != _row.item) _sb.Append('#').Append(_row.item.contextGuid).Append(_row.item.contextPath).Append('#').Append(_row.item.template).Append('#').Append(_row.item.samples);
             return _sb.ToString();
         }
@@ -1345,7 +1361,7 @@ namespace LocalizationQA
             _sb.Append(_row.key).Append('#');
             for (int i = 0; i < languages.Count; i++) _sb.Append((int)languages[i]).Append(',');
             if (null != _row.item) _sb.Append(_row.item.contextGuid).Append(_row.item.contextPath).Append('#').Append(_row.item.template).Append('#').Append(_row.item.samples);
-            _sb.Append('#').Append(settings.ResolutionIndex);
+            _sb.Append('#').Append(settings.ResolutionIndex).Append('#').Append(settings.viewMode);
             return _sb.ToString();
         }
 

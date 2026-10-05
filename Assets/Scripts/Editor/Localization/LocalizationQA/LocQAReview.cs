@@ -1097,7 +1097,7 @@ namespace LocalizationQA
             // 게임이 다른 화면에 붙이는 부품이면 그 화면 안의 그 자리에서 그린다. (LocQAHosting)
             string _contextGuid = _request.contextGuid;
             string _contextPath = _request.contextPath;
-            if (true == LocQAHosting.TryRedirect(_contextGuid, _contextPath, null != _request.entry ? _request.entry.id : null, out string _hostGuid, out string _hostPath))
+            if (true == settings.InGameView && true == LocQAHosting.TryRedirect(_contextGuid, _contextPath, null != _request.entry ? _request.entry.id : null, out string _hostGuid, out string _hostPath))
             {
                 _contextGuid = _hostGuid;
                 _contextPath = _hostPath;
@@ -1121,7 +1121,7 @@ namespace LocalizationQA
             }
 
             // 그 칸이 보일 때의 화면 상태(고른 탭, 툴팁 내용 등)로 맞춘다.
-            hostPlan = LocQAHosting.Begin(instance, _target, _request.entry, table);
+            hostPlan = true == settings.InGameView ? LocQAHosting.Begin(instance, _target, _request.entry, table) : null;
 
             Reveal(_target);
 
@@ -1338,7 +1338,7 @@ namespace LocalizationQA
 
             // 게임이 실행 중에 이 화면에 붙이는 부품을 먼저 붙인다. (그 텍스트도 함께 모으도록)
             hostFills.Clear();
-            LocQAHosting.Attach(instance, _contextGuid, hostFills);
+            if (true == settings.InGameView) LocQAHosting.Attach(instance, _contextGuid, hostFills);
             records = LocQAPrefabScanner.BuildRecords(instance, _contextGuid, _prefab.name, table, bindings);
 
             baseEntries = new LocQAEntry[records.Count];
@@ -1645,8 +1645,10 @@ namespace LocalizationQA
 
             // 화면에 조금이라도 걸쳐 있으면 옮기지 않는다. 게임에서도 그 자리라 화면 밖으로 잘리는 것까지 그대로 보여야 한다.
             // (넓은 툴팁이 화면 오른쪽에서 잘리는 것 등) 완전히 밖에 있는 것은 등장 연출로 들어오는 UI다.
+            // (UI 집중 보기에서는 조금이라도 나가면 옮겨 전체가 보이게 한다)
             Rect _canvas = stage.canvasRoot.rect;
-            if (true == _region.Overlaps(_canvas)) return false;
+            bool _inside = _region.xMin >= _canvas.xMin && _region.xMax <= _canvas.xMax && _region.yMin >= _canvas.yMin && _region.yMax <= _canvas.yMax;
+            if (true == _inside || (true == settings.InGameView && true == _region.Overlaps(_canvas))) return false;
 
             Vector3 _delta = stage.canvasRoot.TransformVector(new Vector3(_canvas.center.x - _region.center.x, _canvas.center.y - _region.center.y, 0f));
             instance.transform.position += _delta;
