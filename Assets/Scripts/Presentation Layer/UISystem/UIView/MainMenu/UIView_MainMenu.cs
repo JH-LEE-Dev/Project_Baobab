@@ -54,9 +54,11 @@ public class UIView_MainMenu : UIView
     // GameInstaller.prefab의 SkyCameraProductionManager.moveEase 직렬화 값(10)과 동일
     [SerializeField] private Ease exitMoveEase = (Ease)10;
 
-    [Header("Debug")]
+#if UNITY_EDITOR
+    [Header("Debug (빌드에는 포함되지 않음)")]
     [SerializeField, Tooltip("체크하면 에디터 환경에서 스플래시와 로고 연출을 건너뛰고 바로 메인 메뉴를 출력합니다.")]
     private bool skipIntroInEditor = true;
+#endif
 
     // 내부 상태 및 캐시
     private RectTransform rootRectTransform;

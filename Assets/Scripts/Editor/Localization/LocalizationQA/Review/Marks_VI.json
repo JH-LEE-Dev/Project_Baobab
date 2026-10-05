@@ -2,12 +2,908 @@
     "language": "VI",
     "marks": [
         {
+            "item": "0b2eda5965a8af845b8e07e6b86168c8|InteractionRoot/Root_OptionPanel/OPT_Control/BTN_AllReset/IMG/Text (TMP)|OptionUI/resetToDefault",
+            "state": 1,
+            "hash": "c1fbd4fe",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:24"
+        },
+        {
+            "item": "0b2eda5965a8af845b8e07e6b86168c8|InteractionRoot/Root_OptionPanel/OPT_GamePlay/BTN_Apply/IMG/Text (TMP)|OptionUI/apply",
+            "state": 1,
+            "hash": "1fc76c94",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:24"
+        },
+        {
+            "item": "0b2eda5965a8af845b8e07e6b86168c8|InteractionRoot/Root_TabGroups/BTN_Control/C_TMP_Text|OptionUI/tabControl",
+            "state": 1,
+            "hash": "09468dff",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:20"
+        },
+        {
+            "item": "0b2eda5965a8af845b8e07e6b86168c8|InteractionRoot/Root_TabGroups/BTN_GamePlay/GP_TMP_Text|OptionUI/tabGameplay",
+            "state": 1,
+            "hash": "7d0c7072",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:20"
+        },
+        {
+            "item": "0b2eda5965a8af845b8e07e6b86168c8|InteractionRoot/Root_TabGroups/BTN_Graphics/G_TMP_Text|OptionUI/tabGraphic",
+            "state": 1,
+            "hash": "1df2dd06",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:20"
+        },
+        {
+            "item": "0b2eda5965a8af845b8e07e6b86168c8|InteractionRoot/Root_TabGroups/BTN_Sounds/SD_TMP_Text|OptionUI/tabSound",
+            "state": 1,
+            "hash": "8a6a26e1",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:20"
+        },
+        {
+            "item": "0b2eda5965a8af845b8e07e6b86168c8|RebindOverlay/PopupWindowRoot/Border/Message|OptionUI/pressGamepadPrompt",
+            "state": 1,
+            "hash": "a839a3cd",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:16"
+        },
+        {
+            "item": "0b2eda5965a8af845b8e07e6b86168c8|RebindOverlay/PopupWindowRoot/Border/Message|OptionUI/pressKeyPrompt",
+            "state": 1,
+            "hash": "651d6e82",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:22"
+        },
+        {
+            "item": "28f9903af375d014baa13e3c51fbc1d3|Visuals/NameGroup/TMP_Title|OptionUI/attack",
+            "state": 1,
+            "hash": "2a9375f8",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:23"
+        },
+        {
+            "item": "28f9903af375d014baa13e3c51fbc1d3|Visuals/NameGroup/TMP_Title|OptionUI/interaction",
+            "state": 1,
+            "hash": "b688b997",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:23"
+        },
+        {
+            "item": "28f9903af375d014baa13e3c51fbc1d3|Visuals/NameGroup/TMP_Title|OptionUI/inventory",
+            "state": 1,
+            "hash": "b9b2694e",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:24"
+        },
+        {
+            "item": "28f9903af375d014baa13e3c51fbc1d3|Visuals/NameGroup/TMP_Title|OptionUI/logSwap",
+            "state": 1,
+            "hash": "39b5f6f5",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:24"
+        },
+        {
+            "item": "28f9903af375d014baa13e3c51fbc1d3|Visuals/NameGroup/TMP_Title|OptionUI/moveDown",
+            "state": 1,
+            "hash": "33729b2b",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:24"
+        },
+        {
+            "item": "28f9903af375d014baa13e3c51fbc1d3|Visuals/NameGroup/TMP_Title|OptionUI/moveLeft",
+            "state": 1,
+            "hash": "eff01e0f",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:24"
+        },
+        {
+            "item": "28f9903af375d014baa13e3c51fbc1d3|Visuals/NameGroup/TMP_Title|OptionUI/moveRight",
+            "state": 1,
+            "hash": "6a23a44b",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:24"
+        },
+        {
+            "item": "28f9903af375d014baa13e3c51fbc1d3|Visuals/NameGroup/TMP_Title|OptionUI/moveUp",
+            "state": 1,
+            "hash": "22ea4606",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:24"
+        },
+        {
+            "item": "28f9903af375d014baa13e3c51fbc1d3|Visuals/NameGroup/TMP_Title|OptionUI/potionKey",
+            "state": 1,
+            "hash": "cc144236",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:25"
+        },
+        {
+            "item": "323645c365d430340bfb16e08f94f2f7|BTNs/BTN_Credit/Visual/TMP_Dot|MainMenuUI/DotText",
+            "state": 1,
+            "hash": "4335acb9",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:39"
+        },
+        {
+            "item": "323645c365d430340bfb16e08f94f2f7|BTNs/BTN_Credit/Visual/TMP_Text|MainMenuUI/Credits",
+            "state": 1,
+            "hash": "569d659c",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:39"
+        },
+        {
+            "item": "323645c365d430340bfb16e08f94f2f7|BTNs/BTN_Exit/Visual/TMP_Dot|MainMenuUI/DotText",
+            "state": 1,
+            "hash": "4335acb9",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:39"
+        },
+        {
+            "item": "323645c365d430340bfb16e08f94f2f7|BTNs/BTN_Exit/Visual/TMP_Text|MainMenuUI/Exit",
+            "state": 1,
+            "hash": "9cd0552f",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:40"
+        },
+        {
+            "item": "323645c365d430340bfb16e08f94f2f7|BTNs/BTN_LoadGame/Visual/TMP_Dot|MainMenuUI/DotText",
+            "state": 1,
+            "hash": "4335acb9",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:39"
+        },
+        {
+            "item": "323645c365d430340bfb16e08f94f2f7|BTNs/BTN_LoadGame/Visual/TMP_Text|MainMenuUI/LoadGame",
+            "state": 1,
+            "hash": "0b4565b1",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:40"
+        },
+        {
+            "item": "323645c365d430340bfb16e08f94f2f7|BTNs/BTN_NewGame/Visual/TMP_Dot|MainMenuUI/DotText",
+            "state": 1,
+            "hash": "4335acb9",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:39"
+        },
+        {
+            "item": "323645c365d430340bfb16e08f94f2f7|BTNs/BTN_NewGame/Visual/TMP_Text|MainMenuUI/NewGame",
+            "state": 1,
+            "hash": "a2f42177",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:40"
+        },
+        {
+            "item": "323645c365d430340bfb16e08f94f2f7|BTNs/BTN_Option/Visual/TMP_Dot|MainMenuUI/DotText",
+            "state": 1,
+            "hash": "4335acb9",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:39"
+        },
+        {
+            "item": "323645c365d430340bfb16e08f94f2f7|BTNs/BTN_Option/Visual/TMP_Text|MainMenuUI/Options",
+            "state": 1,
+            "hash": "59a838ff",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:41"
+        },
+        {
+            "item": "380342ca825ed8643bdca4bd050d56c6|Visuals/Body/Text (TMP)|SpeechBubbleUI/AxeDurabilityEmpty",
+            "state": 1,
+            "hash": "603f5477",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:32"
+        },
+        {
+            "item": "380342ca825ed8643bdca4bd050d56c6|Visuals/Body/Text (TMP)|SpeechBubbleUI/InventoryFull",
+            "state": 1,
+            "hash": "ad87c906",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:33"
+        },
+        {
+            "item": "380342ca825ed8643bdca4bd050d56c6|Visuals/Body/Text (TMP)|SpeechBubbleUI/ItemCantAcquired",
+            "state": 1,
+            "hash": "b8a0f1f5",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:33"
+        },
+        {
+            "item": "4ae2b0a891e214945add8961418fbea8|Groups/Field_TMP/TMP_Desc|DemoNoticeUI/Description",
+            "state": 1,
+            "hash": "d93b6202",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:27"
+        },
+        {
+            "item": "4ae2b0a891e214945add8961418fbea8|Groups/Field_TMP/TMP_Desc|DemoNoticeUI/DescriptionStove",
+            "state": 1,
+            "hash": "29d50911",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:26"
+        },
+        {
+            "item": "4ae2b0a891e214945add8961418fbea8|Groups/Field_TMP/TMP_Title|DemoNoticeUI/Title",
+            "state": 1,
+            "hash": "9b1b29c2",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:25"
+        },
+        {
+            "item": "520d4e0f53cfd9249aef204c9c7eb9a1|Buttons/Buttons_0/Ray/Text (TMP)|EscapeMenuUI/Resume",
+            "state": 1,
+            "hash": "0b4565b1",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:20"
+        },
+        {
+            "item": "520d4e0f53cfd9249aef204c9c7eb9a1|Buttons/Buttons_1/Ray/Text (TMP)|EscapeMenuUI/Option",
+            "state": 1,
+            "hash": "59a838ff",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:20"
+        },
+        {
+            "item": "520d4e0f53cfd9249aef204c9c7eb9a1|Buttons/Buttons_2/Ray/Text (TMP)|EscapeMenuUI/MainMenu",
+            "state": 1,
+            "hash": "47934966",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:19"
+        },
+        {
+            "item": "520d4e0f53cfd9249aef204c9c7eb9a1|Buttons/Buttons_3/Ray/Text (TMP)|EscapeMenuUI/ExitGame",
+            "state": 1,
+            "hash": "af5f23b8",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:19"
+        },
+        {
+            "item": "644c96ad309ba114f9743fd5b9c6d5eb|MainPop/MessageUI/Border/Message|EscapeMenuUI/ExitGameWarning",
+            "state": 1,
+            "hash": "1dd386b0",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:17"
+        },
+        {
+            "item": "644c96ad309ba114f9743fd5b9c6d5eb|MainPop/MessageUI/Border/Message|EscapeMenuUI/MainMenuWarning",
+            "state": 1,
+            "hash": "dcd9d2a6",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:17"
+        },
+        {
+            "item": "644c96ad309ba114f9743fd5b9c6d5eb|MainPop/MessageUI/Border/Message|MainMenuUI/NewGameWarning",
+            "state": 1,
+            "hash": "64fa3c68",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:17"
+        },
+        {
+            "item": "644c96ad309ba114f9743fd5b9c6d5eb|MainPop/MessageUI/Border/Message|OptionUI/resetAllWarning",
+            "state": 1,
+            "hash": "7189c99f",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:18"
+        },
+        {
+            "item": "644c96ad309ba114f9743fd5b9c6d5eb|MainPop/MessageUI/Border/Message|OptionUI/unsavedChangesWarning",
+            "state": 1,
+            "hash": "54999d69",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:19"
+        },
+        {
+            "item": "644c96ad309ba114f9743fd5b9c6d5eb|MainPop/MessageUI/Border/Message|SaveCheckUI/AbandonMessage",
+            "state": 1,
+            "hash": "6c53868f",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 16:41"
+        },
+        {
+            "item": "644c96ad309ba114f9743fd5b9c6d5eb|MainPop/MessageUI/Border/Message|SaveCheckUI/FailedMessage",
+            "state": 1,
+            "hash": "495d1232",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:21"
+        },
+        {
             "item": "7fac8189cec29354da87489252a0394e|Guide_Text|AbilityUI/KeyGuide_Zoom",
             "state": 1,
             "hash": "26c58c0a",
             "memo": "",
             "by": "ywy2arcaea@gmail.com",
             "at": "2026-10-05 14:04"
+        },
+        {
+            "item": "822e4581f49c2334db9d0c23560726c4|TextGroup/Desc|TutorialQuestUI/FillOffroadContainer_Desc",
+            "state": 1,
+            "hash": "2a951610",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:29"
+        },
+        {
+            "item": "822e4581f49c2334db9d0c23560726c4|TextGroup/Main|TutorialQuestUI/CutTree_Title",
+            "state": 1,
+            "hash": "a34a85ee",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:29"
+        },
+        {
+            "item": "822e4581f49c2334db9d0c23560726c4|TextGroup/Main|TutorialQuestUI/FillOffroadContainer_Title",
+            "state": 1,
+            "hash": "ec5a0882",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:29"
+        },
+        {
+            "item": "822e4581f49c2334db9d0c23560726c4|TextGroup/Main|TutorialQuestUI/GoHomeBeforeExhausted_Title",
+            "state": 1,
+            "hash": "656aa8e1",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:29"
+        },
+        {
+            "item": "822e4581f49c2334db9d0c23560726c4|TextGroup/Main|TutorialQuestUI/PutItemsInLogContainer_Title",
+            "state": 1,
+            "hash": "38991c69",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:29"
+        },
+        {
+            "item": "822e4581f49c2334db9d0c23560726c4|TextGroup/Main|TutorialQuestUI/ReceiveMoney_Title",
+            "state": 1,
+            "hash": "587c3ac5",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:30"
+        },
+        {
+            "item": "822e4581f49c2334db9d0c23560726c4|TextGroup/Main|TutorialQuestUI/StartNewLogging_Title",
+            "state": 1,
+            "hash": "48c09a6b",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:30"
+        },
+        {
+            "item": "822e4581f49c2334db9d0c23560726c4|TextGroup/Main|TutorialQuestUI/UnlockNewRegion_Title",
+            "state": 1,
+            "hash": "38898adf",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:30"
+        },
+        {
+            "item": "822e4581f49c2334db9d0c23560726c4|TextGroup/Main|TutorialQuestUI/UpgradeAxe_Title",
+            "state": 1,
+            "hash": "bd404e83",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:31"
+        },
+        {
+            "item": "8b5ca9580ec054340a2f53628082dcd7|--- [ IntroScene ] ---/Intro/0|OpeningProductionUI/Opening_Monologue_0",
+            "state": 1,
+            "hash": "66926d97",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:28"
+        },
+        {
+            "item": "8b5ca9580ec054340a2f53628082dcd7|--- [ IntroScene ] ---/Intro/1|OpeningProductionUI/Opening_Monologue_1",
+            "state": 1,
+            "hash": "5188f100",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:28"
+        },
+        {
+            "item": "8b5ca9580ec054340a2f53628082dcd7|--- [ IntroScene ] ---/Intro/2|OpeningProductionUI/Opening_Monologue_2",
+            "state": 1,
+            "hash": "8a5d656a",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:28"
+        },
+        {
+            "item": "8b5ca9580ec054340a2f53628082dcd7|--- [ IntroScene ] ---/Intro/3|OpeningProductionUI/Opening_Monologue_3",
+            "state": 1,
+            "hash": "8b31b4a1",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:29"
+        },
+        {
+            "item": "9e70dd265ec476441b020914870499a9|--- [ Interactions ]/--- [ Group_NaviField ]/IMG_Popup/Field_Title/TMP_Title|MenuPopupUI/mapName_2",
+            "state": 1,
+            "hash": "001c4b9a",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:25"
+        },
+        {
+            "item": "9e70dd265ec476441b020914870499a9|--- [ Interactions ]/--- [ Group_NaviField ]/IMG_Popup/Field_Title/TMP_Title|MenuPopupUI/mapName_3",
+            "state": 1,
+            "hash": "3e95c5ca",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:26"
+        },
+        {
+            "item": "9e70dd265ec476441b020914870499a9|--- [ Interactions ]/--- [ Group_NaviField ]/IMG_Popup/Field_Title/TMP_Title|MenuPopupUI/mapName_4",
+            "state": 1,
+            "hash": "94759b5f",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:26"
+        },
+        {
+            "item": "9e70dd265ec476441b020914870499a9|--- [ Interactions ]/--- [ Group_NaviField ]/IMG_Popup/Field_Title/TMP_Title|MenuPopupUI/mapName_5",
+            "state": 1,
+            "hash": "2fae2389",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:26"
+        },
+        {
+            "item": "9ebf378887fd90d49a073c3a90cce74c|UI_InitialSetupPopup/Objets/ConsentPanel/DescTMP|MainMenuUI/ConsentDesc",
+            "state": 1,
+            "hash": "366ff08d",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:34"
+        },
+        {
+            "item": "9ebf378887fd90d49a073c3a90cce74c|UI_InitialSetupPopup/Objets/ConsentPanel/TitleTMP|MainMenuUI/ConsentTitle",
+            "state": 1,
+            "hash": "6b08a3b9",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:34"
+        },
+        {
+            "item": "9ebf378887fd90d49a073c3a90cce74c|UI_InitialSetupPopup/Objets/ConsentPanel/Toggle/ToggleTMP|MainMenuUI/ConsentAgree",
+            "state": 1,
+            "hash": "86d0b1d6",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:37"
+        },
+        {
+            "item": "9ebf378887fd90d49a073c3a90cce74c|UI_InitialSetupPopup/Objets/ConsentPanel/Toggle_Disagree/ToggleTMP|MainMenuUI/ConsentDisagree",
+            "state": 1,
+            "hash": "1929ef28",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:37"
+        },
+        {
+            "item": "9ebf378887fd90d49a073c3a90cce74c|UI_InitialSetupPopup/Objets/LanguagePanel/LanguageBox/LanguageSelector/ValueFrame/TXT_Vietnam|OptionUI/LanguageVietnamese",
+            "state": 1,
+            "hash": "feab4202",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:39"
+        },
+        {
+            "item": "9ebf378887fd90d49a073c3a90cce74c|UI_InitialSetupPopup/Objets/LanguagePanel/LanguageBox/TitleRow/TXT_Title|OptionUI/Language",
+            "state": 1,
+            "hash": "6d7db174",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:37"
+        },
+        {
+            "item": "a04d60f53f5cf234180a7e1bf8d4045d|Visuals/TMP_Title|OptionUI/BGMVolume",
+            "state": 1,
+            "hash": "e2f1826a",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:17"
+        },
+        {
+            "item": "a04d60f53f5cf234180a7e1bf8d4045d|Visuals/TMP_Title|OptionUI/CameraShake",
+            "state": 1,
+            "hash": "a5768b5e",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:58"
+        },
+        {
+            "item": "a04d60f53f5cf234180a7e1bf8d4045d|Visuals/TMP_Title|OptionUI/ChromaticAberration",
+            "state": 1,
+            "hash": "fcf8e4f2",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:17"
+        },
+        {
+            "item": "a04d60f53f5cf234180a7e1bf8d4045d|Visuals/TMP_Title|OptionUI/CrosshairBrightness",
+            "state": 1,
+            "hash": "be9c17e7",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:58"
+        },
+        {
+            "item": "a04d60f53f5cf234180a7e1bf8d4045d|Visuals/TMP_Title|OptionUI/HapticStrength",
+            "state": 1,
+            "hash": "65eed528",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:17"
+        },
+        {
+            "item": "a04d60f53f5cf234180a7e1bf8d4045d|Visuals/TMP_Title|OptionUI/MasterVolume",
+            "state": 1,
+            "hash": "fea25f46",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:14"
+        },
+        {
+            "item": "a04d60f53f5cf234180a7e1bf8d4045d|Visuals/TMP_Title|OptionUI/SFXVolume",
+            "state": 1,
+            "hash": "1ebdfd9e",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:17"
+        },
+        {
+            "item": "a04d60f53f5cf234180a7e1bf8d4045d|Visuals/TMP_Title|OptionUI/ScreenBrightness",
+            "state": 1,
+            "hash": "fb4d40b1",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:18"
+        },
+        {
+            "item": "a04d60f53f5cf234180a7e1bf8d4045d|Visuals/TMP_Title|OptionUI/ScreenSaturation",
+            "state": 1,
+            "hash": "e81f663f",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:18"
+        },
+        {
+            "item": "a04d60f53f5cf234180a7e1bf8d4045d|Visuals/TMP_Title|OptionUI/VirtualCursorSensitivity",
+            "state": 1,
+            "hash": "065b5d1d",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:18"
+        },
+        {
+            "item": "a623ac0844e86ca4699b60b86e5a1ce4|Border/RebindText|OptionUI/pressGamepadPrompt",
+            "state": 2,
+            "hash": "a839a3cd",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:26"
+        },
+        {
+            "item": "bd28f55901e93bd4aa5204630655ec49|Text (TMP)|MainMenuUI/PressAnyKey",
+            "state": 1,
+            "hash": "6af108e1",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:41"
+        },
+        {
+            "item": "eca5975b15124c0781844633a23091ae|CheckingPanel/Text_Checking|SaveCheckUI/CheckingMessage",
+            "state": 1,
+            "hash": "ccc080f1",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:31"
+        },
+        {
+            "item": "edc3b765b8e25be4a8ff664cf503693e|Root/MainText|WarningUI/mainText",
+            "state": 1,
+            "hash": "748cc916",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:33"
+        },
+        {
+            "item": "edc3b765b8e25be4a8ff664cf503693e|Root/SubText|WarningUI/subText",
+            "state": 1,
+            "hash": "11a6cabe",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:33"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Description|LootTooltipUI/foundbox",
+            "state": 1,
+            "hash": "51aaf8bd",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:32"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Description|LootTooltipUI/sporepotion",
+            "state": 1,
+            "hash": "2c8cc601",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:43"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Name|LootTooltipUI/name_lostandfoundbox",
+            "state": 1,
+            "hash": "c26c6b65",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:44"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Title|OptionUI/DataConsent",
+            "state": 1,
+            "hash": "aafa3a6c",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:57"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Title|OptionUI/FPS",
+            "state": 1,
+            "hash": "00ad61c8",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:00"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Title|OptionUI/GamepadIconPreference",
+            "state": 1,
+            "hash": "a79a5869",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:02"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Title|OptionUI/Language",
+            "state": 1,
+            "hash": "6d7db174",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:02"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Title|OptionUI/PauseOnUnfocus",
+            "state": 1,
+            "hash": "29cf7505",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:05"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Title|OptionUI/Resolution",
+            "state": 1,
+            "hash": "f4885ef6",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:05"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Title|OptionUI/WindowMode",
+            "state": 1,
+            "hash": "ce4abe4a",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:05"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Value|OptionUI/DataConsentDeclined",
+            "state": 1,
+            "hash": "ced882d7",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:58"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Value|OptionUI/DataConsentGranted",
+            "state": 1,
+            "hash": "556a32e4",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:11"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Value|OptionUI/Fullscreen",
+            "state": 1,
+            "hash": "45c4fd7b",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:11"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Value|OptionUI/GamepadIconAuto",
+            "state": 1,
+            "hash": "c14cc827",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:12"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Value|OptionUI/GamepadIconGeneric",
+            "state": 1,
+            "hash": "2cf51eae",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:12"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Value|OptionUI/LanguageVietnamese",
+            "state": 1,
+            "hash": "feab4202",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:15"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Value|OptionUI/Off",
+            "state": 1,
+            "hash": "20401fd0",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:19"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Value|OptionUI/On",
+            "state": 1,
+            "hash": "9d656364",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:19"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Value|OptionUI/Unlimited",
+            "state": 1,
+            "hash": "526dec04",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:19"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Value|OptionUI/VSync",
+            "state": 1,
+            "hash": "b17ed60f",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:18"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Value|OptionUI/Windowed",
+            "state": 1,
+            "hash": "cac46c48",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:18"
+        },
+        {
+            "item": "fe8baa3bc073aaa459f4d803c40ee997|Visuals/TMP_Title|OptionUI/attack",
+            "state": 1,
+            "hash": "2a9375f8",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:22"
+        },
+        {
+            "item": "fe8baa3bc073aaa459f4d803c40ee997|Visuals/TMP_Title|OptionUI/interaction",
+            "state": 1,
+            "hash": "b688b997",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:22"
+        },
+        {
+            "item": "fe8baa3bc073aaa459f4d803c40ee997|Visuals/TMP_Title|OptionUI/inventory",
+            "state": 1,
+            "hash": "b9b2694e",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:22"
+        },
+        {
+            "item": "fe8baa3bc073aaa459f4d803c40ee997|Visuals/TMP_Title|OptionUI/logSwap",
+            "state": 1,
+            "hash": "39b5f6f5",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:22"
+        },
+        {
+            "item": "fe8baa3bc073aaa459f4d803c40ee997|Visuals/TMP_Title|OptionUI/moveDown",
+            "state": 1,
+            "hash": "33729b2b",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:22"
+        },
+        {
+            "item": "fe8baa3bc073aaa459f4d803c40ee997|Visuals/TMP_Title|OptionUI/moveLeft",
+            "state": 1,
+            "hash": "eff01e0f",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:22"
+        },
+        {
+            "item": "fe8baa3bc073aaa459f4d803c40ee997|Visuals/TMP_Title|OptionUI/moveRight",
+            "state": 1,
+            "hash": "6a23a44b",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:22"
+        },
+        {
+            "item": "fe8baa3bc073aaa459f4d803c40ee997|Visuals/TMP_Title|OptionUI/moveUp",
+            "state": 1,
+            "hash": "22ea4606",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:22"
+        },
+        {
+            "item": "fe8baa3bc073aaa459f4d803c40ee997|Visuals/TMP_Title|OptionUI/potionKey",
+            "state": 1,
+            "hash": "cc144236",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 15:23"
         }
     ]
 }

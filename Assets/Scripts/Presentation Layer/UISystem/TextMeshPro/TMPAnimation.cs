@@ -36,8 +36,11 @@ namespace PresentationLayer.UISystem
         [SerializeField] private float jumpAmplitude = 15.0f;
         [SerializeField] private float earthquakeIntensity = 1.0f;
 
-        [Header("Debug")]
+#if UNITY_EDITOR
+        // 디버그 로그 스위치. 빌드에는 포함되지 않는다.
+        [Header("Debug (빌드에는 포함되지 않음)")]
         [SerializeField] private bool isDebug = false;
+#endif
 
         private List<CharState> charStates = new List<CharState>(128);
         private System.Text.StringBuilder cleanTextBuilder = new System.Text.StringBuilder(128);
@@ -73,10 +76,12 @@ namespace PresentationLayer.UISystem
             ParseText(_text);
             isInitialized = true;
 
+#if UNITY_EDITOR
             if (isDebug)
             {
                 Debug.Log($"[TMPAnimation] Initialized: {tmpText.text}");
             }
+#endif
         }
 
         /// <summary>

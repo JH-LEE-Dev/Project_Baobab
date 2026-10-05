@@ -91,14 +91,27 @@ public static class BuildRunner
         _options.target = BuildTarget.StandaloneWindows64;
         _options.targetGroup = BuildTargetGroup.Standalone;
 
-        // Development 플래그를 넣지 않는다. 넣으면 DemoContentStripper와 BuildOutputSanitizer가
-        // 둘 다 "배포물이 아니다"라고 판단해 정리를 건너뛴다.
+        // Development 플래그를 넣지 않는다. 넣으면 BuildOutputSanitizer가 "배포물이 아니다"라고 판단해
+        // 정리를 건너뛰고, 빌드 가드(캐릭터 스탯·디버그 스위치·데모 제외)도 막지 않고 경고만 남긴다.
         _options.options = RELEASE_OPTIONS;
+
+        string _outputDir = System.IO.Path.GetDirectoryName(_location);
+
+        if (false == CleanOutputFolder(_outputDir, PlatformBuildModeSwitcher.BuildFolderName(_store, _release), out string _cleanError))
+        {
+            Debug.LogError($"[BuildRunner] 출력 폴더를 비우지 못해 빌드하지 않았습니다.\n  {_cleanError}");
+            return null;
+        }
 
         Debug.Log($"[BuildRunner] {_store} / {(BuildRelease.Full == _release ? "정식" : "데모")} 빌드를 시작합니다. " +
                   $"압축 LZ4HC, 씬 {_options.scenes.Length}개\n  출력: {_location}");
 
         BuildReport _report = BuildPipeline.BuildPlayer(_options);
+
+        // 빌드가 실패·취소되면 스트리퍼의 후처리(원본 복구)가 불리지 않아, 잘린 에셋이 에디터 재시작 전까지 남습니다.
+        // 그 상태로 커밋되지 않도록 결과와 상관없이 여기서 복구합니다. 백업이 없으면 아무 일도 하지 않습니다.
+        DemoContentStripper.RestoreIfNeeded(false);
+        AbilityBuildVariantStripper.RestoreIfNeeded(false);
 
         if (null == _report)
         {
@@ -120,6 +133,69 @@ public static class BuildRunner
         }
 
         return _report;
+    }
+
+    /// <summary>
+    /// 빌드 전에 출력 폴더를 비웁니다. 유니티는 새 빌드가 만드는 파일만 덮어쓰므로, 이전 빌드에만 있던 파일
+    /// (예: 정식판에서만 쓰던 파일, 손으로 넣은 파일)은 그대로 남아 업로드에 섞입니다.
+    ///
+    /// 엉뚱한 폴더를 지우지 않도록 세 가지를 확인합니다.
+    ///   1. 폴더 이름이 스위처가 정한 &lt;스토어&gt;_&lt;배포&gt; 이름과 같은가
+    ///   2. 프로젝트 폴더 안이 아닌가
+    ///   3. 비어 있지 않다면, 이전 빌드 결과물(BUILD_STAMP.txt, 실행 파일, _Data 폴더)이 보이는가
+    /// 하나라도 아니면 지우지 않고 빌드를 멈춥니다.
+    /// </summary>
+    private static bool CleanOutputFolder(string _dir, string _expectedFolderName, out string _error)
+    {
+        _error = string.Empty;
+
+        if (true == string.IsNullOrEmpty(_dir) || false == System.IO.Directory.Exists(_dir)) return true;
+
+        string _full = System.IO.Path.GetFullPath(_dir).TrimEnd('\\', '/');
+        string _projectRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, "..")).TrimEnd('\\', '/');
+
+        if (false == string.Equals(System.IO.Path.GetFileName(_full), _expectedFolderName, System.StringComparison.OrdinalIgnoreCase))
+        {
+            _error = $"폴더 이름이 {_expectedFolderName} 가 아닙니다: {_full}";
+            return false;
+        }
+
+        if (true == _full.StartsWith(_projectRoot, System.StringComparison.OrdinalIgnoreCase))
+        {
+            _error = $"프로젝트 폴더 안이라 비우지 않습니다: {_full}";
+            return false;
+        }
+
+        string[] _files = System.IO.Directory.GetFiles(_full);
+        string[] _dirs = System.IO.Directory.GetDirectories(_full);
+
+        if (0 == _files.Length && 0 == _dirs.Length) return true;
+
+        string _product = PlayerSettings.productName;
+        bool _looksLikeBuild = System.IO.File.Exists(System.IO.Path.Combine(_full, "BUILD_STAMP.txt"))
+                            || System.IO.File.Exists(System.IO.Path.Combine(_full, _product + ".exe"))
+                            || System.IO.Directory.Exists(System.IO.Path.Combine(_full, _product + "_Data"));
+
+        if (false == _looksLikeBuild)
+        {
+            _error = $"이전 빌드 결과물로 보이지 않는 파일이 있어 비우지 않습니다. 직접 확인하십시오: {_full}";
+            return false;
+        }
+
+        try
+        {
+            for (int i = 0; i < _files.Length; i++) System.IO.File.Delete(_files[i]);
+            for (int i = 0; i < _dirs.Length; i++) System.IO.Directory.Delete(_dirs[i], true);
+        }
+        catch (System.Exception _e)
+        {
+            // 게임을 실행 중이라 exe 가 잠긴 경우가 대부분이다.
+            _error = $"지우는 중 실패했습니다(실행 중인 게임이 있으면 끄십시오): {_e.Message}";
+            return false;
+        }
+
+        Debug.Log($"[BuildRunner] 출력 폴더를 비웠습니다: {_full} (파일 {_files.Length}개, 폴더 {_dirs.Length}개)");
+        return true;
     }
 
     private static string[] CollectEnabledScenes()

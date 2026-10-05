@@ -2403,9 +2403,25 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         PlayRebindCloseProduction();
     }
 
+    /// <summary>
+    /// 입력 대기 안내판이 열려 있는 상태인지입니다. 닫기 연출이 시작되면 interactable이 꺼지므로
+    /// 등장/퇴장 효과음이 중복 호출(취소 콜백이 닫기를 두 번 부르는 경우 등)되어도 한 번만 재생하는 기준으로 씁니다.
+    /// </summary>
+    private bool IsRebindOverlayOpen()
+    {
+        if (null == rebindOverlay || false == rebindOverlay.activeSelf) return false;
+
+        return null == rebindOverlayCanvasGroup || true == rebindOverlayCanvasGroup.interactable;
+    }
+
     private void PlayRebindOpenProduction(string _promptText)
     {
         EnsureRebindComponents();
+
+        if (false == IsRebindOverlayOpen())
+        {
+            Sound.PlayUI(SoundID.ResultUIOpen);
+        }
 
         if (null != rebindOverlayText)
         {
@@ -2457,6 +2473,12 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private void PlayRebindCloseProduction()
     {
         EnsureRebindComponents();
+
+        if (true == IsRebindOverlayOpen())
+        {
+            Sound.PlayUI(SoundID.ResultUIClose);
+        }
+
         KillRebindSequence();
 
         if (null == rebindOverlayCanvasGroup || null == rebindWindowRoot)

@@ -5,8 +5,11 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
 {
     [SerializeField] private MapDensityDataBase densityDataBase;
 
-    [Header("Debug")]
+#if UNITY_EDITOR
+    // 모든 맵을 여는 테스트 스위치라 빌드에서는 코드째 뺀다. 켜 둔 채 커밋돼도 데모에서 맵이 열리지 않는다.
+    [Header("Debug (빌드에는 포함되지 않음)")]
     [SerializeField] private bool debugUnlockAllMaps = false;
+#endif
 
     private int grassTileCnt;
     private int walkableTilesCnt;
@@ -655,6 +658,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         }
     }
 
+#if UNITY_EDITOR
     private void Update()
     {
         if (debugUnlockAllMaps)
@@ -706,6 +710,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
 
         Debug.Log("[DensityManager] Debug: All Maps Unlocked.");
     }
+#endif
 
     public void MarkUnlocked(MapType mapType, ForestType forestType)
     {

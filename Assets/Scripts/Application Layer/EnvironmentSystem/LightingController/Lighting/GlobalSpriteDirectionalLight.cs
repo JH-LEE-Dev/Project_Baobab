@@ -62,7 +62,10 @@ public class GlobalSpriteDirectionalLight : MonoBehaviour
 
     [Header("Time Of Day Lighting")]
     [SerializeField] private bool useTimeOfDayKeyframes = true;
+#if UNITY_EDITOR
+    // 시간대 조명을 끄고 수동 값으로 보는 테스트 스위치라 빌드에서는 뺀다.
     [SerializeField] private bool debugUseManualLighting = false;
+#endif
     [SerializeField] private DirectionKeyframe[] directionKeyframes =
     {
         new DirectionKeyframe { hour = 5f, direction = new Vector3(0.5f, 0.5f, 0.1f) },
@@ -160,7 +163,12 @@ public class GlobalSpriteDirectionalLight : MonoBehaviour
         Color appliedAmbientColor = ambientColor;
         float appliedAmbientIntensity = ambientIntensity;
 
-        if (useTimeOfDayKeyframes && !debugUseManualLighting)
+        bool useKeyframes = useTimeOfDayKeyframes;
+#if UNITY_EDITOR
+        if (debugUseManualLighting) useKeyframes = false;
+#endif
+
+        if (useKeyframes)
         {
             appliedDirection = EvaluateDirection(currentHour);
             EvaluateLighting(

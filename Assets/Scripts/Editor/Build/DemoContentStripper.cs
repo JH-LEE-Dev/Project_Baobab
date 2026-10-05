@@ -88,6 +88,13 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     private const string BACKUP_FOLDER = "DemoContentStripBackup";
 
     /// <summary>
+    /// 이번 빌드에서 제외를 끝까지 하지 못한 항목입니다. 하나라도 있으면 데모 배포 빌드를 막습니다.
+    /// 예전에는 경고만 남기고 넘어가 정식판 콘텐츠가 든 채로 데모가 빌드될 수 있었습니다(fail-open).
+    /// 대상 에셋이 옮겨지거나 이름이 바뀌어 못 찾는 경우가 대표적입니다.
+    /// </summary>
+    private static readonly List<string> failures = new List<string>();
+
+    /// <summary>
     /// 백업/복원이 추적하는 에셋 전부. 새 대상을 추가하면 <b>여기에도 반드시 넣어야</b>
     /// 복원이 걸립니다(안 넣으면 그 에셋은 잘린 채로 남습니다).
     ///
@@ -113,6 +120,9 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
     public void OnPreprocessBuild(BuildReport _report)
     {
+        failures.Clear();
+        bool _isDevelopmentBuild = 0 != (_report.summary.options & BuildOptions.Development);
+
         // 이전 빌드가 비정상 종료돼 백업이 남아 있을 수 있다. 무엇을 하든 먼저 원본으로 맞춘다.
         RestoreIfNeeded(false);
 
@@ -122,8 +132,8 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         if (MapType.None == _maxPlayableMap)
         {
-            Debug.LogWarning($"[DemoStrip] 데모 최대 플레이 맵을 읽지 못했습니다({NAV_PREFAB_PATH}). " +
-                             "미공개 콘텐츠 제외를 건너뜁니다. 빌드는 그대로 진행됩니다.");
+            ReportFailure($"[DemoStrip] 데모 최대 플레이 맵을 읽지 못했습니다({NAV_PREFAB_PATH}). 미공개 콘텐츠 제외를 할 수 없습니다.");
+            FailIfIncomplete(_isDevelopmentBuild);
             return;
         }
 
@@ -156,6 +166,40 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
                   $"  정식판 기능: {_fullOnly}\n" +
                   $"  VFX Resources 폴더 제외: {(true == _heldVfx ? "적용" : "건너뜀")}\n" +
                   "  빌드가 끝나면 원본으로 자동 복구됩니다.");
+
+        FailIfIncomplete(_isDevelopmentBuild);
+    }
+
+    private static void ReportFailure(string _message)
+    {
+        failures.Add(_message);
+        Debug.LogWarning(_message);
+    }
+
+    /// <summary>
+    /// 제외를 하나라도 못 했으면 데모 배포 빌드를 멈춥니다. 멈추면 후처리(복구)가 불리지 않으므로 여기서 먼저 원본으로 되돌립니다.
+    /// 개발 빌드는 배포물이 될 수 없으므로 경고만 남기고 진행합니다.
+    /// </summary>
+    private static void FailIfIncomplete(bool _isDevelopmentBuild)
+    {
+        if (0 == failures.Count) return;
+
+        string _detail = "  " + string.Join("\n  ", failures);
+
+        if (true == _isDevelopmentBuild)
+        {
+            Debug.LogWarning($"[DemoStrip] 미공개 콘텐츠 제외를 {failures.Count}건 끝내지 못했습니다. Development Build라 그대로 진행합니다.\n{_detail}");
+            return;
+        }
+
+        // 앞서 돈 특성 데이터 스트리퍼(-100)도 에셋을 고쳐 두었다. 빌드를 멈추면 둘 다 후처리가 불리지 않으므로 함께 되돌린다.
+        RestoreIfNeeded(false);
+        AbilityBuildVariantStripper.RestoreIfNeeded(false);
+
+        throw new BuildFailedException(
+            $"[DemoStrip] 빌드를 중단했습니다. 미공개(정식판) 콘텐츠 제외를 {failures.Count}건 끝내지 못해, 이대로면 데모에 정식판 콘텐츠가 실립니다.\n" +
+            $"{_detail}\n\n" +
+            "대상 에셋이 옮겨졌거나 이름이 바뀌었다면 DemoContentStripper 의 경로·타입 이름을 고치십시오. 수정한 에셋은 원본으로 되돌렸습니다.");
     }
 
     public void OnPostprocessBuild(BuildReport _report)
@@ -237,7 +281,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         if (null == _db || null == _db.sounds)
         {
-            Debug.LogWarning($"[DemoStrip] AudioDatabase를 읽지 못했습니다: {AUDIO_DB_PATH}");
+            ReportFailure($"[DemoStrip] AudioDatabase를 읽지 못했습니다: {AUDIO_DB_PATH}");
             return 0;
         }
 
@@ -268,7 +312,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         if (null == _db || null == _db.treeVisualDatas)
         {
-            Debug.LogWarning($"[DemoStrip] TreeVisualDataBase를 읽지 못했습니다: {TREE_VISUAL_DB_PATH}");
+            ReportFailure($"[DemoStrip] TreeVisualDataBase를 읽지 못했습니다: {TREE_VISUAL_DB_PATH}");
             return 0;
         }
 
@@ -277,7 +321,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         if (0 == _keep.Count)
         {
             // 배치 데이터를 못 읽은 상황이다. 여기서 그냥 지우면 데모에 쓰이는 나무까지 날아간다.
-            Debug.LogWarning("[DemoStrip] 데모에서 쓰이는 나무 종류를 찾지 못해 나무 비주얼 제외를 건너뜁니다.");
+            ReportFailure("[DemoStrip] 데모에서 쓰이는 나무 종류를 찾지 못해 나무 비주얼 제외를 건너뜁니다.");
             return 0;
         }
 
@@ -315,7 +359,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         if (null == _installer)
         {
-            Debug.LogWarning($"[DemoStrip] GameInstaller 프리팹을 읽지 못했습니다: {INSTALLER_PREFAB_PATH}");
+            ReportFailure($"[DemoStrip] GameInstaller 프리팹을 읽지 못했습니다: {INSTALLER_PREFAB_PATH}");
             return 0;
         }
 
@@ -323,8 +367,8 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         if (null == _controller)
         {
-            // 원석 기능이 아직 없는 브랜치일 수 있다. 빠뜨렸다고 빌드를 막을 일은 아니다.
-            // 드랍 테이블이 여기 있으므로, 없으면 용광로 쪽도 무엇을 남길지 정할 수 없다.
+            // 드랍 테이블이 여기 있으므로, 없으면 원석·용광로 쪽 모두 무엇을 남길지 정할 수 없다.
+            ReportFailure($"[DemoStrip] {INSTALLER_PREFAB_PATH} 에서 GemOreItemController 를 찾지 못해 원석 그림 제외를 할 수 없습니다.");
             return 0;
         }
 
@@ -333,7 +377,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         if (0 == _demoTrees.Count)
         {
             // 배치 데이터를 못 읽은 상황이다. 여기서 그냥 지우면 데모에 쓰이는 원석까지 날아간다.
-            Debug.LogWarning("[DemoStrip] 데모에서 쓰이는 나무 종류를 찾지 못해 원석 그림 제외를 건너뜁니다.");
+            ReportFailure("[DemoStrip] 데모에서 쓰이는 나무 종류를 찾지 못해 원석 그림 제외를 건너뜁니다.");
             return 0;
         }
 
@@ -448,12 +492,11 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     private static int StripFurnaceHudIcons(HashSet<GemOreType> _keep)
     {
         GameObject _prefab = AssetDatabase.LoadAssetAtPath<GameObject>(FURNACE_HUD_PREFAB_PATH);
-        if (null == _prefab) return 0;
+        if (null == _prefab) return MissingAsset(FURNACE_HUD_PREFAB_PATH);
 
         UI_BlastFurnaceStatus _hud = _prefab.GetComponentInChildren<UI_BlastFurnaceStatus>(true);
 
-        // 용광로 HUD가 아직 없는 브랜치일 수 있다. 빠뜨렸다고 빌드를 막을 일은 아니다.
-        if (null == _hud) return 0;
+        if (null == _hud) return MissingComponent(FURNACE_HUD_PREFAB_PATH, "UI_BlastFurnaceStatus");
 
         SerializedObject _so = new SerializedObject(_hud);
         int _removed = 0;
@@ -479,11 +522,11 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     private static int StripCurrencyHudIcons(HashSet<GemOreType> _keep)
     {
         GameObject _prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CURRENCY_HUD_PREFAB_PATH);
-        if (null == _prefab) return 0;
+        if (null == _prefab) return MissingAsset(CURRENCY_HUD_PREFAB_PATH);
 
         PresentationLayer.UISystem.CustomNumber.CurrencyCounterHUD _hud =
             _prefab.GetComponentInChildren<PresentationLayer.UISystem.CustomNumber.CurrencyCounterHUD>(true);
-        if (null == _hud) return 0;
+        if (null == _hud) return MissingComponent(CURRENCY_HUD_PREFAB_PATH, "CurrencyCounterHUD");
 
         SerializedObject _so = new SerializedObject(_hud);
 
@@ -622,7 +665,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         if (null == _scope)
         {
-            Debug.LogWarning($"[DemoStrip] 데모 스킬 DB를 읽지 못해 정식판 기능 에셋 제외를 건너뜁니다({ABILITY_VARIANT_PATH}).");
+            ReportFailure($"[DemoStrip] 데모 스킬 DB를 읽지 못해 정식판 기능 에셋 제외를 건너뜁니다({ABILITY_VARIANT_PATH}).");
             return "건너뜀 (데모 스킬 DB 없음)";
         }
 
@@ -721,7 +764,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     private static int StripInstallerFullOnly(DemoFeatureScope _s)
     {
         GameObject _root = AssetDatabase.LoadAssetAtPath<GameObject>(INSTALLER_PREFAB_PATH);
-        if (null == _root) return 0;
+        if (null == _root) return MissingAsset(INSTALLER_PREFAB_PATH);
 
         int _n = 0;
 
@@ -782,7 +825,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     private static int StripCharacterFullOnly(DemoFeatureScope _s)
     {
         GameObject _root = AssetDatabase.LoadAssetAtPath<GameObject>(CHARACTER_PREFAB_PATH);
-        if (null == _root) return 0;
+        if (null == _root) return MissingAsset(CHARACTER_PREFAB_PATH);
 
         int _n = 0;
 
@@ -806,7 +849,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     private static int StripTreePrefabFullOnly(DemoFeatureScope _s)
     {
         GameObject _root = AssetDatabase.LoadAssetAtPath<GameObject>(TREE_PREFAB_PATH);
-        if (null == _root) return 0;
+        if (null == _root) return MissingAsset(TREE_PREFAB_PATH);
 
         int _n = 0;
 
@@ -840,7 +883,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     private static int StripOffroadFullOnly(DemoFeatureScope _s)
     {
         GameObject _root = AssetDatabase.LoadAssetAtPath<GameObject>(OFFROAD_PREFAB_PATH);
-        if (null == _root) return 0;
+        if (null == _root) return MissingAsset(OFFROAD_PREFAB_PATH);
 
         return EditComponents(_root, "OffroadVehicleObj", OFFROAD_PREFAB_PATH, _so =>
         {
@@ -857,7 +900,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     private static int StripTentAbilityIcons(DemoFeatureScope _s)
     {
         GameObject _root = AssetDatabase.LoadAssetAtPath<GameObject>(TENT_UI_PREFAB_PATH);
-        if (null == _root) return 0;
+        if (null == _root) return MissingAsset(TENT_UI_PREFAB_PATH);
 
         return EditComponents(_root, "UI_TentAbilityComponent", TENT_UI_PREFAB_PATH, _so =>
         {
@@ -879,7 +922,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     private static int StripLogItemIcons(DemoFeatureScope _s)
     {
         ScriptableObject _db = AssetDatabase.LoadAssetAtPath<ScriptableObject>(LOG_ITEM_DB_PATH);
-        if (null == _db) return 0;
+        if (null == _db) return MissingAsset(LOG_ITEM_DB_PATH);
 
         SerializedObject _so = new SerializedObject(_db);
         SerializedProperty _list = _so.FindProperty("datas");
@@ -903,7 +946,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     private static int StripTreeRegenStrategies(DemoFeatureScope _s)
     {
         ScriptableObject _db = AssetDatabase.LoadAssetAtPath<ScriptableObject>(TREE_STAT_DB_PATH);
-        if (null == _db) return 0;
+        if (null == _db) return MissingAsset(TREE_STAT_DB_PATH);
 
         SerializedObject _so = new SerializedObject(_db);
         SerializedProperty _list = _so.FindProperty("treeStatDatas");
@@ -933,11 +976,13 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     {
         Component[] _all = _root.GetComponentsInChildren<Component>(true);
         int _total = 0;
+        int _found = 0;
 
         for (int i = 0; i < _all.Length; i++)
         {
             if (null == _all[i] || _typeName != _all[i].GetType().Name) continue;
 
+            _found++;
             SerializedObject _so = new SerializedObject(_all[i]);
             int _changed = _edit(_so);
             if (0 == _changed) continue;
@@ -948,7 +993,22 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
             _total += _changed;
         }
 
+        // 타입 이름으로 찾으므로, 클래스 이름이 바뀌면 조용히 0이 된다. 그러면 그 컴포넌트의 정식판 참조가 그대로 실린다.
+        if (0 == _found) MissingComponent(_assetPath, _typeName);
+
         return _total;
+    }
+
+    private static int MissingAsset(string _assetPath)
+    {
+        ReportFailure($"[DemoStrip] 제외 대상 에셋을 찾지 못했습니다: {_assetPath}");
+        return 0;
+    }
+
+    private static int MissingComponent(string _assetPath, string _typeName)
+    {
+        ReportFailure($"[DemoStrip] {_assetPath} 에서 {_typeName} 컴포넌트를 찾지 못했습니다. 이름이 바뀌었다면 DemoContentStripper 도 고치십시오.");
+        return 0;
     }
 
     private static int ApplyIfChanged(SerializedObject _so, UnityEngine.Object _target, string _assetPath, int _changed)
@@ -1038,7 +1098,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         if (true == AssetDatabase.IsValidFolder(_held))
         {
-            Debug.LogWarning($"[DemoStrip] {_held} 가 이미 있어 VFX Resources 폴더 제외를 건너뜁니다. 이전 빌드의 잔재인지 확인하십시오.");
+            ReportFailure($"[DemoStrip] {_held} 가 이미 있어 VFX Resources 폴더 제외를 건너뜁니다. 이전 빌드의 잔재인지 확인하십시오.");
             return false;
         }
 
@@ -1047,7 +1107,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         string _error = AssetDatabase.RenameAsset(VFX_RESOURCES_FOLDER, VFX_RESOURCES_HOLD_NAME);
         if (false == string.IsNullOrEmpty(_error))
         {
-            Debug.LogWarning($"[DemoStrip] VFX Resources 폴더 이름을 바꾸지 못했습니다: {_error}");
+            ReportFailure($"[DemoStrip] VFX Resources 폴더 이름을 바꾸지 못했습니다: {_error}");
             return false;
         }
 

@@ -96,8 +96,11 @@ public class ItemAuraOrbitController : MonoBehaviour
     [SerializeField, HideIf("HasReferenceRenderer"), Tooltip("위성 트레일 궤적의 소팅 오더 (위성 바로 뒤 -1)")]
     private int trailSortingOrder = -1;
 
-    [Header("디버그")]
+#if UNITY_EDITOR
+    // 화면 디버그 GUI(OnGUI)가 에디터 전용이라 스위치도 빌드에서 뺀다.
+    [Header("디버그 (빌드에는 포함되지 않음)")]
     [SerializeField] private bool showOnScreenDebugGui = false;
+#endif
 
     // NaughtyAttributes 조건자
     private bool IsHelicalScrewMode => trajectoryMode == OrbitTrajectoryMode.HelicalScrew;

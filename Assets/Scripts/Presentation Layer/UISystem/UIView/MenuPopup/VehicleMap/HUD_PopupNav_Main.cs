@@ -87,9 +87,12 @@ public class HUD_PopupNav_Main : MonoBehaviour
     [SerializeField] private float multiRegionUnlockSpeedRate = 2.0f;
     [Tooltip("닫힘(내려가는) 연출이 끝난 뒤 던전 확정 콜백을 호출하기까지의 지연 시간")]
     [SerializeField] private float dungeonConfirmDelay = 0.25f;
-    [Header("Debug")]
+#if UNITY_EDITOR
+    // 모든 맵을 여는 테스트 스위치라 빌드에서는 코드째 뺀다. 켜 둔 채 커밋돼도 데모에서 맵이 열리지 않는다.
+    [Header("Debug (빌드에는 포함되지 않음)")]
     [Tooltip("체크 시 내비게이션을 열 때 모든 지역 및 서브지역을 강제로 해금 처리합니다.")]
     [SerializeField] private bool debugForceUnlockAll = false;
+#endif
     // 내부 의존성
     private IMapDataProvider mapDataProvider;
     private LocalizationManager localizationManager;
@@ -385,10 +388,12 @@ public class HUD_PopupNav_Main : MonoBehaviour
             currentRegionNameText.transform.localScale = Vector3.one;
         }
 
+#if UNITY_EDITOR
         if (true == debugForceUnlockAll && null != mapDataProvider)
         {
             ForceUnlockAllMapsForDebug();
         }
+#endif
 
         if (null != appearTween && true == appearTween.IsActive())
         {
@@ -424,6 +429,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         }
     }
 
+#if UNITY_EDITOR
     private void ForceUnlockAllMapsForDebug()
     {
         MapEnvironmentDatabase _db = mapDataProvider.GetMapEnvironmentDatabase();
@@ -451,6 +457,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
             }
         }
     }
+#endif
 
     private void CheckAndStartUnlockProduction()
     {

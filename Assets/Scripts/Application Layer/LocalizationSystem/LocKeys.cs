@@ -192,11 +192,6 @@ public static class LocKeys
         public const int descriptionStove = 29360131;
     }
 
-    public static class EquipmentHUD
-    {
-        public const int axeUse = 25165825;
-    }
-
     public static class EscapeMenuUI
     {
         public const int resume = 27262977;
@@ -205,11 +200,6 @@ public static class LocKeys
         public const int exitGame = 27262980;
         public const int exitGameWarning = 27262981;
         public const int mainMenuWarning = 27262982;
-    }
-
-    public static class InventoryUI
-    {
-        public const int open = 23068673;
     }
 
     public static class LootTooltipUI

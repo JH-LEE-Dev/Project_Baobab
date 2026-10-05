@@ -48,8 +48,11 @@ public class BlastFurnaceHeatHaze : MonoBehaviour
     [Tooltip("수동 제어 모드에서의 가동 여부 (Fade In / Out)")]
     [SerializeField] private bool isTestRunning = false;
 
-    [Tooltip("체크 시 게임 화면(Game View) 좌측 상단에 [🔥 아지랑이 토글] 버튼을 띄웁니다.")]
+#if UNITY_EDITOR
+    // 화면 테스트 버튼(OnGUI)이 에디터 전용이라 이 스위치도 빌드에서 뺀다.
+    [Tooltip("체크 시 게임 화면(Game View) 좌측 상단에 [🔥 아지랑이 토글] 버튼을 띄웁니다. 빌드에는 포함되지 않습니다.")]
     [SerializeField] private bool showScreenTestButton = false;
+#endif
 
     // //내부 의존성
     private static readonly int intensityPropertyId = Shader.PropertyToID("_Intensity");

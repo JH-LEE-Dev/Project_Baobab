@@ -18,13 +18,16 @@ public class OffsetShadow : MonoBehaviour
     [Header("Scale Settings")]
     [SerializeField] private float minScaleYFactor = 0.5f;
 
-    [Header("Debug Settings")]
+#if UNITY_EDITOR
+    // 그림자를 인스펙터 값으로 고정해 보는 테스트 기능이라 빌드에서는 코드째 뺀다.
+    [Header("Debug Settings (빌드에는 포함되지 않음)")]
     [SerializeField] private bool useDebugValues = false;
     [Range(0, 360)]
     [SerializeField] private float debugAngle = 0f;
     [Range(0f, 1f)]
     [SerializeField] private float debugScaleY = 0.5f;
     [SerializeField] private bool debugIsActive = true;
+#endif
 
     public void Initialize()
     {
@@ -32,6 +35,7 @@ public class OffsetShadow : MonoBehaviour
         ApplyDefaultPose();
     }
 
+#if UNITY_EDITOR
     private void Update()
     {
         if (useDebugValues)
@@ -39,6 +43,7 @@ public class OffsetShadow : MonoBehaviour
             ManualUpdate(debugAngle, debugScaleY, debugIsActive);
         }
     }
+#endif
 
     public void ManualUpdate(float _angle, float _scaleY, bool _isActive)
     {

@@ -197,7 +197,9 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         // 스킬 적용 이벤트 발생 (등록된 모든 커맨드 발송)
         if (node.commands != null)
         {
+#if UNITY_EDITOR
             Debug.Log($"특성 적용 -> 타입 : {_type} (Level: {node.currentLevel})");
+#endif
 
             for (int i = 0; i < node.commands.Count; i++)
             {
@@ -254,6 +256,8 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         return AbilityLevelUpRejectReason.Pass;
     }
 
+    // 비용 없이 스킬을 찍는 테스트 기능이다. 호출하는 곳(어빌리티 트리 자동 찍기)이 모두 에디터 전용이라 빌드에서는 코드째 뺀다.
+#if UNITY_EDITOR
     /// <summary>
     /// 비용(재화) 소모 없이 스킬을 습득하는 함수 (단, 선행 스킬 및 최대 레벨 조건은 확인합니다)
     /// </summary>
@@ -314,6 +318,7 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
 
         return AbilityLevelUpRejectReason.Pass;
     }
+#endif
 
     /// <summary>
     /// 특정 스킬을 이미 습득했는지 확인하고 레벨을 반환함 (ISkillSystemProvider 구현)

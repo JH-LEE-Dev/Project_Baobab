@@ -3777,6 +3777,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
     }
 
+    // 인스펙터 테스트 버튼 - 에디터에서 사람이 눌러야만 실행되므로 빌드에는 넣지 않는다.
+#if UNITY_EDITOR
     [Button("Play Prestige Level Up Wave")]
     private void DebugPlayPrestigeLevelUpWave()
     {
@@ -3787,6 +3789,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         PlayLevelUpWavePresentation();
     }
+#endif
 
     private bool IsLevelUpWaveNodeEligible(AbilityNode _node)
     {
