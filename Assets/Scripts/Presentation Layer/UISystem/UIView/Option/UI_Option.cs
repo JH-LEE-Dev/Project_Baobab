@@ -1746,6 +1746,9 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         // 언어 텍스트 재로드 후 UI 갱신
         InitializeSelectors();
+        // InitializeSelectors는 창모드와 무관하게 저장 해상도를 표기하므로, Initialize와 같이
+        // 바로 이어서 전체화면 표기(모니터 해상도)와 조작 가능 여부를 바로잡는다.
+        RefreshResolutionSelector();
         InitializeSliders();
         RefreshControlTabLabels();
 

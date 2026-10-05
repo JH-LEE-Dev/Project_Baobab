@@ -55,6 +55,20 @@ public class UIView_Unit : UIView
         InitHPBarPool();
         InitInteractionUnit();
         InitSpeechBubbleUnit();
+
+        if (null != viewCtx?.localizationManager)
+        {
+            viewCtx.localizationManager.OnLanguageChanged -= RefreshSpeechBubbleText;
+            viewCtx.localizationManager.OnLanguageChanged += RefreshSpeechBubbleText;
+        }
+    }
+
+    public override void OnDestroy()
+    {
+        if (null != viewCtx?.localizationManager)
+            viewCtx.localizationManager.OnLanguageChanged -= RefreshSpeechBubbleText;
+
+        base.OnDestroy();
     }
 
     public void SetCharacter(ICharacter _character)
@@ -433,6 +447,27 @@ public class UIView_Unit : UIView
     {
         if (null != speechBubble)
             speechBubble.Play(_id, _text, speechBubbleDuration, speechBubbleCooldown);
+    }
+
+    /// <summary>
+    /// 언어가 바뀌면 말풍선에 채워진 문구를 새 언어로 다시 채웁니다.
+    ///
+    /// 말풍선 노출 시간과 숨김 모션은 모두 스케일 시간으로 흐르므로, ESC 일시정지 중에는 말풍선이
+    /// 떠 있는(또는 반쯤 사라지는) 채로 멈춘다. 그 상태에서 옵션으로 언어를 바꾸면 FontLocalizer가
+    /// 폰트만 교체해 이전 언어 문구를 새 폰트로 다시 그리게 되어, 재개해서 사라질 때까지 옛 문구가 남는다.
+    /// 다 숨겨진 말풍선도 오브젝트는 활성으로 남아 같은 식으로 다시 조판되므로 함께 갱신한다.
+    /// (UI_SpeechBubble.Initialize 주석 참고)
+    /// </summary>
+    private void RefreshSpeechBubbleText()
+    {
+        if (null == speechBubble || null == viewCtx?.localizationManager)
+            return;
+
+        int _textId = speechBubble.LastTextId;
+        if (0 >= _textId)
+            return;
+
+        speechBubble.SetText(viewCtx.localizationManager.GetText(speechBubbleJsonId, _textId));
     }
 
     public void TownStarted()

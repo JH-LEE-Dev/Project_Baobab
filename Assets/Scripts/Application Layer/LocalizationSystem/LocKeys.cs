@@ -25,7 +25,7 @@ public static class LocKeys
         public const int powerSupplyName = 4194443;
         public const int logProcessingSpeed2Name = 4194445;
         public const int bountifulTree1Name = 4194447;
-        public const int goldTreeChanceName = 4194449;
+        public const int fascinatingLogChance1Name = 4194449;
         public const int pickupRange1Name = 4194451;
         public const int logValue2Name = 4194453;
         public const int bountifulTree2Name = 4194455;
@@ -182,12 +182,14 @@ public static class LocKeys
         public const int abilityDescriptionStarPathSpeedBoost = 4203459;
         public const int abilityDescriptionStarMarkDamage = 4203460;
         public const int abilityDescriptionConstellationDamage = 4203461;
+        public const int abilityDescriptionManifestationBrand = 4203462;
     }
 
     public static class DemoNoticeUI
     {
         public const int title = 29360129;
         public const int description = 29360130;
+        public const int descriptionStove = 29360131;
     }
 
     public static class EscapeMenuUI
@@ -224,8 +226,9 @@ public static class LocKeys
         public const int languageSelectTitle = 16777316;
         public const int consentTitle = 16777317;
         public const int consentDesc = 16777318;
-        public const int consentCheckbox = 16777319;
+        public const int consentAgree = 16777319;
         public const int confirm = 16777320;
+        public const int consentDisagree = 16777321;
     }
 
     public static class MenuPopupUI
@@ -376,6 +379,13 @@ public static class LocKeys
         public const int acquiredLogsHeader = 6291462;
         public const int emptyAcquiredLogs = 6291463;
         public const int containerStateHeader = 6291464;
+    }
+
+    public static class SaveCheckUI
+    {
+        public const int failedMessage = 35651585;
+        public const int abandonMessage = 35651586;
+        public const int checkingMessage = 35651587;
     }
 
     public static class SpeechBubbleUI

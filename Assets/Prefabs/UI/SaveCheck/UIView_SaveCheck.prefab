@@ -137,9 +137,12 @@ MonoBehaviour:
   bScreenSpace: 0
   bOverlay: 1
   checkingPanel: {fileID: 1000000000000010}
+  checkingText: {fileID: 9000000000000012}
   warningPopup: {fileID: 2895138109050072181}
   cursorBox: {fileID: 469049814032534766}
   checkingPanelDelaySeconds: 0.3
+  checkingMessage: "\uC800\uC7A5 \uB370\uC774\uD130\uB97C \uD655\uC778\uD558\uACE0
+    \uC788\uC2B5\uB2C8\uB2E4..."
   depth1FailedMessage: "\uC800\uC7A5 \uB370\uC774\uD130\uB97C \uBD88\uB7EC\uC624\uC9C0
     \uBABB\uD588\uC2B5\uB2C8\uB2E4.\n\uC77C\uC2DC\uC801\uC778 \uC624\uB958\uC77C
     \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uB2E4\uC2DC \uBD88\uB7EC\uC624\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?"
@@ -270,6 +273,7 @@ GameObject:
   - component: {fileID: 2000000000000012}
   - component: {fileID: 9000000000000012}
   - component: {fileID: 6209708848545583186}
+  - component: {fileID: 35811842581929170}
   m_Layer: 5
   m_Name: Text_Checking
   m_TagString: Untagged
@@ -316,7 +320,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uC138\uC774\uBE0C \uD30C\uC77C\uC744 \uD655\uC778\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4..."
+  m_text: "\uC800\uC7A5 \uB370\uC774\uD130\uB97C \uD655\uC778\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4..."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4909044e3da435245a063b33ac595034, type: 2}
   m_sharedMaterial: {fileID: -4971463764404031913, guid: 4909044e3da435245a063b33ac595034, type: 2}
@@ -396,6 +400,22 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1000000000000012}
   m_CullTransparentMesh: 1
+--- !u!114 &35811842581929170
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000000000000012}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9c3e7a1d2f48c6b0a9e8d7c6f5b4a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedFontTracker
+  targetText: {fileID: 0}
+  originalFont: {fileID: 0}
+  originalMaterial: {fileID: 0}
+  hasCaptured: 0
 --- !u!1001 &1721103361927813028
 PrefabInstance:
   m_ObjectHideFlags: 0

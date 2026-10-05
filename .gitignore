@@ -84,3 +84,6 @@ GEMINI.md
 # Resources 안에 있으면 빌드에 그대로 실리므로 커밋되지 않게 막는다.
 /[Aa]ssets/[Rr]esources/PerformanceTestRunInfo.json*
 /[Aa]ssets/[Rr]esources/PerformanceTestRunSettings.json*
+
+# Localization QA 툴의 스크린샷·CSV 출력 폴더
+/LocalizationQA/
