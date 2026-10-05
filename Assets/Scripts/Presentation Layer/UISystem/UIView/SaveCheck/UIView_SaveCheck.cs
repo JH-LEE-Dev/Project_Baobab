@@ -1,5 +1,6 @@
 using System;
 using DG.Tweening;
+using TMPro;
 using UnityEngine;
 
 /// <summary>
@@ -30,6 +31,9 @@ public class UIView_SaveCheck : UIView
     [SerializeField, Tooltip("\"세이브 파일을 확인 중입니다...\" 검은색 블로커 패널")]
     private GameObject checkingPanel;
 
+    [SerializeField, Tooltip("checkingPanel 안의 \"확인 중\" 문구 텍스트")]
+    private TMP_Text checkingText;
+
     [SerializeField, Tooltip("경고/확인 팝업 컴포넌트")]
     private UI_WarningPopup warningPopup;
 
@@ -41,6 +45,9 @@ public class UIView_SaveCheck : UIView
     private float checkingPanelDelaySeconds = 0.3f;
 
     [Header("Messages")]
+    [SerializeField, TextArea(2, 4)]
+    private string checkingMessage = "저장 데이터를 확인하고 있습니다...";
+
     [SerializeField, TextArea(2, 4)]
     private string depth1FailedMessage = "저장 데이터를 불러오지 못했습니다.\n일시적인 오류일 수 있습니다. 다시 불러오시겠습니까?";
 
@@ -71,6 +78,7 @@ public class UIView_SaveCheck : UIView
         inputManager = _inputManager;
         localizationManager = _localizationManager;
         SetupWarningPopup();
+        RefreshCheckingText();
     }
 
     public void InitializeInput(InputManager _inputManager)
@@ -95,6 +103,7 @@ public class UIView_SaveCheck : UIView
                 {
                     if (null != checkingPanel && false == checkingPanel.activeSelf)
                     {
+                        RefreshCheckingText();
                         checkingPanel.SetActive(true);
                     }
                 }
@@ -109,6 +118,7 @@ public class UIView_SaveCheck : UIView
             case ESaveCheckState.Failed:
                 if (null != checkingPanel && false == checkingPanel.activeSelf)
                 {
+                    RefreshCheckingText();
                     checkingPanel.SetActive(true);
                 }
 
@@ -122,6 +132,32 @@ public class UIView_SaveCheck : UIView
     }
 
     // // 2. 일반 비즈니스 로직 및 내부 메서드
+
+    /// <summary>
+    /// "확인 중" 문구를 현재 언어로 채웁니다.
+    ///
+    /// 이 화면은 메인 메뉴보다 먼저 뜨지만, Bootstrap이 그 전에 SettingsManager.Bind로 언어를
+    /// 적용해 둔다. (저장된 선택이 있으면 그 언어, 없으면 Steam 언어 → OS 언어 → 영어 순.
+    /// LanguageAutoDetect 참고) 그래서 여기서 조회하면 이미 유저의 언어로 나온다.
+    /// 패널을 켤 때마다 다시 채우는 이유는, 프리팹에 박혀 있던 문구나 이전 언어 문구가
+    /// 그대로 보이는 일이 없게 하기 위해서다.
+    /// </summary>
+    private void RefreshCheckingText()
+    {
+        if (null == checkingText)
+        {
+            return;
+        }
+
+        string _displayMsg = null != localizationManager ? localizationManager.GetText("CheckingMessage") : null;
+        if (true == string.IsNullOrEmpty(_displayMsg))
+        {
+            _displayMsg = checkingMessage;
+        }
+
+        checkingText.text = _displayMsg;
+    }
+
     private void SetupWarningPopup()
     {
         if (null == warningPopup)
