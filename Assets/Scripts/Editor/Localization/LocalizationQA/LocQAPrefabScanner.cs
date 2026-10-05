@@ -406,6 +406,8 @@ namespace LocalizationQA
                         for (int i = 0; i < _group.Value.Count; i++)
                         {
                             LocQATextRecord _rec = _group.Value[i];
+                            // 게임에서 이 언어 화면에 나오지 않는 문구(다른 언어의 이름)는 검사하지 않는다.
+                            if (null != _rec.entry && false == LocQALanguages.ShownIn(_rec.entry.id, _lang)) continue;
                             LocQAMeasurement _m = LocQATextAnalyzer.Measure(_rec.text, _settings, true, false);
 
                             for (int f = 0; f < _m.findings.Count; f++)
@@ -714,6 +716,8 @@ namespace LocalizationQA
                     for (int l = 0; l < _langs.Count; l++)
                     {
                         Language _lang = _langs[l];
+                        // 게임에서 이 언어 화면에 나오지 않는 조합(다른 언어의 이름)은 글리프가 없어도 문제가 아니다.
+                        if (false == LocQALanguages.ShownIn(_entry.id, _lang)) continue;
                         string _text = LocQALanguages.Resolve(_entry.data, _lang);
 
                         if (true == string.IsNullOrWhiteSpace(_text))

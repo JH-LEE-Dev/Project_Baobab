@@ -1027,6 +1027,10 @@ namespace LocalizationQA
         private List<LocQATextRecord> records;
         private LocQAEntry[] baseEntries;
 
+        // 언어 이름이 들어가는 주변 칸(옵션의 언어 행 값 등) → 언어별로 넣을 문구.
+        // 게임은 그 칸에 항상 "현재 언어의 이름"을 보여주므로, 중국어로 그릴 때는 简体中文을 넣는다. (English로 고정하면 게임과 다르다)
+        private readonly Dictionary<int, Dictionary<Language, LocQAEntry>> ownLanguageFill = new Dictionary<int, Dictionary<Language, LocQAEntry>>();
+
         // 되돌리기 기록
         private readonly List<GameObject> activated = new List<GameObject>(8);
         private readonly List<KeyValuePair<CanvasGroup, float>> alphas = new List<KeyValuePair<CanvasGroup, float>>(4);
@@ -1228,6 +1232,39 @@ namespace LocalizationQA
             return null != _best ? table.Find(_best) : null;
         }
 
+        /// <summary>
+        /// 주변 칸 중 언어 이름이 들어가는 칸을 찾아, 그릴 언어마다 넣을 "그 언어의 이름" 문구를 정해 둔다.
+        /// 그 자리에 연결된 언어 이름 문구가 있으면 그중에서(옵션 행은 짧은 이름 ...Short), 없으면 같은 종류(짧은/긴 이름)에서 고른다.
+        /// </summary>
+        private void BuildOwnLanguageFill(string _contextGuid)
+        {
+            ownLanguageFill.Clear();
+            for (int i = 0; i < records.Count; i++)
+            {
+                LocQAEntry _base = baseEntries[i];
+                if (null == _base || false == LocQALanguages.TryGetOwnLanguage(_base.id, out _)) continue;
+
+                List<string> _candidates = new List<string>(20);
+                if (true == entriesAtPath.TryGetValue(_contextGuid + "|" + records[i].path, out List<string> _atPath))
+                {
+                    for (int c = 0; c < _atPath.Count; c++)
+                    {
+                        if (true == LocQALanguages.TryGetOwnLanguage(_atPath[c], out _)) _candidates.Add(_atPath[c]);
+                    }
+                }
+                if (_candidates.Count < 2) _candidates = LocQALanguages.OwnLanguageEntryIds(_base.id.EndsWith("Short", StringComparison.Ordinal));
+
+                Dictionary<Language, LocQAEntry> _map = new Dictionary<Language, LocQAEntry>();
+                for (int c = 0; c < _candidates.Count; c++)
+                {
+                    if (false == LocQALanguages.TryGetOwnLanguage(_candidates[c], out Language _lang) || true == _map.ContainsKey(_lang)) continue;
+                    LocQAEntry _entry = table.Find(_candidates[c]);
+                    if (null != _entry) _map.Add(_lang, _entry);
+                }
+                if (_map.Count > 0) ownLanguageFill.Add(i, _map);
+            }
+        }
+
         private static readonly string[] NameNoise = { "opt", "row", "tmp", "txt", "text", "visuals", "title", "value", "btn", "label" };
 
         private static string SimplifyName(string _name)
@@ -1286,6 +1323,7 @@ namespace LocalizationQA
 
                 baseEntries[i] = FillEntry(_prefab, _rec);
             }
+            BuildOwnLanguageFill(_contextGuid);
 
             pathMap.Clear();
             Transform[] _all = instance.GetComponentsInChildren<Transform>(true);
@@ -1299,7 +1337,13 @@ namespace LocalizationQA
 
         private void Apply(LocQARenderRequest _request, TMP_Text _text, Language _lang)
         {
+            foreach (KeyValuePair<int, Dictionary<Language, LocQAEntry>> _pair in ownLanguageFill)
+            {
+                if (records[_pair.Key].text == _text) continue;
+                records[_pair.Key].entry = true == _pair.Value.TryGetValue(_lang, out LocQAEntry _own) ? _own : baseEntries[_pair.Key];
+            }
             LocQAPrefabScanner.ApplyLanguage(records, _lang, fonts, settings);
+            LocQALayoutHooks.RunLanguage(instance, _lang);
 
             if (null != _request.entry)
             {

@@ -525,6 +525,8 @@ namespace LocalizationQA
                             float _x = _r.xMax - (_sq + 1f) * languages.Count - 4f;
                             for (int l = 0; l < languages.Count; l++)
                             {
+                                // 게임에서 그 언어 화면에 안 나오는 조합(언어 이름 문구)은 검수 대상이 아니라 비워 둔다.
+                                if (false == LocQALanguages.ShownIn(_row.item.entryId, languages[l])) continue;
                                 Color _c = StateColor(LocQAReviewData.Shared.GetEffective(_row.item, languages[l], _hashes[(int)languages[l]]));
                                 EditorGUI.DrawRect(new Rect(_x + l * (_sq + 1f), _r.y + 20f, _sq, _sq), _c);
                             }
@@ -1310,9 +1312,24 @@ namespace LocalizationQA
             renderedKey = _key;
             LocQARenderRequest _request = null != _current.item ? LocQARenderRequest.From(_current.item, _current.entry) : LocQARenderRequest.From(_current.slot);
 
+            // 언어 이름 문구는 그 언어 화면에서만 나오므로 그 언어 하나만 그린다.
+            List<Language> _langs = null != _current.item ? LocQALanguages.ShownLanguages(_current.item.entryId, languages) : languages;
+            if (null != _current.item && 0 == _langs.Count && true == LocQALanguages.TryGetOwnLanguage(_current.item.entryId, out Language _own))
+            {
+                cells = new List<LocQAReviewCell>();
+                renderError = $"이 문구는 게임에서 {LocQALanguages.Name(_own)} 화면에서만 나옵니다. 비교 언어에 {LocQALanguages.Name(_own)}를 넣으세요.";
+                renderNote = null;
+                return;
+            }
+
             try
             {
-                cells = LocQAReviewRenderer.Render(_request, languages, settings, out renderError, out renderNote);
+                cells = LocQAReviewRenderer.Render(_request, _langs, settings, out renderError, out renderNote);
+                if (null != _current.item && true == LocQALanguages.TryGetOwnLanguage(_current.item.entryId, out Language _onlyIn))
+                {
+                    string _why = $"언어 이름은 그 언어로 바뀐 화면에서만 나오므로 {LocQALanguages.Name(_onlyIn)} 화면 하나만 검수합니다.";
+                    renderNote = string.IsNullOrEmpty(renderNote) ? _why : renderNote + " " + _why;
+                }
             }
             catch (Exception _ex)
             {
@@ -1385,11 +1402,13 @@ namespace LocalizationQA
                 _referenced.Add(_item.entryId);
 
                 string[] _hashes = Hashes(table.Find(_item.entryId));
+                List<Language> _itemLanguages = LocQALanguages.ShownLanguages(_item.entryId, _progressLanguages);
+                if (0 == _itemLanguages.Count) continue;
                 int _done = 0;
                 int _ng = 0;
-                for (int l = 0; l < _progressLanguages.Count; l++)
+                for (int l = 0; l < _itemLanguages.Count; l++)
                 {
-                    LocQAReviewData.EffectiveState _state = _data.GetEffective(_item, _progressLanguages[l], _hashes[(int)_progressLanguages[l]]);
+                    LocQAReviewData.EffectiveState _state = _data.GetEffective(_item, _itemLanguages[l], _hashes[(int)_itemLanguages[l]]);
                     if (LocQAReviewData.EffectiveState.Ok == _state) _done++;
                     else if (LocQAReviewData.EffectiveState.Ng == _state) { _done++; _ng++; }
                 }
@@ -1400,7 +1419,7 @@ namespace LocalizationQA
                 {
                     ContextRow _c = GetContext(_contexts, _screens[s]);
                     _c.rows++;
-                    _c.total += _progressLanguages.Count;
+                    _c.total += _itemLanguages.Count;
                     _c.done += _done;
                     _c.ng += _ng;
                 }
@@ -1446,6 +1465,8 @@ namespace LocalizationQA
                 LocQAReviewItem _item = _data.Items[i];
                 if (false == LocQAScreenIndex.ScreensOfSlot(_item.contextGuid, _item.slotGuid, settings.prefabFolder).Contains(selectedContext)) continue;
 
+                if (EMode.Language == mode && false == LocQALanguages.ShownIn(_item.entryId, ReviewLanguage)) continue;
+
                 LocQAEntry _entry = table.Find(_item.entryId);
                 Row _row = new Row
                 {
@@ -1455,6 +1476,7 @@ namespace LocalizationQA
                     label = _item.entryId,
                     sub = null != _entry ? OneLine(_entry.data.kr, 50) : "(JSON에 없는 키)"
                 };
+                if (true == LocQALanguages.TryGetOwnLanguage(_item.entryId, out Language _ownLanguage)) _row.sub += $"  · {LocQALanguages.Name(_ownLanguage)} 화면에서만";
                 _row.group = GroupLabel(_row);
                 if (false == PassesFilter(_data, _row)) continue;
                 rows.Add(_row);
@@ -1508,7 +1530,7 @@ namespace LocalizationQA
             if (null != _row.slot) return EFilter.Todo == filter && false == _row.slot.ignored;
 
             string[] _hashes = Hashes(_row.entry);
-            List<Language> _langs = EMode.Language == mode ? new List<Language> { ReviewLanguage } : languages;
+            List<Language> _langs = LocQALanguages.ShownLanguages(_row.item.entryId, EMode.Language == mode ? new List<Language> { ReviewLanguage } : languages);
             bool _todo = false;
             bool _ng = false;
             for (int l = 0; l < _langs.Count; l++)
@@ -2132,6 +2154,7 @@ namespace LocalizationQA
                 for (int l = 0; l < _langCount; l++)
                 {
                     Language _lang = LocQALanguages.All[l];
+                    if (false == LocQALanguages.ShownIn(_item.entryId, _lang)) continue; // 게임에 없는 조합 (언어 이름 문구)
                     string _hash = null != _entry ? LocQAReviewData.Hash(LocQALanguages.Resolve(_entry.data, _lang)) : string.Empty;
                     LocQAReviewData.EffectiveState _state = _data.GetEffective(_item, _lang, _hash);
 

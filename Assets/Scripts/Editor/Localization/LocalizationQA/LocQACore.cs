@@ -170,6 +170,72 @@ namespace LocalizationQA
             }
         }
 
+        // 언어 이름 문구는 그 언어로 바뀐 화면에서만 나온다. 옵션의 언어 행과 첫 실행 언어 팝업 모두 넘길 때마다
+        // 앱 언어를 바로 바꾸고 현재 언어의 이름만 보여주기 때문이다. (UI_Option.GetLanguageText(_data.language),
+        // UI_InitialSetupPopup.CycleLanguage → SetLanguage) 그래서 "중국어 화면에 English" 같은 조합은 게임에 없으므로
+        // 이 문구들은 그 언어 하나로만 검수·검사한다.
+        private static readonly Dictionary<string, Language> OwnLanguageEntries = new Dictionary<string, Language>(StringComparer.Ordinal)
+        {
+            { "OptionUI/LanguageKorean", Language.KR },
+            { "OptionUI/LanguageEnglish", Language.EN },
+            { "OptionUI/LanguageChineseSimplified", Language.ZH_HANS },
+            { "OptionUI/LanguageChineseTraditional", Language.ZH_HANT },
+            { "OptionUI/LanguageJapanese", Language.JA },
+            { "OptionUI/LanguageGerman", Language.DE },
+            { "OptionUI/LanguageFrench", Language.FR },
+            { "OptionUI/LanguagePortuguese", Language.PT },
+            { "OptionUI/LanguageSpanish", Language.ES },
+            { "OptionUI/LanguageSpanishShort", Language.ES },
+            { "OptionUI/LanguageRussian", Language.RU },
+            { "OptionUI/LanguagePolish", Language.PL },
+            { "OptionUI/LanguageTurkish", Language.TR },
+            { "OptionUI/LanguageSpanishLatAm", Language.ES_LATAM },
+            { "OptionUI/LanguageSpanishLatAmShort", Language.ES_LATAM },
+            { "OptionUI/LanguageItalian", Language.IT },
+            { "OptionUI/LanguageUkrainian", Language.UK },
+            { "OptionUI/LanguageCzech", Language.CS },
+            { "OptionUI/LanguageIndonesian", Language.ID },
+            { "OptionUI/LanguageIndonesianShort", Language.ID },
+            { "OptionUI/LanguageVietnamese", Language.VI },
+        };
+
+        /// <summary>
+        /// 언어마다 하나씩, 언어 이름 문구 키들. 짧은 이름(...Short)이 있는 언어는 _preferShort에 따라 짧은 쪽/긴 쪽을 고른다.
+        /// (옵션 언어 행은 폭이 좁아 짧은 이름, 첫 실행 팝업은 긴 이름을 쓴다)
+        /// </summary>
+        public static List<string> OwnLanguageEntryIds(bool _preferShort)
+        {
+            Dictionary<Language, string> _pick = new Dictionary<Language, string>();
+            foreach (KeyValuePair<string, Language> _pair in OwnLanguageEntries)
+            {
+                bool _isShort = _pair.Key.EndsWith("Short", StringComparison.Ordinal);
+                if (false == _pick.ContainsKey(_pair.Value) || _isShort == _preferShort) _pick[_pair.Value] = _pair.Key;
+            }
+            return new List<string>(_pick.Values);
+        }
+
+        /// <summary>그 언어 화면에서만 나오는 문구면 그 언어. (언어 이름 문구)</summary>
+        public static bool TryGetOwnLanguage(string _entryId, out Language _lang)
+        {
+            _lang = Language.KR;
+            return null != _entryId && true == OwnLanguageEntries.TryGetValue(_entryId, out _lang);
+        }
+
+        /// <summary>이 문구가 게임에서 그 언어 화면에 나올 수 있는지.</summary>
+        public static bool ShownIn(string _entryId, Language _lang)
+        {
+            return false == TryGetOwnLanguage(_entryId, out Language _own) || _own == _lang;
+        }
+
+        /// <summary>_langs 중 이 문구가 실제로 나오는 언어만. 제한이 없으면 _langs 그대로.</summary>
+        public static List<Language> ShownLanguages(string _entryId, List<Language> _langs)
+        {
+            if (false == TryGetOwnLanguage(_entryId, out Language _own)) return _langs;
+            List<Language> _result = new List<Language>(1);
+            if (true == _langs.Contains(_own)) _result.Add(_own);
+            return _result;
+        }
+
         public static bool IsFallback(in LocalizationEntry _entry, Language _lang)
         {
             if (Language.KR == _lang || Language.EN == _lang) return false;
