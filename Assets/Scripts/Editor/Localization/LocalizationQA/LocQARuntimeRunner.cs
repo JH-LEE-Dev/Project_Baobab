@@ -28,6 +28,7 @@ namespace LocalizationQA
     internal sealed class LocQARuntimeRunner
     {
         public const string CAPTURE_ROOT = "LocalizationQA/Captures";
+        private const string OVERLAY_NAME = "[LocalizationQA Overlay]";
 
         private const float LINE_THICKNESS = 2f;
         private const float CAPTURE_TIMEOUT = 3f;
@@ -54,6 +55,31 @@ namespace LocalizationQA
         private int linesUsed;
 
         // //생성·정리
+        [InitializeOnLoadMethod]
+        private static void RegisterLeakCleanup()
+        {
+            EditorApplication.playModeStateChanged -= CleanupLeakedOverlays;
+            EditorApplication.playModeStateChanged += CleanupLeakedOverlays;
+        }
+
+        /// <summary>
+        /// 플레이를 끝냈는데도 남은 오버레이(정리 도중 스크립트가 다시 컴파일되는 등)를 지운다.
+        /// 씬에 속하지 않고 에셋도 아닌, 이 툴이 만든 이름의 최상위 오브젝트만 대상이다.
+        /// </summary>
+        private static void CleanupLeakedOverlays(PlayModeStateChange _change)
+        {
+            if (PlayModeStateChange.EnteredEditMode != _change) return;
+
+            GameObject[] _all = Resources.FindObjectsOfTypeAll<GameObject>();
+            for (int i = 0; i < _all.Length; i++)
+            {
+                GameObject _go = _all[i];
+                if (null == _go || OVERLAY_NAME != _go.name || null != _go.transform.parent) continue;
+                if (true == _go.scene.IsValid() || true == EditorUtility.IsPersistent(_go)) continue;
+                UnityObject.DestroyImmediate(_go);
+            }
+        }
+
         public static LocQARuntimeRunner Ensure()
         {
             if (false == Application.isPlaying) return null;
@@ -79,7 +105,11 @@ namespace LocalizationQA
             EditorApplication.update -= Tick;
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
 
-            if (null != root) UnityObject.Destroy(root);
+            if (null != root)
+            {
+                if (true == Application.isPlaying) UnityObject.Destroy(root);
+                else UnityObject.DestroyImmediate(root);
+            }
             root = null;
             cycle = null;
             if (this == Current) Current = null;
@@ -418,8 +448,9 @@ namespace LocalizationQA
         // //화면 표시 (게임 뷰 위에 문제 위치를 박스로 그린다)
         private void BuildOverlay()
         {
-            root = new GameObject("[LocalizationQA Overlay]", typeof(RectTransform));
-            root.hideFlags = HideFlags.DontSave;
+            // HideFlags.DontSave를 붙이면 플레이가 끝나도 Unity가 지우지 않아 에디터 Game 뷰에 박스가 남는다.
+            // 평범한 런타임 오브젝트로 만들어 플레이 종료와 함께 사라지게 한다.
+            root = new GameObject(OVERLAY_NAME, typeof(RectTransform));
             UnityObject.DontDestroyOnLoad(root);
 
             overlay = root.AddComponent<Canvas>();
