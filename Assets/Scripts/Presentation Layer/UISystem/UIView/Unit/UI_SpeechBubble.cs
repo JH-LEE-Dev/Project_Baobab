@@ -41,6 +41,16 @@ public class UI_SpeechBubble : MonoBehaviour
     
     private bool enableLock = true;
 
+    // 마지막으로 문구를 채운 말풍선 ID. currentId는 노출 시간이 끝나면 -1로 내려가지만,
+    // 숨김 모션이 도는 동안에는 그 문구가 아직 화면에 보이므로 따로 기억해둔다.
+    private int lastTextId = -1;
+
+    /// <summary>
+    /// 지금 문구가 채워져 있는 말풍선 ID입니다. 한 번도 띄운 적이 없거나 비워졌으면 -1입니다.
+    /// (숨김 모션 중이어도 문구가 남아 있으므로 그 ID를 돌려줍니다)
+    /// </summary>
+    public int LastTextId => lastTextId;
+
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize()
     {
@@ -65,6 +75,7 @@ public class UI_SpeechBubble : MonoBehaviour
         if (null != speechText)
             speechText.text = string.Empty;
 
+        lastTextId = -1;
         enableLock = true;
     }
     
@@ -213,6 +224,7 @@ public class UI_SpeechBubble : MonoBehaviour
             lastShownTimeMap[_id] = Time.time;
 
         currentId = _id;
+        lastTextId = _id;
         SetText(_text);
         Show();
 
