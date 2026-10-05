@@ -24,9 +24,10 @@ using UnityEngine;
 /// 항상 측정할 수 있습니다. 이 스위치는 순수하게 "빌드에 넣을지"만 정합니다.
 ///
 /// [스토어 빌드에서는 반드시 꺼야 합니다]
-/// 켜진 채로 빌드하면 OnPreprocessBuild가 빌드 로그에 경고를 남깁니다. 빌드를 실패시키지는
-/// 않습니다 - 측정용 빌드를 만드는 것 자체가 정당한 작업이고, 어느 빌드가 스토어로 가는지는
-/// 여기서 알 수 없기 때문입니다. 판단은 사람이 하고, 이 클래스는 사실만 남깁니다.
+/// 측정용 빌드를 만드는 것 자체는 정당한 작업이라, 켜진 채 빌드하면 기본적으로 경고만 남깁니다.
+/// 다만 <b>스토어 출력 폴더(&lt;스토어&gt;_&lt;배포&gt;)로 가는 배포 빌드</b>는 실패시킵니다. 그 폴더가 곧 업로드
+/// 대상이기 때문입니다. 측정용 빌드는 Build Profile 창에서 다른 폴더로 만드십시오.
+/// 혹시 빠져나가더라도 UploadPreflightCheck 가 스탬프의 DEFINES 를 보고 한 번 더 막습니다.
 /// </summary>
 public class BenchmarkBuildToggle : IPreprocessBuildWithReport
 {
@@ -79,11 +80,41 @@ public class BenchmarkBuildToggle : IPreprocessBuildWithReport
     {
         if (false == IsEnabled) return;
 
+        bool _isDevelopmentBuild = 0 != (_report.summary.options & BuildOptions.Development);
+
+        if (false == _isDevelopmentBuild && true == IsStoreOutput(_report.summary.outputPath))
+        {
+            throw new BuildFailedException(
+                $"[Benchmark] 빌드를 중단했습니다. 벤치마크 하네스({BENCHMARK_DEFINE})가 켜진 채 스토어 출력 폴더로 배포 빌드를 하려 했습니다.\n" +
+                "  스토어 빌드라면 Tools > 빌드 > \"벤치마크 하네스 빌드에 포함\"을 끄십시오.\n" +
+                "  측정용 빌드라면 Build Profile 창에서 다른 폴더로 빌드하십시오.");
+        }
+
         // 빌드 로그에 남겨야 나중에 "이 빌드가 측정용이었나"를 되짚을 수 있습니다.
         // 콘솔 경고만으로는 배치 빌드에서 아무도 보지 못합니다.
         Debug.LogWarning(
             $"[Benchmark] 이 빌드에는 벤치마크 하네스가 포함됩니다 ({BENCHMARK_DEFINE} 켜짐).\n" +
             "  스토어에 올릴 빌드라면 지금 중단하고 Tools > 빌드 > \"벤치마크 하네스 빌드에 포함\"을 끄십시오.");
+    }
+
+    /// <summary>
+    /// 빌드 결과가 어느 스토어·배포 조합의 출력 폴더(&lt;스토어&gt;_&lt;배포&gt;)로 가는지 봅니다. 그 폴더가 업로드 대상입니다.
+    /// </summary>
+    private static bool IsStoreOutput(string _outputPath)
+    {
+        if (true == string.IsNullOrEmpty(_outputPath)) return false;
+
+        string _folder = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(_outputPath)));
+
+        foreach (BuildStore _store in System.Enum.GetValues(typeof(BuildStore)))
+        {
+            foreach (BuildRelease _release in System.Enum.GetValues(typeof(BuildRelease)))
+            {
+                if (true == string.Equals(_folder, PlatformBuildModeSwitcher.BuildFolderName(_store, _release), System.StringComparison.OrdinalIgnoreCase)) return true;
+            }
+        }
+
+        return false;
     }
 
     private static NamedBuildTarget ActiveTarget =>

@@ -23,7 +23,8 @@ using UnityEngine;
 ///      (Steam 빌드라면 반대로 있어야 합니다)
 ///   3. 심볼 폴더 · pdb · 세이브 파일 · steam_appid.txt 가 없는가
 ///   4. 압축(LZ4HC)으로 포장됐는가 - data.unity3d 가 있어야 합니다. 없으면 무압축으로 나간 것입니다
-///   5. 스탬프의 커밋이 지금 HEAD 와 같은가 (다르면 경고)
+///   5. 스탬프의 커밋이 지금 HEAD 와 같은가 (뒤에 desc·문서 커밋만 있으면 통과, 그 밖의 변경이 있으면 오류)
+///   6. 커밋 안 된 변경이 섞인 빌드(GIT_DIRTY)나 벤치마크 하네스가 든 빌드가 아닌가 (오류)
 ///
 /// [통과하면 경로를 클립보드에 복사합니다]
 /// 업로더에는 경로를 직접 적는 칸이 있습니다. 폴더 선택 창을 열어 옆 폴더를 집는 대신
@@ -289,20 +290,71 @@ public static class UploadPreflightCheck
             _r.Errors.Add("Development Build 입니다. 심볼과 디버그 정보가 그대로 들어 있어 배포할 수 없습니다.");
         }
 
+        // 벤치마크 하네스(-benchmark 인자, F9 측정, 화면 표시)는 측정용 빌드에만 들어가야 한다.
+        if (0 <= Get(_r.Stamp, "DEFINES").IndexOf(BenchmarkBuildToggle.BENCHMARK_DEFINE, StringComparison.Ordinal))
+        {
+            _r.Errors.Add($"{BenchmarkBuildToggle.BENCHMARK_DEFINE} 가 켜진 채 빌드됐습니다. 측정용 빌드라 배포할 수 없습니다. " +
+                          "Tools > 빌드 > \"벤치마크 하네스 빌드에 포함\"을 끄고 다시 빌드하십시오.");
+        }
+
         if (BuildStampWriter.TryGetGitInfo(out string _head, out bool _dirtyNow))
         {
             string _built = Get(_r.Stamp, "GIT");
 
             if (_built != _head)
             {
-                _r.Warnings.Add($"빌드된 커밋({_built})과 지금 HEAD({_head})가 다릅니다. 그 사이 변경이 빌드에 없습니다.");
+                CheckCommitsSinceBuild(_r, _built, _head);
             }
 
+            // 스탬프의 GIT_DIRTY 는 빌드 시작 시점 값이고, 스위처가 바꾸는 파일(디파인·Sentry·GA·steam_appid)은 세지 않는다.
+            // 그런데도 true 면 커밋 안 된 코드나 에셋이 빌드에 섞였다는 뜻이다. 어떤 커밋으로도 재현되지 않는 빌드는 올리지 않는다.
             if ("true" == Get(_r.Stamp, "GIT_DIRTY"))
             {
-                _r.Warnings.Add("커밋되지 않은 변경이 섞인 상태에서 빌드됐습니다. 이 빌드는 어떤 커밋으로도 재현되지 않습니다.");
+                _r.Errors.Add("커밋되지 않은 변경이 섞인 상태에서 빌드됐습니다. 이 빌드는 어떤 커밋으로도 재현되지 않습니다. " +
+                              "변경을 커밋하거나 되돌린 뒤 다시 빌드하십시오.");
             }
         }
+        else
+        {
+            _r.Warnings.Add("git 정보를 읽지 못해 빌드된 커밋과 지금 HEAD 를 비교하지 못했습니다.");
+        }
+    }
+
+    /// <summary>
+    /// 빌드 뒤에 들어온 커밋이 빌드 결과와 무관한 파일(Steam desc VDF, 문서)만 바꿨다면 통과시킵니다.
+    /// 빌드 → 검증 → desc 커밋 → 업로드 순서에서는 HEAD 가 항상 한 칸 앞서기 때문입니다.
+    /// 그 밖의 파일이 바뀌었으면 그 변경이 빌드에 없으므로 막습니다.
+    /// </summary>
+    private static void CheckCommitsSinceBuild(Result _r, string _built, string _head)
+    {
+        if (false == BuildStampWriter.TryGetChangedFilesBetween(_built, _head, out List<string> _changed))
+        {
+            _r.Errors.Add($"빌드된 커밋({_built})을 지금 저장소에서 찾지 못했습니다. 지금 HEAD({_head})로 다시 빌드하십시오.");
+            return;
+        }
+
+        List<string> _relevant = new List<string>();
+
+        for (int i = 0; i < _changed.Count; i++)
+        {
+            string _path = _changed[i];
+
+            if (true == _path.StartsWith("BuildScripts/", StringComparison.OrdinalIgnoreCase)) continue;
+            if (true == _path.StartsWith("Docs/", StringComparison.OrdinalIgnoreCase)) continue;
+            if (true == _path.EndsWith(".md", StringComparison.OrdinalIgnoreCase)) continue;
+
+            _relevant.Add(_path);
+        }
+
+        if (0 == _relevant.Count)
+        {
+            _r.Warnings.Add($"빌드된 커밋({_built}) 뒤에 desc·문서 커밋만 있습니다. 빌드 내용은 지금 HEAD({_head})와 같습니다.");
+            return;
+        }
+
+        string _sample = string.Join(", ", _relevant.GetRange(0, Math.Min(5, _relevant.Count)));
+        _r.Errors.Add($"빌드된 커밋({_built}) 뒤에 빌드에 영향을 주는 변경 {_relevant.Count}건이 들어왔습니다(예: {_sample}). " +
+                      $"이 빌드에는 그 변경이 없습니다. 지금 HEAD({_head})로 다시 빌드하십시오.");
     }
 
     /// <summary>

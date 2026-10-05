@@ -50,7 +50,9 @@ public class HUD_LootTooltip : MonoBehaviour
     /// </summary>
     public void ShowTooltip(RectTransform _targetSlot, string _descriptionText)
     {
+#if UNITY_EDITOR
         Debug.Log($"[HUD_LootTooltip] ShowTooltip called. Target: {_targetSlot?.name}, Description: {_descriptionText}");
+#endif
         if (null == _targetSlot) return;
 
         gameObject.SetActive(true);
