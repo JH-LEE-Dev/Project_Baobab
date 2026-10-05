@@ -10,6 +10,8 @@ using UnityEngine;
 /// </summary>
 public class FPSCounter : MonoBehaviour
 {
+    // 개발용 계측 표시라 배포 빌드에서는 코드째 뺀다. 씬에 켜 둔 채 커밋돼도 유저 화면에 FPS가 뜨지 않는다.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     [SerializeField, Tooltip("화면에 FPS 수치를 표시할지 여부. 릴리즈 빌드에서는 꺼두세요.")]
     private bool showFPS = true;
 
@@ -45,4 +47,5 @@ public class FPSCounter : MonoBehaviour
         guiStyle.normal.textColor = Color.green;
         GUI.Label(rect, text, guiStyle);
     }
+#endif
 }

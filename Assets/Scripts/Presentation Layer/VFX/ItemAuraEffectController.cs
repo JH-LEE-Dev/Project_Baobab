@@ -62,8 +62,11 @@ public class ItemAuraEffectController : MonoBehaviour
     [SerializeField, Tooltip("재생 시 고유 랜덤 시드 및 시작 각도 할당")] private bool randomizeOnPlay = true;
     [SerializeField, Tooltip("재생 시 회전 방향을 랜덤으로 결정 (시계 / 반시계)")] private bool randomizeRotationDirection = true;
 
-    [Header("디버그 및 테스트 GUI")]
+#if UNITY_EDITOR
+    // 화면 디버그 GUI(OnGUI)가 에디터 전용이라 스위치도 빌드에서 뺀다.
+    [Header("디버그 및 테스트 GUI (빌드에는 포함되지 않음)")]
     [SerializeField] private bool showOnScreenDebugGui = false;
+#endif
 
     // 런타임 상태
     private MaterialPropertyBlock propertyBlock;

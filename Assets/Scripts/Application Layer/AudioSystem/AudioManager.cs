@@ -54,9 +54,12 @@ public class AudioManager : MonoBehaviour
     private const string UIMixerGroupName = "UI";
     private AudioMixerGroup uiMixerGroup;
 
-    [Header("Debug Settings")]
+#if UNITY_EDITOR
+    // ` 키로 소리를 내는 테스트 기능이라 빌드에서는 코드째 뺀다.
+    [Header("Debug Settings (빌드에는 포함되지 않음)")]
     [SerializeField] private bool enableDebugSound = false;
     [SerializeField] private SoundID debugSoundId;
+#endif
 
     private Queue<AudioEvent> eventQueue = new Queue<AudioEvent>(100);
     private List<AudioSource> sourcePool = new List<AudioSource>();
@@ -706,6 +709,7 @@ public class AudioManager : MonoBehaviour
             PlayInternal(e);
         }
 
+#if UNITY_EDITOR
         if (enableDebugSound && UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.backquoteKey.wasPressedThisFrame)
         {
             if (Camera.main != null && UnityEngine.InputSystem.Mouse.current != null)
@@ -716,6 +720,7 @@ public class AudioManager : MonoBehaviour
                 EnqueueEvent(new AudioEvent(debugSoundId, worldPos));
             }
         }
+#endif
     }
 
     private void PlayInternal(AudioEvent e)

@@ -62,11 +62,14 @@ public class CollisionSystem : MonoBehaviour
         Debug.Log($"[CollisionSystem] {_context} - 사용 슬롯 {UsedEntityCount}/{maxEntities}");
     }
 
-    [Header("Debug")]
+#if UNITY_EDITOR
+    // 씬 뷰 기즈모 설정. 기즈모는 에디터에서만 그려지므로 빌드에서 뺀다.
+    [Header("Debug (빌드에는 포함되지 않음)")]
     [SerializeField] private bool showDebug = true;
     [SerializeField] private bool showFullGrid = false;
     [SerializeField] private Color objectColor = Color.cyan;
     [SerializeField] private Color activeGridColor = new Color(0, 1, 0, 0.1f);
+#endif
 
     // 1번 최적화: 나눗셈 연산을 피하기 위한 역수 캐싱
     private float invCellSize;
@@ -488,6 +491,7 @@ public class CollisionSystem : MonoBehaviour
         return _dx * _dx + _dy * _dy;
     }
 
+#if UNITY_EDITOR
     private void OnDrawGizmos()
     {
         if (!showDebug || staticHeads == null) return;
@@ -529,4 +533,5 @@ public class CollisionSystem : MonoBehaviour
             _curr = nextPointers[_curr];
         }
     }
+#endif
 }

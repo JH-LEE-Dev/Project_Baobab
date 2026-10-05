@@ -88,7 +88,10 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     private const string PLAYER_TAG = "Player";
 
+#if UNITY_EDITOR
+    // 인벤토리 디버그 로그 스위치. 빌드에는 포함되지 않는다.
     [SerializeField] private bool bDebug = false;
+#endif
 
     private bool bStop = false;
 
@@ -728,6 +731,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         return true;
     }
 
+#if UNITY_EDITOR
     private void DebugLogCharacterInventory()
     {
         if (characterInventory == null || bDebug == false) return;
@@ -762,6 +766,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         }
         Debug.Log(sb.ToString());
     }
+#endif
 
     private void InteractionKeyCanceled()
     {
