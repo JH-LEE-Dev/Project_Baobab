@@ -152,6 +152,9 @@ namespace LocalizationQA
             ("UI_InitialSetupPopup", "languagePanel", new[] { "consentPanel", "confirmButton" }),
             // 2단계 동의로 넘어가면 언어 패널을 끈다. (UI_InitialSetupPopup.SetupConsentPanelOnTransition)
             ("UI_InitialSetupPopup", "consentPanel", new[] { "languagePanel", "languageConfirmButton" }),
+            // 옵션 컨트롤 탭: 입력 장치에 따라 키보드 목록과 패드 목록 중 하나만 켜진다. (UI_Option.RefreshControlTabVisibility)
+            ("UI_Option", "keyBindRowContainer", new[] { "gamepadKeyBindRowContainer" }),
+            ("UI_Option", "gamepadKeyBindRowContainer", new[] { "keyBindRowContainer" }),
         };
 
         private const BindingFlags FLAGS = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -1027,6 +1028,11 @@ namespace LocalizationQA
         private List<LocQATextRecord> records;
         private LocQAEntry[] baseEntries;
 
+        // 게임이 실행 중에 붙이는 부품(툴팁·키 설정 행 등)의 칸에 넣을 문구 (경로 → 키). LocQAHosting.Attach가 채운다.
+        private readonly Dictionary<string, string> hostFills = new Dictionary<string, string>(StringComparer.Ordinal);
+        // 지금 그리는 칸의 부품 내용·위치 맞추기 (툴팁 내용, 말풍선 꼬리 등). 없으면 null
+        private LocQAHostPlan hostPlan;
+
         // 언어 이름이 들어가는 주변 칸(옵션의 언어 행 값 등) → 언어별로 넣을 문구.
         // 게임은 그 칸에 항상 "현재 언어의 이름"을 보여주므로, 중국어로 그릴 때는 简体中文을 넣는다. (English로 고정하면 게임과 다르다)
         private readonly Dictionary<int, Dictionary<Language, LocQAEntry>> ownLanguageFill = new Dictionary<int, Dictionary<Language, LocQAEntry>>();
@@ -1088,11 +1094,20 @@ namespace LocalizationQA
             _note = null;
             List<LocQAReviewCell> _cells = new List<LocQAReviewCell>(_langs.Count);
 
-            if (false == Prepare(_request.contextGuid, out _error)) return _cells;
+            // 게임이 다른 화면에 붙이는 부품이면 그 화면 안의 그 자리에서 그린다. (LocQAHosting)
+            string _contextGuid = _request.contextGuid;
+            string _contextPath = _request.contextPath;
+            if (true == LocQAHosting.TryRedirect(_contextGuid, _contextPath, null != _request.entry ? _request.entry.id : null, out string _hostGuid, out string _hostPath))
+            {
+                _contextGuid = _hostGuid;
+                _contextPath = _hostPath;
+            }
+
+            if (false == Prepare(_contextGuid, out _error)) return _cells;
             Restore();
 
-            pathMap.TryGetValue(_request.contextPath ?? string.Empty, out Transform _target);
-            if (null == _target) _target = LocQAPaths.Find(instance.transform, _request.contextPath);
+            pathMap.TryGetValue(_contextPath ?? string.Empty, out Transform _target);
+            if (null == _target) _target = LocQAPaths.Find(instance.transform, _contextPath);
             TMP_Text _text = null != _target ? _target.GetComponent<TMP_Text>() : null;
             if (null == _text)
             {
@@ -1104,6 +1119,9 @@ namespace LocalizationQA
             {
                 records[i].entry = records[i].text == _text ? _request.entry : baseEntries[i];
             }
+
+            // 그 칸이 보일 때의 화면 상태(고른 탭, 툴팁 내용 등)로 맞춘다.
+            hostPlan = LocQAHosting.Begin(instance, _target, _request.entry, table);
 
             Reveal(_target);
 
@@ -1265,6 +1283,22 @@ namespace LocalizationQA
             }
         }
 
+        private static readonly Regex TemplateKey = new Regex(@"\{key:([^}]+)\}", RegexOptions.Compiled);
+
+        /// <summary>
+        /// 표시 형식 안의 "{key:파일/키}"를 그 언어의 문구로 바꾼다. 코드가 다른 로컬라이징 문구를 덧붙이는 칸용.
+        /// 예) 게임패드 자동: "{text} ({key:OptionUI/GamepadIconGeneric})" → 독일어면 "Automatisch (Standard)"
+        /// </summary>
+        private string FillTemplateKeys(string _template, Language _lang)
+        {
+            if (_template.IndexOf("{key:", StringComparison.Ordinal) < 0) return _template;
+            return TemplateKey.Replace(_template, _m =>
+            {
+                LocQAEntry _entry = table.Find(_m.Groups[1].Value.Trim());
+                return null != _entry ? LocQALanguages.Resolve(_entry.data, _lang) : _m.Value;
+            });
+        }
+
         private static readonly string[] NameNoise = { "opt", "row", "tmp", "txt", "text", "visuals", "title", "value", "btn", "label" };
 
         private static string SimplifyName(string _name)
@@ -1301,12 +1335,23 @@ namespace LocalizationQA
             contextGuid = _contextGuid;
             instance = stage.Spawn(_prefab);
             instanceOrigin = instance.transform.position;
+
+            // 게임이 실행 중에 이 화면에 붙이는 부품을 먼저 붙인다. (그 텍스트도 함께 모으도록)
+            hostFills.Clear();
+            LocQAHosting.Attach(instance, _contextGuid, hostFills);
             records = LocQAPrefabScanner.BuildRecords(instance, _contextGuid, _prefab.name, table, bindings);
 
             baseEntries = new LocQAEntry[records.Count];
             for (int i = 0; i < records.Count; i++)
             {
                 LocQATextRecord _rec = records[i];
+
+                // 붙인 부품의 칸은 게임 코드가 넣는 그 문구 (키 설정 행 제목 = 그 행의 동작 이름)
+                if (true == hostFills.TryGetValue(_rec.path, out string _hostFill))
+                {
+                    baseEntries[i] = table.Find(_hostFill);
+                    if (null != baseEntries[i]) continue;
+                }
 
                 // 이 자리에 연결된 문구가 있으면 그것이 우선이다. 스캐너가 프리팹 임시 문구로 찾은 키는 추측이라
                 // 틀릴 수 있다. (옵션 행들은 프리팹에 다른 행의 문구 "FPS", "Master Volume"이 적힌 채 저장되어 있다)
@@ -1344,15 +1389,23 @@ namespace LocalizationQA
             }
             LocQAPrefabScanner.ApplyLanguage(records, _lang, fonts, settings);
             LocQALayoutHooks.RunLanguage(instance, _lang);
+            hostPlan?.ApplyLanguage(_lang);
 
             if (null != _request.entry)
             {
                 // 문구별 견본 값과, 코드가 붙이는 숫자·태그(표시 형식)까지 실제 화면과 같은 모양으로 넣는다.
                 string _filled = LocQAStringTable.FillFormat(LocQALanguages.Resolve(_request.entry.data, _lang), _request.samples, settings.formatSample);
                 bool _hasTemplate = false == string.IsNullOrEmpty(_request.template) && _request.template.Contains("{text}");
-                _text.text = true == _hasTemplate ? _request.template.Replace("{text}", _filled) : _filled;
+                _text.text = true == _hasTemplate ? FillTemplateKeys(_request.template, _lang).Replace("{text}", _filled) : _filled;
             }
             LocQAPrefabScanner.RebuildLayout(instance);
+
+            // 크기에 따라 정해지는 위치 (툴팁은 폭에 따라 노드 옆 위치가 달라진다)
+            if (null != hostPlan)
+            {
+                hostPlan.AfterLayout();
+                Canvas.ForceUpdateCanvases();
+            }
         }
 
         /// <summary>
@@ -1590,8 +1643,10 @@ namespace LocalizationQA
                 if (_bg.width < stage.width * 0.9f || _bg.height < stage.height * 0.9f) _region = Union(_region, _bg);
             }
 
+            // 화면에 조금이라도 걸쳐 있으면 옮기지 않는다. 게임에서도 그 자리라 화면 밖으로 잘리는 것까지 그대로 보여야 한다.
+            // (넓은 툴팁이 화면 오른쪽에서 잘리는 것 등) 완전히 밖에 있는 것은 등장 연출로 들어오는 UI다.
             Rect _canvas = stage.canvasRoot.rect;
-            if (_region.xMin >= _canvas.xMin && _region.xMax <= _canvas.xMax && _region.yMin >= _canvas.yMin && _region.yMax <= _canvas.yMax) return false;
+            if (true == _region.Overlaps(_canvas)) return false;
 
             Vector3 _delta = stage.canvasRoot.TransformVector(new Vector3(_canvas.center.x - _region.center.x, _canvas.center.y - _region.center.y, 0f));
             instance.transform.position += _delta;

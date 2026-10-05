@@ -75,7 +75,7 @@
             "entryId": "AbilityUI/AbilityDescription_AxeDamage",
             "source": "코드분석",
             "template": "",
-            "samples": ""
+            "samples": "1200"
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -284,7 +284,7 @@
             "entryId": "AbilityUI/AbilityDescription_LogProcessingSpeed",
             "source": "코드분석",
             "template": "",
-            "samples": ""
+            "samples": "1200"
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -295,7 +295,7 @@
             "entryId": "AbilityUI/AbilityDescription_LogValue",
             "source": "코드분석",
             "template": "",
-            "samples": ""
+            "samples": "2900"
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -504,7 +504,7 @@
             "entryId": "AbilityUI/AbilityDescription_SporeShieldCut",
             "source": "코드분석",
             "template": "",
-            "samples": ""
+            "samples": "0.15"
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -625,7 +625,7 @@
             "entryId": "AbilityUI/AbilityDescription_WeakPointHit",
             "source": "코드분석",
             "template": "",
-            "samples": ""
+            "samples": "0.05"
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -679,7 +679,7 @@
             "contextDepth": 1000,
             "entryId": "AbilityUI/Common_Level",
             "source": "코드분석",
-            "template": "{text} : 3 / 5",
+            "template": "{text} : 10 / 10",
             "samples": ""
         },
         {
@@ -2330,7 +2330,7 @@
             "entryId": "ResultUI/treeKillCountLow",
             "source": "코드분석",
             "template": "",
-            "samples": ""
+            "samples": "10"
         },
         {
             "slotGuid": "56ab1690e99457b42b9b057f319d65d9",
@@ -2341,7 +2341,7 @@
             "entryId": "ResultUI/treeKillCountMiddle",
             "source": "코드분석",
             "template": "",
-            "samples": ""
+            "samples": "29"
         },
         {
             "slotGuid": "56ab1690e99457b42b9b057f319d65d9",
@@ -3356,17 +3356,6 @@
             "samples": ""
         },
         {
-            "slotGuid": "c12e0ecbfef8767468e41930b0814944",
-            "slotPath": "Icons/KeyIcon/OpenText",
-            "contextGuid": "c12e0ecbfef8767468e41930b0814944",
-            "contextPath": "Icons/KeyIcon/OpenText",
-            "contextDepth": 1000,
-            "entryId": "InventoryUI/Open",
-            "source": "코드분석",
-            "template": "",
-            "samples": ""
-        },
-        {
             "slotGuid": "eca5975b15124c0781844633a23091ae",
             "slotPath": "CheckingPanel/Text_Checking",
             "contextGuid": "eca5975b15124c0781844633a23091ae",
@@ -3594,7 +3583,7 @@
             "contextDepth": 2,
             "entryId": "OptionUI/GamepadIconAuto",
             "source": "코드분석",
-            "template": "{text} (Xbox)",
+            "template": "{text} ({key:OptionUI/GamepadIconGeneric})",
             "samples": ""
         },
         {
@@ -4806,7 +4795,7 @@
             "contextPath": "Icons/KeyIcon/OpenText",
             "contextDepth": 1000,
             "defaultText": "Открыть/Закрыть",
-            "ignored": false
+            "ignored": true
         },
         {
             "slotGuid": "cd342e10fd24dc842b88530280f46250",
@@ -5057,7 +5046,8 @@
         "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Title|MainMenuUI/LanguageSelectTitle",
         "0b2eda5965a8af845b8e07e6b86168c8|RebindOverlay/PopupWindowRoot/Border/Message|OptionUI/pressKeyPrompt",
         "e71a00c0d5a01db46b44ac77dab65ba8|ContentRoot/Music /Title|OptionUI/BGMVolume",
-        "cd342e10fd24dc842b88530280f46250|Icons/TMP/Text (TMP)|EquipmentHUD/AxeUse"
+        "cd342e10fd24dc842b88530280f46250|Icons/TMP/Text (TMP)|EquipmentHUD/AxeUse",
+        "c12e0ecbfef8767468e41930b0814944|Icons/KeyIcon/OpenText|InventoryUI/Open"
     ],
     "unused": [
         {
@@ -5151,6 +5141,10 @@
         {
             "entryId": "NavigationTreePropUI/ObsidianTree",
             "reason": "사용하지 않는 HUD_NavigationTreeProp에서만 참조 (새 HUD_PopupNav_TreeProp은 텍스트 없음)"
+        },
+        {
+            "entryId": "InventoryUI/Open",
+            "reason": "게임에서 표시되지 않음 (UI_Inventory의 Icons/KeyIcon/OpenText는 프리팹에서 꺼져 있고 켜는 코드가 없음)"
         }
     ]
 }
