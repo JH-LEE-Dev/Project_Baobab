@@ -25,6 +25,10 @@ public class UI_MainMenuButton : Selectable,
     [SerializeField] private RectTransform dotTarget;  
     [SerializeField] private RectTransform textTarget; 
 
+    [Header("Raycast Fit (글자 폭에 맞춰 레이캐스트 박스 자동 확장)")]
+    [SerializeField] private float raycastPaddingLeft = 5f;   // 다이아몬드 왼쪽 가장자리에서 박스 왼쪽 끝까지의 여백
+    [SerializeField] private float raycastPaddingRight = 10f; // 글자 끝(호버 이동량 포함)에서 박스 오른쪽 끝까지의 여백
+
     [Header("UIEffect Targets (그림자 색상 제어용)")]
     [SerializeField] private UIEffect dotUIEffect;
     [SerializeField] private UIEffect textUIEffect;
@@ -86,6 +90,7 @@ public class UI_MainMenuButton : Selectable,
     private Action onClickAction;
     private Action onPressedAction;
     private Action manualDisappearCallback;
+    private Action<UnityEngine.Object> cachedOnTextChanged;
     private InputManager inputManager;
     private Vector2 textOriginalPos;
     private Vector3 dotOriginalRot;
@@ -142,6 +147,7 @@ public class UI_MainMenuButton : Selectable,
         EnsureTargetComponents();
 
         // 델리게이트 인스턴스 사전 생성 및 캐싱 (람다/클로저 제거)
+        cachedOnTextChanged = HandleTextChanged;
         onAppearCompleteCallback = OnAppearComplete;
         onDisappearCompleteCallback = OnDisappearComplete;
         onClickPunchCompleteCallback = OnClickPunchComplete;
@@ -170,12 +176,19 @@ public class UI_MainMenuButton : Selectable,
     {
         base.OnEnable();
         if (false == Application.isPlaying) return;
+
+        // 글자나 폰트가 다시 그려질 때마다(언어 변경 시 폰트가 바뀌어 폭이 달라짐) 레이캐스트 박스를 글자 폭에 맞춘다.
+        TMPro_EventManager.TEXT_CHANGED_EVENT.Add(cachedOnTextChanged);
+        EnsureTargetComponents();
+        FitRaycastToText();
+
         ResetAndPlayAppearInternal();
     }
 
     protected override void OnDisable()
     {
         base.OnDisable();
+        if (null != cachedOnTextChanged) TMPro_EventManager.TEXT_CHANGED_EVENT.Remove(cachedOnTextChanged);
         if (false == Application.isPlaying) return;
         isHovered = false;
         isPointerHovered = false;
@@ -267,7 +280,32 @@ public class UI_MainMenuButton : Selectable,
         if (null != targetTextComponent)
         {
             targetTextComponent.text = _text;
+            FitRaycastToText();
         }
+    }
+
+    /// <summary>
+    /// 레이캐스트 박스(buttonImage)를 다이아몬드 왼쪽 끝부터 글자 끝(호버로 밀리는 거리 포함)까지 덮도록 맞춥니다.
+    /// 글자가 길어지면 박스도 그만큼 늘어나고, 다이아몬드까지 항상 클릭/호버 영역에 포함됩니다.
+    /// (Raycast와 Visual은 같은 중앙 앵커이고 Visual이 원점이라, 점/글자 좌표를 박스 좌표로 그대로 쓸 수 있습니다)
+    /// </summary>
+    private void FitRaycastToText()
+    {
+        if (null == buttonImage || null == dotTarget || null == textTarget || null == targetTextComponent) return;
+
+        float _left = dotTarget.anchoredPosition.x - dotTarget.rect.width * 0.5f - raycastPaddingLeft;
+        float _right = textOriginalPos.x + targetTextComponent.preferredWidth + textHoverMoveX + raycastPaddingRight;
+
+        RectTransform _box = buttonImage.rectTransform;
+        _box.anchoredPosition = new Vector2((_left + _right) * 0.5f, _box.anchoredPosition.y);
+        _box.sizeDelta = new Vector2(_right - _left, _box.sizeDelta.y);
+    }
+
+    private void HandleTextChanged(UnityEngine.Object _changedObject)
+    {
+        if (null == targetTextComponent || _changedObject != targetTextComponent) return;
+
+        FitRaycastToText();
     }
 
     /// <summary>
