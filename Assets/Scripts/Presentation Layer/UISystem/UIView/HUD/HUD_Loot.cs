@@ -219,6 +219,7 @@ public class HUD_Loot : MonoBehaviour
     }
 
     #region Editor Test Logic
+#if UNITY_EDITOR
     [NaughtyAttributes.Button("Test Fill Motion")]
     private void TestFillMotion()
     {
@@ -230,5 +231,6 @@ public class HUD_Loot : MonoBehaviour
     {
         PlayUsePotionMotion();
     }
+#endif
     #endregion
 }

@@ -65,7 +65,9 @@ public class InDungeonUnitSpawner : MonoBehaviour, IInDungeonUnitSpawnerCH
     private IPathfindTreeProvider pathfindTreeProvider;
     private OffroadContainer offroadContainer;
 
-    [Header("Debug")]
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    // LJDebugLog.Log 가 에디터·개발 빌드에서만 컴파일되므로 스위치도 같은 조건으로 둔다.
+    [Header("Debug (배포 빌드에는 포함되지 않음)")]
     [Tooltip("럼버잭 NPC 멈춤 버그 추적용 [LJDebug] 로그를 켜고 끕니다. 재현할 때만 켜두세요.")]
     [SerializeField] private bool enableLJDebugLog = false;
 
@@ -73,11 +75,14 @@ public class InDungeonUnitSpawner : MonoBehaviour, IInDungeonUnitSpawnerCH
     {
         LJDebugLog.Enabled = enableLJDebugLog;
     }
+#endif
 
     // 퍼블릭 메서드
     public void Initialize(IEnvironmentProvider _environmentProvider, IPathfindTreeProvider _pathfindTreeProvider, OffroadContainer _offroadContainer = null)
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         LJDebugLog.Enabled = enableLJDebugLog; // OnValidate는 에디터 전용이라, 빌드에서도 적용되도록 여기서 동기화
+#endif
 
         environmentProvider = _environmentProvider;
         tilemapDataProvider = environmentProvider.tilemapDataProvider;

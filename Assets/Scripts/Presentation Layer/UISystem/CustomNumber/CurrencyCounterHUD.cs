@@ -43,9 +43,12 @@ namespace PresentationLayer.UISystem.CustomNumber
         [SerializeField] [Range(0.0f, 1.0f)] private float normalAlpha = 1.0f;
         [SerializeField] private CanvasGroup canvasGroup;
 
-        [Header("Debug")]
+#if UNITY_EDITOR
+        // 인스펙터 테스트 버튼용 값이라 버튼과 함께 빌드에서 뺀다.
+        [Header("Debug (빌드에는 포함되지 않음)")]
         [SerializeField] private long debugIncreaseAmount = 100;
         [SerializeField] private long debugDecreaseAmount = 100;
+#endif
 
         private MoneyType currentMoneyType = MoneyType.None;
         private long currentValue;

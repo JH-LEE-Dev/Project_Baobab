@@ -3,14 +3,16 @@ using UnityEngine;
 [ExecuteAlways]
 public class RaymarchingShadow : MonoBehaviour
 {
-    //외부 설정 (디버깅용)
-    [Header("Debug Settings")]
+    //외부 설정 (디버깅용) - 그림자를 인스펙터 값으로 고정해 보는 테스트 기능이라 빌드에서는 코드째 뺀다.
+#if UNITY_EDITOR
+    [Header("Debug Settings (빌드에는 포함되지 않음)")]
     [SerializeField] private bool useDebugValues = false;
     [Range(0, 360)]
     [SerializeField] private float debugAngle = 0f;
     [Range(0f, 1f)]
     [SerializeField] private float debugScaleY = 0.5f;
     [SerializeField] private bool debugIsActive = true;
+#endif
     [SerializeField] private float minScaleY = 0.1f;
     [SerializeField] private float maxScaleY = 0.2f;
 
@@ -33,6 +35,7 @@ public class RaymarchingShadow : MonoBehaviour
         Initialize();
     }
 
+#if UNITY_EDITOR
     private void Update()
     {
         // 인스펙터에서 디버그 모드가 활성화된 경우에만 실행
@@ -41,6 +44,7 @@ public class RaymarchingShadow : MonoBehaviour
             ManualUpdate(debugAngle, debugScaleY, debugIsActive);
         }
     }
+#endif
 
     public void ManualUpdate(float _angle, float _scaleY, bool _isActive)
     {

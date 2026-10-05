@@ -126,9 +126,12 @@ namespace PresentationLayer.VFX
         [SerializeField] private int maxPrewarmedSegments = 12;
         [SerializeField] private bool disableObjectOnComplete = true;
 
-        [Header("에디터 테스트 좌표 및 폐곡선 옵션")]
+#if UNITY_EDITOR
+        // 에디터 미리보기 전용 좌표라 빌드에서는 뺀다.
+        [Header("에디터 테스트 좌표 및 폐곡선 옵션 (빌드에는 포함되지 않음)")]
         [SerializeField] private List<Vector3> testNodes = new List<Vector3>();
         [SerializeField] private bool testIsClosedLoop = true;
+#endif
 
         public float TailLength
         {
@@ -261,6 +264,7 @@ namespace PresentationLayer.VFX
             EnsureSegmentsPrewarmed(maxPrewarmedSegments);
         }
 
+#if UNITY_EDITOR
         private void Reset()
         {
             // 인스펙터 기본 테스트 5각 별자리 좌표 자동 세팅
@@ -272,6 +276,7 @@ namespace PresentationLayer.VFX
             testNodes.Add(new Vector3(-1.5f, -1.5f, 0.0f));
             testIsClosedLoop = true;
         }
+#endif
 
         private void OnDisable()
         {
@@ -849,11 +854,13 @@ namespace PresentationLayer.VFX
         /// <summary>
         /// 인스펙터/에디터의 testNodes를 원주 각도순 및 2-Opt 선분 교차 검증을 거쳐 100% 꼬임 없는 외곽선 순서로 정돈합니다.
         /// </summary>
+#if UNITY_EDITOR
         public void AutoUntangleNodes()
         {
             if (null == testNodes || 3 > testNodes.Count) return;
             UntanglePoints(testNodes, 0);
         }
+#endif
 
         /// <summary>
         /// 임의 순서의 좌표 리스트를 2:1 아이소메트릭 방위각 정렬과 2-Opt 교차 검증으로 무할당(Zero GC) 자동 정돈합니다.
@@ -1539,12 +1546,14 @@ namespace PresentationLayer.VFX
 
         #region Editor Helpers
 
+#if UNITY_EDITOR
         public List<Vector3> TestNodes => testNodes;
         public bool TestIsClosedLoop
         {
             get => testIsClosedLoop;
             set => testIsClosedLoop = value;
         }
+#endif
         public bool IsPlaying => isPlaying;
 
         #endregion

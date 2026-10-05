@@ -86,10 +86,13 @@ public class AbilityHUD : MonoBehaviour
     [SerializeField] private float flowerStackPopDuration = 0.45f;
     [SerializeField, HideInInspector] private List<Vector2> flowerObjectPositions = new List<Vector2>();
 
-    [Header("Debug Effect Buttons")]
+#if UNITY_EDITOR
+    // 인스펙터 테스트 버튼용 값이라 버튼과 함께 빌드에서 뺀다.
+    [Header("Debug Effect Buttons (빌드에는 포함되지 않음)")]
     [SerializeField] private int debugEffectExperience = 10;
     [SerializeField] private int debugEffectMaxExperience = 50;
     [SerializeField] private int debugEffectFlowerStack = 3;
+#endif
 
     public int CurrentExperience => currentExperience;
     public int MaxExperience => maxExperience;

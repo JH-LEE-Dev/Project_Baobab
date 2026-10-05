@@ -73,6 +73,7 @@ namespace PresentationLayer.VFX
             return gradient;
         }
 
+#if UNITY_EDITOR
         /// <summary>
         /// (테스트용 버튼) 컴포넌트를 우클릭하거나 점 3개를 눌러서 'Test Fire (PlayZap)'을 누르면 실행됩니다.
         /// </summary>
@@ -87,6 +88,7 @@ namespace PresentationLayer.VFX
             }
             PlayZap();
         }
+#endif
 
         /// <summary>
         /// 코드로 고정 좌표(Fixed Points)를 덮어씌울 때 사용합니다.
