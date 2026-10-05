@@ -147,7 +147,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -300, y: 10}
-  m_SizeDelta: {x: 500, y: 24}
+  m_SizeDelta: {x: 600, y: 24}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &2158578840861691764
 CanvasRenderer:
@@ -177,10 +177,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Title
+  m_text: Bosque de la Pradera Verde I
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 4909044e3da435245a063b33ac595034, type: 2}
-  m_sharedMaterial: {fileID: -4971463764404031913, guid: 4909044e3da435245a063b33ac595034, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 37e25419c80146947b6a80fe87f309b3, type: 2}
+  m_sharedMaterial: {fileID: 7589576482440360579, guid: 37e25419c80146947b6a80fe87f309b3, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -373,7 +373,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -300, y: -15}
-  m_SizeDelta: {x: 500, y: 12}
+  m_SizeDelta: {x: 600, y: 12}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &7136365179140329648
 CanvasRenderer:
@@ -403,10 +403,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Sub
+  m_text: "Encore une belle journ\xE9e paisible pour couper du bois !"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 4909044e3da435245a063b33ac595034, type: 2}
-  m_sharedMaterial: {fileID: -4971463764404031913, guid: 4909044e3da435245a063b33ac595034, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 37e25419c80146947b6a80fe87f309b3, type: 2}
+  m_sharedMaterial: {fileID: 7589576482440360579, guid: 37e25419c80146947b6a80fe87f309b3, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -755,7 +755,7 @@ Canvas:
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
   m_UseReflectionProbes: 0
-  m_AdditionalShaderChannelsFlag: 0
+  m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
