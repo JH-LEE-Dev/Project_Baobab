@@ -19,7 +19,7 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
     // 여러 프레임에 잘게 들어오는 장치에서 언어가 순식간에 몇 칸씩 넘어가는 것을 막습니다.
     // 한 칸마다 로컬라이징 전환·전체 텍스트 폰트 교체·설정 파일 저장이 돌므로, 패드 좌우를 길게 누를 때의
     // 반복 간격(InputSystemUIInputModule.moveRepeatRate = 0.1)보다 자주 돌지 않게 같은 값으로 둡니다.
-    private const float LANGUAGE_SCROLL_INTERVAL = 0.1f;
+    private const float LANGUAGE_SCROLL_INTERVAL = 0.03f;
 
     /// <summary>
     /// 언어 이름 라벨 하나와 그 언어의 짝입니다. 라벨은 각자 그 언어를 표시할 폰트(갈무리/FusionPixel/Lorem)와
