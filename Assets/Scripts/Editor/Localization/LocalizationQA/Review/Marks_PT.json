@@ -98,12 +98,28 @@
             "at": "2026-10-05 14:17"
         },
         {
+            "item": "a04d60f53f5cf234180a7e1bf8d4045d|Visuals/TMP_Title|OptionUI/CameraShake",
+            "state": 1,
+            "hash": "3b998349",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:58"
+        },
+        {
             "item": "a04d60f53f5cf234180a7e1bf8d4045d|Visuals/TMP_Title|OptionUI/ChromaticAberration",
             "state": 1,
             "hash": "c296bad8",
             "memo": "",
             "by": "void91112@gmail.com",
             "at": "2026-10-05 14:17"
+        },
+        {
+            "item": "a04d60f53f5cf234180a7e1bf8d4045d|Visuals/TMP_Title|OptionUI/CrosshairBrightness",
+            "state": 1,
+            "hash": "ca17c23f",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:58"
         },
         {
             "item": "a04d60f53f5cf234180a7e1bf8d4045d|Visuals/TMP_Title|OptionUI/HapticStrength",
@@ -154,6 +170,14 @@
             "at": "2026-10-05 14:26"
         },
         {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Title|OptionUI/DataConsent",
+            "state": 1,
+            "hash": "88612b68",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:57"
+        },
+        {
             "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Title|OptionUI/FPS",
             "state": 1,
             "hash": "00ad61c8",
@@ -200,6 +224,14 @@
             "memo": "",
             "by": "void91112@gmail.com",
             "at": "2026-10-05 14:05"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Value|OptionUI/DataConsentDeclined",
+            "state": 1,
+            "hash": "d203d3f5",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 14:58"
         },
         {
             "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Value|OptionUI/DataConsentGranted",
