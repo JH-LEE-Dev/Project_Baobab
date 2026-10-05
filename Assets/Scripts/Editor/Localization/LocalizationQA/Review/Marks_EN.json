@@ -354,6 +354,158 @@
             "at": "2026-10-05 15:21"
         },
         {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/SubText|MessageHUD/dungeonStateStage1Idle0SubText",
+            "state": 1,
+            "hash": "7321314a",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 17:47"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/SubText|MessageHUD/dungeonStateStage1Idle1SubText",
+            "state": 1,
+            "hash": "d91c69de",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 17:47"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/SubText|MessageHUD/dungeonStateStage1Idle2SubText",
+            "state": 1,
+            "hash": "d4794605",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 17:47"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/SubText|MessageHUD/dungeonStateStage1Idle3SubText",
+            "state": 1,
+            "hash": "d39be1a8",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 17:47"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/SubText|MessageHUD/dungeonStateStage2Idle0SubText",
+            "state": 1,
+            "hash": "aa023b3d",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 17:54"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/SubText|MessageHUD/dungeonStateStage2Idle1SubText",
+            "state": 1,
+            "hash": "2a3b4556",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 17:54"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/SubText|MessageHUD/dungeonStateStage2Idle2SubText",
+            "state": 1,
+            "hash": "eda07ec0",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 17:54"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/SubText|MessageHUD/dungeonStateStage3Idle0SubText",
+            "state": 1,
+            "hash": "31058210",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 17:54"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/SubText|MessageHUD/dungeonStateStage3Idle1SubText",
+            "state": 1,
+            "hash": "e3e1e626",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 17:54"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/SubText|MessageHUD/dungeonStateStage3Idle2SubText",
+            "state": 1,
+            "hash": "3586422f",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 17:54"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/SubText|MessageHUD/dungeonStateStage4Idle0SubText",
+            "state": 1,
+            "hash": "7def0cf8",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 17:54"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/SubText|MessageHUD/dungeonStateStage4Idle1SubText",
+            "state": 1,
+            "hash": "23c4a580",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 17:55"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/SubText|MessageHUD/dungeonStateStage4Idle2SubText",
+            "state": 1,
+            "hash": "cd877879",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 18:00"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/TitleText|MessageHUD/forestFluffySporeForest1Title",
+            "state": 1,
+            "hash": "eb41e57b",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 18:00"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/TitleText|MessageHUD/forestFluffySporeForest2Title",
+            "state": 1,
+            "hash": "8abbcdb6",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 18:00"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/TitleText|MessageHUD/forestFluffySporeForest3Title",
+            "state": 1,
+            "hash": "64a5486d",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 18:00"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/TitleText|MessageHUD/forestWideGreenForest1Title",
+            "state": 1,
+            "hash": "2eb9ae4b",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 18:00"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/TitleText|MessageHUD/forestWideGreenForest2Title",
+            "state": 1,
+            "hash": "904ced26",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 18:00"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/TitleText|MessageHUD/forestWideGreenForest3Title",
+            "state": 1,
+            "hash": "9819c5bd",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-10-05 18:00"
+        },
+        {
             "item": "7fac8189cec29354da87489252a0394e|Guide_Text|AbilityUI/KeyGuide_Zoom",
             "state": 1,
             "hash": "62399752",
@@ -624,14 +776,6 @@
             "memo": "",
             "by": "void91112@gmail.com",
             "at": "2026-10-05 14:18"
-        },
-        {
-            "item": "a623ac0844e86ca4699b60b86e5a1ce4|Border/RebindText|OptionUI/pressGamepadPrompt",
-            "state": 1,
-            "hash": "dc2c3052",
-            "memo": "",
-            "by": "void91112@gmail.com",
-            "at": "2026-10-05 14:26"
         },
         {
             "item": "bd28f55901e93bd4aa5204630655ec49|Text (TMP)|MainMenuUI/PressAnyKey",

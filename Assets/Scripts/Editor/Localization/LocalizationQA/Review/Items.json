@@ -3345,28 +3345,6 @@
             "samples": ""
         },
         {
-            "slotGuid": "a623ac0844e86ca4699b60b86e5a1ce4",
-            "slotPath": "Border/RebindText",
-            "contextGuid": "a623ac0844e86ca4699b60b86e5a1ce4",
-            "contextPath": "Border/RebindText",
-            "contextDepth": 1000,
-            "entryId": "OptionUI/pressGamepadPrompt",
-            "source": "코드분석",
-            "template": "",
-            "samples": ""
-        },
-        {
-            "slotGuid": "a623ac0844e86ca4699b60b86e5a1ce4",
-            "slotPath": "Border/RebindText",
-            "contextGuid": "a623ac0844e86ca4699b60b86e5a1ce4",
-            "contextPath": "Border/RebindText",
-            "contextDepth": 1000,
-            "entryId": "OptionUI/pressKeyPrompt",
-            "source": "코드분석",
-            "template": "",
-            "samples": ""
-        },
-        {
             "slotGuid": "bd28f55901e93bd4aa5204630655ec49",
             "slotPath": "Text (TMP)",
             "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -4763,7 +4741,7 @@
             "contextPath": "Border/RebindText",
             "contextDepth": 1000,
             "defaultText": "Rebind Waiting..",
-            "ignored": false
+            "ignored": true
         },
         {
             "slotGuid": "a79b591f980f19043b363b64099cb2e9",
@@ -5068,7 +5046,9 @@
         "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Title|MainMenuUI/LanguageSelectTitle",
         "e71a00c0d5a01db46b44ac77dab65ba8|ContentRoot/Music /Title|OptionUI/BGMVolume",
         "cd342e10fd24dc842b88530280f46250|Icons/TMP/Text (TMP)|EquipmentHUD/AxeUse",
-        "c12e0ecbfef8767468e41930b0814944|Icons/KeyIcon/OpenText|InventoryUI/Open"
+        "c12e0ecbfef8767468e41930b0814944|Icons/KeyIcon/OpenText|InventoryUI/Open",
+        "a623ac0844e86ca4699b60b86e5a1ce4|Border/RebindText|OptionUI/pressKeyPrompt",
+        "a623ac0844e86ca4699b60b86e5a1ce4|Border/RebindText|OptionUI/pressGamepadPrompt"
     ],
     "unused": [
         {
