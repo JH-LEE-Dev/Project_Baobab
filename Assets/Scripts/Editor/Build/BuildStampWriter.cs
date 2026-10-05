@@ -73,7 +73,15 @@ public class BuildStampWriter : IPostprocessBuildWithReport
         BuildStore _store = PlatformBuildModeSwitcher.CurrentStore;
         BuildRelease _release = PlatformBuildModeSwitcher.CurrentRelease;
 
-        TryGetGitInfo(out string _commit, out bool _dirty);
+        // 빌드 중에는 스트리퍼가 에셋을 고쳤다 되돌리고 유니티가 일부 에셋을 다시 저장해, 끝에서 보면
+        // 늘 "변경 있음"으로 나온다. 그래서 빌드 시작 시점(BuildStampGitSnapshot)에 찍어 둔 값을 우선 쓴다.
+        string _commit;
+        bool _dirty;
+
+        if (false == BuildStampGitSnapshot.TryTake(out _commit, out _dirty))
+        {
+            TryGetGitInfo(out _commit, out _dirty);
+        }
 
         Dictionary<string, string> _d = new Dictionary<string, string>();
 
@@ -191,7 +199,7 @@ public class BuildStampWriter : IPostprocessBuildWithReport
 
     /// <summary>
     /// 스위처(PlatformBuildModeSwitcher)가 스토어·배포에 맞춰 바꾸는 파일은 dirty 로 치지 않습니다.
-    /// 그 셋은 STOVE 로 전환하면 반드시 바뀌므로, 세면 STOVE·itch 빌드가 전부 "커밋 안 된 변경이 섞였다"로
+    /// 이 파일들은 스토어·배포를 전환하면 반드시 바뀌므로, 세면 STOVE·itch 빌드가 전부 "커밋 안 된 변경이 섞였다"로
     /// 나와 경고가 의미를 잃습니다. 그 파일들이 기대값과 맞는지는 PlatformConsistencyGuard 가 따로 봅니다.
     /// </summary>
     private static readonly string[] SWITCHER_MANAGED_FILES =
@@ -199,6 +207,7 @@ public class BuildStampWriter : IPostprocessBuildWithReport
         "ProjectSettings/ProjectSettings.asset",
         "Assets/Resources/Sentry/SentryOptions.asset",
         "Assets/Resources/GameAnalytics/Settings.asset",
+        "steam_appid.txt",
     };
 
     private static bool HasChangesOutsideSwitcherFiles(string _pathsOnePerLine)
@@ -220,6 +229,26 @@ public class BuildStampWriter : IPostprocessBuildWithReport
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// 두 커밋 사이에 바뀐 파일 경로를 돌려줍니다. 업로드 전 검사가 "빌드 뒤에 들어온 커밋이 desc(VDF)·문서뿐인가"를 볼 때 씁니다.
+    /// </summary>
+    public static bool TryGetChangedFilesBetween(string _from, string _to, out List<string> _paths)
+    {
+        _paths = new List<string>();
+
+        string _projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+
+        if (false == TryRunGit(_projectRoot, $"diff --name-only {_from} {_to}", out string _out)) return false;
+
+        foreach (string _raw in _out.Split('\n'))
+        {
+            string _path = _raw.Trim().Trim('"').Replace('\\', '/');
+            if (0 < _path.Length) _paths.Add(_path);
+        }
+
+        return true;
     }
 
     private static bool TryRunGit(string _workingDir, string _args, out string _stdout)
@@ -255,4 +284,43 @@ public class BuildStampWriter : IPostprocessBuildWithReport
     }
 
 #endregion
+}
+
+/// <summary>
+/// 빌드가 에셋을 건드리기 전에 git 상태를 찍어 둡니다. BuildStampWriter 가 빌드 끝에 이 값을 씁니다.
+///
+/// [왜 시작 시점인가]
+/// 빌드 중에는 DemoContentStripper 가 에셋을 고쳤다 되돌리고, 유니티가 일부 프리팹·설정을 다시 저장합니다.
+/// 끝에서 git 을 보면 그 흔적 때문에 깨끗한 트리에서 빌드해도 GIT_DIRTY=true 가 나옵니다.
+/// 그러면 "커밋 안 된 변경이 섞였다"는 경고가 늘 떠서 아무도 믿지 않게 되고, 업로드 전 검사에서 막을 수도 없습니다.
+/// 가장 먼저 도는 가드(-1000)보다도 앞에서 찍습니다.
+///
+/// [찍기 전에 에셋을 저장합니다]
+/// 인스펙터에서 바꾸고 저장하지 않은 에셋도 빌드에는 들어갑니다(스트리퍼가 빌드 중에 SaveAssets 를 부르면 그때 디스크에도 써집니다).
+/// 저장 전에 git 을 보면 그 변경이 안 보여 GIT_DIRTY=false 인데 내용은 다른 빌드가 나옵니다. 먼저 저장해 git 에 드러나게 합니다.
+/// </summary>
+public class BuildStampGitSnapshot : IPreprocessBuildWithReport
+{
+    public int callbackOrder => -2000;
+
+    private static bool hasSnapshot;
+    private static string commit;
+    private static bool dirty;
+
+    public void OnPreprocessBuild(BuildReport _report)
+    {
+        AssetDatabase.SaveAssets();
+        hasSnapshot = BuildStampWriter.TryGetGitInfo(out commit, out dirty);
+    }
+
+    /// <summary>찍어 둔 값을 한 번만 돌려줍니다. 다음 빌드가 이전 값을 쓰지 않도록 꺼낸 뒤 지웁니다.</summary>
+    public static bool TryTake(out string _commit, out bool _dirty)
+    {
+        _commit = commit;
+        _dirty = dirty;
+
+        bool _had = hasSnapshot;
+        hasSnapshot = false;
+        return _had;
+    }
 }

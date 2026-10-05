@@ -1090,7 +1090,8 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
         }
         catch (Exception _e)
         {
-            Debug.LogError($"[SaveManager] Failed to preserve the save from another build variant: {_e.Message}");
+            // 예외 메시지에 C:\Users\<이름>\... 경로가 들어 있다. LogError 는 Sentry 이벤트가 되므로 다른 파일 로그처럼 가린다.
+            Debug.LogError(GamePaths.Redact($"[SaveManager] Failed to preserve the save from another build variant: {_e.Message}"));
         }
     }
 

@@ -164,7 +164,9 @@ public class UIView_ScreenModal : UIView
 
     private void InteractionStateChange(bool _state, LootType _lootType)
     {
+#if UNITY_EDITOR
         Debug.Log("InteractionStateChange: " + _state + ", LootType: " + _lootType);
+#endif
 
         if (true == _state)
         {

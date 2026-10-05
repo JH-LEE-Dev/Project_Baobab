@@ -21,8 +21,8 @@ using UnityEngine;
 /// 1) 소스 검사 - 런타임 스크립트(Assets/Scripts, Editor 폴더 제외)에서 이름이 debug/test/cheat 류인 직렬화 필드가
 ///    에디터 전용 블록 밖에 있으면 막습니다. 새로 추가된 디버그 스위치가 감싸지지 않은 채 들어오는 것을 잡습니다.
 ///    이름만 그럴 뿐 실제 게임 로직인 필드는 RUNTIME_FIELDS 에 등록합니다.
-/// 2) 값 검사 - RUNTIME_FIELDS 중 "꺼져 있어야 하는" 스위치를 프리팹 전체와 빌드 씬(직접 배치·오버라이드)에서 읽어
-///    켜져 있으면 막습니다. 씬은 빌드 중 열린 씬을 바꾸지 않으려고 YAML로 읽습니다.
+/// 2) 값 검사 - RUNTIME_FIELDS 중 배포 값이 정해진 스위치(꺼져 있어야 하는 것, 켜져 있어야 하는 것)를 프리팹 전체와
+///    빌드 씬(직접 배치·오버라이드)에서 읽어 다르면 막습니다. 씬은 빌드 중 열린 씬을 바꾸지 않으려고 YAML로 읽습니다.
 ///
 /// [Development Build]
 /// 개발 빌드에서는 경고만 남깁니다(CharacterStatBuildGuard 와 같은 정책).
@@ -37,29 +37,44 @@ public class DebugSwitchBuildGuard : IPreprocessBuildWithReport
     {
         public Type type;
         public string field;
-        public bool mustBeOff;
+        public bool checkValue;
+        public bool expected;
         public string reason;
 
-        public RuntimeField(Type _type, string _field, bool _mustBeOff, string _reason)
+        /// <summary>배포 빌드에서 반드시 _expected 여야 하는 스위치입니다.</summary>
+        public static RuntimeField Must(Type _type, string _field, bool _expected, string _reason)
         {
-            type = _type;
-            field = _field;
-            mustBeOff = _mustBeOff;
-            reason = _reason;
+            return new RuntimeField { type = _type, field = _field, checkValue = true, expected = _expected, reason = _reason };
         }
+
+        /// <summary>이름만 디버그 같을 뿐 실제 로직이라 소스 검사에서만 빼는 필드입니다. 값은 보지 않습니다.</summary>
+        public static RuntimeField Allow(Type _type, string _field, string _reason)
+        {
+            return new RuntimeField { type = _type, field = _field, checkValue = false, reason = _reason };
+        }
+
+        public string ExpectedText => true == expected ? "켜짐" : "꺼짐";
+        public string WrongText => true == expected ? "꺼짐" : "켜짐";
+        public string WrongYaml => true == expected ? "0" : "1";
     }
 
     /// <summary>
-    /// 이름이 디버그·테스트 같지만 실제 게임에서 쓰여 빌드에 남아야 하는 필드입니다.
-    /// mustBeOff 면 프리팹·씬에서 꺼져 있는지 값까지 봅니다.
+    /// 빌드에 남는 스위치 중 배포 값이 정해진 것(Must)과, 이름만 디버그 같은 실제 로직(Allow)입니다.
+    /// Must 는 프리팹·씬에서 값까지 봅니다.
     /// 필드 이름이 바뀌어 찾지 못하면 "검사 안 함"이 아니라 오류로 막습니다.
     /// </summary>
     private static readonly RuntimeField[] RUNTIME_FIELDS =
     {
         // 용광로가 SetRunning 으로 아지랑이를 직접 켜고 끄는 "수동 제어" 상태다. 이름만 Test 다.
         // 초기값이 켜져 있으면 용광로가 처음 신호를 주기 전까지 실제 가동과 무관하게 보이므로 꺼져 있어야 한다.
-        new RuntimeField(typeof(BlastFurnaceHeatHaze), "isTestMode", true, "용광로 열기 효과가 실제 가동과 무관하게 표시됩니다"),
-        new RuntimeField(typeof(BlastFurnaceHeatHaze), "isTestRunning", false, "수동 제어 상태의 가동 여부"),
+        RuntimeField.Must(typeof(BlastFurnaceHeatHaze), "isTestMode", false, "용광로 열기 효과가 실제 가동과 무관하게 표시됩니다"),
+        RuntimeField.Allow(typeof(BlastFurnaceHeatHaze), "isTestRunning", "수동 제어 상태의 가동 여부"),
+
+        // 부트스트랩(MainMenuScene)의 빌드 단위 스위치. 테스트하려고 바꾼 채 커밋되면 배포판 흐름이 달라진다.
+        RuntimeField.Must(typeof(BootStrap), "isTempScene", false, "메인 메뉴로 넘어가지 않고 임시 씬 모드로 멈춥니다"),
+        RuntimeField.Must(typeof(BootStrap), "enableTutorial", true, "새 게임이 튜토리얼 없이 바로 마을에서 시작합니다"),
+        RuntimeField.Must(typeof(BootStrap), "enableSentry", true, "크래시 리포트가 수집되지 않습니다"),
+        RuntimeField.Must(typeof(BootStrap), "enableGameAnalytics", true, "지표가 수집되지 않습니다"),
     };
 
     // 카멜 표기 경계로 본다. "latest" 처럼 단어 안에 우연히 들어간 test 는 잡지 않는다.
@@ -95,7 +110,7 @@ public class DebugSwitchBuildGuard : IPreprocessBuildWithReport
             $"{_detail}\n" +
             "\n" +
             "- [소스] 디버그·테스트 필드는 #if UNITY_EDITOR 로 감싸십시오. 실제 게임 로직이면 이 가드의 RUNTIME_FIELDS 에 등록하십시오.\n" +
-            "- [값] 해당 프리팹/씬의 인스펙터에서 체크를 끄고 저장한 뒤 다시 빌드하십시오.");
+            "- [값] 해당 프리팹/씬의 인스펙터에서 배포 값으로 바꾸고 저장한 뒤 다시 빌드하십시오.");
     }
 
     /// <summary>
@@ -118,7 +133,7 @@ public class DebugSwitchBuildGuard : IPreprocessBuildWithReport
             }
 
             _allowed.Add(_rule.type.Name + "." + _rule.field);
-            if (true == _rule.mustBeOff) _valueRules.Add(_rule);
+            if (true == _rule.checkValue) _valueRules.Add(_rule);
         }
 
         CheckSources(_allowed, _errors);
@@ -325,9 +340,9 @@ public class DebugSwitchBuildGuard : IPreprocessBuildWithReport
 
                 for (int c = 0; c < _components.Length; c++)
                 {
-                    if (true == IsOn(_components[c], _rules[r].field))
+                    if (true == IsWrong(_components[c], _rules[r]))
                     {
-                        _errors.Add($"[값] {_rules[r].type.Name}.{_rules[r].field} 켜짐 - {_path} ({HierarchyPath(_components[c].transform)})  → {_rules[r].reason}");
+                        _errors.Add($"[값] {_rules[r].type.Name}.{_rules[r].field} {_rules[r].WrongText} (배포 값 {_rules[r].ExpectedText}) - {_path} ({HierarchyPath(_components[c].transform)})  → {_rules[r].reason}");
                     }
                 }
             }
@@ -403,9 +418,9 @@ public class DebugSwitchBuildGuard : IPreprocessBuildWithReport
             {
                 // 최상위 필드는 들여쓰기 두 칸이다. 더 깊으면 다른 구조체 안의 같은 이름 필드다.
                 if (_blockScriptGuid != _scriptGuids[_rules[r].type]) continue;
-                if (_line != "  " + _rules[r].field + ": 1") continue;
+                if (_line != "  " + _rules[r].field + ": " + _rules[r].WrongYaml) continue;
 
-                _errors.Add($"[값] {_rules[r].type.Name}.{_rules[r].field} 켜짐 - {_scenePath} (씬에 직접 배치, {i + 1}행)  → {_rules[r].reason}");
+                _errors.Add($"[값] {_rules[r].type.Name}.{_rules[r].field} {_rules[r].WrongText} (배포 값 {_rules[r].ExpectedText}) - {_scenePath} (씬에 직접 배치, {i + 1}행)  → {_rules[r].reason}");
             }
         }
     }
@@ -425,16 +440,18 @@ public class DebugSwitchBuildGuard : IPreprocessBuildWithReport
             }
 
             if (false == _line.StartsWith("propertyPath: ", StringComparison.Ordinal)) continue;
-            if (i + 1 >= _lines.Length || "value: 1" != _lines[i + 1].Trim()) continue;
+            if (i + 1 >= _lines.Length) continue;
 
             string _property = _line.Substring("propertyPath: ".Length);
+            string _value = _lines[i + 1].Trim();
 
             for (int r = 0; r < _rules.Count; r++)
             {
                 if (_property != _rules[r].field) continue;
+                if ("value: " + _rules[r].WrongYaml != _value) continue;
                 if (false == PrefabHasComponent(_targetGuid, _rules[r].type)) continue;
 
-                _errors.Add($"[값] {_rules[r].type.Name}.{_rules[r].field} 켜짐 - {_scenePath} (씬에서 프리팹 값 덮어씀, {i + 1}행)  → {_rules[r].reason}");
+                _errors.Add($"[값] {_rules[r].type.Name}.{_rules[r].field} {_rules[r].WrongText} (배포 값 {_rules[r].ExpectedText}) - {_scenePath} (씬에서 프리팹 값 덮어씀, {i + 1}행)  → {_rules[r].reason}");
             }
         }
     }
@@ -443,12 +460,12 @@ public class DebugSwitchBuildGuard : IPreprocessBuildWithReport
 
 #region 도우미
 
-    private static bool IsOn(Component _component, string _field)
+    private static bool IsWrong(Component _component, RuntimeField _rule)
     {
         SerializedObject _so = new SerializedObject(_component);
-        SerializedProperty _property = _so.FindProperty(_field);
+        SerializedProperty _property = _so.FindProperty(_rule.field);
 
-        return null != _property && SerializedPropertyType.Boolean == _property.propertyType && true == _property.boolValue;
+        return null != _property && SerializedPropertyType.Boolean == _property.propertyType && _rule.expected != _property.boolValue;
     }
 
     private static bool PrefabHasComponent(string _guid, Type _type)

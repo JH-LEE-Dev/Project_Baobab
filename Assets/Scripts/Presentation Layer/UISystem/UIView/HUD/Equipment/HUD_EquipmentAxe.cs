@@ -179,7 +179,9 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                     if (AxeMode.ZERO == axeMode)
                     {
                         ParticleSystem temp = vfxComponent.Play(axeLastBrokenTag, axeHead.transform.position, Quaternion.identity, transform);
+#if UNITY_EDITOR
                         Debug.Log(temp);
+#endif
 
                         // AxeBreakingFinal도 마찬가지로 나빠지는 방향이면서 파티클이 실제로 나갔을 때만 재생한다.
                         if (true == isBreaking && null != temp)
