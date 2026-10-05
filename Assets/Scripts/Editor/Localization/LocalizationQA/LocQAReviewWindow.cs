@@ -153,6 +153,7 @@ namespace LocalizationQA
         private readonly List<ContextRow> contexts = new List<ContextRow>(64);
         private readonly List<Row> rows = new List<Row>(256);
         [NonSerialized] private string builtSignature;
+        [NonSerialized] private int seenAssetVersion;
         [NonSerialized] private int unconnectedEntries;
         [NonSerialized] private Language? pendingCellLanguage;
 
@@ -186,6 +187,7 @@ namespace LocalizationQA
             settings = LocQASettings.Load();
             table = LocQAStringTable.Load();
             hashCache.Clear();
+            seenAssetVersion = LocQAAssetWatcher.Version;
             LocQAReviewData.Changed += OnDataChanged;
             builtSignature = null;
         }
@@ -214,6 +216,15 @@ namespace LocalizationQA
 
         private void Update()
         {
+            // 프리팹이나 번역 JSON이 저장되면 띄워 둔 화면을 버리고 새로 그린다.
+            if (seenAssetVersion != LocQAAssetWatcher.Version && false == EditorApplication.isCompiling && false == EditorApplication.isUpdating)
+            {
+                seenAssetVersion = LocQAAssetWatcher.Version;
+                LocQAScreenIndex.Invalidate();
+                ResetCaches();
+                Repaint();
+            }
+
             if (EMode.Language != mode || EditorApplication.isCompiling) return;
             if (true == RenderLanguageCellsStep()) Repaint();
         }
@@ -255,19 +266,25 @@ namespace LocalizationQA
             {
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
                 {
-                    if (GUILayout.Button(new GUIContent("목록 갱신", "UI 프리팹을 훑어 텍스트 칸과 문구를 모읍니다. 기존 연결과 판정은 그대로 유지됩니다."), EditorStyles.toolbarButton))
+                    if (GUILayout.Button(new GUIContent("목록 갱신", "UI 프리팹을 훑어 텍스트 칸과 문구를 모읍니다. 기존 연결과 판정은 그대로 유지됩니다.\n지워진 프리팹·텍스트 칸의 연결은 정리합니다. (지우기 전에 확인)"), EditorStyles.toolbarButton))
                     {
                         LocQAScreenIndex.Invalidate();
+                        string _pruned = PruneMissing();
                         LocQAReviewCollector.CollectFromPrefabs(settings);
+                        LocQAScreenIndex.Invalidate();
                         ResetCaches();
+                        if (null != _pruned) ShowNotification(new GUIContent(_pruned));
                         GUIUtility.ExitGUI();
                     }
                 }
-                if (GUILayout.Button(new GUIContent("다시 읽기", "git pull 등으로 다른 사람의 판정을 받은 뒤, 또는 번역 JSON이 바뀐 뒤 누르세요."), EditorStyles.toolbarButton))
+                if (GUILayout.Button(new GUIContent("다시 읽기", "판정·번역 JSON·프리팹을 디스크에서 다시 읽어 새로 그립니다. git pull 뒤에 누르세요.\n지워진 프리팹·텍스트 칸의 연결은 정리합니다. (지우기 전에 확인)"), EditorStyles.toolbarButton))
                 {
                     LocQAReviewData.Reload();
                     LocQAScreenIndex.Invalidate();
+                    string _pruned = PruneMissing();
                     ResetCaches();
+                    if (null != _pruned) ShowNotification(new GUIContent(_pruned));
+                    GUIUtility.ExitGUI();
                 }
 
                 GUILayout.Space(10f);
@@ -357,6 +374,43 @@ namespace LocalizationQA
                 if (GUILayout.Button(new GUIContent("NG 목록 CSV", "NG로 판정한 칸을 사유와 함께 CSV로 내보냅니다."), EditorStyles.toolbarButton)) ExportNgCsv();
                 if (GUILayout.Button(new GUIContent("자동 검사 창", "칸 넘침 등을 자동으로 찾는 창"), EditorStyles.toolbarButton)) LocQAWindow.Open();
             }
+        }
+
+        /// <summary>
+        /// 지워진 프리팹·텍스트 칸을 기록에서 정리한다. 판정이 함께 지워지므로 지울 것이 있으면 먼저 묻는다.
+        /// (그리던 화면에서만 빠진 칸은 묻지 않고 원본 프리팹에서 그리도록 옮긴다)
+        /// </summary>
+        /// <returns>알림에 띄울 결과. 바뀐 것이 없으면 null</returns>
+        private string PruneMissing()
+        {
+            LocQAReviewData _data = LocQAReviewData.Shared;
+            LocQAPruneReport _plan = _data.PruneMissing(false);
+            if (false == _plan.HasRemovals && 0 == _plan.moved) return null;
+
+            bool _remove = false;
+            if (true == _plan.HasRemovals)
+            {
+                StringBuilder _sb = new StringBuilder();
+                _sb.AppendLine("프리팹이나 텍스트 오브젝트가 없어진 칸이 있습니다. 기록에서 지울까요?");
+                _sb.AppendLine();
+                if (_plan.removedItems.Count > 0) _sb.AppendLine($"· 문구 연결 {_plan.removedItems.Count}개 (판정 {_plan.removedMarks}개 함께 삭제)");
+                if (_plan.removedSlots > 0) _sb.AppendLine($"· 칸 기록 {_plan.removedSlots}개");
+                _sb.AppendLine();
+                int _shown = Mathf.Min(12, _plan.removedItems.Count);
+                for (int i = 0; i < _shown; i++) _sb.AppendLine(_plan.removedItems[i]);
+                if (_plan.removedItems.Count > _shown) _sb.AppendLine($"… 외 {_plan.removedItems.Count - _shown}개");
+                _sb.AppendLine();
+                _sb.Append("프리팹을 잠시 옮기거나 지운 중이라면 '그대로 두기'를 누르세요. 다음에 다시 묻습니다.");
+                _remove = EditorUtility.DisplayDialog("Localization QA · 없어진 칸 정리", _sb.ToString(), "지우기", "그대로 두기");
+            }
+
+            LocQAPruneReport _done = _data.PruneMissing(true, _remove);
+            _data.SaveNow();
+
+            List<string> _parts = new List<string>(2);
+            if (true == _remove && _done.removedItems.Count + _done.removedSlots > 0) _parts.Add($"없어진 칸 {_done.removedItems.Count + _done.removedSlots}개 정리");
+            if (_done.moved > 0) _parts.Add($"화면이 바뀐 칸 {_done.moved}개 다시 배치");
+            return _parts.Count > 0 ? string.Join(" · ", _parts) : null;
         }
 
         private void ResetCaches()
@@ -1771,6 +1825,31 @@ namespace LocalizationQA
     /// 텍스트 칸에 들어갈 문구를 검색해 여러 개 고르는 창.
     /// 프리팹 이름과 닮은 JSON(예: HUD_Message ↔ MessageHUD)을 먼저 보여준다.
     /// </summary>
+    /// <summary>
+    /// 프리팹이나 번역 JSON이 저장·삭제·이동되면 번호를 올린다. 검수 창은 번호가 바뀌면 띄워 둔 화면을 버리고 새로 그린다.
+    /// (프리팹을 고친 뒤 '다시 읽기'를 누르지 않아도 그림이 바로 바뀌도록)
+    /// </summary>
+    internal sealed class LocQAAssetWatcher : AssetPostprocessor
+    {
+        public static int Version { get; private set; }
+
+        private static void OnPostprocessAllAssets(string[] _imported, string[] _deleted, string[] _moved, string[] _movedFrom)
+        {
+            if (true == Relevant(_imported) || true == Relevant(_deleted) || true == Relevant(_moved)) Version++;
+        }
+
+        private static bool Relevant(string[] _paths)
+        {
+            for (int i = 0; i < _paths.Length; i++)
+            {
+                string _path = _paths[i];
+                if (true == _path.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase)) return true;
+                if (true == _path.EndsWith(".json", StringComparison.OrdinalIgnoreCase) && _path.IndexOf("/Resources/Localization/", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            }
+            return false;
+        }
+    }
+
     internal sealed class LocQAKeyPickerWindow : EditorWindow
     {
         private LocQAStringTable table;
