@@ -358,6 +358,8 @@ public class UIView_Result : UIView
     private bool hasCachedProductionStartState;
     private bool isClosingProduction;
     private bool isResultContentsActive;
+    // 처치 수 텍스트에 마지막으로 쓴 값. 카운트업 도중에는 최종 수와 다르다. (RefreshLocalizedResultTexts 참고)
+    private int displayedTreeKillCount;
     private Action pendingCloseCompletedEvent;
     private UISelectionCursor selectionCursorInstance;
     private UIHoverSelectionTarget goHomeHoverTarget;
@@ -552,7 +554,11 @@ public class UIView_Result : UIView
     private void RefreshLocalizedResultTexts()
     {
         RefreshLocalizedStaticTexts();
-        RefreshTreeKillCount();
+
+        // 최종 처치 수가 아니라 지금 화면에 보이는 수를 새 언어로 다시 쓴다. 결과창은 ESC로 닫히지 않아
+        // 처치 수 카운트업 도중에 일시정지하고 언어를 바꿀 수 있는데, 최종 수를 쓰면 재개 시 트윈이
+        // 중간값부터 다시 세면서 숫자가 앞으로 튀었다가 되돌아간다.
+        SetTreeKillCountText(displayedTreeKillCount);
     }
 
     private void CacheProductionRuntimeReferences()
@@ -1490,6 +1496,7 @@ public class UIView_Result : UIView
             return;
 
         int normalizedTreeKillCount = Mathf.Max(0, treeKillCount);
+        displayedTreeKillCount = normalizedTreeKillCount;
         int entryId = GetTreeKillCountEntryId(normalizedTreeKillCount);
         string fallbackFormat = GetTreeKillCountFallbackFormat(normalizedTreeKillCount);
         treeKillCountText.text = normalizedTreeKillCount == 0

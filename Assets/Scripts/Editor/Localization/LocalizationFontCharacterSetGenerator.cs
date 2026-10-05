@@ -158,7 +158,16 @@ public static class LocalizationFontCharacterSetGenerator
         }
 
         // 2. 기존 폰트 에셋의 테이블을 신규 베이킹된 테이블로 동기화
-        _existingFont.faceInfo = _newFont.faceInfo;
+        // 행간(lineHeight)만은 기존 값을 유지한다. 행간은 UI 검수 때 폰트 에셋에서 직접 맞추는
+        // 값인데(예: Lorem_Optimum 23 → 20), faceInfo를 통째로 덮어쓰면 굽기를 돌릴 때마다 TTF 기본값으로
+        // 돌아가 그 언어들의 여러 줄 문구 간격이 조용히 벌어진다.
+        // (처음 굽는 빈 에셋이면 기존 값이 0이므로 새로 구운 값을 그대로 쓴다)
+        UnityEngine.TextCore.FaceInfo _faceInfo = _newFont.faceInfo;
+        if (0f < _existingFont.faceInfo.lineHeight)
+        {
+            _faceInfo.lineHeight = _existingFont.faceInfo.lineHeight;
+        }
+        _existingFont.faceInfo = _faceInfo;
         _existingFont.glyphTable.Clear();
         _existingFont.glyphTable.AddRange(_newFont.glyphTable);
         _existingFont.characterTable.Clear();

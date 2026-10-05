@@ -48,6 +48,30 @@
       "vi": "Tiếp tục mà không tải dữ liệu đã lưu?\nBắt đầu trò chơi mới sau đó có thể ghi đè tiến trình hiện có.",
       "enumType": "",
       "enumValue": ""
+    },
+    {
+      "id": 3,
+      "key": "CheckingMessage",
+      "kr": "저장 데이터를 확인하고 있습니다...",
+      "en": "Checking save data...",
+      "zhHans": "正在检查存档数据…",
+      "zhHant": "正在檢查存檔資料…",
+      "ja": "セーブデータを確認しています……",
+      "de": "Speicherdaten werden geprüft...",
+      "fr": "Vérification des données de sauvegarde...",
+      "pt": "Verificando os dados salvos...",
+      "es": "Comprobando los datos guardados...",
+      "ru": "Проверка данных сохранения...",
+      "pl": "Sprawdzanie zapisu...",
+      "tr": "Kayıt verileri kontrol ediliyor...",
+      "esLatam": "Verificando la partida...",
+      "it": "Verifica del salvataggio in corso...",
+      "uk": "Перевірка збереження...",
+      "cs": "Kontrola uložené hry...",
+      "ind": "Memeriksa data simpanan...",
+      "vi": "Đang kiểm tra dữ liệu đã lưu...",
+      "enumType": "",
+      "enumValue": ""
     }
   ]
 }

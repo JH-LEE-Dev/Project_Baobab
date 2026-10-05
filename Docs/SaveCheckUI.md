@@ -125,7 +125,7 @@ Sorting Order와 무관하게 Screen Space - Camera 캔버스보다 항상 위�
 
 | 화면 | 이렇게 | 이러면 안 됨 |
 |---|---|---|
-| 확인 중 | "세이브 파일을 확인하고 있습니다..." | — |
+| 확인 중 | "저장 데이터를 확인하고 있습니다..." | — |
 | 실패 | "세이브 파일을 읽지 못했습니다.<br>다른 프로그램이 파일을 사용 중일 수 있습니다." | "세이브가 손상되었습니다" |
 | 포기 확인 | "새로 시작하면 기존 진행도를 덮어씁니다.<br>클라우드에 저장된 기록도 함께 정리됩니다.<br>계속할까요?" | "정말요?" |
 
@@ -136,6 +136,14 @@ Sorting Order와 무관하게 Screen Space - Camera 캔버스보다 항상 위�
 
 현지화는 다른 UI와 같은 방식으로 붙이면 됩니다. `UIView_Warning`이 로컬라이제이션 JSON을 어떻게
 읽는지 그대로 따라가세요.
+
+현재 세 문구는 모두 `Assets/Resources/Localization/SaveCheckUI.json`에 있습니다.
+(`CheckingMessage` / `FailedMessage` / `AbandonMessage`) 확인 중 문구는 `checkingText` 필드에 연결된
+`Text_Checking`에 들어가며, 이 텍스트에는 언어별 폰트 교체를 위한 `LocalizedFontTracker`가 붙어 있습니다.
+
+이 화면은 메인 메뉴보다 먼저 뜨지만, 그 전에 Bootstrap이 언어를 적용해 둡니다.
+설정 파일에 저장된 선택이 있으면 그 언어, 없으면 Steam 언어 → OS 언어 → 영어 순서입니다.
+(`LanguageAutoDetect` 참고) 그래서 첫 실행 유저도 자기 언어로 이 화면을 봅니다.
 
 ---
 

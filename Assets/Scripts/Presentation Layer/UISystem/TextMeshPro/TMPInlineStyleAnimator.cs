@@ -63,6 +63,8 @@ namespace PresentationLayer.UISystem
         private int revealCharacterCount;
         private int nextRevealCallbackCharacterIndex;
         private Action revealCharacterAppearedCallback;
+        // 등장 연출을 시작할 때의 언어. 연출 도중 언어가 바뀌었는지 판별하는 데 쓴다.
+        private Language revealLanguage;
 
         public string PreprocessText(string _text)
         {
@@ -85,6 +87,7 @@ namespace PresentationLayer.UISystem
             revealStartTime = Time.time;
             nextRevealCallbackCharacterIndex = 0;
             revealCharacterAppearedCallback = _characterAppearedCallback;
+            revealLanguage = FontLocalizer.CurrentLanguage;
 
             tmpText.ForceMeshUpdate(false, true);
             revealCharacterCount = Mathf.Max(0, tmpText.textInfo.characterCount);
@@ -154,6 +157,8 @@ namespace PresentationLayer.UISystem
 
         private void Update()
         {
+            EndRevealIfLanguageChanged();
+
             if ((hasAnimatedStyle == false && isRevealPlaying == false) || tmpText == null)
                 return;
 
@@ -346,8 +351,37 @@ namespace PresentationLayer.UISystem
             return true;
         }
 
+        /// <summary>
+        /// 등장 연출 도중 언어가 바뀌었으면 연출을 끝내고 새 문구를 그대로 보여준다.
+        ///
+        /// 연출은 시작 시점의 글자 수로 글자별 시작 시간을 잡아두기 때문에, 언어 변경으로 문구가
+        /// 바뀐 채 이어가면 새 문구의 글자들이 엉뚱한 타이밍에 나타나거나 연출이 일찍 끝나 뒷글자가
+        /// 한꺼번에 튀어나온다. 특히 일시정지(timeScale = 0) 중에는 Time.time이 멈춰 있어, 반쯤
+        /// 찌그러지거나 투명한 글자가 재개할 때까지 그대로 남는다.
+        ///
+        /// "문구가 바뀌면"이 아니라 "언어가 바뀌면"으로 판별하는 이유: 결과창 처치 수처럼 등장 연출과
+        /// 숫자 카운트업이 동시에 돌며 문구를 계속 바꾸는 UI가 있어, 문구 변경으로 판별하면 평소에도
+        /// 연출이 시작하자마자 끊긴다.
+        ///
+        /// 메시 생성 도중(HandlePreRenderText)에도 불리므로 플래그만 내린다. 이어서 그리는 메시가 곧
+        /// 원래 모습이 되고, 그 경로를 타지 않는 경우(Update)에는 다시 그리도록 표시한다.
+        /// </summary>
+        private void EndRevealIfLanguageChanged(bool _isRebuildingMesh = false)
+        {
+            if (false == isRevealPlaying || FontLocalizer.CurrentLanguage == revealLanguage)
+                return;
+
+            isRevealPlaying = false;
+            revealCharacterAppearedCallback = null;
+
+            if (false == _isRebuildingMesh && tmpText != null)
+                tmpText.SetVerticesDirty();
+        }
+
         private void HandlePreRenderText(TMP_TextInfo _textInfo)
         {
+            EndRevealIfLanguageChanged(true);
+
             if (hasAnyStyle == false && isRevealPlaying == false || _textInfo == null)
                 return;
 

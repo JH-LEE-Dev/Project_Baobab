@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
@@ -43,6 +44,19 @@ using UnityEngine;
 /// 레시피에만 있어 여기서만 걸러집니다. 용광로 본체 그림은 세 대가 같은 것을 쓰므로(원석 종류와
 /// 무관) 제외 대상이 아닙니다.
 ///
+/// [정식판 기능 에셋]
+/// 드론·부메랑·과열·회전 베기·별자리처럼 스킬로 여는 기능, 포자·열기처럼 2~4스테이지에만 있는
+/// 기능의 프리팹·효과음·VFX도 끊습니다(StripFullOnlyFeatures). 코드는 남지만 데모에서 켜질 수 없는
+/// 기능이고, 에셋은 파일을 뜯으면 그대로 보이기 때문입니다. "데모에서 켜질 수 있는가"는
+/// 하드코딩하지 않고 데모 스킬 DB(AbilityBuildVariantData.demoSkillDataBase)의 스킬 명령과
+/// 데모 최대 맵으로 판정합니다. 데모에 그 기능을 넣으면 자동으로 다시 남습니다.
+/// 끊는 필드는 모두 코드가 null을 견디거나(풀 생성 시 null 검사 등) 데모에서 도달하지 않는 경로뿐임을
+/// 2026-10-05에 하나씩 확인했습니다. 필드를 새로 추가할 때도 같은 확인을 거치십시오.
+///
+/// Graphics/VFX/Resources 폴더는 이름이 Resources라 참조와 무관하게 통째로 빌드에 실립니다.
+/// 그 안을 Resources.Load로 읽는 코드는 없으므로(전부 인스펙터 참조), 데모 빌드 동안만 폴더 이름을
+/// 바꿔 "참조된 것만" 실리게 합니다. 정식판 그림(드론 레이저, 발현 낙인, 별 표식 등)이 이 폴더에 있습니다.
+///
 /// [빌드가 도중에 죽으면]
 /// 원본은 Library 아래에 바이트 그대로 백업해 둡니다. 빌드 후 복구가 원칙이고, 빌드가 비정상
 /// 종료돼 백업이 남아 있으면 다음에 에디터가 켜질 때 자동으로 되돌립니다.
@@ -58,6 +72,18 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     private const string INSTALLER_PREFAB_PATH = "Assets/Prefabs/Installer/Installer/GameInstaller.prefab";
     private const string FURNACE_HUD_PREFAB_PATH = "Assets/Prefabs/UI/WorldPopup/BlastFurnaceUI/UI_BlastFurnaceStatus.prefab";
     private const string CURRENCY_HUD_PREFAB_PATH = "Assets/Prefabs/UI/HUD/Common/CurrencyCounterHUD.prefab";
+    private const string CHARACTER_PREFAB_PATH = "Assets/Prefabs/Objects/Character/Character.prefab";
+    private const string TREE_PREFAB_PATH = "Assets/Prefabs/Objects/Trees/Tree.prefab";
+    private const string OFFROAD_PREFAB_PATH = "Assets/Prefabs/Objects/OffRoadVehicle/OffRoadVehicle.prefab";
+    private const string TENT_UI_PREFAB_PATH = "Assets/Prefabs/UI/TentUI/TentUI.prefab";
+    private const string LOG_ITEM_DB_PATH = "Assets/Scriptable Obj/ItemData/LogItemData/LogItemTypeDataBase.asset";
+    private const string TREE_STAT_DB_PATH = "Assets/Scriptable Obj/TreeStatData/Tree Stat Data Base.asset";
+    private const string ABILITY_VARIANT_PATH = "Assets/Scriptable Obj/SkillData/AbilityBuildVariantData.asset";
+
+    /// <summary>데모 빌드 동안 이름을 바꿔 두는 폴더입니다. 바꾼 이름은 Resources가 아니면 무엇이든 됩니다.</summary>
+    private const string VFX_RESOURCES_FOLDER = "Assets/Graphics/VFX/Resources";
+    private const string VFX_RESOURCES_HOLD_NAME = "_DemoBuildHold_VFX";
+    private const string FOLDER_MOVE_MANIFEST = "_folder_moves.txt";
 
     private const string BACKUP_FOLDER = "DemoContentStripBackup";
 
@@ -77,6 +103,12 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         INSTALLER_PREFAB_PATH,
         FURNACE_HUD_PREFAB_PATH,
         CURRENCY_HUD_PREFAB_PATH,
+        CHARACTER_PREFAB_PATH,
+        TREE_PREFAB_PATH,
+        OFFROAD_PREFAB_PATH,
+        TENT_UI_PREFAB_PATH,
+        LOG_ITEM_DB_PATH,
+        TREE_STAT_DB_PATH,
     };
 
     public void OnPreprocessBuild(BuildReport _report)
@@ -112,10 +144,17 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
             _removedIcon += StripCurrencyHudIcons(_keepGemOre);
         }
 
+        string _fullOnly = StripFullOnlyFeatures(_maxPlayableMap);
+
         AssetDatabase.SaveAssets();
+
+        // 저장이 끝난 뒤에 옮긴다. 폴더 이동이 저장되지 않은 수정분과 섞이지 않게 하기 위해서다.
+        bool _heldVfx = HoldVfxResourcesFolder();
 
         Debug.Log($"[DemoStrip] 데모 빌드 - 미공개 콘텐츠 제외 (최대 플레이 맵: {_maxPlayableMap})\n" +
                   $"  BGM {_removedBgm}곡, 나무 비주얼 {_removedTree}종, 원석 그림 {_removedGemOre}종, 용광로 레시피 {_removedFurnaceRecipe}종, 재화 아이콘 {_removedIcon}개\n" +
+                  $"  정식판 기능: {_fullOnly}\n" +
+                  $"  VFX Resources 폴더 제외: {(true == _heldVfx ? "적용" : "건너뜀")}\n" +
                   "  빌드가 끝나면 원본으로 자동 복구됩니다.");
     }
 
@@ -541,6 +580,515 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
 #endregion
 
+#region 정식판 기능 에셋 제외
+
+    /// <summary>
+    /// 정식판 기능 중 데모에서 켜질 수 있는 것을 판정한 결과입니다.
+    /// true 인 기능은 건드리지 않습니다.
+    /// </summary>
+    private sealed class DemoFeatureScope
+    {
+        public MapType maxMap;
+        public HashSet<SkillType> skills = new HashSet<SkillType>();
+        public HashSet<SkillCommandType> commands = new HashSet<SkillCommandType>();
+        public HashSet<TreeType> trees = new HashSet<TreeType>();
+
+        public bool boomerang;
+        public bool drone;
+        public bool overheat;
+        public bool whirlwind;
+        public bool constellation;
+
+        /// <summary>포자막 나무는 2스테이지(FluffySporeForest)부터 나옵니다.</summary>
+        public bool spore;
+
+        /// <summary>나무 열기 분출은 4스테이지(MagmaForest) 데이터에만 있습니다(StageTileDataSO.treeHeatStaminaDamage).</summary>
+        public bool heat;
+
+        /// <summary>나무 화상은 과열 충격파(스킬) 또는 4스테이지 열기에서만 생깁니다.</summary>
+        public bool burn;
+
+        public bool MapReachable(int _mapType) => _mapType <= (int)maxMap;
+    }
+
+    /// <summary>
+    /// 정식판 기능의 에셋 참조를 끊고, 무엇을 끊었는지 한 줄로 돌려줍니다.
+    /// 판정 근거(데모 스킬 DB)를 못 읽으면 아무것도 끊지 않습니다. 잘못 끊으면 데모가 깨지지만,
+    /// 덜 끊으면 용량과 유출만 늘기 때문입니다.
+    /// </summary>
+    private static string StripFullOnlyFeatures(MapType _maxPlayableMap)
+    {
+        DemoFeatureScope _scope = ReadDemoFeatureScope(_maxPlayableMap);
+
+        if (null == _scope)
+        {
+            Debug.LogWarning($"[DemoStrip] 데모 스킬 DB를 읽지 못해 정식판 기능 에셋 제외를 건너뜁니다({ABILITY_VARIANT_PATH}).");
+            return "건너뜀 (데모 스킬 DB 없음)";
+        }
+
+        int _sfx = StripFullOnlySfx(_scope);
+        int _installer = StripInstallerFullOnly(_scope);
+        int _character = StripCharacterFullOnly(_scope);
+        int _tree = StripTreePrefabFullOnly(_scope);
+        int _offroad = StripOffroadFullOnly(_scope);
+        int _icons = StripTentAbilityIcons(_scope);
+        int _logIcons = StripLogItemIcons(_scope);
+        int _regen = StripTreeRegenStrategies(_scope);
+
+        return $"효과음 {_sfx}개, 설치 프리팹 {_installer}곳, 캐릭터 {_character}곳, 나무 {_tree}곳, 차량 {_offroad}곳, " +
+               $"스킬트리 아이콘 {_icons}개, 원목 아이콘 {_logIcons}개, 실드 회복 {_regen}개";
+    }
+
+    private static DemoFeatureScope ReadDemoFeatureScope(MapType _maxPlayableMap)
+    {
+        ScriptableObject _variant = AssetDatabase.LoadAssetAtPath<ScriptableObject>(ABILITY_VARIANT_PATH);
+        if (null == _variant) return null;
+
+        SerializedProperty _dbRef = new SerializedObject(_variant).FindProperty("demoSkillDataBase");
+        if (null == _dbRef || null == _dbRef.objectReferenceValue) return null;
+
+        SerializedProperty _skills = new SerializedObject(_dbRef.objectReferenceValue).FindProperty("skills");
+        if (null == _skills || false == _skills.isArray || 0 == _skills.arraySize) return null;
+
+        DemoFeatureScope _scope = new DemoFeatureScope { maxMap = _maxPlayableMap };
+
+        for (int i = 0; i < _skills.arraySize; i++)
+        {
+            SerializedProperty _skill = _skills.GetArrayElementAtIndex(i);
+            _scope.skills.Add((SkillType)_skill.FindPropertyRelative("skillType").intValue);
+
+            SerializedProperty _effects = _skill.FindPropertyRelative("skillTypes");
+            for (int j = 0; null != _effects && j < _effects.arraySize; j++)
+            {
+                _scope.commands.Add((SkillCommandType)_effects.GetArrayElementAtIndex(j).FindPropertyRelative("skillCommandType").intValue);
+            }
+        }
+
+        foreach (TreeType _tree in CollectDemoTreeTypes(_maxPlayableMap)) _scope.trees.Add(_tree);
+
+        HashSet<SkillCommandType> _c = _scope.commands;
+        _scope.boomerang = _c.Contains(SkillCommandType.Boomerang) || _c.Contains(SkillCommandType.LumberjackNPCBoomerang);
+        _scope.drone = _c.Contains(SkillCommandType.Drone);
+        _scope.overheat = _c.Contains(SkillCommandType.Overheat) || _c.Contains(SkillCommandType.OverheatPermanent);
+        _scope.whirlwind = _c.Contains(SkillCommandType.WhirlWind);
+        _scope.constellation = _c.Contains(SkillCommandType.ConstellationManifestUnlock) || _c.Contains(SkillCommandType.StarGazeUnlock) ||
+                               _c.Contains(SkillCommandType.StarMarkDamage) || _c.Contains(SkillCommandType.StarPathSpeedBoost) ||
+                               _c.Contains(SkillCommandType.ConstellationDamage) || _c.Contains(SkillCommandType.ManifestationBrand);
+        _scope.spore = _scope.MapReachable((int)MapType.FluffySporeForest);
+        _scope.heat = _scope.MapReachable((int)MapType.MagmaForest);
+        _scope.burn = _scope.overheat || _scope.heat;
+
+        return _scope;
+    }
+
+    /// <summary>
+    /// 기능별 효과음입니다. AudioManager는 없는 ID를 경고만 남기고 넘어가며(PlayInternal),
+    /// 아래 소리는 모두 해당 기능 코드(Boomerang/Drone/TreeObj 실드·화상/별자리)에서만 울립니다.
+    /// 데모 나무는 실드(sp)가 0이라 포자막 소리도 울리지 않습니다(2026-10-05 Tree Stat Data Base 확인).
+    /// </summary>
+    private static int StripFullOnlySfx(DemoFeatureScope _s)
+    {
+        HashSet<SoundID> _drop = new HashSet<SoundID>();
+
+        if (false == _s.boomerang) { _drop.Add(SoundID.SpinStart); _drop.Add(SoundID.SpinLoop); }
+        if (false == _s.drone) { _drop.Add(SoundID.SFXBeamFire); _drop.Add(SoundID.SFXChargeUp); _drop.Add(SoundID.SFXPunchImpact); _drop.Add(SoundID.SFXVoltageImpact); }
+        if (false == _s.spore) { _drop.Add(SoundID.SporeHit); _drop.Add(SoundID.SporeExplosion); _drop.Add(SoundID.SporeShieldBreak); }
+        if (false == _s.constellation) { _drop.Add(SoundID.Starappear); _drop.Add(SoundID.Stardisappear); _drop.Add(SoundID.StarExplosion); }
+        if (false == _s.burn) { _drop.Add(SoundID.FireStart); _drop.Add(SoundID.FireLoop); }
+        if (false == _s.heat) { _drop.Add(SoundID.TreeFireExplosion); }
+
+        if (0 == _drop.Count) return 0;
+
+        AudioDatabase _db = AssetDatabase.LoadAssetAtPath<AudioDatabase>(AUDIO_DB_PATH);
+        if (null == _db || null == _db.sounds) return 0;
+
+        Backup(AUDIO_DB_PATH);
+
+        int _removed = _db.sounds.RemoveAll(_sound => null != _sound && _drop.Contains(_sound.id));
+        if (_removed > 0) EditorUtility.SetDirty(_db);
+
+        return _removed;
+    }
+
+    /// <summary>
+    /// GameInstaller에 걸린 정식판 기능의 프리팹·데이터입니다.
+    /// - VFX 풀: InDungeonVFXManager·ConstellationPixelLaserCreator는 프리팹이 null이면 풀을 만들지 않습니다.
+    /// - VFXComponent: 프리팹이 null인 항목은 초기화에서 건너뛰고, 없는 태그는 Play가 null을 돌려줍니다.
+    /// - 맵별 목록: 데모 최대 맵보다 뒤의 맵 항목만 비웁니다. 그 맵으로는 데모에서 이동할 수 없습니다.
+    /// - 스킬 명령: SkillDispatcher는 null 항목을 건너뛰고 없는 명령을 TryGetValue로 찾습니다.
+    ///   데모 스킬이 쓰는 명령은 남기고, 나머지만 끊습니다.
+    /// </summary>
+    private static int StripInstallerFullOnly(DemoFeatureScope _s)
+    {
+        GameObject _root = AssetDatabase.LoadAssetAtPath<GameObject>(INSTALLER_PREFAB_PATH);
+        if (null == _root) return 0;
+
+        int _n = 0;
+
+        _n += EditComponents(_root, "InDungeonVFXManager", INSTALLER_PREFAB_PATH, _so =>
+        {
+            int _c = 0;
+            if (false == _s.constellation)
+            {
+                _c += ClearRef(_so, "constellationDottedLinePrefab");
+                _c += ClearRef(_so, "treeStarMarkGroundPrefab");
+                _c += ClearRef(_so, "brandStarWrapPrefab");
+                _c += ClearRef(_so, "shootingStarVfxPrefab");
+                _c += ClearRef(_so, "starAppearAuraPrefab");
+            }
+            if (false == _s.spore) _c += ClearRef(_so, "sporeExplosionVfxPrefab");
+            if (false == _s.heat) _c += ClearRef(_so, "treeHeatIndicatorMaterial");
+            return _c;
+        });
+
+        if (false == _s.constellation) _n += EditComponents(_root, "ConstellationPixelLaserCreator", INSTALLER_PREFAB_PATH, _so => ClearRef(_so, "laserPrefab"));
+        if (false == _s.boomerang) _n += EditComponents(_root, "BoomerangCreator", INSTALLER_PREFAB_PATH, _so => ClearRef(_so, "boomerangPrefab"));
+
+        HashSet<string> _dropTags = new HashSet<string>();
+        if (false == _s.spore) { _dropTags.Add("SporeShieldBrokenEffect"); _dropTags.Add("SporeShieldBrokenEffect_Bellpine"); }
+        if (false == _s.constellation) _dropTags.Add("ManifestationBrandStampEffect");
+        if (false == _s.heat) _dropTags.Add("TreeHeatEmitEffect");
+        _n += EditComponents(_root, "VFXComponent", INSTALLER_PREFAB_PATH, _so => ClearVfxPoolEntries(_so, _dropTags));
+
+        _n += EditComponents(_root, "TileMapGenerator", INSTALLER_PREFAB_PATH, _so => ClearUnreachableMapEntries(_so, "mapTypeTileDatas", "tileData", _s));
+        _n += EditComponents(_root, "InDungeonObjectManager", INSTALLER_PREFAB_PATH, _so => ClearUnreachableMapEntries(_so, "mapTypeTreeGenerationDatas", "strategy", _s));
+        _n += EditComponents(_root, "EnvironmentParticleSystem", INSTALLER_PREFAB_PATH, _so => ClearUnreachableMapEntries(_so, "mapParticleMappings", "particlePrefab", _s));
+
+        _n += EditComponents(_root, "SkillDispatcher", INSTALLER_PREFAB_PATH, _so =>
+        {
+            SerializedProperty _list = _so.FindProperty("skillCommands");
+            int _c = 0;
+            for (int i = 0; null != _list && i < _list.arraySize; i++)
+            {
+                SerializedProperty _e = _list.GetArrayElementAtIndex(i);
+                SkillCommand _cmd = _e.objectReferenceValue as SkillCommand;
+                if (null == _cmd || true == _s.commands.Contains(_cmd.skillCommandType)) continue;
+
+                _e.objectReferenceValue = null;
+                _c++;
+            }
+            return _c;
+        });
+
+        return _n;
+    }
+
+    /// <summary>
+    /// 캐릭터에 걸린 정식판 무기·과열입니다.
+    /// 부메랑·드론 풀은 생성자에서 미리 만들지 않고, 개수가 0이면 Get을 부르지 않습니다
+    /// (기본 개수 0은 CharacterStatBuildGuard가 보장). 과열 충격파는 null이면 풀을 만들지 않습니다.
+    /// 회전 베기 프레임은 회전 베기 발동 때만 읽힙니다.
+    /// </summary>
+    private static int StripCharacterFullOnly(DemoFeatureScope _s)
+    {
+        GameObject _root = AssetDatabase.LoadAssetAtPath<GameObject>(CHARACTER_PREFAB_PATH);
+        if (null == _root) return 0;
+
+        int _n = 0;
+
+        if (false == _s.boomerang) _n += EditComponents(_root, "BoomerangCreator", CHARACTER_PREFAB_PATH, _so => ClearRef(_so, "boomerangPrefab"));
+        if (false == _s.drone) _n += EditComponents(_root, "DroneCreator", CHARACTER_PREFAB_PATH, _so => ClearRef(_so, "dronePrefab"));
+        if (false == _s.whirlwind) _n += EditComponents(_root, "AttackComponent", CHARACTER_PREFAB_PATH, _so => ClearArray(_so, "whirlwindFrames"));
+
+        if (false == _s.overheat)
+        {
+            _n += EditComponents(_root, "AxeExtraAttackCreator", CHARACTER_PREFAB_PATH, _so => ClearRef(_so, "overheatShockWavePrefab"));
+            _n += EditComponents(_root, "VFXComponent", CHARACTER_PREFAB_PATH, _so => ClearVfxPoolEntries(_so, new HashSet<string> { "OverheatLoopEffect" }));
+        }
+
+        return _n;
+    }
+
+    /// <summary>
+    /// 모든 나무에 붙은 별 표식(별자리)과 화상 이펙트입니다.
+    /// TreeStarMarkAnimator는 프레임이 비면 아무것도 하지 않고, 화상 머티리얼은 화상 때만 씁니다.
+    /// </summary>
+    private static int StripTreePrefabFullOnly(DemoFeatureScope _s)
+    {
+        GameObject _root = AssetDatabase.LoadAssetAtPath<GameObject>(TREE_PREFAB_PATH);
+        if (null == _root) return 0;
+
+        int _n = 0;
+
+        if (false == _s.constellation)
+        {
+            _n += EditComponents(_root, "TreeStarMarkAnimator", TREE_PREFAB_PATH, _so => ClearArray(_so, "frames"));
+
+            // 별 표식 오브젝트의 기본 스프라이트도 같은 그림이다.
+            Component[] _all = _root.GetComponentsInChildren<Component>(true);
+            for (int i = 0; i < _all.Length; i++)
+            {
+                if (null == _all[i] || "TreeStarMarkAnimator" != _all[i].GetType().Name) continue;
+
+                SpriteRenderer _sr = _all[i].GetComponent<SpriteRenderer>();
+                if (null == _sr || null == _sr.sprite) continue;
+
+                Backup(TREE_PREFAB_PATH);
+                SerializedObject _so = new SerializedObject(_sr);
+                _n += ClearRef(_so, "m_Sprite");
+                _so.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(_sr);
+            }
+        }
+
+        if (false == _s.burn) _n += EditComponents(_root, "VFX_TreeBurn", TREE_PREFAB_PATH, _so => ClearRef(_so, "burnMaterial"));
+
+        return _n;
+    }
+
+    /// <summary>원정 차량의 3·4스테이지 외형입니다. 해당 맵에서만 쓰고 null이면 기본 외형을 유지합니다.</summary>
+    private static int StripOffroadFullOnly(DemoFeatureScope _s)
+    {
+        GameObject _root = AssetDatabase.LoadAssetAtPath<GameObject>(OFFROAD_PREFAB_PATH);
+        if (null == _root) return 0;
+
+        return EditComponents(_root, "OffroadVehicleObj", OFFROAD_PREFAB_PATH, _so =>
+        {
+            int _c = 0;
+            if (false == _s.MapReachable((int)MapType.StarrootForest)) { _c += ClearRef(_so, "darkBaseSprite"); _c += ClearRef(_so, "darkWheelSprite"); }
+            if (false == _s.MapReachable((int)MapType.MagmaForest)) { _c += ClearRef(_so, "cinderBaseSprite"); _c += ClearRef(_so, "cinderWheelSprite"); }
+            return _c;
+        });
+    }
+
+    /// <summary>
+    /// 스킬 트리의 스킬별 아이콘입니다. 데모 트리는 데모 스킬만 그리고, 아이콘 캐시는 null을 건너뜁니다.
+    /// </summary>
+    private static int StripTentAbilityIcons(DemoFeatureScope _s)
+    {
+        GameObject _root = AssetDatabase.LoadAssetAtPath<GameObject>(TENT_UI_PREFAB_PATH);
+        if (null == _root) return 0;
+
+        return EditComponents(_root, "UI_TentAbilityComponent", TENT_UI_PREFAB_PATH, _so =>
+        {
+            SerializedProperty _list = _so.FindProperty("pictureBindings");
+            int _c = 0;
+            for (int i = 0; null != _list && i < _list.arraySize; i++)
+            {
+                SerializedProperty _e = _list.GetArrayElementAtIndex(i);
+                SkillType _type = (SkillType)_e.FindPropertyRelative("skillType").intValue;
+                if (SkillType.None == _type || true == _s.skills.Contains(_type)) continue;
+
+                _c += ClearRelativeRef(_e, "sprite");
+            }
+            return _c;
+        });
+    }
+
+    /// <summary>미공개 나무의 원목 아이콘입니다. 그 나무가 데모에 나오지 않으므로 그 원목도 얻을 수 없습니다.</summary>
+    private static int StripLogItemIcons(DemoFeatureScope _s)
+    {
+        ScriptableObject _db = AssetDatabase.LoadAssetAtPath<ScriptableObject>(LOG_ITEM_DB_PATH);
+        if (null == _db) return 0;
+
+        SerializedObject _so = new SerializedObject(_db);
+        SerializedProperty _list = _so.FindProperty("datas");
+        int _c = 0;
+
+        for (int i = 0; null != _list && i < _list.arraySize; i++)
+        {
+            SerializedProperty _e = _list.GetArrayElementAtIndex(i);
+            if (true == _s.trees.Contains((TreeType)_e.FindPropertyRelative("treeType").intValue)) continue;
+
+            _c += ClearRelativeRef(_e, "timberSprite");
+
+            SerializedProperty _states = _e.FindPropertyRelative("stateSprites");
+            for (int j = 0; null != _states && j < _states.arraySize; j++) _c += ClearRelativeRef(_states.GetArrayElementAtIndex(j), "timberSprite");
+        }
+
+        return ApplyIfChanged(_so, _db, LOG_ITEM_DB_PATH, _c);
+    }
+
+    /// <summary>미공개 나무(포자막)의 실드 회복 규칙입니다. EHealthComponent는 null이면 회복하지 않습니다.</summary>
+    private static int StripTreeRegenStrategies(DemoFeatureScope _s)
+    {
+        ScriptableObject _db = AssetDatabase.LoadAssetAtPath<ScriptableObject>(TREE_STAT_DB_PATH);
+        if (null == _db) return 0;
+
+        SerializedObject _so = new SerializedObject(_db);
+        SerializedProperty _list = _so.FindProperty("treeStatDatas");
+        int _c = 0;
+
+        for (int i = 0; null != _list && i < _list.arraySize; i++)
+        {
+            SerializedProperty _e = _list.GetArrayElementAtIndex(i);
+            if (true == _s.trees.Contains((TreeType)_e.FindPropertyRelative("treeType").intValue)) continue;
+
+            _c += ClearRelativeRef(_e, "regenStrategy");
+        }
+
+        return ApplyIfChanged(_so, _db, TREE_STAT_DB_PATH, _c);
+    }
+
+#endregion
+
+#region 정식판 기능 에셋 제외 - 도우미
+
+    /// <summary>
+    /// 프리팹 안에서 이름이 같은 컴포넌트를 전부 찾아 고칩니다. 타입을 이름으로 찾는 이유는
+    /// 네임스페이스·어셈블리가 다른 런타임 타입을 이 에디터 스크립트가 직접 참조하지 않기 위해서입니다.
+    /// 컴포넌트가 없으면(브랜치에 기능이 아직 없음) 조용히 0을 돌려줍니다.
+    /// </summary>
+    private static int EditComponents(GameObject _root, string _typeName, string _assetPath, Func<SerializedObject, int> _edit)
+    {
+        Component[] _all = _root.GetComponentsInChildren<Component>(true);
+        int _total = 0;
+
+        for (int i = 0; i < _all.Length; i++)
+        {
+            if (null == _all[i] || _typeName != _all[i].GetType().Name) continue;
+
+            SerializedObject _so = new SerializedObject(_all[i]);
+            int _changed = _edit(_so);
+            if (0 == _changed) continue;
+
+            Backup(_assetPath);
+            _so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(_all[i]);
+            _total += _changed;
+        }
+
+        return _total;
+    }
+
+    private static int ApplyIfChanged(SerializedObject _so, UnityEngine.Object _target, string _assetPath, int _changed)
+    {
+        if (0 == _changed) return 0;
+
+        Backup(_assetPath);
+        _so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(_target);
+        return _changed;
+    }
+
+    private static int ClearRef(SerializedObject _so, string _field)
+    {
+        SerializedProperty _p = _so.FindProperty(_field);
+        if (null == _p || SerializedPropertyType.ObjectReference != _p.propertyType || null == _p.objectReferenceValue) return 0;
+
+        _p.objectReferenceValue = null;
+        return 1;
+    }
+
+    private static int ClearRelativeRef(SerializedProperty _entry, string _field)
+    {
+        SerializedProperty _p = _entry.FindPropertyRelative(_field);
+        if (null == _p || SerializedPropertyType.ObjectReference != _p.propertyType || null == _p.objectReferenceValue) return 0;
+
+        _p.objectReferenceValue = null;
+        return 1;
+    }
+
+    private static int ClearArray(SerializedObject _so, string _field)
+    {
+        SerializedProperty _p = _so.FindProperty(_field);
+        if (null == _p || false == _p.isArray || 0 == _p.arraySize) return 0;
+
+        _p.arraySize = 0;
+        return 1;
+    }
+
+    /// <summary>VFXComponent.vfxPoolDataList 에서 태그가 맞는 항목의 프리팹만 끊습니다(항목 자체는 남김).</summary>
+    private static int ClearVfxPoolEntries(SerializedObject _so, HashSet<string> _tags)
+    {
+        if (0 == _tags.Count) return 0;
+
+        SerializedProperty _list = _so.FindProperty("vfxPoolDataList");
+        int _c = 0;
+
+        for (int i = 0; null != _list && i < _list.arraySize; i++)
+        {
+            SerializedProperty _e = _list.GetArrayElementAtIndex(i);
+            SerializedProperty _tag = _e.FindPropertyRelative("vfxTag");
+            if (null == _tag || false == _tags.Contains(_tag.stringValue)) continue;
+
+            _c += ClearRelativeRef(_e, "effectPrefab");
+        }
+
+        return _c;
+    }
+
+    /// <summary>맵별 목록에서 데모 최대 맵보다 뒤의 맵 항목의 참조만 끊습니다.</summary>
+    private static int ClearUnreachableMapEntries(SerializedObject _so, string _listField, string _refField, DemoFeatureScope _s)
+    {
+        SerializedProperty _list = _so.FindProperty(_listField);
+        int _c = 0;
+
+        for (int i = 0; null != _list && i < _list.arraySize; i++)
+        {
+            SerializedProperty _e = _list.GetArrayElementAtIndex(i);
+            SerializedProperty _map = _e.FindPropertyRelative("mapType");
+            if (null == _map || true == _s.MapReachable(_map.intValue)) continue;
+
+            _c += ClearRelativeRef(_e, _refField);
+        }
+
+        return _c;
+    }
+
+    /// <summary>
+    /// Graphics/VFX/Resources 폴더의 이름을 잠시 바꿉니다. 기록을 먼저 남기고 옮기므로, 옮긴 직후
+    /// 에디터가 죽어도 다음 실행 때 RestoreHeldFolders가 되돌립니다.
+    /// </summary>
+    private static bool HoldVfxResourcesFolder()
+    {
+        if (false == AssetDatabase.IsValidFolder(VFX_RESOURCES_FOLDER)) return false;
+
+        string _held = Path.GetDirectoryName(VFX_RESOURCES_FOLDER).Replace('\\', '/') + "/" + VFX_RESOURCES_HOLD_NAME;
+
+        if (true == AssetDatabase.IsValidFolder(_held))
+        {
+            Debug.LogWarning($"[DemoStrip] {_held} 가 이미 있어 VFX Resources 폴더 제외를 건너뜁니다. 이전 빌드의 잔재인지 확인하십시오.");
+            return false;
+        }
+
+        File.AppendAllText(Path.Combine(BackupDirectory, FOLDER_MOVE_MANIFEST), _held + "\t" + VFX_RESOURCES_FOLDER + "\n");
+
+        string _error = AssetDatabase.RenameAsset(VFX_RESOURCES_FOLDER, VFX_RESOURCES_HOLD_NAME);
+        if (false == string.IsNullOrEmpty(_error))
+        {
+            Debug.LogWarning($"[DemoStrip] VFX Resources 폴더 이름을 바꾸지 못했습니다: {_error}");
+            return false;
+        }
+
+        return true;
+    }
+
+    private static List<string> RestoreHeldFolders(string _backupDir)
+    {
+        List<string> _restored = new List<string>();
+        string _manifest = Path.Combine(_backupDir, FOLDER_MOVE_MANIFEST);
+
+        if (false == File.Exists(_manifest)) return _restored;
+
+        string[] _lines = File.ReadAllLines(_manifest);
+
+        for (int i = 0; i < _lines.Length; i++)
+        {
+            string[] _pair = _lines[i].Split('\t');
+            if (2 != _pair.Length) continue;
+
+            string _held = _pair[0];
+            string _original = _pair[1];
+
+            if (false == AssetDatabase.IsValidFolder(_held) || true == AssetDatabase.IsValidFolder(_original)) continue;
+
+            string _error = AssetDatabase.RenameAsset(_held, Path.GetFileName(_original));
+            if (true == string.IsNullOrEmpty(_error))
+            {
+                _restored.Add(_original);
+            }
+            else
+            {
+                Debug.LogError($"[DemoStrip] {_held} 를 {_original} 로 되돌리지 못했습니다: {_error}\n직접 이름을 Resources 로 바꾸십시오.");
+            }
+        }
+
+        return _restored;
+    }
+
+#endregion
+
 #region 백업 / 복구
 
     private static string ProjectRoot => Directory.GetParent(Application.dataPath).FullName;
@@ -562,9 +1110,17 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         return Path.Combine(ProjectRoot, _assetPath.Replace('/', Path.DirectorySeparatorChar));
     }
 
+    /// <summary>
+    /// 원본을 한 번만 백업합니다. 같은 에셋을 여러 단계가 고치므로(GameInstaller, AudioDatabase),
+    /// 두 번째 백업이 첫 단계의 수정본을 "원본"으로 덮어쓰지 않게 합니다. 백업 폴더는 매 빌드 시작 때
+    /// 복구와 함께 비워지므로 이전 빌드의 파일이 남아 있을 일은 없습니다.
+    /// </summary>
     private static void Backup(string _assetPath)
     {
-        File.Copy(ToAbsolute(_assetPath), Path.Combine(BackupDirectory, Path.GetFileName(_assetPath)), true);
+        string _dest = Path.Combine(BackupDirectory, Path.GetFileName(_assetPath));
+        if (true == File.Exists(_dest)) return;
+
+        File.Copy(ToAbsolute(_assetPath), _dest, true);
     }
 
     private static string FindAssetPathByFileName(string _fileName)
@@ -607,10 +1163,13 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         string _dir = BackupDirectory;
         if (false == Directory.Exists(_dir)) return;
 
+        // 이름을 바꿔 둔 폴더부터 되돌린다. 아래 파일 복구와 무관하지만, 기록 파일이 백업 폴더 안에 있어
+        // 폴더를 지우기 전에 읽어야 한다.
+        List<string> _restored = RestoreHeldFolders(_dir);
+
         // .asset 뿐 아니라 .prefab도 백업되므로 전부 훑는다.
         // 이름이 복구 대상 표에 없는 파일은 아래에서 건너뛴다.
         string[] _files = Directory.GetFiles(_dir);
-        List<string> _restored = new List<string>(_files.Length);
 
         for (int i = 0; i < _files.Length; i++)
         {
