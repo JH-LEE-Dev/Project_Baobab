@@ -741,6 +741,10 @@ public class UIView_Result : UIView
         ClearButtonSelection();
         HideSelectionCursorImmediately();
         SetButtonsInteractable(false);
+        // interactable=false는 클릭만 막고 Pointer Enter는 그대로 통과시킨다. 닫기 연출로 버튼이
+        // 아래로 내려가며 마우스 밑으로 다시 들어오면 호버가 선택 커서를 다시 띄우는데, 커서는
+        // Section_Button 밖에 있어 같이 사라지지 않고 제자리에 남는다. 레이캐스트 자체를 끊는다.
+        SetCanvasGroupRaycast(sectionButtonCanvasGroup, false);
 
         resultCloseSequence = DOTween.Sequence();
 
