@@ -633,7 +633,9 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
 
         if (null != confirmButton)
         {
-            confirmButton.Initialize(inputManager, cursorBoxUI, HandleConfirmButtonClicked, SoundID.None);
+            // 클릭음은 기본값(OptionClick)을 쓴다. 안내판의 확인 버튼과 같게 클릭음 + 닫기음(Close의 ResultUIClose) 순으로 울린다.
+            // 닫기가 시작되면 SetInteractable(false)로 버튼이 막히므로 재입력으로 확인음이 겹쳐 울리지 않는다.
+            confirmButton.Initialize(inputManager, cursorBoxUI, HandleConfirmButtonClicked);
         }
 
         UpdateConfirmButtonState(true);
@@ -1073,6 +1075,9 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
     {
         if (true == IsLanguageInputBlocked()) return;
 
+        // 메인 메뉴 버튼/안내판의 확인과 같이, 버튼의 클릭음(OptionClick)에 메인 메뉴 클릭음(MainClick)을 함께 울린다.
+        Sound.PlayUI(SoundID.MainClick);
+
         isTransitioning = true;
         ResetLanguageFeedback();
 
@@ -1274,6 +1279,10 @@ public class UI_InitialSetupPopup : MonoBehaviour, IUIDepthCloseable
         {
             return;
         }
+
+        // 메인 메뉴 안내판의 확인(UI_MainMenu.ExecuteNewGame)과 같이, 버튼의 클릭음(OptionClick)과 닫기음(Close의 ResultUIClose)에
+        // 메인 메뉴 클릭음(MainClick)을 함께 울린다. 확정되지 않는 경우(선택 없음/닫는 중)에는 위에서 이미 반환한다.
+        Sound.PlayUI(SoundID.MainClick);
 
         Close();
     }
