@@ -258,6 +258,9 @@ public enum SkillType
     TestNode,  // TestNode
     TestNode2,
     TestNode3,
+    TestNode4,
+    TestNode5,
+    TestNode6,
     MAX
 }
 
