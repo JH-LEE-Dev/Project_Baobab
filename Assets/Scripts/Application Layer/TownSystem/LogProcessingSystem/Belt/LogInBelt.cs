@@ -441,6 +441,20 @@ public class LogInBelt : MonoBehaviour
     // 하강)이 실제 컨베이어 속도와 항상 정확히 연동된다.
     private void UpdateLoopSound()
     {
+        // 던전에 있는 동안(볼륨 0)에는 루프를 아예 재생하지 않는다. 예전엔 볼륨 0으로 계속 재생해 벨트 6개가
+        // AudioManager 풀 슬롯을 상시 점유했고, 과열 충격파로 풀이 꽉 차는 순간 강탈과 재획득이 반복되며 던전의
+        // 루프 사운드가 잘려나갔다. 마을로 돌아오면 아래 재생 조건(핸들 무효)에 걸려 다음 프레임에 다시 시작하고,
+        // 볼륨은 매 프레임 ratio로 다시 계산되므로 들리는 결과는 전과 같다.
+        if (GetSoundVolume() <= 0f)
+        {
+            if (loopSoundHandle.IsValid)
+            {
+                Sound.StopTracked(loopSoundHandle);
+                loopSoundHandle = AudioHandle.Invalid;
+            }
+            return;
+        }
+
         // IsValid만으로는 부족하다 - 씬 전환 시 AudioManager.StopAll3DSounds()가 핸들은 그대로 둔 채
         // AudioSource만 직접 Stop()시키는 경로가 있어서, 핸들은 여전히 "유효"하지만 실제로는 재생이
         // 멈춰있는 상태가 될 수 있다(예: 던전에서 마을로 돌아온 직후). 그 경우도 걸러서 다시 재생한다.

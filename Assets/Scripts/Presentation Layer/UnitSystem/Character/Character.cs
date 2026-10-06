@@ -1303,7 +1303,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
                 if (next is TreeObj nextTree)
                 {
-                    nextTree.TakeDamageFromDrone(statComponent.droneDamage); // 레이저 전이 - 도끼 타격음 없이 드론 발사음만
+                    nextTree.TakeDamageWithoutHitSound(statComponent.droneDamage); // 레이저 전이 - 도끼 타격음 없이 드론 발사음만
 
                     if (bIsOverheat)
                     {

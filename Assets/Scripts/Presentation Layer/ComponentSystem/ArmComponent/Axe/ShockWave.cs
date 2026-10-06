@@ -266,7 +266,8 @@ public class ShockWave : MonoBehaviour
 
                 if (isoDistSq <= rangeSq)
                 {
-                    tree.TakeDamage(10000f);
+                    // 즉사라 사망음이 울린다. 타격음까지 겹치지 않도록 전용 경로를 쓴다.
+                    tree.TakeDamageWithoutHitSound(10000f);
                 }
             }
         }
