@@ -91,11 +91,12 @@ public class CharacterStatBuildGuard : IPreprocessBuildWithReport
         if (0 == _errors.Count) return;
 
         string _detail = "  " + string.Join("\n  ", _errors);
-        bool _isDevelopmentBuild = 0 != (_report.summary.options & BuildOptions.Development);
+        // 촬영용 빌드(BuildRunner.RunTrailer)는 배포하지 않지만 화면 표시 때문에 개발 빌드로 만들 수 없다. 개발 빌드처럼 경고만 남긴다.
+        bool _isDevelopmentBuild = 0 != (_report.summary.options & BuildOptions.Development) || true == BuildRunner.IsTrailerBuildInProgress;
 
         if (true == _isDevelopmentBuild)
         {
-            Debug.LogWarning($"{TAG} 캐릭터 수치가 배포 기준과 다릅니다. Development Build라 그대로 진행합니다.\n{_detail}");
+            Debug.LogWarning($"{TAG} 캐릭터 수치가 배포 기준과 다릅니다. 개발·촬영용 빌드라 그대로 진행합니다.\n{_detail}");
             return;
         }
 

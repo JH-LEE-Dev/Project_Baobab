@@ -87,7 +87,10 @@ public class BuildStampWriter : IPostprocessBuildWithReport
 
         _d["STORE"] = _store.ToString();
         _d["RELEASE"] = _release.ToString();
-        _d["FOLDER"] = PlatformBuildModeSwitcher.BuildFolderName(_store, _release);
+        bool _trailer = BuildRunner.IsTrailerBuildInProgress;
+
+        _d["PURPOSE"] = true == _trailer ? "TRAILER" : "RELEASE";
+        _d["FOLDER"] = (true == _trailer ? BuildRunner.TRAILER_FOLDER_PREFIX : string.Empty) + PlatformBuildModeSwitcher.BuildFolderName(_store, _release);
         _d["VERSION"] = PlayerSettings.bundleVersion;
         _d["PRODUCT"] = PlayerSettings.productName;
         _d["DEFINES"] = DescribeStoreDefines();

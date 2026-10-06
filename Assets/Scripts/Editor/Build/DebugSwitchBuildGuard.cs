@@ -97,11 +97,12 @@ public class DebugSwitchBuildGuard : IPreprocessBuildWithReport
         if (0 == _errors.Count) return;
 
         string _detail = "  " + string.Join("\n  ", _errors);
-        bool _isDevelopmentBuild = 0 != (_report.summary.options & BuildOptions.Development);
+        // 촬영용 빌드(BuildRunner.RunTrailer)는 배포하지 않지만 화면 표시 때문에 개발 빌드로 만들 수 없다. 개발 빌드처럼 경고만 남긴다.
+        bool _isDevelopmentBuild = 0 != (_report.summary.options & BuildOptions.Development) || true == BuildRunner.IsTrailerBuildInProgress;
 
         if (true == _isDevelopmentBuild)
         {
-            Debug.LogWarning($"{TAG} 디버그 스위치 문제가 있습니다. Development Build라 그대로 진행합니다.\n{_detail}");
+            Debug.LogWarning($"{TAG} 디버그 스위치 문제가 있습니다. 개발·촬영용 빌드라 그대로 진행합니다.\n{_detail}");
             return;
         }
 
@@ -136,6 +137,7 @@ public class DebugSwitchBuildGuard : IPreprocessBuildWithReport
             if (true == _rule.checkValue) _valueRules.Add(_rule);
         }
 
+        CheckTrailerDefineNotInProject(_errors);
         CheckSources(_allowed, _errors);
         CheckPrefabs(_valueRules, _errors);
         CheckScenes(_valueRules, _errors);
@@ -144,6 +146,22 @@ public class DebugSwitchBuildGuard : IPreprocessBuildWithReport
     }
 
 #region 소스 검사
+
+    /// <summary>
+    /// 촬영용 디파인이 프로젝트 설정에 들어가면 모든 빌드에 지도 전체 해금 같은 촬영 기능이 실립니다.
+    /// 이 디파인은 BuildRunner.RunTrailer 가 그 빌드에만 붙이는 것이라, 프로젝트 설정에 있으면 안 됩니다.
+    /// </summary>
+    private static void CheckTrailerDefineNotInProject(List<string> _errors)
+    {
+        PlayerSettings.GetScriptingDefineSymbols(UnityEditor.Build.NamedBuildTarget.Standalone, out string[] _defines);
+
+        for (int i = 0; i < _defines.Length; i++)
+        {
+            if (BuildRunner.TRAILER_DEFINE != _defines[i]) continue;
+
+            _errors.Add($"[디파인] {BuildRunner.TRAILER_DEFINE} 가 프로젝트 설정(Standalone)에 들어 있습니다. 촬영용 빌드 메뉴만 붙이는 디파인이니 Player Settings 에서 지우십시오.");
+        }
+    }
 
     private static void CheckSources(HashSet<string> _allowed, List<string> _errors)
     {
@@ -289,7 +307,8 @@ public class DebugSwitchBuildGuard : IPreprocessBuildWithReport
             string _term = _terms[i].Trim().Trim('(', ')').Trim();
 
             if (true == _term.Contains("!")) return false;
-            if (false == _term.Contains("UNITY_EDITOR") && false == _term.Contains("DEVELOPMENT_BUILD")) return false;
+            // BAOBAB_TRAILER 는 촬영용 빌드에만 extraScriptingDefines 로 붙는다. 프로젝트 설정에 들어가 있으면 Validate 가 따로 막는다.
+            if (false == _term.Contains("UNITY_EDITOR") && false == _term.Contains("DEVELOPMENT_BUILD") && false == _term.Contains(BuildRunner.TRAILER_DEFINE)) return false;
         }
 
         return true;

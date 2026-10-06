@@ -23,6 +23,23 @@ using UnityEngine;
 public static class BuildRunner
 {
     private const string MENU_BUILD = "Tools/빌드/배포용 빌드 실행";
+    private const string MENU_BUILD_TRAILER = "Tools/빌드/촬영용 빌드 실행 (트레일러)";
+
+    /// <summary>
+    /// 촬영용 빌드에만 붙는 디파인입니다. 프로젝트 설정(ProjectSettings)에는 넣지 않고 BuildPlayerOptions.extraScriptingDefines 로
+    /// 그 빌드에만 붙입니다. 지도 전체 해금 같은 촬영 편의 기능이 #if UNITY_EDITOR || BAOBAB_TRAILER 로 감싸여 있어,
+    /// 이 디파인이 없는 배포 빌드에는 코드째 빠집니다.
+    /// </summary>
+    public const string TRAILER_DEFINE = "BAOBAB_TRAILER";
+
+    /// <summary>촬영용 빌드 출력 폴더 이름 앞에 붙습니다. 업로드 대상 폴더(&lt;스토어&gt;_&lt;배포&gt;)와 섞이지 않게 합니다.</summary>
+    public const string TRAILER_FOLDER_PREFIX = "TRAILER_";
+
+    /// <summary>
+    /// 지금 촬영용 빌드가 진행 중인지입니다. 빌드 가드들이 이 값을 보고 개발 빌드처럼 경고만 남깁니다.
+    /// 촬영용 빌드는 배포하지 않지만 'Development Build' 표시가 화면에 뜨면 안 되므로 개발 빌드로 만들 수 없습니다.
+    /// </summary>
+    public static bool IsTrailerBuildInProgress { get; private set; }
 
     /// <summary>
     /// 배포 빌드의 압축 방식입니다. LZ4HC는 <b>무손실</b>이라 텍스처·오디오 품질과 무관하고,
@@ -69,13 +86,61 @@ public static class BuildRunner
     }
 
     /// <summary>
+    /// 트레일러 촬영용 빌드입니다. 배포 빌드와 같은 설정(압축, 개발 빌드 아님)으로 굽되 다음이 다릅니다.
+    ///   - 출력: TRAILER_&lt;스토어&gt;_&lt;배포&gt; 폴더 (업로드 대상 폴더와 분리)
+    ///   - 디파인: BAOBAB_TRAILER 를 이 빌드에만 추가 (지도 전체 해금 등 촬영 편의 기능이 들어감)
+    ///   - 빌드 가드: 캐릭터 스탯·디버그 스위치·데모 제외 검사가 막지 않고 경고만 남김 (자동 저장 가드는 그대로 막음)
+    ///   - 스탬프: PURPOSE=TRAILER. 업로드 전 검사가 이 폴더를 배포물로 인정하지 않습니다.
+    /// </summary>
+    [MenuItem(MENU_BUILD_TRAILER, false, 69)]
+    private static void BuildTrailerFromMenu()
+    {
+        BuildStore _store = PlatformBuildModeSwitcher.CurrentStore;
+        BuildRelease _release = PlatformBuildModeSwitcher.CurrentRelease;
+
+        bool _ok = EditorUtility.DisplayDialog(
+            "촬영용 빌드",
+            $"스토어 : {_store}\n" +
+            $"배포   : {(BuildRelease.Full == _release ? "정식" : "데모")}\n" +
+            $"디파인 : + {TRAILER_DEFINE} (이 빌드에만)\n" +
+            $"출력   : {TrailerLocation(_store, _release)}\n\n" +
+            "배포용이 아닙니다. 빌드 가드는 경고만 남깁니다. 이 구성으로 빌드할까요?",
+            "빌드", "취소");
+
+        if (false == _ok) return;
+
+        RunTrailer();
+    }
+
+    /// <summary>
     /// 확인 창 없이 곧바로 빌드합니다. 메뉴와 자동화(배치 빌드)가 같은 경로를 쓰도록 분리해 둡니다.
     /// </summary>
     public static BuildReport Run()
     {
+        return RunInternal(false);
+    }
+
+    /// <summary>확인 창 없이 곧바로 촬영용 빌드를 합니다.</summary>
+    public static BuildReport RunTrailer()
+    {
+        return RunInternal(true);
+    }
+
+    private static string TrailerLocation(BuildStore _store, BuildRelease _release)
+    {
+        string _location = PlatformBuildModeSwitcher.ExpectedBuildLocation(_store, _release);
+        if (true == string.IsNullOrEmpty(_location)) return _location;
+
+        string _storeDir = System.IO.Path.GetDirectoryName(_location);
+        string _root = System.IO.Path.GetDirectoryName(_storeDir);
+        return System.IO.Path.Combine(_root, TRAILER_FOLDER_PREFIX + System.IO.Path.GetFileName(_storeDir), System.IO.Path.GetFileName(_location));
+    }
+
+    private static BuildReport RunInternal(bool _trailer)
+    {
         BuildStore _store = PlatformBuildModeSwitcher.CurrentStore;
         BuildRelease _release = PlatformBuildModeSwitcher.CurrentRelease;
-        string _location = PlatformBuildModeSwitcher.ExpectedBuildLocation(_store, _release);
+        string _location = true == _trailer ? TrailerLocation(_store, _release) : PlatformBuildModeSwitcher.ExpectedBuildLocation(_store, _release);
 
         if (true == string.IsNullOrEmpty(_location))
         {
@@ -95,18 +160,31 @@ public static class BuildRunner
         // 정리를 건너뛰고, 빌드 가드(캐릭터 스탯·디버그 스위치·데모 제외)도 막지 않고 경고만 남긴다.
         _options.options = RELEASE_OPTIONS;
 
-        string _outputDir = System.IO.Path.GetDirectoryName(_location);
+        if (true == _trailer) _options.extraScriptingDefines = new[] { TRAILER_DEFINE };
 
-        if (false == CleanOutputFolder(_outputDir, PlatformBuildModeSwitcher.BuildFolderName(_store, _release), out string _cleanError))
+        string _outputDir = System.IO.Path.GetDirectoryName(_location);
+        string _folderName = (true == _trailer ? TRAILER_FOLDER_PREFIX : string.Empty) + PlatformBuildModeSwitcher.BuildFolderName(_store, _release);
+
+        if (false == CleanOutputFolder(_outputDir, _folderName, out string _cleanError))
         {
             Debug.LogError($"[BuildRunner] 출력 폴더를 비우지 못해 빌드하지 않았습니다.\n  {_cleanError}");
             return null;
         }
 
-        Debug.Log($"[BuildRunner] {_store} / {(BuildRelease.Full == _release ? "정식" : "데모")} 빌드를 시작합니다. " +
+        Debug.Log($"[BuildRunner] {_store} / {(BuildRelease.Full == _release ? "정식" : "데모")} {(true == _trailer ? "촬영용 " : string.Empty)}빌드를 시작합니다. " +
                   $"압축 LZ4HC, 씬 {_options.scenes.Length}개\n  출력: {_location}");
 
-        BuildReport _report = BuildPipeline.BuildPlayer(_options);
+        BuildReport _report;
+
+        IsTrailerBuildInProgress = _trailer;
+        try
+        {
+            _report = BuildPipeline.BuildPlayer(_options);
+        }
+        finally
+        {
+            IsTrailerBuildInProgress = false;
+        }
 
         // 빌드가 실패·취소되면 스트리퍼의 후처리(원본 복구)가 불리지 않아, 잘린 에셋이 에디터 재시작 전까지 남습니다.
         // 그 상태로 커밋되지 않도록 결과와 상관없이 여기서 복구합니다. 백업이 없으면 아무 일도 하지 않습니다.
