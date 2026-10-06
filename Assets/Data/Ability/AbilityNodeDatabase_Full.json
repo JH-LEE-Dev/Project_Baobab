@@ -1847,6 +1847,15 @@
             "gridX": 1,
             "gridY": 1,
             "parents": []
+        },
+        {
+            "skillType": "TestNode4",
+            "nameLocId": 253,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 2,
+            "gridY": -2,
+            "parents": []
         }
     ]
 }
