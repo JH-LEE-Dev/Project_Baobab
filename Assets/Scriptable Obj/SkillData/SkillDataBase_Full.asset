@@ -2051,9 +2051,440 @@ MonoBehaviour:
         baseValue: 0
         manualValues: []
     skillTypes:
+    - skillCommandType: 13
+      amountCurve:
+        type: 3
+        baseValue: 30
+        manualValues: []
+    - skillCommandType: 5
+      amountCurve:
+        type: 3
+        baseValue: 3000
+        manualValues: []
+    - skillCommandType: 34
+      amountCurve:
+        type: 3
+        baseValue: 20
+        manualValues: []
+    - skillCommandType: 37
+      amountCurve:
+        type: 3
+        baseValue: 20
+        manualValues: []
+    - skillCommandType: 45
+      amountCurve:
+        type: 3
+        baseValue: 30
+        manualValues: []
+    - skillCommandType: 46
+      amountCurve:
+        type: 3
+        baseValue: 40
+        manualValues: []
+    - skillCommandType: 23
+      amountCurve:
+        type: 3
+        baseValue: 100
+        manualValues: []
+    - skillCommandType: 35
+      amountCurve:
+        type: 3
+        baseValue: 1500
+        manualValues: []
+    - skillCommandType: 36
+      amountCurve:
+        type: 3
+        baseValue: 220
+        manualValues: []
+    - skillCommandType: 47
+      amountCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    - skillCommandType: 48
+      amountCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    - skillCommandType: 49
+      amountCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    - skillCommandType: 88
+      amountCurve:
+        type: 3
+        baseValue: 100
+        manualValues: []
+    - skillCommandType: 89
+      amountCurve:
+        type: 3
+        baseValue: 3
+        manualValues: []
+    - skillCommandType: 90
+      amountCurve:
+        type: 3
+        baseValue: 65
+        manualValues: []
+    - skillCommandType: 53
+      amountCurve:
+        type: 3
+        baseValue: 250
+        manualValues: []
+    - skillCommandType: 25
+      amountCurve:
+        type: 3
+        baseValue: 30
+        manualValues: []
+    - skillCommandType: 15
+      amountCurve:
+        type: 3
+        baseValue: 4000
+        manualValues: []
+    - skillCommandType: 91
+      amountCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    - skillCommandType: 92
+      amountCurve:
+        type: 3
+        baseValue: 50
+        manualValues: []
+    - skillCommandType: 1
+      amountCurve:
+        type: 3
+        baseValue: 4
+        manualValues: []
+    - skillCommandType: 38
+      amountCurve:
+        type: 3
+        baseValue: 4
+        manualValues: []
+    - skillCommandType: 3
+      amountCurve:
+        type: 3
+        baseValue: 4
+        manualValues: []
+    - skillCommandType: 2
+      amountCurve:
+        type: 3
+        baseValue: 40
+        manualValues: []
+    - skillCommandType: 56
+      amountCurve:
+        type: 3
+        baseValue: 200
+        manualValues: []
+    prerequisiteSkills: 
+  - skillType: 117
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 5
+      amountCurve:
+        type: 3
+        baseValue: 15000
+        manualValues: []
+    - skillCommandType: 45
+      amountCurve:
+        type: 3
+        baseValue: 30
+        manualValues: []
+    - skillCommandType: 46
+      amountCurve:
+        type: 3
+        baseValue: 40
+        manualValues: []
+    - skillCommandType: 34
+      amountCurve:
+        type: 3
+        baseValue: 20
+        manualValues: []
+    - skillCommandType: 22
+      amountCurve:
+        type: 3
+        baseValue: 50
+        manualValues: []
+    - skillCommandType: 24
+      amountCurve:
+        type: 3
+        baseValue: 200
+        manualValues: []
+    - skillCommandType: 41
+      amountCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    - skillCommandType: 44
+      amountCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    - skillCommandType: 73
+      amountCurve:
+        type: 3
+        baseValue: 3
+        manualValues: []
+    - skillCommandType: 78
+      amountCurve:
+        type: 3
+        baseValue: 50
+        manualValues: []
+    - skillCommandType: 74
+      amountCurve:
+        type: 3
+        baseValue: 2000
+        manualValues: []
+    - skillCommandType: 77
+      amountCurve:
+        type: 3
+        baseValue: 50
+        manualValues: []
+    - skillCommandType: 79
+      amountCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    - skillCommandType: 94
+      amountCurve:
+        type: 3
+        baseValue: 30
+        manualValues: []
+    - skillCommandType: 95
+      amountCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    - skillCommandType: 96
+      amountCurve:
+        type: 3
+        baseValue: 15
+        manualValues: []
+    - skillCommandType: 97
+      amountCurve:
+        type: 3
+        baseValue: 50
+        manualValues: []
+    - skillCommandType: 98
+      amountCurve:
+        type: 3
+        baseValue: 300
+        manualValues: []
     - skillCommandType: 100
       amountCurve:
         type: 3
-        baseValue: 0.5
+        baseValue: 12
+        manualValues: []
+    - skillCommandType: 25
+      amountCurve:
+        type: 3
+        baseValue: 150
+        manualValues: []
+    - skillCommandType: 54
+      amountCurve:
+        type: 3
+        baseValue: 75
+        manualValues: []
+    - skillCommandType: 13
+      amountCurve:
+        type: 3
+        baseValue: 30
+        manualValues: []
+    - skillCommandType: 15
+      amountCurve:
+        type: 3
+        baseValue: 15000
+        manualValues: []
+    - skillCommandType: 35
+      amountCurve:
+        type: 3
+        baseValue: 3000
+        manualValues: []
+    - skillCommandType: 36
+      amountCurve:
+        type: 3
+        baseValue: 100
+        manualValues: []
+    prerequisiteSkills: 
+  - skillType: 118
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 105
+      amountCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    - skillCommandType: 113
+      amountCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    - skillCommandType: 106
+      amountCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    - skillCommandType: 107
+      amountCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    - skillCommandType: 108
+      amountCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    - skillCommandType: 13
+      amountCurve:
+        type: 3
+        baseValue: 60
+        manualValues: []
+    - skillCommandType: 15
+      amountCurve:
+        type: 3
+        baseValue: 100000
+        manualValues: []
+    - skillCommandType: 55
+      amountCurve:
+        type: 3
+        baseValue: 250
+        manualValues: []
+    - skillCommandType: 52
+      amountCurve:
+        type: 3
+        baseValue: 600
+        manualValues: []
+    - skillCommandType: 29
+      amountCurve:
+        type: 3
+        baseValue: 3
+        manualValues: []
+    - skillCommandType: 102
+      amountCurve:
+        type: 3
+        baseValue: 2
+        manualValues: []
+    - skillCommandType: 103
+      amountCurve:
+        type: 3
+        baseValue: 1
+        manualValues: []
+    - skillCommandType: 34
+      amountCurve:
+        type: 3
+        baseValue: 30
+        manualValues: []
+    - skillCommandType: 22
+      amountCurve:
+        type: 3
+        baseValue: 50
+        manualValues: []
+    - skillCommandType: 5
+      amountCurve:
+        type: 3
+        baseValue: 50000
+        manualValues: []
+    - skillCommandType: 35
+      amountCurve:
+        type: 3
+        baseValue: 30000
+        manualValues: []
+    - skillCommandType: 45
+      amountCurve:
+        type: 3
+        baseValue: 100
+        manualValues: []
+    - skillCommandType: 46
+      amountCurve:
+        type: 3
+        baseValue: 500
+        manualValues: []
+    - skillCommandType: 73
+      amountCurve:
+        type: 3
+        baseValue: 1
+        manualValues: []
+    - skillCommandType: 74
+      amountCurve:
+        type: 3
+        baseValue: 2000
+        manualValues: []
+    - skillCommandType: 80
+      amountCurve:
+        type: 3
+        baseValue: 3
+        manualValues: []
+    - skillCommandType: 81
+      amountCurve:
+        type: 3
+        baseValue: 2000
+        manualValues: []
+    - skillCommandType: 82
+      amountCurve:
+        type: 3
+        baseValue: 100
+        manualValues: []
+    - skillCommandType: 83
+      amountCurve:
+        type: 3
+        baseValue: 200
+        manualValues: []
+    - skillCommandType: 84
+      amountCurve:
+        type: 3
+        baseValue: 2
+        manualValues: []
+    - skillCommandType: 85
+      amountCurve:
+        type: 3
+        baseValue: 100
+        manualValues: []
+    - skillCommandType: 28
+      amountCurve:
+        type: 3
+        baseValue: 99999
+        manualValues: []
+    - skillCommandType: 2
+      amountCurve:
+        type: 3
+        baseValue: 255
+        manualValues: []
+    - skillCommandType: 56
+      amountCurve:
+        type: 3
+        baseValue: 1000
+        manualValues: []
+    - skillCommandType: 1
+      amountCurve:
+        type: 3
+        baseValue: 2
+        manualValues: []
+    - skillCommandType: 38
+      amountCurve:
+        type: 3
+        baseValue: 2
+        manualValues: []
+    - skillCommandType: 3
+      amountCurve:
+        type: 3
+        baseValue: 2
         manualValues: []
     prerequisiteSkills: 

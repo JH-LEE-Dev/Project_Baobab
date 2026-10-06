@@ -1824,10 +1824,28 @@
         {
             "skillType": "TestNode",
             "nameLocId": 180,
-            "levelBadge": "None",
+            "levelBadge": "I",
             "requiredPrestigeLevel": 0,
             "gridX": -1,
             "gridY": -1,
+            "parents": []
+        },
+        {
+            "skillType": "TestNode2",
+            "nameLocId": 251,
+            "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
+            "gridX": 1,
+            "gridY": -1,
+            "parents": []
+        },
+        {
+            "skillType": "TestNode3",
+            "nameLocId": 252,
+            "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
+            "gridX": 1,
+            "gridY": 1,
             "parents": []
         }
     ]
