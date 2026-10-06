@@ -68,6 +68,15 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private bool bNeedSorting = false;
     private Coroutine sortingCoroutine = null;
 
+    // 슬롯 갱신(아이템 습득/삭제마다 전체 슬롯이 다시 읽힌다)에서 같은 값을 반복 처리하지 않기 위한 캐시
+    private Canvas currencyCanvas;
+    private bool isSortingApplied = false;
+    private bool isFontColorApplied = false;
+    private bool lastFontColorIsMax = false;
+    private bool isRarityApplied = false;
+    private IItemData lastRarityData;
+    private int lastRarityStateKey = -1;
+
     public IItemData ShowItemData => showItemData;
     public IInventorySlot InvSlotRef => invSlotRef;
     public int ShowCnt => showCnt;
@@ -78,6 +87,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         shinyEffectComponent = GetComponentInChildren<ShinyEffectComponent>();
 
+        isRarityApplied = false;
         UpdateImage(null, Color.white);
         SetEffectActive(false);
         SetShinyEffectActive(false);
@@ -114,8 +124,11 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     private void ApplySorting()
     {
-        if (null == currencyFont) 
+        if (null == currencyFont)
             return;
+
+        // 카메라가 (다시) 잡혔으므로 이미 적용했다는 기록은 믿지 않고 다시 적용한다.
+        isSortingApplied = false;
 
         if (true == gameObject.activeInHierarchy)
         {
@@ -130,14 +143,15 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     private System.Collections.IEnumerator ApplySortingRoutine()
     {
-        bNeedSorting = false; 
-        
-        Canvas _canvas = currencyFont.GetComponent<Canvas>();
+        bNeedSorting = false;
+
+        Canvas _canvas = GetCurrencyCanvas();
         int _retryCount = 0;
-        
+
         while (null != _canvas && 10 > _retryCount)
         {
-            ApplyCanvasSortingInternal(_canvas);
+            if (true == ApplyCanvasSortingInternal(_canvas))
+                isSortingApplied = true;
 
             if (true == _canvas.overrideSorting)
             {
@@ -156,19 +170,34 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         if (null == currencyFont)
             return;
-        
-        Canvas _canvas = currencyFont.GetComponent<Canvas>();
-        ApplyCanvasSortingInternal(_canvas);
+
+        // 한 번 적용되면 카메라가 다시 잡히기 전(ApplySorting)까지는 같은 값을 또 쓸 필요가 없다.
+        if (true == isSortingApplied)
+            return;
+
+        if (true == ApplyCanvasSortingInternal(GetCurrencyCanvas()))
+            isSortingApplied = true;
     }
 
-    private static void ApplyCanvasSortingInternal(Canvas _canvas)
+    private Canvas GetCurrencyCanvas()
+    {
+        if (null == currencyCanvas && null != currencyFont)
+            currencyCanvas = currencyFont.GetComponent<Canvas>();
+
+        return currencyCanvas;
+    }
+
+    private static bool ApplyCanvasSortingInternal(Canvas _canvas)
     {
         if (null != _canvas && null != _canvas.rootCanvas && null != _canvas.rootCanvas.worldCamera)
         {
             _canvas.overrideSorting = true;
             _canvas.sortingOrder = 10;
             _canvas.sortingLayerName = "HUD";
+            return true;
         }
+
+        return false;
     }
 
     private void StopSortingCoroutine()
@@ -186,6 +215,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             invSlotRef.SlotUpdatedEvent -= PlayItemInteraction;
 
         isRainbowActive = false;
+        isRarityApplied = false;
         UpdateImage(null, Color.white);
         SetEffectActive(false);
         SetShinyEffectActive(false);
@@ -327,6 +357,9 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         {
             showCnt = _newCnt;
             currencyFont.SetNumber(_newCnt);
+
+            // SetNumber가 글리프 색을 기본색으로 되돌리므로 아래 UpdateFontColor가 다시 칠해야 한다.
+            isFontColorApplied = false;
         }
 
         UpdateFontColor();
@@ -337,10 +370,19 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null == currencyFont)
             return;
 
-        if (maxItemCntPerSlot <= showCnt)
+        bool _isMax = maxItemCntPerSlot <= showCnt;
+
+        // 개수도, 최대치 여부도 그대로면 글리프 풀 전체를 다시 칠할 필요가 없다.
+        if (true == isFontColorApplied && _isMax == lastFontColorIsMax)
+            return;
+
+        if (true == _isMax)
             currencyFont.SetGlyphColor(maxColor);
         else
             currencyFont.SetGlyphColor(defaultColor);
+
+        isFontColorApplied = true;
+        lastFontColorIsMax = _isMax;
     }
 
     public void UpdateImage(Sprite _sprite, Color _color = default)
@@ -366,17 +408,18 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             return;
         }
 
-        if (null != invSlotRef)
-            invSlotRef.SlotUpdatedEvent -= PlayItemInteraction;
-
-        invSlotRef = _newSlot;
-        showItemData = _newSlot.itemData;
-
-        if (null != invSlotRef)
+        // 같은 슬롯을 다시 읽는 경우(아이템 습득/삭제마다 전체 슬롯이 갱신된다)에는 이미 구독돼 있다.
+        if (false == ReferenceEquals(invSlotRef, _newSlot))
         {
+            if (null != invSlotRef)
+                invSlotRef.SlotUpdatedEvent -= PlayItemInteraction;
+
+            invSlotRef = _newSlot;
             invSlotRef.SlotUpdatedEvent -= PlayItemInteraction;
             invSlotRef.SlotUpdatedEvent += PlayItemInteraction;
         }
+
+        showItemData = _newSlot.itemData;
 
         UpdateImage(showItemData.sprite, Color.white);
         UpdateItemCount(invSlotRef.count);
@@ -440,10 +483,24 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         if (null == _itemData)
         {
+            isRarityApplied = false;
             SetEffectActive(false);
             SetShinyEffectActive(false);
             return;
         }
+
+        // 같은 아이템, 같은 등급이면 이미 켜 둔 효과를 다시 쓰지 않는다. 슬롯 갱신마다 UIEffect의
+        // 속성을 다시 대입하면(레인보우는 색까지) 그때마다 해당 UI 메시가 다시 만들어진다.
+        int _stateKey = -1;
+        if (_itemData is ILogItemData _keyLogData)
+            _stateKey = (int)_keyLogData.logState;
+
+        if (true == isRarityApplied && ReferenceEquals(lastRarityData, _itemData) && lastRarityStateKey == _stateKey)
+            return;
+
+        isRarityApplied = true;
+        lastRarityData = _itemData;
+        lastRarityStateKey = _stateKey;
 
         if (_itemData is ILogItemData _logData)
         {
@@ -530,6 +587,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
             if (null == showItemData || 0 >= invSlotRef.count)
             {
+                isRarityApplied = false;
                 UpdateImage(null, Color.white);
                 SetEffectActive(false);
                 SetShinyEffectActive(false);

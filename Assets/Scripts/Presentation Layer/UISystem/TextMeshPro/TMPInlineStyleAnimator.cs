@@ -396,17 +396,18 @@ namespace PresentationLayer.UISystem
             {
                 bool hasStyle = i < characterStyles.Count;
 
-                TMP_CharacterInfo characterInfo = _textInfo.characterInfo[i];
-                if (characterInfo.isVisible == false)
+                // TMP_CharacterInfo / TMP_MeshInfo는 큰 구조체라 값으로 복사하지 않고 참조로 읽는다.
+                ref TMP_CharacterInfo characterInfo = ref _textInfo.characterInfo[i];
+                if (false == characterInfo.isVisible)
                     continue;
 
                 int materialIndex = characterInfo.materialReferenceIndex;
                 int vertexIndex = characterInfo.vertexIndex;
-                if (materialIndex < 0 || materialIndex >= _textInfo.meshInfo.Length)
+                if (0 > materialIndex || materialIndex >= _textInfo.meshInfo.Length)
                     continue;
 
-                TMP_MeshInfo meshInfo = _textInfo.meshInfo[materialIndex];
-                if (meshInfo.vertices == null || meshInfo.colors32 == null || vertexIndex + 3 >= meshInfo.vertices.Length)
+                ref TMP_MeshInfo meshInfo = ref _textInfo.meshInfo[materialIndex];
+                if (null == meshInfo.vertices || null == meshInfo.colors32 || vertexIndex + 3 >= meshInfo.vertices.Length)
                     continue;
 
                 CharacterStyle style = hasStyle ? characterStyles[i] : default;
@@ -423,19 +424,19 @@ namespace PresentationLayer.UISystem
                         meshInfo.colors32[vertexIndex + j] = color;
                 }
 
-                if (isRevealPlaying)
-                    ApplyRevealBounce(_textInfo, characterInfo, meshInfo, vertexIndex, i, time);
+                if (true == isRevealPlaying)
+                    ApplyRevealBounce(in characterInfo, in meshInfo, vertexIndex, i, time);
             }
         }
 
-        private void ApplyRevealBounce(TMP_TextInfo textInfo, TMP_CharacterInfo characterInfo, TMP_MeshInfo meshInfo, int vertexIndex, int characterIndex, float time)
+        private void ApplyRevealBounce(in TMP_CharacterInfo characterInfo, in TMP_MeshInfo meshInfo, int vertexIndex, int characterIndex, float time)
         {
             float characterStartTime = revealStartTime + GetRevealInterval() * characterIndex;
             float elapsed = time - characterStartTime;
 
             if (elapsed < 0f)
             {
-                SetCharacterAlpha(meshInfo, vertexIndex, 0f);
+                SetCharacterAlpha(in meshInfo, vertexIndex, 0f);
                 return;
             }
 
@@ -455,10 +456,10 @@ namespace PresentationLayer.UISystem
                 meshInfo.vertices[currentVertexIndex] = vertex + center;
             }
 
-            SetCharacterAlpha(meshInfo, vertexIndex, alphaProgress);
+            SetCharacterAlpha(in meshInfo, vertexIndex, alphaProgress);
         }
 
-        private void SetCharacterAlpha(TMP_MeshInfo meshInfo, int vertexIndex, float alpha)
+        private void SetCharacterAlpha(in TMP_MeshInfo meshInfo, int vertexIndex, float alpha)
         {
             byte alphaByte = (byte)Mathf.RoundToInt(Mathf.Clamp01(alpha) * 255f);
 
