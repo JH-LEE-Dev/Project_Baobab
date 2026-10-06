@@ -1,7 +1,7 @@
 # 데모 배포 빌드의 캐릭터 스탯 승인 기준값입니다. CharacterStatBuildGuard 가 이 값과 대조합니다.
 # 직접 고치지 말고 Tools > 빌드 > 캐릭터 스탯 기준값 승인 (데모) 로 갱신한 뒤, 프리팹과 함께 커밋하십시오.
 # 대상: Assets/Prefabs/Objects/Character/Character.prefab (StatComponent)
-# 승인: 2026-10-05 11:04
+# 승인: 2026-10-06 15:44
 ammoCap=6
 attackRythmSpeedMul=0
 axeAttackCoolTime=0.6
@@ -30,6 +30,9 @@ boomerangDamage=10
 boomerangDamageInterval=0.3
 boomerangHitRadius=0.5
 boomerangMajorAxisRatio=1
+boomerangOverheatDamageMul=101
+boomerangOverheatHitRadiusMul=4
+boomerangOverheatSpeedMul=3
 ciriticalDamageMul=2
 criticalChance=0
 droneActiveDuration=3
@@ -39,6 +42,11 @@ droneChainRange=1.5
 droneCount=0
 droneDamage=5
 droneDamageInterval=1
+droneOverheatChainCountMul=2
+droneOverheatChainRangeMul=5
+droneOverheatDotDamagePerTick=10000
+droneOverheatDotTickCount=6
+droneOverheatDotTickInterval=0.5
 finalAttackHealthPercent=0
 gunPenetrationChance=0
 heatRecoveryAmount=0
@@ -47,6 +55,9 @@ magCap=2
 maxStamina=100
 originalSpeed=1
 overheatConsumptionReductionAlpha=0
+overheatDotDamagePerTick=10000
+overheatDotTickCount=6
+overheatDotTickInterval=0.5
 overheatEfficiencyBonus=0
 overheatGainBonusAlpha=0
 pickupRangeMultiplier=1
@@ -62,6 +73,8 @@ shockWaveChance=0
 shockWaveCreateDelay=0
 shockWaveDamage=2
 shockWaveDuration=0.25
+shockWaveOverheatDamageMul=101
+shockWaveOverheatDurationMul=4
 shockWaveSpeed=3
 shotDelay=1
 sourceOfSpeedAmount=0
