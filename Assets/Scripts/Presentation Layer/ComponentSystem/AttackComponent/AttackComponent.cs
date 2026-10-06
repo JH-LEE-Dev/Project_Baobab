@@ -27,11 +27,6 @@ public class AttackComponent : PComponent
     [SerializeField] private LayerMask targetLayer; // 공격 대상 레이어 (도끼용)
     [SerializeField] private float shockWaveSpawnOffset = 0.35f; // 충격파 생성 시 공격 지점으로부터의 오프셋
 
-    // 과열 버프 - 도끼 평타/과열 충격파로 맞은 나무에게 부여하는 지속 피해 수치 (ShockWave도 이 값을 쓴다)
-    public const float OverheatDotDamagePerTick = 10000f;
-    public const int OverheatDotTickCount = 6;
-    public const float OverheatDotTickInterval = 0.5f;
-
     [SerializeField] private Transform attackPointTransform;
     private Transform componentCenterTransform;
 
@@ -649,7 +644,8 @@ public class AttackComponent : PComponent
         // 과열 버프 활성 중 도끼 평타로 나무를 맞히면 지속 피해 부여 (과열 충격파는 ShockWave에서 따로 부여, 부메랑 제외)
         if (ctx.overheatComponent != null && ctx.overheatComponent.IsActive && damageable is TreeObj overheatTarget)
         {
-            overheatTarget.ApplyOverheatDot(OverheatDotDamagePerTick, OverheatDotTickCount, OverheatDotTickInterval);
+            StatComponent stat = ctx.characterStat;
+            overheatTarget.ApplyOverheatDot(stat.overheatDotDamagePerTick, stat.overheatDotTickCount, stat.overheatDotTickInterval);
         }
 
         // 충격파 판정은 여기에 두지 않는다. 이 메서드는 타격 대상마다 호출되므로 여기서 굴리면

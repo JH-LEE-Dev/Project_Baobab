@@ -1270,7 +1270,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         if (bIsOverheat && _primaryTarget is TreeObj primaryTree)
         {
-            primaryTree.ApplyDroneOverheatDot(10000f, 6, 0.5f);
+            primaryTree.ApplyDroneOverheatDot(statComponent.droneOverheatDotDamagePerTick, statComponent.droneOverheatDotTickCount, statComponent.droneOverheatDotTickInterval);
         }
 
         Vector3 primaryTopPos = GetTreeTopPosition(_primaryTarget);
@@ -1285,8 +1285,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         if (bIsOverheat)
         {
-            finalChainCount *= 2;
-            finalChainRange *= 5f;
+            finalChainCount *= statComponent.droneOverheatChainCountMul;
+            finalChainRange *= statComponent.droneOverheatChainRangeMul;
         }
 
         if (finalChainCount > 0)
@@ -1307,7 +1307,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
                     if (bIsOverheat)
                     {
-                        nextTree.ApplyDroneOverheatDot(10000f, 6, 0.5f);
+                        nextTree.ApplyDroneOverheatDot(statComponent.droneOverheatDotDamagePerTick, statComponent.droneOverheatDotTickCount, statComponent.droneOverheatDotTickInterval);
                     }
                 }
                 else
