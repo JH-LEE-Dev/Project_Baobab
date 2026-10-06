@@ -18,6 +18,10 @@ public class ShockWave : MonoBehaviour
     private Vector3 moveDirection = Vector3.right;
     private bool bIsEnforced = false;
     private bool bIsOverheat = false;
+    // 과열 충격파가 맞은 나무에게 거는 지속 피해 수치 (StatComponent의 overheatDot* 값)
+    private float overheatDotDamagePerTick;
+    private int overheatDotTickCount;
+    private float overheatDotTickInterval;
     private bool bIsCritical = false;
     private float maxEffectiveDistance = 0f;
 
@@ -87,9 +91,12 @@ public class ShockWave : MonoBehaviour
         bIsEnforced = _isEnforced;
     }
 
-    public void SetOverheat(bool _bIsOverheat)
+    public void SetOverheat(bool _bIsOverheat, float _dotDamagePerTick, int _dotTickCount, float _dotTickInterval)
     {
         bIsOverheat = _bIsOverheat;
+        overheatDotDamagePerTick = _dotDamagePerTick;
+        overheatDotTickCount = _dotTickCount;
+        overheatDotTickInterval = _dotTickInterval;
     }
 
     public void SetCritical(bool _bIsCritical)
@@ -201,7 +208,7 @@ public class ShockWave : MonoBehaviour
                         finalDamage *= damageMultiplier;
                     }
 
-                    // 과열 폭발은 데미지 적용보다 먼저 처리한다. 강화된 셰이크웨이브(데미지 x101)는 맞은
+                    // 과열 폭발은 데미지 적용보다 먼저 처리한다. 강화된 셰이크웨이브(데미지 배율은 StatComponent.shockWaveOverheatDamageMul)는 맞은
                     // 나무를 그 즉시 죽여 풀로 반환(TreeOverheatExplosionEvent 구독 해제)시킬 수 있어,
                     // TakeDamage 이후에 신호를 보내면 폭발 이펙트가 유실될 수 있다. _source는 이웃 데미지
                     // 대상에서 제외되므로 순서를 바꿔도 판정 결과는 동일하다.
@@ -218,7 +225,7 @@ public class ShockWave : MonoBehaviour
                     // 이 타격으로 죽어 풀로 반환됐으면 ApplyOverheatDot이 IsPooled/활성 여부 가드로 알아서 무시한다.
                     if (bIsOverheat)
                     {
-                        treeObj.ApplyOverheatDot(AttackComponent.OverheatDotDamagePerTick, AttackComponent.OverheatDotTickCount, AttackComponent.OverheatDotTickInterval);
+                        treeObj.ApplyOverheatDot(overheatDotDamagePerTick, overheatDotTickCount, overheatDotTickInterval);
                     }
 
                     if (firstTreeHitCallback != null)
@@ -259,7 +266,8 @@ public class ShockWave : MonoBehaviour
 
                 if (isoDistSq <= rangeSq)
                 {
-                    tree.TakeDamage(10000f);
+                    // 즉사라 사망음이 울린다. 타격음까지 겹치지 않도록 전용 경로를 쓴다.
+                    tree.TakeDamageWithoutHitSound(10000f);
                 }
             }
         }

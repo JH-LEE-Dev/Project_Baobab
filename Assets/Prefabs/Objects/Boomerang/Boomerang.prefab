@@ -82,7 +82,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 12
+  m_SortingLayer: 13
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -1110908072274048129, guid: 0800a09822dd97244aa1d8fe8856eb01, type: 3}
@@ -181,13 +181,16 @@ MonoBehaviour:
   - {fileID: 4557475396279378249, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
   - {fileID: -1404088334739578557, guid: 59338e1d8493c9e43bccb59e211785d6, type: 3}
   sampleRate: 24
-  effectHDRIntensity: 1.15
+  effectHDRIntensity: 2
   overheatEffectHDRIntensity: 1.25
   visualWidthAtUnitScale: 3
   afterimageInterval: 0.15
   afterimageFadeDuration: 0.45
   afterimageStartAlpha: 0.5
   heatTrailMaterial: {fileID: 2100000, guid: eba7990807669bf4d9285f84c5a4922f, type: 2}
+  heatAuraScale: 1.14
+  heatAuraHDR: 2.4
+  heatAuraColor: {r: 0.2, g: 0.5, b: 1, a: 0.9}
   shadowSpriteRenderer: {fileID: 4821309571048291008}
   targetLayer:
     serializedVersion: 2
@@ -288,7 +291,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1838057819
-  m_SortingLayer: 5
+  m_SortingLayer: 10
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -1110908072274048129, guid: 0800a09822dd97244aa1d8fe8856eb01, type: 3}
@@ -379,7 +382,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 12
+  m_SortingLayer: 13
   m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: -3955715318796834025, guid: e893a4d947f5c8a4ebf38f0ec97ef1a9, type: 3}

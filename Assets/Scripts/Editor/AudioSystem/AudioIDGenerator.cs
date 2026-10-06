@@ -196,6 +196,9 @@ public class AudioIDGenerator
                         if (mapping.id == data.mixerId && mapping.group != null)
                         {
                             data.mixerGroup = mapping.group;
+                            // 그룹이 처음 연결되는 시점에 실보이스 우선순위 기본값도 그룹 규칙대로 채운다
+                            // (이후 손으로 바꾼 값은 다시 연결되지 않으므로 덮어쓰지 않는다).
+                            data.priority = DefaultPriorityFor(data);
                             isDirty = true;
                             break;
                         }
@@ -207,6 +210,18 @@ public class AudioIDGenerator
         }
         
         if (guids.Length > 0) AssetDatabase.SaveAssets();
+    }
+
+    // AudioData.priority 기본 규칙(낮을수록 중요). AudioDatabase의 기존 항목도 같은 규칙으로 채워져 있다:
+    // BGM 0(코드에서도 0으로 고정), UI 조작음 32, 루프 64, 그 외 128. 발소리처럼 빠져도 되는 소리는 손으로 192를 준다.
+    private static int DefaultPriorityFor(AudioData _data)
+    {
+        switch (_data.mixerId)
+        {
+            case MixerID.BGM: return 0;
+            case MixerID.UI: return 32;
+        }
+        return _data.loop ? 64 : 128;
     }
 
     private static int GetStableHashCode(string str)

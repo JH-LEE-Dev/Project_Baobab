@@ -132,8 +132,8 @@ public class AxeExtraAttackCreator : MonoBehaviour, IShockWaveCreator
 
         if (_bIsOverheat)
         {
-            finalDamage *= 101f;
-            finalDuration *= 4f;
+            finalDamage *= stat.shockWaveOverheatDamageMul;
+            finalDuration *= stat.shockWaveOverheatDurationMul;
         }
 
         bool bCritical = stat.bShockWaveCritical && UnityEngine.Random.value < stat.criticalChance;
@@ -144,7 +144,7 @@ public class AxeExtraAttackCreator : MonoBehaviour, IShockWaveCreator
 
         _shockWave.SetValue(finalDamage, stat.shockWaveSpeed, finalDuration);
         _shockWave.SetEnforced(stat.bShockWaveEnforcement);
-        _shockWave.SetOverheat(_bIsOverheat);
+        _shockWave.SetOverheat(_bIsOverheat, stat.overheatDotDamagePerTick, stat.overheatDotTickCount, stat.overheatDotTickInterval);
         _shockWave.SetCritical(bCritical);
     }
 

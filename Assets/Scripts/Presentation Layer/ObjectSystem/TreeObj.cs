@@ -514,10 +514,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     }
 
     /// <summary>
-    /// 드론 레이저 타격. 레이저는 발사와 동시에 맞으므로 드론이 발사음을 직접 내고, 여기서는 도끼 타격음
-    /// (Tree_Hit/Pitch_Hit 등)을 내지 않는다. 진동/이펙트는 TakeDamage와 동일하다.
+    /// 도끼 타격음(Tree_Hit/Pitch_Hit 등) 없이 피해만 준다. 진동/이펙트는 TakeDamage와 동일하다.
+    /// - 드론 레이저: 발사와 동시에 맞으므로 드론이 발사음을 직접 내고, 타격음은 겹쳐 내지 않는다.
+    /// - 과열 폭발의 인접 피해: 맞은 나무는 그 자리에서 죽어 사망음(Tree_Dead/Prize2)이 울린다. 폭발 한 번에 최대
+    ///   8그루가 같은 프레임에 죽는데, 그루마다 타격음까지 겹치면 수십 개의 소리가 한 번에 몰려 다른 소리가 씹혔다.
     /// </summary>
-    public void TakeDamageFromDrone(float _damage)
+    public void TakeDamageWithoutHitSound(float _damage)
     {
         TakeDamageInternal(_damage, true, false, false);
     }

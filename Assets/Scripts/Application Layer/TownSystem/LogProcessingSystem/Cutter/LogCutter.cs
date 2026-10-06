@@ -394,6 +394,16 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         if (isForward != wasForward)
         {
             float soundVolume = GetSoundVolume();
+            // 던전에 있는 동안(볼륨 0)에는 사운드를 재생하지 않는다. 예전엔 볼륨 0으로 루프를 계속 재생해 던전에서
+            // AudioManager 풀 슬롯을 점유했다. 마을로 돌아오면 SetMapType이 wasForward를 되돌려 여기서 다시 재생된다.
+            if (soundVolume <= 0f)
+            {
+                if (isForward) PlayCuttingEffect();
+                else StopCuttingEffect();
+                wasForward = isForward;
+                return;
+            }
+
             if (isForward)
             {
                 PlayCuttingEffect();

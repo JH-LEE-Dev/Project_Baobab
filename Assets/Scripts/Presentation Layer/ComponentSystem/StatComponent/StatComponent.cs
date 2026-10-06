@@ -148,6 +148,27 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public float heatRecoveryAmount = 0f; // "열기 회수" - 과열 상태에서 나무 벌목 시 회복되는 과열 지속시간(초). 0이면 미해금
     public bool bOverheatPermanent = false; // "화신" - 항상 과열 상태를 유지
 
+    [Header("Overheat - 지속 피해 (도끼 평타 · 화염 참격 충격파 공통)")]
+    public float overheatDotDamagePerTick = 10000f; // 틱당 피해
+    public int overheatDotTickCount = 6; // 틱 횟수
+    public float overheatDotTickInterval = 0.5f; // 틱 간격(초)
+
+    [Header("Overheat - 화염 참격 (과열 충격파 강화)")]
+    public float shockWaveOverheatDamageMul = 101f; // 데미지 배율
+    public float shockWaveOverheatDurationMul = 4f; // 지속시간 배율
+
+    [Header("Overheat - 화염 부메랑 (과열 부메랑 강화)")]
+    public float boomerangOverheatDamageMul = 101f; // 데미지 배율
+    public float boomerangOverheatHitRadiusMul = 4f; // 판정 범위 배율
+    public float boomerangOverheatSpeedMul = 3f; // 비행 속도 배율
+
+    [Header("Overheat - 드론 과부하 (과열 드론 강화)")]
+    public int droneOverheatChainCountMul = 2; // 연쇄 횟수 배율
+    public float droneOverheatChainRangeMul = 5f; // 연쇄 범위 배율
+    public float droneOverheatDotDamagePerTick = 10000f; // 지속 피해 - 틱당 피해
+    public int droneOverheatDotTickCount = 6; // 지속 피해 - 틱 횟수
+    public float droneOverheatDotTickInterval = 0.5f; // 지속 피해 - 틱 간격(초)
+
     [Header("Stamina Recovery")]
     public float recoveryPowerBonus = 0f; // "회복력" - 모든 피로도 회복 효과(전리품 포션, 체력의 원천, 휴식) 증가율(%)
 
@@ -220,6 +241,11 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     bool ICharacterStatForNPC.bShockWaveCritical => bShockWaveCritical;
     bool ICharacterStatForNPC.bShockWaveEnforcement => bShockWaveEnforcement;
     bool ICharacterStatForNPC.bShockWaveOverheatBoost => bShockWaveOverheatBoost;
+    float ICharacterStatForNPC.shockWaveOverheatDamageMul => shockWaveOverheatDamageMul;
+    float ICharacterStatForNPC.shockWaveOverheatDurationMul => shockWaveOverheatDurationMul;
+    float ICharacterStatForNPC.overheatDotDamagePerTick => overheatDotDamagePerTick;
+    int ICharacterStatForNPC.overheatDotTickCount => overheatDotTickCount;
+    float ICharacterStatForNPC.overheatDotTickInterval => overheatDotTickInterval;
     float ICharacterStatForNPC.criticalChance => criticalChance;
     float ICharacterStatForNPC.ciriticalDamageMul => ciriticalDamageMul;
 

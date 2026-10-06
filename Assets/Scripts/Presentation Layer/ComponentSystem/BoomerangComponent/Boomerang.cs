@@ -148,7 +148,7 @@ public class Boomerang : MonoBehaviour
     public bool IsActive { get; private set; }
 
     /// <summary>
-    /// 속도 배율을 설정한다. (과열 시 3배)
+    /// 속도 배율을 설정한다. (과열 시 StatComponent.boomerangOverheatSpeedMul)
     /// </summary>
     public void SetSpeedMultiplier(float _multiplier)
     {

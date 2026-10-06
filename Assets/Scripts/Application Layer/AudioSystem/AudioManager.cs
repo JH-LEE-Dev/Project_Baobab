@@ -17,6 +17,9 @@ public class AudioManager : MonoBehaviour
     // 고정값 대신 재생 시점마다 Camera.main의 현재 값을 읽어 매번 다시 계산한다 (EnsureDistanceRolloffUpToDate 참고).
     // 화면 대각선(가장 먼 화면 안 지점) 기준으로 이 배율만큼 여유를 둔 지점부터 완전 무음 처리한다.
     [SerializeField] private float farDistanceBuffer = 1.05f;
+    // 3D 소스의 스테레오 스프레드(0~360도). 0이면 화면 가장자리 소리가 한쪽 채널로 완전히 쏠린다.
+    // 좌우 위치감은 남기되 쏠림을 줄이기 위한 값으로, 재생 시점마다 적용해 플레이 중 인스펙터에서 바로 튜닝할 수 있다.
+    [SerializeField, Range(0f, 360f)] private float spatialSpread = 90f;
     // Camera.main을 찾을 수 없을 때만 쓰이는 대비용 기본값 (16:9, orthographicSize 5.625 기준).
     private const float FallbackOrthographicSize = 5.625f;
     private const float FallbackAspect = 16f / 9f;
@@ -80,6 +83,34 @@ public class AudioManager : MonoBehaviour
     private int playIdCounter;
     private Dictionary<AudioCueData, int> cueLastIndexCache = new Dictionary<AudioCueData, int>();
 
+    // 같은 SoundID의 동시 재생 상한(maxConcurrentVoices)에 걸렸을 때, 이어받을 "가장 오래된" 슬롯이 이 시간(초)
+    // 안에 시작된 것이면 새 재생을 아예 버린다. 과열 충격파는 한 프레임에 같은 타격음/사망음을 수십 번 요청하는데,
+    // 상한만으로는 방금 시작한 소리를 Stop()하고 다시 시작하는 일이 연쇄로 일어나 타격음이 끊겨 들렸다(씹힘).
+    // 거의 같은 순간에 시작된 같은 소리가 하나 더 겹쳐 봐야 들리는 차이는 없으므로 버리는 쪽이 낫다.
+    // 시작 시각(sourceStartTime)은 unscaledTime이라 일시정지(timeScale 0) 중에도 판정이 멈추지 않는다.
+    private const float PolyphonyStealMinAge = 0.05f;
+
+    // Camera.main 조회와 리스너 위치는 프레임당 한 번만 갱신한다. 폭주 프레임엔 재생 요청이 100회를 넘기도 해서
+    // (과열 충격파 한 번에 수십 그루), 요청마다 다시 읽으면 비용이 쌓인다.
+    private int listenerCacheFrame = -1;
+    private Camera cachedListenerCamera;
+    private Vector3 cachedListenerPosition;
+
+    // 디버그 통계. "풀이 모자라는 것 같다" 같은 제보를 검증할 수 있도록 세어 두고, 에디터/개발 빌드에서
+    // showDebugOverlay가 켜져 있으면 화면에 표시한다(OnGUI). 카운트 자체는 정수 증가뿐이라 항상 센다.
+    private int statRequestsThisFrame;
+    private int statRequestsLastFrame;
+    private int statPeakRequests;
+    private int statDroppedTotal;
+    private int statStolenTotal;
+    private int statFailedTotal;
+    private float statPeakWindowEnd;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    [Header("Debug")]
+    [Tooltip("재생 중 슬롯 수, 프레임당 재생 요청, 드롭/강탈/실패 횟수를 화면 좌상단에 표시한다. 에디터/개발 빌드 전용.")]
+    [SerializeField] private bool showDebugOverlay = false;
+#endif
+
     private float production3DVolumeFactor = 1f;
     private Coroutine productionVolumeCoroutine;
 
@@ -102,8 +133,14 @@ public class AudioManager : MonoBehaviour
     private float cutoffTarget = float.NaN;
     private float gameplayVolumeTarget = float.NaN;
 
-    private AudioSource bgmSource;
+    // BGM은 소스 두 개를 번갈아 쓴다. 하나뿐이면 전환할 때 페이드아웃 → 무음 → 페이드인이 되어 스테이지 전환마다
+    // 음악이 끊기지만, 둘이면 나가는 곡과 들어오는 곡을 동시에 페이드해 이어진다. 지금 곡은 activeBgmIndex가 가리킨다.
+    private readonly AudioSource[] bgmSources = new AudioSource[2];
+    private int activeBgmIndex;
     private Coroutine bgmFadeCoroutine;
+    // 지금 도는 bgmFadeCoroutine이 FadeOutBGM(정지로 가는 페이드)인지. 같은 곡을 다시 요청받았을 때 크로스페이드
+    // 진행 중이면 그대로 두고, 페이드아웃 중이면 끊지 않고 되살려야 해서 둘을 구분한다.
+    private bool bgmFadingOut;
 
     // 2D 게임이므로 카메라(리스너)의 Z축 거리가 3D 사운드 감쇠/패닝에 영향을 주면 안 된다.
     // 발음원의 Z를 카메라의 고정 Z값으로 맞춰서 거리 계산이 X/Y(화면상 좌우/상하)만으로 이뤄지게 한다.
@@ -130,7 +167,7 @@ public class AudioManager : MonoBehaviour
             DontDestroyOnLoad(gameObject);
 
         CreatePool();
-        CreateBGMSource();
+        CreateBGMSources();
         ResetMixerToDefaults();
         CacheUIMixerGroup();
     }
@@ -626,6 +663,19 @@ public class AudioManager : MonoBehaviour
         src.volume = sourceTargetVolume[index] * factor;
     }
 
+    private Camera GetListenerCamera(out Vector3 listenerPos)
+    {
+        if (listenerCacheFrame != Time.frameCount)
+        {
+            listenerCacheFrame = Time.frameCount;
+            cachedListenerCamera = Camera.main;
+            cachedListenerPosition = cachedListenerCamera != null ? cachedListenerCamera.transform.position : Vector3.zero;
+        }
+
+        listenerPos = cachedListenerPosition;
+        return cachedListenerCamera;
+    }
+
     private void CreatePool()
     {
         sourcePool.Capacity = poolSize;
@@ -644,6 +694,9 @@ public class AudioManager : MonoBehaviour
             AudioSource source = obj.AddComponent<AudioSource>();
             source.playOnAwake = false;
             source.spatialBlend = 1f;
+            // 2D 게임이라 도플러는 끈다. 켜 두면 부메랑 회전음·드론 충전음처럼 매 프레임 위치를 옮기는 소리의 피치가
+            // 이동 속도에 따라 흔들린다(Unity는 위치 변화량으로 음원 속도를 추정한다).
+            source.dopplerLevel = 0f;
 
             sourcePool.Add(source);
         }
@@ -659,7 +712,7 @@ public class AudioManager : MonoBehaviour
     // 커브를 새로 만들어 전체 풀에 반영한다. 값이 그대로면 아무 것도 하지 않아 비용이 거의 없다.
     private void EnsureDistanceRolloffUpToDate()
     {
-        Camera cam = Camera.main;
+        Camera cam = GetListenerCamera(out _);
         float halfHeight = cam != null ? cam.orthographicSize : FallbackOrthographicSize;
         float halfWidth = cam != null ? halfHeight * cam.aspect : halfHeight * FallbackAspect;
 
@@ -701,7 +754,11 @@ public class AudioManager : MonoBehaviour
         eventQueue.Enqueue(audioEvent);
     }
 
-    private void Update()
+    // 큐는 LateUpdate에서 비운다. 큐를 Update에서 비우면 실행 순서상 뒤에 호출된 Sound.Play가 다음 프레임에 재생돼
+    // 최대 한 프레임 늦었다. 모든 Update와 애니메이션 이벤트는 LateUpdate보다 앞서므로 같은 프레임에 재생된다.
+    // DefaultExecutionOrder로 더 뒤로 미루지는 않는다 - 실행 순서는 Awake/OnEnable에도 적용돼 sceneLoaded 구독이
+    // Bootstrap보다 늦어지고, 그러면 씬 셋업(SetupScene) 중 넣은 소리와 덕킹 요청을 OnSceneLoaded의 정리가 지워버린다.
+    private void LateUpdate()
     {
         while (eventQueue.Count > 0)
         {
@@ -709,6 +766,44 @@ public class AudioManager : MonoBehaviour
             PlayInternal(e);
         }
 
+        // 프레임당 요청 수의 최근 1초 최대치. 폭주가 얼마나 심한지 디버그 오버레이에서 보기 위한 값이다.
+        // 카운터는 이 프레임의 Update 중 PlayTracked로 들어온 직접 재생까지 포함해야 하므로 여기(프레임 끝)에서
+        // 표시용 값으로 옮긴 뒤 리셋한다. 시작에서 리셋하면 Update 중 요청이 통째로 빠진다.
+        if (Time.unscaledTime >= statPeakWindowEnd)
+        {
+            statPeakWindowEnd = Time.unscaledTime + 1f;
+            statPeakRequests = 0;
+        }
+        if (statRequestsThisFrame > statPeakRequests) statPeakRequests = statRequestsThisFrame;
+        statRequestsLastFrame = statRequestsThisFrame;
+        statRequestsThisFrame = 0;
+    }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private void OnGUI()
+    {
+        if (!showDebugOverlay || sourcePool.Count == 0 || sourceTargetVolume == null) return;
+
+        int playing = 0, audible = 0, loops = 0;
+        for (int i = 0; i < sourcePool.Count; i++)
+        {
+            AudioSource src = sourcePool[i];
+            if (src == null || !src.isPlaying) continue;
+            playing++;
+            if (sourceTargetVolume[i] > 0.0001f) audible++;
+            if (src.loop) loops++;
+        }
+
+        string text =
+            $"Audio slots {playing}/{sourcePool.Count}  (audible {audible}, loops {loops})\n" +
+            $"requests/frame {statRequestsLastFrame}  (peak/1s {statPeakRequests})\n" +
+            $"dropped {statDroppedTotal}   stolen {statStolenTotal}   failed {statFailedTotal}";
+        GUI.Label(new Rect(10f, 10f, 480f, 70f), text);
+    }
+#endif
+
+    private void Update()
+    {
 #if UNITY_EDITOR
         if (enableDebugSound && UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.backquoteKey.wasPressedThisFrame)
         {
@@ -732,8 +827,13 @@ public class AudioManager : MonoBehaviour
             return;
         }
 
-        if (!PlayOnAvailableSource(data, e.position, e.volume, e.is3D, e.pitchOverride, e.bypassDucking).IsValid)
+        AudioHandle handle = TryPlayOnAvailableSource(data, e.position, e.volume, e.is3D, e.pitchOverride, e.bypassDucking, out bool bDropped);
+        // 의도적으로 버린 재생(볼륨 0 원샷, 같은 소리 폭주)은 고장이 아니므로 경고하지 않는다.
+        if (!handle.IsValid && !bDropped)
+        {
+            statFailedTotal++;
             Debug.LogWarning($"[AudioManager] Sound '{e.soundId}' could not be played (missing clip, or no source available).");
+        }
     }
 
     // 큐를 거치지 않고 즉시 재생하며, 이후 Stop/위치 갱신이 가능하도록 핸들을 반환한다.
@@ -990,6 +1090,16 @@ public class AudioManager : MonoBehaviour
 
     private AudioHandle PlayOnAvailableSource(AudioData data, Vector3 position, float volume, bool is3D, float pitchOverride = -1f, bool bypassDucking = false)
     {
+        return TryPlayOnAvailableSource(data, position, volume, is3D, pitchOverride, bypassDucking, out _);
+    }
+
+    // _bDropped: 재생 요청을 의도적으로 버렸는지(볼륨 0 원샷, 같은 소리가 거의 동시에 상한을 넘은 경우).
+    // 클립 누락처럼 고장으로 경고해야 하는 실패와 구분하기 위한 값이다.
+    private AudioHandle TryPlayOnAvailableSource(AudioData data, Vector3 position, float volume, bool is3D, float pitchOverride, bool bypassDucking, out bool _bDropped)
+    {
+        _bDropped = false;
+        statRequestsThisFrame++;
+
         AudioClip clip;
         float pitch;
         // baseVolume: 호출부 배율을 빼고 DB/큐만으로 결정되는 볼륨. 이후 SetTrackedVolume이
@@ -1015,6 +1125,16 @@ public class AudioManager : MonoBehaviour
 
         if (clip == null) return AudioHandle.Invalid;
 
+        // 호출부가 볼륨 0으로 요청한 원샷은 재생하지 않는다. 던전에 있는 동안 마을 제재소 라인이 볼륨 0으로 내는
+        // ConvayerPut/CoinOut/ConvayerCutterGetWood 등이 들리지도 않으면서 풀 슬롯과 실보이스만 차지했다.
+        // 루프는 호출부가 나중에 SetTrackedVolume으로 볼륨을 올릴 수 있으므로(벨트 가감속) 그대로 재생한다.
+        if (!data.loop && finalVolume <= 0.0001f)
+        {
+            _bDropped = true;
+            statDroppedTotal++;
+            return AudioHandle.Invalid;
+        }
+
         // 해상도가 바뀌어 화면 범위가 달라졌다면 재생 직전에 감지해서 갱신한다.
         // (아래 폴리포니 계산이 최신 가청 거리(cachedFarDistance)를 기준으로 세도록 먼저 호출한다.)
         EnsureDistanceRolloffUpToDate();
@@ -1036,13 +1156,24 @@ public class AudioManager : MonoBehaviour
         int index;
         if (data.maxConcurrentVoices > 0 && activeVoices >= data.maxConcurrentVoices && oldestSameSoundIndex >= 0)
         {
+            // 이어받을 가장 오래된 것조차 방금 시작한 소리라면(같은 소리가 한꺼번에 몰린 폭주) 새 재생을 버린다.
+            // 끊고 다시 시작해 봐야 들리는 건 같은데 앞 소리만 뚝 끊긴다.
+            if (Time.unscaledTime - sourceStartTime[oldestSameSoundIndex] < PolyphonyStealMinAge)
+            {
+                _bDropped = true;
+                statDroppedTotal++;
+                return AudioHandle.Invalid;
+            }
+
             // 이 사운드만의 한도를 넘었다면, 전체 풀에서 아무 슬롯이나 강탈하는 대신 같은 SoundID 중
             // 가장 먼저 시작된 것을 이어받는다 - 관계없는 루프 사운드가 엉뚱하게 끊기는 일을 막는다.
             index = oldestSameSoundIndex;
+            statStolenTotal++;
         }
         else
         {
-            index = GetAvailableSourceIndex();
+            index = GetAvailableSourceIndex(out bool bStolen);
+            if (bStolen) statStolenTotal++;
         }
         if (index < 0) return AudioHandle.Invalid;
 
@@ -1058,7 +1189,8 @@ public class AudioManager : MonoBehaviour
         src.bypassEffects = false;
         src.bypassListenerEffects = false;
         src.bypassReverbZones = false;
-        src.priority = 128;
+        // 실보이스 경쟁 우선순위는 사운드별로 DB에서 정한다(AudioData.priority 참고).
+        src.priority = data.priority;
 
         bool is3DSound = data.is3D && is3D;
         float initialVolume = finalVolume;
@@ -1069,10 +1201,9 @@ public class AudioManager : MonoBehaviour
 
         // 3D 사운드이고 카메라/커브 정보가 유효하다면, 재생 시작 시점의 거리를 사전 계산하여
         // 오디오 스레드가 첫 프레임(약 20ms)에 3D 거리 감쇠를 반영하지 못해 발생하는 팝 현상(풀 볼륨 출력)을 방지한다.
-        if (is3DSound && Camera.main != null && cachedRolloffCurve != null)
+        if (is3DSound && cachedRolloffCurve != null && GetListenerCamera(out Vector3 listenerPos) != null)
         {
             Vector3 srcPos = FlattenToListenerZ(position);
-            Vector3 listenerPos = Camera.main.transform.position;
             float dist = Vector3.Distance(srcPos, listenerPos);
             float initialAttenuation = cachedRolloffCurve.Evaluate(dist);
             initialVolume = finalVolume * initialAttenuation;
@@ -1091,11 +1222,13 @@ public class AudioManager : MonoBehaviour
         src.outputAudioMixerGroup = (bypassDucking && uiMixerGroup != null) ? uiMixerGroup : data.mixerGroup;
         // 사운드 데이터의 is3D를 기준으로 하되, 호출부에서 2D로 강제하는 것은 허용한다(예: PlayUI).
         src.spatialBlend = is3DSound ? 1f : 0f;
+        src.spread = spatialSpread;
 
         src.Play();
 
         playIdCounter++;
-        sourceStartTime[index] = Time.time;
+        // unscaledTime: 일시정지 중에도 "방금 시작했는지" 판정(PolyphonyStealMinAge)이 멈추지 않도록.
+        sourceStartTime[index] = Time.unscaledTime;
         sourcePlayId[index] = playIdCounter;
         sourceSoundID[index] = data.id;
 
@@ -1137,8 +1270,7 @@ public class AudioManager : MonoBehaviour
         float oldestTime = float.MaxValue;
         int count = 0;
 
-        Camera cam = Camera.main;
-        Vector3 listenerPos = cam != null ? cam.transform.position : Vector3.zero;
+        Camera cam = GetListenerCamera(out Vector3 listenerPos);
 
         int poolCount = sourcePool.Count;
         for (int i = 0; i < poolCount; i++)
@@ -1175,8 +1307,11 @@ public class AudioManager : MonoBehaviour
         return count;
     }
 
-    private int GetAvailableSourceIndex()
+    // _bStolen: 빈 슬롯이 없어 재생 중인 슬롯을 빼앗았는지(디버그 통계용).
+    private int GetAvailableSourceIndex(out bool _bStolen)
     {
+        _bStolen = false;
+
         int count = sourcePool.Count;
         if (count == 0) return -1;
 
@@ -1187,33 +1322,57 @@ public class AudioManager : MonoBehaviour
                 return i;
         }
 
-        // 모든 소스가 사용 중일 경우, 재생을 가장 먼저 시작해 가장 먼저 끝날 가능성이 높은 소스를 강탈
-        int oldestIndex = 0;
-        float oldestTime = sourceStartTime[0];
-        for (int i = 1; i < count; i++)
+        // 모든 소스가 사용 중이면 원샷 중에서 덜 중요한 것(priority 숫자가 큰 것)부터, 같으면 가장 먼저 시작한 것을 빼앗는다.
+        // 루프는 빼앗지 않는다 - 원샷과 달리 저절로 끝나지 않아 한 번 끊기면 호출부가 되살리지 않는 한 영영 사라진다
+        // (부메랑 회전음·화상 루프). 볼륨 0인 슬롯을 먼저 노리는 단계는 두지 않는다: 볼륨 0 원샷은 재생 시점에 이미
+        // 버려지므로 그 단계가 잡는 건 드론이 멈춘 동안 SetTrackedVolume(0)으로 잠시 꺼 둔 충전음뿐이라 역효과만 났다.
+        // 남은 게 전부 루프면 새 원샷 하나를 포기하는(-1) 쪽이 낫다. 풀 전체가 루프로 차는 건 정상 상황이 아니므로
+        // 그때는 PlayInternal의 경고 로그로 드러난다.
+        int victim = FindStealableOneShotIndex(count);
+        _bStolen = victim >= 0;
+        return victim;
+    }
+
+    private int FindStealableOneShotIndex(int count)
+    {
+        int bestIndex = -1;
+        int bestPriority = -1;
+        float bestTime = float.MaxValue;
+        for (int i = 0; i < count; i++)
         {
-            if (sourceStartTime[i] < oldestTime)
+            AudioSource src = sourcePool[i];
+            if (src.loop) continue;
+
+            // priority는 숫자가 클수록 덜 중요하다(AudioData.priority). 덜 중요한 것 우선, 같으면 오래된 것 우선.
+            if (src.priority > bestPriority || (src.priority == bestPriority && sourceStartTime[i] < bestTime))
             {
-                oldestTime = sourceStartTime[i];
-                oldestIndex = i;
+                bestPriority = src.priority;
+                bestTime = sourceStartTime[i];
+                bestIndex = i;
             }
         }
-        return oldestIndex;
+        return bestIndex;
     }
 
-    private void CreateBGMSource()
+    private void CreateBGMSources()
     {
-        var obj = new GameObject("BGMSource");
-        obj.transform.parent = transform;
+        for (int i = 0; i < bgmSources.Length; i++)
+        {
+            var obj = new GameObject("BGMSource_" + i);
+            obj.transform.parent = transform;
 
-        bgmSource = obj.AddComponent<AudioSource>();
-        bgmSource.playOnAwake = false;
-        bgmSource.loop = true;
-        bgmSource.spatialBlend = 0f;
-        // 풀의 원샷 소스들과 priority(128)가 같으면 실보이스 한도(32) 경쟁에서 BGM이 밀려 뮤트될 수 있다.
-        // 0(최우선)으로 고정해 BGM은 항상 실보이스에서 배제되지 않도록 한다.
-        bgmSource.priority = 0;
+            AudioSource src = obj.AddComponent<AudioSource>();
+            src.playOnAwake = false;
+            src.loop = true;
+            src.spatialBlend = 0f;
+            // 풀의 원샷 소스들과 priority가 같으면 실보이스 한도 경쟁에서 BGM이 밀려 뮤트될 수 있다.
+            // 0(최우선)으로 고정해 BGM은 항상 실보이스에서 배제되지 않도록 한다.
+            src.priority = 0;
+            bgmSources[i] = src;
+        }
     }
+
+    private AudioSource ActiveBgmSource => bgmSources[activeBgmIndex];
 
     public void PlayBGM(SoundID bgmId, float volume = 1f)
     {
@@ -1224,104 +1383,182 @@ public class AudioManager : MonoBehaviour
             return;
         }
 
-        if (bgmFadeCoroutine != null)
-            StopCoroutine(bgmFadeCoroutine);
-
-        bgmFadeCoroutine = StartCoroutine(FadeBGMInternal(data, volume));
-    }
-
-    private System.Collections.IEnumerator FadeBGMInternal(AudioData data, float targetVolume)
-    {
-        float startVolume = bgmSource.volume;
-        
-        // 1. 기존 BGM 페이드 아웃
-        if (bgmSource.isPlaying && startVolume > 0)
+        // 같은 곡이 이미 활성 소스에서 재생 중이면 다른 소스에서 처음부터 다시 틀지 않는다. 크로스페이드로 같은 클립을
+        // 겹쳐 틀면 1초 동안 두 재생 위치가 겹쳐 플랜징처럼 들린다. 메인 메뉴 복귀처럼 "보장 차원"에서 같은 BGM을
+        // 다시 요청하는 호출(Bootstrap, UIView_MainMenu)이 있어 실제로 겪는 경로다.
+        // - 페이드 없음: 볼륨 배율만 새 값으로 맞춘다.
+        // - 이 곡으로 크로스페이드 중(활성 소스 = 들어오는 곡): 진행 중인 페이드가 알아서 목표 볼륨에 도달하므로 그대로 둔다.
+        // - 페이드아웃 중: 끊고 다시 시작하는 대신 현재 볼륨에서 목표 볼륨으로 되올린다.
+        if (data.cueData == null && data.clip != null)
         {
-            float timer = 0f;
-            while (timer < bgmFadeDuration)
+            AudioSource active = ActiveBgmSource;
+            if (active.isPlaying && active.clip == data.clip)
             {
-                timer += Time.deltaTime;
-                bgmSource.volume = Mathf.Lerp(startVolume, 0f, timer / bgmFadeDuration);
-                yield return null;
+                float target = data.defaultVolume * volume;
+
+                if (bgmFadeCoroutine == null)
+                {
+                    active.volume = target;
+                    return;
+                }
+
+                if (!bgmFadingOut) return;
+
+                StopCoroutine(bgmFadeCoroutine);
+                bgmFadeCoroutine = StartCoroutine(RestoreBGMRoutine(active, target));
+                return;
             }
         }
 
-        // 2. 새로운 BGM 설정
-        if (data.cueData != null)
-        {
-            bgmSource.clip = PickClipFromCue(data.cueData);
-            bgmSource.pitch = data.cueData.GetRandomPitch();
-        }
-        else
-        {
-            bgmSource.clip = data.clip;
-            bgmSource.pitch = 1f;
-        }
+        if (bgmFadeCoroutine != null)
+            StopCoroutine(bgmFadeCoroutine);
 
-        bgmSource.outputAudioMixerGroup = data.mixerGroup;
-        bgmSource.Play();
+        bgmFadeCoroutine = StartCoroutine(CrossfadeBGMRoutine(data, volume));
+    }
 
-        // 3. 페이드 인
-        float finalTargetVolume = data.defaultVolume * targetVolume;
-        if (data.cueData != null) finalTargetVolume *= data.cueData.GetRandomVolumeModifier();
+    // 페이드아웃 도중 같은 곡을 다시 요청받았을 때: 활성 소스는 그대로 둔 채 볼륨만 되올리고, 반대 소스는 끈다.
+    private System.Collections.IEnumerator RestoreBGMRoutine(AudioSource active, float targetVolume)
+    {
+        bgmFadingOut = false;
 
-        float fadeInTimer = 0f;
-        while (fadeInTimer < bgmFadeDuration)
+        AudioSource other = bgmSources[1 - activeBgmIndex];
+        other.volume = 0f;
+        other.Stop();
+
+        float startVolume = active.volume;
+        float timer = 0f;
+        while (timer < bgmFadeDuration)
         {
-            fadeInTimer += Time.deltaTime;
-            bgmSource.volume = Mathf.Lerp(0f, finalTargetVolume, fadeInTimer / bgmFadeDuration);
+            timer += Time.unscaledDeltaTime;
+            active.volume = Mathf.Lerp(startVolume, targetVolume, timer / bgmFadeDuration);
             yield return null;
         }
 
-        bgmSource.volume = finalTargetVolume;
+        active.volume = targetVolume;
+        bgmFadeCoroutine = null;
+    }
+
+    // 나가는 곡과 들어오는 곡을 bgmFadeDuration 동안 동시에 페이드한다(크로스페이드).
+    // 페이드는 unscaledDeltaTime으로 진행한다 - 일시정지(timeScale 0) 중에 전환이 걸리면 deltaTime 기준 페이드는 멈춰 버린다.
+    private System.Collections.IEnumerator CrossfadeBGMRoutine(AudioData data, float targetVolume)
+    {
+        bgmFadingOut = false;
+
+        AudioSource outgoing = ActiveBgmSource;
+        activeBgmIndex = 1 - activeBgmIndex;
+        AudioSource incoming = ActiveBgmSource;
+
+        // 직전 전환이 아직 끝나지 않았다면 incoming은 그 전환에서 잦아들던 곡을 아직 물고 있다. 바로 끊고 재사용한다.
+        incoming.Stop();
+
+        if (data.cueData != null)
+        {
+            incoming.clip = PickClipFromCue(data.cueData);
+            incoming.pitch = data.cueData.GetRandomPitch();
+        }
+        else
+        {
+            incoming.clip = data.clip;
+            incoming.pitch = 1f;
+        }
+        incoming.outputAudioMixerGroup = data.mixerGroup;
+
+        float finalTargetVolume = data.defaultVolume * targetVolume;
+        if (data.cueData != null) finalTargetVolume *= data.cueData.GetRandomVolumeModifier();
+
+        incoming.volume = 0f;
+        incoming.Play();
+
+        float outgoingStartVolume = outgoing.volume;
+        bool bFadeOutgoing = outgoing.isPlaying && outgoingStartVolume > 0f;
+
+        float timer = 0f;
+        while (timer < bgmFadeDuration)
+        {
+            timer += Time.unscaledDeltaTime;
+            float t = timer / bgmFadeDuration;
+            if (bFadeOutgoing) outgoing.volume = Mathf.Lerp(outgoingStartVolume, 0f, t);
+            incoming.volume = Mathf.Lerp(0f, finalTargetVolume, t);
+            yield return null;
+        }
+
+        outgoing.volume = 0f;
+        outgoing.Stop();
+        incoming.volume = finalTargetVolume;
         bgmFadeCoroutine = null;
     }
 
     public void StopBGM()
     {
-        if (bgmSource.isPlaying)
-            bgmSource.Stop();
+        if (bgmFadeCoroutine != null)
+        {
+            StopCoroutine(bgmFadeCoroutine);
+            bgmFadeCoroutine = null;
+        }
+        bgmFadingOut = false;
+
+        for (int i = 0; i < bgmSources.Length; i++)
+        {
+            if (bgmSources[i].isPlaying)
+                bgmSources[i].Stop();
+        }
     }
 
     // 지정한 시간에 걸쳐 볼륨을 0까지 낮춘 뒤 정지한다 (예: 던전->타운 복귀 시 카메라가 하늘로
-    // 올라가는 연출 시간 안에 반드시 꺼지도록 그 시간과 맞춰 호출).
+    // 올라가는 연출 시간 안에 반드시 꺼지도록 그 시간과 맞춰 호출). 크로스페이드 도중이면 두 곡 모두 함께 잦아든다.
     public void FadeOutBGM(float duration)
     {
         if (bgmFadeCoroutine != null)
             StopCoroutine(bgmFadeCoroutine);
 
+        bgmFadingOut = true;
         bgmFadeCoroutine = StartCoroutine(FadeOutBGMInternal(duration));
     }
 
     private System.Collections.IEnumerator FadeOutBGMInternal(float duration)
     {
-        float startVolume = bgmSource.volume;
+        float startVolume0 = bgmSources[0].volume;
+        float startVolume1 = bgmSources[1].volume;
+        bool bAnyPlaying = (bgmSources[0].isPlaying && startVolume0 > 0f) || (bgmSources[1].isPlaying && startVolume1 > 0f);
 
-        if (bgmSource.isPlaying && startVolume > 0f && duration > 0f)
+        if (bAnyPlaying && duration > 0f)
         {
             float timer = 0f;
             while (timer < duration)
             {
-                timer += Time.deltaTime;
-                bgmSource.volume = Mathf.Lerp(startVolume, 0f, timer / duration);
+                timer += Time.unscaledDeltaTime;
+                float t = timer / duration;
+                bgmSources[0].volume = Mathf.Lerp(startVolume0, 0f, t);
+                bgmSources[1].volume = Mathf.Lerp(startVolume1, 0f, t);
                 yield return null;
             }
         }
 
-        bgmSource.volume = 0f;
-        bgmSource.Stop();
+        for (int i = 0; i < bgmSources.Length; i++)
+        {
+            bgmSources[i].volume = 0f;
+            bgmSources[i].Stop();
+        }
+        bgmFadingOut = false;
         bgmFadeCoroutine = null;
     }
 
     public void PauseBGM()
     {
-        if (bgmSource.isPlaying)
-            bgmSource.Pause();
+        for (int i = 0; i < bgmSources.Length; i++)
+        {
+            if (bgmSources[i].isPlaying)
+                bgmSources[i].Pause();
+        }
     }
 
     public void ResumeBGM()
     {
-        if (!bgmSource.isPlaying)
-            bgmSource.UnPause();
+        // 정지(Stop)된 소스에 UnPause를 불러도 아무 일도 일어나지 않으므로 둘 다 호출해도 안전하다.
+        for (int i = 0; i < bgmSources.Length; i++)
+        {
+            if (!bgmSources[i].isPlaying)
+                bgmSources[i].UnPause();
+        }
     }
 }

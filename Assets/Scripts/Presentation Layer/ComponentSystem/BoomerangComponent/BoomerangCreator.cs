@@ -82,10 +82,10 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
 
         if (_bIsOverheat)
         {
-            // 과열 효과: 기본 데미지 10000% 추가 증가 (x101), 범위 300% 추가 증가 (x4), 속도 200% 증가 (x3)
-            finalDamage *= 101f;
-            finalHitRadius *= 4f;
-            finalSpeedMul = 3f;
+            // 과열 효과 배율은 StatComponent의 "Overheat - 화염 부메랑" 항목에서 조정한다
+            finalDamage *= statComponent.boomerangOverheatDamageMul;
+            finalHitRadius *= statComponent.boomerangOverheatHitRadiusMul;
+            finalSpeedMul = statComponent.boomerangOverheatSpeedMul;
         }
 
         boomerang.SetDamage(finalDamage);

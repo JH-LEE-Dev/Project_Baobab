@@ -1089,7 +1089,7 @@ public class Drone : MonoBehaviour
         // 레이저라 발사와 동시에 맞는다 - 도끼 타격음 대신 위의 발사음만 들리게 한다
         if (currentTarget is TreeObj tree)
         {
-            tree.TakeDamageFromDrone(damage);
+            tree.TakeDamageWithoutHitSound(damage);
         }
         else
         {
