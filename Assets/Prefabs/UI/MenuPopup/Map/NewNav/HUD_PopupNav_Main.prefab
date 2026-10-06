@@ -666,7 +666,7 @@ MonoBehaviour:
   additionalAnimDurationOverride: 0
   multiRegionUnlockSpeedRate: 2
   dungeonConfirmDelay: 0.25
-  debugForceUnlockAll: 0
+  debugForceUnlockAll: 1
 --- !u!1 &4120266162391270121
 GameObject:
   m_ObjectHideFlags: 0
