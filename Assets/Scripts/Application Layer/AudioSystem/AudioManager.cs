@@ -74,6 +74,13 @@ public class AudioManager : MonoBehaviour
     // 연출용 전역 계수(production3DVolumeFactor)를 한 번 더 곱해서 정해진다(ApplySourceVolume 참고).
     private float[] sourceTargetVolume;
     private int[] sourcePlayId;
+    // 슬롯별 페이드 세대. 페이드아웃/파워다운/볼륨 램프 코루틴은 시작할 때 세대를 올리고 매 프레임 자기 세대인지
+    // 확인한다. 나중에 시작된 페이드나 CancelTrackedFadeOut이 세대를 올리면 앞서 돌던 코루틴은 조용히 끝나므로,
+    // 꺼지는 중인 루프를 되살려도(화상 중 재점화) 이전 페이드아웃이 끝에서 소스를 멈추는 일이 없다.
+    private int[] sourceFadeGen;
+    // 슬롯이 페이드아웃/파워다운으로 꺼지는 중인지. 루프 상한(maxConcurrentVoices) 집계에서 제외하기 위한 값으로,
+    // 사그라드는 루프 4개가 상한을 차지해 그 0.35초 안에 불붙은 나무가 루프를 영영 못 받는 일을 막는다.
+    private bool[] sourceFadingOut;
     // 슬롯이 지금 재생 중인 사운드의 ID. 같은 SoundID가 동시에 몇 개나 겹쳐 재생 중인지 세어
     // 폴리포니 제한/감쇠(maxConcurrentVoices, polyphonyAttenuationStrength)를 적용하는 데 쓴다.
     private SoundID[] sourceSoundID;
@@ -683,6 +690,8 @@ public class AudioManager : MonoBehaviour
         sourceBaseVolume = new float[poolSize];
         sourceTargetVolume = new float[poolSize];
         sourcePlayId = new int[poolSize];
+        sourceFadeGen = new int[poolSize];
+        sourceFadingOut = new bool[poolSize];
         sourceSoundID = new SoundID[poolSize];
         sourcePolyphonyAttenuation = new float[poolSize];
 
@@ -875,6 +884,8 @@ public class AudioManager : MonoBehaviour
     private System.Collections.IEnumerator PowerDownRoutine(AudioHandle handle, float duration, float minPitch)
     {
         int index = handle.sourceIndex;
+        int fadeGen = ++sourceFadeGen[index];
+        sourceFadingOut[index] = true;
         AudioSource src = sourcePool[index];
         float startPitch = src.pitch;
         // src.volume이 아니라 "의도한 볼륨"에서 시작한다. src.volume에는 연출용 전역 계수가 이미
@@ -884,8 +895,9 @@ public class AudioManager : MonoBehaviour
         float timer = 0f;
         while (timer < duration)
         {
-            // 대기 중 슬롯이 다른 사운드에 강탈되면(재사용) 더 이상 손대지 않고 중단한다.
-            if (!IsHandleValid(handle)) yield break;
+            // 대기 중 슬롯이 다른 사운드에 강탈되면(재사용) 더 이상 손대지 않고 중단한다. 다른 페이드/취소가
+            // 세대를 올린 경우도 마찬가지다.
+            if (!IsHandleValid(handle) || sourceFadeGen[index] != fadeGen) yield break;
 
             timer += Time.deltaTime;
             float t = timer / duration;
@@ -895,7 +907,7 @@ public class AudioManager : MonoBehaviour
             yield return null;
         }
 
-        if (IsHandleValid(handle))
+        if (IsHandleValid(handle) && sourceFadeGen[index] == fadeGen)
         {
             src.Stop();
         }
@@ -912,13 +924,15 @@ public class AudioManager : MonoBehaviour
     private System.Collections.IEnumerator FadeOutRoutine(AudioHandle handle, float duration)
     {
         int index = handle.sourceIndex;
+        int fadeGen = ++sourceFadeGen[index];
+        sourceFadingOut[index] = true;
         // PowerDownRoutine과 같은 이유로 src.volume이 아니라 "의도한 볼륨"에서 시작한다.
         float startTargetVolume = sourceTargetVolume[index];
 
         float timer = 0f;
         while (timer < duration)
         {
-            if (!IsHandleValid(handle)) yield break;
+            if (!IsHandleValid(handle) || sourceFadeGen[index] != fadeGen) yield break;
 
             timer += Time.deltaTime;
             sourceTargetVolume[index] = Mathf.Lerp(startTargetVolume, 0f, timer / duration);
@@ -926,10 +940,19 @@ public class AudioManager : MonoBehaviour
             yield return null;
         }
 
-        if (IsHandleValid(handle))
+        if (IsHandleValid(handle) && sourceFadeGen[index] == fadeGen)
         {
             sourcePool[index].Stop();
         }
+    }
+
+    // 진행 중인 페이드아웃/파워다운을 취소한다. 소스는 지금 볼륨 그대로 계속 재생되므로, 호출부가 이어서
+    // RampTrackedVolume 등으로 볼륨을 되올린다(예: 화상 루프가 꺼지는 중에 같은 나무가 다시 불붙은 경우).
+    public void CancelTrackedFadeOut(AudioHandle handle)
+    {
+        if (!IsHandleValid(handle)) return;
+        sourceFadeGen[handle.sourceIndex]++;
+        sourceFadingOut[handle.sourceIndex] = false;
     }
 
     // 별도의 "예열음"이 없는 루프 사운드용: 낮은 피치로 재생을 시작해 목표 피치까지 서서히
@@ -1017,13 +1040,15 @@ public class AudioManager : MonoBehaviour
     private System.Collections.IEnumerator RampVolumeRoutine(AudioHandle handle, float targetVolumeScale, float duration)
     {
         int index = handle.sourceIndex;
+        int fadeGen = ++sourceFadeGen[index];
+        sourceFadingOut[index] = false;
         float startTargetVolume = sourceTargetVolume[index];
         float endTargetVolume = sourceBaseVolume[index] * targetVolumeScale * sourcePolyphonyAttenuation[index];
 
         float timer = 0f;
         while (timer < duration)
         {
-            if (!IsHandleValid(handle)) yield break;
+            if (!IsHandleValid(handle) || sourceFadeGen[index] != fadeGen) yield break;
 
             timer += Time.deltaTime;
             float t = duration > 0f ? timer / duration : 1f;
@@ -1032,7 +1057,7 @@ public class AudioManager : MonoBehaviour
             yield return null;
         }
 
-        if (IsHandleValid(handle))
+        if (IsHandleValid(handle) && sourceFadeGen[index] == fadeGen)
         {
             sourceTargetVolume[index] = endTargetVolume;
             ApplySourceVolume(index);
@@ -1141,14 +1166,17 @@ public class AudioManager : MonoBehaviour
 
         // 같은 SoundID가 지금 몇 개나 겹쳐 재생 중인지 센다 (인크리멘탈 특성상 여러 발음원이
         // 동시에 같은 사운드를 울릴 때 합산 음량이 과도해지는 문제를 사운드별로 억제하기 위함).
-        int activeVoices = CountActiveVoicesAndFindOldest(data.id, out int oldestSameSoundIndex);
+        // activeVoices는 상한 판정용, audibleVoices는 볼륨 감쇠용이다. 루프의 상한은 가청 범위 밖까지 전부 센다 -
+        // 원샷과 달리 저절로 끝나지 않아, 플레이어가 지나간 자리의 화상 루프가 범위 밖이라고 집계에서 빠지면 그 수만큼
+        // 슬롯이 쌓인다. 감쇠는 실제로 겹쳐 들리는 소리만 기준으로 해야 하므로 어느 쪽이든 가청 범위 안만 센다.
+        CountActiveVoices(data.id, data.loop, out int activeVoices, out int audibleVoices, out int oldestSameSoundIndex);
 
         float polyphonyAttenuation = 1f;
         if (data.polyphonyAttenuationStrength > 0f)
         {
             // 비상관 음원 n개가 겹치면 체감 진폭은 대략 sqrt(n)로 늘어난다는 근거로,
             // 그 반대인 1/sqrt(1+n)를 감쇠 계수로 삼는다. strength(0~1)로 사운드별 적용 정도를 조절.
-            float countFactor = 1f / Mathf.Sqrt(1f + activeVoices);
+            float countFactor = 1f / Mathf.Sqrt(1f + audibleVoices);
             polyphonyAttenuation = Mathf.Lerp(1f, countFactor, data.polyphonyAttenuationStrength);
             finalVolume *= polyphonyAttenuation;
         }
@@ -1156,9 +1184,12 @@ public class AudioManager : MonoBehaviour
         int index;
         if (data.maxConcurrentVoices > 0 && activeVoices >= data.maxConcurrentVoices && oldestSameSoundIndex >= 0)
         {
-            // 이어받을 가장 오래된 것조차 방금 시작한 소리라면(같은 소리가 한꺼번에 몰린 폭주) 새 재생을 버린다.
+            // 루프는 상한에 걸리면 기존 것을 빼앗지 않고 새 요청을 버린다. 화상 루프(상한 4)는 과열 상태에서 초당
+            // 여러 그루가 불붙는데, 그때마다 가장 오래된 루프를 Stop하고 처음부터 다시 틀면 불 소리가 초당 몇 번씩
+            // 끊겼다 이어져 타닥거리며 씹힌다. 이미 깔린 루프 4개가 계속 울리는 쪽이 자연스럽다.
+            // 이어받을 가장 오래된 것조차 방금 시작한 소리라면(같은 소리가 한꺼번에 몰린 폭주) 원샷도 버린다.
             // 끊고 다시 시작해 봐야 들리는 건 같은데 앞 소리만 뚝 끊긴다.
-            if (Time.unscaledTime - sourceStartTime[oldestSameSoundIndex] < PolyphonyStealMinAge)
+            if (data.loop || Time.unscaledTime - sourceStartTime[oldestSameSoundIndex] < PolyphonyStealMinAge)
             {
                 _bDropped = true;
                 statDroppedTotal++;
@@ -1178,6 +1209,7 @@ public class AudioManager : MonoBehaviour
         if (index < 0) return AudioHandle.Invalid;
 
         AudioSource src = sourcePool[index];
+        sourceFadingOut[index] = false;
 
         // 3D 위치 설정 (Z는 리스너 기준으로 맞춰 2D 게임에서 카메라 거리로 인한 왜곡을 없앤다)
         src.transform.position = FlattenToListenerZ(position);
@@ -1261,14 +1293,18 @@ public class AudioManager : MonoBehaviour
         return clip;
     }
 
-    // 지정한 SoundID가 지금 몇 개의 슬롯에서 "실제로 들리게" 재생 중인지 세고, 그중 가장 먼저
+    // 지정한 SoundID가 지금 몇 개의 슬롯에서 재생 중인지 두 가지 기준으로 세고, 상한 집계 대상 중 가장 먼저
     // 재생을 시작한 슬롯의 인덱스를 함께 돌려준다(폴리포니 한도 초과 시 이어받을 대상).
+    // - audibleCount: 가청 범위 안에서 실제로 들리게 재생 중인 수. 폴리포니 볼륨 감쇠에 쓴다.
+    // - capCount: 동시 재생 상한(maxConcurrentVoices) 판정용. 원샷은 audibleCount와 같고, 루프는 가청 범위 밖까지
+    //   세되 페이드아웃으로 꺼지는 중인 것은 뺀다(곧 비는 자리를 상한에 넣으면 그 사이 불붙은 나무가 루프를 못 받는다).
     // 풀 크기(최대 50)만 순회하므로 사운드 재생마다 호출해도 비용이 미미하다.
-    private int CountActiveVoicesAndFindOldest(SoundID id, out int oldestIndex)
+    private void CountActiveVoices(SoundID id, bool isLoop, out int capCount, out int audibleCount, out int oldestIndex)
     {
         oldestIndex = -1;
         float oldestTime = float.MaxValue;
-        int count = 0;
+        capCount = 0;
+        audibleCount = 0;
 
         Camera cam = GetListenerCamera(out Vector3 listenerPos);
 
@@ -1289,22 +1325,23 @@ public class AudioManager : MonoBehaviour
             //  여기서 걸러지지 않는다 - 덕킹이 풀리는 순간 여러 소리가 한꺼번에 터지지 않도록 의도한 것이다.)
             if (sourceTargetVolume[i] <= 0.0001f) continue;
 
-            // 가청 범위 밖(거리 감쇠로 이미 볼륨 0)에서 나는 3D 사운드는 세지 않는다. 이걸 세면
+            // 가청 범위 밖(거리 감쇠로 이미 볼륨 0)에서 나는 3D 사운드는 "들리는 수"에 넣지 않는다. 이걸 세면
             // 맵 저편에서 NPC들이 내는, 플레이어에게 들리지도 않는 소리 때문에 정작 화면 안의
             // 소리가 깎이거나 잘려나간다 - 발음원이 맵 전체에 흩어지는 이 게임에서는 치명적이다.
-            if (src.spatialBlend > 0f && cam != null &&
-                Vector3.Distance(src.transform.position, listenerPos) >= cachedFarDistance)
-                continue;
+            bool bInRange = !(src.spatialBlend > 0f && cam != null &&
+                              Vector3.Distance(src.transform.position, listenerPos) >= cachedFarDistance);
+            if (bInRange) audibleCount++;
 
-            count++;
+            bool bCountsForCap = isLoop ? !sourceFadingOut[i] : bInRange;
+            if (!bCountsForCap) continue;
+
+            capCount++;
             if (sourceStartTime[i] < oldestTime)
             {
                 oldestTime = sourceStartTime[i];
                 oldestIndex = i;
             }
         }
-
-        return count;
     }
 
     // _bStolen: 빈 슬롯이 없어 재생 중인 슬롯을 빼앗았는지(디버그 통계용).
