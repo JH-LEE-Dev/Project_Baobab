@@ -35,6 +35,10 @@ namespace PresentationLayer.UISystem
         [Header("Color")]
         [SerializeField] private float colorCycleDuration = 0.75f;
 
+        [Header("Pixel Snap")]
+        [Tooltip("Shake/Char_shake/Wave 오프셋을 360p 기준 1픽셀(캔버스 1유닛) 단위로 반올림한다. 고해상도에서도 저해상도의 픽셀 단위 움직임으로 보인다.")]
+        [SerializeField] private bool snapToReferencePixel = true;
+
         [Header("Shake")]
         [SerializeField] private float shakeAmplitude = 1.2f;
         [SerializeField] private float shakeFrequency = 34.0f;
@@ -386,6 +390,7 @@ namespace PresentationLayer.UISystem
                 return;
 
             float time = Application.isPlaying ? Time.time : Time.realtimeSinceStartup;
+            float pixelStep = true == snapToReferencePixel ? GetReferencePixelStep() : 0f;
 
             for (int i = 0; i < _textInfo.characterCount; i++)
             {
@@ -406,6 +411,8 @@ namespace PresentationLayer.UISystem
 
                 CharacterStyle style = hasStyle ? characterStyles[i] : default;
                 Vector3 offset = hasStyle ? GetCharacterOffset(i, time, style) : Vector3.zero;
+                if (0f < pixelStep)
+                    offset = SnapOffsetToStep(offset, pixelStep);
                 Color32 color = hasStyle ? GetCharacterColor(time, style) : Color.white;
 
                 for (int j = 0; j < 4; j++)
@@ -533,6 +540,34 @@ namespace PresentationLayer.UISystem
             }
 
             return offset;
+        }
+
+        /// <summary>
+        /// 360p 기준 1픽셀이 이 텍스트의 로컬 좌표(정점 단위)로 얼마인지 돌려준다.
+        ///
+        /// 스크린 캔버스는 PixelPerfectCanvasScaleApplier가 정수 배율로 고정하고, 월드 캔버스는 스케일이 1/32(PPU 32)라서
+        /// 어느 쪽이든 캔버스 1유닛이 360p 기준 1픽셀이다. 텍스트와 루트 캔버스 사이의 중간 스케일(텍스트를 키운 경우 등)은
+        /// lossyScale 비율로 환산한다. 캔버스를 못 찾으면 로컬 1유닛을 1픽셀로 본다.
+        /// </summary>
+        private float GetReferencePixelStep()
+        {
+            Canvas canvas = tmpText.canvas;
+            if (null == canvas)
+                return 1.0f;
+
+            float canvasScale = canvas.rootCanvas.transform.lossyScale.x;
+            float textScale = tmpText.transform.lossyScale.x;
+            if (0.0f >= canvasScale || 0.0f >= textScale)
+                return 1.0f;
+
+            return canvasScale / textScale;
+        }
+
+        private static Vector3 SnapOffsetToStep(Vector3 _offset, float _step)
+        {
+            _offset.x = Mathf.Round(_offset.x / _step) * _step;
+            _offset.y = Mathf.Round(_offset.y / _step) * _step;
+            return _offset;
         }
 
         private float GetStable01(float _seed)
