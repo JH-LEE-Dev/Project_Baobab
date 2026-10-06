@@ -24,6 +24,15 @@ public class PHealthComponent : PComponent, IPHealthComponent
 
     private bool bStaminaDecrease = false;
 
+    // 차량 휴식 구역(StaminaRecoverCircle) 안에 있는 동안만 true. 휴식 구역 전용 잠금이라 그쪽만 쓴다.
+    // 예전엔 휴식 구역도 bStaminaDecrease를 같이 썼는데, 그 값은 원정 시작(StartDecreaseStamina)·
+    // 경고창 취소(AbortGameEnd)·귀환 확정(HandleGameEnd)도 쓰는 공용 스위치라 "들어오기 직전 값"을
+    // 저장했다가 되돌리는 방식이 꼬였다. 던전 입장 직후(소모 시작 전 = false) 스폰 지점이 원 안이라
+    // false가 저장되고, 원 안에 있는 동안 도착한 소모 시작 신호는 원이 덮어쓴 뒤, 원을 나가는 순간
+    // 저장해 둔 false로 되돌려 그 원정 내내 스태미나가 닳지 않았다.
+    // 지금은 두 값을 따로 두고 소모 경로가 둘 다 본다. 휴식 구역은 공용 스위치를 건드리지 않는다.
+    private bool bInRestArea = false;
+
     // 튜토리얼 등에서 스태미나가 특정 비율 아래로 떨어지지 않도록 거는 최소치(0~1 비율, maxStamina 기준).
     // 0이면 바닥이 없다는 뜻(기존 동작과 동일하게 0까지 감소). StaminaReset()으로 원정이 끝나면 자동 해제된다.
     private float minStaminaRatio = 0f;
@@ -58,7 +67,7 @@ public class PHealthComponent : PComponent, IPHealthComponent
     public void DecreaseStamina()
     {
         float floor = minStaminaRatio * maxStamina;
-        if (currentStamina <= floor || bStaminaDecrease == false)
+        if (currentStamina <= floor || CanTakeStaminaLoss() == false)
             return;
 
         // staminaDecAmount는 초당 변화량이므로 Time.deltaTime을 곱함
@@ -80,7 +89,7 @@ public class PHealthComponent : PComponent, IPHealthComponent
     public void ApplyEnvironmentalStaminaDrain(float _drainPerSecond)
     {
         float floor = minStaminaRatio * maxStamina;
-        if (currentStamina <= floor || _drainPerSecond <= 0f || bStaminaDecrease == false)
+        if (currentStamina <= floor || _drainPerSecond <= 0f || CanTakeStaminaLoss() == false)
             return;
 
         float amount = _drainPerSecond * Time.deltaTime;
@@ -106,13 +115,13 @@ public class PHealthComponent : PComponent, IPHealthComponent
     ///     minStaminaRatio는 기본 0이라 그대로 0까지 닿아 사망 시퀀스가 귀환 시퀀스와 겹쳤다.
     ///     (입장 쪽은 Character.Update의 bWhileReset 가드가 같은 사고를 이미 막고 있다)
     ///
-    /// 차량 휴식 구역(StaminaRecoverCircle)도 같은 플래그로 소모를 멈추므로, 원 안에서는
+    /// 차량 휴식 구역(StaminaRecoverCircle)은 별도 플래그(bInRestArea)로 세 경로를 함께 멈추므로, 원 안에서는
     /// 환경 피해까지 함께 멈춘다. <b>휴식 구역은 회복만 하고 어떤 피해도 받지 않는 것이 기획 의도다.</b>
     /// </summary>
     public void DecreaseStaminaFlat(float _damage)
     {
         float floor = minStaminaRatio * maxStamina;
-        if (currentStamina <= floor || _damage <= 0f || bStaminaDecrease == false)
+        if (currentStamina <= floor || _damage <= 0f || CanTakeStaminaLoss() == false)
             return;
 
         currentStamina = Mathf.Max(floor, currentStamina - _damage);
@@ -207,15 +216,23 @@ public class PHealthComponent : PComponent, IPHealthComponent
         minStaminaRatio = Mathf.Clamp01(_percent / 100f);
     }
 
-    /// <summary>
-    /// 현재 스태미나 소모가 켜져 있는지. 남의 잠금 위에 겹쳐 잠그는 쪽이 "원래 값"을 저장해 두었다가
-    /// 되돌리기 위해 읽는다. (선례: KnockBackState.bMovePausedBeforeKnockBack)
-    /// </summary>
-    public bool IsStaminaDecreasing => bStaminaDecrease;
-
     public void SetStaminaDecrease(bool _boolean)
     {
         bStaminaDecrease = _boolean;
+    }
+
+    /// <summary>
+    /// 차량 휴식 구역 안에 있는지. StaminaRecoverCircle만 호출한다(bInRestArea 주석 참고).
+    /// </summary>
+    public void SetInRestArea(bool _bInRestArea)
+    {
+        bInRestArea = _bInRestArea;
+    }
+
+    // 일반 소모 · 용암 지속 피해 · 나무 열기 세 경로가 공통으로 따르는 조건.
+    private bool CanTakeStaminaLoss()
+    {
+        return bStaminaDecrease == true && bInRestArea == false;
     }
 
     // "체력의 원천", "휴식"(StaminaRecoverCircle)이 사용한다. "회복력" 특성만큼 회복량이 증가한다.

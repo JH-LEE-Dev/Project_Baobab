@@ -12,18 +12,10 @@ public class StaminaRecoverCircle : MonoBehaviour
 
     private bool bIsCharacterInside = false;
 
-    // 휴식 구역에 들어가기 직전의 소모 상태. 나갈 때 true를 박는 대신 이 값으로 되돌린다.
-    // bStaminaDecrease는 소유자 구분이 없는 단일 bool이라, 남의 잠금 위에 겹쳐 잠그는 쪽이
-    // 무조건 true로 풀어버리면 그 잠금까지 함께 열린다.
-    // (선례: KnockBackState.bMovePausedBeforeKnockBack, GameplayUICoordinator.bMovePausedBeforeEsc)
-    private bool bStaminaDecreaseBeforeRest = true;
-
     // [기획 확정] 휴식 구역 안에서는 어떤 스태미나 피해도 들어오지 않고 회복만 돈다.
     //   일반 소모뿐 아니라 용암 지속 피해와 나무 열기(환경 피해)까지 전부 멈춘다.
-    //   셋을 따로 끄지 않아도 되는 이유는 PHealthComponent의 환경 피해 두 경로
-    //   (ApplyEnvironmentalStaminaDrain / DecreaseStaminaFlat)가 일반 소모와 같은 bStaminaDecrease를
-    //   따르도록 맞춰 두었기 때문이다. SetStaminaDecrease(false) 한 번이 셋 모두를 멈춘다.
-    //   (경위는 PHealthComponent.DecreaseStaminaFlat의 [소모 정지와 환경 피해] 주석 참고)
+    //   PHealthComponent의 세 경로(DecreaseStamina / ApplyEnvironmentalStaminaDrain / DecreaseStaminaFlat)가
+    //   모두 휴식 구역 전용 플래그(SetInRestArea)를 함께 보므로, 그 값 하나가 셋을 모두 멈춘다.
     //
     // [예전에 막혀 있던 것들 - 전부 해소됨. 다시 같은 함정에 빠지지 않도록 남긴다]
     //  1) 이 컴포넌트는 한동안 한 줄도 실행되지 않았다. OffroadVehicleObj가 넘겨주는 _charTransform은
@@ -33,14 +25,13 @@ public class StaminaRecoverCircle : MonoBehaviour
     //     반환했다. 지금은 RepairBox.Initialize와 같이 부모에서 찾는다.
     //  2) 참조를 고치면 특성과 무관하게 소모 정지가 켜져 차량 주변이 안전지대가 되어버린다.
     //     그래서 Update에 [개방 게이트]를 두어 staminaRecoverAmount > 0 일 때만 관여한다.
-    //  3) bStaminaDecrease는 소유자 구분이 없는 단일 bool이라 InDungeonObjectManager.GameEnd()/
-    //     AbortGameEnd(true)와 Character.StartDecreaseStamina()도 같은 값을 건드린다. 경계를 넘는
-    //     순간에만 값을 쓰면 그 사이 누군가 true로 덮었을 때 원 안에 있는데도 소모가 다시 시작된다.
-    //     그래서 원 안에서는 매 프레임 다시 꺼두고, 나갈 때는 true를 박는 대신 들어오기 직전 값
-    //     (bStaminaDecreaseBeforeRest)으로 되돌린다.
-    //     소유자별 잠금(InputReader의 escLockOwners)까지 가지 않은 것은, 이 플래그를 건드리는 쪽 중
-    //     StartDecreaseStamina처럼 "누가 걸었든 전부 켠다"는 의미의 블랭킷 호출이 있어서다.
-    //     소유자 집합으로 바꾸면 그 호출들의 의미가 달라진다. (InputReader.PauseMove 주석과 같은 판단)
+    //  3) 한동안 공용 소모 스위치(SetStaminaDecrease)를 같이 썼다. 그 스위치는 원정 시작
+    //     (StartDecreaseStamina) · 경고창(GameEnd/AbortGameEnd) · 귀환 확정(HandleGameEnd)도 쓰므로,
+    //     처음엔 경계에서만 쓰다가 남이 덮어쓰는 문제가, 그 다음엔 "들어오기 직전 값"을 저장했다가
+    //     되돌리는 방식이 입장 직후 false(소모 시작 전)를 저장해 버리는 문제가 생겼다. 스폰 지점이
+    //     원 한가운데라, 조작이 풀리고 1.4초 안에 원을 벗어나지 않으면 소모 시작 신호를 원이 덮고
+    //     나갈 때 false로 되돌려 그 원정 내내 스태미나가 전혀 닳지 않았다.
+    //     지금은 휴식 구역 전용 플래그만 쓰고 공용 스위치는 건드리지 않는다.
 
     public void Initialize(Transform _charTransform)
     {
@@ -62,7 +53,7 @@ public class StaminaRecoverCircle : MonoBehaviour
     {
         if (charTransform == null || character == null || pHealthComponent == null) return;
 
-        // 사망 중에는 관여하지 않는다. 사망 처리가 스스로 소모를 끄므로 여기서 덮어쓸 이유가 없다.
+        // 사망 중에는 관여하지 않는다. 사망 처리가 공용 스위치로 소모를 끄므로 휴식 상태만 풀어 둔다.
         if (character.bDead)
         {
             ExitRestArea();
@@ -89,17 +80,10 @@ public class StaminaRecoverCircle : MonoBehaviour
         {
             if (!bIsCharacterInside)
             {
+                // 전용 플래그는 이 컴포넌트만 쓰므로 경계를 넘는 순간에만 써도 남이 덮어쓰지 않는다.
                 bIsCharacterInside = true;
-                bStaminaDecreaseBeforeRest = character.IsStaminaDecreasing;
+                pHealthComponent.SetInRestArea(true);
             }
-
-            // 매 프레임 다시 꺼둔다. 경계를 넘는 순간에만 쓰면, 그 사이 AbortGameEnd(true)나
-            // StartDecreaseStamina()가 true로 덮었을 때 원 안에 있는데도 소모가 다시 시작되고
-            // 밖으로 나갔다 들어오기 전까지 복구되지 않는다.
-            // 소모 정지는 일반 소모뿐 아니라 용암 지속 피해와 나무 열기까지 함께 멈춘다
-            // (PHealthComponent의 [소모 정지와 환경 피해] 참고) - 휴식 구역은 회복만 하고
-            // 어떤 피해도 받지 않는 것이 기획 의도다.
-            character.SetStaminaDecrease(false);
 
             // 초당 staminaRecoverAmount만큼 회복
             float recoverAmount = character.statComponent.staminaRecoverAmount * Time.deltaTime;
@@ -114,7 +98,7 @@ public class StaminaRecoverCircle : MonoBehaviour
         }
     }
 
-    // 원 밖으로 나갔거나, 사망/미개방 등으로 더 이상 관여하지 않을 때 원래 소모 상태로 되돌린다.
+    // 원 밖으로 나갔거나, 사망/미개방 등으로 더 이상 관여하지 않을 때 휴식 상태를 푼다.
     // 들어온 적이 없으면 아무 일도 하지 않으므로 매 프레임 불러도 안전하다.
     private void ExitRestArea()
     {
@@ -122,9 +106,9 @@ public class StaminaRecoverCircle : MonoBehaviour
 
         bIsCharacterInside = false;
 
-        if (character != null)
+        if (pHealthComponent != null)
         {
-            character.SetStaminaDecrease(bStaminaDecreaseBeforeRest);
+            pHealthComponent.SetInRestArea(false);
         }
     }
 
