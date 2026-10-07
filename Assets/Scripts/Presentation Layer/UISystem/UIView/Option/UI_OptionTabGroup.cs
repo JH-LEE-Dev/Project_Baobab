@@ -63,6 +63,12 @@ public class UI_OptionTabGroup : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 탭을 바꾸기 직전에 묻는 훅. false를 돌려주면 이번 전환을 하지 않는다(소유자가 팝업을 띄운 뒤 직접 SelectTab을 부를 수 있다).
+    /// 현재 탭과 같은 탭으로의 요청에는 부르지 않는다. 비어 있으면 항상 허용한다.
+    /// </summary>
+    public Func<int, bool> TabChangeGuard;
+
     public int CurrentTabIndex { get; private set; } = 0;
     public int TabCount => null != tabs ? tabs.Length : 0;
 
@@ -92,7 +98,16 @@ public class UI_OptionTabGroup : MonoBehaviour
 
     public void OnTabClicked(int _index)
     {
+        if (false == IsTabChangeAllowed(_index)) return;
+
         SelectTab(_index);
+    }
+
+    private bool IsTabChangeAllowed(int _index)
+    {
+        if (_index == CurrentTabIndex || null == TabChangeGuard) return true;
+
+        return TabChangeGuard.Invoke(_index);
     }
 
     public void ShiftTab(int _delta)
@@ -100,6 +115,8 @@ public class UI_OptionTabGroup : MonoBehaviour
         if (null == tabs || 0 == tabs.Length) return;
         int _newIndex = (CurrentTabIndex + _delta) % tabs.Length;
         if (0 > _newIndex) _newIndex += tabs.Length;
+        if (false == IsTabChangeAllowed(_newIndex)) return;
+
         SelectTab(_newIndex);
         if (null != tabs[_newIndex].tabButton && true == tabs[_newIndex].tabButton.gameObject.activeInHierarchy)
         {
