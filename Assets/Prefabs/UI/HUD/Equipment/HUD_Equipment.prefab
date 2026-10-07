@@ -707,6 +707,7 @@ GameObject:
   - component: {fileID: 6033052735921713039}
   - component: {fileID: 2568714392702800976}
   - component: {fileID: 8428352756427308203}
+  - component: {fileID: 7731904462185530242}
   m_Layer: 18
   m_Name: OverheatAura_Front
   m_TagString: Untagged
@@ -901,6 +902,7 @@ GameObject:
   - component: {fileID: 5007055989793208169}
   - component: {fileID: 3804376571650669240}
   - component: {fileID: 4703323714574667329}
+  - component: {fileID: 7731904462185530243}
   m_Layer: 18
   m_Name: OverheatAura_Back
   m_TagString: Untagged
@@ -2239,3 +2241,51 @@ MonoBehaviour:
   ghostDelay: 0.3
   useAccumulatedGhost: 1
   resetDelayOnHit: 1
+--- !u!223 &7731904462185530242
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3181665304525598522}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 0
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
+  m_AdditionalShaderChannelsFlag: 25
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
+  m_TargetDisplay: 0
+--- !u!223 &7731904462185530243
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4124442395923349588}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 0
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
+  m_AdditionalShaderChannelsFlag: 25
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
+  m_TargetDisplay: 0

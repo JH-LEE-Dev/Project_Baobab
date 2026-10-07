@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5973435824668062020}
   - component: {fileID: 1448683597634536456}
+  - component: {fileID: 7731904462185530241}
   m_Layer: 5
   m_Name: UnitUI
   m_TagString: Untagged
@@ -65,6 +66,31 @@ MonoBehaviour:
   animalsYOffset: 0.35
   hpBarShowDuration: 2
   hpBarDeadShowDelay: 0.2
-  prewarmHpBarCount: 360
+  maxActiveHpBars: 64
+  prewarmHpBarCount: 64
   hpBarViewportMargin: 0.15
   speechBubbleJsonId: 5
+--- !u!223 &7731904462185530241
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6680288061420029778}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 0
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
+  m_AdditionalShaderChannelsFlag: 25
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
+  m_TargetDisplay: 0

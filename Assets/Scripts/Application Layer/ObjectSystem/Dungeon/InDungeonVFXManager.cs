@@ -154,7 +154,9 @@ public class InDungeonVFXManager : MonoBehaviour
     // 캐릭터 도끼 인디케이터(Indicators 레이어, order 0)가 위에 그려지도록 한 칸 아래에 둔다.
     [SerializeField] private int treeHeatIndicatorSortingOrder = -1;
     [SerializeField] private int treeHeatIndicatorPoolDefaultCapacity = 4;
-    [SerializeField] private int treeHeatIndicatorPoolMaxSize = 32;
+    // 보관 상한. 동시 사용 수를 막는 값이 아니라, 반환될 때 이 수를 넘는 인스턴스를 파괴하는 기준이다.
+    // 과열 충격파로 수십 그루가 한 번에 맞으면 매번 그만큼 Destroy/Instantiate가 반복되므로 넉넉히 둔다.
+    [SerializeField] private int treeHeatIndicatorPoolMaxSize = 128;
 
     // 캐릭터 도끼 인디케이터(RadiusIndicator)와 같은 정렬 레이어
     private const string IndicatorSortingLayerName = "Indicators";

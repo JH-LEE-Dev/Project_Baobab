@@ -31,8 +31,10 @@ public class UIView_Unit : UIView
     [SerializeField] private float hpBarDeadShowDelay = 0.2f;
 
     [Header("HP Bar Pool Settings")]
-    [Tooltip("로딩 때 미리 만들어 두는 HP 바 개수. 과열 충격파처럼 수백 그루가 한 번에 맞는 순간 Instantiate가 몰리지 않도록 넉넉히 잡는다.")]
-    [SerializeField] private int prewarmHpBarCount = 360;
+    [Tooltip("동시에 떠 있을 수 있는 HP 바의 상한. 과열 충격파처럼 수백 그루가 한 번에 맞아도 이 수를 넘겨 새 바를 만들지 않는다(그 이상은 읽을 수도 없고 캔버스 리빌드만 키운다).")]
+    [SerializeField] private int maxActiveHpBars = 64;
+    [Tooltip("로딩 때 미리 만들어 두는 HP 바 개수. 상한(maxActiveHpBars)과 같게 두면 플레이 중 Instantiate가 일어나지 않는다.")]
+    [SerializeField] private int prewarmHpBarCount = 64;
     [Tooltip("화면 밖 대상에게는 새 HP 바를 만들지 않는다. 화면 가장자리에서 이 비율만큼 바깥까지는 화면 안으로 본다.")]
     [SerializeField] private float hpBarViewportMargin = 0.15f;
 
@@ -116,6 +118,15 @@ public class UIView_Unit : UIView
 
         if (false == activeHpBars.TryGetValue(_treeObj, out HUD_ShieldHPBar _bar))
         {
+            // 일반 피격과 같은 기준을 적용한다. 화면 밖이거나 이미 상한만큼 떠 있으면 새 바를 만들지 않는다
+            // (전환 연출 자체는 나무 쪽 VFX가 맡고, 이 바는 회복된 체력을 보여 주는 보조 표시다).
+            Transform _treeTf = _treeObj.GetTransform();
+            if (null == _treeTf || false == IsInsideCameraView(_treeTf.position))
+                return;
+
+            if (activeHpBars.Count >= maxActiveHpBars)
+                return;
+
             _bar = GetHPBarFromPool();
             if (null == _bar)
                 return;
@@ -259,6 +270,11 @@ public class UIView_Unit : UIView
             // 화면 밖 대상의 바는 사용자가 볼 수 없으므로 만들지 않는다(충격파로 맞은 수백 그루의 바 생성/활성화 비용 절감).
             // 이미 바가 있는 대상은 위 분기에서 그대로 갱신된다.
             if (false == IsInsideCameraView(_tf.position))
+                return;
+
+            // 화면 안이라도 이미 상한만큼 떠 있으면 새 바를 만들지 않는다. 기존 바는 위 분기에서 계속 갱신되고,
+            // 숨김이 끝나 풀로 돌아간 만큼 자리가 비면 다음 피격부터 다시 만든다.
+            if (activeHpBars.Count >= maxActiveHpBars)
                 return;
 
             HUD_ShieldHPBar _newBar = GetHPBarFromPool();

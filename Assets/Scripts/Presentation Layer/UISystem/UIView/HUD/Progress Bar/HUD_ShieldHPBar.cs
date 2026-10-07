@@ -60,6 +60,13 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     private Tween hpGhostTween;
     private Tween shieldGhostTween;
     private Tween shieldRecoveryTween;
+
+    // 고스트/포자막 바의 보이기·숨기기는 오브젝트 SetActive가 아니라 그 아래 그래픽의 enabled로 한다.
+    // Slider는 OnEnable/OnDisable마다 참조 갱신·비주얼 갱신·레이아웃 재구성을 하므로, 과열 충격파로 수백 개 바가
+    // 한 프레임에 켜지고 꺼지면 그 비용이 그대로 쌓였다. 그래픽 enabled 토글은 그 그래픽의 메쉬만 넣고 뺀다.
+    private Graphic[] ghostGraphics;
+    private Graphic[] shieldGraphics;
+    private Graphic[] shieldGhostGraphics;
     
     private float currentHpValue = 0.0f;
     private float currentShieldValue = 0.0f;
@@ -99,6 +106,11 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         if (null != motionPlayer)
             motionPlayer.Initialize();
 
+        // 세 슬라이더의 오브젝트는 여기서 한 번 켜 두고 이후로는 끄지 않는다. 보이기/숨기기는 그래픽 enabled로만 한다.
+        ghostGraphics = CollectGraphics(ghostSlider);
+        shieldGraphics = CollectGraphics(shieldSlider);
+        shieldGhostGraphics = CollectGraphics(shieldGhostSlider);
+
         if (null != ghostSlider)
         {
             ghostSlider.minValue = 0.0f;
@@ -111,7 +123,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             shieldSlider.minValue = 0.0f;
             shieldSlider.maxValue = 1.0f;
             shieldSlider.value = 0.0f;
-            shieldSlider.gameObject.SetActive(false);
+            SetGraphicsEnabled(shieldGraphics, false);
         }
 
         if (null != shieldGhostSlider)
@@ -119,7 +131,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             shieldGhostSlider.minValue = 0.0f;
             shieldGhostSlider.maxValue = 1.0f;
             shieldGhostSlider.value = 0.0f;
-            shieldGhostSlider.gameObject.SetActive(false);
+            SetGraphicsEnabled(shieldGhostGraphics, false);
         }
 
         if (null != shieldCanvasGroup)
@@ -178,11 +190,8 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             shieldRecoveryTween = null;
         }
 
-        if (null != shieldSlider)
-            shieldSlider.gameObject.SetActive(_useShield);
-
-        if (null != shieldGhostSlider)
-            shieldGhostSlider.gameObject.SetActive(_useShield);
+        SetGraphicsEnabled(shieldGraphics, _useShield);
+        SetGraphicsEnabled(shieldGhostGraphics, _useShield);
 
         if (true == _useShield)
         {
@@ -346,11 +355,8 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             isHiding = false;
             gameObject.SetActive(true);
 
-            if (null != ghostSlider)
-                ghostSlider.gameObject.SetActive(true);
-                
-            if (null != shieldGhostSlider && true == useShield)
-                shieldGhostSlider.gameObject.SetActive(true);
+            SetGraphicsEnabled(ghostGraphics, true);
+            SetGraphicsEnabled(shieldGhostGraphics, useShield);
 
             if (null != motionPlayer && false == isSpecialRecovering)
                 motionPlayer.Play("Show", bReset: true);
@@ -569,7 +575,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         if (null != ghostSlider)
         {
             ghostSlider.value = currentHpValue;
-            ghostSlider.gameObject.SetActive(false);
+            SetGraphicsEnabled(ghostGraphics, false);
         }
 
         if (null != shieldGhostTween && true == shieldGhostTween.IsActive())
@@ -581,7 +587,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         if (null != shieldGhostSlider)
         {
             shieldGhostSlider.value = currentShieldValue;
-            shieldGhostSlider.gameObject.SetActive(false);
+            SetGraphicsEnabled(shieldGhostGraphics, false);
         }
 
         if (null != motionPlayer)
@@ -598,6 +604,31 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         }
         else
             HandleHideComplete();
+    }
+
+    // 슬라이더 오브젝트를 켠 채로 두고(이후 SetActive로 끄지 않는다) 그 아래 그래픽 목록을 모은다.
+    private static Graphic[] CollectGraphics(Slider _slider)
+    {
+        if (null == _slider)
+            return Array.Empty<Graphic>();
+
+        if (false == _slider.gameObject.activeSelf)
+            _slider.gameObject.SetActive(true);
+
+        return _slider.GetComponentsInChildren<Graphic>(true);
+    }
+
+    private static void SetGraphicsEnabled(Graphic[] _graphics, bool _bEnabled)
+    {
+        if (null == _graphics)
+            return;
+
+        for (int _i = 0; _i < _graphics.Length; _i++)
+        {
+            Graphic _graphic = _graphics[_i];
+            if (null != _graphic && _graphic.enabled != _bEnabled)
+                _graphic.enabled = _bEnabled;
+        }
     }
 
     private void HandleHideComplete()
