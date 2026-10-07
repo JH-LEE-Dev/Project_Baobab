@@ -1,0 +1,394 @@
+# 정식판에만 실리는 에셋 목록 (2026-10-05 Steam 정식·데모 빌드의 BuildReport.packedAssets 차이로 만든 스냅숏, 391개).
+# 데모 빌드의 packedAssets 와 대조해 정식판 전용 에셋이 데모에 실렸는지 봅니다. 이후 추가된 정식판 전용 에셋은 들어 있지 않으니
+# 큰 콘텐츠가 추가되면 정식·데모를 함께 빌드해 다시 만드십시오. 데모·정식 공통 에셋(예: 미공개 나무 아이콘)은 이 방법으로 안 잡히므로 extract_check.py 도 함께 쓰십시오.
+Assets/Animation/Character/Arm/Rifle/AC_Rifle.controller
+Assets/Animation/Character/Arm/Rifle/Ready/Ready_Down.anim
+Assets/Animation/Character/Arm/Rifle/Ready/Ready_LR.anim
+Assets/Animation/Character/Arm/Rifle/Ready/Ready_Up.anim
+Assets/Graphics/Ability/Ability_Texture/Boomerang.png
+Assets/Graphics/Ability/Ability_Texture/BoomerangAttackSpeed.png
+Assets/Graphics/Ability/Ability_Texture/BoomerangCooldownReduction.png
+Assets/Graphics/Ability/Ability_Texture/BoomerangCritical.png
+Assets/Graphics/Ability/Ability_Texture/BoomerangDamage.png
+Assets/Graphics/Ability/Ability_Texture/BoomerangDistance.png
+Assets/Graphics/Ability/Ability_Texture/BoomerangRange.png
+Assets/Graphics/Ability/Ability_Texture/ConstellationAfterimage.png
+Assets/Graphics/Ability/Ability_Texture/ConstellationDamage.png
+Assets/Graphics/Ability/Ability_Texture/ConstellationManifestUnlock.png
+Assets/Graphics/Ability/Ability_Texture/FluffySporeForestOvergrowth.png
+Assets/Graphics/Ability/Ability_Texture/ManifestationBrand.png
+Assets/Graphics/Ability/Ability_Texture/SporeShieldCut.png
+Assets/Graphics/Ability/Ability_Texture/SporeShieldPenetration.png
+Assets/Graphics/Ability/Ability_Texture/SporeShieldRegenBlock.png
+Assets/Graphics/Ability/Ability_Texture/StarMarkDamage.png
+Assets/Graphics/Ability/Ability_Texture/StarPathSpeedBoost.png
+Assets/Graphics/Ability/Ability_Texture/StarrootForestOvergrowth.png
+Assets/Graphics/Character/EditPlayer/NewArm/Arm_Gun_D.png
+Assets/Graphics/Environments/Deco/Stage02/Stage02_Deco00.png
+Assets/Graphics/Environments/Deco/Stage02/Stage02_Deco01.png
+Assets/Graphics/Environments/Deco/Stage02/Stage02_Deco02.png
+Assets/Graphics/Environments/Deco/Stage02/Stage02_Deco03.png
+Assets/Graphics/Environments/Deco/Stage02/Stage02_Deco04.png
+Assets/Graphics/Environments/Deco/Stage02/Stage02_Deco05.png
+Assets/Graphics/Environments/Deco/Stage02/Stage02_Deco06.png
+Assets/Graphics/Environments/Deco/Stage02/Stage02_Deco07.png
+Assets/Graphics/Environments/Deco/Stage02/Stage02_Deco08.png
+Assets/Graphics/Environments/Deco/Stage02/Stage02_Deco09.png
+Assets/Graphics/Environments/Deco/Stage02/Stage02_Deco10.png
+Assets/Graphics/Environments/Deco/Stage02/Stage02_Deco11.png
+Assets/Graphics/Environments/Deco/Stage02/Stage02_Deco12.png
+Assets/Graphics/Environments/Deco/Stage03/Stage03_Deco00.png
+Assets/Graphics/Environments/Deco/Stage03/Stage03_Deco01.png
+Assets/Graphics/Environments/Deco/Stage03/Stage03_Deco02.png
+Assets/Graphics/Environments/Deco/Stage03/Stage03_Deco03.png
+Assets/Graphics/Environments/Deco/Stage03/Stage03_Deco04.png
+Assets/Graphics/Environments/Deco/Stage03/Stage03_Deco08.png
+Assets/Graphics/Environments/Deco/Stage03/Stage03_Deco09.png
+Assets/Graphics/Environments/Deco/Stage03/Stage03_Deco10.png
+Assets/Graphics/Environments/Deco/Stage03/Stage03_Deco11.png
+Assets/Graphics/Environments/Deco/Stage03/Stage03_Deco12.png
+Assets/Graphics/Environments/Deco/Stage03/Stage03_Deco13.png
+Assets/Graphics/Environments/Deco/Stage03/Stage03_Deco14.png
+Assets/Graphics/Environments/Deco/Stage03/Stage03_StoneShadows.png
+Assets/Graphics/Environments/Deco/Stage04/Stage04_Deco00.png
+Assets/Graphics/Environments/Deco/Stage04/Stage04_Deco01.png
+Assets/Graphics/Environments/Deco/Stage04/Stage04_Deco02.png
+Assets/Graphics/Environments/Deco/Stage04/Stage04_Deco03.png
+Assets/Graphics/Environments/Deco/Stage04/Stage04_Deco07.png
+Assets/Graphics/Item/Timber/Timber_BellpineTree.png
+Assets/Graphics/Item/Timber/Timber_CinderTree.png
+Assets/Graphics/Item/Timber/Timber_FluffyMyceliumTree.png
+Assets/Graphics/Item/Timber/Timber_GalaxygrainTree.png
+Assets/Graphics/Item/Timber/Timber_LavasapTree.png
+Assets/Graphics/Item/Timber/Timber_MoonhaloTree.png
+Assets/Graphics/Item/Timber/Timber_ObsidianTree.png
+Assets/Graphics/Item/Timber/Timber_SporepuffTree.png
+Assets/Graphics/Item/Timber/Timber_StarrootTree.png
+Assets/Graphics/Objects/Boomerang/Boomerang_Base.png
+Assets/Graphics/Objects/Boomerang/Boomerang_Effect.png
+Assets/Graphics/Objects/Boomerang/OverHeatBoomerang_Base.png
+Assets/Graphics/Objects/Boomerang/OverHeatBoomerang_Effect.png
+Assets/Graphics/Objects/Bullet/Bullet.png
+Assets/Graphics/Objects/Car/Car_Base_Stage3.png
+Assets/Graphics/Objects/Car/Car_Base_Stage4.png
+Assets/Graphics/Objects/Car/Car_Wheel_Stage3.png
+Assets/Graphics/Objects/Car/Car_Wheel_Stage4.png
+Assets/Graphics/Objects/Drone/Drone.png
+Assets/Graphics/Tiles/Stage02/Stage02_GrassTile00.png
+Assets/Graphics/Tiles/Stage02/Stage02_GrassTile01.png
+Assets/Graphics/Tiles/Stage02/Stage02_GroundTile.png
+Assets/Graphics/Tiles/Stage03/Stage03_GrassTile00.asset
+Assets/Graphics/Tiles/Stage03/Stage03_GrassTile00.png
+Assets/Graphics/Tiles/Stage03/Stage03_GrassTile01.asset
+Assets/Graphics/Tiles/Stage03/Stage03_GrassTile01.png
+Assets/Graphics/Tiles/Stage03/Stage03_GroundTile00.asset
+Assets/Graphics/Tiles/Stage03/Stage03_GroundTile00.png
+Assets/Graphics/Tiles/Stage03/Stage03_GroundTile01.asset
+Assets/Graphics/Tiles/Stage03/Stage03_GroundTile01.png
+Assets/Graphics/Tiles/Stage03/Stage03_WaterTile.png
+Assets/Graphics/Tiles/Stage04/Stage04_GrassTile00.asset
+Assets/Graphics/Tiles/Stage04/Stage04_GrassTile00.png
+Assets/Graphics/Tiles/Stage04/Stage04_GrassTile01.asset
+Assets/Graphics/Tiles/Stage04/Stage04_GrassTile01.png
+Assets/Graphics/Tiles/Stage04/Stage04_GroundTile00.asset
+Assets/Graphics/Tiles/Stage04/Stage04_GroundTile00.png
+Assets/Graphics/Tiles/Stage04/Stage04_GroundTile01.asset
+Assets/Graphics/Tiles/Stage04/Stage04_GroundTile01.png
+Assets/Graphics/Tiles/Stage04/Stage04_WaterTile.png
+Assets/Graphics/VFX/Materials/M_BoomerangHeatTrail.mat
+Assets/Graphics/VFX/Materials/M_BrandStamp.mat
+Assets/Graphics/VFX/Materials/M_BrandStampBurst.mat
+Assets/Graphics/VFX/Materials/M_BrandStampFlash.mat
+Assets/Graphics/VFX/Materials/M_BrandStarWrap.mat
+Assets/Graphics/VFX/Materials/M_ConstellationDottedLine.mat
+Assets/Graphics/VFX/Materials/M_ConstellationPixelLaser.mat
+Assets/Graphics/VFX/Materials/M_DroneChargeVortex.mat
+Assets/Graphics/VFX/Materials/M_DroneLaser.mat
+Assets/Graphics/VFX/Materials/M_DroneLaserHit.mat
+Assets/Graphics/VFX/Materials/M_DroneOverheatAura.mat
+Assets/Graphics/VFX/Materials/M_OverheatAura.mat
+Assets/Graphics/VFX/Materials/M_TreeBurn.mat
+Assets/Graphics/VFX/Materials/M_TreeHeatBurst.mat
+Assets/Graphics/VFX/Materials/M_TreeHeatDistortion.mat
+Assets/Graphics/VFX/Resources/Drone/DroneLazer.png
+Assets/Graphics/VFX/Resources/Drone/DroneLazerMuzzle.png
+Assets/Graphics/VFX/Resources/Environment/Stage02_Deco.png
+Assets/Graphics/VFX/Resources/Environment/Stage02_Deco01.png
+Assets/Graphics/VFX/Resources/ManifestationBrand/BrandStamp.png
+Assets/Graphics/VFX/Resources/ShootingStar/ShootingStar.png
+Assets/Graphics/VFX/Resources/Spore/SporeExplosion.png
+Assets/Graphics/VFX/Resources/Tree/BellpineTree_Top_01.png
+Assets/Graphics/VFX/Resources/Tree/SporepuffTree_Top_00.png
+Assets/Graphics/VFX/Resources/TreeStarMark/StarMark_2.png
+Assets/Graphics/VFX/Resources/TreeStarMark/TreeStarMark.png
+Assets/Graphics/VFX/Resources/TreeStarMark/TreeStarMark_Ground.png
+Assets/Graphics/VFX/Resources/Whirlwind/Whirlwind.png
+Assets/Materials/Indicators/OverheatShockWaveArc.mat
+Assets/Materials/Indicators/OverheatShockWaveParticle.mat
+Assets/Materials/Indicators/TreeHeatIndicator.mat
+Assets/Prefabs/Objects/Boomerang/Boomerang.prefab
+Assets/Prefabs/Objects/Bullet/Bullet.prefab
+Assets/Prefabs/Objects/Deco/BloomDeco/BigMushroom.prefab
+Assets/Prefabs/Objects/Deco/BloomDeco/PatternAnimator_FlowerLeaf_C.prefab
+Assets/Prefabs/Objects/Deco/BloomDeco/Stage2_Plant1.prefab
+Assets/Prefabs/Objects/Deco/BloomDeco/Stage2_Plant2.prefab
+Assets/Prefabs/Objects/Deco/Stage3_Rock00.prefab
+Assets/Prefabs/Objects/Deco/Stage3_Rock01.prefab
+Assets/Prefabs/Objects/Deco/Water/PatternAnimator_Lava00.prefab
+Assets/Prefabs/Objects/Deco/Water/PatternAnimator_Lava01.prefab
+Assets/Prefabs/Objects/Drone/Drone.prefab
+Assets/Prefabs/Objects/ShockWave/OverheatShockWave.prefab
+Assets/Prefabs/VFX/Basic/Env/VFX_Env_Stage02.prefab
+Assets/Prefabs/VFX/Basic/Env/VFX_Env_Stage03.prefab
+Assets/Prefabs/VFX/Basic/Env/VFX_Env_Stage04.prefab
+Assets/Prefabs/VFX/Basic/Impact/VFX_SporeExplosion_Basic.prefab
+Assets/Prefabs/VFX/Basic/Impact/VFX_SporeExplosion_Other.prefab
+Assets/Prefabs/VFX/Constellation/VFX_BrandStamp.prefab
+Assets/Prefabs/VFX/Constellation/VFX_BrandStarWrap.prefab
+Assets/Prefabs/VFX/Constellation/VFX_ConstellationDottedLine.prefab
+Assets/Prefabs/VFX/Constellation/VFX_ConstellationPixelLaser.prefab
+Assets/Prefabs/VFX/Drone/VFX_DroneChargeVortex.prefab
+Assets/Prefabs/VFX/Drone/VFX_DroneLaserHit.prefab
+Assets/Prefabs/VFX/Fire/VFX_DroneOverheatAura.prefab
+Assets/Prefabs/VFX/Fire/VFX_OverHeating.prefab
+Assets/Prefabs/VFX/Fire/VFX_TreeHeatBurst.prefab
+Assets/Prefabs/VFX/ShootingStar/ShootingStarVFX.prefab
+Assets/Prefabs/VFX/Spore/SporeExplosionVFX.prefab
+Assets/Prefabs/VFX/TreeStarMark/TreeStarMarkGroundMark.prefab
+Assets/Scriptable Obj/SkillData/SkillCommand/Boomerang Attack Speed.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Boomerang Cooldown Reduction.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Boomerang Critical.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Boomerang Damage.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Boomerang Distance.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Boomerang Overheat Boost.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Boomerang Range.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Boomerang.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Constellation Afterimage.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Constellation Damage.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Constellation Manifest Unlock.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Drone Attack Speed.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Drone Chain Attack Range.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Drone Chain Attack.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Drone Damage.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Drone Overheat Boost.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Drone Range.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Drone.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Hunting.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Increase Ricochet Cnt.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Lumberjack NPC Boomerang.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Manifestation Brand.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Overheat Consumption Reduction.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Overheat Efficiency.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Overheat Gain Bonus.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Overheat Permanent.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Overheat.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Ricochet Damage.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Ricochet Range.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/ShockWave Overheat Boost.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Spore Shield Cut.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Spore Shield Penetration.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Spore Shield Regen Block.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/Starroot Forest OverGrowth.asset
+Assets/Scriptable Obj/SkillData/SkillCommand/WhirlWind.asset
+Assets/Scriptable Obj/TileData/Stage2TileData.asset
+Assets/Scriptable Obj/TileData/Stage3TileData.asset
+Assets/Scriptable Obj/TileData/Stage4TileData.asset
+Assets/Scriptable Obj/TreeGeneration/Stage3TreeGenerationStrategy.asset
+Assets/Scriptable Obj/TreeStatData/SP Regen Data/SporepuffRegenStrategy.asset
+Assets/Scripts/Application Layer/ObjectSystem/Dungeon/Stage3TreeGenerationStrategySO.cs
+Assets/Scripts/Application Layer/ObjectSystem/Interface/ISporeShieldStatProvider.cs
+Assets/Scripts/Application Layer/Scriptable Objects/TreeStatDataBase/SporepuffRegenStrategy.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/Boomerang/SC_Boomerang.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/BoomerangAttackSpeed/SC_BoomerangAttackSpeed.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/BoomerangCooldownReduction/SC_BoomerangCooldownReduction.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/BoomerangCritical/SC_BoomerangCritical.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/BoomerangDamage/SC_BoomerangDamage.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/BoomerangDistance/SC_BoomerangDistance.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/BoomerangOverheatBoost/SC_BoomerangOverheatBoost.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/BoomerangRange/SC_BoomerangRange.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/ConstellationAfterimage/SC_ConstellationAfterimage.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/ConstellationDamage/SC_ConstellationDamage.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/ConstellationManifestUnlock/SC_ConstellationManifestUnlock.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/Drone/SC_Drone.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/DroneAttackSpeed/SC_DroneAttackSpeed.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/DroneChainAttack/SC_DroneChainAttack.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/DroneChainAttackRange/SC_DroneChainAttackRange.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/DroneDamage/SC_DroneDamage.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/DroneOverheatBoost/SC_DroneOverheatBoost.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/DroneRange/SC_DroneRange.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/GunAttackSpeed/SC_GunAttackSpeed.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/GunDamage/SC_GunDamage.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/GunMagazineCapacity/SC_GunMagazineCapacity.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/GunPenetration/SC_GunPenetration.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/GunReloadSpeed/SC_GunReloadSpeed.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/Hunting/SC_Hunting.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/LumberjackNPCBoomerang/SC_LumberjackNPCBoomerang.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/ManifestationBrand/SC_ManifestationBrand.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/Overheat/SC_Overheat.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/OverheatConsumptionReduction/SC_OverheatConsumptionReduction.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/OverheatEfficiency/SC_OverheatEfficiency.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/OverheatGainBonus/SC_OverheatGainBonus.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/OverheatPermanent/SC_OverheatPermanent.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/Ricochet/SC_Ricochet.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/RicochetDamage/SC_RicochetDamage.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/RicochetRange/SC_RicochetRange.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/ShockWaveOverheatBoost/SC_ShockWaveOverheatBoost.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/SporeShieldCut/SC_SporeShieldCut.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/SporeShieldPenetration/SC_SporeShieldPenetration.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/SporeShieldRegenBlock/SC_SporeShieldRegenBlock.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/StarGazeUnlock/SC_StarGazeUnlock.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/StarMarkDamage/SC_StarMarkDamage.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/StarPathSpeedBoost/SC_StarPathSpeedBoost.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/StarrootForestOverGrowth/SC_StarrootForestOverGrowth.cs
+Assets/Scripts/Application Layer/SkillSystem/SkillCommand/WhirlWind/SC_WhirlWind.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/ArmComponent/Axe/OverheatShockWaveVisualComponent.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/ArmComponent/Rifle/Bullet/Bullet.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/ArmComponent/Rifle/BulletObjManager.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/ArmComponent/Rifle/RifleAnimation.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/ArmComponent/Rifle/RifleComponent.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/BoomerangComponent/Boomerang.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/BoomerangComponent/BoomerangAfterimage.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/BoomerangComponent/BoomerangCreator.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/DroneComponent/Drone.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/DroneComponent/DroneCreator.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/Interface/IBoomerangCreator.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/Interface/IDroneCreator.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/Interface/IRifleComponent.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/OverheatComponent/OverheatComponent.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/TreeVisualComponent/TreeStarMarkAnimator.cs
+Assets/Scripts/Presentation Layer/ComponentSystem/TreeVisualComponent/TreeStarMarkGroundAnimator.cs
+Assets/Scripts/Presentation Layer/UISystem/UIView/HUD/Equipment/HUD_BulletIcon.cs
+Assets/Scripts/Presentation Layer/UISystem/UIView/HUD/Equipment/HUD_EquipmentBullet.cs
+Assets/Scripts/Presentation Layer/UISystem/UIView/HUD/Equipment/HUD_EquipmentRifle.cs
+Assets/Scripts/Presentation Layer/VFX/ConstellationLine/ConstellationDottedLine.cs
+Assets/Scripts/Presentation Layer/VFX/ConstellationLine/ConstellationPixelLaser.cs
+Assets/Scripts/Presentation Layer/VFX/ConstellationPixelLaserCreator.cs
+Assets/Scripts/Presentation Layer/VFX/OverheatSilhouette.cs
+Assets/Scripts/Presentation Layer/VFX/ShootingStarVFX.cs
+Assets/Scripts/Presentation Layer/VFX/SporeExplosionVFX.cs
+Assets/Scripts/Presentation Layer/VFX/TreeHeatIndicator.cs
+Assets/Scripts/Presentation Layer/VFX/VFX_BoomerangHeatTrail.cs
+Assets/Scripts/Presentation Layer/VFX/VFX_BrandStampBurst.cs
+Assets/Scripts/Presentation Layer/VFX/VFX_BrandStarWrap.cs
+Assets/Scripts/Presentation Layer/VFX/VFX_DroneLaser.cs
+Assets/Scripts/Presentation Layer/VFX/VFX_OverheatAura.cs
+Assets/Scripts/Presentation Layer/VFX/VFX_TreeBurn.cs
+Assets/Scripts/Presentation Layer/VFX/VFX_TreeHeatBurst.cs
+Assets/Scripts/Presentation Layer/VFX/WhirlwindVFX.cs
+Assets/Shaders/Indicators/OverheatShockWaveArc.shader
+Assets/Shaders/Indicators/OverheatShockWaveParticle.shader
+Assets/Shaders/Indicators/TreeHeatIndicator.shader
+Assets/Shaders/VFX/BrandSparkle.shader
+Assets/Shaders/VFX/BrandWrapGlow.shader
+Assets/Shaders/VFX/ConstellationDottedLine.shader
+Assets/Shaders/VFX/ConstellationPixelLaser.shader
+Assets/Shaders/VFX/DroneLaser.shader
+Assets/Shaders/VFX_HeatBurstDistortion.shader
+Assets/Sounds/Character/Boomerang_Clip/SpinLoop.wav
+Assets/Sounds/Character/Boomerang_Clip/SpinStart.wav
+Assets/Sounds/Character/Drone_Clip/SFX_BeamFire.mp3
+Assets/Sounds/Character/Drone_Clip/SFX_ChargeUp.mp3
+Assets/Sounds/Character/Drone_Clip/SFX_PunchImpact.mp3
+Assets/Sounds/Character/Drone_Clip/SFX_VoltageImpact.mp3
+Assets/Sounds/Tree/Constellation_Clip/StarExplosion.wav
+Assets/Sounds/Tree/Constellation_Clip/Starappear.wav
+Assets/Sounds/Tree/FireStart_Cue/FireStart.asset
+Assets/Sounds/Tree/FireStart_Cue/Fire_Start01.wav
+Assets/Sounds/Tree/FireStart_Cue/Fire_Start02.wav
+Assets/Sounds/Tree/Fire_Clip/Fire_Loop.wav
+Assets/Sounds/Tree/Spore_Clip/SporeExplosion.wav
+Assets/Sounds/Tree/Spore_Clip/SporeShieldBreak.wav
+Assets/Sounds/Tree/Spore_Clip/Spore_Hit.wav
+Assets/Sounds/Tree/Stardisappear_Cue/Stardisappear.asset
+Assets/Sounds/Tree/Stardisappear_Cue/Stardisappear1.wav
+Assets/Sounds/Tree/Stardisappear_Cue/Stardisappear2.wav
+Assets/Sounds/Tree/TreeFireExplosion_Cue/TreeFireExplosion.asset
+Assets/Sounds/Tree/TreeFireExplosion_Cue/TreeFire_Explosion.wav
+Assets/TileMap/Tiles/Animated/Stage3_Water/Corner/Corner_All.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Corner/Corner_D.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Corner/Corner_D_L_R.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Corner/Corner_L.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Corner/Corner_L_D.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Corner/Corner_L_R.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Corner/Corner_L_U.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Corner/Corner_R.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Corner/Corner_R_D.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Corner/Corner_R_U.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Corner/Corner_U.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Corner/Corner_U_D.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Corner/Corner_U_L_D.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Corner/Corner_U_L_R.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Corner/Corner_U_R_D.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water_All.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water_LD.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water_LU.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water_LU_LD.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water_RD.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water_RD_LD.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water_RD_LU.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water_RD_LU_LD.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water_RU.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water_RU_LD.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water_RU_LU.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water_RU_LU_LD.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water_RU_RD.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water_RU_RD_LD.asset
+Assets/TileMap/Tiles/Animated/Stage3_Water/Water_RU_RD_LU.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Corner/Corner_All.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Corner/Corner_D.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Corner/Corner_D_L_R.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Corner/Corner_L.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Corner/Corner_L_D.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Corner/Corner_L_R.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Corner/Corner_L_U.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Corner/Corner_R.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Corner/Corner_R_D.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Corner/Corner_R_U.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Corner/Corner_U.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Corner/Corner_U_D.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Corner/Corner_U_L_D.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Corner/Corner_U_L_R.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Corner/Corner_U_R_D.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water_All.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water_LD.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water_LU.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water_LU_LD.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water_RD.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water_RD_LD.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water_RD_LU.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water_RD_LU_LD.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water_RU.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water_RU_LD.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water_RU_LU.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water_RU_LU_LD.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water_RU_RD.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water_RU_RD_LD.asset
+Assets/TileMap/Tiles/Animated/Stage4_Water/Water_RU_RD_LU.asset
+Assets/TileMap/Tiles/Deco/Stage03_Deco08.asset
+Assets/TileMap/Tiles/Stage02/Stage02_Deco00.asset
+Assets/TileMap/Tiles/Stage02/Stage02_Deco01.asset
+Assets/TileMap/Tiles/Stage02/Stage02_Deco02.asset
+Assets/TileMap/Tiles/Stage02/Stage02_Deco03.asset
+Assets/TileMap/Tiles/Stage02/Stage02_Deco04.asset
+Assets/TileMap/Tiles/Stage02/Stage02_Deco05.asset
+Assets/TileMap/Tiles/Stage02/Stage02_Deco06.asset
+Assets/TileMap/Tiles/Stage02/Stage02_Deco07.asset
+Assets/TileMap/Tiles/Stage02/Stage02_Deco08.asset
+Assets/TileMap/Tiles/Stage02/Stage02_GrassTile00.asset
+Assets/TileMap/Tiles/Stage02/Stage02_GrassTile01.asset
+Assets/TileMap/Tiles/Stage02/Stage02_GroundTile.asset
+Assets/TileMap/Tiles/Stage03/Stage03_Deco00.asset
+Assets/TileMap/Tiles/Stage03/Stage03_Deco01.asset
+Assets/TileMap/Tiles/Stage03/Stage03_Deco02.asset
+Assets/TileMap/Tiles/Stage03/Stage03_Deco03.asset
+Assets/TileMap/Tiles/Stage03/Stage03_Deco04.asset
+Assets/TileMap/Tiles/Stage03/Stage03_Deco11.asset
+Assets/TileMap/Tiles/Stage03/Stage03_Deco12.asset
+Assets/TileMap/Tiles/Stage03/Stage03_Deco13.asset
+Assets/TileMap/Tiles/Stage03/Stage03_Deco14.asset
+Assets/TileMap/Tiles/Stage04/Stage04_Deco00.asset
+Assets/TileMap/Tiles/Stage04/Stage04_Deco01.asset
+Assets/TileMap/Tiles/Stage04/Stage04_Deco02.asset
+Assets/TileMap/Tiles/Stage04/Stage04_Deco03.asset

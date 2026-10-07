@@ -1,7 +1,7 @@
 # 데모 배포 빌드의 스탯 승인 기준값입니다. GameStatBuildGuard 가 이 값과 대조합니다.
 # 직접 고치지 말고 Tools > 빌드 > 스탯 기준값 승인 (데모) 로 갱신한 뒤, 바뀐 에셋과 함께 커밋하십시오.
 # 형식: 출처|오브젝트|필드 경로 = 값
-# 승인: 2026-10-07 11:46
+# 승인: 2026-10-07 21:00
 Data/Ability/AbilityNodeDatabase_Demo|node[AxeAttackSpeed1]|parents = AxeDurability1
 Data/Ability/AbilityNodeDatabase_Demo|node[AxeAttackSpeed1]|requiredPrestigeLevel = 0
 Data/Ability/AbilityNodeDatabase_Demo|node[AxeDamage1]|parents = -
@@ -353,7 +353,7 @@ Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectMa
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/VFXManager:InDungeonVFXManager|starAppearAuraPoolMaxSize = 16
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/VFXManager:InDungeonVFXManager|treeHeatIndicatorLeadTime = 1.5
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/VFXManager:InDungeonVFXManager|treeHeatIndicatorPoolDefaultCapacity = 4
-Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/VFXManager:InDungeonVFXManager|treeHeatIndicatorPoolMaxSize = 32
+Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/VFXManager:InDungeonVFXManager|treeHeatIndicatorPoolMaxSize = 128
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/VFXManager:InDungeonVFXManager|treeHeatIndicatorRadius = 1.5
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/VFXManager:InDungeonVFXManager|treeHeatIndicatorSortingOrder = -1
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/VFXManager:InDungeonVFXManager|treeStarMarkGroundPoolDefaultCapacity = 50
