@@ -168,6 +168,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         string _fullOnly = StripFullOnlyFeatures(_maxPlayableMap);
 
         AssetDatabase.SaveAssets();
+        VerifyModifiedAssetsSaved();
 
         // 저장이 끝난 뒤에 옮긴다. 폴더 이동이 저장되지 않은 수정분과 섞이지 않게 하기 위해서다.
         bool _heldVfx = HoldVfxResourcesFolder();
@@ -179,6 +180,44 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
                   "  빌드가 끝나면 원본으로 자동 복구됩니다.");
 
         FailIfIncomplete(_isDevelopmentBuild);
+    }
+
+    /// <summary>
+    /// 고친 에셋이 실제로 디스크에 저장됐는지 확인합니다. 백업이 있다는 것은 고쳤다는 뜻인데, 저장 뒤에도 파일이 백업과 같으면 저장이 실패한 것입니다.
+    ///
+    /// 2026-10-07, 인벤토리 칸 프리팹(Slot)에 스크립트가 빠진 실행 잔여물이 있어 Unity가 저장을 거부했고("missing script"),
+    /// 오류 한 줄만 남긴 채 빌드가 진행되어 미공개 원목 그림(Wood04)이 데모에 실렸습니다. 이제는 그 경우 빌드를 멈춥니다.
+    /// </summary>
+    private static void VerifyModifiedAssetsSaved()
+    {
+        if (false == Directory.Exists(BackupDirectory)) return;
+
+        string[] _backups = Directory.GetFiles(BackupDirectory);
+
+        for (int i = 0; i < _backups.Length; i++)
+        {
+            string _target = FindAssetPathByFileName(Path.GetFileName(_backups[i]));
+            if (null == _target) continue;
+
+            byte[] _before = File.ReadAllBytes(_backups[i]);
+            byte[] _after = File.ReadAllBytes(ToAbsolute(_target));
+
+            if (false == SameBytes(_before, _after)) continue;
+
+            ReportFailure($"[DemoStrip] {_target} 를 고쳤지만 저장되지 않았습니다. 콘솔의 저장 오류(예: 스크립트가 빠진 컴포넌트)를 먼저 해결하십시오.");
+        }
+    }
+
+    private static bool SameBytes(byte[] _a, byte[] _b)
+    {
+        if (_a.Length != _b.Length) return false;
+
+        for (int i = 0; i < _a.Length; i++)
+        {
+            if (_a[i] != _b[i]) return false;
+        }
+
+        return true;
     }
 
     private static void ReportFailure(string _message)
