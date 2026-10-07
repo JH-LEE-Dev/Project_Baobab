@@ -79,6 +79,9 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     private const string LOG_ITEM_DB_PATH = "Assets/Scriptable Obj/ItemData/LogItemData/LogItemTypeDataBase.asset";
     private const string TREE_STAT_DB_PATH = "Assets/Scriptable Obj/TreeStatData/Tree Stat Data Base.asset";
     private const string ABILITY_VARIANT_PATH = "Assets/Scriptable Obj/SkillData/AbilityBuildVariantData.asset";
+    private const string RESULT_LOG_ROW_PREFAB_PATH = "Assets/Prefabs/UI/Result/UI_ResultLogRow.prefab";
+    private const string INVENTORY_SLOT_PREFAB_PATH = "Assets/Prefabs/UI/Popup/Inventory/Slot.prefab";
+    private const string AURA_SETTING_PREFAB_PATH = "Assets/Prefabs/VFX/Item/AuraEffectSetting.prefab";
 
     /// <summary>데모 빌드 동안 이름을 바꿔 두는 폴더입니다. 바꾼 이름은 Resources가 아니면 무엇이든 됩니다.</summary>
     private const string VFX_RESOURCES_FOLDER = "Assets/Graphics/VFX/Resources";
@@ -93,6 +96,9 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     /// 대상 에셋이 옮겨지거나 이름이 바뀌어 못 찾는 경우가 대표적입니다.
     /// </summary>
     private static readonly List<string> failures = new List<string>();
+
+    /// <summary>이번 빌드에서 끊은 미공개 원목 그림 파일 경로입니다. 빌드 후 실제로 빠졌는지 확인합니다(ReportLockedLogSpritesInBuild).</summary>
+    private static readonly HashSet<string> lockedLogSpritePaths = new HashSet<string>();
 
     /// <summary>
     /// 백업/복원이 추적하는 에셋 전부. 새 대상을 추가하면 <b>여기에도 반드시 넣어야</b>
@@ -116,11 +122,15 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         TENT_UI_PREFAB_PATH,
         LOG_ITEM_DB_PATH,
         TREE_STAT_DB_PATH,
+        RESULT_LOG_ROW_PREFAB_PATH,
+        INVENTORY_SLOT_PREFAB_PATH,
+        AURA_SETTING_PREFAB_PATH,
     };
 
     public void OnPreprocessBuild(BuildReport _report)
     {
         failures.Clear();
+        lockedLogSpritePaths.Clear();
         // 촬영용 빌드(BuildRunner.RunTrailer)는 배포하지 않지만 화면 표시 때문에 개발 빌드로 만들 수 없다. 개발 빌드처럼 경고만 남긴다.
         bool _isDevelopmentBuild = 0 != (_report.summary.options & BuildOptions.Development) || true == BuildRunner.IsTrailerBuildInProgress;
 
@@ -206,6 +216,37 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     public void OnPostprocessBuild(BuildReport _report)
     {
         RestoreIfNeeded(false);
+        ReportLockedLogSpritesInBuild(_report);
+    }
+
+    /// <summary>
+    /// 이번 데모 빌드에서 끊은 미공개 원목 그림이 그래도 빌드에 실렸는지 BuildReport 로 확인합니다.
+    /// 끊은 프리팹 말고 다른 곳(새로 만든 UI 등)이 같은 그림을 참조하면 여기서 드러납니다.
+    /// 빌드가 이미 끝난 뒤라 멈출 수는 없으므로 오류로 남깁니다. 업로드 전에 이 오류가 없는지 확인하십시오.
+    /// </summary>
+    private static void ReportLockedLogSpritesInBuild(BuildReport _report)
+    {
+        if (0 == lockedLogSpritePaths.Count) return;
+
+        HashSet<string> _leaked = new HashSet<string>();
+        PackedAssets[] _packed = _report.packedAssets;
+
+        for (int i = 0; null != _packed && i < _packed.Length; i++)
+        {
+            PackedAssetInfo[] _contents = _packed[i].contents;
+            for (int j = 0; j < _contents.Length; j++)
+            {
+                if (true == lockedLogSpritePaths.Contains(_contents[j].sourceAssetPath)) _leaked.Add(_contents[j].sourceAssetPath);
+            }
+        }
+
+        lockedLogSpritePaths.Clear();
+
+        if (0 == _leaked.Count) return;
+
+        Debug.LogError("[DemoStrip] 미공개 원목 그림이 데모 빌드에 실렸습니다. 이 빌드를 올리지 마십시오. " +
+                       "다른 에셋이 아직 이 그림을 참조합니다. 참조하는 곳을 DemoContentStripper 에 추가하십시오.\n  " +
+                       string.Join("\n  ", _leaked));
     }
 
 #region 제외 대상 판정
@@ -676,7 +717,11 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         int _tree = StripTreePrefabFullOnly(_scope);
         int _offroad = StripOffroadFullOnly(_scope);
         int _icons = StripTentAbilityIcons(_scope);
-        int _logIcons = StripLogItemIcons(_scope);
+        // 원목 데이터에서 미공개 원목 그림을 모은 뒤 끊고, 같은 그림을 쓰는 UI·VFX 프리팹에서도 끊는다.
+        int _logIcons = StripLogItemIcons(_scope, out HashSet<UnityEngine.Object> _lockedLogSprites, out Sprite _demoLogSprite);
+        _logIcons += StripLockedLogSpriteRefs(RESULT_LOG_ROW_PREFAB_PATH, _lockedLogSprites, _demoLogSprite);
+        _logIcons += StripLockedLogSpriteRefs(INVENTORY_SLOT_PREFAB_PATH, _lockedLogSprites, _demoLogSprite);
+        _logIcons += StripLockedLogSpriteRefs(AURA_SETTING_PREFAB_PATH, _lockedLogSprites, _demoLogSprite);
         int _regen = StripTreeRegenStrategies(_scope);
 
         return $"효과음 {_sfx}개, 설치 프리팹 {_installer}곳, 캐릭터 {_character}곳, 나무 {_tree}곳, 차량 {_offroad}곳, " +
@@ -919,9 +964,18 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         });
     }
 
-    /// <summary>미공개 나무의 원목 아이콘입니다. 그 나무가 데모에 나오지 않으므로 그 원목도 얻을 수 없습니다.</summary>
-    private static int StripLogItemIcons(DemoFeatureScope _s)
+    /// <summary>
+    /// 미공개 나무의 원목 그림입니다(기본 아이콘, 통나무 그림, 황금·다이아·무지개 상태 그림).
+    /// 그 나무가 데모에 나오지 않으므로 그 원목도 얻을 수 없고, 원목 데이터는 실제로 얻은 수종으로만 조회됩니다(LogItemTypeDataBase.Get).
+    ///
+    /// 1.0.3 데모까지는 통나무 그림만 끊어서, 기본 아이콘 Wood04~12가 데모에 실렸습니다(2026-10-07 빌드 추출로 확인).
+    /// 끊은 그림 목록과 데모 원목 그림 하나를 돌려줍니다. 같은 그림을 쓰는 다른 프리팹을 정리할 때 씁니다.
+    /// </summary>
+    private static int StripLogItemIcons(DemoFeatureScope _s, out HashSet<UnityEngine.Object> _locked, out Sprite _demoSprite)
     {
+        _locked = new HashSet<UnityEngine.Object>();
+        _demoSprite = null;
+
         ScriptableObject _db = AssetDatabase.LoadAssetAtPath<ScriptableObject>(LOG_ITEM_DB_PATH);
         if (null == _db) return MissingAsset(LOG_ITEM_DB_PATH);
 
@@ -932,15 +986,89 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         for (int i = 0; null != _list && i < _list.arraySize; i++)
         {
             SerializedProperty _e = _list.GetArrayElementAtIndex(i);
-            if (true == _s.trees.Contains((TreeType)_e.FindPropertyRelative("treeType").intValue)) continue;
 
-            _c += ClearRelativeRef(_e, "timberSprite");
+            if (true == _s.trees.Contains((TreeType)_e.FindPropertyRelative("treeType").intValue))
+            {
+                if (null == _demoSprite) _demoSprite = _e.FindPropertyRelative("sprite").objectReferenceValue as Sprite;
+                continue;
+            }
+
+            _c += ClearLockedRef(_e, "sprite", _locked);
+            _c += ClearLockedRef(_e, "timberSprite", _locked);
 
             SerializedProperty _states = _e.FindPropertyRelative("stateSprites");
-            for (int j = 0; null != _states && j < _states.arraySize; j++) _c += ClearRelativeRef(_states.GetArrayElementAtIndex(j), "timberSprite");
+            for (int j = 0; null != _states && j < _states.arraySize; j++)
+            {
+                SerializedProperty _state = _states.GetArrayElementAtIndex(j);
+                _c += ClearLockedRef(_state, "sprite", _locked);
+                _c += ClearLockedRef(_state, "timberSprite", _locked);
+            }
         }
 
         return ApplyIfChanged(_so, _db, LOG_ITEM_DB_PATH, _c);
+    }
+
+    /// <summary>ClearRelativeRef 와 같지만, 끊은 그림을 목록에 모읍니다.</summary>
+    private static int ClearLockedRef(SerializedProperty _entry, string _field, HashSet<UnityEngine.Object> _locked)
+    {
+        SerializedProperty _p = _entry.FindPropertyRelative(_field);
+        if (null == _p || SerializedPropertyType.ObjectReference != _p.propertyType || null == _p.objectReferenceValue) return 0;
+
+        _locked.Add(_p.objectReferenceValue);
+        lockedLogSpritePaths.Add(AssetDatabase.GetAssetPath(_p.objectReferenceValue));
+        _p.objectReferenceValue = null;
+        return 1;
+    }
+
+    /// <summary>
+    /// 미공개 원목 그림을 쓰는 프리팹에서 그 참조를 끊습니다. 원목 데이터만 비워서는 이 프리팹들이 그림을 빌드에 끌고 들어옵니다.
+    ///   - UI_ResultLogRow.logSpriteMappings: 결과 화면의 수종·상태별 원목 그림 표. 비우면 GetSprite 가 기본 상태 그림으로 넘어가는데,
+    ///     미공개 수종은 결과에 나오지 않으므로 보이지 않습니다.
+    ///   - 인벤토리 칸(Slot)·아이템 오라 설정(AuraEffectSetting)의 Image/SpriteRenderer 기본 그림(m_Sprite): 실행 중 실제 아이템 그림으로
+    ///     바뀌는 자리표시용이라, 비우지 않고 데모 원목 그림으로 바꿉니다(비우면 흰 사각형이 될 수 있음).
+    /// 대신 넣을 데모 원목 그림을 못 찾으면 실패로 올립니다. 다른 곳이 같은 그림을 참조하는지는 빌드 후 ReportLockedLogSpritesInBuild 가 봅니다.
+    /// </summary>
+    private static int StripLockedLogSpriteRefs(string _prefabPath, HashSet<UnityEngine.Object> _locked, Sprite _demoSprite)
+    {
+        GameObject _root = AssetDatabase.LoadAssetAtPath<GameObject>(_prefabPath);
+        if (null == _root) return MissingAsset(_prefabPath);
+        if (0 == _locked.Count) return 0;
+
+        Component[] _all = _root.GetComponentsInChildren<Component>(true);
+        int _total = 0;
+
+        for (int i = 0; i < _all.Length; i++)
+        {
+            if (null == _all[i]) continue;
+
+            SerializedObject _so = new SerializedObject(_all[i]);
+            SerializedProperty _it = _so.GetIterator();
+            int _changed = 0;
+
+            while (true == _it.Next(true))
+            {
+                if (SerializedPropertyType.ObjectReference != _it.propertyType || null == _it.objectReferenceValue) continue;
+                if (false == _locked.Contains(_it.objectReferenceValue)) continue;
+
+                if ("m_Sprite" == _it.name && null == _demoSprite)
+                {
+                    ReportFailure($"[DemoStrip] {_prefabPath} 의 {_all[i].GetType().Name}.{_it.propertyPath} 에 미공개 원목 그림이 있는데, 대신 넣을 데모 원목 그림을 찾지 못했습니다.");
+                    continue;
+                }
+
+                _it.objectReferenceValue = "m_Sprite" == _it.name ? _demoSprite : null;
+                _changed++;
+            }
+
+            if (0 == _changed) continue;
+
+            Backup(_prefabPath);
+            _so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(_all[i]);
+            _total += _changed;
+        }
+
+        return _total;
     }
 
     /// <summary>미공개 나무(포자막)의 실드 회복 규칙입니다. EHealthComponent는 null이면 회복하지 않습니다.</summary>
