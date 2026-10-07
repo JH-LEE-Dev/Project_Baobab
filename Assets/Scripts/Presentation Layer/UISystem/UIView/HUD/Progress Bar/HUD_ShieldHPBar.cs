@@ -49,7 +49,9 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     private GameObject targetObj;
     private float yOffset;
     private float showDuration;
-    private Tween hideDelayTween;
+    // 숨김 타이머: 맞을 때마다 트윈을 지우고 다시 만드는 대신 만료 시각만 갱신하고 LateUpdate에서 비교한다.
+    private float hideAtTime;
+    private bool bHideTimerActive;
     private Action<HUD_ShieldHPBar> onFinishCallback;
     private bool isHiding;
     private RectTransform rect;
@@ -76,7 +78,6 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     private TweenCallback cachedSpecialRecoveryComplete;
     private TweenCallback<float> cachedSpecialShakeUpdate;
     private TweenCallback cachedSpecialShakeComplete;
-    private TweenCallback cachedOnHideDelayExpired;
 
     public object Owner => owner;
     public bool IsSpecialRecovering => isSpecialRecovering;
@@ -94,7 +95,6 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         cachedSpecialRecoveryComplete = HandleSpecialRecoveryComplete;
         cachedSpecialShakeUpdate = HandleSpecialShakeUpdate;
         cachedSpecialShakeComplete = HandleSpecialShakeComplete;
-        cachedOnHideDelayExpired = HandleHideDelayExpired;
 
         if (null != motionPlayer)
             motionPlayer.Initialize();
@@ -332,11 +332,6 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         specialShakeTween = null;
     }
 
-    private void HandleHideDelayExpired()
-    {
-        OnHide(-1f);
-    }
-
     public void Setup(GameObject _target, float _yOffset, float _duration)
     {
         targetObj = _target;
@@ -553,11 +548,8 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
 
     private void RestartHideTimer()
     {
-        if (null != hideDelayTween && true == hideDelayTween.IsActive())
-            hideDelayTween.Kill();
-
-        if (0.0f < showDuration)
-            hideDelayTween = DOVirtual.DelayedCall(showDuration, cachedOnHideDelayExpired, false).SetLink(gameObject);
+        bHideTimerActive = 0.0f < showDuration;
+        hideAtTime = Time.time + showDuration;
     }
 
     public void OnHide(float _forceDuration = -1f, bool _bSkip = false)
@@ -656,11 +648,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             shieldFadeTween = null;
         }
 
-        if (null != hideDelayTween && true == hideDelayTween.IsActive())
-        {
-            hideDelayTween.Kill();
-            hideDelayTween = null;
-        }
+        bHideTimerActive = false;
 
         if (null != shieldCanvasGroup)
             shieldCanvasGroup.alpha = 0.0f;
@@ -680,6 +668,12 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     private void LateUpdate()
     {
         UpdatePosition();
+
+        if (true == bHideTimerActive && Time.time >= hideAtTime)
+        {
+            bHideTimerActive = false;
+            OnHide(-1f);
+        }
     }
 
     private void UpdatePosition()
@@ -691,6 +685,9 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         _pos.y += yOffset;
         _pos += shakeOffset;
 
-        rect.position = _pos;
+        // 이미 그 자리면 대입하지 않는다(대입만으로도 트랜스폼/캔버스가 더럽혀진다). 캔버스가 카메라를 따라 움직여
+        // 현재 월드 위치가 달라졌다면 값이 달라서 그대로 다시 맞춘다.
+        if (_pos != rect.position)
+            rect.position = _pos;
     }
 }

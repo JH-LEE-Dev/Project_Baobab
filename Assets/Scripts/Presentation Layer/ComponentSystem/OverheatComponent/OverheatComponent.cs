@@ -1,6 +1,7 @@
+using System;
 using UnityEngine;
 
-public class OverheatComponent : PComponent
+public class OverheatComponent : PComponent, IOverheatComponent
 {
     private const float MoveSpeedBonus = 20f;
     private const float AttackSpeedBonus = 20f;
@@ -29,6 +30,7 @@ public class OverheatComponent : PComponent
     private CustomSortable customSortable;
 
     public bool IsActive => bActive;
+    public event Action<bool> OverheatStateChangedEvent;
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -145,6 +147,8 @@ public class OverheatComponent : PComponent
                 appliedVfxSortingOrder = int.MinValue; // 새 인스턴스이므로 첫 프레임에 반드시 적용
             }
         }
+
+        OverheatStateChangedEvent?.Invoke(true);
     }
 
     private void DeactivateBuff()
@@ -162,5 +166,7 @@ public class OverheatComponent : PComponent
             activeVfx = null;
             activeVfxRenderer = null;
         }
+
+        OverheatStateChangedEvent?.Invoke(false);
     }
 }

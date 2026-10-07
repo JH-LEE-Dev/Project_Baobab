@@ -30,6 +30,12 @@ public class UIView_Unit : UIView
     [SerializeField] private float hpBarShowDuration = 2.0f;
     [SerializeField] private float hpBarDeadShowDelay = 0.2f;
 
+    [Header("HP Bar Pool Settings")]
+    [Tooltip("로딩 때 미리 만들어 두는 HP 바 개수. 과열 충격파처럼 수백 그루가 한 번에 맞는 순간 Instantiate가 몰리지 않도록 넉넉히 잡는다.")]
+    [SerializeField] private int prewarmHpBarCount = 360;
+    [Tooltip("화면 밖 대상에게는 새 HP 바를 만들지 않는다. 화면 가장자리에서 이 비율만큼 바깥까지는 화면 안으로 본다.")]
+    [SerializeField] private float hpBarViewportMargin = 0.15f;
+
     [Header("Localization Settings")]
     [SerializeField] private int speechBubbleJsonId = 5;
 
@@ -171,7 +177,7 @@ public class UIView_Unit : UIView
         if (null == hpBarPrefab || null == hpBarPool)
             return;
 
-        for (int _i = 0; 32 > _i; _i++)
+        for (int _i = 0; prewarmHpBarCount > _i; _i++)
         {
             HUD_ShieldHPBar _bar = CreateNewHPBar();
 
@@ -250,6 +256,11 @@ public class UIView_Unit : UIView
             if (true == _bDead)
                 return;
 
+            // 화면 밖 대상의 바는 사용자가 볼 수 없으므로 만들지 않는다(충격파로 맞은 수백 그루의 바 생성/활성화 비용 절감).
+            // 이미 바가 있는 대상은 위 분기에서 그대로 갱신된다.
+            if (false == IsInsideCameraView(_tf.position))
+                return;
+
             HUD_ShieldHPBar _newBar = GetHPBarFromPool();
             
             if (null != _newBar)
@@ -297,6 +308,19 @@ public class UIView_Unit : UIView
         }
 
         _bar.TriggerActive(returnToPoolAction);
+    }
+
+    // 월드 위치가 메인 카메라 화면(+여유 마진) 안인지. 카메라를 못 찾으면 판정하지 않고 true를 돌려 바를 항상 만든다.
+    private bool IsInsideCameraView(Vector3 _worldPos)
+    {
+        Camera _camera = null != CameraFinder.Instance ? CameraFinder.Instance.PPMainCamera : null;
+        if (null == _camera)
+            return true;
+
+        Vector3 _viewport = _camera.WorldToViewportPoint(_worldPos);
+        float _min = -hpBarViewportMargin;
+        float _max = 1.0f + hpBarViewportMargin;
+        return 0.0f < _viewport.z && _min <= _viewport.x && _viewport.x <= _max && _min <= _viewport.y && _viewport.y <= _max;
     }
 
     private HUD_ShieldHPBar GetHPBarFromPool()

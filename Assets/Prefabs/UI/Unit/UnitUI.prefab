@@ -51,17 +51,20 @@ MonoBehaviour:
   layer: 2
   bCloseableByESC: 0
   bWorld: 1
+  bScreenSpace: 0
   bOverlay: 0
-  bPPUI: 0
   uiRoot: {fileID: 5973435824668062020}
   hpBarPrefab: {fileID: 8900395080866215809, guid: 710c291d85ed212408d450d94237f2ff, type: 3}
   interactionUnitPrefab: {fileID: 2954469314965808777, guid: f37b3f73897c3ee41ab98bf451a1d762, type: 3}
   speechBubbleUnitPrefab: {fileID: 2205594357060437259, guid: 380342ca825ed8643bdca4bd050d56c6, type: 3}
   speechBubbleDuration: 3.5
+  speechBubbleCooldown: 3.5
   interactionYOffset: {x: 0, y: 0.75}
   speechBubbleYOffset: {x: 0, y: 0.5}
   treesYOffset: 1
   animalsYOffset: 0.35
   hpBarShowDuration: 2
   hpBarDeadShowDelay: 0.2
+  prewarmHpBarCount: 360
+  hpBarViewportMargin: 0.15
   speechBubbleJsonId: 5

@@ -35,6 +35,9 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [SerializeField] private string axeBrokenTag;
         [SerializeField] private string axeLastBrokenTag;
 
+        [Header("Overheat Aura")]
+        [SerializeField] private HUD_AxeOverheatAura overheatAura;
+
         // //내부 의존성
         private AxeMode axeMode = AxeMode.DB100;
         private float previousRatio = 1f;
@@ -64,6 +67,9 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             if (null != omp)
                 omp.Initialize();
+
+            if (null != overheatAura)
+                overheatAura.Initialize(axeImage, axeImages);
 
             /*
             if (null != keyboardImage && null != _inputManager)
@@ -98,6 +104,15 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             }
         }
         */
+
+        /// <summary>
+        /// 캐릭터의 과열 상태가 바뀌었을 때 호출된다. 도끼 HUD 둘레의 과열 아우라를 켜고 끈다.
+        /// </summary>
+        public void SetOverheat(bool _bActive)
+        {
+            if (null != overheatAura)
+                overheatAura.SetOverheat(_bActive);
+        }
 
         protected override void UpdateVisuals()
         {
@@ -145,6 +160,10 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 axeMode = AxeMode.ZERO;
 
             axeImage.sprite = axeImages[(int)axeMode];
+
+            // 도끼 모양이 바뀌는 지점은 여기뿐이다(내구도 비율이 0.75 / 0.5 / 0.25 / 0을 지날 때). 과열 아우라는 이 호출에서만 새 실루엣으로 교체된다.
+            if (null != overheatAura)
+                overheatAura.OnAxeSpriteChanged(axeImage.sprite);
 
             // 무음 재동기화(스킬로 최대 내구도만 바뀌는 등)에서는 스프라이트/모드/previousRatio만
             // 갱신하고, 실제 파손 사운드·VFX·애니메이션은 재생하지 않는다.

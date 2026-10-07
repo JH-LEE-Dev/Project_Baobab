@@ -115,6 +115,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     IStatComponent ICharacter.statComponent => statComponent;
 
     IArmComponent ICharacter.armComponent => armComponent;
+    IOverheatComponent ICharacter.overheatState => overheatComponent;
 
     public void RepairWeapon(float _amount)
     {

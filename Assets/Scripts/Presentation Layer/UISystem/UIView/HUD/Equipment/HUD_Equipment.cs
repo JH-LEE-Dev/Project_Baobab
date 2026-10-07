@@ -15,6 +15,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
         // //내부 의존성
         private ICharacter character;
+        private IOverheatComponent overheatState;
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -39,6 +40,32 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             {
                 axeComponent.AxeAttackedEvent -= OnAxeAttacked;
                 axeComponent.AxeAttackedEvent += OnAxeAttacked;
+            }
+
+            // 과열 아우라: 이전에 바인딩한 캐릭터의 구독은 풀고, 지금 상태를 먼저 맞춘 뒤 이후 변화는 이벤트로 받는다.
+            UnbindOverheat();
+            overheatState = character.overheatState;
+            if (null != overheatState)
+            {
+                overheatState.OverheatStateChangedEvent += OnOverheatStateChanged;
+
+                if (null != axeItem)
+                    axeItem.SetOverheat(overheatState.IsActive);
+            }
+        }
+
+        private void OnOverheatStateChanged(bool _bActive)
+        {
+            if (null != axeItem)
+                axeItem.SetOverheat(_bActive);
+        }
+
+        private void UnbindOverheat()
+        {
+            if (null != overheatState)
+            {
+                overheatState.OverheatStateChangedEvent -= OnOverheatStateChanged;
+                overheatState = null;
             }
         }
 
@@ -75,6 +102,8 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         }
         public void OnDestroy()
         {
+            UnbindOverheat();
+
             if (null == character)
                 return;
 
