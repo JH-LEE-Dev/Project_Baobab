@@ -121,7 +121,8 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     public void OnPreprocessBuild(BuildReport _report)
     {
         failures.Clear();
-        bool _isDevelopmentBuild = 0 != (_report.summary.options & BuildOptions.Development);
+        // 촬영용 빌드(BuildRunner.RunTrailer)는 배포하지 않지만 화면 표시 때문에 개발 빌드로 만들 수 없다. 개발 빌드처럼 경고만 남긴다.
+        bool _isDevelopmentBuild = 0 != (_report.summary.options & BuildOptions.Development) || true == BuildRunner.IsTrailerBuildInProgress;
 
         // 이전 빌드가 비정상 종료돼 백업이 남아 있을 수 있다. 무엇을 하든 먼저 원본으로 맞춘다.
         RestoreIfNeeded(false);
@@ -819,7 +820,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     /// <summary>
     /// 캐릭터에 걸린 정식판 무기·과열입니다.
     /// 부메랑·드론 풀은 생성자에서 미리 만들지 않고, 개수가 0이면 Get을 부르지 않습니다
-    /// (기본 개수 0은 CharacterStatBuildGuard가 보장). 과열 충격파는 null이면 풀을 만들지 않습니다.
+    /// (기본 개수 0은 GameStatBuildGuard가 보장). 과열 충격파는 null이면 풀을 만들지 않습니다.
     /// 회전 베기 프레임은 회전 베기 발동 때만 읽힙니다.
     /// </summary>
     private static int StripCharacterFullOnly(DemoFeatureScope _s)

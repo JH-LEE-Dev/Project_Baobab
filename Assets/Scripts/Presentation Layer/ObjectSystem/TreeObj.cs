@@ -198,9 +198,15 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     // 화상 동안 은은하게 깔리는 불 루프 사운드. 화상이 새로 시작될 때만 점화음과 함께 켜고(이미 타는 중에
     // 재타격으로 지속 피해가 갱신될 때는 다시 울리지 않는다), 끝나면 이펙트가 꺼지는 시간에 맞춰 서서히 줄인다.
+    // 꺼지는 중(여우불이 사그라드는 0.35초)에 다시 불붙으면 이펙트가 지금 세기에서 이어서 오르듯 루프도 되살리고
+    // 점화음은 다시 내지 않는다 - 과열 상태에서 같은 나무를 연타하면 그때마다 점화음이 겹쳐 울렸다.
     private AudioHandle burnLoopHandle = AudioHandle.Invalid;
     private bool bBurnSoundOn = false;
+    // 화상 사운드를 마지막으로 끈 시각. 재점화가 "꺼지는 중"인지는 루프 핸들이 아니라 이 시각으로 판정한다 -
+    // 루프가 상한에 걸려 버려진 나무는 핸들이 없지만, 여우불이 아직 타는 동안 다시 맞으면 점화음을 내면 안 된다.
+    private float burnSoundOffTime = float.NegativeInfinity;
     private const float BurnLoopFadeOutDuration = 0.35f;
+    private const float BurnLoopRestoreDuration = 0.15f; // VFX_TreeBurn.igniteDuration과 맞춘 값
 
     private void RefreshBurnVfx()
     {
@@ -219,19 +225,38 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
         if (true == _bBurning)
         {
-            Sound.Play(SoundID.FireStart, cachedTransform.position);
-            burnLoopHandle = Sound.PlayTracked(SoundID.FireLoop, cachedTransform.position);
+            // 여우불이 아직 사그라드는 중(꺼진 지 0.35초 안)에 다시 불붙은 경우는 이어 타는 것이라 점화음을 내지 않는다.
+            bool bRekindle = Time.time - burnSoundOffTime < BurnLoopFadeOutDuration;
+
+            if (burnLoopHandle.IsValid && Sound.IsTrackedPlaying(burnLoopHandle))
+            {
+                // 아직 사그라드는 중인 루프가 있다: 그 루프의 볼륨만 되올린다.
+                Sound.CancelTrackedFadeOut(burnLoopHandle);
+                Sound.RampTrackedVolume(burnLoopHandle, 1f, BurnLoopRestoreDuration);
+            }
+            else
+            {
+                if (false == bRekindle)
+                {
+                    Sound.Play(SoundID.FireStart, cachedTransform.position);
+                }
+                // 루프는 상한(동시 4개)에 걸리면 버려져 Invalid가 돌아올 수 있다. 그래도 이어 타는 경우엔 다시 시도한다.
+                burnLoopHandle = Sound.PlayTracked(SoundID.FireLoop, cachedTransform.position);
+            }
         }
         else
         {
+            burnSoundOffTime = Time.time;
+            // 핸들은 그대로 둔다 - 페이드아웃이 끝나면 소스가 멈춰 IsTrackedPlaying이 false가 되고, 그 전에 다시
+            // 불붙으면 위에서 되살린다. 슬롯이 다른 소리에 재사용되면 핸들 세대 검증으로 자연히 무효가 된다.
             Sound.StopTrackedWithFadeOut(burnLoopHandle, BurnLoopFadeOutDuration);
-            burnLoopHandle = AudioHandle.Invalid;
         }
     }
 
     private void StopBurnSoundImmediate()
     {
         bBurnSoundOn = false;
+        burnSoundOffTime = float.NegativeInfinity; // 풀 반환/비활성: 다음 점화는 새 불이므로 점화음을 낸다
         Sound.StopTracked(burnLoopHandle);
         burnLoopHandle = AudioHandle.Invalid;
     }

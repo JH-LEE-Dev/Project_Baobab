@@ -285,6 +285,11 @@ public static class UploadPreflightCheck
             _r.Warnings.Add($"버전이 다릅니다. 빌드 {_version} / 프로젝트 {PlayerSettings.bundleVersion}. 오래된 빌드일 수 있습니다.");
         }
 
+        if ("TRAILER" == Get(_r.Stamp, "PURPOSE"))
+        {
+            _r.Errors.Add("촬영용(트레일러) 빌드입니다. 지도 전체 해금 같은 촬영 기능이 들어 있어 배포할 수 없습니다.");
+        }
+
         if ("true" == Get(_r.Stamp, "DEVELOPMENT"))
         {
             _r.Errors.Add("Development Build 입니다. 심볼과 디버그 정보가 그대로 들어 있어 배포할 수 없습니다.");

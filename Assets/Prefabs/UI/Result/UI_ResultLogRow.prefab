@@ -110,12 +110,39 @@ MonoBehaviour:
   - treeType: 10
     logState: 2
     sprite: {fileID: 21300000, guid: e64cedb735bd45b40b4777214099c246, type: 3}
+  - treeType: 10
+    logState: 3
+    sprite: {fileID: -7059626055095470267, guid: 05a3742a6ccbe374a9ba6d2ef54c9608, type: 3}
+  - treeType: 10
+    logState: 4
+    sprite: {fileID: 4320610894470836368, guid: 4cea53ce4167838449e8a94f62cc3210, type: 3}
+  - treeType: 10
+    logState: 5
+    sprite: {fileID: 8895081476548743479, guid: 440d3fa578acbe841adcae0b178523b5, type: 3}
   - treeType: 11
     logState: 2
     sprite: {fileID: 21300000, guid: 8b0526a04f2b8184dae2a8f293711260, type: 3}
+  - treeType: 11
+    logState: 3
+    sprite: {fileID: -4820790413388987411, guid: 05a3742a6ccbe374a9ba6d2ef54c9608, type: 3}
+  - treeType: 11
+    logState: 4
+    sprite: {fileID: 8640953460915340156, guid: 4cea53ce4167838449e8a94f62cc3210, type: 3}
+  - treeType: 11
+    logState: 5
+    sprite: {fileID: -3529746680232240869, guid: 440d3fa578acbe841adcae0b178523b5, type: 3}
   - treeType: 12
     logState: 2
     sprite: {fileID: 21300000, guid: 6ea3431f24c5c464e88ec17d4852cc33, type: 3}
+  - treeType: 12
+    logState: 3
+    sprite: {fileID: 2824423199792572757, guid: 05a3742a6ccbe374a9ba6d2ef54c9608, type: 3}
+  - treeType: 12
+    logState: 4
+    sprite: {fileID: 8629938691170070505, guid: 4cea53ce4167838449e8a94f62cc3210, type: 3}
+  - treeType: 12
+    logState: 5
+    sprite: {fileID: 952607218156272392, guid: 440d3fa578acbe841adcae0b178523b5, type: 3}
   lootSpriteMappings:
   - lootType: 2
     sprite: {fileID: -5931985335208768119, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
