@@ -1579,7 +1579,7 @@ MonoBehaviour:
   treeHeatIndicatorLeadTime: 1.5
   treeHeatIndicatorSortingOrder: -1
   treeHeatIndicatorPoolDefaultCapacity: 4
-  treeHeatIndicatorPoolMaxSize: 32
+  treeHeatIndicatorPoolMaxSize: 128
   brandStarWrapPrefab: {fileID: 137350371921299027, guid: 8929e93c80181374cba3211c79d18a0f, type: 3}
   brandStarWrapPoolDefaultCapacity: 8
   brandStarWrapPoolMaxSize: 32

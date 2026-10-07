@@ -10,8 +10,9 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
     /// 아우라 본체는 도끼 이미지 뒤, 불씨와 반짝임과 충격파 앞쪽은 도끼 이미지 앞에 그린다.
     ///
     /// 성능/최적화
-    /// - 실루엣은 도끼 스프라이트에서 한 번만 읽어(스프라이트당 한 번, 캐시) 거리장과 가장자리 목록을 만든다. 파손으로 스프라이트가 바뀌는 순간
-    ///   (HUD_EquipmentAxe.UpdateAxeImage -> OnAxeSpriteChanged)에만 실루엣을 교체하고, 다음 단계(현재 + 1)는 과열 중에 미리 만들어 둔다.
+    /// - 실루엣은 도끼 스프라이트에서 한 번만 읽어(스프라이트당 한 번, 캐시) 거리장과 가장자리 목록을 만든다. 단계별 스프라이트 5장은
+    ///   Initialize에서 전부 만들어 둔다 - 읽기(ReadPixels)가 GPU 동기화를 일으키므로 과열 시작 프레임이 아니라 로딩 때 치른다.
+    ///   파손으로 스프라이트가 바뀌는 순간(HUD_EquipmentAxe.UpdateAxeImage -> OnAxeSpriteChanged)에는 캐시된 실루엣으로 바꾸기만 한다.
     /// - 과열 중에만 컴포넌트가 켜져 LateUpdate가 돈다. 메쉬는 30fps로만 다시 만든다(UI 리빌드 최소화).
     /// 캐릭터 아우라는 HDR 발광(셰이더)으로 밝아지는데, HUD 캔버스에는 블룸이 없어서 같은 팔레트를 밝기 배율로 키우고 채널을 255에서 자른다.
     /// </summary>
@@ -161,8 +162,30 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             if (null != backGraphic) backGraphic.raycastTarget = false;
             if (null != frontGraphic) frontGraphic.raycastTarget = false;
 
+            PrebuildAllFields();
+
             enabled = false;
             bInitialized = true;
+        }
+
+        // 단계별 스프라이트의 실루엣을 전부 미리 만든다. 다 만들고 나면 읽기용 텍스처는 더 쓸 일이 없으므로 바로 놓는다
+        // (목록에 없는 스프라이트가 들어오는 예외 상황에서만 ApplySilhouette이 다시 만든다).
+        private void PrebuildAllFields()
+        {
+            if (null == axeSprites)
+                return;
+
+            for (int i = 0; i < axeSprites.Count; i++)
+            {
+                if (null != axeSprites[i])
+                    GetOrBuildField(axeSprites[i]);
+            }
+
+            if (null != readbackTexture)
+            {
+                Destroy(readbackTexture);
+                readbackTexture = null;
+            }
         }
 
         /// <summary>
@@ -178,7 +201,6 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             if (true == _bActive)
             {
                 ApplySilhouette(currentAxeSprite);
-                PrefetchNextStage(currentAxeSprite);
                 BeginBurning();
                 enabled = true;
             }
@@ -190,7 +212,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         }
 
         /// <summary>
-        /// 도끼 스프라이트가 바뀐 순간(파손/수리 단계 전환)에 한 번만 호출한다. 과열 중이면 실루엣을 바로 교체하고 다음 단계를 미리 만들어 둔다.
+        /// 도끼 스프라이트가 바뀐 순간(파손/수리 단계 전환)에 한 번만 호출한다. 과열 중이면 캐시된 실루엣으로 바로 교체한다.
         /// </summary>
         public void OnAxeSpriteChanged(Sprite _sprite)
         {
@@ -201,7 +223,6 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 return;
 
             ApplySilhouette(_sprite);
-            PrefetchNextStage(_sprite);
             lastFlickerFrame = -1;
         }
 
@@ -256,21 +277,6 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             rect.anchoredPosition = _center;
             rect.sizeDelta = Vector2.zero;
             _graphic.SetCellScale(_scale);
-        }
-
-        // 다음 파손 단계의 스프라이트(현재 단계 + 1)를 미리 만들어 둔다. 마지막 단계에서는 할 일이 없다.
-        private void PrefetchNextStage(Sprite _currentSprite)
-        {
-            if (null == axeSprites || null == _currentSprite)
-                return;
-
-            int index = axeSprites.IndexOf(_currentSprite);
-            if (0 > index || axeSprites.Count - 1 <= index)
-                return;
-
-            Sprite next = axeSprites[index + 1];
-            if (null != next)
-                GetOrBuildField(next);
         }
 
         private SilhouetteField GetOrBuildField(Sprite _axeSprite)
@@ -880,11 +886,15 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             }
 
             // meshFps(30)로만 다시 만든다(UI 메쉬 리빌드 최소화). 불씨도 이 간격으로 움직인다.
-            int meshFrame = (int)(elapsed * Mathf.Max(1.0f, meshFps));
+            float fps = Mathf.Max(1.0f, meshFps);
+            int meshFrame = (int)(elapsed * fps);
             if (meshFrame == lastFlickerFrame)
                 return;
 
-            float stepDt = 1.0f / Mathf.Max(1.0f, meshFps);
+            // 게임 프레임이 meshFps보다 느리면 메쉬 프레임이 여러 개 건너뛰어진다. 그만큼의 시간을 한 번에 흘려야 불씨가 느려지지 않는다.
+            // (-1은 점화/실루엣 교체 직후라 한 걸음만 간다. 긴 멈춤 뒤에는 상한을 두어 한 프레임에 몰아서 계산하지 않는다)
+            int steps = 0 > lastFlickerFrame ? 1 : Mathf.Clamp(meshFrame - lastFlickerFrame, 1, 8);
+            float stepDt = steps / fps;
             lastFlickerFrame = meshFrame;
             SpawnEmbers(stepDt);
             UpdateEmbers(stepDt);
