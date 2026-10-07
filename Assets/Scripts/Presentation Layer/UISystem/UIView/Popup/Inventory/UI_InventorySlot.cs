@@ -434,6 +434,16 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             invSlotRef.SlotUpdatedEvent += PlayItemInteraction;
         }
 
+        // 개수가 0이 된 슬롯은 아이템 데이터가 남아 있어도 비어 있는 슬롯이다. (InventorySlot.TakeOneItem은 개수만 줄이고,
+        // 데이터는 호출한 쪽이 ItemDeleted로 비운다. 그 사이에 UI가 전체 갱신을 하면 빠진 아이템과 등급 연출이 되살아난다)
+        if (0 >= _newSlot.count)
+        {
+            showItemData = _newSlot.itemData;
+            UpdateItemCount(0);
+            ClearEmptyCountVisual();
+            return;
+        }
+
         // 인벤토리 갱신은 SlotUpdatedEvent보다 먼저 슬롯을 다시 읽으므로, 버스트 여부는 갱신 전 상태와 비교해 여기서 정한다.
         // (등급 아이템이 새로 들어왔거나 등급이 바뀐 경우, 또는 개수가 늘어난 경우)
         bool _burst = false;
@@ -660,6 +670,18 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         }
     }
 
+    // 개수가 0인 슬롯의 아이템 이미지와 등급 연출을 모두 끈다. 진행 중이던 등급 버스트도 함께 멈춰,
+    // 비워진 뒤에 흰 번쩍임이 남지 않게 한다.
+    private void ClearEmptyCountVisual()
+    {
+        isRarityApplied = false;
+        KillGradeBurst();
+        SetGradeVisual(null, null);
+        UpdateImage(null, Color.white);
+        SetEffectActive(false);
+        SetShinyEffectActive(false);
+    }
+
     private void PlayItemInteraction()
     {
         if (null != omp)
@@ -672,11 +694,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
             if (null == showItemData || 0 >= invSlotRef.count)
             {
-                isRarityApplied = false;
-                SetGradeVisual(null, null);
-                UpdateImage(null, Color.white);
-                SetEffectActive(false);
-                SetShinyEffectActive(false);
+                ClearEmptyCountVisual();
             }
             else
             {
