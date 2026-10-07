@@ -208,6 +208,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     private bool isInitialized = false;
     private bool isResetAllConfirmationOpen = false;
+    private bool isUnsavedWarningOpen = false;
     private LocalizationManager locManager;
     private SettingsManager settings;
     private InputManager inputManager;
@@ -274,6 +275,10 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private Action cachedOnApplyClicked;
     private Action cachedConfirmDiscardAndClose;
     private Action cachedCancelDiscardAndClose;
+    private Func<int, bool> cachedTabChangeGuard;
+    private Action cachedConfirmDiscardAndChangeTab;
+    private Action cachedCancelDiscardAndChangeTab;
+    private int pendingTabIndex = -1;
     private Action<ERebindableAction> cachedOnRowRebindRequested;
     private Action cachedOnResetAllClicked;
     private Action cachedRefreshKeyBindRows;
@@ -336,6 +341,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             tabGroup.SetCursorBoxUI(cursorBoxUI, inputManager);
             tabGroup.OnTabChanged -= OnTabGroupChanged;
             tabGroup.OnTabChanged += OnTabGroupChanged;
+            tabGroup.TabChangeGuard = cachedTabChangeGuard;
         }
 
         if (null != applyButton)
@@ -461,19 +467,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
             if (null != warningPopup && null != locManager)
             {
-                string _warningMsg = locManager.GetText(LocKeys.OptionUI.unsavedChangesWarning);
-                if (true == string.IsNullOrEmpty(_warningMsg))
-                {
-                    _warningMsg = "변경된 설정을 저장하지 않고 나가시겠습니까?";
-                }
-
-                warningPopup.ShowWarning(
-                    _warningMsg,
-                    cachedConfirmDiscardAndClose,
-                    cachedCancelDiscardAndClose,
-                    SoundID.ResultUIOpen,
-                    SoundID.ResultUIClose,
-                    SoundID.ResultUIHover);
+                ShowUnsavedChangesWarning(cachedConfirmDiscardAndClose, cachedCancelDiscardAndClose);
             }
             else
             {
@@ -549,6 +543,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     private void OnDiscardAndCloseConfirmed()
     {
+        PlayUnsavedWarningClickSound();
+
         // 되돌리기는 ForceHide 안의 RestoreSnapshot이 담당한다. 여기서 한 번 더 부르면
         // 같은 프레임에 Screen.SetResolution이 두 번 실행된다.
         // 패널은 곧바로 비활성화되고 UI 갱신은 다음 Show가 처음부터 다시 하므로
@@ -559,6 +555,92 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     private void OnDiscardAndCloseCancelled()
     {
+        PlayUnsavedWarningClickSound();
+    }
+
+    // 다른 경고판(메인 메뉴 새 게임, 전체 초기화)과 같이 확인/취소 버튼의 클릭음에 MainClick을 함께 울린다.
+    // 경고판 없이 곧바로 실행되는 폴백 경로에서는 플래그가 꺼져 있어 울리지 않는다.
+    private void PlayUnsavedWarningClickSound()
+    {
+        if (false == isUnsavedWarningOpen)
+            return;
+
+        isUnsavedWarningOpen = false;
+        Sound.PlayUI(SoundID.MainClick);
+    }
+
+    // 닫기와 탭 이동이 같은 "저장하지 않고 나가시겠습니까?" 팝업을 쓴다.
+    private void ShowUnsavedChangesWarning(Action _onConfirm, Action _onCancel)
+    {
+        isUnsavedWarningOpen = true;
+        string _warningMsg = locManager.GetText(LocKeys.OptionUI.unsavedChangesWarning);
+        if (true == string.IsNullOrEmpty(_warningMsg))
+        {
+            _warningMsg = "변경된 설정을 저장하지 않고 나가시겠습니까?";
+        }
+
+        warningPopup.ShowWarning(
+            _warningMsg,
+            _onConfirm,
+            _onCancel,
+            SoundID.ResultUIOpen,
+            SoundID.ResultUIClose,
+            SoundID.ResultUIHover);
+    }
+
+    // 적용 버튼이 있는 탭(게임플레이)에 저장하지 않은 변경이 있는 채로 다른 탭으로 가려 하면 이동을 막고 경고를 띄운다.
+    // 적용 대상이 아닌 탭(소리/화면 효과/컨트롤)은 조작 즉시 저장되므로 묻지 않는다.
+    private bool OnTabChangeRequested(int _targetIndex)
+    {
+        if (null == tabGroup || null == applyButton || null == warningPopup || null == locManager) return true;
+        if (false == IsDirty()) return true;
+
+        GameObject _currentPanel = tabGroup.GetTabPanel(tabGroup.CurrentTabIndex);
+        if (null == _currentPanel || false == applyButton.transform.IsChildOf(_currentPanel.transform)) return true;
+
+        if (true == warningPopup.IsActive) return false;
+
+        pendingTabIndex = _targetIndex;
+        ShowUnsavedChangesWarning(cachedConfirmDiscardAndChangeTab, cachedCancelDiscardAndChangeTab);
+        return false;
+    }
+
+    // 확인: 뒤로가기와 같이 저장하지 않은 변경을 마지막 저장 상태로 되돌리고, 막아 두었던 탭으로 이동한다.
+    private void OnDiscardAndChangeTabConfirmed()
+    {
+        PlayUnsavedWarningClickSound();
+
+        int _targetIndex = pendingTabIndex;
+        pendingTabIndex = -1;
+
+        if (0 > _targetIndex || null == tabGroup) return;
+
+        RestoreSnapshot(savedSnapshot);
+        RefreshAllUIFromSettings();
+        tabGroup.SelectTab(_targetIndex);
+
+        // 팝업이 닫히면서 이전 포커스를 되돌릴 수 있으므로, 게임패드에서는 한 프레임 뒤에 새 탭 버튼으로 포커스를 맞춘다.
+        if (null != inputManager && true == inputManager.IsGamepadMode && true == gameObject.activeInHierarchy)
+        {
+            StartCoroutine(FocusTabButtonNextFrame(_targetIndex));
+        }
+    }
+
+    private void OnDiscardAndChangeTabCancelled()
+    {
+        PlayUnsavedWarningClickSound();
+        pendingTabIndex = -1;
+    }
+
+    private System.Collections.IEnumerator FocusTabButtonNextFrame(int _tabIndex)
+    {
+        yield return null;
+
+        UI_OptionTabButton _tabButton = null != tabGroup ? tabGroup.GetTabButton(_tabIndex) : null;
+        if (null != _tabButton && true == _tabButton.gameObject.activeInHierarchy && null != EventSystem.current)
+        {
+            EventSystem.current.SetSelectedGameObject(_tabButton.gameObject);
+        }
     }
 
     private void OnApplyClicked()
@@ -624,6 +706,9 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         cachedOnApplyClicked = OnApplyClicked;
         cachedConfirmDiscardAndClose = OnDiscardAndCloseConfirmed;
         cachedCancelDiscardAndClose = OnDiscardAndCloseCancelled;
+        cachedTabChangeGuard = OnTabChangeRequested;
+        cachedConfirmDiscardAndChangeTab = OnDiscardAndChangeTabConfirmed;
+        cachedCancelDiscardAndChangeTab = OnDiscardAndChangeTabCancelled;
 
         cachedOnRowRebindRequested = OnRowRebindRequested;
         cachedOnGamepadRowRebindRequested = OnGamepadRowRebindRequested;
@@ -2719,6 +2804,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != tabGroup)
         {
             tabGroup.OnTabChanged -= OnTabGroupChanged;
+            tabGroup.TabChangeGuard = null;
         }
 
         if (null != settings)
@@ -2766,6 +2852,9 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         cachedOnApplyClicked = null;
         cachedConfirmDiscardAndClose = null;
         cachedCancelDiscardAndClose = null;
+        cachedTabChangeGuard = null;
+        cachedConfirmDiscardAndChangeTab = null;
+        cachedCancelDiscardAndChangeTab = null;
 
         cachedOnRowRebindRequested = null;
         cachedOnGamepadRowRebindRequested = null;
