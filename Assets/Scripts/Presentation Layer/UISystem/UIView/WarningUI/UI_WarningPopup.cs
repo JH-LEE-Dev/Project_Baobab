@@ -62,6 +62,17 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         bPreferCancelOnOpen = _bPreferCancel;
     }
 
+    /// <summary>
+    /// 팝업이 닫힐 때 포커스를 돌려줄 대상을 지정합니다. 지정하지 않으면 팝업을 띄우던 때의 포커스로 돌아갑니다.
+    /// 포커스를 받는 것만으로 동작하는 UI(탭 버튼 등)에서 팝업이 열리는 순간의 포커스로 되돌아가면
+    /// 그 동작이 다시 실행되므로, 호출자가 돌아갈 곳을 직접 정할 때 씁니다. 팝업이 열려 있는 동안에도 다시 지정할 수 있으며
+    /// 한 번 닫히면 지정이 해제됩니다.
+    /// </summary>
+    public void SetReturnFocus(GameObject _target)
+    {
+        returnFocusOverride = _target;
+    }
+
     [Header("Animation Settings")]
     [SerializeField] private CanvasGroup popupCanvasGroup;
     [SerializeField] private RectTransform popupWindowRoot;
@@ -89,6 +100,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     private InputReader subscribedReader;
 
     private GameObject previousSelectedGameObject;
+    private GameObject returnFocusOverride;
     private SoundID openSoundId = SoundID.None;
     private SoundID closeSoundId = SoundID.None;
     private SoundID hoverSoundId = SoundID.None;
@@ -200,6 +212,7 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         cachedOnUICancel = null;
         cachedOnInputDeviceChanged = null;
         previousSelectedGameObject = null;
+        returnFocusOverride = null;
         cursorBoxUI = null;
         depthController = null;
         inputManager = null;
@@ -566,6 +579,12 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
     private void RestorePreviousFocus()
     {
         UnsubscribeInputEvents();
+
+        if (null != returnFocusOverride)
+        {
+            previousSelectedGameObject = returnFocusOverride;
+            returnFocusOverride = null;
+        }
 
         if (null != inputManager && true == inputManager.IsGamepadMode)
         {
