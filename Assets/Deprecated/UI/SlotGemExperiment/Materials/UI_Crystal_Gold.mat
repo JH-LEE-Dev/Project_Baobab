@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: UI_Crystal_Gold
+  m_Shader: {fileID: 4800000, guid: de91b2623cbdaec44ac0143a2995bffa, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AlphaMin: 1
+    - _Amount: 1
+    - _BorderLumaMax: 0.45
+    - _CalmInner: 6
+    - _CalmOuter: 12.5
+    - _CenterCalm: 0.9
+    - _CenterValue: 0.12
+    - _ColorMask: 15
+    - _EdgeStrength: 1
+    - _EdgeWidth: 1.1
+    - _FacetRandomness: 0.6
+    - _FacetSize: 6
+    - _FlashStrength: 0.55
+    - _FlashThreshold: 0.9
+    - _FormRadius: 14
+    - _GlowFalloff: 1.6
+    - _HueBase: 0.095
+    - _HueRange: 0.07
+    - _InnerGlow: 0.12
+    - _LightHeight: 1.2
+    - _LumaBias: 0.5
+    - _LumaInfluence: 0.35
+    - _Saturation: 0.95
+    - _ShadeSteps: 4
+    - _SparkleBrightness: 0.8
+    - _SparkleRatio: 0.25
+    - _SparkleSize: 0.08
+    - _SparkleSpeed: 2.2
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _SweepSpeed: 0.8
+    - _ValueMax: 0.36
+    - _ValueMin: 0.08
+    m_Colors:
+    - _ClipRect: {r: -32767, g: -32767, b: 32767, a: 32767}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _EdgeColor: {r: 1, g: 0.95, b: 0.72, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

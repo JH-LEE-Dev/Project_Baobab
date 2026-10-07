@@ -295,7 +295,7 @@ public class UI_Inventory : MonoBehaviour
                 continue;
 
             _slot.gameObject.SetActive(_itemCount > _i);
-            _slot.UpdateBindSlotData(_item, inventory.maxItemCntPerSlot);
+            _slot.UpdateBindSlotData(_item, inventory.maxItemCntPerSlot, false, false == isFirstDataBind);
         }
 
         if (false == isFirstDataBind)

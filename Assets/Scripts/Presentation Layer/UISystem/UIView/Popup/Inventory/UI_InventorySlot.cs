@@ -26,16 +26,25 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     [SerializeField] private Color defaultColor = Color.white;
     [SerializeField] private Color maxColor = Color.red;
 
-    [Header("Rarity Effect Colors")]
-    [SerializeField] private Color fascinatingColor = new Color(0.2f, 1.0f, 0.2f, 1.0f);
-    [SerializeField] private Color advancedColor = new Color(0.2f, 0.6f, 1.0f, 1.0f);
-    [SerializeField] private Color perfectColor = new Color(1.0f, 0.85f, 0.0f, 1.0f);
-
-    [Header("Rainbow Effect Settings")]
-    [SerializeField] private bool useRainbowCycle = true;
-    [SerializeField] private float rainbowSpeed = 0.5f;
-    [SerializeField] private float rainbowSaturation = 0.85f;
-    [SerializeField] private float rainbowBrightness = 1.0f;
+    [Header("Grade Frame / Badge")]
+    [Tooltip("슬롯 타일(SlotImg) 위에 겹쳐 그리는 등급 테두리 레이어. 타일의 어두운 테두리 픽셀에만 연출이 입혀지고 안쪽은 투명이다.")]
+    [SerializeField] private Image gradeFrameImage;
+    [Tooltip("타일 구석에 붙는 등급 배지. 등급마다 실루엣이 달라 색을 못 알아봐도 구분된다.")]
+    [SerializeField] private Image gradeBadgeImage;
+    [Tooltip("Fascinating = 금")]
+    [SerializeField] private Material frameMaterialGold;
+    [Tooltip("Advanced = 다이아")]
+    [SerializeField] private Material frameMaterialDiamond;
+    [Tooltip("Perfect = 프리즘")]
+    [SerializeField] private Material frameMaterialPrism;
+    [Tooltip("슬롯 타일 위, 원목 아래에 얹는 보석 커팅(테이블 + 면 링) 레이어.")]
+    [SerializeField] private Image gradeTileFxImage;
+    [SerializeField] private Material tileFxMaterialGold;
+    [SerializeField] private Material tileFxMaterialDiamond;
+    [SerializeField] private Material tileFxMaterialPrism;
+    [SerializeField] private Sprite badgeSpriteGold;
+    [SerializeField] private Sprite badgeSpriteDiamond;
+    [SerializeField] private Sprite badgeSpritePrism;
 
     [Header("Swap Outline Blink Settings")]
     [Tooltip("아웃라인 점멸 시 최소 알파 (0: 완전 소등, 0.25: 은은한 잔상 유지)")]
@@ -54,8 +63,6 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private CurrencyFontHUD currencyFont;
     private int maxItemCntPerSlot = 99;
     private ShinyEffectComponent shinyEffectComponent;
-    private bool isRainbowActive = false;
-    private float currentRainbowHue = 0.0f;
 
     // 스마트 스왑 아웃라인 점멸 제어 및 무할당(Zero GC) 캐싱
     private Tween outlineBlinkTween = null;
@@ -76,6 +83,14 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private bool isRarityApplied = false;
     private IItemData lastRarityData;
     private int lastRarityStateKey = -1;
+    private Material appliedFrameMaterial;
+
+    // 등급 획득 버스트: 셰이더가 Image.color의 R 채널(1 - 세기)로 읽는다.
+    private Tween gradeBurstTween = null;
+    private float gradeBurstValue = 0f;
+    private DOGetter<float> getGradeBurst;
+    private DOSetter<float> setGradeBurst;
+    private const float GradeBurstDuration = 0.8f;
 
     public IItemData ShowItemData => showItemData;
     public IInventorySlot InvSlotRef => invSlotRef;
@@ -214,8 +229,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null != invSlotRef)
             invSlotRef.SlotUpdatedEvent -= PlayItemInteraction;
 
-        isRainbowActive = false;
         isRarityApplied = false;
+        SetGradeVisual(null, null);
         UpdateImage(null, Color.white);
         SetEffectActive(false);
         SetShinyEffectActive(false);
@@ -398,7 +413,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             uiImage.sprite = _sprite;
     }
 
-    public void UpdateBindSlotData(IInventorySlot _newSlot, int _maxCount = 99, bool _playInteraction = false)
+    public void UpdateBindSlotData(IInventorySlot _newSlot, int _maxCount = 99, bool _playInteraction = false, bool _allowGradeBurst = false)
     {
         maxItemCntPerSlot = _maxCount;
 
@@ -419,11 +434,25 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             invSlotRef.SlotUpdatedEvent += PlayItemInteraction;
         }
 
+        // 인벤토리 갱신은 SlotUpdatedEvent보다 먼저 슬롯을 다시 읽으므로, 버스트 여부는 갱신 전 상태와 비교해 여기서 정한다.
+        // (등급 아이템이 새로 들어왔거나 등급이 바뀐 경우, 또는 개수가 늘어난 경우)
+        bool _burst = false;
+        if (true == _allowGradeBurst)
+        {
+            bool _gradeChanged = false == isRarityApplied
+                || false == ReferenceEquals(lastRarityData, _newSlot.itemData)
+                || lastRarityStateKey != GetRarityStateKey(_newSlot.itemData);
+            _burst = _gradeChanged || showCnt < _newSlot.count;
+        }
+
         showItemData = _newSlot.itemData;
 
         UpdateImage(showItemData.sprite, Color.white);
         UpdateItemCount(invSlotRef.count);
         UpdateRarityEffect(showItemData);
+
+        if (true == _burst)
+            PlayGradeBurst();
 
         if (true == _playInteraction)
             PlayItemInteraction();
@@ -437,11 +466,6 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void SetEffectActive(bool _active)
     {
-        if (false == _active)
-        {
-            isRainbowActive = false;
-        }
-
         if (null != uiEffect)
         {
             uiEffect.gameObject.SetActive(_active);
@@ -455,28 +479,96 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             shinyEffectComponent.UseShinyEffect = _active;
         }
     }
- 
-    public void SetEdgeColor(Color _color)
-    {
-        isRainbowActive = false;
 
-        if (null != uiEffect)
+    // 등급 연출은 타일 본체를 건드리지 않고, 테두리 레이어와 구석 배지로만 표현한다.
+    // 등급 -> 연출 매핑은 나무 보석과 같다(Fascinating = 금, Advanced = 다이아, Perfect = 프리즘).
+    // null이면 테두리와 배지를 모두 끈다(일반 원목, 빈 슬롯).
+    private void SetGradeVisual(Material _frameMaterial, Sprite _badgeSprite, Material _tileFxMaterial = null)
+    {
+        if (ReferenceEquals(appliedFrameMaterial, _frameMaterial))
+            return;
+
+        appliedFrameMaterial = _frameMaterial;
+
+        if (null != gradeFrameImage)
         {
-            uiEffect.edgeMode = EdgeMode.Shiny;
-            uiEffect.edgeColor = _color;
+            if (null != _frameMaterial)
+                gradeFrameImage.material = _frameMaterial;
+
+            gradeFrameImage.enabled = null != _frameMaterial;
+        }
+
+        if (null != gradeTileFxImage)
+        {
+            if (null != _tileFxMaterial)
+                gradeTileFxImage.material = _tileFxMaterial;
+
+            gradeTileFxImage.enabled = null != _tileFxMaterial;
+        }
+
+        if (null != gradeBadgeImage)
+        {
+            // 배지는 등급마다 보석 점 개수가 달라 폭이 다르므로 스프라이트의 픽셀 크기에 맞춘다.
+            // SetNativeSize는 캔버스 기준 PPU에 따라 배율이 곱해지므로 쓰지 않는다(캔버스 1유닛 = 1픽셀).
+            if (null != _badgeSprite)
+            {
+                gradeBadgeImage.sprite = _badgeSprite;
+                gradeBadgeImage.rectTransform.sizeDelta = _badgeSprite.rect.size;
+            }
+
+            gradeBadgeImage.enabled = null != _badgeSprite;
         }
     }
 
-    public void SetRainbowEdge(bool _active)
+    private int GetRarityStateKey(IItemData _itemData)
     {
-        isRainbowActive = _active;
+        if (_itemData is ILogItemData _keyLogData)
+            return (int)_keyLogData.logState;
 
-        if (true == _active && null != uiEffect)
+        return -1;
+    }
+
+    private float GetGradeBurstValue()
+    {
+        return gradeBurstValue;
+    }
+
+    private void SetGradeBurstValue(float _value)
+    {
+        gradeBurstValue = _value;
+        Color _color = new Color(1f - _value, 1f, 1f, 1f);
+
+        if (null != gradeFrameImage)
+            gradeFrameImage.color = _color;
+
+        if (null != gradeTileFxImage)
+            gradeTileFxImage.color = _color;
+    }
+
+    private void KillGradeBurst()
+    {
+        if (null != gradeBurstTween)
         {
-            uiEffect.edgeMode = EdgeMode.Shiny;
-            Color rainbowColor = Color.HSVToRGB(currentRainbowHue, rainbowSaturation, rainbowBrightness);
-            uiEffect.edgeColor = rainbowColor;
+            gradeBurstTween.Kill();
+            gradeBurstTween = null;
         }
+
+        SetGradeBurstValue(0f);
+    }
+
+    // 등급 로그가 슬롯에 들어온 순간 프레임과 타일이 한 번 번쩍인다.
+    private void PlayGradeBurst()
+    {
+        if (null == gradeFrameImage || false == gradeFrameImage.enabled || false == isActiveAndEnabled)
+            return;
+
+        if (null != gradeBurstTween)
+            gradeBurstTween.Kill();
+
+        SetGradeBurstValue(1f);
+        gradeBurstTween = DOTween.To(getGradeBurst, setGradeBurst, 0f, GradeBurstDuration)
+            .SetEase(Ease.OutCubic)
+            .SetUpdate(true);
     }
 
     public void UpdateRarityEffect(IItemData _itemData)
@@ -484,16 +576,14 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null == _itemData)
         {
             isRarityApplied = false;
+            SetGradeVisual(null, null);
             SetEffectActive(false);
             SetShinyEffectActive(false);
             return;
         }
 
-        // 같은 아이템, 같은 등급이면 이미 켜 둔 효과를 다시 쓰지 않는다. 슬롯 갱신마다 UIEffect의
-        // 속성을 다시 대입하면(레인보우는 색까지) 그때마다 해당 UI 메시가 다시 만들어진다.
-        int _stateKey = -1;
-        if (_itemData is ILogItemData _keyLogData)
-            _stateKey = (int)_keyLogData.logState;
+        // 같은 아이템, 같은 등급이면 이미 켜 둔 효과를 다시 쓰지 않는다.
+        int _stateKey = GetRarityStateKey(_itemData);
 
         if (true == isRarityApplied && ReferenceEquals(lastRarityData, _itemData) && lastRarityStateKey == _stateKey)
             return;
@@ -505,38 +595,33 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (_itemData is ILogItemData _logData)
         {
             LogState _state = _logData.logState;
+
+            // 기존 RareLine(등급색 모서리선)은 새 테두리가 대신하므로 항상 끈다.
+            SetEffectActive(false);
+
             switch (_state)
             {
                 case LogState.Fascinating:
-                    SetEffectActive(true);
-                    SetEdgeColor(fascinatingColor);
+                    SetGradeVisual(frameMaterialGold, badgeSpriteGold, tileFxMaterialGold);
                     SetShinyEffectActive(true);
                     break;
                 case LogState.Advanced:
-                    SetEffectActive(true);
-                    SetEdgeColor(advancedColor);
+                    SetGradeVisual(frameMaterialDiamond, badgeSpriteDiamond, tileFxMaterialDiamond);
                     SetShinyEffectActive(true);
                     break;
                 case LogState.Perfect:
-                    SetEffectActive(true);
-                    if (true == useRainbowCycle)
-                    {
-                        SetRainbowEdge(true);
-                    }
-                    else
-                    {
-                        SetEdgeColor(perfectColor);
-                    }
+                    SetGradeVisual(frameMaterialPrism, badgeSpritePrism, tileFxMaterialPrism);
                     SetShinyEffectActive(true);
                     break;
                 default:
-                    SetEffectActive(false);
+                    SetGradeVisual(null, null);
                     SetShinyEffectActive(false);
                     break;
             }
         }
         else
         {
+            SetGradeVisual(null, null);
             SetEffectActive(false);
             SetShinyEffectActive(false);
         }
@@ -588,6 +673,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             if (null == showItemData || 0 >= invSlotRef.count)
             {
                 isRarityApplied = false;
+                SetGradeVisual(null, null);
                 UpdateImage(null, Color.white);
                 SetEffectActive(false);
                 SetShinyEffectActive(false);
@@ -608,6 +694,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         getOutlineColor = GetOutlineShadowColor;
         setOutlineColor = SetOutlineShadowColor;
+        getGradeBurst = GetGradeBurstValue;
+        setGradeBurst = SetGradeBurstValue;
 
         EnsureSlotImgEffectBound();
         CacheBaseOutlineColorIfNeeded();
@@ -625,16 +713,6 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (true == bOutlineActive)
         {
             SetSlotOutlineActive(true);
-        }
-    }
-
-    private void Update()
-    {
-        if (true == isRainbowActive && null != uiEffect)
-        {
-            currentRainbowHue = Mathf.Repeat(currentRainbowHue + Time.deltaTime * rainbowSpeed, 1.0f);
-            Color rainbowColor = Color.HSVToRGB(currentRainbowHue, rainbowSaturation, rainbowBrightness);
-            uiEffect.edgeColor = rainbowColor;
         }
     }
 
@@ -660,6 +738,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         StopSortingCoroutine();
         KillOutlineBlinkTween();
+        KillGradeBurst();
 
         // 트윈이 중간 알파에서 죽으므로 기준색으로 되돌려 둔다. 그대로 두면 이 슬롯이 다시 켜질 때
         // 흐릿하게 굳은 아웃라인이 남는다. (켜져 있었다는 사실은 bOutlineActive가 들고 OnEnable이 잇는다)
@@ -673,6 +752,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         StopSortingCoroutine();
         KillOutlineBlinkTween();
+        KillGradeBurst();
 
         if (null != CameraFinder.Instance)
         {

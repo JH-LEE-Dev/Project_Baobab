@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: UI_Gem_Rainbow
+  m_Shader: {fileID: 4800000, guid: d18f46626c06bd041a910921daa98bc0, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BorderLumaMax: 0
+    - _ColorMask: 15
+    - _DeepShade: 0.3
+    - _FacetRandomness: 0.55
+    - _FacetSize: 3
+    - _FacetVariation: 0.14
+    - _FlashStrength: 0.35
+    - _FlashThreshold: 0.9
+    - _FormBulge: 10
+    - _FormCenterY: 0
+    - _GemAmount: 0.7
+    - _HDRIntensity: 0.65
+    - _Iridescence: 0.65
+    - _LightFollow: 0
+    - _LightHeight: 2
+    - _LumaBias: 0.05
+    - _LumaInfluence: 1
+    - _RainbowAmount: 1
+    - _RainbowHueBase: 0.55
+    - _RainbowHueRange: 0.75
+    - _RainbowSaturation: 0.6
+    - _ShadeSteps: 6
+    - _SparkleBrightness: 0.5
+    - _SparkleRatio: 0.15
+    - _SparkleSize: 0.06
+    - _SparkleSpeed: 2.5
+    - _SpecStrength: 0.05
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _SweepSpeed: 0.8
+    - _Whiteness: 0.1
+    m_Colors:
+    - _ClipRect: {r: -32767, g: -32767, b: 32767, a: 32767}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _GemColor: {r: 1.7309318, g: 1.7309318, b: 1.7309318, a: 1}
+    - _GemColorB: {r: 1.2876182, g: 1.2876182, b: 1.2876182, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
