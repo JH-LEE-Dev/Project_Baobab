@@ -279,6 +279,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private Action cachedConfirmDiscardAndChangeTab;
     private Action cachedCancelDiscardAndChangeTab;
     private int pendingTabIndex = -1;
+    private bool isTabWarningQueued = false;
     private Action<ERebindableAction> cachedOnRowRebindRequested;
     private Action cachedOnResetAllClicked;
     private Action cachedRefreshKeyBindRows;
@@ -383,6 +384,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         onCloseAction = _onCloseCallback;
         lastHideFrame = -1;
+        isTabWarningQueued = false;
 
         if (null != settings)
         {
@@ -598,11 +600,34 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         GameObject _currentPanel = tabGroup.GetTabPanel(tabGroup.CurrentTabIndex);
         if (null == _currentPanel || false == applyButton.transform.IsChildOf(_currentPanel.transform)) return true;
 
-        if (true == warningPopup.IsActive) return false;
+        if (true == warningPopup.IsActive || true == isTabWarningQueued) return false;
 
+        // 게임패드는 탭 버튼이 포커스를 받는 순간(OnSelect)에 이 가드가 불린다. EventSystem이 선택을 처리하는 도중에
+        // 팝업이 포커스를 옮기면 "already selecting" 에러가 나므로, 팝업은 한 프레임 뒤에 띄운다.
         pendingTabIndex = _targetIndex;
-        ShowUnsavedChangesWarning(cachedConfirmDiscardAndChangeTab, cachedCancelDiscardAndChangeTab);
+        isTabWarningQueued = true;
+        StartCoroutine(ShowTabChangeWarningNextFrame());
         return false;
+    }
+
+    private System.Collections.IEnumerator ShowTabChangeWarningNextFrame()
+    {
+        yield return null;
+
+        isTabWarningQueued = false;
+        if (null == warningPopup || true == warningPopup.IsActive || 0 > pendingTabIndex) yield break;
+
+        // 포커스가 이동하려던 탭 버튼에 있다면(D-Pad로 탭 버튼 사이를 옮긴 경우) 팝업이 닫힐 때 거기로 돌아가면
+        // 포커스를 받자마자 가드가 다시 불려 팝업이 또 뜬다. 지금 보고 있는 탭의 버튼으로 돌려보낸다.
+        // 설정 항목에 포커스가 있었다면(RB/LB로 탭을 옮기려던 경우) 기본 동작대로 그 항목으로 돌아간다.
+        GameObject _focused = null != EventSystem.current ? EventSystem.current.currentSelectedGameObject : null;
+        UI_OptionTabButton _currentTabButton = null != tabGroup ? tabGroup.GetTabButton(tabGroup.CurrentTabIndex) : null;
+        if (null != _currentTabButton && null != _focused && null != _focused.GetComponent<UI_OptionTabButton>())
+        {
+            warningPopup.SetReturnFocus(_currentTabButton.gameObject);
+        }
+
+        ShowUnsavedChangesWarning(cachedConfirmDiscardAndChangeTab, cachedCancelDiscardAndChangeTab);
     }
 
     // 확인: 뒤로가기와 같이 저장하지 않은 변경을 마지막 저장 상태로 되돌리고, 막아 두었던 탭으로 이동한다.
@@ -619,10 +644,11 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         RefreshAllUIFromSettings();
         tabGroup.SelectTab(_targetIndex);
 
-        // 팝업이 닫히면서 이전 포커스를 되돌릴 수 있으므로, 게임패드에서는 한 프레임 뒤에 새 탭 버튼으로 포커스를 맞춘다.
-        if (null != inputManager && true == inputManager.IsGamepadMode && true == gameObject.activeInHierarchy)
+        // 팝업이 닫히면서 돌려주는 포커스를 새 탭 버튼으로 지정한다. 이미 그 탭이므로 포커스를 받아도 가드가 통과한다.
+        UI_OptionTabButton _targetTabButton = tabGroup.GetTabButton(_targetIndex);
+        if (null != _targetTabButton)
         {
-            StartCoroutine(FocusTabButtonNextFrame(_targetIndex));
+            warningPopup.SetReturnFocus(_targetTabButton.gameObject);
         }
     }
 
@@ -630,17 +656,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         PlayUnsavedWarningClickSound();
         pendingTabIndex = -1;
-    }
-
-    private System.Collections.IEnumerator FocusTabButtonNextFrame(int _tabIndex)
-    {
-        yield return null;
-
-        UI_OptionTabButton _tabButton = null != tabGroup ? tabGroup.GetTabButton(_tabIndex) : null;
-        if (null != _tabButton && true == _tabButton.gameObject.activeInHierarchy && null != EventSystem.current)
-        {
-            EventSystem.current.SetSelectedGameObject(_tabButton.gameObject);
-        }
     }
 
     private void OnApplyClicked()
