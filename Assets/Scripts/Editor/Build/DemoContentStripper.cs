@@ -820,7 +820,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     /// <summary>
     /// 캐릭터에 걸린 정식판 무기·과열입니다.
     /// 부메랑·드론 풀은 생성자에서 미리 만들지 않고, 개수가 0이면 Get을 부르지 않습니다
-    /// (기본 개수 0은 CharacterStatBuildGuard가 보장). 과열 충격파는 null이면 풀을 만들지 않습니다.
+    /// (기본 개수 0은 GameStatBuildGuard가 보장). 과열 충격파는 null이면 풀을 만들지 않습니다.
     /// 회전 베기 프레임은 회전 베기 발동 때만 읽힙니다.
     /// </summary>
     private static int StripCharacterFullOnly(DemoFeatureScope _s)

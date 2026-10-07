@@ -25,7 +25,7 @@ using UnityEngine;
 ///    빌드 씬(직접 배치·오버라이드)에서 읽어 다르면 막습니다. 씬은 빌드 중 열린 씬을 바꾸지 않으려고 YAML로 읽습니다.
 ///
 /// [Development Build]
-/// 개발 빌드에서는 경고만 남깁니다(CharacterStatBuildGuard 와 같은 정책).
+/// 개발 빌드에서는 경고만 남깁니다(GameStatBuildGuard 와 같은 정책).
 /// </summary>
 public class DebugSwitchBuildGuard : IPreprocessBuildWithReport
 {
