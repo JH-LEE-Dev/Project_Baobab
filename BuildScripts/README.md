@@ -107,6 +107,9 @@ Unity 에디터에서 `Tools > 빌드 > 스토어 - Steam` 과 `Tools > 빌드 >
 
 ### ③-1 업로드 전 검사 — 어느 스토어든 반드시
 
+> **유출 검토**: 아래 검사와 함께 `Docs/BuildLeakReview.md` 의 항목(소스·비밀값·개발자/플레이어 개인정보·미공개 리소스·디버그 기능·스토어 섞임)을 확인하세요.
+> 자동 검사는 `python BuildScripts/Verify/leak_scan.py "<빌드 폴더>"` 와 `BuildScripts/Verify/extract_check.py` 입니다.
+
 빌드가 끝나면 `배포용 빌드 실행` 이 **업로드 전 검사** 창을 자동으로 띄웁니다. 나중에 다시
 보려면 `Tools > 빌드 > 업로드 전 검사` 입니다.
 
