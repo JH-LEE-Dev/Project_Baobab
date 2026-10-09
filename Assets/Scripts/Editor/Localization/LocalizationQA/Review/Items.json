@@ -4071,15 +4071,6 @@
             "ignored": false
         },
         {
-            "slotGuid": "11aa61b91ae75c34a824c806e706b635",
-            "slotPath": "Text",
-            "contextGuid": "11aa61b91ae75c34a824c806e706b635",
-            "contextPath": "Text",
-            "contextDepth": 1000,
-            "defaultText": "999999",
-            "ignored": true
-        },
-        {
             "slotGuid": "1a01f98089c26f0499de9e808fdb386e",
             "slotPath": "Name",
             "contextGuid": "1a01f98089c26f0499de9e808fdb386e",
@@ -4368,15 +4359,6 @@
             "ignored": true
         },
         {
-            "slotGuid": "5ed66aebb17f93443808bbdb0a52bf5b",
-            "slotPath": "Raycast/Visual/New",
-            "contextGuid": "5ed66aebb17f93443808bbdb0a52bf5b",
-            "contextPath": "Raycast/Visual/New",
-            "contextDepth": 1000,
-            "defaultText": "NEW",
-            "ignored": true
-        },
-        {
             "slotGuid": "644c96ad309ba114f9743fd5b9c6d5eb",
             "slotPath": "MainPop/MessageUI/Border/Message",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
@@ -4384,15 +4366,6 @@
             "contextDepth": 1,
             "defaultText": "Message",
             "ignored": false
-        },
-        {
-            "slotGuid": "6bf58f4c30a51ce41bad855ee7969042",
-            "slotPath": "Visual/Visual_Top/NavTitle/Text (TMP)",
-            "contextGuid": "6bf58f4c30a51ce41bad855ee7969042",
-            "contextPath": "Visual/Visual_Top/NavTitle/Text (TMP)",
-            "contextDepth": 1000,
-            "defaultText": "목적지\n",
-            "ignored": true
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -4755,42 +4728,6 @@
             "ignored": true
         },
         {
-            "slotGuid": "a79b591f980f19043b363b64099cb2e9",
-            "slotPath": "Titles/TitleBackground/TMP_Title",
-            "contextGuid": "a79b591f980f19043b363b64099cb2e9",
-            "contextPath": "Titles/TitleBackground/TMP_Title",
-            "contextDepth": 1000,
-            "defaultText": "초목평원림",
-            "ignored": true
-        },
-        {
-            "slotGuid": "aec27a88383f9794d99ec2f6d9f2b032",
-            "slotPath": "Raycast/Visual/New",
-            "contextGuid": "aec27a88383f9794d99ec2f6d9f2b032",
-            "contextPath": "Raycast/Visual/New",
-            "contextDepth": 1000,
-            "defaultText": "NEW",
-            "ignored": true
-        },
-        {
-            "slotGuid": "aec27a88383f9794d99ec2f6d9f2b032",
-            "slotPath": "Raycast/Visual/Text (TMP)",
-            "contextGuid": "aec27a88383f9794d99ec2f6d9f2b032",
-            "contextPath": "Raycast/Visual/Text (TMP)",
-            "contextDepth": 1000,
-            "defaultText": "풀빛너른",
-            "ignored": true
-        },
-        {
-            "slotGuid": "b0008199795f8034e9f4755e93903871",
-            "slotPath": "Text (TMP)",
-            "contextGuid": "b0008199795f8034e9f4755e93903871",
-            "contextPath": "Text (TMP)",
-            "contextDepth": 1000,
-            "defaultText": "나무이름",
-            "ignored": true
-        },
-        {
             "slotGuid": "bd28f55901e93bd4aa5204630655ec49",
             "slotPath": "Text (TMP)",
             "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -4816,15 +4753,6 @@
             "contextDepth": 1000,
             "defaultText": "도끼 사용",
             "ignored": false
-        },
-        {
-            "slotGuid": "cf2aa288d16616344af88e383a20a540",
-            "slotPath": "Text",
-            "contextGuid": "cf2aa288d16616344af88e383a20a540",
-            "contextPath": "Text",
-            "contextDepth": 1000,
-            "defaultText": "999999",
-            "ignored": true
         },
         {
             "slotGuid": "e71a00c0d5a01db46b44ac77dab65ba8",

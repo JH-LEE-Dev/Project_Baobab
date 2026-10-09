@@ -26,7 +26,7 @@ public class UIView_OverUIPopup : UIView
         base.Initialize(_ctx);
         if (null != openingProduction)
         {
-            openingProduction.Initialize(_ctx?.localizationManager);
+            openingProduction.Initialize(_ctx?.localizationManager, _ctx?.inputManager);
         }
 
         if (null != tutorialQuest)
