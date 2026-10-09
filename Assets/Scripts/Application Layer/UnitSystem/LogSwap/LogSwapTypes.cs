@@ -102,6 +102,23 @@ public struct LogSwapSlotInfo
             && _a.incomingCount == _b.incomingCount
             && _a.incomingSlotIndex == _b.incomingSlotIndex;
     }
+
+    /// <summary>
+    /// "같은 거래인가" - 버릴 슬롯(어느 칸·무엇·몇 개)과 들어올 종류·넘어갈 가방 슬롯이 같으면 같은 거래다.
+    /// 들어올 <b>개수</b>는 비교하지 않는다. 그 개수는 원목이 빨려 들어가는 동안 틱마다 바뀌는데(3 → 2 → 1), 유저가
+    /// 승인한 것은 "이 칸을 저 종류와 바꾼다"이지 개수가 아니다. 실행 직전 대조(ExecuteLogSwap)는 이걸 쓴다.
+    /// </summary>
+    public static bool IsSameTrade(in LogSwapSlotInfo _a, in LogSwapSlotInfo _b)
+    {
+        return _a.target == _b.target
+            && _a.slotIndex == _b.slotIndex
+            && _a.treeType == _b.treeType
+            && _a.logState == _b.logState
+            && _a.count == _b.count
+            && _a.incomingTreeType == _b.incomingTreeType
+            && _a.incomingLogState == _b.incomingLogState
+            && _a.incomingSlotIndex == _b.incomingSlotIndex;
+    }
 }
 
 /// <summary>
@@ -182,8 +199,9 @@ public static class LogValue
     /// "지금 보이는 만큼"의 가치 = 개당 가치 × min(보이는 개수, 슬롯 최대 중첩).
     ///
     /// 흡입 선점과 교체 상한이 같은 식을 쓴다. 칸 하나의 가치는 그 칸을 채울 수 있는 만큼이지
-    /// 원목 하나의 가치가 아니다 - 그래야 보석 <b>한 개</b>가 마지막 칸을 잠그고 뒤따르는 일반 원목
-    /// 홍수(15개 × 40 = 600)를 막는 일이 없다(황금 소나무 1개 = 60).
+    /// 원목 하나의 가치가 아니다 - 그래야 비싼 원목 <b>한 개</b>(자작 40)가 마지막 칸을 잠그고 뒤따르는
+    /// 싼 원목 홍수(소나무 15개, 칸 기준 12 × 5 = 60)를 막는 일이 없다. 보석 등급만은 이 값과 무관하게
+    /// 먼저 들인다(LogPickupOrder 참고).
     /// </summary>
     public static long GetGroupValue(TreeType _treeType, LogState _logState, int _visibleCount)
     {
@@ -264,11 +282,43 @@ public static class LogVisibleCounts
 }
 
 /// <summary>
+/// 바닥의 원목 중 <b>누가 먼저 칸을 차지하는지</b>의 순서. 흡입 선점 정렬(ItemDetector.SortByPickupPriority)과
+/// 교체의 "들어올 원목" 선정(InventoryManager.RequestLogSwap)이 이 함수 하나를 본다. 두 곳이 다른 기준을 쓰면
+/// "안내는 A인데 선점은 B를 밀어주는" 일이 생기므로 반드시 여기서만 정한다.
+///
+///   1. 보석 등급(황금/다이아/프리즘)이 일반보다 먼저. 총가치와 무관하다.
+///      보석은 희귀하고 기획상 중요해서, 빈 칸 하나를 두고 일반 더미에 밀려 바닥에 남는 손실은 복구가 안 된다.
+///      반대로 보석 1개가 마지막 칸을 차지해 일반 더미가 튕기는 쪽은 복구된다 - 튕긴 원목이 교체 제안을 띄우고,
+///      보석 슬롯은 교체에서 보호되므로 보석은 안전하다. 드문 충돌에서는 돌이킬 수 있는 쪽으로 진다.
+///      보석 슬롯 보호(LogSwapRule)와 대칭이다: 먼저 들어오고, 마지막까지 안 나간다.
+///   2. 총가치(개당 × min(보이는 개수, 슬롯 용량))가 큰 쪽. 보석끼리도 이걸로 가른다 - 어느 쪽이 먼저든 한쪽은
+///      기다려야 한다면 더 많은 가치를 먼저 확보하는 편이 낫다.
+///   3. 개당 가치가 큰 쪽. 총가치가 정확히 같은 경우를 스캔 순서에 맡기지 않기 위해서다.
+///   같으면 0. 정렬은 그 뒤에 스캔 순서로 안정화하고, 교체 선정은 먼저 거절된 쪽을 유지한다.
+/// </summary>
+public static class LogPickupOrder
+{
+    /// <summary>A가 B보다 먼저 칸을 차지하면 음수, 뒤면 양수, 구분이 없으면 0.</summary>
+    public static int Compare(LogState _stateA, long _groupA, long _unitA, LogState _stateB, long _groupB, long _unitB)
+    {
+        bool gemA = LogValue.IsGemGrade(_stateA);
+        bool gemB = LogValue.IsGemGrade(_stateB);
+        if (gemA != gemB) return gemA ? -1 : 1;
+
+        if (_groupA != _groupB) return _groupA > _groupB ? -1 : 1;
+        if (_unitA != _unitB) return _unitA > _unitB ? -1 : 1;
+
+        return 0;
+    }
+}
+
+/// <summary>
 /// 교체에서 <b>어느 슬롯을 버릴지</b>를 정하는 규칙. 인벤토리와 운반 상자가 같은 규칙을 쓰므로 한 곳에만
 /// 둔다 - 규칙을 바꿀 때(예: 기대 개수 하한 도입) 한쪽만 고쳐 선점·교체가 어긋나는 일을 막기 위해서다.
 ///
-/// 시스템은 두 가지만 보장한다. (1) 손해인 거래는 아예 제안하지 않는다. (2) 제안은 환율 한 줄로
-/// 설명된다. 누를지는 유저가 정한다.
+/// 시스템은 세 가지를 보장한다. (1) 손해인 거래는 아예 제안하지 않는다. (2) 제안은 환율 한 줄로
+/// 설명된다. (3) 띄운 종류의 원목이 그 칸에 들어온다(인벤토리는 비운 직후 화면 안에서 가장 가까운 같은 종류를
+/// 바로 끌어오고, 운반 상자는 비운 뒤 곧바로 안내된 가방 슬롯을 보낸다). 누를지는 유저가 정한다.
 ///
 ///   자격 : 버릴 슬롯의 개당 가치 < 들어올 원목의 개당 가치. 보석 등급 슬롯은 절대 버리지 않는다
 ///          - 게임이 아우라와 효과음으로 "보석은 특별하다"고 가르쳐 놨는데 시스템이 버리면

@@ -1533,6 +1533,11 @@ public class LogItem : Item, IStaticCollidable
         LogItemActivatedEvent?.Invoke(this);
     }
 
+    /// <summary>
+    /// 지금 습득 대상이 될 수 있는지. 교체·DropAllItem이 흘리는 연출 원목과 정리 중인 원목은 false다.
+    /// </summary>
+    public bool CanBeAcquired => bCanAcquired;
+
     public void SetbCanAcquired(bool _boolean)
     {
         bCanAcquired = _boolean;

@@ -288,6 +288,11 @@ public class UnitSystem
     /// </summary>
     private void LogSwapRequested(LogSwapRequestedSignal _logSwapRequestedSignal)
     {
+        // 캐릭터가 원목을 주울 수 없는 상태(사망·귀환 중)면 어느 쪽 교체도 실행하지 않는다. 키 게이트(bHUDDown)는
+        // 사망 0.5초 뒤에야 켜지는데, 그 사이 상자 교체가 실행되면 유실될 가방 슬롯 하나가 상자로 넘어간다.
+        Character character = unitSpawner.character;
+        if (character == null || !character.CanAcquireItems) return;
+
         LogSwapSlotInfo inventoryInfo = inventoryManager.GetLogSwapInfo();
         LogSwapSlotInfo containerInfo = offroadContainer.GetLogSwapInfo();
 
@@ -300,9 +305,24 @@ public class UnitSystem
                 break;
 
             case ELogSwapTarget.Inventory:
-                Character character = unitSpawner.character;
-                executed = inventoryManager.ExecuteLogSwap(character != null ? character.centerTransform : null);
+            {
+                // 끌어올 원목을 먼저 찾는다. 화면 안에 안내된 종류가 하나도 없으면(그 사이 사라짐) 슬롯만 버리는 꼴이라
+                // 실행하지 않는다 - 제안은 유효시간이 지나면 스스로 내려간다. 걷다가 흡입 반경을 벗어난 정도는 취소
+                // 사유가 아니다. 화면 안이면 끌어온다.
+                LogItem incoming = character.FindNearestAcquirableLog(inventoryInfo.incomingTreeType, inventoryInfo.incomingLogState);
+                if (incoming == null) break;
+
+                executed = inventoryManager.ExecuteLogSwap(character.centerTransform);
+
+                // 비운 그 프레임에 그 원목을 끌어온다. 다음 감지 틱(최대 0.2초)을 기다리면 걷는 동안 제안을 띄운 원목이
+                // 반경을 벗어나 있어 반경 안의 다른 원목이 칸을 가져간다. 지금 흡입을 걸면 그 원목이 그 자리에서 칸을
+                // 예약하므로(CanAcquired → reservedItems) 끼어들 틈이 없다.
+                if (executed.bHasSlot)
+                {
+                    character.SuckLogNow(incoming);
+                }
                 break;
+            }
         }
 
         if (executed.bHasSlot)

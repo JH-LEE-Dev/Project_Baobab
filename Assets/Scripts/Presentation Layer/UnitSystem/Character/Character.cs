@@ -187,6 +187,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public bool bDead { get; private set; } = false;
 
+    /// <summary>
+    /// 지금 원목을 주울 수 있는 상태인지(사망·차량 귀환·던전 밖이면 false). 교체 키는 이 상태에서만 뜻이 있다 -
+    /// 쓰러진 뒤 HUD가 내려가기까지 0.5초 동안 운반 상자 교체가 실행되면 "사망 = 전량 유실" 규칙에 구멍이 난다.
+    /// </summary>
+    public bool CanAcquireItems => bCanAcquiredItem;
+
     bool ICharacter.bRide => bRide;
 
     public bool bRide = false;
@@ -681,6 +687,38 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         float finalRadius = itemSensorRadius * statComponent.pickupRangeMultiplier;
         itemDetector.Tick(Time.fixedDeltaTime, itemDetectionInterval, finalRadius, onItemsDetectedHandler);
+    }
+
+    /// <summary>
+    /// 화면 안에서 해당 종류의 먹을 수 있는 원목 중 가장 가까운 것. 인벤토리 교체(Tab)가 실행 직전에 묻는다 -
+    /// 하나도 없으면 슬롯만 버리는 꼴이라 교체를 실행하지 않는다. 걷다가 흡입 반경을 벗어난 정도는 여기 걸리지 않는다
+    /// (화면 크기까지 본다). 없으면 null.
+    /// </summary>
+    public LogItem FindNearestAcquirableLog(TreeType _treeType, LogState _logState)
+    {
+        if (bCanAcquiredItem == false || itemDetector == null) return null;
+
+        float pickupRadius = itemSensorRadius * (statComponent != null ? statComponent.pickupRangeMultiplier : 1f);
+        float searchRadius = Mathf.Max(CameraBoundsUtil.GetReferenceHalfDiagonal(), pickupRadius);
+
+        return itemDetector.FindNearestAcquirableLog(searchRadius, _treeType, _logState);
+    }
+
+    /// <summary>
+    /// 지정한 원목을 지금 당장 끌어온다. 인벤토리 교체(Tab)가 슬롯을 비운 직후 부른다.
+    ///
+    /// 교체 제안은 마지막으로 거절된 뒤 0.5초까지 떠 있어서, 걷는 중에 누르면 제안을 띄운 원목이 이미 흡입 반경 밖일
+    /// 수 있다. 그때 다음 감지 틱을 기다리면 비운 칸을 반경 안의 다른 원목이 가져간다("자작을 띄웠는데 소나무가
+    /// 들어옴"). 그래서 반경과 무관하게 <b>같은 프레임에</b> 흡입을 건다. 흡입이 시작되는 순간 그 원목이 빈 칸을
+    /// 예약하므로(CanAcquired → reservedItems) 다른 원목이 끼어들 수 없다. 평소 흡입 규칙(수종 개량, 공간 판정)을
+    /// 그대로 탄다.
+    /// </summary>
+    public bool SuckLogNow(LogItem _logItem)
+    {
+        if (bCanAcquiredItem == false || _logItem == null) return false;
+
+        _logItem.SetSuckTarget(transform);
+        return _logItem.MoveState == ItemMoveState.Sucking;
     }
 
     /// <summary>

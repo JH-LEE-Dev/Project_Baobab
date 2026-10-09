@@ -760,9 +760,12 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     // ── 교체 시스템(인벤토리) ────────────────────────────────────────────────────────
     //
     // 가방이 꽉 차 바닥의 원목을 먹지 못할 때, 값싼 슬롯 하나를 내려놓아 자리를 만드는 기능이다.
-    // 누를지는 유저가 정한다. 시스템은 두 가지만 보장한다.
+    // 누를지는 유저가 정한다. 시스템은 세 가지를 보장한다.
     //   (1) 손해인 거래는 아예 제안하지 않는다.
     //   (2) 제안은 환율 한 줄로 설명된다 - "소나무 3개 ↔ 자작나무 5개 (환율 3.3 : 1)".
+    //   (3) 띄운 종류의 원목이 그 칸에 들어온다 - 비운 직후 화면 안에서 가장 가까운 같은 종류를 바로 끌어온다
+    //       (UnitSystem.LogSwapRequested → Character.TrySuckNearestLogNow). 그 원목이 그 자리에서 칸을 예약하므로
+    //       다음 감지 틱에 다른 종류가 끼어들 수 없다.
     //
     // 제안 규칙 (셋 다 만족해야 한다)
     //   자격 : 버릴 슬롯의 개당 가치 < 들어올 원목의 개당 가치. 보석 등급 슬롯은 절대 버리지 않는다
@@ -788,10 +791,16 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     /// </summary>
     public event Action SwapStateChangedEvent;
 
-    // 들어올 원목(요청): 최근 감지 틱에서 못 먹은 원목 중 가장 비싼 종류와, 그 종류가 몇 개 보였는지.
+    // 들어올 원목(요청): 최근 감지 틱에서 못 먹은 원목 중 "비운 칸을 실제로 차지할" 종류와, 그 종류가 몇 개
+    // 보였는지. 어느 종류가 칸을 차지하는지는 흡입 선점 정렬(ItemDetector.SortByPickupPriority)이 정하므로
+    // 같은 순서(LogPickupOrder: 보석 등급 → 총가치 → 개당 가치)로 고른다.
+    // 예전엔 개당 가치만 봐서, 솜털균사 1개(700)와 포자버섯 3개(300×3=900)가 함께 거절되면 안내는 솜털균사를
+    // 가리키는데 선점 1위는 포자버섯이었다. 안내와 선점이 다른 종류를 가리키면 "선점이 밀어주는 종류를 두고
+    // 다른 종류에 자리를 내주는" 거래가 된다.
     private TreeType swapRequestTreeType = TreeType.None;
     private LogState swapRequestLogState = LogState.Normal;
     private long swapRequestUnitValue = LogValue.NONE;
+    private long swapRequestGroupValue = LogValue.NONE;
     private int swapRequestCount = 0;
     private float swapRequestTime = -999f;
 
@@ -803,6 +812,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     private TreeType rejectBestTreeType = TreeType.None;
     private LogState rejectBestLogState = LogState.Normal;
     private long rejectBestUnitValue = LogValue.NONE;
+    private long rejectBestGroupValue = LogValue.NONE;
     private int rejectBestCount = 0;
 
     /// <summary>
@@ -818,6 +828,22 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     private int stickyVictimSlotIndex = -1;
 
     private float swapCooldownUntil = -999f;
+
+    /// <summary>
+    /// 교체 후보에서 뺄 슬롯. (a) 지금 캐릭터로 날아오는 중인 원목과 같은 종류의 슬롯 - 그 원목은 이미 그 슬롯에
+    /// 자리를 약속받고 출발했는데 착지했을 때 슬롯이 사라져 있으면 비운 칸을 먼저 차지해 안내된 원목이 들어오지
+    /// 못한다. (b) 운반 상자가 지금 꺼내 옮기는 중인 슬롯(externallyLockedSlots) - 0.1초 뒤 공짜로 상자에 들어갔을
+    /// 원목을 버리게 된다. 판정마다 비우고 다시 채우는 재사용 버퍼다.
+    /// </summary>
+    private readonly HashSet<InventorySlot> swapExcludedSlots = new HashSet<InventorySlot>();
+
+    /// <summary>다른 시스템이 "지금 이 가방 슬롯을 꺼내 옮기는 중"으로 표시해 둔 집합. 참조만 들고 있고 내용은 상대가 관리한다.</summary>
+    private HashSet<InventorySlot> externallyLockedSlots;
+
+    public void RegisterExternallyLockedSlots(HashSet<InventorySlot> _slots)
+    {
+        externallyLockedSlots = _slots;
+    }
 
     /// <summary>마지막으로 알린 내용. 같은 내용을 거듭 알리지 않기 위한 것이다.</summary>
     private LogSwapSlotInfo lastNotifiedSwapInfo = LogSwapSlotInfo.None;
@@ -852,22 +878,29 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     /// <summary>
     /// 원목을 담지 못했음을 교체 시스템에 알린다(CanAcquired 실패 경로에서 부른다).
-    /// 한 번의 감지 틱에 여러 원목이 거절될 수 있으므로 그중 가장 비싼 종류를 기준으로 삼고, 그 종류가
-    /// 몇 개 보였는지 함께 센다 - 교체는 "제일 아쉬운 원목을 위해" 자리를 만드는 기능이고, 상한은
-    /// "지금 보이는 만큼"이기 때문이다.
+    /// 한 번의 감지 틱에 여러 원목이 거절될 수 있으므로 그중 <b>비운 칸을 실제로 차지할 종류</b>를 기준으로
+    /// 삼고, 그 종류가 몇 개 보였는지 함께 센다. 어느 종류가 칸을 차지하는지는 흡입 선점 정렬이 정하므로
+    /// 그 정렬과 같은 순서(LogPickupOrder)로 고른다. 거절은 정렬 순서대로 들어오므로 보통 틱의 첫 거절이
+    /// 그대로 기준이 되고, 아래 비교는 그 사실을 다시 확인하는 안전망이다.
     /// </summary>
     private void RequestLogSwap(TreeType _treeType, LogState _logState)
     {
         long unitValue = LogValue.GetUnitValue(_treeType, _logState);
+
+        // 총가치는 선점 정렬(ItemDetector.FillPickupSortKey)과 같은 식·같은 표로 구한다. 표는 이 틱 첫머리에
+        // 화면 전체를 세어 채워졌고, 그 뒤 거절 판정이 도는 동안 바뀌지 않는다.
+        long groupValue = LogValue.GetGroupValue(_treeType, _logState, LogVisibleCounts.Get(_treeType, _logState));
         float tick = Time.fixedTime;
 
-        // 1. 같은 틱 안에서 종류별로 묶는다. 더 비싼 종류가 나타나면 그쪽으로 갈아타고 개수를 다시 센다.
-        if (tick != rejectTick || unitValue > rejectBestUnitValue)
+        // 1. 같은 틱 안에서 종류별로 묶는다. 선점 순서가 앞서는 종류가 나타나면 그쪽으로 갈아타고 개수를 다시 센다.
+        if (tick != rejectTick
+            || LogPickupOrder.Compare(_logState, groupValue, unitValue, rejectBestLogState, rejectBestGroupValue, rejectBestUnitValue) < 0)
         {
             rejectTick = tick;
             rejectBestTreeType = _treeType;
             rejectBestLogState = _logState;
             rejectBestUnitValue = unitValue;
+            rejectBestGroupValue = groupValue;
             rejectBestCount = 1;
         }
         else if (_treeType == rejectBestTreeType && _logState == rejectBestLogState)
@@ -875,13 +908,17 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             rejectBestCount++;
         }
 
-        // 2. 요청에 반영한다. 유효 시간은 "기록된 그 원목을 마지막으로 본 시각"부터 센다. 더 싼 원목이
-        //    거절됐다고 시각을 갱신하면 안 된다 - 원목 더미 위를 계속 걷는 동안 기록이 영원히 살아남아,
+        // 2. 요청에 반영한다. 유효 시간은 "기록된 그 원목을 마지막으로 본 시각"부터 센다. 선점 순서가 뒤지는
+        //    원목이 거절됐다고 시각을 갱신하면 안 된다 - 원목 더미 위를 계속 걷는 동안 기록이 영원히 살아남아,
         //    한 번 스쳐간 흑요목 때문에 참나무를 먹으려고 소나무를 버리는 손해 교체가 성립한다.
         bool expired = swapRequestUnitValue == LogValue.NONE
             || Time.time - swapRequestTime > SwapRequestLifetime;
 
-        if (expired || rejectBestUnitValue >= swapRequestUnitValue)
+        bool sameKind = rejectBestTreeType == swapRequestTreeType && rejectBestLogState == swapRequestLogState;
+
+        if (expired || sameKind
+            || LogPickupOrder.Compare(rejectBestLogState, rejectBestGroupValue, rejectBestUnitValue,
+                swapRequestLogState, swapRequestGroupValue, swapRequestUnitValue) < 0)
         {
             // 상한에 쓸 개수는 "이번 틱에 거절된 개수"와 "반경 안에 보이는 개수(공중 포함)" 중 큰 쪽이다.
             // 선점 정렬이 이 틱 첫머리에 채운 표(LogVisibleCounts)를 그대로 읽으므로 선점과 교체가 같은
@@ -890,6 +927,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             swapRequestTreeType = rejectBestTreeType;
             swapRequestLogState = rejectBestLogState;
             swapRequestUnitValue = rejectBestUnitValue;
+            swapRequestGroupValue = rejectBestGroupValue;
             swapRequestCount = Mathf.Max(rejectBestCount, LogVisibleCounts.Get(rejectBestTreeType, rejectBestLogState));
             swapRequestTime = Time.time;
         }
@@ -900,9 +938,46 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         swapRequestTreeType = TreeType.None;
         swapRequestLogState = LogState.Normal;
         swapRequestUnitValue = LogValue.NONE;
+        swapRequestGroupValue = LogValue.NONE;
         swapRequestCount = 0;
         swapRequestTime = -999f;
         stickyVictimSlotIndex = -1;
+    }
+
+    /// <summary>
+    /// 교체 후보에서 뺄 슬롯을 swapExcludedSlots에 모은다 - 운반 상자가 옮기는 중인 슬롯과, 지금 캐릭터로 날아오는
+    /// 중인 원목(reservedItems)과 같은 종류의 슬롯. 할당 없이 재사용 버퍼만 채운다.
+    /// </summary>
+    private void CollectSwapExcludedSlots()
+    {
+        swapExcludedSlots.Clear();
+
+        if (externallyLockedSlots != null && externallyLockedSlots.Count > 0)
+        {
+            foreach (InventorySlot locked in externallyLockedSlots)
+            {
+                swapExcludedSlots.Add(locked);
+            }
+        }
+
+        if (reservedItems.Count == 0) return;
+
+        int slotCount = Mathf.Min(currentSlotCount, inventorySlots.Count);
+
+        for (int r = 0; r < reservedItems.Count; r++)
+        {
+            LogItem flying = reservedItems[r];
+            if (flying == null || !flying.gameObject.activeInHierarchy || flying.MoveState != ItemMoveState.Sucking) continue;
+
+            for (int i = 0; i < slotCount; i++)
+            {
+                if (inventorySlots[i].itemData is LogItemData logData
+                    && logData.treeType == flying.treeType && logData.logState == flying.logState)
+                {
+                    swapExcludedSlots.Add(inventorySlots[i]);
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -931,10 +1006,15 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         _slotIndex = -1;
 
         if (swapRequestUnitValue == LogValue.NONE) return false;
+        // 만료 판정은 Update의 UpdateLogSwapState가 하지만, 입력 처리가 같은 프레임에 먼저 올 수 있으므로
+        // 실행 경로(ExecuteLogSwap → GetLogSwapInfo)도 여기서 한 번 더 확인한다.
+        if (Time.time - swapRequestTime > SwapRequestLifetime) return false;
         if (Time.time < swapCooldownUntil) return false;
 
+        CollectSwapExcludedSlots();
+
         _slotIndex = LogSwapRule.SelectVictim(inventorySlots, currentSlotCount,
-            swapRequestUnitValue, swapRequestCount, maxItemsPerSlot, null, stickyVictimSlotIndex);
+            swapRequestUnitValue, swapRequestCount, maxItemsPerSlot, swapExcludedSlots, stickyVictimSlotIndex);
 
         stickyVictimSlotIndex = _slotIndex;
         return _slotIndex >= 0;
@@ -949,6 +1029,15 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     {
         LogSwapSlotInfo info = GetLogSwapInfo();
         if (!info.bHasSlot) return LogSwapSlotInfo.None;
+
+        // 유저가 본 것과 지금 계산한 것이 다른 거래면 실행하지 않는다. 입력은 Update보다 먼저 처리되므로, 같은 프레임의
+        // 감지 틱(FixedUpdate)에서 버릴 슬롯이 바뀌었어도 UI는 아직 전 프레임의 제안을 그리고 있다. 그때 실행하면 UI가
+        // 보여준 적 없는 슬롯이 버려진다. 안내만 갱신하고 다음 입력을 기다린다(한 프레임 창이라 체감되지 않는다).
+        if (!LogSwapSlotInfo.IsSameTrade(in info, in lastNotifiedSwapInfo))
+        {
+            UpdateLogSwapState();
+            return LogSwapSlotInfo.None;
+        }
 
         InventorySlot slot = inventorySlots[info.slotIndex];
 

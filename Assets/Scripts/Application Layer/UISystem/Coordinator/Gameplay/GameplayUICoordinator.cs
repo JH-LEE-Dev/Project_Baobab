@@ -25,6 +25,15 @@ public class GameplayUICoordinator
     private UIDepthController uiDepthController;
 
     private bool bInventoryOpened = false;
+
+    /// <summary>
+    /// 마지막으로 받은 교체 가용성. 가방이 닫혀 있는 동안은 교체 키가 동작하지 않으므로(OnLogSwapKeyPressed) 그 동안엔
+    /// 양쪽 UI에 "대상 없음"으로 내려 보내고, 가방이 다시 열리면 같은 내용을 원래 대상으로 다시 보낸다. 안 그러면 상자
+    /// 앞에서 가방을 I로 닫았을 때 상자 UI가 Tab을 띄우고 있는데 눌러도 아무 일도 없다.
+    /// </summary>
+    private LogSwapAvailabilityChangedSignal lastLogSwapAvailability =
+        new LogSwapAvailabilityChangedSignal(LogSwapSlotInfo.None, LogSwapSlotInfo.None, ELogSwapTarget.None);
+
     private bool bIsTutorialQuestHiding = false;
     private bool bPendingGameEnd = false;
 
@@ -356,12 +365,12 @@ public class GameplayUICoordinator
 
         if (bInventoryOpened == false)
         {
-            bInventoryOpened = true;
+            SetInventoryOpened(true);
             popUpUI.Show();
         }
         else
         {
-            bInventoryOpened = false;
+            SetInventoryOpened(false);
             popUpUI.Hide();
         }
     }
@@ -374,7 +383,8 @@ public class GameplayUICoordinator
     /// </summary>
     private void OnLogSwapKeyPressed()
     {
-        if (false == bInventoryOpened)
+        // 플래그와 실제 표시를 둘 다 본다 - 플래그를 거치지 않고 닫히는 경로가 생겨도 닫힌 가방 뒤에서 슬롯이 사라지지 않게.
+        if (false == bInventoryOpened || null == popUpUI || false == popUpUI.IsVisible)
             return;
 
         if (bHUDDown)
@@ -393,14 +403,31 @@ public class GameplayUICoordinator
     /// </summary>
     private void LogSwapAvailabilityChanged(LogSwapAvailabilityChangedSignal _logSwapAvailabilityChangedSignal)
     {
-        // 가방 UI에는 양쪽을 다 준다. 운반 상자 교체가 잡혀 있을 때 "어느 가방 슬롯이 상자로 넘어가는지"
-        // (containerInfo.incomingSlotIndex)를 가방 쪽에도 표시해야 하기 때문이다.
-        popUpUI.LogSwapTargetChanged(_logSwapAvailabilityChangedSignal.inventoryInfo,
-            _logSwapAvailabilityChangedSignal.containerInfo,
-            _logSwapAvailabilityChangedSignal.activeTarget);
+        lastLogSwapAvailability = _logSwapAvailabilityChangedSignal;
+        DispatchLogSwapAvailability();
+    }
 
-        worldPopupUI.LogSwapTargetChanged(_logSwapAvailabilityChangedSignal.containerInfo,
-            _logSwapAvailabilityChangedSignal.activeTarget);
+    /// <summary>
+    /// 교체 가용성을 양쪽 UI에 내린다. 가방이 닫혀 있으면 대상을 None으로 바꿔 보낸다 - 교체 키가 가방이 열려 있을 때만
+    /// 동작하므로, 닫힌 동안 상자 UI가 Tab을 띄우고 있으면 눌러도 아무 일도 없는 안내가 된다.
+    /// 가방 UI에는 양쪽을 다 준다. 운반 상자 교체가 잡혀 있을 때 "어느 가방 슬롯이 상자로 넘어가는지"
+    /// (containerInfo.incomingSlotIndex)를 가방 쪽에도 표시해야 하기 때문이다.
+    /// </summary>
+    private void DispatchLogSwapAvailability()
+    {
+        ELogSwapTarget activeTarget = bInventoryOpened ? lastLogSwapAvailability.activeTarget : ELogSwapTarget.None;
+
+        popUpUI.LogSwapTargetChanged(lastLogSwapAvailability.inventoryInfo, lastLogSwapAvailability.containerInfo, activeTarget);
+        worldPopupUI.LogSwapTargetChanged(lastLogSwapAvailability.containerInfo, activeTarget);
+    }
+
+    /// <summary>가방 열림 플래그는 반드시 여기로 바꾼다. 바뀌면 교체 안내의 대상도 함께 갱신된다.</summary>
+    private void SetInventoryOpened(bool _bOpened)
+    {
+        if (bInventoryOpened == _bOpened) return;
+
+        bInventoryOpened = _bOpened;
+        DispatchLogSwapAvailability();
     }
 
     /// <summary>
@@ -658,6 +685,9 @@ public class GameplayUICoordinator
 
         if (null != popUpUI && true == popUpUI.IsVisible)
         {
+            // 패드 B(UI/Cancel)로 닫는 경로. 여기서 플래그를 내리지 않으면 닫힌 가방 뒤에서 교체 키가 동작하고(슬롯이
+            // 안내 없이 사라짐), 다음 인벤토리 키 한 번이 Hide 공회전으로 먹힌다.
+            SetInventoryOpened(false);
             popUpUI.Hide();
             return;
         }
@@ -673,7 +703,7 @@ public class GameplayUICoordinator
         worldPopupUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
         CurrencyFontHUD.SetGlobalMapType(MapType.Town);
 
-        bInventoryOpened = false;
+        SetInventoryOpened(false);
         bIsTutorialQuestHiding = false;
         bPendingGameEnd = false;
         popUpUI.Hide();
@@ -695,7 +725,7 @@ public class GameplayUICoordinator
 
         resultUI.DungeonStarted();
 
-        bInventoryOpened = false;
+        SetInventoryOpened(false);
         bIsTutorialQuestHiding = false;
         bPendingGameEnd = false;
         popUpUI.Hide();
@@ -933,7 +963,7 @@ public class GameplayUICoordinator
 
     private void InventoryUIOpened(bool _boolean)
     {
-        bInventoryOpened = _boolean;
+        SetInventoryOpened(_boolean);
 
         if (_boolean == true)
         {
