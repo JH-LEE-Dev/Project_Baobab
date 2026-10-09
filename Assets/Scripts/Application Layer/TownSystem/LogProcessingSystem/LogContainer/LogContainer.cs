@@ -108,6 +108,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     private List<FlyingTransferItem> flyingItems = new List<FlyingTransferItem>(32);
     private HashSet<InventorySlot> transferringSlots = new HashSet<InventorySlot>();
     private const float FLY_INTERVAL = 0.075f;
+    // 플레이어 납품에서 밀린 발사를 한 번에 따라잡는 최대 시간(OffroadContainer.MAX_FLY_CATCHUP과 동일).
+    private const float MAX_FLY_CATCHUP = 0.1f;
     private LogItemData arrivalDataBuffer = new LogItemData();
 
     [Header("Get/Out 아이템 사운드")]
@@ -496,8 +498,19 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             // 비우면(인벤토리 전량 이관/유실 경로) 이미 빈 슬롯에 TakeOneItem()을 계속 부르게 되는데,
             // TakeOneItem()은 실패를 알리지 않고 기본값만 돌려주므로 존재하지 않는 아이템이 날아가
             // 착지 시점에 커밋된다(복제). OffroadContainer.TransferOneSlotVisualRoutine과 동일한 방어.
-            while (_charSlot.count > 0)
+            //
+            // 발사 간격은 WaitForSeconds 대신 "다음 발사 예정 시각" 누적으로 맞춘다 - FPS에 따라 전송
+            // 속도가 달라지던 문제. 이유는 OffroadContainer.TransferOneSlotVisualRoutine 주석 참고.
+            double nextFireTime = Time.timeAsDouble;
+            while (true)
             {
+                while (Time.timeAsDouble < nextFireTime)
+                {
+                    yield return null;
+                }
+
+                if (_charSlot.count <= 0) break;
+
                 // CancelPlayerTransfer()로 끊긴 슬롯은 남은 개수를 더 발사하지 않는다(이미 발사된 것은 그대로 착지).
                 if (transferGeneration != playerTransferGeneration) break;
 
@@ -546,7 +559,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
                 ContainerUpdatedEvent?.Invoke();
 
-                yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
+                nextFireTime = System.Math.Max(nextFireTime, Time.timeAsDouble - MAX_FLY_CATCHUP) + FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul);
             }
 
             // 슬롯이 비었다면 정리

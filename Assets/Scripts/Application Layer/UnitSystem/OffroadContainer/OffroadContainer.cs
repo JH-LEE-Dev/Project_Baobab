@@ -64,6 +64,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     // CancelPlayerTransfer()가 올리는 값. 진행 중인 슬롯 전송이 시작 때 값과 달라지면 발사를 멈춘다.
     private int playerTransferGeneration = 0;
     private const float FLY_INTERVAL = 0.075f;
+    // 플레이어 전송에서 밀린 발사를 한 번에 따라잡는 최대 시간. 프레임 하나가 이보다 길게 멈추면(로딩 렉 등)
+    // 초과분은 버린다 - 그렇지 않으면 한 프레임에 원목 수십 개가 같은 자리에서 한꺼번에 튀어나간다.
+    private const float MAX_FLY_CATCHUP = 0.1f;
     // 전송 연출 간격 대기 객체 - itemTransferSpeedMul이 바뀔 때만 재생성한다(아이템마다 new WaitForSeconds를 피한다).
     private WaitForSeconds flyIntervalWait;
     private float flyIntervalWaitSeconds = -1f;
@@ -739,9 +742,14 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         return false;
     }
 
+    private float GetFlyInterval()
+    {
+        return FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul);
+    }
+
     private WaitForSeconds GetFlyIntervalWait()
     {
-        float seconds = FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul);
+        float seconds = GetFlyInterval();
         if (flyIntervalWait == null || flyIntervalWaitSeconds != seconds)
         {
             flyIntervalWait = new WaitForSeconds(seconds);
@@ -770,8 +778,25 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             // _sourceSlot.count를 직접 다시 확인해야 한다. 그렇지 않으면 실제로는 이미 빈 슬롯인데도
             // 정해진 횟수만큼 TakeOneItem()을 계속 호출하게 되고, TakeOneItem()은 안전하게 기본값을
             // 반환하므로 존재하지 않는 아이템이 날아가는(복제되는) 결과가 된다.
-            while (_sourceSlot.count > 0)
+            //
+            // 발사 간격은 WaitForSeconds로 기다리지 않고 "다음 발사 예정 시각"을 누적해서 맞춘다.
+            // WaitForSeconds는 시간이 지난 뒤 첫 프레임에 풀리면서 초과분을 버리고 한 프레임에 하나만
+            // 내보내므로, 간격이 프레임 시간의 배수로 올림되어 FPS에 따라 전송 속도가 달라졌다
+            // (60fps에서 스킬 최대치 기준 이론값의 75%). 예정 시각 방식은 초과분이 다음 간격으로 넘어가고,
+            // 프레임이 간격보다 길면 같은 프레임에 여러 개를 쏴서 평균 속도를 FPS와 무관하게 유지한다.
+            // 마지막 발사 뒤에도 한 간격을 기다린 다음 끝내는 것은 예전과 같다(슬롯 사이 간격 유지).
+            // 짧은 간격을 계속 더해 가므로 double 시계(timeAsDouble)를 쓴다 - float인 Time.time은 몇 시간만
+            // 지나도 단위가 ms 수준으로 굵어져 더할 때마다 같은 쪽으로 반올림되고, 전송 속도가 몇 % 어긋난다.
+            double nextFireTime = Time.timeAsDouble;
+            while (true)
             {
+                while (Time.timeAsDouble < nextFireTime)
+                {
+                    yield return null;
+                }
+
+                if (_sourceSlot.count <= 0) break;
+
                 // CancelPlayerTransfer()로 끊긴 슬롯은 남은 개수를 더 발사하지 않는다(이미 발사된 것은 그대로 착지).
                 if (transferGeneration != playerTransferGeneration) break;
 
@@ -832,7 +857,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
                 flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = _toCharacter, fromCharacter = !_toCharacter });
 
-                yield return GetFlyIntervalWait();
+                nextFireTime = System.Math.Max(nextFireTime, Time.timeAsDouble - MAX_FLY_CATCHUP) + GetFlyInterval();
             }
 
             if (_sourceSlot.count == 0)
