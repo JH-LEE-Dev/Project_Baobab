@@ -195,10 +195,17 @@ public class BuildStampWriter : IPostprocessBuildWithReport
         if (true == TryRunGit(_projectRoot, "diff --cached --name-only", out string _idx)) _changed += _idx + "\n";
         if (true == TryRunGit(_projectRoot, "ls-files --others --exclude-standard", out string _new)) _changed += _new;
 
-        _dirty = HasChangesOutsideSwitcherFiles(_changed);
+        _dirty = HasChangesOutsideSwitcherFiles(_changed, _projectRoot);
 
         return true;
     }
+
+    /// <summary>
+    /// FontMaker(숫자 글리프 UI) 프리팹 guid 입니다. FontMaker 는 [ExecuteAlways] 에디터 미리보기에서 RectTransform 폭을
+    /// 미리보기 문자열에 맞춰 바꾸는데, 이 값이 AbilityHUD·TentUI 의 중첩 프리팹 오버라이드로 빌드 중 저장되며
+    /// 0 ↔ 23·7 을 오갑니다(2026-10-07~09). 실행 중 SetText 때마다 다시 계산되는 값이라 빌드 내용에 영향이 없습니다.
+    /// </summary>
+    private const string FONT_MAKER_PREFAB_GUID = "97d3436c2b4a2b04999ff852ad959c92";
 
     /// <summary>
     /// 스위처(PlatformBuildModeSwitcher)가 스토어·배포에 맞춰 바꾸는 파일은 dirty 로 치지 않습니다.
@@ -213,7 +220,7 @@ public class BuildStampWriter : IPostprocessBuildWithReport
         "steam_appid.txt",
     };
 
-    private static bool HasChangesOutsideSwitcherFiles(string _pathsOnePerLine)
+    private static bool HasChangesOutsideSwitcherFiles(string _pathsOnePerLine, string _projectRoot)
     {
         foreach (string _raw in _pathsOnePerLine.Split('\n'))
         {
@@ -228,10 +235,59 @@ public class BuildStampWriter : IPostprocessBuildWithReport
                 if (string.Equals(_path, SWITCHER_MANAGED_FILES[i], StringComparison.OrdinalIgnoreCase)) { _managed = true; break; }
             }
 
-            if (false == _managed) return true;
+            if (true == _managed) continue;
+            if (true == IsOnlyFontMakerWidthChange(_projectRoot, _path)) continue;
+
+            return true;
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// 이 파일의 작업 트리 변경이 "FontMaker 중첩 프리팹의 m_SizeDelta.x 값" 줄뿐인지 봅니다.
+    /// 한 줄이라도 다른 변경이 섞여 있으면 false 라서, 실제 변경은 그대로 dirty 로 잡힙니다.
+    /// </summary>
+    private static bool IsOnlyFontMakerWidthChange(string _projectRoot, string _path)
+    {
+        if (false == _path.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase)) return false;
+        if (false == TryRunGit(_projectRoot, $"diff --ignore-cr-at-eol -U3 -- \"{_path}\"", out string _diff)) return false;
+
+        string _lastTarget = string.Empty;
+        string _lastProperty = string.Empty;
+        int _changedLines = 0;
+
+        foreach (string _raw in _diff.Split('\n'))
+        {
+            string _line = _raw.TrimEnd('\r');
+
+            if (true == _line.StartsWith("+++") || true == _line.StartsWith("---") || true == _line.StartsWith("diff ") ||
+                true == _line.StartsWith("index ") || true == _line.StartsWith("@@")) continue;
+            if (0 == _line.Length) continue;
+
+            char _kind = _line[0];
+            string _body = _line.Substring(1).Trim();
+
+            if (true == _body.StartsWith("- target:")) _lastTarget = _body;
+            else if (true == _body.StartsWith("propertyPath:")) _lastProperty = _body;
+
+            if ('+' != _kind && '-' != _kind) continue;
+
+            _changedLines++;
+
+            bool _isNumber = true == _body.StartsWith("value: ")
+                             && true == double.TryParse(_body.Substring(7), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _);
+            bool _isWidthValue = true == _isNumber
+                                 && "propertyPath: m_SizeDelta.x" == _lastProperty
+                                 && true == _lastTarget.Contains(FONT_MAKER_PREFAB_GUID);
+
+            if (false == _isWidthValue) return false;
+        }
+
+        if (0 == _changedLines) return false;
+
+        Debug.Log($"[BuildStamp] {_path} 의 변경은 FontMaker 미리보기 폭(m_SizeDelta.x) {_changedLines}줄뿐이라 GIT_DIRTY 로 치지 않습니다.");
+        return true;
     }
 
     /// <summary>

@@ -149,6 +149,7 @@ git diff <직전 배포 커밋> -- ProjectSettings Packages
 | 2026-10-07 | 인벤토리 칸 프리팹에 실행 잔여물(빠진 스크립트)이 있어 데모 제외 저장이 실패, Wood04 가 실릴 뻔함 | 잔여물 삭제, 저장 확인(64045fc7) |
 | 2026-10-07 | 인벤토리 작업 커밋에 품질 설정 기본값 삭제가 섞여 들어옴 | 1.0.3 상태로 복원(faeaa323) |
 | 2026-10-07 | FontMaker 미리보기 폭이 프리팹에 저장돼 매 빌드 `GIT_DIRTY=true` | 0 으로 커밋(199eb96c, e18ef3a0). 빌드 전에 저장 후 dirty 여부 확인 |
+| 2026-10-09 | 같은 폭이 빌드 중 다시 0 → 23·7 로 바뀌어 itch 데모가 `GIT_DIRTY=true` (실행 중 다시 계산되는 값이라 빌드 내용과 무관) | `BuildStampWriter` 가 FontMaker 중첩 프리팹의 `m_SizeDelta.x` 값 줄만 바뀐 프리팹은 dirty 로 치지 않음. 다른 줄이 섞이면 그대로 dirty. 빌드 로그에 `[BuildStamp] … GIT_DIRTY 로 치지 않습니다` 가 남음 |
 
 ---
 
