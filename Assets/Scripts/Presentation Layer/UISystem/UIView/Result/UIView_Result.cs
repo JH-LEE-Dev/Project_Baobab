@@ -232,7 +232,37 @@ public class UIView_Result : UIView
                 return;
             }
 
-            SetData(source.itemData, ExtractTreeTypeCounts(source));
+            SetData(CopyItemData(source.itemData), ExtractTreeTypeCounts(source));
+        }
+
+        // 실제 슬롯의 ItemData는 교체/삭제 시 풀로 돌아가 초기화되므로 참조를 공유하지 않는다.
+        private static IItemData CopyItemData(IItemData source)
+        {
+            if (source == null)
+                return null;
+
+            ItemData snapshot;
+            if (source is LogItemData logItemData)
+            {
+                snapshot = new LogItemData
+                {
+                    treeType = logItemData.treeType,
+                    logState = logItemData.logState,
+                };
+            }
+            else if (source is LootItemData lootItemData)
+            {
+                snapshot = new LootItemData { lootType = lootItemData.lootType };
+            }
+            else
+            {
+                snapshot = new ItemData();
+            }
+
+            snapshot.itemType = source.itemType;
+            snapshot.sprite = source.sprite;
+            snapshot.color = source.color;
+            return snapshot;
         }
 
         private static TreeTypeCount[] CreateEmptyTreeTypeCounts()
@@ -334,6 +364,7 @@ public class UIView_Result : UIView
     private DisplayInventorySlot[] startOffroadSlots;
     private DisplayInventorySlot[] currentOffroadSlots;
     private DisplayInventorySlot[] displayOffroadSlots;
+    private readonly List<ResultLogCount> displayAcquiredLogs = new List<ResultLogCount>();
     private readonly Dictionary<LogVariantKey, float> logDisplayProgress = new Dictionary<LogVariantKey, float>();
     private readonly List<UI_InventorySlot> containerSlots = new List<UI_InventorySlot>();
     private readonly List<Vector2> resultLogRowBasePositions = new List<Vector2>(2);
@@ -1245,7 +1276,9 @@ public class UIView_Result : UIView
         if (startOffroadSlots == null)
             startOffroadSlots = CreateDisplaySlotArray(currentOffroadSlots.Length);
 
-        displayOffroadSlots = CreateDisplaySlotArray(Mathf.Max(startOffroadSlots.Length, currentOffroadSlots.Length));
+        displayOffroadSlots = CreateDisplaySlotArray(currentOffroadSlots.Length);
+        displayAcquiredLogs.Clear();
+        displayAcquiredLogs.AddRange(GetAcquiredLogCounts());
         logDisplayProgress.Clear();
 
         EnsureContainerSlotCount(displayOffroadSlots.Length);
@@ -1278,22 +1311,24 @@ public class UIView_Result : UIView
         int slotCount = displayOffroadSlots != null ? displayOffroadSlots.Length : 0;
         int[,] displayCounts = new int[slotCount, (int)TreeType.Max];
 
+        // 최종 슬롯을 기준으로 아직 카운트되지 않은 증가분만 숨긴다.
+        // 시작 개수에 더하면 교체로 사라진 원목이나 다른 슬롯으로 옮겨진 원목이 중복 표시된다.
         for (int treeIndex = (int)TreeType.None + 1; treeIndex < (int)TreeType.Max; treeIndex++)
         {
             for (int slotIndex = 0; slotIndex < slotCount; slotIndex++)
-                displayCounts[slotIndex, treeIndex] = GetSlotTreeCount(startOffroadSlots, slotIndex, treeIndex);
+                displayCounts[slotIndex, treeIndex] = GetSlotTreeCount(currentOffroadSlots, slotIndex, treeIndex);
         }
 
-        List<ResultLogCount> acquiredLogs = GetAcquiredLogCounts();
-        for (int logIndex = 0; logIndex < acquiredLogs.Count; logIndex++)
+        for (int logIndex = 0; logIndex < displayAcquiredLogs.Count; logIndex++)
         {
-            ResultLogCount acquiredLog = acquiredLogs[logIndex];
+            ResultLogCount acquiredLog = displayAcquiredLogs[logIndex];
             LogVariantKey key = acquiredLog.key;
             if (acquiredLog.count <= 0)
                 continue;
 
             float progress = logDisplayProgress.TryGetValue(key, out float value) ? value : 0f;
-            int remainingAddCount = Mathf.FloorToInt((acquiredLog.count * Mathf.Clamp01(progress)) + 0.0001f);
+            int remainingAddCount = acquiredLog.count;
+            int remainingVisibleAddCount = Mathf.FloorToInt((acquiredLog.count * Mathf.Clamp01(progress)) + 0.0001f);
 
             for (int slotIndex = 0; slotIndex < slotCount && remainingAddCount > 0; slotIndex++)
             {
@@ -1301,9 +1336,11 @@ public class UIView_Result : UIView
                 int currentCount = GetSlotLogVariantCount(currentOffroadSlots, slotIndex, key);
                 int slotDeltaCount = Mathf.Max(0, currentCount - startCount);
                 int addCount = Mathf.Min(slotDeltaCount, remainingAddCount);
+                int visibleAddCount = Mathf.Min(addCount, remainingVisibleAddCount);
 
-                displayCounts[slotIndex, (int)key.treeType] += addCount;
+                displayCounts[slotIndex, (int)key.treeType] -= addCount - visibleAddCount;
                 remainingAddCount -= addCount;
+                remainingVisibleAddCount -= visibleAddCount;
             }
         }
 
@@ -1777,11 +1814,7 @@ public class UIView_Result : UIView
     }
     private IItemData GetDisplaySlotItemData(int slotIndex, int[] counts)
     {
-        IItemData sourceItemData = GetSlotItemDataForCounts(currentOffroadSlots, slotIndex, counts);
-        if (sourceItemData != null)
-            return sourceItemData;
-
-        return GetSlotItemDataForCounts(startOffroadSlots, slotIndex, counts);
+        return GetSlotItemDataForCounts(currentOffroadSlots, slotIndex, counts);
     }
 
     private IItemData GetSlotItemDataForCounts(DisplayInventorySlot[] slots, int slotIndex, int[] counts)
