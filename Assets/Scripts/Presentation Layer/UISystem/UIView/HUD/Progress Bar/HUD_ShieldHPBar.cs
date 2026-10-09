@@ -60,6 +60,10 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     private Tween hpGhostTween;
     private Tween shieldGhostTween;
     private Tween shieldRecoveryTween;
+    // Slider.DOValue 대신 쓰는 슬라이더별 델리게이트 캐시(SliderValueTweener 참조)
+    private SliderValueTweener ghostValueTweener;
+    private SliderValueTweener shieldGhostValueTweener;
+    private SliderValueTweener shieldValueTweener;
 
     // 고스트/포자막 바의 보이기·숨기기는 오브젝트 SetActive가 아니라 그 아래 그래픽의 enabled로 한다.
     // Slider는 OnEnable/OnDisable마다 참조 갱신·비주얼 갱신·레이아웃 재구성을 하므로, 과열 충격파로 수백 개 바가
@@ -419,7 +423,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
                     hpGhostTween = null;
                 }
 
-                hpGhostTween = ghostSlider.DOValue(_hpRatio, ghostFollowDuration)
+                hpGhostTween = SliderValueTweener.DOValue(ref ghostValueTweener, ghostSlider, _hpRatio, ghostFollowDuration)
                     .SetDelay(_nextHpDelay)
                     .SetEase(Ease.OutQuad)
                     .SetLink(gameObject);
@@ -456,7 +460,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
                         shieldGhostTween = null;
                     }
 
-                    shieldGhostTween = shieldGhostSlider.DOValue(_shieldRatio, ghostFollowDuration)
+                    shieldGhostTween = SliderValueTweener.DOValue(ref shieldGhostValueTweener, shieldGhostSlider, _shieldRatio, ghostFollowDuration)
                         .SetDelay(_nextShieldDelay)
                         .SetEase(Ease.OutQuad)
                         .SetLink(gameObject);
@@ -490,7 +494,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
                         shieldRecoveryTween = null;
                     }
 
-                    shieldRecoveryTween = shieldSlider.DOValue(_shieldRatio, ghostFollowDuration)
+                    shieldRecoveryTween = SliderValueTweener.DOValue(ref shieldValueTweener, shieldSlider, _shieldRatio, ghostFollowDuration)
                         .SetDelay(_nextShieldDelay)
                         .SetEase(Ease.OutQuad)
                         .SetLink(gameObject);

@@ -38,6 +38,9 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
     // feedbackSequence가 획득 연출(PlayFeedbackAnimation)인지. 제거 연출과 같은 필드를 쓰므로 재사용 판정에 필요하다.
     private bool bFeedbackIsAdd = false;
     private Tween catchupTween;
+    // Slider.DOValue 대신 쓰는 슬라이더별 델리게이트 캐시(SliderValueTweener 참조)
+    private SliderValueTweener progressValueTweener;
+    private SliderValueTweener ghostValueTweener;
     private TweenCallback cachedOnCapacityUpdate;
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -86,7 +89,7 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
                 if (null != catchupTween && true == catchupTween.IsActive())
                     catchupTween.Kill();
 
-                catchupTween = progressSlider.DOValue(_ratio, ghostCatchupDuration)
+                catchupTween = SliderValueTweener.DOValue(ref progressValueTweener, progressSlider, _ratio, ghostCatchupDuration)
                     .SetDelay(ghostDelay)
                     .SetEase(Ease.OutQuad)
                     .SetLink(gameObject)
@@ -101,7 +104,7 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
                 if (null != catchupTween && true == catchupTween.IsActive())
                     catchupTween.Kill();
 
-                catchupTween = ghostSlider.DOValue(_ratio, ghostCatchupDuration)
+                catchupTween = SliderValueTweener.DOValue(ref ghostValueTweener, ghostSlider, _ratio, ghostCatchupDuration)
                     .SetDelay(ghostDelay)
                     .SetEase(Ease.OutQuad)
                     .SetLink(gameObject);
@@ -156,7 +159,7 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
         {
             ghostSlider.value = _ratio;
 
-            catchupTween = progressSlider.DOValue(_ratio, ghostCatchupDuration)
+            catchupTween = SliderValueTweener.DOValue(ref progressValueTweener, progressSlider, _ratio, ghostCatchupDuration)
                 .SetDelay(ghostDelay)
                 .SetEase(Ease.OutQuad)
                 .SetLink(gameObject)
@@ -167,7 +170,7 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
             UpdateValue(_ratio);
             UpdateColor(_ratio);
 
-            catchupTween = ghostSlider.DOValue(_ratio, ghostCatchupDuration)
+            catchupTween = SliderValueTweener.DOValue(ref ghostValueTweener, ghostSlider, _ratio, ghostCatchupDuration)
                 .SetDelay(ghostDelay)
                 .SetEase(Ease.OutQuad)
                 .SetLink(gameObject);

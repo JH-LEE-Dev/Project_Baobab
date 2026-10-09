@@ -117,6 +117,19 @@ public class TreeVisualComponent : MonoBehaviour
     // FadeAlpha의 DOTween.To에 메서드 그룹을 넘기면 호출마다 getter/setter 델리게이트가 할당되므로 한 번만 만든다.
     private DG.Tweening.Core.DOGetter<float> alphaGetter;
     private DG.Tweening.Core.DOSetter<float> alphaSetter;
+
+    // 이 컴포넌트가 마지막으로 건 트윈들. 각 타깃(visualRoot / this)에 트윈을 거는 곳은 각각 PlayHitFeedback /
+    // FadeAlpha 한 곳뿐이고 새로 걸기 전에 항상 이전 것을 먼저 죽이므로, 그 타깃에 살아 있을 수 있는 트윈은 이
+    // 참조가 가리키는 마지막 트윈 하나뿐이다. 그래서 타깃 기준 DOKill(DOTween 활성 트윈 전체를 선형 탐색) 대신
+    // 이 트윈 하나만 직접 죽인다(KillHitPunchTween / KillAlphaTween).
+    // 재활용 트윈(피격 펀치)은 죽은 뒤 다른 나무의 트윈으로 다시 쓰일 수 있으므로, 참조의 target이 여전히 내
+    // 타깃인지 확인한다. 아니라면 내 트윈은 이미 죽은 것이고, 타깃 기준 DOKill도 아무것도 죽이지 않았을 것이다.
+    private Tween hitPunchTween;
+    // TreeFlashSystem 목록에서 이 나무 항목의 위치(없으면 -1). TreeFlashSystem만 읽고 쓴다.
+    internal int flashEntryIndex = -1;
+    private Tween alphaTween;
+    // 이 나무의 transform에 스케일 트윈을 거는 묘목 연출. 연결되지 않았으면 예전처럼 항상 DOKill한다.
+    private SaplingVEComponent saplingVEComponent;
     private bool isShieldActive = false;
     private bool isOnWaterActive = false;
 
@@ -661,10 +674,59 @@ public class TreeVisualComponent : MonoBehaviour
             return;
         }
 
-        visualRoot.DOKill();
+        KillHitPunchTween();
         visualRoot.localPosition = Vector3.zero;
-        // 피격마다 새 Tweener를 만들지 않도록 재활용한다. 참조를 들고 있지 않고 타깃(visualRoot)으로만 Kill하므로 재활용 트윈을 잘못 죽일 일이 없다.
-        visualRoot.DOPunchPosition(new Vector3(hitPunchX, 0f, 0f), hitDuration, hitVibrato, hitElasticity).SetRecyclable(true);
+        // 피격마다 새 Tweener를 만들지 않도록 재활용한다. 죽일 때는 target이 visualRoot인지 확인하므로
+        // 다른 나무에 재활용된 트윈을 잘못 죽일 일이 없다(KillHitPunchTween 참조).
+        hitPunchTween = visualRoot.DOPunchPosition(new Vector3(hitPunchX, 0f, 0f), hitDuration, hitVibrato, hitElasticity).SetRecyclable(true);
+    }
+
+    /// <summary>
+    /// 이 타격으로 나무가 죽을 때, 사망 이벤트보다 먼저 해 둬야 하는 PlayHitFeedback의 부분(진행 중인 흔들림을
+    /// 멈추고 visualRoot를 제자리로)만 한다. 사망 이펙트와 피격 이펙트가 topRoot/bottomRoot(visualRoot의 자식)
+    /// 위치를 읽기 때문이다. 새 흔들림·번쩍임은 TreeObj가 사망 이벤트 뒤에도 나무가 풀로 가지 않았을 때만 건다.
+    /// visualRoot가 없으면 false를 돌려준다. 그때는 ResetVisualState가 첫머리에서 바로 끝나 번쩍임을 지우지 않으므로
+    /// (미뤘다가 생략하면 결과가 달라진다) 호출부가 예전처럼 타격 시점에 그대로 걸어야 한다.
+    /// </summary>
+    public bool TrySettleVisualRootForDeath()
+    {
+        if (visualRoot == null)
+        {
+            return false;
+        }
+
+        KillHitPunchTween();
+        visualRoot.localPosition = Vector3.zero;
+        return true;
+    }
+
+    private void KillHitPunchTween()
+    {
+        KillLastTween(hitPunchTween, visualRoot, false); // 예전: visualRoot.DOKill()
+    }
+
+    private void KillAlphaTween()
+    {
+        // 예전 호출 this.DOKill(this)는 this가 bool로 암묵 변환되어 DOKill(complete: true)였다.
+        // 완료(끝값 적용) 후 죽이는 동작을 그대로 유지한다.
+        KillLastTween(alphaTween, this, true);
+    }
+
+    /// <summary>
+    /// _target에 살아 있을 수 있는 유일한 트윈(_lastTween)만 죽여, DOTween.Kill(_target, _complete)와 같은 결과를 낸다.
+    /// 마지막 트윈이 이미 죽었거나 다른 대상에 재활용됐으면 _target에 살아 있는 트윈이 없으므로 아무것도 하지 않는다.
+    /// Tween.Kill이 무시되는 상태(DOTween이 아직 초기화되지 않은 경우 - 이때도 DOTween.Kill(target)은 동작한다)에서는
+    /// 트윈이 그대로 살아 있으므로, 그때는 예전처럼 타깃 기준으로 죽인다.
+    /// </summary>
+    internal static void KillLastTween(Tween _lastTween, object _target, bool _complete)
+    {
+        if (false == _lastTween.IsActive() || false == ReferenceEquals(_lastTween.target, _target))
+            return;
+
+        _lastTween.Kill(_complete);
+
+        if (_lastTween.IsActive())
+            DOTween.Kill(_target, _complete);
     }
 
     // 피격 시 나무 스프라이트가 짧게 흰색으로 번쩍였다가 원래 색으로 돌아오도록 한다.
@@ -682,6 +744,20 @@ public class TreeVisualComponent : MonoBehaviour
         PlayFlash(hitFlashDuration, hitFlashCurve, _bCritical ? criticalHitFlashColor : hitFlashColor, _bCritical);
     }
 
+    /// <summary>
+    /// PlayHitFlash와 같되, 오브젝트 활성 여부 검사를 하지 않는다. TreeObj가 사망 이벤트 뒤로 미뤄 둔 번쩍임을
+    /// 걸 때 쓴다 - 예전에는 타격 시점(활성임이 보장된 시점)에 걸었으므로 그때의 판정 결과(통과)를 그대로 따른다.
+    /// </summary>
+    public void PlayHitFlashIgnoringActiveState(bool _bCritical)
+    {
+        if (!_bCritical && Time.time < criticalFlashEndTime)
+        {
+            return;
+        }
+
+        StartFlash(hitFlashDuration, hitFlashCurve, _bCritical ? criticalHitFlashColor : hitFlashColor, _bCritical);
+    }
+
     // 묘목이 다 자라 스케일이 최대가 되는 순간, 피격 플래시와 같은 셰이더로 한 번 하얗게 반짝인다.
     public void PlayGrowUpFlash()
     {
@@ -695,6 +771,11 @@ public class TreeVisualComponent : MonoBehaviour
             return;
         }
 
+        StartFlash(_duration, _curve, _color, _bCritical);
+    }
+
+    private void StartFlash(float _duration, AnimationCurve _curve, Color _color, bool _bCritical)
+    {
         TreeFlashSystem.Cancel(this);
 
         // 색은 점멸 동안 바뀌지 않으므로 시작할 때 한 번만 넣고, 진행 중에는 세기만 갱신한다.
@@ -758,6 +839,12 @@ public class TreeVisualComponent : MonoBehaviour
     public ParticleColorSet GetTopVfxColor() => currentTopVfxColor;
     public ParticleColorSet GetBottomVfxColor() => currentBottomVfxColor;
 
+    // 이 나무의 transform에 스케일 트윈을 거는 묘목 연출을 알려준다(ResetVisualState의 DOKill 생략 판단용).
+    public void SetSaplingVEComponent(SaplingVEComponent _saplingVEComponent)
+    {
+        saplingVEComponent = _saplingVEComponent;
+    }
+
     // 누적된 연출 값을 지우고 비주얼을 기본 위치와 포즈로 되돌린다.
     public void ResetVisualState()
     {
@@ -770,12 +857,15 @@ public class TreeVisualComponent : MonoBehaviour
         }
 
         // 1. 기존 비주얼 루트(전체 쉐이킹 등) 초기화
-        visualRoot.DOKill();
+        KillHitPunchTween();
         visualRoot.localPosition = Vector3.zero;
         visualRoot.localScale = Vector3.one;
 
         // 2. 묘목(Sapling) 애니메이션이 사용했던 Transform 크기 초기화
-        transform.DOKill();
+        if (saplingVEComponent == null)
+            transform.DOKill();
+        else
+            saplingVEComponent.KillScaleTweenOn(transform);
         transform.localScale = Vector3.one;
 
         // 3. 투명도(Alpha)를 완전한 불투명(1.0f) 상태로 복구
@@ -848,7 +938,7 @@ public class TreeVisualComponent : MonoBehaviour
     {
         // 투명도 트윈은 이 컴포넌트(this)를 타깃으로만 건다. 렌더러 개별 DOKill은 걸린 트윈이 없는데도
         // DOTween의 활성 트윈 전체를 선형 탐색하므로(ResetTree마다 8회) 제거했다.
-        this.DOKill(this); // 현재 스크립트 기반 float 트윈 정지
+        KillAlphaTween(); // 현재 스크립트 기반 float 트윈 정지
 
         ApplyAlpha(_alpha);
     }
@@ -866,7 +956,7 @@ public class TreeVisualComponent : MonoBehaviour
 
     public void FadeAlpha(float _targetAlpha, float _duration)
     {
-        this.DOKill(this); // 기존 트윈 취소 (렌더러 개별 DOKill은 SetAlpha와 같은 이유로 제거)
+        KillAlphaTween(); // 기존 트윈 취소 (렌더러 개별 DOKill은 SetAlpha와 같은 이유로 제거)
 
         currentAlpha = topRenderer != null ? topRenderer.color.a : 1f;
 
@@ -876,7 +966,7 @@ public class TreeVisualComponent : MonoBehaviour
             alphaSetter = SetCurrentAlpha;
         }
 
-        DOTween.To(alphaGetter, alphaSetter, _targetAlpha, _duration).SetTarget(this);
+        alphaTween = DOTween.To(alphaGetter, alphaSetter, _targetAlpha, _duration).SetTarget(this);
     }
 
     public void SetOutline(bool _boolean)

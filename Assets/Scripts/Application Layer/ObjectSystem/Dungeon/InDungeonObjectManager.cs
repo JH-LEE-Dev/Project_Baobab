@@ -1358,9 +1358,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
+
+        // 아래에서 나무 위치를 여러 번 쓴다. 나무는 스폰(SpawnTreeAt)과 정리(ClearTrees) 때만 움직이고 이 사이에는
+        // 둘 다 일어나지 않으므로 한 번만 읽는다.
+        Vector3 treePos = _treeObj.transform.position;
         // 보석 나무는 Tree_Dead 자리에만 전용 사운드를 대신 재생한다. 함께 울리는 Prize2는 그대로 유지.
-        Sound.Play(_treeObj.bIsGemStage ? SoundID.TreeDeadMine : SoundID.TreeDead, _treeObj.transform.position);
-        Sound.Play(SoundID.Prize2, _treeObj.transform.position);
+        Sound.Play(_treeObj.bIsGemStage ? SoundID.TreeDeadMine : SoundID.TreeDead, treePos);
+        Sound.Play(SoundID.Prize2, treePos);
 
         if (_treeObj.bStarMarked && _treeObj.treeVisualComponent != null)
         {
@@ -1375,15 +1379,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             if (bConstellationManifestUnlocked)
             {
                 inDungeonVFXManager.PlayConstellationGroundMarkVFX(
-                    _treeObj.transform.position,
+                    treePos,
                     _treeObj.treeVisualComponent.GetTopSortingOrder(),
                     _treeObj.StarGroupId);
-                Sound.Play(SoundID.Starappear, _treeObj.transform.position);
+                Sound.Play(SoundID.Starappear, treePos);
             }
         }
 
-        environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(_treeObj.transform.position);
-        environmentProvider.tilemapDataProvider.RestoreDecoTileForTree(_treeObj.transform.position);
+        environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(treePos);
+        environmentProvider.tilemapDataProvider.RestoreDecoTileForTree(treePos);
         environmentProvider.densityProvider.UpdateTreeCnt(false);
 
         float dropMultiplier = 1f;
@@ -1415,7 +1419,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         // 죽은 위치 재사용 준비
-        Vector3 deadPos = _treeObj.transform.position;
+        Vector3 deadPos = treePos;
 
         // "분실물 보관함" - 나무를 죽여 LogItem이 드랍될 때 함께 스폰을 시도한다.
         // 이미 획득했거나(영구 저장 플래그) 이번 런에서 이미 스폰을 시도했으면(습득 완료 전 중복 방지)
@@ -2958,6 +2962,16 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             if (tree == null || tree.bDead || !tree.bCanApplyDamage) continue;
 
             Vector3 treePos = tree.transform.position;
+
+            float dx = treePos.x - charPos.x;
+            float dy = (treePos.y - charPos.y) * 2f; // 등각 보정
+            float isoSqr = dx * dx + dy * dy;
+
+            // 지금까지의 최근접보다 가깝지 않으면 아래 화면 범위 검사를 통과해도 뽑히지 않으므로 먼저 거른다.
+            // 화면 범위 검사(카메라 조회가 섞인 GetMaxDistanceToEdge)와 거리 검사는 후보를 빼기만 하고 부작용이
+            // 없으므로, 순서를 바꿔도 뽑히는 나무는 같다(같은 순회 순서, 같은 엄격한 < 비교).
+            if (!(isoSqr < nearestIsoSqr)) continue;
+
             Vector3 dirToTree = treePos - charPos;
             float actualDist = dirToTree.magnitude;
             if (actualDist < 0.001f) continue;
@@ -2965,15 +2979,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             float maxDist = CameraBoundsUtil.GetMaxDistanceToEdge(dirToTree, 0f, 1f);
             if (maxDist <= 0.1f || actualDist > maxDist) continue; // 화면 타원 범위 밖
 
-            float dx = treePos.x - charPos.x;
-            float dy = (treePos.y - charPos.y) * 2f; // 등각 보정
-            float isoSqr = dx * dx + dy * dy;
-
-            if (isoSqr < nearestIsoSqr)
-            {
-                nearestIsoSqr = isoSqr;
-                nearest = tree;
-            }
+            nearestIsoSqr = isoSqr;
+            nearest = tree;
         }
 
         return nearest;

@@ -33,6 +33,8 @@ public class HUD_HPBar : HUD_ProgressBar
     private RectTransform rect;
     private UnityAction onHideCompleteAction;
     private Tween ghostTween;
+    // ghostSlider.DOValue 대신 쓰는 델리게이트 캐시(SliderValueTweener 참조)
+    private SliderValueTweener ghostValueTweener;
 
     public object Owner => owner;
 
@@ -121,7 +123,7 @@ public class HUD_HPBar : HUD_ProgressBar
             ghostTween.Kill();
         }
 
-        ghostTween = ghostSlider.DOValue(_ratio, ghostFollowDuration)
+        ghostTween = SliderValueTweener.DOValue(ref ghostValueTweener, ghostSlider, _ratio, ghostFollowDuration)
             .SetDelay(_nextDelay)
             .SetEase(Ease.OutQuad);
     }

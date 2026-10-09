@@ -133,6 +133,15 @@ public class LogItem : Item, IStaticCollidable
     // 런타임에 찾아야 하므로, 중복 탐색과 원본 색 재캡처를 함께 막는다.
     private bool bRenderersCached = false;
 
+    // 프리팹 구성 그대로의 자식 SpriteRenderer들과, 그때의 루트 자식 수(GetOwnSortableRenderers 참조)
+    private SpriteRenderer[] ownSortableRenderers;
+    private int ownSortableRootChildCount = -1;
+
+    // PlayBeltEnter/ExitAnimation이 transform/visualTransform에 트윈을 건 적이 있는지.
+    // 원목 트랜스폼에 트윈을 거는 곳은 이 두 함수뿐이라, 한 번도 안 걸린 원목은 ResetItem에서
+    // DOKill(활성 트윈 전체를 훑는다)을 부를 필요가 없다. 던전 원목은 벨트를 타지 않아 늘 false다.
+    private bool bBeltTweenStarted = false;
+
     private const string flyingItemSortingLayerName = "FlyingItem";
     private const string objectsSortingLayerName = "Objects";
     private static int objectsSortingLayerID = -1;
@@ -236,7 +245,12 @@ public class LogItem : Item, IStaticCollidable
         if (customSortable != null)
         {
             // 정렬 기준(Anchor)을 상하 이동하는 visualTransform으로 설정
-            customSortable.Initialize(visualTransform != null ? visualTransform : transform);
+            Transform sortAnchor = visualTransform != null ? visualTransform : transform;
+            SpriteRenderer[] ownRenderers = GetOwnSortableRenderers();
+            if (ownRenderers != null)
+                customSortable.Initialize(sortAnchor, ownRenderers);
+            else
+                customSortable.Initialize(sortAnchor);
             customSortable.AddSpriteRenderer(spriteRenderer);
             customSortable.AddSpriteRenderer(outlineSR);
         }
@@ -291,6 +305,34 @@ public class LogItem : Item, IStaticCollidable
         originalShadowColor = shadowRenderer != null ? shadowRenderer.color : Color.white;
 
         bRenderersCached = true;
+    }
+
+    /// <summary>
+    /// CustomSortable에 넘길 원목 자신의 SpriteRenderer 목록. 인자 없이 Initialize하면 CustomSortable이
+    /// 원목을 꺼낼 때마다 GetComponentsInChildren으로 자식 전체를 다시 훑는데, 그 결과는 프리팹 구성 그대로라
+    /// 매번 같다. 아무것도 붙기 전(Awake 또는 첫 Initialize)에 한 번 잡아두고 그 배열을 넘긴다.
+    ///
+    /// 다만 원목 루트에는 보석 아우라(SpriteRenderer 보유)나 반짝임 파티클이 잠시 붙었다 떨어진다.
+    /// 아우라가 붙어 있거나 루트 자식 수가 캡처 때와 다르면 null을 돌려, 예전처럼 그 순간의 자식을
+    /// 전부 다시 훑게 한다(외부 자식이 섞인 경우의 결과까지 이전과 같게 유지한다).
+    /// </summary>
+    private SpriteRenderer[] GetOwnSortableRenderers()
+    {
+        CaptureOwnSortableRenderers();
+
+        if (gemAura != null || transform.childCount != ownSortableRootChildCount)
+            return null;
+
+        return ownSortableRenderers;
+    }
+
+    private void CaptureOwnSortableRenderers()
+    {
+        if (ownSortableRenderers != null)
+            return;
+
+        ownSortableRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+        ownSortableRootChildCount = transform.childCount;
     }
 
     public void SetVfxComponent(VFXComponent _vfxComponent)
@@ -366,6 +408,7 @@ public class LogItem : Item, IStaticCollidable
     /// </summary>
     public void PlayBeltEnterAnimation()
     {
+        bBeltTweenStarted = true;
         transform.DOKill();
         transform.localScale = Vector3.one;
 
@@ -382,6 +425,7 @@ public class LogItem : Item, IStaticCollidable
     /// </summary>
     public void PlayBeltExitAnimation(Vector3 _targetPos, float _duration)
     {
+        bBeltTweenStarted = true;
         transform.DOKill();
         transform.DOMove(_targetPos, _duration).SetEase(Ease.Linear).SetLink(gameObject);
 
@@ -668,6 +712,7 @@ public class LogItem : Item, IStaticCollidable
     private void Awake()
     {
         CacheRenderers();
+        CaptureOwnSortableRenderers();
     }
 
     private void OnEnable()
@@ -731,7 +776,11 @@ public class LogItem : Item, IStaticCollidable
         bFadeAndVanish = false;
         // 풀에서 재사용될 때 이전 소유자(예: DropAllItem)가 남긴 구독이 새 사용처로 잘못 넘어가지 않도록 초기화
         LogItemVanishedEvent = null;
-        transform.DOKill();
+        // 벨트 연출 트윈이 걸린 적 없는 원목은 죽일 트윈이 없다(DOKill이 아무것도 하지 않는다)
+        bool bKillBeltTweens = bBeltTweenStarted;
+        bBeltTweenStarted = false;
+        if (bKillBeltTweens)
+            transform.DOKill();
         transform.localScale = Vector3.one;
         landingDampTime = landingDampDuration;
         durability = originalDurability;
@@ -788,7 +837,8 @@ public class LogItem : Item, IStaticCollidable
 
         if (null != visualTransform)
         {
-            visualTransform.DOKill();
+            if (bKillBeltTweens)
+                visualTransform.DOKill();
             visualTransform.localRotation = Quaternion.identity;
             visualTransform.localScale = Vector3.one;
         }

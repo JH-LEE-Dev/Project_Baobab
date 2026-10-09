@@ -75,6 +75,11 @@ public class ItemAuraEffectController : MonoBehaviour
     private float currentRandomSeed = 0f;
     private float currentStartAngle = 0f;
     private float currentRotationSpeed = 0.6f;
+    // 직전 Stop()이 남긴 상태(isPlaying=false, elapsed=0, _Intensity=0, _BurstProgress=0, renderer 꺼짐)가 그 뒤로
+    // 바뀌지 않았는지. 그대로면 다시 Stop()해도 같은 값을 다시 쓸 뿐이다. 원목 습득마다 LogItem이 Stop()한 직후
+    // 풀 반납(SetActive(false))의 OnDisable이 또 Stop()을 부르므로 두 번째를 건너뛴다.
+    // 이 값들을 바꾸는 곳(Play, Initialize, UpdateBurst, 렌더러 교체)에서 false로 되돌린다.
+    private bool bStopStateApplied = false;
 
     /// <summary>
     /// 인스펙터에 세팅된 단발성 버스트의 재생 시간(수명)입니다.
@@ -93,6 +98,7 @@ public class ItemAuraEffectController : MonoBehaviour
     public void Initialize(Renderer _targetRenderer)
     {
         targetRenderer = _targetRenderer;
+        bStopStateApplied = false;
         currentRotationSpeed = rotationSpeed;
         EnsurePropertyBlock();
         transform.localScale = maxScale;
@@ -133,14 +139,25 @@ public class ItemAuraEffectController : MonoBehaviour
             currentRotationSpeed = rotationSpeed;
         }
 
+        bStopStateApplied = false;
+
         if (null != targetRenderer)
         {
             targetRenderer.enabled = true;
         }
 
-        ApplyIntensity(targetIntensity);
-        ApplyAllSettings();
-        ApplyBurstProgress(0f);
+        // 예전 ApplyIntensity -> ApplyAllSettings -> ApplyBurstProgress(0)은 각각 읽기(Get)-수정-쓰기(Set)였다.
+        // 사이에 다른 쓰기가 없어 매번 직전 Set 결과를 다시 읽을 뿐이므로, 한 번 읽고 같은 순서로 모두 넣은 뒤
+        // 한 번 쓴다. 최종 프로퍼티 블록은 같다(중간 Set은 같은 호출 안이라 그려지지 않는다).
+        if (null != targetRenderer)
+        {
+            EnsurePropertyBlock();
+            targetRenderer.GetPropertyBlock(propertyBlock);
+            propertyBlock.SetFloat(ItemAuraShaderHelper.IntensityPropertyId, targetIntensity);
+            WriteAllSettings(propertyBlock);
+            propertyBlock.SetFloat(ItemAuraShaderHelper.BurstProgressPropertyId, 0f);
+            targetRenderer.SetPropertyBlock(propertyBlock);
+        }
     }
 
     /// <summary>
@@ -149,14 +166,27 @@ public class ItemAuraEffectController : MonoBehaviour
     [Button("⏹ Stop Immediate (즉시 정지)")]
     public void Stop()
     {
+        // 직전 Stop의 결과가 그대로면 같은 값을 다시 쓸 뿐이다(bStopStateApplied 참조)
+        if (bStopStateApplied && null != targetRenderer)
+            return;
+
         isPlaying = false;
         elapsedTime = 0f;
-        ApplyIntensity(0f);
-        ApplyBurstProgress(0f);
+
+        // 예전 ApplyIntensity(0) -> ApplyBurstProgress(0) 두 번의 읽기-수정-쓰기를 한 번으로 합친다(Play 참조)
+        if (null != targetRenderer)
+        {
+            EnsurePropertyBlock();
+            targetRenderer.GetPropertyBlock(propertyBlock);
+            propertyBlock.SetFloat(ItemAuraShaderHelper.IntensityPropertyId, 0f);
+            propertyBlock.SetFloat(ItemAuraShaderHelper.BurstProgressPropertyId, 0f);
+            targetRenderer.SetPropertyBlock(propertyBlock);
+        }
 
         if (null != targetRenderer)
         {
             targetRenderer.enabled = false;
+            bStopStateApplied = true;
         }
     }
 
@@ -288,6 +318,7 @@ public class ItemAuraEffectController : MonoBehaviour
         if (null == targetRenderer)
         {
             targetRenderer = GetComponent<Renderer>();
+            bStopStateApplied = false;
         }
     }
 
@@ -297,26 +328,30 @@ public class ItemAuraEffectController : MonoBehaviour
 
         EnsurePropertyBlock();
         targetRenderer.GetPropertyBlock(propertyBlock);
+        WriteAllSettings(propertyBlock);
+        targetRenderer.SetPropertyBlock(propertyBlock);
+    }
 
-        ItemAuraShaderHelper.ApplyPixelSettings(propertyBlock, enablePixelStyle, pixelResolution, colorBandingSteps);
-        ItemAuraShaderHelper.ApplyRandomness(propertyBlock, currentRandomSeed, currentStartAngle);
-        propertyBlock.SetFloat(ItemAuraShaderHelper.BloomMultiplierPropertyId, bloomIntensity);
-        propertyBlock.SetFloat(ItemAuraShaderHelper.RotationSpeedPropertyId, currentRotationSpeed);
-        propertyBlock.SetFloat(ItemAuraShaderHelper.SpeedVariationPropertyId, speedVariation);
+    // ApplyAllSettings가 넣는 값들(_Intensity/_BurstProgress는 건드리지 않는다)
+    private void WriteAllSettings(MaterialPropertyBlock _block)
+    {
+        ItemAuraShaderHelper.ApplyPixelSettings(_block, enablePixelStyle, pixelResolution, colorBandingSteps);
+        ItemAuraShaderHelper.ApplyRandomness(_block, currentRandomSeed, currentStartAngle);
+        _block.SetFloat(ItemAuraShaderHelper.BloomMultiplierPropertyId, bloomIntensity);
+        _block.SetFloat(ItemAuraShaderHelper.RotationSpeedPropertyId, currentRotationSpeed);
+        _block.SetFloat(ItemAuraShaderHelper.SpeedVariationPropertyId, speedVariation);
 
         if (true == overrideRaySettings)
         {
-            ItemAuraShaderHelper.ApplyRayOverrides(propertyBlock, rayCount, angleJitter, beamBlur, minBeamWidth, maxBeamWidth);
+            ItemAuraShaderHelper.ApplyRayOverrides(_block, rayCount, angleJitter, beamBlur, minBeamWidth, maxBeamWidth);
         }
 
         if (true == overrideColors)
         {
-            ItemAuraShaderHelper.ApplyColorSettings(propertyBlock, coreColor, beamColor, outerColor);
+            ItemAuraShaderHelper.ApplyColorSettings(_block, coreColor, beamColor, outerColor);
         }
 
-        ItemAuraShaderHelper.ApplyPrismSettings(propertyBlock, enablePrismMode, prismSaturation, prismSpeed, prismHueOffset);
-
-        targetRenderer.SetPropertyBlock(propertyBlock);
+        ItemAuraShaderHelper.ApplyPrismSettings(_block, enablePrismMode, prismSaturation, prismSpeed, prismHueOffset);
     }
 
     private void ApplyColorSettings()
@@ -405,17 +440,27 @@ public class ItemAuraEffectController : MonoBehaviour
         elapsedTime += _deltaTime;
         float progress = 0f < burstDuration ? Mathf.Clamp01(elapsedTime / burstDuration) : 1f;
 
-        // 셰이더 내부에서 32 PPU 픽셀 그리드를 타고 순차적으로 중심에서 외곽으로 확장 및 부드러운 소멸 연산 구동
-        ApplyBurstProgress(progress);
-
-        if (1f <= progress)
+        if (1f > progress)
         {
-            isPlaying = false;
-            ApplyIntensity(0f);
-            if (null != targetRenderer)
-            {
-                targetRenderer.enabled = false;
-            }
+            // 셰이더 내부에서 32 PPU 픽셀 그리드를 타고 순차적으로 중심에서 외곽으로 확장 및 부드러운 소멸 연산 구동
+            ApplyBurstProgress(progress);
+            return;
+        }
+
+        // 마지막 프레임: 예전 ApplyBurstProgress(progress) -> ApplyIntensity(0) 두 번의 읽기-수정-쓰기를 한 번으로 합친다
+        if (null != targetRenderer)
+        {
+            EnsurePropertyBlock();
+            targetRenderer.GetPropertyBlock(propertyBlock);
+            propertyBlock.SetFloat(ItemAuraShaderHelper.BurstProgressPropertyId, progress);
+            propertyBlock.SetFloat(ItemAuraShaderHelper.IntensityPropertyId, 0f);
+            targetRenderer.SetPropertyBlock(propertyBlock);
+        }
+
+        isPlaying = false;
+        if (null != targetRenderer)
+        {
+            targetRenderer.enabled = false;
         }
     }
 

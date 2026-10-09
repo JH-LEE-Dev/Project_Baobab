@@ -143,6 +143,16 @@ public struct VFXPlaySettings
 }
 
 /// <summary>
+/// 태그별 풀 목록에서 "이 위치 앞의 인스턴스는 전부 꺼낼 수 없다(사용 중이거나 파괴됨)"를 뜻하는 위치.
+/// VFXComponent.Get이 이 위치부터 찾아도 맨 앞부터 훑었을 때와 같은 인스턴스(가장 앞의 비활성 인스턴스)를 고른다.
+/// 인스턴스가 꺼질 때마다(VFXPoolInstanceHelper.NotifyPoolSlotFree) 그 위치까지 내려온다.
+/// </summary>
+public sealed class VFXPoolFreeHint
+{
+    public int firstMaybeFree;
+}
+
+/// <summary>
 /// 여러 종류의 이펙트 프리팹을 태그별로 바인딩하여 각각 로컬 오브젝트 풀링을 수행하는 VFX 컴포넌트입니다.
 /// </summary>
 public class VFXComponent : MonoBehaviour
@@ -161,6 +171,9 @@ public class VFXComponent : MonoBehaviour
     private List<ParticleSystem> masterList;
     // 풀 인스턴스 → 헬퍼 조회표. Get/Play/Stop마다 GetComponent를 다시 하지 않도록 생성 시 한 번만 채운다.
     private Dictionary<ParticleSystem, VFXPoolInstanceHelper> helperLookup;
+    // 태그별 "앞쪽은 전부 사용 중" 위치(VFXPoolFreeHint 참조). 바닥에 놓인 보석 원목마다 루프 Shiny가 켜져 있어,
+    // 매번 맨 앞부터 훑으면 원목이 하나 착지할 때마다 켜진 Shiny 수만큼 activeSelf를 읽었다.
+    private Dictionary<string, VFXPoolFreeHint> poolFreeHints;
     private bool isInitialized = false;
 
 
@@ -182,6 +195,7 @@ public class VFXComponent : MonoBehaviour
         configDictionary = new Dictionary<string, VFXPoolData>(_dataCount);
         masterList = new List<ParticleSystem>();
         helperLookup = new Dictionary<ParticleSystem, VFXPoolInstanceHelper>();
+        poolFreeHints = new Dictionary<string, VFXPoolFreeHint>(_dataCount);
 
         for (int i = 0; i < _dataCount; i++)
         {
@@ -195,14 +209,19 @@ public class VFXComponent : MonoBehaviour
             configDictionary.Add(_data.VfxTag, _data);
 
             List<ParticleSystem> _list = new List<ParticleSystem>(_data.InitialPoolSize);
+            VFXPoolFreeHint _hint = new VFXPoolFreeHint();
             for (int j = 0; j < _data.InitialPoolSize; j++)
             {
                 ParticleSystem _newInstance = CreateNewInstance(_data);
                 if (null != _newInstance)
+                {
+                    BindPoolSlot(_newInstance, _hint, _list.Count);
                     _list.Add(_newInstance);
+                }
             }
 
             poolDictionary.Add(_data.VfxTag, _list);
+            poolFreeHints.Add(_data.VfxTag, _hint);
         }
 
         isInitialized = true;
@@ -280,12 +299,20 @@ public class VFXComponent : MonoBehaviour
         if (false == configDictionary.TryGetValue(_tag, out VFXPoolData _config))
             return null;
 
+        // _hint.firstMaybeFree 앞은 전부 꺼낼 수 없는 인스턴스이므로 거기서부터 찾는다(VFXPoolFreeHint 참조).
+        // 찾으면 그 위치를 그대로 남긴다(i+1이 아니다) - 꺼낸 쪽이 재생하지 않고 끝나도 다음 Get이 다시 고를 수 있게.
+        poolFreeHints.TryGetValue(_tag, out VFXPoolFreeHint _hint);
+
         int _count = _poolList.Count;
-        for (int i = 0; i < _count; i++)
+        int _start = (null != _hint) ? Mathf.Clamp(_hint.firstMaybeFree, 0, _count) : 0;
+        for (int i = _start; i < _count; i++)
         {
             ParticleSystem _effect = _poolList[i];
             if (null != _effect && false == _effect.gameObject.activeSelf)
             {
+                if (null != _hint)
+                    _hint.firstMaybeFree = i;
+
                 VFXPoolInstanceHelper _helper = GetHelper(_effect);
                 if (null != _helper && null != _helper.TargetTransform)
                 {
@@ -302,6 +329,9 @@ public class VFXComponent : MonoBehaviour
             }
         }
 
+        if (null != _hint)
+            _hint.firstMaybeFree = _count;
+
         // 확장을 끈 풀은 설계상 하드 캡이다(OverheatLoop 1개, DroneCharging 3개 등). 예전처럼 null을 돌려준다.
         if (false == _config.AllowDynamicExpansion)
             return null;
@@ -310,7 +340,10 @@ public class VFXComponent : MonoBehaviour
         {
             ParticleSystem _dynamicInstance = CreateNewInstance(_config);
             if (null != _dynamicInstance)
+            {
+                BindPoolSlot(_dynamicInstance, _hint, _poolList.Count);
                 _poolList.Add(_dynamicInstance);
+            }
 
             return _dynamicInstance;
         }
@@ -516,6 +549,7 @@ public class VFXComponent : MonoBehaviour
                     _effect.Clear(true);
                     _effect.transform.SetParent(transform);
                     _effect.gameObject.SetActive(false);
+                    ResetPoolFreeHints();
                 }
                 else
                 {
@@ -548,6 +582,7 @@ public class VFXComponent : MonoBehaviour
                     _effect.Clear(true);
                     _effect.transform.SetParent(transform);
                     _effect.gameObject.SetActive(false);
+                    ResetPoolFreeHints();
                 }
             }
         }
@@ -583,6 +618,9 @@ public class VFXComponent : MonoBehaviour
 
         if (null != poolDictionary)
             poolDictionary.Clear();
+
+        if (null != poolFreeHints)
+            poolFreeHints.Clear();
 
         if (null != configDictionary)
             configDictionary.Clear();
@@ -798,6 +836,35 @@ public class VFXComponent : MonoBehaviour
     }
 
     /// <summary>
+    /// 인스턴스에 자기가 속한 태그 풀의 위치를 알려, 꺼질 때 그 풀의 탐색 시작 위치를 내릴 수 있게 합니다.
+    /// 풀 목록은 뒤에 추가만 되고 순서가 바뀌거나 빠지지 않으므로 위치는 생성 시 한 번 정하면 된다.
+    /// </summary>
+    private void BindPoolSlot(ParticleSystem _instance, VFXPoolFreeHint _hint, int _index)
+    {
+        if (null == _hint)
+            return;
+
+        VFXPoolInstanceHelper _helper = GetHelper(_instance);
+        if (null != _helper)
+            _helper.BindPoolSlot(_hint, _index);
+        else
+            _hint.firstMaybeFree = 0; // 헬퍼가 없으면 꺼짐을 알 수 없으므로 이 풀은 늘 맨 앞부터 찾게 둔다
+    }
+
+    /// <summary>
+    /// 헬퍼 없이 인스턴스를 끈 경우(어느 풀의 몇 번째인지 모른다) 모든 풀을 맨 앞부터 찾게 되돌립니다.
+    /// 생성된 인스턴스에는 항상 헬퍼가 붙으므로 실제로는 거의 지나지 않는 안전망이다.
+    /// </summary>
+    private void ResetPoolFreeHints()
+    {
+        if (null == poolFreeHints)
+            return;
+
+        foreach (VFXPoolFreeHint _hint in poolFreeHints.Values)
+            _hint.firstMaybeFree = 0;
+    }
+
+    /// <summary>
     /// 새 풀 인스턴스를 전체 목록과 헬퍼 조회표에 등록합니다.
     /// </summary>
     private void RegisterInstance(ParticleSystem _instance, VFXPoolInstanceHelper _helper)
@@ -1000,6 +1067,9 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     private int lastSortingOrder;
     private WaitForSeconds cachedReturnWait;
     private float cachedReturnWaitSeconds = -1f;
+    // 이 인스턴스가 속한 태그 풀과 그 안의 위치. 꺼질 때 풀의 탐색 시작 위치를 여기까지 내린다(VFXPoolFreeHint 참조).
+    private VFXPoolFreeHint poolFreeHint;
+    private int poolIndex = -1;
 
 
     // 퍼블릭 초기화 및 제어 메서드
@@ -1051,6 +1121,29 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     }
 
     public static bool IsQuitting => isQuitting;
+
+    public void BindPoolSlot(VFXPoolFreeHint _hint, int _index)
+    {
+        poolFreeHint = _hint;
+        poolIndex = _index;
+    }
+
+    /// <summary>
+    /// 이 인스턴스가 다시 꺼낼 수 있는 상태가 됐을(또는 됐을 수 있는) 때 부른다. 풀의 탐색 시작 위치를 이 인스턴스
+    /// 위치까지 내린다. 실제로는 꺼지지 않은 경우(부모만 꺼진 경우 등)에 불려도, 탐색을 조금 더 앞에서 시작할 뿐
+    /// 고르는 인스턴스는 같다.
+    /// </summary>
+    private void NotifyPoolSlotFree()
+    {
+        if (null != poolFreeHint && poolIndex >= 0 && poolIndex < poolFreeHint.firstMaybeFree)
+            poolFreeHint.firstMaybeFree = poolIndex;
+    }
+
+    private void OnDisable()
+    {
+        // 반납 경로(ReturnToPool) 밖에서 이 오브젝트가 꺼지는 경우까지 덮는 안전망
+        NotifyPoolSlotFree();
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void RegisterQuitGuard()
@@ -1228,6 +1321,9 @@ public class VFXPoolInstanceHelper : MonoBehaviour
             if (targetTransform != transform)
                 gameObject.SetActive(false);
         }
+
+        // 부모가 이미 꺼져 있어 OnDisable이 오지 않는 경우가 있으므로 여기서 직접 알린다
+        NotifyPoolSlotFree();
 
         isReturning = false;
     }

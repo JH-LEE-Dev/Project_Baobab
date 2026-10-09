@@ -183,6 +183,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // 값을 기억해 두었다가 달라지면 사라진다(나무가 풀에서 재사용되어 새 카운트다운을 시작한 경우 포함).
     public int HeatSequence { get; private set; } = 0;
 
+    // ResetTree가 불린 횟수. 사망 타격의 흔들림·번쩍임을 이벤트 뒤로 미룰 때, 그 사이에 ResetTree(풀 반환, 또는
+    // 반환 직후 같은 호출 안에서 다시 꺼내져 재스폰)가 있었는지 가리는 데 쓴다(TakeDamageInternal 참조).
+    private int resetTreeCount = 0;
+
     // 과열 버프 중 도끼 평타에 맞았을 때의 지속 피해. 이 나무 자신이 코루틴을 들고 있어야,
     // 나무가 죽어 풀에서 재사용되어도(ResetTree) 엉뚱한 새 나무에 데미지가 잘못 들어가지 않는다.
     private Coroutine overheatDotCoroutine;
@@ -389,6 +393,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         if (saplingVEComponent != null)
         {
             saplingVEComponent.Initialize(treeVisualComponent.transform);
+            treeVisualComponent.SetSaplingVEComponent(saplingVEComponent);
         }
 
         InitializeShadow(topShadowObject);
@@ -473,6 +478,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     public void ResetTree()
     {
+        resetTreeCount++;
         bDead = false;
         currentGemStage = 0;
         bReserved = false;
@@ -579,10 +585,28 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
         healthComponent.DecreaseHealth(_damage);
 
+        // 이 타격으로 죽는다면 흔들림·번쩍임은 사망 이벤트 뒤로 미룬다. 던전에서는 사망 이벤트 안에서 나무가 풀로
+        // 반환되며 ResetVisualState가 둘 다 즉시 되돌리므로(같은 호출 안이라 한 프레임도 그려지지 않는다), 걸었다가
+        // 지우는 비용(트윈 생성과 렌더러 6개의 프로퍼티 블록 쓰기)만 남았었다. 대량 벌목 프레임에 그루 수만큼 쌓인다.
+        // 이벤트 전에 해 둬야 하는 것(진행 중인 흔들림 정지와 visualRoot 원위치)은 지금 한다. 피격·사망 이펙트가
+        // visualRoot 자식(topRoot/bottomRoot)의 위치를 읽기 때문이다. 사망 이벤트를 받아 반환하는 쪽이 없는
+        // 경우(마을 나무 등)에는 아래에서 이벤트 뒤에 그대로 건다. 그 사이에 이 나무의 비주얼을 읽거나 바꾸는
+        // 핸들러는 던전의 것뿐이고, 던전 나무는 반드시 반환되므로 결과가 같다.
+        bool bDeferHitVisual = (false == wasAlreadyDead && true == bDead);
+        int resetTreeCountAtHit = resetTreeCount;
+
         if (treeVisualComponent != null)
         {
-            treeVisualComponent.PlayHitFeedback();
-            treeVisualComponent.PlayHitFlash(_bCritical);
+            if (bDeferHitVisual)
+            {
+                bDeferHitVisual = treeVisualComponent.TrySettleVisualRootForDeath();
+            }
+
+            if (false == bDeferHitVisual)
+            {
+                treeVisualComponent.PlayHitFeedback();
+                treeVisualComponent.PlayHitFlash(_bCritical);
+            }
         }
 
         if (_bPlayHitSound)
@@ -618,6 +642,16 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
             }
 
             TreeDeadEvent?.Invoke(this);
+        }
+
+        // 사망 이벤트 뒤에도 ResetTree를 거치지 않았다면(= 풀로 반환되지 않았다면) 미뤄 둔 흔들림·번쩍임을 지금
+        // 건다(위 bDeferHitVisual 참조). ResetTree를 거쳤다면 예전에도 ResetVisualState가 둘 다 지웠으므로 걸지
+        // 않는다 - 반환된 나무가 같은 호출 안에서 다시 꺼내져 새 나무로 스폰된 경우도 여기서 걸러진다.
+        // 번쩍임은 타격 시점의 활성 여부(이 함수 첫머리에서 활성임을 확인했다)로 판정했던 예전 동작에 맞춘다.
+        if (bDeferHitVisual && treeVisualComponent != null && resetTreeCountAtHit == resetTreeCount)
+        {
+            treeVisualComponent.PlayHitFeedback();
+            treeVisualComponent.PlayHitFlashIgnoringActiveState(_bCritical);
         }
 
         // 이 히트로 죽었다면 위에서 이미 풀로 반환되어 gameObject가 비활성이므로,

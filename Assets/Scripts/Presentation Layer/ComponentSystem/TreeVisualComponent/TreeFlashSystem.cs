@@ -53,6 +53,7 @@ public static class TreeFlashSystem
         EnsureDriver();
 
         _visual.ApplyFlashAmountFromSystem(_curve.Evaluate(0f));
+        _visual.flashEntryIndex = entries.Count;
         entries.Add(new Entry
         {
             visual = _visual,
@@ -68,6 +69,21 @@ public static class TreeFlashSystem
     /// </summary>
     public static void Cancel(TreeVisualComponent _visual)
     {
+        // 항목이 생길 때(Begin)와 빠질 때(RemoveAt)마다 나무에 위치를 적어 두므로, 대개는 목록을 훑지 않고 끝난다.
+        // 대량 타격 프레임에는 맞는 나무마다 두 번씩(PlayFlash, Begin) 불려, 목록 전체를 훑으면 그루 수의 제곱이 됐다.
+        // -1이면 목록에 없다(항목은 Begin으로만 생기고 RemoveAt으로만 빠진다). 적어 둔 위치가 어긋났으면
+        // (ResetStatics가 목록만 비운 경우) 예전처럼 끝까지 훑는다.
+        if (_visual is null) return;
+
+        int index = _visual.flashEntryIndex;
+        if (index == -1) return;
+
+        if (index >= 0 && index < entries.Count && ReferenceEquals(entries[index].visual, _visual))
+        {
+            RemoveAt(index);
+            return;
+        }
+
         for (int i = entries.Count - 1; i >= 0; i--)
         {
             if (ReferenceEquals(entries[i].visual, _visual))
@@ -113,10 +129,15 @@ public static class TreeFlashSystem
 
     private static void RemoveAt(int _index)
     {
+        TreeVisualComponent removed = entries[_index].visual;
+        if (removed is object) removed.flashEntryIndex = -1;
+
         int last = entries.Count - 1;
         if (_index != last)
         {
-            entries[_index] = entries[last];
+            Entry moved = entries[last];
+            entries[_index] = moved;
+            if (moved.visual is object) moved.visual.flashEntryIndex = _index;
         }
         entries.RemoveAt(last);
     }
