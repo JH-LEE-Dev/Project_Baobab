@@ -721,12 +721,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
   database: {fileID: 11400000, guid: 0df6751f8c20d9743bd59806f470bed3, type: 2}
   poolSize: 96
+  maxPoolSize: 192
   farDistanceBuffer: 1.05
+  spatialSpread: 90
   bgmFadeDuration: 1
   mixer: {fileID: 24100000, guid: 865ed13951834138be11bea38be7fea0, type: 2}
   duckSettings: {fileID: 11400000, guid: 0051b4e90e29e3e4ea42c245e77f7610, type: 2}
   enableDebugSound: 0
   debugSoundId: 0
+  showDebugOverlay: 0
 --- !u!114 &1052455154
 MonoBehaviour:
   m_ObjectHideFlags: 0
