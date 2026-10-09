@@ -156,7 +156,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         {
             axeImage = _axeImage;
             axeSprites = _axeSprites;
-            randomState = unchecked((uint)(GetInstanceID() * 2654435761u));
+            randomState = unchecked((uint)(GetEntityId().GetHashCode() * 2654435761u));
             if (0u == randomState) randomState = 1u;
 
             if (null != backGraphic) backGraphic.raycastTarget = false;
