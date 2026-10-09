@@ -61,6 +61,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     // 시각적 연출을 위한 변수
     private Coroutine transferCoroutine;
+    // CancelPlayerTransfer()가 올리는 값. 진행 중인 슬롯 전송이 시작 때 값과 달라지면 발사를 멈춘다.
+    private int playerTransferGeneration = 0;
     private const float FLY_INTERVAL = 0.075f;
     // 전송 연출 간격 대기 객체 - itemTransferSpeedMul이 바뀔 때만 재생성한다(아이템마다 new WaitForSeconds를 피한다).
     private WaitForSeconds flyIntervalWait;
@@ -751,6 +753,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private IEnumerator TransferOneSlotVisualRoutine(InventorySlot _sourceSlot, bool _toCharacter)
     {
         transferringSlots.Add(_sourceSlot);
+        int transferGeneration = playerTransferGeneration;
 
         try
         {
@@ -769,6 +772,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             // 반환하므로 존재하지 않는 아이템이 날아가는(복제되는) 결과가 된다.
             while (_sourceSlot.count > 0)
             {
+                // CancelPlayerTransfer()로 끊긴 슬롯은 남은 개수를 더 발사하지 않는다(이미 발사된 것은 그대로 착지).
+                if (transferGeneration != playerTransferGeneration) break;
+
                 if (_toCharacter)
                 {
                     if (!CanAddToCharacterInventory(sourceData)) break;
@@ -1454,6 +1460,25 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     {
         bCollisionEnabled = true;
         UpdateInteractState();
+    }
+
+    /// <summary>
+    /// 플레이어 전송을 그 자리에서 끊는다(마을에서 차량 탑승 시).
+    /// transferCoroutine만 멈추면 이미 시작된 TransferOneSlotVisualRoutine은 슬롯이 빌 때까지 계속 발사하므로,
+    /// 세대 값을 올려 그 루프도 다음 발사 전에 빠져나오게 한다. 이미 발사된 원목은 flyingItems에서 정상 착지한다.
+    /// (던전은 탑승 전에 DropAllItem이 캐릭터 슬롯을 비워 같은 결과가 된다)
+    /// </summary>
+    public void CancelPlayerTransfer()
+    {
+        playerTransferGeneration++;
+        bIsInteracting = false;
+        bPlayerOpenRequested = false;
+
+        if (transferCoroutine != null)
+        {
+            StopCoroutine(transferCoroutine);
+            transferCoroutine = null;
+        }
     }
 
     public void SetInTown(bool _boolean)

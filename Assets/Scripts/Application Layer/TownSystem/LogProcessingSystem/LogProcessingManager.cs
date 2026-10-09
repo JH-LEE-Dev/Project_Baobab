@@ -122,6 +122,12 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         logContainer.DI_Inventory(inventory);
     }
 
+    public void CancelPlayerTransfer()
+    {
+        if (logContainer != null)
+            logContainer.CancelPlayerTransfer();
+    }
+
     public void SetCharacter(Character _character)
     {
         character = _character;

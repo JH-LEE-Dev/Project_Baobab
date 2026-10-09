@@ -415,6 +415,12 @@ public class TownSystem : MonoBehaviour
 
     private void PortalActivated()
     {
+        // 탑승 순간 진행 중이던 납품(LogContainer)/꺼내기(운반 상자) 발사를 끊는다. 캐릭터 비활성화로
+        // OnTriggerExit2D가 바깥 전송 코루틴은 멈춰주지만, 이미 시작된 슬롯 하나는 빌 때까지 계속 발사되어
+        // 탑승 후에도 원목이 오갔다. 이미 발사된 원목은 그대로 착지한다(던전은 탑승 전 DropAllItem으로 같은 결과).
+        logProcessingManager.CancelPlayerTransfer();
+        offroadContainer.CancelPlayerTransfer();
+
         townProductionManager.StartCharacterRide();
 
         signalHub.Publish(new TownOffroadVehicleActivatedSignal());

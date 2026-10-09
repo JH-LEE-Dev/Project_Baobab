@@ -80,6 +80,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     public bool isPhysicalOverlapped => bPhysicalOverlapped;
     private Coroutine transferCoroutine;
+    // CancelPlayerTransfer()가 올리는 값. 진행 중인 슬롯 전송이 시작 때 값과 달라지면 발사를 멈춘다.
+    private int playerTransferGeneration = 0;
     private WaitForSeconds transferWait;
     private float lastTransferTime = -1.0f;
     private float lastOutputTime = -1.0f;
@@ -485,6 +487,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     private IEnumerator TransferOneSlotVisualRoutine(InventorySlot _charSlot)
     {
         transferringSlots.Add(_charSlot);
+        int transferGeneration = playerTransferGeneration;
 
         try
         {
@@ -495,6 +498,9 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             // 착지 시점에 커밋된다(복제). OffroadContainer.TransferOneSlotVisualRoutine과 동일한 방어.
             while (_charSlot.count > 0)
             {
+                // CancelPlayerTransfer()로 끊긴 슬롯은 남은 개수를 더 발사하지 않는다(이미 발사된 것은 그대로 착지).
+                if (transferGeneration != playerTransferGeneration) break;
+
                 // 컨테이너가 꽉 찼는지 매번 체크 (비행 중인 아이템까지 고려)
                 if (!CanAddItemByData(sourceData)) break;
 
@@ -770,6 +776,22 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     private void InteractionKeyCanceled()
     {
+        if (transferCoroutine != null)
+        {
+            StopCoroutine(transferCoroutine);
+            transferCoroutine = null;
+        }
+    }
+
+    /// <summary>
+    /// 플레이어 납품을 그 자리에서 끊는다(마을에서 차량 탑승 시).
+    /// transferCoroutine만 멈추면 이미 시작된 TransferOneSlotVisualRoutine은 슬롯이 빌 때까지 계속 발사하므로,
+    /// 세대 값을 올려 그 루프도 다음 발사 전에 빠져나오게 한다. 이미 발사된 원목은 flyingItems에서 정상 착지한다.
+    /// </summary>
+    public void CancelPlayerTransfer()
+    {
+        playerTransferGeneration++;
+
         if (transferCoroutine != null)
         {
             StopCoroutine(transferCoroutine);
