@@ -21,7 +21,7 @@ public class CoinItemPoolingManager : MonoBehaviour
             actionOnGet: OnGetCoin,
             actionOnRelease: OnReleaseCoin,
             actionOnDestroy: OnDestroyCoin,
-            collectionCheck: true,
+            collectionCheck: PoolSettings.CollectionCheck,
             defaultCapacity: 20,
             maxSize: 100
         );
@@ -31,7 +31,7 @@ public class CoinItemPoolingManager : MonoBehaviour
             actionOnGet: OnGetCoin,
             actionOnRelease: OnReleaseCoin,
             actionOnDestroy: OnDestroyCoin,
-            collectionCheck: true,
+            collectionCheck: PoolSettings.CollectionCheck,
             defaultCapacity: 20,
             maxSize: 100
         );
@@ -41,7 +41,7 @@ public class CoinItemPoolingManager : MonoBehaviour
             actionOnGet: OnGetCoin,
             actionOnRelease: OnReleaseCoin,
             actionOnDestroy: OnDestroyCoin,
-            collectionCheck: true,
+            collectionCheck: PoolSettings.CollectionCheck,
             defaultCapacity: 20,
             maxSize: 100
         );

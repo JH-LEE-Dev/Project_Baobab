@@ -41,7 +41,7 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
             actionOnGet: OnGetBoomerang,
             actionOnRelease: OnReleaseBoomerang,
             actionOnDestroy: OnDestroyBoomerang,
-            collectionCheck: true,
+            collectionCheck: PoolSettings.CollectionCheck,
             defaultCapacity: defaultCapacity,
             maxSize: maxSize
         );

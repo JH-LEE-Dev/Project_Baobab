@@ -36,13 +36,24 @@ public class NormalTreeGenerationStrategySO : TreeGenerationStrategySO
 
     public override IEnumerator GrowthRoutine(InDungeonObjectManager _manager)
     {
+        // 간격이 바뀔 때만 새로 만든다. 같은 WaitForSeconds를 다시 yield해도 대기 시간은 같고, 나무 하나를 심을 때마다
+        // 생기던 할당만 사라진다.
+        WaitForSeconds wait = null;
+        float waitInterval = -1f;
+
         while (true)
         {
             float baseInterval = _manager.EnvironmentProvider.densityProvider.GetTreeRegenTime();
             // speedMul이 1 이상이 되어 시간이 0이 되면 무한루프에 빠질 수 있으므로, 최소 대기 시간(0.1초) 보장
             float interval = Mathf.Max(0.1f, baseInterval * (1f - _manager.GrowthSpeedMul));
-            
-            yield return new WaitForSeconds(interval);
+
+            if (wait == null || waitInterval != interval)
+            {
+                wait = new WaitForSeconds(interval);
+                waitInterval = interval;
+            }
+
+            yield return wait;
 
             if (_manager.EnvironmentProvider.densityProvider.CanCreateTree(currentMapType) && _manager.AvailablePositionsCount > 0)
             {

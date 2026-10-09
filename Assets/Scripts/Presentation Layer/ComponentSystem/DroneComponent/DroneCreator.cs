@@ -32,7 +32,7 @@ public class DroneCreator : MonoBehaviour, IDroneCreator
             actionOnGet: OnGetDrone,
             actionOnRelease: OnReleaseDrone,
             actionOnDestroy: OnDestroyDrone,
-            collectionCheck: true,
+            collectionCheck: PoolSettings.CollectionCheck,
             defaultCapacity: defaultCapacity,
             maxSize: maxSize
         );

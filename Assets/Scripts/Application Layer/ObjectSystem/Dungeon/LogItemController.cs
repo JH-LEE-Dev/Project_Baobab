@@ -121,7 +121,45 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         {
             logPool.Release(CreateLogItem());
         }
+
+        PrewarmAuraPools();
     }
+
+    /// <summary>
+    /// 보석 등급 원목 아우라 풀도 등급마다 auraPoolDefaultCapacity개가 쉬고 있도록 미리 만들어 둔다. 원목 풀과 같은 이유로,
+    /// 바닥의 보석 원목 수가 최고치를 넘을 때마다 전투 중에 아우라 프리팹을 새로 만들던 것을 던전 준비로 옮긴다.
+    ///
+    /// 풀의 Get/Release를 그대로 쓴다(별 등장 아우라의 미리 만들기와 같은 방식). 꺼낸 동안 동시에 들고 있어야 서로 다른
+    /// 인스턴스가 생긴다. 꺼낸 아우라는 같은 호출 안에서 반납되므로 한 프레임도 그려지지 않고, 반납은 평소처럼 컨트롤러 아래로
+    /// 되돌리고 끈다(OnReleaseAura). 이미 쉬고 있던 아우라가 함께 꺼내졌다 반납되는 것은 평소 재사용과 같은 경로다.
+    /// </summary>
+    private void PrewarmAuraPools()
+    {
+        if (auraPools == null) return;
+
+        int target = Mathf.Min(auraPoolDefaultCapacity, auraPoolMaxSize);
+        if (target <= 0) return;
+
+        foreach (IObjectPool<ItemAuraEffectController> pool in auraPools.Values)
+        {
+            if (pool.CountInactive >= target) continue;
+
+            auraPrewarmBuffer.Clear();
+            for (int i = 0; i < target; i++)
+            {
+                auraPrewarmBuffer.Add(pool.Get());
+            }
+
+            for (int i = auraPrewarmBuffer.Count - 1; i >= 0; i--)
+            {
+                pool.Release(auraPrewarmBuffer[i]);
+            }
+
+            auraPrewarmBuffer.Clear();
+        }
+    }
+
+    private readonly List<ItemAuraEffectController> auraPrewarmBuffer = new List<ItemAuraEffectController>(8);
 
     // 미리 만들어 둘 원목 수. 풀 상한(maxSize 1000)보다 작아야 한다. 넉넉할수록 전투 중 생성이 줄지만 던전 준비 시간과
     // 메모리가 늘어난다. 이미 앞선 원정에서 이만큼 쓰고 돌려받았다면 아무것도 만들지 않는다.
@@ -683,7 +721,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
                 actionOnGet: OnGetAura,
                 actionOnRelease: OnReleaseAura,
                 actionOnDestroy: OnDestroyAura,
-                collectionCheck: true,
+                collectionCheck: PoolSettings.CollectionCheck,
                 defaultCapacity: auraPoolDefaultCapacity,
                 maxSize: auraPoolMaxSize
             ));

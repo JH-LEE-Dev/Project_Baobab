@@ -27,7 +27,7 @@ public class ConstellationPixelLaserCreator : MonoBehaviour
             actionOnGet: OnGetLaser,
             actionOnRelease: OnReleaseLaser,
             actionOnDestroy: OnDestroyLaser,
-            collectionCheck: true,
+            collectionCheck: PoolSettings.CollectionCheck,
             defaultCapacity: defaultCapacity,
             maxSize: maxSize
         );

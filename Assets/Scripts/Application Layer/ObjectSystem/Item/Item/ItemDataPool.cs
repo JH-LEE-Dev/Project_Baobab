@@ -58,7 +58,7 @@ public class ItemDataPool
             actionOnGet: (data) => { },
             actionOnRelease: (data) => data.Reset(),
             actionOnDestroy: (data) => { },
-            collectionCheck: true,
+            collectionCheck: PoolSettings.CollectionCheck,
             defaultCapacity: 5,
             maxSize: 50
         );

@@ -37,7 +37,7 @@ public class BulletObjManager : MonoBehaviour
             actionOnGet: OnGetBullet,
             actionOnRelease: OnReleaseBullet,
             actionOnDestroy: OnDestroyBullet,
-            collectionCheck: true,
+            collectionCheck: PoolSettings.CollectionCheck,
             defaultCapacity: 30,
             maxSize: 100
         );

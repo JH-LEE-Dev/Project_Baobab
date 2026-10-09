@@ -156,7 +156,7 @@ public class AnimatedObjGenerator : MonoBehaviour
                 actionOnGet: OnGetAnimatedObj,
                 actionOnRelease: OnReleaseAnimatedObj,
                 actionOnDestroy: OnDestroyAnimatedObj,
-                collectionCheck: true,
+                collectionCheck: PoolSettings.CollectionCheck,
                 defaultCapacity: 32,
                 maxSize: 500
             );
@@ -175,7 +175,7 @@ public class AnimatedObjGenerator : MonoBehaviour
                 actionOnGet: OnGetWaterAnimatedObj,
                 actionOnRelease: OnReleaseWaterAnimatedObj,
                 actionOnDestroy: OnDestroyWaterAnimatedObj,
-                collectionCheck: true,
+                collectionCheck: PoolSettings.CollectionCheck,
                 defaultCapacity: 32,
                 maxSize: 500
             );
@@ -194,7 +194,7 @@ public class AnimatedObjGenerator : MonoBehaviour
                 actionOnGet: OnGetStaticObj,
                 actionOnRelease: OnReleaseStaticObj,
                 actionOnDestroy: OnDestroyStaticObj,
-                collectionCheck: true,
+                collectionCheck: PoolSettings.CollectionCheck,
                 defaultCapacity: 32,
                 maxSize: 500
             );

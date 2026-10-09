@@ -797,7 +797,7 @@ public class GemOreItemController : MonoBehaviour, IGemOreAuraProvider
                 actionOnGet: OnGetAura,
                 actionOnRelease: OnReleaseAura,
                 actionOnDestroy: OnDestroyAura,
-                collectionCheck: true,
+                collectionCheck: PoolSettings.CollectionCheck,
                 defaultCapacity: auraPoolDefaultCapacity,
                 maxSize: auraPoolMaxSize
             ));

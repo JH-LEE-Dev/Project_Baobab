@@ -27,7 +27,7 @@ public class LightningZapCreator : MonoBehaviour
             actionOnGet: OnGetZap,
             actionOnRelease: OnReleaseZap,
             actionOnDestroy: OnDestroyZap,
-            collectionCheck: true,
+            collectionCheck: PoolSettings.CollectionCheck,
             defaultCapacity: defaultCapacity,
             maxSize: maxSize
         );

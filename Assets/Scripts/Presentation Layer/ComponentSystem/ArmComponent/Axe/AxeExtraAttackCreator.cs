@@ -99,7 +99,7 @@ public class AxeExtraAttackCreator : MonoBehaviour, IShockWaveCreator
             actionOnGet: OnGetShockWave,
             actionOnRelease: OnReleaseShockWave,
             actionOnDestroy: OnDestroyShockWave,
-            collectionCheck: true,
+            collectionCheck: PoolSettings.CollectionCheck,
             defaultCapacity: 5,
             maxSize: 20
         );

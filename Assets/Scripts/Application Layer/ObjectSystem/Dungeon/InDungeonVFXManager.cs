@@ -196,7 +196,7 @@ public class InDungeonVFXManager : MonoBehaviour
                 actionOnGet: OnGetTreeStarMarkGround,
                 actionOnRelease: OnReleaseTreeStarMarkGround,
                 actionOnDestroy: OnDestroyTreeStarMarkGround,
-                collectionCheck: true,
+                collectionCheck: PoolSettings.CollectionCheck,
                 defaultCapacity: treeStarMarkGroundPoolDefaultCapacity,
                 maxSize: treeStarMarkGroundPoolMaxSize
             );
@@ -209,7 +209,7 @@ public class InDungeonVFXManager : MonoBehaviour
                 actionOnGet: OnGetStarAppearAura,
                 actionOnRelease: OnReleaseStarAppearAura,
                 actionOnDestroy: OnDestroyStarAppearAura,
-                collectionCheck: true,
+                collectionCheck: PoolSettings.CollectionCheck,
                 defaultCapacity: starAppearAuraPoolDefaultCapacity,
                 maxSize: starAppearAuraPoolMaxSize
             );
@@ -224,7 +224,7 @@ public class InDungeonVFXManager : MonoBehaviour
                 actionOnGet: OnGetConstellationDottedLine,
                 actionOnRelease: OnReleaseConstellationDottedLine,
                 actionOnDestroy: OnDestroyConstellationDottedLine,
-                collectionCheck: true,
+                collectionCheck: PoolSettings.CollectionCheck,
                 defaultCapacity: constellationDottedLinePoolDefaultCapacity,
                 maxSize: constellationDottedLinePoolMaxSize
             );
@@ -237,7 +237,7 @@ public class InDungeonVFXManager : MonoBehaviour
                 actionOnGet: OnGetBrandStarWrap,
                 actionOnRelease: OnReleaseBrandStarWrap,
                 actionOnDestroy: OnDestroyBrandStarWrap,
-                collectionCheck: true,
+                collectionCheck: PoolSettings.CollectionCheck,
                 defaultCapacity: brandStarWrapPoolDefaultCapacity,
                 maxSize: brandStarWrapPoolMaxSize
             );
@@ -252,7 +252,7 @@ public class InDungeonVFXManager : MonoBehaviour
                 actionOnGet: OnGetShootingStarVfx,
                 actionOnRelease: OnReleaseShootingStarVfx,
                 actionOnDestroy: OnDestroyShootingStarVfx,
-                collectionCheck: true,
+                collectionCheck: PoolSettings.CollectionCheck,
                 defaultCapacity: shootingStarVfxPoolDefaultCapacity,
                 maxSize: shootingStarVfxPoolMaxSize
             );
@@ -265,7 +265,7 @@ public class InDungeonVFXManager : MonoBehaviour
                 actionOnGet: OnGetSporeExplosionVfx,
                 actionOnRelease: OnReleaseSporeExplosionVfx,
                 actionOnDestroy: OnDestroySporeExplosionVfx,
-                collectionCheck: true,
+                collectionCheck: PoolSettings.CollectionCheck,
                 defaultCapacity: sporeExplosionVfxPoolDefaultCapacity,
                 maxSize: sporeExplosionVfxPoolMaxSize
             );
@@ -278,7 +278,7 @@ public class InDungeonVFXManager : MonoBehaviour
                 actionOnGet: OnGetFireExplosionVfx,
                 actionOnRelease: OnReleaseFireExplosionVfx,
                 actionOnDestroy: OnDestroyFireExplosionVfx,
-                collectionCheck: true,
+                collectionCheck: PoolSettings.CollectionCheck,
                 defaultCapacity: fireExplosionVfxPoolDefaultCapacity,
                 maxSize: fireExplosionVfxPoolMaxSize
             );
@@ -291,7 +291,7 @@ public class InDungeonVFXManager : MonoBehaviour
                 actionOnGet: OnGetTreeTransformVfx,
                 actionOnRelease: OnReleaseTreeTransformVfx,
                 actionOnDestroy: OnDestroyTreeTransformVfx,
-                collectionCheck: true,
+                collectionCheck: PoolSettings.CollectionCheck,
                 defaultCapacity: treeTransformVfxPoolDefaultCapacity,
                 maxSize: treeTransformVfxPoolMaxSize
             );
@@ -304,10 +304,58 @@ public class InDungeonVFXManager : MonoBehaviour
                 actionOnGet: OnGetTreeHeatIndicator,
                 actionOnRelease: OnReleaseTreeHeatIndicator,
                 actionOnDestroy: OnDestroyTreeHeatIndicator,
-                collectionCheck: true,
+                collectionCheck: PoolSettings.CollectionCheck,
                 defaultCapacity: treeHeatIndicatorPoolDefaultCapacity,
                 maxSize: treeHeatIndicatorPoolMaxSize
             );
+        }
+
+        PrewarmCombatVfxPools();
+    }
+
+    // 전투 중 처음 나올 때 생성이 몰리던 이펙트 풀을 초기화 시점에 미리 만들어 두는 개수.
+    // 폭발 이펙트는 맞은 나무 하나당 4개씩 0.15초 간격으로 터지므로, 과열 충격파·포자막 연쇄로 여러 그루가 함께 터지면
+    // 수십 개가 동시에 살아 있다. 이 수를 넘는 순간에는 예전처럼 그때 만든다(동작은 같고 그 순간의 생성만 줄어든다).
+    private const int FireExplosionVfxPrewarmCount = 40;
+    private const int SporeExplosionVfxPrewarmCount = 40;
+    private const int TreeStarMarkGroundPrewarmCount = 16;
+    private const int TreeTransformVfxPrewarmCount = 4;
+    private const int ShootingStarVfxPrewarmCount = 2;
+    private const int TreeHeatIndicatorPrewarmCount = 8;
+
+    /// <summary>
+    /// 별 등장 아우라·별 감싸기(PrewarmStarAppearAuras/PrewarmBrandStarWraps)처럼, 나머지 전투 이펙트 풀도 미리 채운다.
+    /// 풀의 Get/Release를 그대로 쓰며, 각 풀의 꺼내기/반납은 켜고 끄기뿐이고 이펙트 재생(Play/Begin)은 부르지 않으므로
+    /// 아무것도 그리거나 울리지 않는다. 생성 시점만 첫 사용 순간에서 초기화로 옮겨진다.
+    /// </summary>
+    private void PrewarmCombatVfxPools()
+    {
+        PrewarmPool(fireExplosionVfxPool, FireExplosionVfxPrewarmCount, fireExplosionVfxPoolMaxSize);
+        PrewarmPool(sporeExplosionVfxPool, SporeExplosionVfxPrewarmCount, sporeExplosionVfxPoolMaxSize);
+        PrewarmPool(treeStarMarkGroundPool, TreeStarMarkGroundPrewarmCount, treeStarMarkGroundPoolMaxSize);
+        PrewarmPool(treeTransformVfxPool, TreeTransformVfxPrewarmCount, treeTransformVfxPoolMaxSize);
+        PrewarmPool(shootingStarVfxPool, ShootingStarVfxPrewarmCount, shootingStarVfxPoolMaxSize);
+        PrewarmPool(treeHeatIndicatorPool, TreeHeatIndicatorPrewarmCount, treeHeatIndicatorPoolMaxSize);
+    }
+
+    // 쉬고 있는 인스턴스가 _count개(풀 보관 상한 이내)가 되도록 꺼냈다가 돌려놓는다. 꺼낸 동안 동시에 들고 있어야 서로 다른
+    // 인스턴스가 생긴다. 이미 그만큼 쉬고 있으면 아무것도 하지 않는다.
+    private static void PrewarmPool<T>(IObjectPool<T> _pool, int _count, int _maxSize) where T : class
+    {
+        if (_pool == null) return;
+
+        int target = Mathf.Min(_count, _maxSize);
+        if (_pool.CountInactive >= target) return;
+
+        T[] prewarmed = new T[target];
+        for (int i = 0; i < prewarmed.Length; i++)
+        {
+            prewarmed[i] = _pool.Get();
+        }
+
+        for (int i = prewarmed.Length - 1; i >= 0; i--)
+        {
+            _pool.Release(prewarmed[i]);
         }
     }
 
