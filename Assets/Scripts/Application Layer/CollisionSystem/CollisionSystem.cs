@@ -379,18 +379,7 @@ public class CollisionSystem : MonoBehaviour
     {
         _results.Clear();
 
-        // 1. 중심점이 위치한 셀 인덱스를 먼저 찾습니다.
-        int _centerX = Mathf.FloorToInt((_center.x - gridOrigin.x) * invCellSize);
-        int _centerY = Mathf.FloorToInt((_center.y - gridOrigin.y) * invCellSize);
-
-        // 2. 반지름이 커버할 수 있는 셀의 칸 수(Span)를 계산합니다.
-        // 경계선에 걸쳐 있을 때를 대비해 CeilToInt + 1로 여유 있게 범위를 잡습니다.
-        int _span = Mathf.CeilToInt(_radius * invCellSize) + 1;
-
-        int _minX = Mathf.Clamp(_centerX - _span, 0, gridCount.x - 1);
-        int _maxX = Mathf.Clamp(_centerX + _span, 0, gridCount.x - 1);
-        int _minY = Mathf.Clamp(_centerY - _span, 0, gridCount.y - 1);
-        int _maxY = Mathf.Clamp(_centerY + _span, 0, gridCount.y - 1);
+        GetRadiusCellRange(_center, _radius, out int _minX, out int _maxX, out int _minY, out int _maxY);
 
         for (int x = _minX; x <= _maxX; x++)
         {
@@ -401,6 +390,112 @@ public class CollisionSystem : MonoBehaviour
                 InternalCollect(staticHeads[_index], _center, _radius, _layerMask, _results);
                 InternalCollect(dynamicHeads[_index], _center, _radius, _layerMask, _results);
             }
+        }
+    }
+
+    /// <summary>
+    /// GetCollidablesInRadius를 서로 다른 두 원에 대해 각각 부른 것과 같은 결과(내용과 순서 모두)를,
+    /// 겹치는 셀의 체인을 한 번만 훑어서 만든다.
+    ///
+    /// 아이템 감지가 "흡입 반경"과 "화면 전체"를 같은 틱에 따로 질의하는데, 흡입 반경이 화면만큼 커지면 두 질의가
+    /// 거의 같은 셀들을 두 번 훑게 된다. 순서가 같은 이유: 단독 질의는 x → y 순으로 셀을 돌며 셀마다 static 체인,
+    /// dynamic 체인 순으로 담는다. 여기서는 두 범위를 합친 사각형을 같은 순서로 돌고, 각 셀이 그 원의 원래 범위
+    /// 안일 때만 그 원의 결과에 담으므로 각 결과는 단독 질의가 돌았을 셀만, 같은 순서로 담는다. 거리 판정식도 같다.
+    /// </summary>
+    public void GetCollidablesInTwoRadii(Vector2 _centerA, float _radiusA, List<IStaticCollidable> _resultsA,
+        Vector2 _centerB, float _radiusB, List<IStaticCollidable> _resultsB, int _layerMask)
+    {
+        _resultsA.Clear();
+        _resultsB.Clear();
+
+        GetRadiusCellRange(_centerA, _radiusA, out int _aMinX, out int _aMaxX, out int _aMinY, out int _aMaxY);
+        GetRadiusCellRange(_centerB, _radiusB, out int _bMinX, out int _bMaxX, out int _bMinY, out int _bMaxY);
+
+        int _minX = Mathf.Min(_aMinX, _bMinX);
+        int _maxX = Mathf.Max(_aMaxX, _bMaxX);
+        int _minY = Mathf.Min(_aMinY, _bMinY);
+        int _maxY = Mathf.Max(_aMaxY, _bMaxY);
+
+        for (int x = _minX; x <= _maxX; x++)
+        {
+            bool _inAX = x >= _aMinX && x <= _aMaxX;
+            bool _inBX = x >= _bMinX && x <= _bMaxX;
+            if (!_inAX && !_inBX) continue;
+
+            for (int y = _minY; y <= _maxY; y++)
+            {
+                bool _inA = _inAX && y >= _aMinY && y <= _aMaxY;
+                bool _inB = _inBX && y >= _bMinY && y <= _bMaxY;
+                if (!_inA && !_inB) continue;
+
+                int _index = x + y * gridCount.x;
+
+                InternalCollectTwo(staticHeads[_index], _layerMask, _inA, _centerA, _radiusA, _resultsA, _inB, _centerB, _radiusB, _resultsB);
+                InternalCollectTwo(dynamicHeads[_index], _layerMask, _inA, _centerA, _radiusA, _resultsA, _inB, _centerB, _radiusB, _resultsB);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 반지름 질의가 훑을 셀 범위. GetCollidablesInRadius와 GetCollidablesInTwoRadii가 같은 범위를 쓰도록 한 곳에 둔다.
+    /// </summary>
+    private void GetRadiusCellRange(Vector2 _center, float _radius, out int _minX, out int _maxX, out int _minY, out int _maxY)
+    {
+        // 1. 중심점이 위치한 셀 인덱스를 먼저 찾습니다.
+        int _centerX = Mathf.FloorToInt((_center.x - gridOrigin.x) * invCellSize);
+        int _centerY = Mathf.FloorToInt((_center.y - gridOrigin.y) * invCellSize);
+
+        // 2. 반지름이 커버할 수 있는 셀의 칸 수(Span)를 계산합니다.
+        // 경계선에 걸쳐 있을 때를 대비해 CeilToInt + 1로 여유 있게 범위를 잡습니다.
+        int _span = Mathf.CeilToInt(_radius * invCellSize) + 1;
+
+        _minX = Mathf.Clamp(_centerX - _span, 0, gridCount.x - 1);
+        _maxX = Mathf.Clamp(_centerX + _span, 0, gridCount.x - 1);
+        _minY = Mathf.Clamp(_centerY - _span, 0, gridCount.y - 1);
+        _maxY = Mathf.Clamp(_centerY + _span, 0, gridCount.y - 1);
+    }
+
+    /// <summary>InternalCollect를 두 원에 대해 한 번의 체인 순회로 수행한다. 판정식은 InternalCollect와 같다.</summary>
+    private void InternalCollectTwo(int _headIdx, int _mask,
+        bool _inA, Vector2 _centerA, float _radiusA, List<IStaticCollidable> _resultsA,
+        bool _inB, Vector2 _centerB, float _radiusB, List<IStaticCollidable> _resultsB)
+    {
+        int _curr = _headIdx;
+        int _visited = 0;
+        while (_curr != -1)
+        {
+            if (++_visited > maxEntities)
+            {
+                LogChainCycleDetected(nameof(InternalCollectTwo), _headIdx, _curr);
+                break;
+            }
+
+            ref var _ent = ref entities[_curr];
+            if ((_ent.layerBit & _mask) != 0)
+            {
+                if (_inA)
+                {
+                    float _combinedRadius = _radiusA + _ent.radius;
+                    float _dx = _ent.center.x - _centerA.x;
+                    float _dy = _ent.center.y - _centerA.y;
+                    if ((_dx * _dx + _dy * _dy) <= _combinedRadius * _combinedRadius)
+                    {
+                        _resultsA.Add(_ent.owner);
+                    }
+                }
+
+                if (_inB)
+                {
+                    float _combinedRadius = _radiusB + _ent.radius;
+                    float _dx = _ent.center.x - _centerB.x;
+                    float _dy = _ent.center.y - _centerB.y;
+                    if ((_dx * _dx + _dy * _dy) <= _combinedRadius * _combinedRadius)
+                    {
+                        _resultsB.Add(_ent.owner);
+                    }
+                }
+            }
+            _curr = nextPointers[_curr];
         }
     }
 

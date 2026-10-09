@@ -99,6 +99,34 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         character = _character;
     }
 
+    /// <summary>
+    /// 던전 준비 중에 풀에 쉬고 있는 원목이 PrewarmLogItemCount개가 되도록 미리 만들어 둔다.
+    ///
+    /// ObjectPool은 defaultCapacity만큼 미리 만들지 않고, 비었을 때마다 그 자리에서 Instantiate한다. 이 풀은 게임 내내
+    /// 살아 있어서 "바닥 + 날아가는 원목 수"가 지금까지의 최고치를 넘는 순간마다 전투 중에 프리팹을 새로 만들었다.
+    /// 충격파·회오리 베기로 수십 그루가 한꺼번에 쓰러지면 그 프레임에 수십~수백 개가 생성된다.
+    ///
+    /// 여기서 만드는 원목은 전투 중에 새로 만들어졌을 원목과 같다(같은 CreateLogItem). 차이는 만드는 시점뿐이다.
+    /// 만든 즉시 풀에 넣으므로 한 프레임도 보이지 않고, Launch 전이라 충돌 시스템에도 등록되지 않는다(LogItem.OnEnable).
+    /// 활성 목록(activeItemsList/activeItemsForUpdate)을 거치지 않으므로 다른 원목들의 순서에도 영향이 없다.
+    /// </summary>
+    public void PrewarmPool()
+    {
+        if (logPool == null) return;
+
+        using var _profile = ChopProfilerMarkers.LogPoolPrewarm.Auto();
+
+        int need = PrewarmLogItemCount - logPool.CountInactive;
+        for (int i = 0; i < need; i++)
+        {
+            logPool.Release(CreateLogItem());
+        }
+    }
+
+    // 미리 만들어 둘 원목 수. 풀 상한(maxSize 1000)보다 작아야 한다. 넉넉할수록 전투 중 생성이 줄지만 던전 준비 시간과
+    // 메모리가 늘어난다. 이미 앞선 원정에서 이만큼 쓰고 돌려받았다면 아무것도 만들지 않는다.
+    private const int PrewarmLogItemCount = 300;
+
     public void SetupCullingGroup()
     {
         if (!enableCulling) return;
@@ -165,6 +193,8 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         // 최적화: 가시 영역 내의 아이템만 업데이트
         if (activeItemsForUpdate.Count > 0)
         {
+            using var _profile = PickupProfilerMarkers.LogItemsUpdate.Auto();
+
             // ManualUpdate 중 아이템이 해제(Release)되어 리스트가 변형될 수 있으므로 역순 순회
             for (int i = activeItemsForUpdate.Count - 1; i >= 0; i--)
             {
@@ -213,6 +243,8 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
     private void LogItemAcquired(LogItem _item)
     {
+        using var _profile = PickupProfilerMarkers.LogAcquired.Auto();
+
         if (_item.CustomAcquirer != null)
         {
             // NPC 등 특정 소비자가 지정된 경우, 전역(플레이어) 이벤트 체인을 타지 않고 직접 귀속시킨다
@@ -232,6 +264,8 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
     private LogItem CreateLogItem()
     {
+        using var _profile = ChopProfilerMarkers.CreateLogItem.Auto();
+
         LogItem newItem = Instantiate(logItemPrefab, transform);
         newItem.LogItemAcquired -= LogItemAcquired;
         newItem.LogItemAcquired += LogItemAcquired;
@@ -318,6 +352,8 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
     private void OnReleaseLogItem(LogItem _item)
     {
+        using var _profile = PickupProfilerMarkers.LogPoolRelease.Auto();
+
         _item.IsPooled = true;
         // 빌려간 아우라를 여기서 바로 회수한다. ResetItem은 다음 획득 때 호출되므로,
         // 그때까지 기다리면 풀에서 쉬고 있는 원목들이 아우라를 붙든 채로 남는다.
@@ -408,6 +444,8 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
     public void SpawnLogItem(TreeObj _treeObj, float _multiplier)
     {
+        using var _profile = ChopProfilerMarkers.SpawnLogs.Auto();
+
         if (!tileWorldSizeMeasured)
         {
             MeasureTileWorldSize();

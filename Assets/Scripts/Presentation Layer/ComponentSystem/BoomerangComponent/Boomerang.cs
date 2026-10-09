@@ -666,24 +666,33 @@ public class Boomerang : MonoBehaviour
 
         bool bHitAny = false;
 
-        for (int i = 0; i < hitScanResults.Count; i++)
+        // 이 판정에서 쓰러지는 나무들의 타일맵 쓰기를 루프가 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
+        TreeTileWriteBatch.Begin();
+        try
         {
-            // 이 루프 안에서 앞의 나무가 죽으며 연쇄(과열 폭발 등)로 뒤쪽 후보가 먼저 죽어 풀로 반납될 수 있다.
-            // 반납 시 ResetTree가 bDead를 false로 되돌리므로 IsPooled로 함께 거른다.
-            if (hitScanResults[i] is TreeObj treeObj && !treeObj.bDead && !treeObj.IsPooled)
+            for (int i = 0; i < hitScanResults.Count; i++)
             {
-                // topRoot/밑둥 둘 중 하나라도 이동 경로(선분)에 판정 반경만큼 가까웠으면 맞은 것으로
-                // 처리한다. ||는 short-circuit이라 topRoot에서 이미 맞았으면 밑동 거리는 계산하지
-                // 않고, 두 지점이 동시에 맞아도 TakeDamage는 이 한 번만 호출되어 중복 데미지가 없다.
-                bool isHit = DistancePointToSegmentSqr(GetTreeTopPosition(treeObj), segStart, segEnd) <= hitRadiusSqr
-                    || DistancePointToSegmentSqr(treeObj.Position, segStart, segEnd) <= hitRadiusSqr;
-
-                if (isHit && treeObj.bCanApplyDamage) // 묘목은 TakeDamage가 무시하므로 진동도 울리지 않게 미리 거른다
+                // 이 루프 안에서 앞의 나무가 죽으며 연쇄(과열 폭발 등)로 뒤쪽 후보가 먼저 죽어 풀로 반납될 수 있다.
+                // 반납 시 ResetTree가 bDead를 false로 되돌리므로 IsPooled로 함께 거른다.
+                if (hitScanResults[i] is TreeObj treeObj && !treeObj.bDead && !treeObj.IsPooled)
                 {
-                    treeObj.TakeDamage(tickDamage, false, bCritical);
-                    bHitAny = true;
+                    // topRoot/밑둥 둘 중 하나라도 이동 경로(선분)에 판정 반경만큼 가까웠으면 맞은 것으로
+                    // 처리한다. ||는 short-circuit이라 topRoot에서 이미 맞았으면 밑동 거리는 계산하지
+                    // 않고, 두 지점이 동시에 맞아도 TakeDamage는 이 한 번만 호출되어 중복 데미지가 없다.
+                    bool isHit = DistancePointToSegmentSqr(GetTreeTopPosition(treeObj), segStart, segEnd) <= hitRadiusSqr
+                        || DistancePointToSegmentSqr(treeObj.Position, segStart, segEnd) <= hitRadiusSqr;
+
+                    if (isHit && treeObj.bCanApplyDamage) // 묘목은 TakeDamage가 무시하므로 진동도 울리지 않게 미리 거른다
+                    {
+                        treeObj.TakeDamage(tickDamage, false, bCritical);
+                        bHitAny = true;
+                    }
                 }
             }
+        }
+        finally
+        {
+            TreeTileWriteBatch.End();
         }
 
         // 여러 그루가 맞아도 판정 한 번에 진동 한 번.

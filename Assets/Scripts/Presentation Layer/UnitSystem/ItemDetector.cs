@@ -140,12 +140,32 @@ public class ItemDetector
         if (timer < _interval) return false;
         timer = 0f;
 
-        CollisionSystem.Instance.GetCollidablesInRadius(sensorTransform.position, _radius, itemLayer.value, results);
+        using var _profile = PickupProfilerMarkers.DetectScan.Auto();
 
-        if (bTrackVisibleCounts)
+        if (!bTrackVisibleCounts)
         {
-            CountVisibleLogsOnScreen();
+            CollisionSystem.Instance.GetCollidablesInRadius(sensorTransform.position, _radius, itemLayer.value, results);
+            return true;
         }
+
+        // 화면 개수를 셀 때는 흡입 반경 질의와 화면 질의를 한 번의 격자 순회로 같이 한다. 흡입 반경이 화면만큼
+        // 커지면 두 질의가 거의 같은 셀을 두 번 훑기 때문이다. 결과(내용·순서)는 따로 질의한 것과 같다
+        // (CollisionSystem.GetCollidablesInTwoRadii 참고). 카메라를 못 찾으면 흡입 반경 결과로 센다(예전 동작).
+        float screenRadius = CameraBoundsUtil.GetReferenceHalfDiagonal();
+        Camera cam = CameraFinder.Instance != null ? CameraFinder.Instance.PPMainCamera : null;
+        bool bUseScreen = screenRadius > 0f && cam != null;
+
+        if (bUseScreen)
+        {
+            CollisionSystem.Instance.GetCollidablesInTwoRadii(sensorTransform.position, _radius, results,
+                cam.transform.position, screenRadius, screenResults, itemLayer.value);
+        }
+        else
+        {
+            CollisionSystem.Instance.GetCollidablesInRadius(sensorTransform.position, _radius, itemLayer.value, results);
+        }
+
+        CountVisibleLogsOnScreen(bUseScreen ? screenResults : results);
 
         return true;
     }
@@ -155,25 +175,15 @@ public class ItemDetector
     /// 같은 틱의 흡입 정렬과 교체 요청이 이 표를 읽는다. 카메라를 못 찾으면 흡입 반경 결과로 센다(예전 동작).
     /// 공중에 떠 있는 원목도 센다. 수종은 개량이 끝난 값으로 묶는다.
     /// </summary>
-    private void CountVisibleLogsOnScreen()
+    private void CountVisibleLogsOnScreen(List<IStaticCollidable> _source)
     {
-        List<IStaticCollidable> source = results;
-
-        float screenRadius = CameraBoundsUtil.GetReferenceHalfDiagonal();
-        Camera cam = CameraFinder.Instance != null ? CameraFinder.Instance.PPMainCamera : null;
-        if (screenRadius > 0f && cam != null)
-        {
-            CollisionSystem.Instance.GetCollidablesInRadius(cam.transform.position, screenRadius, itemLayer.value, screenResults);
-            source = screenResults;
-        }
-
-        TreeType speciesFloor = FindSpeciesImprovementFloor(source);
+        TreeType speciesFloor = FindSpeciesImprovementFloor(_source);
 
         LogVisibleCounts.Clear();
 
-        for (int i = 0; i < source.Count; i++)
+        for (int i = 0; i < _source.Count; i++)
         {
-            if (!(source[i] is LogItem logItem)) continue;
+            if (!(_source[i] is LogItem logItem)) continue;
 
             // "들어올 수 있는" 원목만 센다.
             // - 습득 불가(교체·DropAllItem이 흘리는 연출 원목, 정리 중인 원목)는 제외. 연출 원목은 풀에서 꺼낸 진짜

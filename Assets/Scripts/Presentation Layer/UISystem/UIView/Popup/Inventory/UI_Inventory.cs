@@ -273,8 +273,18 @@ public class UI_Inventory : MonoBehaviour
 
     private void UpdateSlots(IReadOnlyList<IInventorySlot> _items)
     {
+        UpdateSlots(_items, true);
+    }
+
+    /// <summary>
+    /// _bUpdateCapacityBar가 false면 끝의 용량바 갱신만 건너뛴다. 용량바를 직후에 다시 갱신하는 호출부
+    /// (InventoryShowEvent)가 두 번의 갱신을 UpdateCapacityTwice 한 번으로 합쳐 처리하기 위한 것이다.
+    /// 반환값은 용량바 갱신 지점까지 도달했는지(앞의 null 검사로 빠지지 않았는지)다.
+    /// </summary>
+    private bool UpdateSlots(IReadOnlyList<IInventorySlot> _items, bool _bUpdateCapacityBar)
+    {
         if (null == _items || null == inventory)
-            return;
+            return false;
 
         int _itemCount = inventory.currentSlotCnt;
         int _maxSlots = inventorySlots.Count;
@@ -322,12 +332,15 @@ public class UI_Inventory : MonoBehaviour
 
         previousLogCount = currentLogCount;
 
-        UpdateCapacityBar();
+        if (true == _bUpdateCapacityBar)
+            UpdateCapacityBar();
 
         if (true == IsOpening)
         {
             HandleLogSwapInfoChanged();
         }
+
+        return true;
     }
 
     private void UpdateCapacityBar()
@@ -536,13 +549,25 @@ public class UI_Inventory : MonoBehaviour
 
     public void InventoryShowEvent()
     {
+        // 예전에는 슬롯 갱신 끝에서 한 번, 여기서 한 번, 같은 값으로 용량바를 두 번 갱신했다. 결과는 그대로 두고
+        // 두 번째 갱신 자리에서 한 번에 처리한다(UI_InventoryCapacityBar.UpdateCapacityTwice 참고). 사이에 끼는
+        // 교체 표시 갱신과 크기 초기화는 용량바의 게이지·트윈을 건드리지 않으므로 순서를 옮겨도 결과가 같다.
+        bool _bSlotsUpdated = false;
         if (null != inventory)
-            UpdateSlots(inventory.inventorySlots);
+            _bSlotsUpdated = UpdateSlots(inventory.inventorySlots, false);
 
         if (null != capacityBar)
             capacityBar.transform.localScale = Vector3.one;
 
-        UpdateCapacityBar();
+        if (true == _bSlotsUpdated)
+        {
+            if (null != capacityBar && null != inventory)
+                capacityBar.UpdateCapacityTwice(inventory.currentItemCount, inventory.maxCapacity);
+        }
+        else
+        {
+            UpdateCapacityBar();
+        }
     }
 
     public void MapChanged(MapType _currentMap)

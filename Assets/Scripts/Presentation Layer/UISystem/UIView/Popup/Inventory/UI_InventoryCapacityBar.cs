@@ -35,6 +35,8 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
 
     // //내부 의존성
     private Sequence feedbackSequence;
+    // feedbackSequence가 획득 연출(PlayFeedbackAnimation)인지. 제거 연출과 같은 필드를 쓰므로 재사용 판정에 필요하다.
+    private bool bFeedbackIsAdd = false;
     private Tween catchupTween;
     private TweenCallback cachedOnCapacityUpdate;
 
@@ -113,15 +115,87 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
     }
 
     /// <summary>
+    /// UpdateCapacity(_current, _max)를 같은 값으로 두 번 연달아 부른 것과 정확히 같은 결과를 만든다.
+    ///
+    /// 인벤토리 UI 갱신(UI_Inventory.InventoryShowEvent)은 슬롯 갱신 안에서 한 번, 끝에서 한 번, 같은 값으로 용량바를
+    /// 두 번 갱신한다. 그때 첫 호출이 만든 따라잡기 트윈은 한 번도 진행되기 전에 두 번째 호출이 끊는다. 아이템을 하나
+    /// 먹을 때마다 버려질 트윈을 하나씩 만드는 셈이라, 여기서는 그 트윈만 만들지 않고 나머지 처리는 두 호출의 순서
+    /// 그대로 수행한다(진행 전에 끊긴 트윈은 아무 콜백도 실행하지 않으므로, 만들지 않은 것과 같다).
+    /// </summary>
+    public void UpdateCapacityTwice(int _current, int _max)
+    {
+        if (0 >= _max)
+            return;
+
+        float _ratio = (float)_current / _max;
+
+        if (null == ghostSlider)
+        {
+            // 두 호출 모두 같은 값을 그대로 쓰는 경로라 한 번과 같다.
+            UpdateValue(_ratio);
+            UpdateColor(_ratio);
+            return;
+        }
+
+        // 첫 번째 호출: 새로 만들 트윈은 두 번째 호출이 곧바로 끊으므로 만들지 않는다.
+        if (ghostSlider.value < _ratio)
+        {
+            ghostSlider.value = _ratio;
+        }
+        else
+        {
+            UpdateValue(_ratio);
+            UpdateColor(_ratio);
+        }
+
+        if (null != catchupTween && true == catchupTween.IsActive())
+            catchupTween.Kill();
+
+        // 두 번째 호출: UpdateCapacity와 같은 처리(끊을 트윈은 첫 번째 호출이 만들지 않았으므로 없다).
+        if (ghostSlider.value < _ratio)
+        {
+            ghostSlider.value = _ratio;
+
+            catchupTween = progressSlider.DOValue(_ratio, ghostCatchupDuration)
+                .SetDelay(ghostDelay)
+                .SetEase(Ease.OutQuad)
+                .SetLink(gameObject)
+                .OnUpdate(cachedOnCapacityUpdate);
+        }
+        else
+        {
+            UpdateValue(_ratio);
+            UpdateColor(_ratio);
+
+            catchupTween = ghostSlider.DOValue(_ratio, ghostCatchupDuration)
+                .SetDelay(ghostDelay)
+                .SetEase(Ease.OutQuad)
+                .SetLink(gameObject);
+        }
+    }
+
+    /// <summary>
     /// 아이템을 획득했을 때 호출되어 양옆으로 비틀어서 쫙쫙 늘어나는 스쿼시 앤 스트레치 모션을 재생합니다.
     /// </summary>
     public void PlayFeedbackAnimation()
     {
+        // 흡입 반경이 넓으면 한 프레임에 원목 수십 개가 도착해 이 함수가 연달아 불린다. 직전에 만든 획득 연출이
+        // 아직 한 번도 진행되지 않았다면(같은 프레임) 그것을 끊고 똑같은 연출을 새로 만드는 것과, 그대로 두는 것은
+        // 결과가 같다 - 끊으면 끝값(원래 크기)으로 맞춰진 뒤 원래 크기에서 다시 시작하고, 그대로 두어도 원래 크기에서
+        // 시작한다. 그래서 새로 만들지 않고 재사용해 트윈 할당을 아낀다.
+        if (true == bFeedbackIsAdd && null != feedbackSequence && true == feedbackSequence.IsActive()
+            && true == feedbackSequence.IsPlaying() && 0f >= feedbackSequence.Elapsed(true))
+        {
+            transform.localScale = Vector3.one;
+            return;
+        }
+
         if (null != feedbackSequence && true == feedbackSequence.IsActive())
             feedbackSequence.Kill(true);
 
         transform.localScale = Vector3.one;
-        
+
+        bFeedbackIsAdd = true;
         feedbackSequence = DOTween.Sequence().SetLink(gameObject);
         // 1. 가로로 늘어나면서 세로로 수축 (Stretch)
         feedbackSequence.Append(transform.DOScale(new Vector3(stretchX, stretchY, 1f), stepDuration).SetEase(Ease.OutQuad));
@@ -141,6 +215,7 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
 
         transform.localScale = Vector3.one;
 
+        bFeedbackIsAdd = false;
         feedbackSequence = DOTween.Sequence().SetLink(gameObject);
         // 1. 살짝 작아지면서 눌리는 느낌 (Squash)
         feedbackSequence.Append(transform.DOScale(new Vector3(removeSquashScale, removeSquashScale, 1f), stepDuration).SetEase(Ease.OutQuad));

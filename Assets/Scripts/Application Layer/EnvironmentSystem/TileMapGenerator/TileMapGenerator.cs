@@ -163,6 +163,10 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     public void InitializeMapData()
     {
+        // 공격 판정 루프 동안 모아 둔 나무 타일 쓰기를 루프가 끝날 때 반영하도록 등록한다(TreeTileWriteBatch 참고).
+        if (null == cachedCombatTileFlush) cachedCombatTileFlush = FlushCombatTileBatch;
+        TreeTileWriteBatch.Register(cachedCombatTileFlush);
+
         animatedObjGenerator = GetComponent<AnimatedObjGenerator>();
         if (animatedObjGenerator != null)
         {
@@ -486,6 +490,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         Vector3Int cellPos = collisionTilemap.WorldToCell(adjustedPos);
 
+        // 공격 판정 루프에서 모아 둔 지우기가 있으면 먼저 반영해 "지우고 → 심는" 순서를 지킨다
+        FlushCombatTileWritesForOrdering();
+
         // 스폰 배치 중에는 Tilemap 쓰기만 미룬다. 아래 cellToIndex/walkablePositions 부기는
         // 배치 여부와 상관없이 지금 그대로 반영되므로 호출부가 보는 상태는 달라지지 않는다.
         if (true == bBatchingTreeTileSets)
@@ -612,6 +619,10 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         // 스폰 배치가 열려 있는 상태에서 정리가 시작되면 먼저 심어둔 것을 반영해 "심고 → 지우는" 순서를 지킨다
         if (true == bBatchingTreeTileSets) FlushTreeSpawnTileBatch();
 
+        // 공격 판정 루프가 모아 둔 쓰기가 남아 있으면 아래 Clear로 버리지 않도록 먼저 반영한다(실제로는 겹칠 일이 없다 -
+        // 던전 정리는 공격 판정 루프 밖에서만 일어난다).
+        FlushCombatTileWritesForOrdering();
+
         bBatchingTreeTileClears = true;
         pendingTreeTileClears.Clear();
         pendingDecoRestoreCells.Clear();
@@ -626,14 +637,24 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         bBatchingTreeTileClears = false;
 
+        FlushPendingTreeTileClears();
+    }
+
+    /// <summary>
+    /// 모아 둔 나무 충돌 타일 지우기와 데코 되돌리기를 Tilemap에 반영한다. 던전 정리 배치의 End와 공격 판정 루프의 끝이 같이 쓴다.
+    /// 같은 타일맵에 대한 쓰기는 모은 순서 그대로 SetTiles 한 번에 들어가므로, 하나씩 SetTile 했을 때와 결과가 같다.
+    /// </summary>
+    private void FlushPendingTreeTileClears()
+    {
+        using var _profile = ChopProfilerMarkers.TreeTileFlush.Auto();
+
         int count = pendingTreeTileClears.Count;
         if (collisionTilemap != null && count > 0)
         {
-            // SetTiles는 positionArray.Length만큼 순회하므로 정확한 길이의 배열이어야 한다.
-            // 재사용 버퍼를 크게 잡아두면 남는 칸의 옛 좌표까지 null로 밀어버려 나무와 무관한
-            // 충돌 타일을 지우게 되므로, 던전 정리마다 한 번뿐인 이 할당을 감수한다.
-            Vector3Int[] cells = pendingTreeTileClears.ToArray();
-            TileBase[] emptyTiles = new TileBase[count];
+            // SetTiles는 positionArray.Length만큼 순회하므로 정확한 길이의 배열이어야 한다(남는 칸의 옛 좌표까지 null로 밀면
+            // 나무와 무관한 충돌 타일을 지운다). 공격 판정 루프마다 새로 할당하지 않도록 길이별로 재사용한다.
+            Vector3Int[] cells = GetExactCellArray(pendingTreeTileClears);
+            TileBase[] emptyTiles = GetExactEmptyTileArray(count);
 
             collisionTilemap.SetTiles(cells, emptyTiles);
         }
@@ -648,11 +669,98 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     {
         if (_tilemap != null && _cells.Count > 0)
         {
-            _tilemap.SetTiles(_cells.ToArray(), _tiles.ToArray());
+            TileBase[] tiles = GetExactTileArray(_tiles);
+            _tilemap.SetTiles(GetExactCellArray(_cells), tiles);
+            // 다음에 같은 길이로 재사용될 때까지 타일 참조를 붙들고 있지 않게 비운다
+            Array.Clear(tiles, 0, tiles.Length);
         }
 
         _cells.Clear();
         _tiles.Clear();
+    }
+
+    // ── 공격 판정 루프 묶음(TreeTileWriteBatch) ─────────────────────────────────────
+
+    private Action cachedCombatTileFlush;
+
+    private bool HasPendingTreeTileClears =>
+        pendingTreeTileClears.Count > 0 || pendingDecoRestoreCells.Count > 0 || pendingBloomDecoRestoreCells.Count > 0;
+
+    /// <summary>TreeTileWriteBatch의 가장 바깥 End에서 불린다. 던전 정리 배치가 열려 있으면 그쪽 End가 반영한다.</summary>
+    private void FlushCombatTileBatch()
+    {
+        if (true == bBatchingTreeTileClears) return;
+
+        FlushPendingTreeTileClears();
+    }
+
+    /// <summary>
+    /// 공격 판정 루프가 모아 둔 지우기·되돌리기가 있으면 지금 반영한다. 같은 칸에 대한 다른 쓰기(나무 심기, 데코 걷어내기)가
+    /// 그 뒤에 들어올 때 순서가 뒤집히지 않게 하기 위한 것이다. 던전 정리 배치 중에는 예전 동작 그대로 두기 위해 손대지 않는다.
+    /// </summary>
+    private void FlushCombatTileWritesForOrdering()
+    {
+        if (true == bBatchingTreeTileClears) return;
+        if (false == HasPendingTreeTileClears) return;
+
+        FlushPendingTreeTileClears();
+    }
+
+    // SetTiles에 넘길 정확한 길이의 배열을 길이별로 재사용한다(SetTiles는 넘긴 배열을 수정하지 않는다).
+    // 공격 판정 루프 한 번에 쓰러지는 나무 수 정도의 작은 길이만 보관한다. 던전 정리(수천 칸)처럼 큰 길이는 드물고
+    // 길이가 매번 달라 보관해 봐야 쌓이기만 하므로 예전처럼 그때그때 만든다.
+    private const int MaxCachedExactArrayLength = 256;
+    private readonly Dictionary<int, Vector3Int[]> exactCellArrays = new Dictionary<int, Vector3Int[]>();
+    private readonly Dictionary<int, TileBase[]> exactTileArrays = new Dictionary<int, TileBase[]>();
+    private readonly Dictionary<int, TileBase[]> exactEmptyTileArrays = new Dictionary<int, TileBase[]>();
+
+    private Vector3Int[] GetExactCellArray(List<Vector3Int> _src)
+    {
+        int count = _src.Count;
+        if (count > MaxCachedExactArrayLength) return _src.ToArray();
+
+        if (false == exactCellArrays.TryGetValue(count, out Vector3Int[] arr))
+        {
+            arr = new Vector3Int[count];
+            exactCellArrays.Add(count, arr);
+        }
+
+        _src.CopyTo(arr);
+        return arr;
+    }
+
+    private TileBase[] GetExactTileArray(List<TileBase> _src)
+    {
+        int count = _src.Count;
+        if (count > MaxCachedExactArrayLength) return _src.ToArray();
+
+        if (false == exactTileArrays.TryGetValue(count, out TileBase[] arr))
+        {
+            arr = new TileBase[count];
+            exactTileArrays.Add(count, arr);
+        }
+
+        _src.CopyTo(arr);
+        return arr;
+    }
+
+    // 전부 null인 배열 = 해당 칸을 지운다. 내용을 쓰지 않으므로 그대로 재사용한다.
+    private TileBase[] GetExactEmptyTileArray(int _count)
+    {
+        if (_count > MaxCachedExactArrayLength) return new TileBase[_count];
+
+        if (false == exactEmptyTileArrays.TryGetValue(_count, out TileBase[] arr))
+        {
+            arr = new TileBase[_count];
+            exactEmptyTileArrays.Add(_count, arr);
+        }
+
+        return arr;
+    }
+
+    private void OnDestroy()
+    {
+        if (null != cachedCombatTileFlush) TreeTileWriteBatch.Unregister(cachedCombatTileFlush);
     }
 
     public void ClearTreeCollisionTile(Vector3 _worldPos)
@@ -669,7 +777,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         // 배치 중에는 Tilemap 쓰기만 미룬다. 아래 cellToIndex/walkablePositions 부기는
         // 배치 여부와 상관없이 지금 그대로 반영되므로 호출부가 보는 상태는 달라지지 않는다.
-        if (true == bBatchingTreeTileClears)
+        // 던전 정리 배치뿐 아니라 공격 판정 루프(TreeTileWriteBatch)도 같은 버퍼에 모은다.
+        if (true == bBatchingTreeTileClears || true == TreeTileWriteBatch.IsActive)
         {
             pendingTreeTileClears.Add(cellPos);
         }
@@ -712,6 +821,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         int flatIdx = cellPos.x + cellPos.y * width;
 
+        // 공격 판정 루프에서 모아 둔 데코 되돌리기가 있으면 먼저 반영해 "되돌리고 → 걷어내는" 순서를 지킨다
+        FlushCombatTileWritesForOrdering();
+
         // 걷어낸 타일의 보관(suppressed*)은 배치 여부와 무관하게 즉시 한다. 미루면 그 사이 들어온 Restore가 되돌릴 타일을 모른다.
         if (decoTilesToApply[flatIdx] != null)
         {
@@ -750,7 +862,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             suppressedDecoTiles[flatIdx] = null;
             decoTilesToApply[flatIdx] = deco;
 
-            if (true == bBatchingTreeTileClears)
+            if (true == bBatchingTreeTileClears || true == TreeTileWriteBatch.IsActive)
             {
                 pendingDecoRestoreCells.Add(cellPos);
                 pendingDecoRestoreTiles.Add(deco);
@@ -767,7 +879,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             suppressedBloomDecoTiles[flatIdx] = null;
             bloomDecoTilesToApply[flatIdx] = bloomDeco;
 
-            if (true == bBatchingTreeTileClears)
+            if (true == bBatchingTreeTileClears || true == TreeTileWriteBatch.IsActive)
             {
                 pendingBloomDecoRestoreCells.Add(cellPos);
                 pendingBloomDecoRestoreTiles.Add(bloomDeco);

@@ -145,6 +145,8 @@ public class ShockWave : MonoBehaviour
     {
         if (CollisionSystem.Instance == null) return;
 
+        using var _profile = ChopProfilerMarkers.ShockWaveCheck.Auto();
+
         // 현재 확장된 findRange를 사용하여 검색
         CollisionSystem.Instance.GetCollidablesInRadius(transform.position, findRange, targetLayer.value, targetsInRange);
 
@@ -162,6 +164,20 @@ public class ShockWave : MonoBehaviour
         float sweepMinDistSqr = lastMinDist * lastMinDist;
         float maxDistSqr = maxDist * maxDist;
 
+        // 이 판정에서 쓰러지는 나무들의 타일맵 쓰기를 루프가 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
+        TreeTileWriteBatch.Begin();
+        try
+        {
+            ApplyShockWaveDamageToTargets(centerPos, isoForward, cosThreshold, sweepMinDistSqr, maxDistSqr);
+        }
+        finally
+        {
+            TreeTileWriteBatch.End();
+        }
+    }
+
+    private void ApplyShockWaveDamageToTargets(Vector3 centerPos, Vector3 isoForward, float cosThreshold, float sweepMinDistSqr, float maxDistSqr)
+    {
         for (int i = 0; i < targetsInRange.Count; i++)
         {
             var target = targetsInRange[i];
@@ -178,7 +194,10 @@ public class ShockWave : MonoBehaviour
             // targetsInRange는 루프 시작 전에 뽑아 둔 목록이라, 앞 대상의 과열 폭발 등으로 같은 프레임에
             // 이미 죽어 풀로 반환된 나무가 섞여 있을 수 있다. 풀 반환 시 ResetTree가 bDead/HP를 되돌려
             // 산 나무처럼 보이므로 풀 상태와 활성 여부로 거른다.
-            if (treeObj.IsPooled || !treeObj.gameObject.activeInHierarchy) continue;
+            // 활성 여부(activeInHierarchy, 엔진 호출)는 아래 거리·각도 판정을 통과한 나무에만 묻는다.
+            // 탐색 원은 부채꼴 고리보다 훨씬 넓어 후보 대부분이 거리·각도에서 걸러지기 때문이다. 판정들은 모두
+            // 상태를 바꾸지 않는 읽기라 순서를 바꿔도 맞는 나무는 같다.
+            if (treeObj.IsPooled) continue;
 
             Vector3 targetPos = treeObj.Position + treeObj.Offset;
             float isoDistSq = GetIsometricDistSq(targetPos, centerPos);
@@ -196,7 +215,7 @@ public class ShockWave : MonoBehaviour
 
                 float dot = Vector3.Dot(isoForward, targetDir);
 
-                if (dot >= cosThreshold)
+                if (dot >= cosThreshold && treeObj.gameObject.activeInHierarchy)
                 {
                     float finalDamage = damage;
                     if (bIsEnforced && maxEffectiveDistance > 0f)
@@ -256,15 +275,15 @@ public class ShockWave : MonoBehaviour
 
         for (int i = 0; i < explosionTargets.Count; i++)
         {
-            if (explosionTargets[i] is TreeObj tree && tree != _source && tree.bCanApplyDamage
-                && !tree.IsPooled && tree.gameObject.activeInHierarchy)
+            // 활성 여부(엔진 호출)는 거리 판정을 통과한 나무에만 묻는다. 둘 다 상태를 바꾸지 않는 읽기라 결과는 같다.
+            if (explosionTargets[i] is TreeObj tree && tree != _source && tree.bCanApplyDamage && !tree.IsPooled)
             {
                 Vector3 targetPos = tree.transform.position;
                 float dx = targetPos.x - centerPos.x;
                 float dy = (targetPos.y - centerPos.y) * 2f; // 등각 타원 보정
                 float isoDistSq = dx * dx + dy * dy;
 
-                if (isoDistSq <= rangeSq)
+                if (isoDistSq <= rangeSq && tree.gameObject.activeInHierarchy)
                 {
                     // 즉사라 사망음이 울린다. 타격음까지 겹치지 않도록 전용 경로를 쓴다.
                     tree.TakeDamageWithoutHitSound(10000f);

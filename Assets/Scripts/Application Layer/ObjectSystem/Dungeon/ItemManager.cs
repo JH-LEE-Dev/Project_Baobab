@@ -64,6 +64,8 @@ public class ItemManager : MonoBehaviour
     {
         if (logItemController != null)
         {
+            // 던전 준비 시점에 원목 풀을 미리 채운다(전투 중 대량 벌목 프레임의 Instantiate를 줄인다).
+            logItemController.PrewarmPool();
             logItemController.SetupCullingGroup();
         }
 

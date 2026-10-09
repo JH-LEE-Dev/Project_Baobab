@@ -643,47 +643,23 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     {
         if (_item == null) return false;
 
+        // 감지 틱 묶음 안이면 스냅샷을 이어 쓰는 경로로 간다(결과는 아래 경로와 같다 - CanAcquiredInBatch 참고).
+        if (LogAcquireBatch.IsActive) return CanAcquiredInBatch(_item);
+
         // 1. 기존 예약된 아이템 중 유효하지 않은 것(Sucking 상태가 아니거나 비활성화된 경우) 정리
-        for (int i = reservedItems.Count - 1; i >= 0; i--)
-        {
-            var reserved = reservedItems[i];
-            if (reserved == null || !reserved.gameObject.activeInHierarchy || reserved.MoveState != ItemMoveState.Sucking || reserved == _item)
-            {
-                reservedItems.RemoveAt(i);
-            }
-        }
+        CleanupReservedItems(_item);
 
         // 2. 실제 슬롯 상태를 가상 슬롯으로 복사
         //    힙이 아니라 스택에 잡는다. 이 판정은 바닥의 원목 하나당 초당 5회(Character의 아이템
         //    감지 틱) 돌고 그게 반경 안의 원목 수만큼 곱해지므로, 매번 배열을 새로 잡으면 가방이
         //    꽉 찬 채 원목 더미 위에 서 있는 동안 계속 쓰레기가 쌓인다.
         //    슬롯은 SYSTEM_VAR.MAX_INVENTORY_CNT개가 상한이라 최악이어도 20B * 10 = 200B다.
+        //    (감지 틱은 이제 묶음 경로를 타므로, 여기는 교체 직후의 즉시 흡입 같은 단건 호출만 온다)
         int slotCount = Mathf.Min(currentSlotCount, inventorySlots.Count);
         Span<VirtualSlot> virtualSlots = stackalloc VirtualSlot[slotCount];
 
-        for (int i = 0; i < slotCount; i++)
-        {
-            var data = inventorySlots[i].itemData as ItemData;
-            if (data != null)
-            {
-                virtualSlots[i].hasItem = true;
-                virtualSlots[i].itemType = data.itemType;
-                virtualSlots[i].count = inventorySlots[i].totalCount;
-                if (data is LogItemData logData)
-                {
-                    virtualSlots[i].treeType = logData.treeType;
-                    virtualSlots[i].logState = logData.logState;
-                }
-            }
-        }
-
-        // 3. 이미 예약된 아이템들을 예약된 순서대로 먼저 가상 배치한다.
-        //    ItemAcquired()와 동일한 알고리즘(같은 종류 슬롯 우선 → 빈 슬롯)을 쓰기 때문에,
-        //    종류가 다른 예약끼리도 같은 빈 슬롯을 중복으로 차지하지 못하게 된다.
-        for (int i = 0; i < reservedItems.Count; i++)
-        {
-            TryPlaceVirtual(reservedItems[i], virtualSlots);
-        }
+        // 3. 실제 슬롯 복사 + 이미 예약된 아이템들을 예약된 순서대로 먼저 가상 배치
+        BuildVirtualSlots(virtualSlots);
 
         // 4. 이번 아이템도 같은 방식으로 배치를 시도한다. 성공하면 실제 ItemAcquired() 시점에도
         //    반드시 자리가 있음이 보장되므로 예약 목록에 추가하고 true를 반환한다.
@@ -694,23 +670,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         }
 
         // 5. 들어올 수 없을 때 인벤토리 공간 상태 분석 및 이벤트 호출
-        //    이 지점에 도달했다면 모든 슬롯이 이미 점유된 상태라는 뜻이다 - 비어있는 슬롯이
-        //    하나라도 있었다면 TryPlaceVirtual()이 그 자리에 배치하고 true를 반환했을 것이다.
-        //
-        //    "원목이 안 먹어진다"가 곧 교체 발동 조건 1이므로, 교체 시스템에도 이 원목을 알려둔다.
-        //    수종 개량이 이미 끝난 뒤에 불리는 경로라(LogItem.CheckAcquireCondition) 여기서 보는
-        //    수종은 실제로 담겼을 수종이다.
-        RequestLogSwap(_item.treeType, _item.logState);
-
-        bool hasSpaceRemaining = false;
-        for (int i = 0; i < slotCount; i++)
-        {
-            if (virtualSlots[i].count < maxItemsPerSlot)
-            {
-                hasSpaceRemaining = true;
-                break;
-            }
-        }
+        bool hasSpaceRemaining = HandleAcquireRejected(_item, virtualSlots);
 
         if (hasSpaceRemaining)
         {
@@ -719,6 +679,161 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         else
         {
             InventoryIsFullEvent?.Invoke();
+        }
+
+        return false;
+    }
+
+    // ── 감지 틱 묶음(LogAcquireBatch) 경로 ──────────────────────────────────────────────
+    //
+    // 흡입 반경이 화면 전체로 커지면 감지 틱 한 번에 원목 수백 개가 차례로 CanAcquired를 묻는다. 단건 경로는
+    // 호출마다 예약 정리(예약 수만큼 엔진 호출) → 슬롯 복사 → 예약분 재배치를 처음부터 다시 하므로, 틱 비용이
+    // 원목 수 × (예약 수 + 슬롯 수 × 예약 수)로 커지고 거절된 원목마다 UI 알림이 한 번씩 나간다.
+    //
+    // 묶음 경로는 첫 호출에서 같은 스냅샷을 한 번 만들고 이후 호출은 그 위에 배치만 이어서 시도한다.
+    // 단건 경로를 원목마다 부른 것과 결과가 같은 이유:
+    //   - 묶음이 도는 동안(Character.OnItemsDetected의 루프) 슬롯 내용은 바뀌지 않는다. 습득은 원목이
+    //     도착하는 LogItemController.Update에서 일어나고, 루프 안의 SetSuckTarget은 흡입 시작까지만 한다.
+    //   - 예약 목록도 이 루프가 추가하는 것 말고는 바뀌지 않는다. 묶음 시작 시점에 살아 있던 예약(흡입 중·활성)과
+    //     루프가 새로 넣은 예약(StartSucking 직후라 흡입 중·활성)은 단건 경로의 정리 조건에도 걸리지 않는다.
+    //     단건 경로의 "reserved == _item" 제거는 묻는 원목이 흡입 중일 때만 의미가 있는데, SetSuckTarget은
+    //     바닥에 놓인(Dropped) 원목만 여기까지 보내므로 묶음에서는 해당이 없다.
+    //   - 거절된 배치는 가상 슬롯을 건드리지 않고, 성공한 배치는 단건 경로에서도 다음 호출의 재배치로 똑같이
+    //     반영되므로 가상 슬롯 상태가 호출마다 단건 경로와 일치한다.
+    //
+    // 거절 알림(ItemCantAcquied / InventoryIsFull)은 바로 앞에 낸 알림과 같으면 다시 내지 않는다. 받는 쪽
+    // (UIView_Unit의 말풍선, UIView_Popup의 자동 열기)이 같은 알림을 연달아 받으면 첫 번째 이후로는 아무것도
+    // 바꾸지 않기 때문이다(재생 중인 같은 말풍선은 다시 켜지 않고, 이미 연 가방은 다시 열지 않는다). 교체 요청
+    // (RequestLogSwap)은 거절 개수를 세므로 원목마다 그대로 부른다.
+
+    private VirtualSlot[] batchVirtualSlots = new VirtualSlot[SYSTEM_VAR.MAX_INVENTORY_CNT];
+    private int batchVirtualSlotCount = 0;
+    private int preparedBatchId = 0;
+    private bool bBatchPrepared = false;
+
+    // 이번 묶음에서 마지막으로 낸 거절 알림. 0 = 없음, 1 = ItemCantAcquied, 2 = InventoryIsFull
+    private int lastBatchRejectNotify = 0;
+
+    private bool CanAcquiredInBatch(LogItem _item)
+    {
+        if (!bBatchPrepared || preparedBatchId != LogAcquireBatch.Id)
+        {
+            PrepareAcquireBatch();
+        }
+
+        Span<VirtualSlot> virtualSlots = batchVirtualSlots.AsSpan(0, batchVirtualSlotCount);
+
+        if (TryPlaceVirtual(_item, virtualSlots))
+        {
+            reservedItems.Add(_item);
+            return true;
+        }
+
+        bool hasSpaceRemaining = HandleAcquireRejected(_item, virtualSlots);
+
+        int notify = hasSpaceRemaining ? 1 : 2;
+        if (notify == lastBatchRejectNotify) return false;
+        lastBatchRejectNotify = notify;
+
+        if (hasSpaceRemaining)
+        {
+            ItemCantAcquiedEvent?.Invoke();
+        }
+        else
+        {
+            InventoryIsFullEvent?.Invoke();
+        }
+
+        return false;
+    }
+
+    /// <summary>이번 묶음의 가상 슬롯 스냅샷을 만든다. 단건 경로의 1~3단계와 같은 처리다.</summary>
+    private void PrepareAcquireBatch()
+    {
+        CleanupReservedItems(null);
+
+        int slotCount = Mathf.Min(currentSlotCount, inventorySlots.Count);
+        if (batchVirtualSlots.Length < slotCount)
+        {
+            batchVirtualSlots = new VirtualSlot[slotCount];
+        }
+
+        Span<VirtualSlot> virtualSlots = batchVirtualSlots.AsSpan(0, slotCount);
+        // stackalloc과 같은 0 초기 상태에서 시작한다
+        virtualSlots.Clear();
+
+        BuildVirtualSlots(virtualSlots);
+
+        batchVirtualSlotCount = slotCount;
+        preparedBatchId = LogAcquireBatch.Id;
+        bBatchPrepared = true;
+        lastBatchRejectNotify = 0;
+    }
+
+    /// <summary>
+    /// 예약 목록에서 유효하지 않은 것(흡입 중이 아니거나 비활성화된 것)과, 지정한 경우 지금 묻는 원목 자신을 뺀다.
+    /// </summary>
+    private void CleanupReservedItems(LogItem _asking)
+    {
+        for (int i = reservedItems.Count - 1; i >= 0; i--)
+        {
+            var reserved = reservedItems[i];
+            if (reserved == null || !reserved.gameObject.activeInHierarchy || reserved.MoveState != ItemMoveState.Sucking || reserved == _asking)
+            {
+                reservedItems.RemoveAt(i);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 0으로 초기화된 가상 슬롯에 실제 슬롯 상태를 복사하고, 이미 예약된 아이템들을 예약된 순서대로 먼저 가상 배치한다.
+    /// ItemAcquired()와 동일한 알고리즘(같은 종류 슬롯 우선 → 빈 슬롯)을 쓰기 때문에, 종류가 다른 예약끼리도
+    /// 같은 빈 슬롯을 중복으로 차지하지 못하게 된다.
+    /// </summary>
+    private void BuildVirtualSlots(Span<VirtualSlot> _virtualSlots)
+    {
+        for (int i = 0; i < _virtualSlots.Length; i++)
+        {
+            var data = inventorySlots[i].itemData as ItemData;
+            if (data != null)
+            {
+                _virtualSlots[i].hasItem = true;
+                _virtualSlots[i].itemType = data.itemType;
+                _virtualSlots[i].count = inventorySlots[i].totalCount;
+                if (data is LogItemData logData)
+                {
+                    _virtualSlots[i].treeType = logData.treeType;
+                    _virtualSlots[i].logState = logData.logState;
+                }
+            }
+        }
+
+        for (int i = 0; i < reservedItems.Count; i++)
+        {
+            TryPlaceVirtual(reservedItems[i], _virtualSlots);
+        }
+    }
+
+    /// <summary>
+    /// 들어올 수 없는 원목을 교체 시스템에 알리고, 남은 공간이 있는지(= 어느 알림을 낼지) 돌려준다.
+    ///
+    /// 이 지점에 도달했다면 모든 슬롯이 이미 점유된 상태라는 뜻이다 - 비어있는 슬롯이 하나라도 있었다면
+    /// TryPlaceVirtual()이 그 자리에 배치하고 true를 반환했을 것이다.
+    ///
+    /// "원목이 안 먹어진다"가 곧 교체 발동 조건 1이므로, 교체 시스템에도 이 원목을 알려둔다.
+    /// 수종 개량이 이미 끝난 뒤에 불리는 경로라(LogItem.CheckAcquireCondition) 여기서 보는
+    /// 수종은 실제로 담겼을 수종이다.
+    /// </summary>
+    private bool HandleAcquireRejected(LogItem _item, Span<VirtualSlot> _virtualSlots)
+    {
+        RequestLogSwap(_item.treeType, _item.logState);
+
+        for (int i = 0; i < _virtualSlots.Length; i++)
+        {
+            if (_virtualSlots[i].count < maxItemsPerSlot)
+            {
+                return true;
+            }
         }
 
         return false;
@@ -986,6 +1101,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     /// </summary>
     private void UpdateLogSwapState()
     {
+        using var _profile = PickupProfilerMarkers.LogSwapState.Auto();
+
         if (swapRequestUnitValue != LogValue.NONE && Time.time - swapRequestTime > SwapRequestLifetime)
         {
             ClearLogSwapRequest();

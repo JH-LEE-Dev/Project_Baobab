@@ -535,24 +535,33 @@ public class AttackComponent : PComponent
             if (!bIsWhirlwindStrike) CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
             bool bAnyHit = false;
 
-            for (int i = 0; i < multiAttackResults.Count; i++)
+            // 다중 공격·회오리 베기로 쓰러지는 나무들의 타일맵 쓰기를 루프가 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
+            TreeTileWriteBatch.Begin();
+            try
             {
-                var target = multiAttackResults[i];
-                if (target is IDamageable damageable && damageable.bCanApplyDamage)
+                for (int i = 0; i < multiAttackResults.Count; i++)
                 {
-                    ProcessAxeHit(damageable, centerPos);
-                    bAnyHit = true;
-
-                    if (target is TreeObj hitTree)
+                    var target = multiAttackResults[i];
+                    if (target is IDamageable damageable && damageable.bCanApplyDamage)
                     {
-                        float hitTreeDistSq = GetIsometricDistSq(target.Position + target.Offset, centerPos);
-                        if (hitTreeDistSq < shockWaveSourceDistSq)
+                        ProcessAxeHit(damageable, centerPos);
+                        bAnyHit = true;
+
+                        if (target is TreeObj hitTree)
                         {
-                            shockWaveSourceDistSq = hitTreeDistSq;
-                            shockWaveSourceTree = hitTree;
+                            float hitTreeDistSq = GetIsometricDistSq(target.Position + target.Offset, centerPos);
+                            if (hitTreeDistSq < shockWaveSourceDistSq)
+                            {
+                                shockWaveSourceDistSq = hitTreeDistSq;
+                                shockWaveSourceTree = hitTree;
+                            }
                         }
                     }
                 }
+            }
+            finally
+            {
+                TreeTileWriteBatch.End();
             }
 
             if (bAnyHit)

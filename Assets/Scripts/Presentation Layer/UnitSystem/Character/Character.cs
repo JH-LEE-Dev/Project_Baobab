@@ -734,14 +734,26 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     /// </summary>
     private void OnItemsDetected(List<IStaticCollidable> _detectedItems)
     {
+        using var _profile = PickupProfilerMarkers.DetectTick.Auto();
+
         ItemDetector.SortByPickupPriority(_detectedItems);
 
-        for (int i = 0; i < _detectedItems.Count; i++)
+        // 이 루프 전체를 한 묶음으로 표시한다. 인벤토리가 공간 판정용 스냅샷을 원목마다 새로 만들지 않고
+        // 이어 쓰게 해, 흡입 반경이 화면 전체일 때 수백 개를 판정하는 비용을 줄인다(결과는 같다 - LogAcquireBatch 참고).
+        LogAcquireBatch.Begin();
+        try
         {
-            if (_detectedItems[i] is Item item)
+            for (int i = 0; i < _detectedItems.Count; i++)
             {
-                item.SetSuckTarget(transform);
+                if (_detectedItems[i] is Item item)
+                {
+                    item.SetSuckTarget(transform);
+                }
             }
+        }
+        finally
+        {
+            LogAcquireBatch.End();
         }
     }
 
@@ -1335,30 +1347,39 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
             Vector3 origin = primaryTransform.position;
 
-            for (int i = 0; i < finalChainCount; i++)
+            // 연쇄로 쓰러지는 나무들의 타일맵 쓰기를 연쇄가 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
+            TreeTileWriteBatch.Begin();
+            try
             {
-                ITreeObj next = FindNearestChainTarget(origin, finalChainRange);
-                if (next == null) break;
-
-                if (next is TreeObj nextTree)
+                for (int i = 0; i < finalChainCount; i++)
                 {
-                    nextTree.TakeDamageWithoutHitSound(statComponent.droneDamage); // 레이저 전이 - 도끼 타격음 없이 드론 발사음만
+                    ITreeObj next = FindNearestChainTarget(origin, finalChainRange);
+                    if (next == null) break;
 
-                    if (bIsOverheat)
+                    if (next is TreeObj nextTree)
                     {
-                        nextTree.ApplyDroneOverheatDot(statComponent.droneOverheatDotDamagePerTick, statComponent.droneOverheatDotTickCount, statComponent.droneOverheatDotTickInterval);
-                    }
-                }
-                else
-                {
-                    (next as IDamageable)?.TakeDamage(statComponent.droneDamage);
-                }
+                        nextTree.TakeDamageWithoutHitSound(statComponent.droneDamage); // 레이저 전이 - 도끼 타격음 없이 드론 발사음만
 
-                Vector3 nextTopPos = GetTreeTopPosition(next);
-                droneChainHitTrees.Add(next);
-                droneChainZapPoints.Add(nextTopPos);
-                _drone.PlayAtkHitVfx(nextTopPos);
-                origin = next.GetTransform().position;
+                        if (bIsOverheat)
+                        {
+                            nextTree.ApplyDroneOverheatDot(statComponent.droneOverheatDotDamagePerTick, statComponent.droneOverheatDotTickCount, statComponent.droneOverheatDotTickInterval);
+                        }
+                    }
+                    else
+                    {
+                        (next as IDamageable)?.TakeDamage(statComponent.droneDamage);
+                    }
+
+                    Vector3 nextTopPos = GetTreeTopPosition(next);
+                    droneChainHitTrees.Add(next);
+                    droneChainZapPoints.Add(nextTopPos);
+                    _drone.PlayAtkHitVfx(nextTopPos);
+                    origin = next.GetTransform().position;
+                }
+            }
+            finally
+            {
+                TreeTileWriteBatch.End();
             }
         }
 

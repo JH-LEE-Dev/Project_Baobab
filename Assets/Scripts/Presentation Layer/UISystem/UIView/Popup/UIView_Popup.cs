@@ -257,6 +257,8 @@ public class UIView_Popup : UIView
 
     public void ItemAddedToInventory()
     {
+        using var _profile = PickupProfilerMarkers.InventoryUIItemAdded.Auto();
+
         InventoryShowEvent();
         // uiInventory?.UpdateNotification();
         uiInventory?.PlayCapacityFeedback();

@@ -1343,6 +1343,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 여기서 걸러서 아이템 중복 지급, 밀도 카운트 오염, 풀 이중 반환 예외를 막는다.
         if (_treeObj.PoolIndex == -1) return;
 
+        using var _profile = ChopProfilerMarkers.TreeDead.Auto();
+
         // "열기 회수" 특성 - 과열 상태에서 나무를 벌목하면 과열 지속시간이 회복된다.
         character?.OnTreeFelled();
 
@@ -1792,6 +1794,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void OnReleaseTree(TreeObj _tree)
     {
+        using var _profile = ChopProfilerMarkers.TreeRelease.Auto();
+
         // 최적화: 업데이트 리스트에서 제거
         UpdateTreeVisibility(_tree, false);
 
@@ -2328,6 +2332,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 재귀적인 연쇄 폭발(TakeDamage -> ShieldBrokenEvent -> TriggerShieldExplosion) 도중
         // 공유 버퍼가 덮어써지지 않도록 호출마다 풀에서 리스트를 하나씩 빌려 쓴다(중첩 호출은 각자 다른 리스트를 받는다).
         List<IStaticCollidable> scanResults = RentExplosionScanList();
+        // 폭발(과 그 연쇄)로 쓰러지는 나무들의 타일맵 쓰기를 가장 바깥 폭발이 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
+        TreeTileWriteBatch.Begin();
         try
         {
             CollisionSystem.Instance.GetCollidablesInRadius(_source.Position, range, treeLayerForExplosion.value, scanResults);
@@ -2353,6 +2359,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
         finally
         {
+            TreeTileWriteBatch.End();
             ReturnExplosionScanList(scanResults);
         }
     }
@@ -2977,6 +2984,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (CollisionSystem.Instance == null) return;
 
         List<IStaticCollidable> scanResults = RentExplosionScanList();
+        // 낙하 충격으로 쓰러지는 나무들의 타일맵 쓰기를 루프가 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
+        TreeTileWriteBatch.Begin();
         try
         {
             CollisionSystem.Instance.GetCollidablesInRadius(_landingPos, StarGazeImpactRange, treeLayerForExplosion.value, scanResults);
@@ -3001,6 +3010,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
         finally
         {
+            TreeTileWriteBatch.End();
             ReturnExplosionScanList(scanResults);
         }
     }

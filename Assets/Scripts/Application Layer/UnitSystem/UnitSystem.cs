@@ -226,6 +226,8 @@ public class UnitSystem
 
     private void ItemAcquired(ItemAcquiredSignal itemAcquiredSignal)
     {
+        using var _profile = PickupProfilerMarkers.UnitItemAcquired.Auto();
+
         inventoryManager.ItemAcquired(itemAcquiredSignal.item);
         Sound.PlayUI(SoundID.GetItem);
         unitSpawner.character.PlayItemAcquireBounce();
@@ -288,6 +290,8 @@ public class UnitSystem
     /// </summary>
     private void LogSwapRequested(LogSwapRequestedSignal _logSwapRequestedSignal)
     {
+        using var _profile = PickupProfilerMarkers.LogSwapRequested.Auto();
+
         // 캐릭터가 원목을 주울 수 없는 상태(사망·귀환 중)면 어느 쪽 교체도 실행하지 않는다. 키 게이트(bHUDDown)는
         // 사망 0.5초 뒤에야 켜지는데, 그 사이 상자 교체가 실행되면 유실될 가방 슬롯 하나가 상자로 넘어간다.
         Character character = unitSpawner.character;
