@@ -10,9 +10,14 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioDatabase database;
 
     [Header("Pool Settings")]
-    // 드론·부메랑·과열까지 갖춘 후반 캐릭터는 점화음(3.5초)·드론 타격음(1.6초)·사망음처럼 긴 소리가 상한만큼 상주해
-    // 동시 재생이 55~60개까지 올라간다. 50이면 풀이 상시 포화돼 새 소리가 매번 다른 소리를 끊었다.
+    // 시작 시 미리 만들어 두는 소스 수. 드론·부메랑·과열까지 갖춘 후반 캐릭터는 점화음(3.5초)·드론 타격음(1.6초)·
+    // 사망음처럼 긴 소리가 상한만큼 상주해 동시 재생이 55~60개까지 올라간다. 50이면 풀이 상시 포화돼 새 소리가
+    // 매번 다른 소리를 끊었다.
     [SerializeField] private int poolSize = 96;
+    // 빈 슬롯이 없으면 이 수까지 소스를 즉석에서 더 만든다. 풀이 모자라 소리를 끊거나 버리는 일은 이 상한에 닿은
+    // 뒤에만 생기고, 그때는 PlayInternal 경고와 디버그 오버레이에 드러난다. 쉬는 AudioSource는 비용이 거의 없으므로
+    // 넉넉히 잡는다. 프로젝트 설정의 Max Real Voices는 이 값 + BGM 2개보다 커야 가상화(무음 처리)가 생기지 않는다.
+    [SerializeField] private int maxPoolSize = 192;
 
     [Header("3D Sound Distance Settings")]
     // 해상도 설정(16:9/16:10 등)에 따라 PixelPerfectCamera의 orthographicSize가 실제로 달라지므로,
@@ -98,6 +103,11 @@ public class AudioManager : MonoBehaviour
     // 거의 같은 순간에 시작된 같은 소리가 하나 더 겹쳐 봐야 들리는 차이는 없으므로 버리는 쪽이 낫다.
     // 시작 시각(sourceStartTime)은 unscaledTime이라 일시정지(timeScale 0) 중에도 판정이 멈추지 않는다.
     private const float PolyphonyStealMinAge = 0.05f;
+
+    // 원샷이 상한에 걸렸을 때 빈 슬롯이 있으면, 새 소리는 빈 슬롯에서 바로 시작하고 가장 오래된 같은 소리는 이 시간(초)
+    // 동안 페이드아웃시킨다. 예전엔 같은 슬롯에서 Stop 후 Play해 앞 소리가 뚝 끊기며 클릭이 났고, 드론 타격음처럼
+    // 1.6초짜리 소리가 초당 여러 발 겹치는 경우 그 끊김이 "씹힘"으로 들렸다. 빈 슬롯이 없을 때만 예전처럼 즉시 빼앗는다.
+    private const float PolyphonyStealFadeDuration = 0.06f;
 
     // Camera.main 조회와 리스너 위치는 프레임당 한 번만 갱신한다. 폭주 프레임엔 재생 요청이 100회를 넘기도 해서
     // (과열 충격파 한 번에 수십 그루), 요청마다 다시 읽으면 비용이 쌓인다.
@@ -687,33 +697,69 @@ public class AudioManager : MonoBehaviour
 
     private void CreatePool()
     {
-        sourcePool.Capacity = poolSize;
-        sourceStartTime = new float[poolSize];
-        sourceBaseVolume = new float[poolSize];
-        sourceTargetVolume = new float[poolSize];
-        sourcePlayId = new int[poolSize];
-        sourceFadeGen = new int[poolSize];
-        sourceFadingOut = new bool[poolSize];
-        sourceSoundID = new SoundID[poolSize];
-        sourcePolyphonyAttenuation = new float[poolSize];
+        // 슬롯별 배열은 동적 확장 상한 크기로 한 번에 잡아 두고, 소스만 필요할 때 늘린다.
+        maxPoolSize = Mathf.Max(maxPoolSize, poolSize);
+        sourcePool.Capacity = maxPoolSize;
+        sourceStartTime = new float[maxPoolSize];
+        sourceBaseVolume = new float[maxPoolSize];
+        sourceTargetVolume = new float[maxPoolSize];
+        sourcePlayId = new int[maxPoolSize];
+        sourceFadeGen = new int[maxPoolSize];
+        sourceFadingOut = new bool[maxPoolSize];
+        sourceSoundID = new SoundID[maxPoolSize];
+        sourcePolyphonyAttenuation = new float[maxPoolSize];
 
         for (int i = 0; i < poolSize; i++)
         {
-            var obj = new GameObject("AudioSource_" + i);
-            obj.transform.parent = transform;
-
-            AudioSource source = obj.AddComponent<AudioSource>();
-            source.playOnAwake = false;
-            source.spatialBlend = 1f;
-            // 2D 게임이라 도플러는 끈다. 켜 두면 부메랑 회전음·드론 충전음처럼 매 프레임 위치를 옮기는 소리의 피치가
-            // 이동 속도에 따라 흔들린다(Unity는 위치 변화량으로 음원 속도를 추정한다).
-            source.dopplerLevel = 0f;
-
-            sourcePool.Add(source);
+            AddPoolSource();
         }
 
         // 최초 생성 시점 기준으로 한 번 적용해둔다 (실제 재생 시점에 다시 최신값으로 갱신됨).
         EnsureDistanceRolloffUpToDate();
+    }
+
+    // 풀에 소스를 하나 추가하고 그 인덱스를 돌려준다. 시작 시 poolSize만큼, 이후 빈 슬롯이 없을 때 maxPoolSize까지.
+    private int AddPoolSource()
+    {
+        int index = sourcePool.Count;
+
+        var obj = new GameObject("AudioSource_" + index);
+        obj.transform.parent = transform;
+
+        AudioSource source = obj.AddComponent<AudioSource>();
+        source.playOnAwake = false;
+        source.spatialBlend = 1f;
+        // 2D 게임이라 도플러는 끈다. 켜 두면 부메랑 회전음·드론 충전음처럼 매 프레임 위치를 옮기는 소리의 피치가
+        // 이동 속도에 따라 흔들린다(Unity는 위치 변화량으로 음원 속도를 추정한다).
+        source.dopplerLevel = 0f;
+
+        // 늦게 만들어진 소스도 지금 쓰는 거리 감쇠 커브를 바로 받는다(EnsureDistanceRolloffUpToDate는 값이 바뀔 때만 돈다).
+        if (cachedRolloffCurve != null)
+        {
+            ApplyRolloff(source, cachedNearDistance, cachedFarDistance);
+        }
+
+        sourcePool.Add(source);
+        return index;
+    }
+
+    private void ApplyRolloff(AudioSource source, float near, float far)
+    {
+        source.rolloffMode = AudioRolloffMode.Custom;
+        source.minDistance = near;
+        source.maxDistance = far;
+        source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, cachedRolloffCurve);
+    }
+
+    // 빈 슬롯을 찾고, 없으면 상한까지 소스를 하나 더 만들어 돌려준다. 상한에 닿았으면 -1.
+    private int AcquireFreeSourceIndex()
+    {
+        int freeIndex = FindFreeSourceIndex();
+        if (freeIndex >= 0) return freeIndex;
+
+        if (sourcePool.Count < maxPoolSize) return AddPoolSource();
+
+        return -1;
     }
 
     private AnimationCurve cachedRolloffCurve;
@@ -752,11 +798,7 @@ public class AudioManager : MonoBehaviour
 
         for (int i = 0; i < sourcePool.Count; i++)
         {
-            AudioSource source = sourcePool[i];
-            source.rolloffMode = AudioRolloffMode.Custom;
-            source.minDistance = near;
-            source.maxDistance = far;
-            source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, cachedRolloffCurve);
+            ApplyRolloff(sourcePool[i], near, far);
         }
     }
 
@@ -806,7 +848,7 @@ public class AudioManager : MonoBehaviour
         }
 
         string text =
-            $"Audio slots {playing}/{sourcePool.Count}  (audible {audible}, loops {loops})\n" +
+            $"Audio slots {playing}/{sourcePool.Count} (max {maxPoolSize})  (audible {audible}, loops {loops})\n" +
             $"requests/frame {statRequestsLastFrame}  (peak/1s {statPeakRequests})\n" +
             $"dropped {statDroppedTotal}   stolen {statStolenTotal}   failed {statFailedTotal}";
         GUI.Label(new Rect(10f, 10f, 480f, 70f), text);
@@ -936,7 +978,8 @@ public class AudioManager : MonoBehaviour
         {
             if (!IsHandleValid(handle) || sourceFadeGen[index] != fadeGen) yield break;
 
-            timer += Time.deltaTime;
+            // unscaledDeltaTime: 일시정지(timeScale 0) 중 UI 소리의 상한 페이드가 멈춰 쌓이지 않도록.
+            timer += Time.unscaledDeltaTime;
             sourceTargetVolume[index] = Mathf.Lerp(startTargetVolume, 0f, timer / duration);
             ApplySourceVolume(index);
             yield return null;
@@ -1199,8 +1242,19 @@ public class AudioManager : MonoBehaviour
             }
 
             // 이 사운드만의 한도를 넘었다면, 전체 풀에서 아무 슬롯이나 강탈하는 대신 같은 SoundID 중
-            // 가장 먼저 시작된 것을 이어받는다 - 관계없는 루프 사운드가 엉뚱하게 끊기는 일을 막는다.
-            index = oldestSameSoundIndex;
+            // 가장 먼저 시작된 것을 밀어낸다 - 관계없는 루프 사운드가 엉뚱하게 끊기는 일을 막는다.
+            // 빈 슬롯이 있으면 새 소리는 거기서 시작하고 가장 오래된 것은 짧게 페이드아웃한다(끊김·클릭 없음).
+            // 페이드 중인 슬롯은 상한 집계에서 빠지므로 다음 요청이 또 밀어낼 수 있다. 빈 슬롯이 없으면 즉시 이어받는다.
+            int freeIndex = AcquireFreeSourceIndex();
+            if (freeIndex >= 0)
+            {
+                StartCoroutine(FadeOutRoutine(new AudioHandle(oldestSameSoundIndex, sourcePlayId[oldestSameSoundIndex]), PolyphonyStealFadeDuration));
+                index = freeIndex;
+            }
+            else
+            {
+                index = oldestSameSoundIndex;
+            }
             statStolenTotal++;
         }
         else
@@ -1298,8 +1352,8 @@ public class AudioManager : MonoBehaviour
     // 지정한 SoundID가 지금 몇 개의 슬롯에서 재생 중인지 두 가지 기준으로 세고, 상한 집계 대상 중 가장 먼저
     // 재생을 시작한 슬롯의 인덱스를 함께 돌려준다(폴리포니 한도 초과 시 이어받을 대상).
     // - audibleCount: 가청 범위 안에서 실제로 들리게 재생 중인 수. 폴리포니 볼륨 감쇠에 쓴다.
-    // - capCount: 동시 재생 상한(maxConcurrentVoices) 판정용. 원샷은 audibleCount와 같고, 루프는 가청 범위 밖까지
-    //   세되 페이드아웃으로 꺼지는 중인 것은 뺀다(곧 비는 자리를 상한에 넣으면 그 사이 불붙은 나무가 루프를 못 받는다).
+    // - capCount: 동시 재생 상한(maxConcurrentVoices) 판정용. 원샷은 가청 범위 안만, 루프는 가청 범위 밖까지 세되
+    //   페이드아웃으로 꺼지는 중인 것은 어느 쪽이든 뺀다(곧 비는 자리를 상한에 넣으면 그 사이 새 소리가 자리를 못 받는다).
     // 풀 크기(최대 50)만 순회하므로 사운드 재생마다 호출해도 비용이 미미하다.
     private void CountActiveVoices(SoundID id, bool isLoop, out int capCount, out int audibleCount, out int oldestIndex)
     {
@@ -1334,7 +1388,7 @@ public class AudioManager : MonoBehaviour
                               Vector3.Distance(src.transform.position, listenerPos) >= cachedFarDistance);
             if (bInRange) audibleCount++;
 
-            bool bCountsForCap = isLoop ? !sourceFadingOut[i] : bInRange;
+            bool bCountsForCap = !sourceFadingOut[i] && (isLoop || bInRange);
             if (!bCountsForCap) continue;
 
             capCount++;
@@ -1354,14 +1408,10 @@ public class AudioManager : MonoBehaviour
         int count = sourcePool.Count;
         if (count == 0) return -1;
 
-        // foreach 대신 for 루프를 사용하여 가비지 발생 차단
-        for (int i = 0; i < count; i++)
-        {
-            if (!sourcePool[i].isPlaying)
-                return i;
-        }
+        int freeIndex = AcquireFreeSourceIndex();
+        if (freeIndex >= 0) return freeIndex;
 
-        // 모든 소스가 사용 중일 때의 강탈 순서:
+        // 상한(maxPoolSize)까지 전부 사용 중일 때의 강탈 순서:
         // 1) 요청보다 덜 중요한(priority 숫자가 더 큰) 원샷이 있으면 그중 가장 덜 중요한 것, 같으면 가장 오래된 것.
         //    중요한 소리(별자리 폭발 등)가 발소리를 살려 두고 자기 형제를 끊는 일을 막는다.
         // 2) 없으면 요청과 같은 SoundID의 원샷 중 가장 오래된 것. 타격음은 타격음을, 드론은 드론을 밀어내므로 포화
@@ -1378,6 +1428,18 @@ public class AudioManager : MonoBehaviour
         if (victim < 0) victim = FindStealableOneShotIndex(count, -1);
         _bStolen = victim >= 0;
         return victim;
+    }
+
+    private int FindFreeSourceIndex()
+    {
+        // foreach 대신 for 루프를 사용하여 가비지 발생 차단
+        int count = sourcePool.Count;
+        for (int i = 0; i < count; i++)
+        {
+            if (!sourcePool[i].isPlaying)
+                return i;
+        }
+        return -1;
     }
 
     private int FindOldestOneShotOfSound(int count, SoundID id)

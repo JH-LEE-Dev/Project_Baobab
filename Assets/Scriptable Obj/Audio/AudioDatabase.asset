@@ -1275,8 +1275,8 @@ MonoBehaviour:
     defaultVolume: 0.15
     is3D: 1
     loop: 0
-    maxConcurrentVoices: 4
-    polyphonyAttenuationStrength: 0.6
+    maxConcurrentVoices: 6
+    polyphonyAttenuationStrength: 0.4
     priority: 128
   - id: -654247267
     mixerId: 0
@@ -1297,8 +1297,8 @@ MonoBehaviour:
     defaultVolume: 0.425
     is3D: 1
     loop: 0
-    maxConcurrentVoices: 4
-    polyphonyAttenuationStrength: 0.6
+    maxConcurrentVoices: 6
+    polyphonyAttenuationStrength: 0.4
     priority: 128
   - id: 717466122
     mixerId: 0
@@ -1308,8 +1308,8 @@ MonoBehaviour:
     defaultVolume: 0.12
     is3D: 1
     loop: 0
-    maxConcurrentVoices: 4
-    polyphonyAttenuationStrength: 0.6
+    maxConcurrentVoices: 6
+    polyphonyAttenuationStrength: 0.4
     priority: 128
   - id: 508564987
     mixerId: 0
