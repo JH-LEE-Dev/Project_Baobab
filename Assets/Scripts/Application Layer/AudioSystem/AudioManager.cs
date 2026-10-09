@@ -10,7 +10,9 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioDatabase database;
 
     [Header("Pool Settings")]
-    [SerializeField] private int poolSize = 50;
+    // 드론·부메랑·과열까지 갖춘 후반 캐릭터는 점화음(3.5초)·드론 타격음(1.6초)·사망음처럼 긴 소리가 상한만큼 상주해
+    // 동시 재생이 55~60개까지 올라간다. 50이면 풀이 상시 포화돼 새 소리가 매번 다른 소리를 끊었다.
+    [SerializeField] private int poolSize = 96;
 
     [Header("3D Sound Distance Settings")]
     // 해상도 설정(16:9/16:10 등)에 따라 PixelPerfectCamera의 orthographicSize가 실제로 달라지므로,
@@ -1203,7 +1205,7 @@ public class AudioManager : MonoBehaviour
         }
         else
         {
-            index = GetAvailableSourceIndex(out bool bStolen);
+            index = GetAvailableSourceIndex(data.id, data.priority, out bool bStolen);
             if (bStolen) statStolenTotal++;
         }
         if (index < 0) return AudioHandle.Invalid;
@@ -1345,7 +1347,7 @@ public class AudioManager : MonoBehaviour
     }
 
     // _bStolen: 빈 슬롯이 없어 재생 중인 슬롯을 빼앗았는지(디버그 통계용).
-    private int GetAvailableSourceIndex(out bool _bStolen)
+    private int GetAvailableSourceIndex(SoundID requestedId, int requestedPriority, out bool _bStolen)
     {
         _bStolen = false;
 
@@ -1359,21 +1361,47 @@ public class AudioManager : MonoBehaviour
                 return i;
         }
 
-        // 모든 소스가 사용 중이면 원샷 중에서 덜 중요한 것(priority 숫자가 큰 것)부터, 같으면 가장 먼저 시작한 것을 빼앗는다.
+        // 모든 소스가 사용 중일 때의 강탈 순서:
+        // 1) 요청보다 덜 중요한(priority 숫자가 더 큰) 원샷이 있으면 그중 가장 덜 중요한 것, 같으면 가장 오래된 것.
+        //    중요한 소리(별자리 폭발 등)가 발소리를 살려 두고 자기 형제를 끊는 일을 막는다.
+        // 2) 없으면 요청과 같은 SoundID의 원샷 중 가장 오래된 것. 타격음은 타격음을, 드론은 드론을 밀어내므로 포화
+        //    상태에서도 어떤 소리 종류도 통째로 사라지지 않는다. 예전엔 우선순위만 보고 빼앗아, 풀이 상시 포화되는
+        //    후반 플레이에서 도끼 타격음·드론 타격음(128)만 매번 끊기고 희귀 나무 소리(64)만 남는 제보가 들어왔다.
+        // 3) 그것도 없으면 원샷 전체에서 가장 덜 중요한 것, 같으면 가장 오래된 것.
         // 루프는 빼앗지 않는다 - 원샷과 달리 저절로 끝나지 않아 한 번 끊기면 호출부가 되살리지 않는 한 영영 사라진다
         // (부메랑 회전음·화상 루프). 볼륨 0인 슬롯을 먼저 노리는 단계는 두지 않는다: 볼륨 0 원샷은 재생 시점에 이미
         // 버려지므로 그 단계가 잡는 건 드론이 멈춘 동안 SetTrackedVolume(0)으로 잠시 꺼 둔 충전음뿐이라 역효과만 났다.
         // 남은 게 전부 루프면 새 원샷 하나를 포기하는(-1) 쪽이 낫다. 풀 전체가 루프로 차는 건 정상 상황이 아니므로
         // 그때는 PlayInternal의 경고 로그로 드러난다.
-        int victim = FindStealableOneShotIndex(count);
+        int victim = FindStealableOneShotIndex(count, requestedPriority);
+        if (victim < 0) victim = FindOldestOneShotOfSound(count, requestedId);
+        if (victim < 0) victim = FindStealableOneShotIndex(count, -1);
         _bStolen = victim >= 0;
         return victim;
     }
 
-    private int FindStealableOneShotIndex(int count)
+    private int FindOldestOneShotOfSound(int count, SoundID id)
     {
         int bestIndex = -1;
-        int bestPriority = -1;
+        float bestTime = float.MaxValue;
+        for (int i = 0; i < count; i++)
+        {
+            if (sourceSoundID[i] != id || sourcePool[i].loop) continue;
+            if (sourceStartTime[i] < bestTime)
+            {
+                bestTime = sourceStartTime[i];
+                bestIndex = i;
+            }
+        }
+        return bestIndex;
+    }
+
+    // priority 숫자가 minPriorityExclusive보다 큰(덜 중요한) 원샷 중에서 가장 덜 중요한 것, 같으면 가장 오래된 것.
+    // -1을 넘기면 원샷 전체가 대상이다.
+    private int FindStealableOneShotIndex(int count, int minPriorityExclusive)
+    {
+        int bestIndex = -1;
+        int bestPriority = minPriorityExclusive;
         float bestTime = float.MaxValue;
         for (int i = 0; i < count; i++)
         {
@@ -1381,7 +1409,7 @@ public class AudioManager : MonoBehaviour
             if (src.loop) continue;
 
             // priority는 숫자가 클수록 덜 중요하다(AudioData.priority). 덜 중요한 것 우선, 같으면 오래된 것 우선.
-            if (src.priority > bestPriority || (src.priority == bestPriority && sourceStartTime[i] < bestTime))
+            if (src.priority > bestPriority || (src.priority == bestPriority && bestIndex >= 0 && sourceStartTime[i] < bestTime))
             {
                 bestPriority = src.priority;
                 bestTime = sourceStartTime[i];

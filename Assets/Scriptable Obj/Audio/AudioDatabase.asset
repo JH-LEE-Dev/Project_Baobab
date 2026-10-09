@@ -23,7 +23,7 @@ MonoBehaviour:
     loop: 0
     maxConcurrentVoices: 6
     polyphonyAttenuationStrength: 0.6
-    priority: 128
+    priority: 64
   - id: -1641742776
     mixerId: 0
     clip: {fileID: 8300000, guid: cb5f0b30a84b47a4a895a1abb533ad27, type: 3}
@@ -34,7 +34,7 @@ MonoBehaviour:
     loop: 0
     maxConcurrentVoices: 6
     polyphonyAttenuationStrength: 0.6
-    priority: 128
+    priority: 64
   - id: -398605290
     mixerId: 0
     clip: {fileID: 0}
@@ -43,7 +43,7 @@ MonoBehaviour:
     defaultVolume: 0.07
     is3D: 1
     loop: 0
-    maxConcurrentVoices: 0
+    maxConcurrentVoices: 3
     polyphonyAttenuationStrength: 0
     priority: 192
   - id: 872570553
@@ -54,7 +54,7 @@ MonoBehaviour:
     defaultVolume: 0.07
     is3D: 1
     loop: 0
-    maxConcurrentVoices: 0
+    maxConcurrentVoices: 2
     polyphonyAttenuationStrength: 0
     priority: 192
   - id: 413619275
@@ -120,9 +120,9 @@ MonoBehaviour:
     defaultVolume: 0.075
     is3D: 1
     loop: 0
-    maxConcurrentVoices: 0
+    maxConcurrentVoices: 2
     polyphonyAttenuationStrength: 0
-    priority: 128
+    priority: 160
   - id: -794509328
     mixerId: 0
     clip: {fileID: 0}
@@ -450,9 +450,9 @@ MonoBehaviour:
     defaultVolume: 0.075
     is3D: 1
     loop: 0
-    maxConcurrentVoices: 0
+    maxConcurrentVoices: 3
     polyphonyAttenuationStrength: 0
-    priority: 128
+    priority: 160
   - id: 115041426
     mixerId: 0
     clip: {fileID: 8300000, guid: aa10136d6a045124b834713baa487999, type: 3}
@@ -1110,7 +1110,7 @@ MonoBehaviour:
     defaultVolume: 0.2
     is3D: 1
     loop: 0
-    maxConcurrentVoices: 0
+    maxConcurrentVoices: 3
     polyphonyAttenuationStrength: 0
     priority: 64
   - id: 490385430
@@ -1121,7 +1121,7 @@ MonoBehaviour:
     defaultVolume: 0.2
     is3D: 1
     loop: 0
-    maxConcurrentVoices: 0
+    maxConcurrentVoices: 3
     polyphonyAttenuationStrength: 0
     priority: 64
   - id: -911198171
@@ -1231,7 +1231,7 @@ MonoBehaviour:
     defaultVolume: 0.15
     is3D: 1
     loop: 0
-    maxConcurrentVoices: 0
+    maxConcurrentVoices: 3
     polyphonyAttenuationStrength: 0.5
     priority: 128
   - id: -1782612459
@@ -1354,7 +1354,7 @@ MonoBehaviour:
     loop: 0
     maxConcurrentVoices: 4
     polyphonyAttenuationStrength: 0.6
-    priority: 128
+    priority: 160
   - id: 2067304291
     mixerId: 0
     clip: {fileID: 8300000, guid: adda37c00601ffa44889f6fbe33b28e4, type: 3}

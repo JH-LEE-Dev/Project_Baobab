@@ -720,7 +720,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
   database: {fileID: 11400000, guid: 0df6751f8c20d9743bd59806f470bed3, type: 2}
-  poolSize: 50
+  poolSize: 96
   farDistanceBuffer: 1.05
   bgmFadeDuration: 1
   mixer: {fileID: 24100000, guid: 865ed13951834138be11bea38be7fea0, type: 2}
