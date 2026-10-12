@@ -85,11 +85,11 @@ public class StaminaRecoverCircle : MonoBehaviour
                 pHealthComponent.SetInRestArea(true);
             }
 
-            // 초당 staminaRecoverAmount만큼 회복
+            // 초당 staminaRecoverAmount만큼 회복. 매 프레임 회복이라 HUD 순간 변화 알림이 없는 전용 경로를 쓴다.
             float recoverAmount = character.statComponent.staminaRecoverAmount * Time.deltaTime;
             if (recoverAmount > 0f)
             {
-                pHealthComponent.StaminaRecover(recoverAmount);
+                pHealthComponent.RestAreaStaminaRecover(recoverAmount);
             }
         }
         else

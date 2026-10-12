@@ -1107,7 +1107,7 @@ public class HUD_Stemina : MonoBehaviour
         }
 
         float _gap = _ratio - shownRatio;
-        float _dt = Time.unscaledDeltaTime;
+        float _dt = Time.deltaTime;
         float _ease = Mathf.Lerp(FillEaseMinFactor, 1f, Mathf.Clamp01(_gap / FillEaseGap));
         float _step = fillSpeed * _ease * _dt;
 
@@ -1177,7 +1177,7 @@ public class HUD_Stemina : MonoBehaviour
             return;
         }
 
-        float _dt = Time.unscaledDeltaTime;
+        float _dt = Time.deltaTime;
 
         if (0f < ghostHoldRemain)
         {
@@ -1648,7 +1648,7 @@ public class HUD_Stemina : MonoBehaviour
         flashTween = DOTween.To(getFlashValue, setFlashValue, 0f, _duration)
             .SetEase(Ease.OutQuad)
             .SetLoops(_count, LoopType.Restart)
-            .SetUpdate(true);
+            .SetUpdate(false);
     }
 
     private void StartShake(float _intensity)
@@ -1663,7 +1663,7 @@ public class HUD_Stemina : MonoBehaviour
 
         shakeTween = DOTween.To(getShakeValue, setShakeValue, 0f, shakeDuration)
             .SetEase(Ease.Linear)
-            .SetUpdate(true);
+            .SetUpdate(false);
     }
 
     private float GetFlashValue()
@@ -1766,6 +1766,9 @@ public class HUD_Stemina : MonoBehaviour
 
     // "+"는 트윈 없이 정해진 간격(20fps)으로 한 칸씩만 움직인다.
     // 할 일이 없으면 곧바로 돌아간다.
+    // 이 클래스의 연출(프리즘, "+", 차오름, 잔상, 플래시/흔들림 트윈)은 모두 scaled time을 쓴다.
+    // ESC 일시정지(Time.timeScale = 0) 동안에는 그 자리에서 멈췄다가 풀리면 이어서 진행한다.
+    // 저피로도 경고(DangerShake/DangerColor 모션)도 scaled time이라 함께 멈춘다.
     private void Update()
     {
         if (0 >= alivePlusCount && false == bFillingUp && false == bResting && 0 >= plannedPlusCount
@@ -1775,7 +1778,7 @@ public class HUD_Stemina : MonoBehaviour
             return;
         }
 
-        float _dt = Time.unscaledDeltaTime;
+        float _dt = Time.deltaTime;
 
         UpdatePrism(_dt);
 

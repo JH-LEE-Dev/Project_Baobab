@@ -133,13 +133,14 @@ public class PHealthComponent : PComponent, IPHealthComponent
         float prevStamina = currentStamina;
         currentStamina = Mathf.Max(floor, currentStamina - _damage);
 
-        // 한 번에 깎인 양만 HUD 연출용으로 알린다. (바닥값에 막혀 실제로 줄지 않았다면 알리지 않는다)
-        NotifyStaminaChanged(currentStamina - prevStamina);
-
         if (currentStamina <= 0)
         {
             StaminaIsEmptyEvent?.Invoke();
         }
+
+        // 한 번에 깎인 양만 HUD 연출용으로 알린다. (바닥값에 막혀 실제로 줄지 않았다면 알리지 않는다)
+        // 사망 판정(StaminaIsEmptyEvent)보다 뒤에 둔다. UI 쪽에서 예외가 나도 게임 판정은 이미 끝나 있게 한다.
+        NotifyStaminaChanged(currentStamina - prevStamina);
     }
 
     /// <summary>
@@ -255,18 +256,33 @@ public class PHealthComponent : PComponent, IPHealthComponent
         return bStaminaDecrease == true && bInRestArea == false;
     }
 
-    // "체력의 원천", "휴식"(StaminaRecoverCircle)이 사용한다. "회복력" 특성만큼 회복량이 증가한다.
+    // "체력의 원천" 같은 단발 회복이 사용한다. "회복력" 특성만큼 회복량이 증가한다.
     public void StaminaRecover(float _amount)
     {
-        float finalAmount = _amount * (1f + ctx.characterStat.recoveryPowerBonus / 100f);
         float prevStamina = currentStamina;
-        currentStamina = Mathf.Min(maxStamina, currentStamina + finalAmount);
+        float finalAmount = ApplyStaminaRecover(_amount);
 
         NotifyStaminaChanged(currentStamina - prevStamina);
         NotifyRecoverWasted(finalAmount, currentStamina - prevStamina);
     }
 
-    // 회복하려던 양이 최대치에 막혀 일부라도 버려졌다면 알린다. 휴식 구역은 매 프레임 호출하므로 제외한다(원 안에서는 HUD가 반복 연출을 따로 쓴다).
+    // "휴식"(StaminaRecoverCircle) 전용. 매 프레임 조금씩 회복하므로 HUD 순간 변화 알림을 보내지 않는다.
+    // (원 안에서는 HUD가 IsInRestArea를 보고 반복 연출을 따로 쓴다)
+    // 원 안에서 나무를 베어 받는 "체력의 원천" 회복은 StaminaRecover로 오므로 연출이 그대로 나간다.
+    public void RestAreaStaminaRecover(float _amount)
+    {
+        ApplyStaminaRecover(_amount);
+    }
+
+    // "회복력" 특성을 반영해 회복하고, 회복하려던 양(최대치에 막히기 전)을 돌려준다.
+    private float ApplyStaminaRecover(float _amount)
+    {
+        float finalAmount = _amount * (1f + ctx.characterStat.recoveryPowerBonus / 100f);
+        currentStamina = Mathf.Min(maxStamina, currentStamina + finalAmount);
+        return finalAmount;
+    }
+
+    // 회복하려던 양이 최대치에 막혀 일부라도 버려졌다면 알린다. 휴식 구역 안에서는 HUD가 반복 연출을 따로 쓰므로 제외한다.
     private void NotifyRecoverWasted(float _attemptedAmount, float _appliedAmount)
     {
         if (true == bInRestArea || 0f >= _attemptedAmount)
