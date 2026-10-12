@@ -24,6 +24,14 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     [SerializeField] private GameObject outLineObject;
 
+    // 적재량에 따라 스프라이트를 바꾸는 상자 그림. 비워 두면 예전처럼 이 오브젝트의 SpriteRenderer를 쓴다.
+    //
+    // 짜부 연출(visualTransform)은 상자 그림만 담은 자식에 걸어야 한다. 이 오브젝트(상호작용 트리거 콜라이더가
+    // 붙어 있다)나 그 부모를 짜부시키면 원목이 박힐 때마다 상호작용 범위도 같이 늘었다 줄었다 해서, 경계에 선
+    // 캐릭터가 범위를 들락날락하며 가방이 열렸다 닫혔다 하고 전송이 끊긴다. 그래서 그림을 자식으로 분리하고
+    // 그 SpriteRenderer를 여기에 지정한다.
+    [SerializeField] private SpriteRenderer boxSpriteRenderer;
+
     private SpriteRenderer sr;
     private SpriteRenderer outlineSr;
     private Collider2D col;
@@ -169,8 +177,19 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         customSortable.SetSortingGroup(GetComponent<SortingGroup>());
 
         // 시각적 효과를 위한 트랜스폼 캐싱
-        sr = GetComponent<SpriteRenderer>();
+        sr = boxSpriteRenderer != null ? boxSpriteRenderer : GetComponent<SpriteRenderer>();
         col = GetComponent<Collider2D>();
+
+        // 둘 다 오류 없이 조용히 틀어지는 설정이라 여기서 알린다(boxSpriteRenderer 주석 참고).
+        if (sr == null)
+        {
+            Debug.LogWarning($"[LogContainer] 상자 그림 SpriteRenderer를 찾지 못했습니다. 적재량에 따라 상자 스프라이트가 바뀌지 않습니다. Box Sprite Renderer를 지정하세요. ({name})", this);
+        }
+
+        if (visualTransform != null && transform.IsChildOf(visualTransform))
+        {
+            Debug.LogWarning($"[LogContainer] 짜부 연출 대상(Visual Transform '{visualTransform.name}')이 상호작용 콜라이더를 함께 움직입니다. 원목이 박힐 때마다 상호작용 범위가 출렁여 가방이 열렸다 닫힐 수 있으니, 상자 그림만 담은 자식을 지정하세요. ({name})", this);
+        }
         if (outLineObject != null)
         {
             outlineSr = outLineObject.GetComponent<SpriteRenderer>();
