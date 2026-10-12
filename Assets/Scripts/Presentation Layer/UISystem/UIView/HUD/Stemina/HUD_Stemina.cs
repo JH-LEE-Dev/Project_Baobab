@@ -197,6 +197,10 @@ public class HUD_Stemina : MonoBehaviour
     private DOGetter<float> getShakeValue;
     private DOSetter<float> setShakeValue;
 
+    // 스태미나 무적 원인별 상태(SetInvincible 참고)
+    private bool bEntryInvincible = false;
+    private bool bRestAreaInvincible = false;
+
 
     // 퍼블릭 초기화 및 제어 메서드
 
@@ -334,6 +338,53 @@ public class HUD_Stemina : MonoBehaviour
         // 숨겨지는 동안 남아 있던 연출이 다음에 나타날 때 이어 보이지 않도록 정리한다.
         ResetEffects();
         SetWarning(false);
+
+        // 무적 상태도 맵이 바뀔 때마다 비운다. 꺼짐 알림이 어떤 이유로 빠져도 다음 맵까지 연출이 남지 않게 한다.
+        // 던전 쪽은 이 호출(DecalreDungeonTypeSignal)이 차량 활성화(ReadyPortal) 직후 같은 프레임에 오므로
+        // 휴식 구역 진입 알림(차량의 다음 Update)보다 항상 먼저다. 입장 무적 켜짐은 그보다도 한참 뒤다.
+        ResetInvincible();
+    }
+
+    /// <summary>
+    /// 스태미나가 닳지 않는 무적 구간의 원인별 시작(true) / 종료(false).
+    ///   · DungeonEntry: HUD가 올라오기 시작하는 프레임에 켜지고, 실제 소모가 시작되는 프레임에 꺼진다(약 0.7초 간격).
+    ///   · RestArea: "휴식" 특성으로 열린 차량 주변 휴식 구역에 들어가고 나갈 때.
+    /// 스폰 지점이 휴식 구역 안이라 두 원인은 자주 겹친다. 그래서 원인별로 따로 기억하고, 둘을 합친
+    /// 무적 여부가 실제로 바뀔 때만 연출을 켜고 끈다(입장 무적이 끝나도 원 안이면 연출이 이어진다).
+    /// </summary>
+    public void SetInvincible(EStaminaInvincibleSource _source, bool _bInvincible)
+    {
+        // 마을에서는 무적 연출을 쓰지 않는다. 마을 차량에도 같은 휴식 구역이 있어 알림은 오지만 기록하지도 않는다.
+        if (false == bActive)
+            return;
+
+        bool bWasInvincible = IsInvincible;
+
+        if (EStaminaInvincibleSource.DungeonEntry == _source)
+            bEntryInvincible = _bInvincible;
+        else if (EStaminaInvincibleSource.RestArea == _source)
+            bRestAreaInvincible = _bInvincible;
+
+        if (bWasInvincible != IsInvincible)
+            PlayInvincibleEffect(IsInvincible);
+    }
+
+    private bool IsInvincible => bEntryInvincible || bRestAreaInvincible;
+
+    private void ResetInvincible()
+    {
+        bool bWasInvincible = IsInvincible;
+
+        bEntryInvincible = false;
+        bRestAreaInvincible = false;
+
+        if (true == bWasInvincible)
+            PlayInvincibleEffect(false);
+    }
+
+    private void PlayInvincibleEffect(bool _bOn)
+    {
+        // TODO: 무적 연출 (켜짐: 연출 시작 / 꺼짐: 연출 종료)
     }
 
     private void SetWarning(bool _bOn)

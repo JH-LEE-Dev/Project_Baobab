@@ -266,6 +266,17 @@ public class UIView_HUD : UIView
         hudStaminaBar?.UpdateValue(Mathf.Clamp01(newRatio));
     }
 
+    /// <summary>
+    /// 스태미나 무적 구간 시작(true) / 종료(false). 원인별로 온다(EStaminaInvincibleSource 참고).
+    /// </summary>
+    public void StaminaInvincibleStateChanged(EStaminaInvincibleSource _source, bool _bInvincible)
+    {
+        // ?. 대신 Unity null 비교를 쓴다. 휴식 구역 이탈 알림은 씬 언로드 중 차량의 OnDisable에서도 오는데,
+        // 그때 게이지가 먼저 파괴됐으면 ?.는 걸러내지 못한다(파괴된 오브젝트는 C# 참조로는 null이 아니다).
+        if (null != hudStaminaBar)
+            hudStaminaBar.SetInvincible(_source, _bInvincible);
+    }
+
     #endregion
 
     //무기 모드 변환 시 호출. 기본값은 Axe

@@ -111,6 +111,35 @@ public struct LootPillarInteractSignal
 
 public struct StartDecreaseStaminaSignal { }
 
+// 스태미나 무적(닳지 않는 구간)의 원인. 두 원인이 겹칠 수 있으므로(스폰 지점이 휴식 구역 안이다)
+// UI는 원인별로 따로 기억했다가 하나라도 켜져 있으면 무적으로 본다(HUD_Stemina.SetInvincible 참고).
+// 발행은 모두 UnitSystem이 한다.
+public enum EStaminaInvincibleSource
+{
+    // 숲 입장 직후.
+    // 켜짐: HUD가 올라오고 캐릭터가 활성화되는 시점(ActivateCharacterSignal)
+    // 꺼짐: 실제 소모가 시작되는 시점(StartDecreaseStaminaSignal). 그 사이에 메인메뉴 이탈로 소모 시작이
+    //       취소되는 경우는 이탈 요청(GoToMainMenuRequestedSignal) 시점에 꺼짐을 보낸다.
+    DungeonEntry,
+
+    // "휴식" 특성으로 열리는 차량 주변 휴식 구역(StaminaRecoverCircle) 안에 있는 동안.
+    // PHealthComponent.SetInRestArea가 불릴 때마다 온다. 마을 차량에도 같은 휴식 구역이 있어
+    // 마을에서도 오지만, UI가 마을에서는 무시한다.
+    RestArea,
+}
+
+// 스태미나 무적의 시작/끝을 UI에 알리는 신호. 체력바 연출용.
+public struct StaminaInvincibleStateChangedSignal
+{
+    public EStaminaInvincibleSource source;
+    public bool bInvincible;
+    public StaminaInvincibleStateChangedSignal(EStaminaInvincibleSource _source, bool _bInvincible)
+    {
+        source = _source;
+        bInvincible = _bInvincible;
+    }
+}
+
 public struct PopupUIDownSignal { }
 public struct PopupUIUpSignal { }
 

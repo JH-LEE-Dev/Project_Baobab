@@ -8,6 +8,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public event Action<WeaponMode> WeaponModeChangedEvent;
     public event Action TreeDetectedEvent;
     public event Action TreeDetectionClearedEvent;
+    public event Action<bool> RestAreaStateChangedEvent;
 
     // 외부 의존성
     public InputManager inputManager { get; private set; }
@@ -88,7 +89,16 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     // 넉백 중에는 캐릭터 스프라이트가 조준 방향을 따라 좌우로 도는 것도 막아야 한다.
     private bool bFacingLocked = false;
-    public void SetFacingLocked(bool _locked) => bFacingLocked = _locked;
+    public void SetFacingLocked(bool _locked)
+    {
+        bFacingLocked = _locked;
+
+        // 넉백 도중 귀환을 시작하면 잠금이 풀리는 시점엔 조준이 이미 꺼져 있다(SyncFacingWhileAimDisabled 참고).
+        if (false == _locked)
+        {
+            SyncFacingWhileAimDisabled();
+        }
+    }
 
     // 회전 베기(Whirlwind) 발동 시 스프라이트를 바라보던 방향 기준으로 한 바퀴 돌리는 연출.
     // 도는 동안은 스프라이트/팔 모두 마우스를 따라가지 않고, 끝나면 스프라이트는 즉시 마우스 방향을,
@@ -437,6 +447,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         attackComponent.WhirlwindStrikeEvent -= StartWhirlwindSpin;
         attackComponent.WhirlwindStrikeEvent += StartWhirlwindSpin;
 
+        healthComponent.RestAreaStateChangedEvent -= RestAreaStateChanged;
+        healthComponent.RestAreaStateChangedEvent += RestAreaStateChanged;
+
         if (armComponent.axeComponent != null)
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
@@ -468,6 +481,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             attackComponent.WhirlwindStrikeEvent -= StartWhirlwindSpin;
         }
 
+        if (healthComponent != null)
+            healthComponent.RestAreaStateChangedEvent -= RestAreaStateChanged;
+
         if (armComponent != null && armComponent.axeComponent != null)
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
@@ -488,11 +504,38 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         TreeDetectionClearedEvent?.Invoke();
     }
 
+    private void RestAreaStateChanged(bool _bInRestArea)
+    {
+        RestAreaStateChangedEvent?.Invoke(_bInRestArea);
+    }
+
     private void UpdateFacingByAttackPoint()
     {
         if (true == bFacingLocked || true == bWhirlwindSpinning || 0f == Time.timeScale) return;
         if (null == attackComponent || false == bInDungeon || false == attackComponent.IsCursorEnabled) return;
 
+        FaceAttackPoint();
+    }
+
+    /// <summary>
+    /// 조준이 꺼진 상태에서 스프라이트 방향 잠금(넉백)이나 회전 베기가 끝났을 때, 스프라이트를 조준점 쪽으로 한 번 맞춘다.
+    ///
+    /// 팔(ArmComponent)은 조준이 꺼져 있어도 항상 조준점을 따라가지만, 스프라이트는 조준이 켜져 있을 때만
+    /// UpdateFacingByAttackPoint로 따라간다. 넉백/회전 베기로 스프라이트가 멈춰 있는 동안 조준점이 움직였고
+    /// (그동안 조준은 켜져 있다), 잠금이 풀리기 전에 귀환으로 조준이 꺼지면 스프라이트는 잠기기 전 방향에 남고
+    /// 팔만 조준점으로 돌아가 목이 꺾인 것처럼 보였다. 조준이 꺼진 뒤엔 조준점이 더 움직이지 않으므로 한 번이면 된다.
+    /// 조준이 켜져 있으면 다음 UpdateFacingByAttackPoint가 맞춰 주므로 여기서는 하지 않는다.
+    /// </summary>
+    private void SyncFacingWhileAimDisabled()
+    {
+        if (true == bFacingLocked || true == bWhirlwindSpinning || true == bDead) return;
+        if (null == attackComponent || false == bInDungeon || true == attackComponent.IsCursorEnabled) return;
+
+        FaceAttackPoint();
+    }
+
+    private void FaceAttackPoint()
+    {
         Transform attackTarget = attackComponent.GetAttackPointTransform();
         if (null == attackTarget) return;
 
@@ -533,6 +576,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (t >= 1f)
         {
             StopWhirlwindSpin();
+
+            // 회전 도중 귀환으로 조준이 꺼졌다면 스프라이트가 회전 시작 방향에 남는다(SyncFacingWhileAimDisabled 참고).
+            SyncFacingWhileAimDisabled();
         }
     }
 

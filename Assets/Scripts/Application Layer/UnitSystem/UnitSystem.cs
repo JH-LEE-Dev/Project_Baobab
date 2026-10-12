@@ -61,6 +61,7 @@ public class UnitSystem
         signalHub.Subscribe<LostAndFoundBoxAcquiredSignal>(LostAndFoundBoxAcquired);
         signalHub.Subscribe<RetryButtonClickedSignal>(RetryGame);
         signalHub.Subscribe<ActivateCharacterSignal>(ActivateCharacter);
+        signalHub.Subscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
         signalHub.Subscribe<EnableCharacterAimSignal>(EnableCharacterAim);
         signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.Subscribe<TutorialStepStartedSignal>(TutorialStepStarted);
@@ -85,6 +86,7 @@ public class UnitSystem
         signalHub.UnSubscribe<LostAndFoundBoxAcquiredSignal>(LostAndFoundBoxAcquired);
         signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryGame);
         signalHub.UnSubscribe<ActivateCharacterSignal>(ActivateCharacter);
+        signalHub.UnSubscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
         signalHub.UnSubscribe<EnableCharacterAimSignal>(EnableCharacterAim);
         signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.UnSubscribe<TutorialStepStartedSignal>(TutorialStepStarted);
@@ -111,6 +113,9 @@ public class UnitSystem
 
         unitLogicManager.TreeDetectionClearedEvent -= TreeDetectionCleared;
         unitLogicManager.TreeDetectionClearedEvent += TreeDetectionCleared;
+
+        unitLogicManager.RestAreaStateChangedEvent -= RestAreaStateChanged;
+        unitLogicManager.RestAreaStateChangedEvent += RestAreaStateChanged;
 
         inventoryManager.SpendMoneyEvent -= SpendMoney;
         inventoryManager.SpendMoneyEvent += SpendMoney;
@@ -160,6 +165,7 @@ public class UnitSystem
         unitLogicManager.CharacterStaminaIsEmptyEvent -= CharacterStaminaIsEmpty;
         unitLogicManager.TreeDetectedEvent -= TreeDetected;
         unitLogicManager.TreeDetectionClearedEvent -= TreeDetectionCleared;
+        unitLogicManager.RestAreaStateChangedEvent -= RestAreaStateChanged;
         inventoryManager.SpendMoneyEvent -= SpendMoney;
         offroadContainer.InteractStateEvent -= OffroadContainerInteractStateChanged;
         inventoryManager.LoosAllInventoryItemEvent -= LoosAllInventoryItem;
@@ -370,6 +376,11 @@ public class UnitSystem
         signalHub.Publish(new TreeDetectionClearedSignal());
     }
 
+    private void RestAreaStateChanged(bool _bInRestArea)
+    {
+        signalHub.Publish(new StaminaInvincibleStateChangedSignal(EStaminaInvincibleSource.RestArea, _bInRestArea));
+    }
+
     private void CarrotItemAcquired(CarrotItemAcquiredSignal carrotItemAcquiredSignal)
     {
         inventoryManager.CarrotEarned(carrotItemAcquiredSignal.amount);
@@ -417,14 +428,19 @@ public class UnitSystem
 
     private void CharacterStaminaIsEmpty()
     {
+        // 던전 쪽이 "이번 원정은 사망으로 끝났다"를 기록해(InDungeonObjectManager.RunEndState) 이후의
+        // 차량 상호작용/귀환 경고창 답/지연 탑승을 거부할 수 있도록 알린다.
+        //
+        // 아래 구제 처리보다 반드시 먼저 보내야 한다. 이 신호를 받은 던전 쪽이 공중에 있던 전리품의 획득
+        // 데이터를 확정하는데(LootManager.CommitRunEnd), 그중 분실물 보관함이 있으면 같은 호출 안에서
+        // LostAndFoundBoxAcquiredSignal → SetLostAndFoundBoxEffect(true)까지 이어진다. 순서가 뒤집히면
+        // 마지막으로 벤 나무에서 나온 보관함이 이번 탈진의 구제 판정에서 빠진다.
+        signalHub.Publish(new CharacterStaminaIsEmptySignal());
+
         // "분실물 보관함" 효과: 유실 처리(DropAllItem) 전에 먼저 일부를 오프로드 컨테이너로 구제한다.
         inventoryManager.RescueItemsToOffroadContainer(offroadContainer);
         inDungeonResultManager.IncreaseLostLogItemCnt(inventoryManager.DropAllItem(unitSpawner.character.centerTransform));
         signalHub.Publish(new PopupUIDownSignal());
-
-        // 던전 쪽이 "이번 원정은 사망으로 끝났다"를 기록해(InDungeonObjectManager.RunEndState) 이후의
-        // 차량 상호작용/귀환 경고창 답/지연 탑승을 거부할 수 있도록 알린다.
-        signalHub.Publish(new CharacterStaminaIsEmptySignal());
     }
 
     private void LostAndFoundBoxAcquired(LostAndFoundBoxAcquiredSignal _signal)
@@ -480,6 +496,9 @@ public class UnitSystem
     private void StartDecreaseStamina(StartDecreaseStaminaSignal _startDecreaseStaminaSignal)
     {
         unitLogicManager.StartDecreaseStamina();
+
+        // 숲 입장 무적 구간 끝(ActivateCharacter 참고).
+        signalHub.Publish(new StaminaInvincibleStateChangedSignal(EStaminaInvincibleSource.DungeonEntry, false));
     }
 
     private void GameEnd()
@@ -510,6 +529,18 @@ public class UnitSystem
     private void ActivateCharacter(ActivateCharacterSignal _activateCharacterSignal)
     {
         unitLogicManager.ActivateCharacter();
+
+        // 숲 입장 무적 구간 시작. ActivateCharacterSignal은 TownSystem/InDungeonSystem의 PopupUIGoUPCoroutine
+        // 두 사본에서만 발행되고, 둘 다 곧바로 StaminaDecreaseCoroutine을 돌려 0.7초 뒤
+        // StartDecreaseStaminaSignal(→ 끝)을 보낸다. 무적 신호를 두 사본에 따로 넣지 않고 여기서 한 번에 처리한다.
+        signalHub.Publish(new StaminaInvincibleStateChangedSignal(EStaminaInvincibleSource.DungeonEntry, true));
+    }
+
+    // StaminaDecreaseCoroutine은 그 0.7초 사이에 메인메뉴 이탈이 요청되면 StartDecreaseStaminaSignal 없이
+    // 빠져나가므로, 입장 무적의 끝을 여기서 대신 보낸다. 무적이 아닐 때 와도 UI가 그대로 무시한다.
+    private void GoToMainMenuRequested(GoToMainMenuRequestedSignal _signal)
+    {
+        signalHub.Publish(new StaminaInvincibleStateChangedSignal(EStaminaInvincibleSource.DungeonEntry, false));
     }
 
     private void EnableCharacterAim(EnableCharacterAimSignal _enableCharacterAimSignal)
