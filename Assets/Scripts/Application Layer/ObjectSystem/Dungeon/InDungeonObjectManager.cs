@@ -54,9 +54,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private IInventory characterInventory;
 
     // "1-3"(WideGreenForest_3) 보장 드랍용 - 세이브 데이터와 연동되는 영구 획득 플래그.
-    // 실제로 습득(OnLootItemAcquired)했을 때만 true로 세팅한다 - 스폰 시점에 세팅하면, 스폰 후
-    // 습득이 끝나기 전(포물선 낙하 + 흡입 이동 중) 캐릭터가 죽는 경우 실제로는 효과를 못 받았는데도
-    // 영구히 재도전 기회를 잃게 된다.
+    // 획득 데이터가 확정(OnLootDataCommitted)됐을 때만 true로 세팅한다. 확정 시점은 캐릭터에게 도착한
+    // 순간이고, 런이 끝나는 순간(사망 판정 / 귀환 확정) 아직 공중에 있었다면 그 순간이다
+    // (LootManager.CommitRunEnd). 그래서 드랍된 전리품은 흡입이 끝나기 전에 런이 끝나도 유실되지 않는다.
     public bool bHasAcquiredLostAndFoundBox { get; set; }
     // 같은 던전 진행(run) 동안 이미 스폰을 시도했는지 - 습득 완료 전까지 중복 스폰을 막는 런타임 전용
     // 플래그. 매 던전 진입마다(SetupForForestType) 리셋된다.
@@ -68,15 +68,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField] private float lostAndFoundBoxDropChanceIncreasePerKill = 0.005f;
     private int lostAndFoundBoxWideGreenTreeKillCount;
 
-    // "2-1"(FluffySporeForest_1) 구제(pity) 드랍 - "1-3"에서 못 얻었을 경우를 대비해, 이 스테이지에서
-    // 나무를 min~max그루 베면 확률과 무관하게 무조건 드랍시킨다. 임계값은 스테이지 진입마다 다시 뽑는다.
+    // "2-1"(FluffySporeForest_1) 이후 모든 숲의 구제(pity) 드랍 - "1-3"에서 못 얻었을 경우를 대비해,
+    // 나무를 min~max그루 베면 확률과 무관하게 무조건 드랍시킨다. 임계값은 스테이지 진입마다 다시 뽑는다
+    // (구제 드랍 공통 규칙은 PityStart 상수 주석 참조).
     [SerializeField] private int lostAndFoundBoxPityMinKills = 4;
     [SerializeField] private int lostAndFoundBoxPityMaxKills = 5;
     private int lostAndFoundBoxPityThreshold;
-    private int lostAndFoundBoxPityTreeKillCount;
 
-    // "포자 포션" - "2-1,2-2,2-3"(FluffySporeForest_1/2/3)에서 확률 드랍, "3-1"(StarrootForest_1)에서
-    // 구제 보장. 한 번 획득하면 영구 소지하는 충전식 소비 아이템(세이브 데이터와 연동).
+    // "포자 포션" - "2-1,2-2,2-3"(FluffySporeForest_1/2/3)에서 확률 드랍, "3-1"(StarrootForest_1) 이후
+    // 모든 숲에서 구제 보장. 한 번 획득하면 영구 소지하는 충전식 소비 아이템(세이브 데이터와 연동).
     public bool bHasAcquiredSporePotion { get; set; }
     public float sporePotionCharge { get; set; }
     private bool bSporePotionSpawnedThisRun;
@@ -89,22 +89,20 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField] private int sporePotionPityMinKills = 4;
     [SerializeField] private int sporePotionPityMaxKills = 5;
     private int sporePotionPityThreshold;
-    private int sporePotionPityTreeKillCount;
     [SerializeField] private float sporePotionMaxCharge = 30f;
     [SerializeField] private float sporePotionRefillMin = 3f;
     [SerializeField] private float sporePotionRefillMax = 5f;
 
-    // "별빛 나침반" - StarrootForest_1/2/3 중 어디서든 나무 4~5그루를 벤 시점에 보장 드랍.
-    // 세 맵 중 한 곳에서 획득하면 다른 맵에서는 더 이상 드랍되지 않는다(영구 플래그).
+    // "별빛 나침반" - StarrootForest_1 이후 어느 숲이든 나무 4~5그루를 벤 시점에 보장 드랍.
+    // 한 곳에서 획득하면 다른 숲에서는 더 이상 드랍되지 않는다(영구 플래그).
     // 별자리 표식은 이제 기본으로 항상 표시되므로, 이 아이템은 드랍만 되고 획득해도 아무 효과가 없다.
     public bool bHasAcquiredStarCompass { get; set; }
     private bool bStarCompassSpawnedThisRun;
     [SerializeField] private int starCompassPityMinKills = 4;
     [SerializeField] private int starCompassPityMaxKills = 5;
     private int starCompassPityThreshold;
-    private int starCompassPityTreeKillCount;
 
-    // "흑요 부적"
+    // "흑요 부적" - "4-2"(MagmaForest_2)에서 확률 드랍, "4-3"(MagmaForest_3) 이후 모든 숲에서 구제 보장.
     public bool bHasAcquiredObsidianCharm { get; set; }
     private bool bObsidianCharmSpawnedThisRun;
     [SerializeField] private float obsidianCharmDropChance = 0.05f;
@@ -113,7 +111,22 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField] private int obsidianCharmPityMinKills = 4;
     [SerializeField] private int obsidianCharmPityMaxKills = 5;
     private int obsidianCharmPityThreshold;
-    private int obsidianCharmPityTreeKillCount;
+
+    // 구제(pity) 드랍 공통 규칙
+    //
+    // 각 전리품의 구제는 "보장 시작 숲"만이 아니라 그 이후의 모든 숲에서 적용된다. 숲 해금은 명성 레벨만
+    // 보고(DensityManager.PrestigeLevelIncreased) 이전 숲 방문을 요구하지 않으므로, 보장 숲에 한 번도
+    // 들어가지 않고 다음 숲으로 넘어갈 수 있다. 예전엔 보장이 그 숲 하나에만 걸려 있어서 그렇게 건너뛰면
+    // 해당 전리품을 영영 얻을 수 없었다. ForestType 열거 순서가 진행 순서와 같으므로 ">= 시작 숲"으로 판정한다.
+    //
+    // 한 런에 구제 대상이 여럿이면(뒤늦게 따라잡는 경우) 같은 나무에서 한꺼번에 쏟아지지 않도록, 오래된
+    // 지역 것부터 "앞 전리품 뒤 다시 min~max그루"씩 임계값을 이어 붙인다(SetupForForestType).
+    // 벌목 수는 런 단위 하나(pityTreeKillCount)로 세고, 진입마다 0부터 다시 센다.
+    private const ForestType LostAndFoundBoxPityStart = ForestType.FluffySporeForest_1;
+    private const ForestType SporePotionPityStart = ForestType.StarrootForest_1;
+    private const ForestType StarCompassPityStart = ForestType.StarrootForest_1;
+    private const ForestType ObsidianCharmPityStart = ForestType.MagmaForest_3;
+    private int pityTreeKillCount;
 
     // "황금 나무" 보장 (데모 빌드 전용)
     //
@@ -475,8 +488,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         lootManager = GetComponentInChildren<LootManager>();
         lootManager.Initialize();
-        lootManager.LootItemAcquiredEvent -= OnLootItemAcquired;
-        lootManager.LootItemAcquiredEvent += OnLootItemAcquired;
+        lootManager.LootDataCommittedEvent -= OnLootDataCommitted;
+        lootManager.LootDataCommittedEvent += OnLootDataCommitted;
+        lootManager.LootArrivedEvent -= OnLootArrived;
+        lootManager.LootArrivedEvent += OnLootArrived;
 
         inDungeonVFXManager = GetComponentInChildren<InDungeonVFXManager>();
         inDungeonVFXManager.Initialize();
@@ -554,7 +569,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         if (lootManager != null)
         {
-            lootManager.LootItemAcquiredEvent -= OnLootItemAcquired;
+            lootManager.LootDataCommittedEvent -= OnLootDataCommitted;
+            lootManager.LootArrivedEvent -= OnLootArrived;
         }
 
         if (constellationLaserCreator != null)
@@ -610,15 +626,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     }
 
     /// <summary>
-    /// 현재 던전의 ForestType을 기록한다. "분실물 보관함"이 "1-3"(WideGreenForest_3, 확률)과
-    /// "2-1"(FluffySporeForest_1, 구제 보장)에서, "포자 포션"이 "2-1,2-2,2-3"(확률)과 "3-1"(구제 보장)에서
-    /// 드랍되도록 OnTreeDead에서 이 값을 참조한다. 또한 매 던전 진입마다 런 단위 상태를 리셋한다.
+    /// 현재 던전의 ForestType을 기록한다. 전리품별 확률 드랍 숲과 구제(보장) 드랍 범위를 OnTreeDead에서
+    /// 이 값으로 판정한다(구제 범위는 PityStart 상수 주석 참조). 또한 매 던전 진입마다 런 단위 상태를
+    /// 리셋하고, 이번 런의 구제 임계값을 뽑는다.
     /// </summary>
     public void SetupForForestType(ForestType _forestType)
     {
         currentForestType = _forestType;
         bLostAndFoundBoxSpawnedThisRun = false;
-        lostAndFoundBoxPityTreeKillCount = 0;
         lostAndFoundBoxWideGreenTreeKillCount = 0;
 
         // "원목 보험 증서"는 세이브에 영구 저장되는 전리품이므로, 매 런 시작마다 영구 획득 여부를 기준으로
@@ -630,39 +645,46 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             invMgr.SetLostAndFoundBoxEffect(bHasAcquiredLostAndFoundBox);
         }
 
-        if (_forestType == ForestType.FluffySporeForest_1)
-        {
-            lostAndFoundBoxPityThreshold = UnityEngine.Random.Range(lostAndFoundBoxPityMinKills, lostAndFoundBoxPityMaxKills + 1);
-        }
-
         bSporePotionSpawnedThisRun = false;
         bDrankSporePotionThisRun = false;
         sporePotionFluffyTreeKillCount = 0;
-        sporePotionPityTreeKillCount = 0;
 
-        if (_forestType == ForestType.StarrootForest_1)
-        {
-            sporePotionPityThreshold = UnityEngine.Random.Range(sporePotionPityMinKills, sporePotionPityMaxKills + 1);
-        }
-
-        // "별빛 나침반" - StarrootForest_1/2/3 어느 맵이든 진입 시 리셋 및 임계값 설정
         bStarCompassSpawnedThisRun = false;
-        starCompassPityTreeKillCount = 0;
-        if (_forestType == ForestType.StarrootForest_1
-            || _forestType == ForestType.StarrootForest_2
-            || _forestType == ForestType.StarrootForest_3)
-        {
-            starCompassPityThreshold = UnityEngine.Random.Range(starCompassPityMinKills, starCompassPityMaxKills + 1);
-        }
 
-        // "흑요 부적" - MagmaForest_2/3 진입 시 리셋 및 임계값 설정
         bObsidianCharmSpawnedThisRun = false;
         obsidianCharmTreeKillCount = 0;
-        obsidianCharmPityTreeKillCount = 0;
-        if (_forestType == ForestType.MagmaForest_2 || _forestType == ForestType.MagmaForest_3)
-        {
-            obsidianCharmPityThreshold = UnityEngine.Random.Range(obsidianCharmPityMinKills, obsidianCharmPityMaxKills + 1);
-        }
+
+        // 구제 임계값 - 이번 런에 구제 대상인 것만, 오래된 지역 것부터 "앞 전리품 뒤 다시 min~max그루"씩
+        // 이어 붙인다. 대상이 하나면 지금까지와 같은 min~max그루째이고, 여럿이면 같은 나무에서 한꺼번에
+        // 쏟아지지 않고 차례로 나온다. 대상이 아닌 전리품의 임계값은 OnTreeDead에서 읽히지 않는다.
+        pityTreeKillCount = 0;
+        int pityKillsSoFar = 0;
+        lostAndFoundBoxPityThreshold = RollPityThreshold(IsPityPending(bHasAcquiredLostAndFoundBox, LostAndFoundBoxPityStart),
+            lostAndFoundBoxPityMinKills, lostAndFoundBoxPityMaxKills, ref pityKillsSoFar);
+        sporePotionPityThreshold = RollPityThreshold(IsPityPending(bHasAcquiredSporePotion, SporePotionPityStart),
+            sporePotionPityMinKills, sporePotionPityMaxKills, ref pityKillsSoFar);
+        starCompassPityThreshold = RollPityThreshold(IsPityPending(bHasAcquiredStarCompass, StarCompassPityStart),
+            starCompassPityMinKills, starCompassPityMaxKills, ref pityKillsSoFar);
+        obsidianCharmPityThreshold = RollPityThreshold(IsPityPending(bHasAcquiredObsidianCharm, ObsidianCharmPityStart),
+            obsidianCharmPityMinKills, obsidianCharmPityMaxKills, ref pityKillsSoFar);
+    }
+
+    /// <summary>아직 얻지 못한 전리품이고, 현재 숲이 그 전리품의 구제 범위(시작 숲 이후)에 들어가는지.</summary>
+    private bool IsPityPending(bool _bHasAcquired, ForestType _pityStartForest)
+    {
+        return !_bHasAcquired && currentForestType >= _pityStartForest;
+    }
+
+    /// <summary>
+    /// 구제 대상이면 앞선 대상의 임계값(_pityKillsSoFar) 뒤에 min~max그루를 더한 값을 돌려주고 누적값을 갱신한다.
+    /// 대상이 아니면 0을 돌려주고 누적값은 그대로 둔다.
+    /// </summary>
+    private static int RollPityThreshold(bool _bPending, int _minKills, int _maxKills, ref int _pityKillsSoFar)
+    {
+        if (!_bPending) return 0;
+
+        _pityKillsSoFar += UnityEngine.Random.Range(_minKills, _maxKills + 1);
+        return _pityKillsSoFar;
     }
 
     public void RestoreOwnedLoots(List<LootType> _loots)
@@ -674,42 +696,52 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
     }
 
-    private void OnLootItemAcquired(LootItem _item)
+    /// <summary>
+    /// 전리품 획득 데이터 확정. 런 진행 중에는 도착 순간에, 런이 끝나는 순간 공중에 있던 것은
+    /// 도착을 기다리지 않고 바로 불린다(LootManager.CommitRunEnd). 전리품 하나당 한 번만 불린다.
+    /// </summary>
+    private void OnLootDataCommitted(LootType _lootType)
     {
-        if (!currentOwnedLoots.Contains(_item.LootType))
+        if (!currentOwnedLoots.Contains(_lootType))
         {
-            currentOwnedLoots.Add(_item.LootType);
+            currentOwnedLoots.Add(_lootType);
         }
 
         // currentOwnedLoots는 "영구 소지 목록"이라 예전 런에서 얻은 것도 들어 있다.
         // 결과창은 "이번 런에서 얻은 것"만 보여줘야 하므로 런 단위 집계를 따로 남긴다.
-        inDungeonResultManager?.AddAcquiredLoot(_item.LootType);
+        inDungeonResultManager?.AddAcquiredLoot(_lootType);
 
-        // LogItem 획득과 동일한 획득 피드백(사운드 + 캐릭터 뽀잉 연출)을 LootItem 획득 시에도 재생한다.
-        Sound.PlayUI(SoundID.GetItem);
-        character?.PlayItemAcquireBounce();
-        character?.PlayItemAcquireFlash();
+        LootAcquiredEvent?.Invoke(_lootType);
 
-        LootAcquiredEvent?.Invoke(_item.LootType);
-
-        if (_item.LootType == LootType.LostAndFoundBox)
+        if (_lootType == LootType.LostAndFoundBox)
         {
             bHasAcquiredLostAndFoundBox = true;
             LostAndFoundBoxAcquiredEvent?.Invoke();
         }
-        else if (_item.LootType == LootType.SporePotion)
+        else if (_lootType == LootType.SporePotion)
         {
             bHasAcquiredSporePotion = true;
         }
-        else if (_item.LootType == LootType.StarCompass)
+        else if (_lootType == LootType.StarCompass)
         {
             // 별자리 표식은 이제 항상 기본으로 표시되므로, 이 아이템은 획득해도 별도 효과가 없다.
             bHasAcquiredStarCompass = true;
         }
-        else if (_item.LootType == LootType.ObsidianCharm)
+        else if (_lootType == LootType.ObsidianCharm)
         {
             bHasAcquiredObsidianCharm = true;
         }
+    }
+
+    /// <summary>
+    /// 전리품이 실제로 캐릭터에게 도착한 순간의 획득 피드백. 데이터는 OnLootDataCommitted가 맡는다.
+    /// </summary>
+    private void OnLootArrived(LootType _lootType)
+    {
+        // LogItem 획득과 동일한 획득 피드백(사운드 + 캐릭터 뽀잉 연출)을 LootItem 획득 시에도 재생한다.
+        Sound.PlayUI(SoundID.GetItem);
+        character?.PlayItemAcquireBounce();
+        character?.PlayItemAcquireFlash();
     }
 
     /// <summary>
@@ -835,10 +867,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         // LogItem/CarrotItem과 달리 이 호출이 빠져 있으면, 흡입 중이던 LootItem(예: 분실물 보관함)이
         // 씬 전환 후에도 영속 오브젝트 하위에 그대로 남아 계속 움직이는 버그가 생긴다.
-        // 단순 소멸(ClearAll) 대신 강제 습득(ForceAcquireAllActive) 처리하여, 확정 드랍된 전리품이
-        // 흡입 애니메이션 도중 던전 종료로 유실되지 않고 반드시 인벤토리에 반영되도록 한다.
+        // 획득 데이터는 런 종료 시점(사망 판정 / 귀환 확정)에 이미 확정됐으므로 여기서는 정리만 한다.
+        // 혹시 확정되지 않은 것이 남아 있으면 유실되지 않도록 이 자리에서 확정한다.
         if (lootManager != null)
-            lootManager.ForceAcquireAllActive();
+            lootManager.CommitAndReleaseAllActive();
 
         // currentOwnedLoots는 "이번 런에서 얻은 것"이 아니라 "영구 소지 중인 전리품" 목록이라
         // 여기서 비우면 안 된다. 이 메서드는 마을 도착 시 GameInstaller.SetupGameInstaller()에서
@@ -1421,9 +1453,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 죽은 위치 재사용 준비
         Vector3 deadPos = treePos;
 
+        // 구제(보장) 드랍용 런 단위 벌목 수. 전리품별 임계값은 SetupForForestType에서 이 값 기준으로 뽑아 둔다.
+        pityTreeKillCount++;
+
         // "분실물 보관함" - 나무를 죽여 LogItem이 드랍될 때 함께 스폰을 시도한다.
         // 이미 획득했거나(영구 저장 플래그) 이번 런에서 이미 스폰을 시도했으면(습득 완료 전 중복 방지)
-        // 더 이상 시도하지 않는다. 영구 플래그는 실제 습득 시점(OnLootItemAcquired)에만 세팅된다.
+        // 더 이상 시도하지 않는다. 영구 플래그는 획득 데이터 확정 시점(OnLootDataCommitted)에만 세팅된다.
         if (!bHasAcquiredLostAndFoundBox && !bLostAndFoundBoxSpawnedThisRun && lootManager != null && character != null)
         {
             bool bShouldSpawnLostAndFoundBox = false;
@@ -1436,11 +1471,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 bShouldSpawnLostAndFoundBox = UnityEngine.Random.value < effectiveChance;
                 lostAndFoundBoxWideGreenTreeKillCount++;
             }
-            else if (currentForestType == ForestType.FluffySporeForest_1)
+            else if (currentForestType >= LostAndFoundBoxPityStart)
             {
-                // "2-1" - "1-3"에서 못 얻었을 경우의 구제책. 나무 min~max그루째에 확률과 무관하게 보장 드랍.
-                lostAndFoundBoxPityTreeKillCount++;
-                bShouldSpawnLostAndFoundBox = lostAndFoundBoxPityTreeKillCount >= lostAndFoundBoxPityThreshold;
+                // "2-1" 이후 모든 숲 - "1-3"에서 못 얻었을 경우의 구제책. 임계값 그루째에 확률과 무관하게 보장 드랍.
+                bShouldSpawnLostAndFoundBox = pityTreeKillCount >= lostAndFoundBoxPityThreshold;
             }
 
             if (bShouldSpawnLostAndFoundBox)
@@ -1450,7 +1484,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
         }
 
-        // "포자 포션" - "2-1,2-2,2-3"에서 확률적으로 드랍(못 얻은 채로 벨 때마다 누적 상승), "3-1"에서 구제 보장.
+        // "포자 포션" - "2-1,2-2,2-3"에서 확률적으로 드랍(못 얻은 채로 벨 때마다 누적 상승), "3-1" 이후 모든 숲에서 구제 보장.
         if (!bHasAcquiredSporePotion && !bSporePotionSpawnedThisRun && lootManager != null && character != null)
         {
             bool bShouldSpawnSporePotion = false;
@@ -1463,11 +1497,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 bShouldSpawnSporePotion = UnityEngine.Random.value < effectiveChance;
                 sporePotionFluffyTreeKillCount++;
             }
-            else if (currentForestType == ForestType.StarrootForest_1)
+            else if (currentForestType >= SporePotionPityStart)
             {
-                // "3-1" - "2-1,2-2,2-3"에서 못 얻었을 경우의 구제책. 나무 min~max그루째에 확률과 무관하게 보장 드랍.
-                sporePotionPityTreeKillCount++;
-                bShouldSpawnSporePotion = sporePotionPityTreeKillCount >= sporePotionPityThreshold;
+                // "3-1" 이후 모든 숲 - "2-1,2-2,2-3"에서 못 얻었을 경우의 구제책. 임계값 그루째에 확률과 무관하게 보장 드랍.
+                bShouldSpawnSporePotion = pityTreeKillCount >= sporePotionPityThreshold;
             }
 
             if (bShouldSpawnSporePotion)
@@ -1477,24 +1510,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
         }
 
-        // "별빛 나침반" - StarrootForest_1/2/3에서 나무 4~5그루를 벤 시점에 확률과 무관하게 보장 드랍.
-        // 세 맵 중 어느 한 곳에서 획득하면 영구 플래그가 세팅되어 더 이상 드랍되지 않는다.
+        // "별빛 나침반" - "3-1" 이후 모든 숲에서 임계값 그루째에 확률과 무관하게 보장 드랍.
+        // 어느 한 곳에서 획득하면 영구 플래그가 세팅되어 더 이상 드랍되지 않는다.
         if (!bHasAcquiredStarCompass && !bStarCompassSpawnedThisRun && lootManager != null && character != null)
         {
-            if (currentForestType == ForestType.StarrootForest_1
-                || currentForestType == ForestType.StarrootForest_2
-                || currentForestType == ForestType.StarrootForest_3)
+            if (currentForestType >= StarCompassPityStart && pityTreeKillCount >= starCompassPityThreshold)
             {
-                starCompassPityTreeKillCount++;
-                if (starCompassPityTreeKillCount >= starCompassPityThreshold)
-                {
-                    lootManager.SpawnLootItem(deadPos, LootType.StarCompass, character.centerTransform);
-                    bStarCompassSpawnedThisRun = true;
-                }
+                lootManager.SpawnLootItem(deadPos, LootType.StarCompass, character.centerTransform);
+                bStarCompassSpawnedThisRun = true;
             }
         }
 
-        // "흑요 부적"
+        // "흑요 부적" - "4-2"에서 확률 드랍(못 얻은 채로 벨 때마다 누적 상승), "4-3" 이후 모든 숲에서 구제 보장.
         if (!bHasAcquiredObsidianCharm && !bObsidianCharmSpawnedThisRun && lootManager != null && character != null)
         {
             if (currentForestType == ForestType.MagmaForest_2)
@@ -1507,10 +1534,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 }
                 obsidianCharmTreeKillCount++;
             }
-            else if (currentForestType == ForestType.MagmaForest_3)
+            else if (currentForestType >= ObsidianCharmPityStart)
             {
-                obsidianCharmPityTreeKillCount++;
-                if (obsidianCharmPityTreeKillCount >= obsidianCharmPityThreshold)
+                if (pityTreeKillCount >= obsidianCharmPityThreshold)
                 {
                     lootManager.SpawnLootItem(deadPos, LootType.ObsidianCharm, character.centerTransform);
                     bObsidianCharmSpawnedThisRun = true;
@@ -2102,6 +2128,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         RunEndState = ERunEndState.EndingByDeath;
 
+        // 쓰러지는 순간 공중에 있던 전리품의 획득 데이터를 지금 확정한다(연출은 그대로 시체로 빨려 든다).
+        // UnitSystem이 분실물 보관함 구제(RescueItemsToOffroadContainer)보다 먼저 이 신호를 보내므로,
+        // 마지막으로 벤 나무에서 나온 보관함도 이번 탈진부터 구제 효과가 적용된다.
+        lootManager?.CommitRunEnd();
+
         // 답을 받지 못한 채 닫히는 경고창의 상호작용 잠금(+1)을 여기서 상쇄한다.
         // 나머지(NPC 정지, 성장 정지, 이동 잠금)는 사망 상태에서 그대로 유지되는 것이 맞다.
         if (bWarningPending == true)
@@ -2119,6 +2150,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         RunEndState = ERunEndState.None;
         bWarningPending = false;
+        lootManager?.ResetRunEndCommit();
 
         if (gameEndRoutine != null)
         {
@@ -2189,6 +2221,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (character != null && character.bDead == true) return;
 
         RunEndState = ERunEndState.EndingByReturn;
+
+        // 공중에 있던 전리품의 획득 데이터를 지금 확정한다. 연출은 그대로 이어져 캐릭터에게 빨려 들고,
+        // 결과창(탑승 종료 후)은 이미 확정된 목록을 읽는다.
+        lootManager?.CommitRunEnd();
 
         // 이미 발사되어 공중에 있는 원목은 소멸시키지 않고 그대로 운반 상자에 착지시킨다.
         // 경고창을 거친 경로라면 GameEnd()에서 멈춰 둔 상태이므로 여기서 다시 날려 보낸다.

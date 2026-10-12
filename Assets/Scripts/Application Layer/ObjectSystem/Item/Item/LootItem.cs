@@ -53,6 +53,11 @@ public class LootItem : Item
     // 풀의 actionOnGet/actionOnRelease에서만 갱신한다. (자세한 배경은 PoolSettings 참조)
     public bool IsPooled { get; set; } = false;
 
+    // 획득 데이터(영구 플래그·결과창 집계 등)가 이미 확정됐는지. 런이 끝나는 순간 공중에 있던 전리품은
+    // 데이터만 먼저 확정되고 낙하/흡입 연출은 그대로 이어진다. 도착하면 데이터 없이 획득 피드백만 낸다.
+    // LootManager만 갱신하며, 풀에서 꺼낼 때(ResetItem) false로 되돌린다.
+    public bool IsDataCommitted { get; set; } = false;
+
     [SerializeField] private GameObject outlineObj;
     [SerializeField] private SpriteRenderer outlineStencilSR;
     [SerializeField] private SpriteRenderer outlineSR;
@@ -183,6 +188,7 @@ public class LootItem : Item
     public override void ResetItem()
     {
         base.ResetItem();
+        IsDataCommitted = false;
         state = ItemMoveState.None;
         suckTarget = null;
         elapsed = 0;
