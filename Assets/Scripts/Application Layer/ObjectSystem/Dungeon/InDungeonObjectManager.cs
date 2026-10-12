@@ -1980,6 +1980,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         if (character.bTreeHeatImmune || bHasAcquiredObsidianCharm) return; // 넉백/경직 중엔 열기 영향 없음 + 흑요 부적 획득 시 면역
 
+        // 귀환 경고창이 떠 있는 동안이나 귀환/사망으로 원정이 끝나는 중에는 열기 영향(데미지+넉백)을 주지 않는다.
+        // 이 구간은 캐릭터 조작과 피로도 감소가 멈춘 상태인데, 예전엔 여기 걸리는 조건이 없어서 원목을 떨구며
+        // 기다리는 캐릭터가 한 칸 밀리고 기절 연출이 재생됐다. (발산 VFX/사운드는 위에서 그대로 나온다)
+        if (RunEndState != ERunEndState.None || bWarningPending) return;
+
         Vector3Int treeCell = _tree.CellPos;
         Vector3Int characterCell = character.CurrentCell;
 
@@ -2161,9 +2166,17 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             {
                 growthCoroutine = StartCoroutine(currentTreeGenerationStrategy.GrowthRoutine(this));
             }
+
+            // 조준 재개도 "진짜 취소"일 때만 한다.
+            //
+            // 귀환 확정(HandleGameEnd) 경로에서는 바로 뒤의 DisableAttackComponent()가 조준을 다시 끄므로
+            // 켤 이유가 없는데, 예전엔 여기서 잠깐 켰다. 꺼져 있던 조준이 켜지는 순간 SetCursorEnable(true)가
+            // 조준점을 현재 마우스 위치(경고창 "예" 버튼 쪽)로 옮겨 버려서, 원목을 떨구는 대기 동안
+            // 몸은 E를 누를 때 방향 그대로(조준이 꺼지면 방향 갱신 안 함)인데 팔만 그 조준점으로 돌아가
+            // 목이 꺾인 것처럼 보였다.
+            character.PauseCharacter(false);
         }
 
-        character.PauseCharacter(false);
         inputManager.PauseMove(false);
         inputManager.PauseInteractKey(false);
     }
