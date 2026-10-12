@@ -6,6 +6,7 @@ public class PHealthComponent : PComponent, IPHealthComponent
     public event Action StaminaIsEmptyEvent;
     public event Action<float> StaminaDamagedEvent;
     public event Action<float> StaminaRecoveredEvent;
+    public event Action StaminaRecoverWastedEvent;
     // 외부 의존성 (SerializeField)
     [SerializeField] private float maxHealth;
     [SerializeField] private float maxStamina;
@@ -20,6 +21,7 @@ public class PHealthComponent : PComponent, IPHealthComponent
 
     public float CurrentStamina => currentStamina;
     public float MaxStamina => maxStamina;
+    public bool IsInRestArea => bInRestArea;
 
     private bool bFirstDamage = false;
     public bool bIsFirstDamage => bFirstDamage;
@@ -156,9 +158,11 @@ public class PHealthComponent : PComponent, IPHealthComponent
     {
         float finalPercent = _percent * (1f + ctx.characterStat.recoveryPowerBonus / 100f);
         float prevStamina = currentStamina;
-        currentStamina = Mathf.Min(maxStamina, currentStamina + maxStamina * (finalPercent / 100f));
+        float attemptedAmount = maxStamina * (finalPercent / 100f);
+        currentStamina = Mathf.Min(maxStamina, currentStamina + attemptedAmount);
 
         NotifyStaminaChanged(currentStamina - prevStamina);
+        NotifyRecoverWasted(attemptedAmount, currentStamina - prevStamina);
     }
 
     public void SetStaminaIncreaseAmount(float _staminaIncAmount)
@@ -252,6 +256,17 @@ public class PHealthComponent : PComponent, IPHealthComponent
         currentStamina = Mathf.Min(maxStamina, currentStamina + finalAmount);
 
         NotifyStaminaChanged(currentStamina - prevStamina);
+        NotifyRecoverWasted(finalAmount, currentStamina - prevStamina);
+    }
+
+    // 회복하려던 양이 최대치에 막혀 일부라도 버려졌다면 알린다. 휴식 구역은 매 프레임 호출하므로 제외한다(원 안에서는 HUD가 반복 연출을 따로 쓴다).
+    private void NotifyRecoverWasted(float _attemptedAmount, float _appliedAmount)
+    {
+        if (true == bInRestArea || 0f >= _attemptedAmount)
+            return;
+
+        if (_attemptedAmount - _appliedAmount > 0.0001f)
+            StaminaRecoverWastedEvent?.Invoke();
     }
 
     // 한 번에 일어난 스태미나 변화를 최대치 대비 비율로 바꿔 알린다. 변화가 없으면(이미 최대/바닥) 알리지 않는다.

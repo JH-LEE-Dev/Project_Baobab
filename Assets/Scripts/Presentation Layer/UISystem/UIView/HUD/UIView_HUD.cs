@@ -38,6 +38,7 @@ public class UIView_HUD : UIView
     private IPHealthComponent subscribedHealthComponent;
     private Action<float> cachedOnStaminaDamaged;
     private Action<float> cachedOnStaminaRecovered;
+    private Action cachedOnStaminaRecoverWasted;
 
     private MapType currentMapType;
     private ForestType currentForestType;
@@ -113,9 +114,13 @@ public class UIView_HUD : UIView
         if (null == cachedOnStaminaRecovered)
             cachedOnStaminaRecovered = OnStaminaRecovered;
 
+        if (null == cachedOnStaminaRecoverWasted)
+            cachedOnStaminaRecoverWasted = OnStaminaRecoverWasted;
+
         subscribedHealthComponent = character.pHealthComponent;
         subscribedHealthComponent.StaminaDamagedEvent += cachedOnStaminaDamaged;
         subscribedHealthComponent.StaminaRecoveredEvent += cachedOnStaminaRecovered;
+        subscribedHealthComponent.StaminaRecoverWastedEvent += cachedOnStaminaRecoverWasted;
     }
 
     private void UnbindStaminaEvents()
@@ -125,7 +130,13 @@ public class UIView_HUD : UIView
 
         subscribedHealthComponent.StaminaDamagedEvent -= cachedOnStaminaDamaged;
         subscribedHealthComponent.StaminaRecoveredEvent -= cachedOnStaminaRecovered;
+        subscribedHealthComponent.StaminaRecoverWastedEvent -= cachedOnStaminaRecoverWasted;
         subscribedHealthComponent = null;
+    }
+
+    private void OnStaminaRecoverWasted()
+    {
+        hudStaminaBar?.PlayRecoverWasted();
     }
 
     private void OnStaminaDamaged(float _lossRatio)
@@ -171,6 +182,7 @@ public class UIView_HUD : UIView
         if (null != character && null != character.pHealthComponent)
         {
             UsedSteminaEvent(character.pHealthComponent.GetCurrentStamina(), character.pHealthComponent.GetMaxStamina());
+            hudStaminaBar?.SetResting(character.pHealthComponent.IsInRestArea);
         }
     }
 
