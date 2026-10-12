@@ -175,6 +175,12 @@ public class HUD_Stemina : MonoBehaviour
     private const float PrismLitMix = 0.256f;
     private const int PrismCellKeyOffset = 512;
     private const int PrismCellKeyStride = 1024;
+    // 면마다 미리 계산해 두는 색 변형 수(일반, 윗변, 아랫변, 가장자리)
+    private const int PrismColorVariants = 4;
+    // 픽셀의 위치 종류 비트(윤곽 표에서 한 번만 계산)
+    private const byte PrismKindTop = 1;
+    private const byte PrismKindBottom = 2;
+    private const byte PrismKindLeft = 4;
 
     private const int ShakeStepCount = 8;
     // 휴식 "+" 간격 보정 기준 채움 비율. 이보다 덜 찼으면 좁은 구간에 "+"가 뭉치지 않도록 간격을 비율만큼 늘린다.
@@ -287,6 +293,8 @@ public class HUD_Stemina : MonoBehaviour
     private float prismGainHighPx = 0f;
     private PrismFace[] prismFaces;
     private float[] prismFaceLevel;
+    private Color32[] prismFaceColors;
+    private byte[] prismPixelKind;
     private int[] prismFaceMap;
     private Color32[] prismBuffer;
     private Texture2D prismTexture;
@@ -629,6 +637,32 @@ public class HUD_Stemina : MonoBehaviour
 
         prismFaces = _list.ToArray();
         prismFaceLevel = new float[prismFaces.Length];
+        prismFaceColors = new Color32[prismFaces.Length * PrismColorVariants];
+
+        // 픽셀의 위치 종류(윗변 / 아랫변 / 왼쪽 끝)는 윤곽이 바뀌지 않으므로 한 번만 계산한다.
+        prismPixelKind = new byte[_count];
+
+        for (int y = 0; y < barH; y++)
+        {
+            for (int x = 0; x < barW; x++)
+            {
+                if (false == barInside[y * barW + x])
+                    continue;
+
+                byte _kind = 0;
+
+                if (false == IsInsideBar(x, y + 1))
+                    _kind |= PrismKindTop;
+
+                if (false == IsInsideBar(x, y - 1))
+                    _kind |= PrismKindBottom;
+
+                if (false == IsInsideBar(x - 1, y))
+                    _kind |= PrismKindLeft;
+
+                prismPixelKind[y * barW + x] = _kind;
+            }
+        }
 
         if (null == prismTexture || prismTexture.width != barW || prismTexture.height != barH)
         {
@@ -640,6 +674,11 @@ public class HUD_Stemina : MonoBehaviour
             prismTexture.filterMode = FilterMode.Point;
             prismTexture.wrapMode = TextureWrapMode.Clamp;
         }
+
+        // 새 텍스처의 초기 내용은 불투명 흰색이라, 어떤 경로로든 먼저 보이지 않도록 투명으로 비워 둔다.
+        System.Array.Clear(prismBuffer, 0, prismBuffer.Length);
+        prismTexture.SetPixelData(prismBuffer, 0);
+        prismTexture.Apply(false);
 
         prismSurface.texture = prismTexture;
         prismSurface.enabled = false;
@@ -783,7 +822,8 @@ public class HUD_Stemina : MonoBehaviour
     // 지금 시각의 프리즘을 텍스처에 다시 그린다. 채워진 구간 안에서만 칠하고, 풀려 나간 면은 투명으로 둬 아래 Fill이 보이게 한다.
     private void PaintPrism()
     {
-        if (null == prismBuffer || null == prismTexture || null == prismFaces || null == prismFaceMap)
+        if (null == prismBuffer || null == prismTexture || null == prismFaces || null == prismFaceMap
+            || null == prismFaceColors || null == prismPixelKind)
             return;
 
         int _filledPx = Mathf.Min(barW, Mathf.FloorToInt(barW * Mathf.Clamp01(shownRatio)));
@@ -864,94 +904,117 @@ public class HUD_Stemina : MonoBehaviour
         bool _bWarn = true == bWarningGauge && null != barFillImage;
         Color _warn = true == _bWarn ? barFillImage.color : Color.white;
 
+        // 면마다 색 변형 4종(일반 / 윗변 / 아랫변 / 가장자리)을 한 번만 계산한다. 픽셀 루프는 표 조회만 한다.
+        // 계산식과 순서는 픽셀마다 계산하던 이전 방식과 같다.
+        for (int i = 0; i < prismFaces.Length; i++)
+        {
+            float _level = prismFaceLevel[i];
+
+            if (0f > _level)
+                continue;
+
+            PrismFace _face = prismFaces[i];
+
+            float _ndl = Mathf.Clamp01(_face.nx * _lx + _face.ny * _ly + _face.nz * _lz);
+            float _shade = Mathf.Round(_ndl * 3f) / 3f;
+
+            float _r = Mathf.Lerp(_face.color.r * PrismDeepFactor, Mathf.Lerp(_face.color.r, 1f, PrismLitMix), _shade);
+            float _g = Mathf.Lerp(_face.color.g * PrismDeepFactor, Mathf.Lerp(_face.color.g, 1f, PrismLitMix), _shade);
+            float _b = Mathf.Lerp(_face.color.b * PrismDeepFactor, Mathf.Lerp(_face.color.b, 1f, PrismLitMix), _shade);
+
+            // 광원과 정렬된 면은 한 단계 더 밝다.
+            if (_ndl >= 0.8f)
+            {
+                _r = Mathf.Lerp(_r, 1f, 0.12f);
+                _g = Mathf.Lerp(_g, 1f, 0.12f);
+                _b = Mathf.Lerp(_b, 1f, 0.12f);
+            }
+
+            if (0f < _level)
+            {
+                float _mix = 0.6f * _level;
+                _r = Mathf.Lerp(_r, 1f, _mix);
+                _g = Mathf.Lerp(_g, 1f, _mix);
+                _b = Mathf.Lerp(_b, 1f, _mix);
+            }
+
+            int _slot = i * PrismColorVariants;
+
+            // 일반
+            prismFaceColors[_slot] = PackPrismColor(_r, _g, _b, _bPop);
+
+            // 윗변은 밝게. 저스태미나 경고 중에는 윗변 한 줄만 경고 색(채움 틴트의 현재 색)을 유지한다.
+            float _tr = Mathf.Lerp(_r, 1f, 0.45f);
+            float _tg = Mathf.Lerp(_g, 1f, 0.45f);
+            float _tb = Mathf.Lerp(_b, 1f, 0.45f);
+
+            if (true == _bWarn)
+            {
+                _tr = Mathf.Lerp(_tr, _warn.r, 0.9f);
+                _tg = Mathf.Lerp(_tg, _warn.g, 0.9f);
+                _tb = Mathf.Lerp(_tb, _warn.b, 0.9f);
+            }
+
+            prismFaceColors[_slot + 1] = PackPrismColor(_tr, _tg, _tb, _bPop);
+
+            // 아랫변은 어둡게
+            prismFaceColors[_slot + 2] = PackPrismColor(_r * 0.74f, _g * 0.74f, _b * 0.74f, _bPop);
+
+            // 좌우 끝과 채움 앞쪽은 살짝 어둡게
+            prismFaceColors[_slot + 3] = PackPrismColor(_r * 0.86f, _g * 0.86f, _b * 0.86f, _bPop);
+        }
+
+        Color32 _clear = new Color32(0, 0, 0, 0);
+
         for (int y = 0; y < barH; y++)
         {
+            int _row = y * barW;
+
             for (int x = 0; x < barW; x++)
             {
-                int _index = y * barW + x;
+                int _index = _row + x;
                 int _faceIndex = prismFaceMap[_index];
 
                 if (0 > _faceIndex || x >= _filledPx || 0f > prismFaceLevel[_faceIndex])
                 {
-                    prismBuffer[_index] = new Color32(0, 0, 0, 0);
+                    prismBuffer[_index] = _clear;
                     continue;
                 }
 
-                PrismFace _face = prismFaces[_faceIndex];
+                // 우선순위: 윗변 > 아랫변 > (왼쪽 끝 또는 채움 앞쪽) > 일반
+                byte _kind = prismPixelKind[_index];
+                int _variant = 0;
 
-                float _ndl = Mathf.Clamp01(_face.nx * _lx + _face.ny * _ly + _face.nz * _lz);
-                float _shade = Mathf.Round(_ndl * 3f) / 3f;
+                if (0 != (_kind & PrismKindTop))
+                    _variant = 1;
+                else if (0 != (_kind & PrismKindBottom))
+                    _variant = 2;
+                else if (0 != (_kind & PrismKindLeft) || x == _filledPx - 1)
+                    _variant = 3;
 
-                float _r = Mathf.Lerp(_face.color.r * PrismDeepFactor, Mathf.Lerp(_face.color.r, 1f, PrismLitMix), _shade);
-                float _g = Mathf.Lerp(_face.color.g * PrismDeepFactor, Mathf.Lerp(_face.color.g, 1f, PrismLitMix), _shade);
-                float _b = Mathf.Lerp(_face.color.b * PrismDeepFactor, Mathf.Lerp(_face.color.b, 1f, PrismLitMix), _shade);
-
-                // 광원과 정렬된 면은 한 단계 더 밝다.
-                if (_ndl >= 0.8f)
-                {
-                    _r = Mathf.Lerp(_r, 1f, 0.12f);
-                    _g = Mathf.Lerp(_g, 1f, 0.12f);
-                    _b = Mathf.Lerp(_b, 1f, 0.12f);
-                }
-
-                float _level = prismFaceLevel[_faceIndex];
-                if (0f < _level)
-                {
-                    float _mix = 0.6f * _level;
-                    _r = Mathf.Lerp(_r, 1f, _mix);
-                    _g = Mathf.Lerp(_g, 1f, _mix);
-                    _b = Mathf.Lerp(_b, 1f, _mix);
-                }
-
-                // 바의 윤곽 처리: 윗변은 밝게, 아랫변은 어둡게, 좌우 끝과 채움 앞쪽은 살짝 어둡게.
-                bool _bTop = false == IsInsideBar(x, y + 1);
-                bool _bBottom = false == IsInsideBar(x, y - 1);
-                bool _bEdge = false == IsInsideBar(x - 1, y) || x == _filledPx - 1;
-
-                if (true == _bTop)
-                {
-                    _r = Mathf.Lerp(_r, 1f, 0.45f);
-                    _g = Mathf.Lerp(_g, 1f, 0.45f);
-                    _b = Mathf.Lerp(_b, 1f, 0.45f);
-
-                    // 저스태미나 경고 중에는 윗변 한 줄만 경고 색(채움 틴트의 현재 색)을 유지한다.
-                    if (true == _bWarn)
-                    {
-                        _r = Mathf.Lerp(_r, _warn.r, 0.9f);
-                        _g = Mathf.Lerp(_g, _warn.g, 0.9f);
-                        _b = Mathf.Lerp(_b, _warn.b, 0.9f);
-                    }
-                }
-                else if (true == _bBottom)
-                {
-                    _r *= 0.74f;
-                    _g *= 0.74f;
-                    _b *= 0.74f;
-                }
-                else if (true == _bEdge)
-                {
-                    _r *= 0.86f;
-                    _g *= 0.86f;
-                    _b *= 0.86f;
-                }
-
-                if (true == _bPop)
-                {
-                    _r = Mathf.Lerp(_r, 1f, 0.8f);
-                    _g = Mathf.Lerp(_g, 1f, 0.8f);
-                    _b = Mathf.Lerp(_b, 1f, 0.8f);
-                }
-
-                prismBuffer[_index] = new Color32(
-                    (byte)Mathf.Clamp(Mathf.RoundToInt(_r * 255f), 0, 255),
-                    (byte)Mathf.Clamp(Mathf.RoundToInt(_g * 255f), 0, 255),
-                    (byte)Mathf.Clamp(Mathf.RoundToInt(_b * 255f), 0, 255),
-                    255);
+                prismBuffer[_index] = prismFaceColors[_faceIndex * PrismColorVariants + _variant];
             }
         }
 
         prismTexture.SetPixelData(prismBuffer, 0);
         prismTexture.Apply(false);
+    }
+
+    // 팝 구간이면 흰색 쪽으로 섞은 뒤 바이트 색으로 바꾼다.
+    private static Color32 PackPrismColor(float _r, float _g, float _b, bool _bPop)
+    {
+        if (true == _bPop)
+        {
+            _r = Mathf.Lerp(_r, 1f, 0.8f);
+            _g = Mathf.Lerp(_g, 1f, 0.8f);
+            _b = Mathf.Lerp(_b, 1f, 0.8f);
+        }
+
+        return new Color32(
+            (byte)Mathf.Clamp(Mathf.RoundToInt(_r * 255f), 0, 255),
+            (byte)Mathf.Clamp(Mathf.RoundToInt(_g * 255f), 0, 255),
+            (byte)Mathf.Clamp(Mathf.RoundToInt(_b * 255f), 0, 255),
+            255);
     }
 
     private void SetWarning(bool _bOn)
