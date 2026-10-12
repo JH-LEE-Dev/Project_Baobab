@@ -1273,6 +1273,35 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 별자리 발현 시 별자리 중심에서 재생되는 마법진 + 별 폭발 VFX(VFX_ConstellationNova)입니다.
+    /// 기존 별자리 레이저와 별개로 추가 재생되며, parent는 null로 고정하여 완전히 분리합니다.
+    /// _radius(월드 유닛)가 0 이하이면 프리팹에 설정된 maxRadius를 그대로 씁니다.
+    /// </summary>
+    public void PlayConstellationNovaVFX(Vector3 _center, float _radius = 0.0f)
+    {
+        if (vfxComponent == null) return;
+
+        // 별자리 레이저(ConstellationPixelLaser)와 같은 소팅 레이어/순서로 맞춘다.
+        const string sortingLayerName = "FlyingItem";
+        const int sortingOrder = 10;
+
+        ParticleSystem effect = vfxComponent.Play(new VFXPlaySettings(
+            "ConstellationNovaEffect",
+            _center,
+            Quaternion.identity,
+            sortingLayerName,
+            sortingOrder,
+            null
+        ));
+
+        if (effect == null || _radius <= 0.0f) return;
+
+        // 풀 재생 직후(메쉬 시작은 첫 LateUpdate로 미뤄져 있다) 이번 재생의 범위를 덮어쓴다.
+        PresentationLayer.VFX.VFX_ConstellationNova nova = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_ConstellationNova>(true);
+        if (nova != null) nova.SetRadius(_radius);
+    }
+
+    /// <summary>
     /// 발현 낙인이 나무에 처음 찍히는 순간 1회 재생되는 각인 VFX(VFX_BrandStamp)입니다. 이후 낙인이 유지되는 동안은
     /// BeginBrandStarWrap의 별 감싸기가 이어받는다. parent는 null로 고정하여 나무 오브젝트와 완전히 분리합니다.
     /// </summary>

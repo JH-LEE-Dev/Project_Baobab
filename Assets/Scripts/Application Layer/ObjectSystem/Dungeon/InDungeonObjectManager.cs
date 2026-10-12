@@ -2589,6 +2589,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         constellationCenter /= path.Count;
         Sound.Play(SoundID.StarExplosion, constellationCenter);
 
+        // 레이저와 별개로, 같은 발현 시점에 별자리 중심에서 마법진 + 별 폭발 연출을 추가로 재생한다.
+        inDungeonVFXManager.PlayConstellationNovaVFX(constellationCenter);
+
         StartCoroutine(ConstellationBeamRoutine(_starPositions, path, damage, hitCount));
     }
 

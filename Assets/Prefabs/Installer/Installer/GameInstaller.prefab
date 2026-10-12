@@ -1552,6 +1552,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonVFXManager
   vfxComponent: {fileID: 777467232540049004}
   shieldBrokenVfxYOffset: -0.5
+  sharedBurstEmitterCapacity: 120
   treeStarMarkGroundPrefab: {fileID: 114000001, guid: 7d2b9f4a1c6e48b3a5d9e0f1b2c3d4e5, type: 3}
   treeStarMarkGroundPoolDefaultCapacity: 50
   treeStarMarkGroundPoolMaxSize: 200
@@ -1676,6 +1677,12 @@ MonoBehaviour:
     initialPoolSize: 16
     allowDynamicExpansion: 1
     maxPoolSize: 100
+    uiParticleScale: 0
+  - vfxTag: ConstellationNovaEffect
+    effectPrefab: {fileID: 1386752551214847544, guid: 156668c4261dfcf4f8d00161acc67633, type: 3}
+    initialPoolSize: 2
+    allowDynamicExpansion: 1
+    maxPoolSize: 4
     uiParticleScale: 0
 --- !u!1 &5766810988037463456
 GameObject:
