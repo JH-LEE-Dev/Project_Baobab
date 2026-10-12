@@ -4,6 +4,8 @@ using UnityEngine;
 public class PHealthComponent : PComponent, IPHealthComponent
 {
     public event Action StaminaIsEmptyEvent;
+    public event Action<float> StaminaDamagedEvent;
+    public event Action<float> StaminaRecoveredEvent;
     // 외부 의존성 (SerializeField)
     [SerializeField] private float maxHealth;
     [SerializeField] private float maxStamina;
@@ -124,7 +126,11 @@ public class PHealthComponent : PComponent, IPHealthComponent
         if (currentStamina <= floor || _damage <= 0f || CanTakeStaminaLoss() == false)
             return;
 
+        float prevStamina = currentStamina;
         currentStamina = Mathf.Max(floor, currentStamina - _damage);
+
+        // 한 번에 깎인 양만 HUD 연출용으로 알린다. (바닥값에 막혀 실제로 줄지 않았다면 알리지 않는다)
+        NotifyStaminaChanged(currentStamina - prevStamina);
 
         if (currentStamina <= 0)
         {
@@ -149,7 +155,10 @@ public class PHealthComponent : PComponent, IPHealthComponent
     public void RestoreStaminaByPercent(float _percent)
     {
         float finalPercent = _percent * (1f + ctx.characterStat.recoveryPowerBonus / 100f);
+        float prevStamina = currentStamina;
         currentStamina = Mathf.Min(maxStamina, currentStamina + maxStamina * (finalPercent / 100f));
+
+        NotifyStaminaChanged(currentStamina - prevStamina);
     }
 
     public void SetStaminaIncreaseAmount(float _staminaIncAmount)
@@ -239,6 +248,23 @@ public class PHealthComponent : PComponent, IPHealthComponent
     public void StaminaRecover(float _amount)
     {
         float finalAmount = _amount * (1f + ctx.characterStat.recoveryPowerBonus / 100f);
+        float prevStamina = currentStamina;
         currentStamina = Mathf.Min(maxStamina, currentStamina + finalAmount);
+
+        NotifyStaminaChanged(currentStamina - prevStamina);
+    }
+
+    // 한 번에 일어난 스태미나 변화를 최대치 대비 비율로 바꿔 알린다. 변화가 없으면(이미 최대/바닥) 알리지 않는다.
+    private void NotifyStaminaChanged(float _delta)
+    {
+        if (0f >= maxStamina || Mathf.Approximately(0f, _delta))
+            return;
+
+        float ratio = Mathf.Abs(_delta) / maxStamina;
+
+        if (0f > _delta)
+            StaminaDamagedEvent?.Invoke(ratio);
+        else
+            StaminaRecoveredEvent?.Invoke(ratio);
     }
 }

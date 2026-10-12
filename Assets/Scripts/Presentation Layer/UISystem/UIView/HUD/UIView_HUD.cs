@@ -34,6 +34,10 @@ public class UIView_HUD : UIView
     [SerializeField] private LootItemTypeDataBase lootItemTypeDataBase;
 
     private ICharacter character;
+    // 스태미나 순간 변화 이벤트 구독용. 구독/해제에 같은 델리게이트 인스턴스를 써야 하므로 한 번만 만든다.
+    private IPHealthComponent subscribedHealthComponent;
+    private Action<float> cachedOnStaminaDamaged;
+    private Action<float> cachedOnStaminaRecovered;
 
     private MapType currentMapType;
     private ForestType currentForestType;
@@ -66,6 +70,8 @@ public class UIView_HUD : UIView
     }
     public override void OnDestroy()
     {
+        UnbindStaminaEvents();
+
         hudEquipment?.OnDestroy();
         hudMessage?.Release();
 
@@ -87,9 +93,49 @@ public class UIView_HUD : UIView
 
     public void SetCharacter(ICharacter _character)
     {
+        UnbindStaminaEvents();
+
         character = _character;
 
+        BindStaminaEvents();
+
         hudEquipment?.BindingRef(character);
+    }
+
+    private void BindStaminaEvents()
+    {
+        if (null == character || null == character.pHealthComponent)
+            return;
+
+        if (null == cachedOnStaminaDamaged)
+            cachedOnStaminaDamaged = OnStaminaDamaged;
+
+        if (null == cachedOnStaminaRecovered)
+            cachedOnStaminaRecovered = OnStaminaRecovered;
+
+        subscribedHealthComponent = character.pHealthComponent;
+        subscribedHealthComponent.StaminaDamagedEvent += cachedOnStaminaDamaged;
+        subscribedHealthComponent.StaminaRecoveredEvent += cachedOnStaminaRecovered;
+    }
+
+    private void UnbindStaminaEvents()
+    {
+        if (null == subscribedHealthComponent)
+            return;
+
+        subscribedHealthComponent.StaminaDamagedEvent -= cachedOnStaminaDamaged;
+        subscribedHealthComponent.StaminaRecoveredEvent -= cachedOnStaminaRecovered;
+        subscribedHealthComponent = null;
+    }
+
+    private void OnStaminaDamaged(float _lossRatio)
+    {
+        hudStaminaBar?.PlayDamaged(_lossRatio);
+    }
+
+    private void OnStaminaRecovered(float _gainRatio)
+    {
+        hudStaminaBar?.PlayRecovered(_gainRatio);
     }
 
     public void DependencyInjection(ILootDataProvider _lootDataProvider)
