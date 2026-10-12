@@ -531,7 +531,7 @@
         },
         {
             "id": 145,
-            "key": "FascinatingLogChance1_Name",
+            "key": "GoldTreeChance_Name",
             "kr": "황금 나무",
             "en": "Golden Trees",
             "zhHans": "黄金树",
@@ -916,7 +916,7 @@
         {
             "id": 177,
             "key": "SporeShieldRegenBlock1_Name",
-            "kr": "포자막 회복 억제 I",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>포자막 회복 억제 I</Wave></COLOR>",
             "en": "Spore Shield Suppression I",
             "zhHans": "",
             "zhHant": "",
@@ -1443,7 +1443,7 @@
         },
         {
             "id": 200,
-            "key": "FascinatingLogChance2_Name",
+            "key": "DiamondTreeChance_Name",
             "kr": "희귀 원목 확률 II",
             "en": "Rare Log Chance II",
             "zhHans": "",
@@ -1660,7 +1660,7 @@
         {
             "id": 209,
             "key": "SporeShieldRegenBlock2_Name",
-            "kr": "포자 회복 억제 II",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>포자막 회복 억제 II</Wave></COLOR>",
             "en": "Spore Shield Suppression II",
             "zhHans": "",
             "zhHant": "",
@@ -1900,7 +1900,7 @@
         {
             "id": 219,
             "key": "SporeShieldRegenBlock3_Name",
-            "kr": "포자막 회복 억제 M",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>포자막 회복 억제 M</Wave></COLOR>",
             "en": "Spore Shield Suppression M",
             "zhHans": "",
             "zhHant": "",

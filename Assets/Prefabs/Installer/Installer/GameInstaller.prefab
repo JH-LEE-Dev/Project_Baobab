@@ -1552,6 +1552,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonVFXManager
   vfxComponent: {fileID: 777467232540049004}
   shieldBrokenVfxYOffset: -0.5
+  sharedBurstEmitterCapacity: 120
   treeStarMarkGroundPrefab: {fileID: 114000001, guid: 7d2b9f4a1c6e48b3a5d9e0f1b2c3d4e5, type: 3}
   treeStarMarkGroundPoolDefaultCapacity: 50
   treeStarMarkGroundPoolMaxSize: 200
@@ -2803,7 +2804,7 @@ MonoBehaviour:
   - forestType: 4
     decAmount: 12
   - forestType: 5
-    decAmount: 35
+    decAmount: 30
   - forestType: 6
     decAmount: 70
   - forestType: 7

@@ -20,7 +20,7 @@ MonoBehaviour:
   - treeType: 3
     value: 40
   - treeType: 4
-    value: 300
+    value: 250
   - treeType: 5
     value: 700
   - treeType: 6
