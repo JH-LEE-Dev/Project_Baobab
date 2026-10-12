@@ -100,6 +100,9 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     /// <summary>이번 빌드에서 끊은 미공개 원목 그림 파일 경로입니다. 빌드 후 실제로 빠졌는지 확인합니다(ReportLockedLogSpritesInBuild).</summary>
     private static readonly HashSet<string> lockedLogSpritePaths = new HashSet<string>();
 
+    /// <summary>이번 데모 빌드에서 꺼진 기능·미공개 지역의 이름입니다. 빌드 후 이 이름이 든 에셋이 실렸는지 봅니다(ReportLockedFeatureAssetsInBuild).</summary>
+    private static readonly List<string> lockedPathKeywords = new List<string>();
+
     /// <summary>
     /// 백업/복원이 추적하는 에셋 전부. 새 대상을 추가하면 <b>여기에도 반드시 넣어야</b>
     /// 복원이 걸립니다(안 넣으면 그 에셋은 잘린 채로 남습니다).
@@ -131,6 +134,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     {
         failures.Clear();
         lockedLogSpritePaths.Clear();
+        lockedPathKeywords.Clear();
         // 촬영용 빌드(BuildRunner.RunTrailer)는 배포하지 않지만 화면 표시 때문에 개발 빌드로 만들 수 없다. 개발 빌드처럼 경고만 남긴다.
         bool _isDevelopmentBuild = 0 != (_report.summary.options & BuildOptions.Development) || true == BuildRunner.IsTrailerBuildInProgress;
 
@@ -256,6 +260,54 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     {
         RestoreIfNeeded(false);
         ReportLockedLogSpritesInBuild(_report);
+        ReportLockedFeatureAssetsInBuild(_report);
+    }
+
+    /// <summary>
+    /// 데모에서 꺼진 기능·미공개 지역의 이름이 경로에 들어간 에셋(스크립트 제외)이 빌드에 실렸는지 BuildReport 로 확인합니다.
+    ///
+    /// 2026-10-13, 별자리 노바 이펙트(VFX_ConstellationNova)가 게임 설치기 이펙트 목록에 새로 등록됐는데 제외 대상 태그에 없어서
+    /// 정식판 전용 이펙트가 데모에 실릴 뻔했습니다. 제외 목록은 사람이 새 참조를 알아야만 늘어나므로, 결과물을 이름으로 한 번 더 봅니다.
+    /// 1.0.3 Steam 데모(9cacc551)에서는 이 이름들이 스크립트 외 에셋 경로에 하나도 없었습니다.
+    ///
+    /// 증분 빌드에서는 BuildReport 의 포장 목록이 비어 이 검사가 아무것도 보지 못할 수 있습니다.
+    /// 그때는 BuildScripts/Verify/extract_check.py 로 빌드를 직접 열어 확인하십시오.
+    /// </summary>
+    private static void ReportLockedFeatureAssetsInBuild(BuildReport _report)
+    {
+        if (0 == lockedPathKeywords.Count) return;
+
+        List<string> _leaked = new List<string>();
+        HashSet<string> _seen = new HashSet<string>();
+        PackedAssets[] _packed = _report.packedAssets;
+
+        for (int i = 0; null != _packed && i < _packed.Length; i++)
+        {
+            PackedAssetInfo[] _contents = _packed[i].contents;
+            for (int j = 0; j < _contents.Length; j++)
+            {
+                string _path = _contents[j].sourceAssetPath;
+                if (true == string.IsNullOrEmpty(_path) || true == _path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)) continue;
+                if (false == _seen.Add(_path)) continue;
+
+                for (int k = 0; k < lockedPathKeywords.Count; k++)
+                {
+                    if (0 > _path.IndexOf(lockedPathKeywords[k], StringComparison.OrdinalIgnoreCase)) continue;
+
+                    _leaked.Add($"{_path}  ({lockedPathKeywords[k]})");
+                    break;
+                }
+            }
+        }
+
+        string _keywords = string.Join(", ", lockedPathKeywords);
+        lockedPathKeywords.Clear();
+
+        if (0 == _leaked.Count) return;
+
+        Debug.LogError("[DemoStrip] 데모에서 꺼진 기능·미공개 지역의 에셋이 데모 빌드에 실렸습니다. 이 빌드를 올리지 마십시오. " +
+                       "이 에셋을 참조하는 곳을 찾아 DemoContentStripper 에 제외를 추가하십시오.\n" +
+                       $"  검사한 이름: {_keywords}\n  " + string.Join("\n  ", _leaked));
     }
 
     /// <summary>
@@ -763,8 +815,44 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         _logIcons += StripLockedLogSpriteRefs(AURA_SETTING_PREFAB_PATH, _lockedLogSprites, _demoLogSprite);
         int _regen = StripTreeRegenStrategies(_scope);
 
+        CollectLockedPathKeywords(_scope);
+
         return $"효과음 {_sfx}개, 설치 프리팹 {_installer}곳, 캐릭터 {_character}곳, 나무 {_tree}곳, 차량 {_offroad}곳, " +
                $"스킬트리 아이콘 {_icons}개, 원목 아이콘 {_logIcons}개, 실드 회복 {_regen}개";
+    }
+
+    /// <summary>
+    /// 데모에서 꺼진 기능과 미공개 지역·나무의 이름을 모읍니다. 빌드 후 이 이름이 경로에 든 에셋(스크립트 제외)이 있으면 오류로 남깁니다.
+    /// 데모 범위(DemoFeatureScope)에서 자동으로 만들어서, 데모 공개 범위가 넓어지면 따라서 줄어듭니다.
+    /// </summary>
+    private static void CollectLockedPathKeywords(DemoFeatureScope _s)
+    {
+        lockedPathKeywords.Clear();
+
+        if (false == _s.constellation) lockedPathKeywords.Add("Constellation");
+        if (false == _s.boomerang) lockedPathKeywords.Add("Boomerang");
+        if (false == _s.drone) lockedPathKeywords.Add("Drone");
+        if (false == _s.whirlwind) lockedPathKeywords.Add("Whirlwind");
+        if (false == _s.overheat) lockedPathKeywords.Add("Overheat");
+        if (false == _s.spore) lockedPathKeywords.Add("Spore");
+        if (false == _s.heat) lockedPathKeywords.Add("TreeHeat");
+
+        // 미공개 지역: 맵 이름과 스테이지 번호(WideGreenForest = Stage01)
+        foreach (MapType _map in Enum.GetValues(typeof(MapType)))
+        {
+            if ((int)_map <= (int)MapType.WideGreenForest || true == _s.MapReachable((int)_map)) continue;
+
+            lockedPathKeywords.Add(_map.ToString().Replace("Forest", string.Empty));
+            lockedPathKeywords.Add("Stage" + ((int)_map - 1).ToString("00"));
+        }
+
+        // 미공개 나무: SporepuffTree → Sporepuff
+        foreach (TreeType _tree in Enum.GetValues(typeof(TreeType)))
+        {
+            if (TreeType.None == _tree || TreeType.Max == _tree || true == _s.trees.Contains(_tree)) continue;
+
+            lockedPathKeywords.Add(_tree.ToString().Replace("Tree", string.Empty));
+        }
     }
 
     private static DemoFeatureScope ReadDemoFeatureScope(MapType _maxPlayableMap)
@@ -874,7 +962,8 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         HashSet<string> _dropTags = new HashSet<string>();
         if (false == _s.spore) { _dropTags.Add("SporeShieldBrokenEffect"); _dropTags.Add("SporeShieldBrokenEffect_Bellpine"); }
-        if (false == _s.constellation) _dropTags.Add("ManifestationBrandStampEffect");
+        // ConstellationNovaEffect: 별자리 발현 중심 마법진·은하 별 폭발 이펙트(VFX_ConstellationNova, 2026-10-13 추가)
+        if (false == _s.constellation) { _dropTags.Add("ManifestationBrandStampEffect"); _dropTags.Add("ConstellationNovaEffect"); }
         if (false == _s.heat) _dropTags.Add("TreeHeatEmitEffect");
         _n += EditComponents(_root, "VFXComponent", INSTALLER_PREFAB_PATH, _so => ClearVfxPoolEntries(_so, _dropTags));
 

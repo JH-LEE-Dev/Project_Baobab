@@ -46,7 +46,7 @@ python -m venv <폴더>/upy
 | `.cs`, 프로젝트 파일, `.vdf`, `.git`, `.env`, 원본 에셋(`.prefab` 등), 작업 문서 | 빌드 폴더가 프로젝트 밖이고 `BuildRunner` 가 비우고 빌드 | `leak_scan` : 소스·내부 파일 없음 |
 | `PerformanceTestRunInfo.json` (빌드 PC 이름·사양) | `PerformanceTestArtifactStripper` | `leak_scan` 파일 검사, 업로드 전 검사의 포장 목록 |
 
-**막을 수 없는 것(수용)**: `global-metadata.dat` 는 암호화하지 않아 클래스·함수·필드 **이름**은 보입니다(Il2CppDumper). 동작 코드는 복원되지 않습니다. 난독화·암호화는 관리 부담에 비해 이득이 작아 하지 않기로 했습니다.
+**막을 수 없는 것(수용)**: `global-metadata.dat` 는 암호화하지 않아 클래스·함수·필드 **이름**과 코드 속 **문자열 상수**(예: 세이브 암호화 키)가 그대로 보입니다(Il2CppDumper). C# 원본 파일(주석·지역 변수 이름·파일 구조)은 복원되지 않지만, `GameAssembly.dll` 을 디컴파일러(Ghidra·IDA, Cpp2IL)로 분석하면 **동작 로직은 시간을 들여 읽어낼 수 있습니다**. 그러니 클라이언트 코드에 "들키면 안 되는 비밀"을 두지 마십시오. 난독화·메타데이터 암호화는 분석을 늦출 뿐 막지 못하고 관리 부담이 커서 하지 않기로 했습니다.
 
 ### 2-2. 비밀값·계정
 
@@ -58,6 +58,8 @@ python -m venv <폴더>/upy
 | `steam_appid.txt` (있으면 Steam 실행 확인을 건너뜀) | 스위처가 관리, depot `FileExclusion`, Sanitizer | `leak_scan` : 없음 |
 
 **공개용이라 빌드에 들어가도 되는 것**: Sentry DSN, GameAnalytics 게임 키·시크릿 키. 둘 다 클라이언트에 넣도록 설계된 값입니다. 그래도 대화·문서에 값을 옮겨 적지는 않습니다.
+
+**알려져 있고 수용한 것 — 세이브 암호화 키**: `SaveManager` 의 AES 키·IV 가 문자열 상수라 `global-metadata.dat` 에 그대로 보입니다(2026-10-13 외부 제보로 확인). 클라이언트 안에 있는 키는 어떤 방식으로 숨겨도 결국 꺼낼 수 있으므로, 이 암호화는 "세이브를 메모장으로 바로 고치지 못하게" 하는 수준입니다. 이 게임은 오프라인 싱글 플레이이고 Steam 업적·리더보드가 없으며 세이브에 개인정보가 없어서, 키가 알려져도 플레이어가 **자기 세이브**를 고치는 것 외의 피해는 없습니다. 업적·리더보드·온라인 기능·유료 재화를 넣게 되면 이 판단을 다시 해야 합니다(서버 검증이 필요해짐).
 
 ### 2-3. 개발자 개인정보
 
@@ -98,6 +100,7 @@ python -m venv <폴더>/upy
 | 미공개 맵 BGM·나무 외형·원석·레시피·아이콘·정식판 기능 에셋 | `DemoContentStripper` (실패하면 빌드 중단, 고친 에셋이 저장 안 되면 빌드 중단) | 빌드 로그 요약 수치(README), `full_only_assets.txt` 대조 |
 | 미공개 나무 원목 그림 (Wood04~12, Timber_*, 4스테이지 보석 원목) | `DemoContentStripper.StripLogItemIcons` + 결과 화면·인벤토리 칸·오라 설정 프리팹 | 빌드 직후 `[DemoStrip] 미공개 원목 그림…` 오류 없음, 추출 검사 `미공개 그림 없음` |
 | 데모·정식 **공통 에셋**에 섞인 미공개 그림 | (공통 에셋은 `full_only_assets.txt` 대조로 안 잡힘) | **추출 검사로 직전 배포 빌드와 비교** — 늘어난 그림이 공개 범위 안인지 사람이 확인 |
+| 데모에서 꺼진 기능(별자리·부메랑·드론·회전 베기·과열·포자·나무 열기)과 미공개 지역·나무의 **새로 추가된** 이펙트·그림 | `DemoContentStripper` 제외 목록(사람이 새 참조를 추가해야 함) | 빌드 직후 `[DemoStrip] 데모에서 꺼진 기능·미공개 지역의 에셋이…` 오류 없음. **새 커밋에 VFX·프리팹이 추가됐으면 게임 설치기·캐릭터 프리팹의 이펙트 목록에 등록됐는지 빌드 전에 확인** |
 | 영상·테스트용 수치(예: 충격파 50000) | `GameStatBuildGuard` (데모·정식 기준값 대조) | 빌드 전 `GameStatBuildGuard.Validate(release)` 0건 |
 
 ### 2-6. 디버그·치트·테스트 기능
@@ -150,6 +153,8 @@ git diff <직전 배포 커밋> -- ProjectSettings Packages
 | 2026-10-07 | 인벤토리 작업 커밋에 품질 설정 기본값 삭제가 섞여 들어옴 | 1.0.3 상태로 복원(faeaa323) |
 | 2026-10-07 | FontMaker 미리보기 폭이 프리팹에 저장돼 매 빌드 `GIT_DIRTY=true` | 0 으로 커밋(199eb96c, e18ef3a0). 빌드 전에 저장 후 dirty 여부 확인 |
 | 2026-10-09 | 같은 폭이 빌드 중 다시 0 → 23·7 로 바뀌어 itch 데모가 `GIT_DIRTY=true` (실행 중 다시 계산되는 값이라 빌드 내용과 무관) | `BuildStampWriter` 가 FontMaker 중첩 프리팹의 `m_SizeDelta.x` 값 줄만 바뀐 프리팹은 dirty 로 치지 않음. 다른 줄이 섞이면 그대로 dirty. 빌드 로그에 `[BuildStamp] … GIT_DIRTY 로 치지 않습니다` 가 남음 |
+| 2026-10-13 | 외부 플레이어(marix)가 Steam 데모 1.0.3 의 `global-metadata.dat` 에서 세이브 AES 키·IV 문자열을 찾아 비공개로 제보 | 사실 확인(Steam·itch 데모 모두 포함). 싱글 플레이·업적 없음·세이브에 개인정보 없음이라 위험 낮음으로 판단, 2-2 에 수용 항목으로 기록 |
+| 2026-10-13 | 별자리 노바 이펙트(`VFX_ConstellationNova`)가 게임 설치기 이펙트 목록(`ConstellationNovaEffect`)에 새로 등록됐는데 데모 제외 태그에 없어, 정식판 전용 이펙트가 STOVE 데모 빌드에 실릴 뻔함(빌드 전 커밋 검토로 발견) | 제외 태그 추가. 빌드 후 데모에서 꺼진 기능·미공개 지역·나무 이름이 경로에 든 에셋(스크립트 제외)이 실리면 오류를 남기는 검사 추가(`ReportLockedFeatureAssetsInBuild`) |
 
 ---
 
