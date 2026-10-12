@@ -4,6 +4,8 @@ using UnityEngine;
 public class PHealthComponent : PComponent, IPHealthComponent
 {
     public event Action StaminaIsEmptyEvent;
+    // 휴식 구역 진입(true)/이탈(false). 체력바 무적 연출용(EStaminaInvincibleSource.RestArea).
+    public event Action<bool> RestAreaStateChangedEvent;
     // 외부 의존성 (SerializeField)
     [SerializeField] private float maxHealth;
     [SerializeField] private float maxStamina;
@@ -227,6 +229,11 @@ public class PHealthComponent : PComponent, IPHealthComponent
     public void SetInRestArea(bool _bInRestArea)
     {
         bInRestArea = _bInRestArea;
+
+        // 같은 값이어도 거르지 않고 알린다. StaminaRecoverCircle은 자기 경계를 넘을 때만 부르므로 중복은 드물고,
+        // UI는 맵 전환 때 무적 상태를 초기화하므로(HUD_Stemina.SetActivate) 여기서 걸러 버리면
+        // 초기화 직후 들어온 진입 알림이 빠질 수 있다.
+        RestAreaStateChangedEvent?.Invoke(_bInRestArea);
     }
 
     // 일반 소모 · 용암 지속 피해 · 나무 열기 세 경로가 공통으로 따르는 조건.

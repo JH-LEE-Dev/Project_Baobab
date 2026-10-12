@@ -141,6 +141,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);
         signalHub.Subscribe<PopupUIDownSignal>(PopupUIDown);
         signalHub.Subscribe<PopupUIUpSignal>(PopupUIUp);
+        signalHub.Subscribe<StaminaInvincibleStateChangedSignal>(StaminaInvincibleStateChanged);
         signalHub.Subscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);
         signalHub.Subscribe<GameEndSignal>(GameEnd);
         signalHub.Subscribe<ActivateWarningUISignal>(ActivateWarningUI);
@@ -201,6 +202,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);
         signalHub.UnSubscribe<PopupUIDownSignal>(PopupUIDown);
         signalHub.UnSubscribe<PopupUIUpSignal>(PopupUIUp);
+        signalHub.UnSubscribe<StaminaInvincibleStateChangedSignal>(StaminaInvincibleStateChanged);
         signalHub.UnSubscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);
         signalHub.UnSubscribe<GameEndSignal>(GameEnd);
         signalHub.UnSubscribe<ActivateWarningUISignal>(ActivateWarningUI);
@@ -1014,6 +1016,12 @@ public class GameplayUICoordinator
         hudUI.HUDGoUp(HUDGoUpCompleted, bWaitingIntroProductionEnd);
         popUpUI.PopupGoUp();
         worldPopupUI.WorldPopupGoUp();
+    }
+
+    // 스태미나 무적 구간(숲 입장 직후 / 휴식 구역)의 시작/끝. 체력바 연출에 그대로 넘긴다.
+    private void StaminaInvincibleStateChanged(StaminaInvincibleStateChangedSignal _signal)
+    {
+        hudUI.StaminaInvincibleStateChanged(_signal.source, _signal.bInvincible);
     }
 
     // HUD가 완전히 다 올라온 시점. 튜토리얼 인트로 중이었다면 그 종료를 UI에 알린다.

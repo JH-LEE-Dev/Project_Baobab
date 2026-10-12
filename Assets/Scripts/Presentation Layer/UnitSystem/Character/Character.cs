@@ -8,6 +8,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public event Action<WeaponMode> WeaponModeChangedEvent;
     public event Action TreeDetectedEvent;
     public event Action TreeDetectionClearedEvent;
+    public event Action<bool> RestAreaStateChangedEvent;
 
     // 외부 의존성
     public InputManager inputManager { get; private set; }
@@ -446,6 +447,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         attackComponent.WhirlwindStrikeEvent -= StartWhirlwindSpin;
         attackComponent.WhirlwindStrikeEvent += StartWhirlwindSpin;
 
+        healthComponent.RestAreaStateChangedEvent -= RestAreaStateChanged;
+        healthComponent.RestAreaStateChangedEvent += RestAreaStateChanged;
+
         if (armComponent.axeComponent != null)
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
@@ -477,6 +481,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             attackComponent.WhirlwindStrikeEvent -= StartWhirlwindSpin;
         }
 
+        if (healthComponent != null)
+            healthComponent.RestAreaStateChangedEvent -= RestAreaStateChanged;
+
         if (armComponent != null && armComponent.axeComponent != null)
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
@@ -495,6 +502,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private void TreeDetectionCleared()
     {
         TreeDetectionClearedEvent?.Invoke();
+    }
+
+    private void RestAreaStateChanged(bool _bInRestArea)
+    {
+        RestAreaStateChangedEvent?.Invoke(_bInRestArea);
     }
 
     private void UpdateFacingByAttackPoint()
