@@ -24,8 +24,8 @@ public class OverheatComponent : PComponent, IOverheatComponent
     private ParticleSystem activeVfx;
     private ParticleSystemRenderer activeVfxRenderer;
     private int appliedVfxSortingOrder = int.MinValue; // Update가 마지막으로 적용한 소팅 오더(같으면 세터 생략)
-    // 버프 종료 후 페이드아웃 중인 오라. 풀이 1개짜리 하드 캡이라, 페이드 도중 다시 과열되면
-    // 이 인스턴스를 즉시 회수해야 새 오라를 재생할 수 있다.
+    // 버프 종료 후 페이드아웃 중인 오라. 페이드 도중 다시 과열되면 이 인스턴스를 즉시 회수해, 새 오라와 두 개가
+    // 겹쳐 보이지 않게 하고 1개짜리 풀을 그대로 재사용한다(풀은 부족하면 늘어나지만 여기서는 늘릴 필요가 없다).
     private ParticleSystem fadingVfx;
     private CustomSortable customSortable;
 

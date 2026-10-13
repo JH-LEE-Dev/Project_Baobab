@@ -13,7 +13,7 @@
 
 | 구성 요소 | 역할 | 파일 |
 |---|---|---|
-| `VFXComponent` | 태그별 ParticleSystem 풀. `Get/Play/Stop`, 소팅·색 오버라이드, 풀 상한·최오래된 인스턴스 회수 | `Presentation Layer/ComponentSystem/VFXComponent/VFXComponent.cs` |
+| `VFXComponent` | 태그별 ParticleSystem 풀. `Get/Play/Stop`, 소팅·색 오버라이드, 풀 상한(단발 이펙트는 다 쓰면 상한을 넘어 풀을 늘림) | `Presentation Layer/ComponentSystem/VFXComponent/VFXComponent.cs` |
 | `VFXPoolInstanceHelper` | 풀 인스턴스 1개마다 붙는 헬퍼. 반납, 지연 재부모화, 자식 캐시, 소팅 캐시 | 같은 파일 |
 | `InDungeonVFXManager` | 던전 VFX 진입점. 나무 피격/사망/포자막/열기/별자리/낙인 등 재생 요청을 받아 풀 또는 공유 이미터로 보냄 | `Application Layer/ObjectSystem/Dungeon/InDungeonVFXManager.cs` |
 | `SharedBurstEmitter` | 단발 버스트 이펙트를 인스턴스 하나로 공유 재생 (3장) | `Presentation Layer/VFX/SharedBurstEmitter.cs` |
@@ -124,8 +124,8 @@
 
 ### 3.4 용량과 알려진 차이
 
-- 용량은 `InDungeonVFXManager.sharedBurstEmitterCapacity`(기본 **120**)와 풀 상한(70) 중 큰 값입니다. 시스템별 `maxParticles = 버스트 개수 × 용량`.
-- **유일한 동작 차이**: 같은 태그가 용량을 넘겨 동시에 겹칠 때. 예전 풀은 가장 오래된 이펙트 전체를 잘라 새 것을 보여줬고, 공유 이미터는 초과하는 새 입자만 누락됩니다. 용량 미만에서는 동일합니다.
+- 처음 용량은 `InDungeonVFXManager.sharedBurstEmitterCapacity`(기본 **120**)와 풀 상한(70) 중 큰 값입니다. 시스템별 `maxParticles = 버스트 개수 × 용량`. 넣을 입자가 이 값을 넘으면 `Emit`이 `maxParticles`를 두 배(또는 필요한 만큼)로 늘린 뒤 넣습니다(줄이지 않음).
+- **용량을 넘겨 동시에 겹칠 때**: 풀은 상한을 넘어 인스턴스를 늘리고(예전에는 가장 오래된 이펙트 전체를 잘랐음), 공유 이미터는 최대 입자 수를 늘려(예전에는 초과하는 새 입자가 누락됐음) 둘 다 끊기거나 빠지지 않습니다. 그래서 풀 방식과 공유 이미터 방식은 보이는 결과가 같습니다.
 - `rateOverTime 10 × 0.05s` 류는 재생 프레임에 0.1초 이상 끊기는 극단 상황에서만 예전 경로가 입자 1개를 더 낼 수 있습니다.
 - 메모리: 네 태그 버스트 합 약 480개 × 120 ≈ 5.8만 입자 분량(최대 6~9MB). Unity는 쓰인 만큼 버퍼를 키우므로 평소엔 훨씬 적습니다.
 

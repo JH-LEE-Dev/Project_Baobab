@@ -167,8 +167,6 @@ public class InDungeonVFXManager : MonoBehaviour
     [SerializeField] private PresentationLayer.VFX.VFX_BrandStarWrap brandStarWrapPrefab;
     [SerializeField] private int brandStarWrapPoolDefaultCapacity = 8;
     [SerializeField] private int brandStarWrapPoolMaxSize = 32;
-    // 화면 가득 낙인 나무일 때도 부하가 커지지 않도록 동시에 별이 감싸는 나무 수의 상한
-    [SerializeField] private int brandStarWrapMaxActive = 20;
 
     private IObjectPool<PresentationLayer.VFX.VFX_BrandStarWrap> brandStarWrapPool;
     private readonly List<PresentationLayer.VFX.VFX_BrandStarWrap> activeBrandStarWraps = new List<PresentationLayer.VFX.VFX_BrandStarWrap>(32);
@@ -445,13 +443,13 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 낙인이 찍힌 나무를 별들이 감싸고 도는 유지 이펙트를 시작합니다. 동시 개수 상한을 넘거나 풀/프리팹이 없으면 null을
-    /// 반환합니다. 반환된 인스턴스는 낙인이 풀릴 때(나무가 풀로 돌아갈 때) ReleaseBrandStarWrap으로 회수해야 합니다.
+    /// 낙인이 찍힌 나무를 별들이 감싸고 도는 유지 이펙트를 시작합니다. 동시 개수 상한 없이 낙인 나무마다 띄우고(부족하면 풀이
+    /// 새로 만든다), 풀/프리팹이 없을 때만 null을 반환합니다. 반환된 인스턴스는 낙인이 풀릴 때(나무가 풀로 돌아갈 때)
+    /// ReleaseBrandStarWrap으로 회수해야 합니다.
     /// </summary>
     public PresentationLayer.VFX.VFX_BrandStarWrap BeginBrandStarWrap(TreeVisualComponent _visual)
     {
         if (brandStarWrapPool == null || _visual == null) return null;
-        if (activeBrandStarWraps.Count >= brandStarWrapMaxActive) return null;
 
         PresentationLayer.VFX.VFX_BrandStarWrap _wrap = brandStarWrapPool.Get();
         activeBrandStarWraps.Add(_wrap);

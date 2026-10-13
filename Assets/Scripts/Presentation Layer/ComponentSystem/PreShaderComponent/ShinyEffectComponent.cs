@@ -56,12 +56,14 @@ public class ShinyEffectComponent : MonoBehaviour
     [SerializeField] private int _initialPoolSize = 1;
 
     [ShowIf("_useVfxEffect")]
-    [SerializeField] private bool _allowDynamicExpansion = true;
+    [SerializeField, Tooltip("상한이 아니다 - VFXComponent 풀은 부족하면 이 값과 관계없이 늘어난다(VFXPoolData와 같은 의미).")]
+    private bool _allowDynamicExpansion = true;
 
     private bool ShowMaxPoolSize() => true == _useVfxEffect && true == _allowDynamicExpansion;
 
     [ShowIf("ShowMaxPoolSize")]
-    [SerializeField] private int _maxPoolSize = 10;
+    [SerializeField, Tooltip("상한이 아니다 - VFXComponent 풀은 부족하면 이 값을 넘어 늘어난다(VFXPoolData와 같은 의미).")]
+    private int _maxPoolSize = 10;
 
     [Header("VFX Sorting")]
     [ShowIf("_useVfxEffect")]
@@ -139,10 +141,12 @@ public class ShinyEffectComponent : MonoBehaviour
 
         UpdateOverlaySprite();
 
+        // 이전 재생분(셰이더 트윈과 VFX)을 먼저 정리한다. 머티리얼이 없어 트윈을 쓰지 않는 경우에도 VFX는 정리해야,
+        // 다시 재생할 때 이전 루프 파티클이 참조를 잃은 채 계속 남지 않는다(풀은 부족하면 늘어나므로 그대로 쌓인다).
+        StopEffect();
+
         if (null != _instanceMaterial)
         {
-            StopEffect();
-
             _instanceMaterial.SetFloat(_shinyLocationId, -1f);
             
             if (null == _cachedOnShinyTweenKilled)

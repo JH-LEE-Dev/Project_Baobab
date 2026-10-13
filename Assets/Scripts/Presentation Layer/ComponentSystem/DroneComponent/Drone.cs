@@ -125,7 +125,7 @@ public class Drone : MonoBehaviour
     private float chargingVfxFadeTimer; // 페이드 잔여 시간(초). 파티클(자식 포함) 최대 수명 + 여유
     private ParticleSystemRenderer[] chargingVfxRenderers; // chargingVfx 루트 렌더러 - Muzzle Y좌표 기준으로 매 프레임 정렬 순서를 맞춘다(픽셀 소용돌이 메쉬가 이 값 + 1로 그려진다)
     private PresentationLayer.VFX.VFX_ChargeVortex chargingVortex; // 충전 이펙트의 픽셀 소용돌이. 과열 색 전환과 발사 연출(Release)을 전달한다
-    // 풀 인스턴스(DroneCharging 하드 캡 3개)별 자식 조회 결과. 계층이 고정이라 처음 한 번만 훑고 재사용한다(스윙마다 배열 2개 + 계층 탐색 3회 절약).
+    // 풀 인스턴스(DroneCharging 풀, 기본 3개)별 자식 조회 결과. 계층이 고정이라 처음 한 번만 훑고 재사용한다(스윙마다 배열 2개 + 계층 탐색 3회 절약).
     private struct ChargingVfxCacheEntry
     {
         public ParticleSystemRenderer[] renderers;

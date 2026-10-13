@@ -432,7 +432,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // ClearTrees마다 증가 - 대기 중이던 ConstellationManifestRoutine이 이전 런의 발현을 이어서 쏘지 않게 한다.
     private int constellationManifestVersion = 0;
 
-    // 발현 낙인이 찍힌 나무와, 그 나무를 감싸고 도는 별 이펙트(VFX_BrandStarWrap). 동시 개수 상한에 걸려 별을
+    // 발현 낙인이 찍힌 나무와, 그 나무를 감싸고 도는 별 이펙트(VFX_BrandStarWrap). 풀/프리팹이 없어 별을
     // 띄우지 못한 나무는 null로 들어간다 - 그래도 키가 있어야 같은 나무가 다시 맞았을 때 각인이 반복되지 않는다.
     // 낙인은 나무가 풀로 돌아갈 때(ResetTree)만 풀리므로, 별 이펙트도 OnReleaseTree에서 함께 걷는다.
     private readonly Dictionary<TreeObj, PresentationLayer.VFX.VFX_BrandStarWrap> manifestationBrandWraps
@@ -2801,7 +2801,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         inDungeonVFXManager.PlayManifestationBrandStampVFX(_tree.treeVisualComponent);
 
-        // 동시 개수 상한을 넘으면 null - 낙인은 그대로 걸리고 별만 생략된다(의도된 동작).
+        // 풀/프리팹이 없을 때만 null - 그 경우에도 낙인은 그대로 걸리고 별만 생략된다.
         manifestationBrandWraps[_tree] = inDungeonVFXManager.BeginBrandStarWrap(_tree.treeVisualComponent);
     }
 

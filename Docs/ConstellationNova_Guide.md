@@ -121,7 +121,7 @@ public void PlayConstellationNovaVFX(Vector3 _center, float _radius = 0.0f)
 
 - **왜:** `VFXComponent`는 초기화 때 이 목록의 프리팹을 `initialPoolSize`만큼 미리 만들어 둡니다. 목록에 없으면 `Get`이 null을 돌려줍니다.
 - **크기를 2/4로 잡은 이유:** 별자리 발현은 그룹당 1회이고 연출이 2.8초라서 동시 재생이 드뭅니다. 그룹이 여러 개 동시에 완성되는 경우만 고려했습니다.
-- **풀이 가득 찬 경우:** 단발 이펙트 풀은 가장 오래 재생 중인 인스턴스를 회수해 재사용합니다(`VFXComponent.RecycleOldestActive`). 새 발현이 통째로 빠지는 대신 가장 오래된 노바가 조금 일찍 끊깁니다.
+- **풀이 가득 찬 경우:** 단발 이펙트 풀은 상한(`maxPoolSize`)을 넘어서도 새 인스턴스를 만들어 풀을 늘립니다(`VFXComponent.Get`). 재생 중인 노바는 끊기지 않습니다. 예전에는 가장 오래 재생 중인 인스턴스를 회수해 재사용해서, 연쇄 발현으로 노바가 5개 이상 겹치면 먼저 나온 마법진이 도중에 사라졌습니다. 늘어난 인스턴스는 풀에 남아 재사용됩니다.
 
 #### 부수 변경 (의도하지 않음)
 
@@ -303,7 +303,7 @@ inDungeonVFXManager.PlayConstellationNovaVFX(constellationCenter, novaRadius);
 ### 4.4 풀과 수명
 
 - 루트 ParticleSystem의 duration은 `TotalDuration`(2.8초) 이상이어야 합니다. 짧게 바꾸면 연출 중간에 풀로 돌아갑니다. 길게 바꾸면 그만큼 풀 인스턴스를 점유합니다.
-- 풀 크기 최대 4 이상으로 동시에 재생되면 가장 오래된 노바가 끊깁니다. 그룹을 동시에 많이 완성하는 빌드가 있다면 `maxPoolSize`를 올립니다.
+- 동시에 4개를 넘게 재생되면 풀이 늘어납니다(끊기지 않음). 늘어날 때 그 프레임에 프리팹 생성 비용이 들므로, 동시 발현이 자주 4개를 넘는다면 `initialPoolSize`/`maxPoolSize`를 올려 미리 만들어 두는 편이 좋습니다.
 - 반환 시 `OnDisable`에서 `overrideRadius`가 0으로 돌아가므로, 이전 재생의 반지름이 다음 재생에 남지 않습니다.
 
 ### 4.5 재생 중 시간

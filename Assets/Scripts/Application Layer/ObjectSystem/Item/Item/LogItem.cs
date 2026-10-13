@@ -454,9 +454,11 @@ public class LogItem : Item, IStaticCollidable
         if (null == vfxComponent || logState <= LogState.Normal) return;
 
         // 이전 재생분이 남아 있으면 정리하고 새로 붙인다(전송 -> 안착 경로에서 중복 부착 방지).
+        // 이미 풀로 돌아가 다른 원목에 다시 붙은 인스턴스(낡은 참조)는 끄지 않는다 - StopGemShiny와 같은 소유 확인.
         if (null != particleEffect)
         {
-            vfxComponent.Stop(particleEffect, false);
+            if (particleEffect.transform.IsChildOf(transform))
+                vfxComponent.Stop(particleEffect, false);
             particleEffect = null;
         }
 
@@ -1019,11 +1021,9 @@ public class LogItem : Item, IStaticCollidable
 
             state = ItemMoveState.Dropped;
             SetShaderFloating(true);
-            if (vfxComponent != null && logState > LogState.Normal)
-            {
-                particleEffect = vfxComponent.Play("Shiny", transform.position, transform.rotation, transform);
-                if (particleEffect != null) particleEffect.transform.localScale = Vector3.one;
-            }
+            // 다른 착지 경로와 같은 함수로 붙인다 - 이전 반짝임이 남아 있으면 먼저 정리해, 두 번 착지한 원목에
+            // 루프 파티클이 참조를 잃은 채 겹쳐 남지 않게 한다(조건 vfxComponent/logState 확인도 함수 안에서 같다).
+            PlayShinyEffect();
             CheckAcquireCondition();
         }
     }

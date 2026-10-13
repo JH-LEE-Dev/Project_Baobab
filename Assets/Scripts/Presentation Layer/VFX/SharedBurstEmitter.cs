@@ -170,6 +170,14 @@ namespace PresentationLayer.VFX
                         : entry.transform.InverseTransformPoint(worldPos);
                     emitParams.applyShapeToPosition = true; // Shape 모듈의 위치 분포는 그대로 더해진다(방향/속도는 평소대로 Shape가 정한다)
 
+                    // 최대 입자 수에 닿으면 Emit이 새 입자를 조용히 버리므로(재생 하나가 통째로 빠짐), 넣기 전에 상한을 늘린다.
+                    // 늘린 상한은 줄이지 않는다 - 다음 몰림에도 그대로 쓰고, 실제 입자 수는 살아있는 만큼만 든다.
+                    int required = entry.system.particleCount + entry.burstCount;
+                    if (required > entry.main.maxParticles)
+                    {
+                        entry.main.maxParticles = Mathf.Max(required, entry.main.maxParticles * 2);
+                    }
+
                     entry.system.Emit(emitParams, entry.burstCount);
                 }
             }
