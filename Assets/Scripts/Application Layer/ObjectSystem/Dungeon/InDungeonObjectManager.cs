@@ -54,9 +54,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private IInventory characterInventory;
 
     // "1-3"(WideGreenForest_3) 보장 드랍용 - 세이브 데이터와 연동되는 영구 획득 플래그.
-    // 실제로 습득(OnLootItemAcquired)했을 때만 true로 세팅한다 - 스폰 시점에 세팅하면, 스폰 후
-    // 습득이 끝나기 전(포물선 낙하 + 흡입 이동 중) 캐릭터가 죽는 경우 실제로는 효과를 못 받았는데도
-    // 영구히 재도전 기회를 잃게 된다.
+    // 획득 데이터가 확정(OnLootDataCommitted)됐을 때만 true로 세팅한다. 확정 시점은 캐릭터에게 도착한
+    // 순간이고, 런이 끝나는 순간(사망 판정 / 귀환 확정) 아직 공중에 있었다면 그 순간이다
+    // (LootManager.CommitRunEnd). 그래서 드랍된 전리품은 흡입이 끝나기 전에 런이 끝나도 유실되지 않는다.
     public bool bHasAcquiredLostAndFoundBox { get; set; }
     // 같은 던전 진행(run) 동안 이미 스폰을 시도했는지 - 습득 완료 전까지 중복 스폰을 막는 런타임 전용
     // 플래그. 매 던전 진입마다(SetupForForestType) 리셋된다.
@@ -68,15 +68,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField] private float lostAndFoundBoxDropChanceIncreasePerKill = 0.005f;
     private int lostAndFoundBoxWideGreenTreeKillCount;
 
-    // "2-1"(FluffySporeForest_1) 구제(pity) 드랍 - "1-3"에서 못 얻었을 경우를 대비해, 이 스테이지에서
-    // 나무를 min~max그루 베면 확률과 무관하게 무조건 드랍시킨다. 임계값은 스테이지 진입마다 다시 뽑는다.
+    // "2-1"(FluffySporeForest_1) 이후 모든 숲의 구제(pity) 드랍 - "1-3"에서 못 얻었을 경우를 대비해,
+    // 나무를 min~max그루 베면 확률과 무관하게 무조건 드랍시킨다. 임계값은 스테이지 진입마다 다시 뽑는다
+    // (구제 드랍 공통 규칙은 PityStart 상수 주석 참조).
     [SerializeField] private int lostAndFoundBoxPityMinKills = 4;
     [SerializeField] private int lostAndFoundBoxPityMaxKills = 5;
     private int lostAndFoundBoxPityThreshold;
-    private int lostAndFoundBoxPityTreeKillCount;
 
-    // "포자 포션" - "2-1,2-2,2-3"(FluffySporeForest_1/2/3)에서 확률 드랍, "3-1"(StarrootForest_1)에서
-    // 구제 보장. 한 번 획득하면 영구 소지하는 충전식 소비 아이템(세이브 데이터와 연동).
+    // "포자 포션" - "2-1,2-2,2-3"(FluffySporeForest_1/2/3)에서 확률 드랍, "3-1"(StarrootForest_1) 이후
+    // 모든 숲에서 구제 보장. 한 번 획득하면 영구 소지하는 충전식 소비 아이템(세이브 데이터와 연동).
     public bool bHasAcquiredSporePotion { get; set; }
     public float sporePotionCharge { get; set; }
     private bool bSporePotionSpawnedThisRun;
@@ -89,22 +89,20 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField] private int sporePotionPityMinKills = 4;
     [SerializeField] private int sporePotionPityMaxKills = 5;
     private int sporePotionPityThreshold;
-    private int sporePotionPityTreeKillCount;
     [SerializeField] private float sporePotionMaxCharge = 30f;
     [SerializeField] private float sporePotionRefillMin = 3f;
     [SerializeField] private float sporePotionRefillMax = 5f;
 
-    // "별빛 나침반" - StarrootForest_1/2/3 중 어디서든 나무 4~5그루를 벤 시점에 보장 드랍.
-    // 세 맵 중 한 곳에서 획득하면 다른 맵에서는 더 이상 드랍되지 않는다(영구 플래그).
+    // "별빛 나침반" - StarrootForest_1 이후 어느 숲이든 나무 4~5그루를 벤 시점에 보장 드랍.
+    // 한 곳에서 획득하면 다른 숲에서는 더 이상 드랍되지 않는다(영구 플래그).
     // 별자리 표식은 이제 기본으로 항상 표시되므로, 이 아이템은 드랍만 되고 획득해도 아무 효과가 없다.
     public bool bHasAcquiredStarCompass { get; set; }
     private bool bStarCompassSpawnedThisRun;
     [SerializeField] private int starCompassPityMinKills = 4;
     [SerializeField] private int starCompassPityMaxKills = 5;
     private int starCompassPityThreshold;
-    private int starCompassPityTreeKillCount;
 
-    // "흑요 부적"
+    // "흑요 부적" - "4-2"(MagmaForest_2)에서 확률 드랍, "4-3"(MagmaForest_3) 이후 모든 숲에서 구제 보장.
     public bool bHasAcquiredObsidianCharm { get; set; }
     private bool bObsidianCharmSpawnedThisRun;
     [SerializeField] private float obsidianCharmDropChance = 0.05f;
@@ -113,7 +111,22 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField] private int obsidianCharmPityMinKills = 4;
     [SerializeField] private int obsidianCharmPityMaxKills = 5;
     private int obsidianCharmPityThreshold;
-    private int obsidianCharmPityTreeKillCount;
+
+    // 구제(pity) 드랍 공통 규칙
+    //
+    // 각 전리품의 구제는 "보장 시작 숲"만이 아니라 그 이후의 모든 숲에서 적용된다. 숲 해금은 명성 레벨만
+    // 보고(DensityManager.PrestigeLevelIncreased) 이전 숲 방문을 요구하지 않으므로, 보장 숲에 한 번도
+    // 들어가지 않고 다음 숲으로 넘어갈 수 있다. 예전엔 보장이 그 숲 하나에만 걸려 있어서 그렇게 건너뛰면
+    // 해당 전리품을 영영 얻을 수 없었다. ForestType 열거 순서가 진행 순서와 같으므로 ">= 시작 숲"으로 판정한다.
+    //
+    // 한 런에 구제 대상이 여럿이면(뒤늦게 따라잡는 경우) 같은 나무에서 한꺼번에 쏟아지지 않도록, 오래된
+    // 지역 것부터 "앞 전리품 뒤 다시 min~max그루"씩 임계값을 이어 붙인다(SetupForForestType).
+    // 벌목 수는 런 단위 하나(pityTreeKillCount)로 세고, 진입마다 0부터 다시 센다.
+    private const ForestType LostAndFoundBoxPityStart = ForestType.FluffySporeForest_1;
+    private const ForestType SporePotionPityStart = ForestType.StarrootForest_1;
+    private const ForestType StarCompassPityStart = ForestType.StarrootForest_1;
+    private const ForestType ObsidianCharmPityStart = ForestType.MagmaForest_3;
+    private int pityTreeKillCount;
 
     // "황금 나무" 보장 (데모 빌드 전용)
     //
@@ -334,9 +347,19 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // 별자리(Constellation) 관련 스킬 스탯 - StarrootForest 전용
     private const float BaseConstellationDamage = 5000f;
-    private const float ConstellationBeamHalfThickness = 0.5f; // 선분 중심 기준 좌우 0.5씩(전체 폭 1.0)
     private const float ConstellationHitInterval = 0.2f;
     private static readonly WaitForSeconds constellationHitWait = new WaitForSeconds(ConstellationHitInterval);
+
+    // 별자리 발현 폭발 기본 범위 - 별자리 중심의 바닥 타원(가로 반지름, 세로는 절반).
+    private const float BaseConstellationBlastRadius = 4.0f;
+
+    // 현재 별자리 발현 폭발 범위(가로 반지름). 폭발 판정과 노바 마법진이 발현 시점에 이 값을 같이 써서 보이는 범위와
+    // 피격 범위를 항상 같게 하고, Stage3TreeGenerationStrategySO는 별자리 생성 시점의 이 값 안쪽에 별을 놓는다.
+    // 범위 증가 특성이 생기면 여기서 배율을 곱한다(모든 별자리에 똑같이 적용되고, 범위가 줄지 않는 한 별은 링 안에 남는다).
+    public float CurrentConstellationBlastRadius => BaseConstellationBlastRadius;
+
+    // 폭발 판정 후보 조회 반경 여유 - 나무 윗부분(topRoot)은 밑동보다 위에 있어, 윗부분만 타원에 드는 나무도 놓치지 않게 넓힌다.
+    private const float ConstellationBlastScanMargin = 1.5f;
 
     // 별자리 발현 광선 VFX - VFX_ConstellationPixelLaser. 서로 다른 그룹(또는 별자리 잔상의 여러 발)이
     // 동시에 발현될 수 있으므로 풀에서 매번 새 인스턴스를 꺼내 쓴다. 예전 VFX_LightningZap 풀러가 있던
@@ -344,28 +367,25 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [UnityEngine.Serialization.FormerlySerializedAs("lightningZapCreator")]
     [SerializeField] private ConstellationPixelLaserCreator constellationLaserCreator;
 
-    // 히트박스 계산 시 레이저의 베지에 곡선 한 변을 몇 구간으로 잘라 근사할지.
-    private const int ConstellationBeamCurveSamples = 16;
-
     // 현재 비행/발광 중인 레이저들 - 던전 이탈 시(ClearObjManager) 강제 반환하기 위해 추적한다.
     private readonly List<PresentationLayer.VFX.ConstellationPixelLaser> activeConstellationLasers = new List<PresentationLayer.VFX.ConstellationPixelLaser>();
 
     // 반환 이벤트를 이미 구독한 레이저 인스턴스(풀 인스턴스당 한 번만 구독한다).
     private readonly HashSet<PresentationLayer.VFX.ConstellationPixelLaser> subscribedConstellationLasers = new HashSet<PresentationLayer.VFX.ConstellationPixelLaser>();
 
-    // 별자리 히트박스 - 레이저 발광부(빔 선단)가 지나가는 순간 그 자리의 나무를 맞힌다.
-    // 레이저를 쏠 때 경로 주변 나무마다 "선단이 닿는 시각"을 미리 계산해 두고, 시간 순으로 적용한다.
-    private struct ConstellationBeamHit
+    // 별자리 폭발 판정 - 노바 충격파가 퍼지며 타원 범위 안의 나무를 중심에서 바깥 순서로 맞힌다.
+    // 폭발 시점에 범위 안 나무마다 "파동 선두가 닿는 시각"을 미리 계산해 두고, 시간 순으로 적용한다.
+    private struct ConstellationHit
     {
         public TreeObj tree;
         public Vector3 rootPos;   // 계산 시점의 위치 - 그 사이 풀로 반환/재사용된 나무를 걸러내는 데 쓴다.
-        public float hitTime;     // 레이저 발사 후 선단이 닿는 시각(초)
+        public float hitTime;     // 폭발 후 파동 선두가 닿는 시각(초)
     }
 
-    private static readonly Comparison<ConstellationBeamHit> ConstellationBeamHitTimeComparison = (a, b) => a.hitTime.CompareTo(b.hitTime);
+    private static readonly Comparison<ConstellationHit> ConstellationHitTimeComparison = (a, b) => a.hitTime.CompareTo(b.hitTime);
 
-    // 스윕마다 쓰는 타격 목록 - 잔상으로 여러 스윕이 동시에 돌 수 있어 스윕별로 하나씩 빌려 쓰고 돌려놓는다.
-    private readonly Stack<List<ConstellationBeamHit>> spareConstellationBeamHitLists = new Stack<List<ConstellationBeamHit>>();
+    // 폭발마다 쓰는 타격 목록 - 잔상으로 여러 폭발이 동시에 돌 수 있어 폭발별로 하나씩 빌려 쓰고 돌려놓는다.
+    private readonly Stack<List<ConstellationHit>> spareConstellationHitLists = new Stack<List<ConstellationHit>>();
 
     // 포자막 연쇄 폭발/별똥별 착탄 범위 판정용 결과 리스트 풀. 연쇄 폭발은 재귀로 중첩되므로 호출마다 하나씩 빌려 쓰고 돌려준다.
     private readonly Stack<List<IStaticCollidable>> spareExplosionScanLists = new Stack<List<IStaticCollidable>>();
@@ -388,14 +408,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public float MaxTreeTopShadowRadius => maxTreeTopShadowRadius;
     public float MaxTreeCollisionOffsetMagnitude => maxTreeCollisionOffsetMagnitude;
 
-    // 히트박스 계산용 버퍼 - 계산은 콜백 없이 동기로 끝나므로 하나를 공유해도 안전하다.
+    // 폭발 판정 후보 조회 버퍼 - 계산은 콜백 없이 동기로 끝나므로 하나를 공유해도 안전하다.
     private readonly List<IStaticCollidable> constellationScanBuffer = new List<IStaticCollidable>(64);
-    private readonly List<Vector3> constellationCurveSampleBuffer = new List<Vector3>(96);
-
-    // 변마다 곡선 샘플을 감싸는 상자(판정 두께만큼 넓힘). 상자 밖의 점은 그 변의 어느 구간과도 두께보다 멀어서
-    // 결과가 같으므로 구간별 거리 계산을 건너뛴다 - 한 나무는 보통 1~2개 변에만 가까워 계산량이 크게 준다.
-    private readonly List<Vector3> constellationEdgeBoundsMin = new List<Vector3>(8);
-    private readonly List<Vector3> constellationEdgeBoundsMax = new List<Vector3>(8);
 
     private bool bConstellationManifestUnlocked = false;
     private float starMarkDamageMultiplier = 1f;          // 별표식 베기
@@ -407,7 +421,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private ValueAccumulator manifestationBrandBonusAccum;
 
     // 그룹별 재진입 방지 가드 - groupStarPositions[groupId]와 동일한 List<Vector3> 참조를 키로 쓴다.
-    // 광선 자신의 데미지가 같은 그룹의 다른 별 표식 나무를 맞혀 재귀적으로 재트리거하는 것만 막고,
+    // 발현 폭발 자신의 데미지가 같은 그룹의 다른 별 표식 나무를 맞혀 재귀적으로 재트리거하는 것만 막고,
     // 서로 다른 그룹(다른 List 인스턴스)은 동시에 진행돼도 서로 막지 않는다.
     private readonly HashSet<List<Vector3>> activeConstellationGroups = new HashSet<List<Vector3>>();
 
@@ -415,10 +429,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 발생할 때까지, 별자리 VFX에 필요한 별 위치 목록을 groupId 기준으로 보관해둔다.
     private readonly Dictionary<int, List<Vector3>> pendingConstellationStarPositions = new Dictionary<int, List<Vector3>>();
 
-    // ClearTrees마다 증가 - 대기 중이던 ConstellationBeamRoutine이 이전 런의 발현을 이어서 쏘지 않게 한다.
+    // ClearTrees마다 증가 - 대기 중이던 ConstellationManifestRoutine이 이전 런의 발현을 이어서 쏘지 않게 한다.
     private int constellationManifestVersion = 0;
 
-    // 발현 낙인이 찍힌 나무와, 그 나무를 감싸고 도는 별 이펙트(VFX_BrandStarWrap). 동시 개수 상한에 걸려 별을
+    // 발현 낙인이 찍힌 나무와, 그 나무를 감싸고 도는 별 이펙트(VFX_BrandStarWrap). 풀/프리팹이 없어 별을
     // 띄우지 못한 나무는 null로 들어간다 - 그래도 키가 있어야 같은 나무가 다시 맞았을 때 각인이 반복되지 않는다.
     // 낙인은 나무가 풀로 돌아갈 때(ResetTree)만 풀리므로, 별 이펙트도 OnReleaseTree에서 함께 걷는다.
     private readonly Dictionary<TreeObj, PresentationLayer.VFX.VFX_BrandStarWrap> manifestationBrandWraps
@@ -475,8 +489,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         lootManager = GetComponentInChildren<LootManager>();
         lootManager.Initialize();
-        lootManager.LootItemAcquiredEvent -= OnLootItemAcquired;
-        lootManager.LootItemAcquiredEvent += OnLootItemAcquired;
+        lootManager.LootDataCommittedEvent -= OnLootDataCommitted;
+        lootManager.LootDataCommittedEvent += OnLootDataCommitted;
+        lootManager.LootArrivedEvent -= OnLootArrived;
+        lootManager.LootArrivedEvent += OnLootArrived;
 
         inDungeonVFXManager = GetComponentInChildren<InDungeonVFXManager>();
         inDungeonVFXManager.Initialize();
@@ -554,7 +570,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         if (lootManager != null)
         {
-            lootManager.LootItemAcquiredEvent -= OnLootItemAcquired;
+            lootManager.LootDataCommittedEvent -= OnLootDataCommitted;
+            lootManager.LootArrivedEvent -= OnLootArrived;
         }
 
         if (constellationLaserCreator != null)
@@ -610,15 +627,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     }
 
     /// <summary>
-    /// 현재 던전의 ForestType을 기록한다. "분실물 보관함"이 "1-3"(WideGreenForest_3, 확률)과
-    /// "2-1"(FluffySporeForest_1, 구제 보장)에서, "포자 포션"이 "2-1,2-2,2-3"(확률)과 "3-1"(구제 보장)에서
-    /// 드랍되도록 OnTreeDead에서 이 값을 참조한다. 또한 매 던전 진입마다 런 단위 상태를 리셋한다.
+    /// 현재 던전의 ForestType을 기록한다. 전리품별 확률 드랍 숲과 구제(보장) 드랍 범위를 OnTreeDead에서
+    /// 이 값으로 판정한다(구제 범위는 PityStart 상수 주석 참조). 또한 매 던전 진입마다 런 단위 상태를
+    /// 리셋하고, 이번 런의 구제 임계값을 뽑는다.
     /// </summary>
     public void SetupForForestType(ForestType _forestType)
     {
         currentForestType = _forestType;
         bLostAndFoundBoxSpawnedThisRun = false;
-        lostAndFoundBoxPityTreeKillCount = 0;
         lostAndFoundBoxWideGreenTreeKillCount = 0;
 
         // "원목 보험 증서"는 세이브에 영구 저장되는 전리품이므로, 매 런 시작마다 영구 획득 여부를 기준으로
@@ -630,39 +646,46 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             invMgr.SetLostAndFoundBoxEffect(bHasAcquiredLostAndFoundBox);
         }
 
-        if (_forestType == ForestType.FluffySporeForest_1)
-        {
-            lostAndFoundBoxPityThreshold = UnityEngine.Random.Range(lostAndFoundBoxPityMinKills, lostAndFoundBoxPityMaxKills + 1);
-        }
-
         bSporePotionSpawnedThisRun = false;
         bDrankSporePotionThisRun = false;
         sporePotionFluffyTreeKillCount = 0;
-        sporePotionPityTreeKillCount = 0;
 
-        if (_forestType == ForestType.StarrootForest_1)
-        {
-            sporePotionPityThreshold = UnityEngine.Random.Range(sporePotionPityMinKills, sporePotionPityMaxKills + 1);
-        }
-
-        // "별빛 나침반" - StarrootForest_1/2/3 어느 맵이든 진입 시 리셋 및 임계값 설정
         bStarCompassSpawnedThisRun = false;
-        starCompassPityTreeKillCount = 0;
-        if (_forestType == ForestType.StarrootForest_1
-            || _forestType == ForestType.StarrootForest_2
-            || _forestType == ForestType.StarrootForest_3)
-        {
-            starCompassPityThreshold = UnityEngine.Random.Range(starCompassPityMinKills, starCompassPityMaxKills + 1);
-        }
 
-        // "흑요 부적" - MagmaForest_2/3 진입 시 리셋 및 임계값 설정
         bObsidianCharmSpawnedThisRun = false;
         obsidianCharmTreeKillCount = 0;
-        obsidianCharmPityTreeKillCount = 0;
-        if (_forestType == ForestType.MagmaForest_2 || _forestType == ForestType.MagmaForest_3)
-        {
-            obsidianCharmPityThreshold = UnityEngine.Random.Range(obsidianCharmPityMinKills, obsidianCharmPityMaxKills + 1);
-        }
+
+        // 구제 임계값 - 이번 런에 구제 대상인 것만, 오래된 지역 것부터 "앞 전리품 뒤 다시 min~max그루"씩
+        // 이어 붙인다. 대상이 하나면 지금까지와 같은 min~max그루째이고, 여럿이면 같은 나무에서 한꺼번에
+        // 쏟아지지 않고 차례로 나온다. 대상이 아닌 전리품의 임계값은 OnTreeDead에서 읽히지 않는다.
+        pityTreeKillCount = 0;
+        int pityKillsSoFar = 0;
+        lostAndFoundBoxPityThreshold = RollPityThreshold(IsPityPending(bHasAcquiredLostAndFoundBox, LostAndFoundBoxPityStart),
+            lostAndFoundBoxPityMinKills, lostAndFoundBoxPityMaxKills, ref pityKillsSoFar);
+        sporePotionPityThreshold = RollPityThreshold(IsPityPending(bHasAcquiredSporePotion, SporePotionPityStart),
+            sporePotionPityMinKills, sporePotionPityMaxKills, ref pityKillsSoFar);
+        starCompassPityThreshold = RollPityThreshold(IsPityPending(bHasAcquiredStarCompass, StarCompassPityStart),
+            starCompassPityMinKills, starCompassPityMaxKills, ref pityKillsSoFar);
+        obsidianCharmPityThreshold = RollPityThreshold(IsPityPending(bHasAcquiredObsidianCharm, ObsidianCharmPityStart),
+            obsidianCharmPityMinKills, obsidianCharmPityMaxKills, ref pityKillsSoFar);
+    }
+
+    /// <summary>아직 얻지 못한 전리품이고, 현재 숲이 그 전리품의 구제 범위(시작 숲 이후)에 들어가는지.</summary>
+    private bool IsPityPending(bool _bHasAcquired, ForestType _pityStartForest)
+    {
+        return !_bHasAcquired && currentForestType >= _pityStartForest;
+    }
+
+    /// <summary>
+    /// 구제 대상이면 앞선 대상의 임계값(_pityKillsSoFar) 뒤에 min~max그루를 더한 값을 돌려주고 누적값을 갱신한다.
+    /// 대상이 아니면 0을 돌려주고 누적값은 그대로 둔다.
+    /// </summary>
+    private static int RollPityThreshold(bool _bPending, int _minKills, int _maxKills, ref int _pityKillsSoFar)
+    {
+        if (!_bPending) return 0;
+
+        _pityKillsSoFar += UnityEngine.Random.Range(_minKills, _maxKills + 1);
+        return _pityKillsSoFar;
     }
 
     public void RestoreOwnedLoots(List<LootType> _loots)
@@ -674,42 +697,52 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
     }
 
-    private void OnLootItemAcquired(LootItem _item)
+    /// <summary>
+    /// 전리품 획득 데이터 확정. 런 진행 중에는 도착 순간에, 런이 끝나는 순간 공중에 있던 것은
+    /// 도착을 기다리지 않고 바로 불린다(LootManager.CommitRunEnd). 전리품 하나당 한 번만 불린다.
+    /// </summary>
+    private void OnLootDataCommitted(LootType _lootType)
     {
-        if (!currentOwnedLoots.Contains(_item.LootType))
+        if (!currentOwnedLoots.Contains(_lootType))
         {
-            currentOwnedLoots.Add(_item.LootType);
+            currentOwnedLoots.Add(_lootType);
         }
 
         // currentOwnedLoots는 "영구 소지 목록"이라 예전 런에서 얻은 것도 들어 있다.
         // 결과창은 "이번 런에서 얻은 것"만 보여줘야 하므로 런 단위 집계를 따로 남긴다.
-        inDungeonResultManager?.AddAcquiredLoot(_item.LootType);
+        inDungeonResultManager?.AddAcquiredLoot(_lootType);
 
-        // LogItem 획득과 동일한 획득 피드백(사운드 + 캐릭터 뽀잉 연출)을 LootItem 획득 시에도 재생한다.
-        Sound.PlayUI(SoundID.GetItem);
-        character?.PlayItemAcquireBounce();
-        character?.PlayItemAcquireFlash();
+        LootAcquiredEvent?.Invoke(_lootType);
 
-        LootAcquiredEvent?.Invoke(_item.LootType);
-
-        if (_item.LootType == LootType.LostAndFoundBox)
+        if (_lootType == LootType.LostAndFoundBox)
         {
             bHasAcquiredLostAndFoundBox = true;
             LostAndFoundBoxAcquiredEvent?.Invoke();
         }
-        else if (_item.LootType == LootType.SporePotion)
+        else if (_lootType == LootType.SporePotion)
         {
             bHasAcquiredSporePotion = true;
         }
-        else if (_item.LootType == LootType.StarCompass)
+        else if (_lootType == LootType.StarCompass)
         {
             // 별자리 표식은 이제 항상 기본으로 표시되므로, 이 아이템은 획득해도 별도 효과가 없다.
             bHasAcquiredStarCompass = true;
         }
-        else if (_item.LootType == LootType.ObsidianCharm)
+        else if (_lootType == LootType.ObsidianCharm)
         {
             bHasAcquiredObsidianCharm = true;
         }
+    }
+
+    /// <summary>
+    /// 전리품이 실제로 캐릭터에게 도착한 순간의 획득 피드백. 데이터는 OnLootDataCommitted가 맡는다.
+    /// </summary>
+    private void OnLootArrived(LootType _lootType)
+    {
+        // LogItem 획득과 동일한 획득 피드백(사운드 + 캐릭터 뽀잉 연출)을 LootItem 획득 시에도 재생한다.
+        Sound.PlayUI(SoundID.GetItem);
+        character?.PlayItemAcquireBounce();
+        character?.PlayItemAcquireFlash();
     }
 
     /// <summary>
@@ -835,10 +868,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         // LogItem/CarrotItem과 달리 이 호출이 빠져 있으면, 흡입 중이던 LootItem(예: 분실물 보관함)이
         // 씬 전환 후에도 영속 오브젝트 하위에 그대로 남아 계속 움직이는 버그가 생긴다.
-        // 단순 소멸(ClearAll) 대신 강제 습득(ForceAcquireAllActive) 처리하여, 확정 드랍된 전리품이
-        // 흡입 애니메이션 도중 던전 종료로 유실되지 않고 반드시 인벤토리에 반영되도록 한다.
+        // 획득 데이터는 런 종료 시점(사망 판정 / 귀환 확정)에 이미 확정됐으므로 여기서는 정리만 한다.
+        // 혹시 확정되지 않은 것이 남아 있으면 유실되지 않도록 이 자리에서 확정한다.
         if (lootManager != null)
-            lootManager.ForceAcquireAllActive();
+            lootManager.CommitAndReleaseAllActive();
 
         // currentOwnedLoots는 "이번 런에서 얻은 것"이 아니라 "영구 소지 중인 전리품" 목록이라
         // 여기서 비우면 안 된다. 이 메서드는 마을 도착 시 GameInstaller.SetupGameInstaller()에서
@@ -1194,8 +1227,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
         activeConstellationLasers.Clear();
 
-        // 별자리 잔상(ConstellationBeamRoutine)이 다음 발사를 기다리는 중이었거나 히트박스 스윕
-        // (ConstellationBeamSweepRoutine)이 진행 중이었다면, 버전이 바뀐 것을 보고 더 쏘거나 때리지 않고 끝난다.
+        // 별자리 잔상(ConstellationManifestRoutine)이 다음 발사를 기다리는 중이었거나 폭발 판정
+        // (ConstellationBlastRoutine)이 진행 중이었다면, 버전이 바뀐 것을 보고 더 쏘거나 때리지 않고 끝난다.
         // (그 finally가 뒤늦게 activeConstellationGroups.Remove를 호출해도 무해하다)
         constellationManifestVersion++;
         activeConstellationGroups.Clear();
@@ -1421,9 +1454,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 죽은 위치 재사용 준비
         Vector3 deadPos = treePos;
 
+        // 구제(보장) 드랍용 런 단위 벌목 수. 전리품별 임계값은 SetupForForestType에서 이 값 기준으로 뽑아 둔다.
+        pityTreeKillCount++;
+
         // "분실물 보관함" - 나무를 죽여 LogItem이 드랍될 때 함께 스폰을 시도한다.
         // 이미 획득했거나(영구 저장 플래그) 이번 런에서 이미 스폰을 시도했으면(습득 완료 전 중복 방지)
-        // 더 이상 시도하지 않는다. 영구 플래그는 실제 습득 시점(OnLootItemAcquired)에만 세팅된다.
+        // 더 이상 시도하지 않는다. 영구 플래그는 획득 데이터 확정 시점(OnLootDataCommitted)에만 세팅된다.
         if (!bHasAcquiredLostAndFoundBox && !bLostAndFoundBoxSpawnedThisRun && lootManager != null && character != null)
         {
             bool bShouldSpawnLostAndFoundBox = false;
@@ -1436,11 +1472,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 bShouldSpawnLostAndFoundBox = UnityEngine.Random.value < effectiveChance;
                 lostAndFoundBoxWideGreenTreeKillCount++;
             }
-            else if (currentForestType == ForestType.FluffySporeForest_1)
+            else if (currentForestType >= LostAndFoundBoxPityStart)
             {
-                // "2-1" - "1-3"에서 못 얻었을 경우의 구제책. 나무 min~max그루째에 확률과 무관하게 보장 드랍.
-                lostAndFoundBoxPityTreeKillCount++;
-                bShouldSpawnLostAndFoundBox = lostAndFoundBoxPityTreeKillCount >= lostAndFoundBoxPityThreshold;
+                // "2-1" 이후 모든 숲 - "1-3"에서 못 얻었을 경우의 구제책. 임계값 그루째에 확률과 무관하게 보장 드랍.
+                bShouldSpawnLostAndFoundBox = pityTreeKillCount >= lostAndFoundBoxPityThreshold;
             }
 
             if (bShouldSpawnLostAndFoundBox)
@@ -1450,7 +1485,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
         }
 
-        // "포자 포션" - "2-1,2-2,2-3"에서 확률적으로 드랍(못 얻은 채로 벨 때마다 누적 상승), "3-1"에서 구제 보장.
+        // "포자 포션" - "2-1,2-2,2-3"에서 확률적으로 드랍(못 얻은 채로 벨 때마다 누적 상승), "3-1" 이후 모든 숲에서 구제 보장.
         if (!bHasAcquiredSporePotion && !bSporePotionSpawnedThisRun && lootManager != null && character != null)
         {
             bool bShouldSpawnSporePotion = false;
@@ -1463,11 +1498,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 bShouldSpawnSporePotion = UnityEngine.Random.value < effectiveChance;
                 sporePotionFluffyTreeKillCount++;
             }
-            else if (currentForestType == ForestType.StarrootForest_1)
+            else if (currentForestType >= SporePotionPityStart)
             {
-                // "3-1" - "2-1,2-2,2-3"에서 못 얻었을 경우의 구제책. 나무 min~max그루째에 확률과 무관하게 보장 드랍.
-                sporePotionPityTreeKillCount++;
-                bShouldSpawnSporePotion = sporePotionPityTreeKillCount >= sporePotionPityThreshold;
+                // "3-1" 이후 모든 숲 - "2-1,2-2,2-3"에서 못 얻었을 경우의 구제책. 임계값 그루째에 확률과 무관하게 보장 드랍.
+                bShouldSpawnSporePotion = pityTreeKillCount >= sporePotionPityThreshold;
             }
 
             if (bShouldSpawnSporePotion)
@@ -1477,24 +1511,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
         }
 
-        // "별빛 나침반" - StarrootForest_1/2/3에서 나무 4~5그루를 벤 시점에 확률과 무관하게 보장 드랍.
-        // 세 맵 중 어느 한 곳에서 획득하면 영구 플래그가 세팅되어 더 이상 드랍되지 않는다.
+        // "별빛 나침반" - "3-1" 이후 모든 숲에서 임계값 그루째에 확률과 무관하게 보장 드랍.
+        // 어느 한 곳에서 획득하면 영구 플래그가 세팅되어 더 이상 드랍되지 않는다.
         if (!bHasAcquiredStarCompass && !bStarCompassSpawnedThisRun && lootManager != null && character != null)
         {
-            if (currentForestType == ForestType.StarrootForest_1
-                || currentForestType == ForestType.StarrootForest_2
-                || currentForestType == ForestType.StarrootForest_3)
+            if (currentForestType >= StarCompassPityStart && pityTreeKillCount >= starCompassPityThreshold)
             {
-                starCompassPityTreeKillCount++;
-                if (starCompassPityTreeKillCount >= starCompassPityThreshold)
-                {
-                    lootManager.SpawnLootItem(deadPos, LootType.StarCompass, character.centerTransform);
-                    bStarCompassSpawnedThisRun = true;
-                }
+                lootManager.SpawnLootItem(deadPos, LootType.StarCompass, character.centerTransform);
+                bStarCompassSpawnedThisRun = true;
             }
         }
 
-        // "흑요 부적"
+        // "흑요 부적" - "4-2"에서 확률 드랍(못 얻은 채로 벨 때마다 누적 상승), "4-3" 이후 모든 숲에서 구제 보장.
         if (!bHasAcquiredObsidianCharm && !bObsidianCharmSpawnedThisRun && lootManager != null && character != null)
         {
             if (currentForestType == ForestType.MagmaForest_2)
@@ -1507,10 +1535,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 }
                 obsidianCharmTreeKillCount++;
             }
-            else if (currentForestType == ForestType.MagmaForest_3)
+            else if (currentForestType >= ObsidianCharmPityStart)
             {
-                obsidianCharmPityTreeKillCount++;
-                if (obsidianCharmPityTreeKillCount >= obsidianCharmPityThreshold)
+                if (pityTreeKillCount >= obsidianCharmPityThreshold)
                 {
                     lootManager.SpawnLootItem(deadPos, LootType.ObsidianCharm, character.centerTransform);
                     bObsidianCharmSpawnedThisRun = true;
@@ -1980,6 +2007,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         if (character.bTreeHeatImmune || bHasAcquiredObsidianCharm) return; // 넉백/경직 중엔 열기 영향 없음 + 흑요 부적 획득 시 면역
 
+        // 귀환 경고창이 떠 있는 동안이나 귀환/사망으로 원정이 끝나는 중에는 열기 영향(데미지+넉백)을 주지 않는다.
+        // 이 구간은 캐릭터 조작과 피로도 감소가 멈춘 상태인데, 예전엔 여기 걸리는 조건이 없어서 원목을 떨구며
+        // 기다리는 캐릭터가 한 칸 밀리고 기절 연출이 재생됐다. (발산 VFX/사운드는 위에서 그대로 나온다)
+        if (RunEndState != ERunEndState.None || bWarningPending) return;
+
         Vector3Int treeCell = _tree.CellPos;
         Vector3Int characterCell = character.CurrentCell;
 
@@ -2097,6 +2129,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         RunEndState = ERunEndState.EndingByDeath;
 
+        // 쓰러지는 순간 공중에 있던 전리품의 획득 데이터를 지금 확정한다(연출은 그대로 시체로 빨려 든다).
+        // UnitSystem이 분실물 보관함 구제(RescueItemsToOffroadContainer)보다 먼저 이 신호를 보내므로,
+        // 마지막으로 벤 나무에서 나온 보관함도 이번 탈진부터 구제 효과가 적용된다.
+        lootManager?.CommitRunEnd();
+
         // 답을 받지 못한 채 닫히는 경고창의 상호작용 잠금(+1)을 여기서 상쇄한다.
         // 나머지(NPC 정지, 성장 정지, 이동 잠금)는 사망 상태에서 그대로 유지되는 것이 맞다.
         if (bWarningPending == true)
@@ -2114,6 +2151,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         RunEndState = ERunEndState.None;
         bWarningPending = false;
+        lootManager?.ResetRunEndCommit();
 
         if (gameEndRoutine != null)
         {
@@ -2161,9 +2199,17 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             {
                 growthCoroutine = StartCoroutine(currentTreeGenerationStrategy.GrowthRoutine(this));
             }
+
+            // 조준 재개도 "진짜 취소"일 때만 한다.
+            //
+            // 귀환 확정(HandleGameEnd) 경로에서는 바로 뒤의 DisableAttackComponent()가 조준을 다시 끄므로
+            // 켤 이유가 없는데, 예전엔 여기서 잠깐 켰다. 꺼져 있던 조준이 켜지는 순간 SetCursorEnable(true)가
+            // 조준점을 현재 마우스 위치(경고창 "예" 버튼 쪽)로 옮겨 버려서, 원목을 떨구는 대기 동안
+            // 몸은 E를 누를 때 방향 그대로(조준이 꺼지면 방향 갱신 안 함)인데 팔만 그 조준점으로 돌아가
+            // 목이 꺾인 것처럼 보였다.
+            character.PauseCharacter(false);
         }
 
-        character.PauseCharacter(false);
         inputManager.PauseMove(false);
         inputManager.PauseInteractKey(false);
     }
@@ -2176,6 +2222,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (character != null && character.bDead == true) return;
 
         RunEndState = ERunEndState.EndingByReturn;
+
+        // 공중에 있던 전리품의 획득 데이터를 지금 확정한다. 연출은 그대로 이어져 캐릭터에게 빨려 들고,
+        // 결과창(탑승 종료 후)은 이미 확정된 목록을 읽는다.
+        lootManager?.CommitRunEnd();
 
         // 이미 발사되어 공중에 있는 원목은 소멸시키지 않고 그대로 운반 상자에 착지시킨다.
         // 경고창을 거친 경로라면 GameEnd()에서 멈춰 둔 상태이므로 여기서 다시 날려 보낸다.
@@ -2524,23 +2574,28 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 이제 레이저가 같은 외곽선을 그리므로 점선을 거둔다.
         inDungeonVFXManager.RemoveConstellationDottedLine(_groupId);
 
+        // 레이저 외곽선용 경로. 레이저는 받은 좌표를 내부에서 꼬임 풀기(UntanglePoints)로 한 번 더 정돈하므로
+        // 여기서는 각도 순 정렬만 한다.
         List<Vector3> path = BuildSimplePolygonPath(_starPositions);
-
-        // 레이저는 받은 좌표를 내부에서 꼬임 풀기(UntanglePoints)로 한 번 더 정돈한다. 히트박스가 레이저와 똑같은
-        // 곡선을 따라가도록 같은 정돈을 미리 적용해 둔다(이미 정돈된 순서에 다시 적용해도 결과가 같다).
-        PresentationLayer.VFX.ConstellationPixelLaser.UntanglePoints(path, 0);
 
         float damage = BaseConstellationDamage * Mathf.Max(0f, constellationDamageMultiplier);
         int hitCount = Mathf.Max(1, constellationHitCount);
 
-        // 별자리 발현음은 발현 1회당 한 번, 별자리 중심에서 울린다. 별자리 잔상으로 레이저가 0.2초 간격으로
-        // 여러 발 나가도 긴(약 2.8초) 발현음을 겹쳐 틀지 않는다.
+        // 별자리 중심 - 별 좌표의 평균. 폭발 판정, 노바 마법진, 발현음이 모두 이 점을 쓴다.
+        // 별 좌표는 나무 윗부분(topRoot) 기준이지만, 판정이 나무마다 밑동과 윗부분을 둘 다 보므로 윗부분끼리 일관되게 맞는다.
         Vector3 constellationCenter = Vector3.zero;
         for (int i = 0; i < path.Count; i++) constellationCenter += path[i];
         constellationCenter /= path.Count;
+
+        // 별자리 발현음은 발현 1회당 한 번, 별자리 중심에서 울린다. 별자리 잔상으로 0.2초 간격으로
+        // 여러 번 터져도 긴(약 2.8초) 발현음을 겹쳐 틀지 않는다.
         Sound.Play(SoundID.StarExplosion, constellationCenter);
 
-        StartCoroutine(ConstellationBeamRoutine(_starPositions, path, damage, hitCount));
+        // 별자리 중심에서 마법진 + 별 폭발 연출을 재생한다. 반지름을 폭발 판정과 같은 값으로 넘겨 보이는 범위와 피격 범위를 맞춘다.
+        float blastRadius = CurrentConstellationBlastRadius;
+        inDungeonVFXManager.PlayConstellationNovaVFX(constellationCenter, blastRadius);
+
+        StartCoroutine(ConstellationManifestRoutine(_starPositions, path, constellationCenter, blastRadius, damage, hitCount));
     }
 
     // 중심점(centroid) 기준 각도 순으로 정렬해서 폐곡선을 만든다. 최근접 이웃(greedy) 방식과 달리,
@@ -2550,7 +2605,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     //
     // 반환값은 고유한 N개의 꼭짓점만 담는다 - 시작점을 끝에 다시 붙이지 않는다. ConstellationPixelLaser.PlayLaser가
     // isClosedLoop일 때 (i + 1) % N으로 스스로 닫기 때문에, 중복 좌표를 넘기면 길이 0인 변이 생겨 빔이 깨진다.
-    // 별이 3개 이상이면 폐곡선, 2개뿐이면 열린 선 하나로 취급한다(GetConstellationEdgeCount).
     private List<Vector3> BuildSimplePolygonPath(List<Vector3> _points)
     {
         List<Vector3> sorted = new List<Vector3>(_points);
@@ -2571,16 +2625,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         return sorted;
     }
 
-    // 경로의 변 개수 - 별이 3개 이상이면 마지막 점에서 시작점으로 되돌아가는 변까지 포함한 폐곡선,
-    // 2개뿐이면(다시 그으면 같은 선분을 중복으로 왕복하게 되므로) 열린 선 하나.
-    private static int GetConstellationEdgeCount(List<Vector3> _path)
-    {
-        return 3 <= _path.Count ? _path.Count : _path.Count - 1;
-    }
-
-    // 별자리 잔상(hitCount)만큼 인터벌을 두고 레이저를 발사한다. 각 레이저의 데미지는 발광부(빔 선단)가
-    // 지나가는 순간 그 자리의 나무에 적용된다(ConstellationBeamSweepRoutine).
-    private IEnumerator ConstellationBeamRoutine(List<Vector3> _groupKey, List<Vector3> _path, float _damagePerHit, int _hitCount)
+    // 별자리 잔상(hitCount)만큼 인터벌을 두고 레이저 연출과 폭발을 함께 반복한다. 데미지는 레이저 선이 아니라
+    // 별자리 중심의 바닥 타원 폭발(ConstellationBlastRoutine)이 준다. 레이저는 외곽선을 그리는 연출만 한다.
+    // 잔상의 모든 폭발은 노바 마법진과 같은 발현 시점의 반지름(_blastRadius)을 쓴다.
+    private IEnumerator ConstellationManifestRoutine(List<Vector3> _groupKey, List<Vector3> _path, Vector3 _center, float _blastRadius, float _damagePerHit, int _hitCount)
     {
         int version = constellationManifestVersion;
 
@@ -2588,7 +2636,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             for (int hit = 0; hit < _hitCount; hit++)
             {
-                FireConstellationLaser(_path, _damagePerHit);
+                FireConstellationLaser(_path);
+                StartCoroutine(ConstellationBlastRoutine(_center, _blastRadius, _damagePerHit));
 
                 if (hit < _hitCount - 1)
                 {
@@ -2605,29 +2654,19 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
     }
 
-    private void FireConstellationLaser(List<Vector3> _path, float _damage)
+    private void FireConstellationLaser(List<Vector3> _path)
     {
         PresentationLayer.VFX.ConstellationPixelLaser laser = null != constellationLaserCreator ? constellationLaserCreator.Get() : null;
+        if (null == laser) return;
 
-        // 레이저 풀러/프리팹이 없으면 연출이 없으므로 히트박스도 기다리지 않고 즉시(비행 시간 0) 적용한다.
-        float flightDuration = 0f;
-        float curveRoundness = 0f;
-
-        if (null != laser)
+        // 반환 이벤트는 풀 인스턴스당 한 번만 구독한다.
+        if (subscribedConstellationLasers.Add(laser))
         {
-            // 반환 이벤트는 풀 인스턴스당 한 번만 구독한다.
-            if (subscribedConstellationLasers.Add(laser))
-            {
-                laser.ReturnToPoolEvent += OnConstellationLaserReturned;
-            }
-
-            activeConstellationLasers.Add(laser);
-            flightDuration = laser.SegmentShootDuration;
-            curveRoundness = laser.CurveRoundness;
-            laser.PlayLaser(_path, true);
+            laser.ReturnToPoolEvent += OnConstellationLaserReturned;
         }
 
-        StartCoroutine(ConstellationBeamSweepRoutine(_path, _damage, flightDuration, curveRoundness));
+        activeConstellationLasers.Add(laser);
+        laser.PlayLaser(_path, true);
     }
 
     // 레이저가 연출(비행 -> 서스테인 -> 페이드아웃)을 마치거나 강제 회수되어 풀로 반환될 때 호출된다.
@@ -2644,18 +2683,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _laser.ReturnToPoolEvent -= OnConstellationLaserReturned;
     }
 
-    // 별자리 히트박스 스윕 - 레이저 발광부(빔 선단)가 지나가는 순간에 맞춰 그 자리의 나무를 때린다.
-    // 발사 시점에 경로 주변 나무마다 선단이 닿는 시각을 계산해 두고, 시간이 흐르는 대로 순서대로 적용한다.
-    private IEnumerator ConstellationBeamSweepRoutine(List<Vector3> _path, float _damage, float _flightDuration, float _curveRoundness)
+    // 별자리 폭발 판정 - 노바 충격파가 퍼지는 대로 타원 범위 안의 나무를 중심에서 바깥 순서로 때린다.
+    // 폭발 시점에 범위 안 나무마다 파동 선두가 닿는 시각을 계산해 두고, 시간이 흐르는 대로 순서대로 적용한다.
+    private IEnumerator ConstellationBlastRoutine(Vector3 _center, float _radius, float _damage)
     {
         int version = constellationManifestVersion;
-        List<ConstellationBeamHit> hits = 0 < spareConstellationBeamHitLists.Count
-            ? spareConstellationBeamHitLists.Pop()
-            : new List<ConstellationBeamHit>(32);
+        List<ConstellationHit> hits = 0 < spareConstellationHitLists.Count
+            ? spareConstellationHitLists.Pop()
+            : new List<ConstellationHit>(32);
 
         try
         {
-            CollectConstellationBeamHits(_path, _curveRoundness, _flightDuration, hits);
+            CollectConstellationBlastHits(_center, _radius, hits);
 
             float elapsed = 0f;
             int next = 0;
@@ -2663,7 +2702,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             {
                 while (next < hits.Count && hits[next].hitTime <= elapsed)
                 {
-                    ApplyConstellationBeamHit(hits[next], _damage);
+                    ApplyConstellationHit(hits[next], _damage);
                     next++;
                 }
 
@@ -2671,7 +2710,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
                 yield return null;
 
-                // 스윕 도중 던전을 나갔다면(ClearTrees) 이전 런의 나무를 계속 때리지 않는다.
+                // 폭발 도중 던전을 나갔다면(ClearTrees) 이전 런의 나무를 계속 때리지 않는다.
                 if (version != constellationManifestVersion) yield break;
 
                 elapsed += Time.deltaTime;
@@ -2680,149 +2719,48 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         finally
         {
             hits.Clear();
-            spareConstellationBeamHitLists.Push(hits);
+            spareConstellationHitLists.Push(hits);
         }
     }
 
-    // 경로 주변 나무 중 레이저 곡선의 두께(ConstellationBeamHalfThickness) 안에 드는 나무를 모아, 빔 선단이
-    // 그 나무에 닿는 시각 순으로 정렬해 _hits에 채운다.
-    //
-    // 레이저는 각 변마다 양 끝 별에서 서로를 향해 빔 두 줄기를 동시에 쏘고, 선단은 감속 곡선
-    // (진행도 = 1 - (1 - t)^4, ConstellationPixelLaser.MutualSimultaneousRoutine)을 따른다. 그래서 두 선단은
-    // 비행 시간의 약 16%만에 변의 가운데에서 교차하고, 이후 남은 시간 동안 천천히 반대편 꼭짓점으로 향한다.
-    // 눈에 띄는 발광부는 이 "가운데 -> 꼭짓점" 구간이므로, 각 지점은 그쪽으로 다가오는(가운데를 이미 지난)
-    // 선단이 닿을 때 맞는 것으로 처리한다 - 변 위의 위치 u(0~1)에 필요한 진행도는 max(u, 1 - u)이다.
-    // 즉 변의 가운데가 먼저 맞고, 꼭짓점 쪽으로 갈수록 늦게 맞는다.
-    private void CollectConstellationBeamHits(List<Vector3> _path, float _curveRoundness, float _flightDuration, List<ConstellationBeamHit> _hits)
+    // 별자리 중심의 바닥 타원(가로 반지름 _radius, 세로는 GroundSquashY배) 안에 드는 나무를 모아, 노바 충격파
+    // 선두가 그 나무에 닿는 시각 순으로 정렬해 _hits에 채운다. 거리는 노바 마법진과 같은 비율의 바닥 거리
+    // (VFX_ConstellationNova.GetGroundDistance)로 잰다. 나무는 밑동과 윗부분 중 중심에 더 가까운 쪽 기준이다(레이저 판정과 같은 정책).
+    private void CollectConstellationBlastHits(Vector3 _center, float _radius, List<ConstellationHit> _hits)
     {
-        if (CollisionSystem.Instance == null || 2 > _path.Count) return;
+        if (CollisionSystem.Instance == null || _radius <= 0f) return;
 
-        int edgeCount = GetConstellationEdgeCount(_path);
-        bool bLoop = 3 <= _path.Count;
-        int stride = ConstellationBeamCurveSamples + 1;
-
-        // 1. 레이저와 똑같은 베지에 곡선을 변마다 샘플링한다(ConstellationPixelLaser와 같은 제어점 계산).
-        constellationCurveSampleBuffer.Clear();
-        constellationEdgeBoundsMin.Clear();
-        constellationEdgeBoundsMax.Clear();
-        Vector3 thickness = new Vector3(ConstellationBeamHalfThickness, ConstellationBeamHalfThickness, ConstellationBeamHalfThickness);
-
-        for (int edge = 0; edge < edgeCount; edge++)
-        {
-            PresentationLayer.VFX.ConstellationPixelLaser.ComputeBezierControlPoints(
-                _path, edge, bLoop, _curveRoundness,
-                out Vector3 p0, out Vector3 p1, out Vector3 c0, out Vector3 c1);
-
-            Vector3 boundsMin = p0;
-            Vector3 boundsMax = p0;
-
-            for (int k = 0; k < stride; k++)
-            {
-                float u = (float)k / ConstellationBeamCurveSamples;
-                float oneMinusU = 1f - u;
-                Vector3 sample =
-                    oneMinusU * oneMinusU * oneMinusU * p0
-                    + 3f * oneMinusU * oneMinusU * u * c0
-                    + 3f * oneMinusU * u * u * c1
-                    + u * u * u * p1;
-
-                constellationCurveSampleBuffer.Add(sample);
-                boundsMin = Vector3.Min(boundsMin, sample);
-                boundsMax = Vector3.Max(boundsMax, sample);
-            }
-
-            constellationEdgeBoundsMin.Add(boundsMin - thickness);
-            constellationEdgeBoundsMax.Add(boundsMax + thickness);
-        }
-
-        // 2. 광선은 나무 8~13그루짜리 국지적 군집에만 영향을 주므로, 던전 전체 activeTrees(최대 2500개)를
-        //    순회하지 않도록 곡선 전체를 감싸는 반경만 CollisionSystem으로 조회한다.
-        Vector3 center = Vector3.zero;
-        for (int i = 0; i < _path.Count; i++) center += _path[i];
-        center /= _path.Count;
-
-        float maxDistSq = 0f;
-        for (int i = 0; i < constellationCurveSampleBuffer.Count; i++)
-        {
-            float distSq = (constellationCurveSampleBuffer[i] - center).sqrMagnitude;
-            if (distSq > maxDistSq) maxDistSq = distSq;
-        }
-        float scanRadius = Mathf.Sqrt(maxDistSq) + ConstellationBeamHalfThickness + 1f;
-
+        // 광역 조회는 원이므로, 타원(가로 반지름 R, 세로는 그보다 작음)을 감싸는 반경 R에 윗부분 여유를 더해 후보만 모은다.
         constellationScanBuffer.Clear();
-        CollisionSystem.Instance.GetCollidablesInRadius(center, scanRadius, treeLayerForExplosion.value, constellationScanBuffer);
+        CollisionSystem.Instance.GetCollidablesInRadius(_center, _radius + ConstellationBlastScanMargin, treeLayerForExplosion.value, constellationScanBuffer);
 
-        // 3. 나무마다 밑둥/top 중 하나라도 곡선 두께 안에 들어오는 가장 이른 시각을 구한다
-        //    (여러 변에 걸친 나무는 가장 먼저 닿는 선단 기준, Boomerang과 동일하게 밑둥/top 둘 다 판정).
+        float invRadius = 1f / _radius;
+
         for (int i = 0; i < constellationScanBuffer.Count; i++)
         {
             if (!(constellationScanBuffer[i] is TreeObj tree) || !tree.bCanApplyDamage) continue;
 
             Vector3 rootPos = tree.transform.position;
             Vector3 topPos = tree.treeVisualComponent != null ? tree.treeVisualComponent.GetTopRootPosition() : rootPos;
-            float earliest = float.MaxValue;
 
-            for (int edge = 0; edge < edgeCount; edge++)
+            float normalizedDistance = Mathf.Min(
+                PresentationLayer.VFX.VFX_ConstellationNova.GetGroundDistance(rootPos, _center),
+                PresentationLayer.VFX.VFX_ConstellationNova.GetGroundDistance(topPos, _center)) * invRadius;
+
+            if (normalizedDistance > 1f) continue;
+
+            _hits.Add(new ConstellationHit
             {
-                bool bTopNear = IsInsideBounds(topPos, constellationEdgeBoundsMin[edge], constellationEdgeBoundsMax[edge]);
-                bool bRootNear = IsInsideBounds(rootPos, constellationEdgeBoundsMin[edge], constellationEdgeBoundsMax[edge]);
-                if (!bTopNear && !bRootNear) continue;
-
-                int baseIndex = edge * stride;
-                for (int k = 0; k < ConstellationBeamCurveSamples; k++)
-                {
-                    Vector3 a = constellationCurveSampleBuffer[baseIndex + k];
-                    Vector3 b = constellationCurveSampleBuffer[baseIndex + k + 1];
-
-                    if (bTopNear)
-                    {
-                        float hitTime = GetConstellationBeamHitTime(topPos, a, b, k, _flightDuration);
-                        if (hitTime < earliest) earliest = hitTime;
-                    }
-
-                    if (bRootNear)
-                    {
-                        float hitTime = GetConstellationBeamHitTime(rootPos, a, b, k, _flightDuration);
-                        if (hitTime < earliest) earliest = hitTime;
-                    }
-                }
-            }
-
-            if (float.MaxValue > earliest)
-            {
-                _hits.Add(new ConstellationBeamHit { tree = tree, rootPos = rootPos, hitTime = earliest });
-            }
+                tree = tree,
+                rootPos = rootPos,
+                hitTime = PresentationLayer.VFX.VFX_ConstellationNova.EvaluateShockArrivalTime(normalizedDistance)
+            });
         }
 
-        _hits.Sort(ConstellationBeamHitTimeComparison);
+        _hits.Sort(ConstellationHitTimeComparison);
     }
 
-    private static bool IsInsideBounds(Vector3 _point, Vector3 _min, Vector3 _max)
-    {
-        return _point.x >= _min.x && _point.x <= _max.x
-            && _point.y >= _min.y && _point.y <= _max.y
-            && _point.z >= _min.z && _point.z <= _max.z;
-    }
-
-    // _point가 곡선 샘플 구간 [a, b](변의 k번째 구간) 두께 안에 있으면 빔 선단이 그 지점에 닿는 시각을,
-    // 아니면 float.MaxValue를 돌려준다.
-    private static float GetConstellationBeamHitTime(Vector3 _point, Vector3 _a, Vector3 _b, int _sampleIndex, float _flightDuration)
-    {
-        Vector3 ab = _b - _a;
-        float abLenSq = ab.sqrMagnitude;
-        float segT = abLenSq < 0.0001f ? 0f : Mathf.Clamp01(Vector3.Dot(_point - _a, ab) / abLenSq);
-
-        if (Vector3.Distance(_point, _a + ab * segT) > ConstellationBeamHalfThickness) return float.MaxValue;
-
-        // 변 위의 위치(0~1)와, 그 지점으로 다가오는 선단이 필요로 하는 진행도(가운데 0.5 ~ 꼭짓점 1.0)
-        float edgeU = (_sampleIndex + segT) / ConstellationBeamCurveSamples;
-        float requiredProgress = Mathf.Max(edgeU, 1f - edgeU);
-
-        // 진행도 = 1 - (1 - t)^4 의 역함수: t = 1 - (1 - 진행도)^(1/4)
-        return _flightDuration * (1f - Mathf.Pow(1f - requiredProgress, 0.25f));
-    }
-
-    private void ApplyConstellationBeamHit(ConstellationBeamHit _hit, float _damage)
+    private void ApplyConstellationHit(ConstellationHit _hit, float _damage)
     {
         TreeObj tree = _hit.tree;
         if (tree == null || tree.IsPooled || !tree.bCanApplyDamage) return;
@@ -2831,7 +2769,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // (풀에 들어간 채 아직 재사용되지 않은 나무는 위치가 그대로라 이 검사를 통과하므로 위의 IsPooled로 거른다)
         if ((tree.transform.position - _hit.rootPos).sqrMagnitude > 0.0001f) return;
 
-        // 한 그루의 타격이 연쇄(사망 처리, 다른 그룹 발현 등) 중 예외로 실패해도 스윕의 나머지 나무는 계속 맞힌다.
+        // 한 그루의 타격이 연쇄(사망 처리, 다른 그룹 발현 등) 중 예외로 실패해도 폭발의 나머지 나무는 계속 맞힌다.
         try
         {
             tree.TakeDamage(_damage);
@@ -2847,7 +2785,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
         catch (Exception e)
         {
-            Debug.LogError("[InDungeonObjectManager] 별자리 광선 타격 처리 중 예외가 발생했습니다. 나머지 타격은 계속 진행합니다.");
+            Debug.LogError("[InDungeonObjectManager] 별자리 폭발 타격 처리 중 예외가 발생했습니다. 나머지 타격은 계속 진행합니다.");
             Debug.LogException(e);
         }
     }
@@ -2863,7 +2801,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         inDungeonVFXManager.PlayManifestationBrandStampVFX(_tree.treeVisualComponent);
 
-        // 동시 개수 상한을 넘으면 null - 낙인은 그대로 걸리고 별만 생략된다(의도된 동작).
+        // 풀/프리팹이 없을 때만 null - 그 경우에도 낙인은 그대로 걸리고 별만 생략된다.
         manifestationBrandWraps[_tree] = inDungeonVFXManager.BeginBrandStarWrap(_tree.treeVisualComponent);
     }
 

@@ -58,6 +58,8 @@ namespace PresentationLayer.VFX
         private const int BackLayer = 0;
         private const int FrontLayer = 1;
         private const int DustCapacity = 48;
+        // 화면 안/밖 판단(IsOnScreen) - 별 하나의 최대 크기(앞쪽 큰 별 팔 3칸 + 여유)
+        private const float StarExtentUnits = 0.25f;
         private const int MaxStarCount = 16;
         private static readonly Vector3 MeshBoundsSize = new Vector3(200.0f, 200.0f, 10.0f);
 
@@ -293,15 +295,20 @@ namespace PresentationLayer.VFX
             return 1.0f - (1.0f - _t) * (1.0f - _t);
         }
 
-        private void RebuildMeshes()
+        // _bDraw가 false면(화면 밖) 별가루 생성 같은 상태 갱신만 하고 그리기와 업로드는 건너뛴다. 상태는 그릴 때와 똑같이
+        // 진행되므로 다시 화면에 들어와 그릴 때의 결과가 계속 그려 온 경우와 같다.
+        private void RebuildMeshes(bool _bDraw)
         {
             Vector3 top = visual.GetTopRootPosition();
 
-            Matrix4x4 worldToLocal = transform.worldToLocalMatrix;
-            for (int i = 0; i < 2; i++)
+            if (true == _bDraw)
             {
-                quadBuffers[i].Clear();
-                quadBuffers[i].SetWorldTransform(worldToLocal, top.z);
+                Matrix4x4 worldToLocal = transform.worldToLocalMatrix;
+                for (int i = 0; i < 2; i++)
+                {
+                    quadBuffers[i].Clear();
+                    quadBuffers[i].SetWorldTransform(worldToLocal, top.z);
+                }
             }
 
             Vector3 bottom = visual.GetBottomRootPosition();
@@ -345,7 +352,7 @@ namespace PresentationLayer.VFX
                 float glow = 0 == twinkleStep ? 0.35f : (1 == twinkleStep ? 0.65f : 1.0f);
                 if (true == bGold) glow = Mathf.Min(1.0f, glow + 0.15f);
 
-                DrawStarAt(centerX, cy, radiusScale, angle, sizeStage, bPlus, baseColor, glow, true);
+                if (true == _bDraw) DrawStarAt(centerX, cy, radiusScale, angle, sizeStage, bPlus, baseColor, glow, true);
 
                 // 궤도에 안착한 별만 가루를 흘린다(퇴장 중에는 새로 흘리지 않는다)
                 if (2 == sizeStage && 0.0f == exitU && s < MaxStarCount)
@@ -359,12 +366,16 @@ namespace PresentationLayer.VFX
                     }
                 }
 
+                if (false == _bDraw) continue;
+
                 for (int k = 1; k <= trailDotCount; k++)
                 {
                     float trailAngle = angle - trailAngleStep * k;
                     DrawStarAt(centerX, cy, radiusScale, trailAngle, 0, bPlus, 1 == k ? baseColor : ColorBlue, glow * 0.4f, false);
                 }
             }
+
+            if (false == _bDraw) return;
 
             DrawDust();
 
@@ -507,7 +518,43 @@ namespace PresentationLayer.VFX
 
             bHiddenByCulling = false;
             UpdateDust(dt);
-            RebuildMeshes();
+
+            // 화면 밖이면 그리기와 업로드만 건너뛴다(별가루 생성 같은 상태는 RebuildMeshes 안에서 똑같이 진행된다).
+            // 나무 컬링(enableCulling)이 꺼져 있으면 위 컬링 경로를 타지 않아, 화면 밖 낙인 나무도 매 프레임 그리던 비용을 줄인다.
+            // 건너뛰는 동안은 렌더러를 꺼 둔다 - 카메라가 순간이동이나 큰 줌으로 여유보다 많이 움직인 프레임에 판정이 한 프레임
+            // 늦어도 지난 그림(멈춘 별과 별가루)이 보이지 않는다. 다시 그리는 프레임에 RebuildMeshes가 켠다.
+            bool bOnScreen = IsOnScreen();
+            RebuildMeshes(bOnScreen);
+            if (false == bOnScreen) HideRenderersIfShown();
+        }
+
+        private void HideRenderersIfShown()
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                if (null != meshRenderers[i] && true == meshRenderers[i].enabled) meshRenderers[i].enabled = false;
+            }
+        }
+
+        // 화면 안/밖 판단. 별과 꼬리, 등장 나선(줄기 아래에서 올라옴), 떨어지는 별가루가 그려질 수 있는 전체 범위에 카메라 이동
+        // 여유를 더해 판단하므로, 건너뛰는 동안 남아 있는 이전 메쉬가 화면에 걸리지 않는다.
+        private bool IsOnScreen()
+        {
+            Vector3 top = visual.GetTopRootPosition();
+            float centerY = top.y + orbitCenterYOffset;
+            float baseY = visual.GetBottomRootPosition().y;
+
+            float dustLife = Mathf.Max(dustLifetimeMin, dustLifetimeMax);
+            float dustFall = 0.1f * dustLife + 0.5f * Mathf.Max(0.0f, dustGravity) * dustLife * dustLife;
+            float dustDrift = Mathf.Abs(dustDriftSpeed) * dustLife + 0.05f;
+
+            float halfX = Mathf.Abs(orbitRadiusX) + dustDrift + StarExtentUnits + PixelVfxCulling.MarginUnits;
+            float minY = Mathf.Min(baseY, centerY) - Mathf.Abs(orbitRadiusY) - dustFall - StarExtentUnits - PixelVfxCulling.MarginUnits;
+            float maxY = Mathf.Max(baseY, centerY) + Mathf.Abs(orbitRadiusY) + StarExtentUnits + PixelVfxCulling.MarginUnits;
+
+            Vector3 center = new Vector3(top.x, (minY + maxY) * 0.5f, top.z);
+            Vector3 size = new Vector3(halfX * 2.0f, maxY - minY, PixelVfxCulling.BoundsDepth);
+            return PixelVfxCulling.IsVisible(center, size);
         }
 
         private void OnDisable()

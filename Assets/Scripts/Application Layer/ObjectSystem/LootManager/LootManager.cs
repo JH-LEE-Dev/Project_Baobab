@@ -6,7 +6,12 @@ using UnityEngine.Pool;
 public class LootManager : MonoBehaviour
 {
     // 외부 의존성
-    public event Action<LootItem> LootItemAcquiredEvent;
+    // 획득 데이터 확정(영구 플래그·결과창 집계 등). 전리품 하나당 정확히 한 번 발행된다.
+    // 런 진행 중에는 도착과 같은 프레임이고, 런 종료 시점에 공중에 있던 것은 도착보다 먼저 발행된다.
+    public event Action<LootType> LootDataCommittedEvent;
+    // 전리품이 실제로 캐릭터에게 도착했을 때의 획득 피드백(사운드·뽀잉 연출)용.
+    // 데이터는 담지 않으므로, 도착하지 못한 채 정리되는 전리품(CommitAndReleaseAllActive)은 발행하지 않는다.
+    public event Action<LootType> LootArrivedEvent;
 
     [SerializeField] private List<LootDropData> lootProbDatas;
     [SerializeField] private LootItem lootItemPrefab;
@@ -17,6 +22,10 @@ public class LootManager : MonoBehaviour
     // 최적화: 인덱스 기반 관리로 HashSet 제거
     private List<LootItem> activeItemsList = new List<LootItem>(128); // 최적화: 순회용 리스트
     private List<LootItem> cleanupList = new List<LootItem>(128); // ClearAll용 재사용 리스트
+
+    // 런이 끝난 뒤(CommitRunEnd ~ ResetRunEndCommit)에 새로 떨어지는 전리품은 스폰 즉시 데이터를 확정한다.
+    // 사망 후 남은 공격 효과 등으로 나무가 쓰러져도 결과창보다 먼저 데이터에 들어가게 하기 위함이다.
+    private bool bCommitOnSpawn;
 
     /// <summary>
     /// 매니저 초기화 및 오브젝트 풀 설정
@@ -65,12 +74,51 @@ public class LootManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 아이템 획득 시 호출되는 콜백
+    /// 흡입이 끝나 캐릭터에게 도착했을 때 호출되는 콜백. 아직 확정되지 않았으면 데이터를 확정하고,
+    /// 확정 여부와 무관하게 획득 피드백을 낸 뒤 풀로 돌려보낸다.
     /// </summary>
-    private void OnLootItemAcquired(LootItem _item)
+    private void OnLootItemArrived(LootItem _item)
     {
-        LootItemAcquiredEvent?.Invoke(_item);
+        CommitData(_item);
+        LootArrivedEvent?.Invoke(_item.LootType);
         TryReleaseLootItem(_item);
+    }
+
+    private void CommitData(LootItem _item)
+    {
+        if (_item.IsDataCommitted) return;
+
+        _item.IsDataCommitted = true;
+        LootDataCommittedEvent?.Invoke(_item.LootType);
+    }
+
+    /// <summary>
+    /// 런이 끝나는 순간(사망 판정 / 귀환 확정) 호출한다. 공중에 있는 전리품의 획득 데이터를 지금 확정하고,
+    /// 이후 새로 떨어지는 전리품도 스폰 즉시 확정한다. 낙하/흡입 연출은 건드리지 않으므로 화면에서는
+    /// 평소처럼 빨려 들어와 도착하고, 그때 피드백만 난다. 결과창과 사망 시 구제 판정이 이 데이터를 읽는다.
+    /// </summary>
+    public void CommitRunEnd()
+    {
+        bCommitOnSpawn = true;
+
+        if (activeItemsList.Count == 0) return;
+
+        // 확정 이벤트 처리 중 목록이 바뀌어도 안전하도록 사본을 순회한다.
+        cleanupList.Clear();
+        cleanupList.AddRange(activeItemsList);
+
+        for (int i = 0; i < cleanupList.Count; i++)
+        {
+            CommitData(cleanupList[i]);
+        }
+
+        cleanupList.Clear();
+    }
+
+    /// <summary>새 원정이 시작될 때 CommitRunEnd()의 "스폰 즉시 확정" 상태를 푼다.</summary>
+    public void ResetRunEndCommit()
+    {
+        bCommitOnSpawn = false;
     }
 
     private LootItem CreateLootItem()
@@ -81,8 +129,8 @@ public class LootManager : MonoBehaviour
         LootItem newItem = Instantiate(lootItemPrefab, transform);
 
         // 이벤트 바인딩 (생성 시 한 번만)
-        newItem.lootItemAcquiredEvent -= OnLootItemAcquired;
-        newItem.lootItemAcquiredEvent += OnLootItemAcquired;
+        newItem.lootItemAcquiredEvent -= OnLootItemArrived;
+        newItem.lootItemAcquiredEvent += OnLootItemArrived;
 
         // 첫 스폰 시 발생하는 셰이더 컴파일 지연(푸른색 박스 잔상)을 원천 방지하기 위한 사전 웜업
         newItem.Prewarm();
@@ -137,7 +185,7 @@ public class LootManager : MonoBehaviour
     {
         if (_item != null)
         {
-            _item.lootItemAcquiredEvent -= OnLootItemAcquired;
+            _item.lootItemAcquiredEvent -= OnLootItemArrived;
             OnReleaseLootItem(_item);
             Destroy(_item.gameObject);
         }
@@ -161,10 +209,11 @@ public class LootManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 흡입(습득)이 끝나기 전에 던전이 종료되는 경우, 아직 활성 상태인 전리품을 전부 강제 습득 처리한다.
-    /// 착지/흡입 애니메이션 도중 씬 전환 등으로 소멸되어 확정 드랍이 유실되는 것을 방지한다.
+    /// 던전 정리 시점(재도전 카메라 상승 완료 / 마을 도착)에 남아 있는 전리품을 정리한다. 데이터는
+    /// 런 종료 시점(CommitRunEnd)에 이미 확정됐으므로 피드백 없이 풀로 돌려보내기만 한다.
+    /// 확정되지 않은 것이 남아 있다면 런 종료 훅이 빠진 경로이므로, 유실되지 않게 여기서 확정하고 알린다.
     /// </summary>
-    public void ForceAcquireAllActive()
+    public void CommitAndReleaseAllActive()
     {
         int count = activeItemsList.Count;
         if (count == 0) return;
@@ -174,7 +223,15 @@ public class LootManager : MonoBehaviour
 
         for (int i = 0; i < cleanupList.Count; i++)
         {
-            OnLootItemAcquired(cleanupList[i]);
+            LootItem item = cleanupList[i];
+            if (item.IsDataCommitted == false)
+            {
+                Debug.LogError($"[LootManager] 런 종료 시점에 확정되지 않은 전리품({item.LootType})이 정리 단계까지 남았습니다. " +
+                    "CommitRunEnd() 호출이 빠진 런 종료 경로가 있는지 확인하세요. 획득 데이터는 지금 확정합니다.");
+                CommitData(item);
+            }
+
+            TryReleaseLootItem(item);
         }
 
         cleanupList.Clear();
@@ -201,6 +258,12 @@ public class LootManager : MonoBehaviour
             LootItem lootItem = lootPool.Get();
             lootItem.transform.position = _spawnPos;
             lootItem.Initialize(typeData);
+
+            // 런이 이미 끝난 뒤의 드랍은 연출을 기다리지 않고 데이터부터 확정한다(CommitRunEnd 참조).
+            if (bCommitOnSpawn)
+            {
+                CommitData(lootItem);
+            }
 
             if (_autoAcquireTarget != null)
             {
@@ -263,8 +326,8 @@ public class LootManager : MonoBehaviour
         LootItem lootItem = lootPool.Get();
         lootItem.Initialize(typeData);
 
-        // 즉시 획득 처리 (이벤트 발생 및 풀 반환)
-        OnLootItemAcquired(lootItem);
+        // 즉시 획득 처리 (데이터 확정 + 획득 피드백 + 풀 반환)
+        OnLootItemArrived(lootItem);
     }
 
     /// <summary>

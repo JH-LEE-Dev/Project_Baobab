@@ -4,6 +4,11 @@ using UnityEngine;
 public class PHealthComponent : PComponent, IPHealthComponent
 {
     public event Action StaminaIsEmptyEvent;
+    public event Action<float> StaminaDamagedEvent;
+    public event Action<float> StaminaRecoveredEvent;
+    public event Action StaminaRecoverWastedEvent;
+    // 휴식 구역 진입(true)/이탈(false). 체력바 무적 연출용(EStaminaInvincibleSource.RestArea).
+    public event Action<bool> RestAreaStateChangedEvent;
     // 외부 의존성 (SerializeField)
     [SerializeField] private float maxHealth;
     [SerializeField] private float maxStamina;
@@ -18,6 +23,7 @@ public class PHealthComponent : PComponent, IPHealthComponent
 
     public float CurrentStamina => currentStamina;
     public float MaxStamina => maxStamina;
+    public bool IsInRestArea => bInRestArea;
 
     private bool bFirstDamage = false;
     public bool bIsFirstDamage => bFirstDamage;
@@ -124,12 +130,17 @@ public class PHealthComponent : PComponent, IPHealthComponent
         if (currentStamina <= floor || _damage <= 0f || CanTakeStaminaLoss() == false)
             return;
 
+        float prevStamina = currentStamina;
         currentStamina = Mathf.Max(floor, currentStamina - _damage);
 
         if (currentStamina <= 0)
         {
             StaminaIsEmptyEvent?.Invoke();
         }
+
+        // 한 번에 깎인 양만 HUD 연출용으로 알린다. (바닥값에 막혀 실제로 줄지 않았다면 알리지 않는다)
+        // 사망 판정(StaminaIsEmptyEvent)보다 뒤에 둔다. UI 쪽에서 예외가 나도 게임 판정은 이미 끝나 있게 한다.
+        NotifyStaminaChanged(currentStamina - prevStamina);
     }
 
     /// <summary>
@@ -149,7 +160,12 @@ public class PHealthComponent : PComponent, IPHealthComponent
     public void RestoreStaminaByPercent(float _percent)
     {
         float finalPercent = _percent * (1f + ctx.characterStat.recoveryPowerBonus / 100f);
-        currentStamina = Mathf.Min(maxStamina, currentStamina + maxStamina * (finalPercent / 100f));
+        float prevStamina = currentStamina;
+        float attemptedAmount = maxStamina * (finalPercent / 100f);
+        currentStamina = Mathf.Min(maxStamina, currentStamina + attemptedAmount);
+
+        NotifyStaminaChanged(currentStamina - prevStamina);
+        NotifyRecoverWasted(attemptedAmount, currentStamina - prevStamina);
     }
 
     public void SetStaminaIncreaseAmount(float _staminaIncAmount)
@@ -227,6 +243,11 @@ public class PHealthComponent : PComponent, IPHealthComponent
     public void SetInRestArea(bool _bInRestArea)
     {
         bInRestArea = _bInRestArea;
+
+        // 같은 값이어도 거르지 않고 알린다. StaminaRecoverCircle은 자기 경계를 넘을 때만 부르므로 중복은 드물고,
+        // UI는 맵 전환 때 무적 상태를 초기화하므로(HUD_Stemina.SetActivate) 여기서 걸러 버리면
+        // 초기화 직후 들어온 진입 알림이 빠질 수 있다.
+        RestAreaStateChangedEvent?.Invoke(_bInRestArea);
     }
 
     // 일반 소모 · 용암 지속 피해 · 나무 열기 세 경로가 공통으로 따르는 조건.
@@ -235,10 +256,53 @@ public class PHealthComponent : PComponent, IPHealthComponent
         return bStaminaDecrease == true && bInRestArea == false;
     }
 
-    // "체력의 원천", "휴식"(StaminaRecoverCircle)이 사용한다. "회복력" 특성만큼 회복량이 증가한다.
+    // "체력의 원천" 같은 단발 회복이 사용한다. "회복력" 특성만큼 회복량이 증가한다.
     public void StaminaRecover(float _amount)
+    {
+        float prevStamina = currentStamina;
+        float finalAmount = ApplyStaminaRecover(_amount);
+
+        NotifyStaminaChanged(currentStamina - prevStamina);
+        NotifyRecoverWasted(finalAmount, currentStamina - prevStamina);
+    }
+
+    // "휴식"(StaminaRecoverCircle) 전용. 매 프레임 조금씩 회복하므로 HUD 순간 변화 알림을 보내지 않는다.
+    // (원 안에서는 HUD가 IsInRestArea를 보고 반복 연출을 따로 쓴다)
+    // 원 안에서 나무를 베어 받는 "체력의 원천" 회복은 StaminaRecover로 오므로 연출이 그대로 나간다.
+    public void RestAreaStaminaRecover(float _amount)
+    {
+        ApplyStaminaRecover(_amount);
+    }
+
+    // "회복력" 특성을 반영해 회복하고, 회복하려던 양(최대치에 막히기 전)을 돌려준다.
+    private float ApplyStaminaRecover(float _amount)
     {
         float finalAmount = _amount * (1f + ctx.characterStat.recoveryPowerBonus / 100f);
         currentStamina = Mathf.Min(maxStamina, currentStamina + finalAmount);
+        return finalAmount;
+    }
+
+    // 회복하려던 양이 최대치에 막혀 일부라도 버려졌다면 알린다. 휴식 구역 안에서는 HUD가 반복 연출을 따로 쓰므로 제외한다.
+    private void NotifyRecoverWasted(float _attemptedAmount, float _appliedAmount)
+    {
+        if (true == bInRestArea || 0f >= _attemptedAmount)
+            return;
+
+        if (_attemptedAmount - _appliedAmount > 0.0001f)
+            StaminaRecoverWastedEvent?.Invoke();
+    }
+
+    // 한 번에 일어난 스태미나 변화를 최대치 대비 비율로 바꿔 알린다. 변화가 없으면(이미 최대/바닥) 알리지 않는다.
+    private void NotifyStaminaChanged(float _delta)
+    {
+        if (0f >= maxStamina || Mathf.Approximately(0f, _delta))
+            return;
+
+        float ratio = Mathf.Abs(_delta) / maxStamina;
+
+        if (0f > _delta)
+            StaminaDamagedEvent?.Invoke(ratio);
+        else
+            StaminaRecoveredEvent?.Invoke(ratio);
     }
 }

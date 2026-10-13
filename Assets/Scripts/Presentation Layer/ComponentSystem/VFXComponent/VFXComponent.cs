@@ -8,9 +8,14 @@ public class VFXPoolData
     // 외부 의존성
     [SerializeField] private string vfxTag;
     [SerializeField] private ParticleSystem effectPrefab;
-    [SerializeField] private int initialPoolSize = 5;
-    [SerializeField] private bool allowDynamicExpansion = true;
-    [SerializeField] [ShowIf("allowDynamicExpansion")] private int maxPoolSize = 10;
+    [SerializeField, Tooltip("처음에 미리 만들어 두는 개수. 자주 몰리는 이펙트는 늘려 두면 재생 중 생성(순간 끊김)을 줄일 수 있다.")]
+    private int initialPoolSize = 5;
+    // 풀은 부족하면 이 두 값과 관계없이 늘어난다(VFXComponent.Get). 지금은 공유 이미터(SharedBurstEmitter)가
+    // 처음 잡는 입자 용량을 정하는 데만 쓰인다(TryGetPoolConfig: 확장이 꺼져 있으면 initialPoolSize, 켜져 있으면 maxPoolSize).
+    [SerializeField, Tooltip("상한이 아니다 - 풀은 부족하면 이 값과 관계없이 늘어난다. 공유 이미터의 처음 용량 계산에만 쓰인다(꺼져 있으면 initialPoolSize 기준).")]
+    private bool allowDynamicExpansion = true;
+    [SerializeField, Tooltip("상한이 아니다 - 풀은 부족하면 이 값을 넘어 늘어난다. 공유 이미터의 처음 용량 계산에만 쓰인다.")]
+    [ShowIf("allowDynamicExpansion")] private int maxPoolSize = 10;
     [SerializeField] private float uiParticleScale = 1.0f;
 
     // 퍼블릭 초기화 및 제어 메서드
@@ -280,7 +285,7 @@ public class VFXComponent : MonoBehaviour
 
     /// <summary>
     /// 지정한 태그의 풀에서 사용 가능한(비활성화된) 이펙트 컴포넌트를 반환합니다.
-    /// 해당 태그의 모든 이펙트가 사용 중일 경우, 설정을 확인하여 동적으로 풀을 늘립니다.
+    /// 해당 태그의 모든 이펙트가 사용 중일 경우, 상한/확장 설정과 관계없이 새 인스턴스를 만들어 풀을 늘립니다.
     /// </summary>
     public ParticleSystem Get(string _tag)
     {
@@ -332,75 +337,22 @@ public class VFXComponent : MonoBehaviour
         if (null != _hint)
             _hint.firstMaybeFree = _count;
 
-        // 확장을 끈 풀은 설계상 하드 캡이다(OverheatLoop 1개, DroneCharging 3개 등). 예전처럼 null을 돌려준다.
-        if (false == _config.AllowDynamicExpansion)
-            return null;
-
-        if (_poolList.Count < _config.MaxPoolSize)
+        // 풀이 전부 재생 중이면 상한(MaxPoolSize)이나 확장 설정(AllowDynamicExpansion)과 관계없이 새 인스턴스를 만들어 풀을 늘린다.
+        // 이펙트가 끊기거나 빠지지 않게 하기 위해서다.
+        // - 예전엔 단발 이펙트가 상한에서 가장 오래 재생 중인 인스턴스를 회수해 재사용해서, 재생 중이던 연출이 도중에 통째로
+        //   사라졌다(별자리 연쇄 발현으로 마법진이 5개 이상 겹칠 때 먼저 나온 마법진이 딱 끊기는 문제).
+        // - 루프 이펙트(LogItem의 Shiny, 과열 아우라 등)와 확장을 끈 풀(OverheatLoop 1개, DroneCharging 3개 등)은 상한에서
+        //   null을 돌려줘 새 이펙트가 빠졌다. 이 호출부들은 이전 인스턴스를 직접 Stop한 뒤 새로 재생하므로 늘려도 겹치지 않는다.
+        // 단발 이펙트는 재생이 끝나면 스스로 풀로 돌아오고 루프 이펙트는 호출부가 Stop해 돌려주므로, 늘어나는 수는 동시에 쓰인
+        // 최대 개수까지로 한정된다. 늘어난 인스턴스는 풀에 남아 다음 재생에 재사용된다(상한은 "보통 이 정도면 충분한 크기"라는 뜻).
+        ParticleSystem _dynamicInstance = CreateNewInstance(_config);
+        if (null != _dynamicInstance)
         {
-            ParticleSystem _dynamicInstance = CreateNewInstance(_config);
-            if (null != _dynamicInstance)
-            {
-                BindPoolSlot(_dynamicInstance, _hint, _poolList.Count);
-                _poolList.Add(_dynamicInstance);
-            }
-
-            return _dynamicInstance;
+            BindPoolSlot(_dynamicInstance, _hint, _poolList.Count);
+            _poolList.Add(_dynamicInstance);
         }
 
-        // 루프 이펙트(LogItem의 Shiny, 드론 과열 아우라 등)는 호출부가 인스턴스를 들고 있다가 나중에 Stop한다.
-        // 여기서 뺏어오면 새 주인에게 붙은 이펙트를 옛 주인의 Stop이 꺼버리므로, 예전처럼 null을 돌려준다.
-        if (true == _config.EffectPrefab.main.loop)
-            return null;
-
-        // 단발 이펙트 풀이 전부 재생 중이고 상한까지 찼으면 가장 오래 재생 중인 인스턴스를 회수해 재사용한다.
-        // 예전엔 여기서 null을 돌려줬는데, 호출부가 전부 반환값을 버리고 로그도 없어서 광역 공격으로
-        // 벌목 이펙트가 한꺼번에 몰리는 순간(과열 쇼크웨이브의 인접 즉사, 부메랑 반복 타격 등)
-        // 상한을 넘는 이펙트가 아무 표시 없이 사라졌다. 단발 이펙트라 가장 오래된 것이 조금 일찍
-        // 끊기는 쪽이 새 이펙트가 통째로 빠지는 것보다 낫다.
-        return RecycleOldestActive(_poolList);
-    }
-
-    /// <summary>
-    /// 풀에서 가장 오래전에 재생을 시작한 활성 인스턴스를 즉시 풀로 되돌리고 반환합니다.
-    /// 회수된 인스턴스는 비활성 + 풀 부모 상태라 바로 Play로 넘길 수 있습니다.
-    /// </summary>
-    private ParticleSystem RecycleOldestActive(List<ParticleSystem> _poolList)
-    {
-        ParticleSystem _oldest = null;
-        VFXPoolInstanceHelper _oldestHelper = null;
-        float _oldestTime = float.MaxValue;
-
-        int _count = _poolList.Count;
-        for (int i = 0; i < _count; i++)
-        {
-            ParticleSystem _effect = _poolList[i];
-            if (null == _effect)
-                continue;
-
-            VFXPoolInstanceHelper _helper = GetHelper(_effect);
-            if (null == _helper)
-                continue;
-
-            if (_helper.LastPlayTime < _oldestTime)
-            {
-                _oldestTime = _helper.LastPlayTime;
-                _oldest = _effect;
-                _oldestHelper = _helper;
-            }
-        }
-
-        if (null == _oldest)
-            return null;
-
-        _oldestHelper.ReturnToPool();
-
-        // ReturnToPool이 비활성 상태에서 재부모화를 지연 예약했을 수 있으니 대여 시점에 취소한다(위 루프와 동일).
-        _oldestHelper.CancelPendingReparent();
-        if (null != _oldestHelper.TargetTransform)
-            _oldestHelper.TargetTransform.SetParent(transform);
-
-        return _oldest;
+        return _dynamicInstance;
     }
 
     /// <summary>
@@ -1053,8 +1005,6 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     private DG.Tweening.Tween deferredReparentTween;
     private Vector3 originalLocalScale = Vector3.one;
     private bool hasOriginalLocalScale = false;
-    // 마지막으로 재생을 시작한 시각. 풀이 가득 찼을 때 가장 오래된 인스턴스를 골라 회수하는 기준이다.
-    private float lastPlayTime = float.MinValue;
     // 풀 인스턴스의 계층은 생성 후 바뀌지 않으므로 자식 파티클 시스템은 Initialize에서 한 번만 수집한다.
     private ParticleSystem[] childSystems;
     // 자식 렌더러는 일부 VFX 스크립트(VFX_LaserHit, VFX_ChargeVortex 등)가 Awake에서 메쉬 자식을 만들기 때문에
@@ -1073,8 +1023,6 @@ public class VFXPoolInstanceHelper : MonoBehaviour
 
 
     // 퍼블릭 초기화 및 제어 메서드
-
-    public float LastPlayTime => lastPlayTime;
 
     /// <summary>자기 자신을 포함한 모든 자식 ParticleSystem(비활성 포함). Initialize에서 한 번 수집된다.</summary>
     public ParticleSystem[] ChildSystems => childSystems;
@@ -1159,11 +1107,10 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     }
 
     /// <summary>
-    /// 재생 시작 시각을 기록합니다. VFXComponent.Play가 실제 Play 직전에 호출합니다.
+    /// 새 재생이 시작될 때 VFXComponent.Play가 실제 Play 직전에 호출합니다.
     /// </summary>
     public void MarkPlayed()
     {
-        lastPlayTime = Time.time;
         // 새 주인에게 넘어가는 시점이므로 소팅 캐시를 무효화해 첫 적용은 반드시 수행되게 한다.
         bSortingApplied = false;
         bSortingLayerApplied = false;
@@ -1175,7 +1122,6 @@ public class VFXPoolInstanceHelper : MonoBehaviour
         targetTransform = (null != _target) ? _target : transform;
         particleSys = GetComponent<ParticleSystem>();
         isReturning = false;
-        lastPlayTime = float.MinValue;
         childSystems = GetComponentsInChildren<ParticleSystem>(true);
         childRenderers = null;
         bSortingApplied = false;

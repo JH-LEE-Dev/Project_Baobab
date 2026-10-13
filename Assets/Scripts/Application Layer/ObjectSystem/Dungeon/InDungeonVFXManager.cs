@@ -167,8 +167,6 @@ public class InDungeonVFXManager : MonoBehaviour
     [SerializeField] private PresentationLayer.VFX.VFX_BrandStarWrap brandStarWrapPrefab;
     [SerializeField] private int brandStarWrapPoolDefaultCapacity = 8;
     [SerializeField] private int brandStarWrapPoolMaxSize = 32;
-    // 화면 가득 낙인 나무일 때도 부하가 커지지 않도록 동시에 별이 감싸는 나무 수의 상한
-    [SerializeField] private int brandStarWrapMaxActive = 20;
 
     private IObjectPool<PresentationLayer.VFX.VFX_BrandStarWrap> brandStarWrapPool;
     private readonly List<PresentationLayer.VFX.VFX_BrandStarWrap> activeBrandStarWraps = new List<PresentationLayer.VFX.VFX_BrandStarWrap>(32);
@@ -445,13 +443,13 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 낙인이 찍힌 나무를 별들이 감싸고 도는 유지 이펙트를 시작합니다. 동시 개수 상한을 넘거나 풀/프리팹이 없으면 null을
-    /// 반환합니다. 반환된 인스턴스는 낙인이 풀릴 때(나무가 풀로 돌아갈 때) ReleaseBrandStarWrap으로 회수해야 합니다.
+    /// 낙인이 찍힌 나무를 별들이 감싸고 도는 유지 이펙트를 시작합니다. 동시 개수 상한 없이 낙인 나무마다 띄우고(부족하면 풀이
+    /// 새로 만든다), 풀/프리팹이 없을 때만 null을 반환합니다. 반환된 인스턴스는 낙인이 풀릴 때(나무가 풀로 돌아갈 때)
+    /// ReleaseBrandStarWrap으로 회수해야 합니다.
     /// </summary>
     public PresentationLayer.VFX.VFX_BrandStarWrap BeginBrandStarWrap(TreeVisualComponent _visual)
     {
         if (brandStarWrapPool == null || _visual == null) return null;
-        if (activeBrandStarWraps.Count >= brandStarWrapMaxActive) return null;
 
         PresentationLayer.VFX.VFX_BrandStarWrap _wrap = brandStarWrapPool.Get();
         activeBrandStarWraps.Add(_wrap);
@@ -1270,6 +1268,35 @@ public class InDungeonVFXManager : MonoBehaviour
             _sortingOrder,
             null
         ));
+    }
+
+    /// <summary>
+    /// 별자리 발현 시 별자리 중심에서 재생되는 마법진 + 별 폭발 VFX(VFX_ConstellationNova)입니다.
+    /// 기존 별자리 레이저와 별개로 추가 재생되며, parent는 null로 고정하여 완전히 분리합니다.
+    /// _radius(월드 유닛)가 0 이하이면 프리팹에 설정된 maxRadius를 그대로 씁니다.
+    /// </summary>
+    public void PlayConstellationNovaVFX(Vector3 _center, float _radius = 0.0f)
+    {
+        if (vfxComponent == null) return;
+
+        // 별자리 레이저(ConstellationPixelLaser)와 같은 소팅 레이어/순서로 맞춘다.
+        const string sortingLayerName = "FlyingItem";
+        const int sortingOrder = 10;
+
+        ParticleSystem effect = vfxComponent.Play(new VFXPlaySettings(
+            "ConstellationNovaEffect",
+            _center,
+            Quaternion.identity,
+            sortingLayerName,
+            sortingOrder,
+            null
+        ));
+
+        if (effect == null || _radius <= 0.0f) return;
+
+        // 풀 재생 직후(메쉬 시작은 첫 LateUpdate로 미뤄져 있다) 이번 재생의 범위를 덮어쓴다.
+        PresentationLayer.VFX.VFX_ConstellationNova nova = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_ConstellationNova>(true);
+        if (nova != null) nova.SetRadius(_radius);
     }
 
     /// <summary>

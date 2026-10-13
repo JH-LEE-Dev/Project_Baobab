@@ -34,6 +34,11 @@ public class UIView_HUD : UIView
     [SerializeField] private LootItemTypeDataBase lootItemTypeDataBase;
 
     private ICharacter character;
+    // 스태미나 순간 변화 이벤트 구독용. 구독/해제에 같은 델리게이트 인스턴스를 써야 하므로 한 번만 만든다.
+    private IPHealthComponent subscribedHealthComponent;
+    private Action<float> cachedOnStaminaDamaged;
+    private Action<float> cachedOnStaminaRecovered;
+    private Action cachedOnStaminaRecoverWasted;
 
     private MapType currentMapType;
     private ForestType currentForestType;
@@ -66,6 +71,8 @@ public class UIView_HUD : UIView
     }
     public override void OnDestroy()
     {
+        UnbindStaminaEvents();
+
         hudEquipment?.OnDestroy();
         hudMessage?.Release();
 
@@ -87,9 +94,59 @@ public class UIView_HUD : UIView
 
     public void SetCharacter(ICharacter _character)
     {
+        UnbindStaminaEvents();
+
         character = _character;
 
+        BindStaminaEvents();
+
         hudEquipment?.BindingRef(character);
+    }
+
+    private void BindStaminaEvents()
+    {
+        if (null == character || null == character.pHealthComponent)
+            return;
+
+        if (null == cachedOnStaminaDamaged)
+            cachedOnStaminaDamaged = OnStaminaDamaged;
+
+        if (null == cachedOnStaminaRecovered)
+            cachedOnStaminaRecovered = OnStaminaRecovered;
+
+        if (null == cachedOnStaminaRecoverWasted)
+            cachedOnStaminaRecoverWasted = OnStaminaRecoverWasted;
+
+        subscribedHealthComponent = character.pHealthComponent;
+        subscribedHealthComponent.StaminaDamagedEvent += cachedOnStaminaDamaged;
+        subscribedHealthComponent.StaminaRecoveredEvent += cachedOnStaminaRecovered;
+        subscribedHealthComponent.StaminaRecoverWastedEvent += cachedOnStaminaRecoverWasted;
+    }
+
+    private void UnbindStaminaEvents()
+    {
+        if (null == subscribedHealthComponent)
+            return;
+
+        subscribedHealthComponent.StaminaDamagedEvent -= cachedOnStaminaDamaged;
+        subscribedHealthComponent.StaminaRecoveredEvent -= cachedOnStaminaRecovered;
+        subscribedHealthComponent.StaminaRecoverWastedEvent -= cachedOnStaminaRecoverWasted;
+        subscribedHealthComponent = null;
+    }
+
+    private void OnStaminaRecoverWasted()
+    {
+        hudStaminaBar?.PlayRecoverWasted();
+    }
+
+    private void OnStaminaDamaged(float _lossRatio)
+    {
+        hudStaminaBar?.PlayDamaged(_lossRatio);
+    }
+
+    private void OnStaminaRecovered(float _gainRatio)
+    {
+        hudStaminaBar?.PlayRecovered(_gainRatio);
     }
 
     public void DependencyInjection(ILootDataProvider _lootDataProvider)
@@ -125,6 +182,7 @@ public class UIView_HUD : UIView
         if (null != character && null != character.pHealthComponent)
         {
             UsedSteminaEvent(character.pHealthComponent.GetCurrentStamina(), character.pHealthComponent.GetMaxStamina());
+            hudStaminaBar?.SetResting(character.pHealthComponent.IsInRestArea);
         }
     }
 
@@ -206,6 +264,17 @@ public class UIView_HUD : UIView
     {
         float newRatio = _currentStemina / _maxStemina;
         hudStaminaBar?.UpdateValue(Mathf.Clamp01(newRatio));
+    }
+
+    /// <summary>
+    /// 스태미나 무적 구간 시작(true) / 종료(false). 원인별로 온다(EStaminaInvincibleSource 참고).
+    /// </summary>
+    public void StaminaInvincibleStateChanged(EStaminaInvincibleSource _source, bool _bInvincible)
+    {
+        // ?. 대신 Unity null 비교를 쓴다. 휴식 구역 이탈 알림은 씬 언로드 중 차량의 OnDisable에서도 오는데,
+        // 그때 게이지가 먼저 파괴됐으면 ?.는 걸러내지 못한다(파괴된 오브젝트는 C# 참조로는 null이 아니다).
+        if (null != hudStaminaBar)
+            hudStaminaBar.SetInvincible(_source, _bInvincible);
     }
 
     #endregion

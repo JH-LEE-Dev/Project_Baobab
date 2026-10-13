@@ -1678,6 +1678,12 @@ MonoBehaviour:
     allowDynamicExpansion: 1
     maxPoolSize: 100
     uiParticleScale: 0
+  - vfxTag: ConstellationNovaEffect
+    effectPrefab: {fileID: 1386752551214847544, guid: 156668c4261dfcf4f8d00161acc67633, type: 3}
+    initialPoolSize: 2
+    allowDynamicExpansion: 1
+    maxPoolSize: 4
+    uiParticleScale: 0
 --- !u!1 &5766810988037463456
 GameObject:
   m_ObjectHideFlags: 0

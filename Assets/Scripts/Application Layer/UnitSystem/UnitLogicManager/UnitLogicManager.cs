@@ -10,6 +10,7 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     public event Action<WeaponMode> WeaponModeChangedEvent;
     public event Action TreeDetectedEvent;
     public event Action TreeDetectionClearedEvent;
+    public event Action<bool> RestAreaStateChangedEvent;
 
     private Character character;
     private InputManager inputManager;
@@ -39,6 +40,9 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
 
         character.TreeDetectionClearedEvent -= TreeDetectionCleared;
         character.TreeDetectionClearedEvent += TreeDetectionCleared;
+
+        character.RestAreaStateChangedEvent -= RestAreaStateChanged;
+        character.RestAreaStateChangedEvent += RestAreaStateChanged;
     }
 
     private void ReleaseEvents()
@@ -47,6 +51,7 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
         character.StaminaIsEmptyEvent -= CharacterStaminaIsEmpty;
         character.TreeDetectedEvent -= TreeDetected;
         character.TreeDetectionClearedEvent -= TreeDetectionCleared;
+        character.RestAreaStateChangedEvent -= RestAreaStateChanged;
     }
 
     public void SetCharacter(Character _character)
@@ -119,6 +124,11 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     private void TreeDetectionCleared()
     {
         TreeDetectionClearedEvent?.Invoke();
+    }
+
+    private void RestAreaStateChanged(bool _bInRestArea)
+    {
+        RestAreaStateChangedEvent?.Invoke(_bInRestArea);
     }
 
     public void RefreshCharacter()
