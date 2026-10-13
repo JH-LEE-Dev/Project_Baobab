@@ -20,8 +20,8 @@ using UnityEngine;
 /// </summary>
 public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 {
-    // 메인메뉴 커튼 처리. GameInstaller가 BootStrap까지 그대로 올려 보낸다(본편 던전 진입·이탈과 같은 경로).
-    public event Action MainMenuCurtainRollbackEvent;
+    // 메인메뉴 커튼을 다시 내린다(로비 → 메인메뉴). GameInstaller가 BootStrap까지 그대로 올려 보낸다(본편 던전 이탈과 같은 경로).
+    // 진입 때의 커튼 걷기는 메인메뉴가 암전 아래에서 직접 한다(UIView_MainMenu.RoguelikeEntryRoutine).
     public event Action GoToMainMenuCurtainRevealEvent;
 
     [Serializable]
@@ -49,6 +49,16 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     [SerializeField] private float islandEdgeWaterTiles = 1f;
     [Tooltip("시작 지점 주변의 나무 금지 반경(칸). 본편 값 15는 섬보다 커서 로그라이크에서는 작게 덮어쓴다.")]
     [SerializeField] private float centerSafeZoneRadius = 2f;
+    [Tooltip("바닥 타일 파도(기획서 4-1 진입 3단계, 3-4 지형 전환 공용) 수치.")]
+    [SerializeField] private RoguelikeTileWaveSettings tileWaveSettings = new RoguelikeTileWaveSettings();
+    [Tooltip("결과 화면 → 로비 진입 1~2단계(디스토션 → 암전)와 암전이 걷히는 페이드인 수치. 메인메뉴에서 들어올 때의 디스토션은 UIView_MainMenu가 같은 수치 형식으로 따로 갖는다.")]
+    [SerializeField] private RoguelikeScreenTransitionSettings screenTransitionSettings = new RoguelikeScreenTransitionSettings();
+
+    [Header("플레이어 낙하(기획서 4-1 6단계)")]
+    [Tooltip("시작 칸 위 이 높이(월드)에서 떨어진다. 기준 화면 세로 절반(5.6)보다 크면 화면 위쪽 밖에서 들어온다.")]
+    [SerializeField] private float characterDropHeight = 7f;
+    [Tooltip("떨어지는 시간(초). 처음엔 느리고 점점 빨라진다(중력처럼).")]
+    [SerializeField] private float characterDropSeconds = 0.45f;
 
     [Header("로비")]
     [SerializeField] private RoguelikeLobbyInteractable startRunObjectPrefab;
@@ -60,6 +70,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
     [Header("코인")]
     [SerializeField] private RunCoinController coinController;
+    [Tooltip("코인 HUD가 날아갈 지점을 주지 않을 때(UIView_RoguelikeHUD.CoinFlyTarget = null) 쓰는 화면 지점(뷰포트 0~1). 기획서 5-1 \"하단 중앙, 바 기준 왼쪽 윗부분\".")]
+    [SerializeField] private Vector2 coinHudFallbackViewport = new Vector2(0.375f, 0.1f);
 
     [Header("신규 스킬·조합")]
     [SerializeField] private RoguelikeSkillController skillController;
@@ -69,6 +81,22 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     [SerializeField] private bool bAttackSpeedAffectsAxe = true;
     [Tooltip("본편 회전베기 기본 발동 간격(휘두름 수). AttackComponent.WhirlwindSwingInterval과 같아야 한다.")]
     [SerializeField] private int baseWhirlwindSwingInterval = 3;
+
+    [Header("웨이브 클리어 묘목 연출(기획서 3-1 \"달성 즉시\")")]
+    [Tooltip("남은 나무가 묘목으로 돌아가 톡 튀었다가 작아지며 사라지는 시간(초). 나무 회수는 이 연출이 끝난 뒤에 한다.")]
+    [SerializeField] private float waveClearSaplingVanishSeconds = 0.6f;
+
+    [Header("런 클리어 연출(기획서 3-5 - 30웨이브 마지막 나무 줌인 + 슬로우 부서짐 → 줌아웃)")]
+    [Tooltip("마지막 나무로 확대하는 배율(몇 배 확대).")]
+    [SerializeField] private float runClearZoomMultiplier = 2f;
+    [Tooltip("마지막 나무로 빠르게 다가가는 시간(실제 초).")]
+    [SerializeField] private float runClearZoomInSeconds = 0.25f;
+    [Tooltip("슬로우 동안의 시간 배율.")]
+    [Range(0.05f, 1f)] [SerializeField] private float runClearSlowTimeScale = 0.25f;
+    [Tooltip("확대한 채 슬로우로 부서지는 모습을 보여 주는 시간(실제 초).")]
+    [SerializeField] private float runClearSlowSeconds = 1.2f;
+    [Tooltip("섬 전체로 돌아가는 시간(실제 초).")]
+    [SerializeField] private float runClearZoomOutSeconds = 0.6f;
 
     [Header("연출 핸들러가 없을 때 기다리는 시간(초)")]
     [SerializeField] private float fallbackLobbyEntrySeconds = 0.3f;
@@ -83,7 +111,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     [SerializeField] private float maxCardPresentationWaitSeconds = 10f;
     [Tooltip("캐릭터가 쓰러진 뒤 결과 화면까지 기다리는 상한(본편은 1.5초 뒤 알림이 온다).")]
     [SerializeField] private float maxCharacterDownWaitSeconds = 5f;
-    [Tooltip("로비에서 메인메뉴로 나갈 때 화면이 가려지기를 기다리는 시간.")]
+    [Tooltip("메인메뉴 이탈 상승 연출(본편과 같은 카메라 상승)이 완료를 알리지 않을 때 강제로 메인메뉴로 넘기기까지의 시간.")]
     [SerializeField] private float exitToMainMenuSeconds = 1f;
 
     // // 외부 의존성
@@ -93,6 +121,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private InDungeonObjectManager inDungeonObjectManager;
     private UnitLogicManager unitLogicManager;
     private TownSystem townSystem;
+    // 씬 전환 연출(메인메뉴 ↔ 로그라이크). 본편 메인메뉴 ↔ 마을과 같은 카메라 하강·상승을 쓴다.
+    private SkyCameraProductionManager skyCameraProductionManager;
     private GameplayUIInstaller gameplayUIInstaller;
     private Character character;
 
@@ -106,11 +136,20 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private readonly RunEffectApplier effectApplier = new RunEffectApplier();
     private readonly RoguelikeProductionGate productionGate = new RoguelikeProductionGate();
     private readonly RoguelikeUICoordinator uiCoordinator = new RoguelikeUICoordinator();
+    private readonly RoguelikeTileWave tileWave = new RoguelikeTileWave();
+    private Coroutine tileWaveCoroutine;
     private RoguelikeWaveTreeStrategySO waveStrategy;
     private RoguelikeRecordData records;
 
     // 카메라가 따라갈 섬 중앙의 고정 지점(캐릭터 대신).
     private Transform cameraAnchor;
+
+    // 진입 파도 동안 캐릭터를 비켜 두는 자리(시작 칸 기준). 기준 화면 세로 절반(5.6)보다 멀어 화면 밖이고 그리드 안이다.
+    private static readonly Vector3 characterHiddenOffset = new Vector3(0f, 15f, 0f);
+
+    // 지금 틀고 있는 지역 BGM. 같은 곡을 다시 PlayBGM하면 처음부터 다시 시작하므로 바뀔 때만 튼다.
+    private bool bFieldBgmPlaying;
+    private SoundID currentFieldBgm;
 
     private RoguelikeLobbyInteractable startRunObject;
     private RoguelikeLobbyInteractable recordsObject;
@@ -140,11 +179,18 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private int lastClearedUnlimitWave;
     private float goldRemainder;
     private Vector3 finalTreePosition;
+    // 런 클리어 슬로우가 걸려 있다(흐름이 끊기면 시간 배율을 되돌린다).
+    private bool bRunClearSlowMo;
+    // 웨이브 클리어 묘목 연출이 끝나는 게임 시간. 나무 회수는 이 뒤에 한다.
+    private float saplingVanishEndTime;
+    // 코인이 날아가 닿는 고정점(코인 HUD 화면 지점을 월드로 옮긴 곳).
+    private Transform coinHudTarget;
     private bool bExitingToMainMenu;
 
     // 로비로 들어가는 동안(필드 재생성·입장 연출) ESC를 잠그는 소유자 이름. 이 구간의 메인메뉴 요청은 받을 곳이 없다 -
     // 런도 아니고 로비도 아니라 무시되는데, ESC 쪽은 이미 메뉴를 닫고 이동 잠금을 풀어 버린다.
     private const string LobbyEntryESCLockOwner = "RoguelikeLobbyEntry";
+    private const string RunClearESCLockOwner = "RoguelikeRunClear";
 
     // 로그라이크 세션 내내 본편 가방 키(인벤토리 팝업·원목 교체)를 막는 소유자 이름. 로그라이크에는 가방이 없고,
     // 열리면 카드 선택·결과 화면 위에 본편 가방이 겹쳐 뜬다. 잠금 집합은 앱 수명이라 Release에서 반드시 푼다.
@@ -188,6 +234,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
     // // 디버그·연출 담당용 접근
     public RoguelikeProductionGate ProductionGate => productionGate;
+    /// <summary>바닥 타일 파도. 이펙트 담당이 TileRevealedEvent로 칸 단위 장식을 붙인다.</summary>
+    public RoguelikeTileWave TileWave => tileWave;
     public RunModifiers Modifiers => modifiers;
     public float PlayTimeSeconds => playTimeSeconds;
 
@@ -195,7 +243,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, EnvironmentSystem _environmentSystem,
         InDungeonObjectManager _inDungeonObjectManager, UnitLogicManager _unitLogicManager, TownSystem _townSystem,
-        GameplayUIInstaller _gameplayUIInstaller)
+        GameplayUIInstaller _gameplayUIInstaller, SkyCameraProductionManager _skyCameraProductionManager)
     {
         signalHub = _signalHub;
         inputManager = _inputManager;
@@ -204,6 +252,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         unitLogicManager = _unitLogicManager;
         townSystem = _townSystem;
         gameplayUIInstaller = _gameplayUIInstaller;
+        skyCameraProductionManager = _skyCameraProductionManager;
 
         if (null == balance || null == cardDatabase || null == waveStrategyTemplate)
         {
@@ -220,6 +269,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         shop.Initialize(cardDatabase, balance, build, wallet, modifiers);
         effectApplier.Initialize(bAttackSpeedAffectsAxe, baseWhirlwindSwingInterval);
         productionGate.Initialize(GetFallbackSeconds, maxProductionWaitSeconds);
+        tileWave.Initialize(environmentSystem, tileWaveSettings);
 
         // 이펙트 담당이 이 프리팹 아래에 붙여 둔 연출 핸들러를 모은다.
         GetComponentsInChildren(true, handlerBuffer);
@@ -234,7 +284,11 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         inDungeonObjectManager.SetRunTreeRules(treeRules);
 
         if (null != coinController) coinController.Initialize();
-        if (null != skillController) skillController.Initialize(signalHub, modifiers);
+        if (null != skillController)
+        {
+            skillController.Initialize(signalHub, modifiers);
+            skillController.SetVfxSources(inDungeonObjectManager);
+        }
 
         CreateLobbyObjects();
         OpenViews();
@@ -256,9 +310,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         signalHub.Publish(new DecalreDungeonTypeSignal(lobbyField.mapType, lobbyField.forestType));
         signalHub.Publish(new PopupUIDownSignal());
 
-        // 메인메뉴의 딤머·오버레이와 구름을 걷는다(본편 메인메뉴 → 던전 진입과 같은 처리).
-        MainMenuCurtainRollbackEvent?.Invoke();
-        signalHub.Publish(new RollbackSkyProductionSignal());
+        // 메인메뉴가 디스토션 → 암전을 건 채 씬이 넘어온다(기획서 4-1 1~2단계). 암전 아래에서 섬을 깔고
+        // EnterLobbyRoutine이 암전을 걷은 뒤 바닥 타일 파도 → 배경 조립 → 낙하를 잇는다.
 
         StartFlow(EnterLobbyRoutine(false));
     }
@@ -267,7 +320,11 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     {
         StopAllCoroutines();
         flowCoroutine = null;
+        tileWaveCoroutine = null;
+        tileWave.FinishImmediately();
         productionGate.CancelAll();
+        RoguelikeScreenTransition.ClearIfCovering();
+        EndRunClearCinematic();
 
         // InputManager는 BootStrap 소속이라 메인메뉴까지 살아 있다. 로비 입장 도중 해제돼도 잠금이 남지 않게 푼다.
         inputManager?.SetESCKeyLock(LobbyEntryESCLockOwner, false);
@@ -453,15 +510,42 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         if (waveKills < currentWave.killTarget) return;
 
         // 목표 달성 즉시: 스폰을 멈추고 남은 나무를 묘목으로 돌린다(이 순간부터 피해도 골드도 없다). 기획서 3-1 "달성 즉시".
+        // 30웨이브는 마지막 나무 줌인·슬로우 → 줌아웃 뒤에 나무를 정리한다(기획서 3-5 "나무 정리") - WaveClearRoutine이 돌린다.
+        waveStrategy?.StopSpawning();
         if (IsFinalWave(in currentWave))
         {
             finalTreePosition = _position;
             signalHub.Publish(new RoguelikeFinalTreeKilledSignal(_position));
         }
+        else
+        {
+            RevertFieldTreesToSapling();
+        }
 
-        waveStrategy?.StopSpawning();
-        inDungeonObjectManager.RevertAllTreesToSaplingForRun();
         SetPhase(ERunPhase.WaveClear);
+    }
+
+    /// <summary>남은 나무가 묘목으로 돌아가 사라진다(기획서 3-1). 나무 회수는 연출이 끝난 뒤 WaveClearRoutine이 한다.</summary>
+    private void RevertFieldTreesToSapling()
+    {
+        float seconds = Mathf.Max(0f, waveClearSaplingVanishSeconds);
+        inDungeonObjectManager.RevertAllTreesToSaplingForRun(seconds);
+        saplingVanishEndTime = Time.time + seconds;
+
+        // 본편 묘목 등장음. 나무마다 내면 수십 개가 겹치므로 섬 중앙에서 한 번만 낸다.
+        if (inDungeonObjectManager.ActiveTrees.Count > 0 && null != cameraAnchor) Sound.Play(SoundID.TreeSmallGrow, cameraAnchor.position);
+    }
+
+    /// <summary>런 클리어 슬로우를 풀고 ESC 잠금을 되돌린다(연출이 끝났거나 흐름이 끊겼을 때).</summary>
+    private void EndRunClearCinematic()
+    {
+        if (bRunClearSlowMo)
+        {
+            Time.timeScale = 1f;
+            bRunClearSlowMo = false;
+        }
+
+        inputManager?.SetESCKeyLock(RunClearESCLockOwner, false);
     }
 
     // // 게임오버·포기·메인메뉴
@@ -511,7 +595,9 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         bool bWaveAlreadyCleared = ERunPhase.WaveClear == phase || ERunPhase.RunClear == phase;
 
         StopFlow();
+        StopTileWave();
         productionGate.CancelAll();
+        EndRunClearCinematic();
         waveStrategy?.StopSpawning();
 
         if (null != coinController)
@@ -607,7 +693,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         UIView_RoguelikeRecords recordsUI = gameplayUIInstaller.OpenAdditionalView<UIView_RoguelikeRecords>();
         recordsUI?.Hide();
 
-        uiCoordinator.Initialize(signalHub, this, hudUI, cardSelectUI, ownedCardsUI, resultUI, recordsUI, gameplayUIInstaller.GetOpenedView<UIView_ESC>());
+        uiCoordinator.Initialize(signalHub, this, hudUI, cardSelectUI, ownedCardsUI, resultUI, recordsUI, gameplayUIInstaller.GetOpenedView<UIView_ESC>(),
+            gameplayUIInstaller.GetOpenedView<UIView_Popup>());
     }
 
     // // 공통
@@ -664,6 +751,9 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         flowCoroutine = null;
     }
 
+    // 에디터 전용 디버그 키 처리(RoguelikeSystem.Debug.cs). 빌드에서는 구현이 없어 호출째 빠진다.
+    partial void DebugTick();
+
     // // 유니티 이벤트 함수
 
     private void Update()
@@ -675,5 +765,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         }
 
         uiCoordinator.Tick();
+
+        DebugTick();
     }
 }

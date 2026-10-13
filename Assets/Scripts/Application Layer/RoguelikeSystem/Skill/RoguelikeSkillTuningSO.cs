@@ -51,14 +51,17 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public int spinShockwaveSwingInterval = 3;
 
     [Header("조합: 부메랑 + 충격파")]
-    [Tooltip("같은 자리에 연달아 터지지 않게 하는 최소 간격(초).")]
-    public float boomerangShockwaveCooldown = 0.25f;
+    [Tooltip("부메랑에 맞은 나무마다 충격파가 터진다(기획서). 0이면 타격마다, 값을 주면 그 간격(초) 안의 타격은 건너뛴다(밸런스용).")]
+    public float boomerangShockwaveCooldown = 0f;
+    [Tooltip("같은 프레임에 이 거리(월드) 안에서 터지는 충격파는 하나로 합친다. 붙어 선 나무를 한 번에 꿰뚫어도 같은 자리에 충격파가 겹쳐 쌓이지 않게 한다.")]
+    public float boomerangShockwaveMergeRadius = 0.6f;
 
     [Header("조합: 회전베기 + 부메랑")]
     public float spinBoomerangRadius = 2.2f;
     [Tooltip("도끼 피해 대비 배율.")]
     public float spinBoomerangDamageMultiplier = 1f;
-    public float spinBoomerangCooldown = 0.2f;
+    [Tooltip("부메랑 타격 1회당 회전베기 1회(기획서). 회전베기는 캐릭터 중심이라 한 프레임에 여러 그루를 맞혀도 한 번만 친다(같은 공격이 겹쳐 쌓이지 않게). 값을 주면 그 간격(초) 안의 타격은 건너뛴다(밸런스용).")]
+    public float spinBoomerangCooldown = 0f;
 
     [Header("조합: 스텔라 + 포자폭탄")]
     [Tooltip("별 표식에 붙는 도트(틱당 피해·간격).")]

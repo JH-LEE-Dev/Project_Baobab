@@ -239,6 +239,10 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         // 남아 있으면 그다음 본편 플레이의 저장이 전부 막힌다.
         GameModeContext.ExitRoguelike();
 
+        // 같은 이유로, 로그라이크 진입 암전(메인메뉴 → 로그라이크 씬 로드 동안 화면을 덮는다)이 남아 있으면 걷는다.
+        // 로그라이크에 들어간 적이 없으면 아무 일도 없다.
+        RoguelikeScreenTransition.ClearIfCovering();
+
         currentSceneType = SceneType.MainMenu;
 
         if (mainMenuInstaller == null)

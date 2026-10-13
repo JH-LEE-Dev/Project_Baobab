@@ -288,12 +288,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
     }
 
-    /// <summary>[로그라이크] 필드의 모든 나무를 "묘목으로 돌아가는" 상태로 바꾼다. 이 순간부터 피해·골드가 없다.</summary>
-    public void RevertAllTreesToSaplingForRun()
+    /// <summary>
+    /// [로그라이크] 필드의 모든 나무를 "묘목으로 돌아가는" 상태로 바꾼다. 이 순간부터 피해·골드가 없다.
+    /// _vanishSeconds 동안 묘목이 톡 튀었다가 작아지며 사라진다. 회수(ClearTreesForRun)는 그 뒤에 한다.
+    /// </summary>
+    public void RevertAllTreesToSaplingForRun(float _vanishSeconds)
     {
         for (int i = activeTrees.Count - 1; i >= 0; i--)
         {
-            if (null != activeTrees[i]) activeTrees[i].RevertToSaplingForRun();
+            if (null != activeTrees[i]) activeTrees[i].RevertToSaplingForRun(_vanishSeconds);
         }
     }
 
@@ -304,6 +307,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public void ClearTreesForRun()
     {
         StopDelayedGrassOpen();
+
+        // 웨이브 클리어로 작아져 사라진 나무를 원래 크기로 되돌린 뒤 풀에 넣는다(다시 꺼낼 때 보이도록).
+        for (int i = activeTrees.Count - 1; i >= 0; i--)
+        {
+            if (null != activeTrees[i]) activeTrees[i].RestoreAfterVanishForRun();
+        }
+
         ClearTrees();
     }
 

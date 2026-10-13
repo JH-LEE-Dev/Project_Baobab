@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 /// <summary>
 /// 로그라이크 시스템과 로그라이크 UIView 사이의 연결. GameplayUICoordinator와 같은 역할 분담을 따른다.
@@ -20,6 +21,12 @@ public sealed class RoguelikeUICoordinator
     private UIView_RoguelikeResult resultUI;
     private UIView_RoguelikeRecords recordsUI;
     private UIView_ESC escUI;
+    // 본편 하단 코인 HUD(가방 옆). 런 골드를 읽게 바꿔 쓴다(기획서 5-1).
+    private UIView_Popup mainPopupUI;
+    private RunGoldMoneyData runGoldMoneyData;
+    // 코인 흡수 동안 매 프레임 묻는 코인 HUD 지점의 캔버스. 대상이 바뀔 때만 다시 찾는다.
+    private RectTransform coinHudTargetCache;
+    private Canvas coinHudCanvasCache;
 
     private readonly List<RoguelikeCardViewData> cardViewBuffer = new List<RoguelikeCardViewData>(8);
     private readonly List<RoguelikeOwnedCardViewData> ownedViewBuffer = new List<RoguelikeOwnedCardViewData>(32);
@@ -42,8 +49,16 @@ public sealed class RoguelikeUICoordinator
     private float lastCooldownRatio = -1f;
 
     public void Initialize(SignalHub _signalHub, IRoguelikeRunInfo _runInfo, UIView_RoguelikeHUD _hudUI, UIView_RoguelikeCardSelect _cardSelectUI,
-        UIView_RoguelikeOwnedCards _ownedCardsUI, UIView_RoguelikeResult _resultUI, UIView_RoguelikeRecords _recordsUI, UIView_ESC _escUI)
+        UIView_RoguelikeOwnedCards _ownedCardsUI, UIView_RoguelikeResult _resultUI, UIView_RoguelikeRecords _recordsUI, UIView_ESC _escUI,
+        UIView_Popup _mainPopupUI)
     {
+        mainPopupUI = _mainPopupUI;
+        if (null != mainPopupUI)
+        {
+            runGoldMoneyData = new RunGoldMoneyData(_runInfo);
+            mainPopupUI.SetMoneyDataForRun(runGoldMoneyData);
+        }
+
         signalHub = _signalHub;
         runInfo = _runInfo;
         hudUI = _hudUI;
@@ -121,6 +136,7 @@ public sealed class RoguelikeUICoordinator
         signalHub.Subscribe<RoguelikeResultReadySignal>(ResultReady);
         signalHub.Subscribe<RoguelikeRecordsRequestedSignal>(RecordsRequested);
         signalHub.Subscribe<RoguelikeRunEndedSignal>(RunEnded);
+        signalHub.Subscribe<RoguelikeEntryScreenCoveredSignal>(EntryScreenCovered);
     }
 
     private void UnSubscribeSignals()
@@ -138,6 +154,7 @@ public sealed class RoguelikeUICoordinator
         signalHub.UnSubscribe<RoguelikeResultReadySignal>(ResultReady);
         signalHub.UnSubscribe<RoguelikeRecordsRequestedSignal>(RecordsRequested);
         signalHub.UnSubscribe<RoguelikeRunEndedSignal>(RunEnded);
+        signalHub.UnSubscribe<RoguelikeEntryScreenCoveredSignal>(EntryScreenCovered);
     }
 
     private void BindEvents()
@@ -202,6 +219,13 @@ public sealed class RoguelikeUICoordinator
         // 보유 카드를 열 수 없는 단계(쓰러짐·결과·로비 쪽)로 넘어가면 열려 있던 창과 일시정지를 걷는다.
         if (false == CanOpenOwnedCards(_signal.phase)) CloseOwnedCards();
 
+        // 로비·런 시작에서는 코인 HUD를 보인다(언리밋에서 숨겼던 것을 되돌린다). 런 골드가 0으로 돌아간 것도 맞춘다.
+        if (ERunPhase.Lobby == _signal.phase || ERunPhase.RunStarting == _signal.phase)
+        {
+            mainPopupUI?.SetCoinVisibleForRun(true);
+            mainPopupUI?.CharactersMoneyChanged();
+        }
+
         // 런 도중 ESC의 메인메뉴 버튼은 "로비"(포기)다. 로비에서는 진짜 메인메뉴로 나가므로 본래 문구로 둔다(기획서 3-7).
         escUI?.SetLobbyMode(bCombatPhase);
 
@@ -217,6 +241,8 @@ public sealed class RoguelikeUICoordinator
 
     private void WaveStarted(RoguelikeWaveStartedSignal _signal)
     {
+        mainPopupUI?.SetCoinVisibleForRun(false == _signal.spec.bUnlimit);
+
         if (null == hudUI) return;
 
         hudUI.SetWave(_signal.spec.waveNumber, _signal.spec.bUnlimit, _signal.spec.unlimitIndex);
@@ -232,6 +258,11 @@ public sealed class RoguelikeUICoordinator
     private void GoldChanged(RoguelikeGoldChangedSignal _signal)
     {
         hudUI?.SetGold(_signal.gold, _signal.delta > 0);
+
+        // 본편 코인 HUD: 오를 때는 본편처럼 숫자가 굴러 오르고, 쓰거나 초기화될 때는 바로 맞춘다.
+        if (null == mainPopupUI) return;
+        if (_signal.delta > 0) mainPopupUI.CharacterEarnMoney(MoneyType.Coin);
+        else mainPopupUI.CharactersMoneyChanged();
     }
 
     private void PressureDamaged(RoguelikePressureDamagedSignal _signal)
@@ -384,7 +415,7 @@ public sealed class RoguelikeUICoordinator
 
     private void ResultConfirmRequested()
     {
-        resultUI?.Hide();
+        // 결과 화면은 여기서 닫지 않는다. 확인 직후 결과 화면 위에 디스토션이 걸리고(기획서 4-1 · 3-7), 암전으로 덮인 뒤 닫는다(EntryScreenCovered).
         signalHub.Publish(new RoguelikeResultConfirmedSignal());
     }
 
@@ -416,8 +447,39 @@ public sealed class RoguelikeUICoordinator
     private void RunEnded(RoguelikeRunEndedSignal _signal) => CloseOwnedCards();
 
     /// <summary>
+    /// 코인 HUD(바닥 코인이 날아가 닿는 곳)의 화면 좌표. 로그라이크 HUD가 지점을 주면 그곳, 아니면 본편 코인 HUD(런 골드를 보여 주는 곳).
+    /// 둘 다 없으면 false.
+    /// </summary>
+    public bool TryGetCoinHudScreenPoint(out Vector2 _screenPoint)
+    {
+        _screenPoint = default;
+
+        RectTransform target = null != hudUI && hudUI.IsVisible ? hudUI.CoinFlyTarget : null;
+        if (null == target || false == target.gameObject.activeInHierarchy) target = null != mainPopupUI ? mainPopupUI.CoinCounterRectForRun : null;
+        if (null == target || false == target.gameObject.activeInHierarchy) return false;
+
+        if (target != coinHudTargetCache || null == coinHudCanvasCache)
+        {
+            coinHudTargetCache = target;
+            coinHudCanvasCache = target.GetComponentInParent<Canvas>();
+        }
+
+        Canvas canvas = coinHudCanvasCache;
+        Camera uiCamera = null != canvas && RenderMode.ScreenSpaceOverlay != canvas.renderMode ? canvas.worldCamera : null;
+        _screenPoint = RectTransformUtility.WorldToScreenPoint(uiCamera, target.position);
+        return true;
+    }
+
+    /// <summary>로비 진입 암전이 화면을 덮었다. 디스토션이 걸려 있던 결과 화면을 닫는다.</summary>
+    private void EntryScreenCovered(RoguelikeEntryScreenCoveredSignal _signal)
+    {
+        if (null != resultUI && resultUI.IsVisible) resultUI.Hide();
+    }
+
+    /// <summary>
     /// 보유 카드 창을 열 수 있는 단계. 런이 진행 중인 단계만 허용한다. 쓰러짐(GameOver)·결과·로비 쪽에서 열면
     /// 일시정지가 쓰러짐 애니메이션과 결과 → 로비 연출(스케일 시간)을 창을 닫을 때까지 멈춰 세운다.
+    /// 런 클리어 연출(RunClear)은 슬로우 모션(timeScale)을 직접 걸기 때문에 그동안은 열지 않는다.
     /// </summary>
     private static bool CanOpenOwnedCards(ERunPhase _phase)
     {
@@ -428,7 +490,6 @@ public sealed class RoguelikeUICoordinator
             case ERunPhase.TierTransition:
             case ERunPhase.WaveCombat:
             case ERunPhase.WaveClear:
-            case ERunPhase.RunClear:
                 return true;
             default:
                 return false;

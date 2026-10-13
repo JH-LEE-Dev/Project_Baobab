@@ -481,10 +481,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     /// 다시 자라지 않도록 성장 시간을 무한으로 둔다. 실제 회수(풀 반환)는 연출이 끝난 뒤 매니저가 한다.
     ///
     /// SetIsSapling과 달리 성장 사운드를 내지 않는다. 필드의 나무 수십 그루가 같은 프레임에 들어오기 때문이다.
-    /// 되돌아가는 연출(축소·사라짐)은 이펙트 담당이 RoguelikeWaveClearRevertStartedSignal에 맞춰 입힌다.
+    /// 묘목 그림으로 바뀐 뒤 _vanishSeconds 동안 톡 튀었다가 작아지며 사라진다(SaplingVEComponent). 0이면 그림만 바꾼다.
     /// 본편에서는 호출되지 않는다.
     /// </summary>
-    public void RevertToSaplingForRun()
+    public void RevertToSaplingForRun(float _vanishSeconds)
     {
         if (bDead || IsPooled) return;
 
@@ -496,6 +496,17 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
             treeVisualComponent.DeActivateOnWaterObject();
             treeVisualComponent.ApplySaplingVisual(treeData);
         }
+
+        if (_vanishSeconds > 0f && saplingVEComponent != null)
+        {
+            saplingVEComponent.AnimateRevertAndVanishForRun(_vanishSeconds);
+        }
+    }
+
+    /// <summary>[로그라이크 전용] RevertToSaplingForRun으로 사라진 크기를 되돌린다. 풀로 돌아가기 전에 불러야 재사용 때 보인다.</summary>
+    public void RestoreAfterVanishForRun()
+    {
+        if (saplingVEComponent != null) saplingVEComponent.RestoreScaleForRun();
     }
 
     /// <summary>

@@ -80,6 +80,67 @@ public struct RoguelikeTierChangedSignal
     }
 }
 
+/// <summary>
+/// 바닥 타일 파도가 시작됐다. 두 경우에 나간다 - bEntry로 구분한다.
+///   bEntry = true : 로비 진입(기획서 4-1 3~5단계). 물만 깔린 바다에서 섬 중앙부터 육지가 물결을 따라 깔리고, 이어서 해안선이 퍼즐처럼 조립된다.
+///   bEntry = false: 티어 전환(기획서 3-4). 물결이 지나가며 칸마다 솟았다 가라앉고, 첫 마루에서 직전 지형이 새 지형으로 바뀐다.
+/// 타일 한 칸 단위 장식은 RoguelikeSystem.TileWave.TileRevealedEvent를 쓴다(진입은 칸이 생기는 순간, 전환은 칸이 바뀌는 순간).
+/// </summary>
+public struct RoguelikeTileWaveStartedSignal
+{
+    public bool bEntry;
+    public RoguelikeTileWaveStartedSignal(bool _bEntry)
+    {
+        bEntry = _bEntry;
+    }
+}
+
+/// <summary>
+/// 로비 진입 연출 1~2단계(디스토션 → 암전)가 끝나 화면이 검게 덮였다(기획서 4-1). 결과 화면 UI는 이때 닫는다 -
+/// 디스토션이 결과 화면 위에 걸려야 하므로 확인 버튼을 누른 순간이 아니라 여기서 닫는다.
+/// </summary>
+public struct RoguelikeEntryScreenCoveredSignal { }
+
+/// <summary>로비 진입 암전이 걷히기 시작했다. 화면에는 물만 깔린 바다가 보이고, 이어서 바닥 타일 파도가 시작된다.</summary>
+public struct RoguelikeEntryScreenRevealStartedSignal { }
+
+/// <summary>
+/// 바닥 타일 파도가 끝났다(도중에 끊겨 바로 채운 경우 포함). 화면 안 지형이 전부 새 지형이다.
+/// bEntry는 시작 신호와 같다(로비 진입 파도면 true, 티어 전환이면 false).
+/// </summary>
+public struct RoguelikeTileWaveCompletedSignal
+{
+    public bool bEntry;
+    public RoguelikeTileWaveCompletedSignal(bool _bEntry)
+    {
+        bEntry = _bEntry;
+    }
+}
+
+/// <summary>플레이어 낙하가 시작됐다(기획서 4-1 6단계). from에서 to로 duration초 동안 떨어진다.</summary>
+public struct RoguelikeCharacterDropStartedSignal
+{
+    public Vector3 from;
+    public Vector3 to;
+    public float duration;
+    public RoguelikeCharacterDropStartedSignal(Vector3 _from, Vector3 _to, float _duration)
+    {
+        from = _from;
+        to = _to;
+        duration = _duration;
+    }
+}
+
+/// <summary>플레이어가 착지했다. 착지 먼지·효과음을 여기에 붙인다.</summary>
+public struct RoguelikeCharacterLandedSignal
+{
+    public Vector3 position;
+    public RoguelikeCharacterLandedSignal(Vector3 _position)
+    {
+        position = _position;
+    }
+}
+
 /// <summary>30웨이브 클리어. 곧바로 언리밋으로 이어진다.</summary>
 public struct RoguelikeRunClearedSignal { }
 

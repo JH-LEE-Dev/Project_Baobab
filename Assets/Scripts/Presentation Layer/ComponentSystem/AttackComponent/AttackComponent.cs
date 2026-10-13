@@ -512,7 +512,8 @@ public class AttackComponent : PComponent
 
             float dot = Vector2.Dot(isoAttackDir, targetDir);
 
-            bool bHitByAngle = bIsWhirlwindStrike || (dot >= cosThreshold);
+            // 회전베기는 360도 전체를 친다. 기본 휘두름으로만 맞는 대상(로그라이크 별)은 평소 각도 안에 있을 때만 맞는다.
+            bool bHitByAngle = (bIsWhirlwindStrike && false == (target is IBasicAxeOnlyTarget)) || (dot >= cosThreshold);
 
             if (bHitByAngle)
             {
@@ -1184,6 +1185,9 @@ public class AttackComponent : PComponent
     }
 
     public bool IsCursorEnabled => bCursorEnable;
+
+    /// <summary>공격 범위 인디케이터가 지금 켜져 있는지.</summary>
+    public bool IsIndicatorActive => null != ellipseRadiusIndicator && ellipseRadiusIndicator.activeSelf;
 
     public void SetCursorEnable(bool _boolean)
     {

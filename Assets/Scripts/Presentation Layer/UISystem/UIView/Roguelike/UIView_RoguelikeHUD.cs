@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 /// <summary>
 /// 로그라이크 전투 HUD. 기획서 5-1 "전투 HUD (하단 중앙)".
@@ -51,6 +52,12 @@ public class UIView_RoguelikeHUD : UIView
 
     /// <summary>코인 HUD 표시 여부. 언리밋에서는 골드를 쓸 곳이 없어 숨긴다(기획서 3-5).</summary>
     public virtual void SetGoldVisible(bool _bVisible) { }
+
+    /// <summary>
+    /// [UI 담당] 웨이브 종료 때 바닥 코인이 날아가 닿는 지점(코인 HUD 아이콘). 기획서 3-3 골드 획득 5단계 "코인 HUD 쪽으로 날아가는 애니메이션".
+    /// null이면 기획서 5-1 배치(하단 중앙, 바 기준 왼쪽 윗부분)의 임시 화면 지점으로 날아간다(RoguelikeSystem.coinHudFallbackViewport).
+    /// </summary>
+    public virtual RectTransform CoinFlyTarget => null;
 
     /// <summary>전투 HUD 요소(임계치 바·웨이브) 표시 여부. 로비에서는 숨긴다.</summary>
     public virtual void SetCombatVisible(bool _bVisible) { }

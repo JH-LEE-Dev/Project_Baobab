@@ -292,17 +292,14 @@ public class GameInstaller : MonoBehaviour
 
         roguelikeSystem = Instantiate(roguelikeSystemPrefab, transform);
         roguelikeSystem.Initialize(signalHub, inputManager, environmentSystem, inDungeonSystem.inDungeonObjectManager,
-            unitLogicManager, townSystem, gameplayUIInstaller);
+            unitLogicManager, townSystem, gameplayUIInstaller, skyCameraProductionManager);
 
-        roguelikeSystem.MainMenuCurtainRollbackEvent -= TownIntroCurtainRollback;
-        roguelikeSystem.MainMenuCurtainRollbackEvent += TownIntroCurtainRollback;
         roguelikeSystem.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
         roguelikeSystem.GoToMainMenuCurtainRevealEvent += GoToMainMenuCurtainReveal;
     }
 
     private void ReleaseRoguelikeSystem()
     {
-        roguelikeSystem.MainMenuCurtainRollbackEvent -= TownIntroCurtainRollback;
         roguelikeSystem.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
         roguelikeSystem.Release();
         roguelikeSystem = null;

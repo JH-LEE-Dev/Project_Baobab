@@ -30,10 +30,11 @@ MonoBehaviour:
   sporeTickInterval: 0.5
   sporeTickDamage: 12
   spinShockwaveSwingInterval: 3
-  boomerangShockwaveCooldown: 0.25
+  boomerangShockwaveCooldown: 0
+  boomerangShockwaveMergeRadius: 0.6
   spinBoomerangRadius: 2.2
   spinBoomerangDamageMultiplier: 1
-  spinBoomerangCooldown: 0.2
+  spinBoomerangCooldown: 0
   stellaSporeDotDamage: 10
   stellaSporeDotInterval: 0.5
   stellaSporeExplosionRadius: 1.6

@@ -122,6 +122,8 @@ public sealed class RunEffectApplier
         float maxStaminaPercent = _mods.Get(ERunEffect.MaxStaminaPercent);
         float targetMax = Mathf.Max(1f, baseMaxStamina * (1f + maxStaminaPercent / 100f) + _mods.Get(ERunEffect.MaxStaminaAdd));
         SetValue(EStat.MaxStamina, targetMax - stat.baseMaxStamina);
+        // 체력 컴포넌트의 최대치는 본편에선 던전 입장 때만 맞춘다. 런 도중 카드로 바뀌면 여기서 바로 반영한다(HUD 바도 이 값을 읽는다).
+        character?.SyncMaxStaminaForRun();
 
         // // 충격파: 본편과 같은 발동 조건(휘두를 때 확률). 확률은 카드 데이터의 ChancePercent로만 정해진다.
         bool bShockwave = _mods.IsSkillActive(ERoguelikeSkill.Shockwave);
@@ -171,6 +173,7 @@ public sealed class RunEffectApplier
         appliedWhirlwindInterval = 0;
         RunCombatOverrides.ResetAll();
 
+        character?.SyncMaxStaminaForRun();
         character?.RefreshDronesForRun();
     }
 

@@ -145,6 +145,19 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     /// <summary>[로그라이크] 타일 한 칸의 월드 크기(아이소메트릭 마름모 가로·세로).</summary>
     public Vector2 TileCellSize => tileMapGenerator.CellSize;
 
+    /// <summary>[로그라이크] 그리드 전체 칸 범위.</summary>
+    public BoundsInt TileGridBoundsForRun => tileMapGenerator.GridBoundsForRun;
+
+    /// <summary>[로그라이크] 칸 중심의 월드 위치.</summary>
+    public Vector3 GetTileCellCenterWorldForRun(Vector3Int _cell) => tileMapGenerator.GetCellCenterWorldForRun(_cell);
+
+    /// <summary>[로그라이크] 바닥 타일 파도 연출이 다시 깔 시각 타일맵(TileMapGenerator.GetVisualTilemapsForRun).</summary>
+    public void GetVisualTilemapsForRun(List<UnityEngine.Tilemaps.Tilemap> _floor, List<UnityEngine.Tilemaps.Tilemap> _water,
+        List<UnityEngine.Tilemaps.Tilemap> _shore)
+    {
+        tileMapGenerator.GetVisualTilemapsForRun(_floor, _water, _shore);
+    }
+
     // [로그라이크] 맵 생성 완료를 MapGeneratedSignal 대신 이 콜백으로 돌려받는 중인지.
     // 그 시그널을 받으면 InDungeonSystem이 던전 원정 흐름(포탈·NPC·카메라 하강)을 시작하므로 로그라이크는 피해 간다.
     private System.Action<List<Vector3>> roguelikeMapGeneratedCallback;

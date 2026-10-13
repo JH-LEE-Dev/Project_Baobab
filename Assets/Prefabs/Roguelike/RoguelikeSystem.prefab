@@ -61,6 +61,27 @@ MonoBehaviour:
   islandReferenceViewSize: {x: 20, y: 11.25}
   islandEdgeWaterTiles: 1
   centerSafeZoneRadius: 2
+  tileWaveSettings:
+    frontSpeed: 14
+    rippleHeight: 0.22
+    rippleWavelength: 6
+    rippleWaves: 1.5
+    rippleShade: 0.3
+    entryCompleteSeconds: 3
+    backgroundAssembleSeconds: 1.2
+    backgroundPieceFadeSeconds: 0.3
+    backgroundPieceCells: 3
+    viewMarginTiles: 2
+  screenTransitionSettings:
+    distortSeconds: 0.7
+    distortStrength: 0.05
+    distortWaves: 3
+    distortSpeed: 9
+    blackoutSeconds: 0.35
+    fadeInSeconds: 0.5
+    minBlackHoldSeconds: 0.8
+  characterDropHeight: 7
+  characterDropSeconds: 0.45
   startRunObjectPrefab: {fileID: 2284844287117466035, guid: 2bc6ac8a89e050246b56d5bfdd7b12fc, type: 3}
   recordsObjectPrefab: {fileID: 2601570253084400613, guid: 9cbbf21ca74a77b48b23c351639218a0, type: 3}
   startRunObjectOffset: {x: 2.5, y: 1}
@@ -69,9 +90,16 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   coinController: {fileID: 2181464918765488033}
+  coinHudFallbackViewport: {x: 0.375, y: 0.1}
   skillController: {fileID: 6092421280983671155}
   bAttackSpeedAffectsAxe: 1
   baseWhirlwindSwingInterval: 3
+  waveClearSaplingVanishSeconds: 0.6
+  runClearZoomMultiplier: 2
+  runClearZoomInSeconds: 0.25
+  runClearSlowTimeScale: 0.25
+  runClearSlowSeconds: 1.2
+  runClearZoomOutSeconds: 0.6
   fallbackLobbyEntrySeconds: 0.3
   fallbackTierTransitionSeconds: 0.5
   fallbackWaveClearSeconds: 0.6
@@ -132,6 +160,21 @@ MonoBehaviour:
   treeLayer:
     serializedVersion: 2
     m_Bits: 1024
+  vfxAssets:
+    whirlwindFrames:
+    - {fileID: -5408193984500294317, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    - {fileID: -7408280920834179055, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    - {fileID: 1757503365097481093, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    - {fileID: 8909519306989496007, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    - {fileID: -6337279227023466627, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    - {fileID: -629048883709668978, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    - {fileID: 7538441034235752720, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    - {fileID: -5038717723868688837, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    sporeBombSprite: {fileID: -6607146022748454015, guid: 8750e7ebdd334a04699246440e575215, type: 3}
+    sporeBombThrowSeconds: 0.45
+    sporeBombArcHeight: 1.6
+    sporeZonePuffInterval: 0.3
+    droneLaserPrefab: {fileID: 9005663251761334064, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
 --- !u!1 &6618881184997116136
 GameObject:
   m_ObjectHideFlags: 0
@@ -180,6 +223,11 @@ MonoBehaviour:
   maxCoinObjectsPerTree: 3
   groundAlpha: 0.2
   scatterRadius: 0.8
+  alphaRestoreSeconds: 0.25
   absorbStagger: 0.008
   absorbTimeout: 4
   poolDefaultCapacity: 256
+  coinGetCooldown: 0.04
+  coinPitchResetDelay: 0.2
+  coinPitchStep: 0.05
+  coinPitchMax: 1.5

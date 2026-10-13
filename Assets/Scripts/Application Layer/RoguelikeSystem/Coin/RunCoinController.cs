@@ -19,16 +19,30 @@ public class RunCoinController : MonoBehaviour
     [SerializeField] private RunCoin coinPrefab;
     [Tooltip("나무 한 그루가 뿌리는 코인 오브젝트 수 상한. 골드가 많아도 이 개수로 나눠 담는다.")]
     [SerializeField] private int maxCoinObjectsPerTree = 3;
-    [Tooltip("전투 중 바닥 코인의 알파.")]
+    [Tooltip("전투 중 바닥 코인의 알파. 흩뿌려지는 동안은 불투명하고, 내려앉은 뒤 이 값으로 옅어진다(시간은 코인 프리팹의 RunCoin).")]
     [SerializeField] private float groundAlpha = 0.2f;
     [SerializeField] private float scatterRadius = 0.8f;
+    [Tooltip("웨이브 종료 때 바닥 코인의 알파가 원래대로 돌아오는 시간(초). 다 돌아온 뒤 흡수가 시작된다(기획서 3-3 골드 획득 3단계).")]
+    [SerializeField] private float alphaRestoreSeconds = 0.25f;
     [Tooltip("일괄 흡수에서 코인 사이 출발 간격(초). 드르르륵 느낌을 만든다.")]
     [SerializeField] private float absorbStagger = 0.008f;
     [Tooltip("흡수가 이 시간 안에 끝나지 않으면 남은 값을 한 번에 넣고 끝낸다.")]
     [SerializeField] private float absorbTimeout = 4f;
     [SerializeField] private int poolDefaultCapacity = 256;
 
+    [Header("흡수음(본편 상인 NPC 수금음과 같은 규칙: 짧은 간격 제한 + 연달아 들어올수록 음이 높아진다)")]
+    [SerializeField, Min(0f)] private float coinGetCooldown = 0.04f;
+    [SerializeField, Min(0f)] private float coinPitchResetDelay = 0.2f;
+    [SerializeField, Min(0f)] private float coinPitchStep = 0.05f;
+    [SerializeField, Min(1f)] private float coinPitchMax = 1.5f;
+
+    private const float CoinPitchBase = 1f;
+    private float currentCoinPitch = CoinPitchBase;
+    private float lastCoinGetPlayedTime = float.NegativeInfinity;
+
     private IObjectPool<RunCoin> pool;
+    // 알파 복구를 시작할 때 코인마다의 알파(막 떨어져 아직 불투명한 코인도 있다).
+    private readonly List<float> restoreFromAlpha = new List<float>(512);
     private readonly List<RunCoin> groundCoins = new List<RunCoin>(512);
     private Action<RunCoin> onCoinArrivedHandler;
     private Action<long> absorbValueCallback;
@@ -107,10 +121,30 @@ public class RunCoinController : MonoBehaviour
 
         absorbingCount = groundCoins.Count;
 
+        // 3단계: 알파를 원래대로 되돌린 뒤 흡수한다.
+        if (alphaRestoreSeconds > 0f && groundCoins.Count > 0)
+        {
+            restoreFromAlpha.Clear();
+            for (int i = 0; i < groundCoins.Count; i++) restoreFromAlpha.Add(groundCoins[i].Alpha);
+
+            float restoreElapsed = 0f;
+            while (restoreElapsed < alphaRestoreSeconds)
+            {
+                restoreElapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(restoreElapsed / alphaRestoreSeconds);
+                for (int i = 0; i < groundCoins.Count && i < restoreFromAlpha.Count; i++) groundCoins[i].SetAlpha(Mathf.Lerp(restoreFromAlpha[i], 1f, t));
+
+                yield return null;
+                if (generation != absorbGeneration) yield break;
+            }
+        }
+
         for (int i = 0; i < groundCoins.Count; i++)
         {
             groundCoins[i].SetAlpha(1f);
         }
+
+        currentCoinPitch = CoinPitchBase;
 
         for (int i = 0; i < groundCoins.Count; i++)
         {
@@ -174,10 +208,23 @@ public class RunCoinController : MonoBehaviour
         GroundValue -= value;
         absorbingCount--;
         absorbValueCallback?.Invoke(value);
+        TryPlayCoinGetSound(_coin.transform.position);
 
         // 목록에서는 빼지 않는다(AbsorbAll 끝에 한꺼번에 풀로 돌린다). 값을 비워 두 번 세지 않게 하고 숨긴다.
         _coin.ResetCoin();
         _coin.gameObject.SetActive(false);
+    }
+
+    /// <summary>본편 상인 NPC 수금음(ShopNPC.TryPlayCoinGetSound)과 같다: 짧은 간격으로 겹치지 않게 막고, 연달아 들어올수록 음을 높인다.</summary>
+    private void TryPlayCoinGetSound(Vector3 _position)
+    {
+        float currentTime = Time.time;
+        if (coinPitchResetDelay <= currentTime - lastCoinGetPlayedTime) currentCoinPitch = CoinPitchBase;
+        if (coinGetCooldown > currentTime - lastCoinGetPlayedTime) return;
+
+        Sound.Play(SoundID.CoinGet, _position, 1f, true, currentCoinPitch);
+        lastCoinGetPlayedTime = currentTime;
+        currentCoinPitch = Mathf.Min(Mathf.Max(CoinPitchBase, coinPitchMax), currentCoinPitch + coinPitchStep);
     }
 
     private RunCoin CreateCoin()

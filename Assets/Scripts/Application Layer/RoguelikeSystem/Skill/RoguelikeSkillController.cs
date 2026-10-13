@@ -46,6 +46,7 @@ public class RoguelikeSkillController : MonoBehaviour
         public Vector3 lastPosition;
         public float damage;
         public float radius;
+        public bool bDashStarted;
     }
 
     [SerializeField] private RoguelikeSkillTuningSO tuning;
@@ -53,6 +54,10 @@ public class RoguelikeSkillController : MonoBehaviour
     [Tooltip("오프로드 외형(선택). 비어 있으면 판정만 움직인다.")]
     [SerializeField] private GameObject offroadVisualPrefab;
     [SerializeField] private LayerMask treeLayer;
+    [Tooltip("본편 연출을 재생할 때 코드에서 꺼낼 수 없는 에셋(회전베기 프레임, 포자 폭탄 그림).")]
+    [SerializeField] private RoguelikeSkillVfxAssets vfxAssets = new RoguelikeSkillVfxAssets();
+
+    private readonly RoguelikeSkillVfxPlayer vfxPlayer = new RoguelikeSkillVfxPlayer();
 
     // // 외부 의존성
     private SignalHub signalHub;
@@ -67,6 +72,8 @@ public class RoguelikeSkillController : MonoBehaviour
     private float fieldRadiusY = 4.5f;
 
     private readonly List<IStaticCollidable> scanBuffer = new List<IStaticCollidable>(128);
+    // 부메랑+충격파: 이번 프레임에 이미 충격파를 낸 자리(가까운 자리는 하나로 합친다).
+    private readonly List<Vector3> boomerangShockwaveFired = new List<Vector3>(8);
     private readonly List<TreeObj> hitBuffer = new List<TreeObj>(64);
 
     private readonly List<RoguelikeStar> activeStars = new List<RoguelikeStar>(16);
@@ -137,6 +144,12 @@ public class RoguelikeSkillController : MonoBehaviour
         axeExtraAttackCreator = null != _character ? _character.GetComponentInChildren<AxeExtraAttackCreator>(true) : null;
     }
 
+    /// <summary>본편 연출(별 표식·별똥별 폭발·포자 폭발·별자리 레이저·노바)을 꺼낼 곳. 던전 오브젝트 매니저 아래에 있다.</summary>
+    public void SetVfxSources(InDungeonObjectManager _objectManager)
+    {
+        vfxPlayer.Initialize(_objectManager, vfxAssets, this);
+    }
+
     /// <summary>섬(타원)의 중심과 반지름(월드). 오프로드가 섬 가장자리에서 반대편 가장자리로 돌진하는 데 쓴다.</summary>
     public void SetField(Vector3 _center, float _radiusX, float _radiusY)
     {
@@ -158,13 +171,21 @@ public class RoguelikeSkillController : MonoBehaviour
         pendingSporeExplosions.Clear();
     }
 
-    /// <summary>웨이브 종료. 별·연막·표식·돌진을 모두 치운다.</summary>
-    public void EndCombat()
+    /// <summary>
+    /// 웨이브 종료(_bWaveEnd) 또는 런 종료. 별·연막·표식·돌진을 모두 치운다.
+    /// 단, 웨이브 종료에서 스텔라+드론이 켜져 있으면 별과 이음선은 남긴다 - 기획서 "별들은 노바가 발동될 때만 모두 소멸한다",
+    /// 홀로 남은 별도 "사라지지도 않는다". 다음 웨이브에서 이어서 모은다. 런이 끝나면(_bWaveEnd = false) 전부 치운다.
+    /// </summary>
+    public void EndCombat(bool _bWaveEnd = false)
     {
         bActive = false;
 
-        for (int i = activeStars.Count - 1; i >= 0; i--) DespawnStar(i, false);
-        starLinks.Clear();
+        bool bKeepStars = _bWaveEnd && modifiers.IsComboActive(ERoguelikeCombo.StellaDrone);
+        if (false == bKeepStars)
+        {
+            for (int i = activeStars.Count - 1; i >= 0; i--) DespawnStar(i, false);
+            starLinks.Clear();
+        }
 
         for (int i = 0; i < markedTrees.Count; i++)
         {
@@ -183,6 +204,37 @@ public class RoguelikeSkillController : MonoBehaviour
         pendingSporeExplosions.Clear();
         pendingAxeSwings = 0;
         spinShockwaveSwingCount = 0;
+        vfxPlayer.StopCombatEffects();
+        if (false == bKeepStars) vfxPlayer.Clear();
+    }
+
+    /// <summary>
+    /// 본편 나무 정리(웨이브 클리어·티어 전환의 ClearTreesForRun)가 땅 별·점선 그림까지 거둔 뒤 부른다.
+    /// 웨이브를 넘어 남아 있는 별(스텔라+드론)이 있으면 그 그림을 다시 그린다.
+    /// </summary>
+    public void RestoreKeptStarVisuals()
+    {
+        if (0 == activeStars.Count) return;
+        vfxPlayer.RestoreStars(activeStars, starLinks);
+    }
+
+    /// <summary>
+    /// 지형을 새로 깐 뒤(티어 전환) 남겨 둔 별이 새 지형의 육지 위에 있는지 확인하고, 아닌 별은 조용히 거둔다(충돌 등록도 함께 풀린다).
+    /// 섬은 티어마다 같은 모양이라 보통은 아무 일도 없다. 그림은 이미 나무 정리가 거뒀으므로 소멸 연출은 내지 않는다.
+    /// </summary>
+    public void DropKeptStarsOffLand(System.Func<Vector3, bool> _isLand)
+    {
+        if (null == _isLand || 0 == activeStars.Count) return;
+
+        bool bRemoved = false;
+        for (int i = activeStars.Count - 1; i >= 0; i--)
+        {
+            if (_isLand(activeStars[i].transform.position)) continue;
+            DespawnStar(i, false);
+            bRemoved = true;
+        }
+
+        if (bRemoved) RebuildStarLinks();
     }
 
     /// <summary>웨이브 전투 중 나무가 쓰러졌다(RoguelikeSystem이 알려 준다).</summary>
@@ -255,26 +307,46 @@ public class RoguelikeSkillController : MonoBehaviour
         {
             bool bBoomerangShockwave = modifiers.IsComboActive(ERoguelikeCombo.BoomerangShockwave);
             bool bSpinBoomerang = modifiers.IsComboActive(ERoguelikeCombo.SpinBoomerang);
+            bool bSpinStruckThisFrame = false;
+            float mergeSqr = Mathf.Max(0f, tuning.boomerangShockwaveMergeRadius);
+            mergeSqr *= mergeSqr;
+            boomerangShockwaveFired.Clear();
 
             for (int i = 0; i < pendingBoomerangHits.Count; i++)
             {
+                Vector3 hit = pendingBoomerangHits[i];
+
                 // 부메랑 + 충격파: 맞은 나무 주변으로 충격파가 추가로 터진다(부메랑·충격파 기본 능력은 유지).
-                if (bBoomerangShockwave && _now >= nextBoomerangShockwaveTime)
+                // 같은 프레임에 거의 같은 자리(붙어 선 나무를 한 번에 꿰뚫은 경우)면 하나로 합친다 - 같은 자리 충격파가 겹쳐 쌓이지 않게.
+                if (bBoomerangShockwave && _now >= nextBoomerangShockwaveTime && false == IsNearAny(boomerangShockwaveFired, hit, mergeSqr))
                 {
                     nextBoomerangShockwaveTime = _now + tuning.boomerangShockwaveCooldown;
-                    Fire360ShockWave(pendingBoomerangHits[i]);
+                    boomerangShockwaveFired.Add(hit);
+                    Fire360ShockWave(hit);
                 }
 
                 // 회전베기 + 부메랑: 부메랑 타격 1회당 회전베기 1회(회전베기의 도끼 n타 발동은 꺼짐).
-                if (bSpinBoomerang && _now >= nextSpinBoomerangTime)
+                // 회전베기는 캐릭터 중심이라 한 프레임의 여러 타격은 같은 공격이 겹칠 뿐이다 - 프레임당 한 번만 친다.
+                if (bSpinBoomerang && false == bSpinStruckThisFrame && _now >= nextSpinBoomerangTime)
                 {
                     nextSpinBoomerangTime = _now + tuning.spinBoomerangCooldown;
+                    bSpinStruckThisFrame = true;
                     SpinStrikeAroundCharacter();
                 }
             }
 
             pendingBoomerangHits.Clear();
         }
+    }
+
+    private static bool IsNearAny(List<Vector3> _points, Vector3 _position, float _sqrDistance)
+    {
+        for (int i = 0; i < _points.Count; i++)
+        {
+            if ((_points[i] - _position).sqrMagnitude <= _sqrDistance) return true;
+        }
+
+        return false;
     }
 
     private void Fire360ShockWave(Vector3 _position)
@@ -319,6 +391,8 @@ public class RoguelikeSkillController : MonoBehaviour
 
         RoguelikeStar star = starPool.Count > 0 ? starPool.Pop() : CreateStar();
         star.Place(nextStarId++, _position, GetFirstLayer(treeLayer), false == bStellaDrone);
+        // 본편 땅 별(별 표식 나무에서 나오는 별)을 그릴 수 있으면 로그라이크 별 자체 그림은 숨긴다. 판정은 그대로다.
+        star.SetVisualVisible(false == vfxPlayer.bUsesMainStarVisual);
         star.ExpireTime = Time.time + tuning.stellaStarLifetime * DurationMul(ERoguelikeSkill.Stella);
         activeStars.Add(star);
 
@@ -581,6 +655,14 @@ public class RoguelikeSkillController : MonoBehaviour
                 continue;
             }
 
+            if (false == dash.bDashStarted)
+            {
+                dash.bDashStarted = true;
+                offroadDashes[i] = dash;
+                RoguelikeOffroadVisual dashVisual = null != visual ? visual.GetComponent<RoguelikeOffroadVisual>() : null;
+                if (null != dashVisual) dashVisual.BeginDash();
+            }
+
             float t = dash.dashDuration > 0f ? Mathf.Clamp01((_now - dash.dashStartTime) / dash.dashDuration) : 1f;
             Vector3 pos = Vector3.Lerp(dash.from, dash.to, t);
             if (null != visual) visual.transform.position = pos;
@@ -636,6 +718,8 @@ public class RoguelikeSkillController : MonoBehaviour
             while (offroadVisuals.Count <= visualIndex) offroadVisuals.Add(Instantiate(offroadVisualPrefab, transform));
             offroadVisuals[visualIndex].transform.position = from;
             offroadVisuals[visualIndex].SetActive(true);
+            RoguelikeOffroadVisual warmupVisual = offroadVisuals[visualIndex].GetComponent<RoguelikeOffroadVisual>();
+            if (null != warmupVisual) warmupVisual.BeginWarmup(from, to, tuning.offroadWarmup);
         }
 
         Publish(ERoguelikeSkillVfx.OffroadWarmup, from, to, dash.radius, tuning.offroadWarmup, 0);
@@ -671,7 +755,14 @@ public class RoguelikeSkillController : MonoBehaviour
             DamageTreesInRadius(centroid, radius, tuning.stellaDroneNovaDamage * DamageMul(ERoguelikeSkill.Stella), false, false);
             Publish(ERoguelikeSkillVfx.StarNova, centroid, centroid, radius, 0f, 0);
 
-            for (int i = activeStars.Count - 1; i >= 0; i--) DespawnStar(i, false);
+            // 노바 때 별이 모두 소멸한다(기획서). 별마다 소멸 연출 지점을 알린다.
+            for (int i = activeStars.Count - 1; i >= 0; i--)
+            {
+                Vector3 starPos = activeStars[i].transform.position;
+                Publish(ERoguelikeSkillVfx.StarExpired, starPos, starPos, 0f, 0f, activeStars[i].StarId);
+                DespawnStar(i, false);
+            }
+
             RebuildStarLinks();
             return;
         }
@@ -863,7 +954,9 @@ public class RoguelikeSkillController : MonoBehaviour
 
     private void Publish(ERoguelikeSkillVfx _type, Vector3 _position, Vector3 _position2, float _radius, float _duration, int _id)
     {
-        signalHub?.Publish(new RoguelikeSkillVfxSignal(_type, _position, _position2, _radius, _duration, _id));
+        RoguelikeSkillVfxSignal signal = new RoguelikeSkillVfxSignal(_type, _position, _position2, _radius, _duration, _id);
+        vfxPlayer.Play(in signal, activeStars, starLinks);
+        signalHub?.Publish(signal);
     }
 
     private static int GetFirstLayer(LayerMask _mask)

@@ -42,7 +42,7 @@ public class RoguelikeDebugWindow : EditorWindow
             EditorGUILayout.HelpBox("로그라이크 세션이 아닙니다.", MessageType.None);
             using (new EditorGUI.DisabledScope(null == bootStrap || SceneType.MainMenu != bootStrap.CurrentSceneType))
             {
-                if (GUILayout.Button("메인메뉴 → 로그라이크 진입")) bootStrap.GoToRoguelikeFromMainMenu();
+                if (GUILayout.Button("메인메뉴 → 로그라이크 진입")) EnterRoguelikeLikeMainMenuButton(bootStrap);
             }
 
             EditorGUILayout.EndScrollView();
@@ -86,6 +86,34 @@ public class RoguelikeDebugWindow : EditorWindow
         EditorGUILayout.LabelField("로비", EditorStyles.boldLabel);
         if (GUILayout.Button("게임 시작 오브젝트 타격")) _system.DebugLobbyAction(ERoguelikeLobbyAction.StartRun);
         if (GUILayout.Button("순위표 오브젝트 타격")) _system.DebugLobbyAction(ERoguelikeLobbyAction.OpenRecords);
+        if (GUILayout.Button("다음 티어 지형 전환 연출 (F6)")) _system.DebugPlayTierTransition();
+    }
+
+    /// <summary>
+    /// 메인메뉴의 로그라이크 버튼과 같은 경로로 들어간다(UIView_MainMenu.OnRoguelikeButtonClicked → 디스토션·암전 → 메인메뉴 퇴장 정리 →
+    /// BootStrap.GoToRoguelikeFromMainMenu). BootStrap을 바로 부르면 메인메뉴 버튼 UI가 켜진 채로 남아 입력을 계속 받는다.
+    /// </summary>
+    private static void EnterRoguelikeLikeMainMenuButton(BootStrap _bootStrap)
+    {
+        // 실제 버튼은 메인메뉴 버튼 목록(UI_MainMenu) 안에 있다. 그 목록이 아직 안 보이는 상태(스플래시·초기 설정 팝업 등)에서
+        // 들어가면 열려 있던 팝업이 응답 없이 남아 있다가 메인메뉴로 돌아왔을 때 다시 보인다. 버튼을 누를 수 있을 때만 들어간다.
+        UI_MainMenu mainMenuButtons = FindAnyObjectByType<UI_MainMenu>(FindObjectsInactive.Include);
+        if (null != mainMenuButtons && false == mainMenuButtons.gameObject.activeInHierarchy)
+        {
+            Debug.LogWarning("[RoguelikeDebugWindow] 메인메뉴 버튼이 보이는 상태에서 눌러 주십시오(초기 설정 팝업·스플래시 중에는 들어가지 않습니다).");
+            return;
+        }
+
+        UIView_MainMenu mainMenuView = FindAnyObjectByType<UIView_MainMenu>();
+        if (null != mainMenuView)
+        {
+            Sound.PlayUI(SoundID.MainClick);
+            mainMenuView.OnRoguelikeButtonClicked();
+            return;
+        }
+
+        Debug.LogWarning("[RoguelikeDebugWindow] UIView_MainMenu를 찾지 못해 메인메뉴 퇴장 연출 없이 바로 전환합니다.");
+        _bootStrap.GoToRoguelikeFromMainMenu();
     }
 
     private static void DrawCardSelect(RoguelikeSystem _system)

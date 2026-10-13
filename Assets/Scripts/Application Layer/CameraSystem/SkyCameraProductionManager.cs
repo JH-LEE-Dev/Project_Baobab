@@ -420,7 +420,7 @@ public class SkyCameraProductionManager : MonoBehaviour
             Debug.LogWarning($"[SkyCameraProductionManager] PlayAscendOut 실패로 카메라 상승 연출을 건너뜁니다. " +
                 $"(virtualCamera={virtualCamera != null}, character={_characterTransform != null}, dummyTarget={dummyTarget != null}) 즉시 완료 처리합니다.");
             EndSkyVolumeTracking(1f);
-            AscendOutEndEvent?.Invoke();
+            if (false == TryInvokeRunCompleteOverride()) AscendOutEndEvent?.Invoke();
             return;
         }
 
@@ -461,7 +461,34 @@ public class SkyCameraProductionManager : MonoBehaviour
         // (실패 분기까지 포함해) 반드시 1f로 되돌리므로 무음이 굳지 않는다.
         EndSkyVolumeTracking(0f);
 
-        AscendOutEndEvent?.Invoke();
+        if (false == TryInvokeRunCompleteOverride()) AscendOutEndEvent?.Invoke();
+    }
+
+    // [로그라이크] 상승 완료를 이벤트 대신 받는 일회성 콜백. 이벤트를 받는 마을·던전 쪽 완료 처리(메인메뉴 전환 신호)를 로그라이크가 타지 않게 한다. 카메라·사운드·볼륨 처리는 본편 연출과 완전히 같다.
+    // 본편 경로에서는 항상 null이라 예전과 똑같이 이벤트를 발행한다.
+    private Action runCompleteOverride;
+
+    /// <summary>[로그라이크 전용] 로그라이크 → 메인메뉴 이탈 상승. PlayAscendOut과 같은 연출이고 완료만 _onComplete로 받는다.</summary>
+    public void PlayAscendOutForRun(Transform _target, Action _onComplete)
+    {
+        runCompleteOverride = _onComplete;
+        PlayAscendOut(_target);
+    }
+
+    /// <summary>[로그라이크 전용] PlayAscendOutForRun의 완료 콜백을 거둔다(완료를 기다리지 않고 넘어갈 때). 이후 완료는 본편처럼 이벤트로 나간다.</summary>
+    public void CancelAscendOutForRun()
+    {
+        runCompleteOverride = null;
+    }
+
+    private bool TryInvokeRunCompleteOverride()
+    {
+        if (null == runCompleteOverride) return false;
+
+        Action callback = runCompleteOverride;
+        runCompleteOverride = null;
+        callback.Invoke();
+        return true;
     }
 
     public void SetCharacterTransform(Transform _characterTransform)

@@ -301,6 +301,15 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         UpdateStaminaAmounts();
     }
 
+    /// <summary>
+    /// [로그라이크] 스탯의 최대 스태미너를 체력 컴포넌트에 바로 반영한다. 본편은 던전 입장(SetStaminaUpDownState) 때만 맞추면 되지만
+    /// 로그라이크는 런 도중 카드로 최대치가 바뀐다. 늘어난 만큼 현재치도 함께 늘어난다(PHealthComponent.SetMaxStamina).
+    /// </summary>
+    public void SyncMaxStaminaForRun()
+    {
+        healthComponent.SetMaxStamina(statComponent.maxStamina);
+    }
+
     private void UpdateStaminaAmounts()
     {
         // 최대 스태미나 동기화
@@ -1606,6 +1615,19 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         shadowObject.gameObject.SetActive(true);
     }
 
+    /// <summary>
+    /// [로그라이크 전용] 공격 인디케이터만 캐릭터 정면(아래)을 향하게 띄운다. 조준(마우스 추적)과 공격은 켜지 않는다 -
+    /// 낙하 착지부터 조작이 풀릴 때(EnableAim·ActivateCharacter)까지 아래를 보고 있게 한다. 본편에서는 호출되지 않는다.
+    /// </summary>
+    public void ShowAttackIndicatorFacingDownForRun()
+    {
+        attackComponent.SetCursorEnable(false);
+        armComponent.ResetRotation();
+        attackComponent.ResetAttackTransform();
+        UpdateFacingByAttackPoint();
+        attackComponent.SetEnable(true);
+    }
+
     public void DisableAttackComponent()
     {
         // 귀환 확정(HandleGameEnd) 또는 플레이 시작 전 대기 상태. 스태미나는 낮은 값 그대로 남을 수
@@ -1639,7 +1661,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         UpdateFacingByAttackPoint();
     }
 
-    public void ActivateCharacter()
+    /// <param name="_bKeepVisibleIndicator">
+    /// [로그라이크] true면 이미 떠 있는 공격 인디케이터를 다시 페이드하지 않는다(착지 때 먼저 띄워 둔 경우).
+    /// 본편 호출은 전부 기본값(false)이라 예전과 같다.
+    /// </param>
+    public void ActivateCharacter(bool _bKeepVisibleIndicator = false)
     {
         // 지연 발행되는 ActivateCharacterSignal(입장 연출 0.7초 뒤)이 도착했을 때 이미 차량에 타 있거나
         // 꺼져 있다면 활성화하지 않는다. 원정 종료 상태(InDungeonObjectManager.RunEndState)가 정상적으로는
@@ -1659,7 +1685,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             attackComponent.ResetAimToDefaultPose();
         }
 
-        attackComponent.SetEnable(true);
+        if (false == _bKeepVisibleIndicator || false == attackComponent.IsIndicatorActive) attackComponent.SetEnable(true);
         attackComponent.SetbCanAttack(true);
         armComponent.SetbCanAttack(true);
         bWhileReset = false;
