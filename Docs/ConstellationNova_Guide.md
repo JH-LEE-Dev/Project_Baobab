@@ -37,7 +37,7 @@ Stage3TreeGenerationStrategySO.OnTreeDead            (그룹 마지막 별 표�
   -> InDungeonObjectManager.OnConstellationManifestReady(groupId)
        Sound.Play(StarExplosion, center)
        inDungeonVFXManager.PlayConstellationNovaVFX(center, CurrentConstellationBlastRadius)
-       StartCoroutine(ConstellationBeamRoutine(...))             (잔상 횟수만큼 레이저 연출 + ConstellationBlastRoutine 폭발 판정)
+       StartCoroutine(ConstellationManifestRoutine(...))             (잔상 횟수만큼 레이저 연출 + ConstellationBlastRoutine 폭발 판정)
 ```
 
 ### 1.2 시간표 (`TimelineLength` 2.8초)
@@ -182,7 +182,7 @@ VFX_ConstellationNova           (루트, 레이어 19) ParticleSystem + Particle
 | 필드 | 기본값 | 설명 |
 |---|---|---|
 | `maxRadius` | 4.0 | 바깥 마법진 링 반지름(월드 유닛, 1유닛 = 32px). 피격 범위와 맞추는 기준 값 |
-| `groundSquashY` | 0.5 | 바닥 타원 세로 비율(쿼터뷰). 히트 판정의 Y축 2배 보정과 같은 값 |
+| (상수) `GroundSquashY` | 0.5 | 바닥 타원 세로 비율(쿼터뷰). **인스펙터 필드가 아니라 `public const`** 입니다. 발현 폭발 판정과 별자리 생성이 `GetGroundDistance`로 같은 값을 써서, 한쪽만 바뀌어 보이는 범위와 피격 범위가 어긋나는 일을 막습니다 |
 | `particleSpread` | 1.3 | 별/스파크가 퍼지는 최대 거리 배율(링 반지름 대비). 피격 범위와 무관 |
 | `density` | 1.0 | 별, 주인공 별, 불씨, 스파크 개수에 곱하는 전체 배율(0.25~2). **과한 정도를 조절하는 스위치** |
 | `starsPerUnit` | 17.5 | density 1 기준 반지름 1유닛당 별 수(최대 300) |
@@ -246,7 +246,7 @@ VFX_ConstellationNova           (루트, 레이어 19) ParticleSystem + Particle
 #### 피격 범위와 맞추기
 
 - 별자리 발현은 **모든 별자리에 같은 반지름**(`InDungeonObjectManager.CurrentConstellationBlastRadius`, 기본 4.0)을 발현 시점에 한 번 읽어 노바와 폭발 판정(잔상 포함)에 같이 씁니다. 그래서 보이는 범위와 피격 범위가 항상 같습니다(4.8). 범위 증가 특성은 이 속성에서 배율을 곱하면 됩니다.
-- 바닥 타원은 가로가 반지름이고 세로는 `groundSquashY`(0.5)배입니다. 월드 좌표의 점이 타원 안에 있는지는 `dx² + (2 x dy)² <= 반지름²`로 판정합니다(`GetConstellationBlastDistance`).
+- 바닥 타원은 가로가 반지름이고 세로는 `GroundSquashY`(0.5)배입니다. 월드 좌표의 점이 타원 안에 있는지는 `VFX_ConstellationNova.GetGroundDistance(점, 중심) <= 반지름`으로 판정합니다(세로 차이를 `GroundSquashY`로 나눈 거리).
 
 #### 별자리 크기에 맞춰 자동으로 넘기는 예시 (채택하지 않음)
 
@@ -338,7 +338,7 @@ inDungeonVFXManager.PlayConstellationNovaVFX(constellationCenter, novaRadius);
 | 잔상 | `constellationHitCount`만큼 0.2초 간격으로 레이저 연출과 폭발 판정을 함께 반복. 노바는 발현 1회당 1번만 재생 |
 | 데미지/낙인 | 기존과 같음(`BaseConstellationDamage` x 배율, 살아남은 나무에 발현 낙인) |
 
-**별자리 모양 제약** (`Stage3TreeGenerationStrategySO.SelectConstellationStars`): 고정 반지름 폭발이 별자리를 항상 감싸도록, 그룹 나무를 모두 스폰한 뒤 실제로 스폰된 나무 중에서 별 표식 나무를 고릅니다. 거리는 모두 Y축 2배 보정 거리입니다.
+**별자리 모양 제약** (`Stage3TreeGenerationStrategySO.SelectConstellationStars`): 고정 반지름 폭발이 별자리를 항상 감싸도록, 그룹 나무를 모두 스폰한 뒤 실제로 스폰된 나무 중에서 별 표식 나무를 고릅니다. 거리는 모두 `VFX_ConstellationNova.GetGroundDistance`(마법진과 같은 비율의 바닥 거리)입니다.
 
 | 상수 | 값 | 의미 |
 |---|---|---|

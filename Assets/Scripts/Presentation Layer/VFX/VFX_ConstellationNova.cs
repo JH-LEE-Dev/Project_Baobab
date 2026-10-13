@@ -37,8 +37,6 @@ namespace PresentationLayer.VFX
         [Header("범위 (월드 유닛, 32 PPU 기준 1유닛 = 32px)")]
         [SerializeField, Tooltip("바깥 마법진 링이 닿는 반지름. 눈에 보이는 폭발 범위이자 피격 범위와 맞추는 값이다. 재생 직전에 SetRadius로 덮어쓸 수 있다.")]
         private float maxRadius = 4.0f;
-        [SerializeField, Tooltip("바닥 타원의 세로 비율(쿼터뷰). 히트 판정의 Y축 2배 보정과 같은 0.5가 기본이다.")]
-        private float groundSquashY = 0.5f;
         [SerializeField, Tooltip("별과 방사 스파크가 퍼지는 최대 거리 배율(마법진 링 반지름 대비). 1이면 링 안쪽까지만, 클수록 링 밖으로 팡 터져 나간다. 피격 범위에는 영향이 없다.")]
         private float particleSpread = 1.3f;
 
@@ -67,6 +65,9 @@ namespace PresentationLayer.VFX
         [SerializeField, Tooltip("바닥 메쉬 소팅 오더")]
         private int groundSortingOrder = 0;
 
+        // 바닥 타원의 세로 비율(쿼터뷰, 2:1 아이소메트릭). 마법진 그림과 별자리 발현 폭발 판정(GetGroundDistance)이 같이 쓰는 값이라
+        // 인스펙터로 노출하지 않는다 - 한쪽만 바뀌면 보이는 범위와 피격 범위가 어긋난다.
+        public const float GroundSquashY = 0.5f;
         private const float PixelsPerUnit = 32.0f;
         private const float TwoPi = Mathf.PI * 2.0f;
 
@@ -291,6 +292,18 @@ namespace PresentationLayer.VFX
             return ShockDuration * (1.0f - Mathf.Pow(remaining, 1.0f / 3.0f));
         }
 
+        /// <summary>
+        /// 쿼터뷰 바닥 거리(월드 유닛, 마법진 타원의 가로 반지름 기준). 세로 차이를 GroundSquashY로 나눠 바닥 타원을 원으로 편 거리라,
+        /// 이 값이 반지름 이하이면 마법진 타원 안이다. 별자리 발현 폭발 판정과 별자리 생성 제약이 모두 이 함수를 써서
+        /// 보이는 마법진과 실제 범위가 같은 비율을 쓰게 한다.
+        /// </summary>
+        public static float GetGroundDistance(Vector3 _a, Vector3 _b)
+        {
+            float dx = _a.x - _b.x;
+            float dy = (_a.y - _b.y) / GroundSquashY;
+            return Mathf.Sqrt(dx * dx + dy * dy);
+        }
+
         private void EnsureInitialized()
         {
             if (true == bInitialized) return;
@@ -345,7 +358,7 @@ namespace PresentationLayer.VFX
             float reach = Mathf.Max(1.0f, particleSpread) * 1.2f + EmberOutward;
             float halfX = (radiusPx * reach + 64.0f) / PixelsPerUnit;
             float riseMax = Mathf.Max(PillarHeightPx, StarRisePx + EmberRisePx) * sizeScale;
-            float halfY = (radiusPx * reach * groundSquashY + riseMax + 64.0f) / PixelsPerUnit;
+            float halfY = (radiusPx * reach * GroundSquashY + riseMax + 64.0f) / PixelsPerUnit;
             meshBoundsSize = new Vector3(halfX * 2.0f, halfY * 2.0f, 10.0f);
 
             Vector3 pos = transform.position;
@@ -482,7 +495,7 @@ namespace PresentationLayer.VFX
             lift += vanish * vanish * (30.0f + 40.0f * stars[_index].rise) * sizeScale;
 
             _x = Mathf.Cos(angle) * radius;
-            _y = Mathf.Sin(angle) * radius * groundSquashY + lift;
+            _y = Mathf.Sin(angle) * radius * GroundSquashY + lift;
         }
 
         // 스파크의 중심 기준 픽셀 오프셋(닫힌 식). 강한 감속으로 팡 나가고, 이동이 끝난 뒤에는 천천히 떠오른다.
@@ -571,7 +584,7 @@ namespace PresentationLayer.VFX
             _shape = 0;
 
             float dx = _x - centerX;
-            float dy = (_y - centerY) / groundSquashY;
+            float dy = (_y - centerY) / GroundSquashY;
             float length = Mathf.Sqrt(dx * dx + dy * dy);
             float ratio = Mathf.Min(1.0f, length / radiusPx);
 
@@ -604,7 +617,7 @@ namespace PresentationLayer.VFX
             float wobble = Mathf.Sin(t * 9.0f + h * TwoPi) * 2.0f * sizeScale;
 
             float ox = ux * outward - uy * swirl + wobble;
-            float oy = (uy * outward + ux * swirl) * groundSquashY + lift;
+            float oy = (uy * outward + ux * swirl) * GroundSquashY + lift;
 
             _x += Mathf.RoundToInt(ox);
             _y += Mathf.RoundToInt(oy);
@@ -675,7 +688,7 @@ namespace PresentationLayer.VFX
         private void PlotEllipse(float _angle, float _radius, float _yOffset, Color32 _color, bool _bDrift)
         {
             int px = centerX + Mathf.RoundToInt(Mathf.Cos(_angle) * _radius);
-            int py = centerY + Mathf.RoundToInt(Mathf.Sin(_angle) * _radius * groundSquashY + _yOffset);
+            int py = centerY + Mathf.RoundToInt(Mathf.Sin(_angle) * _radius * GroundSquashY + _yOffset);
             Plot(px, py, _color, _bDrift);
         }
 
@@ -765,9 +778,9 @@ namespace PresentationLayer.VFX
                 float a1 = _rotation + TwoPi * i / _n;
                 float a2 = _rotation + TwoPi * ((i + _k) % _n) / _n;
                 float x1 = Mathf.Cos(a1) * _radius;
-                float y1 = Mathf.Sin(a1) * _radius * groundSquashY;
+                float y1 = Mathf.Sin(a1) * _radius * GroundSquashY;
                 float x2 = Mathf.Cos(a2) * _radius;
-                float y2 = Mathf.Sin(a2) * _radius * groundSquashY;
+                float y2 = Mathf.Sin(a2) * _radius * GroundSquashY;
 
                 DrawLineLocal(x1, y1, x1 + (x2 - x1) * f, y1 + (y2 - y1) * f, _color, _dash, _bDrift);
             }
@@ -781,7 +794,7 @@ namespace PresentationLayer.VFX
             {
                 float angle = _rotation + TwoPi * i / _count;
                 float cos = Mathf.Cos(angle);
-                float sin = Mathf.Sin(angle) * groundSquashY;
+                float sin = Mathf.Sin(angle) * GroundSquashY;
                 DrawLineLocal(cos * _radiusInner, sin * _radiusInner, cos * _radiusOuter, sin * _radiusOuter, _color, 0, _bDrift);
             }
         }
@@ -919,7 +932,7 @@ namespace PresentationLayer.VFX
                 {
                     float angle = stepTime * 0.15f + TwoPi * i / 6.0f;
                     int px = centerX + Mathf.RoundToInt(Mathf.Cos(angle) * r);
-                    int py = centerY + Mathf.RoundToInt(Mathf.Sin(angle) * r * groundSquashY);
+                    int py = centerY + Mathf.RoundToInt(Mathf.Sin(angle) * r * GroundSquashY);
                     DrawSparkle(px, py, 2, true, runeColor, true);
                 }
             }
@@ -973,7 +986,7 @@ namespace PresentationLayer.VFX
             {
                 float angle = rotation + TwoPi * v / StarPolygonPoints;
                 int bx = centerX + Mathf.RoundToInt(Mathf.Cos(angle) * radius);
-                int by = centerY + Mathf.RoundToInt(Mathf.Sin(angle) * radius * groundSquashY);
+                int by = centerY + Mathf.RoundToInt(Mathf.Sin(angle) * radius * GroundSquashY);
                 DrawPillar(bx, by, 0 == (v % 3) ? height : height * 0.5f);
             }
         }
@@ -1030,7 +1043,7 @@ namespace PresentationLayer.VFX
                 if (0.75f < life && 0 != ((Mathf.FloorToInt(elapsed * 30.0f) + i) & 1)) continue;
 
                 float cos = Mathf.Cos(sparks[i].angle);
-                float sin = Mathf.Sin(sparks[i].angle) * groundSquashY;
+                float sin = Mathf.Sin(sparks[i].angle) * GroundSquashY;
 
                 float x;
                 float y;
@@ -1128,7 +1141,7 @@ namespace PresentationLayer.VFX
                 // 오르면서 바깥쪽으로 퍼진다
                 float radius = radiusPx * embers[i].radiusScale * (1.0f + EmberOutward * p);
                 int px = centerX + Mathf.RoundToInt(Mathf.Cos(embers[i].angle) * radius);
-                int py = centerY + Mathf.RoundToInt(Mathf.Sin(embers[i].angle) * radius * groundSquashY + p * EmberRisePx * sizeScale);
+                int py = centerY + Mathf.RoundToInt(Mathf.Sin(embers[i].angle) * radius * GroundSquashY + p * EmberRisePx * sizeScale);
 
                 Color32 baseColor = p < 0.35f ? ColorWhite : (p < 0.7f ? ColorIce : ColorBlue);
                 Plot(px, py, GlowColor(baseColor, (1.0f - p * 0.6f) * 0.4f), false);
@@ -1277,7 +1290,6 @@ namespace PresentationLayer.VFX
         private void OnValidate()
         {
             maxRadius = Mathf.Max(0.5f, maxRadius);
-            groundSquashY = Mathf.Clamp(groundSquashY, 0.2f, 1.0f);
             particleSpread = Mathf.Clamp(particleSpread, 1.0f, 2.5f);
             density = Mathf.Clamp(density, 0.25f, 2.0f);
             starsPerUnit = Mathf.Max(1.0f, starsPerUnit);
@@ -1299,7 +1311,7 @@ namespace PresentationLayer.VFX
             for (int i = 1; i <= Segments; i++)
             {
                 float angle = TwoPi * i / Segments;
-                Vector3 next = center + new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius * groundSquashY, 0.0f);
+                Vector3 next = center + new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius * GroundSquashY, 0.0f);
                 Gizmos.DrawLine(previous, next);
                 previous = next;
             }

@@ -429,7 +429,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 발생할 때까지, 별자리 VFX에 필요한 별 위치 목록을 groupId 기준으로 보관해둔다.
     private readonly Dictionary<int, List<Vector3>> pendingConstellationStarPositions = new Dictionary<int, List<Vector3>>();
 
-    // ClearTrees마다 증가 - 대기 중이던 ConstellationBeamRoutine이 이전 런의 발현을 이어서 쏘지 않게 한다.
+    // ClearTrees마다 증가 - 대기 중이던 ConstellationManifestRoutine이 이전 런의 발현을 이어서 쏘지 않게 한다.
     private int constellationManifestVersion = 0;
 
     // 발현 낙인이 찍힌 나무와, 그 나무를 감싸고 도는 별 이펙트(VFX_BrandStarWrap). 동시 개수 상한에 걸려 별을
@@ -1227,7 +1227,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
         activeConstellationLasers.Clear();
 
-        // 별자리 잔상(ConstellationBeamRoutine)이 다음 발사를 기다리는 중이었거나 폭발 판정
+        // 별자리 잔상(ConstellationManifestRoutine)이 다음 발사를 기다리는 중이었거나 폭발 판정
         // (ConstellationBlastRoutine)이 진행 중이었다면, 버전이 바뀐 것을 보고 더 쏘거나 때리지 않고 끝난다.
         // (그 finally가 뒤늦게 activeConstellationGroups.Remove를 호출해도 무해하다)
         constellationManifestVersion++;
@@ -2595,7 +2595,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         float blastRadius = CurrentConstellationBlastRadius;
         inDungeonVFXManager.PlayConstellationNovaVFX(constellationCenter, blastRadius);
 
-        StartCoroutine(ConstellationBeamRoutine(_starPositions, path, constellationCenter, blastRadius, damage, hitCount));
+        StartCoroutine(ConstellationManifestRoutine(_starPositions, path, constellationCenter, blastRadius, damage, hitCount));
     }
 
     // 중심점(centroid) 기준 각도 순으로 정렬해서 폐곡선을 만든다. 최근접 이웃(greedy) 방식과 달리,
@@ -2628,7 +2628,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 별자리 잔상(hitCount)만큼 인터벌을 두고 레이저 연출과 폭발을 함께 반복한다. 데미지는 레이저 선이 아니라
     // 별자리 중심의 바닥 타원 폭발(ConstellationBlastRoutine)이 준다. 레이저는 외곽선을 그리는 연출만 한다.
     // 잔상의 모든 폭발은 노바 마법진과 같은 발현 시점의 반지름(_blastRadius)을 쓴다.
-    private IEnumerator ConstellationBeamRoutine(List<Vector3> _groupKey, List<Vector3> _path, Vector3 _center, float _blastRadius, float _damagePerHit, int _hitCount)
+    private IEnumerator ConstellationManifestRoutine(List<Vector3> _groupKey, List<Vector3> _path, Vector3 _center, float _blastRadius, float _damagePerHit, int _hitCount)
     {
         int version = constellationManifestVersion;
 
@@ -2723,14 +2723,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
     }
 
-    // 별자리 중심의 바닥 타원(가로 반지름 _radius, 세로는 절반) 안에 드는 나무를 모아, 노바 충격파
-    // 선두가 그 나무에 닿는 시각 순으로 정렬해 _hits에 채운다. 쿼터뷰라 Y축 차이를 2배로 보정해 원으로 판정한다
-    // (노바 마법진의 groundSquashY 0.5와 같은 비율). 나무는 밑동과 윗부분 중 중심에 더 가까운 쪽 기준이다(레이저 판정과 같은 정책).
+    // 별자리 중심의 바닥 타원(가로 반지름 _radius, 세로는 GroundSquashY배) 안에 드는 나무를 모아, 노바 충격파
+    // 선두가 그 나무에 닿는 시각 순으로 정렬해 _hits에 채운다. 거리는 노바 마법진과 같은 비율의 바닥 거리
+    // (VFX_ConstellationNova.GetGroundDistance)로 잰다. 나무는 밑동과 윗부분 중 중심에 더 가까운 쪽 기준이다(레이저 판정과 같은 정책).
     private void CollectConstellationBlastHits(Vector3 _center, float _radius, List<ConstellationHit> _hits)
     {
         if (CollisionSystem.Instance == null || _radius <= 0f) return;
 
-        // 광역 조회는 원이므로, 타원(가로 반지름 R, 세로 R/2)을 감싸는 반경 R에 윗부분 여유를 더해 후보만 모은다.
+        // 광역 조회는 원이므로, 타원(가로 반지름 R, 세로는 그보다 작음)을 감싸는 반경 R에 윗부분 여유를 더해 후보만 모은다.
         constellationScanBuffer.Clear();
         CollisionSystem.Instance.GetCollidablesInRadius(_center, _radius + ConstellationBlastScanMargin, treeLayerForExplosion.value, constellationScanBuffer);
 
@@ -2744,8 +2744,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             Vector3 topPos = tree.treeVisualComponent != null ? tree.treeVisualComponent.GetTopRootPosition() : rootPos;
 
             float normalizedDistance = Mathf.Min(
-                GetConstellationBlastDistance(rootPos, _center),
-                GetConstellationBlastDistance(topPos, _center)) * invRadius;
+                PresentationLayer.VFX.VFX_ConstellationNova.GetGroundDistance(rootPos, _center),
+                PresentationLayer.VFX.VFX_ConstellationNova.GetGroundDistance(topPos, _center)) * invRadius;
 
             if (normalizedDistance > 1f) continue;
 
@@ -2758,14 +2758,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         _hits.Sort(ConstellationHitTimeComparison);
-    }
-
-    // 쿼터뷰 바닥 거리 - Y축 차이를 2배로 보정한 거리(월드 유닛, 타원의 가로 반지름 기준).
-    private static float GetConstellationBlastDistance(Vector3 _point, Vector3 _center)
-    {
-        float dx = _point.x - _center.x;
-        float dy = (_point.y - _center.y) * 2f;
-        return Mathf.Sqrt(dx * dx + dy * dy);
     }
 
     private void ApplyConstellationHit(ConstellationHit _hit, float _damage)

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
+using PresentationLayer.VFX;
 
 [CreateAssetMenu(fileName = "Stage3TreeGenerationStrategy", menuName = "Baobab/ObjectSystem/TreeGenerationStrategy/Stage3")]
 public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
@@ -17,6 +18,10 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
         groupStarPositions.Clear();
         groupRemainingStarCount.Clear();
         nextGroupId = 0;
+
+        // 이전 생성이 5단계 전에 중단(StopCoroutine)됐다면 미뤄 둔 군집이 남아 있다. 그룹 번호가 0부터 다시 매겨지므로
+        // 남겨 두면 새 별자리의 그룹 정보를 덮어쓴다 - 반드시 비우고 시작한다.
+        deferredConstellations.Clear();
 
         // 별이 넘지 못하는 링 반지름 - 생성 시점의 발현 폭발 범위 기준이라, 범위 증가 특성이 있으면 별자리도 그만큼 넓게 구성될 수 있다.
         starMaxReach = _manager.CurrentConstellationBlastRadius * StarMaxReachRatio;
@@ -380,7 +385,7 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
     // 별자리 모양 제약 - 별자리 발현은 별 좌표 평균(중심)에서 모든 별자리에 같은 반지름의 타원
     // (InDungeonObjectManager.CurrentConstellationBlastRadius)으로 터지므로, 별이 그 마법진 링 안쪽에 들어오고(필수)
     // 별자리가 너무 작거나 한 점에 뭉치지 않게 별 표식 나무를 고른다.
-    // 거리는 모두 쿼터뷰 Y축 2배 보정 거리(월드 유닛)다. 군집(반경 5~7칸) 안에서 대부분 첫 몇 번의 시도로 조건을 만족한다.
+    // 거리는 모두 노바 마법진과 같은 비율의 바닥 거리(VFX_ConstellationNova.GetGroundDistance, 월드 유닛)다. 군집(반경 5~7칸) 안에서 대부분 첫 몇 번의 시도로 조건을 만족한다.
     private const int MinStarsPerConstellation = 3;      // 별 2개는 선분이라 다각형 중심이 성립하지 않는다
     private const int MaxStarsPerConstellation = 5;
     private const float StarMinSpacing = 1.8f;           // 별끼리 최소 간격
@@ -434,40 +439,50 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
     }
     private readonly List<DeferredConstellation> deferredConstellations = new List<DeferredConstellation>();
 
-    // 이미 놓인 별자리 다각형(바닥 좌표 = Y 2배 보정, 점선/레이저와 같은 각도 순서). 꼭짓점을 한 목록에 이어 붙이고
-    // 다각형마다 시작 위치와 개수를 따로 둔다. 5)단계에서만 쓴다.
+    // 이미 놓인 별자리 다각형(바닥 좌표 = 세로를 GroundSquashY로 편 좌표, 점선/레이저와 같은 꼭짓점 순서). 꼭짓점을 한 목록에
+    // 이어 붙이고 다각형마다 시작 위치와 개수를 따로 둔다. 5)단계에서만 쓴다.
     private readonly List<Vector2> placedPolygonPoints = new List<Vector2>(128);
     private readonly List<int> placedPolygonStarts = new List<int>(32);
     private readonly List<int> placedPolygonCounts = new List<int>(32);
     private readonly List<Vector2> candidatePolygon = new List<Vector2>(MaxStarsPerConstellation);
-    private readonly List<float> polygonAngleBuffer = new List<float>(MaxStarsPerConstellation);
+    private readonly List<Vector3> polygonWorldBuffer = new List<Vector3>(MaxStarsPerConstellation);
+
+    // 영역 판정에 영향을 줄 수 있는 이웃 씨앗(CollectTerritoryCandidates)
+    private readonly List<int> neighborSeedIndices = new List<int>(16);
 
     // 이번 군집(_ownSeedIndex)의 스폰된 나무 중에서 별 표식 나무를 골라 _result에 인덱스로 채운다(위 1~4단계).
-    // 영역 안에서 별을 MinStarsPerConstellation개 이상 고르지 못하면 _result를 비운다(5단계로 미룸).
+    // 단계마다 조건을 완화하다가 목표 개수(_count)를 채우면 멈추고, 끝까지 못 채우면 별이 가장 많은 결과(같으면 더 엄격한
+    // 앞 단계의 결과)를 쓴다. 영역 안에서 별을 MinStarsPerConstellation개 이상 고르지 못하면 _result를 비운다(5단계로 미룸).
     private void SelectConstellationStarsInTerritory(int _ownSeedIndex, int _count, List<int> _result)
     {
         _result.Clear();
         if (_count < MinStarsPerConstellation) return;
 
         CollectTerritoryCandidates(_ownSeedIndex, TerritoryMargin);
-        SelectConstellationStars(spawnedGroupTopPositions, _count, StarMinSpacing, false, _result);
-        if (_result.Count >= MinStarsPerConstellation) return;
+        if (TryTerritoryStage(_count, StarMinSpacing, _result)) return;
 
         CollectTerritoryCandidates(_ownSeedIndex, 0f);
-        SelectConstellationStars(spawnedGroupTopPositions, _count, StarMinSpacing, false, _result);
-        if (_result.Count >= MinStarsPerConstellation) return;
+        if (TryTerritoryStage(_count, StarMinSpacing, _result)) return;
+        if (TryTerritoryStage(_count, StarFallbackSpacing, _result)) return;
+        if (TryTerritoryStage(_count, 0f, _result)) return;
 
-        SelectConstellationStars(spawnedGroupTopPositions, _count, StarFallbackSpacing, false, _result);
-        if (_result.Count >= MinStarsPerConstellation) return;
+        if (_result.Count < MinStarsPerConstellation) _result.Clear();
+    }
 
-        SelectConstellationStars(spawnedGroupTopPositions, _count, 0f, false, _result);
-        if (_result.Count >= MinStarsPerConstellation) return;
-
-        _result.Clear();
+    // 현재 후보(starCandidateOrder)로 한 단계를 시도해, 지금까지의 최선(_best)보다 별이 많으면 바꾼다. 목표 개수를 채웠으면 true.
+    private bool TryTerritoryStage(int _count, float _minSpacing, List<int> _best)
+    {
+        SelectConstellationStars(spawnedGroupTopPositions, _count, _minSpacing, false, fallbackStarIndices);
+        if (fallbackStarIndices.Count > _best.Count)
+        {
+            _best.Clear();
+            _best.AddRange(fallbackStarIndices);
+        }
+        return _best.Count >= _count;
     }
 
     // 5)단계 - 스폰된 나무 전체를 후보로, 별 간격을 단계적으로 완화하며 이미 놓인 다각형과 겹치지 않는 조합을 찾는다.
-    // 마지막 단계(간격 조건 없음)는 후보가 _count개 이상이면 항상 _count개를 채우므로 별 개수가 보장된다.
+    // 링 조건(필수) 때문에 무작위 시도로 별 3개를 못 모으면 확정 탐색(SelectCompactStars)으로 넘어간다.
     private void SelectConstellationStarsAvoidingPlaced(int _count, List<int> _result)
     {
         _result.Clear();
@@ -540,7 +555,7 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
 
         for (int i = 0; i < spawnedGroupTopPositions.Count; i++)
         {
-            float distance = GetGroundDistance(spawnedGroupTopPositions[i], anchorPos);
+            float distance = VFX_ConstellationNova.GetGroundDistance(spawnedGroupTopPositions[i], anchorPos);
             int insertAt = compactDistances.Count;
             while (insertAt > 0 && compactDistances[insertAt - 1] > distance) insertAt--;
             compactOrder.Insert(insertAt, i);
@@ -557,7 +572,7 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
         float reach = 0f;
         for (int i = 0; i < _selected.Count; i++)
         {
-            reach = Mathf.Max(reach, GetGroundDistance(_positions[_selected[i]], center));
+            reach = Mathf.Max(reach, VFX_ConstellationNova.GetGroundDistance(_positions[_selected[i]], center));
         }
         return reach;
     }
@@ -569,16 +584,33 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
         starCandidateOrder.Clear();
         Vector3 ownSeed = clusterSeedWorldPositions[_ownSeedIndex];
 
+        // 판정에 영향을 줄 수 있는 이웃 씨앗만 추린다. 나무가 자기 씨앗에서 최대 maxOwnDistance 떨어져 있을 때, 자기 씨앗에서
+        // 2 x maxOwnDistance + _margin보다 먼 씨앗 S는 삼각부등식으로 (S까지 거리 - 자기 씨앗까지 거리) > _margin이 항상
+        // 성립해 결과에 영향이 없다. 결과는 모든 씨앗을 보는 것과 같고, 나무마다 도는 비용만 군집 수와 무관해진다.
+        float maxOwnDistance = 0f;
+        for (int i = 0; i < spawnedGroupRootPositions.Count; i++)
+        {
+            maxOwnDistance = Mathf.Max(maxOwnDistance, VFX_ConstellationNova.GetGroundDistance(spawnedGroupRootPositions[i], ownSeed));
+        }
+
+        float neighborRange = 2f * maxOwnDistance + _margin;
+        neighborSeedIndices.Clear();
+        for (int s = 0; s < clusterSeedWorldPositions.Count; s++)
+        {
+            if (s == _ownSeedIndex) continue;
+            if (VFX_ConstellationNova.GetGroundDistance(clusterSeedWorldPositions[s], ownSeed) <= neighborRange) neighborSeedIndices.Add(s);
+        }
+
         for (int i = 0; i < spawnedGroupRootPositions.Count; i++)
         {
             Vector3 rootPos = spawnedGroupRootPositions[i];
-            float ownDistance = GetGroundDistance(rootPos, ownSeed);
+            float ownDistance = VFX_ConstellationNova.GetGroundDistance(rootPos, ownSeed);
             bool bInside = true;
 
-            for (int s = 0; s < clusterSeedWorldPositions.Count; s++)
+            for (int n = 0; n < neighborSeedIndices.Count; n++)
             {
-                if (s == _ownSeedIndex) continue;
-                if (GetGroundDistance(rootPos, clusterSeedWorldPositions[s]) - ownDistance <= _margin)
+                Vector3 otherSeed = clusterSeedWorldPositions[neighborSeedIndices[n]];
+                if (VFX_ConstellationNova.GetGroundDistance(rootPos, otherSeed) - ownDistance <= _margin)
                 {
                     bInside = false;
                     break;
@@ -639,7 +671,7 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
     {
         for (int i = 0; i < _selected.Count; i++)
         {
-            if (GetGroundDistance(_positions[_selected[i]], _positions[_candidate]) < _minSpacing) return false;
+            if (VFX_ConstellationNova.GetGroundDistance(_positions[_selected[i]], _positions[_candidate]) < _minSpacing) return false;
         }
         return true;
     }
@@ -652,10 +684,10 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
         for (int i = 0; i < _selected.Count; i++) center += _positions[_selected[i]];
         center /= _selected.Count + 1;
 
-        if (GetGroundDistance(_positions[_candidate], center) > starMaxReach) return false;
+        if (VFX_ConstellationNova.GetGroundDistance(_positions[_candidate], center) > starMaxReach) return false;
         for (int i = 0; i < _selected.Count; i++)
         {
-            if (GetGroundDistance(_positions[_selected[i]], center) > starMaxReach) return false;
+            if (VFX_ConstellationNova.GetGroundDistance(_positions[_selected[i]], center) > starMaxReach) return false;
         }
         return true;
     }
@@ -667,17 +699,7 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
         float penalty = (_count - _selected.Count) * MissingStarPenalty;
         if (_selected.Count == 0) return penalty;
 
-        Vector3 center = Vector3.zero;
-        for (int i = 0; i < _selected.Count; i++) center += _positions[_selected[i]];
-        center /= _selected.Count;
-
-        float reach = 0f;
-        for (int i = 0; i < _selected.Count; i++)
-        {
-            reach = Mathf.Max(reach, GetGroundDistance(_positions[_selected[i]], center));
-        }
-
-        penalty += Mathf.Max(0f, StarMinReach - reach);
+        penalty += Mathf.Max(0f, StarMinReach - GetReachFromCenter(_positions, _selected));
         return penalty;
     }
 
@@ -704,42 +726,19 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
         placedPolygonPoints.AddRange(candidatePolygon);
     }
 
-    // _indices의 별을 바닥 좌표(Y 2배 보정)로 바꿔 중심 기준 각도 순으로 _output에 채운다. 점선과 레이저가 꼭짓점을
-    // 잇는 순서(ConstellationPixelLaser.UntanglePoints의 각도 정렬)와 같아, 화면에 그려지는 다각형 그대로다.
+    // _indices의 별을 점선과 레이저가 꼭짓점을 잇는 것과 같은 정돈(ConstellationPixelLaser.UntanglePoints)으로 순서를 맞춘 뒤,
+    // 바닥 좌표(세로를 GroundSquashY로 편 좌표)로 바꿔 _output에 채운다. 화면에 그려지는 다각형 그대로다.
     private void BuildGroundPolygon(List<Vector3> _positions, List<int> _indices, List<Vector2> _output)
     {
+        polygonWorldBuffer.Clear();
+        for (int i = 0; i < _indices.Count; i++) polygonWorldBuffer.Add(_positions[_indices[i]]);
+        ConstellationPixelLaser.UntanglePoints(polygonWorldBuffer, 0);
+
         _output.Clear();
-        polygonAngleBuffer.Clear();
-
-        Vector2 center = Vector2.zero;
-        for (int i = 0; i < _indices.Count; i++)
+        for (int i = 0; i < polygonWorldBuffer.Count; i++)
         {
-            Vector3 p = _positions[_indices[i]];
-            Vector2 ground = new Vector2(p.x, p.y * 2f);
-            _output.Add(ground);
-            center += ground;
-        }
-        center /= _output.Count;
-
-        for (int i = 0; i < _output.Count; i++)
-        {
-            polygonAngleBuffer.Add(Mathf.Atan2(_output[i].y - center.y, _output[i].x - center.x));
-        }
-
-        // 꼭짓점이 5개 이하라 삽입 정렬로 충분하다.
-        for (int i = 1; i < _output.Count; i++)
-        {
-            Vector2 point = _output[i];
-            float angle = polygonAngleBuffer[i];
-            int j = i - 1;
-            while (j >= 0 && polygonAngleBuffer[j] > angle)
-            {
-                _output[j + 1] = _output[j];
-                polygonAngleBuffer[j + 1] = polygonAngleBuffer[j];
-                j--;
-            }
-            _output[j + 1] = point;
-            polygonAngleBuffer[j + 1] = angle;
+            Vector3 p = polygonWorldBuffer[i];
+            _output.Add(new Vector2(p.x, p.y / VFX_ConstellationNova.GroundSquashY));
         }
     }
 
@@ -819,14 +818,6 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
             }
         }
         return bInside;
-    }
-
-    // 쿼터뷰 바닥 거리 - Y축 차이를 2배로 보정한 거리. 별자리 발현 폭발 판정과 같은 기준이다.
-    private static float GetGroundDistance(Vector3 _a, Vector3 _b)
-    {
-        float dx = _a.x - _b.x;
-        float dy = (_a.y - _b.y) * 2f;
-        return Mathf.Sqrt(dx * dx + dy * dy);
     }
 
     private void ShuffleList(List<int> list)
