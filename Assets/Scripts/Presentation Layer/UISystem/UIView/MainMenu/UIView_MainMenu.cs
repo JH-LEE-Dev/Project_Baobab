@@ -10,6 +10,8 @@ public class UIView_MainMenu : UIView
     public event Action NewGameButtonClickedEvent;
     public event Action LoadGameButtonClickedEvent;
     public event Action ExitButtonClickedEvent;
+    /// <summary>로그라이크 모드 버튼(기획서 4장 "모드 진입"). 버튼 배치·해금 표시는 UI 담당이 UI_MainMenu에 붙인다.</summary>
+    public event Action RoguelikeButtonClickedEvent;
     public event Action<EOptionLanguage> OnLanguageOptionChangedEvent;
 
     [Header("UI References")]
@@ -78,6 +80,7 @@ public class UIView_MainMenu : UIView
     private TweenCallback onEnterAnimationCompleteCallback;
     private TweenCallback invokeNewGameEventCallback;
     private TweenCallback invokeLoadGameEventCallback;
+    private TweenCallback invokeRoguelikeEventCallback;
     private Action onOptionUIClosedCallback;
     private Action showMainMenuCallback;
     private Action onSplashScreenCompletedCallback;
@@ -393,6 +396,21 @@ public class UIView_MainMenu : UIView
         PlayGameStartSequence(invokeLoadGameEventCallback);
     }
 
+    /// <summary>
+    /// 로그라이크 모드 버튼에서 부른다. 해금 조건(본편 모든 특성 해금 + 엔딩)은 본편 엔딩이 아직 없어
+    /// 적용하지 않는다(기획서 9장 - 개발 중에는 상시 활성). 새로하기·이어하기와 같은 퇴장 연출을 재생한다.
+    /// </summary>
+    public void OnRoguelikeButtonClicked()
+    {
+        if (null == invokeRoguelikeEventCallback) invokeRoguelikeEventCallback = InvokeRoguelikeEvent;
+        PlayGameStartSequence(invokeRoguelikeEventCallback);
+    }
+
+    private void InvokeRoguelikeEvent()
+    {
+        RoguelikeButtonClickedEvent?.Invoke();
+    }
+
     private void PlayGameStartSequence(TweenCallback _onSequenceCompleted)
     {
         if (null != mainMenuUI)
@@ -693,6 +711,7 @@ public class UIView_MainMenu : UIView
         NewGameButtonClickedEvent = null;
         LoadGameButtonClickedEvent = null;
         ExitButtonClickedEvent = null;
+        RoguelikeButtonClickedEvent = null;
         OnLanguageOptionChangedEvent = null;
 
         if (null != viewCtx && null != viewCtx.localizationManager)

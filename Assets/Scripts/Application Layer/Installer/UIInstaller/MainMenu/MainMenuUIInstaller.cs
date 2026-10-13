@@ -211,7 +211,15 @@ public class MainMenuUIInstaller : MonoBehaviour
 
             mainMenuUIView.ExitButtonClickedEvent -= ExitGame;
             mainMenuUIView.ExitButtonClickedEvent += ExitGame;
+
+            mainMenuUIView.RoguelikeButtonClickedEvent -= StartRoguelike;
+            mainMenuUIView.RoguelikeButtonClickedEvent += StartRoguelike;
         }
+    }
+
+    private void StartRoguelike()
+    {
+        bootStrapProvider.GoToRoguelikeFromMainMenu();
     }
 
     private void SetAnchorToCanvas(Transform transform)

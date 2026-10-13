@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0477972afb13dc641b4adea16c55fae8, type: 3}
+  m_Name: RoguelikeCardDatabase
+  m_EditorClassIdentifier: Baobab.Roguelike::CardDatabaseSO
+  cards:
+  - {fileID: 11400000, guid: 131885cf5a9503f41ae8b1c6bff5a236, type: 2}
+  - {fileID: 11400000, guid: 50c5c109f638a9845b029c596ffd0a89, type: 2}
+  - {fileID: 11400000, guid: 5324b1b1c96bfa54b820000ba0fc5ec6, type: 2}
+  - {fileID: 11400000, guid: d7e2a3087f5e894448a4cc282d76219c, type: 2}
+  - {fileID: 11400000, guid: cfa387a1f17445648a7f1162f3d21298, type: 2}
+  - {fileID: 11400000, guid: bd68c9de1e3319248b1fc8a3b9380f0c, type: 2}
+  - {fileID: 11400000, guid: 5d0779fa8b8cbbe4ab79e428e85b5fdb, type: 2}
+  - {fileID: 11400000, guid: b315076526503d24b921f0d9ed345fe5, type: 2}
+  - {fileID: 11400000, guid: f80707a1f5f1edd4fb5cb2985e4a2239, type: 2}

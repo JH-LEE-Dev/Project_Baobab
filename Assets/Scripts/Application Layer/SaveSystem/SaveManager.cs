@@ -356,6 +356,15 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
 
     public void SaveGameData()
     {
+        // 로그라이크 세션은 본편 세이브를 절대 쓰지 않는다. 그 세션의 캐릭터는 본편 진행을 불러오지 않은
+        // 기본 상태(능력 트리 0, 빈 인벤토리)라, 여기서 저장하면 본편 진행이 통째로 덮어써진다.
+        // 자동저장·포커스 상실·종료·F4가 모두 이 메서드를 거치므로 한 곳에서 막는다. 본편에서는 항상 false다.
+        if (GameModeContext.IsRoguelike)
+        {
+            Debug.Log("[SaveManager] SaveGameData skipped because the roguelike mode is active.");
+            return;
+        }
+
         if (null == character || null == character.statComponent) return;
 
         // 읽지 못한 세이브가 디스크에 남아있다. 지금 쓰면 그 파일을 덮어써버린다. (LoadGameData 참고)

@@ -1013,7 +1013,8 @@ public class GameplayUICoordinator
         // bWaitingIntroProductionEnd는 MainMenu → Dungeon 튜토리얼의 스튜디오 로고 연출이 끝난 뒤부터
         // 이번 HUDGoUp의 완료 콜백(HUDGoUpCompleted)에서 꺼질 때까지만 true이므로, 튜토리얼 최초 HUD
         // 노출인지 여기서 정확히 판별할 수 있다. 이 진입에서는 던전 상태 배너를 띄우지 않는다.
-        hudUI.HUDGoUp(HUDGoUpCompleted, bWaitingIntroProductionEnd);
+        // 로그라이크에는 던전 상태 배너(숲 이름·상태 문구)가 없다. 본편에서는 IsRoguelike가 항상 false라 기존 판정 그대로다.
+        hudUI.HUDGoUp(HUDGoUpCompleted, bWaitingIntroProductionEnd || GameModeContext.IsRoguelike);
         popUpUI.PopupGoUp();
         worldPopupUI.WorldPopupGoUp();
     }

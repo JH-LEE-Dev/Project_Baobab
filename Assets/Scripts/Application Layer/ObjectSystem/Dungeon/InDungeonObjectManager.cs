@@ -258,6 +258,64 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public IReadOnlyList<ITreeObj> trees => activeTrees;
 
+    // // 로그라이크 전용 훅
+    //
+    // 아래 필드와 메서드는 로그라이크 모드(RoguelikeSystem)만 호출한다. 본편에서는 runTreeRules가 항상 null이고
+    // 외부 전략도 주입되지 않으므로, 이 블록을 보는 기존 분기는 전부 예전과 같은 경로를 탄다.
+
+    private IRunTreeRules runTreeRules;
+
+    /// <summary>[로그라이크] 판 단위 나무 규칙을 건다. null이면 해제(본편 동작).</summary>
+    public void SetRunTreeRules(IRunTreeRules _rules)
+    {
+        runTreeRules = _rules;
+    }
+
+    /// <summary>
+    /// [로그라이크] MapType별 전략 표를 거치지 않고 외부에서 만든 전략을 쓴다. 전략 에셋의 수명은 호출한 쪽이 관리한다
+    /// (여기서 Instantiate/Destroy하지 않는다). 다음 ReadyTrees부터 적용된다.
+    /// </summary>
+    public void SetExternalTreeGenerationStrategy(TreeGenerationStrategySO _strategy, MapType _mapType)
+    {
+        DestroyOwnedStrategyInstance();
+
+        currentMapType = _mapType;
+        currentTreeGenerationStrategy = _strategy;
+
+        if (null != currentTreeGenerationStrategy)
+        {
+            currentTreeGenerationStrategy.currentMapType = _mapType;
+        }
+    }
+
+    /// <summary>[로그라이크] 필드의 모든 나무를 "묘목으로 돌아가는" 상태로 바꾼다. 이 순간부터 피해·골드가 없다.</summary>
+    public void RevertAllTreesToSaplingForRun()
+    {
+        for (int i = activeTrees.Count - 1; i >= 0; i--)
+        {
+            if (null != activeTrees[i]) activeTrees[i].RevertToSaplingForRun();
+        }
+    }
+
+    /// <summary>
+    /// [로그라이크] 필드의 나무를 드랍 없이 전부 회수한다. 성장 루틴은 멈추지 않는다 - 로그라이크 전략의 성장 루틴은
+    /// 웨이브가 진행 중일 때만 심으므로, 웨이브 사이에는 스스로 쉬고 있다가 다음 웨이브에 그대로 이어서 쓴다.
+    /// </summary>
+    public void ClearTreesForRun()
+    {
+        StopDelayedGrassOpen();
+        ClearTrees();
+    }
+
+    /// <summary>
+    /// [로그라이크] ReadyTrees가 예약한 "5초 뒤 시작점·포탈 옆 잔디칸 개방"을 취소한다. 로그라이크 전략은 그 칸을
+    /// 처음부터 스폰 후보에 넣고 웨이브마다 후보를 새로 깐다. 예약이 남아 있으면 웨이브 도중에 같은 칸이 한 번 더 들어간다.
+    /// </summary>
+    public void CancelDelayedGrassOpenForRun()
+    {
+        StopDelayedGrassOpen();
+    }
+
     [SerializeField] private TreeVisualDataBase treeVisualDataBase;
     [SerializeField] private TreeStatDataBase treeStatDataBase;
     [SerializeField] private List<TreeGradeStatMultiplierData> treeGradeStatMultiplierDatas;
@@ -1035,7 +1093,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             tree.SetOnWaterObjectState(isWaterNearby);
 
             tree.SetCellPos(cellPos);
-            tree.SetHeatDamageAmount(environmentProvider.tilemapDataProvider.TreeHeatStaminaDamage);
+            // 로그라이크는 스테이지 기믹(나무 열기)을 끈다. 본편은 runTreeRules가 null이라 기존 값 그대로다.
+            bool bNoGimmick = null != runTreeRules && runTreeRules.bDisableStageGimmicks;
+            tree.SetHeatDamageAmount(bNoGimmick ? 0f : environmentProvider.tilemapDataProvider.TreeHeatStaminaDamage);
 
             tree.PoolIndex = activeTrees.Count;
             activeTrees.Add(tree);
@@ -1442,7 +1502,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED가 꺼져 있으면 이 분기를 타지 않는다.
         // 원석 계열이 들어오기 전에는 보석 나무도 그냥 원목을 떨궜으므로, 그때의 동작 그대로다.
         // 여기가 원석이 게임에 들어오는 유일한 입구라, 이 한 줄만 막으면 원석은 생성 자체가 없다.
-        if (SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED && _treeObj.bIsGemStage)
+        //
+        // [로그라이크] 보상은 골드뿐이라 원목·원석·전리품을 하나도 떨어뜨리지 않는다(골드는 로그라이크 전략의
+        // OnTreeDead가 따로 뿌린다). 본편은 runTreeRules가 null이라 bSuppressDrops가 항상 false다.
+        bool bSuppressDrops = null != runTreeRules && runTreeRules.bSuppressItemDrops;
+
+        if (bSuppressDrops)
+        {
+        }
+        else if (SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED && _treeObj.bIsGemStage)
         {
             itemManager.SpawnGemOre(_treeObj, dropMultiplier);
         }
@@ -1460,7 +1528,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // "분실물 보관함" - 나무를 죽여 LogItem이 드랍될 때 함께 스폰을 시도한다.
         // 이미 획득했거나(영구 저장 플래그) 이번 런에서 이미 스폰을 시도했으면(습득 완료 전 중복 방지)
         // 더 이상 시도하지 않는다. 영구 플래그는 획득 데이터 확정 시점(OnLootDataCommitted)에만 세팅된다.
-        if (!bHasAcquiredLostAndFoundBox && !bLostAndFoundBoxSpawnedThisRun && lootManager != null && character != null)
+        if (!bSuppressDrops && !bHasAcquiredLostAndFoundBox && !bLostAndFoundBoxSpawnedThisRun && lootManager != null && character != null)
         {
             bool bShouldSpawnLostAndFoundBox = false;
 
@@ -1486,7 +1554,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         // "포자 포션" - "2-1,2-2,2-3"에서 확률적으로 드랍(못 얻은 채로 벨 때마다 누적 상승), "3-1" 이후 모든 숲에서 구제 보장.
-        if (!bHasAcquiredSporePotion && !bSporePotionSpawnedThisRun && lootManager != null && character != null)
+        if (!bSuppressDrops && !bHasAcquiredSporePotion && !bSporePotionSpawnedThisRun && lootManager != null && character != null)
         {
             bool bShouldSpawnSporePotion = false;
 
@@ -1513,7 +1581,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         // "별빛 나침반" - "3-1" 이후 모든 숲에서 임계값 그루째에 확률과 무관하게 보장 드랍.
         // 어느 한 곳에서 획득하면 영구 플래그가 세팅되어 더 이상 드랍되지 않는다.
-        if (!bHasAcquiredStarCompass && !bStarCompassSpawnedThisRun && lootManager != null && character != null)
+        if (!bSuppressDrops && !bHasAcquiredStarCompass && !bStarCompassSpawnedThisRun && lootManager != null && character != null)
         {
             if (currentForestType >= StarCompassPityStart && pityTreeKillCount >= starCompassPityThreshold)
             {
@@ -1523,7 +1591,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         // "흑요 부적" - "4-2"에서 확률 드랍(못 얻은 채로 벨 때마다 누적 상승), "4-3" 이후 모든 숲에서 구제 보장.
-        if (!bHasAcquiredObsidianCharm && !bObsidianCharmSpawnedThisRun && lootManager != null && character != null)
+        if (!bSuppressDrops && !bHasAcquiredObsidianCharm && !bObsidianCharmSpawnedThisRun && lootManager != null && character != null)
         {
             if (currentForestType == ForestType.MagmaForest_2)
             {
@@ -1601,7 +1669,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // [미사용 확정] 첫 갈래(히든맵)는 죽은 길입니다. hiddenMapGrade를 None 밖으로 바꾸는
         // InDungeonSystem.SetHiddenMapGrade()에 호출부가 없어, 실제로는 항상 아래 else 갈래
         // (treeGradeProbs = 특성이 올려주는 확률)만 탑니다.
-        if (hiddenMapGrade != HiddenMapGrade.None && hiddenMapTreeGradeDatas != null)
+        if (null != runTreeRules && runTreeRules.bForceNormalGrade)
+        {
+            // [로그라이크] 등급을 굴리지 않고 Normal로 둔다. 보석 회생이 생기면 처치 수와 골드가 꼬인다.
+        }
+        else if (hiddenMapGrade != HiddenMapGrade.None && hiddenMapTreeGradeDatas != null)
         {
             for (int i = 0; i < hiddenMapTreeGradeDatas.Count; i++)
             {
@@ -1676,6 +1748,17 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         statData.hp *= multiplier;
+
+        // [로그라이크] 티어·언리밋 HP 배율과 기믹(실드) 제거. 본편은 runTreeRules가 null이라 건너뛴다.
+        if (null != runTreeRules)
+        {
+            statData.hp *= runTreeRules.TreeHpMultiplier;
+
+            if (runTreeRules.bDisableStageGimmicks)
+            {
+                statData.sp = 0f;
+            }
+        }
 
         return new TreeData(type, grade, treeVisualDataBase.Get(type), statData);
     }

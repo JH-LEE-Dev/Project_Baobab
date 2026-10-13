@@ -9,4 +9,7 @@ public interface IBootStrapProvider
     void ReturnToTownScene();
     void GoToDungeonFromMainMenu();
     public void GoToOtherScene(MapType _mapType, ForestType _forestType);
+
+    /// <summary>메인메뉴 → 로그라이크 모드. 본편 세이브를 읽지도 지우지도 않는다.</summary>
+    void GoToRoguelikeFromMainMenu();
 }

@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7cf8c99cf50507244a0f3d975df109e7, type: 3}
+  m_Name: Temp_Combo1
+  m_EditorClassIdentifier: Baobab.Roguelike::CardDefinitionSO
+  cardId: temp_combo_1
+  nameKey: Roguelike_Temp_Combo1
+  descriptionKey: Roguelike_Temp_Combo1_Desc
+  icon: {fileID: 0}
+  kind: 3
+  grade: 4
+  skillTag: 0
+  exclusiveGroup: 0
+  maxLevel: 5
+  levels: []
+  basePriceOverride: 0
+  comboMaterialA: {fileID: 11400000, guid: 131885cf5a9503f41ae8b1c6bff5a236, type: 2}
+  comboMaterialB: {fileID: 11400000, guid: 50c5c109f638a9845b029c596ffd0a89, type: 2}
+  comboType: 1
+  suppressedSkills: 0200000003000000
+  designerNote: "\uAE30\uD68D\uC11C 10\uC7A5 \uC784\uC2DC \uCE74\uB4DC. \uC2E4\uC81C
+    \uCE74\uB4DC\uAC00 \uB098\uC624\uBA74 \uC0AD\uC81C. \uC561\uD2F0\uBE0C A + B
+    \uBAA8\uB450 MAX \u2192 360\uB3C4 \uC804 \uBC94\uC704 \uCDA9\uACA9\uD30C(\uC7AC\uB8CC
+    \uAE30\uC874 \uB2A5\uB825 \uBC1C\uB3D9 \uC548 \uD568)."

@@ -142,8 +142,50 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         tileMapGenerator.GenerateMap();
     }
 
+    /// <summary>[로그라이크] 타일 한 칸의 월드 크기(아이소메트릭 마름모 가로·세로).</summary>
+    public Vector2 TileCellSize => tileMapGenerator.CellSize;
+
+    // [로그라이크] 맵 생성 완료를 MapGeneratedSignal 대신 이 콜백으로 돌려받는 중인지.
+    // 그 시그널을 받으면 InDungeonSystem이 던전 원정 흐름(포탈·NPC·카메라 하강)을 시작하므로 로그라이크는 피해 간다.
+    private System.Action<List<Vector3>> roguelikeMapGeneratedCallback;
+
+    /// <summary>
+    /// [로그라이크 전용] 필드 맵을 만든다. 던전 진입(DungeonStarted)과 같은 순서로 생성하되, 완료 알림을
+    /// 시그널이 아니라 _onGenerated 콜백으로만 보낸다. 본편 경로(DungeonReadySignal)는 바뀌지 않는다.
+    /// </summary>
+    public void GenerateRoguelikeField(ForestType _forestType, MapType _mapType, float _centerSafeZoneRadius,
+        float _islandRadiusX, float _islandRadiusY, System.Action<List<Vector3>> _onGenerated)
+    {
+        SetupForMapType(_forestType, _mapType);
+        tileMapGenerator.SetCenterSafeZoneRadiusOverride(_centerSafeZoneRadius);
+        tileMapGenerator.SetEllipseIslandOverride(_islandRadiusX, _islandRadiusY);
+
+        roguelikeMapGeneratedCallback = _onGenerated;
+        try
+        {
+            tileMapGenerator.InitializeMapData();
+            pathfindGridManager.Initialize(tileMapGenerator.GridWidth, tileMapGenerator.GridHeight);
+            tileMapGenerator.GenerateMap();
+        }
+        finally
+        {
+            roguelikeMapGeneratedCallback = null;
+        }
+    }
+
     private void TilemapGenerated(List<Vector3> tilePositions)
     {
+        if (null != roguelikeMapGeneratedCallback)
+        {
+            System.Action<List<Vector3>> callback = roguelikeMapGeneratedCallback;
+            roguelikeMapGeneratedCallback = null;
+            callback.Invoke(tilePositions);
+
+            if (environmentObjManager != null)
+                environmentObjManager.SpawnInDungeonEnvironmentObjs();
+            return;
+        }
+
         signalHub.Publish(new MapGeneratedSignal(tilePositions));
 
         if (environmentObjManager != null)

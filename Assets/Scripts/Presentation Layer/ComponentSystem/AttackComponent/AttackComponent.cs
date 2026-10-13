@@ -429,11 +429,16 @@ public class AttackComponent : PComponent
         bool bIsWhirlwindStrike = false;
         if (ctx.characterStat.bWhirlWind)
         {
-            whirlwindSwingCount = (whirlwindSwingCount + 1) % WhirlwindSwingInterval;
+            // 로그라이크 카드가 발동 간격을 바꿀 수 있다. 덮어쓰기가 없으면(본편) 기본 상수 그대로다.
+            int swingInterval = RunCombatOverrides.WhirlwindSwingInterval > 0 ? RunCombatOverrides.WhirlwindSwingInterval : WhirlwindSwingInterval;
+            whirlwindSwingCount = (whirlwindSwingCount + 1) % swingInterval;
             bIsWhirlwindStrike = (whirlwindSwingCount == 0);
         }
 
         Vector3 centerPos = transform.position;
+
+        // 로그라이크 조합 카드용 알림. 본편에서는 구독자가 없어 아무 일도 일어나지 않는다(RunCombatHooks 참고).
+        RunCombatHooks.NotifyAxeSwung(centerPos);
 
         // 마스터리 충격파는 나무를 맞추지 않아도 스윙당 1회 굴린다. 실제 생성은 도끼 타격 여부가
         // 정해진 뒤(FireMasteryShockWave)에 한다 - 도끼가 헛쳤을 때만 "충격파가 나무를 맞추면 내구도 감소"를 걸어야 하기 때문.

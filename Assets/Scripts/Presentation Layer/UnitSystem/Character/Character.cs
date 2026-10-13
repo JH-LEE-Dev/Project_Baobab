@@ -1734,6 +1734,26 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         }
     }
 
+    /// <summary>
+    /// [로그라이크 전용] 드론 수 스탯이 판 도중에 바뀌었을 때 떠 있는 드론을 다시 맞춘다.
+    /// 본편은 던전 입장(SetWhereIsCharacter)·재시작(ResetStatus)에서만 드론을 소환하므로 이 메서드를 부르지 않는다.
+    /// </summary>
+    public void RefreshDronesForRun()
+    {
+        if (bInDungeon == false || bDead) return;
+        if (activeDrones.Count == statComponent.droneCount) return;
+
+        ClearActiveDrones();
+        SpawnDrones();
+    }
+
+    /// <summary>[로그라이크 전용] 웨이브 클리어 회복 같은 단발 회복. "체력의 원천"과 같은 회복 경로(HUD 연출 포함)를 탄다.</summary>
+    public void RecoverStaminaForRun(float _amount)
+    {
+        if (_amount <= 0f || bDead) return;
+        healthComponent.StaminaRecover(_amount);
+    }
+
     public void StaminaRecover()
     {
         healthComponent.StaminaRecover(statComponent.sourceOfStaminaRecoverAmount);

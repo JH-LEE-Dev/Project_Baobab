@@ -503,6 +503,14 @@ public class UnitSystem
 
     private void GameEnd()
     {
+        // 로그라이크는 본편 결과창(GameEndSignal → UIView_Result)을 쓰지 않는다. 쓰러지는 연출이 끝난 시점만
+        // 로그라이크 시스템에 알리고, 기록·결과 화면은 그쪽이 띄운다. 본편에서는 IsRoguelike가 항상 false다.
+        if (GameModeContext.IsRoguelike)
+        {
+            signalHub.Publish(new RoguelikeCharacterDownCompletedSignal());
+            return;
+        }
+
         signalHub.Publish(new GameEndSignal());
     }
 

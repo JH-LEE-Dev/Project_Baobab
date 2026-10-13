@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7cf8c99cf50507244a0f3d975df109e7, type: 3}
+  m_Name: Temp_ActiveA
+  m_EditorClassIdentifier: Baobab.Roguelike::CardDefinitionSO
+  cardId: temp_active_a
+  nameKey: Roguelike_Temp_ActiveA
+  descriptionKey: Roguelike_Temp_ActiveA_Desc
+  icon: {fileID: 0}
+  kind: 0
+  grade: 0
+  skillTag: 2
+  exclusiveGroup: 0
+  maxLevel: 5
+  levels:
+  - effects:
+    - effect: 0
+      skill: 2
+      value: 1
+  - effects:
+    - effect: 3
+      skill: 2
+      value: 20
+  - effects:
+    - effect: 8
+      skill: 2
+      value: -1
+  - effects: []
+  - effects: []
+  basePriceOverride: 0
+  comboMaterialA: {fileID: 0}
+  comboMaterialB: {fileID: 0}
+  comboType: 0
+  suppressedSkills: 
+  designerNote: "\uAE30\uD68D\uC11C 10\uC7A5 \uC784\uC2DC \uCE74\uB4DC. \uC2E4\uC81C
+    \uCE74\uB4DC\uAC00 \uB098\uC624\uBA74 \uC0AD\uC81C. 1\uB808\uBCA8 \uD68C\uC804\uBCA0\uAE30
+    \uC790\uB3D9 \uBC1C\uB3D9 / 2\uB808\uBCA8 \uBC94\uC704 \uC99D\uAC00 / 3\uB808\uBCA8
+    \uD68C\uC804 \uD69F\uC218 +1(\uD544\uC694 \uD718\uB450\uB984 -1\uB85C \uD574\uC11D).
+    4~5\uB808\uBCA8 \uD6A8\uACFC \uBBF8\uC815."
