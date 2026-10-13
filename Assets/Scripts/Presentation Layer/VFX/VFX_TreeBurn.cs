@@ -73,7 +73,7 @@ namespace PresentationLayer.VFX
         private const float PixelUnit = 1.0f / 32.0f;
         private const float BoundsDepth = 10.0f;
         private const float EmberShapeMarginPx = 2.0f;   // 불씨 모양(최대 3x3)이 위치에서 벗어나는 폭
-        private const float CullingMarginUnits = 1.0f;   // 화면 안/밖 판단 여유(새로 생기거나 움직이는 조각, 카메라 이동)
+        private const float CullingMarginUnits = PixelVfxCulling.MarginUnits; // 화면 안/밖 판단 여유(새로 생기거나 움직이는 조각, 카메라 이동)
 
         // 파랑 3색[진한 색, 중간 색, 밝은 색]. 드론 과열 이펙트와 같은 팔레트이며, HDR 배율이 곱해져도 흰색으로 날아가지 않도록 기본 색은 어둡게 잡았다.
         private const int ToneDeep = 0;

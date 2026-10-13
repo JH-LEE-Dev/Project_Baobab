@@ -1261,6 +1261,19 @@ namespace PresentationLayer.VFX
                 if (groundMeshRenderer.sortingOrder != groundSortingOrder) groundMeshRenderer.sortingOrder = groundSortingOrder;
             }
 
+            // 화면 밖이면 메쉬 재구성을 건너뛰고 시간만 흘린다. 매 프레임 그림은 경과 시간만으로 다시 계산되고(프레임 사이에
+            // 이어지는 상태가 없음) 다시 화면에 들어오는 첫 프레임에 그 시각의 그림을 그대로 그리므로 보이는 결과는 같다.
+            // 판정 범위는 메쉬 경계(그릴 수 있는 전체 범위)에 여유를 더한 것이다. 카메라가 순간이동이나 큰 줌으로 여유보다 많이
+            // 움직인 프레임에 판정이 한 프레임 늦어도 지난 그림이 보이지 않도록, 건너뛰는 동안은 렌더러를 꺼 둔다(RebuildMesh가 다시 켠다).
+            float margin = 2.0f * PixelVfxCulling.MarginUnits;
+            Vector3 cullingSize = new Vector3(meshBoundsSize.x + margin, meshBoundsSize.y + margin, PixelVfxCulling.BoundsDepth);
+            if (false == PixelVfxCulling.IsVisible(transform.position, cullingSize))
+            {
+                if (true == meshRenderer.enabled) meshRenderer.enabled = false;
+                if (null != groundMeshRenderer && true == groundMeshRenderer.enabled) groundMeshRenderer.enabled = false;
+                return;
+            }
+
             RebuildMesh();
         }
 

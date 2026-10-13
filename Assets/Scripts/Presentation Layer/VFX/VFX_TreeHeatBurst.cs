@@ -121,7 +121,7 @@ namespace PresentationLayer.VFX
         private const float PixelUnit = 1.0f / 32.0f;
         private const float BoundsDepth = 10.0f;
         private const float EmberShapeMarginPx = 3.0f;         // 불씨 모양(최대 3x3)이 위치에서 벗어나는 폭
-        private const float CullingMarginUnits = 1.0f;         // 화면 안/밖 판단 여유(이번 프레임에 새로 생기거나 움직이는 조각, 카메라 이동)
+        private const float CullingMarginUnits = PixelVfxCulling.MarginUnits; // 화면 안/밖 판단 여유(이번 프레임에 새로 생기거나 움직이는 조각, 카메라 이동)
 
         // 색 자리: 0~2는 불, 3~6은 연기 명도 4단계(발광 없음, 입자 하나는 그중 단색 하나). HDR 배율이 곱해져도 흰색으로 날아가지 않도록 기본 색은 어둡게 잡았다.
         private const int ToneFireDeep = 0;
