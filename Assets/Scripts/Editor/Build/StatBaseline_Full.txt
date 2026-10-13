@@ -488,7 +488,6 @@ Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectMa
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/ItemManager/LogItemController:VFXComponent|vfxPoolDataList[0].initialPoolSize = 200
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/ItemManager/LogItemController:VFXComponent|vfxPoolDataList[0].maxPoolSize = 1000
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/ItemManager/LogItemController:VFXComponent|vfxPoolDataList[0].uiParticleScale = 0
-Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/VFXManager:InDungeonVFXManager|brandStarWrapMaxActive = 20
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/VFXManager:InDungeonVFXManager|brandStarWrapPoolDefaultCapacity = 8
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/VFXManager:InDungeonVFXManager|brandStarWrapPoolMaxSize = 32
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/VFXManager:InDungeonVFXManager|constellationDottedLinePoolDefaultCapacity = 8
