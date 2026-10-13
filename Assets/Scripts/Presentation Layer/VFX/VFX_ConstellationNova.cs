@@ -280,6 +280,17 @@ namespace PresentationLayer.VFX
             return CurrentRadius * EaseOutCubic(Mathf.Clamp01(_elapsed / ShockDuration));
         }
 
+        /// <summary>
+        /// 충격파 선두가 반지름 비율 _normalizedDistance(0~1)에 닿는 시각(초)을 돌려준다. EvaluateRadius의 역함수라
+        /// 반지름과 무관하고 인스턴스 없이 쓸 수 있다. 피격을 파동에 맞춰 바깥으로 순서대로 적용할 때 쓴다.
+        /// </summary>
+        public static float EvaluateShockArrivalTime(float _normalizedDistance)
+        {
+            // EaseOutCubic(x) = 1 - (1 - x)^3 의 역함수: x = 1 - (1 - 비율)^(1/3)
+            float remaining = 1.0f - Mathf.Clamp01(_normalizedDistance);
+            return ShockDuration * (1.0f - Mathf.Pow(remaining, 1.0f / 3.0f));
+        }
+
         private void EnsureInitialized()
         {
             if (true == bInitialized) return;

@@ -347,9 +347,19 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // 별자리(Constellation) 관련 스킬 스탯 - StarrootForest 전용
     private const float BaseConstellationDamage = 5000f;
-    private const float ConstellationBeamHalfThickness = 0.5f; // 선분 중심 기준 좌우 0.5씩(전체 폭 1.0)
     private const float ConstellationHitInterval = 0.2f;
     private static readonly WaitForSeconds constellationHitWait = new WaitForSeconds(ConstellationHitInterval);
+
+    // 별자리 발현 폭발 기본 범위 - 별자리 중심의 바닥 타원(가로 반지름, 세로는 절반).
+    private const float BaseConstellationBlastRadius = 4.0f;
+
+    // 현재 별자리 발현 폭발 범위(가로 반지름). 폭발 판정과 노바 마법진이 발현 시점에 이 값을 같이 써서 보이는 범위와
+    // 피격 범위를 항상 같게 하고, Stage3TreeGenerationStrategySO는 별자리 생성 시점의 이 값 안쪽에 별을 놓는다.
+    // 범위 증가 특성이 생기면 여기서 배율을 곱한다(모든 별자리에 똑같이 적용되고, 범위가 줄지 않는 한 별은 링 안에 남는다).
+    public float CurrentConstellationBlastRadius => BaseConstellationBlastRadius;
+
+    // 폭발 판정 후보 조회 반경 여유 - 나무 윗부분(topRoot)은 밑동보다 위에 있어, 윗부분만 타원에 드는 나무도 놓치지 않게 넓힌다.
+    private const float ConstellationBlastScanMargin = 1.5f;
 
     // 별자리 발현 광선 VFX - VFX_ConstellationPixelLaser. 서로 다른 그룹(또는 별자리 잔상의 여러 발)이
     // 동시에 발현될 수 있으므로 풀에서 매번 새 인스턴스를 꺼내 쓴다. 예전 VFX_LightningZap 풀러가 있던
@@ -357,28 +367,25 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [UnityEngine.Serialization.FormerlySerializedAs("lightningZapCreator")]
     [SerializeField] private ConstellationPixelLaserCreator constellationLaserCreator;
 
-    // 히트박스 계산 시 레이저의 베지에 곡선 한 변을 몇 구간으로 잘라 근사할지.
-    private const int ConstellationBeamCurveSamples = 16;
-
     // 현재 비행/발광 중인 레이저들 - 던전 이탈 시(ClearObjManager) 강제 반환하기 위해 추적한다.
     private readonly List<PresentationLayer.VFX.ConstellationPixelLaser> activeConstellationLasers = new List<PresentationLayer.VFX.ConstellationPixelLaser>();
 
     // 반환 이벤트를 이미 구독한 레이저 인스턴스(풀 인스턴스당 한 번만 구독한다).
     private readonly HashSet<PresentationLayer.VFX.ConstellationPixelLaser> subscribedConstellationLasers = new HashSet<PresentationLayer.VFX.ConstellationPixelLaser>();
 
-    // 별자리 히트박스 - 레이저 발광부(빔 선단)가 지나가는 순간 그 자리의 나무를 맞힌다.
-    // 레이저를 쏠 때 경로 주변 나무마다 "선단이 닿는 시각"을 미리 계산해 두고, 시간 순으로 적용한다.
-    private struct ConstellationBeamHit
+    // 별자리 폭발 판정 - 노바 충격파가 퍼지며 타원 범위 안의 나무를 중심에서 바깥 순서로 맞힌다.
+    // 폭발 시점에 범위 안 나무마다 "파동 선두가 닿는 시각"을 미리 계산해 두고, 시간 순으로 적용한다.
+    private struct ConstellationHit
     {
         public TreeObj tree;
         public Vector3 rootPos;   // 계산 시점의 위치 - 그 사이 풀로 반환/재사용된 나무를 걸러내는 데 쓴다.
-        public float hitTime;     // 레이저 발사 후 선단이 닿는 시각(초)
+        public float hitTime;     // 폭발 후 파동 선두가 닿는 시각(초)
     }
 
-    private static readonly Comparison<ConstellationBeamHit> ConstellationBeamHitTimeComparison = (a, b) => a.hitTime.CompareTo(b.hitTime);
+    private static readonly Comparison<ConstellationHit> ConstellationHitTimeComparison = (a, b) => a.hitTime.CompareTo(b.hitTime);
 
-    // 스윕마다 쓰는 타격 목록 - 잔상으로 여러 스윕이 동시에 돌 수 있어 스윕별로 하나씩 빌려 쓰고 돌려놓는다.
-    private readonly Stack<List<ConstellationBeamHit>> spareConstellationBeamHitLists = new Stack<List<ConstellationBeamHit>>();
+    // 폭발마다 쓰는 타격 목록 - 잔상으로 여러 폭발이 동시에 돌 수 있어 폭발별로 하나씩 빌려 쓰고 돌려놓는다.
+    private readonly Stack<List<ConstellationHit>> spareConstellationHitLists = new Stack<List<ConstellationHit>>();
 
     // 포자막 연쇄 폭발/별똥별 착탄 범위 판정용 결과 리스트 풀. 연쇄 폭발은 재귀로 중첩되므로 호출마다 하나씩 빌려 쓰고 돌려준다.
     private readonly Stack<List<IStaticCollidable>> spareExplosionScanLists = new Stack<List<IStaticCollidable>>();
@@ -401,14 +408,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public float MaxTreeTopShadowRadius => maxTreeTopShadowRadius;
     public float MaxTreeCollisionOffsetMagnitude => maxTreeCollisionOffsetMagnitude;
 
-    // 히트박스 계산용 버퍼 - 계산은 콜백 없이 동기로 끝나므로 하나를 공유해도 안전하다.
+    // 폭발 판정 후보 조회 버퍼 - 계산은 콜백 없이 동기로 끝나므로 하나를 공유해도 안전하다.
     private readonly List<IStaticCollidable> constellationScanBuffer = new List<IStaticCollidable>(64);
-    private readonly List<Vector3> constellationCurveSampleBuffer = new List<Vector3>(96);
-
-    // 변마다 곡선 샘플을 감싸는 상자(판정 두께만큼 넓힘). 상자 밖의 점은 그 변의 어느 구간과도 두께보다 멀어서
-    // 결과가 같으므로 구간별 거리 계산을 건너뛴다 - 한 나무는 보통 1~2개 변에만 가까워 계산량이 크게 준다.
-    private readonly List<Vector3> constellationEdgeBoundsMin = new List<Vector3>(8);
-    private readonly List<Vector3> constellationEdgeBoundsMax = new List<Vector3>(8);
 
     private bool bConstellationManifestUnlocked = false;
     private float starMarkDamageMultiplier = 1f;          // 별표식 베기
@@ -420,7 +421,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private ValueAccumulator manifestationBrandBonusAccum;
 
     // 그룹별 재진입 방지 가드 - groupStarPositions[groupId]와 동일한 List<Vector3> 참조를 키로 쓴다.
-    // 광선 자신의 데미지가 같은 그룹의 다른 별 표식 나무를 맞혀 재귀적으로 재트리거하는 것만 막고,
+    // 발현 폭발 자신의 데미지가 같은 그룹의 다른 별 표식 나무를 맞혀 재귀적으로 재트리거하는 것만 막고,
     // 서로 다른 그룹(다른 List 인스턴스)은 동시에 진행돼도 서로 막지 않는다.
     private readonly HashSet<List<Vector3>> activeConstellationGroups = new HashSet<List<Vector3>>();
 
@@ -1226,8 +1227,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
         activeConstellationLasers.Clear();
 
-        // 별자리 잔상(ConstellationBeamRoutine)이 다음 발사를 기다리는 중이었거나 히트박스 스윕
-        // (ConstellationBeamSweepRoutine)이 진행 중이었다면, 버전이 바뀐 것을 보고 더 쏘거나 때리지 않고 끝난다.
+        // 별자리 잔상(ConstellationBeamRoutine)이 다음 발사를 기다리는 중이었거나 폭발 판정
+        // (ConstellationBlastRoutine)이 진행 중이었다면, 버전이 바뀐 것을 보고 더 쏘거나 때리지 않고 끝난다.
         // (그 finally가 뒤늦게 activeConstellationGroups.Remove를 호출해도 무해하다)
         constellationManifestVersion++;
         activeConstellationGroups.Clear();
@@ -2573,26 +2574,28 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 이제 레이저가 같은 외곽선을 그리므로 점선을 거둔다.
         inDungeonVFXManager.RemoveConstellationDottedLine(_groupId);
 
+        // 레이저 외곽선용 경로. 레이저는 받은 좌표를 내부에서 꼬임 풀기(UntanglePoints)로 한 번 더 정돈하므로
+        // 여기서는 각도 순 정렬만 한다.
         List<Vector3> path = BuildSimplePolygonPath(_starPositions);
-
-        // 레이저는 받은 좌표를 내부에서 꼬임 풀기(UntanglePoints)로 한 번 더 정돈한다. 히트박스가 레이저와 똑같은
-        // 곡선을 따라가도록 같은 정돈을 미리 적용해 둔다(이미 정돈된 순서에 다시 적용해도 결과가 같다).
-        PresentationLayer.VFX.ConstellationPixelLaser.UntanglePoints(path, 0);
 
         float damage = BaseConstellationDamage * Mathf.Max(0f, constellationDamageMultiplier);
         int hitCount = Mathf.Max(1, constellationHitCount);
 
-        // 별자리 발현음은 발현 1회당 한 번, 별자리 중심에서 울린다. 별자리 잔상으로 레이저가 0.2초 간격으로
-        // 여러 발 나가도 긴(약 2.8초) 발현음을 겹쳐 틀지 않는다.
+        // 별자리 중심 - 별 좌표의 평균. 폭발 판정, 노바 마법진, 발현음이 모두 이 점을 쓴다.
+        // 별 좌표는 나무 윗부분(topRoot) 기준이지만, 판정이 나무마다 밑동과 윗부분을 둘 다 보므로 윗부분끼리 일관되게 맞는다.
         Vector3 constellationCenter = Vector3.zero;
         for (int i = 0; i < path.Count; i++) constellationCenter += path[i];
         constellationCenter /= path.Count;
+
+        // 별자리 발현음은 발현 1회당 한 번, 별자리 중심에서 울린다. 별자리 잔상으로 0.2초 간격으로
+        // 여러 번 터져도 긴(약 2.8초) 발현음을 겹쳐 틀지 않는다.
         Sound.Play(SoundID.StarExplosion, constellationCenter);
 
-        // 레이저와 별개로, 같은 발현 시점에 별자리 중심에서 마법진 + 별 폭발 연출을 추가로 재생한다.
-        inDungeonVFXManager.PlayConstellationNovaVFX(constellationCenter);
+        // 별자리 중심에서 마법진 + 별 폭발 연출을 재생한다. 반지름을 폭발 판정과 같은 값으로 넘겨 보이는 범위와 피격 범위를 맞춘다.
+        float blastRadius = CurrentConstellationBlastRadius;
+        inDungeonVFXManager.PlayConstellationNovaVFX(constellationCenter, blastRadius);
 
-        StartCoroutine(ConstellationBeamRoutine(_starPositions, path, damage, hitCount));
+        StartCoroutine(ConstellationBeamRoutine(_starPositions, path, constellationCenter, blastRadius, damage, hitCount));
     }
 
     // 중심점(centroid) 기준 각도 순으로 정렬해서 폐곡선을 만든다. 최근접 이웃(greedy) 방식과 달리,
@@ -2602,7 +2605,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     //
     // 반환값은 고유한 N개의 꼭짓점만 담는다 - 시작점을 끝에 다시 붙이지 않는다. ConstellationPixelLaser.PlayLaser가
     // isClosedLoop일 때 (i + 1) % N으로 스스로 닫기 때문에, 중복 좌표를 넘기면 길이 0인 변이 생겨 빔이 깨진다.
-    // 별이 3개 이상이면 폐곡선, 2개뿐이면 열린 선 하나로 취급한다(GetConstellationEdgeCount).
     private List<Vector3> BuildSimplePolygonPath(List<Vector3> _points)
     {
         List<Vector3> sorted = new List<Vector3>(_points);
@@ -2623,16 +2625,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         return sorted;
     }
 
-    // 경로의 변 개수 - 별이 3개 이상이면 마지막 점에서 시작점으로 되돌아가는 변까지 포함한 폐곡선,
-    // 2개뿐이면(다시 그으면 같은 선분을 중복으로 왕복하게 되므로) 열린 선 하나.
-    private static int GetConstellationEdgeCount(List<Vector3> _path)
-    {
-        return 3 <= _path.Count ? _path.Count : _path.Count - 1;
-    }
-
-    // 별자리 잔상(hitCount)만큼 인터벌을 두고 레이저를 발사한다. 각 레이저의 데미지는 발광부(빔 선단)가
-    // 지나가는 순간 그 자리의 나무에 적용된다(ConstellationBeamSweepRoutine).
-    private IEnumerator ConstellationBeamRoutine(List<Vector3> _groupKey, List<Vector3> _path, float _damagePerHit, int _hitCount)
+    // 별자리 잔상(hitCount)만큼 인터벌을 두고 레이저 연출과 폭발을 함께 반복한다. 데미지는 레이저 선이 아니라
+    // 별자리 중심의 바닥 타원 폭발(ConstellationBlastRoutine)이 준다. 레이저는 외곽선을 그리는 연출만 한다.
+    // 잔상의 모든 폭발은 노바 마법진과 같은 발현 시점의 반지름(_blastRadius)을 쓴다.
+    private IEnumerator ConstellationBeamRoutine(List<Vector3> _groupKey, List<Vector3> _path, Vector3 _center, float _blastRadius, float _damagePerHit, int _hitCount)
     {
         int version = constellationManifestVersion;
 
@@ -2640,7 +2636,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             for (int hit = 0; hit < _hitCount; hit++)
             {
-                FireConstellationLaser(_path, _damagePerHit);
+                FireConstellationLaser(_path);
+                StartCoroutine(ConstellationBlastRoutine(_center, _blastRadius, _damagePerHit));
 
                 if (hit < _hitCount - 1)
                 {
@@ -2657,29 +2654,19 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
     }
 
-    private void FireConstellationLaser(List<Vector3> _path, float _damage)
+    private void FireConstellationLaser(List<Vector3> _path)
     {
         PresentationLayer.VFX.ConstellationPixelLaser laser = null != constellationLaserCreator ? constellationLaserCreator.Get() : null;
+        if (null == laser) return;
 
-        // 레이저 풀러/프리팹이 없으면 연출이 없으므로 히트박스도 기다리지 않고 즉시(비행 시간 0) 적용한다.
-        float flightDuration = 0f;
-        float curveRoundness = 0f;
-
-        if (null != laser)
+        // 반환 이벤트는 풀 인스턴스당 한 번만 구독한다.
+        if (subscribedConstellationLasers.Add(laser))
         {
-            // 반환 이벤트는 풀 인스턴스당 한 번만 구독한다.
-            if (subscribedConstellationLasers.Add(laser))
-            {
-                laser.ReturnToPoolEvent += OnConstellationLaserReturned;
-            }
-
-            activeConstellationLasers.Add(laser);
-            flightDuration = laser.SegmentShootDuration;
-            curveRoundness = laser.CurveRoundness;
-            laser.PlayLaser(_path, true);
+            laser.ReturnToPoolEvent += OnConstellationLaserReturned;
         }
 
-        StartCoroutine(ConstellationBeamSweepRoutine(_path, _damage, flightDuration, curveRoundness));
+        activeConstellationLasers.Add(laser);
+        laser.PlayLaser(_path, true);
     }
 
     // 레이저가 연출(비행 -> 서스테인 -> 페이드아웃)을 마치거나 강제 회수되어 풀로 반환될 때 호출된다.
@@ -2696,18 +2683,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _laser.ReturnToPoolEvent -= OnConstellationLaserReturned;
     }
 
-    // 별자리 히트박스 스윕 - 레이저 발광부(빔 선단)가 지나가는 순간에 맞춰 그 자리의 나무를 때린다.
-    // 발사 시점에 경로 주변 나무마다 선단이 닿는 시각을 계산해 두고, 시간이 흐르는 대로 순서대로 적용한다.
-    private IEnumerator ConstellationBeamSweepRoutine(List<Vector3> _path, float _damage, float _flightDuration, float _curveRoundness)
+    // 별자리 폭발 판정 - 노바 충격파가 퍼지는 대로 타원 범위 안의 나무를 중심에서 바깥 순서로 때린다.
+    // 폭발 시점에 범위 안 나무마다 파동 선두가 닿는 시각을 계산해 두고, 시간이 흐르는 대로 순서대로 적용한다.
+    private IEnumerator ConstellationBlastRoutine(Vector3 _center, float _radius, float _damage)
     {
         int version = constellationManifestVersion;
-        List<ConstellationBeamHit> hits = 0 < spareConstellationBeamHitLists.Count
-            ? spareConstellationBeamHitLists.Pop()
-            : new List<ConstellationBeamHit>(32);
+        List<ConstellationHit> hits = 0 < spareConstellationHitLists.Count
+            ? spareConstellationHitLists.Pop()
+            : new List<ConstellationHit>(32);
 
         try
         {
-            CollectConstellationBeamHits(_path, _curveRoundness, _flightDuration, hits);
+            CollectConstellationBlastHits(_center, _radius, hits);
 
             float elapsed = 0f;
             int next = 0;
@@ -2715,7 +2702,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             {
                 while (next < hits.Count && hits[next].hitTime <= elapsed)
                 {
-                    ApplyConstellationBeamHit(hits[next], _damage);
+                    ApplyConstellationHit(hits[next], _damage);
                     next++;
                 }
 
@@ -2723,7 +2710,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
                 yield return null;
 
-                // 스윕 도중 던전을 나갔다면(ClearTrees) 이전 런의 나무를 계속 때리지 않는다.
+                // 폭발 도중 던전을 나갔다면(ClearTrees) 이전 런의 나무를 계속 때리지 않는다.
                 if (version != constellationManifestVersion) yield break;
 
                 elapsed += Time.deltaTime;
@@ -2732,149 +2719,56 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         finally
         {
             hits.Clear();
-            spareConstellationBeamHitLists.Push(hits);
+            spareConstellationHitLists.Push(hits);
         }
     }
 
-    // 경로 주변 나무 중 레이저 곡선의 두께(ConstellationBeamHalfThickness) 안에 드는 나무를 모아, 빔 선단이
-    // 그 나무에 닿는 시각 순으로 정렬해 _hits에 채운다.
-    //
-    // 레이저는 각 변마다 양 끝 별에서 서로를 향해 빔 두 줄기를 동시에 쏘고, 선단은 감속 곡선
-    // (진행도 = 1 - (1 - t)^4, ConstellationPixelLaser.MutualSimultaneousRoutine)을 따른다. 그래서 두 선단은
-    // 비행 시간의 약 16%만에 변의 가운데에서 교차하고, 이후 남은 시간 동안 천천히 반대편 꼭짓점으로 향한다.
-    // 눈에 띄는 발광부는 이 "가운데 -> 꼭짓점" 구간이므로, 각 지점은 그쪽으로 다가오는(가운데를 이미 지난)
-    // 선단이 닿을 때 맞는 것으로 처리한다 - 변 위의 위치 u(0~1)에 필요한 진행도는 max(u, 1 - u)이다.
-    // 즉 변의 가운데가 먼저 맞고, 꼭짓점 쪽으로 갈수록 늦게 맞는다.
-    private void CollectConstellationBeamHits(List<Vector3> _path, float _curveRoundness, float _flightDuration, List<ConstellationBeamHit> _hits)
+    // 별자리 중심의 바닥 타원(가로 반지름 _radius, 세로는 절반) 안에 드는 나무를 모아, 노바 충격파
+    // 선두가 그 나무에 닿는 시각 순으로 정렬해 _hits에 채운다. 쿼터뷰라 Y축 차이를 2배로 보정해 원으로 판정한다
+    // (노바 마법진의 groundSquashY 0.5와 같은 비율). 나무는 밑동과 윗부분 중 중심에 더 가까운 쪽 기준이다(레이저 판정과 같은 정책).
+    private void CollectConstellationBlastHits(Vector3 _center, float _radius, List<ConstellationHit> _hits)
     {
-        if (CollisionSystem.Instance == null || 2 > _path.Count) return;
+        if (CollisionSystem.Instance == null || _radius <= 0f) return;
 
-        int edgeCount = GetConstellationEdgeCount(_path);
-        bool bLoop = 3 <= _path.Count;
-        int stride = ConstellationBeamCurveSamples + 1;
-
-        // 1. 레이저와 똑같은 베지에 곡선을 변마다 샘플링한다(ConstellationPixelLaser와 같은 제어점 계산).
-        constellationCurveSampleBuffer.Clear();
-        constellationEdgeBoundsMin.Clear();
-        constellationEdgeBoundsMax.Clear();
-        Vector3 thickness = new Vector3(ConstellationBeamHalfThickness, ConstellationBeamHalfThickness, ConstellationBeamHalfThickness);
-
-        for (int edge = 0; edge < edgeCount; edge++)
-        {
-            PresentationLayer.VFX.ConstellationPixelLaser.ComputeBezierControlPoints(
-                _path, edge, bLoop, _curveRoundness,
-                out Vector3 p0, out Vector3 p1, out Vector3 c0, out Vector3 c1);
-
-            Vector3 boundsMin = p0;
-            Vector3 boundsMax = p0;
-
-            for (int k = 0; k < stride; k++)
-            {
-                float u = (float)k / ConstellationBeamCurveSamples;
-                float oneMinusU = 1f - u;
-                Vector3 sample =
-                    oneMinusU * oneMinusU * oneMinusU * p0
-                    + 3f * oneMinusU * oneMinusU * u * c0
-                    + 3f * oneMinusU * u * u * c1
-                    + u * u * u * p1;
-
-                constellationCurveSampleBuffer.Add(sample);
-                boundsMin = Vector3.Min(boundsMin, sample);
-                boundsMax = Vector3.Max(boundsMax, sample);
-            }
-
-            constellationEdgeBoundsMin.Add(boundsMin - thickness);
-            constellationEdgeBoundsMax.Add(boundsMax + thickness);
-        }
-
-        // 2. 광선은 나무 8~13그루짜리 국지적 군집에만 영향을 주므로, 던전 전체 activeTrees(최대 2500개)를
-        //    순회하지 않도록 곡선 전체를 감싸는 반경만 CollisionSystem으로 조회한다.
-        Vector3 center = Vector3.zero;
-        for (int i = 0; i < _path.Count; i++) center += _path[i];
-        center /= _path.Count;
-
-        float maxDistSq = 0f;
-        for (int i = 0; i < constellationCurveSampleBuffer.Count; i++)
-        {
-            float distSq = (constellationCurveSampleBuffer[i] - center).sqrMagnitude;
-            if (distSq > maxDistSq) maxDistSq = distSq;
-        }
-        float scanRadius = Mathf.Sqrt(maxDistSq) + ConstellationBeamHalfThickness + 1f;
-
+        // 광역 조회는 원이므로, 타원(가로 반지름 R, 세로 R/2)을 감싸는 반경 R에 윗부분 여유를 더해 후보만 모은다.
         constellationScanBuffer.Clear();
-        CollisionSystem.Instance.GetCollidablesInRadius(center, scanRadius, treeLayerForExplosion.value, constellationScanBuffer);
+        CollisionSystem.Instance.GetCollidablesInRadius(_center, _radius + ConstellationBlastScanMargin, treeLayerForExplosion.value, constellationScanBuffer);
 
-        // 3. 나무마다 밑둥/top 중 하나라도 곡선 두께 안에 들어오는 가장 이른 시각을 구한다
-        //    (여러 변에 걸친 나무는 가장 먼저 닿는 선단 기준, Boomerang과 동일하게 밑둥/top 둘 다 판정).
+        float invRadius = 1f / _radius;
+
         for (int i = 0; i < constellationScanBuffer.Count; i++)
         {
             if (!(constellationScanBuffer[i] is TreeObj tree) || !tree.bCanApplyDamage) continue;
 
             Vector3 rootPos = tree.transform.position;
             Vector3 topPos = tree.treeVisualComponent != null ? tree.treeVisualComponent.GetTopRootPosition() : rootPos;
-            float earliest = float.MaxValue;
 
-            for (int edge = 0; edge < edgeCount; edge++)
+            float normalizedDistance = Mathf.Min(
+                GetConstellationBlastDistance(rootPos, _center),
+                GetConstellationBlastDistance(topPos, _center)) * invRadius;
+
+            if (normalizedDistance > 1f) continue;
+
+            _hits.Add(new ConstellationHit
             {
-                bool bTopNear = IsInsideBounds(topPos, constellationEdgeBoundsMin[edge], constellationEdgeBoundsMax[edge]);
-                bool bRootNear = IsInsideBounds(rootPos, constellationEdgeBoundsMin[edge], constellationEdgeBoundsMax[edge]);
-                if (!bTopNear && !bRootNear) continue;
-
-                int baseIndex = edge * stride;
-                for (int k = 0; k < ConstellationBeamCurveSamples; k++)
-                {
-                    Vector3 a = constellationCurveSampleBuffer[baseIndex + k];
-                    Vector3 b = constellationCurveSampleBuffer[baseIndex + k + 1];
-
-                    if (bTopNear)
-                    {
-                        float hitTime = GetConstellationBeamHitTime(topPos, a, b, k, _flightDuration);
-                        if (hitTime < earliest) earliest = hitTime;
-                    }
-
-                    if (bRootNear)
-                    {
-                        float hitTime = GetConstellationBeamHitTime(rootPos, a, b, k, _flightDuration);
-                        if (hitTime < earliest) earliest = hitTime;
-                    }
-                }
-            }
-
-            if (float.MaxValue > earliest)
-            {
-                _hits.Add(new ConstellationBeamHit { tree = tree, rootPos = rootPos, hitTime = earliest });
-            }
+                tree = tree,
+                rootPos = rootPos,
+                hitTime = PresentationLayer.VFX.VFX_ConstellationNova.EvaluateShockArrivalTime(normalizedDistance)
+            });
         }
 
-        _hits.Sort(ConstellationBeamHitTimeComparison);
+        _hits.Sort(ConstellationHitTimeComparison);
     }
 
-    private static bool IsInsideBounds(Vector3 _point, Vector3 _min, Vector3 _max)
+    // 쿼터뷰 바닥 거리 - Y축 차이를 2배로 보정한 거리(월드 유닛, 타원의 가로 반지름 기준).
+    private static float GetConstellationBlastDistance(Vector3 _point, Vector3 _center)
     {
-        return _point.x >= _min.x && _point.x <= _max.x
-            && _point.y >= _min.y && _point.y <= _max.y
-            && _point.z >= _min.z && _point.z <= _max.z;
+        float dx = _point.x - _center.x;
+        float dy = (_point.y - _center.y) * 2f;
+        return Mathf.Sqrt(dx * dx + dy * dy);
     }
 
-    // _point가 곡선 샘플 구간 [a, b](변의 k번째 구간) 두께 안에 있으면 빔 선단이 그 지점에 닿는 시각을,
-    // 아니면 float.MaxValue를 돌려준다.
-    private static float GetConstellationBeamHitTime(Vector3 _point, Vector3 _a, Vector3 _b, int _sampleIndex, float _flightDuration)
-    {
-        Vector3 ab = _b - _a;
-        float abLenSq = ab.sqrMagnitude;
-        float segT = abLenSq < 0.0001f ? 0f : Mathf.Clamp01(Vector3.Dot(_point - _a, ab) / abLenSq);
-
-        if (Vector3.Distance(_point, _a + ab * segT) > ConstellationBeamHalfThickness) return float.MaxValue;
-
-        // 변 위의 위치(0~1)와, 그 지점으로 다가오는 선단이 필요로 하는 진행도(가운데 0.5 ~ 꼭짓점 1.0)
-        float edgeU = (_sampleIndex + segT) / ConstellationBeamCurveSamples;
-        float requiredProgress = Mathf.Max(edgeU, 1f - edgeU);
-
-        // 진행도 = 1 - (1 - t)^4 의 역함수: t = 1 - (1 - 진행도)^(1/4)
-        return _flightDuration * (1f - Mathf.Pow(1f - requiredProgress, 0.25f));
-    }
-
-    private void ApplyConstellationBeamHit(ConstellationBeamHit _hit, float _damage)
+    private void ApplyConstellationHit(ConstellationHit _hit, float _damage)
     {
         TreeObj tree = _hit.tree;
         if (tree == null || tree.IsPooled || !tree.bCanApplyDamage) return;
@@ -2883,7 +2777,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // (풀에 들어간 채 아직 재사용되지 않은 나무는 위치가 그대로라 이 검사를 통과하므로 위의 IsPooled로 거른다)
         if ((tree.transform.position - _hit.rootPos).sqrMagnitude > 0.0001f) return;
 
-        // 한 그루의 타격이 연쇄(사망 처리, 다른 그룹 발현 등) 중 예외로 실패해도 스윕의 나머지 나무는 계속 맞힌다.
+        // 한 그루의 타격이 연쇄(사망 처리, 다른 그룹 발현 등) 중 예외로 실패해도 폭발의 나머지 나무는 계속 맞힌다.
         try
         {
             tree.TakeDamage(_damage);
@@ -2899,7 +2793,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
         catch (Exception e)
         {
-            Debug.LogError("[InDungeonObjectManager] 별자리 광선 타격 처리 중 예외가 발생했습니다. 나머지 타격은 계속 진행합니다.");
+            Debug.LogError("[InDungeonObjectManager] 별자리 폭발 타격 처리 중 예외가 발생했습니다. 나머지 타격은 계속 진행합니다.");
             Debug.LogException(e);
         }
     }

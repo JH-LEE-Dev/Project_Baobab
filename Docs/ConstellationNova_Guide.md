@@ -24,7 +24,7 @@
 | 어디서 | 별자리 모서리 좌표의 중심(centroid) |
 | 어떻게 | 스프라이트가 아니라 32 PPU 정수 격자에 맞춘 **절차적 쿼드 메쉬**를 매 프레임 다시 그림(`PixelQuadBuffer`) |
 | 풀링 | `VFXComponent` 태그 풀 `ConstellationNovaEffect`(초기 2, 최대 4) |
-| 피격 | **관여하지 않음.** 시각 연출만이며 데미지는 기존 `ConstellationBeamRoutine`이 처리 |
+| 피격 | 노바 자체는 데미지를 주지 않지만, **별자리 발현 데미지는 노바와 같은 중심·반지름(4.0)의 바닥 타원 폭발**이 줍니다(`ConstellationBlastRoutine`, 4.8). 레이저는 외곽선 연출만 합니다 |
 
 ### 1.1 재생 흐름
 
@@ -36,8 +36,8 @@ Stage3TreeGenerationStrategySO.OnTreeDead            (그룹 마지막 별 표�
   -> ConstellationManifestReadyEvent
   -> InDungeonObjectManager.OnConstellationManifestReady(groupId)
        Sound.Play(StarExplosion, center)
-       inDungeonVFXManager.PlayConstellationNovaVFX(center)      <-- 이번에 추가한 호출
-       StartCoroutine(ConstellationBeamRoutine(...))             (기존 레이저, 변경 없음)
+       inDungeonVFXManager.PlayConstellationNovaVFX(center, CurrentConstellationBlastRadius)
+       StartCoroutine(ConstellationBeamRoutine(...))             (잔상 횟수만큼 레이저 연출 + ConstellationBlastRoutine 폭발 판정)
 ```
 
 ### 1.2 시간표 (`TimelineLength` 2.8초)
@@ -65,11 +65,12 @@ Stage3TreeGenerationStrategySO.OnTreeDead            (그룹 마지막 별 표�
 
 ```csharp
 // 레이저와 별개로, 같은 발현 시점에 별자리 중심에서 마법진 + 별 폭발 연출을 추가로 재생한다.
-inDungeonVFXManager.PlayConstellationNovaVFX(constellationCenter);
+float blastRadius = CurrentConstellationBlastRadius;
+inDungeonVFXManager.PlayConstellationNovaVFX(constellationCenter, blastRadius);
 ```
 
 - **왜:** 별자리 발현 시점은 이 함수에서만 확정됩니다(별이 모두 사라진 뒤 `ConstellationManifestReadyEvent`가 이 함수를 부름). 같은 함수 안에서 이미 `constellationCenter`를 구해 발현음을 재생하고 있어서, 그 좌표를 그대로 쓰는 것이 가장 변경이 작았습니다.
-- **레이저는 건드리지 않았습니다.** `ConstellationBeamRoutine`, `ConstellationPixelLaser` 등은 그대로입니다.
+- **레이저 연출은 그대로입니다.** `ConstellationPixelLaser`는 바뀌지 않았고, 레이저 선을 따라가던 히트박스 스윕만 타원 폭발 판정으로 바뀌었습니다(4.8).
 - **한 번만 재생됩니다.** 별자리 잔상(`constellationHitCount`)으로 레이저가 여러 발 나가도 노바는 발현 1회당 1회입니다. 발현음과 같은 정책입니다.
 
 ### 2.2 `InDungeonVFXManager.cs` — 재생 메서드 추가
@@ -101,7 +102,7 @@ public void PlayConstellationNovaVFX(Vector3 _center, float _radius = 0.0f)
 - **왜:** 이 프로젝트에서 던전 VFX는 로직 쪽(`InDungeonObjectManager` 등)이 `InDungeonVFXManager`의 `PlayXxxVFX` 메서드를 부르고, 그 메서드가 `vfxComponent.Play(new VFXPlaySettings(태그, 위치, 회전, 소팅, 부모))`로 풀에서 꺼내 재생하는 구조입니다(`PlayManifestationBrandStampVFX`, `PlayStarImpactExplosionVFX` 등과 같은 패턴). 노바도 같은 규약을 따랐습니다.
 - **`parent = null`:** 나무와 분리해서 월드에 둡니다. 나무가 풀로 돌아가도 이펙트가 끊기지 않습니다.
 - **소팅:** `FlyingItem`/10은 별자리 레이저와 같은 값입니다. 이 값은 **공중 메쉬**에만 적용되고, 바닥 메쉬는 스크립트가 자기 레이어(`ShockWave`)로 다시 맞춥니다(4.3).
-- **`_radius`:** 0 이하이면 프리팹의 `maxRadius`(기본 4.0유닛)를 씁니다. 지금 호출부는 반지름을 넘기지 않습니다.
+- **`_radius`:** 0 이하이면 프리팹의 `maxRadius`(기본 4.0유닛)를 씁니다. 지금 호출부는 `InDungeonObjectManager.CurrentConstellationBlastRadius`(기본 `BaseConstellationBlastRadius` 4.0)를 넘깁니다. 프리팹 `maxRadius`를 바꿔도 발현 노바의 크기는 바뀌지 않으니, 범위를 바꾸려면 이 값을 바꿉니다.
 - **풀 태그 문자열** `"ConstellationNovaEffect"`는 `GameInstaller.prefab`의 풀 항목과 반드시 같아야 합니다. 다르면 `Play`가 null을 돌려주고 아무것도 나오지 않습니다(오류 로그 없음).
 
 ### 2.3 `GameInstaller.prefab` — 풀 항목 추가
@@ -202,6 +203,7 @@ VFX_ConstellationNova           (루트, 레이어 19) ParticleSystem + Particle
 | `CurrentRadius` | 이번 재생의 실제 반지름 |
 | `static TotalDuration` | 2.8초 |
 | `EvaluateRadius(float elapsed)` | 경과 시간에서의 충격파 선두 반지름(월드 유닛). 0.4초에 `maxRadius`에 닿음. 피격 타이밍을 파동에 맞출 때 사용 |
+| `static EvaluateShockArrivalTime(float normalizedDistance)` | `EvaluateRadius`의 역함수. 반지름 비율(0~1)에 파동 선두가 닿는 시각(0~0.4초). 별자리 발현 폭발 판정이 사용 |
 
 ### 3.6 범위 조정
 
@@ -243,12 +245,12 @@ VFX_ConstellationNova           (루트, 레이어 19) ParticleSystem + Particle
 
 #### 피격 범위와 맞추기
 
-- 노바는 시각 전용이고 `maxRadius`는 "눈에 보이는 범위"입니다(4.8). 피격 범위에 맞추려면 호출부에서 피격 반지름을 `_radius`로 넘깁니다.
-- 바닥 타원은 가로가 반지름이고 세로는 `groundSquashY`(0.5)배입니다. 월드 좌표의 점이 타원 안에 있는지는 `dx² + (2 x dy)² <= 반지름²`로 판정합니다(레이저 히트 판정의 Y축 2배 보정과 같음).
+- 별자리 발현은 **모든 별자리에 같은 반지름**(`InDungeonObjectManager.CurrentConstellationBlastRadius`, 기본 4.0)을 발현 시점에 한 번 읽어 노바와 폭발 판정(잔상 포함)에 같이 씁니다. 그래서 보이는 범위와 피격 범위가 항상 같습니다(4.8). 범위 증가 특성은 이 속성에서 배율을 곱하면 됩니다.
+- 바닥 타원은 가로가 반지름이고 세로는 `groundSquashY`(0.5)배입니다. 월드 좌표의 점이 타원 안에 있는지는 `dx² + (2 x dy)² <= 반지름²`로 판정합니다(`GetConstellationBlastDistance`).
 
-#### 별자리 크기에 맞춰 자동으로 넘기는 예시 (미적용, 미검증)
+#### 별자리 크기에 맞춰 자동으로 넘기는 예시 (채택하지 않음)
 
-현재 호출부는 반지름을 넘기지 않아 항상 4.0입니다. 별자리 크기에 따라 반지름을 맞추려면 `OnConstellationManifestReady`에서 중심에서 가장 먼 별까지의 거리로 계산해 넘기는 방식을 쓸 수 있습니다. 아래는 구상일 뿐 코드에 들어 있지 않습니다.
+별자리 크기에 따라 반지름을 바꾸는 방식도 검토했지만 채택하지 않았습니다. 기존 생성 규칙(군집에서 별 2~5개 무작위)으로 시뮬레이션하면 이 식의 반지름이 하위 5% 2.0 ~ 상위 5% 4.4로 퍼져, 같은 특성인데 판마다 폭발 면적이 약 5배 달라졌습니다. 대신 반지름을 고정하고 별자리 모양을 생성 단계에서 제약합니다(4.8). 아래는 참고용으로 남긴 구상입니다.
 
 ```csharp
 // OnConstellationManifestReady, constellationCenter를 구한 뒤
@@ -325,7 +327,48 @@ inDungeonVFXManager.PlayConstellationNovaVFX(constellationCenter, novaRadius);
 
 ### 4.8 피격과의 관계
 
-노바는 **시각 전용**입니다. `maxRadius`는 "눈에 보이는 범위"이고 실제 피격은 기존 레이저 스윕(`ConstellationBeamSweepRoutine`)이 처리합니다. 노바 범위로 피격을 하게 바꾸려면 `EvaluateRadius`로 파동 선두 반지름을 읽어 별도 판정을 만들어야 합니다. 이때 Y축 2배 보정(`groundSquashY` 0.5)을 같이 적용해야 합니다.
+노바 컴포넌트 자체는 데미지를 주지 않습니다. 별자리 발현 데미지는 `InDungeonObjectManager`가 노바와 **같은 중심, 같은 반지름**으로 따로 판정합니다(레이저 선을 따라가던 예전 스윕은 제거).
+
+| 항목 | 내용 |
+|---|---|
+| 중심 | 별 좌표(나무 윗부분 기준)의 평균. 노바 재생 위치, 발현음과 같은 점 |
+| 범위 | `CurrentConstellationBlastRadius`(기본 4.0) 가로 반지름, 세로는 절반인 바닥 타원. 모든 별자리에 같은 값 |
+| 대상 | 나무마다 밑동과 윗부분 중 중심에 더 가까운 쪽이 타원 안이면 맞음(예전 레이저 판정과 같은 정책). 후보는 `CollisionSystem.GetCollidablesInRadius`로 반경 4.0 + 1.5(윗부분 여유)만 조회 |
+| 타이밍 | 충격파 선두가 그 나무에 닿는 순간(`VFX_ConstellationNova.EvaluateShockArrivalTime`, 중심 0초 ~ 가장자리 0.4초). 노바 연출의 파동과 같은 곡선 |
+| 잔상 | `constellationHitCount`만큼 0.2초 간격으로 레이저 연출과 폭발 판정을 함께 반복. 노바는 발현 1회당 1번만 재생 |
+| 데미지/낙인 | 기존과 같음(`BaseConstellationDamage` x 배율, 살아남은 나무에 발현 낙인) |
+
+**별자리 모양 제약** (`Stage3TreeGenerationStrategySO.SelectConstellationStars`): 고정 반지름 폭발이 별자리를 항상 감싸도록, 그룹 나무를 모두 스폰한 뒤 실제로 스폰된 나무 중에서 별 표식 나무를 고릅니다. 거리는 모두 Y축 2배 보정 거리입니다.
+
+| 상수 | 값 | 의미 |
+|---|---|---|
+| `MinStarsPerConstellation` / `Max…` | 3 / 5 | 별 2개(선분)는 다각형 중심이 성립하지 않아 하한을 3으로 올림 |
+| `StarMinSpacing` | 1.8 | 별끼리 최소 간격 |
+| `StarMinReach` | 2.0 | 중심에서 가장 먼 별까지 거리 하한(별자리가 너무 작지 않게) |
+| `StarMaxReachRatio` | 반지름 x 0.85 (기본 3.4) | **필수** 상한. 별자리 중심에서 모든 별이 이 거리 안(마법진 링 안쪽). 별을 하나 고를 때마다 검사하므로 어떤 완화 단계에서도 어기지 않음. 생성 시점의 `CurrentConstellationBlastRadius` 기준이라 범위 특성이 있으면 별자리도 그만큼 넓게 구성될 수 있음 |
+| `StarSelectAttempts` | 40 | 무작위 시도 횟수. 실패하면 가장 덜 벗어난 결과를 씀(별은 3~5개 범위 안에서 목표보다 적을 수 있음) |
+| `TerritoryMargin` | 0.5 | 별자리끼리 겹치지 않게 하는 영역 여유(아래) |
+| `StarFallbackSpacing` | 1.4 | 영역이 좁아 별을 3개 못 고를 때 완화하는 별 간격 |
+
+**별자리끼리 겹침 방지:** 별은 자기 군집 씨앗이 다른 모든 씨앗보다 가까운 나무(씨앗 기준 보로노이 영역)에서만 고릅니다. 영역은 볼록하고 서로 겹치지 않아서, 꼭짓점이 모두 자기 영역 안이면 별자리 다각형끼리는 **구조적으로 겹칠 수 없습니다.** 영역 판정은 밑동 좌표로 하며, 점선과 레이저가 쓰는 윗부분 좌표는 모든 나무가 같은 `topRoot` 오프셋만큼 평행이동한 것이라 결론이 같습니다(나무 프리팹마다 오프셋이 달라지면 이 전제가 깨짐). **별 개수는 항상 3~5개**이고, 영역이 좁으면 다음 순서로 완화합니다.
+
+1. 영역 경계에서 안쪽으로 여유를 둠(이웃 별자리와 최소 0.5 간격) + 별 간격 1.8
+2. 영역 경계까지 허용
+3. 별 간격을 1.4로 완화
+4. 별 간격 조건 없이 영역 안 나무 아무거나
+5. 영역 안에서 못 고르면(시뮬레이션에서 약 0.1%) 다른 별자리를 모두 놓은 뒤, 군집 나무 전체에서 이미 놓인 다각형과 실제로 겹치지 않는(0.5 간격 포함) 조합을 찾음. 끝내 없으면 가장 덜 겹치는 조합을 씀. **이 단계에서만 겹침이 생길 수 있음**. 무작위 시도로도 링 안에 3개를 못 모으면 가까운 나무끼리 묶는 확정 탐색(`SelectCompactStars`)을 함
+
+별 개수(3~5)와 링 안쪽 조건은 모든 단계에서 필수입니다.
+
+예외: 칸이 막혀 군집 나무가 3그루도 심어지지 않았거나, 링 안에 드는 3그루 묶음조차 없을 만큼 나무가 흩어진 군집은 별자리를 만들지 않습니다(별 0개, 일반 나무로만 남음. 시뮬레이션에서는 0건). 별을 고르기 전에 풀로 돌아간 나무는 후보에서 빼므로 고른 뒤 별이 줄지 않습니다.
+
+시뮬레이션(60x60칸 전부 잔디, 각 10판) 결과입니다. 실측이 아니며, 실제 맵은 모양과 빈칸이 있어 다를 수 있습니다.
+
+| 나무 수 | 영역 제약 없이 겹친 별자리 | 영역 제약 후 겹침 | 별자리를 못 만든 군집 |
+|---|---|---|---|
+| 180 | 0% | 0% | 0% |
+| 540 | 약 16% | 0% | 0% |
+| 1080 | 약 25% | 0% | 약 0.4% |
 
 ---
 
@@ -411,7 +454,7 @@ inDungeonVFXManager.PlayConstellationNovaVFX(constellationCenter, novaRadius);
 |---|---|
 | 너무 과하다 / 정신없다 | `density`를 0.5~0.7로 낮춤. 주인공 별과 불씨가 가장 먼저 줄어듦 |
 | 너무 소박하다 | `density` 1.3~1.5 또는 `heroStarCount` 증가 |
-| 범위를 피격 범위에 맞추고 싶다 | `maxRadius`(또는 호출 시 `_radius`). 마법진, 별, 기둥, 불씨가 모두 비례해 변함 |
+| 발현 범위를 바꾸고 싶다 | 기본값은 `BaseConstellationBlastRadius`, 특성 배율은 `CurrentConstellationBlastRadius`에서 적용. 노바 크기, 피격 범위, 다음 생성부터의 별자리 크기 상한이 함께 바뀜. 프리팹 `maxRadius`는 발현 노바에 쓰이지 않음 |
 | 별이 마법진 밖으로 너무 멀리 나간다 | `particleSpread`를 1.0~1.15로 |
 | 마법진이 흐릿하다 / 선이 흰색으로 날아간다 | 구조선 발광(`LineGlow`)을 블룸 임계값 근처로 낮춤(코드 상수) |
 | 임팩트가 약하다 | 시작 섬광 발광(`DrawCore`의 흰색 0.12)을 올림. 올리면 블룸이 도트 윤곽을 덮으므로 0.2 이하 권장 |
@@ -450,7 +493,8 @@ inDungeonVFXManager.PlayConstellationNovaVFX(constellationCenter, novaRadius);
 | 동시에 여러 그룹이 완성될 때의 총 비용, 풀 4개 초과 시 체감 | 미측정 |
 | IL2CPP 빌드, 저사양 기기 비용 | 미측정 |
 | 반지름 6.0의 화면 외형, 1.5 이하와 8 이상의 외형 | 미확인(3.6의 "검증된 범위" 표 참고). 6.0은 쿼드 수와 시간만 측정 |
-| 별자리 크기 기반 자동 반지름(3.6의 예시) | 구상만 있고 코드에 적용하지 않음 |
+| 별자리 크기 기반 자동 반지름(3.6의 예시) | 채택하지 않음(고정 4.0 + 생성 제약으로 대체) |
+| 타원 폭발 판정과 별자리 모양 제약의 인게임 동작 | 컴파일만 확인. 플레이로 피격 범위, 타이밍, 별 배치를 확인하지 않음 |
 | 주인공 별, 룬 `+`, 빛기둥 끝 `+`의 도트 느낌 | 시작 섬광과 코어 별만 굵기가 있는 도트 별로 바꿨고, 이 세 곳은 아직 1px 십자(사용자 지적에서 "픽셀 느낌이 약하다"고 한 것과 같은 원인일 수 있음) |
 | 소멸 구간 중심부의 입자 겹침 | 코어 주변은 입자가 밀집해 짧은 가로선처럼 보일 수 있음(블룸 영향) |
 
@@ -508,6 +552,6 @@ Docs/ConstellationNova_Guide.md를 먼저 읽고 작업해 줘.
 |---|---|
 | 노바를 다른 풀 태그로 쓰고 싶다 | `GameInstaller.prefab`에 같은 프리팹으로 새 항목을 추가하고 `PlayConstellationNovaVFX`와 같은 방식으로 태그만 바꿈 |
 | 반지름을 레이저 폭에 맞추고 싶다 | `PlayConstellationNovaVFX(center, 반지름)` 인자로 넘김. 마법진, 별, 기둥이 모두 비례해 변함 |
-| 노바 범위로 데미지를 주고 싶다 | `EvaluateRadius(elapsed)`로 파동 선두를 읽어 별도 판정을 작성. 현재는 시각 전용 |
+| 노바 범위로 데미지를 주고 싶다 | 별자리 발현은 이미 그렇게 동작함(4.8). 다른 곳에서도 쓰려면 `CollectConstellationBlastHits`처럼 타원 판정 + `EvaluateShockArrivalTime` 타이밍을 따름 |
 | 색을 바꾸고 싶다 | 팔레트는 흰색/하늘색/파랑/금색 4색(`ColorWhite/Ice/Blue/Gold`). 다른 이펙트(각인 폭발, 별 감쌈)와 같은 계열이므로 맞춰서 바꿔야 함 |
 | 길이를 바꾸고 싶다 | `TimelineLength`와 루트 ParticleSystem duration을 함께 바꿈. 분해 시작(`DissolveStart`), 빛기둥 끝(`PillarEnd`)도 같이 확인 |
