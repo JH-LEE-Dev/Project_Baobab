@@ -1,4 +1,4 @@
-﻿{
+{
     "jsonId": 2,
     "entries": [
         {
@@ -3388,7 +3388,7 @@
         {
             "id": 9117,
             "key": "AbilityDescription_FascinatingLogChance",
-            "kr": "나무를 벌목하면 <COLOR=54D86A>아주 가끔</COLOR> <COLOR=8bbeff>황금 나무</COLOR>로 변합니다.",
+            "kr": "나무를 벌목하면 <COLOR=54D86A>가끔</COLOR> <COLOR=8bbeff>황금 나무</COLOR>로 변합니다.",
             "en": "Felled trees <COLOR=54D86A>rarely</COLOR>\nturn into <COLOR=8bbeff>Golden Trees</COLOR>.",
             "zhHans": "砍倒的树<COLOR=54D86A>偶尔</COLOR>会变成<COLOR=8bbeff>黄金树</COLOR>。",
             "zhHant": "砍倒的樹<COLOR=54D86A>偶爾</COLOR>會變成<COLOR=8bbeff>黃金樹</COLOR>。",
@@ -4564,7 +4564,7 @@
         {
             "id": 9166,
             "key": "AbilityDescription_AdvancedLogChance",
-            "kr": "",
+            "kr": "나무를 벌목하면 <COLOR=54D86A>아주 가끔</COLOR> <COLOR=8bbeff>다이아몬드 나무</COLOR>로 변합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",

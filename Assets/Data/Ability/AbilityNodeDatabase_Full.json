@@ -1,4 +1,4 @@
-﻿{
+{
     "nodes": [
         {
             "skillType": "AxeDamage1",
@@ -348,7 +348,7 @@
         {
             "skillType": "GoldTreeChance",
             "nameLocId": 145,
-            "levelBadge": "I",
+            "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": 9,
             "gridY": 2,
@@ -795,7 +795,7 @@
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": 4,
-            "gridY": 13,
+            "gridY": 11,
             "parents": [
                 {
                     "skillType": "AxeRange1",
@@ -952,7 +952,7 @@
         {
             "skillType": "DiamondTreeChance",
             "nameLocId": 200,
-            "levelBadge": "II",
+            "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": 13,
             "gridY": 2,
@@ -1270,7 +1270,7 @@
             "nameLocId": 220,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": 6,
+            "gridX": 4,
             "gridY": 13,
             "parents": [
                 {
@@ -1535,7 +1535,7 @@
             "skillType": "ShieldExplosionResearch",
             "nameLocId": 234,
             "levelBadge": "M",
-            "requiredPrestigeLevel": 6,
+            "requiredPrestigeLevel": 0,
             "gridX": 0,
             "gridY": -13,
             "parents": [
@@ -1547,6 +1547,12 @@
                 },
                 {
                     "skillType": "SporeShieldPenetration3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "SporeShieldRegenBlock3",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -1638,7 +1644,7 @@
             "nameLocId": 240,
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
-            "gridX": -2,
+            "gridX": 2,
             "gridY": 19,
             "parents": [
                 {
@@ -1654,7 +1660,7 @@
             "nameLocId": 241,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": -4,
+            "gridX": 4,
             "gridY": 19,
             "parents": [
                 {
@@ -1670,8 +1676,8 @@
             "nameLocId": 242,
             "levelBadge": "III",
             "requiredPrestigeLevel": 0,
-            "gridX": 2,
-            "gridY": 17,
+            "gridX": -2,
+            "gridY": 19,
             "parents": [
                 {
                     "skillType": "AxeDamage5",
@@ -1686,8 +1692,8 @@
             "nameLocId": 243,
             "levelBadge": "III",
             "requiredPrestigeLevel": 0,
-            "gridX": 4,
-            "gridY": 17,
+            "gridX": -4,
+            "gridY": 19,
             "parents": [
                 {
                     "skillType": "AxeDurability3",
@@ -1761,7 +1767,7 @@
             "skillType": "ConstellationManifestUnlock",
             "nameLocId": 247,
             "levelBadge": "M",
-            "requiredPrestigeLevel": 0,
+            "requiredPrestigeLevel": 6,
             "gridX": -6,
             "gridY": -13,
             "parents": [
