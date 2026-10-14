@@ -1,4 +1,4 @@
-{
+﻿{
     "nodes": [
         {
             "skillType": "AxeDamage1",
@@ -1661,10 +1661,16 @@
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
             "gridX": 4,
-            "gridY": 19,
+            "gridY": 9,
             "parents": [
                 {
-                    "skillType": "AxeAttackSpeed2",
+                    "skillType": "MultiAttack",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "AxeCriticalDamage1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0

@@ -41,8 +41,8 @@ MonoBehaviour:
   - logState: 2
     valueMultiplier: 1
   - logState: 3
-    valueMultiplier: 5
+    valueMultiplier: 4
   - logState: 4
-    valueMultiplier: 10
+    valueMultiplier: 8
   - logState: 5
-    valueMultiplier: 20
+    valueMultiplier: 15

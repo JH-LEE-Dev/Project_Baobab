@@ -1584,7 +1584,6 @@ MonoBehaviour:
   brandStarWrapPrefab: {fileID: 137350371921299027, guid: 8929e93c80181374cba3211c79d18a0f, type: 3}
   brandStarWrapPoolDefaultCapacity: 8
   brandStarWrapPoolMaxSize: 32
-  brandStarWrapMaxActive: 20
 --- !u!114 &777467232540049004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2812,7 +2811,7 @@ MonoBehaviour:
   - forestType: 5
     decAmount: 30
   - forestType: 6
-    decAmount: 70
+    decAmount: 50
   - forestType: 7
     decAmount: 120
   - forestType: 8
