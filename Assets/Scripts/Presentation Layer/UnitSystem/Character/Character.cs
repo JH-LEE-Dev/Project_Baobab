@@ -881,7 +881,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     ///
     /// 방향: 이동 입력이 있으면 이동하는 방향(바라보는 방향과 무관), 없으면 바라보는 방향.
     /// 거리: dashDistanceTiles칸. 공격 범위와 같은 등각 거리(세로 2배)로 재므로 화면상 어느 방향이든 같은 칸 수다.
-    /// 대시는 도끼 공격으로 친다(AttackComponent.BeginDashStrike 위 주석 참고). 도끼 내구도가 0이면 이동만 한다.
+    /// 대시는 이동만 한다(공격 판정 없음).
     /// </summary>
     private void TryStartDash()
     {
@@ -902,15 +902,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         dashCooldownTimer = dashCooldown;
 
-        // 회전 베기가 발동하면(BeginDashStrike 안에서) 지금 바라보는 방향에서 한 바퀴를 시작하므로 방향을 먼저 맞춘다.
+        // 대시하는 동안은 조준점이 아니라 대시 방향을 바라본다(UpdateFacingByAttackPoint 참고).
         bDashing = true;
         SetFacingDirection(dashDirection);
-
-        if (false == IsAxeDurabilityZero() && attackComponent.BeginDashStrike(dashDirection, GetAttackCenterAt(rb.position)))
-        {
-            // 도끼 스윙을 시작할 때와 같이 드론을 깨운다(SetbCanAction 참고).
-            ActivateDrones();
-        }
 
         stateMachine.GetState<DashState>().Setup(dashDirection, dashWorldDistance, dashDuration);
         stateMachine.ChangeState<DashState>();
@@ -949,27 +943,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         return dashDistanceTiles * tileWidth / isoLength;
     }
 
-    /// <summary>DashState가 매 물리 틱마다 부른다. _rootPosition은 이번 틱에 캐릭터가 옮겨갈 위치다.</summary>
-    public void TickDashStrike(Vector2 _rootPosition)
-    {
-        attackComponent.TickDashStrike(GetAttackCenterAt(_rootPosition));
-    }
-
     /// <summary>DashState.Exit가 부른다. 어떤 이유로 끝나든 한 번만 불린다.</summary>
-    public void OnDashFinished(Vector2 _rootPosition, bool _bCompleted)
+    public void OnDashFinished()
     {
         bDashing = false;
-
-        // 내구도 0으로 이동만 한 대시나 리셋으로 판정이 지워진 대시는 EndDashStrike가 알아서 건너뛴다.
-        // 쓰러지면서 끊긴 대시는 마지막 타격 판정을 내지 않는다.
-        attackComponent.EndDashStrike(GetAttackCenterAt(_rootPosition), _bCompleted && false == bDead);
-    }
-
-    // 공격 판정의 중심은 AttackComponent 자신의 위치다(Attack 참고). 캐릭터가 _rootPosition에 있을 때의 그 위치.
-    private Vector3 GetAttackCenterAt(Vector2 _rootPosition)
-    {
-        Vector3 attackOffset = attackComponent.transform.position - transform.position;
-        return new Vector3(_rootPosition.x, _rootPosition.y, transform.position.z) + attackOffset;
     }
 
     private void UpdateTreeBoomerang()

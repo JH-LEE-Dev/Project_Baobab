@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 
 /// <summary>
-/// 대시. 정해진 거리를 짧은 시간에 밀고 나가며, 그동안 도끼 공격 판정을 함께 낸다(Character.TryStartDash 참고).
+/// 대시. 정해진 거리를 짧은 시간에 밀고 나간다. 이동만 하고 공격 판정은 없다(Character.TryStartDash 참고).
 ///
 /// 이동은 넉백과 같은 방식(Rigidbody2D.MovePosition)이지만, 넉백과 달리 거리가 길어(3칸) 물리 해결만으로는
 /// 얇은 충돌체를 뚫을 수 있다. 그래서 매 물리 틱마다 이번 틱에 갈 만큼 캐릭터 원형 콜라이더를 미리 쏴 보고
@@ -10,7 +10,7 @@ using UnityEngine.Tilemaps;
 ///  - 비스듬히 부딪히면 걸을 때처럼 벽을 타고 미끄러진다. 남은 거리에서 벽을 향하는 성분만 버리고 벽을 따라가는
 ///    성분만큼 한 번 더 쏴 본다.
 ///  - 거의 정면으로 부딪히거나(SlideStopAngle 이상) 미끄러진 쪽도 막히면(모서리) 그 자리에서 대시를 끝낸다.
-///  - 매 틱 다시 쏘고, 쏘기 전에 타일맵 충돌을 최신으로 맞추므로 대시 도중 앞의 나무가 쓰러지면 길이 열린다.
+///  - 매 틱 다시 쏘고, 쏘기 전에 타일맵 충돌을 최신으로 맞추므로 대시 도중 앞의 나무가 쓰러지면(부메랑·드론 등) 길이 열린다.
 /// 매 틱 움직일 수 있는 길이는 시간에 따른 진행량으로만 정한다. 그래서 미끄러지며 돌아가도 실제로 지나간 길은
 /// 대시 거리를 넘지 않는다.
 /// </summary>
@@ -25,14 +25,10 @@ public class DashState : CharacterState
     private static readonly float SlideMinRatio = Mathf.Cos(SlideStopAngle * Mathf.Deg2Rad);
 
     private Vector2 dashDirection = Vector2.right;
-    private Vector2 lastCommandedPos;
     private float dashDistance;
     private float dashDuration;
     private float timer;
     private float lastProgress;
-
-    // 끝까지(또는 장애물에 막혀) 정상적으로 끝났는지. 넉백·사망 등으로 다른 상태가 끼어들면 false로 Exit한다.
-    private bool bCompleted;
 
     // IdleState/RunState와 같은 이유로 대시 중에도 선 칸을 점유한다(KnockBackState.currentReservedPos 참고).
     private Vector3Int currentReservedPos;
@@ -60,14 +56,12 @@ public class DashState : CharacterState
     public override void Enter()
     {
         bActivated = true;
-        bCompleted = false;
         timer = 0f;
         lastProgress = 0f;
 
         currentReservedPos = ctx.tilemapDataProvider.WorldToCell(character.transform.position);
         ctx.pathfindGridProvider.Occupy(currentReservedPos);
 
-        lastCommandedPos = character.rb.position;
         character.rb.linearVelocity = Vector2.zero;
 
         // 캐릭터를 막는 것은 전부 막는다 - 충돌 매트릭스가 캐릭터와 부딪히게 해 둔 레이어를 그대로 쓴다.
@@ -92,8 +86,8 @@ public class DashState : CharacterState
         character.bMoving = false;
         bActivated = false;
 
-        // 어느 경로로 나가든(만료·장애물·넉백·사망·리셋) 공격 정산은 반드시 한 번 일어나야 한다.
-        character.OnDashFinished(lastCommandedPos, bCompleted);
+        // 어느 경로로 나가든(만료·장애물·넉백·사망·리셋) 대시 중 표시(바라보는 방향 고정)를 반드시 풀어야 한다.
+        character.OnDashFinished();
     }
 
     public override void Update()
@@ -104,8 +98,7 @@ public class DashState : CharacterState
     {
         if (false == bActivated) return;
 
-        // 대시 도중 귀환 경고창·연출 등으로 이동이 잠기면 그 자리에서 멈춘다. 정상 종료가 아니므로
-        // 마지막 타격 판정과 충격파는 내지 않는다(bCompleted = false로 Exit).
+        // 대시 도중 귀환 경고창·연출 등으로 이동이 잠기면 그 자리에서 멈춘다.
         if (true == character.inputManager.IsMovePaused)
         {
             stateMachine.ChangeState<IdleState>();
@@ -122,20 +115,16 @@ public class DashState : CharacterState
         bool bStopped = false;
         if (0.0001f < stepLength)
         {
-            lastCommandedPos = MoveWithSlide(character.rb.position, stepLength, out bStopped);
-            character.rb.MovePosition(lastCommandedPos);
+            character.rb.MovePosition(MoveWithSlide(character.rb.position, stepLength, out bStopped));
         }
 
         // 남은 관성으로 미끄러지지 않게 매 틱 속도를 비운다(이동은 MovePosition만 한다).
         character.rb.linearVelocity = Vector2.zero;
 
-        character.TickDashStrike(lastCommandedPos);
         UpdateOccupation();
 
         if (bStopped || 1f <= t)
         {
-            bCompleted = true;
-
             // 대시 중에 누르고 있던 방향키가 있으면 곧바로 이어서 달린다.
             if (0f != ctx.moveInput.sqrMagnitude) stateMachine.ChangeState<RunState>();
             else stateMachine.ChangeState<IdleState>();
