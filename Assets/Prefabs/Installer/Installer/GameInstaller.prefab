@@ -3328,6 +3328,7 @@ MonoBehaviour:
   treeLayerForExplosion:
     serializedVersion: 2
     m_Bits: 1024
+  baseShieldExplosionDamage: 8
   constellationLaserCreator: {fileID: 3643444765331575717}
 --- !u!114 &3643444765331575717
 MonoBehaviour:
