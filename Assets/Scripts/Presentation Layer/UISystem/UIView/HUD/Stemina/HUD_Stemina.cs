@@ -64,8 +64,12 @@ public class HUD_Stemina : MonoBehaviour
     [Header("Recover Effect")]
     [Tooltip("게이지가 회복 전 값에서 새 값까지 차오르는 대략적인 시간(초). 현재 값을 매 프레임 따라가므로 지속 소모가 겹쳐도 끊기지 않는다.")]
     [SerializeField] private float fillUpDuration = 0.35f;
-    [Tooltip("이 비율(최대치 대비) 이상의 단발 회복에서만 플래시, \"+\"를 띄운다. 작은 회복은 차오름만 보인다.")]
-    [Range(0f, 1f)][SerializeField] private float sparkleMinRatio = 0.03f;
+    [Tooltip("연속으로 들어오는 회복의 세기를 누적하는 시간(초). 마지막 회복의 차오름이 끝난 뒤 이 시간 안에 또 들어오면 같은 묶음으로 보고 누적량으로 플래시 세기와 \"+\" 개수를 정한다.")]
+    [Range(0f, 1f)][SerializeField] private float gainBundleWindow = 0.25f;
+    [Tooltip("이 비율(최대치 대비) 이하의 단일 회복은 무시한다(노이즈 컷). 0이면 0보다 큰 회복은 모두 차오름에 반영한다.")]
+    [Range(0f, 0.05f)][SerializeField] private float minGainRatio = 0f;
+    [Tooltip("아직 연출하지 않은 회복량이 이 비율(최대치 대비)에 닿을 때마다 플래시, \"+\"를 한 번 띄우고 비운다. 잘게 연속으로 들어오는 회복(소모가 더 빨라 혼잡해지는 경우)의 연출 횟수를 회복량에 비례하게 제한한다. 이보다 작은 회복은 차오름만 보인다. 0이면 회복이 올 때마다 연출한다.")]
+    [Range(0f, 1f)][SerializeField] private float sparkleMinRatio = 0.007f;
     [Tooltip("몸통 영역 위쪽에서 제외하는 줄 수. 스프라이트의 위쪽 하이라이트/어두운 줄(2행)을 피한다.")]
     [SerializeField] private int bodyInsetTop = 2;
     [Tooltip("몸통 영역 아래쪽에서 제외하는 줄 수. 스프라이트의 아래쪽 하이라이트 줄과 그림자(3행)를 피한다.")]
@@ -101,9 +105,13 @@ public class HUD_Stemina : MonoBehaviour
     [Tooltip("켜짐 후 모든 면이 번쩍였다가 가라앉기까지의 전체 시간(초, 팝 포함)")]
     [SerializeField] private float prismSettleDuration = 0.28f;
     [Tooltip("무적이 풀릴 때 프리즘이 면 단위로 녹색으로 돌아가는 데 걸리는 시간(초)")]
-    [SerializeField] private float prismReleaseDuration = 0.9f;
-    [Tooltip("풀림을 몇 단계로 끊어서 진행할지")]
-    [SerializeField] private int prismReleaseSteps = 8;
+    [SerializeField] private float prismReleaseDuration = 1f;
+    [Tooltip("면 하나가 풀리는 동안 바 색으로 이행하며 거치는 톤 단계 수")]
+    [SerializeField] private int prismReleaseSteps = 4;
+    [Tooltip("면 하나가 풀리기 시작해서 완전히 사라지기까지가 전체 풀림 시간에서 차지하는 비율")]
+    [Range(0.1f, 0.6f)][SerializeField] private float prismReleaseFadeSpan = 0.35f;
+    [Tooltip("풀림 스타일. Basic: 바 색으로 단계 이행 / Flash: 흰 섬광 후 이행 / Rainbow: 이웃 팔레트 색을 거쳐 이행 / Wave: 왼쪽에서 오른쪽으로 섬광이 쓸고 지나감")]
+    [SerializeField] private PrismReleaseStyle prismReleaseStyle = PrismReleaseStyle.Wave;
     [Tooltip("프리즘을 다시 그리는 속도(fps). 보간 없이 단계식으로 갱신해 픽셀 느낌을 지킨다.")]
     [SerializeField] private float prismStepRate = 14f;
     [Tooltip("프리즘 면 하나의 크기(캔버스 픽셀)")]
@@ -127,8 +135,12 @@ public class HUD_Stemina : MonoBehaviour
         new Color(1.00f, 0.95f, 0.70f, 1f)
     };
 
+    [Header("Front Edge Effect")]
+    [Tooltip("채움 앞쪽의 젤리 머리 세기(0이면 끔). 앞쪽 바깥에 말랑한 둥근 머리를 얹고, 회복 때 늘어났다 튕기며 안착하고 소모 때 눌린다. 1이면 기본, 작을수록 늘어남, 눌림, 호흡이 줄어든다. 무적 프리즘 중에는 쓰지 않는다.")]
+    [Range(0f, 1f)][SerializeField] private float frontEdgeStrength = 1f;
+
     [Header("Common")]
-    [Tooltip("이 비율(최대치 대비)보다 작은 변화는 연출하지 않는다. 휴식 구역 틱처럼 잦고 작은 회복이 계속 번쩍이는 것을 막는다.")]
+    [Tooltip("이 비율(최대치 대비)보다 작은 피격(스태미나 감소)은 연출하지 않는다. 회복에는 쓰지 않는다(회복은 Recover Effect의 sparkleMinRatio, gainBundleWindow가 정한다).")]
     [Range(0f, 1f)][SerializeField] private float minEffectRatio = 0.01f;
     [Tooltip("이 비율 이상의 변화는 연출 세기가 최대가 된다.")]
     [Range(0.01f, 1f)][SerializeField] private float fullEffectRatio = 0.2f;
@@ -157,6 +169,8 @@ public class HUD_Stemina : MonoBehaviour
         public float twinklePeriod;
         public float twinklePhase;
         public float releaseThreshold;
+        public float releaseWaveKey;
+        public int paletteIndex;
     }
 
     private enum PrismPhase
@@ -164,6 +178,14 @@ public class HUD_Stemina : MonoBehaviour
         Off,
         On,
         Releasing
+    }
+
+    private enum PrismReleaseStyle
+    {
+        Basic,
+        Flash,
+        Rainbow,
+        Wave
     }
 
     private static readonly float[] PrismTwinkleLevels = { 0.5f, 1f, 0.8f, 0.35f };
@@ -191,6 +213,8 @@ public class HUD_Stemina : MonoBehaviour
     private const float FollowSharpness = 5f;
     // 격차가 작아져도 끝이 늘어지지 않도록 하는 최소 속도(비율/초)
     private const float GhostMinFollowSpeed = 0.15f;
+    // 회복이 올 때 직전 플래시가 이 값(1이 막 시작, 0이 끝) 이하로 줄어 있으면 플래시를 다시 시작한다(같은 순간의 연타는 건너뛴다)
+    private const float FlashRestartBelow = 0.5f;
     // 차오름은 일정한 속도로 차오르다가 목표에 가까워질 때만 느려진다. (처음부터 지수 감쇠로 시작하면 첫 프레임에 한꺼번에 튄다)
     private const float FillEaseGap = 0.12f;
     private const float FillEaseMinFactor = 0.35f;
@@ -206,6 +230,49 @@ public class HUD_Stemina : MonoBehaviour
     private const int PlacementTries = 6;
     // 한 번에 예약해 둘 수 있는 "+"의 최대 개수
     private const int MaxPlannedPlus = 16;
+    // 회복 한 번마다 최소로 더하는 "+" 개수(묶음의 세기가 상한이어도 회복이 올 때마다 "+"가 보이게)
+    private const int PlusMinPerBurst = 2;
+    // 회복 중 "+"는 보이는 끝(채움 앞쪽 + 젤리 머리 길이)에서 이 칸 수 x 칸 폭 안쪽으로 솟아오른다.
+    private const int PlusTipSlots = 4;
+    private const float PlusTipSlotWidth = 2f;
+    // 젤리 머리: 갱신 간격(30fps), 움직임으로 깨우는 최소 변화량(비율)
+    private const float EdgeStepInterval = 1f / 30f;
+    private const float EdgeMoveEpsilon = 0.00005f;
+    // 스프링 계수(복원력, 감쇠)와 상태별 목표 길이(캔버스 픽셀), 정지 호흡 진폭, 회복 시작/끝에 주는 충격
+    // 회복 때 늘어나는 양은 앞쪽 이동 속도에 비례하고(EdgeGainSpeedK, 비율/초당 픽셀) EdgeGainExtraMax를 넘지 않는다.
+    // 시작 충격은 이번 묶음의 회복량(10% 이상이면 최대)에 비례한다.
+    private const float EdgeSpringK = 200f;
+    private const float EdgeSpringC = 16f;
+    private const float EdgeRestLen = 2.2f;
+    private const float EdgeGainExtraMax = 2f;
+    private const float EdgeGainSpeedK = 4f;
+    private const float EdgeFastTau = 0.1f;
+    private const float EdgeDrainLen = 1.6f;
+    private const float EdgeBreath = 0.35f;
+    private const float EdgeGainKick = 14f;
+    private const float EdgeSettleKick = -6f;
+    // 머리가 (다시) 생길 때 0에서 1로 올라오는 시정수(초). 프리즘 해제 직후 갑자기 튀어나와 회복처럼 보이지 않게 한다.
+    private const float EdgeAppearTau = 0.6f;
+    // 앞쪽 속도 판정(비율/초): 지수 이동평균 시정수, 소모 진입/해제 기준(히스테리시스), 회복으로 보는 기준, 소모 가중치 시정수
+    private const float EdgeVelTau = 0.35f;
+    private const float EdgeDrainEnter = 0.0006f;
+    private const float EdgeDrainExit = 0.0002f;
+    private const float EdgeGainVel = 0.01f;
+    private const float EdgeDrainTau = 0.4f;
+    // 소모 중 표면 물결 진폭, 위/아래 행 길이 차(기울기 흔들림) 진폭(캔버스 픽셀), 픽셀 경계를 넘을 때의 작은 충격
+    private const float EdgeRippleAmp = 0.7f;
+    private const float EdgeSloshAmp = 0.7f;
+    private const float EdgeTickKick = 5f;
+    // 머리 모양: 세로 가운데 이 비율까지는 길이가 일정한 평평한 면이고, 바깥 위/아래 구간에서만 둥글게 말린다
+    private const float EdgeFlatRatio = 0.62f;
+    // 머리 명암(림 라이트): 머리 길이 방향 위치(0 이음매, 1 바깥 끝)가 이 값을 넘는 위쪽 행은 밝게, 아래쪽 행은 어둡게.
+    // 이음매 쪽은 바 본체와 같은 색이라 이음매가 보이지 않는다.
+    private const float EdgeRimStart = 0.5f;
+    private const float EdgeRimOuter = 0.85f;
+    private const float EdgeRimBright1 = 0.14f;
+    private const float EdgeRimBright2 = 0.28f;
+    private const float EdgeShadeStart = 0.55f;
+    private const float EdgeShadeMul = 0.82f;
     // 윤곽(스프라이트 알파)을 안쪽으로 인정하는 기준
     private const byte SilhouetteAlphaCut = 127;
     // 윤곽 표 생성에 실패했을 때 다시 시도하는 간격(초)
@@ -230,7 +297,15 @@ public class HUD_Stemina : MonoBehaviour
     private bool bFillEvent = false;
     private float fillSegmentLow = 0f;
     private float fillSpeed = 0f;
-    private float fillIntensity = 0f;
+
+    // 회복 묶음: 한 번의 공격으로 여러 나무가 쓰러지며 잘게 나뉘어 들어오는 회복을 하나의 큰 회복으로 본다.
+    // 마지막 회복의 차오름이 끝난 뒤 gainBundleWindow 안에 또 들어오면 같은 묶음이고, 세기와 "+" 목표 개수는 누적량으로 정한다.
+    private float bundleGainRatio = 0f;
+    private float bundleLingerRemain = 0f;
+    private float bundleFlashIntensity = 0f;
+    private int bundlePlannedPlus = 0;
+    // 아직 연출하지 않은 회복량. sparkleMinRatio에 닿으면 한 번 연출하고 비운다.
+    private float unplayedGainRatio = 0f;
 
     private float flashValue = 0f;
     private Color flashColor = Color.white;
@@ -245,6 +320,7 @@ public class HUD_Stemina : MonoBehaviour
 
     // 차오르는 동안 앞쪽이 지나갈 때 켜도록 예약해 둔 "+"의 가로 위치(캔버스 픽셀)
     private float[] plannedPlusX = new float[MaxPlannedPlus];
+    private int plusTipSlot = 0;
     private int plannedPlusCount = 0;
 
     // 바 윤곽(Fill 스프라이트 알파)과 그 안쪽 몸통 영역, 기본색. 시작할 때 한 번만 읽는다.
@@ -293,11 +369,36 @@ public class HUD_Stemina : MonoBehaviour
     private float prismGainHighPx = 0f;
     private PrismFace[] prismFaces;
     private float[] prismFaceLevel;
+    private int[] prismFaceTone;
     private Color32[] prismFaceColors;
     private byte[] prismPixelKind;
     private int[] prismFaceMap;
     private Color32[] prismBuffer;
     private Texture2D prismTexture;
+
+    // 젤리 머리 상태. 프리즘 오버레이 텍스처를 프리즘이 꺼져 있을 때만 빌려 쓴다.
+    // 회복/소모는 프레임 변화량이 아니라 시간 보정한 앞쪽 속도의 이동평균(edgeVelocity)으로 판정한다.
+    private Color[] barRowColors;
+    // edgeMask: 머리 픽셀 여부, edgeShade: 머리 길이 방향 위치(0 이음매, 1 바깥 끝)
+    private byte[] edgeMask;
+    private float[] edgeShade;
+    private int edgeRowLo = 0;
+    private int edgeRowHi = 0;
+    private bool bEdgeActive = false;
+    private bool bEdgeDrawn = false;
+    private bool bEdgeGain = false;
+    private bool bEdgeDrain = false;
+    private int edgePrevFilled = -1;
+    private float edgeVelocity = 0f;
+    private float edgeFastSpeed = 0f;
+    private float edgeAppear = 0f;
+    private float edgeDrainWeight = 0f;
+    private float edgeRipplePhase = 0f;
+    private float edgeSpringLen = EdgeRestLen;
+    private float edgeSpringVel = 0f;
+    private float edgeStepTimer = 0f;
+    private float edgeTime = 0f;
+    private float edgePrevShown = 0f;
 
 
     // 퍼블릭 초기화 및 제어 메서드
@@ -357,6 +458,10 @@ public class HUD_Stemina : MonoBehaviour
         UpdateShownRatio(_ratio);
         progressBar?.UpdateValue(shownRatio);
 
+        // 채움 앞쪽이 움직이면 앞쪽 끝부분 연출을 깨운다(움직임이 멈추고 입자가 사라지면 스스로 잠든다).
+        if (0f < frontEdgeStrength && EdgeMoveEpsilon < Mathf.Abs(shownRatio - _prevShown))
+            bEdgeActive = true;
+
         UpdateGhost(_ratio, _prevShown, _wasFilling);
     }
 
@@ -384,10 +489,12 @@ public class HUD_Stemina : MonoBehaviour
     /// <summary>
     /// 스태미나가 한 번에 회복된 순간의 연출(차오름 + 바 전체 플래시 + "+" 상승). _gainRatio는 최대치 대비 늘어난 비율이다.
     /// 자연 회복처럼 매 프레임 쌓이는 회복은 호출하지 않는다.
+    /// 한 호출의 크기로 연출 여부를 정하지 않는다. 한 번의 공격으로 여러 나무가 쓰러지면 0.x%짜리 회복이 여러 번 나뉘어 들어오므로,
+    /// 모두 받아서 묶음(gainBundleWindow)으로 누적하고 누적량으로 세기를 정한다(BeginFillUp).
     /// </summary>
     public void PlayRecovered(float _gainRatio)
     {
-        if (false == bActive || minEffectRatio > _gainRatio)
+        if (false == bActive || minGainRatio >= _gainRatio)
             return;
 
         pendingGainRatio += _gainRatio;
@@ -445,6 +552,10 @@ public class HUD_Stemina : MonoBehaviour
         // 숨겨지는 동안 남아 있던 연출이 다음에 나타날 때 이어 보이지 않도록 정리한다.
         ResetEffects();
         SetWarning(false);
+
+        // 던전에서는 정지 중에도 젤리 머리가 호흡하므로, 활성화되면 곧바로 깨운다.
+        if (true == bActive && 0f < frontEdgeStrength)
+            bEdgeActive = true;
 
         // 무적 상태도 맵이 바뀔 때마다 비운다. 꺼짐 알림이 어떤 이유로 빠져도 다음 맵까지 연출이 남지 않게 한다.
         // 던전 쪽은 이 호출(DecalreDungeonTypeSignal)이 차량 활성화(ReadyPortal) 직후 같은 프레임에 오므로
@@ -605,11 +716,13 @@ public class HUD_Stemina : MonoBehaviour
 
                     // 이웃 면은 인접한 색이 되도록 가로 위치를 천천히 따라가되, 면마다 한 칸 안팎으로 흔든다.
                     Color _color = barBaseColor;
+                    int _paletteIndex = -1;
                     if (0 < _paletteLength)
                     {
                         float _pos = _centerX / 26f + (_crx - 0.5f) * 1.6f + (_centerY / 18f - 0.5f) * 0.9f;
                         int _i0 = Mathf.FloorToInt(_pos);
-                        _color = prismPalette[((_i0 % _paletteLength) + _paletteLength) % _paletteLength];
+                        _paletteIndex = ((_i0 % _paletteLength) + _paletteLength) % _paletteLength;
+                        _color = prismPalette[_paletteIndex];
                     }
 
                     float _srx;
@@ -628,6 +741,9 @@ public class HUD_Stemina : MonoBehaviour
                     _face.twinklePeriod = Mathf.Max(0.1f, _period);
                     _face.twinklePhase = PrismFrac(_srx * 7.1f + _sry * 3.3f) * _face.twinklePeriod;
                     _face.releaseThreshold = 0.12f + 0.78f * PrismFrac(_srx * 9.1f + _sry * 4.3f);
+                    // Wave 스타일: 왼쪽에서 오른쪽으로 쓸고 가되 면마다 조금씩 흔든다(0~0.95).
+                    _face.releaseWaveKey = Mathf.Clamp01(_centerX / Mathf.Max(1f, barW)) * 0.8f + 0.15f * PrismFrac(_srx * 3.7f + _sry * 8.1f);
+                    _face.paletteIndex = _paletteIndex;
                     _list.Add(_face);
                 }
 
@@ -637,6 +753,7 @@ public class HUD_Stemina : MonoBehaviour
 
         prismFaces = _list.ToArray();
         prismFaceLevel = new float[prismFaces.Length];
+        prismFaceTone = new int[prismFaces.Length];
         prismFaceColors = new Color32[prismFaces.Length * PrismColorVariants];
 
         // 픽셀의 위치 종류(윗변 / 아랫변 / 왼쪽 끝)는 윤곽이 바뀌지 않으므로 한 번만 계산한다.
@@ -823,7 +940,7 @@ public class HUD_Stemina : MonoBehaviour
     private void PaintPrism()
     {
         if (null == prismBuffer || null == prismTexture || null == prismFaces || null == prismFaceMap
-            || null == prismFaceColors || null == prismPixelKind)
+            || null == prismFaceColors || null == prismPixelKind || null == prismFaceTone)
             return;
 
         int _filledPx = Mathf.Min(barW, Mathf.FloorToInt(barW * Mathf.Clamp01(shownRatio)));
@@ -840,9 +957,9 @@ public class HUD_Stemina : MonoBehaviour
 
         bool _bReleasing = PrismPhase.Releasing == prismPhase;
         float _releaseP = true == _bReleasing ? Mathf.Clamp01(prismPaintReleaseTimer / Mathf.Max(0.01f, prismReleaseDuration)) : 0f;
-        int _steps = Mathf.Max(1, prismReleaseSteps);
-        float _releaseStep = true == _bReleasing ? Mathf.Floor(_releaseP * _steps) / _steps : 0f;
-        float _releaseStepSize = 1f / _steps;
+        int _tones = Mathf.Max(1, prismReleaseSteps);
+        float _fadeSpan = Mathf.Clamp(prismReleaseFadeSpan, 0.1f, 0.6f);
+        bool _bWave = PrismReleaseStyle.Wave == prismReleaseStyle;
         float _density = Mathf.Max(0f, prismTwinkleDensity) * (true == _bReleasing ? 1f - _releaseP : 1f);
 
         // 켜짐 직후: 팝 구간은 흰색, 이어서 모든 면이 한꺼번에 번쩍였다가 세 단계로 가라앉는다.
@@ -890,12 +1007,18 @@ public class HUD_Stemina : MonoBehaviour
                 }
             }
 
+            // 면마다 풀림 구간(전체의 _fadeSpan 비율)을 갖고, 그 안에서 톤 단계로 바 색에 가까워진 뒤 투명이 된다.
+            prismFaceTone[i] = -1;
+
             if (true == _bReleasing)
             {
-                if (_releaseStep >= _face.releaseThreshold)
+                float _key = true == _bWave ? _face.releaseWaveKey : _face.releaseThreshold;
+                float _q = (_releaseP - _key * (1f - _fadeSpan)) / _fadeSpan;
+
+                if (1f <= _q)
                     _level = -1f;
-                else if (_releaseStep + _releaseStepSize > _face.releaseThreshold && _level < 0.5f)
-                    _level = 0.5f;
+                else if (0f < _q)
+                    prismFaceTone[i] = Mathf.Min(_tones - 1, Mathf.FloorToInt(_q * _tones));
             }
 
             prismFaceLevel[i] = _level;
@@ -917,18 +1040,12 @@ public class HUD_Stemina : MonoBehaviour
 
             float _ndl = Mathf.Clamp01(_face.nx * _lx + _face.ny * _ly + _face.nz * _lz);
             float _shade = Mathf.Round(_ndl * 3f) / 3f;
+            bool _bLit = 0.8f <= _ndl;
 
-            float _r = Mathf.Lerp(_face.color.r * PrismDeepFactor, Mathf.Lerp(_face.color.r, 1f, PrismLitMix), _shade);
-            float _g = Mathf.Lerp(_face.color.g * PrismDeepFactor, Mathf.Lerp(_face.color.g, 1f, PrismLitMix), _shade);
-            float _b = Mathf.Lerp(_face.color.b * PrismDeepFactor, Mathf.Lerp(_face.color.b, 1f, PrismLitMix), _shade);
-
-            // 광원과 정렬된 면은 한 단계 더 밝다.
-            if (_ndl >= 0.8f)
-            {
-                _r = Mathf.Lerp(_r, 1f, 0.12f);
-                _g = Mathf.Lerp(_g, 1f, 0.12f);
-                _b = Mathf.Lerp(_b, 1f, 0.12f);
-            }
+            float _r;
+            float _g;
+            float _b;
+            ShadePrismColor(_face.color, _shade, _bLit, out _r, out _g, out _b);
 
             if (0f < _level)
             {
@@ -937,6 +1054,11 @@ public class HUD_Stemina : MonoBehaviour
                 _g = Mathf.Lerp(_g, 1f, _mix);
                 _b = Mathf.Lerp(_b, 1f, _mix);
             }
+
+            int _tone = prismFaceTone[i];
+
+            if (0 <= _tone)
+                ApplyPrismReleaseTone(in _face, _tone, _tones, _shade, _bLit, ref _r, ref _g, ref _b);
 
             int _slot = i * PrismColorVariants;
 
@@ -998,6 +1120,385 @@ public class HUD_Stemina : MonoBehaviour
 
         prismTexture.SetPixelData(prismBuffer, 0);
         prismTexture.Apply(false);
+    }
+
+    // 면 색에 4단계 명암을 입힌다. 광원과 정렬된 면(_bLit)은 한 단계 더 밝다.
+    private static void ShadePrismColor(Color _color, float _shade, bool _bLit, out float _r, out float _g, out float _b)
+    {
+        _r = Mathf.Lerp(_color.r * PrismDeepFactor, Mathf.Lerp(_color.r, 1f, PrismLitMix), _shade);
+        _g = Mathf.Lerp(_color.g * PrismDeepFactor, Mathf.Lerp(_color.g, 1f, PrismLitMix), _shade);
+        _b = Mathf.Lerp(_color.b * PrismDeepFactor, Mathf.Lerp(_color.b, 1f, PrismLitMix), _shade);
+
+        if (true == _bLit)
+        {
+            _r = Mathf.Lerp(_r, 1f, 0.12f);
+            _g = Mathf.Lerp(_g, 1f, 0.12f);
+            _b = Mathf.Lerp(_b, 1f, 0.12f);
+        }
+    }
+
+    // 면의 팔레트 색에서 _offset칸 뒤의 색. 팔레트가 없으면 면 자신의 색을 쓴다.
+    private Color GetPrismPaletteColor(in PrismFace _face, int _offset)
+    {
+        int _length = null != prismPalette ? prismPalette.Length : 0;
+
+        if (0 >= _length || 0 > _face.paletteIndex)
+            return _face.color;
+
+        return prismPalette[(_face.paletteIndex + _offset) % _length];
+    }
+
+    // 풀리는 면의 톤 단계(_tone)를 스타일에 맞춰 현재 색에 덧입힌다. 마지막 단계 뒤에는 면이 투명이 되어 아래 Fill이 드러난다.
+    private void ApplyPrismReleaseTone(in PrismFace _face, int _tone, int _tones, float _shade, bool _bLit, ref float _r, ref float _g, ref float _b)
+    {
+        Color _bar = barColorNow;
+        float _toBar = 0f;
+        float _toWhite = 0f;
+
+        switch (prismReleaseStyle)
+        {
+            case PrismReleaseStyle.Flash:
+                if (0 == _tone)
+                    _toWhite = 0.8f;
+                else if (1 == _tone)
+                    _toWhite = 0.35f;
+                else
+                    _toBar = 0.7f * (_tone - 1) / Mathf.Max(1, _tones - 2);
+                break;
+
+            case PrismReleaseStyle.Wave:
+                if (0 == _tone)
+                    _toWhite = 0.85f;
+                else if (1 == _tone)
+                    _toWhite = 0.4f;
+                else
+                    _toBar = 0.4f + 0.35f * (_tone - 2) / Mathf.Max(1, _tones - 3);
+                break;
+
+            case PrismReleaseStyle.Rainbow:
+                if (0 < _tone)
+                {
+                    // 이웃 팔레트 색으로 한 번 더 바뀐 뒤 바 색으로 이행한다.
+                    float _pr;
+                    float _pg;
+                    float _pb;
+                    ShadePrismColor(GetPrismPaletteColor(in _face, 1 == _tone ? 1 : 2), _shade, _bLit, out _pr, out _pg, out _pb);
+                    _r = _pr;
+                    _g = _pg;
+                    _b = _pb;
+
+                    if (1 == _tone)
+                        _toWhite = 0.2f;
+                    else
+                        _toBar = 0.7f * (_tone - 1) / Mathf.Max(1, _tones - 2);
+                }
+                break;
+
+            default:
+                _toBar = 0.9f * _tone / _tones;
+                break;
+        }
+
+        if (0f < _toWhite)
+        {
+            _r = Mathf.Lerp(_r, 1f, _toWhite);
+            _g = Mathf.Lerp(_g, 1f, _toWhite);
+            _b = Mathf.Lerp(_b, 1f, _toWhite);
+        }
+
+        if (0f < _toBar)
+        {
+            _r = Mathf.Lerp(_r, _bar.r, _toBar);
+            _g = Mathf.Lerp(_g, _bar.g, _toBar);
+            _b = Mathf.Lerp(_b, _bar.b, _toBar);
+        }
+    }
+
+    // 젤리 머리 연출
+
+    // 매 프레임 불러, 던전에 있는 동안 스프링을 적분하고 30fps로 머리를 그린다.
+    // 프리즘이 켜져 있으면 프리즘이 오버레이 전체를 쓰므로 아무것도 하지 않는다.
+    private void UpdateFrontEdge(float _dt)
+    {
+        if (PrismPhase.Off != prismPhase)
+        {
+            bEdgeActive = false;
+            bEdgeDrawn = false;
+            bEdgeGain = false;
+            bEdgeDrain = false;
+            edgeVelocity = 0f;
+            edgeFastSpeed = 0f;
+            edgeAppear = 0f;
+            edgeDrainWeight = 0f;
+            edgePrevFilled = -1;
+            edgePrevShown = Mathf.Clamp01(shownRatio);
+            return;
+        }
+
+        bool _bAllowed = 0f < frontEdgeStrength && true == bActive && true == bSilhouetteReady
+            && null != prismSurface && null != prismTexture && null != prismBuffer
+            && null != edgeMask && null != barRowColors && prismBuffer.Length == edgeMask.Length;
+
+        if (false == _bAllowed)
+        {
+            ClearFrontEdge();
+            return;
+        }
+
+        bEdgeActive = true;
+
+        float _s = Mathf.Clamp01(frontEdgeStrength);
+        float _dtSafe = Mathf.Max(0.0001f, _dt);
+        float _shown = Mathf.Clamp01(shownRatio);
+
+        // 앞쪽 속도(비율/초)를 시간 보정해 이동평균한다. 프레임 레이트나 한 프레임의 튐에 판정이 흔들리지 않는다.
+        float _vRaw = (_shown - edgePrevShown) / _dtSafe;
+        edgePrevShown = _shown;
+        edgeVelocity += (_vRaw - edgeVelocity) * (1f - Mathf.Exp(-_dtSafe / EdgeVelTau));
+
+        // 회복의 늘어남을 정하는 빠른 속도(짧은 시정수). 차오름이 감속하면 머리도 함께 줄어 멈출 때 갑자기 수축하지 않는다.
+        edgeFastSpeed += (Mathf.Max(0f, _vRaw) - edgeFastSpeed) * (1f - Mathf.Exp(-_dtSafe / EdgeFastTau));
+
+        // 머리 등장: 처음 생길 때 갑자기 튀어나와 회복처럼 보이지 않게 서서히 올린다.
+        edgeAppear += (1f - edgeAppear) * (1f - Mathf.Exp(-_dtSafe / EdgeAppearTau));
+
+        bool _bGain = true == bFillingUp || EdgeGainVel < edgeVelocity;
+
+        if (true == _bGain)
+            bEdgeDrain = false;
+        else if (true == bEdgeDrain)
+            bEdgeDrain = -EdgeDrainExit > edgeVelocity;
+        else
+            bEdgeDrain = -EdgeDrainEnter > edgeVelocity;
+
+        // 충격은 회복이 시작되고 끝날 때만 준다. 소모와 정지 사이는 가중치로 부드럽게 이어진다.
+        if (_bGain != bEdgeGain)
+        {
+            float _kickSize = true == _bGain ? Mathf.Min(1f, bundleGainRatio / 0.1f) : 1f;
+            edgeSpringVel += (true == _bGain ? EdgeGainKick : EdgeSettleKick) * _s * _kickSize;
+            bEdgeGain = _bGain;
+        }
+
+        float _drainTarget = true == bEdgeDrain ? 1f : 0f;
+        edgeDrainWeight += (_drainTarget - edgeDrainWeight) * (1f - Mathf.Exp(-_dtSafe / EdgeDrainTau));
+
+        // 소모로 채움이 한 픽셀 줄 때마다 작은 충격과 새 물결 위상을 준다(같은 패턴이 반복되지 않게 크기와 위상을 흔든다).
+        int _filledNow = Mathf.Min(barW, Mathf.FloorToInt(barW * _shown));
+
+        if (0 <= edgePrevFilled && _filledNow < edgePrevFilled && 0.2f < edgeDrainWeight)
+        {
+            edgeSpringVel -= EdgeTickKick * _s * (0.5f + Random.value);
+            edgeRipplePhase = Random.value * 6.2832f;
+        }
+
+        edgePrevFilled = _filledNow;
+
+        edgeTime += _dt;
+
+        float _rest = EdgeRestLen + EdgeBreath * _s * (1f + 0.8f * edgeDrainWeight) * Mathf.Sin(edgeTime * 2.4f);
+        float _target = _rest + (EdgeDrainLen - EdgeRestLen) * _s * edgeDrainWeight;
+
+        if (true == _bGain)
+            _target = _rest + Mathf.Min(EdgeGainExtraMax, edgeFastSpeed * EdgeGainSpeedK) * _s;
+
+        float _h = Mathf.Min(_dt, 0.05f) * 0.25f;
+
+        for (int i = 0; i < 4; i++)
+        {
+            float _a = EdgeSpringK * (_target - edgeSpringLen) - EdgeSpringC * edgeSpringVel;
+            edgeSpringVel += _a * _h;
+            edgeSpringLen += edgeSpringVel * _h;
+        }
+
+        edgeSpringLen = Mathf.Clamp(edgeSpringLen, 0.6f, EdgeRestLen + EdgeGainExtraMax + 0.6f);
+
+        edgeStepTimer += _dt;
+
+        if (edgeStepTimer < EdgeStepInterval)
+            return;
+
+        edgeStepTimer = 0f;
+        PaintFrontEdge();
+    }
+
+    // 오버레이에 그린 내용을 비우고 연출을 잠재운다. 프리즘이 오버레이를 쓰는 중에는 텍스처를 건드리지 않는다.
+    private void ClearFrontEdge()
+    {
+        bEdgeActive = false;
+        bEdgeGain = false;
+        bEdgeDrain = false;
+        edgeStepTimer = 0f;
+        edgeVelocity = 0f;
+        edgeFastSpeed = 0f;
+        edgeAppear = 0f;
+        edgeDrainWeight = 0f;
+        edgePrevFilled = -1;
+        edgePrevShown = Mathf.Clamp01(shownRatio);
+        edgeSpringLen = EdgeRestLen;
+        edgeSpringVel = 0f;
+
+        ClearEdgePixels();
+    }
+
+    // 머리를 그린 픽셀을 지우고 오버레이를 끈다(프리즘이 쓰는 중에는 건드리지 않는다).
+    private void ClearEdgePixels()
+    {
+        if (true == bEdgeDrawn && PrismPhase.Off == prismPhase && null != prismBuffer && null != prismTexture)
+        {
+            System.Array.Clear(prismBuffer, 0, prismBuffer.Length);
+            prismTexture.SetPixelData(prismBuffer, 0);
+            prismTexture.Apply(false);
+
+            if (null != prismSurface)
+                prismSurface.enabled = false;
+        }
+
+        bEdgeDrawn = false;
+    }
+
+    // 채움 앞쪽 바깥에 말랑한 둥근 머리를 그린다. 불투명 도트이고, 길이는 스프링 값이다.
+    // 앞쪽의 소수 부분을 반길이에 더해 머리 끝이 픽셀 경계에서 점프하지 않게 한다.
+    // 위아래 끝까지 이어지는 캡 모양(가운데는 평평, 위/아래 모서리만 둥글게), 소모 중 표면 물결과 기울기 흔들림,
+    // 가장자리 림 라이트 명암(이음매는 바 본체와 같은 색), 바 틴트 반영, 바깥 1px 테두리를 더한다.
+    private void PaintFrontEdge()
+    {
+        float _frontPx = barW * Mathf.Clamp01(shownRatio);
+        int _filled = Mathf.Min(barW, Mathf.FloorToInt(_frontPx));
+
+        // 비었거나 가득 찼으면 그릴 머리가 없다.
+        if (0 >= _filled || barW <= _filled)
+        {
+            ClearEdgePixels();
+            return;
+        }
+
+        float _s = Mathf.Clamp01(frontEdgeStrength);
+        int _fl = _filled - 1;
+        float _len = (Mathf.Max(0.6f, edgeSpringLen) + (_frontPx - _filled)) * edgeAppear;
+
+        // 세로 범위: 바 윤곽이 실제로 차지하는 행 전체. 늘어나도 높이를 줄이지 않아 윗줄/아랫줄이 머리로 이어진다.
+        // 소모 중 느린 흔들림은 중심을 옮기지 않고 위/아래 행의 길이 차(기울기)로 준다.
+        float _tilt = EdgeSloshAmp * _s * edgeDrainWeight * Mathf.Sin(edgeTime * 1.7f + edgeRipplePhase);
+        float _half = (edgeRowHi - edgeRowLo + 1) * 0.5f;
+        float _cy = (edgeRowLo + edgeRowHi) * 0.5f;
+
+        float _ripple = EdgeRippleAmp * _s * edgeDrainWeight;
+        int _maxX = Mathf.Min(barW - 1, _fl + Mathf.CeilToInt(_len + _ripple * 1.2f + Mathf.Abs(_tilt)) + 1);
+
+        System.Array.Clear(prismBuffer, 0, prismBuffer.Length);
+
+        // 머리 영역의 마스크와 명암을 구한다(바 높이 방향 위쪽이 +y, 빛은 왼쪽 위).
+        for (int y = 0; y < barH; y++)
+        {
+            // 행의 세로 위치(위쪽이 +). 평평한 면 밖에서만 둥글게 말려 길이 비율이 줄어든다.
+            float _v = (y - _cy) / _half;
+            float _vAbs = Mathf.Abs(_v);
+            float _w = EdgeFlatRatio < _vAbs ? Mathf.Min(1f, (_vAbs - EdgeFlatRatio) / (1f - EdgeFlatRatio)) : 0f;
+            float _f = Mathf.Sqrt(1f - _w * _w);
+
+            float _ay = _len + _tilt * _v;
+
+            if (0f < _ripple)
+            {
+                _ay += _ripple * (Mathf.Sin(y * 0.9f - edgeTime * 5.2f + edgeRipplePhase) * 0.7f
+                    + Mathf.Sin(y * 0.45f + edgeTime * 2.3f + edgeRipplePhase * 1.7f) * 0.4f);
+            }
+
+            _ay = Mathf.Max(0.5f, _ay);
+
+            for (int x = _fl + 1; x <= _maxX + 1 && x < barW; x++)
+            {
+                int _i = y * barW + x;
+                edgeMask[_i] = 0;
+                edgeShade[_i] = 0f;
+
+                if (x > _maxX)
+                    continue;
+
+                float _u = (x - (_fl + 0.5f)) / _ay;
+
+                if (_u > _f)
+                    continue;
+
+                edgeMask[_i] = 1;
+                edgeShade[_i] = _u / Mathf.Max(0.0001f, _f);
+            }
+        }
+
+        // 바 본체(Fill)는 현재 틴트(저피로도 경고의 빨강 펄스 포함)가 곱해져 그려진다. 머리도 같은 틴트를 곱해야 색이 갈라지지 않는다.
+        Color _tint = null != barFillImage ? barFillImage.color : Color.white;
+
+        for (int y = 0; y < barH; y++)
+        {
+            Color _rc = barRowColors[y];
+            float _bodyR = _rc.r * _tint.r;
+            float _bodyG = _rc.g * _tint.g;
+            float _bodyB = _rc.b * _tint.b;
+            float _vRow = (y - _cy) / _half;
+
+            for (int x = _fl + 1; x <= _maxX + 1 && x < barW; x++)
+            {
+                int _i = y * barW + x;
+
+                if (false == barInside[_i])
+                    continue;
+
+                float _r;
+                float _g;
+                float _b;
+
+                if (0 != edgeMask[_i])
+                {
+                    float _t = edgeShade[_i];
+
+                    _r = _bodyR;
+                    _g = _bodyG;
+                    _b = _bodyB;
+
+                    if (0.15f < _vRow && EdgeRimStart < _t)
+                    {
+                        float _m = EdgeRimOuter < _t ? EdgeRimBright2 : EdgeRimBright1;
+
+                        _r = Mathf.Lerp(_r, 1f, _m);
+                        _g = Mathf.Lerp(_g, 1f, _m);
+                        _b = Mathf.Lerp(_b, 0.92f, _m);
+                    }
+                    else if (-0.3f > _vRow && EdgeShadeStart < _t)
+                    {
+                        _r *= EdgeShadeMul;
+                        _g *= EdgeShadeMul;
+                        _b *= EdgeShadeMul;
+                    }
+                }
+                else
+                {
+                    // 마스크 바깥에서 마스크와 맞닿은 1px는 어두운 테두리
+                    bool _bAdj = (x - 1 > _fl && 0 != edgeMask[_i - 1])
+                        || (x + 1 <= _maxX && 0 != edgeMask[_i + 1])
+                        || (y > 0 && 0 != edgeMask[_i - barW])
+                        || (y + 1 < barH && 0 != edgeMask[_i + barW]);
+
+                    if (false == _bAdj)
+                        continue;
+
+                    // 테두리도 바 틴트를 따른다(아주 어두워지지 않게 최소 밝기를 둔다).
+                    _r = Mathf.Max(0.09f, 0.23f * _tint.r);
+                    _g = Mathf.Max(0.04f, 0.36f * _tint.g);
+                    _b = Mathf.Max(0.03f, 0.10f * _tint.b);
+                }
+
+                prismBuffer[_i] = new Color32(
+                    (byte)Mathf.Clamp(Mathf.RoundToInt(_r * 255f), 0, 255),
+                    (byte)Mathf.Clamp(Mathf.RoundToInt(_g * 255f), 0, 255),
+                    (byte)Mathf.Clamp(Mathf.RoundToInt(_b * 255f), 0, 255),
+                    255);
+            }
+        }
+
+        prismTexture.SetPixelData(prismBuffer, 0);
+        prismTexture.Apply(false);
+        prismSurface.enabled = true;
+        bEdgeDrawn = true;
     }
 
     // 팝 구간이면 흰색 쪽으로 섞은 뒤 바이트 색으로 바꾼다.
@@ -1063,26 +1564,41 @@ public class HUD_Stemina : MonoBehaviour
             shownRatio = Mathf.Clamp01(_ratio - _gain);
             fillSegmentLow = shownRatio;
             bFillingUp = true;
-            fillIntensity = 0f;
             plannedPlusCount = 0;
         }
 
-        fillIntensity = Mathf.Max(fillIntensity, GetIntensity(_gain));
+        // 묶음 누적: 세기는 이번 호출이 아니라 묶음의 누적량으로 정한다.
+        // 단발 회복이면 누적량이 이번 회복량과 같아 이전과 같은 값이 나온다.
+        bundleGainRatio += _gain;
+        bundleLingerRemain = gainBundleWindow;
 
-        // 작은 회복은 플래시, "+" 없이 차오름만 보여 준다. 차오르는 중 큰 회복이 겹치면 큰 쪽으로 올린다.
-        // 플래시는 차오름과 동시에 시작한다(겹친 회복이면 올라간 세기로 다시 시작).
-        if (_gain >= sparkleMinRatio)
+        float _bundleIntensity = GetIntensity(bundleGainRatio);
+
+        // 연출하지 않은 회복량이 sparkleMinRatio에 닿을 때마다 한 번 연출한다. 큰 회복은 곧바로, 잘게 들어오는 회복은 쌓여서 닿는 시점에 나간다.
+        // 닿기 전까지는 차오름만 보인다. "+"는 그동안 쌓인 회복이 늘린 구간 근처에 놓는다.
+        unplayedGainRatio += _gain;
+
+        if (unplayedGainRatio >= sparkleMinRatio)
         {
+            float _playedGain = unplayedGainRatio;
+            unplayedGainRatio = 0f;
+
             bFillEvent = true;
-            PlanPluses(fillSegmentLow, _high, _gain);
+            PlanBundlePluses(_high - _playedGain, _high);
 
             RefreshBarColor();
 
-            // 무적 중 회복도 평소와 같은 플래시가 먼저 번쩍이고, 그 위에 늘어난 구간의 면이 파도처럼 번쩍인다.
-            if (true == IsPrismShowing)
-                StartPrismGainWave(fillSegmentLow, _high);
+            // 연출 차례마다 플래시를 다시 시작한다. 직전 플래시가 아직 많이 남아 있고 세기도 그대로면(같은 순간의 연타) 건너뛴다.
+            if (FlashRestartBelow >= flashValue || _bundleIntensity > bundleFlashIntensity)
+            {
+                bundleFlashIntensity = _bundleIntensity;
 
-            StartRecoverFlash(fillIntensity);
+                // 무적 중 회복도 평소와 같은 플래시가 먼저 번쩍이고, 그 위에 늘어난 구간의 면이 파도처럼 번쩍인다.
+                if (true == IsPrismShowing)
+                    StartPrismGainWave(fillSegmentLow, _high);
+
+                StartRecoverFlash(_bundleIntensity);
+            }
         }
 
         // 남은 거리를 fillUpDuration 안에 채우는 속도. 이미 차오르는 중에 또 회복되면 구간의 시작은 그대로 두고 남은 거리로 다시 계산한다.
@@ -1125,6 +1641,7 @@ public class HUD_Stemina : MonoBehaviour
     private void EndFillUp()
     {
         bFillingUp = false;
+        bundleLingerRemain = gainBundleWindow;
 
         if (true == bFillEvent)
         {
@@ -1261,6 +1778,10 @@ public class HUD_Stemina : MonoBehaviour
         float _g = 0f;
         float _b = 0f;
         int _opaque = 0;
+        float[] _rowR = new float[_h];
+        float[] _rowG = new float[_h];
+        float[] _rowB = new float[_h];
+        int[] _rowN = new int[_h];
 
         for (int y = 0; y < _h; y++)
         {
@@ -1278,12 +1799,52 @@ public class HUD_Stemina : MonoBehaviour
                     _g += _c.g;
                     _b += _c.b;
                     _opaque++;
+                    _rowR[y] += _c.r;
+                    _rowG[y] += _c.g;
+                    _rowB[y] += _c.b;
+                    _rowN[y]++;
                 }
             }
         }
 
         if (0 < _opaque)
             barBaseColor = new Color(_r / _opaque / 255f, _g / _opaque / 255f, _b / _opaque / 255f, 1f);
+
+        // 행별 평균색: 앞쪽 끝부분 연출이 바의 명암 행(윗 하이라이트, 아랫 어두운 줄)에 맞춰 색을 입히는 데 쓴다.
+        barRowColors = new Color[_h];
+
+        for (int y = 0; y < _h; y++)
+        {
+            if (0 < _rowN[y])
+                barRowColors[y] = new Color(_rowR[y] / _rowN[y] / 255f, _rowG[y] / _rowN[y] / 255f, _rowB[y] / _rowN[y] / 255f, 1f);
+            else
+                barRowColors[y] = barBaseColor;
+        }
+
+        edgeMask = new byte[_w * _h];
+        edgeShade = new float[_w * _h];
+
+        // 젤리 머리의 세로 범위: 바 윤곽이 실제로 차지하는 행(중앙 열 기준). 텍스처 높이와 어긋날 수 있다.
+        edgeRowLo = _h;
+        edgeRowHi = -1;
+
+        for (int y = 0; y < _h; y++)
+        {
+            if (false == barInside[y * _w + _w / 2])
+                continue;
+
+            if (y < edgeRowLo)
+                edgeRowLo = y;
+
+            if (y > edgeRowHi)
+                edgeRowHi = y;
+        }
+
+        if (0 > edgeRowHi)
+        {
+            edgeRowLo = 0;
+            edgeRowHi = _h - 1;
+        }
 
         // 몸통 영역: 윤곽 안쪽에서, 위/아래/좌우로 정해진 폭만큼 윤곽 밖과 닿지 않는 픽셀만 남긴다. (상자 모양 침식)
         int _top = Mathf.Max(0, bodyInsetTop);
@@ -1391,22 +1952,35 @@ public class HUD_Stemina : MonoBehaviour
         return -1;
     }
 
-    // 회복 구간 [_lowRatio, _highRatio]에서 켤 "+"의 가로 위치를 정해 둔다. 차오르는 앞쪽이 그 위치를 지날 때 켜진다.
-    private void PlanPluses(float _lowRatio, float _highRatio, float _gainRatio)
+    // 회복 묶음을 끝낸다. 누적량과 플래시/"+" 기록을 비워 다음 회복이 새 묶음으로 시작하게 한다.
+    private void EndBundle()
     {
+        bundleGainRatio = 0f;
+        bundleLingerRemain = 0f;
+        bundleFlashIntensity = 0f;
+        bundlePlannedPlus = 0;
+        unplayedGainRatio = 0f;
+    }
+
+    // 이번 회복(_lowRatio ~ _highRatio)이 늘린 구간에서 "+"가 켜질 타이밍(앞쪽이 지나가는 위치)을 정해 둔다.
+    // 실제로 켜지는 가로 위치는 켜지는 순간의 보이는 끝 근처다(SpawnPlusAtTip). 이 위치는 켜는 순서와 간격만 정한다.
+    // 개수는 묶음의 누적 세기가 정한 목표에서 이미 예약한 개수를 뺀 만큼이되, 회복마다 최소 PlusMinPerBurst개는 더한다
+    // (세기가 상한이어도 회복이 올 때마다 "+"가 보이게). 구간을 칸으로 나눠 칸마다 하나씩 두어 한꺼번에 켜지지 않게 한다.
+    // 잘게 들어오는 회복은 차오름이 곧바로 끝나므로, 예약된 "+"는 차오름이 끝나는 시점(FlushPlannedPluses)에 한꺼번에 떠오른다.
+    private void PlanBundlePluses(float _lowRatio, float _highRatio)
+    {
+        int _target = Mathf.RoundToInt(Mathf.Lerp(plusCountRange.x, plusCountRange.y, GetIntensity(bundleGainRatio)));
+        int _add = Mathf.Max(_target - bundlePlannedPlus, PlusMinPerBurst);
+
         float _width = GetBarWidth();
-        float _lo = _width * Mathf.Clamp01(_lowRatio) + 2f;
-        float _hi = _width * Mathf.Clamp01(_highRatio) - 2f;
+        float _lo = _width * Mathf.Clamp01(_lowRatio);
+        float _hi = Mathf.Max(_lo, _width * Mathf.Clamp01(_highRatio) - 2f);
 
-        if (_hi < _lo)
-            return;
-
-        int _n = Mathf.RoundToInt(Mathf.Lerp(plusCountRange.x, plusCountRange.y, GetIntensity(_gainRatio)));
-
-        for (int i = 0; i < _n && plannedPlusCount < MaxPlannedPlus; i++)
+        for (int i = 0; i < _add && plannedPlusCount < MaxPlannedPlus; i++)
         {
-            plannedPlusX[plannedPlusCount] = Random.Range(_lo, _hi);
+            plannedPlusX[plannedPlusCount] = _lo + (_hi - _lo) * (i + 0.25f + 0.5f * Random.value) / _add;
             plannedPlusCount++;
+            bundlePlannedPlus++;
         }
     }
 
@@ -1418,7 +1992,7 @@ public class HUD_Stemina : MonoBehaviour
         for (int i = 0; i < plannedPlusCount; i++)
         {
             if (plannedPlusX[i] <= _frontPx)
-                SpawnPlusAt(plannedPlusX[i]);
+                SpawnPlusAtTip();
             else
                 plannedPlusX[_write++] = plannedPlusX[i];
         }
@@ -1429,9 +2003,27 @@ public class HUD_Stemina : MonoBehaviour
     private void FlushPlannedPluses()
     {
         for (int i = 0; i < plannedPlusCount; i++)
-            SpawnPlusAt(plannedPlusX[i]);
+            SpawnPlusAtTip();
 
         plannedPlusCount = 0;
+    }
+
+    // 보이는 끝(채움 앞쪽 + 젤리 머리 길이)의 캔버스 픽셀 위치. 머리를 그리지 않으면 채움 앞쪽이다.
+    private float GetFrontTipPx()
+    {
+        float _front = GetBarWidth() * Mathf.Clamp01(shownRatio);
+        float _head = true == bEdgeDrawn && 0f < frontEdgeStrength ? edgeSpringLen * edgeAppear : 0f;
+
+        return Mathf.Min(barW, _front + _head);
+    }
+
+    // 보이는 끝 근처에서 "+" 하나를 켠다. 칸을 돌려 가며(칸마다 PlusTipSlotWidth) 놓아 한꺼번에 켜져도 서로 붙지 않는다.
+    private void SpawnPlusAtTip()
+    {
+        float _x = GetFrontTipPx() - 2f - plusTipSlot * PlusTipSlotWidth - Random.value * PlusTipSlotWidth;
+        plusTipSlot = (plusTipSlot + 1) % PlusTipSlots;
+
+        SpawnPlusAt(Mathf.Max(2f, _x));
     }
 
     // 구간 [_fromPx, _toPx] 안에 "+" _count개를 한꺼번에 켠다.
@@ -1556,6 +2148,10 @@ public class HUD_Stemina : MonoBehaviour
     {
         int _right = _left + _size - 1;
         int _targetPx = Mathf.Min(barW, Mathf.FloorToInt(GetBarWidth() * Mathf.Clamp01(Mathf.Max(shownRatio, displayRatio))));
+
+        // 젤리 머리가 채움 앞쪽 바깥으로 뻗은 만큼은 머리 위로 본다(머리가 눌려도 갑자기 사라지지 않게 최대 길이까지).
+        if (0f < frontEdgeStrength)
+            _targetPx = Mathf.Min(barW, _targetPx + Mathf.CeilToInt((EdgeRestLen + EdgeGainExtraMax) * Mathf.Clamp01(frontEdgeStrength)));
 
         if (0 > _left || _right >= _targetPx)
             return false;
@@ -1735,6 +2331,7 @@ public class HUD_Stemina : MonoBehaviour
         shownRatio = displayRatio;
         plannedPlusCount = 0;
         pixelStepTimer = 0f;
+        EndBundle();
 
         if (null != ghostSlider)
             ghostSlider.value = displayRatio;
@@ -1755,6 +2352,8 @@ public class HUD_Stemina : MonoBehaviour
         bResting = false;
         restPlusTimer = 0f;
 
+        ClearFrontEdge();
+
         // 맵 전환 등으로 숨겨질 때는 풀림 연출 없이 프리즘도 즉시 걷는다.
         StopPrism();
 
@@ -1772,7 +2371,8 @@ public class HUD_Stemina : MonoBehaviour
     private void Update()
     {
         if (0 >= alivePlusCount && false == bFillingUp && false == bResting && 0 >= plannedPlusCount
-            && PrismPhase.Off == prismPhase && false == bPrismEngagePending)
+            && PrismPhase.Off == prismPhase && false == bPrismEngagePending && 0f >= bundleGainRatio
+            && false == bEdgeActive)
         {
             pixelStepTimer = 0f;
             return;
@@ -1780,7 +2380,17 @@ public class HUD_Stemina : MonoBehaviour
 
         float _dt = Time.deltaTime;
 
+        // 회복 묶음: 차오름이 끝난 뒤 gainBundleWindow 동안 새 회복이 없으면 묶음을 끝낸다.
+        if (0f < bundleGainRatio && false == bFillingUp)
+        {
+            bundleLingerRemain -= _dt;
+
+            if (0f >= bundleLingerRemain)
+                EndBundle();
+        }
+
         UpdatePrism(_dt);
+        UpdateFrontEdge(_dt);
 
         // 휴식 구역 안에서는 일정 간격마다 채워진 구간에서 "+" 하나가 조용히 떠오른다.
         if (true == bResting && false == bFillingUp)

@@ -188,7 +188,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private const float DroneRetargetInterval = 0.15f; // 타겟을 잃은 드론에게 새 나무를 물 흐르듯 이어서 배정하는 주기
 
     [Header("Dash Settings")]
-    [SerializeField, Tooltip("대시 거리(타일 칸 수). 화면상 어느 방향으로든 같은 칸 수만큼 간다 - 공격 범위와 같은 등각 거리 기준.")]
+    [SerializeField, Tooltip("대시 거리(타일 칸 수). 아이소메트릭 대각선(그리드 축) 방향 기준 칸 수이고, 다른 방향도 같은 등각 거리만큼 간다.")]
     private float dashDistanceTiles = 3f;
     [SerializeField, Tooltip("대시 쿨타임(초)")]
     private float dashCooldown = 4f;
@@ -196,7 +196,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private float dashDuration = 0.18f;
 
     // "원목 보험 증서" 전리품을 얻어야 대시를 쓸 수 있다. 씬마다 GameInstaller가 정한다(본편 던전만
-    // 영구 획득 여부로 켜고, 로그라이크·마을은 끈다). 원정 도중 획득은 UnitSystem이 바로 켠다.
+    // 영구 획득 여부로 켜고, 로그라이크·마을은 끈다). 원정 도중 획득하면 다음 숲 방문부터 켜진다.
     private bool bDashUnlocked = false;
     private float dashCooldownTimer = 0f;
     private bool bDashing = false;
@@ -880,8 +880,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     /// 대시를 시작한다. 쓸 수 없는 상황이면 아무 일도 하지 않는다(쿨타임도 소모하지 않는다).
     ///
     /// 방향: 이동 입력이 있으면 이동하는 방향(바라보는 방향과 무관), 없으면 바라보는 방향.
-    /// 거리: dashDistanceTiles칸. 공격 범위와 같은 등각 거리(세로 2배)로 재므로 화면상 어느 방향이든 같은 칸 수다.
-    /// 대시는 도끼 공격으로 친다(AttackComponent.BeginDashStrike 위 주석 참고). 도끼 내구도가 0이면 이동만 한다.
+    /// 거리: dashDistanceTiles칸. 아이소메트릭 대각선(그리드 축) 방향으로 정확히 그 칸 수이고, 공격 범위와 같은
+    ///       등각 거리(세로 2배)로 재므로 다른 방향도 같은 거리만큼 간다.
+    /// 대시는 이동만 한다(공격 판정 없음).
     /// </summary>
     private void TryStartDash()
     {
@@ -902,15 +903,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         dashCooldownTimer = dashCooldown;
 
-        // 회전 베기가 발동하면(BeginDashStrike 안에서) 지금 바라보는 방향에서 한 바퀴를 시작하므로 방향을 먼저 맞춘다.
+        // 대시하는 동안은 조준점이 아니라 대시 방향을 바라본다(UpdateFacingByAttackPoint 참고).
         bDashing = true;
         SetFacingDirection(dashDirection);
-
-        if (false == IsAxeDurabilityZero() && attackComponent.BeginDashStrike(dashDirection, GetAttackCenterAt(rb.position)))
-        {
-            // 도끼 스윙을 시작할 때와 같이 드론을 깨운다(SetbCanAction 참고).
-            ActivateDrones();
-        }
 
         stateMachine.GetState<DashState>().Setup(dashDirection, dashWorldDistance, dashDuration);
         stateMachine.ChangeState<DashState>();
@@ -934,42 +929,26 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     }
 
     /// <summary>
-    /// 대시 칸 수를 이 방향의 월드 거리로 바꾼다. 타일 한 칸의 가로폭을 등각 거리 1칸으로 보고,
-    /// 세로를 2배로 늘린 길이가 그 칸 수가 되도록 맞춘다(가로로는 3, 세로로는 1.5 월드 단위).
+    /// 대시 칸 수를 이 방향의 월드 거리로 바꾼다. 1칸은 그리드 축으로 한 칸(화면상 아이소메트릭 대각선) 옮긴
+    /// 등각 거리다. 그래서 대각선으로는 정확히 그 칸 수만큼 가고, 다른 방향도 같은 등각 거리만큼 간다.
+    /// (타일 가로폭을 1칸으로 잡으면 대각선 한 칸이 약 0.71칸이라, 3칸 설정으로 대각선 4칸 넘게 갔다)
     /// </summary>
     private float GetDashWorldDistance(Vector2 _direction)
     {
         ITilemapDataProvider tilemap = ctx.tilemapDataProvider;
-        float tileWidth = ((Vector2)tilemap.CellToWorld(new Vector3Int(1, 0, 0)) - (Vector2)tilemap.CellToWorld(new Vector3Int(0, 1, 0))).magnitude;
-        if (0.0001f >= tileWidth) tileWidth = 1f;
+        float cellStep = Mathf.Sqrt(GetIsometricDistSq(tilemap.CellToWorld(new Vector3Int(1, 0, 0)), tilemap.CellToWorld(Vector3Int.zero)));
+        if (0.0001f >= cellStep) cellStep = 1f;
 
         float isoLength = Mathf.Sqrt(GetIsometricDistSq(_direction, Vector2.zero));
         if (0.0001f >= isoLength) return 0f;
 
-        return dashDistanceTiles * tileWidth / isoLength;
-    }
-
-    /// <summary>DashState가 매 물리 틱마다 부른다. _rootPosition은 이번 틱에 캐릭터가 옮겨갈 위치다.</summary>
-    public void TickDashStrike(Vector2 _rootPosition)
-    {
-        attackComponent.TickDashStrike(GetAttackCenterAt(_rootPosition));
+        return dashDistanceTiles * cellStep / isoLength;
     }
 
     /// <summary>DashState.Exit가 부른다. 어떤 이유로 끝나든 한 번만 불린다.</summary>
-    public void OnDashFinished(Vector2 _rootPosition, bool _bCompleted)
+    public void OnDashFinished()
     {
         bDashing = false;
-
-        // 내구도 0으로 이동만 한 대시나 리셋으로 판정이 지워진 대시는 EndDashStrike가 알아서 건너뛴다.
-        // 쓰러지면서 끊긴 대시는 마지막 타격 판정을 내지 않는다.
-        attackComponent.EndDashStrike(GetAttackCenterAt(_rootPosition), _bCompleted && false == bDead);
-    }
-
-    // 공격 판정의 중심은 AttackComponent 자신의 위치다(Attack 참고). 캐릭터가 _rootPosition에 있을 때의 그 위치.
-    private Vector3 GetAttackCenterAt(Vector2 _rootPosition)
-    {
-        Vector3 attackOffset = attackComponent.transform.position - transform.position;
-        return new Vector3(_rootPosition.x, _rootPosition.y, transform.position.z) + attackOffset;
     }
 
     private void UpdateTreeBoomerang()

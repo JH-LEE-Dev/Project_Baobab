@@ -141,17 +141,6 @@ public class AttackComponent : PComponent
     private int whirlwindSwingCount = 0;
     private const int WhirlwindSwingInterval = 3;
 
-    // 대시 공격(BeginDashStrike ~ EndDashStrike) 한 번 동안 유지되는 판정 문맥. 자세한 규칙은 BeginDashStrike 위 주석 참고.
-    private bool bDashStrikeActive = false;
-    private bool bDashStrikeWhirlwind = false;
-    private bool bDashStrikeShockWaveTriggered = false;
-    private bool bDashStrikeAxeHit = false;
-    private bool bDashStrikeCameraShaken = false;
-    private Vector2 dashStrikeDirection = Vector2.right;
-    private TreeObj dashStrikeShockWaveSourceTree = null;
-    private float dashStrikeShockWaveSourceDistSq = float.MaxValue;
-    private readonly HashSet<IStaticCollidable> dashStrikeHitTargets = new HashSet<IStaticCollidable>(32);
-
     // 넉백 등으로 공격 범위 인디케이터가 조준 방향을 따라 도는 것을 일시적으로 막아야 할 때 사용
     private bool bIndicatorRotationLocked = false;
     public void SetRotationLocked(bool _locked)
@@ -437,7 +426,14 @@ public class AttackComponent : PComponent
         if (CollisionSystem.Instance == null || bCanAttack == false) return;
 
         // 회전 베기: 타격 성공 여부와 상관없이 도끼 스윙 3회마다 한 번. 헛스윙도 카운트에 포함된다.
-        bool bIsWhirlwindStrike = AdvanceWhirlwindSwingCount();
+        bool bIsWhirlwindStrike = false;
+        if (ctx.characterStat.bWhirlWind)
+        {
+            // 로그라이크 카드가 발동 간격을 바꿀 수 있다. 덮어쓰기가 없으면(본편) 기본 상수 그대로다.
+            int swingInterval = RunCombatOverrides.WhirlwindSwingInterval > 0 ? RunCombatOverrides.WhirlwindSwingInterval : WhirlwindSwingInterval;
+            whirlwindSwingCount = (whirlwindSwingCount + 1) % swingInterval;
+            bIsWhirlwindStrike = (whirlwindSwingCount == 0);
+        }
 
         Vector3 centerPos = transform.position;
 
@@ -446,243 +442,53 @@ public class AttackComponent : PComponent
 
         // 마스터리 충격파는 나무를 맞추지 않아도 스윙당 1회 굴린다. 실제 생성은 도끼 타격 여부가
         // 정해진 뒤(FireMasteryShockWave)에 한다 - 도끼가 헛쳤을 때만 "충격파가 나무를 맞추면 내구도 감소"를 걸어야 하기 때문.
-        bool bShockWaveTriggered = RollMasteryShockWave();
+        bool bShockWaveTriggered = ctx.characterStat.bShockWaveMastery && axeExtraAttackCreator != null
+            && UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance;
 
-        float effectiveEllipseRadius = GetEffectiveEllipseRadius();
+        float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
 
         // 회전 베기 연출(VFX·360도 회전·카메라 흔들림)은 범위 안에 아무것도 없어도(헛스윙) 나가야 하므로
         // 탐색보다 먼저 발동한다. 타격 분기의 흔들림은 회전 베기일 때 건너뛰어 중복되지 않게 한다.
         if (bIsWhirlwindStrike)
         {
-            PlayWhirlwindStrikeStart(centerPos, effectiveEllipseRadius);
+            WhirlwindVFX.Spawn(centerPos, effectiveEllipseRadius, whirlwindFrames);
+            WhirlwindStrikeEvent?.Invoke();
+            CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
         }
 
         // 1단계: 타원 판정 범위를 모두 포함할 수 있도록 타원의 장반경(effectiveEllipseRadius)으로 1차 탐색
         CollisionSystem.Instance.GetCollidablesInRadius(transform.position, effectiveEllipseRadius, targetLayer, collisionResults);
 
-        if (collisionResults.Count <= 0)
+        int hitCount = collisionResults.Count;
+        if (hitCount <= 0)
         {
-            if (bShockWaveTriggered) FireMasteryShockWave(centerPos, (mouseTransform - centerPos).normalized, false);
+            if (bShockWaveTriggered) FireMasteryShockWave(centerPos, false);
             return;
         }
 
-        Vector3 isoAttackDir = ToIsoAttackDirection(attackPointTransform.position - centerPos);
-        bool bMultiAttack = ctx.characterStat.bMultiAttack;
+        Vector3 attackDirVec = attackPointTransform.position - centerPos;
+        Vector3 isoAttackDir = Vector3.right;
+        if (attackDirVec.sqrMagnitude > 0.0001f)
+        {
+            isoAttackDir = new Vector3(attackDirVec.x, attackDirVec.y * 2f, 0f).normalized;
+        }
 
-        IStaticCollidable nearestDamageable = CollectStrikeTargets(centerPos, isoAttackDir, effectiveEllipseRadius, bIsWhirlwindStrike, bMultiAttack, null);
+        float cosThreshold = Mathf.Cos(attackAngle * Mathf.Deg2Rad);
+        float radiusSq = effectiveEllipseRadius * effectiveEllipseRadius;
+
+        bool bMultiAttack = ctx.characterStat.bMultiAttack;
+        multiAttackResults.Clear();
+
+        IStaticCollidable nearestDamageable = null;
+        float minDistanceSqr = float.MaxValue;
 
         // 이번 공격에서 실제로 타격한 나무 중 가장 가까운 것. 충격파는 공격당 한 번만 나가야 하므로
         // (아래 "공격당 1회 충격파" 주석 참고) 판정 기준이 될 나무 하나를 여기에 모은다.
         TreeObj shockWaveSourceTree = null;
         float shockWaveSourceDistSq = float.MaxValue;
 
-        bool bAxeHit = ApplyStrikeHits(nearestDamageable, centerPos, bIsWhirlwindStrike, bMultiAttack, true, null,
-            ref shockWaveSourceTree, ref shockWaveSourceDistSq);
+        bool bAxeHit = false;
 
-        if (bAxeHit) AttackSuccessEvent?.Invoke();
-
-        if (bShockWaveTriggered) FireMasteryShockWave(centerPos, (mouseTransform - centerPos).normalized, bAxeHit);
-
-        // [공격당 1회 충격파]
-        // 마스터리가 없을 때의 충격파 판정이다. 원래 설계도 "가장 가까운 나무 하나를 기준으로
-        // 공격당 한 번"이었다 - 다중 공격이 들어오기 전에는 이 판정이 nearestDamageable 블록 안에
-        // 있었다. 다중 공격을 넣으면서 타격 처리가 ProcessAxeHit으로 묶여 대상마다 호출되자,
-        // 이 판정도 함께 딸려 들어가 N그루를 때리면 충격파가 N번 굴러갔다. 생성 위치와 방향이
-        // centerPos/마우스 방향으로 모두 같아서 같은 자리에 겹친 충격파 N개가 나가고 피해도
-        // N배로 들어갔다. 판정을 여기로 올려 원래 의도대로 되돌린다.
-        //
-        // 마스터리 쪽(FireMasteryShockWave)은 "스윙당 1회"라 원래부터 중복이 없었고, 그대로 둔다.
-        TryFireAxeShockWave(shockWaveSourceTree, centerPos, (mouseTransform - centerPos).normalized);
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────────
-    // 대시 공격
-    //
-    // 대시 한 번은 도끼 스윙 한 번으로 친다. 그래서 스윙 단위로 한 번만 일어나는 일(회전 베기 카운트,
-    // 로그라이크 스윙 알림, 마스터리 충격파 굴림, 내구도·콤보, 카메라 흔들림, 충격파)은 대시 전체에서
-    // 한 번씩만 일어나고, 판정만 대시 경로를 따라간다.
-    //  - 다중 공격이 없으면: 대시가 끝난 위치에서 대시 방향으로 한 번 판정한다(평소 공격과 같은 단일 대상 규칙).
-    //  - 다중 공격이 있으면: 대시를 시작한 자리부터 매 물리 틱마다 판정해, 경로에서 공격 범위에 닿은 나무를 전부 친다.
-    //    한 나무는 대시 한 번에 한 번만 맞는다(dashStrikeHitTargets).
-    //  - 회전 베기 차례에 걸린 대시는 위 두 경우 모두 각도 제한 없이(360도) 판정한다. 평소 회전 베기와 같다.
-    // ──────────────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// 대시 공격을 시작합니다. 공격이 막혀 있으면(조작 불가 구간 등) false를 돌려주고 아무것도 하지 않습니다.
-    /// 시작했다면 대시가 끝날 때 반드시 EndDashStrike를 불러야 내구도·충격파가 정산됩니다.
-    /// </summary>
-    /// <param name="_worldDirection">대시 방향(월드 좌표). 판정 부채꼴이 이 방향을 향합니다.</param>
-    /// <param name="_centerPos">출발 위치의 공격 판정 중심(이 컴포넌트의 위치 기준). 경로·끝 판정과 같은 물리 위치 기준으로 넘깁니다.</param>
-    public bool BeginDashStrike(Vector2 _worldDirection, Vector3 _centerPos)
-    {
-        ClearDashStrike();
-
-        if (CollisionSystem.Instance == null || bCanAttack == false) return false;
-
-        bDashStrikeActive = true;
-        dashStrikeDirection = (_worldDirection.sqrMagnitude > 0.0001f) ? _worldDirection.normalized : Vector2.right;
-
-        bDashStrikeWhirlwind = AdvanceWhirlwindSwingCount();
-
-        Vector3 centerPos = _centerPos;
-        RunCombatHooks.NotifyAxeSwung(centerPos);
-
-        bDashStrikeShockWaveTriggered = RollMasteryShockWave();
-
-        Sound.Play(SoundID.Swing, centerPos);
-
-        if (bDashStrikeWhirlwind)
-        {
-            PlayWhirlwindStrikeStart(centerPos, GetEffectiveEllipseRadius());
-
-            // 회전 베기는 시작할 때 이미 흔들었으므로 타격 때 다시 흔들지 않는다(평소 공격과 같다).
-            bDashStrikeCameraShaken = true;
-        }
-
-        // 경로 판정은 첫 이동 뒤부터 돌기 때문에, 출발하는 순간 앞에 있던 나무는 여기서 친다.
-        // (첫 틱에 거리의 약 30%를 한 번에 이동하므로 이걸 빼면 출발 자리 옆의 나무가 등 뒤로 빠진다)
-        if (ctx.characterStat.bMultiAttack) StrikeDashTargets(centerPos);
-
-        return true;
-    }
-
-    /// <summary>
-    /// 대시 도중 매 물리 틱마다 부릅니다. 다중 공격일 때만 경로 판정을 하고, 아니면 아무것도 하지 않습니다.
-    /// </summary>
-    /// <param name="_centerPos">이번 틱에 공격 판정의 중심이 될 위치(이 컴포넌트의 위치 기준)</param>
-    public void TickDashStrike(Vector3 _centerPos)
-    {
-        if (false == bDashStrikeActive || false == bCanAttack || CollisionSystem.Instance == null) return;
-        if (false == ctx.characterStat.bMultiAttack) return;
-
-        StrikeDashTargets(_centerPos);
-    }
-
-    /// <summary>
-    /// 대시 공격을 끝내고 정산합니다. 대시가 정상적으로 끝났으면(_bCompleted) 끝난 위치에서 마지막 판정을 하고
-    /// 충격파를 굴립니다. 넉백·사망 등으로 끊겼으면 추가 판정과 충격파 없이, 이미 맞힌 만큼만 내구도를 정산합니다.
-    /// </summary>
-    public void EndDashStrike(Vector3 _centerPos, bool _bCompleted)
-    {
-        if (false == bDashStrikeActive) return;
-
-        bool bCanStrike = _bCompleted && bCanAttack && CollisionSystem.Instance != null;
-
-        // 다중 공격은 경로 판정을 이어온 마지막 한 번, 단일 대상은 여기가 유일한 판정이다.
-        if (bCanStrike) StrikeDashTargets(_centerPos);
-
-        bool bAxeHit = bDashStrikeAxeHit;
-        Vector3 direction = dashStrikeDirection;
-        TreeObj shockWaveSourceTree = dashStrikeShockWaveSourceTree;
-        bool bShockWaveTriggered = bDashStrikeShockWaveTriggered;
-
-        ClearDashStrike();
-
-        if (bAxeHit) AttackSuccessEvent?.Invoke();
-
-        if (false == bCanStrike) return;
-
-        if (bShockWaveTriggered) FireMasteryShockWave(_centerPos, direction, bAxeHit);
-        TryFireAxeShockWave(shockWaveSourceTree, _centerPos, direction);
-    }
-
-    private void StrikeDashTargets(Vector3 _centerPos)
-    {
-        float effectiveEllipseRadius = GetEffectiveEllipseRadius();
-
-        CollisionSystem.Instance.GetCollidablesInRadius(_centerPos, effectiveEllipseRadius, targetLayer, collisionResults);
-        if (collisionResults.Count <= 0) return;
-
-        Vector3 isoAttackDir = ToIsoAttackDirection(dashStrikeDirection);
-        bool bMultiAttack = ctx.characterStat.bMultiAttack;
-
-        IStaticCollidable nearestDamageable = CollectStrikeTargets(_centerPos, isoAttackDir, effectiveEllipseRadius,
-            bDashStrikeWhirlwind, bMultiAttack, dashStrikeHitTargets);
-
-        bool bHit = ApplyStrikeHits(nearestDamageable, _centerPos, bDashStrikeWhirlwind, bMultiAttack,
-            false == bDashStrikeCameraShaken, dashStrikeHitTargets,
-            ref dashStrikeShockWaveSourceTree, ref dashStrikeShockWaveSourceDistSq);
-
-        if (bHit)
-        {
-            bDashStrikeAxeHit = true;
-            bDashStrikeCameraShaken = true;
-        }
-    }
-
-    private void ClearDashStrike()
-    {
-        bDashStrikeActive = false;
-        bDashStrikeWhirlwind = false;
-        bDashStrikeShockWaveTriggered = false;
-        bDashStrikeAxeHit = false;
-        bDashStrikeCameraShaken = false;
-        dashStrikeShockWaveSourceTree = null;
-        dashStrikeShockWaveSourceDistSq = float.MaxValue;
-        dashStrikeHitTargets.Clear();
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────────
-    // 공격 판정 공용 단계 (Attack / 대시 공격이 함께 쓴다)
-    // ──────────────────────────────────────────────────────────────────────────────
-
-    /// <summary>회전 베기 스킬이 있으면 스윙 카운트를 1 올리고, 이번 스윙이 회전 베기 차례인지 돌려준다.</summary>
-    private bool AdvanceWhirlwindSwingCount()
-    {
-        if (false == ctx.characterStat.bWhirlWind) return false;
-
-        // 로그라이크 카드가 발동 간격을 바꿀 수 있다. 덮어쓰기가 없으면(본편) 기본 상수 그대로다.
-        int swingInterval = RunCombatOverrides.WhirlwindSwingInterval > 0 ? RunCombatOverrides.WhirlwindSwingInterval : WhirlwindSwingInterval;
-        whirlwindSwingCount = (whirlwindSwingCount + 1) % swingInterval;
-        return whirlwindSwingCount == 0;
-    }
-
-    private bool RollMasteryShockWave()
-    {
-        return ctx.characterStat.bShockWaveMastery && axeExtraAttackCreator != null
-            && UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance;
-    }
-
-    private float GetEffectiveEllipseRadius()
-    {
-        return ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
-    }
-
-    private void PlayWhirlwindStrikeStart(Vector3 _centerPos, float _effectiveEllipseRadius)
-    {
-        WhirlwindVFX.Spawn(_centerPos, _effectiveEllipseRadius, whirlwindFrames);
-        WhirlwindStrikeEvent?.Invoke();
-        CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
-    }
-
-    /// <summary>월드 방향을 판정용 등각 방향(세로 2배, 정규화)으로 바꾼다. 길이가 거의 0이면 오른쪽.</summary>
-    private static Vector3 ToIsoAttackDirection(Vector3 _worldDirection)
-    {
-        if (_worldDirection.sqrMagnitude > 0.0001f)
-        {
-            return new Vector3(_worldDirection.x, _worldDirection.y * 2f, 0f).normalized;
-        }
-
-        return Vector3.right;
-    }
-
-    /// <summary>
-    /// collisionResults(1차 탐색 결과)를 부채꼴(회전 베기면 360도)로 거른다. 여러 대상을 치는 경우(다중 공격의 나무,
-    /// 회전 베기)는 multiAttackResults에 모으고, 단일 대상 후보 중 가장 가까운 것을 돌려준다.
-    /// _excluded에 든 대상은 후보에서 뺀다(대시 한 번에 같은 나무를 두 번 치지 않게). 평소 공격은 null을 넘긴다.
-    /// </summary>
-    private IStaticCollidable CollectStrikeTargets(Vector3 _centerPos, Vector3 _isoAttackDir, float _effectiveEllipseRadius,
-        bool _bIsWhirlwindStrike, bool _bMultiAttack, HashSet<IStaticCollidable> _excluded)
-    {
-        float cosThreshold = Mathf.Cos(attackAngle * Mathf.Deg2Rad);
-        float radiusSq = _effectiveEllipseRadius * _effectiveEllipseRadius;
-
-        multiAttackResults.Clear();
-
-        IStaticCollidable nearestDamageable = null;
-        float minDistanceSqr = float.MaxValue;
-
-        int hitCount = collisionResults.Count;
         for (int i = 0; i < hitCount; i++)
         {
             var target = collisionResults[i];
@@ -691,33 +497,31 @@ public class AttackComponent : PComponent
             // 그 뒤의 나무가 가려지거나, 묘목만 맞았는데 카메라가 흔들리는 일이 없다.
             if (target is IDamageable targetDamageable && !targetDamageable.bCanApplyDamage) continue;
 
-            if (_excluded != null && _excluded.Contains(target)) continue;
-
             Vector3 targetPos = target.Position + target.Offset;
 
             // 2단계: 타원형 반지름(ellipseAttackRadius)으로 2차 필터링
-            float isoDistSq = GetIsometricDistSq(targetPos, _centerPos);
+            float isoDistSq = GetIsometricDistSq(targetPos, centerPos);
             if (isoDistSq > radiusSq) continue;
 
-            Vector3 targetOffset = targetPos - _centerPos;
+            Vector3 targetOffset = targetPos - centerPos;
             Vector3 targetDir = Vector3.right;
             if (targetOffset.sqrMagnitude > 0.0001f)
             {
                 targetDir = new Vector3(targetOffset.x, targetOffset.y * 2f, 0f).normalized;
             }
 
-            float dot = Vector2.Dot(_isoAttackDir, targetDir);
+            float dot = Vector2.Dot(isoAttackDir, targetDir);
 
             // 회전베기는 360도 전체를 친다. 기본 휘두름으로만 맞는 대상(로그라이크 별)은 평소 각도 안에 있을 때만 맞는다.
-            bool bHitByAngle = (_bIsWhirlwindStrike && false == (target is IBasicAxeOnlyTarget)) || (dot >= cosThreshold);
+            bool bHitByAngle = (bIsWhirlwindStrike && false == (target is IBasicAxeOnlyTarget)) || (dot >= cosThreshold);
 
             if (bHitByAngle)
             {
-                if (_bIsWhirlwindStrike)
+                if (bIsWhirlwindStrike)
                 {
                     multiAttackResults.Add(target);
                 }
-                else if (_bMultiAttack && target is TreeObj)
+                else if (bMultiAttack && target is TreeObj)
                 {
                     multiAttackResults.Add(target);
                 }
@@ -732,20 +536,9 @@ public class AttackComponent : PComponent
             }
         }
 
-        return nearestDamageable;
-    }
-
-    /// <summary>
-    /// CollectStrikeTargets가 고른 대상에 실제로 피해를 넣는다. 하나라도 맞혔으면 true.
-    /// 내구도·콤보(AttackSuccessEvent)와 충격파는 여기서 하지 않는다 - 공격(스윙) 단위로 한 번만 일어나야 해서
-    /// 호출하는 쪽이 정산한다. _hitRecord가 있으면 맞힌 대상을 거기에 기록한다.
-    /// </summary>
-    private bool ApplyStrikeHits(IStaticCollidable _nearestDamageable, Vector3 _centerPos, bool _bIsWhirlwindStrike, bool _bMultiAttack,
-        bool _bShakeCamera, HashSet<IStaticCollidable> _hitRecord, ref TreeObj _shockWaveSourceTree, ref float _shockWaveSourceDistSq)
-    {
-        if ((_bMultiAttack || _bIsWhirlwindStrike) && multiAttackResults.Count > 0)
+        if ((bMultiAttack || bIsWhirlwindStrike) && multiAttackResults.Count > 0)
         {
-            if (!_bIsWhirlwindStrike && _bShakeCamera) CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
+            if (!bIsWhirlwindStrike) CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
             bool bAnyHit = false;
 
             // 다중 공격·회오리 베기로 쓰러지는 나무들의 타일맵 쓰기를 루프가 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
@@ -757,17 +550,16 @@ public class AttackComponent : PComponent
                     var target = multiAttackResults[i];
                     if (target is IDamageable damageable && damageable.bCanApplyDamage)
                     {
-                        ProcessAxeHit(damageable, _centerPos);
+                        ProcessAxeHit(damageable, centerPos);
                         bAnyHit = true;
-                        _hitRecord?.Add(target);
 
                         if (target is TreeObj hitTree)
                         {
-                            float hitTreeDistSq = GetIsometricDistSq(target.Position + target.Offset, _centerPos);
-                            if (hitTreeDistSq < _shockWaveSourceDistSq)
+                            float hitTreeDistSq = GetIsometricDistSq(target.Position + target.Offset, centerPos);
+                            if (hitTreeDistSq < shockWaveSourceDistSq)
                             {
-                                _shockWaveSourceDistSq = hitTreeDistSq;
-                                _shockWaveSourceTree = hitTree;
+                                shockWaveSourceDistSq = hitTreeDistSq;
+                                shockWaveSourceTree = hitTree;
                             }
                         }
                     }
@@ -778,34 +570,42 @@ public class AttackComponent : PComponent
                 TreeTileWriteBatch.End();
             }
 
-            return bAnyHit;
-        }
-
-        if (_nearestDamageable != null && _nearestDamageable is IDamageable nearest && nearest.bCanApplyDamage)
-        {
-            if (_bShakeCamera) CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
-            ProcessAxeHit(nearest, _centerPos);
-            _hitRecord?.Add(_nearestDamageable);
-
-            if (_nearestDamageable is TreeObj singleHitTree)
+            if (bAnyHit)
             {
-                _shockWaveSourceTree = singleHitTree;
+                AttackSuccessEvent?.Invoke();
+                bAxeHit = true;
             }
+        }
+        else if (nearestDamageable != null && nearestDamageable is IDamageable damageable && damageable.bCanApplyDamage)
+        {
+            CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
+            ProcessAxeHit(damageable, centerPos);
+            AttackSuccessEvent?.Invoke();
+            bAxeHit = true;
 
-            return true;
+            if (nearestDamageable is TreeObj singleHitTree)
+            {
+                shockWaveSourceTree = singleHitTree;
+            }
         }
 
-        return false;
-    }
+        if (bShockWaveTriggered) FireMasteryShockWave(centerPos, bAxeHit);
 
-    /// <summary>마스터리가 없을 때의 충격파. 맞힌 나무가 있을 때만, 공격당 한 번 확률을 굴린다(Attack의 "[공격당 1회 충격파]" 참고).</summary>
-    private void TryFireAxeShockWave(TreeObj _shockWaveSourceTree, Vector3 _centerPos, Vector3 _direction)
-    {
-        if (false == ctx.characterStat.bShockWaveMastery && _shockWaveSourceTree != null && axeExtraAttackCreator != null)
+        // [공격당 1회 충격파]
+        // 마스터리가 없을 때의 충격파 판정이다. 원래 설계도 "가장 가까운 나무 하나를 기준으로
+        // 공격당 한 번"이었다 - 다중 공격이 들어오기 전에는 이 판정이 nearestDamageable 블록 안에
+        // 있었다. 다중 공격을 넣으면서 타격 처리가 ProcessAxeHit으로 묶여 대상마다 호출되자,
+        // 이 판정도 함께 딸려 들어가 N그루를 때리면 충격파가 N번 굴러갔다. 생성 위치와 방향이
+        // centerPos/마우스 방향으로 모두 같아서 같은 자리에 겹친 충격파 N개가 나가고 피해도
+        // N배로 들어갔다. 판정을 여기로 올려 원래 의도대로 되돌린다.
+        //
+        // 마스터리 쪽(FireMasteryShockWave)은 "스윙당 1회"라 원래부터 중복이 없었고, 그대로 둔다.
+        if (false == ctx.characterStat.bShockWaveMastery && shockWaveSourceTree != null && axeExtraAttackCreator != null)
         {
             if (UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance)
             {
-                StartCoroutine(CreateShockWaveRoutine(_centerPos, _direction));
+                Vector3 direction = (mouseTransform - centerPos).normalized;
+                StartCoroutine(CreateShockWaveRoutine(centerPos, direction));
             }
         }
     }
@@ -869,10 +669,11 @@ public class AttackComponent : PComponent
 
     // 도끼 내구도는 "나무를 실제로 맞췄을 때"만 깎인다. 도끼가 맞췄다면 AttackSuccessEvent에서 이미 깎였으므로
     // 충격파는 추가로 깎지 않고, 도끼가 헛쳤다면 충격파가 나무를 처음 맞추는 순간 한 번 깎는다(콤보는 미적용).
-    private void FireMasteryShockWave(Vector3 _centerPos, Vector3 _direction, bool _bAxeHit)
+    private void FireMasteryShockWave(Vector3 _centerPos, bool _bAxeHit)
     {
+        Vector3 direction = (mouseTransform - _centerPos).normalized;
         if (raiseShockWaveOnlyHitHandler == null) raiseShockWaveOnlyHitHandler = RaiseShockWaveOnlyHit;
-        StartCoroutine(CreateShockWaveRoutine(_centerPos, _direction, _bAxeHit ? null : raiseShockWaveOnlyHitHandler));
+        StartCoroutine(CreateShockWaveRoutine(_centerPos, direction, _bAxeHit ? null : raiseShockWaveOnlyHitHandler));
     }
 
     private void RaiseShockWaveOnlyHit()
@@ -1276,7 +1077,6 @@ public class AttackComponent : PComponent
         // 캐릭터는 DontDestroyOnLoad로 Town/Dungeon을 오가며 살아남으므로, 던전을 나가거나
         // 재시작할 때 회전 베기 스윙 카운터를 여기서 되돌려야 다음 던전이 항상 1번째 스윙부터 시작한다.
         whirlwindSwingCount = 0;
-        ClearDashStrike();
     }
 
     public void Refresh()

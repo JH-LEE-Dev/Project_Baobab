@@ -35,7 +35,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public event Action<Item> ItemAcquiredEvent;
     public event Action<CarrotItem> CarrotItemAcquiredEvent;
     public event Action<GemOreItem> GemOreItemAcquiredEvent;
-    public event Action LostAndFoundBoxAcquiredEvent;
     public event Action<TreeObj> TreeGetHitEvent;
     // 나무가 보석 단계로 변했을 때 발생. InDungeonSystem이 받아 신호로 발행한다.
     public event Action<TreeObj> TreeGemTransformedEvent;
@@ -104,6 +103,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // "흑요 부적" - "4-2"(MagmaForest_2)에서 확률 드랍, "4-3"(MagmaForest_3) 이후 모든 숲에서 구제 보장.
     public bool bHasAcquiredObsidianCharm { get; set; }
+    // 열기 면역은 얻은 순간이 아니라 다음 숲 방문부터 적용한다. 숲에 들어올 때(SetupForForestType,
+    // 로그라이크는 SetRunTreeRules) 영구 획득 여부를 옮겨 담고, 방문 도중 획득해도 바꾸지 않는다.
+    private bool bObsidianCharmActiveThisRun;
     private bool bObsidianCharmSpawnedThisRun;
     [SerializeField] private float obsidianCharmDropChance = 0.05f;
     [SerializeField] private float obsidianCharmDropChanceIncreasePerKill = 0.005f;
@@ -269,6 +271,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public void SetRunTreeRules(IRunTreeRules _rules)
     {
         runTreeRules = _rules;
+
+        // 로그라이크 판 시작도 숲 방문이다. 판 도중엔 전리품이 떨어지지 않으므로 지금까지와 같다.
+        bObsidianCharmActiveThisRun = bHasAcquiredObsidianCharm;
     }
 
     /// <summary>
@@ -717,6 +722,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         bObsidianCharmSpawnedThisRun = false;
         obsidianCharmTreeKillCount = 0;
+        bObsidianCharmActiveThisRun = bHasAcquiredObsidianCharm;
 
         // 구제 임계값 - 이번 런에 구제 대상인 것만, 오래된 지역 것부터 "앞 전리품 뒤 다시 min~max그루"씩
         // 이어 붙인다. 대상이 하나면 지금까지와 같은 min~max그루째이고, 여럿이면 같은 나무에서 한꺼번에
@@ -779,8 +785,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         if (_lootType == LootType.LostAndFoundBox)
         {
+            // 대시는 여기서 켜지 않는다. 다음 숲 방문부터 GameInstaller가 영구 획득 여부로 켠다.
             bHasAcquiredLostAndFoundBox = true;
-            LostAndFoundBoxAcquiredEvent?.Invoke();
         }
         else if (_lootType == LootType.SporePotion)
         {
@@ -2096,7 +2102,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 피치 랜덤 범위와 볼륨은 TreeFireExplosion 큐/DB에서 조절한다
         Sound.Play(SoundID.TreeFireExplosion, _tree.transform.position);
 
-        if (character.bTreeHeatImmune || bHasAcquiredObsidianCharm) return; // 넉백/경직 중엔 열기 영향 없음 + 흑요 부적 획득 시 면역
+        if (character.bTreeHeatImmune || bObsidianCharmActiveThisRun) return; // 넉백/경직 중엔 열기 영향 없음 + 흑요 부적(다음 숲 방문부터) 면역
 
         // 귀환 경고창이 떠 있는 동안이나 귀환/사망으로 원정이 끝나는 중에는 열기 영향(데미지+넉백)을 주지 않는다.
         // 이 구간은 캐릭터 조작과 피로도 감소가 멈춘 상태인데, 예전엔 여기 걸리는 조건이 없어서 원목을 떨구며

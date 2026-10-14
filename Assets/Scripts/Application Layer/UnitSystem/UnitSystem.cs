@@ -58,7 +58,6 @@ public class UnitSystem
         signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.Subscribe<StartDecreaseStaminaSignal>(StartDecreaseStamina);
         signalHub.Subscribe<DropAllItemSignal>(DropAllItem);
-        signalHub.Subscribe<LostAndFoundBoxAcquiredSignal>(LostAndFoundBoxAcquired);
         signalHub.Subscribe<RetryButtonClickedSignal>(RetryGame);
         signalHub.Subscribe<ActivateCharacterSignal>(ActivateCharacter);
         signalHub.Subscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
@@ -83,7 +82,6 @@ public class UnitSystem
         signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.UnSubscribe<StartDecreaseStaminaSignal>(StartDecreaseStamina);
         signalHub.UnSubscribe<DropAllItemSignal>(DropAllItem);
-        signalHub.UnSubscribe<LostAndFoundBoxAcquiredSignal>(LostAndFoundBoxAcquired);
         signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryGame);
         signalHub.UnSubscribe<ActivateCharacterSignal>(ActivateCharacter);
         signalHub.UnSubscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
@@ -443,13 +441,6 @@ public class UnitSystem
 
         inDungeonResultManager.IncreaseLostLogItemCnt(inventoryManager.DropAllItem(unitSpawner.character.centerTransform));
         signalHub.Publish(new PopupUIDownSignal());
-    }
-
-    // "원목 보험 증서"를 이번 원정에서 얻은 순간부터 바로 대시를 쓸 수 있게 한다.
-    // (이미 얻은 상태의 원정 시작은 GameInstaller가 SetDashUnlocked로 맡는다)
-    private void LostAndFoundBoxAcquired(LostAndFoundBoxAcquiredSignal _signal)
-    {
-        unitSpawner.character?.SetDashUnlocked(true);
     }
 
     private void SpendMoney()

@@ -191,8 +191,6 @@ public struct GameEndSignal { }
 
 public struct DropAllItemSignal { }
 
-public struct LostAndFoundBoxAcquiredSignal { }
-
 // 플레이어가 슬롯 하나의 이관을 "시작"할 때 발행된다(아이템이 실제로 빠져나가기 전).
 // 적재 수량 판정에는 쓸 수 없으므로 아래 ItemStoredInOffroadContainerSignal을 사용할 것.
 public struct InventoryItemTransferToOffroadContainerSignal { }
