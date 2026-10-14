@@ -684,8 +684,15 @@ public class Boomerang : MonoBehaviour
 
                     if (isHit && treeObj.bCanApplyDamage) // 묘목은 TakeDamage가 무시하므로 진동도 울리지 않게 미리 거른다
                     {
+                        // 로그라이크 조합 카드용 알림(RunCombatHooks 참고). 본편에서는 구독자가 없어 위치도 읽지 않는다.
+                        // 막타면 TakeDamage 안에서 풀로 반납되며 위치가 바뀌므로 먼저 읽어 둔다.
+                        bool bNotifyRun = RunCombatHooks.HasBoomerangHitTreeListener;
+                        Vector3 hitTreePos = bNotifyRun ? (Vector3)treeObj.Position : Vector3.zero;
+
                         treeObj.TakeDamage(tickDamage, false, bCritical);
                         bHitAny = true;
+
+                        if (bNotifyRun) RunCombatHooks.NotifyBoomerangHitTree(hitTreePos);
                     }
                 }
             }

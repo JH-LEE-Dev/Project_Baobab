@@ -6,6 +6,9 @@ public enum SceneType
     Town,
     DungeonScene,
     MAX,
+
+    // 로그라이크 모드 전용 씬. 기존 값(특히 MAX)의 정수값이 바뀌지 않도록 MAX 뒤에 붙였다.
+    Roguelike,
 }
 
 public struct SceneChangeData

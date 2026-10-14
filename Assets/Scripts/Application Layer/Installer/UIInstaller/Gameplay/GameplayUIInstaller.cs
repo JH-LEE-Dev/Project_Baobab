@@ -96,6 +96,21 @@ public class GameplayUIInstaller : MonoBehaviour
         uICoordinator.Refresh();
     }
 
+    /// <summary>
+    /// [로그라이크 전용] 본편 OpenUIView 목록에 없는 UIView를 연다. 프리팹은 GameplayUIManager의 viewPrefabs에 등록돼 있어야 하고,
+    /// 없으면 null을 돌려준다(호출 쪽이 뷰 없이도 돌도록 짜여 있다). 본편 흐름에서는 호출되지 않는다.
+    /// </summary>
+    public T OpenAdditionalView<T>() where T : UIView
+    {
+        return uiManager.Open<T>();
+    }
+
+    /// <summary>[로그라이크 전용] 이미 열려 있는 UIView를 표시 상태를 바꾸지 않고 가져온다(없으면 null).</summary>
+    public T GetOpenedView<T>() where T : UIView
+    {
+        return uiManager.GetView<T>();
+    }
+
     public void SetupUIElement()
     {
         SetupCanvas();

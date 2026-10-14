@@ -446,6 +446,16 @@ public class UIView_ESC : UIView
         DispatchInputLock(false);
     }
 
+    /// <summary>
+    /// [로그라이크 전용] 메인메뉴 버튼 문구를 "로비"로 바꾼다(기획서 3-7). 누르면 같은 GoToMainMenuButtonClickedEvent가 나가고,
+    /// 로그라이크 시스템이 그 요청을 "포기 → 결과 화면 → 로비"로 처리한다. 본편에서는 호출되지 않는다.
+    /// </summary>
+    public void SetLobbyMode(bool _bLobbyMode)
+    {
+        if (null == escapeMenu) escapeMenu = GetComponentInChildren<UI_EscapeMenu>(true);
+        escapeMenu?.SetLobbyMode(_bLobbyMode);
+    }
+
     public void OnGoToMainMenuButtonClicked()
     {
         if (true == isClosing || true == isOpeningOption) return;

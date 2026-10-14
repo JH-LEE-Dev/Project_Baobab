@@ -56,6 +56,14 @@ public class UI_EscapeMenu : MonoBehaviour
     [SerializeField] private string exitWarningKey = "ExitGameWarning";
     [SerializeField] private string mainMenuWarningKey = "MainMenuWarning";
 
+    [Header("Roguelike")]
+    [Tooltip("로그라이크 런 도중 메인메뉴 버튼 자리에 쓰는 '로비' 문구와 확인 문구(기획서 3-7 '런 중도 나가기').")]
+    [SerializeField] private int lobbyTextId = 7;
+    [SerializeField] private string lobbyWarningKey = "LobbyWarning";
+
+    // 로그라이크 런 도중에만 true. 본편에서는 아무도 켜지 않아 기존 문구 그대로다.
+    private bool bLobbyMode = false;
+
     private LocalizationManager localizationManager;
     private Action cachedRefreshLocalizedTexts;
     private Action cachedConfirmExit;
@@ -242,6 +250,15 @@ public class UI_EscapeMenu : MonoBehaviour
         }
     }
 
+    /// <summary>[로그라이크 전용] 메인메뉴 버튼을 "로비(포기)" 문구로 바꾸거나 되돌린다. 버튼 동작은 그대로다.</summary>
+    public void SetLobbyMode(bool _bLobbyMode)
+    {
+        if (bLobbyMode == _bLobbyMode) return;
+
+        bLobbyMode = _bLobbyMode;
+        RefreshLocalizedTexts();
+    }
+
     public void RefreshLocalizedTexts()
     {
         if (null == localizationManager) return;
@@ -260,7 +277,7 @@ public class UI_EscapeMenu : MonoBehaviour
 
         if (null != mainMenuButton)
         {
-            string _text = localizationManager.GetText(localizationJsonId, mainMenuTextId);
+            string _text = localizationManager.GetText(localizationJsonId, bLobbyMode ? lobbyTextId : mainMenuTextId);
             if (false == string.IsNullOrEmpty(_text)) mainMenuButton.SetText(_text);
         }
 
@@ -1112,7 +1129,7 @@ public class UI_EscapeMenu : MonoBehaviour
         if (null != warningPopup && null != localizationManager)
         {
             PlayCloseProduction(null);
-            string _warningMsg = localizationManager.GetText(mainMenuWarningKey);
+            string _warningMsg = localizationManager.GetText(bLobbyMode ? lobbyWarningKey : mainMenuWarningKey);
             warningPopup.ShowWarning(
                 _warningMsg,
                 cachedConfirmMainMenu,

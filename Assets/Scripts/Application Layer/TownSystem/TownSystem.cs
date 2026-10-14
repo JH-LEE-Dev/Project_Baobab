@@ -605,6 +605,23 @@ public class TownSystem : MonoBehaviour
         townTileManager.SetBuildingExpansionCount(_activeLineCount - 1);
     }
 
+    /// <summary>
+    /// [로그라이크 전용] GameInstaller 프리팹에 함께 들어 있는 마을 오브젝트(상점·텐트·용광로)를 치우고,
+    /// 캐릭터가 던전 타일맵을 보게 한다. 던전 진입(DungeonStarted)의 앞부분과 같은 처리이며,
+    /// 카메라 하강·커튼 처리처럼 던전 원정 흐름에 묶인 부분은 하지 않는다. 본편에서는 호출되지 않는다.
+    /// </summary>
+    public void PrepareForRoguelike()
+    {
+        character?.SetTilemapDataProvider(environmentProvider.tilemapDataProvider);
+
+        logProcessingManager.DisableShopObj();
+        tentManager.DisableTent();
+        blastFurnaceManager?.MoveOffscreen();
+
+        bCurrentlyTownScene = false;
+        townProductionManager.bCurrentlyTownScene = false;
+    }
+
     private void DungeonStarted(DungeonStartSignal _dungeonStartSignal)
     {
         // 이번 하강의 입장 연출을 누가 맡는지 여기서 확정한다. 재도전이면 InDungeonSystem이 맡으므로

@@ -53,6 +53,28 @@ public class UIView_Popup : UIView
             uiInventory.BindData(inventory, _moneyData);
     }
 
+    /// <summary>
+    /// [로그라이크 전용] 하단 코인 HUD가 읽는 재화 출처를 바꾼다(런 골드 - 기획서 5-1 "본 게임의 코인 HUD를 그대로 사용, 현재 보유 골드").
+    /// 인벤토리는 그대로 둔다. 본편에서는 호출되지 않는다.
+    /// </summary>
+    public void SetMoneyDataForRun(IMoneyData _moneyData)
+    {
+        moneyData = _moneyData;
+
+        if (null != uiInventory)
+            uiInventory.BindData(inventory, _moneyData);
+    }
+
+    /// <summary>[로그라이크 전용] 코인 HUD 표시 여부(언리밋에서 숨김 - 기획서 3-5).</summary>
+    public void SetCoinVisibleForRun(bool _bVisible)
+    {
+        if (null != uiInventory)
+            uiInventory.SetCoinVisibleForRun(_bVisible);
+    }
+
+    /// <summary>[로그라이크 전용] 코인 HUD의 위치(흡수 코인이 날아가 닿는 곳).</summary>
+    public RectTransform CoinCounterRectForRun => null != uiInventory ? uiInventory.CoinCounterRectForRun : null;
+
     public void InventoryShowEvent()
     {
         if (null != uiInventory)

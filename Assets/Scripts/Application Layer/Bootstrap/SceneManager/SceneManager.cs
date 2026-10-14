@@ -44,6 +44,9 @@ public class SceneManager : MonoBehaviour
             case SceneType.DungeonScene:
                 sceneName = "DungeonScene";
                 break;
+            case SceneType.Roguelike:
+                sceneName = "RoguelikeScene";
+                break;
         }
 
         if (string.IsNullOrEmpty(sceneName)) return null;
@@ -64,6 +67,9 @@ public class SceneManager : MonoBehaviour
                 break;
             case SceneType.DungeonScene:
                 UnityEngine.SceneManagement.SceneManager.LoadScene("DungeonScene");
+                break;
+            case SceneType.Roguelike:
+                UnityEngine.SceneManagement.SceneManager.LoadScene("RoguelikeScene");
                 break;
         }
     }

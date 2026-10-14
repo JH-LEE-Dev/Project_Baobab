@@ -147,6 +147,67 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     // // 퍼블릭 초기화 및 제어 메서드
 
+    /// <summary>
+    /// [로그라이크 전용] 중앙 보호 구역 반경을 바꾼다. 로그라이크 필드는 플레이어 주변 작은 영역이라,
+    /// 본편 값(15칸)으로는 필드 안에 나무를 심을 자리가 없다. 배열 크기와 무관한 값이라 그리드 구조는 그대로다.
+    /// 로그라이크 세션의 인스톨러는 메인메뉴로 돌아갈 때 통째로 파괴되므로 본편에 값이 남지 않는다.
+    /// </summary>
+    public void SetCenterSafeZoneRadiusOverride(float _radius)
+    {
+        centerSafeZoneRadius = Mathf.Max(0f, _radius);
+    }
+
+    // [로그라이크 전용] 화면 기준 완벽한 타원 섬. 0이면 꺼져 있다(본편).
+    private float ellipseIslandRadiusX;
+    private float ellipseIslandRadiusY;
+
+    /// <summary>
+    /// [로그라이크 전용] 노이즈 섬 대신 플레이어 시작 칸을 중심으로 한 타원 섬을 만든다. 반지름은 월드 단위(화면 가로·세로)다.
+    /// 타원 밖은 전부 물, 안은 전부 육지다(해안선·물 타일·장식은 기존 규칙 그대로 붙는다). 0 이하를 넣으면 꺼진다.
+    /// 로그라이크 세션의 인스톨러는 메인메뉴로 돌아갈 때 파괴되므로 본편에 값이 남지 않는다.
+    /// </summary>
+    public void SetEllipseIslandOverride(float _radiusX, float _radiusY)
+    {
+        bool bEnabled = _radiusX > 0f && _radiusY > 0f;
+        ellipseIslandRadiusX = bEnabled ? _radiusX : 0f;
+        ellipseIslandRadiusY = bEnabled ? _radiusY : 0f;
+    }
+
+    private bool bEllipseIsland => ellipseIslandRadiusX > 0f && ellipseIslandRadiusY > 0f;
+
+    /// <summary>셀 한 칸의 월드 크기(아이소메트릭 마름모의 가로·세로). 그리드가 없으면 (1, 0.5).</summary>
+    public Vector2 CellSize => null != grid ? (Vector2)grid.cellSize : new Vector2(1f, 0.5f);
+
+    /// <summary>[로그라이크 전용] 그리드 전체 칸 범위(0,0 ~ 가로·세로). 바닥 타일 파도 연출이 칸 단위로 다시 깔 범위를 고른다.</summary>
+    public BoundsInt GridBoundsForRun => new BoundsInt(0, 0, 0, width, height, 1);
+
+    /// <summary>[로그라이크 전용] 칸 중심의 월드 위치. 그리드가 없으면 zero.</summary>
+    public Vector3 GetCellCenterWorldForRun(Vector3Int _cell) => null != grid ? grid.GetCellCenterWorld(_cell) : Vector3.zero;
+
+    /// <summary>
+    /// [로그라이크 전용] 바닥 타일 파도 연출이 다시 깔 시각 타일맵. _floor는 바닥 블록(0번이 파도로 떨어지는 층), _water는 물 층
+    /// (0번이 물 타일), _shore는 물 가장자리(해안선) 층이다. 지형 전환 파도는 한 칸의 세 묶음을 함께 띄운다.
+    /// 충돌 타일맵은 넣지 않는다(보이지 않고, 생성 결과가 곧바로 맞아야 한다).
+    /// </summary>
+    public void GetVisualTilemapsForRun(List<Tilemap> _floor, List<Tilemap> _water, List<Tilemap> _shore)
+    {
+        _floor.Clear();
+        _water.Clear();
+        _shore.Clear();
+
+        if (null != groundTilemap) _floor.Add(groundTilemap);
+        if (null != groundStencilTilemap) _floor.Add(groundStencilTilemap);
+        if (null != decoTilemap) _floor.Add(decoTilemap);
+        if (null != bloomDecoTilemap) _floor.Add(bloomDecoTilemap);
+
+        if (null != waterTilemap) _water.Add(waterTilemap);
+        if (null != waterStencilTilemap) _water.Add(waterStencilTilemap);
+        if (null != waterDecoTilemap) _water.Add(waterDecoTilemap);
+        if (null != bloomWaterDecoTilemap) _water.Add(bloomWaterDecoTilemap);
+
+        if (null != waterCornerTilemap) _shore.Add(waterCornerTilemap);
+    }
+
     public void SetupForMapType(MapType _mapType)
     {
         if (mapTypeTileDatas == null) return;
@@ -895,6 +956,13 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     private void GenerateNoiseMap()
     {
+        // [로그라이크] 타원 섬. 본편은 반지름이 0이라 이 분기를 타지 않는다.
+        if (ellipseIslandRadiusX > 0f && ellipseIslandRadiusY > 0f)
+        {
+            GenerateEllipseIslandMap();
+            return;
+        }
+
         float invWidth = 1f / width;
         float invHeight = 1f / height;
         float centerX = width * 0.5f;
@@ -967,6 +1035,46 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 }
 
                 noiseValues[i] = val;
+            }
+        }
+
+        ApplyInnerPuddleDensity();
+        MarkMainland();
+    }
+
+    /// <summary>
+    /// [로그라이크 전용] 플레이어 시작 칸(DetermineSpawns와 같은 칸)을 중심으로 화면에서 완벽한 타원이 되는 섬을 찍는다.
+    ///
+    /// 아이소메트릭 셀 (x, y)의 월드 위치는 ((x - y) × 셀 가로/2, (x + y) × 셀 세로/2)다. 중심 칸과의 차이를 정수 셀 좌표로
+    /// 구해 이 식으로 바꾸면, 화면 좌우 반전(셀 x·y 교환)과 상하 반전(부호 교환과 x·y 교환)에 대응하는 칸이 정확히 같은
+    /// 값을 받는다. 부동소수 월드 좌표(worldPosMap)를 쓰지 않는 이유가 이것이다 - 경계에 걸린 칸이 한쪽에서만 뒤집히지 않는다.
+    ///
+    /// 타원 안은 잔디 값(1)으로 채워 내부 웅덩이·모래 얼룩이 생기지 않는다. 해안선 모래는 isShoreline이 따로 붙인다.
+    /// </summary>
+    private void GenerateEllipseIslandMap()
+    {
+        int centerCellX = width / 2;
+        int centerCellY = (height / 2) - 1;
+
+        Vector2 cell = CellSize;
+        float halfW = cell.x * 0.5f;
+        float halfH = cell.y * 0.5f;
+        float invRx2 = 1f / (ellipseIslandRadiusX * ellipseIslandRadiusX);
+        float invRy2 = 1f / (ellipseIslandRadiusY * ellipseIslandRadiusY);
+
+        for (int y = 0; y < height; y++)
+        {
+            int rowOffset = y * width;
+            int oy = y - centerCellY;
+
+            for (int x = 0; x < width; x++)
+            {
+                int ox = x - centerCellX;
+                float wx = (ox - oy) * halfW;
+                float wy = (ox + oy) * halfH;
+
+                bool bInside = wx * wx * invRx2 + wy * wy * invRy2 <= 1f;
+                noiseValues[x + rowOffset] = bInside ? 1f : 0f;
             }
         }
 
@@ -1370,6 +1478,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         // 칸마다 다시 물어볼 값이 아니라 루프 밖에서 한 번만 읽는다.
         bool bDecoReplacesGround = stageTileData != null && stageTileData.UseGroundTilemapForDeco;
 
+        // [로그라이크] 타원 섬은 모든 티어에서 장식을 하나도 만들지 않는다(장식 타일·움직이는 장식 오브젝트·물 장식).
+        // 바닥·물·해안선과 물 전체에 까는 블룸 층은 장식이 아니라 그대로 둔다. 본편은 bEllipseIsland가 항상 false라
+        // 아래 조건들이 예전과 같고, 무작위 판정 순서도 바뀌지 않는다(&&의 앞 조건이 true라 뒤 판정이 그대로 실행된다).
+        bool bSpawnDeco = false == bEllipseIsland;
+
         Vector3 portalPos = GetPortalSpawnPosition();
         Vector3 playerPos = GetPlayerSpawnPosition();
 
@@ -1438,7 +1551,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 {
                     if (stageTileData != null)
                     {
-                        if (stageTileData.WaterDecoTiles != null && stageTileData.WaterDecoTiles.Count > 0 && UnityEngine.Random.value < stageTileData.WaterDecoDensity)
+                        if (bSpawnDeco && stageTileData.WaterDecoTiles != null && stageTileData.WaterDecoTiles.Count > 0 && UnityEngine.Random.value < stageTileData.WaterDecoDensity)
                         {
                             waterDecoTilesToApply[i] = stageTileData.WaterDecoTiles[UnityEngine.Random.Range(0, stageTileData.WaterDecoTiles.Count)];
                         }
@@ -1466,8 +1579,10 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 }
                 else
                 {
+                    // [로그라이크] 타원 섬은 풀 타일 한 종류(목록의 첫 칸)만 쓴다. 본편은 기존처럼 무작위 변형.
+                    bool bSingleGrass = bEllipseIsland;
                     groundTiles[i] = (stageTileData != null && stageTileData.GrassTiles != null && stageTileData.GrassTiles.Count > 0)
-                        ? stageTileData.GrassTiles[UnityEngine.Random.Range(0, stageTileData.GrassTiles.Count)]
+                        ? stageTileData.GrassTiles[bSingleGrass ? 0 : UnityEngine.Random.Range(0, stageTileData.GrassTiles.Count)]
                         : null;
                 }
 
@@ -1493,7 +1608,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                         density = stageTileData.GrassStaticObjDensity;
                     }
 
-                    if (staticPrefabs != null && staticPrefabs.Count > 0 && UnityEngine.Random.value < density)
+                    // [로그라이크] 충돌 장식(바위 등 StaticObj + 충돌 타일)도 장식이라 만들지 않는다(bSpawnDeco 참고).
+                    if (bSpawnDeco && staticPrefabs != null && staticPrefabs.Count > 0 && UnityEngine.Random.value < density)
                     {
                         if (!inSafeZone && isMainland[i])
                         {
@@ -1516,7 +1632,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 // 애니메이션 오브젝트를 스폰하지 않는다. _hasRockDeco로 이미 배제했으므로 같은 타일에
                 // Static과 Animated가 겹쳐 생성되지 않는다.
                 bool _hasAnimatedObj = false;
-                if (false == _hasRockDeco)
+                if (bSpawnDeco && false == _hasRockDeco)
                 {
                     if (_isShoreline)
                     {
@@ -1537,7 +1653,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 }
 
                 bool _hasGroundDeco = false;
-                if (false == _hasRockDeco && false == _hasAnimatedObj && stageTileData != null)
+                if (bSpawnDeco && false == _hasRockDeco && false == _hasAnimatedObj && stageTileData != null)
                 {
                     float _groundDecoProb = _isSand ? stageTileData.SandDecoDensity : stageTileData.GroundDecoDensity;
                     float _bloomDecoProb = _isSand ? stageTileData.BloomSandDecoDensity : stageTileData.BloomGroundDecoDensity;
@@ -1554,7 +1670,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                     }
                 }
 
-                if (false == _isSand && false == _hasRockDeco && false == _hasAnimatedObj && false == _hasGroundDeco && stageTileData != null)
+                if (bSpawnDeco && false == _isSand && false == _hasRockDeco && false == _hasAnimatedObj && false == _hasGroundDeco && stageTileData != null)
                 {
                     if (stageTileData.GrassDecoTiles != null && stageTileData.GrassDecoTiles.Count > 0 && UnityEngine.Random.value < stageTileData.GrassDecoDensity)
                     {
@@ -1583,7 +1699,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             }
         }
 
-        PlaceWaterAnimatedObjects(size);
+        if (bSpawnDeco) PlaceWaterAnimatedObjects(size);
 
         BoundsInt b = new BoundsInt(0, 0, 0, width, height, 1);
         groundTilemap.SetTilesBlock(b, groundTiles);

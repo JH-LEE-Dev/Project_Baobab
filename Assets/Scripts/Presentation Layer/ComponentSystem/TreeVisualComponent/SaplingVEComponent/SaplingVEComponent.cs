@@ -22,6 +22,10 @@ public class SaplingVEComponent : MonoBehaviour
     private Tween scaleTween;
     private Transform scaleTweenTarget;
 
+    // [로그라이크] 웨이브 클리어로 사라지기 전 크기. RestoreScaleForRun이 되돌린다.
+    private Vector3 scaleBeforeVanish = Vector3.one;
+    private bool bVanishedForRun;
+
     public void Initialize(Transform _saplingTransform)
     {
         saplingTransform = _saplingTransform;
@@ -58,6 +62,52 @@ public class SaplingVEComponent : MonoBehaviour
         // OutElastic은 목표 스케일을 넘겨 한 번 크게 부푼 뒤 수렴하므로, 그 첫 정점이 곧 스케일 최대 시점이다.
         // 혹시 오버슈트가 없는 이징으로 바뀌더라도 트윈 완료 시점에 늦게라도 한 번은 발동하도록 보강한다.
         scaleTween.OnUpdate(CheckScalePeak).OnComplete(FireScalePeak);
+    }
+
+    /// <summary>
+    /// [로그라이크 전용] 웨이브 클리어: 묘목으로 돌아간 나무가 본편 묘목 등장처럼 톡 튀었다가 작아지며 사라진다
+    /// (기획서 3-1 "필드의 나무가 묘목으로 되돌아가며 사라지는 연출"). 사라진 크기는 RestoreScaleForRun이 되돌린다.
+    /// 본편에서는 호출되지 않는다.
+    /// </summary>
+    public void AnimateRevertAndVanishForRun(float _seconds)
+    {
+        if (saplingTransform == null) return;
+
+        // 막 자라는 중(성장 트윈 도중)이면 지금 크기는 중간값이다. 트윈이 수렴할 크기(targetScaleVector)를 원래 크기로 친다.
+        // 트윈을 죽이면 IsActive가 꺼지므로 죽이기 전에 본다.
+        bool bGrowing = null != scaleTween && scaleTween.IsActive() && scaleTween.IsPlaying() && scaleTweenTarget == saplingTransform;
+
+        KillScaleTweenOn(saplingTransform);
+        scalePeakCallback = null;
+        bScalePeakFired = true;
+
+        if (false == bVanishedForRun)
+        {
+            scaleBeforeVanish = bGrowing ? targetScaleVector : saplingTransform.localScale;
+            bVanishedForRun = true;
+        }
+
+        float duration = Mathf.Max(0.05f, _seconds);
+        float pop = duration * 0.45f;
+
+        // 묘목 그림으로 바뀌는 순간 작게 튀어 오른 뒤(묘목 등장과 같은 탄성) 0으로 줄어든다.
+        saplingTransform.localScale = scaleBeforeVanish * 0.6f;
+        Sequence seq = DOTween.Sequence();
+        seq.Append(saplingTransform.DOScale(scaleBeforeVanish, pop).SetEase(Ease.OutBack, 2.5f));
+        seq.Append(saplingTransform.DOScale(zeroScaleVector, duration - pop).SetEase(Ease.InBack, 1.5f));
+
+        scaleTweenTarget = saplingTransform;
+        scaleTween = seq;
+    }
+
+    /// <summary>[로그라이크 전용] AnimateRevertAndVanishForRun으로 사라진 나무를 원래 크기로 되돌린다(풀로 돌아가기 전에).</summary>
+    public void RestoreScaleForRun()
+    {
+        if (false == bVanishedForRun || saplingTransform == null) return;
+
+        KillScaleTweenOn(saplingTransform);
+        saplingTransform.localScale = scaleBeforeVanish;
+        bVanishedForRun = false;
     }
 
     /// <summary>

@@ -438,6 +438,16 @@ public class UI_Inventory : MonoBehaviour
         uiCoin?.SetNumber(moneyData.money);
     }
 
+    /// <summary>[로그라이크 전용] 코인 HUD를 켜고 끈다. 본편에서는 호출되지 않는다.</summary>
+    public void SetCoinVisibleForRun(bool _bVisible)
+    {
+        if (null != uiCoin)
+            uiCoin.gameObject.SetActive(_bVisible);
+    }
+
+    /// <summary>[로그라이크 전용] 코인 HUD의 RectTransform.</summary>
+    public RectTransform CoinCounterRectForRun => null != uiCoin ? uiCoin.transform as RectTransform : null;
+
     /// <summary>
     /// 특정 인벤토리 슬롯의 스마트 스왑 아웃라인을 켜고, 공유 인디케이터를 대상 슬롯 위치로 이동시켜 활성화합니다.
     /// </summary>

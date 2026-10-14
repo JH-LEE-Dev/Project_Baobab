@@ -39,6 +39,11 @@ public class GameInstaller : MonoBehaviour
     private GameSystem gameSystem;
     private TutorialSystem tutorialSystem;
 
+    [Header("Roguelike")]
+    [Tooltip("로그라이크 세션에서만 생성된다. 본편 세션에서는 쓰이지 않는다.")]
+    [SerializeField] private RoguelikeSystem roguelikeSystemPrefab;
+    private RoguelikeSystem roguelikeSystem;
+
     public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager, LocalizationManager _localizeManager, SaveManager _saveManager)
     {
         DontDestroyOnLoad(gameObject);
@@ -119,6 +124,12 @@ public class GameInstaller : MonoBehaviour
         environmentSystem.densityManager, inDungeonSystem.inDungeonObjectManager, townSystem.townObjectManager, offroadContainer,
         townSystem.townUnitSpawner, townSystem.blastFurnaceManager);
 
+        // 로그라이크 세션이면 캐릭터 생성(CharacterSpawnedSignal) 전에 만들어 둔다. 본편 세션은 이 분기를 타지 않는다.
+        if (GameModeContext.IsRoguelike)
+        {
+            CreateRoguelikeSystem();
+        }
+
         unitSystem.CreateCharacter();
         environmentSystem.DI(environmentSystem, townSystem.townObjectManager, inDungeonSystem.inDungeonObjectManager,
         inDungeonSystem.inDungeonUnitSpawner, townSystem.townUnitSpawner);
@@ -144,7 +155,15 @@ public class GameInstaller : MonoBehaviour
 
         cameraManager.ResetCamera();
 
-        if (_sceneChangeData.currentScene == SceneType.DungeonScene)
+        if (_sceneChangeData.currentScene == SceneType.Roguelike)
+        {
+            // 로그라이크: 던전 원정 흐름(InDungeonSystem)과 마을 흐름(TownSystem)을 모두 타지 않고
+            // RoguelikeSystem이 필드·웨이브를 직접 돌린다. 마을 도착 자동저장도 없다.
+            gameplayUIInstaller.SetupCanvas();
+            unitSystem.SetWhereIsCharacter(true);
+            roguelikeSystem?.StartSession();
+        }
+        else if (_sceneChangeData.currentScene == SceneType.DungeonScene)
         {
             environmentSystem.SetupForMapType(_sceneChangeData.forestType, _sceneChangeData.mapType);
             inDungeonSystem.StartDungeonSystem(_sceneChangeData);
@@ -172,6 +191,12 @@ public class GameInstaller : MonoBehaviour
     // 좀비로 남고, 호출자(BootStrap.TransitionToScene)의 씬 로드까지 도달하지 못했다.
     public void Release()
     {
+        // 로그라이크 세션에서만 존재한다. 나무 매니저·캐릭터를 쓰므로 그것들보다 먼저 정리한다.
+        if (null != roguelikeSystem)
+        {
+            SafeRelease("roguelikeSystem", ReleaseRoguelikeSystem);
+        }
+
         SafeRelease("unitSystem", () => unitSystem.Release());
         SafeRelease("cameraManager", () => cameraManager.Release());
         SafeRelease("teleportManager", () => teleportManager.Release());
@@ -255,6 +280,29 @@ public class GameInstaller : MonoBehaviour
         townSystem.MainMenuCurtainRollbackEvent -= TownIntroCurtainRollback;
         townSystem.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
         inDungeonSystem.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
+    }
+
+    private void CreateRoguelikeSystem()
+    {
+        if (null == roguelikeSystemPrefab)
+        {
+            Debug.LogError("[GameInstaller] roguelikeSystemPrefab이 비어 있어 로그라이크 모드를 시작할 수 없습니다.");
+            return;
+        }
+
+        roguelikeSystem = Instantiate(roguelikeSystemPrefab, transform);
+        roguelikeSystem.Initialize(signalHub, inputManager, environmentSystem, inDungeonSystem.inDungeonObjectManager,
+            unitLogicManager, townSystem, gameplayUIInstaller, skyCameraProductionManager);
+
+        roguelikeSystem.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
+        roguelikeSystem.GoToMainMenuCurtainRevealEvent += GoToMainMenuCurtainReveal;
+    }
+
+    private void ReleaseRoguelikeSystem()
+    {
+        roguelikeSystem.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
+        roguelikeSystem.Release();
+        roguelikeSystem = null;
     }
 
     private void TownIntroCurtainRollback()

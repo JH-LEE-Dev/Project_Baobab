@@ -62,6 +62,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private static readonly string mainMenuSceneName = "MainMenuScene";
     private static readonly string townSceneName = "TownScene";
     private static readonly string dungeonSceneName = "DungeonScene";
+    private static readonly string roguelikeSceneName = "RoguelikeScene";
 
     private SceneType currentSceneType = SceneType.None;
     private SceneType prevSceneType = SceneType.None;
@@ -196,6 +197,25 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
                 gameInstaller.GoToMainMenuCurtainRevealEvent += OnGoToMainMenuCurtainReveal;
             }
         }
+        else if (_sceneName == roguelikeSceneName)
+        {
+            currentSceneType = SceneType.Roguelike;
+
+            // 로그라이크는 항상 메인메뉴에서만 들어오므로 여기서 새로 만든다. 본편 세이브는 불러오지 않는다
+            // (LoadGame 없음) - 매 판 같은 출발선에서 시작해야 하고, 본편 능력 트리가 섞이면 안 된다.
+            // 이 세션의 저장은 SaveManager가 GameModeContext를 보고 전부 막는다.
+            if (gameInstaller == null)
+            {
+                gameInstaller = Instantiate(gameInstallerPrefab);
+                gameInstaller.Initialize(this, inputManager, localizationManager, saveManager);
+
+                gameInstaller.TownIntroCurtainRollbackEvent -= OnTownIntroCurtainRollback;
+                gameInstaller.TownIntroCurtainRollbackEvent += OnTownIntroCurtainRollback;
+
+                gameInstaller.GoToMainMenuCurtainRevealEvent -= OnGoToMainMenuCurtainReveal;
+                gameInstaller.GoToMainMenuCurtainRevealEvent += OnGoToMainMenuCurtainReveal;
+            }
+        }
 
         if (gameInstaller != null)
         {
@@ -213,6 +233,15 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
         // SetupScene()과 같은 이유. 위 로그가 timeScale을 이미 찍고 있으므로 반드시 그 뒤에 호출한다.
         ResetTimeScale();
+
+        // 메인메뉴는 로그라이크 세션의 끝이다. 위쪽 인스톨러 해제 경로에서 이미 껐더라도, 로그라이크 전환이
+        // 인스톨러 생성 전에 실패한 경우처럼 그 경로를 타지 않고 돌아와도 플래그가 남지 않게 여기서도 끈다.
+        // 남아 있으면 그다음 본편 플레이의 저장이 전부 막힌다.
+        GameModeContext.ExitRoguelike();
+
+        // 같은 이유로, 로그라이크 진입 암전(메인메뉴 → 로그라이크 씬 로드 동안 화면을 덮는다)이 남아 있으면 걷는다.
+        // 로그라이크에 들어간 적이 없으면 아무 일도 없다.
+        RoguelikeScreenTransition.ClearIfCovering();
 
         currentSceneType = SceneType.MainMenu;
 
@@ -322,6 +351,18 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     }
 
     /// <summary>
+    /// 메인메뉴 → 로그라이크 모드. 본편의 "새로하기"와 달리 세이브를 지우지 않고, "이어하기"와 달리
+    /// 세이브를 읽지도 않는다. 모드 플래그는 전환을 시작하기 직전에 켠다 - 켜진 순간부터 본편 저장이 막힌다.
+    /// </summary>
+    public void GoToRoguelikeFromMainMenu()
+    {
+        if (IsTransitionBlocked(SceneType.Roguelike)) return;
+
+        GameModeContext.EnterRoguelike();
+        TryBeginTransition(SceneType.Roguelike);
+    }
+
+    /// <summary>
     /// 이미 씬 전환이 진행 중이라 이번 요청을 무시해야 하는지 확인한다.
     /// 요청 상태(bNewGame/currentMapType 등)를 바꾸기 전에 먼저 호출해, 무시된 요청이
     /// 진행 중인 전환의 목적지를 오염시키지 않도록 한다.
@@ -385,6 +426,10 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
                     Debug.Log($"[BootStrap] gameInstaller.Release() 완료 ({_swRelease.ElapsedMilliseconds}ms)");
 
                     gameInstaller = null;
+
+                    // 로그라이크 세션의 인스톨러가 방금 해제됐다. 메인메뉴부터는 다시 본편 규칙(저장 허용)이다.
+                    // 본편 세션에서는 이미 false라 아무 일도 없다.
+                    GameModeContext.ExitRoguelike();
 
                     // Release()의 Destroy(gameObject)는 프레임 끝에 처리된다. 그 대량 파괴와 아래
                     // ChangeSceneAsync의 비동기 씬 로드를 같은 프레임에 걸치게 하면 엔진 내부에서

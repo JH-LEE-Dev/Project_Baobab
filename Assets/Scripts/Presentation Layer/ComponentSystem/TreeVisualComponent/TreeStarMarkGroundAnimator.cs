@@ -195,6 +195,20 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
     }
 
     /// <summary>
+    /// [로그라이크 전용] 등장 연출 없이 이미 내려앉은(Idle) 모습으로 놓는다. 웨이브를 넘어 남은 별을 다시 그릴 때 쓴다 -
+    /// Play로 다시 그리면 그 자리에서 별이 새로 생기는 것처럼 튀어나온다. 본편에서는 호출되지 않는다.
+    /// </summary>
+    public void PlayLandedForRun()
+    {
+        Play();
+
+        state = AnimationState.Idle;
+        stateTimer = 0f;
+        idleTimer = 0f;
+        ApplyIdlePose();
+    }
+
+    /// <summary>
     /// Idle에서는 0~manifestRandomDelayMax초 뒤 발현하고,
     /// Spawn 중이거나 아직 정상 Idle에 진입하지 않았다면 즉시 Spawn을 취소하고 발현합니다.
     /// </summary>

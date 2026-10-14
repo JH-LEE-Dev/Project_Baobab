@@ -475,6 +475,50 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         }
     }
 
+    /// <summary>
+    /// [로그라이크 전용] 웨이브 클리어 순간 "묘목으로 돌아가는" 상태로 바꾼다(기획서 3-1 "달성 즉시").
+    /// 묘목은 어떤 피해도 받지 않으므로(bCanApplyDamage) 이 순간부터 도트·폭발로도 죽지 않고 골드도 주지 않는다.
+    /// 다시 자라지 않도록 성장 시간을 무한으로 둔다. 실제 회수(풀 반환)는 연출이 끝난 뒤 매니저가 한다.
+    ///
+    /// SetIsSapling과 달리 성장 사운드를 내지 않는다. 필드의 나무 수십 그루가 같은 프레임에 들어오기 때문이다.
+    /// 묘목 그림으로 바뀐 뒤 _vanishSeconds 동안 톡 튀었다가 작아지며 사라진다(SaplingVEComponent). 0이면 그림만 바꾼다.
+    /// 본편에서는 호출되지 않는다.
+    /// </summary>
+    public void RevertToSaplingForRun(float _vanishSeconds)
+    {
+        if (bDead || IsPooled) return;
+
+        bIsSapling = true;
+        growTime = float.MaxValue;
+
+        if (treeVisualComponent != null)
+        {
+            treeVisualComponent.DeActivateOnWaterObject();
+            treeVisualComponent.ApplySaplingVisual(treeData);
+        }
+
+        if (_vanishSeconds > 0f && saplingVEComponent != null)
+        {
+            saplingVEComponent.AnimateRevertAndVanishForRun(_vanishSeconds);
+        }
+    }
+
+    /// <summary>[로그라이크 전용] RevertToSaplingForRun으로 사라진 크기를 되돌린다. 풀로 돌아가기 전에 불러야 재사용 때 보인다.</summary>
+    public void RestoreAfterVanishForRun()
+    {
+        if (saplingVEComponent != null) saplingVEComponent.RestoreScaleForRun();
+    }
+
+    /// <summary>
+    /// [로그라이크 전용] 묘목 단계 없이 심은 나무에 본편의 "다 자랄 때" 연출(성장 스케일 + 플래시 + 성장음)을 바로 재생한다.
+    /// 본편에서는 호출되지 않는다(본편 성장은 SetIsSapling → 시간 경과 → GrowUp 경로).
+    /// </summary>
+    public void PlayGrowUpForRun()
+    {
+        if (bDead || IsPooled) return;
+        GrowUp();
+    }
+
     [HideInInspector] public bool bLastHitByPlayer = true;
 
     public void ResetTree()

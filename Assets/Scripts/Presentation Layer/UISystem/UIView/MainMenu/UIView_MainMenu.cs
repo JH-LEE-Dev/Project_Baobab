@@ -10,6 +10,8 @@ public class UIView_MainMenu : UIView
     public event Action NewGameButtonClickedEvent;
     public event Action LoadGameButtonClickedEvent;
     public event Action ExitButtonClickedEvent;
+    /// <summary>로그라이크 모드 버튼(기획서 4장 "모드 진입"). 버튼 배치·해금 표시는 UI 담당이 UI_MainMenu에 붙인다.</summary>
+    public event Action RoguelikeButtonClickedEvent;
     public event Action<EOptionLanguage> OnLanguageOptionChangedEvent;
 
     [Header("UI References")]
@@ -46,6 +48,10 @@ public class UIView_MainMenu : UIView
     [SerializeField] private float dimmerTargetAlpha = 0.3f;
     [SerializeField] private float dimmerFadeDuration = 1f;
 
+    [Header("Roguelike Entry")]
+    [SerializeField, Tooltip("로그라이크 버튼을 누른 뒤 메인메뉴 화면에 걸리는 디스토션 → 암전 수치(기획서 4-1 1~2단계). 암전이 걷히는 페이드인은 로그라이크 쪽 값을 쓴다.")]
+    private RoguelikeScreenTransitionSettings roguelikeEntryTransition = new RoguelikeScreenTransitionSettings();
+
     [Header("Exit Animation")]
     [SerializeField] private float exitMoveDuration = 1.8f;
     // MainMenu 모드에서 꺼지는 SkyProduction.prefab의 skyImage 이동 거리(635 → 135)와 동일한 500으로 맞춤
@@ -64,6 +70,9 @@ public class UIView_MainMenu : UIView
     private RectTransform rootRectTransform;
     private Vector2 restAnchoredPosition;
     private int mainMenuUIJsonId = 8; // MainMenuUI.json의 ID
+    // 로그라이크 진입 디스토션 중(버튼을 누른 뒤 메인메뉴가 내려갈 때까지). 그동안 다른 메뉴 버튼은 무시한다 -
+    // 본편 버튼은 누르는 즉시 메뉴를 내리지만 로그라이크는 메뉴를 띄운 채 출렁이게 하므로, 그 사이 이어하기 등이 눌리면 두 흐름이 겹친다.
+    private bool bRoguelikeEntryPlaying;
     private IMainMenuSaveSystem saveSystem;
 
     // 한 번 스플래시를 본 이후(예: 인게임에서 ESC로 메인 메뉴로 돌아왔을 때) 스플래시를 생략하기 위한 정적 변수
@@ -78,6 +87,7 @@ public class UIView_MainMenu : UIView
     private TweenCallback onEnterAnimationCompleteCallback;
     private TweenCallback invokeNewGameEventCallback;
     private TweenCallback invokeLoadGameEventCallback;
+    private TweenCallback invokeRoguelikeEventCallback;
     private Action onOptionUIClosedCallback;
     private Action showMainMenuCallback;
     private Action onSplashScreenCompletedCallback;
@@ -383,17 +393,71 @@ public class UIView_MainMenu : UIView
 
     public void OnNewGameStartButton()
     {
+        if (bRoguelikeEntryPlaying) return;
         if (null == invokeNewGameEventCallback) invokeNewGameEventCallback = InvokeNewGameEvent;
         PlayGameStartSequence(invokeNewGameEventCallback);
     }
 
     public void OnLoadGameButtonClicked()
     {
+        if (bRoguelikeEntryPlaying) return;
         if (null == invokeLoadGameEventCallback) invokeLoadGameEventCallback = InvokeLoadGameEvent;
         PlayGameStartSequence(invokeLoadGameEventCallback);
     }
 
-    private void PlayGameStartSequence(TweenCallback _onSequenceCompleted)
+    /// <summary>
+    /// 로그라이크 모드 버튼에서 부른다. 해금 조건(본편 모든 특성 해금 + 엔딩)은 본편 엔딩이 아직 없어
+    /// 적용하지 않는다(기획서 9장 - 개발 중에는 상시 활성).
+    /// 진입 연출 1~2단계(기획서 4-1): 지금 메인메뉴 화면에 디스토션이 걸리고 검게 덮인다. 검은 화면 아래에서
+    /// 새로하기·이어하기와 같은 퇴장 정리(버튼·딤머·로고)를 바로 끝내고 씬을 넘긴다. 검은 화면은 로그라이크 로비가 걷는다.
+    /// </summary>
+    public void OnRoguelikeButtonClicked()
+    {
+        if (bRoguelikeEntryPlaying) return;
+
+        bRoguelikeEntryPlaying = true;
+        StartCoroutine(RoguelikeEntryRoutine());
+    }
+
+    // 디스토션 도중 메인메뉴가 꺼져 코루틴이 끊기면(씬 전환 요청 전) 버튼 잠금을 풀고 덮어 둔 검은 화면도 걷는다 -
+    // 씬이 바뀌지 않으니 BootStrap의 ClearIfCovering도 불리지 않는다. 씬 전환 요청 뒤에는 이미 false라 아무것도 하지 않는다.
+    private void OnDisable()
+    {
+        if (false == bRoguelikeEntryPlaying) return;
+
+        bRoguelikeEntryPlaying = false;
+        RoguelikeScreenTransition.ClearIfCovering();
+    }
+
+    private System.Collections.IEnumerator RoguelikeEntryRoutine()
+    {
+        // 메인메뉴 BGM은 디스토션 동안 잦아든다(본편 진입 하강이 메인메뉴 BGM을 내리는 것과 같은 역할).
+        Sound.FadeOutBGM(Mathf.Max(0.01f, roguelikeEntryTransition.distortSeconds));
+        yield return RoguelikeScreenTransition.Instance.DistortToBlack(roguelikeEntryTransition);
+
+        // 본편은 씬이 넘어간 뒤 PlayExitAnimation으로 메인메뉴를 위로 밀어 올린다(구름·하강 연출이 그 위를 덮는다).
+        // 로그라이크는 검은 화면 아래라 밀어 올린 끝 자리로 바로 옮긴다 - 돌아갈 때 PlayEnterAnimation이 같은 자리에서 내려온다.
+        if (null != rootRectTransform)
+        {
+            rootRectTransform.DOKill();
+            rootRectTransform.anchoredPosition += Vector2.up * exitMoveDistance;
+        }
+
+        if (null == invokeRoguelikeEventCallback) invokeRoguelikeEventCallback = InvokeRoguelikeEvent;
+        Sequence _seq = PlayGameStartSequence(invokeRoguelikeEventCallback);
+
+        // 메뉴가 내려갔다(PlayGameStartSequence). 씬 전환 요청(Complete → InvokeRoguelikeEvent) 전에 내린다 -
+        // 그 안에서 메인메뉴가 꺼지면 OnDisable이 진입 도중으로 오해해 검은 화면을 걷는다.
+        bRoguelikeEntryPlaying = false;
+        _seq.Complete(true);
+    }
+
+    private void InvokeRoguelikeEvent()
+    {
+        RoguelikeButtonClickedEvent?.Invoke();
+    }
+
+    private Sequence PlayGameStartSequence(TweenCallback _onSequenceCompleted)
     {
         if (null != mainMenuUI)
         {
@@ -425,10 +489,13 @@ public class UIView_MainMenu : UIView
         {
             _seq.OnComplete(_onSequenceCompleted);
         }
+
+        return _seq;
     }
 
     public void OnOptionButtonClicked()
     {
+        if (bRoguelikeEntryPlaying) return;
         if (null == onOptionUIClosedCallback) onOptionUIClosedCallback = OnOptionUIClosed;
 
         if (null != optionUI)
@@ -581,6 +648,7 @@ public class UIView_MainMenu : UIView
 
     public void OnCreditButtonClicked()
     {
+        if (bRoguelikeEntryPlaying) return;
         if (null != creditUI)
         {
             creditUI.PlayCredit();
@@ -597,6 +665,7 @@ public class UIView_MainMenu : UIView
 
     public void OnExitButtonClicked()
     {
+        if (bRoguelikeEntryPlaying) return;
         ExitButtonClickedEvent?.Invoke();
     }
 
@@ -693,6 +762,7 @@ public class UIView_MainMenu : UIView
         NewGameButtonClickedEvent = null;
         LoadGameButtonClickedEvent = null;
         ExitButtonClickedEvent = null;
+        RoguelikeButtonClickedEvent = null;
         OnLanguageOptionChangedEvent = null;
 
         if (null != viewCtx && null != viewCtx.localizationManager)

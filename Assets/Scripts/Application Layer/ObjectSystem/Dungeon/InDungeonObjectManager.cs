@@ -258,6 +258,74 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public IReadOnlyList<ITreeObj> trees => activeTrees;
 
+    // // 로그라이크 전용 훅
+    //
+    // 아래 필드와 메서드는 로그라이크 모드(RoguelikeSystem)만 호출한다. 본편에서는 runTreeRules가 항상 null이고
+    // 외부 전략도 주입되지 않으므로, 이 블록을 보는 기존 분기는 전부 예전과 같은 경로를 탄다.
+
+    private IRunTreeRules runTreeRules;
+
+    /// <summary>[로그라이크] 판 단위 나무 규칙을 건다. null이면 해제(본편 동작).</summary>
+    public void SetRunTreeRules(IRunTreeRules _rules)
+    {
+        runTreeRules = _rules;
+    }
+
+    /// <summary>
+    /// [로그라이크] MapType별 전략 표를 거치지 않고 외부에서 만든 전략을 쓴다. 전략 에셋의 수명은 호출한 쪽이 관리한다
+    /// (여기서 Instantiate/Destroy하지 않는다). 다음 ReadyTrees부터 적용된다.
+    /// </summary>
+    public void SetExternalTreeGenerationStrategy(TreeGenerationStrategySO _strategy, MapType _mapType)
+    {
+        DestroyOwnedStrategyInstance();
+
+        currentMapType = _mapType;
+        currentTreeGenerationStrategy = _strategy;
+
+        if (null != currentTreeGenerationStrategy)
+        {
+            currentTreeGenerationStrategy.currentMapType = _mapType;
+        }
+    }
+
+    /// <summary>
+    /// [로그라이크] 필드의 모든 나무를 "묘목으로 돌아가는" 상태로 바꾼다. 이 순간부터 피해·골드가 없다.
+    /// _vanishSeconds 동안 묘목이 톡 튀었다가 작아지며 사라진다. 회수(ClearTreesForRun)는 그 뒤에 한다.
+    /// </summary>
+    public void RevertAllTreesToSaplingForRun(float _vanishSeconds)
+    {
+        for (int i = activeTrees.Count - 1; i >= 0; i--)
+        {
+            if (null != activeTrees[i]) activeTrees[i].RevertToSaplingForRun(_vanishSeconds);
+        }
+    }
+
+    /// <summary>
+    /// [로그라이크] 필드의 나무를 드랍 없이 전부 회수한다. 성장 루틴은 멈추지 않는다 - 로그라이크 전략의 성장 루틴은
+    /// 웨이브가 진행 중일 때만 심으므로, 웨이브 사이에는 스스로 쉬고 있다가 다음 웨이브에 그대로 이어서 쓴다.
+    /// </summary>
+    public void ClearTreesForRun()
+    {
+        StopDelayedGrassOpen();
+
+        // 웨이브 클리어로 작아져 사라진 나무를 원래 크기로 되돌린 뒤 풀에 넣는다(다시 꺼낼 때 보이도록).
+        for (int i = activeTrees.Count - 1; i >= 0; i--)
+        {
+            if (null != activeTrees[i]) activeTrees[i].RestoreAfterVanishForRun();
+        }
+
+        ClearTrees();
+    }
+
+    /// <summary>
+    /// [로그라이크] ReadyTrees가 예약한 "5초 뒤 시작점·포탈 옆 잔디칸 개방"을 취소한다. 로그라이크 전략은 그 칸을
+    /// 처음부터 스폰 후보에 넣고 웨이브마다 후보를 새로 깐다. 예약이 남아 있으면 웨이브 도중에 같은 칸이 한 번 더 들어간다.
+    /// </summary>
+    public void CancelDelayedGrassOpenForRun()
+    {
+        StopDelayedGrassOpen();
+    }
+
     [SerializeField] private TreeVisualDataBase treeVisualDataBase;
     [SerializeField] private TreeStatDataBase treeStatDataBase;
     [SerializeField] private List<TreeGradeStatMultiplierData> treeGradeStatMultiplierDatas;
@@ -319,7 +387,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // 포자막 폭발 관련 스킬 스탯
     [SerializeField] private LayerMask treeLayerForExplosion;
-    private const float BaseShieldExplosionDamage = 20f;
+    [SerializeField] private float baseShieldExplosionDamage = 20f;
     private const float BaseShieldExplosionRange = 1.5f; // 맞은 타일 주변 8개 이웃 타일(대각선 포함 3x3)이 포함되는 반경
 
     private bool bShieldExplosionUnlocked = false;
@@ -335,6 +403,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private const int SporeExplosionVfxMaxCount = 4;
     private const float SporeExplosionVfxInterval = 0.15f;
     private const float SporeExplosionVfxSpread = 0.25f;
+    // 폭발 시작 랜덤 지연 상한(초) - 연쇄 폭발이 같은 프레임에 몰려 VFX/폭발음이 겹치지 않도록 흩어 놓는다.
+    private const float SporeExplosionStartDelayMax = 0.1f;
+    // ClearTrees마다 증가. 지연·연타 중이던 포자막 폭발이 이 값이 바뀐 것을 보고 다음 맵의 나무를 때리지 않고 끝난다.
+    private int shieldExplosionVersion = 0;
     // 코루틴 루프에서 매번 new WaitForSeconds를 생성하면 반복마다 GC 쓰레기가 생기므로 캐싱해서 재사용한다.
     private static readonly WaitForSeconds sporeExplosionVfxWait = new WaitForSeconds(SporeExplosionVfxInterval);
 
@@ -387,7 +459,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 폭발마다 쓰는 타격 목록 - 잔상으로 여러 폭발이 동시에 돌 수 있어 폭발별로 하나씩 빌려 쓰고 돌려놓는다.
     private readonly Stack<List<ConstellationHit>> spareConstellationHitLists = new Stack<List<ConstellationHit>>();
 
-    // 포자막 연쇄 폭발/별똥별 착탄 범위 판정용 결과 리스트 풀. 연쇄 폭발은 재귀로 중첩되므로 호출마다 하나씩 빌려 쓰고 돌려준다.
+    // 포자막 폭발/별똥별 착탄 범위 판정용 결과 리스트 풀. 판정 도중 다른 판정이 중첩될 수 있으므로 호출마다 하나씩 빌려 쓰고 돌려준다.
     private readonly Stack<List<IStaticCollidable>> spareExplosionScanLists = new Stack<List<IStaticCollidable>>();
 
     private List<IStaticCollidable> RentExplosionScanList()
@@ -1035,7 +1107,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             tree.SetOnWaterObjectState(isWaterNearby);
 
             tree.SetCellPos(cellPos);
-            tree.SetHeatDamageAmount(environmentProvider.tilemapDataProvider.TreeHeatStaminaDamage);
+            // 로그라이크는 스테이지 기믹(나무 열기)을 끈다. 본편은 runTreeRules가 null이라 기존 값 그대로다.
+            bool bNoGimmick = null != runTreeRules && runTreeRules.bDisableStageGimmicks;
+            tree.SetHeatDamageAmount(bNoGimmick ? 0f : environmentProvider.tilemapDataProvider.TreeHeatStaminaDamage);
 
             tree.PoolIndex = activeTrees.Count;
             activeTrees.Add(tree);
@@ -1232,6 +1306,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // (그 finally가 뒤늦게 activeConstellationGroups.Remove를 호출해도 무해하다)
         constellationManifestVersion++;
         activeConstellationGroups.Clear();
+
+        // 시작 지연 중이거나 "톡 톡 톡 톡" 연타 중이던 포자막 폭발도 같은 방식으로 더 때리지 않고 끝나게 한다.
+        shieldExplosionVersion++;
 
         // 마크를 강제 회수한 위 호출은 ConstellationManifestReadyEvent를 발생시키지 않으므로, 별 사라짐을
         // 기다리던 발현 대기 목록도 짝을 맞춰 비운다(이전 런의 별 위치 리스트를 붙들고 있지 않도록).
@@ -1442,7 +1519,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED가 꺼져 있으면 이 분기를 타지 않는다.
         // 원석 계열이 들어오기 전에는 보석 나무도 그냥 원목을 떨궜으므로, 그때의 동작 그대로다.
         // 여기가 원석이 게임에 들어오는 유일한 입구라, 이 한 줄만 막으면 원석은 생성 자체가 없다.
-        if (SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED && _treeObj.bIsGemStage)
+        //
+        // [로그라이크] 보상은 골드뿐이라 원목·원석·전리품을 하나도 떨어뜨리지 않는다(골드는 로그라이크 전략의
+        // OnTreeDead가 따로 뿌린다). 본편은 runTreeRules가 null이라 bSuppressDrops가 항상 false다.
+        bool bSuppressDrops = null != runTreeRules && runTreeRules.bSuppressItemDrops;
+
+        if (bSuppressDrops)
+        {
+        }
+        else if (SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED && _treeObj.bIsGemStage)
         {
             itemManager.SpawnGemOre(_treeObj, dropMultiplier);
         }
@@ -1460,7 +1545,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // "분실물 보관함" - 나무를 죽여 LogItem이 드랍될 때 함께 스폰을 시도한다.
         // 이미 획득했거나(영구 저장 플래그) 이번 런에서 이미 스폰을 시도했으면(습득 완료 전 중복 방지)
         // 더 이상 시도하지 않는다. 영구 플래그는 획득 데이터 확정 시점(OnLootDataCommitted)에만 세팅된다.
-        if (!bHasAcquiredLostAndFoundBox && !bLostAndFoundBoxSpawnedThisRun && lootManager != null && character != null)
+        if (!bSuppressDrops && !bHasAcquiredLostAndFoundBox && !bLostAndFoundBoxSpawnedThisRun && lootManager != null && character != null)
         {
             bool bShouldSpawnLostAndFoundBox = false;
 
@@ -1486,7 +1571,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         // "포자 포션" - "2-1,2-2,2-3"에서 확률적으로 드랍(못 얻은 채로 벨 때마다 누적 상승), "3-1" 이후 모든 숲에서 구제 보장.
-        if (!bHasAcquiredSporePotion && !bSporePotionSpawnedThisRun && lootManager != null && character != null)
+        if (!bSuppressDrops && !bHasAcquiredSporePotion && !bSporePotionSpawnedThisRun && lootManager != null && character != null)
         {
             bool bShouldSpawnSporePotion = false;
 
@@ -1513,7 +1598,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         // "별빛 나침반" - "3-1" 이후 모든 숲에서 임계값 그루째에 확률과 무관하게 보장 드랍.
         // 어느 한 곳에서 획득하면 영구 플래그가 세팅되어 더 이상 드랍되지 않는다.
-        if (!bHasAcquiredStarCompass && !bStarCompassSpawnedThisRun && lootManager != null && character != null)
+        if (!bSuppressDrops && !bHasAcquiredStarCompass && !bStarCompassSpawnedThisRun && lootManager != null && character != null)
         {
             if (currentForestType >= StarCompassPityStart && pityTreeKillCount >= starCompassPityThreshold)
             {
@@ -1523,7 +1608,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         // "흑요 부적" - "4-2"에서 확률 드랍(못 얻은 채로 벨 때마다 누적 상승), "4-3" 이후 모든 숲에서 구제 보장.
-        if (!bHasAcquiredObsidianCharm && !bObsidianCharmSpawnedThisRun && lootManager != null && character != null)
+        if (!bSuppressDrops && !bHasAcquiredObsidianCharm && !bObsidianCharmSpawnedThisRun && lootManager != null && character != null)
         {
             if (currentForestType == ForestType.MagmaForest_2)
             {
@@ -1601,7 +1686,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // [미사용 확정] 첫 갈래(히든맵)는 죽은 길입니다. hiddenMapGrade를 None 밖으로 바꾸는
         // InDungeonSystem.SetHiddenMapGrade()에 호출부가 없어, 실제로는 항상 아래 else 갈래
         // (treeGradeProbs = 특성이 올려주는 확률)만 탑니다.
-        if (hiddenMapGrade != HiddenMapGrade.None && hiddenMapTreeGradeDatas != null)
+        if (null != runTreeRules && runTreeRules.bForceNormalGrade)
+        {
+            // [로그라이크] 등급을 굴리지 않고 Normal로 둔다. 보석 회생이 생기면 처치 수와 골드가 꼬인다.
+        }
+        else if (hiddenMapGrade != HiddenMapGrade.None && hiddenMapTreeGradeDatas != null)
         {
             for (int i = 0; i < hiddenMapTreeGradeDatas.Count; i++)
             {
@@ -1676,6 +1765,17 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         statData.hp *= multiplier;
+
+        // [로그라이크] 티어·언리밋 HP 배율과 기믹(실드) 제거. 본편은 runTreeRules가 null이라 건너뛴다.
+        if (null != runTreeRules)
+        {
+            statData.hp *= runTreeRules.TreeHpMultiplier;
+
+            if (runTreeRules.bDisableStageGimmicks)
+            {
+                statData.sp = 0f;
+            }
+        }
 
         return new TreeData(type, grade, treeVisualDataBase.Get(type), statData);
     }
@@ -2376,61 +2476,49 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void TriggerShieldExplosion(TreeObj _source)
     {
-        StartCoroutine(PlaySporeExplosionVfxRoutine(_source));
+        if (_source == null) return;
 
-        float damage = BaseShieldExplosionDamage * Mathf.Max(0f, shieldExplosionDamageMultiplier);
-        float range = BaseShieldExplosionRange * Mathf.Max(0f, shieldExplosionRangeMultiplier);
-
-        if (CollisionSystem.Instance == null) return;
-
-        // 재귀적인 연쇄 폭발(TakeDamage -> ShieldBrokenEvent -> TriggerShieldExplosion) 도중
-        // 공유 버퍼가 덮어써지지 않도록 호출마다 풀에서 리스트를 하나씩 빌려 쓴다(중첩 호출은 각자 다른 리스트를 받는다).
-        List<IStaticCollidable> scanResults = RentExplosionScanList();
-        // 폭발(과 그 연쇄)로 쓰러지는 나무들의 타일맵 쓰기를 가장 바깥 폭발이 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
-        TreeTileWriteBatch.Begin();
-        try
-        {
-            CollisionSystem.Instance.GetCollidablesInRadius(_source.Position, range, treeLayerForExplosion.value, scanResults);
-
-            Vector3 centerPos = _source.transform.position;
-            float rangeSq = range * range;
-
-            for (int i = 0; i < scanResults.Count; i++)
-            {
-                if (scanResults[i] is TreeObj tree && tree != _source && tree.bCanApplyDamage)
-                {
-                    Vector3 targetPos = tree.transform.position;
-                    float dx = targetPos.x - centerPos.x;
-                    float dy = (targetPos.y - centerPos.y) * 2f; // 등각 타원 보정 (ShockWave와 동일 공식)
-                    float isoDistSq = dx * dx + dy * dy;
-
-                    if (isoDistSq <= rangeSq)
-                    {
-                        tree.TakeDamage(damage);
-                    }
-                }
-            }
-        }
-        finally
-        {
-            TreeTileWriteBatch.End();
-            ReturnExplosionScanList(scanResults);
-        }
+        StartCoroutine(ShieldExplosionRoutine(_source));
     }
 
-    private IEnumerator PlaySporeExplosionVfxRoutine(TreeObj _source)
+    /// <summary>
+    /// 포자막 폭발. 0~SporeExplosionStartDelayMax초 랜덤 지연 뒤 SporeExplosionVfxInterval 간격으로 "톡 톡 톡 톡" 터지며,
+    /// 터질 때마다 폭발 피해를 터지는 횟수로 나눠 범위 안 나무에 준다.
+    /// 시작 지연은 연쇄 폭발로 여러 그루가 같은 프레임에 터질 때 VFX와 폭발음이 한 순간에 겹치는 것을 흩어 놓기 위함이다.
+    /// </summary>
+    private IEnumerator ShieldExplosionRoutine(TreeObj _source)
     {
-        if (_source == null) yield break;
+        int version = shieldExplosionVersion;
 
+        // 지연·연타 도중 원본 나무가 쓰러져 풀로 돌아가거나 다른 자리에 재사용될 수 있으므로 위치는 지금 잡아 둔다.
         Vector3 bottomPos = _source.transform.position;
         Vector3 topPos = _source.treeVisualComponent != null ? _source.treeVisualComponent.GetTopRootPosition() : bottomPos;
 
+        float damage = baseShieldExplosionDamage * Mathf.Max(0f, shieldExplosionDamageMultiplier);
+        float range = BaseShieldExplosionRange * Mathf.Max(0f, shieldExplosionRangeMultiplier);
+
         int count = UnityEngine.Random.Range(SporeExplosionVfxMinCount, SporeExplosionVfxMaxCount + 1);
+        float damagePerPop = damage / count;
+
+        // 최소 한 프레임은 반드시 기다린다. 연쇄 폭발(TakeDamage -> ShieldBrokenEvent -> TriggerShieldExplosion)이
+        // 바깥 폭발의 판정 루프 안에서 동기로 다시 들어오지 않고 다음 프레임 이후로 흩어진다.
+        float startDelay = UnityEngine.Random.Range(0f, SporeExplosionStartDelayMax);
+        do
+        {
+            yield return null;
+            startDelay -= Time.deltaTime;
+        }
+        while (startDelay > 0f);
+
         bool nextTopLeft = UnityEngine.Random.value < 0.5f;
         bool nextBottomLeft = UnityEngine.Random.value < 0.5f;
+        bool bHapticPlayed = false;
 
         for (int i = 0; i < count; i++)
         {
+            // 지연·연타 도중 나무가 전부 정리됐다면(던전 이탈/런 종료) 다음 맵의 나무를 때리지 않고 끝낸다.
+            if (version != shieldExplosionVersion) yield break;
+
             bool useTop = i % 2 == 0;
             Vector3 basePos = useTop ? topPos : bottomPos;
             bool useLeft = useTop ? nextTopLeft : nextBottomLeft;
@@ -2450,8 +2538,62 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             // 폭발 VFX가 SporeExplosionVfxInterval 간격으로 "타타탕" 연달아 터지므로, 터질 때마다 그 자리에서 한 번씩 울린다.
             Sound.Play(SoundID.SporeExplosion, basePos + randomOffset);
 
-            yield return sporeExplosionVfxWait;
+            // 진동은 폭발 한 번당 한 번 - 무언가를 처음 맞힌 타격에서만 울리고, 나머지 연타는 사운드/이펙트만 낸다.
+            if (ApplyShieldExplosionDamage(_source, bottomPos, range, damagePerPop, false == bHapticPlayed))
+            {
+                bHapticPlayed = true;
+            }
+
+            if (i < count - 1)
+            {
+                yield return sporeExplosionVfxWait;
+            }
         }
+    }
+
+    // 포자막 폭발 한 번 터질 때의 피해 판정. 원본 나무 자리(_centerPos) 기준 등각 타원 범위 안의 나무를 때린다.
+    // 터질 때마다 다시 조회하므로 앞선 타격에 쓰러진 나무는 빠지고(bCanApplyDamage), 원본 나무는 계속 제외된다.
+    // 한 그루라도 맞혔으면 true. 같은 타격 안에서 여러 그루가 진동을 내도 Rumble이 한 사건으로 묶는다.
+    private bool ApplyShieldExplosionDamage(TreeObj _source, Vector3 _centerPos, float _range, float _damage, bool _bPlayHaptic)
+    {
+        if (CollisionSystem.Instance == null) return false;
+
+        bool bHitAny = false;
+
+        // 판정 루프 안에서 다른 폭발·별똥별 판정이 끼어들어도 공유 버퍼가 덮어써지지 않도록 호출마다 풀에서 리스트를 빌려 쓴다.
+        List<IStaticCollidable> scanResults = RentExplosionScanList();
+        // 이번 타격으로 쓰러지는 나무들의 타일맵 쓰기를 루프가 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
+        TreeTileWriteBatch.Begin();
+        try
+        {
+            CollisionSystem.Instance.GetCollidablesInRadius(_centerPos, _range, treeLayerForExplosion.value, scanResults);
+
+            float rangeSq = _range * _range;
+
+            for (int i = 0; i < scanResults.Count; i++)
+            {
+                if (scanResults[i] is TreeObj tree && tree != _source && tree.bCanApplyDamage)
+                {
+                    Vector3 targetPos = tree.transform.position;
+                    float dx = targetPos.x - _centerPos.x;
+                    float dy = (targetPos.y - _centerPos.y) * 2f; // 등각 타원 보정 (ShockWave와 동일 공식)
+                    float isoDistSq = dx * dx + dy * dy;
+
+                    if (isoDistSq <= rangeSq)
+                    {
+                        tree.TakeDamage(_damage, _bPlayHaptic);
+                        bHitAny = true;
+                    }
+                }
+            }
+        }
+        finally
+        {
+            TreeTileWriteBatch.End();
+            ReturnExplosionScanList(scanResults);
+        }
+
+        return bHitAny;
     }
 
     // 과열 강화된 ShockWave가 나무를 때리면 TreeObj.TreeOverheatExplosionEvent를 통해 호출된다.

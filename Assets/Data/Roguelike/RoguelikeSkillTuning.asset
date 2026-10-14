@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1034728d166b88a42933e2be86badff7, type: 3}
+  m_Name: RoguelikeSkillTuning
+  m_EditorClassIdentifier: Assembly-CSharp::RoguelikeSkillTuningSO
+  offroadInterval: 6
+  offroadSpeed: 14
+  offroadHitRadius: 0.9
+  offroadDamage: 60
+  offroadWarmup: 0.4
+  stellaBaseChance: 5
+  stellaBaseMaxStars: 3
+  stellaStarLifetime: 12
+  stellaBlastRadius: 2.2
+  stellaBlastDamage: 80
+  stellaMarkDuration: 6
+  sporeInterval: 4
+  sporeTargetRange: 7
+  sporeRadius: 1.6
+  sporeDuration: 4
+  sporeTickInterval: 0.5
+  sporeTickDamage: 12
+  spinShockwaveSwingInterval: 3
+  boomerangShockwaveCooldown: 0
+  boomerangShockwaveMergeRadius: 0.6
+  spinBoomerangRadius: 2.2
+  spinBoomerangDamageMultiplier: 1
+  spinBoomerangCooldown: 0
+  stellaSporeDotDamage: 10
+  stellaSporeDotInterval: 0.5
+  stellaSporeExplosionRadius: 1.6
+  stellaSporeExplosionDamage: 40
+  stellaSporeMaxExplosionsPerFrame: 8
+  stellaDroneBeamInterval: 1.2
+  stellaDroneBeamWidth: 0.6
+  stellaDroneBeamDamage: 40
+  stellaDroneNovaStars: 9
+  stellaDroneNovaRadius: 6
+  stellaDroneNovaDamage: 600
+  stellaDroneLoneStarInterval: 1.5
+  stellaDroneLoneStarRadius: 1.5

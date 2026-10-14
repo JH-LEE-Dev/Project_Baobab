@@ -1,0 +1,161 @@
+// 로그라이크 모드 코어 타입 모음.
+//
+// 이 폴더(Baobab.Roguelike 어셈블리)는 본편 게임 코드(Assembly-CSharp)를 참조하지 않는다.
+// 카드·가격·제시·압박 판정·웨이브·기록처럼 "규칙"만 담고, 실제 게임 오브젝트를 움직이는 일은
+// RoguelikeSystem 폴더의 연동 코드가 맡는다. 그래서 규칙은 EditMode 테스트로 단독 검증할 수 있다.
+//
+// [직렬화 주의] 아래 enum은 ScriptableObject/기록 파일에 정수로 저장된다. 값을 끼워 넣거나 순서를
+// 바꾸면 이미 만든 카드 에셋과 기록이 다른 의미로 읽힌다. 새 항목은 반드시 맨 뒤에 추가한다.
+
+/// <summary>카드 종류. 기획서 3-3 "카드 종류와 태그".</summary>
+public enum ECardKind
+{
+    Active = 0,
+    Passive = 1,
+    Ruby = 2,
+    Prism = 3,
+}
+
+/// <summary>
+/// 기획자가 직접 지정하는 등급. 에메랄드는 구매 시점에 자동으로 붙는 표시 등급이라 여기에 없다.
+/// 프리즘 카드는 종류(ECardKind.Prism)로 판별하므로 이 값은 가격표 조회에만 쓴다.
+/// </summary>
+public enum ECardGrade
+{
+    Bronze = 0,
+    Silver = 1,
+    Gold = 2,
+    Ruby = 3,
+    Prism = 4,
+}
+
+/// <summary>카드 UI가 실제로 그리는 등급. 기획서 3-3 "카드 등급".</summary>
+public enum ECardDisplayGrade
+{
+    Bronze = 0,
+    Silver = 1,
+    Gold = 2,
+    Emerald = 3,
+    Prism = 4,
+    Ruby = 5,
+}
+
+/// <summary>
+/// 액티브 카드의 내부 태그. 카드 이름과 무관하게 시스템은 이 태그로만 스킬을 찾는다(기획서 3-3 "태그 규칙").
+/// None은 "특정 스킬이 아닌 전역 효과"를 뜻하는 데도 쓴다.
+/// </summary>
+public enum ERoguelikeSkill
+{
+    None = 0,
+    Offroad = 1,
+    Spin = 2,
+    Shockwave = 3,
+    Drone = 4,
+    Boomerang = 5,
+    Stella = 6,
+    SporeBomb = 7,
+}
+
+/// <summary>조합 카드(프리즘) 종류. 기획서 3-3 "조합 카드(프리즘) 5종".</summary>
+public enum ERoguelikeCombo
+{
+    None = 0,
+    SpinShockwave = 1,
+    BoomerangShockwave = 2,
+    SpinBoomerang = 3,
+    StellaSpore = 4,
+    StellaDrone = 5,
+}
+
+/// <summary>
+/// 카드 한 레벨이 주는 효과의 종류. CardEffectEntry.skill이 None이면 전역, 아니면 그 스킬에만 적용한다.
+/// 수치의 단위는 항목마다 주석에 적었다. 같은 항목은 보유 카드 전체에서 단순 합산된다.
+/// </summary>
+public enum ERunEffect
+{
+    /// <summary>스킬 획득. skill 필수, value는 쓰지 않는다(0보다 크면 획득).</summary>
+    UnlockSkill = 0,
+    /// <summary>피해량 증가(%). skill=None이면 도끼와 모든 스킬.</summary>
+    DamagePercent = 1,
+    /// <summary>공격 속도(%). skill=None이면 도끼와 모든 스킬의 발동 주기.</summary>
+    AttackSpeedPercent = 2,
+    /// <summary>범위(%).</summary>
+    RangePercent = 3,
+    /// <summary>지속 시간(%).</summary>
+    DurationPercent = 4,
+    /// <summary>도트 피해(%).</summary>
+    DotDamagePercent = 5,
+    /// <summary>동시 발동 수(개수 가산). 드론 수, 부메랑 수, 별 최대 개수 등.</summary>
+    CountAdd = 6,
+    /// <summary>발동 확률(%p 가산). 충격파 발동 확률, 별 생성 확률 등.</summary>
+    ChancePercent = 7,
+    /// <summary>타격 횟수 기반 스킬의 필요 타격 수 가감(정수). 회전베기 n번 타격 등. 음수면 더 자주 발동.</summary>
+    TriggerHitCountAdd = 8,
+    /// <summary>연쇄 횟수(개수 가산). 드론 체인 라이트닝 등.</summary>
+    ChainCountAdd = 9,
+    /// <summary>재사용 대기 감소(%).</summary>
+    CooldownReductionPercent = 10,
+    /// <summary>다중 타격. 0보다 크면 켜진다.</summary>
+    MultiHit = 11,
+    /// <summary>이동 속도(%).</summary>
+    MoveSpeedPercent = 12,
+    /// <summary>웨이브 클리어마다 스태미너 회복(절대값).</summary>
+    StaminaRecoverPerWave = 13,
+    /// <summary>최대 스태미너(절대값 가산). 현재 스태미너도 같이 오른다.</summary>
+    MaxStaminaAdd = 14,
+    /// <summary>최대 스태미너(%). 유리 대포 같은 감소는 음수.</summary>
+    MaxStaminaPercent = 15,
+    /// <summary>임계치 초과 후 첫 피해까지의 유예 시간(초 가산).</summary>
+    GraceTimeAdd = 16,
+    /// <summary>반복 피해 간격(초 가산).</summary>
+    DamageCooldownAdd = 17,
+    /// <summary>나무가 떨어뜨리는 골드(%).</summary>
+    GoldGainPercent = 18,
+    /// <summary>임계치 T(정수 가산). 인내의 시간은 음수.</summary>
+    ThresholdAdd = 19,
+    /// <summary>카드 가격(%). 바겐 세일은 -50, VIP 회원권은 양수.</summary>
+    CardPricePercent = 20,
+    /// <summary>리롤 금지. 0보다 크면 켜진다.</summary>
+    RerollDisabled = 21,
+    /// <summary>리롤 무료. 0보다 크면 켜진다.</summary>
+    RerollFree = 22,
+    /// <summary>나무 생성 주기(%). 루비 디메리트용. 양수면 더 자주 생긴다.</summary>
+    TreeSpawnRatePercent = 23,
+
+    // 새 효과는 이 위가 아니라 여기(맨 뒤)에 추가한다.
+    Count,
+}
+
+/// <summary>런 진행 상태. 기획서 7장 "런 상태 흐름"의 표와 1:1로 대응한다.</summary>
+public enum ERunPhase
+{
+    None = 0,
+    Lobby = 1,
+    RunStarting = 2,
+    CardSelect = 3,
+    TierTransition = 4,
+    WaveCombat = 5,
+    WaveClear = 6,
+    RunClear = 7,
+    GameOver = 8,
+    Result = 9,
+    ReturningToLobby = 10,
+}
+
+/// <summary>임계치 피해 판정 상태. 기획서 3-2 "피해 판정 흐름".</summary>
+public enum EPressureState
+{
+    /// <summary>나무 수가 T 미만. 피해 없음.</summary>
+    Safe = 0,
+    /// <summary>T 이상이 되어 유예 타이머가 흐르는 중.</summary>
+    Grace = 1,
+    /// <summary>첫 피해 이후 T 이상 유지. 쿨다운마다 반복 피해.</summary>
+    Damaging = 2,
+}
+
+/// <summary>런이 끝난 방식.</summary>
+public enum ERunEndReason
+{
+    GameOver = 0,
+    Abandoned = 1,
+}

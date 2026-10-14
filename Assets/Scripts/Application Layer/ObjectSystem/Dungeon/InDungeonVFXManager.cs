@@ -38,6 +38,13 @@ public class InDungeonVFXManager : MonoBehaviour
 
     private IObjectPool<TreeStarMarkGroundAnimator> treeStarMarkGroundPool;
 
+    /// <summary>
+    /// [로그라이크] 땅 별 그림 중심이 스폰 위치에서 떨어진 거리(프리팹의 visualLocalOffset, 흔들림 제외). 별 중심끼리 선을 이을 때 쓴다.
+    /// 읽기 전용이라 본편 동작에는 영향이 없다.
+    /// </summary>
+    public Vector3 ConstellationGroundMarkVisualOffset =>
+        null != treeStarMarkGroundPrefab ? treeStarMarkGroundPrefab.VisualWorldPosition - treeStarMarkGroundPrefab.transform.position : Vector3.zero;
+
     // 그룹(별자리)별로 아직 발현되지 않아 살아있는 그라운드 마크 인스턴스들을 추적한다.
     private readonly Dictionary<int, List<TreeStarMarkGroundAnimator>> activeGroundMarksByGroup = new Dictionary<int, List<TreeStarMarkGroundAnimator>>();
     // 발현이 끝나 사전에서 빠진 그룹 리스트를 모아 뒀다가 새 groupId에 재사용한다(그룹마다 새 List를 만들지 않는다).
@@ -650,20 +657,43 @@ public class InDungeonVFXManager : MonoBehaviour
     {
         if (treeStarMarkGroundPool == null) return;
 
+        TreeStarMarkGroundAnimator _instance = SpawnConstellationGroundMark(_position, _sortingOrder, _groupId, false);
+        PlayStarAppearAura(_instance);
+        AddGroundMarkToGroup(_instance, _groupId);
+    }
+
+    /// <summary>땅 별 하나를 풀에서 꺼내 자리·정렬·그룹을 맞추고 재생을 시작한다(_bLanded면 등장 연출 없이 내려앉은 모습으로).</summary>
+    private TreeStarMarkGroundAnimator SpawnConstellationGroundMark(Vector3 _position, int _sortingOrder, int _groupId, bool _bLanded)
+    {
         TreeStarMarkGroundAnimator _instance = treeStarMarkGroundPool.Get();
         _instance.transform.position = _position;
         _instance.SetSortingOrder(_sortingOrder);
         _instance.SetGroupId(_groupId);
-        _instance.Play();
+        if (_bLanded) _instance.PlayLandedForRun();
+        else _instance.Play();
+        return _instance;
+    }
 
-        PlayStarAppearAura(_instance);
-
+    private void AddGroundMarkToGroup(TreeStarMarkGroundAnimator _instance, int _groupId)
+    {
         if (!activeGroundMarksByGroup.TryGetValue(_groupId, out List<TreeStarMarkGroundAnimator> _list))
         {
             _list = 0 < spareGroundMarkLists.Count ? spareGroundMarkLists.Pop() : new List<TreeStarMarkGroundAnimator>();
             activeGroundMarksByGroup[_groupId] = _list;
         }
         _list.Add(_instance);
+    }
+
+    /// <summary>
+    /// [로그라이크 전용] PlayConstellationGroundMarkVFX와 같지만 등장 연출·등장 오라 없이 이미 내려앉은 모습으로 놓는다.
+    /// 나무 정리(ClearTrees)가 땅 별을 일괄 회수한 뒤, 웨이브를 넘어 남은 로그라이크 별을 다시 그릴 때 쓴다. 본편에서는 호출되지 않는다.
+    /// </summary>
+    public void PlayConstellationGroundMarkLandedForRun(Vector3 _position, int _sortingOrder, int _groupId)
+    {
+        if (treeStarMarkGroundPool == null) return;
+
+        TreeStarMarkGroundAnimator _instance = SpawnConstellationGroundMark(_position, _sortingOrder, _groupId, true);
+        AddGroundMarkToGroup(_instance, _groupId);
     }
 
     /// <summary>
@@ -938,7 +968,25 @@ public class InDungeonVFXManager : MonoBehaviour
 
         dottedLineGroups[_groupId] = _group;
 
-        if (bConstellationDottedLinesVisible) ShowDottedLine(_group);
+        if (bConstellationDottedLinesVisible || alwaysVisibleDottedLineGroups.Contains(_groupId)) ShowDottedLine(_group);
+    }
+
+    // [로그라이크] "별자리 발현" 특성과 무관하게 늘 보이는 점선 그룹(로그라이크 스텔라 별 이음선). 본편은 아무것도 넣지 않아
+    // 비어 있으므로 본편 점선의 표시 규칙은 예전과 같다.
+    private readonly HashSet<int> alwaysVisibleDottedLineGroups = new HashSet<int>();
+
+    /// <summary>
+    /// [로그라이크 전용] 특성 표시 여부(SetConstellationDottedLinesVisible)와 무관하게 늘 보이는 점선을 등록한다.
+    /// 전체 표시 여부를 바꾸면 같은 필드의 본편 별자리 점선까지 켜지거나 꺼지므로 그룹 단위로 둔다. 거둘 때는 RemoveConstellationDottedLine.
+    /// </summary>
+    public void RegisterConstellationDottedLineAlwaysVisibleForRun(int _groupId, IReadOnlyList<Vector3> _points)
+    {
+        // 등록이 같은 그룹의 이전 등록을 먼저 거두므로(그때 표시 목록에서도 빠진다), 등록한 뒤에 표시 목록에 넣고 보인다.
+        RegisterConstellationDottedLine(_groupId, _points);
+        if (false == dottedLineGroups.TryGetValue(_groupId, out DottedLineGroup _group)) return;
+
+        alwaysVisibleDottedLineGroups.Add(_groupId);
+        ShowDottedLine(_group);
     }
 
     /// <summary>
@@ -978,6 +1026,7 @@ public class InDungeonVFXManager : MonoBehaviour
         if (!dottedLineGroups.TryGetValue(_groupId, out DottedLineGroup _group)) return;
 
         dottedLineGroups.Remove(_groupId);
+        alwaysVisibleDottedLineGroups.Remove(_groupId);
         HideDottedLine(_group);
         spareDottedLineGroups.Push(_group);
     }
@@ -990,10 +1039,10 @@ public class InDungeonVFXManager : MonoBehaviour
         if (bConstellationDottedLinesVisible == _visible) return;
         bConstellationDottedLinesVisible = _visible;
 
-        foreach (DottedLineGroup _group in dottedLineGroups.Values)
+        foreach (KeyValuePair<int, DottedLineGroup> _pair in dottedLineGroups)
         {
-            if (_visible) ShowDottedLine(_group);
-            else HideDottedLine(_group);
+            if (_visible) ShowDottedLine(_pair.Value);
+            else if (false == alwaysVisibleDottedLineGroups.Contains(_pair.Key)) HideDottedLine(_pair.Value);
         }
     }
 
@@ -1009,6 +1058,7 @@ public class InDungeonVFXManager : MonoBehaviour
             spareDottedLineGroups.Push(_group);
         }
         dottedLineGroups.Clear();
+        alwaysVisibleDottedLineGroups.Clear();
     }
 
     private void ShowDottedLine(DottedLineGroup _group)

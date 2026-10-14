@@ -210,6 +210,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89b0620edf299d84eab26dc6d4fe909f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameInstaller
+  roguelikeSystemPrefab: {fileID: 6556785899967430927, guid: 0decb8ce9f6f89741b55a41460f170d0, type: 3}
 --- !u!114 &34867441274785128
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2639,6 +2640,11 @@ MonoBehaviour:
   - {fileID: 3010344662233434431, guid: 49598863ab55d30479b17c3e77cb1510, type: 3}
   - {fileID: 2290007335703501642, guid: 0881de5baa698ad4bae64ae1558ae593, type: 3}
   - {fileID: 1001551444749008, guid: 8431aa96e2f19cdc871c0bcab1e09e9e, type: 3}
+  - {fileID: 1441700753121314982, guid: bce080b463b462d488af255457175f93, type: 3}
+  - {fileID: 4901171589092241585, guid: bd53942b5fcb5594c857c1bf09b67b8b, type: 3}
+  - {fileID: 1859813504115818871, guid: d73c6e98d182ed74696b75c5896b7e68, type: 3}
+  - {fileID: 2090445495839535509, guid: 122d271bb3b38d544adb4340c754d1b5, type: 3}
+  - {fileID: 1145271225478838375, guid: b1626051da8aa744fb17c1a0462a209a, type: 3}
 --- !u!114 &6498721921695947709
 MonoBehaviour:
   m_ObjectHideFlags: 0

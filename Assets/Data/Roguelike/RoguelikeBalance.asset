@@ -1,0 +1,122 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94abd3be6108ed447bca80d39d6980bf, type: 3}
+  m_Name: RoguelikeBalance
+  m_EditorClassIdentifier: Baobab.Roguelike::RoguelikeBalanceSO
+  clearWave: 30
+  waves:
+  - killTarget: 60
+    spawnInterval: 0.5
+  - killTarget: 70
+    spawnInterval: 0.475
+  - killTarget: 80
+    spawnInterval: 0.45125
+  - killTarget: 90
+    spawnInterval: 0.42868748
+  - killTarget: 100
+    spawnInterval: 0.40725312
+  - killTarget: 110
+    spawnInterval: 0.38689044
+  - killTarget: 120
+    spawnInterval: 0.36754593
+  - killTarget: 130
+    spawnInterval: 0.34916863
+  - killTarget: 140
+    spawnInterval: 0.3317102
+  - killTarget: 150
+    spawnInterval: 0.31512466
+  - killTarget: 160
+    spawnInterval: 0.29936844
+  - killTarget: 170
+    spawnInterval: 0.28440002
+  - killTarget: 180
+    spawnInterval: 0.27018002
+  - killTarget: 190
+    spawnInterval: 0.256671
+  - killTarget: 200
+    spawnInterval: 0.24383745
+  - killTarget: 210
+    spawnInterval: 0.23164557
+  - killTarget: 220
+    spawnInterval: 0.22006328
+  - killTarget: 230
+    spawnInterval: 0.20906012
+  - killTarget: 240
+    spawnInterval: 0.19860712
+  - killTarget: 250
+    spawnInterval: 0.18867676
+  - killTarget: 260
+    spawnInterval: 0.17924291
+  - killTarget: 270
+    spawnInterval: 0.17028077
+  - killTarget: 280
+    spawnInterval: 0.12
+  - killTarget: 290
+    spawnInterval: 0.12
+  - killTarget: 300
+    spawnInterval: 0.12
+  - killTarget: 310
+    spawnInterval: 0.12
+  - killTarget: 320
+    spawnInterval: 0.12
+  - killTarget: 330
+    spawnInterval: 0.12
+  - killTarget: 340
+    spawnInterval: 0.12
+  - killTarget: 350
+    spawnInterval: 0.12
+  tiers:
+  - startWave: 1
+    treeHpMultiplier: 1
+    staminaDamage: 3
+    goldPerTree: 1
+  - startWave: 8
+    treeHpMultiplier: 2.5
+    staminaDamage: 6
+    goldPerTree: 2
+  - startWave: 16
+    treeHpMultiplier: 6
+    staminaDamage: 10
+    goldPerTree: 3
+  - startWave: 23
+    treeHpMultiplier: 12
+    staminaDamage: 15
+    goldPerTree: 4
+  threshold: 40
+  spawnExtra: 20
+  maxStamina: 100
+  graceTime: 5
+  damageCooldown: 3
+  maxGraceTime: 15
+  maxDamageCooldown: 10
+  minThreshold: 5
+  unlimitHpGrowthPerWave: 0.1
+  gradeBasePrices: 2800000078000000fa000000b40000002c010000
+  upgradePriceStep: 0.5
+  offerCount: 3
+  affordableGuaranteeCount: 2
+  guaranteedSlotCap: 2
+  firstPickFree: 1
+  firstPickBronzeOnly: 1
+  firstPickActiveOnly: 0
+  firstPickSkippable: 0
+  baseWeight: 1
+  upgradeWeightBonus: 1
+  partnerStartLevel: 2
+  partnerWeightBonus: 1
+  maxWeightMultiplier: 4
+  forcePartnerWhenMaterialMax: 1
+  rerollBaseCost: 20
+  rerollCostMode: 0
+  rerollCostStep: 10
+  rerollCostMultiplier: 1.5
+  rerollCostCap: 0

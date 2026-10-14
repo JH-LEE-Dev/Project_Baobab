@@ -1,0 +1,233 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1712804082368470783
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 875531906783215717}
+  - component: {fileID: 6556785899967430927}
+  m_Layer: 0
+  m_Name: RoguelikeSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &875531906783215717
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1712804082368470783}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4288234449750598085}
+  - {fileID: 6180059648262654385}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6556785899967430927
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1712804082368470783}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a43bb53c1c9e63144b27bb01a8570be1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RoguelikeSystem
+  balance: {fileID: 11400000, guid: eba828812e788a449aa9b07c69383f2a, type: 2}
+  cardDatabase: {fileID: 11400000, guid: 3f1e3b902c6f1cf4b807267d9ffdf96c, type: 2}
+  waveStrategyTemplate: {fileID: 11400000, guid: d03f88b67ae3d59479212336cd42f833, type: 2}
+  tierFields:
+  - mapType: 2
+    forestType: 2
+  - mapType: 3
+    forestType: 5
+  - mapType: 4
+    forestType: 8
+  - mapType: 5
+    forestType: 11
+  islandReferenceViewSize: {x: 20, y: 11.25}
+  islandEdgeWaterTiles: 1
+  centerSafeZoneRadius: 2
+  tileWaveSettings:
+    frontSpeed: 14
+    rippleHeight: 0.22
+    rippleWavelength: 6
+    rippleWaves: 1.5
+    rippleShade: 0.3
+    entryCompleteSeconds: 3
+    backgroundAssembleSeconds: 1.2
+    backgroundPieceFadeSeconds: 0.3
+    backgroundPieceCells: 3
+    viewMarginTiles: 2
+  screenTransitionSettings:
+    distortSeconds: 0.7
+    distortStrength: 0.05
+    distortWaves: 3
+    distortSpeed: 9
+    blackoutSeconds: 0.35
+    fadeInSeconds: 0.5
+    minBlackHoldSeconds: 0.8
+  characterDropHeight: 7
+  characterDropSeconds: 0.45
+  startRunObjectPrefab: {fileID: 2284844287117466035, guid: 2bc6ac8a89e050246b56d5bfdd7b12fc, type: 3}
+  recordsObjectPrefab: {fileID: 2601570253084400613, guid: 9cbbf21ca74a77b48b23c351639218a0, type: 3}
+  startRunObjectOffset: {x: 2.5, y: 1}
+  recordsObjectOffset: {x: -2.5, y: 1}
+  lobbyObjectLayer:
+    serializedVersion: 2
+    m_Bits: 1024
+  coinController: {fileID: 2181464918765488033}
+  coinHudFallbackViewport: {x: 0.375, y: 0.1}
+  skillController: {fileID: 6092421280983671155}
+  bAttackSpeedAffectsAxe: 1
+  baseWhirlwindSwingInterval: 3
+  waveClearSaplingVanishSeconds: 0.6
+  runClearZoomMultiplier: 2
+  runClearZoomInSeconds: 0.25
+  runClearSlowTimeScale: 0.25
+  runClearSlowSeconds: 1.2
+  runClearZoomOutSeconds: 0.6
+  fallbackLobbyEntrySeconds: 0.3
+  fallbackTierTransitionSeconds: 0.5
+  fallbackWaveClearSeconds: 0.6
+  fallbackRunClearSeconds: 1
+  fallbackResultToLobbySeconds: 0.2
+  fallbackLobbyToRunSeconds: 0
+  maxProductionWaitSeconds: 15
+  maxCardPresentationWaitSeconds: 10
+  maxCharacterDownWaitSeconds: 5
+  exitToMainMenuSeconds: 1
+--- !u!1 &4371363598458042333
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6180059648262654385}
+  - component: {fileID: 6092421280983671155}
+  m_Layer: 0
+  m_Name: SkillController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6180059648262654385
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4371363598458042333}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 875531906783215717}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6092421280983671155
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4371363598458042333}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbb4fd8d9dca0b14bb51c4ce7262c27c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RoguelikeSkillController
+  tuning: {fileID: 11400000, guid: bfa43b3cae7fee64db7e53651d7d0376, type: 2}
+  starPrefab: {fileID: 4360704163459888742, guid: 4f668281ba1659e4998a5a4b6ebceb8c, type: 3}
+  offroadVisualPrefab: {fileID: 4371024258450697951, guid: df53fe4cf2106ea4ca6a7dcaf529bf04, type: 3}
+  treeLayer:
+    serializedVersion: 2
+    m_Bits: 1024
+  vfxAssets:
+    whirlwindFrames:
+    - {fileID: -5408193984500294317, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    - {fileID: -7408280920834179055, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    - {fileID: 1757503365097481093, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    - {fileID: 8909519306989496007, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    - {fileID: -6337279227023466627, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    - {fileID: -629048883709668978, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    - {fileID: 7538441034235752720, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    - {fileID: -5038717723868688837, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+    sporeBombSprite: {fileID: -6607146022748454015, guid: 8750e7ebdd334a04699246440e575215, type: 3}
+    sporeBombThrowSeconds: 0.45
+    sporeBombArcHeight: 1.6
+    sporeZonePuffInterval: 0.3
+    droneLaserPrefab: {fileID: 9005663251761334064, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
+--- !u!1 &6618881184997116136
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4288234449750598085}
+  - component: {fileID: 2181464918765488033}
+  m_Layer: 0
+  m_Name: CoinController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4288234449750598085
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6618881184997116136}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 875531906783215717}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2181464918765488033
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6618881184997116136}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6bf43e10fe38a44e8b7ccb7d3c9b588, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunCoinController
+  coinPrefab: {fileID: 417739405033273962, guid: 6613ff82bc4440147aa353651349487f, type: 3}
+  maxCoinObjectsPerTree: 3
+  groundAlpha: 0.2
+  scatterRadius: 0.8
+  alphaRestoreSeconds: 0.25
+  absorbStagger: 0.008
+  absorbTimeout: 4
+  poolDefaultCapacity: 256
+  coinGetCooldown: 0.04
+  coinPitchResetDelay: 0.2
+  coinPitchStep: 0.05
+  coinPitchMax: 1.5

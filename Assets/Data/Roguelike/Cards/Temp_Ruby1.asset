@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7cf8c99cf50507244a0f3d975df109e7, type: 3}
+  m_Name: Temp_Ruby1
+  m_EditorClassIdentifier: Baobab.Roguelike::CardDefinitionSO
+  cardId: temp_ruby_1
+  nameKey: Roguelike_Temp_Ruby1
+  descriptionKey: Roguelike_Temp_Ruby1_Desc
+  icon: {fileID: 0}
+  kind: 2
+  grade: 3
+  skillTag: 0
+  exclusiveGroup: 0
+  maxLevel: 5
+  levels:
+  - effects:
+    - effect: 12
+      skill: 0
+      value: -30
+    - effect: 3
+      skill: 0
+      value: 20
+  basePriceOverride: 0
+  comboMaterialA: {fileID: 0}
+  comboMaterialB: {fileID: 0}
+  comboType: 0
+  suppressedSkills: 
+  designerNote: "\uAE30\uD68D\uC11C 10\uC7A5 \uC784\uC2DC \uCE74\uB4DC. \uC2E4\uC81C
+    \uCE74\uB4DC\uAC00 \uB098\uC624\uBA74 \uC0AD\uC81C. \uC774\uB3D9\uC18D\uB3C4
+    -30% / \uBAA8\uB4E0 \uACF5\uACA9 \uBC94\uC704 +0.2(= +20%\uB85C \uD574\uC11D)."
