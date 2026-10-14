@@ -210,6 +210,15 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
+                    ""name"": ""Dash"",
+                    ""type"": ""Button"",
+                    ""id"": ""8f2d6b14-3c7e-4a59-b1d0-6e4f9a2c7b38"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
                     ""name"": ""Aim"",
                     ""type"": ""Value"",
                     ""id"": ""3c1f5b7a-9d24-4e18-b6c0-5a2e7f0d1b93"",
@@ -311,7 +320,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""b5989888-3240-4e6e-8c3f-3d1972be7f5a"",
-                    ""path"": ""<Keyboard>/space"",
+                    ""path"": ""<Keyboard>/tab"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -388,7 +397,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""5b64aba9-6d27-48d8-a40f-7a0a3119d743"",
-                    ""path"": ""<Keyboard>/q"",
+                    ""path"": """",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -399,11 +408,22 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""b1d94e27-3af5-45c0-8e19-6c72d0af5e14"",
-                    ""path"": ""<Keyboard>/tab"",
+                    ""path"": ""<Keyboard>/q"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""LogSwap"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""2a7c5e91-4b3d-4f86-9e0a-7d1c3b5f8e24"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Dash"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -509,7 +529,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""4eb17259-cf8a-4036-e5db-71a26f34809c"",
-                    ""path"": ""<Gamepad>/buttonWest"",
+                    ""path"": """",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -525,6 +545,17 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""LogSwap"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""c6e1a8f3-5d27-4b90-8a4c-1f9e2d7b6a35"",
+                    ""path"": ""<Gamepad>/buttonWest"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Dash"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -866,6 +897,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         m_Normal_AimCorrection = m_Normal.FindAction("AimCorrection", throwIfNotFound: true);
         m_Normal_PotionKey = m_Normal.FindAction("PotionKey", throwIfNotFound: true);
         m_Normal_LogSwap = m_Normal.FindAction("LogSwap", throwIfNotFound: true);
+        m_Normal_Dash = m_Normal.FindAction("Dash", throwIfNotFound: true);
         m_Normal_Aim = m_Normal.FindAction("Aim", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
@@ -973,6 +1005,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
     private readonly InputAction m_Normal_AimCorrection;
     private readonly InputAction m_Normal_PotionKey;
     private readonly InputAction m_Normal_LogSwap;
+    private readonly InputAction m_Normal_Dash;
     private readonly InputAction m_Normal_Aim;
     /// <summary>
     /// Provides access to input actions defined in input action map "Normal".
@@ -1037,6 +1070,10 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Normal/LogSwap".
         /// </summary>
         public InputAction @LogSwap => m_Wrapper.m_Normal_LogSwap;
+        /// <summary>
+        /// Provides access to the underlying input action "Normal/Dash".
+        /// </summary>
+        public InputAction @Dash => m_Wrapper.m_Normal_Dash;
         /// <summary>
         /// Provides access to the underlying input action "Normal/Aim".
         /// </summary>
@@ -1106,6 +1143,9 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
             @LogSwap.started += instance.OnLogSwap;
             @LogSwap.performed += instance.OnLogSwap;
             @LogSwap.canceled += instance.OnLogSwap;
+            @Dash.started += instance.OnDash;
+            @Dash.performed += instance.OnDash;
+            @Dash.canceled += instance.OnDash;
             @Aim.started += instance.OnAim;
             @Aim.performed += instance.OnAim;
             @Aim.canceled += instance.OnAim;
@@ -1159,6 +1199,9 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
             @LogSwap.started -= instance.OnLogSwap;
             @LogSwap.performed -= instance.OnLogSwap;
             @LogSwap.canceled -= instance.OnLogSwap;
+            @Dash.started -= instance.OnDash;
+            @Dash.performed -= instance.OnDash;
+            @Dash.canceled -= instance.OnDash;
             @Aim.started -= instance.OnAim;
             @Aim.performed -= instance.OnAim;
             @Aim.canceled -= instance.OnAim;
@@ -1488,6 +1531,13 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnLogSwap(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Dash" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnDash(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "Aim" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>

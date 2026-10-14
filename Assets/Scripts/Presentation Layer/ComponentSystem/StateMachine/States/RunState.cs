@@ -166,9 +166,9 @@ public class RunState : CharacterState
     }
 
     /// <summary>
-    /// 일반 입력을 아이소매트릭 타일의 변 방향으로 변환합니다.
+    /// 일반 입력을 아이소매트릭 타일의 변 방향으로 변환합니다. (대시 방향도 같은 변환을 쓴다 - Character.GetDashDirection)
     /// </summary>
-    private Vector2 GetIsometricVector(Vector2 _input)
+    public static Vector2 GetIsometricVector(Vector2 _input)
     {
         // ISO X = (X - Y), ISO Y = (X + Y) * 0.5 (2:1 비율 반영)
         return new Vector2(_input.x, _input.y * 0.5f);

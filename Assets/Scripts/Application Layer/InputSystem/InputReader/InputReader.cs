@@ -37,10 +37,16 @@ public class InputReader
     public event Action PotionKeyPressedEvent;
 
     /// <summary>
-    /// 원목 교체 키(기본 Tab / 패드 Y)가 눌렸습니다. 실제로 교체가 가능한 상황인지, 인벤토리가
+    /// 원목 교체 키(기본 Q / 패드 Y)가 눌렸습니다. 실제로 교체가 가능한 상황인지, 인벤토리가
     /// 열려 있는지는 받는 쪽(GameplayUICoordinator)이 판단합니다.
     /// </summary>
     public event Action LogSwapKeyPressedEvent;
+
+    /// <summary>
+    /// 대시 키(기본 Space / 패드 X)가 눌렸습니다. 대시를 쓸 수 있는 상황인지(전리품 보유, 쿨타임,
+    /// 캐릭터 상태)는 받는 쪽(Character)이 판단합니다.
+    /// </summary>
+    public event Action DashKeyPressedEvent;
 
     /// <summary>키 바인딩이 실제로 변경(리바인딩 완료/리셋)될 때 발생합니다. UI가 표시 문자열을 다시 조회하도록 알리는 용도입니다.</summary>
     public event Action KeyBindingsChangedEvent;
@@ -258,6 +264,7 @@ public class InputReader
             actions.Normal.Interaction.canceled += InteractionKeyCanceled;
             actions.Normal.PotionKey.performed += PotionKeyPressed;
             actions.Normal.LogSwap.performed += LogSwapKeyPressed;
+            actions.Normal.Dash.performed += DashKeyPressed;
 
             actions.Normal.Aim.performed += OnAim;
             actions.Normal.Aim.canceled += OnAim;
@@ -299,6 +306,7 @@ public class InputReader
         actions.Normal.Interaction.canceled -= InteractionKeyCanceled;
         actions.Normal.PotionKey.performed -= PotionKeyPressed;
         actions.Normal.LogSwap.performed -= LogSwapKeyPressed;
+        actions.Normal.Dash.performed -= DashKeyPressed;
 
         actions.Normal.Aim.performed -= OnAim;
         actions.Normal.Aim.canceled -= OnAim;
@@ -940,6 +948,12 @@ public class InputReader
         if (0 < inventoryLockOwners.Count)
             return;
 
+        // 인벤토리 기본 키가 Tab이라, Alt+Tab으로 창을 전환할 때 들어오는 Tab에 가방이 여닫히지 않게 한다.
+        // 인벤토리 키 자체를 Alt로 바꿔 둔 경우는 거르지 않는다(그 Alt 입력이 곧 인벤토리 키다).
+        if (context.control is KeyControl _key && _key.device is Keyboard _keyboard && true == _keyboard.altKey.isPressed
+            && Key.LeftAlt != _key.keyCode && Key.RightAlt != _key.keyCode)
+            return;
+
         // UI 모드(ESC 일시정지 메뉴, 내비게이션 팝업, 결과창, 특성 창 등이 떠 있는 구간)에서는
         // 인벤토리 키를 게임플레이 쪽으로 흘리지 않는다. 다른 게임플레이 키(상호작용/포션/공격)는
         // 모두 CanDispatchGameplay로 걸러지는데 인벤토리만 빠져 있어서, 메뉴 위로 가방이 겹쳐
@@ -1089,6 +1103,17 @@ public class InputReader
         if (false == CanDispatchGameplay) return;
 
         LogSwapKeyPressedEvent?.Invoke();
+    }
+
+    /// <summary>
+    /// 대시 키입니다. 원목 교체 키와 같은 이유로 게임플레이 입력이 살아 있는 구간에서만 전달합니다
+    /// (인벤토리 팝업은 UI 모드가 아니므로 가방을 연 채로도 대시할 수 있다).
+    /// </summary>
+    private void DashKeyPressed(InputAction.CallbackContext context)
+    {
+        if (false == CanDispatchGameplay) return;
+
+        DashKeyPressedEvent?.Invoke();
     }
 
     // 키 리바인딩
@@ -1558,13 +1583,73 @@ public class InputReader
         KeyBindingsChangedEvent?.Invoke();
     }
 
-    /// <summary>부팅 시 파일에 저장된 바인딩 오버라이드를 불러옵니다.</summary>
+    /// <summary>
+    /// 부팅 시 파일에 저장된 바인딩 오버라이드를 불러옵니다.
+    ///
+    /// 불러온 뒤 키 중복을 정리합니다. 저장은 중복이 있으면 막히므로(CommitEditSession) 파일 자체는 항상
+    /// 깨끗하지만, 기본 배치가 바뀌면 예전 오버라이드가 새 기본값과 겹칠 수 있습니다. 예를 들어 예전 배치에서
+    /// 인벤토리(Space)와 물약(Q)을 맞바꾼 유저는 "인벤토리 = Q" 오버라이드를 들고 있는데, 지금은 Q가 원목 교체의
+    /// 기본값입니다. 그대로 두면 두 액션이 같은 키에 반응하고, 키 설정을 저장할 수 없게 됩니다.
+    /// </summary>
     private void LoadKeyBindings()
     {
-        if (true == KeyBindingRepository.TryLoad(out string _json))
+        if (false == KeyBindingRepository.TryLoad(out string _json)) return;
+
+        actions.asset.LoadBindingOverridesFromJson(_json);
+
+        if (true == ResolveLoadedBindingConflicts())
         {
-            actions.asset.LoadBindingOverridesFromJson(_json);
+            KeyBindingRepository.Save(actions.asset.SaveBindingOverridesAsJson());
         }
+    }
+
+    /// <summary>
+    /// 불러온 오버라이드 중 서로 겹치는 액션의 오버라이드를 지워 기본값으로 되돌립니다. 하나라도 되돌렸으면 true입니다.
+    /// 기본 배치끼리는 겹치지 않으므로 반복하면 반드시 끝납니다(되돌린 기본값이 또 다른 오버라이드와 겹치면
+    /// 다음 바퀴에서 그쪽도 되돌린다). 겹치지 않는 다른 액션의 설정은 그대로 둡니다.
+    /// </summary>
+    private bool ResolveLoadedBindingConflicts()
+    {
+        bool _bChanged = false;
+
+        // 한 바퀴에 최소 한 액션은 기본값으로 돌아가므로 액션 수만큼이면 충분하다. 상한은 무한 루프 방지용이다.
+        for (int _pass = 0; _pass <= rebindableActions.Length; _pass++)
+        {
+            bool _bResetThisPass = false;
+
+            _bResetThisPass |= ResetConflictingOverrides(EInputDeviceType.KeyboardMouse);
+            _bResetThisPass |= ResetConflictingOverrides(EInputDeviceType.Gamepad);
+
+            if (false == _bResetThisPass) break;
+            _bChanged = true;
+        }
+
+        return _bChanged;
+    }
+
+    /// <summary>지정한 장치에서 중복 중인 액션의 오버라이드를 지웁니다. 실제로 지운 것이 있으면 true입니다.</summary>
+    private bool ResetConflictingOverrides(EInputDeviceType _device)
+    {
+        bool _bReset = false;
+
+        for (int i = 0; i < rebindableActions.Length; i++)
+        {
+            ERebindableAction _action = rebindableActions[i];
+            if (false == IsConflicting(_action, _device)) continue;
+            if (false == TryGetBindingTarget(_action, _device, out InputAction _inputAction, out int _bindingIndex)) continue;
+
+            // 이미 기본값인 쪽은 지울 것이 없다. 상대편(오버라이드를 가진 쪽)이 같은 바퀴에서 되돌아간다.
+            string _overridePath = _inputAction.bindings[_bindingIndex].overridePath;
+            if (true == string.IsNullOrEmpty(_overridePath)) continue;
+
+            _inputAction.RemoveBindingOverride(_bindingIndex);
+            _bReset = true;
+
+            // 유저가 직접 고른 키를 되돌리는 것이므로 무엇을 바꿨는지 남긴다(신고가 오면 추적할 수 있게).
+            Debug.LogWarning($"[InputReader] 저장된 키 설정이 다른 액션과 겹쳐 기본값으로 되돌렸습니다: {_action} ({_device}) {_overridePath} -> {_inputAction.bindings[_bindingIndex].effectivePath}");
+        }
+
+        return _bReset;
     }
 
     /// <summary>
@@ -1584,6 +1669,7 @@ public class InputReader
             case ERebindableAction.Attack: _inputAction = actions.Normal.Click; _bindingIndex = 0; break;
             case ERebindableAction.PotionKey: _inputAction = actions.Normal.PotionKey; _bindingIndex = 0; break;
             case ERebindableAction.LogSwap: _inputAction = actions.Normal.LogSwap; _bindingIndex = 0; break;
+            case ERebindableAction.Dash: _inputAction = actions.Normal.Dash; _bindingIndex = 0; break;
             default: throw new ArgumentOutOfRangeException(nameof(_action), _action, null);
         }
     }
