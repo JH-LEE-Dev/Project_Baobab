@@ -681,9 +681,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         for (int i = 0; i < allLines.Count; i++) allLines[i].Cutter.IncreaseCutSpeed(_amount);
     }
 
-    public void SetPowerSupply(bool _bPowerSupply)
+    public void SetPowerSupply(bool _bPowerSupply, float _multiplier)
     {
-        for (int i = 0; i < allLines.Count; i++) allLines[i].Cutter.SetPowerSupply(_bPowerSupply);
+        for (int i = 0; i < allLines.Count; i++) allLines[i].Cutter.SetPowerSupply(_bPowerSupply, _multiplier);
     }
 
     // ILogEvaluatorCH - 스킬 효과를 (비활성 포함) 모든 라인의 평가기에 브로드캐스트

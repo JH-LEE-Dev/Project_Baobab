@@ -55,7 +55,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     }
     private bool bIsCutting = false;
     private bool bPowerSupply = false;
-    private float bPowerSupplyValue = 5f; // 500퍼센트를 의미
+    private float powerSupplyMultiplier = 1f; // 전력공급 특성 배율 (SC_PowerSupply의 amount, 예: 5 = 5배)
     private float maxDurability = 0f;
     private SpriteRenderer visualSpriteRenderer;
     private float animProgress = 0f;
@@ -295,9 +295,10 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         Debug.Log("[LogCutter] Cutter Save Data Loaded.");
     }
 
-    public void SetPowerSupply(bool _bPowerSupply)
+    public void SetPowerSupply(bool _bPowerSupply, float _multiplier)
     {
         bPowerSupply = _bPowerSupply;
+        powerSupplyMultiplier = _multiplier;
     }
 
     private bool isRestoredFromOtherMap = false;
@@ -357,7 +358,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     ///
     /// [전력공급(PowerSupply)이 마을에서 안 먹는 것은 의도입니다 - 지우지 마십시오]
     /// 아래 mapType != MapType.Town 조건은 <b>자리비움 생산 보너스</b>입니다. 플레이어가 던전에
-    /// 나가 있는 동안에만 제재소가 bPowerSupplyValue배로 돌고, 마을에 서서 지켜보는 동안에는
+    /// 나가 있는 동안에만 제재소가 powerSupplyMultiplier배로 돌고, 마을에 서서 지켜보는 동안에는
     /// 배율이 붙지 않습니다. 그래서 스킬을 찍고 마을에서 커터를 보면 "돈만 나가고 아무 변화가
     /// 없는" 것처럼 보이는데, 그것이 정상입니다.
     ///
@@ -368,7 +369,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     private float GetCurrentSpeed()
     {
         float speed = totalSpeedMultiplier;
-        if (bPowerSupply && mapType != MapType.Town) speed *= bPowerSupplyValue;
+        if (bPowerSupply && mapType != MapType.Town) speed *= powerSupplyMultiplier;
         return speed * globalSpeedMultiplier;
     }
 
