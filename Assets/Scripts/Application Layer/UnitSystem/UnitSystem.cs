@@ -361,6 +361,14 @@ public class UnitSystem
         unitLogicManager.SetWhereIsCharacter(_bInDungeon);
     }
 
+    /// <summary>
+    /// 대시(원목 보험 증서 전리품 효과)를 쓸 수 있는지 캐릭터에 알린다. 씬 진입마다 GameInstaller가 정한다.
+    /// </summary>
+    public void SetDashUnlocked(bool _bUnlocked)
+    {
+        unitSpawner.character?.SetDashUnlocked(_bUnlocked);
+    }
+
     private void WeaponModeChanged(WeaponMode _currentMode)
     {
         signalHub.Publish(new WeaponModeChangedSignal(_currentMode));
@@ -431,21 +439,17 @@ public class UnitSystem
         // 던전 쪽이 "이번 원정은 사망으로 끝났다"를 기록해(InDungeonObjectManager.RunEndState) 이후의
         // 차량 상호작용/귀환 경고창 답/지연 탑승을 거부할 수 있도록 알린다.
         //
-        // 아래 구제 처리보다 반드시 먼저 보내야 한다. 이 신호를 받은 던전 쪽이 공중에 있던 전리품의 획득
-        // 데이터를 확정하는데(LootManager.CommitRunEnd), 그중 분실물 보관함이 있으면 같은 호출 안에서
-        // LostAndFoundBoxAcquiredSignal → SetLostAndFoundBoxEffect(true)까지 이어진다. 순서가 뒤집히면
-        // 마지막으로 벤 나무에서 나온 보관함이 이번 탈진의 구제 판정에서 빠진다.
         signalHub.Publish(new CharacterStaminaIsEmptySignal());
 
-        // "분실물 보관함" 효과: 유실 처리(DropAllItem) 전에 먼저 일부를 오프로드 컨테이너로 구제한다.
-        inventoryManager.RescueItemsToOffroadContainer(offroadContainer);
         inDungeonResultManager.IncreaseLostLogItemCnt(inventoryManager.DropAllItem(unitSpawner.character.centerTransform));
         signalHub.Publish(new PopupUIDownSignal());
     }
 
+    // "원목 보험 증서"를 이번 원정에서 얻은 순간부터 바로 대시를 쓸 수 있게 한다.
+    // (이미 얻은 상태의 원정 시작은 GameInstaller가 SetDashUnlocked로 맡는다)
     private void LostAndFoundBoxAcquired(LostAndFoundBoxAcquiredSignal _signal)
     {
-        inventoryManager.SetLostAndFoundBoxEffect(true);
+        unitSpawner.character?.SetDashUnlocked(true);
     }
 
     private void SpendMoney()
