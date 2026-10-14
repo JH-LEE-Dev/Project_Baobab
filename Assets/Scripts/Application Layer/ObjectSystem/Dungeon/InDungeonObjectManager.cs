@@ -387,7 +387,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // 포자막 폭발 관련 스킬 스탯
     [SerializeField] private LayerMask treeLayerForExplosion;
-    private const float BaseShieldExplosionDamage = 20f;
+    [SerializeField] private float baseShieldExplosionDamage = 20f;
     private const float BaseShieldExplosionRange = 1.5f; // 맞은 타일 주변 8개 이웃 타일(대각선 포함 3x3)이 포함되는 반경
 
     private bool bShieldExplosionUnlocked = false;
@@ -403,6 +403,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private const int SporeExplosionVfxMaxCount = 4;
     private const float SporeExplosionVfxInterval = 0.15f;
     private const float SporeExplosionVfxSpread = 0.25f;
+    // 폭발 시작 랜덤 지연 상한(초) - 연쇄 폭발이 같은 프레임에 몰려 VFX/폭발음이 겹치지 않도록 흩어 놓는다.
+    private const float SporeExplosionStartDelayMax = 0.1f;
+    // ClearTrees마다 증가. 지연·연타 중이던 포자막 폭발이 이 값이 바뀐 것을 보고 다음 맵의 나무를 때리지 않고 끝난다.
+    private int shieldExplosionVersion = 0;
     // 코루틴 루프에서 매번 new WaitForSeconds를 생성하면 반복마다 GC 쓰레기가 생기므로 캐싱해서 재사용한다.
     private static readonly WaitForSeconds sporeExplosionVfxWait = new WaitForSeconds(SporeExplosionVfxInterval);
 
@@ -455,7 +459,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 폭발마다 쓰는 타격 목록 - 잔상으로 여러 폭발이 동시에 돌 수 있어 폭발별로 하나씩 빌려 쓰고 돌려놓는다.
     private readonly Stack<List<ConstellationHit>> spareConstellationHitLists = new Stack<List<ConstellationHit>>();
 
-    // 포자막 연쇄 폭발/별똥별 착탄 범위 판정용 결과 리스트 풀. 연쇄 폭발은 재귀로 중첩되므로 호출마다 하나씩 빌려 쓰고 돌려준다.
+    // 포자막 폭발/별똥별 착탄 범위 판정용 결과 리스트 풀. 판정 도중 다른 판정이 중첩될 수 있으므로 호출마다 하나씩 빌려 쓰고 돌려준다.
     private readonly Stack<List<IStaticCollidable>> spareExplosionScanLists = new Stack<List<IStaticCollidable>>();
 
     private List<IStaticCollidable> RentExplosionScanList()
@@ -1302,6 +1306,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // (그 finally가 뒤늦게 activeConstellationGroups.Remove를 호출해도 무해하다)
         constellationManifestVersion++;
         activeConstellationGroups.Clear();
+
+        // 시작 지연 중이거나 "톡 톡 톡 톡" 연타 중이던 포자막 폭발도 같은 방식으로 더 때리지 않고 끝나게 한다.
+        shieldExplosionVersion++;
 
         // 마크를 강제 회수한 위 호출은 ConstellationManifestReadyEvent를 발생시키지 않으므로, 별 사라짐을
         // 기다리던 발현 대기 목록도 짝을 맞춰 비운다(이전 런의 별 위치 리스트를 붙들고 있지 않도록).
@@ -2469,61 +2476,49 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void TriggerShieldExplosion(TreeObj _source)
     {
-        StartCoroutine(PlaySporeExplosionVfxRoutine(_source));
+        if (_source == null) return;
 
-        float damage = BaseShieldExplosionDamage * Mathf.Max(0f, shieldExplosionDamageMultiplier);
-        float range = BaseShieldExplosionRange * Mathf.Max(0f, shieldExplosionRangeMultiplier);
-
-        if (CollisionSystem.Instance == null) return;
-
-        // 재귀적인 연쇄 폭발(TakeDamage -> ShieldBrokenEvent -> TriggerShieldExplosion) 도중
-        // 공유 버퍼가 덮어써지지 않도록 호출마다 풀에서 리스트를 하나씩 빌려 쓴다(중첩 호출은 각자 다른 리스트를 받는다).
-        List<IStaticCollidable> scanResults = RentExplosionScanList();
-        // 폭발(과 그 연쇄)로 쓰러지는 나무들의 타일맵 쓰기를 가장 바깥 폭발이 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
-        TreeTileWriteBatch.Begin();
-        try
-        {
-            CollisionSystem.Instance.GetCollidablesInRadius(_source.Position, range, treeLayerForExplosion.value, scanResults);
-
-            Vector3 centerPos = _source.transform.position;
-            float rangeSq = range * range;
-
-            for (int i = 0; i < scanResults.Count; i++)
-            {
-                if (scanResults[i] is TreeObj tree && tree != _source && tree.bCanApplyDamage)
-                {
-                    Vector3 targetPos = tree.transform.position;
-                    float dx = targetPos.x - centerPos.x;
-                    float dy = (targetPos.y - centerPos.y) * 2f; // 등각 타원 보정 (ShockWave와 동일 공식)
-                    float isoDistSq = dx * dx + dy * dy;
-
-                    if (isoDistSq <= rangeSq)
-                    {
-                        tree.TakeDamage(damage);
-                    }
-                }
-            }
-        }
-        finally
-        {
-            TreeTileWriteBatch.End();
-            ReturnExplosionScanList(scanResults);
-        }
+        StartCoroutine(ShieldExplosionRoutine(_source));
     }
 
-    private IEnumerator PlaySporeExplosionVfxRoutine(TreeObj _source)
+    /// <summary>
+    /// 포자막 폭발. 0~SporeExplosionStartDelayMax초 랜덤 지연 뒤 SporeExplosionVfxInterval 간격으로 "톡 톡 톡 톡" 터지며,
+    /// 터질 때마다 폭발 피해를 터지는 횟수로 나눠 범위 안 나무에 준다.
+    /// 시작 지연은 연쇄 폭발로 여러 그루가 같은 프레임에 터질 때 VFX와 폭발음이 한 순간에 겹치는 것을 흩어 놓기 위함이다.
+    /// </summary>
+    private IEnumerator ShieldExplosionRoutine(TreeObj _source)
     {
-        if (_source == null) yield break;
+        int version = shieldExplosionVersion;
 
+        // 지연·연타 도중 원본 나무가 쓰러져 풀로 돌아가거나 다른 자리에 재사용될 수 있으므로 위치는 지금 잡아 둔다.
         Vector3 bottomPos = _source.transform.position;
         Vector3 topPos = _source.treeVisualComponent != null ? _source.treeVisualComponent.GetTopRootPosition() : bottomPos;
 
+        float damage = baseShieldExplosionDamage * Mathf.Max(0f, shieldExplosionDamageMultiplier);
+        float range = BaseShieldExplosionRange * Mathf.Max(0f, shieldExplosionRangeMultiplier);
+
         int count = UnityEngine.Random.Range(SporeExplosionVfxMinCount, SporeExplosionVfxMaxCount + 1);
+        float damagePerPop = damage / count;
+
+        // 최소 한 프레임은 반드시 기다린다. 연쇄 폭발(TakeDamage -> ShieldBrokenEvent -> TriggerShieldExplosion)이
+        // 바깥 폭발의 판정 루프 안에서 동기로 다시 들어오지 않고 다음 프레임 이후로 흩어진다.
+        float startDelay = UnityEngine.Random.Range(0f, SporeExplosionStartDelayMax);
+        do
+        {
+            yield return null;
+            startDelay -= Time.deltaTime;
+        }
+        while (startDelay > 0f);
+
         bool nextTopLeft = UnityEngine.Random.value < 0.5f;
         bool nextBottomLeft = UnityEngine.Random.value < 0.5f;
+        bool bHapticPlayed = false;
 
         for (int i = 0; i < count; i++)
         {
+            // 지연·연타 도중 나무가 전부 정리됐다면(던전 이탈/런 종료) 다음 맵의 나무를 때리지 않고 끝낸다.
+            if (version != shieldExplosionVersion) yield break;
+
             bool useTop = i % 2 == 0;
             Vector3 basePos = useTop ? topPos : bottomPos;
             bool useLeft = useTop ? nextTopLeft : nextBottomLeft;
@@ -2543,8 +2538,62 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             // 폭발 VFX가 SporeExplosionVfxInterval 간격으로 "타타탕" 연달아 터지므로, 터질 때마다 그 자리에서 한 번씩 울린다.
             Sound.Play(SoundID.SporeExplosion, basePos + randomOffset);
 
-            yield return sporeExplosionVfxWait;
+            // 진동은 폭발 한 번당 한 번 - 무언가를 처음 맞힌 타격에서만 울리고, 나머지 연타는 사운드/이펙트만 낸다.
+            if (ApplyShieldExplosionDamage(_source, bottomPos, range, damagePerPop, false == bHapticPlayed))
+            {
+                bHapticPlayed = true;
+            }
+
+            if (i < count - 1)
+            {
+                yield return sporeExplosionVfxWait;
+            }
         }
+    }
+
+    // 포자막 폭발 한 번 터질 때의 피해 판정. 원본 나무 자리(_centerPos) 기준 등각 타원 범위 안의 나무를 때린다.
+    // 터질 때마다 다시 조회하므로 앞선 타격에 쓰러진 나무는 빠지고(bCanApplyDamage), 원본 나무는 계속 제외된다.
+    // 한 그루라도 맞혔으면 true. 같은 타격 안에서 여러 그루가 진동을 내도 Rumble이 한 사건으로 묶는다.
+    private bool ApplyShieldExplosionDamage(TreeObj _source, Vector3 _centerPos, float _range, float _damage, bool _bPlayHaptic)
+    {
+        if (CollisionSystem.Instance == null) return false;
+
+        bool bHitAny = false;
+
+        // 판정 루프 안에서 다른 폭발·별똥별 판정이 끼어들어도 공유 버퍼가 덮어써지지 않도록 호출마다 풀에서 리스트를 빌려 쓴다.
+        List<IStaticCollidable> scanResults = RentExplosionScanList();
+        // 이번 타격으로 쓰러지는 나무들의 타일맵 쓰기를 루프가 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
+        TreeTileWriteBatch.Begin();
+        try
+        {
+            CollisionSystem.Instance.GetCollidablesInRadius(_centerPos, _range, treeLayerForExplosion.value, scanResults);
+
+            float rangeSq = _range * _range;
+
+            for (int i = 0; i < scanResults.Count; i++)
+            {
+                if (scanResults[i] is TreeObj tree && tree != _source && tree.bCanApplyDamage)
+                {
+                    Vector3 targetPos = tree.transform.position;
+                    float dx = targetPos.x - _centerPos.x;
+                    float dy = (targetPos.y - _centerPos.y) * 2f; // 등각 타원 보정 (ShockWave와 동일 공식)
+                    float isoDistSq = dx * dx + dy * dy;
+
+                    if (isoDistSq <= rangeSq)
+                    {
+                        tree.TakeDamage(_damage, _bPlayHaptic);
+                        bHitAny = true;
+                    }
+                }
+            }
+        }
+        finally
+        {
+            TreeTileWriteBatch.End();
+            ReturnExplosionScanList(scanResults);
+        }
+
+        return bHitAny;
     }
 
     // 과열 강화된 ShockWave가 나무를 때리면 TreeObj.TreeOverheatExplosionEvent를 통해 호출된다.
