@@ -420,6 +420,7 @@ Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectMa
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager/VFXManager:VFXComponent|vfxPoolDataList[9].uiParticleScale = 0
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager:ConstellationPixelLaserCreator|defaultCapacity = 2
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager:ConstellationPixelLaserCreator|maxSize = 8
+Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager:InDungeonObjectManager|baseShieldExplosionDamage = 20
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager:InDungeonObjectManager|cullingDistance = 25
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager:InDungeonObjectManager|enableCulling = 0
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager:InDungeonObjectManager|goldTreePityMaxKills = 7

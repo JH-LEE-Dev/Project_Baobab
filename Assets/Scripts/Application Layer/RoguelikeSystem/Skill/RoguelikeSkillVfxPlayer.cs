@@ -249,7 +249,7 @@ public sealed class RoguelikeSkillVfxPlayer
         registeredLinkCount = 0;
     }
 
-    /// <summary>본편 포자 폭발(InDungeonObjectManager.PlaySporeExplosionVfxRoutine)과 같은 4연발: 좌우를 번갈아 퍼지며 폭발음이 난다.</summary>
+    /// <summary>본편 포자 폭발(InDungeonObjectManager.ShieldExplosionRoutine)과 같은 4연발: 좌우를 번갈아 퍼지며 폭발음이 난다.</summary>
     private IEnumerator SporeBurstRoutine(Vector3 _position, int _generation)
     {
         if (null == vfx) yield break;
