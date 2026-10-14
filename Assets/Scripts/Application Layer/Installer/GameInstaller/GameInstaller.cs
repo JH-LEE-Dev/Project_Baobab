@@ -161,6 +161,8 @@ public class GameInstaller : MonoBehaviour
             // RoguelikeSystem이 필드·웨이브를 직접 돌린다. 마을 도착 자동저장도 없다.
             gameplayUIInstaller.SetupCanvas();
             unitSystem.SetWhereIsCharacter(true);
+            // 대시는 본편 전리품("원목 보험 증서") 효과라 로그라이크에서는 쓰지 않는다.
+            unitSystem.SetDashUnlocked(false);
             roguelikeSystem?.StartSession();
         }
         else if (_sceneChangeData.currentScene == SceneType.DungeonScene)
@@ -169,6 +171,9 @@ public class GameInstaller : MonoBehaviour
             inDungeonSystem.StartDungeonSystem(_sceneChangeData);
             gameplayUIInstaller.SetupCanvas();
             unitSystem.SetWhereIsCharacter(true);
+
+            // 대시는 "원목 보험 증서" 전리품 효과다. 영구 획득 여부로 켠다.
+            unitSystem.SetDashUnlocked(inDungeonSystem.inDungeonObjectManager.bHasAcquiredLostAndFoundBox);
         }
         else
         {
@@ -180,6 +185,7 @@ public class GameInstaller : MonoBehaviour
             // Town 초기화(그리드 생성, NPC 스폰)가 끝난 뒤에만 구름이 걷히도록 여기서 명시적으로 트리거한다.
             inDungeonSystem.NotifyTownSystemReady();
             unitSystem.SetWhereIsCharacter(false);
+            unitSystem.SetDashUnlocked(false);
 
             // 마을 도착(최초 진입/이어하기 포함) 시점 자동저장.
             signalHub.Publish(new AutoSaveRequestedSignal(AutoSaveReason.ArriveTown));

@@ -124,6 +124,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "Dash",
+                    "type": "Button",
+                    "id": "8f2d6b14-3c7e-4a59-b1d0-6e4f9a2c7b38",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Aim",
                     "type": "Value",
                     "id": "3c1f5b7a-9d24-4e18-b6c0-5a2e7f0d1b93",
@@ -225,7 +234,7 @@
                 {
                     "name": "",
                     "id": "b5989888-3240-4e6e-8c3f-3d1972be7f5a",
-                    "path": "<Keyboard>/space",
+                    "path": "<Keyboard>/tab",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -302,7 +311,7 @@
                 {
                     "name": "",
                     "id": "5b64aba9-6d27-48d8-a40f-7a0a3119d743",
-                    "path": "<Keyboard>/q",
+                    "path": "",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -313,11 +322,22 @@
                 {
                     "name": "",
                     "id": "b1d94e27-3af5-45c0-8e19-6c72d0af5e14",
-                    "path": "<Keyboard>/tab",
+                    "path": "<Keyboard>/q",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
                     "action": "LogSwap",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "2a7c5e91-4b3d-4f86-9e0a-7d1c3b5f8e24",
+                    "path": "<Keyboard>/space",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Dash",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -423,7 +443,7 @@
                 {
                     "name": "",
                     "id": "4eb17259-cf8a-4036-e5db-71a26f34809c",
-                    "path": "<Gamepad>/buttonWest",
+                    "path": "",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -439,6 +459,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "LogSwap",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c6e1a8f3-5d27-4b90-8a4c-1f9e2d7b6a35",
+                    "path": "<Gamepad>/buttonWest",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Dash",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

@@ -187,6 +187,28 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private bool bDronesPaused = false; // WarningUI로 드론을 멈춘 동안 Character 쪽 대형 갱신/분리 밀어내기/재타겟팅도 함께 건너뛴다
     private const float DroneRetargetInterval = 0.15f; // 타겟을 잃은 드론에게 새 나무를 물 흐르듯 이어서 배정하는 주기
 
+    [Header("Dash Settings")]
+    [SerializeField, Tooltip("대시 거리(타일 칸 수). 화면상 어느 방향으로든 같은 칸 수만큼 간다 - 공격 범위와 같은 등각 거리 기준.")]
+    private float dashDistanceTiles = 3f;
+    [SerializeField, Tooltip("대시 쿨타임(초)")]
+    private float dashCooldown = 4f;
+    [SerializeField, Tooltip("대시 이동에 걸리는 시간(초)")]
+    private float dashDuration = 0.18f;
+
+    // "원목 보험 증서" 전리품을 얻어야 대시를 쓸 수 있다. 씬마다 GameInstaller가 정한다(본편 던전만
+    // 영구 획득 여부로 켜고, 로그라이크·마을은 끈다). 원정 도중 획득은 UnitSystem이 바로 켠다.
+    private bool bDashUnlocked = false;
+    private float dashCooldownTimer = 0f;
+    private bool bDashing = false;
+
+    // 대시 키가 눌린 실제 시각(realtimeSinceStartup). 실제 시작은 다음 물리 틱(FixedUpdate)에서 한다 - OnDashKeyPressed 참고.
+    // unscaledTime을 쓰면 안 된다 - FixedUpdate 안에서는 fixedUnscaledTime(물리 시계)을 돌려줘서, 기록할 때(일반 업데이트)와
+    // 비교할 때(물리 틱)의 기준이 달라진다.
+    private bool bDashRequested = false;
+    private float dashRequestTime = 0f;
+    // 이보다 오래 처리되지 못한 요청은 버린다(일시정지 등으로 물리 틱이 멈췄다가 풀리는 순간 뒤늦게 나가지 않게).
+    private const float DashRequestLifetime = 0.1f;
+
     private CharacterVisualComponent characterVisualComponent;
     private StunVisualComponent stunVisualComponent;
     private OverheatComponent overheatComponent;
@@ -336,6 +358,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         boomerangCooldownTimer = 0f;
         bBoomerangSystemPaused = false; // 다음 던전 입장 때는 다시 발사 가능해야 하므로 여기서 해제
 
+        // 새 판에서는 대시 쿨타임과 남은 요청을 비운다. (해금 여부는 GameInstaller가 씬마다 정한다 - bDashUnlocked 참고)
+        dashCooldownTimer = 0f;
+        bDashRequested = false;
+
         bDronesPaused = false;
         ClearActiveDrones();
 
@@ -436,6 +462,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         AddState(new RunState());
         AddState(new DeadState());
         AddState(new KnockBackState());
+        AddState(new DashState());
         stateMachine.ChangeState<IdleState>();
     }
 
@@ -458,6 +485,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         healthComponent.RestAreaStateChangedEvent -= RestAreaStateChanged;
         healthComponent.RestAreaStateChangedEvent += RestAreaStateChanged;
+
+        inputManager.inputReader.DashKeyPressedEvent -= OnDashKeyPressed;
+        inputManager.inputReader.DashKeyPressedEvent += OnDashKeyPressed;
 
         if (armComponent.axeComponent != null)
         {
@@ -493,6 +523,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (healthComponent != null)
             healthComponent.RestAreaStateChangedEvent -= RestAreaStateChanged;
 
+        if (inputManager != null && inputManager.inputReader != null)
+            inputManager.inputReader.DashKeyPressedEvent -= OnDashKeyPressed;
+
         if (armComponent != null && armComponent.axeComponent != null)
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
@@ -520,7 +553,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void UpdateFacingByAttackPoint()
     {
-        if (true == bFacingLocked || true == bWhirlwindSpinning || 0f == Time.timeScale) return;
+        // 대시 중에는 시작할 때 맞춘 대시 방향을 유지한다(TryStartDash).
+        if (true == bFacingLocked || true == bWhirlwindSpinning || true == bDashing || 0f == Time.timeScale) return;
         if (null == attackComponent || false == bInDungeon || false == attackComponent.IsCursorEnabled) return;
 
         FaceAttackPoint();
@@ -810,6 +844,132 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         {
             LogAcquireBatch.End();
         }
+    }
+
+    /// <summary>"원목 보험 증서" 전리품 보유 여부. 이게 켜져 있어야 대시 키가 동작한다.</summary>
+    public void SetDashUnlocked(bool _bUnlocked)
+    {
+        bDashUnlocked = _bUnlocked;
+    }
+
+    /// <summary>
+    /// 대시 키 입력. 여기서 바로 시작하지 않고 다음 물리 틱(FixedUpdate)으로 미룬다.
+    ///
+    /// 대시 방향은 이동 입력(ctx.moveInput)을 보는데, 패드 이동은 InputManager.Update의 폴링으로 들어오고
+    /// 대시 키는 그보다 먼저 Input System 콜백으로 들어온다. 그 자리에서 시작하면 같은 프레임에 함께 누른
+    /// 이동이 아직 반영되지 않아, 스틱을 밀면서 눌러도 바라보던 방향으로 나간다. 물리 틱은 다음 프레임의 Update보다
+    /// 앞이자 이번 프레임의 Update보다 뒤라, 미루면 이번 프레임의 이동 입력이 모두 반영된 뒤에 방향을 정한다.
+    /// </summary>
+    private void OnDashKeyPressed()
+    {
+        bDashRequested = true;
+        dashRequestTime = Time.realtimeSinceStartup;
+    }
+
+    private void ProcessDashRequest()
+    {
+        if (false == bDashRequested) return;
+        bDashRequested = false;
+
+        if (DashRequestLifetime < Time.realtimeSinceStartup - dashRequestTime) return;
+
+        TryStartDash();
+    }
+
+    /// <summary>
+    /// 대시를 시작한다. 쓸 수 없는 상황이면 아무 일도 하지 않는다(쿨타임도 소모하지 않는다).
+    ///
+    /// 방향: 이동 입력이 있으면 이동하는 방향(바라보는 방향과 무관), 없으면 바라보는 방향.
+    /// 거리: dashDistanceTiles칸. 공격 범위와 같은 등각 거리(세로 2배)로 재므로 화면상 어느 방향이든 같은 칸 수다.
+    /// 대시는 도끼 공격으로 친다(AttackComponent.BeginDashStrike 위 주석 참고). 도끼 내구도가 0이면 이동만 한다.
+    /// </summary>
+    private void TryStartDash()
+    {
+        if (false == bDashUnlocked || false == bInDungeon || bDead || bWhileReset || bRide) return;
+        if (false == gameObject.activeInHierarchy) return;
+
+        // 귀환 확정·경고창·입장 연출처럼 조작을 넘겨받지 않은 구간은 조준이 꺼져 있거나 이동이 잠겨 있다.
+        if (null == attackComponent || false == attackComponent.IsCursorEnabled || inputManager.IsMovePaused) return;
+
+        // 키를 누른 순간에는 게임플레이였어도, 시작은 다음 물리 틱이라 그 사이 UI 화면이 열렸을 수 있다.
+        if (EInputMode.Gameplay != inputManager.CurrentInputMode) return;
+
+        if (dashCooldownTimer > 0f) return;
+        if (false == stateMachine.IsState<IdleState>() && false == stateMachine.IsState<RunState>()) return;
+
+        Vector2 dashDirection = GetDashDirection();
+        float dashWorldDistance = GetDashWorldDistance(dashDirection);
+
+        dashCooldownTimer = dashCooldown;
+
+        // 회전 베기가 발동하면(BeginDashStrike 안에서) 지금 바라보는 방향에서 한 바퀴를 시작하므로 방향을 먼저 맞춘다.
+        bDashing = true;
+        SetFacingDirection(dashDirection);
+
+        if (false == IsAxeDurabilityZero() && attackComponent.BeginDashStrike(dashDirection, GetAttackCenterAt(rb.position)))
+        {
+            // 도끼 스윙을 시작할 때와 같이 드론을 깨운다(SetbCanAction 참고).
+            ActivateDrones();
+        }
+
+        stateMachine.GetState<DashState>().Setup(dashDirection, dashWorldDistance, dashDuration);
+        stateMachine.ChangeState<DashState>();
+    }
+
+    private Vector2 GetDashDirection()
+    {
+        Vector2 moveInput = ctx.moveInput;
+        if (0.0001f < moveInput.sqrMagnitude)
+        {
+            // RunState.ApplyMovement와 같은 등각 변환 - 실제로 걸어가던 방향 그대로 나간다.
+            Vector2 moveDir = RunState.GetIsometricVector(moveInput);
+            if (0.0001f < moveDir.sqrMagnitude) return moveDir.normalized;
+        }
+
+        // 회전 베기 연출 중에는 스프라이트 각도가 한 바퀴 도는 도중의 값이다. 연출이 끝나면 돌아갈
+        // 원래 방향(회전 시작 각도)을 바라보는 방향으로 본다.
+        float facingAngle = bWhirlwindSpinning ? whirlwindSpinStartAngle : characterVisualComponent.CurrentFacingAngle;
+        float facingRad = facingAngle * Mathf.Deg2Rad;
+        return new Vector2(Mathf.Cos(facingRad), Mathf.Sin(facingRad));
+    }
+
+    /// <summary>
+    /// 대시 칸 수를 이 방향의 월드 거리로 바꾼다. 타일 한 칸의 가로폭을 등각 거리 1칸으로 보고,
+    /// 세로를 2배로 늘린 길이가 그 칸 수가 되도록 맞춘다(가로로는 3, 세로로는 1.5 월드 단위).
+    /// </summary>
+    private float GetDashWorldDistance(Vector2 _direction)
+    {
+        ITilemapDataProvider tilemap = ctx.tilemapDataProvider;
+        float tileWidth = ((Vector2)tilemap.CellToWorld(new Vector3Int(1, 0, 0)) - (Vector2)tilemap.CellToWorld(new Vector3Int(0, 1, 0))).magnitude;
+        if (0.0001f >= tileWidth) tileWidth = 1f;
+
+        float isoLength = Mathf.Sqrt(GetIsometricDistSq(_direction, Vector2.zero));
+        if (0.0001f >= isoLength) return 0f;
+
+        return dashDistanceTiles * tileWidth / isoLength;
+    }
+
+    /// <summary>DashState가 매 물리 틱마다 부른다. _rootPosition은 이번 틱에 캐릭터가 옮겨갈 위치다.</summary>
+    public void TickDashStrike(Vector2 _rootPosition)
+    {
+        attackComponent.TickDashStrike(GetAttackCenterAt(_rootPosition));
+    }
+
+    /// <summary>DashState.Exit가 부른다. 어떤 이유로 끝나든 한 번만 불린다.</summary>
+    public void OnDashFinished(Vector2 _rootPosition, bool _bCompleted)
+    {
+        bDashing = false;
+
+        // 내구도 0으로 이동만 한 대시나 리셋으로 판정이 지워진 대시는 EndDashStrike가 알아서 건너뛴다.
+        // 쓰러지면서 끊긴 대시는 마지막 타격 판정을 내지 않는다.
+        attackComponent.EndDashStrike(GetAttackCenterAt(_rootPosition), _bCompleted && false == bDead);
+    }
+
+    // 공격 판정의 중심은 AttackComponent 자신의 위치다(Attack 참고). 캐릭터가 _rootPosition에 있을 때의 그 위치.
+    private Vector3 GetAttackCenterAt(Vector2 _rootPosition)
+    {
+        Vector3 attackOffset = attackComponent.transform.position - transform.position;
+        return new Vector3(_rootPosition.x, _rootPosition.y, transform.position.z) + attackOffset;
     }
 
     private void UpdateTreeBoomerang()
@@ -1558,6 +1718,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         UpdateItemDetection(); // 내부적으로 itemDetectionInterval마다만 실제 스캔을 수행함
         UpdateTreeBoomerang(); // 내부적으로 treeDetectionInterval마다만 실제 스캔을 수행함
+        if (dashCooldownTimer > 0f) dashCooldownTimer -= Time.fixedDeltaTime;
         if (!bDronesPaused)
         {
             UpdateDroneRetargeting(); // 내부적으로 DroneRetargetInterval마다만 실제 재타겟팅을 수행함
@@ -1567,6 +1728,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         CollisionSystem.Instance?.UpdatePosition(this, transform.position);
 
         currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
+
+        // 대시 상태로 바뀌면 바로 아래 stateMachine.FixedUpdate에서 첫 이동까지 같은 틱에 한다.
+        ProcessDashRequest();
         stateMachine?.FixedUpdate();
 
         customSortable.SetHeight(visualHeight);
@@ -1707,6 +1871,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         ClearActiveBoomerangs();
         treeScanTimer = 0f;
         boomerangCooldownTimer = 0f;
+        dashCooldownTimer = 0f;
+        bDashRequested = false;
         bBoomerangSystemPaused = false;
         bDronesPaused = false;
 

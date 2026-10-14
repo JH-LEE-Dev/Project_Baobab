@@ -41,7 +41,9 @@ public class KnockBackState : CharacterState
         float denom = (dir.x * dir.x) / (semiMajor * semiMajor) + (dir.y * dir.y) / (semiMinor * semiMinor);
         float distance = denom > 0f ? 1f / Mathf.Sqrt(denom) : 0f;
 
-        startPos = character.transform.position;
+        // transform.position은 보간된 화면 위치라 물리 위치보다 최대 한 틱 늦다. 대시처럼 한 틱에 크게 움직이는
+        // 중에 넉백되면 그만큼 뒤로 끌려가므로 물리 위치에서 시작한다.
+        startPos = character.rb.position;
         targetPos = startPos + dir * distance;
     }
 
