@@ -206,9 +206,6 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.DropAllItemEvent -= DropAllItem;
         inDungeonObjectManager.DropAllItemEvent += DropAllItem;
 
-        inDungeonObjectManager.LostAndFoundBoxAcquiredEvent -= LostAndFoundBoxAcquired;
-        inDungeonObjectManager.LostAndFoundBoxAcquiredEvent += LostAndFoundBoxAcquired;
-
         inputManager.inputReader.PotionKeyPressedEvent -= PotionKeyPressed;
         inputManager.inputReader.PotionKeyPressedEvent += PotionKeyPressed;
 
@@ -258,7 +255,6 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.RepairBoxInteractStateChangedEvent -= RepairBoxInteractStateChanged;
         inDungeonObjectManager.RideOffroadEvent -= RideOffroad;
         inDungeonObjectManager.DropAllItemEvent -= DropAllItem;
-        inDungeonObjectManager.LostAndFoundBoxAcquiredEvent -= LostAndFoundBoxAcquired;
         inputManager.inputReader.PotionKeyPressedEvent -= PotionKeyPressed;
         inDungeonProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
         inDungeonProductionManager.CameraUpIsEndEvent -= CameraUpIsEnd;
@@ -580,11 +576,6 @@ public class InDungeonSystem : MonoBehaviour
     private void DropAllItem()
     {
         signalHub.Publish(new DropAllItemSignal());
-    }
-
-    private void LostAndFoundBoxAcquired()
-    {
-        signalHub.Publish(new LostAndFoundBoxAcquiredSignal());
     }
 
     // "포자 포션" - 던전에 입장해 캐릭터가 실제로 조작 가능해진 시점부터만 특수 키(PotionKey)로 마실 수 있다.

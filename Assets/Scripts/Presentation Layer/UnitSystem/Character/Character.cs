@@ -196,7 +196,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private float dashDuration = 0.18f;
 
     // "원목 보험 증서" 전리품을 얻어야 대시를 쓸 수 있다. 씬마다 GameInstaller가 정한다(본편 던전만
-    // 영구 획득 여부로 켜고, 로그라이크·마을은 끈다). 원정 도중 획득은 UnitSystem이 바로 켠다.
+    // 영구 획득 여부로 켜고, 로그라이크·마을은 끈다). 원정 도중 획득하면 다음 숲 방문부터 켜진다.
     private bool bDashUnlocked = false;
     private float dashCooldownTimer = 0f;
     private bool bDashing = false;

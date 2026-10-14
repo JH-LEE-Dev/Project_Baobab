@@ -172,7 +172,8 @@ public class GameInstaller : MonoBehaviour
             gameplayUIInstaller.SetupCanvas();
             unitSystem.SetWhereIsCharacter(true);
 
-            // 대시는 "원목 보험 증서" 전리품 효과다. 영구 획득 여부로 켠다.
+            // 대시는 "원목 보험 증서" 전리품 효과다. 영구 획득 여부로 켠다. 원정 도중 얻으면 여기서,
+            // 즉 다음 숲 방문(재도전 포함)부터 켜진다.
             unitSystem.SetDashUnlocked(inDungeonSystem.inDungeonObjectManager.bHasAcquiredLostAndFoundBox);
         }
         else
