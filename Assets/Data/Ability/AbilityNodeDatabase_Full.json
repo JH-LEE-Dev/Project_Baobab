@@ -646,6 +646,12 @@
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
+                },
+                {
+                    "skillType": "Shockwave3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
                 }
             ]
         },
@@ -735,6 +741,12 @@
             "parents": [
                 {
                     "skillType": "ShockwaveRange2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "Shockwave3",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -1532,34 +1544,6 @@
             ]
         },
         {
-            "skillType": "ShieldExplosionResearch",
-            "nameLocId": 234,
-            "levelBadge": "M",
-            "requiredPrestigeLevel": 0,
-            "gridX": 0,
-            "gridY": -13,
-            "parents": [
-                {
-                    "skillType": "SporeShieldCut3",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                },
-                {
-                    "skillType": "SporeShieldPenetration3",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                },
-                {
-                    "skillType": "SporeShieldRegenBlock3",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                }
-            ]
-        },
-        {
             "skillType": "LogValue4",
             "nameLocId": 235,
             "levelBadge": "IV",
@@ -1775,10 +1759,10 @@
             "levelBadge": "M",
             "requiredPrestigeLevel": 6,
             "gridX": -6,
-            "gridY": -13,
+            "gridY": -9,
             "parents": [
                 {
-                    "skillType": "ShieldExplosionResearch",
+                    "skillType": "ShieldExplosionUnlock",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -1788,6 +1772,22 @@
         {
             "skillType": "StarPathSpeedBoost1",
             "nameLocId": 248,
+            "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
+            "gridX": -8,
+            "gridY": -13,
+            "parents": [
+                {
+                    "skillType": "StarMarkDamage1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "StarMarkDamage1",
+            "nameLocId": 249,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
             "gridX": -6,
@@ -1802,28 +1802,12 @@
             ]
         },
         {
-            "skillType": "StarMarkDamage1",
-            "nameLocId": 249,
-            "levelBadge": "I",
-            "requiredPrestigeLevel": 0,
-            "gridX": -8,
-            "gridY": -13,
-            "parents": [
-                {
-                    "skillType": "ConstellationManifestUnlock",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                }
-            ]
-        },
-        {
             "skillType": "ConstellationDamage1",
             "nameLocId": 250,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": -6,
-            "gridY": -15,
+            "gridX": -8,
+            "gridY": -11,
             "parents": [
                 {
                     "skillType": "ConstellationManifestUnlock",
