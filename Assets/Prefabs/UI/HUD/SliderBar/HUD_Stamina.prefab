@@ -394,7 +394,9 @@ MonoBehaviour:
   shakeStrength: 2
   shakeDuration: 0.2
   fillUpDuration: 0.35
-  sparkleMinRatio: 0.03
+  gainBundleWindow: 0.25
+  minGainRatio: 0
+  sparkleMinRatio: 0.007
   bodyInsetTop: 2
   bodyInsetBottom: 3
   bodyInsetSide: 3
@@ -410,8 +412,10 @@ MonoBehaviour:
   restPlusInterval: 0.15
   prismPopDuration: 0.07
   prismSettleDuration: 0.28
-  prismReleaseDuration: 0.9
-  prismReleaseSteps: 8
+  prismReleaseDuration: 1
+  prismReleaseSteps: 4
+  prismReleaseFadeSpan: 0.35
+  prismReleaseStyle: 3
   prismStepRate: 14
   prismFacetSize: 8
   prismTwinkleCycle: {x: 1.4, y: 3.6}
