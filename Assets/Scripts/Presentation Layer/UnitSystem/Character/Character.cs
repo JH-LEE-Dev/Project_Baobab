@@ -944,9 +944,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         dashCharge.TryConsume();
 
-        // 대시하는 동안은 조준점이 아니라 대시 방향을 바라본다(UpdateFacingByAttackPoint 참고).
+        // 대시하는 동안은 조준점이 아니라 대시 방향을 바라본다(UpdateFacingByAttackPoint 참고). 팔(도끼)도 같은 쪽을 본다.
         bDashing = true;
         SetFacingDirection(dashDirection);
+        armComponent.SetAimOverride(dashDirection);
+        // 대시 중에는 도끼를 새로 휘두르지 않는다(AxeComponent.SetBlockedByDash 참고).
+        armComponent.axeComponent.SetBlockedByDash(true);
 
         stateMachine.GetState<DashState>().Setup(dashDirection, dashWorldDistance, dashDuration);
         stateMachine.ChangeState<DashState>();
@@ -990,6 +993,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public void OnDashFinished()
     {
         bDashing = false;
+
+        // 팔은 다시 조준점을 따라간다(보간으로 부드럽게 돌아간다). 버튼을 누르고 있었다면 다음 프레임에 이어서 휘두른다.
+        armComponent.ClearAimOverride();
+        armComponent.axeComponent.SetBlockedByDash(false);
     }
 
     private void UpdateTreeBoomerang()
