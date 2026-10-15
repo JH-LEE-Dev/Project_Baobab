@@ -72,7 +72,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: -24, y: -24}
-  m_SizeDelta: {x: 200, y: 88}
+  m_SizeDelta: {x: 200, y: 112}
   m_Pivot: {x: 0, y: 0}
 --- !u!222 &2896523176877794762
 CanvasRenderer:
@@ -176,7 +176,9 @@ MonoBehaviour:
   - {fileID: 939509253, guid: b5919104e6bba484382995363357ae05, type: 3}
   - {fileID: 707337509, guid: b5919104e6bba484382995363357ae05, type: 3}
   - {fileID: -1475847987, guid: b5919104e6bba484382995363357ae05, type: 3}
-  maxVisible: 8
+  rowWidth: 160
+  maxRows: 2
+  rowPitchY: 23
   slotPitch: 20
   slideDuration: 0.3
   slideEase: 27
@@ -265,7 +267,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 636059221275085294}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 938fce054c42f40a3969e27a88d9bdd8, type: 3}
   m_Name: 

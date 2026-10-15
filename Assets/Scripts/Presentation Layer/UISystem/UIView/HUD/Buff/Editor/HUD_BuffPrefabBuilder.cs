@@ -16,6 +16,12 @@ public static class HUD_BuffPrefabBuilder
     private const string PrefabDir = "Assets/Prefabs/UI/HUD/Buff";
     private const string StaminaPrefabPath = "Assets/Prefabs/UI/HUD/SliderBar/HUD_Stamina.prefab";
     private const string HudUiPrefabPath = "Assets/Prefabs/UI/HUD/HUD_UI.prefab";
+    // 평행사변형 두 칸이 바깥 선 1px을 공유하며 맞물리는 칸 간격(스프라이트 폭 24가 아니라 이 값)
+    private const float DashCellPitch = 14f;
+    private const float DashVisibleWidth = 37f;
+    private const float DashReservedWidth = 45f;
+    private const string DashBaseSpritePath = "Assets/Graphics/HUD/Dash/Dash_HUD_Base.png";
+    private const string DashFillSpritePath = "Assets/Graphics/HUD/Dash/Dash_HUD_Fill.png";
     private const string NumberSheetPath = "Assets/Graphics/Font/SmallCurrencyNum.png";
 
     [MenuItem("LumberBoy/HUD/Build Buff HUD Prefabs")]
@@ -139,6 +145,8 @@ public static class HUD_BuffPrefabBuilder
         Image _frameImg = NewImage("Frame", _visual, _sFrame, new Vector2(1f, 4f), new Vector2(16f, 16f));
         UIEffect _outlineFx = _frameImg.gameObject.AddComponent<UIEffect>();
         ConfigureOutline(_outlineFx);
+        // 프레임 스프라이트에 외곽선을 직접 그리므로 꺼 둔다(필요하면 다시 켜서 쓸 수 있게 컴포넌트는 남김)
+        _outlineFx.enabled = false;
         Image _accent = NewImage("Accent", _visual, _sWhite, new Vector2(3f, 18f), new Vector2(12f, 1f));
         _accent.color = new Color32(170, 212, 88, 255);
         RawImage _iconRaw = NewRaw("Icon", _visual, new Vector2(3f, 6f), new Vector2(12f, 12f));
@@ -176,9 +184,10 @@ public static class HUD_BuffPrefabBuilder
         Image _chipFrame = NewImage("ChipFrame", _chip, _sFrame, new Vector2(1f, 4f), new Vector2(16f, 16f));
         UIEffect _chipFx = _chipFrame.gameObject.AddComponent<UIEffect>();
         ConfigureOutline(_chipFx);
+        _chipFx.enabled = false;
         RawImage _chipNumber = NewRaw("ChipNumber", _chip, new Vector2(5f, 8f), new Vector2(8f, 8f));
         _chip.gameObject.SetActive(false);
-        RawImage _fxRaw = NewRaw("Fx", _barRt, new Vector2(-24f, -24f), new Vector2(200f, 88f));
+        RawImage _fxRaw = NewRaw("Fx", _barRt, new Vector2(-24f, -24f), new Vector2(200f, 112f));
 
         SerializedObject _bso = new SerializedObject(_bar);
         _bso.FindProperty("iconPrefab").objectReferenceValue = _iconPrefab.GetComponent<HUD_BuffIcon>();
@@ -198,7 +207,10 @@ public static class HUD_BuffPrefabBuilder
         GameObject _barPrefab = PrefabUtility.SaveAsPrefabAsset(_barGo, PrefabDir + "/HUD_BuffBar.prefab");
         UnityEngine.Object.DestroyImmediate(_barGo);
 
-        // ===== HUD_StaminaGroup.prefab (스태미나 + 버프 조합) =====
+        // ===== HUD_DashGauge.prefab (대시 2칸) =====
+        GameObject _dashPrefab = BuildDashPrefab();
+
+        // ===== HUD_StaminaGroup.prefab (스태미나 + 버프 + 대시 조합) =====
         GameObject _staminaPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(StaminaPrefabPath);
         GameObject _groupGo = new GameObject("HUD_StaminaGroup", typeof(RectTransform));
         RectTransform _groupRt = (RectTransform)_groupGo.transform;
@@ -217,7 +229,16 @@ public static class HUD_BuffPrefabBuilder
         // 스태미나 바(가운데 기준 x -80)의 왼쪽 끝, 게이지 아래쪽이 바 위쪽에서 8px 위(바 y 10 + 높이 18 + 간격 8)
         _buffRt.anchoredPosition = new Vector2(-80f, 36f);
 
+        GameObject _dashInst = (GameObject)PrefabUtility.InstantiatePrefab(_dashPrefab, _groupRt);
+        RectTransform _dashRt = (RectTransform)_dashInst.transform;
+        _dashRt.anchorMin = new Vector2(0.5f, 0f);
+        _dashRt.anchorMax = new Vector2(0.5f, 0f);
+        _dashRt.pivot = Vector2.zero;
+        // 바 오른쪽 끝에 붙인다: 보이는 폭 37(맞물린 2칸), 보이는 아래쪽은 칸 안 7px 위 -> 게이지 아래쪽이 바 위 8px
+        _dashRt.anchoredPosition = new Vector2(80f - DashVisibleWidth, 29f);
+
         SerializedObject _gso = new SerializedObject(_groupComp);
+        _gso.FindProperty("dashGauge").objectReferenceValue = _dashInst.GetComponent<HUD_DashGauge>();
         _gso.FindProperty("stamina").objectReferenceValue = _staminaInst.GetComponent<HUD_Stemina>();
         _gso.FindProperty("buffBar").objectReferenceValue = _buffInst.GetComponent<HUD_BuffBar>();
         _gso.ApplyModifiedPropertiesWithoutUndo();
@@ -232,6 +253,7 @@ public static class HUD_BuffPrefabBuilder
             UIView_HUD _view = _hudUi.GetComponentInChildren<UIView_HUD>(true);
             SerializedObject _vso = new SerializedObject(_view);
             _vso.FindProperty("hudSteminaBarPrefab").objectReferenceValue = _groupPrefab;
+            _vso.FindProperty("dashReservedWidth").floatValue = DashReservedWidth;
             _vso.ApplyModifiedPropertiesWithoutUndo();
             PrefabUtility.SaveAsPrefabAsset(_hudUi, HudUiPrefabPath);
         }
@@ -242,6 +264,67 @@ public static class HUD_BuffPrefabBuilder
 
         AssetDatabase.SaveAssets();
         Debug.Log("[HUD_BuffPrefabBuilder] 완료: HUD_BuffIcon / HUD_BuffBar / HUD_StaminaGroup 프리팹 생성, HUD_UI 참조 교체");
+    }
+
+    private static GameObject BuildDashPrefab()
+    {
+        Sprite _base = AssetDatabase.LoadAssetAtPath<Sprite>(DashBaseSpritePath);
+        Sprite _fill = AssetDatabase.LoadAssetAtPath<Sprite>(DashFillSpritePath);
+
+        GameObject _go = new GameObject("HUD_DashGauge", typeof(RectTransform));
+        RectTransform _rt = (RectTransform)_go.transform;
+        SetRect(_rt, Vector2.zero, new Vector2(DashCellPitch + 24f, 24f), Vector2.zero);
+        HUD_DashGauge _gauge = _go.AddComponent<HUD_DashGauge>();
+
+        RectTransform _visual = NewRect("Visual", _rt, new Vector2((DashCellPitch + 24f) * 0.5f, 12f), new Vector2(DashCellPitch + 24f, 24f), new Vector2(0.5f, 0.5f));
+        RectTransform[] _cells = new RectTransform[HUD_DashGauge.MaxCells];
+        Image[] _fills = new Image[HUD_DashGauge.MaxCells];
+        Image[] _flashes = new Image[HUD_DashGauge.MaxCells];
+
+        for (int i = 0; i < HUD_DashGauge.MaxCells; i++)
+        {
+            RectTransform _cell = NewRect("Cell_" + i, _visual, new Vector2(DashCellPitch * i, 0f), new Vector2(24f, 24f), Vector2.zero);
+            Image _baseImg = NewImage("Base", _cell, _base, Vector2.zero, new Vector2(24f, 24f));
+            Image _fillImg = NewImage("Fill", _cell, _fill, Vector2.zero, new Vector2(24f, 24f));
+            _fillImg.type = Image.Type.Filled;
+            _fillImg.fillMethod = Image.FillMethod.Horizontal;
+            _fillImg.fillOrigin = 0;
+            _fillImg.fillAmount = 1f;
+            Image _flashImg = NewImage("Flash", _cell, _fill, Vector2.zero, new Vector2(24f, 24f));
+            _flashImg.type = Image.Type.Filled;
+            _flashImg.fillMethod = Image.FillMethod.Horizontal;
+            _flashImg.fillOrigin = 0;
+            _flashImg.fillAmount = 1f;
+            UIEffect _flashFx = _flashImg.gameObject.AddComponent<UIEffect>();
+            _flashFx.colorFilter = ColorFilter.Replace;
+            _flashFx.color = Color.white;
+            _flashImg.enabled = false;
+            _baseImg.raycastTarget = false;
+            _cells[i] = _cell;
+            _fills[i] = _fillImg;
+            _flashes[i] = _flashImg;
+        }
+
+        SerializedObject _so = new SerializedObject(_gauge);
+        _so.FindProperty("visualRoot").objectReferenceValue = _visual;
+        SerializedProperty _cp = _so.FindProperty("cellRects");
+        SerializedProperty _fp = _so.FindProperty("fillImages");
+        SerializedProperty _lp = _so.FindProperty("flashImages");
+        _cp.arraySize = HUD_DashGauge.MaxCells;
+        _fp.arraySize = HUD_DashGauge.MaxCells;
+        _lp.arraySize = HUD_DashGauge.MaxCells;
+
+        for (int i = 0; i < HUD_DashGauge.MaxCells; i++)
+        {
+            _cp.GetArrayElementAtIndex(i).objectReferenceValue = _cells[i];
+            _fp.GetArrayElementAtIndex(i).objectReferenceValue = _fills[i];
+            _lp.GetArrayElementAtIndex(i).objectReferenceValue = _flashes[i];
+        }
+
+        _so.ApplyModifiedPropertiesWithoutUndo();
+        GameObject _prefab = PrefabUtility.SaveAsPrefabAsset(_go, PrefabDir + "/HUD_DashGauge.prefab");
+        UnityEngine.Object.DestroyImmediate(_go);
+        return _prefab;
     }
 
     private static void ConfigureOutline(UIEffect _fx)

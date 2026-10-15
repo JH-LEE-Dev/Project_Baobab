@@ -9,10 +9,16 @@ public class HUD_StaminaGroup : MonoBehaviour
     // 내부 의존성
     [SerializeField] private HUD_Stemina stamina;
     [SerializeField] private HUD_BuffBar buffBar;
+    [SerializeField] private HUD_DashGauge dashGauge;
 
     public HUD_Stemina Stamina
     {
         get { return stamina; }
+    }
+
+    public HUD_DashGauge DashGauge
+    {
+        get { return dashGauge; }
     }
 
     public HUD_BuffBar BuffBar

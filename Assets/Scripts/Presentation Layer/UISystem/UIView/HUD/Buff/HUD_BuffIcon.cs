@@ -129,6 +129,9 @@ public class HUD_BuffIcon : MonoBehaviour
     private float decayDotTimer = 0f;
     private float shinePhaseOffset = 0f;
     private float slotX = 0f;
+    private float slotY = 0f;
+    private float slideFromY = 0f;
+    private float slideToY = 0f;
     private float slideFrom = 0f;
     private float slideTo = 0f;
     private float slideAge = 1f;
@@ -191,7 +194,7 @@ public class HUD_BuffIcon : MonoBehaviour
     }
 
     // 새 버프로 칸을 연다. _bPlayEnter가 false면 등장 연출 없이 바로 보인다.
-    public void Begin(in BuffDisplayInfo _info, float _slotX, bool _bPlayEnter)
+    public void Begin(in BuffDisplayInfo _info, Vector2 _slotPos, bool _bPlayEnter)
     {
         info = _info;
         gameObject.SetActive(true);
@@ -229,9 +232,12 @@ public class HUD_BuffIcon : MonoBehaviour
         exitAge = 0f;
         phase = true == _bPlayEnter ? Phase.Enter : Phase.Idle;
 
-        slotX = _slotX;
-        slideFrom = _slotX;
-        slideTo = _slotX;
+        slotX = _slotPos.x;
+        slideFrom = _slotPos.x;
+        slideTo = _slotPos.x;
+        slotY = _slotPos.y;
+        slideFromY = _slotPos.y;
+        slideToY = _slotPos.y;
         slideAge = 1f;
         ApplyPosition();
 
@@ -326,25 +332,30 @@ public class HUD_BuffIcon : MonoBehaviour
         bIconDirty = true;
     }
 
-    public void SetLayoutTarget(float _x, bool _bSnap)
+    public void SetLayoutTarget(Vector2 _pos, bool _bSnap)
     {
         if (true == _bSnap)
         {
-            slotX = _x;
-            slideFrom = _x;
-            slideTo = _x;
+            slotX = _pos.x;
+            slideFrom = _pos.x;
+            slideTo = _pos.x;
+            slotY = _pos.y;
+            slideFromY = _pos.y;
+            slideToY = _pos.y;
             slideAge = 1f;
             ApplyPosition();
             return;
         }
 
-        if (Mathf.Approximately(slideTo, _x))
+        if (Mathf.Approximately(slideTo, _pos.x) && Mathf.Approximately(slideToY, _pos.y))
         {
             return;
         }
 
         slideFrom = slotX;
-        slideTo = _x;
+        slideTo = _pos.x;
+        slideFromY = slotY;
+        slideToY = _pos.y;
         slideAge = 0f;
     }
 
@@ -627,6 +638,7 @@ public class HUD_BuffIcon : MonoBehaviour
         phase = Phase.Done;
 
         float _baseX = slotX;
+        float _baseY = slotY;
 
         if (null != iconBase && false == bOverflowHidden)
         {
@@ -641,11 +653,11 @@ public class HUD_BuffIcon : MonoBehaviour
                         continue;
                     }
 
-                    bar.FxShard(_baseX, tx, iconHeight - 1 - ty, iconWidth, iconHeight, _c);
+                    bar.FxShard(_baseX, _baseY, tx, iconHeight - 1 - ty, iconWidth, iconHeight, _c);
                 }
             }
 
-            bar.FxSparks(_baseX + CenterX, CenterY, HUD_BuffBar.KindsBig6, SparkColor, 0.5f, 8f, 14f);
+            bar.FxSparks(_baseX + CenterX, _baseY + CenterY, HUD_BuffBar.KindsBig6, SparkColor, 0.5f, 8f, 14f);
         }
 
         bar.NotifyIconDone(this);
@@ -671,12 +683,13 @@ public class HUD_BuffIcon : MonoBehaviour
         float _k = Mathf.Clamp01(slideAge / bar.SlideDuration);
         float _e = DOVirtual.EasedValue(0f, 1f, _k, bar.SlideEase, bar.SlideOvershoot);
         slotX = Mathf.LerpUnclamped(slideFrom, slideTo, _e);
+        slotY = Mathf.LerpUnclamped(slideFromY, slideToY, _e);
         ApplyPosition();
     }
 
     private void ApplyPosition()
     {
-        rectTransformCache.anchoredPosition = new Vector2(Mathf.Round(slotX), 0f);
+        rectTransformCache.anchoredPosition = new Vector2(Mathf.Round(slotX), Mathf.Round(slotY));
     }
 
     private void UpdateVisual(float _clock)
@@ -1031,12 +1044,17 @@ public class HUD_BuffIcon : MonoBehaviour
 
     private void ApplyOutlineColor()
     {
-        if (null == outlineEffect)
+        Color _color = true == bGoldOutline ? (Color)GoldOutline : tint;
+
+        // 프레임 스프라이트에 외곽선을 직접 그리는 경우 UIEffect(Outline8)를 꺼 둔다. 그때는 외곽선 색 대신
+        // 프레임 이미지 색을 바꿔 최대 스택의 금색 번쩍임과 위험 틴트를 표현한다.
+        if (null != outlineEffect && true == outlineEffect.enabled)
         {
+            outlineEffect.shadowColor = _color;
             return;
         }
 
-        outlineEffect.shadowColor = true == bGoldOutline ? (Color)GoldOutline : tint;
+        frameImage.color = _color;
     }
 
     // ===== 입자 =====
@@ -1049,7 +1067,7 @@ public class HUD_BuffIcon : MonoBehaviour
         }
 
         EmitDots(CenterX, CenterY, 30, EnterDotColor);
-        bar.FxSparks(slotX + CenterX, CenterY, HUD_BuffBar.KindsEnter, SparkColor, 0.5f, 9f, 13f);
+        bar.FxSparks(slotX + CenterX, slotY + CenterY, HUD_BuffBar.KindsEnter, SparkColor, 0.5f, 9f, 13f);
     }
 
     private void EmitDots(float _cx, float _cy, int _count, Color32 _color)
@@ -1059,7 +1077,7 @@ public class HUD_BuffIcon : MonoBehaviour
             return;
         }
 
-        bar.FxDots(slotX + _cx, _cy, _count, _color, 0.5f);
+        bar.FxDots(slotX + _cx, slotY + _cy, _count, _color, 0.5f);
     }
 
     private void EmitSparks(byte[] _kinds, Color32 _color, float _life, float _radMin, float _radMax)
@@ -1069,7 +1087,7 @@ public class HUD_BuffIcon : MonoBehaviour
             return;
         }
 
-        bar.FxSparks(slotX + CenterX, CenterY, _kinds, _color, _life, _radMin, _radMax);
+        bar.FxSparks(slotX + CenterX, slotY + CenterY, _kinds, _color, _life, _radMin, _radMax);
     }
 
     // 게이지 끝에서 위로 튀어 오르는 점
@@ -1085,7 +1103,7 @@ public class HUD_BuffIcon : MonoBehaviour
 
         for (int i = 0; i < _count; i++)
         {
-            bar.FxRise(_tipX + Random.Range(-1f, 2f), GaugeTipY, _color, DotRiseTime, 0.03f * i);
+            bar.FxRise(_tipX + Random.Range(-1f, 2f), slotY + GaugeTipY, _color, DotRiseTime, 0.03f * i);
         }
     }
 
@@ -1099,7 +1117,7 @@ public class HUD_BuffIcon : MonoBehaviour
 
         for (int i = 0; i < _count; i++)
         {
-            bar.FxFall(slotX + 14f + Random.Range(-3f, 3f), 6f, _color, 0.5f, Random.Range(0f, 0.1f));
+            bar.FxFall(slotX + 14f + Random.Range(-3f, 3f), slotY + 6f, _color, 0.5f, Random.Range(0f, 0.1f));
         }
     }
 

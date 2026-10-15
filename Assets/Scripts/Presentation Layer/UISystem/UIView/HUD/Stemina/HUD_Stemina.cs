@@ -62,8 +62,10 @@ public class HUD_Stemina : MonoBehaviour
     [SerializeField] private float shakeDuration = 0.2f;
 
     [Header("Recover Effect")]
-    [Tooltip("게이지가 회복 전 값에서 새 값까지 차오르는 대략적인 시간(초). 현재 값을 매 프레임 따라가므로 지속 소모가 겹쳐도 끊기지 않는다.")]
+    [Tooltip("게이지가 회복 전 값에서 새 값까지 차오르는 시간(초). 목표는 현재 값을 매 프레임 따라가므로 지속 소모가 겹쳐도 끊기지 않는다.")]
     [SerializeField] private float fillUpDuration = 0.35f;
+    [Tooltip("차오름의 이징 곡선(DOTween Ease). 오버슈트가 있는 곡선은 목표를 넘지 않게 잘라서 쓴다.")]
+    [SerializeField] private Ease fillUpEase = Ease.OutQuad;
     [Tooltip("연속으로 들어오는 회복의 세기를 누적하는 시간(초). 마지막 회복의 차오름이 끝난 뒤 이 시간 안에 또 들어오면 같은 묶음으로 보고 누적량으로 플래시 세기와 \"+\" 개수를 정한다.")]
     [Range(0f, 1f)][SerializeField] private float gainBundleWindow = 0.25f;
     [Tooltip("이 비율(최대치 대비) 이하의 단일 회복은 무시한다(노이즈 컷). 0이면 0보다 큰 회복은 모두 차오름에 반영한다.")]
@@ -215,9 +217,7 @@ public class HUD_Stemina : MonoBehaviour
     private const float GhostMinFollowSpeed = 0.15f;
     // 회복이 올 때 직전 플래시가 이 값(1이 막 시작, 0이 끝) 이하로 줄어 있으면 플래시를 다시 시작한다(같은 순간의 연타는 건너뛴다)
     private const float FlashRestartBelow = 0.5f;
-    // 차오름은 일정한 속도로 차오르다가 목표에 가까워질 때만 느려진다. (처음부터 지수 감쇠로 시작하면 첫 프레임에 한꺼번에 튄다)
-    private const float FillEaseGap = 0.12f;
-    private const float FillEaseMinFactor = 0.35f;
+    // 차오름 시간의 하한을 정하는 최소 속도(비율/초). 작은 회복이 fillUpDuration만큼 느리게 차오르지 않게 한다.
     private const float FillMinSpeed = 0.5f;
     // "+"는 이 간격으로 한 칸씩만 움직인다. (20fps)
     private const float PixelStep = 0.05f;
@@ -296,7 +296,10 @@ public class HUD_Stemina : MonoBehaviour
     private bool bFillingUp = false;
     private bool bFillEvent = false;
     private float fillSegmentLow = 0f;
-    private float fillSpeed = 0f;
+    // 차오름 곡선: 시작 값에서 (매 프레임 따라가는) 현재 값까지 fillUpEase로 진행한다.
+    private float fillFrom = 0f;
+    private float fillElapsed = 0f;
+    private float fillCurveDuration = 0.35f;
 
     // 회복 묶음: 한 번의 공격으로 여러 나무가 쓰러지며 잘게 나뉘어 들어오는 회복을 하나의 큰 회복으로 본다.
     // 마지막 회복의 차오름이 끝난 뒤 gainBundleWindow 안에 또 들어오면 같은 묶음이고, 세기와 "+" 목표 개수는 누적량으로 정한다.
@@ -389,6 +392,8 @@ public class HUD_Stemina : MonoBehaviour
     private bool bEdgeGain = false;
     private bool bEdgeDrain = false;
     private int edgePrevFilled = -1;
+    // 머리를 마지막으로 그린 때의 채움 앞쪽 정수 픽셀. 앞쪽이 움직이면 30fps 간격과 상관없이 바로 다시 그린다.
+    private int edgeLastPaintedFilled = -1;
     private float edgeVelocity = 0f;
     private float edgeFastSpeed = 0f;
     private float edgeAppear = 0f;
@@ -473,6 +478,10 @@ public class HUD_Stemina : MonoBehaviour
         // 채움 앞쪽이 움직이면 앞쪽 끝부분 연출을 깨운다(움직임이 멈추고 입자가 사라지면 스스로 잠든다).
         if (0f < frontEdgeStrength && EdgeMoveEpsilon < Mathf.Abs(shownRatio - _prevShown))
             bEdgeActive = true;
+
+        // 채움 앞쪽 픽셀이 바뀌었으면 같은 호출 안에서 머리도 그 위치로 다시 그린다.
+        // Update가 UpdateValue보다 먼저 도는 프레임에도 채움과 머리가 한 프레임 어긋나지 않게 한다.
+        SyncFrontEdgeToFill();
 
         UpdateGhost(_ratio, _prevShown, _wasFilling);
     }
@@ -1243,6 +1252,7 @@ public class HUD_Stemina : MonoBehaviour
             edgeAppear = 0f;
             edgeDrainWeight = 0f;
             edgePrevFilled = -1;
+            edgeLastPaintedFilled = -1;
             edgePrevShown = Mathf.Clamp01(shownRatio);
             return;
         }
@@ -1326,7 +1336,26 @@ public class HUD_Stemina : MonoBehaviour
 
         edgeStepTimer += _dt;
 
-        if (edgeStepTimer < EdgeStepInterval)
+        // 정지/느린 구간은 30fps로, 채움 앞쪽 픽셀이 바뀐 프레임은 간격과 상관없이 바로 그린다.
+        // (빠른 소모에서 채움은 매 프레임 줄어드는데 머리만 늦게 그려져 사이가 벌어지던 문제)
+        if (edgeStepTimer < EdgeStepInterval && _filledNow == edgeLastPaintedFilled)
+            return;
+
+        edgeStepTimer = 0f;
+        PaintFrontEdge();
+    }
+
+    // 채움 앞쪽 정수 픽셀이 마지막으로 그린 머리와 다르면 지금 값으로 다시 그린다(그릴 수 있는 상태일 때만).
+    private void SyncFrontEdgeToFill()
+    {
+        if (false == bEdgeDrawn || PrismPhase.Off != prismPhase || 0f >= frontEdgeStrength || false == bActive
+            || false == bSilhouetteReady || null == prismSurface || null == prismTexture || null == prismBuffer
+            || null == edgeMask || null == barRowColors || prismBuffer.Length != edgeMask.Length)
+            return;
+
+        int _filled = Mathf.Min(barW, Mathf.FloorToInt(barW * Mathf.Clamp01(shownRatio)));
+
+        if (_filled == edgeLastPaintedFilled)
             return;
 
         edgeStepTimer = 0f;
@@ -1345,6 +1374,7 @@ public class HUD_Stemina : MonoBehaviour
         edgeAppear = 0f;
         edgeDrainWeight = 0f;
         edgePrevFilled = -1;
+        edgeLastPaintedFilled = -1;
         edgePrevShown = Mathf.Clamp01(shownRatio);
         edgeSpringLen = EdgeRestLen;
         edgeSpringVel = 0f;
@@ -1376,6 +1406,7 @@ public class HUD_Stemina : MonoBehaviour
     {
         float _frontPx = barW * Mathf.Clamp01(shownRatio);
         int _filled = Mathf.Min(barW, Mathf.FloorToInt(_frontPx));
+        edgeLastPaintedFilled = _filled;
 
         // 비었거나 가득 찼으면 그릴 머리가 없다.
         if (0 >= _filled || barW <= _filled)
@@ -1613,8 +1644,11 @@ public class HUD_Stemina : MonoBehaviour
             }
         }
 
-        // 남은 거리를 fillUpDuration 안에 채우는 속도. 이미 차오르는 중에 또 회복되면 구간의 시작은 그대로 두고 남은 거리로 다시 계산한다.
-        fillSpeed = Mathf.Max(FillMinSpeed, (_high - shownRatio) / Mathf.Max(0.05f, fillUpDuration));
+        // 지금 보이는 값에서 목표까지 곡선을 새로 시작한다. 이미 차오르는 중에 또 회복되면 구간의 시작(fillSegmentLow)은
+        // 그대로 두고, 곡선만 지금 값에서 남은 거리로 다시 잡는다. 거리가 작으면 FillMinSpeed로 시간을 줄인다.
+        fillFrom = shownRatio;
+        fillElapsed = 0f;
+        fillCurveDuration = Mathf.Max(0.05f, Mathf.Min(fillUpDuration, (_high - shownRatio) / FillMinSpeed));
     }
 
     // 보이는 값: 차오르는 동안은 실제 비율을 향해 일정한 속도로 차오르고(지속 소모가 겹쳐도 끊기지 않음), 아니면 실제 비율과 같다.
@@ -1634,14 +1668,14 @@ public class HUD_Stemina : MonoBehaviour
             return;
         }
 
-        float _gap = _ratio - shownRatio;
-        float _dt = Time.deltaTime;
-        float _ease = Mathf.Lerp(FillEaseMinFactor, 1f, Mathf.Clamp01(_gap / FillEaseGap));
-        float _step = fillSpeed * _ease * _dt;
+        // 시작 값에서 현재 값(매 프레임 바뀔 수 있음)까지 이징 곡선으로 진행한다.
+        fillElapsed += Time.deltaTime;
+        float _t = Mathf.Clamp01(fillElapsed / fillCurveDuration);
+        float _e = DOVirtual.EasedValue(0f, 1f, _t, fillUpEase);
 
-        shownRatio = Mathf.Min(_ratio, shownRatio + _step);
+        shownRatio = Mathf.Min(_ratio, Mathf.LerpUnclamped(fillFrom, _ratio, _e));
 
-        if (SnapGap >= _ratio - shownRatio)
+        if (1f <= _t || SnapGap >= _ratio - shownRatio)
         {
             shownRatio = _ratio;
             EndFillUp();

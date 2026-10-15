@@ -50,8 +50,12 @@ public class HUD_BuffBar : MonoBehaviour
     [SerializeField] private Sprite[] digitSprites;
 
     [Header("Layout")]
-    [Tooltip("한 줄에 보이는 최대 칸 수(+N 표시 칸 포함). 넘으면 마지막 칸이 +N이 된다.")]
-    [SerializeField] private int maxVisible = 8;
+    [Tooltip("한 줄의 가로폭(스태미나 바 폭). 첫 줄은 firstRowReserved만큼 오른쪽을 비운다(대시 게이지 자리).")]
+    [SerializeField] private float rowWidth = 160f;
+    [Tooltip("최대 줄 수. 한 줄이 부족하면 위로 쌓고, 모든 줄이 차면 마지막 칸이 +N이 된다.")]
+    [SerializeField] private int maxRows = 2;
+    [Tooltip("줄 간 세로 간격(칸 21 + 여백 2)")]
+    [SerializeField] private float rowPitchY = 23f;
     [SerializeField] private float slotPitch = 20f;
     [SerializeField] private float slideDuration = 0.3f;
     [Tooltip("이웃 칸이 빈자리로 미끄러져 갈 때의 이징")]
@@ -63,9 +67,10 @@ public class HUD_BuffBar : MonoBehaviour
     private const int FxOriginX = 24;
     private const int FxOriginY = 24;
     private const int FxWidth = 200;
-    private const int FxHeight = 88;
+    private const int FxHeight = 112;
     private const int MaxParticles = 512;
     private const int ChipTexWidth = 24;
+    private const float IconCellWidth = 18f;
     private const float FxFrameRate = 20f;
 
     private static readonly Color32 StageHot = new Color32(255, 244, 190, 255);
@@ -92,6 +97,7 @@ public class HUD_BuffBar : MonoBehaviour
     private bool bInitialized = false;
     private int chipShown = -1;
     private Color lastTint = Color.white;
+    private float firstRowReserved = 0f;
 
     public float SlideDuration
     {
@@ -146,7 +152,7 @@ public class HUD_BuffBar : MonoBehaviour
         }
 
         layoutOrder.Add(_icon);
-        _icon.Begin(_info, (layoutOrder.Count - 1) * slotPitch, true);
+        _icon.Begin(_info, GetSlotPos(layoutOrder.Count - 1), true);
         _icon.SetTint(lastTint);
         RelayoutAll(false);
     }
@@ -280,7 +286,7 @@ public class HUD_BuffBar : MonoBehaviour
     }
 
     // 퇴장 때 아이콘 픽셀 하나가 점으로 흩어진다. _px/_py는 아이콘 픽셀 좌표(왼쪽 위 원점).
-    public void FxShard(float _slotX, int _px, int _py, int _iconW, int _iconH, Color32 _color)
+    public void FxShard(float _slotX, float _slotY, int _px, int _py, int _iconW, int _iconH, Color32 _color)
     {
         float _ang = Mathf.Atan2(_py - _iconH * 0.5f, _px - _iconW * 0.5f) + Random.Range(-0.5f, 0.5f);
         float _sp = Random.Range(12f, 34f);
@@ -291,7 +297,7 @@ public class HUD_BuffBar : MonoBehaviour
         float _a = -1.1f * _sp / _lf;
         // 아이콘 픽셀(위에서 아래)을 로컬 좌표(아래에서 위)로 옮긴다. 칸 안 아이콘 위치는 (3, 6).
         float _x = _slotX + 3f + _px;
-        float _y = 6f + _iconH - 1 - _py;
+        float _y = _slotY + 6f + _iconH - 1 - _py;
         // 화면 y는 아래 방향이 +이므로 sin 부호를 뒤집는다. 위로 8px/s 튀었다가 중력으로 떨어진다.
         Emit(_x, _y, _cos * _v, -_sin * _v + 8f, _cos * _a, -_sin * _a - 60f, _lf, 0f, KindDot, _color);
     }
@@ -395,18 +401,79 @@ public class HUD_BuffBar : MonoBehaviour
         pool.Push(_icon);
     }
 
-    // 퇴장이 끝난 칸이 빠지면 뒤 칸들이 왼쪽으로 슬라이드한다. 한 줄을 넘으면 마지막 칸이 +N이 된다.
+    // 첫 줄에서 오른쪽을 비워 둘 폭(대시 게이지가 보일 때). 바뀌면 칸들이 새 자리로 미끄러져 간다.
+    public void SetFirstRowReserved(float _width)
+    {
+        float _w = Mathf.Max(0f, _width);
+
+        if (Mathf.Approximately(_w, firstRowReserved))
+        {
+            return;
+        }
+
+        firstRowReserved = _w;
+
+        if (true == bInitialized)
+        {
+            RelayoutAll(false);
+        }
+    }
+
+    // 한 줄에 들어가는 칸 수. 칸 폭(18)과 피치(20) 사이의 여백은 줄 끝에서는 필요 없으므로 더해 계산한다.
+    private int GetRowCapacity(int _row)
+    {
+        float _width = rowWidth - (0 == _row ? firstRowReserved : 0f);
+        return Mathf.Max(0, Mathf.FloorToInt((_width + (slotPitch - IconCellWidth)) / slotPitch));
+    }
+
+    // 전체 칸 인덱스를 (줄, 열)로 바꿔 로컬 좌표를 돌려준다. 첫 줄이 아래, 다음 줄이 위.
+    private Vector2 GetSlotPos(int _index)
+    {
+        int _remain = _index;
+
+        for (int row = 0; row < maxRows; row++)
+        {
+            int _cap = GetRowCapacity(row);
+
+            if (_remain < _cap)
+            {
+                return new Vector2(_remain * slotPitch, row * rowPitchY);
+            }
+
+            _remain -= _cap;
+        }
+
+        // 모든 줄이 찼을 때는 마지막 줄 끝(+N 칸)에 겹쳐 둔다
+        int _last = Mathf.Max(0, maxRows - 1);
+        return new Vector2(Mathf.Max(0, GetRowCapacity(_last) - 1) * slotPitch, _last * rowPitchY);
+    }
+
+    private int GetTotalCapacity()
+    {
+        int _total = 0;
+
+        for (int row = 0; row < maxRows; row++)
+        {
+            _total += GetRowCapacity(row);
+        }
+
+        return _total;
+    }
+
+    // 퇴장이 끝난 칸이 빠지면 뒤 칸들이 앞으로 슬라이드한다. 한 줄이 차면 윗줄로 올라가고,
+    // 모든 줄이 차면 마지막 칸이 +N이 된다.
     private void RelayoutAll(bool _bSnap)
     {
         int _count = layoutOrder.Count;
-        bool _bOverflow = maxVisible < _count;
-        int _shown = true == _bOverflow ? maxVisible - 1 : _count;
+        int _total = GetTotalCapacity();
+        bool _bOverflow = _total < _count;
+        int _shown = true == _bOverflow ? Mathf.Max(0, _total - 1) : _count;
 
         for (int i = 0; i < _count; i++)
         {
             HUD_BuffIcon _icon = layoutOrder[i];
             _icon.SetOverflowHidden(_shown <= i);
-            _icon.SetLayoutTarget(i * slotPitch, _bSnap);
+            _icon.SetLayoutTarget(GetSlotPos(i), _bSnap);
         }
 
         if (null == chipRoot)
@@ -418,7 +485,7 @@ public class HUD_BuffBar : MonoBehaviour
 
         if (true == _bOverflow)
         {
-            chipRoot.anchoredPosition = new Vector2((maxVisible - 1) * slotPitch, 0f);
+            chipRoot.anchoredPosition = GetSlotPos(_shown);
             RefreshChip(_count - _shown);
         }
     }

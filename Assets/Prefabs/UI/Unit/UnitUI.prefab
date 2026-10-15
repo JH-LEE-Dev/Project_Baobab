@@ -58,10 +58,12 @@ MonoBehaviour:
   hpBarPrefab: {fileID: 8900395080866215809, guid: 710c291d85ed212408d450d94237f2ff, type: 3}
   interactionUnitPrefab: {fileID: 2954469314965808777, guid: f37b3f73897c3ee41ab98bf451a1d762, type: 3}
   speechBubbleUnitPrefab: {fileID: 2205594357060437259, guid: 380342ca825ed8643bdca4bd050d56c6, type: 3}
+  dashGaugePrefab: {fileID: 2302091704276273006, guid: 00fe1b2d313b47841b56b7b37ef59340, type: 3}
   speechBubbleDuration: 3.5
   speechBubbleCooldown: 3.5
   interactionYOffset: {x: 0, y: 0.75}
   speechBubbleYOffset: {x: 0, y: 0.5}
+  dashGaugeOffset: {x: 0, y: -0.2}
   treesYOffset: 1
   animalsYOffset: 0.35
   hpBarShowDuration: 2
