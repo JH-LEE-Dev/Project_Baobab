@@ -1350,6 +1350,37 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 포자 대폭발 연출. _center는 쓰러진 나무 자리, _radius는 판정 범위(월드 유닛, 가로 반지름), _tier는 포자 포션 성장 단계(1~3)다.
+    /// 알갱이 위치는 재생마다 무작위라 같은 호출도 매번 다른 모양이 나온다.
+    /// </summary>
+    public void PlaySporeBigExplosionVFX(Vector3 _center, float _radius, int _tier)
+    {
+        if (vfxComponent == null) return;
+
+        // 별자리 노바와 같은 소팅 레이어/순서(바닥 메쉬는 이펙트 스크립트가 ShockWave 레이어로 다시 맞춘다).
+        const string sortingLayerName = "FlyingItem";
+        const int sortingOrder = 10;
+
+        ParticleSystem effect = vfxComponent.Play(new VFXPlaySettings(
+            "SporeBigExplosionEffect",
+            _center,
+            Quaternion.identity,
+            sortingLayerName,
+            sortingOrder,
+            null
+        ));
+
+        if (effect == null) return;
+
+        // 풀에서 꺼낸 직후(첫 LateUpdate 전)에 범위와 단계를 정해야 한다.
+        PresentationLayer.VFX.VFX_SporeBigExplosion explosion = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_SporeBigExplosion>(true);
+        if (explosion == null) return;
+
+        if (0.0f < _radius) explosion.SetRange(_radius);
+        explosion.SetTier(_tier);
+    }
+
+    /// <summary>
     /// 발현 낙인이 나무에 처음 찍히는 순간 1회 재생되는 각인 VFX(VFX_BrandStamp)입니다. 이후 낙인이 유지되는 동안은
     /// BeginBrandStarWrap의 별 감싸기가 이어받는다. parent는 null로 고정하여 나무 오브젝트와 완전히 분리합니다.
     /// </summary>

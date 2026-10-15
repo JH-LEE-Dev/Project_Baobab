@@ -2755,12 +2755,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void TriggerSporeBigExplosion(Vector3 _centerPos, int _tier)
     {
+        // 이펙트는 나무가 쓰러진 이 프레임에 시작한다(응집 0.2초 뒤 폭발). 범위는 판정과 같은 값을 넘겨 보이는 범위를 맞춘다.
+        inDungeonVFXManager?.PlaySporeBigExplosionVFX(_centerPos, sporeBigExplosionRange, _tier);
         StartCoroutine(SporeBigExplosionRoutine(_centerPos, _tier));
     }
 
     /// <summary>
     /// "포자 포션" 효과인 포자 대폭발. 쓰러진 나무 자리(_centerPos) 기준 등각 타원 범위의 나무에 피해를 주고,
-    /// 맞은 나무는 이후 받는 피해가 영구히 증폭된다. 이펙트·사운드는 따로 붙인다(지금은 판정만 있다).
+    /// 맞은 나무는 이후 받는 피해가 영구히 증폭된다. 이펙트는 TriggerSporeBigExplosion에서 재생한다(사운드는 아직 없다).
     /// </summary>
     private IEnumerator SporeBigExplosionRoutine(Vector3 _centerPos, int _tier)
     {
