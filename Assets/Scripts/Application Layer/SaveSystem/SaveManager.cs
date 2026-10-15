@@ -445,7 +445,6 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
         {
             cachedSaveData.bHasAcquiredLostAndFoundBox = inDungeonObjectManager.bHasAcquiredLostAndFoundBox;
             cachedSaveData.bHasAcquiredSporePotion = inDungeonObjectManager.bHasAcquiredSporePotion;
-            cachedSaveData.sporePotionCharge = inDungeonObjectManager.sporePotionCharge;
             cachedSaveData.bHasAcquiredStarCompass = inDungeonObjectManager.bHasAcquiredStarCompass;
             cachedSaveData.bHasAcquiredObsidianCharm = inDungeonObjectManager.bHasAcquiredObsidianCharm;
             cachedSaveData.bGoldTreePityDone = inDungeonObjectManager.bGoldTreePityDone;
@@ -894,7 +893,6 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
         {
             inDungeonObjectManager.bHasAcquiredLostAndFoundBox = _data.bHasAcquiredLostAndFoundBox;
             inDungeonObjectManager.bHasAcquiredSporePotion = _data.bHasAcquiredSporePotion;
-            inDungeonObjectManager.sporePotionCharge = _data.sporePotionCharge;
             inDungeonObjectManager.bHasAcquiredStarCompass = _data.bHasAcquiredStarCompass;
             inDungeonObjectManager.bHasAcquiredObsidianCharm = _data.bHasAcquiredObsidianCharm;
             inDungeonObjectManager.bGoldTreePityDone = _data.bGoldTreePityDone;

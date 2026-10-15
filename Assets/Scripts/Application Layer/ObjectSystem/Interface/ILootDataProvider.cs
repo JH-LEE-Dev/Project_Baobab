@@ -8,7 +8,8 @@ public interface ILootDataProvider
 
     /// <summary>
     /// 성장형 전리품의 지금 단계(1부터)입니다. 성장하지 않는 전리품이거나 아직 얻지 않았으면 0입니다.
-    /// 지금은 "원목 보험 증서"(LostAndFoundBox)만 성장합니다(프레스티지 레벨에 따라 I → II → III).
+    /// 지금은 "원목 보험 증서"(LostAndFoundBox)·"포자 포션"(SporePotion)·"별빛 나침반"(StarCompass)이 성장합니다
+    /// (프레스티지 레벨에 따라 I → II → III).
     /// </summary>
     int GetLootGrowthTier(LootType _lootType);
 

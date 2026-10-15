@@ -1082,6 +1082,9 @@ public class Drone : MonoBehaviour
 
     private void ApplyDamageToCurrentTarget()
     {
+        // 드론 레이저(이어지는 연쇄 공격 포함)로 쓰러지는 나무는 플레이어 공격으로 벌목된 것이다(PlayerAttackDamageScope 참고).
+        using var _playerAttackScope = PlayerAttackDamageScope.Enter();
+
         if (currentTarget == null || currentTarget.bDead) return;
 
         PlayFireSound();

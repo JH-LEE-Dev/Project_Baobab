@@ -643,6 +643,9 @@ public class Boomerang : MonoBehaviour
     // 나무가 hitRadius 안에 들어왔으면 놓치지 않고 맞은 것으로 처리한다.
     private void ApplyDamageInRange()
     {
+        // 부메랑으로 쓰러지는 나무는 플레이어 공격으로 벌목된 것이다(PlayerAttackDamageScope 참고).
+        using var _playerAttackScope = PlayerAttackDamageScope.Enter();
+
         if (CollisionSystem.Instance == null) return;
 
         Vector2 segStart = lastDamageCheckPosition;

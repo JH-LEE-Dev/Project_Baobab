@@ -45,6 +45,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public event Action<LootType> LootAcquiredEvent;
     public event Action<LootType, int> LootGrowthTierChangedEvent;
 
+    // "별빛 나침반" 유성우 - 이펙트·사운드를 붙일 자리. 유성우가 시작될 때(지속시간 초) / 유성이 떨어질 때(착지 위치).
+    public event Action<float> MeteorShowerStartedEvent;
+    public event Action<Vector3> MeteorImpactEvent;
+
     // // 외부 의존성
     private IEnvironmentProvider environmentProvider;
     public ItemManager itemManager { get; private set; }
@@ -84,28 +88,82 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private int currentPrestigeLevel;
 
     // "포자 포션" - "2-1,2-2,2-3"(FluffySporeForest_1/2/3)에서 확률 드랍, "3-1"(StarrootForest_1) 이후
-    // 모든 숲에서 구제 보장. 한 번 획득하면 영구 소지하는 충전식 소비 아이템(세이브 데이터와 연동).
+    // 모든 숲에서 구제 보장. 한 번 획득하면 영구 소지한다(세이브 데이터와 연동).
+    // 효과: 나무를 벌목하면 확률로 "포자 대폭발"이 일어나, 쓰러진 나무 자리 기준 등각 타원 범위의 나무에 피해를 주고
+    // 맞은 나무는 이후 받는 피해가 영구히 증폭된다(TreeObj.ApplySporeDamageAmplify). 프레스티지 레벨에 따라
+    // I → II → III으로 성장하고, 효과는 다음 숲 방문부터 적용된다(sporePotionTierThisRun).
     public bool bHasAcquiredSporePotion { get; set; }
-    public float sporePotionCharge { get; set; }
     private bool bSporePotionSpawnedThisRun;
-    // 이번 던전 진행(run) 동안 마셨는지 - RefillSporePotionCharge(TownStartedSignal 시점)에서
-    // 원정 종료 충전 여부를 결정한다. 매 던전 진입마다(SetupForForestType) 리셋된다.
-    private bool bDrankSporePotionThisRun;
     [SerializeField] private float sporePotionDropChance = 0.05f;
     [SerializeField] private float sporePotionDropChanceIncreasePerKill = 0.005f;
     private int sporePotionFluffyTreeKillCount;
     [SerializeField] private int sporePotionPityMinKills = 4;
     [SerializeField] private int sporePotionPityMaxKills = 5;
     private int sporePotionPityThreshold;
-    [SerializeField] private float sporePotionMaxCharge = 30f;
-    [SerializeField] private float sporePotionRefillMin = 3f;
-    [SerializeField] private float sporePotionRefillMax = 5f;
 
-    // "별빛 나침반" - StarrootForest_1 이후 어느 숲이든 나무 4~5그루를 벤 시점에 보장 드랍.
+    // "포자 포션" 성장 기준 프레스티지 레벨과 단계별 포자 대폭발 수치(피해 / 발동 확률 / 맞은 나무의 피해 증폭률).
+    [SerializeField] private int sporePotionTier2PrestigeLevel = 8;
+    [SerializeField] private int sporePotionTier3PrestigeLevel = 10;
+    [SerializeField, Tooltip("포자 대폭발 범위 - 등각 타원의 장반경(타일 가로폭 단위). 2.5면 가로 5타일 폭의 타원")]
+    private float sporeBigExplosionRange = 2.5f;
+    [SerializeField] private float sporeBigExplosionTier1Damage = 50f;
+    [SerializeField] private float sporeBigExplosionTier1Chance = 0.05f;
+    [SerializeField] private float sporeBigExplosionTier1DamageAmplify = 0.2f;
+    [SerializeField] private float sporeBigExplosionTier2Damage = 100f;
+    [SerializeField] private float sporeBigExplosionTier2Chance = 0.075f;
+    [SerializeField] private float sporeBigExplosionTier2DamageAmplify = 0.3f;
+    [SerializeField] private float sporeBigExplosionTier3Damage = 200f;
+    [SerializeField] private float sporeBigExplosionTier3Chance = 0.1f;
+    [SerializeField] private float sporeBigExplosionTier3DamageAmplify = 0.5f;
+    // 이번 숲 방문에 적용되는 단계(0이면 효과 없음). 숲에 들어올 때 정하고 방문 도중에는 바꾸지 않는다.
+    private int sporePotionTierThisRun;
+    // 던전 정리 때 올라간다. 한 프레임 뒤에 터지려고 기다리던 대폭발이 다음 맵의 나무를 때리지 않게 한다.
+    private int sporeBigExplosionVersion = 0;
+
+    // "별빛 나침반" - "3-2"(StarrootForest_2)에서 확률 드랍, "3-3"(StarrootForest_3) 이후 모든 숲에서 구제 보장.
     // 한 곳에서 획득하면 다른 숲에서는 더 이상 드랍되지 않는다(영구 플래그).
-    // 별자리 표식은 이제 기본으로 항상 표시되므로, 이 아이템은 드랍만 되고 획득해도 아무 효과가 없다.
+    // 효과: 플레이어 공격으로 나무를 벨 때마다 유성우 게이지가 차고, 가득 차면 지속시간 동안 캐릭터 주변 무작위 위치에
+    // 유성이 떨어져 착지 위치 기준 등각 타원 범위의 나무에 피해를 준다. 프레스티지 레벨에 따라 I → II → III으로
+    // 성장하고, 효과는 다음 숲 방문부터 적용된다(starCompassTierThisRun). 이펙트는 따로 붙인다
+    // (MeteorShowerStartedEvent / MeteorImpactEvent).
     public bool bHasAcquiredStarCompass { get; set; }
     private bool bStarCompassSpawnedThisRun;
+    // "3-2" 드랍 확률 - 기본값에서 시작해, 이 스테이지에서 나무를 벨 때마다(못 얻은 채로) 한 그루당
+    // starCompassDropChanceIncreasePerKill만큼 계속 올라간다. 스테이지 진입마다 리셋된다.
+    [SerializeField] private float starCompassDropChance = 0.05f;
+    [SerializeField] private float starCompassDropChanceIncreasePerKill = 0.005f;
+    private int starCompassTreeKillCount;
+
+    // "별빛 나침반" 성장 기준 프레스티지 레벨과 유성우 수치. 단계별 수치는 밸런스 작업 전 임시값이다.
+    [SerializeField] private int starCompassTier2PrestigeLevel = 9;
+    [SerializeField] private int starCompassTier3PrestigeLevel = 11;
+    [SerializeField, Tooltip("플레이어 공격으로 나무 한 그루를 벨 때 차는 유성우 게이지(1이면 가득)")]
+    private float meteorShowerChargePerKill = 0.1f;
+    [SerializeField, Tooltip("유성우가 쏟아지는 동안 유성이 떨어지는 간격(초)")]
+    private float meteorShowerInterval = 0.2f;
+    [SerializeField, Tooltip("유성 하나의 피해 범위 - 착지 위치 기준 등각 타원의 장반경(타일 가로폭 단위)")]
+    private float meteorImpactRange = 1f;
+    [SerializeField] private float meteorShowerTier1Damage = 100f;
+    [SerializeField, Tooltip("I단계 낙하 사정거리 - 캐릭터 기준 등각 타원의 장반경(타일 가로폭 단위)")]
+    private float meteorShowerTier1FallRange = 3.5f;
+    [SerializeField] private float meteorShowerTier1Duration = 3f;
+    [SerializeField] private float meteorShowerTier2Damage = 100f;
+    [SerializeField] private float meteorShowerTier2FallRange = 3.5f;
+    [SerializeField] private float meteorShowerTier2Duration = 4f;
+    [SerializeField] private float meteorShowerTier3Damage = 100f;
+    [SerializeField] private float meteorShowerTier3FallRange = 3.5f;
+    [SerializeField] private float meteorShowerTier3Duration = 5f;
+    // 이번 숲 방문에 적용되는 단계(0이면 효과 없음). 숲에 들어올 때 정하고 방문 도중에는 바꾸지 않는다.
+    private int starCompassTierThisRun;
+    // 유성우 게이지(0~1). 숲 방문마다 비운다.
+    private float meteorShowerCharge;
+    // 유성우가 쏟아지는 중인지. 그동안은 게이지가 차지 않는다.
+    private bool bMeteorShowerActive;
+    // 던전 정리 때 올라간다. 쏟아지던 유성우가 다음 맵의 나무를 때리지 않게 한다.
+    private int meteorShowerVersion = 0;
+
+    /// <summary>유성우 게이지(0~1). 효과가 없는 숲 방문이면 0이다.</summary>
+    public float MeteorShowerCharge => meteorShowerCharge;
     [SerializeField] private int starCompassPityMinKills = 4;
     [SerializeField] private int starCompassPityMaxKills = 5;
     private int starCompassPityThreshold;
@@ -135,7 +193,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 벌목 수는 런 단위 하나(pityTreeKillCount)로 세고, 진입마다 0부터 다시 센다.
     private const ForestType LostAndFoundBoxPityStart = ForestType.WideGreenForest_3;
     private const ForestType SporePotionPityStart = ForestType.StarrootForest_1;
-    private const ForestType StarCompassPityStart = ForestType.StarrootForest_1;
+    private const ForestType StarCompassPityStart = ForestType.StarrootForest_3;
     private const ForestType ObsidianCharmPityStart = ForestType.MagmaForest_3;
     private int pityTreeKillCount;
 
@@ -283,6 +341,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         // 로그라이크 판 시작도 숲 방문이다. 판 도중엔 전리품이 떨어지지 않으므로 지금까지와 같다.
         bObsidianCharmActiveThisRun = bHasAcquiredObsidianCharm;
+        sporePotionTierThisRun = GetLootGrowthTier(LootType.SporePotion);
+        starCompassTierThisRun = GetLootGrowthTier(LootType.StarCompass);
+        meteorShowerCharge = 0f;
     }
 
     /// <summary>
@@ -724,10 +785,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         lostAndFoundBoxWideGreenTreeKillCount = 0;
 
         bSporePotionSpawnedThisRun = false;
-        bDrankSporePotionThisRun = false;
         sporePotionFluffyTreeKillCount = 0;
+        sporePotionTierThisRun = GetLootGrowthTier(LootType.SporePotion);
 
         bStarCompassSpawnedThisRun = false;
+        starCompassTreeKillCount = 0;
+        starCompassTierThisRun = GetLootGrowthTier(LootType.StarCompass);
+        meteorShowerCharge = 0f;
 
         bObsidianCharmSpawnedThisRun = false;
         obsidianCharmTreeKillCount = 0;
@@ -780,22 +844,46 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     /// </summary>
     public void PrestigeLevelIncreased(int _prestigeLevel)
     {
-        int tierBefore = GetLootGrowthTier(LootType.LostAndFoundBox);
-        currentPrestigeLevel = _prestigeLevel;
-        int tierAfter = GetLootGrowthTier(LootType.LostAndFoundBox);
-
-        if (tierBefore != tierAfter)
+        Span<int> tiersBefore = stackalloc int[GrowthLootTypes.Length];
+        for (int i = 0; i < GrowthLootTypes.Length; i++)
         {
-            LootGrowthTierChangedEvent?.Invoke(LootType.LostAndFoundBox, tierAfter);
+            tiersBefore[i] = GetLootGrowthTier(GrowthLootTypes[i]);
+        }
+
+        currentPrestigeLevel = _prestigeLevel;
+
+        for (int i = 0; i < GrowthLootTypes.Length; i++)
+        {
+            int tierAfter = GetLootGrowthTier(GrowthLootTypes[i]);
+            if (tiersBefore[i] != tierAfter)
+            {
+                LootGrowthTierChangedEvent?.Invoke(GrowthLootTypes[i], tierAfter);
+            }
         }
     }
 
+    // 프레스티지 레벨에 따라 성장하는 전리품(GetLootGrowthTier가 0이 아닌 값을 돌려줄 수 있는 것).
+    private static readonly LootType[] GrowthLootTypes = { LootType.LostAndFoundBox, LootType.SporePotion, LootType.StarCompass };
+
     public int GetLootGrowthTier(LootType _lootType)
     {
-        if (LootType.LostAndFoundBox != _lootType || false == bHasAcquiredLostAndFoundBox) return 0;
+        switch (_lootType)
+        {
+            case LootType.LostAndFoundBox:
+                return bHasAcquiredLostAndFoundBox ? GetGrowthTier(lostAndFoundBoxTier2PrestigeLevel, lostAndFoundBoxTier3PrestigeLevel) : 0;
+            case LootType.SporePotion:
+                return bHasAcquiredSporePotion ? GetGrowthTier(sporePotionTier2PrestigeLevel, sporePotionTier3PrestigeLevel) : 0;
+            case LootType.StarCompass:
+                return bHasAcquiredStarCompass ? GetGrowthTier(starCompassTier2PrestigeLevel, starCompassTier3PrestigeLevel) : 0;
+            default:
+                return 0;
+        }
+    }
 
-        if (currentPrestigeLevel >= lostAndFoundBoxTier3PrestigeLevel) return 3;
-        if (currentPrestigeLevel >= lostAndFoundBoxTier2PrestigeLevel) return 2;
+    private int GetGrowthTier(int _tier2PrestigeLevel, int _tier3PrestigeLevel)
+    {
+        if (currentPrestigeLevel >= _tier3PrestigeLevel) return 3;
+        if (currentPrestigeLevel >= _tier2PrestigeLevel) return 2;
         return 1;
     }
 
@@ -854,35 +942,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         Sound.PlayUI(SoundID.GetItem);
         character?.PlayItemAcquireBounce();
         character?.PlayItemAcquireFlash();
-    }
-
-    /// <summary>
-    /// "포자 포션"을 사용해 충전된 %만큼 스태미나를 즉시 회복한다. 성공 시 충전량은 0으로 소진되고,
-    /// 이번 던전 진행에서 마셨다는 표시(bDrankSporePotionThisRun)를 남겨 RefillSporePotionCharge의
-    /// 원정 종료 충전을 막는다.
-    /// </summary>
-    public bool TryDrinkSporePotion()
-    {
-        if (!bHasAcquiredSporePotion || sporePotionCharge <= 0f) return false;
-        if (character == null) return false;
-
-        character.pHealthComponent.RestoreStaminaByPercent(sporePotionCharge);
-        sporePotionCharge = 0f;
-        bDrankSporePotionThisRun = true;
-        return true;
-    }
-
-    /// <summary>
-    /// "포자 포션" - 실제 Town 씬이 로드된 시점(TownStartedSignal)에 호출된다. 이번 원정에서 마시지
-    /// 않았다면 3~5% 랜덤 충전(최대치까지). TownStartedSignal은 정상 귀환/리타이어 귀환 모두에서 발생하므로,
-    /// "마셨는지" 여부만으로 충전 여부를 가르는 이 로직은 두 경로 모두에 동일하게 적용된다.
-    /// </summary>
-    public void RefillSporePotionCharge()
-    {
-        if (!bHasAcquiredSporePotion || bDrankSporePotionThisRun) return;
-
-        sporePotionCharge = Mathf.Min(sporePotionMaxCharge,
-            sporePotionCharge + UnityEngine.Random.Range(sporePotionRefillMin, sporePotionRefillMax));
     }
 
     public void SetDungeonData(DungeonData _dungeonData)
@@ -1348,6 +1407,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         // 시작 지연 중이거나 "톡 톡 톡 톡" 연타 중이던 포자막 폭발도 같은 방식으로 더 때리지 않고 끝나게 한다.
         shieldExplosionVersion++;
+        // 한 프레임 뒤에 터지려고 기다리던 포자 대폭발("포자 포션" 효과)도 마찬가지다.
+        sporeBigExplosionVersion++;
+        // 쏟아지던 유성우("별빛 나침반" 효과)도 멈춘다.
+        meteorShowerVersion++;
+        bMeteorShowerActive = false;
 
         // 마크를 강제 회수한 위 호출은 ConstellationManifestReadyEvent를 발생시키지 않으므로, 별 사라짐을
         // 기다리던 발현 대기 목록도 짝을 맞춰 비운다(이전 런의 별 위치 리스트를 붙들고 있지 않도록).
@@ -1506,6 +1570,24 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
         }
 
+        // "포자 포션" 효과 - 플레이어 공격(도끼·충격파·부메랑·드론)으로 벌목하면 확률로 포자 대폭발.
+        // 폭발류(포자 대폭발 자신·포자막 폭발 등)나 지속 피해로 쓰러진 나무는 터뜨리지 않는다 - 대폭발이 포자막을 깨고
+        // 그 폭발이 다시 대폭발을 부르는 식의 연쇄를 막는다(PlayerAttackDamageScope 참고).
+        if (0 < sporePotionTierThisRun && PlayerAttackDamageScope.IsActive)
+        {
+            if (UnityEngine.Random.value < GetSporeBigExplosionChance(sporePotionTierThisRun))
+            {
+                TriggerSporeBigExplosion(_treeObj.transform.position, sporePotionTierThisRun);
+            }
+        }
+
+        // "별빛 나침반" 효과 - 플레이어 공격으로 벌목할 때마다 유성우 게이지가 차고, 가득 차면 유성우가 쏟아진다.
+        // 유성에 쓰러진 나무로는 차지 않고(PlayerAttackDamageScope), 유성우가 쏟아지는 동안에도 차지 않는다.
+        if (0 < starCompassTierThisRun && PlayerAttackDamageScope.IsActive && false == bMeteorShowerActive)
+        {
+            ChargeMeteorShower();
+        }
+
         inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
 
         // 아래에서 나무 위치를 여러 번 쓴다. 나무는 스폰(SpawnTreeAt)과 정리(ClearTrees) 때만 움직이고 이 사이에는
@@ -1635,11 +1717,25 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
         }
 
-        // "별빛 나침반" - "3-1" 이후 모든 숲에서 임계값 그루째에 확률과 무관하게 보장 드랍.
+        // "별빛 나침반" - "3-2"에서 확률 드랍(못 얻은 채로 벨 때마다 누적 상승), "3-3" 이후 모든 숲에서 구제 보장.
         // 어느 한 곳에서 획득하면 영구 플래그가 세팅되어 더 이상 드랍되지 않는다.
         if (!bSuppressDrops && !bHasAcquiredStarCompass && !bStarCompassSpawnedThisRun && lootManager != null && character != null)
         {
-            if (currentForestType >= StarCompassPityStart && pityTreeKillCount >= starCompassPityThreshold)
+            bool bShouldSpawnStarCompass = false;
+
+            if (currentForestType == ForestType.StarrootForest_2)
+            {
+                float effectiveChance = starCompassDropChance + starCompassTreeKillCount * starCompassDropChanceIncreasePerKill;
+                bShouldSpawnStarCompass = UnityEngine.Random.value < effectiveChance;
+                starCompassTreeKillCount++;
+            }
+            else if (currentForestType >= StarCompassPityStart)
+            {
+                // "3-3" 이후 모든 숲 - "3-2"에서 못 얻었을 경우의 구제책. 임계값 그루째에 확률과 무관하게 보장 드랍.
+                bShouldSpawnStarCompass = pityTreeKillCount >= starCompassPityThreshold;
+            }
+
+            if (bShouldSpawnStarCompass)
             {
                 lootManager.SpawnLootItem(deadPos, LootType.StarCompass, character.centerTransform);
                 bStarCompassSpawnedThisRun = true;
@@ -2632,6 +2728,183 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         return bHitAny;
+    }
+
+    private float GetSporeBigExplosionChance(int _tier)
+    {
+        return (3 == _tier) ? sporeBigExplosionTier3Chance : (2 == _tier) ? sporeBigExplosionTier2Chance : sporeBigExplosionTier1Chance;
+    }
+
+    private void TriggerSporeBigExplosion(Vector3 _centerPos, int _tier)
+    {
+        StartCoroutine(SporeBigExplosionRoutine(_centerPos, _tier));
+    }
+
+    /// <summary>
+    /// "포자 포션" 효과인 포자 대폭발. 쓰러진 나무 자리(_centerPos) 기준 등각 타원 범위의 나무에 피해를 주고,
+    /// 맞은 나무는 이후 받는 피해가 영구히 증폭된다. 이펙트·사운드는 따로 붙인다(지금은 판정만 있다).
+    /// </summary>
+    private IEnumerator SporeBigExplosionRoutine(Vector3 _centerPos, int _tier)
+    {
+        int version = sporeBigExplosionVersion;
+
+        // 벌목은 도끼 다중 타격·다른 폭발의 판정 루프 안에서 일어날 수 있다. 그 안에서 동기로 다시 피해를 주지 않도록
+        // 한 프레임 뒤에 터뜨린다(포자막 폭발과 같은 이유).
+        yield return null;
+
+        // 기다리는 사이 던전을 떠났으면(나무 정리) 다음 맵의 나무를 때리지 않는다.
+        if (version != sporeBigExplosionVersion) yield break;
+
+        float damage = (3 == _tier) ? sporeBigExplosionTier3Damage : (2 == _tier) ? sporeBigExplosionTier2Damage : sporeBigExplosionTier1Damage;
+        float damageAmplify = (3 == _tier) ? sporeBigExplosionTier3DamageAmplify : (2 == _tier) ? sporeBigExplosionTier2DamageAmplify : sporeBigExplosionTier1DamageAmplify;
+
+        ApplySporeBigExplosion(_centerPos, damage, damageAmplify);
+    }
+
+    private void ApplySporeBigExplosion(Vector3 _centerPos, float _damage, float _damageAmplify)
+    {
+        if (CollisionSystem.Instance == null) return;
+
+        float range = sporeBigExplosionRange;
+
+        // 판정 루프 안에서 다른 폭발 판정이 끼어들어도 공유 버퍼가 덮어써지지 않도록 풀에서 리스트를 빌려 쓴다.
+        List<IStaticCollidable> scanResults = RentExplosionScanList();
+        // 이번 대폭발로 쓰러지는 나무들의 타일맵 쓰기를 루프가 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
+        TreeTileWriteBatch.Begin();
+        try
+        {
+            CollisionSystem.Instance.GetCollidablesInRadius(_centerPos, range, treeLayerForExplosion.value, scanResults);
+
+            float rangeSq = range * range;
+            bool bHapticPlayed = false;
+
+            for (int i = 0; i < scanResults.Count; i++)
+            {
+                if (scanResults[i] is TreeObj tree && tree.bCanApplyDamage)
+                {
+                    Vector3 targetPos = tree.transform.position;
+                    float dx = targetPos.x - _centerPos.x;
+                    float dy = (targetPos.y - _centerPos.y) * 2f; // 등각 타원 보정 (포자막 폭발과 같은 공식)
+                    if (dx * dx + dy * dy > rangeSq) continue;
+
+                    // 진동은 대폭발 한 번에 한 번만 낸다.
+                    tree.TakeDamage(_damage, false == bHapticPlayed);
+                    bHapticPlayed = true;
+
+                    // 맞은 뒤에 증폭을 건다 - 이번 대폭발 피해 자체는 증폭하지 않는다. 이 피해로 쓰러져 풀로 돌아간 나무는
+                    // 다시 스폰될 때 ResetTree가 지운다.
+                    tree.ApplySporeDamageAmplify(_damageAmplify);
+                }
+            }
+        }
+        finally
+        {
+            TreeTileWriteBatch.End();
+            ReturnExplosionScanList(scanResults);
+        }
+    }
+
+    private void ChargeMeteorShower()
+    {
+        meteorShowerCharge = Mathf.Min(1f, meteorShowerCharge + Mathf.Max(0f, meteorShowerChargePerKill));
+
+        // 0.1씩 열 번 더하면 0.99999…가 될 수 있어 이만큼은 가득 찬 것으로 본다.
+        if (meteorShowerCharge < 1f - 0.0001f) return;
+
+        meteorShowerCharge = 0f;
+        StartCoroutine(MeteorShowerRoutine(starCompassTierThisRun));
+    }
+
+    /// <summary>
+    /// "별빛 나침반" 효과인 유성우. 지속시간 동안 meteorShowerInterval마다 캐릭터 주변 등각 타원(낙하 사정거리) 안의
+    /// 무작위 위치에 유성이 떨어진다. 이펙트·사운드는 따로 붙인다(지금은 판정만 있다).
+    /// </summary>
+    private IEnumerator MeteorShowerRoutine(int _tier)
+    {
+        int version = meteorShowerVersion;
+        bMeteorShowerActive = true;
+
+        float damage = (3 == _tier) ? meteorShowerTier3Damage : (2 == _tier) ? meteorShowerTier2Damage : meteorShowerTier1Damage;
+        float fallRange = (3 == _tier) ? meteorShowerTier3FallRange : (2 == _tier) ? meteorShowerTier2FallRange : meteorShowerTier1FallRange;
+        float duration = (3 == _tier) ? meteorShowerTier3Duration : (2 == _tier) ? meteorShowerTier2Duration : meteorShowerTier1Duration;
+        float interval = Mathf.Max(0.02f, meteorShowerInterval);
+
+        MeteorShowerStartedEvent?.Invoke(duration);
+
+        // 벌목 판정 루프(플레이어 공격 구간) 안에서 시작되므로 첫 유성은 다음 프레임부터 떨어뜨린다. 같은 호출 안에서
+        // 바로 떨어뜨리면 유성에 쓰러진 나무가 플레이어 공격으로 벌목한 것으로 잡힌다(PlayerAttackDamageScope).
+        yield return null;
+
+        float elapsed = 0f;
+        float nextDropTime = 0f;
+
+        while (elapsed < duration)
+        {
+            // 던전을 떠났으면(나무 정리) 다음 맵의 나무를 때리지 않고 끝낸다. 그때 bMeteorShowerActive는 정리 쪽이 끈다.
+            if (version != meteorShowerVersion) yield break;
+
+            while (nextDropTime <= elapsed)
+            {
+                nextDropTime += interval;
+
+                // 귀환 절차 중(경고창·탑승 연출)이나 쓰러진 뒤에는 떨어뜨리지 않는다. 시간은 그대로 흐른다(별똥별과 같은 규칙).
+                if (bStarGazeSuspendedByGameEnd || character == null || character.bDead) continue;
+
+                DropMeteor(character.transform.position, fallRange, damage);
+            }
+
+            yield return null;
+            elapsed += Time.deltaTime;
+        }
+
+        bMeteorShowerActive = false;
+    }
+
+    private void DropMeteor(Vector3 _characterPos, float _fallRange, float _damage)
+    {
+        // 등각 타원 안에서 고르게 뽑는다 - 원 안에서 뽑은 뒤 세로를 절반으로 누른다.
+        Vector2 offset = UnityEngine.Random.insideUnitCircle * Mathf.Max(0f, _fallRange);
+        Vector3 landingPos = _characterPos + new Vector3(offset.x, offset.y * 0.5f, 0f);
+
+        MeteorImpactEvent?.Invoke(landingPos);
+        ApplyMeteorImpactDamage(landingPos, _damage);
+    }
+
+    // 유성 하나의 피해 판정. 착지 위치 기준 등각 타원 범위의 나무를 때린다(포자 대폭발과 같은 방식).
+    private void ApplyMeteorImpactDamage(Vector3 _landingPos, float _damage)
+    {
+        if (CollisionSystem.Instance == null) return;
+
+        float range = Mathf.Max(0f, meteorImpactRange);
+
+        List<IStaticCollidable> scanResults = RentExplosionScanList();
+        // 유성으로 쓰러지는 나무들의 타일맵 쓰기를 루프가 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
+        TreeTileWriteBatch.Begin();
+        try
+        {
+            CollisionSystem.Instance.GetCollidablesInRadius(_landingPos, range, treeLayerForExplosion.value, scanResults);
+
+            float rangeSq = range * range;
+
+            for (int i = 0; i < scanResults.Count; i++)
+            {
+                if (scanResults[i] is TreeObj tree && tree.bCanApplyDamage)
+                {
+                    Vector3 targetPos = tree.transform.position;
+                    float dx = targetPos.x - _landingPos.x;
+                    float dy = (targetPos.y - _landingPos.y) * 2f; // 등각 타원 보정
+                    if (dx * dx + dy * dy > rangeSq) continue;
+
+                    // 진동은 이펙트와 함께 따로 붙인다(유성이 연달아 떨어져 매번 울리면 과하다).
+                    tree.TakeDamage(_damage, false);
+                }
+            }
+        }
+        finally
+        {
+            TreeTileWriteBatch.End();
+            ReturnExplosionScanList(scanResults);
+        }
     }
 
     // 과열 강화된 ShockWave가 나무를 때리면 TreeObj.TreeOverheatExplosionEvent를 통해 호출된다.
