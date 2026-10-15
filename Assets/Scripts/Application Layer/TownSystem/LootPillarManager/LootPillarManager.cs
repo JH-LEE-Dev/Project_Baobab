@@ -59,6 +59,7 @@ public class LootPillarManager : MonoBehaviour
             LootDisplayObject pillar = Instantiate(lootPillarPrefab, point.position, Quaternion.identity);
             pillar.ApplySortingBasis(pivot != null ? pivot.position.y : point.position.y);
             pillar.SetLootDisplay(DisplayOrder[i]);
+            pillar.SetGrowthTier(_inDungeonObjectManager.GetLootGrowthTier(DisplayOrder[i]));
             pillar.Initialize(inputManager);
 
             pillar.InteractStateChangedEvent -= OnPillarInteractStateChanged;

@@ -880,6 +880,24 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
     }
 
+    public int GetNextGrowthPrestigeLevel(LootType _lootType)
+    {
+        int tier = GetLootGrowthTier(_lootType);
+        if (tier <= 0 || 3 <= tier) return 0;
+
+        switch (_lootType)
+        {
+            case LootType.LostAndFoundBox:
+                return 1 == tier ? lostAndFoundBoxTier2PrestigeLevel : lostAndFoundBoxTier3PrestigeLevel;
+            case LootType.SporePotion:
+                return 1 == tier ? sporePotionTier2PrestigeLevel : sporePotionTier3PrestigeLevel;
+            case LootType.StarCompass:
+                return 1 == tier ? starCompassTier2PrestigeLevel : starCompassTier3PrestigeLevel;
+            default:
+                return 0;
+        }
+    }
+
     private int GetGrowthTier(int _tier2PrestigeLevel, int _tier3PrestigeLevel)
     {
         if (currentPrestigeLevel >= _tier3PrestigeLevel) return 3;

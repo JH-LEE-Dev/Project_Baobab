@@ -54,6 +54,9 @@ public class GameplayUIManager : UIManager
         if (view is UIView_HUD hudUI)
             hudUI.DependencyInjection(inDungeonObjProvider as ILootDataProvider);
 
+        if (view is UIView_ScreenModal screenModalUI && inDungeonObjProvider is ILootDataProvider lootDataProvider)
+            screenModalUI.SetGrowthInfoSource(lootDataProvider.GetLootGrowthTier, lootDataProvider.GetNextGrowthPrestigeLevel);
+
         if (view is UIView_MenuPopup menuPopupUI)
             menuPopupUI.DependencyInjection(mapDataProvider, weatherProvider, timeDataProvider);
 
