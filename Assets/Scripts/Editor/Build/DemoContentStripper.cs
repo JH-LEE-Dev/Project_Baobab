@@ -961,7 +961,8 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         if (false == _s.boomerang) _n += EditComponents(_root, "BoomerangCreator", INSTALLER_PREFAB_PATH, _so => ClearRef(_so, "boomerangPrefab"));
 
         HashSet<string> _dropTags = new HashSet<string>();
-        if (false == _s.spore) { _dropTags.Add("SporeShieldBrokenEffect"); _dropTags.Add("SporeShieldBrokenEffect_Bellpine"); }
+        // SporeBigExplosionEffect: 포자 포션 효과인 포자 대폭발 이펙트(VFX_SporeBigExplosion, 2026-10-15 추가)
+        if (false == _s.spore) { _dropTags.Add("SporeShieldBrokenEffect"); _dropTags.Add("SporeShieldBrokenEffect_Bellpine"); _dropTags.Add("SporeBigExplosionEffect"); }
         // ConstellationNovaEffect: 별자리 발현 중심 마법진·은하 별 폭발 이펙트(VFX_ConstellationNova, 2026-10-13 추가)
         if (false == _s.constellation) { _dropTags.Add("ManifestationBrandStampEffect"); _dropTags.Add("ConstellationNovaEffect"); }
         if (false == _s.heat) _dropTags.Add("TreeHeatEmitEffect");
