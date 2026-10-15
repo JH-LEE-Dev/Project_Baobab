@@ -1505,7 +1505,7 @@ MonoBehaviour:
   abilityBuildVariantData: {fileID: 11400000, guid: 435d117acee74a889a1c34c20d764a81, type: 2}
   prestigeLevel: 0
   skillExperience: 0
-  experienceToLevelUp: 280000003200000046000000460000004600000050000000320000003200000032000000320000003200000032000000
+  experienceToLevelUp: 280000003200000046000000500000005000000050000000320000003200000032000000320000003200000032000000
 --- !u!1 &5075027738427714103
 GameObject:
   m_ObjectHideFlags: 0
@@ -2815,9 +2815,9 @@ MonoBehaviour:
   - forestType: 4
     decAmount: 12
   - forestType: 5
-    decAmount: 35
+    decAmount: 30
   - forestType: 6
-    decAmount: 70
+    decAmount: 50
   - forestType: 7
     decAmount: 120
   - forestType: 8
@@ -3328,6 +3328,7 @@ MonoBehaviour:
   treeLayerForExplosion:
     serializedVersion: 2
     m_Bits: 1024
+  baseShieldExplosionDamage: 8
   constellationLaserCreator: {fileID: 3643444765331575717}
 --- !u!114 &3643444765331575717
 MonoBehaviour:
