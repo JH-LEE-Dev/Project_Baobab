@@ -43,6 +43,9 @@ public class UIView_HUD : UIView
     private MapType currentMapType;
     private ForestType currentForestType;
 
+    // 대시 충전 상태(잔여 횟수·충전 진행도). 표시는 아직 없다 - 아래 "HUD_Dash Logic"의 두 메서드에서 그리면 된다.
+    private IDashState dashState;
+
     [Header("Indicator Settings")]
     [SerializeField] private float dirIndicatorShowDelay = 1f;
 
@@ -72,6 +75,7 @@ public class UIView_HUD : UIView
     public override void OnDestroy()
     {
         UnbindStaminaEvents();
+        UnbindDashState();
 
         hudEquipment?.OnDestroy();
         hudMessage?.Release();
@@ -95,10 +99,12 @@ public class UIView_HUD : UIView
     public void SetCharacter(ICharacter _character)
     {
         UnbindStaminaEvents();
+        UnbindDashState();
 
         character = _character;
 
         BindStaminaEvents();
+        BindDashState();
 
         hudEquipment?.BindingRef(character);
     }
@@ -184,6 +190,58 @@ public class UIView_HUD : UIView
             UsedSteminaEvent(character.pHealthComponent.GetCurrentStamina(), character.pHealthComponent.GetMaxStamina());
             hudStaminaBar?.SetResting(character.pHealthComponent.IsInRestArea);
         }
+
+        if (null != dashState)
+        {
+            UpdateDashRecharge(dashState.RechargeProgress);
+        }
+    }
+
+    #endregion
+
+    #region HUD_Dash Logic
+
+    private void BindDashState()
+    {
+        if (null == character || null == character.dashState)
+            return;
+
+        dashState = character.dashState;
+        dashState.DashStateChangedEvent += OnDashStateChanged;
+
+        OnDashStateChanged();
+    }
+
+    private void UnbindDashState()
+    {
+        if (null == dashState)
+            return;
+
+        dashState.DashStateChangedEvent -= OnDashStateChanged;
+        dashState = null;
+    }
+
+    private void OnDashStateChanged()
+    {
+        if (null == dashState)
+            return;
+
+        UpdateDashCharges(dashState.bUnlocked, dashState.CurrentCharges, dashState.MaxCharges);
+    }
+
+    /// <summary>
+    /// [UI 작업용] 대시 해금 여부·찬 횟수·최대 횟수가 바뀔 때 불린다(최초 바인딩 때도 한 번).
+    /// _bUnlocked가 false면 대시를 쓸 수 없는 상태(전리품 미보유, 마을, 로그라이크)라 숨기면 된다.
+    /// </summary>
+    private void UpdateDashCharges(bool _bUnlocked, int _currentCharges, int _maxCharges)
+    {
+    }
+
+    /// <summary>
+    /// [UI 작업용] 매 프레임 불린다. 다음 1회가 차오른 정도(0~1)이며, 전부 찼으면 1이다.
+    /// </summary>
+    private void UpdateDashRecharge(float _rechargeProgress)
+    {
     }
 
     #endregion

@@ -727,6 +727,8 @@ Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|boomer
 Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|boomerangOverheatSpeedMul = 3
 Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|ciriticalDamageMul = 2
 Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|criticalChance = 0
+Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|dashMaxCharges = 1
+Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|dashRechargePerSecond = 0.25
 Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|droneActiveDuration = 3
 Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|droneAttackRange = 3
 Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|droneChainCount = 0
@@ -815,7 +817,6 @@ Prefabs/Objects/Character/Character|Character:Character|bRide = 0
 Prefabs/Objects/Character/Character|Character:Character|boomerangEdgePadding = 0.5
 Prefabs/Objects/Character/Character|Character:Character|collisionOffset = (0, 0.12)
 Prefabs/Objects/Character/Character|Character:Character|collisionRadius = 0.15
-Prefabs/Objects/Character/Character|Character:Character|dashCooldown = 4
 Prefabs/Objects/Character/Character|Character:Character|dashDistanceTiles = 3
 Prefabs/Objects/Character/Character|Character:Character|dashDuration = 0.18
 Prefabs/Objects/Character/Character|Character:Character|droneArrivalTolerance = 0.15
