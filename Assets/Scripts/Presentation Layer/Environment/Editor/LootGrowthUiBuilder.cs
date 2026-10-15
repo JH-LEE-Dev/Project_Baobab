@@ -20,11 +20,11 @@ public static class LootGrowthUiBuilder
     private const string PillarPrefabPath = "Assets/Prefabs/Objects/LootPillar/LootPillar.prefab";
     private const string SpriteAssetPath = "Assets/TextMesh Pro/Resources/Sprite Assets/LootGrowthIcons.asset";
 
-    // 시안 A: 1단계 초록 5BE070, 2단계 하늘 58D7F2, 3단계 금 FFC94A (HDR 강도 2.0)
+    // 1단계 초록 5BE070, 2단계 연보라 B79CEB, 3단계 금 FFC94A (HDR 강도 2.0)
     private static readonly Color[] TierColorsSrgb =
     {
         new Color(0x5B / 255f, 0xE0 / 255f, 0x70 / 255f),
-        new Color(0x58 / 255f, 0xD7 / 255f, 0xF2 / 255f),
+        new Color(0xB7 / 255f, 0x9C / 255f, 0xEB / 255f),
         new Color(0xFF / 255f, 0xC9 / 255f, 0x4A / 255f),
     };
 

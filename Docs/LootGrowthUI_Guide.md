@@ -40,7 +40,7 @@
 | 단계 | 색 |
 |---|---|
 | 1 (씨앗) | `5BE070` 초록 |
-| 2 (꽃) | `58D7F2` 하늘 |
+| 2 (꽃) | `B79CEB` 연보라 |
 | 3 (나무) | `FFC94A` 금 |
 
 값은 `LootGrowthVisualData` 에셋(`Assets/Scriptable Obj/LootData/`)에서 바꿉니다.
