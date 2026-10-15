@@ -194,11 +194,27 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     [SerializeField, Tooltip("대시 이동에 걸리는 시간(초)")]
     private float dashDuration = 0.18f;
 
+    // "원목 보험 증서" 성장 단계별 효과. 단계는 프레스티지 레벨로 정해진다(InDungeonObjectManager.GetLootGrowthTier).
+    [SerializeField, Tooltip("I단계 저장 횟수")]
+    private int dashTier1MaxCharges = 1;
+    [SerializeField, Tooltip("I단계 충전 쿨타임(초) - 1회가 차는 데 걸리는 시간")]
+    private float dashTier1RechargeSeconds = 4f;
+    [SerializeField, Tooltip("II단계 저장 횟수")]
+    private int dashTier2MaxCharges = 1;
+    [SerializeField, Tooltip("II단계 충전 쿨타임(초)")]
+    private float dashTier2RechargeSeconds = 3f;
+    [SerializeField, Tooltip("III단계 저장 횟수")]
+    private int dashTier3MaxCharges = 2;
+    [SerializeField, Tooltip("III단계 충전 쿨타임(초)")]
+    private float dashTier3RechargeSeconds = 2.5f;
+
     // 대시 충전 횟수와 해금 여부. HUD는 IDashState(ICharacter.dashState)로 읽는다.
-    // 최대 횟수·충전 속도는 다른 강화 수치처럼 StatComponent(dashMaxCharges / dashRechargePerSecond)에 있다.
+    // 최대 횟수·충전 속도 = 성장 단계 값(dashTier*) + StatComponent 보너스(dashMaxChargesBonus / dashRechargePerSecondBonus).
     // "원목 보험 증서" 전리품을 얻어야 대시를 쓸 수 있다. 해금은 씬마다 GameInstaller가 정한다(본편 던전만
     // 영구 획득 여부로 켜고, 로그라이크·마을은 끈다). 원정 도중 획득하면 다음 숲 방문부터 켜진다.
     private DashCharge dashCharge;
+    // 원목 보험 증서 성장 단계(1~3). 0이면 미보유라 대시를 쓸 수 없다.
+    private int dashTier = 0;
     private bool bDashing = false;
 
     // 대시 키가 눌린 실제 시각(realtimeSinceStartup). 실제 시작은 다음 물리 틱(FixedUpdate)에서 한다 - OnDashKeyPressed 참고.
@@ -299,7 +315,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         attackComponent.SetCursorEnable(false);
 
-        dashCharge = new DashCharge(statComponent.dashMaxCharges, statComponent.dashRechargePerSecond);
+        dashCharge = new DashCharge(GetDashMaxCharges(), GetDashRechargePerSecond());
 
         SetupStateMachine();
         BindEvents();
@@ -848,10 +864,32 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         }
     }
 
-    /// <summary>"원목 보험 증서" 전리품 보유 여부. 이게 켜져 있어야 대시 키가 동작한다.</summary>
-    public void SetDashUnlocked(bool _bUnlocked)
+    /// <summary>
+    /// "원목 보험 증서" 성장 단계(1~3, 0이면 미보유). 씬 진입 때 GameInstaller가 부른다.
+    /// 단계에 맞춰 저장 횟수·충전 쿨타임을 바꾸고 가득 채운다 - 새 판은 가득 찬 상태로 시작하는데,
+    /// SetWhereIsCharacter의 Refill은 이전 단계 기준이라 III단계로 처음 들어오면 2칸 중 1칸만 찬 채로 시작한다.
+    /// </summary>
+    public void SetDashTier(int _tier)
     {
-        dashCharge.SetUnlocked(_bUnlocked);
+        dashTier = Mathf.Clamp(_tier, 0, 3);
+
+        dashCharge.Configure(GetDashMaxCharges(), GetDashRechargePerSecond());
+        dashCharge.Refill();
+        dashCharge.SetUnlocked(dashTier > 0);
+    }
+
+    // 성장 단계 값 + 특성 보너스. 미보유(0단계)일 때는 I단계 값을 쓴다(쓸 수는 없지만 HUD가 읽을 값은 있어야 한다).
+    private int GetDashMaxCharges()
+    {
+        int tierMaxCharges = (3 == dashTier) ? dashTier3MaxCharges : (2 == dashTier) ? dashTier2MaxCharges : dashTier1MaxCharges;
+        return tierMaxCharges + statComponent.dashMaxChargesBonus;
+    }
+
+    private float GetDashRechargePerSecond()
+    {
+        float tierRechargeSeconds = (3 == dashTier) ? dashTier3RechargeSeconds : (2 == dashTier) ? dashTier2RechargeSeconds : dashTier1RechargeSeconds;
+        float tierPerSecond = (0f < tierRechargeSeconds) ? 1f / tierRechargeSeconds : 0f;
+        return tierPerSecond + statComponent.dashRechargePerSecondBonus;
     }
 
     /// <summary>
@@ -884,7 +922,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     /// 방향: 이동 입력이 있으면 이동하는 방향(바라보는 방향과 무관), 없으면 바라보는 방향.
     /// 거리: dashDistanceTiles칸. 아이소메트릭 대각선(그리드 축) 방향으로 정확히 그 칸 수이고, 공격 범위와 같은
     ///       등각 거리(세로 2배)로 재므로 다른 방향도 같은 거리만큼 간다.
-    /// 횟수: 한 번에 1회를 소모한다. 초당 StatComponent.dashRechargePerSecond만큼 다시 차고, dashMaxCharges회까지 모아 둔다.
+    /// 횟수: 한 번에 1회를 소모한다. 성장 단계의 충전 쿨타임마다 1회씩 다시 차고, 단계의 저장 횟수까지 모아 둔다.
     /// 대시는 이동만 한다(공격 판정 없음).
     /// </summary>
     private void TryStartDash()
@@ -1702,8 +1740,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         UpdateTreeBoomerang(); // 내부적으로 treeDetectionInterval마다만 실제 스캔을 수행함
         if (null != dashCharge)
         {
-            // 스탯을 매 틱 반영한다 - 특성으로 늘어난 값과 플레이 중 튜닝이 바로 먹고, 값이 같으면 아무 일도 하지 않는다.
-            dashCharge.Configure(statComponent.dashMaxCharges, statComponent.dashRechargePerSecond);
+            // 단계 값·보너스를 매 틱 반영한다 - 특성으로 늘어난 값과 플레이 중 튜닝이 바로 먹고, 값이 같으면 아무 일도 하지 않는다.
+            dashCharge.Configure(GetDashMaxCharges(), GetDashRechargePerSecond());
             dashCharge.Tick(Time.fixedDeltaTime);
         }
         if (!bDronesPaused)

@@ -43,6 +43,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public event Action FlyingItemPauseRequestedEvent;
     public event Action FlyingItemResumeRequestedEvent;
     public event Action<LootType> LootAcquiredEvent;
+    public event Action<LootType, int> LootGrowthTierChangedEvent;
 
     // // 외부 의존성
     private IEnvironmentProvider environmentProvider;
@@ -52,7 +53,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private InputManager inputManager;
     private IInventory characterInventory;
 
-    // "1-3"(WideGreenForest_3) 보장 드랍용 - 세이브 데이터와 연동되는 영구 획득 플래그.
+    // "1-2"(WideGreenForest_2) 확률 드랍 / "1-3" 이후 보장 드랍용 - 세이브 데이터와 연동되는 영구 획득 플래그.
     // 획득 데이터가 확정(OnLootDataCommitted)됐을 때만 true로 세팅한다. 확정 시점은 캐릭터에게 도착한
     // 순간이고, 런이 끝나는 순간(사망 판정 / 귀환 확정) 아직 공중에 있었다면 그 순간이다
     // (LootManager.CommitRunEnd). 그래서 드랍된 전리품은 흡입이 끝나기 전에 런이 끝나도 유실되지 않는다.
@@ -61,18 +62,26 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 플래그. 매 던전 진입마다(SetupForForestType) 리셋된다.
     private bool bLostAndFoundBoxSpawnedThisRun;
     private ForestType currentForestType;
-    // "1-3" 드랍 확률 - 기본값에서 시작해, 이 스테이지에서 나무를 벨 때마다(못 얻은 채로) 한 그루당
+    // "1-2" 드랍 확률 - 기본값에서 시작해, 이 스테이지에서 나무를 벨 때마다(못 얻은 채로) 한 그루당
     // lostAndFoundBoxDropChanceIncreasePerKill만큼 계속 올라간다. 스테이지 진입마다 리셋된다.
     [SerializeField] private float lostAndFoundBoxDropChance = 0.1f;
     [SerializeField] private float lostAndFoundBoxDropChanceIncreasePerKill = 0.005f;
     private int lostAndFoundBoxWideGreenTreeKillCount;
 
-    // "2-1"(FluffySporeForest_1) 이후 모든 숲의 구제(pity) 드랍 - "1-3"에서 못 얻었을 경우를 대비해,
+    // "1-3"(WideGreenForest_3) 이후 모든 숲의 구제(pity) 드랍 - "1-2"에서 못 얻었을 경우를 대비해,
     // 나무를 min~max그루 베면 확률과 무관하게 무조건 드랍시킨다. 임계값은 스테이지 진입마다 다시 뽑는다
     // (구제 드랍 공통 규칙은 PityStart 상수 주석 참조).
     [SerializeField] private int lostAndFoundBoxPityMinKills = 4;
     [SerializeField] private int lostAndFoundBoxPityMaxKills = 5;
     private int lostAndFoundBoxPityThreshold;
+
+    // "원목 보험 증서" 성장(I → II → III). 프레스티지 레벨이 기준에 닿으면 한 단계씩 오른다.
+    // 단계별 효과(대시 저장 횟수·충전 쿨타임)는 Character의 Dash Settings에 있고, 던전 입장 때 그 판의
+    // 단계로 적용된다(GameInstaller → UnitSystem.SetDashTier). 전리품 UI는 ILootDataProvider의
+    // GetLootGrowthTier / LootGrowthTierChangedEvent로 단계를 읽는다.
+    [SerializeField] private int lostAndFoundBoxTier2PrestigeLevel = 4;
+    [SerializeField] private int lostAndFoundBoxTier3PrestigeLevel = 7;
+    private int currentPrestigeLevel;
 
     // "포자 포션" - "2-1,2-2,2-3"(FluffySporeForest_1/2/3)에서 확률 드랍, "3-1"(StarrootForest_1) 이후
     // 모든 숲에서 구제 보장. 한 번 획득하면 영구 소지하는 충전식 소비 아이템(세이브 데이터와 연동).
@@ -124,7 +133,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 한 런에 구제 대상이 여럿이면(뒤늦게 따라잡는 경우) 같은 나무에서 한꺼번에 쏟아지지 않도록, 오래된
     // 지역 것부터 "앞 전리품 뒤 다시 min~max그루"씩 임계값을 이어 붙인다(SetupForForestType).
     // 벌목 수는 런 단위 하나(pityTreeKillCount)로 세고, 진입마다 0부터 다시 센다.
-    private const ForestType LostAndFoundBoxPityStart = ForestType.FluffySporeForest_1;
+    private const ForestType LostAndFoundBoxPityStart = ForestType.WideGreenForest_3;
     private const ForestType SporePotionPityStart = ForestType.StarrootForest_1;
     private const ForestType StarCompassPityStart = ForestType.StarrootForest_1;
     private const ForestType ObsidianCharmPityStart = ForestType.MagmaForest_3;
@@ -755,6 +764,39 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         _pityKillsSoFar += UnityEngine.Random.Range(_minKills, _maxKills + 1);
         return _pityKillsSoFar;
+    }
+
+    /// <summary>
+    /// 지금 프레스티지 레벨을 맞춘다. 씬 진입마다(세이브 로드 직후 포함) GameInstaller가 부르며, 성장 알림은
+    /// 보내지 않는다 - 로드로 값이 처음 채워지는 것을 "성장"으로 보면 안 되기 때문이다.
+    /// </summary>
+    public void SyncPrestigeLevel(int _prestigeLevel)
+    {
+        currentPrestigeLevel = _prestigeLevel;
+    }
+
+    /// <summary>
+    /// 프레스티지 레벨이 실제로 올랐을 때(PrestigeLevelIncreasedSignal). 성장형 전리품의 단계가 바뀌면 알린다.
+    /// </summary>
+    public void PrestigeLevelIncreased(int _prestigeLevel)
+    {
+        int tierBefore = GetLootGrowthTier(LootType.LostAndFoundBox);
+        currentPrestigeLevel = _prestigeLevel;
+        int tierAfter = GetLootGrowthTier(LootType.LostAndFoundBox);
+
+        if (tierBefore != tierAfter)
+        {
+            LootGrowthTierChangedEvent?.Invoke(LootType.LostAndFoundBox, tierAfter);
+        }
+    }
+
+    public int GetLootGrowthTier(LootType _lootType)
+    {
+        if (LootType.LostAndFoundBox != _lootType || false == bHasAcquiredLostAndFoundBox) return 0;
+
+        if (currentPrestigeLevel >= lostAndFoundBoxTier3PrestigeLevel) return 3;
+        if (currentPrestigeLevel >= lostAndFoundBoxTier2PrestigeLevel) return 2;
+        return 1;
     }
 
     public void RestoreOwnedLoots(List<LootType> _loots)
@@ -1546,9 +1588,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             bool bShouldSpawnLostAndFoundBox = false;
 
-            if (currentForestType == ForestType.WideGreenForest_3)
+            if (currentForestType == ForestType.WideGreenForest_2)
             {
-                // "1-3" - 확률적으로 드랍. 못 얻은 채로 나무를 벨 때마다 확률이 계속 누적 상승한다.
+                // "1-2" - 확률적으로 드랍. 못 얻은 채로 나무를 벨 때마다 확률이 계속 누적 상승한다.
                 float effectiveChance = lostAndFoundBoxDropChance
                     + lostAndFoundBoxWideGreenTreeKillCount * lostAndFoundBoxDropChanceIncreasePerKill;
                 bShouldSpawnLostAndFoundBox = UnityEngine.Random.value < effectiveChance;
@@ -1556,7 +1598,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
             else if (currentForestType >= LostAndFoundBoxPityStart)
             {
-                // "2-1" 이후 모든 숲 - "1-3"에서 못 얻었을 경우의 구제책. 임계값 그루째에 확률과 무관하게 보장 드랍.
+                // "1-3" 이후 모든 숲 - "1-2"에서 못 얻었을 경우의 구제책. 임계값 그루째에 확률과 무관하게 보장 드랍.
                 bShouldSpawnLostAndFoundBox = pityTreeKillCount >= lostAndFoundBoxPityThreshold;
             }
 

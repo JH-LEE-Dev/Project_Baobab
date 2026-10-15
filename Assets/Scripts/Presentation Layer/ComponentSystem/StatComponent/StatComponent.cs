@@ -93,8 +93,10 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public bool bShockWaveOverheatBoost = false; // "화염 참격" 특성 - 과열 상태에서 충격파 폭발 효과 적용 여부
 
     [Header("Dash")]
-    public int dashMaxCharges = 1; // 대시를 모아 둘 수 있는 최대 횟수 (특성·전리품으로 늘린다 - 추후 2회까지)
-    public float dashRechargePerSecond = 0.25f; // 초당 대시 충전량 (0.25 = 4초에 1회)
+    // 대시의 기본 저장 횟수·충전 쿨타임은 "원목 보험 증서" 성장 단계가 정한다(Character의 Dash Settings).
+    // 여기는 그 위에 특성 등으로 더하는 보너스다.
+    public int dashMaxChargesBonus = 0;
+    public float dashRechargePerSecondBonus = 0f; // 초당 충전량에 더한다 (쿨타임 4초 = 초당 0.25)
 
     [Header("Axe - Boomerang")]
     public int boomerangCount = 0; // "부메랑" 스킬 레벨 = 동시에 존재 가능한 부메랑 개수 (0이면 미해금 상태로 발사되지 않음)
@@ -627,12 +629,12 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreaseDashMaxCharges(int _amount)
     {
-        dashMaxCharges += _amount;
+        dashMaxChargesBonus += _amount;
     }
 
     public void IncreaseDashRechargePerSecond(float _amount)
     {
-        dashRechargePerSecond += _amount;
+        dashRechargePerSecondBonus += _amount;
     }
 
     public void IncreaseBoomerangDamage(float _amount)

@@ -360,11 +360,12 @@ public class UnitSystem
     }
 
     /// <summary>
-    /// 대시(원목 보험 증서 전리품 효과)를 쓸 수 있는지 캐릭터에 알린다. 씬 진입마다 GameInstaller가 정한다.
+    /// 대시(원목 보험 증서 전리품 효과)의 성장 단계를 캐릭터에 알린다. 0이면 대시를 쓸 수 없다.
+    /// 씬 진입마다 GameInstaller가 정한다.
     /// </summary>
-    public void SetDashUnlocked(bool _bUnlocked)
+    public void SetDashTier(int _tier)
     {
-        unitSpawner.character?.SetDashUnlocked(_bUnlocked);
+        unitSpawner.character?.SetDashTier(_tier);
     }
 
     private void WeaponModeChanged(WeaponMode _currentMode)
