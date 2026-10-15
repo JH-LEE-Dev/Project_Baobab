@@ -571,7 +571,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new DropAllItemSignal());
     }
 
-    // 성장형 전리품(원목 보험 증서·포자 포션)의 단계가 프레스티지 레벨을 따라가도록 전달한다(전리품 UI 알림 포함).
+    // 성장형 전리품(원목 보험 증서·포자 포션·별빛 나침반)의 단계가 프레스티지 레벨을 따라가도록 전달한다(전리품 UI 알림 포함).
     private void PrestigeLevelIncreased(PrestigeLevelIncreasedSignal _signal)
     {
         inDungeonObjectManager.PrestigeLevelIncreased(_signal.level);
