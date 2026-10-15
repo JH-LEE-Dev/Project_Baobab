@@ -521,6 +521,15 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     [HideInInspector] public bool bLastHitByPlayer = true;
 
+    // "포자 포션" 포자 대폭발에 맞은 나무가 이후 받는 피해 증폭률(0.2 = +20%). 여러 번 맞아도 겹치지 않고 가장 큰 값을 쓴다.
+    private float sporeDamageAmplify = 0f;
+
+    /// <summary>이후 받는 모든 피해를 _amplify만큼 늘린다(포자 대폭발). 이미 더 큰 증폭이 걸려 있으면 그대로 둔다.</summary>
+    public void ApplySporeDamageAmplify(float _amplify)
+    {
+        if (_amplify > sporeDamageAmplify) sporeDamageAmplify = _amplify;
+    }
+
     public void ResetTree()
     {
         resetTreeCount++;
@@ -531,6 +540,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         bSkipHitVfx = false;
         SetStarMarked(false);
         SetStarGroupId(-1);
+        sporeDamageAmplify = 0f;
         healthComponent.Reset();
         bIsSapling = false;
         growTime = 0f;
@@ -626,6 +636,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         if (bStarMarked)
         {
             _damage *= Mathf.Max(0f, shieldStatProvider?.StarMarkDamageMultiplier ?? 1f);
+        }
+
+        // 포자 대폭발("포자 포션")에 맞은 나무 - 이후 받는 피해 증폭
+        if (0f < sporeDamageAmplify)
+        {
+            _damage *= 1f + sporeDamageAmplify;
         }
 
         healthComponent.DecreaseHealth(_damage);

@@ -178,6 +178,9 @@ public class ShockWave : MonoBehaviour
 
     private void ApplyShockWaveDamageToTargets(Vector3 centerPos, Vector3 isoForward, float cosThreshold, float sweepMinDistSqr, float maxDistSqr)
     {
+        // 충격파(과열 폭발의 인접 피해 포함)로 쓰러지는 나무는 플레이어 공격으로 벌목된 것이다(PlayerAttackDamageScope 참고).
+        using var _playerAttackScope = PlayerAttackDamageScope.Enter();
+
         for (int i = 0; i < targetsInRange.Count; i++)
         {
             var target = targetsInRange[i];

@@ -614,6 +614,9 @@ public class AttackComponent : PComponent
 
     private void ProcessAxeHit(IDamageable damageable, Vector3 centerPos)
     {
+        // 이 타격으로 쓰러지는 나무는 플레이어 공격으로 벌목된 것이다(PlayerAttackDamageScope 참고).
+        using var _playerAttackScope = PlayerAttackDamageScope.Enter();
+
         float damage = ctx.characterStat.axeDamage;
         if (damageable.health != null)
         {

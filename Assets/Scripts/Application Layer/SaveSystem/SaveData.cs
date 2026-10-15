@@ -260,7 +260,6 @@ public class GameSaveData
     public InventorySaveData offroadContainerSaveData;
     public bool bHasAcquiredLostAndFoundBox;
     public bool bHasAcquiredSporePotion;
-    public float sporePotionCharge;
     public bool bHasAcquiredStarCompass;
     public bool bHasAcquiredObsidianCharm;
     // 데모 전용 "황금 나무" 보장을 이미 소진했는지. 이 키가 없는 예전 세이브는 false로 읽히고,
@@ -300,7 +299,6 @@ public class GameSaveData
         // 여기서 비워두지 않으면 이전 세션(새로하기 이전)의 값이 그대로 남을 수 있다.
         bHasAcquiredLostAndFoundBox = false;
         bHasAcquiredSporePotion = false;
-        sporePotionCharge = 0f;
         bHasAcquiredStarCompass = false;
         bHasAcquiredObsidianCharm = false;
         bGoldTreePityDone = false;

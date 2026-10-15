@@ -1546,6 +1546,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     // (중간에 대상을 못 찾으면 중단).
     private void OnDroneChainAttack(Drone _drone, ITreeObj _primaryTarget)
     {
+        // 드론 연쇄 공격으로 쓰러지는 나무도 플레이어 공격으로 벌목된 것이다(PlayerAttackDamageScope 참고).
+        using var _playerAttackScope = PlayerAttackDamageScope.Enter();
+
         if (statComponent == null || _primaryTarget == null) return;
 
         Transform primaryTransform = _primaryTarget.GetTransform();

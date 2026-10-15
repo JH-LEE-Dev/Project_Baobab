@@ -42,10 +42,6 @@ public class InDungeonSystem : MonoBehaviour
     private ForestType selectedForestType;
     private bool bIsFromMainMenu = false;
 
-    // "포자 포션" - 던전 입장 후 캐릭터가 실제로 조작 가능해진 시점(ActivateCharacterSignal)부터만
-    // PotionKey를 허용한다. 매 던전 진입마다(StartDungeonSystem) 리셋된다.
-    private bool bCharacterActivated;
-
     // 이번 던전에서 스테이지 BGM을 이미 재생했는지. 매 던전 진입마다(StartDungeonSystem) 리셋된다.
     private bool bDungeonBGMPlayed;
 
@@ -119,7 +115,6 @@ public class InDungeonSystem : MonoBehaviour
         // 새 원정의 시작 - 이전 원정의 종료 상태/지연 탑승 타이머가 남아 있으면 여기서 반드시 비운다.
         // (재도전은 ClearObjManager에서 이미 비웠지만, 이 메서드가 "원정 시작"의 단일 지점이므로 한 번 더 보장)
         inDungeonObjectManager.ResetRunEnd();
-        bCharacterActivated = false;
         bTutorialRideExitPending = false;
         bDungeonBGMPlayed = false;
         bIsFromMainMenu = (_sceneChangeData.prevScene == SceneType.MainMenu);
@@ -206,9 +201,6 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.DropAllItemEvent -= DropAllItem;
         inDungeonObjectManager.DropAllItemEvent += DropAllItem;
 
-        inputManager.inputReader.PotionKeyPressedEvent -= PotionKeyPressed;
-        inputManager.inputReader.PotionKeyPressedEvent += PotionKeyPressed;
-
         inDungeonProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
         inDungeonProductionManager.CharacterRideEndEvent += CharacterRideEnd;
 
@@ -255,7 +247,6 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.RepairBoxInteractStateChangedEvent -= RepairBoxInteractStateChanged;
         inDungeonObjectManager.RideOffroadEvent -= RideOffroad;
         inDungeonObjectManager.DropAllItemEvent -= DropAllItem;
-        inputManager.inputReader.PotionKeyPressedEvent -= PotionKeyPressed;
         inDungeonProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
         inDungeonProductionManager.CameraUpIsEndEvent -= CameraUpIsEnd;
         inDungeonProductionManager.CameraDownEndEvent -= CameraDownIsEnd;
@@ -580,15 +571,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new DropAllItemSignal());
     }
 
-    // "포자 포션" - 던전에 입장해 캐릭터가 실제로 조작 가능해진 시점부터만 특수 키(PotionKey)로 마실 수 있다.
-    private void PotionKeyPressed()
-    {
-        if (bCurrentlyDungeonScene == false || bCharacterActivated == false) return;
-
-        inDungeonObjectManager.TryDrinkSporePotion();
-    }
-
-    // 성장형 전리품(원목 보험 증서)의 단계가 프레스티지 레벨을 따라가도록 전달한다(전리품 UI 알림 포함).
+    // 성장형 전리품(원목 보험 증서·포자 포션)의 단계가 프레스티지 레벨을 따라가도록 전달한다(전리품 UI 알림 포함).
     private void PrestigeLevelIncreased(PrestigeLevelIncreasedSignal _signal)
     {
         inDungeonObjectManager.PrestigeLevelIncreased(_signal.level);
@@ -596,8 +579,6 @@ public class InDungeonSystem : MonoBehaviour
 
     private void CharacterActivated(ActivateCharacterSignal _signal)
     {
-        bCharacterActivated = true;
-
         // 캐릭터가 실제로 움직일 수 있게 되는 시점에 스테이지별 BGM을 재생한다.
         PlayDungeonBGM();
     }
@@ -786,11 +767,8 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new TutorialStaminaReachedFloorSignal());
     }
 
-    // "포자 포션" - 실제 Town 씬이 로드된 시점에 이번 원정에서 마시지 않았다면 충전한다.
     private void TownStarted(TownStartedSignal _signal)
     {
-        inDungeonObjectManager.RefillSporePotionCharge();
-
         // 피로도 바닥값 감시는 이번 원정 안에서만 의미가 있다. 플레이어가 바닥값에 닿기 전에 스스로
         // 귀환하면(GoHomeBeforeExhausted 스킵) 마을 진입 시 StaminaReset()으로 피로도가 최대치로
         // 돌아가 루프가 영원히 끝나지 않으므로, 여기서 확실히 정리한다.
