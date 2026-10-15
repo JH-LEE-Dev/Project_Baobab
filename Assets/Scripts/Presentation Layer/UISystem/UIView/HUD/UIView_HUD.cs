@@ -20,6 +20,7 @@ public class UIView_HUD : UIView
 
     private HUD_Equipment hudEquipment;
     private HUD_Stemina hudStaminaBar;
+    private HUD_BuffBar hudBuffBar;
     private HUD_DirIndicator hudDirIndicator;
     private HUD_Message hudMessage;
     private HUD_ScreenBlood hudScreenBlood;
@@ -202,6 +203,12 @@ public class UIView_HUD : UIView
 
     #endregion
 
+    // 버프 줄(조합 프리팹을 쓰지 않으면 null)
+    public HUD_BuffBar BuffBar
+    {
+        get { return hudBuffBar; }
+    }
+
     #region HUD_Stemina Logic
 
     private void Init_HUDScreenBlood()
@@ -217,7 +224,19 @@ public class UIView_HUD : UIView
 
     private void Init_HUDStaminaBar()
     {
-        hudStaminaBar = Instantiate(hudSteminaBarPrefab, moveHUD.transform).GetComponent<HUD_Stemina>();
+        GameObject _staminaObject = Instantiate(hudSteminaBarPrefab, moveHUD.transform);
+        HUD_StaminaGroup _group = _staminaObject.GetComponent<HUD_StaminaGroup>();
+
+        // 스태미나 + 버프 조합 프리팹이면 그룹이 둘을 함께 초기화한다. 단독 스태미나 프리팹이면 기존 방식 그대로.
+        if (null != _group)
+        {
+            _group.Initialize(hudScreenBlood);
+            hudStaminaBar = _group.Stamina;
+            hudBuffBar = _group.BuffBar;
+            return;
+        }
+
+        hudStaminaBar = _staminaObject.GetComponent<HUD_Stemina>();
 
         if (null != hudStaminaBar)
         {
@@ -343,6 +362,15 @@ public class UIView_HUD : UIView
 
     private void ChangedActiveStateStemina(bool _isTwon)
     {
+        // 버프 줄도 마을에서는 숨긴다. 숨기기 전에 남은 버프/입자를 비워 다음 던전에서 이어 보이지 않게 한다.
+        if (null != hudBuffBar)
+        {
+            if (true == _isTwon)
+                hudBuffBar.Clear();
+
+            hudBuffBar.gameObject.SetActive(!_isTwon);
+        }
+
         if (null == hudStaminaBar)
             return;
 

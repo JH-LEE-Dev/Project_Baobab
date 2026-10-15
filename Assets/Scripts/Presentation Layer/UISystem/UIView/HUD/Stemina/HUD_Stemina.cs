@@ -403,6 +403,18 @@ public class HUD_Stemina : MonoBehaviour
 
     // 퍼블릭 초기화 및 제어 메서드
 
+    // 저피로도 경고 중인지(다른 HUD가 경고 틴트에 맞춰 색을 따라갈 때 읽는다)
+    public bool IsWarning
+    {
+        get { return bWarningGauge; }
+    }
+
+    // 바 채움의 현재 틴트(경고 중에는 흰색<->붉은색으로 오간다)
+    public Color FillTint
+    {
+        get { return null != barFillImage ? barFillImage.color : Color.white; }
+    }
+
     public void Initialize(HUD_ScreenBlood _screenBlood)
     {
         progressBar?.Initialize();
