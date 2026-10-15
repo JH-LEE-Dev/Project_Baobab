@@ -448,6 +448,8 @@ Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectMa
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager:InDungeonObjectManager|lostAndFoundBoxDropChanceIncreasePerKill = 0.005
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager:InDungeonObjectManager|lostAndFoundBoxPityMaxKills = 5
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager:InDungeonObjectManager|lostAndFoundBoxPityMinKills = 4
+Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager:InDungeonObjectManager|lostAndFoundBoxTier2PrestigeLevel = 4
+Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager:InDungeonObjectManager|lostAndFoundBoxTier3PrestigeLevel = 7
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager:InDungeonObjectManager|mapTypeTreeGenerationDatas[mapType=FluffySporeForest].mapType = FluffySporeForest
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager:InDungeonObjectManager|mapTypeTreeGenerationDatas[mapType=MagmaForest].mapType = MagmaForest
 Prefabs/Installer/Installer/GameInstaller|GameInstaller/InDungeonSystem/ObjectManager:InDungeonObjectManager|mapTypeTreeGenerationDatas[mapType=StarrootForest].mapType = StarrootForest
@@ -727,6 +729,8 @@ Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|boomer
 Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|boomerangOverheatSpeedMul = 3
 Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|ciriticalDamageMul = 2
 Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|criticalChance = 0
+Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|dashMaxChargesBonus = 0
+Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|dashRechargePerSecondBonus = 0
 Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|droneActiveDuration = 3
 Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|droneAttackRange = 3
 Prefabs/Objects/Character/Character|Character/StatComponent:StatComponent|droneChainCount = 0
@@ -815,9 +819,14 @@ Prefabs/Objects/Character/Character|Character:Character|bRide = 0
 Prefabs/Objects/Character/Character|Character:Character|boomerangEdgePadding = 0.5
 Prefabs/Objects/Character/Character|Character:Character|collisionOffset = (0, 0.12)
 Prefabs/Objects/Character/Character|Character:Character|collisionRadius = 0.15
-Prefabs/Objects/Character/Character|Character:Character|dashCooldown = 4
 Prefabs/Objects/Character/Character|Character:Character|dashDistanceTiles = 3
 Prefabs/Objects/Character/Character|Character:Character|dashDuration = 0.18
+Prefabs/Objects/Character/Character|Character:Character|dashTier1MaxCharges = 1
+Prefabs/Objects/Character/Character|Character:Character|dashTier1RechargeSeconds = 4
+Prefabs/Objects/Character/Character|Character:Character|dashTier2MaxCharges = 1
+Prefabs/Objects/Character/Character|Character:Character|dashTier2RechargeSeconds = 3
+Prefabs/Objects/Character/Character|Character:Character|dashTier3MaxCharges = 2
+Prefabs/Objects/Character/Character|Character:Character|dashTier3RechargeSeconds = 2.5
 Prefabs/Objects/Character/Character|Character:Character|droneArrivalTolerance = 0.15
 Prefabs/Objects/Character/Character|Character:Character|droneAttackStaggerStep = 0.08
 Prefabs/Objects/Character/Character|Character:Character|droneCenterHoverHeight = 0.3

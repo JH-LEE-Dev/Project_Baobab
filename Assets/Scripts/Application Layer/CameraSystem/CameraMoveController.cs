@@ -122,6 +122,44 @@ public class CameraMoveController : MonoBehaviour
         }
     }
 
+    // ScreenToWorldWithoutShake가 매 프레임 불리므로 카메라별 브레인 조회를 한 번만 한다.
+    private static Camera cachedBrainCamera;
+    private static CinemachineBrain cachedBrain;
+
+    /// <summary>
+    /// 화면 좌표를 월드 좌표로 바꾸되, 카메라 흔들림(ShakeCamera의 Perlin 노이즈)은 뺀 위치 기준으로 계산합니다.
+    ///
+    /// 조준처럼 "커서가 가리키는 방향"을 구할 때 써야 합니다. 그냥 ScreenToWorldPoint를 쓰면 흔들리는 동안의
+    /// 카메라 오프셋이 그대로 조준점에 섞여, 커서가 캐릭터 가까이 있을 때 방향이 위아래로 뒤집힐 수 있습니다.
+    ///
+    /// 노이즈는 CameraState의 Correction 채널에만 들어가고 브레인이 그 최종값을 카메라 Transform에 씁니다.
+    /// 이 프로젝트의 가상 카메라에는 Correction을 쓰는 다른 확장(Confiner 등)이 없으므로, Transform에서
+    /// Correction만 되돌리면 흔들리기 전 카메라 자세가 됩니다. 흔들림이 없을 때는 Correction이 0이라
+    /// ScreenToWorldPoint와 결과가 같습니다.
+    /// </summary>
+    public static Vector3 ScreenToWorldWithoutShake(Camera _camera, Vector3 _screenPos)
+    {
+        Vector3 _worldPos = _camera.ScreenToWorldPoint(_screenPos);
+
+        if (cachedBrainCamera != _camera)
+        {
+            cachedBrainCamera = _camera;
+            cachedBrain = _camera.GetComponent<CinemachineBrain>();
+        }
+
+        // 브레인이 꺼져 있으면 State가 마지막 값으로 멈춰 있어 Transform과 맞지 않을 수 있다.
+        if (cachedBrain == null || false == cachedBrain.isActiveAndEnabled) return _worldPos;
+
+        CameraState _state = cachedBrain.State;
+        Transform _cameraTransform = _camera.transform;
+
+        Vector3 _rawPosition = _cameraTransform.position - _state.PositionCorrection;
+        Quaternion _rawRotation = _cameraTransform.rotation * Quaternion.Inverse(_state.OrientationCorrection);
+
+        Vector3 _localPos = Quaternion.Inverse(_cameraTransform.rotation) * (_worldPos - _cameraTransform.position);
+        return _rawPosition + (_rawRotation * _localPos);
+    }
+
     /// <summary>
     /// CinemachineCamera의 Lens.OrthographicSize를 일시적으로 줄였다가(줌 인) 다시 원래대로
     /// 부드럽게 복구하는 펀치 연출. _zoomMultiplier는 "몇 배 확대"인지를 뜻한다(1.15 = 1.15배 줌 인).

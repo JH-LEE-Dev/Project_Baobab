@@ -279,6 +279,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Subscribe<CharacterStaminaIsEmptySignal>(CharacterStaminaIsEmpty);
         signalHub.Subscribe<ActivateCharacterSignal>(CharacterActivated);
         signalHub.Subscribe<TownStartedSignal>(TownStarted);
+        signalHub.Subscribe<PrestigeLevelIncreasedSignal>(PrestigeLevelIncreased);
         signalHub.Subscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
         signalHub.Subscribe<CompanyLogoProductionCompletedSignal>(CompanyLogoProductionCompleted);
         signalHub.Subscribe<DungeonBGMStartSignal>(DungeonBGMStart);
@@ -298,6 +299,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.UnSubscribe<CharacterStaminaIsEmptySignal>(CharacterStaminaIsEmpty);
         signalHub.UnSubscribe<ActivateCharacterSignal>(CharacterActivated);
         signalHub.UnSubscribe<TownStartedSignal>(TownStarted);
+        signalHub.UnSubscribe<PrestigeLevelIncreasedSignal>(PrestigeLevelIncreased);
         signalHub.UnSubscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
         signalHub.UnSubscribe<CompanyLogoProductionCompletedSignal>(CompanyLogoProductionCompleted);
         signalHub.UnSubscribe<DungeonBGMStartSignal>(DungeonBGMStart);
@@ -584,6 +586,12 @@ public class InDungeonSystem : MonoBehaviour
         if (bCurrentlyDungeonScene == false || bCharacterActivated == false) return;
 
         inDungeonObjectManager.TryDrinkSporePotion();
+    }
+
+    // 성장형 전리품(원목 보험 증서)의 단계가 프레스티지 레벨을 따라가도록 전달한다(전리품 UI 알림 포함).
+    private void PrestigeLevelIncreased(PrestigeLevelIncreasedSignal _signal)
+    {
+        inDungeonObjectManager.PrestigeLevelIncreased(_signal.level);
     }
 
     private void CharacterActivated(ActivateCharacterSignal _signal)

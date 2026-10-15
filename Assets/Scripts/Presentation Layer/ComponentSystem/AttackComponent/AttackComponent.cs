@@ -368,7 +368,9 @@ public class AttackComponent : PComponent
             -mainCamera.transform.position.z
         );
 
-        Vector3 mouseWorldPos = mainCamera.ScreenToWorldPoint(_convertedMousePos);
+        // 타격마다 카메라가 흔들리므로(ShakeCamera) 흔들림을 뺀 카메라 기준으로 바꾼다.
+        // 그냥 변환하면 흔들리는 동안의 오프셋이 조준점에 섞여, 커서가 캐릭터 가까이 있을 때 충격파·타격 방향이 뒤집힌다.
+        Vector3 mouseWorldPos = CameraMoveController.ScreenToWorldWithoutShake(mainCamera, _convertedMousePos);
         mouseWorldPos.z = 0;
 
         ApplyAimWorldPosition(mouseWorldPos);
@@ -749,9 +751,27 @@ public class AttackComponent : PComponent
         }
     }
 
+    /// <summary>
+    /// 마우스 조준점을 마지막 커서 화면 좌표로 매 프레임 다시 계산합니다.
+    ///
+    /// 조준점은 월드 좌표로 저장되는데, 예전에는 마우스가 움직일 때(MouseMove)와 스윙이 끝날 때만 갱신했습니다.
+    /// 그래서 마우스를 가만히 두고 캐릭터가 걷거나 넉백·대시로 밀리면, 화면상 커서는 같은 방향인데도 조준은
+    /// 맵에 남겨진 예전 지점을 계속 가리켰습니다. 그 지점을 지나치면 충격파·타격이 갑자기 반대쪽으로 나갔습니다.
+    /// 패드 조준(UpdateGamepadAim)이 매 프레임 캐릭터 기준으로 다시 계산하는 것과 같은 이유입니다.
+    /// </summary>
+    private void UpdateMouseAim()
+    {
+        // 아직 마우스 입력이 한 번도 없었거나 패드로 조준 중이면 마우스 좌표로 덮어쓰지 않는다.
+        if (Vector2.zero == lastMouseScreenPos || componentCenterTransform == null) return;
+        if (null == ctx || null == ctx.inputManager || EInputDeviceType.Gamepad == ctx.inputManager.CurrentDevice) return;
+
+        UpdateAttackColliderPosition(lastMouseScreenPos);
+    }
+
     private void Update()
     {
         UpdateGamepadAim();
+        UpdateMouseAim();
         UpdateIndicator();
 
         detectionTimer += Time.deltaTime;
@@ -1194,8 +1214,8 @@ public class AttackComponent : PComponent
         bool _wasEnabled = bCursorEnable;
         bCursorEnable = _boolean;
 
-        // 조준은 마우스가 물리적으로 움직일 때(MouseMove)만 갱신되므로, 켜는 순간 한 번 직접
-        // 계산해주지 않으면 다음 마우스 이동이 있을 때까지 이전 방향을 그대로 보고 있게 된다.
+        // 조준은 MouseMove와 매 프레임(UpdateMouseAim) 갱신되지만, 켜는 순간 한 번 직접 계산해주지 않으면
+        // 같은 프레임에 이 뒤로 이어지는 처리(UpdateFacingByAttackPoint 등)가 이전 방향을 그대로 보게 된다.
         // lastMouseScreenPos는 bCursorEnable이 false인 동안에도 계속 캐싱되므로(MouseMove 참고)
         // 여기서 곧바로 현재 커서 위치 기준으로 맞출 수 있다. 단, 패드 모드일 때는 마우스 위치로 덮어쓰지 않는다.
         if (_boolean && false == _wasEnabled && Vector2.zero != lastMouseScreenPos)

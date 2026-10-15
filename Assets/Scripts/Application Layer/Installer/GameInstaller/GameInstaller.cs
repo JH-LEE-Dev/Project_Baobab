@@ -155,6 +155,9 @@ public class GameInstaller : MonoBehaviour
 
         cameraManager.ResetCamera();
 
+        // 성장형 전리품 단계가 지금 프레스티지 레벨을 보도록 맞춘다(세이브 로드 직후 포함).
+        inDungeonSystem.inDungeonObjectManager.SyncPrestigeLevel(skillManager.GetCurrentPrestigeLevel());
+
         if (_sceneChangeData.currentScene == SceneType.Roguelike)
         {
             // 로그라이크: 던전 원정 흐름(InDungeonSystem)과 마을 흐름(TownSystem)을 모두 타지 않고
@@ -162,7 +165,7 @@ public class GameInstaller : MonoBehaviour
             gameplayUIInstaller.SetupCanvas();
             unitSystem.SetWhereIsCharacter(true);
             // 대시는 본편 전리품("원목 보험 증서") 효과라 로그라이크에서는 쓰지 않는다.
-            unitSystem.SetDashUnlocked(false);
+            unitSystem.SetDashTier(0);
             roguelikeSystem?.StartSession();
         }
         else if (_sceneChangeData.currentScene == SceneType.DungeonScene)
@@ -172,9 +175,9 @@ public class GameInstaller : MonoBehaviour
             gameplayUIInstaller.SetupCanvas();
             unitSystem.SetWhereIsCharacter(true);
 
-            // 대시는 "원목 보험 증서" 전리품 효과다. 영구 획득 여부로 켠다. 원정 도중 얻으면 여기서,
-            // 즉 다음 숲 방문(재도전 포함)부터 켜진다.
-            unitSystem.SetDashUnlocked(inDungeonSystem.inDungeonObjectManager.bHasAcquiredLostAndFoundBox);
+            // 대시는 "원목 보험 증서" 전리품 효과다. 영구 획득 여부와 프레스티지 성장 단계로 켠다(0이면 미보유).
+            // 원정 도중 얻거나 단계가 오르면 여기서, 즉 다음 숲 방문(재도전 포함)부터 적용된다.
+            unitSystem.SetDashTier(inDungeonSystem.inDungeonObjectManager.GetLootGrowthTier(LootType.LostAndFoundBox));
         }
         else
         {
@@ -186,7 +189,7 @@ public class GameInstaller : MonoBehaviour
             // Town 초기화(그리드 생성, NPC 스폰)가 끝난 뒤에만 구름이 걷히도록 여기서 명시적으로 트리거한다.
             inDungeonSystem.NotifyTownSystemReady();
             unitSystem.SetWhereIsCharacter(false);
-            unitSystem.SetDashUnlocked(false);
+            unitSystem.SetDashTier(0);
 
             // 마을 도착(최초 진입/이어하기 포함) 시점 자동저장.
             signalHub.Publish(new AutoSaveRequestedSignal(AutoSaveReason.ArriveTown));
