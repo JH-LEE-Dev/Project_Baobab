@@ -74,6 +74,12 @@ public class HUD_LootReveal : MonoBehaviour
     [SerializeField] private float lootFloatDuration = 4.0f;
 
     private float lootInitialY; 
+
+    // 성장 정보 원천(현재 단계, 다음 단계가 되는 프레스티지 레벨). 윗단이 SetGrowthInfoSource로 연결해 준다.
+    private Func<LootType, int> growthTierGetter;
+    private Func<LootType, int> growthNextLevelGetter;
+    private const string GrowthNextKey = "growth_next";
+    private const string GrowthMaxKey = "growth_max";
     [SerializeField] private Ease lootPopEase = Ease.OutBack;
 
     // ─── VFX ──────────────────────────────────────────────────────────────────
@@ -96,6 +102,13 @@ public class HUD_LootReveal : MonoBehaviour
     [SerializeField] private float descSlideFromX = -250f;
     [SerializeField] private float descSlideDuration = 0.3f;
     [SerializeField] private Ease descSlideEase = Ease.OutCubic;
+
+    // ─── Growth (다음 성장 시점 안내) ─────────────────────────────────────────
+    [Header("── Growth ───────────────────────────────────────────────────────")]
+    [Tooltip("설명 아래 한 줄. \"[꽃 아이콘] N 에서 성장\" 또는 \"최대 성장\"을 보여 준다. 성장하지 않는 전리품이거나 정보가 연결되지 않으면 숨긴다.")]
+    [SerializeField] private TMP_Text lootGrowthText;
+    [Tooltip("단계별 스프라이트(씨앗/꽃/나무). 비워 두면 LootItemTypeDataBase의 기본 스프라이트를 쓴다.")]
+    [SerializeField] private LootGrowthVisualData growthVisualData;
 
     // ─── Timing ───────────────────────────────────────────────────────────────
     [Header("── Timing ───────────────────────────────────────────────────────")]
@@ -235,6 +248,16 @@ public class HUD_LootReveal : MonoBehaviour
         DOTween.Kill("LootFloat");
     }
 
+    /// <summary>
+    /// 성장 정보 원천을 연결한다. _tierGetter는 현재 단계(1~3, 성장하지 않으면 0), _nextLevelGetter는 다음 단계가 되는
+    /// 프레스티지 레벨(이미 최대면 0)을 돌려준다. 연결하지 않으면 성장 줄은 숨겨진다.
+    /// </summary>
+    public void SetGrowthInfoSource(Func<LootType, int> _tierGetter, Func<LootType, int> _nextLevelGetter)
+    {
+        growthTierGetter = _tierGetter;
+        growthNextLevelGetter = _nextLevelGetter;
+    }
+
     public void Show(LootType _lootType, LocalizationManager _locManager)
     {
         // 광클 락 해제: 완전히 켜져있는 상태라도 닫히는 중일 수 있으므로 무조건 초기화하고 다시 연출합니다.
@@ -361,6 +384,13 @@ public class HUD_LootReveal : MonoBehaviour
             lootDescText.rectTransform.anchoredPosition =
                 new Vector2(descSlideFromX, lootDescText.rectTransform.anchoredPosition.y);
             lootDescText.ForceMeshUpdate(true);
+        }
+
+        if (null != lootGrowthText)
+        {
+            lootGrowthText.rectTransform.DOKill();
+            lootGrowthText.rectTransform.anchoredPosition =
+                new Vector2(descSlideFromX, lootGrowthText.rectTransform.anchoredPosition.y);
         }
 
         if (null != bgDissolveImage && null != bgDissolveImage.material)
@@ -516,6 +546,14 @@ public class HUD_LootReveal : MonoBehaviour
             _descRT.DOAnchorPosX(0f, descSlideDuration).SetEase(descSlideEase);
         }
 
+        // 성장 줄은 설명 슬라이드가 끝나갈 즈음 뒤따라 들어온다
+        if (null != lootGrowthText && true == lootGrowthText.gameObject.activeSelf)
+        {
+            RectTransform _growthRT = lootGrowthText.rectTransform;
+            _growthRT.anchoredPosition = new Vector2(descSlideFromX, _growthRT.anchoredPosition.y);
+            _growthRT.DOAnchorPosX(0f, descSlideDuration).SetEase(descSlideEase).SetDelay(descSlideDelay);
+        }
+
         yield return cachedTextSlideEndDelay;
     }
 
@@ -540,6 +578,31 @@ public class HUD_LootReveal : MonoBehaviour
             lootDescText.text = _locManager.GetText(_descKey);
             lootDescText.ForceMeshUpdate(true);
         }
+
+        SetGrowthText(_lootType, _locManager);
+    }
+
+    // 설명 아래 "[꽃] N 에서 성장" / "최대 성장" 한 줄. 정보가 없으면 줄 자체를 숨긴다.
+    private void SetGrowthText(LootType _lootType, LocalizationManager _locManager)
+    {
+        if (null == lootGrowthText)
+            return;
+
+        int _tier = null != growthTierGetter ? growthTierGetter(_lootType) : 0;
+
+        if (_tier <= 0 || null == growthNextLevelGetter)
+        {
+            lootGrowthText.gameObject.SetActive(false);
+            return;
+        }
+
+        int _nextLevel = growthNextLevelGetter(_lootType);
+
+        lootGrowthText.gameObject.SetActive(true);
+        lootGrowthText.text = _nextLevel <= 0
+            ? _locManager.GetText(GrowthMaxKey)
+            : string.Format(_locManager.GetText(GrowthNextKey), _nextLevel);
+        lootGrowthText.ForceMeshUpdate(true);
     }
 
     private string GetNameKey(LootType _type)
@@ -575,6 +638,15 @@ public class HUD_LootReveal : MonoBehaviour
         LootItemTypeData _data = _db.Get(_lootType);
         if (null != _data)
             lootItemImage.sprite = _data.sprite;
+
+        // 성장 단계별 스프라이트가 등록돼 있으면 그것을 쓴다(씨앗/꽃/나무). 없으면 위 기본 스프라이트 그대로.
+        int _tier = null != growthTierGetter ? growthTierGetter(_lootType) : 0;
+
+        if (0 < _tier && null != growthVisualData
+            && true == growthVisualData.TryGetSprite(_lootType, _tier, out Sprite _tierSprite, out bool _bPlaceholder))
+        {
+            lootItemImage.sprite = _tierSprite;
+        }
     }
 
     // ─── 에디터 테스트 ────────────────────────────────────────────────────────

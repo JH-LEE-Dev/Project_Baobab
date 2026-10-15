@@ -34,6 +34,10 @@ namespace PresentationLayer.Environment
         [SerializeField] private SpriteRenderer outlineStencilRenderer;
         [SerializeField] private SpriteRenderer outlineRenderer;
 
+        [Header("Growth Visual (단계별 아우라 색 / 스프라이트)")]
+        [Tooltip("단계(씨앗/꽃/나무)별 아우라 색과 스프라이트. 비워 두면 단계와 상관없이 아래 auraSettings(종류별 색)를 쓴다.")]
+        [SerializeField] private LootGrowthVisualData growthVisualData;
+
         [Header("Aura Orbit Settings")]
         [SerializeField] private bool useAuraOrbit = false;
         [SerializeField] private ItemAuraOrbitController auraOrbitController;
@@ -48,6 +52,12 @@ namespace PresentationLayer.Environment
         public event Action<bool, LootType> LootPillarInteractEvent;
 
         public LootType CurrentLootType { get; private set; } = LootType.None;
+
+        // 지금 표시 중인 성장 단계(0 = 모름/성장하지 않음). SetGrowthTier로 정해진다.
+        private int currentGrowthTier = 0;
+
+        // 임시 스프라이트 경고를 (전리품, 단계)당 한 번만 낸다
+        private static readonly HashSet<int> placeholderWarned = new HashSet<int>();
 
         private int characterLayer;
         private InputManager inputManager;
@@ -222,6 +232,50 @@ namespace PresentationLayer.Environment
             else if (false == useAuraOrbit && null != auraOrbitController)
             {
                 auraOrbitController.Stop();
+            }
+
+            ApplyGrowthVisual();
+        }
+
+        /// <summary>
+        /// 성장 단계(1~3)를 알려 주면 그 단계의 아우라 색과 스프라이트로 바꾼다. 같은 단계면 전리품 종류와 상관없이 같은 색이다.
+        /// 0 이하(성장하지 않는 전리품 / 단계를 모를 때)면 종류별 기본 색(auraSettings)을 그대로 쓴다.
+        /// SetLootDisplay 뒤에 불러야 한다.
+        /// </summary>
+        public void SetGrowthTier(int _tier)
+        {
+            currentGrowthTier = _tier;
+            ApplyGrowthVisual();
+        }
+
+        private void ApplyGrowthVisual()
+        {
+            if (null == growthVisualData || currentGrowthTier < 1)
+            {
+                return;
+            }
+
+            if (true == useAuraOrbit && null != auraOrbitController
+                && true == growthVisualData.TryGetAuraColor(currentGrowthTier, out Color _auraColor))
+            {
+                auraOrbitController.SetCenterGlowColor(_auraColor);
+            }
+
+            if (null != targetRenderer
+                && true == growthVisualData.TryGetSprite(CurrentLootType, currentGrowthTier, out Sprite _sprite, out bool _bPlaceholder))
+            {
+                targetRenderer.sprite = _sprite;
+
+                if (true == _bPlaceholder)
+                {
+                    int _key = ((int)CurrentLootType << 8) | currentGrowthTier;
+
+                    if (true == placeholderWarned.Add(_key))
+                    {
+                        Debug.LogWarning("[LootDisplayObject] 임시 스프라이트 사용 중: " + CurrentLootType + " 단계 " + currentGrowthTier
+                            + " (LootGrowthVisualData에서 정식 스프라이트로 교체하고 isPlaceholder를 끄세요)");
+                    }
+                }
             }
         }
     }

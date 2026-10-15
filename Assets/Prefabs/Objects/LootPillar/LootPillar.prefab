@@ -588,6 +588,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.Environment.LootDisplayObject
   targetRenderer: {fileID: 3127719736685409035}
   lootDataBase: {fileID: 11400000, guid: 3a405593cd27bee44957a785aaf70392, type: 2}
+  growthVisualData: {fileID: 11400000, guid: 375a568b97f461e4db5c2df342e2bc02, type: 2}
   pillarRenderer: {fileID: 5954358378157050357}
   outlineStencilObj: {fileID: 3023795368703313444}
   outlineStencilRenderer: {fileID: 7705092683096633063}

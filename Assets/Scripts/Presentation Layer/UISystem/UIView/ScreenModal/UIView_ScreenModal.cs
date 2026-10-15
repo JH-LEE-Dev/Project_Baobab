@@ -37,6 +37,20 @@ public class UIView_ScreenModal : UIView
 
     public LootType CurrentLootType { get; private set; } = LootType.None;
 
+    /// <summary>
+    /// 전리품 화면의 "다음 성장 시점" 줄에 쓸 정보 원천을 연결한다. 윗단(UI 주입 지점)이 한 번 호출해 주면 된다.
+    /// _tierGetter: 현재 단계(1~3, 성장하지 않으면 0) - ILootDataProvider.GetLootGrowthTier를 그대로 넘기면 된다.
+    /// _nextLevelGetter: 다음 단계가 되는 프레스티지 레벨(이미 최대면 0).
+    /// 연결하지 않으면 성장 줄은 숨겨진다.
+    /// </summary>
+    public void SetGrowthInfoSource(Func<LootType, int> _tierGetter, Func<LootType, int> _nextLevelGetter)
+    {
+        if (null != hudLootReveal)
+        {
+            hudLootReveal.SetGrowthInfoSource(_tierGetter, _nextLevelGetter);
+        }
+    }
+
     protected override void Awake()
     {
         base.Awake();

@@ -220,6 +220,20 @@ namespace PresentationLayer.UISystem
                             // Standard TextMeshPro rich text tags (<b>, </i>, <size=...>, etc.)
                             // Pass through to cleanTextBuilder for TMP to format, but do not add dummy entries to characterStyles.
                             cleanTextBuilder.Append(_source, index, tagEndIndex - index + 1);
+
+                            // 단, <sprite ...>는 눈에 보이는 글자 하나를 만든다. TMP의 글자 인덱스와 characterStyles 인덱스가
+                            // 1:1로 맞아야 하므로 항목을 하나 더한다(색 스타일은 입히지 않아 스프라이트 본래 색이 유지된다).
+                            if (IsSpriteTag(tag))
+                            {
+                                characterStyles.Add(new CharacterStyle
+                                {
+                                    colorStyle = default,
+                                    shake = shakeDepth > 0,
+                                    characterShake = characterShakeDepth > 0,
+                                    wave = waveDepth > 0
+                                });
+                            }
+
                             index = tagEndIndex + 1;
                             continue;
                         }
@@ -236,6 +250,17 @@ namespace PresentationLayer.UISystem
                 });
                 index++;
             }
+        }
+
+        // <sprite name="..."> / <sprite="Asset" name="..."> / <sprite=3> 형태. 닫는 태그는 없다.
+        private static bool IsSpriteTag(string _tag)
+        {
+            if (string.IsNullOrEmpty(_tag))
+                return false;
+
+            string trimmed = _tag.TrimStart();
+            return trimmed.StartsWith("sprite", StringComparison.OrdinalIgnoreCase)
+                && (trimmed.Length == 6 || trimmed[6] == ' ' || trimmed[6] == '=');
         }
 
         private bool HandleTag(string _tag, ref ColorStyle _currentColorStyle, ref int _shakeDepth, ref int _characterShakeDepth, ref int _waveDepth)
