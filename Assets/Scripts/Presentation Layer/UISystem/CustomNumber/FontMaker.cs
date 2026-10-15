@@ -49,6 +49,10 @@ namespace PresentationLayer.UISystem.CustomNumber
         private float layoutHeight = GlyphPixelSize;
         private Color glyphColor = Color.white;
 
+#if UNITY_EDITOR
+        private DrivenRectTransformTracker editorSizeTracker;
+#endif
+
         public float minWidth => layoutWidth;
         public float preferredWidth => layoutWidth;
         public float flexibleWidth => -1.0f;
@@ -186,7 +190,7 @@ namespace PresentationLayer.UISystem.CustomNumber
             HideRemainingGlyphs(0);
 
             if (null != rectTransform)
-                rectTransform.sizeDelta = new Vector2(0.0f, GlyphPixelSize * pixelScale);
+                ApplyLayoutSize(new Vector2(0.0f, GlyphPixelSize * pixelScale));
 
             layoutWidth = 0.0f;
             layoutHeight = GlyphPixelSize * pixelScale;
@@ -247,7 +251,7 @@ namespace PresentationLayer.UISystem.CustomNumber
             layoutHeight = _scaledGlyphSize;
 
             if (null != rectTransform)
-                rectTransform.sizeDelta = new Vector2(layoutWidth, layoutHeight);
+                ApplyLayoutSize(new Vector2(layoutWidth, layoutHeight));
 
             for (int i = 0; i < _visibleLength; i++)
             {
@@ -277,6 +281,26 @@ namespace PresentationLayer.UISystem.CustomNumber
 
             HideRemainingGlyphs(_visibleLength);
             MarkLayoutDirty();
+        }
+
+        // 미리보기의 자동 크기는 저장하지 않는다. 실행 중에는 기존 크기 계산을 그대로 사용한다.
+        private void ApplyLayoutSize(Vector2 _size)
+        {
+#if UNITY_EDITOR
+            editorSizeTracker.Clear();
+            if (false == Application.isPlaying && isActiveAndEnabled && CanUpdateEditorPreview())
+                editorSizeTracker.Add(this, rectTransform, DrivenTransformProperties.SizeDelta);
+#endif
+            if (rectTransform.sizeDelta != _size)
+                rectTransform.sizeDelta = _size;
+        }
+
+        private void OnDisable()
+        {
+#if UNITY_EDITOR
+            EditorApplication.delayCall -= RefreshEditorPreview;
+            editorSizeTracker.Clear();
+#endif
         }
 
         private void MarkLayoutDirty()

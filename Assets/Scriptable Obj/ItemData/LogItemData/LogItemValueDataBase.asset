@@ -20,11 +20,11 @@ MonoBehaviour:
   - treeType: 3
     value: 40
   - treeType: 4
-    value: 300
+    value: 150
   - treeType: 5
-    value: 700
+    value: 350
   - treeType: 6
-    value: 2200
+    value: 1000
   - treeType: 7
     value: 20000
   - treeType: 8
@@ -41,8 +41,8 @@ MonoBehaviour:
   - logState: 2
     valueMultiplier: 1
   - logState: 3
-    valueMultiplier: 5
+    valueMultiplier: 4
   - logState: 4
-    valueMultiplier: 10
+    valueMultiplier: 8
   - logState: 5
-    valueMultiplier: 20
+    valueMultiplier: 15
