@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using PresentationLayer.VFX;
 
 namespace PresentationLayer.Environment
 {
@@ -42,6 +43,10 @@ namespace PresentationLayer.Environment
         [SerializeField, Range(0.1f, 1.5f), Tooltip("단계 색 후광 중심의 세기 배율. 중심이 하얗게 날아가면 낮춘다.")]
         private float growthGlowCoreStrength = 0.8f;
 
+        [Header("Evolve VFX (단계가 오를 때 재생되는 진화 연출)")]
+        [Tooltip("비워 두면 단계가 오를 때 연출 없이 바로 바뀐다.")]
+        [SerializeField] private VFX_LootEvolve evolveEffect;
+
         [Header("Aura Orbit Settings")]
         [SerializeField] private bool useAuraOrbit = false;
         [SerializeField] private ItemAuraOrbitController auraOrbitController;
@@ -60,6 +65,10 @@ namespace PresentationLayer.Environment
         // 지금 표시 중인 성장 단계(0 = 모름/성장하지 않음). SetGrowthTier로 정해진다.
         private int currentGrowthTier = 0;
 
+        // 진화 연출 중에 올라갈 단계(0 = 연출 중이 아님). 연출의 폭발 시각에 이 단계로 후광 색/스프라이트를 바꾼다.
+        private int pendingGrowthTier = 0;
+        private Action cachedOnEvolveBurst;
+
         // 임시 스프라이트 경고를 (전리품, 단계)당 한 번만 낸다
         private static readonly HashSet<int> placeholderWarned = new HashSet<int>();
 
@@ -71,6 +80,7 @@ namespace PresentationLayer.Environment
         private void Awake()
         {
             customSortable = GetComponent<CustomSortable>();
+            cachedOnEvolveBurst = OnEvolveBurst;
             characterLayer = LayerMask.NameToLayer("Character");
 
             // 기본값: 생성 위치(자기 자신의 Y) 기준. 스포너가 별도 Pivot 기준점을 알고 있다면
@@ -248,8 +258,47 @@ namespace PresentationLayer.Environment
         /// </summary>
         public void SetGrowthTier(int _tier)
         {
+            // 이미 성장한 상태(1단계 이상)에서 단계가 오르면 진화 연출을 재생하고, 후광/스프라이트 교체는 폭발 시각까지 미룬다.
+            // 처음 생성될 때(단계 0 -> 현재 단계)나 단계가 내려갈 때는 연출 없이 바로 바꾼다.
+            if (null != evolveEffect && true == isActiveAndEnabled && 1 <= currentGrowthTier && currentGrowthTier < _tier)
+            {
+                int fromTier = 0 < pendingGrowthTier ? pendingGrowthTier : currentGrowthTier;
+
+                // 진행 중이던 연출이 있으면 Play가 먼저 정리하면서 이전 목표 단계를 적용한 뒤 새 연출을 시작한다.
+                evolveEffect.Play(fromTier, _tier, cachedOnEvolveBurst);
+                pendingGrowthTier = _tier;
+                return;
+            }
+
+            if (0 < pendingGrowthTier)
+            {
+                // 연출 중에 다른 단계가 지정되면 연출은 끊고 바로 새 단계로 맞춘다.
+                pendingGrowthTier = 0;
+            }
+
             currentGrowthTier = _tier;
             ApplyGrowthVisual();
+        }
+
+        // 진화 연출의 폭발 시각: 이때 새 단계의 후광 색과 스프라이트로 바꾼다.
+        private void OnEvolveBurst()
+        {
+            if (pendingGrowthTier <= 0) return;
+
+            currentGrowthTier = pendingGrowthTier;
+            pendingGrowthTier = 0;
+            ApplyGrowthVisual();
+        }
+
+        private void OnDisable()
+        {
+            // 연출 중에 꺼지면(마을을 떠남 등) 연출이 정리되며 폭발 콜백을 불러 주지만, 못 불렸다면 여기서 단계를 맞춘다.
+            if (0 < pendingGrowthTier)
+            {
+                currentGrowthTier = pendingGrowthTier;
+                pendingGrowthTier = 0;
+                ApplyGrowthVisual();
+            }
         }
 
         private void ApplyGrowthVisual()
