@@ -122,10 +122,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // "별빛 나침반" - "3-2"(StarrootForest_2)에서 확률 드랍, "3-3"(StarrootForest_3) 이후 모든 숲에서 구제 보장.
     // 한 곳에서 획득하면 다른 숲에서는 더 이상 드랍되지 않는다(영구 플래그).
-    // 효과: 플레이어 공격으로 나무를 벨 때마다 유성우 게이지가 차고, 가득 차면 지속시간 동안 캐릭터 주변 무작위 위치에
-    // 유성이 떨어져 착지 위치 기준 등각 타원 범위의 나무에 피해를 준다. 프레스티지 레벨에 따라 I → II → III으로
-    // 성장하고, 효과는 다음 숲 방문부터 적용된다(starCompassTierThisRun). 이펙트는 따로 붙인다
-    // (MeteorShowerStartedEvent / MeteorImpactEvent).
+    // 효과: 플레이어 공격으로 나무를 벨 때마다 유성우 게이지가 차고, 가득 차면 지속시간 동안 발동 순간의 캐릭터 주변
+    // 무작위 위치에 유성이 떨어져 착지 위치 기준 등각 타원 범위의 나무에 피해를 준다. 프레스티지 레벨에 따라 I → II → III으로
+    // 성장하고, 효과는 다음 숲 방문부터 적용된다(starCompassTierThisRun). 이펙트는 VFX_StarRain(별 비)이고,
+    // 낙하 위치/시각은 이펙트와 같은 시드로 계산해 그림과 판정을 맞춘다(MeteorShowerRoutine).
     public bool bHasAcquiredStarCompass { get; set; }
     private bool bStarCompassSpawnedThisRun;
     // "3-2" 드랍 확률 - 기본값에서 시작해, 이 스테이지에서 나무를 벨 때마다(못 얻은 채로) 한 그루당
@@ -139,7 +139,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField] private int starCompassTier3PrestigeLevel = 11;
     [SerializeField, Tooltip("플레이어 공격으로 나무 한 그루를 벨 때 차는 유성우 게이지(1이면 가득)")]
     private float meteorShowerChargePerKill = 0.1f;
-    [SerializeField, Tooltip("유성우가 쏟아지는 동안 유성이 떨어지는 간격(초)")]
+    [SerializeField, Tooltip("유성우가 쏟아지는 동안 유성이 떨어지는 평균 간격(초). 낙하 수 = 지속시간 / 간격이고, 이펙트 허용 범위(초당 3개 이상, 최대 40개)로 제한된다")]
     private float meteorShowerInterval = 0.2f;
     [SerializeField, Tooltip("유성 하나의 피해 범위 - 착지 위치 기준 등각 타원의 장반경(타일 가로폭 단위)")]
     private float meteorImpactRange = 1f;
@@ -161,6 +161,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private bool bMeteorShowerActive;
     // 던전 정리 때 올라간다. 쏟아지던 유성우가 다음 맵의 나무를 때리지 않게 한다.
     private int meteorShowerVersion = 0;
+    // 유성우 한 번의 낙하 목록(이펙트와 같은 시드로 계산)과 처리 여부. 유성우는 한 번에 하나만 쏟아지므로 재사용한다.
+    private readonly PresentationLayer.VFX.StarRainImpact[] meteorImpacts = new PresentationLayer.VFX.StarRainImpact[PresentationLayer.VFX.VFX_StarRain.MaxCount];
+    private readonly bool[] meteorImpactDone = new bool[PresentationLayer.VFX.VFX_StarRain.MaxCount];
 
     /// <summary>유성우 게이지(0~1). 효과가 없는 숲 방문이면 0이다.</summary>
     public float MeteorShowerCharge => meteorShowerCharge;
@@ -2836,8 +2839,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     }
 
     /// <summary>
-    /// "별빛 나침반" 효과인 유성우. 지속시간 동안 meteorShowerInterval마다 캐릭터 주변 등각 타원(낙하 사정거리) 안의
-    /// 무작위 위치에 유성이 떨어진다. 이펙트·사운드는 따로 붙인다(지금은 판정만 있다).
+    /// "별빛 나침반" 효과인 유성우. 발동 순간의 캐릭터 발밑을 중심으로 등각 타원(낙하 사정거리) 안에 유성이 떨어진다.
+    /// 낙하 위치/시각은 별 비 이펙트(VFX_StarRain)와 같은 시드로 미리 계산해(ComputeImpacts), 이펙트의 별이 땅에 닿는
+    /// 그 시각에 그 자리에서 피해를 준다. 이펙트는 월드에 고정되므로 낙하 범위도 캐릭터를 따라가지 않는다.
     /// </summary>
     private IEnumerator MeteorShowerRoutine(int _tier)
     {
@@ -2849,28 +2853,41 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         float duration = (3 == _tier) ? meteorShowerTier3Duration : (2 == _tier) ? meteorShowerTier2Duration : meteorShowerTier1Duration;
         float interval = Mathf.Max(0.02f, meteorShowerInterval);
 
+        // 낙하 수와 낙하 목록. 이펙트와 판정에 같은 원점/시드/수/지속시간/범위를 넘겨야 그림과 판정이 맞는다.
+        int count = PresentationLayer.VFX.VFX_StarRain.ClampCount(Mathf.RoundToInt(duration / interval), duration);
+        int seed = UnityEngine.Random.Range(1, int.MaxValue);
+        Vector3 origin = null != character ? character.transform.position : Vector3.zero;
+        int impactCount = PresentationLayer.VFX.VFX_StarRain.ComputeImpacts(origin, seed, count, duration, fallRange, meteorImpacts);
+        System.Array.Clear(meteorImpactDone, 0, meteorImpactDone.Length);
+
+        inDungeonVFXManager?.PlayStarRainVFX(origin, count, duration, fallRange, seed, _tier);
         MeteorShowerStartedEvent?.Invoke(duration);
 
         // 벌목 판정 루프(플레이어 공격 구간) 안에서 시작되므로 첫 유성은 다음 프레임부터 떨어뜨린다. 같은 호출 안에서
         // 바로 떨어뜨리면 유성에 쓰러진 나무가 플레이어 공격으로 벌목한 것으로 잡힌다(PlayerAttackDamageScope).
+        // 이펙트도 재생한 프레임에는 시간을 더하지 않으므로, 다음 프레임부터 같은 시계로 센다.
         yield return null;
 
-        float elapsed = 0f;
-        float nextDropTime = 0f;
+        float elapsed = Time.deltaTime;
+        int processedCount = 0;
 
-        while (elapsed < duration)
+        while (processedCount < impactCount || elapsed < duration)
         {
             // 던전을 떠났으면(나무 정리) 다음 맵의 나무를 때리지 않고 끝낸다. 그때 bMeteorShowerActive는 정리 쪽이 끈다.
             if (version != meteorShowerVersion) yield break;
 
-            while (nextDropTime <= elapsed)
+            for (int i = 0; i < impactCount; i++)
             {
-                nextDropTime += interval;
+                if (meteorImpactDone[i] || meteorImpacts[i].time > elapsed) continue;
 
-                // 귀환 절차 중(경고창·탑승 연출)이나 쓰러진 뒤에는 떨어뜨리지 않는다. 시간은 그대로 흐른다(별똥별과 같은 규칙).
+                meteorImpactDone[i] = true;
+                processedCount++;
+
+                // 귀환 절차 중(경고창·탑승 연출)이나 쓰러진 뒤에는 피해를 주지 않는다. 시간은 그대로 흐른다(별똥별과 같은 규칙).
                 if (bStarGazeSuspendedByGameEnd || character == null || character.bDead) continue;
 
-                DropMeteor(character.transform.position, fallRange, damage);
+                MeteorImpactEvent?.Invoke(meteorImpacts[i].position);
+                ApplyMeteorImpactDamage(meteorImpacts[i].position, damage);
             }
 
             yield return null;
@@ -2878,16 +2895,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         bMeteorShowerActive = false;
-    }
-
-    private void DropMeteor(Vector3 _characterPos, float _fallRange, float _damage)
-    {
-        // 등각 타원 안에서 고르게 뽑는다 - 원 안에서 뽑은 뒤 세로를 절반으로 누른다.
-        Vector2 offset = UnityEngine.Random.insideUnitCircle * Mathf.Max(0f, _fallRange);
-        Vector3 landingPos = _characterPos + new Vector3(offset.x, offset.y * 0.5f, 0f);
-
-        MeteorImpactEvent?.Invoke(landingPos);
-        ApplyMeteorImpactDamage(landingPos, _damage);
     }
 
     // 유성 하나의 피해 판정. 착지 위치 기준 등각 타원 범위의 나무를 때린다(포자 대폭발과 같은 방식).

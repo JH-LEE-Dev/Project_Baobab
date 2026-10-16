@@ -966,6 +966,8 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         // ConstellationNovaEffect: 별자리 발현 중심 마법진·은하 별 폭발 이펙트(VFX_ConstellationNova, 2026-10-13 추가)
         if (false == _s.constellation) { _dropTags.Add("ManifestationBrandStampEffect"); _dropTags.Add("ConstellationNovaEffect"); }
         if (false == _s.heat) _dropTags.Add("TreeHeatEmitEffect");
+        // StarRainEffect: 별빛 나침반(3스테이지 전리품) 효과인 유성우 이펙트(VFX_StarRain, 2026-10-16 추가)
+        if (false == _s.MapReachable((int)MapType.StarrootForest)) _dropTags.Add("StarRainEffect");
         _n += EditComponents(_root, "VFXComponent", INSTALLER_PREFAB_PATH, _so => ClearVfxPoolEntries(_so, _dropTags));
 
         _n += EditComponents(_root, "TileMapGenerator", INSTALLER_PREFAB_PATH, _so => ClearUnreachableMapEntries(_so, "mapTypeTileDatas", "tileData", _s));

@@ -1353,6 +1353,35 @@ public class InDungeonVFXManager : MonoBehaviour
     /// 포자 대폭발 연출. _center는 쓰러진 나무 자리, _radius는 판정 범위(월드 유닛, 가로 반지름), _tier는 포자 포션 성장 단계(1~3)다.
     /// 알갱이 위치는 재생마다 무작위라 같은 호출도 매번 다른 모양이 나온다.
     /// </summary>
+    /// <summary>
+    /// 유성우("별빛 나침반") 연출. _center(시전자 발밑)에 월드 고정으로 재생하고, 낙하 위치/시각은 _seed로 정해진다.
+    /// 판정 쪽이 같은 인자로 VFX_StarRain.ComputeImpacts를 부르면 그림과 판정이 같은 자리·같은 시각에 일어난다.
+    /// _tier는 별빛 나침반 성장 단계(1~3)다.
+    /// </summary>
+    public void PlayStarRainVFX(Vector3 _center, int _count, float _duration, float _radius, int _seed, int _tier)
+    {
+        if (vfxComponent == null) return;
+
+        // 공중 메쉬는 별자리 노바와 같은 소팅 레이어/순서, 바닥 메쉬는 이펙트 스크립트가 ShockWave 레이어로 다시 맞춘다.
+        const string sortingLayerName = "FlyingItem";
+        const int sortingOrder = 10;
+
+        ParticleSystem effect = vfxComponent.Play(new VFXPlaySettings(
+            "StarRainEffect",
+            _center,
+            Quaternion.identity,
+            sortingLayerName,
+            sortingOrder,
+            null
+        ));
+
+        if (effect == null) return;
+
+        // 풀에서 꺼낸 직후(첫 LateUpdate 전)에 이번 재생 값을 정해야 한다.
+        PresentationLayer.VFX.VFX_StarRain rain = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_StarRain>(true);
+        if (rain != null) rain.Play(_count, _duration, _radius, _seed, _tier);
+    }
+
     public void PlaySporeBigExplosionVFX(Vector3 _center, float _radius, int _tier)
     {
         if (vfxComponent == null) return;

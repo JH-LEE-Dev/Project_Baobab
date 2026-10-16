@@ -1690,6 +1690,12 @@ MonoBehaviour:
     allowDynamicExpansion: 1
     maxPoolSize: 16
     uiParticleScale: 0
+  - vfxTag: StarRainEffect
+    effectPrefab: {fileID: 1386752551214847544, guid: b62066198fcb1e84b93329edf5978a11, type: 3}
+    initialPoolSize: 1
+    allowDynamicExpansion: 1
+    maxPoolSize: 2
+    uiParticleScale: 0
 --- !u!1 &5766810988037463456
 GameObject:
   m_ObjectHideFlags: 0
