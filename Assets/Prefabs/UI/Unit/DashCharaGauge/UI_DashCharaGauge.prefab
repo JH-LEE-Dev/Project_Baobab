@@ -151,7 +151,7 @@ MonoBehaviour:
   cellSize: 24
   fillContentX: 9
   fillContentWidth: 7
-  cellPitch: 5
+  cellPitch: 6
   contentCenterShift: {x: 0.5, y: -0.5}
   followOffset: {x: 0, y: -0.2}
   fadeDuration: 0.25

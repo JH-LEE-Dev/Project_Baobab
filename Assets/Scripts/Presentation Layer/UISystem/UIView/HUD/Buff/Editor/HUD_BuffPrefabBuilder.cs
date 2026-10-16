@@ -16,10 +16,10 @@ public static class HUD_BuffPrefabBuilder
     private const string PrefabDir = "Assets/Prefabs/UI/HUD/Buff";
     private const string StaminaPrefabPath = "Assets/Prefabs/UI/HUD/SliderBar/HUD_Stamina.prefab";
     private const string HudUiPrefabPath = "Assets/Prefabs/UI/HUD/HUD_UI.prefab";
-    // 평행사변형 두 칸이 바깥 선 1px을 공유하며 맞물리는 칸 간격(스프라이트 폭 24가 아니라 이 값)
-    private const float DashCellPitch = 14f;
-    private const float DashVisibleWidth = 37f;
-    private const float DashReservedWidth = 45f;
+    // 평행사변형 두 칸의 사선 외곽선(2px)이 같은 픽셀에 정확히 겹쳐 맞물리는 칸 간격(스프라이트 폭 24가 아니라 이 값)
+    private const float DashCellPitch = 15f;
+    private const float DashVisibleWidth = 38f;
+    private const float DashReservedWidth = 46f;
     private const string DashBaseSpritePath = "Assets/Graphics/HUD/Dash/Dash_HUD_Base.png";
     private const string DashFillSpritePath = "Assets/Graphics/HUD/Dash/Dash_HUD_Fill.png";
     private const string NumberSheetPath = "Assets/Graphics/Font/SmallCurrencyNum.png";
@@ -234,7 +234,7 @@ public static class HUD_BuffPrefabBuilder
         _dashRt.anchorMin = new Vector2(0.5f, 0f);
         _dashRt.anchorMax = new Vector2(0.5f, 0f);
         _dashRt.pivot = Vector2.zero;
-        // 바 오른쪽 끝에 붙인다: 보이는 폭 37(맞물린 2칸), 보이는 아래쪽은 칸 안 7px 위 -> 게이지 아래쪽이 바 위 8px
+        // 바 오른쪽 끝에 붙인다: 보이는 폭 38(맞물린 2칸), 보이는 아래쪽은 칸 안 7px 위 -> 게이지 아래쪽이 바 위 8px
         _dashRt.anchoredPosition = new Vector2(80f - DashVisibleWidth, 29f);
 
         SerializedObject _gso = new SerializedObject(_groupComp);
@@ -273,10 +273,10 @@ public static class HUD_BuffPrefabBuilder
 
         GameObject _go = new GameObject("HUD_DashGauge", typeof(RectTransform));
         RectTransform _rt = (RectTransform)_go.transform;
-        SetRect(_rt, Vector2.zero, new Vector2(DashCellPitch + 24f, 24f), Vector2.zero);
+        SetRect(_rt, Vector2.zero, new Vector2(DashVisibleWidth, 24f), Vector2.zero);
         HUD_DashGauge _gauge = _go.AddComponent<HUD_DashGauge>();
 
-        RectTransform _visual = NewRect("Visual", _rt, new Vector2((DashCellPitch + 24f) * 0.5f, 12f), new Vector2(DashCellPitch + 24f, 24f), new Vector2(0.5f, 0.5f));
+        RectTransform _visual = NewRect("Visual", _rt, new Vector2(DashVisibleWidth * 0.5f, 12f), new Vector2(DashVisibleWidth, 24f), new Vector2(0.5f, 0.5f));
         RectTransform[] _cells = new RectTransform[HUD_DashGauge.MaxCells];
         Image[] _fills = new Image[HUD_DashGauge.MaxCells];
         Image[] _flashes = new Image[HUD_DashGauge.MaxCells];

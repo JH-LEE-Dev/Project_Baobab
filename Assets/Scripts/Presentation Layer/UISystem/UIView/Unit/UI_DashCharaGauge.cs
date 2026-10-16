@@ -38,8 +38,8 @@ public class UI_DashCharaGauge : MonoBehaviour
     [Tooltip("채움 스프라이트 안에서 채움 픽셀이 시작하는 열과 폭")]
     [SerializeField] private int fillContentX = 9;
     [SerializeField] private int fillContentWidth = 7;
-    [Tooltip("두 칸이 빗변으로 맞물리는 간격(px). 5면 바깥 선이 한 줄로 겹쳐 밀착해 보인다.")]
-    [SerializeField] private float cellPitch = 5f;
+    [Tooltip("두 칸이 빗변으로 맞물리는 간격(px). 6이면 두 칸의 사선 외곽선(1px)이 같은 픽셀에 정확히 겹친다. 5나 7이면 한쪽이 다른 쪽 안으로 파고든다.")]
+    [SerializeField] private float cellPitch = 6f;
     [Tooltip("보이는 영역의 중심이 캔버스 가운데에서 벗어난 양(px). 가운데 정렬 보정.")]
     [SerializeField] private Vector2 contentCenterShift = new Vector2(0.5f, -0.5f);
 
@@ -232,7 +232,7 @@ public class UI_DashCharaGauge : MonoBehaviour
             // 보이는 영역 전체의 중심이 루트 중심에 오도록: 칸 i의 중심 = i*pitch - span/2, 캔버스 안 내용 중심 보정을 뺀다.
             // 위치는 항상 정수 아트px로 맞춘다. 반 픽셀 어긋나면 게이지 도트가 월드 도트 격자와 엇갈려 굵고 얇은 도트가 생긴다.
             // 칸 실루엣 폭이 홀수(9px)라 한 칸은 정확한 중앙이 정수 격자에 없다. 이상 위치가 .5일 때는 내림(Floor)해 왼쪽으로 붙인다
-            // (Round는 .5를 0으로 올려 항상 오른쪽으로 치우쳤다). 2칸은 이상 위치가 정수라 그대로 중앙이다.
+            // (Round는 .5를 0으로 올려 항상 오른쪽으로 치우쳤다). 2칸(간격 6)은 전체 폭이 15px(홀수)라 같은 규칙으로 왼쪽 0.5px에 붙는다.
             float _x = Mathf.Floor(i * cellPitch - _span * 0.5f - contentCenterShift.x);
             float _y = Mathf.Round(-contentCenterShift.y);
             cellRects[i].anchoredPosition = new Vector2(_x, _y);

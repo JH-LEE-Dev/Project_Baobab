@@ -33,7 +33,7 @@ public class HUD_DashGauge : MonoBehaviour
     [Range(0f, 1f)][SerializeField] private float enterFromScale = 0.4f;
     [SerializeField] private Ease enterEase = Ease.OutBack;
     [SerializeField] private float enterOvershoot = 2.2f;
-    [Tooltip("사용/충전 완료 때 칸이 튀는 높이(px)와 시간. 사용은 아래로, 충전 완료는 위로 튄다. 위치는 반올림하지 않고 연속값으로 움직인다.")]
+    [Tooltip("사용/충전 완료 때 게이지 전체가 한 덩어리로 튀는 높이(px)와 시간. 사용은 아래로, 충전 완료는 위로 튄다. 칸이 따로 움직이면 맞물린 이음선이 어긋나므로 칸 하나만 움직이지 않는다. 위치는 반올림하지 않고 연속값으로 움직인다.")]
     [SerializeField] private float bounceHeight = 4f;
     [SerializeField] private float bounceTime = 0.3f;
     [SerializeField] private Ease bounceEase = Ease.OutBack;
@@ -43,12 +43,9 @@ public class HUD_DashGauge : MonoBehaviour
 
     // 내부 의존성
     private readonly float[] ratios = new float[MaxCells];
-    private readonly float[] bounceAges = new float[MaxCells];
-    private readonly float[] bounceDirs = new float[MaxCells];
     private readonly float[] flashAges = new float[MaxCells];
     private readonly float[] flashAmounts = new float[MaxCells];
     private readonly Vector2[] cellBasePos = new Vector2[MaxCells];
-    private readonly float[] cellShiftedX = new float[MaxCells];
     private Vector2 rootBasePos;
 
     // 상태 변수
@@ -56,6 +53,8 @@ public class HUD_DashGauge : MonoBehaviour
     private bool bUnlocked = false;
     private bool bBaseCached = false;
     private float enterAge = -1f;
+    private float bounceAge = -1f;
+    private float bounceDir = 0f;
 
     public bool IsUnlocked
     {
@@ -130,7 +129,6 @@ public class HUD_DashGauge : MonoBehaviour
 
             cellRects[i].gameObject.SetActive(i < maxCharges);
             cellRects[i].anchoredPosition = new Vector2(cellBasePos[i].x + _shift, cellBasePos[i].y);
-            cellShiftedX[i] = cellBasePos[i].x + _shift;
         }
     }
 
@@ -207,7 +205,6 @@ public class HUD_DashGauge : MonoBehaviour
             if (null != cellRects[i])
             {
                 cellBasePos[i] = cellRects[i].anchoredPosition;
-                cellShiftedX[i] = cellBasePos[i].x;
             }
         }
     }
@@ -226,8 +223,8 @@ public class HUD_DashGauge : MonoBehaviour
     private void PlayFlash(int _index, float _amountRatio, float _dir)
     {
         flashAges[_index] = 0f;
-        bounceAges[_index] = 0f;
-        bounceDirs[_index] = _dir;
+        bounceAge = 0f;
+        bounceDir = _dir;
         flashAmounts[_index] = (fillContentX + Mathf.Round(_amountRatio * fillContentWidth)) / cellSize;
 
         if (null != flashImages[_index])
@@ -242,22 +239,19 @@ public class HUD_DashGauge : MonoBehaviour
         for (int i = 0; i < MaxCells; i++)
         {
             flashAges[i] = -1f;
-            bounceAges[i] = -1f;
 
             if (null != flashImages[i])
             {
                 flashImages[i].enabled = false;
             }
-
-            if (null != cellRects[i])
-            {
-                cellRects[i].anchoredPosition = new Vector2(cellShiftedX[i], cellBasePos[i].y);
-            }
         }
+
+        bounceAge = -1f;
 
         if (null != visualRoot)
         {
             visualRoot.localScale = Vector3.one;
+            visualRoot.anchoredPosition = rootBasePos;
         }
     }
 
@@ -287,7 +281,6 @@ public class HUD_DashGauge : MonoBehaviour
         {
             ratios[i] = 1f;
             flashAges[i] = -1f;
-            bounceAges[i] = -1f;
             ApplyFill(i, 1f);
 
             if (null != flashImages[i])
@@ -335,22 +328,23 @@ public class HUD_DashGauge : MonoBehaviour
                     }
                 }
             }
+        }
 
-            if (0f <= bounceAges[i])
+        // 튀는 동작은 게이지 전체(Visual 루트)가 한 덩어리로 한다
+        if (0f <= bounceAge)
+        {
+            bounceAge += _dt;
+            float _t = Mathf.Clamp01(bounceAge / bounceTime);
+            float _dy = DOVirtual.EasedValue(bounceHeight * bounceDir, 0f, _t, bounceEase, bounceOvershoot);
+
+            if (null != visualRoot)
             {
-                bounceAges[i] += _dt;
-                float _t = Mathf.Clamp01(bounceAges[i] / bounceTime);
-                float _dy = DOVirtual.EasedValue(bounceHeight * bounceDirs[i], 0f, _t, bounceEase, bounceOvershoot);
+                visualRoot.anchoredPosition = new Vector2(rootBasePos.x, rootBasePos.y + _dy);
+            }
 
-                if (null != cellRects[i])
-                {
-                    cellRects[i].anchoredPosition = new Vector2(cellShiftedX[i], cellBasePos[i].y + _dy);
-                }
-
-                if (1f <= _t)
-                {
-                    bounceAges[i] = -1f;
-                }
+            if (1f <= _t)
+            {
+                bounceAge = -1f;
             }
         }
     }

@@ -18,7 +18,7 @@ public class UIView_HUD : UIView
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private string mapTransitionMotionTag = "GoDown";
     [Tooltip("대시 게이지가 보일 때 버프 첫 줄에서 비워 둘 폭(맞물린 대시 2칸 37 + 여백 8)")]
-    [SerializeField] private float dashReservedWidth = 45f;
+    [SerializeField] private float dashReservedWidth = 46f;
 
     private HUD_Equipment hudEquipment;
     private HUD_Stemina hudStaminaBar;
