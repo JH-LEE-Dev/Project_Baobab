@@ -94,6 +94,10 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         instance = this;
         DontDestroyOnLoad(gameObject);
 
+        // 카메라가 좌우를 잘라내는 해상도에서 잘린 띠를 비운다. 첫 화면(세이브 확인 등)부터 맞아야 해서
+        // 다른 UI보다 먼저 만든다. 여기서 만드는 이유는 CroppedAreaGuard.Create 주석 참고.
+        CroppedAreaGuard.Create();
+
         // 데이터 수집 SDK를 켜고 끄는 판단은 전부 DataConsentGate가 한다. 여기서 직접
         // GameAnalytics.Initialize()나 SentrySdk.Close()를 부르지 말 것 - 동의 정책이
         // 두 곳으로 갈라지면 한쪽만 고친 채 출시되는 사고가 난다.
