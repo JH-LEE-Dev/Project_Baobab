@@ -58,11 +58,14 @@ namespace PresentationLayer.VFX
         private const int GatherTicks = 15;
         private const int BurstTick = 19;
         private const int GroundY = 29;         // 전리품 중심 기준 바닥 고리 중심(아래 +)
-        private const int BeamHeight = 128;
+        private const int MinBeamHeight = 128;       // 카메라를 못 구할 때 / 화면 안에 들어오는 최소 길이
+        private const int MaxBeamHeight = 420;       // 화면 위쪽 끝까지 닿게 늘리는 상한(약 13유닛)
+        private const int BeamScreenMargin = 24;     // 화면 위쪽 끝을 이만큼(px) 넘겨서 그린다
 
         private const int GridMinX = -100;
         private const int GridMaxX = 100;
-        private const int GridMinY = -140;
+        private const int GridMinY = -140;           // 바닥/받침대 사이 층의 위쪽 끝
+        private const int AirGridMinY = -(MaxBeamHeight + 12);   // 공중 층은 빛기둥이 올라가는 만큼 더 높다
         private const int GridMaxY = 76;
 
         private const byte ToneNone = 0;
@@ -81,6 +84,7 @@ namespace PresentationLayer.VFX
         {
             public PixelQuadBuffer buffer;
             public byte[] cells;
+            public int minY;
             public int width;
             public int height;
             public int dirtyMinX;
@@ -93,9 +97,12 @@ namespace PresentationLayer.VFX
             public int worldMaxY;
         }
 
-        private static readonly Layer groundLayer = CreateLayer(900);
-        private static readonly Layer haloLayer = CreateLayer(300);
-        private static readonly Layer airLayer = CreateLayer(1500);
+        private static readonly Layer groundLayer = CreateLayer(900, GridMinY);
+        private static readonly Layer haloLayer = CreateLayer(300, GridMinY);
+        private static readonly Layer airLayer = CreateLayer(1500, AirGridMinY);
+
+        // 이번 프레임의 빛기둥 길이(px). RebuildMesh가 카메라 위쪽 끝으로 정한다(인스턴스 하나씩 순서대로 그리므로 공유해도 된다).
+        private static int beamHeightPx = MinBeamHeight;
 
         // 톤 정의: 기본색 r,g,b(0~1)와 발광 배율. 알파 = (배율 - 1.2) / 4.8. 색 계열마다 3톤.
         private static readonly float[][] FamilyTones =
@@ -146,6 +153,7 @@ namespace PresentationLayer.VFX
         private ulong haloUploadedHash;
         private int groundUploadedVertexCount = -1;
         private ulong groundUploadedHash;
+        private Camera beamCamera;
         private Vector3 cullingCenter;
         private Vector3 cullingSize = new Vector3(8.0f, 8.0f, PixelVfxCulling.BoundsDepth);
 
@@ -175,12 +183,13 @@ namespace PresentationLayer.VFX
 
         // 일반 비즈니스 로직 및 내부 메서드
 
-        private static Layer CreateLayer(int _quadCapacity)
+        private static Layer CreateLayer(int _quadCapacity, int _minY)
         {
             Layer layer = new Layer();
             layer.buffer = new PixelQuadBuffer(_quadCapacity);
+            layer.minY = _minY;
             layer.width = GridMaxX - GridMinX + 1;
-            layer.height = GridMaxY - GridMinY + 1;
+            layer.height = GridMaxY - _minY + 1;
             layer.cells = new byte[layer.width * layer.height];
             ResetDirty(layer);
             return layer;
@@ -280,7 +289,7 @@ namespace PresentationLayer.VFX
             float minX = originPixelX + GridMinX;
             float maxX = originPixelX + GridMaxX;
             float minY = originPixelY - GridMaxY;
-            float maxY = originPixelY - GridMinY;
+            float maxY = originPixelY - AirGridMinY;
             cullingCenter = new Vector3((minX + maxX) * 0.5f / PixelsPerUnit, (minY + maxY) * 0.5f / PixelsPerUnit, origin.z);
             cullingSize = new Vector3((maxX - minX) / PixelsPerUnit, (maxY - minY) / PixelsPerUnit, PixelVfxCulling.BoundsDepth);
         }
@@ -398,7 +407,7 @@ namespace PresentationLayer.VFX
         private static void Plot(Layer _layer, int _sx, int _sy, byte _tone)
         {
             int gx = _sx - GridMinX;
-            int gy = _sy - GridMinY;
+            int gy = _sy - _layer.minY;
             if (gx < 0 || _layer.width <= gx || gy < 0 || _layer.height <= gy) return;
 
             _layer.cells[gy * _layer.width + gx] = _tone;
@@ -565,7 +574,7 @@ namespace PresentationLayer.VFX
                 FillDisc(A, ix, iy, rr, rr, ToneWhite);
 
                 byte sideTone = BurstTick <= _ft ? ToneNewL : ToneOldL;
-                for (int yy = -BeamHeight; yy < iy - rr; yy++)
+                for (int yy = -beamHeightPx; yy < iy - rr; yy++)
                 {
                     Plot(A, ix, yy, ToneWhite);
                     if (0.6f < u)
@@ -679,10 +688,10 @@ namespace PresentationLayer.VFX
                 byte core;
                 byte edge;
 
-                if (_p < 3.0f) { hh = (int)(BeamHeight * BeamGrow[pt]); wd = 2; core = ToneWhite; edge = ToneNewL; }
-                else if (_p < 10.0f) { hh = BeamHeight; wd = 2; core = ToneWhite; edge = ToneNewL; }
-                else if (_p < 20.0f) { hh = BeamHeight; wd = 1; core = ToneNewL; edge = ToneNewM; }
-                else { hh = BeamHeight; wd = 0; core = ToneNewM; edge = ToneNewD; }
+                if (_p < 3.0f) { hh = (int)(beamHeightPx * BeamGrow[pt]); wd = 2; core = ToneWhite; edge = ToneNewL; }
+                else if (_p < 10.0f) { hh = beamHeightPx; wd = 2; core = ToneWhite; edge = ToneNewL; }
+                else if (_p < 20.0f) { hh = beamHeightPx; wd = 1; core = ToneNewL; edge = ToneNewM; }
+                else { hh = beamHeightPx; wd = 0; core = ToneNewM; edge = ToneNewD; }
 
                 for (int yy = _iy - hh; yy < _iy - 6; yy++)
                 {
@@ -1003,8 +1012,24 @@ namespace PresentationLayer.VFX
             bItemMoved = true;
         }
 
+        // 카메라(직교) 위쪽 끝까지 닿는 빛기둥 길이. 전리품 중심에서 화면 위쪽 끝까지 + 여유, 상하한 적용.
+        private int ComputeBeamHeight()
+        {
+            // Camera.main은 매번 부르지 않고 캐시한다(꺼졌거나 사라졌을 때만 다시 찾는다)
+            if (null == beamCamera || false == beamCamera.isActiveAndEnabled) beamCamera = Camera.main;
+
+            Camera cam = beamCamera;
+            if (null == cam || false == cam.orthographic) return MinBeamHeight;
+
+            float topWorldY = cam.transform.position.y + cam.orthographicSize;
+            float itemWorldY = originPixelY / PixelsPerUnit;
+            int px = Mathf.CeilToInt((topWorldY - itemWorldY) * PixelsPerUnit) + BeamScreenMargin;
+            return Mathf.Clamp(px, MinBeamHeight, MaxBeamHeight);
+        }
+
         private void RebuildMesh(float _ft)
         {
+            beamHeightPx = ComputeBeamHeight();
             DrawFrame(_ft);
 
             bool bHalo = null != haloMesh;
@@ -1081,7 +1106,7 @@ namespace PresentationLayer.VFX
 
                     int wx0 = originPixelX + GridMinX + start;
                     int wx1 = originPixelX + GridMinX + end + 1;
-                    int wy = originPixelY - (GridMinY + gy);
+                    int wy = originPixelY - (_source.minY + gy);
                     buffer.AddWorldRect(wx0, wy, wx1, wy + 1, toneColors[tone]);
 
                     if (wx0 < _target.worldMinX) _target.worldMinX = wx0;

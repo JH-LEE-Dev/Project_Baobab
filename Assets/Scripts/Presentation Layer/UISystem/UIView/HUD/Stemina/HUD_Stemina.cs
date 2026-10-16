@@ -368,6 +368,7 @@ public class HUD_Stemina : MonoBehaviour
     private float prismPaintReleaseTimer = 0f;
     private float prismPaintGainTimer = -1f;
     private int prismPaintedFilledPx = -1;
+    private Image ghostFillImage;   // 잔상 슬라이더의 채움 이미지(그려지는 fillAmount만 픽셀 격자에 맞춘다)
     private float prismGainLowPx = 0f;
     private float prismGainHighPx = 0f;
     private PrismFace[] prismFaces;
@@ -440,6 +441,7 @@ public class HUD_Stemina : MonoBehaviour
             ghostSlider.minValue = 0.0f;
             ghostSlider.maxValue = 1.0f;
             ghostSlider.value = 1.0f;
+            ghostFillImage = null != ghostSlider.fillRect ? ghostSlider.fillRect.GetComponent<Image>() : null;
         }
 
         pluses = new PlusState[GetPlusTotal()];
@@ -474,6 +476,7 @@ public class HUD_Stemina : MonoBehaviour
 
         UpdateShownRatio(_ratio);
         progressBar?.UpdateValue(shownRatio);
+        ApplyMainFillQuantized();
 
         // 채움 앞쪽이 움직이면 앞쪽 끝부분 연출을 깨운다(움직임이 멈추고 입자가 사라지면 스스로 잠든다).
         if (0f < frontEdgeStrength && EdgeMoveEpsilon < Mathf.Abs(shownRatio - _prevShown))
@@ -1351,6 +1354,35 @@ public class HUD_Stemina : MonoBehaviour
 
     // 채움 앞쪽 정수 픽셀이 마지막으로 그린 프리즘과 다르면 지금 값으로 다시 그린다(프리즘이 켜져 있을 때만).
     // 같은 프레임의 UpdatePrism은 이미 같은 픽셀로 그려져 있어 다시 그리지 않으므로 프레임당 그리기 횟수는 늘지 않는다.
+    // 채움 비율을 바의 픽셀 격자(barW열)에 맞춘다. 프리즘/앞쪽 끝과 같은 Floor 규칙이라 모두 같은 열에서 끝난다.
+    // Image.Filled의 fillAmount가 분수이면 앞쪽 한 열이 중간에서 잘려 보여, 통째 열만 칠하는 프리즘보다 앞서 보인다.
+    private float QuantizeToBar(float _ratio)
+    {
+        if (0 >= barW || false == bSilhouetteReady)
+            return Mathf.Clamp01(_ratio);
+
+        int _px = Mathf.Min(barW, Mathf.FloorToInt(barW * Mathf.Clamp01(_ratio)));
+        return _px / (float)barW;
+    }
+
+    // 기본 바의 그려지는 채움을 픽셀 격자에 맞춘다. 슬라이더 값은 그대로 두고 fillAmount만 덮어쓴다.
+    private void ApplyMainFillQuantized()
+    {
+        if (null == barFillImage)
+            return;
+
+        barFillImage.fillAmount = QuantizeToBar(shownRatio);
+    }
+
+    // 잔상 슬라이더 값을 정하고, 그려지는 채움은 픽셀 격자에 맞춘다. 값(상태)은 연속으로 두어 따라가는 속도가 변하지 않는다.
+    private void SetGhostValue(float _value)
+    {
+        ghostSlider.value = _value;
+
+        if (null != ghostFillImage)
+            ghostFillImage.fillAmount = QuantizeToBar(ghostSlider.value);
+    }
+
     private void SyncPrismToFill()
     {
         if (PrismPhase.Off == prismPhase || false == bActive || false == bSilhouetteReady || null == prismTexture)
@@ -1737,7 +1769,7 @@ public class HUD_Stemina : MonoBehaviour
                 _start = Mathf.Min(_start, _prevShown);
 
             if (_start > shownRatio)
-                ghostSlider.value = Mathf.Max(ghostSlider.value, _start);
+                SetGhostValue(Mathf.Max(ghostSlider.value, _start));
 
             pendingLossRatio = 0f;
             ghostHoldRemain = ghostDelay;
@@ -1746,7 +1778,7 @@ public class HUD_Stemina : MonoBehaviour
 
         if (false == bGhostTrailing)
         {
-            ghostSlider.value = shownRatio;
+            SetGhostValue(shownRatio);
             return;
         }
 
@@ -1754,7 +1786,7 @@ public class HUD_Stemina : MonoBehaviour
         float _gap = ghostSlider.value - shownRatio;
         if (SnapGap >= _gap)
         {
-            ghostSlider.value = shownRatio;
+            SetGhostValue(shownRatio);
             bGhostTrailing = false;
             return;
         }
@@ -1770,7 +1802,7 @@ public class HUD_Stemina : MonoBehaviour
         // 지수 감쇠: 격차가 클 때 빠르고 끝에서 느려지는 OutQuad와 비슷한 움직임. 끝이 너무 길게 늘어지지 않도록 최소 속도를 둔다.
         float _follow = 1f - Mathf.Exp(-_dt * FollowSharpness / Mathf.Max(0.01f, ghostFollowDuration));
         float _step = Mathf.Max(_gap * _follow, GhostMinFollowSpeed * _dt);
-        ghostSlider.value = Mathf.Max(shownRatio, ghostSlider.value - _step);
+        SetGhostValue(Mathf.Max(shownRatio, ghostSlider.value - _step));
     }
 
     // 회복 플래시: 피격 플래시와 같은 경로(길이, 횟수, 알파 규칙)를 쓰고 색만 바 색을 밝힌 라임-흰색으로 바꾼다.
@@ -2399,7 +2431,7 @@ public class HUD_Stemina : MonoBehaviour
         EndBundle();
 
         if (null != ghostSlider)
-            ghostSlider.value = displayRatio;
+            SetGhostValue(displayRatio);
 
         if (null != pluses)
         {
