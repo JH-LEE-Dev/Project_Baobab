@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using PresentationLayer.VFX;
 using UnityEngine;
 
 public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, IShadowCaster
@@ -528,6 +529,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     public void ApplySporeDamageAmplify(float _amplify)
     {
         if (_amplify > sporeDamageAmplify) sporeDamageAmplify = _amplify;
+
+        // 증폭 표시(상시 디버프 이펙트). 대폭발 피해 직후에 불리므로, 그 피해로 쓰러져 풀로 돌아간 나무에는 걸지 않는다.
+        if (bDead || IsPooled || false == gameObject.activeInHierarchy) return;
+        TreeSporeDebuffVfx.Apply(this, sporeDamageAmplify);
     }
 
     public void ResetTree()
@@ -541,6 +546,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         SetStarMarked(false);
         SetStarGroupId(-1);
         sporeDamageAmplify = 0f;
+        TreeSporeDebuffVfx.Clear(this);
         healthComponent.Reset();
         bIsSapling = false;
         growTime = 0f;
@@ -642,6 +648,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         if (0f < sporeDamageAmplify)
         {
             _damage *= 1f + sporeDamageAmplify;
+            TreeSporeDebuffVfx.NotifyHit(this);
         }
 
         healthComponent.DecreaseHealth(_damage);
