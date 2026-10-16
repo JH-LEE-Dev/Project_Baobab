@@ -194,6 +194,18 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     [SerializeField, Tooltip("대시 이동에 걸리는 시간(초)")]
     private float dashDuration = 0.18f;
 
+    // 대시 잔상 - 대시하는 동안 일정 간격마다 캐릭터(몸통·팔·얼굴)의 모습을 고스트 색 실루엣으로 남긴다(CharacterVisualComponent.StartDashAfterimages).
+    [SerializeField, Tooltip("대시 잔상 머티리얼(고스트 실루엣 셰이더 Custom/VFX/SpriteGhost, M_DashAfterimage). 비우면 잔상이 나오지 않는다")]
+    private Material dashAfterimageMaterial;
+    [SerializeField, Tooltip("대시 잔상 색(유령 같은 고스트 색). 알파는 처음 불투명도에 곱해진다")]
+    private Color dashAfterimageColor = new Color(0.62f, 0.86f, 1f, 1f);
+    [SerializeField, Tooltip("대시 잔상을 남기는 간격(초)")]
+    private float dashAfterimageInterval = 0.03f;
+    [SerializeField, Tooltip("대시 잔상이 사라지는 데 걸리는 시간(초)")]
+    private float dashAfterimageFadeDuration = 0.25f;
+    [SerializeField, Range(0f, 1f), Tooltip("대시 잔상의 처음 불투명도")]
+    private float dashAfterimageStartAlpha = 0.55f;
+
     // "원목 보험 증서" 성장 단계별 효과. 단계는 프레스티지 레벨로 정해진다(InDungeonObjectManager.GetLootGrowthTier).
     [SerializeField, Tooltip("I단계 저장 횟수")]
     private int dashTier1MaxCharges = 1;
@@ -952,6 +964,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         armComponent.axeComponent.SetBlockedByDash(true);
 
         stateMachine.GetState<DashState>().Setup(dashDirection, dashWorldDistance, dashDuration);
+        // 박차기 먼지는 움직이기 전 발밑(대시 시작 위치)에서 재생한다.
+        characterVisualComponent.PlayDashKickoff(dashDirection, dashWorldDistance, dashDuration);
+        // 잔상은 시작 위치에서 한 장, 이후 대시가 끝날 때까지 일정 간격마다 한 장씩 남긴다.
+        characterVisualComponent.StartDashAfterimages(dashAfterimageMaterial, dashAfterimageColor, dashAfterimageInterval,
+            dashAfterimageFadeDuration, dashAfterimageStartAlpha, dashDuration);
         stateMachine.ChangeState<DashState>();
     }
 
@@ -997,6 +1014,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 팔은 다시 조준점을 따라간다(보간으로 부드럽게 돌아간다). 버튼을 누르고 있었다면 다음 프레임에 이어서 휘두른다.
         armComponent.ClearAimOverride();
         armComponent.axeComponent.SetBlockedByDash(false);
+
+        // 멈춘 자리를 알려 이동 중 잔먼지 생성을 멈춘다(벽에 막혀 일찍 끝난 경우 포함).
+        characterVisualComponent.FinishDashKickoff();
+        // 잔상도 더 찍지 않는다. 이미 남긴 잔상은 끝까지 사라진다.
+        characterVisualComponent.StopDashAfterimages();
     }
 
     private void UpdateTreeBoomerang()

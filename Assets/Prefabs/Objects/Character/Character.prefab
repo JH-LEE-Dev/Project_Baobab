@@ -1013,6 +1013,7 @@ MonoBehaviour:
   treeSensorRadius: 4
   treeDetectionInterval: 0.5
   boomerangEdgePadding: 0.5
+  dashAfterimageMaterial: {fileID: 2100000, guid: b142bea6c82f4c91bab715a4a1cbe0a6, type: 2}
   droneCreator: {fileID: 8468477139537547128}
   droneFollowRadius: 0.8
   droneWingAngleStep: 28
@@ -1703,6 +1704,12 @@ MonoBehaviour:
     allowDynamicExpansion: 0
     maxPoolSize: 20
     uiParticleScale: 1
+  - vfxTag: DashKickoff
+    effectPrefab: {fileID: 1386752551214847544, guid: 5b6bcf5b454447c439e3c71ecd9f489d, type: 3}
+    initialPoolSize: 2
+    allowDynamicExpansion: 1
+    maxPoolSize: 4
+    uiParticleScale: 0
 --- !u!1 &4035353486790179823
 GameObject:
   m_ObjectHideFlags: 0
