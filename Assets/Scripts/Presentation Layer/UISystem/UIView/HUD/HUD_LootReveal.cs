@@ -77,6 +77,7 @@ public class HUD_LootReveal : MonoBehaviour
 
     // 성장 정보 원천(현재 단계, 다음 단계가 되는 프레스티지 레벨). 윗단이 SetGrowthInfoSource로 연결해 준다.
     private Func<LootType, int> growthTierGetter;
+    private LootType revealLootType;
     private Func<LootType, int> growthNextLevelGetter;
     private const string GrowthNextKey = "growth_next";
     private const string GrowthMaxKey = "growth_max";
@@ -272,6 +273,7 @@ public class HUD_LootReveal : MonoBehaviour
             revealCoroutine = null;
         }
 
+        revealLootType = _lootType;
         SetLocalizedTexts(_lootType, _locManager);
         SetLootSprite(_lootType, lootDataBase);
         
@@ -500,7 +502,31 @@ public class HUD_LootReveal : MonoBehaviour
         }
 
         if (null != auraEffect)
+        {
+            ApplyGrowthAuraColors();
             auraEffect.Play();
+        }
+    }
+
+    // 성장 단계(1~3)가 있으면 그 단계 색으로 상세보기 아우라를 칠하고, 없으면 아우라 기본색으로 되돌린다.
+    private void ApplyGrowthAuraColors()
+    {
+        int _tier = null != growthTierGetter ? growthTierGetter(revealLootType) : 0;
+
+        if (0 < _tier && null != growthVisualData && true == growthVisualData.TryGetAuraColor(_tier, out Color _tierColor))
+        {
+            Color _core = Color.Lerp(_tierColor, new Color(2f, 2f, 2f, 1f), 0.45f);
+            _core *= 1.6f;
+            Color _outer = _tierColor * 0.55f;
+            _core.a = 1f;
+            _outer.a = 1f;
+            _tierColor.a = 1f;
+            auraEffect.SetColors(_core, _tierColor, _outer);
+        }
+        else
+        {
+            auraEffect.ResetColors();
+        }
     }
 
     // 3단계 ─ 전리품 이미지 뽀잉 등장

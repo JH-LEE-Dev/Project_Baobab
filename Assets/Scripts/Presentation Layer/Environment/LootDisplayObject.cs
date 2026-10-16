@@ -37,6 +37,10 @@ namespace PresentationLayer.Environment
         [Header("Growth Visual (단계별 아우라 색 / 스프라이트)")]
         [Tooltip("단계(씨앗/꽃/나무)별 아우라 색과 스프라이트. 비워 두면 단계와 상관없이 아래 auraSettings(종류별 색)를 쓴다.")]
         [SerializeField] private LootGrowthVisualData growthVisualData;
+        [SerializeField, Range(0.1f, 1.5f), Tooltip("단계 색 후광 외곽의 세기 배율. 후광 머티리얼의 Intensity가 커서 1을 넘기면 색이 포화된다.")]
+        private float growthGlowStrength = 0.9f;
+        [SerializeField, Range(0.1f, 1.5f), Tooltip("단계 색 후광 중심의 세기 배율. 중심이 하얗게 날아가면 낮춘다.")]
+        private float growthGlowCoreStrength = 0.8f;
 
         [Header("Aura Orbit Settings")]
         [SerializeField] private bool useAuraOrbit = false;
@@ -252,13 +256,22 @@ namespace PresentationLayer.Environment
         {
             if (null == growthVisualData || currentGrowthTier < 1)
             {
+                if (null != auraOrbitController)
+                {
+                    auraOrbitController.ClearCenterGlowShaderColors();
+                }
                 return;
             }
 
             if (true == useAuraOrbit && null != auraOrbitController
                 && true == growthVisualData.TryGetAuraColor(currentGrowthTier, out Color _auraColor))
             {
-                auraOrbitController.SetCenterGlowColor(_auraColor);
+                // 글로우 머티리얼 기본색(금색)이 곱해져 렌더러 색만으로는 단계 색이 나오지 않으므로 셰이더 색을 직접 덮어쓴다.
+                Color _glowCore = Color.Lerp(_auraColor, new Color(2f, 2f, 2f, 1f), 0.2f) * growthGlowCoreStrength;
+                _glowCore.a = 1f;
+                Color _glowOuter = _auraColor * growthGlowStrength;
+                _glowOuter.a = 1f;
+                auraOrbitController.SetCenterGlowShaderColors(_glowCore, _glowOuter);
             }
 
             if (null != targetRenderer

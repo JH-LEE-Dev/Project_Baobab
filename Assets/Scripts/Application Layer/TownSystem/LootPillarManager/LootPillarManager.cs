@@ -31,6 +31,7 @@ public class LootPillarManager : MonoBehaviour
     private readonly List<LootDisplayObject> spawnedPillars = new List<LootDisplayObject>();
 
     private InputManager inputManager;
+    private InDungeonObjectManager subscribedObjectManager;
 
     public void Initialize(InputManager _inputManager)
     {
@@ -47,6 +48,14 @@ public class LootPillarManager : MonoBehaviour
         if (lootPillarPrefab == null || lootPoints == null || _inDungeonObjectManager == null) return;
 
         spawnedPillars.Clear();
+
+        // 마을에서 프레스티지 레벨이 올라 단계가 바뀌면 이미 만든 기둥도 바로 색/스프라이트를 갱신한다.
+        if (null != subscribedObjectManager)
+        {
+            subscribedObjectManager.LootGrowthTierChangedEvent -= OnLootGrowthTierChanged;
+        }
+        subscribedObjectManager = _inDungeonObjectManager;
+        subscribedObjectManager.LootGrowthTierChangedEvent += OnLootGrowthTierChanged;
 
         int pointIndex = 0;
         for (int i = 0; i < DisplayOrder.Length && pointIndex < lootPoints.Length; i++)
@@ -71,6 +80,17 @@ public class LootPillarManager : MonoBehaviour
             spawnedPillars.Add(pillar);
 
             pointIndex++;
+        }
+    }
+
+    private void OnLootGrowthTierChanged(LootType _lootType, int _tier)
+    {
+        for (int i = 0; i < spawnedPillars.Count; i++)
+        {
+            LootDisplayObject pillar = spawnedPillars[i];
+            if (null == pillar || _lootType != pillar.CurrentLootType) continue;
+
+            pillar.SetGrowthTier(_tier);
         }
     }
 
@@ -99,6 +119,15 @@ public class LootPillarManager : MonoBehaviour
             if (null == pillar) continue;
 
             pillar.SyncInteractStateOnExternalClose();
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (null != subscribedObjectManager)
+        {
+            subscribedObjectManager.LootGrowthTierChangedEvent -= OnLootGrowthTierChanged;
+            subscribedObjectManager = null;
         }
     }
 

@@ -483,6 +483,10 @@ public class HUD_Stemina : MonoBehaviour
         // Update가 UpdateValue보다 먼저 도는 프레임에도 채움과 머리가 한 프레임 어긋나지 않게 한다.
         SyncFrontEdgeToFill();
 
+        // 프리즘도 같은 호출 안에서 채움 앞쪽에 맞춘다. 이벤트가 Update보다 늦게 오는 프레임에는 채움만 새 값으로 그려져
+        // 프리즘이 한 프레임 뒤처져 보이던 문제(회복 중 채움 앞쪽 1열이 프리즘 밖으로 삐져나옴)를 막는다.
+        SyncPrismToFill();
+
         UpdateGhost(_ratio, _prevShown, _wasFilling);
     }
 
@@ -1343,6 +1347,21 @@ public class HUD_Stemina : MonoBehaviour
 
         edgeStepTimer = 0f;
         PaintFrontEdge();
+    }
+
+    // 채움 앞쪽 정수 픽셀이 마지막으로 그린 프리즘과 다르면 지금 값으로 다시 그린다(프리즘이 켜져 있을 때만).
+    // 같은 프레임의 UpdatePrism은 이미 같은 픽셀로 그려져 있어 다시 그리지 않으므로 프레임당 그리기 횟수는 늘지 않는다.
+    private void SyncPrismToFill()
+    {
+        if (PrismPhase.Off == prismPhase || false == bActive || false == bSilhouetteReady || null == prismTexture)
+            return;
+
+        int _filled = Mathf.Min(barW, Mathf.FloorToInt(barW * Mathf.Clamp01(shownRatio)));
+
+        if (_filled == prismPaintedFilledPx)
+            return;
+
+        PaintPrism();
     }
 
     // 채움 앞쪽 정수 픽셀이 마지막으로 그린 머리와 다르면 지금 값으로 다시 그린다(그릴 수 있는 상태일 때만).

@@ -73,6 +73,11 @@ public class UI_ItemAuraEffectController : MonoBehaviour
 
     // 런타임 상태
     private Material instanceMaterial;
+    private bool colorBackupSaved = false;
+    private bool backupOverrideColors;
+    private Color backupCoreColor;
+    private Color backupBeamColor;
+    private Color backupOuterColor;
     private float elapsedTime = 0f;
     private bool isPlaying = false;
     private float currentRandomSeed = 0f;
@@ -218,6 +223,7 @@ public class UI_ItemAuraEffectController : MonoBehaviour
     /// </summary>
     public void SetColors(Color _coreColor, Color _beamColor, Color _outerColor)
     {
+        SaveColorBackup();
         overrideColors = true;
         coreColor = _coreColor;
         beamColor = _beamColor;
@@ -230,10 +236,43 @@ public class UI_ItemAuraEffectController : MonoBehaviour
     /// </summary>
     public void SetColors(Color _coreColor, Color _beamColor)
     {
+        SaveColorBackup();
         overrideColors = true;
         coreColor = _coreColor;
         beamColor = _beamColor;
         ApplyColorSettings();
+    }
+
+    /// <summary>
+    /// SetColors로 바꾼 색을 처음 상태(인스펙터 값 / 머티리얼 기본값)로 되돌린다. SetColors를 부른 적이 없으면 아무것도 하지 않는다.
+    /// </summary>
+    public void ResetColors()
+    {
+        if (false == colorBackupSaved)
+            return;
+
+        overrideColors = backupOverrideColors;
+        coreColor = backupCoreColor;
+        beamColor = backupBeamColor;
+        outerColor = backupOuterColor;
+        colorBackupSaved = false;
+
+        if (null == instanceMaterial)
+            return;
+
+        if (true == overrideColors)
+        {
+            ItemAuraShaderHelper.ApplyColorSettings(instanceMaterial, coreColor, beamColor, outerColor);
+        }
+        else if (null != auraMaterialTemplate)
+        {
+            ItemAuraShaderHelper.ApplyColorSettings(instanceMaterial,
+                auraMaterialTemplate.GetColor(ItemAuraShaderHelper.CoreColorPropertyId),
+                auraMaterialTemplate.GetColor(ItemAuraShaderHelper.BeamColorPropertyId),
+                auraMaterialTemplate.GetColor(ItemAuraShaderHelper.OuterColorPropertyId));
+        }
+
+        ForceUIRenderUpdate();
     }
 
     /// <summary>
@@ -295,6 +334,18 @@ public class UI_ItemAuraEffectController : MonoBehaviour
                 targetImage.material = instanceMaterial;
             }
         }
+    }
+
+    private void SaveColorBackup()
+    {
+        if (true == colorBackupSaved)
+            return;
+
+        colorBackupSaved = true;
+        backupOverrideColors = overrideColors;
+        backupCoreColor = coreColor;
+        backupBeamColor = beamColor;
+        backupOuterColor = outerColor;
     }
 
     private void ApplyAllSettings()

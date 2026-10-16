@@ -113,6 +113,9 @@ public class ItemAuraOrbitController : MonoBehaviour
     private readonly List<SatelliteData> activeSatellites = new List<SatelliteData>(8);
     private GameObject centerGlowObject;
     private MaterialPropertyBlock centerGlowPropertyBlock;
+    private bool useCenterGlowShaderColors = false;
+    private Color centerGlowShaderCore;
+    private Color centerGlowShaderOuter;
     private Transform trailRoot;
     private bool isPlaying = false;
     private bool isInitialized = false;
@@ -270,6 +273,30 @@ public class ItemAuraOrbitController : MonoBehaviour
                 sr.color = centerGlowColor; // Bloom multiplier는 별도 _Intensity로 제어되거나 Material에 위임될 수 있으나, 기본 색상 적용.
             }
         }
+    }
+
+    /// <summary>
+    /// 중앙 글로우의 셰이더 색(_CoreColor/_OuterColor)을 직접 덮어쓴다. 글로우 셰이더는 SpriteRenderer.color를 정점 색으로 곱할 뿐이라,
+    /// 머티리얼 기본색(금색)이 곱해지는 한 단계 색이 제 색으로 나오지 않는다. 이 값을 쓰면 렌더러 색은 흰색으로 두고 셰이더 색만 쓴다.
+    /// </summary>
+    public void SetCenterGlowShaderColors(Color _core, Color _outer)
+    {
+        useCenterGlowShaderColors = true;
+        centerGlowShaderCore = _core;
+        centerGlowShaderOuter = _outer;
+        UpdateBloomSettings();
+    }
+
+    /// <summary>
+    /// SetCenterGlowShaderColors로 덮어쓴 색을 걷어내고 머티리얼 기본색 + SetCenterGlowColor 색으로 되돌린다.
+    /// </summary>
+    public void ClearCenterGlowShaderColors()
+    {
+        if (false == useCenterGlowShaderColors)
+            return;
+
+        useCenterGlowShaderColors = false;
+        UpdateBloomSettings();
     }
 
     public void SetTrailMaterial(Material _material)
@@ -671,13 +698,27 @@ public class ItemAuraOrbitController : MonoBehaviour
             {
                 r.GetPropertyBlock(centerGlowPropertyBlock);
                 centerGlowPropertyBlock.SetFloat(CenterIntensityPropertyId, centerGlowBloomMultiplier);
+
+                Material _glowMaterial = r.sharedMaterial;
+                if (true == useCenterGlowShaderColors)
+                {
+                    centerGlowPropertyBlock.SetColor(ItemAuraShaderHelper.CoreColorPropertyId, centerGlowShaderCore);
+                    centerGlowPropertyBlock.SetColor(ItemAuraShaderHelper.OuterColorPropertyId, centerGlowShaderOuter);
+                }
+                else if (null != _glowMaterial && true == _glowMaterial.HasProperty(ItemAuraShaderHelper.CoreColorPropertyId))
+                {
+                    // 덮어쓴 색을 걷어낼 때: 블록에 남은 색을 머티리얼 기본색으로 되돌린다.
+                    centerGlowPropertyBlock.SetColor(ItemAuraShaderHelper.CoreColorPropertyId, _glowMaterial.GetColor(ItemAuraShaderHelper.CoreColorPropertyId));
+                    centerGlowPropertyBlock.SetColor(ItemAuraShaderHelper.OuterColorPropertyId, _glowMaterial.GetColor(ItemAuraShaderHelper.OuterColorPropertyId));
+                }
+
                 r.SetPropertyBlock(centerGlowPropertyBlock);
             }
 
             SpriteRenderer sr = centerGlowRenderer;
             if (null != sr)
             {
-                sr.color = centerGlowColor; // 블룸 업데이트 시 컬러도 갱신
+                sr.color = true == useCenterGlowShaderColors ? Color.white : centerGlowColor; // 블룸 업데이트 시 컬러도 갱신
             }
         }
 
