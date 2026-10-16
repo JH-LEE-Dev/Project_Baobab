@@ -463,6 +463,9 @@ public class TownSystem : MonoBehaviour
     private void TentUIClosed(TentUIClosedSignal _tentUIClosedSignal)
     {
         tentManager.SyncInteractStateOnExternalClose();
+
+        // 특성 창에서 프레스티지를 올려 전리품 단계가 바뀌었다면, 창을 닫고 나온 지금 기둥의 진화 연출을 재생한다.
+        lootPillarManager?.PlayPendingEvolutions();
     }
 
     // LootPillar UI(UIView_ScreenModal)가 실제로 닫힐 때(상호작용 키 토글이 아닌 ESC·패드 Cancel로

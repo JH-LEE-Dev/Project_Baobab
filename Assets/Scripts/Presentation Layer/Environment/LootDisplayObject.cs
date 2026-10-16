@@ -258,26 +258,31 @@ namespace PresentationLayer.Environment
         /// </summary>
         public void SetGrowthTier(int _tier)
         {
-            // 이미 성장한 상태(1단계 이상)에서 단계가 오르면 진화 연출을 재생하고, 후광/스프라이트 교체는 폭발 시각까지 미룬다.
-            // 처음 생성될 때(단계 0 -> 현재 단계)나 단계가 내려갈 때는 연출 없이 바로 바꾼다.
-            if (null != evolveEffect && true == isActiveAndEnabled && 1 <= currentGrowthTier && currentGrowthTier < _tier)
-            {
-                int fromTier = 0 < pendingGrowthTier ? pendingGrowthTier : currentGrowthTier;
-
-                // 진행 중이던 연출이 있으면 Play가 먼저 정리하면서 이전 목표 단계를 적용한 뒤 새 연출을 시작한다.
-                evolveEffect.Play(fromTier, _tier, cachedOnEvolveBurst);
-                pendingGrowthTier = _tier;
-                return;
-            }
-
-            if (0 < pendingGrowthTier)
-            {
-                // 연출 중에 다른 단계가 지정되면 연출은 끊고 바로 새 단계로 맞춘다.
-                pendingGrowthTier = 0;
-            }
+            // 연출 없이 바로 바꾼다(마을 기둥 생성 때). 진화 연출 중이었다면 보류해 둔 단계는 버리고 지정한 단계로 맞춘다.
+            if (0 < pendingGrowthTier) pendingGrowthTier = 0;
 
             currentGrowthTier = _tier;
             ApplyGrowthVisual();
+        }
+
+        /// <summary>
+        /// 단계 상승 연출(VFX_LootEvolve). 연출을 재생하고 후광/스프라이트 교체는 폭발 시각(약 0.8초)까지 미룬다.
+        /// 연출 컴포넌트가 없거나 오브젝트가 꺼져 있거나 이미 성장한 상태(1단계 이상)에서 오르는 변화가 아니면 바로 바꾼다.
+        /// 특성 창(TentUI)에서 프레스티지를 올리고 창을 닫았을 때 LootPillarManager.PlayPendingEvolutions가 부른다.
+        /// </summary>
+        public void PlayGrowthEvolve(int _tier)
+        {
+            if (null == evolveEffect || false == isActiveAndEnabled || false == (1 <= currentGrowthTier && currentGrowthTier < _tier))
+            {
+                SetGrowthTier(_tier);
+                return;
+            }
+
+            int fromTier = 0 < pendingGrowthTier ? pendingGrowthTier : currentGrowthTier;
+
+            // 진행 중이던 연출이 있으면 Play가 먼저 정리하면서 이전 목표 단계를 적용한 뒤 새 연출을 시작한다.
+            evolveEffect.Play(fromTier, _tier, cachedOnEvolveBurst);
+            pendingGrowthTier = _tier;
         }
 
         // 진화 연출의 폭발 시각: 이때 새 단계의 후광 색과 스프라이트로 바꾼다.
