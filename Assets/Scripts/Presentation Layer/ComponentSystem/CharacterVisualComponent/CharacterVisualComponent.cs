@@ -81,6 +81,25 @@ public class CharacterVisualComponent : MonoBehaviour
     // Character.cs 컴파일 호환성 유지용 (혹시 외부에서 사용되는 경우 대비)
     public Animator Anim => null;
 
+    // 대시 잔상. 대시하는 동안 일정 간격마다 Base Visuals(몸통·팔·얼굴)의 지금 모습을 고스트 색으로 한 장씩 남긴다.
+    // 잔상은 처음 대시할 때 링 버퍼로 만들어 두고 돌려 쓴다(DashAfterimage 참고).
+    // 찍기는 LateUpdate에서 한다 - 몸통 스프라이트(Character.Update → UpdateVisuals)와 팔 회전(ArmComponent.Update)이
+    // 이번 프레임 값으로 바뀐 뒤에 찍어야 몸통과 팔이 어긋나지 않는다.
+    private DashAfterimage[] dashAfterimages;
+    private int nextDashAfterimageIndex;
+    private SpriteRenderer[] dashAfterimageSources;
+    private SortingGroup dashAfterimageSortingGroup;
+    private bool bDashAfterimageEmitting = false;
+    // 대시 시작 자리의 첫 장. 대시는 물리 틱에서 시작해 몸통 스프라이트가 아직 바뀌기 전이므로, 다음 LateUpdate에서
+    // 바뀐 모습을 찍고 시작 자리로 옮겨 남긴다. 대시가 그 전에 끝나도(시작하자마자 벽) 한 장은 남긴다.
+    private bool bDashAfterimageFirstPending = false;
+    private Vector3 dashAfterimageStartPosition;
+    private float dashAfterimageTimer;
+    private float dashAfterimageInterval;
+    private float dashAfterimageFadeDuration;
+    private float dashAfterimageStartAlpha;
+    private Color dashAfterimageColor;
+
     #region Public Methods (Initialization & Control)
 
     public void Initialize(IEnvironmentProvider _environmentProvider, GameObject _onWaterAnimatorObject, Shadow _shadowObject,
@@ -263,6 +282,17 @@ public class CharacterVisualComponent : MonoBehaviour
         }
     }
 
+    // 대시 박차기 먼지(CharacterAnimator가 걷기 먼지와 같은 VFX 풀로 재생한다).
+    public void PlayDashKickoff(Vector2 _direction, float _distance, float _duration)
+    {
+        if (null != characterAnimator) characterAnimator.PlayDashKickoff(_direction, _distance, _duration);
+    }
+
+    public void FinishDashKickoff()
+    {
+        if (null != characterAnimator) characterAnimator.FinishDashKickoff();
+    }
+
     public void SetFacingDirection(Vector2 _input)
     {
         if (_input.sqrMagnitude < 0.01f) return;
@@ -389,6 +419,118 @@ public class CharacterVisualComponent : MonoBehaviour
         UpdateItemAcquireBounce(Time.deltaTime);
     }
 
+    private void LateUpdate()
+    {
+        UpdateDashAfterimages(Time.deltaTime);
+    }
+
+    /// <summary>
+    /// 대시 잔상을 찍기 시작한다. 대시 시작 자리에 한 장을 남기고(다음 LateUpdate), StopDashAfterimages까지 _interval초마다 한 장씩 더 찍는다.
+    /// _emitDuration(대시 이동 시간)은 처음 잔상을 만들 때 동시에 보일 최대 장수를 정하는 데만 쓴다.
+    /// </summary>
+    public void StartDashAfterimages(Material _material, Color _color, float _interval, float _fadeDuration, float _startAlpha, float _emitDuration)
+    {
+        if (null == _material || null == characterVisualComponent) return;
+
+        dashAfterimageInterval = Mathf.Max(_interval, 0.01f);
+        dashAfterimageFadeDuration = Mathf.Max(_fadeDuration, 0.01f);
+        dashAfterimageStartAlpha = _startAlpha;
+        dashAfterimageColor = _color;
+
+        EnsureDashAfterimages(_material, _emitDuration);
+
+        bDashAfterimageEmitting = true;
+        bDashAfterimageFirstPending = true;
+        dashAfterimageStartPosition = transform.position;
+        dashAfterimageTimer = 0f;
+    }
+
+    /// <summary>잔상 찍기를 멈춘다. 이미 남긴 잔상은 끝까지 사라진다.</summary>
+    public void StopDashAfterimages()
+    {
+        bDashAfterimageEmitting = false;
+    }
+
+    private void EnsureDashAfterimages(Material _material, float _emitDuration)
+    {
+        if (null != dashAfterimages) return;
+
+        dashAfterimageSources = characterVisualComponent.GetComponentsInChildren<SpriteRenderer>(true);
+        dashAfterimageSortingGroup = characterVisualComponent.GetComponent<SortingGroup>();
+
+        // 한 번의 대시에서 찍는 장수 + 마지막 장이 사라질 때까지 겹치는 장수. 연속 대시로 모자라면 가장 오래된 잔상부터 다시 쓴다.
+        int count = Mathf.CeilToInt((Mathf.Max(_emitDuration, 0f) + dashAfterimageFadeDuration) / dashAfterimageInterval) + 1;
+        dashAfterimages = new DashAfterimage[count];
+
+        for (int i = 0; i < count; i++)
+        {
+            dashAfterimages[i] = DashAfterimage.Create(dashAfterimageSources.Length, _material);
+            // 캐릭터는 씬을 넘어 재사용되므로 잔상도 씬 전환에 함께 남는다(파괴는 OnDestroy에서).
+            DontDestroyOnLoad(dashAfterimages[i].gameObject);
+        }
+
+        nextDashAfterimageIndex = 0;
+    }
+
+    private void UpdateDashAfterimages(float _deltaTime)
+    {
+        if (null == dashAfterimages) return;
+
+        if (true == bDashAfterimageFirstPending)
+        {
+            bDashAfterimageFirstPending = false;
+            dashAfterimageTimer = 0f;
+            EmitDashAfterimage(dashAfterimageStartPosition - transform.position);
+        }
+        else if (true == bDashAfterimageEmitting)
+        {
+            dashAfterimageTimer += _deltaTime;
+            if (dashAfterimageTimer >= dashAfterimageInterval)
+            {
+                // 프레임이 길게 끊겨도 한 번에 한 장만 찍는다(같은 자리에 여러 장이 겹치지 않게).
+                dashAfterimageTimer = Mathf.Min(dashAfterimageTimer - dashAfterimageInterval, dashAfterimageInterval);
+                EmitDashAfterimage(Vector3.zero);
+            }
+        }
+    }
+
+    private void EmitDashAfterimage(Vector3 _offset)
+    {
+        if (null == dashAfterimages || 0 == dashAfterimages.Length) return;
+
+        DashAfterimage afterimage = dashAfterimages[nextDashAfterimageIndex];
+        nextDashAfterimageIndex = (nextDashAfterimageIndex + 1) % dashAfterimages.Length;
+
+        // 잔상은 찍힌 자리의 캐릭터 정렬값보다 한 칸 뒤에 둔다 - 시작 위치에서 캐릭터와 겹쳐도 캐릭터를 덮지 않는다.
+        // 자리를 옮겨 찍는 장(_offset)은 옮긴 자리의 정렬값을 쓴다(CustomSortable과 같은 규칙, y에 대해 선형이라 차이만 더한다).
+        int sortingLayerID = null != dashAfterimageSortingGroup ? dashAfterimageSortingGroup.sortingLayerID : (null != sr ? sr.sortingLayerID : 0);
+        int sortingOrder = GetCharacterSortingOrder() - 1;
+        if (null != customSortable && 0f != _offset.y)
+        {
+            sortingOrder += customSortable.ComputeSortingOrder(_offset.y) - customSortable.ComputeSortingOrder(0f);
+        }
+
+        afterimage.Show(dashAfterimageSources, _offset, sortingLayerID, sortingOrder, dashAfterimageColor, dashAfterimageStartAlpha, dashAfterimageFadeDuration);
+    }
+
+    private int GetCharacterSortingOrder()
+    {
+        if (null != dashAfterimageSortingGroup) return dashAfterimageSortingGroup.sortingOrder;
+        return null != sr ? sr.sortingOrder : 0;
+    }
+
+    private void OnDestroy()
+    {
+        if (null == dashAfterimages) return;
+
+        for (int i = 0; i < dashAfterimages.Length; i++)
+        {
+            if (null != dashAfterimages[i]) Destroy(dashAfterimages[i].gameObject);
+        }
+
+        dashAfterimages = null;
+    }
+
     private void UpdateItemAcquireBounce(float _deltaTime)
     {
         if (visualsRoot == null) return;
@@ -434,6 +576,8 @@ public class CharacterVisualComponent : MonoBehaviour
     private void OnDisable()
     {
         ResetFlash();
+        bDashAfterimageEmitting = false;
+        bDashAfterimageFirstPending = false;
     }
 
     public void ResetFlash()

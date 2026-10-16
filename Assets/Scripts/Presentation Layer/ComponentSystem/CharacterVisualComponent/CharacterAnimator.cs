@@ -427,6 +427,43 @@ public class CharacterAnimator : MonoBehaviour
         Sound.Play(isGrass ? SoundID.GrassFootstep : SoundID.GroundFootstep, transform.position);
     }
 
+    // 진행 중인 대시 박차기. 풀로 돌아간 인스턴스를 건드리지 않도록 끝낼 때 활성 여부를 확인한다.
+    private PresentationLayer.VFX.VFX_DashKickoff activeDashKickoff;
+
+    /// <summary>대시 시작 시 호출. _direction은 월드 기준 방향, _distance는 월드 이동 거리, _duration은 이동 시간(초).</summary>
+    public void PlayDashKickoff(Vector2 _direction, float _distance, float _duration)
+    {
+        if (null == vfxComponent) return;
+
+        ParticleSystem effect = vfxComponent.Play("DashKickoff", transform.position, Quaternion.identity);
+        if (null == effect) return;
+
+        if (null != baseSR)
+        {
+            vfxComponent.SetSortingSettings(effect, baseSR.sortingLayerID, baseSR.sortingOrder);
+        }
+
+        // 풀에서 꺼낸 직후(첫 LateUpdate 전)에 대시 값을 정해야 한다.
+        PresentationLayer.VFX.VFX_DashKickoff kickoff = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_DashKickoff>(true);
+        if (null == kickoff) return;
+
+        kickoff.SetDash(_direction, _distance, _duration);
+        activeDashKickoff = kickoff;
+    }
+
+    /// <summary>대시가 끝날 때(정상 종료, 벽에 막힘, 중단 모두) 호출. 멈춘 위치를 알려 이동 중 잔먼지 생성을 멈춘다.</summary>
+    public void FinishDashKickoff()
+    {
+        if (null == activeDashKickoff) return;
+
+        if (true == activeDashKickoff.gameObject.activeInHierarchy)
+        {
+            activeDashKickoff.Finish(transform.position);
+        }
+
+        activeDashKickoff = null;
+    }
+
     #endregion
 
     #region Private Methods
