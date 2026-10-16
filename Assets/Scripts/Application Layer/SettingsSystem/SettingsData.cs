@@ -464,6 +464,63 @@ public struct SettingsData
     }
 
     /// <summary>
+    /// 보이는 폭이 기준 폭을 넘었는지 판단할 때 쓰는 여유입니다. 부동소수 오차로 640.0000x가
+    /// 걸리지 않도록 조금 둡니다.
+    /// </summary>
+    private const float PILLARBOX_WIDTH_EPSILON = 0.5f;
+
+    /// <summary>
+    /// 이 화면에서 카메라 좌우를 잘라내야(Pillarbox) 하는지 반환합니다.
+    ///
+    /// 배율은 세로만 보고 정해지므로(GetPixelScale), 그 배율로 화면 가로를 나눈 값이 실제로
+    /// 보이는 폭입니다. 그 폭이 기준 폭(640)을 넘으면 자릅니다. 화면비가 아니라 보이는 폭으로
+    /// 판정하는 이유는 UltraWideCropApplier 주석을 보세요.
+    ///
+    /// 카메라의 Crop Frame을 켜는 쪽(UltraWideCropApplier)과 잘린 영역을 비우는 쪽
+    /// (CroppedAreaGuard, CroppedAreaFitter)이 반드시 같은 판정을 써야 해서 여기 한 곳에 둡니다.
+    /// 둘이 어긋나면 카메라는 잘렸는데 띠가 안 지워지거나, 반대로 멀쩡한 화면이 가려집니다.
+    /// </summary>
+    public static bool IsPillarboxRequired(int _screenWidth, int _screenHeight)
+    {
+        if (_screenWidth <= 0 || _screenHeight <= 0) return false;
+
+        float _visibleWidth = (float)_screenWidth / GetPixelScale(_screenHeight);
+        return _visibleWidth > PIXEL_PERFECT_REF_WIDTH + PILLARBOX_WIDTH_EPSILON;
+    }
+
+    /// <summary>
+    /// 카메라가 실제로 그리는 화면 영역(픽셀)을 반환합니다. 자르지 않는 화면이면 화면 전체입니다.
+    ///
+    /// PixelPerfectCamera가 Pillarbox일 때 카메라에 넣는 pixelRect와 같은 식입니다.
+    /// (PixelPerfectCameraInternal.CalculateCameraProperties / CalculateFinalBlitPixelRect,
+    ///  Crop Frame X + Upscale RT 꺼짐 경로)
+    ///
+    ///   zoom  = max(1, min(화면세로 / 기준세로, 화면가로 / 기준가로))   (정수 나눗셈)
+    ///   너비  = zoom * 기준가로
+    ///   x     = (화면가로 - 너비) / 2                                   (정수 나눗셈)
+    ///
+    /// 기준 해상도는 PixelPerfectReferenceResolutionApplier가 카메라에 넣는 값과 같도록
+    /// GetReferenceResolution으로 구합니다.
+    ///
+    /// 카메라 pixelRect를 직접 읽지 않고 계산하는 이유는 씬 전환 중에는 카메라가 없기 때문입니다.
+    /// 그 사이에도 전환 연출 UI는 그려지므로, 카메라 유무와 상관없이 같은 영역을 알아야 합니다.
+    /// </summary>
+    public static RectInt GetCameraViewPixelRect(int _screenWidth, int _screenHeight)
+    {
+        if (false == IsPillarboxRequired(_screenWidth, _screenHeight))
+        {
+            return new RectInt(0, 0, Mathf.Max(0, _screenWidth), Mathf.Max(0, _screenHeight));
+        }
+
+        GetReferenceResolution(_screenWidth, _screenHeight, out int _refWidth, out int _refHeight);
+
+        int _zoom = Mathf.Max(1, Mathf.Min(_screenHeight / _refHeight, _screenWidth / _refWidth));
+        int _viewWidth = _zoom * _refWidth;
+
+        return new RectInt((_screenWidth - _viewWidth) / 2, 0, _viewWidth, _screenHeight);
+    }
+
+    /// <summary>
     /// 주어진 화면 세로에서 픽셀 퍼펙트가 성립하는 직교 크기(OrthographicSize)를 반환합니다.
     /// _authoredOrthoSize는 가상 카메라에 작성해 둔 원본 값, 즉 CAMERA_VIEW_HEIGHT만큼을
     /// 보여주도록 정해진 크기입니다.

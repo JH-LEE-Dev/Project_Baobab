@@ -23,16 +23,13 @@ using UnityEngine.Rendering.Universal;
 /// 정적 상태나 싱글톤 참조가 없어 이전 씬의 값이 남지 않습니다.
 ///
 /// 월드 카메라와 UI 카메라 양쪽에 붙여야 합니다. 한쪽만 켜지면 UI가 검은 띠 위에 얹힙니다.
+///
+/// 이 컴포넌트는 카메라를 자르기만 합니다. 잘려 나간 띠를 비우는 것은 CroppedAreaGuard와
+/// CroppedAreaFitter의 몫입니다. (카메라 스택을 쓰면 URP가 띠를 지워주지 않습니다)
 /// </summary>
 [RequireComponent(typeof(PixelPerfectCamera))]
 public class UltraWideCropApplier : MonoBehaviour
 {
-    /// <summary>
-    /// 보이는 폭이 이 값을 넘을 때만 자릅니다. 부동소수 오차로 640.0000x가 걸리지 않도록
-    /// 여유를 조금 둡니다.
-    /// </summary>
-    private const float WIDTH_EPSILON = 0.5f;
-
     private PixelPerfectCamera pixelPerfectCamera;
 
     // 마지막으로 반영한 화면 크기. 변화가 없으면 아무 일도 하지 않기 위한 것이다.
@@ -76,12 +73,9 @@ public class UltraWideCropApplier : MonoBehaviour
         appliedWidth = Screen.width;
         appliedHeight = Screen.height;
 
-        // 배율은 세로만 보고 정해진다. 그 배율로 화면 가로를 나눈 값이 실제로 보이는 폭이다.
-        int _scale = SettingsData.GetPixelScale(appliedHeight);
-        float _visibleWidth = (float)appliedWidth / _scale;
-
+        // 잘린 영역을 비우는 쪽(CroppedAreaGuard)과 같은 판정을 써야 하므로 SettingsData에 맡긴다.
         PixelPerfectCamera.CropFrame _desired =
-            _visibleWidth > SettingsData.PIXEL_PERFECT_REF_WIDTH + WIDTH_EPSILON
+            SettingsData.IsPillarboxRequired(appliedWidth, appliedHeight)
                 ? PixelPerfectCamera.CropFrame.Pillarbox
                 : PixelPerfectCamera.CropFrame.None;
 
