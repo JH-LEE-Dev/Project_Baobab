@@ -216,7 +216,6 @@ public class BuildStampWriter : IPostprocessBuildWithReport
     {
         "ProjectSettings/ProjectSettings.asset",
         "Assets/Resources/Sentry/SentryOptions.asset",
-        "Assets/Resources/GameAnalytics/Settings.asset",
         "steam_appid.txt",
     };
 

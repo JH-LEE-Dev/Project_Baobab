@@ -50,7 +50,7 @@ public class SettingsManager : MonoBehaviour
 
     /// <summary>
     /// 데이터 수집 동의가 실제로 바뀌었을 때 발생합니다. DataConsentGate가 구독해 SDK에 반영합니다.
-    /// (SettingsManager가 Sentry/GameAnalytics를 직접 알지 않도록 의존성 방향을 뒤집기 위한 것)
+    /// (SettingsManager가 Sentry를 직접 알지 않도록 의존성 방향을 뒤집기 위한 것)
     /// </summary>
     public event Action<EDataConsent> OnDataConsentChangedEvent;
 
