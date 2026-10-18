@@ -63,8 +63,7 @@ public static class SentryUserContextTagger
         }
         catch (System.Exception exception)
         {
-            // LogError는 쓰지 않는다. Sentry가 켜져 있으면 그 자체로 이벤트가 되고,
-            // GameAnalytics의 로그 훅도 에러 이벤트를 하나 더 만든다.
+            // LogError는 쓰지 않는다. Sentry가 켜져 있으면 그 자체로 이벤트가 된다.
             // (DataConsentGate.TryCallSdk와 같은 판단)
             // 예외 객체를 통째로 붙인다. 메시지만 남기면 스택 트레이스가 사라져,
             // 나중에 이 경고를 본 사람이 어디서 터졌는지 되짚을 수 없다.

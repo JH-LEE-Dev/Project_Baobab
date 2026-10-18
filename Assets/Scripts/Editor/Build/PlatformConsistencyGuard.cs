@@ -23,7 +23,7 @@ using UnityEngine;
 /// 어긋나도 <b>아무 에러가 나지 않는</b> 것들만 봅니다. 컴파일이 깨지는 종류는 어차피 빌드가 안 됩니다.
 ///   1. 스토어 디파인(BAOBAB_STOVE / BAOBAB_ITCH)과 DISABLESTEAMWORKS 의 짝
 ///   2. 스크립트 재컴파일 여부 (메뉴를 누르고 바로 빌드를 누른 경우)
-///   3. Sentry environment / GameAnalytics build (Resources 아래라 빌드에 무조건 실림)
+///   3. Sentry environment (Resources 아래라 빌드에 무조건 실림)
 ///   4. steam_appid.txt (경고만 — 배포물에 실리지 않아 빌드를 막을 이유가 없음)
 ///
 /// [개발 빌드는 통과시킵니다]
@@ -169,7 +169,7 @@ public class PlatformConsistencyGuard : IPreprocessBuildWithReport
     }
 
     /// <summary>
-    /// 둘 다 Resources 아래라 빌드에 무조건 실립니다. 어긋나면 다른 스토어의 크래시와 지표가
+    /// Resources 아래라 빌드에 무조건 실립니다. 어긋나면 다른 스토어의 크래시가
     /// Steam 데이터에 섞여 나중에 구분할 수 없게 됩니다. 섞인 뒤에는 되돌릴 방법이 없습니다.
     /// </summary>
     private static void CheckAnalytics(BuildStore _store, BuildRelease _release, List<string> _errors)
@@ -180,14 +180,6 @@ public class PlatformConsistencyGuard : IPreprocessBuildWithReport
         if (_actualEnv != _expectedEnv)
         {
             _errors.Add($"Sentry environment 가 어긋납니다. 기대 \"{_expectedEnv}\", 실제 \"{_actualEnv ?? "(읽기 실패)"}\"");
-        }
-
-        string _expectedBuild = PlatformBuildModeSwitcher.ExpectedGameAnalyticsBuild(_store, _release);
-        string _actualBuild = PlatformBuildModeSwitcher.ReadGameAnalyticsBuild();
-
-        if (_actualBuild != _expectedBuild)
-        {
-            _errors.Add($"GameAnalytics build 가 어긋납니다. 기대 \"{_expectedBuild}\", 실제 \"{_actualBuild ?? "(읽기 실패)"}\"");
         }
     }
 

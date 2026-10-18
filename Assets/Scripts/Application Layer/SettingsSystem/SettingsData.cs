@@ -46,7 +46,7 @@ public enum EWindowMode { Windowed, Fullscreen }
 public enum EOnOff { Off, On }
 
 /// <summary>
-/// 크래시 리포트(Sentry)와 플레이 통계(GameAnalytics) 수집에 대한 유저의 선택입니다.
+/// 크래시 리포트(Sentry) 수집에 대한 유저의 선택입니다.
 ///
 /// EOnOff를 쓰지 않고 별도 enum을 두는 이유는 "아직 묻지 않았음"이 반드시 구분되어야 하기
 /// 때문입니다. 둘을 구분하지 못하면 (a) 최초 동의 팝업을 몇 번 띄워야 하는지 알 수 없고,
@@ -133,7 +133,7 @@ public struct SettingsData
     public EOnOff pauseOnUnfocus;
 
     /// <summary>
-    /// 데이터 수집(Sentry 크래시 리포트 / GameAnalytics 플레이 통계) 동의 여부입니다.
+    /// 데이터 수집(Sentry 크래시 리포트) 동의 여부입니다.
     ///
     /// 이 필드를 추가하면서 SettingsRepository의 버전을 올리지 않은 것은 의도적입니다.
     /// 기본값이 0(NotAsked)이라 키가 없는 구버전 파일도 올바르게 "아직 묻지 않음"으로
