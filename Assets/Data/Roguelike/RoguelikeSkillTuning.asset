@@ -35,7 +35,7 @@ MonoBehaviour:
   offroadVolleyStagger: 0.15
   offroadLaneSpread: 0.75
   offroadEdgeInset: 0.8
-  offroadExitSeconds: 0.2
+  offroadExitSeconds: 0.05
   offroadHitStop: 0.035
   offroadHitStopPerExtraTree: 0.01
   offroadHitStopMax: 0.08

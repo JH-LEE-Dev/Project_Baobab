@@ -10,7 +10,7 @@ using UnityEngine.Rendering;
 ///         시동음이 난다. 바퀴는 멈춰 있다.
 ///   출발: 웅크림이 풀리며 앞으로 늘어났다 돌아온다. 바퀴가 속도에 맞춰 돈다.
 ///   들이받기: 차체가 앞뒤로 눌렸다 튀고 살짝 들썩인다(Bump).
-///   퇴장: 감속 없이 섬 끝에 닿기 직전, 달리는 채로 소환 때처럼 하얀 플래시가 깜빡이다 하얗게 번쩍이며 사라진다(BeginExit).
+///   퇴장: 감속 없이 섬 끝에 닿기 직전, 달리는 채로 아주 짧게 하얗게 된 뒤 사라진다(BeginExit).
 /// 움직임은 차체(Flip)에만 주고 그림자는 그대로 두어 차가 땅에 붙어 보이게 한다.
 /// 정렬은 본편 CustomSortable과 같은 규칙(-y × 100)으로 매 프레임 맞춘다.
 /// </summary>
@@ -45,10 +45,6 @@ public class RoguelikeOffroadVisual : MonoBehaviour
     [SerializeField] private float launchStretch = 0.22f;
     [SerializeField] private float launchStretchSeconds = 0.18f;
 
-    [Header("퇴장 (섬 끝 직전)")]
-    [Tooltip("사라지기 전 플래시가 깜빡이는 횟수. 마지막 깜빡임은 하얗게 멈춘 채 사라진다.")]
-    [SerializeField] private int exitFlashCount = 2;
-
     [Header("들이받기")]
     [Tooltip("들이받을 때 차체가 눌리는 정도(나무 수에 따라 조금 커진다).")]
     [SerializeField] private float bumpSquash = 0.14f;
@@ -73,8 +69,6 @@ public class RoguelikeOffroadVisual : MonoBehaviour
     private float warmupStartTime;
     private float warmupDuration;
     private float launchTime = -100f;
-    private float exitStartTime;
-    private float exitDuration = 0.35f;
     private float bumpTime = -100f;
     private float bumpStrength;
     private float speed;
@@ -109,12 +103,10 @@ public class RoguelikeOffroadVisual : MonoBehaviour
         SetFlash(0f);
     }
 
-    /// <summary>섬 끝에 닿기 직전이다. 달리는 채로 _seconds 동안 플래시가 깜빡이며 사라질 준비를 한다(끝나면 컨트롤러가 Hide한다).</summary>
-    public void BeginExit(float _seconds)
+    /// <summary>섬 끝에 닿기 직전이다. 달리는 채로 하얗게 된다(아주 짧게 유지된 뒤 컨트롤러가 Hide한다).</summary>
+    public void BeginExit()
     {
         state = EState.Exit;
-        exitStartTime = Time.time;
-        exitDuration = Mathf.Max(0.01f, _seconds);
     }
 
     /// <summary>컨트롤러가 정한 이번 프레임의 위치와 속도. 손맛 오프셋은 이 위치 위에 얹는다.</summary>
@@ -183,16 +175,9 @@ public class RoguelikeOffroadVisual : MonoBehaviour
         }
         else if (EState.Exit == state)
         {
-            // 퇴장: 섬 끝에 닿기 직전, 달리는 채로 하얀 플래시가 깜빡이다가 마지막엔 하얗게 번쩍인 채 사라진다.
-            // 소환(예열)의 깜빡임을 거꾸로 돌린 모습이다. 감속하지 않으므로 바퀴와 차체 떨림은 주행 때 그대로다.
-            float t = Mathf.Clamp01((now - exitStartTime) / exitDuration);
-
-            // 깜빡임마다 0에서 1로 차오르는 플래시. 마지막 깜빡임은 1까지 차오른 뒤 하얗게 멈춘 채 사라진다.
-            int flashes = Mathf.Max(1, exitFlashCount);
-            float phase = t * flashes;
-            float local = phase - Mathf.Floor(phase);
-            bool bLastFlash = t >= 1f || phase >= flashes - 1;
-            SetFlash(bLastFlash ? Mathf.Clamp01((phase - (flashes - 1)) * 1.5f) : local * local);
+            // 퇴장: 섬 끝에 닿기 직전 아주 짧게 하얗게 된 채로 달리다 사라진다.
+            // 모양은 바꾸지 않고, 감속하지 않으므로 바퀴와 차체 떨림도 주행 때 그대로다.
+            SetFlash(1f);
 
             float shake = driveShake;
             bodyOffset += new Vector3(Random.Range(-shake, shake), Random.Range(-shake, shake), 0f);

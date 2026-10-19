@@ -52,6 +52,7 @@ public class RoguelikeSkillController : MonoBehaviour
         public float hitStopUntil;
         public bool bExiting;
         public float exitEndTime;
+        public int exitStartFrame;
         public Vector3 lastPosition;
         public float damage;
         public float radius;
@@ -868,7 +869,7 @@ public class RoguelikeSkillController : MonoBehaviour
     // // 오프로드
     //
     // 섬 가장자리 위에 플래시되며 소환(예열) → 확 튀어 나가 가속 → 나무를 들이받을 때마다 멈칫하며 속도를 잃고 다시 붙는다 →
-    // 감속 없이 반대편 섬 끝까지 달리고, 끝에 닿기 직전 소환 때처럼 플래시가 깜빡이며 사라진다(물 위로 나가지 않는다).
+    // 감속 없이 반대편 섬 끝까지 달리고, 끝에 닿기 직전 아주 짧게 하얗게 된 뒤 사라진다(물 위로 나가지 않는다).
     // 진행 방향은 차량 그림에 맞는 아래쪽 대각선 두 방향뿐이다(OffroadLanes).
     // 여러 대(III 2대, V 3대)는 서로 다른 차선에서 시간차를 두고 출발한다.
 
@@ -898,11 +899,12 @@ public class RoguelikeSkillController : MonoBehaviour
             if (false == car.bDashStarted) LaunchOffroad(car);
 
             // 들이받은 직후에는 잠깐 멈칫한다(히트스톱). 멈춘 동안에도 엔진음 위치와 차체 떨림은 이어진다.
-            // 감속은 하지 않는다. 섬 끝까지 그대로 달리고, 끝에 닿기 직전 구간에서 플래시되며 사라진다(BeginOffroadExit).
+            // 감속은 하지 않는다. 섬 끝까지 그대로 달리고, 끝에 닿기 직전 구간에서 하얗게 된 뒤 사라진다(BeginOffroadExit).
             if (_now >= car.hitStopUntil)
             {
                 car.speed = Mathf.MoveTowards(car.speed, tuning.offroadSpeed, tuning.offroadAcceleration * dt);
-                car.traveled = Mathf.Min(car.length, car.traveled + car.speed * dt);
+                // 하얗게 된 뒤에는 끝에서 멈추지 않도록 그대로 달린다. 하얀 시간이 정해져 있어 끝을 넘는 거리는 한 프레임 이동량 이하다(섬 안쪽 들임 거리 안).
+                car.traveled = car.bExiting ? car.traveled + car.speed * dt : Mathf.Min(car.length, car.traveled + car.speed * dt);
             }
 
             Vector3 pos = car.Position;
@@ -915,19 +917,22 @@ public class RoguelikeSkillController : MonoBehaviour
 
             if (hits > 0) OnOffroadHit(car, pos, hits, _now);
 
-            // 지금 속도로 offroadExitSeconds 안에 섬 끝에 닿는 지점부터 사라지기 시작한다. 달리는 채로 깜빡이다 끝에서 번쩍 사라진다.
+            // 지금 속도로 offroadExitSeconds 안에 섬 끝에 닿는 지점부터 하얗게 된다. 달리는 채로 하얀 상태가 offroadExitSeconds 동안 유지되다 사라진다.
             if (false == car.bExiting && car.length - car.traveled <= car.speed * Mathf.Max(0.01f, tuning.offroadExitSeconds))
             {
                 BeginOffroadExit(car, pos, _now);
             }
 
-            if (car.bExiting && (car.traveled >= car.length || _now >= car.exitEndTime)) ReleaseOffroadCar(i, false);
+            // 하얀 시간은 프레임 수가 아니라 시간(offroadExitSeconds)으로 재서 어떤 프레임 속도에서도 같게 보인다.
+            // 프레임 경계에 맞춰 가장 가까운 프레임에서 거두도록 반 프레임을 당겨 비교한다(60fps에서 0.05초 = 정확히 3프레임).
+            // 프레임이 아주 느려도 하얗게 된 모습이 적어도 한 프레임은 그려진 뒤에 거둔다.
+            if (car.bExiting && Time.frameCount > car.exitStartFrame && _now >= car.exitEndTime - dt * 0.5f) ReleaseOffroadCar(i, false);
         }
     }
 
     /// <summary>
-    /// 섬 끝에 닿기 직전이다. 엔진이 꺼지고, 소환 때처럼 플래시가 깜빡이다 끝에서 하얗게 번쩍이며 사라진다.
-    /// 차는 멈추지 않고 그대로 달린다(감속 없음). 끝에 닿거나 offroadExitSeconds가 지나면 거둔다.
+    /// 섬 끝에 닿기 직전이다. 엔진이 꺼지고, 차가 아주 짧게 하얗게 된 채 달리다 사라진다.
+    /// 차는 멈추지 않고 그대로 달린다(감속 없음). offroadExitSeconds가 지나면 거둔다.
     /// </summary>
     private void BeginOffroadExit(OffroadCar _car, Vector3 _position, float _now)
     {
@@ -935,11 +940,13 @@ public class RoguelikeSkillController : MonoBehaviour
 
         _car.bExiting = true;
         _car.exitEndTime = _now + seconds;
-        _car.visual?.BeginExit(seconds);
+        _car.exitStartFrame = Time.frameCount;
+        _car.visual?.BeginExit();
 
         if (_car.engine.IsValid)
         {
-            Sound.StopTrackedWithPowerDown(_car.engine, seconds, 0.5f);
+            // 하얀 시간이 매우 짧아 엔진음은 따로 0.2초 이상에 걸쳐 잦아들게 한다(바로 끊기면 툭 끊긴다).
+            Sound.StopTrackedWithPowerDown(_car.engine, Mathf.Max(0.2f, seconds), 0.5f);
             _car.engine = AudioHandle.Invalid;
         }
 
@@ -1001,6 +1008,7 @@ public class RoguelikeSkillController : MonoBehaviour
         car.hitStopUntil = 0f;
         car.bExiting = false;
         car.exitEndTime = 0f;
+        car.exitStartFrame = 0;
         car.lastPosition = entry;
         car.damage = tuning.offroadDamage * DamageMul(ERoguelikeSkill.Offroad);
         car.radius = tuning.offroadHitRadius * RangeMul(ERoguelikeSkill.Offroad);

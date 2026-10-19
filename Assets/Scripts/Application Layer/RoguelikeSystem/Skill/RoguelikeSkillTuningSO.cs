@@ -61,8 +61,8 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     [Range(0f, 1f)] public float offroadLaneSpread = 0.75f;
     [Tooltip("소환 지점과 멈추는 지점을 섬 가장자리에서 안쪽으로 들여오는 거리(월드). 섬 테두리는 계단 모양이라 경계선 그대로면 차가 물 위에 반쯤 걸친다.")]
     public float offroadEdgeInset = 0.8f;
-    [Tooltip("섬 끝에 닿기 이 시간(초) 전부터 달리는 채로 플래시가 깜빡이다 끝에서 사라진다(감속 없음). 소환 때 예열 깜빡임을 거꾸로 돌린 연출이다.")]
-    public float offroadExitSeconds = 0.2f;
+    [Tooltip("섬 끝에 닿기 이 시간(초) 전부터 달리는 채로 하얗게 된 뒤, 이 시간이 지나면 사라진다(감속 없음). 프레임 수가 아닌 시간이라 어떤 프레임 속도에서도 같다(0.05초 = 60fps 3프레임).")]
+    public float offroadExitSeconds = 0.05f;
 
     [Header("오프로드 손맛")]
     [Tooltip("나무를 들이받은 순간 차가 멈칫하는 시간(초).")]
