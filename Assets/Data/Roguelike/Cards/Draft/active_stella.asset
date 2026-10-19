@@ -17,7 +17,7 @@ MonoBehaviour:
   descriptionKey: Roguelike_Card_active_stella_Desc
   icon: {fileID: 0}
   kind: 0
-  grade: 0
+  grade: 1
   skillTag: 6
   exclusiveGroup: 0
   maxLevel: 5
@@ -26,19 +26,25 @@ MonoBehaviour:
   - effects:
     - effect: 7
       skill: 6
-      value: 5
-  - effects:
-    - effect: 6
-      skill: 6
-      value: 1
-  - effects:
-    - effect: 1
-      skill: 6
-      value: 30
+      value: 3
   - effects:
     - effect: 7
       skill: 6
-      value: 5
+      value: 4
+    - effect: 27
+      skill: 6
+      value: 1
+  - effects:
+    - effect: 24
+      skill: 6
+      value: 3
+    - effect: 3
+      skill: 6
+      value: 15
+  - effects:
+    - effect: 28
+      skill: 6
+      value: 1
   basePriceOverride: 0
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}

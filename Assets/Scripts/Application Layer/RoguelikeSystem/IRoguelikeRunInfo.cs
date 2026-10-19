@@ -23,6 +23,14 @@ public interface IRoguelikeRunInfo
     bool CanReroll { get; }
     bool CanSkip { get; }
 
+    /// <summary>이번 선택 단계에 감정사가 와 있는지(기획서 4-4).</summary>
+    bool IsAppraiserPresent { get; }
+    /// <summary>감정 버튼을 쓸 수 있는지. 감정사가 있어도 대상 카드가 없거나 골드가 가장 싼 감정비보다 적으면 false(잠금).</summary>
+    bool CanAppraise { get; }
+    /// <summary>_card가 감정 대상인지(골드와 무관).</summary>
+    bool IsAppraisable(CardDefinitionSO _card);
+    int GetAppraisalFee(CardDefinitionSO _card);
+
     /// <summary>방금 구매로 함께 사라져야 하는 배타 카드의 제시 인덱스.</summary>
     IReadOnlyList<int> LastDiscardedOfferIndices { get; }
 

@@ -4,22 +4,83 @@ using UnityEngine;
 /// 로그라이크 신규 스킬(오프로드·스텔라·포자폭탄)과 조합 효과의 기본 수치. 기획서 9장 "밸런스 조정 목록"의 항목들이다.
 /// 카드 효과(피해%·범위%·지속%·공격속도%·발동 수·확률)는 이 기본값 위에 곱하거나 더한다.
 ///
-/// 회전베기·충격파·부메랑·드론은 본편 스탯을 그대로 쓰므로 여기 없다(RunEffectApplier).
-/// 모든 값은 임시이며 밸런스 단계에서 조정한다.
+/// 회전베기·충격파·부메랑·드론은 본편 스탯을 쓰고, 그 기준값만 런 시작 때 아래 "전투 기준값"으로 바꿔 끼운다(RunEffectApplier).
+/// 본편 캐릭터 프리팹의 값은 건드리지 않는다. 모든 값은 기획서 v2.1 부록 A 초안이며 밸런스 단계에서 조정한다.
 /// </summary>
 [CreateAssetMenu(fileName = "RoguelikeSkillTuning", menuName = "Baobab/Roguelike/Skill Tuning")]
 public class RoguelikeSkillTuningSO : ScriptableObject
 {
+    [Header("전투 기준값 (런 시작 때 캐릭터에 주입, 부록 A-1)")]
+    [Tooltip("도끼 공격력. 회전베기 피해도 이 값이다.")]
+    public float axeDamage = 10f;
+    [Tooltip("도끼 쿨타임(초).")]
+    public float axeAttackCoolTime = 0.6f;
+    [Tooltip("충격파 피해.")]
+    public float shockwaveDamage = 8f;
+    [Tooltip("부메랑 틱 피해.")]
+    public float boomerangTickDamage = 4f;
+    [Tooltip("부메랑 틱 간격(초).")]
+    public float boomerangTickInterval = 0.3f;
+    [Tooltip("부메랑이 돌아온 뒤 다시 던지기까지의 시간(초). 0이면 돌아오자마자 다시 던진다(상시 발사, 기획서 6-1).")]
+    public float boomerangCooldown = 0f;
+    [Tooltip("부메랑 사거리(화면 기준 반폭 대비 비율). 본편은 1(화면 끝까지)인데 로그라이크 섬은 한 화면에 꽉 차서, 그대로 두면 II·V의 사거리 증가가 " +
+        "섬 밖 바다로 날아가 오히려 손해다. 그래서 기본을 줄여 V(+50%)에서 본편 사거리(1.0)에 닿게 한다.")]
+    public float boomerangRangeRatio = 0.67f;
+    [Tooltip("드론 레이저 피해.")]
+    public float droneLaserDamage = 7f;
+    [Tooltip("드론 레이저 발사 주기(초).")]
+    public float droneLaserInterval = 1f;
+
+    [Header("레벨 효과 반복 간격 (부록 A-4)")]
+    [Tooltip("회전베기 IV 연속 2회전의 두 번째 회전까지 간격(초).")]
+    public float spinExtraRotationDelay = 0.15f;
+    [Tooltip("충격파 V 2중 발생의 두 번째 충격파까지 간격(초).")]
+    public float shockwaveExtraDelay = 0.12f;
+    [Tooltip("스텔라 V 별 폭발 2회 연속의 두 번째 폭발까지 간격(초).")]
+    public float stellaBlastRepeatDelay = 0.2f;
+    [Tooltip("루비 다다익선 도끼 연속 2회 타격의 두 번째 타격까지 간격(초).")]
+    public float axeExtraStrikeDelay = 0.1f;
+
     [Header("오프로드")]
     [Tooltip("소환 주기(초). 공격속도%로 빨라진다.")]
     public float offroadInterval = 6f;
-    [Tooltip("돌진 속도(월드/초).")]
-    public float offroadSpeed = 14f;
-    [Tooltip("돌진 판정 폭(반경).")]
+    [Tooltip("돌진 최고 속도(월드/초).")]
+    public float offroadSpeed = 16f;
+    [Tooltip("돌진 판정 폭(반경). 범위%로 넓어진다(오프로드 IV).")]
     public float offroadHitRadius = 0.9f;
-    public float offroadDamage = 60f;
-    [Tooltip("소환 전 플래시 시간(초). 이 동안은 피해가 없다.")]
-    public float offroadWarmup = 0.4f;
+    public float offroadDamage = 30f;
+    [Tooltip("소환 전 예열 시간(초). 시동 떨림·플래시가 나오고, 이 동안은 피해가 없다.")]
+    public float offroadWarmup = 0.45f;
+    [Tooltip("출발 순간 속도(월드/초). 여기서 최고 속도까지 가속한다.")]
+    public float offroadLaunchSpeed = 3f;
+    [Tooltip("가속도(월드/초²). 클수록 확 튀어 나간다.")]
+    public float offroadAcceleration = 70f;
+    [Tooltip("여러 대가 나갈 때 한 대씩 출발이 늦어지는 간격(초). 연타감을 준다.")]
+    public float offroadVolleyStagger = 0.15f;
+    [Tooltip("차선을 고르는 폭(섬 반폭 대비 0~1). 1이면 섬 가장자리 차선까지 쓴다.")]
+    [Range(0f, 1f)] public float offroadLaneSpread = 0.75f;
+    [Tooltip("소환 지점과 멈추는 지점을 섬 가장자리에서 안쪽으로 들여오는 거리(월드). 섬 테두리는 계단 모양이라 경계선 그대로면 차가 물 위에 반쯤 걸친다.")]
+    public float offroadEdgeInset = 0.8f;
+    [Tooltip("섬 끝에 닿기 이 시간(초) 전부터 달리는 채로 플래시가 깜빡이다 끝에서 사라진다(감속 없음). 소환 때 예열 깜빡임을 거꾸로 돌린 연출이다.")]
+    public float offroadExitSeconds = 0.2f;
+
+    [Header("오프로드 손맛")]
+    [Tooltip("나무를 들이받은 순간 차가 멈칫하는 시간(초).")]
+    public float offroadHitStop = 0.035f;
+    [Tooltip("같은 순간에 나무를 더 들이받을 때마다 늘어나는 멈칫 시간(초).")]
+    public float offroadHitStopPerExtraTree = 0.01f;
+    [Tooltip("한 번에 멈칫하는 시간의 상한(초).")]
+    public float offroadHitStopMax = 0.08f;
+    [Tooltip("들이받을 때 잃는 속도 비율(0~1). 다시 가속하며 '쿵쿵' 박는 느낌을 만든다.")]
+    [Range(0f, 1f)] public float offroadHitSpeedLoss = 0.25f;
+    [Tooltip("출발 순간 카메라 흔들림(세기, 시간).")]
+    public Vector2 offroadLaunchShake = new Vector2(0.8f, 0.1f);
+    [Tooltip("들이받을 때 카메라 흔들림(세기, 시간).")]
+    public Vector2 offroadHitShake = new Vector2(0.5f, 0.06f);
+    [Tooltip("들이받기 카메라 흔들림의 최소 간격(초). 여러 대가 연달아 박아도 화면이 계속 떨리지 않게 한다.")]
+    public float offroadHitShakeInterval = 0.08f;
+    [Tooltip("엔진음 볼륨. 한 번에 나가는 차량 중 첫 차만 엔진음을 낸다.")]
+    [Range(0f, 1f)] public float offroadEngineVolume = 0.6f;
 
     [Header("스텔라")]
     [Tooltip("나무를 벨 때 별이 생길 확률(%). 카드 ChancePercent가 더해진다. 처음에는 낮게.")]
@@ -30,13 +91,15 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float stellaStarLifetime = 12f;
     [Tooltip("별을 쳤을 때의 단발 공격 반경.")]
     public float stellaBlastRadius = 2.2f;
-    public float stellaBlastDamage = 80f;
-    [Tooltip("별 표식(받는 피해 증가) 지속 시간(초). 지속%로 늘어난다.")]
+    public float stellaBlastDamage = 100f;
+    [Tooltip("별 표식 유지 시간(초). 지속%로 늘어나고, 카드 효과 StarMarkDurationAdd(레벨 IV +3초)가 더해진다.")]
     public float stellaMarkDuration = 6f;
+    [Tooltip("별 표식이 남은 나무가 받는 피해 증가율(0.3 = +30%). 도끼·다른 액티브·지속 피해 모두에 적용된다(기획서 6-1).")]
+    public float stellaMarkDamageTakenBonus = 0.3f;
 
     [Header("포자폭탄")]
     [Tooltip("투하 주기(초). 공격속도%로 빨라진다.")]
-    public float sporeInterval = 4f;
+    public float sporeInterval = 5f;
     [Tooltip("투하 대상 탐색 반경(캐릭터 기준).")]
     public float sporeTargetRange = 7f;
     public float sporeRadius = 1.6f;
@@ -44,7 +107,7 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float sporeDuration = 4f;
     public float sporeTickInterval = 0.5f;
     [Tooltip("틱당 피해. 도트%로 늘어난다.")]
-    public float sporeTickDamage = 12f;
+    public float sporeTickDamage = 4f;
 
     [Header("조합: 회전베기 + 충격파 (360도 충격파)")]
     [Tooltip("이 휘두름 수마다 360도 충격파. 회전베기 발동 간격 카드 효과가 함께 적용된다.")]

@@ -158,6 +158,14 @@ public class RoguelikeDebugWindow : EditorWindow
         staminaDamage = EditorGUILayout.FloatField(staminaDamage, GUILayout.Width(60));
         if (GUILayout.Button("스태미너 피해")) _system.DebugDamageStamina(staminaDamage);
         EditorGUILayout.EndHorizontal();
+
+        // 오프로드 즉시 발동. 카드가 없어도 되며, 대수를 고르거나 지금 빌드의 대수로 낸다(게임 화면에서는 F7).
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("오프로드 발동 (지금 빌드, F7)")) _system.DebugFireOffroad(0);
+        if (GUILayout.Button("1대", GUILayout.Width(40))) _system.DebugFireOffroad(1);
+        if (GUILayout.Button("2대", GUILayout.Width(40))) _system.DebugFireOffroad(2);
+        if (GUILayout.Button("3대", GUILayout.Width(40))) _system.DebugFireOffroad(3);
+        EditorGUILayout.EndHorizontal();
     }
 
     private static void DrawResult(RoguelikeSystem _system)

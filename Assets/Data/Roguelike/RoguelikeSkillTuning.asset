@@ -12,23 +12,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1034728d166b88a42933e2be86badff7, type: 3}
   m_Name: RoguelikeSkillTuning
   m_EditorClassIdentifier: Assembly-CSharp::RoguelikeSkillTuningSO
+  axeDamage: 10
+  axeAttackCoolTime: 0.6
+  shockwaveDamage: 8
+  boomerangTickDamage: 4
+  boomerangTickInterval: 0.3
+  boomerangCooldown: 0
+  boomerangRangeRatio: 0.67
+  droneLaserDamage: 7
+  droneLaserInterval: 1
+  spinExtraRotationDelay: 0.15
+  shockwaveExtraDelay: 0.12
+  stellaBlastRepeatDelay: 0.2
+  axeExtraStrikeDelay: 0.1
   offroadInterval: 6
-  offroadSpeed: 14
+  offroadSpeed: 16
   offroadHitRadius: 0.9
-  offroadDamage: 60
-  offroadWarmup: 0.4
+  offroadDamage: 30
+  offroadWarmup: 0.45
+  offroadLaunchSpeed: 3
+  offroadAcceleration: 70
+  offroadVolleyStagger: 0.15
+  offroadLaneSpread: 0.75
+  offroadEdgeInset: 0.8
+  offroadExitSeconds: 0.2
+  offroadHitStop: 0.035
+  offroadHitStopPerExtraTree: 0.01
+  offroadHitStopMax: 0.08
+  offroadHitSpeedLoss: 0.25
+  offroadLaunchShake: {x: 0.8, y: 0.1}
+  offroadHitShake: {x: 0.5, y: 0.06}
+  offroadHitShakeInterval: 0.08
+  offroadEngineVolume: 0.6
   stellaBaseChance: 5
   stellaBaseMaxStars: 3
   stellaStarLifetime: 12
   stellaBlastRadius: 2.2
-  stellaBlastDamage: 80
+  stellaBlastDamage: 100
   stellaMarkDuration: 6
-  sporeInterval: 4
+  stellaMarkDamageTakenBonus: 0.3
+  sporeInterval: 5
   sporeTargetRange: 7
   sporeRadius: 1.6
   sporeDuration: 4
   sporeTickInterval: 0.5
-  sporeTickDamage: 12
+  sporeTickDamage: 4
   spinShockwaveSwingInterval: 3
   boomerangShockwaveCooldown: 0
   boomerangShockwaveMergeRadius: 0.6

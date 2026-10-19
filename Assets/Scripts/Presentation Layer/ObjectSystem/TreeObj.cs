@@ -188,6 +188,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // 반환 직후 같은 호출 안에서 다시 꺼내져 재스폰)가 있었는지 가리는 데 쓴다(TakeDamageInternal 참조).
     private int resetTreeCount = 0;
 
+    /// <summary>풀에서 다시 쓰일 때마다 오르는 번호. 같은 객체가 다른 나무로 재사용됐는지 가릴 때 쓴다(지연 타격 등).</summary>
+    public int ReuseCount => resetTreeCount;
+
     // 과열 버프 중 도끼 평타에 맞았을 때의 지속 피해. 이 나무 자신이 코루틴을 들고 있어야,
     // 나무가 죽어 풀에서 재사용되어도(ResetTree) 엉뚱한 새 나무에 데미지가 잘못 들어가지 않는다.
     private Coroutine overheatDotCoroutine;

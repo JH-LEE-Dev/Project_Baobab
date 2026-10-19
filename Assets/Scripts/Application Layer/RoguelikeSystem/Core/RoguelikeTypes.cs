@@ -95,8 +95,8 @@ public enum ERunEffect
     ChainCountAdd = 9,
     /// <summary>재사용 대기 감소(%).</summary>
     CooldownReductionPercent = 10,
-    /// <summary>다중 타격. 0보다 크면 켜진다.</summary>
-    MultiHit = 11,
+    // 11은 폐지된 다중 타격(MultiHit) 자리다. 도끼는 항상 단일 타격이고(기획서 3-1) 다중 타격 카드도 없다.
+    // 옛 에셋에 남은 11이 다른 효과로 읽히지 않도록 이 번호는 다시 쓰지 않는다.
     /// <summary>이동 속도(%).</summary>
     MoveSpeedPercent = 12,
     /// <summary>웨이브 클리어마다 스태미너 회복(절대값).</summary>
@@ -121,6 +121,28 @@ public enum ERunEffect
     RerollFree = 22,
     /// <summary>나무 생성 주기(%). 루비 디메리트용. 양수면 더 자주 생긴다.</summary>
     TreeSpawnRatePercent = 23,
+    /// <summary>스텔라 별 표식 유지 시간(초 가산). 레벨 IV는 6초 → 9초.</summary>
+    StarMarkDurationAdd = 24,
+    /// <summary>회전베기 한 번에 도는 횟수(개수 가산). 회전베기 IV는 +1(연속 2회전).</summary>
+    SpinRotationAdd = 25,
+    /// <summary>충격파 한 번에 나가는 수(개수 가산). 충격파 V는 +1(2중 발생).</summary>
+    ShockwaveRepeatAdd = 26,
+    /// <summary>다른 액티브 스킬도 별을 칠 수 있다. 0보다 크면 켜진다(스텔라 III).</summary>
+    StarHitByActives = 27,
+    /// <summary>별을 칠 때 폭발 횟수(개수 가산). 스텔라 V는 +1(2회 연속).</summary>
+    StarBlastRepeatAdd = 28,
+    /// <summary>포자 연막이 겹칠 때 지속 피해가 중첩되는 최대 수(개수 가산, 기본 1). 포자폭탄 V는 +2(최대 3).</summary>
+    SporeStackAdd = 29,
+    /// <summary>필드의 나무 수가 임계치 이상인 동안만 붙는 피해량(%). 공격력 증가 MAX(+20%).</summary>
+    DamagePercentAboveThreshold = 30,
+    /// <summary>지속형 스킬(포자 연막·별 표식 지속 피해)로 나무를 처치하면 그 유지 시간을 늘린다(초 가산). 유지 시간 증가 MAX(+0.3초).</summary>
+    DurationExtendOnDotKill = 31,
+    /// <summary>캐릭터가 이동하는 동안만 붙는 공격 속도(%). 이동속도 증가 MAX(+10%).</summary>
+    AttackSpeedPercentWhileMoving = 32,
+    /// <summary>웨이브를 클리어할 때마다 받는 고정 골드(절대값). 골드 획득 증가 MAX(+25).</summary>
+    GoldPerWaveClear = 33,
+    /// <summary>도끼 공격이 연속으로 더 타격하는 횟수(개수 가산). 루비 다다익선(+1, 연속 2회 타격).</summary>
+    AxeExtraStrikeAdd = 34,
 
     // 새 효과는 이 위가 아니라 여기(맨 뒤)에 추가한다.
     Count,

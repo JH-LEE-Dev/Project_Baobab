@@ -17,7 +17,7 @@ MonoBehaviour:
   descriptionKey: Roguelike_Card_passive_dot_Desc
   icon: {fileID: 0}
   kind: 1
-  grade: 0
+  grade: 1
   skillTag: 0
   exclusiveGroup: 0
   maxLevel: 5
@@ -25,19 +25,19 @@ MonoBehaviour:
   - effects:
     - effect: 5
       skill: 0
-      value: 15
+      value: 6
   - effects:
     - effect: 5
       skill: 0
-      value: 15
+      value: 8
   - effects:
     - effect: 5
       skill: 0
-      value: 15
+      value: 9
   - effects:
     - effect: 5
       skill: 0
-      value: 15
+      value: 12
   - effects:
     - effect: 5
       skill: 0

@@ -13,12 +13,33 @@ public partial class RoguelikeSystem
     // 본편 디버그 키(F1 시네마틱, F4 수동 저장, F9 벤치마크, ` 사운드)와 겹치지 않는 키를 쓴다.
     private const UnityEngine.InputSystem.Key DebugTierTransitionKey = UnityEngine.InputSystem.Key.F6;
 
+    // // 오프로드 즉시 발동(F7)
+
+    // 웨이브 전투 중에 이 키를 누르면 오프로드를 지금 빌드의 대수로 바로 한 번 내보낸다(카드가 없어도 된다).
+    private const UnityEngine.InputSystem.Key DebugOffroadKey = UnityEngine.InputSystem.Key.F7;
+
     partial void DebugTick()
     {
         UnityEngine.InputSystem.Keyboard keyboard = UnityEngine.InputSystem.Keyboard.current;
-        if (null == keyboard || false == keyboard[DebugTierTransitionKey].wasPressedThisFrame) return;
+        if (null == keyboard) return;
 
-        DebugPlayTierTransition();
+        if (keyboard[DebugTierTransitionKey].wasPressedThisFrame) DebugPlayTierTransition();
+        if (keyboard[DebugOffroadKey].wasPressedThisFrame) DebugFireOffroad(0);
+    }
+
+    /// <summary>
+    /// 오프로드를 지금 바로 한 번 내보낸다. _count가 0 이하면 지금 빌드의 대수(I~II 1대, III~IV 2대, V 3대)를 쓴다.
+    /// 오프로드 카드를 갖고 있지 않아도 되며, 피해·돌진 폭은 지금 빌드 값을 쓴다. 웨이브 전투 중에만 된다.
+    /// </summary>
+    public bool DebugFireOffroad(int _count)
+    {
+        if (ERunPhase.WaveCombat != phase || null == skillController || false == skillController.DebugFireOffroad(_count))
+        {
+            Debug.LogWarning($"[RoguelikeSystem] 오프로드 디버그 발동은 웨이브 전투 중에만 됩니다. (현재 {phase})");
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>

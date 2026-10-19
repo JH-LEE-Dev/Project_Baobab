@@ -13,25 +13,31 @@ public struct WaveSpec
     public bool bTierChanged;
     public int killTarget;
     public float spawnInterval;
-    public float treeHpMultiplier;
+    /// <summary>나무의 절대 HP(부록 A-2). 언리밋은 마지막 웨이브 HP에 웨이브마다 증가율을 누적한다.</summary>
+    public float treeHp;
+    /// <summary>티어 안 나무 종류 순번(0 = 초기, 1 = 중간, 2 = 후반).</summary>
+    public int treeKind;
+    /// <summary>티어 안에서 종류가 바뀌는 웨이브면 직전 종류 순번, 아니면 -1. 이 종류가 previousTreeKindShare만큼 섞인다.</summary>
+    public int previousTreeKind;
+    public float previousTreeKindShare;
     public float staminaDamage;
-    /// <summary>나무 1그루당 골드. 언리밋은 골드를 쓸 곳이 없어 0(기획서 3-5).</summary>
-    public int goldPerTree;
+    /// <summary>나무 1그루당 골드(소수 가능). 언리밋은 골드를 쓸 곳이 없어 0(기획서 7-2).</summary>
+    public float goldPerTree;
 }
 
-/// <summary>밸런스 데이터에서 웨이브별 수치를 계산한다. 기획서 3-1, 3-4, 3-5.</summary>
+/// <summary>밸런스 데이터에서 웨이브별 수치를 계산한다. 기획서 3-1, 7-1, 7-2, 부록 A-2.</summary>
 public static class WaveSchedule
 {
     public static WaveSpec Get(RoguelikeBalanceSO _balance, int _waveNumber)
     {
-        WaveSpec spec = new WaveSpec { waveNumber = Mathf.Max(1, _waveNumber) };
+        WaveSpec spec = new WaveSpec { waveNumber = Mathf.Max(1, _waveNumber), previousTreeKind = -1 };
         if (null == _balance) return spec;
 
         int clearWave = Mathf.Max(1, _balance.clearWave);
         spec.bUnlimit = spec.waveNumber > clearWave;
         spec.unlimitIndex = spec.bUnlimit ? spec.waveNumber - clearWave : 0;
 
-        // 언리밋은 마지막 웨이브의 처치 수·스폰 주기와 마지막 티어의 피해량을 그대로 쓰고, 나무 HP만 오른다.
+        // 언리밋은 마지막 웨이브의 처치 수·스폰 주기·나무 종류와 마지막 티어의 피해량을 그대로 쓰고, 나무 HP만 오른다.
         int rowWave = spec.bUnlimit ? clearWave : spec.waveNumber;
         RoguelikeBalanceSO.WaveRow row = _balance.GetWaveRow(rowWave);
 
@@ -40,13 +46,25 @@ public static class WaveSchedule
 
         spec.killTarget = Mathf.Max(1, row.killTarget);
         spec.spawnInterval = Mathf.Max(0.01f, row.spawnInterval);
+        spec.treeHp = Mathf.Max(1f, row.treeHp);
+        spec.treeKind = Mathf.Clamp(row.treeKind, 0, RoguelikeBalanceSO.TreeKindsPerTier - 1);
         spec.staminaDamage = tier.staminaDamage;
-        spec.treeHpMultiplier = Mathf.Max(0.01f, tier.treeHpMultiplier);
-        spec.goldPerTree = spec.bUnlimit ? 0 : Mathf.Max(0, tier.goldPerTree);
+        spec.goldPerTree = spec.bUnlimit ? 0f : Mathf.Max(0f, tier.goldPerTree);
 
         if (spec.bUnlimit)
         {
-            spec.treeHpMultiplier *= 1f + Mathf.Max(0f, _balance.unlimitHpGrowthPerWave) * spec.unlimitIndex;
+            spec.treeHp *= 1f + Mathf.Max(0f, _balance.unlimitHpGrowthPerWave) * spec.unlimitIndex;
+        }
+        else if (spec.waveNumber > 1 && _balance.GetTierIndex(spec.waveNumber - 1) == spec.tierIndex)
+        {
+            // 티어 안에서 나무 종류가 바뀌는 웨이브는 이전 종류가 일부 남는다(기획서 7-1). 티어가 바뀌는 웨이브는
+            // 지형째 바뀌므로 다른 숲의 나무를 섞지 않는다.
+            int prevKind = Mathf.Clamp(_balance.GetWaveRow(spec.waveNumber - 1).treeKind, 0, RoguelikeBalanceSO.TreeKindsPerTier - 1);
+            if (prevKind != spec.treeKind)
+            {
+                spec.previousTreeKind = prevKind;
+                spec.previousTreeKindShare = Mathf.Clamp01(_balance.previousTreeKindShare);
+            }
         }
 
         if (spec.waveNumber > 1 && false == spec.bUnlimit)

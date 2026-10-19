@@ -12,8 +12,10 @@ using UnityEngine;
 /// GameInstaller가 로그라이크 세션일 때만 만든다(본편 세션에서는 존재하지 않는다).
 /// 본편 시스템(캐릭터·나무 매니저·타일맵·HUD)은 그대로 재사용하되, 던전 원정 흐름(InDungeonSystem)은 타지 않는다.
 ///
-/// [연출] 시스템이 기다려야 하는 연출은 RoguelikeProductionGate(IRoguelikeProductionHandler)로, 기다릴 필요 없는 연출은
-/// RoguelikeSystemSignals의 상태 알림 시그널로 이펙트 담당이 입힌다. 연출이 하나도 없어도 루프는 끝까지 돈다.
+/// [역할] 이펙트(파티클·셰이더·잔상 등 그림 효과)와 UI만 각 담당이 입히고, 그 밖의 시스템·움직임·손맛(가감속·반동·카메라 흔들림·진동)·
+/// 효과음은 이 시스템 쪽 코드가 맡는다.
+/// [이펙트] 시스템이 기다려야 하는 연출은 RoguelikeProductionGate(IRoguelikeProductionHandler)로, 기다릴 필요 없는 연출은
+/// RoguelikeSystemSignals의 상태 알림 시그널로 이펙트 담당이 입힌다. 이펙트가 하나도 없어도 루프는 끝까지 돈다.
 /// [UI] RoguelikeUICoordinator가 로그라이크 UIView와 연결한다.
 ///
 /// 흐름 코루틴은 RoguelikeSystem.Flow.cs에 있다.
@@ -31,6 +33,14 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         public MapType mapType;
         [Tooltip("나무 종류 분포(DensityData)를 고르는 숲. 같은 MapType의 하위 숲이어야 한다.")]
         public ForestType forestType;
+        [Tooltip("티어 안 초기 · 중간 · 후반 구간의 나무 종류(기획서 7-1 비주얼 진화). 밸런스 웨이브 표의 treeKind가 이 순번을 가리킨다. 비우면 숲의 분포를 그대로 쓴다.")]
+        public List<TreeType> treeTypes;
+
+        public TreeType GetTreeType(int _kind)
+        {
+            if (null == treeTypes || _kind < 0 || _kind >= treeTypes.Count) return TreeType.None;
+            return treeTypes[_kind];
+        }
     }
 
     [Header("데이터")]
@@ -109,6 +119,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     [SerializeField] private float maxProductionWaitSeconds = 15f;
     [Tooltip("카드 UI가 구매 연출 완료를 알리지 않을 때 강제로 진행하기까지의 시간.")]
     [SerializeField] private float maxCardPresentationWaitSeconds = 10f;
+    [Tooltip("노출 가능한 카드가 0장일 때 안내 연출이 완료를 알리지 않으면 이 시간(초) 뒤 웨이브를 시작한다.")]
+    [SerializeField] private float noCardsNoticeFallbackSeconds = 1.5f;
     [Tooltip("캐릭터가 쓰러진 뒤 결과 화면까지 기다리는 상한(본편은 1.5초 뒤 알림이 온다).")]
     [SerializeField] private float maxCharacterDownWaitSeconds = 5f;
     [Tooltip("메인메뉴 이탈 상승 연출(본편과 같은 카메라 상승)이 완료를 알리지 않을 때 강제로 메인메뉴로 넘기기까지의 시간.")]
@@ -224,6 +236,10 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     public int RerollCost => shop.RerollCost;
     public bool CanReroll => shop.CanReroll;
     public bool CanSkip => shop.CanSkip;
+    public bool IsAppraiserPresent => shop.IsAppraiserPresent;
+    public bool CanAppraise => shop.CanAppraise;
+    public bool IsAppraisable(CardDefinitionSO _card) => shop.IsAppraisable(_card);
+    public int GetAppraisalFee(CardDefinitionSO _card) => shop.GetAppraisalFee(_card);
     public IReadOnlyList<int> LastDiscardedOfferIndices => discardedOfferIndices;
     public RunBuildState Build => build;
     public CardDatabaseSO CardDatabase => cardDatabase;
@@ -268,6 +284,27 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
         shop.Initialize(cardDatabase, balance, build, wallet, modifiers);
         effectApplier.Initialize(bAttackSpeedAffectsAxe, baseWhirlwindSwingInterval);
+
+        // 런 시작 때 끼울 전투 기준값(부록 A-1: 도끼 10, 충격파 8, 부메랑 틱 4, 드론 레이저 7). 본편 캐릭터 프리팹은 그대로 둔다.
+        RoguelikeSkillTuningSO tuning = null != skillController ? skillController.Tuning : null;
+        if (null != tuning)
+        {
+            effectApplier.SetRunBaseCombatStats(new StatComponent.CombatBaseStats
+            {
+                axeDamage = tuning.axeDamage,
+                axeAttackCoolTime = tuning.axeAttackCoolTime,
+                shockWaveDamage = tuning.shockwaveDamage,
+                boomerangDamage = tuning.boomerangTickDamage,
+                boomerangDamageInterval = tuning.boomerangTickInterval,
+                boomerangCooldown = tuning.boomerangCooldown,
+                boomerangMajorAxisRatio = tuning.boomerangRangeRatio,
+                droneDamage = tuning.droneLaserDamage,
+                droneDamageInterval = tuning.droneLaserInterval,
+            });
+            effectApplier.SetRepeatDelays(tuning.spinExtraRotationDelay, tuning.shockwaveExtraDelay, tuning.axeExtraStrikeDelay);
+        }
+
+        effectApplier.SetMoveSpeedCap(balance.maxMoveSpeedPercent);
         productionGate.Initialize(GetFallbackSeconds, maxProductionWaitSeconds);
         tileWave.Initialize(environmentSystem, tileWaveSettings);
 
@@ -376,6 +413,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         signalHub.Subscribe<RoguelikeCardBuyRequestedSignal>(CardBuyRequested);
         signalHub.Subscribe<RoguelikeCardSkipRequestedSignal>(CardSkipRequested);
         signalHub.Subscribe<RoguelikeCardRerollRequestedSignal>(CardRerollRequested);
+        signalHub.Subscribe<RoguelikeCardAppraiseRequestedSignal>(CardAppraiseRequested);
         signalHub.Subscribe<RoguelikeCardSelectionPresentationDoneSignal>(CardSelectionPresentationDone);
         signalHub.Subscribe<RoguelikeResultConfirmedSignal>(ResultConfirmed);
         signalHub.Subscribe<RoguelikeLobbyActionSignal>(LobbyActionRequested);
@@ -392,6 +430,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         signalHub.UnSubscribe<RoguelikeCardBuyRequestedSignal>(CardBuyRequested);
         signalHub.UnSubscribe<RoguelikeCardSkipRequestedSignal>(CardSkipRequested);
         signalHub.UnSubscribe<RoguelikeCardRerollRequestedSignal>(CardRerollRequested);
+        signalHub.UnSubscribe<RoguelikeCardAppraiseRequestedSignal>(CardAppraiseRequested);
         signalHub.UnSubscribe<RoguelikeCardSelectionPresentationDoneSignal>(CardSelectionPresentationDone);
         signalHub.UnSubscribe<RoguelikeResultConfirmedSignal>(ResultConfirmed);
         signalHub.UnSubscribe<RoguelikeLobbyActionSignal>(LobbyActionRequested);
@@ -485,6 +524,31 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         signalHub.Publish(new RoguelikeOffersChangedSignal());
     }
 
+    /// <summary>감정(기획서 4-4). 선택 기회를 쓰지 않으므로 선택은 열린 채로 남는다. 승격이면 효과를 바로 적용한다.</summary>
+    private void CardAppraiseRequested(RoguelikeCardAppraiseRequestedSignal _signal)
+    {
+        if (ERunPhase.CardSelect != phase) return;
+
+        ECardAppraisalResult result = shop.TryAppraise(_signal.card, out CardAppraisalResult appraisal);
+        if (ECardAppraisalResult.Success != result)
+        {
+            signalHub.Publish(new RoguelikeCardAppraisalRejectedSignal(result, _signal.card));
+            return;
+        }
+
+        if (appraisal.bPromoted)
+        {
+            effectApplier.Apply(modifiers);
+            signalHub.Publish(new RoguelikeModifiersChangedSignal());
+        }
+
+        signalHub.Publish(new RoguelikeCardAppraisedSignal(appraisal));
+
+        // 승격된 카드가 제시 중이었으면 그 칸의 레벨·가격이 바뀌었거나(MAX면) 다른 카드로 바뀌었다. 그때만 UI가 제시 목록을 다시 그린다
+        // (바뀐 것 없이 다시 그리면 리롤처럼 카드 등장 연출이 다시 나온다).
+        if (appraisal.bOffersChanged) signalHub.Publish(new RoguelikeOffersChangedSignal());
+    }
+
     // // 처치
 
     private void OnTreeKilled(TreeObj _tree, Vector3 _position)
@@ -493,11 +557,20 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
         treesFelled++;
 
-        if (currentWave.goldPerTree > 0 && null != coinController)
+        if (currentWave.goldPerTree > 0f && null != coinController)
         {
+            // 나무당 골드(1.75 등)와 골드 획득 증가분의 소수는 웨이브 안에서 모아 두고, 목표를 채우는 처치에서
+            // 합산 나머지를 반올림해 마지막 코인에 얹는다(부록 A-1 "소수는 웨이브 종료 시 합산해 반올림").
             goldRemainder += currentWave.goldPerTree * Mathf.Max(0f, 1f + modifiers.Get(ERunEffect.GoldGainPercent) / 100f);
             long gold = (long)goldRemainder;
             goldRemainder -= gold;
+
+            if (waveKills + 1 >= currentWave.killTarget)
+            {
+                if (goldRemainder >= 0.5f) gold++;
+                goldRemainder = 0f;
+            }
+
             coinController.Spawn(_position, gold);
         }
 

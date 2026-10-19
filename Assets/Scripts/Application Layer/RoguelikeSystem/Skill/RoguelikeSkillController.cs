@@ -8,7 +8,8 @@ using UnityEngine;
 ///   여기서 구현하는 신규 스킬: 오프로드, 스텔라, 포자폭탄
 ///   여기서 구현하는 조합: 회전베기+충격파(360도 충격파), 부메랑+충격파, 회전베기+부메랑, 스텔라+포자폭탄, 스텔라+드론
 ///
-/// 판정과 피해만 맡는다. 외형은 이펙트 담당이 RoguelikeSkillVfxSignal(및 별 프리팹)로 입힌다.
+/// 판정·피해와 움직임·손맛(오프로드 예열·가속·충돌 반동, 카메라 흔들림, 진동, 효과음)은 여기서 맡는다.
+/// 먼지·잔상 같은 이펙트는 이펙트 담당이 RoguelikeSkillVfxSignal(및 별 프리팹)로 입힌다.
 /// 웨이브 전투 중에만 돈다(BeginCombat ~ EndCombat). 웨이브가 끝나면 별·연막·표식을 모두 치운다.
 ///
 /// 카드 수치 적용 규칙(기획서 3-3 공통 패시브):
@@ -29,27 +30,46 @@ public class RoguelikeSkillController : MonoBehaviour
 
     private struct SporeZone
     {
+        public int id;
         public Vector3 position;
         public float radius;
         public float endTime;
-        public float nextTickTime;
         public float tickDamage;
     }
 
-    private struct OffroadDash
+    /// <summary>돌진 중인 오프로드 한 대. 차마다 맞힌 나무를 따로 세어, 여러 대가 같은 나무를 각각 칠 수 있다.</summary>
+    private sealed class OffroadCar
     {
+        public RoguelikeOffroadVisual visual;
         public Vector3 from;
-        public Vector3 to;
-        public float startTime;
+        public Vector3 islandExit;
+        public Vector2 direction;
+        public float length;
+        public float traveled;
+        public float speed;
         public float dashStartTime;
-        public float dashDuration;
+        public bool bDashStarted;
+        public float hitStopUntil;
+        public bool bExiting;
+        public float exitEndTime;
         public Vector3 lastPosition;
         public float damage;
         public float radius;
-        public bool bDashStarted;
+        public bool bEngine;
+        public AudioHandle engine = AudioHandle.Invalid;
+        // 맞힌 나무 → 맞힌 순간의 재사용 번호. 쓰러져 다른 칸의 새 나무로 다시 쓰인 객체는 번호가 달라 다시 칠 수 있다.
+        public readonly Dictionary<TreeObj, int> hitTrees = new Dictionary<TreeObj, int>();
+
+        public Vector3 Position => from + (Vector3)(direction * traveled);
     }
 
     [SerializeField] private RoguelikeSkillTuningSO tuning;
+
+    public RoguelikeSkillTuningSO Tuning => tuning;
+
+    private InDungeonObjectManager objectManager;
+    private bool bMarkDamageBonusApplied;
+    private float appliedMarkDamageBonus;
     [SerializeField] private RoguelikeStar starPrefab;
     [Tooltip("오프로드 외형(선택). 비어 있으면 판정만 움직인다.")]
     [SerializeField] private GameObject offroadVisualPrefab;
@@ -83,9 +103,10 @@ public class RoguelikeSkillController : MonoBehaviour
 
     private readonly List<MarkedTree> markedTrees = new List<MarkedTree>(128);
     private readonly List<SporeZone> sporeZones = new List<SporeZone>(8);
-    private readonly List<OffroadDash> offroadDashes = new List<OffroadDash>(4);
-    private readonly List<GameObject> offroadVisuals = new List<GameObject>(4);
-    private readonly HashSet<TreeObj> offroadHitTrees = new HashSet<TreeObj>();
+    private readonly List<OffroadCar> offroadCars = new List<OffroadCar>(4);
+    private readonly Stack<OffroadCar> offroadCarPool = new Stack<OffroadCar>(4);
+    private readonly Stack<RoguelikeOffroadVisual> offroadVisualPool = new Stack<RoguelikeOffroadVisual>(4);
+    private float nextOffroadHitShakeTime;
 
     private readonly List<Vector3> pendingBoomerangHits = new List<Vector3>(16);
     private readonly List<Vector3> pendingSporeExplosions = new List<Vector3>(16);
@@ -111,6 +132,26 @@ public class RoguelikeSkillController : MonoBehaviour
     private System.Action<Vector3> axeSwungHandler;
     private System.Action<Vector3> boomerangHitHandler;
     private System.Action<RoguelikeStar> starHitHandler;
+    private System.Action<IReadOnlyList<Vector3>> droneLaserHandler;
+
+    // 스텔라 V "별을 칠 때 폭발이 2회 연속": 첫 폭발 뒤 이어질 폭발(위치, 시각, 별 번호).
+    private struct RepeatBlast
+    {
+        public Vector3 position;
+        public float time;
+        public int starId;
+    }
+
+    private readonly List<RepeatBlast> pendingRepeatBlasts = new List<RepeatBlast>(8);
+
+    // 포자 연막 틱. 연막끼리 겹친 나무가 받는 지속 피해 중첩 수를 세기 위해 모든 연막이 같은 틱에 판정한다(포자폭탄 V).
+    private float nextSporeTickTime;
+    private int nextSporeZoneId = 1;
+    private readonly Dictionary<TreeObj, int> sporeOverlapCounts = new Dictionary<TreeObj, int>(64);
+    private readonly Dictionary<TreeObj, float> sporeTickDamages = new Dictionary<TreeObj, float>(64);
+    // 나무마다 그 나무를 덮은 연막 번호의 비트 묶음(유지 시간 증가 MAX가 처치한 연막만 늘리기 위해).
+    private readonly Dictionary<TreeObj, int> sporeZoneMasks = new Dictionary<TreeObj, int>(64);
+    private readonly List<TreeObj> sporeTargets = new List<TreeObj>(64);
 
     /// <summary>스텔라+드론 이음선. 이펙트 담당이 선을 그릴 때 읽는다(StarLinksChanged 시그널 뒤).</summary>
     public IReadOnlyList<Vector2Int> StarLinks => starLinks;
@@ -129,13 +170,19 @@ public class RoguelikeSkillController : MonoBehaviour
         RunCombatHooks.AxeSwungEvent += axeSwungHandler;
         RunCombatHooks.BoomerangHitTreeEvent -= boomerangHitHandler;
         RunCombatHooks.BoomerangHitTreeEvent += boomerangHitHandler;
+
+        droneLaserHandler = OnDroneLaser;
+        RunCombatHooks.DroneLaserEvent -= droneLaserHandler;
+        RunCombatHooks.DroneLaserEvent += droneLaserHandler;
     }
 
     public void Release()
     {
         RunCombatHooks.AxeSwungEvent -= axeSwungHandler;
         RunCombatHooks.BoomerangHitTreeEvent -= boomerangHitHandler;
+        RunCombatHooks.DroneLaserEvent -= droneLaserHandler;
         EndCombat();
+        SetMarkDamageBonusApplied(false);
     }
 
     public void SetCharacter(Character _character)
@@ -148,6 +195,24 @@ public class RoguelikeSkillController : MonoBehaviour
     public void SetVfxSources(InDungeonObjectManager _objectManager)
     {
         vfxPlayer.Initialize(_objectManager, vfxAssets, this);
+
+        SetMarkDamageBonusApplied(false);
+        objectManager = _objectManager;
+        SetMarkDamageBonusApplied(true);
+    }
+
+    /// <summary>
+    /// 별 표식 나무의 받는 피해 +30%(기획서 6-1). 표식 나무가 받는 모든 피해(도끼·다른 액티브·지속 피해)는
+    /// TreeObj의 별표식 배율 한 곳을 지나므로, 그 배율(본편 "별표식 베기" 특성이 쓰는 누산 값, 기본 1)에 세션 동안만 더한다.
+    /// 로그라이크는 본편 능력 트리를 불러오지 않아 이 값은 세션 내내 1 + 보너스이고, Release에서 뺀다.
+    /// </summary>
+    private void SetMarkDamageBonusApplied(bool _bApply)
+    {
+        if (null == objectManager || null == tuning || bMarkDamageBonusApplied == _bApply) return;
+
+        appliedMarkDamageBonus = _bApply ? tuning.stellaMarkDamageTakenBonus : appliedMarkDamageBonus;
+        objectManager.IncreaseStarMarkDamage(_bApply ? appliedMarkDamageBonus : -appliedMarkDamageBonus);
+        bMarkDamageBonusApplied = _bApply;
     }
 
     /// <summary>섬(타원)의 중심과 반지름(월드). 오프로드가 섬 가장자리에서 반대편 가장자리로 돌진하는 데 쓴다.</summary>
@@ -166,6 +231,8 @@ public class RoguelikeSkillController : MonoBehaviour
         nextSporeTime = now + Interval(tuning.sporeInterval, ERoguelikeSkill.SporeBomb) * 0.5f;
         nextBeamTime = now + tuning.stellaDroneBeamInterval;
         nextLonePulseTime = now + tuning.stellaDroneLoneStarInterval;
+        nextSporeTickTime = now;
+        pendingRepeatBlasts.Clear();
         pendingAxeSwings = 0;
         pendingBoomerangHits.Clear();
         pendingSporeExplosions.Clear();
@@ -195,11 +262,10 @@ public class RoguelikeSkillController : MonoBehaviour
 
         markedTrees.Clear();
         sporeZones.Clear();
-        offroadDashes.Clear();
-        offroadHitTrees.Clear();
-        for (int i = 0; i < offroadVisuals.Count; i++) if (null != offroadVisuals[i]) offroadVisuals[i].SetActive(false);
+        for (int i = offroadCars.Count - 1; i >= 0; i--) ReleaseOffroadCar(i, true);
 
         pendingStarHits.Clear();
+        pendingRepeatBlasts.Clear();
         pendingBoomerangHits.Clear();
         pendingSporeExplosions.Clear();
         pendingAxeSwings = 0;
@@ -372,7 +438,21 @@ public class RoguelikeSkillController : MonoBehaviour
         float damage = stat.axeDamage * tuning.spinBoomerangDamageMultiplier;
 
         DamageTreesInRadius(center, radius, damage, false, false);
+        if (RunEffectApplier.IsStarHitByActives(modifiers)) HitStarsInRadius(center, radius);
         Publish(ERoguelikeSkillVfx.SpinBoomerangStrike, center, center, radius, 0f, 0);
+    }
+
+    /// <summary>스텔라 III: 반경 안의 별을 친다(회전베기+부메랑의 회전베기 등 여기서 판정하는 공격).</summary>
+    private void HitStarsInRadius(Vector3 _center, float _radius)
+    {
+        for (int i = 0; i < activeStars.Count; i++)
+        {
+            RoguelikeStar star = activeStars[i];
+            if (false == star.bCanBeHitBySkill) continue;
+
+            float reach = _radius + star.Radius;
+            if (((Vector2)_center - (star.Position + star.Offset)).sqrMagnitude <= reach * reach) OnStarHit(star);
+        }
     }
 
     // // 스텔라
@@ -418,6 +498,33 @@ public class RoguelikeSkillController : MonoBehaviour
         return star;
     }
 
+    /// <summary>
+    /// 스텔라 III: 드론 레이저(총구 → 주 대상 → 연쇄 대상)가 지나간 경로 위의 별도 맞은 것으로 친다.
+    /// 본편 드론 판정 도중에 불리므로 기록만 하고 터뜨리기는 Update(UpdateStars)에서 한다.
+    /// </summary>
+    private void OnDroneLaser(IReadOnlyList<Vector3> _points)
+    {
+        if (false == bActive || null == _points || _points.Count < 2 || 0 == activeStars.Count) return;
+        if (false == RunEffectApplier.IsStarHitByActives(modifiers)) return;
+
+        for (int s = 0; s < activeStars.Count; s++)
+        {
+            RoguelikeStar star = activeStars[s];
+            if (false == star.bCanBeHitBySkill) continue;
+
+            Vector2 starPos = star.Position + star.Offset;
+            float radiusSq = star.Radius * star.Radius;
+
+            for (int i = 1; i < _points.Count; i++)
+            {
+                if (DistancePointToSegmentSq(starPos, _points[i - 1], _points[i]) > radiusSq) continue;
+
+                OnStarHit(star);
+                break;
+            }
+        }
+    }
+
     private void OnStarHit(RoguelikeStar _star)
     {
         // 도끼 판정 루프 안에서 불린다. 바로 터뜨리지 않고 다음 Update에서 처리한다.
@@ -434,9 +541,33 @@ public class RoguelikeSkillController : MonoBehaviour
             RoguelikeStar star = activeStars[idx];
             StarBlast(star.transform.position, tuning.stellaBlastRadius, tuning.stellaBlastDamage);
             Publish(ERoguelikeSkillVfx.StarBlast, star.transform.position, star.transform.position, tuning.stellaBlastRadius * RangeMul(ERoguelikeSkill.Stella), 0f, star.StarId);
+
+            // 스텔라 V: 같은 자리에서 폭발이 이어서 더 일어난다(별은 첫 폭발과 함께 사라진다).
+            int repeats = Mathf.Max(0, Mathf.RoundToInt(modifiers.GetForSkill(ERunEffect.StarBlastRepeatAdd, ERoguelikeSkill.Stella)));
+            for (int r = 1; r <= repeats; r++)
+            {
+                pendingRepeatBlasts.Add(new RepeatBlast
+                {
+                    position = star.transform.position,
+                    time = _now + tuning.stellaBlastRepeatDelay * r,
+                    starId = star.StarId,
+                });
+            }
+
             DespawnStar(idx, false);
         }
         pendingStarHits.Clear();
+
+        for (int i = pendingRepeatBlasts.Count - 1; i >= 0; i--)
+        {
+            RepeatBlast blast = pendingRepeatBlasts[i];
+            if (_now < blast.time) continue;
+
+            pendingRepeatBlasts.RemoveAt(i);
+            StarBlast(blast.position, tuning.stellaBlastRadius, tuning.stellaBlastDamage);
+            // 별은 첫 폭발 때 사라졌으므로 StarBlast(땅 별 사라짐 포함)가 아니라 폭발만 다시 내는 신호를 쓴다.
+            Publish(ERoguelikeSkillVfx.StarBlastRepeat, blast.position, blast.position, tuning.stellaBlastRadius * RangeMul(ERoguelikeSkill.Stella), 0f, blast.starId);
+        }
 
         // 스텔라+드론의 별은 노바 때만 사라진다.
         if (modifiers.IsComboActive(ERoguelikeCombo.StellaDrone)) return;
@@ -474,7 +605,8 @@ public class RoguelikeSkillController : MonoBehaviour
 
     private void MarkTree(TreeObj _tree, bool _bDot)
     {
-        float expire = Time.time + tuning.stellaMarkDuration * DurationMul(ERoguelikeSkill.Stella);
+        float duration = tuning.stellaMarkDuration + modifiers.GetForSkill(ERunEffect.StarMarkDurationAdd, ERoguelikeSkill.Stella);
+        float expire = Time.time + Mathf.Max(0f, duration) * DurationMul(ERoguelikeSkill.Stella);
 
         for (int i = 0; i < markedTrees.Count; i++)
         {
@@ -531,6 +663,9 @@ public class RoguelikeSkillController : MonoBehaviour
 
                     // 이 타격으로 죽으면 OnTreeKilled가 목록에서 빼고 포자 폭발을 예약한다.
                     tree.TakeDamageWithoutHitSound(dotDamage);
+
+                    // 유지 시간 증가 MAX: 지속형 스킬(별 표식 지속 피해)로 처치하면 남은 표식들의 유지 시간이 늘어난다.
+                    if (false == IsHittable(tree)) ExtendMarksOnDotKill();
                 }
             }
         }
@@ -564,33 +699,126 @@ public class RoguelikeSkillController : MonoBehaviour
             for (int i = 0; i < bombs; i++) ThrowSporeBomb(_now);
         }
 
-        if (0 == sporeZones.Count) return;
+        for (int i = sporeZones.Count - 1; i >= 0; i--)
+        {
+            if (_now >= sporeZones[i].endTime) sporeZones.RemoveAt(i);
+        }
+
+        if (0 == sporeZones.Count || _now < nextSporeTickTime) return;
+
+        nextSporeTickTime = _now + tuning.sporeTickInterval;
+        TickSporeZones();
+    }
+
+    /// <summary>
+    /// 모든 연막이 같은 틱에 판정한다. 연막이 겹친 나무는 겹친 수만큼 지속 피해가 중첩되며, 중첩은 SporeStackMax까지다
+    /// (기본 1 = 겹쳐도 한 번, 포자폭탄 V = 최대 3). 기획서 6-1 포자폭탄 V "연막이 겹치면 지속 피해 중첩".
+    /// </summary>
+    private void TickSporeZones()
+    {
+        if (null == CollisionSystem.Instance) return;
+
+        int stackMax = SporeStackMax();
+        bool bStarHit = RunEffectApplier.IsStarHitByActives(modifiers);
+        float extendOnKill = modifiers.Get(ERunEffect.DurationExtendOnDotKill);
+
+        sporeOverlapCounts.Clear();
+        sporeTickDamages.Clear();
+        sporeZoneMasks.Clear();
+        sporeTargets.Clear();
+
+        for (int z = 0; z < sporeZones.Count; z++)
+        {
+            SporeZone zone = sporeZones[z];
+            CollisionSystem.Instance.GetCollidablesInRadius(zone.position, zone.radius, treeLayer.value, scanBuffer);
+
+            float radiusSq = zone.radius * zone.radius;
+            for (int i = 0; i < scanBuffer.Count; i++)
+            {
+                if (((Vector2)zone.position - scanBuffer[i].Position).sqrMagnitude > radiusSq) continue;
+
+                if (scanBuffer[i] is TreeObj tree)
+                {
+                    if (false == IsHittable(tree)) continue;
+
+                    int zoneBit = z < 32 ? 1 << z : 0;
+
+                    if (sporeOverlapCounts.TryGetValue(tree, out int count))
+                    {
+                        sporeOverlapCounts[tree] = count + 1;
+                        sporeZoneMasks[tree] |= zoneBit;
+                        if (zone.tickDamage > sporeTickDamages[tree]) sporeTickDamages[tree] = zone.tickDamage;
+                    }
+                    else
+                    {
+                        sporeOverlapCounts[tree] = 1;
+                        sporeZoneMasks[tree] = zoneBit;
+                        sporeTickDamages[tree] = zone.tickDamage;
+                        sporeTargets.Add(tree);
+                    }
+                }
+                else if (bStarHit && scanBuffer[i] is RoguelikeStar star && star.bCanBeHitBySkill)
+                {
+                    // 스텔라 III: 연막도 별을 친다.
+                    OnStarHit(star);
+                }
+            }
+        }
 
         TreeTileWriteBatch.Begin();
         try
         {
-            for (int i = sporeZones.Count - 1; i >= 0; i--)
+            for (int i = 0; i < sporeTargets.Count; i++)
             {
-                SporeZone zone = sporeZones[i];
+                TreeObj tree = sporeTargets[i];
+                if (false == IsHittable(tree)) continue;
 
-                if (_now >= zone.endTime)
-                {
-                    sporeZones.RemoveAt(i);
-                    continue;
-                }
+                int stacks = Mathf.Min(sporeOverlapCounts[tree], stackMax);
+                tree.TakeDamage(sporeTickDamages[tree] * stacks, false, false);
 
-                if (_now < zone.nextTickTime) continue;
-
-                zone.nextTickTime = _now + tuning.sporeTickInterval;
-                sporeZones[i] = zone;
-                DamageTreesInRadius(zone.position, zone.radius, zone.tickDamage, false, false, false);
+                // 유지 시간 증가 MAX: 연막으로 처치하면 그 나무를 덮고 있던 연막의 유지 시간이 늘어난다.
+                if (extendOnKill > 0f && false == IsHittable(tree)) ExtendSporeZonesCovering(sporeZoneMasks[tree], extendOnKill);
             }
         }
         finally
         {
             TreeTileWriteBatch.End();
         }
+
+        sporeTargets.Clear();
     }
+
+    /// <summary>_mask에 표시된 연막들의 끝 시각을 _seconds만큼 늦춘다(유지 시간 증가 MAX).</summary>
+    private void ExtendSporeZonesCovering(int _mask, float _seconds)
+    {
+        for (int z = 0; z < sporeZones.Count && z < 32; z++)
+        {
+            if (0 == (_mask & (1 << z))) continue;
+
+            SporeZone zone = sporeZones[z];
+            zone.endTime += _seconds;
+            sporeZones[z] = zone;
+
+            // 연막 그림도 같은 만큼 더 피어오르게 한다(판정만 늘고 그림이 먼저 꺼지면 보이지 않는 연막이 피해를 준다).
+            Publish(ERoguelikeSkillVfx.SporeZoneExtended, zone.position, zone.position, zone.radius, _seconds, zone.id);
+        }
+    }
+
+    /// <summary>별 표식 지속 피해로 나무를 처치하면 남아 있는 표식들의 유지 시간을 늘린다(유지 시간 증가 MAX).</summary>
+    private void ExtendMarksOnDotKill()
+    {
+        float seconds = modifiers.Get(ERunEffect.DurationExtendOnDotKill);
+        if (seconds <= 0f) return;
+
+        for (int i = 0; i < markedTrees.Count; i++)
+        {
+            MarkedTree mark = markedTrees[i];
+            mark.expireTime += seconds;
+            markedTrees[i] = mark;
+        }
+    }
+
+    private int SporeStackMax() => Mathf.Max(1, 1 + Mathf.RoundToInt(modifiers.GetForSkill(ERunEffect.SporeStackAdd, ERoguelikeSkill.SporeBomb)));
 
     private void ThrowSporeBomb(float _now)
     {
@@ -620,110 +848,263 @@ public class RoguelikeSkillController : MonoBehaviour
         float radius = tuning.sporeRadius * RangeMul(ERoguelikeSkill.SporeBomb);
         float duration = tuning.sporeDuration * DurationMul(ERoguelikeSkill.SporeBomb);
 
+        int zoneId = nextSporeZoneId++;
         sporeZones.Add(new SporeZone
         {
+            id = zoneId,
             position = target,
             radius = radius,
             endTime = _now + duration,
-            nextTickTime = _now,
             tickDamage = tuning.sporeTickDamage * DotMul(ERoguelikeSkill.SporeBomb),
         });
 
-        Publish(ERoguelikeSkillVfx.SporeZoneStarted, target, character.transform.position, radius, duration, 0);
+        // 모든 연막은 같은 틱 주기로 판정한다. 이미 돌고 있는 주기를 당기면 기존 연막이 간격보다 일찍 한 번 더 피해를 주므로,
+        // 다른 연막이 없을 때(주기가 멈춰 있을 때)만 새 연막이 바로 첫 틱을 받게 한다. 그 밖에는 다음 틱(최대 틱 간격 뒤)에 합류한다.
+        if (1 == sporeZones.Count) nextSporeTickTime = _now;
+
+        Publish(ERoguelikeSkillVfx.SporeZoneStarted, target, character.transform.position, radius, duration, zoneId);
     }
 
     // // 오프로드
+    //
+    // 섬 가장자리 위에 플래시되며 소환(예열) → 확 튀어 나가 가속 → 나무를 들이받을 때마다 멈칫하며 속도를 잃고 다시 붙는다 →
+    // 감속 없이 반대편 섬 끝까지 달리고, 끝에 닿기 직전 소환 때처럼 플래시가 깜빡이며 사라진다(물 위로 나가지 않는다).
+    // 진행 방향은 차량 그림에 맞는 아래쪽 대각선 두 방향뿐이다(OffroadLanes).
+    // 여러 대(III 2대, V 3대)는 서로 다른 차선에서 시간차를 두고 출발한다.
 
     private void UpdateOffroad(float _now)
     {
         if (modifiers.IsSkillActive(ERoguelikeSkill.Offroad) && _now >= nextOffroadTime)
         {
             nextOffroadTime = _now + Interval(tuning.offroadInterval, ERoguelikeSkill.Offroad);
-
-            int count = 1 + CountAdd(ERoguelikeSkill.Offroad);
-            for (int i = 0; i < count; i++) StartOffroad(_now);
+            StartOffroadVolley(_now, 1 + CountAdd(ERoguelikeSkill.Offroad));
         }
 
-        for (int i = offroadDashes.Count - 1; i >= 0; i--)
-        {
-            OffroadDash dash = offroadDashes[i];
-            GameObject visual = i < offroadVisuals.Count ? offroadVisuals[i] : null;
+        if (0 == offroadCars.Count) return;
 
-            if (_now < dash.dashStartTime)
+        float dt = Time.deltaTime;
+        bool bStarHit = RunEffectApplier.IsStarHitByActives(modifiers);
+
+        for (int i = offroadCars.Count - 1; i >= 0; i--)
+        {
+            OffroadCar car = offroadCars[i];
+
+            if (_now < car.dashStartTime)
             {
-                if (null != visual) visual.transform.position = dash.from;
+                car.visual?.SetPose(car.from, 0f);
                 continue;
             }
 
-            if (false == dash.bDashStarted)
+            if (false == car.bDashStarted) LaunchOffroad(car);
+
+            // 들이받은 직후에는 잠깐 멈칫한다(히트스톱). 멈춘 동안에도 엔진음 위치와 차체 떨림은 이어진다.
+            // 감속은 하지 않는다. 섬 끝까지 그대로 달리고, 끝에 닿기 직전 구간에서 플래시되며 사라진다(BeginOffroadExit).
+            if (_now >= car.hitStopUntil)
             {
-                dash.bDashStarted = true;
-                offroadDashes[i] = dash;
-                RoguelikeOffroadVisual dashVisual = null != visual ? visual.GetComponent<RoguelikeOffroadVisual>() : null;
-                if (null != dashVisual) dashVisual.BeginDash();
+                car.speed = Mathf.MoveTowards(car.speed, tuning.offroadSpeed, tuning.offroadAcceleration * dt);
+                car.traveled = Mathf.Min(car.length, car.traveled + car.speed * dt);
             }
 
-            float t = dash.dashDuration > 0f ? Mathf.Clamp01((_now - dash.dashStartTime) / dash.dashDuration) : 1f;
-            Vector3 pos = Vector3.Lerp(dash.from, dash.to, t);
-            if (null != visual) visual.transform.position = pos;
+            Vector3 pos = car.Position;
+            car.visual?.SetPose(pos, _now >= car.hitStopUntil ? car.speed : 0f);
+            if (car.bEngine) Sound.UpdateTrackedPosition(car.engine, pos);
 
-            DamageTreesAlongSegment(dash.lastPosition, pos, dash.radius, dash.damage, offroadHitTrees);
-            dash.lastPosition = pos;
-            offroadDashes[i] = dash;
+            int hits = DamageTreesAlongSegment(car.lastPosition, pos, car.radius, car.damage, car.hitTrees);
+            if (bStarHit) HitStarsAlongSegment(car.lastPosition, pos, car.radius);
+            car.lastPosition = pos;
 
-            if (t >= 1f)
+            if (hits > 0) OnOffroadHit(car, pos, hits, _now);
+
+            // 지금 속도로 offroadExitSeconds 안에 섬 끝에 닿는 지점부터 사라지기 시작한다. 달리는 채로 깜빡이다 끝에서 번쩍 사라진다.
+            if (false == car.bExiting && car.length - car.traveled <= car.speed * Mathf.Max(0.01f, tuning.offroadExitSeconds))
             {
-                offroadDashes.RemoveAt(i);
-                if (null != visual)
-                {
-                    visual.SetActive(false);
-                    offroadVisuals.RemoveAt(i);
-                    offroadVisuals.Add(visual);
-                }
-
-                if (0 == offroadDashes.Count) offroadHitTrees.Clear();
+                BeginOffroadExit(car, pos, _now);
             }
+
+            if (car.bExiting && (car.traveled >= car.length || _now >= car.exitEndTime)) ReleaseOffroadCar(i, false);
         }
     }
 
-    /// <summary>필드 끝 한 점에 소환되어 반대편 끝까지 정면으로 돌진한다(기획서 "필드 끝 면 타일 위에 랜덤하게 플래시").</summary>
-    private void StartOffroad(float _now)
+    /// <summary>
+    /// 섬 끝에 닿기 직전이다. 엔진이 꺼지고, 소환 때처럼 플래시가 깜빡이다 끝에서 하얗게 번쩍이며 사라진다.
+    /// 차는 멈추지 않고 그대로 달린다(감속 없음). 끝에 닿거나 offroadExitSeconds가 지나면 거둔다.
+    /// </summary>
+    private void BeginOffroadExit(OffroadCar _car, Vector3 _position, float _now)
     {
-        Vector2 dir = Random.insideUnitCircle.normalized;
-        if (dir.sqrMagnitude < 0.01f) dir = Vector2.right;
+        float seconds = Mathf.Max(0.01f, tuning.offroadExitSeconds);
 
-        // 섬 타원 위의 한 점에서 중심을 지나 반대편 점까지.
-        Vector3 edge = new Vector3(dir.x * fieldRadiusX, dir.y * fieldRadiusY, 0f);
-        Vector3 from = fieldCenter + edge;
-        Vector3 to = fieldCenter - edge;
-        float duration = Vector3.Distance(from, to) / Mathf.Max(0.1f, tuning.offroadSpeed);
+        _car.bExiting = true;
+        _car.exitEndTime = _now + seconds;
+        _car.visual?.BeginExit(seconds);
 
-        OffroadDash dash = new OffroadDash
+        if (_car.engine.IsValid)
         {
-            from = from,
-            to = to,
-            startTime = _now,
-            dashStartTime = _now + tuning.offroadWarmup,
-            dashDuration = duration,
-            lastPosition = from,
-            damage = tuning.offroadDamage * DamageMul(ERoguelikeSkill.Offroad),
-            radius = tuning.offroadHitRadius * RangeMul(ERoguelikeSkill.Offroad),
-        };
-
-        offroadDashes.Add(dash);
-
-        if (null != offroadVisualPrefab)
-        {
-            int visualIndex = offroadDashes.Count - 1;
-            while (offroadVisuals.Count <= visualIndex) offroadVisuals.Add(Instantiate(offroadVisualPrefab, transform));
-            offroadVisuals[visualIndex].transform.position = from;
-            offroadVisuals[visualIndex].SetActive(true);
-            RoguelikeOffroadVisual warmupVisual = offroadVisuals[visualIndex].GetComponent<RoguelikeOffroadVisual>();
-            if (null != warmupVisual) warmupVisual.BeginWarmup(from, to, tuning.offroadWarmup);
+            Sound.StopTrackedWithPowerDown(_car.engine, seconds, 0.5f);
+            _car.engine = AudioHandle.Invalid;
         }
 
-        Publish(ERoguelikeSkillVfx.OffroadWarmup, from, to, dash.radius, tuning.offroadWarmup, 0);
-        Publish(ERoguelikeSkillVfx.OffroadDash, from, to, dash.radius, duration, 0);
+        Publish(ERoguelikeSkillVfx.OffroadExit, _position, _position, _car.radius, seconds, 0);
+    }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// [에디터 전용 디버그] 오프로드를 지금 바로 한 번 내보낸다(카드 보유·소환 주기와 무관). _count가 0 이하면 지금 빌드의 대수(1 + 발동 수)를 쓴다.
+    /// 피해·돌진 폭은 지금 빌드 값을 그대로 쓴다. 웨이브 전투 중에만 차가 움직이므로 그때만 된다.
+    /// </summary>
+    public bool DebugFireOffroad(int _count)
+    {
+        if (false == bActive || null == tuning || null == character) return false;
+
+        int count = _count > 0 ? _count : 1 + CountAdd(ERoguelikeSkill.Offroad);
+        StartOffroadVolley(Time.time, count);
+        return true;
+    }
+#endif
+
+    /// <summary>한 번에 _count대를 내보낸다. 차선은 겹치지 않게 섬 폭을 나눠 고르고, 방향(좌·우)은 차마다 무작위다.</summary>
+    private void StartOffroadVolley(float _now, int _count)
+    {
+        int count = Mathf.Max(1, _count);
+        bool bFirstRight = Random.value < 0.5f;
+
+        for (int i = 0; i < count; i++)
+        {
+            // 두 대 이상이면 방향을 번갈아 엇갈리게 해 화면이 한쪽으로 쏠리지 않게 한다.
+            bool bRight = 0 == i % 2 ? bFirstRight : false == bFirstRight;
+            float delay = tuning.offroadVolleyStagger * i;
+            StartOffroad(_now, delay, bRight, i, count);
+        }
+    }
+
+    private void StartOffroad(float _now, float _delay, bool _bRight, int _laneIndex, int _laneCount)
+    {
+        Vector2 dir = OffroadLanes.DownDiagonal(_bRight);
+        float halfWidth = OffroadLanes.HalfWidth(fieldRadiusX, fieldRadiusY, dir);
+        float offset = OffroadLanes.LaneOffset(_laneIndex, _laneCount, halfWidth, tuning.offroadLaneSpread, Random.value);
+
+        if (false == OffroadLanes.TryGetLane(fieldCenter, fieldRadiusX, fieldRadiusY, dir, offset, out Vector2 entry, out Vector2 exit)) return;
+
+        // 섬 테두리 타일 위에서 소환되도록 경계선에서 진행 방향으로 들여온다(차선이 짧으면 차선 길이의 1/4까지만).
+        float inset = Mathf.Min(Mathf.Max(0f, tuning.offroadEdgeInset), Vector2.Distance(entry, exit) * 0.25f);
+        entry += dir * inset;
+
+        OffroadCar car = 0 < offroadCarPool.Count ? offroadCarPool.Pop() : new OffroadCar();
+        car.from = entry;
+        car.islandExit = exit;
+        car.direction = dir;
+        // 반대편도 같은 만큼 안쪽에서 멈춘다(물 위로 나가지 않는다).
+        car.length = Mathf.Max(0.5f, Vector2.Distance(entry, exit) - inset);
+        car.traveled = 0f;
+        car.speed = 0f;
+        car.dashStartTime = _now + tuning.offroadWarmup + _delay;
+        car.bDashStarted = false;
+        car.hitStopUntil = 0f;
+        car.bExiting = false;
+        car.exitEndTime = 0f;
+        car.lastPosition = entry;
+        car.damage = tuning.offroadDamage * DamageMul(ERoguelikeSkill.Offroad);
+        car.radius = tuning.offroadHitRadius * RangeMul(ERoguelikeSkill.Offroad);
+        car.bEngine = 0 == _laneIndex;
+        car.engine = AudioHandle.Invalid;
+        car.hitTrees.Clear();
+        car.visual = RentOffroadVisual();
+
+        offroadCars.Add(car);
+
+        // 예열은 출발 시각에 맞춰 끝난다. 뒤차는 앞차보다 늦게 예열을 시작한다.
+        float warmup = car.dashStartTime - _now;
+        if (null != car.visual) car.visual.BeginWarmup(entry, exit, warmup, car.bEngine);
+
+        Publish(ERoguelikeSkillVfx.OffroadWarmup, entry, exit, car.radius, warmup, 0);
+    }
+
+    private void LaunchOffroad(OffroadCar _car)
+    {
+        _car.bDashStarted = true;
+        _car.speed = tuning.offroadLaunchSpeed;
+        _car.visual?.BeginDash();
+
+        CameraMoveController.Instance?.ShakeCamera(tuning.offroadLaunchShake.x, tuning.offroadLaunchShake.y);
+
+        // 엔진음: 한 번에 나가는 차량 중 첫 차만 낸다(여러 대가 겹치면 시끄럽다). 출발과 함께 회전수가 오른다.
+        if (_car.bEngine)
+        {
+            _car.engine = Sound.PlayTrackedWithPowerUp(SoundID.OffroadNonEditLoop, _car.from, tuning.offroadEngineVolume, true, 0.25f, 0.6f, 1.25f);
+        }
+
+        float estimate = _car.length / Mathf.Max(0.1f, tuning.offroadSpeed);
+        Publish(ERoguelikeSkillVfx.OffroadDash, _car.from, _car.from + (Vector3)(_car.direction * _car.length), _car.radius, estimate, 0);
+    }
+
+    /// <summary>나무를 들이받았다. 멈칫(히트스톱)·감속·차체 반동·카메라 흔들림·진동을 준다.</summary>
+    private void OnOffroadHit(OffroadCar _car, Vector3 _position, int _hits, float _now)
+    {
+        float stop = tuning.offroadHitStop + tuning.offroadHitStopPerExtraTree * (_hits - 1);
+        _car.hitStopUntil = _now + Mathf.Min(stop, tuning.offroadHitStopMax);
+        _car.speed *= 1f - Mathf.Clamp01(tuning.offroadHitSpeedLoss);
+        _car.visual?.Bump(_hits);
+
+        if (_now >= nextOffroadHitShakeTime)
+        {
+            nextOffroadHitShakeTime = _now + tuning.offroadHitShakeInterval;
+            CameraMoveController.Instance?.ShakeCamera(tuning.offroadHitShake.x, tuning.offroadHitShake.y);
+        }
+
+        Rumble.Play(EHapticEvent.TreeImpact);
+        Publish(ERoguelikeSkillVfx.OffroadHit, _position, _position, _car.radius, 0f, _hits);
+    }
+
+    /// <summary>스텔라 III: 오프로드가 지나간 길 위의 별도 친다.</summary>
+    private void HitStarsAlongSegment(Vector3 _from, Vector3 _to, float _width)
+    {
+        for (int i = 0; i < activeStars.Count; i++)
+        {
+            RoguelikeStar star = activeStars[i];
+            if (false == star.bCanBeHitBySkill) continue;
+
+            float reach = _width + star.Radius;
+            if (DistancePointToSegmentSq(star.Position + star.Offset, _from, _to) <= reach * reach) OnStarHit(star);
+        }
+    }
+
+    private RoguelikeOffroadVisual RentOffroadVisual()
+    {
+        if (null == offroadVisualPrefab) return null;
+
+        RoguelikeOffroadVisual visual = 0 < offroadVisualPool.Count ? offroadVisualPool.Pop() : null;
+        if (null == visual)
+        {
+            GameObject go = Instantiate(offroadVisualPrefab, transform);
+            visual = go.GetComponent<RoguelikeOffroadVisual>();
+            if (null == visual) visual = go.AddComponent<RoguelikeOffroadVisual>();
+        }
+
+        visual.gameObject.SetActive(true);
+        return visual;
+    }
+
+    /// <summary>차량 한 대를 거둔다. _bImmediate(웨이브 종료 등)면 엔진음을 바로 끊고, 아니면 회전수가 내려가며 꺼진다.</summary>
+    private void ReleaseOffroadCar(int _index, bool _bImmediate)
+    {
+        OffroadCar car = offroadCars[_index];
+        offroadCars.RemoveAt(_index);
+
+        if (car.engine.IsValid)
+        {
+            if (_bImmediate) Sound.StopTracked(car.engine);
+            else Sound.StopTrackedWithPowerDown(car.engine, 0.35f, 0.5f);
+        }
+
+        if (null != car.visual)
+        {
+            car.visual.Hide();
+            offroadVisualPool.Push(car.visual);
+        }
+
+        car.visual = null;
+        car.engine = AudioHandle.Invalid;
+        car.hitTrees.Clear();
+        offroadCarPool.Push(car);
     }
 
     // // 조합: 스텔라 + 드론
@@ -872,9 +1253,10 @@ public class RoguelikeSkillController : MonoBehaviour
                 TreeObj tree = hitBuffer[i];
                 if (false == IsHittable(tree)) continue;
 
-                // 표식을 먼저 남겨 이번 피해부터 표식 배율이 적용되게 한다.
-                if (_bMark) MarkTree(tree, _bDot);
+                // 별은 주변을 공격한 "뒤에" 표식을 남긴다(기획서 6-1). 표식의 받는 피해 +30%는 이 폭발이 아니라 이후 피해부터 붙는다.
+                // 이 피해로 쓰러진 나무는 풀로 돌아가므로 표식을 남기지 않는다.
                 tree.TakeDamage(_damage, false, false);
+                if (_bMark && IsHittable(tree)) MarkTree(tree, _bDot);
             }
         }
         finally
@@ -883,9 +1265,10 @@ public class RoguelikeSkillController : MonoBehaviour
         }
     }
 
-    private void DamageTreesAlongSegment(Vector3 _from, Vector3 _to, float _width, float _damage, HashSet<TreeObj> _alreadyHit)
+    /// <summary>선분 위의 나무에 피해를 주고 맞힌 나무 수를 돌려준다.</summary>
+    private int DamageTreesAlongSegment(Vector3 _from, Vector3 _to, float _width, float _damage, Dictionary<TreeObj, int> _alreadyHit)
     {
-        if (null == CollisionSystem.Instance) return;
+        if (null == CollisionSystem.Instance) return 0;
 
         Vector2 a = _from;
         Vector2 b = _to;
@@ -899,10 +1282,12 @@ public class RoguelikeSkillController : MonoBehaviour
         for (int i = 0; i < scanBuffer.Count; i++)
         {
             if (false == (scanBuffer[i] is TreeObj tree) || false == IsHittable(tree)) continue;
-            if (null != _alreadyHit && _alreadyHit.Contains(tree)) continue;
+            if (null != _alreadyHit && _alreadyHit.TryGetValue(tree, out int hitReuse) && hitReuse == tree.ReuseCount) continue;
             if (DistancePointToSegmentSq(tree.Position, a, b) > widthSq) continue;
             hitBuffer.Add(tree);
         }
+
+        int hits = 0;
 
         TreeTileWriteBatch.Begin();
         try
@@ -912,14 +1297,17 @@ public class RoguelikeSkillController : MonoBehaviour
                 TreeObj tree = hitBuffer[i];
                 if (false == IsHittable(tree)) continue;
 
-                _alreadyHit?.Add(tree);
+                if (null != _alreadyHit) _alreadyHit[tree] = tree.ReuseCount;
                 tree.TakeDamage(_damage, false, false);
+                hits++;
             }
         }
         finally
         {
             TreeTileWriteBatch.End();
         }
+
+        return hits;
     }
 
     private static bool IsHittable(TreeObj _tree)
@@ -939,7 +1327,8 @@ public class RoguelikeSkillController : MonoBehaviour
 
     // // 수치
 
-    private float DamageMul(ERoguelikeSkill _skill) => Mathf.Max(0f, 1f + modifiers.GetForSkill(ERunEffect.DamagePercent, _skill) / 100f);
+    // 피해%·공격속도%에는 전투 중 조건부 보너스(공격력 MAX 임계치 초과, 이동속도 MAX 이동 중)가 더해진다(RunModifiers.SetConditional).
+    private float DamageMul(ERoguelikeSkill _skill) => Mathf.Max(0f, 1f + (modifiers.GetForSkill(ERunEffect.DamagePercent, _skill) + modifiers.ConditionalDamagePercent) / 100f);
     private float RangeMul(ERoguelikeSkill _skill) => Mathf.Max(0.1f, 1f + modifiers.GetForSkill(ERunEffect.RangePercent, _skill) / 100f);
     private float DurationMul(ERoguelikeSkill _skill) => Mathf.Max(0.1f, 1f + modifiers.GetForSkill(ERunEffect.DurationPercent, _skill) / 100f);
     private float DotMul(ERoguelikeSkill _skill) => DamageMul(_skill) * Mathf.Max(0f, 1f + modifiers.GetForSkill(ERunEffect.DotDamagePercent, _skill) / 100f);
@@ -947,7 +1336,7 @@ public class RoguelikeSkillController : MonoBehaviour
 
     private float Interval(float _baseInterval, ERoguelikeSkill _skill)
     {
-        float speed = Mathf.Max(0.1f, 1f + modifiers.GetForSkill(ERunEffect.AttackSpeedPercent, _skill) / 100f);
+        float speed = Mathf.Max(0.1f, 1f + (modifiers.GetForSkill(ERunEffect.AttackSpeedPercent, _skill) + modifiers.ConditionalAttackSpeedPercent) / 100f);
         float reduction = Mathf.Clamp(modifiers.GetForSkill(ERunEffect.CooldownReductionPercent, _skill), 0f, 90f) / 100f;
         return Mathf.Max(0.05f, _baseInterval / speed * (1f - reduction));
     }

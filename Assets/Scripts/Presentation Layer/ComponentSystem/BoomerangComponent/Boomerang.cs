@@ -698,6 +698,12 @@ public class Boomerang : MonoBehaviour
                         if (bNotifyRun) RunCombatHooks.NotifyBoomerangHitTree(hitTreePos);
                     }
                 }
+                else if (RunCombatOverrides.bSkillsHitRunTargets && hitScanResults[i] is IRunSkillHitTarget runTarget && runTarget.bCanBeHitBySkill
+                    && DistancePointToSegmentSqr(hitScanResults[i].Position + hitScanResults[i].Offset, segStart, segEnd) <= hitRadiusSqr)
+                {
+                    // [로그라이크] 스텔라 III에서는 부메랑도 별을 친다. 본편은 bSkillsHitRunTargets가 false라 지나가지 않는다.
+                    runTarget.NotifySkillHit();
+                }
             }
         }
         finally

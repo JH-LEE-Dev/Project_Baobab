@@ -21,30 +21,69 @@ public class CardRulesTests
     }
 
     [Test]
-    public void Price_FirstPurchaseUsesGradePrice_UpgradeScalesByLevel()
+    public void Price_MatchesAppendixA6Table()
     {
         CardDefinitionSO bronze = factory.CreateCard("b", ECardKind.Passive, ECardGrade.Bronze);
+        CardDefinitionSO silver = factory.CreateCard("s", ECardKind.Active, ECardGrade.Silver, ERoguelikeSkill.Spin);
+        CardDefinitionSO gold = factory.CreateCard("g", ECardKind.Passive, ECardGrade.Gold);
+        CardDefinitionSO ruby = factory.CreateCard("r", ECardKind.Ruby, ECardGrade.Ruby);
 
-        Assert.AreEqual(40, CardPricing.GetPrice(bronze, 1, null, balance));
-        Assert.AreEqual(60, CardPricing.GetPrice(bronze, 2, null, balance));
-        Assert.AreEqual(100, CardPricing.GetPrice(bronze, 4, null, balance));
+        int[] bronzePrices = { 60, 78, 96, 120, 0 };
+        int[] silverPrices = { 150, 195, 240, 300, 0 };
+        int[] goldPrices = { 300, 390, 480, 600, 0 };
+        for (int level = 1; level <= 5; level++)
+        {
+            Assert.AreEqual(bronzePrices[level - 1], CardPricing.GetPrice(bronze, level, null, balance), "브론즈 " + level);
+            Assert.AreEqual(silverPrices[level - 1], CardPricing.GetPrice(silver, level, null, balance), "실버 " + level);
+            Assert.AreEqual(goldPrices[level - 1], CardPricing.GetPrice(gold, level, null, balance), "골드 " + level);
+        }
+
+        Assert.AreEqual(240, CardPricing.GetPrice(ruby, 1, null, balance));
     }
 
     [Test]
-    public void Price_CardPricePercentApplies()
+    public void Price_BargainHalvesAndRoundsUp_FreeCardsStayFree()
     {
-        CardDefinitionSO silver = factory.CreateCard("s", ECardKind.Passive, ECardGrade.Silver);
+        CardDefinitionSO bronze = factory.CreateCard("b", ECardKind.Passive, ECardGrade.Bronze);
         RunModifiers mods = new RunModifiers();
         mods.Add(new CardEffectEntry(ERunEffect.CardPricePercent, ERoguelikeSkill.None, -50f));
 
-        Assert.AreEqual(60, CardPricing.GetPrice(silver, 1, mods, balance));
+        Assert.AreEqual(30, CardPricing.GetPrice(bronze, 1, mods, balance));
+        Assert.AreEqual(39, CardPricing.GetPrice(bronze, 2, mods, balance));
+        Assert.AreEqual(0, CardPricing.GetPrice(bronze, 5, mods, balance));
+
+        // 홀수 정가는 반값에서 올림(기획서 6-4 "소수점은 올림").
+        bronze.basePriceOverride = 75;
+        Assert.AreEqual(38, CardPricing.GetPrice(bronze, 1, mods, balance));
     }
 
     [Test]
-    public void RerollCost_LinearIncrease_AndFreeOverride()
+    public void AppraisalFee_MatchesSection44Table()
+    {
+        CardDefinitionSO bronze = factory.CreateCard("b", ECardKind.Passive, ECardGrade.Bronze);
+        CardDefinitionSO silver = factory.CreateCard("s", ECardKind.Active, ECardGrade.Silver, ERoguelikeSkill.Spin);
+        CardDefinitionSO gold = factory.CreateCard("g", ECardKind.Passive, ECardGrade.Gold);
+
+        int[] bronzeFees = { 90, 110, 138, 66 };
+        int[] silverFees = { 224, 276, 345, 165 };
+        int[] goldFees = { 449, 552, 690, 330 };
+        for (int level = 1; level <= 4; level++)
+        {
+            Assert.AreEqual(bronzeFees[level - 1], CardPricing.GetAppraisalFee(bronze, level, balance), "브론즈 " + level);
+            Assert.AreEqual(silverFees[level - 1], CardPricing.GetAppraisalFee(silver, level, balance), "실버 " + level);
+            Assert.AreEqual(goldFees[level - 1], CardPricing.GetAppraisalFee(gold, level, balance), "골드 " + level);
+        }
+
+        Assert.AreEqual(0, CardPricing.GetAppraisalFee(bronze, 5, balance));
+    }
+
+    [Test]
+    public void RerollCost_MultipliesBy1Point2_AndFreeOverride()
     {
         Assert.AreEqual(20, CardPricing.GetRerollCost(0, null, balance));
-        Assert.AreEqual(40, CardPricing.GetRerollCost(2, null, balance));
+        Assert.AreEqual(24, CardPricing.GetRerollCost(1, null, balance));
+        Assert.AreEqual(29, CardPricing.GetRerollCost(2, null, balance));
+        Assert.AreEqual(35, CardPricing.GetRerollCost(3, null, balance));
 
         RunModifiers mods = new RunModifiers();
         mods.Add(new CardEffectEntry(ERunEffect.RerollFree, ERoguelikeSkill.None, 1f));
@@ -52,14 +91,34 @@ public class CardRulesTests
     }
 
     [Test]
-    public void Reroll_NotAllowedOnFirstPickOrWhenDisabled()
+    public void Reroll_NotAllowedWhenDisabled()
     {
-        Assert.IsFalse(CardPricing.CanReroll(true, null));
-
         RunModifiers mods = new RunModifiers();
         mods.Add(new CardEffectEntry(ERunEffect.RerollDisabled, ERoguelikeSkill.None, 1f));
-        Assert.IsFalse(CardPricing.CanReroll(false, mods));
-        Assert.IsTrue(CardPricing.CanReroll(false, null));
+        Assert.IsFalse(CardPricing.CanReroll(mods));
+        Assert.IsTrue(CardPricing.CanReroll(null));
+    }
+
+    [Test]
+    public void Modifiers_ConditionalBonusAddsToGlobal_AndSurvivesResolve()
+    {
+        CardDefinitionSO atk = factory.CreateCard("atk", ECardKind.Passive, ECardGrade.Bronze);
+        RoguelikeTestFactory.AddLevelEffect(atk, 1, ERunEffect.DamagePercent, ERoguelikeSkill.None, 12f);
+
+        RunBuildState build = new RunBuildState();
+        build.Acquire(atk);
+
+        RunModifiers mods = new RunModifiers();
+        Assert.IsTrue(mods.SetConditional(20f, 10f));
+        Assert.IsFalse(mods.SetConditional(20f, 10f), "같은 값이면 바뀐 것이 아니다");
+
+        // 카드 합계를 다시 만들어도 전투 상태 보너스는 그대로다(RoguelikeSystem이 따로 맞춘다).
+        RunEffectResolver.Resolve(build, mods, new List<CardEffectEntry>());
+        Assert.AreEqual(32f, mods.GlobalDamagePercent, 0.0001f);
+        Assert.AreEqual(10f, mods.GlobalAttackSpeedPercent, 0.0001f);
+
+        Assert.IsTrue(mods.SetConditional(0f, 0f));
+        Assert.AreEqual(12f, mods.GlobalDamagePercent, 0.0001f);
     }
 
     [Test]
@@ -145,13 +204,52 @@ public class CardRulesTests
         Assert.IsFalse(w7.bTierChanged);
         Assert.AreEqual(1, w8.tierIndex);
         Assert.IsTrue(w8.bTierChanged);
-        Assert.AreEqual(60, WaveSchedule.Get(balance, 1).killTarget);
+        Assert.AreEqual(30, WaveSchedule.Get(balance, 1).killTarget);
 
         Assert.IsTrue(w31.bUnlimit);
         Assert.AreEqual(1, w31.unlimitIndex);
-        Assert.AreEqual(0, w31.goldPerTree);
-        Assert.AreEqual(350, w31.killTarget);
-        Assert.AreEqual(12f * 1.1f, w31.treeHpMultiplier, 0.0001f);
-        Assert.AreEqual(12f * 1.2f, w32.treeHpMultiplier, 0.0001f);
+        Assert.AreEqual(0f, w31.goldPerTree);
+        Assert.AreEqual(145, w31.killTarget);
+        Assert.AreEqual(420f * 1.1f, w31.treeHp, 0.001f);
+        Assert.AreEqual(420f * 1.2f, w32.treeHp, 0.001f);
+    }
+
+    [Test]
+    public void WaveSchedule_AbsoluteHpGoldAndDamageFollowAppendixA2()
+    {
+        float[] hp = { 20, 20, 30, 30, 30, 40, 40, 45, 45, 50, 50, 50, 55, 55, 55, 100, 100, 115, 115, 115, 130, 130, 280, 280, 340, 340, 340, 420, 420, 420 };
+        for (int wave = 1; wave <= 30; wave++)
+        {
+            Assert.AreEqual(hp[wave - 1], WaveSchedule.Get(balance, wave).treeHp, 0.001f, "웨이브 " + wave);
+        }
+
+        Assert.AreEqual(2f, WaveSchedule.Get(balance, 1).goldPerTree);
+        Assert.AreEqual(1.75f, WaveSchedule.Get(balance, 8).goldPerTree);
+        Assert.AreEqual(1f, WaveSchedule.Get(balance, 23).goldPerTree);
+        Assert.AreEqual(15f, WaveSchedule.Get(balance, 30).staminaDamage);
+        Assert.AreEqual(2f, WaveSchedule.Get(balance, 1).spawnInterval, 0.001f);
+        Assert.AreEqual(52, balance.SpawnCap);
+    }
+
+    [Test]
+    public void WaveSchedule_TreeKindChangesWithinTier_KeepPreviousKindShare()
+    {
+        WaveSpec w3 = WaveSchedule.Get(balance, 3);
+        WaveSpec w4 = WaveSchedule.Get(balance, 4);
+        WaveSpec w8 = WaveSchedule.Get(balance, 8);
+        WaveSpec w28 = WaveSchedule.Get(balance, 28);
+
+        Assert.AreEqual(1, w3.treeKind);
+        Assert.AreEqual(0, w3.previousTreeKind);
+        Assert.AreEqual(0.3f, w3.previousTreeKindShare, 0.0001f);
+
+        Assert.AreEqual(-1, w4.previousTreeKind);
+
+        // 티어가 바뀌는 웨이브는 다른 숲의 나무를 섞지 않는다.
+        Assert.AreEqual(0, w8.treeKind);
+        Assert.AreEqual(-1, w8.previousTreeKind);
+
+        Assert.AreEqual(2, w28.treeKind);
+        Assert.AreEqual(1, w28.previousTreeKind);
     }
 }

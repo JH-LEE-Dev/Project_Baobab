@@ -286,6 +286,70 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
         axeDamage = baseAxeDamage * axeDamageMultiplier;
     }
 
+    /// <summary>도끼·충격파·부메랑·드론의 기준값(증가 배율을 곱하기 전 값). 로그라이크가 런 동안 바꿔 끼운다.</summary>
+    public struct CombatBaseStats
+    {
+        public float axeDamage;
+        public float axeAttackCoolTime;
+        public float shockWaveDamage;
+        public float boomerangDamage;
+        public float boomerangDamageInterval;
+        public float boomerangCooldown;
+        public float boomerangMajorAxisRatio;
+        public float droneDamage;
+        public float droneDamageInterval;
+    }
+
+    public CombatBaseStats GetCombatBaseStats()
+    {
+        return new CombatBaseStats
+        {
+            axeDamage = baseAxeDamage,
+            axeAttackCoolTime = baseAxeAttackCoolTime,
+            shockWaveDamage = baseShockWaveDamage,
+            boomerangDamage = baseBoomerangDamage,
+            boomerangDamageInterval = baseBoomerangDamageInterval,
+            boomerangCooldown = baseBoomerangCooldown,
+            boomerangMajorAxisRatio = baseBoomerangMajorAxisRatio,
+            droneDamage = baseDroneDamage,
+            droneDamageInterval = baseDroneDamageInterval,
+        };
+    }
+
+    /// <summary>
+    /// [로그라이크 전용] 기준값을 바꾸고, 이미 쌓인 증가 배율을 그대로 다시 곱해 현재 값을 맞춘다.
+    /// 본편은 부르지 않는다. 로그라이크는 런이 끝나면 GetCombatBaseStats로 받아 둔 원래 값으로 되돌린다.
+    /// </summary>
+    public void SetCombatBaseStats(in CombatBaseStats _stats)
+    {
+        baseAxeDamage = _stats.axeDamage;
+        axeDamage = baseAxeDamage * axeDamageMultiplier;
+
+        baseAxeAttackCoolTime = _stats.axeAttackCoolTime;
+        axeAttackCoolTime = baseAxeAttackCoolTime / axeAttackSpeedMultiplier;
+
+        baseShockWaveDamage = _stats.shockWaveDamage;
+        shockWaveDamage = baseShockWaveDamage * shockWaveDamageMultiplier;
+
+        baseBoomerangDamage = _stats.boomerangDamage;
+        boomerangDamage = baseBoomerangDamage * boomerangDamageMultiplier;
+
+        baseBoomerangDamageInterval = _stats.boomerangDamageInterval;
+        boomerangDamageInterval = baseBoomerangDamageInterval / boomerangAttackSpeedMultiplier;
+
+        baseBoomerangCooldown = _stats.boomerangCooldown;
+        boomerangCooldown = baseBoomerangCooldown * Mathf.Max(0f, 1f - (boomerangCooldownReductionAlpha / 100.0f));
+
+        baseBoomerangMajorAxisRatio = _stats.boomerangMajorAxisRatio;
+        boomerangMajorAxisRatio = baseBoomerangMajorAxisRatio * boomerangDistanceMultiplier;
+
+        baseDroneDamage = _stats.droneDamage;
+        droneDamage = baseDroneDamage * droneDamageMultiplier;
+
+        baseDroneDamageInterval = _stats.droneDamageInterval;
+        droneDamageInterval = baseDroneDamageInterval / droneAttackSpeedMultiplier;
+    }
+
     public void CanHunting()
     {
         bCanHunting = true;

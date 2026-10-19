@@ -195,7 +195,7 @@ public partial class RoguelikeSystem
     /// <summary>
     /// 플레이어 낙하(기획서 4-1 6단계 "하늘에서 플레이어가 똑 하고 떨어진다"). 시작 칸 위 화면 밖에서 시작 칸으로 떨어진다.
     /// 카메라는 섬 중앙 고정이라 따라가지 않는다. 떨어지는 동안은 바닥 그림자를 끄고 착지할 때 켠다.
-    /// 착지 먼지·효과음은 RoguelikeCharacterLandedSignal에 이펙트·사운드 담당이 붙인다.
+    /// 착지 효과음·진동은 여기서 낸다. 착지 먼지(이펙트)는 이펙트 담당이 RoguelikeCharacterLandedSignal에 붙인다.
     /// </summary>
     private IEnumerator CharacterDropRoutine(Vector3 _landPos)
     {
@@ -223,6 +223,10 @@ public partial class RoguelikeSystem
 
         unitLogicManager.SetCharacterPos(_landPos);
         character.EnableShadow();
+
+        // 착지: 잔디 발소리 + 짧은 진동(섬 바닥은 잔디다). 먼지 같은 이펙트는 RoguelikeCharacterLandedSignal로 이펙트 담당이 붙인다.
+        Sound.Play(SoundID.GrassFootstep, _landPos);
+        Rumble.Play(EHapticEvent.ItemPickup);
 
         // 착지하면 공격 인디케이터가 캐릭터 정면(아래)을 향해 나타난다. 마우스를 따라가는 건 조작이 풀릴 때(EnableControl)부터다.
         character.ShowAttackIndicatorFacingDownForRun();
@@ -281,7 +285,7 @@ public partial class RoguelikeSystem
             // 언리밋은 카드가 나오지 않는다(기획서 3-5).
             if (false == spec.bUnlimit)
             {
-                yield return CardSelectRoutine(1 == runWaveNumber);
+                yield return CardSelectRoutine(spec.waveNumber);
             }
 
             // 지금 깔린 지형의 티어와 다르면 전환한다. spec.bTierChanged(직전 웨이브 대비)만 보면
@@ -301,15 +305,45 @@ public partial class RoguelikeSystem
         }
     }
 
-    private IEnumerator CardSelectRoutine(bool _bFirstPick)
+    private IEnumerator CardSelectRoutine(int _waveNumber)
     {
         SetPhase(ERunPhase.CardSelect);
         DisableControl();
 
+        // 웨이브 10 진입 때 감정사가 숲을 찾아온다는 예고만 띄운다(실제 등장 웨이브는 알려주지 않는다). 기획서 4-4.
+        if (_waveNumber == balance.appraiserNoticeWave && shop.AppraiserWave > 0)
+        {
+            signalHub.Publish(new RoguelikeAppraiserNoticeSignal());
+        }
+
+        bool bAppraiser = shop.IsAppraiserWave(_waveNumber);
+
         bCardPresentationDone = false;
         discardedOfferIndices.Clear();
-        shop.Open(_bFirstPick);
+        shop.Open(1 == _waveNumber, bAppraiser);
+
+        // 노출 가능한 카드가 0장(기획서 4-3 "카드 풀 예외 처리"): 선택 화면 대신 "지금은 구매할 수 있는 카드가 없습니다" 안내를 띄우고,
+        // 안내가 끝나면 확인 입력 없이 웨이브를 시작한다. 안내 화면은 UI 담당이 RoguelikeNoCardsAvailableSignal로 띄우고 끝나면
+        // RoguelikeCardSelectionPresentationDoneSignal을 보낸다. 안내가 없으면 대체 시간만 기다린다.
+        // 단, 감정사가 와 있고 맡길 카드가 있으면 한 판 한 번뿐인 감정 기회가 사라지지 않게 선택 화면을 그대로 연다
+        // (제시 카드 없이 감정과 건너뛰기만 할 수 있다).
+        if (0 == shop.Offers.Count && false == shop.HasAppraisableCards)
+        {
+            shop.Close();
+            signalHub.Publish(new RoguelikeNoCardsAvailableSignal());
+
+            float noticeElapsed = 0f;
+            while (false == bCardPresentationDone && noticeElapsed < noCardsNoticeFallbackSeconds)
+            {
+                noticeElapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            yield break;
+        }
+
         signalHub.Publish(new RoguelikeCardSelectionOpenedSignal());
+        if (bAppraiser) signalHub.Publish(new RoguelikeAppraiserArrivedSignal());
 
         // 구매 또는 건너뛰기로 닫힐 때까지. 그동안 시간은 흐르지 않는다(필드는 비어 있고 판정도 멈춰 있다).
         while (shop.IsOpen)
@@ -368,7 +402,12 @@ public partial class RoguelikeSystem
     private IEnumerator WaveCombatRoutine(WaveSpec _spec)
     {
         waveKills = 0;
-        treeRules.SetTreeHpMultiplier(_spec.treeHpMultiplier);
+        goldRemainder = 0f;
+        treeRules.SetTreeHp(_spec.treeHp);
+
+        TierFieldData field = GetTierField(_spec.tierIndex);
+        treeRules.SetTreeTypes(field.GetTreeType(_spec.treeKind),
+            _spec.previousTreeKind >= 0 ? field.GetTreeType(_spec.previousTreeKind) : TreeType.None, _spec.previousTreeKindShare);
         ConfigurePressure();
 
         float spawnRate = Mathf.Max(0.1f, 1f + modifiers.Get(ERunEffect.TreeSpawnRatePercent) / 100f);
@@ -385,6 +424,8 @@ public partial class RoguelikeSystem
         // 목표 처치 수를 채우면 OnTreeKilled가 WaveClear로 넘긴다. 게임오버·포기는 이 흐름 자체를 끊는다.
         while (ERunPhase.WaveCombat == phase)
         {
+            UpdateConditionalBonuses();
+
             int hits = pressure.Tick(Time.deltaTime, FieldTreeCount);
 
             if (pressure.State != prevState)
@@ -405,6 +446,7 @@ public partial class RoguelikeSystem
 
         // 별·연막·표식·돌진은 웨이브와 함께 끝난다. 스텔라+드론의 별은 노바 때까지 남는다(EndCombat).
         skillController?.EndCombat(true);
+        ClearConditionalBonuses();
 
         pressure.Reset();
         signalHub.Publish(new RoguelikePressureStateChangedSignal(pressure.State));
@@ -452,6 +494,38 @@ public partial class RoguelikeSystem
         // 스태미너는 자동 회복되지 않는다. 회복은 카드로만(기획서 3-2 "회복").
         float recover = modifiers.Get(ERunEffect.StaminaRecoverPerWave);
         if (recover > 0f) character?.RecoverStaminaForRun(recover);
+
+        // 골드 획득 증가 MAX: 웨이브 클리어마다 고정 골드(기획서 6-3). 언리밋은 골드를 쓸 곳이 없어 주지 않는다(7-2).
+        long clearBonus = GetWaveClearGoldBonus(in _spec);
+        if (clearBonus > 0) wallet.Add(clearBonus);
+    }
+
+    /// <summary>웨이브 클리어 고정 골드(골드 획득 증가 MAX). 언리밋은 0.</summary>
+    private long GetWaveClearGoldBonus(in WaveSpec _spec)
+    {
+        if (_spec.bUnlimit) return 0;
+        return System.Math.Max(0, Mathf.RoundToInt(modifiers.Get(ERunEffect.GoldPerWaveClear)));
+    }
+
+    /// <summary>
+    /// 공통 패시브 MAX 조건부 효과(기획서 6-3)를 지금 전투 상태에 맞춘다.
+    ///   공격력 MAX: 나무 수가 임계치 이상인 동안 피해 +%.  이동속도 MAX: 캐릭터가 움직이는 동안 공격속도 +%.
+    /// 값이 바뀔 때만 피해·공격속도 스탯을 다시 맞춘다(스킬 컨트롤러는 RunModifiers를 직접 읽는다).
+    /// </summary>
+    private void UpdateConditionalBonuses()
+    {
+        bool bCrisis = FieldTreeCount >= pressure.Threshold;
+        bool bMoving = null != character && character.bMoving;
+
+        float damage = bCrisis ? modifiers.Get(ERunEffect.DamagePercentAboveThreshold) : 0f;
+        float speed = bMoving ? modifiers.Get(ERunEffect.AttackSpeedPercentWhileMoving) : 0f;
+
+        if (modifiers.SetConditional(damage, speed)) effectApplier.ApplyDamageAndSpeed(modifiers);
+    }
+
+    private void ClearConditionalBonuses()
+    {
+        if (modifiers.SetConditional(0f, 0f)) effectApplier.ApplyDamageAndSpeed(modifiers);
     }
 
     /// <summary>
@@ -515,6 +589,9 @@ public partial class RoguelikeSystem
         // 30웨이브 코인은 아직 바닥에 있다(흡수는 이 연출 뒤 WaveClearRoutine에서). 목표를 채운 웨이브의 코인은
         // 포기해도 지갑에 들어가므로(StopRunActivity) 지금 바닥 값까지 이 판의 획득으로 센다.
         if (null != coinController) clearSnapshot.coinsCollected += coinController.GroundValue;
+
+        // 30웨이브 클리어 고정 골드(골드 획득 증가 MAX)도 이 연출 뒤 WaveClearRoutine에서 들어온다. 같은 판의 최종 기록과 맞춘다.
+        clearSnapshot.coinsCollected += GetWaveClearGoldBonus(in currentWave);
 
         // 언리밋이 끝날 때의 SubmitRunEnd는 클리어 랭킹을 다시 넣지 않아 순위를 돌려주지 않는다. 여기서 받아 둔다.
         lastClearRank = RunRecordBook.SubmitClear(records, clearSnapshot);
@@ -670,7 +747,8 @@ public partial class RoguelikeSystem
         Vector3 islandCenter = center - new Vector3(0f, cell.y * 0.5f, 0f);
         tileWave.PrepareAfterGenerate(islandCenter, islandReferenceViewSize * 0.5f, _bEntryWave);
         waveStrategy?.ConfigureField(center, islandRadiusX, islandRadiusY);
-        skillController?.SetField(center, islandRadiusX, islandRadiusY);
+        // 오프로드 차선은 화면에 보이는 섬(칸 중심 기준 타원)에 맞춰야 테두리 타일 위에서 소환된다. 시작 칸이 아니라 섬 중심을 넘긴다.
+        skillController?.SetField(islandCenter, islandRadiusX, islandRadiusY);
         inDungeonObjectManager.SetExternalTreeGenerationStrategy(waveStrategy, field.mapType);
 
         if (null == grassPositions)
@@ -768,6 +846,9 @@ public partial class RoguelikeSystem
         coinController?.DiscardAll();
         pressure.Reset();
 
+        // 게임오버·포기로 전투 흐름이 중간에 끊기면 WaveCombatRoutine 끝의 ClearConditionalBonuses가 돌지 않는다.
+        // 조건부 보너스는 카드 합계를 다시 만들어도 남으므로(RunModifiers) 여기서 함께 비운다.
+        modifiers.SetConditional(0f, 0f);
         effectApplier.RemoveAll();
         build.Reset();
         wallet.Reset();

@@ -17,7 +17,7 @@ MonoBehaviour:
   descriptionKey: Roguelike_Card_active_shockwave_Desc
   icon: {fileID: 0}
   kind: 0
-  grade: 0
+  grade: 1
   skillTag: 3
   exclusiveGroup: 0
   maxLevel: 5
@@ -25,7 +25,7 @@ MonoBehaviour:
   - effects:
     - effect: 7
       skill: 3
-      value: 30
+      value: 50
   - effects:
     - effect: 3
       skill: 3
@@ -33,15 +33,21 @@ MonoBehaviour:
   - effects:
     - effect: 7
       skill: 3
-      value: 15
+      value: 50
+    - effect: 3
+      skill: 3
+      value: 20
   - effects:
+    - effect: 3
+      skill: 3
+      value: 20
     - effect: 1
       skill: 3
-      value: 30
+      value: 50
   - effects:
-    - effect: 7
+    - effect: 26
       skill: 3
-      value: 15
+      value: 1
   basePriceOverride: 0
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}

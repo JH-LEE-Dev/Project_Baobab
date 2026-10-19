@@ -52,12 +52,16 @@ MonoBehaviour:
   tierFields:
   - mapType: 2
     forestType: 2
+    treeTypes: 010000000200000003000000
   - mapType: 3
     forestType: 5
+    treeTypes: 040000000500000006000000
   - mapType: 4
     forestType: 8
+    treeTypes: 070000000800000009000000
   - mapType: 5
     forestType: 11
+    treeTypes: 0a0000000b0000000c000000
   islandReferenceViewSize: {x: 20, y: 11.25}
   islandEdgeWaterTiles: 1
   centerSafeZoneRadius: 2

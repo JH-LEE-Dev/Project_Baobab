@@ -25,23 +25,26 @@ MonoBehaviour:
   - effects:
     - effect: 1
       skill: 0
-      value: 10
+      value: 12
   - effects:
     - effect: 1
       skill: 0
-      value: 10
+      value: 15
   - effects:
     - effect: 1
       skill: 0
-      value: 10
+      value: 19
   - effects:
     - effect: 1
       skill: 0
-      value: 10
+      value: 24
   - effects:
     - effect: 1
       skill: 0
-      value: 10
+      value: 30
+    - effect: 30
+      skill: 0
+      value: 20
   basePriceOverride: 0
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}

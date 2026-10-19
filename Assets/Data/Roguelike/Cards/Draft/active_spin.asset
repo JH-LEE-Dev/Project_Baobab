@@ -17,24 +17,24 @@ MonoBehaviour:
   descriptionKey: Roguelike_Card_active_spin_Desc
   icon: {fileID: 0}
   kind: 0
-  grade: 0
+  grade: 1
   skillTag: 2
   exclusiveGroup: 0
   maxLevel: 5
   levels:
   - effects: []
   - effects:
-    - effect: 3
-      skill: 2
-      value: 20
-  - effects:
     - effect: 8
       skill: 2
       value: -1
   - effects:
-    - effect: 1
+    - effect: 3
       skill: 2
       value: 25
+  - effects:
+    - effect: 25
+      skill: 2
+      value: 1
   - effects:
     - effect: 8
       skill: 2

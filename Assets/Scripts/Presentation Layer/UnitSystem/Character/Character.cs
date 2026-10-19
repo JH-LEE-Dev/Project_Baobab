@@ -1650,6 +1650,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             }
         }
 
+        // 로그라이크 스텔라 III용 알림(레이저가 지나간 경로). 본편에서는 구독자가 없어 아무 일도 일어나지 않는다(RunCombatHooks 참고).
+        if (RunCombatHooks.HasDroneLaserListener) RunCombatHooks.NotifyDroneLaser(droneChainZapPoints);
+
         _drone.PlayChainZap(droneChainZapPoints, droneChainZapPoints.Count);
     }
 

@@ -25,21 +25,24 @@ MonoBehaviour:
   - effects:
     - effect: 12
       skill: 0
-      value: 10
+      value: 4
   - effects:
     - effect: 12
       skill: 0
-      value: 10
+      value: 4
   - effects:
     - effect: 12
       skill: 0
-      value: 10
+      value: 6
   - effects:
     - effect: 12
       skill: 0
-      value: 10
+      value: 7
   - effects:
     - effect: 12
+      skill: 0
+      value: 9
+    - effect: 32
       skill: 0
       value: 10
   basePriceOverride: 0

@@ -189,7 +189,18 @@ public class ShockWave : MonoBehaviour
             if (hitTargets.Contains(target)) continue;
             
             // 2. 타입 체크 (레이어 필터링이 잘 되어 있다면 무시 가능하지만 안전을 위해 유지)
-            if (!(target is TreeObj treeObj)) continue;
+            if (!(target is TreeObj treeObj))
+            {
+                // [로그라이크] 스텔라 III에서는 충격파도 별을 친다. 본편은 bSkillsHitRunTargets가 false라 예전처럼 건너뛴다.
+                if (RunCombatOverrides.bSkillsHitRunTargets && target is IRunSkillHitTarget runTarget && runTarget.bCanBeHitBySkill
+                    && IsInShockWaveArc(target.Position + target.Offset, centerPos, isoForward, cosThreshold, sweepMinDistSqr, maxDistSqr))
+                {
+                    hitTargets.Add(target);
+                    runTarget.NotifySkillHit();
+                }
+
+                continue;
+            }
 
             // 묘목은 어떤 상호작용도 받지 않는다(피해, 과열 폭발, 첫 타격 콜백 모두).
             if (!treeObj.bCanApplyDamage) continue;
@@ -259,6 +270,22 @@ public class ShockWave : MonoBehaviour
                 }
             }
         }
+    }
+
+    /// <summary>나무 판정(ApplyShockWaveDamageToTargets)과 같은 거리 고리·각도 판정. 로그라이크 별 판정에만 쓴다.</summary>
+    private bool IsInShockWaveArc(Vector3 _targetPos, Vector3 _centerPos, Vector3 _isoForward, float _cosThreshold, float _sweepMinDistSqr, float _maxDistSqr)
+    {
+        float isoDistSq = GetIsometricDistSq(_targetPos, _centerPos);
+        if (isoDistSq < _sweepMinDistSqr || isoDistSq > _maxDistSqr) return false;
+
+        Vector3 targetOffset = _targetPos - _centerPos;
+        Vector3 targetDir = Vector3.right;
+        if (targetOffset.sqrMagnitude > 0.0001f)
+        {
+            targetDir = new Vector3(targetOffset.x, targetOffset.y * 2f, 0f).normalized;
+        }
+
+        return Vector3.Dot(_isoForward, targetDir) >= _cosThreshold;
     }
 
     private void TriggerOverheatExplosion(TreeObj _source)

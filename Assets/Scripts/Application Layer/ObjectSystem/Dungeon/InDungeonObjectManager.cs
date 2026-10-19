@@ -1837,6 +1837,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         TreeType type = environmentProvider.densityProvider.GetTreeTypeToSpawn();
         TreeGrade grade = TreeGrade.Normal;
 
+        // [로그라이크] 웨이브 구간별 나무 종류(티어 안 비주얼 진화). 본편은 runTreeRules가 null이라 건너뛴다.
+        if (null != runTreeRules)
+        {
+            type = runTreeRules.PickTreeType(type);
+        }
+
         // 1. 등급 결정 (히든 맵 또는 일반 던전 데이터 기반)
         //
         // [미사용 확정] 첫 갈래(히든맵)는 죽은 길입니다. hiddenMapGrade를 None 밖으로 바꾸는
@@ -1922,10 +1928,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         statData.hp *= multiplier;
 
-        // [로그라이크] 티어·언리밋 HP 배율과 기믹(실드) 제거. 본편은 runTreeRules가 null이라 건너뛴다.
+        // [로그라이크] 웨이브 구간별 절대 HP와 기믹(실드) 제거. 본편은 runTreeRules가 null이라 건너뛴다.
         if (null != runTreeRules)
         {
-            statData.hp *= runTreeRules.TreeHpMultiplier;
+            if (runTreeRules.TreeHp > 0f) statData.hp = runTreeRules.TreeHp;
 
             if (runTreeRules.bDisableStageGimmicks)
             {
