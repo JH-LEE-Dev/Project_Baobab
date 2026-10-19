@@ -131,6 +131,28 @@ public class CardRulesTests
     }
 
     [Test]
+    public void IsRare_OnlyMaxPrismAndRuby()
+    {
+        // 기획서 v2.2 10-2 "레어의 기준": MAX(에메랄드)로 완성되는 카드 · 프리즘 · 루비. 레벨 I~IV는 실버·골드여도 일반이다.
+        CardDefinitionSO silver = factory.CreateCard("s", ECardKind.Active, ECardGrade.Silver, ERoguelikeSkill.Spin);
+        CardDefinitionSO gold = factory.CreateCard("g", ECardKind.Passive, ECardGrade.Gold);
+        CardDefinitionSO prism = factory.CreateCard("p", ECardKind.Prism, ECardGrade.Gold);
+        CardDefinitionSO ruby = factory.CreateCard("r", ECardKind.Ruby, ECardGrade.Ruby);
+
+        for (int level = 1; level <= 4; level++)
+        {
+            Assert.IsFalse(CardPricing.IsRare(CardPricing.GetDisplayGrade(silver, level)), "실버 " + level);
+            Assert.IsFalse(CardPricing.IsRare(CardPricing.GetDisplayGrade(gold, level)), "골드 " + level);
+        }
+
+        Assert.IsTrue(CardPricing.IsRare(CardPricing.GetDisplayGrade(silver, 5)), "실버 MAX");
+        Assert.IsTrue(CardPricing.IsRare(CardPricing.GetDisplayGrade(gold, 5)), "골드 MAX");
+        Assert.IsTrue(CardPricing.IsRare(CardPricing.GetDisplayGrade(prism, 1)), "프리즘");
+        Assert.IsTrue(CardPricing.IsRare(CardPricing.GetDisplayGrade(ruby, 1)), "루비");
+        Assert.IsFalse(CardPricing.IsRare(ECardDisplayGrade.Bronze), "브론즈");
+    }
+
+    [Test]
     public void Resolver_SumsLevelEffectsCumulatively()
     {
         CardDefinitionSO atk = factory.CreateCard("atk", ECardKind.Passive, ECardGrade.Bronze);

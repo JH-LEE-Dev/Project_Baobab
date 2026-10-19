@@ -9,13 +9,13 @@ public partial class RoguelikeSystem
     // // 로비
 
     /// <summary>
-    /// 로비로 들어간다(기획서 4-1 진입 연출). 결과 화면에서 오면(_bFromResult) 런 상태를 전부 비우고 캐릭터를 되살린다.
-    ///   1~2. 디스토션 → 암전: 메인메뉴에서 오면 메인메뉴(UIView_MainMenu)가 이미 걸고 검은 화면인 채 씬이 넘어온다.
-    ///        결과 화면에서 오면 여기서 결과 화면 위에 건다.
-    ///   (암전 아래) 런 상태 정리, 1티어 지형 생성. 화면 안은 물만 깔린 바다로 되돌려 둔다.
-    ///   암전이 걷힌다 - 물 타일은 깔린 채로 보인다.
-    ///   3~5. 바닥 타일 파도 → 배경(해안선) 퍼즐 조립 → N초 안에 완성.
-    ///   6. 플레이어 낙하.  7. 조작 가능.
+    /// 로비로 들어간다(기획서 v2.2 9-1 진입 연출 8단계). 결과 화면에서 오면(_bFromResult) 런 상태를 전부 비우고 캐릭터를 되살린다.
+    ///   1. 디스토션 링: 메인메뉴에서 오면 메인메뉴(UIView_MainMenu)가 이미 걸고 검은 화면인 채 씬이 넘어온다.
+    ///      결과 화면에서 오면 여기서 결과 화면 위에 건다.
+    ///   2. 암전 유지(약 0.5초): 그 아래에서 런 상태 정리, 1티어 지형 생성. 화면 안은 물만 깔린 바다로 되돌려 둔다.
+    ///   3. 페이드 아웃(약 0.3초) - 물 타일은 깔린 채로 드러난다. 이와 동시에
+    ///   4~6. 바닥 타일 파도 → 배경(해안선) 퍼즐 조립 → N초 안에 완성.
+    ///   7. 플레이어 낙하.  8. 조작 가능.
     /// </summary>
     private IEnumerator EnterLobbyRoutine(bool _bFromResult)
     {
@@ -75,14 +75,19 @@ public partial class RoguelikeSystem
         // 지역 BGM은 화면이 드러나는 순간부터. 결과 화면에서 돌아오면 1티어 곡으로 돌아간다.
         PlayFieldBgm(lobbyField.mapType);
 
-        // 검은 화면 아래에서 HUD 내림 모션(본편 연출) 같은 정리가 끝날 만큼은 덮어 둔다.
-        while (Time.realtimeSinceStartup - coveredAt < screenTransitionSettings.minBlackHoldSeconds) yield return null;
+        // 2단계: 검은 화면이 꽉 찬 뒤 암전 유지 시간(약 0.5초)만큼 덮어 둔다. 꽉 찬 순간부터 세므로 메인메뉴에서 오면 씬 로드 시간도 여기에 든다.
+        // 지형 생성이 더 걸리면 그만큼 길어진다(위에서 이미 기다렸다). 검은 화면 아래에서 내린 HUD(PopupUIDownSignal)의 내림 모션도
+        // 끝날 때까지 덮어 둔다 - 걷히는 사이로 HUD가 내려가는 모습이 보이지 않게. 모션이 끝나지 않아도 상한이 지나면 걷는다.
+        while (screen.SecondsSinceFullyBlack < screenTransitionSettings.blackHoldSeconds
+            || (uiCoordinator.IsMainHudMotionPlaying && Time.realtimeSinceStartup - coveredAt < EntryHudSettleLimitSeconds))
+        {
+            yield return null;
+        }
 
-        // 암전이 걷힌다. 물 타일은 깔린 채로 보인다.
+        // 3~4단계: 검은 화면이 빠르게 걷히는(약 0.3초) 것과 동시에 입장 연출이 시작된다 - 바닥 타일 파도 → 배경 퍼즐 조립(N초 이내 완성).
+        // 물 타일은 깔린 채로 드러난다. 이펙트 담당의 LobbyEntry 연출은 파도와 함께 돈다(기획서 v2.2 9-1).
         signalHub.Publish(new RoguelikeEntryScreenRevealStartedSignal());
-        yield return screen.FadeFromBlack(screenTransitionSettings.fadeInSeconds);
-
-        // 3~5단계: 바닥 타일 파도 → 배경 퍼즐 조립(N초 이내 완성). 이펙트 담당의 LobbyEntry 연출은 파도와 함께 돈다.
+        screen.StartFadeFromBlack(screenTransitionSettings.fadeOutSeconds);
         tileWaveCoroutine = StartCoroutine(PlayTileWaveRoutine());
 
         yield return productionGate.Play(new RoguelikeProductionRequest
@@ -115,7 +120,7 @@ public partial class RoguelikeSystem
     /// </summary>
     private void PrepareSceneUnderBlack()
     {
-        Sound.RampProduction3DVolume(1f, Mathf.Max(0.01f, screenTransitionSettings.fadeInSeconds));
+        Sound.RampProduction3DVolume(1f, Mathf.Max(0.01f, screenTransitionSettings.fadeOutSeconds));
     }
 
     /// <summary>연출 게이트를 재생하고 끝나면 _onComplete를 부른다(다른 연출과 동시에 돌릴 때).</summary>

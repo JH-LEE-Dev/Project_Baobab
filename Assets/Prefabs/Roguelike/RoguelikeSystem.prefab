@@ -77,13 +77,11 @@ MonoBehaviour:
     backgroundPieceCells: 3
     viewMarginTiles: 2
   screenTransitionSettings:
-    distortSeconds: 0.7
-    distortStrength: 0.05
-    distortWaves: 3
-    distortSpeed: 9
-    blackoutSeconds: 0.35
-    fadeInSeconds: 0.5
-    minBlackHoldSeconds: 0.8
+    ringSeconds: 0.45
+    ringWidth: 0.16
+    ringStrength: 0.05
+    blackHoldSeconds: 0.5
+    fadeOutSeconds: 0.3
   characterDropHeight: 7
   characterDropSeconds: 0.45
   startRunObjectPrefab: {fileID: 2284844287117466035, guid: 2bc6ac8a89e050246b56d5bfdd7b12fc, type: 3}

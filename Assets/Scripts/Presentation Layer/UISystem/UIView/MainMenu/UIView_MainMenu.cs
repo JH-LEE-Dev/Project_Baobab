@@ -49,7 +49,7 @@ public class UIView_MainMenu : UIView
     [SerializeField] private float dimmerFadeDuration = 1f;
 
     [Header("Roguelike Entry")]
-    [SerializeField, Tooltip("로그라이크 버튼을 누른 뒤 메인메뉴 화면에 걸리는 디스토션 → 암전 수치(기획서 4-1 1~2단계). 암전이 걷히는 페이드인은 로그라이크 쪽 값을 쓴다.")]
+    [SerializeField, Tooltip("로그라이크 버튼을 누른 뒤 메인메뉴 화면에 걸리는 디스토션 링 수치(기획서 v2.2 9-1 1단계). 암전 유지·페이드 아웃은 로그라이크 쪽(RoguelikeSystem 프리팹) 값을 쓴다.")]
     private RoguelikeScreenTransitionSettings roguelikeEntryTransition = new RoguelikeScreenTransitionSettings();
 
     [Header("Exit Animation")]
@@ -432,7 +432,7 @@ public class UIView_MainMenu : UIView
     private System.Collections.IEnumerator RoguelikeEntryRoutine()
     {
         // 메인메뉴 BGM은 디스토션 동안 잦아든다(본편 진입 하강이 메인메뉴 BGM을 내리는 것과 같은 역할).
-        Sound.FadeOutBGM(Mathf.Max(0.01f, roguelikeEntryTransition.distortSeconds));
+        Sound.FadeOutBGM(Mathf.Max(0.01f, roguelikeEntryTransition.ringSeconds));
         yield return RoguelikeScreenTransition.Instance.DistortToBlack(roguelikeEntryTransition);
 
         // 본편은 씬이 넘어간 뒤 PlayExitAnimation으로 메인메뉴를 위로 밀어 올린다(구름·하강 연출이 그 위를 덮는다).

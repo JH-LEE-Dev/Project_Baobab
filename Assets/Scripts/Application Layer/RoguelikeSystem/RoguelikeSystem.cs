@@ -207,6 +207,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     // 로그라이크 세션 내내 본편 가방 키(인벤토리 팝업·원목 교체)를 막는 소유자 이름. 로그라이크에는 가방이 없고,
     // 열리면 카드 선택·결과 화면 위에 본편 가방이 겹쳐 뜬다. 잠금 집합은 앱 수명이라 Release에서 반드시 푼다.
     private const string SessionInventoryLockOwner = "RoguelikeSession";
+    // 로비 진입 암전이 HUD 내림 모션을 기다리는 상한(초, 검은 화면 아래로 들어온 때부터). 모션이 멈춰 버려도 진입이 막히지 않게 한다.
+    private const float EntryHudSettleLimitSeconds = 2f;
 
     private RunRecordEntry lastRunRecord;
     private int lastClearRank = -1;
@@ -767,7 +769,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         recordsUI?.Hide();
 
         uiCoordinator.Initialize(signalHub, this, hudUI, cardSelectUI, ownedCardsUI, resultUI, recordsUI, gameplayUIInstaller.GetOpenedView<UIView_ESC>(),
-            gameplayUIInstaller.GetOpenedView<UIView_Popup>());
+            gameplayUIInstaller.GetOpenedView<UIView_Popup>(), gameplayUIInstaller.GetOpenedView<UIView_HUD>());
     }
 
     // // 공통

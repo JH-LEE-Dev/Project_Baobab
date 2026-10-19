@@ -114,6 +114,15 @@ public static class CardPricing
     }
 
     /// <summary>
+    /// 레어 카드인지(기획서 v2.2 10-2 "레어의 기준"): MAX(에메랄드)로 완성되는 카드, 프리즘, 루비. 레벨 I~IV는 실버·골드여도 일반이다.
+    /// 레어 등장 연출과 보관함의 쇼케이스(아크릴 케이스) / 바인더(비닐 슬리브)를 가른다.
+    /// </summary>
+    public static bool IsRare(ECardDisplayGrade _displayGrade)
+    {
+        return ECardDisplayGrade.Emerald == _displayGrade || ECardDisplayGrade.Prism == _displayGrade || ECardDisplayGrade.Ruby == _displayGrade;
+    }
+
+    /// <summary>
     /// 인스펙터에 적힌 배율(1.15 등)을 그 십진값 그대로 double로 옮긴다. 1.15f는 실제로 1.1499999…라
     /// 그대로 곱하면 390 × 1.15 = 448.5가 448.49999…가 되어 반올림이 한 칸 내려간다(감정비 표 449).
     /// </summary>

@@ -19,7 +19,8 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     [Header("Movement")]
     public float originalSpeed = 1f;
-    public float speed => (activeActionCount > 0) ? originalSpeed * speedDecreaseWhileAction : originalSpeed;
+    // [로그라이크] 공격 중 감속을 적용하지 않는다(기획서 v2.2 3-1). 본편은 행동 중 speedDecreaseWhileAction배로 줄어든다.
+    public float speed => (activeActionCount > 0 && false == GameModeContext.IsRoguelike) ? originalSpeed * speedDecreaseWhileAction : originalSpeed;
 
     private int activeActionCount = 0;
 

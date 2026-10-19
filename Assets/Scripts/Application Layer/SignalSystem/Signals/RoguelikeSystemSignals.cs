@@ -101,7 +101,10 @@ public struct RoguelikeTileWaveStartedSignal
 /// </summary>
 public struct RoguelikeEntryScreenCoveredSignal { }
 
-/// <summary>로비 진입 암전이 걷히기 시작했다. 화면에는 물만 깔린 바다가 보이고, 이어서 바닥 타일 파도가 시작된다.</summary>
+/// <summary>
+/// 로비 진입 암전이 걷히기 시작했다(기획서 v2.2 9-1 3단계 페이드 아웃, 약 0.3초). 화면에는 물만 깔린 바다가 드러나고,
+/// 같은 프레임에 바닥 타일 파도(RoguelikeTileWaveStartedSignal, bEntry = true)도 시작된다 - 걷힌 뒤가 아니라 걷히는 동안 파도가 돈다.
+/// </summary>
 public struct RoguelikeEntryScreenRevealStartedSignal { }
 
 /// <summary>

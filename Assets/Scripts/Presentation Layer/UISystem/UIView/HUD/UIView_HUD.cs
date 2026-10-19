@@ -472,10 +472,31 @@ public class UIView_HUD : UIView
         ChangedActiveStateLoot(bTown);
     }
 
+    /// <summary>
+    /// [로그라이크 전용] 도끼 내구도 HUD(장비 HUD)를 숨긴다. 로그라이크는 도끼 내구도가 무제한이라 표시하지 않는다(기획서 v2.2 10-1).
+    /// 숨긴 동안은 맵이 바뀌어도 다시 켜지지 않는다. 본편에서는 호출되지 않는다.
+    /// </summary>
+    public void SetEquipmentHiddenForRun(bool _bHidden)
+    {
+        bEquipmentHiddenForRun = _bHidden;
+        ChangedActiveStateEquipment(MapType.Town == currentMapType);
+    }
+
+    private bool bEquipmentHiddenForRun;
+
+    /// <summary>[로그라이크 전용] 맵 전환용 HUD 내림·올림 모션이 재생 중인지. 진입 암전이 이 모션이 끝난 뒤 걷히게 한다. 본편에서는 호출되지 않는다.</summary>
+    public bool IsMapTransitionMotionPlayingForRun => null != omp && omp.IsPlaying(mapTransitionMotionTag);
+
     private void ChangedActiveStateEquipment(bool _isTwon)
     {
         if (null == hudEquipment)
             return;
+
+        if (bEquipmentHiddenForRun)
+        {
+            hudEquipment.gameObject.SetActive(false);
+            return;
+        }
 
         //WeaponModeChanged(WeaponMode.Axe, !_isTwon);
         hudEquipment.gameObject.SetActive(!_isTwon);

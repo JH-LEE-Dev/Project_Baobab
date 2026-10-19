@@ -213,18 +213,22 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     private void DecreaseDurabilityInternal(bool _bIncrementCombo)
     {
-        if (UnityEngine.Random.Range(0f, 100f) >= ctx.characterStat.axeDurabilityDecIgnoreChance)
-            durability -= ctx.characterStat.axeDurabilityDecAmount;
-
-        if (durability < 0f)
+        // [로그라이크] 도끼 내구도는 무제한이다(기획서 v2.2 3-1). 깎지 않고, 타격 알림·콤보는 본편과 같이 낸다.
+        if (false == GameModeContext.IsRoguelike)
         {
-            durability = 0f;
+            if (UnityEngine.Random.Range(0f, 100f) >= ctx.characterStat.axeDurabilityDecIgnoreChance)
+                durability -= ctx.characterStat.axeDurabilityDecAmount;
+
+            if (durability < 0f)
+            {
+                durability = 0f;
+            }
+
+            UpdateSpriteByDurability();
+
+            if (durability == 0f)
+                DurabilityEmptyEvent?.Invoke();
         }
-
-        UpdateSpriteByDurability();
-
-        if (durability == 0f)
-            DurabilityEmptyEvent?.Invoke();
 
         AxeAttackedEvent?.Invoke();
 
