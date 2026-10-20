@@ -7,7 +7,7 @@ using UnityEngine.UI;
 public class UI_ResultLogRow : MonoBehaviour
 {
     private static readonly Vector2 LogIconSize = new Vector2(32f, 32f);
-    private static readonly Vector2 LootIconSize = new Vector2(16f, 16f);
+    private static readonly Vector2 LootIconSize = new Vector2(32f, 32f);
 
     [Serializable]
     private struct LogSpriteMapping

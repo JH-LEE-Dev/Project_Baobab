@@ -1177,7 +1177,7 @@ Prefabs/Objects/Item/LootItem|LootItem:LootItem|suckScaleDownDistance = 1.2
 Prefabs/Objects/Item/SilverCoin|SilverCoin:Coin|apexEaseStrength = 0.13
 Prefabs/Objects/LootPillar/LootPillar|LootPillar/Loot:ItemAuraOrbitController|centerGlowBloomMultiplier = 1
 Prefabs/Objects/LootPillar/LootPillar|LootPillar/Loot:ItemAuraOrbitController|centerGlowOrderOffset = -1
-Prefabs/Objects/LootPillar/LootPillar|LootPillar/Loot:ItemAuraOrbitController|centerGlowScale = 0.85
+Prefabs/Objects/LootPillar/LootPillar|LootPillar/Loot:ItemAuraOrbitController|centerGlowScale = 0.7
 Prefabs/Objects/LootPillar/LootPillar|LootPillar/Loot:ItemAuraOrbitController|centerGlowSortingOrder = 1
 Prefabs/Objects/LootPillar/LootPillar|LootPillar/Loot:ItemAuraOrbitController|depthScaleAmount = 0.35
 Prefabs/Objects/LootPillar/LootPillar|LootPillar/Loot:ItemAuraOrbitController|ellipseRatio = 0.4
@@ -1210,6 +1210,8 @@ Prefabs/Objects/LootPillar/LootPillar|LootPillar:LootDisplayObject|auraSettings[
 Prefabs/Objects/LootPillar/LootPillar|LootPillar:LootDisplayObject|auraSettings[lootType=ObsidianCharm].lootType = ObsidianCharm
 Prefabs/Objects/LootPillar/LootPillar|LootPillar:LootDisplayObject|auraSettings[lootType=SporePotion].lootType = SporePotion
 Prefabs/Objects/LootPillar/LootPillar|LootPillar:LootDisplayObject|auraSettings[lootType=StarCompass].lootType = StarCompass
+Prefabs/Objects/LootPillar/LootPillar|LootPillar:LootDisplayObject|growthGlowCoreStrength = 0.55
+Prefabs/Objects/LootPillar/LootPillar|LootPillar:LootDisplayObject|growthGlowStrength = 0.6
 Prefabs/Objects/LootPillar/LootPillar|LootPillar:LootDisplayObject|useAuraOrbit = 1
 Prefabs/Objects/NPC/LumberjackNPC|LumberjackNPC/NPC Visuals/OnWater Visuals/OnWater:CharacterAnimTrigger|bActivated = 0
 Prefabs/Objects/NPC/LumberjackNPC|LumberjackNPC/NPC Visuals/Visuals/Animator:CharacterAnimTrigger|bActivated = 1
@@ -2110,6 +2112,114 @@ Scriptable Obj/ItemData/LogItemData/LogItemValueDataBase|LogItemValueDataBase|st
 Scriptable Obj/ItemData/LogItemData/LogItemValueDataBase|LogItemValueDataBase|stateValueDatas[logState=Normal].valueMultiplier = 1
 Scriptable Obj/ItemData/LogItemData/LogItemValueDataBase|LogItemValueDataBase|stateValueDatas[logState=Perfect].logState = Perfect
 Scriptable Obj/ItemData/LogItemData/LogItemValueDataBase|LogItemValueDataBase|stateValueDatas[logState=Perfect].valueMultiplier = 20
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#1].actionFrames[0] = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#1].actionFrames[1] = 1
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#1].actionFrames[2] = 2
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#1].actionFrames[3] = 3
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#1].actionFrames[4] = 4
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#1].actionInterval = (3, 4)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#1].displayArtCenter = (-0.025, -0.08125)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#1].fps = 8
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#1].idleFrames[0] = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#1].isPlaceholder = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#1].lootType = LostAndFoundBox
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#1].tier = 2
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#2].actionInterval = (3, 4)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#2].displayArtCenter = (-0.046875, 0)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#2].fps = 3
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#2].idleFrames[0] = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#2].idleFrames[1] = 1
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#2].idleFrames[2] = 2
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#2].isPlaceholder = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#2].lootType = LostAndFoundBox
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox#2].tier = 3
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox].actionFrames[0] = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox].actionFrames[1] = 1
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox].actionFrames[2] = 2
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox].actionFrames[3] = 3
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox].actionFrames[4] = 4
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox].actionInterval = (3, 4)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox].displayArtCenter = (-0.00625, -0.175)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox].fps = 10
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox].idleFrames[0] = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox].isPlaceholder = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox].lootType = LostAndFoundBox
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=LostAndFoundBox].tier = 1
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=ObsidianCharm#10].actionInterval = (3, 4)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=ObsidianCharm#10].displayArtCenter = (0.0234375, 0.046875)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=ObsidianCharm#10].fps = 2
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=ObsidianCharm#10].isPlaceholder = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=ObsidianCharm#10].lootType = ObsidianCharm
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=ObsidianCharm#10].tier = 3
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=ObsidianCharm].actionInterval = (3, 4)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=ObsidianCharm].displayArtCenter = (0, -0.203125)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=ObsidianCharm].fps = 8
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=ObsidianCharm].isPlaceholder = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=ObsidianCharm].lootType = ObsidianCharm
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=ObsidianCharm].tier = 1
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#4].actionFrames[0] = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#4].actionFrames[1] = 1
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#4].actionFrames[2] = 2
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#4].actionFrames[3] = 3
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#4].actionFrames[4] = 4
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#4].actionFrames[5] = 5
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#4].actionInterval = (3, 4)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#4].displayArtCenter = (0.020833334, 0.00260416674)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#4].fps = 8
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#4].idleFrames[0] = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#4].isPlaceholder = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#4].lootType = SporePotion
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#4].tier = 2
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#5].actionInterval = (3, 4)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#5].displayArtCenter = (0.0078125, 0.03125)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#5].fps = 2
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#5].idleFrames[0] = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#5].idleFrames[1] = 1
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#5].isPlaceholder = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#5].lootType = SporePotion
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion#5].tier = 3
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion].actionInterval = (3, 4)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion].displayArtCenter = (0.009375, -0.075)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion].fps = 8
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion].idleFrames[0] = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion].idleFrames[1] = 1
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion].idleFrames[2] = 2
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion].idleFrames[3] = 3
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion].idleFrames[4] = 4
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion].isPlaceholder = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion].lootType = SporePotion
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=SporePotion].tier = 1
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#7].actionFrames[0] = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#7].actionFrames[1] = 1
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#7].actionFrames[2] = 2
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#7].actionFrames[3] = 3
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#7].actionInterval = (3, 4)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#7].displayArtCenter = (-0.0625, 0.00390625)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#7].fps = 8
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#7].idleFrames[0] = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#7].isPlaceholder = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#7].lootType = StarCompass
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#7].tier = 2
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#8].actionInterval = (3, 4)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#8].displayArtCenter = (0.0234375, 0.046875)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#8].fps = 2
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#8].idleFrames[0] = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#8].idleFrames[1] = 1
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#8].isPlaceholder = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#8].lootType = StarCompass
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass#8].tier = 3
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass].actionFrames[0] = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass].actionFrames[1] = 1
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass].actionFrames[2] = 2
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass].actionFrames[3] = 1
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass].actionFrames[4] = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass].actionInterval = (3, 4)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass].displayArtCenter = (0, -0.203125)
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass].fps = 10
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass].idleFrames[0] = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass].isPlaceholder = 0
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass].lootType = StarCompass
+Scriptable Obj/LootData/LootGrowthVisualData|LootGrowthVisualData|tierSprites[lootType=StarCompass].tier = 1
 Scriptable Obj/LootData/LootItemTypeDataBase|LootItemTypeDataBase|datas[itemType=Loot,lootType=LostAndFoundBox].itemType = Loot
 Scriptable Obj/LootData/LootItemTypeDataBase|LootItemTypeDataBase|datas[itemType=Loot,lootType=LostAndFoundBox].lootType = LostAndFoundBox
 Scriptable Obj/LootData/LootItemTypeDataBase|LootItemTypeDataBase|datas[itemType=Loot,lootType=ObsidianCharm].itemType = Loot

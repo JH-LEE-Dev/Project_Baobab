@@ -665,10 +665,11 @@ public class HUD_LootReveal : MonoBehaviour
         if (null != _data)
             lootItemImage.sprite = _data.sprite;
 
-        // 성장 단계별 스프라이트가 등록돼 있으면 그것을 쓴다(씨앗/꽃/나무). 없으면 위 기본 스프라이트 그대로.
+        // 성장 단계별 확대 스프라이트가 등록돼 있으면 그것을 쓴다(씨앗/꽃/나무). 없으면 위 기본 스프라이트 그대로.
+        // 성장하지 않는 전리품(단계 0)은 그 전리품의 가장 낮은 단계 스프라이트를 쓴다.
         int _tier = null != growthTierGetter ? growthTierGetter(_lootType) : 0;
 
-        if (0 < _tier && null != growthVisualData
+        if (null != growthVisualData
             && true == growthVisualData.TryGetSprite(_lootType, _tier, out Sprite _tierSprite, out bool _bPlaceholder))
         {
             lootItemImage.sprite = _tierSprite;
