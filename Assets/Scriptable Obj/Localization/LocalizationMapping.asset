@@ -249,6 +249,70 @@ MonoBehaviour:
     enumValueName: ManifestationBrand
     enumIntValue: 100
     compositeKey: 4203462
+  - enumTypeName: SkillCommandType
+    enumValueName: WhirlWind
+    enumIntValue: 44
+    compositeKey: 4203463
+  - enumTypeName: SkillCommandType
+    enumValueName: Overheat
+    enumIntValue: 105
+    compositeKey: 4203464
+  - enumTypeName: SkillCommandType
+    enumValueName: OverheatPermanent
+    enumIntValue: 113
+    compositeKey: 4203465
+  - enumTypeName: SkillCommandType
+    enumValueName: ShockWaveOverheatBoost
+    enumIntValue: 106
+    compositeKey: 4203466
+  - enumTypeName: SkillCommandType
+    enumValueName: BoomerangOverheatBoost
+    enumIntValue: 107
+    compositeKey: 4203467
+  - enumTypeName: SkillCommandType
+    enumValueName: DroneOverheatBoost
+    enumIntValue: 108
+    compositeKey: 4203468
+  - enumTypeName: SkillCommandType
+    enumValueName: MagmaForestOverGrowth
+    enumIntValue: 55
+    compositeKey: 4203469
+  - enumTypeName: SkillCommandType
+    enumValueName: AdvancedLogChance
+    enumIntValue: 102
+    compositeKey: 4203470
+  - enumTypeName: SkillCommandType
+    enumValueName: PerfectLogChance
+    enumIntValue: 103
+    compositeKey: 4203471
+  - enumTypeName: SkillCommandType
+    enumValueName: Drone
+    enumIntValue: 80
+    compositeKey: 4203472
+  - enumTypeName: SkillCommandType
+    enumValueName: DroneDamage
+    enumIntValue: 81
+    compositeKey: 4203473
+  - enumTypeName: SkillCommandType
+    enumValueName: DroneAttackSpeed
+    enumIntValue: 82
+    compositeKey: 4203474
+  - enumTypeName: SkillCommandType
+    enumValueName: DroneRange
+    enumIntValue: 83
+    compositeKey: 4203475
+  - enumTypeName: SkillCommandType
+    enumValueName: DroneChainAttack
+    enumIntValue: 84
+    compositeKey: 4203476
+  - enumTypeName: SkillCommandType
+    enumValueName: DroneChainAttackRange
+    enumIntValue: 85
+    compositeKey: 4203477
+  - enumTypeName: SkillCommandType
+    enumValueName: Hello
+    enumIntValue: 40
+    compositeKey: 4203478
   - enumTypeName: MapType
     enumValueName: None
     enumIntValue: 0

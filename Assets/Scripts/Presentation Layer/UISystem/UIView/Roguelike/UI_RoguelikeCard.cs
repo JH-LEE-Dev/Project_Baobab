@@ -1,0 +1,214 @@
+using UnityEngine;
+using UnityEngine.UI;
+
+/// <summary>
+/// 로그라이크 카드 한 장의 그림. 기획서 v2.3 "카드 선택 화면 구성"의 카드 본체 - 프레임 안에 카드 이미지, 하단 중앙에 레벨 표기만 둔다.
+/// 카드 본체에는 텍스트를 넣지 않는다(이름·설명·가격은 카드 아래 패널·태그가 맡는다).
+///
+/// [픽셀 규칙 - UI_WorkList 0장]
+///   - 스케일은 항상 1(뒤집힘 연출 중 일시적으로 폭만 줄어드는 것은 허용). 크기는 스프라이트 원본 픽셀 그대로(sizeDelta = sprite.rect.size), 위치는 정수 픽셀.
+///   - 호버는 크기가 아니라 Visual을 위로 HoverLiftPixels(6px) 올린다. 마우스를 받는 HitBox는 올라간 범위까지 덮고 움직이지 않는다.
+///     움직이는 그림(Visual 아래)은 raycastTarget을 끈다 - 그림이 올라가며 판정이 풀렸다 걸렸다 하는 떨림이 없다.
+///   - 뒤집힘은 3D 회전이 아니라 FlipRoot의 폭을 정수 픽셀 단계로 줄였다 늘리는 방식이다(SetFlipWidth). 폭은 짝수 픽셀만 쓴다 - 가운데 기준이라 홀수 폭은 가장자리가 반 픽셀에 걸린다.
+///
+/// [아이콘] RoguelikeCardViewData.icon(= CardDefinitionSO.icon)을 그대로 쓴다. 특성 트리와 같은 스프라이트를 카드 에셋의 icon에 넣으면 된다.
+/// [레벨] levelAfterPurchase를 I~VI로 그리고, maxLevel에 닿은 레벨은 MAX로 그린다(액티브 7레벨 = I~VI, MAX / 공통 패시브 5레벨 = I~IV, MAX).
+///   루비(계약)·프리즘은 레벨이 없어 숨기고, 루비는 rubyBadgeSprite(±)가 있으면 그것을 그린다.
+///   MAX 전용 이미지(maxLevelSprite)와 VI 이미지가 아직 없어서, MAX는 V로 대신 그리고 VI는 비어 있으면 레벨 표기를 숨긴다(리소스가 생기면 슬롯에 넣는다).
+/// [뒷면] SetFaceDown(true)면 프레임만 어둡게 보인다(임시 뒷면 - 뒷면 리소스가 생기면 backSprite에 넣는다).
+/// </summary>
+public class UI_RoguelikeCard : MonoBehaviour
+{
+    public const int HoverLiftPixels = 6;
+    // MAX 전용 이미지가 없을 때 MAX 표기 대신 쓰는 레벨(V). 리소스가 생기면 maxLevelSprite를 채우면 이 대체는 쓰이지 않는다.
+    private const int FallbackMaxBadgeLevel = 5;
+
+    private static readonly Color BackTint = new Color(0.55f, 0.55f, 0.55f, 1f);
+
+    //내부 의존성 (프리팹에서 연결)
+    [SerializeField] private RectTransform visual;
+    [SerializeField] private RectTransform flipRoot;
+    [SerializeField] private Image frameImage;
+    [SerializeField] private Image profileImage;
+    [SerializeField] private Image iconImage;
+    [SerializeField] private Image levelImage;
+
+    [Header("에셋")]
+    [Tooltip("레벨 1~6(I~VI) 표기. 인덱스 0이 레벨 1. 비어 있는 칸은 그 레벨의 표기를 숨긴다.")]
+    [SerializeField] private Sprite[] levelSprites = new Sprite[6];
+    [Tooltip("MAX 표기. 비어 있으면 V 이미지로 대신한다.")]
+    [SerializeField] private Sprite maxLevelSprite;
+    [Tooltip("루비 카드의 ± 표기. 비어 있으면 루비는 레벨 표기를 숨긴다.")]
+    [SerializeField] private Sprite rubyBadgeSprite;
+    [Tooltip("ECardDisplayGrade 순서(Bronze, Silver, Gold, Emerald, Prism, Ruby)의 프레임. 비어 있는 칸은 기본 프레임을 쓴다.")]
+    [SerializeField] private Sprite[] gradeFrames = new Sprite[0];
+    [Tooltip("뒷면 스프라이트. 비어 있으면 기본 프레임을 어둡게 해서 뒷면으로 쓴다.")]
+    [SerializeField] private Sprite backSprite;
+
+    [Header("배치 (프레임 왼쪽 아래 기준 정수 픽셀)")]
+    [SerializeField] private Vector2Int iconCenter = new Vector2Int(25, 55);
+    [SerializeField] private Vector2Int levelCenter = new Vector2Int(25, 21);
+
+    //상태 변수
+    private Sprite defaultFrameSprite;
+    private Sprite faceFrameSprite;
+    private bool bHovered;
+    private bool bFaceDown;
+    private bool bIconVisible;
+    private bool bLevelVisible;
+    private int shakeOffsetX;
+
+    public bool IsHovered => bHovered;
+    public bool IsFaceDown => bFaceDown;
+
+    /// <summary>카드 그림 영역(호버로 올라가는 부분). 커서 박스가 이 위치를 따라간다.</summary>
+    public RectTransform VisualRect => visual;
+
+    public void SetData(in RoguelikeCardViewData _data)
+    {
+        SetCard(_data.icon, _data.kind, _data.displayGrade, _data.levelAfterPurchase, _data.maxLevel, _data.bRuby);
+    }
+
+    public void SetCard(Sprite _icon, ECardKind _kind, ECardDisplayGrade _grade, int _level, int _maxLevel, bool _bRuby)
+    {
+        ApplyFrame(_grade);
+        ApplyIcon(_icon);
+        ApplyLevel(_kind, _level, _maxLevel, _bRuby);
+        ApplyFace();
+    }
+
+    /// <summary>호버(마우스·커서 박스 공통). 그림만 정수 픽셀 위로 올리고 판정은 그대로다.</summary>
+    public void SetHovered(bool _bHovered)
+    {
+        bHovered = _bHovered;
+        ApplyVisualPosition();
+    }
+
+    /// <summary>거절 반응용 좌우 흔들림(정수 픽셀). 0이면 제자리.</summary>
+    public void SetShakeOffset(int _offsetX)
+    {
+        shakeOffsetX = _offsetX;
+        ApplyVisualPosition();
+    }
+
+    /// <summary>뒷면(true)이면 프레임만 어둡게 보이고 프로필·아이콘·레벨은 숨긴다.</summary>
+    public void SetFaceDown(bool _bFaceDown)
+    {
+        bFaceDown = _bFaceDown;
+        ApplyFace();
+    }
+
+    /// <summary>뒤집힘 연출용 폭(픽셀). 프레임 폭이면 정상, 0이면 안 보인다. 짝수 픽셀만 쓰는 것이 호출 쪽 규칙이다.</summary>
+    public void SetFlipWidth(int _width)
+    {
+        if (null == flipRoot) return;
+
+        float frameWidth = flipRoot.rect.width;
+        float scaleX = 0f < frameWidth ? Mathf.Clamp01(_width / frameWidth) : 1f;
+        flipRoot.localScale = new Vector3(scaleX, 1f, 1f);
+    }
+
+    /// <summary>프레임 폭(픽셀). 뒤집힘 폭 계산용.</summary>
+    public int FrameWidth => null != flipRoot ? Mathf.RoundToInt(flipRoot.rect.width) : 0;
+
+    private void ApplyVisualPosition()
+    {
+        if (null == visual) return;
+
+        visual.anchoredPosition = new Vector2(shakeOffsetX, bHovered ? HoverLiftPixels : 0);
+    }
+
+    private void ApplyFrame(ECardDisplayGrade _grade)
+    {
+        if (null == frameImage) return;
+
+        if (null == defaultFrameSprite) defaultFrameSprite = frameImage.sprite;
+
+        int index = (int)_grade;
+        Sprite sprite = null != gradeFrames && index >= 0 && index < gradeFrames.Length ? gradeFrames[index] : null;
+        faceFrameSprite = null != sprite ? sprite : defaultFrameSprite;
+    }
+
+    private void ApplyIcon(Sprite _icon)
+    {
+        if (null == iconImage) return;
+
+        bIconVisible = null != _icon;
+        if (false == bIconVisible) return;
+
+        iconImage.sprite = _icon;
+        PlaceCentered(iconImage.rectTransform, _icon, iconCenter);
+    }
+
+    private void ApplyLevel(ECardKind _kind, int _level, int _maxLevel, bool _bRuby)
+    {
+        if (null == levelImage) return;
+
+        Sprite sprite = null;
+        if (_bRuby || ECardKind.Ruby == _kind)
+        {
+            sprite = rubyBadgeSprite;
+        }
+        else if (ECardKind.Prism != _kind)
+        {
+            bool bMax = 0 < _maxLevel && _level >= _maxLevel;
+            if (bMax) sprite = null != maxLevelSprite ? maxLevelSprite : GetLevelSprite(Mathf.Min(_level, FallbackMaxBadgeLevel));
+            else sprite = GetLevelSprite(_level);
+        }
+
+        bLevelVisible = null != sprite;
+        if (false == bLevelVisible) return;
+
+        levelImage.sprite = sprite;
+        PlaceCentered(levelImage.rectTransform, sprite, levelCenter);
+    }
+
+    private Sprite GetLevelSprite(int _level)
+    {
+        int index = _level - 1;
+        return null != levelSprites && 0 <= index && index < levelSprites.Length ? levelSprites[index] : null;
+    }
+
+    /// <summary>앞면/뒷면 상태를 그림에 반영한다(프레임 스프라이트·틴트, 아이콘·레벨·프로필·유료 점 표시).</summary>
+    private void ApplyFace()
+    {
+        bool bFront = false == bFaceDown;
+
+        if (null != frameImage)
+        {
+            if (null == defaultFrameSprite) defaultFrameSprite = frameImage.sprite;
+
+            if (bFront)
+            {
+                frameImage.sprite = null != faceFrameSprite ? faceFrameSprite : defaultFrameSprite;
+                frameImage.color = Color.white;
+            }
+            else
+            {
+                frameImage.sprite = null != backSprite ? backSprite : defaultFrameSprite;
+                frameImage.color = null != backSprite ? Color.white : BackTint;
+            }
+        }
+
+        if (null != profileImage) profileImage.enabled = bFront;
+        if (null != iconImage) iconImage.enabled = bFront && bIconVisible;
+        if (null != levelImage) levelImage.enabled = bFront && bLevelVisible;
+    }
+
+    /// <summary>
+    /// 스프라이트 원본 픽셀 크기로 _center에 가운데 맞춘다. 크기가 홀수면 내림해서 항상 정수 픽셀에 놓는다.
+    /// 대상 RectTransform은 앵커·피벗이 왼쪽 아래(0, 0)여야 한다(프리팹 빌더가 그렇게 만든다).
+    /// </summary>
+    private static void PlaceCentered(RectTransform _rect, Sprite _sprite, Vector2Int _center)
+    {
+        Vector2 size = _sprite.rect.size;
+        _rect.sizeDelta = size;
+        _rect.anchoredPosition = new Vector2(Mathf.Floor(_center.x - size.x * 0.5f), Mathf.Floor(_center.y - size.y * 0.5f));
+    }
+
+    private void OnDisable()
+    {
+        shakeOffsetX = 0;
+        SetHovered(false);
+    }
+}
