@@ -123,4 +123,32 @@ public class CursorMotionSettings
         hideExpandOffset = 4f,
         hideEase = Ease.OutQuad
     };
+
+    /// <summary>
+    /// 카드 선택 화면용. 세로로 긴 카드 둘레를 도는 커서라 기울이지 않고(픽셀 UI 규칙 - 기울임 금지) 크기만 살짝 눌렀다 돌아오게 한다.
+    /// 카드를 옮겨 다닐 때마다 다시 재생되므로 짧고 약하게(0.2초, 수축 3%) 잡고, 숨쉬기는 1px 안에서 느리게 한다.
+    /// </summary>
+    public static CursorMotionSettings Card => new CursorMotionSettings
+    {
+        enableShowMotion = true,
+        showDuration = 0.2f,
+        shrinkSizeScale = 0.97f,
+        shrinkTimeRatio = 0.35f,
+        restoreTimeRatio = 0.65f,
+        sizeRestoreEase = Ease.OutQuad,
+        startAngle = 0f,
+        angleDamping = 0.5f,
+        swingCount = 1,
+        rotationTimeRatio = 0.85f,
+        rotationEase = Ease.OutSine,
+
+        enableIdleMotion = true,
+        idleCycleDuration = 2.4f,
+        idleSizeOffset = 1f,
+
+        enableHideMotion = true,
+        hideDuration = 0.1f,
+        hideExpandOffset = 3f,
+        hideEase = Ease.OutQuad
+    };
 }

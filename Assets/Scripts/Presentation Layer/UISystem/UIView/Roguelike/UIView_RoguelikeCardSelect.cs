@@ -48,6 +48,9 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private const float CloseSeconds = 0.2f;
     private const float ShakeStepSeconds = 0.03f;
     private const float DisabledButtonAlpha = 0.4f;
+    private const float RerollFocusSeconds = 0.1f;
+    private static readonly Color RerollIdleColor = new Color(0.22f, 0.14f, 0.1f, 0.95f);
+    private static readonly Color RerollFocusColor = new Color(0.36f, 0.24f, 0.16f, 1f);
     private const int CursorPadding = 4;
     private const float ButtonHeight = 18f;
     private const float RerollButtonWidth = 26f;
@@ -78,6 +81,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     [SerializeField] private CanvasGroup rerollGroup;
     [SerializeField] private UI_RoguelikeSelectRelay rerollRelay;
     [SerializeField] private RectTransform rerollIconRect;
+    [SerializeField] private Image rerollBackground;
 
     //상태 변수
     private EPhase phase;
@@ -91,6 +95,9 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private Action languageChangedHandler;
     private float contentDefaultY;
     private float buttonTopY;
+    private CursorMotionSettings cursorMotion;
+    private float rerollFocusAmount;
+    private float rerollIconBaseY;
 
     private RectTransform shakeRect;
     private Vector2 shakeBasePosition;
@@ -137,6 +144,9 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         pendingComplete = _onComplete;
         bLocked = true;
         chosenSlot = FindSlotByOffer(_purchase.offerIndex);
+
+        ApplyDimming(null);
+        chosenSlot?.PlayFlash();
 
         for (int i = 0; i < slotCount; i++)
         {
@@ -276,7 +286,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         rerollRect.anchoredPosition = new Vector2(Mathf.Floor(-RerollButtonWidth * 0.5f), y);
 
         Vector2 iconSize = rerollIconRect.rect.size;
-        rerollIconRect.anchoredPosition = new Vector2(Mathf.Floor((RerollButtonWidth - iconSize.x) * 0.5f), Mathf.Floor((ButtonHeight - iconSize.y) * 0.5f));
+        rerollIconBaseY = Mathf.Floor((ButtonHeight - iconSize.y) * 0.5f);
+        rerollIconRect.anchoredPosition = new Vector2(Mathf.Floor((RerollButtonWidth - iconSize.x) * 0.5f), rerollIconBaseY + Mathf.Round(rerollFocusAmount));
 
         ((RectTransform)descPanel.transform).anchoredPosition = new Vector2(0f, y - DescGap);
         FitContentVertically(y - DescGap - PrepareDescriptionPanel());
@@ -387,6 +398,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
         if (null == _relay)
         {
+            ApplyDimming(null);
             descPanel.Clear();
             HideCursor();
             return;
@@ -395,8 +407,15 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         UI_RoguelikeCardSlot slot = FindSlotByRelay(_relay);
         if (null != slot) slot.SetFocused(true);
 
+        ApplyDimming(slot);
         RefreshDescription();
         ShowCursor(_relay);
+    }
+
+    /// <summary>카드가 선택 중이면 나머지 카드를 어둡게 해 밝기로도 선택 중인 카드를 구분한다. 리롤 버튼에 포커스가 있거나 포커스가 없으면 모두 원래 밝기.</summary>
+    private void ApplyDimming(UI_RoguelikeCardSlot _focusedSlot)
+    {
+        for (int i = 0; i < slotCount; i++) slots[i].SetDimmed(null != _focusedSlot && slots[i] != _focusedSlot);
     }
 
     /// <summary>포커스가 있는 대상(카드·리롤)의 이름·설명을 패널에 채운다. 아직 뒤집히는 중인 카드는 비운다.</summary>
@@ -425,8 +444,12 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         ICursorBoxUI cursor = viewCtx?.cursorBoxUI;
         if (null == cursor) return;
 
+        // 카드는 뒤집히는 동안 커서 박스를 띄우지 않는다(착지하는 순간 OnSlotLanded에서 나타난다).
+        UI_RoguelikeCardSlot slot = FindSlotByRelay(_relay);
+        if (null != slot && slot.IsIntroPlaying) return;
+
         RectTransform target = _relay.CursorTarget;
-        cursor.Show(target, target.rect.size + new Vector2(CursorPadding, CursorPadding));
+        cursor.Show(target, target.rect.size + new Vector2(CursorPadding, CursorPadding), Vector2.zero, cursorMotion);
     }
 
     private void HideCursor()
@@ -505,6 +528,11 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         if (null != focusedRelay && _slot.Relay == focusedRelay) RefreshDescription();
     }
 
+    private void OnSlotLanded(UI_RoguelikeCardSlot _slot)
+    {
+        if (null != focusedRelay && _slot.Relay == focusedRelay) ShowCursor(focusedRelay);
+    }
+
     private void OnRerollClicked()
     {
         if (bLocked) return;
@@ -538,6 +566,19 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         }
 
         shakeRect.anchoredPosition = shakeBasePosition + new Vector2(ShakePattern[step], 0f);
+    }
+
+    /// <summary>리롤 버튼에 포커스가 오면 배경이 밝아지고 아이콘이 1px 뜬다(카드 호버와 같은 결의 약한 반응).</summary>
+    private void UpdateRerollFocus()
+    {
+        float target = null != focusedRelay && focusedRelay == rerollRelay ? 1f : 0f;
+        if (rerollFocusAmount == target) return;
+
+        rerollFocusAmount = Mathf.MoveTowards(rerollFocusAmount, target, Time.unscaledDeltaTime / RerollFocusSeconds);
+        rerollBackground.color = Color.Lerp(RerollIdleColor, RerollFocusColor, rerollFocusAmount);
+
+        Vector2 iconPosition = rerollIconRect.anchoredPosition;
+        rerollIconRect.anchoredPosition = new Vector2(iconPosition.x, rerollIconBaseY + Mathf.Round(rerollFocusAmount));
     }
 
     private void UpdatePhase()
@@ -604,6 +645,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         if (null != localizationManager) localizationManager.OnLanguageChanged += languageChangedHandler;
 
         descPanel.Initialize(localizationManager);
+        rerollFocusAmount = 0f;
+        rerollBackground.color = RerollIdleColor;
         LayoutControls();
         pendingComplete = null;
         phase = EPhase.Idle;
@@ -646,6 +689,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         base.Awake();
 
         languageChangedHandler = OnLanguageChanged;
+        cursorMotion = CursorMotionSettings.Card;
 
         // 프리팹에 잡아 둔 기준값(버튼 위쪽, Content 기본 위치). 이후 레이아웃은 이 값에서 다시 계산한다.
         RectTransform rerollRect = (RectTransform)rerollButton.transform;
@@ -656,6 +700,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         {
             slots[i].ClickedEvent += OnSlotClicked;
             slots[i].RevealedEvent += OnSlotRevealed;
+            slots[i].LandedEvent += OnSlotLanded;
             slots[i].Relay.FocusedEvent += OnRelayFocused;
         }
 
@@ -669,6 +714,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
         UpdatePhase();
         UpdateButtonShake();
+        UpdateRerollFocus();
 
         // 선택 중이던 것이 비활성화되면 EventSystem 선택이 null이 되어 패드 조작이 먹통이 된다. 포커스가 있으면 되돌려 준다.
         if (EPhase.Idle == phase && false == bLocked && null != focusedRelay && focusedRelay.gameObject.activeInHierarchy)

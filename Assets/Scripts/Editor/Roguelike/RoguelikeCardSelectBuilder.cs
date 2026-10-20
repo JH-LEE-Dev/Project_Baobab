@@ -195,6 +195,7 @@ public static class RoguelikeCardSelectBuilder
         viewSo.FindProperty("rerollGroup").objectReferenceValue = rerollGroup;
         viewSo.FindProperty("rerollRelay").objectReferenceValue = rerollRelay;
         viewSo.FindProperty("rerollIconRect").objectReferenceValue = rerollIconRect;
+        viewSo.FindProperty("rerollBackground").objectReferenceValue = rerollRect.GetComponent<Image>();
         viewSo.ApplyModifiedPropertiesWithoutUndo();
 
         PrefabUtility.SaveAsPrefabAsset(root, ViewPrefabPath);
@@ -234,62 +235,42 @@ public static class RoguelikeCardSelectBuilder
     /// </summary>
     private static Sprite EnsureIconSprite(string _path, string[] _rows)
     {
-        if (false == System.IO.File.Exists(_path))
+        int gw = _rows[0].Length;
+        int gh = _rows.Length;
+        int w = gw + 2;
+        int h = gh + 2;
+        Color32[] pixels = new Color32[w * h];
+
+        for (int y = 0; y < gh; y++)
         {
-            int gw = _rows[0].Length;
-            int gh = _rows.Length;
-            int w = gw + 2;
-            int h = gh + 2;
-            Color32[] pixels = new Color32[w * h];
-
-            for (int y = 0; y < gh; y++)
+            for (int x = 0; x < gw; x++)
             {
-                for (int x = 0; x < gw; x++)
-                {
-                    if ('#' != _rows[y][x]) continue;
+                if ('#' != _rows[y][x]) continue;
 
-                    int px = x + 1;
-                    int py = gh - 1 - y + 1; // 텍스처는 아래에서 위
-                    for (int dy = -1; dy <= 1; dy++)
+                int px = x + 1;
+                int py = gh - 1 - y + 1; // 텍스처는 아래에서 위
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    for (int dx = -1; dx <= 1; dx++)
                     {
-                        for (int dx = -1; dx <= 1; dx++)
-                        {
-                            int idx = (py + dy) * w + px + dx;
-                            if (0 == pixels[idx].a) pixels[idx] = new Color32(0, 0, 0, 255);
-                        }
+                        int idx = (py + dy) * w + px + dx;
+                        if (0 == pixels[idx].a) pixels[idx] = new Color32(0, 0, 0, 255);
                     }
                 }
             }
-
-            for (int y = 0; y < gh; y++)
-            {
-                for (int x = 0; x < gw; x++)
-                {
-                    if ('#' != _rows[y][x]) continue;
-
-                    pixels[(gh - 1 - y + 1) * w + x + 1] = new Color32(255, 255, 255, 255);
-                }
-            }
-
-            Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
-            tex.SetPixels32(pixels);
-            tex.Apply();
-            System.IO.File.WriteAllBytes(_path, tex.EncodeToPNG());
-            UnityEngine.Object.DestroyImmediate(tex);
-            AssetDatabase.ImportAsset(_path, ImportAssetOptions.ForceSynchronousImport);
-
-            TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(_path);
-            importer.textureType = TextureImporterType.Sprite;
-            importer.spriteImportMode = SpriteImportMode.Single;
-            importer.spritePixelsPerUnit = 100f;
-            importer.filterMode = FilterMode.Point;
-            importer.mipmapEnabled = false;
-            importer.textureCompression = TextureImporterCompression.Uncompressed;
-            importer.alphaIsTransparency = true;
-            importer.SaveAndReimport();
         }
 
-        return RoguelikeCardBuilder.LoadSprite(_path);
+        for (int y = 0; y < gh; y++)
+        {
+            for (int x = 0; x < gw; x++)
+            {
+                if ('#' != _rows[y][x]) continue;
+
+                pixels[(gh - 1 - y + 1) * w + x + 1] = new Color32(255, 255, 255, 255);
+            }
+        }
+
+        return RoguelikeCardBuilder.EnsureSpriteFromPixels(_path, pixels, w, h);
     }
 
     private static void CreateButton(string _name, RectTransform _parent, Vector2Int _position, Vector2Int _size, out Button _button, out CanvasGroup _group,
