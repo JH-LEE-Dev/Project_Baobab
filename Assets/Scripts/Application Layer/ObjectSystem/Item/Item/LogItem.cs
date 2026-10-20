@@ -149,6 +149,7 @@ public class LogItem : Item, IStaticCollidable
 
     [SerializeField] private GameObject outlineObj;
     private Transform outlineTransform; // outlineObj.transform 프로퍼티(네이티브 호출)를 매 프레임 반복하지 않도록 캐싱
+    private TweenCallback syncOutlineCallback; // 벨트 트윈마다 메서드 그룹 델리게이트를 새로 할당하지 않도록 캐싱
     [SerializeField] private SpriteRenderer outlineStencilSR;
     [SerializeField] private SpriteRenderer outlineSR;
 
@@ -200,6 +201,9 @@ public class LogItem : Item, IStaticCollidable
         bDisableCustomSortable = _bDisableCustomSortable;
         logState = _logState;
         ApplyOutlineColor();
+        // 아웃라인은 공중에서 사라지는 연출(DropAllItem, Launch에서 끈다)을 빼고는 언제나 켠다.
+        // 보관함/제재소 전송, 벨트, 재단기(제재목)처럼 Launch를 거치지 않는 경로도 모두 여기서 켜진다.
+        SetOutlineVisible(true);
         treeType = _logItemTypeData.treeType;
         currentTypeData = _logItemTypeData;
         originalTypeData = _logItemTypeData;
@@ -223,11 +227,7 @@ public class LogItem : Item, IStaticCollidable
 
         if (spriteRenderer != null)
         {
-            spriteRenderer.sprite = sprite;
-            if (outlineStencilSR != null)
-                outlineStencilSR.sprite = sprite;
-            if (outlineSR != null)
-                outlineSR.sprite = sprite;
+            SetBodySprite(sprite);
         }
 
         InitializeShadowFrames();
@@ -253,6 +253,14 @@ public class LogItem : Item, IStaticCollidable
                 customSortable.Initialize(sortAnchor);
             customSortable.AddSpriteRenderer(spriteRenderer);
             customSortable.AddSpriteRenderer(outlineSR);
+        }
+
+        // 첫 정렬 갱신 전에 그려지는 프레임(벨트 투입 직후 등)에도 스텐실 작성기가 본체보다 먼저 그려지도록
+        // 아웃라인 렌더러 순서만 본체에 맞춘다. 본체 순서는 건드리지 않는다.
+        if (outlineSR != null && outlineStencilSR != null)
+        {
+            outlineSR.sortingOrder = spriteRenderer.sortingOrder;
+            outlineStencilSR.sortingOrder = spriteRenderer.sortingOrder - 1;
         }
 
         // 원본 색은 CacheRenderers()가 프리팹 상태 그대로일 때 한 번만 잡아둔다.
@@ -394,11 +402,7 @@ public class LogItem : Item, IStaticCollidable
 
         if (spriteRenderer != null)
         {
-            spriteRenderer.sprite = sprite;
-            if (outlineStencilSR != null)
-                outlineStencilSR.sprite = sprite;
-            if (outlineSR != null)
-                outlineSR.sprite = sprite;
+            SetBodySprite(sprite);
         }
     }
 
@@ -416,7 +420,9 @@ public class LogItem : Item, IStaticCollidable
         {
             visualTransform.DOKill();
             visualTransform.localScale = Vector3.zero;
-            visualTransform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutElastic, 1.7f, 0.3f).SetLink(visualTransform.gameObject);
+            SyncOutlineTransform();
+            // 벨트는 원목을 멈춰 있는 동안 갱신하지 않으므로, 아웃라인은 트윈이 직접 따라가게 한다
+            visualTransform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutElastic, 1.7f, 0.3f).OnUpdate(GetSyncOutlineCallback()).SetLink(visualTransform.gameObject);
         }
     }
 
@@ -432,7 +438,7 @@ public class LogItem : Item, IStaticCollidable
         if (null != visualTransform)
         {
             visualTransform.DOKill();
-            visualTransform.DOScale(Vector3.zero, _duration).SetEase(Ease.InBack).SetLink(visualTransform.gameObject);
+            visualTransform.DOScale(Vector3.zero, _duration).SetEase(Ease.InBack).OnUpdate(GetSyncOutlineCallback()).SetLink(visualTransform.gameObject);
         }
     }
 
@@ -622,18 +628,8 @@ public class LogItem : Item, IStaticCollidable
         transform.localScale = Vector3.zero;
 
         // 공중에서 페이드아웃되어 사라지는 연출(버려진 아이템)에서는 아웃라인을 켜지 않는다
-        if (outlineObj != null && !bFadeAndVanish)
-        {
-            outlineObj.SetActive(true);
-        }
-
-        if (outlineObj != null && visualTransform != null)
-        {
-            if (outlineTransform == null) outlineTransform = outlineObj.transform;
-            outlineTransform.localPosition = visualTransform.localPosition;
-            outlineTransform.localRotation = visualTransform.localRotation;
-            outlineTransform.localScale = visualTransform.localScale;
-        }
+        SetOutlineVisible(!bFadeAndVanish);
+        SyncOutlineTransform();
 
         // (예전엔 여기서 GetPropertyBlock→SetPropertyBlock을 그대로 되돌려 쓰는 no-op이 있었다. 실제 값은 바로 아래 SetShaderFloating/UpdateShadowScale이 쓴다)
 
@@ -787,8 +783,7 @@ public class LogItem : Item, IStaticCollidable
         landingDampTime = landingDampDuration;
         durability = originalDurability;
 
-        if (null != outlineObj)
-            outlineObj.SetActive(false);
+        SetOutlineVisible(false);
 
         if (null != outlineSR)
         {
@@ -829,13 +824,14 @@ public class LogItem : Item, IStaticCollidable
             spriteRenderer.color = originalColor;
             spriteRenderer.SetPropertyBlock(null);
             spriteRenderer.sortingLayerID = objectsSortingLayerID;
+            SetOutlineSortingLayer(objectsSortingLayerID);
         }
 
         // 풀 재사용 시 원목 스프라이트로 되돌아가므로 가공 상태도 함께 해제한다.
         bIsTimber = false;
 
         if (null != sprite && null != spriteRenderer)
-            spriteRenderer.sprite = sprite;
+            SetBodySprite(sprite);
 
         if (null != visualTransform)
         {
@@ -843,6 +839,7 @@ public class LogItem : Item, IStaticCollidable
                 visualTransform.DOKill();
             visualTransform.localRotation = Quaternion.identity;
             visualTransform.localScale = Vector3.one;
+            SyncOutlineTransform();
         }
 
         if (null != customSortable)
@@ -866,7 +863,8 @@ public class LogItem : Item, IStaticCollidable
 
         if (spriteRenderer != null)
         {
-            spriteRenderer.sprite = timberSprite;
+            // 아웃라인도 제재목 모양을 따라가야 하므로 함께 바꾼다
+            SetBodySprite(timberSprite);
         }
     }
 
@@ -901,6 +899,9 @@ public class LogItem : Item, IStaticCollidable
                 outlineStencilSR.sortingOrder = outlineSR.sortingOrder - 1;
         }
 
+        // 모든 이동 상태(포물선/전송/흡입/착지)에서 아웃라인이 본체 그림을 따라가게 한 곳에서 맞춘다
+        SyncOutlineTransform();
+
         SyncGemAura();
 
         SyncParticleSorting();
@@ -915,6 +916,7 @@ public class LogItem : Item, IStaticCollidable
                 outlineStencilSR.sortingOrder = outlineSR.sortingOrder - 1;
         }
 
+        SyncOutlineTransform();
         SyncGemAura();
         SyncParticleSorting();
     }
@@ -948,13 +950,6 @@ public class LogItem : Item, IStaticCollidable
             pulse = Mathf.Min(pulse, 0.2f); // 최대 변형치 제한
 
             visualTransform.localScale = Vector3.one * (1f + pulse);
-
-            if (outlineObj != null)
-            {
-                outlineTransform.localPosition = visualTransform.localPosition;
-                outlineTransform.localRotation = visualTransform.localRotation;
-                outlineTransform.localScale = visualTransform.localScale;
-            }
         }
         else
         {
@@ -990,13 +985,6 @@ public class LogItem : Item, IStaticCollidable
             {
                 visualTransform.localPosition = Vector3.zero;
                 visualTransform.localRotation = Quaternion.identity;
-
-                if (outlineObj != null)
-                {
-                    outlineObj.transform.localPosition = Vector3.zero;
-                    outlineObj.transform.localRotation = Quaternion.identity;
-                    outlineObj.transform.localScale = Vector3.one;
-                }
             }
             transform.localScale = Vector3.one;
 
@@ -1419,13 +1407,6 @@ public class LogItem : Item, IStaticCollidable
             }
 
             UpdateShadowScale(visualTransform.localPosition.y);
-
-            if (outlineObj != null)
-            {
-                outlineTransform.localPosition = visualTransform.localPosition;
-                outlineTransform.localScale = visualTransform.localScale;
-                outlineTransform.localRotation = visualTransform.localRotation;
-            }
         }
 
         // 타겟에 매우 가까워지면 전체 스케일 축소 (최소 0.25 유지)
@@ -1477,13 +1458,6 @@ public class LogItem : Item, IStaticCollidable
             else
             {
                 visualTransform.localScale = Vector3.one;
-            }
-
-            if (outlineObj != null)
-            {
-                outlineTransform.localPosition = visualTransform.localPosition;
-                outlineTransform.localScale = visualTransform.localScale;
-                outlineTransform.localRotation = visualTransform.localRotation;
             }
         }
     }
@@ -1680,6 +1654,50 @@ public class LogItem : Item, IStaticCollidable
     {
         EnsureSortingLayerIDs();
         spriteRenderer.sortingLayerID = flyingItemSortingLayerID;
+        // 아웃라인이 Objects 레이어에 남으면 본체와 다른 레이어에 그려져 상자 등에 가려진다
+        SetOutlineSortingLayer(flyingItemSortingLayerID);
+    }
+
+    private void SetOutlineSortingLayer(int _sortingLayerID)
+    {
+        if (outlineSR != null) outlineSR.sortingLayerID = _sortingLayerID;
+        if (outlineStencilSR != null) outlineStencilSR.sortingLayerID = _sortingLayerID;
+    }
+
+    private void SetOutlineVisible(bool _visible)
+    {
+        if (outlineObj == null || outlineObj.activeSelf == _visible) return;
+
+        outlineObj.SetActive(_visible);
+    }
+
+    // 아웃라인은 본체(visualTransform)의 형제라 상속받지 못하므로, 본체의 로컬 변형을 그대로 복사한다
+    private void SyncOutlineTransform()
+    {
+        if (outlineObj == null || visualTransform == null) return;
+
+        if (outlineTransform == null) outlineTransform = outlineObj.transform;
+        outlineTransform.localPosition = visualTransform.localPosition;
+        outlineTransform.localRotation = visualTransform.localRotation;
+        outlineTransform.localScale = visualTransform.localScale;
+    }
+
+    private TweenCallback GetSyncOutlineCallback()
+    {
+        if (syncOutlineCallback == null)
+            syncOutlineCallback = SyncOutlineTransform;
+
+        return syncOutlineCallback;
+    }
+
+    // 본체와 아웃라인(스텐실 포함)은 항상 같은 스프라이트를 써야 테두리가 모양에 맞는다
+    private void SetBodySprite(Sprite _sprite)
+    {
+        spriteRenderer.sprite = _sprite;
+        if (outlineStencilSR != null)
+            outlineStencilSR.sprite = _sprite;
+        if (outlineSR != null)
+            outlineSR.sprite = _sprite;
     }
 
     private void SetShaderFloating(bool _enable)
