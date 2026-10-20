@@ -122,6 +122,8 @@ public class ItemAuraOrbitController : MonoBehaviour
     private static readonly Color EvolveWhite = new Color(2.5f, 2.5f, 2.5f, 1.0f);
     private Color centerGlowShaderCore;
     private Color centerGlowShaderOuter;
+    // 중앙 글로우 위치(이 오브젝트 기준 로컬). 기본 0 - 마을 기둥이 전시 그림의 실제 중심에 맞출 때만 바꾼다.
+    private Vector2 centerGlowOffset;
     private Transform trailRoot;
     private bool isPlaying = false;
     private bool isInitialized = false;
@@ -278,6 +280,18 @@ public class ItemAuraOrbitController : MonoBehaviour
             {
                 sr.color = centerGlowColor; // Bloom multiplier는 별도 _Intensity로 제어되거나 Material에 위임될 수 있으나, 기본 색상 적용.
             }
+        }
+    }
+
+    /// <summary>
+    /// 중앙 글로우를 이 오브젝트 기준(로컬)으로 옮긴다. 그림이 스프라이트 중심에서 벗어나 그려져 있을 때(마을 기둥의 씨앗 등) 쓴다.
+    /// </summary>
+    public void SetCenterGlowOffset(Vector2 _offset)
+    {
+        centerGlowOffset = _offset;
+        if (null != centerGlowObject)
+        {
+            centerGlowObject.transform.localPosition = _offset;
         }
     }
 
@@ -452,7 +466,7 @@ public class ItemAuraOrbitController : MonoBehaviour
         {
             centerGlowObject = new GameObject("AuraCenterGlow");
             centerGlowObject.transform.SetParent(transform, false);
-            centerGlowObject.transform.localPosition = Vector3.zero;
+            centerGlowObject.transform.localPosition = centerGlowOffset;
             centerGlowObject.transform.localScale = Vector3.one * (centerGlowScale * evolveScale);
 
             SpriteRenderer sr = centerGlowObject.AddComponent<SpriteRenderer>();

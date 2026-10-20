@@ -8,14 +8,13 @@ using UnityEngine;
 
 /// <summary>
 /// 전리품 성장 UI 에셋 구성기. 여러 번 실행해도 같은 결과로 맞춘다.
-///  1) LootGrowthVisualData.asset 생성/갱신(단계별 아우라 색 + 임시 스프라이트 9개)
+///  1) LootGrowthVisualData.asset 생성/갱신(단계별 아우라 색 + 마법 씨앗 스프라이트 - MagicalSeedVisualBuilder)
 ///  2) HUD_LootReveal.prefab에 성장 줄(TMP_Growth) 추가 + 참조 연결
 ///  3) LootPillar.prefab에 LootGrowthVisualData 연결
 /// </summary>
 public static class LootGrowthUiBuilder
 {
     private const string DataPath = "Assets/Scriptable Obj/LootData/LootGrowthVisualData.asset";
-    private const string DbPath = "Assets/Scriptable Obj/LootData/LootItemTypeDataBase.asset";
     private const string RevealPrefabPath = "Assets/Prefabs/UI/LootInfo/HUD_LootReveal.prefab";
     private const string PillarPrefabPath = "Assets/Prefabs/Objects/LootPillar/LootPillar.prefab";
     private const string SpriteAssetPath = "Assets/TextMesh Pro/Resources/Sprite Assets/LootGrowthIcons.asset";
@@ -29,8 +28,6 @@ public static class LootGrowthUiBuilder
     };
 
     private const float AuraIntensity = 2f;
-
-    private static readonly LootType[] GrowthLoots = { LootType.LostAndFoundBox, LootType.SporePotion, LootType.StarCompass };
 
     [MenuItem("LumberBoy/UI/Build Loot Growth UI")]
     public static void Build()
@@ -63,27 +60,14 @@ public static class LootGrowthUiBuilder
             _colors[i] = _c;
         }
 
-        LootItemTypeDataBase _db = AssetDatabase.LoadAssetAtPath<LootItemTypeDataBase>(DbPath);
-        List<LootGrowthVisualData.TierSprite> _sprites = new List<LootGrowthVisualData.TierSprite>(9);
-
-        for (int l = 0; l < GrowthLoots.Length; l++)
-        {
-            LootItemTypeData _item = null != _db ? _db.Get(GrowthLoots[l]) : null;
-            Sprite _base = null != _item ? _item.sprite : null;
-
-            for (int t = 1; t <= LootGrowthVisualData.MaxTier; t++)
-            {
-                LootGrowthVisualData.TierSprite _entry = new LootGrowthVisualData.TierSprite();
-                _entry.lootType = GrowthLoots[l];
-                _entry.tier = t;
-                _entry.sprite = _base;
-                _entry.isPlaceholder = true; // 씨앗/꽃/나무 정식 아트 전까지 임시
-                _sprites.Add(_entry);
-            }
-        }
+        // 스프라이트는 마법 씨앗 리소스(Assets/Graphics/Magical Seed)에서 채운다
+        List<LootGrowthVisualData.TierSprite> _sprites = null != _data.EditorTierSprites
+            ? _data.EditorTierSprites : new List<LootGrowthVisualData.TierSprite>();
 
         _data.SetEditorData(_colors, _sprites);
         EditorUtility.SetDirty(_data);
+        AssetDatabase.SaveAssetIfDirty(_data);
+        MagicalSeedVisualBuilder.Build();
         return _data;
     }
 

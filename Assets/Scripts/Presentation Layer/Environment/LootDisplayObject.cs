@@ -308,17 +308,24 @@ namespace PresentationLayer.Environment
 
         private void ApplyGrowthVisual()
         {
-            if (null == growthVisualData || currentGrowthTier < 1)
+            ApplyDisplayAnimation();
+
+            if (null == auraOrbitController) return;
+
+            // 성장하는 전리품은 단계 색, 성장하지 않는 전리품(단계 0)은 종류별 색(auraSettings)을 같은 세기로 쓴다
+            Color _auraColor = default;
+            bool _bHasColor = null != growthVisualData
+                && (1 <= currentGrowthTier
+                    ? growthVisualData.TryGetAuraColor(currentGrowthTier, out _auraColor)
+                    : TryGetLootAuraColor(CurrentLootType, out _auraColor));
+
+            if (false == _bHasColor)
             {
-                if (null != auraOrbitController)
-                {
-                    auraOrbitController.ClearCenterGlowShaderColors();
-                }
+                auraOrbitController.ClearCenterGlowShaderColors();
                 return;
             }
 
-            if (true == useAuraOrbit && null != auraOrbitController
-                && true == growthVisualData.TryGetAuraColor(currentGrowthTier, out Color _auraColor))
+            if (true == useAuraOrbit)
             {
                 // 글로우 머티리얼 기본색(금색)이 곱해져 렌더러 색만으로는 단계 색이 나오지 않으므로 셰이더 색을 직접 덮어쓴다.
                 Color _glowCore = Color.Lerp(_auraColor, new Color(2f, 2f, 2f, 1f), 0.2f) * growthGlowCoreStrength;
@@ -327,22 +334,163 @@ namespace PresentationLayer.Environment
                 _glowOuter.a = 1f;
                 auraOrbitController.SetCenterGlowShaderColors(_glowCore, _glowOuter);
             }
+        }
 
-            if (null != targetRenderer
-                && true == growthVisualData.TryGetSprite(CurrentLootType, currentGrowthTier, out Sprite _sprite, out bool _bPlaceholder))
+        private bool TryGetLootAuraColor(LootType _lootType, out Color _color)
+        {
+            _color = default;
+
+            if (null == auraSettings) return false;
+
+            int _index = auraSettings.FindIndex(x => x.lootType == _lootType);
+
+            if (_index < 0) return false;
+
+            _color = auraSettings[_index].auraCenterColor;
+            return true;
+        }
+
+        // ─── 전시 애니메이션 (마을 기둥 위 씨앗/꽃/나무) ─────────────────────────
+        // idle 순서를 계속 반복하다가, action이 있으면 actionInterval(랜덤)마다 한 번 재생하고 idle로 돌아온다.
+        // 성장하지 않는 전리품(단계 0)은 그 전리품의 가장 낮은 단계 프레임을 쓴다(LootGrowthVisualData.TryGetDisplay).
+
+        private Sprite[] animFrames;
+        private int[] animIdle;
+        private int[] animAction;
+        private float animFrameTime;
+        private Vector2 animInterval;
+        private bool bAnimAction;
+        private int animStep;
+        private float animFrameTimer;
+        private float animActionWait;
+
+        private void ApplyDisplayAnimation()
+        {
+            animFrames = null;
+
+            if (null == growthVisualData || null == targetRenderer
+                || false == growthVisualData.TryGetDisplay(CurrentLootType, currentGrowthTier, out LootGrowthVisualData.TierSprite _entry))
             {
-                targetRenderer.sprite = _sprite;
+                SetGlowOffset(Vector2.zero);
+                return;
+            }
 
-                if (true == _bPlaceholder)
+            // 전시 그림은 32x32 프레임 아래쪽(기둥 윗면)에 서 있어 프레임 중심과 그림 중심이 다르다 - 후광을 그림 중심에 맞춘다.
+            SetGlowOffset(_entry.displayArtCenter);
+
+            animFrames = _entry.displayFrames;
+            animIdle = _entry.idleFrames;
+            animAction = _entry.actionFrames;
+            animFrameTime = 1f / Mathf.Max(0.1f, _entry.fps);
+            animInterval = _entry.actionInterval;
+            bAnimAction = false;
+            animStep = 0;
+            animFrameTimer = 0f;
+            // 기둥마다 동작 시점이 겹치지 않도록 첫 대기도 랜덤
+            animActionWait = RollActionInterval();
+            ShowAnimFrame(animIdle, 0);
+
+            if (true == _entry.isPlaceholder)
+            {
+                int _key = ((int)CurrentLootType << 8) | currentGrowthTier;
+
+                if (true == placeholderWarned.Add(_key))
                 {
-                    int _key = ((int)CurrentLootType << 8) | currentGrowthTier;
+                    Debug.LogWarning("[LootDisplayObject] 임시 스프라이트 사용 중: " + CurrentLootType + " 단계 " + currentGrowthTier
+                        + " (LootGrowthVisualData에서 정식 스프라이트로 교체하고 isPlaceholder를 끄세요)");
+                }
+            }
+        }
 
-                    if (true == placeholderWarned.Add(_key))
+        private void Update()
+        {
+            if (null == animFrames || 0 == animFrames.Length) return;
+
+            float _dt = Time.deltaTime;
+
+            if (false == bAnimAction && 0 < AnimLength(animAction, true))
+            {
+                animActionWait -= _dt;
+
+                if (animActionWait <= 0f)
+                {
+                    bAnimAction = true;
+                    animStep = 0;
+                    animFrameTimer = 0f;
+                    ShowAnimFrame(animAction, 0);
+                    return;
+                }
+            }
+
+            int[] _sequence = true == bAnimAction ? animAction : animIdle;
+            int _length = AnimLength(_sequence, bAnimAction);
+
+            // idle이 한 장이면 넘길 프레임이 없다
+            if (false == bAnimAction && _length <= 1) return;
+
+            animFrameTimer += _dt;
+
+            while (animFrameTime <= animFrameTimer)
+            {
+                animFrameTimer -= animFrameTime;
+                animStep++;
+
+                if (_length <= animStep)
+                {
+                    animStep = 0;
+
+                    if (true == bAnimAction)
                     {
-                        Debug.LogWarning("[LootDisplayObject] 임시 스프라이트 사용 중: " + CurrentLootType + " 단계 " + currentGrowthTier
-                            + " (LootGrowthVisualData에서 정식 스프라이트로 교체하고 isPlaceholder를 끄세요)");
+                        bAnimAction = false;
+                        animFrameTimer = 0f;
+                        animActionWait = RollActionInterval();
+                        ShowAnimFrame(animIdle, 0);
+                        return;
                     }
                 }
+            }
+
+            ShowAnimFrame(_sequence, animStep);
+        }
+
+        private void SetGlowOffset(Vector2 _offset)
+        {
+            if (null == auraOrbitController) return;
+
+            auraOrbitController.SetCenterGlowOffset(_offset);
+        }
+
+        private float RollActionInterval()
+        {
+            return UnityEngine.Random.Range(animInterval.x, Mathf.Max(animInterval.x, animInterval.y));
+        }
+
+        // idle 순서가 비어 있으면 프레임 전부를 순서대로 쓴다. action 순서가 비어 있으면 action이 없다.
+        private int AnimLength(int[] _sequence, bool _bAction)
+        {
+            if (null == _sequence || 0 == _sequence.Length)
+            {
+                return true == _bAction ? 0 : animFrames.Length;
+            }
+
+            return _sequence.Length;
+        }
+
+        private void ShowAnimFrame(int[] _sequence, int _step)
+        {
+            int _frame = (null == _sequence || 0 == _sequence.Length) ? _step : _sequence[_step];
+
+            // 시트를 교체해 프레임 수가 줄었으면 범위 안으로 접는다
+            if (_frame < 0 || animFrames.Length <= _frame)
+            {
+                _frame = Mathf.Clamp(_frame, 0, animFrames.Length - 1);
+            }
+
+            Sprite _sprite = animFrames[_frame];
+
+            if (null != _sprite && targetRenderer.sprite != _sprite)
+            {
+                targetRenderer.sprite = _sprite;
             }
         }
     }

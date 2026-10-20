@@ -162,7 +162,7 @@ MonoBehaviour:
   centerGlowMaterial: {fileID: 2100000, guid: b67a5410de806ea40af2cb02fcba8d11, type: 2}
   centerGlowSprite: {fileID: 0}
   centerGlowColor: {r: 2.5, g: 2.2, b: 1.2, a: 1}
-  centerGlowScale: 0.85
+  centerGlowScale: 0.7
   centerGlowBloomMultiplier: 1
   referenceSortingRenderer: {fileID: 3127719736685409035}
   centerGlowOrderOffset: -1
@@ -891,8 +891,8 @@ MonoBehaviour:
   outlineStencilRenderer: {fileID: 7705092683096633063}
   outlineRenderer: {fileID: 3364019558931927907}
   growthVisualData: {fileID: 11400000, guid: 375a568b97f461e4db5c2df342e2bc02, type: 2}
-  growthGlowStrength: 0.9
-  growthGlowCoreStrength: 0.8
+  growthGlowStrength: 0.6
+  growthGlowCoreStrength: 0.55
   evolveEffect: {fileID: 506757280907023574}
   useAuraOrbit: 1
   auraOrbitController: {fileID: 79144371278649808}
