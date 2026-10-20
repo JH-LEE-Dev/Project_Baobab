@@ -912,6 +912,8 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         if (false == _s.constellation) { _drop.Add(SoundID.Starappear); _drop.Add(SoundID.Stardisappear); _drop.Add(SoundID.StarExplosion); }
         if (false == _s.burn) { _drop.Add(SoundID.FireStart); _drop.Add(SoundID.FireLoop); }
         if (false == _s.heat) { _drop.Add(SoundID.TreeFireExplosion); }
+        // 별빛 나침반 유성우 발동음(StarRainEffect와 같은 조건)
+        if (false == _s.MapReachable((int)MapType.StarrootForest)) { _drop.Add(SoundID.SFXShootingStar1); _drop.Add(SoundID.SFXShootingStar2); _drop.Add(SoundID.SFXShootingStarChime); }
 
         if (0 == _drop.Count) return 0;
 

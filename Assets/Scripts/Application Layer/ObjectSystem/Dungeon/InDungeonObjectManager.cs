@@ -2867,6 +2867,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         System.Array.Clear(meteorImpactDone, 0, meteorImpactDone.Length);
 
         inDungeonVFXManager?.PlayStarRainVFX(origin, count, duration, fallRange, seed, _tier);
+        // 발동 연출(캐릭터 발밑 섬광 -> 솟는 별)과 함께 세 소리를 겹쳐 울린다.
+        Sound.Play(SoundID.SFXShootingStar1, origin);
+        Sound.Play(SoundID.SFXShootingStar2, origin);
+        Sound.Play(SoundID.SFXShootingStarChime, origin);
         MeteorShowerStartedEvent?.Invoke(duration);
 
         // 벌목 판정 루프(플레이어 공격 구간) 안에서 시작되므로 첫 유성은 다음 프레임부터 떨어뜨린다. 같은 호출 안에서
