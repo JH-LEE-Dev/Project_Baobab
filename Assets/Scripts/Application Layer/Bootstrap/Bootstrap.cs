@@ -12,7 +12,6 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     [Tooltip("빌드 단위 스위치입니다. 유저 동의와는 별개이며, 둘 다 켜져 있을 때만 실제로 동작합니다. " +
         "여기를 켠다고 해서 동의하지 않은 유저의 데이터가 수집되지는 않습니다.")]
     [SerializeField] private bool enableSentry = true;
-    [SerializeField] private bool enableGameAnalytics = true;
 
     [Header("Tutorial")]
     [Tooltip("켜면 '새 게임'이 MainMenu → Dungeon 튜토리얼로 직행한다. 끄면 튜토리얼을 거치지 않고 " +
@@ -95,14 +94,18 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         instance = this;
         DontDestroyOnLoad(gameObject);
 
+        // 카메라가 좌우를 잘라내는 해상도에서 잘린 띠를 비운다. 첫 화면(세이브 확인 등)부터 맞아야 해서
+        // 다른 UI보다 먼저 만든다. 여기서 만드는 이유는 CroppedAreaGuard.Create 주석 참고.
+        CroppedAreaGuard.Create();
+
         // 데이터 수집 SDK를 켜고 끄는 판단은 전부 DataConsentGate가 한다. 여기서 직접
-        // GameAnalytics.Initialize()나 SentrySdk.Close()를 부르지 말 것 - 동의 정책이
-        // 두 곳으로 갈라지면 한쪽만 고친 채 출시되는 사고가 난다.
+        // SentrySdk.Close() 등을 부르지 말 것 - 동의 정책이 두 곳으로 갈라지면 한쪽만
+        // 고친 채 출시되는 사고가 난다.
         //
         // Sentry는 이 Awake보다 훨씬 이른 SubsystemRegistration에서 스스로 초기화되며,
         // 그 시점에 SentryConsentOptionsConfiguration이 동의 여부를 보고 시작할지를 이미
         // 정한다. 그래서 "동의 없는 유저에게서 Sentry가 잠깐이라도 켜지는" 구간은 없다.
-        DataConsentGate.ApplyAtStartup(enableSentry, enableGameAnalytics);
+        DataConsentGate.ApplyAtStartup(enableSentry);
 
         // 이벤트 중복 등록 방지
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;

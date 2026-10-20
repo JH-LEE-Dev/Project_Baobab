@@ -17,12 +17,16 @@ public class UIView_Unit : UIView
     [SerializeField] private GameObject hpBarPrefab;
     [SerializeField] private GameObject interactionUnitPrefab;
     [SerializeField] private GameObject speechBubbleUnitPrefab;
+    [Tooltip("캐릭터 발 밑에 뜨는 대시 충전 게이지(UI_DashCharaGauge). 비워 두면 만들지 않는다.")]
+    [SerializeField] private GameObject dashGaugePrefab;
     [SerializeField] private float speechBubbleDuration = 3.5f;
     [SerializeField] private float speechBubbleCooldown = 3.5f;
 
     [Header("Offset Settings")]
     [SerializeField] private Vector2 interactionYOffset = new Vector2(0.0f, 0.75f);
     [SerializeField] private Vector2 speechBubbleYOffset = new Vector2(0.0f, 0.5f);
+    [Tooltip("캐릭터 발 밑 중앙 기준 대시 게이지 오프셋(월드 단위)")]
+    [SerializeField] private Vector2 dashGaugeOffset = new Vector2(0.0f, -0.2f);
     [SerializeField] private float treesYOffset = 1.5f;
     [SerializeField] private float animalsYOffset = 1.5f;
 
@@ -48,6 +52,7 @@ public class UIView_Unit : UIView
 
     private UI_InteractionUnit interactionUnit;
     private UI_SpeechBubble speechBubble;
+    private UI_DashCharaGauge dashGauge;
     private int lastInventoryFullFrame = -1;
 
     //private bool isInitialOpen = false;
@@ -63,6 +68,7 @@ public class UIView_Unit : UIView
         InitHPBarPool();
         InitInteractionUnit();
         InitSpeechBubbleUnit();
+        InitDashGauge();
 
         if (null != viewCtx?.localizationManager)
         {
@@ -73,6 +79,8 @@ public class UIView_Unit : UIView
 
     public override void OnDestroy()
     {
+        dashGauge?.Unbind();
+
         if (null != viewCtx?.localizationManager)
             viewCtx.localizationManager.OnLanguageChanged -= RefreshSpeechBubbleText;
 
@@ -96,6 +104,13 @@ public class UIView_Unit : UIView
 
             interactionUnit?.SetTarget(character.GetTransform(), interactionYOffset);
             speechBubble?.SetTarget(character.GetTransform(), speechBubbleYOffset);
+
+            // 캐릭터 발 밑 대시 게이지: 상류 IDashState를 그대로 읽는다(해금/횟수/충전 진행도).
+            if (null != dashGauge)
+            {
+                dashGauge.SetTarget(character.GetTransform(), dashGaugeOffset);
+                dashGauge.Bind(character.dashState);
+            }
         }
     }
 
@@ -212,6 +227,14 @@ public class UIView_Unit : UIView
             InputManager _inputMgr = null != viewCtx ? viewCtx.inputManager : null;
             interactionUnit.Initialize(_inputMgr);
         }
+    }
+
+    private void InitDashGauge()
+    {
+        if (null == dashGaugePrefab)
+            return;
+
+        dashGauge = Instantiate(dashGaugePrefab, uiRoot.transform).GetComponent<UI_DashCharaGauge>();
     }
 
     private void InitSpeechBubbleUnit()

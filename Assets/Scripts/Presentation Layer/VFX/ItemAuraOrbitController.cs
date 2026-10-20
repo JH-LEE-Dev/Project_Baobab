@@ -113,6 +113,15 @@ public class ItemAuraOrbitController : MonoBehaviour
     private readonly List<SatelliteData> activeSatellites = new List<SatelliteData>(8);
     private GameObject centerGlowObject;
     private MaterialPropertyBlock centerGlowPropertyBlock;
+    private bool useCenterGlowShaderColors = false;
+
+    // 진화 연출 변조(중앙 글로우 전용). 인스펙터 값은 건드리지 않고 그 위에 곱하거나 섞는다.
+    private float evolveScale = 1.0f;
+    private float evolveIntensity = 1.0f;
+    private float evolveWhite = 0.0f;
+    private static readonly Color EvolveWhite = new Color(2.5f, 2.5f, 2.5f, 1.0f);
+    private Color centerGlowShaderCore;
+    private Color centerGlowShaderOuter;
     private Transform trailRoot;
     private bool isPlaying = false;
     private bool isInitialized = false;
@@ -272,6 +281,56 @@ public class ItemAuraOrbitController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 중앙 글로우의 셰이더 색(_CoreColor/_OuterColor)을 직접 덮어쓴다. 글로우 셰이더는 SpriteRenderer.color를 정점 색으로 곱할 뿐이라,
+    /// 머티리얼 기본색(금색)이 곱해지는 한 단계 색이 제 색으로 나오지 않는다. 이 값을 쓰면 렌더러 색은 흰색으로 두고 셰이더 색만 쓴다.
+    /// </summary>
+    public void SetCenterGlowShaderColors(Color _core, Color _outer)
+    {
+        useCenterGlowShaderColors = true;
+        centerGlowShaderCore = _core;
+        centerGlowShaderOuter = _outer;
+        UpdateBloomSettings();
+    }
+
+    /// <summary>
+    /// SetCenterGlowShaderColors로 덮어쓴 색을 걷어내고 머티리얼 기본색 + SetCenterGlowColor 색으로 되돌린다.
+    /// </summary>
+    public void ClearCenterGlowShaderColors()
+    {
+        if (false == useCenterGlowShaderColors)
+            return;
+
+        useCenterGlowShaderColors = false;
+        UpdateBloomSettings();
+    }
+
+    /// <summary>
+    /// 진화 연출용 중앙 글로우 변조. _scale은 글로우 크기 배율, _intensity는 발광 배율, _whiteMix(0~1)는 현재 글로우 색을 흰색 쪽으로 섞는 정도다.
+    /// 인스펙터 값(centerGlowScale, centerGlowBloomMultiplier)과 LootDisplayObject가 정한 단계 색 위에 얹히므로,
+    /// 연출 도중 단계 색이 바뀌어도(폭발 시각) 그 색에서 흰색이 풀린다. 매 프레임 불러도 할당이 없다.
+    /// </summary>
+    public void SetEvolveModulation(float _scale, float _intensity, float _whiteMix)
+    {
+        evolveScale = Mathf.Max(0.05f, _scale);
+        evolveIntensity = Mathf.Max(0.0f, _intensity);
+        evolveWhite = Mathf.Clamp01(_whiteMix);
+        ApplyCenterGlowProperties();
+    }
+
+    /// <summary>
+    /// SetEvolveModulation으로 준 변조를 걷어내고 인스펙터 값과 단계 색 그대로로 되돌린다.
+    /// </summary>
+    public void ClearEvolveModulation()
+    {
+        if (1.0f == evolveScale && 1.0f == evolveIntensity && 0.0f == evolveWhite) return;
+
+        evolveScale = 1.0f;
+        evolveIntensity = 1.0f;
+        evolveWhite = 0.0f;
+        ApplyCenterGlowProperties();
+    }
+
     public void SetTrailMaterial(Material _material)
     {
         trailMaterial = _material;
@@ -394,7 +453,7 @@ public class ItemAuraOrbitController : MonoBehaviour
             centerGlowObject = new GameObject("AuraCenterGlow");
             centerGlowObject.transform.SetParent(transform, false);
             centerGlowObject.transform.localPosition = Vector3.zero;
-            centerGlowObject.transform.localScale = Vector3.one * centerGlowScale;
+            centerGlowObject.transform.localScale = Vector3.one * (centerGlowScale * evolveScale);
 
             SpriteRenderer sr = centerGlowObject.AddComponent<SpriteRenderer>();
             centerGlowRenderer = sr;
@@ -654,6 +713,47 @@ public class ItemAuraOrbitController : MonoBehaviour
         isInitialized = false;
     }
 
+    // 중앙 글로우의 크기/발광/색을 한 번에 반영한다(인스펙터 값 x 진화 변조). 속성 블록만 갱신하므로 할당이 없다.
+    private void ApplyCenterGlowProperties()
+    {
+        if (null == centerGlowObject) return;
+
+        centerGlowObject.transform.localScale = Vector3.one * (centerGlowScale * evolveScale);
+
+        if (null == centerGlowPropertyBlock) centerGlowPropertyBlock = new MaterialPropertyBlock();
+        Renderer r = centerGlowRenderer;
+        if (null != r)
+        {
+            r.GetPropertyBlock(centerGlowPropertyBlock);
+            centerGlowPropertyBlock.SetFloat(CenterIntensityPropertyId, centerGlowBloomMultiplier * evolveIntensity);
+
+            Material glowMaterial = r.sharedMaterial;
+            bool bHasColors = true == useCenterGlowShaderColors || (null != glowMaterial && true == glowMaterial.HasProperty(ItemAuraShaderHelper.CoreColorPropertyId));
+            if (true == bHasColors)
+            {
+                Color core = true == useCenterGlowShaderColors ? centerGlowShaderCore : glowMaterial.GetColor(ItemAuraShaderHelper.CoreColorPropertyId);
+                Color outer = true == useCenterGlowShaderColors ? centerGlowShaderOuter : glowMaterial.GetColor(ItemAuraShaderHelper.OuterColorPropertyId);
+
+                if (0.0f < evolveWhite)
+                {
+                    core = Color.Lerp(core, EvolveWhite, evolveWhite);
+                    outer = Color.Lerp(outer, EvolveWhite, evolveWhite);
+                }
+
+                centerGlowPropertyBlock.SetColor(ItemAuraShaderHelper.CoreColorPropertyId, core);
+                centerGlowPropertyBlock.SetColor(ItemAuraShaderHelper.OuterColorPropertyId, outer);
+            }
+
+            r.SetPropertyBlock(centerGlowPropertyBlock);
+        }
+
+        SpriteRenderer sr = centerGlowRenderer;
+        if (null != sr)
+        {
+            sr.color = true == useCenterGlowShaderColors ? Color.white : centerGlowColor;
+        }
+    }
+
     private void UpdateBloomSettings()
     {
         // 그라데이션 원본/배율이 바뀌었을 때만 캐시를 버린다(인스펙터 변경 반영). 같으면 Play마다 Gradient/키 배열을 다시 만들지 않는다.
@@ -663,23 +763,7 @@ public class ItemAuraOrbitController : MonoBehaviour
         }
 
         // 1. 중앙 원형 글로우 블룸 반영
-        if (null != centerGlowObject)
-        {
-            if (null == centerGlowPropertyBlock) centerGlowPropertyBlock = new MaterialPropertyBlock();
-            Renderer r = centerGlowRenderer;
-            if (null != r)
-            {
-                r.GetPropertyBlock(centerGlowPropertyBlock);
-                centerGlowPropertyBlock.SetFloat(CenterIntensityPropertyId, centerGlowBloomMultiplier);
-                r.SetPropertyBlock(centerGlowPropertyBlock);
-            }
-
-            SpriteRenderer sr = centerGlowRenderer;
-            if (null != sr)
-            {
-                sr.color = centerGlowColor; // 블룸 업데이트 시 컬러도 갱신
-            }
-        }
+        ApplyCenterGlowProperties();
 
         // 2. 위성 및 트레일 블룸 반영
         int count = activeSatellites.Count;

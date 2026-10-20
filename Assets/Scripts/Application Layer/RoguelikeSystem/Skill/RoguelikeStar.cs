@@ -2,13 +2,14 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// 스텔라 카드의 별. 기획서 3-3 액티브 "스텔라" - 나무를 벤 자리에 생기고, 기본적으로 도끼로만 칠 수 있다.
+/// 스텔라 카드의 별. 기획서 6-1 액티브 "스텔라" - 나무를 벤 자리에 생기고, 기본적으로 도끼로만 칠 수 있다.
 ///
 /// 나무 충돌 레이어에 등록되어 도끼 판정에 걸린다. 회전베기 휘두름의 360도 판정에서는 빠진다(IBasicAxeOnlyTarget). 충격파는 TreeObj만, 부메랑·드론은 ITreeObj만 노리므로
-/// 이 별을 치지 않는다(기획서 "다른 액티브가 별을 칠 수 있게 하는 것은 조합 카드로 개방" - 미정 항목).
-/// 외형·생성·소멸 연출은 이펙트 담당이 프리팹과 RoguelikeSkillVfxSignal로 입힌다.
+/// 평소에는 이 별을 치지 않는다. 스텔라 III("다른 액티브 스킬도 별을 공격")가 켜지면 RunCombatOverrides.bSkillsHitRunTargets로
+/// 회전베기 360도·충격파·부메랑이 IRunSkillHitTarget으로 알리고, 드론 레이저와 로그라이크 신규 스킬은 RoguelikeSkillController가 직접 판정한다.
+/// 생성·소멸 이펙트는 이펙트 담당이 프리팹과 RoguelikeSkillVfxSignal로 입힌다.
 /// </summary>
-public class RoguelikeStar : MonoBehaviour, IStaticCollidable, IDamageable, IBasicAxeOnlyTarget
+public class RoguelikeStar : MonoBehaviour, IStaticCollidable, IDamageable, IBasicAxeOnlyTarget, IRunSkillHitTarget
 {
     public event Action<RoguelikeStar> HitEvent;
 
@@ -78,6 +79,15 @@ public class RoguelikeStar : MonoBehaviour, IStaticCollidable, IDamageable, IBas
     }
 
     public void KnockBack(Vector2 _knockBackDir, float _knockBackForce) { }
+
+    // // IRunSkillHitTarget
+    public bool bCanBeHitBySkill => bAttackable && bRegistered;
+
+    public void NotifySkillHit()
+    {
+        if (false == bAttackable) return;
+        HitEvent?.Invoke(this);
+    }
 
     private void Unregister()
     {

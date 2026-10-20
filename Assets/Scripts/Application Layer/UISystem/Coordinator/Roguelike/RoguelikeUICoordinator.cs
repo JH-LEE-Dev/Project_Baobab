@@ -23,6 +23,8 @@ public sealed class RoguelikeUICoordinator
     private UIView_ESC escUI;
     // 본편 하단 코인 HUD(가방 옆). 런 골드를 읽게 바꿔 쓴다(기획서 5-1).
     private UIView_Popup mainPopupUI;
+    // 본편 HUD. 도끼 내구도 HUD(장비 HUD)를 숨기는 데만 쓴다(기획서 v2.2 10-1).
+    private UIView_HUD mainHudUI;
     private RunGoldMoneyData runGoldMoneyData;
     // 코인 흡수 동안 매 프레임 묻는 코인 HUD 지점의 캔버스. 대상이 바뀔 때만 다시 찾는다.
     private RectTransform coinHudTargetCache;
@@ -50,14 +52,21 @@ public sealed class RoguelikeUICoordinator
 
     public void Initialize(SignalHub _signalHub, IRoguelikeRunInfo _runInfo, UIView_RoguelikeHUD _hudUI, UIView_RoguelikeCardSelect _cardSelectUI,
         UIView_RoguelikeOwnedCards _ownedCardsUI, UIView_RoguelikeResult _resultUI, UIView_RoguelikeRecords _recordsUI, UIView_ESC _escUI,
-        UIView_Popup _mainPopupUI)
+        UIView_Popup _mainPopupUI, UIView_HUD _mainHudUI)
     {
         mainPopupUI = _mainPopupUI;
         if (null != mainPopupUI)
         {
             runGoldMoneyData = new RunGoldMoneyData(_runInfo);
             mainPopupUI.SetMoneyDataForRun(runGoldMoneyData);
+
+            // 로그라이크는 아이템 드롭·인벤토리를 쓰지 않는다. 가방 HUD는 숨기고 코인 HUD만 남긴다(기획서 v2.2 3-1, 10-1).
+            mainPopupUI.SetInventoryVisibleForRun(false);
         }
+
+        // 도끼 내구도는 무제한이라 내구도 HUD를 숨긴다(기획서 v2.2 3-1, 10-1).
+        mainHudUI = _mainHudUI;
+        mainHudUI?.SetEquipmentHiddenForRun(true);
 
         signalHub = _signalHub;
         runInfo = _runInfo;
@@ -80,8 +89,17 @@ public sealed class RoguelikeUICoordinator
         UnSubscribeSignals();
         ReleaseEvents();
         escUI?.SetLobbyMode(false);
+        mainPopupUI?.SetInventoryVisibleForRun(true);
+        mainHudUI?.SetEquipmentHiddenForRun(false);
         ResumeFromOwnedCards();
     }
+
+    /// <summary>
+    /// 본편 HUD·하단 팝업의 맵 전환 내림·올림 모션이 재생 중인지. 로비 진입 암전은 이 모션이 끝난 뒤 걷힌다 -
+    /// 그 전에 걷히면 HUD가 내려가는 모습이 페이드 아웃 사이로 보인다.
+    /// </summary>
+    public bool IsMainHudMotionPlaying =>
+        (null != mainHudUI && mainHudUI.IsMapTransitionMotionPlayingForRun) || (null != mainPopupUI && mainPopupUI.IsMapTransitionMotionPlayingForRun);
 
     /// <summary>카드 연출 완료를 끝내 받지 못하고 다음 단계로 넘어갈 때. 남아 있는 카드 선택 화면을 닫는다.</summary>
     public void ForceCloseCardSelection()
@@ -547,7 +565,7 @@ public sealed class RoguelikeUICoordinator
                 bRuby = ECardDisplayGrade.Ruby == offer.displayGrade,
                 bNewCard = offer.bNewCard,
                 bFirstSeen = offer.bFirstSeen,
-                bRare = ECardDisplayGrade.Bronze != offer.displayGrade,
+                bRare = CardPricing.IsRare(offer.displayGrade),
                 price = offer.price,
                 bAffordable = offer.IsAffordable(gold),
             });

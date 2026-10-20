@@ -17,7 +17,7 @@ MonoBehaviour:
   descriptionKey: Roguelike_Card_passive_duration_Desc
   icon: {fileID: 0}
   kind: 1
-  grade: 0
+  grade: 1
   skillTag: 0
   exclusiveGroup: 0
   maxLevel: 5
@@ -25,23 +25,26 @@ MonoBehaviour:
   - effects:
     - effect: 4
       skill: 0
-      value: 10
+      value: 6
   - effects:
     - effect: 4
       skill: 0
-      value: 10
+      value: 8
   - effects:
     - effect: 4
       skill: 0
-      value: 10
+      value: 9
   - effects:
     - effect: 4
       skill: 0
-      value: 10
+      value: 12
   - effects:
     - effect: 4
       skill: 0
-      value: 10
+      value: 15
+    - effect: 31
+      skill: 0
+      value: 0.3
   basePriceOverride: 0
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}

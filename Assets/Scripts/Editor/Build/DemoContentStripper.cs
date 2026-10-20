@@ -912,6 +912,8 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         if (false == _s.constellation) { _drop.Add(SoundID.Starappear); _drop.Add(SoundID.Stardisappear); _drop.Add(SoundID.StarExplosion); }
         if (false == _s.burn) { _drop.Add(SoundID.FireStart); _drop.Add(SoundID.FireLoop); }
         if (false == _s.heat) { _drop.Add(SoundID.TreeFireExplosion); }
+        // 별빛 나침반 유성우 발동음(StarRainEffect와 같은 조건)
+        if (false == _s.MapReachable((int)MapType.StarrootForest)) { _drop.Add(SoundID.SFXShootingStar1); _drop.Add(SoundID.SFXShootingStar2); _drop.Add(SoundID.SFXShootingStarChime); }
 
         if (0 == _drop.Count) return 0;
 
@@ -961,10 +963,13 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         if (false == _s.boomerang) _n += EditComponents(_root, "BoomerangCreator", INSTALLER_PREFAB_PATH, _so => ClearRef(_so, "boomerangPrefab"));
 
         HashSet<string> _dropTags = new HashSet<string>();
-        if (false == _s.spore) { _dropTags.Add("SporeShieldBrokenEffect"); _dropTags.Add("SporeShieldBrokenEffect_Bellpine"); }
+        // SporeBigExplosionEffect: 포자 포션 효과인 포자 대폭발 이펙트(VFX_SporeBigExplosion, 2026-10-15 추가)
+        if (false == _s.spore) { _dropTags.Add("SporeShieldBrokenEffect"); _dropTags.Add("SporeShieldBrokenEffect_Bellpine"); _dropTags.Add("SporeBigExplosionEffect"); }
         // ConstellationNovaEffect: 별자리 발현 중심 마법진·은하 별 폭발 이펙트(VFX_ConstellationNova, 2026-10-13 추가)
         if (false == _s.constellation) { _dropTags.Add("ManifestationBrandStampEffect"); _dropTags.Add("ConstellationNovaEffect"); }
         if (false == _s.heat) _dropTags.Add("TreeHeatEmitEffect");
+        // StarRainEffect: 별빛 나침반(3스테이지 전리품) 효과인 유성우 이펙트(VFX_StarRain, 2026-10-16 추가)
+        if (false == _s.MapReachable((int)MapType.StarrootForest)) _dropTags.Add("StarRainEffect");
         _n += EditComponents(_root, "VFXComponent", INSTALLER_PREFAB_PATH, _so => ClearVfxPoolEntries(_so, _dropTags));
 
         _n += EditComponents(_root, "TileMapGenerator", INSTALLER_PREFAB_PATH, _so => ClearUnreachableMapEntries(_so, "mapTypeTileDatas", "tileData", _s));

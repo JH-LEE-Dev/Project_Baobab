@@ -72,6 +72,16 @@ public class UIView_Popup : UIView
             uiInventory.SetCoinVisibleForRun(_bVisible);
     }
 
+    /// <summary>[로그라이크 전용] 인벤토리 HUD 표시 여부(아이템 드롭·인벤토리를 쓰지 않아 숨김 - 기획서 v2.2 10-1). 코인 HUD는 그대로다.</summary>
+    public void SetInventoryVisibleForRun(bool _bVisible)
+    {
+        if (null != uiInventory)
+            uiInventory.SetInventoryVisibleForRun(_bVisible);
+    }
+
+    /// <summary>[로그라이크 전용] 맵 전환용 하단 팝업(코인·가방) 내림·올림 모션이 재생 중인지. 진입 암전이 이 모션이 끝난 뒤 걷히게 한다.</summary>
+    public bool IsMapTransitionMotionPlayingForRun => null != omp && omp.IsPlaying(mapTransitionMotionTag);
+
     /// <summary>[로그라이크 전용] 코인 HUD의 위치(흡수 코인이 날아가 닿는 곳).</summary>
     public RectTransform CoinCounterRectForRun => null != uiInventory ? uiInventory.CoinCounterRectForRun : null;
 

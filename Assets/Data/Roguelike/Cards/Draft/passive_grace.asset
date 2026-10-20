@@ -17,7 +17,7 @@ MonoBehaviour:
   descriptionKey: Roguelike_Card_passive_grace_Desc
   icon: {fileID: 0}
   kind: 1
-  grade: 1
+  grade: 2
   skillTag: 0
   exclusiveGroup: 0
   maxLevel: 5
@@ -29,19 +29,19 @@ MonoBehaviour:
   - effects:
     - effect: 16
       skill: 0
-      value: 0.5
+      value: 0.6
   - effects:
     - effect: 16
       skill: 0
-      value: 0.5
+      value: 0.7
   - effects:
     - effect: 16
       skill: 0
-      value: 0.5
+      value: 1
   - effects:
     - effect: 16
       skill: 0
-      value: 0.5
+      value: 1.2
   basePriceOverride: 0
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}

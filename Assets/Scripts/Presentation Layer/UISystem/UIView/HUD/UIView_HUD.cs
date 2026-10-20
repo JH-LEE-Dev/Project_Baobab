@@ -17,9 +17,13 @@ public class UIView_HUD : UIView
     [SerializeField] private GameObject hudLootPrefab;
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private string mapTransitionMotionTag = "GoDown";
+    [Tooltip("대시 게이지가 보일 때 버프 첫 줄에서 비워 둘 폭(맞물린 대시 2칸 37 + 여백 8)")]
+    [SerializeField] private float dashReservedWidth = 46f;
 
     private HUD_Equipment hudEquipment;
     private HUD_Stemina hudStaminaBar;
+    private HUD_BuffBar hudBuffBar;
+    private HUD_DashGauge hudDashGauge;
     private HUD_DirIndicator hudDirIndicator;
     private HUD_Message hudMessage;
     private HUD_ScreenBlood hudScreenBlood;
@@ -45,6 +49,10 @@ public class UIView_HUD : UIView
 
     // 대시 충전 상태(잔여 횟수·충전 진행도). 표시는 아직 없다 - 아래 "HUD_Dash Logic"의 두 메서드에서 그리면 된다.
     private IDashState dashState;
+    private bool bDashShownUnlocked = false;
+    private int dashShownCharges = 0;
+    private int dashShownMax = 0;
+    private float dashLastProgress = 0f;
 
     [Header("Indicator Settings")]
     [SerializeField] private float dirIndicatorShowDelay = 1f;
@@ -235,6 +243,27 @@ public class UIView_HUD : UIView
     /// </summary>
     private void UpdateDashCharges(bool _bUnlocked, int _currentCharges, int _maxCharges)
     {
+        bDashShownUnlocked = _bUnlocked;
+        dashShownCharges = _currentCharges;
+        dashShownMax = _maxCharges;
+
+        if (null == hudDashGauge)
+        {
+            hudBuffBar?.SetFirstRowReserved(true == _bUnlocked ? dashReservedWidth : 0f);
+            return;
+        }
+
+        // 막 보이게 되는 순간의 칸 상태는 연출(사용/충전 완료 번쩍임) 없이 곧바로 맞춘다
+        bool _bBecameVisible = true == _bUnlocked && false == hudDashGauge.IsUnlocked;
+
+        hudDashGauge.SetMaxCharges(_maxCharges);
+        hudDashGauge.SetUnlocked(_bUnlocked);
+
+        // 대시가 보이는 동안 버프 첫 줄은 대시 폭만큼 오른쪽을 비켜 준다.
+        // dashReservedWidth는 2칸 기준이므로 빠진 칸만큼 줄인다.
+        float _missing = (HUD_DashGauge.MaxCells - Mathf.Clamp(_maxCharges, 0, HUD_DashGauge.MaxCells)) * hudDashGauge.CellPitch;
+        hudBuffBar?.SetFirstRowReserved(true == _bUnlocked ? Mathf.Max(0f, dashReservedWidth - _missing) : 0f);
+        ApplyDashCells(_bBecameVisible);
     }
 
     /// <summary>
@@ -242,6 +271,33 @@ public class UIView_HUD : UIView
     /// </summary>
     private void UpdateDashRecharge(float _rechargeProgress)
     {
+        dashLastProgress = _rechargeProgress;
+
+        if (null == hudDashGauge)
+            return;
+
+        // 차오르는 칸 하나만 갱신하면 된다(찬 칸/빈 칸은 UpdateDashCharges에서 정해짐)
+        if (dashShownCharges < dashShownMax)
+            hudDashGauge.SetCharge(dashShownCharges, _rechargeProgress);
+    }
+
+    // 찬 칸은 1, 다음에 차오르는 칸은 진행도, 그 뒤 칸은 0
+    private void ApplyDashCells(bool _bSilent)
+    {
+        for (int i = 0; i < HUD_DashGauge.MaxCells; i++)
+        {
+            float _ratio = 0f;
+
+            if (i < dashShownCharges)
+                _ratio = 1f;
+            else if (i == dashShownCharges)
+                _ratio = dashLastProgress;
+
+            if (true == _bSilent)
+                hudDashGauge.SetChargeSilently(i, _ratio);
+            else
+                hudDashGauge.SetCharge(i, _ratio);
+        }
     }
 
     #endregion
@@ -260,6 +316,18 @@ public class UIView_HUD : UIView
 
     #endregion
 
+    // 대시 게이지(조합 프리팹을 쓰지 않으면 null)
+    public HUD_DashGauge DashGauge
+    {
+        get { return hudDashGauge; }
+    }
+
+    // 버프 줄(조합 프리팹을 쓰지 않으면 null)
+    public HUD_BuffBar BuffBar
+    {
+        get { return hudBuffBar; }
+    }
+
     #region HUD_Stemina Logic
 
     private void Init_HUDScreenBlood()
@@ -275,7 +343,24 @@ public class UIView_HUD : UIView
 
     private void Init_HUDStaminaBar()
     {
-        hudStaminaBar = Instantiate(hudSteminaBarPrefab, moveHUD.transform).GetComponent<HUD_Stemina>();
+        GameObject _staminaObject = Instantiate(hudSteminaBarPrefab, moveHUD.transform);
+        HUD_StaminaGroup _group = _staminaObject.GetComponent<HUD_StaminaGroup>();
+
+        // 스태미나 + 버프 조합 프리팹이면 그룹이 둘을 함께 초기화한다. 단독 스태미나 프리팹이면 기존 방식 그대로.
+        if (null != _group)
+        {
+            _group.Initialize(hudScreenBlood);
+            hudStaminaBar = _group.Stamina;
+            hudBuffBar = _group.BuffBar;
+            hudDashGauge = _group.DashGauge;
+
+            // 캐릭터 바인딩이 HUD 생성보다 먼저였다면 그때 받은 대시 상태를 지금 반영한다
+            if (null != dashState)
+                UpdateDashCharges(bDashShownUnlocked, dashShownCharges, dashShownMax);
+            return;
+        }
+
+        hudStaminaBar = _staminaObject.GetComponent<HUD_Stemina>();
 
         if (null != hudStaminaBar)
         {
@@ -387,10 +472,31 @@ public class UIView_HUD : UIView
         ChangedActiveStateLoot(bTown);
     }
 
+    /// <summary>
+    /// [로그라이크 전용] 도끼 내구도 HUD(장비 HUD)를 숨긴다. 로그라이크는 도끼 내구도가 무제한이라 표시하지 않는다(기획서 v2.2 10-1).
+    /// 숨긴 동안은 맵이 바뀌어도 다시 켜지지 않는다. 본편에서는 호출되지 않는다.
+    /// </summary>
+    public void SetEquipmentHiddenForRun(bool _bHidden)
+    {
+        bEquipmentHiddenForRun = _bHidden;
+        ChangedActiveStateEquipment(MapType.Town == currentMapType);
+    }
+
+    private bool bEquipmentHiddenForRun;
+
+    /// <summary>[로그라이크 전용] 맵 전환용 HUD 내림·올림 모션이 재생 중인지. 진입 암전이 이 모션이 끝난 뒤 걷히게 한다. 본편에서는 호출되지 않는다.</summary>
+    public bool IsMapTransitionMotionPlayingForRun => null != omp && omp.IsPlaying(mapTransitionMotionTag);
+
     private void ChangedActiveStateEquipment(bool _isTwon)
     {
         if (null == hudEquipment)
             return;
+
+        if (bEquipmentHiddenForRun)
+        {
+            hudEquipment.gameObject.SetActive(false);
+            return;
+        }
 
         //WeaponModeChanged(WeaponMode.Axe, !_isTwon);
         hudEquipment.gameObject.SetActive(!_isTwon);
@@ -401,6 +507,15 @@ public class UIView_HUD : UIView
 
     private void ChangedActiveStateStemina(bool _isTwon)
     {
+        // 버프 줄도 마을에서는 숨긴다. 숨기기 전에 남은 버프/입자를 비워 다음 던전에서 이어 보이지 않게 한다.
+        if (null != hudBuffBar)
+        {
+            if (true == _isTwon)
+                hudBuffBar.Clear();
+
+            hudBuffBar.gameObject.SetActive(!_isTwon);
+        }
+
         if (null == hudStaminaBar)
             return;
 

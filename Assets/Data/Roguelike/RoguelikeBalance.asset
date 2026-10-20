@@ -14,109 +14,204 @@ MonoBehaviour:
   m_EditorClassIdentifier: Baobab.Roguelike::RoguelikeBalanceSO
   clearWave: 30
   waves:
-  - killTarget: 60
-    spawnInterval: 0.5
-  - killTarget: 70
-    spawnInterval: 0.475
-  - killTarget: 80
-    spawnInterval: 0.45125
+  - killTarget: 30
+    spawnInterval: 2
+    treeHp: 20
+    treeKind: 0
+  - killTarget: 35
+    spawnInterval: 1.8181818
+    treeHp: 20
+    treeKind: 0
+  - killTarget: 35
+    spawnInterval: 1.6666666
+    treeHp: 30
+    treeKind: 1
+  - killTarget: 40
+    spawnInterval: 1.5384616
+    treeHp: 30
+    treeKind: 1
+  - killTarget: 40
+    spawnInterval: 1.4285715
+    treeHp: 30
+    treeKind: 1
+  - killTarget: 45
+    spawnInterval: 1.3333334
+    treeHp: 40
+    treeKind: 2
+  - killTarget: 50
+    spawnInterval: 1.25
+    treeHp: 40
+    treeKind: 2
+  - killTarget: 50
+    spawnInterval: 1.1764705
+    treeHp: 45
+    treeKind: 0
+  - killTarget: 55
+    spawnInterval: 1.1111112
+    treeHp: 45
+    treeKind: 0
+  - killTarget: 55
+    spawnInterval: 1.1111112
+    treeHp: 50
+    treeKind: 1
+  - killTarget: 55
+    spawnInterval: 1.0526316
+    treeHp: 50
+    treeKind: 1
+  - killTarget: 55
+    spawnInterval: 1.0526316
+    treeHp: 50
+    treeKind: 1
+  - killTarget: 55
+    spawnInterval: 1.0526316
+    treeHp: 55
+    treeKind: 2
+  - killTarget: 55
+    spawnInterval: 1.0526316
+    treeHp: 55
+    treeKind: 2
+  - killTarget: 55
+    spawnInterval: 1.0526316
+    treeHp: 55
+    treeKind: 2
   - killTarget: 90
-    spawnInterval: 0.42868748
+    spawnInterval: 0.6666667
+    treeHp: 100
+    treeKind: 0
+  - killTarget: 95
+    spawnInterval: 0.64516133
+    treeHp: 100
+    treeKind: 0
+  - killTarget: 95
+    spawnInterval: 0.625
+    treeHp: 115
+    treeKind: 1
   - killTarget: 100
-    spawnInterval: 0.40725312
+    spawnInterval: 0.6060606
+    treeHp: 115
+    treeKind: 1
+  - killTarget: 100
+    spawnInterval: 0.58823526
+    treeHp: 115
+    treeKind: 1
   - killTarget: 110
-    spawnInterval: 0.38689044
+    spawnInterval: 0.5555556
+    treeHp: 130
+    treeKind: 2
+  - killTarget: 115
+    spawnInterval: 0.5263158
+    treeHp: 130
+    treeKind: 2
   - killTarget: 120
-    spawnInterval: 0.36754593
+    spawnInterval: 0.5
+    treeHp: 280
+    treeKind: 0
+  - killTarget: 125
+    spawnInterval: 0.4761905
+    treeHp: 280
+    treeKind: 0
   - killTarget: 130
-    spawnInterval: 0.34916863
+    spawnInterval: 0.45454544
+    treeHp: 340
+    treeKind: 1
   - killTarget: 140
-    spawnInterval: 0.3317102
-  - killTarget: 150
-    spawnInterval: 0.31512466
-  - killTarget: 160
-    spawnInterval: 0.29936844
-  - killTarget: 170
-    spawnInterval: 0.28440002
-  - killTarget: 180
-    spawnInterval: 0.27018002
-  - killTarget: 190
-    spawnInterval: 0.256671
-  - killTarget: 200
-    spawnInterval: 0.24383745
-  - killTarget: 210
-    spawnInterval: 0.23164557
-  - killTarget: 220
-    spawnInterval: 0.22006328
-  - killTarget: 230
-    spawnInterval: 0.20906012
-  - killTarget: 240
-    spawnInterval: 0.19860712
-  - killTarget: 250
-    spawnInterval: 0.18867676
-  - killTarget: 260
-    spawnInterval: 0.17924291
-  - killTarget: 270
-    spawnInterval: 0.17028077
-  - killTarget: 280
-    spawnInterval: 0.12
-  - killTarget: 290
-    spawnInterval: 0.12
-  - killTarget: 300
-    spawnInterval: 0.12
-  - killTarget: 310
-    spawnInterval: 0.12
-  - killTarget: 320
-    spawnInterval: 0.12
-  - killTarget: 330
-    spawnInterval: 0.12
-  - killTarget: 340
-    spawnInterval: 0.12
-  - killTarget: 350
-    spawnInterval: 0.12
+    spawnInterval: 0.43478262
+    treeHp: 340
+    treeKind: 1
+  - killTarget: 145
+    spawnInterval: 0.41666666
+    treeHp: 340
+    treeKind: 1
+  - killTarget: 145
+    spawnInterval: 0.41666666
+    treeHp: 420
+    treeKind: 2
+  - killTarget: 145
+    spawnInterval: 0.41666666
+    treeHp: 420
+    treeKind: 2
+  - killTarget: 145
+    spawnInterval: 0.40816325
+    treeHp: 420
+    treeKind: 2
   tiers:
   - startWave: 1
-    treeHpMultiplier: 1
     staminaDamage: 3
-    goldPerTree: 1
-  - startWave: 8
-    treeHpMultiplier: 2.5
-    staminaDamage: 6
     goldPerTree: 2
+  - startWave: 8
+    staminaDamage: 6
+    goldPerTree: 1.75
   - startWave: 16
-    treeHpMultiplier: 6
     staminaDamage: 10
-    goldPerTree: 3
+    goldPerTree: 1
   - startWave: 23
-    treeHpMultiplier: 12
     staminaDamage: 15
-    goldPerTree: 4
+    goldPerTree: 1
+  previousTreeKindShare: 0.3
   threshold: 40
-  spawnExtra: 20
+  spawnExtra: 12
   maxStamina: 100
   graceTime: 5
   damageCooldown: 3
   maxGraceTime: 15
   maxDamageCooldown: 10
   minThreshold: 5
+  maxMoveSpeedPercent: 60
   unlimitHpGrowthPerWave: 0.1
-  gradeBasePrices: 2800000078000000fa000000b40000002c010000
-  upgradePriceStep: 0.5
+  gradeBasePrices: 3c000000960000002c010000f000000000000000
+  levelPriceMultipliers:
+  - 1
+  - 1.3
+  - 1.6
+  - 2
+  bMaxLevelFree: 1
   offerCount: 3
   affordableGuaranteeCount: 2
   guaranteedSlotCap: 2
+  activeGuaranteeCount: 1
+  activeGuaranteeReleaseOwnedCount: 3
   firstPickFree: 1
-  firstPickBronzeOnly: 1
-  firstPickActiveOnly: 0
+  firstPickActiveOnly: 1
+  firstPickFreeRerolls: 1
   firstPickSkippable: 0
+  rerollGuaranteedReshowChance: 0.5
   baseWeight: 1
+  gradeWeights:
+  - 1
+  - 0.7
+  - 0.5
+  - 0.15
+  - 1
   upgradeWeightBonus: 1
   partnerStartLevel: 2
   partnerWeightBonus: 1
   maxWeightMultiplier: 4
   forcePartnerWhenMaterialMax: 1
   rerollBaseCost: 20
-  rerollCostMode: 0
+  rerollCostMode: 1
   rerollCostStep: 10
-  rerollCostMultiplier: 1.5
+  rerollCostMultiplier: 1.2
   rerollCostCap: 0
+  appraiserWaveMin: 10
+  appraiserWaveMax: 20
+  appraiserNoticeWave: 10
+  appraisalMaxCards: 3
+  appraisalNextLevelFeeMultiplier: 1.15
+  appraisalMaxChallengeFeeMultiplier: 1.1
+  appraisalOutcomes:
+  - stay: 55
+    plusOne: 25
+    plusTwo: 15
+    max: 5
+  - stay: 50
+    plusOne: 25
+    plusTwo: 17
+    max: 8
+  - stay: 45
+    plusOne: 28
+    plusTwo: 0
+    max: 27
+  - stay: 65
+    plusOne: 0
+    plusTwo: 0
+    max: 35

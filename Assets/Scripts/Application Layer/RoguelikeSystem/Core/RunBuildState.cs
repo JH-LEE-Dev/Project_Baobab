@@ -87,6 +87,37 @@ public sealed class RunBuildState
         return true;
     }
 
+    /// <summary>
+    /// 감정 승격. 보유 카드의 레벨을 _level로 바로 올린다(최대 MAX). 구매가 아니므로 구매 수는 늘지 않는다.
+    /// 보유하지 않았거나 현재 레벨 이하면 false.
+    /// </summary>
+    public bool PromoteTo(CardDefinitionSO _card, int _level)
+    {
+        int current = GetLevel(_card);
+        if (current <= 0) return false;
+
+        int target = UnityEngine.Mathf.Min(_level, _card.EffectiveMaxLevel);
+        if (target <= current) return false;
+
+        levels[_card] = target;
+        return true;
+    }
+
+    /// <summary>보유 중인 액티브 카드 수(액티브 보장 해제 판단용).</summary>
+    public int OwnedActiveCount
+    {
+        get
+        {
+            int count = 0;
+            for (int i = 0; i < ownedOrder.Count; i++)
+            {
+                if (null != ownedOrder[i] && ECardKind.Active == ownedOrder[i].kind) count++;
+            }
+
+            return count;
+        }
+    }
+
     public void IncreaseRerollCount()
     {
         RerollCount++;

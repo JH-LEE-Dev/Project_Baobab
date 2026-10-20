@@ -88,6 +88,46 @@ public class ArmComponent : PComponent, IArmComponent
         bWhirlwindSpinning = false;
     }
 
+    // 대시처럼 조준점이 아니라 정해진 방향을 봐야 할 때 쓴다. 몸이 대시 방향을 보는 동안 팔도 같은 쪽을 보게 한다.
+    // 켜져 있는 동안 회전·좌우 반전·높이 보정·도끼 앞뒤 정렬을 조준점 대신 이 방향(월드 기준)으로 맞춘다.
+    // 넉백 잠금·회전 베기는 지금처럼 이보다 우선한다(Update가 먼저 거른다).
+    private bool bAimOverride = false;
+    private Vector2 aimOverrideDirection = Vector2.down;
+
+    // 방향 덮어쓰기 중 좌우 반전 완충값. 단위 벡터의 x라 FlipDeadband(월드 거리)를 그대로 쓸 수 없다.
+    private const float AimOverrideFlipDeadband = 0.01f;
+
+    /// <summary>
+    /// 팔이 조준점 대신 _worldDirection을 보게 한다. 몸이 보간 없이 바로 돌아가므로 팔도 바로 맞춘다
+    /// (보간하면 대시처럼 짧은 동작에서는 몸과 팔이 끝까지 따로 논다).
+    /// </summary>
+    public void SetAimOverride(Vector2 _worldDirection)
+    {
+        if (_worldDirection.sqrMagnitude < 0.0001f) return;
+
+        bAimOverride = true;
+        aimOverrideDirection = _worldDirection.normalized;
+
+        if (bRotationLocked || bWhirlwindSpinning) return;
+
+        transform.rotation = Quaternion.Euler(0f, 0f, GetArmRotationZ(aimOverrideDirection));
+        UpdateFacingDirection();
+        UpdatePositionOffset();
+        UpdateFlip();
+    }
+
+    /// <summary>방향 덮어쓰기를 푼다. 이후 UpdateRotation의 보간으로 조준 방향으로 부드럽게 돌아간다.</summary>
+    public void ClearAimOverride()
+    {
+        bAimOverride = false;
+    }
+
+    // 팔 회전값은 아래(0,-1)를 0도로 삼는다(UpdateRotation과 같은 기준).
+    private static float GetArmRotationZ(Vector2 _direction)
+    {
+        return Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg + 90f;
+    }
+
     IAxeComponent IArmComponent.axeComponent => axeComponent;
 
     IRifleComponent IArmComponent.rifleComponent => rifleComponent;
@@ -158,6 +198,13 @@ public class ArmComponent : PComponent, IArmComponent
 
     private void UpdateRotation()
     {
+        if (bAimOverride)
+        {
+            Quaternion overrideRotation = Quaternion.Euler(0, 0, GetArmRotationZ(aimOverrideDirection));
+            transform.rotation = Quaternion.Lerp(transform.rotation, overrideRotation, Time.deltaTime * smoothSpeed);
+            return;
+        }
+
         if (attackTransform == null) return;
 
         // 타겟을 바라보는 방향 계산
@@ -177,6 +224,18 @@ public class ArmComponent : PComponent, IArmComponent
 
     private void UpdateFacingDirection()
     {
+        if (bAimOverride)
+        {
+            // 도끼 앞뒤 정렬(위를 볼 때 몸 뒤로)도 덮어쓴 방향 기준으로 맞춘다(AxeComponent.SetFacingDir와 같은 각도 기준).
+            if (axeComponent != null && ReferenceEquals(currentWeapon, axeComponent))
+            {
+                axeComponent.SetSortingByAngle(Mathf.Atan2(aimOverrideDirection.y, aimOverrideDirection.x) * Mathf.Rad2Deg);
+            }
+
+            if (currentWeapon != null) currentWeapon.SetMouseTransform(mouseTransform);
+            return;
+        }
+
         if (attackTransform == null || currentWeapon == null) return;
 
         currentWeapon.SetFacingDir(attackTransform);
@@ -185,6 +244,12 @@ public class ArmComponent : PComponent, IArmComponent
 
     private void UpdatePositionOffset()
     {
+        if (bAimOverride)
+        {
+            ApplyPositionOffset(Mathf.Atan2(aimOverrideDirection.y, aimOverrideDirection.x) * Mathf.Rad2Deg);
+            return;
+        }
+
         if (attackTransform == null) return;
 
         Vector2 direction = (attackTransform.position - transform.position);
@@ -216,14 +281,26 @@ public class ArmComponent : PComponent, IArmComponent
 
     private void UpdateFlip()
     {
-        if (attackTransform == null) return;
+        float _distanceX;
 
-        float _distanceX = attackTransform.position.x - transform.position.x;
+        if (bAimOverride)
+        {
+            _distanceX = aimOverrideDirection.x;
 
-        // 조준이 거의 수직일 때는 방금까지의 방향을 유지한다. x 부호만 보고 뒤집으면, 스틱을 위로
-        // 곧게 밀었을 때 x가 0 근처에서 미세하게 흔들리며 팔이 좌우로 깜빡인다.
-        // (8방향 조준일 때는 x가 정확히 0이라 드러나지 않던 문제다)
-        if (Mathf.Abs(_distanceX) < FlipDeadband) return;
+            // 정확히 위·아래로 대시할 때는 방금까지의 방향을 유지한다(아래 조준과 같은 이유).
+            if (Mathf.Abs(_distanceX) < AimOverrideFlipDeadband) return;
+        }
+        else
+        {
+            if (attackTransform == null) return;
+
+            _distanceX = attackTransform.position.x - transform.position.x;
+
+            // 조준이 거의 수직일 때는 방금까지의 방향을 유지한다. x 부호만 보고 뒤집으면, 스틱을 위로
+            // 곧게 밀었을 때 x가 0 근처에서 미세하게 흔들리며 팔이 좌우로 깜빡인다.
+            // (8방향 조준일 때는 x가 정확히 0이라 드러나지 않던 문제다)
+            if (Mathf.Abs(_distanceX) < FlipDeadband) return;
+        }
 
         // 타겟의 x 위치가 Arm의 x 위치보다 작으면 왼쪽(-1), 크면 오른쪽(1)
         float sign = (_distanceX < 0f) ? -1f : 1f;

@@ -13,6 +13,9 @@ public interface ILootDataProvider
     /// </summary>
     int GetLootGrowthTier(LootType _lootType);
 
+    /// <summary>다음 단계가 되는 프레스티지 레벨. 이미 최대 단계이거나 성장하지 않는 전리품이면 0.</summary>
+    int GetNextGrowthPrestigeLevel(LootType _lootType);
+
     /// <summary>
     /// 성장형 전리품의 단계가 프레스티지 레벨 상승으로 올랐을 때 (전리품, 새 단계)로 옵니다.
     /// 처음 얻을 때는 오지 않으니, 그때는 LootAcquiredEvent를 받은 뒤 GetLootGrowthTier로 읽으세요.

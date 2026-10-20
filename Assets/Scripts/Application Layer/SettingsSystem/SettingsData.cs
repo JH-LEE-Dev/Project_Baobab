@@ -46,7 +46,7 @@ public enum EWindowMode { Windowed, Fullscreen }
 public enum EOnOff { Off, On }
 
 /// <summary>
-/// 크래시 리포트(Sentry)와 플레이 통계(GameAnalytics) 수집에 대한 유저의 선택입니다.
+/// 크래시 리포트(Sentry) 수집에 대한 유저의 선택입니다.
 ///
 /// EOnOff를 쓰지 않고 별도 enum을 두는 이유는 "아직 묻지 않았음"이 반드시 구분되어야 하기
 /// 때문입니다. 둘을 구분하지 못하면 (a) 최초 동의 팝업을 몇 번 띄워야 하는지 알 수 없고,
@@ -133,7 +133,7 @@ public struct SettingsData
     public EOnOff pauseOnUnfocus;
 
     /// <summary>
-    /// 데이터 수집(Sentry 크래시 리포트 / GameAnalytics 플레이 통계) 동의 여부입니다.
+    /// 데이터 수집(Sentry 크래시 리포트) 동의 여부입니다.
     ///
     /// 이 필드를 추가하면서 SettingsRepository의 버전을 올리지 않은 것은 의도적입니다.
     /// 기본값이 0(NotAsked)이라 키가 없는 구버전 파일도 올바르게 "아직 묻지 않음"으로
@@ -461,6 +461,63 @@ public struct SettingsData
 
         // 기준 시야보다 작은 화면에서도 0배가 되지 않도록 1을 하한으로 둔다.
         return Mathf.Max(1, Mathf.RoundToInt((float)_screenHeight / CAMERA_VIEW_HEIGHT));
+    }
+
+    /// <summary>
+    /// 보이는 폭이 기준 폭을 넘었는지 판단할 때 쓰는 여유입니다. 부동소수 오차로 640.0000x가
+    /// 걸리지 않도록 조금 둡니다.
+    /// </summary>
+    private const float PILLARBOX_WIDTH_EPSILON = 0.5f;
+
+    /// <summary>
+    /// 이 화면에서 카메라 좌우를 잘라내야(Pillarbox) 하는지 반환합니다.
+    ///
+    /// 배율은 세로만 보고 정해지므로(GetPixelScale), 그 배율로 화면 가로를 나눈 값이 실제로
+    /// 보이는 폭입니다. 그 폭이 기준 폭(640)을 넘으면 자릅니다. 화면비가 아니라 보이는 폭으로
+    /// 판정하는 이유는 UltraWideCropApplier 주석을 보세요.
+    ///
+    /// 카메라의 Crop Frame을 켜는 쪽(UltraWideCropApplier)과 잘린 영역을 비우는 쪽
+    /// (CroppedAreaGuard, CroppedAreaFitter)이 반드시 같은 판정을 써야 해서 여기 한 곳에 둡니다.
+    /// 둘이 어긋나면 카메라는 잘렸는데 띠가 안 지워지거나, 반대로 멀쩡한 화면이 가려집니다.
+    /// </summary>
+    public static bool IsPillarboxRequired(int _screenWidth, int _screenHeight)
+    {
+        if (_screenWidth <= 0 || _screenHeight <= 0) return false;
+
+        float _visibleWidth = (float)_screenWidth / GetPixelScale(_screenHeight);
+        return _visibleWidth > PIXEL_PERFECT_REF_WIDTH + PILLARBOX_WIDTH_EPSILON;
+    }
+
+    /// <summary>
+    /// 카메라가 실제로 그리는 화면 영역(픽셀)을 반환합니다. 자르지 않는 화면이면 화면 전체입니다.
+    ///
+    /// PixelPerfectCamera가 Pillarbox일 때 카메라에 넣는 pixelRect와 같은 식입니다.
+    /// (PixelPerfectCameraInternal.CalculateCameraProperties / CalculateFinalBlitPixelRect,
+    ///  Crop Frame X + Upscale RT 꺼짐 경로)
+    ///
+    ///   zoom  = max(1, min(화면세로 / 기준세로, 화면가로 / 기준가로))   (정수 나눗셈)
+    ///   너비  = zoom * 기준가로
+    ///   x     = (화면가로 - 너비) / 2                                   (정수 나눗셈)
+    ///
+    /// 기준 해상도는 PixelPerfectReferenceResolutionApplier가 카메라에 넣는 값과 같도록
+    /// GetReferenceResolution으로 구합니다.
+    ///
+    /// 카메라 pixelRect를 직접 읽지 않고 계산하는 이유는 씬 전환 중에는 카메라가 없기 때문입니다.
+    /// 그 사이에도 전환 연출 UI는 그려지므로, 카메라 유무와 상관없이 같은 영역을 알아야 합니다.
+    /// </summary>
+    public static RectInt GetCameraViewPixelRect(int _screenWidth, int _screenHeight)
+    {
+        if (false == IsPillarboxRequired(_screenWidth, _screenHeight))
+        {
+            return new RectInt(0, 0, Mathf.Max(0, _screenWidth), Mathf.Max(0, _screenHeight));
+        }
+
+        GetReferenceResolution(_screenWidth, _screenHeight, out int _refWidth, out int _refHeight);
+
+        int _zoom = Mathf.Max(1, Mathf.Min(_screenHeight / _refHeight, _screenWidth / _refWidth));
+        int _viewWidth = _zoom * _refWidth;
+
+        return new RectInt((_screenWidth - _viewWidth) / 2, 0, _viewWidth, _screenHeight);
     }
 
     /// <summary>

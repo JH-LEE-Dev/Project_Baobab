@@ -42,7 +42,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AspectRatio: 5.3333335
+    - _AspectRatio: 4.848485
     - _ColorMask: 15
     - _DissolveAmount: 1
     - _DitherBandWidth: 10

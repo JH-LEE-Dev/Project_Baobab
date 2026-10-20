@@ -12,8 +12,12 @@ using UnityEngine;
 /// 본편 능력 트리 경로(SkillManager/SkillDispatcher)는 전혀 거치지 않는다. 노드 레벨·툴팁 누적값·스킬 SO를
 /// 건드리지 않으므로 세이브와 마을 UI에 흔적이 남지 않는다. (로그라이크 세션은 애초에 저장도 막혀 있다)
 ///
-/// [켜기/끄기 스위치] 회전베기·다중 타격 같은 bool 스위치는 기준 상태가 "꺼짐"이라는 전제로 켰다 끈다.
+/// [켜기/끄기 스위치] 회전베기 같은 bool 스위치는 기준 상태가 "꺼짐"이라는 전제로 켰다 끈다.
 /// 로그라이크는 본편 능력 트리를 불러오지 않으므로(BootStrap) 이 전제가 항상 성립한다.
+/// 도끼는 항상 단일 타격이다(기획서 3-1). 다중 타격 스위치는 켜지 않는다.
+///
+/// [전투 기준값] 런의 도끼 공격력 10 같은 기준값(부록 A-1)은 본편 캐릭터 프리팹 값 위에 덮어 끼우고,
+/// RemoveAll에서 끼우기 전 값으로 되돌린다. 증가 배율 장부와는 별개다.
 /// </summary>
 public sealed class RunEffectApplier
 {
@@ -31,6 +35,7 @@ public sealed class RunEffectApplier
         DroneRange,
         ShockWaveSpeed,
         DroneDuration,
+        BoomerangDistance,
         MoveSpeed,
         ShockWaveChance,
         BoomerangCooldownReduction,
@@ -49,7 +54,6 @@ public sealed class RunEffectApplier
     private enum ESwitch
     {
         WhirlWind,
-        MultiAttack,
         Count,
     }
 
@@ -61,15 +65,41 @@ public sealed class RunEffectApplier
     private Character character;
     private StatComponent stat;
 
-    // 기획서 3-3 미정 항목. 공통 패시브 "공격속도 증가"가 도끼 공격 속도에도 붙는지. 기본은 붙는다(임시 카드 세트 기준).
+    // 공통 패시브 "공격속도 증가"가 도끼 공격 속도에도 붙는지. 기획서 6-3은 붙는다.
     private bool bAttackSpeedAffectsAxe = true;
     private int baseWhirlwindInterval = 3;
     private float baseMaxStamina = 100f;
+
+    private float maxMoveSpeedPercent;
+    private float whirlwindExtraRotationDelay = 0.15f;
+    private float shockwaveExtraDelay = 0.12f;
+    private float axeExtraStrikeDelay = 0.1f;
+
+    private bool bHasRunBaseStats;
+    private StatComponent.CombatBaseStats runBaseStats;
+    // 기준값을 끼운 캐릭터와 끼우기 전 값. RemoveAll이 이 캐릭터에 되돌린다.
+    private StatComponent injectedStat;
+    private StatComponent.CombatBaseStats originalBaseStats;
 
     public void Initialize(bool _bAttackSpeedAffectsAxe, int _baseWhirlwindInterval)
     {
         bAttackSpeedAffectsAxe = _bAttackSpeedAffectsAxe;
         baseWhirlwindInterval = Mathf.Max(1, _baseWhirlwindInterval);
+    }
+
+    /// <summary>회전베기 추가 회전·충격파 추가 발생 사이의 간격(초). 튜닝 SO 값.</summary>
+    public void SetRepeatDelays(float _whirlwindExtraRotationDelay, float _shockwaveExtraDelay, float _axeExtraStrikeDelay)
+    {
+        whirlwindExtraRotationDelay = Mathf.Max(0f, _whirlwindExtraRotationDelay);
+        shockwaveExtraDelay = Mathf.Max(0f, _shockwaveExtraDelay);
+        axeExtraStrikeDelay = Mathf.Max(0f, _axeExtraStrikeDelay);
+    }
+
+    /// <summary>런 동안 쓸 전투 기준값(도끼 공격력 10 등). 다음 Apply에서 캐릭터에 끼운다.</summary>
+    public void SetRunBaseCombatStats(in StatComponent.CombatBaseStats _stats)
+    {
+        runBaseStats = _stats;
+        bHasRunBaseStats = true;
     }
 
     public void SetCharacter(Character _character)
@@ -89,18 +119,16 @@ public sealed class RunEffectApplier
     {
         if (null == stat || null == _mods) return;
 
-        // // 피해량: 전역 + 각 스킬 전용
-        float globalDamage = _mods.Get(ERunEffect.DamagePercent);
-        SetValue(EStat.AxeDamage, globalDamage + _mods.Get(ERunEffect.DamagePercent, ERoguelikeSkill.Spin));
-        SetValue(EStat.ShockWaveDamage, _mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Shockwave));
-        SetValue(EStat.BoomerangDamage, _mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Boomerang));
-        SetValue(EStat.DroneDamage, _mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Drone));
+        // 전투 기준값은 증가 배율보다 먼저 끼운다. SetCombatBaseStats가 쌓인 배율을 다시 곱해 현재 값을 맞춘다.
+        if (bHasRunBaseStats && injectedStat != stat)
+        {
+            RestoreBaseStats();
+            originalBaseStats = stat.GetCombatBaseStats();
+            stat.SetCombatBaseStats(in runBaseStats);
+            injectedStat = stat;
+        }
 
-        // // 공격 속도
-        float globalSpeed = _mods.Get(ERunEffect.AttackSpeedPercent);
-        SetValue(EStat.AxeAttackSpeed, bAttackSpeedAffectsAxe ? globalSpeed : 0f);
-        SetValue(EStat.BoomerangAttackSpeed, _mods.GetForSkill(ERunEffect.AttackSpeedPercent, ERoguelikeSkill.Boomerang));
-        SetValue(EStat.DroneAttackSpeed, _mods.GetForSkill(ERunEffect.AttackSpeedPercent, ERoguelikeSkill.Drone));
+        ApplyDamageAndSpeed(_mods);
 
         // // 범위. 충격파는 범위 스탯이 따로 없고 확장 속도 × 수명이 곧 범위다(본편 "충격파 범위" 노드와 같은 처리).
         float globalRange = _mods.Get(ERunEffect.RangePercent);
@@ -111,9 +139,14 @@ public sealed class RunEffectApplier
 
         // // 지속 시간
         SetValue(EStat.DroneDuration, _mods.GetForSkill(ERunEffect.DurationPercent, ERoguelikeSkill.Drone));
+        // 부메랑의 "유지 시간"은 한 번 왕복하며 날아 있는 시간이고, 본편에서는 사거리(타원 장축 비율)가 그 길이를 정한다.
+        // 부메랑 전용 값만 쓴다 - 공통 패시브 "유지 시간 증가"의 대상(연막·별 표식·별 생존)에는 부메랑이 없다(기획서 6-3).
+        SetValue(EStat.BoomerangDistance, _mods.Get(ERunEffect.DurationPercent, ERoguelikeSkill.Boomerang));
 
-        // // 이동 속도
-        SetValue(EStat.MoveSpeed, _mods.Get(ERunEffect.MoveSpeedPercent));
+        // // 이동 속도. 루비 등과 겹쳐도 합산 상한을 넘지 않는다(기획서 6-3 "합산 상한", 부록 A-5 +60%).
+        float moveSpeed = _mods.Get(ERunEffect.MoveSpeedPercent);
+        if (maxMoveSpeedPercent > 0f) moveSpeed = Mathf.Min(moveSpeed, maxMoveSpeedPercent);
+        SetValue(EStat.MoveSpeed, moveSpeed);
 
         // // 재사용 대기 감소(부메랑만 본편 스탯이 있다)
         SetValue(EStat.BoomerangCooldownReduction, _mods.GetForSkill(ERunEffect.CooldownReductionPercent, ERoguelikeSkill.Boomerang));
@@ -141,7 +174,6 @@ public sealed class RunEffectApplier
 
         // // 스위치
         SetSwitch(ESwitch.WhirlWind, _mods.IsSkillActive(ERoguelikeSkill.Spin));
-        SetSwitch(ESwitch.MultiAttack, _mods.IsOn(ERunEffect.MultiHit));
 
         // // 회전베기 발동 간격(필요 휘두름 수). 데이터의 TriggerHitCountAdd로 줄이거나 늘린다.
         int interval = Mathf.Max(1, baseWhirlwindInterval + Mathf.RoundToInt(_mods.GetForSkill(ERunEffect.TriggerHitCountAdd, ERoguelikeSkill.Spin)));
@@ -150,6 +182,19 @@ public sealed class RunEffectApplier
             appliedWhirlwindInterval = interval;
             RunCombatOverrides.SetWhirlwindSwingInterval(interval);
         }
+
+        // // 레벨 효과의 반복 수(부록 A-4). 본편 공격 코드는 덮어쓰기 값이 0/false일 때 예전 그대로다(RunCombatOverrides).
+        // 회전베기 IV 연속 2회전, 충격파 V 2중 발생, 스텔라 III 다른 액티브의 별 타격.
+        int extraRotations = _mods.IsSkillActive(ERoguelikeSkill.Spin) ? Mathf.RoundToInt(_mods.GetForSkill(ERunEffect.SpinRotationAdd, ERoguelikeSkill.Spin)) : 0;
+        RunCombatOverrides.SetWhirlwindExtraRotations(extraRotations, whirlwindExtraRotationDelay);
+
+        int extraShockwaves = _mods.IsSkillActive(ERoguelikeSkill.Shockwave) ? Mathf.RoundToInt(_mods.GetForSkill(ERunEffect.ShockwaveRepeatAdd, ERoguelikeSkill.Shockwave)) : 0;
+        RunCombatOverrides.SetShockWaveExtraCount(extraShockwaves, shockwaveExtraDelay);
+
+        RunCombatOverrides.SetSkillsHitRunTargets(IsStarHitByActives(_mods));
+
+        // 루비 다다익선: 도끼 공격 연속 2회 타격.
+        RunCombatOverrides.SetAxeExtraStrikes(Mathf.RoundToInt(_mods.Get(ERunEffect.AxeExtraStrikeAdd)), axeExtraStrikeDelay);
 
         character?.RefreshDronesForRun();
     }
@@ -170,11 +215,56 @@ public sealed class RunEffectApplier
             Array.Clear(appliedSwitches, 0, appliedSwitches.Length);
         }
 
+        RestoreBaseStats();
+
         appliedWhirlwindInterval = 0;
         RunCombatOverrides.ResetAll();
 
         character?.SyncMaxStaminaForRun();
         character?.RefreshDronesForRun();
+    }
+
+    /// <summary>
+    /// 피해량과 공격 속도만 다시 맞춘다. 전투 중 조건부 보너스(임계치 초과·이동 중)가 바뀔 때 RoguelikeSystem이 부른다.
+    /// 전체 Apply는 드론 재배치·최대 스태미너 동기화까지 하므로 매 프레임 부르기에는 무겁다.
+    /// </summary>
+    public void ApplyDamageAndSpeed(RunModifiers _mods)
+    {
+        if (null == stat || null == _mods) return;
+
+        // // 피해량: 전역(+ 조건부) + 각 스킬 전용
+        float globalDamage = _mods.GlobalDamagePercent;
+        SetValue(EStat.AxeDamage, globalDamage + _mods.Get(ERunEffect.DamagePercent, ERoguelikeSkill.Spin));
+        SetValue(EStat.ShockWaveDamage, globalDamage + _mods.Get(ERunEffect.DamagePercent, ERoguelikeSkill.Shockwave));
+        SetValue(EStat.BoomerangDamage, globalDamage + _mods.Get(ERunEffect.DamagePercent, ERoguelikeSkill.Boomerang));
+        SetValue(EStat.DroneDamage, globalDamage + _mods.Get(ERunEffect.DamagePercent, ERoguelikeSkill.Drone));
+
+        // // 공격 속도: 전역(+ 조건부) + 각 스킬 전용
+        float globalSpeed = _mods.GlobalAttackSpeedPercent;
+        SetValue(EStat.AxeAttackSpeed, bAttackSpeedAffectsAxe ? globalSpeed : 0f);
+        SetValue(EStat.BoomerangAttackSpeed, globalSpeed + _mods.Get(ERunEffect.AttackSpeedPercent, ERoguelikeSkill.Boomerang));
+        SetValue(EStat.DroneAttackSpeed, globalSpeed + _mods.Get(ERunEffect.AttackSpeedPercent, ERoguelikeSkill.Drone));
+    }
+
+    /// <summary>이동속도 합산 상한(%). 0이면 상한 없음.</summary>
+    public void SetMoveSpeedCap(float _maxPercent)
+    {
+        maxMoveSpeedPercent = Mathf.Max(0f, _maxPercent);
+    }
+
+    /// <summary>스텔라 III "다른 액티브 스킬도 별을 공격". 스텔라 기본 능력이 켜져 있을 때만(스텔라+드론처럼 별을 공격하지 않는 조합에서는 꺼짐).</summary>
+    public static bool IsStarHitByActives(RunModifiers _mods)
+    {
+        return null != _mods && _mods.IsSkillActive(ERoguelikeSkill.Stella) && _mods.GetForSkill(ERunEffect.StarHitByActives, ERoguelikeSkill.Stella) > 0f;
+    }
+
+    /// <summary>끼워 둔 전투 기준값을 끼우기 전 값으로 되돌린다.</summary>
+    private void RestoreBaseStats()
+    {
+        if (null == injectedStat) return;
+
+        injectedStat.SetCombatBaseStats(in originalBaseStats);
+        injectedStat = null;
     }
 
     private void SetValue(EStat _stat, float _target)
@@ -197,6 +287,7 @@ public sealed class RunEffectApplier
             case EStat.DroneRange: stat.IncreaseDroneRange(delta); break;
             case EStat.ShockWaveSpeed: stat.IncreaseShockWaveSpeed(delta); break;
             case EStat.DroneDuration: stat.IncreaseDroneDuration(delta); break;
+            case EStat.BoomerangDistance: stat.IncreaseBoomerangDistance(delta); break;
             case EStat.MoveSpeed: stat.IncreaseMovementSpeed(delta); break;
             case EStat.ShockWaveChance: stat.IncreaseShockWaveChance(delta); break;
             case EStat.BoomerangCooldownReduction: stat.IncreaseBoomerangCooldownReduction(delta); break;
@@ -230,7 +321,6 @@ public sealed class RunEffectApplier
         switch (_switch)
         {
             case ESwitch.WhirlWind: stat.ActivateWhirlWind(_bOn); break;
-            case ESwitch.MultiAttack: stat.SetMultiAttack(_bOn); break;
         }
 
         appliedSwitches[idx] = _bOn;

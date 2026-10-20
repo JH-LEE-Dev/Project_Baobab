@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using PresentationLayer.VFX;
 
 namespace PresentationLayer.Environment
 {
@@ -34,6 +35,18 @@ namespace PresentationLayer.Environment
         [SerializeField] private SpriteRenderer outlineStencilRenderer;
         [SerializeField] private SpriteRenderer outlineRenderer;
 
+        [Header("Growth Visual (단계별 아우라 색 / 스프라이트)")]
+        [Tooltip("단계(씨앗/꽃/나무)별 아우라 색과 스프라이트. 비워 두면 단계와 상관없이 아래 auraSettings(종류별 색)를 쓴다.")]
+        [SerializeField] private LootGrowthVisualData growthVisualData;
+        [SerializeField, Range(0.1f, 1.5f), Tooltip("단계 색 후광 외곽의 세기 배율. 후광 머티리얼의 Intensity가 커서 1을 넘기면 색이 포화된다.")]
+        private float growthGlowStrength = 0.9f;
+        [SerializeField, Range(0.1f, 1.5f), Tooltip("단계 색 후광 중심의 세기 배율. 중심이 하얗게 날아가면 낮춘다.")]
+        private float growthGlowCoreStrength = 0.8f;
+
+        [Header("Evolve VFX (단계가 오를 때 재생되는 진화 연출)")]
+        [Tooltip("비워 두면 단계가 오를 때 연출 없이 바로 바뀐다.")]
+        [SerializeField] private VFX_LootEvolve evolveEffect;
+
         [Header("Aura Orbit Settings")]
         [SerializeField] private bool useAuraOrbit = false;
         [SerializeField] private ItemAuraOrbitController auraOrbitController;
@@ -49,6 +62,16 @@ namespace PresentationLayer.Environment
 
         public LootType CurrentLootType { get; private set; } = LootType.None;
 
+        // 지금 표시 중인 성장 단계(0 = 모름/성장하지 않음). SetGrowthTier로 정해진다.
+        private int currentGrowthTier = 0;
+
+        // 진화 연출 중에 올라갈 단계(0 = 연출 중이 아님). 연출의 폭발 시각에 이 단계로 후광 색/스프라이트를 바꾼다.
+        private int pendingGrowthTier = 0;
+        private Action cachedOnEvolveBurst;
+
+        // 임시 스프라이트 경고를 (전리품, 단계)당 한 번만 낸다
+        private static readonly HashSet<int> placeholderWarned = new HashSet<int>();
+
         private int characterLayer;
         private InputManager inputManager;
         private bool bPhysicalOverlapped;
@@ -57,6 +80,7 @@ namespace PresentationLayer.Environment
         private void Awake()
         {
             customSortable = GetComponent<CustomSortable>();
+            cachedOnEvolveBurst = OnEvolveBurst;
             characterLayer = LayerMask.NameToLayer("Character");
 
             // 기본값: 생성 위치(자기 자신의 Y) 기준. 스포너가 별도 Pivot 기준점을 알고 있다면
@@ -222,6 +246,103 @@ namespace PresentationLayer.Environment
             else if (false == useAuraOrbit && null != auraOrbitController)
             {
                 auraOrbitController.Stop();
+            }
+
+            ApplyGrowthVisual();
+        }
+
+        /// <summary>
+        /// 성장 단계(1~3)를 알려 주면 그 단계의 아우라 색과 스프라이트로 바꾼다. 같은 단계면 전리품 종류와 상관없이 같은 색이다.
+        /// 0 이하(성장하지 않는 전리품 / 단계를 모를 때)면 종류별 기본 색(auraSettings)을 그대로 쓴다.
+        /// SetLootDisplay 뒤에 불러야 한다.
+        /// </summary>
+        public void SetGrowthTier(int _tier)
+        {
+            // 연출 없이 바로 바꾼다(마을 기둥 생성 때). 진화 연출 중이었다면 보류해 둔 단계는 버리고 지정한 단계로 맞춘다.
+            if (0 < pendingGrowthTier) pendingGrowthTier = 0;
+
+            currentGrowthTier = _tier;
+            ApplyGrowthVisual();
+        }
+
+        /// <summary>
+        /// 단계 상승 연출(VFX_LootEvolve). 연출을 재생하고 후광/스프라이트 교체는 폭발 시각(약 0.8초)까지 미룬다.
+        /// 연출 컴포넌트가 없거나 오브젝트가 꺼져 있거나 이미 성장한 상태(1단계 이상)에서 오르는 변화가 아니면 바로 바꾼다.
+        /// 특성 창(TentUI)에서 프레스티지를 올리고 창을 닫았을 때 LootPillarManager.PlayPendingEvolutions가 부른다.
+        /// </summary>
+        public void PlayGrowthEvolve(int _tier)
+        {
+            if (null == evolveEffect || false == isActiveAndEnabled || false == (1 <= currentGrowthTier && currentGrowthTier < _tier))
+            {
+                SetGrowthTier(_tier);
+                return;
+            }
+
+            int fromTier = 0 < pendingGrowthTier ? pendingGrowthTier : currentGrowthTier;
+
+            // 진행 중이던 연출이 있으면 Play가 먼저 정리하면서 이전 목표 단계를 적용한 뒤 새 연출을 시작한다.
+            evolveEffect.Play(fromTier, _tier, cachedOnEvolveBurst);
+            pendingGrowthTier = _tier;
+        }
+
+        // 진화 연출의 폭발 시각: 이때 새 단계의 후광 색과 스프라이트로 바꾼다.
+        private void OnEvolveBurst()
+        {
+            if (pendingGrowthTier <= 0) return;
+
+            currentGrowthTier = pendingGrowthTier;
+            pendingGrowthTier = 0;
+            ApplyGrowthVisual();
+        }
+
+        private void OnDisable()
+        {
+            // 연출 중에 꺼지면(마을을 떠남 등) 연출이 정리되며 폭발 콜백을 불러 주지만, 못 불렸다면 여기서 단계를 맞춘다.
+            if (0 < pendingGrowthTier)
+            {
+                currentGrowthTier = pendingGrowthTier;
+                pendingGrowthTier = 0;
+                ApplyGrowthVisual();
+            }
+        }
+
+        private void ApplyGrowthVisual()
+        {
+            if (null == growthVisualData || currentGrowthTier < 1)
+            {
+                if (null != auraOrbitController)
+                {
+                    auraOrbitController.ClearCenterGlowShaderColors();
+                }
+                return;
+            }
+
+            if (true == useAuraOrbit && null != auraOrbitController
+                && true == growthVisualData.TryGetAuraColor(currentGrowthTier, out Color _auraColor))
+            {
+                // 글로우 머티리얼 기본색(금색)이 곱해져 렌더러 색만으로는 단계 색이 나오지 않으므로 셰이더 색을 직접 덮어쓴다.
+                Color _glowCore = Color.Lerp(_auraColor, new Color(2f, 2f, 2f, 1f), 0.2f) * growthGlowCoreStrength;
+                _glowCore.a = 1f;
+                Color _glowOuter = _auraColor * growthGlowStrength;
+                _glowOuter.a = 1f;
+                auraOrbitController.SetCenterGlowShaderColors(_glowCore, _glowOuter);
+            }
+
+            if (null != targetRenderer
+                && true == growthVisualData.TryGetSprite(CurrentLootType, currentGrowthTier, out Sprite _sprite, out bool _bPlaceholder))
+            {
+                targetRenderer.sprite = _sprite;
+
+                if (true == _bPlaceholder)
+                {
+                    int _key = ((int)CurrentLootType << 8) | currentGrowthTier;
+
+                    if (true == placeholderWarned.Add(_key))
+                    {
+                        Debug.LogWarning("[LootDisplayObject] 임시 스프라이트 사용 중: " + CurrentLootType + " 단계 " + currentGrowthTier
+                            + " (LootGrowthVisualData에서 정식 스프라이트로 교체하고 isPlaceholder를 끄세요)");
+                    }
+                }
             }
         }
     }

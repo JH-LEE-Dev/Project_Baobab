@@ -88,13 +88,45 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         sortingOrder = (_angle > 0 && _angle < 180) ? -1 : 1;
     }
 
+    // 대시 중에는 새 스윙을 시작하지 않는다. 팔이 대시 방향을 보는 동안 휘두르면 연출은 대시 방향인데
+    // 판정은 조준 방향으로 들어가 어긋난다. 버튼이 눌린 상태는 그대로 기억해 두었다가, 대시가 끝나면 이어서 휘두른다.
+    private bool bBlockedByDash = false;
+
+    // 대시가 끝난 뒤 이어 휘두를지 다음 Update에서 확인한다. 대시 종료 순간에 바로 휘두르면, 스태미나 소진으로
+    // 대시가 끊길 때(StaminaIsEmpty가 상태를 먼저 바꾸고 그 뒤에 무기를 끈다) 쓰러지는 도중에 스윙이 나간다.
+    // 한 박자 미루면 그때는 SetEnable(false)가 끝나 있어 CanStartSwing에서 걸러진다.
+    private bool bResumeSwingAfterDash = false;
+
+    public void SetBlockedByDash(bool _bBlocked)
+    {
+        bBlockedByDash = _bBlocked;
+        bResumeSwingAfterDash = false == _bBlocked;
+    }
+
+    // 대시 동안 눌러 두었거나 연속 공격 중이었다면 대시가 끝난 뒤 이어 휘두른다(LeftButtonClicked와 같은 조건).
+    private void ResumeSwingAfterDash()
+    {
+        bResumeSwingAfterDash = false;
+
+        if (bLeftButtonClicked && CanStartSwing())
+        {
+            OnAttackStart();
+        }
+    }
+
+    private bool CanStartSwing()
+    {
+        return false == bAttacked && null != axeAnimation && bCanAction && durability != 0f && bCanAttack
+            && false == ctx.bWhileChangingWeapon && false == bBlockedByDash;
+    }
+
     public override void LeftButtonClicked()
     {
         if (ctx.inputManager.IsCursorHoveredOnUI() || bCanAttack == false) return;
 
         bLeftButtonClicked = true;
 
-        if (bAttacked || null == axeAnimation || bCanAction == false || durability == 0f || ctx.bWhileChangingWeapon == true) return;
+        if (false == CanStartSwing()) return;
 
         OnAttackStart();
     }
@@ -157,7 +189,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
         DeclareAttackStateEvent?.Invoke(false);
 
-        if (bLeftButtonClicked && durability > 0f && bCanAttack == true)
+        if (bLeftButtonClicked && durability > 0f && bCanAttack == true && false == bBlockedByDash)
         {
             OnAttackStart();
         }
@@ -181,18 +213,22 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     private void DecreaseDurabilityInternal(bool _bIncrementCombo)
     {
-        if (UnityEngine.Random.Range(0f, 100f) >= ctx.characterStat.axeDurabilityDecIgnoreChance)
-            durability -= ctx.characterStat.axeDurabilityDecAmount;
-
-        if (durability < 0f)
+        // [로그라이크] 도끼 내구도는 무제한이다(기획서 v2.2 3-1). 깎지 않고, 타격 알림·콤보는 본편과 같이 낸다.
+        if (false == GameModeContext.IsRoguelike)
         {
-            durability = 0f;
+            if (UnityEngine.Random.Range(0f, 100f) >= ctx.characterStat.axeDurabilityDecIgnoreChance)
+                durability -= ctx.characterStat.axeDurabilityDecAmount;
+
+            if (durability < 0f)
+            {
+                durability = 0f;
+            }
+
+            UpdateSpriteByDurability();
+
+            if (durability == 0f)
+                DurabilityEmptyEvent?.Invoke();
         }
-
-        UpdateSpriteByDurability();
-
-        if (durability == 0f)
-            DurabilityEmptyEvent?.Invoke();
 
         AxeAttackedEvent?.Invoke();
 
@@ -297,6 +333,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
         bAttacked = false;
         bLeftButtonClicked = false;
+        bResumeSwingAfterDash = false;
         attackComboStack = 0;
         comboResetTimer = 0f;
 
@@ -362,6 +399,11 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     private void Update()
     {
+        if (bResumeSwingAfterDash)
+        {
+            ResumeSwingAfterDash();
+        }
+
         if (attackComboStack > 0)
         {
             comboResetTimer -= Time.deltaTime;

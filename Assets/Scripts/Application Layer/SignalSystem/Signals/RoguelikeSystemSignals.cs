@@ -101,7 +101,10 @@ public struct RoguelikeTileWaveStartedSignal
 /// </summary>
 public struct RoguelikeEntryScreenCoveredSignal { }
 
-/// <summary>로비 진입 암전이 걷히기 시작했다. 화면에는 물만 깔린 바다가 보이고, 이어서 바닥 타일 파도가 시작된다.</summary>
+/// <summary>
+/// 로비 진입 암전이 걷히기 시작했다(기획서 v2.2 9-1 3단계 페이드 아웃, 약 0.3초). 화면에는 물만 깔린 바다가 드러나고,
+/// 같은 프레임에 바닥 타일 파도(RoguelikeTileWaveStartedSignal, bEntry = true)도 시작된다 - 걷힌 뒤가 아니라 걷히는 동안 파도가 돈다.
+/// </summary>
 public struct RoguelikeEntryScreenRevealStartedSignal { }
 
 /// <summary>
@@ -217,6 +220,16 @@ public struct RoguelikeCardSkipRequestedSignal { }
 
 public struct RoguelikeCardRerollRequestedSignal { }
 
+/// <summary>보유 카드 한 장을 감정에 맡긴다(기획서 4-4). 감정사가 있는 선택 단계에서만 받는다.</summary>
+public struct RoguelikeCardAppraiseRequestedSignal
+{
+    public CardDefinitionSO card;
+    public RoguelikeCardAppraiseRequestedSignal(CardDefinitionSO _card)
+    {
+        card = _card;
+    }
+}
+
 /// <summary>카드 UI가 구매·소멸 연출을 다 보여 줬다. 시스템은 이 신호를 받고서야 다음 단계로 넘어간다.</summary>
 public struct RoguelikeCardSelectionPresentationDoneSignal { }
 
@@ -257,6 +270,43 @@ public struct RoguelikeCardShopRejectedSignal
     }
 }
 
+/// <summary>
+/// 노출 가능한 카드가 0장이라 선택 화면 대신 "지금은 구매할 수 있는 카드가 없습니다" 안내를 띄울 차례다(기획서 4-3).
+/// 안내가 끝나면 RoguelikeCardSelectionPresentationDoneSignal을 보낸다. 확인 입력 없이 웨이브가 시작된다.
+/// </summary>
+public struct RoguelikeNoCardsAvailableSignal { }
+
+/// <summary>감정사가 숲을 찾아온다는 예고(기획서 4-4, 웨이브 10 진입). 실제 등장 웨이브는 담지 않는다.</summary>
+public struct RoguelikeAppraiserNoticeSignal { }
+
+/// <summary>
+/// 감정사가 이번 카드 선택 단계에 와 있다. 버튼 잠금 여부는 IRoguelikeRunInfo.CanAppraise이며,
+/// 골드·보유 카드가 바뀔 때마다(구매 전 감정·리롤) 다시 읽어야 한다. 선택이 닫히면 남은 기회는 사라진다.
+/// </summary>
+public struct RoguelikeAppraiserArrivedSignal { }
+
+/// <summary>감정 결과가 확정됐다(감정비 지불 시점). 승격이면 효과는 이미 적용된 상태다.</summary>
+public struct RoguelikeCardAppraisedSignal
+{
+    public CardAppraisalResult result;
+    public RoguelikeCardAppraisedSignal(CardAppraisalResult _result)
+    {
+        result = _result;
+    }
+}
+
+/// <summary>감정 요청이 거절됐다(골드 부족, 대상 아님 등).</summary>
+public struct RoguelikeCardAppraisalRejectedSignal
+{
+    public ECardAppraisalResult reason;
+    public CardDefinitionSO card;
+    public RoguelikeCardAppraisalRejectedSignal(ECardAppraisalResult _reason, CardDefinitionSO _card)
+    {
+        reason = _reason;
+        card = _card;
+    }
+}
+
 /// <summary>결과 화면을 띄울 차례다. 내용은 IRoguelikeRunInfo.LastRunRecord.</summary>
 public struct RoguelikeResultReadySignal { }
 
@@ -270,7 +320,7 @@ public enum ERoguelikeSkillVfx
 {
     /// <summary>오프로드가 필드 끝에 플래시되며 소환됨. position=출발점, position2=도착점, duration=예열 시간.</summary>
     OffroadWarmup = 0,
-    /// <summary>오프로드 돌진 시작. position=출발점, position2=도착점, duration=돌진 시간.</summary>
+    /// <summary>오프로드 돌진 시작(예열이 끝나 출발하는 순간). position=출발점, position2=반대편 섬 끝 멈추는 점, duration=멈칫 없이 달렸을 때의 돌진 시간(대략).</summary>
     OffroadDash = 1,
     /// <summary>별 생성. id=별 번호.</summary>
     StarSpawned = 2,
@@ -278,7 +328,7 @@ public enum ERoguelikeSkillVfx
     StarBlast = 3,
     /// <summary>별이 수명이 다해 사라짐.</summary>
     StarExpired = 4,
-    /// <summary>포자 연막 시작. radius, duration.</summary>
+    /// <summary>포자 연막 시작. radius, duration, id=연막 번호(SporeZoneExtended가 같은 번호로 온다).</summary>
     SporeZoneStarted = 5,
     /// <summary>360도 충격파(회전베기+충격파, 부메랑+충격파).</summary>
     Shockwave360 = 6,
@@ -294,6 +344,14 @@ public enum ERoguelikeSkillVfx
     LoneStarPulse = 11,
     /// <summary>별 이음선 구성이 바뀜(스텔라+드론). 연결선 그리기는 IRoguelikeStarLinkProvider로 읽는다.</summary>
     StarLinksChanged = 12,
+    /// <summary>오프로드가 나무를 들이받음(충돌 먼지·파편 자리). position=차량 위치, radius=돌진 폭, id=같은 순간에 맞은 나무 수.</summary>
+    OffroadHit = 13,
+    /// <summary>오프로드가 반대편 섬 끝에 닿기 직전이라 달리는 채로 플래시되며 사라지기 시작함. position=그 순간 위치, duration=사라지기까지의 시간.</summary>
+    OffroadExit = 14,
+    /// <summary>포자 연막의 유지 시간이 늘어남(유지 시간 증가 MAX, 연막으로 처치). id=연막 번호, duration=늘어난 시간(초).</summary>
+    SporeZoneExtended = 15,
+    /// <summary>스텔라 V 별 폭발 2회 연속의 뒤이은 폭발. 별은 첫 폭발(StarBlast) 때 이미 사라졌다. position, radius, id=그 별 번호.</summary>
+    StarBlastRepeat = 16,
 }
 
 public struct RoguelikeSkillVfxSignal

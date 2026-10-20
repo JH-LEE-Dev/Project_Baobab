@@ -26,9 +26,8 @@ public enum BuildRelease
 /// 신경 쓸 필요가 없습니다. 문제는 <b>코드가 아니라 파일·에셋이라 디파인을 따라오지 않는 것들</b>입니다.
 ///   - steam_appid.txt        (파일)
 ///   - Sentry environment     (Resources 아래 에셋 - 빌드에 무조건 실림)
-///   - GameAnalytics build    (Resources 아래 에셋 - 빌드에 무조건 실림)
 ///   - 빌드 출력 폴더          (에디터 설정 - 산출물에는 안 실리지만 사람이 폴더를 잘못 집습니다)
-/// 앞의 셋이 어긋나면 데모에서 올라온 크래시·지표가 정식에 섞이거나, 개발 중 Steam이 엉뚱한 앱으로
+/// 앞의 둘이 어긋나면 데모에서 올라온 크래시가 정식에 섞이거나, 개발 중 Steam이 엉뚱한 앱으로
 /// 인식합니다. 그래서 여기서 함께 씁니다.
 ///
 /// 마지막 하나는 성격이 다릅니다. 빌드 결과물에는 영향이 없지만, 스토어마다 폴더 이름이 제각각이면
@@ -85,8 +84,7 @@ public static class PlatformBuildModeSwitcher
 
 #region 동기화 대상
 
-    /// <summary>둘 다 Resources 아래라 빌드에 무조건 포함됩니다.</summary>
-    private const string GAME_ANALYTICS_SETTINGS_PATH = "Assets/Resources/GameAnalytics/Settings.asset";
+    /// <summary>Resources 아래라 빌드에 무조건 포함됩니다.</summary>
     private const string SENTRY_OPTIONS_PATH = "Assets/Resources/Sentry/SentryOptions.asset";
 
     /// <summary>
@@ -235,8 +233,7 @@ public static class PlatformBuildModeSwitcher
     }
 
     /// <summary>
-    /// Sentry environment와 GameAnalytics build가 함께 쓰는 스토어 이름입니다. 한 곳에서
-    /// 만들어야 두 태그가 서로 다른 이름으로 갈리지 않습니다. (steam-demo / 1.0.0-itch 처럼)
+    /// Sentry environment에 쓰는 스토어 이름입니다. (steam-demo / itch-production 처럼)
     /// </summary>
     private static string StoreTag(BuildStore _store)
     {
@@ -246,19 +243,6 @@ public static class PlatformBuildModeSwitcher
             case BuildStore.Itch:  return "itch";
             default:               return "steam";
         }
-    }
-
-    /// <summary>
-    /// GameAnalytics의 build 문자열입니다. 버전은 Player Settings를 따라가므로 버전을 올려도
-    /// 여기를 따로 고칠 필요가 없습니다.
-    /// </summary>
-    public static string ExpectedGameAnalyticsBuild(BuildStore _store, BuildRelease _release)
-    {
-        string _value = PlayerSettings.bundleVersion + "-" + StoreTag(_store);
-
-        if (BuildRelease.Full != _release) _value += "-demo";
-
-        return _value;
     }
 
     /// <summary>
@@ -282,16 +266,6 @@ public static class PlatformBuildModeSwitcher
         if (null == _env) return null;
 
         return _env.stringValue;
-    }
-
-    public static string ReadGameAnalyticsBuild()
-    {
-        SerializedObject _so = LoadSettingsAsset(GAME_ANALYTICS_SETTINGS_PATH);
-        SerializedProperty _build = (null == _so) ? null : _so.FindProperty("Build");
-
-        if (null == _build || false == _build.isArray || 0 == _build.arraySize) return null;
-
-        return _build.GetArrayElementAtIndex(0).stringValue;
     }
 
 #endregion
@@ -394,9 +368,6 @@ public static class PlatformBuildModeSwitcher
         string _expectedEnv = ExpectedSentryEnvironment(_store, _release);
         if (ReadSentryEnvironment() != _expectedEnv) _problems.Add($"Sentry environment가 어긋납니다. (기대: {_expectedEnv})");
 
-        string _expectedBuild = ExpectedGameAnalyticsBuild(_store, _release);
-        if (ReadGameAnalyticsBuild() != _expectedBuild) _problems.Add($"GameAnalytics build가 어긋납니다. (기대: {_expectedBuild})");
-
         // 사람이 Build Settings 창에서 폴더를 직접 골라버리면 스위처가 맞춰둔 자리를 벗어납니다.
         // 산출물 자체는 멀쩡하지만, 다른 스토어의 폴더에 덮어써 놓고 그걸 업로드하면 사고입니다.
         string _expectedLocation = ExpectedBuildLocation(_store, _release);
@@ -435,8 +406,7 @@ public static class PlatformBuildModeSwitcher
             $"빌드 위치       : {NonEmptyOr(EditorUserBuildSettings.GetBuildLocation(BuildTarget.StandaloneWindows64), "(정해지지 않음 - 빌드 출력 폴더 지정)")}\n" +
             $"기대 앱 ID      : {(null == _expectedAppId ? $"({_store} - 사용 안 함)" : _expectedAppId)}\n" +
             $"steam_appid    : {_fileAppId}\n" +
-            $"Sentry env     : {ReadSentryEnvironment() ?? "(읽기 실패)"}\n" +
-            $"GA build       : {ReadGameAnalyticsBuild() ?? "(읽기 실패)"}\n\n" + _verdict;
+            $"Sentry env     : {ReadSentryEnvironment() ?? "(읽기 실패)"}\n\n" + _verdict;
 
         EditorUtility.DisplayDialog("빌드 설정", _message, "확인");
 
@@ -503,7 +473,6 @@ public static class PlatformBuildModeSwitcher
                   $"  세이브 폴더  : {SaveFolderName(_store)}\n" +
                   $"  빌드 위치    : {NonEmptyOr(EditorUserBuildSettings.GetBuildLocation(BuildTarget.StandaloneWindows64), "(정해지지 않음)")}\n" +
                   $"  Sentry env  : {ExpectedSentryEnvironment(_store, _release)}\n" +
-                  $"  GA build    : {ExpectedGameAnalyticsBuild(_store, _release)}\n" +
                   $"  steam_appid : {(null == _appId ? $"({_store} - 건드리지 않음)" : _appId)}\n" +
                   "스크립트 재컴파일 후 적용됩니다.\n" +
                   "주의: 데모↔정식 세이브는 서로 호환되지 않고, 스토어끼리는 세이브 폴더 자체가 다릅니다.");
@@ -627,13 +596,7 @@ public static class PlatformBuildModeSwitcher
 
     private static void SyncAnalyticsAssets(BuildStore _store, BuildRelease _release)
     {
-        bool _changed = false;
-
-        // |= 는 단축 평가를 하지 않으므로 둘 다 실행된다.
-        _changed |= SyncSentryEnvironment(_store, _release);
-        _changed |= SyncGameAnalyticsBuild(_store, _release);
-
-        if (true == _changed) AssetDatabase.SaveAssets();
+        if (true == SyncSentryEnvironment(_store, _release)) AssetDatabase.SaveAssets();
     }
 
     private static bool SyncSentryEnvironment(BuildStore _store, BuildRelease _release)
@@ -650,32 +613,6 @@ public static class PlatformBuildModeSwitcher
         }
 
         _env.stringValue = ExpectedSentryEnvironment(_store, _release);
-
-        return _so.ApplyModifiedProperties();
-    }
-
-    private static bool SyncGameAnalyticsBuild(BuildStore _store, BuildRelease _release)
-    {
-        SerializedObject _so = LoadSettingsAsset(GAME_ANALYTICS_SETTINGS_PATH);
-        if (null == _so) return false;
-
-        SerializedProperty _build = _so.FindProperty("Build");
-
-        if (null == _build || false == _build.isArray)
-        {
-            Debug.LogWarning("[BuildMode] GameAnalytics의 Build 필드를 찾지 못했습니다. SDK 버전이 바뀌었는지 확인하세요.");
-            return false;
-        }
-
-        string _value = ExpectedGameAnalyticsBuild(_store, _release);
-
-        // GA는 플랫폼별 배열을 쓰지만 이 프로젝트는 Standalone 하나뿐이라 전부 같은 값으로 맞춘다.
-        if (0 == _build.arraySize) _build.arraySize = 1;
-
-        for (int i = 0; i < _build.arraySize; i++)
-        {
-            _build.GetArrayElementAtIndex(i).stringValue = _value;
-        }
 
         return _so.ApplyModifiedProperties();
     }

@@ -32,6 +32,11 @@ public class LootPillarManager : MonoBehaviour
 
     private InputManager inputManager;
 
+    // 전리품 성장 단계 변경(프레스티지 레벨업) 구독. 특성 창(TentUI)이 열려 있는 동안 단계가 바뀌면 기둥은 건드리지 않고
+    // 전리품마다 최신 단계만 보류했다가, 창이 닫힐 때(PlayPendingEvolutions) 진화 연출로 반영한다.
+    private InDungeonObjectManager subscribedObjectManager;
+    private readonly Dictionary<LootType, int> pendingEvolutions = new Dictionary<LootType, int>(4);
+
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;
@@ -48,6 +53,12 @@ public class LootPillarManager : MonoBehaviour
 
         spawnedPillars.Clear();
 
+        // 새 기둥은 지금 단계로 만들어지므로 이전에 보류한 진화는 버린다.
+        pendingEvolutions.Clear();
+        if (null != subscribedObjectManager) subscribedObjectManager.LootGrowthTierChangedEvent -= OnLootGrowthTierChanged;
+        subscribedObjectManager = _inDungeonObjectManager;
+        subscribedObjectManager.LootGrowthTierChangedEvent += OnLootGrowthTierChanged;
+
         int pointIndex = 0;
         for (int i = 0; i < DisplayOrder.Length && pointIndex < lootPoints.Length; i++)
         {
@@ -59,6 +70,7 @@ public class LootPillarManager : MonoBehaviour
             LootDisplayObject pillar = Instantiate(lootPillarPrefab, point.position, Quaternion.identity);
             pillar.ApplySortingBasis(pivot != null ? pivot.position.y : point.position.y);
             pillar.SetLootDisplay(DisplayOrder[i]);
+            pillar.SetGrowthTier(_inDungeonObjectManager.GetLootGrowthTier(DisplayOrder[i]));
             pillar.Initialize(inputManager);
 
             pillar.InteractStateChangedEvent -= OnPillarInteractStateChanged;
@@ -71,6 +83,41 @@ public class LootPillarManager : MonoBehaviour
 
             pointIndex++;
         }
+    }
+
+    // 단계 변경 이벤트(레벨이 올라 실제로 단계가 바뀐 전리품만 온다): 기둥은 건드리지 않고 최신 단계만 보류한다.
+    private void OnLootGrowthTierChanged(LootType _lootType, int _tier)
+    {
+        pendingEvolutions[_lootType] = _tier;
+    }
+
+    /// <summary>
+    /// 보류해 둔 전리품 진화를 기둥에 재생한다. 특성 창(TentUI)이 닫힐 때 TownSystem이 부른다.
+    /// 여러 번 레벨업했어도 전리품마다 "지금 표시 단계 -> 최신 단계"로 한 번만 재생한다.
+    /// </summary>
+    public void PlayPendingEvolutions()
+    {
+        if (0 == pendingEvolutions.Count) return;
+
+        for (int i = 0; i < spawnedPillars.Count; i++)
+        {
+            LootDisplayObject pillar = spawnedPillars[i];
+            if (null == pillar) continue;
+
+            if (true == pendingEvolutions.TryGetValue(pillar.CurrentLootType, out int tier))
+            {
+                pillar.PlayGrowthEvolve(tier);
+            }
+        }
+
+        pendingEvolutions.Clear();
+    }
+
+    private void OnDestroy()
+    {
+        if (null != subscribedObjectManager) subscribedObjectManager.LootGrowthTierChangedEvent -= OnLootGrowthTierChanged;
+        subscribedObjectManager = null;
+        pendingEvolutions.Clear();
     }
 
     private void OnPillarInteractStateChanged(bool _state, LootType _lootType)

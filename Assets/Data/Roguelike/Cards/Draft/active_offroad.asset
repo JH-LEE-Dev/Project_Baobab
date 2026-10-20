@@ -17,28 +17,28 @@ MonoBehaviour:
   descriptionKey: Roguelike_Card_active_offroad_Desc
   icon: {fileID: 0}
   kind: 0
-  grade: 0
+  grade: 1
   skillTag: 1
   exclusiveGroup: 0
   maxLevel: 5
   levels:
   - effects: []
   - effects:
-    - effect: 1
-      skill: 1
-      value: 25
-  - effects:
     - effect: 2
       skill: 1
-      value: 20
+      value: 33.4
   - effects:
     - effect: 6
       skill: 1
       value: 1
   - effects:
-    - effect: 1
+    - effect: 3
       skill: 1
-      value: 50
+      value: 25
+  - effects:
+    - effect: 6
+      skill: 1
+      value: 1
   basePriceOverride: 0
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}

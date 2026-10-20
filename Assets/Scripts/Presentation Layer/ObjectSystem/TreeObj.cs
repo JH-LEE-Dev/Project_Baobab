@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using PresentationLayer.VFX;
 using UnityEngine;
 
 public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, IShadowCaster
@@ -186,6 +187,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // ResetTree가 불린 횟수. 사망 타격의 흔들림·번쩍임을 이벤트 뒤로 미룰 때, 그 사이에 ResetTree(풀 반환, 또는
     // 반환 직후 같은 호출 안에서 다시 꺼내져 재스폰)가 있었는지 가리는 데 쓴다(TakeDamageInternal 참조).
     private int resetTreeCount = 0;
+
+    /// <summary>풀에서 다시 쓰일 때마다 오르는 번호. 같은 객체가 다른 나무로 재사용됐는지 가릴 때 쓴다(지연 타격 등).</summary>
+    public int ReuseCount => resetTreeCount;
 
     // 과열 버프 중 도끼 평타에 맞았을 때의 지속 피해. 이 나무 자신이 코루틴을 들고 있어야,
     // 나무가 죽어 풀에서 재사용되어도(ResetTree) 엉뚱한 새 나무에 데미지가 잘못 들어가지 않는다.
@@ -528,6 +532,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     public void ApplySporeDamageAmplify(float _amplify)
     {
         if (_amplify > sporeDamageAmplify) sporeDamageAmplify = _amplify;
+
+        // 증폭 표시(상시 디버프 이펙트). 대폭발 피해 직후에 불리므로, 그 피해로 쓰러져 풀로 돌아간 나무에는 걸지 않는다.
+        if (bDead || IsPooled || false == gameObject.activeInHierarchy) return;
+        TreeSporeDebuffVfx.Apply(this, sporeDamageAmplify);
     }
 
     public void ResetTree()
@@ -541,6 +549,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         SetStarMarked(false);
         SetStarGroupId(-1);
         sporeDamageAmplify = 0f;
+        TreeSporeDebuffVfx.Clear(this);
         healthComponent.Reset();
         bIsSapling = false;
         growTime = 0f;
@@ -642,6 +651,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         if (0f < sporeDamageAmplify)
         {
             _damage *= 1f + sporeDamageAmplify;
+            TreeSporeDebuffVfx.NotifyHit(this);
         }
 
         healthComponent.DecreaseHealth(_damage);

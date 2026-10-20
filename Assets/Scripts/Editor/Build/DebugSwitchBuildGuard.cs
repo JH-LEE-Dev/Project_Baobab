@@ -74,7 +74,6 @@ public class DebugSwitchBuildGuard : IPreprocessBuildWithReport
         RuntimeField.Must(typeof(BootStrap), "isTempScene", false, "메인 메뉴로 넘어가지 않고 임시 씬 모드로 멈춥니다"),
         RuntimeField.Must(typeof(BootStrap), "enableTutorial", true, "새 게임이 튜토리얼 없이 바로 마을에서 시작합니다"),
         RuntimeField.Must(typeof(BootStrap), "enableSentry", true, "크래시 리포트가 수집되지 않습니다"),
-        RuntimeField.Must(typeof(BootStrap), "enableGameAnalytics", true, "지표가 수집되지 않습니다"),
     };
 
     // 카멜 표기 경계로 본다. "latest" 처럼 단어 안에 우연히 들어간 test 는 잡지 않는다.

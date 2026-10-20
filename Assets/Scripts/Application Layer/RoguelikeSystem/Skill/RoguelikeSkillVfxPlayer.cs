@@ -57,6 +57,10 @@ public sealed class RoguelikeSkillVfxPlayer
     private int lastWhirlwindFrame = -1;
     // 포자 연출 회차. StopCombatEffects가 올리면 진행 중이던 포자 폭발·폭탄·연막 연출이 다음 단계에서 멈춘다.
     private int sporeGeneration;
+    // 연막 번호 → 처음 유지 시간 뒤로 더 피어오를 시간(유지 시간 증가 MAX로 연장된 만큼). 연막 연출이 끝나면 지운다.
+    private readonly Dictionary<int, float> sporeZoneExtraSeconds = new Dictionary<int, float>(8);
+    // 연출이 돌고 있는(투척 중이거나 피어오르는 중인) 연막 번호. 이미 끝난 연막의 연장 신호는 기록하지 않는다.
+    private readonly HashSet<int> activeSporeZoneVisuals = new HashSet<int>();
 
     /// <summary>본편 땅 별을 쓸 수 있어 로그라이크 별 자체 그림을 숨겨도 되는지.</summary>
     public bool bUsesMainStarVisual => null != vfx;
@@ -89,6 +93,13 @@ public sealed class RoguelikeSkillVfxPlayer
                 CameraMoveController.Instance?.ShakeCamera(3f, 0.2f);
                 break;
 
+            case ERoguelikeSkillVfx.StarBlastRepeat:
+                // 같은 자리의 뒤이은 폭발. 땅 별은 첫 폭발에서 이미 사라졌으므로 폭발 그림·소리·흔들림만 낸다.
+                vfx?.PlayStarImpactExplosionVFX(_signal.position + starCenterOffset, Order(_signal.position) + 40);
+                Sound.Play(SoundID.StarExplosion, _signal.position + starCenterOffset);
+                CameraMoveController.Instance?.ShakeCamera(3f, 0.2f);
+                break;
+
             case ERoguelikeSkillVfx.StarExpired:
                 vfx?.BeginConstellationGroundMarkManifest(StarGroupBase - _signal.id);
                 break;
@@ -103,7 +114,13 @@ public sealed class RoguelikeSkillVfxPlayer
                 break;
 
             case ERoguelikeSkillVfx.SporeZoneStarted:
-                if (null != host && host.isActiveAndEnabled) host.StartCoroutine(SporeBombRoutine(_signal.position2, _signal.position, _signal.radius, _signal.duration, sporeGeneration));
+                if (null != host && host.isActiveAndEnabled) host.StartCoroutine(SporeBombRoutine(_signal.position2, _signal.position, _signal.radius, _signal.duration, _signal.id, sporeGeneration));
+                break;
+
+            case ERoguelikeSkillVfx.SporeZoneExtended:
+                if (false == activeSporeZoneVisuals.Contains(_signal.id)) break;
+                sporeZoneExtraSeconds.TryGetValue(_signal.id, out float extra);
+                sporeZoneExtraSeconds[_signal.id] = extra + Mathf.Max(0f, _signal.duration);
                 break;
 
             case ERoguelikeSkillVfx.StarLinkBeam:
@@ -156,6 +173,8 @@ public sealed class RoguelikeSkillVfxPlayer
     public void StopCombatEffects()
     {
         sporeGeneration++;
+        sporeZoneExtraSeconds.Clear();
+        activeSporeZoneVisuals.Clear();
         for (int i = 0; i < projectilePool.Count; i++)
         {
             if (null != projectilePool[i]) projectilePool[i].SetActive(false);
@@ -269,7 +288,25 @@ public sealed class RoguelikeSkillVfxPlayer
     }
 
     /// <summary>캐릭터 쪽에서 포자 폭탄을 포물선으로 던진다. 떨어지면 포자가 터지고, 연막 동안 포자가 피어오른다.</summary>
-    private IEnumerator SporeBombRoutine(Vector3 _from, Vector3 _to, float _radius, float _duration, int _generation)
+    private IEnumerator SporeBombRoutine(Vector3 _from, Vector3 _to, float _radius, float _duration, int _zoneId, int _generation)
+    {
+        activeSporeZoneVisuals.Add(_zoneId);
+        try
+        {
+            yield return SporeBombBodyRoutine(_from, _to, _radius, _duration, _zoneId, _generation);
+        }
+        finally
+        {
+            // 회차가 바뀌었으면 StopCombatEffects가 이미 비웠다(같은 번호가 다음 회차에 다시 쓰이지는 않지만 손대지 않는다).
+            if (_generation == sporeGeneration)
+            {
+                activeSporeZoneVisuals.Remove(_zoneId);
+                sporeZoneExtraSeconds.Remove(_zoneId);
+            }
+        }
+    }
+
+    private IEnumerator SporeBombBodyRoutine(Vector3 _from, Vector3 _to, float _radius, float _duration, int _zoneId, int _generation)
     {
         GameObject projectile = GetProjectile();
         float throwSeconds = Mathf.Max(0.05f, assets.sporeBombThrowSeconds);
@@ -306,9 +343,10 @@ public sealed class RoguelikeSkillVfxPlayer
         Sound.Play(SoundID.SporeExplosion, _to);
 
         // 연막: 범위 안 무작위 지점에서 포자가 피어오른다(도트 피해 구간 표시).
+        // 유지 시간 증가 MAX로 판정이 늘어나면(SporeZoneExtended) 같은 만큼 더 피어오른다.
         float interval = Mathf.Max(0.05f, assets.sporeZonePuffInterval);
         float zoneElapsed = 0f;
-        while (zoneElapsed < _duration && _generation == sporeGeneration)
+        while (zoneElapsed < _duration + GetSporeZoneExtraSeconds(_zoneId) && _generation == sporeGeneration)
         {
             Vector2 offset = UnityEngine.Random.insideUnitCircle * Mathf.Max(0.1f, _radius);
             offset.y *= 0.5f;
@@ -317,6 +355,11 @@ public sealed class RoguelikeSkillVfxPlayer
             yield return new WaitForSeconds(interval);
             zoneElapsed += interval;
         }
+    }
+
+    private float GetSporeZoneExtraSeconds(int _zoneId)
+    {
+        return sporeZoneExtraSeconds.TryGetValue(_zoneId, out float extra) ? extra : 0f;
     }
 
     private GameObject GetProjectile()

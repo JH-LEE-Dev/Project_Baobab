@@ -31,7 +31,36 @@ public sealed class RunModifiers
         Array.Copy(_other.values, values, values.Length);
         Array.Copy(_other.suppressedSkills, suppressedSkills, suppressedSkills.Length);
         Array.Copy(_other.activeCombos, activeCombos, activeCombos.Length);
+        ConditionalDamagePercent = _other.ConditionalDamagePercent;
+        ConditionalAttackSpeedPercent = _other.ConditionalAttackSpeedPercent;
     }
+
+    // // 전투 상태에 따라 켜졌다 꺼지는 보너스(공통 패시브 MAX 조건부 효과, 기획서 6-3)
+    //
+    // 카드 합계(values)는 구매 때마다 빌드에서 새로 만들지만(Clear), 이 값은 전투 중 상태(임계치 초과, 이동 중)로 매 프레임 바뀐다.
+    // 그래서 Clear가 지우지 않고 RoguelikeSystem이 SetConditional로 직접 맞춘다. 읽는 쪽은 전역 피해%·공격속도%에 더한다.
+
+    /// <summary>지금 붙어 있는 조건부 피해량(%). 공격력 증가 MAX: 나무 수가 임계치 이상인 동안.</summary>
+    public float ConditionalDamagePercent { get; private set; }
+
+    /// <summary>지금 붙어 있는 조건부 공격 속도(%). 이동속도 증가 MAX: 이동하는 동안.</summary>
+    public float ConditionalAttackSpeedPercent { get; private set; }
+
+    /// <summary>조건부 보너스를 바꾼다. 값이 바뀌었으면 true(호출부가 스탯을 다시 맞춘다).</summary>
+    public bool SetConditional(float _damagePercent, float _attackSpeedPercent)
+    {
+        if (ConditionalDamagePercent == _damagePercent && ConditionalAttackSpeedPercent == _attackSpeedPercent) return false;
+
+        ConditionalDamagePercent = _damagePercent;
+        ConditionalAttackSpeedPercent = _attackSpeedPercent;
+        return true;
+    }
+
+    /// <summary>전역 피해% + 조건부 피해%.</summary>
+    public float GlobalDamagePercent => Get(ERunEffect.DamagePercent) + ConditionalDamagePercent;
+
+    /// <summary>전역 공격속도% + 조건부 공격속도%.</summary>
+    public float GlobalAttackSpeedPercent => Get(ERunEffect.AttackSpeedPercent) + ConditionalAttackSpeedPercent;
 
     /// <summary>특정 칸의 합계. 전역 값은 _skill=None.</summary>
     public float Get(ERunEffect _effect, ERoguelikeSkill _skill = ERoguelikeSkill.None)
