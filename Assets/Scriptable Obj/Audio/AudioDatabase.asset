@@ -1382,7 +1382,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 8516be82d8c0c5d429b4d0df2f455c68, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 24300200, guid: 865ed13951834138be11bea38be7fea0, type: 2}
-    defaultVolume: 1
+    defaultVolume: 0.5
     is3D: 1
     loop: 0
     maxConcurrentVoices: 0
@@ -1404,7 +1404,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: f7d0218dc80531d4280fe61e73c923cd, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 24300200, guid: 865ed13951834138be11bea38be7fea0, type: 2}
-    defaultVolume: 1
+    defaultVolume: 0.5
     is3D: 1
     loop: 0
     maxConcurrentVoices: 0
