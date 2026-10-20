@@ -62,7 +62,7 @@ public class CardDatabaseSO : ScriptableObject
             if (0 != a.exclusiveGroup && IsUsedAsComboMaterial(a))
             {
                 Debug.LogWarning($"[CardDatabaseSO] '{a.name}'은 조합 재료인데 배타 그룹({a.exclusiveGroup})에 들어 있습니다. " +
-                    "다른 카드를 사는 순간 조합이 막힐 수 있습니다(기획서 3-3 '조합 재료 주의').", a);
+                    "다른 카드를 고르는 순간 조합이 막힐 수 있습니다(기획서 5-4 '조합 재료 주의').", a);
             }
         }
     }

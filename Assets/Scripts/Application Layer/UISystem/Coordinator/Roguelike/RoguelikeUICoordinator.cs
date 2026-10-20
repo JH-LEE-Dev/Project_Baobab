@@ -21,14 +21,10 @@ public sealed class RoguelikeUICoordinator
     private UIView_RoguelikeResult resultUI;
     private UIView_RoguelikeRecords recordsUI;
     private UIView_ESC escUI;
-    // 본편 하단 코인 HUD(가방 옆). 런 골드를 읽게 바꿔 쓴다(기획서 5-1).
+    // 본편 하단 팝업(코인 HUD·가방). 로그라이크에는 골드도 인벤토리도 없어 둘 다 숨긴다(기획서 v2.4 10-1).
     private UIView_Popup mainPopupUI;
     // 본편 HUD. 도끼 내구도 HUD(장비 HUD)를 숨기는 데만 쓴다(기획서 v2.2 10-1).
     private UIView_HUD mainHudUI;
-    private RunGoldMoneyData runGoldMoneyData;
-    // 코인 흡수 동안 매 프레임 묻는 코인 HUD 지점의 캔버스. 대상이 바뀔 때만 다시 찾는다.
-    private RectTransform coinHudTargetCache;
-    private Canvas coinHudCanvasCache;
 
     private readonly List<RoguelikeCardViewData> cardViewBuffer = new List<RoguelikeCardViewData>(8);
     private readonly List<RoguelikeOwnedCardViewData> ownedViewBuffer = new List<RoguelikeOwnedCardViewData>(32);
@@ -54,15 +50,10 @@ public sealed class RoguelikeUICoordinator
         UIView_RoguelikeOwnedCards _ownedCardsUI, UIView_RoguelikeResult _resultUI, UIView_RoguelikeRecords _recordsUI, UIView_ESC _escUI,
         UIView_Popup _mainPopupUI, UIView_HUD _mainHudUI)
     {
+        // 로그라이크는 아이템 드롭·인벤토리(기획서 v2.2 3-1)도 골드(v2.4)도 쓰지 않는다. 가방 HUD와 코인 HUD를 모두 숨긴다.
         mainPopupUI = _mainPopupUI;
-        if (null != mainPopupUI)
-        {
-            runGoldMoneyData = new RunGoldMoneyData(_runInfo);
-            mainPopupUI.SetMoneyDataForRun(runGoldMoneyData);
-
-            // 로그라이크는 아이템 드롭·인벤토리를 쓰지 않는다. 가방 HUD는 숨기고 코인 HUD만 남긴다(기획서 v2.2 3-1, 10-1).
-            mainPopupUI.SetInventoryVisibleForRun(false);
-        }
+        mainPopupUI?.SetInventoryVisibleForRun(false);
+        mainPopupUI?.SetCoinVisibleForRun(false);
 
         // 도끼 내구도는 무제한이라 내구도 HUD를 숨긴다(기획서 v2.2 3-1, 10-1).
         mainHudUI = _mainHudUI;
@@ -77,6 +68,8 @@ public sealed class RoguelikeUICoordinator
         recordsUI = _recordsUI;
         escUI = _escUI;
 
+        hudUI?.SetGoldVisible(false);
+
         cardPresentationDoneHandler = OnCardPresentationDone;
         ownedCardsHiddenHandler = OnOwnedCardsHidden;
 
@@ -90,6 +83,7 @@ public sealed class RoguelikeUICoordinator
         ReleaseEvents();
         escUI?.SetLobbyMode(false);
         mainPopupUI?.SetInventoryVisibleForRun(true);
+        mainPopupUI?.SetCoinVisibleForRun(true);
         mainHudUI?.SetEquipmentHiddenForRun(false);
         ResumeFromOwnedCards();
     }
@@ -144,7 +138,6 @@ public sealed class RoguelikeUICoordinator
         signalHub.Subscribe<RoguelikePhaseChangedSignal>(PhaseChanged);
         signalHub.Subscribe<RoguelikeWaveStartedSignal>(WaveStarted);
         signalHub.Subscribe<RoguelikeWaveProgressSignal>(WaveProgress);
-        signalHub.Subscribe<RoguelikeGoldChangedSignal>(GoldChanged);
         signalHub.Subscribe<RoguelikePressureDamagedSignal>(PressureDamaged);
         signalHub.Subscribe<RoguelikeCardSelectionOpenedSignal>(CardSelectionOpened);
         signalHub.Subscribe<RoguelikeOffersChangedSignal>(OffersChanged);
@@ -162,7 +155,6 @@ public sealed class RoguelikeUICoordinator
         signalHub.UnSubscribe<RoguelikePhaseChangedSignal>(PhaseChanged);
         signalHub.UnSubscribe<RoguelikeWaveStartedSignal>(WaveStarted);
         signalHub.UnSubscribe<RoguelikeWaveProgressSignal>(WaveProgress);
-        signalHub.UnSubscribe<RoguelikeGoldChangedSignal>(GoldChanged);
         signalHub.UnSubscribe<RoguelikePressureDamagedSignal>(PressureDamaged);
         signalHub.UnSubscribe<RoguelikeCardSelectionOpenedSignal>(CardSelectionOpened);
         signalHub.UnSubscribe<RoguelikeOffersChangedSignal>(OffersChanged);
@@ -187,8 +179,6 @@ public sealed class RoguelikeUICoordinator
         {
             cardSelectUI.BuyRequestedEvent -= BuyRequested;
             cardSelectUI.BuyRequestedEvent += BuyRequested;
-            cardSelectUI.SkipRequestedEvent -= SkipRequested;
-            cardSelectUI.SkipRequestedEvent += SkipRequested;
             cardSelectUI.RerollRequestedEvent -= RerollRequested;
             cardSelectUI.RerollRequestedEvent += RerollRequested;
         }
@@ -219,7 +209,6 @@ public sealed class RoguelikeUICoordinator
         if (null != cardSelectUI)
         {
             cardSelectUI.BuyRequestedEvent -= BuyRequested;
-            cardSelectUI.SkipRequestedEvent -= SkipRequested;
             cardSelectUI.RerollRequestedEvent -= RerollRequested;
         }
 
@@ -237,50 +226,24 @@ public sealed class RoguelikeUICoordinator
         // 보유 카드를 열 수 없는 단계(쓰러짐·결과·로비 쪽)로 넘어가면 열려 있던 창과 일시정지를 걷는다.
         if (false == CanOpenOwnedCards(_signal.phase)) CloseOwnedCards();
 
-        // 로비·런 시작에서는 코인 HUD를 보인다(언리밋에서 숨겼던 것을 되돌린다). 런 골드가 0으로 돌아간 것도 맞춘다.
-        if (ERunPhase.Lobby == _signal.phase || ERunPhase.RunStarting == _signal.phase)
-        {
-            mainPopupUI?.SetCoinVisibleForRun(true);
-            mainPopupUI?.CharactersMoneyChanged();
-        }
-
         // 런 도중 ESC의 메인메뉴 버튼은 "로비"(포기)다. 로비에서는 진짜 메인메뉴로 나가므로 본래 문구로 둔다(기획서 3-7).
         escUI?.SetLobbyMode(bCombatPhase);
 
         if (null == hudUI) return;
         hudUI.SetCombatVisible(bCombatPhase);
-
-        if (ERunPhase.RunStarting == _signal.phase)
-        {
-            hudUI.SetGold(runInfo.Gold, false);
-            hudUI.SetGoldVisible(true);
-        }
     }
 
     private void WaveStarted(RoguelikeWaveStartedSignal _signal)
     {
-        mainPopupUI?.SetCoinVisibleForRun(false == _signal.spec.bUnlimit);
-
         if (null == hudUI) return;
 
         hudUI.SetWave(_signal.spec.waveNumber, _signal.spec.bUnlimit, _signal.spec.unlimitIndex);
         hudUI.SetWaveProgress(0, _signal.spec.killTarget);
-        hudUI.SetGoldVisible(false == _signal.spec.bUnlimit);
     }
 
     private void WaveProgress(RoguelikeWaveProgressSignal _signal)
     {
         hudUI?.SetWaveProgress(_signal.killed, _signal.target);
-    }
-
-    private void GoldChanged(RoguelikeGoldChangedSignal _signal)
-    {
-        hudUI?.SetGold(_signal.gold, _signal.delta > 0);
-
-        // 본편 코인 HUD: 오를 때는 본편처럼 숫자가 굴러 오르고, 쓰거나 초기화될 때는 바로 맞춘다.
-        if (null == mainPopupUI) return;
-        if (_signal.delta > 0) mainPopupUI.CharacterEarnMoney(MoneyType.Coin);
-        else mainPopupUI.CharactersMoneyChanged();
     }
 
     private void PressureDamaged(RoguelikePressureDamagedSignal _signal)
@@ -297,34 +260,28 @@ public sealed class RoguelikeUICoordinator
         }
 
         BuildCardViewData();
-        cardSelectUI.OpenSelection(cardViewBuffer, runInfo.Gold, runInfo.RerollCost, runInfo.CanReroll, runInfo.CanSkip, runInfo.IsFirstPick);
+        // 골드·리롤 비용·건너뛰기는 v2.4에서 없어졌다(뷰가 아직 인자를 받으므로 빈 값을 넘긴다).
+        cardSelectUI.OpenSelection(cardViewBuffer, 0, 0, runInfo.CanReroll, false, runInfo.IsFirstPick);
     }
 
     /// <summary>
     /// 카드 선택 화면이 없으면(프리팹 미등록) 고를 수단이 없어 런이 이 단계에서 멈춘다. 결과·순위표 화면이 없을 때처럼
-    /// 흐름을 이어 준다: 건너뛸 수 있으면 건너뛰고, 건너뛸 수 없는 첫 선택이면 살 수 있는 첫 카드를 산다.
+    /// 흐름을 이어 준다: 건너뛰기가 없으므로(기획서 v2.4 4-1) 제시된 첫 카드를 고른다.
     /// </summary>
     private void ResolveSelectionWithoutView()
     {
         UnityEngine.Debug.LogWarning("[RoguelikeUICoordinator] UIView_RoguelikeCardSelect가 없어 카드 선택을 자동으로 처리합니다. GameplayUIManager의 viewPrefabs를 확인하십시오.");
 
-        if (runInfo.CanSkip)
-        {
-            signalHub.Publish(new RoguelikeCardSkipRequestedSignal());
-            return;
-        }
-
         IReadOnlyList<CardOffer> offers = runInfo.CurrentOffers;
-        long gold = runInfo.Gold;
         for (int i = 0; i < offers.Count; i++)
         {
-            if (false == offers[i].IsValid || false == offers[i].IsAffordable(gold)) continue;
+            if (false == offers[i].IsValid) continue;
 
             signalHub.Publish(new RoguelikeCardBuyRequestedSignal(i));
             return;
         }
 
-        UnityEngine.Debug.LogError("[RoguelikeUICoordinator] 건너뛸 수 없는 카드 선택인데 살 수 있는 카드가 없습니다. 런이 카드 선택에서 멈춥니다.");
+        UnityEngine.Debug.LogError("[RoguelikeUICoordinator] 카드 선택이 열렸는데 고를 수 있는 카드가 없습니다. 런이 카드 선택에서 멈춥니다.");
     }
 
     private void OffersChanged(RoguelikeOffersChangedSignal _signal)
@@ -332,7 +289,7 @@ public sealed class RoguelikeUICoordinator
         if (null == cardSelectUI) return;
 
         BuildCardViewData();
-        cardSelectUI.ReplaceOffers(cardViewBuffer, runInfo.Gold, runInfo.RerollCost, runInfo.CanReroll);
+        cardSelectUI.ReplaceOffers(cardViewBuffer, 0, 0, runInfo.CanReroll);
     }
 
     private void CardPurchased(RoguelikeCardPurchasedSignal _signal)
@@ -391,7 +348,6 @@ public sealed class RoguelikeUICoordinator
             bAbandoned = null != entry && entry.bAbandoned,
             playTimeSeconds = null != entry ? entry.playTimeSeconds : 0f,
             treesFelled = null != entry ? entry.treesFelled : 0,
-            coinsCollected = null != entry ? entry.coinsCollected : 0,
             cards = cards,
             clearRank = runInfo.LastClearRank,
             unlimitRank = runInfo.LastUnlimitRank,
@@ -427,7 +383,6 @@ public sealed class RoguelikeUICoordinator
     // // UI → 시스템
 
     private void BuyRequested(int _offerIndex) => signalHub.Publish(new RoguelikeCardBuyRequestedSignal(_offerIndex));
-    private void SkipRequested() => signalHub.Publish(new RoguelikeCardSkipRequestedSignal());
     private void RerollRequested() => signalHub.Publish(new RoguelikeCardRerollRequestedSignal());
     private void OnCardPresentationDone() => signalHub.Publish(new RoguelikeCardSelectionPresentationDoneSignal());
 
@@ -463,30 +418,6 @@ public sealed class RoguelikeUICoordinator
 
     /// <summary>판이 끝났다(게임오버·포기). 결과 화면과 그 뒤 연출이 멈춘 시간 위에서 돌지 않게 보유 카드 창을 닫는다.</summary>
     private void RunEnded(RoguelikeRunEndedSignal _signal) => CloseOwnedCards();
-
-    /// <summary>
-    /// 코인 HUD(바닥 코인이 날아가 닿는 곳)의 화면 좌표. 로그라이크 HUD가 지점을 주면 그곳, 아니면 본편 코인 HUD(런 골드를 보여 주는 곳).
-    /// 둘 다 없으면 false.
-    /// </summary>
-    public bool TryGetCoinHudScreenPoint(out Vector2 _screenPoint)
-    {
-        _screenPoint = default;
-
-        RectTransform target = null != hudUI && hudUI.IsVisible ? hudUI.CoinFlyTarget : null;
-        if (null == target || false == target.gameObject.activeInHierarchy) target = null != mainPopupUI ? mainPopupUI.CoinCounterRectForRun : null;
-        if (null == target || false == target.gameObject.activeInHierarchy) return false;
-
-        if (target != coinHudTargetCache || null == coinHudCanvasCache)
-        {
-            coinHudTargetCache = target;
-            coinHudCanvasCache = target.GetComponentInParent<Canvas>();
-        }
-
-        Canvas canvas = coinHudCanvasCache;
-        Camera uiCamera = null != canvas && RenderMode.ScreenSpaceOverlay != canvas.renderMode ? canvas.worldCamera : null;
-        _screenPoint = RectTransformUtility.WorldToScreenPoint(uiCamera, target.position);
-        return true;
-    }
 
     /// <summary>로비 진입 암전이 화면을 덮었다. 디스토션이 걸려 있던 결과 화면을 닫는다.</summary>
     private void EntryScreenCovered(RoguelikeEntryScreenCoveredSignal _signal)
@@ -544,7 +475,6 @@ public sealed class RoguelikeUICoordinator
         cardViewBuffer.Clear();
 
         IReadOnlyList<CardOffer> offers = runInfo.CurrentOffers;
-        long gold = runInfo.Gold;
 
         for (int i = 0; i < offers.Count; i++)
         {
@@ -565,9 +495,10 @@ public sealed class RoguelikeUICoordinator
                 bRuby = ECardDisplayGrade.Ruby == offer.displayGrade,
                 bNewCard = offer.bNewCard,
                 bFirstSeen = offer.bFirstSeen,
-                bRare = CardPricing.IsRare(offer.displayGrade),
-                price = offer.price,
-                bAffordable = offer.IsAffordable(gold),
+                bRare = CardRarity.IsRare(offer.displayGrade),
+                // 모든 카드는 무료다(기획서 v2.4 4-1).
+                price = 0,
+                bAffordable = true,
             });
         }
     }
@@ -583,7 +514,7 @@ public sealed class RoguelikeUICoordinator
             descriptionKey = _card.descriptionKey,
             icon = _card.icon,
             kind = _card.kind,
-            displayGrade = CardPricing.GetDisplayGrade(_card, _level),
+            displayGrade = CardRarity.GetDisplayGrade(_card, _level),
             level = _level,
             maxLevel = _card.EffectiveMaxLevel,
             bRuby = ECardKind.Ruby == _card.kind,

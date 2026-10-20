@@ -6,7 +6,7 @@ using System.Collections.Generic;
 public struct RunRecordCard
 {
     public string cardId;
-    /// <summary>판이 끝났을 때의 레벨. 루비·프리즘은 1.</summary>
+    /// <summary>판이 끝났을 때의 레벨. 계약·프리즘은 1.</summary>
     public int level;
 
     public RunRecordCard(string _cardId, int _level)
@@ -44,9 +44,8 @@ public class RunRecordEntry
     public bool bAbandoned;
 
     public int treesFelled;
-    public long coinsCollected;
 
-    /// <summary>구매한 카드 + 해금한 히든(프리즘) 카드. 처음 구매한 순서.</summary>
+    /// <summary>고른 카드 + 해금한 히든(프리즘) 카드. 처음 고른 순서.</summary>
     public List<RunRecordCard> cards = new List<RunRecordCard>();
 
     /// <summary>클리어 랭킹 비교 시간. 클리어한 판은 클리어 시점, 아니면 플레이 시간(기획서 3-6).</summary>

@@ -3,8 +3,24 @@
 UI 담당이 해야 할 일을 한곳에 모았다. 규칙의 근거는 [기획서 v2.4](Roguelike_Planning_v2.4.md)이고(장 번호는 v2.2와 같되 **4장은 4-1·4-2만** 남았다),
 실행 방법·디버그 창·UIView 구조는 [로그라이크 시스템 안내](../RoguelikeSystem.md) 0장·3장을 먼저 본다.
 
-> ⚠️ **시스템 코드는 아직 v2.3 이전 구현이다.** 코드에는 골드 · 코인 · 가격 · 감정사 · 건너뛰기 · 구매 가능 보장이 아직 남아 있다.
-> 기획서 v2.4에서 **모두 삭제**되었으므로, 아래에서 "삭제됨"으로 표시한 항목은 **UI를 만들지 않는다.** API 이름(`RequestBuy`, `PlayPurchase` 등)은 코드 정리 전까지 그대로 쓰이고, 인자 일부(골드 · 가격 · 리롤 비용)는 정리 때 사라진다.
+> ✅ **시스템 코드는 v2.4 기준으로 정리되었다(2026-10-20).** 골드 · 코인 · 가격 · 감정사 · 건너뛰기 · 구매 가능 보장 · 액티브 보장은 시스템에서 **삭제되었다.**
+> 아래에서 "삭제됨"으로 표시한 항목은 **UI를 만들지 않는다.** API 이름(`RequestBuy`, `PlayPurchase` 등)은 UI 이벤트 이름에 맞춰 그대로 두었고, 지금은 "고르기"를 뜻한다(비용 없음).
+> UI 파일에 남은 옛 인자·필드는 시스템이 빈 값으로 채워 넘긴다. 정리는 UI 쪽에서 한다(아래 "시스템 정리 후 UI에 남은 것").
+
+### 시스템 정리 후 UI에 남은 것 (UI 쪽에서 지우면 된다)
+
+시스템은 UI 파일을 고치지 않았다. 아래 인자·필드·이벤트는 이제 **항상 빈 값이거나 아무도 쓰지 않는다.** 지울 때 코디네이터(`RoguelikeUICoordinator.cs`)의 호출부도 같이 맞춘다(시스템 쪽 요청 가능).
+
+| 위치 | 남은 것 | 지금 들어오는 값 |
+|---|---|---|
+| `UIView_RoguelikeCardSelect.OpenSelection` | `_gold`, `_rerollCost`, `_bCanSkip`, `_bFirstPick` | `0`, `0`, `false`, 첫 선택 여부(쓸 일 없음) |
+| `UIView_RoguelikeCardSelect.ReplaceOffers` | `_gold`, `_rerollCost` | `0`, `0` |
+| `UIView_RoguelikeCardSelect` | `SkipRequestedEvent`, `RequestSkip()` | 코디네이터가 구독하지 않는다(누르면 아무 일도 없다) |
+| `RoguelikeCardViewData` | `price`, `bAffordable` | `0`, `true` |
+| `RoguelikeResultViewData` | `coinsCollected` | `0`(기록에서 필드가 삭제됨) |
+| `UIView_RoguelikeHUD` | `SetGold`, `CoinFlyTarget`, `SetGoldVisible` | `SetGoldVisible(false)`만 세션 시작 때 한 번 온다. `SetGold`는 오지 않는다 |
+| `ECardDisplayGrade` | `Silver`, `Gold` | 더 이상 나오지 않는다. 일반 카드는 모두 `Bronze`(일반 프레임) |
+| 현지화 | 골드 획득 증가 · 바겐 세일! · VIP 회원권 카드 문구(`roguelikeCardPassiveGold*`, `roguelikeCardRubyBargainSale*`, `roguelikeCardRubyVip*`) | 카드 데이터가 삭제되어 쓰이지 않는다 |
 
 - 시스템(규칙·판정·카드 효과·연출 대기)은 다 돌아간다. UI가 비어 있어도 런은 끝까지 진행된다(디버그 창으로 대신 조작).
 - UI 표기 원칙(기획서 10장): 디자인이 확정되지 않은 UI는 **테스트 버튼**으로 먼저 두고, 확정되면 바꾼다.
@@ -56,7 +72,7 @@ UIView 5종은 API와 입력 모드 처리까지 들어 있고, **각 클래스�
 | 임계치 피해 반응 | `PlayPressureDamaged(피해량)` |
 | 로비에서 전투 HUD 숨김 | `SetCombatVisible` |
 | 보관함 트레이 | 1-3. 트레이를 누르면 `RequestOwnedCards()` |
-| ~~코인 HUD 배치~~ | **삭제됨.** 기획서 10-1에서 코인 HUD가 사라졌다. 본편 하단 코인 HUD(`CurrencyCounterHUD`)를 로그라이크에서 숨기는 일은 시스템 쪽(코드 정리) 몫이다. `SetGold` · `CoinFlyTarget` · `SetGoldVisible`은 UI에서 구현하지 않는다 |
+| ~~코인 HUD 배치~~ | **삭제됨.** 기획서 10-1에서 코인 HUD가 사라졌다. 본편 하단 코인 HUD(`CurrencyCounterHUD`)와 가방 HUD는 시스템이 로그라이크 세션 동안 숨긴다(적용됨). `SetGold` · `CoinFlyTarget` · `SetGoldVisible`은 UI에서 구현하지 않는다 |
 
 스태미너 바는 본편 HUD(`UIView_HUD`)가 그대로 그린다. 따로 만들지 않는다.
 
@@ -66,15 +82,16 @@ UIView 5종은 API와 입력 모드 처리까지 들어 있고, **각 클래스�
 
 | 할 일 | 받는 값 / 규칙 |
 |---|---|
-| 화면 열기 | `OpenSelection(제시 카드, …)`. 골드 · 리롤 비용 · 건너뛰기 가능 · 첫 선택 여부 인자는 **v2.4에서 사라진다**(코드 정리 예정). UI는 제시 카드와 리롤 가능 여부만 쓴다 |
-| 카드 본체 | 특성 트리 노드 UI 사용, 이미지보다 **조금 더 넓은 프레임**, 희귀 나무 셰이더 참고. 둥근 프레임(종류 · 레어 표현) 안에 카드 이미지, 하단 중앙에 레벨 아이콘만 둔다. **카드 본체에는 텍스트를 넣지 않는다.** 레어 프레임은 `displayGrade`(에메랄드·프리즘은 시스템이 자동 판정, 계약은 붉은 루비색 프레임) |
+| 화면 열기 | `OpenSelection(제시 카드, …)`. 골드 · 리롤 비용 · 건너뛰기 가능 · 첫 선택 여부 인자에는 빈 값(`0`, `0`, `false`)이 온다(위 "남은 것" 표). UI는 제시 카드와 리롤 가능 여부(`_bCanReroll`)만 쓴다. 첫 선택(웨이브 1)은 시스템이 액티브만 제시한다 |
+| 카드 본체 | 특성 트리 노드 UI 사용, 이미지보다 **조금 더 넓은 프레임**, 희귀 나무 셰이더 참고. 둥근 프레임(종류 · 레어 표현) 안에 카드 이미지, 하단 중앙에 레벨 아이콘만 둔다. **카드 본체에는 텍스트를 넣지 않는다.** 프레임은 `displayGrade`로 고른다: 일반 카드 = `Bronze`(일반 프레임), 고르면 MAX가 되는 카드 = `Emerald`, 조합 = `Prism`, 계약 = `Ruby`(붉은 루비색 프레임). 모두 시스템이 판정해 넣는다 |
 | 레벨 아이콘 | 액티브 `I`~`VI`, `MAX`(7레벨) / 공통 패시브 `I`~`IV`, `MAX`(5레벨). **선택 후 레벨**(`levelAfterPurchase`). 계약은 `bRuby` → `±` |
-| ~~가격 태그 · 무료 표기 · 골드 부족 · 유료 점~~ | **삭제됨.** 카드에는 가격이 없다. `price` · `bAffordable` 값은 무시한다 |
+| ~~가격 태그 · 무료 표기 · 골드 부족 · 유료 점~~ | **삭제됨.** 카드에는 가격이 없다. `price`(항상 0) · `bAffordable`(항상 true)은 무시한다 |
 | 설명 패널 | 카드 아래 넓은 박스 하나. 커서가 올라간 카드의 이름(첫 줄) + 레벨 + 효과. 상태별 내용은 📦 3-2 |
 | 리롤 | **카드 줄 바로 아래**(가운데) **아이콘 버튼**(2026-10 구현 결정) - 글자가 없어 언어마다 길이가 달라도 폭이 변하지 않는다. 이름·설명은 커서가 버튼에 올라가면 **설명 패널**이 보여 준다(`RoguelikeUI.json`의 `Reroll`/`RerollDesc`/`Unavailable`). **선택 단계마다 1회**만 쓸 수 있고, 쓰고 나면 버튼을 어둡게(비활성) 하고 설명 패널에 사유를 보여 준다(`bCanReroll`). `RequestReroll()`. 아이콘 이미지는 임시(`Assets/Graphics/Roguelike/card/Icon_Reroll.png`)이며 같은 경로·이름으로 바꾸면 된다. ⚠️ 기획서 10-2는 버튼 위치를 **좌하단**으로 적었다 - 구현 결정(카드 줄 아래)과 다르니 기획과 맞춘다 |
-| ~~건너뛰기 · 첫 선택 무료 리롤 · 리롤 비용~~ | **삭제됨.** 건너뛰기 버튼은 없다(`RequestSkip` · `bCanSkip` · `Icon_Skip.png` 미사용). 첫 선택에도 일반 선택과 같은 리롤 1회이며 비용 표시는 없다 |
+| ~~건너뛰기 · 첫 선택 무료 리롤 · 리롤 비용~~ | **삭제됨.** 건너뛰기 버튼은 없다(`RequestSkip` · `bCanSkip` · `Icon_Skip.png` 미사용 - `RequestSkip`은 시스템이 받지 않는다). 첫 선택에도 일반 선택과 같은 리롤 1회이며 비용 표시는 없다. 리롤을 쓰지 않아도 다음 선택으로 이월되지 않는다 |
 | 선택 | `RequestBuy(i)`(코드 이름만 구매, 비용 없음). 결과는 `PlayPurchase(선택 정보, 함께 사라질 배타 카드 인덱스, 완료 콜백)` |
-| 거절 반응 | `PlayRejected(사유, 카드 인덱스)`. 골드 부족 사유는 사라진다. 남는 사유는 시스템 정리 후 확인 |
+| 거절 반응 | `PlayRejected(사유, 카드 인덱스)`. 남은 사유는 `ECardShopResult`의 `NotOpen`(선택이 이미 닫힘), `InvalidIndex`(없는 칸·이미 MAX·배타로 막힌 카드), `RerollNotAllowed`(이번 선택의 리롤을 이미 씀) 세 가지다. 골드 부족 · 건너뛰기 불가 사유는 삭제되었다 |
+| 선택 화면이 열린 채 런이 끝남 | 포기·게임오버로 런이 끊기면 `CloseSelection(완료 콜백)`이 온다(`RoguelikeCardSelectionSkippedSignal`, 이름만 건너뛰기). 플레이어 입력으로는 오지 않는다 |
 | ~~"골드가 부족합니다" 안내~~ | **삭제됨** |
 | 제시 카드 0장 | 선택 화면 대신 안내 연출(2-1)이 온다. `OpenSelection`이 빈 목록으로 와도 깨지지 않게만 한다 |
 
@@ -97,7 +114,8 @@ UIView 5종은 API와 입력 모드 처리까지 들어 있고, **각 클래스�
 | 선택 | 선택 효과음. **고르지 않은 카드는 흐려지며 조용히 사라지고**(약 0.3초), 고른 카드는 화면 중앙으로 → 보관 연출(1-3)로 이어진다 | `PlayPurchase` |
 | 배타 카드 소멸 | 함께 제시된 상충 카드는 **조용한 사라짐과 구분되는** 소멸 연출(불타기·찢기 등, 🟡 방식 미정). 선택 연출 뒤에 빠르게 | `PlayPurchase`의 `_discardedIndices` |
 
-- `bRare`는 시스템이 v2.4 기준(MAX·프리즘·계약)으로 넣어 준다. `RoguelikeViewData.cs`의 `bRare` 주석("실버 이상…")은 옛 문구라 무시한다.
+- `bRare`는 시스템이 v2.4 기준(MAX·프리즘·계약)으로 넣어 준다(`CardRarity.IsRare`). `RoguelikeViewData.cs`의 `bRare` 주석("실버 이상…")은 옛 문구라 무시한다.
+- 카드 하나의 레벨 상한은 `maxLevel`로 온다: 액티브 7, 공통 패시브 5, 계약·조합 1. 고른 뒤 레벨(`levelAfterPurchase`)이 `maxLevel`과 같으면 그 카드는 에메랄드(MAX)다.
 - ⚠️ 부록 A-1의 "카드 연출" 행(등장 0.3초, 간격 0.1초)과 10-2의 "약 0.13초 간격, 뒤집힘 약 0.5초"가 다르다. 기획과 맞춘다(둘 다 초안).
 
 ⚠️ 반드시 지킬 것
@@ -112,7 +130,7 @@ UIView 5종은 API와 입력 모드 처리까지 들어 있고, **각 클래스�
 
 | 항목 | 규칙 |
 |---|---|
-| 레어의 기준 | **MAX(에메랄드)로 완성된 카드, 프리즘, 계약.** 그 전 레벨(액티브 I~VI, 패시브 I~IV)은 일반. 일반 카드가 MAX가 되면 바인더에서 쇼케이스로 옮긴다(슬리브 → 케이스). 판정은 보유 카드 데이터의 `displayGrade`로 `CardPricing.IsRare(displayGrade)`를 쓴다(시스템과 같은 기준) |
+| 레어의 기준 | **MAX(에메랄드)로 완성된 카드, 프리즘, 계약.** 그 전 레벨(액티브 I~VI, 패시브 I~IV)은 일반. 일반 카드가 MAX가 되면 바인더에서 쇼케이스로 옮긴다(슬리브 → 케이스). 판정은 보유 카드 데이터의 `displayGrade`로 `CardRarity.IsRare(displayGrade)`를 쓴다(시스템과 같은 기준. 옛 이름 `CardPricing`은 v2.4 정리 때 `CardRarity`로 바뀌었다) |
 | 기본 상태(접힘) | 전투 중에는 접혀 있고 **우하단 트레이 아이콘 + 숫자(레어 · 일반)**만 보인다. 카드 목록은 보이지 않는다 🔌 |
 | 펼침 | 트레이를 누르면 위로 펼쳐진다 → `RequestOwnedCards()` → 시스템이 `SetCards(목록)` 후 `Show()`. ESC나 닫기 버튼으로 접는다(`Hide()`). 게임패드 키는 미정 → 테스트 버튼. 위쪽 **레어 쇼케이스**(선반 + 스포트라이트), 아래쪽 **일반 바인더**(가죽 표지 + 링) |
 | 용량 | **칸 수 제한 없음.** 카드가 늘면 칸이 뒤에 자동으로 생기고, 많아지면 보관함 안에서 스크롤. 새 카드가 가려지면 자동 스크롤해 보여 준다. 보관함 크기는 선택을 막지 않는다 |
@@ -130,7 +148,7 @@ UIView 5종은 API와 입력 모드 처리까지 들어 있고, **각 클래스�
 - 도착할 칸은 **비어 있다.** 카드가 미리 놓여 있다가 덮어씌워지는 연출은 쓰지 않는다. 칸에 닿는 순간 채워지고 숫자가 오른다.
 - 레어 연출은 보관함 열림·접힘까지 약 2.5초라 길 수 있다. 구현 후 체감을 보고 단축한다(초안).
 - "작아지며 트레이로"는 날아가는 동안의 일시적 축소라 허용된다. 보관함 안의 작은 카드·케이스·슬리브는 **별도 리소스**로 만든다(0장).
-- 선택 연출 판단: `PlayPurchase`의 `displayGrade`로 `CardPricing.IsRare`(케이스냐 슬리브냐), `bNewCard`(새 칸이냐 기존 슬리브 레벨 업이냐), `newLevel`. 일반 카드가 MAX가 되는 선택은 레어 케이스 연출 + 바인더에서 그 카드 제거.
+- 선택 연출 판단: `PlayPurchase`의 `displayGrade`로 `CardRarity.IsRare`(케이스냐 슬리브냐), `bNewCard`(새 칸이냐 기존 슬리브 레벨 업이냐), `newLevel`. 일반 카드가 MAX가 되는 선택은 레어 케이스 연출 + 바인더에서 그 카드 제거.
 - 🔌 지금은 보유 카드 목록이 보관함을 **펼칠 때만**(`RequestOwnedCards`) 넘어간다. 접힌 트레이의 레어·일반 숫자와 선택 순간의 자동 펼침(레어)에는 런 시작·선택 때 보유 목록을 밀어 주는 연결이 필요하다
   (신호는 `RoguelikeRunStartedSignal`, `RoguelikeCardPurchasedSignal`, 읽을 값은 `IRoguelikeRunInfo.Build`).
 - 🔌 선택 순간 보관함을 자동으로 열 때는 `RequestOwnedCards()`를 쓰지 않는다(일시정지가 걸리고 닫힘이 시스템 흐름과 엮인다). 카드 선택 화면의 선택 연출 안에서 보관함 그림만 열고 접는 방식을 쓰거나, 필요한 API를 시스템 쪽에 요청한다.
@@ -140,7 +158,7 @@ UIView 5종은 API와 입력 모드 처리까지 들어 있고, **각 클래스�
 | 할 일 | 받는 값 / 규칙 |
 |---|---|
 | 화면 열기 | `OpenResult(RoguelikeResultViewData)` |
-| 항목 | 도달 웨이브(`reachedWave`, 언리밋이면 `Unlimit-{unlimitWave}`), 플레이 시간(`playTimeSeconds`), 총 부순 나무(`treesFelled`), 보유 카드 목록(`cards`, 레벨 아이콘 달린 카드 그대로). 포기한 판은 `bAbandoned`. ~~총 획득 코인(`coinsCollected`)~~은 **삭제됨**(표시하지 않는다) |
+| 항목 | 도달 웨이브(`reachedWave`, 언리밋이면 `Unlimit-{unlimitWave}`), 플레이 시간(`playTimeSeconds`), 총 부순 나무(`treesFelled`), 보유 카드 목록(`cards`, 레벨 아이콘 달린 카드 그대로). 포기한 판은 `bAbandoned`. ~~총 획득 코인(`coinsCollected`)~~은 **삭제됨**(항상 0, 표시하지 않는다) |
 | 신기록 연출 | `clearRank`/`unlimitRank`가 0 이상이면 그 순위로 랭킹 진입(-1이면 진입 못함) |
 | 확인 | `RequestConfirm()`. **결과 화면을 직접 닫지 않는다** - 확인 직후 결과 화면 위에 링 디스토션이 걸리고, 암전이 덮은 뒤 시스템이 닫는다 |
 | 구조·연출 | 본편 결과 UI의 구조와 연출을 비슷하게 가져간다 |
@@ -163,7 +181,7 @@ UIView 5종은 API와 입력 모드 처리까지 들어 있고, **각 클래스�
 보관함의 트레이 숫자·자동 펼침 연결은 1-3 끝을 본다.
 
 > **카드 감정(구 2-1)은 기획서 v2.4에서 삭제**되었다. 감정사 예고 · 감정 버튼 · 스티커 연출 · 감정비 표는 만들지 않는다.
-> 코드에 남아 있는 `RoguelikeAppraiser*Signal` · `RoguelikeCardAppraise*Signal` · `CanAppraise` 등은 정리 대상이라 구독하지 않는다.
+> 감정 시그널(`RoguelikeAppraiser*Signal` · `RoguelikeCardAppraise*Signal`)과 `CanAppraise` 등 읽을 값, 골드 시그널(`RoguelikeGoldChangedSignal`), 건너뛰기 요청(`RoguelikeCardSkipRequestedSignal`)은 시스템에서 **삭제되었다.**
 
 ### 2-1. "선택할 수 있는 카드가 없습니다" 안내 (기획서 4-2)
 
@@ -178,7 +196,10 @@ UIView 5종은 API와 입력 모드 처리까지 들어 있고, **각 클래스�
 
 ### 3-1. 카드 리소스
 
-- 초안 카드 데이터(`Assets/Data/Roguelike/Cards/Draft/`)는 아직 v2.3 이전의 28종이다(골드 획득 증가 · 바겐 세일! · VIP 회원권 포함, 이 3종은 v2.4에서 삭제). `icon`이 전부 비어 있다. 카드 이미지를 넣되 **삭제 대상 3종의 이미지는 만들지 않는다.** 최종 카드는 25종이다.
+- 카드 데이터(`Assets/Data/Roguelike/Cards/Draft/`, DB `RoguelikeCardDatabase_Draft.asset`)는 **v2.4 기준 25종으로 정리되었고, `RoguelikeSystem` 프리팹이 이 DB로 돈다**(2026-10-20 연결).
+  액티브 7(`active_*`) · 조합 5(`combo_*`) · 공통 패시브 10(`passive_*`) · 계약 3(`ruby_glass_cannon`, `ruby_patience`, `ruby_more_the_merrier`). 골드 획득 증가 · 바겐 세일! · VIP 회원권은 삭제되었다.
+- 📦 **`icon`이 전부 비어 있다.** 지금 선택 화면에는 카드 그림 없이 프레임만 나온다. 카드 에셋의 `icon`에 이미지를 넣으면 바로 보인다.
+- 📦 **카드 이름·설명 키**: 카드 데이터의 `nameKey` / `descriptionKey`는 문자열 `Roguelike_Card_<cardId>` / `Roguelike_Card_<cardId>_Desc`다(예: `Roguelike_Card_active_spin`). UI가 이 키를 `RoguelikeUI.json` 문구(`LocKeys.RoguelikeUI.roguelikeCard*`)로 바꿔 보여 주는지 확인한다(시스템은 확인하지 않았다).
 - 픽셀 UI 규칙상 크기별로 따로 만든다: **선택 화면용 큰 카드**, **보관함용 작은 카드**, **아크릴 케이스**, **비닐 슬리브**, 쇼케이스 선반·바인더, 트레이 아이콘.
   카드 데이터에는 이미지가 `icon` 하나뿐이다. 크기별 카드 그림을 카드마다 따로 둬야 하면 필드 형식을 정해 시스템 쪽에 요청한다.
 - **레벨 표기 이미지**: 지금 `Assets/Graphics/Roguelike/card/`에 `I`~`V`만 있다. 액티브 7레벨은 `VI`와 `MAX` 이미지가 더 필요하다(📦). 카드 UI는 레벨이 카드의 `maxLevel`에 닿으면 `MAX`, 아니면 `I`~`VI`를 그린다. `MAX.png`가 없으면 `V`로 대신 그리고, `VI.png`가 없으면 액티브 6레벨의 표기가 비어 보인다. 이미지를 `VI.png`·`MAX.png`로 넣고 `LumberBoy/UI/Build Roguelike Card Select` 메뉴를 다시 실행하면 연결된다.
@@ -220,18 +241,18 @@ UIView 5종은 API와 입력 모드 처리까지 들어 있고, **각 클래스�
 
 ## 5. UI가 하지 않아도 되는 것
 
-- **도끼 내구도 HUD·인벤토리(가방) UI 숨김**: 시스템이 로그라이크 세션 동안 숨긴다. 도끼 내구도는 깎이지 않고, 공격 중 감속도 없다(기획서 3-1). **코인 HUD도 v2.4에서 숨기는 쪽**이 되었다(코드 정리 때 시스템이 한다).
+- **도끼 내구도 HUD·인벤토리(가방) UI·코인 HUD 숨김**: 시스템이 로그라이크 세션 동안 숨긴다(적용됨). 도끼 내구도는 깎이지 않고, 공격 중 감속도 없다(기획서 3-1).
 - **진입·결과 → 로비 화면 전환**: 화면 정중앙에서 퍼지는 링 디스토션(약 0.45초) → 암전 유지(약 0.5초) → 페이드 아웃(약 0.3초)과 동시에 입장 연출(바닥 타일 파도·배경 조립·낙하). 시스템이 한다(기획서 9-1).
-- **웨이브 시작 초기 나무**: 웨이브 전투가 시작될 때 초기 N그루가 솟아난다(기획서 3-1). 연출은 나무 담당·시스템이 한다.
+- **웨이브 시작 초기 나무·군집 스폰**: 웨이브 전투가 시작될 때 초기 N그루(초당 스폰 × 10초)가 솟아나고, 나무는 군집으로 생긴다(기획서 3-1, 적용됨). HUD의 웨이브 진행도(`SetWaveProgress`)는 초기 나무도 처치 수에 포함한 값이 그대로 온다.
 - 티어 전환 파도, 런 클리어 줌인·슬로우, 웨이브 클리어 묘목: 시스템이 한다.
 - 결과 화면 닫기 시점, 일시정지(`timeScale`) 걸고 풀기, 카드 판단(레어·처음 보는 카드·배타 소멸 대상): 시스템이 끝내서 넘긴다.
-- 스킬·조합 이펙트: 이펙트 담당(`RoguelikeSkillVfxSignal`). 포자폭탄은 연막이 아니라 **포자 대폭발 + 오염 표시**가 필요하다(기획서 6-1).
+- 스킬·조합 이펙트: 이펙트 담당(`RoguelikeSkillVfxSignal`). 포자폭탄은 연막이 아니라 **포자 대폭발 + 오염**이다(기획서 6-1). 시스템이 본편 포자 대폭발 연출과 본편 포자 디버프 표시(중첩 1~3단계)를 이미 재생한다. 덧입힐 지점은 `SporeBombThrown`(투척) · `SporeBigExplosion`(착지 폭발) 신호다.
 
 ## 6. 확인하는 법
 
 - 실행: [로그라이크 시스템 안내](../RoguelikeSystem.md) 0장. `MainMenuScene`에서 Play → `Tools/Roguelike/Debug Window` → "메인메뉴 → 로그라이크 진입".
-- 카드 선택: 런 시작 → 첫 선택. "카드 1단계 지급"으로 업그레이드·에메랄드(레어) 표시를 본다. (디버그 창의 "골드 추가"는 v2.4에서 의미가 없어진다.)
+- 카드 선택: 런 시작 → 첫 선택(액티브만). "카드 1단계 지급"으로 업그레이드·에메랄드(레어) 표시를 본다(액티브는 6번 지급하면 다음 제시가 MAX = 에메랄드). 디버그 창에는 카드별 버튼(`[표시 프레임] 카드 →Lv.고른 뒤/상한`)과 리롤(선택마다 1회)이 있다. "골드 추가"·"건너뛰기"는 삭제되었다.
 - 결과 화면: 전투 중 "스태미너 피해"에 큰 값. 순위표: 로비에서 "순위표 오브젝트 타격".
 - 언리밋 HUD: "다음 웨이브 번호 지정"에 31.
-- `RoguelikeSystem` 프리팹은 지금 임시 카드 세트(`RoguelikeCardDatabase.asset`, 9장)로 돈다. 초안 카드 데이터로 보려면 프리팹의 `cardDatabase`를 `RoguelikeCardDatabase_Draft.asset`으로 바꾼다(커밋 여부는 기획과 맞춘다). 이 초안은 아직 28종·5레벨 기준이라 v2.4(25종·액티브 7레벨)와 다르다.
+- `RoguelikeSystem` 프리팹은 **v2.4 카드 25장(`RoguelikeCardDatabase_Draft.asset`)으로 돈다.** 예전 임시 카드 9장(`RoguelikeCardDatabase.asset`)은 파일만 남아 있다.
 - 플레이 중에 스크립트를 고치지 않는다(도메인 리로드로 흐름이 멈춘다).

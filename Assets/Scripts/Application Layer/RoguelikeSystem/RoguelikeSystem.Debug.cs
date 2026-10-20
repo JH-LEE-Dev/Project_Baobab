@@ -28,7 +28,7 @@ public partial class RoguelikeSystem
     }
 
     /// <summary>
-    /// 오프로드를 지금 바로 한 번 내보낸다. _count가 0 이하면 지금 빌드의 대수(I~II 1대, III~IV 2대, V 3대)를 쓴다.
+    /// 오프로드를 지금 바로 한 번 내보낸다. _count가 0 이하면 지금 빌드의 대수(I~II 1대, III~IV 2대, V~VI 4대, MAX 6대)를 쓴다.
     /// 오프로드 카드를 갖고 있지 않아도 되며, 피해·돌진 폭은 지금 빌드 값을 쓴다. 웨이브 전투 중에만 된다.
     /// </summary>
     public bool DebugFireOffroad(int _count)
@@ -101,17 +101,11 @@ public partial class RoguelikeSystem
     }
 
     public void DebugBuyOffer(int _offerIndex) => CardBuyRequested(new RoguelikeCardBuyRequestedSignal(_offerIndex));
-    public void DebugSkip() => CardSkipRequested(new RoguelikeCardSkipRequestedSignal());
     public void DebugReroll() => CardRerollRequested(new RoguelikeCardRerollRequestedSignal());
     public void DebugConfirmResult() => signalHub.Publish(new RoguelikeResultConfirmedSignal());
     public void DebugLobbyAction(ERoguelikeLobbyAction _action) => OnLobbyAction(_action);
 
-    public void DebugAddGold(long _amount)
-    {
-        wallet.Add(_amount);
-    }
-
-    /// <summary>제시와 무관하게 카드를 한 단계 얻는다(골드 차감 없음).</summary>
+    /// <summary>제시와 무관하게 카드를 한 단계 얻는다.</summary>
     public void DebugGrantCard(CardDefinitionSO _card)
     {
         if (null == _card || false == shop.GrantDirect(_card)) return;
@@ -120,7 +114,7 @@ public partial class RoguelikeSystem
         signalHub.Publish(new RoguelikeModifiersChangedSignal());
     }
 
-    /// <summary>필드의 나무 _count그루를 즉시 쓰러뜨린다(처치 수·골드에 그대로 반영된다).</summary>
+    /// <summary>필드의 나무 _count그루를 즉시 쓰러뜨린다(처치 수에 그대로 반영된다).</summary>
     public void DebugKillTrees(int _count)
     {
         var trees = inDungeonObjectManager.ActiveTrees;

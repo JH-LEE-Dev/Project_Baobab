@@ -17,16 +17,13 @@ MonoBehaviour:
   descriptionKey: Roguelike_Card_combo_stella_spore_Desc
   icon: {fileID: 0}
   kind: 3
-  grade: 4
   skillTag: 0
-  exclusiveGroup: 0
-  maxLevel: 5
+  exclusiveGroup: 1
   levels:
   - effects:
     - effect: 0
       skill: 0
       value: 0
-  basePriceOverride: 0
   comboMaterialA: {fileID: 11400000, guid: 9dd2c45bb986dc547b63b4fc403a9ef5, type: 2}
   comboMaterialB: {fileID: 11400000, guid: 9e29f30a2b02c2648a8a1204e2fd97cd, type: 2}
   comboType: 4

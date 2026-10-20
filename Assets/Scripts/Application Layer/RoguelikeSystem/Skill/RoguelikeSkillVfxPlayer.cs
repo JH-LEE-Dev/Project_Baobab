@@ -11,11 +11,9 @@ public sealed class RoguelikeSkillVfxAssets
     public Sprite[] whirlwindFrames;
     [Tooltip("포자 폭탄이 날아가는 동안의 그림(본편 포자 그림).")]
     public Sprite sporeBombSprite;
-    [Tooltip("포자 폭탄이 날아가는 시간(초)과 포물선 높이.")]
+    [Tooltip("포자 폭탄이 날아가는 시간(초)과 포물선 높이. 폭탄은 떨어지는 순간 대폭발을 일으킨다(판정도 이 시간 뒤다).")]
     public float sporeBombThrowSeconds = 0.45f;
     public float sporeBombArcHeight = 1.6f;
-    [Tooltip("연막이 유지되는 동안 포자가 피어오르는 간격(초).")]
-    public float sporeZonePuffInterval = 0.3f;
     [Tooltip("본편 드론 레이저(VFX_DroneLaser.prefab). 스텔라+드론의 이음선 빔 - 기획서 \"드론 레이저가 이음선 위로 발사되는 형태\".")]
     public PresentationLayer.VFX.VFX_DroneLaser droneLaserPrefab;
 }
@@ -25,7 +23,7 @@ public sealed class RoguelikeSkillVfxAssets
 ///   스텔라 별: 본편 3스테이지 별 표식 나무에서 나오는 땅 별(TreeStarMark_Ground) + 등장음 / 사라질 때 본편 회전 소멸.
 ///   별 공격: 본편 별똥별 착지 폭발(StarImpactExplosion) + 별 폭발음.
 ///   포자 폭발(스텔라+포자폭탄): 본편 포자 폭발(4연발 + 포자 폭발음).
-///   포자 폭탄: 포물선으로 던져 착지 때 포자 폭발, 연막 동안 포자가 피어오른다.
+///   포자 폭탄: 포물선으로 던지고, 떨어지면 본편 포자 대폭발(2스테이지 전리품 연출). 오염된 나무에는 본편 포자 디버프 표시.
 ///   별 이음선 빔·노바(스텔라+드론): 본편 드론 레이저(+ 드론 발사음)·별자리 노바 마법진, 이음선은 본편 별자리 점선.
 ///   회전베기+부메랑: 본편 회전베기 VFX + 카메라 흔들림.
 /// 판정·피해는 RoguelikeSkillController가 이미 끝낸 뒤라 여기서는 그리기만 한다. 이펙트 담당은 같은 지점의
@@ -55,12 +53,8 @@ public sealed class RoguelikeSkillVfxPlayer
     private int lastBeamSoundFrame = -1;
     // 회전베기+부메랑: 같은 프레임에 여러 그루를 맞혀 회전베기가 여러 번 나가도 그림·흔들림은 한 번만(겹치면 같은 그림이다).
     private int lastWhirlwindFrame = -1;
-    // 포자 연출 회차. StopCombatEffects가 올리면 진행 중이던 포자 폭발·폭탄·연막 연출이 다음 단계에서 멈춘다.
+    // 포자 연출 회차. StopCombatEffects가 올리면 진행 중이던 포자 폭발·폭탄 연출이 다음 단계에서 멈춘다.
     private int sporeGeneration;
-    // 연막 번호 → 처음 유지 시간 뒤로 더 피어오를 시간(유지 시간 증가 MAX로 연장된 만큼). 연막 연출이 끝나면 지운다.
-    private readonly Dictionary<int, float> sporeZoneExtraSeconds = new Dictionary<int, float>(8);
-    // 연출이 돌고 있는(투척 중이거나 피어오르는 중인) 연막 번호. 이미 끝난 연막의 연장 신호는 기록하지 않는다.
-    private readonly HashSet<int> activeSporeZoneVisuals = new HashSet<int>();
 
     /// <summary>본편 땅 별을 쓸 수 있어 로그라이크 별 자체 그림을 숨겨도 되는지.</summary>
     public bool bUsesMainStarVisual => null != vfx;
@@ -113,14 +107,15 @@ public sealed class RoguelikeSkillVfxPlayer
                 if (null != host && host.isActiveAndEnabled) host.StartCoroutine(SporeBurstRoutine(_signal.position, sporeGeneration));
                 break;
 
-            case ERoguelikeSkillVfx.SporeZoneStarted:
-                if (null != host && host.isActiveAndEnabled) host.StartCoroutine(SporeBombRoutine(_signal.position2, _signal.position, _signal.radius, _signal.duration, _signal.id, sporeGeneration));
+            case ERoguelikeSkillVfx.SporeBombThrown:
+                if (null != host && host.isActiveAndEnabled) host.StartCoroutine(SporeBombRoutine(_signal.position2, _signal.position, _signal.duration, sporeGeneration));
                 break;
 
-            case ERoguelikeSkillVfx.SporeZoneExtended:
-                if (false == activeSporeZoneVisuals.Contains(_signal.id)) break;
-                sporeZoneExtraSeconds.TryGetValue(_signal.id, out float extra);
-                sporeZoneExtraSeconds[_signal.id] = extra + Mathf.Max(0f, _signal.duration);
+            case ERoguelikeSkillVfx.SporeBigExplosion:
+                // 본편 2스테이지 전리품 "포자 대폭발" 연출(응집 → 폭발). 범위는 판정과 같은 값을 넘겨 보이는 범위를 맞춘다.
+                vfx?.PlaySporeBigExplosionVFX(_signal.position, _signal.radius, Mathf.Clamp(_signal.id, 1, 3));
+                Sound.Play(SoundID.SporeExplosion, _signal.position);
+                CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
                 break;
 
             case ERoguelikeSkillVfx.StarLinkBeam:
@@ -167,18 +162,47 @@ public sealed class RoguelikeSkillVfxPlayer
     }
 
     /// <summary>
-    /// 전투가 끝났다(웨이브·런 종료). 웨이브와 함께 끝나는 연출(포자 폭발·폭탄·연막)을 멈춘다. 별은 건드리지 않는다
+    /// 전투가 끝났다(웨이브·런 종료). 웨이브와 함께 끝나는 연출(포자 폭발·폭탄)을 멈춘다. 별은 건드리지 않는다
     /// (스텔라+드론의 별은 웨이브를 넘어 남는다 - Clear는 따로 부른다).
     /// </summary>
     public void StopCombatEffects()
     {
         sporeGeneration++;
-        sporeZoneExtraSeconds.Clear();
-        activeSporeZoneVisuals.Clear();
         for (int i = 0; i < projectilePool.Count; i++)
         {
             if (null != projectilePool[i]) projectilePool[i].SetActive(false);
         }
+    }
+
+    /// <summary>
+    /// 포자폭탄으로 오염된 나무 표시. 본편 포자 대폭발에 맞은 나무의 디버프 표시(TreeSporeDebuff)를 그대로 쓰고,
+    /// 중첩 수(1~3)를 표시 단계로 쓴다.
+    /// </summary>
+    public void SetContaminated(TreeObj _tree, int _stacks)
+    {
+        if (null == _tree) return;
+        PresentationLayer.VFX.TreeSporeDebuffVfx.Apply(_tree, ContaminationDisplayAmplify(_stacks));
+    }
+
+    /// <summary>
+    /// 오염이 풀렸다. _bRestoreMain이면 본편 전리품 포자 대폭발의 피해 증폭(로그라이크에도 적용된다)이 남아 있는 나무는 그 표시로 되돌린다.
+    /// 전투가 끝나 나무가 곧 정리될 때는 지우기만 한다(지우기는 관리자를 새로 만들지 않는다).
+    /// </summary>
+    public void ClearContaminated(TreeObj _tree, bool _bRestoreMain)
+    {
+        if (null == _tree) return;
+
+        // 표시는 더 큰 단계로만 올라가므로 지운 뒤 다시 건다.
+        PresentationLayer.VFX.TreeSporeDebuffVfx.Clear(_tree);
+        if (_bRestoreMain && _tree.SporeDamageAmplify > 0f) PresentationLayer.VFX.TreeSporeDebuffVfx.Apply(_tree, _tree.SporeDamageAmplify);
+    }
+
+    /// <summary>중첩 수를 디버프 표시 단계(1~3)로 바꾸는 증폭 값. 단계 경계는 TreeSporeDebuffVfx.TierFromAmplify를 따른다.</summary>
+    private static float ContaminationDisplayAmplify(int _stacks)
+    {
+        if (_stacks >= 3) return PresentationLayer.VFX.TreeSporeDebuffVfx.Tier3Threshold;
+        if (_stacks >= 2) return PresentationLayer.VFX.TreeSporeDebuffVfx.Tier2Threshold;
+        return PresentationLayer.VFX.TreeSporeDebuffVfx.Tier2Threshold * 0.5f;
     }
 
     /// <summary>웨이브가 끝나 별·이음선이 한꺼번에 치워질 때. 남은 땅 별과 점선을 거둔다.</summary>
@@ -287,79 +311,32 @@ public sealed class RoguelikeSkillVfxPlayer
         }
     }
 
-    /// <summary>캐릭터 쪽에서 포자 폭탄을 포물선으로 던진다. 떨어지면 포자가 터지고, 연막 동안 포자가 피어오른다.</summary>
-    private IEnumerator SporeBombRoutine(Vector3 _from, Vector3 _to, float _radius, float _duration, int _zoneId, int _generation)
-    {
-        activeSporeZoneVisuals.Add(_zoneId);
-        try
-        {
-            yield return SporeBombBodyRoutine(_from, _to, _radius, _duration, _zoneId, _generation);
-        }
-        finally
-        {
-            // 회차가 바뀌었으면 StopCombatEffects가 이미 비웠다(같은 번호가 다음 회차에 다시 쓰이지는 않지만 손대지 않는다).
-            if (_generation == sporeGeneration)
-            {
-                activeSporeZoneVisuals.Remove(_zoneId);
-                sporeZoneExtraSeconds.Remove(_zoneId);
-            }
-        }
-    }
-
-    private IEnumerator SporeBombBodyRoutine(Vector3 _from, Vector3 _to, float _radius, float _duration, int _zoneId, int _generation)
+    /// <summary>캐릭터 쪽에서 포자 폭탄을 포물선으로 던진다. 떨어진 뒤의 대폭발은 SporeBigExplosion 신호가 그린다.</summary>
+    private IEnumerator SporeBombRoutine(Vector3 _from, Vector3 _to, float _throwSeconds, int _generation)
     {
         GameObject projectile = GetProjectile();
-        float throwSeconds = Mathf.Max(0.05f, assets.sporeBombThrowSeconds);
+        if (null == projectile) yield break;
 
-        if (null != projectile)
+        float throwSeconds = Mathf.Max(0.05f, _throwSeconds);
+        projectile.SetActive(true);
+        SpriteRenderer renderer = projectile.GetComponent<SpriteRenderer>();
+
+        float elapsed = 0f;
+        while (elapsed < throwSeconds)
         {
-            projectile.SetActive(true);
-            SpriteRenderer renderer = projectile.GetComponent<SpriteRenderer>();
-            float elapsed = 0f;
-            while (elapsed < throwSeconds)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / throwSeconds);
-                Vector3 pos = Vector3.Lerp(_from, _to, t);
-                pos.y += Mathf.Sin(t * Mathf.PI) * assets.sporeBombArcHeight;
-                projectile.transform.position = pos;
-                projectile.transform.Rotate(0f, 0f, 540f * Time.deltaTime);
-                if (null != renderer) renderer.sortingOrder = Order(pos) + 200;
-                yield return null;
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / throwSeconds);
+            Vector3 pos = Vector3.Lerp(_from, _to, t);
+            pos.y += Mathf.Sin(t * Mathf.PI) * assets.sporeBombArcHeight;
+            projectile.transform.position = pos;
+            projectile.transform.Rotate(0f, 0f, 540f * Time.deltaTime);
+            if (null != renderer) renderer.sortingOrder = Order(pos) + 200;
+            yield return null;
 
-                if (_generation != sporeGeneration)
-                {
-                    projectile.SetActive(false);
-                    yield break;
-                }
-            }
-
-            projectile.SetActive(false);
+            if (_generation != sporeGeneration) break;
         }
 
-        if (null == vfx || _generation != sporeGeneration) yield break;
-
-        vfx.PlaySporeExplosionVFX(_to, Vector2.up);
-        Sound.Play(SoundID.SporeExplosion, _to);
-
-        // 연막: 범위 안 무작위 지점에서 포자가 피어오른다(도트 피해 구간 표시).
-        // 유지 시간 증가 MAX로 판정이 늘어나면(SporeZoneExtended) 같은 만큼 더 피어오른다.
-        float interval = Mathf.Max(0.05f, assets.sporeZonePuffInterval);
-        float zoneElapsed = 0f;
-        while (zoneElapsed < _duration + GetSporeZoneExtraSeconds(_zoneId) && _generation == sporeGeneration)
-        {
-            Vector2 offset = UnityEngine.Random.insideUnitCircle * Mathf.Max(0.1f, _radius);
-            offset.y *= 0.5f;
-            vfx.PlaySporeExplosionVFX(_to + (Vector3)offset, offset.sqrMagnitude > 0.0001f ? offset.normalized : Vector2.up);
-
-            yield return new WaitForSeconds(interval);
-            zoneElapsed += interval;
-        }
-    }
-
-    private float GetSporeZoneExtraSeconds(int _zoneId)
-    {
-        return sporeZoneExtraSeconds.TryGetValue(_zoneId, out float extra) ? extra : 0f;
+        projectile.SetActive(false);
     }
 
     private GameObject GetProjectile()

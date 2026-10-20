@@ -78,19 +78,12 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     [Tooltip("로비 오브젝트를 올릴 충돌 레이어. 도끼가 맞히는 레이어(나무 레이어)여야 한다.")]
     [SerializeField] private LayerMask lobbyObjectLayer;
 
-    [Header("코인")]
-    [SerializeField] private RunCoinController coinController;
-    [Tooltip("코인 HUD가 날아갈 지점을 주지 않을 때(UIView_RoguelikeHUD.CoinFlyTarget = null) 쓰는 화면 지점(뷰포트 0~1). 기획서 5-1 \"하단 중앙, 바 기준 왼쪽 윗부분\".")]
-    [SerializeField] private Vector2 coinHudFallbackViewport = new Vector2(0.375f, 0.1f);
-
     [Header("신규 스킬·조합")]
     [SerializeField] private RoguelikeSkillController skillController;
 
     [Header("카드 효과")]
-    [Tooltip("기획서 미정 항목: 공통 패시브 '공격속도 증가'가 도끼에도 붙는지. 임시 카드 세트 기준으로 켜 둔다.")]
+    [Tooltip("공통 패시브 '공격속도 증가'가 도끼에도 붙는지. 기획서 6-3은 붙는다.")]
     [SerializeField] private bool bAttackSpeedAffectsAxe = true;
-    [Tooltip("본편 회전베기 기본 발동 간격(휘두름 수). AttackComponent.WhirlwindSwingInterval과 같아야 한다.")]
-    [SerializeField] private int baseWhirlwindSwingInterval = 3;
 
     [Header("웨이브 클리어 묘목 연출(기획서 3-1 \"달성 즉시\")")]
     [Tooltip("남은 나무가 묘목으로 돌아가 톡 튀었다가 작아지며 사라지는 시간(초). 나무 회수는 이 연출이 끝난 뒤에 한다.")]
@@ -140,7 +133,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
     // // 내부 의존성 (규칙)
     private readonly RunBuildState build = new RunBuildState();
-    private readonly RunWallet wallet = new RunWallet();
     private readonly RunModifiers modifiers = new RunModifiers();
     private readonly CardShop shop = new CardShop();
     private readonly StaminaPressureLogic pressure = new StaminaPressureLogic();
@@ -169,7 +161,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private readonly List<int> discardedOfferIndices = new List<int>(4);
     private readonly List<IRoguelikeProductionHandler> handlerBuffer = new List<IRoguelikeProductionHandler>(8);
 
-    private Action<long, long> goldChangedHandler;
     private Action<TreeObj, Vector3> treeKilledHandler;
     private Action<ERoguelikeLobbyAction> lobbyActionHandler;
 
@@ -189,14 +180,14 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private int treesFelled;
     private int lastClearedWave;
     private int lastClearedUnlimitWave;
-    private float goldRemainder;
+    // 허탕 이동 측정(기획서 v2.3 C-2): 이 판의 웨이브 전투 시간 합과 그중 나무 없이 이동한 시간.
+    private float combatSecondsForIdle;
+    private float idleMoveSeconds;
     private Vector3 finalTreePosition;
     // 런 클리어 슬로우가 걸려 있다(흐름이 끊기면 시간 배율을 되돌린다).
     private bool bRunClearSlowMo;
     // 웨이브 클리어 묘목 연출이 끝나는 게임 시간. 나무 회수는 이 뒤에 한다.
     private float saplingVanishEndTime;
-    // 코인이 날아가 닿는 고정점(코인 HUD 화면 지점을 월드로 옮긴 곳).
-    private Transform coinHudTarget;
     private bool bExitingToMainMenu;
 
     // 로비로 들어가는 동안(필드 재생성·입장 연출) ESC를 잠그는 소유자 이름. 이 구간의 메인메뉴 요청은 받을 곳이 없다 -
@@ -225,23 +216,18 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     public ERunPhase Phase => phase;
     public WaveSpec CurrentWave => currentWave;
     public int WaveKills => waveKills;
-    public long Gold => wallet.Gold;
     public int FieldTreeCount => null != inDungeonObjectManager ? inDungeonObjectManager.ActiveTrees.Count : 0;
     public int Threshold => pressure.Threshold;
-    public int SpawnCap => null != balance ? balance.SpawnCap : 0;
+    public int SpawnCap => CurrentSpawnCap;
+    /// <summary>지금 스폰 상한 = 지금 임계치 + 추가 개수(기획서 3-2 "스폰 상한은 항상 현재 임계치 + α"). 계약으로 임계치가 줄면 함께 줄어든다.</summary>
+    private int CurrentSpawnCap => null != balance ? pressure.Threshold + Mathf.Max(0, balance.spawnExtra) : 0;
     public EPressureState PressureState => pressure.State;
     public float PressureGraceRatio => pressure.GraceRatio;
     public float PressureCooldownRatio => pressure.CooldownRatio;
     public bool IsCardSelectionOpen => shop.IsOpen;
     public bool IsFirstPick => shop.IsFirstPick;
     public IReadOnlyList<CardOffer> CurrentOffers => shop.Offers;
-    public int RerollCost => shop.RerollCost;
     public bool CanReroll => shop.CanReroll;
-    public bool CanSkip => shop.CanSkip;
-    public bool IsAppraiserPresent => shop.IsAppraiserPresent;
-    public bool CanAppraise => shop.CanAppraise;
-    public bool IsAppraisable(CardDefinitionSO _card) => shop.IsAppraisable(_card);
-    public int GetAppraisalFee(CardDefinitionSO _card) => shop.GetAppraisalFee(_card);
     public IReadOnlyList<int> LastDiscardedOfferIndices => discardedOfferIndices;
     public RunBuildState Build => build;
     public CardDatabaseSO CardDatabase => cardDatabase;
@@ -256,6 +242,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     public RoguelikeTileWave TileWave => tileWave;
     public RunModifiers Modifiers => modifiers;
     public float PlayTimeSeconds => playTimeSeconds;
+    /// <summary>이 판의 전투 시간 중 나무 없이 이동한 시간 비율(0~1, 측정용).</summary>
+    public float IdleMoveRatio => combatSecondsForIdle > 0f ? idleMoveSeconds / combatSecondsForIdle : 0f;
 
     // // 퍼블릭 초기화 및 제어 메서드
 
@@ -284,11 +272,11 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
         inputManager.SetInventoryKeyLock(SessionInventoryLockOwner, true);
 
-        shop.Initialize(cardDatabase, balance, build, wallet, modifiers);
-        effectApplier.Initialize(bAttackSpeedAffectsAxe, baseWhirlwindSwingInterval);
+        shop.Initialize(cardDatabase, balance, build, modifiers);
 
         // 런 시작 때 끼울 전투 기준값(부록 A-1: 도끼 10, 충격파 8, 부메랑 틱 4, 드론 레이저 7). 본편 캐릭터 프리팹은 그대로 둔다.
         RoguelikeSkillTuningSO tuning = null != skillController ? skillController.Tuning : null;
+        effectApplier.Initialize(bAttackSpeedAffectsAxe, null != tuning ? tuning.spinRequiredSwings : 3);
         if (null != tuning)
         {
             effectApplier.SetRunBaseCombatStats(new StatComponent.CombatBaseStats
@@ -303,7 +291,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
                 droneDamage = tuning.droneLaserDamage,
                 droneDamageInterval = tuning.droneLaserInterval,
             });
-            effectApplier.SetRepeatDelays(tuning.spinExtraRotationDelay, tuning.shockwaveExtraDelay, tuning.axeExtraStrikeDelay);
+            effectApplier.SetRepeatDelays(tuning.shockwaveExtraDelay, tuning.axeExtraStrikeDelay);
         }
 
         effectApplier.SetMoveSpeedCap(balance.maxMoveSpeedPercent);
@@ -322,7 +310,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
         inDungeonObjectManager.SetRunTreeRules(treeRules);
 
-        if (null != coinController) coinController.Initialize();
         if (null != skillController)
         {
             skillController.Initialize(signalHub, modifiers);
@@ -332,7 +319,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         CreateLobbyObjects();
         OpenViews();
 
-        goldChangedHandler = OnGoldChanged;
         treeKilledHandler = OnTreeKilled;
         lobbyActionHandler = OnLobbyAction;
 
@@ -382,7 +368,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
             inDungeonObjectManager.SetRunTreeRules(null);
         }
 
-        if (null != coinController) coinController.Release();
         if (null != skillController) skillController.Release();
         RunCombatHooks.ClearAll();
 
@@ -413,9 +398,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         signalHub.Subscribe<RoguelikeCharacterDownCompletedSignal>(CharacterDownCompleted);
         signalHub.Subscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
         signalHub.Subscribe<RoguelikeCardBuyRequestedSignal>(CardBuyRequested);
-        signalHub.Subscribe<RoguelikeCardSkipRequestedSignal>(CardSkipRequested);
         signalHub.Subscribe<RoguelikeCardRerollRequestedSignal>(CardRerollRequested);
-        signalHub.Subscribe<RoguelikeCardAppraiseRequestedSignal>(CardAppraiseRequested);
         signalHub.Subscribe<RoguelikeCardSelectionPresentationDoneSignal>(CardSelectionPresentationDone);
         signalHub.Subscribe<RoguelikeResultConfirmedSignal>(ResultConfirmed);
         signalHub.Subscribe<RoguelikeLobbyActionSignal>(LobbyActionRequested);
@@ -430,9 +413,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         signalHub.UnSubscribe<RoguelikeCharacterDownCompletedSignal>(CharacterDownCompleted);
         signalHub.UnSubscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
         signalHub.UnSubscribe<RoguelikeCardBuyRequestedSignal>(CardBuyRequested);
-        signalHub.UnSubscribe<RoguelikeCardSkipRequestedSignal>(CardSkipRequested);
         signalHub.UnSubscribe<RoguelikeCardRerollRequestedSignal>(CardRerollRequested);
-        signalHub.UnSubscribe<RoguelikeCardAppraiseRequestedSignal>(CardAppraiseRequested);
         signalHub.UnSubscribe<RoguelikeCardSelectionPresentationDoneSignal>(CardSelectionPresentationDone);
         signalHub.UnSubscribe<RoguelikeResultConfirmedSignal>(ResultConfirmed);
         signalHub.UnSubscribe<RoguelikeLobbyActionSignal>(LobbyActionRequested);
@@ -440,9 +421,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
     private void BindEvents()
     {
-        wallet.GoldChangedEvent -= goldChangedHandler;
-        wallet.GoldChangedEvent += goldChangedHandler;
-
         if (null != waveStrategy)
         {
             waveStrategy.TreeKilledEvent -= treeKilledHandler;
@@ -464,15 +442,9 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
     private void ReleaseEvents()
     {
-        wallet.GoldChangedEvent -= goldChangedHandler;
         if (null != waveStrategy) waveStrategy.TreeKilledEvent -= treeKilledHandler;
         if (null != startRunObject) startRunObject.ActionTriggeredEvent -= lobbyActionHandler;
         if (null != recordsObject) recordsObject.ActionTriggeredEvent -= lobbyActionHandler;
-    }
-
-    private void OnGoldChanged(long _gold, long _delta)
-    {
-        signalHub.Publish(new RoguelikeGoldChangedSignal(_gold, _delta));
     }
 
     private void CharacterDownCompleted(RoguelikeCharacterDownCompletedSignal _signal) => bCharacterDownCompleted = true;
@@ -498,20 +470,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         signalHub.Publish(new RoguelikeCardPurchasedSignal(purchase));
     }
 
-    private void CardSkipRequested(RoguelikeCardSkipRequestedSignal _signal)
-    {
-        if (ERunPhase.CardSelect != phase) return;
-
-        ECardShopResult result = shop.TrySkip();
-        if (ECardShopResult.Success != result)
-        {
-            signalHub.Publish(new RoguelikeCardShopRejectedSignal(result, -1));
-            return;
-        }
-
-        signalHub.Publish(new RoguelikeCardSelectionSkippedSignal());
-    }
-
     private void CardRerollRequested(RoguelikeCardRerollRequestedSignal _signal)
     {
         if (ERunPhase.CardSelect != phase) return;
@@ -526,31 +484,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         signalHub.Publish(new RoguelikeOffersChangedSignal());
     }
 
-    /// <summary>감정(기획서 4-4). 선택 기회를 쓰지 않으므로 선택은 열린 채로 남는다. 승격이면 효과를 바로 적용한다.</summary>
-    private void CardAppraiseRequested(RoguelikeCardAppraiseRequestedSignal _signal)
-    {
-        if (ERunPhase.CardSelect != phase) return;
-
-        ECardAppraisalResult result = shop.TryAppraise(_signal.card, out CardAppraisalResult appraisal);
-        if (ECardAppraisalResult.Success != result)
-        {
-            signalHub.Publish(new RoguelikeCardAppraisalRejectedSignal(result, _signal.card));
-            return;
-        }
-
-        if (appraisal.bPromoted)
-        {
-            effectApplier.Apply(modifiers);
-            signalHub.Publish(new RoguelikeModifiersChangedSignal());
-        }
-
-        signalHub.Publish(new RoguelikeCardAppraisedSignal(appraisal));
-
-        // 승격된 카드가 제시 중이었으면 그 칸의 레벨·가격이 바뀌었거나(MAX면) 다른 카드로 바뀌었다. 그때만 UI가 제시 목록을 다시 그린다
-        // (바뀐 것 없이 다시 그리면 리롤처럼 카드 등장 연출이 다시 나온다).
-        if (appraisal.bOffersChanged) signalHub.Publish(new RoguelikeOffersChangedSignal());
-    }
-
     // // 처치
 
     private void OnTreeKilled(TreeObj _tree, Vector3 _position)
@@ -558,23 +491,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         if (false == bRunActive || ERunPhase.WaveCombat != phase) return;
 
         treesFelled++;
-
-        if (currentWave.goldPerTree > 0f && null != coinController)
-        {
-            // 나무당 골드(1.75 등)와 골드 획득 증가분의 소수는 웨이브 안에서 모아 두고, 목표를 채우는 처치에서
-            // 합산 나머지를 반올림해 마지막 코인에 얹는다(부록 A-1 "소수는 웨이브 종료 시 합산해 반올림").
-            goldRemainder += currentWave.goldPerTree * Mathf.Max(0f, 1f + modifiers.Get(ERunEffect.GoldGainPercent) / 100f);
-            long gold = (long)goldRemainder;
-            goldRemainder -= gold;
-
-            if (waveKills + 1 >= currentWave.killTarget)
-            {
-                if (goldRemainder >= 0.5f) gold++;
-                goldRemainder = 0f;
-            }
-
-            coinController.Spawn(_position, gold);
-        }
 
         // 스텔라 별 생성·포자 폭발 연쇄는 처치마다 판정한다(_tree는 디버그 클리어에서 null일 수 있다).
         if (null != _tree) skillController?.OnTreeKilled(_tree, _position);
@@ -584,7 +500,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
         if (waveKills < currentWave.killTarget) return;
 
-        // 목표 달성 즉시: 스폰을 멈추고 남은 나무를 묘목으로 돌린다(이 순간부터 피해도 골드도 없다). 기획서 3-1 "달성 즉시".
+        // 목표 달성 즉시: 스폰을 멈추고 남은 나무를 묘목으로 돌린다(이 순간부터 피해가 없다). 기획서 3-1 "달성 즉시".
         // 30웨이브는 마지막 나무 줌인·슬로우 → 줌아웃 뒤에 나무를 정리한다(기획서 3-5 "나무 정리") - WaveClearRoutine이 돌린다.
         waveStrategy?.StopSpawning();
         if (IsFinalWave(in currentWave))
@@ -660,26 +576,14 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         }
     }
 
-    /// <summary>
-    /// 진행 중인 흐름·스폰·연출 대기를 모두 끊는다. 싸우던 웨이브의 바닥 코인은 지갑에 넣지 않고 버린다.
-    /// 목표를 이미 채운 웨이브(클리어 연출·흡수 도중)의 코인은 번 것이므로 값을 지갑에 넣고 치운다 -
-    /// 30웨이브 클리어 기록(RunClearRoutine)도 그 값을 획득으로 셌다.
-    /// </summary>
+    /// <summary>진행 중인 흐름·스폰·연출 대기를 모두 끊는다.</summary>
     private void StopRunActivity()
     {
-        bool bWaveAlreadyCleared = ERunPhase.WaveClear == phase || ERunPhase.RunClear == phase;
-
         StopFlow();
         StopTileWave();
         productionGate.CancelAll();
         EndRunClearCinematic();
         waveStrategy?.StopSpawning();
-
-        if (null != coinController)
-        {
-            if (bWaveAlreadyCleared) wallet.Add(coinController.GroundValue);
-            coinController.DiscardAll();
-        }
         skillController?.EndCombat();
         pressure.Reset();
 

@@ -5,7 +5,7 @@ using UnityEngine;
 /// 카드 효과(피해%·범위%·지속%·공격속도%·발동 수·확률)는 이 기본값 위에 곱하거나 더한다.
 ///
 /// 회전베기·충격파·부메랑·드론은 본편 스탯을 쓰고, 그 기준값만 런 시작 때 아래 "전투 기준값"으로 바꿔 끼운다(RunEffectApplier).
-/// 본편 캐릭터 프리팹의 값은 건드리지 않는다. 모든 값은 기획서 v2.1 부록 A 초안이며 밸런스 단계에서 조정한다.
+/// 본편 캐릭터 프리팹의 값은 건드리지 않는다. 모든 값은 기획서 v2.4 부록 A 초안이며 밸런스 단계에서 조정한다.
 /// </summary>
 [CreateAssetMenu(fileName = "RoguelikeSkillTuning", menuName = "Baobab/Roguelike/Skill Tuning")]
 public class RoguelikeSkillTuningSO : ScriptableObject
@@ -31,20 +31,22 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     [Tooltip("드론 레이저 발사 주기(초).")]
     public float droneLaserInterval = 1f;
 
+    [Header("회전베기 (부록 A-4)")]
+    [Tooltip("레벨 I의 필요 휘두름 수. n휘두름 뒤 n+1번째 공격에 발동한다(3 = 4번째 공격). 카드 효과 TriggerHitCountAdd로 3 → 2 → 1 → 0(상시)으로 줄어든다.")]
+    public int spinRequiredSwings = 3;
+
     [Header("레벨 효과 반복 간격 (부록 A-4)")]
-    [Tooltip("회전베기 IV 연속 2회전의 두 번째 회전까지 간격(초).")]
-    public float spinExtraRotationDelay = 0.15f;
-    [Tooltip("충격파 V 2중 발생의 두 번째 충격파까지 간격(초).")]
+    [Tooltip("충격파 MAX 2중 발생의 두 번째 충격파까지 간격(초).")]
     public float shockwaveExtraDelay = 0.12f;
-    [Tooltip("스텔라 V 별 폭발 2회 연속의 두 번째 폭발까지 간격(초).")]
+    [Tooltip("스텔라 MAX 별 폭발 2회 연속의 두 번째 폭발까지 간격(초).")]
     public float stellaBlastRepeatDelay = 0.2f;
-    [Tooltip("루비 다다익선 도끼 연속 2회 타격의 두 번째 타격까지 간격(초).")]
+    [Tooltip("계약 다다익선 도끼 연속 2회 타격의 두 번째 타격까지 간격(초).")]
     public float axeExtraStrikeDelay = 0.1f;
 
     [Header("오프로드")]
     [Tooltip("소환 주기(초). 공격속도%로 빨라진다.")]
     public float offroadInterval = 6f;
-    [Tooltip("돌진 최고 속도(월드/초).")]
+    [Tooltip("돌진 최고 속도(월드/초). 오프로드 IV의 돌진 속도 증가(MoveSpeedPercent, 오프로드 전용)가 곱해진다.")]
     public float offroadSpeed = 16f;
     [Tooltip("돌진 판정 폭(반경). 범위%로 넓어진다(오프로드 IV).")]
     public float offroadHitRadius = 0.9f;
@@ -94,19 +96,25 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float stellaBlastDamage = 100f;
     [Tooltip("별 표식 유지 시간(초). 지속%로 늘어나고, 카드 효과 StarMarkDurationAdd(레벨 IV +3초)가 더해진다.")]
     public float stellaMarkDuration = 6f;
-    [Tooltip("별 표식이 남은 나무가 받는 피해 증가율(0.3 = +30%). 도끼·다른 액티브·지속 피해 모두에 적용된다(기획서 6-1).")]
+    [Tooltip("별 표식이 남은 나무가 받는 피해 증가율(0.3 = +30%). 도끼·다른 액티브·지속 피해 모두에 적용된다(기획서 6-1). 스텔라 V의 StarMarkDamageTakenAdd(+15%p)가 더해진다.")]
     public float stellaMarkDamageTakenBonus = 0.3f;
 
-    [Header("포자폭탄")]
+    [Header("포자폭탄 (포자 대폭발 + 오염, 기획서 v2.4 6-1)")]
     [Tooltip("투하 주기(초). 공격속도%로 빨라진다.")]
     public float sporeInterval = 5f;
     [Tooltip("투하 대상 탐색 반경(캐릭터 기준).")]
     public float sporeTargetRange = 7f;
-    public float sporeRadius = 1.6f;
-    [Tooltip("연막 지속(초). 지속%로 늘어난다.")]
+    [Tooltip("포자 대폭발 범위(등각 타원 장반경, 월드). 본편 포자 대폭발과 같은 판정(세로는 절반)이다. 범위%로 넓어진다.")]
+    public float sporeRadius = 2.5f;
+    [Tooltip("폭탄이 떨어진 뒤 대폭발 판정까지의 시간(초). 본편 대폭발 연출이 응집한 뒤 터지는 순간에 맞춘다.")]
+    public float sporeExplosionDelay = 0.2f;
+    [Tooltip("대폭발 자체의 피해. 기획서는 오염 지속 피해만 정해 두었으므로 기본 0이다.")]
+    public float sporeExplosionDamage = 0f;
+    [Tooltip("오염 유지 시간(초). 지속%로 늘어난다(II 5초, VI 6초).")]
     public float sporeDuration = 4f;
+    [Tooltip("오염 지속 피해 간격(초).")]
     public float sporeTickInterval = 0.5f;
-    [Tooltip("틱당 피해. 도트%로 늘어난다.")]
+    [Tooltip("오염 틱당 피해. 피해%·지속 피해%로 늘어난다. 중첩 수만큼 곱해진다.")]
     public float sporeTickDamage = 4f;
 
     [Header("조합: 회전베기 + 충격파 (360도 충격파)")]

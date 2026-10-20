@@ -17,10 +17,8 @@ MonoBehaviour:
   descriptionKey: Roguelike_Card_ruby_more_the_merrier_Desc
   icon: {fileID: 0}
   kind: 2
-  grade: 3
   skillTag: 0
   exclusiveGroup: 0
-  maxLevel: 5
   levels:
   - effects:
     - effect: 34
@@ -35,7 +33,6 @@ MonoBehaviour:
     - effect: 23
       skill: 0
       value: 30
-  basePriceOverride: 0
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}
   comboType: 0

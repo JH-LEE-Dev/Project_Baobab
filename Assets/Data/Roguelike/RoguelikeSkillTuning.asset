@@ -21,7 +21,7 @@ MonoBehaviour:
   boomerangRangeRatio: 0.67
   droneLaserDamage: 7
   droneLaserInterval: 1
-  spinExtraRotationDelay: 0.15
+  spinRequiredSwings: 3
   shockwaveExtraDelay: 0.12
   stellaBlastRepeatDelay: 0.2
   axeExtraStrikeDelay: 0.1
@@ -53,7 +53,9 @@ MonoBehaviour:
   stellaMarkDamageTakenBonus: 0.3
   sporeInterval: 5
   sporeTargetRange: 7
-  sporeRadius: 1.6
+  sporeRadius: 2.5
+  sporeExplosionDelay: 0.2
+  sporeExplosionDamage: 0
   sporeDuration: 4
   sporeTickInterval: 0.5
   sporeTickDamage: 4

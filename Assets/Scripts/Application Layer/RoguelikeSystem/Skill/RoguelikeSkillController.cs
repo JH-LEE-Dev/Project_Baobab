@@ -10,7 +10,7 @@ using UnityEngine;
 ///
 /// 판정·피해와 움직임·손맛(오프로드 예열·가속·충돌 반동, 카메라 흔들림, 진동, 효과음)은 여기서 맡는다.
 /// 먼지·잔상 같은 이펙트는 이펙트 담당이 RoguelikeSkillVfxSignal(및 별 프리팹)로 입힌다.
-/// 웨이브 전투 중에만 돈다(BeginCombat ~ EndCombat). 웨이브가 끝나면 별·연막·표식을 모두 치운다.
+/// 웨이브 전투 중에만 돈다(BeginCombat ~ EndCombat). 웨이브가 끝나면 별·오염·표식을 모두 치운다.
 ///
 /// 카드 수치 적용 규칙(기획서 3-3 공통 패시브):
 ///   피해 = 기본 × (1 + 피해%(전역+스킬)/100), 도트 = 기본 × (1 + 피해%/100) × (1 + 도트%/100)
@@ -28,13 +28,24 @@ public class RoguelikeSkillController : MonoBehaviour
         public float nextDotTime;
     }
 
-    private struct SporeZone
+    /// <summary>포자 대폭발에 맞아 오염된 나무(기획서 v2.4 6-1 포자폭탄). 오염이 유지되는 동안 틱마다 지속 피해를 받는다.</summary>
+    private struct Contamination
     {
-        public int id;
+        public TreeObj tree;
+        // 오염된 순간의 재사용 번호. 쓰러져 다른 자리의 새 나무로 다시 쓰인 객체는 번호가 달라 오염이 이어지지 않는다.
+        public int reuseCount;
+        public float expireTime;
+        public int stacks;
+    }
+
+    /// <summary>던진 포자 폭탄. 떨어지면(landTime) 대폭발 연출이 시작되고, blastTime에 범위 안 나무를 오염시킨다.</summary>
+    private struct SporeBomb
+    {
         public Vector3 position;
         public float radius;
-        public float endTime;
-        public float tickDamage;
+        public float landTime;
+        public float blastTime;
+        public bool bLanded;
     }
 
     /// <summary>돌진 중인 오프로드 한 대. 차마다 맞힌 나무를 따로 세어, 여러 대가 같은 나무를 각각 칠 수 있다.</summary>
@@ -47,6 +58,7 @@ public class RoguelikeSkillController : MonoBehaviour
         public float length;
         public float traveled;
         public float speed;
+        public float maxSpeed;
         public float dashStartTime;
         public bool bDashStarted;
         public float hitStopUntil;
@@ -69,7 +81,7 @@ public class RoguelikeSkillController : MonoBehaviour
     public RoguelikeSkillTuningSO Tuning => tuning;
 
     private InDungeonObjectManager objectManager;
-    private bool bMarkDamageBonusApplied;
+    // 별 표식 나무의 받는 피해 증가율 중 이 세션이 본편 누산 값에 더해 둔 양(0.3 = +30%).
     private float appliedMarkDamageBonus;
     [SerializeField] private RoguelikeStar starPrefab;
     [Tooltip("오프로드 외형(선택). 비어 있으면 판정만 움직인다.")]
@@ -103,7 +115,8 @@ public class RoguelikeSkillController : MonoBehaviour
     private int nextStarId = 1;
 
     private readonly List<MarkedTree> markedTrees = new List<MarkedTree>(128);
-    private readonly List<SporeZone> sporeZones = new List<SporeZone>(8);
+    private readonly List<Contamination> contaminations = new List<Contamination>(64);
+    private readonly List<SporeBomb> sporeBombs = new List<SporeBomb>(8);
     private readonly List<OffroadCar> offroadCars = new List<OffroadCar>(4);
     private readonly Stack<OffroadCar> offroadCarPool = new Stack<OffroadCar>(4);
     private readonly Stack<RoguelikeOffroadVisual> offroadVisualPool = new Stack<RoguelikeOffroadVisual>(4);
@@ -135,7 +148,7 @@ public class RoguelikeSkillController : MonoBehaviour
     private System.Action<RoguelikeStar> starHitHandler;
     private System.Action<IReadOnlyList<Vector3>> droneLaserHandler;
 
-    // 스텔라 V "별을 칠 때 폭발이 2회 연속": 첫 폭발 뒤 이어질 폭발(위치, 시각, 별 번호).
+    // 스텔라 MAX "별을 칠 때 폭발이 2회 연속": 첫 폭발 뒤 이어질 폭발(위치, 시각, 별 번호).
     private struct RepeatBlast
     {
         public Vector3 position;
@@ -145,14 +158,8 @@ public class RoguelikeSkillController : MonoBehaviour
 
     private readonly List<RepeatBlast> pendingRepeatBlasts = new List<RepeatBlast>(8);
 
-    // 포자 연막 틱. 연막끼리 겹친 나무가 받는 지속 피해 중첩 수를 세기 위해 모든 연막이 같은 틱에 판정한다(포자폭탄 V).
+    // 오염 지속 피해 틱. 모든 오염 나무가 같은 틱에 피해를 받는다.
     private float nextSporeTickTime;
-    private int nextSporeZoneId = 1;
-    private readonly Dictionary<TreeObj, int> sporeOverlapCounts = new Dictionary<TreeObj, int>(64);
-    private readonly Dictionary<TreeObj, float> sporeTickDamages = new Dictionary<TreeObj, float>(64);
-    // 나무마다 그 나무를 덮은 연막 번호의 비트 묶음(유지 시간 증가 MAX가 처치한 연막만 늘리기 위해).
-    private readonly Dictionary<TreeObj, int> sporeZoneMasks = new Dictionary<TreeObj, int>(64);
-    private readonly List<TreeObj> sporeTargets = new List<TreeObj>(64);
 
     /// <summary>스텔라+드론 이음선. 이펙트 담당이 선을 그릴 때 읽는다(StarLinksChanged 시그널 뒤).</summary>
     public IReadOnlyList<Vector2Int> StarLinks => starLinks;
@@ -183,7 +190,7 @@ public class RoguelikeSkillController : MonoBehaviour
         RunCombatHooks.BoomerangHitTreeEvent -= boomerangHitHandler;
         RunCombatHooks.DroneLaserEvent -= droneLaserHandler;
         EndCombat();
-        SetMarkDamageBonusApplied(false);
+        SetMarkDamageBonus(0f);
     }
 
     public void SetCharacter(Character _character)
@@ -197,23 +204,32 @@ public class RoguelikeSkillController : MonoBehaviour
     {
         vfxPlayer.Initialize(_objectManager, vfxAssets, this);
 
-        SetMarkDamageBonusApplied(false);
+        SetMarkDamageBonus(0f);
         objectManager = _objectManager;
-        SetMarkDamageBonusApplied(true);
+        SyncMarkDamageBonus();
     }
 
     /// <summary>
-    /// 별 표식 나무의 받는 피해 +30%(기획서 6-1). 표식 나무가 받는 모든 피해(도끼·다른 액티브·지속 피해)는
+    /// 별 표식 나무의 받는 피해 증가(기획서 v2.4 6-1: 기본 +30%, 스텔라 V부터 +45%). 표식 나무가 받는 모든 피해(도끼·다른 액티브·지속 피해)는
     /// TreeObj의 별표식 배율 한 곳을 지나므로, 그 배율(본편 "별표식 베기" 특성이 쓰는 누산 값, 기본 1)에 세션 동안만 더한다.
     /// 로그라이크는 본편 능력 트리를 불러오지 않아 이 값은 세션 내내 1 + 보너스이고, Release에서 뺀다.
+    /// 카드는 웨이브 사이에만 바뀌므로 웨이브 전투가 시작될 때(BeginCombat) 지금 빌드 값으로 맞춘다.
     /// </summary>
-    private void SetMarkDamageBonusApplied(bool _bApply)
+    private void SyncMarkDamageBonus()
     {
-        if (null == objectManager || null == tuning || bMarkDamageBonusApplied == _bApply) return;
+        if (null == tuning || null == modifiers) return;
+        SetMarkDamageBonus(tuning.stellaMarkDamageTakenBonus + modifiers.GetForSkill(ERunEffect.StarMarkDamageTakenAdd, ERoguelikeSkill.Stella) / 100f);
+    }
 
-        appliedMarkDamageBonus = _bApply ? tuning.stellaMarkDamageTakenBonus : appliedMarkDamageBonus;
-        objectManager.IncreaseStarMarkDamage(_bApply ? appliedMarkDamageBonus : -appliedMarkDamageBonus);
-        bMarkDamageBonusApplied = _bApply;
+    private void SetMarkDamageBonus(float _bonus)
+    {
+        if (null == objectManager) return;
+
+        float delta = _bonus - appliedMarkDamageBonus;
+        if (Mathf.Approximately(delta, 0f)) return;
+
+        objectManager.IncreaseStarMarkDamage(delta);
+        appliedMarkDamageBonus = _bonus;
     }
 
     /// <summary>섬(타원)의 중심과 반지름(월드). 오프로드가 섬 가장자리에서 반대편 가장자리로 돌진하는 데 쓴다.</summary>
@@ -233,6 +249,7 @@ public class RoguelikeSkillController : MonoBehaviour
         nextBeamTime = now + tuning.stellaDroneBeamInterval;
         nextLonePulseTime = now + tuning.stellaDroneLoneStarInterval;
         nextSporeTickTime = now;
+        SyncMarkDamageBonus();
         pendingRepeatBlasts.Clear();
         pendingAxeSwings = 0;
         pendingBoomerangHits.Clear();
@@ -240,7 +257,7 @@ public class RoguelikeSkillController : MonoBehaviour
     }
 
     /// <summary>
-    /// 웨이브 종료(_bWaveEnd) 또는 런 종료. 별·연막·표식·돌진을 모두 치운다.
+    /// 웨이브 종료(_bWaveEnd) 또는 런 종료. 별·오염·표식·돌진을 모두 치운다.
     /// 단, 웨이브 종료에서 스텔라+드론이 켜져 있으면 별과 이음선은 남긴다 - 기획서 "별들은 노바가 발동될 때만 모두 소멸한다",
     /// 홀로 남은 별도 "사라지지도 않는다". 다음 웨이브에서 이어서 모은다. 런이 끝나면(_bWaveEnd = false) 전부 치운다.
     /// </summary>
@@ -262,7 +279,8 @@ public class RoguelikeSkillController : MonoBehaviour
         }
 
         markedTrees.Clear();
-        sporeZones.Clear();
+        ClearContaminations();
+        sporeBombs.Clear();
         for (int i = offroadCars.Count - 1; i >= 0; i--) ReleaseOffroadCar(i, true);
 
         pendingStarHits.Clear();
@@ -309,7 +327,7 @@ public class RoguelikeSkillController : MonoBehaviour
     {
         if (false == bActive) return;
 
-        // 표식·도트 목록에서 뺀다. 이 나무는 곧 풀로 돌아가 다른 나무로 재사용된다.
+        // 표식·도트 목록에서 뺀다. 이 나무는 곧 풀로 돌아가 다른 나무로 재사용된다(오염은 재사용 번호로 걸러진다).
         for (int i = markedTrees.Count - 1; i >= 0; i--)
         {
             if (markedTrees[i].tree != _tree) continue;
@@ -435,8 +453,9 @@ public class RoguelikeSkillController : MonoBehaviour
     {
         StatComponent stat = character.statComponent;
         Vector3 center = character.transform.position;
-        float radius = tuning.spinBoomerangRadius * stat.axeAttackRangeMultiplier;
-        float damage = stat.axeDamage * tuning.spinBoomerangDamageMultiplier;
+        // 회전베기 카드의 범위·회전 피해 증가는 회전베기 타격에만 붙는다(RunCombatOverrides). 이 회전베기도 같이 받는다.
+        float radius = tuning.spinBoomerangRadius * stat.axeAttackRangeMultiplier * RunCombatOverrides.WhirlwindRangeMultiplier;
+        float damage = stat.axeDamage * tuning.spinBoomerangDamageMultiplier * RunCombatOverrides.WhirlwindDamageMultiplier;
 
         DamageTreesInRadius(center, radius, damage, false, false);
         if (RunEffectApplier.IsStarHitByActives(modifiers)) HitStarsInRadius(center, radius);
@@ -543,7 +562,7 @@ public class RoguelikeSkillController : MonoBehaviour
             StarBlast(star.transform.position, tuning.stellaBlastRadius, tuning.stellaBlastDamage);
             Publish(ERoguelikeSkillVfx.StarBlast, star.transform.position, star.transform.position, tuning.stellaBlastRadius * RangeMul(ERoguelikeSkill.Stella), 0f, star.StarId);
 
-            // 스텔라 V: 같은 자리에서 폭발이 이어서 더 일어난다(별은 첫 폭발과 함께 사라진다).
+            // 스텔라 MAX: 같은 자리에서 폭발이 이어서 더 일어난다(별은 첫 폭발과 함께 사라진다).
             int repeats = Mathf.Max(0, Mathf.RoundToInt(modifiers.GetForSkill(ERunEffect.StarBlastRepeatAdd, ERoguelikeSkill.Stella)));
             for (int r = 1; r <= repeats; r++)
             {
@@ -689,6 +708,10 @@ public class RoguelikeSkillController : MonoBehaviour
     }
 
     // // 포자폭탄
+    //
+    // 기획서 v2.4 6-1: 자동으로 특정 위치에 포자 폭탄을 던진다. 폭탄이 터지면 본편의 포자 대폭발이 일어나고, 폭발 범위에 맞은
+    // 나무들이 오염되어 오염이 유지되는 동안 지속 피해를 받는다(연막은 남지 않는다). 오염된 나무가 대폭발에 다시 맞으면
+    // 오염 유지 시간이 새로 시작되고, 포자폭탄 V부터는 지속 피해가 중첩된다(V 최대 2, MAX 최대 3).
 
     private void UpdateSpore(float _now)
     {
@@ -700,85 +723,61 @@ public class RoguelikeSkillController : MonoBehaviour
             for (int i = 0; i < bombs; i++) ThrowSporeBomb(_now);
         }
 
-        for (int i = sporeZones.Count - 1; i >= 0; i--)
+        for (int i = sporeBombs.Count - 1; i >= 0; i--)
         {
-            if (_now >= sporeZones[i].endTime) sporeZones.RemoveAt(i);
+            SporeBomb bomb = sporeBombs[i];
+
+            // 떨어지는 순간 본편 대폭발 연출이 시작된다(응집한 뒤 터진다). 판정은 터지는 순간(blastTime)에 한다.
+            if (false == bomb.bLanded && _now >= bomb.landTime)
+            {
+                bomb.bLanded = true;
+                sporeBombs[i] = bomb;
+                Publish(ERoguelikeSkillVfx.SporeBigExplosion, bomb.position, bomb.position, bomb.radius, 0f, SporeTier());
+            }
+
+            if (_now < bomb.blastTime) continue;
+
+            sporeBombs.RemoveAt(i);
+            SporeBigExplosion(bomb.position, bomb.radius);
         }
 
-        if (0 == sporeZones.Count || _now < nextSporeTickTime) return;
-
-        nextSporeTickTime = _now + tuning.sporeTickInterval;
-        TickSporeZones();
+        UpdateContaminations(_now);
     }
 
-    /// <summary>
-    /// 모든 연막이 같은 틱에 판정한다. 연막이 겹친 나무는 겹친 수만큼 지속 피해가 중첩되며, 중첩은 SporeStackMax까지다
-    /// (기본 1 = 겹쳐도 한 번, 포자폭탄 V = 최대 3). 기획서 6-1 포자폭탄 V "연막이 겹치면 지속 피해 중첩".
-    /// </summary>
-    private void TickSporeZones()
+    /// <summary>오염 지속 피해 틱과 만료. 모든 오염 나무가 같은 틱에 (틱 피해 × 중첩 수)를 받는다.</summary>
+    private void UpdateContaminations(float _now)
     {
-        if (null == CollisionSystem.Instance) return;
+        if (0 == contaminations.Count) return;
 
-        int stackMax = SporeStackMax();
-        bool bStarHit = RunEffectApplier.IsStarHitByActives(modifiers);
-        float extendOnKill = modifiers.Get(ERunEffect.DurationExtendOnDotKill);
-
-        sporeOverlapCounts.Clear();
-        sporeTickDamages.Clear();
-        sporeZoneMasks.Clear();
-        sporeTargets.Clear();
-
-        for (int z = 0; z < sporeZones.Count; z++)
+        for (int i = contaminations.Count - 1; i >= 0; i--)
         {
-            SporeZone zone = sporeZones[z];
-            CollisionSystem.Instance.GetCollidablesInRadius(zone.position, zone.radius, treeLayer.value, scanBuffer);
+            Contamination c = contaminations[i];
+            if (IsContaminationAlive(in c) && _now < c.expireTime) continue;
 
-            float radiusSq = zone.radius * zone.radius;
-            for (int i = 0; i < scanBuffer.Count; i++)
-            {
-                if (((Vector2)zone.position - scanBuffer[i].Position).sqrMagnitude > radiusSq) continue;
-
-                if (scanBuffer[i] is TreeObj tree)
-                {
-                    if (false == IsHittable(tree)) continue;
-
-                    int zoneBit = z < 32 ? 1 << z : 0;
-
-                    if (sporeOverlapCounts.TryGetValue(tree, out int count))
-                    {
-                        sporeOverlapCounts[tree] = count + 1;
-                        sporeZoneMasks[tree] |= zoneBit;
-                        if (zone.tickDamage > sporeTickDamages[tree]) sporeTickDamages[tree] = zone.tickDamage;
-                    }
-                    else
-                    {
-                        sporeOverlapCounts[tree] = 1;
-                        sporeZoneMasks[tree] = zoneBit;
-                        sporeTickDamages[tree] = zone.tickDamage;
-                        sporeTargets.Add(tree);
-                    }
-                }
-                else if (bStarHit && scanBuffer[i] is RoguelikeStar star && star.bCanBeHitBySkill)
-                {
-                    // 스텔라 III: 연막도 별을 친다.
-                    OnStarHit(star);
-                }
-            }
+            RemoveContaminationAt(i, true);
         }
+
+        if (0 == contaminations.Count || _now < nextSporeTickTime) return;
+
+        nextSporeTickTime = _now + Mathf.Max(0.05f, tuning.sporeTickInterval);
+
+        float tickDamage = tuning.sporeTickDamage * DotMul(ERoguelikeSkill.SporeBomb);
+        float extendOnKill = modifiers.Get(ERunEffect.DurationExtendOnDotKill);
+        int kills = 0;
 
         TreeTileWriteBatch.Begin();
         try
         {
-            for (int i = 0; i < sporeTargets.Count; i++)
+            for (int i = contaminations.Count - 1; i >= 0; i--)
             {
-                TreeObj tree = sporeTargets[i];
-                if (false == IsHittable(tree)) continue;
+                if (i >= contaminations.Count) continue;
 
-                int stacks = Mathf.Min(sporeOverlapCounts[tree], stackMax);
-                tree.TakeDamage(sporeTickDamages[tree] * stacks, false, false);
+                Contamination c = contaminations[i];
+                if (false == IsContaminationAlive(in c)) continue;
 
-                // 유지 시간 증가 MAX: 연막으로 처치하면 그 나무를 덮고 있던 연막의 유지 시간이 늘어난다.
-                if (extendOnKill > 0f && false == IsHittable(tree)) ExtendSporeZonesCovering(sporeZoneMasks[tree], extendOnKill);
+                // 이 피해로 쓰러지면 OnTreeKilled 이후 다음 Update에서 목록에서 빠진다(재사용 번호가 바뀐다).
+                c.tree.TakeDamage(tickDamage * c.stacks, false, false);
+                if (false == IsHittable(c.tree)) kills++;
             }
         }
         finally
@@ -786,23 +785,137 @@ public class RoguelikeSkillController : MonoBehaviour
             TreeTileWriteBatch.End();
         }
 
-        sporeTargets.Clear();
+        // 유지 시간 증가 MAX: 지속형 스킬(오염)로 나무를 처치하면 남아 있는 오염의 유지 시간이 늘어난다. 처치 하나마다 늘린다(별 표식과 같다).
+        if (kills > 0 && extendOnKill > 0f) ExtendContaminations(extendOnKill * kills);
     }
 
-    /// <summary>_mask에 표시된 연막들의 끝 시각을 _seconds만큼 늦춘다(유지 시간 증가 MAX).</summary>
-    private void ExtendSporeZonesCovering(int _mask, float _seconds)
+    private bool IsContaminationAlive(in Contamination _c)
     {
-        for (int z = 0; z < sporeZones.Count && z < 32; z++)
+        return IsHittable(_c.tree) && _c.tree.ReuseCount == _c.reuseCount;
+    }
+
+    /// <summary>본편 포자 대폭발과 같은 등각 타원 범위의 나무를 오염시킨다(피해가 정해져 있으면 먼저 준다).</summary>
+    private void SporeBigExplosion(Vector3 _center, float _radius)
+    {
+        if (null == CollisionSystem.Instance || _radius <= 0f) return;
+
+        CollisionSystem.Instance.GetCollidablesInRadius(_center, _radius, treeLayer.value, scanBuffer);
+
+        bool bStarHit = RunEffectApplier.IsStarHitByActives(modifiers);
+        float radiusSq = _radius * _radius;
+        hitBuffer.Clear();
+
+        for (int i = 0; i < scanBuffer.Count; i++)
         {
-            if (0 == (_mask & (1 << z))) continue;
+            Vector2 offset = scanBuffer[i].Position - (Vector2)_center;
+            // 등각 타원 보정(본편 포자 대폭발과 같은 공식): 세로 거리를 두 배로 본다.
+            if (offset.x * offset.x + offset.y * offset.y * 4f > radiusSq) continue;
 
-            SporeZone zone = sporeZones[z];
-            zone.endTime += _seconds;
-            sporeZones[z] = zone;
-
-            // 연막 그림도 같은 만큼 더 피어오르게 한다(판정만 늘고 그림이 먼저 꺼지면 보이지 않는 연막이 피해를 준다).
-            Publish(ERoguelikeSkillVfx.SporeZoneExtended, zone.position, zone.position, zone.radius, _seconds, zone.id);
+            if (scanBuffer[i] is TreeObj tree)
+            {
+                if (IsHittable(tree)) hitBuffer.Add(tree);
+            }
+            else if (bStarHit && scanBuffer[i] is RoguelikeStar star && star.bCanBeHitBySkill)
+            {
+                // 스텔라 III: 대폭발도 별을 친다.
+                OnStarHit(star);
+            }
         }
+
+        float damage = tuning.sporeExplosionDamage * DamageMul(ERoguelikeSkill.SporeBomb);
+        float duration = tuning.sporeDuration * DurationMul(ERoguelikeSkill.SporeBomb);
+        int stackMax = SporeStackMax();
+
+        TreeTileWriteBatch.Begin();
+        try
+        {
+            for (int i = 0; i < hitBuffer.Count; i++)
+            {
+                TreeObj tree = hitBuffer[i];
+                if (false == IsHittable(tree)) continue;
+
+                if (damage > 0f)
+                {
+                    tree.TakeDamage(damage, false, false);
+                    if (false == IsHittable(tree)) continue;
+                }
+
+                Contaminate(tree, duration, stackMax);
+            }
+        }
+        finally
+        {
+            TreeTileWriteBatch.End();
+        }
+    }
+
+    /// <summary>나무를 오염시킨다. 이미 오염된 나무면 유지 시간을 새로 시작하고 중첩을 하나 올린다(상한까지).</summary>
+    private void Contaminate(TreeObj _tree, float _duration, int _stackMax)
+    {
+        float expire = Time.time + Mathf.Max(0f, _duration);
+
+        for (int i = 0; i < contaminations.Count; i++)
+        {
+            Contamination c = contaminations[i];
+            if (c.tree != _tree || c.reuseCount != _tree.ReuseCount) continue;
+
+            c.expireTime = expire;
+            c.stacks = Mathf.Min(c.stacks + 1, _stackMax);
+            contaminations[i] = c;
+            vfxPlayer.SetContaminated(_tree, c.stacks);
+            return;
+        }
+
+        // 다른 오염이 없을 때는 틱 주기가 멈춰 있다. 한 틱 간격 뒤에 첫 피해를 준다(이미 돌고 있으면 그 주기에 합류한다).
+        if (0 == contaminations.Count) nextSporeTickTime = Time.time + Mathf.Max(0.05f, tuning.sporeTickInterval);
+
+        contaminations.Add(new Contamination
+        {
+            tree = _tree,
+            reuseCount = _tree.ReuseCount,
+            expireTime = expire,
+            stacks = 1,
+        });
+        vfxPlayer.SetContaminated(_tree, 1);
+    }
+
+    private void ExtendContaminations(float _seconds)
+    {
+        for (int i = 0; i < contaminations.Count; i++)
+        {
+            Contamination c = contaminations[i];
+            c.expireTime += _seconds;
+            contaminations[i] = c;
+        }
+    }
+
+    /// <summary>오염 하나를 거둔다. _bRestoreMain이면 본편 포자 대폭발 증폭 표시가 남은 나무는 그 표시로 되돌린다(전투 중 만료).</summary>
+    private void RemoveContaminationAt(int _index, bool _bRestoreMain)
+    {
+        Contamination c = contaminations[_index];
+        contaminations.RemoveAt(_index);
+
+        // 쓰러져 풀로 돌아간(재사용 번호가 바뀐) 나무의 표시는 본편 초기화(ResetTree)가 이미 지웠다.
+        if (null != c.tree && false == c.tree.IsPooled && c.tree.ReuseCount == c.reuseCount) vfxPlayer.ClearContaminated(c.tree, _bRestoreMain);
+    }
+
+    /// <summary>
+    /// 웨이브·런·세션이 끝나 오염을 모두 거둔다. 필드의 나무도 곧 정리되므로 본편 증폭 표시는 되돌리지 않는다
+    /// (되돌리면 세션 해제 중에 디버프 표시 관리자를 새로 만들 수 있다).
+    /// </summary>
+    private void ClearContaminations()
+    {
+        for (int i = contaminations.Count - 1; i >= 0; i--) RemoveContaminationAt(i, false);
+        contaminations.Clear();
+    }
+
+    /// <summary>포자폭탄 레벨 단계(1~3). 본편 대폭발 연출의 단계(I~III)로 쓴다: 중첩 상한을 따라 I~IV 1단계, V~VI 2단계, MAX 3단계.</summary>
+    private int SporeTier()
+    {
+        int stack = SporeStackMax();
+        if (stack >= 3) return 3;
+        if (stack >= 2) return 2;
+        return 1;
     }
 
     /// <summary>별 표식 지속 피해로 나무를 처치하면 남아 있는 표식들의 유지 시간을 늘린다(유지 시간 증가 MAX).</summary>
@@ -847,23 +960,18 @@ public class RoguelikeSkillController : MonoBehaviour
         }
 
         float radius = tuning.sporeRadius * RangeMul(ERoguelikeSkill.SporeBomb);
-        float duration = tuning.sporeDuration * DurationMul(ERoguelikeSkill.SporeBomb);
+        float flight = Mathf.Max(0f, vfxAssets.sporeBombThrowSeconds);
 
-        int zoneId = nextSporeZoneId++;
-        sporeZones.Add(new SporeZone
+        sporeBombs.Add(new SporeBomb
         {
-            id = zoneId,
             position = target,
             radius = radius,
-            endTime = _now + duration,
-            tickDamage = tuning.sporeTickDamage * DotMul(ERoguelikeSkill.SporeBomb),
+            landTime = _now + flight,
+            blastTime = _now + flight + Mathf.Max(0f, tuning.sporeExplosionDelay),
+            bLanded = false,
         });
 
-        // 모든 연막은 같은 틱 주기로 판정한다. 이미 돌고 있는 주기를 당기면 기존 연막이 간격보다 일찍 한 번 더 피해를 주므로,
-        // 다른 연막이 없을 때(주기가 멈춰 있을 때)만 새 연막이 바로 첫 틱을 받게 한다. 그 밖에는 다음 틱(최대 틱 간격 뒤)에 합류한다.
-        if (1 == sporeZones.Count) nextSporeTickTime = _now;
-
-        Publish(ERoguelikeSkillVfx.SporeZoneStarted, target, character.transform.position, radius, duration, zoneId);
+        Publish(ERoguelikeSkillVfx.SporeBombThrown, target, character.transform.position, radius, flight, 0);
     }
 
     // // 오프로드
@@ -871,7 +979,7 @@ public class RoguelikeSkillController : MonoBehaviour
     // 섬 가장자리 위에 플래시되며 소환(예열) → 확 튀어 나가 가속 → 나무를 들이받을 때마다 멈칫하며 속도를 잃고 다시 붙는다 →
     // 감속 없이 반대편 섬 끝까지 달리고, 끝에 닿기 직전 아주 짧게 하얗게 된 뒤 사라진다(물 위로 나가지 않는다).
     // 진행 방향은 차량 그림에 맞는 아래쪽 대각선 두 방향뿐이다(OffroadLanes).
-    // 여러 대(III 2대, V 3대)는 서로 다른 차선에서 시간차를 두고 출발한다.
+    // 여러 대(III 2대, V 4대, MAX 6대)는 서로 다른 차선에서 시간차를 두고 출발한다.
 
     private void UpdateOffroad(float _now)
     {
@@ -902,7 +1010,7 @@ public class RoguelikeSkillController : MonoBehaviour
             // 감속은 하지 않는다. 섬 끝까지 그대로 달리고, 끝에 닿기 직전 구간에서 하얗게 된 뒤 사라진다(BeginOffroadExit).
             if (_now >= car.hitStopUntil)
             {
-                car.speed = Mathf.MoveTowards(car.speed, tuning.offroadSpeed, tuning.offroadAcceleration * dt);
+                car.speed = Mathf.MoveTowards(car.speed, car.maxSpeed, tuning.offroadAcceleration * dt);
                 // 하얗게 된 뒤에는 끝에서 멈추지 않도록 그대로 달린다. 하얀 시간이 정해져 있어 끝을 넘는 거리는 한 프레임 이동량 이하다(섬 안쪽 들임 거리 안).
                 car.traveled = car.bExiting ? car.traveled + car.speed * dt : Mathf.Min(car.length, car.traveled + car.speed * dt);
             }
@@ -1003,6 +1111,8 @@ public class RoguelikeSkillController : MonoBehaviour
         car.length = Mathf.Max(0.5f, Vector2.Distance(entry, exit) - inset);
         car.traveled = 0f;
         car.speed = 0f;
+        // 오프로드 IV "돌진 속도 증가"(MoveSpeedPercent, 오프로드 전용).
+        car.maxSpeed = tuning.offroadSpeed * Mathf.Max(0.1f, 1f + modifiers.Get(ERunEffect.MoveSpeedPercent, ERoguelikeSkill.Offroad) / 100f);
         car.dashStartTime = _now + tuning.offroadWarmup + _delay;
         car.bDashStarted = false;
         car.hitStopUntil = 0f;
@@ -1040,7 +1150,7 @@ public class RoguelikeSkillController : MonoBehaviour
             _car.engine = Sound.PlayTrackedWithPowerUp(SoundID.OffroadNonEditLoop, _car.from, tuning.offroadEngineVolume, true, 0.25f, 0.6f, 1.25f);
         }
 
-        float estimate = _car.length / Mathf.Max(0.1f, tuning.offroadSpeed);
+        float estimate = _car.length / Mathf.Max(0.1f, _car.maxSpeed);
         Publish(ERoguelikeSkillVfx.OffroadDash, _car.from, _car.from + (Vector3)(_car.direction * _car.length), _car.radius, estimate, 0);
     }
 

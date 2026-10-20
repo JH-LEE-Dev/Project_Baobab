@@ -76,80 +76,83 @@ MonoBehaviour:
     treeKind: 2
   - killTarget: 90
     spawnInterval: 0.6666667
-    treeHp: 100
+    treeHp: 160
     treeKind: 0
   - killTarget: 95
     spawnInterval: 0.64516133
-    treeHp: 100
+    treeHp: 160
     treeKind: 0
   - killTarget: 95
     spawnInterval: 0.625
-    treeHp: 115
+    treeHp: 185
     treeKind: 1
   - killTarget: 100
     spawnInterval: 0.6060606
-    treeHp: 115
+    treeHp: 185
     treeKind: 1
   - killTarget: 100
     spawnInterval: 0.58823526
-    treeHp: 115
+    treeHp: 185
     treeKind: 1
   - killTarget: 110
     spawnInterval: 0.5555556
-    treeHp: 130
+    treeHp: 210
     treeKind: 2
   - killTarget: 115
     spawnInterval: 0.5263158
-    treeHp: 130
+    treeHp: 210
     treeKind: 2
   - killTarget: 120
     spawnInterval: 0.5
-    treeHp: 280
+    treeHp: 380
     treeKind: 0
   - killTarget: 125
     spawnInterval: 0.4761905
-    treeHp: 280
+    treeHp: 380
     treeKind: 0
   - killTarget: 130
     spawnInterval: 0.45454544
-    treeHp: 340
+    treeHp: 450
     treeKind: 1
   - killTarget: 140
     spawnInterval: 0.43478262
-    treeHp: 340
+    treeHp: 450
     treeKind: 1
   - killTarget: 145
     spawnInterval: 0.41666666
-    treeHp: 340
+    treeHp: 450
     treeKind: 1
   - killTarget: 145
     spawnInterval: 0.41666666
-    treeHp: 420
+    treeHp: 520
     treeKind: 2
   - killTarget: 145
     spawnInterval: 0.41666666
-    treeHp: 420
+    treeHp: 520
     treeKind: 2
   - killTarget: 145
     spawnInterval: 0.40816325
-    treeHp: 420
+    treeHp: 520
     treeKind: 2
   tiers:
   - startWave: 1
     staminaDamage: 3
-    goldPerTree: 2
   - startWave: 8
     staminaDamage: 6
-    goldPerTree: 1.75
   - startWave: 16
     staminaDamage: 10
-    goldPerTree: 1
   - startWave: 23
     staminaDamage: 15
-    goldPerTree: 1
   previousTreeKindShare: 0.3
   threshold: 40
   spawnExtra: 12
+  initialTreeSeconds: 10
+  clusterRadius: 2.5
+  clusterMoveInterval: 15
+  gapDistance: 4
+  playerExclusionRadius: 1.2
+  initialClusterMaxDistance: 4
+  idleMoveReach: 1.5
   maxStamina: 100
   graceTime: 5
   damageCooldown: 3
@@ -158,28 +161,15 @@ MonoBehaviour:
   minThreshold: 5
   maxMoveSpeedPercent: 60
   unlimitHpGrowthPerWave: 0.1
-  gradeBasePrices: 3c000000960000002c010000f000000000000000
-  levelPriceMultipliers:
-  - 1
-  - 1.3
-  - 1.6
-  - 2
-  bMaxLevelFree: 1
   offerCount: 3
-  affordableGuaranteeCount: 2
   guaranteedSlotCap: 2
-  activeGuaranteeCount: 1
-  activeGuaranteeReleaseOwnedCount: 3
-  firstPickFree: 1
   firstPickActiveOnly: 1
-  firstPickFreeRerolls: 1
-  firstPickSkippable: 0
+  rerollsPerSelection: 1
   rerollGuaranteedReshowChance: 0.5
   baseWeight: 1
-  gradeWeights:
+  kindWeights:
   - 1
-  - 0.7
-  - 0.5
+  - 1
   - 0.15
   - 1
   upgradeWeightBonus: 1
@@ -187,31 +177,3 @@ MonoBehaviour:
   partnerWeightBonus: 1
   maxWeightMultiplier: 4
   forcePartnerWhenMaterialMax: 1
-  rerollBaseCost: 20
-  rerollCostMode: 1
-  rerollCostStep: 10
-  rerollCostMultiplier: 1.2
-  rerollCostCap: 0
-  appraiserWaveMin: 10
-  appraiserWaveMax: 20
-  appraiserNoticeWave: 10
-  appraisalMaxCards: 3
-  appraisalNextLevelFeeMultiplier: 1.15
-  appraisalMaxChallengeFeeMultiplier: 1.1
-  appraisalOutcomes:
-  - stay: 55
-    plusOne: 25
-    plusTwo: 15
-    max: 5
-  - stay: 50
-    plusOne: 25
-    plusTwo: 17
-    max: 8
-  - stay: 45
-    plusOne: 28
-    plusTwo: 0
-    max: 27
-  - stay: 65
-    plusOne: 0
-    plusTwo: 0
-    max: 35
