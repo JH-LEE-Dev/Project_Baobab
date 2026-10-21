@@ -29,7 +29,7 @@ namespace PresentationLayer.Environment
         [Header("Loot Shadow (기둥 윗판에 드리우는 전리품 그림자)")]
         [Tooltip("기둥 윗판 중앙에 놓인 그림자 렌더러(Pillar 자식). 전리품마다 크기(LootGrowthVisualData.displayShadowWidth)에 맞춘 타원을 그린다.")]
         [SerializeField] private SpriteRenderer lootShadowRenderer;
-        [SerializeField, Range(0f, 1f), Tooltip("그림자 진하기(검정 알파). 리니어 색공간에서 섞이므로 0.4가 기존 기둥 그림에 그려져 있던 그림자(윗판 192 → 153)와 같은 진하기다.")]
+        [SerializeField, Range(0f, 1f), Tooltip("그림자 진하기(검정 알파). 리니어 색공간에서 섞이므로 0.4가 그림자를 그려 넣은 기둥 그림(PillarGrassShadowVer)의 그림자와 같은 진하기다.")]
         private float lootShadowAlpha = 0.4f;
 
         [Header("Outline Settings")]
@@ -661,7 +661,8 @@ namespace PresentationLayer.Environment
                 _loot.localPosition.z);
         }
 
-        // 전리품 크기에 맞춘 그림자 타원을 켠다(0 이하면 끈다). 세로는 가로의 30%를 짝수로 맞춘다 -
+        // 전리품 크기에 맞춘 그림자 타원을 켠다(0 이하면 끈다). 세로는 4px로 고정한다 - 흙 윗판(PillarGrassVer)이 낮아서
+        // 더 높으면 가장 넓은 그림자(18px)가 윗판 모서리의 돌 테두리로 삐져나온다.
         // 가로·세로가 짝수라 타원 가장자리가 기둥 픽셀 격자에 맞는다(그림자 중심이 기둥 픽셀 경계에 있다).
         private void SetLootShadow(int _width)
         {
@@ -674,7 +675,7 @@ namespace PresentationLayer.Environment
             }
 
             int _w = Mathf.Max(2, _width / 2 * 2);
-            int _h = Mathf.Max(4, Mathf.RoundToInt(_w * 0.15f) * 2);
+            const int _h = 4;
 
             lootShadowRenderer.sprite = GetShadowSprite(_w, _h);
             lootShadowRenderer.color = new Color(0f, 0f, 0f, lootShadowAlpha);
