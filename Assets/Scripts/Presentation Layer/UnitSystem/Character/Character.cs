@@ -1744,19 +1744,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 사망 순간의 강한 펄스는 여기가 아니라 StaminaIsEmpty()의 PlayDeathChromaticAberrationPulse가 담당한다.
         PostProcessSettingsApplier.Instance?.UpdateLowStaminaChromaticAberration(_fatigueRatio);
 
-        // 용암 등 위험 지형 인접 시 열기 적립. 스태미나 추가 소모는 없앴다(본편 · 로그라이크 모두). 용암 그림은 그대로다.
-        // 일반 스태미나 소모(DecreaseStamina)와 마찬가지로 "실제 플레이가 시작된 이후"(bWhileReset · bDead 제외)에만 적용한다.
-        //
-        // [로그라이크] 4티어(용암 맵) 맵 끝 용암은 영향이 없다(기획서 v2.5 3-1 - 플레이어가 받는 피해는 스태미너 규칙뿐).
+        // 나무 열기 판정(InDungeonObjectManager)이 쓰는 캐릭터 칸 위치.
+        // 용암 등 위험 지형은 그림만 있고 효과가 없다(스태미나 소모 · 열기 적립 모두 없앴다, 본편 · 로그라이크 공통).
         CurrentCell = environmentProvider.tilemapDataProvider.WorldToCell(transform.position);
-        if (true == bInDungeon && false == bWhileReset && false == bDead && false == GameModeContext.IsRoguelike)
-        {
-            float hazardDrain = environmentProvider.tilemapDataProvider.GetHazardStaminaDrainPerSecond(CurrentCell);
-            if (0f < hazardDrain)
-            {
-                overheatComponent?.AddOverheatDuration(2f * Time.deltaTime); // 용암 열기 노출 1초당 2초 비율로 연속 적립
-            }
-        }
     }
 
     private void LateUpdate()

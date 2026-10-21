@@ -38,7 +38,7 @@ public class OverheatComponent : PComponent, IOverheatComponent
         customSortable = GetComponentInParent<CustomSortable>();
     }
 
-    // 나무 열기(+15초), 용암 열기(초당 +2초) 등 "열기에 닿는" 것으로 열기 피해를 받을 때마다 호출된다.
+    // 나무 열기(+15초) 등 "열기에 닿는" 것으로 열기 피해를 받을 때마다 호출된다.
     // "과열" 특성이 없으면 아무 효과가 없고, 지속시간은 상한 없이 계속 합산된다.
     // "열기 포집" 특성이 있으면 그 비율만큼 획득량이 늘어난다.
     public void AddOverheatDuration(float _seconds)
