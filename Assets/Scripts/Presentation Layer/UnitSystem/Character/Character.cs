@@ -1744,20 +1744,16 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 사망 순간의 강한 펄스는 여기가 아니라 StaminaIsEmpty()의 PlayDeathChromaticAberrationPulse가 담당한다.
         PostProcessSettingsApplier.Instance?.UpdateLowStaminaChromaticAberration(_fatigueRatio);
 
-        // 용암 등 위험 지형 인접 시 추가 소모. 단, 일반 스태미나 소모(DecreaseStamina)와 마찬가지로
-        // "실제 플레이가 시작된 이후"에만 적용해야 한다. bWhileReset(입장 카메라 연출 중, 조작 불가) 또는
-        // bDead 상태에서까지 깎으면, 스태미나가 매우 빠르게 닳는 스테이지(예: 최대치가 낮은 상태의 MagmaForest)에서
-        // 입장 연출 도중에 사망이 발생해 사망 시퀀스가 아직 끝나지 않은 입장 시퀀스와 충돌하고,
-        // 공유 카메라(isMoved 토글)·입력 잠금 플래그가 꼬여 마을에서 캐릭터가 죽은 채로 남고 입력이 먹통이 된다.
+        // 용암 등 위험 지형 인접 시 열기 적립. 스태미나 추가 소모는 없앴다(본편 · 로그라이크 모두). 용암 그림은 그대로다.
+        // 일반 스태미나 소모(DecreaseStamina)와 마찬가지로 "실제 플레이가 시작된 이후"(bWhileReset · bDead 제외)에만 적용한다.
         //
-        // [로그라이크] 4티어(용암 맵) 맵 끝 용암 피해는 받지 않는다(기획서 v2.5 3-1 - 플레이어가 받는 피해는 스태미너 규칙뿐). 용암 그림은 그대로다.
+        // [로그라이크] 4티어(용암 맵) 맵 끝 용암은 영향이 없다(기획서 v2.5 3-1 - 플레이어가 받는 피해는 스태미너 규칙뿐).
         CurrentCell = environmentProvider.tilemapDataProvider.WorldToCell(transform.position);
         if (true == bInDungeon && false == bWhileReset && false == bDead && false == GameModeContext.IsRoguelike)
         {
             float hazardDrain = environmentProvider.tilemapDataProvider.GetHazardStaminaDrainPerSecond(CurrentCell);
             if (0f < hazardDrain)
             {
-                healthComponent.ApplyEnvironmentalStaminaDrain(hazardDrain);
                 overheatComponent?.AddOverheatDuration(2f * Time.deltaTime); // 용암 열기 노출 1초당 2초 비율로 연속 적립
             }
         }
