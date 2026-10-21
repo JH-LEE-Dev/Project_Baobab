@@ -57,19 +57,17 @@ public class RoguelikeBalanceSO : ScriptableObject
     [Tooltip("스폰 상한 = T + 이 값(기획서 3-1의 +α, 10~15그루). 제약: T ≤ 스폰 상한.")]
     public int spawnExtra = 12;
 
-    [Header("초기 나무 · 생성 위치 (기획서 v2.3 3-1, 값은 부록 A TBD - 실측 후 조정)")]
-    [Tooltip("웨이브 시작 초기 나무 = 초당 스폰 × 이 시간(초). 목표 처치 수에 포함되고 임계치 T보다 항상 낮다.")]
-    public float initialTreeSeconds = 10f;
-    [Tooltip("군집 반경(월드, 등각 보정 거리). 새 나무는 군집 중심에서 이 반경 안에 심는다. 다 차면 넓혀 가며 찾는다.")]
-    public float clusterRadius = 2.5f;
-    [Tooltip("군집 중심을 필드 안 다른 곳으로 옮기는 주기(초). 0이면 웨이브마다만 옮긴다.")]
-    public float clusterMoveInterval = 15f;
-    [Tooltip("허탕 방지 거리 R. 플레이어에서 가장 가까운 나무가 이보다 멀면 그 나무 쪽 군집에 우선 심는다.")]
-    public float gapDistance = 4f;
-    [Tooltip("플레이어 바로 옆에는 심지 않는 반경(월드, 등각 보정 거리).")]
+    [Header("초기 나무 · 묶음 스폰 · 생성 위치 (기획서 v2.5 3-1, 부록 A-1 초안 - 실측 후 조정)")]
+    [Tooltip("웨이브 시작 초기 나무 = 현재 임계치 T × 이 비율(내림). T 40이면 20그루, 웨이브 번호와 무관하다. 목표 처치 수에 포함되고 T보다 항상 낮다.")]
+    [Range(0f, 1f)] public float initialTreeThresholdRatio = 0.5f;
+    [Tooltip("묶음 주기 P(초). 나무는 한 그루씩 나오지 않고 P마다 초당 스폰 × P그루가 한꺼번에 나온다(소수는 다음 묶음으로 이월).")]
+    public float spawnBatchSeconds = 3f;
+    [Tooltip("나무끼리의 최소 간격(월드, 등각 보정 거리, TBD). 간격을 지킬 빈칸이 없으면 간격만 포기하고 심는다.")]
+    public float treeMinSpacing = 1f;
+    [Tooltip("플레이어 바로 옆에는 심지 않는 반경(월드, 등각 보정 거리, TBD).")]
     public float playerExclusionRadius = 1.2f;
-    [Tooltip("초기 나무 군집의 중심을 고르는 범위. 플레이어 시작 위치에서 이 거리 안(이동 거리가 짧은 곳).")]
-    public float initialClusterMaxDistance = 4f;
+    [Tooltip("섬 가장자리에서 이 칸 수만큼은 나무를 심지 않는다(맵 끝 나무가 HUD 밖으로 나가 보이는 문제). 물 · 용암 칸과 8방향으로 이 거리 안이면 뺀다. 0이면 끈다.")]
+    public int fieldEdgeInsetCells = 1;
     [Tooltip("측정용: 이동 중 가장 가까운 나무가 이 거리보다 멀면 '나무 없이 이동한 시간'으로 센다(기획서 C-2 실측 항목).")]
     public float idleMoveReach = 1.5f;
 
@@ -213,12 +211,11 @@ public class RoguelikeBalanceSO : ScriptableObject
         threshold = 40;
         spawnExtra = 12;
 
-        initialTreeSeconds = 10f;
-        clusterRadius = 2.5f;
-        clusterMoveInterval = 15f;
-        gapDistance = 4f;
+        initialTreeThresholdRatio = 0.5f;
+        spawnBatchSeconds = 3f;
+        treeMinSpacing = 1f;
         playerExclusionRadius = 1.2f;
-        initialClusterMaxDistance = 4f;
+        fieldEdgeInsetCells = 1;
         idleMoveReach = 1.5f;
 
         maxStamina = 100f;

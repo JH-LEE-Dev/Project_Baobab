@@ -98,6 +98,10 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float stellaMarkDuration = 6f;
     [Tooltip("별 표식이 남은 나무가 받는 피해 증가율(0.3 = +30%). 도끼·다른 액티브·지속 피해 모두에 적용된다(기획서 6-1). 스텔라 V의 StarMarkDamageTakenAdd(+15%p)가 더해진다.")]
     public float stellaMarkDamageTakenBonus = 0.3f;
+    [Tooltip("별 폭발 한 번이 나무에 주는 피해의 상한(나무 최대 HP 대비 비율, 표식 · 공격력 증가 포함). 기획서 v2.5 A-4 초안 25%. 0이면 상한 없음.")]
+    [Range(0f, 1f)] public float stellaBlastMaxHpRatio = 0.25f;
+    [Tooltip("별 폭발 피해 상한을 적용하는 첫 티어(0부터, 3 = 4티어). 언리밋도 4티어로 친다.")]
+    public int stellaBlastCapFromTier = 3;
 
     [Header("포자폭탄 (포자 대폭발 + 오염, 기획서 v2.4 6-1)")]
     [Tooltip("투하 주기(초). 공격속도%로 빨라진다.")]

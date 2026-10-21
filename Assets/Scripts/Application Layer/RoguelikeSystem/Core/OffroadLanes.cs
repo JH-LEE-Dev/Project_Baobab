@@ -54,14 +54,25 @@ public static class OffroadLanes
     }
 
     /// <summary>
-    /// 한 번에 _count대가 나갈 때 _index번째 차량의 수직 오프셋. 차선이 겹치지 않게 반폭의 ±_spread 안을 고르게 나누고,
-    /// 각 칸 안에서 _jitter01(0~1)로 흔든다.
+    /// 한 방향에서 소환 위치가 겹치지 않게 놓을 수 있는 차선 칸 수. 반폭의 ±_spread 구간을 최소 간격(_minGap)으로 나눈다(최소 1).
     /// </summary>
-    public static float LaneOffset(int _index, int _count, float _halfWidth, float _spread, float _jitter01)
+    public static int SlotCount(float _halfWidth, float _spread, float _minGap)
     {
-        int count = Mathf.Max(1, _count);
-        float span = 2f * _halfWidth * Mathf.Clamp01(_spread);
+        float span = 2f * Mathf.Max(0f, _halfWidth) * Mathf.Clamp01(_spread);
+        if (_minGap <= 0.0001f) return 1;
+        return Mathf.Max(1, Mathf.FloorToInt(span / _minGap));
+    }
+
+    /// <summary>
+    /// SlotCount로 나눈 _slot번째 칸의 수직 오프셋. 칸 가운데에서 _jitter01(0~1)만큼 흔들되, 흔들림 폭을 (칸 폭 − _minGap)으로 묶어
+    /// 이웃 칸끼리는 어떻게 흔들려도 _minGap 이상 떨어진다(칸이 하나뿐이면 구간 안에서 자유롭게 흔든다).
+    /// </summary>
+    public static float SlotOffset(int _slot, int _slotCount, float _halfWidth, float _spread, float _minGap, float _jitter01)
+    {
+        int count = Mathf.Max(1, _slotCount);
+        float span = 2f * Mathf.Max(0f, _halfWidth) * Mathf.Clamp01(_spread);
         float cell = span / count;
-        return -span * 0.5f + cell * (Mathf.Clamp(_index, 0, count - 1) + Mathf.Clamp01(_jitter01));
+        float sway = 1 == count ? cell : Mathf.Max(0f, cell - Mathf.Max(0f, _minGap));
+        return -span * 0.5f + cell * (Mathf.Clamp(_slot, 0, count - 1) + 0.5f) + (Mathf.Clamp01(_jitter01) - 0.5f) * sway;
     }
 }

@@ -67,6 +67,12 @@ public class AttackComponent : PComponent
     private List<TreeObj> currentlyDetectedTrees = new List<TreeObj>(16);
     private List<TreeObj> previouslyDetectedTrees = new List<TreeObj>(16);
 
+    // [로그라이크] 기본 휘두름으로만 맞는 대상(스텔라의 별). 나무와 별개로 범위 안이면 강조되고 휘두를 때 늘 맞는다.
+    // 본편에는 이런 대상이 없어 두 목록은 늘 비어 있다.
+    private List<IBasicAxeOnlyTarget> currentlyHighlightedAxeOnly = new List<IBasicAxeOnlyTarget>(4);
+    private List<IBasicAxeOnlyTarget> previouslyHighlightedAxeOnly = new List<IBasicAxeOnlyTarget>(4);
+    private readonly List<IStaticCollidable> axeOnlyHits = new List<IStaticCollidable>(4);
+
     private WeaponMode currentWeaponMode = WeaponMode.Axe;
 
     [Header("Gamepad Aim")]
@@ -514,6 +520,7 @@ public class AttackComponent : PComponent
 
         bool bMultiAttack = ctx.characterStat.bMultiAttack;
         multiAttackResults.Clear();
+        axeOnlyHits.Clear();
 
         IStaticCollidable nearestDamageable = null;
         float minDistanceSqr = float.MaxValue;
@@ -548,9 +555,17 @@ public class AttackComponent : PComponent
 
             float dot = Vector2.Dot(isoAttackDir, targetDir);
 
-            // 회전베기는 360도 전체를 친다. 기본 휘두름으로만 맞는 대상(로그라이크 별)은 평소 각도 안에 있을 때만 맞는다.
-            // 로그라이크 스텔라 III에서는 회전베기도 별을 친다(RunCombatOverrides.bSkillsHitRunTargets, 본편은 항상 false).
-            bool bHitByAngle = (bIsWhirlwindStrike && (false == (target is IBasicAxeOnlyTarget) || RunCombatOverrides.bSkillsHitRunTargets)) || (dot >= cosThreshold);
+            // [로그라이크] 기본 휘두름으로만 맞는 대상(스텔라의 별)은 "가장 가까운 대상" 다툼에 끼지 않고, 휘두름 범위(인디케이터) 안이면
+            // 나무와 별개로 늘 맞는다(기획서 v2.5 6-1 "별의 타격은 나무와 같은 규칙"). 회전베기 360도는 스텔라 III에서만 친다
+            // (RunCombatOverrides.bSkillsHitRunTargets, 본편은 항상 false). 본편에는 이런 대상이 없어 이 분기를 타지 않는다.
+            if (target is IBasicAxeOnlyTarget)
+            {
+                if (dot >= cosThreshold || (bIsWhirlwindStrike && RunCombatOverrides.bSkillsHitRunTargets)) axeOnlyHits.Add(target);
+                continue;
+            }
+
+            // 회전베기는 360도 전체를 친다.
+            bool bHitByAngle = bIsWhirlwindStrike || (dot >= cosThreshold);
 
             if (bHitByAngle)
             {
@@ -624,6 +639,30 @@ public class AttackComponent : PComponent
             if (nearestDamageable is TreeObj singleHitTree)
             {
                 shockWaveSourceTree = singleHitTree;
+            }
+        }
+
+        // [로그라이크] 범위 안의 별은 나무 타격과 함께 맞는다. 본편은 목록이 늘 비어 있다.
+        if (axeOnlyHits.Count > 0)
+        {
+            bool bAnyAxeOnlyHit = false;
+            for (int i = 0; i < axeOnlyHits.Count; i++)
+            {
+                if (axeOnlyHits[i] is IDamageable axeOnlyTarget && axeOnlyTarget.bCanApplyDamage)
+                {
+                    ProcessAxeHit(axeOnlyTarget, centerPos);
+                    bAnyAxeOnlyHit = true;
+                }
+            }
+
+            axeOnlyHits.Clear();
+
+            // 나무는 못 맞히고 별만 맞혔으면 예전에 별이 가장 가까운 대상으로 맞았을 때처럼 타격 성공으로 친다.
+            if (bAnyAxeOnlyHit && false == bAxeHit)
+            {
+                CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
+                AttackSuccessEvent?.Invoke();
+                bAxeHit = true;
             }
         }
 
@@ -958,6 +997,7 @@ public class AttackComponent : PComponent
 
         bool bMultiAttack = ctx.characterStat.bMultiAttack;
         currentlyDetectedTrees.Clear();
+        currentlyHighlightedAxeOnly.Clear();
 
         IStaticCollidable nearest = null;
         float minDistanceSqr = float.MaxValue;
@@ -984,6 +1024,13 @@ public class AttackComponent : PComponent
             }
 
             float dot = Vector2.Dot(isoAttackDir, targetDir);
+
+            // [로그라이크] 별은 Attack()과 같은 기준으로 가장 가까운 대상 다툼에서 빼고, 범위 안이면 따로 강조한다.
+            if (target is IBasicAxeOnlyTarget axeOnlyTarget)
+            {
+                if (dot >= cosThreshold) currentlyHighlightedAxeOnly.Add(axeOnlyTarget);
+                continue;
+            }
 
             if (dot >= cosThreshold)
             {
@@ -1036,7 +1083,31 @@ public class AttackComponent : PComponent
         currentlyDetectedTrees = temp;
         currentlyDetectedTrees.Clear();
 
+        UpdateAxeOnlyHighlights();
+
         SetTreesDetected(previouslyDetectedTrees.Count > 0);
+    }
+
+    // [로그라이크] 범위에서 빠진 별은 강조를 끄고 새로 들어온 별은 켠다. 본편은 두 목록이 늘 비어 있어 아무 일도 없다.
+    private void UpdateAxeOnlyHighlights()
+    {
+        if (0 == previouslyHighlightedAxeOnly.Count && 0 == currentlyHighlightedAxeOnly.Count) return;
+
+        for (int i = 0; i < previouslyHighlightedAxeOnly.Count; i++)
+        {
+            if (!currentlyHighlightedAxeOnly.Contains(previouslyHighlightedAxeOnly[i])) previouslyHighlightedAxeOnly[i].SetAxeHighlighted(false);
+        }
+
+        // 켜기는 매번 다시 건다 - 강조된 채 거둬졌다가 같은 객체로 다시 놓인 별도 다시 켜진다(SetAxeHighlighted는 같은 상태면 아무 일도 하지 않는다).
+        for (int i = 0; i < currentlyHighlightedAxeOnly.Count; i++)
+        {
+            currentlyHighlightedAxeOnly[i].SetAxeHighlighted(true);
+        }
+
+        var temp = previouslyHighlightedAxeOnly;
+        previouslyHighlightedAxeOnly = currentlyHighlightedAxeOnly;
+        currentlyHighlightedAxeOnly = temp;
+        currentlyHighlightedAxeOnly.Clear();
     }
 
     private void ClearDetectedTreeOutlines()
@@ -1047,6 +1118,13 @@ public class AttackComponent : PComponent
         }
         previouslyDetectedTrees.Clear();
         currentlyDetectedTrees.Clear();
+
+        for (int i = 0; i < previouslyHighlightedAxeOnly.Count; i++)
+        {
+            previouslyHighlightedAxeOnly[i].SetAxeHighlighted(false);
+        }
+        previouslyHighlightedAxeOnly.Clear();
+        currentlyHighlightedAxeOnly.Clear();
 
         SetTreesDetected(false);
     }

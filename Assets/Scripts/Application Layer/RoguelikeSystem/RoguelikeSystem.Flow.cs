@@ -403,11 +403,11 @@ public partial class RoguelikeSystem
             _spec.previousTreeKind >= 0 ? field.GetTreeType(_spec.previousTreeKind) : TreeType.None, _spec.previousTreeKindShare);
         ConfigurePressure();
 
-        // 초기 N그루가 솟아난 채로 웨이브가 시작되고(솟아나는 연출이 시작 신호), 웨이브 동안 심는 총량은 목표 처치 수다
-        // (초기 N 포함, 이후 스폰은 목표 − N). 생성 위치는 군집 스폰. 기획서 v2.3 3-1.
+        // 임계치의 절반이 솟아난 채로 웨이브가 시작되고(솟아나는 연출이 시작 신호), 웨이브 동안 심는 총량은 목표 처치 수다
+        // (초기 나무 포함, 이후 스폰은 목표 − 초기 나무를 묶음 단위로). 생성 위치는 필드 곳곳에 분산. 기획서 v2.5 3-1.
         // 스폰 상한·초기 나무 수는 지금 임계치(계약 "인내의 시간"으로 줄어든 값, ConfigurePressure)를 따른다(기획서 6-4).
         float spawnRate = Mathf.Max(0.1f, 1f + modifiers.Get(ERunEffect.TreeSpawnRatePercent) / 100f);
-        int initialTrees = Mathf.Min(_spec.initialTrees, Mathf.Max(0, pressure.Threshold - 1));
+        int initialTrees = TreeSpawnRules.InitialTreeCount(pressure.Threshold, balance.initialTreeThresholdRatio, _spec.killTarget);
         waveStrategy?.BeginWave(inDungeonObjectManager, _spec.spawnInterval / spawnRate, CurrentSpawnCap, initialTrees, _spec.killTarget,
             balance, null != character ? character.transform : null);
 
@@ -418,7 +418,7 @@ public partial class RoguelikeSystem
         signalHub.Publish(new RoguelikeWaveStartedSignal(_spec));
         signalHub.Publish(new RoguelikeWaveProgressSignal(0, _spec.killTarget));
         EnableControl();
-        skillController?.BeginCombat();
+        skillController?.BeginCombat(_spec.tierIndex);
 
         EPressureState prevState = pressure.State;
 
@@ -695,7 +695,7 @@ public partial class RoguelikeSystem
         // 같은 프레임에 시작 상태로 되돌린다(새 지형이 한 프레임도 통째로 보이지 않게). 섬 중심은 시작 칸보다 반 칸 아래다.
         Vector3 islandCenter = center - new Vector3(0f, cell.y * 0.5f, 0f);
         tileWave.PrepareAfterGenerate(islandCenter, islandReferenceViewSize * 0.5f, _bEntryWave);
-        waveStrategy?.ConfigureField(center, islandRadiusX, islandRadiusY);
+        waveStrategy?.ConfigureField(center, islandRadiusX, islandRadiusY, null != balance ? balance.fieldEdgeInsetCells : 0);
         // 오프로드 차선은 화면에 보이는 섬(칸 중심 기준 타원)에 맞춰야 테두리 타일 위에서 소환된다. 시작 칸이 아니라 섬 중심을 넘긴다.
         skillController?.SetField(islandCenter, islandRadiusX, islandRadiusY);
         inDungeonObjectManager.SetExternalTreeGenerationStrategy(waveStrategy, field.mapType);

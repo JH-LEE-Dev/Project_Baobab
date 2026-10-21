@@ -1749,8 +1749,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // bDead 상태에서까지 깎으면, 스태미나가 매우 빠르게 닳는 스테이지(예: 최대치가 낮은 상태의 MagmaForest)에서
         // 입장 연출 도중에 사망이 발생해 사망 시퀀스가 아직 끝나지 않은 입장 시퀀스와 충돌하고,
         // 공유 카메라(isMoved 토글)·입력 잠금 플래그가 꼬여 마을에서 캐릭터가 죽은 채로 남고 입력이 먹통이 된다.
+        //
+        // [로그라이크] 4티어(용암 맵) 맵 끝 용암 피해는 받지 않는다(기획서 v2.5 3-1 - 플레이어가 받는 피해는 스태미너 규칙뿐). 용암 그림은 그대로다.
         CurrentCell = environmentProvider.tilemapDataProvider.WorldToCell(transform.position);
-        if (true == bInDungeon && false == bWhileReset && false == bDead)
+        if (true == bInDungeon && false == bWhileReset && false == bDead && false == GameModeContext.IsRoguelike)
         {
             float hazardDrain = environmentProvider.tilemapDataProvider.GetHazardStaminaDrainPerSecond(CurrentCell);
             if (0f < hazardDrain)
@@ -1997,6 +1999,22 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         ClearActiveDrones();
         SpawnDrones();
+    }
+
+    /// <summary>
+    /// [로그라이크 전용] 도끼질과 무관하게 드론이 발사 주기마다 쏘도록 활성 상태를 이어 붙인다(기획서 v2.5 6-1 드론 "자동 발사").
+    /// 지속시간이 끝난 드론이 있을 때만 공격 키를 누른 것과 같은 활성화를 다시 건다 - 물고 있는 타겟과 발사 주기는 그대로다(Drone.Activate).
+    /// 본편은 공격 키(SetbCanAction)에서만 활성화하고 이 메서드를 부르지 않는다.
+    /// </summary>
+    public void KeepDronesActiveForRun()
+    {
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            if (activeDrones[i].IsActive) continue;
+
+            ActivateDrones();
+            return;
+        }
     }
 
     /// <summary>[로그라이크 전용] 웨이브 클리어 회복 같은 단발 회복. "체력의 원천"과 같은 회복 경로(HUD 연출 포함)를 탄다.</summary>
