@@ -61,8 +61,6 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
     /// <summary>제시된 _offerIndex번 카드를 고르겠다.</summary>
     public event Action<int> BuyRequestedEvent;
-    /// <summary>건너뛰기는 v2.4에서 없어졌다. 코디네이터가 구독하고 있어 코드 정리 전까지 이벤트만 남기며, UI는 발생시키지 않는다.</summary>
-    public event Action SkipRequestedEvent;
     public event Action RerollRequestedEvent;
 
     protected readonly List<RoguelikeCardViewData> offers = new List<RoguelikeCardViewData>(8);
@@ -109,9 +107,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
     /// <summary>
     /// 선택 화면을 연다. 화면이 켜지고 카드 등장 연출을 시작한다.
-    /// _gold, _rerollCost, _bCanSkip, _bFirstPick은 v2.4에서 사라진 값이라 UI는 쓰지 않는다(시스템 코드 정리 때 인자째 사라진다).
     /// </summary>
-    public virtual void OpenSelection(IReadOnlyList<RoguelikeCardViewData> _offers, long _gold, int _rerollCost, bool _bCanReroll, bool _bCanSkip, bool _bFirstPick)
+    public virtual void OpenSelection(IReadOnlyList<RoguelikeCardViewData> _offers, bool _bCanReroll)
     {
         CopyOffers(_offers);
         bCanReroll = _bCanReroll;
@@ -120,8 +117,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         OnOffersPresented(false);
     }
 
-    /// <summary>리롤로 카드가 바뀌었다. 리롤은 선택 단계마다 1회라 쓰고 나면 _bCanReroll이 false로 온다. _gold, _rerollCost는 쓰지 않는다.</summary>
-    public virtual void ReplaceOffers(IReadOnlyList<RoguelikeCardViewData> _offers, long _gold, int _rerollCost, bool _bCanReroll)
+    /// <summary>리롤로 카드가 바뀌었다. 리롤은 선택 단계마다 1회라 쓰고 나면 _bCanReroll이 false로 온다.</summary>
+    public virtual void ReplaceOffers(IReadOnlyList<RoguelikeCardViewData> _offers, bool _bCanReroll)
     {
         CopyOffers(_offers);
         bCanReroll = _bCanReroll;
@@ -226,8 +223,6 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     // // 입력 전달
 
     protected void RequestBuy(int _offerIndex) => BuyRequestedEvent?.Invoke(_offerIndex);
-    /// <summary>건너뛰기는 v2.4에서 없어졌다. SkipRequestedEvent를 쓰는 유일한 곳으로 코드 정리 때 이벤트와 함께 지운다.</summary>
-    protected void RequestSkip() => SkipRequestedEvent?.Invoke();
     protected void RequestReroll() => RerollRequestedEvent?.Invoke();
 
     private void CopyOffers(IReadOnlyList<RoguelikeCardViewData> _offers)
@@ -730,7 +725,6 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     public override void OnDestroy()
     {
         BuyRequestedEvent = null;
-        SkipRequestedEvent = null;
         RerollRequestedEvent = null;
         pendingComplete = null;
         UnsubscribeLanguage();

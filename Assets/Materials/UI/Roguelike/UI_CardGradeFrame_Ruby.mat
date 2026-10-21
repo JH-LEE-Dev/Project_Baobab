@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: UI_CardGradeFrame_Ruby
+  m_Shader: {fileID: 4800000, guid: a192d5456633e1248aca2bd9d6057f2d, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _ColorMask: 15
+    - _CornerSparkle: 1
+    - _GlintDuration: 0.3
+    - _GlintPeriod: 3.6
+    - _GlintWidth: 5
+    - _HatchStrength: 0.16
+    - _HueSpeed: 0.2
+    - _PulseSpeed: 1.8
+    - _Rainbow: 0
+    - _RainbowSaturation: 0.6
+    - _RainbowSteps: 8
+    - _SheenSpeed: 0.22
+    - _SheenStrength: 0.5
+    - _SheenWidth: 12
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    m_Colors:
+    - _ClipRect: {r: -32767, g: -32767, b: 32767, a: 32767}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _LineHalf: {r: 22.5, g: 38, b: 0, a: 0}
+    - _PixelSize: {r: 50, g: 81, b: 0, a: 0}
+    - _SheenColor: {r: 1, g: 0.55, b: 0.55, a: 1}
+    - _Tone0: {r: 0.2, g: 0.03, b: 0.06, a: 1}
+    - _Tone1: {r: 0.34, g: 0.05, b: 0.09, a: 1}
+    - _Tone2: {r: 0.58, g: 0.09, b: 0.14, a: 1}
+    - _Tone3: {r: 0.86, g: 0.22, b: 0.24, a: 1}
+    - _Tone4: {r: 1, g: 0.62, b: 0.56, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

@@ -12,7 +12,7 @@ using UnityEngine.UI;
 /// [뒤집힘] 폭을 짝수 정수 픽셀 단계로 줄였다 늘린다(3D 회전 금지 - UI_WorkList 0장). 한 장 0.5초:
 ///   접힘(앞 40%)  폭이 점점 빨라지며 가장 얇은 폭(EdgeWidth)까지 줄고, 그동안 카드가 HopHeight만큼 뜬다.
 ///   옆면(7%)      가장 얇은 폭으로 두 프레임쯤 머문다(60fps에서 프레임이 이 순간을 건너뛰지 않게). 이때 뒷면 → 앞면으로 바뀌고(앞면이 드러남 = IsRevealed),
-///                 카드 두께(옆면)가 앞면 테두리 색으로 보이고 프레임이 약하게 번쩍인다.
+///                 카드 두께(옆면)가 앞면 테두리 색으로 보이고 프레임이 약하게 번쩍이며, 희귀 카드는 대각 광택 띠가 지나가며 레어로 바뀐다.
 ///   펼침(53%)     폭이 목표를 살짝 지나쳤다(최대 +4px) 돌아오고, 카드가 내려와 착지한다.
 ///   착지          0.08초 동안 1px 눌렸다 돌아오고 먼지·지면 링·금빛 반짝이 퍼진다(PlayLandingDust). 뒤집힘이 끝나면 LandedEvent.
 /// 뒷면에서는 구매 요청을 보내지 않는다(IsRevealed).
@@ -261,6 +261,7 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
         bRevealed = true;
         card.SetFaceDown(false);
         card.PlayFlash(RevealFlashAlpha);
+        card.PlayGradeReveal();
         RevealedEvent?.Invoke(this);
         // [효과음 지점] 카드가 앞면으로 바뀌는 순간
     }

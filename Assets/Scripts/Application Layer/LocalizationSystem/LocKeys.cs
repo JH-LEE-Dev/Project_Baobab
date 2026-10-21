@@ -432,11 +432,8 @@ public static class LocKeys
         public const int roguelikeCardPassiveMaxStamina = 37748956;
         public const int roguelikeCardPassiveGrace = 37748957;
         public const int roguelikeCardPassiveDamageCooldown = 37748958;
-        public const int roguelikeCardPassiveGold = 37748959;
-        public const int roguelikeCardRubyBargainSale = 37748960;
         public const int roguelikeCardRubyGlassCannon = 37748961;
         public const int roguelikeCardRubyPatience = 37748962;
-        public const int roguelikeCardRubyVip = 37748963;
         public const int roguelikeCardRubyMoreTheMerrier = 37748964;
         public const int roguelikeCardActiveOffroadDesc = 37749037;
         public const int roguelikeCardActiveSpinDesc = 37749038;
@@ -460,11 +457,8 @@ public static class LocKeys
         public const int roguelikeCardPassiveMaxStaminaDesc = 37749056;
         public const int roguelikeCardPassiveGraceDesc = 37749057;
         public const int roguelikeCardPassiveDamageCooldownDesc = 37749058;
-        public const int roguelikeCardPassiveGoldDesc = 37749059;
-        public const int roguelikeCardRubyBargainSaleDesc = 37749060;
         public const int roguelikeCardRubyGlassCannonDesc = 37749061;
         public const int roguelikeCardRubyPatienceDesc = 37749062;
-        public const int roguelikeCardRubyVipDesc = 37749063;
         public const int roguelikeCardRubyMoreTheMerrierDesc = 37749064;
     }
 

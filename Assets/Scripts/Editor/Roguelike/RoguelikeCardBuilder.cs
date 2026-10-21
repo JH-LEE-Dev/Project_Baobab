@@ -13,11 +13,13 @@ using UnityEngine.UI;
 ///    ├ Visual   50x81  호버 때 위로 올라가는 부분. 아래 그림은 모두 raycastTarget 끔
 ///       └ FlipRoot 50x81  뒤집힘 연출 때 폭이 줄었다 느는 부분(피벗 가운데 아래)
 ///          ├ Frame   CardFrame_0   (0, 0)
+///          ├ GradeFrame 50x81  프레임을 등급 색으로 바꿔 그리는 층(Card_FrameFull = 프레임 복사본, 셰이더 UI/CardGradeFrame 팔레트 스왑). 희귀 카드에서만 켜지고 이때 Frame은 꺼진다
 ///          ├ Profile CardProfile_0 (8, 38)  - 같은 64x96 캔버스에서 잘린 스프라이트라 캔버스 좌표 (15,47)-(7,9)
 ///          ├ Icon    스킬 아이콘 (스크립트가 프로필 칸 중앙에 배치)
 ///          ├ Level   I~VI, MAX (스크립트가 하단 중앙에 배치)
 ///          └ Flash   선택·앞면 공개 순간 프레임 모양으로 하얗게 번쩍이는 층(평소에는 꺼져 있다)
-///       └ EdgeLine  4x77  카드가 옆으로 선 순간 보이는 카드 두께(앞면 테두리 색. FlipRoot 밖이라 폭이 변하지 않는다. 평소에는 꺼져 있다)
+///       ├ EdgeLine  4x77  카드가 옆으로 선 순간 보이는 카드 두께(앞면 테두리 색. FlipRoot 밖이라 폭이 변하지 않는다. 평소에는 꺼져 있다)
+///       └ Aura     50x81  희귀 카드의 별가루·불씨·글린트·공개 스파크(UI_RoguelikeCardAura, 불투명 . + x 픽셀). 일반 카드는 꺼짐
 ///    └ Fx       50x81  UI_RoguelikePixelFx. 맨 위에 그려지는 입자 풀(Particle_0~53, 입자 하나가 연속한 이미지 3장 = 머리 + 잔상 둘을 쓴다). 평소에는 모두 꺼져 있다
 ///
 /// 프레임과 프로필은 같은 캔버스(64x96)에서 잘려 나온 스프라이트라 서로의 위치가 잘린 사각형 좌표 차이로 정해진다.
@@ -27,6 +29,9 @@ public static class RoguelikeCardBuilder
     private const string CardDir = "Assets/Graphics/Roguelike/card/";
     private const string ShadowPath = CardDir + "Card_Shadow.png";
     private const string BackPath = CardDir + "Card_Back.png";
+    private const string FrameFullPath = CardDir + "Card_FrameFull.png";
+    private const string MaterialDir = "Assets/Materials/UI/Roguelike";
+    private const string FrameShaderPath = "Assets/Shaders/UI/UI_CardGradeFrame.shader";
     private const string EdgeStripPath = CardDir + "Fx_EdgeStrip.png";
     private const string Dot1Path = CardDir + "Fx_Dot1.png";
     private const string Dot2Path = CardDir + "Fx_Dot2.png";
@@ -70,6 +75,9 @@ public static class RoguelikeCardBuilder
         Sprite bar2 = EnsureSpriteFromPixels(Bar2Path, BuildFilledPixels(2, 1), 2, 1);
         Sprite plusSmall = EnsureSpriteFromPixels(PlusSmallPath, BuildPlusPixels(3), 3, 3);
         Sprite plusLarge = EnsureSpriteFromPixels(PlusLargePath, BuildPlusPixels(5), 5, 5);
+        // 희귀 등급 층용 단일 스프라이트(셰이더가 UV로 픽셀 좌표를 구하므로 시트에서 잘린 조각이 아니라 한 장짜리여야 한다): 프레임 그림 그대로의 복사본.
+        Sprite frameFull = EnsureSpriteFromPixels(FrameFullPath, ReadSpritePixels(frame, Mathf.RoundToInt(frame.rect.width), Mathf.RoundToInt(frame.rect.height)), Mathf.RoundToInt(frame.rect.width), Mathf.RoundToInt(frame.rect.height));
+        Material[] frameMaterials = BuildGradeFrameMaterials(Mathf.RoundToInt(frame.rect.width), Mathf.RoundToInt(frame.rect.height));
         Sprite back = EnsureSpriteFromPixels(BackPath, BuildBackPixels(frame), Mathf.RoundToInt(frame.rect.width), Mathf.RoundToInt(frame.rect.height));
 
         GameObject root = new GameObject("UI_RoguelikeCard", typeof(RectTransform));
@@ -92,6 +100,8 @@ public static class RoguelikeCardBuilder
         flipRoot.pivot = new Vector2(0.5f, 0f);
 
         Image frameImage = CreateImage("Frame", flipRoot, frame, Vector2Int.zero, frame.rect.size);
+        Image gradeFrameImage = CreateImage("GradeFrame", flipRoot, frameFull, Vector2Int.zero, frameFull.rect.size);
+        gradeFrameImage.enabled = false;
         Image profileImage = CreateImage("Profile", flipRoot, profile, ProfilePosition, profile.rect.size);
         Image iconImage = CreateImage("Icon", flipRoot, null, Vector2Int.zero, Vector2.zero);
         iconImage.enabled = false;
@@ -106,6 +116,8 @@ public static class RoguelikeCardBuilder
         Image edgeLineImage = CreateImage("EdgeLine", visual, edgeStrip, new Vector2Int(FrameWidth / 2 - EdgeStripWidth / 2, 2), edgeStrip.rect.size);
         edgeLineImage.color = new Color(1f, 1f, 1f, 0f);
         edgeLineImage.enabled = false;
+
+        UI_RoguelikeCardAura aura = CreateAura("Aura", visual);
 
         // 입자 이펙트: 카드 맨 위. 입자 풀. 위치와 크기는 스크립트가 정한다.
         RectTransform fxRect = CreateRect("Fx", rootRect, Vector2Int.zero, new Vector2(FrameWidth, FrameHeight));
@@ -143,6 +155,13 @@ public static class RoguelikeCardBuilder
         so.FindProperty("flashImage").objectReferenceValue = flashImage;
         so.FindProperty("edgeLineImage").objectReferenceValue = edgeLineImage;
         so.FindProperty("pixelFx").objectReferenceValue = pixelFx;
+        so.FindProperty("gradeFrameImage").objectReferenceValue = gradeFrameImage;
+        so.FindProperty("aura").objectReferenceValue = aura;
+
+        SerializedProperty frameMaterialProperty = so.FindProperty("gradeFrameMaterials");
+        frameMaterialProperty.arraySize = frameMaterials.Length;
+        for (int i = 0; i < frameMaterials.Length; i++) frameMaterialProperty.GetArrayElementAtIndex(i).objectReferenceValue = frameMaterials[i];
+
         so.FindProperty("backSprite").objectReferenceValue = back;
 
         SerializedProperty levelSprites = so.FindProperty("levelSprites");
@@ -181,6 +200,84 @@ public static class RoguelikeCardBuilder
         }
 
         return pixels;
+    }
+
+    /// <summary>
+    /// 카드용 프레임 팔레트 스왑 머티리얼 3종. 셰이더가 프레임의 5톤(안쪽 그림자·몸통·바깥 링·가운데 링·하이라이트)을 이 팔레트 5톤으로 치환한다.
+    /// 에메랄드 = 실버, 프리즘 = 어두운 보랏빛 + 무지개 링, 루비 = 붉은색. 몸통은 레벨 숫자와 아이콘 칸이 잘 읽히게 어둡게 둔다. 여러 번 실행해도 같은 에셋을 덮어쓴다.
+    /// </summary>
+    private static Material[] BuildGradeFrameMaterials(int _w, int _h)
+    {
+        Shader shader = AssetDatabase.LoadAssetAtPath<Shader>(FrameShaderPath);
+        Material silver = GetOrCreateMaterial(MaterialDir + "/UI_CardGradeFrame_Silver.mat", shader);
+        Material prism = GetOrCreateMaterial(MaterialDir + "/UI_CardGradeFrame_Prism.mat", shader);
+        Material ruby = GetOrCreateMaterial(MaterialDir + "/UI_CardGradeFrame_Ruby.mat", shader);
+        if (null == silver || null == prism || null == ruby) return new Material[3];
+
+        Material[] all = { silver, prism, ruby };
+        for (int i = 0; i < all.Length; i++)
+        {
+            all[i].SetVector("_PixelSize", new Vector4(_w, _h, 0f, 0f));
+            // 반짝은 링 모서리: 가장자리에서 2px 안쪽(픽셀 중심 기준 반폭 22.5, 반높이 38).
+            all[i].SetVector("_LineHalf", new Vector4(_w * 0.5f - 2.5f, _h * 0.5f - 2.5f, 0f, 0f));
+            all[i].SetFloat("_Rainbow", 0f);
+        }
+
+        SetTones(silver, new Color(0.20f, 0.23f, 0.29f), new Color(0.30f, 0.34f, 0.41f), new Color(0.50f, 0.55f, 0.63f), new Color(0.74f, 0.79f, 0.86f), new Color(0.95f, 0.97f, 1.00f));
+        SetTones(ruby, new Color(0.20f, 0.03f, 0.06f), new Color(0.34f, 0.05f, 0.09f), new Color(0.58f, 0.09f, 0.14f), new Color(0.86f, 0.22f, 0.24f), new Color(1.00f, 0.62f, 0.56f));
+        SetTones(prism, new Color(0.14f, 0.12f, 0.22f), new Color(0.22f, 0.19f, 0.34f), new Color(0.55f, 0.50f, 0.80f), new Color(0.75f, 0.70f, 0.95f), new Color(0.95f, 0.93f, 1.00f));
+        prism.SetFloat("_Rainbow", 1f);
+        prism.SetFloat("_RainbowSaturation", 0.6f);
+        prism.SetFloat("_RainbowSteps", 8f);
+
+        for (int i = 0; i < all.Length; i++) EditorUtility.SetDirty(all[i]);
+        return all;
+    }
+
+    private static void SetTones(Material _material, Color _t0, Color _t1, Color _t2, Color _t3, Color _t4)
+    {
+        _material.SetColor("_Tone0", _t0);
+        _material.SetColor("_Tone1", _t1);
+        _material.SetColor("_Tone2", _t2);
+        _material.SetColor("_Tone3", _t3);
+        _material.SetColor("_Tone4", _t4);
+    }
+
+    private static UI_RoguelikeCardAura CreateAura(string _name, RectTransform _parent)
+    {
+        RectTransform rect = CreateRect(_name, _parent, Vector2Int.zero, new Vector2(FrameWidth, FrameHeight));
+        UI_RoguelikeCardAura aura = rect.gameObject.AddComponent<UI_RoguelikeCardAura>();
+        aura.raycastTarget = false;
+
+        return aura;
+    }
+
+    /// <summary>경로의 머티리얼을 불러오고, 없으면 셰이더로 새로 만든다. 이미 있으면 셰이더만 맞춘다.</summary>
+    private static Material GetOrCreateMaterial(string _path, Shader _shader)
+    {
+        if (null == _shader)
+        {
+            Debug.LogError("[RoguelikeCardBuilder] 카드 셰이더를 찾지 못했습니다(경로: " + _path + ").");
+            return null;
+        }
+
+        if (false == AssetDatabase.IsValidFolder(MaterialDir))
+        {
+            AssetDatabase.CreateFolder("Assets/Materials/UI", "Roguelike");
+        }
+
+        Material material = AssetDatabase.LoadAssetAtPath<Material>(_path);
+        if (null == material)
+        {
+            material = new Material(_shader);
+            AssetDatabase.CreateAsset(material, _path);
+        }
+        else if (material.shader != _shader)
+        {
+            material.shader = _shader;
+        }
+
+        return material;
     }
 
     /// <summary>_w x _h 불투명 흰색 사각형(1px·2px 입자, 2x1 줄기). 색은 스크립트가 틴트로 정한다.</summary>

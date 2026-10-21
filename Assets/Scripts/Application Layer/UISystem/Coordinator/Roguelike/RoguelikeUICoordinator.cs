@@ -260,8 +260,7 @@ public sealed class RoguelikeUICoordinator
         }
 
         BuildCardViewData();
-        // 골드·리롤 비용·건너뛰기는 v2.4에서 없어졌다(뷰가 아직 인자를 받으므로 빈 값을 넘긴다).
-        cardSelectUI.OpenSelection(cardViewBuffer, 0, 0, runInfo.CanReroll, false, runInfo.IsFirstPick);
+        cardSelectUI.OpenSelection(cardViewBuffer, runInfo.CanReroll);
     }
 
     /// <summary>
@@ -289,7 +288,7 @@ public sealed class RoguelikeUICoordinator
         if (null == cardSelectUI) return;
 
         BuildCardViewData();
-        cardSelectUI.ReplaceOffers(cardViewBuffer, 0, 0, runInfo.CanReroll);
+        cardSelectUI.ReplaceOffers(cardViewBuffer, runInfo.CanReroll);
     }
 
     private void CardPurchased(RoguelikeCardPurchasedSignal _signal)
@@ -487,6 +486,7 @@ public sealed class RoguelikeUICoordinator
                 cardId = card.cardId,
                 nameKey = card.nameKey,
                 descriptionKey = card.descriptionKey,
+                card = card,
                 icon = card.icon,
                 kind = card.kind,
                 displayGrade = offer.displayGrade,
@@ -496,9 +496,6 @@ public sealed class RoguelikeUICoordinator
                 bNewCard = offer.bNewCard,
                 bFirstSeen = offer.bFirstSeen,
                 bRare = CardRarity.IsRare(offer.displayGrade),
-                // 모든 카드는 무료다(기획서 v2.4 4-1).
-                price = 0,
-                bAffordable = true,
             });
         }
     }
@@ -512,6 +509,7 @@ public sealed class RoguelikeUICoordinator
             cardId = _card.cardId,
             nameKey = _card.nameKey,
             descriptionKey = _card.descriptionKey,
+            card = _card,
             icon = _card.icon,
             kind = _card.kind,
             displayGrade = CardRarity.GetDisplayGrade(_card, _level),

@@ -30,7 +30,15 @@ using UnityEngine.UI;
 /// [레벨] levelAfterPurchase를 I~VI로 그리고, maxLevel에 닿은 레벨은 MAX로 그린다(액티브 7레벨 = I~VI, MAX / 공통 패시브 5레벨 = I~IV, MAX).
 ///   루비(계약)·프리즘은 레벨이 없어 숨기고, 루비는 rubyBadgeSprite(±)가 있으면 그것을 그린다.
 ///   MAX 전용 이미지(maxLevelSprite)와 VI 이미지가 아직 없어서, MAX는 V로 대신 그리고 VI는 비어 있으면 레벨 표기를 숨긴다(리소스가 생기면 슬롯에 넣는다).
-/// [뒷면] SetFaceDown(true)면 프레임만 어둡게 보인다(임시 뒷면 - 뒷면 리소스가 생기면 backSprite에 넣는다).
+/// [희귀 등급] 프레임 자체의 색을 등급 팔레트로 바꿔 그린다(셰이더 UI/CardGradeFrame, 팔레트 스왑). 프레임을 덮는 층이 아니다.
+///   GradeFrame  프레임 스프라이트 복사본(Card_FrameFull)을 같은 자리에 그리는 층. 프레임의 5톤(안쪽 그림자·몸통·링 둘·하이라이트)을 등급 5톤으로 치환해
+///               손으로 그린 명암·모서리가 그대로 남는다. 희귀 카드에서는 원래 프레임 이미지를 끄고 이 층이 대신 보인다. 일반 카드는 원래 프레임 그대로.
+///   등급 대응   에메랄드(MAX가 되는 카드) = 실버, 프리즘(조합) = 어두운 보랏빛 + 무지개 링, 루비(계약) = 붉은색.
+///   움직임      옅은 해칭·링 맥동·단계식 광택 띠·모서리 반짝(셰이더가 시간으로 그린다).
+///   이펙트      UI_RoguelikeCardAura가 등급별 . + x 입자(별가루·불씨·모서리 글린트)를 그린다. 호버로 늘어난다.
+///   공개        PlayGradeReveal은 앞면이 드러나는 순간 대각 광택 띠가 왼쪽 위에서 오른쪽 아래로 지나가며 일반 프레임이 레어로 바뀌게 한다(0.5초, 와이프). 띠 위에서 입자가 흩날린다.
+///               Image.color의 R 채널 = 공개 진행도(1이면 완전히 레어), G 채널 = 밝기(어두워짐). 공개가 끝나기 전에는 원래 프레임을 켜 둔다(아직 안 지나간 자리가 보여야 한다).
+/// [뒷면] SetFaceDown(true)면 프레임만 어둡게 보인다(임시 뒷면 - 뒷면 리소스가 생기면 backSprite에 넣는다). 뒷면에서는 등급 층이 보이지 않는다.
 /// </summary>
 public class UI_RoguelikeCard : MonoBehaviour
 {
@@ -53,6 +61,7 @@ public class UI_RoguelikeCard : MonoBehaviour
     private const float ShadowRestAlpha = 0.35f;
     private const float ShadowLiftedAlpha = 0.15f;
     private const float DimBrightness = 0.82f;
+    private const float GradeRevealSeconds = 0.5f;
     private const float TintSeconds = 0.12f;
     private const float FlashRiseSeconds = 0.03f;
     private const float FlashSeconds = 0.1f;
@@ -74,6 +83,8 @@ public class UI_RoguelikeCard : MonoBehaviour
     [SerializeField] private Image flashImage;
     [SerializeField] private Image edgeLineImage;
     [SerializeField] private UI_RoguelikePixelFx pixelFx;
+    [SerializeField] private Image gradeFrameImage;
+    [SerializeField] private UI_RoguelikeCardAura aura;
 
     [Header("에셋")]
     [Tooltip("레벨 1~6(I~VI) 표기. 인덱스 0이 레벨 1. 비어 있는 칸은 그 레벨의 표기를 숨긴다.")]
@@ -82,8 +93,8 @@ public class UI_RoguelikeCard : MonoBehaviour
     [SerializeField] private Sprite maxLevelSprite;
     [Tooltip("루비 카드의 ± 표기. 비어 있으면 루비는 레벨 표기를 숨긴다.")]
     [SerializeField] private Sprite rubyBadgeSprite;
-    [Tooltip("ECardDisplayGrade 순서(Bronze, Silver, Gold, Emerald, Prism, Ruby)의 프레임. 비어 있는 칸은 기본 프레임을 쓴다.")]
-    [SerializeField] private Sprite[] gradeFrames = new Sprite[0];
+    [Tooltip("희귀 등급의 프레임 팔레트 스왑 머티리얼. 순서: 에메랄드(실버), 프리즘, 루비. 비어 있는 칸은 그 등급의 층을 끈다.")]
+    [SerializeField] private Material[] gradeFrameMaterials = new Material[3];
     [Tooltip("뒷면 스프라이트. 비어 있으면 기본 프레임을 어둡게 해서 뒷면으로 쓴다.")]
     [SerializeField] private Sprite backSprite;
 
@@ -93,7 +104,9 @@ public class UI_RoguelikeCard : MonoBehaviour
 
     //상태 변수
     private Sprite defaultFrameSprite;
-    private Sprite faceFrameSprite;
+    private int gradeIndex = -1;
+    private float gradeRevealTime = -1f;
+    private float gradeRevealProgress = 1f;
     private bool bHovered;
     private bool bPressed;
     private bool bFaceDown;
@@ -142,6 +155,8 @@ public class UI_RoguelikeCard : MonoBehaviour
     {
         bHovered = _bHovered;
         bMotionActive = true;
+
+        if (null != aura) aura.SetIntensity(_bHovered ? 1f : 0f);
     }
 
     /// <summary>마우스를 누르고 있는 동안 true. 눌린 만큼 카드가 내려간다.</summary>
@@ -177,6 +192,19 @@ public class UI_RoguelikeCard : MonoBehaviour
         bMotionActive = true;
     }
 
+    /// <summary>
+    /// 희귀 등급 공개: 대각 광택 띠가 지나가며 일반 프레임이 레어로 바뀐다. 앞면이 드러나는 순간에 부른다. 일반 카드·뒷면에서는 아무 일도 없다.
+    /// </summary>
+    public void PlayGradeReveal()
+    {
+        if (gradeIndex < 0 || bFaceDown) return;
+
+        gradeRevealTime = 0f;
+        gradeRevealProgress = 0f;
+        ApplyGradeLayers();
+        bMotionActive = true;
+    }
+
     /// <summary>호버·누름·밝기·반짝을 모두 처음 상태로 즉시 되돌린다(카드를 새로 채울 때, 꺼질 때).</summary>
     public void ResetMotion()
     {
@@ -190,7 +218,11 @@ public class UI_RoguelikeCard : MonoBehaviour
         dimAmount = 0f;
         flashTime = -1f;
         flipLift = 0;
+        gradeRevealTime = -1f;
+        gradeRevealProgress = 1f;
         bMotionActive = false;
+
+        if (null != aura) aura.Clear();
 
         if (null != flashImage) flashImage.enabled = false;
         if (null != edgeLineImage) edgeLineImage.enabled = false;
@@ -288,6 +320,23 @@ public class UI_RoguelikeCard : MonoBehaviour
             bActive = true;
         }
 
+        if (0f <= gradeRevealTime)
+        {
+            gradeRevealTime += _dt;
+            if (GradeRevealSeconds <= gradeRevealTime)
+            {
+                gradeRevealTime = -1f;
+                gradeRevealProgress = 1f;
+            }
+            else
+            {
+                gradeRevealProgress = gradeRevealTime / GradeRevealSeconds;
+                bActive = true;
+            }
+
+            ApplyGradeLayers();
+        }
+
         if (0f <= flashTime)
         {
             flashTime += _dt;
@@ -350,13 +399,51 @@ public class UI_RoguelikeCard : MonoBehaviour
 
     private void ApplyFrame(ECardDisplayGrade _grade)
     {
-        if (null == frameImage) return;
+        if (null != frameImage && null == defaultFrameSprite) defaultFrameSprite = frameImage.sprite;
 
-        if (null == defaultFrameSprite) defaultFrameSprite = frameImage.sprite;
+        int index = GetGradeIndex(_grade);
+        bool bHasLayer = 0 <= index && index < gradeFrameMaterials.Length && null != gradeFrameMaterials[index];
+        gradeIndex = bHasLayer ? index : -1;
 
-        int index = (int)_grade;
-        Sprite sprite = null != gradeFrames && index >= 0 && index < gradeFrames.Length ? gradeFrames[index] : null;
-        faceFrameSprite = null != sprite ? sprite : defaultFrameSprite;
+        if (null != gradeFrameImage && bHasLayer) gradeFrameImage.material = gradeFrameMaterials[index];
+    }
+
+    /// <summary>희귀 등급 → 머티리얼 칸. 에메랄드 0 · 프리즘 1 · 루비 2, 일반(브론즈, 더는 나오지 않는 실버·골드)은 -1.</summary>
+    private static int GetGradeIndex(ECardDisplayGrade _grade)
+    {
+        switch (_grade)
+        {
+            case ECardDisplayGrade.Emerald: return 0;
+            case ECardDisplayGrade.Prism: return 1;
+            case ECardDisplayGrade.Ruby: return 2;
+            default: return -1;
+        }
+    }
+
+    /// <summary>
+    /// 등급 층의 표시와 색. 희귀 카드(앞면)에서는 이 층이 원래 프레임을 대신하지만, 공개 연출이 끝나기 전에는 원래 프레임도 켜 둔다(아직 안 지나간 자리).
+    /// 셰이더 약속: R = 공개 진행도(1이면 완전히 레어), G = 밝기(다른 카드가 선택 중일 때 어두워짐). 입자(Aura)도 같은 등급·어두워짐·진행도를 따른다.
+    /// </summary>
+    private void ApplyGradeLayers()
+    {
+        bool bShow = 0 <= gradeIndex && false == bFaceDown;
+        bool bRevealDone = gradeRevealProgress >= 1f;
+
+        if (null != gradeFrameImage)
+        {
+            float brightness = Mathf.Lerp(1f, DimBrightness, dimAmount);
+            gradeFrameImage.enabled = bShow;
+            gradeFrameImage.color = new Color(gradeRevealProgress, brightness, brightness, 1f);
+        }
+
+        if (null != aura)
+        {
+            aura.SetGrade(bShow ? gradeIndex : -1);
+            aura.SetDim(dimAmount);
+            aura.SetRevealProgress(gradeRevealProgress);
+        }
+
+        if (null != frameImage) frameImage.enabled = false == (bShow && bRevealDone);
     }
 
     private void ApplyIcon(Sprite _icon)
@@ -411,7 +498,7 @@ public class UI_RoguelikeCard : MonoBehaviour
 
             if (bFront)
             {
-                frameImage.sprite = null != faceFrameSprite ? faceFrameSprite : defaultFrameSprite;
+                frameImage.sprite = defaultFrameSprite;
                 frameImage.color = tint;
             }
             else
@@ -438,6 +525,8 @@ public class UI_RoguelikeCard : MonoBehaviour
             levelImage.enabled = bFront && bLevelVisible;
             levelImage.color = tint;
         }
+
+        ApplyGradeLayers();
     }
 
     /// <summary>
