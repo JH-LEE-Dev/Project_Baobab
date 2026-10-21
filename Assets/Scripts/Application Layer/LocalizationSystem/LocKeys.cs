@@ -421,7 +421,6 @@ public static class LocKeys
         public const int roguelikeCardComboSpinShockwave = 37748944;
         public const int roguelikeCardComboBoomerangShockwave = 37748945;
         public const int roguelikeCardComboSpinBoomerang = 37748946;
-        public const int roguelikeCardComboStellaSpore = 37748947;
         public const int roguelikeCardComboStellaDrone = 37748948;
         public const int roguelikeCardPassiveRange = 37748949;
         public const int roguelikeCardPassiveDamage = 37748950;
@@ -446,7 +445,6 @@ public static class LocKeys
         public const int roguelikeCardComboSpinShockwaveDesc = 37749044;
         public const int roguelikeCardComboBoomerangShockwaveDesc = 37749045;
         public const int roguelikeCardComboSpinBoomerangDesc = 37749046;
-        public const int roguelikeCardComboStellaSporeDesc = 37749047;
         public const int roguelikeCardComboStellaDroneDesc = 37749048;
         public const int roguelikeCardPassiveRangeDesc = 37749049;
         public const int roguelikeCardPassiveDamageDesc = 37749050;
@@ -500,8 +498,28 @@ public static class LocKeys
         public const int roguelikeCardComboSpinShockwaveL1 = 37749236;
         public const int roguelikeCardComboBoomerangShockwaveL1 = 37749237;
         public const int roguelikeCardComboSpinBoomerangL1 = 37749238;
-        public const int roguelikeCardComboStellaSporeL1 = 37749239;
         public const int roguelikeCardComboStellaDroneL1 = 37749240;
+        public const int roguelikeHudWave = 37749241;
+        public const int roguelikeHudUnlimit = 37749242;
+        public const int roguelikeCardPassiveDotSpeed = 37748959;
+        public const int roguelikeCardComboSporeDrone = 37748965;
+        public const int roguelikeCardComboSporeOffroad = 37748966;
+        public const int roguelikeCardComboSporeShockwave = 37748967;
+        public const int roguelikeCardPassiveDotSpeedDesc = 37749059;
+        public const int roguelikeCardComboSporeDroneDesc = 37749065;
+        public const int roguelikeCardComboSporeOffroadDesc = 37749066;
+        public const int roguelikeCardComboSporeShockwaveDesc = 37749067;
+        public const int roguelikeEffectDotTickIntervalAdd = 37749171;
+        public const int roguelikeEffectDotTickIntervalReducePercent = 37749172;
+        public const int roguelikeEffectDotTickIntervalReduceAtMaxStackPercent = 37749173;
+        public const int roguelikeEffectAttackSpeedPercentOffroad = 37749174;
+        public const int roguelikeEffectAttackSpeedPercentDrone = 37749175;
+        public const int roguelikeEffectAttackSpeedPercentSporeBomb = 37749176;
+        public const int roguelikeEffectAttackSpeedPercentBoomerang = 37749177;
+        public const int roguelikeEffectRangePercentOffroad = 37749178;
+        public const int roguelikeCardComboSporeDroneL1 = 37749243;
+        public const int roguelikeCardComboSporeOffroadL1 = 37749244;
+        public const int roguelikeCardComboSporeShockwaveL1 = 37749245;
     }
 
     public static class SaveCheckUI

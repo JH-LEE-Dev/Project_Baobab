@@ -194,12 +194,15 @@ public static class RoguelikeCardEffectText
             case ERunEffect.DamagePercentAboveThreshold:
             case ERunEffect.AttackSpeedPercentWhileMoving:
             case ERunEffect.StarMarkDamageTakenAdd:
+            case ERunEffect.DotTickIntervalReducePercent:
+            case ERunEffect.DotTickIntervalReduceAtMaxStackPercent:
                 return "%";
 
             case ERunEffect.GraceTimeAdd:
             case ERunEffect.DamageCooldownAdd:
             case ERunEffect.StarMarkDurationAdd:
             case ERunEffect.DurationExtendOnDotKill:
+            case ERunEffect.DotTickIntervalAdd:
                 return _seconds;
 
             default:

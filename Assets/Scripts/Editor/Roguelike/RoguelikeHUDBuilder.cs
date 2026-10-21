@@ -5,18 +5,23 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 로그라이크 전투 HUD(UIView_RoguelikeHUD 프리팹)에 임계점 바를 만든다. 여러 번 실행해도 같은 결과로 덮어쓴다.
+/// 로그라이크 전투 HUD(UIView_RoguelikeHUD 프리팹)에 목표치 바 · 웨이브 표시 · 임계치 띠를 만든다. 여러 번 실행해도 같은 결과로 덮어쓴다.
 ///
-/// 계층(ThresholdBar = 하단 중앙, 스태미너 바(y 10~28) 바로 위. 오른쪽 대쉬 게이지(x 42~)와 겹치지 않게 x -80~40, 폭 120):
-///   ThresholdBar 120x18 (anchor 하단 중앙, 위치 (-20, 30))  UI_RoguelikeThresholdBar
+/// 배치(하단 중앙 기준, 아래 모서리 y. 스태미너 바 y 10~28, 오른쪽 대쉬 게이지 x 42~와 겹치지 않게 x -80~40, 폭 120):
+///   ThresholdBar   목표치 바(현재 처치 수 / 목표 처치 수) 120x18, 위치 (-20, 30)   UI_RoguelikeThresholdBar
 ///    ├ Background  MainBar_Base  스태미너 바와 같은 바탕
-///    ├ Ghost       줄어든 직후 직전 값을 옅은 색으로 잠깐 남기는 층(Image Filled, 채움 뒤). 평소에는 채움에 가려진다
 ///    ├ Fill        파스텔 적색 채움 한 가지(Image Filled - 정수 픽셀 폭). 상태별 색 구분·눈금은 없다
-///    ├ Head        채움 앞쪽 끝의 젤리 머리(Image Sliced 5x18, 테두리 왼 1 / 오른 3 - 폭을 정수로 늘리고 줄여도 둥근 끝이 안 깨진다)
-///    ├ Flash       피해 때 번갈아 하얗게 번쩍이는 층(평소 꺼짐, 채움 모양의 흰색 실루엣)
-///    └ Value_0~4   "처치 수/목표 처치 수" 숫자(Galmuri11). 0~3 = 1px 짙은 갈색 외곽선(네 방향), 4 = 밝은 크림색 본문. 섬광 위에 그려진다
+///    ├ Head        채움 앞쪽 끝의 젤리 머리(RawImage 120x18. 스태미너 바처럼 컴포넌트가 CPU로 픽셀을 그려 넣는 오버레이)
+///    └ Value_0~4   "처치 수/목표 처치 수" 숫자(Galmuri11). 0~3 = 1px 짙은 갈색 외곽선(네 방향), 4 = 밝은 크림색 본문
+///   PressureStrip  임계치 띠 + 숫자 줄 120x18, 위치 (-20, 50) - 목표치 바 2px 위   UI_RoguelikePressureStrip
+///    ├ Background  띠 프레임 120x4 (ThresholdStripBase.png)
+///    ├ BaseFill    T까지의 파스텔 적색 채움(폭만 바뀌는 단색 사각형, 안쪽 118x2)
+///    ├ OverFill    T를 넘은 구간의 진한 적색 채움(눈금 오른쪽에서 시작)
+///    ├ Tick        T 위치의 크림색 눈금(1x6)
+///    ├ Flash       피해 때 번갈아 하얗게 번쩍이는 층(평소 꺼짐)
+///    └ NumberRow   띠 위 12px 줄: Icon(나무 5x5, ThresholdTree.png) + Value_0~4 "나무 수/T"(오른쪽 정렬)
+///   WaveLabel      웨이브 표시 60x12, 위치 (-80, 55) - 목표치 바 왼쪽 끝 위. Value_0~4 "웨이브 12/30"(왼쪽 정렬)   UI_RoguelikeWaveLabel
 /// 채움 스프라이트는 MainBar_Fill(초록)의 색조만 돌려 만든다(밝기·명암은 그대로라 스태미너 바와 같은 질감): Assets/Graphics/Roguelike/hud/ThresholdFill.png.
-/// 머리(ThresholdHead.png)는 그 채움의 오른쪽 끝 5열, 고스트(ThresholdGhost.png)는 같은 채움의 밝은 붉은 색조다.
 /// </summary>
 public static class RoguelikeHUDBuilder
 {
@@ -33,6 +38,13 @@ public static class RoguelikeHUDBuilder
     private const float PastelValue = 1.25f;
     private const int BarX = -20;
     private const int BarY = 30;
+    // Galmuri11 숫자는 줄 높이 기준 가운데 정렬이라 글리프가 시각적 중앙보다 아래에 앉는다. 숫자 사각형을 이만큼 올려 위아래 여백을 맞춘다.
+    private const int ValueOffsetY = 2;
+    private const int StripY = 50;
+    private const int StripHeight = 4;
+    private const int RowY = 55;
+    private const int RowHeight = 12;
+    private const int WaveLabelWidth = 60;
 
     [MenuItem("LumberBoy/UI/Build Roguelike HUD")]
     public static void Build()
@@ -59,30 +71,19 @@ public static class RoguelikeHUDBuilder
         Color32[] burgundyPixels = ShiftHue(source, baseHue, PastelHue, PastelSaturation, PastelValue);
         Sprite fillBurgundy = RoguelikeCardBuilder.EnsureSpriteFromPixels(HudDir + "ThresholdFill.png", burgundyPixels, BarWidth, BarHeight);
 
-        // 고스트: 같은 채움을 밝은 붉은색으로(줄어든 직후 직전 값이 옅게 남아 보인다).
-        Sprite ghostSprite = RoguelikeCardBuilder.EnsureSpriteFromPixels(HudDir + "ThresholdGhost.png", ShiftHue(source, baseHue, PastelHue, PastelSaturation * 0.45f, 1.45f), BarWidth, BarHeight);
+        // 젤리 머리는 컴포넌트가 런타임에 그린다. 채움의 행별 평균색과 윤곽(안쪽 여부), 바 프레임 색을 컴포넌트에 넘긴다.
+        Color[] rowColors = RowAverageColors(burgundyPixels);
+        bool[] insideMask = new bool[burgundyPixels.Length];
+        for (int i = 0; i < burgundyPixels.Length; i++) insideMask[i] = 127 < burgundyPixels[i].a;
+        Color borderColor = DarkestOpaqueColor(ReadPixels(HudDir + "ThresholdBase.png"));
 
-        // 젤리 머리: 채움 오른쪽 끝 5열(왼쪽 1열 = 몸통에 이어지는 열, 가운데 1열 = 늘어나는 몸통, 오른쪽 3열 = 둥근 끝). 9-slice 테두리로 폭을 정수 칸 단위로 바꾼다.
-        const int headWidth = 5;
-        Color32[] headPixels = new Color32[headWidth * BarHeight];
-        for (int y = 0; y < BarHeight; y++)
-        {
-            for (int x = 0; x < headWidth; x++) headPixels[y * headWidth + x] = burgundyPixels[y * BarWidth + (BarWidth - headWidth + x)];
-        }
-
-        Sprite headSprite = RoguelikeCardBuilder.EnsureSpriteFromPixels(HudDir + "ThresholdHead.png", headPixels, headWidth, BarHeight);
-        TextureImporter headImporter = (TextureImporter)AssetImporter.GetAtPath(HudDir + "ThresholdHead.png");
-        if (new Vector4(1f, 0f, 3f, 0f) != headImporter.spriteBorder)
-        {
-            headImporter.spriteBorder = new Vector4(1f, 0f, 3f, 0f);
-            headImporter.SaveAndReimport();
-            headSprite = RoguelikeCardBuilder.LoadSprite(HudDir + "ThresholdHead.png");
-        }
-
-        // 피해 섬광용 흰색 실루엣(채움 모양 그대로, 모든 불투명 픽셀이 흰색). Image 색은 스프라이트 색에 곱해지므로 초록 채움을 그대로 쓰면 흰색이 되지 않는다.
-        Color32[] flashPixels = new Color32[source.Length];
-        for (int i = 0; i < source.Length; i++) flashPixels[i] = 0 < source[i].a ? new Color32(255, 255, 255, source[i].a) : new Color32(0, 0, 0, 0);
-        Sprite flashSprite = RoguelikeCardBuilder.EnsureSpriteFromPixels(HudDir + "ThresholdFlash.png", flashPixels, BarWidth, BarHeight);
+        // 임계치 띠 프레임(120x4: 1px 테두리, 모서리 투명, 안쪽 바탕색)과 나무 아이콘(5x5 흰색 - 색은 Image 색으로 입힌다).
+        Color32[] basePixels = ReadPixels(HudDir + "ThresholdBase.png");
+        Color32 stripInner = basePixels[(BarHeight / 2) * BarWidth + BarWidth / 2];
+        Sprite stripSprite = RoguelikeCardBuilder.EnsureSpriteFromPixels(HudDir + "ThresholdStripBase.png", BuildStripPixels((Color32)borderColor, stripInner), BarWidth, StripHeight);
+        Sprite treeSprite = RoguelikeCardBuilder.EnsureSpriteFromPixels(HudDir + "ThresholdTree.png", BuildTreePixels(), 5, 5);
+        Color pastelColor = rowColors[BarHeight / 2];
+        Color deepColor = new Color(0.79f, 0.227f, 0.282f, 1f);
 
         GameObject root = PrefabUtility.LoadPrefabContents(PrefabPath);
 
@@ -110,26 +111,16 @@ public static class RoguelikeHUDBuilder
 
             Image background = RoguelikeCardBuilder.CreateImage("Background", barRect, baseSprite, Vector2Int.zero, baseSprite.rect.size);
 
-            Image ghost = RoguelikeCardBuilder.CreateImage("Ghost", barRect, ghostSprite, Vector2Int.zero, ghostSprite.rect.size);
-            ghost.type = Image.Type.Filled;
-            ghost.fillMethod = Image.FillMethod.Horizontal;
-            ghost.fillOrigin = (int)Image.OriginHorizontal.Left;
-            ghost.fillAmount = 0f;
-            ghost.enabled = false;
-
             Image fill = RoguelikeCardBuilder.CreateImage("Fill", barRect, fillBurgundy, Vector2Int.zero, fillBurgundy.rect.size);
             fill.type = Image.Type.Filled;
             fill.fillMethod = Image.FillMethod.Horizontal;
             fill.fillOrigin = (int)Image.OriginHorizontal.Left;
             fill.fillAmount = 0f;
 
-            Image head = RoguelikeCardBuilder.CreateImage("Head", barRect, headSprite, Vector2Int.zero, headSprite.rect.size);
-            head.type = Image.Type.Sliced;
+            RectTransform headRect = RoguelikeCardBuilder.CreateRect("Head", barRect, Vector2Int.zero, new Vector2(BarWidth, BarHeight));
+            RawImage head = headRect.gameObject.AddComponent<RawImage>();
+            head.raycastTarget = false;
             head.enabled = false;
-
-            Image flash = RoguelikeCardBuilder.CreateImage("Flash", barRect, flashSprite, Vector2Int.zero, flashSprite.rect.size);
-            flash.color = Color.white;
-            flash.enabled = false;
 
             // 숫자: 외곽선 네 장(±1px) + 본문 한 장. 바 전체를 덮는 사각형에 가운데 정렬(정수 픽셀 위치).
             TMP_FontAsset font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontPath);
@@ -139,30 +130,37 @@ public static class RoguelikeHUDBuilder
             TMP_Text[] valueTexts = new TMP_Text[offsets.Length];
             for (int i = 0; i < offsets.Length; i++)
             {
-                valueTexts[i] = CreateValueText("Value_" + i, barRect, font, offsets[i], i == offsets.Length - 1 ? cream : outline);
+                valueTexts[i] = CreateValueText("Value_" + i, barRect, font, offsets[i], i == offsets.Length - 1 ? cream : outline, TextAlignmentOptions.Midline);
             }
 
             UI_RoguelikeThresholdBar bar = barGo.AddComponent<UI_RoguelikeThresholdBar>();
             SerializedObject barSo = new SerializedObject(bar);
-            barSo.FindProperty("barRoot").objectReferenceValue = barRect;
-            barSo.FindProperty("ghostImage").objectReferenceValue = ghost;
             barSo.FindProperty("fillImage").objectReferenceValue = fill;
-            barSo.FindProperty("headRect").objectReferenceValue = head.rectTransform;
-            barSo.FindProperty("headImage").objectReferenceValue = head;
-            barSo.FindProperty("flashImage").objectReferenceValue = flash;
+            barSo.FindProperty("headSurface").objectReferenceValue = head;
+            barSo.FindProperty("borderColor").colorValue = borderColor;
+            SerializedProperty rowProperty = barSo.FindProperty("rowColors");
+            rowProperty.arraySize = rowColors.Length;
+            for (int i = 0; i < rowColors.Length; i++) rowProperty.GetArrayElementAtIndex(i).colorValue = rowColors[i];
+            SerializedProperty insideProperty = barSo.FindProperty("insideMask");
+            insideProperty.arraySize = insideMask.Length;
+            for (int i = 0; i < insideMask.Length; i++) insideProperty.GetArrayElementAtIndex(i).boolValue = insideMask[i];
             SerializedProperty textProperty = barSo.FindProperty("valueTexts");
             textProperty.arraySize = valueTexts.Length;
             for (int i = 0; i < valueTexts.Length; i++) textProperty.GetArrayElementAtIndex(i).objectReferenceValue = valueTexts[i];
             barSo.ApplyModifiedPropertiesWithoutUndo();
 
+            UI_RoguelikeWaveLabel waveLabel = BuildWaveLabel(root, font, offsets, outline, cream);
+            UI_RoguelikePressureStrip pressureStrip = BuildPressureStrip(root, stripSprite, treeSprite, pastelColor, deepColor, font, offsets, outline, cream);
+
             SerializedObject viewSo = new SerializedObject(view);
             viewSo.FindProperty("thresholdBar").objectReferenceValue = bar;
+            viewSo.FindProperty("waveLabel").objectReferenceValue = waveLabel;
+            viewSo.FindProperty("pressureStrip").objectReferenceValue = pressureStrip;
             viewSo.ApplyModifiedPropertiesWithoutUndo();
 
             // 배경은 레이캐스트를 받지 않는다(HUD가 마우스를 가로채지 않게).
             background.raycastTarget = false;
             fill.raycastTarget = false;
-            ghost.raycastTarget = false;
 
             PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             Debug.Log("[RoguelikeHUDBuilder] 완료: " + PrefabPath);
@@ -173,8 +171,140 @@ public static class RoguelikeHUDBuilder
         }
     }
 
-    /// <summary>바 전체를 덮고 _offset만큼 어긋난 가운데 정렬 숫자 텍스트.</summary>
-    private static TMP_Text CreateValueText(string _name, RectTransform _parent, TMP_FontAsset _font, Vector2Int _offset, Color _color)
+    /// <summary>웨이브 표시(WaveLabel)를 만든다. 목표치 바 왼쪽 끝 위, 왼쪽 정렬.</summary>
+    private static UI_RoguelikeWaveLabel BuildWaveLabel(GameObject _root, TMP_FontAsset _font, Vector2Int[] _offsets, Color _outline, Color _cream)
+    {
+        Transform existing = _root.transform.Find("WaveLabel");
+        if (null != existing) Object.DestroyImmediate(existing.gameObject);
+
+        RectTransform rect = RoguelikeCardBuilder.CreateRect("WaveLabel", (RectTransform)_root.transform, Vector2Int.zero, new Vector2(WaveLabelWidth, RowHeight));
+        rect.anchorMin = new Vector2(0.5f, 0f);
+        rect.anchorMax = new Vector2(0.5f, 0f);
+        rect.pivot = Vector2.zero;
+        rect.anchoredPosition = new Vector2(BarX - BarWidth / 2, RowY);
+
+        TMP_Text[] texts = new TMP_Text[_offsets.Length];
+        for (int i = 0; i < _offsets.Length; i++)
+        {
+            texts[i] = CreateValueText("Value_" + i, rect, _font, _offsets[i], i == _offsets.Length - 1 ? _cream : _outline, TextAlignmentOptions.MidlineLeft);
+            texts[i].text = string.Empty;
+        }
+
+        UI_RoguelikeWaveLabel label = rect.gameObject.AddComponent<UI_RoguelikeWaveLabel>();
+        SerializedObject so = new SerializedObject(label);
+        so.FindProperty("labelRoot").objectReferenceValue = rect;
+        SerializedProperty textProperty = so.FindProperty("texts");
+        textProperty.arraySize = texts.Length;
+        for (int i = 0; i < texts.Length; i++) textProperty.GetArrayElementAtIndex(i).objectReferenceValue = texts[i];
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return label;
+    }
+
+    /// <summary>임계치 띠 + 숫자 줄(PressureStrip)을 만든다. 목표치 바 2px 위.</summary>
+    private static UI_RoguelikePressureStrip BuildPressureStrip(GameObject _root, Sprite _stripSprite, Sprite _treeSprite, Color _pastel, Color _deep,
+        TMP_FontAsset _font, Vector2Int[] _offsets, Color _outline, Color _cream)
+    {
+        Transform existing = _root.transform.Find("PressureStrip");
+        if (null != existing) Object.DestroyImmediate(existing.gameObject);
+
+        RectTransform rect = RoguelikeCardBuilder.CreateRect("PressureStrip", (RectTransform)_root.transform, Vector2Int.zero, new Vector2(BarWidth, BarHeight));
+        rect.anchorMin = new Vector2(0.5f, 0f);
+        rect.anchorMax = new Vector2(0.5f, 0f);
+        rect.pivot = new Vector2(0.5f, 0f);
+        rect.anchoredPosition = new Vector2(BarX, StripY);
+
+        Image background = RoguelikeCardBuilder.CreateImage("Background", rect, _stripSprite, Vector2Int.zero, _stripSprite.rect.size);
+        RectTransform baseFill = CreateSolid("BaseFill", rect, new Vector2Int(1, 1), new Vector2(0f, StripHeight - 2), _pastel);
+        RectTransform overFill = CreateSolid("OverFill", rect, new Vector2Int(1, 1), new Vector2(0f, StripHeight - 2), _deep);
+        RectTransform tick = CreateSolid("Tick", rect, new Vector2Int(1, -1), new Vector2(1f, StripHeight + 2), _cream);
+        Image flash = RoguelikeCardBuilder.CreateRect("Flash", rect, new Vector2Int(1, 1), new Vector2(BarWidth - 2, StripHeight - 2)).gameObject.AddComponent<Image>();
+        flash.color = Color.white;
+        flash.raycastTarget = false;
+        flash.enabled = false;
+
+        RectTransform row = RoguelikeCardBuilder.CreateRect("NumberRow", rect, new Vector2Int(0, StripHeight + 1), new Vector2(BarWidth, RowHeight));
+        RectTransform iconRect = RoguelikeCardBuilder.CreateRect("Icon", row, new Vector2Int(0, 4), _treeSprite.rect.size);
+        Image icon = iconRect.gameObject.AddComponent<Image>();
+        icon.sprite = _treeSprite;
+        icon.color = _cream;
+        icon.raycastTarget = false;
+
+        TMP_Text[] texts = new TMP_Text[_offsets.Length];
+        for (int i = 0; i < _offsets.Length; i++)
+        {
+            texts[i] = CreateValueText("Value_" + i, row, _font, _offsets[i], i == _offsets.Length - 1 ? _cream : _outline, TextAlignmentOptions.MidlineRight);
+            texts[i].text = "0/0";
+        }
+
+        background.raycastTarget = false;
+
+        UI_RoguelikePressureStrip strip = rect.gameObject.AddComponent<UI_RoguelikePressureStrip>();
+        SerializedObject so = new SerializedObject(strip);
+        so.FindProperty("stripRoot").objectReferenceValue = rect;
+        so.FindProperty("baseFill").objectReferenceValue = baseFill;
+        so.FindProperty("overFill").objectReferenceValue = overFill;
+        so.FindProperty("tick").objectReferenceValue = tick;
+        so.FindProperty("flashImage").objectReferenceValue = flash;
+        so.FindProperty("iconRect").objectReferenceValue = iconRect;
+        so.FindProperty("iconImage").objectReferenceValue = icon;
+        SerializedProperty textProperty = so.FindProperty("valueTexts");
+        textProperty.arraySize = texts.Length;
+        for (int i = 0; i < texts.Length; i++) textProperty.GetArrayElementAtIndex(i).objectReferenceValue = texts[i];
+        so.ApplyModifiedPropertiesWithoutUndo();
+
+        baseFill.gameObject.SetActive(false);
+        overFill.gameObject.SetActive(false);
+        return strip;
+    }
+
+    /// <summary>스프라이트 없는 단색 사각형(폭만 바뀌는 채움·눈금).</summary>
+    private static RectTransform CreateSolid(string _name, RectTransform _parent, Vector2Int _position, Vector2 _size, Color _color)
+    {
+        RectTransform rect = RoguelikeCardBuilder.CreateRect(_name, _parent, _position, _size);
+        Image image = rect.gameObject.AddComponent<Image>();
+        image.color = _color;
+        image.raycastTarget = false;
+        return rect;
+    }
+
+    /// <summary>띠 프레임 픽셀(아래 행부터): 1px 테두리, 네 모서리 투명, 안쪽은 바탕색.</summary>
+    private static Color32[] BuildStripPixels(Color32 _border, Color32 _inner)
+    {
+        Color32[] pixels = new Color32[BarWidth * StripHeight];
+
+        for (int y = 0; y < StripHeight; y++)
+        {
+            for (int x = 0; x < BarWidth; x++)
+            {
+                bool bEdgeX = 0 == x || BarWidth - 1 == x;
+                bool bEdgeY = 0 == y || StripHeight - 1 == y;
+                if (true == bEdgeX && true == bEdgeY) pixels[y * BarWidth + x] = new Color32(0, 0, 0, 0);
+                else pixels[y * BarWidth + x] = true == bEdgeX || true == bEdgeY ? _border : _inner;
+            }
+        }
+
+        return pixels;
+    }
+
+    /// <summary>나무 아이콘 5x5(아래 행부터): 위 세 줄은 둥근 수관, 아래 두 줄은 줄기. 흰색이라 Image 색으로 입힌다.</summary>
+    private static Color32[] BuildTreePixels()
+    {
+        string[] rows = { "..#..", "..#..", "#####", "#####", ".###." };
+        Color32[] pixels = new Color32[25];
+
+        for (int y = 0; y < 5; y++)
+        {
+            for (int x = 0; x < 5; x++)
+            {
+                pixels[y * 5 + x] = '#' == rows[y][x] ? new Color32(255, 255, 255, 255) : new Color32(0, 0, 0, 0);
+            }
+        }
+
+        return pixels;
+    }
+
+    /// <summary>_rect를 덮고 _offset만큼 어긋난 숫자 텍스트(외곽선 복사본은 _offset이 있고, 본문은 (0, 0)).</summary>
+    private static TMP_Text CreateValueText(string _name, RectTransform _parent, TMP_FontAsset _font, Vector2Int _offset, Color _color, TextAlignmentOptions _alignment)
     {
         GameObject go = new GameObject(_name, typeof(RectTransform));
         go.layer = LayerMask.NameToLayer("UI");
@@ -182,19 +312,77 @@ public static class RoguelikeHUDBuilder
         rect.SetParent(_parent, false);
         rect.anchorMin = Vector2.zero;
         rect.anchorMax = Vector2.one;
-        rect.offsetMin = new Vector2(_offset.x, _offset.y);
-        rect.offsetMax = new Vector2(_offset.x, _offset.y);
+        rect.offsetMin = new Vector2(_offset.x, _offset.y + ValueOffsetY);
+        rect.offsetMax = new Vector2(_offset.x, _offset.y + ValueOffsetY);
 
         TextMeshProUGUI text = go.AddComponent<TextMeshProUGUI>();
         text.font = _font;
         text.fontSize = _font.faceInfo.pointSize;
         text.text = "0/0";
-        text.alignment = TextAlignmentOptions.Midline;
+        text.alignment = _alignment;
         text.color = _color;
         text.textWrappingMode = TextWrappingModes.NoWrap;
         text.overflowMode = TextOverflowModes.Overflow;
         text.raycastTarget = false;
         return text;
+    }
+
+    /// <summary>행(아래부터)별 평균색. 불투명 픽셀이 없는 행은 전체 평균색을 쓴다.</summary>
+    private static Color[] RowAverageColors(Color32[] _pixels)
+    {
+        Color[] rows = new Color[BarHeight];
+        Color total = Color.black;
+        int totalCount = 0;
+
+        for (int y = 0; y < BarHeight; y++)
+        {
+            Color sum = Color.black;
+            int count = 0;
+
+            for (int x = 0; x < BarWidth; x++)
+            {
+                Color32 pixel = _pixels[y * BarWidth + x];
+                if (pixel.a < 127) continue;
+
+                sum += (Color)pixel;
+                count++;
+            }
+
+            if (0 < count) rows[y] = new Color(sum.r / count, sum.g / count, sum.b / count, 1f);
+            total += sum;
+            totalCount += count;
+            if (0 == count) rows[y] = Color.clear;
+        }
+
+        Color average = 0 < totalCount ? new Color(total.r / totalCount, total.g / totalCount, total.b / totalCount, 1f) : Color.gray;
+        for (int y = 0; y < BarHeight; y++)
+        {
+            if (0f == rows[y].a) rows[y] = average;
+        }
+
+        return rows;
+    }
+
+    /// <summary>불투명 픽셀 중 가장 어두운 색(바 프레임 색).</summary>
+    private static Color DarkestOpaqueColor(Color32[] _pixels)
+    {
+        Color darkest = Color.black;
+        float best = float.MaxValue;
+
+        for (int i = 0; i < _pixels.Length; i++)
+        {
+            if (_pixels[i].a < 255) continue;
+
+            Color color = _pixels[i];
+            float brightness = color.r + color.g + color.b;
+            if (best <= brightness) continue;
+
+            best = brightness;
+            darkest = color;
+        }
+
+        darkest.a = 1f;
+        return darkest;
     }
 
     /// <summary>160폭 픽셀을 120폭으로 줄인다: 왼쪽 60열 + 오른쪽 60열(가운데 40열은 같은 무늬의 반복이라 버린다).</summary>
