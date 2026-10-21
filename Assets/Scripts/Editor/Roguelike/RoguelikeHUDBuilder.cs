@@ -12,11 +12,11 @@ using UnityEngine.UI;
 ///    ├ Background  MainBar_Base  스태미너 바와 같은 바탕
 ///    ├ Ghost       줄어든 직후 직전 값을 옅은 색으로 잠깐 남기는 층(Image Filled, 채움 뒤). 평소에는 채움에 가려진다
 ///    ├ Fill        파스텔 적색 채움 한 가지(Image Filled - 정수 픽셀 폭). 상태별 색 구분·눈금은 없다
-///    ├ Head        채움 앞쪽 끝의 젤리 머리(Image Sliced 8x18, 테두리 왼 1 / 오른 5 - 폭을 정수로 늘리고 줄여도 둥근 끝이 안 깨진다)
+///    ├ Head        채움 앞쪽 끝의 젤리 머리(Image Sliced 5x18, 테두리 왼 1 / 오른 3 - 폭을 정수로 늘리고 줄여도 둥근 끝이 안 깨진다)
 ///    ├ Flash       피해 때 번갈아 하얗게 번쩍이는 층(평소 꺼짐, 채움 모양의 흰색 실루엣)
 ///    └ Value_0~4   "처치 수/목표 처치 수" 숫자(Galmuri11). 0~3 = 1px 짙은 갈색 외곽선(네 방향), 4 = 밝은 크림색 본문. 섬광 위에 그려진다
 /// 채움 스프라이트는 MainBar_Fill(초록)의 색조만 돌려 만든다(밝기·명암은 그대로라 스태미너 바와 같은 질감): Assets/Graphics/Roguelike/hud/ThresholdFill.png.
-/// 머리(ThresholdHead.png)는 그 채움의 오른쪽 끝 8열, 고스트(ThresholdGhost.png)는 같은 채움의 밝은 붉은 색조다.
+/// 머리(ThresholdHead.png)는 그 채움의 오른쪽 끝 5열, 고스트(ThresholdGhost.png)는 같은 채움의 밝은 붉은 색조다.
 /// </summary>
 public static class RoguelikeHUDBuilder
 {
@@ -62,8 +62,8 @@ public static class RoguelikeHUDBuilder
         // 고스트: 같은 채움을 밝은 붉은색으로(줄어든 직후 직전 값이 옅게 남아 보인다).
         Sprite ghostSprite = RoguelikeCardBuilder.EnsureSpriteFromPixels(HudDir + "ThresholdGhost.png", ShiftHue(source, baseHue, PastelHue, PastelSaturation * 0.45f, 1.45f), BarWidth, BarHeight);
 
-        // 젤리 머리: 채움 오른쪽 끝 8열(왼쪽 1열 = 몸통에 이어지는 열, 가운데 2열 = 늘어나는 몸통, 오른쪽 5열 = 둥근 끝). 9-slice 테두리로 폭을 정수 칸 단위로 바꾼다.
-        const int headWidth = 8;
+        // 젤리 머리: 채움 오른쪽 끝 5열(왼쪽 1열 = 몸통에 이어지는 열, 가운데 1열 = 늘어나는 몸통, 오른쪽 3열 = 둥근 끝). 9-slice 테두리로 폭을 정수 칸 단위로 바꾼다.
+        const int headWidth = 5;
         Color32[] headPixels = new Color32[headWidth * BarHeight];
         for (int y = 0; y < BarHeight; y++)
         {
@@ -72,9 +72,9 @@ public static class RoguelikeHUDBuilder
 
         Sprite headSprite = RoguelikeCardBuilder.EnsureSpriteFromPixels(HudDir + "ThresholdHead.png", headPixels, headWidth, BarHeight);
         TextureImporter headImporter = (TextureImporter)AssetImporter.GetAtPath(HudDir + "ThresholdHead.png");
-        if (new Vector4(1f, 0f, 5f, 0f) != headImporter.spriteBorder)
+        if (new Vector4(1f, 0f, 3f, 0f) != headImporter.spriteBorder)
         {
-            headImporter.spriteBorder = new Vector4(1f, 0f, 5f, 0f);
+            headImporter.spriteBorder = new Vector4(1f, 0f, 3f, 0f);
             headImporter.SaveAndReimport();
             headSprite = RoguelikeCardBuilder.LoadSprite(HudDir + "ThresholdHead.png");
         }

@@ -5,12 +5,13 @@ using UnityEngine.UI;
 /// <summary>
 /// 로그라이크 전투 HUD의 임계점 바. 현재 웨이브의 "현재 처치 수 / 목표 처치 수"(예: 12/40)를 채움과 숫자로 보여 준다.
 /// 스태미너 바(MainBar)와 같은 모양에 폭만 120으로 줄이고(오른쪽의 대쉬 게이지와 겹치지 않게), 채움 색은 밝은 파스텔 적색 한 가지다(상태별 색 구분·눈금 없음). 프로젝트의 픽셀 규칙을 따른다.
-///   - 채움 폭은 정수 픽셀(Image Filled)이고 반투명이 없다. 값이 바뀌면 초당 140px로 따라가며 줄어들고 늘어난다.
+///   - 채움 폭은 정수 픽셀(Image Filled)이고 반투명이 없다. 값이 바뀌면 지수 감속(시정수 0.12초)으로 따라간다.
+///   - 목표를 채우기 전에는 오른쪽 14px(머리 포함)를 항상 비워 둔다(비율 x 106px). 목표를 채웠을 때만 꽉 찬다.
 ///   - 섬광은 24Hz 틱으로 끊고, 흔들림은 정수 픽셀 패턴(카드 거절 흔들림과 같은 { -2, 2, -2, 2, -1, 1, 0 })이다. 시간은 unscaled라 ESC로 멈춰도 연출이 이어진다.
 ///
-/// [젤리 움직임] 스태미너 바(HUD_Stemina의 젤리 머리)와 같은 규칙의 가벼운 버전이다.
-///   머리   채움 앞쪽 끝에 둥근 머리(Head, 9-slice 8x18)가 얹힌다. 채움이 늘어나는 동안은 앞으로 늘어났다가 멈추면 스프링으로 튕기며 안착하고, 줄어드는 동안은 눌린다.
-///          가만히 있을 때는 느리게 호흡한다(1px, 24Hz 틱). 머리 폭은 항상 정수 픽셀이고 채움이 거의 꽉 차면(바 끝에 닿으면) 숨긴다 - 채움 이미지의 둥근 끝이 대신 보인다.
+/// [젤리 움직임] 스태미너 바(HUD_Stemina의 젤리 머리)와 같은 계수의 스프링이다(K 200, C 16, 평소 길이 2.2, 늘어남 최대 +2, 줄어듦 1.6, 호흡 0.35).
+///   머리   채움 앞쪽 끝에 짧은 둥근 머리(Head, 9-slice 5x18, 폭 4~8)가 얹힌다. 채움이 움직이기 시작할 때 +14, 멈출 때 -6의 충격을 주고,
+///          늘어남은 앞쪽 속도(짧은 이동평균)에 비례한다. 줄어드는 동안은 눌린다. 머리 폭은 항상 정수 픽셀이고 채움이 거의 꽉 차면(바 끝에 닿으면) 숨긴다.
 ///   고스트 값이 줄어들 때(새 웨이브 시작 등) 직전 값이 옅은 색(Ghost)으로 잠깐 남았다가(0.3초) 따라온다. 늘어날 때는 바로 따라간다.
 ///
 /// [숫자] 바 가운데에 "처치 수/목표 처치 수"(현재/최대)를 그린다. 파스텔 적색·갈색 어느 바탕 위에서도 읽히도록 밝은 크림색에 1px 짙은 갈색 외곽선(네 방향 복사본)이고,
@@ -21,21 +22,34 @@ using UnityEngine.UI;
 public class UI_RoguelikeThresholdBar : MonoBehaviour
 {
     private const int BarWidth = 120;
-    private const float FillPixelsPerSecond = 140f;
     private const float TicksPerSecond = 24f;
     private const float ShakeStepSeconds = 0.03f;
     private const int FlashTicks = 4;
     private static readonly int[] ShakePattern = { -2, 2, -2, 2, -1, 1, 0 };
 
-    // 젤리 머리: 평소 폭 8, 늘어나면 +5, 눌리면 -2, 호흡 +1. 스프링은 약간 출렁이게(감쇠비 0.45) 1/120초 단위로 적분한다.
-    private const int HeadRestWidth = 8;
-    private const int HeadMinWidth = 5;
-    private const float HeadStretch = 5f;
-    private const float HeadSquash = -2f;
-    private const float HeadOmega = 26f;
-    private const float HeadDamping = 0.45f;
-    private const float SpringStep = 1f / 120f;
-    private const float MovingSpeed = 6f;
+    // 채움: 목표 미달성 구간은 오른쪽 EndReserve만큼 비워 둔다(머리가 바 끝을 덮어 가득 찬 것처럼 보이지 않게). 목표를 채우면 BarWidth까지.
+    private const int EndReserve = 14;
+    private const float FillTau = 0.12f;
+
+    // 젤리 머리(스태미너 바와 같은 계수): 머리 폭 = 앞쪽으로 뻗은 길이(반올림) + 둥근 끝 3열, 4~8px.
+    private const int HeadCapColumns = 3;
+    private const int HeadMinWidth = 4;
+    private const int HeadMaxWidth = 8;
+    private const float SpringK = 200f;
+    private const float SpringC = 16f;
+    private const float HeadRestLen = 2.2f;
+    private const float HeadGainExtraMax = 2f;
+    private const float HeadGainSpeedK = 8f;
+    private const float HeadFastTau = 0.1f;
+    private const float HeadDrainLen = 1.6f;
+    private const float HeadBreath = 0.35f;
+    private const float HeadGainKick = 14f;
+    private const float HeadSettleKick = -6f;
+    private const float HeadVelTau = 0.35f;
+    private const float HeadGainVel = 0.01f;
+    private const float HeadDrainEnter = 0.0006f;
+    private const float HeadDrainExit = 0.0002f;
+    private const float HeadDrainTau = 0.4f;
 
     // 고스트: 줄어든 직후 0.3초 머물렀다가 초당 70px로 따라온다.
     private const float GhostHoldSeconds = 0.3f;
@@ -57,8 +71,14 @@ public class UI_RoguelikeThresholdBar : MonoBehaviour
     private float displayPixels;
     private float ghostPixels;
     private float ghostHold;
-    private float headSpring;
+    private float headSpring = HeadRestLen;
     private float headVelocity;
+    private float headSpeed;
+    private float headFastSpeed;
+    private float headDrainWeight;
+    private float headTime;
+    private bool bHeadGain;
+    private bool bHeadDrain;
     private float clock;
     private Vector2 basePosition;
     private bool bBasePositionCaptured;
@@ -93,8 +113,13 @@ public class UI_RoguelikeThresholdBar : MonoBehaviour
         displayPixels = 0f;
         ghostPixels = 0f;
         ghostHold = 0f;
-        headSpring = 0f;
+        headSpring = HeadRestLen;
         headVelocity = 0f;
+        headSpeed = 0f;
+        headFastSpeed = 0f;
+        headDrainWeight = 0f;
+        bHeadGain = false;
+        bHeadDrain = false;
         shakeTime = -1f;
         flashStartTick = -1;
         shownKilled = -1;
@@ -109,13 +134,14 @@ public class UI_RoguelikeThresholdBar : MonoBehaviour
     public void Step(float _dt)
     {
         clock += _dt;
+        headTime += _dt;
 
         float previous = displayPixels;
-        displayPixels = Mathf.MoveTowards(displayPixels, targetRatio * BarWidth, FillPixelsPerSecond * _dt);
-        float velocity = 0f < _dt ? (displayPixels - previous) / _dt : 0f;
+        float targetPixels = 1f <= targetRatio ? BarWidth : targetRatio * (BarWidth - EndReserve);
+        displayPixels = Mathf.Abs(targetPixels - displayPixels) < 0.01f ? targetPixels : displayPixels + (targetPixels - displayPixels) * (1f - Mathf.Exp(-_dt / FillTau));
 
         StepGhost(previous, _dt);
-        StepHead(velocity, _dt);
+        StepHead(previous, _dt);
         ApplyVisuals();
         StepPosition(_dt);
         StepFlash();
@@ -149,24 +175,48 @@ public class UI_RoguelikeThresholdBar : MonoBehaviour
     }
 
     /// <summary>
-    /// 머리 스프링. 목표는 늘어나는 중 +5, 줄어드는 중 -2, 멈춰 있으면 호흡(느린 24Hz 틱 1px). 멈추는 순간 목표가 0으로 돌아가며 스프링이 출렁이다 안착한다.
+    /// 머리 스프링(HUD_Stemina의 젤리 머리와 같은 규칙). 앞쪽 속도를 시간 보정해 이동평균하고, 움직임이 시작·끝날 때 충격을 주며,
+    /// 늘어나는 중에는 빠른 속도에 비례해 길어지고, 줄어드는 중에는 눌리고, 멈춰 있으면 느리게 호흡한다.
     /// </summary>
-    private void StepHead(float _velocity, float _dt)
+    private void StepHead(float _previousPixels, float _dt)
     {
-        float target;
-        if (MovingSpeed < _velocity) target = HeadStretch;
-        else if (_velocity < -MovingSpeed) target = HeadSquash;
-        else target = 1 == (CurrentTick() / 12) % 4 || 2 == (CurrentTick() / 12) % 4 ? 1f : 0f;
+        float dtSafe = Mathf.Max(0.0001f, _dt);
+        float travel = BarWidth - EndReserve;
+        float rawSpeed = (displayPixels - _previousPixels) / dtSafe / travel;
 
-        float remain = _dt;
-        while (0f < remain)
+        headSpeed += (rawSpeed - headSpeed) * (1f - Mathf.Exp(-dtSafe / HeadVelTau));
+        headFastSpeed += (Mathf.Max(0f, rawSpeed) - headFastSpeed) * (1f - Mathf.Exp(-dtSafe / HeadFastTau));
+
+        bool bGain = HeadGainVel < headSpeed;
+
+        if (true == bGain) bHeadDrain = false;
+        else if (true == bHeadDrain) bHeadDrain = -HeadDrainExit > headSpeed;
+        else bHeadDrain = -HeadDrainEnter > headSpeed;
+
+        // 충격은 늘어남이 시작되고 끝날 때만 준다.
+        if (bGain != bHeadGain)
         {
-            float step = Mathf.Min(remain, SpringStep);
-            float acceleration = HeadOmega * HeadOmega * (target - headSpring) - 2f * HeadDamping * HeadOmega * headVelocity;
-            headVelocity += acceleration * step;
-            headSpring += headVelocity * step;
-            remain -= step;
+            headVelocity += true == bGain ? HeadGainKick : HeadSettleKick;
+            bHeadGain = bGain;
         }
+
+        headDrainWeight += ((true == bHeadDrain ? 1f : 0f) - headDrainWeight) * (1f - Mathf.Exp(-dtSafe / HeadDrainTau));
+
+        float rest = HeadRestLen + HeadBreath * (1f + 0.8f * headDrainWeight) * Mathf.Sin(headTime * 2.4f);
+        float target = rest + (HeadDrainLen - HeadRestLen) * headDrainWeight;
+
+        if (true == bGain) target = rest + Mathf.Min(HeadGainExtraMax, headFastSpeed * HeadGainSpeedK);
+
+        float h = Mathf.Min(_dt, 0.05f) * 0.25f;
+
+        for (int i = 0; i < 4; i++)
+        {
+            float acceleration = SpringK * (target - headSpring) - SpringC * headVelocity;
+            headVelocity += acceleration * h;
+            headSpring += headVelocity * h;
+        }
+
+        headSpring = Mathf.Clamp(headSpring, 0.6f, HeadRestLen + HeadGainExtraMax + 0.6f);
     }
 
     /// <summary>"처치 수/목표 처치 수" 숫자를 갱신한다. 값이 그대로면 아무것도 하지 않는다.</summary>
@@ -207,7 +257,7 @@ public class UI_RoguelikeThresholdBar : MonoBehaviour
     {
         if (null == headRect || null == headImage) return;
 
-        int width = Mathf.Clamp(HeadRestWidth + Mathf.RoundToInt(headSpring), HeadMinWidth, HeadRestWidth + (int)HeadStretch);
+        int width = Mathf.Clamp(Mathf.RoundToInt(headSpring) + HeadCapColumns, HeadMinWidth, HeadMaxWidth);
         int left = _fillPixels - 1;
         int room = BarWidth - left;
         if (room < width) width = room;
