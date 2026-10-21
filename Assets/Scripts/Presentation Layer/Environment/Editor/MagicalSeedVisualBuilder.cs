@@ -118,6 +118,7 @@ public static class MagicalSeedVisualBuilder
             int _index = GetOrAddEntry(_entries, _old, _loot, _stage, _tier, _bKeepAnimSettings);
             LootGrowthVisualData.TierSprite _entry = _entries[_index];
             _entry.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(_path);
+            if (Vector2.zero == _entry.spriteBase && null != _entry.sprite) _entry.spriteBase = EstimateBase(_path, _entry.sprite);
             _entries[_index] = _entry;
         }
 
@@ -129,6 +130,7 @@ public static class MagicalSeedVisualBuilder
             LootGrowthVisualData.TierSprite _entry = _entries[_index];
             _entry.displayFrames = LoadFrames(_path);
             _entry.displayArtCenter = ComputeArtCenter(_path, _entry.displayFrames);
+            if (Vector2.zero == _entry.displayBase && 0 < _entry.displayFrames.Length) _entry.displayBase = EstimateBase(_path, _entry.displayFrames[0]);
             _entries[_index] = _entry;
         }
 
@@ -163,6 +165,13 @@ public static class MagicalSeedVisualBuilder
         _entry.displayFrames = new Sprite[0];
 
         int _oldIndex = _old.FindIndex(x => x.lootType == _loot && x.tier == _tier);
+
+        // 밑둥은 그림을 보고 맞춘 값이라 메뉴 실행(Build)에서도 유지한다. 비어 있을 때만 픽셀에서 추정한다.
+        if (0 <= _oldIndex)
+        {
+            _entry.displayBase = _old[_oldIndex].displayBase;
+            _entry.spriteBase = _old[_oldIndex].spriteBase;
+        }
 
         if (true == _bKeepAnimSettings && 0 <= _oldIndex && 0 < _old[_oldIndex].fps)
         {
@@ -345,6 +354,47 @@ public static class MagicalSeedVisualBuilder
         }
     }
 
+    // 밑둥 추정: 가장 아래 줄의 가로 중심, 높이는 그 줄에서 프레임 크기의 1/16만큼 위(바닥 면 중심 근사) - 스프라이트 중심 기준, 유닛.
+    // 꽃처럼 잎이 옆으로 퍼진 그림은 맞지 않을 수 있으니 결과를 보고 데이터에서 고친다.
+    private static Vector2 EstimateBase(string _path, Sprite _sprite)
+    {
+        Texture2D _tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+
+        try
+        {
+            if (false == _tex.LoadImage(File.ReadAllBytes(_path))) return Vector2.zero;
+
+            Color32[] _pixels = _tex.GetPixels32();
+            Rect _rect = _sprite.rect;
+
+            for (int y = (int)_rect.y; y < (int)_rect.yMax && y < _tex.height; y++)
+            {
+                int _minX = int.MaxValue, _maxX = int.MinValue;
+
+                for (int x = (int)_rect.x; x < (int)_rect.xMax && x < _tex.width; x++)
+                {
+                    if (0 == _pixels[y * _tex.width + x].a) continue;
+
+                    if (x < _minX) _minX = x;
+                    if (_maxX < x) _maxX = x;
+                }
+
+                if (_maxX < _minX) continue;
+
+                float _ppu = _sprite.pixelsPerUnit;
+                float _baseX = (_minX + _maxX + 1) * 0.5f - _rect.center.x;
+                float _baseY = y + _rect.height / 16f - _rect.center.y;
+                return new Vector2(_baseX / _ppu, _baseY / _ppu);
+            }
+
+            return Vector2.zero;
+        }
+        finally
+        {
+            Object.DestroyImmediate(_tex);
+        }
+    }
+
     /// <summary>
     /// Small 시트를 32x32 격자로 슬라이스한다. 이미 격자와 같으면 아무것도 하지 않는다(false).
     /// 기존 조각은 이름/ID를 그대로 두고 위치만 맞추므로 기존 참조가 유지된다. 바꿨으면 재임포트까지 하고 true.
@@ -429,6 +479,7 @@ public static class MagicalSeedVisualBuilder
 
             if (x.lootType != y.lootType || x.tier != y.tier || x.sprite != y.sprite || x.isPlaceholder != y.isPlaceholder
                 || x.fps != y.fps || x.actionInterval != y.actionInterval || x.displayArtCenter != y.displayArtCenter
+                || x.displayBase != y.displayBase || x.spriteBase != y.spriteBase
                 || false == SeqEqual(x.idleFrames, y.idleFrames) || false == SeqEqual(x.actionFrames, y.actionFrames)
                 || false == SeqEqual(x.displayFrames, y.displayFrames))
             {

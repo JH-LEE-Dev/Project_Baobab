@@ -27,11 +27,11 @@ Transform:
   m_GameObject: {fileID: 76350711469888660}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.215, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2140170100607089639}
+  m_Father: {fileID: 7967144750156568118}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3127719736685409035
 SpriteRenderer:
@@ -277,7 +277,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.VFX.VFX_LootEvolve
   itemRenderer: {fileID: 3127719736685409035}
-  itemTransform: {fileID: 6261167627840208332}
+  itemTransform: {fileID: 7967144750156568118}
   auraController: {fileID: 79144371278649808}
   quadBudget: 1800
   airSortingLayerName: FlyingItem
@@ -470,6 +470,38 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &6429823582600070666
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7967144750156568118}
+  m_Layer: 0
+  m_Name: LootAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7967144750156568118
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6429823582600070666}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.215, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 6261167627840208332}
+  m_Father: {fileID: 2140170100607089639}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6541406506856029618
 GameObject:
   m_ObjectHideFlags: 0
@@ -867,7 +899,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 9073590921670445931}
-  - {fileID: 6261167627840208332}
+  - {fileID: 7967144750156568118}
   - {fileID: 8085616993122957990}
   - {fileID: 7547305513318753406}
   m_Father: {fileID: 0}
@@ -886,6 +918,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.Environment.LootDisplayObject
   targetRenderer: {fileID: 3127719736685409035}
   lootDataBase: {fileID: 11400000, guid: 3a405593cd27bee44957a785aaf70392, type: 2}
+  displayBaseAnchor: {x: 0, y: -0.27}
   pillarRenderer: {fileID: 5954358378157050357}
   outlineStencilObj: {fileID: 3023795368703313444}
   outlineStencilRenderer: {fileID: 7705092683096633063}
@@ -894,6 +927,13 @@ MonoBehaviour:
   growthGlowStrength: 0.6
   growthGlowCoreStrength: 0.55
   evolveEffect: {fileID: 506757280907023574}
+  growthFlashHold: 0.05
+  growthFlashDuration: 0.3
+  growthPopDuration: 0.6
+  growthPopAmplitude: 0.2
+  growthPopWidthRatio: 0.6
+  growthPopFrequency: 3.5
+  growthPopDamping: 6
   useAuraOrbit: 1
   auraOrbitController: {fileID: 79144371278649808}
   auraSettings:

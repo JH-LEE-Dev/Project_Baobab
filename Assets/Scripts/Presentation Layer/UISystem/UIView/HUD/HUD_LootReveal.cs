@@ -73,7 +73,13 @@ public class HUD_LootReveal : MonoBehaviour
     [Tooltip("전리품 아이템 1회 왕복 소요 시간")]
     [SerializeField] private float lootFloatDuration = 4.0f;
 
-    private float lootInitialY; 
+    [Tooltip("기둥 윗판 중앙 - 전리품 이미지의 원래 중심 기준(UI 단위). 확대 그림의 밑둥(LootGrowthVisualData.spriteBase)을 여기에 맞춘다.")]
+    [SerializeField] private Vector2 lootBaseAnchor = new Vector2(0f, -18f);
+
+    private float lootInitialX;
+    private float lootInitialY;
+    // 지금 그림의 밑둥을 기둥 윗판 중앙에 맞추는 이동량(SetLootSprite에서 정한다)
+    private Vector2 lootBaseOffset;
 
     // 성장 정보 원천(현재 단계, 다음 단계가 되는 프레스티지 레벨). 윗단이 SetGrowthInfoSource로 연결해 준다.
     private Func<LootType, int> growthTierGetter;
@@ -152,6 +158,7 @@ public class HUD_LootReveal : MonoBehaviour
 
         if (null != lootItemRect)
         {
+            lootInitialX = lootItemRect.anchoredPosition.x;
             lootInitialY = lootItemRect.anchoredPosition.y;
         }
 
@@ -369,7 +376,7 @@ public class HUD_LootReveal : MonoBehaviour
         {
             lootItemRect.DOKill(); // 부유 및 스케일 모션 강제 정지
             lootItemRect.localScale = Vector3.zero;
-            lootItemRect.anchoredPosition = new Vector2(lootItemRect.anchoredPosition.x, lootInitialY);
+            lootItemRect.anchoredPosition = new Vector2(lootInitialX + lootBaseOffset.x, lootInitialY + lootBaseOffset.y);
             lootItemRect.gameObject.SetActive(false);
         }
 
@@ -545,7 +552,7 @@ public class HUD_LootReveal : MonoBehaviour
         yield return _popSeq.WaitForCompletion();
 
         // 등장 스케일 애니메이션이 완전히 끝난 후, 아이템이 파티클처럼 부유(Floating)하도록 모션 연결
-        lootItemRect.DOAnchorPosY(lootInitialY + lootFloatDistance, lootFloatDuration)
+        lootItemRect.DOAnchorPosY(lootInitialY + lootBaseOffset.y + lootFloatDistance, lootFloatDuration)
             .SetEase(Ease.InOutSine)
             .SetLoops(-1, LoopType.Yoyo)
             .SetId("LootFloat"); 
@@ -658,6 +665,8 @@ public class HUD_LootReveal : MonoBehaviour
 
     private void SetLootSprite(LootType _lootType, LootItemTypeDataBase _db)
     {
+        lootBaseOffset = Vector2.zero;
+
         if (null == lootItemImage || null == _db)
             return;
 
@@ -670,9 +679,17 @@ public class HUD_LootReveal : MonoBehaviour
         int _tier = null != growthTierGetter ? growthTierGetter(_lootType) : 0;
 
         if (null != growthVisualData
-            && true == growthVisualData.TryGetSprite(_lootType, _tier, out Sprite _tierSprite, out bool _bPlaceholder))
+            && true == growthVisualData.TryGetSprite(_lootType, _tier, out Sprite _tierSprite, out bool _bPlaceholder, out Vector2 _base))
         {
             lootItemImage.sprite = _tierSprite;
+
+            // 그림마다 밑둥이 다른 곳에 있다 - 밑둥(스프라이트 유닛 → 이미지 픽셀)이 기둥 윗판 중앙에 오도록 옮긴다. 픽셀 단위로 맞춘다.
+            if (null != _tierSprite && 0f < _tierSprite.rect.width)
+            {
+                float _scale = _tierSprite.pixelsPerUnit * lootItemImage.rectTransform.rect.width / _tierSprite.rect.width;
+                Vector2 _offset = lootBaseAnchor - _base * _scale;
+                lootBaseOffset = new Vector2(Mathf.Floor(_offset.x + 0.5f), Mathf.Floor(_offset.y + 0.5f));
+            }
         }
     }
 

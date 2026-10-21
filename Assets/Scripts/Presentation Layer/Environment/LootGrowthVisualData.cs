@@ -39,6 +39,10 @@ public class LootGrowthVisualData : ScriptableObject
         public Vector2 actionInterval;
         [Tooltip("전시 그림이 실제로 그려진 영역의 중심(프레임 평균) - 스프라이트 중심 기준, 유닛. 후광을 여기에 맞춘다. 빌더가 픽셀에서 계산한다.")]
         public Vector2 displayArtCenter;
+        [Tooltip("전시 그림의 밑둥(기둥 윗판 중앙에 놓일 점) - 스프라이트 중심 기준, 유닛. 비어 있으면 빌더가 픽셀에서 추정하고, 있으면 그대로 둔다(그림을 바꾸면 0으로 두고 다시 적용).")]
+        public Vector2 displayBase;
+        [Tooltip("확대 그림의 밑둥(상호작용 화면 기둥 윗판 중앙에 놓일 점) - 스프라이트 중심 기준, 유닛. 채우는 규칙은 displayBase와 같다.")]
+        public Vector2 spriteBase;
 
         public bool HasDisplayFrames => null != displayFrames && 0 < displayFrames.Length;
     }
@@ -67,8 +71,15 @@ public class LootGrowthVisualData : ScriptableObject
     // 단계가 정확히 없으면 FindEntryIndex 규칙대로 가까운 단계로 대신한다.
     public bool TryGetSprite(LootType _lootType, int _tier, out Sprite _sprite, out bool _bPlaceholder)
     {
+        return TryGetSprite(_lootType, _tier, out _sprite, out _bPlaceholder, out _);
+    }
+
+    // _base: 확대 그림의 밑둥(spriteBase)
+    public bool TryGetSprite(LootType _lootType, int _tier, out Sprite _sprite, out bool _bPlaceholder, out Vector2 _base)
+    {
         _sprite = null;
         _bPlaceholder = false;
+        _base = Vector2.zero;
 
         int _index = FindEntryIndex(_lootType, _tier, false);
 
@@ -79,6 +90,7 @@ public class LootGrowthVisualData : ScriptableObject
 
         _sprite = tierSprites[_index].sprite;
         _bPlaceholder = tierSprites[_index].isPlaceholder;
+        _base = tierSprites[_index].spriteBase;
         return true;
     }
 

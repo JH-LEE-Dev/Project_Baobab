@@ -19,6 +19,8 @@ namespace PresentationLayer.Environment
         [Header("Display Settings")]
         [SerializeField] private SpriteRenderer targetRenderer;
         [SerializeField] private LootItemTypeDataBase lootDataBase;
+        [SerializeField, Tooltip("기둥 윗판 중앙 - 전리품 부모(LootAnchor) 기준, 유닛. 전시 그림의 밑둥(LootGrowthVisualData.displayBase)을 여기에 맞춘다.")]
+        private Vector2 displayBaseAnchor = new Vector2(0f, -0.27f);
 
         [Header("Sorting Settings")]
         [SerializeField] private SpriteRenderer pillarRenderer;
@@ -90,8 +92,9 @@ namespace PresentationLayer.Environment
         private bool bEvolveRestarting;
 
         // 성장 뽀잉/번쩍임 상태. 기둥과 전리품을 기둥 바닥(growthPopAnchorWorld) 기준으로 함께 늘이고 줄인다.
-        // 전리품 위치는 진화 연출(VFX_LootEvolve)도 폭발 직후까지 움직이므로, 연출이 쓴 위치(lootRawLocalPosition)를
-        // 원본으로 삼아 그 위에 뽀잉 보정만 더한다(LateUpdate). 끝나면 기둥은 원래대로, 전리품은 원본 위치로 돌린다.
+        // 진화 연출(VFX_LootEvolve)은 폭발 직후까지 전리품의 부모(LootAnchor)를 흔든다. 전리품 자신의 위치(밑둥 맞춤, SetDisplayBase)를
+        // 다른 곳이 바꿔 써도 따라가도록, 마지막으로 읽은 위치(lootRawLocalPosition)를 원본으로 삼아 그 위에 뽀잉 보정만 더한다(LateUpdate).
+        // 끝나면 기둥은 원래대로, 전리품은 원본 위치로 돌린다.
         private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
         private MaterialPropertyBlock growthFlashMPB;
         private bool bGrowthPopPlaying;
@@ -517,6 +520,8 @@ namespace PresentationLayer.Environment
         // idle 순서를 계속 반복하다가, action이 있으면 actionInterval(랜덤)마다 한 번 재생하고 idle로 돌아온다.
         // 성장하지 않는 전리품(단계 0)은 그 전리품의 가장 낮은 단계 프레임을 쓴다(LootGrowthVisualData.TryGetDisplay).
 
+        private const float DisplayPixelsPerUnit = 32f;
+
         private Sprite[] animFrames;
         private int[] animIdle;
         private int[] animAction;
@@ -531,12 +536,19 @@ namespace PresentationLayer.Environment
         {
             animFrames = null;
 
+            // 뽀잉은 전리품 위치를 원본으로 되돌리며 끝나므로, 밑둥 위치를 바꾸기 전에 먼저 정리한다.
+            StopGrowthPop();
+
             if (null == growthVisualData || null == targetRenderer
                 || false == growthVisualData.TryGetDisplay(CurrentLootType, currentGrowthTier, out LootGrowthVisualData.TierSprite _entry))
             {
+                SetDisplayBase(Vector2.zero);
                 SetGlowOffset(Vector2.zero);
                 return;
             }
+
+            // 그림마다 밑둥이 프레임 안 다른 곳에 있다 - 밑둥이 기둥 윗판 중앙에 오도록 전리품을 옮긴다(후광은 전리품 자식이라 같이 움직인다).
+            SetDisplayBase(displayBaseAnchor - _entry.displayBase);
 
             // 전시 그림은 32x32 프레임 아래쪽(기둥 윗면)에 서 있어 프레임 중심과 그림 중심이 다르다 - 후광을 그림 중심에 맞춘다.
             SetGlowOffset(_entry.displayArtCenter);
@@ -614,6 +626,19 @@ namespace PresentationLayer.Environment
             }
 
             ShowAnimFrame(_sequence, animStep);
+        }
+
+        // 전리품을 부모(LootAnchor) 기준 _offset으로 옮긴다. 기둥과 픽셀 격자가 어긋나지 않도록 픽셀 단위로 맞춘다.
+        // 진화 연출은 부모를 흔들고 성장 뽀잉은 이 위치를 원본으로 삼으므로 둘 다 이 값과 겹치지 않는다.
+        private void SetDisplayBase(Vector2 _offset)
+        {
+            if (null == targetRenderer) return;
+
+            Transform _loot = targetRenderer.transform;
+            _loot.localPosition = new Vector3(
+                Mathf.Floor(_offset.x * DisplayPixelsPerUnit + 0.5f) / DisplayPixelsPerUnit,
+                Mathf.Floor(_offset.y * DisplayPixelsPerUnit + 0.5f) / DisplayPixelsPerUnit,
+                _loot.localPosition.z);
         }
 
         private void SetGlowOffset(Vector2 _offset)
