@@ -12,6 +12,8 @@ namespace PresentationLayer.Environment
         [ColorUsage(true, true)] public Color auraCenterColor;
     }
 
+    // 성장 뽀잉(LateUpdate)이 진화 연출(VFX_LootEvolve.LateUpdate, 기본값 0)이 전리품 위치를 쓴 뒤에 그 위에 보정을 더하도록 늦게 실행한다.
+    [DefaultExecutionOrder(100)]
     public class LootDisplayObject : MonoBehaviour
     {
         [Header("Display Settings")]
@@ -47,6 +49,22 @@ namespace PresentationLayer.Environment
         [Tooltip("비워 두면 단계가 오를 때 연출 없이 바로 바뀐다.")]
         [SerializeField] private VFX_LootEvolve evolveEffect;
 
+        [Header("Growth Pop (단계가 오를 때 기둥·전리품이 하얗게 번쩍이며 뽀잉)")]
+        [SerializeField, Tooltip("완전히 흰색으로 유지하는 시간(초). 이후 growthFlashDuration까지 원래 색으로 풀린다.")]
+        private float growthFlashHold = 0.05f;
+        [SerializeField, Tooltip("흰색으로 번쩍였다가 원래 색으로 돌아오기까지의 시간(초).")]
+        private float growthFlashDuration = 0.3f;
+        [SerializeField, Tooltip("뽀잉(눌렸다 튀며 출렁임) 전체 시간(초).")]
+        private float growthPopDuration = 0.6f;
+        [SerializeField, Range(0f, 0.5f), Tooltip("처음 눌리는 세로 비율. 0.2면 세로가 80%까지 눌렸다가 튄다.")]
+        private float growthPopAmplitude = 0.2f;
+        [SerializeField, Range(0f, 1f), Tooltip("세로 변화에 맞춰 가로가 반대로 변하는 비율(부피감).")]
+        private float growthPopWidthRatio = 0.6f;
+        [SerializeField, Tooltip("초당 출렁임 횟수.")]
+        private float growthPopFrequency = 3.5f;
+        [SerializeField, Tooltip("출렁임이 잦아드는 빠르기. 클수록 빨리 멈춘다.")]
+        private float growthPopDamping = 6f;
+
         [Header("Aura Orbit Settings")]
         [SerializeField] private bool useAuraOrbit = false;
         [SerializeField] private ItemAuraOrbitController auraOrbitController;
@@ -70,6 +88,21 @@ namespace PresentationLayer.Environment
         private Action cachedOnEvolveBurst;
         // PlayGrowthEvolve가 진행 중인 연출을 끊고 다시 시작하는 동안 true. 그 사이 불리는 폭발 콜백에서 폭발음을 막는다.
         private bool bEvolveRestarting;
+
+        // 성장 뽀잉/번쩍임 상태. 기둥과 전리품을 기둥 바닥(growthPopAnchorWorld) 기준으로 함께 늘이고 줄인다.
+        // 전리품 위치는 진화 연출(VFX_LootEvolve)도 폭발 직후까지 움직이므로, 연출이 쓴 위치(lootRawLocalPosition)를
+        // 원본으로 삼아 그 위에 뽀잉 보정만 더한다(LateUpdate). 끝나면 기둥은 원래대로, 전리품은 원본 위치로 돌린다.
+        private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
+        private MaterialPropertyBlock growthFlashMPB;
+        private bool bGrowthPopPlaying;
+        private float growthPopElapsed;
+        private Vector3 growthPopAnchorWorld;
+        private Vector3 pillarBaseLocalPosition;
+        private Vector3 pillarBaseLocalScale;
+        private Vector3 lootBaseLocalScale;
+        private Vector3 lootRawLocalPosition;
+        private Vector3 lootWrittenLocalPosition;
+        private bool bLootPositionWritten;
 
         // 임시 스프라이트 경고를 (전리품, 단계)당 한 번만 낸다
         private static readonly HashSet<int> placeholderWarned = new HashSet<int>();
@@ -284,6 +317,9 @@ namespace PresentationLayer.Environment
 
             // 진행 중이던 연출이 있으면 Play가 먼저 정리하면서 이전 목표 단계를 적용한 뒤 새 연출을 시작한다.
             // 그때 불리는 폭발 콜백은 연출이 끊긴 것이라 폭발음을 내지 않는다.
+            // 이전 뽀잉이 남아 있으면 먼저 원래 자리/크기로 돌린다(연출이 시작 위치를 기준으로 기억하므로).
+            StopGrowthPop();
+
             bEvolveRestarting = true;
             evolveEffect.Play(fromTier, _tier, cachedOnEvolveBurst);
             bEvolveRestarting = false;
@@ -308,10 +344,122 @@ namespace PresentationLayer.Environment
             Sound.Play(SoundID.SFXLevelUpAura, transform.position);
             Sound.Play(SoundID.SFXLevelUpAura01, transform.position);
             Sound.Play(SoundID.SFXLevelUpChime, transform.position);
+
+            StartGrowthPop();
+        }
+
+        // 기둥과 전리품을 하얗게 번쩍이며 눌렸다 튀게 한다. 진행은 LateUpdate에서 한다.
+        private void StartGrowthPop()
+        {
+            if (null == pillarRenderer || null == targetRenderer) return;
+
+            StopGrowthPop();
+
+            Transform _pillar = pillarRenderer.transform;
+            Transform _loot = targetRenderer.transform;
+
+            // 기준점은 기둥 그림의 바닥 가운데다. 둘 다 이 점을 기준으로 늘고 줄어 한 덩어리처럼 출렁인다.
+            float _bottom = null != pillarRenderer.sprite ? pillarRenderer.sprite.bounds.min.y : 0f;
+            growthPopAnchorWorld = _pillar.TransformPoint(new Vector3(0f, _bottom, 0f));
+
+            pillarBaseLocalPosition = _pillar.localPosition;
+            pillarBaseLocalScale = _pillar.localScale;
+            lootBaseLocalScale = _loot.localScale;
+            lootRawLocalPosition = _loot.localPosition;
+            bLootPositionWritten = false;
+
+            growthPopElapsed = 0f;
+            bGrowthPopPlaying = true;
+        }
+
+        private void StopGrowthPop()
+        {
+            if (false == bGrowthPopPlaying) return;
+
+            bGrowthPopPlaying = false;
+
+            Transform _pillar = pillarRenderer.transform;
+            Transform _loot = targetRenderer.transform;
+
+            _pillar.localPosition = pillarBaseLocalPosition;
+            _pillar.localScale = pillarBaseLocalScale;
+            _loot.localScale = lootBaseLocalScale;
+            // 그사이 진화 연출이 위치를 다시 썼다면 그 값을 그대로 둔다.
+            if (true == bLootPositionWritten && _loot.localPosition == lootWrittenLocalPosition) _loot.localPosition = lootRawLocalPosition;
+
+            SetGrowthFlash(0f);
+        }
+
+        private void LateUpdate()
+        {
+            if (false == bGrowthPopPlaying) return;
+
+            float _t = growthPopElapsed;
+
+            if (Mathf.Max(growthPopDuration, growthFlashDuration) <= _t)
+            {
+                StopGrowthPop();
+                return;
+            }
+
+            // 번쩍임: 잠깐 완전히 흰색을 유지했다가 원래 색으로 풀린다.
+            float _flash = _t <= growthFlashHold ? 1f : 1f - Mathf.Clamp01((_t - growthFlashHold) / Mathf.Max(0.0001f, growthFlashDuration - growthFlashHold));
+            SetGrowthFlash(_flash * _flash);
+
+            // 뽀잉: 폭발 순간 세로로 눌린 채 시작해 감쇠 진동하며 1로 돌아온다. 끝에서 정확히 1이 되도록 남은 시간 비율을 곱한다.
+            float _a = 0f;
+            if (_t < growthPopDuration)
+            {
+                float _remain = 1f - _t / growthPopDuration;
+                _a = -growthPopAmplitude * Mathf.Exp(-growthPopDamping * _t) * Mathf.Cos(2f * Mathf.PI * growthPopFrequency * _t) * _remain;
+            }
+            Vector3 _scale = new Vector3(1f - _a * growthPopWidthRatio, 1f + _a, 1f);
+
+            Transform _pillar = pillarRenderer.transform;
+            _pillar.localScale = Vector3.Scale(pillarBaseLocalScale, _scale);
+            _pillar.localPosition = ScaleAroundAnchor(_pillar, pillarBaseLocalPosition, _scale);
+
+            // 진화 연출이 이번 프레임에 전리품 위치를 새로 썼으면 그 값을 원본으로 삼는다.
+            Transform _loot = targetRenderer.transform;
+            if (false == bLootPositionWritten || _loot.localPosition != lootWrittenLocalPosition) lootRawLocalPosition = _loot.localPosition;
+
+            _loot.localScale = Vector3.Scale(lootBaseLocalScale, _scale);
+            lootWrittenLocalPosition = ScaleAroundAnchor(_loot, lootRawLocalPosition, _scale);
+            _loot.localPosition = lootWrittenLocalPosition;
+            bLootPositionWritten = true;
+
+            growthPopElapsed += Time.deltaTime;
+        }
+
+        // _basePosition(부모 기준)을 기준점(growthPopAnchorWorld)에서 _scale만큼 늘이고 줄인 위치.
+        private Vector3 ScaleAroundAnchor(Transform _target, Vector3 _basePosition, Vector3 _scale)
+        {
+            Vector3 _anchor = null != _target.parent ? _target.parent.InverseTransformPoint(growthPopAnchorWorld) : growthPopAnchorWorld;
+            _anchor.z = _basePosition.z;
+            return _anchor + Vector3.Scale(_basePosition - _anchor, _scale);
+        }
+
+        private void SetGrowthFlash(float _amount)
+        {
+            if (null == growthFlashMPB) growthFlashMPB = new MaterialPropertyBlock();
+
+            ApplyGrowthFlash(pillarRenderer, _amount);
+            ApplyGrowthFlash(targetRenderer, _amount);
+        }
+
+        private void ApplyGrowthFlash(SpriteRenderer _renderer, float _amount)
+        {
+            if (null == _renderer) return;
+
+            _renderer.GetPropertyBlock(growthFlashMPB);
+            growthFlashMPB.SetFloat(FlashAmountID, _amount);
+            _renderer.SetPropertyBlock(growthFlashMPB);
         }
 
         private void OnDisable()
         {
+            StopGrowthPop();
+
             // 연출 중에 꺼지면(마을을 떠남 등) 연출이 정리되며 폭발 콜백을 불러 주지만, 못 불렸다면 여기서 단계를 맞춘다.
             if (0 < pendingGrowthTier)
             {
