@@ -43,6 +43,8 @@ public class LootGrowthVisualData : ScriptableObject
         public Vector2 displayBase;
         [Tooltip("확대 그림의 밑둥(상호작용 화면 기둥 윗판 중앙에 놓일 점) - 스프라이트 중심 기준, 유닛. 채우는 규칙은 displayBase와 같다.")]
         public Vector2 spriteBase;
+        [Tooltip("전시 그림이 기둥 윗판에 드리우는 그림자 타원의 가로 픽셀(짝수). 0이면 빌더가 그림 폭에서 추정한다.")]
+        public int displayShadowWidth;
 
         public bool HasDisplayFrames => null != displayFrames && 0 < displayFrames.Length;
     }
@@ -71,15 +73,23 @@ public class LootGrowthVisualData : ScriptableObject
     // 단계가 정확히 없으면 FindEntryIndex 규칙대로 가까운 단계로 대신한다.
     public bool TryGetSprite(LootType _lootType, int _tier, out Sprite _sprite, out bool _bPlaceholder)
     {
-        return TryGetSprite(_lootType, _tier, out _sprite, out _bPlaceholder, out _);
-    }
-
-    // _base: 확대 그림의 밑둥(spriteBase)
-    public bool TryGetSprite(LootType _lootType, int _tier, out Sprite _sprite, out bool _bPlaceholder, out Vector2 _base)
-    {
         _sprite = null;
         _bPlaceholder = false;
-        _base = Vector2.zero;
+
+        if (false == TryGetSpriteEntry(_lootType, _tier, out TierSprite _entry))
+        {
+            return false;
+        }
+
+        _sprite = _entry.sprite;
+        _bPlaceholder = _entry.isPlaceholder;
+        return true;
+    }
+
+    // 확대 스프라이트가 등록된 항목을 통째로 찾는다(밑둥 spriteBase, 실제로 쓰인 그림의 단계 tier 등). 찾는 규칙은 TryGetSprite와 같다.
+    public bool TryGetSpriteEntry(LootType _lootType, int _tier, out TierSprite _entry)
+    {
+        _entry = default;
 
         int _index = FindEntryIndex(_lootType, _tier, false);
 
@@ -88,9 +98,7 @@ public class LootGrowthVisualData : ScriptableObject
             return false;
         }
 
-        _sprite = tierSprites[_index].sprite;
-        _bPlaceholder = tierSprites[_index].isPlaceholder;
-        _base = tierSprites[_index].spriteBase;
+        _entry = tierSprites[_index];
         return true;
     }
 
