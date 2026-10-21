@@ -68,6 +68,8 @@ namespace PresentationLayer.Environment
         // 진화 연출 중에 올라갈 단계(0 = 연출 중이 아님). 연출의 폭발 시각에 이 단계로 후광 색/스프라이트를 바꾼다.
         private int pendingGrowthTier = 0;
         private Action cachedOnEvolveBurst;
+        // PlayGrowthEvolve가 진행 중인 연출을 끊고 다시 시작하는 동안 true. 그 사이 불리는 폭발 콜백에서 폭발음을 막는다.
+        private bool bEvolveRestarting;
 
         // 임시 스프라이트 경고를 (전리품, 단계)당 한 번만 낸다
         private static readonly HashSet<int> placeholderWarned = new HashSet<int>();
@@ -281,8 +283,14 @@ namespace PresentationLayer.Environment
             int fromTier = 0 < pendingGrowthTier ? pendingGrowthTier : currentGrowthTier;
 
             // 진행 중이던 연출이 있으면 Play가 먼저 정리하면서 이전 목표 단계를 적용한 뒤 새 연출을 시작한다.
+            // 그때 불리는 폭발 콜백은 연출이 끊긴 것이라 폭발음을 내지 않는다.
+            bEvolveRestarting = true;
             evolveEffect.Play(fromTier, _tier, cachedOnEvolveBurst);
+            bEvolveRestarting = false;
             pendingGrowthTier = _tier;
+
+            // 레벨업 시작음
+            Sound.Play(SoundID.SFXLevelUpAura01, transform.position);
         }
 
         // 진화 연출의 폭발 시각: 이때 새 단계의 후광 색과 스프라이트로 바꾼다.
@@ -293,6 +301,13 @@ namespace PresentationLayer.Environment
             currentGrowthTier = pendingGrowthTier;
             pendingGrowthTier = 0;
             ApplyGrowthVisual();
+
+            // 폭발음은 연출이 끝까지 진행돼 폭발 시각에 닿았을 때만 낸다(다시 시작/기둥이 꺼지며 정리될 때는 제외).
+            if (true == bEvolveRestarting || false == isActiveAndEnabled) return;
+
+            Sound.Play(SoundID.SFXLevelUpAura, transform.position);
+            Sound.Play(SoundID.SFXLevelUpAura01, transform.position);
+            Sound.Play(SoundID.SFXLevelUpChime, transform.position);
         }
 
         private void OnDisable()
