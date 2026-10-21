@@ -131,6 +131,7 @@ public static class MagicalSeedVisualBuilder
             _entry.displayFrames = LoadFrames(_path);
             _entry.displayArtCenter = ComputeArtCenter(_path, _entry.displayFrames);
             if (Vector2.zero == _entry.displayBase && 0 < _entry.displayFrames.Length) _entry.displayBase = EstimateBase(_path, _entry.displayFrames[0]);
+            if (0 == _entry.displayShadowWidth && 0 < _entry.displayFrames.Length) _entry.displayShadowWidth = EstimateShadowWidth(_path, _entry.displayFrames[0]);
             _entries[_index] = _entry;
         }
 
@@ -171,6 +172,7 @@ public static class MagicalSeedVisualBuilder
         {
             _entry.displayBase = _old[_oldIndex].displayBase;
             _entry.spriteBase = _old[_oldIndex].spriteBase;
+            _entry.displayShadowWidth = _old[_oldIndex].displayShadowWidth;
         }
 
         if (true == _bKeepAnimSettings && 0 <= _oldIndex && 0 < _old[_oldIndex].fps)
@@ -395,6 +397,40 @@ public static class MagicalSeedVisualBuilder
         }
     }
 
+    // 그림자 폭 추정: 그림 가로 폭의 70%를 짝수로 맞추고 기둥 윗판 안(8~18px)으로 자른다.
+    private static int EstimateShadowWidth(string _path, Sprite _sprite)
+    {
+        Texture2D _tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+
+        try
+        {
+            if (false == _tex.LoadImage(File.ReadAllBytes(_path))) return 0;
+
+            Color32[] _pixels = _tex.GetPixels32();
+            Rect _rect = _sprite.rect;
+            int _minX = int.MaxValue, _maxX = int.MinValue;
+
+            for (int y = (int)_rect.y; y < (int)_rect.yMax && y < _tex.height; y++)
+            {
+                for (int x = (int)_rect.x; x < (int)_rect.xMax && x < _tex.width; x++)
+                {
+                    if (0 == _pixels[y * _tex.width + x].a) continue;
+
+                    if (x < _minX) _minX = x;
+                    if (_maxX < x) _maxX = x;
+                }
+            }
+
+            if (_maxX < _minX) return 0;
+
+            return Mathf.Clamp(Mathf.RoundToInt((_maxX - _minX + 1) * 0.7f * 0.5f) * 2, 8, 18);
+        }
+        finally
+        {
+            Object.DestroyImmediate(_tex);
+        }
+    }
+
     /// <summary>
     /// Small 시트를 32x32 격자로 슬라이스한다. 이미 격자와 같으면 아무것도 하지 않는다(false).
     /// 기존 조각은 이름/ID를 그대로 두고 위치만 맞추므로 기존 참조가 유지된다. 바꿨으면 재임포트까지 하고 true.
@@ -479,7 +515,7 @@ public static class MagicalSeedVisualBuilder
 
             if (x.lootType != y.lootType || x.tier != y.tier || x.sprite != y.sprite || x.isPlaceholder != y.isPlaceholder
                 || x.fps != y.fps || x.actionInterval != y.actionInterval || x.displayArtCenter != y.displayArtCenter
-                || x.displayBase != y.displayBase || x.spriteBase != y.spriteBase
+                || x.displayBase != y.displayBase || x.spriteBase != y.spriteBase || x.displayShadowWidth != y.displayShadowWidth
                 || false == SeqEqual(x.idleFrames, y.idleFrames) || false == SeqEqual(x.actionFrames, y.actionFrames)
                 || false == SeqEqual(x.displayFrames, y.displayFrames))
             {

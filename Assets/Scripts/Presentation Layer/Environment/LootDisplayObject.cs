@@ -26,6 +26,12 @@ namespace PresentationLayer.Environment
         [SerializeField] private SpriteRenderer pillarRenderer;
         private CustomSortable customSortable;
 
+        [Header("Loot Shadow (기둥 윗판에 드리우는 전리품 그림자)")]
+        [Tooltip("기둥 윗판 중앙에 놓인 그림자 렌더러(Pillar 자식). 전리품마다 크기(LootGrowthVisualData.displayShadowWidth)에 맞춘 타원을 그린다.")]
+        [SerializeField] private SpriteRenderer lootShadowRenderer;
+        [SerializeField, Range(0f, 1f), Tooltip("그림자 진하기(검정 알파). 리니어 색공간에서 섞이므로 0.4가 기존 기둥 그림에 그려져 있던 그림자(윗판 192 → 153)와 같은 진하기다.")]
+        private float lootShadowAlpha = 0.4f;
+
         [Header("Outline Settings")]
         // 상호작용 범위에 들어오면 켜지는 Pillar 아웃라인. OffroadContainer/RepairBox와 같은 스텐실 방식이다 -
         // outlineStencilObj(OutlineStencilWriter)가 Pillar 스프라이트 모양대로 스텐실을 찍고, 그 자식인
@@ -240,6 +246,12 @@ namespace PresentationLayer.Environment
                 targetRenderer.sortingOrder = pillarOrder + 2;
             }
 
+            // 그림자는 기둥 바로 위, 전리품 아래. 아웃라인(+1)과 같은 Order지만 아웃라인은 기둥 바깥에만 그려져 겹치지 않는다.
+            if (null != lootShadowRenderer)
+            {
+                lootShadowRenderer.sortingOrder = pillarOrder + 1;
+            }
+
             // 아웃라인도 Pillar와 같은 기준으로 따라간다. (outlineStencilRenderer 주석 참고)
             if (null != outlineStencilRenderer)
             {
@@ -448,6 +460,12 @@ namespace PresentationLayer.Environment
 
             ApplyGrowthFlash(pillarRenderer, _amount);
             ApplyGrowthFlash(targetRenderer, _amount);
+
+            // 하얗게 번쩍이는 동안 그림자는 그만큼 옅어진다
+            if (null != lootShadowRenderer)
+            {
+                lootShadowRenderer.color = new Color(0f, 0f, 0f, lootShadowAlpha * (1f - _amount));
+            }
         }
 
         private void ApplyGrowthFlash(SpriteRenderer _renderer, float _amount)
@@ -543,12 +561,14 @@ namespace PresentationLayer.Environment
                 || false == growthVisualData.TryGetDisplay(CurrentLootType, currentGrowthTier, out LootGrowthVisualData.TierSprite _entry))
             {
                 SetDisplayBase(Vector2.zero);
+                SetLootShadow(0);
                 SetGlowOffset(Vector2.zero);
                 return;
             }
 
             // 그림마다 밑둥이 프레임 안 다른 곳에 있다 - 밑둥이 기둥 윗판 중앙에 오도록 전리품을 옮긴다(후광은 전리품 자식이라 같이 움직인다).
             SetDisplayBase(displayBaseAnchor - _entry.displayBase);
+            SetLootShadow(_entry.displayShadowWidth);
 
             // 전시 그림은 32x32 프레임 아래쪽(기둥 윗면)에 서 있어 프레임 중심과 그림 중심이 다르다 - 후광을 그림 중심에 맞춘다.
             SetGlowOffset(_entry.displayArtCenter);
@@ -639,6 +659,66 @@ namespace PresentationLayer.Environment
                 Mathf.Floor(_offset.x * DisplayPixelsPerUnit + 0.5f) / DisplayPixelsPerUnit,
                 Mathf.Floor(_offset.y * DisplayPixelsPerUnit + 0.5f) / DisplayPixelsPerUnit,
                 _loot.localPosition.z);
+        }
+
+        // 전리품 크기에 맞춘 그림자 타원을 켠다(0 이하면 끈다). 세로는 가로의 30%를 짝수로 맞춘다 -
+        // 가로·세로가 짝수라 타원 가장자리가 기둥 픽셀 격자에 맞는다(그림자 중심이 기둥 픽셀 경계에 있다).
+        private void SetLootShadow(int _width)
+        {
+            if (null == lootShadowRenderer) return;
+
+            if (_width <= 0)
+            {
+                lootShadowRenderer.enabled = false;
+                return;
+            }
+
+            int _w = Mathf.Max(2, _width / 2 * 2);
+            int _h = Mathf.Max(4, Mathf.RoundToInt(_w * 0.15f) * 2);
+
+            lootShadowRenderer.sprite = GetShadowSprite(_w, _h);
+            lootShadowRenderer.color = new Color(0f, 0f, 0f, lootShadowAlpha);
+            lootShadowRenderer.enabled = true;
+        }
+
+        // 크기별 그림자 타원 스프라이트. 기둥마다 같은 크기를 쓰므로 한 번 만들어 계속 쓴다.
+        private static readonly Dictionary<int, Sprite> shadowSprites = new Dictionary<int, Sprite>();
+
+        private static Sprite GetShadowSprite(int _w, int _h)
+        {
+            int _key = (_w << 8) | _h;
+
+            if (true == shadowSprites.TryGetValue(_key, out Sprite _cached) && null != _cached)
+            {
+                return _cached;
+            }
+
+            Texture2D _tex = new Texture2D(_w, _h, TextureFormat.RGBA32, false);
+            _tex.filterMode = FilterMode.Point;
+            _tex.wrapMode = TextureWrapMode.Clamp;
+            _tex.hideFlags = HideFlags.DontSave;
+
+            Color32[] _pixels = new Color32[_w * _h];
+            float _rx = _w * 0.5f;
+            float _ry = _h * 0.5f;
+
+            for (int y = 0; y < _h; y++)
+            {
+                for (int x = 0; x < _w; x++)
+                {
+                    float _dx = (x + 0.5f - _rx) / _rx;
+                    float _dy = (y + 0.5f - _ry) / _ry;
+                    _pixels[y * _w + x] = _dx * _dx + _dy * _dy <= 1f ? new Color32(255, 255, 255, 255) : new Color32(0, 0, 0, 0);
+                }
+            }
+
+            _tex.SetPixels32(_pixels);
+            _tex.Apply(false, true);
+
+            Sprite _sprite = Sprite.Create(_tex, new Rect(0f, 0f, _w, _h), new Vector2(0.5f, 0.5f), DisplayPixelsPerUnit, 0, SpriteMeshType.FullRect);
+            _sprite.hideFlags = HideFlags.DontSave;
+            shadowSprites[_key] = _sprite;
+            return _sprite;
         }
 
         private void SetGlowOffset(Vector2 _offset)

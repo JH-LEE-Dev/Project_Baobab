@@ -80,6 +80,8 @@ public class HUD_LootReveal : MonoBehaviour
     private float lootInitialY;
     // 지금 그림의 밑둥을 기둥 윗판 중앙에 맞추는 이동량(SetLootSprite에서 정한다)
     private Vector2 lootBaseOffset;
+    // 등장 뒤 위아래로 떠다니는지. 성장 그림 중에는 씨앗만 떠다닌다(SetLootSprite에서 정한다).
+    private bool bLootFloat = true;
 
     // 성장 정보 원천(현재 단계, 다음 단계가 되는 프레스티지 레벨). 윗단이 SetGrowthInfoSource로 연결해 준다.
     private Func<LootType, int> growthTierGetter;
@@ -552,6 +554,9 @@ public class HUD_LootReveal : MonoBehaviour
         yield return _popSeq.WaitForCompletion();
 
         // 등장 스케일 애니메이션이 완전히 끝난 후, 아이템이 파티클처럼 부유(Floating)하도록 모션 연결
+        if (false == bLootFloat)
+            yield break;
+
         lootItemRect.DOAnchorPosY(lootInitialY + lootBaseOffset.y + lootFloatDistance, lootFloatDuration)
             .SetEase(Ease.InOutSine)
             .SetLoops(-1, LoopType.Yoyo)
@@ -666,6 +671,7 @@ public class HUD_LootReveal : MonoBehaviour
     private void SetLootSprite(LootType _lootType, LootItemTypeDataBase _db)
     {
         lootBaseOffset = Vector2.zero;
+        bLootFloat = true;
 
         if (null == lootItemImage || null == _db)
             return;
@@ -679,15 +685,21 @@ public class HUD_LootReveal : MonoBehaviour
         int _tier = null != growthTierGetter ? growthTierGetter(_lootType) : 0;
 
         if (null != growthVisualData
-            && true == growthVisualData.TryGetSprite(_lootType, _tier, out Sprite _tierSprite, out bool _bPlaceholder, out Vector2 _base))
+            && true == growthVisualData.TryGetSpriteEntry(_lootType, _tier, out LootGrowthVisualData.TierSprite _entry))
         {
+            Sprite _tierSprite = _entry.sprite;
             lootItemImage.sprite = _tierSprite;
 
+            // 기둥에 심긴 꽃/나무는 떠다니지 않고 씨앗(1단계 그림)만 떠다닌다. 그림이 없어 1단계 그림을 대신 쓰는 단계도 씨앗으로 본다.
+            bLootFloat = _entry.tier <= 1;
+
             // 그림마다 밑둥이 다른 곳에 있다 - 밑둥(스프라이트 유닛 → 이미지 픽셀)이 기둥 윗판 중앙에 오도록 옮긴다. 픽셀 단위로 맞춘다.
+            // 떠다니는 씨앗은 제자리에서 위로 lootFloatDistance만큼 떠다니므로, 떠다니는 범위의 가운데가 윗판 중앙에 오도록 그 절반만큼 내려 둔다.
             if (null != _tierSprite && 0f < _tierSprite.rect.width)
             {
                 float _scale = _tierSprite.pixelsPerUnit * lootItemImage.rectTransform.rect.width / _tierSprite.rect.width;
-                Vector2 _offset = lootBaseAnchor - _base * _scale;
+                float _floatHalf = true == bLootFloat ? lootFloatDistance * 0.5f : 0f;
+                Vector2 _offset = lootBaseAnchor - _entry.spriteBase * _scale - new Vector2(0f, _floatHalf);
                 lootBaseOffset = new Vector2(Mathf.Floor(_offset.x + 0.5f), Mathf.Floor(_offset.y + 0.5f));
             }
         }

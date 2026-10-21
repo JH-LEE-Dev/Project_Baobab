@@ -34,6 +34,7 @@ MonoBehaviour:
     displayArtCenter: {x: -0.00625, y: -0.175}
     displayBase: {x: -0.03125, y: -0.3125}
     spriteBase: {x: -0.03125, y: -0.625}
+    displayShadowWidth: 12
   - lootType: 2
     tier: 2
     sprite: {fileID: 21300000, guid: f4f0539807188b9489770c761144b60c, type: 3}
@@ -51,6 +52,7 @@ MonoBehaviour:
     displayArtCenter: {x: -0.025, y: -0.08125}
     displayBase: {x: -0.015625, y: -0.34375}
     spriteBase: {x: 0, y: -0.71875}
+    displayShadowWidth: 14
   - lootType: 2
     tier: 3
     sprite: {fileID: 21300000, guid: 72edfd0b3bee7e345999cbab6f8206e4, type: 3}
@@ -66,6 +68,7 @@ MonoBehaviour:
     displayArtCenter: {x: -0.046875, y: 0}
     displayBase: {x: -0.03125, y: -0.359375}
     spriteBase: {x: 0, y: -0.75}
+    displayShadowWidth: 18
   - lootType: 3
     tier: 1
     sprite: {fileID: 21300000, guid: 047f4cf8b917b7049a640e47f4f3e7f0, type: 3}
@@ -83,6 +86,7 @@ MonoBehaviour:
     displayArtCenter: {x: 0.009375, y: -0.075}
     displayBase: {x: 0, y: -0.3125}
     spriteBase: {x: 0, y: -0.625}
+    displayShadowWidth: 10
   - lootType: 3
     tier: 2
     sprite: {fileID: 21300000, guid: 13ebd879cbba0884dae0f9407f6615dc, type: 3}
@@ -101,6 +105,7 @@ MonoBehaviour:
     displayArtCenter: {x: 0.020833334, y: 0.0026041667}
     displayBase: {x: 0, y: -0.375}
     spriteBase: {x: 0, y: -0.71875}
+    displayShadowWidth: 12
   - lootType: 3
     tier: 3
     sprite: {fileID: 21300000, guid: ae610351fa287d443a4616035e7c89b7, type: 3}
@@ -115,6 +120,7 @@ MonoBehaviour:
     displayArtCenter: {x: 0.0078125, y: 0.03125}
     displayBase: {x: 0, y: -0.34375}
     spriteBase: {x: -0.015625, y: -0.71875}
+    displayShadowWidth: 18
   - lootType: 4
     tier: 1
     sprite: {fileID: 21300000, guid: 7e1ef28e2bf224a40bff9f1f3b798653, type: 3}
@@ -130,6 +136,7 @@ MonoBehaviour:
     displayArtCenter: {x: 0, y: -0.203125}
     displayBase: {x: 0, y: -0.3125}
     spriteBase: {x: -0.015625, y: -0.625}
+    displayShadowWidth: 8
   - lootType: 4
     tier: 2
     sprite: {fileID: 21300000, guid: e2371784fc932b5438a8839ea08e111d, type: 3}
@@ -146,6 +153,7 @@ MonoBehaviour:
     displayArtCenter: {x: -0.0625, y: 0.00390625}
     displayBase: {x: -0.015625, y: -0.359375}
     spriteBase: {x: -0.03125, y: -0.6875}
+    displayShadowWidth: 14
   - lootType: 4
     tier: 3
     sprite: {fileID: 21300000, guid: 7077b9b51a936dd47b3b978f53b0873c, type: 3}
@@ -160,6 +168,7 @@ MonoBehaviour:
     displayArtCenter: {x: 0.0234375, y: 0.046875}
     displayBase: {x: -0.015625, y: -0.359375}
     spriteBase: {x: -0.015625, y: -0.71875}
+    displayShadowWidth: 18
   - lootType: 5
     tier: 1
     sprite: {fileID: 21300000, guid: e6a82cbd0f16e0e4fa905e39eda6611a, type: 3}
@@ -175,6 +184,7 @@ MonoBehaviour:
     displayArtCenter: {x: 0, y: -0.203125}
     displayBase: {x: 0, y: -0.3125}
     spriteBase: {x: -0.015625, y: -0.625}
+    displayShadowWidth: 8
   - lootType: 5
     tier: 3
     sprite: {fileID: 21300000, guid: 67eecb7200943b54fbcecd2aa53d85cc, type: 3}
@@ -189,3 +199,4 @@ MonoBehaviour:
     displayArtCenter: {x: 0.0234375, y: 0.046875}
     displayBase: {x: -0.015625, y: -0.359375}
     spriteBase: {x: -0.015625, y: -0.71875}
+    displayShadowWidth: 18
