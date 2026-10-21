@@ -4,18 +4,18 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 로그라이크 웨이브용 나무 생성 전략. 기획서 3-1 "필드와 웨이브"(v2.3 초기 나무 · 생성 위치 포함).
+/// 로그라이크 웨이브용 나무 생성 전략. 기획서 3-1 "필드와 웨이브"(v2.5 초기 나무 · 묶음 스폰 · 생성 위치 · 필드 가장자리 포함).
 ///
 ///   - 필드: 플레이어 시작 지점을 중심으로 한 타원 섬(TileMapGenerator 타원 섬) 안의 잔디 칸에만 심는다.
+///     섬 가장자리(물 · 용암 칸에서 edgeInsetCells칸 안)는 빼 둔다 - 맵 끝 나무가 HUD 밖으로 나가 보이지 않게.
 ///   - 등장: 묘목 단계를 건너뛰고 다 자란 나무로 심은 뒤, 본편의 "다 자랄 때" 연출(성장 스케일 + 플래시)을 바로 재생한다.
-///   - 초기 나무: 웨이브 전투가 시작될 때 초기 N그루가 솟아난 채로 시작한다(목표 처치 수에 포함). 플레이어 시작 위치에서 가까운 군집에 둔다.
-///   - 스폰: 웨이브가 진행 중일 때만, spawnInterval마다 1그루. 스폰 상한(T + 추가 개수)에 닿으면 멈춘다.
-///     웨이브 동안 심는 총량은 목표 처치 수(초기 N 포함)까지다 - 이후 스폰은 "목표 − N"그루.
-///   - 상한 도달 후: 한 그루가 죽으면 다음 프레임에 바로 1그루를 다시 심는다(주기를 기다리지 않는다).
-///   - 생성 위치: 군집 스폰(ClusterSpawnRules). 군집 중심은 웨이브마다(그리고 clusterMoveInterval마다) 옮기고, 플레이어 바로 옆에는 심지 않으며,
-///     가장 가까운 나무가 R보다 멀면 그 나무 쪽 군집에 우선 심는다.
+///   - 초기 나무: 웨이브 전투가 시작될 때 현재 임계치의 절반이 필드 곳곳에 솟아난 채로 시작한다(목표 처치 수에 포함).
+///   - 스폰: 웨이브가 진행 중일 때만, 묶음 주기마다 초당 스폰 × 주기만큼 한꺼번에(소수는 다음 묶음으로 이월).
+///     웨이브 동안 심는 총량은 목표 처치 수(초기 나무 포함)까지다 - 이후 스폰은 "목표 − 초기 나무"그루.
+///   - 상한 도달 후: 묶음이 스폰 상한(T + 추가 개수)을 넘으면 상한까지만 심고 넘치는 몫은 버린다. 죽은 자리는 다음 묶음 때 채운다.
+///   - 생성 위치: 필드 곳곳에 분산(TreeSpawnRules). 다른 나무와 최소 간격을 두고, 플레이어 바로 옆에는 심지 않는다.
 ///
-/// 빈칸 목록은 이 전략이 직접 들고 있고, 본편 매니저의 후보 목록(availablePositions)은 비워 둔다 - 군집 위치에 직접 심어야 해서
+/// 빈칸 목록은 이 전략이 직접 들고 있고, 본편 매니저의 후보 목록(availablePositions)은 비워 둔다 - 간격 규칙으로 고른 칸에 직접 심어야 해서
 /// 매니저의 무작위 후보 뽑기(SpawnOneTreeFromAvailable)는 쓰지 않는다.
 ///
 /// 처치 수 집계는 TreeKilledEvent를 받은 RoguelikeSystem이 한다. 이 전략은 "어디에 언제 심는가"만 맡는다.
@@ -36,6 +36,7 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
     private readonly HashSet<Vector3Int> fieldCells = new HashSet<Vector3Int>();
     // 지금 나무가 없는 필드 칸. 심으면 빠지고 나무가 죽으면 돌아온다.
     private readonly List<Vector3> freePositions = new List<Vector3>(1024);
+    // 지금 서 있는 나무 + 이번 묶음에 심은 나무 위치. 최소 간격 판정에 쓴다.
     private readonly List<Vector3> treePositionScratch = new List<Vector3>(64);
     // 이번 스폰에서 심지 못한 칸(잠깐 점유된 칸). 스폰이 끝나면 빈칸으로 되돌린다. 바위 장식 칸은 필드에서 미리 뺀다.
     private readonly List<Vector3> blockedScratch = new List<Vector3>(16);
@@ -45,35 +46,39 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
     private Vector3 fieldCenter;
     private float fieldRadiusX = 8f;
     private float fieldRadiusY = 4.5f;
+    private int edgeInsetCells;
 
     private bool bSpawning;
     private float spawnInterval = 0.5f;
     private int spawnCap = 60;
     // 이 웨이브에 심을 수 있는 총량(초기 나무 포함). 0 이하면 제한 없음.
     private int spawnBudget;
-    // 생성 위치 수치(초기 나무 · 군집 · 허탕 방지 · 플레이어 금지 반경). RoguelikeSystem의 밸런스 에셋을 그대로 읽는다.
+    // 묶음 주기 · 최소 간격 · 플레이어 금지 반경. RoguelikeSystem의 밸런스 에셋을 그대로 읽는다.
     private RoguelikeBalanceSO balance;
     private int spawnedThisWave;
-    private float spawnAccumulator;
-    private int pendingImmediateSpawns;
-    private Vector3 clusterCenter;
-    private float nextClusterMoveTime;
+    // 다음 묶음까지 남은 시간과, 묶음 크기의 소수 이월분.
+    private float batchTimer;
+    private float batchCarry;
     private Transform playerTransform;
 
     public int FieldPositionCount => fieldPositions.Count;
 
-    /// <summary>다음 ReadyTrees에서 쓸 필드 범위(타원 반지름, 월드). 맵을 새로 만들 때마다 먼저 부른다.</summary>
-    public void ConfigureField(Vector3 _center, float _radiusX, float _radiusY)
+    /// <summary>
+    /// 다음 ReadyTrees에서 쓸 필드 범위(타원 반지름, 월드)와 가장자리에서 뺄 칸 수(_edgeInsetCells, 0이면 빼지 않음).
+    /// 맵을 새로 만들 때마다 먼저 부른다.
+    /// </summary>
+    public void ConfigureField(Vector3 _center, float _radiusX, float _radiusY, int _edgeInsetCells)
     {
         fieldCenter = _center;
         fieldRadiusX = Mathf.Max(1f, _radiusX);
         fieldRadiusY = Mathf.Max(1f, _radiusY);
+        edgeInsetCells = Mathf.Max(0, _edgeInsetCells);
     }
 
     /// <summary>
-    /// 웨이브 시작. 빈칸을 필드 전체로 되돌리고, 플레이어 근처에 군집 중심을 잡아 초기 나무 _initialTrees그루를 한꺼번에 심은 뒤 스폰을 켠다.
-    /// _spawnBudget은 이 웨이브에 심는 총량(초기 나무 포함, 0 이하면 제한 없음). 생성 위치 수치는 _balance에서 읽는다.
-    /// _player는 플레이어 바로 옆 금지·허탕 방지 판정에 쓴다(없으면 필드 중심 기준).
+    /// 웨이브 시작. 빈칸을 필드 전체로 되돌리고, 초기 나무 _initialTrees그루를 필드 곳곳에 한꺼번에 심은 뒤 묶음 스폰을 켠다.
+    /// _spawnBudget은 이 웨이브에 심는 총량(초기 나무 포함, 0 이하면 제한 없음). 묶음 주기 · 생성 위치 수치는 _balance에서 읽는다.
+    /// _player는 플레이어 바로 옆 금지 판정에 쓴다(없으면 필드 중심 기준).
     /// </summary>
     public void BeginWave(InDungeonObjectManager _manager, float _spawnInterval, int _spawnCap, int _initialTrees, int _spawnBudget,
         RoguelikeBalanceSO _balance, Transform _player)
@@ -84,20 +89,13 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
         balance = _balance;
         playerTransform = _player;
         spawnedThisWave = 0;
-        spawnAccumulator = 0f;
-        pendingImmediateSpawns = 0;
+        batchTimer = BatchSeconds;
+        batchCarry = 0f;
 
         ResetSpawnPositions(_manager);
 
-        // 초기 나무는 플레이어 시작 위치에서 이동 거리가 짧은 곳의 군집에 둔다(기획서 v2.3 3-1).
-        clusterCenter = PickClusterCenter(PlayerPosition, InitialClusterMaxDistance);
-        nextClusterMoveTime = ClusterMoveInterval > 0f ? Time.time + ClusterMoveInterval : float.MaxValue;
-
-        int initial = Mathf.Min(Mathf.Max(0, _initialTrees), spawnCap);
-        for (int i = 0; i < initial; i++)
-        {
-            if (false == SpawnOne(_manager)) break;
-        }
+        // 초기 나무도 한 묶음처럼 필드 곳곳에 흩어 심는다(기획서 v2.5 3-1).
+        SpawnBatch(_manager, Mathf.Max(0, _initialTrees));
 
         bSpawning = true;
     }
@@ -112,15 +110,15 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
     public void StopSpawning()
     {
         bSpawning = false;
-        spawnAccumulator = 0f;
-        pendingImmediateSpawns = 0;
+        batchTimer = 0f;
+        batchCarry = 0f;
     }
 
     /// <summary>_position에서 가장 가까운 나무까지의 거리(월드, 등각 보정). 나무가 없으면 float.MaxValue. 허탕 이동 측정용.</summary>
     public float NearestTreeDistance(InDungeonObjectManager _manager, Vector3 _position)
     {
         CollectTreePositions(_manager);
-        if (ClusterSpawnRules.NearestIndex(treePositionScratch, _position, out float distanceSq) < 0) return float.MaxValue;
+        if (TreeSpawnRules.NearestIndex(treePositionScratch, _position, out float distanceSq) < 0) return float.MaxValue;
         return Mathf.Sqrt(distanceSq);
     }
 
@@ -139,6 +137,8 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
         // 로그라이크 웨이브는 처음부터 후보에 넣는다. 매니저의 지연 개방 예약은
         // RoguelikeSystem이 준비 직후 취소한다 - 남겨 두면 웨이브마다 그 칸이 열리는 시점이 들쭉날쭉해진다.
         AddFieldPositions(tiles?.GetDelayedGrassTileWorldPositions(), invRx2, invRy2, tiles);
+
+        RemoveEdgePositions(tiles);
 
         if (0 == fieldPositions.Count)
         {
@@ -162,40 +162,13 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
                 continue;
             }
 
-            // 군집 중심을 일정 시간마다 필드 안 다른 곳으로 옮긴다(기획서 v2.3 "웨이브마다(또는 일정 시간마다)").
-            if (Time.time >= nextClusterMoveTime)
+            // 묶음 주기마다 초당 스폰 × 주기만큼 한꺼번에 심는다(기획서 v2.5 "스폰 속도 · 묶음"). 상한을 넘는 몫은 SpawnBatch가 버린다.
+            batchTimer -= Time.deltaTime;
+            if (batchTimer <= 0f)
             {
-                clusterCenter = PickClusterCenter(fieldCenter, float.MaxValue);
-                nextClusterMoveTime = Time.time + ClusterMoveInterval;
+                batchTimer = Mathf.Max(0f, batchTimer + BatchSeconds);
+                SpawnBatch(_manager, TreeSpawnRules.TakeBatch(ref batchCarry, spawnInterval, BatchSeconds));
             }
-
-            int alive = _manager.ActiveTrees.Count;
-            int cap = spawnCap;
-
-            // 상한에서 한 그루가 죽은 자리는 주기를 기다리지 않고 채운다.
-            while (pendingImmediateSpawns > 0 && alive < cap && HasBudget)
-            {
-                pendingImmediateSpawns--;
-                if (false == SpawnOne(_manager)) break;
-                alive++;
-            }
-            pendingImmediateSpawns = 0;
-
-            spawnAccumulator += Time.deltaTime;
-            while (spawnAccumulator >= spawnInterval && alive < cap && HasBudget)
-            {
-                spawnAccumulator -= spawnInterval;
-                if (false == SpawnOne(_manager))
-                {
-                    spawnAccumulator = 0f;
-                    break;
-                }
-
-                alive++;
-            }
-
-            // 상한·총량에 막혀 있는 동안 주기를 쌓아 두면, 자리가 나는 순간 한꺼번에 몰려 심긴다. 한 주기분만 남긴다.
-            if ((alive >= cap || false == HasBudget) && spawnAccumulator > spawnInterval) spawnAccumulator = spawnInterval;
 
             yield return null;
         }
@@ -203,14 +176,8 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
 
     public override void OnTreeDead(InDungeonObjectManager _manager, TreeObj _treeObj, Vector3 _deadPos)
     {
-        // 빈칸으로 돌려놓는다. 다음 스폰이 군집 규칙으로 다시 고른다.
+        // 빈칸으로 돌려놓는다. 상한에 막혀 있었어도 바로 채우지 않고 다음 묶음 때 채운다(기획서 v2.5 "상한 도달 후").
         freePositions.Add(_deadPos);
-
-        // 이 콜백은 죽은 나무가 아직 활성 목록에 있을 때 불린다. "죽기 전 수 >= 상한"이면 상한에 막혀 있던 상태다.
-        if (bSpawning && _manager.ActiveTrees.Count >= spawnCap)
-        {
-            pendingImmediateSpawns++;
-        }
 
         TreeKilledEvent?.Invoke(_treeObj, _deadPos);
     }
@@ -219,33 +186,43 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
 
     private bool HasBudget => spawnBudget <= 0 || spawnedThisWave < spawnBudget;
 
-    private float ClusterRadius => null != balance ? balance.clusterRadius : 2.5f;
-    private float ClusterMoveInterval => null != balance ? balance.clusterMoveInterval : 0f;
-    private float GapDistance => null != balance ? balance.gapDistance : 0f;
+    private float BatchSeconds => null != balance ? Mathf.Max(0.1f, balance.spawnBatchSeconds) : 3f;
+    private float MinSpacing => null != balance ? balance.treeMinSpacing : 0f;
     private float PlayerExclusionRadius => null != balance ? balance.playerExclusionRadius : 0f;
-    private float InitialClusterMaxDistance => null != balance ? balance.initialClusterMaxDistance : 4f;
 
     private Vector3 PlayerPosition => null != playerTransform ? playerTransform.position : fieldCenter;
 
     /// <summary>
-    /// 군집 규칙으로 고른 빈칸에 다 자란 나무 한 그루를 심고 성장 연출을 바로 재생한다. 묘목 상태를 거치지 않으므로 심는 즉시 벨 수 있다.
+    /// _count그루를 필드 곳곳에 같은 프레임에 심는다(한 묶음이 "팍" 솟아난다). 스폰 상한 · 웨이브 총량에 닿으면 거기서 멈추고 남은 몫은 버린다.
+    /// </summary>
+    private void SpawnBatch(InDungeonObjectManager _manager, int _count)
+    {
+        int room = Mathf.Min(_count, spawnCap - _manager.ActiveTrees.Count);
+        if (room <= 0) return;
+
+        // 간격 판정용 위치 목록. 이번 묶음에 심은 나무는 SpawnOne이 뒤에 더한다.
+        CollectTreePositions(_manager);
+
+        for (int i = 0; i < room && HasBudget; i++)
+        {
+            if (false == SpawnOne(_manager)) break;
+        }
+    }
+
+    /// <summary>
+    /// 분산 규칙으로 고른 빈칸에 다 자란 나무 한 그루를 심고 성장 연출을 바로 재생한다. 묘목 상태를 거치지 않으므로 심는 즉시 벨 수 있다.
     /// 지금 심을 수 없는 칸(바위 장식·잠깐 점유된 칸)은 이번 스폰에서만 건너뛰고, 스폰이 끝나면 빈칸으로 되돌린다.
+    /// 심은 위치는 간격 판정 목록에 더해 같은 묶음의 다음 나무도 간격을 지키게 한다.
     /// </summary>
     private bool SpawnOne(InDungeonObjectManager _manager)
     {
         Vector3 player = PlayerPosition;
-        Vector3 anchor = clusterCenter;
-
-        // 허탕 방지: 가장 가까운 나무가 R보다 멀면 그 나무 쪽 군집에 우선 심는다.
-        CollectTreePositions(_manager);
-        if (ClusterSpawnRules.TryGetGapAnchor(treePositionScratch, player, GapDistance, out Vector3 gapAnchor)) anchor = gapAnchor;
-
         bool bSpawned = false;
         blockedScratch.Clear();
 
         while (freePositions.Count > 0)
         {
-            int index = ClusterSpawnRules.PickIndex(freePositions, anchor, ClusterRadius, player, PlayerExclusionRadius, rng, pickScratch);
+            int index = TreeSpawnRules.PickScatteredIndex(freePositions, treePositionScratch, MinSpacing, player, PlayerExclusionRadius, rng, pickScratch);
             if (index < 0) break;
 
             Vector3 pos = freePositions[index];
@@ -259,6 +236,7 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
             }
 
             spawnedThisWave++;
+            treePositionScratch.Add(tree.transform.position);
             if (bPlayGrowUpOnSpawn) tree.PlayGrowUpForRun();
             bSpawned = true;
             break;
@@ -267,16 +245,6 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
         freePositions.AddRange(blockedScratch);
         blockedScratch.Clear();
         return bSpawned;
-    }
-
-    /// <summary>군집 중심을 고른다. _origin에서 _maxDistance 안의 빈칸 중 하나(플레이어 바로 옆 제외). 없으면 필드 아무 빈칸.</summary>
-    private Vector3 PickClusterCenter(Vector3 _origin, float _maxDistance)
-    {
-        if (0 == freePositions.Count) return fieldCenter;
-
-        float radius = float.MaxValue == _maxDistance ? Mathf.Max(fieldRadiusX, fieldRadiusY) * 2f : Mathf.Max(0.5f, _maxDistance);
-        int index = ClusterSpawnRules.PickIndex(freePositions, _origin, radius, PlayerPosition, PlayerExclusionRadius + ClusterRadius * 0.5f, rng, pickScratch);
-        return index >= 0 ? freePositions[index] : fieldCenter;
     }
 
     private void CollectTreePositions(InDungeonObjectManager _manager)
@@ -332,5 +300,38 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
 
             fieldPositions.Add(pos);
         }
+    }
+
+    /// <summary>
+    /// 섬 가장자리 칸을 필드에서 뺀다(기획서 v2.5 3-1 "필드": 맵 끝에 나무가 나오면 HUD 밖으로 빠져나가 보인다).
+    /// 8방향으로 edgeInsetCells칸 안에 물(4티어는 용암) 칸이 있으면 가장자리로 본다.
+    /// </summary>
+    private void RemoveEdgePositions(ITilemapDataProvider _tiles)
+    {
+        if (null == _tiles || edgeInsetCells <= 0) return;
+
+        int write = 0;
+        for (int i = 0; i < fieldPositions.Count; i++)
+        {
+            Vector3 pos = fieldPositions[i];
+            if (IsNearWater(_tiles, _tiles.WorldToCell(pos), edgeInsetCells)) continue;
+            fieldPositions[write++] = pos;
+        }
+
+        fieldPositions.RemoveRange(write, fieldPositions.Count - write);
+    }
+
+    private static bool IsNearWater(ITilemapDataProvider _tiles, Vector3Int _cell, int _range)
+    {
+        for (int dy = -_range; dy <= _range; dy++)
+        {
+            for (int dx = -_range; dx <= _range; dx++)
+            {
+                if (0 == dx && 0 == dy) continue;
+                if (_tiles.IsWaterTile(new Vector3Int(_cell.x + dx, _cell.y + dy, _cell.z))) return true;
+            }
+        }
+
+        return false;
     }
 }

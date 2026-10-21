@@ -52,6 +52,9 @@ public class RoguelikeSkillController : MonoBehaviour
     private sealed class OffroadCar
     {
         public RoguelikeOffroadVisual visual;
+        // 차선(진행 방향 · 수직 오프셋). 같은 차선에 다른 차를 겹쳐 소환하지 않는 데 쓴다.
+        public bool bRight;
+        public float laneOffset;
         public Vector3 from;
         public Vector3 islandExit;
         public Vector2 direction;
@@ -74,6 +77,16 @@ public class RoguelikeSkillController : MonoBehaviour
         public readonly Dictionary<TreeObj, int> hitTrees = new Dictionary<TreeObj, int>();
 
         public Vector3 Position => from + (Vector3)(direction * traveled);
+    }
+
+    /// <summary>오프로드 소환 후보 차선 하나. 진입점은 섬 테두리에서 진행 방향으로 들여온 소환 위치다.</summary>
+    private struct OffroadLane
+    {
+        public bool bRight;
+        public float offset;
+        public Vector2 entry;
+        public Vector2 exit;
+        public float inset;
     }
 
     [SerializeField] private RoguelikeSkillTuningSO tuning;
@@ -120,6 +133,8 @@ public class RoguelikeSkillController : MonoBehaviour
     private readonly List<OffroadCar> offroadCars = new List<OffroadCar>(4);
     private readonly Stack<OffroadCar> offroadCarPool = new Stack<OffroadCar>(4);
     private readonly Stack<RoguelikeOffroadVisual> offroadVisualPool = new Stack<RoguelikeOffroadVisual>(4);
+    private readonly List<OffroadLane> offroadLaneCandidates = new List<OffroadLane>(32);
+    private readonly List<OffroadLane> offroadLanePicks = new List<OffroadLane>(8);
     private float nextOffroadHitShakeTime;
 
     private readonly List<Vector3> pendingBoomerangHits = new List<Vector3>(16);
@@ -160,6 +175,9 @@ public class RoguelikeSkillController : MonoBehaviour
 
     // 오염 지속 피해 틱. 모든 오염 나무가 같은 틱에 피해를 받는다.
     private float nextSporeTickTime;
+
+    // 이번 웨이브의 별 폭발 1회 피해 상한(나무 최대 HP 대비). 0이면 상한 없음(4티어 미만).
+    private float starBlastHpCapRatio;
 
     /// <summary>스텔라+드론 이음선. 이펙트 담당이 선을 그릴 때 읽는다(StarLinksChanged 시그널 뒤).</summary>
     public IReadOnlyList<Vector2Int> StarLinks => starLinks;
@@ -240,9 +258,11 @@ public class RoguelikeSkillController : MonoBehaviour
         fieldRadiusY = Mathf.Max(1f, _radiusY);
     }
 
-    public void BeginCombat()
+    /// <summary>웨이브 전투 시작. _tierIndex(0부터)는 별 폭발 피해 상한(4티어부터)을 거는 데 쓴다.</summary>
+    public void BeginCombat(int _tierIndex)
     {
         bActive = true;
+        starBlastHpCapRatio = _tierIndex >= tuning.stellaBlastCapFromTier ? Mathf.Max(0f, tuning.stellaBlastMaxHpRatio) : 0f;
         float now = Time.time;
         nextOffroadTime = now + Interval(tuning.offroadInterval, ERoguelikeSkill.Offroad);
         nextSporeTime = now + Interval(tuning.sporeInterval, ERoguelikeSkill.SporeBomb) * 0.5f;
@@ -357,6 +377,9 @@ public class RoguelikeSkillController : MonoBehaviour
         UpdateSpore(now);
         UpdateOffroad(now);
         UpdateStellaDrone(now);
+
+        // 드론은 본편과 달리 도끼질을 하지 않아도 발사 주기마다 자동으로 쏜다(기획서 v2.5 6-1). 발사 · 체인 판정은 본편 드론 그대로다.
+        if (modifiers.IsSkillActive(ERoguelikeSkill.Drone)) character.KeepDronesActiveForRun();
     }
 
     // // 조합: 회전베기+충격파 / 부메랑+충격파 / 회전베기+부메랑
@@ -515,7 +538,15 @@ public class RoguelikeSkillController : MonoBehaviour
     {
         RoguelikeStar star = Instantiate(starPrefab, transform);
         star.HitEvent += starHitHandler;
+        star.HighlightChangedEvent += OnStarHighlightChanged;
         return star;
+    }
+
+    /// <summary>별이 도끼 범위에 들어오거나 빠졌다. 나무 아웃라인처럼 강조를 그릴 자리를 이펙트 쪽에 알린다(그림 중심 기준).</summary>
+    private void OnStarHighlightChanged(RoguelikeStar _star, bool _bHighlighted)
+    {
+        Vector3 pos = _star.transform.position;
+        Publish(_bHighlighted ? ERoguelikeSkillVfx.StarHighlightOn : ERoguelikeSkillVfx.StarHighlightOff, pos, pos, _star.Radius, 0f, _star.StarId);
     }
 
     /// <summary>
@@ -608,7 +639,7 @@ public class RoguelikeSkillController : MonoBehaviour
         float damage = _baseDamage * DamageMul(ERoguelikeSkill.Stella);
         bool bDot = modifiers.IsComboActive(ERoguelikeCombo.StellaSpore);
 
-        DamageTreesInRadius(_center, radius, damage, true, bDot);
+        DamageTreesInRadius(_center, radius, damage, true, bDot, true, starBlastHpCapRatio);
     }
 
     private void DespawnStar(int _index, bool _bRebuildLinks)
@@ -1076,34 +1107,124 @@ public class RoguelikeSkillController : MonoBehaviour
     }
 #endif
 
-    /// <summary>한 번에 _count대를 내보낸다. 차선은 겹치지 않게 섬 폭을 나눠 고르고, 방향(좌·우)은 차마다 무작위다.</summary>
+    /// <summary>
+    /// 한 번에 _count대를 내보낸다(기획서 v2.5 6-1 오프로드 "소환 위치").
+    ///   - 돌진 경로 위에 나무가 1그루 이상 있는 차선만 후보다.
+    ///   - 이번에 함께 나가는 차끼리, 그리고 아직 돌진 중인 차와 위치가 겹치는 차선에는 소환하지 않는다.
+    ///   - 후보가 대수보다 적으면 있는 만큼만 나간다.
+    /// 후보는 두 방향(좌·우 아래 대각선)마다 섬 폭을 차선 폭으로 나눈 칸이고, 그중 무작위로 고른다.
+    /// </summary>
     private void StartOffroadVolley(float _now, int _count)
     {
         int count = Mathf.Max(1, _count);
-        bool bFirstRight = Random.value < 0.5f;
+        float radius = tuning.offroadHitRadius * RangeMul(ERoguelikeSkill.Offroad);
 
-        for (int i = 0; i < count; i++)
+        CollectOffroadLaneCandidates(radius);
+
+        // 무작위 순서로 훑으며 겹치지 않는 차선을 고른다.
+        offroadLanePicks.Clear();
+        for (int i = offroadLaneCandidates.Count - 1; i >= 0 && offroadLanePicks.Count < count; i--)
         {
-            // 두 대 이상이면 방향을 번갈아 엇갈리게 해 화면이 한쪽으로 쏠리지 않게 한다.
-            bool bRight = 0 == i % 2 ? bFirstRight : false == bFirstRight;
-            float delay = tuning.offroadVolleyStagger * i;
-            StartOffroad(_now, delay, bRight, i, count);
+            int swap = Random.Range(0, i + 1);
+            OffroadLane lane = offroadLaneCandidates[swap];
+            offroadLaneCandidates[swap] = offroadLaneCandidates[i];
+            offroadLaneCandidates[i] = lane;
+
+            if (IsOffroadLaneTaken(in lane, radius)) continue;
+            offroadLanePicks.Add(lane);
+        }
+
+        for (int i = 0; i < offroadLanePicks.Count; i++)
+        {
+            StartOffroad(_now, tuning.offroadVolleyStagger * i, offroadLanePicks[i], 0 == i);
         }
     }
 
-    private void StartOffroad(float _now, float _delay, bool _bRight, int _laneIndex, int _laneCount)
+    /// <summary>
+    /// 돌진 경로 위에 나무가 있는 차선을 모두 모은다. 차선 칸은 소환 위치 최소 간격(돌진 판정 반지름)으로 나누고, 이웃 칸끼리도
+    /// 그 간격 이상 떨어지게 흔든다 - 나무가 고루 있으면 MAX 6대가 늘 다 나간다. 돌진 판정 폭(반지름 × 2)은 이웃 차선과 일부 겹칠 수 있다
+    /// (기획서의 "위치 중복 금지"는 같은 자리 소환을 막는 규칙이다).
+    /// </summary>
+    private void CollectOffroadLaneCandidates(float _radius)
     {
-        Vector2 dir = OffroadLanes.DownDiagonal(_bRight);
-        float halfWidth = OffroadLanes.HalfWidth(fieldRadiusX, fieldRadiusY, dir);
-        float offset = OffroadLanes.LaneOffset(_laneIndex, _laneCount, halfWidth, tuning.offroadLaneSpread, Random.value);
+        offroadLaneCandidates.Clear();
 
-        if (false == OffroadLanes.TryGetLane(fieldCenter, fieldRadiusX, fieldRadiusY, dir, offset, out Vector2 entry, out Vector2 exit)) return;
+        for (int side = 0; side < 2; side++)
+        {
+            bool bRight = 1 == side;
+            Vector2 dir = OffroadLanes.DownDiagonal(bRight);
+            float halfWidth = OffroadLanes.HalfWidth(fieldRadiusX, fieldRadiusY, dir);
+            int slots = OffroadLanes.SlotCount(halfWidth, tuning.offroadLaneSpread, _radius);
 
-        // 섬 테두리 타일 위에서 소환되도록 경계선에서 진행 방향으로 들여온다(차선이 짧으면 차선 길이의 1/4까지만).
-        float inset = Mathf.Min(Mathf.Max(0f, tuning.offroadEdgeInset), Vector2.Distance(entry, exit) * 0.25f);
-        entry += dir * inset;
+            for (int slot = 0; slot < slots; slot++)
+            {
+                float offset = OffroadLanes.SlotOffset(slot, slots, halfWidth, tuning.offroadLaneSpread, _radius, Random.value);
+                if (false == OffroadLanes.TryGetLane(fieldCenter, fieldRadiusX, fieldRadiusY, dir, offset, out Vector2 entry, out Vector2 exit)) continue;
+
+                // 섬 테두리 타일 위에서 소환되도록 경계선에서 진행 방향으로 들여온다(차선이 짧으면 차선 길이의 1/4까지만).
+                // 반대편도 같은 만큼 안쪽에서 멈추므로 판정 경로는 양끝에서 inset만큼 짧다.
+                float inset = Mathf.Min(Mathf.Max(0f, tuning.offroadEdgeInset), Vector2.Distance(entry, exit) * 0.25f);
+                Vector2 start = entry + dir * inset;
+                Vector2 end = exit - dir * inset;
+                if (false == HasTreeAlongSegment(start, end, _radius)) continue;
+
+                offroadLaneCandidates.Add(new OffroadLane { bRight = bRight, offset = offset, entry = start, exit = exit, inset = inset });
+            }
+        }
+    }
+
+    /// <summary>
+    /// 이 차선이 이번에 고른 차선이나 아직 달리는 차와 겹치는지. 최소 간격은 돌진 판정 반지름이다(CollectOffroadLaneCandidates와 같은 값).
+    /// 같은 방향이면 차선 간격이 최소 간격보다 좁을 때, 반대 방향이면 소환 위치가 다른 차(이번에 고른 차는 소환 위치, 달리는 차는 지금 위치)와
+    /// 최소 간격 안일 때 겹친다고 본다.
+    /// </summary>
+    private bool IsOffroadLaneTaken(in OffroadLane _lane, float _radius)
+    {
+        float gap = _radius;
+        float gapSq = gap * gap;
+
+        for (int i = 0; i < offroadLanePicks.Count; i++)
+        {
+            OffroadLane other = offroadLanePicks[i];
+            if (other.bRight == _lane.bRight ? Mathf.Abs(other.offset - _lane.offset) < gap : (other.entry - _lane.entry).sqrMagnitude < gapSq) return true;
+        }
+
+        for (int i = 0; i < offroadCars.Count; i++)
+        {
+            OffroadCar car = offroadCars[i];
+            if (car.bRight == _lane.bRight ? Mathf.Abs(car.laneOffset - _lane.offset) < gap : ((Vector2)car.Position - _lane.entry).sqrMagnitude < gapSq) return true;
+        }
+
+        return false;
+    }
+
+    private bool HasTreeAlongSegment(Vector2 _from, Vector2 _to, float _width)
+    {
+        if (null == CollisionSystem.Instance) return false;
+
+        Vector2 center = (_from + _to) * 0.5f;
+        float scanRadius = Vector2.Distance(_from, _to) * 0.5f + _width;
+        CollisionSystem.Instance.GetCollidablesInRadius(center, scanRadius, treeLayer.value, scanBuffer);
+
+        float widthSq = _width * _width;
+        for (int i = 0; i < scanBuffer.Count; i++)
+        {
+            if (scanBuffer[i] is TreeObj tree && IsHittable(tree) && DistancePointToSegmentSq(tree.Position, _from, _to) <= widthSq) return true;
+        }
+
+        return false;
+    }
+
+    private void StartOffroad(float _now, float _delay, in OffroadLane _lane, bool _bEngine)
+    {
+        Vector2 dir = OffroadLanes.DownDiagonal(_lane.bRight);
+        Vector2 entry = _lane.entry;
+        Vector2 exit = _lane.exit;
+        float inset = _lane.inset;
 
         OffroadCar car = 0 < offroadCarPool.Count ? offroadCarPool.Pop() : new OffroadCar();
+        car.bRight = _lane.bRight;
+        car.laneOffset = _lane.offset;
         car.from = entry;
         car.islandExit = exit;
         car.direction = dir;
@@ -1122,7 +1243,7 @@ public class RoguelikeSkillController : MonoBehaviour
         car.lastPosition = entry;
         car.damage = tuning.offroadDamage * DamageMul(ERoguelikeSkill.Offroad);
         car.radius = tuning.offroadHitRadius * RangeMul(ERoguelikeSkill.Offroad);
-        car.bEngine = 0 == _laneIndex;
+        car.bEngine = _bEngine;
         car.engine = AudioHandle.Invalid;
         car.hitTrees.Clear();
         car.visual = RentOffroadVisual();
@@ -1272,7 +1393,7 @@ public class RoguelikeSkillController : MonoBehaviour
             nextLonePulseTime = _now + Interval(tuning.stellaDroneLoneStarInterval, ERoguelikeSkill.Drone);
             Vector3 pos = activeStars[0].transform.position;
             float radius = tuning.stellaDroneLoneStarRadius * RangeMul(ERoguelikeSkill.Stella);
-            DamageTreesInRadius(pos, radius, tuning.stellaBlastDamage * DamageMul(ERoguelikeSkill.Stella), true, false);
+            DamageTreesInRadius(pos, radius, tuning.stellaBlastDamage * DamageMul(ERoguelikeSkill.Stella), true, false, true, starBlastHpCapRatio);
             Publish(ERoguelikeSkillVfx.LoneStarPulse, pos, pos, radius, 0f, activeStars[0].StarId);
         }
 
@@ -1348,7 +1469,11 @@ public class RoguelikeSkillController : MonoBehaviour
 
     // // 피해 공통
 
-    private void DamageTreesInRadius(Vector3 _center, float _radius, float _damage, bool _bMark, bool _bDot, bool _bBatch = true)
+    /// <summary>
+    /// 반경 안 나무에 피해를 준다. _hpCapRatio가 0보다 크면 한 그루가 이 한 번에 받는 최종 피해(별 표식 · 포자 증폭 배율 포함)를
+    /// 그 나무 최대 HP × _hpCapRatio로 자른다(기획서 v2.5 A-4 스텔라 4티어 폭발 상한).
+    /// </summary>
+    private void DamageTreesInRadius(Vector3 _center, float _radius, float _damage, bool _bMark, bool _bDot, bool _bBatch = true, float _hpCapRatio = 0f)
     {
         if (null == CollisionSystem.Instance || _radius <= 0f) return;
 
@@ -1373,7 +1498,7 @@ public class RoguelikeSkillController : MonoBehaviour
 
                 // 별은 주변을 공격한 "뒤에" 표식을 남긴다(기획서 6-1). 표식의 받는 피해 +30%는 이 폭발이 아니라 이후 피해부터 붙는다.
                 // 이 피해로 쓰러진 나무는 풀로 돌아가므로 표식을 남기지 않는다.
-                tree.TakeDamage(_damage, false, false);
+                tree.TakeDamage(_hpCapRatio > 0f ? CapDamageToMaxHp(tree, _damage, _hpCapRatio) : _damage, false, false);
                 if (_bMark && IsHittable(tree)) MarkTree(tree, _bDot);
             }
         }
@@ -1426,6 +1551,22 @@ public class RoguelikeSkillController : MonoBehaviour
         }
 
         return hits;
+    }
+
+    /// <summary>
+    /// 나무가 받는 최종 피해가 최대 HP × _ratio를 넘지 않게 넘길 피해를 줄인다. 나무는 TakeDamage 안에서 별 표식 배율과
+    /// 포자 대폭발 증폭을 곱하므로 그 배율로 나눠 넘긴다.
+    /// </summary>
+    private float CapDamageToMaxHp(TreeObj _tree, float _damage, float _ratio)
+    {
+        float maxHp = null != _tree.health ? _tree.health.GetMaxHealth() : 0f;
+        if (maxHp <= 0f) return _damage;
+
+        float scale = 1f + Mathf.Max(0f, _tree.SporeDamageAmplify);
+        if (_tree.bStarMarked && null != objectManager) scale *= Mathf.Max(0f, objectManager.StarMarkDamageMultiplier);
+        if (scale <= 0f) return _damage;
+
+        return Mathf.Min(_damage, maxHp * _ratio / scale);
     }
 
     private static bool IsHittable(TreeObj _tree)

@@ -9,11 +9,24 @@ public sealed class RoguelikeSkillVfxAssets
 {
     [Tooltip("본편 회전베기 프레임(AttackComponent.whirlwindFrames와 같은 것). 회전베기+부메랑 타격에 쓴다.")]
     public Sprite[] whirlwindFrames;
-    [Tooltip("포자 폭탄이 날아가는 동안의 그림(본편 포자 그림).")]
+    [Tooltip("포자 수류탄이 날아가는 동안의 그림(기획서 v2.5: Booty Items_16x의 초록 포자 주머니, 두 번째 칸).")]
     public Sprite sporeBombSprite;
-    [Tooltip("포자 폭탄이 날아가는 시간(초)과 포물선 높이. 폭탄은 떨어지는 순간 대폭발을 일으킨다(판정도 이 시간 뒤다).")]
+    [Tooltip("포자 수류탄이 날아가는 시간(초)과 포물선 높이. 수류탄은 떨어지는 순간 대폭발을 일으킨다(판정도 이 시간 뒤다).")]
     public float sporeBombThrowSeconds = 0.45f;
     public float sporeBombArcHeight = 1.6f;
+    [Tooltip("날아가는 동안 빙글빙글 도는 속도(도/초).")]
+    public float sporeBombSpinSpeed = 720f;
+    [Tooltip("날아가는 동안의 스쿼시/스트레치 세기. 오르내릴 때(빠를 때) 세로로 늘어나고 꼭대기에서 원래 모양으로 돌아온다.")]
+    [Range(0f, 1f)] public float sporeBombFlightStretch = 0.3f;
+    [Tooltip("착지 뒤 찌그러졌다 출렁이다 부풀며 터질 때까지의 시간(초). 대폭발 연출은 착지 순간 함께 시작된다.")]
+    public float sporeBombLandSeconds = 0.4f;
+    [Tooltip("착지 순간 찌그러지는 세기(세로가 1 - 이 값까지 납작해진다).")]
+    [Range(0f, 0.9f)] public float sporeBombLandSquash = 0.45f;
+    [Tooltip("착지 뒤 출렁임의 초당 진동 수와 감쇠(클수록 빨리 잦아든다).")]
+    public float sporeBombWobbleFrequency = 9f;
+    public float sporeBombWobbleDamping = 7f;
+    [Tooltip("터지기 직전 부풀어 오르는 최대 배율.")]
+    public float sporeBombPopScale = 1.35f;
     [Tooltip("본편 드론 레이저(VFX_DroneLaser.prefab). 스텔라+드론의 이음선 빔 - 기획서 \"드론 레이저가 이음선 위로 발사되는 형태\".")]
     public PresentationLayer.VFX.VFX_DroneLaser droneLaserPrefab;
 }
@@ -311,15 +324,27 @@ public sealed class RoguelikeSkillVfxPlayer
         }
     }
 
-    /// <summary>캐릭터 쪽에서 포자 폭탄을 포물선으로 던진다. 떨어진 뒤의 대폭발은 SporeBigExplosion 신호가 그린다.</summary>
+    /// <summary>
+    /// 캐릭터 쪽에서 포자 수류탄을 포물선으로 던진다(기획서 v2.5 6-1 포자 수류탄 연출).
+    ///   비행: 빙글빙글 돌며 날아가고, 빠르게 오르내릴 때 세로로 늘어났다가 꼭대기에서 원래 모양으로 돌아온다(스쿼시/스트레치).
+    ///   착지: 납작하게 찌그러졌다가 감쇠하며 출렁이고(젤리 같은 탄성), 마지막에 부풀어 오르며 사라진다.
+    /// 찌그러짐은 부모(월드 축), 회전은 자식에 걸어 돌면서도 늘어나는 방향이 화면 위아래로 유지된다.
+    /// 착지 순간의 대폭발은 SporeBigExplosion 신호가 그린다.
+    /// </summary>
     private IEnumerator SporeBombRoutine(Vector3 _from, Vector3 _to, float _throwSeconds, int _generation)
     {
         GameObject projectile = GetProjectile();
         if (null == projectile) yield break;
 
+        Transform squash = projectile.transform;
+        Transform spin = 0 < squash.childCount ? squash.GetChild(0) : squash;
+        SpriteRenderer renderer = projectile.GetComponentInChildren<SpriteRenderer>(true);
+
         float throwSeconds = Mathf.Max(0.05f, _throwSeconds);
+        float stretchAmount = Mathf.Clamp01(assets.sporeBombFlightStretch);
+        squash.localScale = Vector3.one;
+        spin.localRotation = Quaternion.identity;
         projectile.SetActive(true);
-        SpriteRenderer renderer = projectile.GetComponent<SpriteRenderer>();
 
         float elapsed = 0f;
         while (elapsed < throwSeconds)
@@ -328,14 +353,50 @@ public sealed class RoguelikeSkillVfxPlayer
             float t = Mathf.Clamp01(elapsed / throwSeconds);
             Vector3 pos = Vector3.Lerp(_from, _to, t);
             pos.y += Mathf.Sin(t * Mathf.PI) * assets.sporeBombArcHeight;
-            projectile.transform.position = pos;
-            projectile.transform.Rotate(0f, 0f, 540f * Time.deltaTime);
+            squash.position = pos;
+
+            // 세로 속도(포물선의 기울기)가 클수록 늘어난다. 부피가 대략 유지되게 가로는 그만큼 줄인다.
+            float stretch = 1f + stretchAmount * Mathf.Abs(Mathf.Cos(t * Mathf.PI));
+            squash.localScale = new Vector3(1f / Mathf.Sqrt(stretch), stretch, 1f);
+            spin.Rotate(0f, 0f, -assets.sporeBombSpinSpeed * Time.deltaTime);
             if (null != renderer) renderer.sortingOrder = Order(pos) + 200;
+            yield return null;
+
+            if (_generation != sporeGeneration)
+            {
+                projectile.SetActive(false);
+                yield break;
+            }
+        }
+
+        // 착지. 회전을 바로 세우고(바닥에 철퍼덕 붙는다), 찌그러졌다 출렁이다 부풀며 사라진다.
+        squash.position = _to;
+        spin.localRotation = Quaternion.identity;
+        if (null != renderer) renderer.sortingOrder = Order(_to) + 200;
+
+        float landSeconds = Mathf.Max(0.05f, assets.sporeBombLandSeconds);
+        float squashAmount = Mathf.Clamp(assets.sporeBombLandSquash, 0f, 0.9f);
+        float omega = Mathf.Max(0f, assets.sporeBombWobbleFrequency) * 2f * Mathf.PI;
+        // 마지막 이 비율 동안 부풀어 오른다.
+        const float PopShare = 0.3f;
+
+        elapsed = 0f;
+        while (elapsed < landSeconds)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / landSeconds);
+
+            // 감쇠 진동: 0초에 가장 납작(세로 1 - squash, 가로 1 + squash)하고, 출렁이며 원래 모양으로 잦아든다.
+            float wobble = squashAmount * Mathf.Exp(-assets.sporeBombWobbleDamping * elapsed) * Mathf.Cos(omega * elapsed);
+            float pop = t > 1f - PopShare ? Mathf.Lerp(1f, Mathf.Max(1f, assets.sporeBombPopScale), (t - (1f - PopShare)) / PopShare) : 1f;
+            squash.localScale = new Vector3((1f + wobble) * pop, (1f - wobble) * pop, 1f);
+
             yield return null;
 
             if (_generation != sporeGeneration) break;
         }
 
+        squash.localScale = Vector3.one;
         projectile.SetActive(false);
     }
 
@@ -348,9 +409,12 @@ public sealed class RoguelikeSkillVfxPlayer
             if (null != projectilePool[i] && false == projectilePool[i].activeSelf) return projectilePool[i];
         }
 
+        // 부모(RoguelikeSporeBomb)는 위치와 찌그러짐, 자식(Sprite)은 회전만 맡는다.
         GameObject go = new GameObject("RoguelikeSporeBomb");
         go.transform.SetParent(host.transform, false);
-        SpriteRenderer renderer = go.AddComponent<SpriteRenderer>();
+        GameObject sprite = new GameObject("Sprite");
+        sprite.transform.SetParent(go.transform, false);
+        SpriteRenderer renderer = sprite.AddComponent<SpriteRenderer>();
         renderer.sprite = assets.sporeBombSprite;
         renderer.sortingLayerName = "Objects";
         go.SetActive(false);

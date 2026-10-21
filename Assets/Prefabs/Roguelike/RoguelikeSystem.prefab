@@ -168,7 +168,7 @@ MonoBehaviour:
     - {fileID: -629048883709668978, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
     - {fileID: 7538441034235752720, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
     - {fileID: -5038717723868688837, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
-    sporeBombSprite: {fileID: -6607146022748454015, guid: 8750e7ebdd334a04699246440e575215, type: 3}
+    sporeBombSprite: {fileID: 6479773223036287334, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
     sporeBombThrowSeconds: 0.45
     sporeBombArcHeight: 1.6
     droneLaserPrefab: {fileID: 9005663251761334064, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}

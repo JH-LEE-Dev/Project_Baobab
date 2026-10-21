@@ -137,12 +137,13 @@ public class DraftCardDataTests
     {
         Assert.AreEqual(0f, ResolveAtLevel("active_drone", 4).GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone), "체인은 V부터");
         Assert.AreEqual(1f, ResolveAtLevel("active_drone", 3).GetForSkill(ERunEffect.CountAdd, ERoguelikeSkill.Drone));     // 2기
-        Assert.AreEqual(1f, ResolveAtLevel("active_drone", 5).GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone)); // 1연쇄
-        Assert.AreEqual(2f, ResolveAtLevel("active_drone", 6).GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone)); // 2연쇄
+        // 기획서 v2.5 A-4: 체인 타격 수 약 1.5배 - V 2연쇄(레이저당 3그루) · VI 4연쇄(5그루) · MAX 5연쇄(6그루).
+        Assert.AreEqual(2f, ResolveAtLevel("active_drone", 5).GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone)); // 2연쇄
+        Assert.AreEqual(4f, ResolveAtLevel("active_drone", 6).GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone)); // 4연쇄
 
         RunModifiers max = ResolveAtLevel("active_drone", 7);
         Assert.AreEqual(2f, max.GetForSkill(ERunEffect.CountAdd, ERoguelikeSkill.Drone));      // 3기
-        Assert.AreEqual(3f, max.GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone)); // 3연쇄
+        Assert.AreEqual(5f, max.GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone)); // 5연쇄
 
         float[] intervals = { 1f, 0.8f, 0.8f, 0.7f, 0.7f, 0.6f, 0.6f };
         float[] damages = { 7f, 9f, 9f, 12f, 12f, 12f, 12f };

@@ -1744,21 +1744,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 사망 순간의 강한 펄스는 여기가 아니라 StaminaIsEmpty()의 PlayDeathChromaticAberrationPulse가 담당한다.
         PostProcessSettingsApplier.Instance?.UpdateLowStaminaChromaticAberration(_fatigueRatio);
 
-        // 용암 등 위험 지형 인접 시 추가 소모. 단, 일반 스태미나 소모(DecreaseStamina)와 마찬가지로
-        // "실제 플레이가 시작된 이후"에만 적용해야 한다. bWhileReset(입장 카메라 연출 중, 조작 불가) 또는
-        // bDead 상태에서까지 깎으면, 스태미나가 매우 빠르게 닳는 스테이지(예: 최대치가 낮은 상태의 MagmaForest)에서
-        // 입장 연출 도중에 사망이 발생해 사망 시퀀스가 아직 끝나지 않은 입장 시퀀스와 충돌하고,
-        // 공유 카메라(isMoved 토글)·입력 잠금 플래그가 꼬여 마을에서 캐릭터가 죽은 채로 남고 입력이 먹통이 된다.
+        // 나무 열기 판정(InDungeonObjectManager)이 쓰는 캐릭터 칸 위치.
+        // 용암 등 위험 지형은 그림만 있고 효과가 없다(스태미나 소모 · 열기 적립 모두 없앴다, 본편 · 로그라이크 공통).
         CurrentCell = environmentProvider.tilemapDataProvider.WorldToCell(transform.position);
-        if (true == bInDungeon && false == bWhileReset && false == bDead)
-        {
-            float hazardDrain = environmentProvider.tilemapDataProvider.GetHazardStaminaDrainPerSecond(CurrentCell);
-            if (0f < hazardDrain)
-            {
-                healthComponent.ApplyEnvironmentalStaminaDrain(hazardDrain);
-                overheatComponent?.AddOverheatDuration(2f * Time.deltaTime); // 용암 열기 노출 1초당 2초 비율로 연속 적립
-            }
-        }
     }
 
     private void LateUpdate()
@@ -1997,6 +1985,22 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         ClearActiveDrones();
         SpawnDrones();
+    }
+
+    /// <summary>
+    /// [로그라이크 전용] 도끼질과 무관하게 드론이 발사 주기마다 쏘도록 활성 상태를 이어 붙인다(기획서 v2.5 6-1 드론 "자동 발사").
+    /// 지속시간이 끝난 드론이 있을 때만 공격 키를 누른 것과 같은 활성화를 다시 건다 - 물고 있는 타겟과 발사 주기는 그대로다(Drone.Activate).
+    /// 본편은 공격 키(SetbCanAction)에서만 활성화하고 이 메서드를 부르지 않는다.
+    /// </summary>
+    public void KeepDronesActiveForRun()
+    {
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            if (activeDrones[i].IsActive) continue;
+
+            ActivateDrones();
+            return;
+        }
     }
 
     /// <summary>[로그라이크 전용] 웨이브 클리어 회복 같은 단발 회복. "체력의 원천"과 같은 회복 경로(HUD 연출 포함)를 탄다.</summary>

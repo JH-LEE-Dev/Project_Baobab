@@ -1,6 +1,6 @@
 # 로그라이크 모드 시스템 안내
 
-노션 기획서 "로그라이크 모드 — 코어 루프 기획서"를 구현한 시스템이다. 현재 기준은 [기획서 v2.4](Roguelike/Roguelike_Planning_v2.4.md)이고(2026-10-20 적용: 골드 제거 · 카드 25장 · 액티브 7레벨 · 리롤 선택마다 1회 · 건너뛰기 없음 · 포자폭탄 오염 · 초기 나무와 군집 스폰), UI 할 일은 [UI 작업 목록](Roguelike/UI_WorkList.md)에 모았다.
+노션 기획서 "로그라이크 모드 — 코어 루프 기획서"를 구현한 시스템이다. 현재 기준은 [기획서 v2.5](Roguelike/Roguelike_Planning_v2.5.md)이고(2026-10-21 적용: 초기 나무 = 임계치의 절반 · 3초 묶음 분산 스폰 · 섬 가장자리 1칸 제외 · 4티어 용암 피해 제거 · 드론 자동 발사와 체인 확대 · 오프로드 소환 위치 · 스텔라 별 타격 판정과 4티어 폭발 상한 · 포자 수류탄 비행 · 착지 연출. 그 전 v2.4: 골드 제거 · 카드 25장 · 액티브 7레벨 · 리롤 선택마다 1회 · 건너뛰기 없음 · 포자 오염), UI 할 일은 [UI 작업 목록](Roguelike/UI_WorkList.md)에 모았다.
 UI·이펙트는 이 시스템 위에 각 담당이 입힌다. 이 문서는 어디에 무엇을 꽂으면 되는지 정리한다.
 
 ## 0. 실행 방법 (UI·이펙트 담당은 여기부터)
@@ -100,12 +100,12 @@ UI·이펙트는 이 시스템 위에 각 담당이 입힌다. 이 문서는 어
 | `Bootstrap.cs` | 메인메뉴 진입 때 로그라이크 진입 암전이 남아 있으면 걷기(`RoguelikeScreenTransition.ClearIfCovering`, 들어간 적 없으면 아무 일도 없음) |
 | `UIView_Popup.cs`, `UI_Inventory.cs` | 하단 코인 HUD·가방 HUD 표시 여부 `SetCoinVisibleForRun`·`SetInventoryVisibleForRun` 등 (새 메서드). v2.4부터 로그라이크는 둘 다 숨긴다 |
 | `InDungeonVFXManager.cs` | 땅 별 그림 중심 오프셋을 읽는 `ConstellationGroundMarkVisualOffset` (새 읽기 전용 속성) |
-| `IBasicAxeOnlyTarget.cs` | 기본 도끼 휘두름으로만 맞는 대상 표식(새 인터페이스, 로그라이크 별만 구현) |
+| `IBasicAxeOnlyTarget.cs` | 기본 도끼 휘두름으로만 맞는 대상 표식(새 인터페이스, 로그라이크 별만 구현). 도끼 범위 강조를 켜고 끄는 `SetAxeHighlighted` |
 | `EnvironmentSystem.cs`, `TileMapGenerator.cs` | 시그널 없이 필드 맵을 만드는 `GenerateRoguelikeField`, 안전구역 반경 덮어쓰기, 타원 섬(풀 한 종류, 장식 전부 생략 - 장식 타일·움직이는 장식·바위·물 장식), 바닥 타일 파도용 시각 타일맵·칸 위치 조회(`GetVisualTilemapsForRun` 등, 새 메서드) |
 | `TownSystem.cs` | 마을 오브젝트를 치우는 `PrepareForRoguelike()` (새 메서드) |
 | `UnitSystem.cs` | 로그라이크면 본편 결과창 대신 `RoguelikeCharacterDownCompletedSignal` |
-| `Character.cs` | `RefreshDronesForRun()`, `RecoverStaminaForRun()`, 카드로 바뀐 최대 스태미너를 바로 반영하는 `SyncMaxStaminaForRun()` (새 메서드) |
-| `AttackComponent.cs` | 회전베기 간격 덮어쓰기(기본 3), 회전베기 타격에만 붙는 피해·범위 배율(기본 1), 휘두름 알림(`RunCombatHooks`), 회전베기의 360도 판정에서 `IBasicAxeOnlyTarget` 제외(평소 휘두름 각도 안이면 맞는다 - 기획서 "별은 기본적으로 도끼(기본 공격)로만") |
+| `Character.cs` | `RefreshDronesForRun()`, `RecoverStaminaForRun()`, 카드로 바뀐 최대 스태미너를 바로 반영하는 `SyncMaxStaminaForRun()`, 도끼질과 무관하게 드론을 활성 상태로 잇는 `KeepDronesActiveForRun()` (새 메서드). 로그라이크면 맵 끝 용암(위험 지형) 스태미너 소모를 건너뛴다 |
+| `AttackComponent.cs` | 회전베기 간격 덮어쓰기(기본 3), 회전베기 타격에만 붙는 피해·범위 배율(기본 1), 휘두름 알림(`RunCombatHooks`). `IBasicAxeOnlyTarget`(별)은 "가장 가까운 대상" 다툼에서 빼고, 휘두름 각도 · 범위 안이면 나무와 함께 늘 맞히고 범위 안에서 강조한다(기획서 v2.5 "별의 타격은 나무와 같은 규칙"). 회전베기 360도는 스텔라 III에서만 별을 친다. 본편에는 이런 대상이 없어 경로가 같다 |
 | `Boomerang.cs` | 부메랑 적중 알림(구독자가 없으면 위치도 읽지 않음) |
 | `GameplayUICoordinator.cs` | 로그라이크면 HUD 상승 시 숲 상태 배너 생략 |
 | `SkyCameraProductionManager.cs` | 본편 마을 → 메인메뉴 카메라 상승을 완료 콜백으로 받는 `PlayAscendOutForRun` (새 메서드, 연출·사운드·볼륨은 본편과 같음) |
@@ -142,7 +142,7 @@ UIView는 API(퍼블릭 메서드·이벤트)와 입력 모드 처리까지만 �
 
 1. **기다릴 필요 없는 연출** - 시그널 구독. `RoguelikeSystemSignals.cs` 참고.
    - 상태: `RoguelikePhaseChangedSignal`, `RoguelikeWaveStartedSignal`, `RoguelikeWaveClearedSignal`, `RoguelikeTierChangedSignal`, `RoguelikeRunClearedSignal`, `RoguelikePressureStateChangedSignal`, `RoguelikePressureDamagedSignal`, `RoguelikeCardPurchasedSignal`, `RoguelikeFinalTreeKilledSignal`(30웨이브 마지막 나무 위치)
-   - 신규 스킬: `RoguelikeSkillVfxSignal`(종류 `ERoguelikeSkillVfx` - 오프로드 예열/돌진/충돌/퇴장, 별 생성/공격/연속 폭발/소멸, 포자 폭탄 투척(`SporeBombThrown`)·포자 대폭발(`SporeBigExplosion`), 360도 충격파, 회전베기+부메랑, 포자 폭발(스텔라+포자폭탄), 이음선 빔, 노바, 홀로 남은 별, 이음선 변경). 이음선 목록은 `RoguelikeSkillController.StarLinks`.
+   - 신규 스킬: `RoguelikeSkillVfxSignal`(종류 `ERoguelikeSkillVfx` - 오프로드 예열/돌진/충돌/퇴장, 별 생성/공격/연속 폭발/소멸, 별 도끼 범위 강조 켜짐 · 꺼짐(`StarHighlightOn` / `StarHighlightOff` - 별 아웃라인을 그릴 자리, `RoguelikeStar.prefab`의 `outlineVisualObj` 슬롯도 있다), 포자 수류탄 투척(`SporeBombThrown`)·포자 대폭발(`SporeBigExplosion`), 360도 충격파, 회전베기+부메랑, 포자 폭발(스텔라+포자폭탄), 이음선 빔, 노바, 홀로 남은 별, 이음선 변경). 이음선 목록은 `RoguelikeSkillController.StarLinks`.
 2. **시스템이 끝날 때까지 기다리는 연출** - `IRoguelikeProductionHandler` 구현.
    `RoguelikeSystem` 프리팹 아래에 컴포넌트로 붙이면 자동 등록된다(또는 `RoguelikeSystem.ProductionGate.Register`).
    `Play(요청, 완료 콜백)`에서 연출이 끝나면 콜백을 부른다. 핸들러가 없으면 프리팹에 적힌 대체 시간만 기다린다.
@@ -159,9 +159,11 @@ UIView는 API(퍼블릭 메서드·이벤트)와 입력 모드 처리까지만 �
 - 시스템이 직접 재생하는 연출(본편 에셋 재사용):
   - 웨이브 클리어: 남은 나무가 묘목 그림으로 바뀌어 톡 튀었다가 작아지며 사라진다(`waveClearSaplingVanishSeconds`, 본편 묘목 등장음 1회). 30웨이브는 줌인 연출 뒤에 같은 정리를 한다(기획서 3-5 "나무 정리").
   - 런 클리어: 마지막 나무로 빠르게 다가가 확대(본편 `CameraMoveController.ZoomCamera`) + 슬로우(시간 배율) → 섬 전체로 줌아웃. 그동안 ESC·보유 카드 창은 막힌다. 수치 `runClear*`.
-  - 웨이브 시작: 초기 N그루(초당 스폰 × 10초)가 본편 성장 연출로 솟아난다. 나무는 군집으로 생기고(군집 중심은 웨이브마다·15초마다 이동), 플레이어 바로 옆에는 생기지 않는다(`RoguelikeWaveTreeStrategySO`, 수치는 `RoguelikeBalance.asset` "초기 나무 · 생성 위치").
+  - 웨이브 시작: 현재 임계치의 절반(T 40이면 20그루)이 본편 성장 연출로 필드 곳곳에 솟아난다. 이후 3초마다 `초당 스폰 × 3`그루가 한꺼번에(소수 이월) 흩어져 솟아나고, 상한을 넘는 몫은 버린다. 나무끼리 최소 간격을 두고, 플레이어 바로 옆과 섬 가장자리 1칸(물 · 용암 옆)에는 생기지 않는다(`RoguelikeWaveTreeStrategySO` · `TreeSpawnRules`, 수치는 `RoguelikeBalance.asset` "초기 나무 · 묶음 스폰 · 생성 위치").
+  - 포자 수류탄: 초록 포자 주머니(`Booty Items_16x` 두 번째 칸)가 빙글빙글 돌며 포물선으로 날아가고(오르내릴 때 세로로 늘어남), 착지하면 납작하게 찌그러졌다 감쇠하며 출렁이고 부풀며 사라진다(수치 `vfxAssets.sporeBomb*`).
   - 스킬(`RoguelikeSkillVfxPlayer`): 스텔라 별 = 본편 3스테이지 땅 별(등장 오라 + Starappear, 사라질 때 본편 회전 소멸), 별 공격 = 본편 별똥별 착지 폭발 + StarExplosion, 포자 폭발(스텔라+포자폭탄) = 본편 포자 폭발 4연발 + SporeExplosion, 포자 폭탄 = 포물선 투척 → 착지에서 본편 포자 대폭발(2스테이지 전리품 연출, 단계는 오염 중첩 상한) → 맞은 나무에 본편 포자 디버프 표시(오염 중첩 1~3단계, 오염이 풀리면 지움), 스텔라+드론 = 본편 별자리 점선(이음선)·본편 드론 레이저와 드론 발사음(빔, 기획서 "드론 레이저가 이음선 위로 발사")·별자리 노바(노바 때 땅 별도 함께 소멸). 스텔라+드론의 별은 노바 때까지 웨이브를 넘어 남는다(기획서 "별들은 노바가 발동될 때만 모두 소멸") - 본편 나무 정리가 그림을 거두면 다시 그린다(`RestoreKeptStarVisuals`), 이음선·빔·별 폭발은 땅 별 그림 중심(프리팹 `visualLocalOffset`, `InDungeonVFXManager.ConstellationGroundMarkVisualOffset`)끼리 잇는다, 회전베기+부메랑 = 본편 회전베기 VFX. 오프로드 = 본편 차량 그림·바퀴 애니메이터(`RoguelikeOffroadVisual`): 예열 동안 본편 플래시(_FlashAmount)가 깜빡이고 시동음(OffroadNonEdit), 진행 방향으로 좌우를 맞추고 돌진 중 바퀴가 돈다.
-- 별 판정체: `RoguelikeStar.prefab`(본편 땅 별로 그릴 수 있으면 자체 그림은 숨긴다). 포자 폭탄 그림·회전베기 프레임: `RoguelikeSystem` 프리팹 `RoguelikeSkillController.vfxAssets`.
+- 별 판정체: `RoguelikeStar.prefab`(본편 땅 별로 그릴 수 있으면 자체 그림은 숨긴다). 포자 수류탄 그림·회전베기 프레임: `RoguelikeSystem` 프리팹 `RoguelikeSkillController.vfxAssets`.
+- 이펙트 담당 몫으로 남은 것(기획서 v2.5 C-1): 별 폭발 범위를 보여 주는 신규 폭발 이펙트(크기 = `StarBlast`의 `radius`), 별 표식 전용 이펙트(지금은 링만), 별 아웃라인 그림, 오염 단계 이펙트와 바닥 링 색(중첩 1 초록 · 2 보라 · 3 금색, 한 나무에 현재 단계 하나만).
 - 360도 충격파는 본편 충격파 프리팹의 각도를 전 범위로 넓혀 쓴다. 본편 충격파 셰이더가 각도대로 그리므로 원형으로 보인다.
 - 오프로드 엔진 루프음은 본편에도 튜토리얼 대기 전용(OffroadNonEditLoop)이라 쓰지 않았다. 돌진 효과음·흙먼지(본편 "Go" VFX)는 이펙트 담당이 `OffroadDash` 시그널에 붙인다.
 
@@ -169,8 +171,8 @@ UIView는 API(퍼블릭 메서드·이벤트)와 입력 모드 처리까지만 �
 
 | 에셋 | 내용 |
 |---|---|
-| `RoguelikeBalance.asset` | 부록 A 파라미터(웨이브표·티어·T·스태미너·초기 나무·군집 스폰·제시·리롤 횟수·종류 비중 가중치). 우클릭 메뉴 "기획서 v2.4 부록 A 초안 값으로 채우기" |
-| `RoguelikeSkillTuning.asset` | 전투 기준값과 신규 스킬·조합 기본 수치(부록 A-1, A-4) |
+| `RoguelikeBalance.asset` | 부록 A 파라미터(웨이브표·티어·T·스태미너·초기 나무 비율·묶음 주기·최소 간격·가장자리 칸 수·제시·리롤 횟수·종류 비중 가중치). 우클릭 메뉴 "기획서 v2.4 부록 A 초안 값으로 채우기" |
+| `RoguelikeSkillTuning.asset` | 전투 기준값과 신규 스킬·조합 기본 수치(부록 A-1, A-4). 스텔라 폭발 상한(`stellaBlastMaxHpRatio` 25%, `stellaBlastCapFromTier` 4티어부터) 포함 |
 | `RoguelikeCardDatabase_Draft.asset` | **현재 사용 중.** v2.4 카드 25장(액티브 7 · 조합 5 · 공통 패시브 10 · 계약 3). 액티브 7레벨 · 패시브 5레벨 효과는 부록 A-4·A-5 초안 수치. 카드 아이콘은 아직 비어 있다 |
 | `RoguelikeCardDatabase.asset` | 예전 임시 카드 세트 9장(쓰지 않음) |
 | `RoguelikeSystem.prefab` | 티어별 지형(1 넓은 초원, 2 뭉글 포자, 3 별뿌리, 4 마그마), 섬 크기(기준 화면 20 × 11.25 + 가장자리 물 칸 수), 로비 배치, 연출 대체 시간 |
@@ -193,7 +195,11 @@ UIView는 API(퍼블릭 메서드·이벤트)와 입력 모드 처리까지만 �
 | 첫 선택 | 액티브만 제시(밸런스 `firstPickActiveOnly`), 리롤 1회 |
 | 회전베기 레벨 효과 | 회전 피해·범위 증가는 회전베기 타격(과 회전베기+부메랑의 회전베기)에만 붙고 일반 도끼 공격에는 붙지 않는다. 필요 휘두름 n이면 n+1번째 공격에 발동(상시 = 매 공격) |
 | 포자 대폭발 | 판정은 본편과 같은 등각 타원(장반경 `sporeRadius` 2.5), 폭발 자체 피해 0(오염 지속 피해만). 착지 후 0.2초 뒤 판정 |
-| 초안 수치(기획서에 숫자 없음) | 충격파 크기 한 단계 = 범위 +20%, 스텔라 범위 II +10% · VI +12%, 포자 범위 II +10% · VI +15%, 군집 반경 2.5 · 이동 15초 · 허탕 방지 R 4 · 플레이어 금지 반경 1.2 |
+| 초안 수치(기획서에 숫자 없음) | 충격파 크기 한 단계 = 범위 +20%, 스텔라 범위 II +10% · VI +12%, 포자 범위 II +10% · VI +15%, 나무 최소 간격 1.0 · 플레이어 금지 반경 1.2(기획서 TBD) |
+| 맵 가장자리 | 기획서의 "끝 1픽셀 단축"을 **1타일**로 해석해 물 · 용암 칸과 8방향으로 붙은 칸 전부(모든 변)를 뺐다(`fieldEdgeInsetCells`) |
+| 4티어 용암 | 피해만 없앴고 용암 그림은 그대로다 |
+| 오프로드 소환 위치 | 두 대각선 방향마다 섬 폭을 최소 간격(돌진 판정 반지름)으로 나눈 차선 중 경로에 나무가 있는 것만 후보. 같은 방향은 차선 간격, 반대 방향은 소환 위치 거리가 최소 간격보다 좁으면 겹침으로 본다. 이웃 차선의 돌진 판정 폭은 일부 겹칠 수 있다(같은 자리 소환만 막는다). 나무가 고루 있으면 MAX 6대가 늘 다 나간다 |
+| 스텔라 폭발 상한 | 별 폭발(MAX 연속 폭발 포함)과 홀로 남은 별의 표식 공격에 적용. 표식 · 포자 증폭 배율을 곱한 최종 피해 기준 |
 | 플레이 시간 | 카드 선택·결과 화면 시간은 세지 않는다 |
 | 공격속도 증가 | 도끼 포함(프리팹 `bAttackSpeedAffectsAxe`) |
 | 공격력과 도트 피해 | 도트에 둘 다 곱한다 |

@@ -12,7 +12,10 @@ public struct WaveSpec
     /// <summary>직전 웨이브와 티어가 달라 지형 전환 연출이 필요한지. 웨이브 1은 false(런 시작 때 이미 깔린다).</summary>
     public bool bTierChanged;
     public int killTarget;
-    /// <summary>웨이브 시작 때 이미 자라 있는 초기 나무 수(목표 처치 수에 포함, 기획서 v2.3 3-1). 이후 스폰은 목표 − 이 수만큼.</summary>
+    /// <summary>
+    /// 웨이브 시작 때 이미 자라 있는 초기 나무 수(기본 임계치의 절반, 목표 처치 수에 포함, 기획서 v2.5 3-1). 이후 스폰은 목표 − 이 수만큼.
+    /// 계약으로 임계치가 줄면 런 컨트롤러가 그 임계치로 다시 계산한다.
+    /// </summary>
     public int initialTrees;
     public float spawnInterval;
     /// <summary>나무의 절대 HP(부록 A-2). 언리밋은 마지막 웨이브 HP에 웨이브마다 증가율을 누적한다.</summary>
@@ -46,7 +49,7 @@ public static class WaveSchedule
 
         spec.killTarget = Mathf.Max(1, row.killTarget);
         spec.spawnInterval = Mathf.Max(0.01f, row.spawnInterval);
-        spec.initialTrees = ClusterSpawnRules.InitialTreeCount(spec.spawnInterval, _balance.initialTreeSeconds, _balance.threshold, spec.killTarget);
+        spec.initialTrees = TreeSpawnRules.InitialTreeCount(_balance.threshold, _balance.initialTreeThresholdRatio, spec.killTarget);
         spec.treeHp = Mathf.Max(1f, row.treeHp);
         spec.treeKind = Mathf.Clamp(row.treeKind, 0, RoguelikeBalanceSO.TreeKindsPerTier - 1);
         spec.staminaDamage = tier.staminaDamage;

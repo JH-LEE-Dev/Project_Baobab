@@ -42,11 +42,11 @@ MonoBehaviour:
   - effects:
     - effect: 9
       skill: 4
-      value: 1
+      value: 2
   - effects:
     - effect: 9
       skill: 4
-      value: 1
+      value: 2
     - effect: 2
       skill: 4
       value: 23.8095

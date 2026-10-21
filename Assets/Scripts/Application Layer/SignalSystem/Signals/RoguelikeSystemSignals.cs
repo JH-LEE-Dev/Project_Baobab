@@ -301,6 +301,10 @@ public enum ERoguelikeSkillVfx
     StarBlastRepeat = 16,
     /// <summary>포자 폭탄이 떨어져 본편 포자 대폭발이 일어남. 범위 안 나무는 오염된다. position=폭발 중심, radius=대폭발 범위(등각 타원 장반경), id=포자폭탄 레벨 단계(1~3).</summary>
     SporeBigExplosion = 17,
+    /// <summary>별이 도끼 범위(인디케이터) 안에 들어와 나무처럼 아웃라인으로 강조됨. position=별 위치, id=별 번호. 범위에서 빠지면 StarHighlightOff.</summary>
+    StarHighlightOn = 18,
+    /// <summary>별 강조가 꺼짐(도끼 범위에서 빠짐, 맞아서 터짐, 사라짐). position=별 위치, id=별 번호.</summary>
+    StarHighlightOff = 19,
 }
 
 public struct RoguelikeSkillVfxSignal
