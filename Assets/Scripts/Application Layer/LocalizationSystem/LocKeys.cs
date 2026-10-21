@@ -246,6 +246,7 @@ public static class LocKeys
         public const int pressAnyKey = 16777315;
         public const int newGameWarning = 16777222;
         public const int dotText = 16777223;
+        public const int roguelike = 16777224;
         public const int languageSelectTitle = 16777316;
         public const int consentTitle = 16777317;
         public const int consentDesc = 16777318;
@@ -460,6 +461,47 @@ public static class LocKeys
         public const int roguelikeCardRubyGlassCannonDesc = 37749061;
         public const int roguelikeCardRubyPatienceDesc = 37749062;
         public const int roguelikeCardRubyMoreTheMerrierDesc = 37749064;
+        public const int roguelikeEffectDamagePercent = 37749136;
+        public const int roguelikeEffectAttackSpeedPercent = 37749137;
+        public const int roguelikeEffectRangePercent = 37749138;
+        public const int roguelikeEffectDurationPercent = 37749139;
+        public const int roguelikeEffectDotDamagePercent = 37749140;
+        public const int roguelikeEffectCountAdd = 37749141;
+        public const int roguelikeEffectCountAddBoomerang = 37749142;
+        public const int roguelikeEffectCountAddDrone = 37749143;
+        public const int roguelikeEffectCountAddOffroad = 37749144;
+        public const int roguelikeEffectCountAddSporeBomb = 37749145;
+        public const int roguelikeEffectChancePercentShockwave = 37749146;
+        public const int roguelikeEffectChancePercentStella = 37749147;
+        public const int roguelikeEffectChancePercent = 37749148;
+        public const int roguelikeEffectTriggerHitCountAdd = 37749149;
+        public const int roguelikeEffectChainCountAdd = 37749150;
+        public const int roguelikeEffectCooldownReductionPercent = 37749151;
+        public const int roguelikeEffectMoveSpeedPercent = 37749152;
+        public const int roguelikeEffectMoveSpeedPercentOffroad = 37749153;
+        public const int roguelikeEffectStaminaRecoverPerWave = 37749154;
+        public const int roguelikeEffectMaxStaminaAdd = 37749155;
+        public const int roguelikeEffectMaxStaminaPercent = 37749156;
+        public const int roguelikeEffectGraceTimeAdd = 37749157;
+        public const int roguelikeEffectDamageCooldownAdd = 37749158;
+        public const int roguelikeEffectThresholdAdd = 37749159;
+        public const int roguelikeEffectTreeSpawnRatePercent = 37749160;
+        public const int roguelikeEffectStarMarkDurationAdd = 37749161;
+        public const int roguelikeEffectShockwaveRepeatAdd = 37749162;
+        public const int roguelikeEffectStarHitByActives = 37749163;
+        public const int roguelikeEffectStarBlastRepeatAdd = 37749164;
+        public const int roguelikeEffectSporeStackAdd = 37749165;
+        public const int roguelikeEffectDamagePercentAboveThreshold = 37749166;
+        public const int roguelikeEffectDurationExtendOnDotKill = 37749167;
+        public const int roguelikeEffectAttackSpeedPercentWhileMoving = 37749168;
+        public const int roguelikeEffectAxeExtraStrikeAdd = 37749169;
+        public const int roguelikeEffectStarMarkDamageTakenAdd = 37749170;
+        public const int roguelikeEffectUnitSeconds = 37749216;
+        public const int roguelikeCardComboSpinShockwaveL1 = 37749236;
+        public const int roguelikeCardComboBoomerangShockwaveL1 = 37749237;
+        public const int roguelikeCardComboSpinBoomerangL1 = 37749238;
+        public const int roguelikeCardComboStellaSporeL1 = 37749239;
+        public const int roguelikeCardComboStellaDroneL1 = 37749240;
     }
 
     public static class SaveCheckUI

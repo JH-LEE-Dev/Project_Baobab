@@ -224,6 +224,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     public EPressureState PressureState => pressure.State;
     public float PressureGraceRatio => pressure.GraceRatio;
     public float PressureCooldownRatio => pressure.CooldownRatio;
+    public bool PressureHitLethal => ERunPhase.WaveCombat == phase && null != character && character.pHealthComponent.GetCurrentStamina() <= currentWave.staminaDamage;
     public bool IsCardSelectionOpen => shop.IsOpen;
     public bool IsFirstPick => shop.IsFirstPick;
     public IReadOnlyList<CardOffer> CurrentOffers => shop.Offers;

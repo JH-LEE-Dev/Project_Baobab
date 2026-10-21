@@ -281,7 +281,12 @@ public class HUD_Stemina : MonoBehaviour
     private HUD_ScreenBlood screenBloodComponent;
     // 던전에서만 true. 마을에서는 게이지가 숨겨지고 저피로도 경고(게이지 흔들림/붉은 화면)도 판정하지 않는다.
     private bool bActive = false;
+    // 게이지 경고(흔들림 + 색 핑퐁)가 실제로 켜져 있는지. 저피로도 경고와 로그라이크 강제 경고 중 하나라도 켜져 있으면 true.
     private bool bWarningGauge = false;
+    // 경고의 원천 둘. 저피로도(startPoint 이하)는 게이지 경고 + 붉은 화면, 로그라이크 강제 경고(임계점 초과 / 한 번 맞으면 죽는 상태)는 호출한 쪽이 정한다.
+    private bool bLowStaminaWarning = false;
+    private bool bForcedBarWarning = false;
+    private bool bForcedScreenBlood = false;
     private MotionEntry shakeMotion;
     private MotionEntry colorMotion;
 
@@ -459,10 +464,16 @@ public class HUD_Stemina : MonoBehaviour
         {
             float _warnRatio = startPoint * 0.01f;
 
-            if (false == bWarningGauge && _warnRatio >= _ratio)
-                SetWarning(true);
-            else if (true == bWarningGauge && _warnRatio + releaseMargin * 0.01f < _ratio)
-                SetWarning(false);
+            if (false == bLowStaminaWarning && _warnRatio >= _ratio)
+            {
+                bLowStaminaWarning = true;
+                RefreshWarning();
+            }
+            else if (true == bLowStaminaWarning && _warnRatio + releaseMargin * 0.01f < _ratio)
+            {
+                bLowStaminaWarning = false;
+                RefreshWarning();
+            }
         }
 
         displayRatio = _ratio;
@@ -579,7 +590,10 @@ public class HUD_Stemina : MonoBehaviour
 
         // 숨겨지는 동안 남아 있던 연출이 다음에 나타날 때 이어 보이지 않도록 정리한다.
         ResetEffects();
-        SetWarning(false);
+        bLowStaminaWarning = false;
+        bForcedBarWarning = false;
+        bForcedScreenBlood = false;
+        RefreshWarning();
 
         // 던전에서는 정지 중에도 젤리 머리가 호흡하므로, 활성화되면 곧바로 깨운다.
         if (true == bActive && 0f < frontEdgeStrength)
@@ -1612,30 +1626,47 @@ public class HUD_Stemina : MonoBehaviour
             255);
     }
 
-    private void SetWarning(bool _bOn)
+    /// <summary>
+    /// 로그라이크 강제 경고(기획서 v2.5 10-1). 저피로도 경고와는 별개의 원천이라 둘 중 하나라도 켜져 있으면 켜진다.
+    ///   _bBarWarning  게이지 경고(흔들림 + 색 핑퐁). 임계점을 넘었거나 한 번 맞으면 죽는 상태일 때.
+    ///   _bScreenBlood 붉은 화면(BloodScreen). 임계점을 넘었을 때만 - 죽을 수 있다는 예고는 게이지만 깜빡인다.
+    /// 던전 활성 여부와 무관하게 받는다(SetActivate가 맵이 바뀔 때 모두 끈다).
+    /// </summary>
+    public void SetForcedWarning(bool _bBarWarning, bool _bScreenBlood)
     {
-        bWarningGauge = _bOn;
+        if (bForcedBarWarning == _bBarWarning && bForcedScreenBlood == _bScreenBlood) return;
 
-        if (true == _bOn)
+        bForcedBarWarning = _bBarWarning;
+        bForcedScreenBlood = _bScreenBlood;
+        RefreshWarning();
+    }
+
+    /// <summary>경고 원천(저피로도 · 강제)을 합쳐 게이지 경고 모션과 붉은 화면을 맞춘다.</summary>
+    private void RefreshWarning()
+    {
+        bool _bBar = true == bLowStaminaWarning || true == bForcedBarWarning;
+        bool _bBlood = true == bLowStaminaWarning || true == bForcedScreenBlood;
+
+        if (true == _bBar)
         {
-            if (null != motionPlayer)
+            // 이미 켜져 있으면 모션을 다시 시작하지 않는다(다른 원천이 겹쳐도 깜빡임이 끊기지 않게).
+            if (false == bWarningGauge && null != motionPlayer)
             {
                 shakeMotion = motionPlayer.Play(shakeTag, bReset: true);
                 colorMotion = motionPlayer.Play(colorTag, bReset: true);
             }
         }
-        else
+        else if (null != motionPlayer)
         {
-            if (null != motionPlayer)
-            {
-                motionPlayer.SettingEntryMotion(shakeMotion, true, true);
-                motionPlayer.SettingEntryMotion(colorMotion, true, true);
-            }
+            motionPlayer.SettingEntryMotion(shakeMotion, true, true);
+            motionPlayer.SettingEntryMotion(colorMotion, true, true);
         }
+
+        bWarningGauge = _bBar;
 
         // 켜기/끄기 모두 HUD_ScreenBlood 쪽이 중복 호출을 걸러주므로 상태 전이 여부와 무관하게 넘긴다.
         if (null != screenBloodComponent)
-            screenBloodComponent.PlayBloodEffect(_bOn);
+            screenBloodComponent.PlayBloodEffect(_bBlood);
     }
 
     // 피격/회복 연출

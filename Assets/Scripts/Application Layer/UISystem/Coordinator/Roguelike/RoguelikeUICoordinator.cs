@@ -43,6 +43,9 @@ public sealed class RoguelikeUICoordinator
     private int lastTreeCount = -1;
     private int lastThreshold = -1;
     private EPressureState lastPressureState;
+    // 스태미너 바·붉은 화면 경고도 바뀔 때만 HUD에 넣는다(임계점을 넘었는지 / 한 번 맞으면 죽는지).
+    private bool bLastPressureExceeded;
+    private bool bLastPressureLethal;
     private float lastGraceRatio = -1f;
     private float lastCooldownRatio = -1f;
 
@@ -58,6 +61,7 @@ public sealed class RoguelikeUICoordinator
         // 도끼 내구도는 무제한이라 내구도 HUD를 숨긴다(기획서 v2.2 3-1, 10-1).
         mainHudUI = _mainHudUI;
         mainHudUI?.SetEquipmentHiddenForRun(true);
+        mainHudUI?.SetBuffHiddenForRun(true);
 
         signalHub = _signalHub;
         runInfo = _runInfo;
@@ -85,6 +89,7 @@ public sealed class RoguelikeUICoordinator
         mainPopupUI?.SetInventoryVisibleForRun(true);
         mainPopupUI?.SetCoinVisibleForRun(true);
         mainHudUI?.SetEquipmentHiddenForRun(false);
+        mainHudUI?.SetBuffHiddenForRun(false);
         ResumeFromOwnedCards();
     }
 
@@ -115,6 +120,16 @@ public sealed class RoguelikeUICoordinator
         int treeCount = runInfo.FieldTreeCount;
         int threshold = runInfo.Threshold;
         EPressureState state = runInfo.PressureState;
+
+        // 임계점 경고: 넘었으면 스태미너 바 + 붉은 화면, 아직 안 넘었어도 한 번 맞으면 죽는 상태면 스태미너 바만. 스태미너가 바뀔 때마다 달라질 수 있어 임계치 값 비교보다 먼저 본다.
+        bool bExceeded = EPressureState.Safe != state;
+        bool bLethal = runInfo.PressureHitLethal;
+        if (bExceeded != bLastPressureExceeded || bLethal != bLastPressureLethal)
+        {
+            bLastPressureExceeded = bExceeded;
+            bLastPressureLethal = bLethal;
+            if (null != mainHudUI) mainHudUI.SetRoguelikePressureWarning(bExceeded || bLethal, bExceeded);
+        }
         float grace = runInfo.PressureGraceRatio;
         float cooldown = runInfo.PressureCooldownRatio;
 
@@ -228,6 +243,14 @@ public sealed class RoguelikeUICoordinator
 
         // 런 도중 ESC의 메인메뉴 버튼은 "로비"(포기)다. 로비에서는 진짜 메인메뉴로 나가므로 본래 문구로 둔다(기획서 3-7).
         escUI?.SetLobbyMode(bCombatPhase);
+
+        // 전투 단계를 벗어나면(결과·로비 등) 임계점 경고(스태미너 바 + 붉은 화면)를 확실히 끈다.
+        if (false == bCombatPhase && (bLastPressureExceeded || bLastPressureLethal))
+        {
+            bLastPressureExceeded = false;
+            bLastPressureLethal = false;
+            if (null != mainHudUI) mainHudUI.SetRoguelikePressureWarning(false, false);
+        }
 
         if (null == hudUI) return;
         hudUI.SetCombatVisible(bCombatPhase);
