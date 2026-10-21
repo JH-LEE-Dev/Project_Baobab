@@ -966,6 +966,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         stateMachine.GetState<DashState>().Setup(dashDirection, dashWorldDistance, dashDuration);
         // 박차기 먼지는 움직이기 전 발밑(대시 시작 위치)에서 재생한다.
         characterVisualComponent.PlayDashKickoff(dashDirection, dashWorldDistance, dashDuration);
+        // 음원은 앞의 무음/빌드업을 잘라 두어(Dash_Clip) 대시가 끝날 무렵 휙 소리가 가장 커진다.
+        Sound.Play(SoundID.SFXDashWoosh, transform.position);
         // 잔상은 시작 위치에서 한 장, 이후 대시가 끝날 때까지 일정 간격마다 한 장씩 남긴다.
         characterVisualComponent.StartDashAfterimages(dashAfterimageMaterial, dashAfterimageColor, dashAfterimageInterval,
             dashAfterimageFadeDuration, dashAfterimageStartAlpha, dashDuration);

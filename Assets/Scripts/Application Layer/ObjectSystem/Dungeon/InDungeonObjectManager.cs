@@ -2767,11 +2767,30 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 이펙트는 나무가 쓰러진 이 프레임에 시작한다(응집 0.2초 뒤 폭발). 범위는 판정과 같은 값을 넘겨 보이는 범위를 맞춘다.
         inDungeonVFXManager?.PlaySporeBigExplosionVFX(_centerPos, sporeBigExplosionRange, _tier);
         StartCoroutine(SporeBigExplosionRoutine(_centerPos, _tier));
+        StartCoroutine(SporeBigExplosionSoundRoutine(_centerPos));
+    }
+
+    // 포자 대폭발 음원(SporeBigExplosion 큐 3종)은 재생 후 약 0.1초에 터지는 소리가 시작된다.
+    private const float SporeBigExplosionSoundLead = 0.1f;
+
+    /// <summary>
+    /// 폭발음이 이펙트의 응집이 끝나고 터지는 순간(VFX_SporeBigExplosion.BurstDelay)에 들리도록 늦춰 재생한다.
+    /// </summary>
+    private IEnumerator SporeBigExplosionSoundRoutine(Vector3 _centerPos)
+    {
+        int version = sporeBigExplosionVersion;
+
+        yield return new WaitForSeconds(Mathf.Max(0f, PresentationLayer.VFX.VFX_SporeBigExplosion.BurstDelay - SporeBigExplosionSoundLead));
+
+        // 기다리는 사이 던전을 떠났으면 울리지 않는다.
+        if (version != sporeBigExplosionVersion) yield break;
+
+        Sound.Play(SoundID.SporeBigExplosion, _centerPos);
     }
 
     /// <summary>
     /// "포자 포션" 효과인 포자 대폭발. 쓰러진 나무 자리(_centerPos) 기준 등각 타원 범위의 나무에 피해를 주고,
-    /// 맞은 나무는 이후 받는 피해가 영구히 증폭된다. 이펙트는 TriggerSporeBigExplosion에서 재생한다(사운드는 아직 없다).
+    /// 맞은 나무는 이후 받는 피해가 영구히 증폭된다. 이펙트와 사운드는 TriggerSporeBigExplosion에서 재생한다.
     /// </summary>
     private IEnumerator SporeBigExplosionRoutine(Vector3 _centerPos, int _tier)
     {
