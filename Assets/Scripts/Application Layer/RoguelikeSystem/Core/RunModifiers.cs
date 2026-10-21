@@ -12,7 +12,8 @@ public sealed class RunModifiers
 {
     private static readonly int EffectCount = (int)ERunEffect.Count;
     private static readonly int SkillCount = Enum.GetValues(typeof(ERoguelikeSkill)).Length;
-    private static readonly int ComboCount = Enum.GetValues(typeof(ERoguelikeCombo)).Length;
+    // 조합 enum은 폐지된 번호(4)가 비어 있어 개수가 아니라 가장 큰 값 + 1칸을 잡는다.
+    private static readonly int ComboCount = MaxEnumValue(typeof(ERoguelikeCombo)) + 1;
 
     // [effect * SkillCount + skill] = 합계. skill 0(None)은 전역 효과 칸이다.
     private readonly float[] values = new float[EffectCount * SkillCount];
@@ -119,6 +120,13 @@ public sealed class RunModifiers
     private static int Index(ERunEffect _effect, ERoguelikeSkill _skill)
     {
         return (int)_effect * SkillCount + (int)_skill;
+    }
+
+    private static int MaxEnumValue(Type _enumType)
+    {
+        int max = 0;
+        foreach (object value in Enum.GetValues(_enumType)) max = Math.Max(max, (int)value);
+        return max;
     }
 }
 

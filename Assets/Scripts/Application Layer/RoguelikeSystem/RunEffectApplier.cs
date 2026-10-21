@@ -73,6 +73,8 @@ public sealed class RunEffectApplier
 
     private float maxMoveSpeedPercent;
     private float shockwaveExtraDelay = 0.12f;
+    private float shockwaveExtraDamageRatio = 0.6f;
+    private Color sporeShockwaveColor = Color.green;
     private float axeExtraStrikeDelay = 0.1f;
 
     private bool bHasRunBaseStats;
@@ -87,11 +89,18 @@ public sealed class RunEffectApplier
         spinRequiredSwings = Mathf.Max(0, _spinRequiredSwings);
     }
 
-    /// <summary>충격파 추가 발생·도끼 연속 타격 사이의 간격(초). 튜닝 SO 값.</summary>
-    public void SetRepeatDelays(float _shockwaveExtraDelay, float _axeExtraStrikeDelay)
+    /// <summary>충격파 추가 발생·도끼 연속 타격 사이의 간격(초)과 추가 충격파의 피해 비율(충격파 MAX 두 번째 60%). 튜닝 SO 값.</summary>
+    public void SetRepeatDelays(float _shockwaveExtraDelay, float _axeExtraStrikeDelay, float _shockwaveExtraDamageRatio)
     {
         shockwaveExtraDelay = Mathf.Max(0f, _shockwaveExtraDelay);
         axeExtraStrikeDelay = Mathf.Max(0f, _axeExtraStrikeDelay);
+        shockwaveExtraDamageRatio = Mathf.Max(0f, _shockwaveExtraDamageRatio);
+    }
+
+    /// <summary>포자 충격파(포자 수류탄 + 충격파)를 가졌을 때 충격파 그림에 곱하는 색. 튜닝 SO 값.</summary>
+    public void SetSporeShockwaveColor(Color _color)
+    {
+        sporeShockwaveColor = _color;
     }
 
     /// <summary>런 동안 쓸 전투 기준값(도끼 공격력 10 등). 다음 Apply에서 캐릭터에 끼운다.</summary>
@@ -191,10 +200,13 @@ public sealed class RunEffectApplier
             Mathf.Max(0.1f, 1f + _mods.Get(ERunEffect.RangePercent, ERoguelikeSkill.Spin) / 100f));
 
         // // 레벨 효과의 반복 수(부록 A-4). 본편 공격 코드는 덮어쓰기 값이 0/false일 때 예전 그대로다(RunCombatOverrides).
-        // 충격파 MAX 2중 발생, 스텔라 III 다른 액티브의 별 타격.
+        // 충격파 MAX 2중 발생(두 번째 피해 60%), 스텔라 III 다른 액티브의 별 타격.
 
         int extraShockwaves = _mods.IsSkillActive(ERoguelikeSkill.Shockwave) ? Mathf.RoundToInt(_mods.GetForSkill(ERunEffect.ShockwaveRepeatAdd, ERoguelikeSkill.Shockwave)) : 0;
-        RunCombatOverrides.SetShockWaveExtraCount(extraShockwaves, shockwaveExtraDelay);
+        RunCombatOverrides.SetShockWaveExtraCount(extraShockwaves, shockwaveExtraDelay, shockwaveExtraDamageRatio);
+
+        // 포자 충격파: 충격파 색이 초록으로 바뀐다(기획서 v2.5 6-2, 기본 능력은 그대로 · 색만 변경).
+        RunCombatOverrides.SetShockWaveTint(_mods.IsComboActive(ERoguelikeCombo.SporeShockwave), sporeShockwaveColor);
 
         RunCombatOverrides.SetSkillsHitRunTargets(IsStarHitByActives(_mods));
 

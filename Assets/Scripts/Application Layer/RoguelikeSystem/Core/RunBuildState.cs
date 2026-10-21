@@ -47,14 +47,21 @@ public sealed class RunBuildState
     }
 
     /// <summary>
-    /// 같은 배타 그룹의 "다른" 카드를 이미 보유해서 이 카드를 더 이상 고를 수 없는지.
+    /// 같은 배타 그룹의 "다른" 카드, 또는 재료가 겹치는 다른 조합 카드를 이미 보유해서 이 카드를 더 이상 고를 수 없는지.
     /// 그룹을 잠근 카드 자신은 제외되지 않는다(업그레이드 가능한 종류라면 계속 강화할 수 있다).
     /// </summary>
     public bool IsExcluded(CardDefinitionSO _card)
     {
-        if (null == _card || 0 == _card.exclusiveGroup) return false;
-        if (false == lockedExclusiveGroups.Contains(_card.exclusiveGroup)) return false;
-        return false == IsOwned(_card);
+        if (null == _card || IsOwned(_card)) return false;
+        if (0 != _card.exclusiveGroup && lockedExclusiveGroups.Contains(_card.exclusiveGroup)) return true;
+        if (ECardKind.Prism != _card.kind) return false;
+
+        for (int i = 0; i < ownedOrder.Count; i++)
+        {
+            if (ECardKind.Prism == ownedOrder[i].kind && _card.ConflictsWith(ownedOrder[i])) return true;
+        }
+
+        return false;
     }
 
     public bool HasSeen(CardDefinitionSO _card) => null != _card && seenCards.Contains(_card);

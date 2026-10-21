@@ -12,7 +12,7 @@ public struct CardOffer
     public bool bNewCard;
     /// <summary>이번 판에서 처음 제시된 카드.</summary>
     public bool bFirstSeen;
-    /// <summary>에메랄드·프리즘 보장 노출로 들어온 카드.</summary>
+    /// <summary>에메랄드·프리즘 보장 노출로 들어온 카드(리롤로 나온 카드는 보장이 아니다).</summary>
     public bool bGuaranteed;
 
     public bool IsValid => null != card;
@@ -25,22 +25,24 @@ public struct CardOfferContext
     public RunBuildState build;
     public RoguelikeBalanceSO balance;
     public bool bFirstPick;
-    /// <summary>같은 선택 단계 안의 리롤인지. 보장 카드 재노출 규칙이 달라진다(기획서 4-2 "리롤").</summary>
+    /// <summary>같은 선택 단계 안의 리롤인지. 리롤은 우선순위 없이 진짜 랜덤으로 뽑는다(기획서 v2.5 4-2 "리롤").</summary>
     public bool bReroll;
 }
 
 /// <summary>
-/// 카드 제시 파이프라인. 기획서 v2.4 4-2 "카드 노출 규칙"의 적용 순서를 그대로 따른다.
+/// 카드 제시 파이프라인. 기획서 v2.5 4-2 "카드 노출 규칙"의 구성 우선순위(프리즘 > MAX 레벨 > 패시브 2장 보장 > 랜덤)를 그대로 따른다.
 ///   0. 제외: MAX·배타 그룹·보유 계약·조건 미충족 프리즘을 뺀다. (가장 먼저라 보장 노출로 되살아나지 않는다)
-///   1. 슬롯 1 보장 노출: 에메랄드·프리즘 조건 카드를 한 번에 cap장까지. 못 넣은 카드는 다음 선택으로 이월된다.
+///   1. 프리즘 · MAX 보장 노출: 프리즘 조건 카드와 에메랄드(MAX 직전 레벨 보유) 카드를 합쳐 한 번에 cap(2)장까지. 못 넣은 카드는 다음 선택으로 이월된다.
 ///      서로 배타인 프리즘이 함께 대기 중이면 cap과 무관하게 함께 노출한다(최대 제시 수).
-///   2. 파트너 확정 노출: 조합 재료 한 장이 MAX면 파트너를 남은 칸에 1장 넣는다(부록 A-1 "MAX면 한 선택에 1장 확실 노출").
-///   3. 가중치: 남은 칸을 종류 비중 × 업그레이드 우선 × 파트너 유도(편향 상한 적용)로 뽑는다.
+///   2. 공통 패시브 보장: 남은 칸에 공통 패시브를 guaranteedPassiveCount(2)장까지 가중치로 넣는다. 첫 선택은 제외.
+///   3. 파트너 확정 노출: 조합 재료 한 장이 MAX면 파트너를 남은 칸에 1장 넣는다(부록 A-1 "MAX면 한 선택에 1장 확실 노출").
+///   4. 가중치 랜덤: 남은 칸을 종류 비중 × 업그레이드 우선 × 파트너 유도(편향 상한 적용)로 뽑는다.
 ///
-/// v2.4에서 골드가 없어져 액티브 보장(슬롯 2)과 구매 가능 보장(슬롯 3)은 사라졌다.
+/// 리롤은 위 우선순위를 쓰지 않는다: 제외만 거친 노출 가능 카드에서 균등하게 진짜 랜덤으로 뽑는다. 방금 나온 카드도 다시 나올 수 있고,
+/// 한 선택 안에서는 같은 카드가 두 번 나오지 않는다. 리롤로 나오지 않은 프리즘 · MAX는 조건이 유지되는 동안 다음 선택에 다시 보장된다.
+///
 /// 후보가 모자라면 있는 만큼만 넣는다(MAX 카드나 보유 계약으로 채우지 않는다).
-///
-/// 리롤도 같은 파이프라인을 다시 돌린다. 리스트는 모두 재사용하므로 호출마다 할당이 없다.
+/// 리스트는 모두 재사용하므로 호출마다 할당이 없다.
 /// </summary>
 public sealed class CardOfferGenerator
 {
@@ -50,9 +52,8 @@ public sealed class CardOfferGenerator
         public CardDefinitionSO card;
         public bool bPrism;
         public int enqueueOrder;
-        /// <summary>노출된 선택 단계 수. 적게 노출된 카드가 먼저 나와 이월된 카드가 다음 선택에 나온다.</summary>
+        /// <summary>보장으로 노출된 선택 단계 수. 적게 노출된 카드가 먼저 나와 이월된 카드가 다음 선택에 나온다.</summary>
         public int shownSelections;
-        public bool bShownThisSelection;
     }
 
     private readonly List<CardDefinitionSO> candidates = new List<CardDefinitionSO>(64);
@@ -74,12 +75,6 @@ public sealed class CardOfferGenerator
         enqueueCounter = 0;
     }
 
-    /// <summary>선택 단계가 새로 열릴 때 부른다. "이번 선택에서 이미 노출된 보장 카드" 기록을 비운다.</summary>
-    public void BeginSelection()
-    {
-        for (int i = 0; i < guaranteedQueue.Count; i++) guaranteedQueue[i].bShownThisSelection = false;
-    }
-
     public void Generate(in CardOfferContext _ctx, List<CardOffer> _results)
     {
         _results.Clear();
@@ -89,9 +84,19 @@ public sealed class CardOfferGenerator
         int slots = Mathf.Max(1, _ctx.balance.offerCount);
 
         BuildCandidates(in _ctx);
-        FillGuaranteed(in _ctx, slots, _results);
-        FillForcedPartner(in _ctx, slots, _results);
-        FillWeighted(in _ctx, slots, _results);
+
+        if (_ctx.bReroll)
+        {
+            FillUniformRandom(in _ctx, slots, _results);
+        }
+        else
+        {
+            FillGuaranteed(in _ctx, slots, _results);
+            FillGuaranteedPassives(in _ctx, slots, _results);
+            FillForcedPartner(in _ctx, slots, _results);
+            FillWeighted(in _ctx, slots, _results);
+        }
+
         Shuffle(_results);
 
         for (int i = 0; i < _results.Count; i++)
@@ -154,7 +159,7 @@ public sealed class CardOfferGenerator
         return true;
     }
 
-    // // 1. 슬롯 1 보장 노출
+    // // 1. 프리즘 · MAX 보장 노출
 
     private void FillGuaranteed(in CardOfferContext _ctx, int _slots, List<CardOffer> _results)
     {
@@ -166,36 +171,20 @@ public sealed class CardOfferGenerator
         int cap = Mathf.Min(Mathf.Max(0, _ctx.balance.guaranteedSlotCap), _slots);
         takeScratch.Clear();
 
-        if (_ctx.bReroll)
-        {
-            // 리롤: 이번 선택에서 아직 노출되지 않은 대기 카드가 우선. 이미 노출됐던 카드는 카드마다 확률로 다시 나온다.
-            float reshow = Mathf.Clamp01(_ctx.balance.rerollGuaranteedReshowChance);
+        for (int i = 0; i < guaranteedQueue.Count && takeScratch.Count < cap; i++) takeScratch.Add(guaranteedQueue[i]);
 
-            for (int i = 0; i < guaranteedQueue.Count && takeScratch.Count < cap; i++)
-            {
-                if (false == guaranteedQueue[i].bShownThisSelection) takeScratch.Add(guaranteedQueue[i]);
-            }
-
-            for (int i = 0; i < guaranteedQueue.Count && takeScratch.Count < cap; i++)
-            {
-                if (guaranteedQueue[i].bShownThisSelection && rng.NextDouble() < reshow) takeScratch.Add(guaranteedQueue[i]);
-            }
-        }
-        else
-        {
-            for (int i = 0; i < guaranteedQueue.Count && takeScratch.Count < cap; i++) takeScratch.Add(guaranteedQueue[i]);
-        }
-
-        // 서로 배타인 프리즘은 함께 노출한다(양자택일). 슬롯 상한의 예외이며 제시 수까지만.
-        for (int i = 0; i < takeScratch.Count && takeScratch.Count < _slots; i++)
+        // 서로 배타인(같은 배타 그룹이거나 재료가 겹치는) 프리즘은 함께 노출한다(양자택일). 슬롯 상한의 예외이며 최대 제시 수 − 1장까지
+        // (4장이면 3장, 남은 한 칸은 패시브 보장, 기획서 v2.5 4-2).
+        int conflictLimit = Mathf.Max(cap, _slots - 1);
+        for (int i = 0; i < takeScratch.Count && takeScratch.Count < conflictLimit; i++)
         {
             GuaranteedEntry taken = takeScratch[i];
-            if (false == taken.bPrism || 0 == taken.card.exclusiveGroup) continue;
+            if (false == taken.bPrism) continue;
 
-            for (int j = 0; j < guaranteedQueue.Count && takeScratch.Count < _slots; j++)
+            for (int j = 0; j < guaranteedQueue.Count && takeScratch.Count < conflictLimit; j++)
             {
                 GuaranteedEntry other = guaranteedQueue[j];
-                if (other.bPrism && other.card.exclusiveGroup == taken.card.exclusiveGroup && false == takeScratch.Contains(other)) takeScratch.Add(other);
+                if (other.bPrism && taken.card.ConflictsWith(other.card) && false == takeScratch.Contains(other)) takeScratch.Add(other);
             }
         }
 
@@ -204,12 +193,7 @@ public sealed class CardOfferGenerator
             GuaranteedEntry entry = takeScratch[i];
             candidates.Remove(entry.card);
             _results.Add(CreateOffer(in _ctx, entry.card, true));
-
-            if (false == entry.bShownThisSelection)
-            {
-                entry.bShownThisSelection = true;
-                entry.shownSelections++;
-            }
+            entry.shownSelections++;
         }
     }
 
@@ -241,7 +225,6 @@ public sealed class CardOfferGenerator
                 entry.bPrism = bPrismPass;
                 entry.enqueueOrder = enqueueCounter++;
                 entry.shownSelections = 0;
-                entry.bShownThisSelection = false;
                 guaranteedQueue.Add(entry);
             }
         }
@@ -280,7 +263,26 @@ public sealed class CardOfferGenerator
         return _a.enqueueOrder.CompareTo(_b.enqueueOrder);
     }
 
-    // // 2. 파트너 확정 노출
+    // // 2. 공통 패시브 보장
+
+    private void FillGuaranteedPassives(in CardOfferContext _ctx, int _slots, List<CardOffer> _results)
+    {
+        // 첫 선택은 액티브 7종 중에서만 제시한다(기획서 v2.5 4-1). 패시브 보장은 그다음 선택부터.
+        if (_ctx.bFirstPick) return;
+
+        int target = Mathf.Min(_results.Count + Mathf.Max(0, _ctx.balance.guaranteedPassiveCount), _slots);
+        while (_results.Count < target)
+        {
+            int pick = PickWeighted(in _ctx, true);
+            if (pick < 0) break;
+
+            CardDefinitionSO card = candidates[pick];
+            candidates.RemoveAt(pick);
+            _results.Add(CreateOffer(in _ctx, card, false));
+        }
+    }
+
+    // // 3. 파트너 확정 노출
 
     private void FillForcedPartner(in CardOfferContext _ctx, int _slots, List<CardOffer> _results)
     {
@@ -327,13 +329,13 @@ public sealed class CardOfferGenerator
         return false;
     }
 
-    // // 3. 가중치
+    // // 4. 가중치 랜덤
 
     private void FillWeighted(in CardOfferContext _ctx, int _slots, List<CardOffer> _results)
     {
         while (_results.Count < _slots)
         {
-            int pick = PickWeighted(in _ctx);
+            int pick = PickWeighted(in _ctx, false);
             if (pick < 0) break;
 
             CardDefinitionSO card = candidates[pick];
@@ -342,12 +344,13 @@ public sealed class CardOfferGenerator
         }
     }
 
-    /// <summary>후보 중 하나를 가중치로 뽑아 인덱스를 돌려준다. 없으면 -1.</summary>
-    private int PickWeighted(in CardOfferContext _ctx)
+    /// <summary>후보 중 하나를 가중치로 뽑아 인덱스를 돌려준다. _bPassiveOnly면 공통 패시브만 뽑는다. 없으면 -1.</summary>
+    private int PickWeighted(in CardOfferContext _ctx, bool _bPassiveOnly)
     {
         float total = 0f;
         for (int i = 0; i < candidates.Count; i++)
         {
+            if (_bPassiveOnly && ECardKind.Passive != candidates[i].kind) continue;
             total += GetWeight(in _ctx, candidates[i]);
         }
 
@@ -359,6 +362,8 @@ public sealed class CardOfferGenerator
 
         for (int i = 0; i < candidates.Count; i++)
         {
+            if (_bPassiveOnly && ECardKind.Passive != candidates[i].kind) continue;
+
             float weight = GetWeight(in _ctx, candidates[i]);
             if (weight <= 0f) continue;
 
@@ -410,6 +415,20 @@ public sealed class CardOfferGenerator
         }
 
         return false;
+    }
+
+    // // 리롤: 진짜 랜덤
+
+    /// <summary>제외만 거친 후보에서 가중치·보장 없이 균등하게 뽑는다(기획서 v2.5 4-2 "리롤").</summary>
+    private void FillUniformRandom(in CardOfferContext _ctx, int _slots, List<CardOffer> _results)
+    {
+        while (_results.Count < _slots && candidates.Count > 0)
+        {
+            int pick = rng.Next(candidates.Count);
+            CardDefinitionSO card = candidates[pick];
+            candidates.RemoveAt(pick);
+            _results.Add(CreateOffer(in _ctx, card, false));
+        }
     }
 
     // // 공통

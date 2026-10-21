@@ -86,6 +86,12 @@ public class ShockWave : MonoBehaviour
         maxEffectiveDistance = initialMaxDist + (effectiveExpandSpeed * lifeTime);
     }
 
+    /// <summary>[로그라이크 전용] SetValue로 정한 피해에 배율을 곱한다(충격파 MAX 2중 발생의 두 번째 60%). 본편은 부르지 않는다.</summary>
+    public void MultiplyDamage(float _multiplier)
+    {
+        damage *= _multiplier;
+    }
+
     public void SetEnforced(bool _isEnforced)
     {
         bIsEnforced = _isEnforced;
@@ -249,6 +255,9 @@ public class ShockWave : MonoBehaviour
                     {
                         TriggerOverheatExplosion(treeObj);
                     }
+
+                    // [로그라이크] 포자 충격파(포자 수류탄 + 충격파): 맞은 나무 자리를 알린다(이 타격으로 풀에 돌아가기 전에). 본편은 구독자가 없어 지나간다.
+                    if (RunCombatHooks.HasShockWaveHitTreeListener) RunCombatHooks.NotifyShockWaveHitTree(treeObj.Position);
 
                     treeObj.TakeDamage(finalDamage, true, bIsCritical);
                     hitTargets.Add(target);

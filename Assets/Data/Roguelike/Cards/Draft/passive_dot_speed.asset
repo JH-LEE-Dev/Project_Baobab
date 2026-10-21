@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7cf8c99cf50507244a0f3d975df109e7, type: 3}
+  m_Name: passive_dot_speed
+  m_EditorClassIdentifier: Baobab.Roguelike::CardDefinitionSO
+  cardId: passive_dot_speed
+  nameKey: Roguelike_Card_passive_dot_speed
+  descriptionKey: Roguelike_Card_passive_dot_speed_Desc
+  icon: {fileID: 0}
+  kind: 1
+  skillTag: 0
+  exclusiveGroup: 0
+  levels:
+  - effects:
+    - effect: 37
+      skill: 0
+      value: 5
+  - effects:
+    - effect: 37
+      skill: 0
+      value: 6
+  - effects:
+    - effect: 37
+      skill: 0
+      value: 7
+  - effects:
+    - effect: 37
+      skill: 0
+      value: 10
+  - effects:
+    - effect: 37
+      skill: 0
+      value: 12
+    - effect: 38
+      skill: 0
+      value: 10
+  comboMaterialA: {fileID: 0}
+  comboMaterialB: {fileID: 0}
+  comboType: 0
+  suppressedSkills: 
+  designerNote: "\uAE30\uD68D\uC11C v2.5 6-3 \u00B7 A-5 \uC9C0\uC18D \uD53C\uD574 \uC18D\uB3C4 \uC99D\uAC00. \uC9C0\uC18D \uD53C\uD574 \uD2F1 \uC8FC\uAE30 \uB204\uC801 -5 / -11 / -18 / -28 / -40% (\uD558\uD55C 0.2\uCD08\uB294 \uD29C\uB2DD), MAX \uC870\uAC74\uBD80: \uC624\uC5FC \uC911\uCCA9\uC774 \uCD5C\uB300\uC778 \uB098\uBB34\uB294 \uD2F1 \uC8FC\uAE30 \uCD94\uAC00 -10%."

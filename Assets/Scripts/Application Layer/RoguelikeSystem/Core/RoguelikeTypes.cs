@@ -48,15 +48,21 @@ public enum ERoguelikeSkill
     SporeBomb = 7,
 }
 
-/// <summary>조합 카드(프리즘) 종류. 기획서 3-3 "조합 카드(프리즘) 5종".</summary>
+/// <summary>조합 카드(프리즘) 종류. 기획서 v2.5 6-2 "조합(프리즘) 7종".</summary>
 public enum ERoguelikeCombo
 {
     None = 0,
     SpinShockwave = 1,
     BoomerangShockwave = 2,
     SpinBoomerang = 3,
-    StellaSpore = 4,
+    // 4는 폐지된 스텔라 + 포자 수류탄(StellaSpore) 자리다. v2.5에서 삭제됐다. 다시 쓰지 않는다.
     StellaDrone = 5,
+    /// <summary>포자 수류탄 + 드론(포자 레이저): 드론이 공격하는 모든 나무에서 포자 폭발.</summary>
+    SporeDrone = 6,
+    /// <summary>포자 수류탄 + 오프로드(방구차): 오프로드가 지나간 자리에 포자 폭발.</summary>
+    SporeOffroad = 7,
+    /// <summary>포자 수류탄 + 충격파(포자 충격파): 초록 충격파에 맞은 모든 나무에서 포자 폭발.</summary>
+    SporeShockwave = 8,
 }
 
 /// <summary>
@@ -121,7 +127,7 @@ public enum ERunEffect
     SporeStackAdd = 29,
     /// <summary>필드의 나무 수가 임계치 이상인 동안만 붙는 피해량(%). 공격력 증가 MAX(+20%).</summary>
     DamagePercentAboveThreshold = 30,
-    /// <summary>지속형 스킬(포자 오염·별 표식 지속 피해)로 나무를 처치하면 그 유지 시간을 늘린다(초 가산). 유지 시간 증가 MAX(+0.3초).</summary>
+    /// <summary>지속형 스킬(포자 오염)로 나무를 처치하면 그 유지 시간을 늘린다(초 가산). 유지 시간 증가 MAX(+0.3초).</summary>
     DurationExtendOnDotKill = 31,
     /// <summary>캐릭터가 이동하는 동안만 붙는 공격 속도(%). 이동속도 증가 MAX(+10%).</summary>
     AttackSpeedPercentWhileMoving = 32,
@@ -130,6 +136,12 @@ public enum ERunEffect
     AxeExtraStrikeAdd = 34,
     /// <summary>별 표식 나무가 받는 피해 증가율(%p 가산, 기본 +30%는 튜닝 값). 스텔라 V는 +15(+45%).</summary>
     StarMarkDamageTakenAdd = 35,
+    /// <summary>지속 피해 틱 주기(초 가산, 음수면 짧아진다). 포자 수류탄 오염 틱 2.0초 → II 1.5 → IV 1.0 → VI 0.5초(각 −0.5).</summary>
+    DotTickIntervalAdd = 36,
+    /// <summary>지속 피해 틱 주기 감소(%). 틱 주기 × (1 − 값/100), 하한은 튜닝 값(0.2초). 지속 피해 속도 증가(MAX 누적 40).</summary>
+    DotTickIntervalReducePercent = 37,
+    /// <summary>오염 중첩이 최대인 나무에만 더 붙는 틱 주기 감소(%). DotTickIntervalReducePercent에 더한다. 지속 피해 속도 증가 MAX(+10).</summary>
+    DotTickIntervalReduceAtMaxStackPercent = 38,
 
     // 새 효과는 이 위가 아니라 여기(맨 뒤)에 추가한다.
     Count,

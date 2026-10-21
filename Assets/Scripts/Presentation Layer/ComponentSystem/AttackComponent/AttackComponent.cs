@@ -798,16 +798,16 @@ public class AttackComponent : PComponent
 
         SpawnShockWave(_position, _direction, _onFirstTreeHit);
 
-        // [로그라이크] 충격파 V "2중 발생": 같은 자리·방향으로 바로 뒤이어 더 내보낸다. 본편은 덮어쓰기 값이 0이라 지나가지 않는다.
+        // [로그라이크] 충격파 MAX "2중 발생": 같은 자리·방향으로 바로 뒤이어 더 내보낸다(두 번째는 피해 60%). 본편은 덮어쓰기 값이 0이라 지나가지 않는다.
         // 첫 타격 콜백(내구도)은 첫 충격파에만 건다.
         for (int i = 0; i < RunCombatOverrides.ShockWaveExtraCount; i++)
         {
             yield return GetCachedWait(ref extraShockWaveWait, ref extraShockWaveWaitSeconds, RunCombatOverrides.ShockWaveExtraDelay);
-            SpawnShockWave(_position, _direction, null);
+            SpawnShockWave(_position, _direction, null, RunCombatOverrides.ShockWaveExtraDamageMultiplier);
         }
     }
 
-    private void SpawnShockWave(Vector3 _position, Vector3 _direction, Action _onFirstTreeHit)
+    private void SpawnShockWave(Vector3 _position, Vector3 _direction, Action _onFirstTreeHit, float _damageMultiplier = 1f)
     {
         if (axeExtraAttackCreator == null) return;
 
@@ -815,6 +815,7 @@ public class AttackComponent : PComponent
         ShockWave sw = axeExtraAttackCreator.CreateShockWave(spawnPos);
         if (sw != null)
         {
+            if (1f != _damageMultiplier) sw.MultiplyDamage(_damageMultiplier);
             sw.SetDirection(_direction);
             sw.SetFirstTreeHitCallback(_onFirstTreeHit);
             axeExtraAttackCreator.PlayShockWaveVisual(sw);

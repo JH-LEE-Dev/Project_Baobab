@@ -74,6 +74,19 @@ public class CardDefinitionSO : ScriptableObject
         return null != _card && (comboMaterialA == _card || comboMaterialB == _card);
     }
 
+    /// <summary>
+    /// 한 판에 함께 가질 수 없는 카드인지. 같은 배타 그룹(0 제외)이거나, 둘 다 조합 카드이고 재료가 한 장이라도 겹친다
+    /// (기획서 v2.5 6-2 "재료가 겹치는 조합은 한 판에 하나만": 포자 수류탄 + 충격파와 삼각 조합, 포자 수류탄 + 드론과 스텔라 + 드론).
+    /// </summary>
+    public bool ConflictsWith(CardDefinitionSO _other)
+    {
+        if (null == _other || this == _other) return false;
+        if (0 != exclusiveGroup && exclusiveGroup == _other.exclusiveGroup) return true;
+        if (ECardKind.Prism != kind || ECardKind.Prism != _other.kind) return false;
+
+        return (null != comboMaterialA && _other.IsComboMaterial(comboMaterialA)) || (null != comboMaterialB && _other.IsComboMaterial(comboMaterialB));
+    }
+
     /// <summary>_level레벨까지 누적된 효과를 _results에 더한다(지우지 않는다).</summary>
     public void CollectEffects(int _level, List<CardEffectEntry> _results)
     {

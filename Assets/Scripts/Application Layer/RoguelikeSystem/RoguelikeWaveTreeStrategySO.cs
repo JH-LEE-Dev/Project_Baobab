@@ -11,7 +11,7 @@ using UnityEngine;
 ///   - 등장: 묘목 단계를 건너뛰고 다 자란 나무로 심은 뒤, 본편의 "다 자랄 때" 연출(성장 스케일 + 플래시)을 바로 재생한다.
 ///   - 초기 나무: 웨이브 전투가 시작될 때 현재 임계치의 절반이 필드 곳곳에 솟아난 채로 시작한다(목표 처치 수에 포함).
 ///   - 스폰: 웨이브가 진행 중일 때만, 묶음 주기마다 초당 스폰 × 주기만큼 한꺼번에(소수는 다음 묶음으로 이월).
-///     웨이브 동안 심는 총량은 목표 처치 수(초기 나무 포함)까지다 - 이후 스폰은 "목표 − 초기 나무"그루.
+///     스폰 총량에는 제한이 없다 - 목표 처치 수와 상관없이 웨이브가 끝날 때까지 계속 심는다(처치가 늦으면 임계치를 넘는다).
 ///   - 상한 도달 후: 묶음이 스폰 상한(T + 추가 개수)을 넘으면 상한까지만 심고 넘치는 몫은 버린다. 죽은 자리는 다음 묶음 때 채운다.
 ///   - 생성 위치: 필드 곳곳에 분산(TreeSpawnRules). 다른 나무와 최소 간격을 두고, 플레이어 바로 옆에는 심지 않는다.
 ///
@@ -51,11 +51,8 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
     private bool bSpawning;
     private float spawnInterval = 0.5f;
     private int spawnCap = 60;
-    // 이 웨이브에 심을 수 있는 총량(초기 나무 포함). 0 이하면 제한 없음.
-    private int spawnBudget;
     // 묶음 주기 · 최소 간격 · 플레이어 금지 반경. RoguelikeSystem의 밸런스 에셋을 그대로 읽는다.
     private RoguelikeBalanceSO balance;
-    private int spawnedThisWave;
     // 다음 묶음까지 남은 시간과, 묶음 크기의 소수 이월분.
     private float batchTimer;
     private float batchCarry;
@@ -77,18 +74,16 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
 
     /// <summary>
     /// 웨이브 시작. 빈칸을 필드 전체로 되돌리고, 초기 나무 _initialTrees그루를 필드 곳곳에 한꺼번에 심은 뒤 묶음 스폰을 켠다.
-    /// _spawnBudget은 이 웨이브에 심는 총량(초기 나무 포함, 0 이하면 제한 없음). 묶음 주기 · 생성 위치 수치는 _balance에서 읽는다.
+    /// 스폰 총량에는 제한이 없다: 웨이브가 끝날 때까지(StopSpawning) 스폰 상한까지 계속 심는다(기획서 v2.5 3-1). 묶음 주기 · 생성 위치 수치는 _balance에서 읽는다.
     /// _player는 플레이어 바로 옆 금지 판정에 쓴다(없으면 필드 중심 기준).
     /// </summary>
-    public void BeginWave(InDungeonObjectManager _manager, float _spawnInterval, int _spawnCap, int _initialTrees, int _spawnBudget,
+    public void BeginWave(InDungeonObjectManager _manager, float _spawnInterval, int _spawnCap, int _initialTrees,
         RoguelikeBalanceSO _balance, Transform _player)
     {
         spawnInterval = Mathf.Max(0.01f, _spawnInterval);
         spawnCap = Mathf.Max(1, _spawnCap);
-        spawnBudget = _spawnBudget;
         balance = _balance;
         playerTransform = _player;
-        spawnedThisWave = 0;
         batchTimer = BatchSeconds;
         batchCarry = 0f;
 
@@ -184,8 +179,6 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
 
     // // 내부
 
-    private bool HasBudget => spawnBudget <= 0 || spawnedThisWave < spawnBudget;
-
     private float BatchSeconds => null != balance ? Mathf.Max(0.1f, balance.spawnBatchSeconds) : 3f;
     private float MinSpacing => null != balance ? balance.treeMinSpacing : 0f;
     private float PlayerExclusionRadius => null != balance ? balance.playerExclusionRadius : 0f;
@@ -193,7 +186,7 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
     private Vector3 PlayerPosition => null != playerTransform ? playerTransform.position : fieldCenter;
 
     /// <summary>
-    /// _count그루를 필드 곳곳에 같은 프레임에 심는다(한 묶음이 "팍" 솟아난다). 스폰 상한 · 웨이브 총량에 닿으면 거기서 멈추고 남은 몫은 버린다.
+    /// _count그루를 필드 곳곳에 같은 프레임에 심는다(한 묶음이 "팍" 솟아난다). 스폰 상한에 닿으면 거기서 멈추고 남은 몫은 버린다.
     /// </summary>
     private void SpawnBatch(InDungeonObjectManager _manager, int _count)
     {
@@ -203,7 +196,7 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
         // 간격 판정용 위치 목록. 이번 묶음에 심은 나무는 SpawnOne이 뒤에 더한다.
         CollectTreePositions(_manager);
 
-        for (int i = 0; i < room && HasBudget; i++)
+        for (int i = 0; i < room; i++)
         {
             if (false == SpawnOne(_manager)) break;
         }
@@ -235,7 +228,6 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
                 continue;
             }
 
-            spawnedThisWave++;
             treePositionScratch.Add(tree.transform.position);
             if (bPlayGrowUpOnSpawn) tree.PlayGrowUpForRun();
             bSpawned = true;

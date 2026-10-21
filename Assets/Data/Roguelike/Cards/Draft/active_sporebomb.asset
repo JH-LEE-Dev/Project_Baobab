@@ -25,17 +25,17 @@ MonoBehaviour:
     - effect: 3
       skill: 7
       value: 10
-    - effect: 4
+    - effect: 36
       skill: 7
-      value: 25
+      value: -0.5
   - effects:
     - effect: 6
       skill: 7
       value: 1
   - effects:
-    - effect: 1
+    - effect: 36
       skill: 7
-      value: 25
+      value: -0.5
     - effect: 2
       skill: 7
       value: 25
@@ -47,10 +47,13 @@ MonoBehaviour:
     - effect: 3
       skill: 7
       value: 15
-    - effect: 4
+    - effect: 36
       skill: 7
-      value: 25
+      value: -0.5
   - effects:
+    - effect: 6
+      skill: 7
+      value: 1
     - effect: 29
       skill: 7
       value: 1

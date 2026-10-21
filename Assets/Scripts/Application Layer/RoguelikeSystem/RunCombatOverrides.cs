@@ -1,3 +1,5 @@
+using UnityEngine;
+
 /// <summary>
 /// 본편 전투 코드에 하드코딩된 상수 중 로그라이크 카드가 바꿔야 하는 값의 덮어쓰기 창구.
 ///
@@ -26,6 +28,15 @@ public static class RunCombatOverrides
 
     /// <summary>추가 충격파 사이의 간격(초).</summary>
     public static float ShockWaveExtraDelay { get; private set; } = 0.12f;
+
+    /// <summary>추가 충격파의 피해 배율(충격파 MAX 두 번째 = 0.6). 추가 충격파가 없는 본편에서는 읽히지 않는다.</summary>
+    public static float ShockWaveExtraDamageMultiplier { get; private set; } = 1f;
+
+    /// <summary>true면 충격파 그림 색에 ShockWaveTint를 곱한다(포자 충격파의 초록 충격파). false(본편)면 원래 색 그대로.</summary>
+    public static bool bShockWaveTinted { get; private set; }
+
+    /// <summary>충격파 그림에 곱하는 색. bShockWaveTinted일 때만 쓴다.</summary>
+    public static Color ShockWaveTint { get; private set; } = Color.white;
 
     /// <summary>
     /// true면 도끼 이외의 공격(회전베기 360도·충격파·부메랑·드론 레이저)도 IRunSkillHitTarget(로그라이크 별)을 친다(스텔라 III).
@@ -56,10 +67,17 @@ public static class RunCombatOverrides
         WhirlwindRangeMultiplier = _range > 0f ? _range : 1f;
     }
 
-    public static void SetShockWaveExtraCount(int _count, float _delay)
+    public static void SetShockWaveExtraCount(int _count, float _delay, float _damageMultiplier)
     {
         ShockWaveExtraCount = _count > 0 ? _count : 0;
         ShockWaveExtraDelay = _delay > 0f ? _delay : 0f;
+        ShockWaveExtraDamageMultiplier = _damageMultiplier > 0f ? _damageMultiplier : 0f;
+    }
+
+    public static void SetShockWaveTint(bool _bTinted, Color _tint)
+    {
+        bShockWaveTinted = _bTinted;
+        ShockWaveTint = _bTinted ? _tint : Color.white;
     }
 
     public static void SetSkillsHitRunTargets(bool _bOn)
@@ -74,6 +92,9 @@ public static class RunCombatOverrides
         WhirlwindRangeMultiplier = 1f;
         ShockWaveExtraCount = 0;
         ShockWaveExtraDelay = 0.12f;
+        ShockWaveExtraDamageMultiplier = 1f;
+        bShockWaveTinted = false;
+        ShockWaveTint = Color.white;
         bSkillsHitRunTargets = false;
         AxeExtraStrikes = 0;
         AxeExtraStrikeDelay = 0.1f;

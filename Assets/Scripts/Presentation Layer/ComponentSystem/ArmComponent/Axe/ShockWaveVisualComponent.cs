@@ -51,6 +51,10 @@ public class ShockWaveVisualComponent : MonoBehaviour
 
         if (visualRunner == null || shockWave == null) return;
 
+        Color color = sourceRenderer != null ? sourceRenderer.color : Color.white;
+        // [로그라이크] 포자 충격파는 초록 충격파다. 본편은 bShockWaveTinted가 false라 원래 색 그대로다.
+        if (RunCombatOverrides.bShockWaveTinted) color *= RunCombatOverrides.ShockWaveTint;
+
         visualRunner.SetOnStopped(cachedReturnVisualRunner);
         visualRunner.Play(new ShockWaveVisualRunner.PlayData
         {
@@ -60,7 +64,7 @@ public class ShockWaveVisualComponent : MonoBehaviour
             StartPosition = transform.position,
             Sprite = sourceRenderer != null ? sourceRenderer.sprite : null,
             Material = sourceRenderer != null ? sourceRenderer.sharedMaterial : null,
-            Color = sourceRenderer != null ? sourceRenderer.color : Color.white,
+            Color = color,
             SortingLayerID = sourceRenderer != null ? sourceRenderer.sortingLayerID : 0,
             SortingOrder = sourceRenderer != null ? sourceRenderer.sortingOrder : 0,
             ExpandSpeed = shockWave.EffectiveExpandSpeed,

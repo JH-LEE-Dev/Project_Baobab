@@ -18,7 +18,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   kind: 3
   skillTag: 0
-  exclusiveGroup: 1
+  exclusiveGroup: 0
   levels:
   - effects:
     - effect: 0

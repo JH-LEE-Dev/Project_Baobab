@@ -403,12 +403,12 @@ public partial class RoguelikeSystem
             _spec.previousTreeKind >= 0 ? field.GetTreeType(_spec.previousTreeKind) : TreeType.None, _spec.previousTreeKindShare);
         ConfigurePressure();
 
-        // 임계치의 절반이 솟아난 채로 웨이브가 시작되고(솟아나는 연출이 시작 신호), 웨이브 동안 심는 총량은 목표 처치 수다
-        // (초기 나무 포함, 이후 스폰은 목표 − 초기 나무를 묶음 단위로). 생성 위치는 필드 곳곳에 분산. 기획서 v2.5 3-1.
+        // 임계치의 절반이 솟아난 채로 웨이브가 시작되고(솟아나는 연출이 시작 신호, 목표 처치 수에 포함), 이후 스폰은 목표 처치 수와
+        // 상관없이 웨이브가 끝날 때까지 묶음 단위로 스폰 상한(T + 20)까지 계속된다(총량 제한 없음). 생성 위치는 필드 곳곳에 분산. 기획서 v2.5 3-1.
         // 스폰 상한·초기 나무 수는 지금 임계치(계약 "인내의 시간"으로 줄어든 값, ConfigurePressure)를 따른다(기획서 6-4).
         float spawnRate = Mathf.Max(0.1f, 1f + modifiers.Get(ERunEffect.TreeSpawnRatePercent) / 100f);
         int initialTrees = TreeSpawnRules.InitialTreeCount(pressure.Threshold, balance.initialTreeThresholdRatio, _spec.killTarget);
-        waveStrategy?.BeginWave(inDungeonObjectManager, _spec.spawnInterval / spawnRate, CurrentSpawnCap, initialTrees, _spec.killTarget,
+        waveStrategy?.BeginWave(inDungeonObjectManager, _spec.spawnInterval / spawnRate, CurrentSpawnCap, initialTrees,
             balance, null != character ? character.transform : null);
 
         float waveCombatSeconds = 0f;

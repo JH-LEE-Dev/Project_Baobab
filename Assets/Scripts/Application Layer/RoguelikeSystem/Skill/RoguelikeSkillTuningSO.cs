@@ -15,8 +15,8 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float axeDamage = 10f;
     [Tooltip("도끼 쿨타임(초).")]
     public float axeAttackCoolTime = 0.6f;
-    [Tooltip("충격파 피해.")]
-    public float shockwaveDamage = 8f;
+    [Tooltip("충격파 피해. 기획서 v2.5 A-4: 초반부터 강하게 12로 시작(크기 1.5는 충격파 카드 I의 범위 +10%).")]
+    public float shockwaveDamage = 12f;
     [Tooltip("부메랑 틱 피해.")]
     public float boomerangTickDamage = 4f;
     [Tooltip("부메랑 틱 간격(초).")]
@@ -38,6 +38,8 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     [Header("레벨 효과 반복 간격 (부록 A-4)")]
     [Tooltip("충격파 MAX 2중 발생의 두 번째 충격파까지 간격(초).")]
     public float shockwaveExtraDelay = 0.12f;
+    [Tooltip("충격파 MAX 2중 발생에서 두 번째(이후) 충격파의 피해 비율. 기획서 v2.5 A-4 60%.")]
+    [Range(0f, 1f)] public float shockwaveExtraDamageRatio = 0.6f;
     [Tooltip("스텔라 MAX 별 폭발 2회 연속의 두 번째 폭발까지 간격(초).")]
     public float stellaBlastRepeatDelay = 0.2f;
     [Tooltip("계약 다다익선 도끼 연속 2회 타격의 두 번째 타격까지 간격(초).")]
@@ -103,7 +105,7 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     [Tooltip("별 폭발 피해 상한을 적용하는 첫 티어(0부터, 3 = 4티어). 언리밋도 4티어로 친다.")]
     public int stellaBlastCapFromTier = 3;
 
-    [Header("포자폭탄 (포자 대폭발 + 오염, 기획서 v2.4 6-1)")]
+    [Header("포자폭탄 (포자 대폭발 + 오염, 기획서 v2.5 6-1)")]
     [Tooltip("투하 주기(초). 공격속도%로 빨라진다.")]
     public float sporeInterval = 5f;
     [Tooltip("투하 대상 탐색 반경(캐릭터 기준).")]
@@ -114,12 +116,14 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float sporeExplosionDelay = 0.2f;
     [Tooltip("대폭발 자체의 피해. 기획서는 오염 지속 피해만 정해 두었으므로 기본 0이다.")]
     public float sporeExplosionDamage = 0f;
-    [Tooltip("오염 유지 시간(초). 지속%로 늘어난다(II 5초, VI 6초).")]
+    [Tooltip("오염 유지 시간(초). 공통 패시브 '유지 시간 증가'(지속%)로만 늘어난다(포자 수류탄 레벨은 유지 시간을 올리지 않는다).")]
     public float sporeDuration = 4f;
-    [Tooltip("오염 지속 피해 간격(초).")]
-    public float sporeTickInterval = 0.5f;
-    [Tooltip("오염 틱당 피해. 피해%·지속 피해%로 늘어난다. 중첩 수만큼 곱해진다.")]
+    [Tooltip("오염 지속 피해 틱 주기(초). 1레벨 2.0초로 극단적으로 느리게 시작해 카드 DotTickIntervalAdd(II · IV · VI 각 −0.5초)로 0.5초까지 짧아진다.")]
+    public float sporeTickInterval = 2f;
+    [Tooltip("오염 틱당 피해(4 고정). 피해%·지속 피해%로 늘어난다. 중첩 수만큼 곱해진다.")]
     public float sporeTickDamage = 4f;
+    [Tooltip("지속 피해 틱 주기의 하한(초). 공통 패시브 '지속 피해 속도 증가'가 줄여도 이보다 짧아지지 않는다(기획서 v2.5 6-3).")]
+    public float dotTickIntervalMin = 0.2f;
 
     [Header("조합: 회전베기 + 충격파 (360도 충격파)")]
     [Tooltip("이 휘두름 수마다 360도 충격파. 회전베기 발동 간격 카드 효과가 함께 적용된다.")]
@@ -138,15 +142,23 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     [Tooltip("부메랑 타격 1회당 회전베기 1회(기획서). 회전베기는 캐릭터 중심이라 한 프레임에 여러 그루를 맞혀도 한 번만 친다(같은 공격이 겹쳐 쌓이지 않게). 값을 주면 그 간격(초) 안의 타격은 건너뛴다(밸런스용).")]
     public float spinBoomerangCooldown = 0f;
 
-    [Header("조합: 스텔라 + 포자폭탄")]
-    [Tooltip("별 표식에 붙는 도트(틱당 피해·간격).")]
-    public float stellaSporeDotDamage = 10f;
-    public float stellaSporeDotInterval = 0.5f;
-    [Tooltip("도트 중인 나무가 죽을 때 터지는 포자 폭발.")]
-    public float stellaSporeExplosionRadius = 1.6f;
-    public float stellaSporeExplosionDamage = 40f;
-    [Tooltip("연쇄 폭발 상한(한 프레임에 터지는 수). 기획서 9장 '연쇄 폭발의 상한'.")]
-    public int stellaSporeMaxExplosionsPerFrame = 8;
+    [Header("조합: 포자 수류탄 + 드론 / 오프로드 / 충격파 (포자 폭발, 기획서 v2.5 6-2 · C-2 '연쇄 폭발')")]
+    [Tooltip("포자 폭발 한 번의 반경(월드). 포자 수류탄의 범위%로 넓어진다.")]
+    public float sporeComboExplosionRadius = 1.6f;
+    [Tooltip("포자 폭발 한 번의 피해. 공격력 증가(피해%)가 적용된다.")]
+    public float sporeComboExplosionDamage = 40f;
+    [Tooltip("한 프레임에 터지는 포자 폭발 수의 상한. 넘친 몫은 다음 프레임으로 미룬다.")]
+    public int sporeComboMaxExplosionsPerFrame = 8;
+    [Tooltip("터지기를 기다리는 포자 폭발 수의 상한. 넘치면 새 예약은 버린다(드론 체인 · 충격파가 한꺼번에 많은 나무를 맞힐 때).")]
+    public int sporeComboMaxPending = 48;
+    [Tooltip("같은 자리 재폭발 제한: 최근 이 시간(초) 안에 병합 반경 안에서 터졌으면 다시 터지지 않는다.")]
+    public float sporeComboRepeatCooldown = 0.5f;
+    [Tooltip("같은 자리로 보는 거리(월드). 붙어 선 나무를 한 번에 맞혀도 같은 자리 폭발이 겹쳐 쌓이지 않게 한다.")]
+    public float sporeComboMergeRadius = 0.6f;
+    [Tooltip("방구차: 오프로드가 이 거리(월드)를 달릴 때마다 지나간 자리에 포자 폭발.")]
+    public float sporeOffroadSpacing = 1.5f;
+    [Tooltip("포자 충격파: 충격파 그림에 곱하는 색. 충격파 그림이 흰색이라 이 색이 그대로 보인다. 기본은 본편 포자 대폭발 팔레트의 초록(143, 217, 138).")]
+    public Color sporeShockwaveColor = new Color(143f / 255f, 217f / 255f, 138f / 255f, 1f);
 
     [Header("조합: 스텔라 + 드론")]
     [Tooltip("이음선 빔 주기(초). 공격속도%로 빨라진다.")]

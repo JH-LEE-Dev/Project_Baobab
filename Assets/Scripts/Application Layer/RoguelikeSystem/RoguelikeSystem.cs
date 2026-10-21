@@ -275,7 +275,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
         shop.Initialize(cardDatabase, balance, build, modifiers);
 
-        // 런 시작 때 끼울 전투 기준값(부록 A-1: 도끼 10, 충격파 8, 부메랑 틱 4, 드론 레이저 7). 본편 캐릭터 프리팹은 그대로 둔다.
+        // 런 시작 때 끼울 전투 기준값(부록 A-1·A-4: 도끼 10, 충격파 12, 부메랑 틱 4, 드론 레이저 7). 본편 캐릭터 프리팹은 그대로 둔다.
         RoguelikeSkillTuningSO tuning = null != skillController ? skillController.Tuning : null;
         effectApplier.Initialize(bAttackSpeedAffectsAxe, null != tuning ? tuning.spinRequiredSwings : 3);
         if (null != tuning)
@@ -292,7 +292,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
                 droneDamage = tuning.droneLaserDamage,
                 droneDamageInterval = tuning.droneLaserInterval,
             });
-            effectApplier.SetRepeatDelays(tuning.shockwaveExtraDelay, tuning.axeExtraStrikeDelay);
+            effectApplier.SetRepeatDelays(tuning.shockwaveExtraDelay, tuning.axeExtraStrikeDelay, tuning.shockwaveExtraDamageRatio);
+            effectApplier.SetSporeShockwaveColor(tuning.sporeShockwaveColor);
         }
 
         effectApplier.SetMoveSpeedCap(balance.maxMoveSpeedPercent);

@@ -145,7 +145,7 @@ MonoBehaviour:
     staminaDamage: 15
   previousTreeKindShare: 0.3
   threshold: 40
-  spawnExtra: 12
+  spawnExtra: 20
   initialTreeSeconds: 10
   clusterRadius: 2.5
   clusterMoveInterval: 15
@@ -161,16 +161,16 @@ MonoBehaviour:
   minThreshold: 5
   maxMoveSpeedPercent: 60
   unlimitHpGrowthPerWave: 0.1
-  offerCount: 3
+  offerCount: 4
   guaranteedSlotCap: 2
+  guaranteedPassiveCount: 2
   firstPickActiveOnly: 1
   rerollsPerSelection: 1
-  rerollGuaranteedReshowChance: 0.5
   baseWeight: 1
   kindWeights:
   - 1
   - 1
-  - 0.15
+  - 0.3
   - 1
   upgradeWeightBonus: 1
   partnerStartLevel: 2

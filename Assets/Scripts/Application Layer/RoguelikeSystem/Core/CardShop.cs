@@ -73,7 +73,6 @@ public sealed class CardShop
         IsFirstPick = _bFirstPick;
         RerollsLeft = Math.Max(0, balance.rerollsPerSelection);
         IsOpen = true;
-        generator.BeginSelection();
         Regenerate(false);
     }
 
@@ -85,7 +84,7 @@ public sealed class CardShop
 
     /// <summary>
     /// 제시된 _offerIndex번 카드를 고른다. 성공하면 선택이 닫힌다.
-    /// _discardedOfferIndices에는 같은 배타 그룹이라 함께 사라져야 하는 다른 제시 카드의 인덱스가 담긴다(기획서 10-3 "배타 카드 소멸").
+    /// _discardedOfferIndices에는 같은 배타 그룹(또는 재료가 겹치는 조합)이라 함께 사라져야 하는 다른 제시 카드의 인덱스가 담긴다(기획서 10-3 "배타 카드 소멸").
     /// </summary>
     public ECardShopResult TryBuy(int _offerIndex, out CardPurchaseResult _result, List<int> _discardedOfferIndices)
     {
@@ -111,12 +110,12 @@ public sealed class CardShop
             displayGrade = offer.displayGrade,
         };
 
-        if (null != _discardedOfferIndices && 0 != offer.card.exclusiveGroup)
+        if (null != _discardedOfferIndices)
         {
             for (int i = 0; i < offers.Count; i++)
             {
                 if (i == _offerIndex || false == offers[i].IsValid) continue;
-                if (offers[i].card.exclusiveGroup == offer.card.exclusiveGroup) _discardedOfferIndices.Add(i);
+                if (offer.card.ConflictsWith(offers[i].card)) _discardedOfferIndices.Add(i);
             }
         }
 
@@ -127,7 +126,7 @@ public sealed class CardShop
         return ECardShopResult.Success;
     }
 
-    /// <summary>제시 카드를 전부 바꾼다. 선택 단계마다 정해진 횟수만 쓸 수 있다(기획서 4-1 "리롤").</summary>
+    /// <summary>제시 카드를 전부 바꾼다. 선택 단계마다 정해진 횟수만 쓸 수 있고, 우선순위 없는 진짜 랜덤이다(기획서 v2.5 4-1·4-2 "리롤").</summary>
     public ECardShopResult TryReroll()
     {
         if (false == IsOpen) return ECardShopResult.NotOpen;

@@ -184,6 +184,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private readonly List<ITreeObj> droneClaimedTargets = new List<ITreeObj>(4); // 한 번의 Activate/재타겟팅 호출 안에서 드론끼리 서로 다른 나무를 고르도록
     private readonly List<ITreeObj> droneChainHitTrees = new List<ITreeObj>(8); // 한 번의 연쇄공격 전이 동안 이미 맞은 나무(중복 전이 방지)
     private readonly List<Vector3> droneChainZapPoints = new List<Vector3>(8); // muzzle -> 각 나무 top 위치. 연쇄공격 VFX(LightningZap) 재생용
+    private readonly List<Vector3> droneChainHitGroundPoints = new List<Vector3>(8); // [로그라이크] 주 대상 -> 연쇄 대상의 바닥 위치. RunCombatHooks 알림용
     private float droneRetargetTimer = 0f;
     private bool bDronesPaused = false; // WarningUI로 드론을 멈춘 동안 Character 쪽 대형 갱신/분리 밀어내기/재타겟팅도 함께 건너뛴다
     private const float DroneRetargetInterval = 0.15f; // 타겟을 잃은 드론에게 새 나무를 물 흐르듯 이어서 배정하는 주기
@@ -1600,6 +1601,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         droneChainZapPoints.Add(primaryTopPos);
         _drone.PlayAtkHitVfx(primaryTopPos);
 
+        // [로그라이크] 레이저가 맞힌 나무의 바닥 위치(포자 레이저의 포자 폭발 자리). 본편은 듣는 쪽이 없어 모으지 않는다.
+        bool bCollectHitGround = RunCombatHooks.HasDroneLaserListener;
+        droneChainHitGroundPoints.Clear();
+        if (bCollectHitGround) droneChainHitGroundPoints.Add(primaryTransform.position);
+
         int finalChainCount = statComponent.droneChainCount;
         float finalChainRange = statComponent.droneChainRange;
 
@@ -1624,6 +1630,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
                 {
                     ITreeObj next = FindNearestChainTarget(origin, finalChainRange);
                     if (next == null) break;
+
+                    // 피해로 쓰러져 풀에 돌아가기 전의 자리를 잡아 둔다.
+                    if (bCollectHitGround) droneChainHitGroundPoints.Add(next.GetTransform().position);
 
                     if (next is TreeObj nextTree)
                     {
@@ -1652,8 +1661,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             }
         }
 
-        // 로그라이크 스텔라 III용 알림(레이저가 지나간 경로). 본편에서는 구독자가 없어 아무 일도 일어나지 않는다(RunCombatHooks 참고).
-        if (RunCombatHooks.HasDroneLaserListener) RunCombatHooks.NotifyDroneLaser(droneChainZapPoints);
+        // 로그라이크 스텔라 III · 포자 레이저용 알림(레이저가 지나간 경로, 맞힌 나무의 바닥 위치). 본편에서는 구독자가 없어 아무 일도 일어나지 않는다(RunCombatHooks 참고).
+        if (bCollectHitGround) RunCombatHooks.NotifyDroneLaser(droneChainZapPoints, droneChainHitGroundPoints);
 
         _drone.PlayChainZap(droneChainZapPoints, droneChainZapPoints.Count);
     }

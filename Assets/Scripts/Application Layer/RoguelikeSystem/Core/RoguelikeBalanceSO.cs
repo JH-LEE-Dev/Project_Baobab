@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary>
 /// 기획서 v2.4 부록 A "밸런스 수치"를 한곳에 모은 데이터. 코드에는 수치를 두지 않는다.
 ///
-/// 처음 만든 에셋은 비어 있다. 인스펙터 우측 메뉴의 "기획서 v2.4 부록 A 초안 값으로 채우기"를 누르면
+/// 처음 만든 에셋은 비어 있다. 인스펙터 우측 메뉴의 "기획서 v2.5 부록 A 초안 값으로 채우기"를 누르면
 /// 부록 A의 초안 값이 들어간다. 값은 모두 초안이며 프로토타입 실측 후 덮어쓴다.
 ///
 /// v2.4에서 골드 시스템이 없어져 골드·가격·리롤 비용·감정 항목이 사라졌다. 카드 선택은 모두 무료이고,
@@ -54,8 +54,8 @@ public class RoguelikeBalanceSO : ScriptableObject
     [Header("필드")]
     [Tooltip("임계치 T. 필드의 나무 수가 이 값 이상이면 유예 타이머가 돈다.")]
     public int threshold = 40;
-    [Tooltip("스폰 상한 = T + 이 값(기획서 3-1의 +α, 10~15그루). 제약: T ≤ 스폰 상한.")]
-    public int spawnExtra = 12;
+    [Tooltip("스폰 상한 = T + 이 값(기획서 v2.5 3-1의 +α, 20그루). 제약: T ≤ 스폰 상한.")]
+    public int spawnExtra = 20;
 
     [Header("초기 나무 · 묶음 스폰 · 생성 위치 (기획서 v2.5 3-1, 부록 A-1 초안 - 실측 후 조정)")]
     [Tooltip("웨이브 시작 초기 나무 = 현재 임계치 T × 이 비율(내림). T 40이면 20그루, 웨이브 번호와 무관하다. 목표 처치 수에 포함되고 T보다 항상 낮다.")]
@@ -93,16 +93,16 @@ public class RoguelikeBalanceSO : ScriptableObject
     public float unlimitHpGrowthPerWave = 0.1f;
 
     [Header("카드 제시")]
-    [Tooltip("한 번에 제시하는 카드 수 N.")]
-    public int offerCount = 3;
-    [Tooltip("에메랄드·프리즘 보장 노출을 한 번에 몇 장까지 넣을지(슬롯 1). 나머지는 다음 선택으로 이월. 서로 배타인 프리즘은 이 상한의 예외.")]
+    [Tooltip("한 번에 제시하는 카드 수 N(기획서 v2.5 4장).")]
+    public int offerCount = 4;
+    [Tooltip("프리즘·에메랄드(MAX) 보장 노출을 합쳐 한 번에 몇 장까지 넣을지. 나머지는 다음 선택으로 이월. 서로 배타인 프리즘은 이 상한의 예외.")]
     public int guaranteedSlotCap = 2;
+    [Tooltip("프리즘·MAX 다음으로 무조건 넣는 공통 패시브 수(기획서 v2.5 4-2 ③). 첫 선택에는 적용하지 않는다. 노출 가능한 패시브가 모자라면 있는 만큼.")]
+    public int guaranteedPassiveCount = 2;
     [Tooltip("첫 선택(웨이브 1)은 액티브만 제시.")]
     public bool firstPickActiveOnly = true;
-    [Tooltip("선택 단계마다 쓸 수 있는 리롤 횟수(첫 선택 포함). 쓰지 않아도 다음 선택으로 이월하지 않는다(기획서 4-1).")]
+    [Tooltip("선택 단계마다 쓸 수 있는 리롤 횟수(첫 선택 포함). 쓰지 않아도 다음 선택으로 이월하지 않는다(기획서 4-1). 리롤은 우선순위 없는 진짜 랜덤이다(4-2).")]
     public int rerollsPerSelection = 1;
-    [Tooltip("리롤로 다시 뽑을 때 이번 선택에서 이미 노출된 보장 카드가 다시 나올 확률(0~1).")]
-    [Range(0f, 1f)] public float rerollGuaranteedReshowChance = 0.5f;
 
     [Header("노출 가중치")]
     public float baseWeight = 1f;
@@ -163,7 +163,7 @@ public class RoguelikeBalanceSO : ScriptableObject
 
     // // 초안 값
 
-    [ContextMenu("기획서 v2.4 부록 A 초안 값으로 채우기")]
+    [ContextMenu("기획서 v2.5 부록 A 초안 값으로 채우기")]
     public void FillTemporaryValues()
     {
         clearWave = 30;
@@ -209,7 +209,7 @@ public class RoguelikeBalanceSO : ScriptableObject
         previousTreeKindShare = 0.3f;
 
         threshold = 40;
-        spawnExtra = 12;
+        spawnExtra = 20;
 
         initialTreeThresholdRatio = 0.5f;
         spawnBatchSeconds = 3f;
@@ -227,15 +227,15 @@ public class RoguelikeBalanceSO : ScriptableObject
 
         unlimitHpGrowthPerWave = 0.1f;
 
-        offerCount = 3;
+        offerCount = 4;
         guaranteedSlotCap = 2;
+        guaranteedPassiveCount = 2;
         firstPickActiveOnly = true;
         rerollsPerSelection = 1;
-        rerollGuaranteedReshowChance = 0.5f;
 
-        // 종류 비중: 액티브 1.0 / 공통 패시브 1.0 / 계약 0.15 / 프리즘(보장 노출이라 가중치 추첨에 거의 오지 않는다) 1.0.
+        // 종류 비중: 액티브 1.0 / 공통 패시브 1.0 / 계약 0.3(v2.5에서 0.15 → 0.3) / 프리즘(보장 노출이라 가중치 추첨에 거의 오지 않는다) 1.0.
         baseWeight = 1f;
-        kindWeights = new List<float>(4) { 1f, 1f, 0.15f, 1f };
+        kindWeights = new List<float>(4) { 1f, 1f, 0.3f, 1f };
         upgradeWeightBonus = 1f;
         partnerStartLevel = 2;
         partnerWeightBonus = 1f;

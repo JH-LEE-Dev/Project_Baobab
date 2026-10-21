@@ -282,7 +282,7 @@ public enum ERoguelikeSkillVfx
     Shockwave360 = 6,
     /// <summary>부메랑 타격에 붙은 회전베기(회전베기+부메랑). position=캐릭터, radius.</summary>
     SpinBoomerangStrike = 7,
-    /// <summary>포자 폭발(스텔라+포자폭탄). radius.</summary>
+    /// <summary>포자 폭발(포자 수류탄 + 드론 / 오프로드 / 충격파). 포자 레이저 · 방구차 · 포자 충격파가 나무를 맞힌 자리마다 터진다. radius.</summary>
     SporeExplosion = 8,
     /// <summary>별 이음선 빔(스텔라+드론). position→position2.</summary>
     StarLinkBeam = 9,

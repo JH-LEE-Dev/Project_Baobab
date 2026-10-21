@@ -155,15 +155,60 @@ public class CardRulesTests
     [Test]
     public void Build_ExclusiveGroupLocksOtherCardsButNotTheOwner()
     {
-        CardDefinitionSO stellaSpore = factory.CreateCard("stellaSpore", ECardKind.Prism, _exclusiveGroup: 1);
-        CardDefinitionSO stellaDrone = factory.CreateCard("stellaDrone", ECardKind.Prism, _exclusiveGroup: 1);
+        CardDefinitionSO sporeDrone = factory.CreateCard("sporeDrone", ECardKind.Prism, _exclusiveGroup: 3);
+        CardDefinitionSO sporeOffroad = factory.CreateCard("sporeOffroad", ECardKind.Prism, _exclusiveGroup: 3);
 
         RunBuildState build = new RunBuildState();
-        build.Acquire(stellaSpore);
+        build.Acquire(sporeDrone);
+
+        Assert.IsTrue(build.IsExcluded(sporeOffroad));
+        Assert.IsFalse(build.IsExcluded(sporeDrone));
+        Assert.IsTrue(build.IsMax(sporeDrone));
+    }
+
+    [Test]
+    public void Build_PrismsSharingMaterialAreExclusive_EvenAcrossGroups()
+    {
+        // 기획서 v2.5 6-2: 재료가 겹치는 조합은 한 판에 하나만. 포자 수류탄 + 드론(포자 조합)과 스텔라 + 드론(그룹 없음)은 드론이 겹친다.
+        CardDefinitionSO spore = factory.CreateCard("spore", ECardKind.Active, ERoguelikeSkill.SporeBomb);
+        CardDefinitionSO drone = factory.CreateCard("drone", ECardKind.Active, ERoguelikeSkill.Drone);
+        CardDefinitionSO stella = factory.CreateCard("stella", ECardKind.Active, ERoguelikeSkill.Stella);
+        CardDefinitionSO spin = factory.CreateCard("spin", ECardKind.Active, ERoguelikeSkill.Spin);
+        CardDefinitionSO boomerang = factory.CreateCard("boomerang", ECardKind.Active, ERoguelikeSkill.Boomerang);
+        CardDefinitionSO sporeDrone = factory.CreatePrism("sporeDrone", spore, drone, ERoguelikeCombo.SporeDrone, ERoguelikeSkill.SporeBomb);
+        CardDefinitionSO stellaDrone = factory.CreatePrism("stellaDrone", stella, drone, ERoguelikeCombo.StellaDrone);
+        CardDefinitionSO spinBoomerang = factory.CreatePrism("spinBoomerang", spin, boomerang, ERoguelikeCombo.SpinBoomerang);
+        sporeDrone.exclusiveGroup = 3;
+
+        RunBuildState build = new RunBuildState();
+        build.Acquire(sporeDrone);
 
         Assert.IsTrue(build.IsExcluded(stellaDrone));
-        Assert.IsFalse(build.IsExcluded(stellaSpore));
-        Assert.IsTrue(build.IsMax(stellaSpore));
+        Assert.IsFalse(build.IsExcluded(spinBoomerang), "재료가 겹치지 않는 조합은 함께 가질 수 있다");
+        Assert.IsFalse(build.IsExcluded(drone), "재료 카드 자체는 막지 않는다");
+        Assert.IsTrue(sporeDrone.ConflictsWith(stellaDrone));
+        Assert.IsFalse(sporeDrone.ConflictsWith(spinBoomerang));
+    }
+
+    [Test]
+    public void Resolver_SporeComboSuppressesSporeThrowButKeepsPartner()
+    {
+        CardDefinitionSO spore = factory.CreateCard("spore", ECardKind.Active, ERoguelikeSkill.SporeBomb);
+        CardDefinitionSO drone = factory.CreateCard("drone", ECardKind.Active, ERoguelikeSkill.Drone);
+        CardDefinitionSO sporeDrone = factory.CreatePrism("sporeDrone", spore, drone, ERoguelikeCombo.SporeDrone, ERoguelikeSkill.SporeBomb);
+
+        RunBuildState build = new RunBuildState();
+        build.Acquire(spore);
+        build.Acquire(drone);
+        build.Acquire(sporeDrone);
+
+        RunModifiers mods = new RunModifiers();
+        RunEffectResolver.Resolve(build, mods, new List<CardEffectEntry>());
+
+        Assert.IsTrue(mods.IsComboActive(ERoguelikeCombo.SporeDrone));
+        Assert.IsFalse(mods.IsSkillActive(ERoguelikeSkill.SporeBomb));
+        Assert.IsTrue(mods.IsSkillActive(ERoguelikeSkill.Drone));
+        Assert.IsFalse(mods.IsComboActive(ERoguelikeCombo.SporeShockwave));
     }
 
     [Test]
@@ -201,7 +246,8 @@ public class CardRulesTests
         Assert.AreEqual(3f, WaveSchedule.Get(balance, 1).staminaDamage);
         Assert.AreEqual(15f, WaveSchedule.Get(balance, 30).staminaDamage);
         Assert.AreEqual(2f, WaveSchedule.Get(balance, 1).spawnInterval, 0.001f);
-        Assert.AreEqual(52, balance.SpawnCap);
+        // 기획서 v2.5: 스폰 상한 = 임계치 40 + 20.
+        Assert.AreEqual(60, balance.SpawnCap);
     }
 
     [Test]

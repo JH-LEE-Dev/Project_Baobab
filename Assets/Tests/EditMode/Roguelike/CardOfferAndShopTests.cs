@@ -75,7 +75,7 @@ public class CardOfferAndShopTests
         Assert.AreEqual(1, shop.RerollsLeft);
         Assert.AreEqual(ECardShopResult.Success, shop.TryReroll());
         Assert.AreEqual(ECardShopResult.RerollNotAllowed, shop.TryReroll());
-        Assert.AreEqual(3, shop.Offers.Count);
+        Assert.AreEqual(4, shop.Offers.Count);
         Assert.AreEqual(ECardShopResult.Success, shop.TryBuy(0, out _, null));
 
         // 다음 선택에서는 다시 1회.
@@ -117,7 +117,7 @@ public class CardOfferAndShopTests
     [Test]
     public void KindWeight_ContractsAppearMuchLessThanPassives()
     {
-        // 종류 비중: 액티브 1.0 = 공통 패시브 1.0 > 계약 0.15(기획서 v2.4 부록 A-1).
+        // 종류 비중: 액티브 1.0 = 공통 패시브 1.0 > 계약 0.3(기획서 v2.5 부록 A-1). 패시브 2장 보장이 더해져 계약은 랜덤 칸에서만 나온다.
         List<CardDefinitionSO> cards = new List<CardDefinitionSO>();
         for (int i = 0; i < 10; i++) cards.Add(factory.CreateCard("p" + i, ECardKind.Passive));
         for (int i = 0; i < 10; i++) cards.Add(factory.CreateCard("r" + i, ECardKind.Ruby));
@@ -168,25 +168,25 @@ public class CardOfferAndShopTests
     [Test]
     public void ForcedPartner_NotShownForExcludedPrism()
     {
-        // 스텔라+포자폭탄을 고르면 같은 배타 그룹의 스텔라+드론은 더는 얻을 수 없다. 스텔라가 MAX여도 드론을 파트너로 밀어주지 않는다.
-        CardDefinitionSO stella = factory.CreateCard("stella", ECardKind.Active, ERoguelikeSkill.Stella);
+        // 포자 수류탄 + 오프로드를 고르면 같은 포자 조합 그룹의 포자 수류탄 + 드론은 더는 얻을 수 없다. 포자 수류탄이 MAX여도 드론을 파트너로 밀어주지 않는다.
         CardDefinitionSO spore = factory.CreateCard("spore", ECardKind.Active, ERoguelikeSkill.SporeBomb);
+        CardDefinitionSO offroad = factory.CreateCard("offroad", ECardKind.Active, ERoguelikeSkill.Offroad);
         CardDefinitionSO drone = factory.CreateCard("drone", ECardKind.Active, ERoguelikeSkill.Drone);
-        CardDefinitionSO stellaSpore = factory.CreatePrism("stellaSpore", stella, spore, ERoguelikeCombo.StellaSpore);
-        CardDefinitionSO stellaDrone = factory.CreatePrism("stellaDrone", stella, drone, ERoguelikeCombo.StellaDrone);
-        stellaSpore.exclusiveGroup = 1;
-        stellaDrone.exclusiveGroup = 1;
-        List<CardDefinitionSO> cards = new List<CardDefinitionSO> { stella, spore, drone, stellaSpore, stellaDrone };
+        CardDefinitionSO sporeOffroad = factory.CreatePrism("sporeOffroad", spore, offroad, ERoguelikeCombo.SporeOffroad);
+        CardDefinitionSO sporeDrone = factory.CreatePrism("sporeDrone", spore, drone, ERoguelikeCombo.SporeDrone);
+        sporeOffroad.exclusiveGroup = 3;
+        sporeDrone.exclusiveGroup = 3;
+        List<CardDefinitionSO> cards = new List<CardDefinitionSO> { spore, offroad, drone, sporeOffroad, sporeDrone };
         for (int i = 0; i < 40; i++) cards.Add(factory.CreateCard("p" + i, ECardKind.Passive));
         InitShop(factory.CreateDatabase(cards.ToArray()));
 
         for (int i = 0; i < 7; i++)
         {
-            shop.GrantDirect(stella);
             shop.GrantDirect(spore);
+            shop.GrantDirect(offroad);
         }
 
-        shop.GrantDirect(stellaSpore);
+        shop.GrantDirect(sporeOffroad);
 
         int droneShown = 0;
         for (int round = 0; round < 40; round++)
@@ -207,13 +207,13 @@ public class CardOfferAndShopTests
     [Test]
     public void ExclusivePrisms_ShownTogether_BeyondSlotCap()
     {
+        // 포자 수류탄 + 드론과 스텔라 + 드론은 배타 그룹이 달라도 재료(드론)가 겹쳐 양자택일이다.
         CardDefinitionSO stella = factory.CreateCard("stella", ECardKind.Active, ERoguelikeSkill.Stella);
         CardDefinitionSO spore = factory.CreateCard("spore", ECardKind.Active, ERoguelikeSkill.SporeBomb);
         CardDefinitionSO drone = factory.CreateCard("drone", ECardKind.Active, ERoguelikeSkill.Drone);
-        CardDefinitionSO prismA = factory.CreatePrism("prismA", stella, spore, ERoguelikeCombo.StellaSpore);
+        CardDefinitionSO prismA = factory.CreatePrism("prismA", spore, drone, ERoguelikeCombo.SporeDrone);
         CardDefinitionSO prismB = factory.CreatePrism("prismB", stella, drone, ERoguelikeCombo.StellaDrone);
         prismA.exclusiveGroup = 3;
-        prismB.exclusiveGroup = 3;
         CardDefinitionSO emerald = factory.CreateCard("emerald", ECardKind.Passive);
         InitShop(factory.CreateDatabase(stella, spore, drone, prismA, prismB, emerald));
         // 상한 1이어도 배타 프리즘 두 장은 함께 나와야 한다.
@@ -241,7 +241,7 @@ public class CardOfferAndShopTests
     }
 
     [Test]
-    public void Reroll_UnshownGuaranteedCardComesFirst()
+    public void Guaranteed_CapTwo_ThirdCarriesOverToNextSelection()
     {
         List<CardDefinitionSO> emeralds = new List<CardDefinitionSO>();
         List<CardDefinitionSO> cards = new List<CardDefinitionSO>();
@@ -267,10 +267,12 @@ public class CardOfferAndShopTests
             if (shop.Offers[i].bGuaranteed) shown.Add(shop.Offers[i].card);
         }
 
+        // 프리즘 · MAX는 합쳐 한 번에 2장까지(기획서 v2.5 4-2).
         Assert.AreEqual(2, shown.Count);
 
-        // 리롤하면 아직 노출되지 않은 세 번째 에메랄드가 반드시 나온다.
-        Assert.AreEqual(ECardShopResult.Success, shop.TryReroll());
+        // 고르지 않고 닫으면 다음 선택에는 이월된 세 번째 에메랄드가 보장으로 나온다.
+        shop.Close();
+        shop.Open(false);
         bool bThirdShown = false;
         for (int i = 0; i < shop.Offers.Count; i++)
         {
@@ -278,6 +280,69 @@ public class CardOfferAndShopTests
         }
 
         Assert.IsTrue(bThirdShown);
+    }
+
+    [Test]
+    public void TwoPassivesGuaranteed_AfterFirstPick()
+    {
+        // 액티브가 훨씬 많아도 공통 패시브 2장은 무조건 나온다(기획서 v2.5 4-2 ③).
+        List<CardDefinitionSO> cards = new List<CardDefinitionSO>();
+        for (int i = 0; i < 30; i++) cards.Add(factory.CreateCard("a" + i, ECardKind.Active, ERoguelikeSkill.Spin));
+        for (int i = 0; i < 3; i++) cards.Add(factory.CreateCard("p" + i, ECardKind.Passive));
+        InitShop(factory.CreateDatabase(cards.ToArray()));
+
+        for (int round = 0; round < 30; round++)
+        {
+            shop.Open(false);
+            Assert.AreEqual(4, shop.Offers.Count);
+
+            int passives = 0;
+            for (int i = 0; i < shop.Offers.Count; i++)
+            {
+                if (ECardKind.Passive == shop.Offers[i].card.kind) passives++;
+            }
+
+            Assert.GreaterOrEqual(passives, 2);
+            shop.Close();
+        }
+    }
+
+    [Test]
+    public void Reroll_IsTrueRandom_NoGuaranteedSlots()
+    {
+        // 리롤은 우선순위(프리즘 · MAX · 패시브 보장)를 쓰지 않는다. 에메랄드도 보장으로 나오지 않고 랜덤으로만 섞인다.
+        CardDefinitionSO target = factory.CreateCard("target", ECardKind.Active, ERoguelikeSkill.Boomerang);
+        List<CardDefinitionSO> cards = new List<CardDefinitionSO> { target };
+        for (int i = 0; i < 30; i++) cards.Add(factory.CreateCard("a" + i, ECardKind.Active, ERoguelikeSkill.Spin));
+        InitShop(factory.CreateDatabase(cards.ToArray()));
+        for (int i = 0; i < 6; i++) shop.GrantDirect(target);
+
+        int targetMissing = 0;
+        for (int round = 0; round < 40; round++)
+        {
+            shop.Open(false);
+            Assert.AreEqual(ECardShopResult.Success, shop.TryReroll());
+
+            bool bFound = false;
+            HashSet<CardDefinitionSO> seen = new HashSet<CardDefinitionSO>();
+            for (int i = 0; i < shop.Offers.Count; i++)
+            {
+                Assert.IsFalse(shop.Offers[i].bGuaranteed);
+                Assert.IsTrue(seen.Add(shop.Offers[i].card), "한 선택에 같은 카드는 한 번만");
+                bFound |= shop.Offers[i].card == target;
+            }
+
+            if (false == bFound) targetMissing++;
+            shop.Close();
+        }
+
+        Assert.Greater(targetMissing, 0, "리롤에서는 에메랄드가 보장되지 않는다");
+
+        // 리롤로 빠졌어도 다음 선택에는 다시 보장으로 나온다.
+        shop.Open(false);
+        bool bGuaranteedBack = false;
+        for (int i = 0; i < shop.Offers.Count; i++) bGuaranteedBack |= shop.Offers[i].card == target && shop.Offers[i].bGuaranteed;
+        Assert.IsTrue(bGuaranteedBack);
     }
 
     [Test]
@@ -290,7 +355,7 @@ public class CardOfferAndShopTests
         for (int round = 0; round < 50; round++)
         {
             shop.Open(false);
-            Assert.AreEqual(3, shop.Offers.Count);
+            Assert.AreEqual(4, shop.Offers.Count);
 
             HashSet<CardDefinitionSO> seen = new HashSet<CardDefinitionSO>();
             for (int i = 0; i < shop.Offers.Count; i++) Assert.IsTrue(seen.Add(shop.Offers[i].card));
