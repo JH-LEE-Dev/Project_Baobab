@@ -6,7 +6,8 @@ namespace PresentationLayer.VFX
     /// 스텔라(별) 유지시간 게이지. 별 위에 뜨는 작은 푸른 막대(22x5px)로, 남은 수명 비율만큼 채워진 채 줄어든다.
     /// 막대 전체가 스프링으로 말랑하게 움직인다(젤리 연출).
     ///   등장  가로로 좁게 시작해 위로 튀어 오르며 스프링으로 출렁이다 안착하고, 별가루(`+` `.` `x` `◆`)가 터진다.
-    ///   유지  1px 단위로 천천히 떠올랐다 내려앉고(호버), 채움 앞쪽의 젤리 머리가 줄어드는 동안 눌린다. 남은 비율 22% 이하는 흰색으로 점멸한다.
+    ///   유지  막대 위치와 크기는 고정이다. 채움 앞쪽의 젤리 머리가 줄어드는 동안 눌린다. 남은 비율 22% 이하는 흰색으로 점멸한다.
+    ///         연속값을 반올림해 그리면 반올림 경계에서 프레임마다 1px씩 깜빡이므로(지터) 머리 길이는 히스테리시스로 정수를 정한다.
     ///   퇴장  End() 또는 수명 0. 먼저 위로 늘어나는 예비 동작(0.09초) 후 납작하게 눌리며 사라지고 입자(`+` `.` `x` `●` `◆`)가 튄다.
     ///         막대가 사라진 뒤 입자가 끝나면 스스로 루트 ParticleSystem을 멈춰 풀에 반환한다.
     ///
@@ -50,6 +51,8 @@ namespace PresentationLayer.VFX
         private const float HeadSpringK = 220.0f;
         private const float HeadSpringC = 14.0f;
         private const float LowRatio = 0.22f;
+        // 머리 길이(정수 px)가 바뀌는 데 필요한 스프링 값과의 거리. 0.5(반올림 경계)보다 커서 경계 근처에서 깜빡이지 않는다.
+        private const float HeadHysteresis = 0.8f;
         private const float BlinkRate = 12.0f;
         private const float ParticleGravity = 40.0f;
         private const int SpawnParticleCount = 7;
@@ -110,7 +113,7 @@ namespace PresentationLayer.VFX
         private float fillShown;
         private float headLength;
         private float headVelocity;
-        private float hoverPhase;
+        private int headPx;
         private int sortingLayerId;
         private int particleCount;
         private bool bInitialized;
@@ -183,6 +186,15 @@ namespace PresentationLayer.VFX
             gaugeState = _state;
             stateElapsed = 0.0f;
 
+            // 유지에 들어가면 스프링 잔여를 없애 크기를 정확히 22x5로 고정한다(잔여 진동이 반올림 경계를 넘나드는 것을 막는다).
+            if (EGaugeState.Live == _state)
+            {
+                scaleX = 1.0f;
+                scaleY = 1.0f;
+                velocityX = 0.0f;
+                velocityY = 0.0f;
+            }
+
             if (EGaugeState.Collapsing == _state)
             {
                 velocityY = -8.0f;
@@ -194,7 +206,6 @@ namespace PresentationLayer.VFX
         {
             elapsed += _dt;
             stateElapsed += _dt;
-            hoverPhase += _dt;
 
             float targetY = 1.0f;
             float targetX = 1.0f;
@@ -208,11 +219,6 @@ namespace PresentationLayer.VFX
                     break;
 
                 case EGaugeState.Live:
-                    {
-                        float breath = Mathf.Sin(elapsed * 3.2f) * 0.04f;
-                        targetX = 1.0f - breath * 1.8f;
-                        targetY = 1.0f + breath;
-                    }
                     break;
 
                 case EGaugeState.Anticipating:
@@ -273,6 +279,10 @@ namespace PresentationLayer.VFX
             }
 
             headLength = Mathf.Clamp(headLength, 0.2f, 3.4f);
+
+            // 정수 길이는 스프링 값이 현재 정수에서 HeadHysteresis 넘게 벗어날 때만 바꾼다.
+            if (headLength > headPx + HeadHysteresis) headPx = Mathf.Min(3, headPx + 1);
+            else if (headLength < headPx - HeadHysteresis) headPx = Mathf.Max(1, headPx - 1);
 
             StepParticles(_dt);
 
@@ -340,9 +350,7 @@ namespace PresentationLayer.VFX
 
             painter.Begin(quadBuffer, transform.worldToLocalMatrix, pos.z);
 
-            // 호버: 1px 단위로 천천히 떠올랐다 내려앉는다(정수 픽셀).
-            int hover = Mathf.RoundToInt(Mathf.Sin(hoverPhase * 2.6f) * 0.8f);
-            int baseY = centerY + Mathf.RoundToInt(gaugeHeightPx) + hover;
+            int baseY = centerY + Mathf.RoundToInt(gaugeHeightPx);
 
             if (EGaugeState.Finished != gaugeState) DrawGauge(centerX, baseY);
 
@@ -373,7 +381,6 @@ namespace PresentationLayer.VFX
             int fillPx = Mathf.RoundToInt(InnerWidth * fillShown);
             if (0 == fillPx && 0.02f < fillShown) fillPx = 1;
 
-            int headPx = Mathf.RoundToInt(headLength);
             bool bFlash = fillShown < LowRatio && 0 == (Mathf.FloorToInt(elapsed * BlinkRate) & 1);
 
             for (int dy = 0; dy < heightPx; dy++)
@@ -432,7 +439,7 @@ namespace PresentationLayer.VFX
             fillShown = 1.0f;
             headLength = 1.6f;
             headVelocity = 0.0f;
-            hoverPhase = Random.value * 6.2832f;
+            headPx = 2;
             particleCount = 0;
             contentVertexCount = -1;
 

@@ -3,9 +3,11 @@ using UnityEngine;
 namespace PresentationLayer.VFX
 {
     /// <summary>
-    /// 로그라이크 오프로드 이동 경로 표시. 오프로드가 소환되기 전 예열 동안 필드 끝의 소환 위치(수축 링 + 게이트 선 + 도는 표식)와
-    /// 진행 방향을 가리키는 `&lt;&lt;&lt;&lt;` 화살표 펄스, 차선 가장자리 점선을 보여 준다. 예열이 끝나면 소환 섬광이 터지고
-    /// 차량이 지나가는 속도에 맞춰 경로 표시가 소환 지점부터 걷힌다.
+    /// 로그라이크 오프로드 소환 위치 · 돌진 방향 표시(기획서 v2.8). 소환될 위치가 정해지는 순간(발동 주기 시작)에 Begin으로 시작해
+    /// 발동까지 계속 보여 준다: 필드 끝의 소환 위치(수축 링 + 게이트 선 + 도는 표식)와 진행 방향을 가리키는
+    /// `&lt;&lt;&lt;&lt;` 화살표 펄스, 차선 가장자리 점선. 발동 때 Fire를 부르면 소환 섬광이 터지고 차량이 지나가는 시간에 맞춰
+    /// 경로 표시가 소환 지점부터 걷히며 끝나면 스스로 풀에 반환한다. 발동 시각을 모르는 채로 오래 두어도 된다(남은 주기를 알면
+    /// SetRemaining으로 알리면 마지막 0.5초에 깜빡인다).
     ///
     /// 렌더링은 바닥 메쉬(경로, 마커)와 공중 메쉬(소환 섬광 기둥과 불꽃)로 나뉜다. 바닥 메쉬는 나무와 캐릭터(Objects 레이어)보다
     /// 아래 레이어(ShockWave)에 그려져 나무가 항상 경로 위에 보이고, 공중 메쉬는 루트 렌더러의 레이어에 그려진다.
@@ -13,7 +15,8 @@ namespace PresentationLayer.VFX
     /// 경로는 쿼터뷰 바닥 위의 직선이다. 화살표와 차선 폭은 바닥 평면(세로를 2배로 편 좌표)에서 정의한 뒤 화면으로 투영해서(세로 0.5배)
     /// 아이소 대각선 경로에서도 화살표가 경로 방향을 정확히 가리킨다.
     ///
-    /// 수명: Begin(출발점, 도착점, 예열 시간) 뒤 예열 + 걷힘이 끝나면 스스로 루트 ParticleSystem을 멈춰 풀에 반환한다.
+    /// 수명: Begin -> (유지) -> Fire -> 걷힘이 끝나면 스스로 루트 ParticleSystem을 멈춰 풀에 반환한다. 웨이브/런 종료는 Cancel로 즉시 회수한다.
+    /// Fire를 영영 부르지 않아도 MaxHoldSeconds가 지나면 스스로 끝낸다(루트 ParticleSystem 수명 60초 안쪽).
     /// 픽셀 규칙: JAGGIES(타원은 midpoint 한 가지), DOUBLE PIXEL(선의 L자 모서리 제거), HUGGING(선 옆에 보조선을 겹치지 않음).
     /// 입자는 `.` `+` `x` `●` `◆`만 쓰고 매 프레임 경과 시간으로 다시 그린다. 정적 버퍼만 써서 재생 중 힙 할당이 없다.
     /// </summary>
@@ -27,7 +30,7 @@ namespace PresentationLayer.VFX
         private float laneHalfWidth = 0.4f;
         [SerializeField, Tooltip("출발점/도착점(차량 위치)에서 바닥 접지점까지 내려가는 높이(월드 유닛). 위치가 이미 바닥이면 0.")]
         private float groundOffset = 0.0f;
-        [SerializeField, Tooltip("소환 섬광 뒤 경로 표시가 소환 지점부터 걷히는 데 걸리는 시간(초). 차량이 경로를 지나는 시간에 맞춘다.")]
+        [SerializeField, Tooltip("Fire에 돌진 시간을 넘기지 않을 때 쓰는 기본 걷힘 시간(초). 차량이 경로를 지나는 시간에 맞춘다.")]
         private float clearSeconds = 0.8f;
 
         [Header("정렬")]
@@ -45,7 +48,9 @@ namespace PresentationLayer.VFX
 
         private const float PixelsPerUnit = 32.0f;
         private const float TwoPi = Mathf.PI * 2.0f;
-        private const float DefaultWarmSeconds = 1.0f;
+        // Fire를 부르지 않은 채 이 시간이 지나면 스스로 끝낸다(루트 ParticleSystem 수명 60초보다 짧아야 한다)
+        private const float MaxHoldSeconds = 55.0f;
+        private const float BlinkSeconds = 0.5f;
         private const float RevealSeconds = 0.5f;
         private const float FlashSeconds = 0.35f;
         private const float FlashColumnSeconds = 0.1f;
@@ -86,7 +91,11 @@ namespace PresentationLayer.VFX
 
         // 상태 변수
         private float elapsed;
-        private float warmSeconds = DefaultWarmSeconds;
+        private bool bFired;
+        private float fireElapsed;
+        private float clearDuration;
+        private float fireDueTime = -1.0f;
+        private float autoFireTime = -1.0f;
         private float halfWidthPx;
         private bool bActive;
         private bool bInitialized;
@@ -110,10 +119,11 @@ namespace PresentationLayer.VFX
         // 퍼블릭 초기화 및 제어 메서드
 
         /// <summary>
-        /// 경로 표시를 시작한다. _from/_to는 차량의 출발점과 도착점(월드), _warmSeconds는 소환까지의 예열 시간이다.
-        /// _halfWidthUnits가 0 이하이면 인스펙터의 laneHalfWidth를 쓴다. 풀에서 꺼내 활성화한 직후에 부른다.
+        /// 소환 위치와 경로 표시를 시작한다. 소환될 위치가 정해지는 시점(발동 주기 시작)에 부르고, 발동 때 Fire를 부를 때까지 유지된다.
+        /// _from/_to는 차량의 출발점과 도착점(월드), _halfWidthUnits는 돌진 폭의 반폭(0 이하이면 인스펙터의 laneHalfWidth).
+        /// 풀에서 꺼내 활성화한 직후에 부른다.
         /// </summary>
-        public void Begin(Vector3 _from, Vector3 _to, float _warmSeconds, float _halfWidthUnits = 0.0f)
+        public void Begin(Vector3 _from, Vector3 _to, float _halfWidthUnits = 0.0f)
         {
             EnsureInitialized();
 
@@ -137,7 +147,6 @@ namespace PresentationLayer.VFX
                 groundDirY = dy / groundLength;
             }
 
-            warmSeconds = 0.0f < _warmSeconds ? _warmSeconds : DefaultWarmSeconds;
             halfWidthPx = Mathf.Max(0.5f, 0.0f < _halfWidthUnits ? _halfWidthUnits : laneHalfWidth) * PixelsPerUnit;
             chevronCount = Mathf.Max(1, Mathf.FloorToInt((groundLength - ChevronStartOffset) / ChevronSpacing));
 
@@ -149,6 +158,11 @@ namespace PresentationLayer.VFX
             cullingSize = new Vector3(spanX + 2.0f * PixelVfxCulling.MarginUnits, spanY + 2.0f * PixelVfxCulling.MarginUnits, PixelVfxCulling.BoundsDepth);
 
             elapsed = 0.0f;
+            bFired = false;
+            fireElapsed = 0.0f;
+            clearDuration = clearSeconds;
+            fireDueTime = -1.0f;
+            autoFireTime = -1.0f;
             bActive = true;
             skyVertexCount = -1;
             groundVertexCount = -1;
@@ -156,8 +170,58 @@ namespace PresentationLayer.VFX
             appliedRootSortingOrder = int.MinValue;
         }
 
-        /// <summary>총 재생 시간(초): 예열 + 걷힘.</summary>
-        public float TotalDuration => warmSeconds + clearSeconds + EndLinger;
+        /// <summary>
+        /// [호환용, 기획서 v2.8 이전 방식] 예열 시간 뒤에 자동으로 발동한다. 소환 직전에 잠깐 나왔다 사라지는 예고라서 v2.8 규칙과 맞지 않는다.
+        /// 호출부를 Begin(출발점, 도착점, 반폭) + Fire로 옮기면 이 오버로드는 지운다.
+        /// </summary>
+        public void Begin(Vector3 _from, Vector3 _to, float _warmSeconds, float _halfWidthUnits)
+        {
+            Begin(_from, _to, _halfWidthUnits);
+
+            autoFireTime = 0.0f < _warmSeconds ? _warmSeconds : 1.0f;
+            SetRemaining(autoFireTime);
+        }
+
+        /// <summary>
+        /// 발동한다(차량 소환). 소환 섬광이 터지고 경로 표시가 소환 지점부터 걷힌다. _dashSeconds는 차량이 경로를 지나는 시간
+        /// (신호 OffroadDash의 duration)이며 0 이하이면 인스펙터의 clearSeconds. 걷힘이 끝나면 스스로 풀에 반환한다.
+        /// 이미 발동했거나 시작 전이면 아무 일도 하지 않는다.
+        /// </summary>
+        public void Fire(float _dashSeconds = 0.0f)
+        {
+            if (false == bActive || true == bFired) return;
+
+            bFired = true;
+            fireElapsed = 0.0f;
+            clearDuration = Mathf.Max(0.1f, 0.0f < _dashSeconds ? _dashSeconds : clearSeconds);
+        }
+
+        /// <summary>
+        /// 발동까지 남은 시간(초)을 알린다(선택). 알리면 마지막 0.5초에 소환 마커가 흰색으로 깜빡인다. 주기가 바뀌면(레벨, 공격속도)
+        /// 다시 불러 갱신한다. 한 번도 부르지 않으면 깜빡임 없이 유지된다.
+        /// </summary>
+        public void SetRemaining(float _seconds)
+        {
+            fireDueTime = elapsed + Mathf.Max(0.0f, _seconds);
+        }
+
+        /// <summary>웨이브/런 종료 등으로 발동 없이 표시를 지운다. 연출 없이 즉시 풀에 반환한다.</summary>
+        public void Cancel()
+        {
+            if (false == bActive) return;
+
+            Finish();
+        }
+
+        // 렌더러를 끄고 루트 ParticleSystem을 멈춘다(VFXComponent가 풀에 반환한다)
+        private void Finish()
+        {
+            bActive = false;
+            if (null != meshRenderer && true == meshRenderer.enabled) meshRenderer.enabled = false;
+            if (null != groundMeshRenderer && true == groundMeshRenderer.enabled) groundMeshRenderer.enabled = false;
+
+            if (null != rootParticleSystem && true == rootParticleSystem.isPlaying) rootParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
 
         private void EnsureInitialized()
         {
@@ -243,7 +307,7 @@ namespace PresentationLayer.VFX
 
         private void DrawGround(PixelPainter _p)
         {
-            float clearT = Mathf.Clamp01((elapsed - warmSeconds) / Mathf.Max(0.05f, clearSeconds));
+            float clearT = true == bFired ? Mathf.Clamp01(fireElapsed / Mathf.Max(0.05f, clearDuration)) : 0.0f;
             float clearS = clearT * groundLength;
 
             DrawEdges(_p, clearS);
@@ -273,7 +337,7 @@ namespace PresentationLayer.VFX
         {
             float reveal = Mathf.Clamp01(elapsed / RevealSeconds);
             int revealCount = Mathf.CeilToInt(chevronCount * reveal);
-            bool bSpawning = warmSeconds <= elapsed;
+            bool bSpawning = bFired;
             int basePulse = 0 != (Mathf.FloorToInt(elapsed * 4.0f) & 1) ? 1 : 0;
 
             float cycle = chevronCount + 12.0f;
@@ -309,16 +373,17 @@ namespace PresentationLayer.VFX
         // 소환 위치 마커 - 수축하는 링이 소환이 임박했음을 알리고, 마지막 0.5초는 흰색으로 빠르게 깜빡인다.
         private void DrawMarker(PixelPainter _p)
         {
-            float fade = elapsed < warmSeconds + FlashSeconds ? 1.0f : 1.0f - Mathf.Clamp01((elapsed - warmSeconds - FlashSeconds) / 0.3f);
+            float fade = false == bFired || fireElapsed < FlashSeconds ? 1.0f : 1.0f - Mathf.Clamp01((fireElapsed - FlashSeconds) / 0.3f);
             if (fade <= 0.0f) return;
 
-            bool bBlink = warmSeconds - 0.5f < elapsed && elapsed < warmSeconds && 0 != (Mathf.FloorToInt(elapsed * 8.0f) & 1);
+            float untilDue = fireDueTime - elapsed;
+            bool bBlink = false == bFired && 0.0f <= fireDueTime && untilDue < BlinkSeconds && 0 != (Mathf.FloorToInt(elapsed * 8.0f) & 1);
             Color32 ringColor = true == bBlink ? GlowColor(ColorWhite, 0.3f) : (0 != (Mathf.FloorToInt(elapsed * 6.0f) & 1) ? GlowColor(ColorCream, GroundGlow) : GlowColor(ColorAmberLight, GroundGlow));
             int phase = Mathf.FloorToInt(elapsed * 30.0f);
 
             _p.Ring(startX, startY, 17, 8, 2, 2, phase, ringColor);
 
-            if (elapsed < warmSeconds)
+            if (false == bFired)
             {
                 float contract = Mathf.Repeat(elapsed * 1.25f, 1.0f);
                 int radius = Mathf.RoundToInt(28.0f - 16.0f * contract);
@@ -340,7 +405,7 @@ namespace PresentationLayer.VFX
             _p.Shape(0 != (Mathf.FloorToInt(elapsed * 8.0f) & 1) ? PixelPainter.ShapeDiamond : PixelPainter.ShapePlus, startX, startY, GlowColor(true == bBlink ? ColorWhite : ColorCream, 0.3f));
 
             // 소환 순간 퍼지는 고리
-            float flashT = (elapsed - warmSeconds) / FlashSeconds;
+            float flashT = true == bFired ? fireElapsed / FlashSeconds : -1.0f;
             if (0.0f <= flashT && flashT < 1.0f)
             {
                 int radius = Mathf.RoundToInt(17.0f + 32.0f * EaseOutCubic(flashT));
@@ -351,7 +416,7 @@ namespace PresentationLayer.VFX
         // 소환 섬광(공중) - 아주 짧은 빛기둥과 사방으로 튀는 불꽃. 나무 위에서 보인다.
         private void DrawFlash(PixelPainter _p)
         {
-            float since = elapsed - warmSeconds;
+            float since = true == bFired ? fireElapsed : -1.0f;
             if (0.0f > since || FlashSeconds + 0.2f <= since) return;
 
             if (since < FlashColumnSeconds)
@@ -385,6 +450,7 @@ namespace PresentationLayer.VFX
         private void OnEnable()
         {
             bActive = false;
+            bFired = false;
             elapsed = 0.0f;
 
             if (null != meshRenderer) meshRenderer.enabled = false;
@@ -395,16 +461,15 @@ namespace PresentationLayer.VFX
         {
             if (false == bActive) return;
 
-            elapsed += Time.deltaTime;
+            float dt = Time.deltaTime;
+            elapsed += dt;
+            if (true == bFired) fireElapsed += dt;
 
-            if (TotalDuration <= elapsed)
+            if (false == bFired && 0.0f <= autoFireTime && autoFireTime <= elapsed) Fire(0.0f);
+
+            if (true == bFired ? clearDuration + EndLinger <= fireElapsed : MaxHoldSeconds <= elapsed)
             {
-                bActive = false;
-                if (true == meshRenderer.enabled) meshRenderer.enabled = false;
-                if (null != groundMeshRenderer && true == groundMeshRenderer.enabled) groundMeshRenderer.enabled = false;
-
-                // 루트 ParticleSystem을 멈추면 VFXComponent가 풀에 반환한다
-                if (null != rootParticleSystem && true == rootParticleSystem.isPlaying) rootParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                Finish();
                 return;
             }
 

@@ -44,12 +44,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     public bool bStarMarked { get; private set; } = false;
     public int StarGroupId { get; private set; } = -1;
 
-    public void SetStarMarked(bool _boolean)
+    public void SetStarMarked(bool _boolean, float _markHdrOverride = 0f)
     {
         bStarMarked = _boolean;
         if (treeVisualComponent != null)
         {
-            treeVisualComponent.SetConstellationMarkActive(_boolean);
+            treeVisualComponent.SetConstellationMarkActive(_boolean, _markHdrOverride);
         }
     }
 

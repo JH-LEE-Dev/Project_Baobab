@@ -62,6 +62,8 @@ public sealed class RoguelikeSkillVfxPlayer
     private readonly List<Vector3> linkPoints = new List<Vector3>(2) { Vector3.zero, Vector3.zero };
     private int registeredLinkCount;
     private readonly List<GameObject> projectilePool = new List<GameObject>(4);
+    // 별 표식이 찍힌 나무 -> 그 나무를 감싸고 도는 별 이펙트
+    private readonly Dictionary<TreeObj, PresentationLayer.VFX.VFX_BrandStarWrap> markWraps = new Dictionary<TreeObj, PresentationLayer.VFX.VFX_BrandStarWrap>(32);
 
     // 드론 레이저 한 번이 다 그려지는 시간(본편 VFX_DroneLaser 0.05 + 0.10 + 0.15초)보다 조금 길게. 그 안이면 쓰는 중으로 본다.
     private const float DroneLaserBusySeconds = 0.35f;
@@ -247,6 +249,55 @@ public sealed class RoguelikeSkillVfxPlayer
         // 표시는 더 큰 단계로만 올라가므로 지운 뒤 다시 건다.
         PresentationLayer.VFX.TreeSporeDebuffVfx.Clear(_tree);
         if (_bRestoreMain && _tree.SporeDamageAmplify > 0f) PresentationLayer.VFX.TreeSporeDebuffVfx.Apply(_tree, _tree.SporeDamageAmplify);
+    }
+
+    /// <summary>
+    /// 별 표식이 찍힌 나무에 본편 별 감싸기(VFX_BrandStarWrap, 타원 궤도를 빙글빙글 도는 별)를 시작한다.
+    /// 이미 같은 나무에 감싸기가 돌고 있으면 아무 일도 하지 않는다. 풀/프리팹이 없으면 조용히 건너뛴다.
+    /// </summary>
+    public void BeginMarkWrap(TreeObj _tree)
+    {
+        if (null == vfx || null == _tree || null == _tree.treeVisualComponent) return;
+
+        PresentationLayer.VFX.VFX_BrandStarWrap existing;
+        if (true == markWraps.TryGetValue(_tree, out existing))
+        {
+            // 던전 정리 등으로 이미 회수된 낡은 항목이면(감싸는 나무가 비어 있음) 버리고 새로 시작한다
+            if (null != existing && _tree.treeVisualComponent == existing.Visual) return;
+            markWraps.Remove(_tree);
+        }
+
+        PresentationLayer.VFX.VFX_BrandStarWrap wrap = vfx.BeginBrandStarWrap(_tree.treeVisualComponent);
+        if (null != wrap) markWraps[_tree] = wrap;
+    }
+
+    /// <summary>
+    /// 표식이 풀렸다. _bImmediate가 거짓이면 별들이 궤도 안쪽으로 모이며 사라지는 퇴장 연출 뒤 스스로 풀에 돌아가고,
+    /// 참이면(나무가 죽거나 풀로 돌아가는 중) 연출 없이 바로 회수한다.
+    /// </summary>
+    public void EndMarkWrap(TreeObj _tree, bool _bImmediate)
+    {
+        if (null == _tree) return;
+
+        PresentationLayer.VFX.VFX_BrandStarWrap wrap;
+        if (false == markWraps.TryGetValue(_tree, out wrap)) return;
+
+        markWraps.Remove(_tree);
+        if (null == wrap) return;
+
+        if (true == _bImmediate) wrap.ForceRelease();
+        else wrap.End();
+    }
+
+    /// <summary>웨이브/런 종료. 표식 별 감싸기를 연출 없이 전부 회수한다.</summary>
+    public void ClearMarkWraps()
+    {
+        foreach (KeyValuePair<TreeObj, PresentationLayer.VFX.VFX_BrandStarWrap> pair in markWraps)
+        {
+            if (null != pair.Value) pair.Value.ForceRelease();
+        }
+
+        markWraps.Clear();
     }
 
     /// <summary>중첩 수를 디버프 표시 단계(1~3)로 바꾸는 증폭 값. 단계 경계는 TreeSporeDebuffVfx.TierFromAmplify를 따른다.</summary>

@@ -91,6 +91,9 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private float shieldHDRIntensity = 1.05f;
     [SerializeField] private float highlightHDRIntensity = 1.05f;
 
+    // 별 표식 링의 HDR 덮어쓰기. 0 이하이면 highlightHDRIntensity를 쓴다(본편 별자리 나무의 기존 동작).
+    // 로그라이크 표식이 SetConstellationMarkActive로 값을 넘기고, 표식이 꺼지면 0으로 돌아간다.
+    private float constellationHDROverride;
 
     [Header("Editor Custom Settings")]
     public TreeType customTreeType = TreeType.OakTree;
@@ -247,14 +250,19 @@ public class TreeVisualComponent : MonoBehaviour
     /// <summary>
     /// StarrootForest 별 표식 마커(Constellation)의 표시 여부를 전환한다.
     /// </summary>
-    public void SetConstellationMarkActive(bool _active)
+    public void SetConstellationMarkActive(bool _active, float _hdrOverride = 0f)
     {
         if (constellationRenderer != null)
         {
+            // 꺼질 때는 덮어쓰기를 항상 지운다(풀에서 재사용되는 나무에 남지 않게).
+            float hdrOverride = _active ? Mathf.Max(0f, _hdrOverride) : 0f;
+
             // ResetTree가 스폰/반환마다 false로 호출한다. 이미 같은 상태면 HDR 재적용(렌더러 7개 MPB 갱신)까지 전부 생략한다.
             // HDR 입력값(스프라이트/실드/물 위 상태)이 바뀌는 경로는 각자 UpdateHDRStates를 호출하므로 결과는 동일하다.
-            if (constellationRenderer.gameObject.activeSelf == _active) return;
+            // 켜진 채로 덮어쓰기 값만 바뀌는 경우(본편 표식 위에 로그라이크 표식)는 HDR만 다시 적용한다.
+            if (constellationRenderer.gameObject.activeSelf == _active && constellationHDROverride == hdrOverride) return;
 
+            constellationHDROverride = hdrOverride;
             constellationRenderer.gameObject.SetActive(_active);
             UpdateHDRStates();
         }
@@ -1201,7 +1209,7 @@ public class TreeVisualComponent : MonoBehaviour
         if (topShieldOnWaterSR != null) ApplyHDRToRenderer(topShieldOnWaterSR, isOnWaterActive && isShieldActive && topShieldOnWaterSR.sprite != null, shieldHDRIntensity + 0.25f);
         if (topHighlightOnWaterSR != null) ApplyHDRToRenderer(topHighlightOnWaterSR, isOnWaterActive && topHighlightOnWaterSR.sprite != null, highlightHDRIntensity + 0.25f);
 
-        if (constellationRenderer != null) ApplyHDRToRenderer(constellationRenderer, constellationRenderer.gameObject.activeSelf && constellationRenderer.sprite != null, highlightHDRIntensity);
+        if (constellationRenderer != null) ApplyHDRToRenderer(constellationRenderer, constellationRenderer.gameObject.activeSelf && constellationRenderer.sprite != null, 0f < constellationHDROverride ? constellationHDROverride : highlightHDRIntensity);
     }
 
     #endregion
