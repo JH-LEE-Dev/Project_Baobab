@@ -325,7 +325,7 @@ MonoBehaviour:
   skyImage2: {fileID: 4049458310564438251}
   cloudTargetTransform: {fileID: 2223744958440074505}
   skyTargetTransform: {fileID: 6837710031492252193}
-  moveDuration: 1.8
+  moveDuration: 1.5
   useCustomCurve: 0
   moveCurve:
     serializedVersion: 2
@@ -353,7 +353,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   moveEase: 10
   floatingAmplitude: 8
-  floatingDuration: 4
+  floatingDuration: 3.3333333
   loadingCloudSprite_MainMenu: {fileID: 21300000, guid: 8a6675ffa3d61074a98160c44c6f445f, type: 3}
   loadingCloudSprite: {fileID: 21300000, guid: 0478b4b4a6a44e249a33bfe7710bf07d, type: 3}
 --- !u!223 &8034429127669148663

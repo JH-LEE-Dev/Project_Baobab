@@ -203,7 +203,9 @@ public class InDungeonProductionManager : MonoBehaviour
 
     private IEnumerator RollbackCameraMoveRoutine()
     {
-        yield return new WaitForSeconds(0.375f);
+        // 상공 체공 대기(예전 0.375초)는 없앴다. 한 프레임만 넘겨, 같은 프레임에 이어지는 씬 셋업이
+        // 전부 끝난 뒤에 하강이 시작되는 순서만 유지한다(TownProductionManager.RollbackCameraMoveRoutine과 동일).
+        yield return null;
 
         RollbackSkyProductionEvent?.Invoke();
         skyCameraProductionManager.StartCameraMove();
