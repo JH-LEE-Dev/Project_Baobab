@@ -273,6 +273,10 @@ public class HUD_Stemina : MonoBehaviour
     private const float EdgeRimBright2 = 0.28f;
     private const float EdgeShadeStart = 0.55f;
     private const float EdgeShadeMul = 0.82f;
+    // 이웃한 행끼리 길이가 벌어질 수 있는 최대 폭(캔버스 픽셀). 둥근 모서리는 별도로 모양을 만든다.
+    private const float EdgeRowStepMax = 1f;
+    // 잔상 중 머리 색: 잔상과 채움의 격차(비율)가 이 값 이상이면 잔상 색, 0에 가까워질수록 채움 색으로 섞인다.
+    private const float EdgeGhostBlendGap = 0.03f;
     // 윤곽(스프라이트 알파)을 안쪽으로 인정하는 기준
     private const byte SilhouetteAlphaCut = 127;
     // 윤곽 표 생성에 실패했을 때 다시 시도하는 간격(초)
@@ -391,6 +395,7 @@ public class HUD_Stemina : MonoBehaviour
     // edgeMask: 머리 픽셀 여부, edgeShade: 머리 길이 방향 위치(0 이음매, 1 바깥 끝)
     private byte[] edgeMask;
     private float[] edgeShade;
+    private float[] edgeRowLength;
     private int edgeRowLo = 0;
     private int edgeRowHi = 0;
     private bool bEdgeActive = false;
@@ -493,15 +498,16 @@ public class HUD_Stemina : MonoBehaviour
         if (0f < frontEdgeStrength && EdgeMoveEpsilon < Mathf.Abs(shownRatio - _prevShown))
             bEdgeActive = true;
 
-        // 채움 앞쪽 픽셀이 바뀌었으면 같은 호출 안에서 머리도 그 위치로 다시 그린다.
-        // Update가 UpdateValue보다 먼저 도는 프레임에도 채움과 머리가 한 프레임 어긋나지 않게 한다.
-        SyncFrontEdgeToFill();
-
         // 프리즘도 같은 호출 안에서 채움 앞쪽에 맞춘다. 이벤트가 Update보다 늦게 오는 프레임에는 채움만 새 값으로 그려져
         // 프리즘이 한 프레임 뒤처져 보이던 문제(회복 중 채움 앞쪽 1열이 프리즘 밖으로 삐져나옴)를 막는다.
         SyncPrismToFill();
 
         UpdateGhost(_ratio, _prevShown, _wasFilling);
+
+        // 머리의 위치는 잔상 값에 따라 정해지므로 잔상을 갱신한 뒤에 맞춘다.
+        // 앞쪽 픽셀이 바뀌었으면 같은 호출 안에서 머리도 그 위치로 다시 그린다.
+        // Update가 UpdateValue보다 먼저 도는 프레임에도 채움과 머리가 한 프레임 어긋나지 않게 한다.
+        SyncFrontEdgeToFill();
     }
 
     /// <summary>
@@ -1274,7 +1280,7 @@ public class HUD_Stemina : MonoBehaviour
             edgeDrainWeight = 0f;
             edgePrevFilled = -1;
             edgeLastPaintedFilled = -1;
-            edgePrevShown = Mathf.Clamp01(shownRatio);
+            edgePrevShown = GetEdgeFrontRatio();
             return;
         }
 
@@ -1292,7 +1298,7 @@ public class HUD_Stemina : MonoBehaviour
 
         float _s = Mathf.Clamp01(frontEdgeStrength);
         float _dtSafe = Mathf.Max(0.0001f, _dt);
-        float _shown = Mathf.Clamp01(shownRatio);
+        float _shown = GetEdgeFrontRatio();
 
         // 앞쪽 속도(비율/초)를 시간 보정해 이동평균한다. 프레임 레이트나 한 프레임의 튐에 판정이 흔들리지 않는다.
         float _vRaw = (_shown - edgePrevShown) / _dtSafe;
@@ -1410,6 +1416,25 @@ public class HUD_Stemina : MonoBehaviour
         PaintPrism();
     }
 
+    // 젤리 머리가 붙는 앞쪽 비율. 잔상이 남아 있는 동안은 붉은 잔상의 앞쪽에 붙고(머리가 잔상을 따라 움직인다),
+    // 잔상이 채움에 닿으면 채움의 앞쪽으로 이어진다.
+    private float GetEdgeFrontRatio()
+    {
+        if (true == bGhostTrailing && null != ghostSlider)
+            return Mathf.Max(Mathf.Clamp01(shownRatio), Mathf.Clamp01(ghostSlider.value));
+
+        return Mathf.Clamp01(shownRatio);
+    }
+
+    // 머리 색의 잔상 비중(1이면 잔상 색, 0이면 채움 색). 잔상이 채움에 가까워질수록 채움 색으로 섞여 닿는 순간 색이 튀지 않는다.
+    private float GetEdgeGhostBlend()
+    {
+        if (false == bGhostTrailing || null == ghostSlider || null == ghostFillImage)
+            return 0f;
+
+        return Mathf.Clamp01((ghostSlider.value - shownRatio) / EdgeGhostBlendGap);
+    }
+
     // 채움 앞쪽 정수 픽셀이 마지막으로 그린 머리와 다르면 지금 값으로 다시 그린다(그릴 수 있는 상태일 때만).
     private void SyncFrontEdgeToFill()
     {
@@ -1418,7 +1443,7 @@ public class HUD_Stemina : MonoBehaviour
             || null == edgeMask || null == barRowColors || prismBuffer.Length != edgeMask.Length)
             return;
 
-        int _filled = Mathf.Min(barW, Mathf.FloorToInt(barW * Mathf.Clamp01(shownRatio)));
+        int _filled = Mathf.Min(barW, Mathf.FloorToInt(barW * GetEdgeFrontRatio()));
 
         if (_filled == edgeLastPaintedFilled)
             return;
@@ -1440,7 +1465,7 @@ public class HUD_Stemina : MonoBehaviour
         edgeDrainWeight = 0f;
         edgePrevFilled = -1;
         edgeLastPaintedFilled = -1;
-        edgePrevShown = Mathf.Clamp01(shownRatio);
+        edgePrevShown = GetEdgeFrontRatio();
         edgeSpringLen = EdgeRestLen;
         edgeSpringVel = 0f;
 
@@ -1469,7 +1494,7 @@ public class HUD_Stemina : MonoBehaviour
     // 가장자리 림 라이트 명암(이음매는 바 본체와 같은 색), 바 틴트 반영, 바깥 1px 테두리를 더한다.
     private void PaintFrontEdge()
     {
-        float _frontPx = barW * Mathf.Clamp01(shownRatio);
+        float _frontPx = barW * GetEdgeFrontRatio();
         int _filled = Mathf.Min(barW, Mathf.FloorToInt(_frontPx));
         edgeLastPaintedFilled = _filled;
 
@@ -1495,6 +1520,29 @@ public class HUD_Stemina : MonoBehaviour
 
         System.Array.Clear(prismBuffer, 0, prismBuffer.Length);
 
+        // 행별 길이(기울기 + 물결). 이웃한 행끼리 EdgeRowStepMax보다 더 벌어지면 오른쪽 끝이 계단처럼 찢어져 보이므로 위아래로 한 번씩 훑어 제한한다.
+        if (null == edgeRowLength || edgeRowLength.Length != barH)
+            edgeRowLength = new float[barH];
+
+        for (int y = 0; y < barH; y++)
+        {
+            float _rowLen = _len + _tilt * ((y - _cy) / _half);
+
+            if (0f < _ripple)
+            {
+                _rowLen += _ripple * (Mathf.Sin(y * 0.9f - edgeTime * 5.2f + edgeRipplePhase) * 0.7f
+                    + Mathf.Sin(y * 0.45f + edgeTime * 2.3f + edgeRipplePhase * 1.7f) * 0.4f);
+            }
+
+            edgeRowLength[y] = Mathf.Max(0.5f, _rowLen);
+        }
+
+        for (int y = 1; y < barH; y++)
+            edgeRowLength[y] = Mathf.Clamp(edgeRowLength[y], edgeRowLength[y - 1] - EdgeRowStepMax, edgeRowLength[y - 1] + EdgeRowStepMax);
+
+        for (int y = barH - 2; y >= 0; y--)
+            edgeRowLength[y] = Mathf.Clamp(edgeRowLength[y], edgeRowLength[y + 1] - EdgeRowStepMax, edgeRowLength[y + 1] + EdgeRowStepMax);
+
         // 머리 영역의 마스크와 명암을 구한다(바 높이 방향 위쪽이 +y, 빛은 왼쪽 위).
         for (int y = 0; y < barH; y++)
         {
@@ -1504,15 +1552,7 @@ public class HUD_Stemina : MonoBehaviour
             float _w = EdgeFlatRatio < _vAbs ? Mathf.Min(1f, (_vAbs - EdgeFlatRatio) / (1f - EdgeFlatRatio)) : 0f;
             float _f = Mathf.Sqrt(1f - _w * _w);
 
-            float _ay = _len + _tilt * _v;
-
-            if (0f < _ripple)
-            {
-                _ay += _ripple * (Mathf.Sin(y * 0.9f - edgeTime * 5.2f + edgeRipplePhase) * 0.7f
-                    + Mathf.Sin(y * 0.45f + edgeTime * 2.3f + edgeRipplePhase * 1.7f) * 0.4f);
-            }
-
-            _ay = Mathf.Max(0.5f, _ay);
+            float _ay = edgeRowLength[y];
 
             for (int x = _fl + 1; x <= _maxX + 1 && x < barW; x++)
             {
@@ -1534,7 +1574,12 @@ public class HUD_Stemina : MonoBehaviour
         }
 
         // 바 본체(Fill)는 현재 틴트(저피로도 경고의 빨강 펄스 포함)가 곱해져 그려진다. 머리도 같은 틴트를 곱해야 색이 갈라지지 않는다.
+        // 잔상이 남아 있는 동안은 머리가 잔상 색을 입는다(잔상 이미지의 틴트).
         Color _tint = null != barFillImage ? barFillImage.color : Color.white;
+        float _ghostBlend = GetEdgeGhostBlend();
+
+        if (0f < _ghostBlend)
+            _tint = Color.Lerp(_tint, ghostFillImage.color, _ghostBlend);
 
         for (int y = 0; y < barH; y++)
         {

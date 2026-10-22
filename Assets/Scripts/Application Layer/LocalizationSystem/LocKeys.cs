@@ -431,7 +431,6 @@ public static class LocKeys
         public const int roguelikeCardPassiveStaminaRecover = 37748955;
         public const int roguelikeCardPassiveMaxStamina = 37748956;
         public const int roguelikeCardPassiveGrace = 37748957;
-        public const int roguelikeCardPassiveDamageCooldown = 37748958;
         public const int roguelikeCardRubyGlassCannon = 37748961;
         public const int roguelikeCardRubyPatience = 37748962;
         public const int roguelikeCardRubyMoreTheMerrier = 37748964;
@@ -455,7 +454,6 @@ public static class LocKeys
         public const int roguelikeCardPassiveStaminaRecoverDesc = 37749055;
         public const int roguelikeCardPassiveMaxStaminaDesc = 37749056;
         public const int roguelikeCardPassiveGraceDesc = 37749057;
-        public const int roguelikeCardPassiveDamageCooldownDesc = 37749058;
         public const int roguelikeCardRubyGlassCannonDesc = 37749061;
         public const int roguelikeCardRubyPatienceDesc = 37749062;
         public const int roguelikeCardRubyMoreTheMerrierDesc = 37749064;
@@ -499,8 +497,6 @@ public static class LocKeys
         public const int roguelikeCardComboBoomerangShockwaveL1 = 37749237;
         public const int roguelikeCardComboSpinBoomerangL1 = 37749238;
         public const int roguelikeCardComboStellaDroneL1 = 37749240;
-        public const int roguelikeHudWave = 37749241;
-        public const int roguelikeHudUnlimit = 37749242;
         public const int roguelikeCardPassiveDotSpeed = 37748959;
         public const int roguelikeCardComboSporeDrone = 37748965;
         public const int roguelikeCardComboSporeOffroad = 37748966;
