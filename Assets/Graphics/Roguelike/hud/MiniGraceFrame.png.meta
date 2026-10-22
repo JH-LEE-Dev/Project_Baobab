@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 1d9f26f1c36422547a83b55fcf85c032
+guid: b8eacef47f33a32419ffbced1c610b85
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -9084143482700917597
-    second: ThresholdFill_0
+      213: -881335103899119621
+    second: MiniGraceFrame_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: ThresholdFill_0
+      name: MiniGraceFrame_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 2
+        y: 0
         width: 120
-        height: 16
+        height: 4
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 3a49ee0e1a3aee180800000000000000
-      internalID: -9084143482700917597
+      spriteID: bffc20c746ed4c3f0800000000000000
+      internalID: -881335103899119621
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      ThresholdFill_0: -9084143482700917597
+      MiniGraceFrame_0: -881335103899119621
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

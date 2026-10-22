@@ -262,6 +262,9 @@ public sealed class RoguelikeUICoordinator
 
         hudUI.SetWave(_signal.spec.waveNumber, _signal.spec.bUnlimit, _signal.spec.unlimitIndex);
         hudUI.SetWaveProgress(0, _signal.spec.killTarget);
+
+        // 웨이브 시작의 첫 임계치 값이 반드시 HUD에 들어가게 한다(임계치 바가 그 값으로 곧바로 선다).
+        lastTreeCount = -1;
     }
 
     private void WaveProgress(RoguelikeWaveProgressSignal _signal)

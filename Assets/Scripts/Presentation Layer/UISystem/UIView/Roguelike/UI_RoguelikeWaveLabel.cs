@@ -1,12 +1,12 @@
-using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
-/// 로그라이크 전투 HUD의 웨이브 표시. 목표치 바 위 왼쪽 끝에 "웨이브 12/30"(30웨이브 이후는 "Unlimit-3")을 그린다.
-/// 문구는 LocalizationManager 형식 문자열(LocKeys.RoguelikeUI.roguelikeHudWave / roguelikeHudUnlimit)로 만든다. 웨이브가 바뀔 때와 언어가 바뀔 때만 다시 만든다.
-/// 글자는 임계 바 숫자와 같은 방식이다: 밝은 크림색 본문 1장 + 1px 짙은 갈색 외곽선 4장(네 방향 복사본), 모두 같은 문구.
+/// 로그라이크 전투 HUD의 웨이브 표시. 게이지 바가 아니라 화면 상단 중앙에 혼자 놓이는 프레임 배지다(기획서 v2.6 10-1).
+/// 깃발 아이콘(Flag) + 작은 숫자(UI_RoguelikeIconNumber)로 "12/30"을 그린다. 30웨이브 이후(언리밋)는 깃발이 금색으로 바뀌고 무한대 아이콘(Infinity) + 언리밋 번호(Unlimit-3이면 "3")를 그린다.
+/// 글자 라벨은 쓰지 않는다. 배지 프레임·아이콘은 프리팹에 있고 이 컴포넌트는 숫자와 색, 튐 연출만 맡는다.
 ///
-/// [웨이브가 바뀔 때] 24Hz 틱으로 위로 { +2, +3, +1, 0 }px 튀어 오르고(스텝당 3틱), 처음 6틱은 본문이 흰색과 크림색으로 번갈아 번쩍인다.
+/// [웨이브가 바뀔 때] 24Hz 틱으로 위로 { +2, +3, +1, 0 }px 튀어 오르고(스텝당 3틱), 처음 6틱은 깃발이 흰색과 원래 색으로 번갈아 번쩍인다.
 ///   정수 픽셀 이동이고, 시간은 unscaled라 ESC로 멈춰도 이어진다. 처음 표시될 때(HUD가 켜질 때)는 튀지 않는다.
 /// </summary>
 public class UI_RoguelikeWaveLabel : MonoBehaviour
@@ -19,13 +19,11 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
 
     //내부 의존성 (프리팹에서 연결)
     [SerializeField] private RectTransform labelRoot;
-    [SerializeField, Tooltip("앞의 넷은 1px 외곽선(네 방향), 마지막이 본문. 모두 같은 문구를 받는다.")]
-    private TMP_Text[] texts = new TMP_Text[0];
-    [SerializeField] private Color mainColor = new Color(1f, 0.945f, 0.79f, 1f);
-    [SerializeField] private Color flashColor = Color.white;
-
-    //외부 의존성
-    private LocalizationManager localizationManager;
+    [SerializeField] private UI_RoguelikeIconNumber iconNumber;
+    [SerializeField] private Image flagImage;
+    [SerializeField] private Image infinityImage;
+    [SerializeField] private Color flagColor = Color.white;
+    [SerializeField] private Color unlimitFlagColor = new Color(1f, 0.82f, 0.35f, 1f);
 
     //상태 변수
     private int wave;
@@ -36,14 +34,11 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
     private float hopStartClock = -1f;
     private Vector2 basePosition;
     private bool bBasePositionCaptured;
+    // 퇴장 연출(숫자가 사라지는 동안)이 끝난 뒤 오브젝트를 끈다.
+    private bool bHiding;
+    private float hideClock;
 
-    public void Initialize(LocalizationManager _localizationManager)
-    {
-        localizationManager = _localizationManager;
-        RefreshText();
-    }
-
-    /// <summary>웨이브 표기. 언리밋이면 _unlimitIndex로 "Unlimit-N"을 그린다. 같은 웨이브가 다시 오면 아무것도 하지 않는다.</summary>
+    /// <summary>웨이브 표기. 언리밋이면 _unlimitIndex를 무한대 아이콘 옆에 그린다. 같은 웨이브가 다시 오면 아무것도 하지 않는다.</summary>
     public void SetWave(int _waveNumber, bool _bUnlimit, int _unlimitIndex)
     {
         bool bChanged = false == bHasWave || wave != _waveNumber || bUnlimit != _bUnlimit || unlimitIndex != _unlimitIndex;
@@ -55,30 +50,30 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
         unlimitIndex = _unlimitIndex;
         bHasWave = true;
 
-        RefreshText();
+        Refresh();
         if (false == bFirst) PlayChanged();
     }
 
-    /// <summary>언어가 바뀌었을 때 다시 그린다.</summary>
-    public void RefreshText()
-    {
-        if (false == bHasWave) return;
-
-        string label;
-        if (true == bUnlimit) label = null != localizationManager ? localizationManager.GetFormatText(LocKeys.RoguelikeUI.roguelikeHudUnlimit, unlimitIndex) : string.Empty;
-        else label = null != localizationManager ? localizationManager.GetFormatText(LocKeys.RoguelikeUI.roguelikeHudWave, wave, TotalWaves) : string.Empty;
-
-        if (true == string.IsNullOrEmpty(label)) label = true == bUnlimit ? string.Concat("Unlimit-", unlimitIndex.ToString()) : string.Concat(wave.ToString(), "/", TotalWaves.ToString());
-
-        for (int i = 0; i < texts.Length; i++)
-        {
-            if (null != texts[i]) texts[i].SetText(label);
-        }
-    }
-
+    /// <summary>켜면 숫자가 등장 연출로 다시 나타난다. 끄면 숫자가 퇴장 연출을 재생한 뒤 오브젝트가 꺼진다.</summary>
     public void SetVisible(bool _bVisible)
     {
-        gameObject.SetActive(_bVisible);
+        if (true == _bVisible)
+        {
+            bHiding = false;
+            gameObject.SetActive(true);
+            if (null != iconNumber) iconNumber.Restore();
+            return;
+        }
+
+        if (false == gameObject.activeInHierarchy || null == iconNumber)
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+
+        iconNumber.PlayExit();
+        bHiding = true;
+        hideClock = 0f;
     }
 
     /// <summary>_dt초만큼 진행한다(Update가 부른다). 편집기 검증에서도 이 메서드로 시간대별 모습을 만들 수 있다.</summary>
@@ -86,10 +81,7 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
     {
         clock += _dt;
 
-        if (hopStartClock < 0f)
-        {
-            return;
-        }
+        if (hopStartClock < 0f) return;
 
         int tick = (int)((clock - hopStartClock) * TicksPerSecond);
         int step = tick / StepTicks;
@@ -105,6 +97,19 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
     }
 
     // // 내부
+
+    private void Refresh()
+    {
+        if (null != infinityImage) infinityImage.enabled = bUnlimit;
+
+        if (null != iconNumber)
+        {
+            if (true == bUnlimit) iconNumber.SetSingle(unlimitIndex);
+            else iconNumber.SetPair(wave, TotalWaves);
+        }
+
+        if (null != flagImage) flagImage.color = true == bUnlimit ? unlimitFlagColor : flagColor;
+    }
 
     private void PlayChanged()
     {
@@ -125,16 +130,27 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
             labelRoot.anchoredPosition = new Vector2(basePosition.x, basePosition.y + _offset);
         }
 
-        if (0 < texts.Length && null != texts[texts.Length - 1]) texts[texts.Length - 1].color = true == _bFlash ? flashColor : mainColor;
+        if (null != flagImage) flagImage.color = true == _bFlash ? Color.white : (true == bUnlimit ? unlimitFlagColor : flagColor);
     }
 
     private void Update()
     {
+        if (true == bHiding)
+        {
+            hideClock += Mathf.Min(Time.unscaledDeltaTime, 1f / 20f);
+            if (UI_RoguelikeIconNumber.ExitSeconds + 0.02f <= hideClock)
+            {
+                bHiding = false;
+                gameObject.SetActive(false);
+            }
+        }
+
         Step(Mathf.Min(Time.unscaledDeltaTime, 1f / 20f));
     }
 
     private void OnDisable()
     {
+        bHiding = false;
         hopStartClock = -1f;
         ApplyHop(0, false);
     }

@@ -499,8 +499,6 @@ public static class LocKeys
         public const int roguelikeCardComboBoomerangShockwaveL1 = 37749237;
         public const int roguelikeCardComboSpinBoomerangL1 = 37749238;
         public const int roguelikeCardComboStellaDroneL1 = 37749240;
-        public const int roguelikeHudWave = 37749241;
-        public const int roguelikeHudUnlimit = 37749242;
         public const int roguelikeCardPassiveDotSpeed = 37748959;
         public const int roguelikeCardComboSporeDrone = 37748965;
         public const int roguelikeCardComboSporeOffroad = 37748966;
