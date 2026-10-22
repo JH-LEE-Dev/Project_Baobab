@@ -185,8 +185,8 @@ public class SkyCameraProductionManager : MonoBehaviour
 
             Sound.PlayUI(SoundID.SkyUP);
             Sequence seq = DOTween.Sequence();
+            // 상승이 끝나면 상공에서 머무르지 않고 곧바로 씬 전환으로 넘어간다(예전엔 0.5초 체공 대기가 있었다).
             seq.Append(dummyTarget.DOMove(targetPosition, moveDuration));
-            seq.AppendInterval(0.5f);
             seq.AppendCallback(OnSkyProductionEnd);
             cameraMoveTween = seq;
         }

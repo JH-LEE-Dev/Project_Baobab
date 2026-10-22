@@ -2249,7 +2249,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SkyCameraProductionComponent
   virtualCamera: {fileID: 0}
-  moveDuration: 1.8
+  moveDuration: 1.5
   yOffset: 50
   useCustomCurve: 0
   moveCurve:

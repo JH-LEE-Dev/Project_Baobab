@@ -263,7 +263,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField] private int treeSpawnMinPerFrame = 1;
     [Tooltip("프레임당 최대 스폰 개수 - 시간 예산이 남아도 이 개수에 도달하면 다음 프레임으로 넘긴다.")]
     [SerializeField] private int treeSpawnMaxPerFrame = 40;
+    // 켜면 초기 스폰을 프레임으로 나누지 않고 한 프레임에 전부 심는다(위 예산/개수 제한은 무시).
+    // 초기 스폰은 카메라가 상공에 있고 구름이 화면을 덮은 동안 돌기 때문에, 한 프레임이 길어져도 보이지 않고
+    // 나눠 심느라 늘어나던 체공 시간이 사라진다.
+    [SerializeField] private bool spawnInitialTreesInOneFrame = true;
 
+    public bool SpawnInitialTreesInOneFrame => spawnInitialTreesInOneFrame;
     public float TreeSpawnFrameTimeBudgetMs => treeSpawnFrameTimeBudgetMs;
     public int TreeSpawnMinPerFrame => treeSpawnMinPerFrame;
     public int TreeSpawnMaxPerFrame => treeSpawnMaxPerFrame;

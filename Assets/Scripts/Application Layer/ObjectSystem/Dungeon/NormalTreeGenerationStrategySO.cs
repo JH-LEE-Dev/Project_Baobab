@@ -25,7 +25,8 @@ public class NormalTreeGenerationStrategySO : TreeGenerationStrategySO
             countThisFrame++;
 
             bool overBudget = (Time.realtimeSinceStartup - frameStart) * 1000f >= _manager.TreeSpawnFrameTimeBudgetMs;
-            if (countThisFrame >= _manager.TreeSpawnMinPerFrame && (countThisFrame >= _manager.TreeSpawnMaxPerFrame || overBudget))
+            if (!_manager.SpawnInitialTreesInOneFrame
+                && countThisFrame >= _manager.TreeSpawnMinPerFrame && (countThisFrame >= _manager.TreeSpawnMaxPerFrame || overBudget))
             {
                 yield return null;
                 frameStart = Time.realtimeSinceStartup;

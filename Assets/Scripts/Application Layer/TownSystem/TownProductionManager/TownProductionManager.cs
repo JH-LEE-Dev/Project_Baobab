@@ -321,7 +321,9 @@ public class TownProductionManager : MonoBehaviour
 
     private IEnumerator RollbackCameraMoveRoutine(bool _bNoDelay)
     {
-        if (!_bNoDelay) yield return new WaitForSeconds(0.375f);
+        // 상공 체공 대기(예전 0.375초)는 없앴다. 한 프레임만 넘겨, 이 호출과 같은 프레임에 이어지는
+        // 던전 셋업(OnTreesReady의 나머지 처리)이 전부 끝난 뒤에 하강이 시작되는 순서만 유지한다.
+        if (!_bNoDelay) yield return null;
 
         RollbackSkyProductionEvent?.Invoke();
         skyCameraProductionManager.StartCameraMove();
