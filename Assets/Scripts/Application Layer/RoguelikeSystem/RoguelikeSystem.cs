@@ -712,6 +712,10 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
         ERunPhase prev = phase;
         phase = _phase;
+
+        // 카드 선택은 시간이 흐르지 않는 단계라 대시 쿨타임도 멈춘다(timeScale은 그대로라 직접 막는다).
+        character?.SetDashRechargePaused(ERunPhase.CardSelect == _phase);
+
         signalHub.Publish(new RoguelikePhaseChangedSignal(_phase, prev));
     }
 
