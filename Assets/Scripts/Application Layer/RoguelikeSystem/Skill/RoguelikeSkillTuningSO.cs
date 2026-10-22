@@ -45,6 +45,10 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     [Tooltip("계약 다다익선 도끼 연속 2회 타격의 두 번째 타격까지 간격(초).")]
     public float axeExtraStrikeDelay = 0.1f;
 
+    [Header("대쉬 (이동속도 증가 III · V, 기획서 v2.7 6-3)")]
+    [Tooltip("대쉬 1개가 다시 차오르는 시간(초, 개당 쿨타임). 보유 개수(최대 2개)는 이동속도 증가 카드의 DashChargeAdd가 정한다.")]
+    public float dashRechargeSeconds = 4f;
+
     [Header("오프로드")]
     [Tooltip("소환 주기(초). 공격속도%로 빨라진다.")]
     public float offroadInterval = 6f;
@@ -52,7 +56,8 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float offroadSpeed = 16f;
     [Tooltip("돌진 판정 폭(반경). 범위%로 넓어진다(오프로드 IV).")]
     public float offroadHitRadius = 0.9f;
-    public float offroadDamage = 30f;
+    [Tooltip("돌진 피해 기준값(1레벨 10, 기획서 v2.7 A-4). 오프로드 카드의 피해%로 10 / 10 / 14 / 18 / 22 / 28 / 30이 된다.")]
+    public float offroadDamage = 10f;
     [Tooltip("소환 전 예열 시간(초). 시동 떨림·플래시가 나오고, 이 동안은 피해가 없다.")]
     public float offroadWarmup = 0.45f;
     [Tooltip("출발 순간 속도(월드/초). 여기서 최고 속도까지 가속한다.")]
@@ -87,15 +92,16 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     [Range(0f, 1f)] public float offroadEngineVolume = 0.6f;
 
     [Header("스텔라")]
-    [Tooltip("나무를 벨 때 별이 생길 확률(%). 카드 ChancePercent가 더해진다. 처음에는 낮게.")]
-    public float stellaBaseChance = 5f;
+    [Tooltip("나무를 벨 때 별이 생길 확률(%, 1레벨 20%, 기획서 v2.7 A-4). 카드 ChancePercent가 더해진다(50 / 50 / 50 / 60 / 70 / 70%).")]
+    public float stellaBaseChance = 20f;
     [Tooltip("필드에 동시에 있을 수 있는 별 수. 발동 수(CountAdd)가 더해진다.")]
     public int stellaBaseMaxStars = 3;
     [Tooltip("별이 사라지기까지의 시간(초). 지속%로 늘어난다.")]
     public float stellaStarLifetime = 12f;
     [Tooltip("별을 쳤을 때의 단발 공격 반경.")]
     public float stellaBlastRadius = 2.2f;
-    public float stellaBlastDamage = 100f;
+    [Tooltip("별 폭발 피해 기준값(1레벨 11, 기획서 v2.7 A-4). 스텔라 카드의 피해%로 16 / 16 / 18 / 19 / 20 / 20이 된다.")]
+    public float stellaBlastDamage = 11f;
     [Tooltip("별 표식 유지 시간(초). 지속%로 늘어나고, 카드 효과 StarMarkDurationAdd(레벨 IV +3초)가 더해진다.")]
     public float stellaMarkDuration = 6f;
     [Tooltip("별 표식이 남은 나무가 받는 피해 증가율(0.3 = +30%). 도끼·다른 액티브·지속 피해 모두에 적용된다(기획서 6-1). 스텔라 V의 StarMarkDamageTakenAdd(+15%p)가 더해진다.")]
@@ -116,8 +122,8 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float sporeExplosionDelay = 0.2f;
     [Tooltip("대폭발 자체의 피해. 기획서는 오염 지속 피해만 정해 두었으므로 기본 0이다.")]
     public float sporeExplosionDamage = 0f;
-    [Tooltip("오염 유지 시간(초). 공통 패시브 '유지 시간 증가'(지속%)로만 늘어난다(포자 수류탄 레벨은 유지 시간을 올리지 않는다).")]
-    public float sporeDuration = 4f;
+    [Tooltip("오염 유지 시간(초, 기획서 v2.7 6초 - 1레벨 틱 2초로 3틱). 공통 패시브 '유지 시간 증가'(지속%)로만 늘어난다(포자 수류탄 레벨은 유지 시간을 올리지 않는다).")]
+    public float sporeDuration = 6f;
     [Tooltip("오염 지속 피해 틱 주기(초). 1레벨 2.0초로 극단적으로 느리게 시작해 카드 DotTickIntervalAdd(II · IV · VI 각 −0.5초)로 0.5초까지 짧아진다.")]
     public float sporeTickInterval = 2f;
     [Tooltip("오염 틱당 피해(4 고정). 피해%·지속 피해%로 늘어난다. 중첩 수만큼 곱해진다.")]

@@ -270,7 +270,7 @@ public enum ERoguelikeSkillVfx
     OffroadWarmup = 0,
     /// <summary>오프로드 돌진 시작(예열이 끝나 출발하는 순간). position=출발점, position2=반대편 섬 끝 멈추는 점, duration=멈칫 없이 달렸을 때의 돌진 시간(대략).</summary>
     OffroadDash = 1,
-    /// <summary>별 생성. id=별 번호.</summary>
+    /// <summary>별 생성. id=별 번호, radius=이 별을 쳤을 때의 폭발 반경, duration=별의 수명(초). 스텔라+드론의 별은 쳐도 터지지 않고 노바 때까지 사라지지 않아 radius·duration이 0이다.</summary>
     StarSpawned = 2,
     /// <summary>별을 쳐서 단발 공격. radius=공격 반경.</summary>
     StarBlast = 3,
@@ -305,6 +305,8 @@ public enum ERoguelikeSkillVfx
     StarHighlightOn = 18,
     /// <summary>별 강조가 꺼짐(도끼 범위에서 빠짐, 맞아서 터짐, 사라짐). position=별 위치, id=별 번호.</summary>
     StarHighlightOff = 19,
+    /// <summary>스텔라 III: 드론 레이저가 사거리 안의 별을 맞힘. position=드론 총구, position2=별 위치, id=별 번호.</summary>
+    DroneStarShot = 20,
 }
 
 public struct RoguelikeSkillVfxSignal

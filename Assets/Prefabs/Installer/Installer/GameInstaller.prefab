@@ -1696,6 +1696,30 @@ MonoBehaviour:
     allowDynamicExpansion: 1
     maxPoolSize: 2
     uiParticleScale: 0
+  - vfxTag: StellaBurstEffect
+    effectPrefab: {fileID: 1386752551214847544, guid: ff078b01cb87edf4c8666b8789422cf6, type: 3}
+    initialPoolSize: 2
+    allowDynamicExpansion: 1
+    maxPoolSize: 6
+    uiParticleScale: 0
+  - vfxTag: StellaRangeEffect
+    effectPrefab: {fileID: 1386752551214847544, guid: dd29f1d534264e049b4bbc83f3f176b3, type: 3}
+    initialPoolSize: 3
+    allowDynamicExpansion: 1
+    maxPoolSize: 12
+    uiParticleScale: 0
+  - vfxTag: OffroadLaneEffect
+    effectPrefab: {fileID: 1386752551214847544, guid: ef1d304ad65cb1c4e9e49b3f96097807, type: 3}
+    initialPoolSize: 3
+    allowDynamicExpansion: 1
+    maxPoolSize: 8
+    uiParticleScale: 0
+  - vfxTag: StellaGaugeEffect
+    effectPrefab: {fileID: 1386752551214847544, guid: e7da91820a887ea4fa528cd04bc48a3e, type: 3}
+    initialPoolSize: 3
+    allowDynamicExpansion: 1
+    maxPoolSize: 12
+    uiParticleScale: 0
 --- !u!1 &5766810988037463456
 GameObject:
   m_ObjectHideFlags: 0

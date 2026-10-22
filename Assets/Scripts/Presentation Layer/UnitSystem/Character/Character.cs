@@ -162,6 +162,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private float treeScanTimer = 0f;
     private float boomerangCooldownTimer = 0f;
     private bool bBoomerangSystemPaused = false; // WarningUI가 떠 있거나 마을로 돌아가는 동안 새로 발사되지 않도록 막는다
+    // [로그라이크] 부메랑 나무 조준(RunCombatOverrides.bBoomerangAimAtTrees)에서 나무가 없을 때 던질 마지막 이동 방향(월드, 정규화).
+    // 아직 움직인 적이 없으면 zero이고 그때는 바라보는 방향을 쓴다. 본편에서는 기록도 사용도 하지 않는다.
+    private Vector2 lastBoomerangMoveDirection = Vector2.zero;
 
     [Header("Drone Settings")]
     [SerializeField] private DroneCreator droneCreator;
@@ -226,6 +229,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     // "원목 보험 증서" 전리품을 얻어야 대시를 쓸 수 있다. 해금은 씬마다 GameInstaller가 정한다(본편 던전만
     // 영구 획득 여부로 켜고, 로그라이크·마을은 끈다). 원정 도중 획득하면 다음 숲 방문부터 켜진다.
     private DashCharge dashCharge;
+
+    // [로그라이크] 이동속도 증가 패시브의 대쉬(III 1개, V 2개, 충전식). 0이면 덮어쓰지 않는다 - 본편은 늘 0이라 전리품 단계 그대로다.
+    private int runDashMaxCharges;
+    private float runDashRechargeSeconds;
     // 원목 보험 증서 성장 단계(1~3). 0이면 미보유라 대시를 쓸 수 없다.
     private int dashTier = 0;
     private bool bDashing = false;
@@ -888,18 +895,39 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         dashCharge.Configure(GetDashMaxCharges(), GetDashRechargePerSecond());
         dashCharge.Refill();
-        dashCharge.SetUnlocked(dashTier > 0);
+        dashCharge.SetUnlocked(dashTier > 0 || 0 < runDashMaxCharges);
+    }
+
+    /// <summary>
+    /// [로그라이크] 이동속도 증가 패시브가 주는 대쉬(기획서 v2.7 6-3: III 1개, V 2개, 개당 쿨타임). _maxCharges가 0이면 덮어쓰기를 풀고
+    /// 전리품 단계(SetDashTier) 값으로 돌아간다. 개수가 늘면 늘어난 칸은 쿨타임만큼 이어서 차오른다(DashCharge.Configure).
+    /// </summary>
+    public void SetDashForRun(int _maxCharges, float _rechargeSeconds)
+    {
+        int maxCharges = Mathf.Max(0, _maxCharges);
+        if (maxCharges == runDashMaxCharges && Mathf.Approximately(_rechargeSeconds, runDashRechargeSeconds)) return;
+
+        runDashMaxCharges = maxCharges;
+        runDashRechargeSeconds = _rechargeSeconds;
+
+        dashCharge.Configure(GetDashMaxCharges(), GetDashRechargePerSecond());
+        dashCharge.SetUnlocked(0 < runDashMaxCharges || 0 < dashTier);
     }
 
     // 성장 단계 값 + 특성 보너스. 미보유(0단계)일 때는 I단계 값을 쓴다(쓸 수는 없지만 HUD가 읽을 값은 있어야 한다).
+    // 로그라이크에서 패시브 대쉬를 받았으면 그 값을 쓴다(SetDashForRun).
     private int GetDashMaxCharges()
     {
+        if (0 < runDashMaxCharges) return runDashMaxCharges;
+
         int tierMaxCharges = (3 == dashTier) ? dashTier3MaxCharges : (2 == dashTier) ? dashTier2MaxCharges : dashTier1MaxCharges;
         return tierMaxCharges + statComponent.dashMaxChargesBonus;
     }
 
     private float GetDashRechargePerSecond()
     {
+        if (0 < runDashMaxCharges) return 0f < runDashRechargeSeconds ? 1f / runDashRechargeSeconds : 0f;
+
         float tierRechargeSeconds = (3 == dashTier) ? dashTier3RechargeSeconds : (2 == dashTier) ? dashTier2RechargeSeconds : dashTier1RechargeSeconds;
         float tierPerSecond = (0f < tierRechargeSeconds) ? 1f / tierRechargeSeconds : 0f;
         return tierPerSecond + statComponent.dashRechargePerSecondBonus;
@@ -1037,6 +1065,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 아예 발사되지 않는다.
         if (statComponent.boomerangCount <= 0) return;
 
+        // [로그라이크] 나무가 없을 때 쓸 마지막 이동 방향은 스캔 주기와 무관하게 매 틱 기록한다. 본편(false)은 기록하지 않는다.
+        if (RunCombatOverrides.bBoomerangAimAtTrees) RecordBoomerangMoveDirection();
+
         boomerangCooldownTimer -= Time.fixedDeltaTime;
 
         treeScanTimer += Time.fixedDeltaTime;
@@ -1045,6 +1076,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         if (boomerangCooldownTimer > 0f) return;
         if (activeBoomerangTargets.Count >= statComponent.boomerangCount) return;
+
+        // [로그라이크] 기획서 v2.7 6-1 - 나무가 다 노려졌거나 없어도 던진다(ThrowBoomerangForRun 참고).
+        if (RunCombatOverrides.bBoomerangAimAtTrees)
+        {
+            ThrowBoomerangForRun();
+            return;
+        }
 
         ITreeObj nearestTree = FindNearestTree();
         if (nearestTree == null) return;
@@ -1100,8 +1138,15 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (dir.sqrMagnitude < 0.0001f) return;
         dir.Normalize();
 
+        LaunchBoomerang(origin, dir, _tree);
+    }
+
+    // 정규화된 방향으로 부메랑 하나를 던진다. 본편(ThrowBoomerangAt)과 로그라이크 조준(ThrowBoomerangForRun)이 같이 쓴다.
+    // _tree는 이 부메랑이 노리는 나무로 동시 발사 분배(activeBoomerangTargets)에 쓰이고, 로그라이크에서 나무 없이 던질 때만 null이다.
+    private void LaunchBoomerang(Vector3 _origin, Vector3 _dir, ITreeObj _tree)
+    {
         // "부메랑 사정거리" 스킬(boomerangMajorAxisRatio)을 타원 장축 비율로 그대로 전달한다.
-        float maxDistance = CameraBoundsUtil.GetMaxDistanceToEdge(dir, boomerangEdgePadding, statComponent.boomerangMajorAxisRatio);
+        float maxDistance = CameraBoundsUtil.GetMaxDistanceToEdge(_dir, boomerangEdgePadding, statComponent.boomerangMajorAxisRatio);
         if (maxDistance <= 0.1f) return;
 
         activeBoomerangTargets.Add(_tree);
@@ -1111,7 +1156,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         if (onBoomerangFinishedHandler == null) onBoomerangFinishedHandler = OnBoomerangFinished;
 
-        Boomerang thrownBoomerang = boomerangCreator.ThrowBoomerang(origin, dir, maxDistance, transform, onBoomerangFinishedHandler, bIsOverheat, true);
+        Boomerang thrownBoomerang = boomerangCreator.ThrowBoomerang(_origin, _dir, maxDistance, transform, onBoomerangFinishedHandler, bIsOverheat, true);
 
         if (thrownBoomerang == null)
         {
@@ -1124,6 +1169,105 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         thrownBoomerang.TargetTree = _tree;
         thrownBoomerang.LaunchedOverheat = bIsOverheat;
         activeBoomerangs.Add(thrownBoomerang);
+    }
+
+    // [로그라이크] 기획서 v2.7 6-1 부메랑 발사 방향. RunCombatOverrides.bBoomerangAimAtTrees일 때만 UpdateTreeBoomerang이 부른다.
+    // 발사 주기·사거리·복귀는 본편과 같고 방향만 다르게 고른다.
+    // - 나무가 있으면 가장 가까운 나무. 이미 다른 부메랑이 노리는 나무는 뒤로 미뤄 동시에 날아가는 부메랑끼리 서로 다른 나무로 나눈다.
+    // - 나무보다 부메랑이 많으면 노리는 부메랑이 가장 적은 나무를 가까운 순으로 다시 노린다(가까운 나무부터 한 바퀴씩 돌려 나눔).
+    //   본편은 이때 던지지 않는다.
+    // - 나무가 하나도 없으면 마지막 이동 방향으로 던진다(조작 가능할 때만). 본편은 이때도 던지지 않는다.
+    private void ThrowBoomerangForRun()
+    {
+        Vector3 origin = transform.position;
+        ITreeObj tree = FindBoomerangTreeForRun();
+
+        if (null != tree)
+        {
+            Vector3 treeDir = GetTreeTopPosition(tree) - origin;
+            // 나무 꼭대기가 캐릭터와 겹칠 만큼 붙어 있으면 방향을 정할 수 없으므로 아래 이동 방향으로 던지되, 그 나무를 노린 것으로 센다.
+            if (treeDir.sqrMagnitude >= 0.0001f)
+            {
+                LaunchBoomerang(origin, treeDir.normalized, tree);
+                return;
+            }
+        }
+
+        // 나무 없이 빈 방향으로 던지는 것은 조작할 수 있을 때(전투 중)만 한다. 카드 선택 · 웨이브 클리어 · 티어 전환 연출처럼
+        // 조작이 잠긴 동안은 커서가 꺼져 있다(PauseCharacter, 대쉬와 같은 조건) - 그때는 본편처럼 던지지 않는다.
+        if (null == tree && (null == attackComponent || false == attackComponent.IsCursorEnabled)) return;
+
+        LaunchBoomerang(origin, GetBoomerangFallbackDirection(), tree);
+    }
+
+    // [로그라이크] 부메랑이 노릴 나무. 본편 FindNearestTree와 같은 반경(treeSensorRadius)·등각 거리(세로 2배)를 쓰고,
+    // 유효성은 FindNearestTreeForDrone과 같은 기준(살아 있음, bCanApplyDamage, 풀로 돌아가 비활성화된 나무 제외)으로 거른다.
+    // 노리는 부메랑 수가 적은 나무를 먼저, 같으면 가까운 나무를 고른다. 이미 노려진 나무만 남아도 null이 아니다.
+    private ITreeObj FindBoomerangTreeForRun()
+    {
+        if (null == CollisionSystem.Instance) return null;
+
+        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, treeSensorRadius, treeLayer.value, treeScanResults);
+
+        ITreeObj best = null;
+        int bestClaimCount = int.MaxValue;
+        float bestIsoSqr = float.MaxValue;
+        Vector2 myPos = transform.position;
+
+        for (int i = 0; i < treeScanResults.Count; i++)
+        {
+            if (treeScanResults[i] is not ITreeObj treeObj || treeObj.bDead) continue;
+
+            // 묘목(그루터기에서 리셋된 나무 포함)은 공격할 수 없으므로 뺀다.
+            if (false == ((treeObj as IDamageable)?.bCanApplyDamage ?? true)) continue;
+
+            // 풀로 돌아간 나무는 CollisionSystem에 남아 검색되므로 비활성 오브젝트를 거른다(FindNearestTreeForDrone 참고).
+            Transform treeTransform = treeObj.GetTransform();
+            if (null == treeTransform || false == treeTransform.gameObject.activeInHierarchy) continue;
+
+            int claimCount = CountBoomerangClaims(treeObj);
+            float isoSqr = GetIsometricDistSq(treeScanResults[i].Position, myPos);
+
+            if (claimCount < bestClaimCount || (claimCount == bestClaimCount && isoSqr < bestIsoSqr))
+            {
+                bestClaimCount = claimCount;
+                bestIsoSqr = isoSqr;
+                best = treeObj;
+            }
+        }
+
+        return best;
+    }
+
+    // [로그라이크] 지금 날아가는 부메랑 중 이 나무를 노리는 수.
+    private int CountBoomerangClaims(ITreeObj _tree)
+    {
+        int count = 0;
+        for (int i = 0; i < activeBoomerangTargets.Count; i++)
+        {
+            if (activeBoomerangTargets[i] == _tree) count++;
+        }
+        return count;
+    }
+
+    // [로그라이크] 이동 입력이 있으면 RunState.ApplyMovement와 같은 등각 변환으로 실제 걷는 방향을 기록한다(GetDashDirection과 같은 기준).
+    private void RecordBoomerangMoveDirection()
+    {
+        Vector2 moveInput = ctx.moveInput;
+        if (0.0001f >= moveInput.sqrMagnitude) return;
+
+        Vector2 moveDir = RunState.GetIsometricVector(moveInput);
+        if (0.0001f < moveDir.sqrMagnitude) lastBoomerangMoveDirection = moveDir.normalized;
+    }
+
+    // [로그라이크] 나무가 없을 때의 발사 방향. 마지막 이동 방향, 아직 움직인 적이 없으면 바라보는 방향(GetDashDirection의 폴백과 같다).
+    private Vector3 GetBoomerangFallbackDirection()
+    {
+        if (0.0001f < lastBoomerangMoveDirection.sqrMagnitude) return lastBoomerangMoveDirection;
+
+        float facingAngle = bWhirlwindSpinning ? whirlwindSpinStartAngle : characterVisualComponent.CurrentFacingAngle;
+        float facingRad = facingAngle * Mathf.Deg2Rad;
+        return new Vector3(Mathf.Cos(facingRad), Mathf.Sin(facingRad), 0f);
     }
 
     // 부메랑 왕복이 끝나 풀로 돌아가기 직전에 1회 호출된다(예전의 발사별 클로저와 같은 처리).

@@ -375,11 +375,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     /// [로그라이크] 필드의 모든 나무를 "묘목으로 돌아가는" 상태로 바꾼다. 이 순간부터 피해·골드가 없다.
     /// _vanishSeconds 동안 묘목이 톡 튀었다가 작아지며 사라진다. 회수(ClearTreesForRun)는 그 뒤에 한다.
     /// </summary>
-    public void RevertAllTreesToSaplingForRun(float _vanishSeconds)
+    public void RevertAllTreesToSaplingForRun(float _vanishSeconds, Func<TreeType, Sprite> _saplingTopOverride = null)
     {
         for (int i = activeTrees.Count - 1; i >= 0; i--)
         {
-            if (null != activeTrees[i]) activeTrees[i].RevertToSaplingForRun(_vanishSeconds);
+            TreeObj tree = activeTrees[i];
+            if (null == tree) continue;
+
+            // 로그라이크가 나무 종류별 묘목 그림 보정을 넘기면 그 그림으로 되돌린다(없으면 공용 데이터 그대로).
+            tree.RevertToSaplingForRun(_vanishSeconds, null != _saplingTopOverride ? _saplingTopOverride(tree.GetTreeType()) : null);
         }
     }
 

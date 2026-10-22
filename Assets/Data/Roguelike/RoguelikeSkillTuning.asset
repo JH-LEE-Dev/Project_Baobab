@@ -26,10 +26,11 @@ MonoBehaviour:
   shockwaveExtraDamageRatio: 0.6
   stellaBlastRepeatDelay: 0.2
   axeExtraStrikeDelay: 0.1
+  dashRechargeSeconds: 4
   offroadInterval: 6
   offroadSpeed: 16
   offroadHitRadius: 0.9
-  offroadDamage: 30
+  offroadDamage: 10
   offroadWarmup: 0.45
   offroadLaunchSpeed: 3
   offroadAcceleration: 70
@@ -45,11 +46,11 @@ MonoBehaviour:
   offroadHitShake: {x: 0.5, y: 0.06}
   offroadHitShakeInterval: 0.08
   offroadEngineVolume: 0.6
-  stellaBaseChance: 5
+  stellaBaseChance: 20
   stellaBaseMaxStars: 3
   stellaStarLifetime: 12
   stellaBlastRadius: 2.2
-  stellaBlastDamage: 100
+  stellaBlastDamage: 11
   stellaMarkDuration: 6
   stellaMarkDamageTakenBonus: 0.3
   sporeInterval: 5
@@ -57,7 +58,7 @@ MonoBehaviour:
   sporeRadius: 2.5
   sporeExplosionDelay: 0.2
   sporeExplosionDamage: 0
-  sporeDuration: 4
+  sporeDuration: 6
   sporeTickInterval: 2
   sporeTickDamage: 4
   dotTickIntervalMin: 0.2

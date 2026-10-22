@@ -26,6 +26,14 @@ public class SaplingVEComponent : MonoBehaviour
     private Vector3 scaleBeforeVanish = Vector3.one;
     private bool bVanishedForRun;
 
+    // [로그라이크] 웨이브 클리어 "뽀잉" 수치. 출렁임 구간이 전체 사라짐 시간에서 차지하는 비율,
+    // 시작할 때 눌린 모양(가로/세로 배율), 탄성의 세기와 주기(출렁임 구간 길이 대비 비율).
+    private const float RevertPopRatio = 0.55f;
+    private const float RevertSquashX = 1.35f;
+    private const float RevertSquashY = 0.6f;
+    private const float RevertPopAmplitude = 1.1f;
+    private const float RevertPopPeriodRatio = 0.4f;
+
     public void Initialize(Transform _saplingTransform)
     {
         saplingTransform = _saplingTransform;
@@ -65,7 +73,7 @@ public class SaplingVEComponent : MonoBehaviour
     }
 
     /// <summary>
-    /// [로그라이크 전용] 웨이브 클리어: 묘목으로 돌아간 나무가 본편 묘목 등장처럼 톡 튀었다가 작아지며 사라진다
+    /// [로그라이크 전용] 웨이브 클리어: 묘목으로 돌아간 나무가 "뽀잉" 눌렸다 늘어나며 출렁인 뒤 작아지며 사라진다
     /// (기획서 3-1 "필드의 나무가 묘목으로 되돌아가며 사라지는 연출"). 사라진 크기는 RestoreScaleForRun이 되돌린다.
     /// 본편에서는 호출되지 않는다.
     /// </summary>
@@ -88,12 +96,15 @@ public class SaplingVEComponent : MonoBehaviour
         }
 
         float duration = Mathf.Max(0.05f, _seconds);
-        float pop = duration * 0.45f;
+        float pop = duration * RevertPopRatio;
 
-        // 묘목 그림으로 바뀌는 순간 작게 튀어 오른 뒤(묘목 등장과 같은 탄성) 0으로 줄어든다.
-        saplingTransform.localScale = scaleBeforeVanish * 0.6f;
+        // "뽀잉": 묘목 그림으로 바뀌는 순간 옆으로 납작하게 눌렸다가, 탄성으로 위로 쭉 늘어나며 출렁인 뒤 제 크기로 자리 잡는다.
+        // 시작 크기만 가로·세로를 다르게 두고 목표는 원래 크기라, OutElastic이 넘칠 때 가로는 줄고 세로는 늘어 찌그러짐-늘어남이 번갈아 나온다.
+        // 그다음 남은 시간 동안 0으로 줄어 사라진다. 전체 길이는 _seconds 그대로다(웨이브 흐름의 대기 시간과 맞물려 있다).
+        // 하얀 번쩍임은 TreeObj.RevertToSaplingForRun이 같은 순간 따로 건다.
+        saplingTransform.localScale = new Vector3(scaleBeforeVanish.x * RevertSquashX, scaleBeforeVanish.y * RevertSquashY, scaleBeforeVanish.z);
         Sequence seq = DOTween.Sequence();
-        seq.Append(saplingTransform.DOScale(scaleBeforeVanish, pop).SetEase(Ease.OutBack, 2.5f));
+        seq.Append(saplingTransform.DOScale(scaleBeforeVanish, pop).SetEase(Ease.OutElastic, RevertPopAmplitude, pop * RevertPopPeriodRatio));
         seq.Append(saplingTransform.DOScale(zeroScaleVector, duration - pop).SetEase(Ease.InBack, 1.5f));
 
         scaleTweenTarget = saplingTransform;

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 기획서 v2.6 부록 A "밸런스 수치"를 한곳에 모은 데이터. 코드에는 수치를 두지 않는다.
+/// 기획서 v2.7 부록 A "밸런스 수치"를 한곳에 모은 데이터. 코드에는 수치를 두지 않는다.
 ///
-/// 처음 만든 에셋은 비어 있다. 인스펙터 우측 메뉴의 "기획서 v2.6 부록 A 초안 값으로 채우기"를 누르면
+/// 처음 만든 에셋은 비어 있다. 인스펙터 우측 메뉴의 "기획서 v2.7 부록 A 초안 값으로 채우기"를 누르면
 /// 부록 A의 초안 값이 들어간다. 값은 모두 초안이며 프로토타입 실측 후 덮어쓴다.
 ///
 /// [스폰] v2.6부터 나무는 티어별 정수 묶음으로 나온다. 웨이브마다 (묶음 크기, 묶음 주기, HP, 목표 처치 수)를 둔다(WaveRow.batchSize / batchSeconds).
@@ -60,9 +60,9 @@ public class RoguelikeBalanceSO : ScriptableObject
 
     [Header("필드")]
     [Tooltip("임계치 T. 필드의 나무 수가 이 값 이상이면 유예 타이머가 돈다.")]
-    public int threshold = 40;
-    [Tooltip("스폰 상한 = T + 이 값(기획서 v2.5 3-1의 +α, 20그루). 제약: T ≤ 스폰 상한.")]
-    public int spawnExtra = 20;
+    public int threshold = 50;
+    [Tooltip("스폰 상한(필드 최대 나무 수). 임계치와 무관한 고정값이다(기획서 v2.6 3-1, 80그루). 계약 '인내의 시간'으로 T가 줄어도 그대로다. 제약: T ≤ 스폰 상한.")]
+    public int spawnCap = 80;
 
     [Header("초기 나무 · 묶음 스폰 · 생성 위치 (기획서 v2.5 3-1, 부록 A-1 초안 - 실측 후 조정)")]
     [Tooltip("웨이브 시작 초기 나무 = 현재 임계치 T × 이 비율(내림). T 40이면 20그루, 웨이브 번호와 무관하다. 목표 처치 수에 포함되고 T보다 항상 낮다.")]
@@ -80,14 +80,10 @@ public class RoguelikeBalanceSO : ScriptableObject
 
     [Header("스태미너")]
     public float maxStamina = 100f;
-    [Tooltip("T 이상이 된 뒤 첫 피해까지의 시간(초).")]
-    public float graceTime = 5f;
-    [Tooltip("첫 피해 이후 반복 피해 간격(초).")]
-    public float damageCooldown = 3f;
-    [Tooltip("패시브로 유예 시간이 늘어도 넘지 않는 상한(초). 압박 규칙이 무력화되지 않게 한다.")]
+    [Tooltip("T 이상이 된 뒤 첫 피해까지의 시간(초). 첫 피해 이후 반복 피해 간격도 같은 값이다(기획서 v2.7 3-2 '유예 시간 = 피해 간격').")]
+    public float graceTime = 4f;
+    [Tooltip("패시브 · 계약으로 유예 시간(= 피해 간격)이 늘어도 넘지 않는 상한(초). 압박 규칙이 무력화되지 않게 한다.")]
     public float maxGraceTime = 15f;
-    [Tooltip("패시브로 피해 간격이 늘어도 넘지 않는 상한(초).")]
-    public float maxDamageCooldown = 10f;
     [Tooltip("계약 등으로 T가 줄어도 이 값 밑으로는 내려가지 않는다.")]
     public int minThreshold = 5;
 
@@ -172,17 +168,18 @@ public class RoguelikeBalanceSO : ScriptableObject
 
     public int TierCount => null == tiers ? 0 : tiers.Count;
 
-    public int SpawnCap => threshold + Mathf.Max(0, spawnExtra);
+    public int SpawnCap => Mathf.Max(1, spawnCap);
 
     // // 초안 값
 
-    [ContextMenu("기획서 v2.6 부록 A 초안 값으로 채우기")]
+    [ContextMenu("기획서 v2.7 부록 A 초안 값으로 채우기")]
     public void FillTemporaryValues()
     {
         clearWave = 30;
 
-        // 부록 A-2(v2.6): (묶음 크기, 묶음 주기, 나무 HP, 목표 처치 수, 티어 안 나무 종류 순번). 스폰 주기 = 묶음 주기 ÷ 묶음 크기(참고용).
-        // 1티어 3~7그루 / 3초, 2티어 7~14그루 / 2.5초, 3티어 14~21그루 / 2초, 4티어 21~30그루 / 1.5초. HP는 3티어 100 / 105 / 115, 4티어 230 / 300 / 350.
+        // 부록 A-2(v2.7): (묶음 크기, 묶음 주기, 나무 HP, 목표 처치 수, 티어 안 나무 종류 순번). 스폰 주기 = 묶음 주기 ÷ 묶음 크기(참고용).
+        // 1티어 3~7그루 / 3초, 2티어 7~14그루 / 2.5초, 3티어 14~21그루 / 3초, 4티어 21~30그루 / 2.5초. HP는 3티어 150 / 160 / 175, 4티어 380 / 500 / 580.
+        // 목표 처치 수는 이전 웨이브보다 줄지 않는다(단조 규칙): 16 · 17웨이브만 공식값 240 / 265 대신 280 / 285.
         float[,] table =
         {
             { 3f, 3f, 20f, 20f, 0f },
@@ -200,21 +197,21 @@ public class RoguelikeBalanceSO : ScriptableObject
             { 12f, 2.5f, 55f, 215f, 2f },
             { 13f, 2.5f, 55f, 245f, 2f },
             { 14f, 2.5f, 55f, 275f, 2f },
-            { 14f, 2f, 100f, 355f, 0f },
-            { 15f, 2f, 100f, 400f, 0f },
-            { 16f, 2f, 105f, 440f, 1f },
-            { 18f, 2f, 105f, 515f, 1f },
-            { 19f, 2f, 105f, 565f, 1f },
-            { 20f, 2f, 115f, 615f, 2f },
-            { 21f, 2f, 115f, 665f, 2f },
-            { 21f, 1.5f, 230f, 915f, 0f },
-            { 22f, 1.5f, 230f, 990f, 0f },
-            { 24f, 1.5f, 300f, 1115f, 1f },
-            { 25f, 1.5f, 300f, 1195f, 1f },
-            { 26f, 1.5f, 300f, 1280f, 1f },
-            { 28f, 1.5f, 350f, 1415f, 2f },
-            { 29f, 1.5f, 350f, 1505f, 2f },
-            { 30f, 1.5f, 350f, 1600f, 2f },
+            { 14f, 3f, 150f, 280f, 0f },
+            { 15f, 3f, 150f, 285f, 0f },
+            { 16f, 3f, 160f, 295f, 1f },
+            { 18f, 3f, 160f, 345f, 1f },
+            { 19f, 3f, 160f, 375f, 1f },
+            { 20f, 3f, 175f, 410f, 2f },
+            { 21f, 3f, 175f, 445f, 2f },
+            { 21f, 2.5f, 380f, 550f, 0f },
+            { 22f, 2.5f, 380f, 595f, 0f },
+            { 24f, 2.5f, 500f, 670f, 1f },
+            { 25f, 2.5f, 500f, 715f, 1f },
+            { 26f, 2.5f, 500f, 765f, 1f },
+            { 28f, 2.5f, 580f, 850f, 2f },
+            { 29f, 2.5f, 580f, 905f, 2f },
+            { 30f, 2.5f, 580f, 960f, 2f },
         };
 
         int rows = table.GetLength(0);
@@ -241,8 +238,8 @@ public class RoguelikeBalanceSO : ScriptableObject
         };
         previousTreeKindShare = 0.3f;
 
-        threshold = 40;
-        spawnExtra = 20;
+        threshold = 50;
+        spawnCap = 80;
 
         initialTreeThresholdRatio = 0.5f;
         spawnBatchSeconds = 3f;
@@ -252,10 +249,8 @@ public class RoguelikeBalanceSO : ScriptableObject
         idleMoveReach = 1.5f;
 
         maxStamina = 100f;
-        graceTime = 5f;
-        damageCooldown = 3f;
+        graceTime = 4f;
         maxGraceTime = 15f;
-        maxDamageCooldown = 10f;
         maxMoveSpeedPercent = 100f;
 
         unlimitHpGrowthPerWave = 0.1f;

@@ -73,6 +73,12 @@ public class AttackComponent : PComponent
     private List<IBasicAxeOnlyTarget> previouslyHighlightedAxeOnly = new List<IBasicAxeOnlyTarget>(4);
     private readonly List<IStaticCollidable> axeOnlyHits = new List<IStaticCollidable>(4);
 
+    // [로그라이크] 범위 증가 패시브의 "도끼 동시 타격 수"(RunCombatOverrides.AxeMaxTargets) 후보 나무와 등각 거리.
+    // 휘두름 범위 안 나무를 모아 가까운 순으로 그 수만큼 친다. 본편은 덮어쓰기 값이 0이라 늘 비어 있다.
+    private readonly List<IStaticCollidable> runAxeTargetCandidates = new List<IStaticCollidable>(16);
+    private readonly List<float> runAxeTargetDistSq = new List<float>(16);
+    private readonly List<IStaticCollidable> runAxeOutlineScratch = new List<IStaticCollidable>(8);
+
     private WeaponMode currentWeaponMode = WeaponMode.Axe;
 
     [Header("Gamepad Aim")]
@@ -522,6 +528,11 @@ public class AttackComponent : PComponent
         multiAttackResults.Clear();
         axeOnlyHits.Clear();
 
+        // [로그라이크] 도끼 동시 타격 수가 2 이상이면 가장 가까운 한 그루 대신 가까운 순 N그루를 친다(본편은 0이라 false).
+        bool bRunMultiTarget = RunCombatOverrides.AxeMaxTargets > 1 && false == bMultiAttack && false == bIsWhirlwindStrike;
+        runAxeTargetCandidates.Clear();
+        runAxeTargetDistSq.Clear();
+
         IStaticCollidable nearestDamageable = null;
         float minDistanceSqr = float.MaxValue;
 
@@ -579,6 +590,12 @@ public class AttackComponent : PComponent
                 }
                 else
                 {
+                    if (bRunMultiTarget && target is TreeObj)
+                    {
+                        runAxeTargetCandidates.Add(target);
+                        runAxeTargetDistSq.Add(isoDistSq);
+                    }
+
                     if (isoDistSq < minDistanceSqr)
                     {
                         minDistanceSqr = isoDistSq;
@@ -588,7 +605,14 @@ public class AttackComponent : PComponent
             }
         }
 
-        if ((bMultiAttack || bIsWhirlwindStrike) && multiAttackResults.Count > 0)
+        // [로그라이크] 후보 나무 중 가까운 순 N그루를 다중 타격 목록으로 옮긴다. 나무가 없으면 예전처럼 가장 가까운 대상 하나를 친다.
+        if (bRunMultiTarget)
+        {
+            TakeNearestRunAxeTargets(RunCombatOverrides.AxeMaxTargets, multiAttackResults);
+            bRunMultiTarget = multiAttackResults.Count > 0;
+        }
+
+        if ((bMultiAttack || bIsWhirlwindStrike || bRunMultiTarget) && multiAttackResults.Count > 0)
         {
             if (!bIsWhirlwindStrike) CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
             bool bAnyHit = false;
@@ -673,7 +697,7 @@ public class AttackComponent : PComponent
             List<ExtraStrikeTarget> targets = 0 < extraStrikeListPool.Count ? extraStrikeListPool.Pop() : new List<ExtraStrikeTarget>(16);
             targets.Clear();
 
-            if ((bMultiAttack || bIsWhirlwindStrike) && multiAttackResults.Count > 0)
+            if ((bMultiAttack || bIsWhirlwindStrike || bRunMultiTarget) && multiAttackResults.Count > 0)
             {
                 for (int i = 0; i < multiAttackResults.Count; i++)
                 {
@@ -710,6 +734,29 @@ public class AttackComponent : PComponent
                 StartCoroutine(CreateShockWaveRoutine(centerPos, direction));
             }
         }
+    }
+
+    /// <summary>
+    /// [로그라이크] runAxeTargetCandidates에서 가까운 순으로 _count개를 _results에 더하고 후보 목록을 비운다.
+    /// 후보는 휘두름 한 번의 범위 안 나무라 몇 그루 안 되므로 _count번 최솟값을 고른다(정렬 할당 없음).
+    /// </summary>
+    private void TakeNearestRunAxeTargets(int _count, List<IStaticCollidable> _results)
+    {
+        for (int n = 0; n < _count && runAxeTargetCandidates.Count > 0; n++)
+        {
+            int best = 0;
+            for (int i = 1; i < runAxeTargetDistSq.Count; i++)
+            {
+                if (runAxeTargetDistSq[i] < runAxeTargetDistSq[best]) best = i;
+            }
+
+            _results.Add(runAxeTargetCandidates[best]);
+            runAxeTargetCandidates.RemoveAt(best);
+            runAxeTargetDistSq.RemoveAt(best);
+        }
+
+        runAxeTargetCandidates.Clear();
+        runAxeTargetDistSq.Clear();
     }
 
     private void ProcessAxeHit(IDamageable damageable, Vector3 centerPos, float _damageScale = 1f)
@@ -1000,6 +1047,11 @@ public class AttackComponent : PComponent
         currentlyDetectedTrees.Clear();
         currentlyHighlightedAxeOnly.Clear();
 
+        // [로그라이크] 도끼 동시 타격 수가 2 이상이면 Attack()과 같이 가까운 순 N그루를 강조한다(본편은 0이라 false).
+        bool bRunMultiTarget = RunCombatOverrides.AxeMaxTargets > 1 && false == bMultiAttack;
+        runAxeTargetCandidates.Clear();
+        runAxeTargetDistSq.Clear();
+
         IStaticCollidable nearest = null;
         float minDistanceSqr = float.MaxValue;
 
@@ -1041,6 +1093,12 @@ public class AttackComponent : PComponent
                 }
                 else
                 {
+                    if (bRunMultiTarget && target is TreeObj)
+                    {
+                        runAxeTargetCandidates.Add(target);
+                        runAxeTargetDistSq.Add(isoDistSq);
+                    }
+
                     if (isoDistSq < minDistanceSqr)
                     {
                         minDistanceSqr = isoDistSq;
@@ -1052,8 +1110,19 @@ public class AttackComponent : PComponent
 
         nearestTarget = nearest;
 
+        if (bRunMultiTarget)
+        {
+            // [로그라이크] 가까운 순 N그루(가장 가까운 나무 포함)를 감지 목록에 넣는다.
+            TakeNearestRunAxeTargets(RunCombatOverrides.AxeMaxTargets, runAxeOutlineScratch);
+            for (int i = 0; i < runAxeOutlineScratch.Count; i++)
+            {
+                if (runAxeOutlineScratch[i] is TreeObj runTree) currentlyDetectedTrees.Add(runTree);
+            }
+
+            runAxeOutlineScratch.Clear();
+        }
         // 광역 공격 모드가 아니고 가장 가까운 대상이 나무라면 감지 목록에 추가
-        if (!bMultiAttack && nearest is TreeObj nearestTree)
+        else if (!bMultiAttack && nearest is TreeObj nearestTree)
         {
             currentlyDetectedTrees.Add(nearestTree);
         }

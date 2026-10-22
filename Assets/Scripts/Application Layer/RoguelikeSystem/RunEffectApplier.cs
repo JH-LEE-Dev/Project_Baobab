@@ -78,6 +78,7 @@ public sealed class RunEffectApplier
     private float shockwaveExtraDamageRatio = 0.6f;
     private Color sporeShockwaveColor = Color.green;
     private float axeExtraStrikeDelay = 0.1f;
+    private float dashRechargeSeconds = 4f;
 
     private bool bHasRunBaseStats;
     private StatComponent.CombatBaseStats runBaseStats;
@@ -103,6 +104,12 @@ public sealed class RunEffectApplier
     public void SetSporeShockwaveColor(Color _color)
     {
         sporeShockwaveColor = _color;
+    }
+
+    /// <summary>이동속도 증가 패시브 대쉬의 개당 쿨타임(초). 튜닝 SO 값.</summary>
+    public void SetDashRechargeSeconds(float _seconds)
+    {
+        dashRechargeSeconds = Mathf.Max(0.1f, _seconds);
     }
 
     /// <summary>런 동안 쓸 전투 기준값(도끼 공격력 10 등). 다음 Apply에서 캐릭터에 끼운다.</summary>
@@ -212,6 +219,18 @@ public sealed class RunEffectApplier
         // 포자 충격파: 충격파 색이 초록으로 바뀐다(기획서 v2.5 6-2, 기본 능력은 그대로 · 색만 변경).
         RunCombatOverrides.SetShockWaveTint(_mods.IsComboActive(ERoguelikeCombo.SporeShockwave), sporeShockwaveColor);
 
+        // 충격파 그루당 피해 배율(기획서 v2.7 A-4: 범위가 넓어진 만큼 12 → 2로 감소). 피해%와 따로 곱한다.
+        RunCombatOverrides.SetShockWaveDamageScale(Mathf.Max(0.01f, 1f + _mods.GetForSkill(ERunEffect.ShockwaveDamageScalePercent, ERoguelikeSkill.Shockwave) / 100f));
+
+        // 범위 증가 패시브: 도끼 동시 타격 수(기본 1, MAX 5그루, 기획서 v2.6 부록 A-5).
+        RunCombatOverrides.SetAxeMaxTargets(1 + Mathf.RoundToInt(_mods.Get(ERunEffect.AxeTargetCountAdd)));
+
+        // 부메랑은 로그라이크에서 늘 나무 쪽으로 던진다(기획서 v2.7 6-1). 나무가 없으면 마지막 이동 방향.
+        RunCombatOverrides.SetBoomerangAimAtTrees(true);
+
+        // 이동속도 증가 패시브: 대쉬 III 1개 · V 2개(충전식, 기획서 v2.7 6-3).
+        character?.SetDashForRun(Mathf.RoundToInt(_mods.Get(ERunEffect.DashChargeAdd)), dashRechargeSeconds);
+
         RunCombatOverrides.SetSkillsHitRunTargets(IsStarHitByActives(_mods));
 
         // 계약 다다익선: 도끼 공격 연속 2회 타격.
@@ -241,6 +260,8 @@ public sealed class RunEffectApplier
         appliedWhirlwindInterval = 0;
         RunCombatOverrides.ResetAll();
 
+        // 패시브 대쉬 덮어쓰기를 풀어 전리품 단계 값으로 되돌린다.
+        character?.SetDashForRun(0, 0f);
         character?.SyncMaxStaminaForRun();
         character?.RefreshDronesForRun();
     }

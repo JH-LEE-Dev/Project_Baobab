@@ -127,7 +127,8 @@ public class AxeExtraAttackCreator : MonoBehaviour, IShockWaveCreator
 
     private void ApplyShockWaveValues(ShockWave _shockWave, bool _bIsOverheat)
     {
-        float finalDamage = stat.shockWaveDamage;
+        // [로그라이크] 충격파 카드의 "범위가 넓어진 만큼 그루당 피해 감소" 배율. 본편은 1이라 그대로다.
+        float finalDamage = stat.shockWaveDamage * RunCombatOverrides.ShockWaveDamageScale;
         float finalDuration = stat.shockWaveDuration;
 
         if (_bIsOverheat)

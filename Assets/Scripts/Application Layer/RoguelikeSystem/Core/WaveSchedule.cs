@@ -13,7 +13,7 @@ public struct WaveSpec
     public bool bTierChanged;
     public int killTarget;
     /// <summary>
-    /// 웨이브 시작 때 이미 자라 있는 초기 나무 수(기본 임계치의 절반, 목표 처치 수에 포함, 기획서 v2.5 3-1). 이후 스폰은 목표 − 이 수만큼.
+    /// 웨이브 시작 때 이미 자라 있는 초기 나무 수(기본 임계치의 절반, 목표 처치 수에 포함, 기획서 v2.7 3-1). 이후 스폰은 목표와 무관하게 웨이브 끝까지 계속된다.
     /// 계약으로 임계치가 줄면 런 컨트롤러가 그 임계치로 다시 계산한다.
     /// </summary>
     public int initialTrees;
@@ -55,7 +55,7 @@ public static class WaveSchedule
         spec.spawnInterval = Mathf.Max(0.01f, row.spawnInterval);
         spec.batchSize = Mathf.Max(0, row.batchSize);
         spec.batchSeconds = Mathf.Max(0f, row.batchSeconds);
-        spec.initialTrees = TreeSpawnRules.InitialTreeCount(_balance.threshold, _balance.initialTreeThresholdRatio, spec.killTarget);
+        spec.initialTrees = TreeSpawnRules.InitialTreeCount(_balance.threshold, _balance.initialTreeThresholdRatio);
         spec.treeHp = Mathf.Max(1f, row.treeHp);
         spec.treeKind = Mathf.Clamp(row.treeKind, 0, RoguelikeBalanceSO.TreeKindsPerTier - 1);
         spec.staminaDamage = tier.staminaDamage;

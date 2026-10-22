@@ -32,6 +32,12 @@ public static class RunCombatOverrides
     /// <summary>추가 충격파의 피해 배율(충격파 MAX 두 번째 = 0.6). 추가 충격파가 없는 본편에서는 읽히지 않는다.</summary>
     public static float ShockWaveExtraDamageMultiplier { get; private set; } = 1f;
 
+    /// <summary>
+    /// 모든 충격파의 피해에 곱하는 배율(충격파 카드의 "범위가 넓어진 만큼 그루당 피해 감소", 기획서 v2.7 A-4). 1이면 본편처럼 그대로.
+    /// 공격력 증가 같은 피해% 합산과 섞이지 않게 따로 곱한다.
+    /// </summary>
+    public static float ShockWaveDamageScale { get; private set; } = 1f;
+
     /// <summary>true면 충격파 그림 색에 ShockWaveTint를 곱한다(포자 충격파의 초록 충격파). false(본편)면 원래 색 그대로.</summary>
     public static bool bShockWaveTinted { get; private set; }
 
@@ -49,6 +55,25 @@ public static class RunCombatOverrides
 
     /// <summary>추가 타격 사이의 간격(초).</summary>
     public static float AxeExtraStrikeDelay { get; private set; } = 0.1f;
+
+    /// <summary>
+    /// 도끼 한 번에 맞히는 나무 수(범위 증가 패시브의 "도끼 동시 타격 수", 기획서 v2.6 부록 A-5). 휘두름 범위 안 가까운 순으로 이만큼 친다.
+    /// 1 이하면 본편처럼 가장 가까운 한 그루만 친다.
+    /// </summary>
+    public static int AxeMaxTargets { get; private set; }
+
+    /// <summary>true면 부메랑을 입력 방향이 아니라 가장 가까운 나무 방향으로 던진다(기획서 v2.7 6-1). false(본편)면 예전 그대로.</summary>
+    public static bool bBoomerangAimAtTrees { get; private set; }
+
+    public static void SetAxeMaxTargets(int _count)
+    {
+        AxeMaxTargets = _count > 1 ? _count : 0;
+    }
+
+    public static void SetBoomerangAimAtTrees(bool _bOn)
+    {
+        bBoomerangAimAtTrees = _bOn;
+    }
 
     public static void SetAxeExtraStrikes(int _count, float _delay)
     {
@@ -74,6 +99,11 @@ public static class RunCombatOverrides
         ShockWaveExtraDamageMultiplier = _damageMultiplier > 0f ? _damageMultiplier : 0f;
     }
 
+    public static void SetShockWaveDamageScale(float _scale)
+    {
+        ShockWaveDamageScale = _scale > 0f ? _scale : 1f;
+    }
+
     public static void SetShockWaveTint(bool _bTinted, Color _tint)
     {
         bShockWaveTinted = _bTinted;
@@ -93,10 +123,13 @@ public static class RunCombatOverrides
         ShockWaveExtraCount = 0;
         ShockWaveExtraDelay = 0.12f;
         ShockWaveExtraDamageMultiplier = 1f;
+        ShockWaveDamageScale = 1f;
         bShockWaveTinted = false;
         ShockWaveTint = Color.white;
         bSkillsHitRunTargets = false;
         AxeExtraStrikes = 0;
         AxeExtraStrikeDelay = 0.1f;
+        AxeMaxTargets = 0;
+        bBoomerangAimAtTrees = false;
     }
 }

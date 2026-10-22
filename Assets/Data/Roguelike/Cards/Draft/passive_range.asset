@@ -28,18 +28,30 @@ MonoBehaviour:
     - effect: 3
       skill: 0
       value: 40
+    - effect: 41
+      skill: 0
+      value: 1
   - effects:
     - effect: 3
       skill: 0
       value: 40
+    - effect: 41
+      skill: 0
+      value: 1
   - effects:
     - effect: 3
       skill: 0
       value: 40
+    - effect: 41
+      skill: 0
+      value: 1
   - effects:
     - effect: 3
       skill: 0
       value: 40
+    - effect: 41
+      skill: 0
+      value: 1
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}
   comboType: 0

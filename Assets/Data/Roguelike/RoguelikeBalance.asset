@@ -15,7 +15,7 @@ MonoBehaviour:
   clearWave: 30
   waves:
   - killTarget: 20
-    spawnInterval: 1
+    spawnInterval: 1.0
     batchSize: 3
     batchSeconds: 3
     treeHp: 20
@@ -104,95 +104,95 @@ MonoBehaviour:
     batchSeconds: 2.5
     treeHp: 55
     treeKind: 2
-  - killTarget: 355
-    spawnInterval: 0.14285714285714285
+  - killTarget: 280
+    spawnInterval: 0.21428571428571427
     batchSize: 14
-    batchSeconds: 2
-    treeHp: 100
+    batchSeconds: 3
+    treeHp: 150
     treeKind: 0
-  - killTarget: 400
-    spawnInterval: 0.13333333333333333
+  - killTarget: 285
+    spawnInterval: 0.2
     batchSize: 15
-    batchSeconds: 2
-    treeHp: 100
+    batchSeconds: 3
+    treeHp: 150
     treeKind: 0
-  - killTarget: 440
-    spawnInterval: 0.125
+  - killTarget: 295
+    spawnInterval: 0.1875
     batchSize: 16
-    batchSeconds: 2
-    treeHp: 105
+    batchSeconds: 3
+    treeHp: 160
     treeKind: 1
-  - killTarget: 515
-    spawnInterval: 0.1111111111111111
+  - killTarget: 345
+    spawnInterval: 0.16666666666666666
     batchSize: 18
-    batchSeconds: 2
-    treeHp: 105
+    batchSeconds: 3
+    treeHp: 160
     treeKind: 1
-  - killTarget: 565
-    spawnInterval: 0.10526315789473684
+  - killTarget: 375
+    spawnInterval: 0.15789473684210525
     batchSize: 19
-    batchSeconds: 2
-    treeHp: 105
+    batchSeconds: 3
+    treeHp: 160
     treeKind: 1
-  - killTarget: 615
-    spawnInterval: 0.1
+  - killTarget: 410
+    spawnInterval: 0.15
     batchSize: 20
-    batchSeconds: 2
-    treeHp: 115
+    batchSeconds: 3
+    treeHp: 175
     treeKind: 2
-  - killTarget: 665
-    spawnInterval: 0.09523809523809523
+  - killTarget: 445
+    spawnInterval: 0.14285714285714285
     batchSize: 21
-    batchSeconds: 2
-    treeHp: 115
+    batchSeconds: 3
+    treeHp: 175
     treeKind: 2
-  - killTarget: 915
-    spawnInterval: 0.07142857142857142
+  - killTarget: 550
+    spawnInterval: 0.11904761904761904
     batchSize: 21
-    batchSeconds: 1.5
-    treeHp: 230
+    batchSeconds: 2.5
+    treeHp: 380
     treeKind: 0
-  - killTarget: 990
-    spawnInterval: 0.06818181818181818
+  - killTarget: 595
+    spawnInterval: 0.11363636363636363
     batchSize: 22
-    batchSeconds: 1.5
-    treeHp: 230
+    batchSeconds: 2.5
+    treeHp: 380
     treeKind: 0
-  - killTarget: 1115
-    spawnInterval: 0.0625
+  - killTarget: 670
+    spawnInterval: 0.10416666666666667
     batchSize: 24
-    batchSeconds: 1.5
-    treeHp: 300
+    batchSeconds: 2.5
+    treeHp: 500
     treeKind: 1
-  - killTarget: 1195
-    spawnInterval: 0.06
+  - killTarget: 715
+    spawnInterval: 0.1
     batchSize: 25
-    batchSeconds: 1.5
-    treeHp: 300
+    batchSeconds: 2.5
+    treeHp: 500
     treeKind: 1
-  - killTarget: 1280
-    spawnInterval: 0.057692307692307696
+  - killTarget: 765
+    spawnInterval: 0.09615384615384616
     batchSize: 26
-    batchSeconds: 1.5
-    treeHp: 300
+    batchSeconds: 2.5
+    treeHp: 500
     treeKind: 1
-  - killTarget: 1415
-    spawnInterval: 0.05357142857142857
+  - killTarget: 850
+    spawnInterval: 0.08928571428571429
     batchSize: 28
-    batchSeconds: 1.5
-    treeHp: 350
+    batchSeconds: 2.5
+    treeHp: 580
     treeKind: 2
-  - killTarget: 1505
-    spawnInterval: 0.05172413793103448
+  - killTarget: 905
+    spawnInterval: 0.08620689655172414
     batchSize: 29
-    batchSeconds: 1.5
-    treeHp: 350
+    batchSeconds: 2.5
+    treeHp: 580
     treeKind: 2
-  - killTarget: 1600
-    spawnInterval: 0.05
+  - killTarget: 960
+    spawnInterval: 0.08333333333333333
     batchSize: 30
-    batchSeconds: 1.5
-    treeHp: 350
+    batchSeconds: 2.5
+    treeHp: 580
     treeKind: 2
   tiers:
   - startWave: 1
@@ -204,8 +204,8 @@ MonoBehaviour:
   - startWave: 23
     staminaDamage: 15
   previousTreeKindShare: 0.3
-  threshold: 40
-  spawnExtra: 20
+  threshold: 50
+  spawnCap: 80
   initialTreeSeconds: 10
   clusterRadius: 2.5
   clusterMoveInterval: 15
@@ -218,10 +218,8 @@ MonoBehaviour:
   initialClusterMaxDistance: 4
   idleMoveReach: 1.5
   maxStamina: 100
-  graceTime: 5
-  damageCooldown: 3
+  graceTime: 4
   maxGraceTime: 15
-  maxDamageCooldown: 10
   minThreshold: 5
   maxMoveSpeedPercent: 100
   unlimitHpGrowthPerWave: 0.1

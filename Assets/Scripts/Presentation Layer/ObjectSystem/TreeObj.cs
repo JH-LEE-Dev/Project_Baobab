@@ -485,10 +485,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     /// 다시 자라지 않도록 성장 시간을 무한으로 둔다. 실제 회수(풀 반환)는 연출이 끝난 뒤 매니저가 한다.
     ///
     /// SetIsSapling과 달리 성장 사운드를 내지 않는다. 필드의 나무 수십 그루가 같은 프레임에 들어오기 때문이다.
-    /// 묘목 그림으로 바뀐 뒤 _vanishSeconds 동안 톡 튀었다가 작아지며 사라진다(SaplingVEComponent). 0이면 그림만 바꾼다.
+    /// 묘목 그림으로 바뀌는 순간 하얗게 번쩍이며 "뽀잉" 출렁인 뒤 _vanishSeconds 안에 작아지며 사라진다(SaplingVEComponent). 0이면 그림만 바꾼다.
     /// 본편에서는 호출되지 않는다.
     /// </summary>
-    public void RevertToSaplingForRun(float _vanishSeconds)
+    public void RevertToSaplingForRun(float _vanishSeconds, Sprite _saplingTopOverride = null)
     {
         if (bDead || IsPooled) return;
 
@@ -499,11 +499,17 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         {
             treeVisualComponent.DeActivateOnWaterObject();
             treeVisualComponent.ApplySaplingVisual(treeData);
+            // 공용 나무 데이터의 묘목 그림이 다른 종류 것으로 잘못 들어 있는 경우 로그라이크가 넘겨준 제 묘목 그림으로 바꿔 끼운다.
+            if (null != _saplingTopOverride) treeVisualComponent.SetSaplingTopSpriteForRun(_saplingTopOverride);
         }
 
         if (_vanishSeconds > 0f && saplingVEComponent != null)
         {
             saplingVEComponent.AnimateRevertAndVanishForRun(_vanishSeconds);
+
+            // "뽀잉"의 하얀 번쩍임. 본편 성장 정점과 같은 플래시(처음이 가장 하얗고 0.35초에 걸쳐 빠진다)라
+            // 그림이 묘목으로 바뀌는 순간을 하얗게 덮었다가 묘목이 드러난다. 회수(풀 반환) 때 ResetVisualState가 남은 플래시를 지운다.
+            if (treeVisualComponent != null) treeVisualComponent.PlayGrowUpFlash();
         }
     }
 

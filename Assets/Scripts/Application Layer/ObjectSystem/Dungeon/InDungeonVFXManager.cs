@@ -1350,6 +1350,106 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     /// <summary>
+    /// [로그라이크] 스텔라 별 폭발(VFX_StellaBurst). _groundPosition은 별의 바닥 위치(별 그림 높이는 이펙트가 맡는다),
+    /// _radius는 폭발 판정 반경(월드 유닛, 가로 반지름)이다. 0 이하이면 프리팹의 maxRadius.
+    /// </summary>
+    public void PlayStellaBurstVFX(Vector3 _groundPosition, float _radius, int _sortingOrder)
+    {
+        if (vfxComponent == null) return;
+
+        ParticleSystem effect = vfxComponent.Play(new VFXPlaySettings(
+            "StellaBurstEffect",
+            _groundPosition,
+            Quaternion.identity,
+            "FlyingItem",
+            _sortingOrder,
+            null
+        ));
+
+        if (effect == null) return;
+
+        // 풀에서 꺼낸 직후(첫 LateUpdate 전)에 이번 재생의 반지름을 정해야 한다.
+        PresentationLayer.VFX.VFX_StellaBurst burst = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_StellaBurst>(true);
+        if (burst != null) burst.SetRadius(_radius);
+    }
+
+    /// <summary>
+    /// [로그라이크] 별이 필드에 있는 동안 유지되는 폭발 범위 링(VFX_StellaRange, 루프). 별 하나에 하나이며,
+    /// 호출부가 별이 터지거나 사라질 때 VFX_StellaRange.End()를 불러야 풀로 돌아온다.
+    /// </summary>
+    public ParticleSystem PlayStellaRangeVFX(Vector3 _groundPosition, float _radius)
+    {
+        if (vfxComponent == null) return null;
+
+        ParticleSystem effect = vfxComponent.Play(new VFXPlaySettings(
+            "StellaRangeEffect",
+            _groundPosition,
+            Quaternion.identity,
+            "ShockWave",
+            0,
+            null
+        ));
+
+        if (effect == null) return null;
+
+        PresentationLayer.VFX.VFX_StellaRange range = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_StellaRange>(true);
+        if (range != null) range.SetRadius(_radius);
+        return effect;
+    }
+
+    /// <summary>
+    /// [로그라이크] 별 위에 뜨는 유지시간 게이지(VFX_StellaDurationGauge). 별 하나에 하나이며, 남은 수명이 0이 되거나
+    /// 호출부가 VFX_StellaDurationGauge.End()를 부르면 퇴장 연출 뒤 스스로 풀로 돌아온다.
+    /// </summary>
+    public ParticleSystem PlayStellaGaugeVFX(Vector3 _groundPosition, float _lifetime, int _sortingOrder)
+    {
+        if (vfxComponent == null) return null;
+
+        ParticleSystem effect = vfxComponent.Play(new VFXPlaySettings(
+            "StellaGaugeEffect",
+            _groundPosition,
+            Quaternion.identity,
+            "FlyingItem",
+            _sortingOrder,
+            null
+        ));
+
+        if (effect == null) return null;
+
+        PresentationLayer.VFX.VFX_StellaDurationGauge gauge = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_StellaDurationGauge>(true);
+        if (gauge != null)
+        {
+            gauge.SetSortingOrder(_sortingOrder);
+            gauge.Begin(_lifetime);
+        }
+
+        return effect;
+    }
+
+    /// <summary>
+    /// [로그라이크] 오프로드 예열 동안의 이동 경로 표시(VFX_OffroadLane). _from/_to는 출발점/도착점, _halfWidth는 돌진 폭의 반폭
+    /// (0 이하이면 프리팹의 laneHalfWidth)이다. 예열이 끝나면 경로가 걷히고 스스로 풀로 돌아온다.
+    /// </summary>
+    public void PlayOffroadLaneVFX(Vector3 _from, Vector3 _to, float _warmSeconds, float _halfWidth)
+    {
+        if (vfxComponent == null) return;
+
+        ParticleSystem effect = vfxComponent.Play(new VFXPlaySettings(
+            "OffroadLaneEffect",
+            _from,
+            Quaternion.identity,
+            "FlyingItem",
+            0,
+            null
+        ));
+
+        if (effect == null) return;
+
+        PresentationLayer.VFX.VFX_OffroadLane lane = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_OffroadLane>(true);
+        if (lane != null) lane.Begin(_from, _to, _warmSeconds, _halfWidth);
+    }
+
+    /// <summary>
     /// 포자 대폭발 연출. _center는 쓰러진 나무 자리, _radius는 판정 범위(월드 유닛, 가로 반지름), _tier는 포자 포션 성장 단계(1~3)다.
     /// 알갱이 위치는 재생마다 무작위라 같은 호출도 매번 다른 모양이 나온다.
     /// </summary>

@@ -27,16 +27,16 @@ public class DraftCardDataTests
     }
 
     [Test]
-    public void DraftDatabase_Has28CardsInPlannedKinds()
+    public void DraftDatabase_Has27CardsInPlannedKinds()
     {
-        // 기획서 v2.5: 액티브 7 · 조합 7 · 공통 패시브 11 · 계약 3.
+        // 기획서 v2.7: 액티브 7 · 조합 7 · 공통 패시브 10(피해 쿨다운 증가 삭제) · 계약 3.
         CardDatabaseSO db = AssetDatabase.LoadAssetAtPath<CardDatabaseSO>("Assets/Data/Roguelike/RoguelikeCardDatabase_Draft.asset");
         int[] counts = new int[4];
         for (int i = 0; i < db.Count; i++) counts[(int)db.Get(i).kind]++;
 
-        Assert.AreEqual(28, db.Count);
+        Assert.AreEqual(27, db.Count);
         Assert.AreEqual(7, counts[(int)ECardKind.Active]);
-        Assert.AreEqual(11, counts[(int)ECardKind.Passive]);
+        Assert.AreEqual(10, counts[(int)ECardKind.Passive]);
         Assert.AreEqual(3, counts[(int)ECardKind.Ruby]);
         Assert.AreEqual(7, counts[(int)ECardKind.Prism]);
     }
@@ -96,7 +96,22 @@ public class DraftCardDataTests
         Assert.AreEqual(0f, ResolveAtLevel("passive_damage", 4).Get(ERunEffect.DamagePercentAboveThreshold));
         Assert.AreEqual(20f, ResolveAtLevel("passive_damage", 5).Get(ERunEffect.DamagePercentAboveThreshold));
         Assert.AreEqual(0.3f, ResolveAtLevel("passive_duration", 5).Get(ERunEffect.DurationExtendOnDotKill), 0.0001f);
-        Assert.AreEqual(10f, ResolveAtLevel("passive_movespeed", 5).Get(ERunEffect.AttackSpeedPercentWhileMoving));
+        // 이동속도 증가의 MAX 효과는 이동 중 공격속도가 아니라 대쉬다(기획서 v2.7 6-3: III 1개 + V 1개, 최대 2개).
+        Assert.AreEqual(0f, ResolveAtLevel("passive_movespeed", 5).Get(ERunEffect.AttackSpeedPercentWhileMoving));
+        Assert.AreEqual(0f, ResolveAtLevel("passive_movespeed", 2).Get(ERunEffect.DashChargeAdd));
+        Assert.AreEqual(1f, ResolveAtLevel("passive_movespeed", 3).Get(ERunEffect.DashChargeAdd));
+        Assert.AreEqual(1f, ResolveAtLevel("passive_movespeed", 4).Get(ERunEffect.DashChargeAdd));
+        Assert.AreEqual(2f, ResolveAtLevel("passive_movespeed", 5).Get(ERunEffect.DashChargeAdd));
+    }
+
+    [Test]
+    public void Range_AxeTargetCountOneToFive()
+    {
+        // 기획서 v2.6 부록 A-5: 범위 증가 1레벨 1그루(범위만) → MAX 5그루.
+        for (int level = 1; level <= 5; level++)
+        {
+            Assert.AreEqual(level, 1 + (int)ResolveAtLevel("passive_range", level).Get(ERunEffect.AxeTargetCountAdd), "레벨 " + level);
+        }
     }
 
     [Test]
@@ -107,6 +122,9 @@ public class DraftCardDataTests
         Assert.AreEqual(1f, mods.GetForSkill(ERunEffect.ShockwaveRepeatAdd, ERoguelikeSkill.Shockwave));
         Assert.AreEqual(1f, mods.GetForSkill(ERunEffect.CountAdd, ERoguelikeSkill.Boomerang));
         Assert.Greater(mods.Get(ERunEffect.TreeSpawnRatePercent), 0f);
+        // 기획서 v2.6 6-4: 공격력 +100%, 디메리트 이동속도 −30%.
+        Assert.AreEqual(100f, mods.Get(ERunEffect.DamagePercent), 0.001f);
+        Assert.AreEqual(-30f, mods.Get(ERunEffect.MoveSpeedPercent), 0.001f);
     }
 
     [Test]
@@ -118,11 +136,17 @@ public class DraftCardDataTests
         Assert.AreEqual(3f, ResolveAtLevel("active_offroad", 5).GetForSkill(ERunEffect.CountAdd, ERoguelikeSkill.Offroad));
         Assert.AreEqual(5f, ResolveAtLevel("active_offroad", 7).GetForSkill(ERunEffect.CountAdd, ERoguelikeSkill.Offroad));
 
-        // 주기 6 → 5.5(II) → 5.0(VI)초, 피해 30 → 33(IV) → 34(VI), 돌진 속도 +20%(IV).
+        // 주기 6 → 5.5(II) → 5.0(VI)초, 돌진 속도 +20%(IV).
         Assert.AreEqual(5.5f, 6f / (1f + ResolveAtLevel("active_offroad", 2).GetForSkill(ERunEffect.AttackSpeedPercent, ERoguelikeSkill.Offroad) / 100f), 0.01f);
         Assert.AreEqual(5f, 6f / (1f + ResolveAtLevel("active_offroad", 6).GetForSkill(ERunEffect.AttackSpeedPercent, ERoguelikeSkill.Offroad) / 100f), 0.01f);
-        Assert.AreEqual(33f, 30f * (1f + ResolveAtLevel("active_offroad", 4).GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Offroad) / 100f), 0.01f);
-        Assert.AreEqual(34f, 30f * (1f + ResolveAtLevel("active_offroad", 6).GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Offroad) / 100f), 0.01f);
+
+        // 기획서 v2.7 A-4: 피해 10 / 10 / 14 / 18 / 22 / 28 / 30(기준 10).
+        float[] damages = { 10f, 10f, 14f, 18f, 22f, 28f, 30f };
+        for (int level = 1; level <= 7; level++)
+        {
+            Assert.AreEqual(damages[level - 1], 10f * (1f + ResolveAtLevel("active_offroad", level).GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Offroad) / 100f), 0.01f, "피해 " + level);
+        }
+
         Assert.AreEqual(20f, ResolveAtLevel("active_offroad", 4).Get(ERunEffect.MoveSpeedPercent, ERoguelikeSkill.Offroad), 0.01f);
         Assert.AreEqual(0f, ResolveAtLevel("active_offroad", 7).Get(ERunEffect.MoveSpeedPercent), "오프로드 돌진 속도는 플레이어 이동속도가 아니다");
     }
@@ -137,27 +161,30 @@ public class DraftCardDataTests
             Assert.AreEqual(required[level - 1], 3 + (int)add, "레벨 " + level);
         }
 
-        RunModifiers vi = ResolveAtLevel("active_spin", 6);
-        Assert.AreEqual(70f, vi.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Spin), 0.01f);   // 회전 피해 ×1.7
-        Assert.AreEqual(50f, vi.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Spin), 0.01f);    // 범위 +50%
-        Assert.AreEqual(50f, ResolveAtLevel("active_spin", 4).GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Spin), 0.01f); // ×1.5
+        // 기획서 v2.7 A-4: 회전 피해 ×2.0 전 레벨, 범위 약 7 / 7.5 / 8 / 8.5그루(+25 / +29 / +33 / +37%, II · IV · VI에서 증가).
+        float[] ranges = { 25f, 29f, 29f, 33f, 33f, 37f, 37f };
+        for (int level = 1; level <= 7; level++)
+        {
+            RunModifiers mods = ResolveAtLevel("active_spin", level);
+            Assert.AreEqual(100f, mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Spin), 0.01f, "회전 피해 " + level);
+            Assert.AreEqual(ranges[level - 1], mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Spin), 0.01f, "범위 " + level);
+        }
     }
 
     [Test]
     public void Shockwave_Chance50To75To100_DamageAndDoubleAtMax()
     {
-        Assert.AreEqual(50f, ResolveAtLevel("active_shockwave", 1).GetForSkill(ERunEffect.ChancePercent, ERoguelikeSkill.Shockwave));
-        Assert.AreEqual(75f, ResolveAtLevel("active_shockwave", 3).GetForSkill(ERunEffect.ChancePercent, ERoguelikeSkill.Shockwave));
-        Assert.AreEqual(100f, ResolveAtLevel("active_shockwave", 5).GetForSkill(ERunEffect.ChancePercent, ERoguelikeSkill.Shockwave));
-
-        // 기획서 v2.6 A-4: 피해 12(I) → 13(II) → 14(IV) → 15(VI), 크기 1.5(I) · 2.5(II) · 3.5(IV) · 5(VI) · 7(VII) = 범위 +10 / +30 / +50 / +80 / +120%
-        // (크기 1 = 기본, 크기 +1 = 범위 +20%).
-        float[] damages = { 12f, 13f, 13f, 14f, 14f, 15f, 15f };
-        float[] ranges = { 10f, 30f, 30f, 50f, 50f, 80f, 120f };
+        // 기획서 v2.7 A-4: 확률 50 / 75 / 100%(I~III), 크기 1.5 / 2.5 / 3.5 / 4.5 / 5.5 / 6.5 / 8(크기 1 = 기본, +1 = 범위 +20%),
+        // 그루당 피해 12 / 6 / 4 / 3.5 / 3 / 3 / 2(피해%와 따로 곱하는 배율).
+        float[] chances = { 50f, 75f, 100f, 100f, 100f, 100f, 100f };
+        float[] damages = { 12f, 6f, 4f, 3.5f, 3f, 3f, 2f };
+        float[] ranges = { 10f, 30f, 50f, 70f, 90f, 110f, 140f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_shockwave", level);
-            Assert.AreEqual(damages[level - 1], 12f * (1f + mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Shockwave) / 100f), 0.01f, "피해 " + level);
+            Assert.AreEqual(chances[level - 1], mods.GetForSkill(ERunEffect.ChancePercent, ERoguelikeSkill.Shockwave), 0.01f, "확률 " + level);
+            Assert.AreEqual(damages[level - 1], 12f * (1f + mods.GetForSkill(ERunEffect.ShockwaveDamageScalePercent, ERoguelikeSkill.Shockwave) / 100f), 0.01f, "피해 " + level);
+            Assert.AreEqual(0f, mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Shockwave), "피해%는 쓰지 않는다 " + level);
             Assert.AreEqual(ranges[level - 1], mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Shockwave), 0.01f, "범위 " + level);
         }
 
@@ -228,10 +255,14 @@ public class DraftCardDataTests
     [Test]
     public void Stella_ChanceOtherActivesMarkDurationMarkDamageAndDoubleBlast()
     {
-        float[] chances = { 5f, 8f, 8f, 8f, 10f, 12f, 12f };
+        // 기획서 v2.7 A-4: 확률 20 / 50 / 50 / 50 / 60 / 70 / 70%(기준 20), 폭발 피해 11 / 16 / 16 / 18 / 19 / 20 / 20(기준 11).
+        float[] chances = { 20f, 50f, 50f, 50f, 60f, 70f, 70f };
+        float[] damages = { 11f, 16f, 16f, 18f, 19f, 20f, 20f };
         for (int level = 1; level <= 7; level++)
         {
-            Assert.AreEqual(chances[level - 1], 5f + ResolveAtLevel("active_stella", level).GetForSkill(ERunEffect.ChancePercent, ERoguelikeSkill.Stella), 0.001f, "확률 " + level);
+            RunModifiers mods = ResolveAtLevel("active_stella", level);
+            Assert.AreEqual(chances[level - 1], 20f + mods.GetForSkill(ERunEffect.ChancePercent, ERoguelikeSkill.Stella), 0.001f, "확률 " + level);
+            Assert.AreEqual(damages[level - 1], 11f * (1f + mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Stella) / 100f), 0.01f, "폭발 피해 " + level);
         }
 
         Assert.AreEqual(0f, ResolveAtLevel("active_stella", 2).GetForSkill(ERunEffect.StarHitByActives, ERoguelikeSkill.Stella));
@@ -239,7 +270,6 @@ public class DraftCardDataTests
 
         RunModifiers iv = ResolveAtLevel("active_stella", 4);
         Assert.AreEqual(9f, 6f + iv.GetForSkill(ERunEffect.StarMarkDurationAdd, ERoguelikeSkill.Stella));
-        Assert.AreEqual(115f, 100f * (1f + iv.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Stella) / 100f), 0.01f);
 
         // 표식 나무의 받는 피해 +30% → +45%(V).
         Assert.AreEqual(30f, 30f + ResolveAtLevel("active_stella", 4).GetForSkill(ERunEffect.StarMarkDamageTakenAdd, ERoguelikeSkill.Stella));
@@ -262,7 +292,12 @@ public class DraftCardDataTests
         Assert.AreEqual(60f, ResolveAtLevel("passive_movespeed", 5).Get(ERunEffect.MoveSpeedPercent), 0.001f);
         Assert.AreEqual(25f, ResolveAtLevel("passive_stamina_recover", 5).Get(ERunEffect.StaminaRecoverPerWave), 0.001f);
         Assert.AreEqual(50f, ResolveAtLevel("passive_max_stamina", 5).Get(ERunEffect.MaxStaminaAdd), 0.001f);
-        Assert.AreEqual(4f, ResolveAtLevel("passive_grace", 5).Get(ERunEffect.GraceTimeAdd), 0.001f);
+        // 기획서 v2.7: 유예 시간 증가(= 피해 간격) +0.2 / +0.5 / +0.9 / +1.4 / +2.0초.
+        float[] grace = { 0.2f, 0.5f, 0.9f, 1.4f, 2f };
+        for (int level = 1; level <= 5; level++)
+        {
+            Assert.AreEqual(grace[level - 1], ResolveAtLevel("passive_grace", level).Get(ERunEffect.GraceTimeAdd), 0.001f, "유예 " + level);
+        }
     }
 
     [Test]

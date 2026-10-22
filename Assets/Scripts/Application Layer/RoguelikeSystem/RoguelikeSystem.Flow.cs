@@ -404,10 +404,10 @@ public partial class RoguelikeSystem
         ConfigurePressure();
 
         // 임계치의 절반이 솟아난 채로 웨이브가 시작되고(솟아나는 연출이 시작 신호, 목표 처치 수에 포함), 이후 스폰은 목표 처치 수와
-        // 상관없이 웨이브가 끝날 때까지 묶음 단위로 스폰 상한(T + 20)까지 계속된다(총량 제한 없음). 생성 위치는 필드 곳곳에 분산. 기획서 v2.5 3-1.
+        // 상관없이 웨이브가 끝날 때까지 묶음 단위로 스폰 상한(80 고정)까지 계속된다(총량 제한 없음). 생성 위치는 필드 곳곳에 분산. 기획서 v2.5 3-1.
         // 스폰 상한·초기 나무 수는 지금 임계치(계약 "인내의 시간"으로 줄어든 값, ConfigurePressure)를 따른다(기획서 6-4).
         float spawnRate = Mathf.Max(0.1f, 1f + modifiers.Get(ERunEffect.TreeSpawnRatePercent) / 100f);
-        int initialTrees = TreeSpawnRules.InitialTreeCount(pressure.Threshold, balance.initialTreeThresholdRatio, _spec.killTarget);
+        int initialTrees = TreeSpawnRules.InitialTreeCount(pressure.Threshold, balance.initialTreeThresholdRatio);
         // 묶음 크기는 정수로 두고 다다익선(스폰 속도 증가)은 묶음 주기를 줄여 반영한다(기획서 v2.6 3-1: 소수 그루 · 이월 없음).
         waveStrategy?.BeginWave(inDungeonObjectManager, _spec.spawnInterval / spawnRate, CurrentSpawnCap, initialTrees,
             balance, null != character ? character.transform : null, _spec.batchSize, _spec.batchSeconds / spawnRate);
@@ -836,12 +836,12 @@ public partial class RoguelikeSystem
     private void ConfigurePressure()
     {
         int cap = balance.SpawnCap;
-        // 임계치는 기본 스폰 상한을 넘지 않는다. 줄어든 임계치에 맞춘 스폰 상한은 CurrentSpawnCap.
+        // 임계치는 스폰 상한(80 고정)을 넘지 않는다. 스폰 상한은 임계치가 줄어도 그대로다(기획서 v2.6 3-1).
         int threshold = Mathf.Clamp(balance.threshold + Mathf.RoundToInt(modifiers.Get(ERunEffect.ThresholdAdd)), Mathf.Max(1, balance.minThreshold), cap);
+        // 유예 시간 = 반복 피해 간격(기획서 v2.7 3-2). 유예 시간 증가 패시브 · 인내의 시간 계약이 둘을 같은 값으로 올린다.
         float grace = Mathf.Clamp(balance.graceTime + modifiers.Get(ERunEffect.GraceTimeAdd), 0f, balance.maxGraceTime);
-        float cooldown = Mathf.Clamp(balance.damageCooldown + modifiers.Get(ERunEffect.DamageCooldownAdd), 0.1f, balance.maxDamageCooldown);
 
-        pressure.Configure(threshold, grace, cooldown);
+        pressure.Configure(threshold, grace, Mathf.Max(0.1f, grace));
         pressure.Reset();
     }
 

@@ -91,16 +91,15 @@ public static class TreeSpawnRules
     }
 
     /// <summary>
-    /// 웨이브 시작 초기 나무 수(기획서 v2.5 3-1 "초기 나무"): 현재 임계치 × _ratio(초안 0.5), 내림. T 40이면 20그루이고 웨이브 번호와 무관하다.
-    /// 임계치 T보다 항상 낮고 목표 처치 수를 넘지 않는다.
+    /// 웨이브 시작 초기 나무 수(기획서 v2.7 3-1 "초기 나무"): 현재 임계치 × _ratio(초안 0.5), 내림. T 50이면 25그루이고 모든 웨이브가 같다.
+    /// 임계치 T보다 항상 낮다. 목표 처치 수보다 많을 수 있다(1웨이브 목표 20그루는 초기 나무 25그루만으로 클리어된다).
     /// </summary>
-    public static int InitialTreeCount(int _threshold, float _ratio, int _killTarget)
+    public static int InitialTreeCount(int _threshold, float _ratio)
     {
         if (_threshold <= 0 || _ratio <= 0f) return 0;
 
         int count = Mathf.FloorToInt(_threshold * _ratio + 0.0001f);
-        count = Mathf.Min(count, _threshold - 1);
-        return Mathf.Clamp(count, 0, Mathf.Max(0, _killTarget));
+        return Mathf.Clamp(count, 0, _threshold - 1);
     }
 
     /// <summary>

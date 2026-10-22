@@ -532,7 +532,11 @@ public class RoguelikeSkillController : MonoBehaviour
         star.ExpireTime = Time.time + tuning.stellaStarLifetime * DurationMul(ERoguelikeSkill.Stella);
         activeStars.Add(star);
 
-        Publish(ERoguelikeSkillVfx.StarSpawned, _position, _position, 0f, 0f, star.StarId);
+        // 범위 링(폭발 반경)과 유지시간 게이지(남은 수명)에 쓸 값. 스텔라+드론의 별은 쳐도 터지지 않고 노바 때까지
+        // 사라지지 않으므로 둘 다 0으로 보낸다(링·게이지를 붙이지 않는다).
+        float blastRadius = bStellaDrone ? 0f : tuning.stellaBlastRadius * RangeMul(ERoguelikeSkill.Stella);
+        float lifetime = bStellaDrone ? 0f : star.ExpireTime - Time.time;
+        Publish(ERoguelikeSkillVfx.StarSpawned, _position, _position, blastRadius, lifetime, star.StarId);
 
         if (bStellaDrone) RebuildStarLinks();
     }
@@ -597,6 +601,37 @@ public class RoguelikeSkillController : MonoBehaviour
                 break;
             }
         }
+
+        // 스텔라 III: 드론은 레이저 사거리 안의 별을 나무보다 먼저 노린다(기획서 v2.6 6-1, 초안). 본편 드론 타겟팅(나무 전용)은 건드리지 않고,
+        // 레이저가 나갈 때마다 총구에서 사거리 안 가장 가까운 별 하나를 함께 맞힌다(별까지 레이저를 하나 더 그린다).
+        RoguelikeStar target = FindNearestStarForDrone(_points[0]);
+        if (null == target) return;
+
+        OnStarHit(target);
+        Publish(ERoguelikeSkillVfx.DroneStarShot, _points[0], target.transform.position, 0f, 0f, target.StarId);
+    }
+
+    /// <summary>총구 _origin에서 드론 사거리 안(등각 거리) 가장 가까운, 아직 맞지 않은 별. 없으면 null.</summary>
+    private RoguelikeStar FindNearestStarForDrone(Vector3 _origin)
+    {
+        float range = null != character ? character.statComponent.droneAttackRange : 0f;
+        float bestSq = range * range;
+        RoguelikeStar best = null;
+
+        for (int i = 0; i < activeStars.Count; i++)
+        {
+            RoguelikeStar star = activeStars[i];
+            if (false == star.bCanBeHitBySkill || pendingStarHits.Contains(star)) continue;
+
+            Vector2 offset = (star.Position + star.Offset) - (Vector2)_origin;
+            float isoSq = offset.x * offset.x + offset.y * offset.y * 4f;
+            if (isoSq > bestSq) continue;
+
+            bestSq = isoSq;
+            best = star;
+        }
+
+        return best;
     }
 
     private void OnStarHit(RoguelikeStar _star)

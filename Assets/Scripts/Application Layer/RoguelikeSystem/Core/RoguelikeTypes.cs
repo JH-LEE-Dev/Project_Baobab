@@ -105,7 +105,7 @@ public enum ERunEffect
     MaxStaminaPercent = 15,
     /// <summary>임계치 초과 후 첫 피해까지의 유예 시간(초 가산).</summary>
     GraceTimeAdd = 16,
-    /// <summary>반복 피해 간격(초 가산).</summary>
+    /// <summary>반복 피해 간격(초 가산). v2.7에서 피해 쿨다운 증가 카드가 삭제되고 피해 간격 = 유예 시간이 되어 지금은 쓰지 않는다(GraceTimeAdd가 둘 다 올린다).</summary>
     DamageCooldownAdd = 17,
     // 18은 폐지된 골드 획득 증가(GoldGainPercent) 자리다. v2.4에서 골드가 없어졌다. 다시 쓰지 않는다.
     /// <summary>임계치 T(정수 가산). 인내의 시간은 음수.</summary>
@@ -144,6 +144,15 @@ public enum ERunEffect
     DotTickIntervalReduceAtMaxStackPercent = 38,
     /// <summary>충격파가 나무를 맞히지 않은 헛스윙에도 발동 판정을 한다. 0보다 크면 켜진다(충격파 MAX, 기획서 v2.6 6-1).</summary>
     ShockwaveFireOnWhiff = 39,
+    /// <summary>대쉬 보유 개수(개수 가산, 충전식). 이동속도 증가 III +1, V(MAX) +1(최대 2개, 기획서 v2.7 6-3).</summary>
+    DashChargeAdd = 40,
+    /// <summary>도끼 한 번에 맞히는 나무 수(개수 가산, 기본 1). 범위 증가 II · III · IV · V 각 +1(MAX 5그루, 기획서 v2.6 부록 A-5).</summary>
+    AxeTargetCountAdd = 41,
+    /// <summary>
+    /// 충격파 그루당 피해에 따로 곱하는 배율(%, 1 + 합/100). 범위가 커지는 만큼 피해를 낮추는 데 쓴다(기획서 v2.7 A-4: 12 → 6 → 4 → 3.5 → 3 → 3 → 2).
+    /// 피해%(DamagePercent)와 더하지 않고 곱하므로 공격력 증가 패시브가 붙어도 레벨별 감소 비율이 유지된다.
+    /// </summary>
+    ShockwaveDamageScalePercent = 42,
 
     // 새 효과는 이 위가 아니라 여기(맨 뒤)에 추가한다.
     Count,

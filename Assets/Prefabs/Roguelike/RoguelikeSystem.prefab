@@ -93,6 +93,9 @@ MonoBehaviour:
   skillController: {fileID: 6092421280983671155}
   bAttackSpeedAffectsAxe: 1
   waveClearSaplingVanishSeconds: 0.6
+  saplingTopOverrides:
+  - treeType: 5
+    saplingTop: {fileID: 21300000, guid: 6b344182da9255f4fbd13797d14bb6f6, type: 3}
   runClearZoomMultiplier: 2
   runClearZoomInSeconds: 0.25
   runClearSlowTimeScale: 0.25

@@ -88,6 +88,16 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     [Header("웨이브 클리어 묘목 연출(기획서 3-1 \"달성 즉시\")")]
     [Tooltip("남은 나무가 묘목으로 돌아가 톡 튀었다가 작아지며 사라지는 시간(초). 나무 회수는 이 연출이 끝난 뒤에 한다.")]
     [SerializeField] private float waveClearSaplingVanishSeconds = 0.6f;
+    [Tooltip("묘목으로 돌아갈 때 쓸 나무 종류별 묘목 위쪽 그림(기획서 v2.7 3-1 \"원래 묘목 그대로\"). 공용 나무 데이터(Tree Visual Data Base)의 묘목 그림이 " +
+        "다른 종류 것으로 들어 있는 종류만 넣는다(예: 균사 나무 → FluffyMyceliumTree_Baby_Top). 본편 데이터는 바꾸지 않는다.")]
+    [SerializeField] private List<SaplingSpriteOverride> saplingTopOverrides = new List<SaplingSpriteOverride>();
+
+    [Serializable]
+    private struct SaplingSpriteOverride
+    {
+        public TreeType treeType;
+        public Sprite saplingTop;
+    }
 
     [Header("런 클리어 연출(기획서 3-5 - 30웨이브 마지막 나무 줌인 + 슬로우 부서짐 → 줌아웃)")]
     [Tooltip("마지막 나무로 확대하는 배율(몇 배 확대).")]
@@ -219,8 +229,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     public int FieldTreeCount => null != inDungeonObjectManager ? inDungeonObjectManager.ActiveTrees.Count : 0;
     public int Threshold => pressure.Threshold;
     public int SpawnCap => CurrentSpawnCap;
-    /// <summary>지금 스폰 상한 = 지금 임계치 + 추가 개수(기획서 3-2 "스폰 상한은 항상 현재 임계치 + α"). 계약으로 임계치가 줄면 함께 줄어든다.</summary>
-    private int CurrentSpawnCap => null != balance ? pressure.Threshold + Mathf.Max(0, balance.spawnExtra) : 0;
+    /// <summary>지금 스폰 상한(필드 최대 나무 수). 임계치와 무관한 고정값이다(기획서 v2.6 3-1, 80그루). 계약으로 임계치가 줄어도 그대로다.</summary>
+    private int CurrentSpawnCap => null != balance ? balance.SpawnCap : 0;
     public EPressureState PressureState => pressure.State;
     public float PressureGraceRatio => pressure.GraceRatio;
     public float PressureCooldownRatio => pressure.CooldownRatio;
@@ -294,6 +304,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
             });
             effectApplier.SetRepeatDelays(tuning.shockwaveExtraDelay, tuning.axeExtraStrikeDelay, tuning.shockwaveExtraDamageRatio);
             effectApplier.SetSporeShockwaveColor(tuning.sporeShockwaveColor);
+            effectApplier.SetDashRechargeSeconds(tuning.dashRechargeSeconds);
         }
 
         effectApplier.SetMoveSpeedCap(balance.maxMoveSpeedPercent);
@@ -518,11 +529,26 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         SetPhase(ERunPhase.WaveClear);
     }
 
+    // 묘목 그림 보정 조회(웨이브 클리어마다 델리게이트를 새로 만들지 않도록 한 번만 만든다).
+    private Func<TreeType, Sprite> saplingTopOverrideHandler;
+
+    /// <summary>나무 종류의 보정 묘목 그림. 보정이 없으면 null(공용 데이터 그대로).</summary>
+    private Sprite GetSaplingTopOverride(TreeType _treeType)
+    {
+        for (int i = 0; i < saplingTopOverrides.Count; i++)
+        {
+            if (saplingTopOverrides[i].treeType == _treeType) return saplingTopOverrides[i].saplingTop;
+        }
+
+        return null;
+    }
+
     /// <summary>남은 나무가 묘목으로 돌아가 사라진다(기획서 3-1). 나무 회수는 연출이 끝난 뒤 WaveClearRoutine이 한다.</summary>
     private void RevertFieldTreesToSapling()
     {
         float seconds = Mathf.Max(0f, waveClearSaplingVanishSeconds);
-        inDungeonObjectManager.RevertAllTreesToSaplingForRun(seconds);
+        if (null == saplingTopOverrideHandler) saplingTopOverrideHandler = GetSaplingTopOverride;
+        inDungeonObjectManager.RevertAllTreesToSaplingForRun(seconds, saplingTopOverrideHandler);
         saplingVanishEndTime = Time.time + seconds;
 
         // 본편 묘목 등장음. 나무마다 내면 수십 개가 겹치므로 섬 중앙에서 한 번만 낸다.

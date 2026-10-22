@@ -24,22 +24,20 @@ public class TreeSpawnRulesTests
     [Test]
     public void InitialTrees_AreHalfOfThreshold_SameForEveryWave()
     {
-        // T 40이면 20그루, 웨이브 번호와 무관하다. 목표 처치 수(1웨이브 30)보다 적다.
+        // 기획서 v2.7: T 50이면 25그루, 웨이브 번호와 무관하다(1웨이브 목표 20그루보다 많아도 그대로).
         for (int wave = 1; wave <= 35; wave++)
         {
             WaveSpec spec = WaveSchedule.Get(balance, wave);
-            Assert.AreEqual(20, spec.initialTrees, "웨이브 " + wave);
-            Assert.LessOrEqual(spec.initialTrees, spec.killTarget, "웨이브 " + wave);
+            Assert.AreEqual(25, spec.initialTrees, "웨이브 " + wave);
         }
     }
 
     [Test]
-    public void InitialTrees_FollowReducedThreshold_AndClampToTarget()
+    public void InitialTrees_FollowReducedThreshold()
     {
-        Assert.AreEqual(17, TreeSpawnRules.InitialTreeCount(35, 0.5f, 200), "계약으로 줄어든 T의 절반(내림)");
-        Assert.AreEqual(3, TreeSpawnRules.InitialTreeCount(40, 0.5f, 3), "목표 처치 수를 넘지 않는다");
-        Assert.AreEqual(39, TreeSpawnRules.InitialTreeCount(40, 1f, 200), "T보다 항상 낮다");
-        Assert.AreEqual(0, TreeSpawnRules.InitialTreeCount(40, 0f, 30));
+        Assert.AreEqual(17, TreeSpawnRules.InitialTreeCount(35, 0.5f), "계약으로 줄어든 T의 절반(내림)");
+        Assert.AreEqual(39, TreeSpawnRules.InitialTreeCount(40, 1f), "T보다 항상 낮다");
+        Assert.AreEqual(0, TreeSpawnRules.InitialTreeCount(40, 0f));
     }
 
     [Test]

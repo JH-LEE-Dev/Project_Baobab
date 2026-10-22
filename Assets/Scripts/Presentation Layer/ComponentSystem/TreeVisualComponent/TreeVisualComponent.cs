@@ -411,6 +411,15 @@ public class TreeVisualComponent : MonoBehaviour
         UpdateHDRStates();
     }
 
+    /// <summary>[로그라이크 전용] ApplySaplingVisual 직후 묘목 위쪽 그림을 바꿔 끼운다(공용 데이터의 잘못된 묘목 그림 보정). 본편은 부르지 않는다.</summary>
+    public void SetSaplingTopSpriteForRun(Sprite _sprite)
+    {
+        if (null == topRenderer || null == _sprite) return;
+
+        topRenderer.sprite = _sprite;
+        defaultTopSprite = _sprite;
+    }
+
     // 묘목(Sapling) 비주얼을 적용한다.
     public void ApplySaplingVisual(TreeData _treeData)
     {

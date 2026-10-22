@@ -34,7 +34,9 @@ public sealed class RoguelikeSkillVfxAssets
 /// <summary>
 /// 로그라이크 신규 스킬·조합의 연출을 본편 연출로 재생한다(기획서 3-3 "본편 ~을 그대로 사용한다/활용한다").
 ///   스텔라 별: 본편 3스테이지 별 표식 나무에서 나오는 땅 별(TreeStarMark_Ground) + 등장음 / 사라질 때 본편 회전 소멸.
-///   별 공격: 본편 별똥별 착지 폭발(StarImpactExplosion) + 별 폭발음.
+///              별마다 로그라이크 전용 폭발 범위 링(VFX_StellaRange)과 유지시간 게이지(VFX_StellaDurationGauge)를 붙인다.
+///   별 공격: 로그라이크 전용 스텔라 폭발(VFX_StellaBurst) + 본편 별 폭발음.
+///   오프로드 예열: 로그라이크 전용 이동 경로 표시(VFX_OffroadLane).
 ///   포자 폭발: 본편 포자 폭발(4연발 + 포자 폭발음). v2.6부터 포자 조합 3종도 대폭발을 써서 지금은 내는 곳이 없다.
 ///   포자 폭탄: 포물선으로 던지고, 떨어지면 본편 포자 대폭발(2스테이지 전리품 연출). 오염된 나무에는 본편 포자 디버프 표시.
 ///              포자 조합 3종(포자 레이저 · 방구차 · 포자 충격파)의 대폭발도 같은 연출이다(던지기 없이 그 자리에서).
@@ -72,6 +74,15 @@ public sealed class RoguelikeSkillVfxPlayer
     // 포자 연출 회차. StopCombatEffects가 올리면 진행 중이던 포자 폭발·폭탄 연출이 다음 단계에서 멈춘다.
     private int sporeGeneration;
 
+    // 별마다 붙는 폭발 범위 링·유지시간 게이지. 별 번호로 찾아 별이 터지거나 사라질 때 End()로 거둔다.
+    private struct StarOverlay
+    {
+        public int starId;
+        public PresentationLayer.VFX.VFX_StellaRange range;
+        public PresentationLayer.VFX.VFX_StellaDurationGauge gauge;
+    }
+    private readonly List<StarOverlay> starOverlays = new List<StarOverlay>(12);
+
     /// <summary>본편 땅 별을 쓸 수 있어 로그라이크 별 자체 그림을 숨겨도 되는지.</summary>
     public bool bUsesMainStarVisual => null != vfx;
 
@@ -94,29 +105,40 @@ public sealed class RoguelikeSkillVfxPlayer
             case ERoguelikeSkillVfx.StarSpawned:
                 vfx?.PlayConstellationGroundMarkVFX(_signal.position, Order(_signal.position) + 20, StarGroupBase - _signal.id);
                 Sound.Play(SoundID.Starappear, _signal.position);
+                PlayStarOverlay(_signal.id, _signal.position, _signal.radius, _signal.duration);
                 break;
 
             case ERoguelikeSkillVfx.StarBlast:
                 vfx?.BeginConstellationGroundMarkManifest(StarGroupBase - _signal.id);
-                vfx?.PlayStarImpactExplosionVFX(_signal.position + starCenterOffset, Order(_signal.position) + 40);
+                // 범위 링을 밝게 강조한 뒤 폭발을 내고, 링·게이지를 거둔다. 폭발은 별의 바닥 위치에 놓는다(별 높이는 이펙트가 맡는다).
+                ActivateStarRange(_signal.id);
+                vfx?.PlayStellaBurstVFX(_signal.position, _signal.radius, Order(_signal.position) + 40);
+                EndStarOverlay(_signal.id);
                 Sound.Play(SoundID.StarExplosion, _signal.position + starCenterOffset);
                 CameraMoveController.Instance?.ShakeCamera(3f, 0.2f);
                 break;
 
             case ERoguelikeSkillVfx.StarBlastRepeat:
-                // 같은 자리의 뒤이은 폭발. 땅 별은 첫 폭발에서 이미 사라졌으므로 폭발 그림·소리·흔들림만 낸다.
-                vfx?.PlayStarImpactExplosionVFX(_signal.position + starCenterOffset, Order(_signal.position) + 40);
+                // 같은 자리의 뒤이은 폭발. 땅 별·범위 링·게이지는 첫 폭발에서 이미 거뒀으므로 폭발 그림·소리·흔들림만 낸다.
+                vfx?.PlayStellaBurstVFX(_signal.position, _signal.radius, Order(_signal.position) + 40);
                 Sound.Play(SoundID.StarExplosion, _signal.position + starCenterOffset);
                 CameraMoveController.Instance?.ShakeCamera(3f, 0.2f);
                 break;
 
             case ERoguelikeSkillVfx.StarExpired:
                 vfx?.BeginConstellationGroundMarkManifest(StarGroupBase - _signal.id);
+                EndStarOverlay(_signal.id);
                 break;
 
             case ERoguelikeSkillVfx.LoneStarPulse:
-                vfx?.PlayStarImpactExplosionVFX(_signal.position + starCenterOffset, Order(_signal.position) + 40);
+                // 홀로 남은 별은 공격 뒤에도 남는다. 스텔라+드론의 별에는 범위 링을 붙이지 않으므로 폭발만 낸다.
+                vfx?.PlayStellaBurstVFX(_signal.position, _signal.radius, Order(_signal.position) + 40);
                 Sound.Play(SoundID.StarExplosion, _signal.position + starCenterOffset, 0.6f);
+                break;
+
+            case ERoguelikeSkillVfx.OffroadWarmup:
+                // 예열 동안 소환 위치와 진행 방향을 보여 주고, 출발 시각에 맞춰 경로가 걷힌다. radius는 돌진 폭의 반폭이다.
+                vfx?.PlayOffroadLaneVFX(_signal.position, _signal.position2, _signal.duration, _signal.radius);
                 break;
 
             case ERoguelikeSkillVfx.SporeExplosion:
@@ -141,6 +163,11 @@ public sealed class RoguelikeSkillVfxPlayer
 
             case ERoguelikeSkillVfx.StarLinkBeam:
                 FireLaser(_signal.position + starCenterOffset, _signal.position2 + starCenterOffset);
+                break;
+
+            case ERoguelikeSkillVfx.DroneStarShot:
+                // 드론 총구에서 별 그림 중심까지 본편 드론 레이저.
+                FireLaser(_signal.position, _signal.position2 + starCenterOffset);
                 break;
 
             case ERoguelikeSkillVfx.StarNova:
@@ -169,6 +196,10 @@ public sealed class RoguelikeSkillVfxPlayer
     public void RestoreStars(IReadOnlyList<RoguelikeStar> _stars, IReadOnlyList<Vector2Int> _links)
     {
         if (null == vfx || null == _stars) return;
+
+        // 남는 별은 스텔라+드론의 별뿐이고 여기에는 범위 링·게이지를 붙이지 않으므로 다시 그릴 것이 없다.
+        // 본편 정리(StopAllPooledVFX)가 풀로 거둔 항목이 남아 있으면 비운다.
+        EndAllStarOverlays();
 
         for (int i = 0; i < _stars.Count; i++)
         {
@@ -226,18 +257,108 @@ public sealed class RoguelikeSkillVfxPlayer
         return PresentationLayer.VFX.TreeSporeDebuffVfx.Tier2Threshold * 0.5f;
     }
 
-    /// <summary>웨이브가 끝나 별·이음선이 한꺼번에 치워질 때. 남은 땅 별과 점선을 거둔다.</summary>
+    /// <summary>웨이브가 끝나 별·이음선이 한꺼번에 치워질 때. 남은 땅 별과 점선, 범위 링·게이지를 거둔다.</summary>
     public void Clear()
     {
         if (null == vfx) return;
 
         vfx.ClearAllConstellationGroundMarks();
         RemoveLinkLines();
+        EndAllStarOverlays();
     }
 
     // // 내부
 
     private static int Order(Vector3 _position) => -Mathf.RoundToInt(_position.y * 100f);
+
+    /// <summary>
+    /// 새 별에 폭발 범위 링(_radius)과 유지시간 게이지(_lifetime초)를 붙인다. 0 이하인 쪽은 붙이지 않는다
+    /// (스텔라+드론의 별은 쳐도 터지지 않고 사라지지도 않아 둘 다 0으로 온다).
+    /// </summary>
+    private void PlayStarOverlay(int _starId, Vector3 _position, float _radius, float _lifetime)
+    {
+        if (null == vfx) return;
+
+        StarOverlay overlay = new StarOverlay { starId = _starId };
+
+        if (_radius > 0f)
+        {
+            ParticleSystem effect = vfx.PlayStellaRangeVFX(_position, _radius);
+            overlay.range = null != effect ? effect.GetComponentInChildren<PresentationLayer.VFX.VFX_StellaRange>(true) : null;
+        }
+
+        if (_lifetime > 0f)
+        {
+            // 땅 별(+20)·폭발(+40)보다 위에 그린다.
+            ParticleSystem effect = vfx.PlayStellaGaugeVFX(_position, _lifetime, Order(_position) + 50);
+            overlay.gauge = null != effect ? effect.GetComponentInChildren<PresentationLayer.VFX.VFX_StellaDurationGauge>(true) : null;
+        }
+
+        if (null == overlay.range && null == overlay.gauge) return;
+
+        ForgetReusedOverlay(overlay.range, overlay.gauge);
+        starOverlays.Add(overlay);
+    }
+
+    /// <summary>
+    /// 방금 꺼낸 인스턴스를 아직 들고 있는 다른 별 항목에서 뺀다. 게이지는 수명이 다하면 스스로, 링은 루트 수명(60초)이 끝나면
+    /// 풀로 돌아가므로 그 사이 다른 별이 같은 인스턴스를 꺼낼 수 있다 - 옛 별의 End()가 새 별의 그림을 끄지 않게 한다.
+    /// </summary>
+    private void ForgetReusedOverlay(PresentationLayer.VFX.VFX_StellaRange _range, PresentationLayer.VFX.VFX_StellaDurationGauge _gauge)
+    {
+        for (int i = starOverlays.Count - 1; i >= 0; i--)
+        {
+            StarOverlay overlay = starOverlays[i];
+            if (null != _range && overlay.range == _range) overlay.range = null;
+            if (null != _gauge && overlay.gauge == _gauge) overlay.gauge = null;
+
+            if (null == overlay.range && null == overlay.gauge) starOverlays.RemoveAt(i);
+            else starOverlays[i] = overlay;
+        }
+    }
+
+    private int FindStarOverlay(int _starId)
+    {
+        for (int i = 0; i < starOverlays.Count; i++)
+        {
+            if (starOverlays[i].starId == _starId) return i;
+        }
+
+        return -1;
+    }
+
+    /// <summary>별이 터지기 직전 범위 링을 밝게 강조한다(VFX_StellaBurst 재생 직전).</summary>
+    private void ActivateStarRange(int _starId)
+    {
+        int index = FindStarOverlay(_starId);
+        if (index < 0) return;
+
+        PresentationLayer.VFX.VFX_StellaRange range = starOverlays[index].range;
+        if (null != range && range.isActiveAndEnabled) range.Activate();
+    }
+
+    /// <summary>별이 터지거나 사라졌다. 링은 깜빡이며, 게이지는 퇴장 연출 뒤 스스로 풀로 돌아간다.</summary>
+    private void EndStarOverlay(int _starId)
+    {
+        int index = FindStarOverlay(_starId);
+        if (index < 0) return;
+
+        EndOverlay(starOverlays[index]);
+        starOverlays.RemoveAt(index);
+    }
+
+    private void EndAllStarOverlays()
+    {
+        for (int i = 0; i < starOverlays.Count; i++) EndOverlay(starOverlays[i]);
+        starOverlays.Clear();
+    }
+
+    // 이미 풀로 돌아간(꺼진) 인스턴스는 건드리지 않는다.
+    private static void EndOverlay(StarOverlay _overlay)
+    {
+        if (null != _overlay.range && _overlay.range.isActiveAndEnabled) _overlay.range.End();
+        if (null != _overlay.gauge && _overlay.gauge.isActiveAndEnabled) _overlay.gauge.End();
+    }
 
     /// <summary>
     /// 이음선 하나에 본편 드론 레이저를 쏜다. 레이저 한 개는 다시 쏘면 처음부터 다시 터지므로(본편 Drone.chainZap) 이음선마다
