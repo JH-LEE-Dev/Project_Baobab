@@ -151,6 +151,15 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     /// <summary>[로그라이크] 칸 중심의 월드 위치.</summary>
     public Vector3 GetTileCellCenterWorldForRun(Vector3Int _cell) => tileMapGenerator.GetCellCenterWorldForRun(_cell);
 
+    /// <summary>[로그라이크] 지금 맵 종류의 물 장식 프리팹(TileMapGenerator.WaterDecoPrefabsForRun).</summary>
+    public List<DecoSpritePatternAnimator> WaterDecoPrefabsForRun => tileMapGenerator.WaterDecoPrefabsForRun;
+
+    /// <summary>[로그라이크] 장식 자리가 _worldRect 안에 드는 깊은 물 칸(TileMapGenerator.GetDeepWaterCellsForRun).</summary>
+    public void GetDeepWaterCellsForRun(Rect _worldRect, List<Vector3Int> _outCells) => tileMapGenerator.GetDeepWaterCellsForRun(_worldRect, _outCells);
+
+    /// <summary>[로그라이크] 칸에 물 장식을 놓을 월드 위치(본편 물 장식과 같은 자리).</summary>
+    public Vector3 GetWaterDecoWorldPosForRun(Vector3Int _cell) => tileMapGenerator.GetWaterDecoWorldPosForRun(_cell);
+
     /// <summary>[로그라이크] 바닥 타일 파도 연출이 다시 깔 시각 타일맵(TileMapGenerator.GetVisualTilemapsForRun).</summary>
     public void GetVisualTilemapsForRun(List<UnityEngine.Tilemaps.Tilemap> _floor, List<UnityEngine.Tilemaps.Tilemap> _water,
         List<UnityEngine.Tilemaps.Tilemap> _shore)
@@ -186,6 +195,16 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         }
     }
 
+    /// <summary>
+    /// [로그라이크 전용] 섬 한 화면(_viewRect, 월드)에 맞춰 구름·새 그림자를 깐다. GenerateRoguelikeField 뒤에 부른다.
+    /// 구름은 화면 둘레에만 _cloudCnt개를 깔고 속도·불투명도를 로그라이크 값으로 쓴다. 본편 던전 경로는 바뀌지 않는다.
+    /// </summary>
+    public void SpawnRoguelikeEnvironmentObjs(Rect _viewRect, int _cloudCnt, float _cloudMinSpeed, float _cloudMaxSpeed, float _cloudAlpha)
+    {
+        if (environmentObjManager != null)
+            environmentObjManager.SpawnRoguelikeEnvironmentObjs(_viewRect, _cloudCnt, _cloudMinSpeed, _cloudMaxSpeed, _cloudAlpha);
+    }
+
     private void TilemapGenerated(List<Vector3> tilePositions)
     {
         if (null != roguelikeMapGeneratedCallback)
@@ -194,8 +213,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
             roguelikeMapGeneratedCallback = null;
             callback.Invoke(tilePositions);
 
-            if (environmentObjManager != null)
-                environmentObjManager.SpawnInDungeonEnvironmentObjs();
+            // 환경 오브젝트(구름·새 그림자)는 섬 화면을 아는 로그라이크가 SpawnRoguelikeEnvironmentObjs로 깐다.
             return;
         }
 

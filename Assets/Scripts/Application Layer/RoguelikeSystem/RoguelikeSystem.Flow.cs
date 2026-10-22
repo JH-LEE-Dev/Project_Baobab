@@ -259,6 +259,8 @@ public partial class RoguelikeSystem
         }
 
         tileWave.FinishImmediately();
+        waterDeco.Flush();
+        cloudFade.Flush();
 
         // 시작 신호를 받은 쪽(이펙트 담당)이 끝 신호를 기다리지 않게 짝을 맞춘다. 파도는 방금 새 지형으로 다 채워졌다.
         if (bWasPlaying) signalHub.Publish(new RoguelikeTileWaveCompletedSignal(tileWave.IsEntryWave));
@@ -695,7 +697,14 @@ public partial class RoguelikeSystem
 
         // 같은 프레임에 시작 상태로 되돌린다(새 지형이 한 프레임도 통째로 보이지 않게). 섬 중심은 시작 칸보다 반 칸 아래다.
         Vector3 islandCenter = center - new Vector3(0f, cell.y * 0.5f, 0f);
+        // 티어 전환이면 다시 깔기 전에 지금 구름의 그림을 떠 둔다(파도 선이 닿으면 서서히 지운다). 진입은 암전 아래라 그냥 바뀐다.
+        if (false == _bEntryWave) cloudFade.CaptureBefore();
+        environmentSystem.SpawnRoguelikeEnvironmentObjs(GetFieldViewRect(islandCenter, fieldCloudSettings.viewMargin), fieldCloudSettings.count,
+            fieldCloudSettings.minSpeed, fieldCloudSettings.maxSpeed, fieldCloudSettings.alpha);
         tileWave.PrepareAfterGenerate(islandCenter, islandReferenceViewSize * 0.5f, _bEntryWave);
+        // 구름·물 장식은 파도 선을 따라 바뀐다. 파도가 진입으로 되돌렸는지는 IsEntryWave로 본다.
+        cloudFade.PrepareAfterSpawn(fieldCloudSettings.alpha, fieldCloudSettings.fadeSeconds);
+        waterDeco.Prepare(GetFieldViewRect(islandCenter, 0f), tileWave, tileWave.IsEntryWave);
         waveStrategy?.ConfigureField(center, islandRadiusX, islandRadiusY, null != balance ? balance.fieldEdgeInsetCells : 0);
         // 오프로드 차선은 화면에 보이는 섬(칸 중심 기준 타원)에 맞춰야 테두리 타일 위에서 소환된다. 시작 칸이 아니라 섬 중심을 넘긴다.
         skillController?.SetField(islandCenter, islandRadiusX, islandRadiusY);
@@ -717,6 +726,23 @@ public partial class RoguelikeSystem
 
         // 전략이 지연 개방 칸까지 이미 후보에 넣었다(RoguelikeWaveTreeStrategySO.SpawnInitialTrees).
         inDungeonObjectManager.CancelDelayedGrassOpenForRun();
+    }
+
+    /// <summary>
+    /// 섬 중앙에 고정된 카메라가 보는 화면 영역(월드). 기준 화면보다 넓은 해상도면 실제 화면 크기를 쓰고 _margin만큼 더 넓힌다.
+    /// </summary>
+    private Rect GetFieldViewRect(Vector3 _islandCenter, float _margin)
+    {
+        Vector2 size = islandReferenceViewSize;
+        Camera cam = Camera.main;
+        if (null != cam && cam.orthographic)
+        {
+            size.x = Mathf.Max(size.x, cam.orthographicSize * 2f * cam.aspect);
+            size.y = Mathf.Max(size.y, cam.orthographicSize * 2f);
+        }
+
+        size += Vector2.one * (Mathf.Max(0f, _margin) * 2f);
+        return new Rect((Vector2)_islandCenter - size * 0.5f, size);
     }
 
     /// <summary>캐릭터를 필드 시작 지점에 세우고 카메라를 붙인다.</summary>

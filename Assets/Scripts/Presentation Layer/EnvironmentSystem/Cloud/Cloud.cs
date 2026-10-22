@@ -9,6 +9,9 @@ public class Cloud : EnvironmentObj
     private float timeOffset;
     private float initialY;
 
+    /// <summary>수평 이동 속도(월드 단위/초, +x 방향).</summary>
+    public float MoveSpeed => moveSpeed;
+
     public override void Initialize()
     {
         base.Initialize();

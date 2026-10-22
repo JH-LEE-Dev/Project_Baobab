@@ -74,6 +74,10 @@ public class EnvironmentObjManager : MonoBehaviour
 
     private List<int> cellIndices = new List<int>(100); // GC Alloc 방지용 재사용 리스트
 
+    // [로그라이크 전용] 구름 반사의 불투명도(OnWaterCloud 셰이더 _Alpha)를 구름마다 덮어쓴다. 공용 재질은 건드리지 않는다.
+    private static readonly int cloudAlphaPropertyId = Shader.PropertyToID("_Alpha");
+    private MaterialPropertyBlock roguelikeCloudPropertyBlock;
+
     [Space]
     [Header("BirdSpawnPoint")]
     [SerializeField] Transform birdSpawnPoint_LU;
@@ -164,6 +168,106 @@ public class EnvironmentObjManager : MonoBehaviour
         ReleaseAll();
         SpawnTownClouds();
         SpawnTownBirdShadows();
+    }
+
+    /// <summary>
+    /// [로그라이크 전용] 구름을 맵 전체가 아니라 섬 한 화면(_viewRect) 둘레에만 촘촘히 깔고, 새 그림자는 본편 던전과 같게 깐다.
+    /// 본편 분포(맵 전체에 cloudCnt개)로는 섬 둘레의 좁은 물에 구름이 두세 개만 걸친다.
+    /// 구름은 화면 좌우 밖(구름 반 폭 바깥)에서 반대편으로 넘어가 이어 흐르므로 화면 안에서 갑자기 생기거나 사라지지 않는다.
+    /// </summary>
+    public void SpawnRoguelikeEnvironmentObjs(Rect _viewRect, int _cloudCnt, float _cloudMinSpeed, float _cloudMaxSpeed, float _cloudAlpha)
+    {
+        ReleaseAll();
+        SpawnRoguelikeClouds(_viewRect, _cloudCnt, _cloudMinSpeed, _cloudMaxSpeed, _cloudAlpha);
+        SpawnBirdShadows();
+    }
+
+    private void SpawnRoguelikeClouds(Rect _viewRect, int _cloudCnt, float _minSpeed, float _maxSpeed, float _alpha)
+    {
+        if (currentStageEnvData == null || _cloudCnt <= 0) return;
+        if (false == objPools.ContainsKey(EnvironmentObjType.Cloud)) return;
+
+        List<Sprite> spritesToUse = (currentStageEnvData.CloudSprites != null && currentStageEnvData.CloudSprites.Count > 0)
+            ? currentStageEnvData.CloudSprites
+            : cloudSprites;
+
+        // 피벗(중심)에서 가장 먼 구름 가장자리까지의 거리. 넘어가는 지점이 화면 밖이 되도록 좌우를 이만큼 넓힌다.
+        Vector2 cloudExtents = Vector2.zero;
+        if (spritesToUse != null)
+        {
+            for (int i = 0; i < spritesToUse.Count; i++)
+            {
+                if (null == spritesToUse[i]) continue;
+                Bounds b = spritesToUse[i].bounds;
+                cloudExtents.x = Mathf.Max(cloudExtents.x, Mathf.Abs(b.min.x), Mathf.Abs(b.max.x));
+                cloudExtents.y = Mathf.Max(cloudExtents.y, Mathf.Abs(b.min.y), Mathf.Abs(b.max.y));
+            }
+        }
+
+        float minX = _viewRect.xMin - cloudExtents.x;
+        float maxX = _viewRect.xMax + cloudExtents.x;
+        // 위아래는 흐르지 않으니 구름 절반이 화면에 걸치는 데까지만 깐다.
+        float minY = _viewRect.yMin - cloudExtents.y * 0.5f;
+        float maxY = _viewRect.yMax + cloudExtents.y * 0.5f;
+
+        float width = Mathf.Max(0.1f, maxX - minX);
+        float height = Mathf.Max(0.1f, maxY - minY);
+
+        int cols = Mathf.CeilToInt(Mathf.Sqrt(_cloudCnt * (width / height)));
+        cols = Mathf.Max(1, cols);
+        int rows = Mathf.CeilToInt((float)_cloudCnt / cols);
+        rows = Mathf.Max(1, rows);
+
+        float cellWidth = width / cols;
+        float cellHeight = height / rows;
+
+        int totalCells = cols * rows;
+
+        if (cellIndices.Capacity < totalCells)
+        {
+            cellIndices.Capacity = totalCells;
+        }
+        cellIndices.Clear();
+
+        for (int i = 0; i < totalCells; i++)
+        {
+            cellIndices.Add(i);
+        }
+
+        for (int i = 0; i < totalCells; i++)
+        {
+            int temp = cellIndices[i];
+            int randomIndex = UnityEngine.Random.Range(i, totalCells);
+            cellIndices[i] = cellIndices[randomIndex];
+            cellIndices[randomIndex] = temp;
+        }
+
+        if (null == roguelikeCloudPropertyBlock) roguelikeCloudPropertyBlock = new MaterialPropertyBlock();
+
+        int toSpawn = Mathf.Min(_cloudCnt, totalCells);
+        for (int i = 0; i < toSpawn; i++)
+        {
+            int cellIdx = cellIndices[i];
+            int row = cellIdx / cols;
+            int col = cellIdx % cols;
+
+            float centerX = minX + (col + 0.5f) * cellWidth;
+            float centerY = minY + (row + 0.5f) * cellHeight;
+
+            float jitterX = UnityEngine.Random.Range(-cellWidth * 0.4f, cellWidth * 0.4f);
+            float jitterY = UnityEngine.Random.Range(-cellHeight * 0.4f, cellHeight * 0.4f);
+
+            Vector3 spawnPos = new Vector3(centerX + jitterX, centerY + jitterY, 0f);
+            EnvironmentObj _obj = SpawnCloudAt(spawnPos, minX, maxX, _minSpeed, _maxSpeed);
+            if (null == _obj) continue;
+
+            SpriteRenderer _sr = _obj.GetComponentInChildren<SpriteRenderer>(true);
+            if (null == _sr) continue;
+
+            _sr.GetPropertyBlock(roguelikeCloudPropertyBlock);
+            roguelikeCloudPropertyBlock.SetFloat(cloudAlphaPropertyId, _alpha);
+            _sr.SetPropertyBlock(roguelikeCloudPropertyBlock);
+        }
     }
 
     private void SpawnTownClouds()
@@ -340,8 +444,13 @@ public class EnvironmentObjManager : MonoBehaviour
 
     private void SpawnCloudAt(Vector3 _pos, float _minX, float _maxX)
     {
+        SpawnCloudAt(_pos, _minX, _maxX, cloudMinSpeed, cloudMaxSpeed);
+    }
+
+    private EnvironmentObj SpawnCloudAt(Vector3 _pos, float _minX, float _maxX, float _minSpeed, float _maxSpeed)
+    {
         if (false == objPools.TryGetValue(EnvironmentObjType.Cloud, out IObjectPool<EnvironmentObj> _pool))
-            return;
+            return null;
 
         if (null == cullingGroup)
         {
@@ -360,7 +469,7 @@ public class EnvironmentObjManager : MonoBehaviour
 
         if (_obj is Cloud cloud)
         {
-            float moveSpeed = UnityEngine.Random.Range(cloudMinSpeed, cloudMaxSpeed); // 수평 이동 속도
+            float moveSpeed = UnityEngine.Random.Range(_minSpeed, _maxSpeed); // 수평 이동 속도
             cloud.SetupCloud(spritesToUse, colorToUse, moveSpeed, _minX, _maxX);
         }
 
@@ -378,6 +487,7 @@ public class EnvironmentObjManager : MonoBehaviour
 
         bool _shouldBeActive = cullingGroup.IsVisible(_obj.PoolIndex) && (cullingGroup.GetDistance(_obj.PoolIndex) == 0);
         UpdateObjVisibility(_obj, _shouldBeActive);
+        return _obj;
     }
 
     private void SpawnBirdShadows()
