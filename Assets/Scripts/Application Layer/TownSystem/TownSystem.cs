@@ -187,38 +187,38 @@ public class TownSystem : MonoBehaviour
     }
 
     /// <summary>
-    /// 마을 강아지를 플레이어 도착 지점 근처에 내보낸다. 강아지가 피할(그리고 플레이어가 서 있으면 강아지보다
-    /// 우선하는) 코어루프 기물의 상호작용 영역도 여기서 다시 등록한다 - 차량은 마을에 들어올 때마다 새로 연결된다.
+    /// 마을 강아지를 플레이어 도착 지점 근처에 내보낸다. 플레이어가 서 있으면 강아지보다
+    /// 우선하는 코어루프 기물의 상호작용 영역도 여기서 다시 등록한다 - 차량은 마을에 들어올 때마다 새로 연결된다.
     /// </summary>
     private void EnterPuppyTown(Transform _arrivalAnchor)
     {
         if (puppyManager == null)
             return;
 
-        puppyManager.ClearAvoidZones();
-        puppyManager.AddAvoidZone(tentManager.Tent != null ? tentManager.Tent.InteractionCollider : null);
+        puppyManager.ClearPriorityZones();
+        puppyManager.AddPriorityZone(tentManager.Tent != null ? tentManager.Tent.InteractionCollider : null);
 
         if (logProcessingManager.shopNPC != null)
-            puppyManager.AddAvoidZone(logProcessingManager.shopNPC.GetComponent<Collider2D>());
+            puppyManager.AddPriorityZone(logProcessingManager.shopNPC.GetComponent<Collider2D>());
 
         if (logProcessingManager.logContainer != null)
-            puppyManager.AddAvoidZone(logProcessingManager.logContainer.GetComponent<Collider2D>());
+            puppyManager.AddPriorityZone(logProcessingManager.logContainer.GetComponent<Collider2D>());
 
         if (offroadContainer != null)
-            puppyManager.AddAvoidZone(offroadContainer.col);
+            puppyManager.AddPriorityZone(offroadContainer.col);
 
         OffroadVehicleObj offroadVehicle = townObjectManager.offroadVehicle;
         if (offroadVehicle != null)
         {
-            puppyManager.AddAvoidZone(offroadVehicle.col);
+            puppyManager.AddPriorityZone(offroadVehicle.col);
 
             RepairBox repairBox = offroadVehicle.GetComponentInChildren<RepairBox>(true);
             if (repairBox != null)
-                puppyManager.AddAvoidZone(repairBox.col);
+                puppyManager.AddPriorityZone(repairBox.col);
         }
 
         ITilemapDataProvider tilemapDataProvider = townUnitSpawner != null ? townUnitSpawner.TilemapDataProvider : null;
-        puppyManager.EnterTown(tilemapDataProvider, _arrivalAnchor);
+        puppyManager.EnterTown(tilemapDataProvider, townTileManager, _arrivalAnchor);
     }
 
     private void BindEvents()
@@ -986,13 +986,13 @@ public class TownSystem : MonoBehaviour
         townTileManager.ApplyLootPillarColliderState(_inDungeonObjectManager);
 
         // 기둥은 StartTownSystem() 뒤에 새로 세워지므로(EnterPuppyTown 시점엔 아직 없다), 그 상호작용 영역은
-        // 기둥이 세워진 직후인 여기서 강아지 회피·우선 대상에 더한다. 지난 방문의 기둥은 EnterPuppyTown이 이미 비웠다.
+        // 기둥이 세워진 직후인 여기서 강아지보다 우선하는 대상에 더한다. 지난 방문의 기둥은 EnterPuppyTown이 이미 비웠다.
         if (puppyManager != null && lootPillarManager != null)
         {
             for (int i = 0; i < lootPillarManager.SpawnedPillars.Count; i++)
             {
                 if (lootPillarManager.SpawnedPillars[i] != null)
-                    puppyManager.AddAvoidZone(lootPillarManager.SpawnedPillars[i].GetComponent<Collider2D>());
+                    puppyManager.AddPriorityZone(lootPillarManager.SpawnedPillars[i].GetComponent<Collider2D>());
             }
         }
     }

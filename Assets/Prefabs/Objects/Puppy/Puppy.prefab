@@ -432,6 +432,62 @@ MonoBehaviour:
   popWidthRatio: 0.6
   popFrequency: 4
   popDamping: 6
+  hopDuration: 0.22
+  hopHeight: 0.08
+  hopStretch: 0.12
+--- !u!1 &7633258820745970967
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8962903042777384796}
+  - component: {fileID: 7688010565761677916}
+  m_Layer: 16
+  m_Name: VFX
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8962903042777384796
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7633258820745970967}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2502976370886332209}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7688010565761677916
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7633258820745970967}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 0
+  initializeOnAwake: 1
+  vfxPoolDataList:
+  - vfxTag: Dust
+    effectPrefab: {fileID: 1195041634881441715, guid: 1162bcec792bdfc449d62914c2b4e633, type: 3}
+    initialPoolSize: 6
+    allowDynamicExpansion: 1
+    maxPoolSize: 10
+    uiParticleScale: 1
 --- !u!1 &8431164261311557408
 GameObject:
   m_ObjectHideFlags: 0
@@ -465,6 +521,7 @@ Transform:
   m_Children:
   - {fileID: 4947164592641761462}
   - {fileID: 1875977610555729427}
+  - {fileID: 8962903042777384796}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &180446622343410912
@@ -483,6 +540,9 @@ MonoBehaviour:
   sortingGroup: {fileID: 4647243480379705491}
   outlineObject: {fileID: 1602652230094474287}
   popEffect: {fileID: 8232599026579501607}
+  vfxComponent: {fileID: 7688010565761677916}
+  dustInterval: 0.2
+  dustOffsetDistance: 0.08
   southSprites:
   - {fileID: -1057516210466262196, guid: 217add19405031c4a820d88801b8b8b6, type: 3}
   - {fileID: -537098380180518905, guid: 217add19405031c4a820d88801b8b8b6, type: 3}
@@ -577,8 +637,8 @@ MonoBehaviour:
   daydreamWagFps: 5
   wagFpsFar: 3
   wagFpsNear: 14
-  wagFarDistance: 6
-  wagNearDistance: 1
+  wagFarDistance: 3
+  wagNearDistance: 0.5
   runSpeed: 3.6
   catchUpDistance: 3.5
   catchUpMultiplier: 1.4
@@ -593,10 +653,15 @@ MonoBehaviour:
   sniffDuration: {x: 1, y: 2}
   eatDuration: 5
   circleRadius: 1.1
+  circleApproachMaxDuration: 6
+  circleMinWalkableRatio: 0.6
   islandLaps: {x: 0.7, y: 1.3}
   islandMaxDuration: 45
   fetchDistance: {x: 3, y: 6}
-  fetchPause: 0.4
+  fetchBarkDuration: 1
+  fetchBarkTimes:
+  - 0.15
+  - 0.55
   fetchMaxDuration: 20
   eatOffset: {x: 0.32, y: 0.2}
   eatApproachMaxDuration: 15

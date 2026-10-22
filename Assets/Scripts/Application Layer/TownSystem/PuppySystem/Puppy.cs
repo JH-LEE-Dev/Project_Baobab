@@ -136,6 +136,14 @@ public class Puppy : MonoBehaviour
     [SerializeField] private GameObject outlineObject;
     [SerializeField] private PuppyPopEffect popEffect;
 
+    [Header("Dust (달릴 때 발밑 먼지)")]
+    [SerializeField, Tooltip("캐릭터와 같은 먼지 이펙트(VFX_Dust)를 작게 줄인 VFX_PuppyDust를 \"Dust\" 태그로 풀링한다.")]
+    private VFXComponent vfxComponent;
+    [SerializeField, Tooltip("달리는 동안 먼지를 내는 간격(초). Run 2프레임 한 바퀴마다 한 번.")]
+    private float dustInterval = 0.2f;
+    [SerializeField, Tooltip("발밑에서 진행 반대 방향으로 이만큼 뒤에 먼지를 낸다.")]
+    private float dustOffsetDistance = 0.08f;
+
     [Header("Sprites (Puppy 0~14 / Puppy_Sleep 0~5)")]
     [SerializeField] private Sprite[] southSprites = new Sprite[15];
     [SerializeField] private Sprite[] southEastSprites = new Sprite[15];
@@ -153,8 +161,8 @@ public class Puppy : MonoBehaviour
     [SerializeField, Tooltip("멍때릴 때(2)의 꼬리 흔드는 속도.")] private float daydreamWagFps = 5f;
     [SerializeField, Tooltip("주인이 멀리 있을 때 꼬리 흔드는 속도.")] private float wagFpsFar = 3f;
     [SerializeField, Tooltip("주인이 바로 옆에 있을 때 꼬리 흔드는 속도.")] private float wagFpsNear = 14f;
-    [SerializeField] private float wagFarDistance = 6f;
-    [SerializeField] private float wagNearDistance = 1f;
+    [SerializeField] private float wagFarDistance = 3f;
+    [SerializeField] private float wagNearDistance = 0.5f;
 
     [Header("Movement")]
     [SerializeField] private float runSpeed = 3.6f;
@@ -164,8 +172,6 @@ public class Puppy : MonoBehaviour
     [SerializeField] private float repathInterval = 0.3f;
     [SerializeField, Tooltip("주인을 따라가다 멈추는 거리.")] private float followStopDistance = 0.9f;
     [SerializeField, Tooltip("멈춰 있다가 다시 따라가기 시작하는 거리.")] private float followResumeDistance = 1.5f;
-    [SerializeField, Tooltip("코어루프 기물 영역 밖으로 걸어 나가는 데 쓸 최대 시간. 못 나가면 그 자리에서 행동을 시작한다.")]
-    private float escapeMaxDuration = 4f;
 
     [Header("Behavior Timing (초, 범위 안 랜덤)")]
     [SerializeField] private Vector2 lookAtOwnerDuration = new Vector2(6f, 10f);
@@ -181,6 +187,8 @@ public class Puppy : MonoBehaviour
     private float circleRadius = 1.1f;
     [SerializeField, Tooltip("주인에게 다가가기만 하다 이 시간이 지나면(원에 붙지 못함) 그만둔다.")]
     private float circleApproachMaxDuration = 6f;
+    [SerializeField, Range(0f, 1f), Tooltip("주인 둘레 원 중 걸을 수 있는 곳이 이 비율보다 적으면 돌지 않고 다음 행동으로 넘어간다.")]
+    private float circleMinWalkableRatio = 0.6f;
 
     [Header("Run Around Island (4)")]
     [SerializeField] private Vector2 islandLaps = new Vector2(0.7f, 1.3f);
@@ -189,7 +197,9 @@ public class Puppy : MonoBehaviour
 
     [Header("Fetch And Return (5)")]
     [SerializeField] private Vector2 fetchDistance = new Vector2(3f, 6f);
-    [SerializeField, Tooltip("찍은 곳에서 잠깐 멈춰 있는 시간.")] private float fetchPause = 0.4f;
+    [SerializeField, Tooltip("찍은 곳에서 주인을 바라보며 짖는 시간.")] private float fetchBarkDuration = 1f;
+    [SerializeField, Tooltip("찍은 곳에 도착한 뒤 짖는 시점(초). 기획: 1초 동안 \"왕왕\" 두 번.")]
+    private float[] fetchBarkTimes = { 0.15f, 0.55f };
     [SerializeField] private float fetchMaxDuration = 20f;
 
     [Header("Eat (9)")]
@@ -222,6 +232,8 @@ public class Puppy : MonoBehaviour
     private float circleAngle = 0f;
     private float circleDirection = 1f;
     private float circleBlockedTimer = 0f;
+    private float circleLastTargetDistance = float.MaxValue;
+    private float circleCheckTimer = 0f;
 
     // 4: 섬 일주
     private int islandWaypointIndex = 0;
@@ -230,18 +242,18 @@ public class Puppy : MonoBehaviour
     private float islandAccumAngle = 0f;
     private float islandLastAngle = 0f;
 
+    // 5: 찍은 곳에서 짖은 횟수
+    private int fetchBarkCount = 0;
+
     // 6: 따라가는 중인지(멈춰 있는지)
     private bool bFollowMoving = true;
     private Vector2 followStopOwnerPosition;
 
-    // 멈춰 있는 행동을 시작하기 전에 코어루프 기물 영역 밖으로 걸어 나가는 중인지
-    private bool bEscapingZone = false;
-    private Vector2 escapePoint;
-    private float escapeTimer = 0f;
-
     // 9: 밥그릇 앞 자리
     private Vector2 eatPoint;
     private float eatStuckTimer = 0f;
+
+    private float dustTimer = 0f;
 
     // 애니메이션
     private EAnim currentAnim = EAnim.StandIdle;
@@ -284,7 +296,6 @@ public class Puppy : MonoBehaviour
         behavior = PuppyBehavior.None;
         pendingBehavior = PuppyBehavior.None;
         bExiting = false;
-        bEscapingZone = false;
         path.Clear();
         pathIndex = 0;
         popEffect.Stop();
@@ -347,13 +358,6 @@ public class Puppy : MonoBehaviour
     // 지금 행동을 끝낼 때 재생해야 할 끝 애니메이션.
     private bool TryGetEndAnim(out EAnim _endAnim)
     {
-        // 영역 밖으로 걸어 나가는 중이면 아직 앉거나 엎드리지 않았으므로 끝 애니메이션이 없다.
-        if (true == bEscapingZone)
-        {
-            _endAnim = EAnim.StandIdle;
-            return false;
-        }
-
         switch (behavior)
         {
             case PuppyBehavior.SitLookAtOwner:
@@ -380,31 +384,17 @@ public class Puppy : MonoBehaviour
     }
 
     // _bSkipIntro: 마을에 도착했을 때 이미 앉아/엎드려/자고 있던 것처럼 시작 애니메이션을 건너뛴다.
-    // _bSkipZoneCheck: 영역 밖으로 걸어 나간 뒤 다시 들어올 때(또는 끝내 못 나갔을 때) 같은 검사를 반복하지 않는다.
-    private void EnterBehavior(PuppyBehavior _behavior, bool _bSkipIntro, bool _bSkipZoneCheck = false)
+    private void EnterBehavior(PuppyBehavior _behavior, bool _bSkipIntro)
     {
         behavior = _behavior;
         pendingBehavior = PuppyBehavior.None;
         bExiting = false;
-        bEscapingZone = false;
         phase = 0;
         phaseTimer = 0f;
         path.Clear();
         pathIndex = 0;
         repathTimer = 0f;
         chaseBlockedTimer = 0f;
-
-        // 기획 규칙 4: 코어루프 기물 상호작용 영역 안에서는 웬만하면 머물지 않는다. 멈춰 있는 행동(바라보기·멍때리기·
-        // 앉기·냄새 맡기·자기)을 영역 안에서 시작하게 됐다면(주인 주변을 돌다 끝난 자리 등) 먼저 밖으로 걸어 나간다.
-        if (false == _bSkipZoneCheck && true == IsStationary(_behavior) && true == manager.TryGetAvoidZoneExit(Position, out Vector2 _exit))
-        {
-            bEscapingZone = true;
-            escapePoint = _exit;
-            escapeTimer = escapeMaxDuration;
-            BuildPath(_exit, true);
-            PlayAnim(EAnim.Run, runFps, true);
-            return;
-        }
 
         switch (_behavior)
         {
@@ -477,12 +467,6 @@ public class Puppy : MonoBehaviour
             return;
         }
 
-        if (true == bEscapingZone)
-        {
-            UpdateEscapeZone(_dt);
-            return;
-        }
-
         switch (behavior)
         {
             case PuppyBehavior.LookAtOwner: UpdateLookAtOwner(_dt); break;
@@ -496,38 +480,6 @@ public class Puppy : MonoBehaviour
             case PuppyBehavior.Eat: UpdateEat(_dt); break;
             case PuppyBehavior.Sleep: UpdateSleep(); break;
         }
-    }
-
-    // 영역 밖 자리까지 달려간 뒤 원래 하려던 행동을 시작한다. 길이 막혀 시간 안에 못 나가면 그 자리에서 시작한다.
-    private void UpdateEscapeZone(float _dt)
-    {
-        PlayAnim(EAnim.Run, runFps);
-
-        bool _bArrived = pathIndex < path.Count
-            ? false
-            : SteerTowards(escapePoint, runSpeed, _dt);
-
-        if (pathIndex < path.Count)
-            StepPath(runSpeed, _dt);
-
-        escapeTimer -= _dt;
-        if (true == _bArrived || escapeTimer <= 0f)
-            EnterBehavior(behavior, false, true);
-    }
-
-    private static bool IsStationary(PuppyBehavior _behavior)
-    {
-        switch (_behavior)
-        {
-            case PuppyBehavior.LookAtOwner:
-            case PuppyBehavior.Daydream:
-            case PuppyBehavior.SitLookAtOwner:
-            case PuppyBehavior.Sniff:
-            case PuppyBehavior.Sleep:
-                return true;
-        }
-
-        return false;
     }
 
     // 1. 가만히 주인을 바라본다
@@ -557,8 +509,8 @@ public class Puppy : MonoBehaviour
         }
 
         // 기획: "주인 주변을 5~7초간 계속 돌고 난 뒤" - 도는 시간(behaviorTimer)은 원을 그리는 동안만 흐른다.
-        // 다가가는 시간은 따로 재서, 주인이 상호작용 영역 안이나 갈 수 없는 곳에 있어 끝내 원에 붙지 못하면
-        // 그만두게 한다(행동이 영영 끝나지 않는 것 방지).
+        // 다가가는 시간은 따로 재서, 주인이 갈 수 없는 곳에 있어 끝내 원에 붙지 못하면 그만두게 한다
+        // (행동이 영영 끝나지 않는 것 방지).
         if (false == bCircling)
         {
             phaseTimer += _dt;
@@ -569,11 +521,7 @@ public class Puppy : MonoBehaviour
             }
         }
 
-        PlayAnim(EAnim.Run, runFps);
-
-        // 주인이 코어루프 기물 상호작용 영역 안에 있으면 주인 대신 영역 밖 기다리는 자리를 중심으로 돈다(기획 규칙 4).
-        // 주인을 중심으로 그대로 돌면 원 대부분이 영역 안에 걸려 강아지가 영역을 드나들게 된다.
-        Vector2 _owner = manager.GetOwnerGoal(Position);
+        Vector2 _owner = manager.OwnerPosition;
         Vector2 _rel = Position - _owner;
 
         // 아이소메트릭 바닥의 원은 화면에서 세로가 절반인 타원이라, 세로를 두 배로 펴서 거리를 잰다.
@@ -585,13 +533,17 @@ public class Puppy : MonoBehaviour
 
         if (false == bCircling)
         {
-            // 너무 멀면 원을 그리기 전에 먼저 주인에게 달려간다. 주인이 영역 안이라 영역 밖 자리에서 멈췄을 때도
-            // (ChaseOwner가 도착을 알림) 그 자리에서 원을 그리기 시작한다 - 원 위의 자리도 영역 밖으로 밀려난다.
+            // 너무 멀면 원을 그리기 전에 먼저 주인에게 달려간다. 갈 수 있는 데까지 와서 멈췄을 때도
+            // (ChaseOwner가 도착을 알림) 그 자리에서 원을 그리기 시작한다.
+            PlayAnim(EAnim.Run, runFps);
             if (_groundDistance > circleRadius + 1.5f && false == ChaseOwner(_dt, circleRadius))
                 return;
 
             bCircling = true;
             phaseTimer = 0f;
+            circleBlockedTimer = 0f;
+            circleCheckTimer = 0f;
+            circleLastTargetDistance = float.MaxValue;
             circleAngle = Mathf.Atan2(_rel.y * 2f, _rel.x);
 
             // 다가가며 쓰던 길이 남아 있으면 원 대신 그 길을 따라가 버리므로 비운다.
@@ -599,28 +551,98 @@ public class Puppy : MonoBehaviour
             pathIndex = 0;
         }
 
-        circleAngle += circleDirection * (runSpeed / circleRadius) * _dt;
-        Vector2 _target = _owner + new Vector2(Mathf.Cos(circleAngle), Mathf.Sin(circleAngle) * 0.5f) * circleRadius;
-        _target = manager.PushOutOfAvoidZones(_target);
+        // 주인 둘레가 나무·건물로 대부분 막혀 있으면(숲 가장자리 등) 돌 수 있는 짧은 구간만 좌우로 왔다 갔다 하며
+        // 떨게 된다. 그런 자리에서는 도는 걸 그만두고 다음 행동으로 넘어간다.
+        circleCheckTimer -= _dt;
+        if (circleCheckTimer <= 0f)
+        {
+            circleCheckTimer = 0.25f;
+            if (GetWalkableCircleRatio(_owner) < circleMinWalkableRatio)
+            {
+                CompleteBehavior();
+                return;
+            }
+        }
 
-        // 도는 길이 나무·물에 막혀 한 걸음도 못 나가면 제자리에서 달리기만 하게 되므로, 잠깐 막혔다 싶으면
-        // 원 위의 자리까지 길찾기로 돌아간다. 그 자리까지도 길이 없으면 반대 방향으로 돌아선다.
-        Vector2 _before = Position;
-        if (pathIndex < path.Count)
+        circleAngle += circleDirection * (runSpeed / circleRadius) * _dt;
+
+        // 원 위의 자리가 집 건물·나무·물 같은 막힌 칸이면 그 자리를 향해 벽에 비비며 떨게 되므로,
+        // 도는 방향으로 다음 걸을 수 있는 자리까지 건너뛴다. 주인 둘레가 전부 막혀 있으면 그 자리에서 기다린다.
+        if (false == TryGetWalkableCirclePoint(_owner, out Vector2 _target))
+        {
+            PlayAnim(EAnim.StandIdle, GetWagFps());
+            FaceOwner();
+        }
+        else if (pathIndex < path.Count)
+        {
+            PlayAnim(EAnim.Run, runFps);
             StepPath(runSpeed * 1.25f, _dt);
+        }
         else
+        {
+            PlayAnim(EAnim.Run, runFps);
+
+            Vector2 _before = Position;
             SteerTowards(_target, runSpeed * 1.25f, _dt);
 
-        circleBlockedTimer = (Position - _before).sqrMagnitude < 0.000001f ? circleBlockedTimer + _dt : 0f;
-        if (circleBlockedTimer >= 0.3f)
-        {
-            circleBlockedTimer = 0f;
-            if (false == BuildPath(_target, true) || 0 == path.Count)
-                circleDirection = -circleDirection;
+            // 한 걸음도 못 나갔거나, 나무·건물에 걸려 미끄러지기만 하며 목표에 가까워지지 못한 채로 잠깐 지나면
+            // 막힌 것이다. 벽에 비비며 떨지 않도록 그 자리까지 길찾기로 돌아가고, 길이 없으면(같은 칸이라 길이
+            // 비는 경우 포함) 원 위의 목표를 도는 방향으로 45도 넘긴다. 방향을 뒤집으면 양쪽이 다 막힌 자리에서
+            // 왔다 갔다 하며 멈춰 버린다.
+            float _targetDistance = (_target - Position).magnitude;
+            bool _bMoved = (Position - _before).sqrMagnitude > 0.000001f;
+            bool _bStalled = false == _bMoved || (_targetDistance > 0.35f && _targetDistance > circleLastTargetDistance - 0.01f);
+            circleBlockedTimer = true == _bStalled ? circleBlockedTimer + _dt : 0f;
+            circleLastTargetDistance = _targetDistance;
+
+            if (circleBlockedTimer >= 0.2f)
+            {
+                circleBlockedTimer = 0f;
+                circleLastTargetDistance = float.MaxValue;
+                if (false == BuildPath(_target, true) || 0 == path.Count)
+                    circleAngle += circleDirection * Mathf.PI * 0.25f;
+            }
         }
 
         behaviorTimer -= _dt;
         if (behaviorTimer <= 0f) CompleteBehavior();
+    }
+
+    // 주인 둘레 원 위 16곳 중 걸을 수 있는 곳의 비율.
+    private float GetWalkableCircleRatio(Vector2 _owner)
+    {
+        const int Samples = 16;
+
+        int _walkable = 0;
+        for (int i = 0; i < Samples; i++)
+        {
+            float _angle = i * Mathf.PI * 2f / Samples;
+            Vector2 _point = _owner + new Vector2(Mathf.Cos(_angle), Mathf.Sin(_angle) * 0.5f) * circleRadius;
+            if (true == manager.IsWalkablePoint(_point)) _walkable++;
+        }
+
+        return (float)_walkable / Samples;
+    }
+
+    // 주인 둘레 원 위에서 지금 각도의 자리가 막혀 있으면 도는 방향으로 22.5도씩 넘기며 걸을 수 있는 자리를 찾는다.
+    private bool TryGetWalkableCirclePoint(Vector2 _owner, out Vector2 _point)
+    {
+        const int SearchSteps = 15;
+        const float SearchStepAngle = Mathf.PI / 8f;
+
+        for (int i = 0; i <= SearchSteps; i++)
+        {
+            float _angle = circleAngle + circleDirection * i * SearchStepAngle;
+            _point = _owner + new Vector2(Mathf.Cos(_angle), Mathf.Sin(_angle) * 0.5f) * circleRadius;
+            if (true == manager.IsWalkablePoint(_point))
+            {
+                circleAngle = _angle;
+                return true;
+            }
+        }
+
+        _point = Position;
+        return false;
     }
 
     // 4. 섬 한 바퀴
@@ -687,7 +709,7 @@ public class Puppy : MonoBehaviour
         IReadOnlyList<Vector2> _waypoints = manager.IslandWaypoints;
         for (int i = 0; i < _waypoints.Count; i++)
         {
-            if (true == BuildPath(_waypoints[islandWaypointIndex], false) && 0 < path.Count)
+            if (true == BuildPath(_waypoints[islandWaypointIndex], true) && 0 < path.Count)
                 return true;
 
             AdvanceIslandWaypoint();
@@ -730,15 +752,26 @@ public class Puppy : MonoBehaviour
                 if (true == StepPath(runSpeed, _dt))
                 {
                     phase = 1;
-                    phaseTimer = fetchPause;
+                    phaseTimer = 0f;
+                    fetchBarkCount = 0;
                 }
                 break;
 
             case 1:
-                // 기획: StandIdle은 주인과 가까울수록 꼬리를 더 빠르게 흔든다(멍때리기(2)만 "적당히").
+                // 찍은 곳에 도착하면 주인을 바라보며 1초 동안 "왕왕" 두 번 짖고(짖을 때마다 콩 튀어오름) 돌아간다.
+                // 기획: StandIdle은 주인과 가까울수록 꼬리를 더 빠르게 흔든다.
                 PlayAnim(EAnim.StandIdle, GetWagFps());
-                phaseTimer -= _dt;
-                if (phaseTimer <= 0f)
+                FaceOwner();
+
+                phaseTimer += _dt;
+                if (fetchBarkCount < fetchBarkTimes.Length && phaseTimer >= fetchBarkTimes[fetchBarkCount])
+                {
+                    fetchBarkCount++;
+                    Sound.Play(SoundID.PuppyBark, transform.position);
+                    popEffect.PlayHop();
+                }
+
+                if (phaseTimer >= fetchBarkDuration)
                 {
                     phase = 2;
                     repathTimer = 0f;
@@ -773,7 +806,7 @@ public class Puppy : MonoBehaviour
             return;
         }
 
-        float _distance = (manager.GetOwnerGoal(Position) - Position).magnitude;
+        float _distance = (manager.OwnerPosition - Position).magnitude;
 
         if (true == bFollowMoving)
         {
@@ -962,7 +995,7 @@ public class Puppy : MonoBehaviour
             case PuppyBehavior.Eat:
                 return null != manager.Bowl && true == manager.Bowl.HasFood;
             case PuppyBehavior.RunAroundIsland:
-                return 4 <= manager.IslandWaypoints.Count;
+                return 3 <= manager.IslandWaypoints.Count;
             case PuppyBehavior.CircleOwner:
             case PuppyBehavior.FetchAndReturn:
             case PuppyBehavior.FollowOwner:
@@ -1045,7 +1078,8 @@ public class Puppy : MonoBehaviour
             else return false;
         }
 
-        FaceTowards(_next - _position);
+        // 미끄러질 때도 가려던 쪽을 본다. 미끄러지는 방향(가로/세로)을 보면 매 프레임 좌우가 뒤집혀 떨려 보인다.
+        FaceTowards(_delta);
         MoveTo(_next);
         return _distance <= _step + 0.02f;
     }
@@ -1053,7 +1087,7 @@ public class Puppy : MonoBehaviour
     // 주인(상호작용 영역 안이면 그 바깥)에게 달려간다. _stopDistance 안에 들어오면 true.
     private bool ChaseOwner(float _dt, float _stopDistance)
     {
-        Vector2 _goal = manager.GetOwnerGoal(Position);
+        Vector2 _goal = manager.OwnerPosition;
         float _distance = (_goal - Position).magnitude;
         if (_distance <= _stopDistance) return true;
 
@@ -1231,8 +1265,31 @@ public class Puppy : MonoBehaviour
         if (null == manager || PuppyBehavior.None == behavior) return;
 
         float _dt = Time.deltaTime;
+        Vector2 _before = Position;
         UpdateBehavior(_dt);
         UpdateAnim(_dt);
+        UpdateDust(_before, _dt);
+    }
+
+    // 달리는 동안(Run 애니메이션 + 실제로 움직임) 일정 간격으로 발밑에 작은 먼지를 낸다. 캐릭터의 발걸음 먼지와 같은 방식.
+    private void UpdateDust(Vector2 _before, float _dt)
+    {
+        Vector2 _moveDelta = Position - _before;
+        if (EAnim.Run != currentAnim || _moveDelta.sqrMagnitude < 0.0000001f || null == vfxComponent)
+        {
+            dustTimer = 0f;
+            return;
+        }
+
+        dustTimer += _dt;
+        if (dustTimer < dustInterval) return;
+
+        dustTimer -= dustInterval;
+
+        Vector2 _spawn = Position - _moveDelta.normalized * dustOffsetDistance;
+        ParticleSystem _effect = vfxComponent.Play("Dust", _spawn, Quaternion.identity);
+        if (null != _effect)
+            vfxComponent.SetSortingSettings(_effect, bodyRenderer.sortingLayerID, sortingGroup.sortingOrder);
     }
 
     private void LateUpdate()
