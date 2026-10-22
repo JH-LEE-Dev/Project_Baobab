@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 717c3149918b39442ad5e4699f094e2e
+guid: 025532f434c1eb14ca89838cff4318bc
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 4968738396916815309
-    second: ThresholdStripBase_0
+      213: 5609574146175043028
+    second: MiniFillWhite_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: ThresholdStripBase_0
+      name: MiniFillWhite_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 0
+        y: 2
         width: 120
-        height: 4
+        height: 12
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: dc5121a1f3184f440800000000000000
-      internalID: 4968738396916815309
+      spriteID: 4d58af317f539dd40800000000000000
+      internalID: 5609574146175043028
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      ThresholdStripBase_0: 4968738396916815309
+      MiniFillWhite_0: 5609574146175043028
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
