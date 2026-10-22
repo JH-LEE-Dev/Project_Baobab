@@ -30,16 +30,18 @@ public struct CardOfferContext
 }
 
 /// <summary>
-/// 카드 제시 파이프라인. 기획서 v2.5 4-2 "카드 노출 규칙"의 구성 우선순위(프리즘 > MAX 레벨 > 패시브 2장 보장 > 랜덤)를 그대로 따른다.
+/// 카드 제시 파이프라인. 기획서 v2.6 4-2 "카드 노출 규칙"의 구성 우선순위(프리즘 > MAX 레벨 > 패시브 2장 보장 > 랜덤, 액티브 최소 1장)를 그대로 따른다.
 ///   0. 제외: MAX·배타 그룹·보유 계약·조건 미충족 프리즘을 뺀다. (가장 먼저라 보장 노출로 되살아나지 않는다)
 ///   1. 프리즘 · MAX 보장 노출: 프리즘 조건 카드와 에메랄드(MAX 직전 레벨 보유) 카드를 합쳐 한 번에 cap(2)장까지. 못 넣은 카드는 다음 선택으로 이월된다.
 ///      서로 배타인 프리즘이 함께 대기 중이면 cap과 무관하게 함께 노출한다(최대 제시 수).
 ///   2. 공통 패시브 보장: 남은 칸에 공통 패시브를 guaranteedPassiveCount(2)장까지 가중치로 넣는다. 첫 선택은 제외.
 ///   3. 파트너 확정 노출: 조합 재료 한 장이 MAX면 파트너를 남은 칸에 1장 넣는다(부록 A-1 "MAX면 한 선택에 1장 확실 노출").
 ///   4. 가중치 랜덤: 남은 칸을 종류 비중 × 업그레이드 우선 × 파트너 유도(편향 상한 적용)로 뽑는다.
+///   5. 액티브 최소 1장: 제시에 액티브가 없으면 랜덤 칸(없으면 패시브 보장 칸) 하나를 액티브 1장으로 바꾼다.
 ///
-/// 리롤은 위 우선순위를 쓰지 않는다: 제외만 거친 노출 가능 카드에서 균등하게 진짜 랜덤으로 뽑는다. 방금 나온 카드도 다시 나올 수 있고,
-/// 한 선택 안에서는 같은 카드가 두 번 나오지 않는다. 리롤로 나오지 않은 프리즘 · MAX는 조건이 유지되는 동안 다음 선택에 다시 보장된다.
+/// 리롤은 위 우선순위를 쓰지 않는다: 제외만 거친 노출 가능 카드에서 균등하게 진짜 랜덤으로 뽑고, 액티브 최소 1장 보장만 적용한다.
+/// 방금 나온 카드도 다시 나올 수 있고, 한 선택 안에서는 같은 카드가 두 번 나오지 않는다. 리롤로 나오지 않은 프리즘 · MAX는
+/// 조건이 유지되는 동안 다음 선택에 다시 보장된다.
 ///
 /// 후보가 모자라면 있는 만큼만 넣는다(MAX 카드나 보유 계약으로 채우지 않는다).
 /// 리스트는 모두 재사용하므로 호출마다 할당이 없다.
@@ -88,13 +90,18 @@ public sealed class CardOfferGenerator
         if (_ctx.bReroll)
         {
             FillUniformRandom(in _ctx, slots, _results);
+            // 리롤은 4칸 모두 랜덤 칸이다.
+            EnsureActive(in _ctx, _results, 0, 0, true);
         }
         else
         {
             FillGuaranteed(in _ctx, slots, _results);
+            int passiveStart = _results.Count;
             FillGuaranteedPassives(in _ctx, slots, _results);
+            int randomStart = _results.Count;
             FillForcedPartner(in _ctx, slots, _results);
             FillWeighted(in _ctx, slots, _results);
+            EnsureActive(in _ctx, _results, randomStart, passiveStart, false);
         }
 
         Shuffle(_results);
@@ -273,7 +280,7 @@ public sealed class CardOfferGenerator
         int target = Mathf.Min(_results.Count + Mathf.Max(0, _ctx.balance.guaranteedPassiveCount), _slots);
         while (_results.Count < target)
         {
-            int pick = PickWeighted(in _ctx, true);
+            int pick = PickWeighted(in _ctx, ECardKind.Passive);
             if (pick < 0) break;
 
             CardDefinitionSO card = candidates[pick];
@@ -335,7 +342,7 @@ public sealed class CardOfferGenerator
     {
         while (_results.Count < _slots)
         {
-            int pick = PickWeighted(in _ctx, false);
+            int pick = PickWeighted(in _ctx, null);
             if (pick < 0) break;
 
             CardDefinitionSO card = candidates[pick];
@@ -344,13 +351,13 @@ public sealed class CardOfferGenerator
         }
     }
 
-    /// <summary>후보 중 하나를 가중치로 뽑아 인덱스를 돌려준다. _bPassiveOnly면 공통 패시브만 뽑는다. 없으면 -1.</summary>
-    private int PickWeighted(in CardOfferContext _ctx, bool _bPassiveOnly)
+    /// <summary>후보 중 하나를 가중치로 뽑아 인덱스를 돌려준다. _onlyKind가 있으면 그 종류만 뽑는다. 없으면 -1.</summary>
+    private int PickWeighted(in CardOfferContext _ctx, ECardKind? _onlyKind)
     {
         float total = 0f;
         for (int i = 0; i < candidates.Count; i++)
         {
-            if (_bPassiveOnly && ECardKind.Passive != candidates[i].kind) continue;
+            if (_onlyKind.HasValue && _onlyKind.Value != candidates[i].kind) continue;
             total += GetWeight(in _ctx, candidates[i]);
         }
 
@@ -362,7 +369,7 @@ public sealed class CardOfferGenerator
 
         for (int i = 0; i < candidates.Count; i++)
         {
-            if (_bPassiveOnly && ECardKind.Passive != candidates[i].kind) continue;
+            if (_onlyKind.HasValue && _onlyKind.Value != candidates[i].kind) continue;
 
             float weight = GetWeight(in _ctx, candidates[i]);
             if (weight <= 0f) continue;
@@ -415,6 +422,54 @@ public sealed class CardOfferGenerator
         }
 
         return false;
+    }
+
+    // // 5. 액티브 최소 1장 보장 (기획서 v2.6 4-2 ⑤)
+
+    /// <summary>
+    /// 제시에 액티브(에메랄드 액티브 MAX 카드 포함)가 한 장도 없으면, 노출 가능한 액티브 1장으로 랜덤 칸 하나를 바꾼다.
+    /// 랜덤 칸이 없으면 패시브 보장 칸 하나를 바꾼다. 프리즘 · MAX 보장 칸은 바꾸지 않는다. 노출 가능한 액티브가 없으면 그대로 둔다.
+    /// _randomStart · _passiveStart는 랜덤 칸 · 패시브 보장 칸이 시작하는 인덱스(셔플 전)다. 리롤은 진짜 랜덤이라 균등하게 뽑는다.
+    /// </summary>
+    private void EnsureActive(in CardOfferContext _ctx, List<CardOffer> _results, int _randomStart, int _passiveStart, bool _bUniform)
+    {
+        if (0 == _results.Count) return;
+
+        for (int i = 0; i < _results.Count; i++)
+        {
+            if (ECardKind.Active == _results[i].card.kind) return;
+        }
+
+        int replace = _results.Count > _randomStart ? _results.Count - 1 : _randomStart > _passiveStart ? _randomStart - 1 : -1;
+        if (replace < 0) return;
+
+        int pick = _bUniform ? PickUniform(ECardKind.Active) : PickWeighted(in _ctx, ECardKind.Active);
+        if (pick < 0) return;
+
+        CardDefinitionSO card = candidates[pick];
+        candidates.RemoveAt(pick);
+        _results[replace] = CreateOffer(in _ctx, card, false);
+    }
+
+    /// <summary>후보 중 _kind 카드 하나를 균등하게 뽑아 인덱스를 돌려준다. 없으면 -1.</summary>
+    private int PickUniform(ECardKind _kind)
+    {
+        int count = 0;
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            if (_kind == candidates[i].kind) count++;
+        }
+
+        if (0 == count) return -1;
+
+        int nth = rng.Next(count);
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            if (_kind != candidates[i].kind) continue;
+            if (0 == nth--) return i;
+        }
+
+        return -1;
     }
 
     // // 리롤: 진짜 랜덤

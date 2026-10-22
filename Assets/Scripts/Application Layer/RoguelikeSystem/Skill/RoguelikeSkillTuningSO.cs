@@ -142,20 +142,16 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     [Tooltip("부메랑 타격 1회당 회전베기 1회(기획서). 회전베기는 캐릭터 중심이라 한 프레임에 여러 그루를 맞혀도 한 번만 친다(같은 공격이 겹쳐 쌓이지 않게). 값을 주면 그 간격(초) 안의 타격은 건너뛴다(밸런스용).")]
     public float spinBoomerangCooldown = 0f;
 
-    [Header("조합: 포자 수류탄 + 드론 / 오프로드 / 충격파 (포자 폭발, 기획서 v2.5 6-2 · C-2 '연쇄 폭발')")]
-    [Tooltip("포자 폭발 한 번의 반경(월드). 포자 수류탄의 범위%로 넓어진다.")]
-    public float sporeComboExplosionRadius = 1.6f;
-    [Tooltip("포자 폭발 한 번의 피해. 공격력 증가(피해%)가 적용된다.")]
-    public float sporeComboExplosionDamage = 40f;
-    [Tooltip("한 프레임에 터지는 포자 폭발 수의 상한. 넘친 몫은 다음 프레임으로 미룬다.")]
+    [Header("조합: 포자 수류탄 + 드론 / 오프로드 / 충격파 (포자 수류탄 대폭발 + 오염, 기획서 v2.6 6-2 · C-2 '연쇄 폭발')")]
+    [Tooltip("한 프레임에 일으키는 대폭발 수의 상한. 넘친 몫은 다음 프레임으로 미룬다. 대폭발의 범위 · 피해 · 오염은 위 포자폭탄 값을 그대로 쓴다.")]
     public int sporeComboMaxExplosionsPerFrame = 8;
-    [Tooltip("터지기를 기다리는 포자 폭발 수의 상한. 넘치면 새 예약은 버린다(드론 체인 · 충격파가 한꺼번에 많은 나무를 맞힐 때).")]
+    [Tooltip("일어나기를 기다리는 대폭발 수의 상한. 넘치면 새 예약은 버린다(드론 체인 · 충격파가 한꺼번에 많은 나무를 맞힐 때).")]
     public int sporeComboMaxPending = 48;
-    [Tooltip("같은 자리 재폭발 제한: 최근 이 시간(초) 안에 병합 반경 안에서 터졌으면 다시 터지지 않는다.")]
+    [Tooltip("같은 자리(같은 나무) 재발동 제한: 최근 이 시간(초) 안에 병합 반경 안에서 일어났으면 다시 일어나지 않는다.")]
     public float sporeComboRepeatCooldown = 0.5f;
-    [Tooltip("같은 자리로 보는 거리(월드). 붙어 선 나무를 한 번에 맞혀도 같은 자리 폭발이 겹쳐 쌓이지 않게 한다.")]
+    [Tooltip("같은 자리로 보는 거리(월드). 붙어 선 나무를 한 번에 맞혀도 같은 자리 대폭발이 겹쳐 쌓이지 않게 한다.")]
     public float sporeComboMergeRadius = 0.6f;
-    [Tooltip("방구차: 오프로드가 이 거리(월드)를 달릴 때마다 지나간 자리에 포자 폭발.")]
+    [Tooltip("방구차: 오프로드가 이 거리(월드)를 달릴 때마다 지나가는 경로에 대폭발.")]
     public float sporeOffroadSpacing = 1.5f;
     [Tooltip("포자 충격파: 충격파 그림에 곱하는 색. 충격파 그림이 흰색이라 이 색이 그대로 보인다. 기본은 본편 포자 대폭발 팔레트의 초록(143, 217, 138).")]
     public Color sporeShockwaveColor = new Color(143f / 255f, 217f / 255f, 138f / 255f, 1f);

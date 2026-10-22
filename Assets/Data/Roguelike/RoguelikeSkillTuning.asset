@@ -67,8 +67,6 @@ MonoBehaviour:
   spinBoomerangRadius: 2.2
   spinBoomerangDamageMultiplier: 1
   spinBoomerangCooldown: 0
-  sporeComboExplosionRadius: 1.6
-  sporeComboExplosionDamage: 40
   sporeComboMaxExplosionsPerFrame: 8
   sporeComboMaxPending: 48
   sporeComboRepeatCooldown: 0.5

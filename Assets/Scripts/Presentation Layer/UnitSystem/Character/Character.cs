@@ -1601,7 +1601,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         droneChainZapPoints.Add(primaryTopPos);
         _drone.PlayAtkHitVfx(primaryTopPos);
 
-        // [로그라이크] 레이저가 맞힌 나무의 바닥 위치(포자 레이저의 포자 폭발 자리). 본편은 듣는 쪽이 없어 모으지 않는다.
+        // [로그라이크] 레이저가 맞힌 나무의 바닥 위치(포자 레이저의 대폭발 자리). 본편은 듣는 쪽이 없어 모으지 않는다.
         bool bCollectHitGround = RunCombatHooks.HasDroneLaserListener;
         droneChainHitGroundPoints.Clear();
         if (bCollectHitGround) droneChainHitGroundPoints.Add(primaryTransform.position);

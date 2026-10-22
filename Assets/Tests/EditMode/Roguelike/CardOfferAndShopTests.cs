@@ -178,6 +178,8 @@ public class CardOfferAndShopTests
         sporeDrone.exclusiveGroup = 3;
         List<CardDefinitionSO> cards = new List<CardDefinitionSO> { spore, offroad, drone, sporeOffroad, sporeDrone };
         for (int i = 0; i < 40; i++) cards.Add(factory.CreateCard("p" + i, ECardKind.Passive));
+        // 액티브 최소 1장 보장(v2.6)이 노출 가능한 액티브 중에서 고르므로, 드론만 남지 않게 다른 액티브를 섞는다.
+        for (int i = 0; i < 10; i++) cards.Add(factory.CreateCard("a" + i, ECardKind.Active, ERoguelikeSkill.Spin));
         InitShop(factory.CreateDatabase(cards.ToArray()));
 
         for (int i = 0; i < 7; i++)
@@ -343,6 +345,77 @@ public class CardOfferAndShopTests
         bool bGuaranteedBack = false;
         for (int i = 0; i < shop.Offers.Count; i++) bGuaranteedBack |= shop.Offers[i].card == target && shop.Offers[i].bGuaranteed;
         Assert.IsTrue(bGuaranteedBack);
+    }
+
+    [Test]
+    public void ActiveAtLeastOne_EveryOfferAndReroll()
+    {
+        // 기획서 v2.6 4-2 ⑤: 패시브 · 계약이 훨씬 많아도 제시와 리롤 모두 액티브가 최소 1장 나온다.
+        CardDefinitionSO active = factory.CreateCard("active", ECardKind.Active, ERoguelikeSkill.Spin);
+        List<CardDefinitionSO> cards = new List<CardDefinitionSO> { active };
+        for (int i = 0; i < 30; i++) cards.Add(factory.CreateCard("p" + i, ECardKind.Passive));
+        for (int i = 0; i < 30; i++) cards.Add(factory.CreateCard("r" + i, ECardKind.Ruby));
+        balance.kindWeights = new List<float> { 1f, 1f, 1f, 1f };
+        InitShop(factory.CreateDatabase(cards.ToArray()), 3);
+
+        for (int round = 0; round < 40; round++)
+        {
+            shop.Open(false);
+            Assert.AreEqual(4, shop.Offers.Count);
+            Assert.AreEqual(1, CountKind(ECardKind.Active), "제시 " + round);
+            Assert.GreaterOrEqual(CountKind(ECardKind.Passive), 2, "패시브 2장 보장은 유지 " + round);
+
+            Assert.AreEqual(ECardShopResult.Success, shop.TryReroll());
+            Assert.AreEqual(1, CountKind(ECardKind.Active), "리롤 " + round);
+            shop.Close();
+        }
+    }
+
+    [Test]
+    public void ActiveAtLeastOne_ReplacesPassiveSlotWhenNoRandomSlot()
+    {
+        // 프리즘 · MAX 2장 + 패시브 2장으로 4칸이 찼는데 액티브가 없으면 패시브 보장 1칸을 액티브로 바꾼다. 보장 칸은 건드리지 않는다.
+        List<CardDefinitionSO> emeralds = new List<CardDefinitionSO>();
+        List<CardDefinitionSO> cards = new List<CardDefinitionSO>();
+        for (int i = 0; i < 2; i++)
+        {
+            CardDefinitionSO card = factory.CreateCard("e" + i, ECardKind.Passive);
+            emeralds.Add(card);
+            cards.Add(card);
+        }
+
+        for (int i = 0; i < 10; i++) cards.Add(factory.CreateCard("p" + i, ECardKind.Passive));
+        CardDefinitionSO active = factory.CreateCard("active", ECardKind.Active, ERoguelikeSkill.Boomerang);
+        cards.Add(active);
+        InitShop(factory.CreateDatabase(cards.ToArray()));
+        for (int i = 0; i < emeralds.Count; i++)
+        {
+            for (int j = 0; j < 4; j++) shop.GrantDirect(emeralds[i]);
+        }
+
+        shop.Open(false);
+
+        int guaranteed = 0;
+        for (int i = 0; i < shop.Offers.Count; i++)
+        {
+            if (shop.Offers[i].bGuaranteed) guaranteed++;
+        }
+
+        Assert.AreEqual(4, shop.Offers.Count);
+        Assert.AreEqual(2, guaranteed);
+        Assert.AreEqual(1, CountKind(ECardKind.Active));
+        Assert.AreEqual(3, CountKind(ECardKind.Passive));
+    }
+
+    private int CountKind(ECardKind _kind)
+    {
+        int count = 0;
+        for (int i = 0; i < shop.Offers.Count; i++)
+        {
+            if (_kind == shop.Offers[i].card.kind) count++;
+        }
+
+        return count;
     }
 
     [Test]

@@ -39,14 +39,17 @@ public class RoguelikeSkillController : MonoBehaviour
         public float nextTickTime;
     }
 
-    /// <summary>포자 조합 3종의 포자 폭발 한 번(같은 자리 재폭발 제한에 쓴다).</summary>
+    /// <summary>포자 조합 3종의 대폭발 한 번(같은 자리 재발동 제한에 쓴다).</summary>
     private struct SporeComboBlast
     {
         public Vector3 position;
         public float time;
     }
 
-    /// <summary>던진 포자 폭탄. 떨어지면(landTime) 대폭발 연출이 시작되고, blastTime에 범위 안 나무를 오염시킨다.</summary>
+    /// <summary>
+    /// 던진 포자 폭탄. 떨어지면(landTime) 대폭발 연출이 시작되고, blastTime에 범위 안 나무를 오염시킨다.
+    /// 포자 조합 3종의 대폭발도 던지지 않고 그 자리에 바로 떨어진 폭탄으로 여기에 들어온다.
+    /// </summary>
     private struct SporeBomb
     {
         public Vector3 position;
@@ -80,7 +83,7 @@ public class RoguelikeSkillController : MonoBehaviour
         public float damage;
         public float radius;
         public bool bEngine;
-        // 방구차(포자 수류탄 + 오프로드): 마지막 포자 폭발 뒤 달린 거리.
+        // 방구차(포자 수류탄 + 오프로드): 마지막 대폭발 뒤 달린 거리.
         public float sporeTrail;
         public AudioHandle engine = AudioHandle.Invalid;
         // 맞힌 나무 → 맞힌 순간의 재사용 번호. 쓰러져 다른 칸의 새 나무로 다시 쓰인 객체는 번호가 달라 다시 칠 수 있다.
@@ -148,7 +151,7 @@ public class RoguelikeSkillController : MonoBehaviour
     private float nextOffroadHitShakeTime;
 
     private readonly List<Vector3> pendingBoomerangHits = new List<Vector3>(16);
-    // 포자 조합 3종이 예약한 포자 폭발 자리. 본편 판정 도중에 쌓이므로 Update(UpdateSporeComboExplosions)에서 터뜨린다.
+    // 포자 조합 3종이 예약한 대폭발 자리. 본편 판정 도중에 쌓이므로 Update(UpdateSporeComboExplosions)에서 일으킨다.
     private readonly List<Vector3> pendingSporeExplosions = new List<Vector3>(32);
     private readonly List<SporeComboBlast> recentSporeExplosions = new List<SporeComboBlast>(64);
     private int pendingAxeSwings;
@@ -561,7 +564,7 @@ public class RoguelikeSkillController : MonoBehaviour
 
     /// <summary>
     /// 드론 레이저(총구 → 주 대상 → 연쇄 대상)가 나갔다. _points는 레이저 지점(나무 꼭대기), _hitGroundPositions는 맞힌 나무의 바닥 위치다.
-    ///   포자 수류탄 + 드론(포자 레이저): 레이저가 맞힌 나무(주 대상 + 체인 대상) 모두의 바닥 자리에서 포자 폭발을 예약한다.
+    ///   포자 수류탄 + 드론(포자 레이저): 레이저가 맞힌 나무(주 대상 + 체인 대상) 모두의 바닥 자리에서 포자 수류탄 대폭발을 예약한다.
     ///   스텔라 III: 레이저가 지나간 경로 위의 별도 맞은 것으로 친다.
     /// 본편 드론 판정 도중에 불리므로 기록만 하고 터뜨리기는 Update(UpdateSporeComboExplosions · UpdateStars)에서 한다.
     /// </summary>
@@ -1341,12 +1344,13 @@ public class RoguelikeSkillController : MonoBehaviour
         offroadCarPool.Push(car);
     }
 
-    // // 조합: 포자 수류탄 + 드론 / 오프로드 / 충격파 (기획서 v2.5 6-2)
+    // // 조합: 포자 수류탄 + 드론 / 오프로드 / 충격파 (기획서 v2.6 6-2)
     //
-    // 세 조합 모두 포자 수류탄의 포자 던지기(투하 · 대폭발 · 오염)는 꺼지고(조합 카드의 suppressedSkills) 포자 폭발로 대체된다.
-    // 포자 레이저는 드론이 맞힌 모든 나무, 방구차는 오프로드가 지나간 자리(일정 거리마다), 포자 충격파는 충격파에 맞은 모든 나무에서 터진다.
-    // 맞히는 나무 수만큼 폭발이 폭증할 수 있으므로(부록 C-2 "연쇄 폭발") 같은 자리 재폭발 제한과 프레임당 폭발 수 상한을 둔다.
-    // 포자 폭발 자체는 다른 포자 폭발을 부르지 않는다(연쇄 없음). 공격력 증가가 적용된다(6-2 확정 메모).
+    // 세 조합 모두 포자 수류탄의 던지기만 꺼지고(조합 카드의 suppressedSkills) 포자 수류탄의 대폭발(폭발 피해 포함) + 오염은 그대로 쓴다.
+    // 포자 레이저는 드론이 맞힌 모든 나무, 방구차는 오프로드가 지나가는 경로(일정 거리마다), 포자 충격파는 초록 충격파에 맞은 모든 나무에서
+    // 대폭발이 일어난다. 범위 · 오염 유지 · 틱 주기 · 중첩 상한은 포자 수류탄 카드 레벨과 오염 관련 패시브를 그대로 따른다.
+    // 맞히는 나무 수만큼 대폭발이 폭증할 수 있으므로(부록 C-2 "연쇄 폭발") 같은 자리 재발동 제한과 프레임당 발동 수 상한을 둔다.
+    // 대폭발 자체는 다른 대폭발을 부르지 않는다(연쇄 없음).
 
     /// <summary>포자 충격파: 충격파가 나무를 맞혔다(본편 충격파 판정 도중이라 예약만 한다).</summary>
     private void OnShockWaveHitTree(Vector3 _position)
@@ -1354,7 +1358,7 @@ public class RoguelikeSkillController : MonoBehaviour
         if (bActive && modifiers.IsComboActive(ERoguelikeCombo.SporeShockwave)) QueueSporeExplosion(_position);
     }
 
-    /// <summary>방구차: 오프로드가 _position까지 달린 거리만큼 쌓다가 간격마다 그 자리에 포자 폭발을 예약한다.</summary>
+    /// <summary>방구차: 오프로드가 _position까지 달린 거리만큼 쌓다가 간격마다 그 자리에 포자 수류탄 대폭발을 예약한다.</summary>
     private void TrailSporeExplosions(OffroadCar _car, Vector3 _position)
     {
         float spacing = Mathf.Max(0.1f, tuning.sporeOffroadSpacing);
@@ -1372,7 +1376,10 @@ public class RoguelikeSkillController : MonoBehaviour
         if (pendingSporeExplosions.Count < Mathf.Max(1, tuning.sporeComboMaxPending)) pendingSporeExplosions.Add(_position);
     }
 
-    /// <summary>예약된 포자 폭발을 프레임당 상한까지 터뜨린다. 최근에 같은 자리(병합 반경 안)에서 터졌으면 건너뛴다.</summary>
+    /// <summary>
+    /// 예약된 자리에 포자 수류탄의 대폭발을 프레임당 상한까지 일으킨다. 최근에 같은 자리(병합 반경 안)에서 일어났으면 건너뛴다.
+    /// 던지지 않고 그 자리에 바로 떨어진 폭탄으로 넣는다 - 착지 연출 · 폭발 판정 지연 · 오염은 포자 수류탄과 같은 경로(UpdateSpore)를 탄다.
+    /// </summary>
     private void UpdateSporeComboExplosions(float _now)
     {
         float cooldown = Mathf.Max(0f, tuning.sporeComboRepeatCooldown);
@@ -1384,11 +1391,10 @@ public class RoguelikeSkillController : MonoBehaviour
         if (0 == pendingSporeExplosions.Count) return;
 
         int budget = Mathf.Max(1, tuning.sporeComboMaxExplosionsPerFrame);
-        float radius = tuning.sporeComboExplosionRadius * RangeMul(ERoguelikeSkill.SporeBomb);
-        float damage = tuning.sporeComboExplosionDamage * DamageMul(ERoguelikeSkill.SporeBomb);
+        float radius = tuning.sporeRadius * RangeMul(ERoguelikeSkill.SporeBomb);
+        float delay = Mathf.Max(0f, tuning.sporeExplosionDelay);
         float mergeSq = Mathf.Max(0f, tuning.sporeComboMergeRadius);
         mergeSq *= mergeSq;
-        bool bStarHit = RunEffectApplier.IsStarHitByActives(modifiers);
 
         int consumed = 0;
         for (; consumed < pendingSporeExplosions.Count && budget > 0; consumed++)
@@ -1399,9 +1405,14 @@ public class RoguelikeSkillController : MonoBehaviour
             budget--;
             recentSporeExplosions.Add(new SporeComboBlast { position = pos, time = _now });
 
-            DamageTreesInRadius(pos, radius, damage, false);
-            if (bStarHit) HitStarsInRadius(pos, radius);
-            Publish(ERoguelikeSkillVfx.SporeExplosion, pos, pos, radius, 0f, 0);
+            sporeBombs.Add(new SporeBomb
+            {
+                position = pos,
+                radius = radius,
+                landTime = _now,
+                blastTime = _now + delay,
+                bLanded = false,
+            });
         }
 
         pendingSporeExplosions.RemoveRange(0, consumed);

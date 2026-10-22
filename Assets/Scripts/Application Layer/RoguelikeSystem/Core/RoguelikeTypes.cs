@@ -57,11 +57,11 @@ public enum ERoguelikeCombo
     SpinBoomerang = 3,
     // 4는 폐지된 스텔라 + 포자 수류탄(StellaSpore) 자리다. v2.5에서 삭제됐다. 다시 쓰지 않는다.
     StellaDrone = 5,
-    /// <summary>포자 수류탄 + 드론(포자 레이저): 드론이 공격하는 모든 나무에서 포자 폭발.</summary>
+    /// <summary>포자 수류탄 + 드론(포자 레이저): 드론이 공격하는 모든 나무에서 포자 수류탄 대폭발 + 오염.</summary>
     SporeDrone = 6,
-    /// <summary>포자 수류탄 + 오프로드(방구차): 오프로드가 지나간 자리에 포자 폭발.</summary>
+    /// <summary>포자 수류탄 + 오프로드(방구차): 오프로드가 지나가는 경로에 포자 수류탄 대폭발 + 오염.</summary>
     SporeOffroad = 7,
-    /// <summary>포자 수류탄 + 충격파(포자 충격파): 초록 충격파에 맞은 모든 나무에서 포자 폭발.</summary>
+    /// <summary>포자 수류탄 + 충격파(포자 충격파): 초록 충격파에 맞은 모든 나무에서 포자 수류탄 대폭발 + 오염.</summary>
     SporeShockwave = 8,
 }
 
@@ -142,6 +142,8 @@ public enum ERunEffect
     DotTickIntervalReducePercent = 37,
     /// <summary>오염 중첩이 최대인 나무에만 더 붙는 틱 주기 감소(%). DotTickIntervalReducePercent에 더한다. 지속 피해 속도 증가 MAX(+10).</summary>
     DotTickIntervalReduceAtMaxStackPercent = 38,
+    /// <summary>충격파가 나무를 맞히지 않은 헛스윙에도 발동 판정을 한다. 0보다 크면 켜진다(충격파 MAX, 기획서 v2.6 6-1).</summary>
+    ShockwaveFireOnWhiff = 39,
 
     // 새 효과는 이 위가 아니라 여기(맨 뒤)에 추가한다.
     Count,

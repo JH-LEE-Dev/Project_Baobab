@@ -35,8 +35,9 @@ public sealed class RoguelikeSkillVfxAssets
 /// 로그라이크 신규 스킬·조합의 연출을 본편 연출로 재생한다(기획서 3-3 "본편 ~을 그대로 사용한다/활용한다").
 ///   스텔라 별: 본편 3스테이지 별 표식 나무에서 나오는 땅 별(TreeStarMark_Ground) + 등장음 / 사라질 때 본편 회전 소멸.
 ///   별 공격: 본편 별똥별 착지 폭발(StarImpactExplosion) + 별 폭발음.
-///   포자 폭발(포자 조합 3종): 본편 포자 폭발(4연발 + 포자 폭발음).
+///   포자 폭발: 본편 포자 폭발(4연발 + 포자 폭발음). v2.6부터 포자 조합 3종도 대폭발을 써서 지금은 내는 곳이 없다.
 ///   포자 폭탄: 포물선으로 던지고, 떨어지면 본편 포자 대폭발(2스테이지 전리품 연출). 오염된 나무에는 본편 포자 디버프 표시.
+///              포자 조합 3종(포자 레이저 · 방구차 · 포자 충격파)의 대폭발도 같은 연출이다(던지기 없이 그 자리에서).
 ///   별 이음선 빔·노바(스텔라+드론): 본편 드론 레이저(+ 드론 발사음)·별자리 노바 마법진, 이음선은 본편 별자리 점선.
 ///   회전베기+부메랑: 본편 회전베기 VFX + 카메라 흔들림.
 /// 판정·피해는 RoguelikeSkillController가 이미 끝낸 뒤라 여기서는 그리기만 한다. 이펙트 담당은 같은 지점의
@@ -50,6 +51,7 @@ public sealed class RoguelikeSkillVfxPlayer
     private const int SporeBursts = 4;
     private const float SporeBurstInterval = 0.15f;
     private const float SporeBurstSpread = 0.25f;
+    private const float SporeBigExplosionShakeInterval = 0.2f;
 
     private InDungeonVFXManager vfx;
     private ConstellationPixelLaserCreator laserCreator;
@@ -66,6 +68,7 @@ public sealed class RoguelikeSkillVfxPlayer
     private int lastBeamSoundFrame = -1;
     // 회전베기+부메랑: 같은 프레임에 여러 그루를 맞혀 회전베기가 여러 번 나가도 그림·흔들림은 한 번만(겹치면 같은 그림이다).
     private int lastWhirlwindFrame = -1;
+    private float lastSporeShakeTime = float.NegativeInfinity;
     // 포자 연출 회차. StopCombatEffects가 올리면 진행 중이던 포자 폭발·폭탄 연출이 다음 단계에서 멈춘다.
     private int sporeGeneration;
 
@@ -128,7 +131,12 @@ public sealed class RoguelikeSkillVfxPlayer
                 // 본편 2스테이지 전리품 "포자 대폭발" 연출(응집 → 폭발). 범위는 판정과 같은 값을 넘겨 보이는 범위를 맞춘다.
                 vfx?.PlaySporeBigExplosionVFX(_signal.position, _signal.radius, Mathf.Clamp(_signal.id, 1, 3));
                 Sound.Play(SoundID.SporeExplosion, _signal.position);
-                CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
+                // 포자 조합 3종은 맞힌 나무마다 대폭발이 일어나 연달아 터진다. 흔들림은 최소 간격을 두어 화면이 계속 떨리지 않게 한다.
+                if (Time.time - lastSporeShakeTime >= SporeBigExplosionShakeInterval)
+                {
+                    lastSporeShakeTime = Time.time;
+                    CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
+                }
                 break;
 
             case ERoguelikeSkillVfx.StarLinkBeam:

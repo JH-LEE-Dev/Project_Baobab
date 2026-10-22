@@ -150,9 +150,10 @@ public class DraftCardDataTests
         Assert.AreEqual(75f, ResolveAtLevel("active_shockwave", 3).GetForSkill(ERunEffect.ChancePercent, ERoguelikeSkill.Shockwave));
         Assert.AreEqual(100f, ResolveAtLevel("active_shockwave", 5).GetForSkill(ERunEffect.ChancePercent, ERoguelikeSkill.Shockwave));
 
-        // 기획서 v2.5 A-4: 피해 12(I) → 13(II) → 14(IV) → 15(VI), 크기 1.5(I) · 2(II) · 2.5(IV) · 3(VI) = 범위 +10 / +20 / +30 / +40%.
+        // 기획서 v2.6 A-4: 피해 12(I) → 13(II) → 14(IV) → 15(VI), 크기 1.5(I) · 2.5(II) · 3.5(IV) · 5(VI) · 7(VII) = 범위 +10 / +30 / +50 / +80 / +120%
+        // (크기 1 = 기본, 크기 +1 = 범위 +20%).
         float[] damages = { 12f, 13f, 13f, 14f, 14f, 15f, 15f };
-        float[] ranges = { 10f, 20f, 20f, 30f, 30f, 40f, 40f };
+        float[] ranges = { 10f, 30f, 30f, 50f, 50f, 80f, 120f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_shockwave", level);
@@ -162,6 +163,10 @@ public class DraftCardDataTests
 
         Assert.AreEqual(0f, ResolveAtLevel("active_shockwave", 6).GetForSkill(ERunEffect.ShockwaveRepeatAdd, ERoguelikeSkill.Shockwave));
         Assert.AreEqual(1f, ResolveAtLevel("active_shockwave", 7).GetForSkill(ERunEffect.ShockwaveRepeatAdd, ERoguelikeSkill.Shockwave));
+
+        // MAX: 허공을 휘둘러도 발동.
+        Assert.AreEqual(0f, ResolveAtLevel("active_shockwave", 6).GetForSkill(ERunEffect.ShockwaveFireOnWhiff, ERoguelikeSkill.Shockwave));
+        Assert.Greater(ResolveAtLevel("active_shockwave", 7).GetForSkill(ERunEffect.ShockwaveFireOnWhiff, ERoguelikeSkill.Shockwave), 0f);
     }
 
     [Test]

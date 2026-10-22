@@ -54,6 +54,8 @@ public sealed class RunEffectApplier
     private enum ESwitch
     {
         WhirlWind,
+        // 본편 "충격파 마스터리"(헛스윙에도 스윙당 1회 충격파 판정). 충격파 MAX "허공 발동"에 쓴다.
+        ShockWaveMastery,
         Count,
     }
 
@@ -183,6 +185,8 @@ public sealed class RunEffectApplier
 
         // // 스위치
         SetSwitch(ESwitch.WhirlWind, _mods.IsSkillActive(ERoguelikeSkill.Spin));
+        // 충격파 MAX: 나무를 맞히지 않고 허공을 휘둘러도 발동 판정을 한다(기획서 v2.6 6-1). 본편 마스터리 경로가 바로 이 동작이다.
+        SetSwitch(ESwitch.ShockWaveMastery, bShockwave && _mods.GetForSkill(ERunEffect.ShockwaveFireOnWhiff, ERoguelikeSkill.Shockwave) > 0f);
 
         // // 회전베기 빈도 사다리(기획서 v2.4 6-1): 필요 휘두름 3 → 2 → 1 → 0(상시). n휘두름 뒤 n+1번째 공격에 발동하므로
         // 본편 공격 코드의 발동 주기는 n + 1이다(1 = 공격할 때마다). 데이터의 TriggerHitCountAdd가 n을 줄인다.
@@ -338,6 +342,7 @@ public sealed class RunEffectApplier
         switch (_switch)
         {
             case ESwitch.WhirlWind: stat.ActivateWhirlWind(_bOn); break;
+            case ESwitch.ShockWaveMastery: stat.ShockWaveMastery(_bOn); break;
         }
 
         appliedSwitches[idx] = _bOn;
