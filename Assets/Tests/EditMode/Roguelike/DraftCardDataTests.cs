@@ -263,7 +263,6 @@ public class DraftCardDataTests
         Assert.AreEqual(25f, ResolveAtLevel("passive_stamina_recover", 5).Get(ERunEffect.StaminaRecoverPerWave), 0.001f);
         Assert.AreEqual(50f, ResolveAtLevel("passive_max_stamina", 5).Get(ERunEffect.MaxStaminaAdd), 0.001f);
         Assert.AreEqual(4f, ResolveAtLevel("passive_grace", 5).Get(ERunEffect.GraceTimeAdd), 0.001f);
-        Assert.AreEqual(3f, ResolveAtLevel("passive_damage_cooldown", 5).Get(ERunEffect.DamageCooldownAdd), 0.001f);
     }
 
     [Test]

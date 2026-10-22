@@ -13,6 +13,8 @@ using UnityEngine;
 /// [문구 키] 템플릿은 RoguelikeUI.json의 Roguelike_Effect_&lt;ERunEffect&gt;[_&lt;ERoguelikeSkill&gt;] ({0} 자리에 수치). 스킬별 문구가 있으면 그쪽이 우선이다
 ///   (예: CountAdd_Drone = "드론 수 {0}"). 초 단위 효과의 단위는 Roguelike_EffectUnit_Seconds. 퍼센트는 "%"를 그대로 쓴다.
 ///   템플릿으로 표현되지 않는 카드(조합 등)는 Roguelike_Card_&lt;cardId&gt;_L&lt;레벨&gt; 문구가 있으면 그것을 대신 쓴다.
+/// [레벨별 추가 문구] 수치 줄 아래에 Roguelike_Card_&lt;cardId&gt;_X&lt;레벨&gt; 문구가 있으면 그 레벨에서만 한 줄 더 보여 준다(예: 회전베기 "4번째 공격마다 발동한다.").
+/// 기본 설명에는 레벨에 따라 달라지는 내용을 쓰지 않는다.
 /// [계약] 좋은 효과는 버프 줄, 나쁜 효과(디메리트)는 별도 줄(붉은색)로 나눈다. 좋고 나쁨은 효과마다 다르다(나무 생성 빈도 증가·임계치 감소·타격 수 감소 등).
 /// 힙 할당 없이 재사용 버퍼로 계산한다(키 문자열은 처음 쓸 때 한 번만 만든다).
 /// </summary>
@@ -38,6 +40,7 @@ public static class RoguelikeCardEffectText
     private static readonly string[,] effectKeys = new string[(int)ERunEffect.Count, SkillCount];
     private static readonly string[] genericKeys = new string[(int)ERunEffect.Count];
     private static readonly Dictionary<string, string[]> cardKeys = new Dictionary<string, string[]>(32);
+    private static readonly Dictionary<string, string[]> extraKeys = new Dictionary<string, string[]>(32);
     private static int slotCount;
 
     /// <summary>
@@ -77,6 +80,13 @@ public static class RoguelikeCardEffectText
             if (0 < target.Length) target.Append('\n');
 
             AppendLine(target, template, in slot, GetUnit(slot.effect, seconds));
+        }
+
+        string extraText = _localization.GetText(GetExtraKey(card.cardId, level));
+        if (false == string.IsNullOrEmpty(extraText))
+        {
+            if (0 < _benefit.Length) _benefit.Append('\n');
+            _benefit.Append(extraText);
         }
     }
 
@@ -253,6 +263,20 @@ public static class RoguelikeCardEffectText
         }
 
         return _localization.GetText(genericKey);
+    }
+
+    /// <summary>수치 줄 아래에 덧붙는 레벨별 한 줄(Roguelike_Card_&lt;cardId&gt;_X&lt;레벨&gt;). 수치로 말할 수 없는 그 레벨만의 변화(발동 방식, 대쉬 해금 등)를 쓴다.</summary>
+    private static string GetExtraKey(string _cardId, int _level)
+    {
+        if (false == extraKeys.TryGetValue(_cardId, out string[] keys))
+        {
+            keys = new string[CardDefinitionSO.ActiveMaxLevel + 1];
+            extraKeys.Add(_cardId, keys);
+        }
+
+        int index = Mathf.Clamp(_level, 0, keys.Length - 1);
+        if (null == keys[index]) keys[index] = "Roguelike_Card_" + _cardId + "_X" + _level;
+        return keys[index];
     }
 
     private static string GetCardKey(string _cardId, int _level)
