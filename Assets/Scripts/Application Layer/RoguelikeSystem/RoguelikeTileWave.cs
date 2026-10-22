@@ -131,8 +131,32 @@ public sealed class RoguelikeTileWave
     // 칸마다 따로 바꾸는 타일의 애니메이션(물결) 시간을 맞출 기준 칸. 따로 바꾼 칸은 재생 시점이 어긋나 주변과 이음선이 진다.
     private Vector3Int animRefCell;
     private bool bHasAnimRef;
+    // 파도가 퍼지는 중심과 지금 앞머리 거리·속도(재생 중에만 의미가 있다). 칸 단위가 아닌 장식이 파도에 맞춰 바뀔 때 쓴다.
+    private Vector3 waveCenter;
+    private float frontDistance;
+    private float frontSpeed;
 
     public bool IsPlaying => bPlaying;
+
+    /// <summary>시작 상태를 깔아 두었고 아직 재생하지 않았다(곧 Play가 돈다).</summary>
+    public bool IsPrepared => bPrepared;
+
+    /// <summary>
+    /// 재생 중이면 true. _distance는 지금 새 지형으로 바뀐 선(중심에서 이 파도 거리 안의 칸은 바뀌었다), _speed는 그 선이 퍼지는 속도(파도 거리/초).
+    /// 티어 전환은 첫 마루에서 바뀌므로 앞머리보다 그만큼 뒤다.
+    /// </summary>
+    public bool TryGetSwapFront(out float _distance, out float _speed)
+    {
+        _distance = frontDistance - (bEntry ? 0f : CrestDistance);
+        _speed = frontSpeed;
+        return bPlaying;
+    }
+
+    /// <summary>섬 중심에서 _worldPos까지의 파도 거리(바닥 평면 거리 - 아이소는 세로를 두 배로 편다). 칸은 중심 위치로 잰다.</summary>
+    public float GetWaveDistance(Vector3 _worldPos)
+    {
+        return new Vector2(_worldPos.x - waveCenter.x, (_worldPos.y - waveCenter.y) * 2f).magnitude;
+    }
 
     /// <summary>마지막으로 준비(PrepareAfterGenerate)한 파도가 로비 진입 파도인지(아니면 티어 전환).</summary>
     public bool IsEntryWave => bEntry;
@@ -163,6 +187,7 @@ public sealed class RoguelikeTileWave
     {
         FinishImmediately();
 
+        waveCenter = _center;
         if (false == BindLayers()) return;
 
         BuildRegion(_center, _viewHalfSize);
@@ -229,9 +254,13 @@ public sealed class RoguelikeTileWave
         int next = 0;   // 아직 물결이 닿지 않은 첫 칸
         int done = 0;   // 물결이 다 지나가지 않은 첫 칸
 
+        frontSpeed = speed;
+        frontDistance = startKey;
+
         while (done < cells.Count)
         {
             float front = startKey + elapsed * speed;
+            frontDistance = front;
 
             while (next < cells.Count && cells[next].key <= front)
             {
@@ -1007,5 +1036,47 @@ public sealed class RoguelikeTileWave
             lift.SetTransformMatrix(_cell, _matrix);
             lift.SetColor(_cell, _color);
         }
+    }
+}
+
+/// <summary>
+/// 파도가 새 지형으로 바꾼 선(섬 중심에서의 파도 거리)을 따라간다. 칸 단위가 아닌 것(물 장식·구름)이 파도에 맞춰 바뀔 때 쓴다.
+/// 한번 출발하면 같은 속도로 계속 퍼진다 - 파도가 먼 바다까지 가지 않고 끝나거나 진입 파도가 해안선 조립 동안 앞머리를 멈춰도
+/// 선은 멈추지 않는다. 파도가 앞서 있으면 파도를 따른다.
+/// </summary>
+public sealed class RoguelikeWaveFront
+{
+    private bool bStarted;
+    private float distance;
+    private float speed;
+
+    /// <summary>지금 선의 파도 거리. 이 안쪽은 새 지형으로 바뀌었다.</summary>
+    public float Distance => distance;
+
+    /// <summary>새 파도를 기다린다(RoguelikeTileWave.PrepareAfterGenerate 뒤).</summary>
+    public void Reset()
+    {
+        bStarted = false;
+        distance = 0f;
+    }
+
+    /// <summary>매 프레임(게임 시간). 파도가 아직 시작하지 않았으면 false. 돌 파도가 없으면(영역을 못 잡았다) 선이 곧바로 끝까지 간다.</summary>
+    public bool Advance(RoguelikeTileWave _wave, float _deltaTime)
+    {
+        if (bStarted) distance += speed * _deltaTime;
+
+        if (_wave.TryGetSwapFront(out float waveFront, out float waveSpeed))
+        {
+            distance = bStarted ? Mathf.Max(distance, waveFront) : waveFront;
+            speed = Mathf.Max(0.1f, waveSpeed);
+            bStarted = true;
+            return true;
+        }
+
+        if (bStarted) return true;
+        if (_wave.IsPrepared) return false;
+
+        distance = float.MaxValue;
+        return true;
     }
 }

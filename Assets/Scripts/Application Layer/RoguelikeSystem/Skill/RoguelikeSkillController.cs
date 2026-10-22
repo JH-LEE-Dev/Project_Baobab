@@ -21,6 +21,9 @@ using UnityEngine;
 /// </summary>
 public class RoguelikeSkillController : MonoBehaviour
 {
+    // 표식 링의 HDR 밝기. 본편 땅 별(TreeStarMarkGroundAnimator.hdrIntensity 1.75)과 같은 값 - 블룸 임계값(1.345)을 넘어 링이 번진다.
+    private const float StarMarkRingHdr = 1.75f;
+
     private struct MarkedTree
     {
         public TreeObj tree;
@@ -317,6 +320,7 @@ public class RoguelikeSkillController : MonoBehaviour
         }
 
         markedTrees.Clear();
+        vfxPlayer.ClearMarkWraps();
         ClearContaminations();
         sporeBombs.Clear();
         for (int i = offroadCars.Count - 1; i >= 0; i--) ReleaseOffroadCar(i, true);
@@ -371,6 +375,9 @@ public class RoguelikeSkillController : MonoBehaviour
         {
             if (markedTrees[i].tree == _tree) markedTrees.RemoveAt(i);
         }
+
+        // 쓰러진 나무의 별 감싸기는 퇴장 연출 없이 바로 회수한다
+        vfxPlayer.EndMarkWrap(_tree, true);
 
         TrySpawnStar(_position);
     }
@@ -726,7 +733,8 @@ public class RoguelikeSkillController : MonoBehaviour
             return;
         }
 
-        _tree.SetStarMarked(true);
+        _tree.SetStarMarked(true, StarMarkRingHdr);
+        vfxPlayer.BeginMarkWrap(_tree);
         markedTrees.Add(new MarkedTree
         {
             tree = _tree,
@@ -743,6 +751,8 @@ public class RoguelikeSkillController : MonoBehaviour
 
             if (null == tree || tree.IsPooled || tree.bDead || false == tree.bCanApplyDamage)
             {
+                // 나무가 죽거나 풀로 돌아가는 중이라 퇴장 연출은 보이지 않는다
+                vfxPlayer.EndMarkWrap(tree, true);
                 markedTrees.RemoveAt(i);
                 continue;
             }
@@ -750,6 +760,7 @@ public class RoguelikeSkillController : MonoBehaviour
             if (_now >= mark.expireTime)
             {
                 tree.SetStarMarked(false);
+                vfxPlayer.EndMarkWrap(tree, false);
                 markedTrees.RemoveAt(i);
             }
         }

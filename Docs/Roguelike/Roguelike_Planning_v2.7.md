@@ -6,7 +6,7 @@
 | 갱신일 | 2026-10-22 |
 | 상태 | 초안 (규칙 확정 다수, 수치는 프로토타입 실측 후 확정) |
 | 원본 | Notion 기획서 (이 파일은 v2.7 시점의 내보내기 사본) |
-| 이전 버전 | [v2.6](Roguelike_Planning_v2.6.md) · 변경 이력은 [CHANGELOG.md](CHANGELOG.md) |
+| 이전 버전 | v2.6 (본문 삭제, [CHANGELOG.md](CHANGELOG.md) 9장 패치로 재현) · 변경 이력은 [CHANGELOG.md](CHANGELOG.md) |
 | 구현 가이드 (v2.7 적용 필수) | [StellaOffroadVFX_Guide.md](StellaOffroadVFX_Guide.md) (스텔라 폭발 · 범위 링 · 오프로드 경로) · [StellaDurationGauge_Guide.md](StellaDurationGauge_Guide.md) (스텔라 유지시간 게이지). 이펙트와 프리팹은 구현됨, Application Layer 연동은 미적용 |
 
 > 구조: 1\~10장은 규칙, 부록 A는 모든 수치, 부록 B는 카드 기획 시트 양식, 부록 C는 미정·조정 목록이다.

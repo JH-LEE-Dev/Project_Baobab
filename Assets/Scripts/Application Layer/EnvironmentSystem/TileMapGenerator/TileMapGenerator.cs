@@ -184,6 +184,31 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     /// <summary>[로그라이크 전용] 칸 중심의 월드 위치. 그리드가 없으면 zero.</summary>
     public Vector3 GetCellCenterWorldForRun(Vector3Int _cell) => null != grid ? grid.GetCellCenterWorld(_cell) : Vector3.zero;
 
+    /// <summary>[로그라이크 전용] 지금 맵 종류의 물 장식 프리팹(본편 물에 뜨는 연잎·물결·용암 거품 등). 없으면 null.</summary>
+    public List<DecoSpritePatternAnimator> WaterDecoPrefabsForRun => null != stageTileData ? stageTileData.WaterAnimatedObjPrefabs : null;
+
+    /// <summary>
+    /// [로그라이크 전용] 장식 자리(GetWaterDecoWorldPosForRun)가 _worldRect 안에 드는 깊은 물 칸을 모은다.
+    /// 깊은 물은 둘레 8칸에 육지가 없는 물로, 본편 물 장식이 뜨는 칸과 같은 기준이다. 맵을 깐 뒤에 부른다.
+    /// </summary>
+    public void GetDeepWaterCellsForRun(Rect _worldRect, List<Vector3Int> _outCells)
+    {
+        _outCells.Clear();
+        if (null == deepWaterTileFlags || null == worldPosMap) return;
+
+        int size = Mathf.Min(deepWaterTileFlags.Length, worldPosMap.Length);
+        for (int i = 0; i < size; i++)
+        {
+            if (false == deepWaterTileFlags[i]) continue;
+            if (false == _worldRect.Contains(worldPosMap[i])) continue;
+
+            _outCells.Add(new Vector3Int(i % width, i / width, 0));
+        }
+    }
+
+    /// <summary>[로그라이크 전용] 칸에 물 장식을 놓을 월드 위치. 본편 물 장식과 같은 자리(칸 중심에서 반 칸 위)다.</summary>
+    public Vector3 GetWaterDecoWorldPosForRun(Vector3Int _cell) => GetWorldPos(_cell.x + _cell.y * width);
+
     /// <summary>
     /// [로그라이크 전용] 바닥 타일 파도 연출이 다시 깔 시각 타일맵. _floor는 바닥 블록(0번이 파도로 떨어지는 층), _water는 물 층
     /// (0번이 물 타일), _shore는 물 가장자리(해안선) 층이다. 지형 전환 파도는 한 칸의 세 묶음을 함께 띄운다.

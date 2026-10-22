@@ -43,6 +43,26 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         }
     }
 
+    /// <summary>
+    /// 섬 둘레 물의 구름. 본편 분포(맵 전체 약 196×95에 700개, 0.06~0.075/초, 불투명도 0.1)로는 섬 둘레의 좁은 물에
+    /// 두세 개만 걸치고 거의 멈춘 듯 보여, 섬 한 화면 둘레에만 촘촘히 깔고 더 빠르고 진하게 쓴다.
+    /// </summary>
+    [Serializable]
+    private sealed class FieldCloudSettings
+    {
+        [Tooltip("섬 한 화면 둘레(좌우로는 구름 반 폭씩 더)에 까는 구름 수.")]
+        public int count = 35;
+        [Tooltip("구름이 흐르는 속도 범위(월드 단위/초). 본편은 0.06~0.075.")]
+        public float minSpeed = 0.07f;
+        public float maxSpeed = 0.1f;
+        [Tooltip("물에 비친 구름의 불투명도(0~1). 본편 재질 값은 0.1.")]
+        [Range(0f, 1f)] public float alpha = 0.12f;
+        [Tooltip("기준 화면(또는 그보다 넓은 실제 화면) 바깥으로 구름을 더 까는 여유(월드). 해상도가 바뀌어도 가장자리가 비지 않게 한다.")]
+        public float viewMargin = 1f;
+        [Tooltip("진입·티어 전환에서 파도가 지나간 구름이 서서히 드러나고(새 구름) 지워지는(직전 구름) 시간(초).")]
+        public float fadeSeconds = 1f;
+    }
+
     [Header("데이터")]
     [SerializeField] private RoguelikeBalanceSO balance;
     [SerializeField] private CardDatabaseSO cardDatabase;
@@ -61,6 +81,10 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     [SerializeField] private float centerSafeZoneRadius = 2f;
     [Tooltip("바닥 타일 파도(기획서 4-1 진입 3단계, 3-4 지형 전환 공용) 수치.")]
     [SerializeField] private RoguelikeTileWaveSettings tileWaveSettings = new RoguelikeTileWaveSettings();
+    [Tooltip("섬 둘레 물에 비치는 구름 수치. 본편 던전 구름 값은 바꾸지 않는다.")]
+    [SerializeField] private FieldCloudSettings fieldCloudSettings = new FieldCloudSettings();
+    [Tooltip("섬 둘레 물에 띄우는 장식(맵 종류별 본편 물 장식) 수치.")]
+    [SerializeField] private RoguelikeWaterDecoSettings waterDecoSettings = new RoguelikeWaterDecoSettings();
     [Tooltip("결과 화면 → 로비 진입 1~2단계(디스토션 → 암전)와 암전이 걷히는 페이드인 수치. 메인메뉴에서 들어올 때의 디스토션은 UIView_MainMenu가 같은 수치 형식으로 따로 갖는다.")]
     [SerializeField] private RoguelikeScreenTransitionSettings screenTransitionSettings = new RoguelikeScreenTransitionSettings();
 
@@ -151,6 +175,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private readonly RoguelikeProductionGate productionGate = new RoguelikeProductionGate();
     private readonly RoguelikeUICoordinator uiCoordinator = new RoguelikeUICoordinator();
     private readonly RoguelikeTileWave tileWave = new RoguelikeTileWave();
+    private readonly RoguelikeWaterDeco waterDeco = new RoguelikeWaterDeco();
+    private readonly RoguelikeCloudFade cloudFade = new RoguelikeCloudFade();
     private Coroutine tileWaveCoroutine;
     private RoguelikeWaveTreeStrategySO waveStrategy;
     private RoguelikeRecordData records;
@@ -310,6 +336,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         effectApplier.SetMoveSpeedCap(balance.maxMoveSpeedPercent);
         productionGate.Initialize(GetFallbackSeconds, maxProductionWaitSeconds);
         tileWave.Initialize(environmentSystem, tileWaveSettings);
+        waterDeco.Initialize(environmentSystem, waterDecoSettings, transform);
+        cloudFade.Initialize(environmentSystem, transform);
 
         // 이펙트 담당이 이 프리팹 아래에 붙여 둔 연출 핸들러를 모은다.
         GetComponentsInChildren(true, handlerBuffer);
@@ -776,6 +804,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         }
 
         uiCoordinator.Tick();
+        waterDeco.Tick(tileWave, Time.deltaTime);
+        cloudFade.Tick(tileWave, Time.deltaTime);
 
         DebugTick();
     }

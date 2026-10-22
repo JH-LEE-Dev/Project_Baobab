@@ -3,7 +3,7 @@
 별 위에 뜨는 작은 푸른 유지시간 게이지의 구조, 연동 방법, 검증 결과를 정리한 인수인계 문서입니다. 이펙트 스크립트와 프리팹까지만 만들었고, **Application Layer(`RoguelikeSkillVfxPlayer`, `InDungeonVFXManager`, `GameInstaller.prefab`) 연동은 아직 적용하지 않았습니다.** 3장의 코드를 연동 담당자가 적용합니다.
 
 - 구조 기준: [StellaOffroadVFX_Guide.md](StellaOffroadVFX_Guide.md)(`VFX_StellaRange`와 같은 풀 구조), [VFX_Procedural_Pixel_Guide.md](../VFX_Procedural_Pixel_Guide.md) 10장, [DungeonVFXOptimization.md](../DungeonVFXOptimization.md) 8장
-- 시뮬레이션으로 승인받은 연출 그대로 구현했습니다(등장 스프링, 호버, 젤리 머리, 22% 이하 점멸, 예비 동작 후 납작하게 퇴장).
+- 시뮬레이션으로 승인받은 연출에서 유지 중 호버와 폭 호흡을 뺐습니다(픽셀 지터 방지, 호버는 사용자 요청으로 제거). 등장 스프링, 젤리 머리, 22% 이하 점멸, 예비 동작 후 납작하게 퇴장은 그대로입니다.
 
 ---
 
@@ -25,7 +25,7 @@
 | 단계 | 내용 |
 |---|---|
 | 등장 | 가로로 좁게 시작해 위로 튀어 오르며 스프링으로 출렁이다 안착. 별가루 `+` `.` `x` `◆` 7개 |
-| 유지 | 1px 단위 호버, 막대 폭 호흡, 채움 앞쪽 젤리 머리(줄어드는 동안 눌림), 남은 비율 22% 이하는 흰색 점멸(12Hz) |
+| 유지 | 막대 위치와 크기는 고정. 채움 앞쪽 젤리 머리(줄어드는 동안 눌림), 남은 비율 22% 이하는 흰색 점멸(12Hz) |
 | 퇴장 | 위로 늘어나는 예비 동작(0.09초) → 납작하게 눌리며 사라짐. 입자 `+` `.` `x` `●` `◆` 10개. 입자가 끝나면 스스로 루트 ParticleSystem을 멈춰 풀에 반환 |
 
 ---

@@ -25,25 +25,53 @@ public class PuppyPopEffect : MonoBehaviour
     [SerializeField, Tooltip("출렁임이 잦아드는 빠르기. 클수록 빨리 멈춘다.")]
     private float popDamping = 6f;
 
+    [Header("Hop (짖을 때 콩 튀어오름, 번쩍임 없음)")]
+    [SerializeField, Tooltip("튀어올랐다 내려오는 전체 시간(초).")]
+    private float hopDuration = 0.22f;
+    [SerializeField, Tooltip("튀어오르는 높이(월드).")]
+    private float hopHeight = 0.08f;
+    [SerializeField, Range(0f, 0.5f), Tooltip("튀어오를 때 세로로 늘어나는 비율.")]
+    private float hopStretch = 0.12f;
+
     private SpriteRenderer[] flashRenderers;
     private MaterialPropertyBlock mpb;
 
     private Vector3 baseLocalScale = Vector3.one;
+    private Vector3 baseLocalPosition = Vector3.zero;
     private float elapsed = 0f;
     private bool bPlaying = false;
+    private bool bHop = false;
 
     public void Initialize(SpriteRenderer[] _flashRenderers)
     {
         flashRenderers = _flashRenderers;
         baseLocalScale = transform.localScale;
+        baseLocalPosition = transform.localPosition;
         mpb = new MaterialPropertyBlock();
     }
 
+    /// <summary>상호작용 연출: 흰색으로 번쩍이며 눌렸다 튄다.</summary>
     public void Play()
     {
-        if (true == bPlaying)
-            transform.localScale = baseLocalScale;
+        Restart(false);
+    }
 
+    /// <summary>짖을 때의 연출: 번쩍임 없이 살짝 늘어나며 콩 튀어오른다.</summary>
+    public void PlayHop()
+    {
+        Restart(true);
+    }
+
+    private void Restart(bool _bHop)
+    {
+        if (true == bPlaying)
+        {
+            transform.localScale = baseLocalScale;
+            transform.localPosition = baseLocalPosition;
+            SetFlash(0f);
+        }
+
+        bHop = _bHop;
         elapsed = 0f;
         bPlaying = true;
     }
@@ -54,6 +82,7 @@ public class PuppyPopEffect : MonoBehaviour
 
         bPlaying = false;
         transform.localScale = baseLocalScale;
+        transform.localPosition = baseLocalPosition;
         SetFlash(0f);
     }
 
@@ -76,6 +105,12 @@ public class PuppyPopEffect : MonoBehaviour
     {
         if (false == bPlaying) return;
 
+        if (true == bHop)
+        {
+            UpdateHop();
+            return;
+        }
+
         float _t = elapsed;
         if (Mathf.Max(popDuration, flashDuration) <= _t)
         {
@@ -95,6 +130,21 @@ public class PuppyPopEffect : MonoBehaviour
         }
 
         transform.localScale = Vector3.Scale(baseLocalScale, new Vector3(1f - _a * popWidthRatio, 1f + _a, 1f));
+
+        elapsed += Time.deltaTime;
+    }
+
+    private void UpdateHop()
+    {
+        if (elapsed >= hopDuration)
+        {
+            Stop();
+            return;
+        }
+
+        float _wave = Mathf.Sin(Mathf.PI * elapsed / hopDuration);
+        transform.localPosition = baseLocalPosition + new Vector3(0f, hopHeight * _wave, 0f);
+        transform.localScale = Vector3.Scale(baseLocalScale, new Vector3(1f - hopStretch * 0.5f * _wave, 1f + hopStretch * _wave, 1f));
 
         elapsed += Time.deltaTime;
     }

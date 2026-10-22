@@ -63,7 +63,11 @@ namespace PresentationLayer.VFX
         private const int SparkCapacity = 96;
         private const int QuadBudget = 6000;
 
-        private const float DustSpawnStep = 0.05f;
+        // 별 하나가 별가루를 흘리는 간격(초). 크게 잡을수록 성기다(눈 피로를 줄이려고 담백하게 둔다).
+        private const float DustSpawnStep = 0.25f;
+        private const int HeroStarInterval = 8;
+        private const int SparkBaseCount = 8;
+        private const int SparkTrailDots = 1;
         private const float LandedDustLife = 0.4f;
         private const float StarFlashStage = 0.046f;
         private const float GroundGlow = 0.28f;
@@ -141,6 +145,9 @@ namespace PresentationLayer.VFX
             public bool bGold;
         }
 
+        // 재생 중인 스텔라 폭발 수. 연쇄 폭발이 겹치면 뒤에 시작한 폭발의 입자 밀도를 낮춰 화면이 번잡해지지 않게 한다.
+        private static int activeBurstCount;
+
         // 쿼드 버퍼는 인스턴스끼리 공유한다(메인 스레드 단일 실행, 매 프레임 Clear 후 채운다).
         private static readonly PixelQuadBuffer skyBuffer = new PixelQuadBuffer(QuadBudget);
         private static readonly PixelQuadBuffer groundBuffer = new PixelQuadBuffer(QuadBudget);
@@ -168,6 +175,8 @@ namespace PresentationLayer.VFX
         private bool bInitialized;
         private float overrideRadius;
         private float currentRadius;
+        private float overlapScale = 1.0f;
+        private bool bCounted;
         private float radiusPx;
         private int starTotal;
         private int dustTotal;
@@ -279,13 +288,13 @@ namespace PresentationLayer.VFX
         // 궤도 별, 별가루, 방사 별가루를 한 번에 만든다. 이후에는 난수를 새로 뽑지 않고 경과 시간으로만 위치를 계산한다.
         private void SetupParticles()
         {
-            float scale = Mathf.Clamp(density, 0.25f, 2.0f);
+            float scale = Mathf.Clamp(density * overlapScale, 0.25f, 2.0f);
 
             starTotal = 0;
             for (int r = 0; r < RingCount; r++)
             {
                 ringMaxRadius[r] = radiusPx * RingFactor[r];
-                int count = Mathf.Clamp(Mathf.RoundToInt((6.0f + ringMaxRadius[r] / 13.0f) * scale), 5, MaxStarsPerRing);
+                int count = Mathf.Clamp(Mathf.RoundToInt((3.0f + ringMaxRadius[r] / 30.0f) * scale), 3, MaxStarsPerRing);
                 ringStarStart[r] = starTotal;
                 ringStarCount[r] = count;
 
@@ -293,7 +302,7 @@ namespace PresentationLayer.VFX
                 {
                     StellaStar star = new StellaStar();
                     star.angle = TwoPi * i / count + Rand01() * 0.4f;
-                    star.bHero = 0 == (i % 4);
+                    star.bHero = 0 == (i % HeroStarInterval);
                     star.bGold = 0 == (i % 3);
                     stars[starTotal++] = star;
                 }
@@ -332,13 +341,13 @@ namespace PresentationLayer.VFX
                         float roll = Rand01();
                         dust.type = roll < 0.15f ? 0 : (roll < 0.5f ? 1 : 2);
                         dust.bGold = Rand01() < 0.28f;
-                        dust.seed = Mathf.FloorToInt(Rand01() * 8.0f);
+                        dust.seed = Mathf.FloorToInt(Rand01() * 6.0f);
                         dusts[dustTotal++] = dust;
                     }
                 }
             }
 
-            sparkTotal = Mathf.Min(SparkCapacity, Mathf.RoundToInt(46.0f * scale));
+            sparkTotal = Mathf.Min(SparkCapacity, Mathf.RoundToInt(SparkBaseCount * scale));
             for (int i = 0; i < sparkTotal; i++)
             {
                 StellaSpark spark = new StellaSpark();
@@ -455,7 +464,7 @@ namespace PresentationLayer.VFX
             if (radius < 2) return;
 
             Color32 ringColor = _tb < 0.12f ? GlowColor(ColorWhite, GroundGlow) : (_tb < 0.3f ? GlowColor(ColorIce, GroundGlow) : (_tb < 0.5f ? GlowColor(ColorIce2, GroundGlow) : (_tb < 0.65f ? GlowColor(ColorBlue, GroundGlow * 0.6f) : GlowColor(ColorBlue2, 0.0f))));
-            _p.DitherBand(centerX, centerY, radius, 9, GroundSquashY, GlowColor(_tb < 0.35f ? ColorBlue2 : ColorBlue3, BandGlow));
+            _p.LatticeBand(centerX, centerY, radius, 6, GroundSquashY, 4, GlowColor(_tb < 0.35f ? ColorBlue2 : ColorBlue3, BandGlow));
             _p.Ring(centerX, centerY, radius, Mathf.Max(1, Mathf.RoundToInt(radius * GroundSquashY)), 2, 2, Mathf.FloorToInt(_tb * 60.0f), ringColor);
 
             float goldT = Mathf.Clamp01((_tb - 0.08f) / 0.55f);
@@ -476,6 +485,9 @@ namespace PresentationLayer.VFX
             {
                 float dt = _tb - dusts[i].startTime - dusts[i].fallTime;
                 if (0.0f > dt || LandedDustLife < dt) continue;
+
+                // 바닥 잔상은 별가루 일부만 남긴다(바닥이 지저분해지지 않게)
+                if (0 != (dusts[i].seed % 6)) continue;
 
                 float lf = dt / LandedDustLife;
                 int lx = centerX + Mathf.FloorToInt(dusts[i].x + dusts[i].velocityX * dusts[i].fallTime);
@@ -683,7 +695,7 @@ namespace PresentationLayer.VFX
                 float f = _tb / sparks[i].fallTime;
                 bool bGold = sparks[i].bGold;
 
-                for (int j = 3; j >= 0; j--)
+                for (int j = SparkTrailDots; j >= 0; j--)
                 {
                     float d = _tb - j * 0.028f;
                     if (0.0f > d) continue;
@@ -720,6 +732,11 @@ namespace PresentationLayer.VFX
             appliedRootSortingOrder = int.MinValue;
             bBeginPending = true;
             elapsed = 0.0f;
+
+            // 먼저 시작한 폭발이 있으면 이 폭발은 입자를 줄인다(2번째 50%, 3번째부터 30%)
+            activeBurstCount++;
+            bCounted = true;
+            overlapScale = 1 == activeBurstCount ? 1.0f : (2 == activeBurstCount ? 0.5f : 0.3f);
 
             if (null != meshRenderer) meshRenderer.enabled = false;
             if (null != groundMeshRenderer) groundMeshRenderer.enabled = false;
@@ -784,8 +801,20 @@ namespace PresentationLayer.VFX
         {
             overrideRadius = 0.0f;
 
+            if (true == bCounted)
+            {
+                bCounted = false;
+                activeBurstCount = Mathf.Max(0, activeBurstCount - 1);
+            }
+
             if (null != meshRenderer) meshRenderer.enabled = false;
             if (null != groundMeshRenderer) groundMeshRenderer.enabled = false;
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            activeBurstCount = 0;
         }
 
         private void OnDestroy()
