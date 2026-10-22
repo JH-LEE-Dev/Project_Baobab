@@ -7,11 +7,11 @@ using UnityEngine.UI;
 /// 슬래시는 시트에 없어서 같은 규칙(흰 획 + 검은 외곽선 1px, 흰 획은 덮지 않음)으로 직접 만든다. 최대 999까지 그린다(버프 숫자 글리프의 자리수 제한).
 ///
 /// [연출] 픽셀 규칙(24Hz 틱, 정수 픽셀, 스케일 1, 반투명 없음, unscaled 시간)을 따른다. 숫자는 게이지 바 안에 있으므로 위아래로 움직이지 않는다(바 밖으로 나가 보인다). 시간 상수는 아래에 모았다.
-///   등장 (4틱)  첫 값이 들어오거나 HUD가 다시 켜질 때. 왼쪽에서 오른쪽으로 25 / 50 / 75 / 100% 폭으로 드러난다. 앞의 두 틱은 노랗게 번쩍인다.
-///   변경 (6틱)  값이 바뀔 때. 앞의 네 틱 동안 틱마다 번갈아 노랗게 번쩍인다. bPlayChange를 끄면 쓰지 않는다.
+///   등장 (4틱)  첫 값이 들어오거나 HUD가 다시 켜질 때. 왼쪽에서 오른쪽으로 25 / 50 / 75 / 100% 폭으로 드러난다.
+///   변경        값이 바뀔 때. 연출 없이 새 값으로 바로 바뀐다.
 ///   퇴장 (4틱)  PlayExit. 오른쪽에서 왼쪽으로 75 / 50 / 25 / 0% 폭으로 사라진다. 끝나면 이미지를 끈다(흰 네모가 보이지 않는다).
 /// 값이 들어오기 전 · 퇴장이 끝난 뒤 · 오브젝트가 꺼져 있는 동안에는 이미지가 항상 꺼져 있다. 오브젝트가 다시 켜지면 마지막 값으로 등장 연출부터 시작한다.
-/// 위치는 정수 픽셀이다: 폭이 홀수여도 반 칸 어긋나지 않게 pivot을 왼쪽에 두고 폭의 절반(내림)만큼 앞으로 민다. 색 번쩍임은 흰 획만 물들인다(검은 외곽선은 그대로).
+/// 위치는 정수 픽셀이다: 폭이 홀수여도 반 칸 어긋나지 않게 pivot을 왼쪽에 두고 폭의 절반(내림)만큼 앞으로 민다(가운데 정렬). bLeftAlign이면 앵커에서 오른쪽으로 시작한다.
 /// </summary>
 public class UI_RoguelikeIconNumber : MonoBehaviour
 {
@@ -23,7 +23,6 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
     private const int SlashCellWidth = 6;
     private const float TicksPerSecond = 24f;
     private const int AppearTicks = 4;
-    private const int ChangeTicks = 6;
     private const int ExitTicks = 4;
     private const float MaxStepSeconds = 1f / 20f;
 
@@ -32,7 +31,6 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
         Hidden,
         Appearing,
         Shown,
-        Changing,
         Exiting,
     }
 
@@ -40,9 +38,8 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
     [SerializeField] private RawImage image;
     [SerializeField, Tooltip("숫자 스프라이트. 인덱스 d가 숫자 d(버프 HUD와 같은 SmallCurrencyNum 시트: _0~_8이 1~9, _9가 0).")]
     private Sprite[] digitSprites = new Sprite[0];
-    [SerializeField, Tooltip("값이 바뀔 때의 튐 · 번쩍임 연출. 소유 HUD가 따로 튀는 연출을 가지면(웨이브) 끈다.")]
-    private bool bPlayChange = true;
-    [SerializeField] private Color flashColor = new Color(1f, 0.9f, 0.45f, 1f);
+    [SerializeField, Tooltip("켜면 앵커에서 오른쪽으로 시작한다(왼쪽 정렬). 끄면 앵커를 가운데로 놓는다.")]
+    private bool bLeftAlign = false;
 
     //상태 변수
     private HUD_BuffNumberFont font;
@@ -75,7 +72,7 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
         Rebuild();
 
         if (false == bWasShown) StartPhase(EPhase.Appearing);
-        else if (true == bPlayChange) StartChange();
+        else if (EPhase.Shown == phase) Apply(contentWidth);
     }
 
     /// <summary>한 숫자만 그린다(슬래시 없음).</summary>
@@ -92,7 +89,7 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
         Rebuild();
 
         if (false == bWasShown) StartPhase(EPhase.Appearing);
-        else if (true == bPlayChange) StartChange();
+        else if (EPhase.Shown == phase) Apply(contentWidth);
     }
 
     /// <summary>글자 색 곱(흰 획만 물든다, 검은 외곽선은 그대로).</summary>
@@ -141,17 +138,12 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
         {
             case EPhase.Appearing:
                 if (AppearTicks <= tick) StartPhase(EPhase.Shown);
-                else Apply(Mathf.CeilToInt(contentWidth * (tick + 1) / (float)AppearTicks), tick < 2);
-                break;
-
-            case EPhase.Changing:
-                if (ChangeTicks <= tick) StartPhase(EPhase.Shown);
-                else Apply(contentWidth, tick < 4 && 0 == tick % 2);
+                else Apply(Mathf.CeilToInt(contentWidth * (tick + 1) / (float)AppearTicks));
                 break;
 
             case EPhase.Exiting:
                 if (ExitTicks <= tick) StartPhase(EPhase.Hidden);
-                else Apply(Mathf.FloorToInt(contentWidth * (ExitTicks - 1 - tick) / (float)ExitTicks), false);
+                else Apply(Mathf.FloorToInt(contentWidth * (ExitTicks - 1 - tick) / (float)ExitTicks));
                 break;
         }
     }
@@ -170,27 +162,21 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
                 break;
 
             case EPhase.Shown:
-                Apply(contentWidth, false);
+                Apply(contentWidth);
                 break;
 
             case EPhase.Appearing:
-                Apply(Mathf.CeilToInt(contentWidth / (float)AppearTicks), true);
+                Apply(Mathf.CeilToInt(contentWidth / (float)AppearTicks));
                 break;
 
             case EPhase.Exiting:
-                Apply(Mathf.FloorToInt(contentWidth * (ExitTicks - 1) / (float)ExitTicks), false);
+                Apply(Mathf.FloorToInt(contentWidth * (ExitTicks - 1) / (float)ExitTicks));
                 break;
         }
     }
 
-    private void StartChange()
-    {
-        StartPhase(EPhase.Changing);
-        Apply(contentWidth, true);
-    }
-
-    /// <summary>드러난 폭(_revealPixels)과 번쩍임 여부를 이미지에 반영한다. 위치는 가운데 정렬 정수 칸에 고정이다.</summary>
-    private void Apply(int _revealPixels, bool _bFlash)
+    /// <summary>드러난 폭(_revealPixels)을 이미지에 반영한다. 위치는 가운데 정렬 정수 칸에 고정이다.</summary>
+    private void Apply(int _revealPixels)
     {
         if (null == image || false == bReady) return;
 
@@ -199,12 +185,12 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
         if (reveal <= 0) return;
 
         image.uvRect = new Rect(0f, 0f, reveal / (float)TexWidth, 1f);
-        image.color = true == _bFlash ? flashColor : baseTint;
+        image.color = baseTint;
 
         RectTransform rect = image.rectTransform;
         rect.pivot = new Vector2(0f, 0.5f);
         rect.sizeDelta = new Vector2(reveal, Height);
-        rect.anchoredPosition = new Vector2(-(contentWidth / 2), rect.anchoredPosition.y);
+        rect.anchoredPosition = new Vector2(true == bLeftAlign ? 0 : -(contentWidth / 2), rect.anchoredPosition.y);
     }
 
     private bool EnsureReady()

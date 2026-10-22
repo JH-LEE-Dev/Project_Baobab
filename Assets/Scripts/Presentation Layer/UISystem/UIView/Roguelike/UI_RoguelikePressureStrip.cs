@@ -52,6 +52,8 @@ public class UI_RoguelikePressureStrip : MonoBehaviour
     private float displayBase;
     private float displayOver;
     private int tickX;
+    // 마지막으로 그린 채움 끝 열 수(채움 이미지와 젤리 머리가 같은 값을 기준으로 삼는다).
+    private int shownTotalPixels;
     private bool bSnapNext;
     private float clock;
     private Vector2 basePosition;
@@ -172,8 +174,9 @@ public class UI_RoguelikePressureStrip : MonoBehaviour
             jelly.SetRowColors(amberRowColors);
         }
 
+        // 채움 끝 열(shownTotalPixels)이 없으면 머리도 그리지 않는다. 있으면 채움 끝 바로 다음 열에서 시작한다(채움과 머리 사이에 빈 줄이 생기지 않는다).
         float total = displayBase + displayOver;
-        float front = 0.01f < total ? total + 1f : 0f;
+        float front = 0 < shownTotalPixels ? total + 1f : 0f;
 
         bool bOver = 1f <= displayOver;
         if (bOver != bJellyOverColor)
@@ -196,8 +199,10 @@ public class UI_RoguelikePressureStrip : MonoBehaviour
     /// <summary>막대 채움을 정수 픽셀로 반영한다. 적색 채움이 뒤에서 (호박 + 초과)까지 깔리고 호박색이 앞에서 덮어, 넘은 구간이 눈금 오른쪽에서 드러난다.</summary>
     private void ApplyFill()
     {
-        int basePixels = Mathf.Min(InnerWidth, Mathf.FloorToInt(displayBase));
-        int totalPixels = Mathf.Min(InnerWidth, basePixels + Mathf.FloorToInt(displayOver));
+        // 합계를 먼저 내림해 머리 위치(내림)와 같은 규칙으로 맞춘다. 각각 내림한 값을 더하면 소수 부분이 버려져 채움이 머리보다 1열 모자란다.
+        int totalPixels = Mathf.Min(InnerWidth, Mathf.FloorToInt(displayBase + displayOver));
+        int basePixels = Mathf.Min(Mathf.FloorToInt(displayBase), totalPixels);
+        shownTotalPixels = totalPixels;
 
         SetFill(baseFill, basePixels);
         SetFill(overFill, totalPixels);

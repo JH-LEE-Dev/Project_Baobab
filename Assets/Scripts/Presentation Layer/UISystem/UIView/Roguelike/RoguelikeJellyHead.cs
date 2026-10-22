@@ -39,6 +39,8 @@ public sealed class RoguelikeJellyHead
     private const float HeadRimBright2 = 0.28f;
     private const float HeadShadeStart = 0.55f;
     private const float HeadShadeMul = 0.82f;
+    // 이웃한 행끼리 길이가 벌어질 수 있는 최대 폭(캔버스 픽셀). 둥근 모서리(HeadFlatRatio 바깥)는 별도로 모양을 만든다.
+    private const float HeadRowStepMax = 1f;
 
     //외부 의존성
     private readonly RawImage surface;
@@ -68,6 +70,7 @@ public sealed class RoguelikeJellyHead
     private Color32[] headBuffer;
     private byte[] headMask;
     private float[] headShade;
+    private float[] headRowLength;
 
     /// <summary>_insideMask는 채움 스프라이트의 윤곽 안쪽 여부(폭 x 높이, 아래 행부터). 머리는 이 안쪽에만 그려진다.</summary>
     public RoguelikeJellyHead(RawImage _surface, int _width, int _height, bool[] _insideMask, Color _borderColor)
@@ -224,6 +227,26 @@ public sealed class RoguelikeJellyHead
 
         System.Array.Clear(headBuffer, 0, headBuffer.Length);
 
+        // 행별 길이(기울기 + 물결). 이웃한 행끼리 HeadRowStepMax보다 더 벌어지면 오른쪽 끝이 계단처럼 찢어져 보이므로 위아래로 한 번씩 훑어 제한한다.
+        for (int y = 0; y < barHeight; y++)
+        {
+            float rowLen = len + tilt * ((y - cy) / half);
+
+            if (0f < ripple)
+            {
+                rowLen += ripple * (Mathf.Sin(y * 0.9f - headTime * 5.2f + headRipplePhase) * 0.7f
+                    + Mathf.Sin(y * 0.45f + headTime * 2.3f + headRipplePhase * 1.7f) * 0.4f);
+            }
+
+            headRowLength[y] = Mathf.Max(0.5f, rowLen);
+        }
+
+        for (int y = 1; y < barHeight; y++)
+            headRowLength[y] = Mathf.Clamp(headRowLength[y], headRowLength[y - 1] - HeadRowStepMax, headRowLength[y - 1] + HeadRowStepMax);
+
+        for (int y = barHeight - 2; y >= 0; y--)
+            headRowLength[y] = Mathf.Clamp(headRowLength[y], headRowLength[y + 1] - HeadRowStepMax, headRowLength[y + 1] + HeadRowStepMax);
+
         // 머리 영역의 마스크와 명암을 구한다(바 높이 방향 위쪽이 +y, 빛은 왼쪽 위).
         for (int y = 0; y < barHeight; y++)
         {
@@ -233,15 +256,7 @@ public sealed class RoguelikeJellyHead
             float w = HeadFlatRatio < vAbs ? Mathf.Min(1f, (vAbs - HeadFlatRatio) / (1f - HeadFlatRatio)) : 0f;
             float f = Mathf.Sqrt(1f - w * w);
 
-            float ay = len + tilt * v;
-
-            if (0f < ripple)
-            {
-                ay += ripple * (Mathf.Sin(y * 0.9f - headTime * 5.2f + headRipplePhase) * 0.7f
-                    + Mathf.Sin(y * 0.45f + headTime * 2.3f + headRipplePhase * 1.7f) * 0.4f);
-            }
-
-            ay = Mathf.Max(0.5f, ay);
+            float ay = headRowLength[y];
 
             for (int x = fl + 1; x <= maxX + 1 && x < barWidth; x++)
             {
@@ -342,6 +357,7 @@ public sealed class RoguelikeJellyHead
         headBuffer = new Color32[barWidth * barHeight];
         headMask = new byte[barWidth * barHeight];
         headShade = new float[barWidth * barHeight];
+        headRowLength = new float[barHeight];
 
         // 머리의 세로 범위: 바 윤곽이 실제로 차지하는 행(중앙 열 기준).
         rowLo = barHeight;

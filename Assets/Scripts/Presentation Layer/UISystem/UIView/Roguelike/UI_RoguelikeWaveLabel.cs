@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 로그라이크 전투 HUD의 웨이브 표시. 게이지 바가 아니라 화면 상단 중앙에 혼자 놓이는 프레임 배지다(기획서 v2.6 10-1).
+/// 로그라이크 전투 HUD의 웨이브 표시. 막대 묶음(하단 중앙)의 왼쪽 윗 모서리에 놓이는 배지다(기획서 v2.6 10-1).
 /// 깃발 아이콘(Flag) + 작은 숫자(UI_RoguelikeIconNumber)로 "12/30"을 그린다. 30웨이브 이후(언리밋)는 깃발이 금색으로 바뀌고 무한대 아이콘(Infinity) + 언리밋 번호(Unlimit-3이면 "3")를 그린다.
 /// 글자 라벨은 쓰지 않는다. 배지 프레임·아이콘은 프리팹에 있고 이 컴포넌트는 숫자와 색, 튐 연출만 맡는다.
 ///
@@ -14,12 +14,17 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
     private const int TotalWaves = 30;
     private const float TicksPerSecond = 24f;
     private const int StepTicks = 3;
+    // 숫자 시작 x(라벨 왼쪽 기준). 깃발만 있을 때와 깃발 + 무한대 아이콘이 있을 때.
+    private const int NumberX = 13;
+    private const int NumberXUnlimit = 23;
     private const int FlashTicks = 6;
     private static readonly int[] HopPattern = { 2, 3, 1, 0 };
 
     //내부 의존성 (프리팹에서 연결)
     [SerializeField] private RectTransform labelRoot;
     [SerializeField] private UI_RoguelikeIconNumber iconNumber;
+    [SerializeField, Tooltip("숫자 앵커. 언리밋이면 무한대 아이콘 뒤로 옮긴다.")]
+    private RectTransform numberAnchor;
     [SerializeField] private Image flagImage;
     [SerializeField] private Image infinityImage;
     [SerializeField] private Color flagColor = Color.white;
@@ -101,6 +106,8 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
     private void Refresh()
     {
         if (null != infinityImage) infinityImage.enabled = bUnlimit;
+
+        if (null != numberAnchor) numberAnchor.anchoredPosition = new Vector2(true == bUnlimit ? NumberXUnlimit : NumberX, numberAnchor.anchoredPosition.y);
 
         if (null != iconNumber)
         {

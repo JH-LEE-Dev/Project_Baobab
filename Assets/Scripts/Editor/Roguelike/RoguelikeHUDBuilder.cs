@@ -16,7 +16,7 @@ using UnityEngine.UI;
 ///    └ Background(프레임 4행) + Fill + Flash
 ///   PressureStrip 임계치 바 120x14, 위치 (-20, 48) - 유예 타이머 바로 위. 호박색 + T 눈금, 초과 진한 적색. 나무 아이콘 + 나무 수/T   UI_RoguelikePressureStrip
 ///    └ Background + OverFill(적색, 뒤) + BaseFill(호박색, 앞) + Tick + Flash(흰 실루엣) + TreeIcon + NumberAnchor/Number
-///   WaveLabel     웨이브 68x14, 화면 상단 중앙(위에서 9px). 배경 없음. 깃발 + 현재/30, 언리밋은 금색 깃발 + 무한대 + 번호   UI_RoguelikeWaveLabel
+///   WaveLabel     웨이브 68x14, 임계치 바 왼쪽 윗 모서리 위(x -80, y 66). 배경 없음. 깃발 + 현재/30, 언리밋은 금색 깃발 + 무한대 + 번호   UI_RoguelikeWaveLabel
 /// 스프라이트는 Assets/Graphics/Roguelike/hud/에 만든다.
 /// </summary>
 public static class RoguelikeHUDBuilder
@@ -36,7 +36,7 @@ public static class RoguelikeHUDBuilder
     private const int KillY = 28;
     private const int GraceY = 44;
     private const int TreeY = 48;
-    private const int WaveTop = 9;
+    private const int WaveY = TreeY + SpriteHeight + 4;
     private const int IconBottom = BodyBottom + 2;
 
     private static readonly Color32 Clear = new Color32(0, 0, 0, 0);
@@ -212,24 +212,23 @@ public static class RoguelikeHUDBuilder
             stripSo.ApplyModifiedPropertiesWithoutUndo();
 
             // ---- 웨이브(상단 중앙, 배경 없이 깃발 + 숫자)
-            RectTransform waveRect = RoguelikeCardBuilder.CreateRect("WaveLabel", rootRect, Vector2Int.zero, new Vector2(WaveWidth, WaveHeight));
-            waveRect.anchorMin = new Vector2(0.5f, 1f);
-            waveRect.anchorMax = new Vector2(0.5f, 1f);
-            waveRect.pivot = new Vector2(0.5f, 1f);
-            waveRect.anchoredPosition = new Vector2(0f, -WaveTop);
-            Image flag = NewIcon("Flag", waveRect, flagIcon, 15, 2, new Color(0.95f, 0.45f, 0.4f, 1f));
-            Image infinity = NewIcon("Infinity", waveRect, infinityIcon, 25, 3, new Color(1f, 0.85f, 0.4f, 1f));
+            RectTransform waveRect = NewBottomCenter("WaveLabel", rootRect, BarX - BarWidth / 2, WaveY, WaveWidth, WaveHeight);
+            waveRect.pivot = new Vector2(0f, 0f);
+            waveRect.anchoredPosition = new Vector2(BarX - BarWidth / 2, WaveY);
+            Image flag = NewIcon("Flag", waveRect, flagIcon, 1, 2, new Color(0.95f, 0.45f, 0.4f, 1f));
+            Image infinity = NewIcon("Infinity", waveRect, infinityIcon, 12, 3, new Color(1f, 0.85f, 0.4f, 1f));
             infinity.enabled = false;
-            UI_RoguelikeIconNumber waveNumber = NewNumber(waveRect, 42, 3, digits);
-            // 웨이브는 배지 전체가 따로 튀는 연출이 있어 숫자의 변경 연출은 끈다(등장 · 퇴장만 쓴다).
+            UI_RoguelikeIconNumber waveNumber = NewNumber(waveRect, 13, 3, digits);
+            // 웨이브 숫자는 깃발 오른쪽에서 왼쪽 정렬로 시작한다(자릿수가 늘어도 끝자리가 잘리지 않는다).
             SerializedObject waveNumberSo = new SerializedObject(waveNumber);
-            waveNumberSo.FindProperty("bPlayChange").boolValue = false;
+            waveNumberSo.FindProperty("bLeftAlign").boolValue = true;
             waveNumberSo.ApplyModifiedPropertiesWithoutUndo();
 
             UI_RoguelikeWaveLabel wave = waveRect.gameObject.AddComponent<UI_RoguelikeWaveLabel>();
             SerializedObject waveSo = new SerializedObject(wave);
             waveSo.FindProperty("labelRoot").objectReferenceValue = waveRect;
             waveSo.FindProperty("iconNumber").objectReferenceValue = waveNumber;
+            waveSo.FindProperty("numberAnchor").objectReferenceValue = waveNumber.transform.parent;
             waveSo.FindProperty("flagImage").objectReferenceValue = flag;
             waveSo.FindProperty("infinityImage").objectReferenceValue = infinity;
             waveSo.FindProperty("flagColor").colorValue = new Color(0.95f, 0.45f, 0.4f, 1f);
