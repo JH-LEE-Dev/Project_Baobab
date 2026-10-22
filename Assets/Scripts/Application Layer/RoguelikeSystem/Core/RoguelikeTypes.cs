@@ -1,35 +1,27 @@
 // 로그라이크 모드 코어 타입 모음.
 //
 // 이 폴더(Baobab.Roguelike 어셈블리)는 본편 게임 코드(Assembly-CSharp)를 참조하지 않는다.
-// 카드·가격·제시·압박 판정·웨이브·기록처럼 "규칙"만 담고, 실제 게임 오브젝트를 움직이는 일은
+// 카드·제시·압박 판정·웨이브·기록처럼 "규칙"만 담고, 실제 게임 오브젝트를 움직이는 일은
 // RoguelikeSystem 폴더의 연동 코드가 맡는다. 그래서 규칙은 EditMode 테스트로 단독 검증할 수 있다.
 //
 // [직렬화 주의] 아래 enum은 ScriptableObject/기록 파일에 정수로 저장된다. 값을 끼워 넣거나 순서를
 // 바꾸면 이미 만든 카드 에셋과 기록이 다른 의미로 읽힌다. 새 항목은 반드시 맨 뒤에 추가한다.
 
-/// <summary>카드 종류. 기획서 3-3 "카드 종류와 태그".</summary>
+/// <summary>카드 종류. 기획서 v2.4 5-1 "카드 종류와 태그".</summary>
 public enum ECardKind
 {
     Active = 0,
     Passive = 1,
+    /// <summary>계약(v2.3까지의 루비). 버프와 디메리트를 함께 가지며 레벨이 없다. 붉은 루비색 프레임으로 그린다.</summary>
     Ruby = 2,
     Prism = 3,
 }
 
 /// <summary>
-/// 기획자가 직접 지정하는 등급. 에메랄드는 구매 시점에 자동으로 붙는 표시 등급이라 여기에 없다.
-/// 프리즘 카드는 종류(ECardKind.Prism)로 판별하므로 이 값은 가격표 조회에만 쓴다.
+/// 카드 UI가 실제로 그리는 프레임. 기획서 v2.4 5-3 "카드 분류와 레어".
+/// v2.4에서 등급(브론즈·실버·골드)이 없어져 일반 카드는 모두 Bronze(일반 프레임)로 그리고, Silver·Gold는 더 이상 나오지 않는다.
+/// 값은 UI의 프레임 배열 순서이므로 번호를 바꾸지 않는다.
 /// </summary>
-public enum ECardGrade
-{
-    Bronze = 0,
-    Silver = 1,
-    Gold = 2,
-    Ruby = 3,
-    Prism = 4,
-}
-
-/// <summary>카드 UI가 실제로 그리는 등급. 기획서 3-3 "카드 등급".</summary>
 public enum ECardDisplayGrade
 {
     Bronze = 0,
@@ -56,15 +48,21 @@ public enum ERoguelikeSkill
     SporeBomb = 7,
 }
 
-/// <summary>조합 카드(프리즘) 종류. 기획서 3-3 "조합 카드(프리즘) 5종".</summary>
+/// <summary>조합 카드(프리즘) 종류. 기획서 v2.5 6-2 "조합(프리즘) 7종".</summary>
 public enum ERoguelikeCombo
 {
     None = 0,
     SpinShockwave = 1,
     BoomerangShockwave = 2,
     SpinBoomerang = 3,
-    StellaSpore = 4,
+    // 4는 폐지된 스텔라 + 포자 수류탄(StellaSpore) 자리다. v2.5에서 삭제됐다. 다시 쓰지 않는다.
     StellaDrone = 5,
+    /// <summary>포자 수류탄 + 드론(포자 레이저): 드론이 공격하는 모든 나무에서 포자 수류탄 대폭발 + 오염.</summary>
+    SporeDrone = 6,
+    /// <summary>포자 수류탄 + 오프로드(방구차): 오프로드가 지나가는 경로에 포자 수류탄 대폭발 + 오염.</summary>
+    SporeOffroad = 7,
+    /// <summary>포자 수류탄 + 충격파(포자 충격파): 초록 충격파에 맞은 모든 나무에서 포자 수류탄 대폭발 + 오염.</summary>
+    SporeShockwave = 8,
 }
 
 /// <summary>
@@ -97,7 +95,7 @@ public enum ERunEffect
     CooldownReductionPercent = 10,
     // 11은 폐지된 다중 타격(MultiHit) 자리다. 도끼는 항상 단일 타격이고(기획서 3-1) 다중 타격 카드도 없다.
     // 옛 에셋에 남은 11이 다른 효과로 읽히지 않도록 이 번호는 다시 쓰지 않는다.
-    /// <summary>이동 속도(%).</summary>
+    /// <summary>이동 속도(%). skill=None이면 플레이어, skill=Offroad면 오프로드 돌진 속도(오프로드 IV).</summary>
     MoveSpeedPercent = 12,
     /// <summary>웨이브 클리어마다 스태미너 회복(절대값).</summary>
     StaminaRecoverPerWave = 13,
@@ -109,40 +107,43 @@ public enum ERunEffect
     GraceTimeAdd = 16,
     /// <summary>반복 피해 간격(초 가산).</summary>
     DamageCooldownAdd = 17,
-    /// <summary>나무가 떨어뜨리는 골드(%).</summary>
-    GoldGainPercent = 18,
+    // 18은 폐지된 골드 획득 증가(GoldGainPercent) 자리다. v2.4에서 골드가 없어졌다. 다시 쓰지 않는다.
     /// <summary>임계치 T(정수 가산). 인내의 시간은 음수.</summary>
     ThresholdAdd = 19,
-    /// <summary>카드 가격(%). 바겐 세일은 -50, VIP 회원권은 양수.</summary>
-    CardPricePercent = 20,
-    /// <summary>리롤 금지. 0보다 크면 켜진다.</summary>
-    RerollDisabled = 21,
-    /// <summary>리롤 무료. 0보다 크면 켜진다.</summary>
-    RerollFree = 22,
-    /// <summary>나무 생성 주기(%). 루비 디메리트용. 양수면 더 자주 생긴다.</summary>
+    // 20 · 21 · 22는 폐지된 카드 가격(CardPricePercent) · 리롤 금지(RerollDisabled) · 리롤 무료(RerollFree) 자리다
+    // (v2.4 골드 제거로 바겐 세일! · VIP 회원권 삭제). 다시 쓰지 않는다.
+    /// <summary>나무 생성 주기(%). 계약 디메리트용. 양수면 더 자주 생긴다.</summary>
     TreeSpawnRatePercent = 23,
     /// <summary>스텔라 별 표식 유지 시간(초 가산). 레벨 IV는 6초 → 9초.</summary>
     StarMarkDurationAdd = 24,
-    /// <summary>회전베기 한 번에 도는 횟수(개수 가산). 회전베기 IV는 +1(연속 2회전).</summary>
-    SpinRotationAdd = 25,
-    /// <summary>충격파 한 번에 나가는 수(개수 가산). 충격파 V는 +1(2중 발생).</summary>
+    // 25는 폐지된 회전베기 연속 회전(SpinRotationAdd) 자리다. v2.4에서 상시 회전베기와 겹쳐 삭제됐다. 다시 쓰지 않는다.
+    /// <summary>충격파 한 번에 나가는 수(개수 가산). 충격파 VII는 +1(2중 발생).</summary>
     ShockwaveRepeatAdd = 26,
     /// <summary>다른 액티브 스킬도 별을 칠 수 있다. 0보다 크면 켜진다(스텔라 III).</summary>
     StarHitByActives = 27,
-    /// <summary>별을 칠 때 폭발 횟수(개수 가산). 스텔라 V는 +1(2회 연속).</summary>
+    /// <summary>별을 칠 때 폭발 횟수(개수 가산). 스텔라 VII는 +1(2회 연속).</summary>
     StarBlastRepeatAdd = 28,
-    /// <summary>포자 연막이 겹칠 때 지속 피해가 중첩되는 최대 수(개수 가산, 기본 1). 포자폭탄 V는 +2(최대 3).</summary>
+    /// <summary>오염된 나무가 대폭발에 다시 맞을 때 지속 피해가 중첩되는 최대 수(개수 가산, 기본 1). 포자폭탄 V +1(최대 2), VII +1(최대 3).</summary>
     SporeStackAdd = 29,
     /// <summary>필드의 나무 수가 임계치 이상인 동안만 붙는 피해량(%). 공격력 증가 MAX(+20%).</summary>
     DamagePercentAboveThreshold = 30,
-    /// <summary>지속형 스킬(포자 연막·별 표식 지속 피해)로 나무를 처치하면 그 유지 시간을 늘린다(초 가산). 유지 시간 증가 MAX(+0.3초).</summary>
+    /// <summary>지속형 스킬(포자 오염)로 나무를 처치하면 그 유지 시간을 늘린다(초 가산). 유지 시간 증가 MAX(+0.3초).</summary>
     DurationExtendOnDotKill = 31,
     /// <summary>캐릭터가 이동하는 동안만 붙는 공격 속도(%). 이동속도 증가 MAX(+10%).</summary>
     AttackSpeedPercentWhileMoving = 32,
-    /// <summary>웨이브를 클리어할 때마다 받는 고정 골드(절대값). 골드 획득 증가 MAX(+25).</summary>
-    GoldPerWaveClear = 33,
-    /// <summary>도끼 공격이 연속으로 더 타격하는 횟수(개수 가산). 루비 다다익선(+1, 연속 2회 타격).</summary>
+    // 33은 폐지된 웨이브 클리어 골드(GoldPerWaveClear) 자리다. 다시 쓰지 않는다.
+    /// <summary>도끼 공격이 연속으로 더 타격하는 횟수(개수 가산). 계약 다다익선(+1, 연속 2회 타격).</summary>
     AxeExtraStrikeAdd = 34,
+    /// <summary>별 표식 나무가 받는 피해 증가율(%p 가산, 기본 +30%는 튜닝 값). 스텔라 V는 +15(+45%).</summary>
+    StarMarkDamageTakenAdd = 35,
+    /// <summary>지속 피해 틱 주기(초 가산, 음수면 짧아진다). 포자 수류탄 오염 틱 2.0초 → II 1.5 → IV 1.0 → VI 0.5초(각 −0.5).</summary>
+    DotTickIntervalAdd = 36,
+    /// <summary>지속 피해 틱 주기 감소(%). 틱 주기 × (1 − 값/100), 하한은 튜닝 값(0.2초). 지속 피해 속도 증가(MAX 누적 40).</summary>
+    DotTickIntervalReducePercent = 37,
+    /// <summary>오염 중첩이 최대인 나무에만 더 붙는 틱 주기 감소(%). DotTickIntervalReducePercent에 더한다. 지속 피해 속도 증가 MAX(+10).</summary>
+    DotTickIntervalReduceAtMaxStackPercent = 38,
+    /// <summary>충격파가 나무를 맞히지 않은 헛스윙에도 발동 판정을 한다. 0보다 크면 켜진다(충격파 MAX, 기획서 v2.6 6-1).</summary>
+    ShockwaveFireOnWhiff = 39,
 
     // 새 효과는 이 위가 아니라 여기(맨 뒤)에 추가한다.
     Count,

@@ -410,6 +410,16 @@ public class UIView_HUD : UIView
     }
 
     /// <summary>
+    /// 로그라이크 임계점 경고(기획서 v2.5 10-1). 스태미너 바 경고 모션(흔들림 + 색 핑퐁)과 붉은 화면(BloodScreen)을 따로 켠다.
+    /// 임계점을 넘으면 둘 다, 한 번 맞으면 죽는 상태(아직 넘기 전)에서는 바만 켠다. 로그라이크 코디네이터가 부른다.
+    /// </summary>
+    public void SetRoguelikePressureWarning(bool _bBarWarning, bool _bScreenBlood)
+    {
+        if (null != hudStaminaBar)
+            hudStaminaBar.SetForcedWarning(_bBarWarning, _bScreenBlood);
+    }
+
+    /// <summary>
     /// 스태미나 무적 구간 시작(true) / 종료(false). 원인별로 온다(EStaminaInvincibleSource 참고).
     /// </summary>
     public void StaminaInvincibleStateChanged(EStaminaInvincibleSource _source, bool _bInvincible)
@@ -484,6 +494,29 @@ public class UIView_HUD : UIView
 
     private bool bEquipmentHiddenForRun;
 
+    /// <summary>
+    /// [로그라이크 전용] 버프 줄을 숨기고 비운다(로그라이크에는 버프 HUD가 동작할 일이 없다. 스태미너 바 바로 위에 임계 바가 놓인다).
+    /// 숨긴 동안은 맵이 바뀌어도 다시 켜지지 않는다. 본편에서는 호출되지 않는다.
+    /// </summary>
+    public void SetBuffHiddenForRun(bool _bHidden)
+    {
+        bBuffHiddenForRun = _bHidden;
+
+        if (null == hudBuffBar)
+            return;
+
+        if (true == _bHidden)
+        {
+            hudBuffBar.Clear();
+            hudBuffBar.gameObject.SetActive(false);
+            return;
+        }
+
+        hudBuffBar.gameObject.SetActive(MapType.Town != currentMapType);
+    }
+
+    private bool bBuffHiddenForRun;
+
     /// <summary>[로그라이크 전용] 맵 전환용 HUD 내림·올림 모션이 재생 중인지. 진입 암전이 이 모션이 끝난 뒤 걷히게 한다. 본편에서는 호출되지 않는다.</summary>
     public bool IsMapTransitionMotionPlayingForRun => null != omp && omp.IsPlaying(mapTransitionMotionTag);
 
@@ -513,7 +546,7 @@ public class UIView_HUD : UIView
             if (true == _isTwon)
                 hudBuffBar.Clear();
 
-            hudBuffBar.gameObject.SetActive(!_isTwon);
+            hudBuffBar.gameObject.SetActive(!_isTwon && false == bBuffHiddenForRun);
         }
 
         if (null == hudStaminaBar)

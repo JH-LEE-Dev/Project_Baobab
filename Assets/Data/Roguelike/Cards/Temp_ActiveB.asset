@@ -17,10 +17,8 @@ MonoBehaviour:
   descriptionKey: Roguelike_Temp_ActiveB_Desc
   icon: {fileID: 0}
   kind: 0
-  grade: 1
   skillTag: 3
   exclusiveGroup: 0
-  maxLevel: 5
   levels:
   - effects:
     - effect: 7
@@ -36,7 +34,6 @@ MonoBehaviour:
       value: 15
   - effects: []
   - effects: []
-  basePriceOverride: 0
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}
   comboType: 0

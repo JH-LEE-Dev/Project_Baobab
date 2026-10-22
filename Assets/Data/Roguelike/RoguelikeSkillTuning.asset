@@ -14,15 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RoguelikeSkillTuningSO
   axeDamage: 10
   axeAttackCoolTime: 0.6
-  shockwaveDamage: 8
+  shockwaveDamage: 12
   boomerangTickDamage: 4
   boomerangTickInterval: 0.3
   boomerangCooldown: 0
   boomerangRangeRatio: 0.67
   droneLaserDamage: 7
   droneLaserInterval: 1
-  spinExtraRotationDelay: 0.15
+  spinRequiredSwings: 3
   shockwaveExtraDelay: 0.12
+  shockwaveExtraDamageRatio: 0.6
   stellaBlastRepeatDelay: 0.2
   axeExtraStrikeDelay: 0.1
   offroadInterval: 6
@@ -53,21 +54,25 @@ MonoBehaviour:
   stellaMarkDamageTakenBonus: 0.3
   sporeInterval: 5
   sporeTargetRange: 7
-  sporeRadius: 1.6
+  sporeRadius: 2.5
+  sporeExplosionDelay: 0.2
+  sporeExplosionDamage: 0
   sporeDuration: 4
-  sporeTickInterval: 0.5
+  sporeTickInterval: 2
   sporeTickDamage: 4
+  dotTickIntervalMin: 0.2
   spinShockwaveSwingInterval: 3
   boomerangShockwaveCooldown: 0
   boomerangShockwaveMergeRadius: 0.6
   spinBoomerangRadius: 2.2
   spinBoomerangDamageMultiplier: 1
   spinBoomerangCooldown: 0
-  stellaSporeDotDamage: 10
-  stellaSporeDotInterval: 0.5
-  stellaSporeExplosionRadius: 1.6
-  stellaSporeExplosionDamage: 40
-  stellaSporeMaxExplosionsPerFrame: 8
+  sporeComboMaxExplosionsPerFrame: 8
+  sporeComboMaxPending: 48
+  sporeComboRepeatCooldown: 0.5
+  sporeComboMergeRadius: 0.6
+  sporeOffroadSpacing: 1.5
+  sporeShockwaveColor: {r: 0.56078434, g: 0.8509804, b: 0.5411765, a: 1}
   stellaDroneBeamInterval: 1.2
   stellaDroneBeamWidth: 0.6
   stellaDroneBeamDamage: 40

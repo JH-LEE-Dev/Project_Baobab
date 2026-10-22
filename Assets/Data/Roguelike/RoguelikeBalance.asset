@@ -14,204 +14,233 @@ MonoBehaviour:
   m_EditorClassIdentifier: Baobab.Roguelike::RoguelikeBalanceSO
   clearWave: 30
   waves:
+  - killTarget: 20
+    spawnInterval: 1
+    batchSize: 3
+    batchSeconds: 3
+    treeHp: 20
+    treeKind: 0
   - killTarget: 30
-    spawnInterval: 2
+    spawnInterval: 0.75
+    batchSize: 4
+    batchSeconds: 3
     treeHp: 20
     treeKind: 0
-  - killTarget: 35
-    spawnInterval: 1.8181818
-    treeHp: 20
-    treeKind: 0
-  - killTarget: 35
-    spawnInterval: 1.6666666
-    treeHp: 30
-    treeKind: 1
-  - killTarget: 40
-    spawnInterval: 1.5384616
-    treeHp: 30
-    treeKind: 1
-  - killTarget: 40
-    spawnInterval: 1.4285715
+  - killTarget: 30
+    spawnInterval: 0.75
+    batchSize: 4
+    batchSeconds: 3
     treeHp: 30
     treeKind: 1
   - killTarget: 45
-    spawnInterval: 1.3333334
-    treeHp: 40
-    treeKind: 2
-  - killTarget: 50
-    spawnInterval: 1.25
-    treeHp: 40
-    treeKind: 2
-  - killTarget: 50
-    spawnInterval: 1.1764705
-    treeHp: 45
-    treeKind: 0
-  - killTarget: 55
-    spawnInterval: 1.1111112
-    treeHp: 45
-    treeKind: 0
-  - killTarget: 55
-    spawnInterval: 1.1111112
-    treeHp: 50
+    spawnInterval: 0.6
+    batchSize: 5
+    batchSeconds: 3
+    treeHp: 30
     treeKind: 1
   - killTarget: 55
-    spawnInterval: 1.0526316
-    treeHp: 50
-    treeKind: 1
-  - killTarget: 55
-    spawnInterval: 1.0526316
-    treeHp: 50
-    treeKind: 1
-  - killTarget: 55
-    spawnInterval: 1.0526316
-    treeHp: 55
-    treeKind: 2
-  - killTarget: 55
-    spawnInterval: 1.0526316
-    treeHp: 55
-    treeKind: 2
-  - killTarget: 55
-    spawnInterval: 1.0526316
-    treeHp: 55
-    treeKind: 2
-  - killTarget: 90
-    spawnInterval: 0.6666667
-    treeHp: 100
-    treeKind: 0
-  - killTarget: 95
-    spawnInterval: 0.64516133
-    treeHp: 100
-    treeKind: 0
-  - killTarget: 95
-    spawnInterval: 0.625
-    treeHp: 115
-    treeKind: 1
-  - killTarget: 100
-    spawnInterval: 0.6060606
-    treeHp: 115
-    treeKind: 1
-  - killTarget: 100
-    spawnInterval: 0.58823526
-    treeHp: 115
-    treeKind: 1
-  - killTarget: 110
-    spawnInterval: 0.5555556
-    treeHp: 130
-    treeKind: 2
-  - killTarget: 115
-    spawnInterval: 0.5263158
-    treeHp: 130
-    treeKind: 2
-  - killTarget: 120
     spawnInterval: 0.5
-    treeHp: 280
-    treeKind: 0
-  - killTarget: 125
-    spawnInterval: 0.4761905
-    treeHp: 280
-    treeKind: 0
-  - killTarget: 130
-    spawnInterval: 0.45454544
-    treeHp: 340
+    batchSize: 6
+    batchSeconds: 3
+    treeHp: 30
     treeKind: 1
+  - killTarget: 60
+    spawnInterval: 0.5
+    batchSize: 6
+    batchSeconds: 3
+    treeHp: 40
+    treeKind: 2
+  - killTarget: 75
+    spawnInterval: 0.42857142857142855
+    batchSize: 7
+    batchSeconds: 3
+    treeHp: 40
+    treeKind: 2
+  - killTarget: 95
+    spawnInterval: 0.35714285714285715
+    batchSize: 7
+    batchSeconds: 2.5
+    treeHp: 45
+    treeKind: 0
+  - killTarget: 115
+    spawnInterval: 0.3125
+    batchSize: 8
+    batchSeconds: 2.5
+    treeHp: 50
+    treeKind: 0
   - killTarget: 140
-    spawnInterval: 0.43478262
-    treeHp: 340
+    spawnInterval: 0.2777777777777778
+    batchSize: 9
+    batchSeconds: 2.5
+    treeHp: 50
     treeKind: 1
-  - killTarget: 145
-    spawnInterval: 0.41666666
-    treeHp: 340
+  - killTarget: 165
+    spawnInterval: 0.25
+    batchSize: 10
+    batchSeconds: 2.5
+    treeHp: 55
     treeKind: 1
-  - killTarget: 145
-    spawnInterval: 0.41666666
-    treeHp: 420
+  - killTarget: 190
+    spawnInterval: 0.22727272727272727
+    batchSize: 11
+    batchSeconds: 2.5
+    treeHp: 55
+    treeKind: 1
+  - killTarget: 215
+    spawnInterval: 0.20833333333333334
+    batchSize: 12
+    batchSeconds: 2.5
+    treeHp: 55
     treeKind: 2
-  - killTarget: 145
-    spawnInterval: 0.41666666
-    treeHp: 420
+  - killTarget: 245
+    spawnInterval: 0.19230769230769232
+    batchSize: 13
+    batchSeconds: 2.5
+    treeHp: 55
     treeKind: 2
-  - killTarget: 145
-    spawnInterval: 0.40816325
-    treeHp: 420
+  - killTarget: 275
+    spawnInterval: 0.17857142857142858
+    batchSize: 14
+    batchSeconds: 2.5
+    treeHp: 55
+    treeKind: 2
+  - killTarget: 355
+    spawnInterval: 0.14285714285714285
+    batchSize: 14
+    batchSeconds: 2
+    treeHp: 100
+    treeKind: 0
+  - killTarget: 400
+    spawnInterval: 0.13333333333333333
+    batchSize: 15
+    batchSeconds: 2
+    treeHp: 100
+    treeKind: 0
+  - killTarget: 440
+    spawnInterval: 0.125
+    batchSize: 16
+    batchSeconds: 2
+    treeHp: 105
+    treeKind: 1
+  - killTarget: 515
+    spawnInterval: 0.1111111111111111
+    batchSize: 18
+    batchSeconds: 2
+    treeHp: 105
+    treeKind: 1
+  - killTarget: 565
+    spawnInterval: 0.10526315789473684
+    batchSize: 19
+    batchSeconds: 2
+    treeHp: 105
+    treeKind: 1
+  - killTarget: 615
+    spawnInterval: 0.1
+    batchSize: 20
+    batchSeconds: 2
+    treeHp: 115
+    treeKind: 2
+  - killTarget: 665
+    spawnInterval: 0.09523809523809523
+    batchSize: 21
+    batchSeconds: 2
+    treeHp: 115
+    treeKind: 2
+  - killTarget: 915
+    spawnInterval: 0.07142857142857142
+    batchSize: 21
+    batchSeconds: 1.5
+    treeHp: 230
+    treeKind: 0
+  - killTarget: 990
+    spawnInterval: 0.06818181818181818
+    batchSize: 22
+    batchSeconds: 1.5
+    treeHp: 230
+    treeKind: 0
+  - killTarget: 1115
+    spawnInterval: 0.0625
+    batchSize: 24
+    batchSeconds: 1.5
+    treeHp: 300
+    treeKind: 1
+  - killTarget: 1195
+    spawnInterval: 0.06
+    batchSize: 25
+    batchSeconds: 1.5
+    treeHp: 300
+    treeKind: 1
+  - killTarget: 1280
+    spawnInterval: 0.057692307692307696
+    batchSize: 26
+    batchSeconds: 1.5
+    treeHp: 300
+    treeKind: 1
+  - killTarget: 1415
+    spawnInterval: 0.05357142857142857
+    batchSize: 28
+    batchSeconds: 1.5
+    treeHp: 350
+    treeKind: 2
+  - killTarget: 1505
+    spawnInterval: 0.05172413793103448
+    batchSize: 29
+    batchSeconds: 1.5
+    treeHp: 350
+    treeKind: 2
+  - killTarget: 1600
+    spawnInterval: 0.05
+    batchSize: 30
+    batchSeconds: 1.5
+    treeHp: 350
     treeKind: 2
   tiers:
   - startWave: 1
     staminaDamage: 3
-    goldPerTree: 2
   - startWave: 8
     staminaDamage: 6
-    goldPerTree: 1.75
   - startWave: 16
     staminaDamage: 10
-    goldPerTree: 1
   - startWave: 23
     staminaDamage: 15
-    goldPerTree: 1
   previousTreeKindShare: 0.3
   threshold: 40
-  spawnExtra: 12
+  spawnExtra: 20
+  initialTreeSeconds: 10
+  clusterRadius: 2.5
+  clusterMoveInterval: 15
+  gapDistance: 4
+  initialTreeThresholdRatio: 0.5
+  spawnBatchSeconds: 3
+  treeMinSpacing: 1
+  playerExclusionRadius: 1.2
+  fieldEdgeInsetCells: 1
+  initialClusterMaxDistance: 4
+  idleMoveReach: 1.5
   maxStamina: 100
   graceTime: 5
   damageCooldown: 3
   maxGraceTime: 15
   maxDamageCooldown: 10
   minThreshold: 5
-  maxMoveSpeedPercent: 60
+  maxMoveSpeedPercent: 100
   unlimitHpGrowthPerWave: 0.1
-  gradeBasePrices: 3c000000960000002c010000f000000000000000
-  levelPriceMultipliers:
-  - 1
-  - 1.3
-  - 1.6
-  - 2
-  bMaxLevelFree: 1
-  offerCount: 3
-  affordableGuaranteeCount: 2
+  unlimitBatchSizeAddPerWave: 1
+  unlimitBatchSecondsAddPerWave: -0.02
+  unlimitMinBatchSeconds: 1
+  offerCount: 4
   guaranteedSlotCap: 2
-  activeGuaranteeCount: 1
-  activeGuaranteeReleaseOwnedCount: 3
-  firstPickFree: 1
+  guaranteedPassiveCount: 2
   firstPickActiveOnly: 1
-  firstPickFreeRerolls: 1
-  firstPickSkippable: 0
-  rerollGuaranteedReshowChance: 0.5
+  rerollsPerSelection: 1
   baseWeight: 1
-  gradeWeights:
+  kindWeights:
   - 1
-  - 0.7
-  - 0.5
-  - 0.15
+  - 1
+  - 0.3
   - 1
   upgradeWeightBonus: 1
   partnerStartLevel: 2
   partnerWeightBonus: 1
   maxWeightMultiplier: 4
   forcePartnerWhenMaterialMax: 1
-  rerollBaseCost: 20
-  rerollCostMode: 1
-  rerollCostStep: 10
-  rerollCostMultiplier: 1.2
-  rerollCostCap: 0
-  appraiserWaveMin: 10
-  appraiserWaveMax: 20
-  appraiserNoticeWave: 10
-  appraisalMaxCards: 3
-  appraisalNextLevelFeeMultiplier: 1.15
-  appraisalMaxChallengeFeeMultiplier: 1.1
-  appraisalOutcomes:
-  - stay: 55
-    plusOne: 25
-    plusTwo: 15
-    max: 5
-  - stay: 50
-    plusOne: 25
-    plusTwo: 17
-    max: 8
-  - stay: 45
-    plusOne: 28
-    plusTwo: 0
-    max: 27
-  - stay: 65
-    plusOne: 0
-    plusTwo: 0
-    max: 35

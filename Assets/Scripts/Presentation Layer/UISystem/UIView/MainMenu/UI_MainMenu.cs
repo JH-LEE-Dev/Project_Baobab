@@ -13,6 +13,7 @@ public class UI_MainMenu : MonoBehaviour
     // 외부 의존성
     [Header("Main Buttons")]
     [SerializeField] private UI_MainMenuButton newGameButton;
+    [SerializeField] private UI_MainMenuButton roguelikeButton;
     [SerializeField] private UI_MainMenuButton loadGameButton;
     [SerializeField] private UI_MainMenuButton exitButton;
     
@@ -40,7 +41,7 @@ public class UI_MainMenu : MonoBehaviour
     private UIViewContext viewCtx;
     private UI_MainMenuButton lastFocusedMainMenuButton;
     private UI_MainMenuButton[] buttonsInOrder;
-    private readonly List<UI_MainMenuButton> activeButtonsCache = new List<UI_MainMenuButton>(5);
+    private readonly List<UI_MainMenuButton> activeButtonsCache = new List<UI_MainMenuButton>(6);
     
     // 캐싱 델리게이트
     private System.Action cachedExecuteNewGame;
@@ -79,6 +80,11 @@ public class UI_MainMenu : MonoBehaviour
             newGameButton.Initialize(OnNewGameClicked, null, _inputMgr);
         }
         
+        if (null != roguelikeButton)
+        {
+            roguelikeButton.Initialize(OnRoguelikeClicked, null, _inputMgr);
+        }
+
         if (null != loadGameButton)
         {
             loadGameButton.Initialize(OnLoadGameClicked, null, _inputMgr);
@@ -163,6 +169,7 @@ public class UI_MainMenu : MonoBehaviour
             {
                 loadGameButton,
                 newGameButton,
+                roguelikeButton,
                 optionButton,
                 creditButton,
                 exitButton
@@ -190,6 +197,8 @@ public class UI_MainMenu : MonoBehaviour
         }
 
         if (null != newGameButton) newGameButton.gameObject.SetActive(true);
+        // 로그라이크 모드 진입 버튼. 해금 조건(본편 모든 특성 해금 + 엔딩)은 본편 엔딩이 아직 없어 개발 중에는 상시 활성이다(기획서 9장).
+        if (null != roguelikeButton) roguelikeButton.gameObject.SetActive(true);
         if (null != optionButton) optionButton.gameObject.SetActive(true);
         if (null != creditButton) creditButton.gameObject.SetActive(true);
         if (null != exitButton) exitButton.gameObject.SetActive(true);
@@ -475,6 +484,12 @@ public class UI_MainMenu : MonoBehaviour
             newGameButton.SetDotText(_dotText);
         }
         
+        if (null != roguelikeButton)
+        {
+            roguelikeButton.SetText(viewCtx.localizationManager.GetText(mainMenuUIJsonId, 8));
+            roguelikeButton.SetDotText(_dotText);
+        }
+
         if (null != loadGameButton)
         {
             loadGameButton.SetText(viewCtx.localizationManager.GetText(mainMenuUIJsonId, 2));
@@ -616,6 +631,22 @@ public class UI_MainMenu : MonoBehaviour
         }
     }
     
+    /// <summary>
+    /// 로그라이크 모드 진입. 이후 흐름(디스토션 → 암전 → 메인메뉴 퇴장 정리 → 씬 전환)은 UIView_MainMenu.OnRoguelikeButtonClicked가 맡는다.
+    /// 입력 잠금은 메인메뉴로 돌아올 때 ResetAndShowButtons가 푼다.
+    /// </summary>
+    private void OnRoguelikeClicked()
+    {
+        if (true == isInputBlocked) return;
+        isInputBlocked = true;
+        UnhoverAllButtons();
+
+        if (null != parentView)
+        {
+            parentView.OnRoguelikeButtonClicked();
+        }
+    }
+
     private void OnExitClicked()
     {
         if (true == isInputBlocked) return;

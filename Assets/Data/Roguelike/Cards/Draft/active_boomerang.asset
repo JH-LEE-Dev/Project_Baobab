@@ -17,10 +17,8 @@ MonoBehaviour:
   descriptionKey: Roguelike_Card_active_boomerang_Desc
   icon: {fileID: 0}
   kind: 0
-  grade: 1
   skillTag: 5
   exclusiveGroup: 0
-  maxLevel: 5
   levels:
   - effects: []
   - effects:
@@ -28,24 +26,28 @@ MonoBehaviour:
       skill: 5
       value: 25
   - effects:
+    - effect: 6
+      skill: 5
+      value: 1
+  - effects:
+    - effect: 1
+      skill: 5
+      value: 25
     - effect: 3
       skill: 5
       value: 25
-    - effect: 1
-      skill: 5
-      value: 50
   - effects:
-    - effect: 6
+    - effect: 2
       skill: 5
-      value: 1
+      value: 20
   - effects:
-    - effect: 6
-      skill: 5
-      value: 1
     - effect: 4
       skill: 5
       value: 25
-  basePriceOverride: 0
+  - effects:
+    - effect: 6
+      skill: 5
+      value: 1
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}
   comboType: 0

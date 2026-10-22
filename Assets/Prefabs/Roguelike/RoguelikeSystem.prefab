@@ -30,7 +30,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 4288234449750598085}
   - {fileID: 6180059648262654385}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -47,7 +46,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoguelikeSystem
   balance: {fileID: 11400000, guid: eba828812e788a449aa9b07c69383f2a, type: 2}
-  cardDatabase: {fileID: 11400000, guid: 3f1e3b902c6f1cf4b807267d9ffdf96c, type: 2}
+  cardDatabase: {fileID: 11400000, guid: 0dd50fc80e34b704fbea1b8f1b0b1ed4, type: 2}
   waveStrategyTemplate: {fileID: 11400000, guid: d03f88b67ae3d59479212336cd42f833, type: 2}
   tierFields:
   - mapType: 2
@@ -91,11 +90,8 @@ MonoBehaviour:
   lobbyObjectLayer:
     serializedVersion: 2
     m_Bits: 1024
-  coinController: {fileID: 2181464918765488033}
-  coinHudFallbackViewport: {x: 0.375, y: 0.1}
   skillController: {fileID: 6092421280983671155}
   bAttackSpeedAffectsAxe: 1
-  baseWhirlwindSwingInterval: 3
   waveClearSaplingVanishSeconds: 0.6
   runClearZoomMultiplier: 2
   runClearZoomInSeconds: 0.25
@@ -172,64 +168,7 @@ MonoBehaviour:
     - {fileID: -629048883709668978, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
     - {fileID: 7538441034235752720, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
     - {fileID: -5038717723868688837, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
-    sporeBombSprite: {fileID: -6607146022748454015, guid: 8750e7ebdd334a04699246440e575215, type: 3}
+    sporeBombSprite: {fileID: 6479773223036287334, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
     sporeBombThrowSeconds: 0.45
     sporeBombArcHeight: 1.6
-    sporeZonePuffInterval: 0.3
     droneLaserPrefab: {fileID: 9005663251761334064, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}
---- !u!1 &6618881184997116136
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 4288234449750598085}
-  - component: {fileID: 2181464918765488033}
-  m_Layer: 0
-  m_Name: CoinController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &4288234449750598085
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6618881184997116136}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 875531906783215717}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2181464918765488033
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6618881184997116136}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b6bf43e10fe38a44e8b7ccb7d3c9b588, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RunCoinController
-  coinPrefab: {fileID: 417739405033273962, guid: 6613ff82bc4440147aa353651349487f, type: 3}
-  maxCoinObjectsPerTree: 3
-  groundAlpha: 0.2
-  scatterRadius: 0.8
-  alphaRestoreSeconds: 0.25
-  absorbStagger: 0.008
-  absorbTimeout: 4
-  poolDefaultCapacity: 256
-  coinGetCooldown: 0.04
-  coinPitchResetDelay: 0.2
-  coinPitchStep: 0.05
-  coinPitchMax: 1.5

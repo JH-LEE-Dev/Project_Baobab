@@ -10,9 +10,11 @@ public struct RoguelikeCardViewData
     public string cardId;
     public string nameKey;
     public string descriptionKey;
+    /// <summary>카드 데이터. 설명 패널이 레벨별 효과 수치(levels)를 읽어 "선택 후 효과" 문구를 만든다(RoguelikeCardEffectText).</summary>
+    public CardDefinitionSO card;
     public Sprite icon;
     public ECardKind kind;
-    /// <summary>프레임·셰이더를 고르는 등급. 사면 MAX가 되는 카드는 Emerald.</summary>
+    /// <summary>희귀 셰이더를 고르는 등급. 사면 MAX가 되는 카드는 Emerald.</summary>
     public ECardDisplayGrade displayGrade;
     /// <summary>구매 후 레벨(1~5). 이미지 아래 I, II, III, IV, MAX 표기. 루비는 레벨 대신 ± 표기(bRuby).</summary>
     public int levelAfterPurchase;
@@ -22,11 +24,8 @@ public struct RoguelikeCardViewData
     public bool bNewCard;
     /// <summary>이번 판에서 처음 제시된 카드.</summary>
     public bool bFirstSeen;
-    /// <summary>희귀 셰이더 연출 대상(실버 이상·에메랄드·프리즘·루비).</summary>
+    /// <summary>희귀 셰이더 연출 대상(MAX가 되는 에메랄드·프리즘·계약).</summary>
     public bool bRare;
-    public int price;
-    /// <summary>false면 가격을 붉게 표시하고 구매 불가(기획서 5-2 "골드 부족").</summary>
-    public bool bAffordable;
 }
 
 /// <summary>보유 카드 확인 UI의 카드 한 장. 기획서 5-2 "보유 카드 확인".</summary>
@@ -35,6 +34,8 @@ public struct RoguelikeOwnedCardViewData
     public string cardId;
     public string nameKey;
     public string descriptionKey;
+    /// <summary>카드 데이터(현재 레벨 효과 문구용).</summary>
+    public CardDefinitionSO card;
     public Sprite icon;
     public ECardKind kind;
     public ECardDisplayGrade displayGrade;

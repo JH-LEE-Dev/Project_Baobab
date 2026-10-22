@@ -167,19 +167,7 @@ public struct RoguelikePressureDamagedSignal
     }
 }
 
-/// <summary>런 골드가 바뀌었다.</summary>
-public struct RoguelikeGoldChangedSignal
-{
-    public long gold;
-    public long delta;
-    public RoguelikeGoldChangedSignal(long _gold, long _delta)
-    {
-        gold = _gold;
-        delta = _delta;
-    }
-}
-
-/// <summary>카드를 샀다. 효과는 이미 적용된 상태다.</summary>
+/// <summary>카드를 골랐다. 효과는 이미 적용된 상태다.</summary>
 public struct RoguelikeCardPurchasedSignal
 {
     public CardPurchaseResult result;
@@ -189,7 +177,7 @@ public struct RoguelikeCardPurchasedSignal
     }
 }
 
-/// <summary>빌드 효과 합계가 다시 계산됐다(카드 구매, 런 시작).</summary>
+/// <summary>빌드 효과 합계가 다시 계산됐다(카드 선택, 런 시작).</summary>
 public struct RoguelikeModifiersChangedSignal { }
 
 /// <summary>런이 끝났다(게임오버 또는 포기). 기록은 이미 저장된 상태다.</summary>
@@ -216,21 +204,9 @@ public struct RoguelikeCardBuyRequestedSignal
     }
 }
 
-public struct RoguelikeCardSkipRequestedSignal { }
-
 public struct RoguelikeCardRerollRequestedSignal { }
 
-/// <summary>보유 카드 한 장을 감정에 맡긴다(기획서 4-4). 감정사가 있는 선택 단계에서만 받는다.</summary>
-public struct RoguelikeCardAppraiseRequestedSignal
-{
-    public CardDefinitionSO card;
-    public RoguelikeCardAppraiseRequestedSignal(CardDefinitionSO _card)
-    {
-        card = _card;
-    }
-}
-
-/// <summary>카드 UI가 구매·소멸 연출을 다 보여 줬다. 시스템은 이 신호를 받고서야 다음 단계로 넘어간다.</summary>
+/// <summary>카드 UI가 선택·소멸 연출을 다 보여 줬다. 시스템은 이 신호를 받고서야 다음 단계로 넘어간다.</summary>
 public struct RoguelikeCardSelectionPresentationDoneSignal { }
 
 public struct RoguelikeResultConfirmedSignal { }
@@ -255,10 +231,13 @@ public struct RoguelikeCardSelectionOpenedSignal { }
 /// <summary>리롤로 제시 카드가 바뀌었다.</summary>
 public struct RoguelikeOffersChangedSignal { }
 
-/// <summary>건너뛰기로 선택이 닫혔다(구매 없음).</summary>
+/// <summary>
+/// 카드를 고르지 않은 채 선택이 닫혔다(선택 화면이 열린 채 포기·게임오버로 런이 끊긴 경우). v2.4에는 건너뛰기가 없어
+/// 플레이어 입력으로는 오지 않는다. UI는 열려 있던 선택 화면을 닫는다.
+/// </summary>
 public struct RoguelikeCardSelectionSkippedSignal { }
 
-/// <summary>구매·리롤·건너뛰기 요청이 거절됐다(골드 부족 등).</summary>
+/// <summary>선택·리롤 요청이 거절됐다(리롤을 이미 씀, 고를 수 없는 칸 등).</summary>
 public struct RoguelikeCardShopRejectedSignal
 {
     public ECardShopResult reason;
@@ -271,41 +250,10 @@ public struct RoguelikeCardShopRejectedSignal
 }
 
 /// <summary>
-/// 노출 가능한 카드가 0장이라 선택 화면 대신 "지금은 구매할 수 있는 카드가 없습니다" 안내를 띄울 차례다(기획서 4-3).
+/// 노출 가능한 카드가 0장이라 선택 화면 대신 "선택할 수 있는 카드가 없습니다" 안내를 띄울 차례다(기획서 v2.4 4-2).
 /// 안내가 끝나면 RoguelikeCardSelectionPresentationDoneSignal을 보낸다. 확인 입력 없이 웨이브가 시작된다.
 /// </summary>
 public struct RoguelikeNoCardsAvailableSignal { }
-
-/// <summary>감정사가 숲을 찾아온다는 예고(기획서 4-4, 웨이브 10 진입). 실제 등장 웨이브는 담지 않는다.</summary>
-public struct RoguelikeAppraiserNoticeSignal { }
-
-/// <summary>
-/// 감정사가 이번 카드 선택 단계에 와 있다. 버튼 잠금 여부는 IRoguelikeRunInfo.CanAppraise이며,
-/// 골드·보유 카드가 바뀔 때마다(구매 전 감정·리롤) 다시 읽어야 한다. 선택이 닫히면 남은 기회는 사라진다.
-/// </summary>
-public struct RoguelikeAppraiserArrivedSignal { }
-
-/// <summary>감정 결과가 확정됐다(감정비 지불 시점). 승격이면 효과는 이미 적용된 상태다.</summary>
-public struct RoguelikeCardAppraisedSignal
-{
-    public CardAppraisalResult result;
-    public RoguelikeCardAppraisedSignal(CardAppraisalResult _result)
-    {
-        result = _result;
-    }
-}
-
-/// <summary>감정 요청이 거절됐다(골드 부족, 대상 아님 등).</summary>
-public struct RoguelikeCardAppraisalRejectedSignal
-{
-    public ECardAppraisalResult reason;
-    public CardDefinitionSO card;
-    public RoguelikeCardAppraisalRejectedSignal(ECardAppraisalResult _reason, CardDefinitionSO _card)
-    {
-        reason = _reason;
-        card = _card;
-    }
-}
 
 /// <summary>결과 화면을 띄울 차례다. 내용은 IRoguelikeRunInfo.LastRunRecord.</summary>
 public struct RoguelikeResultReadySignal { }
@@ -328,13 +276,13 @@ public enum ERoguelikeSkillVfx
     StarBlast = 3,
     /// <summary>별이 수명이 다해 사라짐.</summary>
     StarExpired = 4,
-    /// <summary>포자 연막 시작. radius, duration, id=연막 번호(SporeZoneExtended가 같은 번호로 온다).</summary>
-    SporeZoneStarted = 5,
+    /// <summary>포자 폭탄 투하(캐릭터 → 착지점). position=착지점, position2=던진 자리, radius=대폭발 범위, duration=날아가는 시간(초).</summary>
+    SporeBombThrown = 5,
     /// <summary>360도 충격파(회전베기+충격파, 부메랑+충격파).</summary>
     Shockwave360 = 6,
     /// <summary>부메랑 타격에 붙은 회전베기(회전베기+부메랑). position=캐릭터, radius.</summary>
     SpinBoomerangStrike = 7,
-    /// <summary>포자 폭발(스텔라+포자폭탄). radius.</summary>
+    /// <summary>포자 폭발(본편 4연발). radius. v2.6부터 포자 조합 3종은 SporeBigExplosion(포자 수류탄 대폭발)을 써서 지금은 내는 곳이 없다.</summary>
     SporeExplosion = 8,
     /// <summary>별 이음선 빔(스텔라+드론). position→position2.</summary>
     StarLinkBeam = 9,
@@ -348,10 +296,15 @@ public enum ERoguelikeSkillVfx
     OffroadHit = 13,
     /// <summary>오프로드가 반대편 섬 끝에 닿기 직전이라 달리는 채로 플래시되며 사라지기 시작함. position=그 순간 위치, duration=사라지기까지의 시간.</summary>
     OffroadExit = 14,
-    /// <summary>포자 연막의 유지 시간이 늘어남(유지 시간 증가 MAX, 연막으로 처치). id=연막 번호, duration=늘어난 시간(초).</summary>
-    SporeZoneExtended = 15,
+    // 15는 폐지된 포자 연막 연장(SporeZoneExtended) 자리다. v2.4에서 연막이 오염으로 바뀌었다.
     /// <summary>스텔라 V 별 폭발 2회 연속의 뒤이은 폭발. 별은 첫 폭발(StarBlast) 때 이미 사라졌다. position, radius, id=그 별 번호.</summary>
     StarBlastRepeat = 16,
+    /// <summary>포자 폭탄이 떨어져 본편 포자 대폭발이 일어남. 범위 안 나무는 오염된다. position=폭발 중심, radius=대폭발 범위(등각 타원 장반경), id=포자폭탄 레벨 단계(1~3).</summary>
+    SporeBigExplosion = 17,
+    /// <summary>별이 도끼 범위(인디케이터) 안에 들어와 나무처럼 아웃라인으로 강조됨. position=별 위치, id=별 번호. 범위에서 빠지면 StarHighlightOff.</summary>
+    StarHighlightOn = 18,
+    /// <summary>별 강조가 꺼짐(도끼 범위에서 빠짐, 맞아서 터짐, 사라짐). position=별 위치, id=별 번호.</summary>
+    StarHighlightOff = 19,
 }
 
 public struct RoguelikeSkillVfxSignal

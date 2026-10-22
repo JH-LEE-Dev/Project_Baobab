@@ -14,16 +14,14 @@ public sealed class RoguelikeTestFactory
         return balance;
     }
 
-    public CardDefinitionSO CreateCard(string _id, ECardKind _kind, ECardGrade _grade, ERoguelikeSkill _skill = ERoguelikeSkill.None, int _exclusiveGroup = 0)
+    public CardDefinitionSO CreateCard(string _id, ECardKind _kind, ERoguelikeSkill _skill = ERoguelikeSkill.None, int _exclusiveGroup = 0)
     {
         CardDefinitionSO card = ScriptableObject.CreateInstance<CardDefinitionSO>();
         card.name = _id;
         card.cardId = _id;
         card.kind = _kind;
-        card.grade = _grade;
         card.skillTag = _skill;
         card.exclusiveGroup = _exclusiveGroup;
-        card.maxLevel = CardDefinitionSO.DefaultMaxLevel;
         card.levels = new List<CardLevelData>();
         created.Add(card);
         return card;
@@ -31,7 +29,7 @@ public sealed class RoguelikeTestFactory
 
     public CardDefinitionSO CreatePrism(string _id, CardDefinitionSO _a, CardDefinitionSO _b, ERoguelikeCombo _combo, params ERoguelikeSkill[] _suppressed)
     {
-        CardDefinitionSO card = CreateCard(_id, ECardKind.Prism, ECardGrade.Prism);
+        CardDefinitionSO card = CreateCard(_id, ECardKind.Prism);
         card.comboMaterialA = _a;
         card.comboMaterialB = _b;
         card.comboType = _combo;

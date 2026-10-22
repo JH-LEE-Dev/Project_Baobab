@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 
-/// <summary>가격·표시 등급·효과 합산·조합 억제 규칙(기획서 3-3).</summary>
+/// <summary>레벨 수·표시 프레임·효과 합산·조합 억제·웨이브 표 규칙(기획서 v2.4 5장, 부록 A-2).</summary>
 public class CardRulesTests
 {
     private RoguelikeTestFactory factory;
@@ -21,88 +21,34 @@ public class CardRulesTests
     }
 
     [Test]
-    public void Price_MatchesAppendixA6Table()
+    public void MaxLevel_FollowsKind_Active7Passive5ContractAndPrism1()
     {
-        CardDefinitionSO bronze = factory.CreateCard("b", ECardKind.Passive, ECardGrade.Bronze);
-        CardDefinitionSO silver = factory.CreateCard("s", ECardKind.Active, ECardGrade.Silver, ERoguelikeSkill.Spin);
-        CardDefinitionSO gold = factory.CreateCard("g", ECardKind.Passive, ECardGrade.Gold);
-        CardDefinitionSO ruby = factory.CreateCard("r", ECardKind.Ruby, ECardGrade.Ruby);
-
-        int[] bronzePrices = { 60, 78, 96, 120, 0 };
-        int[] silverPrices = { 150, 195, 240, 300, 0 };
-        int[] goldPrices = { 300, 390, 480, 600, 0 };
-        for (int level = 1; level <= 5; level++)
-        {
-            Assert.AreEqual(bronzePrices[level - 1], CardPricing.GetPrice(bronze, level, null, balance), "브론즈 " + level);
-            Assert.AreEqual(silverPrices[level - 1], CardPricing.GetPrice(silver, level, null, balance), "실버 " + level);
-            Assert.AreEqual(goldPrices[level - 1], CardPricing.GetPrice(gold, level, null, balance), "골드 " + level);
-        }
-
-        Assert.AreEqual(240, CardPricing.GetPrice(ruby, 1, null, balance));
+        // 기획서 v2.4 5-2: 액티브 7레벨, 공통 패시브 5레벨, 계약·프리즘은 레벨이 없다.
+        Assert.AreEqual(7, factory.CreateCard("a", ECardKind.Active, ERoguelikeSkill.Spin).EffectiveMaxLevel);
+        Assert.AreEqual(5, factory.CreateCard("p", ECardKind.Passive).EffectiveMaxLevel);
+        Assert.AreEqual(1, factory.CreateCard("r", ECardKind.Ruby).EffectiveMaxLevel);
+        Assert.AreEqual(1, factory.CreateCard("x", ECardKind.Prism).EffectiveMaxLevel);
     }
 
     [Test]
-    public void Price_BargainHalvesAndRoundsUp_FreeCardsStayFree()
+    public void Build_ActiveNeedsSevenPicksToMax()
     {
-        CardDefinitionSO bronze = factory.CreateCard("b", ECardKind.Passive, ECardGrade.Bronze);
-        RunModifiers mods = new RunModifiers();
-        mods.Add(new CardEffectEntry(ERunEffect.CardPricePercent, ERoguelikeSkill.None, -50f));
+        CardDefinitionSO active = factory.CreateCard("a", ECardKind.Active, ERoguelikeSkill.Drone);
+        RunBuildState build = new RunBuildState();
 
-        Assert.AreEqual(30, CardPricing.GetPrice(bronze, 1, mods, balance));
-        Assert.AreEqual(39, CardPricing.GetPrice(bronze, 2, mods, balance));
-        Assert.AreEqual(0, CardPricing.GetPrice(bronze, 5, mods, balance));
+        for (int i = 0; i < 6; i++) Assert.IsTrue(build.Acquire(active));
+        Assert.IsFalse(build.IsMax(active));
 
-        // 홀수 정가는 반값에서 올림(기획서 6-4 "소수점은 올림").
-        bronze.basePriceOverride = 75;
-        Assert.AreEqual(38, CardPricing.GetPrice(bronze, 1, mods, balance));
-    }
-
-    [Test]
-    public void AppraisalFee_MatchesSection44Table()
-    {
-        CardDefinitionSO bronze = factory.CreateCard("b", ECardKind.Passive, ECardGrade.Bronze);
-        CardDefinitionSO silver = factory.CreateCard("s", ECardKind.Active, ECardGrade.Silver, ERoguelikeSkill.Spin);
-        CardDefinitionSO gold = factory.CreateCard("g", ECardKind.Passive, ECardGrade.Gold);
-
-        int[] bronzeFees = { 90, 110, 138, 66 };
-        int[] silverFees = { 224, 276, 345, 165 };
-        int[] goldFees = { 449, 552, 690, 330 };
-        for (int level = 1; level <= 4; level++)
-        {
-            Assert.AreEqual(bronzeFees[level - 1], CardPricing.GetAppraisalFee(bronze, level, balance), "브론즈 " + level);
-            Assert.AreEqual(silverFees[level - 1], CardPricing.GetAppraisalFee(silver, level, balance), "실버 " + level);
-            Assert.AreEqual(goldFees[level - 1], CardPricing.GetAppraisalFee(gold, level, balance), "골드 " + level);
-        }
-
-        Assert.AreEqual(0, CardPricing.GetAppraisalFee(bronze, 5, balance));
-    }
-
-    [Test]
-    public void RerollCost_MultipliesBy1Point2_AndFreeOverride()
-    {
-        Assert.AreEqual(20, CardPricing.GetRerollCost(0, null, balance));
-        Assert.AreEqual(24, CardPricing.GetRerollCost(1, null, balance));
-        Assert.AreEqual(29, CardPricing.GetRerollCost(2, null, balance));
-        Assert.AreEqual(35, CardPricing.GetRerollCost(3, null, balance));
-
-        RunModifiers mods = new RunModifiers();
-        mods.Add(new CardEffectEntry(ERunEffect.RerollFree, ERoguelikeSkill.None, 1f));
-        Assert.AreEqual(0, CardPricing.GetRerollCost(5, mods, balance));
-    }
-
-    [Test]
-    public void Reroll_NotAllowedWhenDisabled()
-    {
-        RunModifiers mods = new RunModifiers();
-        mods.Add(new CardEffectEntry(ERunEffect.RerollDisabled, ERoguelikeSkill.None, 1f));
-        Assert.IsFalse(CardPricing.CanReroll(mods));
-        Assert.IsTrue(CardPricing.CanReroll(null));
+        Assert.IsTrue(build.Acquire(active));
+        Assert.IsTrue(build.IsMax(active));
+        Assert.IsFalse(build.Acquire(active), "MAX 이후에는 더 오르지 않는다");
+        Assert.AreEqual(7, build.PickCount);
     }
 
     [Test]
     public void Modifiers_ConditionalBonusAddsToGlobal_AndSurvivesResolve()
     {
-        CardDefinitionSO atk = factory.CreateCard("atk", ECardKind.Passive, ECardGrade.Bronze);
+        CardDefinitionSO atk = factory.CreateCard("atk", ECardKind.Passive);
         RoguelikeTestFactory.AddLevelEffect(atk, 1, ERunEffect.DamagePercent, ERoguelikeSkill.None, 12f);
 
         RunBuildState build = new RunBuildState();
@@ -122,40 +68,46 @@ public class CardRulesTests
     }
 
     [Test]
-    public void DisplayGrade_PurchaseReachingMaxIsEmerald()
+    public void DisplayGrade_PickReachingMaxIsEmerald_OtherwiseNormal()
     {
-        CardDefinitionSO gold = factory.CreateCard("g", ECardKind.Passive, ECardGrade.Gold);
+        CardDefinitionSO active = factory.CreateCard("a", ECardKind.Active, ERoguelikeSkill.Spin);
+        CardDefinitionSO passive = factory.CreateCard("p", ECardKind.Passive);
 
-        Assert.AreEqual(ECardDisplayGrade.Gold, CardPricing.GetDisplayGrade(gold, 4));
-        Assert.AreEqual(ECardDisplayGrade.Emerald, CardPricing.GetDisplayGrade(gold, 5));
+        Assert.AreEqual(ECardDisplayGrade.Bronze, CardRarity.GetDisplayGrade(active, 6));
+        Assert.AreEqual(ECardDisplayGrade.Emerald, CardRarity.GetDisplayGrade(active, 7));
+        Assert.AreEqual(ECardDisplayGrade.Bronze, CardRarity.GetDisplayGrade(passive, 4));
+        Assert.AreEqual(ECardDisplayGrade.Emerald, CardRarity.GetDisplayGrade(passive, 5));
     }
 
     [Test]
-    public void IsRare_OnlyMaxPrismAndRuby()
+    public void IsRare_OnlyMaxPrismAndContract()
     {
-        // 기획서 v2.2 10-2 "레어의 기준": MAX(에메랄드)로 완성되는 카드 · 프리즘 · 루비. 레벨 I~IV는 실버·골드여도 일반이다.
-        CardDefinitionSO silver = factory.CreateCard("s", ECardKind.Active, ECardGrade.Silver, ERoguelikeSkill.Spin);
-        CardDefinitionSO gold = factory.CreateCard("g", ECardKind.Passive, ECardGrade.Gold);
-        CardDefinitionSO prism = factory.CreateCard("p", ECardKind.Prism, ECardGrade.Gold);
-        CardDefinitionSO ruby = factory.CreateCard("r", ECardKind.Ruby, ECardGrade.Ruby);
+        // 기획서 v2.4 5-3 "레어 / 일반": MAX(에메랄드)로 완성되는 카드 · 프리즘 · 계약. 나머지는 일반이다.
+        CardDefinitionSO active = factory.CreateCard("a", ECardKind.Active, ERoguelikeSkill.Spin);
+        CardDefinitionSO passive = factory.CreateCard("p", ECardKind.Passive);
+        CardDefinitionSO prism = factory.CreateCard("x", ECardKind.Prism);
+        CardDefinitionSO contract = factory.CreateCard("r", ECardKind.Ruby);
+
+        for (int level = 1; level <= 6; level++)
+        {
+            Assert.IsFalse(CardRarity.IsRare(CardRarity.GetDisplayGrade(active, level)), "액티브 " + level);
+        }
 
         for (int level = 1; level <= 4; level++)
         {
-            Assert.IsFalse(CardPricing.IsRare(CardPricing.GetDisplayGrade(silver, level)), "실버 " + level);
-            Assert.IsFalse(CardPricing.IsRare(CardPricing.GetDisplayGrade(gold, level)), "골드 " + level);
+            Assert.IsFalse(CardRarity.IsRare(CardRarity.GetDisplayGrade(passive, level)), "패시브 " + level);
         }
 
-        Assert.IsTrue(CardPricing.IsRare(CardPricing.GetDisplayGrade(silver, 5)), "실버 MAX");
-        Assert.IsTrue(CardPricing.IsRare(CardPricing.GetDisplayGrade(gold, 5)), "골드 MAX");
-        Assert.IsTrue(CardPricing.IsRare(CardPricing.GetDisplayGrade(prism, 1)), "프리즘");
-        Assert.IsTrue(CardPricing.IsRare(CardPricing.GetDisplayGrade(ruby, 1)), "루비");
-        Assert.IsFalse(CardPricing.IsRare(ECardDisplayGrade.Bronze), "브론즈");
+        Assert.IsTrue(CardRarity.IsRare(CardRarity.GetDisplayGrade(active, 7)), "액티브 MAX");
+        Assert.IsTrue(CardRarity.IsRare(CardRarity.GetDisplayGrade(passive, 5)), "패시브 MAX");
+        Assert.IsTrue(CardRarity.IsRare(CardRarity.GetDisplayGrade(prism, 1)), "프리즘");
+        Assert.IsTrue(CardRarity.IsRare(CardRarity.GetDisplayGrade(contract, 1)), "계약");
     }
 
     [Test]
     public void Resolver_SumsLevelEffectsCumulatively()
     {
-        CardDefinitionSO atk = factory.CreateCard("atk", ECardKind.Passive, ECardGrade.Bronze);
+        CardDefinitionSO atk = factory.CreateCard("atk", ECardKind.Passive);
         for (int level = 1; level <= 5; level++)
         {
             RoguelikeTestFactory.AddLevelEffect(atk, level, ERunEffect.DamagePercent, ERoguelikeSkill.None, 10f);
@@ -175,8 +127,8 @@ public class CardRulesTests
     [Test]
     public void Resolver_ActiveCardUnlocksItsSkill_PrismSuppressesMaterials()
     {
-        CardDefinitionSO spin = factory.CreateCard("spin", ECardKind.Active, ECardGrade.Bronze, ERoguelikeSkill.Spin);
-        CardDefinitionSO shock = factory.CreateCard("shock", ECardKind.Active, ECardGrade.Silver, ERoguelikeSkill.Shockwave);
+        CardDefinitionSO spin = factory.CreateCard("spin", ECardKind.Active, ERoguelikeSkill.Spin);
+        CardDefinitionSO shock = factory.CreateCard("shock", ECardKind.Active, ERoguelikeSkill.Shockwave);
         CardDefinitionSO prism = factory.CreatePrism("p", spin, shock, ERoguelikeCombo.SpinShockwave, ERoguelikeSkill.Spin, ERoguelikeSkill.Shockwave);
 
         RunBuildState build = new RunBuildState();
@@ -203,15 +155,60 @@ public class CardRulesTests
     [Test]
     public void Build_ExclusiveGroupLocksOtherCardsButNotTheOwner()
     {
-        CardDefinitionSO bargain = factory.CreateCard("bargain", ECardKind.Ruby, ECardGrade.Ruby, _exclusiveGroup: 1);
-        CardDefinitionSO vip = factory.CreateCard("vip", ECardKind.Ruby, ECardGrade.Ruby, _exclusiveGroup: 1);
+        CardDefinitionSO sporeDrone = factory.CreateCard("sporeDrone", ECardKind.Prism, _exclusiveGroup: 3);
+        CardDefinitionSO sporeOffroad = factory.CreateCard("sporeOffroad", ECardKind.Prism, _exclusiveGroup: 3);
 
         RunBuildState build = new RunBuildState();
-        build.Acquire(bargain);
+        build.Acquire(sporeDrone);
 
-        Assert.IsTrue(build.IsExcluded(vip));
-        Assert.IsFalse(build.IsExcluded(bargain));
-        Assert.IsTrue(build.IsMax(bargain));
+        Assert.IsTrue(build.IsExcluded(sporeOffroad));
+        Assert.IsFalse(build.IsExcluded(sporeDrone));
+        Assert.IsTrue(build.IsMax(sporeDrone));
+    }
+
+    [Test]
+    public void Build_PrismsSharingMaterialAreExclusive_EvenAcrossGroups()
+    {
+        // 기획서 v2.5 6-2: 재료가 겹치는 조합은 한 판에 하나만. 포자 수류탄 + 드론(포자 조합)과 스텔라 + 드론(그룹 없음)은 드론이 겹친다.
+        CardDefinitionSO spore = factory.CreateCard("spore", ECardKind.Active, ERoguelikeSkill.SporeBomb);
+        CardDefinitionSO drone = factory.CreateCard("drone", ECardKind.Active, ERoguelikeSkill.Drone);
+        CardDefinitionSO stella = factory.CreateCard("stella", ECardKind.Active, ERoguelikeSkill.Stella);
+        CardDefinitionSO spin = factory.CreateCard("spin", ECardKind.Active, ERoguelikeSkill.Spin);
+        CardDefinitionSO boomerang = factory.CreateCard("boomerang", ECardKind.Active, ERoguelikeSkill.Boomerang);
+        CardDefinitionSO sporeDrone = factory.CreatePrism("sporeDrone", spore, drone, ERoguelikeCombo.SporeDrone, ERoguelikeSkill.SporeBomb);
+        CardDefinitionSO stellaDrone = factory.CreatePrism("stellaDrone", stella, drone, ERoguelikeCombo.StellaDrone);
+        CardDefinitionSO spinBoomerang = factory.CreatePrism("spinBoomerang", spin, boomerang, ERoguelikeCombo.SpinBoomerang);
+        sporeDrone.exclusiveGroup = 3;
+
+        RunBuildState build = new RunBuildState();
+        build.Acquire(sporeDrone);
+
+        Assert.IsTrue(build.IsExcluded(stellaDrone));
+        Assert.IsFalse(build.IsExcluded(spinBoomerang), "재료가 겹치지 않는 조합은 함께 가질 수 있다");
+        Assert.IsFalse(build.IsExcluded(drone), "재료 카드 자체는 막지 않는다");
+        Assert.IsTrue(sporeDrone.ConflictsWith(stellaDrone));
+        Assert.IsFalse(sporeDrone.ConflictsWith(spinBoomerang));
+    }
+
+    [Test]
+    public void Resolver_SporeComboSuppressesSporeThrowButKeepsPartner()
+    {
+        CardDefinitionSO spore = factory.CreateCard("spore", ECardKind.Active, ERoguelikeSkill.SporeBomb);
+        CardDefinitionSO drone = factory.CreateCard("drone", ECardKind.Active, ERoguelikeSkill.Drone);
+        CardDefinitionSO sporeDrone = factory.CreatePrism("sporeDrone", spore, drone, ERoguelikeCombo.SporeDrone, ERoguelikeSkill.SporeBomb);
+
+        RunBuildState build = new RunBuildState();
+        build.Acquire(spore);
+        build.Acquire(drone);
+        build.Acquire(sporeDrone);
+
+        RunModifiers mods = new RunModifiers();
+        RunEffectResolver.Resolve(build, mods, new List<CardEffectEntry>());
+
+        Assert.IsTrue(mods.IsComboActive(ERoguelikeCombo.SporeDrone));
+        Assert.IsFalse(mods.IsSkillActive(ERoguelikeSkill.SporeBomb));
+        Assert.IsTrue(mods.IsSkillActive(ERoguelikeSkill.Drone));
+        Assert.IsFalse(mods.IsComboActive(ERoguelikeCombo.SporeShockwave));
     }
 
     [Test]
@@ -226,31 +223,58 @@ public class CardRulesTests
         Assert.IsFalse(w7.bTierChanged);
         Assert.AreEqual(1, w8.tierIndex);
         Assert.IsTrue(w8.bTierChanged);
-        Assert.AreEqual(30, WaveSchedule.Get(balance, 1).killTarget);
+        Assert.AreEqual(20, WaveSchedule.Get(balance, 1).killTarget);
 
+        // 기획서 v2.6 부록 A "언리밋 곡선": Unlimit-1은 4티어 최소 수치(HP 230, 묶음 21그루 / 1.5초)에서 시작하고,
+        // 웨이브마다 HP ×1.10 · 묶음 +1그루 · 묶음 주기 −0.02초가 누적된다. 목표 처치 수는 1,600 고정.
         Assert.IsTrue(w31.bUnlimit);
         Assert.AreEqual(1, w31.unlimitIndex);
-        Assert.AreEqual(0f, w31.goldPerTree);
-        Assert.AreEqual(145, w31.killTarget);
-        Assert.AreEqual(420f * 1.1f, w31.treeHp, 0.001f);
-        Assert.AreEqual(420f * 1.2f, w32.treeHp, 0.001f);
+        Assert.AreEqual(1600, w31.killTarget);
+        Assert.AreEqual(230f, w31.treeHp, 0.001f);
+        Assert.AreEqual(21, w31.batchSize);
+        Assert.AreEqual(1.5f, w31.batchSeconds, 0.0001f);
+        Assert.AreEqual(230f * 1.1f, w32.treeHp, 0.001f);
+        Assert.AreEqual(22, w32.batchSize);
+        Assert.AreEqual(1.48f, w32.batchSeconds, 0.0001f);
+
+        // 묶음 주기는 하한 1.0초에서 멈춘다(Unlimit-30은 묶음 50그루 / 1.0초).
+        WaveSpec w60 = WaveSchedule.Get(balance, 60);
+        Assert.AreEqual(50, w60.batchSize);
+        Assert.AreEqual(1f, w60.batchSeconds, 0.0001f);
     }
 
     [Test]
-    public void WaveSchedule_AbsoluteHpGoldAndDamageFollowAppendixA2()
+    public void WaveSchedule_BatchSizeAndPeriodFollowAppendixA2()
     {
-        float[] hp = { 20, 20, 30, 30, 30, 40, 40, 45, 45, 50, 50, 50, 55, 55, 55, 100, 100, 115, 115, 115, 130, 130, 280, 280, 340, 340, 340, 420, 420, 420 };
+        // 기획서 v2.6 부록 A-2: 티어별 정수 묶음. 1티어 3~7그루 / 3초, 2티어 7~14그루 / 2.5초, 3티어 14~21그루 / 2초, 4티어 21~30그루 / 1.5초.
+        int[] size = { 3, 4, 4, 5, 6, 6, 7, 7, 8, 9, 10, 11, 12, 13, 14, 14, 15, 16, 18, 19, 20, 21, 21, 22, 24, 25, 26, 28, 29, 30 };
+        for (int wave = 1; wave <= 30; wave++)
+        {
+            WaveSpec spec = WaveSchedule.Get(balance, wave);
+            float period = wave <= 7 ? 3f : wave <= 15 ? 2.5f : wave <= 22 ? 2f : 1.5f;
+            Assert.AreEqual(size[wave - 1], spec.batchSize, "묶음 크기 " + wave);
+            Assert.AreEqual(period, spec.batchSeconds, 0.0001f, "묶음 주기 " + wave);
+            Assert.AreEqual(period / size[wave - 1], spec.spawnInterval, 0.0001f, "그루당 주기 " + wave);
+        }
+
+        Assert.AreEqual(1600, WaveSchedule.Get(balance, 30).killTarget);
+    }
+
+    [Test]
+    public void WaveSchedule_AbsoluteHpAndDamageFollowAppendixA2()
+    {
+        // 기획서 v2.6 부록 A-2: 3티어 100 / 105 / 115, 4티어 230 / 300 / 350.
+        float[] hp = { 20, 20, 30, 30, 30, 40, 40, 45, 50, 50, 55, 55, 55, 55, 55, 100, 100, 105, 105, 105, 115, 115, 230, 230, 300, 300, 300, 350, 350, 350 };
         for (int wave = 1; wave <= 30; wave++)
         {
             Assert.AreEqual(hp[wave - 1], WaveSchedule.Get(balance, wave).treeHp, 0.001f, "웨이브 " + wave);
         }
 
-        Assert.AreEqual(2f, WaveSchedule.Get(balance, 1).goldPerTree);
-        Assert.AreEqual(1.75f, WaveSchedule.Get(balance, 8).goldPerTree);
-        Assert.AreEqual(1f, WaveSchedule.Get(balance, 23).goldPerTree);
+        Assert.AreEqual(3f, WaveSchedule.Get(balance, 1).staminaDamage);
         Assert.AreEqual(15f, WaveSchedule.Get(balance, 30).staminaDamage);
-        Assert.AreEqual(2f, WaveSchedule.Get(balance, 1).spawnInterval, 0.001f);
-        Assert.AreEqual(52, balance.SpawnCap);
+        Assert.AreEqual(1f, WaveSchedule.Get(balance, 1).spawnInterval, 0.001f);
+        // 기획서 v2.5: 스폰 상한 = 임계치 40 + 20.
+        Assert.AreEqual(60, balance.SpawnCap);
     }
 
     [Test]

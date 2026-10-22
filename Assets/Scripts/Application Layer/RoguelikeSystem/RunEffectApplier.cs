@@ -54,6 +54,8 @@ public sealed class RunEffectApplier
     private enum ESwitch
     {
         WhirlWind,
+        // 본편 "충격파 마스터리"(헛스윙에도 스윙당 1회 충격파 판정). 충격파 MAX "허공 발동"에 쓴다.
+        ShockWaveMastery,
         Count,
     }
 
@@ -67,12 +69,14 @@ public sealed class RunEffectApplier
 
     // 공통 패시브 "공격속도 증가"가 도끼 공격 속도에도 붙는지. 기획서 6-3은 붙는다.
     private bool bAttackSpeedAffectsAxe = true;
-    private int baseWhirlwindInterval = 3;
+    // 회전베기 기본 "필요 휘두름" 수(I = 3휘두름마다 → 4번째 공격에 발동, 기획서 v2.4 6-1).
+    private int spinRequiredSwings = 3;
     private float baseMaxStamina = 100f;
 
     private float maxMoveSpeedPercent;
-    private float whirlwindExtraRotationDelay = 0.15f;
     private float shockwaveExtraDelay = 0.12f;
+    private float shockwaveExtraDamageRatio = 0.6f;
+    private Color sporeShockwaveColor = Color.green;
     private float axeExtraStrikeDelay = 0.1f;
 
     private bool bHasRunBaseStats;
@@ -81,18 +85,24 @@ public sealed class RunEffectApplier
     private StatComponent injectedStat;
     private StatComponent.CombatBaseStats originalBaseStats;
 
-    public void Initialize(bool _bAttackSpeedAffectsAxe, int _baseWhirlwindInterval)
+    public void Initialize(bool _bAttackSpeedAffectsAxe, int _spinRequiredSwings)
     {
         bAttackSpeedAffectsAxe = _bAttackSpeedAffectsAxe;
-        baseWhirlwindInterval = Mathf.Max(1, _baseWhirlwindInterval);
+        spinRequiredSwings = Mathf.Max(0, _spinRequiredSwings);
     }
 
-    /// <summary>회전베기 추가 회전·충격파 추가 발생 사이의 간격(초). 튜닝 SO 값.</summary>
-    public void SetRepeatDelays(float _whirlwindExtraRotationDelay, float _shockwaveExtraDelay, float _axeExtraStrikeDelay)
+    /// <summary>충격파 추가 발생·도끼 연속 타격 사이의 간격(초)과 추가 충격파의 피해 비율(충격파 MAX 두 번째 60%). 튜닝 SO 값.</summary>
+    public void SetRepeatDelays(float _shockwaveExtraDelay, float _axeExtraStrikeDelay, float _shockwaveExtraDamageRatio)
     {
-        whirlwindExtraRotationDelay = Mathf.Max(0f, _whirlwindExtraRotationDelay);
         shockwaveExtraDelay = Mathf.Max(0f, _shockwaveExtraDelay);
         axeExtraStrikeDelay = Mathf.Max(0f, _axeExtraStrikeDelay);
+        shockwaveExtraDamageRatio = Mathf.Max(0f, _shockwaveExtraDamageRatio);
+    }
+
+    /// <summary>포자 충격파(포자 수류탄 + 충격파)를 가졌을 때 충격파 그림에 곱하는 색. 튜닝 SO 값.</summary>
+    public void SetSporeShockwaveColor(Color _color)
+    {
+        sporeShockwaveColor = _color;
     }
 
     /// <summary>런 동안 쓸 전투 기준값(도끼 공격력 10 등). 다음 Apply에서 캐릭터에 끼운다.</summary>
@@ -131,8 +141,9 @@ public sealed class RunEffectApplier
         ApplyDamageAndSpeed(_mods);
 
         // // 범위. 충격파는 범위 스탯이 따로 없고 확장 속도 × 수명이 곧 범위다(본편 "충격파 범위" 노드와 같은 처리).
+        // 도끼 범위는 공통 패시브(전역)만. 회전베기 카드의 범위 증가는 회전베기 타격에만 붙는다(아래 회전베기 배율).
         float globalRange = _mods.Get(ERunEffect.RangePercent);
-        SetValue(EStat.AxeRange, globalRange + _mods.Get(ERunEffect.RangePercent, ERoguelikeSkill.Spin));
+        SetValue(EStat.AxeRange, globalRange);
         SetValue(EStat.BoomerangRange, _mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Boomerang));
         SetValue(EStat.DroneRange, _mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Drone));
         SetValue(EStat.ShockWaveSpeed, _mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Shockwave));
@@ -140,10 +151,10 @@ public sealed class RunEffectApplier
         // // 지속 시간
         SetValue(EStat.DroneDuration, _mods.GetForSkill(ERunEffect.DurationPercent, ERoguelikeSkill.Drone));
         // 부메랑의 "유지 시간"은 한 번 왕복하며 날아 있는 시간이고, 본편에서는 사거리(타원 장축 비율)가 그 길이를 정한다.
-        // 부메랑 전용 값만 쓴다 - 공통 패시브 "유지 시간 증가"의 대상(연막·별 표식·별 생존)에는 부메랑이 없다(기획서 6-3).
+        // 부메랑 전용 값만 쓴다 - 공통 패시브 "유지 시간 증가"의 대상(오염·별 표식·별 생존)에는 부메랑이 없다(기획서 6-3).
         SetValue(EStat.BoomerangDistance, _mods.Get(ERunEffect.DurationPercent, ERoguelikeSkill.Boomerang));
 
-        // // 이동 속도. 루비 등과 겹쳐도 합산 상한을 넘지 않는다(기획서 6-3 "합산 상한", 부록 A-5 +60%).
+        // // 이동 속도. 계약 등과 겹쳐도 합산 상한을 넘지 않는다(기획서 6-3 "합산 상한", 부록 A-5 +60%).
         float moveSpeed = _mods.Get(ERunEffect.MoveSpeedPercent);
         if (maxMoveSpeedPercent > 0f) moveSpeed = Mathf.Min(moveSpeed, maxMoveSpeedPercent);
         SetValue(EStat.MoveSpeed, moveSpeed);
@@ -174,26 +185,36 @@ public sealed class RunEffectApplier
 
         // // 스위치
         SetSwitch(ESwitch.WhirlWind, _mods.IsSkillActive(ERoguelikeSkill.Spin));
+        // 충격파 MAX: 나무를 맞히지 않고 허공을 휘둘러도 발동 판정을 한다(기획서 v2.6 6-1). 본편 마스터리 경로가 바로 이 동작이다.
+        SetSwitch(ESwitch.ShockWaveMastery, bShockwave && _mods.GetForSkill(ERunEffect.ShockwaveFireOnWhiff, ERoguelikeSkill.Shockwave) > 0f);
 
-        // // 회전베기 발동 간격(필요 휘두름 수). 데이터의 TriggerHitCountAdd로 줄이거나 늘린다.
-        int interval = Mathf.Max(1, baseWhirlwindInterval + Mathf.RoundToInt(_mods.GetForSkill(ERunEffect.TriggerHitCountAdd, ERoguelikeSkill.Spin)));
+        // // 회전베기 빈도 사다리(기획서 v2.4 6-1): 필요 휘두름 3 → 2 → 1 → 0(상시). n휘두름 뒤 n+1번째 공격에 발동하므로
+        // 본편 공격 코드의 발동 주기는 n + 1이다(1 = 공격할 때마다). 데이터의 TriggerHitCountAdd가 n을 줄인다.
+        int requiredSwings = Mathf.Max(0, spinRequiredSwings + Mathf.RoundToInt(_mods.GetForSkill(ERunEffect.TriggerHitCountAdd, ERoguelikeSkill.Spin)));
+        int interval = requiredSwings + 1;
         if (interval != appliedWhirlwindInterval)
         {
             appliedWhirlwindInterval = interval;
             RunCombatOverrides.SetWhirlwindSwingInterval(interval);
         }
 
+        // 회전베기 카드의 회전 피해·범위 증가는 회전베기 타격에만 곱한다(일반 도끼 공격에는 붙지 않는다).
+        RunCombatOverrides.SetWhirlwindMultipliers(
+            Mathf.Max(0f, 1f + _mods.Get(ERunEffect.DamagePercent, ERoguelikeSkill.Spin) / 100f),
+            Mathf.Max(0.1f, 1f + _mods.Get(ERunEffect.RangePercent, ERoguelikeSkill.Spin) / 100f));
+
         // // 레벨 효과의 반복 수(부록 A-4). 본편 공격 코드는 덮어쓰기 값이 0/false일 때 예전 그대로다(RunCombatOverrides).
-        // 회전베기 IV 연속 2회전, 충격파 V 2중 발생, 스텔라 III 다른 액티브의 별 타격.
-        int extraRotations = _mods.IsSkillActive(ERoguelikeSkill.Spin) ? Mathf.RoundToInt(_mods.GetForSkill(ERunEffect.SpinRotationAdd, ERoguelikeSkill.Spin)) : 0;
-        RunCombatOverrides.SetWhirlwindExtraRotations(extraRotations, whirlwindExtraRotationDelay);
+        // 충격파 MAX 2중 발생(두 번째 피해 60%), 스텔라 III 다른 액티브의 별 타격.
 
         int extraShockwaves = _mods.IsSkillActive(ERoguelikeSkill.Shockwave) ? Mathf.RoundToInt(_mods.GetForSkill(ERunEffect.ShockwaveRepeatAdd, ERoguelikeSkill.Shockwave)) : 0;
-        RunCombatOverrides.SetShockWaveExtraCount(extraShockwaves, shockwaveExtraDelay);
+        RunCombatOverrides.SetShockWaveExtraCount(extraShockwaves, shockwaveExtraDelay, shockwaveExtraDamageRatio);
+
+        // 포자 충격파: 충격파 색이 초록으로 바뀐다(기획서 v2.5 6-2, 기본 능력은 그대로 · 색만 변경).
+        RunCombatOverrides.SetShockWaveTint(_mods.IsComboActive(ERoguelikeCombo.SporeShockwave), sporeShockwaveColor);
 
         RunCombatOverrides.SetSkillsHitRunTargets(IsStarHitByActives(_mods));
 
-        // 루비 다다익선: 도끼 공격 연속 2회 타격.
+        // 계약 다다익선: 도끼 공격 연속 2회 타격.
         RunCombatOverrides.SetAxeExtraStrikes(Mathf.RoundToInt(_mods.Get(ERunEffect.AxeExtraStrikeAdd)), axeExtraStrikeDelay);
 
         character?.RefreshDronesForRun();
@@ -232,9 +253,9 @@ public sealed class RunEffectApplier
     {
         if (null == stat || null == _mods) return;
 
-        // // 피해량: 전역(+ 조건부) + 각 스킬 전용
+        // // 피해량: 전역(+ 조건부) + 각 스킬 전용. 도끼는 전역만(회전베기 전용 피해는 회전베기 배율로 따로 곱한다).
         float globalDamage = _mods.GlobalDamagePercent;
-        SetValue(EStat.AxeDamage, globalDamage + _mods.Get(ERunEffect.DamagePercent, ERoguelikeSkill.Spin));
+        SetValue(EStat.AxeDamage, globalDamage);
         SetValue(EStat.ShockWaveDamage, globalDamage + _mods.Get(ERunEffect.DamagePercent, ERoguelikeSkill.Shockwave));
         SetValue(EStat.BoomerangDamage, globalDamage + _mods.Get(ERunEffect.DamagePercent, ERoguelikeSkill.Boomerang));
         SetValue(EStat.DroneDamage, globalDamage + _mods.Get(ERunEffect.DamagePercent, ERoguelikeSkill.Drone));
@@ -321,6 +342,7 @@ public sealed class RunEffectApplier
         switch (_switch)
         {
             case ESwitch.WhirlWind: stat.ActivateWhirlWind(_bOn); break;
+            case ESwitch.ShockWaveMastery: stat.ShockWaveMastery(_bOn); break;
         }
 
         appliedSwitches[idx] = _bOn;

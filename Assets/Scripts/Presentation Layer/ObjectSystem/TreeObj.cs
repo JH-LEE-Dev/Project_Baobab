@@ -528,6 +528,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // "포자 포션" 포자 대폭발에 맞은 나무가 이후 받는 피해 증폭률(0.2 = +20%). 여러 번 맞아도 겹치지 않고 가장 큰 값을 쓴다.
     private float sporeDamageAmplify = 0f;
 
+    /// <summary>지금 걸려 있는 포자 대폭발 피해 증폭률(0이면 없음). 로그라이크 오염 표시가 풀릴 때 본편 표시로 되돌리는 데 쓴다.</summary>
+    public float SporeDamageAmplify => sporeDamageAmplify;
+
     /// <summary>이후 받는 모든 피해를 _amplify만큼 늘린다(포자 대폭발). 이미 더 큰 증폭이 걸려 있으면 그대로 둔다.</summary>
     public void ApplySporeDamageAmplify(float _amplify)
     {

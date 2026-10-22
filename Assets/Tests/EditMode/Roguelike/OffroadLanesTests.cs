@@ -58,21 +58,31 @@ public class OffroadLanesTests
     }
 
     [Test]
-    public void LaneOffset_SplitsSpreadWithoutOverlap()
+    public void SlotOffset_NeighborsKeepMinGap_InsideSpread()
     {
         const float half = 6f;
         const float spread = 0.75f;
+        const float gap = 1.125f; // 오프로드 II(범위 +25%)의 돌진 판정 반지름
 
-        float prevMax = float.MinValue;
-        for (int i = 0; i < 3; i++)
+        int slots = OffroadLanes.SlotCount(half, spread, gap);
+        Assert.AreEqual(8, slots, "9 ÷ 1.125");
+
+        for (int i = 0; i < slots; i++)
         {
-            float min = OffroadLanes.LaneOffset(i, 3, half, spread, 0f);
-            float max = OffroadLanes.LaneOffset(i, 3, half, spread, 1f);
-
-            Assert.GreaterOrEqual(min, prevMax - 0.0001f);
+            float min = OffroadLanes.SlotOffset(i, slots, half, spread, gap, 0f);
+            float max = OffroadLanes.SlotOffset(i, slots, half, spread, gap, 1f);
             Assert.GreaterOrEqual(min, -half * spread - 0.0001f);
             Assert.LessOrEqual(max, half * spread + 0.0001f);
-            prevMax = max;
+
+            // 이웃 칸이 서로 가장 가깝게 흔들려도(이 칸은 끝까지 오른쪽, 다음 칸은 끝까지 왼쪽) 최소 간격 이상 떨어진다.
+            if (i + 1 < slots) Assert.GreaterOrEqual(OffroadLanes.SlotOffset(i + 1, slots, half, spread, gap, 0f) - max, gap - 0.0001f, "칸 " + i);
         }
+    }
+
+    [Test]
+    public void SlotCount_AtLeastOne()
+    {
+        Assert.AreEqual(1, OffroadLanes.SlotCount(0.2f, 0.75f, 1f));
+        Assert.AreEqual(1, OffroadLanes.SlotCount(6f, 0.75f, 0f));
     }
 }

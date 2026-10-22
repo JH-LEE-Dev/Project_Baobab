@@ -315,24 +315,14 @@ public partial class RoguelikeSystem
         SetPhase(ERunPhase.CardSelect);
         DisableControl();
 
-        // 웨이브 10 진입 때 감정사가 숲을 찾아온다는 예고만 띄운다(실제 등장 웨이브는 알려주지 않는다). 기획서 4-4.
-        if (_waveNumber == balance.appraiserNoticeWave && shop.AppraiserWave > 0)
-        {
-            signalHub.Publish(new RoguelikeAppraiserNoticeSignal());
-        }
-
-        bool bAppraiser = shop.IsAppraiserWave(_waveNumber);
-
         bCardPresentationDone = false;
         discardedOfferIndices.Clear();
-        shop.Open(1 == _waveNumber, bAppraiser);
+        shop.Open(1 == _waveNumber);
 
-        // 노출 가능한 카드가 0장(기획서 4-3 "카드 풀 예외 처리"): 선택 화면 대신 "지금은 구매할 수 있는 카드가 없습니다" 안내를 띄우고,
+        // 노출 가능한 카드가 0장(기획서 v2.4 4-2 "카드 풀 예외 처리"): 선택 화면 대신 "선택할 수 있는 카드가 없습니다" 안내를 띄우고,
         // 안내가 끝나면 확인 입력 없이 웨이브를 시작한다. 안내 화면은 UI 담당이 RoguelikeNoCardsAvailableSignal로 띄우고 끝나면
         // RoguelikeCardSelectionPresentationDoneSignal을 보낸다. 안내가 없으면 대체 시간만 기다린다.
-        // 단, 감정사가 와 있고 맡길 카드가 있으면 한 판 한 번뿐인 감정 기회가 사라지지 않게 선택 화면을 그대로 연다
-        // (제시 카드 없이 감정과 건너뛰기만 할 수 있다).
-        if (0 == shop.Offers.Count && false == shop.HasAppraisableCards)
+        if (0 == shop.Offers.Count)
         {
             shop.Close();
             signalHub.Publish(new RoguelikeNoCardsAvailableSignal());
@@ -348,15 +338,14 @@ public partial class RoguelikeSystem
         }
 
         signalHub.Publish(new RoguelikeCardSelectionOpenedSignal());
-        if (bAppraiser) signalHub.Publish(new RoguelikeAppraiserArrivedSignal());
 
-        // 구매 또는 건너뛰기로 닫힐 때까지. 그동안 시간은 흐르지 않는다(필드는 비어 있고 판정도 멈춰 있다).
+        // 카드를 고를 때까지(건너뛰기는 없다, 기획서 v2.4 4-1). 그동안 시간은 흐르지 않는다(필드는 비어 있고 판정도 멈춰 있다).
         while (shop.IsOpen)
         {
             yield return null;
         }
 
-        // 카드 UI의 구매·소멸 연출이 끝나기를 기다린다.
+        // 카드 UI의 선택·소멸 연출이 끝나기를 기다린다.
         // 상한은 게임 시간으로 센다. ESC·보유 카드 일시정지(timeScale 0) 동안 흐르면 메뉴가 떠 있는 채로
         // 강제 진행되어 EnableControl이 메뉴 아래에서 입력 모드를 Gameplay로 바꿔 버린다.
         float elapsed = 0f;
@@ -407,7 +396,6 @@ public partial class RoguelikeSystem
     private IEnumerator WaveCombatRoutine(WaveSpec _spec)
     {
         waveKills = 0;
-        goldRemainder = 0f;
         treeRules.SetTreeHp(_spec.treeHp);
 
         TierFieldData field = GetTierField(_spec.tierIndex);
@@ -415,14 +403,23 @@ public partial class RoguelikeSystem
             _spec.previousTreeKind >= 0 ? field.GetTreeType(_spec.previousTreeKind) : TreeType.None, _spec.previousTreeKindShare);
         ConfigurePressure();
 
+        // 임계치의 절반이 솟아난 채로 웨이브가 시작되고(솟아나는 연출이 시작 신호, 목표 처치 수에 포함), 이후 스폰은 목표 처치 수와
+        // 상관없이 웨이브가 끝날 때까지 묶음 단위로 스폰 상한(T + 20)까지 계속된다(총량 제한 없음). 생성 위치는 필드 곳곳에 분산. 기획서 v2.5 3-1.
+        // 스폰 상한·초기 나무 수는 지금 임계치(계약 "인내의 시간"으로 줄어든 값, ConfigurePressure)를 따른다(기획서 6-4).
         float spawnRate = Mathf.Max(0.1f, 1f + modifiers.Get(ERunEffect.TreeSpawnRatePercent) / 100f);
-        waveStrategy?.BeginWave(inDungeonObjectManager, _spec.spawnInterval / spawnRate, balance.SpawnCap);
+        int initialTrees = TreeSpawnRules.InitialTreeCount(pressure.Threshold, balance.initialTreeThresholdRatio, _spec.killTarget);
+        // 묶음 크기는 정수로 두고 다다익선(스폰 속도 증가)은 묶음 주기를 줄여 반영한다(기획서 v2.6 3-1: 소수 그루 · 이월 없음).
+        waveStrategy?.BeginWave(inDungeonObjectManager, _spec.spawnInterval / spawnRate, CurrentSpawnCap, initialTrees,
+            balance, null != character ? character.transform : null, _spec.batchSize, _spec.batchSeconds / spawnRate);
+
+        float waveCombatSeconds = 0f;
+        float waveIdleMoveSeconds = 0f;
 
         SetPhase(ERunPhase.WaveCombat);
         signalHub.Publish(new RoguelikeWaveStartedSignal(_spec));
         signalHub.Publish(new RoguelikeWaveProgressSignal(0, _spec.killTarget));
         EnableControl();
-        skillController?.BeginCombat();
+        skillController?.BeginCombat(_spec.tierIndex);
 
         EPressureState prevState = pressure.State;
 
@@ -432,6 +429,7 @@ public partial class RoguelikeSystem
             UpdateConditionalBonuses();
 
             int hits = pressure.Tick(Time.deltaTime, FieldTreeCount);
+            MeasureIdleMove(ref waveCombatSeconds, ref waveIdleMoveSeconds);
 
             if (pressure.State != prevState)
             {
@@ -449,7 +447,17 @@ public partial class RoguelikeSystem
             yield return null;
         }
 
-        // 별·연막·표식·돌진은 웨이브와 함께 끝난다. 스텔라+드론의 별은 노바 때까지 남는다(EndCombat).
+        idleMoveSeconds += waveIdleMoveSeconds;
+        combatSecondsForIdle += waveCombatSeconds;
+#if UNITY_EDITOR
+        if (waveCombatSeconds > 0f)
+        {
+            Debug.Log($"[RoguelikeSystem] 웨이브 {_spec.waveNumber}: 전투 {waveCombatSeconds:F1}초 중 나무 없이 이동 {waveIdleMoveSeconds:F1}초 ({waveIdleMoveSeconds / waveCombatSeconds:P0}), " +
+                $"런 누적 {IdleMoveRatio:P0}");
+        }
+#endif
+
+        // 별·오염·표식·돌진은 웨이브와 함께 끝난다. 스텔라+드론의 별은 노바 때까지 남는다(EndCombat).
         skillController?.EndCombat(true);
         ClearConditionalBonuses();
 
@@ -471,23 +479,11 @@ public partial class RoguelikeSystem
             RevertFieldTreesToSapling();
         }
 
-        // 묘목 회수 연출과 코인 흡수는 동시에 진행한다(기획서 3-3 골드 획득 4단계).
-        bool bCoinsDone = null == coinController || null == character;
-        if (false == bCoinsDone)
-        {
-            StartCoroutine(AbsorbCoinsRoutine(() => bCoinsDone = true));
-        }
-
         yield return productionGate.Play(new RoguelikeProductionRequest
         {
             type = ERoguelikeProduction.WaveClear,
             characterTransform = null != character ? character.transform : null,
         });
-
-        while (false == bCoinsDone)
-        {
-            yield return null;
-        }
 
         // 묘목이 다 사라진 뒤에 회수한다(회수하면 그 자리에서 바로 없어진다).
         while (Time.time < saplingVanishEndTime) yield return null;
@@ -499,17 +495,20 @@ public partial class RoguelikeSystem
         // 스태미너는 자동 회복되지 않는다. 회복은 카드로만(기획서 3-2 "회복").
         float recover = modifiers.Get(ERunEffect.StaminaRecoverPerWave);
         if (recover > 0f) character?.RecoverStaminaForRun(recover);
-
-        // 골드 획득 증가 MAX: 웨이브 클리어마다 고정 골드(기획서 6-3). 언리밋은 골드를 쓸 곳이 없어 주지 않는다(7-2).
-        long clearBonus = GetWaveClearGoldBonus(in _spec);
-        if (clearBonus > 0) wallet.Add(clearBonus);
     }
 
-    /// <summary>웨이브 클리어 고정 골드(골드 획득 증가 MAX). 언리밋은 0.</summary>
-    private long GetWaveClearGoldBonus(in WaveSpec _spec)
+    /// <summary>
+    /// 허탕 이동 측정(에디터 전용, 기획서 v2.3 C-2 실측 항목 "전투 시간 중 나무 없이 이동한 시간 비율"). 캐릭터가 움직이는데 가장 가까운 나무가
+    /// idleMoveReach보다 멀면 나무 없이 이동한 시간으로 센다. 웨이브마다 에디터 로그와 디버그 창으로 확인한다.
+    /// </summary>
+    [System.Diagnostics.Conditional("UNITY_EDITOR")]
+    private void MeasureIdleMove(ref float _combatSeconds, ref float _idleSeconds)
     {
-        if (_spec.bUnlimit) return 0;
-        return System.Math.Max(0, Mathf.RoundToInt(modifiers.Get(ERunEffect.GoldPerWaveClear)));
+        float dt = Time.deltaTime;
+        _combatSeconds += dt;
+
+        if (null == character || false == character.bMoving || null == waveStrategy) return;
+        if (waveStrategy.NearestTreeDistance(inDungeonObjectManager, character.transform.position) > balance.idleMoveReach) _idleSeconds += dt;
     }
 
     /// <summary>
@@ -533,53 +532,6 @@ public partial class RoguelikeSystem
         if (modifiers.SetConditional(0f, 0f)) effectApplier.ApplyDamageAndSpeed(modifiers);
     }
 
-    /// <summary>
-    /// 바닥 코인을 코인 HUD 쪽으로 빨아들인다(기획서 3-3 골드 획득 5단계 "코인 HUD 쪽으로 날아가는 애니메이션과 함께 보유 골드가 오른다").
-    /// 코인은 월드 물체라 HUD 화면 지점을 월드로 옮긴 고정점으로 날아간다. 흡수 동안 매 프레임 다시 맞춘다(해상도 변경 대비).
-    /// </summary>
-    private IEnumerator AbsorbCoinsRoutine(System.Action _onComplete)
-    {
-        if (null == coinHudTarget)
-        {
-            coinHudTarget = new GameObject("RoguelikeCoinHudTarget").transform;
-            coinHudTarget.SetParent(transform, false);
-        }
-
-        UpdateCoinHudTarget();
-
-        bool bDone = false;
-        StartCoroutine(AbsorbAllThen(() => bDone = true));
-        while (false == bDone)
-        {
-            UpdateCoinHudTarget();
-            yield return null;
-        }
-
-        _onComplete?.Invoke();
-    }
-
-    private IEnumerator AbsorbAllThen(System.Action _onComplete)
-    {
-        yield return coinController.AbsorbAll(coinHudTarget, wallet.Add);
-        _onComplete?.Invoke();
-    }
-
-    private void UpdateCoinHudTarget()
-    {
-        Camera cam = Camera.main;
-        if (null == cam || null == coinHudTarget) return;
-
-        Vector2 screen;
-        if (false == uiCoordinator.TryGetCoinHudScreenPoint(out screen))
-        {
-            screen = new Vector2(coinHudFallbackViewport.x * Screen.width, coinHudFallbackViewport.y * Screen.height);
-        }
-
-        Vector3 world = cam.ScreenToWorldPoint(new Vector3(screen.x, screen.y, Mathf.Abs(cam.transform.position.z)));
-        world.z = 0f;
-        coinHudTarget.position = world;
-    }
-
     private IEnumerator RunClearRoutine()
     {
         SetPhase(ERunPhase.RunClear);
@@ -590,13 +542,6 @@ public partial class RoguelikeSystem
 
         // 클리어 직후 바로 저장(기획서 3-7). 언리밋에서 게임이 꺼져도 클리어 랭킹은 남는다.
         RunRecordEntry clearSnapshot = BuildRecordEntry(ERunEndReason.GameOver, false);
-
-        // 30웨이브 코인은 아직 바닥에 있다(흡수는 이 연출 뒤 WaveClearRoutine에서). 목표를 채운 웨이브의 코인은
-        // 포기해도 지갑에 들어가므로(StopRunActivity) 지금 바닥 값까지 이 판의 획득으로 센다.
-        if (null != coinController) clearSnapshot.coinsCollected += coinController.GroundValue;
-
-        // 30웨이브 클리어 고정 골드(골드 획득 증가 MAX)도 이 연출 뒤 WaveClearRoutine에서 들어온다. 같은 판의 최종 기록과 맞춘다.
-        clearSnapshot.coinsCollected += GetWaveClearGoldBonus(in currentWave);
 
         // 언리밋이 끝날 때의 SubmitRunEnd는 클리어 랭킹을 다시 넣지 않아 순위를 돌려주지 않는다. 여기서 받아 둔다.
         lastClearRank = RunRecordBook.SubmitClear(records, clearSnapshot);
@@ -751,7 +696,7 @@ public partial class RoguelikeSystem
         // 같은 프레임에 시작 상태로 되돌린다(새 지형이 한 프레임도 통째로 보이지 않게). 섬 중심은 시작 칸보다 반 칸 아래다.
         Vector3 islandCenter = center - new Vector3(0f, cell.y * 0.5f, 0f);
         tileWave.PrepareAfterGenerate(islandCenter, islandReferenceViewSize * 0.5f, _bEntryWave);
-        waveStrategy?.ConfigureField(center, islandRadiusX, islandRadiusY);
+        waveStrategy?.ConfigureField(center, islandRadiusX, islandRadiusY, null != balance ? balance.fieldEdgeInsetCells : 0);
         // 오프로드 차선은 화면에 보이는 섬(칸 중심 기준 타원)에 맞춰야 테두리 타일 위에서 소환된다. 시작 칸이 아니라 섬 중심을 넘긴다.
         skillController?.SetField(islandCenter, islandRadiusX, islandRadiusY);
         inDungeonObjectManager.SetExternalTreeGenerationStrategy(waveStrategy, field.mapType);
@@ -848,7 +793,6 @@ public partial class RoguelikeSystem
         bCleared = false;
 
         waveStrategy?.StopSpawning();
-        coinController?.DiscardAll();
         pressure.Reset();
 
         // 게임오버·포기로 전투 흐름이 중간에 끊기면 WaveCombatRoutine 끝의 ClearConditionalBonuses가 돌지 않는다.
@@ -856,7 +800,6 @@ public partial class RoguelikeSystem
         modifiers.SetConditional(0f, 0f);
         effectApplier.RemoveAll();
         build.Reset();
-        wallet.Reset();
         shop.ResetRun(System.Environment.TickCount);
 
         currentWave = default;
@@ -868,15 +811,19 @@ public partial class RoguelikeSystem
         lastClearedUnlimitWave = 0;
         lastClearRank = -1;
         lastUnlimitRank = -1;
-        goldRemainder = 0f;
+        idleMoveSeconds = 0f;
+        combatSecondsForIdle = 0f;
         discardedOfferIndices.Clear();
     }
 
-    /// <summary>새 런 시작(골드 0, 보유 카드 없음, 리롤 비용 초기화). 스태미너를 밸런스 최대치로 채운다.</summary>
+    /// <summary>새 런 시작(보유 카드 없음). 스태미너를 밸런스 최대치로 채운다.</summary>
     private void BeginRunState()
     {
         effectApplier.SetBaseMaxStamina(balance.maxStamina);
         effectApplier.Apply(modifiers);
+
+        // 첫 웨이브 전(카드 선택 동안)에도 HUD가 이번 판의 임계치·스폰 상한을 읽도록 맞춘다. 웨이브마다 다시 맞춘다(WaveCombatRoutine).
+        ConfigurePressure();
 
         unitLogicManager.SetCharacterStaminaState(false, 0f, 0f);
         unitLogicManager.CharacterSleep();
@@ -889,6 +836,7 @@ public partial class RoguelikeSystem
     private void ConfigurePressure()
     {
         int cap = balance.SpawnCap;
+        // 임계치는 기본 스폰 상한을 넘지 않는다. 줄어든 임계치에 맞춘 스폰 상한은 CurrentSpawnCap.
         int threshold = Mathf.Clamp(balance.threshold + Mathf.RoundToInt(modifiers.Get(ERunEffect.ThresholdAdd)), Mathf.Max(1, balance.minThreshold), cap);
         float grace = Mathf.Clamp(balance.graceTime + modifiers.Get(ERunEffect.GraceTimeAdd), 0f, balance.maxGraceTime);
         float cooldown = Mathf.Clamp(balance.damageCooldown + modifiers.Get(ERunEffect.DamageCooldownAdd), 0.1f, balance.maxDamageCooldown);
@@ -938,7 +886,6 @@ public partial class RoguelikeSystem
             playTimeSeconds = playTimeSeconds,
             clearTimeSeconds = bCleared ? clearTimeSeconds : 0f,
             treesFelled = treesFelled,
-            coinsCollected = wallet.TotalEarned,
         };
 
         if (bCleared)

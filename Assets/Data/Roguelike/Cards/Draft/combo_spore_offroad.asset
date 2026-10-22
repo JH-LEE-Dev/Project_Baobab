@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7cf8c99cf50507244a0f3d975df109e7, type: 3}
+  m_Name: combo_spore_offroad
+  m_EditorClassIdentifier: Baobab.Roguelike::CardDefinitionSO
+  cardId: combo_spore_offroad
+  nameKey: Roguelike_Card_combo_spore_offroad
+  descriptionKey: Roguelike_Card_combo_spore_offroad_Desc
+  icon: {fileID: 0}
+  kind: 3
+  skillTag: 0
+  exclusiveGroup: 3
+  levels:
+  - effects: []
+  comboMaterialA: {fileID: 11400000, guid: 9e29f30a2b02c2648a8a1204e2fd97cd, type: 2}
+  comboMaterialB: {fileID: 11400000, guid: 6e4671b1986325f46b98059748e81f74, type: 2}
+  comboType: 7
+  suppressedSkills: 07000000
+  designerNote: "\uAE30\uD68D\uC11C v2.5 6-2 \uD3EC\uC790 \uC218\uB958\uD0C4 + \uC624\uD504\uB85C\uB4DC(\uBC29\uAD6C\uCC28). \uC624\uD504\uB85C\uB4DC\uAC00 \uC9C0\uB098\uAC04 \uC790\uB9AC\uC5D0 \uD3EC\uC790 \uD3ED\uBC1C(\uAC04\uACA9 \u00B7 \uBC94\uC704\uB294 \uD29C\uB2DD). \uC624\uD504\uB85C\uB4DC \uAE30\uBCF8 \uB2A5\uB825 \uC720\uC9C0, \uD3EC\uC790 \uC218\uB958\uD0C4 \uAE30\uBCF8 \uB2A5\uB825 \uC81C\uAC70. \uBC30\uD0C0 \uADF8\uB8F9 \uD3EC\uC790 \uC870\uD569."

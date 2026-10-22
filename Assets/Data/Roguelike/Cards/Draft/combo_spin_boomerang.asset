@@ -17,16 +17,13 @@ MonoBehaviour:
   descriptionKey: Roguelike_Card_combo_spin_boomerang_Desc
   icon: {fileID: 0}
   kind: 3
-  grade: 4
   skillTag: 0
-  exclusiveGroup: 0
-  maxLevel: 5
+  exclusiveGroup: 2
   levels:
   - effects:
     - effect: 0
       skill: 0
       value: 0
-  basePriceOverride: 0
   comboMaterialA: {fileID: 11400000, guid: 0e49dfb761c149d489e685cb283d2e74, type: 2}
   comboMaterialB: {fileID: 11400000, guid: 28b0bae289f16c248b790180c1a819be, type: 2}
   comboType: 3

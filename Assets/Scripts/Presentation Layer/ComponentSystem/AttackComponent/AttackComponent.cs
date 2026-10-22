@@ -33,8 +33,6 @@ public class AttackComponent : PComponent
     //최적화를 위한 재사용 컬렉션
     private List<IStaticCollidable> collisionResults = new List<IStaticCollidable>(16);
     private List<IStaticCollidable> multiAttackResults = new List<IStaticCollidable>(16);
-    // [로그라이크] 회전베기 추가 회전(RunCombatOverrides.WhirlwindExtraRotations)의 판정 버퍼. 본편에서는 쓰이지 않는다.
-    private List<IStaticCollidable> extraWhirlwindResults;
     // [로그라이크] 도끼 연속 타격(RunCombatOverrides.AxeExtraStrikes) 대상. 본편에서는 쓰이지 않는다.
     // 대상 객체는 풀에서 재사용될 수 있으므로(나무, 스텔라 별) 맞힌 순간의 재사용 번호(나무)와 위치(모든 정적 대상)를 함께 기억해,
     // 사이에 사라졌다가 다른 자리에 새로 놓인 객체는 치지 않는다.
@@ -55,8 +53,6 @@ public class AttackComponent : PComponent
     private float extraShockWaveWaitSeconds = -1f;
     private WaitForSeconds extraStrikeWait;
     private float extraStrikeWaitSeconds = -1f;
-    private WaitForSeconds extraWhirlwindWait;
-    private float extraWhirlwindWaitSeconds = -1f;
 
     private static WaitForSeconds GetCachedWait(ref WaitForSeconds _cache, ref float _cachedSeconds, float _seconds)
     {
@@ -70,6 +66,12 @@ public class AttackComponent : PComponent
     }
     private List<TreeObj> currentlyDetectedTrees = new List<TreeObj>(16);
     private List<TreeObj> previouslyDetectedTrees = new List<TreeObj>(16);
+
+    // [로그라이크] 기본 휘두름으로만 맞는 대상(스텔라의 별). 나무와 별개로 범위 안이면 강조되고 휘두를 때 늘 맞는다.
+    // 본편에는 이런 대상이 없어 두 목록은 늘 비어 있다.
+    private List<IBasicAxeOnlyTarget> currentlyHighlightedAxeOnly = new List<IBasicAxeOnlyTarget>(4);
+    private List<IBasicAxeOnlyTarget> previouslyHighlightedAxeOnly = new List<IBasicAxeOnlyTarget>(4);
+    private readonly List<IStaticCollidable> axeOnlyHits = new List<IStaticCollidable>(4);
 
     private WeaponMode currentWeaponMode = WeaponMode.Axe;
 
@@ -484,6 +486,9 @@ public class AttackComponent : PComponent
 
         float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
 
+        // [로그라이크] 회전베기 카드의 범위 증가는 회전베기 타격에만 붙는다. 본편은 배율이 1이라 그대로다.
+        if (bIsWhirlwindStrike) effectiveEllipseRadius *= RunCombatOverrides.WhirlwindRangeMultiplier;
+
         // 회전 베기 연출(VFX·360도 회전·카메라 흔들림)은 범위 안에 아무것도 없어도(헛스윙) 나가야 하므로
         // 탐색보다 먼저 발동한다. 타격 분기의 흔들림은 회전 베기일 때 건너뛰어 중복되지 않게 한다.
         if (bIsWhirlwindStrike)
@@ -491,12 +496,6 @@ public class AttackComponent : PComponent
             WhirlwindVFX.Spawn(centerPos, effectiveEllipseRadius, whirlwindFrames);
             WhirlwindStrikeEvent?.Invoke();
             CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
-
-            // [로그라이크] 회전베기 IV "연속 2회전". 본편은 덮어쓰기 값이 0이라 지나가지 않는다.
-            if (RunCombatOverrides.WhirlwindExtraRotations > 0)
-            {
-                StartCoroutine(ExtraWhirlwindRoutine(RunCombatOverrides.WhirlwindExtraRotations));
-            }
         }
 
         // 1단계: 타원 판정 범위를 모두 포함할 수 있도록 타원의 장반경(effectiveEllipseRadius)으로 1차 탐색
@@ -521,6 +520,7 @@ public class AttackComponent : PComponent
 
         bool bMultiAttack = ctx.characterStat.bMultiAttack;
         multiAttackResults.Clear();
+        axeOnlyHits.Clear();
 
         IStaticCollidable nearestDamageable = null;
         float minDistanceSqr = float.MaxValue;
@@ -555,9 +555,17 @@ public class AttackComponent : PComponent
 
             float dot = Vector2.Dot(isoAttackDir, targetDir);
 
-            // 회전베기는 360도 전체를 친다. 기본 휘두름으로만 맞는 대상(로그라이크 별)은 평소 각도 안에 있을 때만 맞는다.
-            // 로그라이크 스텔라 III에서는 회전베기도 별을 친다(RunCombatOverrides.bSkillsHitRunTargets, 본편은 항상 false).
-            bool bHitByAngle = (bIsWhirlwindStrike && (false == (target is IBasicAxeOnlyTarget) || RunCombatOverrides.bSkillsHitRunTargets)) || (dot >= cosThreshold);
+            // [로그라이크] 기본 휘두름으로만 맞는 대상(스텔라의 별)은 "가장 가까운 대상" 다툼에 끼지 않고, 휘두름 범위(인디케이터) 안이면
+            // 나무와 별개로 늘 맞는다(기획서 v2.5 6-1 "별의 타격은 나무와 같은 규칙"). 회전베기 360도는 스텔라 III에서만 친다
+            // (RunCombatOverrides.bSkillsHitRunTargets, 본편은 항상 false). 본편에는 이런 대상이 없어 이 분기를 타지 않는다.
+            if (target is IBasicAxeOnlyTarget)
+            {
+                if (dot >= cosThreshold || (bIsWhirlwindStrike && RunCombatOverrides.bSkillsHitRunTargets)) axeOnlyHits.Add(target);
+                continue;
+            }
+
+            // 회전베기는 360도 전체를 친다.
+            bool bHitByAngle = bIsWhirlwindStrike || (dot >= cosThreshold);
 
             if (bHitByAngle)
             {
@@ -594,7 +602,8 @@ public class AttackComponent : PComponent
                     var target = multiAttackResults[i];
                     if (target is IDamageable damageable && damageable.bCanApplyDamage)
                     {
-                        ProcessAxeHit(damageable, centerPos);
+                        // [로그라이크] 회전베기 카드의 회전 피해 증가는 회전베기 타격에만 붙는다. 본편은 배율이 1이다.
+                        ProcessAxeHit(damageable, centerPos, bIsWhirlwindStrike ? RunCombatOverrides.WhirlwindDamageMultiplier : 1f);
                         bAnyHit = true;
 
                         if (target is TreeObj hitTree)
@@ -633,6 +642,30 @@ public class AttackComponent : PComponent
             }
         }
 
+        // [로그라이크] 범위 안의 별은 나무 타격과 함께 맞는다. 본편은 목록이 늘 비어 있다.
+        if (axeOnlyHits.Count > 0)
+        {
+            bool bAnyAxeOnlyHit = false;
+            for (int i = 0; i < axeOnlyHits.Count; i++)
+            {
+                if (axeOnlyHits[i] is IDamageable axeOnlyTarget && axeOnlyTarget.bCanApplyDamage)
+                {
+                    ProcessAxeHit(axeOnlyTarget, centerPos);
+                    bAnyAxeOnlyHit = true;
+                }
+            }
+
+            axeOnlyHits.Clear();
+
+            // 나무는 못 맞히고 별만 맞혔으면 예전에 별이 가장 가까운 대상으로 맞았을 때처럼 타격 성공으로 친다.
+            if (bAnyAxeOnlyHit && false == bAxeHit)
+            {
+                CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
+                AttackSuccessEvent?.Invoke();
+                bAxeHit = true;
+            }
+        }
+
         // [로그라이크] 루비 다다익선 "도끼 공격 연속 2회 타격": 방금 맞힌 대상을 간격을 두고 한 번 더 친다. 본편은 덮어쓰기 값이 0이라 지나가지 않는다.
         if (bAxeHit && RunCombatOverrides.AxeExtraStrikes > 0)
         {
@@ -652,7 +685,9 @@ public class AttackComponent : PComponent
                 AddExtraStrikeTarget(targets, extraSingle);
             }
 
-            if (targets.Count > 0) StartCoroutine(ExtraAxeStrikeRoutine(RunCombatOverrides.AxeExtraStrikes, targets));
+            // 회전베기로 맞힌 대상을 다시 칠 때는 회전베기 피해 배율도 같이 받는다(본편은 이 경로에 오지 않는다).
+            float extraScale = bIsWhirlwindStrike ? RunCombatOverrides.WhirlwindDamageMultiplier : 1f;
+            if (targets.Count > 0) StartCoroutine(ExtraAxeStrikeRoutine(RunCombatOverrides.AxeExtraStrikes, targets, extraScale));
             else extraStrikeListPool.Push(targets);
         }
 
@@ -677,12 +712,12 @@ public class AttackComponent : PComponent
         }
     }
 
-    private void ProcessAxeHit(IDamageable damageable, Vector3 centerPos)
+    private void ProcessAxeHit(IDamageable damageable, Vector3 centerPos, float _damageScale = 1f)
     {
         // 이 타격으로 쓰러지는 나무는 플레이어 공격으로 벌목된 것이다(PlayerAttackDamageScope 참고).
         using var _playerAttackScope = PlayerAttackDamageScope.Enter();
 
-        float damage = ctx.characterStat.axeDamage;
+        float damage = ctx.characterStat.axeDamage * _damageScale;
         if (damageable.health != null)
         {
             float currentHp = damageable.health.GetCurrentHealth();
@@ -763,16 +798,16 @@ public class AttackComponent : PComponent
 
         SpawnShockWave(_position, _direction, _onFirstTreeHit);
 
-        // [로그라이크] 충격파 V "2중 발생": 같은 자리·방향으로 바로 뒤이어 더 내보낸다. 본편은 덮어쓰기 값이 0이라 지나가지 않는다.
+        // [로그라이크] 충격파 MAX "2중 발생": 같은 자리·방향으로 바로 뒤이어 더 내보낸다(두 번째는 피해 60%). 본편은 덮어쓰기 값이 0이라 지나가지 않는다.
         // 첫 타격 콜백(내구도)은 첫 충격파에만 건다.
         for (int i = 0; i < RunCombatOverrides.ShockWaveExtraCount; i++)
         {
             yield return GetCachedWait(ref extraShockWaveWait, ref extraShockWaveWaitSeconds, RunCombatOverrides.ShockWaveExtraDelay);
-            SpawnShockWave(_position, _direction, null);
+            SpawnShockWave(_position, _direction, null, RunCombatOverrides.ShockWaveExtraDamageMultiplier);
         }
     }
 
-    private void SpawnShockWave(Vector3 _position, Vector3 _direction, Action _onFirstTreeHit)
+    private void SpawnShockWave(Vector3 _position, Vector3 _direction, Action _onFirstTreeHit, float _damageMultiplier = 1f)
     {
         if (axeExtraAttackCreator == null) return;
 
@@ -780,6 +815,7 @@ public class AttackComponent : PComponent
         ShockWave sw = axeExtraAttackCreator.CreateShockWave(spawnPos);
         if (sw != null)
         {
+            if (1f != _damageMultiplier) sw.MultiplyDamage(_damageMultiplier);
             sw.SetDirection(_direction);
             sw.SetFirstTreeHitCallback(_onFirstTreeHit);
             axeExtraAttackCreator.PlayShockWaveVisual(sw);
@@ -804,7 +840,7 @@ public class AttackComponent : PComponent
         });
     }
 
-    private System.Collections.IEnumerator ExtraAxeStrikeRoutine(int _count, List<ExtraStrikeTarget> _targets)
+    private System.Collections.IEnumerator ExtraAxeStrikeRoutine(int _count, List<ExtraStrikeTarget> _targets, float _damageScale)
     {
         try
         {
@@ -830,7 +866,7 @@ public class AttackComponent : PComponent
                         // 나무가 아닌 정적 대상(스텔라 별 등)은 재사용 번호가 없다. 맞힌 자리에서 옮겨졌으면 다른 대상으로 다시 놓인 것이다.
                         if (null != entry.collidable && (entry.collidable.Position - entry.position).sqrMagnitude > 0.0001f) continue;
 
-                        ProcessAxeHit(entry.target, centerPos);
+                        ProcessAxeHit(entry.target, centerPos, _damageScale);
                         bAnyHit = true;
                     }
                 }
@@ -846,49 +882,6 @@ public class AttackComponent : PComponent
         {
             _targets.Clear();
             extraStrikeListPool.Push(_targets);
-        }
-    }
-
-    /// <summary>
-    /// [로그라이크 전용] 회전베기 IV "연속 2회전". 발동한 회전베기 뒤로 간격을 두고 도끼 범위 360도를 한 번 더 친다.
-    /// 도끼 휘두름이 아니므로 충격파·내구도·휘두름 알림은 내지 않는다. 본편은 RunCombatOverrides.WhirlwindExtraRotations가 0이라 오지 않는다.
-    /// </summary>
-    private System.Collections.IEnumerator ExtraWhirlwindRoutine(int _count)
-    {
-        if (null == extraWhirlwindResults) extraWhirlwindResults = new List<IStaticCollidable>(16);
-
-        for (int n = 0; n < _count; n++)
-        {
-            yield return GetCachedWait(ref extraWhirlwindWait, ref extraWhirlwindWaitSeconds, RunCombatOverrides.WhirlwindExtraRotationDelay);
-
-            if (CollisionSystem.Instance == null || false == bCanAttack || false == ctx.characterStat.bWhirlWind) yield break;
-
-            Vector3 centerPos = transform.position;
-            float radius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
-            float radiusSq = radius * radius;
-
-            WhirlwindVFX.Spawn(centerPos, radius, whirlwindFrames);
-            WhirlwindStrikeEvent?.Invoke();
-
-            CollisionSystem.Instance.GetCollidablesInRadius(centerPos, radius, targetLayer, extraWhirlwindResults);
-
-            TreeTileWriteBatch.Begin();
-            try
-            {
-                for (int i = 0; i < extraWhirlwindResults.Count; i++)
-                {
-                    IStaticCollidable target = extraWhirlwindResults[i];
-                    if (false == (target is IDamageable damageable) || false == damageable.bCanApplyDamage) continue;
-                    if (target is IBasicAxeOnlyTarget && false == RunCombatOverrides.bSkillsHitRunTargets) continue;
-                    if (GetIsometricDistSq(target.Position + target.Offset, centerPos) > radiusSq) continue;
-
-                    ProcessAxeHit(damageable, centerPos);
-                }
-            }
-            finally
-            {
-                TreeTileWriteBatch.End();
-            }
         }
     }
 
@@ -1005,6 +998,7 @@ public class AttackComponent : PComponent
 
         bool bMultiAttack = ctx.characterStat.bMultiAttack;
         currentlyDetectedTrees.Clear();
+        currentlyHighlightedAxeOnly.Clear();
 
         IStaticCollidable nearest = null;
         float minDistanceSqr = float.MaxValue;
@@ -1031,6 +1025,13 @@ public class AttackComponent : PComponent
             }
 
             float dot = Vector2.Dot(isoAttackDir, targetDir);
+
+            // [로그라이크] 별은 Attack()과 같은 기준으로 가장 가까운 대상 다툼에서 빼고, 범위 안이면 따로 강조한다.
+            if (target is IBasicAxeOnlyTarget axeOnlyTarget)
+            {
+                if (dot >= cosThreshold) currentlyHighlightedAxeOnly.Add(axeOnlyTarget);
+                continue;
+            }
 
             if (dot >= cosThreshold)
             {
@@ -1083,7 +1084,31 @@ public class AttackComponent : PComponent
         currentlyDetectedTrees = temp;
         currentlyDetectedTrees.Clear();
 
+        UpdateAxeOnlyHighlights();
+
         SetTreesDetected(previouslyDetectedTrees.Count > 0);
+    }
+
+    // [로그라이크] 범위에서 빠진 별은 강조를 끄고 새로 들어온 별은 켠다. 본편은 두 목록이 늘 비어 있어 아무 일도 없다.
+    private void UpdateAxeOnlyHighlights()
+    {
+        if (0 == previouslyHighlightedAxeOnly.Count && 0 == currentlyHighlightedAxeOnly.Count) return;
+
+        for (int i = 0; i < previouslyHighlightedAxeOnly.Count; i++)
+        {
+            if (!currentlyHighlightedAxeOnly.Contains(previouslyHighlightedAxeOnly[i])) previouslyHighlightedAxeOnly[i].SetAxeHighlighted(false);
+        }
+
+        // 켜기는 매번 다시 건다 - 강조된 채 거둬졌다가 같은 객체로 다시 놓인 별도 다시 켜진다(SetAxeHighlighted는 같은 상태면 아무 일도 하지 않는다).
+        for (int i = 0; i < currentlyHighlightedAxeOnly.Count; i++)
+        {
+            currentlyHighlightedAxeOnly[i].SetAxeHighlighted(true);
+        }
+
+        var temp = previouslyHighlightedAxeOnly;
+        previouslyHighlightedAxeOnly = currentlyHighlightedAxeOnly;
+        currentlyHighlightedAxeOnly = temp;
+        currentlyHighlightedAxeOnly.Clear();
     }
 
     private void ClearDetectedTreeOutlines()
@@ -1094,6 +1119,13 @@ public class AttackComponent : PComponent
         }
         previouslyDetectedTrees.Clear();
         currentlyDetectedTrees.Clear();
+
+        for (int i = 0; i < previouslyHighlightedAxeOnly.Count; i++)
+        {
+            previouslyHighlightedAxeOnly[i].SetAxeHighlighted(false);
+        }
+        previouslyHighlightedAxeOnly.Clear();
+        currentlyHighlightedAxeOnly.Clear();
 
         SetTreesDetected(false);
     }

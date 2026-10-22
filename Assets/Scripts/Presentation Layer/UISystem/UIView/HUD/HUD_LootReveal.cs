@@ -66,14 +66,14 @@ public class HUD_LootReveal : MonoBehaviour
     [SerializeField] private Image lootItemImage;
     [SerializeField] private float lootPopDuration = 0.25f;
     [SerializeField] private Vector3 lootPopOvershoot = new Vector3(1.3f, 1.3f, 1f);
-    
-    [Space(5)]
-    [Tooltip("전리품 아이템 부유 거리(위아래 폭)")]
-    [SerializeField] private float lootFloatDistance = 5f;
-    [Tooltip("전리품 아이템 1회 왕복 소요 시간")]
-    [SerializeField] private float lootFloatDuration = 4.0f;
 
-    private float lootInitialY; 
+    [Tooltip("기둥 윗판 중앙 - 전리품 이미지의 원래 중심 기준(UI 단위). 확대 그림의 밑둥(LootGrowthVisualData.spriteBase)을 여기에 맞춘다.")]
+    [SerializeField] private Vector2 lootBaseAnchor = new Vector2(0f, -18f);
+
+    private float lootInitialX;
+    private float lootInitialY;
+    // 지금 그림의 밑둥을 기둥 윗판 중앙에 맞추는 이동량(SetLootSprite에서 정한다)
+    private Vector2 lootBaseOffset;
 
     // 성장 정보 원천(현재 단계, 다음 단계가 되는 프레스티지 레벨). 윗단이 SetGrowthInfoSource로 연결해 준다.
     private Func<LootType, int> growthTierGetter;
@@ -152,6 +152,7 @@ public class HUD_LootReveal : MonoBehaviour
 
         if (null != lootItemRect)
         {
+            lootInitialX = lootItemRect.anchoredPosition.x;
             lootInitialY = lootItemRect.anchoredPosition.y;
         }
 
@@ -246,7 +247,6 @@ public class HUD_LootReveal : MonoBehaviour
                 if (null != _p) _p.DOKill();
             }
         }
-        DOTween.Kill("LootFloat");
     }
 
     /// <summary>
@@ -369,7 +369,7 @@ public class HUD_LootReveal : MonoBehaviour
         {
             lootItemRect.DOKill(); // 부유 및 스케일 모션 강제 정지
             lootItemRect.localScale = Vector3.zero;
-            lootItemRect.anchoredPosition = new Vector2(lootItemRect.anchoredPosition.x, lootInitialY);
+            lootItemRect.anchoredPosition = new Vector2(lootInitialX + lootBaseOffset.x, lootInitialY + lootBaseOffset.y);
             lootItemRect.gameObject.SetActive(false);
         }
 
@@ -542,13 +542,8 @@ public class HUD_LootReveal : MonoBehaviour
         _popSeq.Append(lootItemRect.DOScale(lootPopOvershoot, lootPopDuration * 0.6f).SetEase(lootPopEase));
         _popSeq.Append(lootItemRect.DOScale(Vector3.one, lootPopDuration * 0.4f).SetEase(Ease.OutQuad));
         
+        // 등장 뒤에는 떠다니지 않고 기둥 위에 그대로 서 있는다(밑둥이 윗판 중앙에 고정).
         yield return _popSeq.WaitForCompletion();
-
-        // 등장 스케일 애니메이션이 완전히 끝난 후, 아이템이 파티클처럼 부유(Floating)하도록 모션 연결
-        lootItemRect.DOAnchorPosY(lootInitialY + lootFloatDistance, lootFloatDuration)
-            .SetEase(Ease.InOutSine)
-            .SetLoops(-1, LoopType.Yoyo)
-            .SetId("LootFloat"); 
     }
 
     // 4단계 ─ 이름/설명 텍스트 마스킹 슬라이드
@@ -658,6 +653,8 @@ public class HUD_LootReveal : MonoBehaviour
 
     private void SetLootSprite(LootType _lootType, LootItemTypeDataBase _db)
     {
+        lootBaseOffset = Vector2.zero;
+
         if (null == lootItemImage || null == _db)
             return;
 
@@ -665,13 +662,23 @@ public class HUD_LootReveal : MonoBehaviour
         if (null != _data)
             lootItemImage.sprite = _data.sprite;
 
-        // 성장 단계별 스프라이트가 등록돼 있으면 그것을 쓴다(씨앗/꽃/나무). 없으면 위 기본 스프라이트 그대로.
+        // 성장 단계별 확대 스프라이트가 등록돼 있으면 그것을 쓴다(씨앗/꽃/나무). 없으면 위 기본 스프라이트 그대로.
+        // 성장하지 않는 전리품(단계 0)은 그 전리품의 가장 낮은 단계 스프라이트를 쓴다.
         int _tier = null != growthTierGetter ? growthTierGetter(_lootType) : 0;
 
-        if (0 < _tier && null != growthVisualData
-            && true == growthVisualData.TryGetSprite(_lootType, _tier, out Sprite _tierSprite, out bool _bPlaceholder))
+        if (null != growthVisualData
+            && true == growthVisualData.TryGetSpriteEntry(_lootType, _tier, out LootGrowthVisualData.TierSprite _entry))
         {
+            Sprite _tierSprite = _entry.sprite;
             lootItemImage.sprite = _tierSprite;
+
+            // 그림마다 밑둥이 다른 곳에 있다 - 밑둥(스프라이트 유닛 → 이미지 픽셀)이 기둥 윗판 중앙에 오도록 옮긴다. 픽셀 단위로 맞춘다.
+            if (null != _tierSprite && 0f < _tierSprite.rect.width)
+            {
+                float _scale = _tierSprite.pixelsPerUnit * lootItemImage.rectTransform.rect.width / _tierSprite.rect.width;
+                Vector2 _offset = lootBaseAnchor - _entry.spriteBase * _scale;
+                lootBaseOffset = new Vector2(Mathf.Floor(_offset.x + 0.5f), Mathf.Floor(_offset.y + 0.5f));
+            }
         }
     }
 

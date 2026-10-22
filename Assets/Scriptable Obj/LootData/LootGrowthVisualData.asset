@@ -19,37 +19,184 @@ MonoBehaviour:
   tierSprites:
   - lootType: 2
     tier: 1
-    sprite: {fileID: -5931985335208768119, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
-    isPlaceholder: 1
+    sprite: {fileID: 21300000, guid: 1b8947cdf7afc4e4a91e12ddff186138, type: 3}
+    isPlaceholder: 0
+    displayFrames:
+    - {fileID: 291387840, guid: 5cda615795caca74a849115a51469c27, type: 3}
+    - {fileID: -1261710131, guid: 5cda615795caca74a849115a51469c27, type: 3}
+    - {fileID: -806710204, guid: 5cda615795caca74a849115a51469c27, type: 3}
+    - {fileID: 2137430057, guid: 5cda615795caca74a849115a51469c27, type: 3}
+    - {fileID: -983310841, guid: 5cda615795caca74a849115a51469c27, type: 3}
+    idleFrames: 00000000
+    actionFrames: 0000000001000000020000000300000004000000
+    fps: 10
+    actionInterval: {x: 3, y: 4}
+    displayArtCenter: {x: -0.00625, y: -0.175}
+    displayBase: {x: -0.03125, y: -0.3125}
+    spriteBase: {x: -0.03125, y: -0.625}
+    displayShadowWidth: 12
   - lootType: 2
     tier: 2
-    sprite: {fileID: -5931985335208768119, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
-    isPlaceholder: 1
+    sprite: {fileID: 21300000, guid: f4f0539807188b9489770c761144b60c, type: 3}
+    isPlaceholder: 0
+    displayFrames:
+    - {fileID: -1938012808, guid: 39d6468603c95c7438bcf25ecf1fa50d, type: 3}
+    - {fileID: -1062745126, guid: 39d6468603c95c7438bcf25ecf1fa50d, type: 3}
+    - {fileID: 740281305, guid: 39d6468603c95c7438bcf25ecf1fa50d, type: 3}
+    - {fileID: -1927722404, guid: 39d6468603c95c7438bcf25ecf1fa50d, type: 3}
+    - {fileID: 721999584, guid: 39d6468603c95c7438bcf25ecf1fa50d, type: 3}
+    idleFrames: 00000000
+    actionFrames: 0000000001000000020000000300000004000000
+    fps: 8
+    actionInterval: {x: 3, y: 4}
+    displayArtCenter: {x: -0.025, y: -0.08125}
+    displayBase: {x: -0.015625, y: -0.34375}
+    spriteBase: {x: 0, y: -0.71875}
+    displayShadowWidth: 14
   - lootType: 2
     tier: 3
-    sprite: {fileID: -5931985335208768119, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
-    isPlaceholder: 1
+    sprite: {fileID: 21300000, guid: 72edfd0b3bee7e345999cbab6f8206e4, type: 3}
+    isPlaceholder: 0
+    displayFrames:
+    - {fileID: 660657301, guid: 0989c5d43dc685d4c9ef36a73b7690bb, type: 3}
+    - {fileID: 899642603, guid: 0989c5d43dc685d4c9ef36a73b7690bb, type: 3}
+    - {fileID: -1476895278, guid: 0989c5d43dc685d4c9ef36a73b7690bb, type: 3}
+    idleFrames: 000000000100000002000000
+    actionFrames: 
+    fps: 3
+    actionInterval: {x: 3, y: 4}
+    displayArtCenter: {x: -0.046875, y: 0}
+    displayBase: {x: -0.03125, y: -0.359375}
+    spriteBase: {x: 0, y: -0.75}
+    displayShadowWidth: 18
   - lootType: 3
     tier: 1
-    sprite: {fileID: 6479773223036287334, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
-    isPlaceholder: 1
+    sprite: {fileID: 21300000, guid: 047f4cf8b917b7049a640e47f4f3e7f0, type: 3}
+    isPlaceholder: 0
+    displayFrames:
+    - {fileID: 266208460, guid: d7e79b0f636452b41958bcc302632f29, type: 3}
+    - {fileID: 356075983, guid: d7e79b0f636452b41958bcc302632f29, type: 3}
+    - {fileID: -1923061017, guid: d7e79b0f636452b41958bcc302632f29, type: 3}
+    - {fileID: -632009749, guid: d7e79b0f636452b41958bcc302632f29, type: 3}
+    - {fileID: -1804909311, guid: d7e79b0f636452b41958bcc302632f29, type: 3}
+    idleFrames: 0000000001000000020000000300000004000000
+    actionFrames: 
+    fps: 8
+    actionInterval: {x: 3, y: 4}
+    displayArtCenter: {x: 0.009375, y: -0.075}
+    displayBase: {x: 0, y: -0.3125}
+    spriteBase: {x: 0, y: -0.625}
+    displayShadowWidth: 10
   - lootType: 3
     tier: 2
-    sprite: {fileID: 6479773223036287334, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
-    isPlaceholder: 1
+    sprite: {fileID: 21300000, guid: 13ebd879cbba0884dae0f9407f6615dc, type: 3}
+    isPlaceholder: 0
+    displayFrames:
+    - {fileID: -873968231, guid: 591f8f6ca2fa3c747808b4c1cdf0132e, type: 3}
+    - {fileID: -310302640, guid: 591f8f6ca2fa3c747808b4c1cdf0132e, type: 3}
+    - {fileID: 724925293, guid: 591f8f6ca2fa3c747808b4c1cdf0132e, type: 3}
+    - {fileID: 1130385232, guid: 591f8f6ca2fa3c747808b4c1cdf0132e, type: 3}
+    - {fileID: 1871605261, guid: 591f8f6ca2fa3c747808b4c1cdf0132e, type: 3}
+    - {fileID: 900064651, guid: 591f8f6ca2fa3c747808b4c1cdf0132e, type: 3}
+    idleFrames: 00000000
+    actionFrames: 000000000100000002000000030000000400000005000000
+    fps: 8
+    actionInterval: {x: 3, y: 4}
+    displayArtCenter: {x: 0.020833334, y: 0.0026041667}
+    displayBase: {x: 0, y: -0.375}
+    spriteBase: {x: 0, y: -0.71875}
+    displayShadowWidth: 12
   - lootType: 3
     tier: 3
-    sprite: {fileID: 6479773223036287334, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
-    isPlaceholder: 1
+    sprite: {fileID: 21300000, guid: ae610351fa287d443a4616035e7c89b7, type: 3}
+    isPlaceholder: 0
+    displayFrames:
+    - {fileID: -1539386787, guid: 246bb7fbee765d64e800ed88c281560c, type: 3}
+    - {fileID: 1015159382, guid: 246bb7fbee765d64e800ed88c281560c, type: 3}
+    idleFrames: 0000000001000000
+    actionFrames: 
+    fps: 2
+    actionInterval: {x: 3, y: 4}
+    displayArtCenter: {x: 0.0078125, y: 0.03125}
+    displayBase: {x: 0, y: -0.34375}
+    spriteBase: {x: -0.015625, y: -0.71875}
+    displayShadowWidth: 18
   - lootType: 4
     tier: 1
-    sprite: {fileID: 6139783936273432520, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
-    isPlaceholder: 1
+    sprite: {fileID: 21300000, guid: 7e1ef28e2bf224a40bff9f1f3b798653, type: 3}
+    isPlaceholder: 0
+    displayFrames:
+    - {fileID: 1050644378, guid: a264b9758258bda41b38ab8e5035c174, type: 3}
+    - {fileID: -1823721840, guid: a264b9758258bda41b38ab8e5035c174, type: 3}
+    - {fileID: -1085480975, guid: a264b9758258bda41b38ab8e5035c174, type: 3}
+    idleFrames: 00000000
+    actionFrames: 0000000001000000020000000100000000000000
+    fps: 10
+    actionInterval: {x: 3, y: 4}
+    displayArtCenter: {x: 0, y: -0.203125}
+    displayBase: {x: 0, y: -0.3125}
+    spriteBase: {x: -0.015625, y: -0.625}
+    displayShadowWidth: 8
   - lootType: 4
     tier: 2
-    sprite: {fileID: 6139783936273432520, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
-    isPlaceholder: 1
+    sprite: {fileID: 21300000, guid: e2371784fc932b5438a8839ea08e111d, type: 3}
+    isPlaceholder: 0
+    displayFrames:
+    - {fileID: 1356482703, guid: 632f443b201080144a8b36fa87e0ae93, type: 3}
+    - {fileID: -813577546, guid: 632f443b201080144a8b36fa87e0ae93, type: 3}
+    - {fileID: -2014320988, guid: 632f443b201080144a8b36fa87e0ae93, type: 3}
+    - {fileID: -910229468, guid: 632f443b201080144a8b36fa87e0ae93, type: 3}
+    idleFrames: 00000000
+    actionFrames: 00000000010000000200000003000000
+    fps: 8
+    actionInterval: {x: 3, y: 4}
+    displayArtCenter: {x: -0.0625, y: 0.00390625}
+    displayBase: {x: -0.015625, y: -0.359375}
+    spriteBase: {x: -0.03125, y: -0.6875}
+    displayShadowWidth: 14
   - lootType: 4
     tier: 3
-    sprite: {fileID: 6139783936273432520, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
-    isPlaceholder: 1
+    sprite: {fileID: 21300000, guid: 7077b9b51a936dd47b3b978f53b0873c, type: 3}
+    isPlaceholder: 0
+    displayFrames:
+    - {fileID: 1364752891, guid: 25a85a8f03c291d46b14f8919ce6af05, type: 3}
+    - {fileID: -1007820369, guid: 25a85a8f03c291d46b14f8919ce6af05, type: 3}
+    idleFrames: 0000000001000000
+    actionFrames: 
+    fps: 2
+    actionInterval: {x: 3, y: 4}
+    displayArtCenter: {x: 0.0234375, y: 0.046875}
+    displayBase: {x: -0.015625, y: -0.359375}
+    spriteBase: {x: -0.015625, y: -0.71875}
+    displayShadowWidth: 18
+  - lootType: 5
+    tier: 1
+    sprite: {fileID: 21300000, guid: e6a82cbd0f16e0e4fa905e39eda6611a, type: 3}
+    isPlaceholder: 0
+    displayFrames:
+    - {fileID: 1476290586, guid: 96861d98befcd5144ae5c2a745d8f0cd, type: 3}
+    - {fileID: -627729479, guid: 96861d98befcd5144ae5c2a745d8f0cd, type: 3}
+    - {fileID: 1257956555, guid: 96861d98befcd5144ae5c2a745d8f0cd, type: 3}
+    idleFrames: 
+    actionFrames: 
+    fps: 8
+    actionInterval: {x: 3, y: 4}
+    displayArtCenter: {x: 0, y: -0.203125}
+    displayBase: {x: 0, y: -0.3125}
+    spriteBase: {x: -0.015625, y: -0.625}
+    displayShadowWidth: 8
+  - lootType: 5
+    tier: 3
+    sprite: {fileID: 21300000, guid: 67eecb7200943b54fbcecd2aa53d85cc, type: 3}
+    isPlaceholder: 0
+    displayFrames:
+    - {fileID: 1024581307, guid: 6c904acf35ed6924cacc1f0f060a058f, type: 3}
+    - {fileID: 1782968220, guid: 6c904acf35ed6924cacc1f0f060a058f, type: 3}
+    idleFrames: 
+    actionFrames: 
+    fps: 2
+    actionInterval: {x: 3, y: 4}
+    displayArtCenter: {x: 0.0234375, y: 0.046875}
+    displayBase: {x: -0.015625, y: -0.359375}
+    spriteBase: {x: -0.015625, y: -0.71875}
+    displayShadowWidth: 18

@@ -8,7 +8,6 @@ using UnityEngine;
 public class RoguelikeDebugWindow : EditorWindow
 {
     private int nextWave = 8;
-    private long goldToAdd = 500;
     private int treesToKill = 10;
     private float staminaDamage = 10f;
     private CardDefinitionSO cardToGrant;
@@ -68,8 +67,9 @@ public class RoguelikeDebugWindow : EditorWindow
         EditorGUILayout.LabelField("처치", $"{_system.WaveKills} / {wave.killTarget}");
         EditorGUILayout.LabelField("필드 나무", $"{_system.FieldTreeCount} / T {_system.Threshold} (상한 {_system.SpawnCap})");
         EditorGUILayout.LabelField("임계치 판정", $"{_system.PressureState}  유예 {_system.PressureGraceRatio:P0}  쿨다운 {_system.PressureCooldownRatio:P0}");
-        EditorGUILayout.LabelField("골드", _system.Gold.ToString());
+        EditorGUILayout.LabelField("선택 횟수", _system.Build.PickCount.ToString());
         EditorGUILayout.LabelField("플레이 시간", $"{_system.PlayTimeSeconds:F1}초");
+        EditorGUILayout.LabelField("초기 나무 / 나무 없이 이동", $"{wave.initialTrees}그루 / {_system.IdleMoveRatio:P0}");
 
         RunBuildState build = _system.Build;
         for (int i = 0; i < build.OwnedCards.Count; i++)
@@ -120,26 +120,20 @@ public class RoguelikeDebugWindow : EditorWindow
     {
         if (false == _system.IsCardSelectionOpen) return;
 
-        EditorGUILayout.LabelField(_system.IsFirstPick ? "카드 선택 (첫 무료 선택)" : "카드 선택", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField(_system.IsFirstPick ? "카드 선택 (첫 선택, 액티브만)" : "카드 선택", EditorStyles.boldLabel);
 
         for (int i = 0; i < _system.CurrentOffers.Count; i++)
         {
             CardOffer offer = _system.CurrentOffers[i];
-            string label = $"[{offer.displayGrade}] {offer.card.name}  →Lv.{offer.levelAfterPurchase}  {offer.price}G" +
-                (offer.bGuaranteed ? "  (보장)" : string.Empty) + (offer.IsAffordable(_system.Gold) ? string.Empty : "  (골드 부족)");
+            string label = $"[{offer.displayGrade}] {offer.card.name}  →Lv.{offer.levelAfterPurchase}/{offer.card.EffectiveMaxLevel}" +
+                (offer.bGuaranteed ? "  (보장)" : string.Empty);
             if (GUILayout.Button(label)) _system.DebugBuyOffer(i);
         }
 
-        EditorGUILayout.BeginHorizontal();
-        using (new EditorGUI.DisabledScope(false == _system.CanSkip))
-        {
-            if (GUILayout.Button("건너뛰기")) _system.DebugSkip();
-        }
         using (new EditorGUI.DisabledScope(false == _system.CanReroll))
         {
-            if (GUILayout.Button($"리롤 ({_system.RerollCost}G)")) _system.DebugReroll();
+            if (GUILayout.Button(_system.CanReroll ? "리롤 (이번 선택 1회)" : "리롤 (사용함)")) _system.DebugReroll();
         }
-        EditorGUILayout.EndHorizontal();
     }
 
     private void DrawCombat(RoguelikeSystem _system)
@@ -164,7 +158,8 @@ public class RoguelikeDebugWindow : EditorWindow
         if (GUILayout.Button("오프로드 발동 (지금 빌드, F7)")) _system.DebugFireOffroad(0);
         if (GUILayout.Button("1대", GUILayout.Width(40))) _system.DebugFireOffroad(1);
         if (GUILayout.Button("2대", GUILayout.Width(40))) _system.DebugFireOffroad(2);
-        if (GUILayout.Button("3대", GUILayout.Width(40))) _system.DebugFireOffroad(3);
+        if (GUILayout.Button("4대", GUILayout.Width(40))) _system.DebugFireOffroad(4);
+        if (GUILayout.Button("6대", GUILayout.Width(40))) _system.DebugFireOffroad(6);
         EditorGUILayout.EndHorizontal();
     }
 
@@ -177,7 +172,7 @@ public class RoguelikeDebugWindow : EditorWindow
         if (null != entry)
         {
             EditorGUILayout.LabelField("도달", entry.bCleared ? $"30 클리어, Unlimit-{entry.reachedUnlimitWave}" : $"웨이브 {entry.reachedWave}");
-            EditorGUILayout.LabelField("시간/나무/코인", $"{entry.playTimeSeconds:F1}초 / {entry.treesFelled} / {entry.coinsCollected}");
+            EditorGUILayout.LabelField("시간/나무", $"{entry.playTimeSeconds:F1}초 / {entry.treesFelled}");
             EditorGUILayout.LabelField("순위", $"클리어 {_system.LastClearRank}  언리밋 {_system.LastUnlimitRank}");
         }
 
@@ -188,11 +183,6 @@ public class RoguelikeDebugWindow : EditorWindow
     {
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("치트", EditorStyles.boldLabel);
-
-        EditorGUILayout.BeginHorizontal();
-        goldToAdd = EditorGUILayout.LongField(goldToAdd, GUILayout.Width(80));
-        if (GUILayout.Button("골드 추가")) _system.DebugAddGold(goldToAdd);
-        EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.BeginHorizontal();
         nextWave = EditorGUILayout.IntField(nextWave, GUILayout.Width(80));

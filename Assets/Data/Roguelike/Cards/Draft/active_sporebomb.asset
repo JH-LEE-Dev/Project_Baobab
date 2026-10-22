@@ -17,29 +17,46 @@ MonoBehaviour:
   descriptionKey: Roguelike_Card_active_sporebomb_Desc
   icon: {fileID: 0}
   kind: 0
-  grade: 1
   skillTag: 7
   exclusiveGroup: 0
-  maxLevel: 5
   levels:
   - effects: []
   - effects:
-    - effect: 4
-      skill: 7
-      value: 25
-  - effects:
     - effect: 3
       skill: 7
-      value: 15
+      value: 10
+    - effect: 36
+      skill: 7
+      value: -0.5
   - effects:
     - effect: 6
       skill: 7
       value: 1
   - effects:
+    - effect: 36
+      skill: 7
+      value: -0.5
+    - effect: 2
+      skill: 7
+      value: 25
+  - effects:
     - effect: 29
       skill: 7
-      value: 2
-  basePriceOverride: 0
+      value: 1
+  - effects:
+    - effect: 3
+      skill: 7
+      value: 15
+    - effect: 36
+      skill: 7
+      value: -0.5
+  - effects:
+    - effect: 6
+      skill: 7
+      value: 1
+    - effect: 29
+      skill: 7
+      value: 1
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}
   comboType: 0

@@ -908,7 +908,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         if (false == _s.boomerang) { _drop.Add(SoundID.SpinStart); _drop.Add(SoundID.SpinLoop); }
         if (false == _s.drone) { _drop.Add(SoundID.SFXBeamFire); _drop.Add(SoundID.SFXChargeUp); _drop.Add(SoundID.SFXPunchImpact); _drop.Add(SoundID.SFXVoltageImpact); }
-        if (false == _s.spore) { _drop.Add(SoundID.SporeHit); _drop.Add(SoundID.SporeExplosion); _drop.Add(SoundID.SporeShieldBreak); }
+        if (false == _s.spore) { _drop.Add(SoundID.SporeHit); _drop.Add(SoundID.SporeExplosion); _drop.Add(SoundID.SporeShieldBreak); _drop.Add(SoundID.SporeBigExplosion); }
         if (false == _s.constellation) { _drop.Add(SoundID.Starappear); _drop.Add(SoundID.Stardisappear); _drop.Add(SoundID.StarExplosion); }
         if (false == _s.burn) { _drop.Add(SoundID.FireStart); _drop.Add(SoundID.FireLoop); }
         if (false == _s.heat) { _drop.Add(SoundID.TreeFireExplosion); }

@@ -815,9 +815,11 @@ namespace PresentationLayer.VFX
 
         private void OnDestroy()
         {
+            // 파괴 중인 자신을 부모로 다시 지정하면 오류가 나므로 풀로 되돌리지 않는다. 렌더러는 자식이라 함께 파괴된다.
             for (int i = 0; i < entries.Count; i++)
             {
-                ReleaseEntry(entries[i]);
+                entries[i].overlay = null;
+                entries[i].ground = null;
             }
 
             entries.Clear();

@@ -17,12 +17,9 @@ MonoBehaviour:
   descriptionKey: Roguelike_Temp_Combo1_Desc
   icon: {fileID: 0}
   kind: 3
-  grade: 4
   skillTag: 0
   exclusiveGroup: 0
-  maxLevel: 5
   levels: []
-  basePriceOverride: 0
   comboMaterialA: {fileID: 11400000, guid: 131885cf5a9503f41ae8b1c6bff5a236, type: 2}
   comboMaterialB: {fileID: 11400000, guid: 50c5c109f638a9845b029c596ffd0a89, type: 2}
   comboType: 1

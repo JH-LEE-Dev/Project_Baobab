@@ -3,12 +3,18 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 기획서 v2.1 부록 A "밸런스 수치"를 한곳에 모은 데이터. 코드에는 수치를 두지 않는다.
+/// 기획서 v2.6 부록 A "밸런스 수치"를 한곳에 모은 데이터. 코드에는 수치를 두지 않는다.
 ///
-/// 처음 만든 에셋은 비어 있다. 인스펙터 우측 메뉴의 "기획서 v2.1 부록 A 초안 값으로 채우기"를 누르면
+/// 처음 만든 에셋은 비어 있다. 인스펙터 우측 메뉴의 "기획서 v2.6 부록 A 초안 값으로 채우기"를 누르면
 /// 부록 A의 초안 값이 들어간다. 값은 모두 초안이며 프로토타입 실측 후 덮어쓴다.
 ///
-/// 연출 시간(진입 연출·카드 연출·코인 연출)은 이 에셋이 아니라 연출 쪽 설정에서 관리한다.
+/// [스폰] v2.6부터 나무는 티어별 정수 묶음으로 나온다. 웨이브마다 (묶음 크기, 묶음 주기, HP, 목표 처치 수)를 둔다(WaveRow.batchSize / batchSeconds).
+/// 묶음 크기가 0인 줄은 옛 방식(spawnInterval과 spawnBatchSeconds로 계산, 소수 이월)을 그대로 쓴다.
+///
+/// v2.4에서 골드 시스템이 없어져 골드·가격·리롤 비용·감정 항목이 사라졌다. 카드 선택은 모두 무료이고,
+/// 한 판의 빌드 규모는 선택 횟수(웨이브마다 1회)가 정한다.
+///
+/// 연출 시간(진입 연출·카드 연출)은 이 에셋이 아니라 연출 쪽 설정에서 관리한다.
 /// </summary>
 [CreateAssetMenu(fileName = "RoguelikeBalance", menuName = "Baobab/Roguelike/Balance")]
 public class RoguelikeBalanceSO : ScriptableObject
@@ -23,8 +29,6 @@ public class RoguelikeBalanceSO : ScriptableObject
         public int startWave;
         [Tooltip("임계치 피해 1회의 스태미너 피해량.")]
         public float staminaDamage;
-        [Tooltip("나무 1그루당 골드. 소수는 웨이브 종료 시 합산해 반올림한다(부록 A-1).")]
-        public float goldPerTree;
     }
 
     [Serializable]
@@ -32,31 +36,16 @@ public class RoguelikeBalanceSO : ScriptableObject
     {
         [Tooltip("목표 처치 수.")]
         public int killTarget;
-        [Tooltip("나무 1그루 스폰 주기(초) = 1 ÷ 초당 스폰.")]
+        [Tooltip("나무 1그루 스폰 주기(초) = 묶음 주기 ÷ 묶음 크기 = 1 ÷ 초당 스폰. 묶음 크기가 있으면 참고용이고, 없으면(0) 이 값과 spawnBatchSeconds로 묶음을 계산한다.")]
         public float spawnInterval;
+        [Tooltip("묶음 크기(그루). 묶음 주기마다 이 수만큼 정수로 한꺼번에 심는다(소수 이월 없음, 기획서 v2.6 3-1). 0이면 옛 방식(spawnInterval × spawnBatchSeconds, 소수 이월).")]
+        public int batchSize;
+        [Tooltip("묶음 주기(초). 티어마다 다르다(1티어 3 / 2티어 2.5 / 3티어 2 / 4티어 1.5). batchSize가 있을 때만 쓴다.")]
+        public float batchSeconds;
         [Tooltip("이 웨이브 나무의 절대 HP(도끼 공격력 10 기준). 나무 종류와 무관하게 이 값을 쓴다(부록 A-2).")]
         public float treeHp;
         [Tooltip("티어 안의 나무 종류 순번. 0 = 초기, 1 = 중간, 2 = 후반(기획서 7-1). 실제 종류는 RoguelikeSystem의 티어 지형 설정에 있다.")]
         public int treeKind;
-    }
-
-    [Serializable]
-    public struct AppraisalOutcome
-    {
-        [Tooltip("현재 레벨 유지 가중치.")]
-        public float stay;
-        [Tooltip("+1 레벨 가중치.")]
-        public float plusOne;
-        [Tooltip("+2 레벨 가중치.")]
-        public float plusTwo;
-        [Tooltip("MAX 가중치.")]
-        public float max;
-    }
-
-    public enum ERerollCostMode
-    {
-        Linear = 0,
-        Multiply = 1,
     }
 
     [Header("웨이브")]
@@ -72,8 +61,22 @@ public class RoguelikeBalanceSO : ScriptableObject
     [Header("필드")]
     [Tooltip("임계치 T. 필드의 나무 수가 이 값 이상이면 유예 타이머가 돈다.")]
     public int threshold = 40;
-    [Tooltip("스폰 상한 = T + 이 값(기획서 3-1의 +α, 10~15그루). 제약: T ≤ 스폰 상한.")]
-    public int spawnExtra = 12;
+    [Tooltip("스폰 상한 = T + 이 값(기획서 v2.5 3-1의 +α, 20그루). 제약: T ≤ 스폰 상한.")]
+    public int spawnExtra = 20;
+
+    [Header("초기 나무 · 묶음 스폰 · 생성 위치 (기획서 v2.5 3-1, 부록 A-1 초안 - 실측 후 조정)")]
+    [Tooltip("웨이브 시작 초기 나무 = 현재 임계치 T × 이 비율(내림). T 40이면 20그루, 웨이브 번호와 무관하다. 목표 처치 수에 포함되고 T보다 항상 낮다.")]
+    [Range(0f, 1f)] public float initialTreeThresholdRatio = 0.5f;
+    [Tooltip("묶음 주기 P(초). 나무는 한 그루씩 나오지 않고 P마다 초당 스폰 × P그루가 한꺼번에 나온다(소수는 다음 묶음으로 이월).")]
+    public float spawnBatchSeconds = 3f;
+    [Tooltip("나무끼리의 최소 간격(월드, 등각 보정 거리, TBD). 간격을 지킬 빈칸이 없으면 간격만 포기하고 심는다.")]
+    public float treeMinSpacing = 1f;
+    [Tooltip("플레이어 바로 옆에는 심지 않는 반경(월드, 등각 보정 거리, TBD).")]
+    public float playerExclusionRadius = 1.2f;
+    [Tooltip("섬 가장자리에서 이 칸 수만큼은 나무를 심지 않는다(맵 끝 나무가 HUD 밖으로 나가 보이는 문제). 물 · 용암 칸과 8방향으로 이 거리 안이면 뺀다. 0이면 끈다.")]
+    public int fieldEdgeInsetCells = 1;
+    [Tooltip("측정용: 이동 중 가장 가까운 나무가 이 거리보다 멀면 '나무 없이 이동한 시간'으로 센다(기획서 C-2 실측 항목).")]
+    public float idleMoveReach = 1.5f;
 
     [Header("스태미너")]
     public float maxStamina = 100f;
@@ -85,51 +88,39 @@ public class RoguelikeBalanceSO : ScriptableObject
     public float maxGraceTime = 15f;
     [Tooltip("패시브로 피해 간격이 늘어도 넘지 않는 상한(초).")]
     public float maxDamageCooldown = 10f;
-    [Tooltip("루비 등으로 T가 줄어도 이 값 밑으로는 내려가지 않는다.")]
+    [Tooltip("계약 등으로 T가 줄어도 이 값 밑으로는 내려가지 않는다.")]
     public int minThreshold = 5;
 
     [Header("이동")]
-    [Tooltip("카드로 오르는 이동속도의 합산 상한(%). 0이면 상한 없음(부록 A-5 +60%).")]
-    public float maxMoveSpeedPercent = 60f;
+    [Tooltip("카드로 오르는 이동속도의 합산 상한(%). 0이면 상한 없음(부록 A-5 합산 상한 +100%).")]
+    public float maxMoveSpeedPercent = 100f;
 
-    [Header("언리밋")]
-    [Tooltip("언리밋 웨이브마다 마지막 웨이브 HP에 더하는 비율. 0.1이면 Unlimit-1은 ×1.1, Unlimit-2는 ×1.2.")]
+    [Header("언리밋 (기획서 v2.6 7-2, 부록 A \"언리밋 곡선\")")]
+    [Tooltip("언리밋 웨이브마다 나무 HP에 곱하는 증가율(누적). Unlimit-1은 마지막 티어의 첫 웨이브(4티어 최소 수치) HP에서 시작하고, Unlimit-N의 HP = 시작 HP × (1 + 이 값)^(N−1). 0.1이면 웨이브마다 ×1.10.")]
     public float unlimitHpGrowthPerWave = 0.1f;
-
-    [Header("카드 가격")]
-    [Tooltip("ECardGrade 순서(브론즈, 실버, 골드, 루비, 프리즘)의 레벨 I 가격 = 기준 가격 P × 등급 비율. 브론즈는 100 이내.")]
-    public List<int> gradeBasePrices = new List<int>();
-    [Tooltip("레벨 배율. [0]=레벨 I, [1]=II ... 가격 = 레벨 I 가격 × 이 값. 모자라면 마지막 값을 쓴다.")]
-    public List<float> levelPriceMultipliers = new List<float>();
-    [Tooltip("사면 MAX가 되는 구매(에메랄드)는 무료.")]
-    public bool bMaxLevelFree = true;
+    [Tooltip("언리밋 웨이브마다 묶음 크기에 더하는 그루 수. Unlimit-N의 묶음 = 시작 묶음 + 이 값 × (N−1). 스폰 상한을 넘는 몫은 소멸한다.")]
+    public int unlimitBatchSizeAddPerWave = 1;
+    [Tooltip("언리밋 웨이브마다 묶음 주기에 더하는 초(음수면 빨라진다). Unlimit-N의 주기 = 시작 주기 + 이 값 × (N−1), 하한은 아래 값.")]
+    public float unlimitBatchSecondsAddPerWave = -0.02f;
+    [Tooltip("언리밋 묶음 주기의 하한(초).")]
+    public float unlimitMinBatchSeconds = 1f;
 
     [Header("카드 제시")]
-    [Tooltip("한 번에 제시하는 카드 수 N.")]
-    public int offerCount = 3;
-    [Tooltip("보유 골드로 단독 구매 가능한 카드를 최소 몇 장 섞을지(슬롯 3).")]
-    public int affordableGuaranteeCount = 2;
-    [Tooltip("에메랄드·프리즘 보장 노출을 한 번에 몇 장까지 넣을지(슬롯 1). 나머지는 다음 선택으로 이월. 서로 배타인 프리즘은 이 상한의 예외.")]
+    [Tooltip("한 번에 제시하는 카드 수 N(기획서 v2.5 4장).")]
+    public int offerCount = 4;
+    [Tooltip("프리즘·에메랄드(MAX) 보장 노출을 합쳐 한 번에 몇 장까지 넣을지. 나머지는 다음 선택으로 이월. 서로 배타인 프리즘은 이 상한의 예외.")]
     public int guaranteedSlotCap = 2;
-    [Tooltip("선택마다 액티브를 최소 몇 장 넣을지(슬롯 2).")]
-    public int activeGuaranteeCount = 1;
-    [Tooltip("보유 액티브가 이 수 이상이면 액티브 보장(슬롯 2)을 해제한다.")]
-    public int activeGuaranteeReleaseOwnedCount = 3;
-    [Tooltip("첫 선택(웨이브 1)은 무료.")]
-    public bool firstPickFree = true;
-    [Tooltip("첫 선택은 액티브만 제시(등급 무관).")]
+    [Tooltip("프리즘·MAX 다음으로 무조건 넣는 공통 패시브 수(기획서 v2.5 4-2 ③). 첫 선택에는 적용하지 않는다. 노출 가능한 패시브가 모자라면 있는 만큼.")]
+    public int guaranteedPassiveCount = 2;
+    [Tooltip("첫 선택(웨이브 1)은 액티브만 제시.")]
     public bool firstPickActiveOnly = true;
-    [Tooltip("첫 선택의 무료 리롤 횟수. 리롤 비용 상승 횟수에 포함하지 않는다.")]
-    public int firstPickFreeRerolls = 1;
-    [Tooltip("첫 선택에서 건너뛰기를 허용할지. 끄면 반드시 한 장을 골라야 한다.")]
-    public bool firstPickSkippable = false;
-    [Tooltip("리롤로 다시 뽑을 때 이번 선택에서 이미 노출된 보장 카드가 다시 나올 확률(0~1).")]
-    [Range(0f, 1f)] public float rerollGuaranteedReshowChance = 0.5f;
+    [Tooltip("선택 단계마다 쓸 수 있는 리롤 횟수(첫 선택 포함). 쓰지 않아도 다음 선택으로 이월하지 않는다(기획서 4-1). 리롤은 우선순위 없는 진짜 랜덤이다(4-2).")]
+    public int rerollsPerSelection = 1;
 
     [Header("노출 가중치")]
     public float baseWeight = 1f;
-    [Tooltip("ECardGrade 순서(브론즈, 실버, 골드, 루비, 프리즘)의 등급 비중. 브론즈 > 실버 > 골드 > 루비.")]
-    public List<float> gradeWeights = new List<float>();
+    [Tooltip("ECardKind 순서(액티브, 공통 패시브, 계약, 프리즘)의 종류 비중. 액티브 = 공통 패시브 > 계약(기획서 4-2 가중 3).")]
+    public List<float> kindWeights = new List<float>();
     [Tooltip("이미 보유한 카드의 다음 레벨은 가중치 × (1 + 이 값).")]
     public float upgradeWeightBonus = 1f;
     [Tooltip("조합 재료 한 장이 이 레벨 이상이면 그 파트너 카드의 유도를 시작한다(기본 II).")]
@@ -141,59 +132,14 @@ public class RoguelikeBalanceSO : ScriptableObject
     [Tooltip("조합 재료 한 장이 MAX면 파트너를 남은 칸에 확실히 넣는다(한 선택에 1장).")]
     public bool forcePartnerWhenMaterialMax = true;
 
-    [Header("리롤")]
-    public int rerollBaseCost = 20;
-    public ERerollCostMode rerollCostMode = ERerollCostMode.Multiply;
-    [Tooltip("Linear: 사용할 때마다 이 값만큼 오른다.")]
-    public int rerollCostStep = 10;
-    [Tooltip("Multiply: 사용할 때마다 이 배율만큼 오른다.")]
-    public float rerollCostMultiplier = 1.2f;
-    [Tooltip("0이면 상한 없음.")]
-    public int rerollCostCap = 0;
-
-    [Header("카드 감정")]
-    [Tooltip("감정사가 등장할 수 있는 웨이브 범위(포함). 런 시작 때 이 안에서 한 웨이브를 무작위로 정한다.")]
-    public int appraiserWaveMin = 10;
-    public int appraiserWaveMax = 20;
-    [Tooltip("감정사가 숲을 찾아온다는 예고를 띄우는 웨이브(실제 등장 웨이브는 알려주지 않는다).")]
-    public int appraiserNoticeWave = 10;
-    [Tooltip("한 판에 감정할 수 있는 카드 수(서로 다른 카드).")]
-    public int appraisalMaxCards = 3;
-    [Tooltip("레벨 I~III 감정비 = 다음 레벨 정가 × 이 값.")]
-    public float appraisalNextLevelFeeMultiplier = 1.15f;
-    [Tooltip("레벨 IV 감정비(MAX 도전) = 레벨 I 가격 × 이 값.")]
-    public float appraisalMaxChallengeFeeMultiplier = 1.1f;
-    [Tooltip("보유 레벨별 결과 분포. [0]=레벨 I ... [3]=레벨 IV. 결과가 MAX를 넘으면 MAX로 맞춘다.")]
-    public List<AppraisalOutcome> appraisalOutcomes = new List<AppraisalOutcome>();
-
     // // 조회
 
-    public int GetGradeBasePrice(ECardGrade _grade)
+    /// <summary>카드 종류의 노출 비중. 비어 있으면 1.</summary>
+    public float GetKindWeight(ECardKind _kind)
     {
-        int idx = (int)_grade;
-        if (null == gradeBasePrices || idx < 0 || idx >= gradeBasePrices.Count) return 0;
-        return gradeBasePrices[idx];
-    }
-
-    /// <summary>_level(1부터)의 가격 배율. 비어 있으면 1.</summary>
-    public float GetLevelPriceMultiplier(int _level)
-    {
-        if (null == levelPriceMultipliers || 0 == levelPriceMultipliers.Count) return 1f;
-        return levelPriceMultipliers[Mathf.Clamp(_level - 1, 0, levelPriceMultipliers.Count - 1)];
-    }
-
-    public float GetGradeWeight(ECardGrade _grade)
-    {
-        int idx = (int)_grade;
-        if (null == gradeWeights || idx < 0 || idx >= gradeWeights.Count) return 1f;
-        return Mathf.Max(0f, gradeWeights[idx]);
-    }
-
-    /// <summary>보유 레벨 _level(1부터)의 감정 결과 분포. 없으면 전부 유지.</summary>
-    public AppraisalOutcome GetAppraisalOutcome(int _level)
-    {
-        if (null == appraisalOutcomes || _level < 1 || _level > appraisalOutcomes.Count) return new AppraisalOutcome { stay = 1f };
-        return appraisalOutcomes[_level - 1];
+        int idx = (int)_kind;
+        if (null == kindWeights || idx < 0 || idx >= kindWeights.Count) return 1f;
+        return Mathf.Max(0f, kindWeights[idx]);
     }
 
     public WaveRow GetWaveRow(int _waveNumber)
@@ -230,26 +176,45 @@ public class RoguelikeBalanceSO : ScriptableObject
 
     // // 초안 값
 
-    [ContextMenu("기획서 v2.1 부록 A 초안 값으로 채우기")]
+    [ContextMenu("기획서 v2.6 부록 A 초안 값으로 채우기")]
     public void FillTemporaryValues()
     {
         clearWave = 30;
 
-        // 부록 A-2: (초당 스폰, 나무 HP, 목표 처치 수, 티어 안 나무 종류 순번). 스폰 주기 = 1 ÷ 초당 스폰.
+        // 부록 A-2(v2.6): (묶음 크기, 묶음 주기, 나무 HP, 목표 처치 수, 티어 안 나무 종류 순번). 스폰 주기 = 묶음 주기 ÷ 묶음 크기(참고용).
+        // 1티어 3~7그루 / 3초, 2티어 7~14그루 / 2.5초, 3티어 14~21그루 / 2초, 4티어 21~30그루 / 1.5초. HP는 3티어 100 / 105 / 115, 4티어 230 / 300 / 350.
         float[,] table =
         {
-            { 0.50f, 20f, 30f, 0f }, { 0.55f, 20f, 35f, 0f },
-            { 0.60f, 30f, 35f, 1f }, { 0.65f, 30f, 40f, 1f }, { 0.70f, 30f, 40f, 1f },
-            { 0.75f, 40f, 45f, 2f }, { 0.80f, 40f, 50f, 2f },
-            { 0.85f, 45f, 50f, 0f }, { 0.90f, 45f, 55f, 0f },
-            { 0.90f, 50f, 55f, 1f }, { 0.95f, 50f, 55f, 1f }, { 0.95f, 50f, 55f, 1f },
-            { 0.95f, 55f, 55f, 2f }, { 0.95f, 55f, 55f, 2f }, { 0.95f, 55f, 55f, 2f },
-            { 1.50f, 100f, 90f, 0f }, { 1.55f, 100f, 95f, 0f },
-            { 1.60f, 115f, 95f, 1f }, { 1.65f, 115f, 100f, 1f }, { 1.70f, 115f, 100f, 1f },
-            { 1.80f, 130f, 110f, 2f }, { 1.90f, 130f, 115f, 2f },
-            { 2.00f, 280f, 120f, 0f }, { 2.10f, 280f, 125f, 0f },
-            { 2.20f, 340f, 130f, 1f }, { 2.30f, 340f, 140f, 1f }, { 2.40f, 340f, 145f, 1f },
-            { 2.40f, 420f, 145f, 2f }, { 2.40f, 420f, 145f, 2f }, { 2.45f, 420f, 145f, 2f },
+            { 3f, 3f, 20f, 20f, 0f },
+            { 4f, 3f, 20f, 30f, 0f },
+            { 4f, 3f, 30f, 30f, 1f },
+            { 5f, 3f, 30f, 45f, 1f },
+            { 6f, 3f, 30f, 55f, 1f },
+            { 6f, 3f, 40f, 60f, 2f },
+            { 7f, 3f, 40f, 75f, 2f },
+            { 7f, 2.5f, 45f, 95f, 0f },
+            { 8f, 2.5f, 50f, 115f, 0f },
+            { 9f, 2.5f, 50f, 140f, 1f },
+            { 10f, 2.5f, 55f, 165f, 1f },
+            { 11f, 2.5f, 55f, 190f, 1f },
+            { 12f, 2.5f, 55f, 215f, 2f },
+            { 13f, 2.5f, 55f, 245f, 2f },
+            { 14f, 2.5f, 55f, 275f, 2f },
+            { 14f, 2f, 100f, 355f, 0f },
+            { 15f, 2f, 100f, 400f, 0f },
+            { 16f, 2f, 105f, 440f, 1f },
+            { 18f, 2f, 105f, 515f, 1f },
+            { 19f, 2f, 105f, 565f, 1f },
+            { 20f, 2f, 115f, 615f, 2f },
+            { 21f, 2f, 115f, 665f, 2f },
+            { 21f, 1.5f, 230f, 915f, 0f },
+            { 22f, 1.5f, 230f, 990f, 0f },
+            { 24f, 1.5f, 300f, 1115f, 1f },
+            { 25f, 1.5f, 300f, 1195f, 1f },
+            { 26f, 1.5f, 300f, 1280f, 1f },
+            { 28f, 1.5f, 350f, 1415f, 2f },
+            { 29f, 1.5f, 350f, 1505f, 2f },
+            { 30f, 1.5f, 350f, 1600f, 2f },
         };
 
         int rows = table.GetLength(0);
@@ -258,76 +223,59 @@ public class RoguelikeBalanceSO : ScriptableObject
         {
             waves.Add(new WaveRow
             {
-                spawnInterval = 1f / table[i, 0],
-                treeHp = table[i, 1],
-                killTarget = (int)table[i, 2],
-                treeKind = (int)table[i, 3],
+                batchSize = (int)table[i, 0],
+                batchSeconds = table[i, 1],
+                spawnInterval = table[i, 1] / table[i, 0],
+                treeHp = table[i, 2],
+                killTarget = (int)table[i, 3],
+                treeKind = (int)table[i, 4],
             });
         }
 
         tiers = new List<TierRow>(4)
         {
-            new TierRow { startWave = 1, staminaDamage = 3f, goldPerTree = 2f },
-            new TierRow { startWave = 8, staminaDamage = 6f, goldPerTree = 1.75f },
-            new TierRow { startWave = 16, staminaDamage = 10f, goldPerTree = 1f },
-            new TierRow { startWave = 23, staminaDamage = 15f, goldPerTree = 1f },
+            new TierRow { startWave = 1, staminaDamage = 3f },
+            new TierRow { startWave = 8, staminaDamage = 6f },
+            new TierRow { startWave = 16, staminaDamage = 10f },
+            new TierRow { startWave = 23, staminaDamage = 15f },
         };
         previousTreeKindShare = 0.3f;
 
         threshold = 40;
-        spawnExtra = 12;
+        spawnExtra = 20;
+
+        initialTreeThresholdRatio = 0.5f;
+        spawnBatchSeconds = 3f;
+        treeMinSpacing = 1f;
+        playerExclusionRadius = 1.2f;
+        fieldEdgeInsetCells = 1;
+        idleMoveReach = 1.5f;
 
         maxStamina = 100f;
         graceTime = 5f;
         damageCooldown = 3f;
         maxGraceTime = 15f;
         maxDamageCooldown = 10f;
-        maxMoveSpeedPercent = 60f;
+        maxMoveSpeedPercent = 100f;
 
         unlimitHpGrowthPerWave = 0.1f;
+        unlimitBatchSizeAddPerWave = 1;
+        unlimitBatchSecondsAddPerWave = -0.02f;
+        unlimitMinBatchSeconds = 1f;
 
-        // 기준 가격 P = 60 × 등급 비율(브론즈 1 / 실버 2.5 / 골드 5 / 루비 4). 프리즘은 무료.
-        gradeBasePrices = new List<int>(5) { 60, 150, 300, 240, 0 };
-        levelPriceMultipliers = new List<float>(4) { 1f, 1.3f, 1.6f, 2f };
-        bMaxLevelFree = true;
-
-        offerCount = 3;
-        affordableGuaranteeCount = 2;
+        offerCount = 4;
         guaranteedSlotCap = 2;
-        activeGuaranteeCount = 1;
-        activeGuaranteeReleaseOwnedCount = 3;
-        firstPickFree = true;
+        guaranteedPassiveCount = 2;
         firstPickActiveOnly = true;
-        firstPickFreeRerolls = 1;
-        firstPickSkippable = false;
-        rerollGuaranteedReshowChance = 0.5f;
+        rerollsPerSelection = 1;
 
+        // 종류 비중: 액티브 1.0 / 공통 패시브 1.0 / 계약 0.3(v2.5에서 0.15 → 0.3) / 프리즘(보장 노출이라 가중치 추첨에 거의 오지 않는다) 1.0.
         baseWeight = 1f;
-        gradeWeights = new List<float>(5) { 1f, 0.7f, 0.5f, 0.15f, 1f };
+        kindWeights = new List<float>(4) { 1f, 1f, 0.3f, 1f };
         upgradeWeightBonus = 1f;
         partnerStartLevel = 2;
         partnerWeightBonus = 1f;
         maxWeightMultiplier = 4f;
         forcePartnerWhenMaterialMax = true;
-
-        rerollBaseCost = 20;
-        rerollCostMode = ERerollCostMode.Multiply;
-        rerollCostStep = 10;
-        rerollCostMultiplier = 1.2f;
-        rerollCostCap = 0;
-
-        appraiserWaveMin = 10;
-        appraiserWaveMax = 20;
-        appraiserNoticeWave = 10;
-        appraisalMaxCards = 3;
-        appraisalNextLevelFeeMultiplier = 1.15f;
-        appraisalMaxChallengeFeeMultiplier = 1.1f;
-        appraisalOutcomes = new List<AppraisalOutcome>(4)
-        {
-            new AppraisalOutcome { stay = 55f, plusOne = 25f, plusTwo = 15f, max = 5f },
-            new AppraisalOutcome { stay = 50f, plusOne = 25f, plusTwo = 17f, max = 8f },
-            new AppraisalOutcome { stay = 45f, plusOne = 28f, plusTwo = 0f, max = 27f },
-            new AppraisalOutcome { stay = 65f, plusOne = 0f, plusTwo = 0f, max = 35f },
-        };
     }
 }

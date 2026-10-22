@@ -1,3 +1,5 @@
+using UnityEngine;
+
 /// <summary>
 /// 본편 전투 코드에 하드코딩된 상수 중 로그라이크 카드가 바꿔야 하는 값의 덮어쓰기 창구.
 ///
@@ -9,20 +11,32 @@
 /// </summary>
 public static class RunCombatOverrides
 {
-    /// <summary>회전베기 발동에 필요한 휘두름 수. 0 이하면 AttackComponent의 기본 상수(3)를 쓴다.</summary>
+    /// <summary>
+    /// 회전베기 발동 주기(이 휘두름마다 한 번 회전베기). 0 이하면 AttackComponent의 기본 상수(3)를 쓴다.
+    /// 1이면 휘두를 때마다 회전베기다(로그라이크 회전베기 MAX "상시 회전베기").
+    /// </summary>
     public static int WhirlwindSwingInterval { get; private set; }
 
-    /// <summary>회전베기가 발동할 때 이어서 더 도는 횟수(회전베기 IV 연속 2회전 = 1). 0이면 본편처럼 한 번.</summary>
-    public static int WhirlwindExtraRotations { get; private set; }
+    /// <summary>회전베기 타격에만 곱하는 피해 배율(회전베기 카드의 "회전 피해 증가"). 1이면 본편처럼 도끼 피해 그대로.</summary>
+    public static float WhirlwindDamageMultiplier { get; private set; } = 1f;
 
-    /// <summary>추가 회전 사이의 간격(초).</summary>
-    public static float WhirlwindExtraRotationDelay { get; private set; } = 0.15f;
+    /// <summary>회전베기 타격에만 곱하는 범위 배율(회전베기 카드의 "범위 증가"). 1이면 본편처럼 도끼 범위 그대로.</summary>
+    public static float WhirlwindRangeMultiplier { get; private set; } = 1f;
 
-    /// <summary>충격파가 나갈 때 이어서 더 나가는 수(충격파 V 2중 발생 = 1). 0이면 본편처럼 하나.</summary>
+    /// <summary>충격파가 나갈 때 이어서 더 나가는 수(충격파 MAX 2중 발생 = 1). 0이면 본편처럼 하나.</summary>
     public static int ShockWaveExtraCount { get; private set; }
 
     /// <summary>추가 충격파 사이의 간격(초).</summary>
     public static float ShockWaveExtraDelay { get; private set; } = 0.12f;
+
+    /// <summary>추가 충격파의 피해 배율(충격파 MAX 두 번째 = 0.6). 추가 충격파가 없는 본편에서는 읽히지 않는다.</summary>
+    public static float ShockWaveExtraDamageMultiplier { get; private set; } = 1f;
+
+    /// <summary>true면 충격파 그림 색에 ShockWaveTint를 곱한다(포자 충격파의 초록 충격파). false(본편)면 원래 색 그대로.</summary>
+    public static bool bShockWaveTinted { get; private set; }
+
+    /// <summary>충격파 그림에 곱하는 색. bShockWaveTinted일 때만 쓴다.</summary>
+    public static Color ShockWaveTint { get; private set; } = Color.white;
 
     /// <summary>
     /// true면 도끼 이외의 공격(회전베기 360도·충격파·부메랑·드론 레이저)도 IRunSkillHitTarget(로그라이크 별)을 친다(스텔라 III).
@@ -30,7 +44,7 @@ public static class RunCombatOverrides
     /// </summary>
     public static bool bSkillsHitRunTargets { get; private set; }
 
-    /// <summary>도끼 공격이 맞힌 대상을 이어서 더 치는 횟수(루비 다다익선 "연속 2회 타격" = 1). 0이면 본편처럼 한 번.</summary>
+    /// <summary>도끼 공격이 맞힌 대상을 이어서 더 치는 횟수(계약 다다익선 "연속 2회 타격" = 1). 0이면 본편처럼 한 번.</summary>
     public static int AxeExtraStrikes { get; private set; }
 
     /// <summary>추가 타격 사이의 간격(초).</summary>
@@ -47,16 +61,23 @@ public static class RunCombatOverrides
         WhirlwindSwingInterval = _interval;
     }
 
-    public static void SetWhirlwindExtraRotations(int _count, float _delay)
+    public static void SetWhirlwindMultipliers(float _damage, float _range)
     {
-        WhirlwindExtraRotations = _count > 0 ? _count : 0;
-        WhirlwindExtraRotationDelay = _delay > 0f ? _delay : 0f;
+        WhirlwindDamageMultiplier = _damage > 0f ? _damage : 1f;
+        WhirlwindRangeMultiplier = _range > 0f ? _range : 1f;
     }
 
-    public static void SetShockWaveExtraCount(int _count, float _delay)
+    public static void SetShockWaveExtraCount(int _count, float _delay, float _damageMultiplier)
     {
         ShockWaveExtraCount = _count > 0 ? _count : 0;
         ShockWaveExtraDelay = _delay > 0f ? _delay : 0f;
+        ShockWaveExtraDamageMultiplier = _damageMultiplier > 0f ? _damageMultiplier : 0f;
+    }
+
+    public static void SetShockWaveTint(bool _bTinted, Color _tint)
+    {
+        bShockWaveTinted = _bTinted;
+        ShockWaveTint = _bTinted ? _tint : Color.white;
     }
 
     public static void SetSkillsHitRunTargets(bool _bOn)
@@ -67,10 +88,13 @@ public static class RunCombatOverrides
     public static void ResetAll()
     {
         WhirlwindSwingInterval = 0;
-        WhirlwindExtraRotations = 0;
-        WhirlwindExtraRotationDelay = 0.15f;
+        WhirlwindDamageMultiplier = 1f;
+        WhirlwindRangeMultiplier = 1f;
         ShockWaveExtraCount = 0;
         ShockWaveExtraDelay = 0.12f;
+        ShockWaveExtraDamageMultiplier = 1f;
+        bShockWaveTinted = false;
+        ShockWaveTint = Color.white;
         bSkillsHitRunTargets = false;
         AxeExtraStrikes = 0;
         AxeExtraStrikeDelay = 0.1f;

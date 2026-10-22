@@ -7,31 +7,22 @@ public interface IRoguelikeRunInfo
     WaveSpec CurrentWave { get; }
     int WaveKills { get; }
 
-    long Gold { get; }
-
     int FieldTreeCount { get; }
     int Threshold { get; }
     int SpawnCap { get; }
     EPressureState PressureState { get; }
     float PressureGraceRatio { get; }
     float PressureCooldownRatio { get; }
+    /// <summary>웨이브 전투 중이고 현재 스태미너가 임계치 피해 1회(웨이브의 staminaDamage)보다 작거나 같아, 임계점을 넘어 한 번 맞으면 쓰러지는 상태인가. UI가 스태미너 바 경고를 미리 켜는 데 쓴다.</summary>
+    bool PressureHitLethal { get; }
 
     bool IsCardSelectionOpen { get; }
     bool IsFirstPick { get; }
     IReadOnlyList<CardOffer> CurrentOffers { get; }
-    int RerollCost { get; }
+    /// <summary>이번 선택 단계에 리롤이 남아 있는지(선택 단계마다 1회, 기획서 v2.4 4-1).</summary>
     bool CanReroll { get; }
-    bool CanSkip { get; }
 
-    /// <summary>이번 선택 단계에 감정사가 와 있는지(기획서 4-4).</summary>
-    bool IsAppraiserPresent { get; }
-    /// <summary>감정 버튼을 쓸 수 있는지. 감정사가 있어도 대상 카드가 없거나 골드가 가장 싼 감정비보다 적으면 false(잠금).</summary>
-    bool CanAppraise { get; }
-    /// <summary>_card가 감정 대상인지(골드와 무관).</summary>
-    bool IsAppraisable(CardDefinitionSO _card);
-    int GetAppraisalFee(CardDefinitionSO _card);
-
-    /// <summary>방금 구매로 함께 사라져야 하는 배타 카드의 제시 인덱스.</summary>
+    /// <summary>방금 선택으로 함께 사라져야 하는 배타 카드의 제시 인덱스.</summary>
     IReadOnlyList<int> LastDiscardedOfferIndices { get; }
 
     RunBuildState Build { get; }
