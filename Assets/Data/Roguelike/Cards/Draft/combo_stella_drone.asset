@@ -27,7 +27,7 @@ MonoBehaviour:
   comboMaterialA: {fileID: 11400000, guid: 9dd2c45bb986dc547b63b4fc403a9ef5, type: 2}
   comboMaterialB: {fileID: 11400000, guid: 39212f83e12920542958df6f676e9d0b, type: 2}
   comboType: 5
-  suppressedSkills: 04000000
+  suppressedSkills: 
   designerNote: "[\uCD08\uC548] \uAE30\uD68D\uC11C 3-3 \uCE74\uB4DC. \uB808\uBCA8\uBCC4
     \uD6A8\uACFC\xB7\uB4F1\uAE09\xB7\uAC00\uACA9\uC740 \uBBF8\uC815\uC774\uB77C \uC2DC\uC2A4\uD15C
     \uD655\uC778\uC6A9 \uC784\uC2DC \uC218\uCE58\uB2E4. \uCE74\uB4DC \uAE30\uD68D(8\uC7A5

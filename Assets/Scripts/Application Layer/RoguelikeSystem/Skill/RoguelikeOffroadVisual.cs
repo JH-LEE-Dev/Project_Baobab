@@ -72,6 +72,8 @@ public class RoguelikeOffroadVisual : MonoBehaviour
     private float bumpTime = -100f;
     private float bumpStrength;
     private float speed;
+    // 시동음(본편 OffroadNonEdit, 약 8초). 차가 1~2초 만에 사라지므로 차와 함께 끊는다(기획서 v2.8 "오프로드 사운드 잔존").
+    private AudioHandle ignitionSound = AudioHandle.Invalid;
 
     /// <summary>
     /// 필드 끝에 소환된다. _seconds 동안 예열한 뒤 BeginDash로 돌진한다.
@@ -93,7 +95,8 @@ public class RoguelikeOffroadVisual : MonoBehaviour
 
         if (null != wheelAnimator) wheelAnimator.speed = 0f;
         ApplyPose();
-        if (_bPlaySound) Sound.Play(SoundID.OffroadNonEdit, _from);
+        StopIgnitionSound(0f);
+        if (_bPlaySound) ignitionSound = Sound.PlayTracked(SoundID.OffroadNonEdit, _from);
     }
 
     public void BeginDash()
@@ -107,6 +110,8 @@ public class RoguelikeOffroadVisual : MonoBehaviour
     public void BeginExit()
     {
         state = EState.Exit;
+        // 엔진음과 같이 잦아들게 한다(RoguelikeSkillController.BeginOffroadExit).
+        StopIgnitionSound(0.2f);
     }
 
     /// <summary>컨트롤러가 정한 이번 프레임의 위치와 속도. 손맛 오프셋은 이 위치 위에 얹는다.</summary>
@@ -126,8 +131,19 @@ public class RoguelikeOffroadVisual : MonoBehaviour
     public void Hide()
     {
         state = EState.Hidden;
+        StopIgnitionSound(0f);
         SetFlash(0f);
         gameObject.SetActive(false);
+    }
+
+    /// <summary>시동음을 끊는다. _fadeSeconds가 0보다 크면 그동안 잦아든다.</summary>
+    private void StopIgnitionSound(float _fadeSeconds)
+    {
+        if (false == ignitionSound.IsValid) return;
+
+        if (_fadeSeconds > 0f) Sound.StopTrackedWithFadeOut(ignitionSound, _fadeSeconds);
+        else Sound.StopTracked(ignitionSound);
+        ignitionSound = AudioHandle.Invalid;
     }
 
     private void Face(Vector2 _direction)
@@ -210,6 +226,7 @@ public class RoguelikeOffroadVisual : MonoBehaviour
         }
 
         transform.position = basePosition + offset;
+        if (ignitionSound.IsValid) Sound.UpdateTrackedPosition(ignitionSound, basePosition);
 
         if (null != flipRoot)
         {
@@ -243,6 +260,7 @@ public class RoguelikeOffroadVisual : MonoBehaviour
 
     private void OnDisable()
     {
+        StopIgnitionSound(0f);
         state = EState.Hidden;
         SetFlash(0f);
         if (null != flipRoot)

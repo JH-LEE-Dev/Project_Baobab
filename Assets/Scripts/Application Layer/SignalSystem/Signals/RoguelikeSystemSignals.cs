@@ -266,7 +266,8 @@ public struct RoguelikeRecordsRequestedSignal { }
 /// <summary>로그라이크 신규 스킬·조합 효과의 연출 지점. 판정과 피해는 이미 끝난 뒤에 발행된다.</summary>
 public enum ERoguelikeSkillVfx
 {
-    /// <summary>오프로드가 필드 끝에 플래시되며 소환됨. position=출발점, position2=도착점, duration=예열 시간.</summary>
+    /// <summary>오프로드 소환 위치가 정해짐(발동 주기 시작, 기획서 v2.8). position=출발점, position2=도착점, radius=돌진 폭의 반폭, duration=발동(소환)까지 남은 시간.
+    /// 차량은 발동 순간에 필드 끝에 플래시되며 소환된다. 경로 표시(VFX_OffroadLane)는 시스템이 이 시점에 시작해 발동 때 걷는다.</summary>
     OffroadWarmup = 0,
     /// <summary>오프로드 돌진 시작(예열이 끝나 출발하는 순간). position=출발점, position2=반대편 섬 끝 멈추는 점, duration=멈칫 없이 달렸을 때의 돌진 시간(대략).</summary>
     OffroadDash = 1,
@@ -284,11 +285,11 @@ public enum ERoguelikeSkillVfx
     SpinBoomerangStrike = 7,
     /// <summary>포자 폭발(본편 4연발). radius. v2.6부터 포자 조합 3종은 SporeBigExplosion(포자 수류탄 대폭발)을 써서 지금은 내는 곳이 없다.</summary>
     SporeExplosion = 8,
-    /// <summary>별 이음선 빔(스텔라+드론). position→position2.</summary>
+    /// <summary>별 이음선 레이저(스텔라+드론, 드론 레이저 발사 주기마다). position→position2.</summary>
     StarLinkBeam = 9,
     /// <summary>노바(스텔라+드론). position=중심, radius.</summary>
     StarNova = 10,
-    /// <summary>홀로 남은 별의 표식 공격(스텔라+드론). radius.</summary>
+    /// <summary>[v2.8 삭제, 발행하지 않음] 홀로 남은 별의 표식 공격(스텔라+드론). 번호는 비워 둔다.</summary>
     LoneStarPulse = 11,
     /// <summary>별 이음선 구성이 바뀜(스텔라+드론). 연결선 그리기는 IRoguelikeStarLinkProvider로 읽는다.</summary>
     StarLinksChanged = 12,
@@ -305,7 +306,7 @@ public enum ERoguelikeSkillVfx
     StarHighlightOn = 18,
     /// <summary>별 강조가 꺼짐(도끼 범위에서 빠짐, 맞아서 터짐, 사라짐). position=별 위치, id=별 번호.</summary>
     StarHighlightOff = 19,
-    /// <summary>스텔라 III: 드론 레이저가 사거리 안의 별을 맞힘. position=드론 총구, position2=별 위치, id=별 번호.</summary>
+    /// <summary>스텔라 III: 드론 레이저의 1차 타겟이 별이었다(레이저 그림은 본편 드론 연쇄 번개가 총구 → 별 → 체인 나무로 그린다). position=드론 총구, position2=별 위치, id=별 번호.</summary>
     DroneStarShot = 20,
 }
 

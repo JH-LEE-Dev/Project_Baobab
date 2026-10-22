@@ -15,10 +15,10 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float axeDamage = 10f;
     [Tooltip("도끼 쿨타임(초).")]
     public float axeAttackCoolTime = 0.6f;
-    [Tooltip("충격파 피해. 기획서 v2.5 A-4: 초반부터 강하게 12로 시작(크기 1.5는 충격파 카드 I의 범위 +10%).")]
-    public float shockwaveDamage = 12f;
-    [Tooltip("부메랑 틱 피해.")]
-    public float boomerangTickDamage = 4f;
+    [Tooltip("충격파 피해(1레벨 20 = Oak 1타, 기획서 v2.8 A-4). 충격파 카드의 그루당 피해 배율로 22 / 24 / … / 32가 된다(크기 1.5는 충격파 카드 I의 범위 +10%).")]
+    public float shockwaveDamage = 20f;
+    [Tooltip("부메랑 틱 피해(1레벨 6, 기획서 v2.8 A-4). 부메랑 카드의 피해%로 7 / 8 / … / 12가 된다.")]
+    public float boomerangTickDamage = 6f;
     [Tooltip("부메랑 틱 간격(초).")]
     public float boomerangTickInterval = 0.3f;
     [Tooltip("부메랑이 돌아온 뒤 다시 던지기까지의 시간(초). 0이면 돌아오자마자 다시 던진다(상시 발사, 기획서 6-1).")]
@@ -163,15 +163,11 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public Color sporeShockwaveColor = new Color(143f / 255f, 217f / 255f, 138f / 255f, 1f);
 
     [Header("조합: 스텔라 + 드론")]
-    [Tooltip("이음선 빔 주기(초). 공격속도%로 빨라진다.")]
-    public float stellaDroneBeamInterval = 1.2f;
+    [Tooltip("이음선 레이저의 판정 폭과 이음선 하나당 피해. 발사 주기는 따로 없고 드론 레이저 발사 주기(공격속도 반영)를 그대로 쓴다(기획서 v2.8 6-2).")]
     public float stellaDroneBeamWidth = 0.6f;
     public float stellaDroneBeamDamage = 40f;
     [Tooltip("이 수만큼 별이 이어지면 노바(기획서 9개).")]
     public int stellaDroneNovaStars = 9;
     public float stellaDroneNovaRadius = 6f;
     public float stellaDroneNovaDamage = 600f;
-    [Tooltip("홀로 남은 별의 표식 공격 주기(초)와 반경.")]
-    public float stellaDroneLoneStarInterval = 1.5f;
-    public float stellaDroneLoneStarRadius = 1.5f;
 }

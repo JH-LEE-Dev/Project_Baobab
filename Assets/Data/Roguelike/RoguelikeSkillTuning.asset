@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RoguelikeSkillTuningSO
   axeDamage: 10
   axeAttackCoolTime: 0.6
-  shockwaveDamage: 12
-  boomerangTickDamage: 4
+  shockwaveDamage: 20
+  boomerangTickDamage: 6
   boomerangTickInterval: 0.3
   boomerangCooldown: 0
   boomerangRangeRatio: 0.67
@@ -53,6 +53,8 @@ MonoBehaviour:
   stellaBlastDamage: 11
   stellaMarkDuration: 6
   stellaMarkDamageTakenBonus: 0.3
+  stellaBlastMaxHpRatio: 0.25
+  stellaBlastCapFromTier: 3
   sporeInterval: 5
   sporeTargetRange: 7
   sporeRadius: 2.5

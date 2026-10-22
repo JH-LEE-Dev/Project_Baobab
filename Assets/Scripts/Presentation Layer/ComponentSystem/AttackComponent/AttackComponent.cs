@@ -551,6 +551,18 @@ public class AttackComponent : PComponent
             // 그 뒤의 나무가 가려지거나, 묘목만 맞았는데 카메라가 흔들리는 일이 없다.
             if (target is IDamageable targetDamageable && !targetDamageable.bCanApplyDamage) continue;
 
+            // [로그라이크] 기본 휘두름으로만 맞는 대상(스텔라의 별)은 "가장 가까운 대상" 다툼에 끼지 않고, 휘두름 범위(인디케이터)에 조금이라도
+            // 들어와 있으면 나무와 별개로 늘 맞는다(기획서 v2.8 6-1 "범위 안의 별은 무조건 타격"). 회전베기 360도는 스텔라 III에서만 친다
+            // (RunCombatOverrides.bSkillsHitRunTargets, 본편은 항상 false). 본편에는 이런 대상이 없어 이 분기를 타지 않는다.
+            if (target is IBasicAxeOnlyTarget axeOnly)
+            {
+                // 회전베기 범위 증가는 360도로 별을 칠 때(스텔라 III)만 붙고, 아니면 평소 휘두름 범위다.
+                bool bAxeOnlyFullCircle = bIsWhirlwindStrike && RunCombatOverrides.bSkillsHitRunTargets;
+                float axeOnlyRadius = bIsWhirlwindStrike && false == bAxeOnlyFullCircle ? ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier : effectiveEllipseRadius;
+                if (IsAxeOnlyTargetInSwing(target, axeOnly, centerPos, isoAttackDir, axeOnlyRadius, bAxeOnlyFullCircle)) axeOnlyHits.Add(target);
+                continue;
+            }
+
             Vector3 targetPos = target.Position + target.Offset;
 
             // 2단계: 타원형 반지름(ellipseAttackRadius)으로 2차 필터링
@@ -565,15 +577,6 @@ public class AttackComponent : PComponent
             }
 
             float dot = Vector2.Dot(isoAttackDir, targetDir);
-
-            // [로그라이크] 기본 휘두름으로만 맞는 대상(스텔라의 별)은 "가장 가까운 대상" 다툼에 끼지 않고, 휘두름 범위(인디케이터) 안이면
-            // 나무와 별개로 늘 맞는다(기획서 v2.5 6-1 "별의 타격은 나무와 같은 규칙"). 회전베기 360도는 스텔라 III에서만 친다
-            // (RunCombatOverrides.bSkillsHitRunTargets, 본편은 항상 false). 본편에는 이런 대상이 없어 이 분기를 타지 않는다.
-            if (target is IBasicAxeOnlyTarget)
-            {
-                if (dot >= cosThreshold || (bIsWhirlwindStrike && RunCombatOverrides.bSkillsHitRunTargets)) axeOnlyHits.Add(target);
-                continue;
-            }
 
             // 회전베기는 360도 전체를 친다.
             bool bHitByAngle = bIsWhirlwindStrike || (dot >= cosThreshold);
@@ -1062,6 +1065,13 @@ public class AttackComponent : PComponent
             // 묘목은 감지(아웃라인) 대상도 아니다. Attack()의 대상 선택과 같은 기준.
             if (target is IDamageable targetDamageable && !targetDamageable.bCanApplyDamage) continue;
 
+            // [로그라이크] 별은 Attack()과 같은 기준으로 가장 가까운 대상 다툼에서 빼고, 범위에 조금이라도 들어와 있으면 따로 강조한다.
+            if (target is IBasicAxeOnlyTarget axeOnlyTarget)
+            {
+                if (IsAxeOnlyTargetInSwing(target, axeOnlyTarget, centerPos, isoAttackDir, effectiveEllipseRadius, false)) currentlyHighlightedAxeOnly.Add(axeOnlyTarget);
+                continue;
+            }
+
             Vector3 targetPos = target.Position + target.Offset;
 
             // 2단계: 타원형 반지름(ellipseAttackRadius)으로 2차 필터링
@@ -1077,13 +1087,6 @@ public class AttackComponent : PComponent
             }
 
             float dot = Vector2.Dot(isoAttackDir, targetDir);
-
-            // [로그라이크] 별은 Attack()과 같은 기준으로 가장 가까운 대상 다툼에서 빼고, 범위 안이면 따로 강조한다.
-            if (target is IBasicAxeOnlyTarget axeOnlyTarget)
-            {
-                if (dot >= cosThreshold) currentlyHighlightedAxeOnly.Add(axeOnlyTarget);
-                continue;
-            }
 
             if (dot >= cosThreshold)
             {
@@ -1389,6 +1392,36 @@ public class AttackComponent : PComponent
     public void Refresh()
     {
 
+    }
+
+    // [로그라이크] 기본 휘두름으로만 맞는 대상(스텔라의 별)이 휘두름 범위(등각 타원 반경 _radius, 반각 attackAngle)에 조금이라도 들어왔는지.
+    // 별은 바닥 위치에서 떠 있는 그림 중심(AxeHitTopOffset)까지 길게 보이므로 그 막대 위 몇 점을 별 크기(Radius)만큼 넉넉하게 본다 -
+    // 한 점만 보면 나무를 벤 자리에 생긴 별이 판정점만 살짝 범위 밖이라 같은 자리에서 휘둘러도 맞지 않는다.
+    private const int AxeOnlyHitSamples = 3;
+
+    private bool IsAxeOnlyTargetInSwing(IStaticCollidable _target, IBasicAxeOnlyTarget _axeOnly, Vector3 _center, Vector3 _isoAttackDir, float _radius, bool _bFullCircle)
+    {
+        Vector2 basePos = _target.Position;
+        Vector2 top = _axeOnly.AxeHitTopOffset;
+        float size = Mathf.Max(0f, _target.Radius);
+
+        for (int i = 0; i < AxeOnlyHitSamples; i++)
+        {
+            Vector2 point = basePos + top * (i / (float)(AxeOnlyHitSamples - 1));
+            float dx = point.x - _center.x;
+            float dy = (point.y - _center.y) * 2f;
+            float dist = Mathf.Sqrt(dx * dx + dy * dy);
+
+            if (dist - size > _radius) continue;
+            if (_bFullCircle || dist <= size) return true;
+
+            // 각도도 별 크기만큼 넉넉하게: 별의 가장자리가 부채꼴 안에 걸치면 맞는다.
+            float angle = Mathf.Acos(Mathf.Clamp((dx * _isoAttackDir.x + dy * _isoAttackDir.y) / dist, -1f, 1f)) * Mathf.Rad2Deg;
+            float slack = Mathf.Asin(Mathf.Min(1f, size / dist)) * Mathf.Rad2Deg;
+            if (angle <= attackAngle + slack) return true;
+        }
+
+        return false;
     }
 
     private float GetIsometricDistSq(Vector3 _p1, Vector3 _p2)

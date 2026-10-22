@@ -696,6 +696,17 @@ public class InDungeonVFXManager : MonoBehaviour
         AddGroundMarkToGroup(_instance, _groupId);
     }
 
+    /// <summary>[로그라이크 전용] 그룹(로그라이크는 별 하나가 한 그룹)의 땅 별을 도끼 범위 강조로 켜거나 끈다. 본편에서는 호출되지 않는다.</summary>
+    public void SetConstellationGroundMarkHighlightForRun(int _groupId, bool _bHighlighted)
+    {
+        if (!activeGroundMarksByGroup.TryGetValue(_groupId, out List<TreeStarMarkGroundAnimator> _list)) return;
+
+        for (int i = 0; i < _list.Count; i++)
+        {
+            if (_list[i] != null) _list[i].SetHighlightedForRun(_bHighlighted);
+        }
+    }
+
     /// <summary>
     /// 그룹의 별자리 발현이 확정되면 호출됩니다. 그룹의 별이 전부 땅에 안착할 때까지 기다렸다가(방금 벤
     /// 마지막 별은 아직 떨어지는 중이다), 전부 한꺼번에 회전하며 작아지는 사라짐 연출을 재생시킵니다.
@@ -1427,12 +1438,13 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     /// <summary>
-    /// [로그라이크] 오프로드 예열 동안의 이동 경로 표시(VFX_OffroadLane). _from/_to는 출발점/도착점, _halfWidth는 돌진 폭의 반폭
-    /// (0 이하이면 프리팹의 laneHalfWidth)이다. 예열이 끝나면 경로가 걷히고 스스로 풀로 돌아온다.
+    /// [로그라이크] 오프로드 소환 위치 · 이동 경로 표시(VFX_OffroadLane, 기획서 v2.8). 위치가 정해지는 시점(발동 주기 시작)에 부르고,
+    /// 돌려받은 컴포넌트에 발동 때 Fire, 웨이브 종료 때 Cancel을 부른다. _from/_to는 출발점/도착점, _halfWidth는 돌진 폭의 반폭
+    /// (0 이하이면 프리팹의 laneHalfWidth)이다. Fire 뒤 경로가 걷히면 스스로 풀로 돌아온다.
     /// </summary>
-    public void PlayOffroadLaneVFX(Vector3 _from, Vector3 _to, float _warmSeconds, float _halfWidth)
+    public PresentationLayer.VFX.VFX_OffroadLane PlayOffroadLaneVFX(Vector3 _from, Vector3 _to, float _halfWidth)
     {
-        if (vfxComponent == null) return;
+        if (vfxComponent == null) return null;
 
         ParticleSystem effect = vfxComponent.Play(new VFXPlaySettings(
             "OffroadLaneEffect",
@@ -1443,10 +1455,11 @@ public class InDungeonVFXManager : MonoBehaviour
             null
         ));
 
-        if (effect == null) return;
+        if (effect == null) return null;
 
         PresentationLayer.VFX.VFX_OffroadLane lane = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_OffroadLane>(true);
-        if (lane != null) lane.Begin(_from, _to, _warmSeconds, _halfWidth);
+        if (lane != null) lane.Begin(_from, _to, _halfWidth);
+        return lane;
     }
 
     /// <summary>

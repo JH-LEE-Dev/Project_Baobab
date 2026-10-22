@@ -25,6 +25,9 @@ public class RoguelikeStar : MonoBehaviour, IStaticCollidable, IDamageable, IBas
     private bool bRegistered;
     private bool bAxeHighlighted;
     private SpriteRenderer[] visualRenderers;
+    // 도끼 판정 모양의 윗끝(바닥 위치 기준). 본편 땅 별로 그리면 그 그림 중심이다(SetAxeHitTop).
+    private Vector2 axeHitTopOffset;
+    private bool bAxeHitTopSet;
 
     /// <summary>링크·연출 식별용 번호. 컨트롤러가 붙인다.</summary>
     public int StarId { get; private set; }
@@ -70,6 +73,13 @@ public class RoguelikeStar : MonoBehaviour, IStaticCollidable, IDamageable, IBas
         }
     }
 
+    /// <summary>도끼 판정 모양의 윗끝(바닥 위치 기준, 떠 있는 그림의 중심). 정하지 않으면 충돌 오프셋을 쓴다.</summary>
+    public void SetAxeHitTop(Vector2 _offset)
+    {
+        axeHitTopOffset = _offset;
+        bAxeHitTopSet = true;
+    }
+
     public void SetAttackable(bool _bAttackable)
     {
         bAttackable = _bAttackable;
@@ -99,6 +109,8 @@ public class RoguelikeStar : MonoBehaviour, IStaticCollidable, IDamageable, IBas
         if (null != outlineVisualObj) outlineVisualObj.SetActive(_bHighlighted);
         HighlightChangedEvent?.Invoke(this, _bHighlighted);
     }
+
+    public Vector2 AxeHitTopOffset => bAxeHitTopSet ? axeHitTopOffset : collisionOffset;
 
     // // IRunSkillHitTarget
     public bool bCanBeHitBySkill => bAttackable && bRegistered;

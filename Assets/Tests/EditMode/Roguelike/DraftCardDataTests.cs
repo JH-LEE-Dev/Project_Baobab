@@ -161,31 +161,32 @@ public class DraftCardDataTests
             Assert.AreEqual(required[level - 1], 3 + (int)add, "레벨 " + level);
         }
 
-        // 기획서 v2.7 A-4: 회전 피해 ×2.0 전 레벨, 범위 약 7 / 7.5 / 8 / 8.5그루(+25 / +29 / +33 / +37%, II · IV · VI에서 증가).
-        float[] ranges = { 25f, 29f, 29f, 33f, 33f, 37f, 37f };
+        // 기획서 v2.8 A-4: 회전 피해 20 / 22 / … / 32(도끼 10 기준), 범위(반경) 1레벨 대비 ×1.0 / 1.33 / … / 3.0(모든 레벨 증가).
+        float[] damages = { 20f, 22f, 24f, 26f, 28f, 30f, 32f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_spin", level);
-            Assert.AreEqual(100f, mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Spin), 0.01f, "회전 피해 " + level);
-            Assert.AreEqual(ranges[level - 1], mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Spin), 0.01f, "범위 " + level);
+            Assert.AreEqual(damages[level - 1], 10f * (1f + mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Spin) / 100f), 0.01f, "회전 피해 " + level);
+            float radius = 1f + mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Spin) / 100f;
+            Assert.AreEqual(1f + (level - 1) / 3f, radius / 1.25f, 0.001f, "범위 " + level);
         }
     }
 
     [Test]
     public void Shockwave_Chance50To75To100_DamageAndDoubleAtMax()
     {
-        // 기획서 v2.7 A-4: 확률 50 / 75 / 100%(I~III), 크기 1.5 / 2.5 / 3.5 / 4.5 / 5.5 / 6.5 / 8(크기 1 = 기본, +1 = 범위 +20%),
-        // 그루당 피해 12 / 6 / 4 / 3.5 / 3 / 3 / 2(피해%와 따로 곱하는 배율).
+        // 기획서 v2.8 A-4: 확률 50 / 75 / 100%(I~III), 크기 1.5 / 2.0 / … / 4.5(1레벨 대비 ×1 / 1.33 / … / 3), 그루당 피해 20 / 22 / … / 32.
+        // 크기는 충격파가 닿는 거리(0.5 + 1.5 × 범위 배율, ShockWave.SetValue)다 - 1레벨(범위 +10%) 2.15에서 7레벨 6.45까지.
         float[] chances = { 50f, 75f, 100f, 100f, 100f, 100f, 100f };
-        float[] damages = { 12f, 6f, 4f, 3.5f, 3f, 3f, 2f };
-        float[] ranges = { 10f, 30f, 50f, 70f, 90f, 110f, 140f };
+        float[] damages = { 20f, 22f, 24f, 26f, 28f, 30f, 32f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_shockwave", level);
             Assert.AreEqual(chances[level - 1], mods.GetForSkill(ERunEffect.ChancePercent, ERoguelikeSkill.Shockwave), 0.01f, "확률 " + level);
-            Assert.AreEqual(damages[level - 1], 12f * (1f + mods.GetForSkill(ERunEffect.ShockwaveDamageScalePercent, ERoguelikeSkill.Shockwave) / 100f), 0.01f, "피해 " + level);
+            Assert.AreEqual(damages[level - 1], 20f * (1f + mods.GetForSkill(ERunEffect.ShockwaveDamageScalePercent, ERoguelikeSkill.Shockwave) / 100f), 0.01f, "피해 " + level);
             Assert.AreEqual(0f, mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Shockwave), "피해%는 쓰지 않는다 " + level);
-            Assert.AreEqual(ranges[level - 1], mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Shockwave), 0.01f, "범위 " + level);
+            float reach = 0.5f + 1.5f * (1f + mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Shockwave) / 100f);
+            Assert.AreEqual(1f + (level - 1) / 3f, reach / 2.15f, 0.001f, "크기 " + level);
         }
 
         Assert.AreEqual(0f, ResolveAtLevel("active_shockwave", 6).GetForSkill(ERunEffect.ShockwaveRepeatAdd, ERoguelikeSkill.Shockwave));
@@ -223,9 +224,25 @@ public class DraftCardDataTests
     public void Boomerang_TwoAtIII_FasterTicksAtV_ThreeAtMax()
     {
         Assert.AreEqual(1f, ResolveAtLevel("active_boomerang", 3).GetForSkill(ERunEffect.CountAdd, ERoguelikeSkill.Boomerang));
-        Assert.AreEqual(5f, 4f * (1f + ResolveAtLevel("active_boomerang", 4).GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Boomerang) / 100f), 0.01f);
         Assert.AreEqual(0.25f, 0.3f / (1f + ResolveAtLevel("active_boomerang", 5).GetForSkill(ERunEffect.AttackSpeedPercent, ERoguelikeSkill.Boomerang) / 100f), 0.001f);
         Assert.AreEqual(2f, ResolveAtLevel("active_boomerang", 7).GetForSkill(ERunEffect.CountAdd, ERoguelikeSkill.Boomerang));
+
+        // 기획서 v2.8 A-4: 틱 피해 6 / 7 / … / 12(기준 6), 경로 위 타격 폭 약 2.5 → 7.5그루(1레벨 대비 7레벨 +200%, 모든 레벨 증가).
+        for (int level = 1; level <= 7; level++)
+        {
+            RunModifiers mods = ResolveAtLevel("active_boomerang", level);
+            Assert.AreEqual(5f + level, 6f * (1f + mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Boomerang) / 100f), 0.01f, "틱 피해 " + level);
+            Assert.AreEqual(1f + (level - 1) / 3f, 1f + mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Boomerang) / 100f, 0.001f, "범위 " + level);
+        }
+    }
+
+    [Test]
+    public void StellaDrone_KeepsDroneAbility()
+    {
+        // 기획서 v2.8 6-2: 드론의 기존 능력(자동 레이저 · 체인)은 그대로 쓰고 스텔라 능력만 바뀐다.
+        CardDefinitionSO prism = Load("combo_stella_drone");
+        Assert.AreEqual(ERoguelikeCombo.StellaDrone, prism.comboType);
+        CollectionAssert.IsEmpty(prism.suppressedSkills);
     }
 
     [Test]

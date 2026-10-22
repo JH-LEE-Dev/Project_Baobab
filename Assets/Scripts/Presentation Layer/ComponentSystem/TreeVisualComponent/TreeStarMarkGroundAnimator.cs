@@ -68,6 +68,9 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
 
     [Header("Rendering")]
     [SerializeField] private float hdrIntensity = 1.75f;
+    [Tooltip("[로그라이크] 도끼 범위에 들어와 강조될 때 HDR 밝기에 곱하는 값(SetHighlightedForRun). 본편은 쓰지 않는다.")]
+    [Min(1f)]
+    [SerializeField] private float runHighlightHdrMultiplier = 1.8f;
     [SerializeField] private int sparkleSortingOrderOffset = 1;
 
     public event Action<TreeStarMarkGroundAnimator> ManifestFinishedEvent;
@@ -84,6 +87,7 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
     private const float TwoPi = Mathf.PI * 2f;
 
     private MaterialPropertyBlock materialPropertyBlock;
+    private bool bRunHighlighted;
     private IObjectPool<TreeStarMarkGroundAnimator> pool;
     private AnimationState state;
     private float stateTimer;
@@ -129,6 +133,19 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
     {
         state = AnimationState.Inactive;
         ResetVisualPose();
+        SetHighlightedForRun(false);
+    }
+
+    /// <summary>
+    /// [로그라이크 전용] 도끼 범위(인디케이터)에 들어온 별을 나무 아웃라인처럼 강조한다 - 켜져 있는 동안 HDR 밝기를 올려 더 밝게 번진다.
+    /// 풀로 돌아가면(OnDisable) 꺼진다. 본편에서는 호출되지 않는다.
+    /// </summary>
+    public void SetHighlightedForRun(bool _bHighlighted)
+    {
+        if (bRunHighlighted == _bHighlighted) return;
+
+        bRunHighlighted = _bHighlighted;
+        ApplyVisualDefaults();
     }
 
     public void SetPool(IObjectPool<TreeStarMarkGroundAnimator> _pool)
@@ -471,7 +488,7 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
 
     private void ApplyVisualDefaults()
     {
-        PropertyBlock.SetFloat(HDRIntensityID, hdrIntensity);
+        PropertyBlock.SetFloat(HDRIntensityID, bRunHighlighted ? hdrIntensity * runHighlightHdrMultiplier : hdrIntensity);
 
         if (starRenderer != null)
         {

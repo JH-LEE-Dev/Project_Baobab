@@ -1379,6 +1379,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             drone.SetAttackPhaseOffset(i * droneAttackStaggerStep); // 꼭짓점 드론이 먼저, 양옆이 차례로 쏘는 계단식 사격 위상
             drone.SetRetargetCallback(RequestDroneRetarget);
             drone.SetChainAttackCallback(OnDroneChainAttack);
+            drone.SetPriorityShotCallback(OnDronePriorityShot);
             activeDrones.Add(drone);
 
             // Town → Dungeon 진입은 캐릭터가 차량 탑승으로 비활성화된 채 SetupGameInstaller까지 오므로, 이 시점에 소환되는
@@ -1762,10 +1763,42 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         droneChainHitGroundPoints.Clear();
         if (bCollectHitGround) droneChainHitGroundPoints.Add(primaryTransform.position);
 
+        ChainDroneLaser(_drone, _primaryTarget, primaryTransform.position, bIsOverheat, bCollectHitGround);
+    }
+
+    // [로그라이크] 드론이 임팩트 프레임에 묻는다(Drone.SetPriorityShotCallback). 스텔라 III에서 사거리 안에 별이 있으면 이번 레이저의
+    // 1차 타겟은 노리던 나무가 아니라 그 별이다(기획서 v2.8 6-1): 레이저는 총구 → 별로 나가고, 체인(5레벨부터)은 별 자리에서 나무로 이어진다.
+    // 본편은 창구(RunCombatOverrides.DronePriorityTarget)가 비어 있어 false로 끝나고 드론은 예전처럼 나무를 친다.
+    private bool OnDronePriorityShot(Drone _drone)
+    {
+        RunCombatOverrides.DronePriorityTargetFinder finder = RunCombatOverrides.DronePriorityTarget;
+        if (finder == null || statComponent == null || _drone == null) return false;
+        if (false == finder(_drone.transform.position, statComponent.droneAttackRange, out Vector3 groundPos, out Vector3 aimPos)) return false;
+
+        using var _playerAttackScope = PlayerAttackDamageScope.Enter();
+
+        bool bIsOverheat = overheatComponent != null && overheatComponent.IsActive && statComponent.bDroneOverheatBoost;
+
+        droneChainZapPoints.Clear();
+        droneChainZapPoints.Add(_drone.GetMuzzlePosition());
+        droneChainZapPoints.Add(aimPos);
+        _drone.PlayAtkHitVfx(aimPos);
+
+        // 별은 나무가 아니라 바닥 위치 목록(포자 레이저의 대폭발 자리)에 넣지 않는다.
+        bool bCollectHitGround = RunCombatHooks.HasDroneLaserListener;
+        droneChainHitGroundPoints.Clear();
+
+        ChainDroneLaser(_drone, null, groundPos, bIsOverheat, bCollectHitGround);
+        return true;
+    }
+
+    // 1차 타겟(_primaryTarget, 별이면 null) 자리 _origin에서 체인을 이어 피해를 주고, 레이저 그림을 재생한다.
+    private void ChainDroneLaser(Drone _drone, ITreeObj _primaryTarget, Vector3 _origin, bool _bIsOverheat, bool _bCollectHitGround)
+    {
         int finalChainCount = statComponent.droneChainCount;
         float finalChainRange = statComponent.droneChainRange;
 
-        if (bIsOverheat)
+        if (_bIsOverheat)
         {
             finalChainCount *= statComponent.droneOverheatChainCountMul;
             finalChainRange *= statComponent.droneOverheatChainRangeMul;
@@ -1774,9 +1807,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (finalChainCount > 0)
         {
             droneChainHitTrees.Clear();
-            droneChainHitTrees.Add(_primaryTarget);
+            if (_primaryTarget != null) droneChainHitTrees.Add(_primaryTarget);
 
-            Vector3 origin = primaryTransform.position;
+            Vector3 origin = _origin;
 
             // 연쇄로 쓰러지는 나무들의 타일맵 쓰기를 연쇄가 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
             TreeTileWriteBatch.Begin();
@@ -1788,13 +1821,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
                     if (next == null) break;
 
                     // 피해로 쓰러져 풀에 돌아가기 전의 자리를 잡아 둔다.
-                    if (bCollectHitGround) droneChainHitGroundPoints.Add(next.GetTransform().position);
+                    if (_bCollectHitGround) droneChainHitGroundPoints.Add(next.GetTransform().position);
 
                     if (next is TreeObj nextTree)
                     {
                         nextTree.TakeDamageWithoutHitSound(statComponent.droneDamage); // 레이저 전이 - 도끼 타격음 없이 드론 발사음만
 
-                        if (bIsOverheat)
+                        if (_bIsOverheat)
                         {
                             nextTree.ApplyDroneOverheatDot(statComponent.droneOverheatDotDamagePerTick, statComponent.droneOverheatDotTickCount, statComponent.droneOverheatDotTickInterval);
                         }
@@ -1818,7 +1851,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         }
 
         // 로그라이크 스텔라 III · 포자 레이저용 알림(레이저가 지나간 경로, 맞힌 나무의 바닥 위치). 본편에서는 구독자가 없어 아무 일도 일어나지 않는다(RunCombatHooks 참고).
-        if (bCollectHitGround) RunCombatHooks.NotifyDroneLaser(droneChainZapPoints, droneChainHitGroundPoints);
+        if (_bCollectHitGround) RunCombatHooks.NotifyDroneLaser(droneChainZapPoints, droneChainHitGroundPoints);
 
         _drone.PlayChainZap(droneChainZapPoints, droneChainZapPoints.Count);
     }

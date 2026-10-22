@@ -219,7 +219,7 @@ public sealed class RunEffectApplier
         // 포자 충격파: 충격파 색이 초록으로 바뀐다(기획서 v2.5 6-2, 기본 능력은 그대로 · 색만 변경).
         RunCombatOverrides.SetShockWaveTint(_mods.IsComboActive(ERoguelikeCombo.SporeShockwave), sporeShockwaveColor);
 
-        // 충격파 그루당 피해 배율(기획서 v2.7 A-4: 범위가 넓어진 만큼 12 → 2로 감소). 피해%와 따로 곱한다.
+        // 충격파 그루당 피해 배율(기획서 v2.8 A-4: 레벨마다 +2, 20 → 32). 피해%와 따로 곱한다.
         RunCombatOverrides.SetShockWaveDamageScale(Mathf.Max(0.01f, 1f + _mods.GetForSkill(ERunEffect.ShockwaveDamageScalePercent, ERoguelikeSkill.Shockwave) / 100f));
 
         // 범위 증가 패시브: 도끼 동시 타격 수(기본 1, MAX 5그루, 기획서 v2.6 부록 A-5).

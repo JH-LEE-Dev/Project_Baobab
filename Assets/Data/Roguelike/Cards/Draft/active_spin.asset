@@ -30,27 +30,54 @@ MonoBehaviour:
   - effects:
     - effect: 3
       skill: 2
-      value: 4
+      value: 41.666668
+    - effect: 1
+      skill: 2
+      value: 20
   - effects:
     - effect: 8
       skill: 2
       value: -1
+    - effect: 3
+      skill: 2
+      value: 41.666668
+    - effect: 1
+      skill: 2
+      value: 20
   - effects:
     - effect: 3
       skill: 2
-      value: 4
+      value: 41.666668
+    - effect: 1
+      skill: 2
+      value: 20
   - effects:
     - effect: 8
       skill: 2
       value: -1
+    - effect: 3
+      skill: 2
+      value: 41.666668
+    - effect: 1
+      skill: 2
+      value: 20
   - effects:
     - effect: 3
       skill: 2
-      value: 4
+      value: 41.666668
+    - effect: 1
+      skill: 2
+      value: 20
   - effects:
     - effect: 8
       skill: 2
       value: -1
+    - effect: 3
+      skill: 2
+      value: 41.666668
+    - effect: 1
+      skill: 2
+      value: 20
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}
   comboType: 0

@@ -33,7 +33,7 @@ public static class RunCombatOverrides
     public static float ShockWaveExtraDamageMultiplier { get; private set; } = 1f;
 
     /// <summary>
-    /// 모든 충격파의 피해에 곱하는 배율(충격파 카드의 "범위가 넓어진 만큼 그루당 피해 감소", 기획서 v2.7 A-4). 1이면 본편처럼 그대로.
+    /// 모든 충격파의 피해에 곱하는 배율(충격파 카드의 레벨별 "충격파 피해 증가", 기획서 v2.8 A-4 20 → 32). 1이면 본편처럼 그대로.
     /// 공격력 증가 같은 피해% 합산과 섞이지 않게 따로 곱한다.
     /// </summary>
     public static float ShockWaveDamageScale { get; private set; } = 1f;
@@ -64,6 +64,20 @@ public static class RunCombatOverrides
 
     /// <summary>true면 부메랑을 입력 방향이 아니라 가장 가까운 나무 방향으로 던진다(기획서 v2.7 6-1). false(본편)면 예전 그대로.</summary>
     public static bool bBoomerangAimAtTrees { get; private set; }
+
+    /// <summary>
+    /// 드론 레이저의 1차 타겟을 나무보다 먼저 고르는 창구(스텔라 III의 별, 기획서 v2.8 6-1). _origin에서 _range 안에 그런 대상이 있으면
+    /// 그 대상을 맞힌 것으로 처리하고 true와 함께 바닥 위치(체인이 이어지는 자리)와 레이저가 꽂히는 지점을 돌려준다.
+    /// </summary>
+    public delegate bool DronePriorityTargetFinder(Vector3 _origin, float _range, out Vector3 _groundPosition, out Vector3 _aimPosition);
+
+    /// <summary>null(본편)이면 드론은 예전처럼 노린 나무를 친다.</summary>
+    public static DronePriorityTargetFinder DronePriorityTarget { get; private set; }
+
+    public static void SetDronePriorityTarget(DronePriorityTargetFinder _finder)
+    {
+        DronePriorityTarget = _finder;
+    }
 
     public static void SetAxeMaxTargets(int _count)
     {
@@ -131,5 +145,6 @@ public static class RunCombatOverrides
         AxeExtraStrikeDelay = 0.1f;
         AxeMaxTargets = 0;
         bBoomerangAimAtTrees = false;
+        DronePriorityTarget = null;
     }
 }

@@ -151,6 +151,12 @@ public class RoguelikeSkillController : MonoBehaviour
     private readonly Stack<RoguelikeOffroadVisual> offroadVisualPool = new Stack<RoguelikeOffroadVisual>(4);
     private readonly List<OffroadLane> offroadLaneCandidates = new List<OffroadLane>(32);
     private readonly List<OffroadLane> offroadLanePicks = new List<OffroadLane>(8);
+    // 이번 발동 주기에 미리 정해 둔 소환 차선과 그 위치 표시(기획서 v2.8 6-1). 같은 번호끼리 짝이다. 표시는 이펙트가 없으면 null이다.
+    private readonly List<OffroadLane> pendingOffroadLanes = new List<OffroadLane>(8);
+    private readonly List<PresentationLayer.VFX.VFX_OffroadLane> pendingOffroadMarkers = new List<PresentationLayer.VFX.VFX_OffroadLane>(8);
+    // 이번 주기의 소환 위치를 정했는지. 주기 시작에 경로 위 나무가 없어 못 정했으면 nextOffroadPickTime마다 다시 시도한다.
+    private bool bOffroadLanesPicked;
+    private float nextOffroadPickTime;
     private float nextOffroadHitShakeTime;
 
     private readonly List<Vector3> pendingBoomerangHits = new List<Vector3>(16);
@@ -172,7 +178,6 @@ public class RoguelikeSkillController : MonoBehaviour
     private float nextOffroadTime;
     private float nextSporeTime;
     private float nextBeamTime;
-    private float nextLonePulseTime;
     private float nextBoomerangShockwaveTime;
     private float nextSpinBoomerangTime;
 
@@ -181,6 +186,7 @@ public class RoguelikeSkillController : MonoBehaviour
     private System.Action<RoguelikeStar> starHitHandler;
     private System.Action<IReadOnlyList<Vector3>, IReadOnlyList<Vector3>> droneLaserHandler;
     private System.Action<Vector3> shockWaveHitHandler;
+    private RunCombatOverrides.DronePriorityTargetFinder droneStarTargetFinder;
 
     // 스텔라 MAX "별을 칠 때 폭발이 2회 연속": 첫 폭발 뒤 이어질 폭발(위치, 시각, 별 번호).
     private struct RepeatBlast
@@ -220,6 +226,8 @@ public class RoguelikeSkillController : MonoBehaviour
         shockWaveHitHandler = OnShockWaveHitTree;
         RunCombatHooks.ShockWaveHitTreeEvent -= shockWaveHitHandler;
         RunCombatHooks.ShockWaveHitTreeEvent += shockWaveHitHandler;
+
+        droneStarTargetFinder = TryPickDroneStarTarget;
     }
 
     public void Release()
@@ -285,10 +293,13 @@ public class RoguelikeSkillController : MonoBehaviour
         bActive = true;
         starBlastHpCapRatio = _tierIndex >= tuning.stellaBlastCapFromTier ? Mathf.Max(0f, tuning.stellaBlastMaxHpRatio) : 0f;
         float now = Time.time;
+        // 주기형 액티브의 첫 발동까지의 시간은 지금 발동 주기와 같다(기획서 v2.8 5-5, 고정 초기 대기 없음). 이번 주기의 소환 위치는 첫 Update에서 정해 표시를 시작한다.
         nextOffroadTime = now + Interval(tuning.offroadInterval, ERoguelikeSkill.Offroad);
-        nextSporeTime = now + Interval(tuning.sporeInterval, ERoguelikeSkill.SporeBomb) * 0.5f;
-        nextBeamTime = now + tuning.stellaDroneBeamInterval;
-        nextLonePulseTime = now + tuning.stellaDroneLoneStarInterval;
+        bOffroadLanesPicked = false;
+        nextOffroadPickTime = now;
+        RunCombatOverrides.SetDronePriorityTarget(droneStarTargetFinder);
+        nextSporeTime = now + Interval(tuning.sporeInterval, ERoguelikeSkill.SporeBomb);
+        nextBeamTime = now + (null != character ? Mathf.Max(0.05f, character.statComponent.droneDamageInterval) : 1f);
         SyncMarkDamageBonus();
         pendingRepeatBlasts.Clear();
         pendingAxeSwings = 0;
@@ -299,8 +310,8 @@ public class RoguelikeSkillController : MonoBehaviour
 
     /// <summary>
     /// 웨이브 종료(_bWaveEnd) 또는 런 종료. 별·오염·표식·돌진을 모두 치운다.
-    /// 단, 웨이브 종료에서 스텔라+드론이 켜져 있으면 별과 이음선은 남긴다 - 기획서 "별들은 노바가 발동될 때만 모두 소멸한다",
-    /// 홀로 남은 별도 "사라지지도 않는다". 다음 웨이브에서 이어서 모은다. 런이 끝나면(_bWaveEnd = false) 전부 치운다.
+    /// 단, 웨이브 종료에서 스텔라+드론이 켜져 있으면 별과 이음선은 남긴다 - 기획서 "별들은 노바가 발동될 때만 소멸한다".
+    /// 다음 웨이브에서 이어서 모은다. 런이 끝나면(_bWaveEnd = false) 전부 치운다.
     /// </summary>
     public void EndCombat(bool _bWaveEnd = false)
     {
@@ -324,6 +335,8 @@ public class RoguelikeSkillController : MonoBehaviour
         ClearContaminations();
         sporeBombs.Clear();
         for (int i = offroadCars.Count - 1; i >= 0; i--) ReleaseOffroadCar(i, true);
+        CancelPendingOffroadLanes();
+        if (RunCombatOverrides.DronePriorityTarget == droneStarTargetFinder) RunCombatOverrides.SetDronePriorityTarget(null);
 
         pendingStarHits.Clear();
         pendingRepeatBlasts.Clear();
@@ -536,6 +549,8 @@ public class RoguelikeSkillController : MonoBehaviour
         star.Place(nextStarId++, _position, GetFirstLayer(treeLayer), false == bStellaDrone);
         // 본편 땅 별(별 표식 나무에서 나오는 별)을 그릴 수 있으면 로그라이크 별 자체 그림은 숨긴다. 판정은 그대로다.
         star.SetVisualVisible(false == vfxPlayer.bUsesMainStarVisual);
+        // 도끼 판정은 바닥 위치부터 떠 있는 그림 중심까지(기획서 v2.8 "범위 안의 별은 무조건 타격"). 별 그림이 떠 있는 만큼 판정도 위로 늘린다.
+        star.SetAxeHitTop(vfxPlayer.bUsesMainStarVisual ? (Vector2)vfxPlayer.StarCenterOffset : star.Offset);
         star.ExpireTime = Time.time + tuning.stellaStarLifetime * DurationMul(ERoguelikeSkill.Stella);
         activeStars.Add(star);
 
@@ -592,6 +607,7 @@ public class RoguelikeSkillController : MonoBehaviour
 
         if (0 == activeStars.Count || false == RunEffectApplier.IsStarHitByActives(modifiers)) return;
 
+        // 체인 연쇄 구간(1차 타겟 이후)이 지나간 길 위의 별도 맞는다 - 연쇄 후보는 나무 · 별을 구분하지 않는다(기획서 v2.8 6-1).
         for (int s = 0; s < activeStars.Count; s++)
         {
             RoguelikeStar star = activeStars[s];
@@ -608,21 +624,22 @@ public class RoguelikeSkillController : MonoBehaviour
                 break;
             }
         }
-
-        // 스텔라 III: 드론은 레이저 사거리 안의 별을 나무보다 먼저 노린다(기획서 v2.6 6-1, 초안). 본편 드론 타겟팅(나무 전용)은 건드리지 않고,
-        // 레이저가 나갈 때마다 총구에서 사거리 안 가장 가까운 별 하나를 함께 맞힌다(별까지 레이저를 하나 더 그린다).
-        RoguelikeStar target = FindNearestStarForDrone(_points[0]);
-        if (null == target) return;
-
-        OnStarHit(target);
-        Publish(ERoguelikeSkillVfx.DroneStarShot, _points[0], target.transform.position, 0f, 0f, target.StarId);
     }
 
-    /// <summary>총구 _origin에서 드론 사거리 안(등각 거리) 가장 가까운, 아직 맞지 않은 별. 없으면 null.</summary>
-    private RoguelikeStar FindNearestStarForDrone(Vector3 _origin)
+    /// <summary>
+    /// 스텔라 III: 드론 레이저의 1차 타겟(기획서 v2.8 6-1 "각 레이저의 1차 타겟은 사거리 안의 가장 가까운 별"). 드론이 레이저를 쏘는
+    /// 임팩트 프레임마다 본편 드론이 묻는다(RunCombatOverrides.DronePriorityTarget). 별이 있으면 그 별을 맞힌 것으로 처리하고
+    /// 레이저는 나무 대신 별로 나가며 체인은 별 자리에서 이어진다. 드론이 여러 기면 이미 맞은 별은 건너뛰어 기마다 다른 별을 노린다.
+    /// 스텔라 + 드론 조합 중에는 별이 피격되지 않으므로(bCanBeHitBySkill = false) 별을 고르지 않는다(6-2).
+    /// </summary>
+    private bool TryPickDroneStarTarget(Vector3 _origin, float _range, out Vector3 _groundPosition, out Vector3 _aimPosition)
     {
-        float range = null != character ? character.statComponent.droneAttackRange : 0f;
-        float bestSq = range * range;
+        _groundPosition = _origin;
+        _aimPosition = _origin;
+        if (false == bActive || 0 == activeStars.Count || false == RunEffectApplier.IsStarHitByActives(modifiers)) return false;
+
+        // 나무 타겟을 고르는 본편 드론과 같은 거리 기준(드론 위치에서 평면 거리, 사거리 = droneAttackRange).
+        float bestSq = _range * _range;
         RoguelikeStar best = null;
 
         for (int i = 0; i < activeStars.Count; i++)
@@ -630,15 +647,20 @@ public class RoguelikeSkillController : MonoBehaviour
             RoguelikeStar star = activeStars[i];
             if (false == star.bCanBeHitBySkill || pendingStarHits.Contains(star)) continue;
 
-            Vector2 offset = (star.Position + star.Offset) - (Vector2)_origin;
-            float isoSq = offset.x * offset.x + offset.y * offset.y * 4f;
-            if (isoSq > bestSq) continue;
+            float sq = ((Vector2)star.transform.position - (Vector2)_origin).sqrMagnitude;
+            if (sq > bestSq) continue;
 
-            bestSq = isoSq;
+            bestSq = sq;
             best = star;
         }
 
-        return best;
+        if (null == best) return false;
+
+        OnStarHit(best);
+        _groundPosition = best.transform.position;
+        _aimPosition = _groundPosition + vfxPlayer.StarCenterOffset;
+        Publish(ERoguelikeSkillVfx.DroneStarShot, _origin, _groundPosition, 0f, 0f, best.StarId);
+        return true;
     }
 
     private void OnStarHit(RoguelikeStar _star)
@@ -1048,18 +1070,14 @@ public class RoguelikeSkillController : MonoBehaviour
 
     // // 오프로드
     //
-    // 섬 가장자리 위에 플래시되며 소환(예열) → 확 튀어 나가 가속 → 나무를 들이받을 때마다 멈칫하며 속도를 잃고 다시 붙는다 →
+    // 발동 주기 내내 다음 소환 위치를 표시하다가(VFX_OffroadLane) 주기가 끝나면 그 위치에 플래시되며 소환(예열) → 확 튀어 나가 가속 → 나무를 들이받을 때마다 멈칫하며 속도를 잃고 다시 붙는다 →
     // 감속 없이 반대편 섬 끝까지 달리고, 끝에 닿기 직전 아주 짧게 하얗게 된 뒤 사라진다(물 위로 나가지 않는다).
     // 진행 방향은 차량 그림에 맞는 아래쪽 대각선 두 방향뿐이다(OffroadLanes).
     // 여러 대(III 2대, V 4대, MAX 6대)는 서로 다른 차선에서 시간차를 두고 출발한다.
 
     private void UpdateOffroad(float _now)
     {
-        if (modifiers.IsSkillActive(ERoguelikeSkill.Offroad) && _now >= nextOffroadTime)
-        {
-            nextOffroadTime = _now + Interval(tuning.offroadInterval, ERoguelikeSkill.Offroad);
-            StartOffroadVolley(_now, 1 + CountAdd(ERoguelikeSkill.Offroad));
-        }
+        if (modifiers.IsSkillActive(ERoguelikeSkill.Offroad)) UpdateOffroadCycle(_now);
 
         if (0 == offroadCars.Count) return;
 
@@ -1150,22 +1168,98 @@ public class RoguelikeSkillController : MonoBehaviour
     }
 #endif
 
+    // 주기 시작에 소환 위치를 못 정했을 때(경로 위 나무 없음 - 웨이브 시작 직후 나무가 솟아나는 중 등) 다시 시도하는 간격(초).
+    private const float OffroadPickRetrySeconds = 0.25f;
+
     /// <summary>
-    /// 한 번에 _count대를 내보낸다(기획서 v2.5 6-1 오프로드 "소환 위치").
+    /// 오프로드 발동 주기(기획서 v2.8 6-1 · 5-5). 주기가 시작되면 이번에 소환될 위치를 미리 정해 주기 내내 표시하고(VFX_OffroadLane),
+    /// 주기가 끝나는 순간(발동) 그 위치에 차량을 소환하며 표시를 걷는다. 미리 정한 위치는 그 사이 경로 위 나무가 쓰러져도 그대로 쓴다.
+    /// 주기 시작에 후보가 없으면 표시 없이 주기 동안 다시 시도하고, 발동 시점에도 없으면 후보가 생길 때까지 짧은 간격으로 다시 시도한다.
+    /// 첫 주기도 웨이브 시작부터 지금 소환 주기 그대로다(BeginCombat).
+    /// </summary>
+    private void UpdateOffroadCycle(float _now)
+    {
+        if (false == bOffroadLanesPicked && _now >= nextOffroadPickTime) PickPendingOffroadLanes(_now);
+        if (_now < nextOffroadTime || false == bOffroadLanesPicked) return;
+
+        for (int i = 0; i < pendingOffroadLanes.Count; i++)
+        {
+            OffroadCar car = StartOffroad(_now, tuning.offroadVolleyStagger * i, pendingOffroadLanes[i], 0 == i);
+            // 소환 섬광과 함께 경로 표시가 소환 지점부터 걷힌다. 걷히는 시간은 출발까지의 예열 + 멈칫 없이 달렸을 때의 돌진 시간이다.
+            float clearSeconds = car.dashStartTime - _now + car.length / Mathf.Max(0.1f, car.maxSpeed);
+            if (null != pendingOffroadMarkers[i] && pendingOffroadMarkers[i].isActiveAndEnabled) pendingOffroadMarkers[i].Fire(clearSeconds);
+        }
+
+        pendingOffroadLanes.Clear();
+        pendingOffroadMarkers.Clear();
+        bOffroadLanesPicked = false;
+
+        // 다음 주기가 바로 시작된다.
+        nextOffroadTime = _now + Interval(tuning.offroadInterval, ERoguelikeSkill.Offroad);
+        PickPendingOffroadLanes(_now);
+    }
+
+    /// <summary>이번 주기의 소환 위치(1 + 발동 수 대)를 정하고 표시를 시작한다. 하나도 못 정하면 잠시 뒤 다시 시도한다.</summary>
+    private void PickPendingOffroadLanes(float _now)
+    {
+        float radius = tuning.offroadHitRadius * RangeMul(ERoguelikeSkill.Offroad);
+        // 지금 달리는 차(방금 소환된 직전 발동분)의 차선은 되도록 피한다 - 같은 차선을 고르면 걷히는 표시 위에 새 표시가 겹쳐 표시가 안 지워진 것처럼 보인다.
+        // 그래서 대수가 모자랄 때만 이번 발동 시각 전에 사라질 차의 차선을 더 고른다(그때까지 남아 있을 차와는 여전히 겹치지 않는다).
+        int count = 1 + CountAdd(ERoguelikeSkill.Offroad);
+        PickOffroadLanes(count, radius, _now, false);
+        if (offroadLanePicks.Count < count) PickOffroadLanes(count, radius, nextOffroadTime, true);
+        if (0 == offroadLanePicks.Count)
+        {
+            nextOffroadPickTime = _now + OffroadPickRetrySeconds;
+            return;
+        }
+
+        bOffroadLanesPicked = true;
+        float remaining = Mathf.Max(0f, nextOffroadTime - _now);
+
+        for (int i = 0; i < offroadLanePicks.Count; i++)
+        {
+            OffroadLane lane = offroadLanePicks[i];
+            Vector3 entry = lane.entry;
+            Vector3 exit = lane.exit;
+
+            PresentationLayer.VFX.VFX_OffroadLane marker = vfxPlayer.BeginOffroadLane(entry, exit, radius);
+            if (null != marker) marker.SetRemaining(remaining);
+
+            pendingOffroadLanes.Add(lane);
+            pendingOffroadMarkers.Add(marker);
+            Publish(ERoguelikeSkillVfx.OffroadWarmup, entry, exit, radius, remaining, 0);
+        }
+    }
+
+    /// <summary>웨이브·런 종료. 아직 소환되지 않은 위치 표시를 연출 없이 지운다.</summary>
+    private void CancelPendingOffroadLanes()
+    {
+        for (int i = 0; i < pendingOffroadMarkers.Count; i++)
+        {
+            if (null != pendingOffroadMarkers[i] && pendingOffroadMarkers[i].isActiveAndEnabled) pendingOffroadMarkers[i].Cancel();
+        }
+
+        pendingOffroadLanes.Clear();
+        pendingOffroadMarkers.Clear();
+        bOffroadLanesPicked = false;
+    }
+
+    /// <summary>
+    /// 소환 위치를 offroadLanePicks가 _count개가 될 때까지 골라 담고 담긴 수를 돌려준다(기획서 v2.5 6-1 오프로드 "소환 위치"). _bAppend면 이미 고른 것에 더한다.
     ///   - 돌진 경로 위에 나무가 1그루 이상 있는 차선만 후보다.
-    ///   - 이번에 함께 나가는 차끼리, 그리고 아직 돌진 중인 차와 위치가 겹치는 차선에는 소환하지 않는다.
-    ///   - 후보가 대수보다 적으면 있는 만큼만 나간다.
+    ///   - 함께 고르는 차선끼리, 그리고 소환 시각 _summonTime에도 아직 돌진 중일 차와 위치가 겹치는 차선은 고르지 않는다.
+    ///   - 후보가 대수보다 적으면 있는 만큼만 고른다.
     /// 후보는 두 방향(좌·우 아래 대각선)마다 섬 폭을 차선 폭으로 나눈 칸이고, 그중 무작위로 고른다.
     /// </summary>
-    private void StartOffroadVolley(float _now, int _count)
+    private int PickOffroadLanes(int _count, float _radius, float _summonTime, bool _bAppend)
     {
         int count = Mathf.Max(1, _count);
-        float radius = tuning.offroadHitRadius * RangeMul(ERoguelikeSkill.Offroad);
 
-        CollectOffroadLaneCandidates(radius);
+        CollectOffroadLaneCandidates(_radius);
 
-        // 무작위 순서로 훑으며 겹치지 않는 차선을 고른다.
-        offroadLanePicks.Clear();
+        // 무작위 순서로 훑으며 겹치지 않는 차선을 고른다. 이미 고른 차선과 같은 칸은 겹침 판정에서 걸러진다.
+        if (false == _bAppend) offroadLanePicks.Clear();
         for (int i = offroadLaneCandidates.Count - 1; i >= 0 && offroadLanePicks.Count < count; i--)
         {
             int swap = Random.Range(0, i + 1);
@@ -1173,10 +1267,17 @@ public class RoguelikeSkillController : MonoBehaviour
             offroadLaneCandidates[swap] = offroadLaneCandidates[i];
             offroadLaneCandidates[i] = lane;
 
-            if (IsOffroadLaneTaken(in lane, radius)) continue;
+            if (IsOffroadLaneTaken(in lane, _radius, _summonTime)) continue;
             offroadLanePicks.Add(lane);
         }
 
+        return offroadLanePicks.Count;
+    }
+
+    /// <summary>[디버그] 위치 표시 없이 지금 바로 _count대를 내보낸다.</summary>
+    private void StartOffroadVolley(float _now, int _count)
+    {
+        PickOffroadLanes(_count, tuning.offroadHitRadius * RangeMul(ERoguelikeSkill.Offroad), _now, false);
         for (int i = 0; i < offroadLanePicks.Count; i++)
         {
             StartOffroad(_now, tuning.offroadVolleyStagger * i, offroadLanePicks[i], 0 == i);
@@ -1217,11 +1318,11 @@ public class RoguelikeSkillController : MonoBehaviour
     }
 
     /// <summary>
-    /// 이 차선이 이번에 고른 차선이나 아직 달리는 차와 겹치는지. 최소 간격은 돌진 판정 반지름이다(CollectOffroadLaneCandidates와 같은 값).
+    /// 이 차선이 이번에 고른 차선이나 소환 시각 _summonTime에도 남아 있을 달리는 차와 겹치는지. 최소 간격은 돌진 판정 반지름이다(CollectOffroadLaneCandidates와 같은 값).
     /// 같은 방향이면 차선 간격이 최소 간격보다 좁을 때, 반대 방향이면 소환 위치가 다른 차(이번에 고른 차는 소환 위치, 달리는 차는 지금 위치)와
     /// 최소 간격 안일 때 겹친다고 본다.
     /// </summary>
-    private bool IsOffroadLaneTaken(in OffroadLane _lane, float _radius)
+    private bool IsOffroadLaneTaken(in OffroadLane _lane, float _radius, float _summonTime)
     {
         float gap = _radius;
         float gapSq = gap * gap;
@@ -1235,10 +1336,24 @@ public class RoguelikeSkillController : MonoBehaviour
         for (int i = 0; i < offroadCars.Count; i++)
         {
             OffroadCar car = offroadCars[i];
+            if (EstimateOffroadEndTime(car) < _summonTime) continue;
             if (car.bRight == _lane.bRight ? Mathf.Abs(car.laneOffset - _lane.offset) < gap : ((Vector2)car.Position - _lane.entry).sqrMagnitude < gapSq) return true;
         }
 
         return false;
+    }
+
+    // 멈칫(히트스톱)·충돌 감속으로 늦어지는 몫을 넉넉하게 더한 여유(초).
+    private const float OffroadEndTimeMargin = 0.5f;
+
+    /// <summary>이 차가 섬 끝에서 사라질 대략의 시각. 멈칫 없이 최고 속도로 남은 길을 달린다고 보고 여유를 더한다.</summary>
+    private float EstimateOffroadEndTime(OffroadCar _car)
+    {
+        if (_car.bExiting) return _car.exitEndTime;
+
+        float start = Mathf.Max(_car.dashStartTime, Time.time);
+        float remaining = Mathf.Max(0f, _car.length - _car.traveled) / Mathf.Max(0.1f, _car.maxSpeed);
+        return start + remaining + Mathf.Max(0f, tuning.offroadExitSeconds) + OffroadEndTimeMargin;
     }
 
     private bool HasTreeAlongSegment(Vector2 _from, Vector2 _to, float _width)
@@ -1258,7 +1373,8 @@ public class RoguelikeSkillController : MonoBehaviour
         return false;
     }
 
-    private void StartOffroad(float _now, float _delay, in OffroadLane _lane, bool _bEngine)
+    /// <summary>차량 한 대를 _lane의 소환 위치에 소환한다. 예열(offroadWarmup) + _delay 뒤에 돌진한다.</summary>
+    private OffroadCar StartOffroad(float _now, float _delay, in OffroadLane _lane, bool _bEngine)
     {
         Vector2 dir = OffroadLanes.DownDiagonal(_lane.bRight);
         Vector2 entry = _lane.entry;
@@ -1298,7 +1414,7 @@ public class RoguelikeSkillController : MonoBehaviour
         float warmup = car.dashStartTime - _now;
         if (null != car.visual) car.visual.BeginWarmup(entry, exit, warmup, car.bEngine);
 
-        Publish(ERoguelikeSkillVfx.OffroadWarmup, entry, exit, car.radius, warmup, 0);
+        return car;
     }
 
     private void LaunchOffroad(OffroadCar _car)
@@ -1515,20 +1631,11 @@ public class RoguelikeSkillController : MonoBehaviour
             return;
         }
 
-        // 홀로 남은 별: 공격받지도 사라지지도 않고 주변에 표식 공격을 계속한다.
-        if (1 == activeStars.Count && _now >= nextLonePulseTime)
-        {
-            nextLonePulseTime = _now + Interval(tuning.stellaDroneLoneStarInterval, ERoguelikeSkill.Drone);
-            Vector3 pos = activeStars[0].transform.position;
-            float radius = tuning.stellaDroneLoneStarRadius * RangeMul(ERoguelikeSkill.Stella);
-            DamageTreesInRadius(pos, radius, tuning.stellaBlastDamage * DamageMul(ERoguelikeSkill.Stella), true, true, starBlastHpCapRatio);
-            Publish(ERoguelikeSkillVfx.LoneStarPulse, pos, pos, radius, 0f, activeStars[0].StarId);
-        }
-
-        // 이음선 빔.
+        // 이음선 레이저(기획서 v2.8 6-2): 별이 2개 이상이면 드론과 같은 공격속도(드론 레이저 발사 주기, 공격속도 패시브 반영)로 쏜다.
+        // 별이 1개면 이음선이 없고 아무 공격도 하지 않는다(홀로 남은 별 삭제).
         if (starLinks.Count > 0 && _now >= nextBeamTime)
         {
-            nextBeamTime = _now + Interval(tuning.stellaDroneBeamInterval, ERoguelikeSkill.Drone);
+            nextBeamTime = _now + Mathf.Max(0.05f, character.statComponent.droneDamageInterval);
             float width = tuning.stellaDroneBeamWidth * RangeMul(ERoguelikeSkill.Drone);
             float damage = tuning.stellaDroneBeamDamage * DamageMul(ERoguelikeSkill.Drone);
 

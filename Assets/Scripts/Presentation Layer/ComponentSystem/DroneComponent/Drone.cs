@@ -177,6 +177,10 @@ public class Drone : MonoBehaviour
     // 때렸는지"만 알려주고 실제 전이 판정/데미지 적용은 Character가 전담한다.
     private System.Action<Drone, ITreeObj> requestChainAttack;
 
+    // [로그라이크] 임팩트 프레임에 나무 대신 다른 1차 타겟(스텔라 별)을 쏠지 묻는 콜백(Character가 소환 시 등록).
+    // true면 그쪽이 레이저·체인을 모두 처리했으므로 노리던 나무는 치지 않는다. 본편은 늘 false다.
+    private System.Func<Drone, bool> requestPriorityShot;
+
     private Vector2 lastFacingDir = Vector2.down; // 목표로 삼는 방향(즉시 갱신). 실제 스프라이트 방향은 facingAngle이 이 방향으로 서서히 돌아가며 따라간다
     private float facingAngle = 270f; // 현재 실제로 바라보는 각도(도, 0=R 반시계). MoveTowardsAngle로 lastFacingDir 각도까지 보간된다. 270 = Down
     private Vector2 characterAimDir = Vector2.down; // 캐릭터의 조준 방향. Character가 매 프레임 갱신해준다.
@@ -304,6 +308,12 @@ public class Drone : MonoBehaviour
     public void SetChainAttackCallback(System.Action<Drone, ITreeObj> _callback)
     {
         requestChainAttack = _callback;
+    }
+
+    /// <summary>[로그라이크] 임팩트 프레임마다 나무 대신 다른 1차 타겟을 쏠지 묻는 콜백. Character가 소환 시 등록한다.</summary>
+    public void SetPriorityShotCallback(System.Func<Drone, bool> _callback)
+    {
+        requestPriorityShot = _callback;
     }
 
     /// <summary>
@@ -1088,6 +1098,9 @@ public class Drone : MonoBehaviour
         if (currentTarget == null || currentTarget.bDead) return;
 
         PlayFireSound();
+
+        // [로그라이크] 사거리 안에 스텔라 별이 있으면 이번 레이저의 1차 타겟은 별이다(나무는 맞지 않는다, 기획서 v2.8 6-1).
+        if (null != requestPriorityShot && requestPriorityShot(this)) return;
 
         // 레이저라 발사와 동시에 맞는다 - 도끼 타격음 대신 위의 발사음만 들리게 한다
         if (currentTarget is TreeObj tree)

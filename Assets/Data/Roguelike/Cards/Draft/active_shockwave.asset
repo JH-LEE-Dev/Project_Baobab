@@ -33,48 +33,51 @@ MonoBehaviour:
       value: 25
     - effect: 3
       skill: 3
-      value: 20
+      value: 47.77778
     - effect: 42
       skill: 3
-      value: -50
+      value: 10
   - effects:
     - effect: 7
       skill: 3
       value: 25
     - effect: 3
       skill: 3
-      value: 20
+      value: 47.77778
     - effect: 42
       skill: 3
-      value: -16.666667
+      value: 10
   - effects:
     - effect: 3
       skill: 3
-      value: 20
+      value: 47.77778
     - effect: 42
       skill: 3
-      value: -4.166667
+      value: 10
   - effects:
     - effect: 3
       skill: 3
-      value: 20
+      value: 47.77778
     - effect: 42
       skill: 3
-      value: -4.166667
+      value: 10
   - effects:
     - effect: 3
       skill: 3
-      value: 20
+      value: 47.77778
+    - effect: 42
+      skill: 3
+      value: 10
   - effects:
     - effect: 26
       skill: 3
       value: 1
     - effect: 3
       skill: 3
-      value: 30
+      value: 47.77778
     - effect: 42
       skill: 3
-      value: -8.333333
+      value: 10
     - effect: 39
       skill: 3
       value: 1

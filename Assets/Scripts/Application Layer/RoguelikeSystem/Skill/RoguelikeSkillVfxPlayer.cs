@@ -36,7 +36,7 @@ public sealed class RoguelikeSkillVfxAssets
 ///   스텔라 별: 본편 3스테이지 별 표식 나무에서 나오는 땅 별(TreeStarMark_Ground) + 등장음 / 사라질 때 본편 회전 소멸.
 ///              별마다 로그라이크 전용 폭발 범위 링(VFX_StellaRange)과 유지시간 게이지(VFX_StellaDurationGauge)를 붙인다.
 ///   별 공격: 로그라이크 전용 스텔라 폭발(VFX_StellaBurst) + 본편 별 폭발음.
-///   오프로드 예열: 로그라이크 전용 이동 경로 표시(VFX_OffroadLane).
+///   오프로드 소환 위치: 로그라이크 전용 이동 경로 표시(VFX_OffroadLane, 발동 주기 내내 - BeginOffroadLane).
 ///   포자 폭발: 본편 포자 폭발(4연발 + 포자 폭발음). v2.6부터 포자 조합 3종도 대폭발을 써서 지금은 내는 곳이 없다.
 ///   포자 폭탄: 포물선으로 던지고, 떨어지면 본편 포자 대폭발(2스테이지 전리품 연출). 오염된 나무에는 본편 포자 디버프 표시.
 ///              포자 조합 3종(포자 레이저 · 방구차 · 포자 충격파)의 대폭발도 같은 연출이다(던지기 없이 그 자리에서).
@@ -91,6 +91,9 @@ public sealed class RoguelikeSkillVfxPlayer
     // 땅 별 그림 중심이 별 위치(판정·스폰 지점)에서 떠 있는 거리. 이음선·빔·별 폭발은 그림 중심끼리 잇는다.
     private Vector3 starCenterOffset;
 
+    /// <summary>땅 별 그림 중심이 별 바닥 위치에서 떠 있는 거리(본편 땅 별을 못 쓰면 0).</summary>
+    public Vector3 StarCenterOffset => starCenterOffset;
+
     public void Initialize(InDungeonObjectManager _objectManager, RoguelikeSkillVfxAssets _assets, MonoBehaviour _host)
     {
         assets = _assets ?? new RoguelikeSkillVfxAssets();
@@ -111,6 +114,7 @@ public sealed class RoguelikeSkillVfxPlayer
                 break;
 
             case ERoguelikeSkillVfx.StarBlast:
+                vfx?.SetConstellationGroundMarkHighlightForRun(StarGroupBase - _signal.id, false);
                 vfx?.BeginConstellationGroundMarkManifest(StarGroupBase - _signal.id);
                 // 범위 링을 밝게 강조한 뒤 폭발을 내고, 링·게이지를 거둔다. 폭발은 별의 바닥 위치에 놓는다(별 높이는 이펙트가 맡는다).
                 ActivateStarRange(_signal.id);
@@ -127,20 +131,16 @@ public sealed class RoguelikeSkillVfxPlayer
                 CameraMoveController.Instance?.ShakeCamera(3f, 0.2f);
                 break;
 
+            case ERoguelikeSkillVfx.StarHighlightOn:
+            case ERoguelikeSkillVfx.StarHighlightOff:
+                // 도끼 범위에 들어온 별은 나무 아웃라인처럼 강조한다(본편 땅 별이 더 밝게 번진다).
+                vfx?.SetConstellationGroundMarkHighlightForRun(StarGroupBase - _signal.id, ERoguelikeSkillVfx.StarHighlightOn == _signal.type);
+                break;
+
             case ERoguelikeSkillVfx.StarExpired:
+                vfx?.SetConstellationGroundMarkHighlightForRun(StarGroupBase - _signal.id, false);
                 vfx?.BeginConstellationGroundMarkManifest(StarGroupBase - _signal.id);
                 EndStarOverlay(_signal.id);
-                break;
-
-            case ERoguelikeSkillVfx.LoneStarPulse:
-                // 홀로 남은 별은 공격 뒤에도 남는다. 스텔라+드론의 별에는 범위 링을 붙이지 않으므로 폭발만 낸다.
-                vfx?.PlayStellaBurstVFX(_signal.position, _signal.radius, Order(_signal.position) + 40);
-                Sound.Play(SoundID.StarExplosion, _signal.position + starCenterOffset, 0.6f);
-                break;
-
-            case ERoguelikeSkillVfx.OffroadWarmup:
-                // 예열 동안 소환 위치와 진행 방향을 보여 주고, 출발 시각에 맞춰 경로가 걷힌다. radius는 돌진 폭의 반폭이다.
-                vfx?.PlayOffroadLaneVFX(_signal.position, _signal.position2, _signal.duration, _signal.radius);
                 break;
 
             case ERoguelikeSkillVfx.SporeExplosion:
@@ -167,10 +167,7 @@ public sealed class RoguelikeSkillVfxPlayer
                 FireLaser(_signal.position + starCenterOffset, _signal.position2 + starCenterOffset);
                 break;
 
-            case ERoguelikeSkillVfx.DroneStarShot:
-                // 드론 총구에서 별 그림 중심까지 본편 드론 레이저.
-                FireLaser(_signal.position, _signal.position2 + starCenterOffset);
-                break;
+            // DroneStarShot: 레이저 그림은 본편 드론 연쇄 번개가 총구 → 별 그림 중심 → 체인 나무로 이미 그린다(Character.OnDronePriorityShot).
 
             case ERoguelikeSkillVfx.StarNova:
                 vfx?.PlayConstellationNovaVFX(_signal.position, _signal.radius);
@@ -249,6 +246,15 @@ public sealed class RoguelikeSkillVfxPlayer
         // 표시는 더 큰 단계로만 올라가므로 지운 뒤 다시 건다.
         PresentationLayer.VFX.TreeSporeDebuffVfx.Clear(_tree);
         if (_bRestoreMain && _tree.SporeDamageAmplify > 0f) PresentationLayer.VFX.TreeSporeDebuffVfx.Apply(_tree, _tree.SporeDamageAmplify);
+    }
+
+    /// <summary>
+    /// 오프로드 소환 위치 · 진행 방향 표시(VFX_OffroadLane)를 시작한다(기획서 v2.8: 발동 주기 시작 ~ 발동). _halfWidth는 돌진 폭의 반폭이다.
+    /// 돌려받은 표시는 컨트롤러가 들고 있다가 발동 때 Fire, 웨이브 종료 때 Cancel을 부른다. 이펙트가 없으면 null.
+    /// </summary>
+    public PresentationLayer.VFX.VFX_OffroadLane BeginOffroadLane(Vector3 _from, Vector3 _to, float _halfWidth)
+    {
+        return null != vfx ? vfx.PlayOffroadLaneVFX(_from, _to, _halfWidth) : null;
     }
 
     /// <summary>
