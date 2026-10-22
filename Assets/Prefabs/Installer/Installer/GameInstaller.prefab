@@ -1382,6 +1382,37 @@ MonoBehaviour:
     allowDynamicExpansion: 1
     maxPoolSize: 200
     uiParticleScale: 0
+--- !u!1 &4185518539190277772
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7985413889516137983}
+  m_Layer: 0
+  m_Name: BowlSpawnPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7985413889516137983
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4185518539190277772}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.75, y: 1.5, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2844678032952820732}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4623915527415485074
 GameObject:
   m_ObjectHideFlags: 0
@@ -1751,6 +1782,37 @@ Transform:
   m_Children:
   - {fileID: 7841501489216884872}
   m_Father: {fileID: 1821968231370692703}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &5921264398416181827
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6099955067169537471}
+  m_Layer: 0
+  m_Name: HouseSpawnPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6099955067169537471
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5921264398416181827}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.5, y: 2.25, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2844678032952820732}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6072749610732021143
 GameObject:
@@ -2731,6 +2793,7 @@ Transform:
   - {fileID: 2112430069709630900}
   - {fileID: 2394091770785061486}
   - {fileID: 7439228434502376222}
+  - {fileID: 2844678032952820732}
   m_Father: {fileID: 1821968231370692703}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2035583621322038210
@@ -3184,6 +3247,64 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ec788717b5cb9274ba5e8d735dfce8e9, type: 2}
   - {fileID: 11400000, guid: a1d94f6b2c73e084b9f5028ad6e31c7f, type: 2}
   - {fileID: 11400000, guid: b6c3f09d54e871a4998dc2be7f01a3d6, type: 2}
+--- !u!1 &8536741958456108890
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2844678032952820732}
+  - component: {fileID: 6053966552833718124}
+  m_Layer: 0
+  m_Name: PuppyManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2844678032952820732
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8536741958456108890}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 6099955067169537471}
+  - {fileID: 7985413889516137983}
+  m_Father: {fileID: 7167910169251179437}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6053966552833718124
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8536741958456108890}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60555301cec49a046b23688c5bcc2b13, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PuppyManager
+  puppyPrefab: {fileID: 180446622343410912, guid: bf1ac8a92df227541a1de80cf69b8840, type: 3}
+  bowlPrefab: {fileID: 6958470249711014040, guid: 278396c23c43cf646a6232a7dca696d8, type: 3}
+  housePrefab: {fileID: 7575586318937502435, guid: ad25c26b1853e3a46ace5211dca28fea, type: 3}
+  houseSpawnPoint: {fileID: 6099955067169537471}
+  bowlSpawnPoint: {fileID: 7985413889516137983}
+  initialBowlLevel: 1
+  spawnDistance: {x: 1.5, y: 4}
+  puppyInteractRadius: 1
+  bowlInteractRadius: 0.7
+  interactExitRadiusMultiplier: 1.25
+  interactCooldown: 1
+  avoidMargin: 0.25
 --- !u!1 &8962706255023184329
 GameObject:
   m_ObjectHideFlags: 0
@@ -3283,13 +3404,40 @@ MonoBehaviour:
   lostAndFoundBoxDropChanceIncreasePerKill: 0.005
   lostAndFoundBoxPityMinKills: 4
   lostAndFoundBoxPityMaxKills: 5
+  lostAndFoundBoxTier2PrestigeLevel: 4
+  lostAndFoundBoxTier3PrestigeLevel: 7
   sporePotionDropChance: 0.05
   sporePotionDropChanceIncreasePerKill: 0.005
   sporePotionPityMinKills: 4
   sporePotionPityMaxKills: 5
-  sporePotionMaxCharge: 30
-  sporePotionRefillMin: 3
-  sporePotionRefillMax: 5
+  sporePotionTier2PrestigeLevel: 8
+  sporePotionTier3PrestigeLevel: 10
+  sporeBigExplosionRange: 2.5
+  sporeBigExplosionTier1Damage: 50
+  sporeBigExplosionTier1Chance: 0.05
+  sporeBigExplosionTier1DamageAmplify: 0.2
+  sporeBigExplosionTier2Damage: 100
+  sporeBigExplosionTier2Chance: 0.075
+  sporeBigExplosionTier2DamageAmplify: 0.3
+  sporeBigExplosionTier3Damage: 200
+  sporeBigExplosionTier3Chance: 0.1
+  sporeBigExplosionTier3DamageAmplify: 0.5
+  starCompassDropChance: 0.05
+  starCompassDropChanceIncreasePerKill: 0.005
+  starCompassTier2PrestigeLevel: 9
+  starCompassTier3PrestigeLevel: 11
+  meteorShowerChargePerKill: 0.1
+  meteorShowerInterval: 0.2
+  meteorImpactRange: 1
+  meteorShowerTier1Damage: 100
+  meteorShowerTier1FallRange: 3.5
+  meteorShowerTier1Duration: 3
+  meteorShowerTier2Damage: 100
+  meteorShowerTier2FallRange: 3.5
+  meteorShowerTier2Duration: 4
+  meteorShowerTier3Damage: 100
+  meteorShowerTier3FallRange: 3.5
+  meteorShowerTier3Duration: 5
   starCompassPityMinKills: 4
   starCompassPityMaxKills: 5
   obsidianCharmDropChance: 0.05
@@ -3304,6 +3452,7 @@ MonoBehaviour:
   treeSpawnFrameTimeBudgetMs: 2
   treeSpawnMinPerFrame: 1
   treeSpawnMaxPerFrame: 40
+  spawnInitialTreesInOneFrame: 1
   offroadVehiclePrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
   offroadVehicle: {fileID: 0}
   treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}

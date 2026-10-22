@@ -64,6 +64,16 @@ public struct TentInteractStateChangedSignal
     }
 }
 
+/// <summary>강아지/밥그릇 상호작용 가능 상태 변화. 캐릭터 위 상호작용 키 안내를 켜고 끈다.</summary>
+public struct PuppyInteractStateChangedSignal
+{
+    public bool state;
+    public PuppyInteractStateChangedSignal(bool _state)
+    {
+        state = _state;
+    }
+}
+
 /// <summary>용광로 상호작용 범위 진입/이탈. 캐릭터 위 E키 안내를 켜고 끈다.</summary>
 public struct BlastFurnaceInteractStateChangedSignal
 {
