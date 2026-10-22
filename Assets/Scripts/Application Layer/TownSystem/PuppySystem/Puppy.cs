@@ -135,6 +135,8 @@ public class Puppy : MonoBehaviour
     [SerializeField] private SortingGroup sortingGroup;
     [SerializeField] private GameObject outlineObject;
     [SerializeField] private PuppyPopEffect popEffect;
+    [SerializeField, Tooltip("상호작용했을 때와 밥 먹는 동안 머리 위로 떠오르는 하트.")]
+    private PuppyHeartEffect heartEffect;
 
     [Header("Dust (달릴 때 발밑 먼지)")]
     [SerializeField, Tooltip("캐릭터와 같은 먼지 이펙트(VFX_Dust)를 작게 줄인 VFX_PuppyDust를 \"Dust\" 태그로 풀링한다.")]
@@ -206,6 +208,10 @@ public class Puppy : MonoBehaviour
     [SerializeField, Tooltip("밥그릇 중심에서 강아지가 서는 자리까지의 거리(가로/세로).")]
     private Vector2 eatOffset = new Vector2(0.32f, 0.2f);
     [SerializeField] private float eatApproachMaxDuration = 15f;
+    [SerializeField, Tooltip("먹기 시작하고 첫 하트가 떠오르기까지의 시간(초).")]
+    private float eatFirstHeartDelay = 0.5f;
+    [SerializeField, Tooltip("먹는 동안 하트가 떠오르는 간격(초, 범위 안 랜덤).")]
+    private Vector2 eatHeartInterval = new Vector2(1.3f, 1.9f);
 
     //외부 의존성
     private PuppyManager manager;
@@ -252,6 +258,7 @@ public class Puppy : MonoBehaviour
     // 9: 밥그릇 앞 자리
     private Vector2 eatPoint;
     private float eatStuckTimer = 0f;
+    private float eatHeartTimer = 0f;
 
     private float dustTimer = 0f;
 
@@ -299,13 +306,15 @@ public class Puppy : MonoBehaviour
         path.Clear();
         pathIndex = 0;
         popEffect.Stop();
+        heartEffect.StopAll();
         SetOutline(false);
     }
 
-    /// <summary>주인이 상호작용했다. 흰색 + 뽀잉 연출 후 상황에 맞는 행동으로 바꾼다.</summary>
+    /// <summary>주인이 상호작용했다. 흰색 + 뽀잉 연출(+ 하트) 후 상황에 맞는 행동으로 바꾼다.</summary>
     public void Interact()
     {
         popEffect.Play();
+        heartEffect.Play(Position);
 
         if (PuppyBehavior.None == behavior) return;
 
@@ -944,11 +953,20 @@ public class Puppy : MonoBehaviour
                 {
                     phase = 2;
                     behaviorTimer = eatDuration;
+                    eatHeartTimer = eatFirstHeartDelay;
                     PlayAnim(EAnim.Eating, eatingFps, true);
                 }
                 break;
 
             case 2:
+                // 맛있게 먹는 동안 머리 위로 하트가 하나씩 떠오른다.
+                eatHeartTimer -= _dt;
+                if (eatHeartTimer <= 0f)
+                {
+                    eatHeartTimer = RandomRange(eatHeartInterval);
+                    heartEffect.Play(Position);
+                }
+
                 behaviorTimer -= _dt;
                 if (behaviorTimer <= 0f)
                 {

@@ -380,6 +380,69 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!1 &4912395316138273289
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5776879294568311335}
+  - component: {fileID: 5848884024959580038}
+  m_Layer: 0
+  m_Name: Hearts
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5776879294568311335
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4912395316138273289}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2502976370886332209}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5848884024959580038
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4912395316138273289}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 397a61a9f0e189847a6b4322a128d02a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PuppyHeartEffect
+  frames:
+  - {fileID: 4606908045521496030, guid: 67c658f91ba717b4aa77856ba7f6a9a9, type: 3}
+  - {fileID: -4195582761621981391, guid: 67c658f91ba717b4aa77856ba7f6a9a9, type: 3}
+  - {fileID: 338476814, guid: 67c658f91ba717b4aa77856ba7f6a9a9, type: 3}
+  - {fileID: -1812790948, guid: 67c658f91ba717b4aa77856ba7f6a9a9, type: 3}
+  - {fileID: -61478246, guid: 67c658f91ba717b4aa77856ba7f6a9a9, type: 3}
+  - {fileID: 544255350, guid: 67c658f91ba717b4aa77856ba7f6a9a9, type: 3}
+  material: {fileID: 2100000, guid: b67fe07a84e38264994e6c435bb30cc5, type: 2}
+  sortingLayerName: FlyingItem
+  sortingOrder: 0
+  spawnHeight: 0.4
+  spawnJitterX: 0.06
+  lifetime: 1.1
+  riseHeight: 0.55
+  swayAmplitude: 0.035
+  swayFrequency: 1.2
+  popInDuration: 0.15
+  popInStartScale: 0.4
+  fadeStart: 0.75
 --- !u!1 &5086813049401765168
 GameObject:
   m_ObjectHideFlags: 0
@@ -522,6 +585,7 @@ Transform:
   - {fileID: 4947164592641761462}
   - {fileID: 1875977610555729427}
   - {fileID: 8962903042777384796}
+  - {fileID: 5776879294568311335}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &180446622343410912
@@ -540,6 +604,7 @@ MonoBehaviour:
   sortingGroup: {fileID: 4647243480379705491}
   outlineObject: {fileID: 1602652230094474287}
   popEffect: {fileID: 8232599026579501607}
+  heartEffect: {fileID: 5848884024959580038}
   vfxComponent: {fileID: 7688010565761677916}
   dustInterval: 0.2
   dustOffsetDistance: 0.08
@@ -665,6 +730,8 @@ MonoBehaviour:
   fetchMaxDuration: 20
   eatOffset: {x: 0.32, y: 0.2}
   eatApproachMaxDuration: 15
+  eatFirstHeartDelay: 0.5
+  eatHeartInterval: {x: 1.3, y: 1.9}
 --- !u!114 &8724442017707536414
 MonoBehaviour:
   m_ObjectHideFlags: 0
