@@ -18,7 +18,11 @@ public struct WaveSpec
     /// </summary>
     public int initialTrees;
     public float spawnInterval;
-    /// <summary>나무의 절대 HP(부록 A-2). 언리밋은 마지막 웨이브 HP에 웨이브마다 증가율을 누적한다.</summary>
+    /// <summary>묶음 크기(그루, 기획서 v2.6 3-1). 0이면 옛 방식(spawnInterval과 묶음 주기로 계산, 소수 이월).</summary>
+    public int batchSize;
+    /// <summary>묶음 주기(초). batchSize가 있을 때만 쓴다.</summary>
+    public float batchSeconds;
+    /// <summary>나무의 절대 HP(부록 A-2). 언리밋은 4티어 최소 수치에서 시작해 웨이브마다 증가율을 누적한다(부록 A "언리밋 곡선").</summary>
     public float treeHp;
     /// <summary>티어 안 나무 종류 순번(0 = 초기, 1 = 중간, 2 = 후반).</summary>
     public int treeKind;
@@ -40,7 +44,7 @@ public static class WaveSchedule
         spec.bUnlimit = spec.waveNumber > clearWave;
         spec.unlimitIndex = spec.bUnlimit ? spec.waveNumber - clearWave : 0;
 
-        // 언리밋은 마지막 웨이브의 처치 수·스폰 주기·나무 종류와 마지막 티어의 피해량을 그대로 쓰고, 나무 HP만 오른다.
+        // 언리밋은 마지막 웨이브의 처치 수·나무 종류와 마지막 티어의 피해량을 쓰고, 나무 HP · 묶음 크기 · 묶음 주기는 마지막 티어의 첫 웨이브(4티어 최소 수치)에서 시작해 웨이브마다 강해진다.
         int rowWave = spec.bUnlimit ? clearWave : spec.waveNumber;
         RoguelikeBalanceSO.WaveRow row = _balance.GetWaveRow(rowWave);
 
@@ -49,6 +53,8 @@ public static class WaveSchedule
 
         spec.killTarget = Mathf.Max(1, row.killTarget);
         spec.spawnInterval = Mathf.Max(0.01f, row.spawnInterval);
+        spec.batchSize = Mathf.Max(0, row.batchSize);
+        spec.batchSeconds = Mathf.Max(0f, row.batchSeconds);
         spec.initialTrees = TreeSpawnRules.InitialTreeCount(_balance.threshold, _balance.initialTreeThresholdRatio, spec.killTarget);
         spec.treeHp = Mathf.Max(1f, row.treeHp);
         spec.treeKind = Mathf.Clamp(row.treeKind, 0, RoguelikeBalanceSO.TreeKindsPerTier - 1);
@@ -56,7 +62,18 @@ public static class WaveSchedule
 
         if (spec.bUnlimit)
         {
-            spec.treeHp *= 1f + Mathf.Max(0f, _balance.unlimitHpGrowthPerWave) * spec.unlimitIndex;
+            // Unlimit-N: HP = 시작 HP × (1 + 증가율)^(N−1), 묶음 = 시작 + 증가분 × (N−1), 주기 = 시작 + 증가분 × (N−1)(하한). 시작값은 마지막 티어의 첫 웨이브 줄이다.
+            RoguelikeBalanceSO.WaveRow start = _balance.GetWaveRow(Mathf.Max(1, tier.startWave));
+            int steps = spec.unlimitIndex - 1;
+
+            spec.treeHp = Mathf.Max(1f, start.treeHp) * Mathf.Pow(1f + Mathf.Max(0f, _balance.unlimitHpGrowthPerWave), steps);
+
+            if (0 < start.batchSize)
+            {
+                spec.batchSize = Mathf.Max(1, start.batchSize + _balance.unlimitBatchSizeAddPerWave * steps);
+                spec.batchSeconds = Mathf.Max(Mathf.Max(0.1f, _balance.unlimitMinBatchSeconds), start.batchSeconds + _balance.unlimitBatchSecondsAddPerWave * steps);
+                spec.spawnInterval = spec.batchSeconds / spec.batchSize;
+            }
         }
         else if (spec.waveNumber > 1 && _balance.GetTierIndex(spec.waveNumber - 1) == spec.tierIndex)
         {

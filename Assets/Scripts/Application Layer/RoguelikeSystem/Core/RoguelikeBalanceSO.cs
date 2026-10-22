@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 기획서 v2.4 부록 A "밸런스 수치"를 한곳에 모은 데이터. 코드에는 수치를 두지 않는다.
+/// 기획서 v2.6 부록 A "밸런스 수치"를 한곳에 모은 데이터. 코드에는 수치를 두지 않는다.
 ///
-/// 처음 만든 에셋은 비어 있다. 인스펙터 우측 메뉴의 "기획서 v2.5 부록 A 초안 값으로 채우기"를 누르면
+/// 처음 만든 에셋은 비어 있다. 인스펙터 우측 메뉴의 "기획서 v2.6 부록 A 초안 값으로 채우기"를 누르면
 /// 부록 A의 초안 값이 들어간다. 값은 모두 초안이며 프로토타입 실측 후 덮어쓴다.
+///
+/// [스폰] v2.6부터 나무는 티어별 정수 묶음으로 나온다. 웨이브마다 (묶음 크기, 묶음 주기, HP, 목표 처치 수)를 둔다(WaveRow.batchSize / batchSeconds).
+/// 묶음 크기가 0인 줄은 옛 방식(spawnInterval과 spawnBatchSeconds로 계산, 소수 이월)을 그대로 쓴다.
 ///
 /// v2.4에서 골드 시스템이 없어져 골드·가격·리롤 비용·감정 항목이 사라졌다. 카드 선택은 모두 무료이고,
 /// 한 판의 빌드 규모는 선택 횟수(웨이브마다 1회)가 정한다.
@@ -33,8 +36,12 @@ public class RoguelikeBalanceSO : ScriptableObject
     {
         [Tooltip("목표 처치 수.")]
         public int killTarget;
-        [Tooltip("나무 1그루 스폰 주기(초) = 1 ÷ 초당 스폰.")]
+        [Tooltip("나무 1그루 스폰 주기(초) = 묶음 주기 ÷ 묶음 크기 = 1 ÷ 초당 스폰. 묶음 크기가 있으면 참고용이고, 없으면(0) 이 값과 spawnBatchSeconds로 묶음을 계산한다.")]
         public float spawnInterval;
+        [Tooltip("묶음 크기(그루). 묶음 주기마다 이 수만큼 정수로 한꺼번에 심는다(소수 이월 없음, 기획서 v2.6 3-1). 0이면 옛 방식(spawnInterval × spawnBatchSeconds, 소수 이월).")]
+        public int batchSize;
+        [Tooltip("묶음 주기(초). 티어마다 다르다(1티어 3 / 2티어 2.5 / 3티어 2 / 4티어 1.5). batchSize가 있을 때만 쓴다.")]
+        public float batchSeconds;
         [Tooltip("이 웨이브 나무의 절대 HP(도끼 공격력 10 기준). 나무 종류와 무관하게 이 값을 쓴다(부록 A-2).")]
         public float treeHp;
         [Tooltip("티어 안의 나무 종류 순번. 0 = 초기, 1 = 중간, 2 = 후반(기획서 7-1). 실제 종류는 RoguelikeSystem의 티어 지형 설정에 있다.")]
@@ -85,12 +92,18 @@ public class RoguelikeBalanceSO : ScriptableObject
     public int minThreshold = 5;
 
     [Header("이동")]
-    [Tooltip("카드로 오르는 이동속도의 합산 상한(%). 0이면 상한 없음(부록 A-5 +60%).")]
-    public float maxMoveSpeedPercent = 60f;
+    [Tooltip("카드로 오르는 이동속도의 합산 상한(%). 0이면 상한 없음(부록 A-5 합산 상한 +100%).")]
+    public float maxMoveSpeedPercent = 100f;
 
-    [Header("언리밋")]
-    [Tooltip("언리밋 웨이브마다 마지막 웨이브 HP에 더하는 비율. 0.1이면 Unlimit-1은 ×1.1, Unlimit-2는 ×1.2.")]
+    [Header("언리밋 (기획서 v2.6 7-2, 부록 A \"언리밋 곡선\")")]
+    [Tooltip("언리밋 웨이브마다 나무 HP에 곱하는 증가율(누적). Unlimit-1은 마지막 티어의 첫 웨이브(4티어 최소 수치) HP에서 시작하고, Unlimit-N의 HP = 시작 HP × (1 + 이 값)^(N−1). 0.1이면 웨이브마다 ×1.10.")]
     public float unlimitHpGrowthPerWave = 0.1f;
+    [Tooltip("언리밋 웨이브마다 묶음 크기에 더하는 그루 수. Unlimit-N의 묶음 = 시작 묶음 + 이 값 × (N−1). 스폰 상한을 넘는 몫은 소멸한다.")]
+    public int unlimitBatchSizeAddPerWave = 1;
+    [Tooltip("언리밋 웨이브마다 묶음 주기에 더하는 초(음수면 빨라진다). Unlimit-N의 주기 = 시작 주기 + 이 값 × (N−1), 하한은 아래 값.")]
+    public float unlimitBatchSecondsAddPerWave = -0.02f;
+    [Tooltip("언리밋 묶음 주기의 하한(초).")]
+    public float unlimitMinBatchSeconds = 1f;
 
     [Header("카드 제시")]
     [Tooltip("한 번에 제시하는 카드 수 N(기획서 v2.5 4장).")]
@@ -163,27 +176,45 @@ public class RoguelikeBalanceSO : ScriptableObject
 
     // // 초안 값
 
-    [ContextMenu("기획서 v2.5 부록 A 초안 값으로 채우기")]
+    [ContextMenu("기획서 v2.6 부록 A 초안 값으로 채우기")]
     public void FillTemporaryValues()
     {
         clearWave = 30;
 
-        // 부록 A-2: (초당 스폰, 나무 HP, 목표 처치 수, 티어 안 나무 종류 순번). 스폰 주기 = 1 ÷ 초당 스폰.
-        // v2.4: 3티어 160 / 185 / 210, 4티어 380 / 450 / 520(골드 제거로 첫 액티브 MAX가 7웨이브로 당겨져 상향).
+        // 부록 A-2(v2.6): (묶음 크기, 묶음 주기, 나무 HP, 목표 처치 수, 티어 안 나무 종류 순번). 스폰 주기 = 묶음 주기 ÷ 묶음 크기(참고용).
+        // 1티어 3~7그루 / 3초, 2티어 7~14그루 / 2.5초, 3티어 14~21그루 / 2초, 4티어 21~30그루 / 1.5초. HP는 3티어 100 / 105 / 115, 4티어 230 / 300 / 350.
         float[,] table =
         {
-            { 0.50f, 20f, 30f, 0f }, { 0.55f, 20f, 35f, 0f },
-            { 0.60f, 30f, 35f, 1f }, { 0.65f, 30f, 40f, 1f }, { 0.70f, 30f, 40f, 1f },
-            { 0.75f, 40f, 45f, 2f }, { 0.80f, 40f, 50f, 2f },
-            { 0.85f, 45f, 50f, 0f }, { 0.90f, 45f, 55f, 0f },
-            { 0.90f, 50f, 55f, 1f }, { 0.95f, 50f, 55f, 1f }, { 0.95f, 50f, 55f, 1f },
-            { 0.95f, 55f, 55f, 2f }, { 0.95f, 55f, 55f, 2f }, { 0.95f, 55f, 55f, 2f },
-            { 1.50f, 160f, 90f, 0f }, { 1.55f, 160f, 95f, 0f },
-            { 1.60f, 185f, 95f, 1f }, { 1.65f, 185f, 100f, 1f }, { 1.70f, 185f, 100f, 1f },
-            { 1.80f, 210f, 110f, 2f }, { 1.90f, 210f, 115f, 2f },
-            { 2.00f, 380f, 120f, 0f }, { 2.10f, 380f, 125f, 0f },
-            { 2.20f, 450f, 130f, 1f }, { 2.30f, 450f, 140f, 1f }, { 2.40f, 450f, 145f, 1f },
-            { 2.40f, 520f, 145f, 2f }, { 2.40f, 520f, 145f, 2f }, { 2.45f, 520f, 145f, 2f },
+            { 3f, 3f, 20f, 20f, 0f },
+            { 4f, 3f, 20f, 30f, 0f },
+            { 4f, 3f, 30f, 30f, 1f },
+            { 5f, 3f, 30f, 45f, 1f },
+            { 6f, 3f, 30f, 55f, 1f },
+            { 6f, 3f, 40f, 60f, 2f },
+            { 7f, 3f, 40f, 75f, 2f },
+            { 7f, 2.5f, 45f, 95f, 0f },
+            { 8f, 2.5f, 50f, 115f, 0f },
+            { 9f, 2.5f, 50f, 140f, 1f },
+            { 10f, 2.5f, 55f, 165f, 1f },
+            { 11f, 2.5f, 55f, 190f, 1f },
+            { 12f, 2.5f, 55f, 215f, 2f },
+            { 13f, 2.5f, 55f, 245f, 2f },
+            { 14f, 2.5f, 55f, 275f, 2f },
+            { 14f, 2f, 100f, 355f, 0f },
+            { 15f, 2f, 100f, 400f, 0f },
+            { 16f, 2f, 105f, 440f, 1f },
+            { 18f, 2f, 105f, 515f, 1f },
+            { 19f, 2f, 105f, 565f, 1f },
+            { 20f, 2f, 115f, 615f, 2f },
+            { 21f, 2f, 115f, 665f, 2f },
+            { 21f, 1.5f, 230f, 915f, 0f },
+            { 22f, 1.5f, 230f, 990f, 0f },
+            { 24f, 1.5f, 300f, 1115f, 1f },
+            { 25f, 1.5f, 300f, 1195f, 1f },
+            { 26f, 1.5f, 300f, 1280f, 1f },
+            { 28f, 1.5f, 350f, 1415f, 2f },
+            { 29f, 1.5f, 350f, 1505f, 2f },
+            { 30f, 1.5f, 350f, 1600f, 2f },
         };
 
         int rows = table.GetLength(0);
@@ -192,10 +223,12 @@ public class RoguelikeBalanceSO : ScriptableObject
         {
             waves.Add(new WaveRow
             {
-                spawnInterval = 1f / table[i, 0],
-                treeHp = table[i, 1],
-                killTarget = (int)table[i, 2],
-                treeKind = (int)table[i, 3],
+                batchSize = (int)table[i, 0],
+                batchSeconds = table[i, 1],
+                spawnInterval = table[i, 1] / table[i, 0],
+                treeHp = table[i, 2],
+                killTarget = (int)table[i, 3],
+                treeKind = (int)table[i, 4],
             });
         }
 
@@ -223,9 +256,12 @@ public class RoguelikeBalanceSO : ScriptableObject
         damageCooldown = 3f;
         maxGraceTime = 15f;
         maxDamageCooldown = 10f;
-        maxMoveSpeedPercent = 60f;
+        maxMoveSpeedPercent = 100f;
 
         unlimitHpGrowthPerWave = 0.1f;
+        unlimitBatchSizeAddPerWave = 1;
+        unlimitBatchSecondsAddPerWave = -0.02f;
+        unlimitMinBatchSeconds = 1f;
 
         offerCount = 4;
         guaranteedSlotCap = 2;

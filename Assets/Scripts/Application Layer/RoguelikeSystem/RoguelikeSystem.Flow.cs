@@ -408,8 +408,9 @@ public partial class RoguelikeSystem
         // 스폰 상한·초기 나무 수는 지금 임계치(계약 "인내의 시간"으로 줄어든 값, ConfigurePressure)를 따른다(기획서 6-4).
         float spawnRate = Mathf.Max(0.1f, 1f + modifiers.Get(ERunEffect.TreeSpawnRatePercent) / 100f);
         int initialTrees = TreeSpawnRules.InitialTreeCount(pressure.Threshold, balance.initialTreeThresholdRatio, _spec.killTarget);
+        // 묶음 크기는 정수로 두고 다다익선(스폰 속도 증가)은 묶음 주기를 줄여 반영한다(기획서 v2.6 3-1: 소수 그루 · 이월 없음).
         waveStrategy?.BeginWave(inDungeonObjectManager, _spec.spawnInterval / spawnRate, CurrentSpawnCap, initialTrees,
-            balance, null != character ? character.transform : null);
+            balance, null != character ? character.transform : null, _spec.batchSize, _spec.batchSeconds / spawnRate);
 
         float waveCombatSeconds = 0f;
         float waveIdleMoveSeconds = 0f;

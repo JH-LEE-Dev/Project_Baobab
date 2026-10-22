@@ -56,6 +56,9 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
     // 다음 묶음까지 남은 시간과, 묶음 크기의 소수 이월분.
     private float batchTimer;
     private float batchCarry;
+    // 웨이브가 정한 정수 묶음(기획서 v2.6). 0이면 옛 방식(초당 스폰 × 묶음 주기, 소수 이월).
+    private int waveBatchSize;
+    private float waveBatchSeconds;
     private Transform playerTransform;
 
     public int FieldPositionCount => fieldPositions.Count;
@@ -78,12 +81,14 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
     /// _player는 플레이어 바로 옆 금지 판정에 쓴다(없으면 필드 중심 기준).
     /// </summary>
     public void BeginWave(InDungeonObjectManager _manager, float _spawnInterval, int _spawnCap, int _initialTrees,
-        RoguelikeBalanceSO _balance, Transform _player)
+        RoguelikeBalanceSO _balance, Transform _player, int _batchSize = 0, float _batchSeconds = 0f)
     {
         spawnInterval = Mathf.Max(0.01f, _spawnInterval);
         spawnCap = Mathf.Max(1, _spawnCap);
         balance = _balance;
         playerTransform = _player;
+        waveBatchSize = Mathf.Max(0, _batchSize);
+        waveBatchSeconds = Mathf.Max(0f, _batchSeconds);
         batchTimer = BatchSeconds;
         batchCarry = 0f;
 
@@ -157,12 +162,12 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
                 continue;
             }
 
-            // 묶음 주기마다 초당 스폰 × 주기만큼 한꺼번에 심는다(기획서 v2.5 "스폰 속도 · 묶음"). 상한을 넘는 몫은 SpawnBatch가 버린다.
+            // 묶음 주기마다 웨이브가 정한 정수 묶음(v2.6)을, 묶음이 없는 옛 데이터는 초당 스폰 × 주기를 한꺼번에 심는다. 상한을 넘는 몫은 SpawnBatch가 버린다.
             batchTimer -= Time.deltaTime;
             if (batchTimer <= 0f)
             {
                 batchTimer = Mathf.Max(0f, batchTimer + BatchSeconds);
-                SpawnBatch(_manager, TreeSpawnRules.TakeBatch(ref batchCarry, spawnInterval, BatchSeconds));
+                SpawnBatch(_manager, 0 < waveBatchSize ? waveBatchSize : TreeSpawnRules.TakeBatch(ref batchCarry, spawnInterval, BatchSeconds));
             }
 
             yield return null;
@@ -179,7 +184,7 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
 
     // // 내부
 
-    private float BatchSeconds => null != balance ? Mathf.Max(0.1f, balance.spawnBatchSeconds) : 3f;
+    private float BatchSeconds => 0 < waveBatchSize && 0f < waveBatchSeconds ? Mathf.Max(0.1f, waveBatchSeconds) : null != balance ? Mathf.Max(0.1f, balance.spawnBatchSeconds) : 3f;
     private float MinSpacing => null != balance ? balance.treeMinSpacing : 0f;
     private float PlayerExclusionRadius => null != balance ? balance.playerExclusionRadius : 0f;
 

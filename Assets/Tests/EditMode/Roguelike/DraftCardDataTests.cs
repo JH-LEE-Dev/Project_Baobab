@@ -247,11 +247,14 @@ public class DraftCardDataTests
     [Test]
     public void Passives_MaxCumulativeMatchesAppendixA5()
     {
-        Assert.AreEqual(50f, ResolveAtLevel("passive_range", 5).Get(ERunEffect.RangePercent), 0.001f);
-        Assert.AreEqual(100f, ResolveAtLevel("passive_damage", 5).Get(ERunEffect.DamagePercent), 0.001f);
-        Assert.AreEqual(46f, ResolveAtLevel("passive_damage", 3).Get(ERunEffect.DamagePercent), 0.001f);
-        Assert.AreEqual(60f, ResolveAtLevel("passive_attackspeed", 5).Get(ERunEffect.AttackSpeedPercent), 0.001f);
-        Assert.AreEqual(30f, ResolveAtLevel("passive_movespeed", 5).Get(ERunEffect.MoveSpeedPercent), 0.001f);
+        // 기획서 v2.6 A-5: 퍼센트 계열은 MAX +200%(레벨마다 +40%), 이동속도는 MAX +60%(레벨마다 +12%).
+        Assert.AreEqual(200f, ResolveAtLevel("passive_range", 5).Get(ERunEffect.RangePercent), 0.001f);
+        Assert.AreEqual(200f, ResolveAtLevel("passive_damage", 5).Get(ERunEffect.DamagePercent), 0.001f);
+        Assert.AreEqual(120f, ResolveAtLevel("passive_damage", 3).Get(ERunEffect.DamagePercent), 0.001f);
+        Assert.AreEqual(200f, ResolveAtLevel("passive_attackspeed", 5).Get(ERunEffect.AttackSpeedPercent), 0.001f);
+        Assert.AreEqual(200f, ResolveAtLevel("passive_dot", 5).Get(ERunEffect.DotDamagePercent), 0.001f);
+        Assert.AreEqual(200f, ResolveAtLevel("passive_duration", 5).Get(ERunEffect.DurationPercent), 0.001f);
+        Assert.AreEqual(60f, ResolveAtLevel("passive_movespeed", 5).Get(ERunEffect.MoveSpeedPercent), 0.001f);
         Assert.AreEqual(25f, ResolveAtLevel("passive_stamina_recover", 5).Get(ERunEffect.StaminaRecoverPerWave), 0.001f);
         Assert.AreEqual(50f, ResolveAtLevel("passive_max_stamina", 5).Get(ERunEffect.MaxStaminaAdd), 0.001f);
         Assert.AreEqual(4f, ResolveAtLevel("passive_grace", 5).Get(ERunEffect.GraceTimeAdd), 0.001f);
@@ -261,8 +264,8 @@ public class DraftCardDataTests
     [Test]
     public void DotSpeed_TickIntervalReductionLadder_AndMaxStackBonusAtV()
     {
-        // 기획서 v2.5 A-5 지속 피해 속도 증가: 틱 주기 −5 / −11 / −18 / −28 / −40%, MAX 조건부(중첩 최대 나무) 추가 −10%.
-        float[] reduce = { 5f, 11f, 18f, 28f, 40f };
+        // 기획서 v2.6 A-5 지속 피해 속도 증가: 틱 주기 −16 / −32 / −48 / −64 / −80%, MAX 조건부(중첩 최대 나무) 추가 −10%.
+        float[] reduce = { 16f, 32f, 48f, 64f, 80f };
         for (int level = 1; level <= 5; level++)
         {
             Assert.AreEqual(reduce[level - 1], ResolveAtLevel("passive_dot_speed", level).Get(ERunEffect.DotTickIntervalReducePercent), 0.001f, "레벨 " + level);

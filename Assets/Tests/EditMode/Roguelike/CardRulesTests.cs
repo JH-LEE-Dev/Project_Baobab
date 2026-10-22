@@ -223,21 +223,48 @@ public class CardRulesTests
         Assert.IsFalse(w7.bTierChanged);
         Assert.AreEqual(1, w8.tierIndex);
         Assert.IsTrue(w8.bTierChanged);
-        Assert.AreEqual(30, WaveSchedule.Get(balance, 1).killTarget);
+        Assert.AreEqual(20, WaveSchedule.Get(balance, 1).killTarget);
 
-        // 언리밋 기준 HP 520(기획서 v2.4 부록 A-1), 웨이브마다 +10% 누적.
+        // 기획서 v2.6 부록 A "언리밋 곡선": Unlimit-1은 4티어 최소 수치(HP 230, 묶음 21그루 / 1.5초)에서 시작하고,
+        // 웨이브마다 HP ×1.10 · 묶음 +1그루 · 묶음 주기 −0.02초가 누적된다. 목표 처치 수는 1,600 고정.
         Assert.IsTrue(w31.bUnlimit);
         Assert.AreEqual(1, w31.unlimitIndex);
-        Assert.AreEqual(145, w31.killTarget);
-        Assert.AreEqual(520f * 1.1f, w31.treeHp, 0.001f);
-        Assert.AreEqual(520f * 1.2f, w32.treeHp, 0.001f);
+        Assert.AreEqual(1600, w31.killTarget);
+        Assert.AreEqual(230f, w31.treeHp, 0.001f);
+        Assert.AreEqual(21, w31.batchSize);
+        Assert.AreEqual(1.5f, w31.batchSeconds, 0.0001f);
+        Assert.AreEqual(230f * 1.1f, w32.treeHp, 0.001f);
+        Assert.AreEqual(22, w32.batchSize);
+        Assert.AreEqual(1.48f, w32.batchSeconds, 0.0001f);
+
+        // 묶음 주기는 하한 1.0초에서 멈춘다(Unlimit-30은 묶음 50그루 / 1.0초).
+        WaveSpec w60 = WaveSchedule.Get(balance, 60);
+        Assert.AreEqual(50, w60.batchSize);
+        Assert.AreEqual(1f, w60.batchSeconds, 0.0001f);
+    }
+
+    [Test]
+    public void WaveSchedule_BatchSizeAndPeriodFollowAppendixA2()
+    {
+        // 기획서 v2.6 부록 A-2: 티어별 정수 묶음. 1티어 3~7그루 / 3초, 2티어 7~14그루 / 2.5초, 3티어 14~21그루 / 2초, 4티어 21~30그루 / 1.5초.
+        int[] size = { 3, 4, 4, 5, 6, 6, 7, 7, 8, 9, 10, 11, 12, 13, 14, 14, 15, 16, 18, 19, 20, 21, 21, 22, 24, 25, 26, 28, 29, 30 };
+        for (int wave = 1; wave <= 30; wave++)
+        {
+            WaveSpec spec = WaveSchedule.Get(balance, wave);
+            float period = wave <= 7 ? 3f : wave <= 15 ? 2.5f : wave <= 22 ? 2f : 1.5f;
+            Assert.AreEqual(size[wave - 1], spec.batchSize, "묶음 크기 " + wave);
+            Assert.AreEqual(period, spec.batchSeconds, 0.0001f, "묶음 주기 " + wave);
+            Assert.AreEqual(period / size[wave - 1], spec.spawnInterval, 0.0001f, "그루당 주기 " + wave);
+        }
+
+        Assert.AreEqual(1600, WaveSchedule.Get(balance, 30).killTarget);
     }
 
     [Test]
     public void WaveSchedule_AbsoluteHpAndDamageFollowAppendixA2()
     {
-        // 기획서 v2.4 부록 A-2: 3티어 160 / 185 / 210, 4티어 380 / 450 / 520.
-        float[] hp = { 20, 20, 30, 30, 30, 40, 40, 45, 45, 50, 50, 50, 55, 55, 55, 160, 160, 185, 185, 185, 210, 210, 380, 380, 450, 450, 450, 520, 520, 520 };
+        // 기획서 v2.6 부록 A-2: 3티어 100 / 105 / 115, 4티어 230 / 300 / 350.
+        float[] hp = { 20, 20, 30, 30, 30, 40, 40, 45, 50, 50, 55, 55, 55, 55, 55, 100, 100, 105, 105, 105, 115, 115, 230, 230, 300, 300, 300, 350, 350, 350 };
         for (int wave = 1; wave <= 30; wave++)
         {
             Assert.AreEqual(hp[wave - 1], WaveSchedule.Get(balance, wave).treeHp, 0.001f, "웨이브 " + wave);
@@ -245,7 +272,7 @@ public class CardRulesTests
 
         Assert.AreEqual(3f, WaveSchedule.Get(balance, 1).staminaDamage);
         Assert.AreEqual(15f, WaveSchedule.Get(balance, 30).staminaDamage);
-        Assert.AreEqual(2f, WaveSchedule.Get(balance, 1).spawnInterval, 0.001f);
+        Assert.AreEqual(1f, WaveSchedule.Get(balance, 1).spawnInterval, 0.001f);
         // 기획서 v2.5: 스폰 상한 = 임계치 40 + 20.
         Assert.AreEqual(60, balance.SpawnCap);
     }

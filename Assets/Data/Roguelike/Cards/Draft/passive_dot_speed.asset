@@ -23,23 +23,23 @@ MonoBehaviour:
   - effects:
     - effect: 37
       skill: 0
-      value: 5
+      value: 16
   - effects:
     - effect: 37
       skill: 0
-      value: 6
+      value: 16
   - effects:
     - effect: 37
       skill: 0
-      value: 7
+      value: 16
   - effects:
     - effect: 37
       skill: 0
-      value: 10
+      value: 16
   - effects:
     - effect: 37
       skill: 0
-      value: 12
+      value: 16
     - effect: 38
       skill: 0
       value: 10
