@@ -28,6 +28,7 @@ public class TownSystem : MonoBehaviour
     public TownUnitSpawner townUnitSpawner { get; private set; }
     public LootPillarManager lootPillarManager { get; private set; }
     public BlastFurnaceManager blastFurnaceManager { get; private set; }
+    public PuppyManager puppyManager { get; private set; }
 
     /// <summary>
     /// 게임이 처음 시작됐을 때(던전에서 돌아온 것이 아닐 때) 캐릭터가 생성되는 위치.
@@ -83,6 +84,7 @@ public class TownSystem : MonoBehaviour
         townUnitSpawner = GetComponentInChildren<TownUnitSpawner>();
         lootPillarManager = GetComponentInChildren<LootPillarManager>();
         blastFurnaceManager = GetComponentInChildren<BlastFurnaceManager>();
+        puppyManager = GetComponentInChildren<PuppyManager>();
         skyCameraProductionManager = _skyCameraProductionManager;
 
         townProductionManager.Initialize(inputManager, _skyCameraProductionManager);
@@ -101,6 +103,8 @@ public class TownSystem : MonoBehaviour
         blastFurnaceManager?.SetDependencies(inputManager, characterInventory as InventoryManager, logProcessingManager.shopNPC, logProcessingManager);
         blastFurnaceManager?.Initialize();
 
+        puppyManager?.Initialize(inputManager);
+
         BindEvents();
         SubscribeSignals();
     }
@@ -111,6 +115,7 @@ public class TownSystem : MonoBehaviour
         townObjectManager.Release();
         tentManager.Release();
         blastFurnaceManager?.Release();
+        puppyManager?.Release();
         townProductionManager.Release();
 
         ReleaseEvents();
@@ -158,6 +163,8 @@ public class TownSystem : MonoBehaviour
         // 발소리 등 타일 판정이 던전 전용 TileMapGenerator가 아닌 Town의 실제 타일맵을 보도록 갈아끼운다.
         character?.SetTilemapDataProvider(townUnitSpawner?.TilemapDataProvider);
 
+        EnterPuppyTown(_sceneChangeData.prevScene == SceneType.DungeonScene ? townObjectManager.GetTownReturnPoint() : townStartPoint);
+
         if (_sceneChangeData.prevScene == SceneType.DungeonScene)
         {
             signalHub.Publish(new TownStartedSignal(townObjectManager.GetTownReturnPoint()));
@@ -177,6 +184,41 @@ public class TownSystem : MonoBehaviour
         townProductionManager.bCurrentlyTownScene = true;
 
         townUnitSpawner?.ResetAllNPCsToSpawn();
+    }
+
+    /// <summary>
+    /// 마을 강아지를 플레이어 도착 지점 근처에 내보낸다. 플레이어가 서 있으면 강아지보다
+    /// 우선하는 코어루프 기물의 상호작용 영역도 여기서 다시 등록한다 - 차량은 마을에 들어올 때마다 새로 연결된다.
+    /// </summary>
+    private void EnterPuppyTown(Transform _arrivalAnchor)
+    {
+        if (puppyManager == null)
+            return;
+
+        puppyManager.ClearPriorityZones();
+        puppyManager.AddPriorityZone(tentManager.Tent != null ? tentManager.Tent.InteractionCollider : null);
+
+        if (logProcessingManager.shopNPC != null)
+            puppyManager.AddPriorityZone(logProcessingManager.shopNPC.GetComponent<Collider2D>());
+
+        if (logProcessingManager.logContainer != null)
+            puppyManager.AddPriorityZone(logProcessingManager.logContainer.GetComponent<Collider2D>());
+
+        if (offroadContainer != null)
+            puppyManager.AddPriorityZone(offroadContainer.col);
+
+        OffroadVehicleObj offroadVehicle = townObjectManager.offroadVehicle;
+        if (offroadVehicle != null)
+        {
+            puppyManager.AddPriorityZone(offroadVehicle.col);
+
+            RepairBox repairBox = offroadVehicle.GetComponentInChildren<RepairBox>(true);
+            if (repairBox != null)
+                puppyManager.AddPriorityZone(repairBox.col);
+        }
+
+        ITilemapDataProvider tilemapDataProvider = townUnitSpawner != null ? townUnitSpawner.TilemapDataProvider : null;
+        puppyManager.EnterTown(tilemapDataProvider, townTileManager, _arrivalAnchor);
     }
 
     private void BindEvents()
@@ -277,6 +319,12 @@ public class TownSystem : MonoBehaviour
             lootPillarManager.LootPillarInteractEvent -= LootPillarInteract;
             lootPillarManager.LootPillarInteractEvent += LootPillarInteract;
         }
+
+        if (puppyManager != null)
+        {
+            puppyManager.InteractStateChangedEvent -= PuppyInteractStateChanged;
+            puppyManager.InteractStateChangedEvent += PuppyInteractStateChanged;
+        }
     }
 
     private void ReleaseEvents()
@@ -319,6 +367,9 @@ public class TownSystem : MonoBehaviour
             lootPillarManager.LootPillarInteractStateChangedEvent -= LootPillarInteractStateChanged;
             lootPillarManager.LootPillarInteractEvent -= LootPillarInteract;
         }
+
+        if (puppyManager != null)
+            puppyManager.InteractStateChangedEvent -= PuppyInteractStateChanged;
     }
 
     private void SubscribeSignals()
@@ -520,6 +571,7 @@ public class TownSystem : MonoBehaviour
         character = _signal.character;
         logProcessingManager.SetCharacter(character);
         blastFurnaceManager?.SetCharacter(character);
+        puppyManager?.SetCharacter(character);
         townProductionManager.Character_DI(character);
         townObjectManager.SetCharacter(character);
     }
@@ -578,6 +630,11 @@ public class TownSystem : MonoBehaviour
         signalHub.Publish(new LootPillarInteractStateChangedSignal(_state, _lootType));
     }
 
+    private void PuppyInteractStateChanged(bool _boolean)
+    {
+        signalHub.Publish(new PuppyInteractStateChangedSignal(_boolean));
+    }
+
     private void LootPillarInteract(bool _bInteract, LootType _lootType)
     {
         signalHub.Publish(new LootPillarInteractSignal(_bInteract, _lootType));
@@ -620,6 +677,7 @@ public class TownSystem : MonoBehaviour
         logProcessingManager.DisableShopObj();
         tentManager.DisableTent();
         blastFurnaceManager?.MoveOffscreen();
+        puppyManager?.ExitTown();
 
         bCurrentlyTownScene = false;
         townProductionManager.bCurrentlyTownScene = false;
@@ -638,6 +696,7 @@ public class TownSystem : MonoBehaviour
         logProcessingManager.DisableShopObj();
         tentManager.DisableTent();
         blastFurnaceManager?.MoveOffscreen();
+        puppyManager?.ExitTown();
         townProductionManager.SetCharacterTransform();
 
         if (bRetryGame == false)
@@ -690,6 +749,9 @@ public class TownSystem : MonoBehaviour
 
         townUnitSpawner?.PauseAllNPCs();
         townUnitSpawner?.DeactivateAllNPCs();
+
+        // 곧 마을 Grid가 사라져 길찾기 데이터가 비므로 강아지도 여기서 거둔다(카메라가 하늘에 있어 보이지 않는다).
+        puppyManager?.ExitTown();
 
         townObjectManager.ClearObjManager();
         townTileManager.DestroyGrid();
@@ -922,5 +984,16 @@ public class TownSystem : MonoBehaviour
     public void ApplyLootPillarColliderState(InDungeonObjectManager _inDungeonObjectManager)
     {
         townTileManager.ApplyLootPillarColliderState(_inDungeonObjectManager);
+
+        // 기둥은 StartTownSystem() 뒤에 새로 세워지므로(EnterPuppyTown 시점엔 아직 없다), 그 상호작용 영역은
+        // 기둥이 세워진 직후인 여기서 강아지보다 우선하는 대상에 더한다. 지난 방문의 기둥은 EnterPuppyTown이 이미 비웠다.
+        if (puppyManager != null && lootPillarManager != null)
+        {
+            for (int i = 0; i < lootPillarManager.SpawnedPillars.Count; i++)
+            {
+                if (lootPillarManager.SpawnedPillars[i] != null)
+                    puppyManager.AddPriorityZone(lootPillarManager.SpawnedPillars[i].GetComponent<Collider2D>());
+            }
+        }
     }
 }

@@ -30,6 +30,9 @@ public class LootPillarManager : MonoBehaviour
 
     private readonly List<LootDisplayObject> spawnedPillars = new List<LootDisplayObject>();
 
+    /// <summary>이번 마을 방문에 세워진 기둥들. 마을 강아지가 기둥의 상호작용 영역을 피하는 데 쓴다.</summary>
+    public IReadOnlyList<LootDisplayObject> SpawnedPillars => spawnedPillars;
+
     private InputManager inputManager;
 
     // 전리품 성장 단계 변경(프레스티지 레벨업) 구독. 특성 창(TentUI)이 열려 있는 동안 단계가 바뀌면 기둥은 건드리지 않고

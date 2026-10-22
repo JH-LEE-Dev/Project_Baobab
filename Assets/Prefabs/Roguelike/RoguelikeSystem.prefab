@@ -75,6 +75,18 @@ MonoBehaviour:
     backgroundPieceFadeSeconds: 0.3
     backgroundPieceCells: 3
     viewMarginTiles: 2
+  fieldCloudSettings:
+    count: 35
+    minSpeed: 0.07
+    maxSpeed: 0.1
+    alpha: 0.12
+    viewMargin: 1
+    fadeSeconds: 1
+  waterDecoSettings:
+    density: 0.08
+    minGapCells: 2
+    appearSeconds: 0.4
+    disappearSeconds: 0.25
   screenTransitionSettings:
     ringSeconds: 0.45
     ringWidth: 0.16
@@ -109,6 +121,7 @@ MonoBehaviour:
   fallbackLobbyToRunSeconds: 0
   maxProductionWaitSeconds: 15
   maxCardPresentationWaitSeconds: 10
+  noCardsNoticeFallbackSeconds: 1.5
   maxCharacterDownWaitSeconds: 5
   exitToMainMenuSeconds: 1
 --- !u!1 &4371363598458042333
@@ -174,4 +187,11 @@ MonoBehaviour:
     sporeBombSprite: {fileID: 6479773223036287334, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
     sporeBombThrowSeconds: 0.45
     sporeBombArcHeight: 1.6
+    sporeBombSpinSpeed: 720
+    sporeBombFlightStretch: 0.3
+    sporeBombLandSeconds: 0.4
+    sporeBombLandSquash: 0.45
+    sporeBombWobbleFrequency: 9
+    sporeBombWobbleDamping: 7
+    sporeBombPopScale: 1.35
     droneLaserPrefab: {fileID: 9005663251761334064, guid: 269940660a587ae42b4662324dc1fbcd, type: 3}

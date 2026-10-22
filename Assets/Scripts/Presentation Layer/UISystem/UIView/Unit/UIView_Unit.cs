@@ -442,6 +442,11 @@ public class UIView_Unit : UIView
         InteractionStateChange(_state);
     }
 
+    public void PuppyInteractStateChanged(bool _state)
+    {
+        InteractionStateChange(_state);
+    }
+
     private void InteractionStateChange(bool _state)
     {
         if (true == _state)

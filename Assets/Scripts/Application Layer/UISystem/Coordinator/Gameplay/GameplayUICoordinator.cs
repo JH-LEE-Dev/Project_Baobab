@@ -130,6 +130,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<LogSwapAvailabilityChangedSignal>(LogSwapAvailabilityChanged);
         signalHub.Subscribe<LogSwapExecutedSignal>(LogSwapExecuted);
         signalHub.Subscribe<TentInteractStateChangedSignal>(TentInteractStateChanged);
+        signalHub.Subscribe<PuppyInteractStateChangedSignal>(PuppyInteractStateChanged);
         signalHub.Subscribe<BlastFurnaceInteractStateChangedSignal>(BlastFurnaceInteractStateChanged);
         signalHub.Subscribe<BlastFurnaceStateChangedSignal>(BlastFurnaceStateChanged);
         signalHub.Subscribe<OffroadInteractStateChangedSignal>(OffroadInteractStateChanged);
@@ -191,6 +192,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<LogSwapAvailabilityChangedSignal>(LogSwapAvailabilityChanged);
         signalHub.UnSubscribe<LogSwapExecutedSignal>(LogSwapExecuted);
         signalHub.UnSubscribe<TentInteractStateChangedSignal>(TentInteractStateChanged);
+        signalHub.UnSubscribe<PuppyInteractStateChangedSignal>(PuppyInteractStateChanged);
         signalHub.UnSubscribe<BlastFurnaceInteractStateChangedSignal>(BlastFurnaceInteractStateChanged);
         signalHub.UnSubscribe<BlastFurnaceStateChangedSignal>(BlastFurnaceStateChanged);
         signalHub.UnSubscribe<OffroadInteractStateChangedSignal>(OffroadInteractStateChanged);
@@ -900,6 +902,11 @@ public class GameplayUICoordinator
     private void TentInteractStateChanged(TentInteractStateChangedSignal _tentInteractStateChangedSignal)
     {
         unitUI.TentInteractStateChanged(_tentInteractStateChangedSignal.state);
+    }
+
+    private void PuppyInteractStateChanged(PuppyInteractStateChangedSignal _signal)
+    {
+        unitUI.PuppyInteractStateChanged(_signal.state);
     }
 
     private void BlastFurnaceInteractStateChanged(BlastFurnaceInteractStateChangedSignal _signal)

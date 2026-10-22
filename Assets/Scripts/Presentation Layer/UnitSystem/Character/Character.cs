@@ -229,6 +229,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     // "원목 보험 증서" 전리품을 얻어야 대시를 쓸 수 있다. 해금은 씬마다 GameInstaller가 정한다(본편 던전만
     // 영구 획득 여부로 켜고, 로그라이크·마을은 끈다). 원정 도중 획득하면 다음 숲 방문부터 켜진다.
     private DashCharge dashCharge;
+    // [로그라이크] 카드 선택처럼 timeScale은 그대로인데 시간이 흐르지 않는 단계 동안 대시 충전을 멈춘다(SetDashRechargePaused).
+    // ESC 메뉴·보유 카드 창은 timeScale 0이라 FixedUpdate가 돌지 않아 자연히 멈춘다.
+    private bool bDashRechargePaused = false;
 
     // [로그라이크] 이동속도 증가 패시브의 대쉬(III 1개, V 2개, 충전식). 0이면 덮어쓰지 않는다 - 본편은 늘 0이라 전리품 단계 그대로다.
     private int runDashMaxCharges;
@@ -399,6 +402,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 새 판에서는 대시를 가득 채우고 남은 요청을 비운다. (해금 여부는 GameInstaller가 씬마다 정한다 - dashCharge 참고)
         dashCharge.Refill();
         bDashRequested = false;
+        bDashRechargePaused = false;
 
         bDronesPaused = false;
         ClearActiveDrones();
@@ -912,6 +916,14 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         dashCharge.Configure(GetDashMaxCharges(), GetDashRechargePerSecond());
         dashCharge.SetUnlocked(0 < runDashMaxCharges || 0 < dashTier);
+    }
+
+    /// <summary>
+    /// [로그라이크] 시간이 흐르지 않는 단계(카드 선택) 동안 대시 충전을 멈춘다. 본편은 부르지 않는다.
+    /// </summary>
+    public void SetDashRechargePaused(bool _bPaused)
+    {
+        bDashRechargePaused = _bPaused;
     }
 
     // 성장 단계 값 + 특성 보너스. 미보유(0단계)일 때는 I단계 값을 쓴다(쓸 수는 없지만 HUD가 읽을 값은 있어야 한다).
@@ -1920,7 +1932,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         {
             // 단계 값·보너스를 매 틱 반영한다 - 특성으로 늘어난 값과 플레이 중 튜닝이 바로 먹고, 값이 같으면 아무 일도 하지 않는다.
             dashCharge.Configure(GetDashMaxCharges(), GetDashRechargePerSecond());
-            dashCharge.Tick(Time.fixedDeltaTime);
+
+            // 일시정지 동안은 차오르지 않는다 - WarningUI(bDronesPaused, 피로도 감소도 멈춘다)·로그라이크 카드 선택(bDashRechargePaused).
+            if (!bDronesPaused && !bDashRechargePaused)
+                dashCharge.Tick(Time.fixedDeltaTime);
         }
         if (!bDronesPaused)
         {
@@ -2076,6 +2091,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         boomerangCooldownTimer = 0f;
         dashCharge.Refill();
         bDashRequested = false;
+        bDashRechargePaused = false;
         bBoomerangSystemPaused = false;
         bDronesPaused = false;
 
