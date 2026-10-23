@@ -20,14 +20,17 @@ MonoBehaviour:
   skillTag: 4
   exclusiveGroup: 0
   levels:
-  - effects: []
+  - effects:
+    - effect: 1
+      skill: 4
+      value: 28.57143
   - effects:
     - effect: 2
       skill: 4
       value: 25
     - effect: 1
       skill: 4
-      value: 28.5714
+      value: 42.85714
   - effects:
     - effect: 6
       skill: 4
@@ -35,10 +38,10 @@ MonoBehaviour:
   - effects:
     - effect: 1
       skill: 4
-      value: 42.8571
+      value: 57.14286
     - effect: 2
       skill: 4
-      value: 17.8571
+      value: 17.85714
   - effects:
     - effect: 9
       skill: 4
@@ -49,7 +52,10 @@ MonoBehaviour:
       value: 2
     - effect: 2
       skill: 4
-      value: 23.8095
+      value: 57.14286
+    - effect: 1
+      skill: 4
+      value: 28.57143
   - effects:
     - effect: 6
       skill: 4
@@ -57,6 +63,12 @@ MonoBehaviour:
     - effect: 9
       skill: 4
       value: 1
+    - effect: 1
+      skill: 4
+      value: 28.57143
+    - effect: 2
+      skill: 4
+      value: 50
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}
   comboType: 0

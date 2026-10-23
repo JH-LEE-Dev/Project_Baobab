@@ -15,10 +15,10 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float axeDamage = 10f;
     [Tooltip("도끼 쿨타임(초).")]
     public float axeAttackCoolTime = 0.6f;
-    [Tooltip("충격파 피해(1레벨 20 = Oak 1타, 기획서 v2.8 A-4). 충격파 카드의 그루당 피해 배율로 22 / 24 / … / 32가 된다(크기 1.5는 충격파 카드 I의 범위 +10%).")]
-    public float shockwaveDamage = 20f;
-    [Tooltip("부메랑 틱 피해(1레벨 6, 기획서 v2.8 A-4). 부메랑 카드의 피해%로 7 / 8 / … / 12가 된다.")]
-    public float boomerangTickDamage = 6f;
+    [Tooltip("충격파 피해(1레벨 10, 기획서 v2.8 A-4). 충격파 카드의 그루당 피해 배율로 19 / 38 / 40 / 75 / 110 / 72(2회 다단 합 115)가 된다(크기 1.5는 충격파 카드 I의 범위 +10%).")]
+    public float shockwaveDamage = 10f;
+    [Tooltip("부메랑 틱 피해(1레벨 2.5, 기획서 v2.8 A-4). 부메랑 카드의 피해%로 4.8 / 9.5 / 10 / 19 / 27.5 / 29가 된다.")]
+    public float boomerangTickDamage = 2.5f;
     [Tooltip("부메랑 틱 간격(초).")]
     public float boomerangTickInterval = 0.3f;
     [Tooltip("부메랑이 돌아온 뒤 다시 던지기까지의 시간(초). 0이면 돌아오자마자 다시 던진다(상시 발사, 기획서 6-1).")]
@@ -122,12 +122,12 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float sporeExplosionDelay = 0.2f;
     [Tooltip("대폭발 자체의 피해. 기획서는 오염 지속 피해만 정해 두었으므로 기본 0이다.")]
     public float sporeExplosionDamage = 0f;
-    [Tooltip("오염 유지 시간(초, 기획서 v2.7 6초 - 1레벨 틱 2초로 3틱). 공통 패시브 '유지 시간 증가'(지속%)로만 늘어난다(포자 수류탄 레벨은 유지 시간을 올리지 않는다).")]
+    [Tooltip("오염 유지 시간(초, 기획서 v2.8 6초 - 1레벨 틱 1.5초로 4틱). 공통 패시브 '유지 시간 증가'(지속%)로만 늘어난다(포자 수류탄 레벨은 유지 시간을 올리지 않는다).")]
     public float sporeDuration = 6f;
-    [Tooltip("오염 지속 피해 틱 주기(초). 1레벨 2.0초로 극단적으로 느리게 시작해 카드 DotTickIntervalAdd(II · IV · VI 각 −0.5초)로 0.5초까지 짧아진다.")]
-    public float sporeTickInterval = 2f;
-    [Tooltip("오염 틱당 피해(4 고정). 피해%·지속 피해%로 늘어난다. 중첩 수만큼 곱해진다.")]
-    public float sporeTickDamage = 4f;
+    [Tooltip("오염 지속 피해 틱 주기(초). 1레벨 1.5초에서 시작해 카드 DotTickIntervalAdd(II −0.3 · IV −0.4 · VI −0.3초)로 1.2 / 0.8 / 0.5초까지 짧아진다(기획서 v2.8).")]
+    public float sporeTickInterval = 1.5f;
+    [Tooltip("오염 틱당 피해(1레벨 3, 2레벨부터 지속 피해% +33으로 4)입니다. 피해%·지속 피해%로 늘어난다. 중첩 수만큼 곱해진다.")]
+    public float sporeTickDamage = 3f;
     [Tooltip("지속 피해 틱 주기의 하한(초). 공통 패시브 '지속 피해 속도 증가'가 줄여도 이보다 짧아지지 않는다(기획서 v2.5 6-3).")]
     public float dotTickIntervalMin = 0.2f;
 

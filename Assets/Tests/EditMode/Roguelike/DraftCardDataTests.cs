@@ -161,29 +161,29 @@ public class DraftCardDataTests
             Assert.AreEqual(required[level - 1], 3 + (int)add, "레벨 " + level);
         }
 
-        // 기획서 v2.8 A-4: 회전 피해 20 / 22 / … / 32(도끼 10 기준), 범위(반경) 1레벨 대비 ×1.0 / 1.33 / … / 3.0(모든 레벨 증가).
-        float[] damages = { 20f, 22f, 24f, 26f, 28f, 30f, 32f };
+        // 기획서 v2.8 A-4: 회전 피해 10 / 19 / 38 / 40 / 75 / 110 / 115(도끼 10 기준), 범위(반경) 1레벨 대비 ×1.0 / 1.17 / … / 2.0(모든 레벨 증가, 최종 +100%).
+        float[] damages = { 10f, 19f, 38f, 40f, 75f, 110f, 115f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_spin", level);
             Assert.AreEqual(damages[level - 1], 10f * (1f + mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Spin) / 100f), 0.01f, "회전 피해 " + level);
             float radius = 1f + mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Spin) / 100f;
-            Assert.AreEqual(1f + (level - 1) / 3f, radius / 1.25f, 0.001f, "범위 " + level);
+            Assert.AreEqual(1f + (level - 1) / 6f, radius / 1.25f, 0.001f, "범위 " + level);
         }
     }
 
     [Test]
     public void Shockwave_Chance50To75To100_DamageAndDoubleAtMax()
     {
-        // 기획서 v2.8 A-4: 확률 50 / 75 / 100%(I~III), 크기 1.5 / 2.0 / … / 4.5(1레벨 대비 ×1 / 1.33 / … / 3), 그루당 피해 20 / 22 / … / 32.
+        // 기획서 v2.8 A-4: 확률 50 / 75 / 100%(I~III), 크기 1.5 / 2.0 / … / 4.5(1레벨 대비 ×1 / 1.33 / … / 3), 그루당 피해 10 / 19 / 38 / 40 / 75 / 110 / 115(VII는 2회 다단 합이라 1회째 약 72).
         // 크기는 충격파가 닿는 거리(0.5 + 1.5 × 범위 배율, ShockWave.SetValue)다 - 1레벨(범위 +10%) 2.15에서 7레벨 6.45까지.
         float[] chances = { 50f, 75f, 100f, 100f, 100f, 100f, 100f };
-        float[] damages = { 20f, 22f, 24f, 26f, 28f, 30f, 32f };
+        float[] damages = { 10f, 19f, 38f, 40f, 75f, 110f, 71.875f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_shockwave", level);
             Assert.AreEqual(chances[level - 1], mods.GetForSkill(ERunEffect.ChancePercent, ERoguelikeSkill.Shockwave), 0.01f, "확률 " + level);
-            Assert.AreEqual(damages[level - 1], 20f * (1f + mods.GetForSkill(ERunEffect.ShockwaveDamageScalePercent, ERoguelikeSkill.Shockwave) / 100f), 0.01f, "피해 " + level);
+            Assert.AreEqual(damages[level - 1], 10f * (1f + mods.GetForSkill(ERunEffect.ShockwaveDamageScalePercent, ERoguelikeSkill.Shockwave) / 100f), 0.01f, "피해 " + level);
             Assert.AreEqual(0f, mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Shockwave), "피해%는 쓰지 않는다 " + level);
             float reach = 0.5f + 1.5f * (1f + mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Shockwave) / 100f);
             Assert.AreEqual(1f + (level - 1) / 3f, reach / 2.15f, 0.001f, "크기 " + level);
@@ -210,8 +210,9 @@ public class DraftCardDataTests
         Assert.AreEqual(2f, max.GetForSkill(ERunEffect.CountAdd, ERoguelikeSkill.Drone));      // 3기
         Assert.AreEqual(5f, max.GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone)); // 5연쇄
 
-        float[] intervals = { 1f, 0.8f, 0.8f, 0.7f, 0.7f, 0.6f, 0.6f };
-        float[] damages = { 7f, 9f, 9f, 12f, 12f, 12f, 12f };
+        // 기획서 v2.8 A-4: 레이저 피해 9 / 12 / 12 / 16 / 16 / 18 / 20, 발사 주기 VI 0.5초 · VII 0.4초.
+        float[] intervals = { 1f, 0.8f, 0.8f, 0.7f, 0.7f, 0.5f, 0.4f };
+        float[] damages = { 9f, 12f, 12f, 16f, 16f, 18f, 20f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_drone", level);
@@ -227,11 +228,12 @@ public class DraftCardDataTests
         Assert.AreEqual(0.25f, 0.3f / (1f + ResolveAtLevel("active_boomerang", 5).GetForSkill(ERunEffect.AttackSpeedPercent, ERoguelikeSkill.Boomerang) / 100f), 0.001f);
         Assert.AreEqual(2f, ResolveAtLevel("active_boomerang", 7).GetForSkill(ERunEffect.CountAdd, ERoguelikeSkill.Boomerang));
 
-        // 기획서 v2.8 A-4: 틱 피해 6 / 7 / … / 12(기준 6), 경로 위 타격 폭 약 2.5 → 7.5그루(1레벨 대비 7레벨 +200%, 모든 레벨 증가).
+        // 기획서 v2.8 A-4: 틱 피해 2.5 / 4.8 / 9.5 / 10 / 19 / 27.5 / 29(기준 2.5), 경로 위 타격 폭 약 2.5 → 7.5그루(1레벨 대비 7레벨 +200%, 모든 레벨 증가).
+        float[] ticks = { 2.5f, 4.8f, 9.5f, 10f, 19f, 27.5f, 29f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_boomerang", level);
-            Assert.AreEqual(5f + level, 6f * (1f + mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Boomerang) / 100f), 0.01f, "틱 피해 " + level);
+            Assert.AreEqual(ticks[level - 1], 2.5f * (1f + mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Boomerang) / 100f), 0.01f, "틱 피해 " + level);
             Assert.AreEqual(1f + (level - 1) / 3f, 1f + mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Boomerang) / 100f, 0.001f, "범위 " + level);
         }
     }
@@ -248,13 +250,13 @@ public class DraftCardDataTests
     [Test]
     public void SporeBomb_TickIntervalBombsDropIntervalAndStacks()
     {
-        // 기획서 v2.5 A-4: 틱 주기 2.0 → 1.5(II) → 1.0(IV) → 0.5(VI)초, 틱 피해 4 고정, 오염 4초 고정.
-        float[] tickIntervals = { 2f, 1.5f, 1.5f, 1f, 1f, 0.5f, 0.5f };
+        // 기획서 v2.8 A-4: 틱 주기 1.5 → 1.2(II) → 0.8(IV) → 0.5(VI)초, 틱 피해 3(I) → 4(II 이후), 오염 6초 고정.
+        float[] tickIntervals = { 1.5f, 1.2f, 1.2f, 0.8f, 0.8f, 0.5f, 0.5f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_sporebomb", level);
-            Assert.AreEqual(tickIntervals[level - 1], 2f + mods.GetForSkill(ERunEffect.DotTickIntervalAdd, ERoguelikeSkill.SporeBomb), 0.001f, "틱 주기 " + level);
-            Assert.AreEqual(0f, mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.SporeBomb), "틱 피해 고정 " + level);
+            Assert.AreEqual(tickIntervals[level - 1], 1.5f + mods.GetForSkill(ERunEffect.DotTickIntervalAdd, ERoguelikeSkill.SporeBomb), 0.001f, "틱 주기 " + level);
+            Assert.AreEqual(level < 2 ? 3f : 4f, 3f * (1f + mods.GetForSkill(ERunEffect.DotDamagePercent, ERoguelikeSkill.SporeBomb) / 100f), 0.01f, "틱 피해 " + level);
             Assert.AreEqual(0f, mods.GetForSkill(ERunEffect.DurationPercent, ERoguelikeSkill.SporeBomb), "오염 유지 고정 " + level);
         }
 

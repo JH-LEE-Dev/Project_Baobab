@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RoguelikeSkillTuningSO
   axeDamage: 10
   axeAttackCoolTime: 0.6
-  shockwaveDamage: 20
-  boomerangTickDamage: 6
+  shockwaveDamage: 10
+  boomerangTickDamage: 2.5
   boomerangTickInterval: 0.3
   boomerangCooldown: 0
   boomerangRangeRatio: 0.67
@@ -61,8 +61,8 @@ MonoBehaviour:
   sporeExplosionDelay: 0.2
   sporeExplosionDamage: 0
   sporeDuration: 6
-  sporeTickInterval: 2
-  sporeTickDamage: 4
+  sporeTickInterval: 1.5
+  sporeTickDamage: 3
   dotTickIntervalMin: 0.2
   spinShockwaveSwingInterval: 3
   boomerangShockwaveCooldown: 0

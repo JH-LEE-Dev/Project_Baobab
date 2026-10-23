@@ -892,8 +892,8 @@
         {
             "id": 312,
             "key": "Roguelike_Card_combo_stella_drone_Desc",
-            "kr": "별 사이를 레이저로 이어 피해를 준다.\n별이 9개 이어지면 노바가 발동한다.",
-            "en": "Lasers link stars together and deal damage.\nWhen 9 stars are linked, a nova triggers.",
+            "kr": "별 사이를 레이저로 이어 피해를 준다.\n별이 9개 모이면 노바가 발동한다.",
+            "en": "Lasers link stars together and deal damage.\nWhen 9 stars gather, a nova triggers.",
             "zhHans": "",
             "zhHant": "",
             "ja": "",
@@ -2140,8 +2140,8 @@
         {
             "id": 504,
             "key": "Roguelike_Card_combo_stella_drone_L1",
-            "kr": "스텔라·드론의 기존 능력은 쓰지 않는다.",
-            "en": "Stella and Drone lose their own abilities.",
+            "kr": "드론은 유지되고\n스텔라 능력이 바뀐다.",
+            "en": "Drone stays;\nStella changes.",
             "zhHans": "",
             "zhHant": "",
             "ja": "",
