@@ -134,6 +134,8 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     [Header("조합: 회전베기 + 충격파 (360도 충격파)")]
     [Tooltip("이 휘두름 수마다 360도 충격파. 회전베기 발동 간격 카드 효과가 함께 적용된다.")]
     public int spinShockwaveSwingInterval = 3;
+    [Tooltip("360도 충격파 한 번 발동의 그루당 피해(기획서 v2.8 6-2: 400, 두 카드 MAX 합 230 이상 · 프리즘 기준 380 이상). 충격파 카드의 레벨별 피해 배율 대신 이 값을 쓰고, 피해%(다다익선 공격력 포함)는 곱한다. 다다익선의 발동 +1이면 같은 자리에서 한 번 더 발동한다.")]
+    public float spinShockwaveDamage = 400f;
 
     [Header("조합: 부메랑 + 충격파")]
     [Tooltip("부메랑에 맞은 나무마다 충격파가 터진다(기획서). 0이면 타격마다, 값을 주면 그 간격(초) 안의 타격은 건너뛴다(밸런스용).")]

@@ -198,6 +198,15 @@ public class RoguelikeSkillController : MonoBehaviour
 
     private readonly List<RepeatBlast> pendingRepeatBlasts = new List<RepeatBlast>(8);
 
+    // 회전베기 + 충격파: 다다익선 "발동 +1"로 이어서 나갈 360도 충격파(위치, 시각).
+    private struct RepeatSpinShockwave
+    {
+        public Vector3 position;
+        public float time;
+    }
+
+    private readonly List<RepeatSpinShockwave> pendingSpinShockwaves = new List<RepeatSpinShockwave>(4);
+
     // 이번 웨이브의 별 폭발 1회 피해 상한(나무 최대 HP 대비). 0이면 상한 없음(4티어 미만).
     private float starBlastHpCapRatio;
 
@@ -302,6 +311,7 @@ public class RoguelikeSkillController : MonoBehaviour
         nextBeamTime = now + (null != character ? Mathf.Max(0.05f, character.statComponent.droneDamageInterval) : 1f);
         SyncMarkDamageBonus();
         pendingRepeatBlasts.Clear();
+        pendingSpinShockwaves.Clear();
         pendingAxeSwings = 0;
         pendingBoomerangHits.Clear();
         pendingSporeExplosions.Clear();
@@ -340,6 +350,7 @@ public class RoguelikeSkillController : MonoBehaviour
 
         pendingStarHits.Clear();
         pendingRepeatBlasts.Clear();
+        pendingSpinShockwaves.Clear();
         pendingBoomerangHits.Clear();
         pendingSporeExplosions.Clear();
         recentSporeExplosions.Clear();
@@ -430,19 +441,40 @@ public class RoguelikeSkillController : MonoBehaviour
     private void UpdateCombos(float _now)
     {
         // 회전베기 + 충격파: 회전베기·충격파 기본 능력은 꺼지고, n번 휘두를 때마다 360도 충격파.
+        // 그루당 피해는 충격파 카드 배율이 아니라 조합 고정값(기획서 v2.8 6-2: 400)이고, 다다익선의 발동 +1을 받는다(6-3).
         if (modifiers.IsComboActive(ERoguelikeCombo.SpinShockwave))
         {
             int interval = Mathf.Max(1, tuning.spinShockwaveSwingInterval + Mathf.RoundToInt(modifiers.GetForSkill(ERunEffect.TriggerHitCountAdd, ERoguelikeSkill.Spin)));
+            // 다다익선의 발동 +1(전역 값만). 충격파 VII의 2회 다단은 재료 기본 능력이라 쓰지 않는다.
+            int repeats = Mathf.Max(0, Mathf.RoundToInt(modifiers.Get(ERunEffect.ShockwaveRepeatAdd)));
             for (int i = 0; i < pendingAxeSwings; i++)
             {
                 spinShockwaveSwingCount++;
                 if (spinShockwaveSwingCount < interval) continue;
 
                 spinShockwaveSwingCount = 0;
-                Fire360ShockWave(character.transform.position);
+                Vector3 position = character.transform.position;
+                Fire360ShockWave(position, SpinShockwaveDamage());
+                for (int r = 1; r <= repeats; r++)
+                {
+                    pendingSpinShockwaves.Add(new RepeatSpinShockwave
+                    {
+                        position = position,
+                        time = _now + tuning.shockwaveExtraDelay * r,
+                    });
+                }
             }
         }
         pendingAxeSwings = 0;
+
+        for (int i = pendingSpinShockwaves.Count - 1; i >= 0; i--)
+        {
+            RepeatSpinShockwave repeat = pendingSpinShockwaves[i];
+            if (_now < repeat.time) continue;
+
+            pendingSpinShockwaves.RemoveAt(i);
+            Fire360ShockWave(repeat.position, SpinShockwaveDamage());
+        }
 
         if (pendingBoomerangHits.Count > 0)
         {
@@ -490,13 +522,18 @@ public class RoguelikeSkillController : MonoBehaviour
         return false;
     }
 
-    private void Fire360ShockWave(Vector3 _position)
+    /// <summary>회전베기 + 충격파의 360도 충격파 그루당 피해. 조합 고정값 × 피해%(전역 · 조건부 · 충격파 전용, 다다익선 공격력 포함).</summary>
+    private float SpinShockwaveDamage() => tuning.spinShockwaveDamage * DamageMul(ERoguelikeSkill.Shockwave);
+
+    /// <summary>360도 충격파. _damage가 0보다 크면 그 값을 그루당 피해로 쓴다(0이면 충격파 스탯 그대로).</summary>
+    private void Fire360ShockWave(Vector3 _position, float _damage = 0f)
     {
         if (null == axeExtraAttackCreator) return;
 
         ShockWave sw = axeExtraAttackCreator.CreateShockWave(_position);
         if (null == sw) return;
 
+        if (_damage > 0f) sw.OverrideDamage(_damage);
         sw.SetDirection(Vector3.right);
         // 부채꼴 반각 180도 = 전 범위. 다음 생성 때 Reset이 기본 각도로 되돌린다.
         sw.angle = 180f;

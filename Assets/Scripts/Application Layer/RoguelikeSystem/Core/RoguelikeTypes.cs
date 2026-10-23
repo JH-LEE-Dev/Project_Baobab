@@ -136,7 +136,7 @@ public enum ERunEffect
     AxeExtraStrikeAdd = 34,
     /// <summary>별 표식 나무가 받는 피해 증가율(%p 가산, 기본 +30%는 튜닝 값). 스텔라 V는 +15(+45%).</summary>
     StarMarkDamageTakenAdd = 35,
-    /// <summary>지속 피해 틱 주기(초 가산, 음수면 짧아진다). 포자 수류탄 오염 틱 2.0초 → II 1.5 → IV 1.0 → VI 0.5초(각 −0.5).</summary>
+    /// <summary>지속 피해 틱 주기(초 가산, 음수면 짧아진다). 포자 수류탄 오염 틱 1.5초 → II 1.2 → IV 0.8 → VI 0.5초(−0.3 · −0.4 · −0.3, 기획서 v2.8).</summary>
     DotTickIntervalAdd = 36,
     /// <summary>지속 피해 틱 주기 감소(%). 틱 주기 × (1 − 값/100), 하한은 튜닝 값(0.2초). 지속 피해 속도 증가(MAX 누적 40).</summary>
     DotTickIntervalReducePercent = 37,
@@ -149,8 +149,8 @@ public enum ERunEffect
     /// <summary>도끼 한 번에 맞히는 나무 수(개수 가산, 기본 1). 범위 증가 II · III · IV · V 각 +1(MAX 5그루, 기획서 v2.6 부록 A-5).</summary>
     AxeTargetCountAdd = 41,
     /// <summary>
-    /// 충격파 그루당 피해에 따로 곱하는 배율(%, 1 + 합/100). 범위가 커지는 만큼 피해를 낮추는 데 쓴다(기획서 v2.7 A-4: 12 → 6 → 4 → 3.5 → 3 → 3 → 2).
-    /// 피해%(DamagePercent)와 더하지 않고 곱하므로 공격력 증가 패시브가 붙어도 레벨별 감소 비율이 유지된다.
+    /// 충격파 그루당 피해에 따로 곱하는 배율(%, 1 + 합/100). 레벨별 피해를 기준 곡선에 맞추는 데 쓴다(기획서 v2.8 A-4: 10 / 19 / 38 / 40 / 75 / 110 / 115).
+    /// 피해%(DamagePercent)와 더하지 않고 곱하므로 공격력 증가 패시브가 붙어도 레벨별 비율이 유지된다.
     /// </summary>
     ShockwaveDamageScalePercent = 42,
 

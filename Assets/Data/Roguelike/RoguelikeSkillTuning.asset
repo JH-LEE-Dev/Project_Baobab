@@ -65,6 +65,7 @@ MonoBehaviour:
   sporeTickDamage: 3
   dotTickIntervalMin: 0.2
   spinShockwaveSwingInterval: 3
+  spinShockwaveDamage: 400
   boomerangShockwaveCooldown: 0
   boomerangShockwaveMergeRadius: 0.6
   spinBoomerangRadius: 2.2

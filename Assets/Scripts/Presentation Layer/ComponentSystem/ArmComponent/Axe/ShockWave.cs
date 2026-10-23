@@ -92,6 +92,12 @@ public class ShockWave : MonoBehaviour
         damage *= _multiplier;
     }
 
+    /// <summary>[로그라이크 전용] SetValue로 정한 피해를 다른 값으로 바꾼다(회전베기 + 충격파 360도 충격파의 고정 피해). 본편은 부르지 않는다.</summary>
+    public void OverrideDamage(float _damage)
+    {
+        damage = _damage;
+    }
+
     public void SetEnforced(bool _isEnforced)
     {
         bIsEnforced = _isEnforced;

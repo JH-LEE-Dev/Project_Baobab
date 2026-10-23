@@ -33,7 +33,7 @@ public static class RunCombatOverrides
     public static float ShockWaveExtraDamageMultiplier { get; private set; } = 1f;
 
     /// <summary>
-    /// 모든 충격파의 피해에 곱하는 배율(충격파 카드의 레벨별 "충격파 피해 증가", 기획서 v2.8 A-4 20 → 32). 1이면 본편처럼 그대로.
+    /// 모든 충격파의 피해에 곱하는 배율(충격파 카드의 레벨별 "충격파 피해 증가", 기획서 v2.8 A-4 기준 곡선 10 → 115). 1이면 본편처럼 그대로.
     /// 공격력 증가 같은 피해% 합산과 섞이지 않게 따로 곱한다.
     /// </summary>
     public static float ShockWaveDamageScale { get; private set; } = 1f;
