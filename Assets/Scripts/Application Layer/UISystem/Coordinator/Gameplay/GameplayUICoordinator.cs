@@ -103,6 +103,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<TreeGetHitSignal>(TreeGetHit);
         signalHub.Subscribe<TreeGemTransformedSignal>(TreeGemTransformed);
         signalHub.Subscribe<TreeShieldRecoveringSignal>(TreeShieldRecovering);
+        signalHub.Subscribe<RoguelikeFieldTreesRevertedSignal>(RoguelikeFieldTreesReverted);
         signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.Subscribe<ContainerUpdatedSignal>(ContainerUpdated);
         signalHub.Subscribe<ContainerInteractStateChangedSignal>(ContainerInteractStateChanged);
@@ -165,6 +166,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<TreeGetHitSignal>(TreeGetHit);
         signalHub.UnSubscribe<TreeGemTransformedSignal>(TreeGemTransformed);
         signalHub.UnSubscribe<TreeShieldRecoveringSignal>(TreeShieldRecovering);
+        signalHub.UnSubscribe<RoguelikeFieldTreesRevertedSignal>(RoguelikeFieldTreesReverted);
         signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.UnSubscribe<ContainerUpdatedSignal>(ContainerUpdated);
         signalHub.UnSubscribe<ContainerInteractStateChangedSignal>(ContainerInteractStateChanged);
@@ -467,6 +469,12 @@ public class GameplayUICoordinator
     private void TreeShieldRecovering(TreeShieldRecoveringSignal treeShieldRecoveringSignal)
     {
         unitUI.TreeShieldRecovering(treeShieldRecoveringSignal.treeObj);
+    }
+
+    // 로그라이크 웨이브 클리어: 묘목으로 돌아가는 나무의 HP 바를 바로 내린다. 본편에서는 발행되지 않는다.
+    private void RoguelikeFieldTreesReverted(RoguelikeFieldTreesRevertedSignal _signal)
+    {
+        unitUI.HideTreeHpBars();
     }
 
     private void CharacterSpawned(CharacterSpawnedSignal characterSpawendSignal)
