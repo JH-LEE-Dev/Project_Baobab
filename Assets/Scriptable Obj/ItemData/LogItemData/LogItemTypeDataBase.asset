@@ -67,42 +67,96 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: b63f7ce3222f9b04d96eecaae2f0ae2c, type: 3}
     timberSprite: {fileID: 21300000, guid: a0beab1716850d44f9d87f1ac4d691d0, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
-    stateSprites: []
+    stateSprites:
+    - logState: 3
+      sprite: {fileID: 8726891099636591106, guid: 47ecbdf78d365a743b1fee22118ab1a7, type: 3}
+      timberSprite: {fileID: 21300000, guid: 095cb47498e2a8547b518dd2e0d5b1c0, type: 3}
+    - logState: 4
+      sprite: {fileID: -2765870954498976837, guid: ab8a715cb71e9284b9bc28a07cfc92f4, type: 3}
+      timberSprite: {fileID: 21300000, guid: 8138c4a4b2133c642a9f71d63ba1d2bc, type: 3}
+    - logState: 5
+      sprite: {fileID: -227633881726844179, guid: d34ce4d2e44bb034cad6dddf9c12f907, type: 3}
+      timberSprite: {fileID: 21300000, guid: 2e5869a152c8e9940919523ed5a294f5, type: 3}
   - itemType: 1
     treeType: 5
     durability: 80
     sprite: {fileID: 21300000, guid: 3cc6aa8a7e5568b41b5f8ab0fc15372a, type: 3}
     timberSprite: {fileID: 21300000, guid: f14fe471d37022a46b88e90df55543f1, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
-    stateSprites: []
+    stateSprites:
+    - logState: 3
+      sprite: {fileID: 1869620537861959336, guid: 47ecbdf78d365a743b1fee22118ab1a7, type: 3}
+      timberSprite: {fileID: 21300000, guid: 095cb47498e2a8547b518dd2e0d5b1c0, type: 3}
+    - logState: 4
+      sprite: {fileID: 8476094146592646202, guid: ab8a715cb71e9284b9bc28a07cfc92f4, type: 3}
+      timberSprite: {fileID: 21300000, guid: 8138c4a4b2133c642a9f71d63ba1d2bc, type: 3}
+    - logState: 5
+      sprite: {fileID: 4624394884825789241, guid: d34ce4d2e44bb034cad6dddf9c12f907, type: 3}
+      timberSprite: {fileID: 21300000, guid: 2e5869a152c8e9940919523ed5a294f5, type: 3}
   - itemType: 1
     treeType: 6
     durability: 150
     sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
     timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
-    stateSprites: []
+    stateSprites:
+    - logState: 3
+      sprite: {fileID: -507707473294798521, guid: 47ecbdf78d365a743b1fee22118ab1a7, type: 3}
+      timberSprite: {fileID: 21300000, guid: 095cb47498e2a8547b518dd2e0d5b1c0, type: 3}
+    - logState: 4
+      sprite: {fileID: -3130096842029554529, guid: ab8a715cb71e9284b9bc28a07cfc92f4, type: 3}
+      timberSprite: {fileID: 21300000, guid: 8138c4a4b2133c642a9f71d63ba1d2bc, type: 3}
+    - logState: 5
+      sprite: {fileID: 2825772840007400929, guid: d34ce4d2e44bb034cad6dddf9c12f907, type: 3}
+      timberSprite: {fileID: 21300000, guid: 2e5869a152c8e9940919523ed5a294f5, type: 3}
   - itemType: 1
     treeType: 7
     durability: 300
     sprite: {fileID: 21300000, guid: 39ffeb265e07d3b45a78a12882e51b90, type: 3}
     timberSprite: {fileID: 21300000, guid: 65f664dd0306e0b4ab5a99348124d2f6, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
-    stateSprites: []
+    stateSprites:
+    - logState: 3
+      sprite: {fileID: 4829668760280412763, guid: 1230f19888c9d6f4982df282699005f6, type: 3}
+      timberSprite: {fileID: 21300000, guid: 095cb47498e2a8547b518dd2e0d5b1c0, type: 3}
+    - logState: 4
+      sprite: {fileID: -4736858229911535092, guid: 37bd6946eefc18e4f9c7f7b8833e2634, type: 3}
+      timberSprite: {fileID: 21300000, guid: 8138c4a4b2133c642a9f71d63ba1d2bc, type: 3}
+    - logState: 5
+      sprite: {fileID: -4464115589644073743, guid: fda4f60ef0ccb2a4e8fac62995baf8e5, type: 3}
+      timberSprite: {fileID: 21300000, guid: 2e5869a152c8e9940919523ed5a294f5, type: 3}
   - itemType: 1
     treeType: 8
     durability: 500
     sprite: {fileID: 21300000, guid: 01c84f829f208764a8915df18e35fe22, type: 3}
     timberSprite: {fileID: 21300000, guid: 53e5a89c4b73a2840b48e3b5f98da310, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
-    stateSprites: []
+    stateSprites:
+    - logState: 3
+      sprite: {fileID: 4926002890989738532, guid: 1230f19888c9d6f4982df282699005f6, type: 3}
+      timberSprite: {fileID: 21300000, guid: 095cb47498e2a8547b518dd2e0d5b1c0, type: 3}
+    - logState: 4
+      sprite: {fileID: -5891119334629894202, guid: 37bd6946eefc18e4f9c7f7b8833e2634, type: 3}
+      timberSprite: {fileID: 21300000, guid: 8138c4a4b2133c642a9f71d63ba1d2bc, type: 3}
+    - logState: 5
+      sprite: {fileID: 5099783506952396369, guid: fda4f60ef0ccb2a4e8fac62995baf8e5, type: 3}
+      timberSprite: {fileID: 21300000, guid: 2e5869a152c8e9940919523ed5a294f5, type: 3}
   - itemType: 1
     treeType: 9
     durability: 1000
     sprite: {fileID: 21300000, guid: a9075905726912a4591b9dbf33ca7e1f, type: 3}
     timberSprite: {fileID: 21300000, guid: cfddf4568535bfc428f71be28094dce7, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
-    stateSprites: []
+    stateSprites:
+    - logState: 3
+      sprite: {fileID: -3349294862854746911, guid: 1230f19888c9d6f4982df282699005f6, type: 3}
+      timberSprite: {fileID: 21300000, guid: 095cb47498e2a8547b518dd2e0d5b1c0, type: 3}
+    - logState: 4
+      sprite: {fileID: -7230718301847417145, guid: 37bd6946eefc18e4f9c7f7b8833e2634, type: 3}
+      timberSprite: {fileID: 21300000, guid: 8138c4a4b2133c642a9f71d63ba1d2bc, type: 3}
+    - logState: 5
+      sprite: {fileID: 5483744174538113266, guid: fda4f60ef0ccb2a4e8fac62995baf8e5, type: 3}
+      timberSprite: {fileID: 21300000, guid: 2e5869a152c8e9940919523ed5a294f5, type: 3}
   - itemType: 1
     treeType: 10
     durability: 1500
@@ -112,13 +166,13 @@ MonoBehaviour:
     stateSprites:
     - logState: 3
       sprite: {fileID: -7059626055095470267, guid: 05a3742a6ccbe374a9ba6d2ef54c9608, type: 3}
-      timberSprite: {fileID: 0}
+      timberSprite: {fileID: 21300000, guid: c3a711134eb7d704b8b71fdeaeef697d, type: 3}
     - logState: 4
       sprite: {fileID: 4320610894470836368, guid: 4cea53ce4167838449e8a94f62cc3210, type: 3}
-      timberSprite: {fileID: 0}
+      timberSprite: {fileID: 21300000, guid: 38abcccb79370d046b55f63f6aeb75c3, type: 3}
     - logState: 5
       sprite: {fileID: 8895081476548743479, guid: 440d3fa578acbe841adcae0b178523b5, type: 3}
-      timberSprite: {fileID: 0}
+      timberSprite: {fileID: 21300000, guid: b40d532ee9642a0468d4b86acb612ab7, type: 3}
   - itemType: 1
     treeType: 11
     durability: 2000
@@ -128,13 +182,13 @@ MonoBehaviour:
     stateSprites:
     - logState: 3
       sprite: {fileID: -4820790413388987411, guid: 05a3742a6ccbe374a9ba6d2ef54c9608, type: 3}
-      timberSprite: {fileID: 0}
+      timberSprite: {fileID: 21300000, guid: c3a711134eb7d704b8b71fdeaeef697d, type: 3}
     - logState: 4
       sprite: {fileID: 8640953460915340156, guid: 4cea53ce4167838449e8a94f62cc3210, type: 3}
-      timberSprite: {fileID: 0}
+      timberSprite: {fileID: 21300000, guid: 38abcccb79370d046b55f63f6aeb75c3, type: 3}
     - logState: 5
       sprite: {fileID: -3529746680232240869, guid: 440d3fa578acbe841adcae0b178523b5, type: 3}
-      timberSprite: {fileID: 0}
+      timberSprite: {fileID: 21300000, guid: b40d532ee9642a0468d4b86acb612ab7, type: 3}
   - itemType: 1
     treeType: 12
     durability: 3000
@@ -144,10 +198,10 @@ MonoBehaviour:
     stateSprites:
     - logState: 3
       sprite: {fileID: 2824423199792572757, guid: 05a3742a6ccbe374a9ba6d2ef54c9608, type: 3}
-      timberSprite: {fileID: 0}
+      timberSprite: {fileID: 21300000, guid: c3a711134eb7d704b8b71fdeaeef697d, type: 3}
     - logState: 4
       sprite: {fileID: 8629938691170070505, guid: 4cea53ce4167838449e8a94f62cc3210, type: 3}
-      timberSprite: {fileID: 0}
+      timberSprite: {fileID: 21300000, guid: 38abcccb79370d046b55f63f6aeb75c3, type: 3}
     - logState: 5
       sprite: {fileID: 952607218156272392, guid: 440d3fa578acbe841adcae0b178523b5, type: 3}
-      timberSprite: {fileID: 0}
+      timberSprite: {fileID: 21300000, guid: b40d532ee9642a0468d4b86acb612ab7, type: 3}
