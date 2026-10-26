@@ -2872,7 +2872,8 @@ MonoBehaviour:
   waterThreshold: 0.25
   outerWaterDepth: 25
   baseMapRadius: 75
-  centerSafeZoneRadius: 5
+  centerSafeZoneRadius: 6
+  centerSafeZoneOffset: {x: -1, y: -1}
   innerPuddleDensity: 1
   minPuddleTileCount: 10
   sandDensity: 0.075
