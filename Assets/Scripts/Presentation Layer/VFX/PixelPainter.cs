@@ -20,6 +20,11 @@ namespace PresentationLayer.VFX
 
         private const float PixelUnit = 1.0f / 32.0f;
         private const int LineCapacity = 2048;
+        private const float TwoPi = Mathf.PI * 2.0f;
+        // RingArcWithHead 머리 뒤쪽 색 구간 경계(라디안). 0.04 / 0.1 / 0.2 바퀴.
+        private const float HeadRadians0 = 0.04f * TwoPi;
+        private const float HeadRadians1 = 0.1f * TwoPi;
+        private const float HeadRadians2 = 0.2f * TwoPi;
 
         private static readonly int[] linePixelX = new int[LineCapacity];
         private static readonly int[] linePixelY = new int[LineCapacity];
@@ -165,37 +170,75 @@ namespace PresentationLayer.VFX
         }
 
         /// <summary>
-        /// 타원 점선 링. _dashOn/_dashOff는 윤곽 점 개수 단위(0이면 실선)이고 _phase를 바꾸면 점선이 돌며 흐른다.
+        /// midpoint 윤곽 위의 링. _dashOff가 0이면 끊김 없는 실선이고, 0보다 크면 윤곽 픽셀 개수 기준으로 _dashOn칸 켜고 _dashOff칸 끄는
+        /// 점선이다(점선 길이가 둘레 어디서나 같고, 윤곽 한 바퀴를 주기로 고르게 나눠 시작점에서 잘리지 않는다).
+        /// _dashShift(윤곽 픽셀)를 키우면 점선이 화면 시계 방향으로 한 칸씩 흐른다.
         /// </summary>
-        public void Ring(int _cx, int _cy, int _rx, int _ry, int _dashOn, int _dashOff, int _phase, Color32 _color)
+        public void RingArc(int _cx, int _cy, int _rx, int _ry, int _dashOn, int _dashOff, float _dashShift, Color32 _color)
         {
             int count = PixelEllipse.Build(_rx, _ry);
             int period = _dashOn + _dashOff;
+            int shift = Mathf.FloorToInt(_dashShift);
+            float cellScale = 0 < _dashOff ? Mathf.Max(1, Mathf.RoundToInt(count / (float)period)) / (float)count : 0.0f;
+            float duty = 0 < _dashOff ? _dashOn / (float)period : 1.0f;
 
             for (int i = 0; i < count; i++)
             {
-                if (0 < _dashOff && ((i + _phase) % period + period) % period >= _dashOn) continue;
+                if (0 < _dashOff && Mathf.Repeat((i + shift) * cellScale, 1.0f) >= duty) continue;
                 Dot(_cx + PixelEllipse.OutX[i], _cy + PixelEllipse.OutY[i], _color);
             }
         }
 
         /// <summary>
-        /// 밝은 구간(머리)이 링을 따라 도는 점선 링. _headFrac(0~1)에서 가까운 점일수록 밝은 색을 쓴다(_c0 가장 밝음 ~ _c3 기본).
+        /// RingArc에 밝은 구간(머리)을 더한다. _headAngle(라디안, 시계 방향)에서 뒤쪽으로 가까운 점일수록 밝은 색을 쓴다(_c0 가장 밝음 ~ _c3 기본).
+        /// 머리는 바닥 원 기준 각도라 속도가 둘레 어디서나 같다.
         /// </summary>
-        public void RingWithHead(int _cx, int _cy, int _rx, int _ry, int _dashOn, int _dashOff, int _phase, float _headFrac, Color32 _c0, Color32 _c1, Color32 _c2, Color32 _c3)
+        public void RingArcWithHead(int _cx, int _cy, int _rx, int _ry, int _dashOn, int _dashOff, float _dashShift, float _headAngle, Color32 _c0, Color32 _c1, Color32 _c2, Color32 _c3)
         {
             int count = PixelEllipse.Build(_rx, _ry);
             int period = _dashOn + _dashOff;
-            float inv = 1.0f / count;
+            int shift = Mathf.FloorToInt(_dashShift);
+            float cellScale = 0 < _dashOff ? Mathf.Max(1, Mathf.RoundToInt(count / (float)period)) / (float)count : 0.0f;
+            float duty = 0 < _dashOff ? _dashOn / (float)period : 1.0f;
 
             for (int i = 0; i < count; i++)
             {
-                if (0 < _dashOff && ((i + _phase) % period + period) % period >= _dashOn) continue;
+                if (0 < _dashOff && Mathf.Repeat((i + shift) * cellScale, 1.0f) >= duty) continue;
 
-                float behind = Mathf.Repeat(_headFrac - i * inv, 1.0f);
-                Color32 color = behind < 0.04f ? _c0 : (behind < 0.1f ? _c1 : (behind < 0.2f ? _c2 : _c3));
+                float behind = Mathf.Repeat(_headAngle - ClockAngle(i, _rx, _ry), TwoPi);
+                Color32 color = behind < HeadRadians0 ? _c0 : (behind < HeadRadians1 ? _c1 : (behind < HeadRadians2 ? _c2 : _c3));
                 Dot(_cx + PixelEllipse.OutX[i], _cy + PixelEllipse.OutY[i], color);
             }
+        }
+
+        /// <summary>
+        /// 링 윤곽 위에서 _clockAngle(라디안, 동쪽 0, 화면 시계 방향)에 가장 가까운 픽셀의 오프셋. 표식과 꼬리 점을 링 선 위에 정확히 얹을 때 쓴다.
+        /// PixelEllipse 공용 버퍼를 다시 채우므로 같은 링을 그리는 도중에는 부르지 않는다.
+        /// </summary>
+        public static void RingPoint(int _rx, int _ry, float _clockAngle, out int _x, out int _y)
+        {
+            int count = PixelEllipse.Build(_rx, _ry);
+            int best = 0;
+            float bestDiff = float.MaxValue;
+
+            for (int i = 0; i < count; i++)
+            {
+                float diff = Mathf.Abs(Mathf.Repeat(ClockAngle(i, _rx, _ry) - _clockAngle + Mathf.PI, TwoPi) - Mathf.PI);
+                if (diff >= bestDiff) continue;
+
+                bestDiff = diff;
+                best = i;
+            }
+
+            _x = PixelEllipse.OutX[best];
+            _y = PixelEllipse.OutY[best];
+        }
+
+        // 윤곽 점 _index의 바닥 원 기준 각도(동쪽 0, 화면 시계 방향으로 증가, 0~2pi). 직전 PixelEllipse.Build 결과를 읽는다.
+        private static float ClockAngle(int _index, int _rx, int _ry)
+        {
+            float angle = -Mathf.Atan2(PixelEllipse.OutY[_index] * (float)_rx, PixelEllipse.OutX[_index] * (float)_ry);
+            return angle < 0.0f ? angle + TwoPi : angle;
         }
 
         /// <summary>

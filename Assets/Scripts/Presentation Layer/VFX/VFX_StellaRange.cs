@@ -3,7 +3,7 @@ using UnityEngine;
 namespace PresentationLayer.VFX
 {
     /// <summary>
-    /// 스텔라(별) 폭발 범위 표시. 별이 필드에 있는 동안 별 발치의 바닥에 은은한 점선 링이 깔리고, 링을 따라 밝은 구간과
+    /// 스텔라(별) 폭발 범위 표시. 별이 필드에 있는 동안 별 발치의 바닥에 은은한 링이 깔리고, 링을 따라 밝은 구간과
     /// 별 표식 6개(◆ ● + x)가 천천히 돈다. 모든 그림이 바닥 메쉬 하나라서 나무와 캐릭터(Objects 레이어)보다 아래(ShockWave)에 그려진다.
     ///
     /// 수명 주기: 풀에서 꺼내면 링이 안쪽에서 펼쳐지며 나타나고(0.3초), 별이 사라질 때까지 유지된다(루트 ParticleSystem 수명이 상한).
@@ -36,6 +36,9 @@ namespace PresentationLayer.VFX
         private const int OrbitMarkCount = 6;
         private const int QuadBudget = 4000;
         private const float RingGlow = 0.28f;
+        private const float RingOrbitSpeed = 0.5f;   // 링의 밝은 구간과 별 표식이 도는 각속도(rad/s, 시계 방향)
+        private const int OuterRingGap = 6;          // 바깥 보조 링과 링의 가로 반지름 차(세로로 2줄 떨어져 HUGGING 방지)
+        private const int InnerRingGap = 6;          // 확산 링이 링에 이만큼(가로 반지름 차) 다가오면 그리지 않는다
 
         private static readonly Color32 ColorWhite = new Color32(255, 255, 255, 255);
         private static readonly Color32 ColorIce = new Color32(191, 230, 255, 255);
@@ -167,32 +170,32 @@ namespace PresentationLayer.VFX
             Color32 fieldColor = 1 == _level ? GlowColor(ColorBlue3, 0.0f) : (2 == _level ? GlowColor(bPulse ? ColorBlue2 : ColorBlue3, 0.05f) : GlowColor(ColorBlue, 0.1f));
             painter.LatticeBand(_cx, _cy, rx - 5, 12, GroundSquashY, 5, fieldColor);
 
-            // 점선 링 + 링을 따라 도는 밝은 구간
-            int phase = Mathf.FloorToInt(elapsed * 12.0f);
-            float head = Mathf.Repeat(elapsed * 0.9f / TwoPi, 1.0f);
+            // 끊김 없는 실선 링 + 링을 따라 도는 밝은 구간. 밝은 구간만 별 표식과 같은 방향(시계)으로 돈다.
+            float head = elapsed * RingOrbitSpeed;
             if (1 == _level)
             {
-                painter.Ring(_cx, _cy, rx, ry, 3, 3, phase, GlowColor(ColorBlue3, RingGlow * 0.6f));
+                painter.RingArc(_cx, _cy, rx, ry, 1, 0, 0.0f, GlowColor(ColorBlue3, RingGlow * 0.4f));
             }
             else if (3 == _level)
             {
-                painter.RingWithHead(_cx, _cy, rx, ry, 3, 3, phase, head, GlowColor(ColorWhite, 0.35f), GlowColor(ColorWhite, 0.3f), GlowColor(ColorIce, RingGlow), GlowColor(ColorIce, RingGlow));
+                painter.RingArcWithHead(_cx, _cy, rx, ry, 1, 0, 0.0f, head, GlowColor(ColorWhite, 0.35f), GlowColor(ColorWhite, 0.3f), GlowColor(ColorIce, RingGlow * 0.8f), GlowColor(ColorIce, RingGlow * 0.6f));
             }
             else
             {
-                painter.RingWithHead(_cx, _cy, rx, ry, 3, 3, phase, head, GlowColor(ColorWhite, 0.3f), GlowColor(ColorIce, RingGlow), GlowColor(ColorIce2, RingGlow * 0.6f), GlowColor(bPulse ? ColorBlue : ColorBlue2, RingGlow * 0.3f));
+                Color32 baseColor = Color32.Lerp(ColorBlue2, ColorBlue, 0.5f + 0.5f * Mathf.Sin(elapsed * 5.2f));
+                painter.RingArcWithHead(_cx, _cy, rx, ry, 1, 0, 0.0f, head, GlowColor(ColorWhite, 0.3f), GlowColor(ColorIce, RingGlow), GlowColor(ColorIce2, RingGlow * 0.6f), GlowColor(baseColor, RingGlow * 0.3f));
             }
 
-            // 바깥 보조 링(3px 띄움)
-            int outerRx = rx + 4;
-            painter.Ring(_cx, _cy, outerRx, Mathf.Max(1, Mathf.RoundToInt(outerRx * GroundSquashY)), 1, 7, -phase, GlowColor(1 == _level ? ColorBlue3 : ColorBlue2, 0.05f));
+            // 바깥 보조 링(세로 2줄 띄움) - 고정
+            int outerRx = rx + OuterRingGap;
+            painter.RingArc(_cx, _cy, outerRx, Mathf.Max(1, Mathf.RoundToInt(outerRx * GroundSquashY)), 1, 7, 0.0f, GlowColor(1 == _level ? ColorBlue3 : ColorBlue2, 0.05f));
 
             if (3 == _level)
             {
-                // 안쪽에서 바깥으로 퍼지는 강조 고리
+                // 안쪽에서 바깥으로 퍼지는 강조 고리 - 링에 달라붙기 전(세로 2줄 이상 떨어진 동안)까지만 퍼지며 옅어진다
                 float u = Mathf.Repeat(elapsed * 3.0f, 1.0f);
                 int innerRx = Mathf.RoundToInt(rx * u);
-                if (2 <= innerRx && 3 <= rx - innerRx) painter.Ring(_cx, _cy, innerRx, Mathf.Max(1, Mathf.RoundToInt(innerRx * GroundSquashY)), 2, 1, phase * 3, GlowColor(ColorWhite, 0.3f));
+                if (2 <= innerRx && InnerRingGap <= rx - innerRx) painter.RingArc(_cx, _cy, innerRx, Mathf.Max(1, Mathf.RoundToInt(innerRx * GroundSquashY)), 1, 0, 0.0f, GlowColor(ColorWhite, 0.3f * (1.0f - u)));
             }
 
             if (_level < 2) return;
@@ -200,16 +203,21 @@ namespace PresentationLayer.VFX
             // 링을 도는 별 표식 6개: ◆ ● 와 + x 가 번갈아 반짝이고 점 두 개의 꼬리를 끈다
             for (int i = 0; i < OrbitMarkCount; i++)
             {
-                float angle = TwoPi * i / OrbitMarkCount + elapsed * 0.5f;
-                int mx = _cx + Mathf.RoundToInt(Mathf.Cos(angle) * rx);
-                int my = _cy + Mathf.RoundToInt(-Mathf.Sin(angle) * ry);
+                float angle = TwoPi * i / OrbitMarkCount + elapsed * RingOrbitSpeed;
+                int offsetX;
+                int offsetY;
                 bool bTwinkle = 0 != ((Mathf.FloorToInt(elapsed * 8.0f) + i) & 1);
 
+                // 표식과 꼬리 점은 링 윤곽의 실제 픽셀 위에 올린다(반올림 좌표는 링에서 1px 벗어난다)
                 for (int j = 2; j >= 1; j--)
                 {
-                    float trail = angle - 0.13f * j;
-                    painter.Dot(_cx + Mathf.RoundToInt(Mathf.Cos(trail) * rx), _cy + Mathf.RoundToInt(-Mathf.Sin(trail) * ry), GlowColor(1 == j ? ColorIce : ColorBlue, 0.45f));
+                    PixelPainter.RingPoint(rx, ry, Mathf.Repeat(angle - 0.13f * j, TwoPi), out offsetX, out offsetY);
+                    painter.Dot(_cx + offsetX, _cy + offsetY, GlowColor(1 == j ? ColorIce : ColorBlue, 0.45f));
                 }
+
+                PixelPainter.RingPoint(rx, ry, Mathf.Repeat(angle, TwoPi), out offsetX, out offsetY);
+                int mx = _cx + offsetX;
+                int my = _cy + offsetY;
 
                 if (0 == (i & 1)) painter.Shape(bTwinkle ? PixelPainter.ShapeDiamond : PixelPainter.ShapeCircle, mx, my, GlowColor(ColorGold, 0.28f));
                 else painter.Shape(bTwinkle ? PixelPainter.ShapePlus : PixelPainter.ShapeCross, mx, my, GlowColor(ColorWhite, 0.3f));

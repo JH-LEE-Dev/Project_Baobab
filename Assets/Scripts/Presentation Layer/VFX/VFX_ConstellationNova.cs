@@ -684,14 +684,6 @@ namespace PresentationLayer.VFX
             runColor = _color;
         }
 
-        // 바닥 타원 위의 점(반지름 _radius px, 각도 _angle)을 픽셀로 찍는다. _yOffset은 바닥에서 띄운 높이.
-        private void PlotEllipse(float _angle, float _radius, float _yOffset, Color32 _color, bool _bDrift)
-        {
-            int px = centerX + Mathf.RoundToInt(Mathf.Cos(_angle) * _radius);
-            int py = centerY + Mathf.RoundToInt(Mathf.Sin(_angle) * _radius * GroundSquashY + _yOffset);
-            Plot(px, py, _color, _bDrift);
-        }
-
         // 브레젠험 직선. _dash가 0이면 실선, 아니면 _dash칸 중 앞 절반만 찍는 점선.
         private void DrawLine(float _fx0, float _fy0, float _fx1, float _fy1, Color32 _color, int _dash, bool _bDrift)
         {
@@ -737,31 +729,35 @@ namespace PresentationLayer.VFX
             DrawLine(centerX + _ax, centerY + _ay, centerX + _bx, centerY + _by, _color, _dash, _bDrift);
         }
 
-        // 바닥 타원 호. _frac(0~1)만큼만 그려서 "그려지는" 연출을 만든다. _gaps가 0보다 크면 원을 _gaps등분해 각 구간 끝에 틈을 낸다.
+        // 바닥 타원 호. midpoint 윤곽(PixelEllipse) 위에 그려서 반올림 중복과 떨림이 없다. _frac(0~1)만큼만 반시계로 그려서 "그려지는" 연출을 만든다
+        // (_rotation 지점에서 시작). _dash가 0보다 크면 윤곽 픽셀 기준 점선(한 바퀴를 주기로 고르게 나눠 시작점에서 잘리지 않는다)이고,
+        // _gaps가 0보다 크면 원을 _gaps등분해 각 구간 끝에 틈을 낸다.
         private void DrawRing(float _radius, float _rotation, Color32 _color, float _frac, int _dash, bool _bDrift, float _yOffset, int _gaps = 0)
         {
             if (0.0f >= _frac || 0.5f >= _radius) return;
 
-            int total = Mathf.Max(16, Mathf.CeilToInt(TwoPi * _radius * 1.3f));
-            int drawCount = Mathf.FloorToInt(total * Mathf.Min(1.0f, _frac));
-            int dashOn = Mathf.Max(1, _dash >> 1);
+            int rx = Mathf.Max(1, Mathf.RoundToInt(_radius));
+            int ry = Mathf.Max(1, Mathf.RoundToInt(_radius * GroundSquashY));
+            int offsetY = Mathf.RoundToInt(_yOffset);
+            int count = PixelEllipse.Build(rx, ry);
+            float drawLimit = count * Mathf.Min(1.0f, _frac);
+            float dashCells = 0 < _dash ? Mathf.Max(1, Mathf.RoundToInt(count / (float)_dash)) : 0.0f;
+            float dashDuty = 0 < _dash ? Mathf.Max(1, _dash >> 1) / (float)_dash : 1.0f;
 
             if (true == _bDrift) plotSalt = ++primitiveCounter;
 
-            for (int i = 0; i < drawCount; i++)
+            for (int i = 0; i < count; i++)
             {
+                float q = Mathf.Atan2(PixelEllipse.OutY[i] * (float)rx, PixelEllipse.OutX[i] * (float)ry) / TwoPi;
+                q -= Mathf.Floor(q);
+
+                float param = Mathf.Repeat(q - _rotation / TwoPi, 1.0f) * count;
+                if (param >= drawLimit) continue;
+                if (0 < _dash && Mathf.Repeat(param * dashCells / count, 1.0f) >= dashDuty) continue;
+                if (0 < _gaps && (q * _gaps * 5.0f) % 5.0f < 0.55f) continue;
+
                 plotIndex = i;
-                if (0 < _dash && i % _dash >= dashOn) continue;
-
-                float angle = _rotation + TwoPi * i / total;
-                if (0 < _gaps)
-                {
-                    float q = angle / TwoPi;
-                    q -= Mathf.Floor(q);
-                    if ((q * _gaps * 5.0f) % 5.0f < 0.55f) continue;
-                }
-
-                PlotEllipse(angle, _radius, _yOffset, _color, _bDrift);
+                Plot(centerX + PixelEllipse.OutX[i], centerY + PixelEllipse.OutY[i] + offsetY, _color, _bDrift);
             }
         }
 
@@ -895,7 +891,7 @@ namespace PresentationLayer.VFX
             float fade = 1.0f - Mathf.Clamp01((elapsed - ShockFadeStart) / ShockFadeTime);
             float radius = radiusPx * EaseOutCubic(Mathf.Clamp01(elapsed / ShockDuration));
 
-            DrawRing(radius, 0.0f, GlowColor(ColorIce, 0.7f * fade), 1.0f, 4, false, 0.0f);
+            DrawRing(radius, 0.0f, GlowColor(ColorIce, 0.4f * fade), 1.0f, 0, false, 0.0f);
         }
 
         // 마법진 4겹 - 바깥에서 안쪽으로 "그려지듯" 펼쳐진다. 회전은 12fps 스텝이고 바깥 링은 고정이다.
@@ -928,12 +924,16 @@ namespace PresentationLayer.VFX
             if (0.95f < layerFrac[2])
             {
                 Color32 runeColor = GlowColor(ColorGold, 0.55f);
+                int runeRx = Mathf.Max(1, Mathf.RoundToInt(r));
+                int runeRy = Mathf.Max(1, Mathf.RoundToInt(r * GroundSquashY));
                 for (int i = 0; i < 6; i++)
                 {
+                    // 룬은 링 윤곽의 실제 픽셀 위에 올린다(반올림 좌표는 링에서 1px 벗어난다). 링은 반시계 각도, RingPoint는 시계 각도다.
                     float angle = stepTime * 0.15f + TwoPi * i / 6.0f;
-                    int px = centerX + Mathf.RoundToInt(Mathf.Cos(angle) * r);
-                    int py = centerY + Mathf.RoundToInt(Mathf.Sin(angle) * r * GroundSquashY);
-                    DrawSparkle(px, py, 2, true, runeColor, true);
+                    int offsetX;
+                    int offsetY;
+                    PixelPainter.RingPoint(runeRx, runeRy, Mathf.Repeat(-angle, TwoPi), out offsetX, out offsetY);
+                    DrawSparkle(centerX + offsetX, centerY + offsetY, 2, true, runeColor, true);
                 }
             }
 
@@ -1025,7 +1025,7 @@ namespace PresentationLayer.VFX
             float radius = radiusPx * Mathf.Lerp(0.4f, 1.1f, EaseOutQuint(t));
             float fade = 1.0f - t;
 
-            DrawRing(radius, 0.0f, GlowColor(ColorIce, 0.4f * fade), 1.0f, 3, false, 0.0f);
+            DrawRing(radius, 0.0f, GlowColor(ColorIce, 0.2f * fade), 1.0f, 0, false, 0.0f);
         }
 
         // 방사 스파크 - 충격파와 함께 바깥으로 팡 튀어 나가는 큰 `x`/`+` 별. 긴 꼬리를 끌고 위로 떠오르며 사라진다.

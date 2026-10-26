@@ -26,6 +26,10 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     [Header("중앙 보호 구역 설정")]
     [SerializeField] private float centerSafeZoneRadius = 15f;
+    // 본편 보호 구역 중심을 맵 중앙 칸에서 이만큼(칸 좌표) 옮긴다. 휴식 특성 모닥불이 놓이는 칸
+    // (차량 StaminaRecoverCircle.centerOffset)에 맞춘 값이라, 모닥불 위치를 바꾸면 이 값도 같이 바꿔야 한다.
+    // 로그라이크 타원 섬(bEllipseIsland)은 모닥불이 없으므로 예전처럼 맵 중앙 칸 그대로다.
+    [SerializeField] private Vector2Int centerSafeZoneOffset = new Vector2Int(-1, -1);
 
     [Header("섬 내부 웅덩이 설정")]
     // 1 = 기존과 동일하게 생성되는 모든 웅덩이를 유지, 0 = 섬 내부 웅덩이를 전부 제거.
@@ -993,6 +997,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         float centerX = width * 0.5f;
         float centerY = height * 0.5f;
         float safeRadiusSq = centerSafeZoneRadius * centerSafeZoneRadius;
+        // 해안선은 맵 중앙 기준 그대로, 보호 구역만 모닥불 칸 기준이다(centerSafeZoneOffset 주석 참고).
+        float safeCenterX = centerX + centerSafeZoneOffset.x;
+        float safeCenterY = centerY + centerSafeZoneOffset.y;
         float mapRadius = baseMapRadius;
         float mapRadiusSq = mapRadius * mapRadius;
 
@@ -1054,9 +1061,14 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 {
                     val = 0f;
                 }
-                else if (distSq < safeRadiusSq)
+                else
                 {
-                    val = Mathf.Max(val, waterThreshold + 0.05f);
+                    float sdx = x - safeCenterX;
+                    float sdy = y - safeCenterY;
+                    if (sdx * sdx + sdy * sdy < safeRadiusSq)
+                    {
+                        val = Mathf.Max(val, waterThreshold + 0.05f);
+                    }
                 }
 
                 noiseValues[i] = val;
@@ -1514,7 +1526,10 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         float centerX = width * 0.5f;
         float centerY = height * 0.5f;
         float safeRadiusSq = centerSafeZoneRadius * centerSafeZoneRadius;
-        
+        // 보호 구역만 모닥불 칸 기준(centerSafeZoneOffset 주석 참고). 로그라이크 타원 섬은 맵 중앙 그대로다.
+        float safeCenterX = bEllipseIsland ? centerX : centerX + centerSafeZoneOffset.x;
+        float safeCenterY = bEllipseIsland ? centerY : centerY + centerSafeZoneOffset.y;
+
         float mapRadius = baseMapRadius;
         float outerRadius = mapRadius + outerWaterDepth;
         float outerRadiusSq = outerRadius * outerRadius;
@@ -1530,7 +1545,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             // 도화지(Width x Height)의 구석 부분(타원 반경을 벗어나는 곳)은 타일을 아예 생성하지 않음 (사각형 방지)
             if (distSq > outerRadiusSq) continue;
 
-            bool inSafeZone = (distSq < safeRadiusSq);
+            float sdx = x - safeCenterX;
+            float sdy = y - safeCenterY;
+            bool inSafeZone = (sdx * sdx + sdy * sdy < safeRadiusSq);
 
             float v = noiseValues[i];
 

@@ -1,0 +1,635 @@
+using UnityEngine;
+
+namespace PresentationLayer.VFX
+{
+    /// <summary>
+    /// 캐릭터의 헤이스트(이동속도 버프) 연출. 화살표나 상승 표시 없이 "몸 주변 공기가 같이 빠르게 흐른다"는 느낌을 준다.
+    /// 버프가 유지되는 동안 캐릭터를 따라다니며, Begin으로 시작하고 End로 끝낸다(끝나면 스스로 풀에 반환).
+    ///
+    /// 구성(하늘색 한 계열, 별 표식 팔레트와 같은 흰색/하늘색/파랑)
+    /// - 발동 연출(0.85초): 입자가 나선으로 감아 오르며 가슴 높이에 `◆`가 번쩍인다(바닥 고리는 없다).
+    /// - 속도선: 이동할 때 이동 반대 방향으로 공중에 남았다가 앞에서부터 사라지는 1px 선. 속도에 비례해 많아진다.
+    /// - 발걸음 바람 먼지: 걸음마다 발밑에서 `●` -> `+` -> `.`로 줄어드는 먼지가 뒤로 밀리고 발끝에 `◆` 반짝임이 스친다.
+    /// - 발끝 반짝임: 멈춰 있어도 버프 중임을 알리는 `◆` `+` `.` 반짝임이 몸 주변에서 올라간다.
+    ///
+    /// 속도와 방향은 대상 Transform의 위치 변화량으로 스스로 계산하므로 이동 코드와 결합하지 않는다.
+    /// 캐릭터 속도 자체는 이 이펙트가 바꾸지 않는다(실제 이동속도 버프와 같이 쓴다).
+    ///
+    /// 렌더링: 뒤쪽 메쉬(캐릭터 소팅 -1, 먼지), 앞쪽 메쉬(캐릭터 소팅 +1, 속도선/반짝임/발동 입자).
+    /// 캐릭터 소팅 오더는 Begin에 넘긴 SpriteRenderer를 매 프레임 따라간다(캐릭터가 움직이며 y 기반 오더가 바뀐다).
+    ///
+    /// 픽셀 규칙: DOUBLE PIXEL(속도선의 L자 모서리 제거), HUGGING(선 옆에 보조선을 겹치지 않음).
+    /// 입자는 `.` `+` `x` `●` `◆`만 쓰고 모든 그림이 매 프레임 다시 그려진다. 정적 버퍼와 고정 크기 배열만 써서 재생 중 힙 할당이 없다.
+    /// </summary>
+    [DisallowMultipleComponent]
+    [RequireComponent(typeof(MeshFilter))]
+    [RequireComponent(typeof(MeshRenderer))]
+    public class VFX_Haste : MonoBehaviour
+    {
+        [Header("강도")]
+        [SerializeField, Range(0.4f, 1.5f), Tooltip("속도선, 먼지, 발동 입자 개수와 길이에 곱하는 전체 배율. 1이 기본이다.")]
+        private float intensity = 1.0f;
+        [SerializeField, Tooltip("헤이스트로 달릴 때의 바닥 속도(px/s). 속도선 길이와 개수를 이 값 대비 비율로 정한다. 캐릭터 이동속도에 맞춘다.")]
+        private float referenceSpeedPx = 78.0f;
+
+        [Header("뒤쪽 메쉬 (캐릭터 뒤에 가려지는 먼지)")]
+        [SerializeField] private MeshFilter backMeshFilter;
+        [SerializeField] private MeshRenderer backMeshRenderer;
+
+        private const float PixelsPerUnit = 32.0f;
+        private const float TwoPi = Mathf.PI * 2.0f;
+        private const float BurstLength = 0.85f;
+        private const float EndDrainSeconds = 0.6f;
+        private const float StrideLengthPx = 13.0f;
+        private const float MovingThresholdPx = 8.0f;
+        private const float TeleportUnits = 4.0f;
+        private const int LineCapacity = 64;
+        private const int PuffCapacity = 64;
+        private const int SparkCapacity = 16;
+        private const int QuadBudget = 1500;
+
+        // 팔레트 (별 표식 / 스텔라 폭발과 같은 하늘색 계열)
+        private static readonly Color32 ColorWhite = new Color32(255, 255, 255, 255);
+        private static readonly Color32 ColorIce = new Color32(191, 230, 255, 255);
+        private static readonly Color32 ColorIce2 = new Color32(140, 196, 255, 255);
+        private static readonly Color32 ColorBlue = new Color32(91, 146, 230, 255);
+        private static readonly Color32 ColorBlue2 = new Color32(52, 86, 158, 255);
+
+        // 시간 단계별 색(밝음 -> 어두움). 정점 알파 = 발광 세기(블룸 임계값 근처로 낮춰 색이 흰색으로 날아가지 않게 한다).
+        private static readonly Color32[] Steps =
+        {
+            GlowColor(ColorWhite, 0.3f), GlowColor(ColorIce, 0.22f), GlowColor(ColorIce2, 0.16f), GlowColor(ColorBlue, 0.1f), GlowColor(ColorBlue2, 0.06f),
+        };
+
+        private struct HasteLine
+        {
+            public float x;
+            public float y;
+            public float dirX;
+            public float dirY;
+            public float length;
+            public float age;
+            public float life;
+            public bool bBright;
+        }
+
+        private struct HastePuff
+        {
+            public float x;
+            public float y;
+            public float velocityX;
+            public float velocityY;
+            public float age;
+            public float life;
+            public bool bCross;
+            public bool bBig;
+        }
+
+        private struct HasteSpark
+        {
+            public float x;
+            public float y;
+            public float velocityX;
+            public float velocityY;
+            public float age;
+            public float life;
+        }
+
+        private static readonly PixelQuadBuffer frontBuffer = new PixelQuadBuffer(QuadBudget);
+        private static readonly PixelQuadBuffer backBuffer = new PixelQuadBuffer(QuadBudget / 2);
+
+        // 외부 의존성
+        private Transform target;
+        private SpriteRenderer sortingSource;
+
+        // 내부 의존성
+        private readonly PixelPainter frontPainter = new PixelPainter();
+        private readonly PixelPainter backPainter = new PixelPainter();
+        private MeshFilter meshFilter;
+        private MeshRenderer meshRenderer;
+        private Mesh frontMesh;
+        private Mesh backMesh;
+        private ParticleSystemRenderer rootParticleRenderer;
+        private ParticleSystem rootParticleSystem;
+
+        private readonly HasteLine[] lines = new HasteLine[LineCapacity];
+        private readonly HastePuff[] puffs = new HastePuff[PuffCapacity];
+        private readonly HasteSpark[] sparks = new HasteSpark[SparkCapacity];
+
+        // 상태 변수
+        private bool bActive;
+        private bool bEnding;
+        private bool bInitialized;
+        private bool bHasLast;
+        private float elapsed;
+        private float burstTime = -1.0f;
+        private float endTimer;
+        private Vector3 lastPosition;
+        private float velocityX;
+        private float velocityY;
+        private float groundSpeed;
+        private int facing = 1;
+        private float gait;
+        private int lastStep;
+        private int stepCounter;
+        private float lineAccumulator;
+        private uint randomState = 1u;
+        private int lineCount;
+        private int puffCount;
+        private int sparkCount;
+        private int centerX;
+        private int centerY;
+        private Vector3 cullingSize = new Vector3(8.0f, 8.0f, 10.0f);
+
+        private int appliedLayerId = int.MinValue;
+        private int appliedOrder = int.MinValue;
+        private ulong frontHash;
+        private int frontVertexCount = -1;
+        private ulong backHash;
+        private int backVertexCount = -1;
+
+        // 퍼블릭 초기화 및 제어 메서드
+
+        /// <summary>
+        /// 헤이스트 연출을 시작한다. _target은 따라다닐 캐릭터(발밑 위치), _sortingSource는 캐릭터 본체 SpriteRenderer(소팅 기준).
+        /// 풀에서 꺼내 활성화한 직후에 부른다. _sortingSource가 null이면 루트 렌더러의 소팅을 그대로 쓴다.
+        /// </summary>
+        public void Begin(Transform _target, SpriteRenderer _sortingSource)
+        {
+            EnsureInitialized();
+
+            target = _target;
+            sortingSource = _sortingSource;
+
+            if (null != target) transform.position = target.position;
+
+            elapsed = 0.0f;
+            burstTime = 0.0f;
+            bEnding = false;
+            endTimer = 0.0f;
+            bHasLast = false;
+            velocityX = 0.0f;
+            velocityY = 0.0f;
+            groundSpeed = 0.0f;
+            gait = 0.0f;
+            lastStep = 0;
+            stepCounter = 0;
+            lineAccumulator = 0.0f;
+            lineCount = 0;
+            puffCount = 0;
+            sparkCount = 0;
+            frontVertexCount = -1;
+            backVertexCount = -1;
+            appliedLayerId = int.MinValue;
+            appliedOrder = int.MinValue;
+            randomState = unchecked((uint)(Time.frameCount * 2654435761u) | 1u);
+            bActive = true;
+        }
+
+        /// <summary>
+        /// 헤이스트가 끝났다. 새 입자 생성을 멈추고 남은 입자가 사라진 뒤(0.6초) 스스로 풀에 반환한다.
+        /// </summary>
+        public void End()
+        {
+            if (false == bActive || true == bEnding) return;
+
+            bEnding = true;
+            endTimer = 0.0f;
+        }
+
+        /// <summary>연출 없이 즉시 풀에 반환한다(캐릭터 사망, 씬 이탈 등).</summary>
+        public void Cancel()
+        {
+            if (false == bActive) return;
+
+            Finish();
+        }
+
+        private void EnsureInitialized()
+        {
+            if (true == bInitialized) return;
+            bInitialized = true;
+
+            meshFilter = GetComponent<MeshFilter>();
+            meshRenderer = GetComponent<MeshRenderer>();
+            rootParticleRenderer = null != transform.parent ? transform.parent.GetComponent<ParticleSystemRenderer>() : null;
+            rootParticleSystem = null != transform.parent ? transform.parent.GetComponent<ParticleSystem>() : null;
+
+            frontMesh = CreateMesh(meshFilter, meshRenderer, "VFX_Haste_Front");
+
+            if (null != backMeshFilter && null != backMeshRenderer) backMesh = CreateMesh(backMeshFilter, backMeshRenderer, "VFX_Haste_Back");
+        }
+
+        private static Mesh CreateMesh(MeshFilter _filter, MeshRenderer _renderer, string _name)
+        {
+            Mesh mesh = new Mesh { name = _name };
+            mesh.MarkDynamic();
+            _filter.sharedMesh = mesh;
+            PixelQuadBuffer.ReserveMesh(mesh, 600);
+
+            _renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _renderer.receiveShadows = false;
+            _renderer.enabled = false;
+            return mesh;
+        }
+
+        // 계산
+
+        private static Color32 GlowColor(Color32 _base, float _glow)
+        {
+            byte alpha = (byte)Mathf.RoundToInt(Mathf.Clamp01(_glow) * 255.0f);
+            return new Color32(_base.r, _base.g, _base.b, alpha);
+        }
+
+        private float Rand01()
+        {
+            randomState = unchecked(randomState * 1664525u + 1013904223u);
+            return ((randomState >> 8) & 0xFFFF) / 65535.0f;
+        }
+
+        private static float EaseOutCubic(float _t)
+        {
+            float inv = 1.0f - _t;
+            return 1.0f - inv * inv * inv;
+        }
+
+        // 대상의 위치 변화량으로 속도(px/s)와 방향, 걸음 수를 갱신한다. 순간이동(큰 변화)은 속도로 보지 않는다.
+        private void UpdateMotion(float _dt)
+        {
+            Vector3 position = transform.position;
+            if (true == bHasLast)
+            {
+                Vector3 delta = position - lastPosition;
+                if (delta.magnitude < TeleportUnits)
+                {
+                    float rawX = delta.x * PixelsPerUnit / _dt;
+                    float rawY = delta.y * PixelsPerUnit / _dt;
+                    float blend = 1.0f - Mathf.Exp(-_dt * 20.0f);
+                    velocityX += (rawX - velocityX) * blend;
+                    velocityY += (rawY - velocityY) * blend;
+                }
+                else
+                {
+                    velocityX = 0.0f;
+                    velocityY = 0.0f;
+                }
+            }
+
+            lastPosition = position;
+            bHasLast = true;
+
+            groundSpeed = Mathf.Sqrt(velocityX * velocityX + 4.0f * velocityY * velocityY);
+            if (Mathf.Abs(velocityX) > 4.0f) facing = velocityX > 0.0f ? 1 : -1;
+
+            if (MovingThresholdPx < groundSpeed) gait += groundSpeed * _dt / StrideLengthPx;
+        }
+
+        private void SpawnPuffs()
+        {
+            float back = -Mathf.Sign(0.0f != velocityX ? velocityX : 1.0f);
+            int count = 2 + (Rand01() < 0.6f ? 1 : 0);
+            float baseX = transform.position.x * PixelsPerUnit;
+            float baseY = transform.position.y * PixelsPerUnit;
+
+            for (int i = 0; i < count && puffCount < PuffCapacity; i++)
+            {
+                HastePuff puff = new HastePuff();
+                puff.x = baseX + (Rand01() - 0.5f) * 5.0f;
+                puff.y = baseY + 1.0f;
+                puff.velocityX = back * (14.0f + Rand01() * 22.0f) + (Rand01() - 0.5f) * 8.0f;
+                puff.velocityY = 6.0f + Rand01() * 14.0f;
+                puff.age = 0.0f;
+                puff.life = 0.26f + Rand01() * 0.22f;
+                puff.bCross = Rand01() < 0.3f;
+                puff.bBig = Rand01() < 0.25f;
+                puffs[puffCount++] = puff;
+            }
+
+            stepCounter++;
+            if (0 == (stepCounter & 1) && sparkCount < SparkCapacity)
+            {
+                HasteSpark spark = new HasteSpark();
+                spark.x = baseX + facing * 3.0f;
+                spark.y = baseY + 2.0f;
+                spark.velocityX = -facing * 10.0f;
+                spark.velocityY = 26.0f;
+                spark.age = 0.0f;
+                spark.life = 0.34f;
+                sparks[sparkCount++] = spark;
+            }
+        }
+
+        private void SpawnLine()
+        {
+            if (lineCount >= LineCapacity || groundSpeed < 1.0f) return;
+
+            float dirX = velocityX / groundSpeed;
+            float dirY = velocityY / groundSpeed * 0.9f;
+            float lateral = (Rand01() - 0.5f) * 30.0f;
+            float height = 2.0f + Rand01() * 22.0f;
+
+            HasteLine line = new HasteLine();
+            line.x = transform.position.x * PixelsPerUnit + (-dirY) * lateral * 0.2f;
+            line.y = transform.position.y * PixelsPerUnit + height - dirX * lateral * 0.15f;
+            line.dirX = dirX;
+            line.dirY = dirY;
+            line.length = (9.0f + Rand01() * 16.0f) * Mathf.Min(1.4f, groundSpeed / Mathf.Max(1.0f, referenceSpeedPx * 0.9f));
+            line.age = 0.0f;
+            line.life = 0.16f + Rand01() * 0.14f;
+            line.bBright = Rand01() < 0.3f;
+            lines[lineCount++] = line;
+        }
+
+        // 수명이 끝난 입자를 뒤 원소로 채워 지운다
+        private void AgeParticles(float _dt)
+        {
+            for (int i = lineCount - 1; i >= 0; i--)
+            {
+                lines[i].age += _dt;
+                if (lines[i].age >= lines[i].life) lines[i] = lines[--lineCount];
+            }
+
+            for (int i = puffCount - 1; i >= 0; i--)
+            {
+                puffs[i].age += _dt;
+                if (puffs[i].age >= puffs[i].life) puffs[i] = puffs[--puffCount];
+            }
+
+            for (int i = sparkCount - 1; i >= 0; i--)
+            {
+                sparks[i].age += _dt;
+                if (sparks[i].age >= sparks[i].life) sparks[i] = sparks[--sparkCount];
+            }
+        }
+
+        // 그리기
+
+        private void RebuildMesh()
+        {
+            Vector3 pos = transform.position;
+            centerX = Mathf.FloorToInt(pos.x * PixelsPerUnit);
+            centerY = Mathf.FloorToInt(pos.y * PixelsPerUnit);
+
+            frontPainter.Begin(frontBuffer, transform.worldToLocalMatrix, pos.z);
+            PixelPainter backTarget = frontPainter;
+            if (null != backMesh)
+            {
+                backPainter.Begin(backBuffer, backMeshRenderer.transform.worldToLocalMatrix, pos.z);
+                backTarget = backPainter;
+            }
+
+            DrawPuffs(backTarget);
+            DrawBurstAir(frontPainter);
+            DrawLines(frontPainter);
+            DrawSparks(frontPainter);
+            DrawGlints(frontPainter);
+
+            frontPainter.Commit(frontMesh, meshRenderer, ref frontHash, ref frontVertexCount);
+            if (null != backMesh) backPainter.Commit(backMesh, backMeshRenderer, ref backHash, ref backVertexCount);
+        }
+
+        // 발동 - 입자가 나선으로 감아 오르고 가슴 높이에 ◆가 번쩍인다
+        private void DrawBurstAir(PixelPainter _p)
+        {
+            if (burstTime < 0.0f || burstTime >= BurstLength) return;
+
+            float t = burstTime;
+            for (int i = 0; i < 14; i++)
+            {
+                float f = Mathf.Clamp01((t - i * 0.018f) / 0.55f);
+                if (f <= 0.0f || f >= 1.0f) continue;
+
+                float angle = TwoPi * i / 14.0f * 2.0f + t * 9.0f;
+                float radius = (1.0f - f) * 20.0f + 4.0f;
+                float height = f * 34.0f;
+                int x = centerX + Mathf.FloorToInt(Mathf.Cos(angle) * radius);
+                int y = centerY + Mathf.FloorToInt(height - Mathf.Sin(angle) * radius * 0.5f);
+                int shape = f < 0.35f ? (0 == (i % 3) ? PixelPainter.ShapeDiamond : PixelPainter.ShapeCircle) : (f < 0.7f ? (0 != (i & 1) ? PixelPainter.ShapePlus : PixelPainter.ShapeCross) : PixelPainter.ShapeDot);
+                _p.Shape(shape, x, y, Steps[f < 0.25f ? 0 : (f < 0.55f ? 1 : 2)]);
+            }
+
+            if (t < 0.12f) _p.Shape(PixelPainter.ShapeDiamond, centerX, centerY + 12, Steps[0]);
+        }
+
+        // 속도선 - 월드에 고정된 선이 앞에서부터 사라진다
+        private void DrawLines(PixelPainter _p)
+        {
+            for (int i = 0; i < lineCount; i++)
+            {
+                float f = lines[i].age / lines[i].life;
+                if (f > 0.92f) continue;
+
+                float tailX = lines[i].x - lines[i].dirX * lines[i].length;
+                float tailY = lines[i].y - lines[i].dirY * lines[i].length * 0.5f;
+                float headX = lines[i].x - lines[i].dirX * lines[i].length * f;
+                float headY = lines[i].y - lines[i].dirY * lines[i].length * 0.5f * f;
+                Color32 color = f < 0.45f ? (true == lines[i].bBright ? Steps[0] : Steps[1]) : (f < 0.75f ? Steps[2] : Steps[3]);
+
+                _p.Line(Mathf.RoundToInt(tailX), Mathf.RoundToInt(tailY), Mathf.RoundToInt(headX), Mathf.RoundToInt(headY), 0, 0, 0, color);
+            }
+        }
+
+        // 발걸음 바람 먼지 - ● -> + -> . 로 줄어들며 뒤로 밀린다
+        private void DrawPuffs(PixelPainter _p)
+        {
+            for (int i = 0; i < puffCount; i++)
+            {
+                float f = puffs[i].age / puffs[i].life;
+                float x = puffs[i].x + puffs[i].velocityX * puffs[i].age;
+                float y = puffs[i].y + puffs[i].velocityY * puffs[i].age - 30.0f * puffs[i].age * puffs[i].age;
+                int shape = f < 0.3f ? (true == puffs[i].bBig ? PixelPainter.ShapeCircle : PixelPainter.ShapePlus) : (f < 0.65f ? (true == puffs[i].bCross ? PixelPainter.ShapeCross : PixelPainter.ShapePlus) : PixelPainter.ShapeDot);
+                _p.Shape(shape, Mathf.FloorToInt(x), Mathf.FloorToInt(y), Steps[f < 0.2f ? 0 : (f < 0.5f ? 1 : (f < 0.8f ? 2 : 3))]);
+            }
+        }
+
+        private void DrawSparks(PixelPainter _p)
+        {
+            for (int i = 0; i < sparkCount; i++)
+            {
+                float f = sparks[i].age / sparks[i].life;
+                int shape = f < 0.5f ? PixelPainter.ShapeDiamond : (f < 0.8f ? PixelPainter.ShapePlus : PixelPainter.ShapeDot);
+                _p.Shape(shape, Mathf.FloorToInt(sparks[i].x + sparks[i].velocityX * sparks[i].age), Mathf.FloorToInt(sparks[i].y + sparks[i].velocityY * sparks[i].age), Steps[f < 0.4f ? 0 : 1]);
+            }
+        }
+
+        // 멈춰 있어도 버프 중임을 알리는 몸 주변 반짝임
+        private void DrawGlints(PixelPainter _p)
+        {
+            if (true == bEnding) return;
+
+            for (int i = 0; i < 3; i++)
+            {
+                float cycle = elapsed * 0.9f + i * 0.37f;
+                float phase = Mathf.Repeat(cycle, 1.0f);
+                if (phase > 0.55f) continue;
+
+                float angle = i * 2.1f + Mathf.Floor(cycle) * 1.7f;
+                int x = centerX + Mathf.FloorToInt(Mathf.Cos(angle) * 9.0f);
+                int y = centerY + Mathf.FloorToInt(4.0f + phase * 22.0f);
+                _p.Shape(phase < 0.2f ? PixelPainter.ShapeDiamond : (phase < 0.4f ? PixelPainter.ShapePlus : PixelPainter.ShapeDot), x, y, Steps[phase < 0.25f ? 0 : 1]);
+            }
+        }
+
+        private void ApplySorting()
+        {
+            int layerId;
+            int order;
+            if (null != sortingSource)
+            {
+                layerId = sortingSource.sortingLayerID;
+                order = sortingSource.sortingOrder;
+            }
+            else if (null != rootParticleRenderer)
+            {
+                layerId = rootParticleRenderer.sortingLayerID;
+                order = rootParticleRenderer.sortingOrder;
+            }
+            else
+            {
+                return;
+            }
+
+            // 소팅은 VFXComponent가 자식 렌더러 전체에 같은 값으로 덮어쓰므로, 매번 캐릭터 기준으로 다시 맞춘다(바뀔 때만 쓴다)
+            if (layerId != appliedLayerId || order != appliedOrder)
+            {
+                appliedLayerId = layerId;
+                appliedOrder = order;
+                meshRenderer.sortingLayerID = layerId;
+                meshRenderer.sortingOrder = order + 1;
+                if (null != backMeshRenderer)
+                {
+                    backMeshRenderer.sortingLayerID = layerId;
+                    backMeshRenderer.sortingOrder = order - 1;
+                }
+            }
+        }
+
+        // 렌더러를 끄고 루트 ParticleSystem을 멈춘다(VFXComponent가 풀에 반환한다)
+        private void Finish()
+        {
+            bActive = false;
+            if (null != meshRenderer && true == meshRenderer.enabled) meshRenderer.enabled = false;
+            if (null != backMeshRenderer && true == backMeshRenderer.enabled) backMeshRenderer.enabled = false;
+
+            if (null != rootParticleSystem && true == rootParticleSystem.isPlaying) rootParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        // 유니티 이벤트 함수
+
+        private void Awake()
+        {
+            EnsureInitialized();
+        }
+
+        private void OnEnable()
+        {
+            bActive = false;
+
+            if (null != meshRenderer) meshRenderer.enabled = false;
+            if (null != backMeshRenderer) backMeshRenderer.enabled = false;
+        }
+
+        private void LateUpdate()
+        {
+            if (false == bActive) return;
+
+            float dt = Time.deltaTime;
+            if (dt <= 0.0f) return;
+
+            // 대상이 사라졌으면(풀 반환 등) 연출 없이 끝낸다
+            if (null != target && false == target.gameObject.activeInHierarchy)
+            {
+                Finish();
+                return;
+            }
+
+            if (null != target) transform.position = target.position;
+
+            elapsed += dt;
+            if (burstTime >= 0.0f)
+            {
+                burstTime += dt;
+                if (burstTime >= BurstLength) burstTime = -1.0f;
+            }
+
+            UpdateMotion(dt);
+            AgeParticles(dt);
+
+            if (false == bEnding)
+            {
+                int stepNo = Mathf.FloorToInt(gait);
+                if (stepNo != lastStep)
+                {
+                    lastStep = stepNo;
+                    SpawnPuffs();
+                }
+
+                if (MovingThresholdPx < groundSpeed)
+                {
+                    lineAccumulator += dt * (20.0f + groundSpeed * 0.55f) * intensity;
+                    while (lineAccumulator >= 1.0f)
+                    {
+                        lineAccumulator -= 1.0f;
+                        SpawnLine();
+                    }
+                }
+            }
+            else
+            {
+                endTimer += dt;
+                if (EndDrainSeconds <= endTimer)
+                {
+                    Finish();
+                    return;
+                }
+            }
+
+            ApplySorting();
+
+            float reach = 80.0f / PixelsPerUnit;
+            cullingSize = new Vector3(reach * 2.0f + 2.0f * PixelVfxCulling.MarginUnits, reach * 2.0f + 2.0f * PixelVfxCulling.MarginUnits, PixelVfxCulling.BoundsDepth);
+            if (false == PixelVfxCulling.IsVisible(transform.position, cullingSize))
+            {
+                if (true == meshRenderer.enabled) meshRenderer.enabled = false;
+                if (null != backMeshRenderer && true == backMeshRenderer.enabled) backMeshRenderer.enabled = false;
+                    frontVertexCount = -1;
+                backVertexCount = -1;
+                return;
+            }
+
+            RebuildMesh();
+        }
+
+        private void OnDisable()
+        {
+            bActive = false;
+            target = null;
+            sortingSource = null;
+
+            if (null != meshRenderer) meshRenderer.enabled = false;
+            if (null != backMeshRenderer) backMeshRenderer.enabled = false;
+        }
+
+        private void OnDestroy()
+        {
+            if (null != frontMesh)
+            {
+                Destroy(frontMesh);
+                frontMesh = null;
+            }
+
+            if (null != backMesh)
+            {
+                Destroy(backMesh);
+                backMesh = null;
+            }
+
+        }
+
+        private void OnValidate()
+        {
+            intensity = Mathf.Clamp(intensity, 0.4f, 1.5f);
+            referenceSpeedPx = Mathf.Max(10.0f, referenceSpeedPx);
+        }
+    }
+}

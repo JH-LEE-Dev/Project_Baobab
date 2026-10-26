@@ -250,13 +250,13 @@ public class DraftCardDataTests
     [Test]
     public void SporeBomb_TickIntervalBombsDropIntervalAndStacks()
     {
-        // 기획서 v2.8 A-4: 틱 주기 1.5 → 1.2(II) → 0.8(IV) → 0.5(VI)초, 틱 피해 3(I) → 4(II 이후), 오염 6초 고정.
+        // 기획서 v2.8 A-4: 틱 주기 1.5 → 1.2(II) → 0.8(IV) → 0.5(VI)초, 틱 피해 4 → 7(레벨마다 +0.5), 오염 6초 고정.
         float[] tickIntervals = { 1.5f, 1.2f, 1.2f, 0.8f, 0.8f, 0.5f, 0.5f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_sporebomb", level);
             Assert.AreEqual(tickIntervals[level - 1], 1.5f + mods.GetForSkill(ERunEffect.DotTickIntervalAdd, ERoguelikeSkill.SporeBomb), 0.001f, "틱 주기 " + level);
-            Assert.AreEqual(level < 2 ? 3f : 4f, 3f * (1f + mods.GetForSkill(ERunEffect.DotDamagePercent, ERoguelikeSkill.SporeBomb) / 100f), 0.01f, "틱 피해 " + level);
+            Assert.AreEqual(4f + 0.5f * (level - 1), 4f * (1f + mods.GetForSkill(ERunEffect.DotDamagePercent, ERoguelikeSkill.SporeBomb) / 100f), 0.01f, "틱 피해 " + level);
             Assert.AreEqual(0f, mods.GetForSkill(ERunEffect.DurationPercent, ERoguelikeSkill.SporeBomb), "오염 유지 고정 " + level);
         }
 
