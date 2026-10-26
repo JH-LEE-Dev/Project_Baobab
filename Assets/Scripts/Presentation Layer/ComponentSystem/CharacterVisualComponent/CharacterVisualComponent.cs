@@ -293,6 +293,17 @@ public class CharacterVisualComponent : MonoBehaviour
         if (null != characterAnimator) characterAnimator.FinishDashKickoff();
     }
 
+    // 헤이스트(이동속도 버프) 연출(CharacterAnimator가 같은 VFX 풀로 재생한다).
+    public void PlayHaste()
+    {
+        if (null != characterAnimator) characterAnimator.PlayHaste();
+    }
+
+    public void StopHaste(bool _bImmediate = false)
+    {
+        if (null != characterAnimator) characterAnimator.StopHaste(_bImmediate);
+    }
+
     public void SetFacingDirection(Vector2 _input)
     {
         if (_input.sqrMagnitude < 0.01f) return;

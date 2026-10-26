@@ -531,6 +531,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         inputManager.inputReader.DashKeyPressedEvent -= OnDashKeyPressed;
         inputManager.inputReader.DashKeyPressedEvent += OnDashKeyPressed;
 
+        statComponent.HasteStartedEvent -= HasteStarted;
+        statComponent.HasteStartedEvent += HasteStarted;
+
+        statComponent.HasteEndedEvent -= HasteEnded;
+        statComponent.HasteEndedEvent += HasteEnded;
+
         if (armComponent.axeComponent != null)
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
@@ -567,6 +573,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         if (inputManager != null && inputManager.inputReader != null)
             inputManager.inputReader.DashKeyPressedEvent -= OnDashKeyPressed;
+
+        if (statComponent != null)
+        {
+            statComponent.HasteStartedEvent -= HasteStarted;
+            statComponent.HasteEndedEvent -= HasteEnded;
+        }
 
         if (armComponent != null && armComponent.axeComponent != null)
         {
@@ -734,6 +746,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 쓰러지면 회전이 방향을 계속 바꿔 쓰러지는 연출이 여러 번 재시작된다. 여기서 회전을 끊는다.
         StopWhirlwindSpin();
         characterVisualComponent.CharacterIsDead(true);
+        // 이동속도 버프 타이머는 계속 돌지만 쓰러진 캐릭터 주변에 바람 연출이 남지 않게 바로 끈다.
+        characterVisualComponent.StopHaste(true);
         characterVisualComponent.PlayDeathFlash(GetArmFlashRenderer());
         CameraMoveController.Instance?.ShakeCamera(5f, 0.3f);
         CameraMoveController.Instance?.ZoomCamera(1.05f, 0.08f, 0.05f, 0.15f);
@@ -2218,5 +2232,17 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         healthComponent.StaminaRecover(statComponent.sourceOfStaminaRecoverAmount);
         statComponent.ActivateSourceOfSpeed();
+    }
+
+    // 시간제 이동속도 버프(속도의 원천 · 별길 걸음)가 걸려 있는 동안 헤이스트 연출을 따라다니게 한다.
+    private void HasteStarted()
+    {
+        if (bDead) return;
+        characterVisualComponent.PlayHaste();
+    }
+
+    private void HasteEnded(bool _bImmediate)
+    {
+        characterVisualComponent.StopHaste(_bImmediate);
     }
 }
