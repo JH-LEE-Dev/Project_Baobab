@@ -233,7 +233,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         offroadContainerVComponent = containerObject.GetComponentInChildren<OffroadContainerVComponent>();
 
         staminaRecoverCircle = GetComponent<StaminaRecoverCircle>();
-        staminaRecoverCircle.Initialize(charTransform);
+        // 모닥불·휴식 범위는 던전 차량(마을로 돌아가는 포탈)에서만 보인다.
+        staminaRecoverCircle.Initialize(charTransform, environmentProvider, type == PortalType.ToTownPortal);
 
         repairBox = GetComponentInChildren<RepairBox>();
         if (repairBox != null)
@@ -241,13 +242,15 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             repairBox.Initialize(_inputManager, charTransform, environmentProvider);
         }
 
-        // 차량/컨테이너 자체의 ColliderTilemap을 찾는다. RepairBox 밑에 있는 것과 이름이 같아서(둘 다 "ColliderTilemap")
-        // RepairBox의 하위 트리에 속하지 않는 것만 골라야 한다.
+        // 차량/컨테이너 자체의 ColliderTilemap을 찾는다. RepairBox·모닥불 밑에 있는 것과 이름이 같아서(모두 "ColliderTilemap")
+        // 그 하위 트리에 속하지 않는 것만 골라야 한다.
+        RestAreaVisual restAreaVisual = GetComponentInChildren<RestAreaVisual>(true);
         footprintColliderTilemap = null;
         Tilemap[] allTilemaps = GetComponentsInChildren<Tilemap>(true);
         for (int i = 0; i < allTilemaps.Length; i++)
         {
             if (repairBox != null && allTilemaps[i].transform.IsChildOf(repairBox.transform)) continue;
+            if (restAreaVisual != null && allTilemaps[i].transform.IsChildOf(restAreaVisual.transform)) continue;
             footprintColliderTilemap = allTilemaps[i];
             break;
         }
@@ -285,6 +288,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         // 차량이 배치/재배치될 때마다 발밑 타일을 길찾기 불가 타일로 등록 (이전 위치의 등록은 먼저 해제)
         footprintCollider?.Register();
+        staminaRecoverCircle?.RefreshRestAreaFootprint();
 
         // 던전 재입장 시 타일맵이 이후 프레임에 걸쳐 다시 초기화/갱신되면서 방금 한 등록이
         // 뒤늦게 걷어차이는 경우를 대비해, 몇 프레임 뒤 한 번 더 재등록해서 안전하게 확정한다.

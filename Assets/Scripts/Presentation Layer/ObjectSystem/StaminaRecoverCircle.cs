@@ -9,6 +9,13 @@ public class StaminaRecoverCircle : MonoBehaviour
     [Header("Ellipse Settings")]
     public float radiusX = 3f;
     public float radiusY = 1.5f;
+    [Tooltip("휴식 구역(타원) 중심의 차량 기준 위치. 모닥불이 이 자리에 놓인다.")]
+    public Vector2 centerOffset = Vector2.zero;
+
+    [Header("Visual")]
+    [Tooltip("모닥불 + 휴식 범위 타원. 던전 차량에서만 보인다.")]
+    [SerializeField] private RestAreaVisual restAreaVisual;
+    private bool bShowRestAreaVisual = false;
 
     private bool bIsCharacterInside = false;
 
@@ -33,9 +40,16 @@ public class StaminaRecoverCircle : MonoBehaviour
     //     나갈 때 false로 되돌려 그 원정 내내 스태미나가 전혀 닳지 않았다.
     //     지금은 휴식 구역 전용 플래그만 쓰고 공용 스위치는 건드리지 않는다.
 
-    public void Initialize(Transform _charTransform)
+    public void Initialize(Transform _charTransform, IEnvironmentProvider _environmentProvider, bool _bShowRestAreaVisual)
     {
         charTransform = _charTransform;
+        bShowRestAreaVisual = _bShowRestAreaVisual;
+
+        if (restAreaVisual != null)
+        {
+            restAreaVisual.transform.localPosition = centerOffset;
+            restAreaVisual.Initialize(_environmentProvider, radiusX, radiusY);
+        }
 
         // 넘어오는 것은 캐릭터 루트가 아니라 character.centerTransform(자식 피벗)이다.
         // Character 컴포넌트는 그 부모에 붙어 있으므로 부모에서 찾아야 한다. (RepairBox.Initialize와 동일)
@@ -53,6 +67,13 @@ public class StaminaRecoverCircle : MonoBehaviour
     {
         if (charTransform == null || character == null || pHealthComponent == null) return;
 
+        // 모닥불·타원은 특성 개방 여부만 따른다. 사망 중이거나 원 밖에 있어도 구역 자체는 계속 보인다.
+        if (restAreaVisual != null)
+        {
+            bool bOpened = character.statComponent != null && character.statComponent.staminaRecoverAmount > 0f;
+            restAreaVisual.SetOpen(bShowRestAreaVisual && bOpened);
+        }
+
         // 사망 중에는 관여하지 않는다. 사망 처리가 공용 스위치로 소모를 끄므로 휴식 상태만 풀어 둔다.
         if (character.bDead)
         {
@@ -69,7 +90,7 @@ public class StaminaRecoverCircle : MonoBehaviour
             return;
         }
 
-        Vector3 diff = charTransform.position - transform.position;
+        Vector3 diff = charTransform.position - GetCenter();
         float x = diff.x;
         float y = diff.y;
 
@@ -118,10 +139,26 @@ public class StaminaRecoverCircle : MonoBehaviour
         ExitRestArea();
     }
 
+    /// <summary>차량이 배치/재배치될 때 모닥불 발밑 타일을 다시 등록한다.</summary>
+    public void RefreshRestAreaFootprint()
+    {
+        if (restAreaVisual != null) restAreaVisual.RefreshFootprint();
+    }
+
+    private Vector3 GetCenter()
+    {
+        return transform.position + (Vector3)centerOffset;
+    }
+
+    private void OnValidate()
+    {
+        if (restAreaVisual != null) restAreaVisual.transform.localPosition = centerOffset;
+    }
+
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.green;
-        DrawEllipse(transform.position, radiusX, radiusY, 32);
+        DrawEllipse(GetCenter(), radiusX, radiusY, 32);
     }
 
     private void DrawEllipse(Vector3 center, float rx, float ry, int segments)
