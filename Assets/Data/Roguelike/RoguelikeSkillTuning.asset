@@ -62,7 +62,7 @@ MonoBehaviour:
   sporeExplosionDamage: 0
   sporeDuration: 6
   sporeTickInterval: 1.5
-  sporeTickDamage: 3
+  sporeTickDamage: 4
   dotTickIntervalMin: 0.2
   spinShockwaveSwingInterval: 3
   spinShockwaveDamage: 400

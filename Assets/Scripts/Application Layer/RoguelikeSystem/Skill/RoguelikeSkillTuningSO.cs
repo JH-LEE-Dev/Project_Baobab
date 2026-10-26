@@ -126,8 +126,8 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float sporeDuration = 6f;
     [Tooltip("오염 지속 피해 틱 주기(초). 1레벨 1.5초에서 시작해 카드 DotTickIntervalAdd(II −0.3 · IV −0.4 · VI −0.3초)로 1.2 / 0.8 / 0.5초까지 짧아진다(기획서 v2.8).")]
     public float sporeTickInterval = 1.5f;
-    [Tooltip("오염 틱당 피해(1레벨 3, 2레벨부터 지속 피해% +33으로 4)입니다. 피해%·지속 피해%로 늘어난다. 중첩 수만큼 곱해진다.")]
-    public float sporeTickDamage = 3f;
+    [Tooltip("오염 틱당 피해(1레벨 4, 레벨마다 지속 피해% +12.5로 +0.5씩 올라 7레벨 7, 기획서 v2.8)입니다. 피해%·지속 피해%로 늘어난다. 중첩 수만큼 곱해진다.")]
+    public float sporeTickDamage = 4f;
     [Tooltip("지속 피해 틱 주기의 하한(초). 공통 패시브 '지속 피해 속도 증가'가 줄여도 이보다 짧아지지 않는다(기획서 v2.5 6-3).")]
     public float dotTickIntervalMin = 0.2f;
 

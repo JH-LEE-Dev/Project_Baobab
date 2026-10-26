@@ -12,8 +12,10 @@ namespace PresentationLayer.VFX
     /// 렌더링은 바닥 메쉬(경로, 마커)와 공중 메쉬(소환 섬광 기둥과 불꽃)로 나뉜다. 바닥 메쉬는 나무와 캐릭터(Objects 레이어)보다
     /// 아래 레이어(ShockWave)에 그려져 나무가 항상 경로 위에 보이고, 공중 메쉬는 루트 렌더러의 레이어에 그려진다.
     ///
-    /// 경로는 쿼터뷰 바닥 위의 직선이다. 화살표와 차선 폭은 바닥 평면(세로를 2배로 편 좌표)에서 정의한 뒤 화면으로 투영해서(세로 0.5배)
-    /// 아이소 대각선 경로에서도 화살표가 경로 방향을 정확히 가리킨다.
+    /// 경로가 아이소 대각선(가로 2 : 세로 1)이면 그 정수 격자에 모든 요소를 맞춘다: 화살표는 꼭짓점 + 가로 팔 6px + 세로 팔 3px의
+    /// 정확한 직선 꺾쇠이고 4칸(가로 8, 세로 4)마다 하나씩 놓이며, 경계 점선과 게이트 선도 같은 격자 위에 있어 계단이 가지런하다.
+    /// 경로가 대각선에서 크게 벗어나면 바닥 평면(세로 2배 편 좌표) 투영 방식으로 그린다(폴백).
+    /// 여러 차선이 교차하면 먼저 시작한 차선이 위에 오고, 나중 차선의 화살표와 점선은 앞선 차선 띠 안에서 그리지 않는다.
     ///
     /// 수명: Begin -> (유지) -> Fire -> 걷힘이 끝나면 스스로 루트 ParticleSystem을 멈춰 풀에 반환한다. 웨이브/런 종료는 Cancel로 즉시 회수한다.
     /// Fire를 영영 부르지 않아도 MaxHoldSeconds가 지나면 스스로 끝낸다(루트 ParticleSystem 수명 60초 안쪽).
@@ -62,6 +64,16 @@ namespace PresentationLayer.VFX
         private const float WaveSpeed = 22.0f;
         private const int SparkCount = 14;
         private const int QuadBudget = 5000;
+        private const int LatticeChevronUnits = 4;     // 화살표 간격(격자 칸). 한 칸 = 가로 2px, 세로 1px
+        private const int LatticeChevronTip = 3;
+        private const int LatticeChevronHorizontalArm = 5;
+        private const int LatticeChevronVerticalArm = 3;
+        private const float LatticeSlopeMin = 0.35f;   // 가로 대비 세로 비율이 이 범위 안이면 아이소 대각선으로 본다
+        private const float LatticeSlopeMax = 0.65f;
+        private const float GroundPerLatticeUnit = 2.83f;
+        private const float UnderpassMargin = 9.0f;
+        private const float UnderpassFeather = 6.0f;   // 띠 가장자리와 걷힘 선두에서 가림이 0~1로 전이하는 폭(px)
+        private const int MaxActiveLanes = 16;
         private const float GroundGlow = 0.2f;
 
         // 경고 팔레트(앰버). 별 계열(하늘색)과 구분되는 따뜻한 색이다.
@@ -75,6 +87,11 @@ namespace PresentationLayer.VFX
         {
             GlowColor(ColorAmberDark, 0.05f), GlowColor(ColorAmber, 0.18f), GlowColor(ColorAmberLight, 0.3f), GlowColor(ColorCream, 0.4f),
         };
+
+        // 교차 구간 끊기용 활성 차선 목록(고정 배열, 시작 순서가 곧 우선순위)
+        private static readonly VFX_OffroadLane[] activeLanes = new VFX_OffroadLane[MaxActiveLanes];
+        private static int activeLaneCount;
+        private static int nextLaneOrder;
 
         private static readonly PixelQuadBuffer skyBuffer = new PixelQuadBuffer(QuadBudget);
         private static readonly PixelQuadBuffer groundBuffer = new PixelQuadBuffer(QuadBudget);
@@ -105,6 +122,12 @@ namespace PresentationLayer.VFX
         private float groundDirY;
         private float groundLength;
         private int chevronCount;
+        private bool bLattice;
+        private int stepX;
+        private int stepY;
+        private int latticeUnits;
+        private int edgeSteps;
+        private int laneOrder;
         private Vector3 cullingCenter;
         private Vector3 cullingSize = new Vector3(20.0f, 20.0f, 10.0f);
 
@@ -150,6 +173,17 @@ namespace PresentationLayer.VFX
             halfWidthPx = Mathf.Max(0.5f, 0.0f < _halfWidthUnits ? _halfWidthUnits : laneHalfWidth) * PixelsPerUnit;
             chevronCount = Mathf.Max(1, Mathf.FloorToInt((groundLength - ChevronStartOffset) / ChevronSpacing));
 
+            // 아이소 대각선(가로 2 : 세로 1)이면 정수 격자로 그린다
+            float screenDx = (to.x - from.x) * PixelsPerUnit;
+            float screenDy = (to.y - from.y) * PixelsPerUnit;
+            float slope = 1.0f < Mathf.Abs(screenDx) ? Mathf.Abs(screenDy) / Mathf.Abs(screenDx) : 0.0f;
+            bLattice = LatticeSlopeMin <= slope && slope <= LatticeSlopeMax;
+            stepX = screenDx < 0.0f ? -2 : 2;
+            stepY = screenDy < 0.0f ? -1 : 1;
+            latticeUnits = Mathf.Max(1, Mathf.RoundToInt(Mathf.Abs(screenDx) * 0.5f));
+            edgeSteps = Mathf.Max(2, Mathf.RoundToInt(halfWidthPx / GroundPerLatticeUnit));
+            if (true == bLattice) chevronCount = Mathf.Max(1, latticeUnits / LatticeChevronUnits);
+
             // 경계: 출발점~도착점 + 차선 폭과 섬광 높이 여유
             Vector3 mid = (from + to) * 0.5f;
             float spanX = Mathf.Abs(to.x - from.x) + (halfWidthPx * 2.0f + 80.0f) / PixelsPerUnit;
@@ -168,6 +202,9 @@ namespace PresentationLayer.VFX
             groundVertexCount = -1;
             appliedRootSortingLayerID = int.MinValue;
             appliedRootSortingOrder = int.MinValue;
+
+            laneOrder = nextLaneOrder++;
+            RegisterLane();
         }
 
         /// <summary>
@@ -217,10 +254,72 @@ namespace PresentationLayer.VFX
         private void Finish()
         {
             bActive = false;
+            UnregisterLane();
             if (null != meshRenderer && true == meshRenderer.enabled) meshRenderer.enabled = false;
             if (null != groundMeshRenderer && true == groundMeshRenderer.enabled) groundMeshRenderer.enabled = false;
 
             if (null != rootParticleSystem && true == rootParticleSystem.isPlaying) rootParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        private void RegisterLane()
+        {
+            for (int i = 0; i < activeLaneCount; i++)
+            {
+                if (this == activeLanes[i]) return;
+            }
+
+            if (MaxActiveLanes <= activeLaneCount) return;
+            activeLanes[activeLaneCount++] = this;
+        }
+
+        private void UnregisterLane()
+        {
+            for (int i = 0; i < activeLaneCount; i++)
+            {
+                if (this != activeLanes[i]) continue;
+
+                activeLanes[i] = activeLanes[--activeLaneCount];
+                activeLanes[activeLaneCount] = null;
+                return;
+            }
+        }
+
+        // 먼저 시작한 차선(우선순위 높음)이 이 점을 가리는 정도(0 = 안 가림, 1 = 완전히 가림). 바닥 평면(세로 2배)에서 거리를 잰다.
+        // 띠 가장자리는 페더로 서서히 약해지고, 선행 차선이 발동하면 차량이 지나간 쪽부터 가림이 풀리며, 종료 직전 EndLinger 동안 0으로 내려간다.
+        private float GetOtherLaneCover(int _x, int _y)
+        {
+            float cover = 0.0f;
+
+            for (int i = 0; i < activeLaneCount; i++)
+            {
+                VFX_OffroadLane other = activeLanes[i];
+                if (null == other || this == other || other.laneOrder >= laneOrder) continue;
+
+                float gx = _x - other.startX;
+                float gy = (_y - other.startY) / GroundSquashY;
+                float along = gx * other.groundDirX + gy * other.groundDirY;
+                float lateral = Mathf.Abs(gx * other.groundDirY - gy * other.groundDirX);
+
+                float laneCover = Mathf.Clamp01((other.halfWidthPx + UnderpassMargin - lateral) / UnderpassFeather);
+                laneCover *= Mathf.Clamp01((along + 8.0f) / UnderpassFeather);
+                laneCover *= Mathf.Clamp01((other.groundLength + 8.0f - along) / UnderpassFeather);
+
+                if (true == other.bFired)
+                {
+                    float clearS = Mathf.Clamp01(other.fireElapsed / Mathf.Max(0.05f, other.clearDuration)) * other.groundLength;
+                    laneCover *= Mathf.Clamp01((along - clearS) / UnderpassFeather + 1.0f);
+                    laneCover *= Mathf.Clamp01((other.clearDuration + EndLinger - other.fireElapsed) / EndLinger);
+                }
+
+                cover = Mathf.Max(cover, laneCover);
+            }
+
+            return cover;
+        }
+
+        private static Color32 ScaleAlpha(Color32 _color, float _scale)
+        {
+            return new Color32(_color.r, _color.g, _color.b, (byte)Mathf.RoundToInt(_color.a * Mathf.Clamp01(_scale)));
         }
 
         private void EnsureInitialized()
@@ -310,9 +409,85 @@ namespace PresentationLayer.VFX
             float clearT = true == bFired ? Mathf.Clamp01(fireElapsed / Mathf.Max(0.05f, clearDuration)) : 0.0f;
             float clearS = clearT * groundLength;
 
-            DrawEdges(_p, clearS);
-            DrawChevrons(_p, clearS);
+            if (true == bLattice)
+            {
+                int cleared = true == bFired ? Mathf.FloorToInt(clearT * latticeUnits) : -1;
+                DrawLatticeEdges(_p, cleared);
+                DrawLatticeChevrons(_p, cleared);
+            }
+            else
+            {
+                DrawEdges(_p, clearS);
+                DrawChevrons(_p, clearS);
+            }
+
             DrawMarker(_p);
+        }
+
+        // 격자 경계 점선 - 차선 폭 +-edgeSteps칸. 한 칸마다 가로 두 픽셀이라 2:1 계단이 정확하다. 3칸 켜고 3칸 끄며 흐른다.
+        private void DrawLatticeEdges(PixelPainter _p, int _cleared)
+        {
+            int visible = Mathf.FloorToInt(latticeUnits * Mathf.Clamp01(elapsed / RevealSeconds));
+            int phase = Mathf.FloorToInt(elapsed * 15.0f);
+            Color32 color = GlowColor(ColorAmberDark, 0.08f);
+
+            for (int side = -1; side <= 1; side += 2)
+            {
+                int offsetX = side * edgeSteps * stepX;
+                int offsetY = -side * edgeSteps * stepY;
+
+                for (int u = Mathf.Max(0, _cleared); u < visible; u++)
+                {
+                    if (((u + phase) % 6) >= 3) continue;
+
+                    int x = startX + u * stepX + offsetX;
+                    int y = startY + u * stepY + offsetY;
+                    float cover = GetOtherLaneCover(x, y);
+                    if (1.0f <= cover) continue;
+
+                    Color32 dotColor = 0.0f < cover ? ScaleAlpha(color, 1.0f - cover) : color;
+                    _p.Dot(x, y, dotColor);
+                    _p.Dot(x + (stepX < 0 ? -1 : 1), y, dotColor);
+                }
+            }
+        }
+
+        // 격자 화살표 - 꼭짓점 + 이동 반대쪽 가로 팔 6px + 세로 팔 3px. 4칸(가로 8, 세로 4)마다 하나씩, 밝은 파동 한 줄이 달려간다.
+        private void DrawLatticeChevrons(PixelPainter _p, int _cleared)
+        {
+            int visible = Mathf.FloorToInt(latticeUnits * Mathf.Clamp01(elapsed / RevealSeconds));
+            int basePulse = 0 != (Mathf.FloorToInt(elapsed * 4.0f) & 1) ? 1 : 0;
+            float cycle = chevronCount + 12.0f;
+            float head = Mathf.Repeat(elapsed * WaveSpeed, cycle);
+            int dirX = stepX < 0 ? -1 : 1;
+            int dirY = stepY < 0 ? -1 : 1;
+
+            for (int n = 0; n < chevronCount; n++)
+            {
+                int u = n * LatticeChevronUnits + LatticeChevronTip;
+                if (u >= visible || u < _cleared) continue;
+                if (true == bFired && n < 1) continue;
+
+                int tipX = startX + u * stepX;
+                int tipY = startY + u * stepY;
+                float cover = GetOtherLaneCover(tipX, tipY);
+                if (1.0f <= cover) continue;
+
+                int level = basePulse;
+                float behind = head - n;
+                if (0.0f <= behind && behind < 6.0f) level = Mathf.Max(level, 3 - Mathf.FloorToInt(behind / 2.0f));
+
+                // 경로 끝 쪽 화살표는 점멸하며 사라지는 느낌을 낸다
+                if (chevronCount - 4 < n && 0 != ((Mathf.FloorToInt(elapsed * 12.0f) + n) & 1)) level = Mathf.Max(0, level - 1);
+
+                Color32 color = ChevronColors[Mathf.Clamp(level, 0, 3)];
+                if (0.0f < cover) color = ScaleAlpha(color, 1.0f - cover);
+                int armEnd = tipX - dirX * LatticeChevronHorizontalArm;
+                _p.HLine(Mathf.Min(tipX, armEnd), Mathf.Max(tipX, armEnd), tipY, color);
+
+                // 세로 팔은 이동 반대쪽(위/아래)으로 뻗는다
+                for (int k = 1; k <= LatticeChevronVerticalArm; k++) _p.Dot(tipX, tipY - dirY * k, color);
+            }
         }
 
         // 차선 가장자리 점선 - 걷힌 구간은 그리지 않는다. 점선이 경로 방향으로 천천히 흐른다.
@@ -379,26 +554,41 @@ namespace PresentationLayer.VFX
             float untilDue = fireDueTime - elapsed;
             bool bBlink = false == bFired && 0.0f <= fireDueTime && untilDue < BlinkSeconds && 0 != (Mathf.FloorToInt(elapsed * 8.0f) & 1);
             Color32 ringColor = true == bBlink ? GlowColor(ColorWhite, 0.3f) : (0 != (Mathf.FloorToInt(elapsed * 6.0f) & 1) ? GlowColor(ColorCream, GroundGlow) : GlowColor(ColorAmberLight, GroundGlow));
-            int phase = Mathf.FloorToInt(elapsed * 30.0f);
 
-            _p.Ring(startX, startY, 17, 8, 2, 2, phase, ringColor);
+            _p.RingArc(startX, startY, 17, 8, 1, 0, 0.0f, ringColor);
 
             if (false == bFired)
             {
                 float contract = Mathf.Repeat(elapsed * 1.25f, 1.0f);
                 int radius = Mathf.RoundToInt(28.0f - 16.0f * contract);
-                if (3 <= Mathf.Abs(radius - 17)) _p.Ring(startX, startY, radius, Mathf.Max(1, Mathf.RoundToInt(radius * GroundSquashY)), 1, 2, -Mathf.FloorToInt(elapsed * 20.0f), GlowColor(contract < 0.5f ? ColorAmberLight : ColorAmber, GroundGlow * 0.7f));
+                if (3 <= Mathf.Abs(radius - 17)) _p.RingArc(startX, startY, radius, Mathf.Max(1, Mathf.RoundToInt(radius * GroundSquashY)), 1, 2, 0.0f, GlowColor(contract < 0.5f ? ColorAmberLight : ColorAmber, GroundGlow * 0.7f));
             }
 
             // 게이트 선: 소환 지점에서 차선 폭만큼 가로지르는 점선
-            _p.Line(ProjectX(0.0f, -halfWidthPx), ProjectY(0.0f, -halfWidthPx), ProjectX(0.0f, halfWidthPx), ProjectY(0.0f, halfWidthPx), 2, 2, Mathf.FloorToInt(elapsed * 20.0f), GlowColor(ColorAmber, 0.15f));
+            if (true == bLattice)
+            {
+                int gatePhase = Mathf.FloorToInt(elapsed * 20.0f);
+                for (int j = -edgeSteps; j <= edgeSteps; j++)
+                {
+                    if (((j + gatePhase) & 3) >= 2) continue;
+
+                    int gx = startX + j * stepX;
+                    int gy = startY - j * stepY;
+                    _p.Dot(gx, gy, GlowColor(ColorAmber, 0.15f));
+                    _p.Dot(gx + 1, gy, GlowColor(ColorAmber, 0.15f));
+                }
+            }
+            else _p.Line(ProjectX(0.0f, -halfWidthPx), ProjectY(0.0f, -halfWidthPx), ProjectX(0.0f, halfWidthPx), ProjectY(0.0f, halfWidthPx), 2, 2, Mathf.FloorToInt(elapsed * 20.0f), GlowColor(ColorAmber, 0.15f));
 
             // 링을 도는 표식 4개와 중심 별
             for (int j = 0; j < 4; j++)
             {
                 float angle = TwoPi * j / 4.0f + elapsed * 1.1f;
-                int mx = startX + Mathf.RoundToInt(Mathf.Cos(angle) * 17.0f);
-                int my = startY + Mathf.RoundToInt(-Mathf.Sin(angle) * 8.5f);
+                int offsetX;
+                int offsetY;
+                PixelPainter.RingPoint(17, 8, Mathf.Repeat(angle, TwoPi), out offsetX, out offsetY);
+                int mx = startX + offsetX;
+                int my = startY + offsetY;
                 _p.Shape(0 != (j & 1) ? PixelPainter.ShapePlus : PixelPainter.ShapeDiamond, mx, my, GlowColor(0 != (j & 1) ? ColorCream : ColorAmberLight, 0.25f));
             }
 
@@ -409,7 +599,7 @@ namespace PresentationLayer.VFX
             if (0.0f <= flashT && flashT < 1.0f)
             {
                 int radius = Mathf.RoundToInt(17.0f + 32.0f * EaseOutCubic(flashT));
-                _p.Ring(startX, startY, radius, Mathf.Max(1, Mathf.RoundToInt(radius * GroundSquashY)), 2, 1, Mathf.FloorToInt(elapsed * 50.0f), GlowColor(flashT < 0.4f ? ColorWhite : (flashT < 0.7f ? ColorCream : ColorAmberLight), 0.3f * (1.0f - flashT * 0.6f)));
+                _p.RingArc(startX, startY, radius, Mathf.Max(1, Mathf.RoundToInt(radius * GroundSquashY)), 1, 0, 0.0f, GlowColor(flashT < 0.4f ? ColorWhite : (flashT < 0.7f ? ColorCream : ColorAmberLight), 0.25f * (1.0f - flashT * 0.6f)));
             }
         }
 
@@ -508,6 +698,7 @@ namespace PresentationLayer.VFX
         private void OnDisable()
         {
             bActive = false;
+            UnregisterLane();
 
             if (null != meshRenderer) meshRenderer.enabled = false;
             if (null != groundMeshRenderer) groundMeshRenderer.enabled = false;
@@ -526,6 +717,14 @@ namespace PresentationLayer.VFX
                 Destroy(groundMesh);
                 groundMesh = null;
             }
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            activeLaneCount = 0;
+            nextLaneOrder = 0;
+            for (int i = 0; i < MaxActiveLanes; i++) activeLanes[i] = null;
         }
 
         private void OnValidate()

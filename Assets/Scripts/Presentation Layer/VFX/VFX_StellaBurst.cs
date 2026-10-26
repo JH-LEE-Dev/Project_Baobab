@@ -463,17 +463,21 @@ namespace PresentationLayer.VFX
             int radius = Mathf.RoundToInt(radiusPx * EaseOutQuart(Mathf.Clamp01(_tb / 0.5f)));
             if (radius < 2) return;
 
-            Color32 ringColor = _tb < 0.12f ? GlowColor(ColorWhite, GroundGlow) : (_tb < 0.3f ? GlowColor(ColorIce, GroundGlow) : (_tb < 0.5f ? GlowColor(ColorIce2, GroundGlow) : (_tb < 0.65f ? GlowColor(ColorBlue, GroundGlow * 0.6f) : GlowColor(ColorBlue2, 0.0f))));
+            // 끊김 없는 실선이라 점선보다 밝아 보이므로 알파를 낮춘다
+            float ringGlow = GroundGlow * 0.7f;
+            Color32 ringColor = _tb < 0.12f ? GlowColor(ColorWhite, ringGlow) : (_tb < 0.3f ? GlowColor(ColorIce, ringGlow) : (_tb < 0.5f ? GlowColor(ColorIce2, ringGlow) : (_tb < 0.65f ? GlowColor(ColorBlue, ringGlow * 0.6f) : GlowColor(ColorBlue2, 0.0f))));
             _p.LatticeBand(centerX, centerY, radius, 6, GroundSquashY, 4, GlowColor(_tb < 0.35f ? ColorBlue2 : ColorBlue3, BandGlow));
-            _p.Ring(centerX, centerY, radius, Mathf.Max(1, Mathf.RoundToInt(radius * GroundSquashY)), 2, 2, Mathf.FloorToInt(_tb * 60.0f), ringColor);
+            _p.RingArc(centerX, centerY, radius, Mathf.Max(1, Mathf.RoundToInt(radius * GroundSquashY)), 1, 0, 0.0f, ringColor);
 
             float goldT = Mathf.Clamp01((_tb - 0.08f) / 0.55f);
             if (0.0f < goldT && goldT < 1.0f)
             {
                 int goldRadius = Mathf.RoundToInt(radiusPx * 0.82f * EaseOutQuart(goldT));
-                if (3 <= radius - goldRadius && 2 <= goldRadius)
+
+                // 세로로도 2줄 이상 떨어진 동안만 그린다(가로 반지름 차 6 이상)
+                if (6 <= radius - goldRadius && 2 <= goldRadius)
                 {
-                    _p.Ring(centerX, centerY, goldRadius, Mathf.Max(1, Mathf.RoundToInt(goldRadius * GroundSquashY)), 1, 2, Mathf.FloorToInt(_tb * 50.0f), GlowColor(goldT < 0.6f ? ColorGold : ColorGold2, GroundGlow));
+                    _p.RingArc(centerX, centerY, goldRadius, Mathf.Max(1, Mathf.RoundToInt(goldRadius * GroundSquashY)), 1, 0, 0.0f, GlowColor(goldT < 0.6f ? ColorGold : ColorGold2, GroundGlow * 0.5f));
                 }
             }
         }
@@ -600,7 +604,7 @@ namespace PresentationLayer.VFX
                     int radius = Mathf.RoundToInt(44.0f * EaseOutCubic(ringT));
                     if (2 <= radius)
                     {
-                        _p.Ring(centerX, centerY + Mathf.RoundToInt(starHeightPx * 0.6f), radius, Mathf.Max(1, Mathf.RoundToInt(radius * GroundSquashY)), 3, 1, Mathf.FloorToInt(_tb * 80.0f), GlowColor(ringT < 0.4f ? ColorWhite : ColorIce, 0.25f));
+                        _p.RingArc(centerX, centerY + Mathf.RoundToInt(starHeightPx * 0.6f), radius, Mathf.Max(1, Mathf.RoundToInt(radius * GroundSquashY)), 1, 0, 0.0f, GlowColor(ringT < 0.4f ? ColorWhite : ColorIce, 0.22f));
                     }
                 }
             }
