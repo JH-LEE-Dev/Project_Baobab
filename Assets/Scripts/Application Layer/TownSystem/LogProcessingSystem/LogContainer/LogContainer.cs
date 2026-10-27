@@ -116,6 +116,13 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     private List<FlyingTransferItem> flyingItems = new List<FlyingTransferItem>(32);
     private HashSet<InventorySlot> transferringSlots = new HashSet<InventorySlot>();
     private const float FLY_INTERVAL = 0.075f;
+    // 원격 운반 서비스(운반 상자 -> 보관함) 비행에서 원목이 줄어들기 시작하는 진행도(LogItem.TransferLaunch 참고).
+    private const float REMOTE_DEPOSIT_SHRINK_START = 0.9f;
+    // 원격 운반 체공 시간. 캐릭터 납품(보관함 반경 1 안에서 약 1.25칸, 0.5초)을 기준으로 거리의 제곱근에 비례해 늘린다.
+    // 거리에 정비례하면 먼 거리가 늘어지고, 고정이면 먼 거리가 너무 빠르다.
+    private const float REMOTE_DEPOSIT_BASE_DURATION = 0.5f;
+    private const float REMOTE_DEPOSIT_BASE_DISTANCE = 1.25f;
+    private const float REMOTE_DEPOSIT_MAX_DURATION = 1.4f;
     // 플레이어 납품에서 밀린 발사를 한 번에 따라잡는 최대 시간(OffroadContainer.MAX_FLY_CATCHUP과 동일).
     private const float MAX_FLY_CATCHUP = 0.1f;
     private LogItemData arrivalDataBuffer = new LogItemData();
@@ -611,7 +618,13 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     // 유발할 수 있다.
     private bool CanAddItemByData(ItemData _sourceData)
     {
-        if (!(_sourceData is LogItemData logSource)) return false;
+        return GetAcceptableCountByData(_sourceData) > 0;
+    }
+
+    // CanAddItemByData의 계산 본체. 이 조합을 지금 더 받을 수 있는 개수(날아오는 중인 물량 반영)를 돌려준다.
+    private int GetAcceptableCountByData(ItemData _sourceData)
+    {
+        if (!(_sourceData is LogItemData logSource)) return 0;
 
         int matchingExistingSpace = 0;
         int emptySlotCount = 0;
@@ -705,7 +718,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             totalCapacity += maxItemsPerSlot * emptySlotsAvailableToMe;
         }
 
-        return pendingSameType < totalCapacity;
+        return Mathf.Max(0, totalCapacity - pendingSameType);
     }
 
     private void AddItemByData(ItemData _sourceData, LogState _state)
@@ -1004,6 +1017,66 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         ContainerUpdatedEvent?.Invoke();
 
         return true;
+    }
+
+    /// <summary>
+    /// 원격 운반 서비스(운반 상자 -> 이 보관함)용 납품. 캐릭터가 넣을 때(TransferOneSlotVisualRoutine)와 같은
+    /// 포물선으로 날아와 착지하고, 착지 시점에 커밋된다. 출발점이 캐릭터 대신 _fromWorldPos(운반 상자)이고,
+    /// 상자가 보관함에서 멀리 떨어져 있어 포물선 높이(_height)는 호출하는 쪽이 정한다.
+    /// 캐릭터가 넣은 것이 아니므로 착지 때 카메라 흔들림·진동은 없다(운반 NPC 납품과 같음).
+    /// </summary>
+    public bool TryRemoteDepositLogItemVisual(LogItemData _sourceData, Vector3 _fromWorldPos, float _height)
+    {
+        LogItemData visualData = new LogItemData
+        {
+            itemType = _sourceData.itemType,
+            treeType = _sourceData.treeType,
+            logState = _sourceData.logState,
+            color = _sourceData.color
+        };
+
+        if (!CanAddItemByData(visualData)) return false;
+
+        LogItem flyingItem = logItemPoolManager.GetLogItem(visualData);
+        flyingItem.SetFlyingItemSortingLayer();
+        flyingItem.IsDropItem(false);
+
+        Vector3 end = inputTransform != null ? inputTransform.position : transform.position;
+        Vector3 trajectoryJitter = new Vector3(UnityEngine.Random.Range(-0.3f, 0.0f), UnityEngine.Random.Range(-0.2f, 0.0f), 0f);
+        float rotationSpeed = UnityEngine.Random.Range(90f, 270f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
+
+        flyingItem.transform.position = _fromWorldPos;
+        float distance = Vector2.Distance(_fromWorldPos, end);
+        float duration = Mathf.Clamp(REMOTE_DEPOSIT_BASE_DURATION * Mathf.Sqrt(distance / REMOTE_DEPOSIT_BASE_DISTANCE),
+            REMOTE_DEPOSIT_BASE_DURATION, REMOTE_DEPOSIT_MAX_DURATION);
+
+        // 멀리서 높게 날아오므로 기본값(0.7)대로 줄어들면 보관함에 닿기 한참 전 공중에서 사라진다.
+        // 보관함 바로 위에서 줄어들게 한다.
+        flyingItem.TransferLaunch(_fromWorldPos, end, _height, duration, trajectoryJitter, rotationSpeed,
+            REMOTE_DEPOSIT_SHRINK_START);
+        flyingItems.Add(new FlyingTransferItem { item = flyingItem, fromCharacter = false });
+
+        ContainerUpdatedEvent?.Invoke();
+
+        return true;
+    }
+
+    /// <summary>
+    /// 이 원목을 지금 받을 자리가 있는지(비행 중인 물량 포함). 아무것도 발사하지 않는다.
+    /// 원격 운반 서비스가 운반 상자 뚜껑을 열기 전에 보낼 것이 있는지 미리 볼 때 쓴다.
+    /// </summary>
+    public bool CanAcceptLogItemData(LogItemData _sourceData)
+    {
+        return CanAddItemByData(_sourceData);
+    }
+
+    /// <summary>
+    /// 이 원목(나무 종류·등급 조합)을 지금 몇 개 더 받을 수 있는지(비행 중인 물량 포함, CanAcceptLogItemData와 같은 판정).
+    /// 아무것도 발사하지 않는다. 원격 운반 서비스가 가득 찬 보관함에 자리가 충분히 났는지 볼 때 쓴다.
+    /// </summary>
+    public int GetAcceptableLogCount(LogItemData _sourceData)
+    {
+        return GetAcceptableCountByData(_sourceData);
     }
 
     /// <summary>

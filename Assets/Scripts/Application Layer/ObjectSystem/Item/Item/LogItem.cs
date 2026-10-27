@@ -49,6 +49,8 @@ public class LogItem : Item, IStaticCollidable
     private Vector3 trajectoryJitter;
     private float height;
     private float duration;
+    // TransferLaunch / ContainerTransferLaunch 비행에서 원목이 줄어들기 시작하는 진행도(0~1). 기본 0.7.
+    private float transferShrinkStartT = 0.7f;
     private float elapsed;
     private float rotationSpeed;
     private float totalRotation;
@@ -643,12 +645,16 @@ public class LogItem : Item, IStaticCollidable
         PlayGemAura();
     }
 
-    public void TransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, Vector3 _jitter, float _rotationSpeed = 0f)
+    /// <param name="_shrinkStartT">원목이 줄어들기 시작하는 진행도(0~1). 멀리서 높게 날아오는 비행은 값을 키워야
+    /// 도착 지점 근처에서 흡수되는 것처럼 보인다(기본 0.7은 캐릭터 -> 보관함처럼 짧은 비행 기준).</param>
+    public void TransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, Vector3 _jitter, float _rotationSpeed = 0f,
+        float _shrinkStartT = 0.7f)
     {
         startPos = _start;
         endPos = _end;
         height = _height;
         duration = _duration;
+        transferShrinkStartT = Mathf.Clamp(_shrinkStartT, 0.4f, 0.99f);
         trajectoryJitter = _jitter;
         rotationSpeed = _rotationSpeed;
         elapsed = 0f;
@@ -664,12 +670,15 @@ public class LogItem : Item, IStaticCollidable
         }
     }
 
-    public void ContainerTransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, Vector3 _jitter, float _rotationSpeed = 0f)
+    /// <param name="_shrinkStartT">원목이 줄어들기 시작하는 진행도(0~1). TransferLaunch와 같다(기본 0.7은 상자 사정권 안의 짧은 비행 기준).</param>
+    public void ContainerTransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, Vector3 _jitter, float _rotationSpeed = 0f,
+        float _shrinkStartT = 0.7f)
     {
         startPos = _start;
         endPos = _end;
         height = _height;
         duration = _duration;
+        transferShrinkStartT = Mathf.Clamp(_shrinkStartT, 0.4f, 0.99f);
         trajectoryJitter = _jitter;
         rotationSpeed = _rotationSpeed;
         elapsed = 0f;
@@ -1088,7 +1097,7 @@ public class LogItem : Item, IStaticCollidable
 
         UpdateShadowScale(heightOffset);
 
-        // Scale 연출 (0.4까지 스프링 댐퍼(Overshoot) 효과로 커지고, 0.7부터 작아짐)
+        // Scale 연출 (0.4까지 스프링 댐퍼(Overshoot) 효과로 커지고, transferShrinkStartT(기본 0.7)부터 작아짐)
         float targetScale = 1f;
         if (t < 0.4f)
         {
@@ -1098,9 +1107,9 @@ public class LogItem : Item, IStaticCollidable
             // (t-1)^2 * ((s+1)(t-1) + s) + 1 공식 적용
             targetScale = Mathf.Max(0, (t1 * t1 * ((s + 1f) * t1 + s) + 1f));
         }
-        else if (t > 0.7f)
+        else if (t > transferShrinkStartT)
         {
-            float nt = (t - 0.7f) / 0.3f;
+            float nt = (t - transferShrinkStartT) / (1f - transferShrinkStartT);
             targetScale = 1f - nt;
         }
 
@@ -1162,7 +1171,7 @@ public class LogItem : Item, IStaticCollidable
 
         UpdateShadowScale(heightOffset);
 
-        // Scale 연출 동일하게 적용
+        // Scale 연출 동일하게 적용 (transferShrinkStartT(기본 0.7)부터 작아짐)
         float targetScale = 1f;
         if (t < 0.4f)
         {
@@ -1171,9 +1180,9 @@ public class LogItem : Item, IStaticCollidable
             float t1 = nt - 1f;
             targetScale = Mathf.Max(0, (t1 * t1 * ((s + 1f) * t1 + s) + 1f));
         }
-        else if (t > 0.7f)
+        else if (t > transferShrinkStartT)
         {
-            float nt = (t - 0.7f) / 0.3f;
+            float nt = (t - transferShrinkStartT) / (1f - transferShrinkStartT);
             targetScale = 1f - nt;
         }
 

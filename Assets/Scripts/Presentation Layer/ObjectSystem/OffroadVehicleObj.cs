@@ -1014,7 +1014,10 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         Vector3 playerPos = charTransform.position;
         float distToVehicleSq = (col.ClosestPoint(playerPos) - (Vector2)playerPos).sqrMagnitude;
-        float distToContainerSq = (offroadContainer.col.ClosestPoint(playerPos) - (Vector2)playerPos).sqrMagnitude;
+        // 자동 적재 모드에서는 상자와의 E 상호작용이 없으므로 경합에서 뺀다. 안 빼면 상자 근처에서 차량·모루 E가 막힌다.
+        float distToContainerSq = offroadContainer.IsInteractionDisabled
+            ? float.MaxValue
+            : (offroadContainer.col.ClosestPoint(playerPos) - (Vector2)playerPos).sqrMagnitude;
         float distToRepairBoxSq = float.MaxValue;
 
         if (repairBox != null && repairBox.gameObject.activeSelf)

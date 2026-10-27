@@ -228,6 +228,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         UpdateBounce(Time.deltaTime);
         UpdateContainerState(Time.deltaTime);
         UpdateLogSwapState(Time.deltaTime);
+        UpdateAutoLoad(Time.deltaTime);
+        UpdateRemoteLogTransport(Time.deltaTime);
     }
 
     private void UpdateFlyingItems(float _deltaTime)
@@ -559,8 +561,21 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             transferCoroutine = null;
         }
 
+        if (insuredLogVisualCoroutine != null)
+        {
+            StopCoroutine(insuredLogVisualCoroutine);
+            insuredLogVisualCoroutine = null;
+        }
+
         transferringSlots.Clear();
         bIsInteracting = false;
+        autoLoadCheckTimer = 0f;
+        SetAutoLoadAreaActive(false);
+        StopRemoteTransfer();
+        remoteTransportCheckTimer = 0f;
+        remoteTransportLastActiveTime = -999f;
+        bRemoteWaitingForRoom = false;
+        SetRemoteTransporting(false);
         ClearLogSwapRequest();
         bSwapDropPending = false;
         lastTransferTime = -transferInterval;
@@ -639,8 +654,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 yield return null;
             }
 
-            // 한 슬롯이 비워진 시점에 키 입력을 뗀 상태라면 중단
-            if (!bIsInteracting)
+            // 한 슬롯이 비워진 시점에 키 입력을 뗀 상태라면 중단(자동 적재 중이면 계속 담는다)
+            if (!bIsInteracting && !IsAutoLoading())
             {
                 break;
             }
@@ -650,7 +665,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private bool TryTransferOneSlot()
     {
-        if (!bCanInteract || characterInventory == null) return false;
+        if (!CanTransferWithCharacter() || characterInventory == null) return false;
 
         if (bInTown)
         {
@@ -742,6 +757,34 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         return false;
     }
 
+    // 캐릭터 -> 상자 비행의 기준. E 전송은 상자 반경(1.25칸) 안에서 높이 0.8~1.2, 0.5초로 난다.
+    private const float BOX_FLIGHT_BASE_DISTANCE = 1.25f;
+    private const float BOX_FLIGHT_BASE_DURATION = 0.5f;
+    private const float BOX_FLIGHT_MAX_DURATION = 1.4f;
+    private const float BOX_FLIGHT_MAX_HEIGHT = 3.0f;
+    // 기본 비행이 줄어들기 시작하는 진행도(LogItem 기본값과 같다).
+    private const float BOX_FLIGHT_BASE_SHRINK_START = 0.7f;
+
+    /// <summary>
+    /// 상자 사정권보다 먼 곳(자동 적재의 휴식 범위, 보험 증서의 탈진 위치)에서 상자로 날아오는 비행 값.
+    /// 기준 거리 안이면 E 전송과 똑같고, 멀수록 체공 시간과 높이를 거리의 제곱근에 비례해 늘린다(거리에 정비례하면
+    /// 먼 거리가 늘어지고, 고정이면 너무 빠르다). 줄어드는 구간은 실제 길이가 기본 비행과 같도록 뒤로 미뤄,
+    /// 어느 거리에서든 상자 바로 앞에서 흡수된다.
+    /// </summary>
+    private void GetCharacterToBoxFlight(Vector3 _start, Vector3 _end, out float _height, out float _duration, out float _shrinkStartT)
+    {
+        float distance = Vector2.Distance(_start, _end);
+        float scale = Mathf.Max(1f, Mathf.Sqrt(distance / BOX_FLIGHT_BASE_DISTANCE));
+
+        _duration = Mathf.Min(BOX_FLIGHT_BASE_DURATION * scale, BOX_FLIGHT_MAX_DURATION);
+        _height = Mathf.Min(UnityEngine.Random.Range(0.8f, 1.2f) * scale, BOX_FLIGHT_MAX_HEIGHT);
+
+        float baseShrinkLength = (1f - BOX_FLIGHT_BASE_SHRINK_START) * BOX_FLIGHT_BASE_DISTANCE;
+        _shrinkStartT = distance > BOX_FLIGHT_BASE_DISTANCE
+            ? Mathf.Clamp(1f - baseShrinkLength / distance, BOX_FLIGHT_BASE_SHRINK_START, 0.95f)
+            : BOX_FLIGHT_BASE_SHRINK_START;
+    }
+
     private float GetFlyInterval()
     {
         return FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul);
@@ -758,17 +801,22 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         return flyIntervalWait;
     }
 
-    private IEnumerator TransferOneSlotVisualRoutine(InventorySlot _sourceSlot, bool _toCharacter)
+    /// <param name="_toRemoteTarget">null이 아니면 원격 운반 서비스(이 상자 -> 제재소 원목 보관함)다. 발사 타이밍·간격·
+    /// 소리·슬롯 정리는 상자 -> 캐릭터 꺼내기와 같고, 비행과 착지 커밋만 보관함이 맡는다. _toCharacter는 false로 넘긴다.</param>
+    private IEnumerator TransferOneSlotVisualRoutine(InventorySlot _sourceSlot, bool _toCharacter, LogContainer _toRemoteTarget = null)
     {
         transferringSlots.Add(_sourceSlot);
         int transferGeneration = playerTransferGeneration;
+
+        // 이 상자의 슬롯을 비우는 방향인지(꺼내기·원격 운반). 아니면 가방 -> 상자 넣기다.
+        bool bFromContainer = _toCharacter || null != _toRemoteTarget;
 
         try
         {
             LogItemData sourceData = _sourceSlot.itemData as LogItemData;
             int countToTransfer = _sourceSlot.count;
 
-            if (!_toCharacter && countToTransfer > 0)
+            if (!bFromContainer && countToTransfer > 0)
             {
                 ItemTransferToContainerEvent?.Invoke();
             }
@@ -798,7 +846,30 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 if (_sourceSlot.count <= 0) break;
 
                 // CancelPlayerTransfer()로 끊긴 슬롯은 남은 개수를 더 발사하지 않는다(이미 발사된 것은 그대로 착지).
-                if (transferGeneration != playerTransferGeneration) break;
+                // 원격 운반은 플레이어 전송이 아니라 탑승(CancelPlayerTransfer)과 무관하게 이어지고, 멈춤은 아래 게이트가 정한다.
+                if (null == _toRemoteTarget && transferGeneration != playerTransferGeneration) break;
+
+                // 자동 적재 모드에서 캐릭터가 휴식 범위를 벗어났으면 이 원목부터는 보내지 않는다. 남은 원목은 가방에 그대로
+                // 남고, 이미 발사된 것은 그대로 착지한다. (E 전송은 이 모드에서 없으므로 일반 E 전송 동작은 바뀌지 않는다)
+                if (!bFromContainer && IsInteractionDisabled && !IsAutoLoading()) break;
+
+                if (null != _toRemoteTarget)
+                {
+                    // 마을을 떠나는 카메라 상승이 시작되는 등 원격 운반이 멈춰야 하는 상태가 되면 이 원목부터는 보내지 않는다.
+                    if (!UpdateRemoteTransportGate()) break;
+
+                    // 보관함 여유 판정(비행 중인 물량 포함)과 발사를 함께 한다. 자리가 없으면 아무 일도 없이 false다.
+                    // 상자가 보관함에서 멀어 포물선을 높이 띄운다(캐릭터 -> 보관함은 0.8~1.2).
+                    Vector3 remoteStart = GetRemoteLaunchPosition();
+                    float remoteHeight = UnityEngine.Random.Range(REMOTE_TRANSPORT_HEIGHT_MIN, REMOTE_TRANSPORT_HEIGHT_MAX);
+                    if (!_toRemoteTarget.TryRemoteDepositLogItemVisual(sourceData, remoteStart, remoteHeight)) break;
+
+                    _sourceSlot.TakeOneItem();
+                    Sound.PlayUI(SoundID.OutItem);
+
+                    nextFireTime = System.Math.Max(nextFireTime, Time.timeAsDouble - MAX_FLY_CATCHUP) + GetFlyInterval();
+                    continue;
+                }
 
                 if (_toCharacter)
                 {
@@ -850,6 +921,12 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 {
                     flyingItem.DynamicTransferLaunch(start, charTransform, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
                 }
+                else if (IsInteractionDisabled)
+                {
+                    // 자동 적재: 휴식 범위 어디서든 담기므로 상자 사정권보다 멀리서 날아온다. 거리에 맞춰 체공·높이·흡수 지점을 늘린다.
+                    GetCharacterToBoxFlight(start, end, out float flightHeight, out float flightDuration, out float shrinkStartT);
+                    flyingItem.ContainerTransferLaunch(start, end, flightHeight, flightDuration, trajectoryJitter, rotationSpeed, shrinkStartT);
+                }
                 else
                 {
                     flyingItem.ContainerTransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
@@ -862,7 +939,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
             if (_sourceSlot.count == 0)
             {
-                if (_toCharacter)
+                if (bFromContainer)
                 {
                     ItemDeleted(_sourceSlot);
                     ContainerUpdatedEvent?.Invoke();
@@ -875,7 +952,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     }
                 }
             }
-            else if (_toCharacter)
+            else if (bFromContainer)
             {
                 ContainerUpdatedEvent?.Invoke();
             }
@@ -1234,7 +1311,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private void UpdateInteractState()
     {
-        bool currentState = bCollisionEnabled && bCanReach && bPhysicalOverlapped;
+        // 자동 적재 모드에서는 상자와의 E 상호작용 자체가 없다(휴식 범위가 그 역할을 한다 - IsAutoLoading 참고).
+        bool currentState = !IsInteractionDisabled && bCollisionEnabled && bCanReach && bPhysicalOverlapped;
 
         if (currentState != bLastInteractState)
         {
@@ -1280,7 +1358,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             bPlayerOpenRequested = false;
             UpdateInteractState();
 
-            if (transferCoroutine != null)
+            // 자동 적재 중이면 상자 콜라이더와 무관하게 휴식 범위가 사정권이므로, 상자 옆을 지나쳤다고 전송을 끊지 않는다.
+            if (transferCoroutine != null && !IsAutoLoading())
             {
                 StopCoroutine(transferCoroutine);
                 transferCoroutine = null;
@@ -1509,6 +1588,17 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     public void SetInTown(bool _boolean)
     {
         bInTown = _boolean;
+
+        // 원격 운반 서비스·자동 적재는 맵에 새로 도착할 때마다 캐릭터가 움직일 수 있게 된 뒤 다시 시작한다.
+        bRemoteTransportStarted = false;
+        bRemoteTransportDeparted = false;
+        bRemoteDeparting = false;
+        bRemoteWasParked = false;
+        bRemoteWaitingForRoom = false;
+        bAutoLoadStarted = false;
+
+        // 자동 적재 모드(던전 전용) 여부가 바뀌었을 수 있다 - E 상호작용 가능 여부를 다시 맞춘다.
+        UpdateInteractState();
     }
 
     /// <summary>
@@ -2188,8 +2278,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private void UpdateLogSwapState(float _deltaTime)
     {
-        // 상자에 손이 닿지 않거나(멀어짐) 마을이면 넣는 상황 자체가 아니다.
-        bool bInRange = !bInTown && bCanInteract && characterInventory != null;
+        // 상자에 손이 닿지 않거나(멀어짐) 마을이면 넣는 상황 자체가 아니다. 자동 적재 모드에서는 휴식 범위가 사정권이다.
+        bool bInRange = !bInTown && CanTransferWithCharacter() && characterInventory != null;
 
         if (!bInRange)
         {
@@ -2290,7 +2380,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         // 사정권 밖(또는 마을)이면 실행하지 않는다. 아래 전송 시작이 bCanInteract를 보고 조용히 건너뛰는데, 슬롯 삭제는
         // 그 전에 일어나므로 트리거를 벗어나는 프레임에 Tab이 들어오면 상자 슬롯만 사라지고 가방 슬롯은 안 넘어갔다.
         // 요청 삭제는 Update(UpdateLogSwapState)에서 하므로 그 한 프레임은 GetLogSwapInfo가 아직 슬롯을 돌려준다.
-        if (bInTown || !bCanInteract || characterInventory == null) return LogSwapSlotInfo.None;
+        if (bInTown || !CanTransferWithCharacter() || characterInventory == null) return LogSwapSlotInfo.None;
 
         LogSwapSlotInfo info = GetLogSwapInfo();
         if (!info.bHasSlot) return LogSwapSlotInfo.None;
@@ -2315,7 +2405,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         // TransferAllItemsRoutine은 키를 뗀 상태면 한 슬롯 뒤 스스로 멈추므로 정확히 그 슬롯 하나만 넘어간다
         // (TryTransferOneSlot이 가장 비싼 종류 = 방금 막혀 있던 그 종류를 먼저 고른다). E를 누른 채였다면
         // 그건 E의 동작이라 평소처럼 이어진다.
-        if (bCanInteract && transferCoroutine == null && HasAnyItemToTransfer())
+        if (CanTransferWithCharacter() && transferCoroutine == null && HasAnyItemToTransfer())
         {
             // 전송 루프의 첫 대기(transferInterval, E 연타 완충용)는 여기선 뜻이 없으므로 직전 전송 시각을 밀어
             // 첫 스텝이 즉시 나가게 한다 - 안 하면 E로 상자를 채우다 막힌 직후 Tab을 눌렀을 때 가방 쪽이
@@ -2364,9 +2454,17 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private void UpdateContainerState(float _deltaTime)
     {
+        // 원격 운반 서비스가 있는 마을에서 출발 연출이 시작되면(상자가 차로 점프·이동) 뚜껑을 그대로 둔다. 출발 직전까지
+        // 원격 운반으로 열려 있던 뚜껑이 연출 도중 닫히거나 새로 열리면, 그 크기·회전 연출이 점프하는 상자에 그대로 걸린다
+        // (RequestRemoteTransfer 주석 참고). 다음 도착 때 ResetObject가 상자 상태를 초기화한다. 특성이 없으면 이전과 같다.
+        if (bRemoteLogTransport && bInTown && bRemoteDeparting)
+            return;
+
         // 데이터만 먼저 커밋되고 아직 날아오는 중인 원목(committedFlyingItems)도 착지 전까지는 전송 중으로 본다.
         // 빼면 착지 연출이 끝나기 전에 닫힘 타이머가 돌기 시작한다.
-        bool _isTransferring = (transferCoroutine != null) || (flyingItems.Count > 0) || (committedFlyingItems.Count > 0);
+        // 원격 운반 서비스로 원목을 내보내는 동안도 열어 둔다(원목이 이 상자에서 출발한다).
+        bool _isTransferring = (transferCoroutine != null) || (flyingItems.Count > 0) || (committedFlyingItems.Count > 0) ||
+            (remoteTransferCoroutine != null);
 
         if (_isTransferring)
         {
@@ -2461,7 +2559,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private bool HasAnyItemToTransfer()
     {
-        if (!bCanInteract || characterInventory == null) return false;
+        if (!CanTransferWithCharacter() || characterInventory == null) return false;
 
         if (bInTown)
         {
@@ -2525,6 +2623,13 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
             }
         }
+
+        // 원격 운반 서비스도 위 꺼내기와 같은 자리, 같은 조건(이번 열림을 원격 운반이 요청함)에서 시작한다.
+        if (bInTown && bContainerVisualOpened && bRemoteOpenRequested && remoteTransferCoroutine == null)
+        {
+            bRemoteOpenRequested = false;
+            remoteTransferCoroutine = StartCoroutine(RemoteTransferRoutine());
+        }
     }
 
     public void ItemTransferSpeedUP(float _amount)
@@ -2553,5 +2658,552 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         {
             capsule.size *= scaleRatio;
         }
+    }
+
+    // ── 운반 상자 특성(자동 적재 / 원격 운반 서비스 / 원목 보험 증서) ─────────────────────
+    //
+    // 셋 다 특성(SkillCommand)으로만 켜지고, 특성이 없으면 이 아래 코드는 아무 일도 하지 않는다.
+    // 로그라이크 캐릭터는 능력 트리가 비어 있어 셋 다 꺼진 채로 돈다.
+
+    // ── 자동 적재 ──
+    //
+    // 특성을 찍으면 던전에서 상자와의 E 상호작용이 사라지고(IsInteractionDisabled), 휴식 범위가 상자 사정권을 대신한다.
+    // 휴식 범위에 들어오면 상자 슬롯 UI와 가방이 열리고(AutoLoadAreaStateChangedEvent), 상호작용 키를 누르고 있는 것처럼
+    // 가방 -> 상자 전송이 계속 돈다. 전송 자체(순서·비행·착지 커밋·교체 막힘 기록)는 E 전송과 같은
+    // TransferAllItemsRoutine을 그대로 쓴다. 교체는 수동 그대로다 - 휴식 범위 안에서 교체 키로 일어난다.
+
+    private bool bAutoLoadInRestArea = false;
+    private float autoLoadCheckTimer = 0f;
+    // 이번 던전 방문에서 자동 적재를 시작해도 되는지. 스폰 지점이 휴식 범위 한가운데라, 이게 없으면 입장 연출 도중
+    // (조작 불가)에 상자 UI와 가방이 열린다. 캐릭터가 처음 움직일 수 있게 된 순간 켜지고, 맵이 바뀔 때(SetInTown) 꺼진다.
+    // 한 번 켜지면 그 뒤 넉백 등으로 이동이 잠깐 잠겨도 유지된다(UI가 깜빡이지 않게).
+    private bool bAutoLoadStarted = false;
+    // 마지막으로 알린 휴식 범위(=자동 적재 사정권) 안 여부.
+    private bool bAutoLoadAreaActive = false;
+
+    // 상자가 가득 차 넣을 것이 없을 때 매 프레임 가방을 다시 훑지 않도록 재시작 판정을 이 간격으로만 한다.
+    private const float AUTO_LOAD_CHECK_INTERVAL = 0.2f;
+
+    /// <summary>휴식 범위(자동 적재 사정권)에 들어왔을 때(true) / 나갔을 때(false). 상자 슬롯 UI와 가방을 열고 닫는 데 쓴다.</summary>
+    public event Action<bool> AutoLoadAreaStateChangedEvent;
+
+    /// <summary>
+    /// 자동 적재 모드(던전 + 자동 적재 특성)라 상자와의 E 상호작용이 없는지. 이때는 차량·모루의 E 대상 경합에서도 빠진다
+    /// (OffroadVehicleObj.CalcDistForCanReach).
+    /// 휴식 특성이 아직 없어 휴식 범위가 없으면 자동 적재가 돌 수 없으므로 E 상호작용을 그대로 둔다(상자를 못 쓰게 되지 않게).
+    /// </summary>
+    public bool IsInteractionDisabled => bAutoLoadInRestArea && !bInTown && IsRestAreaOpened();
+
+    // 휴식 범위가 열려 있는지. StaminaRecoverCircle의 개방 게이트와 같은 판정이다(staminaRecoverAmount는 특성으로만 0보다 커진다).
+    private bool IsRestAreaOpened()
+    {
+        return character != null && character.statComponent != null && character.statComponent.staminaRecoverAmount > 0f;
+    }
+
+    public void SetAutoLoadInRestArea(bool _bActive)
+    {
+        bAutoLoadInRestArea = _bActive;
+        UpdateInteractState();
+    }
+
+    /// <summary>
+    /// 지금 자동 적재가 동작해야 하는지. 던전 + 휴식 범위 안 + 원목을 다룰 수 있는 상태(사망·귀환 중 아님)일 때만이다.
+    /// 휴식 범위 판정은 휴식 특성이 열려 있을 때만 켜지므로(StaminaRecoverCircle) 휴식이 없으면 자동 적재도 없다.
+    /// </summary>
+    private bool IsAutoLoading()
+    {
+        if (!bAutoLoadInRestArea || bInTown || !bCollisionEnabled || !bAutoLoadStarted) return false;
+
+        // 귀환 경고창이 떠 있는 동안은 던전 전체와 함께 상자로 날아가던 원목도 멈춰 있다(PauseAllFlyingItems).
+        // 그동안 새로 쏘면 캐릭터 옆 공중에 멈춘 채 쌓이므로 자동 적재도 쉰다. 취소하거나 귀환을 확정하면 풀린다.
+        if (bFlyingPaused) return false;
+        if (character == null || character.bDead || !character.CanAcquireItems) return false;
+
+        return character.pHealthComponent != null && character.pHealthComponent.IsInRestArea;
+    }
+
+    /// <summary>가방과 상자 사이에 전송을 할 수 있는지. 상자 사정권이거나 자동 적재 중이면 된다.</summary>
+    private bool CanTransferWithCharacter()
+    {
+        return bCanInteract || IsAutoLoading();
+    }
+
+    private void SetAutoLoadAreaActive(bool _bActive)
+    {
+        if (bAutoLoadAreaActive == _bActive) return;
+
+        bAutoLoadAreaActive = _bActive;
+        AutoLoadAreaStateChangedEvent?.Invoke(_bActive);
+    }
+
+    private void UpdateAutoLoad(float _deltaTime)
+    {
+        // 던전에 들어와 캐릭터가 차에서 내려 처음 움직일 수 있게 된 뒤부터 자동 적재를 연다(입장 연출 중에는 열지 않는다).
+        if (!bAutoLoadStarted && bAutoLoadInRestArea && !bInTown && inputManager != null && !inputManager.IsMovePaused &&
+            character != null && character.gameObject.activeInHierarchy && !character.bRide)
+        {
+            bAutoLoadStarted = true;
+        }
+
+        SetAutoLoadAreaActive(IsAutoLoading());
+
+        if (transferCoroutine != null || !IsAutoLoading())
+        {
+            autoLoadCheckTimer = 0f;
+            return;
+        }
+
+        autoLoadCheckTimer -= _deltaTime;
+        if (autoLoadCheckTimer > 0f) return;
+        autoLoadCheckTimer = AUTO_LOAD_CHECK_INTERVAL;
+
+        if (HasAnyItemToTransfer())
+        {
+            transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
+        }
+    }
+
+    // ── 원격 운반 서비스 ──
+    //
+    // 마을에서 이 상자에 든 원목을 제재소 원목 보관함(LogContainer)으로 보낸다. 가치가 높은 원목 슬롯부터
+    // 보내고, 보관함이 그 원목을 받을 자리가 없으면 다음으로 비싼 슬롯을 본다(칸이 되는대로).
+    //
+    // 시작과 발사는 마을에서 E로 상자에서 꺼낼 때와 같은 코드를 탄다: 뚜껑을 열고(OpenContainerImmediately),
+    // 이미 열려 있으면 바로, 아니면 뚜껑이 입을 벌린 순간(SetContainerVisualOpened) 전송 루틴을 시작한다.
+    // 슬롯 하나는 TransferOneSlotVisualRoutine이 같은 발사 간격으로 쏜다 - 도착지만 캐릭터 대신 보관함이다.
+    // 비행은 캐릭터가 보관함에 넣을 때와 같은 포물선이고, 착지 커밋·여유 계산·저장 정산은 보관함의 기존
+    // 납품 경로(flyingItems)가 그대로 처리한다(LogContainer.TryRemoteDepositLogItemVisual).
+    // 데이터는 발사 순간 이 상자에서 빠지고 보관함의 비행 목록으로 넘어가므로 중간에 저장해도 사라지거나 늘지 않는다.
+
+    private bool bRemoteLogTransport = false;
+    private LogContainer remoteTransportTarget;
+    private Coroutine remoteTransferCoroutine;
+    // 이번 뚜껑 열림을 원격 운반이 요청했는지(꺼내기의 bPlayerOpenRequested와 같은 역할).
+    private bool bRemoteOpenRequested = false;
+    private float remoteLastTransferTime = -999f;
+    private float remoteTransportCheckTimer = 0f;
+    // 지금 원격 운반 중인지(UI 표시용). 전송이 시작되면 켜지고, 전송이 끝난 뒤
+    // REMOTE_TRANSPORT_ACTIVE_HOLD 동안 다시 시작되지 않으면 꺼진다(보관함이 잠깐 차서 한두 개씩 이어 보낼 때 깜빡이지 않게).
+    private bool bRemoteTransporting = false;
+    private float remoteTransportLastActiveTime = -999f;
+    private const float REMOTE_TRANSPORT_ACTIVE_HOLD = 2f;
+
+    /// <summary>원격 운반이 시작됐을 때(true) / 끝났을 때(false). 운반 상자 UI를 띄우고 내리는 데 쓴다.</summary>
+    public event Action<bool> RemoteTransportStateChangedEvent;
+
+    // 이번 마을 방문에서 운반을 시작해도 되는지. 마을에 도착해 캐릭터가 처음 움직일 수 있게 된 순간 켜지고,
+    // 마을/던전이 바뀔 때(SetInTown) 꺼진다. 한 번 켜지면 그 뒤 UI 때문에 이동이 잠겨도 운반은 이어진다.
+    private bool bRemoteTransportStarted = false;
+    // 이번 마을 방문에서 떠나는 카메라 상승이 시작됐는지(숲 출발·메인메뉴 이탈). 켜지면 마을에 다시 도착할 때까지 보내지 않는다.
+    private bool bRemoteTransportDeparted = false;
+    // 보관함이 가득 차 상자에 원목을 남긴 채 운반을 멈췄는지. 켜져 있으면 가공 라인이 한 칸씩 빼 갈 때마다 한 개씩
+    // 보내지 않고(그때마다 뚜껑·상자 UI가 열렸다 닫힌다), 보관함에 한 슬롯 분량의 자리가 난 뒤 몰아서 보낸다
+    // (CanResumeRemoteTransport). 마을에 도착한 직후의 첫 운반은 이 대기 없이 바로 보낸다.
+    private bool bRemoteWaitingForRoom = false;
+    private readonly List<InventorySlot> remoteTransportCandidates = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
+
+    // 전송이 쉬는 동안 보낼 원목이 생겼는지 다시 볼 간격.
+    private const float REMOTE_TRANSPORT_CHECK_INTERVAL = 0.25f;
+    // 상자 -> 보관함 포물선 높이. 캐릭터 -> 보관함(0.8~1.2)보다 거리가 멀어 높게 띄운다.
+    private const float REMOTE_TRANSPORT_HEIGHT_MIN = 2.4f;
+    private const float REMOTE_TRANSPORT_HEIGHT_MAX = 3.0f;
+
+    public void SetRemoteLogTransport(bool _bActive)
+    {
+        bRemoteLogTransport = _bActive;
+    }
+
+    /// <summary>원격 운반 서비스가 원목을 보낼 제재소 원목 보관함. TownSystem이 초기화 때 넣어준다.</summary>
+    public void SetRemoteTransportTarget(LogContainer _logContainer)
+    {
+        remoteTransportTarget = _logContainer;
+    }
+
+    /// <summary>
+    /// 마을을 떠나는 카메라 상승이 시작됐다(숲 출발 확정 뒤 상자가 차에 안착하고 하늘 연출이 시작된 순간, 또는 메인메뉴 이탈).
+    /// 원격 운반을 멈추고, 이번 방문에서는 다시 시작하지 않는다. 진행 중인 슬롯도 다음 원목부터 멈추고, 이미 날아간 원목은
+    /// 그대로 보관함에 착지한다. TownSystem이 부른다.
+    /// </summary>
+    public void StopRemoteTransportForDeparture()
+    {
+        bRemoteTransportDeparted = true;
+        StopRemoteTransfer();
+    }
+
+    /// <summary>
+    /// 상자가 마을에 세워져 있는지. 숲 출발이 확정되면(DungeonSelected의 콜라이더 끔 / StartDrive의 DisableCollision)
+    /// 상자는 차에 실려 떠나는 중이다. 마을에 막 도착했을 때도 잠깐(콜라이더가 켜지기 전) false이므로, 출발 여부는
+    /// 이 값이 아니라 bRemoteDeparting으로 판단한다.
+    /// </summary>
+    private bool IsParked()
+    {
+        return col != null && col.enabled && bCollisionEnabled;
+    }
+
+    // 이번 마을 방문에서 상자가 세워져 있다가 출발 연출로 들어갔는지(세워짐 -> 아님 전환을 본 뒤 켜진다). 켜져 있는 동안
+    // 상자는 차로 점프·이동 중이라 원격 운반이 뚜껑을 건드리지 않고, 원목은 상자 그림 위치에서 쏘며, 상자 UI는 내린다.
+    private bool bRemoteDeparting = false;
+    private bool bRemoteWasParked = false;
+
+    private void UpdateRemoteDepartingState()
+    {
+        if (!bInTown) return;
+
+        bool bParked = IsParked();
+        if (bRemoteWasParked && !bParked)
+            bRemoteDeparting = true;
+
+        bRemoteWasParked = bParked;
+    }
+
+    // ResetObject가 로직 위치를 상자 그림(ContainerPivot)보다 0.25 위에 둔다. 출발 뒤 그림 기준으로 쏠 때 세워져 있을 때와
+    // 같은 높이가 되도록 맞춘다.
+    private static readonly Vector3 REMOTE_LAUNCH_OFFSET_FROM_VISUAL = new Vector3(0f, 0.45f, 0f);
+
+    // 원격 운반 원목이 출발하는 위치. 세워져 있을 때는 E로 꺼낼 때와 같은 자리(로직 위치 + 0.2)다. 출발 연출 중에는
+    // 상자 그림이 차와 함께 떠나고 로직 위치는 땅에 남으므로, 차와 함께 움직이는 그림 위치에서 쏜다.
+    private Vector3 GetRemoteLaunchPosition()
+    {
+        if (!bRemoteDeparting || visualTransform == null)
+            return transform.position + new Vector3(0f, 0.2f, 0f);
+
+        return visualTransform.position + REMOTE_LAUNCH_OFFSET_FROM_VISUAL;
+    }
+
+    private void UpdateRemoteLogTransport(float _deltaTime)
+    {
+        UpdateRemoteDepartingState();
+
+        if (!UpdateRemoteTransportGate())
+        {
+            StopRemoteTransfer();
+            SetRemoteTransporting(false);
+            return;
+        }
+
+        if (remoteTransferCoroutine != null || bRemoteOpenRequested)
+        {
+            remoteTransportLastActiveTime = Time.time;
+        }
+        else
+        {
+            remoteTransportCheckTimer -= _deltaTime;
+            if (remoteTransportCheckTimer <= 0f)
+            {
+                remoteTransportCheckTimer = REMOTE_TRANSPORT_CHECK_INTERVAL;
+
+                if (CanResumeRemoteTransport())
+                {
+                    if (FindRemoteTransportSlot() != null)
+                    {
+                        bRemoteWaitingForRoom = false;
+                        remoteTransportLastActiveTime = Time.time;
+                        RequestRemoteTransfer();
+                    }
+                    else if (GetRemoteTransportableLogCount() > 0)
+                    {
+                        // 마을에 도착했을 때부터 보관함이 가득 차 있으면 운반이 시작되지 않아 대기에 들어가지 못한다.
+                        // 그대로 두면 첫 빈칸이 날 때 한 개만 따로 보내게 되므로 여기서도 대기에 들어간다.
+                        bRemoteWaitingForRoom = true;
+                    }
+                }
+            }
+        }
+
+        // 상자 UI는 상자가 마을에 세워져 있는 동안만 띄운다. 숲 출발이 확정되면(상자 콜라이더가 꺼짐) 상자는 차에 실려
+        // 떠나므로 UI는 내리고, 운반은 카메라가 올라갈 때까지 이어진다.
+        SetRemoteTransporting(!bRemoteDeparting && Time.time - remoteTransportLastActiveTime < REMOTE_TRANSPORT_ACTIVE_HOLD);
+    }
+
+    /// <summary>
+    /// 마을에서 E로 상자에서 꺼낼 때(InteractionKeyPressed의 bInTown 분기)와 같은 순서로 시작한다 - 뚜껑을 열고,
+    /// 이미 열려 있으면 바로 전송 루틴을 시작하고, 아니면 뚜껑이 입을 벌릴 때 SetContainerVisualOpened가 시작한다.
+    /// </summary>
+    private void RequestRemoteTransfer()
+    {
+        // 출발 연출 중(상자가 차로 점프·이동)에는 뚜껑을 건드리지 않고 바로 보낸다. 뚜껑 연출이 크기·회전을 바꾸는
+        // ContainerPivot이 점프하는 상자의 부모라, 그 사이 열고 닫으면 날아가는 상자가 찌그러지고 돈다.
+        if (bRemoteDeparting)
+        {
+            remoteTransferCoroutine = StartCoroutine(RemoteTransferRoutine());
+            return;
+        }
+
+        bRemoteOpenRequested = true;
+        OpenContainerImmediately();
+        if (bContainerVisualOpened)
+        {
+            bRemoteOpenRequested = false;
+            remoteTransferCoroutine = StartCoroutine(RemoteTransferRoutine());
+        }
+    }
+
+    private void StopRemoteTransfer()
+    {
+        bRemoteOpenRequested = false;
+
+        if (remoteTransferCoroutine != null)
+        {
+            StopCoroutine(remoteTransferCoroutine);
+            remoteTransferCoroutine = null;
+        }
+    }
+
+    /// <summary>
+    /// TransferAllItemsRoutine과 같은 흐름으로 슬롯 단위 전송을 이어간다. 키 대신 "보낼 원목이 남았는지"로 계속 여부를
+    /// 정하고, 슬롯은 FindRemoteTransportSlot이 고른다. 슬롯 하나의 발사는 꺼내기와 같은 TransferOneSlotVisualRoutine이다.
+    /// </summary>
+    private IEnumerator RemoteTransferRoutine()
+    {
+        while (true)
+        {
+            // 이전 전송으로부터 인터벌이 지날 때까지 대기
+            while (Time.time - remoteLastTransferTime < (transferInterval / Mathf.Max(0.01f, itemTransferSpeedMul)))
+            {
+                yield return null;
+            }
+
+            // 플레이어가 E로 꺼내는 중이면 그 전송이 끝날 때까지 새 슬롯을 시작하지 않는다. 꺼내기 루틴은 전송 중인
+            // 슬롯이 모두 끝나야 다음 슬롯을 잡으므로, 여기서 이어 잡으면 E가 운반이 끝날 때까지 먹히지 않는다.
+            while (transferCoroutine != null)
+            {
+                yield return null;
+            }
+
+            if (!UpdateRemoteTransportGate()) break;
+
+            InventorySlot slot = FindRemoteTransportSlot();
+            if (slot == null)
+            {
+                // 보낼 원목이 남았는데 보관함이 받지 못해 멈추는 것이면, 다음은 자리가 넉넉히 난 뒤에 몰아서 보낸다.
+                bRemoteWaitingForRoom = GetRemoteTransportableLogCount() > 0;
+                break;
+            }
+
+            StartCoroutine(TransferOneSlotVisualRoutine(slot, false, remoteTransportTarget));
+            remoteLastTransferTime = Time.time;
+
+            // 방금 시작한 슬롯의 전송이 끝날 때까지 대기
+            while (transferringSlots.Contains(slot))
+            {
+                yield return null;
+            }
+        }
+
+        remoteTransferCoroutine = null;
+    }
+
+    private void SetRemoteTransporting(bool _bTransporting)
+    {
+        if (bRemoteTransporting == _bTransporting) return;
+
+        bRemoteTransporting = _bTransporting;
+        RemoteTransportStateChangedEvent?.Invoke(_bTransporting);
+    }
+
+    /// <returns>지금 원격 운반이 돌 수 있는 상태인지(특성 보유 + 마을 + 캐릭터가 움직일 수 있게 된 뒤).</returns>
+    private bool UpdateRemoteTransportGate()
+    {
+        // 마을에 있는 동안 보낸다. 차에 타고 숲을 골라 출발하는 동안에도 이어지고, 카메라가 하늘로 올라가기 시작하면
+        // (StopRemoteTransportForDeparture) 이번 마을 방문에서는 더 보내지 않는다.
+        if (!bRemoteLogTransport || !bInTown || bRemoteTransportDeparted || remoteTransportTarget == null ||
+            !remoteTransportTarget.isActiveAndEnabled)
+        {
+            return false;
+        }
+
+        // 마을에 도착해 캐릭터가 차에서 내려 움직일 수 있게 된 뒤부터 보낸다(도착 연출 중에는 보내지 않는다).
+        if (!bRemoteTransportStarted)
+        {
+            if (inputManager == null || inputManager.IsMovePaused) return false;
+            if (character == null || !character.gameObject.activeInHierarchy || character.bRide) return false;
+
+            bRemoteTransportStarted = true;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 보관함으로 지금 보낼 슬롯. 개당 가치가 높은 슬롯부터 보면서, 보관함에 그 원목을 받을 자리가 있는 첫 슬롯을
+    /// 고른다(칸이 되는대로). 없으면 null.
+    /// </summary>
+    private InventorySlot FindRemoteTransportSlot()
+    {
+        remoteTransportCandidates.Clear();
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            if (!(slot.itemData is LogItemData) || slot.count <= 0) continue;
+
+            // 플레이어가 꺼내 가는 중인 슬롯은 건드리지 않는다.
+            if (transferringSlots.Contains(slot)) continue;
+
+            remoteTransportCandidates.Add(slot);
+        }
+
+        if (remoteTransportCandidates.Count == 0) return null;
+
+        // 개당 가치가 높은 순, 같으면 많이 쌓인 순(마을에서 상자를 비우는 FindBestSlotToCharacter와 같은 기준).
+        remoteTransportCandidates.Sort(CompareRemoteTransportOrder);
+
+        for (int i = 0; i < remoteTransportCandidates.Count; i++)
+        {
+            // 보관함 여유 판정은 비행 중인 물량까지 센다.
+            if (remoteTransportTarget.CanAcceptLogItemData((LogItemData)remoteTransportCandidates[i].itemData))
+            {
+                return remoteTransportCandidates[i];
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 가득 찬 보관함을 기다리던 중이면, 상자에 든 원목 중 한 조합(나무 종류·등급)이라도 보관함에 한 슬롯 분량만큼
+    /// 들어갈 자리가 났는지(상자에 그 조합이 그보다 적으면 그만큼). 자리는 조합별로 따진다 - 다른 종류 칸이 비어 있는
+    /// 것만으로는 상자 원목이 한 개씩만 들어가 다시 매번 뚜껑이 열린다. 기다리는 중이 아니면 언제든 true다.
+    /// </summary>
+    private bool CanResumeRemoteTransport()
+    {
+        if (!bRemoteWaitingForRoom) return true;
+
+        int maxPerSlot = remoteTransportTarget.GetMaxItemsPerSlot();
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            if (!(slot.itemData is LogItemData logData) || slot.count <= 0) continue;
+            if (transferringSlots.Contains(slot)) continue;
+
+            int need = Mathf.Min(maxPerSlot, GetRemoteTransportableLogCount(logData));
+            if (remoteTransportTarget.GetAcceptableLogCount(logData) >= need) return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 상자에서 원격 운반으로 보낼 수 있는 원목 수(플레이어가 꺼내 가는 중인 슬롯은 뺀다). _filter를 주면 그 조합
+    /// (나무 종류·등급)만 센다.
+    /// </summary>
+    private int GetRemoteTransportableLogCount(LogItemData _filter = null)
+    {
+        int total = 0;
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            if (!(slot.itemData is LogItemData logData) || slot.count <= 0) continue;
+            if (transferringSlots.Contains(slot)) continue;
+            if (_filter != null && (logData.treeType != _filter.treeType || logData.logState != _filter.logState)) continue;
+
+            total += slot.count;
+        }
+
+        return total;
+    }
+
+    private static int CompareRemoteTransportOrder(InventorySlot _a, InventorySlot _b)
+    {
+        LogItemData a = (LogItemData)_a.itemData;
+        LogItemData b = (LogItemData)_b.itemData;
+
+        long unitA = LogValue.GetUnitValue(a.treeType, a.logState);
+        long unitB = LogValue.GetUnitValue(b.treeType, b.logState);
+        if (unitA != unitB) return unitB.CompareTo(unitA);
+
+        return _b.count.CompareTo(_a.count);
+    }
+
+    // ── 원목 보험 증서 ──
+    //
+    // 탈진으로 유실될 원목 중 일부를 이 상자로 옮긴다. 데이터 선별·커밋은 InventoryManager.RescueInsuredLogs가
+    // 유실 처리(DropAllItem) 직전에 즉시 끝내고, 여기서는 연출만 재생한다. 유실 원목이 몸 위로 분출되는 연출이
+    // 먼저 끝난 뒤, 보호된 원목이 E로 넣을 때와 같은 비행으로 캐릭터에게서 상자로 날아가 박힌다.
+    // 데이터가 먼저 들어가 있으므로 연출은 committedFlyingItems(착지 때 피드백만)에 싣는다 -
+    // 결과창 집계와 저장이 연출 진행과 무관하게 맞는다.
+
+    // 누적 비율(%). 레벨마다 더해지고 실제 적용은 0~100으로 막는다.
+    private float logInsurancePercent = 0f;
+
+    private Coroutine insuredLogVisualCoroutine;
+    private readonly List<(TreeType treeType, LogState logState)> insuredLogVisualPlan = new List<(TreeType, LogState)>(16);
+
+    /// <summary>탈진 시 운반 상자로 옮길 비율(0~1). 0이면 원목 보험 증서가 없다.</summary>
+    public float LogInsuranceRatio => Mathf.Clamp01(logInsurancePercent * 0.01f);
+
+    public void IncreaseLogInsurancePercent(float _amount)
+    {
+        logInsurancePercent = Mathf.Max(0f, logInsurancePercent + _amount);
+    }
+
+    /// <summary>
+    /// 보험으로 상자에 담긴 원목이 캐릭터에게서 상자로 날아가는 연출을 _delay 뒤부터 재생한다. 데이터는 이미 커밋된
+    /// 상태여야 한다. _delay에는 유실 원목 분출 연출(DropAllItem)이 끝나는 시간을 넘겨, 분출이 먼저 보이게 한다.
+    /// 비행 모양과 발사 간격은 E로 넣을 때(TransferOneSlotVisualRoutine)와 같다.
+    /// </summary>
+    public void PlayInsuredLogVisuals(List<(TreeType treeType, LogState logState)> _plan, Vector3 _startPos, float _delay)
+    {
+        if (_plan == null || _plan.Count == 0) return;
+
+        if (insuredLogVisualCoroutine != null)
+        {
+            StopCoroutine(insuredLogVisualCoroutine);
+        }
+
+        insuredLogVisualPlan.Clear();
+        insuredLogVisualPlan.AddRange(_plan);
+        insuredLogVisualCoroutine = StartCoroutine(InsuredLogVisualRoutine(_startPos, _delay));
+    }
+
+    private IEnumerator InsuredLogVisualRoutine(Vector3 _startPos, float _delay)
+    {
+        if (_delay > 0f)
+        {
+            yield return new WaitForSeconds(_delay);
+        }
+
+        for (int i = 0; i < insuredLogVisualPlan.Count; i++)
+        {
+            // 쓰러진 캐릭터는 움직이지 않지만, E 전송처럼 발사 순간의 캐릭터 위치에서 출발시킨다.
+            Vector3 start = charTransform != null ? charTransform.position : _startPos;
+            LaunchInsuredLogVisual(insuredLogVisualPlan[i].treeType, insuredLogVisualPlan[i].logState, start);
+
+            if (i < insuredLogVisualPlan.Count - 1)
+            {
+                yield return GetFlyIntervalWait();
+            }
+        }
+
+        insuredLogVisualCoroutine = null;
+    }
+
+    private void LaunchInsuredLogVisual(TreeType _treeType, LogState _logState, Vector3 _startPos)
+    {
+        // 아래 발사 설정은 TransferOneSlotVisualRoutine의 가방 -> 상자 방향과 같고, 비행 값만 거리에 맞춘다(GetCharacterToBoxFlight).
+        LogItem flyingItem = logItemPoolManager.GetLogItem(_treeType, _logState);
+        if (flyingItem == null) return;
+
+        flyingItem.SetFlyingItemSortingLayer();
+        flyingItem.IsDropItem(false);
+        flyingItem.spriteRenderer.sortingOrder = 100;
+
+        Vector3 containerPos = transform.position + new Vector3(0f, 0.2f, 0f);
+
+        Vector3 dir = (containerPos - _startPos).normalized;
+        if (dir == Vector3.zero) dir = Vector3.up;
+        Vector3 normal = new Vector3(-dir.y, dir.x, 0f);
+        float arcPower = UnityEngine.Random.Range(-0.3f, 0.3f);
+        Vector3 trajectoryJitter = normal * arcPower;
+
+        float rotationSpeed = UnityEngine.Random.Range(90f, 270f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
+
+        // 탈진한 자리에서 상자까지는 숲 어디든 될 수 있어 거리에 맞춰 체공·높이·흡수 지점을 늘린다.
+        GetCharacterToBoxFlight(_startPos, containerPos, out float flightHeight, out float flightDuration, out float shrinkStartT);
+
+        flyingItem.transform.position = _startPos;
+        flyingItem.ContainerTransferLaunch(_startPos, containerPos, flightHeight, flightDuration, trajectoryJitter, rotationSpeed, shrinkStartT);
+
+        committedFlyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = false, fromCharacter = false });
+        Sound.PlayUI(SoundID.OutItem);
     }
 }

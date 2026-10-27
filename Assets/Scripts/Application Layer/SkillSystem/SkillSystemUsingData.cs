@@ -388,6 +388,9 @@ public enum SkillCommandType
     BlastFurnaceSpeed,
     SpeciesImprovement, // 수종 개량
     GemOrePouchExpansion, // 원석 주머니 확장
+    RemoteLogTransport, // 원격 운반 서비스
+    AutoLoadInRestArea, // 자동 적재
+    LogInsurance, // 원목 보험 증서
 }
 
 public enum AbilityLevelUpRejectReason
