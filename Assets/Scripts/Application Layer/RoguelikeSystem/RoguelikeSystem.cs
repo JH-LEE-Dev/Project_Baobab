@@ -236,6 +236,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
     // 로그라이크 세션 내내 본편 가방 키(인벤토리 팝업·원목 교체)를 막는 소유자 이름. 로그라이크에는 가방이 없고,
     // 열리면 카드 선택·결과 화면 위에 본편 가방이 겹쳐 뜬다. 잠금 집합은 앱 수명이라 Release에서 반드시 푼다.
+    // 같은 소유자로 인벤토리 키를 보유 카드 창 열기로 리다이렉트한다(Tab · 패드 LT, 리바인딩 결과 그대로). 리다이렉트도 Release에서 푼다.
     private const string SessionInventoryLockOwner = "RoguelikeSession";
     // 로비 진입 암전이 HUD 내림 모션을 기다리는 상한(초, 검은 화면 아래로 들어온 때부터). 모션이 멈춰 버려도 진입이 막히지 않게 한다.
     private const float EntryHudSettleLimitSeconds = 2f;
@@ -363,6 +364,9 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         CreateLobbyObjects();
         OpenViews();
 
+        // 코디네이터가 뷰를 받은 뒤에 연결한다. 열 수 없는 단계·이미 열린 경우는 코디네이터가 스스로 거른다.
+        inputManager.SetInventoryKeyRedirect(SessionInventoryLockOwner, uiCoordinator.RequestOwnedCards);
+
         treeKilledHandler = OnTreeKilled;
         lobbyActionHandler = OnLobbyAction;
 
@@ -398,6 +402,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         // InputManager는 BootStrap 소속이라 메인메뉴까지 살아 있다. 로비 입장 도중 해제돼도 잠금이 남지 않게 푼다.
         inputManager?.SetESCKeyLock(LobbyEntryESCLockOwner, false);
         inputManager?.SetInventoryKeyLock(SessionInventoryLockOwner, false);
+        inputManager?.SetInventoryKeyRedirect(SessionInventoryLockOwner, null);
 
         UnSubscribeSignals();
         ReleaseEvents();
