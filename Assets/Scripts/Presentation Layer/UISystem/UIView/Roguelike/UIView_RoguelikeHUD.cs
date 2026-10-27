@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 /// <summary>
@@ -11,7 +10,8 @@ using UnityEngine;
 ///   - 유예 타이머(GraceTimer): 목표치 바와 임계치 바 사이의 얇은 바. 유예 중 보라 차오름, 쿨다운 장미주황 줄어듦. 숫자 없음 - SetThreshold, PlayPressureDamaged
 ///   - 임계치 바(PressureStrip): 호박색 가로 막대. 나무 + 나무 수 / 임계치 T, T 눈금과 초과 구간 - SetThreshold, PlayPressureDamaged
 ///   - 코인 HUD: 보유 골드(본편 코인 HUD 표현 재사용 권장 - CurrencyCounterHUD). 언리밋에서는 숨긴다.
-///   - 보유 카드 열기(마우스 클릭 버튼, 패드 키) → OwnedCardsRequestedEvent
+///   - 보관함 트레이(OwnedTray): 우하단. 카드 윗면이 삐져나온 상자 + 숫자판(레어 · 일반). 표시 전용(클릭 없음) - SetOwnedCardCounts
+///     보유 카드 창은 이 뷰가 아니라 키(인벤토리 키)로 연다(RoguelikeUICoordinator).
 ///
 /// 값은 바뀔 때만 들어온다(매 프레임 같은 값을 다시 넣지 않는다).
 ///
@@ -19,14 +19,12 @@ using UnityEngine;
 /// </summary>
 public class UIView_RoguelikeHUD : UIView
 {
-    /// <summary>보유 카드 확인 UI를 열어 달라(기획서 5-2 "보유 카드 확인").</summary>
-    public event Action OwnedCardsRequestedEvent;
-
     //외부 의존성 (프리팹에서 연결 - LumberBoy/UI/Build Roguelike HUD)
     [SerializeField] private UI_RoguelikeThresholdBar thresholdBar;
     [SerializeField] private UI_RoguelikeWaveLabel waveLabel;
     [SerializeField] private UI_RoguelikePressureStrip pressureStrip;
     [SerializeField] private UI_RoguelikeGraceTimer graceTimer;
+    [SerializeField] private UI_RoguelikeOwnedCardTray ownedTray;
 
     protected override void OnShow()
     {
@@ -34,6 +32,7 @@ public class UIView_RoguelikeHUD : UIView
         gameObject.SetActive(true);
 
         if (null != thresholdBar) thresholdBar.ResetBar();
+        if (null != ownedTray) ownedTray.ResetTray();
     }
 
     protected override void OnHide()
@@ -72,6 +71,12 @@ public class UIView_RoguelikeHUD : UIView
         if (null != graceTimer) graceTimer.PlayDamaged();
     }
 
+    /// <summary>보관함 트레이의 숫자판. 레어(케이스) · 일반(슬리브) 장수. 값을 받기 전에는 숫자판이 비어 있다.</summary>
+    public virtual void SetOwnedCardCounts(int _rareCount, int _normalCount)
+    {
+        if (null != ownedTray) ownedTray.SetCounts(_rareCount, _normalCount);
+    }
+
     /// <summary>보유 골드. _bAnimated면 코인이 흡수되어 오르는 연출(기획서 3-3 골드 획득 5단계).</summary>
     public virtual void SetGold(long _gold, bool _bAnimated) { }
 
@@ -91,14 +96,6 @@ public class UIView_RoguelikeHUD : UIView
         if (null != pressureStrip) pressureStrip.SetVisible(_bVisible);
         if (null != graceTimer) graceTimer.SetVisible(_bVisible);
         if (null != waveLabel) waveLabel.SetVisible(_bVisible);
-    }
-
-    /// <summary>[UI 담당] 보유 카드 버튼·패드 키에서 부른다.</summary>
-    protected void RequestOwnedCards() => OwnedCardsRequestedEvent?.Invoke();
-
-    public override void OnDestroy()
-    {
-        OwnedCardsRequestedEvent = null;
-        base.OnDestroy();
+        if (null != ownedTray) ownedTray.SetVisible(_bVisible);
     }
 }

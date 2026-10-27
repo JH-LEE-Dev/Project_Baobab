@@ -184,12 +184,6 @@ public sealed class RoguelikeUICoordinator
 
     private void BindEvents()
     {
-        if (null != hudUI)
-        {
-            hudUI.OwnedCardsRequestedEvent -= OwnedCardsRequested;
-            hudUI.OwnedCardsRequestedEvent += OwnedCardsRequested;
-        }
-
         if (null != cardSelectUI)
         {
             cardSelectUI.BuyRequestedEvent -= BuyRequested;
@@ -219,8 +213,6 @@ public sealed class RoguelikeUICoordinator
 
     private void ReleaseEvents()
     {
-        if (null != hudUI) hudUI.OwnedCardsRequestedEvent -= OwnedCardsRequested;
-
         if (null != cardSelectUI)
         {
             cardSelectUI.BuyRequestedEvent -= BuyRequested;
@@ -419,6 +411,7 @@ public sealed class RoguelikeUICoordinator
 
     private void RecordsClosed() => signalHub.Publish(new RoguelikeRecordsClosedSignal());
 
+    /// <summary>보유 카드 창 열기. 인벤토리 키 연결(요청서 OwnedCards_AppLayer_Request.md B-2)이 부른다 - 키 연결 전이라 아직 호출처가 없다.</summary>
     private void OwnedCardsRequested()
     {
         if (null == ownedCardsUI || ownedCardsUI.IsVisible) return;

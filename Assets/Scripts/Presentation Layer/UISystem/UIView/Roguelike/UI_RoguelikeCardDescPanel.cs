@@ -27,6 +27,9 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     private const string BenefitColorTag = "<color=#F2D27A>";
     private const string DemeritColorTag = "<color=#E86A6A>";
     private const string ColorEndTag = "</color>";
+    // 보유 카드 확인 화면의 "현재 효과" 소제목(설명 본문보다 흐린 색).
+    private const string CurrentEffectColorTag = "<color=#B59B7A>";
+    private const string CurrentEffectKey = "Roguelike_OwnedCards_CurrentEffect";
 
     public const float MinPanelWidth = 190f;
     public const float MinPanelHeight = 36f;
@@ -91,12 +94,34 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
         Show();
     }
 
+    /// <summary>
+    /// 보유 카드 확인 화면. 기본 설명 아래에 "현재 효과"(현재 레벨까지 누적, RoguelikeCardEffectText.BuildCurrent)를 이어 붙인다.
+    /// 다음 레벨 효과는 보여 주지 않는다. 줄바꿈·폭 규칙은 카드 선택 화면과 같다.
+    /// </summary>
+    public void SetOwnedCard(in RoguelikeOwnedCardViewData _data)
+    {
+        ApplyOwnedTexts(in _data);
+        Show();
+    }
+
     // // 측정 (패널이 그 내용으로 그려진 채 남는다. 부른 쪽이 끝나고 Clear나 다시 그리기로 정리한다)
 
     public float MeasureCardWidth(in RoguelikeCardViewData _data)
     {
         ApplyCardTexts(in _data);
         return RequiredWidth();
+    }
+
+    public float MeasureOwnedWidth(in RoguelikeOwnedCardViewData _data)
+    {
+        ApplyOwnedTexts(in _data);
+        return RequiredWidth();
+    }
+
+    public float MeasureOwnedHeight(in RoguelikeOwnedCardViewData _data)
+    {
+        SetOwnedCard(in _data);
+        return ((RectTransform)transform).sizeDelta.y;
     }
 
     public float MeasureCardHeight(in RoguelikeCardViewData _data)
@@ -122,6 +147,38 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     private void ApplyCardTexts(in RoguelikeCardViewData _data)
     {
         ApplyTexts(LocalizeCard(_data.nameKey), GetLevelLabel(in _data), BuildDescription(in _data));
+    }
+
+    private void ApplyOwnedTexts(in RoguelikeOwnedCardViewData _data)
+    {
+        string levelLabel = BuildLevelLabel(localizationManager, _data.kind, _data.bRuby, _data.level, _data.maxLevel);
+        ApplyTexts(LocalizeCard(_data.nameKey), levelLabel, BuildOwnedDescription(in _data));
+    }
+
+    /// <summary>기본 설명 + "현재 효과" 소제목 + 누적 효과 줄(버프는 금색, 계약 디메리트는 붉은색). 효과 줄이 없으면 기본 설명만이다.</summary>
+    private string BuildOwnedDescription(in RoguelikeOwnedCardViewData _data)
+    {
+        string description = LocalizeCard(_data.descriptionKey);
+        RoguelikeCardEffectText.BuildCurrent(in _data, localizationManager, benefitBuilder, demeritBuilder);
+        if (0 == benefitBuilder.Length && 0 == demeritBuilder.Length) return description;
+
+        descriptionBuilder.Clear();
+        descriptionBuilder.Append(description);
+
+        if (0 < descriptionBuilder.Length) descriptionBuilder.Append('\n');
+        descriptionBuilder.Append(CurrentEffectColorTag).Append(LocalizeCard(CurrentEffectKey)).Append(ColorEndTag);
+
+        if (0 < benefitBuilder.Length)
+        {
+            descriptionBuilder.Append('\n').Append(BenefitColorTag).Append(benefitBuilder).Append(ColorEndTag);
+        }
+
+        if (0 < demeritBuilder.Length)
+        {
+            descriptionBuilder.Append('\n').Append(DemeritColorTag).Append(demeritBuilder).Append(ColorEndTag);
+        }
+
+        return descriptionBuilder.ToString();
     }
 
     /// <summary>기본 설명 + 고르면 적용되는 효과 줄(버프는 금색, 계약 디메리트는 붉은색). 효과 줄이 없으면 기본 설명만이다.</summary>
@@ -248,14 +305,21 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
 
     private string GetLevelLabel(in RoguelikeCardViewData _data)
     {
-        if (_data.bRuby || ECardKind.Ruby == _data.kind) return RubyLabel;
-        if (ECardKind.Prism == _data.kind) return string.Empty;
+        return BuildLevelLabel(localizationManager, _data.kind, _data.bRuby, _data.levelAfterPurchase, _data.maxLevel);
+    }
 
-        // 마지막 레벨(카드 데이터의 최대 레벨)은 MAX, 그 전은 I~VI. 최대 레벨을 모르면(0) 표기를 숨긴다.
-        int maxLevel = _data.maxLevel;
-        int level = Mathf.Max(1, _data.levelAfterPurchase);
-        if (maxLevel <= 0) return string.Empty;
-        if (level >= maxLevel) return null != localizationManager ? localizationManager.GetText(LocKeys.RoguelikeUI.roguelikeCardLevelMax) : string.Empty;
+    /// <summary>
+    /// 레벨 표기. 루비(계약)는 ±, 프리즘은 없음, 마지막 레벨(카드 데이터의 최대 레벨)은 MAX, 그 전은 I~VI. 최대 레벨을 모르면(0) 표기를 숨긴다.
+    /// 설명 패널과 보관함 카드 셀이 같은 표기를 쓰도록 공개한다.
+    /// </summary>
+    public static string BuildLevelLabel(LocalizationManager _localizationManager, ECardKind _kind, bool _bRuby, int _level, int _maxLevel)
+    {
+        if (_bRuby || ECardKind.Ruby == _kind) return RubyLabel;
+        if (ECardKind.Prism == _kind) return string.Empty;
+
+        int level = Mathf.Max(1, _level);
+        if (_maxLevel <= 0) return string.Empty;
+        if (level >= _maxLevel) return null != _localizationManager ? _localizationManager.GetText(LocKeys.RoguelikeUI.roguelikeCardLevelMax) : string.Empty;
 
         return level < LevelLabels.Length ? LevelLabels[level] : string.Empty;
     }

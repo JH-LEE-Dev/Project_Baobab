@@ -25,13 +25,22 @@ public class UI_RoguelikeSelectRelay : MonoBehaviour, IPointerEnterHandler, ISel
 
     public RectTransform CursorTarget => null != cursorTarget ? cursorTarget : (RectTransform)transform;
 
+    /// <summary>
+    /// 마지막 포커스가 마우스 호버에서 왔는지(true) 패드·키보드 선택에서 왔는지(false). FocusedEvent 핸들러 안에서 읽는다.
+    /// 스크롤하는 화면이 패드 선택일 때만 선택한 칸을 보이게 스크롤하고, 마우스 호버로는 스크롤하지 않게 하려는 것이다
+    /// (호버로 스크롤하면 커서 아래 칸이 바뀌어 호버가 계속 옮겨 다닌다).
+    /// </summary>
+    public bool IsPointerFocus { get; private set; }
+
     public void OnPointerEnter(PointerEventData _eventData)
     {
+        IsPointerFocus = true;
         FocusedEvent?.Invoke(this);
     }
 
     public void OnSelect(BaseEventData _eventData)
     {
+        IsPointerFocus = false;
         FocusedEvent?.Invoke(this);
     }
 
