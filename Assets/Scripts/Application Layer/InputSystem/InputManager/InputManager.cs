@@ -433,6 +433,12 @@ public class InputManager : MonoBehaviour
         inputReader?.SetInventoryKeyLock(_owner, _locked);
     }
 
+    /// <summary>인벤토리 키를 본편 가방 대신 _handler로 보냅니다(잠금 소유자가 _owner 하나뿐일 때). null이면 해제합니다.</summary>
+    public void SetInventoryKeyRedirect(string _owner, Action _handler)
+    {
+        inputReader?.SetInventoryKeyRedirect(_owner, _handler);
+    }
+
     // 키 리바인딩 (실제 처리는 inputReader 위임, KeyBindingsChangedEvent는 inputManager.inputReader에서 직접 구독)
     public bool IsRebinding => inputReader.IsRebinding;
 

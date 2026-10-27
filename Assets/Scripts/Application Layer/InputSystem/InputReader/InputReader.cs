@@ -232,6 +232,13 @@ public class InputReader
     /// </summary>
     public const string INVENTORY_LOCK_OWNER_SCREENMODAL = "ScreenModal";
 
+    // 인벤토리 키 리다이렉트. 등록되어 있으면 키를 InventoryKeyEvent(본편 가방) 대신 이 핸들러로 보낸다.
+    // 로그라이크는 가방이 없어 세션 내내 인벤토리 키를 잠그는데, 같은 키로 보유 카드 창을 연다 - 잠금 소유자가
+    // 리다이렉트 소유자 하나뿐일 때만 핸들러로 흘리고, 다른 소유자의 잠금이 있으면 기존처럼 무시한다.
+    // 잠금과 같은 앱 수명이라 등록한 쪽이 반드시 해제한다.
+    private string inventoryRedirectOwner;
+    private Action inventoryRedirectHandler;
+
     public void Initialize(InputDeviceSettings _deviceSettings)
     {
         if (null == deviceTracker)
@@ -945,7 +952,11 @@ public class InputReader
 
     private void OnInventoryKeyPressed(InputAction.CallbackContext context)
     {
-        if (0 < inventoryLockOwners.Count)
+        bool bRedirect = null != inventoryRedirectHandler;
+
+        // 리다이렉트 소유자 자신의 잠금은 본편 가방만 막는다. 그 외 소유자의 잠금이 하나라도 있으면 리다이렉트도 막힌다.
+        if (0 < inventoryLockOwners.Count
+            && (false == bRedirect || 1 != inventoryLockOwners.Count || false == inventoryLockOwners.Contains(inventoryRedirectOwner)))
             return;
 
         // 인벤토리 기본 키가 Tab이라, Alt+Tab으로 창을 전환할 때 들어오는 Tab에 가방이 여닫히지 않게 한다.
@@ -960,6 +971,12 @@ public class InputReader
         // 열리고 그 상태로 조작까지 되는 버그가 있었다.
         if (false == CanDispatchGameplay)
             return;
+
+        if (true == bRedirect)
+        {
+            inventoryRedirectHandler.Invoke();
+            return;
+        }
 
         InventoryKeyEvent?.Invoke();
     }
@@ -1084,6 +1101,29 @@ public class InputReader
             inventoryLockOwners.Add(_owner);
         else
             inventoryLockOwners.Remove(_owner);
+    }
+
+    /// <summary>
+    /// 인벤토리 키를 본편 가방(InventoryKeyEvent) 대신 _handler로 보냅니다. 잠금 소유자가 _owner 하나뿐일 때만
+    /// 핸들러가 불리고, 다른 소유자의 잠금이 있으면 무시됩니다. _handler에 null을 넣으면 _owner가 건 리다이렉트를 해제합니다.
+    /// </summary>
+    public void SetInventoryKeyRedirect(string _owner, Action _handler)
+    {
+        if (true == string.IsNullOrEmpty(_owner))
+            return;
+
+        if (null == _handler)
+        {
+            if (inventoryRedirectOwner != _owner)
+                return;
+
+            inventoryRedirectOwner = null;
+            inventoryRedirectHandler = null;
+            return;
+        }
+
+        inventoryRedirectOwner = _owner;
+        inventoryRedirectHandler = _handler;
     }
 
     public void PotionKeyPressed(InputAction.CallbackContext context)

@@ -48,6 +48,9 @@ public sealed class RoguelikeUICoordinator
     private bool bLastPressureLethal;
     private float lastGraceRatio = -1f;
     private float lastCooldownRatio = -1f;
+    // 보관함 트레이 숫자판(레어 · 일반 장수)도 바뀔 때만 넣는다. -1이면 다음 계산 값을 반드시 넣는다.
+    private int lastRareCount = -1;
+    private int lastNormalCount = -1;
 
     public void Initialize(SignalHub _signalHub, IRoguelikeRunInfo _runInfo, UIView_RoguelikeHUD _hudUI, UIView_RoguelikeCardSelect _cardSelectUI,
         UIView_RoguelikeOwnedCards _ownedCardsUI, UIView_RoguelikeResult _resultUI, UIView_RoguelikeRecords _recordsUI, UIView_ESC _escUI,
@@ -163,6 +166,8 @@ public sealed class RoguelikeUICoordinator
         signalHub.Subscribe<RoguelikeRecordsRequestedSignal>(RecordsRequested);
         signalHub.Subscribe<RoguelikeRunEndedSignal>(RunEnded);
         signalHub.Subscribe<RoguelikeEntryScreenCoveredSignal>(EntryScreenCovered);
+        signalHub.Subscribe<RoguelikeRunStartedSignal>(RunStarted);
+        signalHub.Subscribe<RoguelikeModifiersChangedSignal>(ModifiersChanged);
     }
 
     private void UnSubscribeSignals()
@@ -180,6 +185,8 @@ public sealed class RoguelikeUICoordinator
         signalHub.UnSubscribe<RoguelikeRecordsRequestedSignal>(RecordsRequested);
         signalHub.UnSubscribe<RoguelikeRunEndedSignal>(RunEnded);
         signalHub.UnSubscribe<RoguelikeEntryScreenCoveredSignal>(EntryScreenCovered);
+        signalHub.UnSubscribe<RoguelikeRunStartedSignal>(RunStarted);
+        signalHub.UnSubscribe<RoguelikeModifiersChangedSignal>(ModifiersChanged);
     }
 
     private void BindEvents()
@@ -339,6 +346,40 @@ public sealed class RoguelikeUICoordinator
         cardSelectUI.CloseSelection(cardPresentationDoneHandler);
     }
 
+    /// <summary>새 런 시작. 이어서 오는 보유 카드 갱신(ModifiersChanged)이 이전 런 값과 같아도 0 · 0을 반드시 넣게 한다.</summary>
+    private void RunStarted(RoguelikeRunStartedSignal _signal)
+    {
+        lastRareCount = -1;
+        lastNormalCount = -1;
+    }
+
+    /// <summary>
+    /// 보유 카드가 바뀌었다(런 시작 · 카드 획득 · 레벨업). 트레이 숫자판을 다시 센다. 표시 등급은 레벨에 따라 변하므로
+    /// (MAX 도달 시 에메랄드) 장수가 그대로여도 레어 · 일반 구분이 바뀔 수 있다. 보유 카드 창(ToOwnedView)과 같은 규칙이다.
+    /// </summary>
+    private void ModifiersChanged(RoguelikeModifiersChangedSignal _signal)
+    {
+        if (null == hudUI || null == runInfo) return;
+
+        int rareCount = 0;
+        int normalCount = 0;
+        RunBuildState build = runInfo.Build;
+        IReadOnlyList<CardDefinitionSO> owned = build.OwnedCards;
+        for (int i = 0; i < owned.Count; i++)
+        {
+            if (null == owned[i]) continue;
+
+            if (CardRarity.IsRare(CardRarity.GetDisplayGrade(owned[i], build.GetLevel(owned[i])))) rareCount++;
+            else normalCount++;
+        }
+
+        if (rareCount == lastRareCount && normalCount == lastNormalCount) return;
+
+        lastRareCount = rareCount;
+        lastNormalCount = normalCount;
+        hudUI.SetOwnedCardCounts(rareCount, normalCount);
+    }
+
     private void CardShopRejected(RoguelikeCardShopRejectedSignal _signal)
     {
         cardSelectUI?.PlayRejected(_signal.reason, _signal.offerIndex);
@@ -411,8 +452,8 @@ public sealed class RoguelikeUICoordinator
 
     private void RecordsClosed() => signalHub.Publish(new RoguelikeRecordsClosedSignal());
 
-    /// <summary>보유 카드 창 열기. 인벤토리 키 연결(요청서 OwnedCards_AppLayer_Request.md B-2)이 부른다 - 키 연결 전이라 아직 호출처가 없다.</summary>
-    private void OwnedCardsRequested()
+    /// <summary>보유 카드 창 열기. 로그라이크 세션 동안 인벤토리 키(Tab · 패드 LT)가 RoguelikeSystem의 리다이렉트를 거쳐 부른다.</summary>
+    public void RequestOwnedCards()
     {
         if (null == ownedCardsUI || ownedCardsUI.IsVisible) return;
         if (false == CanOpenOwnedCards(runInfo.Phase)) return;
