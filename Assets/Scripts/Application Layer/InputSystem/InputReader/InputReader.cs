@@ -236,8 +236,10 @@ public class InputReader
     // 로그라이크는 가방이 없어 세션 내내 인벤토리 키를 잠그는데, 같은 키로 보유 카드 창을 연다 - 잠금 소유자가
     // 리다이렉트 소유자 하나뿐일 때만 핸들러로 흘리고, 다른 소유자의 잠금이 있으면 기존처럼 무시한다.
     // 잠금과 같은 앱 수명이라 등록한 쪽이 반드시 해제한다.
+    // 리다이렉트 핸들러가 UI 모드(창이 열려 있는 동안)에도 불려야 하는지 키를 누를 때마다 묻는 함수. 없으면 UI 모드에서는 기존처럼 막힌다.
     private string inventoryRedirectOwner;
     private Action inventoryRedirectHandler;
+    private Func<bool> inventoryRedirectUIModePass;
 
     public void Initialize(InputDeviceSettings _deviceSettings)
     {
@@ -969,8 +971,13 @@ public class InputReader
         // 인벤토리 키를 게임플레이 쪽으로 흘리지 않는다. 다른 게임플레이 키(상호작용/포션/공격)는
         // 모두 CanDispatchGameplay로 걸러지는데 인벤토리만 빠져 있어서, 메뉴 위로 가방이 겹쳐
         // 열리고 그 상태로 조작까지 되는 버그가 있었다.
+        // 단, 리다이렉트 쪽이 UI 모드에서도 받겠다고 한 경우(로그라이크 보유 카드 창이 떠 있을 때 같은 키로 닫는다)는 핸들러까지 보낸다.
         if (false == CanDispatchGameplay)
-            return;
+        {
+            bool bPassInUIMode = true == bRedirect && null != inventoryRedirectUIModePass && true == inventoryRedirectUIModePass();
+            if (false == bPassInUIMode)
+                return;
+        }
 
         if (true == bRedirect)
         {
@@ -1106,8 +1113,10 @@ public class InputReader
     /// <summary>
     /// 인벤토리 키를 본편 가방(InventoryKeyEvent) 대신 _handler로 보냅니다. 잠금 소유자가 _owner 하나뿐일 때만
     /// 핸들러가 불리고, 다른 소유자의 잠금이 있으면 무시됩니다. _handler에 null을 넣으면 _owner가 건 리다이렉트를 해제합니다.
+    /// _uiModePass는 선택입니다. UI 모드(창이 열려 있는 구간)에서 키를 눌렀을 때 이 함수가 true를 돌려주면 핸들러를 그대로 부릅니다
+    /// (같은 키로 창을 닫는 용도). 없거나 false면 UI 모드에서는 기존처럼 무시됩니다.
     /// </summary>
-    public void SetInventoryKeyRedirect(string _owner, Action _handler)
+    public void SetInventoryKeyRedirect(string _owner, Action _handler, Func<bool> _uiModePass = null)
     {
         if (true == string.IsNullOrEmpty(_owner))
             return;
@@ -1119,11 +1128,13 @@ public class InputReader
 
             inventoryRedirectOwner = null;
             inventoryRedirectHandler = null;
+            inventoryRedirectUIModePass = null;
             return;
         }
 
         inventoryRedirectOwner = _owner;
         inventoryRedirectHandler = _handler;
+        inventoryRedirectUIModePass = _uiModePass;
     }
 
     public void PotionKeyPressed(InputAction.CallbackContext context)

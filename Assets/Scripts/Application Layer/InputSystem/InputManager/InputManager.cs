@@ -433,10 +433,13 @@ public class InputManager : MonoBehaviour
         inputReader?.SetInventoryKeyLock(_owner, _locked);
     }
 
-    /// <summary>인벤토리 키를 본편 가방 대신 _handler로 보냅니다(잠금 소유자가 _owner 하나뿐일 때). null이면 해제합니다.</summary>
-    public void SetInventoryKeyRedirect(string _owner, Action _handler)
+    /// <summary>
+    /// 인벤토리 키를 본편 가방 대신 _handler로 보냅니다(잠금 소유자가 _owner 하나뿐일 때). null이면 해제합니다.
+    /// _uiModePass가 true를 돌려주는 동안에는 UI 모드(창이 열려 있는 구간)에서도 핸들러를 부릅니다(같은 키로 창 닫기).
+    /// </summary>
+    public void SetInventoryKeyRedirect(string _owner, Action _handler, Func<bool> _uiModePass = null)
     {
-        inputReader?.SetInventoryKeyRedirect(_owner, _handler);
+        inputReader?.SetInventoryKeyRedirect(_owner, _handler, _uiModePass);
     }
 
     // 키 리바인딩 (실제 처리는 inputReader 위임, KeyBindingsChangedEvent는 inputManager.inputReader에서 직접 구독)

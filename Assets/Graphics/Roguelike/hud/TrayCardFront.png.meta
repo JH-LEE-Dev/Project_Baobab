@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 49c553a679d5aff4e86b020d9af41539
+guid: de8349a5ffa084c4ea9db3ffea11d5e9
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -1391736738631978786
-    second: TrayMiniCard_0
+      213: -657654795230817870
+    second: TrayCardFront_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: TrayMiniCard_0
+      name: TrayCardFront_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 5
-        height: 7
+        width: 7
+        height: 9
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: ed0faf85fce8face0800000000000000
-      internalID: -1391736738631978786
+      spriteID: 2b15f69b27a8fd6f0800000000000000
+      internalID: -657654795230817870
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      TrayMiniCard_0: -1391736738631978786
+      TrayCardFront_0: -657654795230817870
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

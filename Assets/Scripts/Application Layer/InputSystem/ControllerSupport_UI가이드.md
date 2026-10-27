@@ -290,7 +290,9 @@ viewCtx.inputManager.SetInputMode(EInputMode.Gameplay);
 `UIView_Popup`이 지금 `SetCursorHoveredOnUI(true/false)`를 부르는 **바로 그 자리**에 같이 넣으면 됩니다. (`IsCursorHoveredOnUI()`는 이제 UI 모드일 때도 true를 반환하므로, 기존 호출부는 고치지 않아도 패드에서 같은 보호가 걸립니다)
 
 UI 모드에서 막히는 것: 이동 · 조준 · 공격 · 상호작용 · 물약
-UI 모드에서도 통과하는 것: **ESC/Start**(메뉴를 닫아야 하므로) · **인벤토리 키**(같은 키로 닫으므로) · **버튼을 떼는 신호**(누른 채 창이 열리면 공격이 눌린 채로 남으므로)
+UI 모드에서도 통과하는 것: **ESC/Start**(메뉴를 닫아야 하므로) · **버튼을 떼는 신호**(누른 채 창이 열리면 공격이 눌린 채로 남으므로)
+
+인벤토리 키는 UI 모드에서 기본적으로 막힙니다(메뉴 위로 가방이 겹쳐 열리는 버그 방지). 단, 로그라이크 보유 카드 창처럼 **같은 키로 닫아야 하는 창**은 `SetInventoryKeyRedirect(owner, handler, uiModePass)`의 세 번째 인자(창이 떠 있는 동안 `true`를 돌려주는 함수)로 UI 모드 통과를 허용합니다. 함수가 없거나 `false`면 막힙니다.
 
 ### UI 전용 입력
 

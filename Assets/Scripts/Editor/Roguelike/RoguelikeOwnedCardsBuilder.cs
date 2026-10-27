@@ -26,22 +26,30 @@ public static class RoguelikeOwnedCardsBuilder
     private const string KeyIconDatabasePath = "Assets/Prefabs/UI/Option/KeyIconDatabase.asset";
     private const string SpriteDir = "Assets/Graphics/Roguelike/owned/";
     private const float KeyIconSize = 16f;
-    private const int PanelSize = 16;
-    private const int PanelBorder = 6;
-    private const int InsetSize = 6;
-    private const int PlateSize = 12;
+    // 9-슬라이스 그림은 캔버스의 Reference Pixels Per Unit(32)과 같은 PPU로 만들어야 테두리가 그린 크기 그대로(카드와 같은 픽셀 밀도) 나온다.
+    private const float SpritePixelsPerUnit = 32f;
+    // 틀은 카드 프레임(CardFrame)과 같은 구조다: 바깥 윤곽 · 면 · 안쪽 윤곽 3겹 + 안쪽 그림자 1칸 = 테두리 4칸. 모서리는 4칸 안에서 계단식 대각선으로 깎는다.
+    private const int PanelSize = 10;
+    private const int PanelBorder = 4;
+    private const int PlateSize = 10;
+    private const int PlateBorder = 4;
 
     private class BackdropSprites
     {
         public Sprite bookPanel;
         public Sprite infoPanel;
-        public Sprite descInset;
         public Sprite titlePlate;
         public Sprite scrollTrack;
         public Sprite scrollThumb;
     }
 
-    private static readonly Color DimColor = new Color(0f, 0f, 0f, 0.72f);
+    // 카드 프레임(Assets/Graphics/Roguelike/card/CardFrame.png)에서 가져온 색.
+    private static readonly Color32 FrameOutline = new Color32(102, 57, 49, 255);
+    private static readonly Color32 FrameLight = new Color32(202, 143, 115, 255);
+    private static readonly Color32 FrameShade = new Color32(143, 86, 59, 255);
+
+    // 프로젝트가 Linear 색 공간이라 알파 0.9의 검정은 화면 밝기 약 35%가 남는다. 0.97이면 약 20%.
+    private static readonly Color DimColor = new Color(0.03f, 0.02f, 0.01f, 0.97f);
     private static readonly Color TitleColor = new Color(0.95f, 0.88f, 0.7f, 1f);
     private static readonly Color MutedColor = new Color(0.71f, 0.61f, 0.48f, 1f);
 
@@ -70,10 +78,9 @@ public static class RoguelikeOwnedCardsBuilder
 
         BackdropSprites sprites = new BackdropSprites
         {
-            bookPanel = MakeSlicedSprite("Panel_Book", BuildFrame(PanelSize, PanelSize, C(30, 21, 14)), PanelSize, PanelSize, new Vector4(PanelBorder, PanelBorder, PanelBorder, PanelBorder)),
-            infoPanel = MakeSlicedSprite("Panel_Info", BuildFrame(PanelSize, PanelSize, C(38, 27, 19)), PanelSize, PanelSize, new Vector4(PanelBorder, PanelBorder, PanelBorder, PanelBorder)),
-            descInset = MakeSlicedSprite("Panel_Desc", BuildInset(InsetSize, InsetSize), InsetSize, InsetSize, new Vector4(2f, 2f, 2f, 2f)),
-            titlePlate = MakeSlicedSprite("Title_Plate", BuildPlate(PlateSize, PlateSize), PlateSize, PlateSize, new Vector4(4f, 4f, 4f, 4f)),
+            bookPanel = MakeSlicedSprite("Panel_Book", BuildFrame(PanelSize, PanelSize, C(30, 21, 14), C(20, 14, 9)), PanelSize, PanelSize, new Vector4(PanelBorder, PanelBorder, PanelBorder, PanelBorder)),
+            infoPanel = MakeSlicedSprite("Panel_Info", BuildFrame(PanelSize, PanelSize, C(38, 27, 19), C(25, 18, 12)), PanelSize, PanelSize, new Vector4(PanelBorder, PanelBorder, PanelBorder, PanelBorder)),
+            titlePlate = MakeSlicedSprite("Title_Plate", BuildFrame(PlateSize, PlateSize, C(92, 60, 40), C(92, 60, 40)), PlateSize, PlateSize, new Vector4(PlateBorder, PlateBorder, PlateBorder, PlateBorder)),
             scrollTrack = MakeSlicedSprite("Scroll_Track", BuildScrollTrack(), 3, 6, new Vector4(0f, 2f, 0f, 2f)),
             scrollThumb = MakeSlicedSprite("Scroll_Thumb", BuildScrollThumb(), 3, 6, new Vector4(0f, 2f, 0f, 2f)),
         };
@@ -171,13 +178,22 @@ public static class RoguelikeOwnedCardsBuilder
             content.anchorMax = new Vector2(0.5f, 0.5f);
             content.pivot = new Vector2(0.5f, 0.5f);
 
-            // ---- 제목 줄: 명판 위에 제목 · 장수(명판 폭은 글자 폭에 맞춰 스크립트가 정한다)
-            RectTransform titlePlate = CreateSlicedPanel("TitlePlate", content, _sprites.titlePlate, 120f, 20f, false);
-            TMP_Text titleText = CreateText("Title", content, _font, TextAlignmentOptions.MidlineLeft, TitleColor);
-            TMP_Text countText = CreateText("Count", content, _font, TextAlignmentOptions.MidlineLeft, MutedColor);
+            // 열기 · 닫기 연출 중에는 카드 · 설명이 마우스를 받지 않게 막는다(딤은 Content 밖이라 연출 중에도 눌린다).
+            CanvasGroup contentGroup = content.gameObject.AddComponent<CanvasGroup>();
+
+            // ---- 제목 줄: 명판 위에 제목 · 장수(명판 폭은 글자 폭에 맞춰 스크립트가 정한다). 열기 · 닫기 연출에서 한 묶음으로 투명도를 바꾸려고 TitleBar(Content 왼쪽 위 모서리)에 담는다.
+            RectTransform titleBar = TopLeftRect("TitleBar", content, 1f, 1f);
+            CanvasGroup titleGroup = titleBar.gameObject.AddComponent<CanvasGroup>();
+            RectTransform titlePlate = CreateSlicedPanel("TitlePlate", titleBar, _sprites.titlePlate, 120f, 20f, false);
+            TMP_Text titleText = CreateText("Title", titleBar, _font, TextAlignmentOptions.MidlineLeft, TitleColor);
+            TMP_Text countText = CreateText("Count", titleBar, _font, TextAlignmentOptions.MidlineLeft, MutedColor);
 
             // ---- 카드 목록(왼쪽): 마스크 영역 안에서 스크롤하는 내용 + 스크롤바. 패널 바탕은 마우스를 받아 딤(닫기)으로 새지 않게 한다.
             RectTransform book = CreateSlicedPanel("Book", content, _sprites.bookPanel, 288f, 300f, true);
+
+            // 열기 · 닫기 연출 중 책이 트레이 칸 크기로 줄어들 때 안의 내용이 삐져나오지 않게 하는 마스크. 평소에는 꺼 둔다(스크립트가 연출 동안만 켠다).
+            RectMask2D bookMask = book.gameObject.AddComponent<RectMask2D>();
+            bookMask.enabled = false;
 
             RectTransform viewport = TopLeftRect("Viewport", book, 266f, 284f);
             viewport.gameObject.AddComponent<RectMask2D>();
@@ -205,18 +221,20 @@ public static class RoguelikeOwnedCardsBuilder
             scroll.movementType = ScrollRect.MovementType.Clamped;
             scroll.inertia = false;
 
-            // ---- 설명(오른쪽): 설명 패널(이름 · 레벨 · 설명 · 현재 효과) + 안내 문구. 카드 그림은 목록의 카드가 이미 보여 준다.
-            RectTransform info = CreateSlicedPanel("Info", content, _sprites.infoPanel, 328f, 300f, true);
+            // ---- 설명(오른쪽): 설명 패널(이름 · 레벨 · 구분선 · 설명 · 현재 효과). 카드 그림은 목록의 카드가 이미 보여 준다. 배경 상자 없이 패널 위에 바로 놓는다.
+            RectTransform info = CreateSlicedPanel("Info", content, _sprites.infoPanel, 224f, 300f, true);
+            CanvasGroup infoGroup = info.gameObject.AddComponent<CanvasGroup>();
 
-            RectTransform desc = TopLeftRect("DescPanel", info, 316f, 48f);
-            Image descBg = desc.gameObject.AddComponent<Image>();
-            descBg.sprite = _sprites.descInset;
-            descBg.type = Image.Type.Sliced;
-            descBg.raycastTarget = false;
+            RectTransform desc = TopLeftRect("DescPanel", info, 216f, 48f);
 
             TMP_Text nameText = CreateText("Name", desc, _font, TextAlignmentOptions.TopLeft, Color.white);
             TMP_Text levelText = CreateText("Level", desc, _font, TextAlignmentOptions.TopRight, new Color(1f, 0.8f, 0.25f, 1f));
             TMP_Text descText = CreateText("Description", desc, _font, TextAlignmentOptions.TopLeft, new Color(0.85f, 0.85f, 0.85f, 1f));
+
+            // 이름 줄 아래 1칸 구분선: 카드 프레임의 윤곽색.
+            Image divider = RoguelikeCardBuilder.CreateImage("Divider", desc, null, Vector2Int.zero, new Vector2(100f, 1f));
+            divider.color = FrameOutline;
+            divider.raycastTarget = false;
             nameText.textWrappingMode = TextWrappingModes.Normal;
             descText.textWrappingMode = TextWrappingModes.Normal;
 
@@ -225,14 +243,13 @@ public static class RoguelikeOwnedCardsBuilder
             descSo.FindProperty("nameText").objectReferenceValue = nameText;
             descSo.FindProperty("levelText").objectReferenceValue = levelText;
             descSo.FindProperty("descriptionText").objectReferenceValue = descText;
+            descSo.FindProperty("divider").objectReferenceValue = divider.rectTransform;
             descSo.ApplyModifiedPropertiesWithoutUndo();
 
-            TMP_Text footerText = CreateText("FooterText", info, _font, TextAlignmentOptions.TopLeft, MutedColor);
-            footerText.textWrappingMode = TextWrappingModes.Normal;
-
             // ---- 키 안내 줄: 키보드 = [Esc] 닫기 / 패드 = [스틱] 이동  [B] 닫기. 이동 안내(MoveRow)는 패드 모드에서만 켜진다(키보드/마우스는 마우스 전용).
-            // 아이콘은 UI_KeyboardImage가 입력 장치에 맞춰 바꾼다.
+            // 아이콘은 UI_KeyboardImage가 입력 장치에 맞춰 바꾼다. 아이콘과 문구 모두 인벤토리 키 아이콘과 같은 흰 외곽선(UIEffect)을 쓴다.
             RectTransform keyGuide = TopLeftRect("KeyGuide", content, 624f, 18f);
+            CanvasGroup keyGuideGroup = keyGuide.gameObject.AddComponent<CanvasGroup>();
             HorizontalLayoutGroup guideLayout = keyGuide.gameObject.AddComponent<HorizontalLayoutGroup>();
             guideLayout.childAlignment = TextAnchor.MiddleCenter;
             guideLayout.spacing = 16f;
@@ -243,11 +260,21 @@ public static class RoguelikeOwnedCardsBuilder
 
             RectTransform moveRow = CreateGuideRow("MoveRow", keyGuide);
             UI_KeyboardImage moveImage = CreateKeyImage("Key_Move", moveRow, _keyIconDatabase, EOtherKey.None, EGamepadButton.LeftStick);
-            TMP_Text hintMoveText = CreateText("MoveText", moveRow, _font, TextAlignmentOptions.MidlineLeft, MutedColor);
+            TMP_Text hintMoveText = CreateText("MoveText", moveRow, _font, TextAlignmentOptions.MidlineLeft, Color.black);
+            RoguelikeHUDBuilder.CopyInventoryKeyEffect(hintMoveText.gameObject);
 
             RectTransform closeRow = CreateGuideRow("CloseRow", keyGuide);
             UI_KeyboardImage closeImage = CreateKeyImage("Key_Close", closeRow, _keyIconDatabase, EOtherKey.Escape, EGamepadButton.Button_B_Circle);
-            TMP_Text hintCloseText = CreateText("CloseText", closeRow, _font, TextAlignmentOptions.MidlineLeft, MutedColor);
+            TMP_Text hintCloseText = CreateText("CloseText", closeRow, _font, TextAlignmentOptions.MidlineLeft, Color.black);
+            RoguelikeHUDBuilder.CopyInventoryKeyEffect(hintCloseText.gameObject);
+
+            // ---- 트레이 레이어: 창이 열려 있는 동안 HUD 트레이를 올려 두는 화면 전체 레이어. 가장 마지막 형제라 딤 · 내용 위에 그려진다. 그래픽이 없어 마우스를 받지 않는다.
+            RectTransform trayLayer = RoguelikeCardBuilder.CreateRect("TrayLayer", rootRect, Vector2Int.zero, Vector2.zero);
+            trayLayer.anchorMin = Vector2.zero;
+            trayLayer.anchorMax = Vector2.one;
+            trayLayer.pivot = new Vector2(0.5f, 0.5f);
+            trayLayer.offsetMin = Vector2.zero;
+            trayLayer.offsetMax = Vector2.zero;
 
             // ---- 화면 컴포넌트 연결. UIView 기본 설정(layer · ESC 닫기 등)은 기존 프리팹 값을 그대로 둔다.
             SerializedObject viewSo = new SerializedObject(view);
@@ -266,11 +293,16 @@ public static class RoguelikeOwnedCardsBuilder
             viewSo.FindProperty("emptyText").objectReferenceValue = emptyText;
             viewSo.FindProperty("infoRoot").objectReferenceValue = info;
             viewSo.FindProperty("descPanel").objectReferenceValue = descPanel;
-            viewSo.FindProperty("footerText").objectReferenceValue = footerText;
             viewSo.FindProperty("keyGuideRoot").objectReferenceValue = keyGuide;
             viewSo.FindProperty("moveGuideRow").objectReferenceValue = moveRow;
             viewSo.FindProperty("hintMoveText").objectReferenceValue = hintMoveText;
             viewSo.FindProperty("hintCloseText").objectReferenceValue = hintCloseText;
+            viewSo.FindProperty("bookMask").objectReferenceValue = bookMask;
+            viewSo.FindProperty("contentGroup").objectReferenceValue = contentGroup;
+            viewSo.FindProperty("titleGroup").objectReferenceValue = titleGroup;
+            viewSo.FindProperty("infoGroup").objectReferenceValue = infoGroup;
+            viewSo.FindProperty("keyGuideGroup").objectReferenceValue = keyGuideGroup;
+            viewSo.FindProperty("trayLayer").objectReferenceValue = trayLayer;
 
             SerializedProperty imageProperty = viewSo.FindProperty("keyGuideImages");
             imageProperty.arraySize = 2;
@@ -355,6 +387,9 @@ public static class RoguelikeOwnedCardsBuilder
         Image image = go.AddComponent<Image>();
         image.raycastTarget = false;
 
+        // 흰 외곽선: 인벤토리의 키 아이콘(UI_Inventory/Keyboard)의 UIEffect를 그대로 복사한다(HUD 트레이의 키 아이콘과 같다).
+        RoguelikeHUDBuilder.CopyInventoryKeyEffect(go);
+
         // 키 아이콘은 16x16 원본 크기 그대로 보인다(Image 기본 선호 크기는 PPU 기준 환산이라 50x50으로 부풀어 오른다).
         rect.sizeDelta = new Vector2(KeyIconSize, KeyIconSize);
         LayoutElement element = go.AddComponent<LayoutElement>();
@@ -418,7 +453,7 @@ public static class RoguelikeOwnedCardsBuilder
     private static Sprite MakeSlicedSprite(string _name, Color32[] _pixels, int _width, int _height, Vector4 _border)
     {
         string path = SpriteDir + _name + ".png";
-        Sprite sprite = RoguelikeCardBuilder.EnsureSpriteFromPixels(path, _pixels, _width, _height);
+        Sprite sprite = RoguelikeCardBuilder.EnsureSpriteFromPixels(path, _pixels, _width, _height, SpritePixelsPerUnit);
 
         TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(path);
         if (null != importer && Vector4.zero == importer.spriteBorder)
@@ -431,16 +466,11 @@ public static class RoguelikeOwnedCardsBuilder
         return sprite;
     }
 
-    private static bool IsCorner(int _x, int _y, int _width, int _height)
-    {
-        return (0 == _x || _width - 1 == _x) && (0 == _y || _height - 1 == _y);
-    }
-
     /// <summary>
-    /// 패널 틀 16x16(테두리 6): 바깥 윤곽 · 위왼쪽이 밝고 아래오른쪽이 어두운 목재 테 · 파인 안쪽 그림자(위왼쪽이 어둡다) · 네 모서리 리벳. 가운데는 _center 단색.
-    /// 텍스처는 아래에서 위 순서다(y=0이 맨 아래).
+    /// 카드 프레임 같은 틀(10x10, 테두리 4): 바깥 윤곽 · 면(위왼쪽이 밝고 아래오른쪽이 중간 갈색) · 안쪽 윤곽 · 안쪽 그림자(위왼쪽만). 가운데는 _center.
+    /// 모서리는 둥글리지 않고 4칸 안에서 계단식 대각선으로 깎는다. 안쪽 그림자가 필요 없으면 _shadow를 _center와 같게 준다. 텍스처는 아래에서 위 순서다(y=0이 맨 아래).
     /// </summary>
-    private static Color32[] BuildFrame(int _width, int _height, Color32 _center)
+    private static Color32[] BuildFrame(int _width, int _height, Color32 _center, Color32 _shadow)
     {
         Color32[] pixels = new Color32[_width * _height];
 
@@ -448,36 +478,22 @@ public static class RoguelikeOwnedCardsBuilder
         {
             for (int x = 0; x < _width; x++)
             {
-                if (IsCorner(x, y, _width, _height)) continue;
-
                 int sy = _height - 1 - y;
-                int d = Mathf.Min(Mathf.Min(x, y), Mathf.Min(_width - 1 - x, sy));
+                int layer = FrameLayer(x, sy, _width, _height);
+                if (layer < 0) continue;
+
                 bool bLit = Mathf.Min(x, sy) <= Mathf.Min(_width - 1 - x, y);
 
                 Color32 color;
-                switch (d)
+                switch (layer)
                 {
-                    case 0: color = C(26, 17, 10); break;
-                    case 1: color = bLit ? C(172, 130, 82) : C(80, 54, 32); break;
-                    case 2: color = bLit ? C(124, 88, 52) : C(98, 68, 40); break;
-                    case 3: color = bLit ? C(106, 74, 44) : C(84, 58, 34); break;
-                    case 4: color = C(44, 29, 18); break;
-                    case 5: color = bLit ? C(16, 11, 7) : C(42, 30, 20); break;
+                    case 0: color = FrameOutline; break;
+                    case 1: color = bLit ? FrameLight : FrameShade; break;
+                    case 2: color = FrameOutline; break;
+                    case 3: color = bLit ? _shadow : _center; break;
                     default: color = _center; break;
                 }
 
-                // 리벳: 모서리에서 (2~3, 2~3)의 2x2. 왼쪽 위 점이 밝고 오른쪽 아래 점이 어둡다.
-                int cx = Mathf.Min(x, _width - 1 - x);
-                int cy = Mathf.Min(sy, _height - 1 - sy);
-                if (2 <= cx && cx <= 3 && 2 <= cy && cy <= 3)
-                {
-                    int ox = x < _width / 2 ? x - 2 : x - (_width - 4);
-                    int oy = sy < _height / 2 ? sy - 2 : sy - (_height - 4);
-                    if (0 == ox && 0 == oy) color = C(236, 200, 128);
-                    else if (1 == ox && 1 == oy) color = C(74, 48, 28);
-                    else color = C(176, 132, 74);
-                }
-
                 pixels[y * _width + x] = color;
             }
         }
@@ -485,60 +501,25 @@ public static class RoguelikeOwnedCardsBuilder
         return pixels;
     }
 
-    /// <summary>설명 칸 6x6(테두리 2): 어두운 윤곽 · 위왼쪽이 어둡고 아래오른쪽이 밝은 1px(파인 느낌) · 가운데는 따뜻한 어두운 양피지색.</summary>
-    private static Color32[] BuildInset(int _width, int _height)
+    /// <summary>
+    /// 틀의 한 칸이 어느 층인지: 0 바깥 윤곽, 1 면, 2 안쪽 윤곽, 3 안쪽 그림자 자리, 4 가운데, -1 비어 있음(깎인 모서리).
+    /// 변 근처는 가장자리까지의 거리가 층이고, 모서리 4x4에서는 두 거리의 합(3 윤곽 · 4~5 면 · 6 안쪽 윤곽)이 계단식 대각선 층이 된다 - 카드 프레임의 모서리와 같은 모양이다.
+    /// </summary>
+    private static int FrameLayer(int _x, int _y, int _width, int _height)
     {
-        Color32[] pixels = new Color32[_width * _height];
+        int edgeX = Mathf.Min(_x, _width - 1 - _x);
+        int edgeY = Mathf.Min(_y, _height - 1 - _y);
 
-        for (int y = 0; y < _height; y++)
+        if (3 >= edgeX && 3 >= edgeY)
         {
-            for (int x = 0; x < _width; x++)
-            {
-                if (IsCorner(x, y, _width, _height)) continue;
-
-                int sy = _height - 1 - y;
-                int d = Mathf.Min(Mathf.Min(x, y), Mathf.Min(_width - 1 - x, sy));
-                bool bLit = Mathf.Min(x, sy) <= Mathf.Min(_width - 1 - x, y);
-
-                if (0 == d) pixels[y * _width + x] = C(20, 13, 8);
-                else if (1 == d) pixels[y * _width + x] = bLit ? C(30, 21, 14) : C(70, 51, 34);
-                else pixels[y * _width + x] = C(52, 38, 26);
-            }
+            int sum = edgeX + edgeY;
+            if (3 > sum) return -1;
+            if (3 == sum) return 0;
+            if (5 >= sum) return 1;
+            return 2;
         }
 
-        return pixels;
-    }
-
-    /// <summary>제목 명판 12x12(테두리 4): 윤곽 · 금빛 테 · 목재 면. 가운데는 글자가 잘 읽히는 어두운 갈색.</summary>
-    private static Color32[] BuildPlate(int _width, int _height)
-    {
-        Color32[] pixels = new Color32[_width * _height];
-
-        for (int y = 0; y < _height; y++)
-        {
-            for (int x = 0; x < _width; x++)
-            {
-                if (IsCorner(x, y, _width, _height)) continue;
-
-                int sy = _height - 1 - y;
-                int d = Mathf.Min(Mathf.Min(x, y), Mathf.Min(_width - 1 - x, sy));
-                bool bLit = Mathf.Min(x, sy) <= Mathf.Min(_width - 1 - x, y);
-
-                Color32 color;
-                switch (d)
-                {
-                    case 0: color = C(26, 17, 10); break;
-                    case 1: color = bLit ? C(222, 176, 100) : C(126, 88, 46); break;
-                    case 2: color = bLit ? C(138, 98, 58) : C(104, 72, 42); break;
-                    case 3: color = C(70, 48, 30); break;
-                    default: color = C(78, 54, 34); break;
-                }
-
-                pixels[y * _width + x] = color;
-            }
-        }
-
-        return pixels;
+        return Mathf.Min(Mathf.Min(edgeX, edgeY), 4);
     }
 
     /// <summary>스크롤바 홈 3x6(세로 테두리 2): 왼쪽이 어두운 파인 홈. 위아래 끝은 윤곽.</summary>
@@ -562,7 +543,7 @@ public static class RoguelikeOwnedCardsBuilder
         return pixels;
     }
 
-    /// <summary>스크롤바 막대 3x6(세로 테두리 2): 왼쪽 밝은 줄 · 가운데 · 오른쪽 어두운 줄, 위아래 끝은 윤곽.</summary>
+    /// <summary>스크롤바 막대 3x6(세로 테두리 2): 왼쪽 밝은 줄 · 가운데 · 오른쪽 윤곽색 줄(카드 프레임 팔레트), 위아래 끝은 윤곽.</summary>
     private static Color32[] BuildScrollThumb()
     {
         const int Width = 3;
@@ -573,10 +554,10 @@ public static class RoguelikeOwnedCardsBuilder
         {
             for (int x = 0; x < Width; x++)
             {
-                if (0 == y || Height - 1 == y) pixels[y * Width + x] = C(54, 38, 22);
-                else if (0 == x) pixels[y * Width + x] = C(220, 182, 114);
-                else if (1 == x) pixels[y * Width + x] = C(166, 128, 76);
-                else pixels[y * Width + x] = C(104, 74, 42);
+                if (0 == y || Height - 1 == y) pixels[y * Width + x] = C(57, 34, 23);
+                else if (0 == x) pixels[y * Width + x] = FrameLight;
+                else if (1 == x) pixels[y * Width + x] = FrameShade;
+                else pixels[y * Width + x] = FrameOutline;
             }
         }
 

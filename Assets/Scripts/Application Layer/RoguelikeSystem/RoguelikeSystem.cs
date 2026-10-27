@@ -364,8 +364,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         CreateLobbyObjects();
         OpenViews();
 
-        // 코디네이터가 뷰를 받은 뒤에 연결한다. 열 수 없는 단계·이미 열린 경우는 코디네이터가 스스로 거른다.
-        inputManager.SetInventoryKeyRedirect(SessionInventoryLockOwner, uiCoordinator.RequestOwnedCards);
+        // 코디네이터가 뷰를 받은 뒤에 연결한다. 열 수 없는 단계는 코디네이터가 스스로 거르고, 이미 열려 있으면 같은 키가 창을 닫는다(창이 떠 있는 동안은 UI 모드라 IsOwnedCardsOpen으로 통과시킨다).
+        inputManager.SetInventoryKeyRedirect(SessionInventoryLockOwner, uiCoordinator.RequestOwnedCards, uiCoordinator.IsOwnedCardsOpen);
 
         treeKilledHandler = OnTreeKilled;
         lobbyActionHandler = OnLobbyAction;

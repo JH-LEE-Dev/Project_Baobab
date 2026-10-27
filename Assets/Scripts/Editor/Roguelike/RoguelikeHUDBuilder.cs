@@ -42,17 +42,23 @@ public static class RoguelikeHUDBuilder
     private const int WaveY = TreeY + SpriteHeight + 4;
     private const int IconBottom = BodyBottom + 2;
 
-    // 보관함 트레이(우하단): 숫자판 26x13 둘을 위아래로(26x26) + 오른쪽 위 모서리에 걸친 인벤토리 키 아이콘(16x16).
-    // 판 높이가 홀수(13)라 7칸 높이의 아이콘 · 숫자가 판 전체 기준으로 위아래 3칸씩 같은 여백에 놓인다. 표시 전용이라 레이캐스트를 받는 그래픽이 없다.
-    private const int TrayPlateWidth = 26;
-    private const int TrayPlateHeight = 13;
-    private const int TrayContentY = 3;
+    // 보관함 트레이(우하단): 보유 카드 총량 숫자판 34x19 하나(겹친 카드 묶음 아이콘 11x11 + 합계 숫자) + 오른쪽 위 모서리에 걸친 인벤토리 키 아이콘(16x16).
+    // 판 높이가 홀수(19)라 아이콘(11) · 숫자(8)가 판 전체 기준으로 위아래 같은 여백에 놓인다. 표시 전용이라 레이캐스트를 받는 그래픽이 없다.
+    private const int TrayPlateWidth = UI_RoguelikeOwnedCardTray.PlateWidth;
+    private const int TrayPlateHeight = UI_RoguelikeOwnedCardTray.PlateHeight;
+    private const int TrayIconSize = 11;
+    private const int TrayCardWidth = 7;
+    private const int TrayCardHeight = 9;
+    private const int TrayBackOffsetX = 4;
+    private const int TrayIconX = 3;
+    private const int TrayIconY = (TrayPlateHeight - TrayIconSize) / 2;
+    private const int TrayContentY = 6;
     private const int TrayKeySize = 16;
     private const int TrayKeyDrop = 5;
     private const int TrayKeyShiftX = 3;
     private const int TrayNumberRight = TrayPlateWidth - 3;
     private const int TrayWidth = TrayPlateWidth;
-    private const int TrayHeight = TrayPlateHeight * 2;
+    private const int TrayHeight = TrayPlateHeight;
     private const int TrayMargin = 8;
 
     private static readonly Color32 Clear = new Color32(0, 0, 0, 0);
@@ -67,7 +73,6 @@ public static class RoguelikeHUDBuilder
     private static readonly string[] TreeRows = { "...#...", "..###..", ".#####.", "..###..", ".#####.", "...#...", "...#..." };
     private static readonly string[] FlagRows = { "#......", "###....", "#####..", "####...", "#......", "#......", "#......" };
     private static readonly string[] InfinityRows = { ".##.##.", "#..#..#", "#..#..#", "#..#..#", ".##.##." };
-    private static readonly string[] TrayMiniCardRows = { "###", "###", "###", "###", "###" };
 
     [MenuItem("LumberBoy/UI/Build Roguelike HUD")]
     public static void Build()
@@ -88,7 +93,7 @@ public static class RoguelikeHUDBuilder
 
         // 옛 스프라이트와 이번에 다시 만드는 스프라이트를 지운다(디자인이 바뀌어도 낡은 그림이 남지 않게).
         string[] stale = { "ThresholdBase", "ThresholdFill", "ThresholdStripBase", "ThresholdTree", "BarFrame12", "KillFill12", "GraceFrame", "BadgeFrame", "IconAxe", "IconTree", "IconFlag", "IconInfinity",
-            "MiniFrame", "MiniFillPink", "MiniFillAmber", "MiniFillRed", "MiniFillWhite", "MiniGraceFrame", "MiniGraceFill", "TrayBox", "TrayPlate", "TrayMiniCard" };
+            "MiniFrame", "MiniFillPink", "MiniFillAmber", "MiniFillRed", "MiniFillWhite", "MiniGraceFrame", "MiniGraceFill", "TrayBox", "TrayPlate", "TrayPlateLit1", "TrayPlateLit2", "TrayMiniCard", "TrayCardStack", "TrayCardBack", "TrayCardFront" };
         for (int i = 0; i < stale.Length; i++) AssetDatabase.DeleteAsset(HudDir + stale[i] + ".png");
 
         Color32[] fullBase = ReadPixels(BarDir + "MainBar_Base.png");
@@ -116,8 +121,14 @@ public static class RoguelikeHUDBuilder
         Sprite treeIcon = Make("IconTree", IconPixels(TreeRows, false), 7, 7);
         Sprite flagIcon = Make("IconFlag", IconPixels(FlagRows, true), 9, 9);
         Sprite infinityIcon = Make("IconInfinity", IconPixels(InfinityRows, true), 9, 7);
-        Sprite trayPlate = Make("TrayPlate", TrayPlatePixels(), TrayPlateWidth, TrayPlateHeight);
-        Sprite trayMiniCard = Make("TrayMiniCard", IconPixels(TrayMiniCardRows, true), 5, 7);
+        Sprite[] trayPlates =
+        {
+            Make("TrayPlate", TrayPlatePixels(0), TrayPlateWidth, TrayPlateHeight),
+            Make("TrayPlateLit1", TrayPlatePixels(1), TrayPlateWidth, TrayPlateHeight),
+            Make("TrayPlateLit2", TrayPlatePixels(2), TrayPlateWidth, TrayPlateHeight),
+        };
+        Sprite trayCardBack = Make("TrayCardBack", TrayCardPixels(false), TrayCardWidth, TrayCardHeight);
+        Sprite trayCardFront = Make("TrayCardFront", TrayCardPixels(true), TrayCardWidth, TrayCardHeight);
 
         // 젤리 머리는 컴포넌트가 런타임에 그린다. 채움의 행별 평균색과 윤곽(안쪽 여부), 바 프레임 색을 컴포넌트에 넘긴다.
         Color[] rowColors = RowAverageColors(pinkPixels, BarWidth, SpriteHeight);
@@ -253,7 +264,7 @@ public static class RoguelikeHUDBuilder
             waveSo.FindProperty("flagColor").colorValue = new Color(0.95f, 0.45f, 0.4f, 1f);
             waveSo.ApplyModifiedPropertiesWithoutUndo();
 
-            // ---- 보관함 트레이(우하단): 숫자판 둘(레어 · 일반). 표시 전용(클릭 없음) - 보유 카드 창은 키로 연다.
+            // ---- 보관함 트레이(우하단): 보유 카드 총량 숫자판 하나. 표시 전용(클릭 없음) - 보유 카드 창은 키로 연다.
             RectTransform trayRect = RoguelikeCardBuilder.CreateRect("OwnedTray", rootRect, Vector2Int.zero, new Vector2(TrayWidth, TrayHeight));
             trayRect.anchorMin = new Vector2(1f, 0f);
             trayRect.anchorMax = new Vector2(1f, 0f);
@@ -261,14 +272,18 @@ public static class RoguelikeHUDBuilder
             trayRect.anchoredPosition = new Vector2(-TrayMargin, TrayMargin);
 
             RectTransform trayVisual = RoguelikeCardBuilder.CreateRect("Visual", trayRect, Vector2Int.zero, new Vector2(TrayWidth, TrayHeight));
-            UI_RoguelikeIconNumber rareNumber = NewTrayPlate("RarePlate", trayVisual, trayPlate, trayMiniCard, TrayPlateHeight, new Color(0.56f, 0.94f, 0.75f, 1f), digits);
-            UI_RoguelikeIconNumber normalNumber = NewTrayPlate("NormalPlate", trayVisual, trayPlate, trayMiniCard, 0, new Color(0.85f, 0.6f, 0.35f, 1f), digits);
+            TrayParts trayParts = NewTrayPlate("CountPlate", trayVisual, trayPlates, trayCardBack, trayCardFront, digits);
+
             UI_KeyboardImage ownedKeyImage = NewTrayKeyIcon("Key_Inventory", trayVisual, AssetDatabase.LoadAssetAtPath<KeyIconDatabase>(KeyIconDatabasePath));
 
             UI_RoguelikeOwnedCardTray tray = trayRect.gameObject.AddComponent<UI_RoguelikeOwnedCardTray>();
             SerializedObject traySo = new SerializedObject(tray);
-            traySo.FindProperty("rareNumber").objectReferenceValue = rareNumber;
-            traySo.FindProperty("normalNumber").objectReferenceValue = normalNumber;
+            traySo.FindProperty("totalNumber").objectReferenceValue = trayParts.number;
+            traySo.FindProperty("plateImage").objectReferenceValue = trayParts.plate;
+            SerializedProperty plateSpriteProperty = traySo.FindProperty("plateSprites");
+            plateSpriteProperty.arraySize = trayPlates.Length;
+            for (int i = 0; i < trayPlates.Length; i++) plateSpriteProperty.GetArrayElementAtIndex(i).objectReferenceValue = trayPlates[i];
+            traySo.FindProperty("keyIcon").objectReferenceValue = ownedKeyImage.transform;
             traySo.ApplyModifiedPropertiesWithoutUndo();
 
             SerializedObject viewSo = new SerializedObject(view);
@@ -387,7 +402,7 @@ public static class RoguelikeHUDBuilder
     }
 
     /// <summary>인벤토리 키 아이콘의 UIEffect(흰 외곽선 Outline8)를 _target에 그대로 복사한다. 설정값을 따로 옮기지 않아 인벤토리와 같은 외곽선이 된다.</summary>
-    private static void CopyInventoryKeyEffect(GameObject _target)
+    internal static void CopyInventoryKeyEffect(GameObject _target)
     {
         GameObject inventoryPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(InventoryPrefabPath);
         UI_KeyboardImage sourceKey = null != inventoryPrefab ? inventoryPrefab.GetComponentInChildren<UI_KeyboardImage>(true) : null;
@@ -402,17 +417,29 @@ public static class RoguelikeHUDBuilder
         UnityEditorInternal.ComponentUtility.PasteComponentAsNew(_target);
     }
 
-    /// <summary>트레이의 숫자판 하나: 판 + 작은 카드 아이콘(등급색) + 오른쪽 숫자(판 오른쪽 끝에 붙는 오른쪽 정렬이라 자릿수가 늘면 왼쪽으로 자란다). _y는 트레이 아래 모서리 기준 판 위치. 아이콘 · 숫자는 판 세로 가운데(TrayContentY).</summary>
-    private static UI_RoguelikeIconNumber NewTrayPlate(string _name, RectTransform _parent, Sprite _plate, Sprite _icon, int _y, Color _iconColor, Sprite[] _digits)
+    private class TrayParts
     {
-        Image plate = RoguelikeCardBuilder.CreateImage(_name, _parent, _plate, new Vector2Int(0, _y), _plate.rect.size);
-        NewIcon("Icon", plate.rectTransform, _icon, 3, TrayContentY, _iconColor);
+        public Image plate;
+        public UI_RoguelikeIconNumber number;
+    }
+
+    /// <summary>
+    /// 트레이의 숫자판: 판 + 카드 아이콘(뒤 카드 · 앞 카드. 연출 없이 고정이다. 자체 색, 색 곱 없음) + 오른쪽 숫자(판 오른쪽 끝에 붙는 오른쪽 정렬이라 자릿수가 늘면 왼쪽으로 자란다).
+    /// 아이콘 11x11 칸 안에서 뒤 카드는 오른쪽 위(왼쪽 4 · 위 0), 앞 카드는 왼쪽 아래(왼쪽 0 · 위 2)다. 아이콘 · 숫자는 판 세로 가운데.
+    /// </summary>
+    private static TrayParts NewTrayPlate(string _name, RectTransform _parent, Sprite[] _plates, Sprite _cardBack, Sprite _cardFront, Sprite[] _digits)
+    {
+        Image plate = RoguelikeCardBuilder.CreateImage(_name, _parent, _plates[0], Vector2Int.zero, _plates[0].rect.size);
+        NewIcon("IconBack", plate.rectTransform, _cardBack, TrayIconX + TrayBackOffsetX, TrayIconY + TrayIconSize - TrayCardHeight, Color.white);
+        NewIcon("IconFront", plate.rectTransform, _cardFront, TrayIconX, TrayIconY, Color.white);
+
         UI_RoguelikeIconNumber number = NewNumber(plate.rectTransform, TrayNumberRight, TrayContentY, _digits);
 
         SerializedObject so = new SerializedObject(number);
         so.FindProperty("bRightAlign").boolValue = true;
         so.ApplyModifiedPropertiesWithoutUndo();
-        return number;
+
+        return new TrayParts { plate = plate, number = number };
     }
 
     /// <summary>버프 HUD와 같은 숫자 시트. 시트 순서가 1~9,0이라 _0~_8이 1~9, _9가 0이다.</summary>
@@ -626,13 +653,54 @@ public static class RoguelikeHUDBuilder
         return result;
     }
 
-    /// <summary>트레이 숫자판 26x13: 윤곽 + 어두운 바탕 + 위쪽 안쪽 하이라이트 한 줄. 네 모서리는 한 칸씩 비운다.</summary>
-    private static Color32[] TrayPlatePixels()
+    /// <summary>
+    /// 트레이 카드 한 장 7x9: 1칸 검은 윤곽(프레임 윤곽색과 같은 계열) + 채움. 뒤 카드는 어두운 갈색, 앞 카드는 밝은 갈색에 안쪽 맨 위 줄 · 맨 왼쪽 줄 하이라이트.
+    /// 카드 프레임 팔레트: 윤곽 #663931, 밝음 #ca8f73, 어둠 #8f563b.
+    /// </summary>
+    private static Color32[] TrayCardPixels(bool _bFront)
+    {
+        Color32[] pixels = new Color32[TrayCardWidth * TrayCardHeight];
+        Color32 black = new Color32(0, 0, 0, 255);
+        Color32 fill = _bFront ? new Color32(143, 86, 59, 255) : new Color32(102, 57, 49, 255);
+        Color32 light = new Color32(202, 143, 115, 255);
+
+        for (int ty = 0; ty < TrayCardHeight; ty++)
+        {
+            for (int tx = 0; tx < TrayCardWidth; tx++)
+            {
+                bool bEdge = 0 == tx || TrayCardWidth - 1 == tx || 0 == ty || TrayCardHeight - 1 == ty;
+                Color32 color = bEdge ? black : fill;
+                if (false == bEdge && true == _bFront && (1 == ty || 1 == tx)) color = light;
+
+                pixels[(TrayCardHeight - 1 - ty) * TrayCardWidth + tx] = color;
+            }
+        }
+
+        return pixels;
+    }
+
+    /// <summary>
+    /// 트레이 숫자판 34x19: 윤곽 + 어두운 바탕 + 위쪽 안쪽 하이라이트 한 줄. 네 모서리는 한 칸씩 비운다.
+    /// _lit 0 = 기본, 1 = 약한 점멸(테두리가 살구색, 위 하이라이트가 한 단계 밝음), 2 = 강한 점멸(테두리가 거의 흰색, 위 하이라이트가 밝은 살구색). 바탕은 그대로다 - 판 전체가 아니라 테두리만 번쩍인다.
+    /// 반투명 없이 판 스프라이트를 갈아 끼워 단계로 번쩍인다.
+    /// </summary>
+    private static Color32[] TrayPlatePixels(int _lit)
     {
         Color32[] pixels = new Color32[TrayPlateWidth * TrayPlateHeight];
         Color32 outline = new Color32(59, 41, 31, 255);
         Color32 fill = new Color32(35, 24, 16, 255);
         Color32 highlight = new Color32(90, 66, 40, 255);
+
+        if (1 == _lit)
+        {
+            outline = new Color32(255, 217, 160, 255);
+            highlight = new Color32(170, 128, 84, 255);
+        }
+        else if (2 == _lit)
+        {
+            outline = new Color32(255, 244, 214, 255);
+            highlight = new Color32(255, 222, 168, 255);
+        }
 
         for (int y = 0; y < TrayPlateHeight; y++)
         {

@@ -18,10 +18,18 @@ using UnityEngine.UI;
 /// [구성 - 고정 설명 패널(A안)] 어두운 딤 위에 한 묶음(Content)이 화면 가운데에 놓인다.
 ///   제목 줄   제목 · 레어/일반 장수
 ///   왼쪽      카드 목록. 카드 선택 화면과 같은 카드(UI_RoguelikeCard 50x81)를 크기 그대로 격자로 놓는다(레어 먼저, 일반 뒤). 칸 수 제한이 없어 넘치면 안에서 스크롤한다.
-///   오른쪽    포커스한 카드의 설명 패널(이름 · 레벨 · 설명 · "현재 효과"). 카드 그림은 목록의 카드가 이미 보여 주므로 따로 그리지 않는다.
+///   오른쪽    포커스한 카드의 설명 패널(이름 · 레벨 · 설명 · "현재 효과"). 폭은 고정이고 높이는 내용에 맞춘다. 카드 그림은 목록의 카드가 이미 보여 주므로 따로 그리지 않는다.
 ///   아래      키 안내 한 줄. 아이콘은 현재 입력 장치(키보드/패드)를 따라 바뀐다(UI_KeyboardImage - 옵션·특성 UI와 같은 방식).
 ///   설명은 잘라 쓰지 않는다: 모든 보유 카드의 설명 높이를 열 때 한 번 재서 패널 크기를 고정하고(호버를 옮겨도 화면이 움직이지 않는다),
 ///   화면 높이에 들어가지 않는 카드가 있으면 경고를 남긴다.
+///
+/// [열기 · 닫기 연출 - RoguelikeOwnedCardsMotion] 우하단 HUD 트레이(SetTray로 연결)에서 책이 펼쳐지고, 닫힐 때 같은 칸으로 접혀 들어간다. 입자 · 탄성 없음, unscaled 시간.
+///   열기: 딤 → 책이 트레이 칸에서 확장 → 제목 · 키 안내 · 카드(왼쪽부터 폭이 펼쳐짐) · 설명이 차례로 나타난다.
+///   닫기: 설명 · 제목이 먼저 사라지고 카드가 오른쪽부터 접힌 뒤 책이 트레이 칸으로 수렴한다. 수렴이 끝나는 순간 창이 꺼지고 트레이가 도착 반응(UI_RoguelikeOwnedCardTray)을 이어받는다.
+///   연출 중에는 카드 · 설명이 마우스를 받지 않고 패드 포커스는 열기가 끝난 뒤에 건다. 닫기를 연출 없이 하려면 HideImmediate(시스템이 강제로 닫을 때), 연출 중 Hide는 한 번만 먹는다(열기 중이면 열기가 끝난 뒤).
+///   트레이가 연결되지 않았으면 우하단(가장자리 8칸) 기본 위치로 줄어들고 트레이 반응만 빠진다.
+///   창이 HUD보다 위 캔버스라서, 열려 있는 동안 트레이를 창의 맨 위 레이어(trayLayer)로 옮겨 딤 · 책 위에 보이게 하고 닫기 도착 직후 HUD로 돌려보낸다.
+///   뷰를 만들며 Show한 바로 그 프레임에 Hide하면(RoguelikeSystem.OpenViews) 연출 없이 즉시 닫는다.
 ///
 /// [조작 - ControllerSupport_UI가이드.md 3-1 · 3-8] 키보드/마우스 모드는 마우스 전용이다: 호버가 포커스(카드가 올라가고 CursorBox가 따라간다)이고,
 ///   EventSystem 선택은 잡지 않아 방향키가 아무 일도 하지 않는다. 패드 모드는 첫 칸을 선택한 채 열리고 스틱·십자키로 격자를 이동한다.
@@ -31,15 +39,14 @@ using UnityEngine.UI;
 /// </summary>
 public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
 {
-    // 화면 배치(Content 왼쪽 위 기준 정수 픽셀). 640×360 기준: 가장자리 8 + 목록 288 + 8 + 설명 328 + 가장자리 8.
+    // 화면 배치(Content 왼쪽 위 기준 정수 픽셀). 640×360 기준: 가장자리 8 + 목록 398(카드 7열에 딱 맞춤) + 2 + 설명 224 + 가장자리 8.
     private const float GroupMaxWidth = 624f;
-    private const float BookMaxWidth = 288f;
-    private const float MinBookWidth = 120f;
-    private const float PanelGap = 8f;
-    private const float MinInfoWidth = 190f;
+    private const float InfoTargetWidth = 200f;
+    private const float PanelGap = 2f;
     private const float ScreenMargin = 8f;
     private const float VerticalGap = 4f;
-    private const float TitleHeight = 20f;
+    // 제목 글자(Galmuri11)는 11칸 높이라, 명판 높이가 홀수여야 위아래 여백이 정수 칸으로 같아진다(짝수면 반 칸씩 어긋난다).
+    private const float TitleHeight = 21f;
     private const float KeyGuideHeight = 18f;
     private const float MaxMainHeight = 300f;
     private const float MinMainHeight = 120f;
@@ -47,9 +54,11 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     private const float TitlePlatePadding = 8f;
 
     // 카드 목록(왼쪽)
+    // 목록 패널 가장자리에서 카드 영역까지 8칸(틀 4칸 + 4칸), 카드 영역 안쪽에 호버 괄호가 삐져나오는 여유 4칸. 스크롤바는 오른쪽 여백 안에 둔다.
     private const float BookPadding = 8f;
+    private const float BracketClearance = 4f;
     private const float ScrollbarWidth = 3f;
-    private const float ScrollbarGap = 3f;
+    private const float ScrollbarGap = 1f;
     private const float MinThumbHeight = 8f;
     private const float CellGap = 4f;
     private const float RowGap = 8f;
@@ -58,22 +67,53 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     private const float WheelSensitivity = 2f;
 
     // 설명(오른쪽)
-    private const float InfoPadding = 6f;
-    private const float InfoPaddingX = 8f;
-    private const float FooterReserve = 26f;
+    private const float InfoPadding = 4f;
+    private const float InfoPaddingX = 4f;
     private const int CursorPadding = 4;
     private const float Unbounded = 10000f;
+
+    // 열기 · 닫기 연출 시간표(연출 단위 - RoguelikeOwnedCardsMotion.Speed로 나눠 실제 시간이 된다)
+    private const float OpenDimEnd = 0.3f;
+    private const float OpenBookStart = 0.05f;
+    private const float OpenBookEnd = 0.55f;
+    private const float OpenTitleStart = 0.45f;
+    private const float OpenTitleEnd = 0.7f;
+    private const float OpenInfoStart = 0.55f;
+    private const float OpenInfoEnd = 0.9f;
+    private const float OpenCardStart = 0.4f;
+    private const float OpenCardStagger = 0.04f;
+    private const float OpenCardSpan = 0.22f;
+    private const float CloseInfoEnd = 0.2f;
+    private const float CloseTitleStart = 0.15f;
+    private const float CloseTitleEnd = 0.3f;
+    private const float CloseCardStagger = 0.015f;
+    private const float CloseCardSpan = 0.12f;
+    private const float CloseBookStart = 0.25f;
+    private const float CloseDimStart = 0.5f;
+    private const float InfoSlidePixels = 8f;
+    // 연출에서 순서를 매기는 카드 수(목록 첫 화면에 보이는 만큼). 그 뒤 카드는 같이 움직인다.
+    private const int MotionCellLimit = 10;
+    // 트레이가 연결되지 않았을 때 줄어들 칸(HUD 트레이 기본 배치: 우하단 가장자리 8칸, 34x19).
+    private const float FallbackTrayWidth = 34f;
+    private const float FallbackTrayHeight = 19f;
+    private const float FallbackTrayMargin = 8f;
 
     // 문구 키(RoguelikeUI.json)
     private const string TitleKey = "Roguelike_OwnedCards_Title";
     private const string RareShortKey = "Roguelike_OwnedCards_RareShort";
     private const string NormalShortKey = "Roguelike_OwnedCards_NormalShort";
-    private const string NextLevelHintKey = "Roguelike_OwnedCards_NextLevelHint";
     private const string EmptyKey = "Roguelike_OwnedCards_Empty";
     private const string HintMoveKey = "Roguelike_OwnedCards_HintMove";
     private const string HintCloseKey = "Roguelike_OwnedCards_HintClose";
 
     public event Action ClosedEvent;
+
+    private enum EMotion
+    {
+        None,
+        Opening,
+        Closing,
+    }
 
     protected readonly List<RoguelikeOwnedCardViewData> cards = new List<RoguelikeOwnedCardViewData>(32);
 
@@ -100,7 +140,6 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     [Header("설명 (오른쪽)")]
     [SerializeField] private RectTransform infoRoot;
     [SerializeField] private UI_RoguelikeCardDescPanel descPanel;
-    [SerializeField] private TMP_Text footerText;
 
     [Header("키 안내 줄")]
     [SerializeField] private RectTransform keyGuideRoot;
@@ -108,6 +147,14 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     [SerializeField] private TMP_Text hintMoveText;
     [SerializeField] private TMP_Text hintCloseText;
     [SerializeField] private UI_KeyboardImage[] keyGuideImages = new UI_KeyboardImage[0];
+
+    [Header("열기 · 닫기 연출")]
+    [SerializeField] private RectMask2D bookMask;
+    [SerializeField] private CanvasGroup contentGroup;
+    [SerializeField] private CanvasGroup titleGroup;
+    [SerializeField] private CanvasGroup infoGroup;
+    [SerializeField] private CanvasGroup keyGuideGroup;
+    [SerializeField, Tooltip("창이 열려 있는 동안 HUD 트레이를 올려 두는 맨 위 레이어(화면 전체, 마지막 형제).")] private RectTransform trayLayer;
 
     //상태 변수
     private LocalizationManager localizationManager;
@@ -132,6 +179,19 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     private bool bGamepadMode;
     private bool bFocusShown;
 
+    // 열기 · 닫기 연출
+    private readonly Vector3[] cornerBuffer = new Vector3[4];
+    private UI_RoguelikeOwnedCardTray tray;
+    private Graphic dimGraphic;
+    private Color dimColor;
+    private Rect bookFinalRect;
+    private Rect infoFinalRect;
+    private Rect trayTargetRect;
+    private EMotion motion;
+    private float motionClock;
+    private bool bMotionReady;
+    private bool bCloseQueued;
+
     public IReadOnlyList<RoguelikeOwnedCardViewData> Cards => cards;
 
     public virtual void SetCards(IReadOnlyList<RoguelikeOwnedCardViewData> _cards)
@@ -143,6 +203,56 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
         }
 
         OnCardsChanged();
+    }
+
+    /// <summary>
+    /// 우하단 HUD 트레이를 연결한다(UIView_RoguelikeHUD.OwnedTray). 연결하면 창이 이 칸에서 펼쳐지고 이 칸으로 접히며, 트레이가 열기 · 닫기 반응을 낸다. null이면 기본 위치를 쓰고 트레이 반응은 없다.
+    /// </summary>
+    public void SetTray(UI_RoguelikeOwnedCardTray _tray)
+    {
+        tray = _tray;
+    }
+
+    /// <summary>
+    /// 닫는다. 연출을 켜 둔 화면이면 닫기 연출을 재생한 뒤 실제로 닫힌다(HiddenEvent · ClosedEvent는 그때 온다).
+    /// 닫는 중이면 무시하고, 여는 중이면 열기가 끝난 뒤 닫는다. 시스템이 강제로 닫을 때는 HideImmediate를 쓴다.
+    /// </summary>
+    public override void Hide()
+    {
+        if (false == IsVisible) return;
+
+        if (false == bMotionReady)
+        {
+            base.Hide();
+            return;
+        }
+
+        if (EMotion.Closing == motion) return;
+
+        if (EMotion.Opening == motion)
+        {
+            // Show와 같은 프레임의 Hide(뷰 생성 직후 정리)는 연출 없이 닫는다. 연출이 한 프레임이라도 진행됐으면 열기가 끝난 뒤에 닫는다.
+            if (0f >= motionClock)
+            {
+                HideImmediate();
+                return;
+            }
+
+            bCloseQueued = true;
+            return;
+        }
+
+        BeginClose();
+    }
+
+    /// <summary>연출 없이 바로 닫는다(런 종료 · 쓰러짐 같은 시스템 강제 닫기). 트레이 연출도 멈춘다.</summary>
+    public void HideImmediate()
+    {
+        motion = EMotion.None;
+        bCloseQueued = false;
+        if (null != tray) tray.ResetEffect();
+
+        base.Hide();
     }
 
     /// <summary>목록을 다시 그린다. 화면이 아직 꺼져 있으면(SetCards 뒤에 Show가 온다) 열릴 때 그린다.</summary>
@@ -217,13 +327,13 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
         Rect screen = ((RectTransform)contentRoot.parent).rect;
 
         float groupWidth = Mathf.Floor(Mathf.Min(GroupMaxWidth, screen.width - ScreenMargin * 2f) * 0.5f) * 2f;
-        float bookWidth = BookMaxWidth;
-        infoWidth = groupWidth - bookWidth - PanelGap;
-        if (infoWidth < MinInfoWidth)
-        {
-            infoWidth = MinInfoWidth;
-            bookWidth = Mathf.Max(MinBookWidth, groupWidth - PanelGap - infoWidth);
-        }
+        // 목록 폭은 카드 열 수에 딱 맞춘다(남는 폭이 양쪽 여백으로 새지 않게). 남는 폭은 설명 패널이 가진다.
+        float cardStep = UI_RoguelikeOwnedCardCell.CardWidth + CellGap;
+        float gridSpace = groupWidth - PanelGap - InfoTargetWidth - (BookPadding + BracketClearance) * 2f;
+        columns = Mathf.Max(1, Mathf.FloorToInt((gridSpace + CellGap) / cardStep));
+        float gridWidth = columns * UI_RoguelikeOwnedCardCell.CardWidth + (columns - 1) * CellGap;
+        float bookWidth = gridWidth + (BookPadding + BracketClearance) * 2f;
+        infoWidth = groupWidth - PanelGap - bookWidth;
 
         float maxMain = screen.height - ScreenMargin * 2f - TitleHeight - KeyGuideHeight - VerticalGap * 2f;
         mainHeight = Mathf.Floor(Mathf.Clamp(maxMain, MinMainHeight, MaxMainHeight));
@@ -237,13 +347,15 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
 
         float mainTop = TitleHeight + VerticalGap;
         PlaceTopLeft(bookRoot, 0f, mainTop, bookWidth, mainHeight);
-        PlaceTopLeft(infoRoot, bookWidth + PanelGap, mainTop, infoWidth, mainHeight);
         PlaceTopLeft(keyGuideRoot, 0f, mainTop + mainHeight + VerticalGap, groupWidth, KeyGuideHeight);
 
         ApplyStaticTexts();
         LayoutTitleBar();
         LayoutBook(bookWidth);
-        PrepareDescriptionPanel();
+        float infoHeight = PrepareDescriptionPanel();
+        PlaceTopLeft(infoRoot, bookWidth + PanelGap, mainTop, infoWidth, infoHeight);
+        bookFinalRect = new Rect(0f, mainTop, bookWidth, mainHeight);
+        infoFinalRect = new Rect(bookWidth + PanelGap, mainTop, infoWidth, infoHeight);
         RefreshInfo();
         LayoutRebuilder.ForceRebuildLayoutImmediate(keyGuideRoot);
     }
@@ -254,7 +366,6 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
         hintMoveText.text = Localize(HintMoveKey);
         hintCloseText.text = Localize(HintCloseKey);
         emptyText.text = Localize(EmptyKey);
-        footerText.text = Localize(NextLevelHintKey);
 
         labelBuilder.Clear();
         labelBuilder.Append(Localize(RareShortKey)).Append(' ').Append(rareCount).Append("  ·  ").Append(Localize(NormalShortKey)).Append(' ').Append(normalCount);
@@ -275,16 +386,15 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     /// <summary>카드 목록: 마스크 영역 · 스크롤바 · 카드 격자를 놓는다. 위쪽에 카드가 올라갈 여유(HoverLiftPixels)를 둔다.</summary>
     private void LayoutBook(float _bookWidth)
     {
-        viewportWidth = _bookWidth - BookPadding * 2f - ScrollbarWidth - ScrollbarGap;
+        viewportWidth = _bookWidth - BookPadding * 2f;
         viewportHeight = mainHeight - BookPadding * 2f;
         PlaceTopLeft(viewport, BookPadding, BookPadding, viewportWidth, viewportHeight);
-        PlaceTopLeft(scrollTrack, _bookWidth - BookPadding - ScrollbarWidth, BookPadding, ScrollbarWidth, viewportHeight);
+        PlaceTopLeft(scrollTrack, _bookWidth - BookPadding + ScrollbarGap, BookPadding, ScrollbarWidth, viewportHeight);
 
         scrollContent.anchorMin = new Vector2(0f, 1f);
         scrollContent.anchorMax = new Vector2(0f, 1f);
         scrollContent.pivot = new Vector2(0f, 1f);
 
-        columns = Mathf.Max(1, Mathf.FloorToInt((viewportWidth + CellGap) / (UI_RoguelikeOwnedCardCell.CardWidth + CellGap)));
         float gridWidth = columns * UI_RoguelikeOwnedCardCell.CardWidth + (columns - 1) * CellGap;
         float gridLeft = Mathf.Floor((viewportWidth - gridWidth) * 0.5f);
 
@@ -310,10 +420,9 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
 
     /// <summary>
     /// 설명 패널이 보여 줄 수 있는 모든 카드의 높이를 한 번 재서 패널 폭을 고정한다. 호버를 옮겨도 패널 위치가 변하지 않는다.
-    /// 푸터("같은 카드를 다시 고르면…")는 레벨이 더 오를 수 있는 카드에만 뜨므로 그 카드의 필요 높이에만 더한다.
-    /// 끝나면 패널을 비운다(호출한 쪽이 RefreshInfo로 현재 포커스를 다시 채운다).
+    /// 끝나면 패널을 비운다(호출한 쪽이 RefreshInfo로 현재 포커스를 다시 채운다). 설명 패널(Info)의 높이를 돌려준다 - 내용에 맞추되 목록 높이를 넘지 않는다.
     /// </summary>
-    private void PrepareDescriptionPanel()
+    private float PrepareDescriptionPanel()
     {
         float panelWidth = infoWidth - InfoPaddingX * 2f;
         descPanel.SetMaxWidth(panelWidth);
@@ -323,7 +432,7 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
         for (int i = 0; i < cellCount; i++)
         {
             RoguelikeOwnedCardViewData data = cells[i].Data;
-            float height = InfoPadding * 2f + descPanel.MeasureOwnedHeight(in data) + (HasNextLevelHint(in data) ? FooterReserve : 0f);
+            float height = InfoPadding * 2f + descPanel.MeasureOwnedHeight(in data);
             requiredHeight = Mathf.Max(requiredHeight, height);
         }
 
@@ -340,7 +449,7 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
             Debug.LogWarning("[UIView_RoguelikeOwnedCards] 설명이 화면 높이(" + mainHeight + ")보다 깁니다. 필요한 높이: " + requiredHeight);
         }
 
-        PlaceTopLeft(footerText.rectTransform, InfoPaddingX, mainHeight - FooterReserve - InfoPadding, panelWidth, FooterReserve);
+        return Mathf.Min(mainHeight, requiredHeight);
     }
 
     // // 설명 패널(오른쪽)
@@ -350,7 +459,6 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     {
         bool bHasCard = null != focusedCell && focusedCell.gameObject.activeSelf;
         descPanel.gameObject.SetActive(bHasCard);
-        footerText.gameObject.SetActive(false);
 
         if (false == bHasCard)
         {
@@ -361,14 +469,6 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
 
         RoguelikeOwnedCardViewData data = focusedCell.Data;
         descPanel.SetOwnedCard(in data);
-        footerText.gameObject.SetActive(HasNextLevelHint(in data));
-    }
-
-    /// <summary>같은 카드를 다시 고르면 레벨이 오르는 카드인가(액티브·패시브이고 최대 레벨 전).</summary>
-    private static bool HasNextLevelHint(in RoguelikeOwnedCardViewData _data)
-    {
-        bool bLevelable = (ECardKind.Active == _data.kind || ECardKind.Passive == _data.kind) && 1 < _data.maxLevel;
-        return bLevelable && _data.level < _data.maxLevel;
     }
 
     // // 내비게이션 · 포커스
@@ -426,13 +526,14 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
             return;
         }
 
-        if (true == bGamepadMode)
+        if (true == bGamepadMode && EMotion.None == motion)
         {
             SetFocusCell(cells[0], false);
             SelectInEventSystem(cells[0].Relay);
             return;
         }
 
+        // 키보드/마우스 모드이거나 열기 연출 중이다. 연출 중 패드 모드의 포커스(선택 · 커서)는 열기가 끝난 뒤에 건다(FinishOpen).
         focusedCell = cells[0];
         focusedRelay = cells[0].Relay;
         RefreshInfo();
@@ -465,6 +566,9 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
         LayoutRebuilder.ForceRebuildLayoutImmediate(keyGuideRoot);
 
         if (false == IsVisible || 0 == cellCount) return;
+
+        // 연출 중에는 포커스를 걸지 않는다. 장치는 이미 기록했고, 열기가 끝날 때(FinishOpen) 그 장치에 맞춰 건다.
+        if (EMotion.None != motion) return;
 
         if (true == _bGamepad)
         {
@@ -590,6 +694,232 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
         scrollThumb.anchoredPosition = new Vector2(0f, -thumbY);
     }
 
+    // // 열기 · 닫기 연출
+
+    /// <summary>열기 연출을 시작한다. 책이 줄어들 칸(트레이)을 정하고 첫 프레임을 그린다. OnShowContent에서 motion을 먼저 Opening으로 두고 Rebuild한 뒤 부른다.</summary>
+    private void BeginOpen()
+    {
+        motionClock = 0f;
+        bCloseQueued = false;
+
+        contentGroup.blocksRaycasts = false;
+        bookMask.enabled = true;
+        AttachTray();
+        ResolveTrayRect();
+
+        if (null != tray) tray.PlayOpenEffect();
+        ApplyOpening(0f);
+    }
+
+    private void BeginClose()
+    {
+        motion = EMotion.Closing;
+        motionClock = 0f;
+
+        // 연출이 시작되면 카드 호버 · 선택 · 커서를 걷는다(접히는 카드 위에 커서가 남지 않게).
+        for (int i = 0; i < cellCount; i++) cells[i].SetFocused(false);
+        bFocusShown = false;
+        HideCursor();
+        ReleaseSelection();
+
+        contentGroup.blocksRaycasts = false;
+        bookMask.enabled = true;
+        AttachTray();
+        ResolveTrayRect();
+
+        if (null != tray) tray.PlayAbsorbEffect();
+        ApplyClosing(0f);
+    }
+
+    private void FinishOpen()
+    {
+        motion = EMotion.None;
+        ResetMotionVisuals();
+
+        if (true == bCloseQueued)
+        {
+            bCloseQueued = false;
+            BeginClose();
+            return;
+        }
+
+        // 열기 연출 중 보류해 둔 패드 포커스를 건다.
+        if (true == bGamepadMode && 0 < cellCount)
+        {
+            UI_RoguelikeOwnedCardCell cell = null != focusedCell ? focusedCell : cells[0];
+            SetFocusCell(cell, true);
+            SelectInEventSystem(cell.Relay);
+        }
+    }
+
+    private void FinishClose()
+    {
+        motion = EMotion.None;
+
+        // 창이 꺼지기 전에 트레이를 HUD로 돌려보낸다(창과 함께 꺼지지 않게). 같은 자리라 도착 반응이 끊기지 않고 이어진다.
+        DetachTray();
+        base.Hide();
+    }
+
+    /// <summary>트레이가 연결되어 있고 켜져 있으면 창의 맨 위 레이어로 올린다(딤 · 책 위에 보이게). 꺼져 있으면(로비 등) 올리지 않는다.</summary>
+    private void AttachTray()
+    {
+        if (null == tray || null == trayLayer || false == tray.gameObject.activeInHierarchy) return;
+
+        trayLayer.SetAsLastSibling();
+        tray.AttachTo(trayLayer);
+    }
+
+    private void DetachTray()
+    {
+        if (null != tray) tray.Detach();
+    }
+
+    private void StepMotion()
+    {
+        motionClock += Mathf.Min(Time.unscaledDeltaTime, RoguelikeOwnedCardsMotion.MaxFrameSeconds);
+        float t = motionClock * RoguelikeOwnedCardsMotion.Speed;
+
+        if (EMotion.Opening == motion)
+        {
+            if (RoguelikeOwnedCardsMotion.OpenDuration <= t) FinishOpen();
+            else ApplyOpening(t);
+
+            return;
+        }
+
+        if (RoguelikeOwnedCardsMotion.ArriveTime <= t) FinishClose();
+        else ApplyClosing(t);
+    }
+
+    /// <summary>열기 _t(연출 단위) 시점의 모습: 딤 → 책 확장 → 제목 · 키 안내 → 카드 펼침 → 설명.</summary>
+    private void ApplyOpening(float _t)
+    {
+        SetDim(RoguelikeOwnedCardsMotion.Segment(_t, 0f, OpenDimEnd));
+
+        float bookK = RoguelikeOwnedCardsMotion.EaseOut(RoguelikeOwnedCardsMotion.Segment(_t, OpenBookStart, OpenBookEnd));
+        PlaceRect(bookRoot, LerpRect(trayTargetRect, bookFinalRect, bookK));
+
+        float titleK = RoguelikeOwnedCardsMotion.EaseOut(RoguelikeOwnedCardsMotion.Segment(_t, OpenTitleStart, OpenTitleEnd));
+        titleGroup.alpha = titleK;
+        keyGuideGroup.alpha = titleK;
+
+        ApplyInfo(RoguelikeOwnedCardsMotion.EaseOut(RoguelikeOwnedCardsMotion.Segment(_t, OpenInfoStart, OpenInfoEnd)));
+
+        for (int i = 0; i < cellCount; i++)
+        {
+            float from = OpenCardStart + Mathf.Min(i, MotionCellLimit - 1) * OpenCardStagger;
+            SetCellReveal(cells[i], RoguelikeOwnedCardsMotion.EaseOut(RoguelikeOwnedCardsMotion.Segment(_t, from, from + OpenCardSpan)));
+        }
+    }
+
+    /// <summary>닫기 _t(연출 단위) 시점의 모습: 설명 · 제목 사라짐 → 카드가 오른쪽부터 접힘 → 책이 트레이 칸으로 수렴 + 딤 걷힘.</summary>
+    private void ApplyClosing(float _t)
+    {
+        ApplyInfo(1f - RoguelikeOwnedCardsMotion.Segment(_t, 0f, CloseInfoEnd));
+
+        float titleK = 1f - RoguelikeOwnedCardsMotion.Segment(_t, CloseTitleStart, CloseTitleEnd);
+        titleGroup.alpha = titleK;
+        keyGuideGroup.alpha = titleK;
+
+        for (int i = 0; i < cellCount; i++)
+        {
+            float from = (MotionCellLimit - 1 - Mathf.Min(i, MotionCellLimit - 1)) * CloseCardStagger;
+            SetCellReveal(cells[i], 1f - RoguelikeOwnedCardsMotion.EaseOut(RoguelikeOwnedCardsMotion.Segment(_t, from, from + CloseCardSpan)));
+        }
+
+        float bookK = RoguelikeOwnedCardsMotion.EaseInOut(RoguelikeOwnedCardsMotion.Segment(_t, CloseBookStart, RoguelikeOwnedCardsMotion.ArriveTime));
+        PlaceRect(bookRoot, LerpRect(bookFinalRect, trayTargetRect, bookK));
+
+        SetDim(1f - RoguelikeOwnedCardsMotion.Segment(_t, CloseDimStart, RoguelikeOwnedCardsMotion.ArriveTime));
+    }
+
+    /// <summary>설명 패널의 투명도(_k)와 그에 따른 옆으로 밀림. 정수 픽셀이다.</summary>
+    private void ApplyInfo(float _k)
+    {
+        infoGroup.alpha = _k;
+
+        Rect rect = infoFinalRect;
+        rect.x += Mathf.Round((1f - _k) * InfoSlidePixels);
+        PlaceRect(infoRoot, rect);
+    }
+
+    private void SetDim(float _k)
+    {
+        Color color = dimColor;
+        color.a = dimColor.a * _k;
+        dimGraphic.color = color;
+    }
+
+    /// <summary>카드 공개 폭. 짝수 픽셀 단계로만 변한다(UI_RoguelikeCard 뒤집힘 폭 규칙).</summary>
+    private static void SetCellReveal(UI_RoguelikeOwnedCardCell _cell, float _k)
+    {
+        int width = 2 * Mathf.RoundToInt(UI_RoguelikeOwnedCardCell.CardWidth * 0.5f * _k);
+        _cell.SetRevealWidth(width);
+    }
+
+    /// <summary>연출로 바뀐 것을 모두 평상시 값으로 되돌린다(열기가 끝났을 때, 닫혀서 꺼질 때).</summary>
+    private void ResetMotionVisuals()
+    {
+        if (false == bMotionReady) return;
+
+        bookMask.enabled = false;
+        contentGroup.blocksRaycasts = true;
+        titleGroup.alpha = 1f;
+        keyGuideGroup.alpha = 1f;
+        infoGroup.alpha = 1f;
+        dimGraphic.color = dimColor;
+
+        PlaceRect(bookRoot, bookFinalRect);
+        PlaceRect(infoRoot, infoFinalRect);
+        for (int i = 0; i < cellCount; i++) cells[i].RevealFull();
+    }
+
+    /// <summary>책이 줄어들 칸(Content 왼쪽 위 기준 정수 픽셀)을 정한다. 트레이가 연결되어 있고 켜져 있으면 그 칸, 아니면 우하단 기본 칸.</summary>
+    private void ResolveTrayRect()
+    {
+        RectTransform source = null != tray ? tray.TrayRect : null;
+        Rect content = contentRoot.rect;
+
+        if (null != source && true == source.gameObject.activeInHierarchy)
+        {
+            source.GetWorldCorners(cornerBuffer);
+            Vector3 bottomLeft = contentRoot.InverseTransformPoint(cornerBuffer[0]);
+            Vector3 topRight = contentRoot.InverseTransformPoint(cornerBuffer[2]);
+
+            trayTargetRect = new Rect(
+                Mathf.Round(bottomLeft.x - content.xMin),
+                Mathf.Round(content.yMax - topRight.y),
+                Mathf.Round(topRight.x - bottomLeft.x),
+                Mathf.Round(topRight.y - bottomLeft.y));
+            return;
+        }
+
+        Rect screen = ((RectTransform)contentRoot.parent).rect;
+        float left = (screen.width - content.width) * 0.5f;
+        float top = (screen.height - content.height) * 0.5f;
+
+        trayTargetRect = new Rect(
+            screen.width - FallbackTrayMargin - FallbackTrayWidth - left,
+            screen.height - FallbackTrayMargin - FallbackTrayHeight - top,
+            FallbackTrayWidth,
+            FallbackTrayHeight);
+    }
+
+    private static Rect LerpRect(Rect _from, Rect _to, float _k)
+    {
+        return new Rect(
+            Mathf.Round(Mathf.Lerp(_from.x, _to.x, _k)),
+            Mathf.Round(Mathf.Lerp(_from.y, _to.y, _k)),
+            Mathf.Round(Mathf.Lerp(_from.width, _to.width, _k)),
+            Mathf.Round(Mathf.Lerp(_from.height, _to.height, _k)));
+    }
+
+    private static void PlaceRect(RectTransform _rect, Rect _placement)
+    {
+        PlaceTopLeft(_rect, _placement.x, _placement.y, _placement.width, _placement.height);
+    }
+
     // // 공통
 
     private string Localize(string _key)
@@ -614,7 +944,7 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
         return null != contentRoot && null != dimButton && null != titleText && null != countText
             && null != bookRoot && null != viewport && null != scrollContent && null != scrollRect && null != scrollTrack && null != scrollThumb
             && null != cellPrefab && null != emptyText
-            && null != infoRoot && null != descPanel && null != footerText
+            && null != infoRoot && null != descPanel
             && null != titlePlate && null != keyGuideRoot && null != moveGuideRow && null != hintMoveText && null != hintCloseText;
     }
 
@@ -632,6 +962,8 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
 
     private void OnRelayFocused(UI_RoguelikeSelectRelay _relay)
     {
+        if (EMotion.None != motion) return;
+
         UI_RoguelikeOwnedCardCell cell = FindCell(_relay);
         if (null == cell) return;
 
@@ -665,11 +997,21 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
         bGamepadMode = null != inputManager && inputManager.IsGamepadMode;
         moveGuideRow.gameObject.SetActive(bGamepadMode);
 
+        // 열기 연출: 포커스 · 커서는 연출이 끝난 뒤에 걸리도록 motion을 먼저 정하고 그린다. 책이 줄어들 칸은 배치가 끝난 뒤 정한다.
+        if (true == bMotionReady) motion = EMotion.Opening;
+
         Rebuild();
+
+        if (true == bMotionReady) BeginOpen();
     }
 
     protected override void OnHideContent()
     {
+        motion = EMotion.None;
+        bCloseQueued = false;
+        DetachTray();
+        ResetMotionVisuals();
+
         for (int i = 0; i < cellCount; i++) cells[i].SetFocused(false);
         focusedCell = null;
         focusedRelay = null;
@@ -707,6 +1049,11 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
 
         dimButton.onClick.AddListener(OnDimClicked);
 
+        // 연출용 참조가 모두 있으면 연출을 켠다. 옛 프리팹(구성기를 아직 안 돌림)이면 연출 없이 예전처럼 바로 열고 닫힌다.
+        dimGraphic = dimButton.targetGraphic;
+        bMotionReady = null != dimGraphic && null != bookMask && null != contentGroup && null != titleGroup && null != infoGroup && null != keyGuideGroup;
+        if (true == bMotionReady) dimColor = dimGraphic.color;
+
         scrollRect.scrollSensitivity = WheelSensitivity;
         scrollRect.onValueChanged.AddListener(OnScrollChanged);
     }
@@ -716,6 +1063,12 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
         base.Update();
 
         if (false == IsVisible) return;
+
+        if (EMotion.None != motion)
+        {
+            StepMotion();
+            return;
+        }
 
         // 키보드/마우스 모드는 마우스 전용이다. 카드를 눌러도 UGUI가 그 버튼을 선택하므로, 선택이 생기면 풀어 방향키가 먹지 않게 한다.
         if (false == bGamepadMode)
@@ -736,6 +1089,7 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
 
     public override void OnDestroy()
     {
+        DetachTray();
         ClosedEvent = null;
         UnsubscribeLanguage();
         UnsubscribeDevice();

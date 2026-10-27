@@ -448,8 +448,9 @@ public static class RoguelikeCardBuilder
     /// <summary>
     /// 픽셀 배열로 PNG를 만들고 픽셀 아트 규칙(Point 필터·비압축·Single 스프라이트)으로 가져와 스프라이트를 돌려준다.
     /// 같은 경로에 이미 파일이 있으면 덮어쓰지 않는다 - 디자인 이미지로 바꿀 때는 같은 이름으로 교체하면 된다.
+    /// _pixelsPerUnit은 9-슬라이스로 쓰는 그림이 캔버스의 Reference Pixels Per Unit과 같아야 테두리가 원래 픽셀 크기로 그려진다(다르면 테두리가 그 비율만큼 줄거나 는다).
     /// </summary>
-    public static Sprite EnsureSpriteFromPixels(string _path, Color32[] _pixels, int _w, int _h)
+    public static Sprite EnsureSpriteFromPixels(string _path, Color32[] _pixels, int _w, int _h, float _pixelsPerUnit = 100f)
     {
         if (false == System.IO.File.Exists(_path))
         {
@@ -463,7 +464,7 @@ public static class RoguelikeCardBuilder
             TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(_path);
             importer.textureType = TextureImporterType.Sprite;
             importer.spriteImportMode = SpriteImportMode.Single;
-            importer.spritePixelsPerUnit = 100f;
+            importer.spritePixelsPerUnit = _pixelsPerUnit;
             importer.filterMode = FilterMode.Point;
             importer.mipmapEnabled = false;
             importer.textureCompression = TextureImporterCompression.Uncompressed;

@@ -15,7 +15,7 @@ using UnityEngine;
 ///
 /// [줄바꿈은 문구가 정한다] 번역문 안의 `\n`(수동 줄바꿈)을 그대로 따른다. 줄을 어디서 나눠야 자연스러운지는 그 언어를 아는 번역가가 정하는 것이 프로젝트 방침이다
 /// (영문 용어집: 긴 설명은 문장 안에서 `\n`으로 직접 나눈다). 패널은 그 줄들 중 가장 긴 줄이 들어가는 폭으로 맞추고, 수동 줄바꿈이 없거나 한 줄이 최대 폭보다 길 때만
-/// TMP가 공백에서 자동으로 줄바꿈한다. 자동 줄바꿈은 같은 줄 수를 유지하는 가장 좁은 폭으로 줄여 마지막 줄에 한두 단어만 남는 어색함을 줄인다.
+/// TMP가 공백에서 자동으로 줄바꿈한다(TMP Settings의 Modern Hangul Line Breaking Rules가 켜져 있어야 한글이 단어 단위로 끊긴다). 글자 영역은 패널 안쪽 폭을 그대로 쓴다.
 ///
 /// [화면 전체 폭 통일] 호버를 옮길 때 박스 크기가 달라지면 어지러우므로, 화면이 열릴 때 보일 수 있는 모든 내용을 재 보고(Measure*) 가장 넓은 폭을 SetFixedWidth로 고정한다.
 /// </summary>
@@ -37,16 +37,18 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     private const float PaddingX = 6f;
     private const float PaddingY = 4f;
     private const float RowGap = 2f;
+    // 구분선이 있으면 이름 줄과 설명 사이에 선 1칸 + 위아래 3칸씩을 둔다.
+    private const float DividerSpace = 7f;
     private const float LevelGap = 6f;
     private const float MinLineHeight = 12f;
     private const float Unbounded = 10000f;
-    private const float BalanceMinRatio = 0.6f;
-    private const int BalanceSteps = 5;
 
     //외부 의존성 (프리팹에서 연결)
     [SerializeField] private TMP_Text nameText;
     [SerializeField] private TMP_Text levelText;
     [SerializeField] private TMP_Text descriptionText;
+    // 선택. 있으면 이름 줄 아래에 1칸 구분선을 놓는다(보유 카드 확인 화면). 카드 선택 화면 프리팹에는 없다.
+    [SerializeField] private RectTransform divider;
 
     //상태 변수
     private LocalizationManager localizationManager;
@@ -243,15 +245,17 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
 
         float levelWidth = LevelWidth();
         float nameBoxWidth = Mathf.Max(0f, innerWidth - (0f < levelWidth ? levelWidth + LevelGap : 0f));
-        float descBoxWidth = BalancedWidth(descriptionText, innerWidth);
+        float descBoxWidth = innerWidth;
 
         float nameHeight = Mathf.Max(MinLineHeight, MeasureHeight(nameText, nameBoxWidth));
         float descHeight = string.IsNullOrEmpty(descriptionText.text) ? 0f : Mathf.Max(MinLineHeight, MeasureHeight(descriptionText, descBoxWidth));
 
         SetTopLeft(nameText.rectTransform, PaddingX, PaddingY, nameBoxWidth, nameHeight);
         SetTopLeft(levelText.rectTransform, panelWidth - PaddingX - levelWidth, PaddingY, levelWidth, nameHeight);
-        float descTop = PaddingY + nameHeight + RowGap;
+        bool bDivider = null != divider;
+        float descTop = PaddingY + nameHeight + (true == bDivider ? DividerSpace : RowGap);
         SetTopLeft(descriptionText.rectTransform, PaddingX, descTop, descBoxWidth, descHeight);
+        if (true == bDivider) SetTopLeft(divider, PaddingX, PaddingY + nameHeight + (DividerSpace - 1f) * 0.5f, innerWidth, 1f);
 
         float panelHeight = Mathf.Max(MinPanelHeight, descTop + descHeight + PaddingY);
         panel.sizeDelta = new Vector2(panelWidth, panelHeight);
@@ -260,29 +264,6 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     private static float MeasureHeight(TMP_Text _text, float _width)
     {
         return Mathf.Ceil(_text.GetPreferredValues(_text.text, _width, Unbounded).y);
-    }
-
-    /// <summary>
-    /// _limit 폭에서 나오는 줄 수·높이를 그대로 유지하는 가장 좁은 폭. 자동 줄바꿈이 일어나는 문구에서 마지막 줄에 한두 단어만 남는 것을 줄인다.
-    /// 더 좁히면 높이가 늘어나는 지점(단어가 쪼개지거나 줄이 하나 더 생기는 지점)에서 멈추므로, 단어가 중간에서 끊기는 폭은 고르지 않는다.
-    /// 수동 줄바꿈만 있는 문구는 가장 긴 줄의 폭이 된다(왼쪽 정렬이라 보이는 모양은 같다).
-    /// </summary>
-    private static float BalancedWidth(TMP_Text _text, float _limit)
-    {
-        if (string.IsNullOrEmpty(_text.text)) return _limit;
-
-        float full = _text.GetPreferredValues(_text.text, _limit, Unbounded).y;
-        float low = _limit * BalanceMinRatio;
-        float high = _limit;
-
-        for (int i = 0; i < BalanceSteps; i++)
-        {
-            float mid = (low + high) * 0.5f;
-            if (_text.GetPreferredValues(_text.text, mid, Unbounded).y <= full + 0.01f) high = mid;
-            else low = mid;
-        }
-
-        return Mathf.Min(_limit, Mathf.Ceil(high));
     }
 
     /// <summary>앵커·피벗이 왼쪽 위(0, 1)인 자식을 패널 왼쪽 위에서 (_left, _top)만큼 떨어진 곳에 놓는다.</summary>

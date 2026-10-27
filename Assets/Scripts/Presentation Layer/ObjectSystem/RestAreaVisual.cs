@@ -1,4 +1,5 @@
 using System.Collections;
+using PresentationLayer.VFX;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -18,6 +19,10 @@ public class RestAreaVisual : MonoBehaviour
 
     [Header("Range Ellipse")]
     [SerializeField] private Renderer ellipseRenderer;
+
+    [Header("Plus Particle")]
+    [Tooltip("범위 안에서 올라오는 + 입자. 모닥불 CustomSortable로 지면 Y 정렬해 사물 사이에 끼어든다.")]
+    [SerializeField] private VFX_RestAreaPlus plusVfx;
 
     [Header("Reveal")]
     [SerializeField] private float revealDuration = 0.6f;
@@ -52,6 +57,8 @@ public class RestAreaVisual : MonoBehaviour
             campfireSortable.AddSpriteRenderer(campfireSR);
         }
 
+        if (null != plusVfx) plusVfx.Initialize(campfireSortable);
+
         // Initialize 전에도 프리팹에 맞춰 둔 크기로 그려지도록 기본값을 잡아 둔다.
         if (ellipseRenderer != null) ellipseBaseScale = ellipseRenderer.transform.localScale;
 
@@ -62,6 +69,8 @@ public class RestAreaVisual : MonoBehaviour
     public void Initialize(IEnvironmentProvider _environmentProvider, float _radiusX, float _radiusY)
     {
         footprintCollider?.SetEnvironmentProvider(_environmentProvider);
+
+        if (null != plusVfx) plusVfx.SetRadius(_radiusX, _radiusY);
 
         ellipseBaseScale = new Vector3(_radiusX * 2f, _radiusY * 2f, 1f);
         if (ellipseRenderer != null)
@@ -77,6 +86,8 @@ public class RestAreaVisual : MonoBehaviour
 
         bOpen = _bOpen;
         elapsed = 0f;
+
+        if (null != plusVfx) plusVfx.SetOpen(bOpen);
 
         if (bOpen)
         {

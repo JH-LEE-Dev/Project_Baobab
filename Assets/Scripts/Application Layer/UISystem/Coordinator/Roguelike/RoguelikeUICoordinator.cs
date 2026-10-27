@@ -71,6 +71,8 @@ public sealed class RoguelikeUICoordinator
         hudUI = _hudUI;
         cardSelectUI = _cardSelectUI;
         ownedCardsUI = _ownedCardsUI;
+        // 보유 카드 창이 HUD 우하단 트레이 칸에서 펼쳐지고 접히도록, 트레이 연출과 위치를 창에 연결한다.
+        ownedCardsUI?.SetTray(hudUI?.OwnedTray);
         resultUI = _resultUI;
         recordsUI = _recordsUI;
         escUI = _escUI;
@@ -452,10 +454,26 @@ public sealed class RoguelikeUICoordinator
 
     private void RecordsClosed() => signalHub.Publish(new RoguelikeRecordsClosedSignal());
 
-    /// <summary>보유 카드 창 열기. 로그라이크 세션 동안 인벤토리 키(Tab · 패드 LT)가 RoguelikeSystem의 리다이렉트를 거쳐 부른다.</summary>
+    /// <summary>보유 카드 창이 떠 있는지(닫기 연출 중 포함). 인벤토리 키 리다이렉트가 UI 모드에서도 키를 통과시킬지 정하는 데 쓴다.</summary>
+    public bool IsOwnedCardsOpen()
+    {
+        return null != ownedCardsUI && true == ownedCardsUI.IsVisible;
+    }
+
+    /// <summary>
+    /// 보유 카드 창 토글. 로그라이크 세션 동안 인벤토리 키(Tab · 패드 LT)가 RoguelikeSystem의 리다이렉트를 거쳐 부른다.
+    /// 닫혀 있으면 열고, 열려 있으면 닫는다(ESC · 패드 B · 딤 클릭의 닫기와 같은 Hide다 - 열리는 중이면 열기가 끝난 뒤, 닫히는 중이면 무시).
+    /// </summary>
     public void RequestOwnedCards()
     {
-        if (null == ownedCardsUI || ownedCardsUI.IsVisible) return;
+        if (null == ownedCardsUI) return;
+
+        if (true == ownedCardsUI.IsVisible)
+        {
+            ownedCardsUI.Hide();
+            return;
+        }
+
         if (false == CanOpenOwnedCards(runInfo.Phase)) return;
 
         ownedViewBuffer.Clear();
@@ -506,7 +524,8 @@ public sealed class RoguelikeUICoordinator
 
     private void CloseOwnedCards()
     {
-        if (null != ownedCardsUI && ownedCardsUI.IsVisible) ownedCardsUI.Hide();
+        // 시스템이 화면을 바꾸는 순간이라 닫기 연출 없이 바로 닫는다(연출이 결과 · 로비 연출 위에 겹쳐 뜨지 않게).
+        if (null != ownedCardsUI && ownedCardsUI.IsVisible) ownedCardsUI.HideImmediate();
         ResumeFromOwnedCards();
     }
 

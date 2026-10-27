@@ -5,7 +5,7 @@
 - 관련 기획: `Roguelike_Planning_v2.8.md` 5-2 "보유 카드 확인" · 10-2 "보유 카드 보관함"
 - 관련 UI 작업 목록: `UI_WorkList.md`
 
-UI 레이어에서 보유 카드 보관함 화면·HUD 트레이를 구현했다. 아래 두 가지는 **UI 레이어에서 할 수 없는 기능**이라 어플리케이션 레이어에서 구현해 주어야 한다. 이 문서는 필요한 기능과 이유, 제안 형태, 주의점만 적는다. 구현 방식은 담당자 판단에 맡긴다.
+UI 레이어에서 보유 카드 보관함 화면·HUD 트레이를 구현했다. 아래 세 가지(요청 A · B · C)는 **UI 레이어에서 할 수 없는 기능**이라 어플리케이션 레이어에서 구현해 주어야 한다. 이 문서는 필요한 기능과 이유, 제안 형태, 주의점만 적는다. 구현 방식은 담당자 판단에 맡긴다.
 
 ---
 
@@ -27,14 +27,16 @@ UI 레이어에서 보유 카드 보관함 화면·HUD 트레이를 구현했다
 |---|---|
 | `UIView_RoguelikeOwnedCards` | 화면 본체 구현(카드 선택 화면의 카드 `UI_RoguelikeCard`를 그대로 쓴 카드 목록(레어 먼저) + 고정 설명 패널 + 현재 효과 + 키 안내 줄). **공개 시그니처는 그대로**(`SetCards`, `Show/Hide`, `HiddenEvent`, `ClosedEvent`) |
 | `UI_RoguelikeOwnedCardCell` | 카드 한 칸(`UI_RoguelikeCard` + 판정 박스) |
-| `UI_RoguelikeOwnedCardTray` | HUD 우하단 보관함 트레이. **표시 전용**이다(인벤토리 키 아이콘 + 숫자판 둘을 보여 주며 클릭 · 호버에 반응하지 않고 레이캐스트도 받지 않는다) |
+| `UI_RoguelikeOwnedCardTray` | HUD 우하단 보관함 트레이. **표시 전용**이다(인벤토리 키 아이콘 + 보유 카드 총량 숫자판 하나를 보여 주며 클릭 · 호버에 반응하지 않고 레이캐스트도 받지 않는다). 창 열기 · 닫기와 짝을 이루는 연출(`PlayOpenEffect` / `PlayAbsorbEffect`)을 갖는다 - 요청 C |
+| `UIView_RoguelikeOwnedCards` 열기 · 닫기 연출 | 트레이 칸에서 책이 펼쳐지고 같은 칸으로 접힌다(입자 · 탄성 없음, unscaled 시간). **`Hide()`가 닫기 연출 뒤에 실제로 닫는다(약 0.39초)**. 새 공개 메서드 `SetTray(UI_RoguelikeOwnedCardTray)`, `HideImmediate()` - 요청 C |
+| `UIView_RoguelikeHUD.OwnedTray` | 트레이 접근자(읽기 전용 프로퍼티). 요청 C가 쓴다 |
 | `UIView_RoguelikeHUD.SetOwnedCardCounts(int _rareCount, int _normalCount)` | 트레이 숫자판(레어 · 일반 장수) 갱신. 새 virtual 메서드 |
 | `RoguelikeCardEffectText.BuildCurrent` | 누적 "현재 효과" 문구(UI 내부 사용) |
 | 로컬라이징 | `RoguelikeUI.json`에 `Roguelike_OwnedCards_*` 키 추가(id 523~538). 문자열 키로 조회하므로 `LocKeys` 재생성 불필요 |
 
 > **보유 카드 창은 키로만 열린다.** 트레이 클릭 열람은 폐지했다(기획 결정). 요청 A · B-2를 구현하기 전까지는 창을 열 방법이 없다.
 >
-> 트레이 오른쪽 위 모서리에는 보유 카드 창을 여는 **인벤토리 키 아이콘**이 걸려 있다(흰 외곽선은 인벤토리의 키 아이콘과 같은 `UIEffect`; `UI_KeyboardImage`, `RebindableAction` 모드 + `ERebindableAction.Inventory`; 리바인딩과 입력 장치 전환(키보드 ↔ 패드 LT)을 자동으로 따라간다. HUD `Initialize`에서 `InputManager`를 넘긴다). 앱 레이어 작업은 필요 없다. 키 연결(요청 A · B-2)이 아직 없어도 아이콘은 보인다. 트레이 본체는 레어 · 일반 숫자판 둘이다(숫자는 판 오른쪽 끝에 붙는 오른쪽 정렬, 상자 그림은 없다). **카드를 골라도 숫자는 요청 B-1을 구현하기 전까지 0으로 남는다.** 숫자판은 `SetOwnedCardCounts`가 불리기 전에는 **0 · 0**으로 표기된다(HUD가 켜질 때 `ResetTray`가 0으로 둔다). 카드가 0장이어도 0으로 표기한다. 요청 B-1을 구현하기 전까지는 항상 0이 보이는 것이 정상이다.
+> 트레이 오른쪽 위 모서리에는 보유 카드 창을 여는 **인벤토리 키 아이콘**이 걸려 있다(흰 외곽선은 인벤토리의 키 아이콘과 같은 `UIEffect`; `UI_KeyboardImage`, `RebindableAction` 모드 + `ERebindableAction.Inventory`; 리바인딩과 입력 장치 전환(키보드 ↔ 패드 LT)을 자동으로 따라간다. HUD `Initialize`에서 `InputManager`를 넘긴다). 앱 레이어 작업은 필요 없다. 키 연결(요청 A · B-2)이 아직 없어도 아이콘은 보인다. 트레이 본체는 카드 묶음 아이콘 + 보유 카드 총량(레어 + 일반) 숫자 하나가 든 숫자판 하나다(숫자는 판 오른쪽 끝에 붙는 오른쪽 정렬). **카드를 골라도 숫자는 요청 B-1을 구현하기 전까지 0으로 남는다.** 숫자판은 `SetOwnedCardCounts`가 불리기 전에는 **0**으로 표기된다(HUD가 켜질 때 `ResetTray`가 0으로 둔다). 카드가 0장이어도 0으로 표기한다. 요청 B-1을 구현하기 전까지는 항상 0이 보이는 것이 정상이다. 레어 · 일반 구분은 보유 카드 창 제목 줄이 보여 준다.
 
 ---
 
@@ -94,6 +96,30 @@ UI 레이어에서 보유 카드 보관함 화면·HUD 트레이를 구현했다
 
 ---
 
+## 요청 C. 보유 카드 창 ↔ HUD 트레이 연결 + 강제 닫기 — **UI 담당이 `RoguelikeUICoordinator`에 직접 적용함 (확인만 부탁)**
+
+보유 카드 창은 열릴 때 우하단 HUD 트레이 칸에서 펼쳐지고, 닫힐 때 같은 칸으로 접혀 들어간다. 트레이는 열 때와 닫을 때 모두 키를 누른 즉시 반응한다(판 눌림 · 테두리 점멸). 닫힌 창이 트레이 칸에 닿는 도착 순간에는 반응하지 않는다. 카드 · 숫자 · 키 아이콘은 단독으로 움직이지 않고 입자 · 임팩트 선도 없다. 두 쪽이 같은 시간표(`RoguelikeOwnedCardsMotion`)를 쓴다.
+
+> **왜 코디네이터를 직접 고쳤나**: 창(`Overlay Canvas`, sort 100)이 HUD(`ScreenSpaceCanvas`, sort 0)보다 위 캔버스라 딤과 책이 트레이를 덮는다. 창이 열려 있는 동안 트레이를 창의 맨 위 레이어로 올리려면 창이 트레이를 알아야 해서, 아래 두 줄을 넣었다. 둘 다 한 줄짜리 추가 · 교체이며 흐름은 바뀌지 않는다. 구현 방식이 마음에 안 들면 같은 효과의 다른 연결로 바꿔도 된다.
+
+| 적용 위치 | 내용 |
+|---|---|
+| `RoguelikeUICoordinator.Initialize` | `ownedCardsUI?.SetTray(hudUI?.OwnedTray);` - 창에 트레이를 연결한다. 연결하지 않으면 창은 우하단 기본 칸(가장자리 8칸, 34x19)을 쓰고 트레이 반응만 빠진다. |
+| `RoguelikeUICoordinator.CloseOwnedCards` | `ownedCardsUI.Hide()` → `ownedCardsUI.HideImmediate()` - 런 종료 · 단계 전환처럼 시스템이 강제로 닫을 때는 연출 없이 즉시 닫는다. |
+| `RoguelikeUICoordinator.RequestOwnedCards` / `IsOwnedCardsOpen()` | 같은 인벤토리 키로 닫는다(토글). 열려 있으면 `ownedCardsUI.Hide()`(ESC · 패드 B · 딤 클릭과 같은 닫기), 닫혀 있으면 열 수 있는 단계에서만 연다. `IsOwnedCardsOpen()`은 아래 입력 통과 판정용이다. |
+| `InputReader.SetInventoryKeyRedirect` / `InputManager.SetInventoryKeyRedirect` | 선택 인자 `Func<bool> _uiModePass`를 추가했다. 창이 떠 있는 동안은 입력 모드가 UI라 인벤토리 키가 `CanDispatchGameplay`에서 막히는데, 이 함수가 `true`를 돌려주면 UI 모드에서도 리다이렉트 핸들러를 부른다. 없거나 `false`면 기존과 같다(ESC 메뉴 · 결과창 등 다른 UI에서는 계속 막힘). 잠금 소유자 검사와 Alt+Tab 거름은 그대로 앞에서 걸러진다. |
+| `RoguelikeSystem` 리다이렉트 등록 | `SetInventoryKeyRedirect(SessionInventoryLockOwner, uiCoordinator.RequestOwnedCards, uiCoordinator.IsOwnedCardsOpen)` - 세 번째 인자만 추가했다. |
+
+### 동작 규칙 (참고)
+
+- `Hide()`는 **닫기 연출을 재생한 뒤에 실제로 닫는다**. `IsVisible` · `HiddenEvent` · `ClosedEvent`는 연출이 끝나는 약 0.39초 뒤(실시간, 연출 속도 2.2배)에 온다. 그 사이 `Hide()`를 또 불러도 무시되고, 열리는 중(약 0.45초)이면 열기가 끝난 뒤에 닫힌다. ESC · 패드 B · 딤 클릭은 이 `Hide()`가 맞다.
+- **`Show()`와 같은 프레임의 `Hide()`는 연출 없이 즉시 닫는다.** `RoguelikeSystem.OpenViews`가 뷰를 만들며 `Open`(= `Show`) 직후 `Hide()`하는 구조라 이 규칙이 없으면 로그라이크 진입 때 열기 · 닫기 연출이 재생된다.
+- 열려 있는 동안 인벤토리 키는 닫기다(토글). 열리는 중에 누르면 열기가 끝난 뒤 닫히고, 닫히는 중에 누르면 무시된다. 시간은 `HiddenEvent`(연출 끝)에서 풀린다.
+- 알려진 한계: 보유 카드 창 위에 다른 UI가 겹쳐 떠 있는 상태에서 인벤토리 키를 누르면 아래 창이 닫힐 수 있다. 현재는 ESC가 창을 먼저 닫아서 겹치는 경우가 거의 없다.
+- 창이 열려 있는 동안 트레이는 창의 `TrayLayer`(맨 위 레이어)의 자식이다. 닫기 도착 직후 · 즉시 닫기 · 파괴 때 HUD로 돌아간다(`UI_RoguelikeOwnedCardTray.AttachTo` / `Detach`). 트레이가 꺼져 있으면(로비 등) 올리지 않는다.
+
+---
+
 ## 검증 체크리스트 (구현 후)
 
 1. Tab / 패드 LT → 전투 중 보유 카드 창이 열리고 게임이 멈춘다. ESC / B로 닫으면 원래 속도로 돌아온다.
@@ -103,6 +129,10 @@ UI 레이어에서 보유 카드 보관함 화면·HUD 트레이를 구현했다
 5. 카드를 고르는 즉시 트레이 숫자가 바뀐다. 레벨업으로 에메랄드(MAX)가 되는 순간 레어 +1, 일반 −1.
 6. 새 런 시작 시 트레이 숫자가 이전 런 값 없이 0 · 0에서 시작한다. 카드가 0장이면 숫자판에 0이 보인다(빈 칸이 아니다).
 7. 트레이를 마우스로 눌러도 올려도 아무 반응이 없다(표시 전용, 창이 열리지 않는다).
+8. (요청 C) 열 때도 닫을 때도 키를 누른 즉시 판이 1칸 가라앉았다 돌아오며 테두리가 번쩍인다(흰색 → 살구색 → 평소, 약 0.11초). 책이 트레이 칸에 닿아 창이 사라지는 도착 순간에는 트레이가 따로 반응하지 않는다. 카드 · 숫자 · 키 아이콘은 움직이지 않는다.
+9. (요청 C) 열리는 중 · 닫히는 중에 ESC를 연타해도 한 번만 닫힌다. 닫히는 중 인벤토리 키는 무시된다.
+10. (요청 C) 보유 카드 창이 열려 있는 상태에서 런이 끝나거나 쓰러지면 연출 없이 즉시 닫힌다.
+11. (요청 C) 보유 카드 창이 열린 상태에서 인벤토리 키(Tab · 패드 LT)를 누르면 닫힌다. ESC · 패드 B · 딤 클릭의 닫기도 그대로 동작한다. ESC 메뉴 · 결과창이 떠 있을 때는 인벤토리 키가 아무 일도 하지 않는다.
 
 ## 알려진 문제 — SkyProduction의 구름이 화면 전체 입력을 가린다
 

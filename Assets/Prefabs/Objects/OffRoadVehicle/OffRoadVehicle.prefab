@@ -1644,6 +1644,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8191057861066700726}
   - component: {fileID: 2791583011080765980}
+  - component: {fileID: 4277153185598032201}
   m_Layer: 0
   m_Name: RestArea
   m_TagString: Untagged
@@ -1684,10 +1685,29 @@ MonoBehaviour:
   campfireSR: {fileID: 7320803417584002611}
   campfireSortable: {fileID: 1269862190523492107}
   ellipseRenderer: {fileID: 657255742198922817}
+  plusVfx: {fileID: 4277153185598032201}
   revealDuration: 0.6
   hideDuration: 0.25
   revealOvershoot: 1.8
   campfireRevealDelay: 0.12
+--- !u!114 &4277153185598032201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2517337103599020070}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31a25a6ed608d6a4294fb6c7b0ee8af5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.VFX.VFX_RestAreaPlus
+  plusMaterial: {fileID: 2100000, guid: 00d90ef9ff6ab054493dd3beee7b31c2, type: 2}
+  sortingLayerName: Objects
+  sortingOrderOffset: 1
+  maxCount: 15
+  radiusX: 3
+  radiusY: 1.5
 --- !u!1 &2659426531881402086
 GameObject:
   m_ObjectHideFlags: 0

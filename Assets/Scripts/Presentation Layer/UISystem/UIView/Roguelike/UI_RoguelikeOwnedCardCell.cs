@@ -35,6 +35,7 @@ public class UI_RoguelikeOwnedCardCell : MonoBehaviour
         data = _data;
 
         gameObject.SetActive(true);
+        card.gameObject.SetActive(true);
 
         card.SetFaceDown(false);
         card.SetFlipWidth(card.FrameWidth);
@@ -55,6 +56,21 @@ public class UI_RoguelikeOwnedCardCell : MonoBehaviour
     {
         RectTransform rect = (RectTransform)transform;
         rect.anchoredPosition = new Vector2(Mathf.Round(_position.x), Mathf.Round(_position.y));
+    }
+
+    /// <summary>열기 · 닫기 연출용 공개 폭(픽셀, 짝수). 0이면 카드를 아예 꺼서(뒤집힘 옆면 선 · 그림자까지) 안 보이게 하고, 카드 폭이면 정상이다.</summary>
+    public void SetRevealWidth(int _width)
+    {
+        bool bVisible = 0 < _width;
+        if (card.gameObject.activeSelf != bVisible) card.gameObject.SetActive(bVisible);
+        if (true == bVisible) card.SetFlipWidth(_width);
+    }
+
+    /// <summary>공개 폭을 카드 폭으로 되돌린다(연출이 끝났을 때).</summary>
+    public void RevealFull()
+    {
+        card.gameObject.SetActive(true);
+        card.SetFlipWidth(card.FrameWidth);
     }
 
     /// <summary>호버·패드 선택 공통. 카드가 올라가고 레어 카드는 빛 입자가 인다.</summary>
