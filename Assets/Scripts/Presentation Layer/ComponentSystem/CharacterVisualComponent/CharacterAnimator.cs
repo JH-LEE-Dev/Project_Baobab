@@ -464,6 +464,39 @@ public class CharacterAnimator : MonoBehaviour
         activeDashKickoff = null;
     }
 
+    // 진행 중인 헤이스트(이동속도 버프) 연출. 풀로 돌아간 인스턴스를 건드리지 않도록 끝낼 때 활성 여부를 확인한다.
+    private PresentationLayer.VFX.VFX_Haste activeHaste;
+
+    /// <summary>헤이스트 버프가 시작될 때 호출. 이미 재생 중이면 아무 일도 하지 않는다.</summary>
+    public void PlayHaste()
+    {
+        if (null == vfxComponent) return;
+        if (null != activeHaste && true == activeHaste.gameObject.activeInHierarchy) return;
+
+        ParticleSystem effect = vfxComponent.Play("Haste", transform.position, Quaternion.identity);
+        if (null == effect) return;
+
+        PresentationLayer.VFX.VFX_Haste haste = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_Haste>(true);
+        if (null == haste) return;
+
+        haste.Begin(transform, baseSR);
+        activeHaste = haste;
+    }
+
+    /// <summary>헤이스트 버프가 끝날 때 호출. _bImmediate가 참이면 연출 없이 즉시 끝낸다(사망, 씬 전환).</summary>
+    public void StopHaste(bool _bImmediate = false)
+    {
+        if (null == activeHaste) return;
+
+        if (true == activeHaste.gameObject.activeInHierarchy)
+        {
+            if (true == _bImmediate) activeHaste.Cancel();
+            else activeHaste.End();
+        }
+
+        activeHaste = null;
+    }
+
     #endregion
 
     #region Private Methods

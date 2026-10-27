@@ -111,7 +111,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
     [Header("웨이브 클리어 묘목 연출(기획서 3-1 \"달성 즉시\")")]
     [Tooltip("남은 나무가 묘목으로 돌아가 톡 튀었다가 작아지며 사라지는 시간(초). 나무 회수는 이 연출이 끝난 뒤에 한다.")]
-    [SerializeField] private float waveClearSaplingVanishSeconds = 0.6f;
+    [SerializeField] private float waveClearSaplingVanishSeconds = 1.0f;
     [Tooltip("묘목으로 돌아갈 때 쓸 나무 종류별 묘목 위쪽 그림(기획서 v2.7 3-1 \"원래 묘목 그대로\"). 공용 나무 데이터(Tree Visual Data Base)의 묘목 그림이 " +
         "다른 종류 것으로 들어 있는 종류만 넣는다(예: 균사 나무 → FluffyMyceliumTree_Baby_Top). 본편 데이터는 바꾸지 않는다.")]
     [SerializeField] private List<SaplingSpriteOverride> saplingTopOverrides = new List<SaplingSpriteOverride>();
@@ -224,6 +224,9 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private bool bRunClearSlowMo;
     // 웨이브 클리어 묘목 연출이 끝나는 게임 시간. 나무 회수는 이 뒤에 한다.
     private float saplingVanishEndTime;
+    // 웨이브 클리어 역성장에서 나무가 묘목 그림으로 바뀌는 게임 시간. 묘목 등장음을 이때 낸다.
+    private float saplingAppearSoundTime;
+    private bool bSaplingAppearSoundPending;
     private bool bExitingToMainMenu;
 
     // 로비로 들어가는 동안(필드 재생성·입장 연출) ESC를 잠그는 소유자 이름. 이 구간의 메인메뉴 요청은 받을 곳이 없다 -
@@ -578,8 +581,25 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         if (null == saplingTopOverrideHandler) saplingTopOverrideHandler = GetSaplingTopOverride;
         inDungeonObjectManager.RevertAllTreesToSaplingForRun(seconds, saplingTopOverrideHandler);
         saplingVanishEndTime = Time.time + seconds;
+        // 남은 나무의 HP 바를 바로 내린다(그대로 두면 마지막 타격 뒤 노출 시간 동안 회수된 자리에 남는다).
+        signalHub.Publish(new RoguelikeFieldTreesRevertedSignal());
 
-        // 본편 묘목 등장음. 나무마다 내면 수십 개가 겹치므로 섬 중앙에서 한 번만 낸다.
+        // 본편 묘목 등장음은 나무가 줄어들어 묘목 그림으로 바뀌는 순간에 낸다(TickSaplingAppearSound).
+        saplingAppearSoundTime = Time.time + (seconds > 0f ? SaplingVEComponent.GetRevertShrinkSeconds(seconds) : 0f);
+        // 웨이브 클리어 단계로 넘어가기 전에 불리므로(OnTreeKilled) 여기서 바로 내지 않고 Update에서 낸다.
+        bSaplingAppearSoundPending = true;
+    }
+
+    /// <summary>
+    /// 웨이브 클리어 묘목 등장음. 나무마다 내면 수십 개가 겹치므로 섬 중앙에서 한 번만 낸다.
+    /// 기다리는 사이 런이 끊겨 단계가 바뀌었거나 나무가 회수됐으면 내지 않는다.
+    /// </summary>
+    private void TickSaplingAppearSound()
+    {
+        if (false == bSaplingAppearSoundPending || Time.time < saplingAppearSoundTime) return;
+
+        bSaplingAppearSoundPending = false;
+        if (ERunPhase.WaveClear != phase) return;
         if (inDungeonObjectManager.ActiveTrees.Count > 0 && null != cameraAnchor) Sound.Play(SoundID.TreeSmallGrow, cameraAnchor.position);
     }
 
@@ -803,6 +823,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
             playTimeSeconds += Time.deltaTime;
         }
 
+        TickSaplingAppearSound();
         uiCoordinator.Tick();
         waterDeco.Tick(tileWave, Time.deltaTime);
         cloudFade.Tick(tileWave, Time.deltaTime);

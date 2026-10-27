@@ -56,6 +56,12 @@ public struct RoguelikeWaveClearedSignal
 }
 
 /// <summary>
+/// 필드의 남은 나무가 묘목으로 돌아가기 시작했다(웨이브 클리어, 30웨이브는 런 클리어 연출 뒤). 이 순간부터 나무는 피해를 받지 않는다.
+/// 나무 HP 바는 이때 내린다.
+/// </summary>
+public struct RoguelikeFieldTreesRevertedSignal { }
+
+/// <summary>
 /// 30웨이브 목표의 마지막 나무를 벤 순간(기획서 3-5 "런 클리어 연출"의 줌인 대상).
 /// 일반 웨이브에서는 발행되지 않는다.
 /// </summary>

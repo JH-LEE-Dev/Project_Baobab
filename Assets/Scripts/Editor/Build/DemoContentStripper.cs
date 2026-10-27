@@ -1103,6 +1103,9 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     ///
     /// 1.0.3 데모까지는 통나무 그림만 끊어서, 기본 아이콘 Wood04~12가 데모에 실렸습니다(2026-10-07 빌드 추출로 확인).
     /// 끊은 그림 목록과 데모 원목 그림 하나를 돌려줍니다. 같은 그림을 쓰는 다른 프리팹을 정리할 때 씁니다.
+    ///
+    /// 데모 나무도 쓰는 그림(예: 1~3스테이지가 함께 쓰는 Stage01 보석 제재목)은 미공개 나무에서 참조만 끊고 끊은 목록에는 넣지 않습니다.
+    /// 데모에 정상으로 실리는 그림이라, 목록에 넣으면 빌드 후 유출로 잘못 보고되고 프리팹의 데모 참조까지 바뀝니다.
     /// </summary>
     private static int StripLogItemIcons(DemoFeatureScope _s, out HashSet<UnityEngine.Object> _locked, out Sprite _demoSprite)
     {
@@ -1115,6 +1118,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         SerializedObject _so = new SerializedObject(_db);
         SerializedProperty _list = _so.FindProperty("datas");
         int _c = 0;
+        HashSet<string> _demoPaths = new HashSet<string>();
 
         for (int i = 0; null != _list && i < _list.arraySize; i++)
         {
@@ -1123,6 +1127,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
             if (true == _s.trees.Contains((TreeType)_e.FindPropertyRelative("treeType").intValue))
             {
                 if (null == _demoSprite) _demoSprite = _e.FindPropertyRelative("sprite").objectReferenceValue as Sprite;
+                CollectLogSpritePaths(_e, _demoPaths);
                 continue;
             }
 
@@ -1138,7 +1143,34 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
             }
         }
 
+        // 시트 그림은 파일 하나를 여러 칸이 나눠 쓰므로 파일 경로로 견줍니다.
+        _locked.RemoveWhere(_o => _demoPaths.Contains(AssetDatabase.GetAssetPath(_o)));
+        lockedLogSpritePaths.ExceptWith(_demoPaths);
+
         return ApplyIfChanged(_so, _db, LOG_ITEM_DB_PATH, _c);
+    }
+
+    /// <summary>원목 항목 하나가 참조하는 그림(기본·통나무·상태별)의 파일 경로를 모읍니다.</summary>
+    private static void CollectLogSpritePaths(SerializedProperty _entry, HashSet<string> _paths)
+    {
+        AddRefPath(_entry, "sprite", _paths);
+        AddRefPath(_entry, "timberSprite", _paths);
+
+        SerializedProperty _states = _entry.FindPropertyRelative("stateSprites");
+        for (int j = 0; null != _states && j < _states.arraySize; j++)
+        {
+            SerializedProperty _state = _states.GetArrayElementAtIndex(j);
+            AddRefPath(_state, "sprite", _paths);
+            AddRefPath(_state, "timberSprite", _paths);
+        }
+    }
+
+    private static void AddRefPath(SerializedProperty _entry, string _field, HashSet<string> _paths)
+    {
+        SerializedProperty _p = _entry.FindPropertyRelative(_field);
+        if (null == _p || SerializedPropertyType.ObjectReference != _p.propertyType || null == _p.objectReferenceValue) return;
+
+        _paths.Add(AssetDatabase.GetAssetPath(_p.objectReferenceValue));
     }
 
     /// <summary>ClearRelativeRef 와 같지만, 끊은 그림을 목록에 모읍니다.</summary>

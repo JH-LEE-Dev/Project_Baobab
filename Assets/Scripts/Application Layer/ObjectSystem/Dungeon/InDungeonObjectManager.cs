@@ -373,7 +373,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     /// <summary>
     /// [로그라이크] 필드의 모든 나무를 "묘목으로 돌아가는" 상태로 바꾼다. 이 순간부터 피해·골드가 없다.
-    /// _vanishSeconds 동안 묘목이 톡 튀었다가 작아지며 사라진다. 회수(ClearTreesForRun)는 그 뒤에 한다.
+    /// _vanishSeconds 동안 본편 성장을 거꾸로 돌려 나무 → 묘목 → 사라짐으로 줄어든다. 회수(ClearTreesForRun)는 그 뒤에 한다.
     /// </summary>
     public void RevertAllTreesToSaplingForRun(float _vanishSeconds, Func<TreeType, Sprite> _saplingTopOverride = null)
     {
@@ -2641,6 +2641,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void OnTreeShieldRecovering(TreeObj _treeObj)
     {
+        // 묘목은 HP 바를 띄우지 않는다. 로그라이크 웨이브 클리어로 묘목이 된 나무는 포자막이 계속 차오르는데, 그 알림이
+        // 내려 둔 HP 바를 다시 띄운다. 본편 묘목은 포자막이 가득 찬 채로 생겨 회복 알림이 없으므로 그대로다.
+        if (false == _treeObj.bCanApplyDamage) return;
+
         TreeShieldRecoveringEvent?.Invoke(_treeObj);
     }
 

@@ -1710,6 +1710,12 @@ MonoBehaviour:
     allowDynamicExpansion: 1
     maxPoolSize: 4
     uiParticleScale: 0
+  - vfxTag: Haste
+    effectPrefab: {fileID: 1386752551214847544, guid: 983ddaa17ccae3e4091be9ff73800438, type: 3}
+    initialPoolSize: 1
+    allowDynamicExpansion: 1
+    maxPoolSize: 2
+    uiParticleScale: 0
 --- !u!1 &4035353486790179823
 GameObject:
   m_ObjectHideFlags: 0

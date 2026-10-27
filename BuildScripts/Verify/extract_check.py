@@ -30,13 +30,15 @@ import UnityPy
 # 미공개 나무·지역·기능이 늘면 여기에 추가하십시오. (기준: DemoContentStripper 의 DemoFeatureScope)
 #   - Wood04~12          : 미공개 나무 원목 아이콘 (1.0.3 데모까지 실려 있었음, 2026-10-07 제거)
 #   - Timber_<미공개 나무> : 미공개 나무 통나무 그림
-#   - Wood_*_Stage04     : 4스테이지 보석 원목
+#   - Wood_*_Stage02~04  : 2~4스테이지 보석 원목
+#   - Stage04_<등급>     : 4스테이지 보석 제재목 (Timber 폴더. Stage01_<등급> 은 1~3스테이지 공용이라 데모에 실림)
 # ---------------------------------------------------------------------------
 DEMO_LOCKED_IMAGE_PREFIXES = (
     ["Wood%02d" % i for i in range(4, 13)]
     + ["Timber_" + t for t in ("SporepuffTree", "FluffyMyceliumTree", "BellpineTree", "StarrootTree", "MoonhaloTree",
                                "GalaxygrainTree", "CinderTree", "LavasapTree", "ObsidianTree")]
-    + ["Wood_Gold_Stage04", "Wood_Diamond_Stage04", "Wood_Rainbow_Stage04"]
+    + ["Wood_%s_Stage%02d" % (g, s) for s in (2, 3, 4) for g in ("Gold", "Diamond", "Rainbow")]
+    + ["Stage04_" + g for g in ("Gold", "Diamond", "Rainbow")]
 )
 
 # 데모 빌드에 있으면 안 되는 데이터 이름 (정식판 DB)

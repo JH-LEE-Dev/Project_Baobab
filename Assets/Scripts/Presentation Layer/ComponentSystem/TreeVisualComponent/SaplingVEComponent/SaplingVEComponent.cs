@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using DG.Tweening;
+using DG.Tweening.Core.Easing;
 
 public class SaplingVEComponent : MonoBehaviour
 {
@@ -22,17 +23,28 @@ public class SaplingVEComponent : MonoBehaviour
     private Tween scaleTween;
     private Transform scaleTweenTarget;
 
+    // 본편 성장 곡선(AnimateSaplingVE). 웨이브 클리어 역성장이 같은 곡선을 거꾸로 돌린다.
+    private const float GrowDuration = 1.0f;
+    private const float GrowAmplitude = 1.7f;
+    private const float GrowPeriod = 0.3f;
+
     // [로그라이크] 웨이브 클리어로 사라지기 전 크기. RestoreScaleForRun이 되돌린다.
     private Vector3 scaleBeforeVanish = Vector3.one;
     private bool bVanishedForRun;
 
-    // [로그라이크] 웨이브 클리어 "뽀잉" 수치. 출렁임 구간이 전체 사라짐 시간에서 차지하는 비율,
-    // 시작할 때 눌린 모양(가로/세로 배율), 탄성의 세기와 주기(출렁임 구간 길이 대비 비율).
-    private const float RevertPopRatio = 0.55f;
-    private const float RevertSquashX = 1.35f;
-    private const float RevertSquashY = 0.6f;
-    private const float RevertPopAmplitude = 1.1f;
-    private const float RevertPopPeriodRatio = 0.4f;
+    // [로그라이크] 역성장은 성장 곡선의 앞 0.6초만 거꾸로 돈다. 그 뒤는 3% 미만으로 잔잔히 떨리는 꼬리라
+    // 거꾸로 돌리면 한참 멈춰 있다가 움직이는 것처럼 보인다. 묘목 단계가 전체 시간에서 차지하는 비율(본편은 두 단계 모두 1초).
+    private const float ReverseGrowSpan = 0.6f;
+    private const float RevertSaplingRatio = 0.5f;
+
+    // 잘라 낸 꼬리 지점의 진행값. 역성장이 0에서 시작하도록 빼 준다(그대로 두면 첫 프레임에 1.6%쯤 튄다).
+    private static readonly float ReverseGrowStartOffset = 1f - EaseManager.Evaluate(Ease.OutElastic, null, ReverseGrowSpan, GrowDuration, GrowAmplitude, GrowPeriod);
+    private static readonly EaseFunction ReverseGrowEase = EvaluateReverseGrow;
+
+    // [로그라이크] 나무가 다 줄어든 순간(묘목 그림으로 바뀔 때) 부를 콜백과 이어지는 묘목 단계 길이.
+    private Action revertShrunkCallback;
+    private float revertSaplingSeconds;
+    private TweenCallback onRevertTreeShrunk;
 
     public void Initialize(Transform _saplingTransform)
     {
@@ -40,6 +52,7 @@ public class SaplingVEComponent : MonoBehaviour
         startScaleVector = new Vector3(startScale.x, startScale.y, 1f);
         zeroScaleVector = new Vector3(0f, 0f, 1f);
         targetScaleVector = new Vector3(targetScale.x, targetScale.y, 1f);
+        onRevertTreeShrunk = OnRevertTreeShrunk;
     }
 
     public void AnimateSaplingVE(bool _bIsSapling, Action _onScalePeak = null)
@@ -62,8 +75,8 @@ public class SaplingVEComponent : MonoBehaviour
         // 더욱 극적인 스프링 효과를 위해 Amplitude(진동 폭)를 크게 높이고 Period(진동 주기)를 조절
         // 1.0초 동안 매우 탄력 있게 튕기며 목표 스케일로 수렴
         scaleTweenTarget = saplingTransform;
-        scaleTween = saplingTransform.DOScale(targetScaleVector, 1.0f)
-            .SetEase(Ease.OutElastic, 1.7f, 0.3f);
+        scaleTween = saplingTransform.DOScale(targetScaleVector, GrowDuration)
+            .SetEase(Ease.OutElastic, GrowAmplitude, GrowPeriod);
 
         if (bScalePeakFired) return;
 
@@ -73,16 +86,21 @@ public class SaplingVEComponent : MonoBehaviour
     }
 
     /// <summary>
-    /// [로그라이크 전용] 웨이브 클리어: 묘목으로 돌아간 나무가 "뽀잉" 눌렸다 늘어나며 출렁인 뒤 작아지며 사라진다
-    /// (기획서 3-1 "필드의 나무가 묘목으로 되돌아가며 사라지는 연출"). 사라진 크기는 RestoreScaleForRun이 되돌린다.
-    /// 본편에서는 호출되지 않는다.
+    /// [로그라이크 전용] 웨이브 클리어: 본편 성장을 거꾸로 돌린다(기획서 3-1 "필드의 나무가 묘목으로 되돌아가며 사라지는 연출").
+    /// 나무가 출렁이며 부풀었다가 묘목 크기로 쏙 줄어들고(나무 성장의 역재생), 그 순간 _onShrunk가 그림을 묘목으로 바꾼다.
+    /// 이어서 묘목이 같은 식으로 출렁이다 0으로 줄어 사라진다(묘목 등장의 역재생). 전체 길이는 _seconds 그대로다
+    /// (웨이브 흐름의 대기 시간과 맞물려 있다). 사라진 크기는 RestoreScaleForRun이 되돌린다. 본편에서는 호출되지 않는다.
     /// </summary>
-    public void AnimateRevertAndVanishForRun(float _seconds)
+    public void AnimateReverseGrowAndVanishForRun(float _seconds, Action _onShrunk)
     {
-        if (saplingTransform == null) return;
+        if (saplingTransform == null)
+        {
+            _onShrunk?.Invoke();
+            return;
+        }
 
         // 막 자라는 중(성장 트윈 도중)이면 지금 크기는 중간값이다. 트윈이 수렴할 크기(targetScaleVector)를 원래 크기로 친다.
-        // 트윈을 죽이면 IsActive가 꺼지므로 죽이기 전에 본다.
+        // 줄어드는 연출은 지금 크기에서 그대로 이어서 시작한다. 트윈을 죽이면 IsActive가 꺼지므로 죽이기 전에 본다.
         bool bGrowing = null != scaleTween && scaleTween.IsActive() && scaleTween.IsPlaying() && scaleTweenTarget == saplingTransform;
 
         KillScaleTweenOn(saplingTransform);
@@ -95,23 +113,47 @@ public class SaplingVEComponent : MonoBehaviour
             bVanishedForRun = true;
         }
 
-        float duration = Mathf.Max(0.05f, _seconds);
-        float pop = duration * RevertPopRatio;
+        float duration = GetRevertDuration(_seconds);
+        revertSaplingSeconds = duration * RevertSaplingRatio;
+        revertShrunkCallback = _onShrunk;
 
-        // "뽀잉": 묘목 그림으로 바뀌는 순간 옆으로 납작하게 눌렸다가, 탄성으로 위로 쭉 늘어나며 출렁인 뒤 제 크기로 자리 잡는다.
-        // 시작 크기만 가로·세로를 다르게 두고 목표는 원래 크기라, OutElastic이 넘칠 때 가로는 줄고 세로는 늘어 찌그러짐-늘어남이 번갈아 나온다.
-        // 그다음 남은 시간 동안 0으로 줄어 사라진다. 전체 길이는 _seconds 그대로다(웨이브 흐름의 대기 시간과 맞물려 있다).
-        // 하얀 번쩍임은 TreeObj.RevertToSaplingForRun이 같은 순간 따로 건다.
-        saplingTransform.localScale = new Vector3(scaleBeforeVanish.x * RevertSquashX, scaleBeforeVanish.y * RevertSquashY, scaleBeforeVanish.z);
-        Sequence seq = DOTween.Sequence();
-        seq.Append(saplingTransform.DOScale(scaleBeforeVanish, pop).SetEase(Ease.OutElastic, RevertPopAmplitude, pop * RevertPopPeriodRatio));
-        seq.Append(saplingTransform.DOScale(zeroScaleVector, duration - pop).SetEase(Ease.InBack, 1.5f));
-
+        // 나무 단계: 본편에서 나무는 startScale에서 탄성으로 자라 나온다. 그 곡선을 거꾸로 따라 startScale까지 줄어든다.
         scaleTweenTarget = saplingTransform;
-        scaleTween = seq;
+        scaleTween = saplingTransform.DOScale(startScaleVector, GetRevertShrinkSeconds(_seconds))
+            .SetEase(ReverseGrowEase)
+            .OnComplete(onRevertTreeShrunk);
     }
 
-    /// <summary>[로그라이크 전용] AnimateRevertAndVanishForRun으로 사라진 나무를 원래 크기로 되돌린다(풀로 돌아가기 전에).</summary>
+    private static float GetRevertDuration(float _seconds) => Mathf.Max(0.05f, _seconds);
+
+    /// <summary>[로그라이크 전용] AnimateReverseGrowAndVanishForRun(_seconds)에서 나무가 다 줄어 묘목 그림으로 바뀌기까지의 시간(초).</summary>
+    public static float GetRevertShrinkSeconds(float _seconds)
+    {
+        return GetRevertDuration(_seconds) * (1f - RevertSaplingRatio);
+    }
+
+    private void OnRevertTreeShrunk()
+    {
+        // 본편 성장 순간의 역순: 다 자란 묘목(원래 크기)이 작은 나무로 바뀌었으니, 거꾸로 작은 나무가 원래 크기의 묘목으로 바뀐다.
+        Action callback = revertShrunkCallback;
+        revertShrunkCallback = null;
+        callback?.Invoke();
+
+        // 묘목 단계: 본편에서 묘목은 0에서 탄성으로 튀어나온다. 그 곡선을 거꾸로 따라 0으로 줄어 사라진다.
+        saplingTransform.localScale = scaleBeforeVanish;
+        scaleTweenTarget = saplingTransform;
+        scaleTween = saplingTransform.DOScale(zeroScaleVector, revertSaplingSeconds).SetEase(ReverseGrowEase);
+    }
+
+    // 본편 성장 곡선(OutElastic)을 시간축으로 뒤집는다. 트윈 길이가 달라도 같은 모양이 되도록 성장 1초 기준으로 계산한다.
+    private static float EvaluateReverseGrow(float _time, float _duration, float _overshootOrAmplitude, float _period)
+    {
+        float t = _duration > 0f ? Mathf.Clamp01(_time / _duration) : 1f;
+        float reversed = 1f - EaseManager.Evaluate(Ease.OutElastic, null, (1f - t) * ReverseGrowSpan, GrowDuration, GrowAmplitude, GrowPeriod);
+        return reversed - ReverseGrowStartOffset * (1f - t);
+    }
+
+    /// <summary>[로그라이크 전용] AnimateReverseGrowAndVanishForRun으로 사라진 나무를 원래 크기로 되돌린다(풀로 돌아가기 전에).</summary>
     public void RestoreScaleForRun()
     {
         if (false == bVanishedForRun || saplingTransform == null) return;

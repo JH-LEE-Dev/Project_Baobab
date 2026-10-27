@@ -48,6 +48,7 @@ public class UIView_Unit : UIView
     private Dictionary<object, HUD_ShieldHPBar> activeHpBars = new Dictionary<object, HUD_ShieldHPBar>(64);
     private List<HUD_ShieldHPBar> hpBarPool = new List<HUD_ShieldHPBar>(32);
     private System.Action<HUD_ShieldHPBar> returnToPoolAction;
+    private readonly List<HUD_ShieldHPBar> hideBarBuffer = new List<HUD_ShieldHPBar>(64);
 
 
     private UI_InteractionUnit interactionUnit;
@@ -185,6 +186,30 @@ public class UIView_Unit : UIView
             return;
 
         ProcessUnitHit(_treeObj, _treeObj.health, false, _treeObj.GetTransform(), treesYOffset);
+    }
+
+    /// <summary>
+    /// 떠 있는 나무 HP 바를 모두 내린다(로그라이크 웨이브 클리어로 남은 나무가 묘목으로 돌아갈 때). 동물 바는 그대로 둔다.
+    /// 숨김 모션은 노출 시간이 끝났을 때와 같고, 끝나면 풀로 돌아간다.
+    /// </summary>
+    public void HideTreeHpBars()
+    {
+        // 숨김이 끝나 풀로 돌아가면 activeHpBars에서 빠지므로(ReturnHPBarToPool) 먼저 목록을 떠 두고 내린다.
+        hideBarBuffer.Clear();
+        foreach (KeyValuePair<object, HUD_ShieldHPBar> _pair in activeHpBars)
+        {
+            if (_pair.Key is ITreeObj)
+                hideBarBuffer.Add(_pair.Value);
+        }
+
+        for (int _i = 0; hideBarBuffer.Count > _i; _i++)
+        {
+            HUD_ShieldHPBar _bar = hideBarBuffer[_i];
+            _bar.TriggerActive(returnToPoolAction);
+            _bar.OnHide();
+        }
+
+        hideBarBuffer.Clear();
     }
 
     public void WeaponModeChanged(WeaponMode _currentWeaponMode)
