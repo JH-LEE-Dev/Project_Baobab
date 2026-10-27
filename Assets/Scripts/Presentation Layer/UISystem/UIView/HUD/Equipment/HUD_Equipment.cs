@@ -40,6 +40,8 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             {
                 axeComponent.AxeAttackedEvent -= OnAxeAttacked;
                 axeComponent.AxeAttackedEvent += OnAxeAttacked;
+                axeComponent.DurabilityRepairedEvent -= OnAxeRepaired;
+                axeComponent.DurabilityRepairedEvent += OnAxeRepaired;
             }
 
             // 과열 아우라: 이전에 바인딩한 캐릭터의 구독은 풀고, 지금 상태를 먼저 맞춘 뒤 이후 변화는 이벤트로 받는다.
@@ -73,6 +75,13 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         private void OnAxeAttacked()
         {
             UpdateAxeDurability(true);
+        }
+
+        // 모루 수리. 내구도 갱신(OnAxeAttacked)이 먼저 끝난 뒤 불리므로 도끼 그림은 이미 새 내구도 모습이다.
+        private void OnAxeRepaired()
+        {
+            if (null != axeItem)
+                axeItem.PlayRepairEffect();
         }
 
         /// <summary>
@@ -112,6 +121,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             if (null != axeComponent)
             {
                 axeComponent.AxeAttackedEvent -= OnAxeAttacked;
+                axeComponent.DurabilityRepairedEvent -= OnAxeRepaired;
             }
         }
 
