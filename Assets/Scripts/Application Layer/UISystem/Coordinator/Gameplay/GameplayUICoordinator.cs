@@ -122,6 +122,8 @@ public class GameplayUICoordinator
         signalHub.Subscribe<PortalDeActivatedSignal>(PortalDeActivated);
         signalHub.Subscribe<OffraodContainerSpecChangedSignal>(OffraodContainerSpecChanged);
         signalHub.Subscribe<OffroadContainerInteractStateChangedSignal>(OffroadContainerInteractStateChanged);
+        signalHub.Subscribe<OffroadContainerRemoteTransportStateChangedSignal>(OffroadContainerRemoteTransportStateChanged);
+        signalHub.Subscribe<OffroadContainerAutoLoadAreaStateChangedSignal>(OffroadContainerAutoLoadAreaStateChanged);
         signalHub.Subscribe<LoosAllInventoryItemSignal>(LoosAllInventoryItem);
         signalHub.Subscribe<OffroadContainerUpdatedSignal>(OffroadContainerUpdated);
         signalHub.Subscribe<InventoryIsFullSignal>(InventoryIsFull);
@@ -185,6 +187,8 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<PortalDeActivatedSignal>(PortalDeActivated);
         signalHub.UnSubscribe<OffraodContainerSpecChangedSignal>(OffraodContainerSpecChanged);
         signalHub.UnSubscribe<OffroadContainerInteractStateChangedSignal>(OffroadContainerInteractStateChanged);
+        signalHub.UnSubscribe<OffroadContainerRemoteTransportStateChangedSignal>(OffroadContainerRemoteTransportStateChanged);
+        signalHub.UnSubscribe<OffroadContainerAutoLoadAreaStateChangedSignal>(OffroadContainerAutoLoadAreaStateChanged);
         signalHub.UnSubscribe<LoosAllInventoryItemSignal>(LoosAllInventoryItem);
         signalHub.UnSubscribe<OffroadContainerUpdatedSignal>(OffroadContainerUpdated);
         signalHub.UnSubscribe<InventoryIsFullSignal>(InventoryIsFull);
@@ -869,11 +873,56 @@ public class GameplayUICoordinator
         inputManager.PauseUICancelKey(_isLocked);
     }
 
+    // 운반 상자 UI(월드 팝업)는 상자 사정권 안이거나, 원격 운반 서비스가 원목을 보내는 중이거나, 자동 적재의
+    // 휴식 범위 안이면 보인다. 가방 자동 열림은 상자 사정권 또는 자동 적재의 휴식 범위일 때다.
+    // 상태를 따로 들고 있어야 한쪽이 꺼질 때 다른 쪽이 켜 둔 UI까지 내려가지 않는다.
+    private bool bOffroadContainerInRange = false;
+    private bool bOffroadContainerRemoteTransporting = false;
+    private bool bOffroadContainerAutoLoadArea = false;
+    private bool bOffroadContainerWorldPopupShown = false;
+    private bool bOffroadContainerBagOpenRequested = false;
+
     private void OffroadContainerInteractStateChanged(OffroadContainerInteractStateChangedSignal _offroadContainerInteractStateChangedSignal)
     {
-        worldPopupUI.OffroadContainerInteractStateChanged(_offroadContainerInteractStateChangedSignal.state);
-        popUpUI.LogContainerCanInteract(_offroadContainerInteractStateChangedSignal.state);
+        bOffroadContainerInRange = _offroadContainerInteractStateChangedSignal.state;
+        RefreshOffroadContainerWorldPopup();
+        RefreshOffroadContainerBag();
         unitUI.OffroadContainerInteractStateChanged(_offroadContainerInteractStateChangedSignal.state);
+    }
+
+    // 원격 운반은 상자 UI만 띄운다(가방 자동 열림·상호작용 안내는 사정권일 때만).
+    private void OffroadContainerRemoteTransportStateChanged(OffroadContainerRemoteTransportStateChangedSignal _signal)
+    {
+        bOffroadContainerRemoteTransporting = _signal.state;
+        RefreshOffroadContainerWorldPopup();
+    }
+
+    // 자동 적재의 휴식 범위는 상자 사정권처럼 상자 UI와 가방을 연다. 상자 E 상호작용 안내(unitUI)는 띄우지 않는다.
+    private void OffroadContainerAutoLoadAreaStateChanged(OffroadContainerAutoLoadAreaStateChangedSignal _signal)
+    {
+        bOffroadContainerAutoLoadArea = _signal.state;
+        RefreshOffroadContainerWorldPopup();
+        RefreshOffroadContainerBag();
+    }
+
+    // 보임 여부가 실제로 바뀔 때만 알린다 - 이미 떠 있는데 다른 쪽이 켜지며 다시 띄우는 연출이 재생되지 않게.
+    private void RefreshOffroadContainerWorldPopup()
+    {
+        bool bShow = bOffroadContainerInRange || bOffroadContainerRemoteTransporting || bOffroadContainerAutoLoadArea;
+        if (bShow == bOffroadContainerWorldPopupShown) return;
+
+        bOffroadContainerWorldPopupShown = bShow;
+        worldPopupUI.OffroadContainerInteractStateChanged(bShow);
+    }
+
+    // 사정권 신호는 진입/이탈이 번갈아 오므로, 바뀔 때만 알려도 예전(매 신호마다 알림)과 같다.
+    private void RefreshOffroadContainerBag()
+    {
+        bool bOpen = bOffroadContainerInRange || bOffroadContainerAutoLoadArea;
+        if (bOpen == bOffroadContainerBagOpenRequested) return;
+
+        bOffroadContainerBagOpenRequested = bOpen;
+        popUpUI.LogContainerCanInteract(bOpen);
     }
 
     private void LoosAllInventoryItem(LoosAllInventoryItemSignal _loosAllInventoryItemSignal)

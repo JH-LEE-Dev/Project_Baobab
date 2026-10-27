@@ -1316,6 +1316,92 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         return transferredCount;
     }
 
+    // 원목 보험 증서 선별 버퍼(탈진마다 새로 할당하지 않도록 재사용한다).
+    private readonly List<InventorySlot> insuranceSlotOrder = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
+    private readonly List<(TreeType treeType, LogState logState)> insuranceVisualPlan = new List<(TreeType, LogState)>(32);
+
+    /// <summary>
+    /// "원목 보험 증서" 효과: 탈진으로 유실되기 직전, 가방 원목 일부를 운반 상자로 옮긴다(데이터는 즉시 커밋).
+    /// 반드시 DropAllItem보다 먼저 호출해야 한다 - 여기서 빼낸 만큼 줄어든 슬롯을 DropAllItem이 유실 처리한다.
+    ///
+    /// 랜덤이 아니라 <b>슬롯마다</b> 그 슬롯 개수의 비율(반올림)만큼이다. 가치가 높은 슬롯부터 옮기고, 상자에
+    /// 그 원목을 받을 자리가 없으면 그 슬롯은 거기서 멈추고 다음 슬롯으로 넘어간다(상자의 여유는 나무 종류·등급
+    /// 조합별로 판정되므로, 한 조합이 막혀도 다른 조합은 아직 들어갈 수 있다).
+    ///
+    /// 옮긴 원목은 유실 원목 분출(DropAllItem) 연출이 끝난 뒤 캐릭터에게서 상자로 날아가는 연출로 보여준다.
+    /// </summary>
+    /// <returns>상자로 옮긴 원목 수</returns>
+    public int RescueInsuredLogs(OffroadContainer _container, Transform _charTransform)
+    {
+        if (_container == null || _charTransform == null) return 0;
+
+        float ratio = _container.LogInsuranceRatio;
+        if (ratio <= 0f) return 0;
+
+        insuranceSlotOrder.Clear();
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (inventorySlots[i].itemData is LogItemData && inventorySlots[i].totalCount > 0)
+            {
+                insuranceSlotOrder.Add(inventorySlots[i]);
+            }
+        }
+
+        if (insuranceSlotOrder.Count == 0) return 0;
+
+        // 개당 가치가 높은 순, 같으면 많이 쌓인 순.
+        insuranceSlotOrder.Sort(CompareInsuranceOrder);
+
+        insuranceVisualPlan.Clear();
+        int rescuedCount = 0;
+
+        for (int i = 0; i < insuranceSlotOrder.Count; i++)
+        {
+            InventorySlot slot = insuranceSlotOrder[i];
+            LogItemData logData = (LogItemData)slot.itemData;
+
+            // 반올림(.5는 올림). 5 x 0.3이 float로 1.4999…가 되어 .5가 내려가지 않도록 아주 작은 값을 더한다.
+            int target = Mathf.Min(slot.totalCount, Mathf.FloorToInt(slot.totalCount * ratio + 0.5f + 0.0001f));
+
+            for (int j = 0; j < target && slot.totalCount > 0; j++)
+            {
+                // 상자에 자리가 있는지 먼저 확인하고, 성공했을 때만 가방에서 뺀다(반대 순서면 실패 시 데이터가 증발한다).
+                if (!_container.TryAddLogItemDataDirect(logData, logData.logState, false)) break;
+
+                insuranceVisualPlan.Add((logData.treeType, logData.logState));
+                slot.TakeOneItem();
+                rescuedCount++;
+                ItemRemoved();
+            }
+
+            if (slot.totalCount <= 0)
+            {
+                ItemDeleted(slot);
+            }
+        }
+
+        if (rescuedCount > 0)
+        {
+            // 남은 원목의 분출 연출(DropAllItem)이 다 나간 다음부터 상자로 날린다.
+            float delay = GetDropVisualDuration() + dropVisualInterval;
+            _container.PlayInsuredLogVisuals(insuranceVisualPlan, _charTransform.position, delay);
+        }
+
+        return rescuedCount;
+    }
+
+    private static int CompareInsuranceOrder(InventorySlot _a, InventorySlot _b)
+    {
+        LogItemData a = (LogItemData)_a.itemData;
+        LogItemData b = (LogItemData)_b.itemData;
+
+        long unitA = LogValue.GetUnitValue(a.treeType, a.logState);
+        long unitB = LogValue.GetUnitValue(b.treeType, b.logState);
+        if (unitA != unitB) return unitB.CompareTo(unitA);
+
+        return _b.totalCount.CompareTo(_a.totalCount);
+    }
+
     public int DropAllItem(Transform _charTransform)
     {
         if (_charTransform == null) return 0;

@@ -65,6 +65,28 @@ public struct OffroadContainerInteractStateChangedSignal
     }
 }
 
+// 원격 운반 서비스(마을에서 운반 상자 -> 제재소 원목 보관함)가 원목을 보내기 시작했는지(true) / 멈췄는지(false).
+// 보내는 동안에는 상자 사정권 밖이어도 운반 상자 UI를 띄운다.
+public struct OffroadContainerRemoteTransportStateChangedSignal
+{
+    public bool state;
+    public OffroadContainerRemoteTransportStateChangedSignal(bool _state)
+    {
+        state = _state;
+    }
+}
+
+// 자동 적재 특성: 던전 휴식 범위(=자동 적재 사정권)에 들어왔는지(true) / 나갔는지(false).
+// 상자 사정권에 들어왔을 때처럼 상자 슬롯 UI와 가방을 열되, 상자 E 상호작용 안내는 띄우지 않는다.
+public struct OffroadContainerAutoLoadAreaStateChangedSignal
+{
+    public bool state;
+    public OffroadContainerAutoLoadAreaStateChangedSignal(bool _state)
+    {
+        state = _state;
+    }
+}
+
 public struct LoosAllInventoryItemSignal { }
 
 public struct OffroadContainerUpdatedSignal { }

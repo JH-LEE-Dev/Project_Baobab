@@ -10,6 +10,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     public event Action AttackEvent;
     public event Action DurabilityEmptyEvent;
     public event Action DurabilityRestoredEvent;
+    // 모루 등으로 수리한 직후. 내구도 갱신(AxeAttackedEvent) 다음에 불리므로 받는 쪽은 이미 새 값을 본다.
+    public event Action DurabilityRepairedEvent;
 
     // 외부 의존성
     [SerializeField] private Sprite halfDurabilityAxe;
@@ -268,6 +270,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         {
             DurabilityRestoredEvent?.Invoke();
         }
+
+        DurabilityRepairedEvent?.Invoke();
     }
 
     private void UpdateSpriteByDurability()

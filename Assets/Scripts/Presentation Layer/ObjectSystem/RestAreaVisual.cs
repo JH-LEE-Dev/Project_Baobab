@@ -12,10 +12,12 @@ public class RestAreaVisual : MonoBehaviour
 {
     [Header("Campfire")]
     [SerializeField] private GameObject campfireObj;
-    [Tooltip("튀어나오는 연출로 크기를 바꾸는 건 이 스프라이트뿐이다. 발밑 충돌 타일맵(Rigidbody2D)이 들어 있는 " +
+    [Tooltip("튀어나오는 연출로 크기를 바꾸는 건 이 그림 묶음(뒤·앞·그림자)뿐이다. 발밑 충돌 타일맵(Rigidbody2D)이 들어 있는 " +
              "campfireObj 자체를 0 크기로 줄이면 물리 쪽이 그 순간의 위치를 기억해 타일맵이 옆으로 밀려난다.")]
-    [SerializeField] private SpriteRenderer campfireSR;
-    [SerializeField] private CustomSortable campfireSortable;
+    [SerializeField] private Transform campfireVisual;
+    [Tooltip("모닥불 뒤(Back)·앞(Front) 조각. 둘 다 campfireObj 위치로 정렬하고 각자의 offset으로 앞뒤를 가른다 " +
+             "(Back 0 / Front +2, 사이의 +1은 불꽃 이펙트 자리).")]
+    [SerializeField] private CustomSortable[] campfireSortables;
 
     [Header("Range Ellipse")]
     [SerializeField] private Renderer ellipseRenderer;
@@ -44,17 +46,20 @@ public class RestAreaVisual : MonoBehaviour
 
     private void Awake()
     {
-        if (campfireSR != null) campfireBaseScale = campfireSR.transform.localScale;
+        if (campfireVisual != null) campfireBaseScale = campfireVisual.localScale;
 
         if (campfireObj != null)
         {
             footprintCollider = new TilemapFootprintCollider(campfireObj.GetComponentInChildren<Tilemap>(true));
         }
 
-        if (campfireSortable != null && campfireSR != null)
+        // 렌더러를 따로 넘기지 않으면 각 조각이 자기 아래 SpriteRenderer만 모은다.
+        if (campfireSortables != null && campfireObj != null)
         {
-            campfireSortable.Initialize(campfireObj.transform);
-            campfireSortable.AddSpriteRenderer(campfireSR);
+            for (int i = 0; i < campfireSortables.Length; i++)
+            {
+                if (campfireSortables[i] != null) campfireSortables[i].Initialize(campfireObj.transform);
+            }
         }
 
         if (null != plusVfx) plusVfx.Initialize(campfireSortable);
@@ -162,10 +167,13 @@ public class RestAreaVisual : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (campfireSortable != null && campfireObj != null && campfireObj.activeSelf)
+        if (campfireSortables == null || campfireObj == null || !campfireObj.activeSelf) return;
+
+        for (int i = 0; i < campfireSortables.Length; i++)
         {
-            campfireSortable.SetHeight(0f);
-            campfireSortable.ManualLateUpdate();
+            if (campfireSortables[i] == null) continue;
+            campfireSortables[i].SetHeight(0f);
+            campfireSortables[i].ManualLateUpdate();
         }
     }
 
@@ -176,9 +184,9 @@ public class RestAreaVisual : MonoBehaviour
         float campfireT = revealDuration > 0f ? Mathf.Clamp01((elapsed - campfireRevealDelay) / revealDuration) : 1f;
 
         ApplyEllipse(EaseOutBack(ellipseT), Mathf.Clamp01(ellipseT * 2f));
-        if (campfireSR != null)
+        if (campfireVisual != null)
         {
-            campfireSR.transform.localScale = campfireBaseScale * EaseOutBack(campfireT);
+            campfireVisual.localScale = campfireBaseScale * EaseOutBack(campfireT);
         }
     }
 

@@ -1,5 +1,7 @@
 using PresentationLayer.DOTweenAnimationSystem;
 using System.Collections.Generic;
+using Coffee.UIEffects;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -38,9 +40,21 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [Header("Overheat Aura")]
         [SerializeField] private HUD_AxeOverheatAura overheatAura;
 
+        [Header("Repair Effect")]
+        [Tooltip("수리 번쩍임. 도끼 그림 위에 같은 스프라이트로 겹쳐 두고, 색은 repairFlashEffect의 색 치환(Replace)이 하얗게 칠한다.")]
+        [SerializeField] private Image repairFlashOverlay;
+        [SerializeField] private UIEffect repairFlashEffect;
+        [Tooltip("뽀잉으로 크기가 출렁이는 대상(도끼 그림·외곽선·그림자를 묶은 부모)")]
+        [SerializeField] private RectTransform repairBounceTarget;
+        [SerializeField] private float repairFlashDuration = 0.3f;
+        [SerializeField] private float repairBounceScale = 1.2f;
+        [SerializeField] private float repairBounceDuration = 0.5f;
+
         // //내부 의존성
         private AxeMode axeMode = AxeMode.DB100;
         private float previousRatio = 1f;
+        private Sequence repairSequence;
+        private Vector3 repairBounceBaseScale = Vector3.one;
 
         // private LocalizationManager localizationManager;
         // private Action cachedRefreshLocalizedText;
@@ -70,6 +84,18 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             if (null != overheatAura)
                 overheatAura.Initialize(axeImage, axeImages);
+
+            if (null != repairBounceTarget)
+                repairBounceBaseScale = repairBounceTarget.localScale;
+
+            if (null != repairFlashEffect)
+            {
+                repairFlashEffect.colorFilter = ColorFilter.Replace;
+                repairFlashEffect.colorIntensity = 1f;
+                repairFlashEffect.color = Color.white;
+            }
+
+            SetRepairFlashAlpha(0f);
 
             /*
             if (null != keyboardImage && null != _inputManager)
@@ -161,6 +187,10 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             axeImage.sprite = axeImages[(int)axeMode];
 
+            // 번쩍임 오버레이는 도끼 실루엣을 그대로 따라가야 한다.
+            if (null != repairFlashOverlay)
+                repairFlashOverlay.sprite = axeImage.sprite;
+
             // 도끼 모양이 바뀌는 지점은 여기뿐이다(내구도 비율이 0.75 / 0.5 / 0.25 / 0을 지날 때). 과열 아우라는 이 호출에서만 새 실루엣으로 교체된다.
             if (null != overheatAura)
                 overheatAura.OnAxeSpriteChanged(axeImage.sprite);
@@ -170,8 +200,13 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             if (false == _bPlayEffects)
                 return;
 
-            if (1f > _ratio && prevMode != axeMode)
+            // 수리로 좋아지는 방향에서는 깨짐 흔들림·파편 대신 PlayRepairEffect(흰 번쩍임 + 뽀잉)가 나간다.
+            if (true == isBreaking && 1f > _ratio && prevMode != axeMode)
             {
+                // 수리 직후 곧바로 깨지면 깨짐 연출이 우선이다. 하얀 실루엣은 MainImage의 흔들림을 따라가지 않으므로
+                // 남아 있으면 둘이 어긋나 보인다 - 번쩍임·뽀잉을 여기서 바로 끝낸다(OnKill이 원래 모습으로 되돌린다).
+                KillRepairSequence();
+
                 if (null != omp)
                 {
                     omp.Play(brokenAnimTag, bReset: true);
@@ -212,6 +247,82 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             }
         }
 
+        /// <summary>
+        /// 모루로 수리했을 때 호출된다. 스프라이트가 바뀌지 않는 수리여도 항상 재생한다.
+        /// 도끼가 하얗게 번쩍였다가 지금 내구도의 모습으로 돌아오며 뽀잉 튀어오른다.
+        /// </summary>
+        public void PlayRepairEffect()
+        {
+            KillRepairSequence();
+
+            if (null != repairFlashOverlay && null != axeImage)
+                repairFlashOverlay.sprite = axeImage.sprite;
+
+            SetRepairFlashAlpha(1f);
+            if (null != repairBounceTarget)
+                repairBounceTarget.localScale = repairBounceBaseScale;
+
+            repairSequence = DOTween.Sequence();
+
+            if (null != repairFlashOverlay)
+            {
+                repairSequence.Insert(0f, DOTween.To(GetRepairFlashAlpha, SetRepairFlashAlpha, 0f, repairFlashDuration)
+                    .SetEase(Ease.InQuad));
+            }
+
+            // HUD_Loot와 같은 쫀득한 뽀잉: 빠르게 커졌다가 탄성 있게 제자리로
+            if (null != repairBounceTarget)
+            {
+                repairSequence.Insert(0f, repairBounceTarget.DOScale(repairBounceBaseScale * repairBounceScale, repairBounceDuration * 0.3f)
+                    .SetEase(Ease.OutQuad));
+                repairSequence.Insert(repairBounceDuration * 0.3f, repairBounceTarget.DOScale(repairBounceBaseScale, repairBounceDuration * 0.7f)
+                    .SetEase(Ease.OutElastic));
+            }
+
+            repairSequence.OnKill(ResetRepairEffect);
+        }
+
+        private float repairFlashAlpha;
+
+        private float GetRepairFlashAlpha()
+        {
+            return repairFlashAlpha;
+        }
+
+        private void SetRepairFlashAlpha(float _alpha)
+        {
+            repairFlashAlpha = _alpha;
+
+            if (null == repairFlashOverlay)
+                return;
+
+            // 색 치환(UIEffect)이 실루엣을 하얗게 칠하므로 이미지 색은 알파만 담당한다.
+            Color _color = Color.white;
+            _color.a = _alpha;
+            repairFlashOverlay.color = _color;
+        }
+
+        private void KillRepairSequence()
+        {
+            if (null != repairSequence && true == repairSequence.IsActive())
+                repairSequence.Kill();
+            repairSequence = null;
+        }
+
+        private void ResetRepairEffect()
+        {
+            SetRepairFlashAlpha(0f);
+            if (null != repairBounceTarget)
+                repairBounceTarget.localScale = repairBounceBaseScale;
+        }
+
+        private void OnDisable()
+        {
+            // HUD가 꺼질 때(어빌리티 트리 UI 등) 연출 도중이면 커진 채로 남지 않도록 정리한다.
+            KillRepairSequence();
+            ResetRepairEffect();
+        }
+
         private System.Collections.IEnumerator PlayAxeBreakingExDelayed()
         {
             yield return new WaitForSeconds(UnityEngine.Random.Range(0.5f, 1.5f));
@@ -220,6 +331,8 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
         private void OnDestroy()
         {
+            KillRepairSequence();
+
             /*
             if (null != localizationManager && null != cachedRefreshLocalizedText)
             {

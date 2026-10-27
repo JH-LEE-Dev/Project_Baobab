@@ -90,6 +90,7 @@ public class TownSystem : MonoBehaviour
         townProductionManager.Initialize(inputManager, _skyCameraProductionManager);
         townObjectManager.Initialize(environmentProvider, inputManager, characterInventory, offroadContainer);
         logProcessingManager.Initialize(inputManager);
+        offroadContainer.SetRemoteTransportTarget(logProcessingManager.logContainer);
         tentManager.Initialize(inputManager);
         townObjectManager.RegisterBuildingShadowCaster(logProcessingManager.shopNPC);
         townObjectManager.RegisterBuildingShadowCaster(tentManager.Tent);
@@ -731,6 +732,11 @@ public class TownSystem : MonoBehaviour
 
     private void StartSkyProduction(bool isMainMenu)
     {
+        // 숲 출발로 카메라가 하늘로 올라가기 시작하는 순간 원격 운반 서비스를 멈춘다.
+        // (isMainMenu = true는 메인메뉴 ↔ 마을 연출이라 여기서 거르지 않고, 이탈 쪽은 GoToMainMenuRequested에서 멈춘다)
+        if (!isMainMenu)
+            offroadContainer.StopRemoteTransportForDeparture();
+
         signalHub.Publish(new StartSkyProductionSignal(isMainMenu));
     }
 
@@ -943,6 +949,9 @@ public class TownSystem : MonoBehaviour
             return;
 
         bGoingToMainMenu = true;
+
+        // 메인메뉴로 나가는 카메라 상승도 마을을 떠나는 것이므로 원격 운반 서비스를 멈춘다(저장 뒤에 더 보내지 않게 먼저).
+        offroadContainer.StopRemoteTransportForDeparture();
 
         // 마을 → 메인메뉴 이탈 시점 자동저장. 게임 종료(OnApplicationQuit)와 같은 느낌의 타이밍으로,
         // townObjectManager가 정리되기 전, 가장 온전한 상태에서 저장한다.

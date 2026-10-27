@@ -6,4 +6,5 @@ public interface IAxeComponent
     public event Action AxeAttackedEvent;
     public event Action DurabilityEmptyEvent;
     public event Action DurabilityRestoredEvent;
+    public event Action DurabilityRepairedEvent;
 }
