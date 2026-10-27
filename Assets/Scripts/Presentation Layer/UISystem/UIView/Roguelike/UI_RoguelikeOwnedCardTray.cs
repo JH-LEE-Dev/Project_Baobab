@@ -1,10 +1,10 @@
 using UnityEngine;
 
 /// <summary>
-/// 전투 HUD 우하단의 보관함 트레이. 기획서 10-2 "보유 카드 보관함 - 기본 상태(접힘)": 카드 윗면이 삐져나온 보관함 상자 + 숫자판 둘(레어 · 일반 장수).
+/// 전투 HUD 우하단의 보관함 트레이. 기획서 10-2 "보유 카드 보관함 - 기본 상태(접힘)": 등급색 미니 카드 아이콘 + 숫자가 든 숫자판 둘(레어 · 일반 장수).
 /// 표시 전용이다 - 마우스를 받지 않고(레이캐스트 그래픽 없음) 누르거나 올려도 반응하지 않는다. 보유 카드 창은 키(인벤토리 키)로만 연다.
 ///
-/// [숫자] 레어 · 일반 장수는 SetCounts로 받는다. 값을 한 번도 받지 못했다면 숫자판을 비워 둔다(0으로 잘못 보이지 않게).
+/// [숫자] 레어 · 일반 장수는 SetCounts로 받는다. 값을 받기 전(HUD가 켜질 때, ResetTray)에는 0 · 0이다. 카드가 0장이어도 0으로 표기한다.
 ///   숫자는 버프 HUD와 같은 작은 숫자 글리프(UI_RoguelikeIconNumber)다.
 /// </summary>
 public class UI_RoguelikeOwnedCardTray : MonoBehaviour
@@ -20,11 +20,10 @@ public class UI_RoguelikeOwnedCardTray : MonoBehaviour
         if (null != normalNumber) normalNumber.SetSingle(_normalCount);
     }
 
-    /// <summary>런 시작·종료 초기화. 숫자를 비운다.</summary>
+    /// <summary>런 시작·종료 초기화. 0 · 0으로 되돌린다.</summary>
     public void ResetTray()
     {
-        if (null != rareNumber) rareNumber.HideImmediate();
-        if (null != normalNumber) normalNumber.HideImmediate();
+        SetCounts(0, 0);
     }
 
     public void SetVisible(bool _bVisible)

@@ -11,7 +11,7 @@ using UnityEngine.UI;
 ///   변경        값이 바뀔 때. 연출 없이 새 값으로 바로 바뀐다.
 ///   퇴장 (4틱)  PlayExit. 오른쪽에서 왼쪽으로 75 / 50 / 25 / 0% 폭으로 사라진다. 끝나면 이미지를 끈다(흰 네모가 보이지 않는다).
 /// 값이 들어오기 전 · 퇴장이 끝난 뒤 · 오브젝트가 꺼져 있는 동안에는 이미지가 항상 꺼져 있다. 오브젝트가 다시 켜지면 마지막 값으로 등장 연출부터 시작한다.
-/// 위치는 정수 픽셀이다: 폭이 홀수여도 반 칸 어긋나지 않게 pivot을 왼쪽에 두고 폭의 절반(내림)만큼 앞으로 민다(가운데 정렬). bLeftAlign이면 앵커에서 오른쪽으로 시작한다.
+/// 위치는 정수 픽셀이다: 폭이 홀수여도 반 칸 어긋나지 않게 pivot을 왼쪽에 두고 폭의 절반(내림)만큼 앞으로 민다(가운데 정렬). bLeftAlign이면 앵커에서 오른쪽으로 시작하고, bRightAlign이면 앵커가 숫자의 오른쪽 끝이다(자릿수가 늘면 왼쪽으로 자란다).
 /// </summary>
 public class UI_RoguelikeIconNumber : MonoBehaviour
 {
@@ -40,6 +40,8 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
     private Sprite[] digitSprites = new Sprite[0];
     [SerializeField, Tooltip("켜면 앵커에서 오른쪽으로 시작한다(왼쪽 정렬). 끄면 앵커를 가운데로 놓는다.")]
     private bool bLeftAlign = false;
+    [SerializeField, Tooltip("켜면 앵커가 숫자의 오른쪽 끝이다(오른쪽 정렬). 자릿수가 늘면 왼쪽으로 자란다. bLeftAlign이 켜져 있으면 그쪽이 먼저다.")]
+    private bool bRightAlign = false;
 
     //상태 변수
     private HUD_BuffNumberFont font;
@@ -190,7 +192,12 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
         RectTransform rect = image.rectTransform;
         rect.pivot = new Vector2(0f, 0.5f);
         rect.sizeDelta = new Vector2(reveal, Height);
-        rect.anchoredPosition = new Vector2(true == bLeftAlign ? 0 : -(contentWidth / 2), rect.anchoredPosition.y);
+
+        int anchorX = -(contentWidth / 2);
+        if (true == bLeftAlign) anchorX = 0;
+        else if (true == bRightAlign) anchorX = -contentWidth;
+
+        rect.anchoredPosition = new Vector2(anchorX, rect.anchoredPosition.y);
     }
 
     private bool EnsureReady()

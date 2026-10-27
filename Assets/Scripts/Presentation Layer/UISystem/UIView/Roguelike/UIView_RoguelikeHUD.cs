@@ -10,7 +10,7 @@ using UnityEngine;
 ///   - 유예 타이머(GraceTimer): 목표치 바와 임계치 바 사이의 얇은 바. 유예 중 보라 차오름, 쿨다운 장미주황 줄어듦. 숫자 없음 - SetThreshold, PlayPressureDamaged
 ///   - 임계치 바(PressureStrip): 호박색 가로 막대. 나무 + 나무 수 / 임계치 T, T 눈금과 초과 구간 - SetThreshold, PlayPressureDamaged
 ///   - 코인 HUD: 보유 골드(본편 코인 HUD 표현 재사용 권장 - CurrencyCounterHUD). 언리밋에서는 숨긴다.
-///   - 보관함 트레이(OwnedTray): 우하단. 카드 윗면이 삐져나온 상자 + 숫자판(레어 · 일반). 표시 전용(클릭 없음) - SetOwnedCardCounts
+///   - 보관함 트레이(OwnedTray): 우하단. 인벤토리 키 아이콘 + 숫자판(레어 · 일반). 표시 전용(클릭 없음) - SetOwnedCardCounts
 ///     보유 카드 창은 이 뷰가 아니라 키(인벤토리 키)로 연다(RoguelikeUICoordinator).
 ///
 /// 값은 바뀔 때만 들어온다(매 프레임 같은 값을 다시 넣지 않는다).
@@ -25,6 +25,15 @@ public class UIView_RoguelikeHUD : UIView
     [SerializeField] private UI_RoguelikePressureStrip pressureStrip;
     [SerializeField] private UI_RoguelikeGraceTimer graceTimer;
     [SerializeField] private UI_RoguelikeOwnedCardTray ownedTray;
+    [SerializeField] private UI_KeyboardImage ownedKeyImage;
+
+    public override void Initialize(UIViewContext _ctx)
+    {
+        base.Initialize(_ctx);
+
+        // 보유 카드 창을 여는 키(인벤토리 키) 아이콘. 리바인딩과 입력 장치 전환을 따라간다(인벤토리 UI와 같은 방식).
+        if (null != ownedKeyImage) ownedKeyImage.Initialize(_ctx?.inputManager);
+    }
 
     protected override void OnShow()
     {

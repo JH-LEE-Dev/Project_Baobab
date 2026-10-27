@@ -27,14 +27,14 @@ UI 레이어에서 보유 카드 보관함 화면·HUD 트레이를 구현했다
 |---|---|
 | `UIView_RoguelikeOwnedCards` | 화면 본체 구현(카드 선택 화면의 카드 `UI_RoguelikeCard`를 그대로 쓴 카드 목록(레어 먼저) + 고정 설명 패널 + 현재 효과 + 키 안내 줄). **공개 시그니처는 그대로**(`SetCards`, `Show/Hide`, `HiddenEvent`, `ClosedEvent`) |
 | `UI_RoguelikeOwnedCardCell` | 카드 한 칸(`UI_RoguelikeCard` + 판정 박스) |
-| `UI_RoguelikeOwnedCardTray` | HUD 우하단 보관함 트레이. **표시 전용**이다(숫자판만 보여 주며 클릭 · 호버에 반응하지 않고 레이캐스트도 받지 않는다) |
+| `UI_RoguelikeOwnedCardTray` | HUD 우하단 보관함 트레이. **표시 전용**이다(인벤토리 키 아이콘 + 숫자판 둘을 보여 주며 클릭 · 호버에 반응하지 않고 레이캐스트도 받지 않는다) |
 | `UIView_RoguelikeHUD.SetOwnedCardCounts(int _rareCount, int _normalCount)` | 트레이 숫자판(레어 · 일반 장수) 갱신. 새 virtual 메서드 |
 | `RoguelikeCardEffectText.BuildCurrent` | 누적 "현재 효과" 문구(UI 내부 사용) |
 | 로컬라이징 | `RoguelikeUI.json`에 `Roguelike_OwnedCards_*` 키 추가(id 523~538). 문자열 키로 조회하므로 `LocKeys` 재생성 불필요 |
 
 > **보유 카드 창은 키로만 열린다.** 트레이 클릭 열람은 폐지했다(기획 결정). 요청 A · B-2를 구현하기 전까지는 창을 열 방법이 없다.
 >
-> 트레이 숫자판은 `SetOwnedCardCounts`가 한 번도 불리지 않으면 **비어 있다**(0으로 잘못 보이지 않게). 요청 B-1을 구현하기 전까지는 숫자가 보이지 않는 것이 정상이다.
+> 트레이 오른쪽 위 모서리에는 보유 카드 창을 여는 **인벤토리 키 아이콘**이 걸려 있다(흰 외곽선은 인벤토리의 키 아이콘과 같은 `UIEffect`; `UI_KeyboardImage`, `RebindableAction` 모드 + `ERebindableAction.Inventory`; 리바인딩과 입력 장치 전환(키보드 ↔ 패드 LT)을 자동으로 따라간다. HUD `Initialize`에서 `InputManager`를 넘긴다). 앱 레이어 작업은 필요 없다. 키 연결(요청 A · B-2)이 아직 없어도 아이콘은 보인다. 트레이 본체는 레어 · 일반 숫자판 둘이다(숫자는 판 오른쪽 끝에 붙는 오른쪽 정렬, 상자 그림은 없다). **카드를 골라도 숫자는 요청 B-1을 구현하기 전까지 0으로 남는다.** 숫자판은 `SetOwnedCardCounts`가 불리기 전에는 **0 · 0**으로 표기된다(HUD가 켜질 때 `ResetTray`가 0으로 둔다). 카드가 0장이어도 0으로 표기한다. 요청 B-1을 구현하기 전까지는 항상 0이 보이는 것이 정상이다.
 
 ---
 
@@ -84,7 +84,7 @@ UI 레이어에서 보유 카드 보관함 화면·HUD 트레이를 구현했다
 - 계산: `runInfo.Build.OwnedCards`를 돌며 `CardRarity.IsRare(CardRarity.GetDisplayGrade(card, build.GetLevel(card)))`로 센다. `OwnedCardsRequested` 안의 `ToOwnedView`가 쓰는 규칙과 같다. **표시 등급은 레벨에 따라 변한다**(에메랄드 = MAX 도달 시)이므로 카드 수가 아니라 레벨업에서도 다시 세어야 한다.
 - 조합(프리즘)으로 재료 카드가 `OwnedCards`에서 빠지는 경우에도 같은 시그널 경로에서 다시 센다.
 - 값이 바뀔 때만 호출한다(코디네이터의 다른 HUD 값과 같은 규칙). 마지막 값 두 개를 필드로 기억하면 된다.
-- 런 시작 시 0 · 0을 한 번 넣는다. (HUD `OnShow`가 `ResetTray`로 숫자를 비우므로 새 런에서는 이전 런의 숫자가 남지 않는다. 다만 비어 있는 것과 0은 다르게 보이므로 런 시작 시 0을 넣는 편이 맞다.)
+- 런 시작 시 0 · 0을 한 번 넣는다. (`ResetTray`로 0 · 0에 두는 시점은 HUD `OnShow`뿐이다. 새 런에서 이전 런의 숫자가 남지 않게 런 시작 때 0을 넣는 편이 맞다.)
 
 ### B-2. 열기 키 수신
 
@@ -101,7 +101,7 @@ UI 레이어에서 보유 카드 보관함 화면·HUD 트레이를 구현했다
 3. ESC 메뉴를 보유 카드 창 위에서 열었다 닫아도 시간이 멈춘 채로 유지된다(기존 `Tick` 보정).
 4. 로비로 돌아간 뒤 LT / Tab이 본편 규칙으로 복구된다(리다이렉트 해제 확인). 다음 런 진입 시 다시 등록된다.
 5. 카드를 고르는 즉시 트레이 숫자가 바뀐다. 레벨업으로 에메랄드(MAX)가 되는 순간 레어 +1, 일반 −1.
-6. 새 런 시작 시 트레이 숫자가 이전 런 값 없이 0 · 0에서 시작한다.
+6. 새 런 시작 시 트레이 숫자가 이전 런 값 없이 0 · 0에서 시작한다. 카드가 0장이면 숫자판에 0이 보인다(빈 칸이 아니다).
 7. 트레이를 마우스로 눌러도 올려도 아무 반응이 없다(표시 전용, 창이 열리지 않는다).
 
 ## 알려진 문제 — SkyProduction의 구름이 화면 전체 입력을 가린다
