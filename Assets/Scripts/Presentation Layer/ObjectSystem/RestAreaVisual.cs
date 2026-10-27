@@ -62,7 +62,8 @@ public class RestAreaVisual : MonoBehaviour
             }
         }
 
-        if (null != plusVfx) plusVfx.Initialize(campfireSortable);
+        // + 입자는 offset 0인 뒤(Back) 조각 기준으로 정렬한다.
+        if (null != plusVfx) plusVfx.Initialize(campfireSortables != null && campfireSortables.Length > 0 ? campfireSortables[0] : null);
 
         // Initialize 전에도 프리팹에 맞춰 둔 크기로 그려지도록 기본값을 잡아 둔다.
         if (ellipseRenderer != null) ellipseBaseScale = ellipseRenderer.transform.localScale;
