@@ -20,6 +20,7 @@ namespace PresentationLayer.VFX
 
         private const float PixelUnit = 1.0f / 32.0f;
         private const int LineCapacity = 2048;
+        private const int SpacedCapacity = 128;
         private const float TwoPi = Mathf.PI * 2.0f;
         // RingArcWithHead 머리 뒤쪽 색 구간 경계(라디안). 0.04 / 0.1 / 0.2 바퀴.
         private const float HeadRadians0 = 0.04f * TwoPi;
@@ -31,8 +32,13 @@ namespace PresentationLayer.VFX
 
         // 내부 의존성
         private PixelQuadBuffer buffer;
+        private readonly int[] spacedMinX = new int[SpacedCapacity];
+        private readonly int[] spacedMinY = new int[SpacedCapacity];
+        private readonly int[] spacedMaxX = new int[SpacedCapacity];
+        private readonly int[] spacedMaxY = new int[SpacedCapacity];
 
         // 상태 변수
+        private int spacedCount;
         private bool bRunActive;
         private int runX0;
         private int runX1;
@@ -61,6 +67,7 @@ namespace PresentationLayer.VFX
             translationX = _worldToLocal.m03;
             translationY = _worldToLocal.m13;
             bRunActive = false;
+            spacedCount = 0;
             minX = int.MaxValue;
             minY = int.MaxValue;
             maxX = int.MinValue;
@@ -167,6 +174,24 @@ namespace PresentationLayer.VFX
                     Dot(_x, _y, _color);
                     break;
             }
+        }
+
+        /// <summary>
+        /// Shape와 같은 입자를 그리되, 이번 프레임(Begin 이후)에 이미 SpacedShape로 그린 입자와 겹치거나 맞닿으면
+        /// `.`로 줄여 그리고, `.`도 맞닿으면 그리지 않는다. 서로 다른 입자가 이어 붙어 한 덩어리의 뚱뚱한 모양(`x`와 `+`의 합집합 등)이
+        /// 되는 것을 막는다. 먼저 그린 입자가 우선이므로, 입자 배열 순서가 고정이면 같은 프레임 결과도 고정이다.
+        /// </summary>
+        public void SpacedShape(int _shape, int _x, int _y, Color32 _color)
+        {
+            int shape = _shape;
+
+            if (false == TryReserveShape(shape, _x, _y))
+            {
+                if (ShapeDot == shape || false == TryReserveShape(ShapeDot, _x, _y)) return;
+                shape = ShapeDot;
+            }
+
+            Shape(shape, _x, _y, _color);
         }
 
         /// <summary>
@@ -323,6 +348,59 @@ namespace PresentationLayer.VFX
         }
 
         // 내부 메서드
+
+        // 모양의 점유 상자(중심 기준 -left..+right, -down..+up)가 기록된 상자와 1칸 이내로 맞닿지 않으면 기록하고 true를 돌려준다.
+        private bool TryReserveShape(int _shape, int _x, int _y)
+        {
+            int left = 0;
+            int right = 0;
+            int down = 0;
+            int up = 0;
+
+            switch (_shape)
+            {
+                case ShapePlus:
+                case ShapeCross:
+                    left = 1;
+                    right = 1;
+                    down = 1;
+                    up = 1;
+                    break;
+
+                case ShapeCircle:
+                    left = 2;
+                    right = 1;
+                    down = 2;
+                    up = 1;
+                    break;
+
+                case ShapeDiamond:
+                    left = 2;
+                    right = 2;
+                    down = 2;
+                    up = 2;
+                    break;
+            }
+
+            int x0 = _x - left;
+            int x1 = _x + right;
+            int y0 = _y - down;
+            int y1 = _y + up;
+
+            for (int i = 0; i < spacedCount; i++)
+            {
+                if (x0 <= spacedMaxX[i] + 1 && spacedMinX[i] - 1 <= x1 && y0 <= spacedMaxY[i] + 1 && spacedMinY[i] - 1 <= y1) return false;
+            }
+
+            if (SpacedCapacity <= spacedCount) return false;
+
+            spacedMinX[spacedCount] = x0;
+            spacedMinY[spacedCount] = y0;
+            spacedMaxX[spacedCount] = x1;
+            spacedMaxY[spacedCount] = y1;
+            spacedCount++;
+            return true;
+        }
 
         private void FlushRun()
         {

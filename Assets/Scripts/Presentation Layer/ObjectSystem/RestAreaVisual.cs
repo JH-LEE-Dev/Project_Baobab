@@ -26,6 +26,10 @@ public class RestAreaVisual : MonoBehaviour
     [Tooltip("범위 안에서 올라오는 + 입자. 모닥불 CustomSortable로 지면 Y 정렬해 사물 사이에 끼어든다.")]
     [SerializeField] private VFX_RestAreaPlus plusVfx;
 
+    [Header("Flame")]
+    [Tooltip("모닥불 불꽃 연출. 열리면 campfireRevealDelay 뒤 점화하고, 닫히면 즉시 멈춘다. 모닥불 Back 조각 기준으로 앞뒤를 정렬한다.")]
+    [SerializeField] private VFX_CampfireFlame flameVfx;
+
     [Header("Reveal")]
     [SerializeField] private float revealDuration = 0.6f;
     [SerializeField] private float hideDuration = 0.25f;
@@ -65,6 +69,9 @@ public class RestAreaVisual : MonoBehaviour
         // + 입자는 offset 0인 뒤(Back) 조각 기준으로 정렬한다.
         if (null != plusVfx) plusVfx.Initialize(campfireSortables != null && campfireSortables.Length > 0 ? campfireSortables[0] : null);
 
+        // 불꽃도 offset 0인 뒤(Back) 조각 기준으로 정렬한다. (Back 0 / 불꽃 +1 / Front +2)
+        if (null != flameVfx) flameVfx.Initialize(campfireSortables != null && campfireSortables.Length > 0 ? campfireSortables[0] : null);
+
         // Initialize 전에도 프리팹에 맞춰 둔 크기로 그려지도록 기본값을 잡아 둔다.
         if (ellipseRenderer != null) ellipseBaseScale = ellipseRenderer.transform.localScale;
 
@@ -94,6 +101,7 @@ public class RestAreaVisual : MonoBehaviour
         elapsed = 0f;
 
         if (null != plusVfx) plusVfx.SetOpen(bOpen);
+        if (null != flameVfx) flameVfx.SetOpen(bOpen, campfireRevealDelay);
 
         if (bOpen)
         {
