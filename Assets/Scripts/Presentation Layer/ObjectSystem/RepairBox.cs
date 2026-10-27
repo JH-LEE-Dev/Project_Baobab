@@ -265,7 +265,13 @@ public class RepairBox : MonoBehaviour
         {
             Vector3 sparkPos = repairSparkPoint != null ? repairSparkPoint.position
                 : (spriteRenderer != null ? spriteRenderer.transform.position : transform.position);
-            repairVfx.Play(repairSparkTag, sparkPos, Quaternion.identity);
+            ParticleSystem sparkEffect = repairVfx.Play(repairSparkTag, sparkPos, Quaternion.identity);
+
+            // 모루 그림 위에 그려지도록 정렬을 맞춘다(그림의 정렬 순서는 CustomSortable이 위치에 따라 정한다).
+            if (null != sparkEffect && null != spriteRenderer)
+            {
+                repairVfx.SetSortingSettings(sparkEffect, spriteRenderer.sortingLayerID, spriteRenderer.sortingOrder + 2);
+            }
         }
 
         if (spriteRenderer == null || !gameObject.activeInHierarchy) return;

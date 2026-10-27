@@ -673,7 +673,7 @@ Transform:
   m_GameObject: {fileID: 550032117597520478}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.65625, z: 0}
+  m_LocalPosition: {x: -0.15625, y: 0.65625, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4706,4 +4706,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
   isUIComponent: 0
   initializeOnAwake: 1
-  vfxPoolDataList: []
+  vfxPoolDataList:
+  - vfxTag: RepairSpark
+    effectPrefab: {fileID: 1386752551214847544, guid: 8161552781f014c44a5975b30b05acfa, type: 3}
+    initialPoolSize: 1
+    allowDynamicExpansion: 1
+    maxPoolSize: 2
+    uiParticleScale: 0
