@@ -62,23 +62,8 @@ public class RestAreaVisual : MonoBehaviour
             }
         }
 
-        // + 입자는 지면 Y 정렬 규칙(precision/offset)만 빌려 쓴다. offset 0인 첫 조각(Back)을 기준으로 삼아 불꽃 자리(+1)와 같은 칸에 놓는다.
-        if (null != plusVfx)
-        {
-            CustomSortable plusSortable = null;
-            if (campfireSortables != null)
-            {
-                for (int i = 0; i < campfireSortables.Length; i++)
-                {
-                    if (null == campfireSortables[i]) continue;
-
-                    plusSortable = campfireSortables[i];
-                    break;
-                }
-            }
-
-            plusVfx.Initialize(plusSortable);
-        }
+        // + 입자는 offset 0인 뒤(Back) 조각 기준으로 정렬한다.
+        if (null != plusVfx) plusVfx.Initialize(campfireSortables != null && campfireSortables.Length > 0 ? campfireSortables[0] : null);
 
         // Initialize 전에도 프리팹에 맞춰 둔 크기로 그려지도록 기본값을 잡아 둔다.
         if (ellipseRenderer != null) ellipseBaseScale = ellipseRenderer.transform.localScale;
