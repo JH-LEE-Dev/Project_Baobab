@@ -38,6 +38,7 @@ public class HUD_BuffIcon : MonoBehaviour
     [SerializeField] private Color durationAccent = new Color32(170, 212, 88, 255);
     [SerializeField] private Color hitsAccent = new Color32(232, 178, 58, 255);
     [SerializeField] private Color thresholdAccent = new Color32(120, 224, 224, 255);
+    [SerializeField] private Color statusAccent = new Color32(120, 190, 255, 255);
     [Tooltip("위 지속형 게이지가 이 비율 아래로 내려가면 경고색(붉은 계열)으로 바뀐다.")]
     [Range(0f, 1f)][SerializeField] private float warnRatio = 0.25f;
     [Tooltip("지속형이 이 비율 아래로 내려가면 만료 임박 점멸을 시작한다.")]
@@ -94,6 +95,8 @@ public class HUD_BuffIcon : MonoBehaviour
     private static readonly Color32 HitsBottom = new Color32(196, 140, 36, 255);
     private static readonly Color32 ThresholdTop = new Color32(120, 224, 224, 255);
     private static readonly Color32 ThresholdBottom = new Color32(62, 168, 176, 255);
+    private static readonly Color32 StatusTop = new Color32(130, 200, 255, 255);
+    private static readonly Color32 StatusBottom = new Color32(70, 140, 215, 255);
 
     // 내부 의존성
     private HUD_BuffBar bar;
@@ -284,6 +287,12 @@ public class HUD_BuffIcon : MonoBehaviour
     // 스택형의 현재 값을 바꾼다. 증가하면 팝/불꽃, 감소하면 가라앉는 연출이 나온다.
     public void SetValue(float _value)
     {
+        // 상태형은 값이 없다(켜짐/꺼짐은 AddOrUpdate/Dispel로만 바꾼다)
+        if (BuffGaugeKind.Status == info.kind)
+        {
+            return;
+        }
+
         float _clamped = Mathf.Clamp(_value, 0f, info.maxValue);
 
         if (BuffGaugeKind.Duration == info.kind)
@@ -642,6 +651,8 @@ public class HUD_BuffIcon : MonoBehaviour
 
         if (null != iconBase && false == bOverflowHidden)
         {
+            Vector2 _iconOrigin = iconRect.anchoredPosition;
+
             for (int ty = 0; ty < iconHeight; ty++)
             {
                 for (int tx = 0; tx < iconWidth; tx++)
@@ -653,7 +664,7 @@ public class HUD_BuffIcon : MonoBehaviour
                         continue;
                     }
 
-                    bar.FxShard(_baseX, _baseY, tx, iconHeight - 1 - ty, iconWidth, iconHeight, _c);
+                    bar.FxShard(_baseX, _baseY, _iconOrigin.x, _iconOrigin.y, tx, iconHeight - 1 - ty, iconWidth, iconHeight, _c);
                 }
             }
 
@@ -795,7 +806,7 @@ public class HUD_BuffIcon : MonoBehaviour
 
     private void RefreshNumber(bool _bForce)
     {
-        if (BuffGaugeKind.Duration == info.kind)
+        if (BuffGaugeKind.Duration == info.kind || BuffGaugeKind.Status == info.kind)
         {
             if (true == numberImage.enabled)
             {
@@ -870,6 +881,12 @@ public class HUD_BuffIcon : MonoBehaviour
                 _ratio = shownValue / info.thresholdValue;
                 _top = ThresholdTop;
                 _bottom = ThresholdBottom;
+                break;
+
+            case BuffGaugeKind.Status:
+                _ratio = 1f;
+                _top = StatusTop;
+                _bottom = StatusBottom;
                 break;
 
             default:
@@ -1025,6 +1042,9 @@ public class HUD_BuffIcon : MonoBehaviour
                     break;
                 case BuffGaugeKind.StackThreshold:
                     _accent = thresholdAccent;
+                    break;
+                case BuffGaugeKind.Status:
+                    _accent = statusAccent;
                     break;
                 default:
                     _accent = durationAccent;

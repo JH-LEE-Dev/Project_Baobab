@@ -23,6 +23,53 @@ public static class HUD_BuffPrefabBuilder
     private const string DashBaseSpritePath = "Assets/Graphics/HUD/Dash/Dash_HUD_Base.png";
     private const string DashFillSpritePath = "Assets/Graphics/HUD/Dash/Dash_HUD_Fill.png";
     private const string NumberSheetPath = "Assets/Graphics/Font/SmallCurrencyNum.png";
+    private const string IconDir = "Assets/Graphics/HUD/Buff/BuffIcon";
+    private const string IconTablePath = "Assets/Prefabs/UI/HUD/Buff/HUD_BuffIconTable.asset";
+
+    // 버프 아이콘 테이블(id -> Buff_{enum 이름}.png)을 만들거나 같은 규칙으로 다시 채운다. 프리팹은 건드리지 않는다.
+    [MenuItem("LumberBoy/HUD/Build Buff Icon Table")]
+    public static HUD_BuffIconTable BuildIconTable()
+    {
+        EnsureFolder("Assets/Prefabs/UI/HUD", "Buff");
+
+        HUD_BuffIconTable _table = AssetDatabase.LoadAssetAtPath<HUD_BuffIconTable>(IconTablePath);
+
+        if (null == _table)
+        {
+            _table = ScriptableObject.CreateInstance<HUD_BuffIconTable>();
+            AssetDatabase.CreateAsset(_table, IconTablePath);
+        }
+
+        EBuffHudId[] _ids = (EBuffHudId[])System.Enum.GetValues(typeof(EBuffHudId));
+        System.Collections.Generic.List<HUD_BuffIconTable.Entry> _entries = new System.Collections.Generic.List<HUD_BuffIconTable.Entry>(_ids.Length);
+
+        for (int i = 0; i < _ids.Length; i++)
+        {
+            if (EBuffHudId.None == _ids[i])
+            {
+                continue;
+            }
+
+            string _path = IconDir + "/Buff_" + _ids[i] + ".png";
+            Sprite _sprite = AssetDatabase.LoadAssetAtPath<Sprite>(_path);
+
+            if (null == _sprite)
+            {
+                Debug.LogWarning("[HUD_BuffPrefabBuilder] 버프 아이콘을 찾지 못했습니다: " + _path);
+                continue;
+            }
+
+            HUD_BuffIconTable.Entry _entry = new HUD_BuffIconTable.Entry();
+            _entry.id = _ids[i];
+            _entry.icon = _sprite;
+            _entries.Add(_entry);
+        }
+
+        _table.SetEntriesForEditor(_entries.ToArray());
+        EditorUtility.SetDirty(_table);
+        AssetDatabase.SaveAssets();
+        return _table;
+    }
 
     [MenuItem("LumberBoy/HUD/Build Buff HUD Prefabs")]
     public static void Build()
@@ -195,6 +242,7 @@ public static class HUD_BuffPrefabBuilder
         _bso.FindProperty("fxOverlay").objectReferenceValue = _fxRaw;
         _bso.FindProperty("chipRoot").objectReferenceValue = _chip;
         _bso.FindProperty("chipNumber").objectReferenceValue = _chipNumber;
+        _bso.FindProperty("iconTable").objectReferenceValue = BuildIconTable();
         SerializedProperty _dp = _bso.FindProperty("digitSprites");
         _dp.arraySize = 10;
 

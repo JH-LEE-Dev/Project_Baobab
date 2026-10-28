@@ -9,6 +9,8 @@ public enum BuffGaugeKind
     StackHits = 1,
     // 임계 수치형. 값이 연속적으로 차오르고 thresholdValue를 넘으면 발동 연출이 나온다.
     StackThreshold = 2,
+    // 상태형. 켜져 있는 동안만 보이고 게이지는 가득 찬 채 고정, 숫자와 자동 만료가 없다. Dispel/Remove로만 사라진다.
+    Status = 3,
 }
 
 /// <summary>버프 하나를 HUD에 그리기 위한 표시 정보. 게임 로직 수치는 담지 않고 표시에 필요한 값만 둔다.</summary>

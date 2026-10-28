@@ -165,6 +165,7 @@ MonoBehaviour:
   fxOverlay: {fileID: 1686782060075689586}
   chipRoot: {fileID: 4940428100890067877}
   chipNumber: {fileID: 2246081015455169401}
+  iconTable: {fileID: 11400000, guid: 55ff02b513cf1d3469ef51a01bf6aa53, type: 2}
   digitSprites:
   - {fileID: -1720054314, guid: b5919104e6bba484382995363357ae05, type: 3}
   - {fileID: 1212407753, guid: b5919104e6bba484382995363357ae05, type: 3}
