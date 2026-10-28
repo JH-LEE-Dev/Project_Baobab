@@ -146,6 +146,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<PopupUIDownSignal>(PopupUIDown);
         signalHub.Subscribe<PopupUIUpSignal>(PopupUIUp);
         signalHub.Subscribe<StaminaInvincibleStateChangedSignal>(StaminaInvincibleStateChanged);
+        signalHub.Subscribe<BuffHudSignal>(BuffHud);
         signalHub.Subscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);
         signalHub.Subscribe<GameEndSignal>(GameEnd);
         signalHub.Subscribe<ActivateWarningUISignal>(ActivateWarningUI);
@@ -211,6 +212,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<PopupUIDownSignal>(PopupUIDown);
         signalHub.UnSubscribe<PopupUIUpSignal>(PopupUIUp);
         signalHub.UnSubscribe<StaminaInvincibleStateChangedSignal>(StaminaInvincibleStateChanged);
+        signalHub.UnSubscribe<BuffHudSignal>(BuffHud);
         signalHub.UnSubscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);
         signalHub.UnSubscribe<GameEndSignal>(GameEnd);
         signalHub.UnSubscribe<ActivateWarningUISignal>(ActivateWarningUI);
@@ -1087,6 +1089,12 @@ public class GameplayUICoordinator
     private void StaminaInvincibleStateChanged(StaminaInvincibleStateChangedSignal _signal)
     {
         hudUI.StaminaInvincibleStateChanged(_signal.source, _signal.bInvincible);
+    }
+
+    // 버프 HUD(스태미나 바 위 아이콘 줄) 갱신. 그대로 넘긴다.
+    private void BuffHud(BuffHudSignal _signal)
+    {
+        hudUI.ApplyBuffHud(in _signal);
     }
 
     // HUD가 완전히 다 올라온 시점. 튜토리얼 인트로 중이었다면 그 종료를 UI에 알린다.

@@ -8,6 +8,10 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     // 끝 이벤트의 인자가 참이면 씬 전환 등으로 강제 해제된 것이라 연출 없이 바로 끈다.
     public event Action HasteStartedEvent;
     public event Action<bool> HasteEndedEvent;
+    // 속도의 원천이 걸릴 때마다(다시 걸려 시간이 처음부터일 때 포함, 인자는 지속 시간) / 씬 전환 등으로 강제로 풀릴 때.
+    // 시간이 다 돼 풀리는 경우는 따로 알리지 않는다(같은 지속 시간을 받은 쪽이 스스로 끝낸다).
+    public event Action<float> SourceOfSpeedActivatedEvent;
+    public event Action SourceOfSpeedForceEndedEvent;
 
     [Header("For Debugging")]
     // 에디터에서 플레이를 누르기 전에 캐릭터 소지금을 원하는 값으로 맞춰두기 위한 치트 값이다.
@@ -597,18 +601,21 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     }
 
     private float sourceOfSpeedTimer = 0f;
+    private const float SourceOfSpeedDuration = 3f;
 
     public void ActivateSourceOfSpeed()
     {
         if (sourceOfSpeedAmount <= 0) return;
 
-        sourceOfSpeedTimer = 3f;
+        sourceOfSpeedTimer = SourceOfSpeedDuration;
 
         if (sourceOfSpeedCoroutine == null)
         {
             sourceOfSpeedCoroutine = StartCoroutine(SourceOfSpeedRoutine());
             HasteStartedEvent?.Invoke();
         }
+
+        SourceOfSpeedActivatedEvent?.Invoke(SourceOfSpeedDuration);
     }
 
     private System.Collections.IEnumerator SourceOfSpeedRoutine()
@@ -632,6 +639,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public void Reset()
     {
         bool bHasteActive = sourceOfSpeedCoroutine != null || starPathSpeedCoroutine != null;
+        bool bSourceOfSpeedForceEnded = false;
 
         if (sourceOfSpeedCoroutine != null)
         {
@@ -639,6 +647,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
             IncreaseMovementSpeed(-currentSourceOfSpeedBonus * 100.0f);
             currentSourceOfSpeedBonus = 0f;
             sourceOfSpeedCoroutine = null;
+            bSourceOfSpeedForceEnded = true;
         }
 
         if (starPathSpeedCoroutine != null)
@@ -650,6 +659,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
         }
 
         if (bHasteActive) HasteEndedEvent?.Invoke(true);
+        if (bSourceOfSpeedForceEnded) SourceOfSpeedForceEndedEvent?.Invoke();
     }
 
     // 별길 걸음 - 별 표식 나무 벌목 시 일정 시간 이동속도 증가 (SourceOfSpeed와 별개의 타이머로 관리)

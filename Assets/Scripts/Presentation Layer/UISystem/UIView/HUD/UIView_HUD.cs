@@ -20,6 +20,16 @@ public class UIView_HUD : UIView
     [Tooltip("대시 게이지가 보일 때 버프 첫 줄에서 비워 둘 폭(맞물린 대시 2칸 37 + 여백 8)")]
     [SerializeField] private float dashReservedWidth = 46f;
 
+    [System.Serializable]
+    public struct BuffHudIconEntry
+    {
+        public EBuffHudId id;
+        public Sprite icon;
+    }
+
+    // 버프 id별 아이콘(12x12, Point 필터). 없으면 HUD_BuffBar의 임시 아이콘이 쓰인다.
+    [SerializeField] private BuffHudIconEntry[] buffHudIcons;
+
     private HUD_Equipment hudEquipment;
     private HUD_Stemina hudStaminaBar;
     private HUD_BuffBar hudBuffBar;
@@ -327,6 +337,81 @@ public class UIView_HUD : UIView
     {
         get { return hudBuffBar; }
     }
+
+    #region HUD_Buff Logic
+
+    public void ApplyBuffHud(in BuffHudSignal _s)
+    {
+        if (null == hudBuffBar)
+            return;
+
+        int _id = (int)_s.id;
+
+        switch (_s.op)
+        {
+            case EBuffHudOp.Add:
+                // 버프 줄이 숨겨진 동안(마을, 로그라이크)에는 새로 띄우지 않는다
+                if (MapType.Town == currentMapType || true == bBuffHiddenForRun)
+                    return;
+
+                // 스택형은 이미 떠 있으면 값만 바꾼다(AddOrUpdate 재호출은 지속형 갱신용)
+                if (BuffGaugeKind.Duration != _s.kind && true == hudBuffBar.Contains(_id))
+                {
+                    hudBuffBar.SetValue(_id, _s.value);
+                    return;
+                }
+
+                BuffDisplayInfo _info = new BuffDisplayInfo();
+                _info.id = _id;
+                _info.kind = _s.kind;
+                _info.icon = FindBuffHudIcon(_s.id);
+                _info.duration = _s.duration;
+                _info.maxValue = _s.max;
+                _info.initialValue = _s.value;
+                _info.thresholdValue = _s.threshold;
+                _info.decayDelay = _s.decayDelay;
+                _info.decayInterval = _s.decayInterval;
+                _info.decayPerSecond = _s.decayPerSecond;
+                hudBuffBar.AddOrUpdate(_info);
+                break;
+
+            case EBuffHudOp.SetValue:
+                hudBuffBar.SetValue(_id, _s.value);
+                break;
+
+            case EBuffHudOp.Trigger:
+                hudBuffBar.Trigger(_id);
+                break;
+
+            case EBuffHudOp.Dispel:
+                hudBuffBar.Dispel(_id);
+                break;
+
+            case EBuffHudOp.Remove:
+                hudBuffBar.Remove(_id);
+                break;
+
+            case EBuffHudOp.ClearAll:
+                hudBuffBar.Clear();
+                break;
+        }
+    }
+
+    private Sprite FindBuffHudIcon(EBuffHudId _id)
+    {
+        if (null == buffHudIcons)
+            return null;
+
+        for (int i = 0; i < buffHudIcons.Length; i++)
+        {
+            if (_id == buffHudIcons[i].id)
+                return buffHudIcons[i].icon;
+        }
+
+        return null;
+    }
+
+    #endregion
 
     #region HUD_Stemina Logic
 

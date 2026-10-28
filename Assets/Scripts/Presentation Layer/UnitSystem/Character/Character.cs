@@ -9,6 +9,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public event Action TreeDetectedEvent;
     public event Action TreeDetectionClearedEvent;
     public event Action<bool> RestAreaStateChangedEvent;
+    // 벌목 리듬 콤보(현재 중첩, 최대 중첩, 강제 초기화 여부). 특성이 없으면 쌓이는 쪽은 알리지 않는다.
+    public event Action<int, int, bool> AttackRythmStackChangedEvent;
+    // 속도의 원천이 걸림(지속 시간) / 강제로 풀림
+    public event Action<float> SourceOfSpeedActivatedEvent;
+    public event Action SourceOfSpeedForceEndedEvent;
 
     // 외부 의존성
     public InputManager inputManager { get; private set; }
@@ -537,8 +542,17 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         statComponent.HasteEndedEvent -= HasteEnded;
         statComponent.HasteEndedEvent += HasteEnded;
 
+        statComponent.SourceOfSpeedActivatedEvent -= SourceOfSpeedActivated;
+        statComponent.SourceOfSpeedActivatedEvent += SourceOfSpeedActivated;
+
+        statComponent.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
+        statComponent.SourceOfSpeedForceEndedEvent += SourceOfSpeedForceEnded;
+
         if (armComponent.axeComponent != null)
         {
+            armComponent.axeComponent.AttackComboChangedEvent -= AttackComboChanged;
+            armComponent.axeComponent.AttackComboChangedEvent += AttackComboChanged;
+
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
             armComponent.axeComponent.DeclareAttackStateEvent += SetbCanAction;
 
@@ -578,10 +592,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         {
             statComponent.HasteStartedEvent -= HasteStarted;
             statComponent.HasteEndedEvent -= HasteEnded;
+            statComponent.SourceOfSpeedActivatedEvent -= SourceOfSpeedActivated;
+            statComponent.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
         }
 
         if (armComponent != null && armComponent.axeComponent != null)
         {
+            armComponent.axeComponent.AttackComboChangedEvent -= AttackComboChanged;
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
             attackComponent.AttackSuccessEvent -= armComponent.axeComponent.DecreaseDurability;
             attackComponent.ShockWaveOnlyHitEvent -= armComponent.axeComponent.DecreaseDurabilityWithoutCombo;
@@ -2244,5 +2261,23 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private void HasteEnded(bool _bImmediate)
     {
         characterVisualComponent.StopHaste(_bImmediate);
+    }
+
+    private void SourceOfSpeedActivated(float _duration)
+    {
+        SourceOfSpeedActivatedEvent?.Invoke(_duration);
+    }
+
+    private void SourceOfSpeedForceEnded()
+    {
+        SourceOfSpeedForceEndedEvent?.Invoke();
+    }
+
+    private void AttackComboChanged(int _stack, bool _bForcedReset)
+    {
+        // 콤보 자체는 특성과 무관하게 쌓이므로, 벌목 리듬이 없으면 쌓이는 쪽은 알리지 않는다. 0으로 돌아가는 건 늘 알린다.
+        if (_stack > 0 && statComponent.attackRythmSpeedMul <= 0f) return;
+
+        AttackRythmStackChangedEvent?.Invoke(_stack, AxeComponent.MAX_ATTACK_COMBO_STACK, _bForcedReset);
     }
 }

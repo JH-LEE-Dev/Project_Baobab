@@ -115,6 +115,15 @@ public class UnitSystem
         unitLogicManager.RestAreaStateChangedEvent -= RestAreaStateChanged;
         unitLogicManager.RestAreaStateChangedEvent += RestAreaStateChanged;
 
+        unitLogicManager.AttackRythmStackChangedEvent -= AttackRythmStackChanged;
+        unitLogicManager.AttackRythmStackChangedEvent += AttackRythmStackChanged;
+
+        unitLogicManager.SourceOfSpeedActivatedEvent -= SourceOfSpeedActivated;
+        unitLogicManager.SourceOfSpeedActivatedEvent += SourceOfSpeedActivated;
+
+        unitLogicManager.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
+        unitLogicManager.SourceOfSpeedForceEndedEvent += SourceOfSpeedForceEnded;
+
         inventoryManager.SpendMoneyEvent -= SpendMoney;
         inventoryManager.SpendMoneyEvent += SpendMoney;
 
@@ -170,6 +179,9 @@ public class UnitSystem
         unitLogicManager.TreeDetectedEvent -= TreeDetected;
         unitLogicManager.TreeDetectionClearedEvent -= TreeDetectionCleared;
         unitLogicManager.RestAreaStateChangedEvent -= RestAreaStateChanged;
+        unitLogicManager.AttackRythmStackChangedEvent -= AttackRythmStackChanged;
+        unitLogicManager.SourceOfSpeedActivatedEvent -= SourceOfSpeedActivated;
+        unitLogicManager.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
         inventoryManager.SpendMoneyEvent -= SpendMoney;
         offroadContainer.InteractStateEvent -= OffroadContainerInteractStateChanged;
         inventoryManager.LoosAllInventoryItemEvent -= LoosAllInventoryItem;
@@ -394,6 +406,36 @@ public class UnitSystem
     private void RestAreaStateChanged(bool _bInRestArea)
     {
         signalHub.Publish(new StaminaInvincibleStateChangedSignal(EStaminaInvincibleSource.RestArea, _bInRestArea));
+    }
+
+    // 벌목 리듬: 타수 중첩(StackHits). 3초간 공격이 없으면 한 번에 0이 되므로 HUD 자동 감소는 쓰지 않고 값을 그대로 내린다.
+    // 0이 되면 SetValue(0)로 퇴장 연출, 무기가 꺼지며 정리된 경우(사망·전환)는 연출 없이 지운다.
+    private void AttackRythmStackChanged(int _stack, int _maxStack, bool _bForcedReset)
+    {
+        if (_bForcedReset)
+        {
+            signalHub.Publish(BuffHudSignal.Of(EBuffHudId.AttackRythm, EBuffHudOp.Remove));
+            return;
+        }
+
+        if (_stack <= 0)
+        {
+            signalHub.Publish(BuffHudSignal.SetValue(EBuffHudId.AttackRythm, 0f));
+            return;
+        }
+
+        signalHub.Publish(BuffHudSignal.AddStackHits(EBuffHudId.AttackRythm, _stack, _maxStack));
+    }
+
+    // 속도의 원천: 지속형(Duration). 다시 걸리면 같은 Add로 시간이 처음부터. 시간이 다 되면 HUD가 스스로 내린다.
+    private void SourceOfSpeedActivated(float _duration)
+    {
+        signalHub.Publish(BuffHudSignal.AddDuration(EBuffHudId.SourceOfSpeed, _duration));
+    }
+
+    private void SourceOfSpeedForceEnded()
+    {
+        signalHub.Publish(BuffHudSignal.Of(EBuffHudId.SourceOfSpeed, EBuffHudOp.Remove));
     }
 
     private void CarrotItemAcquired(CarrotItemAcquiredSignal carrotItemAcquiredSignal)

@@ -12,6 +12,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     public event Action DurabilityRestoredEvent;
     // 모루 등으로 수리한 직후. 내구도 갱신(AxeAttackedEvent) 다음에 불리므로 받는 쪽은 이미 새 값을 본다.
     public event Action DurabilityRepairedEvent;
+    // 공격 리듬 콤보 수가 바뀔 때(현재 콤보, 강제 초기화 여부). 강제 초기화는 무기가 꺼지며 상태를 정리한 경우다.
+    public event Action<int, bool> AttackComboChangedEvent;
 
     // 외부 의존성
     [SerializeField] private Sprite halfDurabilityAxe;
@@ -33,6 +35,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     private int attackComboStack = 0;
     private float comboResetTimer = 0f;
     private const float COMBO_RESET_TIME = 3f;
+    public const int MAX_ATTACK_COMBO_STACK = 10;
 
     float IAxeComponent.durability => durability;
 
@@ -237,8 +240,12 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         if (_bIncrementCombo)
         {
             // 공격 성공 시 콤보 누적 및 타이머 초기화 (최대 10중첩)
-            attackComboStack = Mathf.Min(attackComboStack + 1, 10);
+            int prevStack = attackComboStack;
+            attackComboStack = Mathf.Min(attackComboStack + 1, MAX_ATTACK_COMBO_STACK);
             comboResetTimer = COMBO_RESET_TIME;
+
+            if (prevStack != attackComboStack)
+                AttackComboChangedEvent?.Invoke(attackComboStack, false);
         }
     }
 
@@ -338,8 +345,9 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         bAttacked = false;
         bLeftButtonClicked = false;
         bResumeSwingAfterDash = false;
-        attackComboStack = 0;
         comboResetTimer = 0f;
+        bool bComboCleared = attackComboStack > 0;
+        attackComboStack = 0;
 
         if (bIsSpeedReduced)
         {
@@ -355,6 +363,10 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         // OnAttackFinish(트윈 콜백)와 AttackCoolDownRoutine이 실행되지 않아 이 둘이 잠긴 채 남는다.
         DeclareCanSwapEvent?.Invoke(true);
         DeclareAttackStateEvent?.Invoke(false);
+
+        // 정리가 다 끝난 뒤에 알린다(받는 쪽 사정으로 위의 잠금 해제가 건너뛰어지지 않게)
+        if (bComboCleared)
+            AttackComboChangedEvent?.Invoke(0, true);
     }
 
     public void Refresh()
@@ -414,6 +426,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
             if (comboResetTimer <= 0f)
             {
                 attackComboStack = 0;
+                AttackComboChangedEvent?.Invoke(0, false);
             }
         }
     }

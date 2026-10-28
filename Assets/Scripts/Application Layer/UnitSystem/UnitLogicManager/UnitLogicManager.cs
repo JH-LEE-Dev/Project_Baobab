@@ -11,6 +11,9 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     public event Action TreeDetectedEvent;
     public event Action TreeDetectionClearedEvent;
     public event Action<bool> RestAreaStateChangedEvent;
+    public event Action<int, int, bool> AttackRythmStackChangedEvent;
+    public event Action<float> SourceOfSpeedActivatedEvent;
+    public event Action SourceOfSpeedForceEndedEvent;
 
     private Character character;
     private InputManager inputManager;
@@ -43,6 +46,15 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
 
         character.RestAreaStateChangedEvent -= RestAreaStateChanged;
         character.RestAreaStateChangedEvent += RestAreaStateChanged;
+
+        character.AttackRythmStackChangedEvent -= AttackRythmStackChanged;
+        character.AttackRythmStackChangedEvent += AttackRythmStackChanged;
+
+        character.SourceOfSpeedActivatedEvent -= SourceOfSpeedActivated;
+        character.SourceOfSpeedActivatedEvent += SourceOfSpeedActivated;
+
+        character.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
+        character.SourceOfSpeedForceEndedEvent += SourceOfSpeedForceEnded;
     }
 
     private void ReleaseEvents()
@@ -52,6 +64,9 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
         character.TreeDetectedEvent -= TreeDetected;
         character.TreeDetectionClearedEvent -= TreeDetectionCleared;
         character.RestAreaStateChangedEvent -= RestAreaStateChanged;
+        character.AttackRythmStackChangedEvent -= AttackRythmStackChanged;
+        character.SourceOfSpeedActivatedEvent -= SourceOfSpeedActivated;
+        character.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
     }
 
     public void SetCharacter(Character _character)
@@ -129,6 +144,21 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     private void RestAreaStateChanged(bool _bInRestArea)
     {
         RestAreaStateChangedEvent?.Invoke(_bInRestArea);
+    }
+
+    private void AttackRythmStackChanged(int _stack, int _maxStack, bool _bForcedReset)
+    {
+        AttackRythmStackChangedEvent?.Invoke(_stack, _maxStack, _bForcedReset);
+    }
+
+    private void SourceOfSpeedActivated(float _duration)
+    {
+        SourceOfSpeedActivatedEvent?.Invoke(_duration);
+    }
+
+    private void SourceOfSpeedForceEnded()
+    {
+        SourceOfSpeedForceEndedEvent?.Invoke();
     }
 
     public void RefreshCharacter()
