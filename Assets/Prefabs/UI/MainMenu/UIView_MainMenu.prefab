@@ -6821,6 +6821,12 @@ MonoBehaviour:
   backgroundDimmer: {fileID: 3577683620735908448}
   dimmerTargetAlpha: 0.784
   dimmerFadeDuration: 0.5
+  roguelikeEntryTransition:
+    ringSeconds: 0.45
+    ringWidth: 0.16
+    ringStrength: 0.05
+    blackHoldSeconds: 0.5
+    fadeOutSeconds: 0.3
   exitMoveDuration: 1.5
   exitMoveDistance: 500
   exitMoveEase: 10
