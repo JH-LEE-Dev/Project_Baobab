@@ -11,7 +11,7 @@ using Unity.Profiling;
 /// </summary>
 public static class ChopProfilerMarkers
 {
-    /// <summary>충격파의 피해 판정 한 번(0.04초마다, 과열 폭발과 그로 인한 사망 처리 포함).</summary>
+    /// <summary>충격파의 피해 판정 한 번(0.04초마다, 그로 인한 사망 처리 포함).</summary>
     public static readonly ProfilerMarker ShockWaveCheck = new ProfilerMarker("LumberBoy.Chop.ShockWaveCheck");
 
     /// <summary>나무 한 그루의 사망 처리 전체(이펙트·사운드·타일·원목 드랍·전리품·풀 반환).</summary>

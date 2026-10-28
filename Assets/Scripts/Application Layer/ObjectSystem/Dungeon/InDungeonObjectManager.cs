@@ -21,7 +21,7 @@ public enum ERunEndState
     EndingByReturn,
 }
 
-public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInDungeonObjManagerCH, IPathfindTreeProvider, ISporeShieldStatProvider, ILootDataProvider
+public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInDungeonObjManagerCH, IPathfindTreeProvider, ISporeShieldStatProvider, IOverheatDamageProvider, ILootDataProvider
 {
     // // 이벤트
     public event Action ActivateWarningUIEvent;
@@ -293,7 +293,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private Action<TreeObj> onTreeShieldRecoveringHandler;
     private Action<TreeObj> onTreeHeatEmitHandler;
     private Action<TreeObj, float> onTreeHeatCountdownStartedHandler;
-    private Action<TreeObj> onTreeOverheatExplosionHandler;
     private Action<TreeObj> onTreeGemTransformedHandler;
     private Action<TreeObj> onTreeAboutToDieHandler;
 
@@ -497,13 +496,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 코루틴 루프에서 매번 new WaitForSeconds를 생성하면 반복마다 GC 쓰레기가 생기므로 캐싱해서 재사용한다.
     private static readonly WaitForSeconds sporeExplosionVfxWait = new WaitForSeconds(SporeExplosionVfxInterval);
 
-    // 과열 강화 ShockWave 폭발 VFX - 포자막 폭발과 완전히 동일한 방식으로 top/bottom 주변에서 연쇄 재생
-    private const int FireExplosionVfxMinCount = 4;
-    private const int FireExplosionVfxMaxCount = 4;
-    private const float FireExplosionVfxInterval = 0.15f;
-    private const float FireExplosionVfxSpread = 0.25f;
-    private static readonly WaitForSeconds fireExplosionVfxWait = new WaitForSeconds(FireExplosionVfxInterval);
-
     // 별자리(Constellation) 관련 스킬 스탯 - StarrootForest 전용
     private const float BaseConstellationDamage = 5000f;
     private const float ConstellationHitInterval = 0.2f;
@@ -598,6 +590,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         = new Dictionary<TreeObj, PresentationLayer.VFX.VFX_BrandStarWrap>();
 
     public float StarMarkDamageMultiplier => starMarkDamageMultiplier;
+    // 과열(4스테이지 불씨) 피해 배율. 나무가 받는 피해(화상 틱 제외)의 마지막에 곱한다. 캐릭터가 없거나 과열이 0이면 1이다.
+    public float OverheatDamageMultiplier => character != null ? character.OverheatDamageMultiplier : 1f;
 
     // 별의 주시(Star Gaze) - 모든 숲에서 발동, 화면 범위 내 가장 가까운 나무에 주기적으로 별똥별 낙하
     private const float StarGazeInterval = 10f;
@@ -696,6 +690,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
             itemManager.GemOreItemAcquiredEvent -= GemOreItemAcquired;
             itemManager.GemOreItemAcquiredEvent += GemOreItemAcquired;
+
+            itemManager.EmberItemAcquiredEvent -= EmberItemAcquired;
+            itemManager.EmberItemAcquiredEvent += EmberItemAcquired;
         }
     }
 
@@ -726,6 +723,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         itemManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         itemManager.GemOreItemAcquiredEvent -= GemOreItemAcquired;
+        itemManager.EmberItemAcquiredEvent -= EmberItemAcquired;
 
         if (lootManager != null)
         {
@@ -1109,6 +1107,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             StopDelayedGrassOpen();
             ClearTrees();
 
+            // 4스테이지 불씨: 이전 원정의 불씨를 치우고 이번 맵에서 나오는지 정한다(로그라이크는 스테이지 기믹을 끈다).
+            itemManager?.BeginEmberRun(currentMapType, null != runTreeRules && runTreeRules.bDisableStageGimmicks, CanSpawnMoreEmbers);
+
             // 일괄 스폰 구간에서는 나무마다 컬링 개수를 갱신하지 않는다. 스폰이 끝난 직후의
             // RefreshCullingGroup()이 개수 설정과 전체 가시성 재계산을 한 번에 처리한다.
             // (이 코루틴이 끝나야 던전이 플레이어에게 공개되므로 중간에 안 보여도 문제없다)
@@ -1130,6 +1131,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
 
             RefreshCullingGroup();
+
+            // 나무가 다 심어진 뒤 그 옆 빈 칸에 불씨를 드문드문 놓는다(불씨가 나오는 맵에서만).
+            itemManager?.SpawnInitialEmbers(activeTrees);
 
             // 3. 5초 후 성장 루틴 시작
             growthCoroutine = StartCoroutine(StartGrowthAfterDelay());
@@ -1588,9 +1592,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         using var _profile = ChopProfilerMarkers.TreeDead.Auto();
 
-        // "열기 회수" 특성 - 과열 상태에서 나무를 벌목하면 과열 지속시간이 회복된다.
-        character?.OnTreeFelled();
-
         // 폭발 연구: 뭉글 포자 숲이 아닌 곳에서도 나무 벌목 시 일정 확률로 포자막 폭발 발생
         if (bShieldExplosionUnlocked && currentMapType != MapType.FluffySporeForest && shieldExplosionResearchChance > 0f)
         {
@@ -1685,6 +1686,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         else
         {
             itemManager.SpawnLogItem(_treeObj, dropMultiplier);
+        }
+
+        // 4스테이지 불씨 - 쓰러진 나무마다 튀어나온다(희귀나무는 등급이 바뀔 때도, OnTreeGemTransformed).
+        if (!bSuppressDrops)
+        {
+            itemManager.SpawnEmberDrop(treePos);
         }
 
         // 죽은 위치 재사용 준비
@@ -1837,7 +1844,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private TreeObj OnCreateTree()
     {
         TreeObj tree = Instantiate(treePrefab, transform);
-        tree.Initialize(environmentProvider, this);
+        tree.Initialize(environmentProvider, this, this);
         return tree;
     }
 
@@ -1961,7 +1968,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         onTreeShieldRecoveringHandler = OnTreeShieldRecovering;
         onTreeHeatEmitHandler = OnTreeHeatEmit;
         onTreeHeatCountdownStartedHandler = OnTreeHeatCountdownStarted;
-        onTreeOverheatExplosionHandler = OnTreeOverheatExplosion;
         onTreeGemTransformedHandler = OnTreeGemTransformed;
         onTreeAboutToDieHandler = OnTreeAboutToDie;
     }
@@ -1988,8 +1994,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeHeatEmitEvent += onTreeHeatEmitHandler;
         _tree.TreeHeatCountdownStartedEvent -= onTreeHeatCountdownStartedHandler;
         _tree.TreeHeatCountdownStartedEvent += onTreeHeatCountdownStartedHandler;
-        _tree.TreeOverheatExplosionEvent -= onTreeOverheatExplosionHandler;
-        _tree.TreeOverheatExplosionEvent += onTreeOverheatExplosionHandler;
         _tree.TreeGemTransformedEvent -= onTreeGemTransformedHandler;
         _tree.TreeGemTransformedEvent += onTreeGemTransformedHandler;
         _tree.TreeAboutToDieEvent -= onTreeAboutToDieHandler;
@@ -2014,8 +2018,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 두기 때문에, 그런 유령 나무도 이 아래 판정을 멀쩡히 통과한다.
         //
         // 데모에 실리는 콘텐츠(1-1~1-3, 도끼/셰이크웨이브)만 놓고 보면 그렇게 때릴 수 있는 호출부를
-        // 찾지 못했다. 연쇄 포자막 폭발은 뭉글 포자 숲 전용이고 셰이크웨이브 과열 폭발은 "셰이크웨이브
-        // 과부하" 특성이 있어야 하는데 둘 다 데모에 없으며, 평범한 셰이크웨이브는 hitTargets로 같은
+        // 찾지 못했다. 연쇄 포자막 폭발은 뭉글 포자 숲 전용이라 데모에 없고, 셰이크웨이브는 hitTargets로 같은
         // 나무를 두 번 때리지 않는다. 그래도 가드를 두는 이유는 실패가 조용하고 영구적이기 때문이다.
         // 한 번 유령 나무에 소모되면 bGoldTreePityDone이 서고, 그 세이브에서는 황금 나무가 영영 안 뜬다.
         // (OnReleaseTree에서 이 이벤트를 끊어두므로 평소엔 여기까지 오지 않는다 - 이중 안전장치다)
@@ -2090,6 +2093,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             inDungeonVFXManager.PlayTreeTransformVFX(_treeObj.treeVisualComponent, _treeObj.gemStage);
         }
 
+        // 4스테이지 불씨 - 희귀나무는 등급이 바뀔 때마다 불씨를 떨어뜨린다(마지막 파괴는 OnTreeDead).
+        itemManager?.SpawnEmberDrop(_treeObj.transform.position);
+
         // VFX 유무와 무관하게 외부(UI 등)에 어떤 나무가 변했는지 알린다.
         TreeGemTransformedEvent?.Invoke(_treeObj);
     }
@@ -2155,7 +2161,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeShieldRecoveringEvent -= onTreeShieldRecoveringHandler;
         _tree.TreeHeatEmitEvent -= onTreeHeatEmitHandler;
         _tree.TreeHeatCountdownStartedEvent -= onTreeHeatCountdownStartedHandler;
-        _tree.TreeOverheatExplosionEvent -= onTreeOverheatExplosionHandler;
         _tree.TreeGemTransformedEvent -= onTreeGemTransformedHandler;
         _tree.TreeAboutToDieEvent -= onTreeAboutToDieHandler;
         //_tree.transform.position = new Vector2(-10000f, -10000f);
@@ -2292,7 +2297,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             {
                 character.TakeEnvironmentalStaminaDamage(_tree.HeatDamageAmount);
                 character.ApplyTreeHeatKnockback(TreeHeatOffsets[i]);
-                character.AddOverheatDuration(15f);
                 return;
             }
         }
@@ -2324,6 +2328,28 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         character?.PlayItemAcquireFlash();
 
         GemOreItemAcquiredEvent?.Invoke(_item);
+    }
+
+    // 4스테이지 불씨를 주운 순간. 과열이 이미 최대여도 줍기는 하되 효과는 없다.
+    private void EmberItemAcquired(EmberItem _ember)
+    {
+        if (character == null) return;
+
+        character.AddOverheat(itemManager.emberItemController != null ? itemManager.emberItemController.OverheatPerEmber : 1f);
+
+        // 원목 획득과 같은 손맛(짧은 진동 + 획득음 + 캐릭터 뽀잉 + 하얀 번쩍임)
+        Rumble.Play(EHapticEvent.ItemPickup);
+        Sound.PlayUI(SoundID.GetItem);
+        character.PlayItemAcquireBounce();
+        character.PlayItemAcquireFlash();
+    }
+
+    // 불씨를 더 만들어도 되는지(자연 생성·벌목 드랍). 차에서 내리기 전(입장 연출)이거나 원정이 끝나는 중이거나
+    // 쓰러졌거나 과열이 최대면 만들지 않는다.
+    private bool CanSpawnMoreEmbers()
+    {
+        return RunEndState == ERunEndState.None && false == bWarningPending
+            && character != null && false == character.bDead && false == character.bRide && false == character.IsOverheatMax;
     }
 
     /// <summary>
@@ -2973,47 +2999,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             TreeTileWriteBatch.End();
             ReturnExplosionScanList(scanResults);
-        }
-    }
-
-    // 과열 강화된 ShockWave가 나무를 때리면 TreeObj.TreeOverheatExplosionEvent를 통해 호출된다.
-    // 포자막 폭발과 동일하게, 맞은 나무(인접 8타일의 중심)에 FireExplosionVFX를 재생한다.
-    private void OnTreeOverheatExplosion(TreeObj _tree)
-    {
-        StartCoroutine(PlayFireExplosionVfxRoutine(_tree));
-    }
-
-    private IEnumerator PlayFireExplosionVfxRoutine(TreeObj _source)
-    {
-        if (_source == null) yield break;
-
-        Vector3 bottomPos = _source.transform.position;
-        Vector3 topPos = _source.treeVisualComponent != null ? _source.treeVisualComponent.GetTopRootPosition() : bottomPos;
-
-        int count = UnityEngine.Random.Range(FireExplosionVfxMinCount, FireExplosionVfxMaxCount + 1);
-        bool nextTopLeft = UnityEngine.Random.value < 0.5f;
-        bool nextBottomLeft = UnityEngine.Random.value < 0.5f;
-
-        for (int i = 0; i < count; i++)
-        {
-            bool useTop = i % 2 == 0;
-            Vector3 basePos = useTop ? topPos : bottomPos;
-            bool useLeft = useTop ? nextTopLeft : nextBottomLeft;
-
-            if (useTop)
-                nextTopLeft = !nextTopLeft;
-            else
-                nextBottomLeft = !nextBottomLeft;
-
-            float horizontalOffset = UnityEngine.Random.Range(0f, FireExplosionVfxSpread);
-            Vector3 randomOffset = new Vector3(
-                useLeft ? -horizontalOffset : horizontalOffset,
-                UnityEngine.Random.Range(-FireExplosionVfxSpread, FireExplosionVfxSpread),
-                0f);
-
-            inDungeonVFXManager.PlayFireExplosionVFX(basePos + randomOffset, randomOffset);
-
-            yield return fireExplosionVfxWait;
         }
     }
 

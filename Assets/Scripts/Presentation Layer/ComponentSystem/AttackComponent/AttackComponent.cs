@@ -811,13 +811,6 @@ public class AttackComponent : PComponent
             damageable.TakeDamage(damage);
         }
 
-        // 과열 버프 활성 중 도끼 평타로 나무를 맞히면 지속 피해 부여 (과열 충격파는 ShockWave에서 따로 부여, 부메랑 제외)
-        if (ctx.overheatComponent != null && ctx.overheatComponent.IsActive && damageable is TreeObj overheatTarget)
-        {
-            StatComponent stat = ctx.characterStat;
-            overheatTarget.ApplyOverheatDot(stat.overheatDotDamagePerTick, stat.overheatDotTickCount, stat.overheatDotTickInterval);
-        }
-
         // 충격파 판정은 여기에 두지 않는다. 이 메서드는 타격 대상마다 호출되므로 여기서 굴리면
         // 다중 공격 때 충격파가 대상 수만큼 생긴다. Attack()의 "[공격당 1회 충격파]"를 참고.
     }

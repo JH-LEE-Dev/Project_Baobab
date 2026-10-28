@@ -114,9 +114,13 @@ public class Boomerang : MonoBehaviour
 
     private float damage;
 
+    // 과열 부메랑의 화상. 비율은 맞히는 순간의 과열 구간으로 정한다(충격파·드론과 같은 규칙). burnStat이 null이면 화상 없음.
+    private StatComponent burnStat;
+    private IOverheatComponent overheatSource;
+
     // 치명타는 발사 시점이 아니라 판정 틱마다 새로 굴린다. 확률과 배율은 발사 시점의 값을 스냅샷으로
-    // 들고 있는데(과열 배율과 같은 이유), 비행 중 스킬 레벨이 올라도 이미 날아간 부메랑의 기대값이
-    // 도중에 바뀌지 않게 하기 위해서다.
+    // 들고 있는데(피해·판정 범위와 같은 이유), 비행 중 스킬 레벨이 올라도 이미 날아간 부메랑의 기대값이
+    // 도중에 바뀌지 않게 하기 위해서다. 과열 화상 비율만은 맞히는 순간의 과열 구간을 쓴다(위 burnStat 참고).
     private bool bCriticalEnabled;
     private float criticalChance;
     private float criticalDamageMul;
@@ -148,7 +152,7 @@ public class Boomerang : MonoBehaviour
     public bool IsActive { get; private set; }
 
     /// <summary>
-    /// 속도 배율을 설정한다. (과열 시 StatComponent.boomerangOverheatSpeedMul)
+    /// 속도 배율을 설정한다.
     /// </summary>
     public void SetSpeedMultiplier(float _multiplier)
     {
@@ -156,11 +160,15 @@ public class Boomerang : MonoBehaviour
     }
 
     /// <summary>
-    /// 과열 상태로 던졌는지에 따라 재생할 스프라이트(일반/과열 전용)를 고른다.
+    /// 과열 부메랑으로 던졌는지에 따라 재생할 스프라이트(일반/과열 전용)를 고르고, 맞힌 나무에 걸 화상의 출처를 정한다.
+    /// 화상 비율은 맞히는 순간 _overheatSource의 과열 수치로 _burnStat에서 읽는다(_overheatSource가 없으면 과열 0으로 본다).
     /// 풀에서 재사용되므로 BoomerangCreator가 발사마다 덮어쓴다. 과열 리스트가 비어 있으면 일반 리스트를 쓴다.
     /// </summary>
-    public void SetOverheat(bool _bIsOverheat)
+    public void SetOverheat(bool _bIsOverheat, StatComponent _burnStat, IOverheatComponent _overheatSource)
     {
+        burnStat = _bIsOverheat ? _burnStat : null;
+        overheatSource = _bIsOverheat ? _overheatSource : null;
+
         bool bUseOverheat = _bIsOverheat && overheatBaseSprites != null && overheatBaseSprites.Count > 0;
         activeBaseSprites = bUseOverheat ? overheatBaseSprites : baseSprites;
         activeEffectSprites = bUseOverheat && overheatEffectSprites != null && overheatEffectSprites.Count > 0
@@ -404,7 +412,7 @@ public class Boomerang : MonoBehaviour
 
     private void Awake()
     {
-        SetOverheat(false); // SetOverheat 없이 Launch돼도 일반 스프라이트로 재생되도록 기본값
+        SetOverheat(false, null, null); // SetOverheat 없이 Launch돼도 일반 스프라이트로 재생되도록 기본값
 
         customSortable = GetComponent<CustomSortable>();
         if (customSortable != null)
@@ -675,7 +683,7 @@ public class Boomerang : MonoBehaviour
         {
             for (int i = 0; i < hitScanResults.Count; i++)
             {
-                // 이 루프 안에서 앞의 나무가 죽으며 연쇄(과열 폭발 등)로 뒤쪽 후보가 먼저 죽어 풀로 반납될 수 있다.
+                // 이 루프 안에서 앞의 나무가 죽으며 연쇄 피해(포자막 폭발 등)로 뒤쪽 후보가 먼저 죽어 풀로 반납될 수 있다.
                 // 반납 시 ResetTree가 bDead를 false로 되돌리므로 IsPooled로 함께 거른다.
                 if (hitScanResults[i] is TreeObj treeObj && !treeObj.bDead && !treeObj.IsPooled)
                 {
@@ -694,6 +702,13 @@ public class Boomerang : MonoBehaviour
 
                         treeObj.TakeDamage(tickDamage, false, bCritical);
                         bHitAny = true;
+
+                        // 과열 부메랑: 방금 들어간 피해의 비율로 화상(충격파·드론과 공유). 막타였으면 가드가 무시한다.
+                        if (null != burnStat)
+                        {
+                            int overheatLevel = null != overheatSource ? overheatSource.OverheatLevel : 0;
+                            treeObj.ApplyOverheatBurn(burnStat.GetOverheatBurnRatio(overheatLevel), burnStat.overheatBurnTickCount, burnStat.overheatBurnTickInterval, false);
+                        }
 
                         if (bNotifyRun) RunCombatHooks.NotifyBoomerangHitTree(hitTreePos);
                     }

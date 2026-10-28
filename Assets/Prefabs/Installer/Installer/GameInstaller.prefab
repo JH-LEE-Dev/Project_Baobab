@@ -1486,6 +1486,7 @@ Transform:
   m_Children:
   - {fileID: 7760121811131757844}
   - {fileID: 6412770358841193002}
+  - {fileID: 4004845146292592799}
   m_Father: {fileID: 7610549331774678628}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7695641314077768773
@@ -3011,6 +3012,79 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 33288a4e791ef964e9d71282ed0c9949, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIDepthController
+--- !u!1 &7528122842851547233
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4004845146292592799}
+  - component: {fileID: 572581769145471002}
+  - component: {fileID: 5570756660208873412}
+  m_Layer: 0
+  m_Name: EmberItemController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4004845146292592799
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7528122842851547233}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1304635927712425472}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &572581769145471002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7528122842851547233}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 0
+  initializeOnAwake: 1
+  vfxPoolDataList: []
+--- !u!114 &5570756660208873412
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7528122842851547233}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 890c994d76f51eb449fea98129596d86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EmberItemController
+  emberItemPrefab: {fileID: 6885275396082023371, guid: 4020514d49da95d4ea739865a7e3dbfe, type: 3}
+  enabledMapTypes: 05000000
+  overheatPerEmber: 1
+  initialEmbersPerTree: 0.25
+  naturalSpawnInterval: 5
+  naturalSpawnHalfExtents: {x: 9, y: 5}
+  naturalSpawnAttempts: 20
+  dropCountMin: 2
+  dropCountMax: 3
+  droppedLifetime: 20
+  groundLoopVfxTag: 
+  acquireVfxTag: 
+  expireVfxTag: 
 --- !u!1 &7565708588615142684
 GameObject:
   m_ObjectHideFlags: 0

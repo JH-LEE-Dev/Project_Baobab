@@ -6,7 +6,7 @@ public class AxeExtraAttackCreator : MonoBehaviour, IShockWaveCreator
 {
     // 외부 의존성
     [SerializeField] private ShockWave shockWavePrefab;
-    // 과열 상태("화염 참격" 특성)에서 나가는 충격파 전용 프리팹(OverheatShockWaveVisualComponent 이펙트).
+    // "과열 충격파" 특성이 있을 때 나가는 충격파 전용 프리팹(OverheatShockWaveVisualComponent 이펙트).
     // 비어 있으면 일반 프리팹으로 대체한다.
     [SerializeField] private ShockWave overheatShockWavePrefab;
 
@@ -50,8 +50,8 @@ public class AxeExtraAttackCreator : MonoBehaviour, IShockWaveCreator
         // 생성기가 파괴된 뒤(메인 메뉴 이탈 중)에 들어온 요청. 호출부는 null을 거른다.
         if (shockWavePool == null) return null;
 
-        // "화염 참격" 특성을 찍어야만 과열 상태의 충격파 강화 효과가 적용된다.
-        bool bIsOverheat = (overheatComponent != null && overheatComponent.IsActive && stat.bShockWaveOverheatBoost);
+        // "과열 충격파" 특성을 찍으면 과열 수치가 0이어도 항상 과열 충격파로 나간다.
+        bool bIsOverheat = stat.bShockWaveOverheatBoost;
         bool bUseOverheatPool = bIsOverheat && overheatShockWavePool != null;
 
         ShockWave sw = bUseOverheatPool ? overheatShockWavePool.Get() : shockWavePool.Get();
@@ -131,10 +131,14 @@ public class AxeExtraAttackCreator : MonoBehaviour, IShockWaveCreator
         float finalDamage = stat.shockWaveDamage * RunCombatOverrides.ShockWaveDamageScale;
         float finalDuration = stat.shockWaveDuration;
 
+        // 과열 충격파: 퍼지는 속도는 그대로 두고 유지시간만 늘려 더 멀리 나가게 한다. 피해 배율은 없다
+        // (과열 피해 배율은 모든 공격 공통으로 나무가 받을 때 곱한다).
+        int overheatLevel = overheatComponent != null ? overheatComponent.OverheatLevel : 0;
+        float burnRatio = 0f;
         if (_bIsOverheat)
         {
-            finalDamage *= stat.shockWaveOverheatDamageMul;
-            finalDuration *= stat.shockWaveOverheatDurationMul;
+            finalDuration *= stat.shockWaveOverheatDurationBase + overheatLevel * stat.shockWaveOverheatDurationPerLevel;
+            burnRatio = stat.GetOverheatBurnRatio(overheatLevel);
         }
 
         bool bCritical = stat.bShockWaveCritical && UnityEngine.Random.value < stat.criticalChance;
@@ -145,7 +149,7 @@ public class AxeExtraAttackCreator : MonoBehaviour, IShockWaveCreator
 
         _shockWave.SetValue(finalDamage, stat.shockWaveSpeed, finalDuration);
         _shockWave.SetEnforced(stat.bShockWaveEnforcement);
-        _shockWave.SetOverheat(_bIsOverheat, stat.overheatDotDamagePerTick, stat.overheatDotTickCount, stat.overheatDotTickInterval);
+        _shockWave.SetOverheat(_bIsOverheat, burnRatio, stat.overheatBurnTickCount, stat.overheatBurnTickInterval);
         _shockWave.SetCritical(bCritical);
     }
 

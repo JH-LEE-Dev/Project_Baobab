@@ -7,6 +7,8 @@ public class ItemManager : MonoBehaviour
     public LogItemController logItemController { get; private set; }
     public CarrotItemController carrrotItemController { get; private set; }
     public GemOreItemController gemOreItemController { get; private set; }
+    // 4스테이지 불씨. 인벤토리를 거치지 않는다(주우면 과열 수치가 오른다).
+    public EmberItemController emberItemController { get; private set; }
     private IInventoryChecker inventoryChecker;
     private ICharacter character;
 
@@ -18,6 +20,12 @@ public class ItemManager : MonoBehaviour
         logItemController = GetComponentInChildren<LogItemController>();
         carrrotItemController = GetComponentInChildren<CarrotItemController>();
         gemOreItemController = GetComponentInChildren<GemOreItemController>();
+        emberItemController = GetComponentInChildren<EmberItemController>();
+
+        if (emberItemController != null)
+        {
+            emberItemController.Initialize(character, _environmentProvider);
+        }
 
         if (logItemController != null)
         {
@@ -43,6 +51,7 @@ public class ItemManager : MonoBehaviour
 
         logItemController?.SetCharacter(_character);
         gemOreItemController?.SetCharacter(_character);
+        emberItemController?.SetCharacter(_character);
     }
 
     public void Release()
@@ -114,6 +123,23 @@ public class ItemManager : MonoBehaviour
         gemOreItemController?.ReturnToPool(_item);
     }
 
+    // ── 4스테이지 불씨 (EmberItemController) ──
+
+    public void BeginEmberRun(MapType _mapType, bool _bStageGimmicksDisabled, Func<bool> _canSpawnMore)
+    {
+        emberItemController?.BeginRun(_mapType, _bStageGimmicksDisabled, _canSpawnMore);
+    }
+
+    public void SpawnInitialEmbers(System.Collections.Generic.IReadOnlyList<TreeObj> _trees)
+    {
+        emberItemController?.SpawnInitialEmbers(_trees);
+    }
+
+    public void SpawnEmberDrop(Vector3 _treePosition)
+    {
+        emberItemController?.SpawnDropEmbers(_treePosition);
+    }
+
     public void SpawnCarrotItem(Vector3 _position, AnimalType _animalType)
     {
         carrrotItemController?.SpawnCarrotItem(_position, _animalType);
@@ -143,16 +169,25 @@ public class ItemManager : MonoBehaviour
         remove { if (gemOreItemController != null) gemOreItemController.GemOreItemAcquiredEvent -= value; }
     }
 
+    public event Action<EmberItem> EmberItemAcquiredEvent
+    {
+        add { if (emberItemController != null) emberItemController.EmberAcquiredEvent += value; }
+        remove { if (emberItemController != null) emberItemController.EmberAcquiredEvent -= value; }
+    }
+
     public void ReleaseAllItems()
     {
         //carrrotItemController.ClearAll();
         logItemController.ClearAll();
         gemOreItemController?.ClearAll();
+        // 원정이 끝났으니 불씨도 치우고 다음 원정(BeginEmberRun)까지 자연 생성을 멈춘다.
+        emberItemController?.EndRun();
     }
 
     public void CancelActiveSucking()
     {
         logItemController?.CancelActiveSucking();
         gemOreItemController?.CancelActiveSucking();
+        emberItemController?.CancelActiveSucking();
     }
 }

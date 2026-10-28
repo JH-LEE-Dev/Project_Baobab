@@ -185,7 +185,7 @@ public class Drone : MonoBehaviour
     private float facingAngle = 270f; // 현재 실제로 바라보는 각도(도, 0=R 반시계). MoveTowardsAngle로 lastFacingDir 각도까지 보간된다. 270 = Down
     private Vector2 characterAimDir = Vector2.down; // 캐릭터의 조준 방향. Character가 매 프레임 갱신해준다.
     private int dirIndex = 6; // CharacterAnimator 규칙상 6 = Down
-    private bool isOverheat; // 과열 버프(+"드론 과부하" 특성) 상태. Character가 매 프레임 갱신해준다 - true면 6~10행(Overheat 세트)을 사용한다.
+    private bool isOverheat; // "과열 드론" 특성 보유 여부(과열 수치와 무관). Character가 매 프레임 갱신해준다 - true면 6~10행(Overheat 세트)을 사용한다.
 
     private bool isActive; // 공격 키로 활성화되어 지속시간 동안 대상을 계속 노리는 상태
     private bool isSwinging; // damageInterval마다 한 번씩, 공격 모션이 재생되는 짧은 구간
@@ -394,7 +394,7 @@ public class Drone : MonoBehaviour
     }
 
     /// <summary>
-    /// 과열 버프 상태(OverheatComponent.IsActive && "드론 과부하" 특성). Character가 매 프레임
+    /// "과열 드론" 특성 보유 여부. 특성이 있으면 과열 수치가 0이어도(다른 스테이지에서도) 항상 true다. Character가 매 프레임
     /// 갱신해준다 - true인 동안은 Attack/Idle 스프라이트를 6~10행(Overheat 세트)에서 골라 쓴다.
     /// </summary>
     public void SetOverheatState(bool _isOverheat)
@@ -1519,7 +1519,7 @@ public class Drone : MonoBehaviour
 
     // CharacterAnimator.GetBaseSprites와 동일한 규칙: R/RU/U/RD/D 5방향만 원본으로 갖고 있고,
     // 나머지(RU 반전=좌상단, R 반전=좌측, RD 반전=좌하단) 3방향은 FlipX로 만든다.
-    // isOverheat이 true면(과열 버프 + "드론 과부하" 특성) 같은 5방향의 Overheat 세트(6~10행)를 대신 쓴다.
+    // isOverheat이 true면("과열 드론" 특성) 같은 5방향의 Overheat 세트(6~10행)를 대신 쓴다.
     private List<Sprite> GetAttackSprites(int _dirIndex, out bool _flipX)
     {
         _flipX = false;

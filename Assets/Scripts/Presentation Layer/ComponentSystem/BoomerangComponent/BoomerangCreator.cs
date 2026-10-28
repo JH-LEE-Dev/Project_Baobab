@@ -47,9 +47,9 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
         );
     }
 
-    public Boomerang ThrowBoomerang(Vector3 _origin, Vector3 _direction, float _maxDistance, Transform _returnTarget, Action _onFinished, bool _bIsOverheat = false, bool _bPlayHaptic = false)
+    public Boomerang ThrowBoomerang(Vector3 _origin, Vector3 _direction, float _maxDistance, Transform _returnTarget, Action _onFinished, bool _bIsOverheat = false, bool _bPlayHaptic = false, IOverheatComponent _overheatSource = null)
     {
-        Boomerang boomerang = PrepareBoomerang(_bIsOverheat, _bPlayHaptic);
+        Boomerang boomerang = PrepareBoomerang(_bIsOverheat, _bPlayHaptic, _overheatSource);
         if (boomerang == null) return null;
 
         boomerang.Launch(_origin, _direction, _maxDistance, _returnTarget, _onFinished);
@@ -59,9 +59,9 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
     /// <summary>
     /// 완료 콜백으로 부메랑 자신을 넘기는 오버로드. 호출자가 발사마다 클로저를 만들지 않고 캐싱된 핸들러 하나를 재사용할 수 있다.
     /// </summary>
-    public Boomerang ThrowBoomerang(Vector3 _origin, Vector3 _direction, float _maxDistance, Transform _returnTarget, Action<Boomerang> _onFinished, bool _bIsOverheat = false, bool _bPlayHaptic = false)
+    public Boomerang ThrowBoomerang(Vector3 _origin, Vector3 _direction, float _maxDistance, Transform _returnTarget, Action<Boomerang> _onFinished, bool _bIsOverheat = false, bool _bPlayHaptic = false, IOverheatComponent _overheatSource = null)
     {
-        Boomerang boomerang = PrepareBoomerang(_bIsOverheat, _bPlayHaptic);
+        Boomerang boomerang = PrepareBoomerang(_bIsOverheat, _bPlayHaptic, _overheatSource);
         if (boomerang == null) return null;
 
         boomerang.Launch(_origin, _direction, _maxDistance, _returnTarget, _onFinished);
@@ -69,7 +69,7 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
     }
 
     // 풀에서 꺼내 스탯/상태를 세팅한다(발사 직전 공통 처리).
-    private Boomerang PrepareBoomerang(bool _bIsOverheat, bool _bPlayHaptic)
+    private Boomerang PrepareBoomerang(bool _bIsOverheat, bool _bPlayHaptic, IOverheatComponent _overheatSource)
     {
         if (boomerangPool == null || statComponent == null) return null;
 
@@ -78,14 +78,14 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
         // 데미지, 범위, 속도 스탯 계산
         float finalDamage = statComponent.boomerangDamage;
         float finalHitRadius = statComponent.boomerangHitRadius;
-        float finalSpeedMul = 1f;
 
         if (_bIsOverheat)
         {
-            // 과열 효과 배율은 StatComponent의 "Overheat - 화염 부메랑" 항목에서 조정한다
-            finalDamage *= statComponent.boomerangOverheatDamageMul;
-            finalHitRadius *= statComponent.boomerangOverheatHitRadiusMul;
-            finalSpeedMul = statComponent.boomerangOverheatSpeedMul;
+            // 과열 부메랑: 판정 범위만 과열 수치만큼 커지고 화상이 붙는다. 피해·비행 속도 배율은 없다
+            // (과열 피해 배율은 모든 공격 공통으로 나무가 받을 때 곱한다). 값은 StatComponent의 "Overheat - 과열 부메랑" 항목.
+            // 판정 범위는 그림 크기와 맞물리므로 발사 시점 값으로 정한다. 화상 비율은 Boomerang이 맞히는 순간 다시 읽는다.
+            int launchOverheatLevel = _overheatSource != null ? _overheatSource.OverheatLevel : 0;
+            finalHitRadius *= 1f + launchOverheatLevel * statComponent.boomerangOverheatHitRadiusPerLevel;
         }
 
         boomerang.SetDamage(finalDamage);
@@ -99,9 +99,9 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
             statComponent.criticalChance,
             statComponent.ciriticalDamageMul);
         boomerang.SetHitRadius(finalHitRadius);
-        boomerang.SetSpeedMultiplier(finalSpeedMul);
-        // 과열 상태면 과열 전용 스프라이트(OverHeatBoomerang_Base/Effect)로 재생한다.
-        boomerang.SetOverheat(_bIsOverheat);
+        boomerang.SetSpeedMultiplier(1f);
+        // 과열 부메랑이면 과열 전용 스프라이트(OverHeatBoomerang_Base/Effect)로 재생하고 맞힌 나무에 화상을 건다.
+        boomerang.SetOverheat(_bIsOverheat, statComponent, _overheatSource);
         // damageInterval은 변동 없음
         boomerang.SetDamageInterval(statComponent.boomerangDamageInterval);
         // 풀에서 재사용되므로 이전 소유자(캐릭터/NPC)의 값이 남지 않도록 매번 덮어쓴다.

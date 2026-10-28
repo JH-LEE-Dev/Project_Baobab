@@ -13,11 +13,11 @@ public interface ICharacterStatForNPC
     public bool bShockWaveCritical { get; }
     public bool bShockWaveEnforcement { get; }
     public bool bShockWaveOverheatBoost { get; }
-    public float shockWaveOverheatDamageMul { get; }
-    public float shockWaveOverheatDurationMul { get; }
-    public float overheatDotDamagePerTick { get; }
-    public int overheatDotTickCount { get; }
-    public float overheatDotTickInterval { get; }
+    public float shockWaveOverheatDurationBase { get; }
+    public float shockWaveOverheatDurationPerLevel { get; }
+    public int overheatBurnTickCount { get; }
+    public float overheatBurnTickInterval { get; }
+    public float GetOverheatBurnRatio(int _overheatLevel);
     public float criticalChance { get; }
     public float ciriticalDamageMul { get; }
 }

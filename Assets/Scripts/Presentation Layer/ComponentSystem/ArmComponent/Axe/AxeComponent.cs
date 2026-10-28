@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class AxeComponent : WeaponComponent, IAxeComponent
@@ -43,9 +42,6 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     // 쿨다운 코루틴 핸들 - 문자열(nameof) 기반 Start/StopCoroutine은 리플렉션 조회를 하므로 핸들로 다룬다.
     private Coroutine attackCoolDownCoroutine;
-    // 쿨타임은 콤보 스택(0~10) × 스킬 레벨 조합의 유한한 값만 가지므로 값별로 WaitForSeconds를 한 번만 만든다.
-    private readonly Dictionary<float, WaitForSeconds> coolTimeWaitCache = new Dictionary<float, WaitForSeconds>(16);
-    private const int CoolTimeWaitCacheLimit = 64;
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -181,8 +177,15 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     private System.Collections.IEnumerator AttackCoolDownRoutine()
     {
-        float currentCoolTime = GetEffectiveAxeAttackCoolTime();
-        yield return GetCoolTimeWait(currentCoolTime);
+        // WaitForSeconds를 쓰면 쿨타임 값마다 객체가 필요한데, 4스테이지 과열은 수치 1마다 공격속도를 바꿔 값의 종류가
+        // 수백 가지로 늘어난다(콤보 스택과 곱해짐). 그래서 남은 시간을 직접 깎아 할당을 없앤다. WaitForSeconds와 같은
+        // 스케일 시간(Time.deltaTime)을 쓰므로 쿨타임 길이와 일시정지(timeScale 0) 동안 멈추는 동작은 그대로다.
+        float remainingCoolTime = GetEffectiveAxeAttackCoolTime();
+        while (remainingCoolTime > 0f)
+        {
+            yield return null;
+            remainingCoolTime -= Time.deltaTime;
+        }
 
         bAttacked = false;
 
@@ -386,20 +389,6 @@ public class AxeComponent : WeaponComponent, IAxeComponent
             StopCoroutine(attackCoolDownCoroutine);
             attackCoolDownCoroutine = null;
         }
-    }
-
-    private WaitForSeconds GetCoolTimeWait(float _seconds)
-    {
-        if (coolTimeWaitCache.TryGetValue(_seconds, out WaitForSeconds wait))
-            return wait;
-
-        // 스탯이 연속적으로 바뀌는 비정상 상황을 대비한 상한 - 넘으면 비우고 다시 채운다.
-        if (coolTimeWaitCache.Count >= CoolTimeWaitCacheLimit)
-            coolTimeWaitCache.Clear();
-
-        wait = new WaitForSeconds(_seconds);
-        coolTimeWaitCache[_seconds] = wait;
-        return wait;
     }
 
     private float GetEffectiveAxeAttackCoolTime()

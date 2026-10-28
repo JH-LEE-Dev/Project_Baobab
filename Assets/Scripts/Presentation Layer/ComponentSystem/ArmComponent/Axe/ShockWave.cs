@@ -18,10 +18,10 @@ public class ShockWave : MonoBehaviour
     private Vector3 moveDirection = Vector3.right;
     private bool bIsEnforced = false;
     private bool bIsOverheat = false;
-    // 과열 충격파가 맞은 나무에게 거는 지속 피해 수치 (StatComponent의 overheatDot* 값)
-    private float overheatDotDamagePerTick;
-    private int overheatDotTickCount;
-    private float overheatDotTickInterval;
+    // 과열 충격파가 맞은 나무에게 거는 화상 (실제 들어간 피해 대비 틱 비율, StatComponent의 overheatBurn* 값)
+    private float overheatBurnRatio;
+    private int overheatBurnTickCount;
+    private float overheatBurnTickInterval;
     private bool bIsCritical = false;
     private float maxEffectiveDistance = 0f;
 
@@ -47,7 +47,6 @@ public class ShockWave : MonoBehaviour
     private const float DAMAGE_CHECK_INTERVAL = 0.04f; // 약 25FPS 판정 (나무는 정적이므로 충분)
     private List<IStaticCollidable> targetsInRange = new List<IStaticCollidable>(128);
     private HashSet<IStaticCollidable> hitTargets = new HashSet<IStaticCollidable>();
-    private List<IStaticCollidable> explosionTargets = new List<IStaticCollidable>(32);
     
     // 빠른 확장 시 충돌 누락(터널링) 방지용 (Sweep 처리)
     private float lastMinDist;
@@ -103,12 +102,12 @@ public class ShockWave : MonoBehaviour
         bIsEnforced = _isEnforced;
     }
 
-    public void SetOverheat(bool _bIsOverheat, float _dotDamagePerTick, int _dotTickCount, float _dotTickInterval)
+    public void SetOverheat(bool _bIsOverheat, float _burnRatio, int _burnTickCount, float _burnTickInterval)
     {
         bIsOverheat = _bIsOverheat;
-        overheatDotDamagePerTick = _dotDamagePerTick;
-        overheatDotTickCount = _dotTickCount;
-        overheatDotTickInterval = _dotTickInterval;
+        overheatBurnRatio = _burnRatio;
+        overheatBurnTickCount = _burnTickCount;
+        overheatBurnTickInterval = _burnTickInterval;
     }
 
     public void SetCritical(bool _bIsCritical)
@@ -135,7 +134,6 @@ public class ShockWave : MonoBehaviour
         startPosition = transform.position;
         targetsInRange.Clear();
         hitTargets.Clear();
-        explosionTargets.Clear();
         moveDirection = Vector3.right;
         bIsEnforced = false;
         bIsOverheat = false;
@@ -190,7 +188,7 @@ public class ShockWave : MonoBehaviour
 
     private void ApplyShockWaveDamageToTargets(Vector3 centerPos, Vector3 isoForward, float cosThreshold, float sweepMinDistSqr, float maxDistSqr)
     {
-        // 충격파(과열 폭발의 인접 피해 포함)로 쓰러지는 나무는 플레이어 공격으로 벌목된 것이다(PlayerAttackDamageScope 참고).
+        // 충격파로 쓰러지는 나무는 플레이어 공격으로 벌목된 것이다(PlayerAttackDamageScope 참고).
         using var _playerAttackScope = PlayerAttackDamageScope.Enter();
 
         for (int i = 0; i < targetsInRange.Count; i++)
@@ -214,10 +212,10 @@ public class ShockWave : MonoBehaviour
                 continue;
             }
 
-            // 묘목은 어떤 상호작용도 받지 않는다(피해, 과열 폭발, 첫 타격 콜백 모두).
+            // 묘목은 어떤 상호작용도 받지 않는다(피해, 화상, 첫 타격 콜백 모두).
             if (!treeObj.bCanApplyDamage) continue;
 
-            // targetsInRange는 루프 시작 전에 뽑아 둔 목록이라, 앞 대상의 과열 폭발 등으로 같은 프레임에
+            // targetsInRange는 루프 시작 전에 뽑아 둔 목록이라, 앞 대상이 쓰러지며 일어난 연쇄 피해(포자막 폭발 등)로 같은 프레임에
             // 이미 죽어 풀로 반환된 나무가 섞여 있을 수 있다. 풀 반환 시 ResetTree가 bDead/HP를 되돌려
             // 산 나무처럼 보이므로 풀 상태와 활성 여부로 거른다.
             // 활성 여부(activeInHierarchy, 엔진 호출)는 아래 거리·각도 판정을 통과한 나무에만 묻는다.
@@ -253,27 +251,17 @@ public class ShockWave : MonoBehaviour
                         finalDamage *= damageMultiplier;
                     }
 
-                    // 과열 폭발은 데미지 적용보다 먼저 처리한다. 강화된 셰이크웨이브(데미지 배율은 StatComponent.shockWaveOverheatDamageMul)는 맞은
-                    // 나무를 그 즉시 죽여 풀로 반환(TreeOverheatExplosionEvent 구독 해제)시킬 수 있어,
-                    // TakeDamage 이후에 신호를 보내면 폭발 이펙트가 유실될 수 있다. _source는 이웃 데미지
-                    // 대상에서 제외되므로 순서를 바꿔도 판정 결과는 동일하다.
-                    if (bIsOverheat)
-                    {
-                        TriggerOverheatExplosion(treeObj);
-                    }
-
                     // [로그라이크] 포자 충격파(포자 수류탄 + 충격파): 맞은 나무 자리를 알린다(이 타격으로 풀에 돌아가기 전에). 본편은 구독자가 없어 지나간다.
                     if (RunCombatHooks.HasShockWaveHitTreeListener) RunCombatHooks.NotifyShockWaveHitTree(treeObj.Position);
 
                     treeObj.TakeDamage(finalDamage, true, bIsCritical);
                     hitTargets.Add(target);
 
-                    // 과열 충격파에 맞은 나무에도 도끼 평타와 같은 화상(지속 피해)을 건다. 평타와 같은 슬롯을 쓰므로
-                    // 한 번 휘둘러 평타와 충격파에 모두 맞아도 화상이 겹치지 않고 새로 걸린다.
-                    // 이 타격으로 죽어 풀로 반환됐으면 ApplyOverheatDot이 IsPooled/활성 여부 가드로 알아서 무시한다.
+                    // 과열 충격파에 맞은 나무에는 방금 들어간 피해의 비율로 화상을 건다(부메랑·드론과 같은 화상 하나를 공유).
+                    // 이 타격으로 죽어 풀로 반환됐으면 ApplyOverheatBurn이 IsPooled/활성 여부 가드로 알아서 무시한다.
                     if (bIsOverheat)
                     {
-                        treeObj.ApplyOverheatDot(overheatDotDamagePerTick, overheatDotTickCount, overheatDotTickInterval);
+                        treeObj.ApplyOverheatBurn(overheatBurnRatio, overheatBurnTickCount, overheatBurnTickInterval, true);
                     }
 
                     if (firstTreeHitCallback != null)
@@ -301,40 +289,6 @@ public class ShockWave : MonoBehaviour
         }
 
         return Vector3.Dot(_isoForward, targetDir) >= _cosThreshold;
-    }
-
-    private void TriggerOverheatExplosion(TreeObj _source)
-    {
-        // 폭발 이펙트 생성은 ShockWave가 직접 하지 않는다. 맞은 나무로 신호를 보내면
-        // InDungeonObjectManager가 받아서 나무 중앙(인접 8타일의 중심)에 FireExplosionVFX를 재생한다.
-        _source.RaiseOverheatExplosion();
-
-        float range = 1.5f; // BaseShieldExplosionRange
-        if (CollisionSystem.Instance == null) return;
-
-        explosionTargets.Clear();
-        CollisionSystem.Instance.GetCollidablesInRadius(_source.Position, range, targetLayer.value, explosionTargets);
-
-        Vector3 centerPos = _source.transform.position;
-        float rangeSq = range * range;
-
-        for (int i = 0; i < explosionTargets.Count; i++)
-        {
-            // 활성 여부(엔진 호출)는 거리 판정을 통과한 나무에만 묻는다. 둘 다 상태를 바꾸지 않는 읽기라 결과는 같다.
-            if (explosionTargets[i] is TreeObj tree && tree != _source && tree.bCanApplyDamage && !tree.IsPooled)
-            {
-                Vector3 targetPos = tree.transform.position;
-                float dx = targetPos.x - centerPos.x;
-                float dy = (targetPos.y - centerPos.y) * 2f; // 등각 타원 보정
-                float isoDistSq = dx * dx + dy * dy;
-
-                if (isoDistSq <= rangeSq && tree.gameObject.activeInHierarchy)
-                {
-                    // 즉사라 사망음이 울린다. 타격음까지 겹치지 않도록 전용 경로를 쓴다.
-                    tree.TakeDamageWithoutHitSound(10000f);
-                }
-            }
-        }
     }
 
     private float GetIsometricDistSq(Vector3 _p1, Vector3 _p2)

@@ -771,17 +771,20 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         public bool boomerang;
         public bool drone;
+        /// <summary>과열 관련 에셋(이름에 Overheat)이 하나라도 쓰이는지. 4스테이지 불씨(heat) 또는 과열 충격파·부메랑·드론 특성.</summary>
         public bool overheat;
+        /// <summary>과열 충격파 특성(전용 충격파 프리팹).</summary>
+        public bool overheatShockWave;
         public bool whirlwind;
         public bool constellation;
 
         /// <summary>포자막 나무는 2스테이지(FluffySporeForest)부터 나옵니다.</summary>
         public bool spore;
 
-        /// <summary>나무 열기 분출은 4스테이지(MagmaForest) 데이터에만 있습니다(StageTileDataSO.treeHeatStaminaDamage).</summary>
+        /// <summary>나무 열기 분출과 불씨(과열 수치·캐릭터 과열 오라)는 4스테이지(MagmaForest)에만 있습니다.</summary>
         public bool heat;
 
-        /// <summary>나무 화상은 과열 충격파(스킬) 또는 4스테이지 열기에서만 생깁니다.</summary>
+        /// <summary>나무 화상은 과열 충격파·부메랑·드론 특성에서만 생깁니다. 4스테이지는 안전하게 함께 남깁니다.</summary>
         public bool burn;
 
         public bool MapReachable(int _mapType) => _mapType <= (int)maxMap;
@@ -885,14 +888,16 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         HashSet<SkillCommandType> _c = _scope.commands;
         _scope.boomerang = _c.Contains(SkillCommandType.Boomerang) || _c.Contains(SkillCommandType.LumberjackNPCBoomerang);
         _scope.drone = _c.Contains(SkillCommandType.Drone);
-        _scope.overheat = _c.Contains(SkillCommandType.Overheat) || _c.Contains(SkillCommandType.OverheatPermanent);
+        _scope.overheatShockWave = _c.Contains(SkillCommandType.ShockWaveOverheatBoost);
+        bool _overheatTraits = _scope.overheatShockWave || _c.Contains(SkillCommandType.BoomerangOverheatBoost) || _c.Contains(SkillCommandType.DroneOverheatBoost);
         _scope.whirlwind = _c.Contains(SkillCommandType.WhirlWind);
         _scope.constellation = _c.Contains(SkillCommandType.ConstellationManifestUnlock) || _c.Contains(SkillCommandType.StarGazeUnlock) ||
                                _c.Contains(SkillCommandType.StarMarkDamage) || _c.Contains(SkillCommandType.StarPathSpeedBoost) ||
                                _c.Contains(SkillCommandType.ConstellationDamage) || _c.Contains(SkillCommandType.ManifestationBrand);
         _scope.spore = _scope.MapReachable((int)MapType.FluffySporeForest);
         _scope.heat = _scope.MapReachable((int)MapType.MagmaForest);
-        _scope.burn = _scope.overheat || _scope.heat;
+        _scope.overheat = _overheatTraits || _scope.heat;
+        _scope.burn = _overheatTraits || _scope.heat;
 
         return _scope;
     }
@@ -961,6 +966,8 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         if (false == _s.constellation) _n += EditComponents(_root, "ConstellationPixelLaserCreator", INSTALLER_PREFAB_PATH, _so => ClearRef(_so, "laserPrefab"));
         if (false == _s.boomerang) _n += EditComponents(_root, "BoomerangCreator", INSTALLER_PREFAB_PATH, _so => ClearRef(_so, "boomerangPrefab"));
+        // 4스테이지 불씨(OverheatEmber, 2026-10-28 추가). 프리팹이 비면 EmberItemController가 불씨를 만들지 않는다.
+        if (false == _s.heat) _n += EditComponents(_root, "EmberItemController", INSTALLER_PREFAB_PATH, _so => ClearRef(_so, "emberItemPrefab"));
 
         HashSet<string> _dropTags = new HashSet<string>();
         // SporeBigExplosionEffect: 포자 포션 효과인 포자 대폭발 이펙트(VFX_SporeBigExplosion, 2026-10-15 추가)
@@ -1012,9 +1019,14 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         if (false == _s.drone) _n += EditComponents(_root, "DroneCreator", CHARACTER_PREFAB_PATH, _so => ClearRef(_so, "dronePrefab"));
         if (false == _s.whirlwind) _n += EditComponents(_root, "AttackComponent", CHARACTER_PREFAB_PATH, _so => ClearArray(_so, "whirlwindFrames"));
 
-        if (false == _s.overheat)
+        if (false == _s.overheatShockWave)
         {
             _n += EditComponents(_root, "AxeExtraAttackCreator", CHARACTER_PREFAB_PATH, _so => ClearRef(_so, "overheatShockWavePrefab"));
+        }
+
+        // 캐릭터 과열 오라는 4스테이지 불씨로 과열 수치가 오를 때만 나온다.
+        if (false == _s.heat)
+        {
             _n += EditComponents(_root, "VFXComponent", CHARACTER_PREFAB_PATH, _so => ClearVfxPoolEntries(_so, new HashSet<string> { "OverheatLoopEffect" }));
         }
 

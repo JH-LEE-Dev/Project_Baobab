@@ -12,9 +12,6 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     public event Action<TreeObj> TreeHeatEmitEvent;
     // 열기 카운트다운이 시작된 순간 발생. float는 방출까지 남은 시간(초)으로, 예고 인디케이터가 이 값을 쓴다.
     public event Action<TreeObj, float> TreeHeatCountdownStartedEvent;
-    // 과열 강화된 ShockWave에 맞았을 때 발생. 실제 폭발 이펙트 생성은 InDungeonObjectManager가
-    // 이 이벤트를 구독해서 처리한다(포자막 폭발과 동일한 신호 흐름).
-    public event Action<TreeObj> TreeOverheatExplosionEvent;
     // 보석 단계로 변한 순간 발생. VFX 생성은 InDungeonObjectManager가 이 이벤트를 받아 처리한다
     // (나무가 풀로 반환되어도 연출이 끊기지 않도록 나무 바깥에서 재생한다).
     public event Action<TreeObj> TreeGemTransformedEvent;
@@ -33,6 +30,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     private IEnvironmentProvider environmentProvider;
     private IShadowDataProvider shadowDataProvider;
     private ISporeShieldStatProvider shieldStatProvider;
+    // 4스테이지 과열 피해 배율. 던전 나무만 받는다(없으면 배율 1).
+    private IOverheatDamageProvider overheatDamageProvider;
     private EHealthComponent healthComponent;
     private SaplingVEComponent saplingVEComponent;
     private Transform cachedTransform;
@@ -195,17 +194,23 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     /// <summary>풀에서 다시 쓰일 때마다 오르는 번호. 같은 객체가 다른 나무로 재사용됐는지 가릴 때 쓴다(지연 타격 등).</summary>
     public int ReuseCount => resetTreeCount;
 
-    // 과열 버프 중 도끼 평타에 맞았을 때의 지속 피해. 이 나무 자신이 코루틴을 들고 있어야,
+    // 과열 충격파·부메랑·드론이 거는 화상. 나무당 하나만 걸린다. 이 나무 자신이 코루틴을 들고 있어야,
     // 나무가 죽어 풀에서 재사용되어도(ResetTree) 엉뚱한 새 나무에 데미지가 잘못 들어가지 않는다.
-    private Coroutine overheatDotCoroutine;
-    // 화상 틱 대기 객체. 틱 간격은 호출부 상수(0.5초)라 모든 나무가 하나를 공유한다(간격이 바뀌면 재생성).
+    private Coroutine burnCoroutine;
+    private float burnDamagePerTick;
+    private int burnTicksRemaining;
+    // 화상 틱이 도끼 타격음을 낼지. 도끼 계열(충격파)이 건 화상만 낸다 - 드론·부메랑이 건 화상은 도끼로 맞은 게 아니라
+    // 내지 않는다(예전 드론 지속 피해와 같은 규칙). 타는 동안 한 번이라도 도끼 계열이 걸었으면 끝날 때까지 낸다.
+    private bool bBurnPlaysHitSound;
+    // 화상 틱 대기 객체. 틱 간격은 스탯 값(0.5초)이라 모든 나무가 하나를 공유한다(간격이 바뀌면 재생성).
     private static WaitForSeconds cachedDotTickWait;
     private static float cachedDotTickWaitInterval = -1f;
 
-    // 과열 버프 중 드론 전이에 맞았을 때의 지속 피해 (평타와 중첩 가능)
-    private Coroutine droneOverheatDotCoroutine;
+    // 마지막 타격(화상 틱 제외)에 실제로 들어간 피해. 치명타·별표식·포자 증폭·과열 배율이 모두 곱해진 값이다.
+    // 화상은 이 값의 비율로 걸린다. 공격이 TakeDamage 직후 같은 호출 안에서 ApplyOverheatBurn을 부르므로 그 타격의 값이다.
+    private float lastHitDamage;
 
-    // 화상(위 두 지속 피해 중 하나라도 돌고 있는 상태)을 보여 주는 푸른 여우불 루프 이펙트. 나무 프리팹의 비활성 자식이고 이 나무가 켜고 끈다.
+    // 화상(위 지속 피해가 돌고 있는 상태)을 보여 주는 푸른 여우불 루프 이펙트. 나무 프리팹의 비활성 자식이고 이 나무가 켜고 끈다.
     [SerializeField] private PresentationLayer.VFX.VFX_TreeBurn burnVfx;
 
     // 화상 동안 은은하게 깔리는 불 루프 사운드. 화상이 새로 시작될 때만 점화음과 함께 켜고(이미 타는 중에
@@ -222,7 +227,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     private void RefreshBurnVfx()
     {
-        bool bBurning = overheatDotCoroutine != null || droneOverheatDotCoroutine != null;
+        bool bBurning = burnCoroutine != null;
 
         if (burnVfx != null) burnVfx.SetBurning(bBurning);
 
@@ -273,7 +278,13 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         burnLoopHandle = AudioHandle.Invalid;
     }
 
-    public void ApplyOverheatDot(float _damagePerTick, int _tickCount, float _tickInterval)
+    /// <summary>
+    /// 방금 들어간 타격 피해(lastHitDamage)의 _ratio만큼을 틱마다 주는 화상을 건다. 공격이 TakeDamage 바로 뒤에 부른다.
+    /// 이미 타는 중이면 횟수는 처음부터 다시 세고, 틱 피해는 지금 것과 새 것 중 큰 쪽을 유지한다(약한 화상이 강한 화상을 덮지 않는다).
+    /// 틱 피해에는 어떤 배율도 다시 곱하지 않는다(과열 배율 제외 규칙 + 이미 곱해진 값의 비율이므로).
+    /// _bPlayHitSound: 도끼 계열(충격파)이 건 화상이면 true - 틱마다 도끼 타격음을 낸다(간격 제한은 그대로).
+    /// </summary>
+    public void ApplyOverheatBurn(float _ratio, int _tickCount, float _tickInterval, bool _bPlayHitSound)
     {
         // 이 타격이 막타였다면 TakeDamage 안에서 이미 죽어 풀로 반환되어 비활성화된 뒤이므로,
         // 그 상태에서 StartCoroutine을 시도하면 안 된다. 묘목은 어떤 상호작용도 받지 않는다.
@@ -283,24 +294,17 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         // bDead는 풀을 거치지 않아 죽은 채로 활성 상태에 남은 나무를 거르기 위해 그대로 둔다.
         if (bDead || IsPooled || !gameObject.activeInHierarchy || !bCanApplyDamage) return;
 
-        if (overheatDotCoroutine != null)
-        {
-            StopCoroutine(overheatDotCoroutine); // 같은 나무 재타격 시 리셋
-        }
-        overheatDotCoroutine = StartCoroutine(OverheatDotRoutine(_damagePerTick, _tickCount, _tickInterval, false));
-        RefreshBurnVfx();
-    }
+        float damagePerTick = lastHitDamage * _ratio;
+        if (damagePerTick <= 0f || _tickCount <= 0) return;
 
-    public void ApplyDroneOverheatDot(float _damagePerTick, int _tickCount, float _tickInterval)
-    {
-        // ApplyOverheatDot과 같은 이유로 bDead에 더해 풀 상태/활성 여부로도 거른다
-        if (bDead || IsPooled || !gameObject.activeInHierarchy || !bCanApplyDamage) return;
+        burnDamagePerTick = Mathf.Max(burnDamagePerTick, damagePerTick);
+        burnTicksRemaining = _tickCount;
+        bBurnPlaysHitSound |= _bPlayHitSound;
 
-        if (droneOverheatDotCoroutine != null)
+        if (burnCoroutine == null)
         {
-            StopCoroutine(droneOverheatDotCoroutine); // 같은 나무 드론 재타격 시 리셋
+            burnCoroutine = StartCoroutine(BurnRoutine(_tickInterval));
         }
-        droneOverheatDotCoroutine = StartCoroutine(OverheatDotRoutine(_damagePerTick, _tickCount, _tickInterval, true));
         RefreshBurnVfx();
     }
 
@@ -330,7 +334,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         return true;
     }
 
-    private IEnumerator OverheatDotRoutine(float _damagePerTick, int _tickCount, float _tickInterval, bool _isDrone)
+    private IEnumerator BurnRoutine(float _tickInterval)
     {
         if (cachedDotTickWait == null || cachedDotTickWaitInterval != _tickInterval)
         {
@@ -339,27 +343,26 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         }
         WaitForSeconds tickWait = cachedDotTickWait;
 
-        for (int i = 0; i < _tickCount; i++)
+        // 도는 중에 다시 걸리면 ApplyOverheatBurn이 남은 횟수를 채우고 틱 피해를 올려 둔다(틱 간격은 그대로 이어진다).
+        while (burnTicksRemaining > 0)
         {
             yield return tickWait;
             if (!bCanApplyDamage) break;
 
+            burnTicksRemaining--;
+
             bool bPlayFeedback = TryConsumeDotTickFeedback();
             bSkipHitVfx = !bPlayFeedback;
-            // 드론 레이저가 건 지속 피해는 도끼로 맞은 게 아니므로 도끼 타격음을 내지 않는다
-            TakeDamageInternal(_damagePerTick, false, false, !_isDrone && bPlayFeedback);
+            TakeDamageInternal(burnDamagePerTick, false, false, bBurnPlaysHitSound && bPlayFeedback, true);
             bSkipHitVfx = false;
         }
-        if (_isDrone)
-        {
-            droneOverheatDotCoroutine = null;
-        }
-        else
-        {
-            overheatDotCoroutine = null;
-        }
 
-        RefreshBurnVfx(); // 두 지속 피해가 모두 끝났다면 화상 이펙트가 꺼지는 연출을 시작한다
+        burnCoroutine = null;
+        burnDamagePerTick = 0f;
+        burnTicksRemaining = 0;
+        bBurnPlaysHitSound = false;
+
+        RefreshBurnVfx(); // 화상이 끝났으니 화상 이펙트가 꺼지는 연출을 시작한다
     }
 
     public void SetCellPos(Vector3Int _cellPos)
@@ -386,11 +389,13 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         cachedTransform = transform;
     }
 
-    public void Initialize(IEnvironmentProvider _environmentProvider, ISporeShieldStatProvider _shieldStatProvider = null)
+    public void Initialize(IEnvironmentProvider _environmentProvider, ISporeShieldStatProvider _shieldStatProvider = null,
+        IOverheatDamageProvider _overheatDamageProvider = null)
     {
         environmentProvider = _environmentProvider;
         shadowDataProvider = _environmentProvider.shadowDataProvider;
         shieldStatProvider = _shieldStatProvider;
+        overheatDamageProvider = _overheatDamageProvider;
         cachedTransform = transform;
 
         healthComponent = GetComponent<EHealthComponent>();
@@ -596,17 +601,15 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         bHeatCounting = false;
         HeatSequence++;
 
-        if (overheatDotCoroutine != null)
+        if (burnCoroutine != null)
         {
-            StopCoroutine(overheatDotCoroutine);
-            overheatDotCoroutine = null;
+            StopCoroutine(burnCoroutine);
+            burnCoroutine = null;
         }
-
-        if (droneOverheatDotCoroutine != null)
-        {
-            StopCoroutine(droneOverheatDotCoroutine);
-            droneOverheatDotCoroutine = null;
-        }
+        burnDamagePerTick = 0f;
+        burnTicksRemaining = 0;
+        bBurnPlaysHitSound = false;
+        lastHitDamage = 0f;
 
         // 지속 피해를 끊은 만큼 화상 이펙트도 연출 없이 즉시 끈다(풀 재사용 시 새 나무에 남지 않게)
         if (burnVfx != null) burnVfx.StopImmediate();
@@ -640,17 +643,18 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     /// <summary>
     /// 도끼 타격음(Tree_Hit/Pitch_Hit 등) 없이 피해만 준다. 진동/이펙트는 TakeDamage와 동일하다.
-    /// - 드론 레이저: 발사와 동시에 맞으므로 드론이 발사음을 직접 내고, 타격음은 겹쳐 내지 않는다.
-    /// - 과열 폭발의 인접 피해: 맞은 나무는 그 자리에서 죽어 사망음(Tree_Dead/Prize2)이 울린다. 폭발 한 번에 최대
-    ///   8그루가 같은 프레임에 죽는데, 그루마다 타격음까지 겹치면 수십 개의 소리가 한 번에 몰려 다른 소리가 씹혔다.
+    /// - 드론 레이저(주 대상·연쇄 전이): 발사와 동시에 맞으므로 드론이 발사음을 직접 내고, 타격음은 겹쳐 내지 않는다.
     /// </summary>
     public void TakeDamageWithoutHitSound(float _damage)
     {
         TakeDamageInternal(_damage, true, false, false);
     }
 
-    private void TakeDamageInternal(float _damage, bool _bPlayHaptic, bool _bCritical, bool _bPlayHitSound = true)
+    private void TakeDamageInternal(float _damage, bool _bPlayHaptic, bool _bCritical, bool _bPlayHitSound = true, bool _bBurnTick = false)
     {
+        // 이 타격이 들어가지 않고 끝나면 뒤따르는 ApplyOverheatBurn이 예전 타격 값으로 화상을 걸지 않도록 먼저 비운다.
+        if (false == _bBurnTick) lastHitDamage = 0f;
+
         if (!bCanApplyDamage) return;
 
         // 호출부가 미리 뽑아 둔 대상 목록을 도는 사이 같은 프레임에 죽어 풀로 반환된 나무가 다시 맞는 경우를 막는다.
@@ -671,17 +675,26 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         // DecreaseHealth 안에서 SP가 0이 되므로 역시 미리 기억해 둔다.
         bool hadShieldBeforeHit = healthComponent.GetCurrentSP() > 0f;
 
-        // 별표식 베기 - 별 표식을 가진 나무에게 배율 적용
-        if (bStarMarked)
+        // 화상 틱은 이미 모든 배율이 곱해진 타격 피해의 비율이라 아래 배율을 다시 곱하지 않는다.
+        if (false == _bBurnTick)
         {
-            _damage *= Mathf.Max(0f, shieldStatProvider?.StarMarkDamageMultiplier ?? 1f);
-        }
+            // 별표식 베기 - 별 표식을 가진 나무에게 배율 적용
+            if (bStarMarked)
+            {
+                _damage *= Mathf.Max(0f, shieldStatProvider?.StarMarkDamageMultiplier ?? 1f);
+            }
 
-        // 포자 대폭발("포자 포션")에 맞은 나무 - 이후 받는 피해 증폭
-        if (0f < sporeDamageAmplify)
-        {
-            _damage *= 1f + sporeDamageAmplify;
-            TreeSporeDebuffVfx.NotifyHit(this);
+            // 포자 대폭발("포자 포션")에 맞은 나무 - 이후 받는 피해 증폭
+            if (0f < sporeDamageAmplify)
+            {
+                _damage *= 1f + sporeDamageAmplify;
+                TreeSporeDebuffVfx.NotifyHit(this);
+            }
+
+            // 과열(4스테이지 불씨) - 화상을 뺀 모든 공격의 마지막에 곱한다. 과열이 0이면(다른 스테이지·마을·로그라이크) 1이다.
+            _damage *= overheatDamageProvider?.OverheatDamageMultiplier ?? 1f;
+
+            lastHitDamage = _damage;
         }
 
         healthComponent.DecreaseHealth(_damage);
@@ -953,15 +966,6 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         Sound.Play(SoundID.SporeShieldBreak, cachedTransform.position);
 
         TreeShieldBrokenEvent?.Invoke(this);
-    }
-
-    // 과열 강화된 ShockWave가 이 나무를 때렸을 때 ShockWave가 호출한다. 폭발 이펙트 생성은
-    // InDungeonObjectManager가 TreeOverheatExplosionEvent를 받아 처리한다(포자막 폭발과 동일한 방식).
-    public void RaiseOverheatExplosion()
-    {
-        if (!bCanApplyDamage) return; // 묘목은 어떤 상호작용도 받지 않는다
-
-        TreeOverheatExplosionEvent?.Invoke(this);
     }
 
     private void OnShieldRecovering()

@@ -73,17 +73,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     }
 
     public void TakeEnvironmentalStaminaDamage(float _amount) => healthComponent.DecreaseStaminaFlat(_amount);
-    public void AddOverheatDuration(float _seconds) => overheatComponent?.AddOverheatDuration(_seconds);
-    public void EndOverheatBuff() => overheatComponent?.ForceEnd();
-
-    // "열기 회수" 특성 - 과열 상태에서 나무를 벌목하면 과열 지속시간이 회복된다.
-    public void OnTreeFelled()
-    {
-        if (overheatComponent == null || !overheatComponent.IsActive) return;
-        if (statComponent.heatRecoveryAmount <= 0f) return;
-
-        overheatComponent.AddOverheatDurationRaw(statComponent.heatRecoveryAmount);
-    }
+    // 불씨를 주워 과열 수치를 올린다. 이미 최대면 효과가 없고 false.
+    public bool AddOverheat(float _amount) => overheatComponent != null && overheatComponent.AddOverheat(_amount);
+    public bool IsOverheatMax => overheatComponent != null && overheatComponent.IsMax;
+    // 화상을 뺀 모든 공격의 피해 마지막에 곱하는 과열 배율(TreeObj가 InDungeonObjectManager를 통해 읽는다).
+    public float OverheatDamageMultiplier => overheatComponent != null ? overheatComponent.DamageMultiplier : 1f;
+    private int OverheatLevel => overheatComponent != null ? overheatComponent.OverheatLevel : 0;
 
     // 넉백/경직 중에는 나무 열기 발산의 영향(데미지+넉백)을 받지 않는다.
     public bool bTreeHeatImmune { get; private set; }
@@ -412,10 +407,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         bDronesPaused = false;
         ClearActiveDrones();
 
-        // 씬 전환마다 과열 버프를 강제 종료한다. 던전을 나갈 때(MagmaForest 전용 효과가 다른 곳까지 이어지지 않도록)뿐 아니라,
+        // 씬 전환마다 과열 수치를 0으로 되돌린다. 던전을 나갈 때(MagmaForest 전용 효과가 다른 곳까지 이어지지 않도록)뿐 아니라,
         // 재도전(결과창 → 재도전)은 타운을 거치지 않고 던전 → 던전으로 직행하므로 여기서 끊지 않으면 이전 판에 쌓은
-        // 과열 시간과 버프가 새 판까지 그대로 이어진다. "화신"은 아래 TryActivatePermanent가 다시 켠다.
-        EndOverheatBuff();
+        // 과열이 새 판까지 그대로 이어진다.
+        overheatComponent?.ResetOverheat();
 
         if (_bInDungeon == false)
         {
@@ -456,7 +451,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (bInDungeon)
         {
             SpawnDrones();
-            overheatComponent?.TryActivatePermanent(); // "화신" 특성이 있으면 던전 입장과 동시에 과열 상태로 진입
         }
     }
 
@@ -1194,12 +1188,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         activeBoomerangTargets.Add(_tree);
 
-        // "화염 부메랑" 특성을 찍어야만 과열 상태의 부메랑 강화 효과가 적용된다.
-        bool bIsOverheat = overheatComponent != null && overheatComponent.IsActive && statComponent.bBoomerangOverheatBoost;
+        // "과열 부메랑" 특성을 찍으면 과열 수치가 0이어도 항상 과열 부메랑으로 나간다.
+        bool bIsOverheat = statComponent.bBoomerangOverheatBoost;
 
         if (onBoomerangFinishedHandler == null) onBoomerangFinishedHandler = OnBoomerangFinished;
 
-        Boomerang thrownBoomerang = boomerangCreator.ThrowBoomerang(_origin, _dir, maxDistance, transform, onBoomerangFinishedHandler, bIsOverheat, true);
+        Boomerang thrownBoomerang = boomerangCreator.ThrowBoomerang(_origin, _dir, maxDistance, transform, onBoomerangFinishedHandler, bIsOverheat, true, overheatComponent);
 
         if (thrownBoomerang == null)
         {
@@ -1318,8 +1312,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         activeBoomerangTargets.Remove(_boomerang.TargetTree);
         activeBoomerangs.Remove(_boomerang);
-        // 과열 상태에서 발사되었다면 쿨타임 50% 감소
-        boomerangCooldownTimer = _boomerang.LaunchedOverheat ? statComponent.boomerangCooldown * 0.5f : statComponent.boomerangCooldown;
+        // 과열 부메랑으로 발사되었다면 최종 쿨타임 감소(기본 50%)
+        boomerangCooldownTimer = _boomerang.LaunchedOverheat ? statComponent.boomerangCooldown * statComponent.boomerangOverheatCooldownMul : statComponent.boomerangCooldown;
     }
 
     // 캐릭터가 죽거나 던전을 나가는 등 왕복이 끝나기 전에 상태를 리셋해야 할 때, 날아가고 있던
@@ -1453,9 +1447,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         Vector2 aimDir = -droneBehindDir; // 대형은 "뒤" 기준, 드론 개별 Idle 방향은 "조준" 기준이라 부호가 반대다
 
-        // OnDroneChainAttack의 bIsOverheat 판정과 동일한 조건: 과열 버프 + "드론 과부하" 특성을
-        // 둘 다 갖췄을 때만 스프라이트가 6~10행(Overheat 세트)으로 바뀐다.
-        bool bIsOverheat = overheatComponent != null && overheatComponent.IsActive && statComponent.bDroneOverheatBoost;
+        // OnDroneChainAttack의 bIsOverheat 판정과 동일한 조건: "과열 드론" 특성이 있으면 과열 수치와 무관하게
+        // 스프라이트가 6~10행(Overheat 세트)으로 바뀐다.
+        bool bIsOverheat = statComponent.bDroneOverheatBoost;
 
         for (int i = 0; i < activeDrones.Count; i++)
         {
@@ -1774,12 +1768,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         Transform primaryTransform = _primaryTarget.GetTransform();
         if (primaryTransform == null) return;
 
-        // "드론 과부하" 특성을 찍어야만 과열 상태의 드론 강화 효과가 적용된다.
-        bool bIsOverheat = overheatComponent != null && overheatComponent.IsActive && statComponent.bDroneOverheatBoost;
+        // "과열 드론" 특성을 찍으면 과열 수치가 0이어도 항상 과열 드론 효과가 적용된다.
+        bool bIsOverheat = statComponent.bDroneOverheatBoost;
 
+        // 주 타겟은 Drone이 바로 앞에서 피해를 줬다. 그 피해의 비율로 화상을 건다(충격파·부메랑과 공유).
         if (bIsOverheat && _primaryTarget is TreeObj primaryTree)
         {
-            primaryTree.ApplyDroneOverheatDot(statComponent.droneOverheatDotDamagePerTick, statComponent.droneOverheatDotTickCount, statComponent.droneOverheatDotTickInterval);
+            ApplyOverheatBurn(primaryTree);
         }
 
         Vector3 primaryTopPos = GetTreeTopPosition(_primaryTarget);
@@ -1808,7 +1803,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         using var _playerAttackScope = PlayerAttackDamageScope.Enter();
 
-        bool bIsOverheat = overheatComponent != null && overheatComponent.IsActive && statComponent.bDroneOverheatBoost;
+        bool bIsOverheat = statComponent.bDroneOverheatBoost;
 
         droneChainZapPoints.Clear();
         droneChainZapPoints.Add(_drone.GetMuzzlePosition());
@@ -1829,9 +1824,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         int finalChainCount = statComponent.droneChainCount;
         float finalChainRange = statComponent.droneChainRange;
 
+        // 과열 드론: 연쇄 횟수는 구간별로 더하고(연쇄공격 특성이 없어도 붙는다), 탐색 범위는 배율로 늘린다.
         if (_bIsOverheat)
         {
-            finalChainCount *= statComponent.droneOverheatChainCountMul;
+            finalChainCount += statComponent.GetDroneOverheatChainBonus(OverheatLevel);
             finalChainRange *= statComponent.droneOverheatChainRangeMul;
         }
 
@@ -1860,7 +1856,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
                         if (_bIsOverheat)
                         {
-                            nextTree.ApplyDroneOverheatDot(statComponent.droneOverheatDotDamagePerTick, statComponent.droneOverheatDotTickCount, statComponent.droneOverheatDotTickInterval);
+                            ApplyOverheatBurn(nextTree);
                         }
                     }
                     else
@@ -1885,6 +1881,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (_bCollectHitGround) RunCombatHooks.NotifyDroneLaser(droneChainZapPoints, droneChainHitGroundPoints);
 
         _drone.PlayChainZap(droneChainZapPoints, droneChainZapPoints.Count);
+    }
+
+    // 과열 드론 화상. 방금 그 나무에 들어간 피해의 비율로 건다(비율은 지금 과열 구간). 레이저라 도끼 타격음은 내지 않는다.
+    private void ApplyOverheatBurn(TreeObj _tree)
+    {
+        _tree.ApplyOverheatBurn(statComponent.GetOverheatBurnRatio(OverheatLevel), statComponent.overheatBurnTickCount, statComponent.overheatBurnTickInterval, false);
     }
 
     // droneChainHitTrees(이번 전이 동안 이미 맞은 나무)를 제외하고, origin 기준 지정된 반경(_chainRange)

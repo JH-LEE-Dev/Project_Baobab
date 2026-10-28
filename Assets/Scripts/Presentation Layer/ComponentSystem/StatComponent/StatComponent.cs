@@ -98,8 +98,8 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public bool bShockWaveCritical = false;
     public bool bShockWaveEnforcement = false;
     public bool bShockWaveMastery = false;
-    public bool bOverheat = false;
-    public bool bShockWaveOverheatBoost = false; // "화염 참격" 특성 - 과열 상태에서 충격파 폭발 효과 적용 여부
+    public bool bOverheat = false; // [미사용] 과열은 이제 4스테이지 맵 규칙이라 특성 없이 작동한다. 특성 재구성 때 정리
+    public bool bShockWaveOverheatBoost = false; // "과열 충격파" 특성 - 충격파가 과열 수치에 영향을 받는다(과열 0이어도 적용)
 
     [Header("Dash")]
     // 대시의 기본 저장 횟수·충전 쿨타임은 "원목 보험 증서" 성장 단계가 정한다(Character의 Dash Settings).
@@ -115,7 +115,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public float boomerangCooldown = 2.5f; // "쿨타임"
     public float boomerangDamageInterval = 0.3f; // "공격 속도"가 반영되는 판정 주기
     public bool bBoomerangCritical = false;
-    public bool bBoomerangOverheatBoost = false; // "화염 부메랑" 특성 - 과열 상태에서 부메랑 강화 적용 여부
+    public bool bBoomerangOverheatBoost = false; // "과열 부메랑" 특성 - 부메랑이 과열 수치에 영향을 받는다(과열 0이어도 적용)
     public float baseBoomerangDamage { get; private set; }
     public float boomerangDamageMultiplier { get; private set; } = 1.0f;
     private PercentAccumulator boomerangDamageAccum;
@@ -154,35 +154,43 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public float baseDroneChainRange { get; private set; }
     public float droneChainRangeMultiplier { get; private set; } = 1.0f;
     private PercentAccumulator droneChainRangeAccum;
-    public bool bDroneOverheatBoost = false; // "드론 과부하" 특성 - 과열 상태에서 드론 강화 적용 여부
+    public bool bDroneOverheatBoost = false; // "과열 드론" 특성 - 드론이 과열 수치에 영향을 받는다(과열 0이어도 적용)
 
-    [Header("Overheat")]
-    public float overheatEfficiencyBonus = 0f; // "과열 강화" - 과열 버프(이동속도/공격속도/공격력) 효율 증가율(%). 100이면 기본 20%가 40%가 된다.
-    public float overheatConsumptionReductionAlpha = 0f; // "과열 유지" - 과열 지속시간 소모 속도 감소율(%)
-    public float overheatGainBonusAlpha = 0f; // "열기 포집" - 열기 접촉으로 얻는 과열 획득량 증가율(%)
-    public float heatRecoveryAmount = 0f; // "열기 회수" - 과열 상태에서 나무 벌목 시 회복되는 과열 지속시간(초). 0이면 미해금
-    public bool bOverheatPermanent = false; // "화신" - 항상 과열 상태를 유지
+    // [미사용] 지속시간제 과열의 특성 값. 과열이 0~100 스택으로 바뀌면서 효과가 없다. 특성 재구성 때 정리
+    [Header("Overheat - 미사용 (옛 지속시간제 특성)")]
+    public float overheatEfficiencyBonus = 0f;
+    public float overheatConsumptionReductionAlpha = 0f;
+    public float overheatGainBonusAlpha = 0f;
+    public float heatRecoveryAmount = 0f;
+    public bool bOverheatPermanent = false;
 
-    [Header("Overheat - 지속 피해 (도끼 평타 · 화염 참격 충격파 공통)")]
-    public float overheatDotDamagePerTick = 10000f; // 틱당 피해
-    public int overheatDotTickCount = 6; // 틱 횟수
-    public float overheatDotTickInterval = 0.5f; // 틱 간격(초)
+    // 과열 수치(4스테이지 불씨)는 OverheatComponent가 들고 있고, 수치 1당 효과는 여기서 조정한다.
+    // 공식에 쓰는 과열 수치는 항상 내림한 정수(HUD에 보이는 값)다.
+    [Header("Overheat - 과열 수치 1당 효과")]
+    public float overheatMaxValue = 100f;
+    public float overheatDamagePerLevel = 0.02f; // 화상을 뺀 모든 공격의 피해 마지막에 곱한다 (1 + 과열 * 값)
+    public float overheatAxeAttackSpeedPerLevel = 0.005f; // 도끼 공격속도 마지막에 곱한다 (1 + 과열 * 값)
 
-    [Header("Overheat - 화염 참격 (과열 충격파 강화)")]
-    public float shockWaveOverheatDamageMul = 101f; // 데미지 배율
-    public float shockWaveOverheatDurationMul = 4f; // 지속시간 배율
+    [Header("Overheat - 구간 (화상 비율 · 드론 연쇄 공통)")]
+    // 과열 수치가 이 값 이상이면 다음 구간. 기본값이면 0~33 / 34~66 / 67~99 / 100의 4구간이다.
+    public int[] overheatTierThresholds = { 34, 67, 100 };
 
-    [Header("Overheat - 화염 부메랑 (과열 부메랑 강화)")]
-    public float boomerangOverheatDamageMul = 101f; // 데미지 배율
-    public float boomerangOverheatHitRadiusMul = 4f; // 판정 범위 배율
-    public float boomerangOverheatSpeedMul = 3f; // 비행 속도 배율
+    [Header("Overheat - 화상 (과열 충격파 · 부메랑 · 드론 공통)")]
+    public float[] overheatBurnRatios = { 0.02f, 0.03f, 0.04f, 0.05f }; // 구간별 틱 피해(실제 들어간 피해 대비)
+    public int overheatBurnTickCount = 6; // 틱 횟수
+    public float overheatBurnTickInterval = 0.5f; // 틱 간격(초)
 
-    [Header("Overheat - 드론 과부하 (과열 드론 강화)")]
-    public int droneOverheatChainCountMul = 2; // 연쇄 횟수 배율
-    public float droneOverheatChainRangeMul = 5f; // 연쇄 범위 배율
-    public float droneOverheatDotDamagePerTick = 10000f; // 지속 피해 - 틱당 피해
-    public int droneOverheatDotTickCount = 6; // 지속 피해 - 틱 횟수
-    public float droneOverheatDotTickInterval = 0.5f; // 지속 피해 - 틱 간격(초)
+    [Header("Overheat - 과열 충격파")]
+    public float shockWaveOverheatDurationBase = 1.25f; // 유지시간 배율 = 기본값 + 과열 * 1당 값
+    public float shockWaveOverheatDurationPerLevel = 0.0275f;
+
+    [Header("Overheat - 과열 부메랑")]
+    public float boomerangOverheatHitRadiusPerLevel = 0.02f; // 판정 범위 배율 = 1 + 과열 * 값
+    public float boomerangOverheatCooldownMul = 0.5f; // 최종 쿨타임 배율
+
+    [Header("Overheat - 과열 드론")]
+    public int[] droneOverheatChainBonus = { 1, 2, 3, 4 }; // 구간별 연쇄 횟수 추가(합연산)
+    public float droneOverheatChainRangeMul = 3f; // 연쇄 탐색 범위 배율
 
     [Header("Stamina Recovery")]
     public float recoveryPowerBonus = 0f; // "회복력" - 모든 피로도 회복 효과(전리품 포션, 체력의 원천, 휴식) 증가율(%)
@@ -256,11 +264,10 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     bool ICharacterStatForNPC.bShockWaveCritical => bShockWaveCritical;
     bool ICharacterStatForNPC.bShockWaveEnforcement => bShockWaveEnforcement;
     bool ICharacterStatForNPC.bShockWaveOverheatBoost => bShockWaveOverheatBoost;
-    float ICharacterStatForNPC.shockWaveOverheatDamageMul => shockWaveOverheatDamageMul;
-    float ICharacterStatForNPC.shockWaveOverheatDurationMul => shockWaveOverheatDurationMul;
-    float ICharacterStatForNPC.overheatDotDamagePerTick => overheatDotDamagePerTick;
-    int ICharacterStatForNPC.overheatDotTickCount => overheatDotTickCount;
-    float ICharacterStatForNPC.overheatDotTickInterval => overheatDotTickInterval;
+    float ICharacterStatForNPC.shockWaveOverheatDurationBase => shockWaveOverheatDurationBase;
+    float ICharacterStatForNPC.shockWaveOverheatDurationPerLevel => shockWaveOverheatDurationPerLevel;
+    int ICharacterStatForNPC.overheatBurnTickCount => overheatBurnTickCount;
+    float ICharacterStatForNPC.overheatBurnTickInterval => overheatBurnTickInterval;
     float ICharacterStatForNPC.criticalChance => criticalChance;
     float ICharacterStatForNPC.ciriticalDamageMul => ciriticalDamageMul;
 
@@ -335,7 +342,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
         axeDamage = baseAxeDamage * axeDamageMultiplier;
 
         baseAxeAttackCoolTime = _stats.axeAttackCoolTime;
-        axeAttackCoolTime = baseAxeAttackCoolTime / axeAttackSpeedMultiplier;
+        RecalculateAxeAttackCoolTime();
 
         baseShockWaveDamage = _stats.shockWaveDamage;
         shockWaveDamage = baseShockWaveDamage * shockWaveDamageMultiplier;
@@ -492,7 +499,56 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public void IncreaseAxeAttackSpeed(float _amount)
     {
         axeAttackSpeedMultiplier = axeAttackSpeedAccum.Add(axeAttackSpeedMultiplier, _amount);
-        axeAttackCoolTime = baseAxeAttackCoolTime / axeAttackSpeedMultiplier;
+        RecalculateAxeAttackCoolTime();
+    }
+
+    /// <summary>
+    /// 과열 수치로 오르는 도끼 공격속도 배율. 특성 배율(axeAttackSpeedMultiplier)과 따로 들고 있다가 마지막에 곱한다.
+    /// OverheatComponent만 넣는다. 과열이 0이면 1이라 본편 다른 스테이지와 로그라이크는 값이 그대로다.
+    /// </summary>
+    public float overheatAxeAttackSpeedMultiplier { get; private set; } = 1.0f;
+
+    public void SetOverheatAxeAttackSpeedMultiplier(float _multiplier)
+    {
+        overheatAxeAttackSpeedMultiplier = _multiplier;
+        RecalculateAxeAttackCoolTime();
+    }
+
+    private void RecalculateAxeAttackCoolTime()
+    {
+        axeAttackCoolTime = baseAxeAttackCoolTime / (axeAttackSpeedMultiplier * overheatAxeAttackSpeedMultiplier);
+    }
+
+    /// <summary>과열 수치(내림한 정수)가 속한 구간. 기본값이면 0~33 = 0, 34~66 = 1, 67~99 = 2, 100 = 3.</summary>
+    public int GetOverheatTier(int _overheatLevel)
+    {
+        int tier = 0;
+        if (overheatTierThresholds == null) return tier;
+
+        for (int i = 0; i < overheatTierThresholds.Length; i++)
+        {
+            if (_overheatLevel >= overheatTierThresholds[i]) tier++;
+        }
+        return tier;
+    }
+
+    /// <summary>화상 틱 피해 비율(실제 들어간 피해 대비). 과열 충격파·부메랑·드론이 같이 쓴다.</summary>
+    public float GetOverheatBurnRatio(int _overheatLevel)
+    {
+        return GetTierValue(overheatBurnRatios, GetOverheatTier(_overheatLevel));
+    }
+
+    /// <summary>과열 드론의 연쇄 횟수 추가분.</summary>
+    public int GetDroneOverheatChainBonus(int _overheatLevel)
+    {
+        if (droneOverheatChainBonus == null || droneOverheatChainBonus.Length == 0) return 0;
+        return droneOverheatChainBonus[Mathf.Clamp(GetOverheatTier(_overheatLevel), 0, droneOverheatChainBonus.Length - 1)];
+    }
+
+    private static float GetTierValue(float[] _values, int _tier)
+    {
+        if (_values == null || _values.Length == 0) return 0f;
+        return _values[Mathf.Clamp(_tier, 0, _values.Length - 1)];
     }
 
     public void IncreaseWeakPointDamageMul(float _amount)

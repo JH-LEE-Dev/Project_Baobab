@@ -134,13 +134,6 @@ public class InDungeonVFXManager : MonoBehaviour
 
     private IObjectPool<SporeExplosionVFX> sporeExplosionVfxPool;
 
-    [Header("Fire Explosion")]
-    [SerializeField] private FireExplosionVFX fireExplosionVfxPrefab;
-    [SerializeField] private int fireExplosionVfxPoolDefaultCapacity = 8;
-    [SerializeField] private int fireExplosionVfxPoolMaxSize = 64;
-
-    private IObjectPool<FireExplosionVFX> fireExplosionVfxPool;
-
     [Header("Tree Transform (보석 단계 변환)")]
     [SerializeField] private TreeTransformVFX treeTransformVfxPrefab;
     [SerializeField] private int treeTransformVfxPoolDefaultCapacity = 4;
@@ -276,19 +269,6 @@ public class InDungeonVFXManager : MonoBehaviour
             );
         }
 
-        if (fireExplosionVfxPool == null && fireExplosionVfxPrefab != null)
-        {
-            fireExplosionVfxPool = new ObjectPool<FireExplosionVFX>(
-                createFunc: CreateFireExplosionVfx,
-                actionOnGet: OnGetFireExplosionVfx,
-                actionOnRelease: OnReleaseFireExplosionVfx,
-                actionOnDestroy: OnDestroyFireExplosionVfx,
-                collectionCheck: PoolSettings.CollectionCheck,
-                defaultCapacity: fireExplosionVfxPoolDefaultCapacity,
-                maxSize: fireExplosionVfxPoolMaxSize
-            );
-        }
-
         if (treeTransformVfxPool == null && treeTransformVfxPrefab != null)
         {
             treeTransformVfxPool = new ObjectPool<TreeTransformVFX>(
@@ -319,9 +299,8 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     // 전투 중 처음 나올 때 생성이 몰리던 이펙트 풀을 초기화 시점에 미리 만들어 두는 개수.
-    // 폭발 이펙트는 맞은 나무 하나당 4개씩 0.15초 간격으로 터지므로, 과열 충격파·포자막 연쇄로 여러 그루가 함께 터지면
+    // 폭발 이펙트는 맞은 나무 하나당 4개씩 0.15초 간격으로 터지므로, 포자막 연쇄로 여러 그루가 함께 터지면
     // 수십 개가 동시에 살아 있다. 이 수를 넘는 순간에는 예전처럼 그때 만든다(동작은 같고 그 순간의 생성만 줄어든다).
-    private const int FireExplosionVfxPrewarmCount = 40;
     private const int SporeExplosionVfxPrewarmCount = 40;
     private const int TreeStarMarkGroundPrewarmCount = 16;
     private const int TreeTransformVfxPrewarmCount = 4;
@@ -335,7 +314,6 @@ public class InDungeonVFXManager : MonoBehaviour
     /// </summary>
     private void PrewarmCombatVfxPools()
     {
-        PrewarmPool(fireExplosionVfxPool, FireExplosionVfxPrewarmCount, fireExplosionVfxPoolMaxSize);
         PrewarmPool(sporeExplosionVfxPool, SporeExplosionVfxPrewarmCount, sporeExplosionVfxPoolMaxSize);
         PrewarmPool(treeStarMarkGroundPool, TreeStarMarkGroundPrewarmCount, treeStarMarkGroundPoolMaxSize);
         PrewarmPool(treeTransformVfxPool, TreeTransformVfxPrewarmCount, treeTransformVfxPoolMaxSize);
@@ -609,40 +587,6 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     private void OnDestroySporeExplosionVfx(SporeExplosionVFX _instance)
-    {
-        if (_instance != null) Destroy(_instance.gameObject);
-    }
-
-    /// <summary>
-    /// 과열 강화 ShockWave 폭발 VFX를 스폰합니다. 포자 폭발 VFX와 완전히 동일한 방식(프리팹 + ObjectPool)입니다.
-    /// </summary>
-    public void PlayFireExplosionVFX(Vector3 _position, Vector2 _outwardDirection, int _sortingOrderOffset = 100)
-    {
-        if (fireExplosionVfxPool == null) return;
-
-        FireExplosionVFX instance = fireExplosionVfxPool.Get();
-        instance.transform.position = _position;
-        instance.Play(_sortingOrderOffset, _outwardDirection);
-    }
-
-    private FireExplosionVFX CreateFireExplosionVfx()
-    {
-        FireExplosionVFX instance = Instantiate(fireExplosionVfxPrefab, transform);
-        instance.SetPool(fireExplosionVfxPool);
-        return instance;
-    }
-
-    private void OnGetFireExplosionVfx(FireExplosionVFX _instance)
-    {
-        _instance.gameObject.SetActive(true);
-    }
-
-    private void OnReleaseFireExplosionVfx(FireExplosionVFX _instance)
-    {
-        _instance.gameObject.SetActive(false);
-    }
-
-    private void OnDestroyFireExplosionVfx(FireExplosionVFX _instance)
     {
         if (_instance != null) Destroy(_instance.gameObject);
     }
