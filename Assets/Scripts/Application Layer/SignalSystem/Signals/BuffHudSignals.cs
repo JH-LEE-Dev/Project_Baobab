@@ -1,10 +1,5 @@
 
-// 버프 HUD(스태미나 바 위 아이콘 줄)에 띄울 버프의 식별자. 같은 id면 HUD가 같은 칸으로 본다.
-public enum EBuffHudId
-{
-    AttackRythm = 1,   // 벌목 리듬
-    SourceOfSpeed = 2, // 속도의 원천
-}
+// 버프 식별자(EBuffHudId)는 HUD 아이콘 테이블과 같이 쓰도록 UI 쪽 EBuffHudId.cs에 있다(같은 id면 HUD가 같은 칸으로 본다).
 
 public enum EBuffHudOp
 {

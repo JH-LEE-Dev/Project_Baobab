@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52ae58612b68cc74bba59966807ca381, type: 3}
+  m_Name: HUD_BuffIconTable
+  m_EditorClassIdentifier: Assembly-CSharp::HUD_BuffIconTable
+  entries:
+  - id: 1
+    icon: {fileID: 21300000, guid: 894fbadf89a452e468739c00b0a36158, type: 3}
+  - id: 2
+    icon: {fileID: 21300000, guid: 8522e84c9da5d9f4daa988efc89b2066, type: 3}
+  - id: 3
+    icon: {fileID: 21300000, guid: c7e9d7dd5d8643649a939265eb5dbe13, type: 3}
+  - id: 4
+    icon: {fileID: 21300000, guid: b30faef094bc42d44a1c6cf36e20df3a, type: 3}
+  - id: 5
+    icon: {fileID: 21300000, guid: 4d98845fe98586044b69546715aa97bb, type: 3}
+  - id: 6
+    icon: {fileID: 21300000, guid: 278c2eaa7e197dc4db4854df30fccea6, type: 3}

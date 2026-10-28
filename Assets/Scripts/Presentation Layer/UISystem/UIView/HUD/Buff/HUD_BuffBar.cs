@@ -45,6 +45,10 @@ public class HUD_BuffBar : MonoBehaviour
     [SerializeField] private RectTransform chipRoot;
     [SerializeField] private RawImage chipNumber;
 
+    [Header("Icon")]
+    [Tooltip("id -> 아이콘 테이블. BuffDisplayInfo.icon이 비어 있으면 여기서 id로 찾아 채운다.")]
+    [SerializeField] private HUD_BuffIconTable iconTable;
+
     [Header("Number Glyph")]
     [Tooltip("숫자 스프라이트. 인덱스 d가 숫자 d (SmallCurrencyNum 시트는 1~9,0 순서이므로 _0~_8이 1~9, _9가 0).")]
     [SerializeField] private Sprite[] digitSprites;
@@ -135,11 +139,18 @@ public class HUD_BuffBar : MonoBehaviour
             return;
         }
 
-        HUD_BuffIcon _icon = FindIcon(_info.id);
+        BuffDisplayInfo _resolved = _info;
+
+        if (null == _resolved.icon && null != iconTable)
+        {
+            _resolved.icon = iconTable.GetIcon(_resolved.id);
+        }
+
+        HUD_BuffIcon _icon = FindIcon(_resolved.id);
 
         if (null != _icon)
         {
-            _icon.Refresh(_info);
+            _icon.Refresh(_resolved);
             return;
         }
 
@@ -147,12 +158,12 @@ public class HUD_BuffBar : MonoBehaviour
 
         if (null == _icon)
         {
-            Debug.LogWarning("[HUD_BuffBar] 버프 칸이 가득 찼습니다. poolCapacity=" + poolCapacity + " id=" + _info.id);
+            Debug.LogWarning("[HUD_BuffBar] 버프 칸이 가득 찼습니다. poolCapacity=" + poolCapacity + " id=" + _resolved.id);
             return;
         }
 
         layoutOrder.Add(_icon);
-        _icon.Begin(_info, GetSlotPos(layoutOrder.Count - 1), true);
+        _icon.Begin(_resolved, GetSlotPos(layoutOrder.Count - 1), true);
         _icon.SetTint(lastTint);
         RelayoutAll(false);
     }
@@ -285,8 +296,9 @@ public class HUD_BuffBar : MonoBehaviour
         Emit(_x, _y, 0f, -12f, 0f, -40f, _life, _delay, KindDot, _color);
     }
 
-    // 퇴장 때 아이콘 픽셀 하나가 점으로 흩어진다. _px/_py는 아이콘 픽셀 좌표(왼쪽 위 원점).
-    public void FxShard(float _slotX, float _slotY, int _px, int _py, int _iconW, int _iconH, Color32 _color)
+    // 퇴장 때 아이콘 픽셀 하나가 점으로 흩어진다. _px/_py는 아이콘 픽셀 좌표(왼쪽 위 원점),
+    // _originX/_originY는 칸 안에서 아이콘 이미지의 왼쪽 아래 위치다.
+    public void FxShard(float _slotX, float _slotY, float _originX, float _originY, int _px, int _py, int _iconW, int _iconH, Color32 _color)
     {
         float _ang = Mathf.Atan2(_py - _iconH * 0.5f, _px - _iconW * 0.5f) + Random.Range(-0.5f, 0.5f);
         float _sp = Random.Range(12f, 34f);
@@ -295,9 +307,9 @@ public class HUD_BuffBar : MonoBehaviour
         float _sin = Mathf.Sin(_ang);
         float _v = 1.1f * _sp;
         float _a = -1.1f * _sp / _lf;
-        // 아이콘 픽셀(위에서 아래)을 로컬 좌표(아래에서 위)로 옮긴다. 칸 안 아이콘 위치는 (3, 6).
-        float _x = _slotX + 3f + _px;
-        float _y = _slotY + 6f + _iconH - 1 - _py;
+        // 아이콘 픽셀(위에서 아래)을 로컬 좌표(아래에서 위)로 옮긴다. 아이콘 위치는 칸 안 (_originX, _originY).
+        float _x = _slotX + _originX + _px;
+        float _y = _slotY + _originY + _iconH - 1 - _py;
         // 화면 y는 아래 방향이 +이므로 sin 부호를 뒤집는다. 위로 8px/s 튀었다가 중력으로 떨어진다.
         Emit(_x, _y, _cos * _v, -_sin * _v + 8f, _cos * _a, -_sin * _a - 60f, _lf, 0f, KindDot, _color);
     }

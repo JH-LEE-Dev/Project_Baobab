@@ -17,6 +17,7 @@ public class RepairBox : MonoBehaviour
     private int characterLayer;
     private bool bPhysicalOverlapped = false;
     private bool bLastInteractState = false;
+    private bool bLastHudState = false;
 
     // RepairBox가 Active일 때만 길찾기 상 이동 불가 타일로 등록되는 발밑 ColliderTilemap
     private TilemapFootprintCollider footprintCollider;
@@ -46,6 +47,10 @@ public class RepairBox : MonoBehaviour
     [SerializeField] private string repairSparkTag = "RepairSpark";
     [Tooltip("스파크가 튀는 위치. 비어 있으면 모루 그림 위치를 쓴다.")]
     [SerializeField] private Transform repairSparkPoint;
+
+    [Header("Count HUD")]
+    [Tooltip("모루 옆에 남은 사용 횟수를 보여 주는 월드 HUD")]
+    [SerializeField] private HUD_RepairKitCount countHud;
 
     private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
     private MaterialPropertyBlock flashMPB;
@@ -123,6 +128,7 @@ public class RepairBox : MonoBehaviour
     public void SetRepairBoxCount(float _amount)
     {
         repairBoxCount = (int)_amount;
+        if (countHud != null) countHud.SetCount(repairBoxCount, false);
     }
 
     public void SetRepairAmount(float _amount)
@@ -132,6 +138,19 @@ public class RepairBox : MonoBehaviour
 
     private void UpdateInteractState()
     {
+        // 횟수 HUD는 남은 횟수와 무관하게 수리 가능한 위치(가장 가까운 대상이면서 겹침)에 있을 때 보여 준다.
+        // 그래야 마지막 사용 연출이 잘리지 않고, 다 쓴 뒤에도 0이 보인다.
+        bool hudState = bCanReach && bPhysicalOverlapped;
+        if (hudState != bLastHudState)
+        {
+            bLastHudState = hudState;
+            if (countHud != null)
+            {
+                if (hudState) countHud.Show();
+                else countHud.Hide();
+            }
+        }
+
         bool currentState = bCanReach && bPhysicalOverlapped && repairBoxCount > 0;
         if (currentState != bLastInteractState)
         {
@@ -176,6 +195,11 @@ public class RepairBox : MonoBehaviour
     {
         inputManager = _inputManager;
         footprintCollider.SetEnvironmentProvider(_environmentProvider);
+        if (countHud != null)
+        {
+            countHud.Initialize(_characterTransform);
+            countHud.SetCount(repairBoxCount, false);
+        }
         if (_characterTransform != null && _characterTransform.parent != null)
         {
             character = _characterTransform.parent.GetComponent<Character>();
@@ -215,6 +239,9 @@ public class RepairBox : MonoBehaviour
     {
         footprintCollider?.Clear();
 
+        // HUD는 자체 OnDisable에서 숨겨지므로, 다시 켜졌을 때 상태 변화로 다시 보이도록 기록을 비운다.
+        bLastHudState = false;
+
         // 연출 도중 꺼지면(원정 종료 등) 다음에 켜질 때 찌그러진 채로 남지 않도록 원래 모습으로 돌린다.
         if (repairFeedbackCoroutine != null)
         {
@@ -253,6 +280,7 @@ public class RepairBox : MonoBehaviour
         {
             character.RepairWeapon(repairAmount);
             repairBoxCount--;
+            if (countHud != null) countHud.SetCount(repairBoxCount, true);
             UpdateInteractState();
             PlayRepairFeedback();
         }
@@ -265,7 +293,13 @@ public class RepairBox : MonoBehaviour
         {
             Vector3 sparkPos = repairSparkPoint != null ? repairSparkPoint.position
                 : (spriteRenderer != null ? spriteRenderer.transform.position : transform.position);
-            repairVfx.Play(repairSparkTag, sparkPos, Quaternion.identity);
+            ParticleSystem sparkEffect = repairVfx.Play(repairSparkTag, sparkPos, Quaternion.identity);
+
+            // 모루 그림 위에 그려지도록 정렬을 맞춘다(그림의 정렬 순서는 CustomSortable이 위치에 따라 정한다).
+            if (null != sparkEffect && null != spriteRenderer)
+            {
+                repairVfx.SetSortingSettings(sparkEffect, spriteRenderer.sortingLayerID, spriteRenderer.sortingOrder + 2);
+            }
         }
 
         if (spriteRenderer == null || !gameObject.activeInHierarchy) return;
