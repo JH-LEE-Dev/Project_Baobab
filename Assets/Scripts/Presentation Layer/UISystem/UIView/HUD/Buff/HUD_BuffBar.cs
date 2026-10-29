@@ -127,6 +127,9 @@ public class HUD_BuffBar : MonoBehaviour
     public void Initialize(HUD_Stemina _stamina)
     {
         staminaBar = _stamina;
+
+        // 첫 버프가 오기 전에도 Fx 오버레이에 투명 텍스처를 물려 둔다. 비어 있으면 RawImage가 흰 사각형으로 그려진다.
+        EnsureInitialized();
     }
 
     // ===== 공개 API =====
