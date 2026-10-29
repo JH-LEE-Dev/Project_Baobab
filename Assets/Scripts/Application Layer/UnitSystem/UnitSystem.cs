@@ -381,7 +381,7 @@ public class UnitSystem
 
     /// <summary>
     /// 대시(원목 보험 증서 전리품 효과)의 성장 단계를 캐릭터에 알린다. 0이면 대시를 쓸 수 없다.
-    /// 씬 진입마다 GameInstaller가 정한다.
+    /// 씬 진입마다, 그리고 마을에서 프레스티지로 단계가 바뀔 때 GameInstaller가 정한다.
     /// </summary>
     public void SetDashTier(int _tier)
     {

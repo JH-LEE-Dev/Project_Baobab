@@ -914,7 +914,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     }
 
     /// <summary>
-    /// "원목 보험 증서" 성장 단계(1~3, 0이면 미보유). 씬 진입 때 GameInstaller가 부른다.
+    /// "원목 보험 증서" 성장 단계(1~3, 0이면 미보유). 씬 진입 때와, 마을에서 프레스티지로 단계가 바뀔 때 GameInstaller가 부른다.
     /// 단계에 맞춰 저장 횟수·충전 쿨타임을 바꾸고 가득 채운다 - 새 판은 가득 찬 상태로 시작하는데,
     /// SetWhereIsCharacter의 Refill은 이전 단계 기준이라 III단계로 처음 들어오면 2칸 중 1칸만 찬 채로 시작한다.
     /// </summary>
@@ -1005,11 +1005,14 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     /// </summary>
     private void TryStartDash()
     {
-        if (false == dashCharge.bUnlocked || false == bInDungeon || bDead || bWhileReset || bRide) return;
+        if (false == dashCharge.bUnlocked || bDead || bRide) return;
         if (false == gameObject.activeInHierarchy) return;
 
-        // 귀환 확정·경고창·입장 연출처럼 조작을 넘겨받지 않은 구간은 조준이 꺼져 있거나 이동이 잠겨 있다.
-        if (null == attackComponent || false == attackComponent.IsCursorEnabled || inputManager.IsMovePaused) return;
+        // 던전: 귀환 확정·경고창·입장 연출처럼 조작을 넘겨받지 않은 구간은 리셋 중이거나 조준이 꺼져 있다.
+        // 마을은 조준을 쓰지 않고(커서가 늘 꺼져 있다) bWhileReset은 ResetStatus 뒤 다음 던전의 ActivateCharacter에서야 풀려 마을에서는 켜진 채 남을 수 있으므로 보지 않는다.
+        // 마을의 출발·도착·메인 메뉴 연출은 이동 잠금(IsMovePaused)과 탑승(bRide)으로 막힌다.
+        if (bInDungeon && (bWhileReset || null == attackComponent || false == attackComponent.IsCursorEnabled)) return;
+        if (inputManager.IsMovePaused) return;
 
         // 키를 누른 순간에는 게임플레이였어도, 시작은 다음 물리 틱이라 그 사이 UI 화면이 열렸을 수 있다.
         if (EInputMode.Gameplay != inputManager.CurrentInputMode) return;
