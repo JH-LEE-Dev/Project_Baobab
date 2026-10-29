@@ -44,6 +44,9 @@ public class GameInstaller : MonoBehaviour
     [SerializeField] private RoguelikeSystem roguelikeSystemPrefab;
     private RoguelikeSystem roguelikeSystem;
 
+    // 지금 씬이 마을인지. 마을에서 프레스티지로 대시 단계가 바뀌면 바로 반영한다(LootGrowthTierChanged).
+    private bool bTownScene = false;
+
     public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager, LocalizationManager _localizeManager, SaveManager _saveManager)
     {
         DontDestroyOnLoad(gameObject);
@@ -158,6 +161,8 @@ public class GameInstaller : MonoBehaviour
         // 성장형 전리품 단계가 지금 프레스티지 레벨을 보도록 맞춘다(세이브 로드 직후 포함).
         inDungeonSystem.inDungeonObjectManager.SyncPrestigeLevel(skillManager.GetCurrentPrestigeLevel());
 
+        bTownScene = _sceneChangeData.currentScene != SceneType.Roguelike && _sceneChangeData.currentScene != SceneType.DungeonScene;
+
         if (_sceneChangeData.currentScene == SceneType.Roguelike)
         {
             // 로그라이크: 던전 원정 흐름(InDungeonSystem)과 마을 흐름(TownSystem)을 모두 타지 않고
@@ -189,7 +194,8 @@ public class GameInstaller : MonoBehaviour
             // Town 초기화(그리드 생성, NPC 스폰)가 끝난 뒤에만 구름이 걷히도록 여기서 명시적으로 트리거한다.
             inDungeonSystem.NotifyTownSystemReady();
             unitSystem.SetWhereIsCharacter(false);
-            unitSystem.SetDashTier(0);
+            // 마을에서도 던전과 같은 기준(영구 획득 여부·프레스티지 성장 단계)으로 대시를 켠다.
+            unitSystem.SetDashTier(inDungeonSystem.inDungeonObjectManager.GetLootGrowthTier(LootType.LostAndFoundBox));
 
             // 마을 도착(최초 진입/이어하기 포함) 시점 자동저장.
             signalHub.Publish(new AutoSaveRequestedSignal(AutoSaveReason.ArriveTown));
@@ -282,6 +288,9 @@ public class GameInstaller : MonoBehaviour
 
         inDungeonSystem.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
         inDungeonSystem.GoToMainMenuCurtainRevealEvent += GoToMainMenuCurtainReveal;
+
+        inDungeonSystem.inDungeonObjectManager.LootGrowthTierChangedEvent -= LootGrowthTierChanged;
+        inDungeonSystem.inDungeonObjectManager.LootGrowthTierChangedEvent += LootGrowthTierChanged;
     }
 
     private void ReleaseEvents()
@@ -290,6 +299,16 @@ public class GameInstaller : MonoBehaviour
         townSystem.MainMenuCurtainRollbackEvent -= TownIntroCurtainRollback;
         townSystem.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
         inDungeonSystem.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
+        inDungeonSystem.inDungeonObjectManager.LootGrowthTierChangedEvent -= LootGrowthTierChanged;
+    }
+
+    // 마을(특성 창)에서 프레스티지가 올라 대시 전리품 단계가 바뀌면 다음 씬 진입을 기다리지 않고 바로 적용한다.
+    // 던전은 들어갈 때 단계를 다시 읽으므로(SetupGameInstaller) 여기서는 마을만 맡는다.
+    private void LootGrowthTierChanged(LootType _lootType, int _tier)
+    {
+        if (LootType.LostAndFoundBox != _lootType || false == bTownScene) return;
+
+        unitSystem.SetDashTier(_tier);
     }
 
     private void CreateRoguelikeSystem()
