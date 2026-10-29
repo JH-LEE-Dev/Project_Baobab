@@ -54,6 +54,9 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     private ItemDataPool itemDataPool;
 
     public Transform visualTransform;
+    // visualTransform과 같이 짜부시킬 그림. 상자와 정렬 그룹이 달라 같은 자식에 넣을 수 없는 그림자 같은 것을 둔다.
+    // 비워 두면 visualTransform만 짜부된다. 여기 넣는 트랜스폼도 이 오브젝트(상호작용 콜라이더)를 품으면 안 된다.
+    [SerializeField] private Transform[] extraVisualTransforms;
     private float bounceTime = 1f;
     private const float BOUNCE_DURATION = 0.4f;
 
@@ -196,6 +199,17 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         if (visualTransform != null && transform.IsChildOf(visualTransform))
         {
             Debug.LogWarning($"[LogContainer] 짜부 연출 대상(Visual Transform '{visualTransform.name}')이 상호작용 콜라이더를 함께 움직입니다. 원목이 박힐 때마다 상호작용 범위가 출렁여 가방이 열렸다 닫힐 수 있으니, 상자 그림만 담은 자식을 지정하세요. ({name})", this);
+        }
+
+        if (extraVisualTransforms != null)
+        {
+            for (int i = 0; i < extraVisualTransforms.Length; i++)
+            {
+                if (extraVisualTransforms[i] != null && transform.IsChildOf(extraVisualTransforms[i]))
+                {
+                    Debug.LogWarning($"[LogContainer] 짜부 연출 대상(Extra Visual Transforms '{extraVisualTransforms[i].name}')이 상호작용 콜라이더를 함께 움직입니다. 그림만 담은 트랜스폼을 지정하세요. ({name})", this);
+                }
+            }
         }
         if (outLineObject != null)
         {
@@ -387,8 +401,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     {
         if (bounceTime >= BOUNCE_DURATION)
         {
-            if (visualTransform != null && visualTransform.localScale != Vector3.one)
-                visualTransform.localScale = Vector3.one;
+            SetBounceScale(Vector3.one);
             return;
         }
 
@@ -398,10 +411,21 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         // 진폭을 0.4로 키우고 감쇠를 3f로 늦춰 더 찰진 느낌 부여
         float curve = Mathf.Sin(t * Mathf.PI * 3f) * Mathf.Exp(-t * 4f) * 0.25f;
 
-        if (visualTransform != null)
+        // X축 확대 시 Y축 축소 (Squash & Stretch)
+        SetBounceScale(new Vector3(1f + curve, 1f - curve, 1f));
+    }
+
+    private void SetBounceScale(Vector3 _scale)
+    {
+        if (visualTransform != null && visualTransform.localScale != _scale)
+            visualTransform.localScale = _scale;
+
+        if (extraVisualTransforms == null) return;
+
+        for (int i = 0; i < extraVisualTransforms.Length; i++)
         {
-            // X축 확대 시 Y축 축소 (Squash & Stretch)
-            visualTransform.localScale = new Vector3(1f + curve, 1f - curve, 1f);
+            if (extraVisualTransforms[i] != null && extraVisualTransforms[i].localScale != _scale)
+                extraVisualTransforms[i].localScale = _scale;
         }
     }
 
