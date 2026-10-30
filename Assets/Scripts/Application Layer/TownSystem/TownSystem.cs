@@ -414,6 +414,9 @@ public class TownSystem : MonoBehaviour
     // 단, 마지막 스텝(StartNewLogging)은 차량 상호작용 자체가 완료 조건이므로 잠그지 않는다.
     private void TutorialStepStarted(TutorialStepStartedSignal _signal)
     {
+        // 튜토리얼이 끝날 때까지(마지막 스텝 포함) 강아지는 자고만 있고 상호작용할 수 없다.
+        puppyManager?.SetTutorialSleep(true);
+
         if (_signal.step == TutorialStep.StartNewLogging)
         {
             // 이미 UpgradeAxe 완료 시점에 풀렸지만, 순서가 어긋나더라도 확실히 열려 있도록 한 번 더 보장한다.
@@ -441,6 +444,9 @@ public class TownSystem : MonoBehaviour
     // (마지막 스텝 시작 전에 미리 열려 생기는 빈틈은 TutorialSystem 쪽에서 처리한다)
     private void TutorialStepCompleted(TutorialStepCompletedSignal _signal)
     {
+        if (_signal.step == TutorialStep.StartNewLogging)
+            puppyManager?.SetTutorialSleep(false);
+
         if (_signal.step != TutorialStep.UpgradeAxe)
             return;
 

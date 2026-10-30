@@ -11,7 +11,8 @@ using UnityEngine.Rendering;
 ///   - 강아지와 밥그릇 중 플레이어에게 가까운 하나만 반응한다(아웃라인 + 머리 위 상호작용 키).
 ///   - 플레이어가 코어루프 기물(집·상점·원목 상자·차량 등)의 상호작용 영역 안에 있으면 그쪽이 우선이라
 ///     강아지/밥그릇은 반응하지 않는다.
-///   - 강아지 상호작용 쿨타임은 1초. 밥그릇은 강아지가 먹고 있는 동안 상호작용할 수 없다.
+///   - 강아지 상호작용 쿨타임은 1초. 밥그릇은 강아지가 먹고 있는 동안이나 가득 차 있을 때 상호작용할 수 없다.
+///   - 튜토리얼 중에는 강아지가 자고만 있고 상호작용할 수 없다.
 /// </summary>
 public class PuppyManager : MonoBehaviour
 {
@@ -78,6 +79,9 @@ public class PuppyManager : MonoBehaviour
 
     private bool bInTown = false;
 
+    // 튜토리얼 중에는 강아지를 재워 두고 상호작용을 막는다. TownSystem이 튜토리얼 신호를 받아 정해준다.
+    private bool bTutorialSleep = false;
+
     private EInteractTarget currentTarget = EInteractTarget.None;
     private bool bLastInteractState = false;
     private float lastPuppyInteractTime = -999f;
@@ -142,6 +146,18 @@ public class PuppyManager : MonoBehaviour
             priorityZones.Add(_zone);
     }
 
+    public void SetTutorialSleep(bool _bSleep)
+    {
+        if (bTutorialSleep == _bSleep) return;
+
+        bTutorialSleep = _bSleep;
+
+        // 마을에 있는 동안 튜토리얼이 시작되면 바로 재운다. 끝날 때는 깨우지 않고 상호작용만 다시 열어,
+        // 평소처럼 주인이 상호작용해야 일어난다.
+        if (true == bTutorialSleep && true == bInTown && null != puppy)
+            puppy.ForceSleep();
+    }
+
     /// <summary>
     /// 마을에 도착했을 때(TownSystem.StartTownSystem) 호출한다. 마을 Grid와 길찾기 데이터가 준비된 뒤여야 한다.
     /// _arrivalAnchor는 플레이어가 나타나는 지점으로, 강아지가 그 근처 무작위 위치에서 반긴다.
@@ -165,7 +181,7 @@ public class PuppyManager : MonoBehaviour
         if (false == TryGetRandomPoint(_anchor, spawnDistance.x, spawnDistance.y, out Vector2 _spawn))
             _spawn = GetEatPoint(_anchor, new Vector2(0.6f, 0.4f));
 
-        puppy.EnterTown(_spawn, tilemapDataProvider);
+        puppy.EnterTown(_spawn, tilemapDataProvider, bTutorialSleep);
     }
 
     /// <summary>던전으로 떠나거나(로그라이크 포함) 마을 Grid가 사라질 때 호출한다.</summary>
@@ -213,6 +229,7 @@ public class PuppyManager : MonoBehaviour
         switch (currentTarget)
         {
             case EInteractTarget.Puppy:
+                if (true == bTutorialSleep) return;
                 if (Time.time - lastPuppyInteractTime < interactCooldown) return;
 
                 lastPuppyInteractTime = Time.time;
@@ -220,7 +237,7 @@ public class PuppyManager : MonoBehaviour
                 break;
 
             case EInteractTarget.Bowl:
-                if (true == puppy.IsEating) return;
+                if (true == puppy.IsEating || PuppyBowl.FullLevel <= bowl.Level) return;
                 if (Time.time - lastBowlInteractTime < interactCooldown) return;
 
                 lastBowlInteractTime = Time.time;
@@ -239,7 +256,7 @@ public class PuppyManager : MonoBehaviour
             Vector2 _owner = OwnerPosition;
             float _bestDistance = float.MaxValue;
 
-            if (PuppyBehavior.None != puppy.CurrentBehavior)
+            if (false == bTutorialSleep && PuppyBehavior.None != puppy.CurrentBehavior)
             {
                 float _radius = puppyInteractRadius * (EInteractTarget.Puppy == currentTarget ? interactExitRadiusMultiplier : 1f);
                 float _distance = ((Vector2)puppy.transform.position - _owner).magnitude;
@@ -250,7 +267,7 @@ public class PuppyManager : MonoBehaviour
                 }
             }
 
-            if (false == puppy.IsEating)
+            if (false == puppy.IsEating && bowl.Level < PuppyBowl.FullLevel)
             {
                 float _radius = bowlInteractRadius * (EInteractTarget.Bowl == currentTarget ? interactExitRadiusMultiplier : 1f);
                 float _distance = ((Vector2)bowl.transform.position - _owner).magnitude;
