@@ -19,21 +19,20 @@ public enum ERebindableAction
     /// <summary>공격. 실제 액션은 Click(&lt;Mouse&gt;/leftButton)이며 기본값은 마우스 좌클릭입니다.</summary>
     Attack,
 
-    /// <summary>포자 물약. 곧 없어질 기능이라 기본 바인딩을 비워 두었습니다(키보드 Q는 원목 교체, 패드 X는 대시가 가져갔다).</summary>
-    PotionKey,
+    // 7은 없어진 물약 키(PotionKey) 자리입니다. 다시 쓰지 마세요 - HUD 프리팹(UI_KeyboardImage.boundAction)이
+    // 이 enum을 정수로 저장하므로, 뒤쪽 값을 당기면 그 값을 가리키던 키 안내가 전부 한 칸씩 밀립니다.
 
     /// <summary>
     /// 원목 교체. 가방이나 운반 상자에 자리가 없을 때, 가장 값싼 슬롯을 버려 자리를 만듭니다.
     /// 기본값은 키보드 Q / 패드 buttonNorth(Y/△)입니다.
     /// </summary>
-    LogSwap,
+    LogSwap = 8,
 
     /// <summary>
     /// 대시. "원목 보험 증서" 전리품을 얻어야 쓸 수 있습니다. 기본값은 키보드 Space / 패드 buttonWest(X/□)입니다.
-    /// 반드시 맨 끝에 둡니다 - HUD 프리팹(UI_KeyboardImage.boundAction)이 이 enum을 정수로 저장하므로
-    /// 중간에 끼우면 뒤쪽 값(PotionKey/LogSwap)을 가리키던 키 안내가 전부 한 칸씩 밀립니다.
+    /// 반드시 맨 끝에 둡니다 - 중간에 끼우면 뒤쪽 값을 가리키던 키 안내가 밀립니다.
     /// </summary>
-    Dash,
+    Dash = 9,
 }
 
 /// <summary>
@@ -48,7 +47,6 @@ public enum ERebindableAction
 /// | Inventory  | leftTrigger (LT/L2)  |
 /// | Dash       | buttonWest (X/□)     |
 /// | LogSwap    | buttonNorth (Y/△)    |
-/// | PotionKey  | (없음)                |
 /// | ESC(메뉴)   | start                |
 ///
 /// buttonEast(B/○)는 비워 둡니다. 리바인딩 취소이자 "뒤로가기"라는 보편 관례라
