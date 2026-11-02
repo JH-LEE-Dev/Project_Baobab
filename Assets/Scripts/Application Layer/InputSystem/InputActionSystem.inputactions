@@ -106,15 +106,6 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "PotionKey",
-                    "type": "Button",
-                    "id": "ebe98831-37f9-41e8-83b4-1007f5eeb116",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
                     "name": "LogSwap",
                     "type": "Button",
                     "id": "c7a41f30-5b62-4e88-9a37-2d6e81f4c905",
@@ -310,17 +301,6 @@
                 },
                 {
                     "name": "",
-                    "id": "5b64aba9-6d27-48d8-a40f-7a0a3119d743",
-                    "path": "",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "PotionKey",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "b1d94e27-3af5-45c0-8e19-6c72d0af5e14",
                     "path": "<Keyboard>/q",
                     "interactions": "",
@@ -437,17 +417,6 @@
                     "processors": "",
                     "groups": "",
                     "action": "Inventory",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "4eb17259-cf8a-4036-e5db-71a26f34809c",
-                    "path": "",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "PotionKey",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

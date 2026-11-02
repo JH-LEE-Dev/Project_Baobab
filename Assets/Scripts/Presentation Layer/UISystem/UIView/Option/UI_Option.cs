@@ -1364,7 +1364,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             case ERebindableAction.Inventory:     return GetText(LocKeys.OptionUI.inventory, "인벤토리");
             case ERebindableAction.Interaction:   return GetText(LocKeys.OptionUI.interaction, "상호작용");
             case ERebindableAction.Attack:        return GetText(LocKeys.OptionUI.attack, "공격");
-            case ERebindableAction.PotionKey:     return GetText(LocKeys.OptionUI.potionKey, "물약 사용");
             case ERebindableAction.LogSwap:       return GetText(LocKeys.OptionUI.logSwap, "원목 교체");
             default:                              return _action.ToString();
         }

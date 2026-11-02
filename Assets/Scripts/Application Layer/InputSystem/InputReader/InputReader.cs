@@ -34,7 +34,6 @@ public class InputReader
     /// </summary>
     public event Action InteractionKeyPressedWhileUIModeEvent;
     public event Action InteractionKeyCanceledEvent;
-    public event Action PotionKeyPressedEvent;
 
     /// <summary>
     /// 원목 교체 키(기본 Q / 패드 Y)가 눌렸습니다. 실제로 교체가 가능한 상황인지, 인벤토리가
@@ -271,7 +270,6 @@ public class InputReader
             actions.Normal.Inventory.performed += OnInventoryKeyPressed;
             actions.Normal.Interaction.performed += InteractionKeyPressed;
             actions.Normal.Interaction.canceled += InteractionKeyCanceled;
-            actions.Normal.PotionKey.performed += PotionKeyPressed;
             actions.Normal.LogSwap.performed += LogSwapKeyPressed;
             actions.Normal.Dash.performed += DashKeyPressed;
 
@@ -313,7 +311,6 @@ public class InputReader
         actions.Normal.Inventory.performed -= OnInventoryKeyPressed;
         actions.Normal.Interaction.performed -= InteractionKeyPressed;
         actions.Normal.Interaction.canceled -= InteractionKeyCanceled;
-        actions.Normal.PotionKey.performed -= PotionKeyPressed;
         actions.Normal.LogSwap.performed -= LogSwapKeyPressed;
         actions.Normal.Dash.performed -= DashKeyPressed;
 
@@ -1137,13 +1134,6 @@ public class InputReader
         inventoryRedirectUIModePass = _uiModePass;
     }
 
-    public void PotionKeyPressed(InputAction.CallbackContext context)
-    {
-        if (false == CanDispatchGameplay) return;
-
-        PotionKeyPressedEvent?.Invoke();
-    }
-
     /// <summary>
     /// 원목 교체 키입니다. 게임플레이 입력이 살아 있는 구간에서만 전달합니다 - 인벤토리 팝업은
     /// 입력 모드를 UI로 바꾸지 않으므로(가방을 연 채로 계속 움직일 수 있다) 이 조건으로 막히지
@@ -1252,6 +1242,14 @@ public class InputReader
     /// </summary>
     private bool TryGetBindingTarget(ERebindableAction _action, EInputDeviceType _device, out InputAction _inputAction, out int _bindingIndex)
     {
+        // 없어진 액션 값(예: 7 = 옛 물약 키)을 저장한 프리팹이 남아 있어도 예외 대신 "바인딩 없음"으로 처리한다.
+        if (0 > Array.IndexOf(rebindableActions, _action))
+        {
+            _inputAction = null;
+            _bindingIndex = -1;
+            return false;
+        }
+
         GetBindingTarget(_action, out _inputAction, out int _keyboardIndex);
 
         if (EInputDeviceType.Gamepad != _device)
@@ -1718,7 +1716,6 @@ public class InputReader
             case ERebindableAction.Inventory: _inputAction = actions.Normal.Inventory; _bindingIndex = 0; break;
             case ERebindableAction.Interaction: _inputAction = actions.Normal.Interaction; _bindingIndex = 0; break;
             case ERebindableAction.Attack: _inputAction = actions.Normal.Click; _bindingIndex = 0; break;
-            case ERebindableAction.PotionKey: _inputAction = actions.Normal.PotionKey; _bindingIndex = 0; break;
             case ERebindableAction.LogSwap: _inputAction = actions.Normal.LogSwap; _bindingIndex = 0; break;
             case ERebindableAction.Dash: _inputAction = actions.Normal.Dash; _bindingIndex = 0; break;
             default: throw new ArgumentOutOfRangeException(nameof(_action), _action, null);

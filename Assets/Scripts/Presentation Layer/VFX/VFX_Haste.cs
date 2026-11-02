@@ -3,35 +3,32 @@ using UnityEngine;
 namespace PresentationLayer.VFX
 {
     /// <summary>
-    /// 캐릭터의 헤이스트(이동속도 버프) 연출. 화살표나 상승 표시 없이 "몸 주변 공기가 같이 빠르게 흐른다"는 느낌을 준다.
+    /// 캐릭터의 헤이스트(이동속도 버프) 연출 중 VFX 풀로 재생하는 부분. 화살표나 상승 표시, 직선 꼬리 없이 절제된 연출만 남긴다.
     /// 버프가 유지되는 동안 캐릭터를 따라다니며, Begin으로 시작하고 End로 끝낸다(끝나면 스스로 풀에 반환).
     ///
     /// 구성(하늘색 한 계열, 별 표식 팔레트와 같은 흰색/하늘색/파랑)
     /// - 발동 연출(0.85초): 입자가 나선으로 감아 오르며 가슴 높이에 `◆`가 번쩍인다(바닥 고리는 없다).
-    /// - 속도선: 이동할 때 이동 반대 방향으로 공중에 남았다가 앞에서부터 사라지는 1px 선. 속도에 비례해 많아진다.
-    /// - 발걸음 바람 먼지: 걸음마다 발밑에서 `●` -> `+` -> `.`로 줄어드는 먼지가 뒤로 밀리고 발끝에 `◆` 반짝임이 스친다.
+    /// - 걸음 먼지: 걸음마다 좌우 발 번갈아 발밑에서 `●` -> `+` -> `.`로 줄어드는 먼지 2~3개가 이동 반대쪽으로 밀린다.
+    /// - 발끝 스파크: 걸음마다 3~4개가 이동 반대쪽으로 튀어 오르고 중력으로 떨어지며 `x` -> `+` -> `.`로 줄어든다.
     /// - 발끝 반짝임: 멈춰 있어도 버프 중임을 알리는 `◆` `+` `.` 반짝임이 몸 주변에서 올라간다.
     ///
+    /// 몸 스프라이트를 복제하는 잔상은 쓰지 않는다(복제본의 정렬 순서가 만든 시점에 고정돼 위로 달릴 때 캐릭터를 덮고 버벅여 보였다).
     /// 속도와 방향은 대상 Transform의 위치 변화량으로 스스로 계산하므로 이동 코드와 결합하지 않는다.
+    /// 아이소 지면 평면 기준(화면 y는 지면 y의 절반)으로 방향을 환산한다.
     /// 캐릭터 속도 자체는 이 이펙트가 바꾸지 않는다(실제 이동속도 버프와 같이 쓴다).
     ///
-    /// 렌더링: 뒤쪽 메쉬(캐릭터 소팅 -1, 먼지), 앞쪽 메쉬(캐릭터 소팅 +1, 속도선/반짝임/발동 입자).
+    /// 렌더링: 뒤쪽 메쉬(캐릭터 소팅 -1, 먼지), 앞쪽 메쉬(캐릭터 소팅 +1, 스파크/반짝임/발동 입자).
     /// 캐릭터 소팅 오더는 Begin에 넘긴 SpriteRenderer를 매 프레임 따라간다(캐릭터가 움직이며 y 기반 오더가 바뀐다).
     ///
-    /// 픽셀 규칙: DOUBLE PIXEL(속도선의 L자 모서리 제거), HUGGING(선 옆에 보조선을 겹치지 않음).
+    /// 픽셀 규칙: 선분 없이 점/도형만 쓰므로 DOUBLE PIXEL(L자 모서리), HUGGING 문제가 생기지 않는다.
     /// 입자는 `.` `+` `x` `●` `◆`만 쓰고 모든 그림이 매 프레임 다시 그려진다. 정적 버퍼와 고정 크기 배열만 써서 재생 중 힙 할당이 없다.
     /// </summary>
+    [DefaultExecutionOrder(10000)] // 캐릭터 이동과 카메라 갱신이 끝난 뒤의 위치를 따라가도록 다른 LateUpdate보다 늦게 실행한다
     [DisallowMultipleComponent]
     [RequireComponent(typeof(MeshFilter))]
     [RequireComponent(typeof(MeshRenderer))]
     public class VFX_Haste : MonoBehaviour
     {
-        [Header("강도")]
-        [SerializeField, Range(0.4f, 1.5f), Tooltip("속도선, 먼지, 발동 입자 개수와 길이에 곱하는 전체 배율. 1이 기본이다.")]
-        private float intensity = 1.0f;
-        [SerializeField, Tooltip("헤이스트로 달릴 때의 바닥 속도(px/s). 속도선 길이와 개수를 이 값 대비 비율로 정한다. 캐릭터 이동속도에 맞춘다.")]
-        private float referenceSpeedPx = 78.0f;
-
         [Header("뒤쪽 메쉬 (캐릭터 뒤에 가려지는 먼지)")]
         [SerializeField] private MeshFilter backMeshFilter;
         [SerializeField] private MeshRenderer backMeshRenderer;
@@ -43,9 +40,10 @@ namespace PresentationLayer.VFX
         private const float StrideLengthPx = 13.0f;
         private const float MovingThresholdPx = 8.0f;
         private const float TeleportUnits = 4.0f;
-        private const int LineCapacity = 64;
+        private const float MotionBlendRate = 45.0f;
         private const int PuffCapacity = 64;
-        private const int SparkCapacity = 16;
+        private const int SparkCapacity = 40;
+        private const float SparkGravity = 95.0f;
         private const int QuadBudget = 1500;
 
         // 팔레트 (별 표식 / 스텔라 폭발과 같은 하늘색 계열)
@@ -60,18 +58,6 @@ namespace PresentationLayer.VFX
         {
             GlowColor(ColorWhite, 0.3f), GlowColor(ColorIce, 0.22f), GlowColor(ColorIce2, 0.16f), GlowColor(ColorBlue, 0.1f), GlowColor(ColorBlue2, 0.06f),
         };
-
-        private struct HasteLine
-        {
-            public float x;
-            public float y;
-            public float dirX;
-            public float dirY;
-            public float length;
-            public float age;
-            public float life;
-            public bool bBright;
-        }
 
         private struct HastePuff
         {
@@ -112,7 +98,6 @@ namespace PresentationLayer.VFX
         private ParticleSystemRenderer rootParticleRenderer;
         private ParticleSystem rootParticleSystem;
 
-        private readonly HasteLine[] lines = new HasteLine[LineCapacity];
         private readonly HastePuff[] puffs = new HastePuff[PuffCapacity];
         private readonly HasteSpark[] sparks = new HasteSpark[SparkCapacity];
 
@@ -128,13 +113,14 @@ namespace PresentationLayer.VFX
         private float velocityX;
         private float velocityY;
         private float groundSpeed;
-        private int facing = 1;
+        private float moveDirX = 1.0f;
+        private float moveDirY;
+        private float groundDirX = 1.0f;
+        private float groundDirY;
         private float gait;
         private int lastStep;
         private int stepCounter;
-        private float lineAccumulator;
         private uint randomState = 1u;
-        private int lineCount;
         private int puffCount;
         private int sparkCount;
         private int centerX;
@@ -171,11 +157,13 @@ namespace PresentationLayer.VFX
             velocityX = 0.0f;
             velocityY = 0.0f;
             groundSpeed = 0.0f;
+            moveDirX = 1.0f;
+            moveDirY = 0.0f;
+            groundDirX = 1.0f;
+            groundDirY = 0.0f;
             gait = 0.0f;
             lastStep = 0;
             stepCounter = 0;
-            lineAccumulator = 0.0f;
-            lineCount = 0;
             puffCount = 0;
             sparkCount = 0;
             frontVertexCount = -1;
@@ -254,6 +242,7 @@ namespace PresentationLayer.VFX
         }
 
         // 대상의 위치 변화량으로 속도(px/s)와 방향, 걸음 수를 갱신한다. 순간이동(큰 변화)은 속도로 보지 않는다.
+        // 화면 방향(moveDir)과 아이소 지면 방향(groundDir, 화면 y를 2배로 환산)은 움직이는 동안에만 갱신해 멈춘 뒤에도 마지막 방향을 유지한다.
         private void UpdateMotion(float _dt)
         {
             Vector3 position = transform.position;
@@ -264,7 +253,7 @@ namespace PresentationLayer.VFX
                 {
                     float rawX = delta.x * PixelsPerUnit / _dt;
                     float rawY = delta.y * PixelsPerUnit / _dt;
-                    float blend = 1.0f - Mathf.Exp(-_dt * 20.0f);
+                    float blend = 1.0f - Mathf.Exp(-_dt * MotionBlendRate);
                     velocityX += (rawX - velocityX) * blend;
                     velocityY += (rawY - velocityY) * blend;
                 }
@@ -279,76 +268,71 @@ namespace PresentationLayer.VFX
             bHasLast = true;
 
             groundSpeed = Mathf.Sqrt(velocityX * velocityX + 4.0f * velocityY * velocityY);
-            if (Mathf.Abs(velocityX) > 4.0f) facing = velocityX > 0.0f ? 1 : -1;
+
+            float screenSpeed = Mathf.Sqrt(velocityX * velocityX + velocityY * velocityY);
+            if (1.0f <= screenSpeed)
+            {
+                moveDirX = velocityX / screenSpeed;
+                moveDirY = velocityY / screenSpeed;
+
+                float groundX = moveDirX;
+                float groundY = moveDirY * 2.0f;
+                float groundLength = Mathf.Sqrt(groundX * groundX + groundY * groundY);
+                groundDirX = groundX / groundLength;
+                groundDirY = groundY / groundLength;
+            }
 
             if (MovingThresholdPx < groundSpeed) gait += groundSpeed * _dt / StrideLengthPx;
         }
 
+        // 걸음 먼지 - 좌우 발 번갈아 발밑에서 2~3개가 이동 반대쪽으로 밀린다. 같은 발 위치에 스파크도 함께 만든다.
         private void SpawnPuffs()
         {
-            float back = -Mathf.Sign(0.0f != velocityX ? velocityX : 1.0f);
+            int side = 0 == (stepCounter & 1) ? -1 : 1;
+            stepCounter++;
+
+            float footX = transform.position.x * PixelsPerUnit + side * (-groundDirY) * 3.0f;
+            float footY = transform.position.y * PixelsPerUnit + side * groundDirX * 1.5f;
             int count = 2 + (Rand01() < 0.6f ? 1 : 0);
-            float baseX = transform.position.x * PixelsPerUnit;
-            float baseY = transform.position.y * PixelsPerUnit;
 
             for (int i = 0; i < count && puffCount < PuffCapacity; i++)
             {
                 HastePuff puff = new HastePuff();
-                puff.x = baseX + (Rand01() - 0.5f) * 5.0f;
-                puff.y = baseY + 1.0f;
-                puff.velocityX = back * (14.0f + Rand01() * 22.0f) + (Rand01() - 0.5f) * 8.0f;
-                puff.velocityY = 6.0f + Rand01() * 14.0f;
+                puff.x = footX + (Rand01() - 0.5f) * 4.0f;
+                puff.y = footY + 1.0f;
+                puff.velocityX = -moveDirX * (14.0f + Rand01() * 22.0f) + (Rand01() - 0.5f) * 6.0f;
+                puff.velocityY = -moveDirY * (8.0f + Rand01() * 12.0f) * 0.7f + 4.0f + Rand01() * 10.0f;
                 puff.age = 0.0f;
-                puff.life = 0.26f + Rand01() * 0.22f;
+                puff.life = 0.28f + Rand01() * 0.3f;
                 puff.bCross = Rand01() < 0.3f;
                 puff.bBig = Rand01() < 0.25f;
                 puffs[puffCount++] = puff;
             }
 
-            stepCounter++;
-            if (0 == (stepCounter & 1) && sparkCount < SparkCapacity)
-            {
-                HasteSpark spark = new HasteSpark();
-                spark.x = baseX + facing * 3.0f;
-                spark.y = baseY + 2.0f;
-                spark.velocityX = -facing * 10.0f;
-                spark.velocityY = 26.0f;
-                spark.age = 0.0f;
-                spark.life = 0.34f;
-                sparks[sparkCount++] = spark;
-            }
+            SpawnSparks(footX, footY);
         }
 
-        private void SpawnLine()
+        // 발끝 스파크 - 3~4개가 이동 반대쪽으로 튀어 오른다
+        private void SpawnSparks(float _footX, float _footY)
         {
-            if (lineCount >= LineCapacity || groundSpeed < 1.0f) return;
+            int count = 3 + (Rand01() < 0.5f ? 1 : 0);
 
-            float dirX = velocityX / groundSpeed;
-            float dirY = velocityY / groundSpeed * 0.9f;
-            float lateral = (Rand01() - 0.5f) * 30.0f;
-            float height = 2.0f + Rand01() * 22.0f;
-
-            HasteLine line = new HasteLine();
-            line.x = transform.position.x * PixelsPerUnit + (-dirY) * lateral * 0.2f;
-            line.y = transform.position.y * PixelsPerUnit + height - dirX * lateral * 0.15f;
-            line.dirX = dirX;
-            line.dirY = dirY;
-            line.length = (9.0f + Rand01() * 16.0f) * Mathf.Min(1.4f, groundSpeed / Mathf.Max(1.0f, referenceSpeedPx * 0.9f));
-            line.age = 0.0f;
-            line.life = 0.16f + Rand01() * 0.14f;
-            line.bBright = Rand01() < 0.3f;
-            lines[lineCount++] = line;
+            for (int i = 0; i < count && sparkCount < SparkCapacity; i++)
+            {
+                HasteSpark spark = new HasteSpark();
+                spark.x = _footX;
+                spark.y = _footY + 2.0f;
+                spark.velocityX = -moveDirX * (26.0f + Rand01() * 34.0f) + (Rand01() - 0.5f) * 14.0f;
+                spark.velocityY = -moveDirY * (10.0f + Rand01() * 14.0f) + 20.0f + Rand01() * 26.0f;
+                spark.age = 0.0f;
+                spark.life = 0.32f + Rand01() * 0.22f;
+                sparks[sparkCount++] = spark;
+            }
         }
 
         // 수명이 끝난 입자를 뒤 원소로 채워 지운다
         private void AgeParticles(float _dt)
         {
-            for (int i = lineCount - 1; i >= 0; i--)
-            {
-                lines[i].age += _dt;
-                if (lines[i].age >= lines[i].life) lines[i] = lines[--lineCount];
-            }
-
             for (int i = puffCount - 1; i >= 0; i--)
             {
                 puffs[i].age += _dt;
@@ -367,8 +351,8 @@ namespace PresentationLayer.VFX
         private void RebuildMesh()
         {
             Vector3 pos = transform.position;
-            centerX = Mathf.FloorToInt(pos.x * PixelsPerUnit);
-            centerY = Mathf.FloorToInt(pos.y * PixelsPerUnit);
+            centerX = Mathf.RoundToInt(pos.x * PixelsPerUnit);
+            centerY = Mathf.RoundToInt(pos.y * PixelsPerUnit);
 
             frontPainter.Begin(frontBuffer, transform.worldToLocalMatrix, pos.z);
             PixelPainter backTarget = frontPainter;
@@ -379,9 +363,8 @@ namespace PresentationLayer.VFX
             }
 
             DrawPuffs(backTarget);
-            DrawBurstAir(frontPainter);
-            DrawLines(frontPainter);
             DrawSparks(frontPainter);
+            DrawBurstAir(frontPainter);
             DrawGlints(frontPainter);
 
             frontPainter.Commit(frontMesh, meshRenderer, ref frontHash, ref frontVertexCount);
@@ -411,25 +394,7 @@ namespace PresentationLayer.VFX
             if (t < 0.12f) _p.Shape(PixelPainter.ShapeDiamond, centerX, centerY + 12, Steps[0]);
         }
 
-        // 속도선 - 월드에 고정된 선이 앞에서부터 사라진다
-        private void DrawLines(PixelPainter _p)
-        {
-            for (int i = 0; i < lineCount; i++)
-            {
-                float f = lines[i].age / lines[i].life;
-                if (f > 0.92f) continue;
-
-                float tailX = lines[i].x - lines[i].dirX * lines[i].length;
-                float tailY = lines[i].y - lines[i].dirY * lines[i].length * 0.5f;
-                float headX = lines[i].x - lines[i].dirX * lines[i].length * f;
-                float headY = lines[i].y - lines[i].dirY * lines[i].length * 0.5f * f;
-                Color32 color = f < 0.45f ? (true == lines[i].bBright ? Steps[0] : Steps[1]) : (f < 0.75f ? Steps[2] : Steps[3]);
-
-                _p.Line(Mathf.RoundToInt(tailX), Mathf.RoundToInt(tailY), Mathf.RoundToInt(headX), Mathf.RoundToInt(headY), 0, 0, 0, color);
-            }
-        }
-
-        // 발걸음 바람 먼지 - ● -> + -> . 로 줄어들며 뒤로 밀린다
+        // 걸음 먼지 - ● -> + -> . 로 줄어들며 이동 반대쪽으로 밀린다
         private void DrawPuffs(PixelPainter _p)
         {
             for (int i = 0; i < puffCount; i++)
@@ -438,17 +403,20 @@ namespace PresentationLayer.VFX
                 float x = puffs[i].x + puffs[i].velocityX * puffs[i].age;
                 float y = puffs[i].y + puffs[i].velocityY * puffs[i].age - 30.0f * puffs[i].age * puffs[i].age;
                 int shape = f < 0.3f ? (true == puffs[i].bBig ? PixelPainter.ShapeCircle : PixelPainter.ShapePlus) : (f < 0.65f ? (true == puffs[i].bCross ? PixelPainter.ShapeCross : PixelPainter.ShapePlus) : PixelPainter.ShapeDot);
-                _p.Shape(shape, Mathf.FloorToInt(x), Mathf.FloorToInt(y), Steps[f < 0.2f ? 0 : (f < 0.5f ? 1 : (f < 0.8f ? 2 : 3))]);
+                _p.Shape(shape, Mathf.RoundToInt(x), Mathf.RoundToInt(y), Steps[f < 0.2f ? 0 : (f < 0.5f ? 1 : (f < 0.8f ? 2 : 3))]);
             }
         }
 
+        // 발끝 스파크 - x -> + -> . 로 줄어들며 튀어 올랐다 중력으로 떨어진다
         private void DrawSparks(PixelPainter _p)
         {
             for (int i = 0; i < sparkCount; i++)
             {
                 float f = sparks[i].age / sparks[i].life;
-                int shape = f < 0.5f ? PixelPainter.ShapeDiamond : (f < 0.8f ? PixelPainter.ShapePlus : PixelPainter.ShapeDot);
-                _p.Shape(shape, Mathf.FloorToInt(sparks[i].x + sparks[i].velocityX * sparks[i].age), Mathf.FloorToInt(sparks[i].y + sparks[i].velocityY * sparks[i].age), Steps[f < 0.4f ? 0 : 1]);
+                float x = sparks[i].x + sparks[i].velocityX * sparks[i].age;
+                float y = sparks[i].y + sparks[i].velocityY * sparks[i].age - SparkGravity * sparks[i].age * sparks[i].age;
+                int shape = f < 0.3f ? PixelPainter.ShapeCross : (f < 0.65f ? PixelPainter.ShapePlus : PixelPainter.ShapeDot);
+                _p.Shape(shape, Mathf.RoundToInt(x), Mathf.RoundToInt(y), Steps[f < 0.25f ? 0 : (f < 0.6f ? 1 : 2)]);
             }
         }
 
@@ -464,8 +432,8 @@ namespace PresentationLayer.VFX
                 if (phase > 0.55f) continue;
 
                 float angle = i * 2.1f + Mathf.Floor(cycle) * 1.7f;
-                int x = centerX + Mathf.FloorToInt(Mathf.Cos(angle) * 9.0f);
-                int y = centerY + Mathf.FloorToInt(4.0f + phase * 22.0f);
+                int x = centerX + Mathf.RoundToInt(Mathf.Cos(angle) * 9.0f);
+                int y = centerY + Mathf.RoundToInt(4.0f + phase * 22.0f);
                 _p.Shape(phase < 0.2f ? PixelPainter.ShapeDiamond : (phase < 0.4f ? PixelPainter.ShapePlus : PixelPainter.ShapeDot), x, y, Steps[phase < 0.25f ? 0 : 1]);
             }
         }
@@ -563,16 +531,6 @@ namespace PresentationLayer.VFX
                     lastStep = stepNo;
                     SpawnPuffs();
                 }
-
-                if (MovingThresholdPx < groundSpeed)
-                {
-                    lineAccumulator += dt * (20.0f + groundSpeed * 0.55f) * intensity;
-                    while (lineAccumulator >= 1.0f)
-                    {
-                        lineAccumulator -= 1.0f;
-                        SpawnLine();
-                    }
-                }
             }
             else
             {
@@ -592,7 +550,7 @@ namespace PresentationLayer.VFX
             {
                 if (true == meshRenderer.enabled) meshRenderer.enabled = false;
                 if (null != backMeshRenderer && true == backMeshRenderer.enabled) backMeshRenderer.enabled = false;
-                    frontVertexCount = -1;
+                frontVertexCount = -1;
                 backVertexCount = -1;
                 return;
             }
@@ -623,13 +581,6 @@ namespace PresentationLayer.VFX
                 Destroy(backMesh);
                 backMesh = null;
             }
-
-        }
-
-        private void OnValidate()
-        {
-            intensity = Mathf.Clamp(intensity, 0.4f, 1.5f);
-            referenceSpeedPx = Mathf.Max(10.0f, referenceSpeedPx);
         }
     }
 }
