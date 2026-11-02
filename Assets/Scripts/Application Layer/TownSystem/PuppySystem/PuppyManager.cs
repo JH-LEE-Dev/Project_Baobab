@@ -51,6 +51,10 @@ public class PuppyManager : MonoBehaviour
     [Tooltip("섬 일주 경로. 이 순서대로(또는 거꾸로) 이어 달린다. 연못을 감싸 돌며 나무 다리를 건너도록 찍어 둔다.")]
     [SerializeField] private Transform[] islandLoopPoints;
 
+    [Header("Tutorial")]
+    [Tooltip("튜토리얼 중 강아지가 자는 자리. 개집 밑면 중심(houseSpawnPoint)에서 이만큼 떨어진 곳으로, 남동쪽을 향한 개집 문 바로 앞 한 칸이다. 강아지는 이 방향(문 밖)을 보고 잔다.")]
+    [SerializeField] private Vector2 houseSleepOffset = new Vector2(0.5f, -0.25f);
+
     [Header("Spawn")]
     [Tooltip("마을에 도착했을 때 플레이어 도착 지점에서 이 거리 범위 안의 무작위 위치에 강아지가 나타난다.")]
     [SerializeField] private Vector2 spawnDistance = new Vector2(1.5f, 4f);
@@ -177,11 +181,20 @@ public class PuppyManager : MonoBehaviour
         BuildRegion();
         BuildIslandWaypoints();
 
+        // 튜토리얼 중에는 개집 문 앞에서 자고 있다.
+        if (true == bTutorialSleep)
+        {
+            Vector2 _sleepPoint = (Vector2)houseSpawnPoint.position + houseSleepOffset;
+            TryGetNearestWalkablePoint(_sleepPoint, 2, out _sleepPoint);
+            puppy.EnterTownAsleep(_sleepPoint, houseSleepOffset, tilemapDataProvider);
+            return;
+        }
+
         Vector2 _anchor = null != _arrivalAnchor ? (Vector2)_arrivalAnchor.position : (Vector2)bowlSpawnPoint.position;
         if (false == TryGetRandomPoint(_anchor, spawnDistance.x, spawnDistance.y, out Vector2 _spawn))
             _spawn = GetEatPoint(_anchor, new Vector2(0.6f, 0.4f));
 
-        puppy.EnterTown(_spawn, tilemapDataProvider, bTutorialSleep);
+        puppy.EnterTown(_spawn, tilemapDataProvider);
     }
 
     /// <summary>던전으로 떠나거나(로그라이크 포함) 마을 Grid가 사라질 때 호출한다.</summary>
