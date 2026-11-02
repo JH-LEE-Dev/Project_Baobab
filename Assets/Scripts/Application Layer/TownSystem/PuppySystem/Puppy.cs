@@ -284,21 +284,32 @@ public class Puppy : MonoBehaviour
         SetOutline(false);
     }
 
-    /// <summary>
-    /// 마을에 도착할 때마다 호출된다. 자리를 잡고 처음 행동(◆)을 무작위로 고른다.
-    /// _bForceSleep이면 이미 자고 있던 것처럼 잠(10)으로 시작한다(튜토리얼 중).
-    /// </summary>
-    public void EnterTown(Vector2 _spawnPosition, ITilemapDataProvider _tilemapDataProvider, bool _bForceSleep)
+    /// <summary>마을에 도착할 때마다 호출된다. 자리를 잡고 처음 행동(◆)을 무작위로 고른다.</summary>
+    public void EnterTown(Vector2 _spawnPosition, ITilemapDataProvider _tilemapDataProvider)
+    {
+        PlaceInTown(_spawnPosition, _tilemapDataProvider);
+        facing = (EFacing)Random.Range(0, FacingCount);
+
+        EnterBehavior(PickRandom(InitialBehaviors), true);
+    }
+
+    /// <summary>튜토리얼 중 마을에 도착할 때 호출된다. _position에서 _faceDirection을 보고 이미 자고 있던 것처럼 시작한다.</summary>
+    public void EnterTownAsleep(Vector2 _position, Vector2 _faceDirection, ITilemapDataProvider _tilemapDataProvider)
+    {
+        PlaceInTown(_position, _tilemapDataProvider);
+        FaceTowards(_faceDirection);
+
+        EnterBehavior(PuppyBehavior.Sleep, true);
+    }
+
+    private void PlaceInTown(Vector2 _position, ITilemapDataProvider _tilemapDataProvider)
     {
         // 마을 Grid는 매번 새로 만들어지므로 길찾기 크기도 다시 맞춘다.
         if (null != _tilemapDataProvider)
             pathFind.Initialize(_tilemapDataProvider, null);
 
-        MoveTo(_spawnPosition);
-        facing = (EFacing)Random.Range(0, FacingCount);
-
+        MoveTo(_position);
         behavior = PuppyBehavior.None;
-        EnterBehavior(true == _bForceSleep ? PuppyBehavior.Sleep : PickRandom(InitialBehaviors), true);
     }
 
     /// <summary>마을에 있는 동안 튜토리얼이 시작됐을 때 재운다. 잠은 상호작용 전까지 이어진다.</summary>
