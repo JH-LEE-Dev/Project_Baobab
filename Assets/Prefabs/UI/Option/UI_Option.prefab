@@ -8386,6 +8386,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: OPT_FPS
       objectReference: {fileID: 0}
+    - target: {fileID: 2675331813396441984, guid: fdd5be21d9568a442a2f5bf7d71f5414, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4135917404057033917, guid: fdd5be21d9568a442a2f5bf7d71f5414, type: 3}
       propertyPath: m_text
       value: FPS

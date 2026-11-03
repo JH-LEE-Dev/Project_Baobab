@@ -50,11 +50,23 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [SerializeField] private float repairBounceScale = 1.2f;
         [SerializeField] private float repairBounceDuration = 0.5f;
 
+        [Header("Overheat Stage Effect")]
+        [Tooltip("과열 단계가 오를 때 도끼가 튕기는 배율")]
+        [SerializeField] private float overheatBounceScale = 1.16f;
+        [SerializeField] private float overheatBounceDuration = 0.3f;
+
+        // 과열 단계(1~3)별 섬광 색: 호박, 노랑, 하늘
+        private static readonly Color[] OverheatStageFlashColors = { new Color32(255, 160, 40, 255), new Color32(255, 214, 90, 255), new Color32(120, 196, 255, 255) };
+        private static readonly float[] OverheatFlashAlphaSteps = { 0.9f, 0.65f, 0.4f, 0.2f };
+        private const float OverheatFlashStepDuration = 0.06f;
+
         // //내부 의존성
         private AxeMode axeMode = AxeMode.DB100;
         private float previousRatio = 1f;
         private Sequence repairSequence;
         private Vector3 repairBounceBaseScale = Vector3.one;
+        private Color overheatFlashColor = Color.white;
+        private float overheatFlashProgress;
 
         // private LocalizationManager localizationManager;
         // private Action cachedRefreshLocalizedText;
@@ -138,6 +150,82 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         {
             if (null != overheatAura)
                 overheatAura.SetOverheat(_bActive);
+        }
+
+        /// <summary>
+        /// 과열 단계(1~3)와 그 단계 안의 진행도(0~1)를 아우라에 넘긴다. 단계 전환 연출은 PlayOverheatStageEffect가 따로 한다.
+        /// </summary>
+        public void SetOverheatStage(int _stage, float _progress)
+        {
+            if (null != overheatAura)
+                overheatAura.SetStage(_stage, _progress);
+        }
+
+        /// <summary>
+        /// 과열 단계가 오를 때(0 -> 1 포함) 도끼가 단계색으로 번쩍이며 튕긴다. 수리 연출의 번쩍임 덮개와 뽀잉 대상을 같이 쓴다.
+        /// 덮개는 첫 칸만 흰색이고 이후 단계색으로 0.9 -> 0.65 -> 0.4 -> 0.2 계단식으로 사라진다(0.06초 간격).
+        /// </summary>
+        public void PlayOverheatStageEffect(int _stage)
+        {
+            if (1 > _stage || OverheatStageFlashColors.Length < _stage)
+                return;
+
+            KillRepairSequence();
+
+            if (null != repairFlashOverlay && null != axeImage)
+                repairFlashOverlay.sprite = axeImage.sprite;
+
+            if (null != repairBounceTarget)
+                repairBounceTarget.localScale = repairBounceBaseScale;
+
+            overheatFlashColor = OverheatStageFlashColors[_stage - 1];
+            SetOverheatFlashProgress(0f);
+
+            repairSequence = DOTween.Sequence();
+
+            if (null != repairFlashOverlay)
+            {
+                repairSequence.Insert(0f, DOTween.To(GetOverheatFlashProgress, SetOverheatFlashProgress, 1f, OverheatFlashStepDuration * OverheatFlashAlphaSteps.Length)
+                    .SetEase(Ease.Linear));
+            }
+
+            if (null != repairBounceTarget)
+            {
+                repairSequence.Insert(0f, repairBounceTarget.DOScale(repairBounceBaseScale * overheatBounceScale, overheatBounceDuration * 0.4f)
+                    .SetEase(Ease.OutQuad));
+                repairSequence.Insert(overheatBounceDuration * 0.4f, repairBounceTarget.DOScale(repairBounceBaseScale, overheatBounceDuration * 0.6f)
+                    .SetEase(Ease.OutBack));
+            }
+
+            repairSequence.OnKill(ResetRepairEffect);
+        }
+
+        private float GetOverheatFlashProgress()
+        {
+            return overheatFlashProgress;
+        }
+
+        // 과열 단계 섬광 진행도(0~1)를 계단(OverheatFlashAlphaSteps)으로 바꿔 덮개 색/알파를 정한다. 첫 칸은 흰색, 이후는 단계색이다.
+        private void SetOverheatFlashProgress(float _progress)
+        {
+            overheatFlashProgress = _progress;
+
+            int step = Mathf.FloorToInt(_progress * OverheatFlashAlphaSteps.Length);
+            if (OverheatFlashAlphaSteps.Length <= step)
+            {
+                SetRepairFlashAlpha(0f);
+                return;
+            }
+
+            SetFlashColor(0 == step ? Color.white : overheatFlashColor);
+            SetRepairFlashAlpha(OverheatFlashAlphaSteps[step]);
+        }
+
+        // 덮개의 색 치환 색. 수리 연출은 흰색, 과열 단계 연출은 흰색 -> 단계색을 쓴다(ResetRepairEffect가 흰색으로 되돌린다).
+        private void SetFlashColor(Color _color)
+        {
+            if (null != repairFlashEffect)
+                repairFlashEffect.color = _color;
         }
 
         protected override void UpdateVisuals()
@@ -312,6 +400,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         private void ResetRepairEffect()
         {
             SetRepairFlashAlpha(0f);
+            SetFlashColor(Color.white);
             if (null != repairBounceTarget)
                 repairBounceTarget.localScale = repairBounceBaseScale;
         }

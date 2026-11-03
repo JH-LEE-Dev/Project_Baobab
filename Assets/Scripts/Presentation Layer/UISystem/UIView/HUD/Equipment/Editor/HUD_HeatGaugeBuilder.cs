@@ -11,6 +11,7 @@ using UnityEngine.UI;
 ///  HUD_HeatGauge (오른쪽 아래 앵커)
 ///   └ Visual                       숨김 동안 꺼짐
 ///      ├ Bar      (9x50, 아래 가운데 pivot)  슬라이드 · 바운스 대상
+///      │  ├ Shadow          HeatBar_Base 실루엣(검정 128), (-2, -3)
 ///      │  ├ HeatBar         HeatBar_Base + UI/HeatGaugeFill 머티리얼(테두리 · 달아오름 · 용암 채움 · 번쩍임)
 ///      │  ├ Sparks          21x80 불티(HUD_HeatSparks), 바 왼쪽 6px 밖부터
 ///      │  └ LevelNumber
@@ -29,6 +30,9 @@ public static class HUD_HeatGaugeBuilder
     // HUD_Equipment 오른쪽 아래 기준 px. 도끼 그림(HUD_Axe)은 x -76 ~ -12, y 7 ~ 77을 차지한다.
     private static readonly Vector2 BarPosition = new Vector2(-81.5f, 8f); // 바 아래 가운데(왼쪽 끝 -86)
     private static readonly Vector2 BarSize = new Vector2(9f, 50f);
+    // HUD 그림자 규격(인벤토리 용량 게이지와 같다): 같은 스프라이트를 검정 반투명으로 왼쪽 아래에 깐다
+    private static readonly Vector2 ShadowOffset = new Vector2(-2f, -3f);
+    private static readonly Color32 ShadowColor = new Color32(0, 0, 0, 128);
     private static readonly Vector2 SparksPosition = new Vector2(-6f, 0f); // 바 왼쪽 아래 기준
     private static readonly Vector2 SparksSize = new Vector2(21f, 80f);
     private static readonly Vector2 LevelNumberPosition = new Vector2(4f, 56f); // 바 왼쪽 아래 기준, 글자 아래 끝이 바 위 2px
@@ -158,6 +162,9 @@ public static class HUD_HeatGaugeBuilder
 
         // 바
         RectTransform _bar = NewRect("Bar", _visual, new Vector2(0.5f, 0f), new Vector2(1f, 0f), BarPosition, BarSize);
+        // 그림자는 바보다 먼저(뒤에) 그려 슬라이드 · 바운스를 함께 따라간다. 기본 머티리얼로 실루엣만 쓴다.
+        Image _shadowImage = NewImage("Shadow", _bar, _base, ShadowOffset, BarSize);
+        _shadowImage.color = ShadowColor;
         Image _fillImage = NewImage("HeatBar", _bar, _base, Vector2.zero, BarSize);
         _fillImage.material = _material;
 

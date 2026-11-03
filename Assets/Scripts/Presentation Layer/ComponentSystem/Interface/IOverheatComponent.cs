@@ -11,6 +11,8 @@ public interface IOverheatComponent
     public int OverheatLevel { get; }
     // 이펙트 단계. 0 = 없음, 1 = 1~33(예열), 2 = 34~66(가열), 3 = 67 이상(푸른 불꽃, 최대치와 무관한 절대값).
     public int Stage { get; }
+    // 지금 이펙트 단계 안에서의 진행도(0~1). 단계 시작 값이 0, 다음 단계 직전 값이 1이고 마지막 단계와 0단계는 1이다.
+    public float StageProgress { get; }
     public bool IsMax { get; }
     // 과열 수치 최대치(스탯 overheatMaxValue, 기본 100, 특성이 N씩 올린다). 게이지 채움 비율에 쓴다.
     public float MaxValue { get; }

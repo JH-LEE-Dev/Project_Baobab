@@ -19,7 +19,12 @@ public static class HUD_BuffPrefabBuilder
     // 평행사변형 두 칸의 사선 외곽선(2px)이 같은 픽셀에 정확히 겹쳐 맞물리는 칸 간격(스프라이트 폭 24가 아니라 이 값)
     private const float DashCellPitch = 15f;
     private const float DashVisibleWidth = 38f;
-    private const float DashReservedWidth = 46f;
+    // 대시 게이지의 화면 왼쪽 아래 기준 위치(가방 오른쪽 끝 바로 옆, 코인 줄 위)
+    private static readonly Vector2 DashScreenPosition = new Vector2(89f, 32f);
+    // HUD 그림자 규격(인벤토리 용량 게이지와 같다): 같은 스프라이트를 검정 반투명으로 왼쪽 아래에 깐다.
+    // 칸이 위로 갈수록 오른쪽으로 기운 평행사변형이라 그림자가 오른쪽으로 치우쳐 보이므로 X는 2도트 더 왼쪽(-4)에 둔다.
+    private static readonly Vector2 DashShadowOffset = new Vector2(-4f, -3f);
+    private static readonly Color32 DashShadowColor = new Color32(0, 0, 0, 128);
     private const string DashBaseSpritePath = "Assets/Graphics/HUD/Dash/Dash_HUD_Base.png";
     private const string DashFillSpritePath = "Assets/Graphics/HUD/Dash/Dash_HUD_Fill.png";
     private const string NumberSheetPath = "Assets/Graphics/Font/SmallCurrencyNum.png";
@@ -274,16 +279,17 @@ public static class HUD_BuffPrefabBuilder
         _buffRt.anchorMin = new Vector2(0.5f, 0f);
         _buffRt.anchorMax = new Vector2(0.5f, 0f);
         _buffRt.pivot = Vector2.zero;
-        // 스태미나 바(가운데 기준 x -80)의 왼쪽 끝, 게이지 아래쪽이 바 위쪽에서 8px 위(바 y 10 + 높이 18 + 간격 8)
-        _buffRt.anchoredPosition = new Vector2(-80f, 36f);
+        // 스태미나 바(가운데 기준 x -80, 폭 160) 안에서 8칸(18 + 20x7 = 158)이 좌우 1px씩 비도록 x -79,
+        // 게이지 아래쪽이 바 위쪽에서 8px 위(바 y 10 + 높이 18 + 간격 8)
+        _buffRt.anchoredPosition = new Vector2(-79f, 36f);
 
         GameObject _dashInst = (GameObject)PrefabUtility.InstantiatePrefab(_dashPrefab, _groupRt);
         RectTransform _dashRt = (RectTransform)_dashInst.transform;
-        _dashRt.anchorMin = new Vector2(0.5f, 0f);
-        _dashRt.anchorMax = new Vector2(0.5f, 0f);
+        _dashRt.anchorMin = Vector2.zero;
+        _dashRt.anchorMax = Vector2.zero;
         _dashRt.pivot = Vector2.zero;
-        // 바 오른쪽 끝에 붙인다: 보이는 폭 38(맞물린 2칸), 보이는 아래쪽은 칸 안 7px 위 -> 게이지 아래쪽이 바 위 8px
-        _dashRt.anchoredPosition = new Vector2(80f - DashVisibleWidth, 29f);
+        // 화면 왼쪽 아래 인벤토리(가방, UI_Inventory 팝업 뷰) 오른쪽에 고정. 인벤토리 열기/닫기 모션은 따라가지 않는다
+        _dashRt.anchoredPosition = DashScreenPosition;
 
         SerializedObject _gso = new SerializedObject(_groupComp);
         _gso.FindProperty("dashGauge").objectReferenceValue = _dashInst.GetComponent<HUD_DashGauge>();
@@ -301,7 +307,6 @@ public static class HUD_BuffPrefabBuilder
             UIView_HUD _view = _hudUi.GetComponentInChildren<UIView_HUD>(true);
             SerializedObject _vso = new SerializedObject(_view);
             _vso.FindProperty("hudSteminaBarPrefab").objectReferenceValue = _groupPrefab;
-            _vso.FindProperty("dashReservedWidth").floatValue = DashReservedWidth;
             _vso.ApplyModifiedPropertiesWithoutUndo();
             PrefabUtility.SaveAsPrefabAsset(_hudUi, HudUiPrefabPath);
         }
@@ -328,6 +333,18 @@ public static class HUD_BuffPrefabBuilder
         RectTransform[] _cells = new RectTransform[HUD_DashGauge.MaxCells];
         Image[] _fills = new Image[HUD_DashGauge.MaxCells];
         Image[] _flashes = new Image[HUD_DashGauge.MaxCells];
+        Image[] _shadows = new Image[HUD_DashGauge.MaxCells];
+
+        // 그림자는 맞물린 칸 위에 겹쳐 그려지지 않도록 모든 칸보다 먼저(뒤에) 한 그룹으로 둔다
+        RectTransform _shadowGroup = NewRect("Shadows", _visual, Vector2.zero, new Vector2(DashVisibleWidth, 24f), Vector2.zero);
+
+        for (int i = 0; i < HUD_DashGauge.MaxCells; i++)
+        {
+            Image _shadowImg = NewImage("Shadow_" + i, _shadowGroup, _base, new Vector2(DashCellPitch * i, 0f) + DashShadowOffset, new Vector2(24f, 24f));
+            _shadowImg.color = DashShadowColor;
+            _shadowImg.raycastTarget = false;
+            _shadows[i] = _shadowImg;
+        }
 
         for (int i = 0; i < HUD_DashGauge.MaxCells; i++)
         {
@@ -358,15 +375,18 @@ public static class HUD_BuffPrefabBuilder
         SerializedProperty _cp = _so.FindProperty("cellRects");
         SerializedProperty _fp = _so.FindProperty("fillImages");
         SerializedProperty _lp = _so.FindProperty("flashImages");
+        SerializedProperty _sp = _so.FindProperty("shadowImages");
         _cp.arraySize = HUD_DashGauge.MaxCells;
         _fp.arraySize = HUD_DashGauge.MaxCells;
         _lp.arraySize = HUD_DashGauge.MaxCells;
+        _sp.arraySize = HUD_DashGauge.MaxCells;
 
         for (int i = 0; i < HUD_DashGauge.MaxCells; i++)
         {
             _cp.GetArrayElementAtIndex(i).objectReferenceValue = _cells[i];
             _fp.GetArrayElementAtIndex(i).objectReferenceValue = _fills[i];
             _lp.GetArrayElementAtIndex(i).objectReferenceValue = _flashes[i];
+            _sp.GetArrayElementAtIndex(i).objectReferenceValue = _shadows[i];
         }
 
         _so.ApplyModifiedPropertiesWithoutUndo();

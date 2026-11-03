@@ -43,6 +43,7 @@ public class OverheatComponent : PComponent, IOverheatComponent
     public float OverheatValue => (float)overheatScaled / ValueScale;
     public int OverheatLevel => overheatLevel;
     public int Stage => overheatStage;
+    public float StageProgress => CalculateStageProgress(overheatLevel, overheatStage);
     // 캐릭터 초기화(Initialize) 전에 UI 등이 읽어도 터지지 않도록 스탯이 없으면 기본값을 쓴다.
     private StatComponent Stat => ctx != null ? ctx.characterStat : null;
     public float MaxValue => Stat != null ? Stat.overheatMaxValue : 100f;
@@ -167,7 +168,7 @@ public class OverheatComponent : PComponent, IOverheatComponent
         return Mathf.Clamp01((float)(_level - start) / (end - start));
     }
 
-    // 켜진 오라에 단계 안 진행도를 넣는다(예열 테두리 밀도, 가열 불꽃 높이, 불씨 양이 따라 오른다)
+    // 켜진 오라에 단계 안 진행도를 넣는다(예열 불티 양, 가열 불꽃 높이, 불씨 양이 따라 오른다)
     private void ApplyStageProgress()
     {
         if (null == activeAura) return;

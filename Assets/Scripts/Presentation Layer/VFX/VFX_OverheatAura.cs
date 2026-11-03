@@ -21,10 +21,11 @@ namespace PresentationLayer.VFX
     /// 스프라이트 마스크는 처음 쓰는 스프라이트에서만 한 번 만들고(GPU 복사 + 읽기) 이후에는 캐시를 쓴다. 아우라 본체는 12fps로만 다시 만든다.
     ///
     /// 과열 단계(auraStyle)
-    /// - Preheat(1단계 예열): 점이 빠진 1px 검붉은 테두리 + 머리 위 작은 주황 혀, 느린 주황 불씨, 머리에서 피어오르는 회색 연기.
+    /// - Preheat(1단계 예열): 몸 아우라 없이 머리/어깨 같은 위쪽 가장자리에서 불티(노랑 `+` -> 주황/빨강 `.`)가 떨어져 나와 날아가고,
+    ///   머리 쪽에서 회색 연기가 오른다.
     /// - Heating(2단계 가열): 주황 링 + 어깨 위 노랑 -> 주황 -> 빨강 불꽃, pulseInterval마다 박동처럼 밝아진다. 연기 소량.
     /// - BlueFlame(3단계): 위 설명의 푸른 불꽃(기본값, 드론도 이 스타일).
-    /// SetStageProgress로 그 단계 안에서의 진행도(0~1)를 받으면 예열 테두리 밀도, 가열 불꽃 높이, 불씨 양이 함께 오른다.
+    /// SetStageProgress로 그 단계 안에서의 진행도(0~1)를 받으면 예열 불티 양, 가열 불꽃 높이와 불씨 양이 함께 오른다.
     /// 점화 충격파는 실루엣 발밑 중심에서 PixelEllipse 1px 타원이 30fps로 퍼지고, 후반에는 점이 빠지며 흩어진다.
     /// </summary>
     [DisallowMultipleComponent]
@@ -89,6 +90,9 @@ namespace PresentationLayer.VFX
         [SerializeField, Tooltip("머리 쪽에서 피어오르는 회색 연기 간격(초). 0이면 없음")] private float smokeInterval = 0.0f;
         [SerializeField, Tooltip("링과 불꽃이 박동처럼 밝아지는 간격(초). 0이면 없음")] private float pulseInterval = 0.0f;
 
+        [Header("예열(1단계): 불티")]
+        [SerializeField, Tooltip("머리/어깨 같은 위쪽 가장자리에서 떨어져 나오는 불티의 초당 개수(진행도 0 -> 1)")] private Vector2 preheatWispRate = new Vector2(6.0f, 15.0f);
+
         [Header("점화 (드론처럼 작은 대상은 줄여서 쓴다)")]
         [SerializeField, Tooltip("점화 충격파 반지름과 바닥 파편 개수의 배율")] private float igniteRingScale = 1.0f;
         [SerializeField, Tooltip("점화 순간 사방으로 터지는 불씨 개수")] private int igniteEmberCount = 16;
@@ -126,6 +130,7 @@ namespace PresentationLayer.VFX
         private const int EmberKindCross = 1;          // `+`/`x` 번갈아 회전
         private const int EmberKindSmoke = 2;          // 회색 연기 `.`(발광 없음)
         private const int EmberKindDebris = 3;         // 충격파와 함께 바닥을 미끄러지는 파편
+        private const int EmberKindWisp = 4;           // 예열 불티: 노랑 `+`로 떨어져 나와 주황 -> 빨강 `.`로 식는다
         private const float BodyBleedPx = 0.3f;
         private const int MeshBoundsHalfSize = 100;
         private static readonly Vector3 MeshBoundsSize = new Vector3(MeshBoundsHalfSize, MeshBoundsHalfSize, 10.0f);
@@ -225,6 +230,7 @@ namespace PresentationLayer.VFX
         private bool bIgniteEmbersSpawned;
         private float emberSpawnAccumulator;
         private float smokeSpawnAccumulator;
+        private float wispSpawnAccumulator;
         private float stageProgress = 1.0f;   // 그 과열 단계 안에서의 진행도(0~1). OverheatComponent가 SetStageProgress로 넣는다.
         private Vector2 characterWorldPx;    // 캐릭터(이 컴포넌트) 위치(월드 px). 불씨는 월드 좌표로 움직여서 이동하면 뒤에 꼬리처럼 남는다.
         private Vector2 lastCharacterWorldPx;
@@ -281,6 +287,7 @@ namespace PresentationLayer.VFX
             bIgniteEmbersSpawned = false;
             emberSpawnAccumulator = 0.0f;
             smokeSpawnAccumulator = 0.0f;
+            wispSpawnAccumulator = 0.0f;
             stageProgress = 1.0f;
             moveSpeedPx = 0.0f;
             emberCursor = 0;
@@ -349,7 +356,7 @@ namespace PresentationLayer.VFX
         }
 
         /// <summary>
-        /// 지금 과열 단계 안에서의 진행도(0~1)를 넣는다. 예열은 테두리 밀도, 가열은 불꽃 높이와 박동 세기, 두 단계 모두 불씨 양이 따라 오른다.
+        /// 지금 과열 단계 안에서의 진행도(0~1)를 넣는다. 예열은 불티 양, 가열은 불꽃 높이와 박동 세기와 불씨 양이 따라 오른다.
         /// 푸른 불꽃(BlueFlame)은 쓰지 않는다. 재생(OnEnable)마다 1로 돌아가므로 재생 직후에 호출한다.
         /// </summary>
         public void SetStageProgress(float _progress)
@@ -491,10 +498,9 @@ namespace PresentationLayer.VFX
             return AuraStyle.BlueFlame == auraStyle ? ColorBlue : ColorEmberDark;
         }
 
-        // 단계 안 진행도에 따른 불씨 양 배율(예열 0.5~1, 가열 0.75~1, 푸른 불꽃 1)
+        // 단계 안 진행도에 따른 가장자리 불씨 양 배율(가열 0.75~1, 푸른 불꽃 1). 예열은 가장자리 불씨 대신 불티를 쓴다.
         private float GetEmberRateScale()
         {
-            if (AuraStyle.Preheat == auraStyle) return 0.5f + 0.5f * stageProgress;
             if (AuraStyle.Heating == auraStyle) return 0.75f + 0.25f * stageProgress;
             return 1.0f;
         }
@@ -527,7 +533,9 @@ namespace PresentationLayer.VFX
                     continue;
                 }
 
-                float swayAmplitude = EmberKindSmoke == embers[i].kind ? emberSwayAmplitude * 0.55f : emberSwayAmplitude;
+                float swayAmplitude = emberSwayAmplitude;
+                if (EmberKindSmoke == embers[i].kind) swayAmplitude = emberSwayAmplitude * 0.55f;
+                else if (EmberKindWisp == embers[i].kind) swayAmplitude = emberSwayAmplitude * 0.45f;
                 float sway = Mathf.Sin(embers[i].age * embers[i].swaySpeed + embers[i].swayPhase) * swayAmplitude;
                 embers[i].vy *= Mathf.Max(0.0f, 1.0f - 0.9f * _dt);
                 embers[i].x += (embers[i].vx + sway) * _dt;
@@ -558,10 +566,12 @@ namespace PresentationLayer.VFX
 
             SpawnSmoke(_dt, edgeCells, edgeCellCount);
 
-            // 예열은 불씨가 느리게 오르고 조금 더 오래 산다
-            bool bPreheat = AuraStyle.Preheat == auraStyle;
-            float riseScale = true == bPreheat ? 0.6f : 1.0f;
-            float lifeScale = true == bPreheat ? 1.25f : 1.0f;
+            // 예열은 가장자리 불씨 대신 위쪽 가장자리 불티를 쓴다
+            if (AuraStyle.Preheat == auraStyle)
+            {
+                SpawnWisps(_dt, edgeCells, edgeCellCount);
+                return;
+            }
 
             // 실루엣 가장자리에서 피어오르는 불씨(위쪽 가장자리일수록 잘 나오게 한다). 달리는 중에는 더 많이 나와서 꼬리가 촘촘해진다.
             float speedFactor = Mathf.Clamp01(moveSpeedPx / Mathf.Max(1.0f, emberTrailFullSpeedPx));
@@ -581,8 +591,37 @@ namespace PresentationLayer.VFX
                     float upward = Mathf.Clamp01((cy - 2.0f) / 14.0f);
                     if (Rand01() > Mathf.Lerp(0.4f, 1.0f, upward)) continue;
 
-                    SpawnEmber(cx, cy + 1.0f, (Rand01() - 0.5f) * 6.0f, Mathf.Lerp(12.0f, 26.0f, Rand01()) * riseScale, Mathf.Lerp(0.5f, 0.95f, Rand01()) * lifeScale, Rand01() < 0.5f ? FrontLayer : BackLayer, RandomEmberColor(), -1);
+                    SpawnEmber(cx, cy + 1.0f, (Rand01() - 0.5f) * 6.0f, Mathf.Lerp(12.0f, 26.0f, Rand01()), Mathf.Lerp(0.5f, 0.95f, Rand01()), Rand01() < 0.5f ? FrontLayer : BackLayer, RandomEmberColor(), -1);
                 }
+            }
+        }
+
+        // 예열: 머리/어깨 같은 위쪽 가장자리(바로 위 칸이 몸 밖)에서 불티가 떨어져 나와 위로 날아간다. 발 근처(발밑 + 4px 아래)는 건너뛴다.
+        private void SpawnWisps(float _dt, int[] _edgeCells, int _edgeCellCount)
+        {
+            wispSpawnAccumulator += _dt * Mathf.Lerp(preheatWispRate.x, preheatWispRate.y, stageProgress) * Mathf.Min(1.0f, GetIntensity());
+            int count = Mathf.Min(4, (int)wispSpawnAccumulator);
+            wispSpawnAccumulator -= (int)wispSpawnAccumulator;
+
+            int[] distance = silhouette.Distance;
+            int minY = silhouette.FootY + 4;
+            for (int i = 0; i < count; i++)
+            {
+                // 75%는 위를 향한 가장자리만 고른다(몇 번 다시 뽑고, 못 찾으면 마지막 칸을 쓴다)
+                bool bNeedUpFacing = 0.75f > Rand01();
+                int cell = _edgeCells[(int)(Rand01() * _edgeCellCount) % _edgeCellCount];
+                for (int tryCount = 0; true == bNeedUpFacing && tryCount < 4; tryCount++)
+                {
+                    int above = cell + GridWidth;
+                    if (above < distance.Length && 0 < distance[above]) break;
+                    cell = _edgeCells[(int)(Rand01() * _edgeCellCount) % _edgeCellCount];
+                }
+
+                int cx = cell % GridWidth - GridOriginX;
+                int cy = cell / GridWidth - GridOriginY;
+                if (cy < minY) continue;
+
+                SpawnEmber(cx + (Rand01() - 0.5f), cy + 1.0f, (Rand01() - 0.5f) * 5.0f, Mathf.Lerp(16.0f, 28.0f, Rand01()), Mathf.Lerp(0.4f, 0.75f, Rand01()), 0.35f > Rand01() ? FrontLayer : BackLayer, ColorYellow, EmberKindWisp);
             }
         }
 
@@ -764,6 +803,9 @@ namespace PresentationLayer.VFX
         {
             if (_intensity <= 0.0f || false == silhouette.HasSolid) return;
 
+            // 예열은 몸 아우라가 없다(불티와 연기만 쓴다)
+            if (AuraStyle.Preheat == auraStyle) return;
+
             AuraFrame frame = CreateAuraFrame(_flickerTime, _flickerFrame, _intensity);
 
             int regionMinX = silhouette.RegionMinX;
@@ -857,11 +899,10 @@ namespace PresentationLayer.VFX
             int index = _gy * GridWidth + _gx;
             int dist = silhouette.Distance[index];
 
-            if (0 == dist && true == silhouette.EdgeMask[index] && AuraStyle.Preheat != auraStyle)
+            if (0 == dist && true == silhouette.EdgeMask[index])
             {
                 // 실루엣 가장자리 안쪽 칸에도 링의 안쪽 색을 깐다. 아우라는 캐릭터 뒤 층이라 스프라이트가 덮으면 가려지고,
                 // 회전한 도끼날처럼 계산과 실제 픽셀이 반 픽셀쯤 어긋나 스프라이트가 비는 칸에서는 링이 드러나 빈틈이 메워진다.
-                // 예열은 테두리가 점으로 빠지는 연출이라 메우지 않는다.
                 _color = Tint(AuraStyle.Heating == auraStyle ? ColorOrange : ColorBlue, ringGlow, AuraLayer);
                 return true;
             }
@@ -876,8 +917,6 @@ namespace PresentationLayer.VFX
             float n1 = ValueNoise(cx * 0.34f, cy * 0.21f - _frame.flickerTime * noiseScrollSpeed);
             float n2 = ValueNoise(cx * 0.75f + 31.0f, cy * 0.46f - _frame.flickerTime * noiseScrollSpeed * 2.0f);
 
-            if (AuraStyle.Preheat == auraStyle) return TryGetPreheatColor(in _frame, d, index, _crown, n1, n2, out _color);
-
             // 가열은 박동 때 링/불꽃이 조금 두꺼워지고, 불꽃 높이가 단계 진행도를 따라 오른다(푸른 불꽃은 배율 1)
             bool bHeating = AuraStyle.Heating == auraStyle;
             float ringScale = true == bHeating ? 1.0f + 0.15f * _frame.pulse : 1.0f;
@@ -891,31 +930,6 @@ namespace PresentationLayer.VFX
 
             if (d <= ring) return TryGetRingColor(in _frame, d, ring, _gx, _gy, out _color);
             return TryGetFlameColor(in _frame, d, ring, thick, index, cx, cy, n2, out _color);
-        }
-
-        // 예열: 1px 검붉은 테두리가 점으로 빠진 채 깜빡이고(진행도가 오를수록 빈 곳이 줄어든다), 머리 위에서만 작은 주황 혀가 오른다.
-        private bool TryGetPreheatColor(in AuraFrame _frame, float _d, int _index, float _crown, float _n1, float _n2, out Color32 _color)
-        {
-            _color = default(Color32);
-
-            float rim = _frame.ringThickness * _frame.intensity;
-            if (_d <= rim)
-            {
-                float rimChance = (0.3f + 0.45f * stageProgress) * (0.6f + 0.6f * _n1);
-                if (Hash01(_index, _frame.flickerFrame) >= rimChance) return false;
-
-                _color = Tint(_n1 > 0.62f ? ColorRed : ColorEmberDark, 0.22f + 0.2f * _n1, AuraLayer);
-                return true;
-            }
-
-            float tongue = rim + _crown * crownExtraThicknessPx * (0.4f + 0.6f * stageProgress) * (0.55f * _n1 + 0.45f * _n2) * _frame.intensity;
-            if (_d > tongue) return false;
-
-            float r2 = (_d - rim) / Mathf.Max(0.01f, tongue - rim);
-            if (r2 > 0.45f && Hash01(_index + 5, _frame.flickerFrame) < (r2 - 0.45f) * 1.6f) return false;
-
-            _color = r2 < 0.5f ? Tint(ColorOrange, 0.55f, AuraLayer) : Tint(ColorRed, 0.35f, AuraLayer);
-            return true;
         }
 
         // 링: 안쪽 1px는 밝은 색, 그 바깥은 진한 색, 가장 바깥 절반은 체크무늬 디더로 옅어진다. 푸른 불꽃은 파랑 -> 진파랑, 가열은 주황 -> 진홍(박동 때 밝아짐).
@@ -1004,11 +1018,9 @@ namespace PresentationLayer.VFX
         private void DrawSparkles(int _flickerFrame)
         {
             int edgeCellCount = silhouette.EdgeCellCount;
-            if (0 >= edgeCellCount || AuraPhase.Extinguishing == phase || 0 >= sparkleCount) return;
+            // 예열은 몸 표면 반짝임이 없다(불티가 대신한다)
+            if (0 >= edgeCellCount || AuraPhase.Extinguishing == phase || 0 >= sparkleCount || AuraStyle.Preheat == auraStyle) return;
             int[] edgeCells = silhouette.EdgeCells;
-
-            // 예열은 한 프레임 걸러 한 번만 튄다(아직 약하게 달아오른 느낌)
-            if (AuraStyle.Preheat == auraStyle && 0 != (_flickerFrame & 1)) return;
 
             float ramp = Mathf.Clamp01((elapsed - 0.1f) / 0.3f);
             int count = Mathf.RoundToInt(sparkleCount * ramp);
@@ -1020,8 +1032,7 @@ namespace PresentationLayer.VFX
 
                 float roll = Hash01(i, _flickerFrame + 91);
                 Color32 color;
-                if (AuraStyle.Preheat == auraStyle) color = ColorAmber;
-                else if (AuraStyle.Heating == auraStyle) color = roll < 0.5f ? ColorYellow : ColorPale;
+                if (AuraStyle.Heating == auraStyle) color = roll < 0.5f ? ColorYellow : ColorPale;
                 else color = roll < 0.4f ? ColorCyan : ColorWhite;
                 AddRect(FrontLayer, cx, cy, cx + 1, cy + 1, Tint(color, 0.9f, FrontLayer));
             }
@@ -1194,6 +1205,26 @@ namespace PresentationLayer.VFX
                     else
                     {
                         AddRect(embers[i].layer, px, py, px + 1, py + 1, debrisColor);
+                    }
+
+                    continue;
+                }
+
+                if (EmberKindWisp == embers[i].kind)
+                {
+                    // 불티: 처음 30%는 노랑 `+`, 그다음 주황 `.`, 마지막은 빨강 `.`로 식으며 후반에 점멸한다
+                    if (0.75f < u && 0 != ((int)(embers[i].age * 30.0f) & 1)) continue;
+
+                    if (0.3f > u)
+                    {
+                        Color32 headColor = Tint(ColorYellow, 0.85f, embers[i].layer);
+                        AddRect(embers[i].layer, px - 1, py, px + 2, py + 1, headColor);
+                        AddRect(embers[i].layer, px, py - 1, px + 1, py + 2, headColor);
+                    }
+                    else
+                    {
+                        Color32 tailColor = 0.65f > u ? Tint(ColorOrange, 0.55f, embers[i].layer) : Tint(ColorRed, 0.3f, embers[i].layer);
+                        AddRect(embers[i].layer, px, py, px + 1, py + 1, tailColor);
                     }
 
                     continue;

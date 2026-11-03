@@ -31,7 +31,7 @@ RectTransform:
   m_Children:
   - {fileID: 2017855881916711367}
   - {fileID: 394914258690098973}
-  - {fileID: 4488130666159379663}
+  - {fileID: 1397446314988306552}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -53,8 +53,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HUD_StaminaGroup
   stamina: {fileID: 3888782681909992634}
   buffBar: {fileID: 4931906276204446137}
-  dashGauge: {fileID: 3968115115470929673}
---- !u!1001 &853999439248463574
+  dashGauge: {fileID: 1890424045820292030}
+--- !u!1001 &2807909688873615969
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -76,7 +76,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3860439170375615001, guid: ef2d0fe53de32fa4ea8f94a5735daad9, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 0.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3860439170375615001, guid: ef2d0fe53de32fa4ea8f94a5735daad9, type: 3}
       propertyPath: m_AnchorMax.y
@@ -84,7 +84,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3860439170375615001, guid: ef2d0fe53de32fa4ea8f94a5735daad9, type: 3}
       propertyPath: m_AnchorMin.x
-      value: 0.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3860439170375615001, guid: ef2d0fe53de32fa4ea8f94a5735daad9, type: 3}
       propertyPath: m_AnchorMin.y
@@ -128,11 +128,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3860439170375615001, guid: ef2d0fe53de32fa4ea8f94a5735daad9, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 42
+      value: 89
       objectReference: {fileID: 0}
     - target: {fileID: 3860439170375615001, guid: ef2d0fe53de32fa4ea8f94a5735daad9, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 29
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 3860439170375615001, guid: ef2d0fe53de32fa4ea8f94a5735daad9, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -151,10 +151,15 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ef2d0fe53de32fa4ea8f94a5735daad9, type: 3}
---- !u!114 &3968115115470929673 stripped
+--- !u!224 &1397446314988306552 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 3860439170375615001, guid: ef2d0fe53de32fa4ea8f94a5735daad9, type: 3}
+  m_PrefabInstance: {fileID: 2807909688873615969}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1890424045820292030 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4380753784998537695, guid: ef2d0fe53de32fa4ea8f94a5735daad9, type: 3}
-  m_PrefabInstance: {fileID: 853999439248463574}
+  m_PrefabInstance: {fileID: 2807909688873615969}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
@@ -162,11 +167,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45cc49313bef70247b24f0a06d01a742, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD_DashGauge
---- !u!224 &4488130666159379663 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 3860439170375615001, guid: ef2d0fe53de32fa4ea8f94a5735daad9, type: 3}
-  m_PrefabInstance: {fileID: 853999439248463574}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &4142838575625278299
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -354,7 +354,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5138052653489987593, guid: 942d31ae8d4082748a6575193197b1b6, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -80
+      value: -79
       objectReference: {fileID: 0}
     - target: {fileID: 5138052653489987593, guid: 942d31ae8d4082748a6575193197b1b6, type: 3}
       propertyPath: m_AnchoredPosition.y

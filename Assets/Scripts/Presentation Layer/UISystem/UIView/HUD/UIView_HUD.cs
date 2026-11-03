@@ -16,8 +16,6 @@ public class UIView_HUD : UIView
     [SerializeField] private GameObject hudScreenBloodPrefab;
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private string mapTransitionMotionTag = "GoDown";
-    [Tooltip("대시 게이지가 보일 때 버프 첫 줄에서 비워 둘 폭(맞물린 대시 2칸 37 + 여백 8)")]
-    [SerializeField] private float dashReservedWidth = 46f;
 
     [System.Serializable]
     public struct BuffHudIconEntry
@@ -218,21 +216,13 @@ public class UIView_HUD : UIView
         dashShownMax = _maxCharges;
 
         if (null == hudDashGauge)
-        {
-            hudBuffBar?.SetFirstRowReserved(true == _bUnlocked ? dashReservedWidth : 0f);
             return;
-        }
 
         // 막 보이게 되는 순간의 칸 상태는 연출(사용/충전 완료 번쩍임) 없이 곧바로 맞춘다
         bool _bBecameVisible = true == _bUnlocked && false == hudDashGauge.IsUnlocked;
 
         hudDashGauge.SetMaxCharges(_maxCharges);
         hudDashGauge.SetUnlocked(_bUnlocked);
-
-        // 대시가 보이는 동안 버프 첫 줄은 대시 폭만큼 오른쪽을 비켜 준다.
-        // dashReservedWidth는 2칸 기준이므로 빠진 칸만큼 줄인다.
-        float _missing = (HUD_DashGauge.MaxCells - Mathf.Clamp(_maxCharges, 0, HUD_DashGauge.MaxCells)) * hudDashGauge.CellPitch;
-        hudBuffBar?.SetFirstRowReserved(true == _bUnlocked ? Mathf.Max(0f, dashReservedWidth - _missing) : 0f);
         ApplyDashCells(_bBecameVisible);
     }
 
