@@ -3088,6 +3088,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         environmentProvider.PlayQuakeRipple(origin);
         float frontSpeed = environmentProvider.QuakeRippleFrontSpeed;
 
+        // 연출은 몇 프레임 준비(복제층 옮겨 쓰기)한 뒤에 퍼지기 시작한다. 피해도 그때까지 기다려 앞머리와 함께 간다.
+        while (environmentProvider.IsQuakeRipplePreparing)
+        {
+            yield return null;
+            if (version != quakeVersion) yield break;
+        }
+
         // 불씨 줍기는 물체 처리 도중에 일어날 수 있어 첫 피해는 다음 프레임부터 준다. 물결도 게임 시간으로 퍼지므로 같은 시계로 센다.
         yield return null;
 

@@ -35,6 +35,8 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private readonly List<UnityEngine.Tilemaps.Tilemap> quakeFloorLayers = new List<UnityEngine.Tilemaps.Tilemap>(4);
     private readonly List<UnityEngine.Tilemaps.Tilemap> quakeWaterLayers = new List<UnityEngine.Tilemaps.Tilemap>(4);
     private readonly List<UnityEngine.Tilemaps.Tilemap> quakeShoreLayers = new List<UnityEngine.Tilemaps.Tilemap>(2);
+    // 시작한 물결이 준비(복제층 옮겨 쓰기)를 마치면 카메라 흔들림·진동을 낸다.
+    private bool bQuakeFeedbackPending;
     // 던전 맵이 깔려 있는지(DungeonStarted ~ TownStarted). 마을에서는 지진 물결을 내지 않는다.
     private bool bDungeonMapActive;
     private Transform characterTransform;
@@ -163,6 +165,13 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         // 게임 시간으로 진행한다(일시정지 중에는 물결도 멈춘다). 끝난 뒤 복제층을 나눠 비우는 동안에도 부른다.
         if (quakeRipple.IsBusy) quakeRipple.Tick(Time.deltaTime);
 
+        // 카메라 흔들림·진동은 물결이 실제로 퍼지기 시작하는 프레임에 낸다(복제층을 다 옮겨 쓴 뒤 - QuakeTileRipple [시작 준비]).
+        if (bQuakeFeedbackPending && false == quakeRipple.IsPreparing)
+        {
+            bQuakeFeedbackPending = false;
+            if (quakeRipple.IsPlaying) PlayQuakeFeedback();
+        }
+
 #if UNITY_EDITOR
         DebugQuakeTick();
 #endif
@@ -192,10 +201,15 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         _center.z = 0f;
         if (false == quakeRipple.Begin(grid, quakeFloorLayers, quakeWaterLayers, quakeShoreLayers, _center, viewRect)) return false;
 
+        bQuakeFeedbackPending = true;
+        return true;
+    }
+
+    private void PlayQuakeFeedback()
+    {
         if (quakeRippleSettings.cameraShakeIntensity > 0f)
             CameraMoveController.Instance?.ShakeCamera(quakeRippleSettings.cameraShakeIntensity, quakeRippleSettings.cameraShakeSeconds);
         Rumble.Play(EHapticEvent.Earthquake);
-        return true;
     }
 
     /// <summary>캐릭터 자리에서 지진 바닥 물결을 시작한다(PlayQuakeRipple). 캐릭터가 아직 없으면 false.</summary>
@@ -206,6 +220,8 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     }
 
     public bool IsQuakeRipplePlaying => quakeRipple.IsPlaying;
+
+    public bool IsQuakeRipplePreparing => quakeRipple.IsPreparing;
 
     public float QuakeRippleFrontSpeed => Mathf.Max(0.1f, quakeRippleSettings.frontSpeed);
 

@@ -83,6 +83,11 @@ public sealed class QuakeTileRippleSettings
 ///   대신 비어 있지 않은 칸만 층마다 한 번에 쓴다(타일 쓰기는 칸 수에 비례해 비싸고 빈 칸도 든다).
 ///   출렁이는 동안 바뀐 칸도 프레임마다 모아 층마다 한 번에 쓴다(칸마다 SetTile·SetColor를 따로 부르면 호출 비용이 크다).
 ///
+/// [시작 준비 - 옮겨 쓰기는 여러 프레임에]
+///   화면(+여유) 영역을 한 프레임에 다 옮겨 쓰면 시작 순간 한 프레임이 눈에 띄게 걸린다. 그래서 Begin은 칸 목록만 만들고,
+///   복제층은 숨긴 채로 Tick마다 CopyCostPerTick만큼씩 나눠 쓴다(IsPreparing). 다 쓴 Tick에 복제층을 보이고 다음 Tick부터 물결이 퍼진다.
+///   숨긴 동안은 실제 층만 보이니 화면은 그대로이고, 물결은 그만큼(몇 프레임) 늦게 시작한다.
+///
 /// [높이는 피벗을 옮긴 그림으로 - 앞뒤 순서가 높이에 흔들리지 않게]
 ///   칸마다 따로 정렬되는 타일맵(Individual)은 칸 변형(SetTransformMatrix)으로 옮긴 만큼 정렬 위치도 옮겨진다.
 ///   솟은 칸이 한 줄 간격(8픽셀)보다 높아지면 뒤 칸보다 먼저 그려져 뒤 칸에 덮인다(실측). 그래서 칸을 움직이지 않고
@@ -131,6 +136,11 @@ public sealed class QuakeTileRipple
     // 끝난 뒤 복제층을 비울 때 한 프레임에 비우는 칸 수(띠 하나). 이보다 적게 쓴 층은 ClearAllTiles로 한 번에 비운다.
     private const int ClearStripCells = 1536;
     private const int ClearAllBelow = 512;
+    // 시작할 때 복제층에 옮겨 쓰는 몫([시작 준비]). Tick 한 번에 칸 비용 합이 이만큼이 될 때까지 쓴다(모든 층 합).
+    // 보통 칸은 1, 애니메이션 칸(용암)은 AnimatedCopyCost다 - 쓰기와 애니메이션 시간 맞추기로 보통 칸의 약 세 배가 든다(실측).
+    // 4스테이지 기본 화면(영역 약 8800칸, 쓸 칸 약 9400칸)이 서너 번에 나뉜다.
+    private const int CopyCostPerTick = 3200;
+    private const int AnimatedCopyCost = 3;
 
     private struct RippleCell
     {
@@ -139,6 +149,16 @@ public sealed class QuakeTileRipple
         public float key;              // 진원에서의 바닥 평면 거리
         public float amplitude;        // 이 칸의 최대 높이(진원 거리 감쇠 적용)
         public float outlineStrength;  // 테두리 진하기 중 진원 거리로 정해지는 몫(매 프레임 Pow를 다시 하지 않는다)
+    }
+
+    // 시작 준비 때 옮겨 쓸 층 하나. floorLayer가 0 이상이면 바닥 층(영역 타일은 floorBlocks에 이미 떠 두었다),
+    // -1이면 물·해안선 층(그 층 차례가 오면 blockBuffer에 뜬다).
+    private struct CopyJob
+    {
+        public Tilemap source;
+        public Tilemap lift;
+        public int floorLayer;
+        public Vector2Int offsetPixels;
     }
 
     // 끝난 복제층 비우기 한 번. bAll이면 ClearAllTiles, 아니면 row부터 띠 하나(clearStrip)를 비운다.
@@ -206,10 +226,15 @@ public sealed class QuakeTileRipple
     private readonly Dictionary<Tilemap, int> liftWritten = new Dictionary<Tilemap, int>(8);
     private TileBase[] clearStrip = new TileBase[0];
     private int clearStripRows;
-    // 옮겨 쓸 칸을 모으는 버퍼(CopyLayer).
+    // 시작 준비: 옮겨 쓸 층 차례(물 → 해안선 → 바닥)와 지금 층·그 층에서 다음에 볼 영역 칸 번호.
+    private readonly List<CopyJob> copyJobs = new List<CopyJob>(8);
+    private int copyJob;
+    private int copyCell;
+    private bool bPreparing;
+    // 옮겨 쓸 칸을 모으는 버퍼(CopyStep).
     private readonly List<Vector3Int> copyPositions = new List<Vector3Int>(4096);
     private readonly List<TileBase> copyTiles = new List<TileBase>(4096);
-    private readonly List<int> copyIndices = new List<int>(4096);
+    private readonly List<Vector3Int> copyAnimatedCells = new List<Vector3Int>(1024);
     // 이번 프레임에 복제층마다 바꿀 칸(바닥 복제층별·테두리·틈 빛). Tick 끝에 층마다 한 번에 쓴다(FlushChanges).
     private readonly List<List<TileChangeData>> floorChanges = new List<List<TileChangeData>>(4);
     private readonly List<TileChangeData> outlineChanges = new List<TileChangeData>(512);
@@ -246,8 +271,11 @@ public sealed class QuakeTileRipple
 
     public bool IsPlaying => bPlaying;
 
-    /// <summary>물결이 돌고 있거나, 끝난 복제층을 아직 비우는 중(이때도 Tick을 불러야 한다).</summary>
-    public bool IsBusy => bPlaying || pendingClears.Count > 0;
+    /// <summary>시작했지만 아직 복제층을 옮겨 쓰는 중이라 물결이 퍼지기 전(화면은 실제 층 그대로).</summary>
+    public bool IsPreparing => bPreparing;
+
+    /// <summary>물결을 준비하거나 돌고 있거나, 끝난 복제층을 아직 비우는 중(이때도 Tick을 불러야 한다).</summary>
+    public bool IsBusy => bPreparing || bPlaying || pendingClears.Count > 0;
 
     public void Initialize(QuakeTileRippleSettings _settings)
     {
@@ -257,7 +285,7 @@ public sealed class QuakeTileRipple
     /// <summary>
     /// 물결을 시작한다. _floor·_water·_shore는 실제 시각 타일맵 묶음(TileMapGenerator.GetVisualTilemapsForRun과 같은 순서),
     /// _grid는 그 그리드, _viewRect는 지금 화면(월드). 이미 돌던 물결은 바로 끝내고 새로 시작한다.
-    /// 물결이 닿을 바닥이 없으면 false.
+    /// 물결이 닿을 바닥이 없으면 false. 물결은 복제층을 다 옮겨 쓴 Tick부터 퍼진다(IsPreparing, [시작 준비]).
     /// </summary>
     public bool Begin(Grid _grid, List<Tilemap> _floor, List<Tilemap> _water, List<Tilemap> _shore, Vector3 _center, Rect _viewRect)
     {
@@ -277,15 +305,10 @@ public sealed class QuakeTileRipple
         BuildCells();
         if (cells.Count == 0) return false;
 
-        CopyRegionToLifts();
-        ApplyGlowMaterial();
-        SetLiftsVisible(true);
-
-        elapsed = 0f;
-        nextCell = 0;
-        doneCell = 0;
-        bPlaying = true;
-        bObjectRidePending = settings.rideObjects;
+        // 옮겨 쓰는 동안은 숨겨 둔다. 새로 만든 복제층(EnsureLifts)은 렌더러가 켜진 채라, 그대로 두면 반쯤 쓴 층이 보인다.
+        SetLiftsVisible(false);
+        BuildCopyJobs();
+        bPreparing = true;
         return true;
     }
 
@@ -295,6 +318,23 @@ public sealed class QuakeTileRipple
     /// </summary>
     public bool Tick(float _deltaTime)
     {
+        if (bPreparing)
+        {
+            if (false == CopyStep()) return true;
+
+            // 다 옮겨 썼다. 이 프레임부터 복제층이 보이고(아직 모든 칸이 제자리) 다음 Tick부터 물결이 퍼진다.
+            bPreparing = false;
+            ApplyGlowMaterial();
+            SetLiftsVisible(true);
+
+            elapsed = 0f;
+            nextCell = 0;
+            doneCell = 0;
+            bPlaying = true;
+            bObjectRidePending = settings.rideObjects;
+            return true;
+        }
+
         if (false == bPlaying)
         {
             ClearOnePending();
@@ -339,8 +379,10 @@ public sealed class QuakeTileRipple
     /// <summary>바로 끝낸다(복제층을 숨겨 실제 층만 보이게 한다). 맵을 새로 깔거나 던전을 떠날 때도 부른다.</summary>
     public void Stop()
     {
-        if (false == bPlaying) return;
+        if (false == bPlaying && false == bPreparing) return;
 
+        // 준비 중이었으면 복제층은 아직 숨겨져 있고, 그때까지 옮겨 쓴 칸만 비운다(liftWritten).
+        bPreparing = false;
         bPlaying = false;
         bObjectRidePending = false;
         objectRide.Stop();
@@ -606,57 +648,94 @@ public sealed class QuakeTileRipple
         for (int l = 0; l < floorLayers.Count; l++) floorLayers[l].GetTilesBlockNonAlloc(region, floorBlocks[l]);
     }
 
-    private void CopyRegionToLifts()
+    /// <summary>옮겨 쓸 층 차례를 세운다(물 → 해안선 → 바닥). 칸은 Tick마다 CopyStep이 나눠 쓴다.</summary>
+    private void BuildCopyJobs()
     {
         if (null == propertyBlock) propertyBlock = new MaterialPropertyBlock();
 
         liftWritten.Clear();
-        for (int l = 0; l < waterLayers.Count; l++)
-        {
-            waterLayers[l].GetTilesBlockNonAlloc(region, blockBuffer);
-            CopyLayer(waterLayers[l], waterLifts[l], blockBuffer, Vector2Int.zero);
-        }
+        copyJobs.Clear();
+        copyJob = 0;
+        copyCell = 0;
 
-        for (int l = 0; l < shoreLayers.Count; l++)
-        {
-            shoreLayers[l].GetTilesBlockNonAlloc(region, blockBuffer);
-            CopyLayer(shoreLayers[l], shoreLifts[l], blockBuffer, Vector2Int.zero);
-        }
-
-        for (int l = 0; l < floorLayers.Count; l++) CopyLayer(floorLayers[l], floorLifts[l], floorBlocks[l], floorLiftOffsets[l]);
+        for (int l = 0; l < waterLayers.Count; l++) copyJobs.Add(new CopyJob { source = waterLayers[l], lift = waterLifts[l], floorLayer = -1 });
+        for (int l = 0; l < shoreLayers.Count; l++) copyJobs.Add(new CopyJob { source = shoreLayers[l], lift = shoreLifts[l], floorLayer = -1 });
+        for (int l = 0; l < floorLayers.Count; l++) copyJobs.Add(new CopyJob { source = floorLayers[l], lift = floorLifts[l], floorLayer = l, offsetPixels = floorLiftOffsets[l] });
     }
 
     /// <summary>
-    /// 실제 층에서 뜬 영역(_tiles)의 비어 있지 않은 칸을 복제층에 깔고, 재질(속성 블록 포함)과 칸별 애니메이션 시간을 맞춘다.
-    /// _offsetPixels가 있으면(장식 층) 그만큼 피벗을 옮긴 사본으로 깐다.
+    /// 실제 층에서 뜬 영역의 비어 있지 않은 칸을 복제층에 이어서 쓴다(모든 층 합 CopyCostPerTick만큼). 다 옮겼으면 true.
+    /// 층마다 처음 쓸 때 재질(속성 블록 포함)·색을 맞추고, 쓴 칸의 애니메이션 시간도 실제 층에 맞춘다.
+    /// 장식 층은 비켜 놓인 만큼(offsetPixels) 피벗을 옮긴 사본으로 쓴다.
     /// </summary>
-    private void CopyLayer(Tilemap _source, Tilemap _lift, TileBase[] _tiles, Vector2Int _offsetPixels)
+    private bool CopyStep()
     {
-        _lift.color = _source.color;
-        ApplySourceMaterial(_source.GetComponent<TilemapRenderer>(), _lift.GetComponent<TilemapRenderer>());
-
-        copyPositions.Clear();
-        copyTiles.Clear();
-        copyIndices.Clear();
-        for (int i = 0; i < regionCells; i++)
+        int budget = CopyCostPerTick;
+        while (copyJob < copyJobs.Count)
         {
-            if (null == _tiles[i]) continue;
+            CopyJob job = copyJobs[copyJob];
+            if (0 == copyCell) BeginCopyJob(job);
+            TileBase[] tiles = job.floorLayer >= 0 ? floorBlocks[job.floorLayer] : blockBuffer;
 
-            copyPositions.Add(CellOf(i));
-            copyTiles.Add(OffsetTile(_tiles[i], _offsetPixels));
-            copyIndices.Add(i);
+            copyPositions.Clear();
+            copyTiles.Clear();
+            copyAnimatedCells.Clear();
+            int i = copyCell;
+            for (; i < regionCells && budget > 0; i++)
+            {
+                if (null == tiles[i]) continue;
+
+                Vector3Int cell = CellOf(i);
+                copyPositions.Add(cell);
+                copyTiles.Add(OffsetTile(tiles[i], job.offsetPixels));
+
+                if (IsAnimated(job.source, tiles[i], cell))
+                {
+                    copyAnimatedCells.Add(cell);
+                    budget -= AnimatedCopyCost;
+                }
+                else
+                {
+                    budget -= 1;
+                }
+            }
+
+            copyCell = i;
+            WriteCopied(job);
+
+            // 이 층을 다 쓰기 전에 이번 몫이 끝났다.
+            if (copyCell < regionCells) return false;
+
+            copyJob++;
+            copyCell = 0;
+            if (budget <= 0) break;
         }
 
+        return copyJob >= copyJobs.Count;
+    }
+
+    private void BeginCopyJob(CopyJob _job)
+    {
+        _job.lift.color = _job.source.color;
+        ApplySourceMaterial(_job.source.GetComponent<TilemapRenderer>(), _job.lift.GetComponent<TilemapRenderer>());
+
+        // 바닥 층은 Begin에서 이미 떴다(ReadFloorBlocks). 물·해안선은 제 차례에 뜬다(그 층을 다 쓸 때까지 blockBuffer를 쓴다).
+        if (_job.floorLayer < 0) _job.source.GetTilesBlockNonAlloc(region, blockBuffer);
+    }
+
+    private void WriteCopied(CopyJob _job)
+    {
         if (copyPositions.Count == 0) return;
 
-        SetTiles(_lift, copyPositions, copyTiles);
-        liftWritten[_lift] = copyPositions.Count;
+        SetTiles(_job.lift, copyPositions, copyTiles);
+        liftWritten.TryGetValue(_job.lift, out int written);
+        liftWritten[_job.lift] = written + copyPositions.Count;
 
         // 애니메이션 타일(용암·물결)만 실제 층의 그 칸 시간에 맞춘다. 안 맞추면 끝나고 실제 층으로 돌아갈 때 출렁임 위상이 튄다.
-        for (int c = 0; c < copyIndices.Count; c++)
+        for (int c = 0; c < copyAnimatedCells.Count; c++)
         {
-            Vector3Int cell = copyPositions[c];
-            if (IsAnimated(_source, _tiles[copyIndices[c]], cell)) _lift.SetAnimationTime(cell, _source.GetAnimationTime(cell));
+            Vector3Int cell = copyAnimatedCells[c];
+            _job.lift.SetAnimationTime(cell, _job.source.GetAnimationTime(cell));
         }
     }
 
