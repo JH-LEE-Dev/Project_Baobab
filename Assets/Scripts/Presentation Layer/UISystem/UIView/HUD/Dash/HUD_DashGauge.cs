@@ -19,14 +19,14 @@ public class HUD_DashGauge : MonoBehaviour
     [SerializeField] private Image[] fillImages = new Image[MaxCells];
     [Tooltip("번쩍임용. 채움 스프라이트를 단색(Replace)으로 칠해 겹친다.")]
     [SerializeField] private Image[] flashImages = new Image[MaxCells];
+    [Tooltip("칸별 그림자. 맞물린 칸 위에 그려지지 않도록 칸 밖(Visual 첫 자식 그룹)에 두고 칸과 함께 켜고 끈다.")]
+    [SerializeField] private Image[] shadowImages = new Image[MaxCells];
 
     [Header("Cell Shape")]
     [Tooltip("채움 스프라이트(24x24) 안에서 채움 픽셀이 시작하는 열과 폭")]
     [SerializeField] private int fillContentX = 1;
     [SerializeField] private int fillContentWidth = 21;
     [SerializeField] private int cellSize = 24;
-    [Tooltip("칸 하나의 보이는 폭(스프라이트 캔버스 24 중 실루엣 폭). 보이는 전체 폭 계산에 쓴다.")]
-    [SerializeField] private int cellVisibleWidth = 23;
 
     [Header("Motion")]
     [SerializeField] private float enterDuration = 0.35f;
@@ -66,22 +66,6 @@ public class HUD_DashGauge : MonoBehaviour
         get { return maxCharges; }
     }
 
-    // 칸과 칸 사이 간격(프리팹의 칸 배치에서 읽는다)
-    public float CellPitch
-    {
-        get
-        {
-            CacheBase();
-            return cellBasePos[MaxCells - 1].x - cellBasePos[MaxCells - 2].x;
-        }
-    }
-
-    // 현재 칸 수에서 화면에 보이는 가로폭
-    public float VisibleWidth
-    {
-        get { return 0 < maxCharges ? cellVisibleWidth + CellPitch * (maxCharges - 1) : 0f; }
-    }
-
     // 대시를 쓸 수 있을 때만 보인다. 새로 보이게 되는 순간 등장 연출이 나온다.
     public void SetUnlocked(bool _bUnlocked)
     {
@@ -117,18 +101,21 @@ public class HUD_DashGauge : MonoBehaviour
         CacheBase();
         maxCharges = Mathf.Clamp(_count, 0, MaxCells);
 
-        // 칸 수가 모자라면 남은 칸을 오른쪽 자리에 둔다(1칸이면 스태미나 바 오른쪽 끝)
-        float _shift = (MaxCells - maxCharges) * CellPitch;
-
+        // 칸 수가 모자라면 남은 칸을 왼쪽(인벤토리 HUD 쪽) 자리부터 채운다
         for (int i = 0; i < MaxCells; i++)
         {
+            if (null != shadowImages[i])
+            {
+                shadowImages[i].gameObject.SetActive(i < maxCharges);
+            }
+
             if (null == cellRects[i])
             {
                 continue;
             }
 
             cellRects[i].gameObject.SetActive(i < maxCharges);
-            cellRects[i].anchoredPosition = new Vector2(cellBasePos[i].x + _shift, cellBasePos[i].y);
+            cellRects[i].anchoredPosition = cellBasePos[i];
         }
     }
 

@@ -12,10 +12,13 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [Header("Component Settings")]
         [SerializeField] private HUD_EquipmentAxe axeItem;
         [SerializeField] private UIMotion_Pop axePop;
+        [Tooltip("도끼 HUD 왼쪽의 과열 게이지. 보일지 말지는 UIView_HUD가 정한다")]
+        [SerializeField] private HUD_HeatGauge heatGauge;
 
         // //내부 의존성
         private ICharacter character;
         private IOverheatComponent overheatState;
+        private int shownOverheatStage; // 마지막으로 도끼 HUD에 넣은 과열 단계(단계가 오를 때만 섬광 연출)
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -25,6 +28,18 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             {
                 axeItem.Initialize(_inputManager, _localizationManager);
             }
+
+            if (null != heatGauge)
+                heatGauge.Initialize();
+        }
+
+        /// <summary>
+        /// 과열 게이지를 보이거나 숨긴다. _bAnimate가 true면 아래에서 튀어 오르는 등장 / 아래로 빠지는 퇴장 연출을 한다.
+        /// </summary>
+        public void SetHeatGaugeVisible(bool _bVisible, bool _bAnimate)
+        {
+            if (null != heatGauge)
+                heatGauge.SetVisible(_bVisible, _bAnimate);
         }
 
         public void BindingRef(ICharacter _character)
@@ -50,10 +65,21 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             if (null != overheatState)
             {
                 overheatState.OverheatStateChangedEvent += OnOverheatStateChanged;
+                overheatState.OverheatStageChangedEvent += OnOverheatStageChanged;
+                overheatState.OverheatLevelChangedEvent += OnOverheatLevelChanged;
 
+                // 바인딩 시점 동기화는 단계 전환 연출 없이 맞춘다(단계를 먼저 넣어야 켜질 때 그 단계 모습으로 점화한다)
+                shownOverheatStage = overheatState.Stage;
                 if (null != axeItem)
+                {
+                    axeItem.SetOverheatStage(overheatState.Stage, overheatState.StageProgress);
                     axeItem.SetOverheat(overheatState.IsActive);
+                }
             }
+
+            // 과열 게이지도 같은 상태를 구독한다(null이면 게이지는 0 · x1.00으로 남는다).
+            if (null != heatGauge)
+                heatGauge.Bind(overheatState);
         }
 
         private void OnOverheatStateChanged(bool _bActive)
@@ -62,11 +88,37 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 axeItem.SetOverheat(_bActive);
         }
 
+        // 단계 전환. OverheatComponent는 단계 이벤트를 켜짐 이벤트(OverheatStateChangedEvent)보다 먼저 보내므로 0 -> 1에서도 단계가 먼저 들어간다.
+        // 단계가 오를 때만 도끼 섬광/튕김을 재생한다(0으로 돌아가는 초기화는 소화 연출만 한다).
+        private void OnOverheatStageChanged(int _stage)
+        {
+            if (null == axeItem || null == overheatState)
+                return;
+
+            axeItem.SetOverheatStage(_stage, overheatState.StageProgress);
+            if (_stage > shownOverheatStage)
+                axeItem.PlayOverheatStageEffect(_stage);
+
+            shownOverheatStage = _stage;
+        }
+
+        // 단계 안 진행도(예열 불티 양, 가열 불꽃 높이)를 따라 올린다
+        private void OnOverheatLevelChanged(int _level)
+        {
+            if (null != axeItem && null != overheatState)
+                axeItem.SetOverheatStage(overheatState.Stage, overheatState.StageProgress);
+        }
+
         private void UnbindOverheat()
         {
+            if (null != heatGauge)
+                heatGauge.Unbind();
+
             if (null != overheatState)
             {
                 overheatState.OverheatStateChangedEvent -= OnOverheatStateChanged;
+                overheatState.OverheatStageChangedEvent -= OnOverheatStageChanged;
+                overheatState.OverheatLevelChangedEvent -= OnOverheatLevelChanged;
                 overheatState = null;
             }
         }

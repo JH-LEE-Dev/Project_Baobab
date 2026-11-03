@@ -75,6 +75,10 @@ namespace PresentationLayer.VFX
         public int RegionMinY { get; private set; }
         public int RegionMaxY { get; private set; }
 
+        // 발밑 기준점(원점 기준 px). 실루엣 맨 아래 3줄이 차지하는 좌우 범위의 가운데와 맨 아래 줄. 점화 충격파의 중심으로 쓴다. HasSolid가 false면 (0, -1).
+        public int FootCenterX { get; private set; }
+        public int FootY { get; private set; }
+
         /// <summary>
         /// _root 아래의 _sortingLayerName 레이어 스프라이트 렌더러들을 소스로 모은다(몸, 얼굴, 도끼, 드론 본체 등).
         /// 그림자/사거리 표시/물 위 스프라이트는 레이어가 달라 제외된다. 정적 리스트를 재사용해서 할당하지 않는다.
@@ -322,8 +326,12 @@ namespace PresentationLayer.VFX
             if (false == HasSolid)
             {
                 EdgeCellCount = 0;
+                FootCenterX = 0;
+                FootY = -1;
                 return;
             }
+
+            BuildFootPoint(minX, maxX, minY, maxY);
 
             RegionMinX = Mathf.Max(0, minX - _reachMarginCells);
             RegionMaxX = Mathf.Min(GridWidth - 1, maxX + _reachMarginCells);
@@ -332,6 +340,27 @@ namespace PresentationLayer.VFX
 
             BuildDistanceField();
             BuildEdgeList(minX, maxX, minY, maxY);
+        }
+
+        // 실루엣 맨 아래 3줄의 좌우 범위 가운데를 발밑 중심으로 잡는다(피벗이 아니라 실제 몸 기준이라 충격파가 몸 가운데에서 퍼진다)
+        private void BuildFootPoint(int _minX, int _maxX, int _minY, int _maxY)
+        {
+            int footMinX = GridWidth;
+            int footMaxX = -1;
+            int endY = Mathf.Min(_maxY, _minY + 2);
+            for (int y = _minY; y <= endY; y++)
+            {
+                int rowIndex = y * GridWidth;
+                for (int x = _minX; x <= _maxX; x++)
+                {
+                    if (false == solid[rowIndex + x]) continue;
+                    if (x < footMinX) footMinX = x;
+                    if (x > footMaxX) footMaxX = x;
+                }
+            }
+
+            FootCenterX = Mathf.RoundToInt((footMinX + footMaxX) * 0.5f) - GridOriginX;
+            FootY = _minY - GridOriginY;
         }
 
         // 지난 빌드의 실루엣 사각형과 가장자리 표시만 지운다(격자 전체를 초기화하지 않는다)

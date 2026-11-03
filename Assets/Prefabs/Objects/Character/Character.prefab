@@ -161,6 +161,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OverheatComponent
   vfxComponent: {fileID: 169558516840733384}
   overheatVfxTag: OverheatLoopEffect
+  stageVfxTags:
+  - OverheatLoopEffect_Stage1
+  - OverheatLoopEffect_Stage2
+  - 
   vfxOffset: {x: 0, y: 0, z: 0}
 --- !u!114 &169558516840733384
 MonoBehaviour:
@@ -179,6 +183,18 @@ MonoBehaviour:
   vfxPoolDataList:
   - vfxTag: OverheatLoopEffect
     effectPrefab: {fileID: 7006864300503741061, guid: b9f6f8f30a201c84688f5a455ed86d3e, type: 3}
+    initialPoolSize: 1
+    allowDynamicExpansion: 0
+    maxPoolSize: 1
+    uiParticleScale: 0
+  - vfxTag: OverheatLoopEffect_Stage1
+    effectPrefab: {fileID: 7006864300503741061, guid: b81fa86b58856d24f9f7c147333dfc31, type: 3}
+    initialPoolSize: 1
+    allowDynamicExpansion: 0
+    maxPoolSize: 1
+    uiParticleScale: 0
+  - vfxTag: OverheatLoopEffect_Stage2
+    effectPrefab: {fileID: 7006864300503741061, guid: 6433cccc362d8db4b9505c41283dc91b, type: 3}
     initialPoolSize: 1
     allowDynamicExpansion: 0
     maxPoolSize: 1
@@ -1013,7 +1029,6 @@ MonoBehaviour:
   treeSensorRadius: 4
   treeDetectionInterval: 0.5
   boomerangEdgePadding: 0.5
-  dashAfterimageMaterial: {fileID: 2100000, guid: b142bea6c82f4c91bab715a4a1cbe0a6, type: 2}
   droneCreator: {fileID: 8468477139537547128}
   droneFollowRadius: 0.8
   droneWingAngleStep: 28
@@ -1024,6 +1039,19 @@ MonoBehaviour:
   droneSeparationSpeed: 3
   droneAttackStaggerStep: 0.08
   droneFormationTurnSpeed: 360
+  dashDistanceTiles: 3
+  dashDuration: 0.18
+  dashAfterimageMaterial: {fileID: 2100000, guid: b142bea6c82f4c91bab715a4a1cbe0a6, type: 2}
+  dashAfterimageColor: {r: 0.62, g: 0.86, b: 1, a: 1}
+  dashAfterimageInterval: 0.03
+  dashAfterimageFadeDuration: 0.25
+  dashAfterimageStartAlpha: 0.55
+  dashTier1MaxCharges: 1
+  dashTier1RechargeSeconds: 4
+  dashTier2MaxCharges: 1
+  dashTier2RechargeSeconds: 3
+  dashTier3MaxCharges: 2
+  dashTier3RechargeSeconds: 2.5
   centerTransform: {fileID: 4602724895061784125}
   bRide: 0
   characterVisualObjects: {fileID: 9168519115169485814}
@@ -2030,6 +2058,8 @@ MonoBehaviour:
   bShockWaveMastery: 0
   bOverheat: 0
   bShockWaveOverheatBoost: 0
+  dashMaxChargesBonus: 0
+  dashRechargePerSecondBonus: 0
   boomerangCount: 0
   boomerangDamage: 10
   boomerangHitRadius: 0.5
@@ -2052,6 +2082,23 @@ MonoBehaviour:
   overheatGainBonusAlpha: 0
   heatRecoveryAmount: 0
   bOverheatPermanent: 0
+  overheatMaxValue: 100
+  overheatDamagePerLevel: 0.02
+  overheatAxeAttackSpeedPerLevel: 0.005
+  overheatTierThresholds: 220000004300000064000000
+  overheatBurnRatios:
+  - 0.02
+  - 0.03
+  - 0.04
+  - 0.05
+  overheatBurnTickCount: 6
+  overheatBurnTickInterval: 0.5
+  shockWaveOverheatDurationBase: 1.25
+  shockWaveOverheatDurationPerLevel: 0.0275
+  boomerangOverheatHitRadiusPerLevel: 0.02
+  boomerangOverheatCooldownMul: 0.5
+  droneOverheatChainBonus: 01000000020000000300000004000000
+  droneOverheatChainRangeMul: 3
   recoveryPowerBonus: 0
   rifleDamage: 1
   rifleReadyTime: 0.25

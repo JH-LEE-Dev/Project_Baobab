@@ -14,11 +14,8 @@ public class UIView_HUD : UIView
     [SerializeField] private GameObject hudDirectionalIndicatorPrefab;
     [SerializeField] private GameObject hudMessagePrefab;
     [SerializeField] private GameObject hudScreenBloodPrefab;
-    [SerializeField] private GameObject hudLootPrefab;
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private string mapTransitionMotionTag = "GoDown";
-    [Tooltip("대시 게이지가 보일 때 버프 첫 줄에서 비워 둘 폭(맞물린 대시 2칸 37 + 여백 8)")]
-    [SerializeField] private float dashReservedWidth = 46f;
 
     [System.Serializable]
     public struct BuffHudIconEntry
@@ -37,15 +34,10 @@ public class UIView_HUD : UIView
     private HUD_DirIndicator hudDirIndicator;
     private HUD_Message hudMessage;
     private HUD_ScreenBlood hudScreenBlood;
-    private HUD_Loot hudLoot;
 
     // 모션 중첩 방지를 위한 현재 재생 중인 엔트리 참조
     private MotionEntry goDownEntry;
     private MotionEntry goUpEntry;
-
-    private ILootDataProvider lootDataProvider;
-    [Header("Loot Data")]
-    [SerializeField] private LootItemTypeDataBase lootItemTypeDataBase;
 
     private ICharacter character;
     // 스태미나 순간 변화 이벤트 구독용. 구독/해제에 같은 델리게이트 인스턴스를 써야 하므로 한 번만 만든다.
@@ -78,7 +70,6 @@ public class UIView_HUD : UIView
 
         currentMapType = MapType.Town;
 
-        Init_HUDLoot();
         Init_HUDEquipment();
         Init_HUDMessage();
         Init_HUDDirIndicator();
@@ -97,11 +88,6 @@ public class UIView_HUD : UIView
 
         hudEquipment?.OnDestroy();
         hudMessage?.Release();
-
-        if (lootDataProvider != null)
-        {
-            lootDataProvider.LootAcquiredEvent -= OnLootAcquired;
-        }
     }
 
     protected override void OnShow() //이 UI가 켜졌을 때 호출 됨.
@@ -173,34 +159,6 @@ public class UIView_HUD : UIView
         hudStaminaBar?.PlayRecovered(_gainRatio);
     }
 
-    public void DependencyInjection(ILootDataProvider _lootDataProvider)
-    {
-        if (lootDataProvider != null)
-        {
-            lootDataProvider.LootAcquiredEvent -= OnLootAcquired;
-        }
-
-        lootDataProvider = _lootDataProvider;
-        
-        if (lootDataProvider != null)
-        {
-            lootDataProvider.LootAcquiredEvent += OnLootAcquired;
-        }
-    }
-
-    private void OnLootAcquired(LootType newlyAcquiredType)
-    {
-        if (null != hudLoot && LootType.SporePotion == newlyAcquiredType)
-        {
-            hudLoot.AcquireLoot(newlyAcquiredType);
-
-            if (MapType.Town == currentMapType)
-            {
-                ChangedActiveStateLoot(true);
-            }
-        }
-    }
-
     public override void Update()
     {
         if (null != character && null != character.pHealthComponent)
@@ -258,21 +216,13 @@ public class UIView_HUD : UIView
         dashShownMax = _maxCharges;
 
         if (null == hudDashGauge)
-        {
-            hudBuffBar?.SetFirstRowReserved(true == _bUnlocked ? dashReservedWidth : 0f);
             return;
-        }
 
         // 막 보이게 되는 순간의 칸 상태는 연출(사용/충전 완료 번쩍임) 없이 곧바로 맞춘다
         bool _bBecameVisible = true == _bUnlocked && false == hudDashGauge.IsUnlocked;
 
         hudDashGauge.SetMaxCharges(_maxCharges);
         hudDashGauge.SetUnlocked(_bUnlocked);
-
-        // 대시가 보이는 동안 버프 첫 줄은 대시 폭만큼 오른쪽을 비켜 준다.
-        // dashReservedWidth는 2칸 기준이므로 빠진 칸만큼 줄인다.
-        float _missing = (HUD_DashGauge.MaxCells - Mathf.Clamp(_maxCharges, 0, HUD_DashGauge.MaxCells)) * hudDashGauge.CellPitch;
-        hudBuffBar?.SetFirstRowReserved(true == _bUnlocked ? Mathf.Max(0f, dashReservedWidth - _missing) : 0f);
         ApplyDashCells(_bBecameVisible);
     }
 
@@ -477,16 +427,6 @@ public class UIView_HUD : UIView
             hudMessage.Initialize(viewCtx?.localizationManager);
     }
 
-    private void Init_HUDLoot()
-    {
-        if (null == hudLoot)
-            hudLoot = Instantiate(hudLootPrefab, moveHUD.transform).GetComponent<HUD_Loot>();
-
-        if (null != hudLoot)
-            hudLoot.Initialize(viewCtx?.inputManager);
-    }
-
-
 
     private void UsedSteminaEvent(float _currentStemina, float _maxStemina)
     {
@@ -529,25 +469,6 @@ public class UIView_HUD : UIView
         {
             hudEquipment.UpdateAxeDurability();
         }
-
-        if (null != lootDataProvider && null != hudLoot)
-        {
-            var _ownedLoots = lootDataProvider.CurrentOwnedLoots;
-            if (null != _ownedLoots)
-            {
-                // HUD_Loot는 포션 슬롯 하나만 담당하므로(전달하는 LootType은 내부에서 무시된다)
-                // 실시간 경로인 OnLootAcquired와 동일하게 SporePotion만 걸러서 넘긴다.
-                // 필터 없이 넘기면 별빛 나침반 같은 다른 전리품만 가진 상태에서도 포션 슬롯이 켜진다.
-                for (int i = 0; i < _ownedLoots.Count; i++)
-                {
-                    if (LootType.SporePotion != _ownedLoots[i]) continue;
-
-                    hudLoot.AcquireLoot(_ownedLoots[i], false);
-                }
-            }
-        }
-
-        ChangedActiveStateLoot(MapType.Town == currentMapType);
     }
 
     public void SetCurrentMapType(MapType _currentMapType, ForestType _currentForestType)
@@ -564,8 +485,49 @@ public class UIView_HUD : UIView
 
         ChangedActiveStateEquipment(bTown);
         ChangedActiveStateStemina(bTown);
-        ChangedActiveStateLoot(bTown);
+
+        // 과열 게이지는 맵이 바뀌는 순간 일단 화면 밖에 대기시키고, HUD가 다 올라온 뒤(HUDGoUp 완료) 튀어 오르게 한다.
+        hudEquipment?.SetHeatGaugeVisible(false, false);
     }
+
+    #region HUD_HeatGauge Logic
+
+    // "예열" 특성(입장하자마자 과열 수치를 받는 특성, 아무 스테이지에서나 사용 가능)이 켜져 있는지.
+    private bool bPreheatActive;
+
+    /// <summary>
+    /// [연결 자리] "예열" 특성이 켜지고 꺼질 때 부른다. 특성이 아직 없으므로 지금은 아무도 부르지 않는다.
+    /// 특성이 생기면 그 SkillCommand(Execute / Undo) → 신호 → GameplayUICoordinator → 이 메서드 순서로 이어 주면 된다.
+    /// 던전 안에서 바뀌면 그 자리에서 등장 / 퇴장 연출을 한다. 입장 시 과열 수치를 실제로 부여하는 일은 특성 쪽이 맡는다.
+    /// </summary>
+    public void SetPreheatActive(bool _bActive)
+    {
+        if (_bActive == bPreheatActive)
+            return;
+
+        bPreheatActive = _bActive;
+
+        if (MapType.Town != currentMapType)
+            hudEquipment?.SetHeatGaugeVisible(IsHeatGaugeRequired(), true);
+    }
+
+    // 4스테이지(MagmaForest)는 맵 규칙으로 과열이 쌓이고, 다른 스테이지는 "예열" 특성이 있을 때만 과열이 있다.
+    // 마을과 로그라이크(장비 HUD 숨김)에서는 보이지 않는다.
+    private bool IsHeatGaugeRequired()
+    {
+        if (true == bEquipmentHiddenForRun || MapType.Town == currentMapType)
+            return false;
+
+        return MapType.MagmaForest == currentMapType || true == bPreheatActive;
+    }
+
+    private void ShowHeatGaugeIfRequired()
+    {
+        if (true == IsHeatGaugeRequired())
+            hudEquipment?.SetHeatGaugeVisible(true, true);
+    }
+
+    #endregion
 
     /// <summary>
     /// [로그라이크 전용] 도끼 내구도 HUD(장비 HUD)를 숨긴다. 로그라이크는 도끼 내구도가 무제한이라 표시하지 않는다(기획서 v2.2 10-1).
@@ -575,6 +537,9 @@ public class UIView_HUD : UIView
     {
         bEquipmentHiddenForRun = _bHidden;
         ChangedActiveStateEquipment(MapType.Town == currentMapType);
+
+        if (true == _bHidden)
+            hudEquipment?.SetHeatGaugeVisible(false, false);
     }
 
     private bool bEquipmentHiddenForRun;
@@ -640,21 +605,6 @@ public class UIView_HUD : UIView
         hudStaminaBar.SetActivate(!_isTwon);
     }
 
-    private void ChangedActiveStateLoot(bool _isTown)
-    {
-        if (null == hudLoot)
-            return;
-
-        if (true == _isTown)
-        {
-            hudLoot.gameObject.SetActive(false);
-        }
-        else
-        {
-            hudLoot.gameObject.SetActive(true == hudLoot.HasAcquired);
-        }
-    }
-
     public void OffroadSpawned(IOffroadProvider _offroadProvider)
     {
         hudDirIndicator?.SetTarget(_offroadProvider.transform);
@@ -668,8 +618,6 @@ public class UIView_HUD : UIView
 
         if (null != hudScreenBlood)
             hudScreenBlood.ResetAnimation(false);
-            
-        hudLoot?.OnHUDGoDown();
 
         if (null != omp)
         {
@@ -677,6 +625,10 @@ public class UIView_HUD : UIView
             omp.SettingEntryMotion(goUpEntry, true, true);
             goDownEntry = omp.Play(mapTransitionMotionTag, bReset: true);
         }
+
+        // HUD가 내려가는 동안 과열 게이지도 함께 아래로 빠진다(보이지 않던 상태면 아무 일도 없다).
+        // 올라가는 모션을 끊을 때 그 완료 콜백이 게이지를 띄울 수 있으므로 모션 처리 뒤에 숨긴다.
+        hudEquipment?.SetHeatGaugeVisible(false, true);
     }
 
     /// <param name="_onCompleted">HUD가 완전히 다 올라온 시점에 호출된다. 모션이 없으면 즉시 호출된다.</param>
@@ -690,17 +642,21 @@ public class UIView_HUD : UIView
         {
             // 내려가는 모션이 재생 중이라면 강제 종료하여 모션 중첩을 방지합니다.
             omp.SettingEntryMotion(goDownEntry, true, true);
-            goUpEntry = omp.PlayBackward(mapTransitionMotionTag, _onComplete: () => _onCompleted?.Invoke(), bReset: true);
+            // 과열 게이지는 HUD가 다 올라온 뒤에 튀어 오른다(올라오는 모션과 겹치면 쫀득함이 묻힌다).
+            goUpEntry = omp.PlayBackward(mapTransitionMotionTag, _onComplete: () =>
+            {
+                ShowHeatGaugeIfRequired();
+                _onCompleted?.Invoke();
+            }, bReset: true);
         }
         else
         {
+            ShowHeatGaugeIfRequired();
             _onCompleted?.Invoke();
         }
 
         if (MapType.Town != currentMapType)
         {
-            hudLoot?.OnHUDGoUp();
-
             if (false == _bSuppressDungeonStateBanner)
                 hudMessage?.Play();
 

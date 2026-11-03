@@ -54,7 +54,7 @@ public class HUD_BuffBar : MonoBehaviour
     [SerializeField] private Sprite[] digitSprites;
 
     [Header("Layout")]
-    [Tooltip("한 줄의 가로폭(스태미나 바 폭). 첫 줄은 firstRowReserved만큼 오른쪽을 비운다(대시 게이지 자리).")]
+    [Tooltip("한 줄의 가로폭(스태미나 바 폭). 모든 줄이 같은 칸 수를 갖는다.")]
     [SerializeField] private float rowWidth = 160f;
     [Tooltip("최대 줄 수. 한 줄이 부족하면 위로 쌓고, 모든 줄이 차면 마지막 칸이 +N이 된다.")]
     [SerializeField] private int maxRows = 2;
@@ -101,7 +101,6 @@ public class HUD_BuffBar : MonoBehaviour
     private bool bInitialized = false;
     private int chipShown = -1;
     private Color lastTint = Color.white;
-    private float firstRowReserved = 0f;
 
     public float SlideDuration
     {
@@ -416,29 +415,10 @@ public class HUD_BuffBar : MonoBehaviour
         pool.Push(_icon);
     }
 
-    // 첫 줄에서 오른쪽을 비워 둘 폭(대시 게이지가 보일 때). 바뀌면 칸들이 새 자리로 미끄러져 간다.
-    public void SetFirstRowReserved(float _width)
-    {
-        float _w = Mathf.Max(0f, _width);
-
-        if (Mathf.Approximately(_w, firstRowReserved))
-        {
-            return;
-        }
-
-        firstRowReserved = _w;
-
-        if (true == bInitialized)
-        {
-            RelayoutAll(false);
-        }
-    }
-
     // 한 줄에 들어가는 칸 수. 칸 폭(18)과 피치(20) 사이의 여백은 줄 끝에서는 필요 없으므로 더해 계산한다.
     private int GetRowCapacity(int _row)
     {
-        float _width = rowWidth - (0 == _row ? firstRowReserved : 0f);
-        return Mathf.Max(0, Mathf.FloorToInt((_width + (slotPitch - IconCellWidth)) / slotPitch));
+        return Mathf.Max(0, Mathf.FloorToInt((rowWidth + (slotPitch - IconCellWidth)) / slotPitch));
     }
 
     // 전체 칸 인덱스를 (줄, 열)로 바꿔 로컬 좌표를 돌려준다. 첫 줄이 아래, 다음 줄이 위.

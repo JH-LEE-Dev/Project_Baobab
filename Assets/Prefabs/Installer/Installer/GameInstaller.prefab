@@ -1787,9 +1787,6 @@ MonoBehaviour:
   sporeExplosionVfxPrefab: {fileID: 114000001, guid: 76a82539148a5da39264cf6082f3ad74, type: 3}
   sporeExplosionVfxPoolDefaultCapacity: 50
   sporeExplosionVfxPoolMaxSize: 200
-  fireExplosionVfxPrefab: {fileID: 114000001, guid: 78c4367b9868445483fb67da0533cbaf, type: 3}
-  fireExplosionVfxPoolDefaultCapacity: 200
-  fireExplosionVfxPoolMaxSize: 500
   treeTransformVfxPrefab: {fileID: 114000001, guid: 3e8d1b64f0a27c948b53da961ef4270c, type: 3}
   treeTransformVfxPoolDefaultCapacity: 4
   treeTransformVfxPoolMaxSize: 32
@@ -3059,7 +3056,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
   isUIComponent: 0
   initializeOnAwake: 1
-  vfxPoolDataList: []
+  vfxPoolDataList:
+  - vfxTag: OverheatEmberAcquire
+    effectPrefab: {fileID: 1386752551214847544, guid: 1ade87e47bde32c4484a65786fe36278, type: 3}
+    initialPoolSize: 4
+    allowDynamicExpansion: 1
+    maxPoolSize: 16
+    uiParticleScale: 0
+  - vfxTag: OverheatEmberExpire
+    effectPrefab: {fileID: 1386752551214847544, guid: ef16fa67e864a4f4495d3751a9d27c51, type: 3}
+    initialPoolSize: 2
+    allowDynamicExpansion: 1
+    maxPoolSize: 8
+    uiParticleScale: 0
 --- !u!114 &5570756660208873412
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3083,8 +3092,8 @@ MonoBehaviour:
   dropCountMax: 3
   droppedLifetime: 20
   groundLoopVfxTag: 
-  acquireVfxTag: 
-  expireVfxTag: 
+  acquireVfxTag: OverheatEmberAcquire
+  expireVfxTag: OverheatEmberExpire
 --- !u!1 &7565708588615142684
 GameObject:
   m_ObjectHideFlags: 0
@@ -3646,6 +3655,7 @@ MonoBehaviour:
   - {fileID: 2289352092563808759}
   - {fileID: 4097291587162280328}
   - {fileID: 8496391971791109407}
+  houseSleepOffset: {x: 0.5, y: -0.25}
   spawnDistance: {x: 1.5, y: 4}
   puppyInteractRadius: 1
   bowlInteractRadius: 0.7

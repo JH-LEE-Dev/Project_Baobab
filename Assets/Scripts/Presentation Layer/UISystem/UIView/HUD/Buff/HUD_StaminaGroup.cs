@@ -9,6 +9,7 @@ public class HUD_StaminaGroup : MonoBehaviour
     // 내부 의존성
     [SerializeField] private HUD_Stemina stamina;
     [SerializeField] private HUD_BuffBar buffBar;
+    [Tooltip("화면 왼쪽 아래 인벤토리(가방) 오른쪽에 고정되는 대시 게이지. 인벤토리 열기/닫기 모션은 따라가지 않는다")]
     [SerializeField] private HUD_DashGauge dashGauge;
 
     public HUD_Stemina Stamina
