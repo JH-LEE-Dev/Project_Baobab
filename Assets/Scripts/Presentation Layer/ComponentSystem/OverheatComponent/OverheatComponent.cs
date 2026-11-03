@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// 4스테이지(MagmaForest) 맵 규칙인 과열 수치. 불씨를 주울 때마다 오르고(0~100, 특성에 따라 소수점도 가능)
+/// 4스테이지(MagmaForest) 맵 규칙인 과열 수치. 불씨를 주울 때마다 오르고(0~최대치, 최대치는 기본 100이며 특성이 N씩 올린다. 특성에 따라 소수점도 가능)
 /// 줄어들지 않으며, 원정이 바뀔 때(던전 입장·마을 귀환·재도전)만 0으로 돌아간다. 특성 없이 작동한다.
 ///
 /// 공식에는 항상 내림한 정수(OverheatLevel, HUD에 보이는 값)를 쓴다.
@@ -53,11 +53,48 @@ public class OverheatComponent : PComponent, IOverheatComponent
     public event Action<bool> OverheatStateChangedEvent;
     public event Action<int> OverheatLevelChangedEvent;
     public event Action<int> OverheatStageChangedEvent;
+    public event Action<float> OverheatMaxChangedEvent;
+
+    // 최대치 변경 구독용. 구독/해제에 같은 델리게이트 인스턴스를 써야 하므로 한 번만 만든다.
+    private StatComponent subscribedStat;
+    private Action<float> cachedOnMaxValueChanged;
 
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
         customSortable = GetComponentInParent<CustomSortable>();
+
+        UnbindStat();
+        subscribedStat = Stat;
+        if (null != subscribedStat)
+        {
+            if (null == cachedOnMaxValueChanged)
+                cachedOnMaxValueChanged = OnMaxValueChanged;
+
+            subscribedStat.OverheatMaxValueChangedEvent += cachedOnMaxValueChanged;
+        }
+    }
+
+    private void UnbindStat()
+    {
+        if (null == subscribedStat)
+            return;
+
+        subscribedStat.OverheatMaxValueChangedEvent -= cachedOnMaxValueChanged;
+        subscribedStat = null;
+    }
+
+    // 최대치가 내려가 지금 수치가 넘치면 새 최대치로 잘라낸다(단계 · 공속 배율은 Refresh가 다시 맞춘다).
+    // 올라간 경우는 수치는 그대로이고 IsMax만 풀린다(불씨를 다시 주울 수 있다).
+    private void OnMaxValueChanged(float _maxValue)
+    {
+        if (overheatScaled > MaxScaled)
+        {
+            overheatScaled = MaxScaled;
+            Refresh();
+        }
+
+        OverheatMaxChangedEvent?.Invoke(MaxValue);
     }
 
     /// <summary>
@@ -193,5 +230,10 @@ public class OverheatComponent : PComponent, IOverheatComponent
         activeVfx = null;
         activeVfxTag = null;
         activeVfxRenderer = null;
+    }
+
+    private void OnDestroy()
+    {
+        UnbindStat();
     }
 }

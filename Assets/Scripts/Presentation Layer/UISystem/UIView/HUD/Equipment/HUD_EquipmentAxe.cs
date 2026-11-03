@@ -270,7 +270,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                     .SetEase(Ease.InQuad));
             }
 
-            // HUD_Loot와 같은 쫀득한 뽀잉: 빠르게 커졌다가 탄성 있게 제자리로
+            // 쫀득한 뽀잉: 빠르게 커졌다가 탄성 있게 제자리로
             if (null != repairBounceTarget)
             {
                 repairSequence.Insert(0f, repairBounceTarget.DOScale(repairBounceBaseScale * repairBounceScale, repairBounceDuration * 0.3f)

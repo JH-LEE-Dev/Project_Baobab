@@ -51,9 +51,6 @@ public class GameplayUIManager : UIManager
         if (view is UIView_Tent tentUI)
             tentUI.DependencyInjection(skillSystemProvider, moneyData);
 
-        if (view is UIView_HUD hudUI)
-            hudUI.DependencyInjection(inDungeonObjProvider as ILootDataProvider);
-
         if (view is UIView_ScreenModal screenModalUI && inDungeonObjProvider is ILootDataProvider lootDataProvider)
             screenModalUI.SetGrowthInfoSource(lootDataProvider.GetLootGrowthTier, lootDataProvider.GetNextGrowthPrestigeLevel);
 

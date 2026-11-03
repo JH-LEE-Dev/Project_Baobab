@@ -12,6 +12,8 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     // 시간이 다 돼 풀리는 경우는 따로 알리지 않는다(같은 지속 시간을 받은 쪽이 스스로 끝낸다).
     public event Action<float> SourceOfSpeedActivatedEvent;
     public event Action SourceOfSpeedForceEndedEvent;
+    // 과열 수치 최대치(overheatMaxValue)가 IncreaseOverheatMaxValue로 바뀔 때. 인자는 새 최대치.
+    public event Action<float> OverheatMaxValueChangedEvent;
 
     [Header("For Debugging")]
     // 에디터에서 플레이를 누르기 전에 캐릭터 소지금을 원하는 값으로 맞춰두기 위한 치트 값이다.
@@ -167,7 +169,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     // 과열 수치(4스테이지 불씨)는 OverheatComponent가 들고 있고, 수치 1당 효과는 여기서 조정한다.
     // 공식에 쓰는 과열 수치는 항상 내림한 정수(HUD에 보이는 값)다.
     [Header("Overheat - 과열 수치 1당 효과")]
-    public float overheatMaxValue = 100f;
+    public float overheatMaxValue = 100f; // 기본 최대치. 특성이 IncreaseOverheatMaxValue로 N씩 올린다
     public float overheatDamagePerLevel = 0.02f; // 화상을 뺀 모든 공격의 피해 마지막에 곱한다 (1 + 과열 * 값)
     public float overheatAxeAttackSpeedPerLevel = 0.005f; // 도끼 공격속도 마지막에 곱한다 (1 + 과열 * 값)
 
@@ -639,6 +641,21 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public void ActivateOverheatPermanent(bool _boolean)
     {
         bOverheatPermanent = _boolean;
+    }
+
+    /// <summary>
+    /// 과열 수치 최대치를 _amount만큼 올린다(특성 Execute는 +N, Undo는 -N). 0 밑으로는 내려가지 않는다.
+    /// 값이 바뀌면 OverheatMaxValueChangedEvent로 알려 OverheatComponent가 넘친 수치를 잘라내고 HUD가 바를 다시 그린다.
+    /// </summary>
+    public void IncreaseOverheatMaxValue(float _amount)
+    {
+        float _newValue = Mathf.Max(0f, overheatMaxValue + _amount);
+
+        if (Mathf.Approximately(_newValue, overheatMaxValue))
+            return;
+
+        overheatMaxValue = _newValue;
+        OverheatMaxValueChangedEvent?.Invoke(overheatMaxValue);
     }
 
     public void IncreaseRecoveryPower(float _amount)

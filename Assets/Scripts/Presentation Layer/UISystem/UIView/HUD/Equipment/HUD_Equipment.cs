@@ -12,6 +12,8 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [Header("Component Settings")]
         [SerializeField] private HUD_EquipmentAxe axeItem;
         [SerializeField] private UIMotion_Pop axePop;
+        [Tooltip("도끼 HUD 왼쪽의 과열 게이지. 보일지 말지는 UIView_HUD가 정한다")]
+        [SerializeField] private HUD_HeatGauge heatGauge;
 
         // //내부 의존성
         private ICharacter character;
@@ -25,6 +27,18 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             {
                 axeItem.Initialize(_inputManager, _localizationManager);
             }
+
+            if (null != heatGauge)
+                heatGauge.Initialize();
+        }
+
+        /// <summary>
+        /// 과열 게이지를 보이거나 숨긴다. _bAnimate가 true면 아래에서 튀어 오르는 등장 / 아래로 빠지는 퇴장 연출을 한다.
+        /// </summary>
+        public void SetHeatGaugeVisible(bool _bVisible, bool _bAnimate)
+        {
+            if (null != heatGauge)
+                heatGauge.SetVisible(_bVisible, _bAnimate);
         }
 
         public void BindingRef(ICharacter _character)
@@ -54,6 +68,10 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 if (null != axeItem)
                     axeItem.SetOverheat(overheatState.IsActive);
             }
+
+            // 과열 게이지도 같은 상태를 구독한다(null이면 게이지는 0 · x1.00으로 남는다).
+            if (null != heatGauge)
+                heatGauge.Bind(overheatState);
         }
 
         private void OnOverheatStateChanged(bool _bActive)
@@ -64,6 +82,9 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
         private void UnbindOverheat()
         {
+            if (null != heatGauge)
+                heatGauge.Unbind();
+
             if (null != overheatState)
             {
                 overheatState.OverheatStateChangedEvent -= OnOverheatStateChanged;
