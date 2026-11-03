@@ -488,26 +488,6 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: 150
       objectReference: {fileID: 0}
-    - target: {fileID: 8640261846680310045, guid: 0b2eda5965a8af845b8e07e6b86168c8, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8640261846680310045, guid: 0b2eda5965a8af845b8e07e6b86168c8, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8640261846680310045, guid: 0b2eda5965a8af845b8e07e6b86168c8, type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 400
-      objectReference: {fileID: 0}
-    - target: {fileID: 8640261846680310045, guid: 0b2eda5965a8af845b8e07e6b86168c8, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 200
-      objectReference: {fileID: 0}
-    - target: {fileID: 8640261846680310045, guid: 0b2eda5965a8af845b8e07e6b86168c8, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -124
-      objectReference: {fileID: 0}
     - target: {fileID: 8664077167452570210, guid: 0b2eda5965a8af845b8e07e6b86168c8, type: 3}
       propertyPath: warningPopup
       value: 

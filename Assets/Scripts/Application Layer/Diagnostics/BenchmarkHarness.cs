@@ -32,7 +32,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 /// [쓰는 법]
 /// 1) 릴리즈 빌드를 -benchmark 인자와 함께 실행합니다.
 ///      LumberBoy.exe -benchmark -benchmarkSeconds 180 -benchmarkLabel "2core-50pct"
-/// 2) 설정에서 FPS를 반드시 Unlimited로 맞춥니다. (아래 [측정 유효성] 참고)
+/// 2) -benchmark 인자로 실행하면 프레임 상한(평소 60 고정)이 자동으로 풀립니다. (아래 [측정 유효성] 참고)
 /// 3) 측정할 세이브를 불러와 벤치마크 구간에 선 뒤 F9로 시작합니다.
 /// 4) 지정한 시간이 지나면 자동으로 멈추고 리포트를 씁니다. F9로 직접 멈춰도 됩니다.
 ///
@@ -46,10 +46,12 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 /// 파일이므로 처음부터 다른 폴더에 씁니다. persistentDataPath는 Player.log와 같은 자리라
 /// 유저에게 "로그 폴더"라고 안내하기도 쉽습니다.
 ///
-/// [측정 유효성 - 이 하네스가 FPS 설정을 건드리지 않는 이유]
+/// [측정 유효성 - 상한은 SettingsManager가 푼다]
 /// 프레임 상한을 정하는 주체는 SettingsManager 단독입니다(FrameRateLimiter 주석 참고).
-/// 여기서 상한을 임의로 풀면 그 값이 유저 설정으로 저장되어 측정이 끝난 뒤에도 남습니다.
-/// 그래서 이 하네스는 상한을 고치지 않고 "지금 상한이 걸려 있다"는 사실을 리포트에 크게 적습니다.
+/// 그래서 이 하네스는 엔진 값을 직접 고치지 않고, 빌드의 -benchmark 실행에서만
+/// SettingsManager.LiftFrameCapForBenchmark로 상한 해제를 요청합니다. 설정 파일에 저장되지 않으므로 측정 뒤에 남지 않습니다.
+/// 에디터에서는 풀지 않습니다. 리포트는 Unity 쪽 상한(vSyncCount, targetFrameRate)이 남아 있을 때만 경고하며,
+/// 그래픽 드라이버가 VSync를 강제로 켠 경우는 잡아내지 못합니다. 측정 전에 드라이버 설정을 확인하십시오.
 ///
 /// 상한이 걸린 채로 잰 수치는 최소사양 근거로 쓸 수 없습니다. 60fps 상한에서 재면 아무리 느린
 /// 기계라도 대부분의 프레임이 16.6ms로 나와서 통과처럼 보이기 때문입니다. 실제로 이 프로젝트의
@@ -182,6 +184,13 @@ public class BenchmarkHarness : MonoBehaviour
 
     private void Awake()
     {
+        // 빌드의 -benchmark 실행에서만 프레임 상한을 푼다. 에디터는 인자 없이도 하네스가 켜지지만
+        // 상한은 그대로 둔다. (에디터 수치는 어차피 최소사양 근거로 못 쓴다)
+        if (false == Application.isEditor)
+        {
+            SettingsManager.Instance.LiftFrameCapForBenchmark();
+        }
+
         ReadCommandLine();
 
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
@@ -388,11 +397,6 @@ public class BenchmarkHarness : MonoBehaviour
     private void AppendValidity(StringBuilder _sb, FrameTimeStats _stats)
     {
         List<string> _problems = new List<string>(8);
-
-        if (true == SettingsManager.HasInstance && EFPS.Unlimited != SettingsManager.Instance.Current.fps)
-        {
-            _problems.Add($"FPS 설정이 {SettingsManager.Instance.Current.fps}입니다. 상한이 걸린 상태의 프레임 타임은 게임 성능이 아니라 리미터의 모양입니다. 설정에서 Unlimited로 바꾸고 다시 재십시오.");
-        }
 
         if (0 != QualitySettings.vSyncCount) _problems.Add($"vSyncCount가 {QualitySettings.vSyncCount}입니다. 주사율이 상한으로 작동합니다.");
         if (0 < Application.targetFrameRate) _problems.Add($"targetFrameRate가 {Application.targetFrameRate}입니다. 상한이 걸려 있습니다.");
