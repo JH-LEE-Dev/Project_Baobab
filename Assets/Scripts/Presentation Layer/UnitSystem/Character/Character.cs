@@ -14,6 +14,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     // 속도의 원천이 걸림(지속 시간) / 강제로 풀림
     public event Action<float> SourceOfSpeedActivatedEvent;
     public event Action SourceOfSpeedForceEndedEvent;
+    // 과열 수치(내림한 정수, 최대치). 버프 HUD 표시용으로 값이 바뀔 때마다 알린다.
+    public event Action<int, float> OverheatLevelChangedEvent;
 
     // 외부 의존성
     public InputManager inputManager { get; private set; }
@@ -551,6 +553,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         statComponent.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
         statComponent.SourceOfSpeedForceEndedEvent += SourceOfSpeedForceEnded;
 
+        if (overheatComponent != null)
+        {
+            overheatComponent.OverheatLevelChangedEvent -= OverheatLevelChanged;
+            overheatComponent.OverheatLevelChangedEvent += OverheatLevelChanged;
+        }
+
         if (armComponent.axeComponent != null)
         {
             armComponent.axeComponent.AttackComboChangedEvent -= AttackComboChanged;
@@ -598,6 +606,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             statComponent.SourceOfSpeedActivatedEvent -= SourceOfSpeedActivated;
             statComponent.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
         }
+
+        if (overheatComponent != null)
+            overheatComponent.OverheatLevelChangedEvent -= OverheatLevelChanged;
 
         if (armComponent != null && armComponent.axeComponent != null)
         {
@@ -2285,6 +2296,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private void SourceOfSpeedForceEnded()
     {
         SourceOfSpeedForceEndedEvent?.Invoke();
+    }
+
+    private void OverheatLevelChanged(int _level)
+    {
+        OverheatLevelChangedEvent?.Invoke(_level, overheatComponent.MaxValue);
     }
 
     private void AttackComboChanged(int _stack, bool _bForcedReset)

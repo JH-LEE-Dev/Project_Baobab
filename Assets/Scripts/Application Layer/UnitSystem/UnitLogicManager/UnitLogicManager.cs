@@ -14,6 +14,7 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     public event Action<int, int, bool> AttackRythmStackChangedEvent;
     public event Action<float> SourceOfSpeedActivatedEvent;
     public event Action SourceOfSpeedForceEndedEvent;
+    public event Action<int, float> OverheatLevelChangedEvent;
 
     private Character character;
     private InputManager inputManager;
@@ -55,6 +56,9 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
 
         character.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
         character.SourceOfSpeedForceEndedEvent += SourceOfSpeedForceEnded;
+
+        character.OverheatLevelChangedEvent -= OverheatLevelChanged;
+        character.OverheatLevelChangedEvent += OverheatLevelChanged;
     }
 
     private void ReleaseEvents()
@@ -67,6 +71,7 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
         character.AttackRythmStackChangedEvent -= AttackRythmStackChanged;
         character.SourceOfSpeedActivatedEvent -= SourceOfSpeedActivated;
         character.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
+        character.OverheatLevelChangedEvent -= OverheatLevelChanged;
     }
 
     public void SetCharacter(Character _character)
@@ -159,6 +164,11 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     private void SourceOfSpeedForceEnded()
     {
         SourceOfSpeedForceEndedEvent?.Invoke();
+    }
+
+    private void OverheatLevelChanged(int _level, float _maxValue)
+    {
+        OverheatLevelChangedEvent?.Invoke(_level, _maxValue);
     }
 
     public void RefreshCharacter()
