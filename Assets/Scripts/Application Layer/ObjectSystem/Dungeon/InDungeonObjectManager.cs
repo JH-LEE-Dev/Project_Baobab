@@ -292,6 +292,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private Action<TreeObj> onTreeShieldBrokenHandler;
     private Action<TreeObj> onTreeShieldRecoveringHandler;
     private Action<TreeObj> onTreeHeatEmitHandler;
+    // "예열" 특성을 이번 원정에 이미 적용했는지(BeginEmberRun마다 되돌린다).
+    private bool bPreheatAppliedThisRun;
     private Action<TreeObj, float> onTreeHeatCountdownStartedHandler;
     private Action<TreeObj> onTreeGemTransformedHandler;
     private Action<TreeObj> onTreeAboutToDieHandler;
@@ -1108,7 +1110,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             ClearTrees();
 
             // 4스테이지 불씨: 이전 원정의 불씨를 치우고 이번 맵에서 나오는지 정한다(로그라이크는 스테이지 기믹을 끈다).
-            itemManager?.BeginEmberRun(currentMapType, null != runTreeRules && runTreeRules.bDisableStageGimmicks, CanSpawnMoreEmbers);
+            // "산불 조심" 특성이면 다른 숲에서도 나오고, "불씨 드랍량 증가" 특성 배율을 이번 원정 동안 쓴다.
+            itemManager?.BeginEmberRun(currentMapType, null != runTreeRules && runTreeRules.bDisableStageGimmicks, CanSpawnMoreEmbers,
+                character != null && character.bEmberEverywhere, character != null ? character.EmberDropMultiplier : 1f);
+            bPreheatAppliedThisRun = false;
 
             // 일괄 스폰 구간에서는 나무마다 컬링 개수를 갱신하지 않는다. 스폰이 끝난 직후의
             // RefreshCullingGroup()이 개수 설정과 전체 가시성 재계산을 한 번에 처리한다.
@@ -2295,7 +2300,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             if (treeCell + TreeHeatOffsets[i] == characterCell)
             {
-                character.TakeEnvironmentalStaminaDamage(_tree.HeatDamageAmount);
+                character.TakeEnvironmentalStaminaDamage(_tree.HeatDamageAmount * character.TreeHeatMultiplier); // "열기 내성 강화"
                 character.ApplyTreeHeatKnockback(TreeHeatOffsets[i]);
                 return;
             }
@@ -2335,13 +2340,31 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         if (character == null) return;
 
-        character.AddOverheat(itemManager.emberItemController != null ? itemManager.emberItemController.OverheatPerEmber : 1f);
+        // "불씨 획득량 증가" 특성 배율을 곱한다(특성이 없으면 1).
+        float overheatPerEmber = itemManager.emberItemController != null ? itemManager.emberItemController.OverheatPerEmber : 1f;
+        character.AddOverheat(overheatPerEmber * character.OverheatGainMultiplier);
 
         // 원목 획득과 같은 손맛(짧은 진동 + 획득음 + 캐릭터 뽀잉 + 하얀 번쩍임)
         Rumble.Play(EHapticEvent.ItemPickup);
         Sound.PlayUI(SoundID.GetItem);
         character.PlayItemAcquireBounce();
         character.PlayItemAcquireFlash();
+    }
+
+    /// <summary>
+    /// "예열" 특성 - 캐릭터가 움직일 수 있게 된 순간(InDungeonSystem의 ActivateCharacterSignal) 과열 수치를 올린다.
+    /// 불씨가 나오는 원정에서만, 원정마다 한 번만 적용한다. 과열 리셋(Character.SetWhereIsCharacter)보다 늦은 시점이라 지워지지 않는다.
+    /// </summary>
+    public void ApplyPreheat()
+    {
+        if (bPreheatAppliedThisRun || character == null) return;
+        if (itemManager == null || itemManager.emberItemController == null || false == itemManager.emberItemController.bEnabled) return;
+
+        bPreheatAppliedThisRun = true;
+        if (character.PreheatAmount > 0f)
+        {
+            character.AddOverheat(character.PreheatAmount);
+        }
     }
 
     // 불씨를 더 만들어도 되는지(자연 생성·벌목 드랍). 차에서 내리기 전(입장 연출)이거나 원정이 끝나는 중이거나

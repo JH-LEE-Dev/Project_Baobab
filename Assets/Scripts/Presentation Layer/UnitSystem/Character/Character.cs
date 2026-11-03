@@ -76,6 +76,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     // 불씨를 주워 과열 수치를 올린다. 이미 최대면 효과가 없고 false.
     public bool AddOverheat(float _amount) => overheatComponent != null && overheatComponent.AddOverheat(_amount);
     public bool IsOverheatMax => overheatComponent != null && overheatComponent.IsMax;
+    // 불씨·과열 특성 값(InDungeonObjectManager가 불씨 생성·획득·예열에 쓴다). 특성이 없으면 본편 기본값이다.
+    public float OverheatGainMultiplier => statComponent.overheatGainMultiplier;
+    public float EmberDropMultiplier => statComponent.emberDropMultiplier;
+    public bool bEmberEverywhere => statComponent.bEmberEverywhere;
+    public float PreheatAmount => statComponent.preheatAmount;
+    // 나무 열기의 피해량·기절 시간 배율("열기 내성 강화", 특성이 없으면 1).
+    public float TreeHeatMultiplier => statComponent.TreeHeatMultiplier;
     // 화상을 뺀 모든 공격의 피해 마지막에 곱하는 과열 배율(TreeObj가 InDungeonObjectManager를 통해 읽는다).
     public float OverheatDamageMultiplier => overheatComponent != null ? overheatComponent.DamageMultiplier : 1f;
     private int OverheatLevel => overheatComponent != null ? overheatComponent.OverheatLevel : 0;
@@ -118,7 +125,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         if (bDead) return;
 
-        stateMachine.GetState<KnockBackState>().SetKnockbackDirection(_cellOffset);
+        KnockBackState knockBackState = stateMachine.GetState<KnockBackState>();
+        knockBackState.SetKnockbackDirection(_cellOffset);
+        knockBackState.SetLockDurationScale(statComponent.TreeHeatMultiplier);
         stateMachine.ChangeState<KnockBackState>();
     }
 

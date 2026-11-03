@@ -581,6 +581,9 @@ public class InDungeonSystem : MonoBehaviour
     {
         // 캐릭터가 실제로 움직일 수 있게 되는 시점에 스테이지별 BGM을 재생한다.
         PlayDungeonBGM();
+
+        // "예열" 특성 - 숲에 들어와 움직일 수 있게 된 순간 과열 수치를 올린다(불씨가 나오는 원정에서만, 원정당 한 번).
+        inDungeonObjectManager.ApplyPreheat();
     }
 
     // MainMenu → Dungeon 튜토리얼: 이 경로엔 ActivateCharacterSignal이 없어 BGM 재생 지점도 없으므로,

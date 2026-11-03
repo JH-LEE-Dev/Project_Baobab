@@ -8,6 +8,8 @@ public class KnockBackState : CharacterState
     private Vector2 startPos;
     private Vector2 targetPos;
     private float timer;
+    // 이번 넉백의 경직 시간. "열기 내성 강화"가 줄이며, 밀려나는 시간(TravelDuration)보다 짧아지지는 않는다.
+    private float lockDuration = TotalLockDuration;
 
     // 넉백 중에도 캐릭터가 선 칸을 계속 점유한다.
     //
@@ -45,6 +47,12 @@ public class KnockBackState : CharacterState
         // 중에 넉백되면 그만큼 뒤로 끌려가므로 물리 위치에서 시작한다.
         startPos = character.rb.position;
         targetPos = startPos + dir * distance;
+    }
+
+    // 경직 시간 배율(1이면 기본 TotalLockDuration). SetKnockbackDirection과 함께 넉백에 들어가기 직전에 부른다.
+    public void SetLockDurationScale(float _scale)
+    {
+        lockDuration = Mathf.Max(TravelDuration, TotalLockDuration * _scale);
     }
 
     public override void Enter()
@@ -113,7 +121,7 @@ public class KnockBackState : CharacterState
 
         UpdateOccupation();
 
-        if (timer >= TotalLockDuration)
+        if (timer >= lockDuration)
         {
             stateMachine.ChangeState<IdleState>(); // 내부적으로 Exit()이 호출되어 각종 잠금이 풀린다
 

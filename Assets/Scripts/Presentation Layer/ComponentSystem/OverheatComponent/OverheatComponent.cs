@@ -2,12 +2,13 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// 4스테이지(MagmaForest) 맵 규칙인 과열 수치. 불씨를 주울 때마다 오르고(0~100, 특성에 따라 소수점도 가능)
+/// 4스테이지(MagmaForest) 맵 규칙인 과열 수치. 불씨를 주울 때마다 오르고(0~최대치, 기본 100이고 "과열 최대치 증가" 특성으로 늘어난다. 특성에 따라 소수점도 가능)
 /// 줄어들지 않으며, 원정이 바뀔 때(던전 입장·마을 귀환·재도전)만 0으로 돌아간다. 특성 없이 작동한다.
 ///
 /// 공식에는 항상 내림한 정수(OverheatLevel, HUD에 보이는 값)를 쓴다.
-/// - 피해: 화상을 뺀 모든 공격의 마지막에 (1 + 과열 * overheatDamagePerLevel)을 곱한다(TreeObj가 InDungeonObjectManager를 통해 읽는다).
-/// - 도끼 공격속도: 마지막에 (1 + 과열 * overheatAxeAttackSpeedPerLevel)을 곱한다(StatComponent.overheatAxeAttackSpeedMultiplier).
+/// - 피해: 화상을 뺀 모든 공격의 마지막에 (1 + 과열 * overheatDamagePerLevel * 효율)을 곱한다(TreeObj가 InDungeonObjectManager를 통해 읽는다).
+/// - 도끼 공격속도: 마지막에 (1 + 과열 * overheatAxeAttackSpeedPerLevel * 효율)을 곱한다(StatComponent.overheatAxeAttackSpeedMultiplier).
+/// 효율은 "과열 효율 증가" 특성 배율(StatComponent.overheatEfficiencyMultiplier, 특성이 없으면 1)이다.
 /// </summary>
 public class OverheatComponent : PComponent, IOverheatComponent
 {
@@ -47,8 +48,8 @@ public class OverheatComponent : PComponent, IOverheatComponent
     public float MaxValue => Stat != null ? Stat.overheatMaxValue : 100f;
     private int MaxScaled => Mathf.RoundToInt(MaxValue * ValueScale);
     public bool IsMax => overheatScaled >= MaxScaled;
-    public float DamageMultiplier => Stat != null ? 1f + overheatLevel * Stat.overheatDamagePerLevel : 1f;
-    public float AxeAttackSpeedMultiplier => Stat != null ? 1f + overheatLevel * Stat.overheatAxeAttackSpeedPerLevel : 1f;
+    public float DamageMultiplier => Stat != null ? 1f + overheatLevel * Stat.overheatDamagePerLevel * Stat.overheatEfficiencyMultiplier : 1f;
+    public float AxeAttackSpeedMultiplier => Stat != null ? 1f + overheatLevel * Stat.overheatAxeAttackSpeedPerLevel * Stat.overheatEfficiencyMultiplier : 1f;
 
     public event Action<bool> OverheatStateChangedEvent;
     public event Action<int> OverheatLevelChangedEvent;

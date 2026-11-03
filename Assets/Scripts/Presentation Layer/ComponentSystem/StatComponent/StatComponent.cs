@@ -158,11 +158,25 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     // [미사용] 지속시간제 과열의 특성 값. 과열이 0~100 스택으로 바뀌면서 효과가 없다. 특성 재구성 때 정리
     [Header("Overheat - 미사용 (옛 지속시간제 특성)")]
-    public float overheatEfficiencyBonus = 0f;
     public float overheatConsumptionReductionAlpha = 0f;
-    public float overheatGainBonusAlpha = 0f;
     public float heatRecoveryAmount = 0f;
     public bool bOverheatPermanent = false;
+
+    // 불씨·과열 특성. 전부 특성으로만 바뀌고 기본값이면 특성이 없는 본편과 같다.
+    // "불씨 획득량 증가" - 불씨 1개로 오르는 과열 수치 배율
+    public float overheatGainMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator overheatGainAccum;
+    // "과열 효율 증가" - 과열로 오르는 피해·도끼 공격속도(1당 효과)에 곱하는 배율
+    public float overheatEfficiencyMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator overheatEfficiencyAccum;
+    // "불씨 드랍량 증가" - 벌목으로 떨어지는 불씨 개수 배율
+    public float emberDropMultiplier { get; private set; } = 1.0f;
+    private PercentAccumulator emberDropAccum;
+    public float preheatAmount = 0f; // "예열" - 숲에 들어와 움직일 수 있게 된 순간 오르는 과열 수치(불씨가 나오는 숲에서만)
+    public bool bEmberEverywhere = false; // "산불 조심" - 4스테이지가 아닌 숲에서도 불씨가 나온다
+    // "열기 내성 강화" - 나무 열기의 피해량·기절 시간 감소율(0~1). 100%를 넘게 쌓여도 1에서 막힌다
+    public float treeHeatResistance { get; private set; } = 0f;
+    private PercentAccumulator treeHeatResistanceAccum;
 
     // 과열 수치(4스테이지 불씨)는 OverheatComponent가 들고 있고, 수치 1당 효과는 여기서 조정한다.
     // 공식에 쓰는 과열 수치는 항상 내림한 정수(HUD에 보이는 값)다.
@@ -618,7 +632,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreaseOverheatEfficiency(float _amount)
     {
-        overheatEfficiencyBonus += _amount;
+        overheatEfficiencyMultiplier = overheatEfficiencyAccum.Add(overheatEfficiencyMultiplier, _amount);
     }
 
     public void IncreaseOverheatConsumptionReduction(float _amount)
@@ -628,8 +642,36 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreaseOverheatGainBonus(float _amount)
     {
-        overheatGainBonusAlpha += _amount;
+        overheatGainMultiplier = overheatGainAccum.Add(overheatGainMultiplier, _amount);
     }
+
+    public void IncreaseEmberDrop(float _amount)
+    {
+        emberDropMultiplier = emberDropAccum.Add(emberDropMultiplier, _amount);
+    }
+
+    public void IncreasePreheat(float _amount)
+    {
+        preheatAmount += _amount;
+    }
+
+    public void ActivateEmberEverywhere(bool _boolean)
+    {
+        bEmberEverywhere = _boolean;
+    }
+
+    public void IncreaseOverheatMaxValue(float _amount)
+    {
+        overheatMaxValue += _amount;
+    }
+
+    public void IncreaseTreeHeatResistance(float _amount)
+    {
+        treeHeatResistance = treeHeatResistanceAccum.Add(treeHeatResistance, _amount);
+    }
+
+    /// <summary>나무 열기의 피해량·기절 시간에 곱하는 배율("열기 내성 강화"가 없으면 1).</summary>
+    public float TreeHeatMultiplier => 1f - Mathf.Clamp01(treeHeatResistance);
 
     public void IncreaseHeatRecoveryAmount(float _amount)
     {

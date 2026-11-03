@@ -64,5 +64,10 @@ public interface ICharacterStatCH
     public void IncreaseOverheatGainBonus(float _amount);
     public void IncreaseHeatRecoveryAmount(float _amount);
     public void ActivateOverheatPermanent(bool _boolean);
+    public void IncreaseEmberDrop(float _amount);
+    public void IncreasePreheat(float _amount);
+    public void ActivateEmberEverywhere(bool _boolean);
+    public void IncreaseOverheatMaxValue(float _amount);
+    public void IncreaseTreeHeatResistance(float _amount);
     public void IncreaseRecoveryPower(float _amount);
 }

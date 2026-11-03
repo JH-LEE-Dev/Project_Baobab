@@ -771,7 +771,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         public bool boomerang;
         public bool drone;
-        /// <summary>과열 관련 에셋(이름에 Overheat)이 하나라도 쓰이는지. 4스테이지 불씨(heat) 또는 과열 충격파·부메랑·드론 특성.</summary>
+        /// <summary>과열 관련 에셋(이름에 Overheat)이 하나라도 쓰이는지. 불씨(ember) 또는 과열 충격파·부메랑·드론 특성.</summary>
         public bool overheat;
         /// <summary>과열 충격파 특성(전용 충격파 프리팹).</summary>
         public bool overheatShockWave;
@@ -781,8 +781,11 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         /// <summary>포자막 나무는 2스테이지(FluffySporeForest)부터 나옵니다.</summary>
         public bool spore;
 
-        /// <summary>나무 열기 분출과 불씨(과열 수치·캐릭터 과열 오라)는 4스테이지(MagmaForest)에만 있습니다.</summary>
+        /// <summary>나무 열기 분출은 4스테이지(MagmaForest)에만 있습니다.</summary>
         public bool heat;
+
+        /// <summary>불씨(과열 수치·캐릭터 과열 오라)는 4스테이지와, "산불 조심" 특성이 있으면 모든 숲에서 나옵니다.</summary>
+        public bool ember;
 
         /// <summary>나무 화상은 과열 충격파·부메랑·드론 특성에서만 생깁니다. 4스테이지는 안전하게 함께 남깁니다.</summary>
         public bool burn;
@@ -896,7 +899,8 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
                                _c.Contains(SkillCommandType.ConstellationDamage) || _c.Contains(SkillCommandType.ManifestationBrand);
         _scope.spore = _scope.MapReachable((int)MapType.FluffySporeForest);
         _scope.heat = _scope.MapReachable((int)MapType.MagmaForest);
-        _scope.overheat = _overheatTraits || _scope.heat;
+        _scope.ember = _scope.heat || _c.Contains(SkillCommandType.EmberEverywhere);
+        _scope.overheat = _overheatTraits || _scope.ember;
         _scope.burn = _overheatTraits || _scope.heat;
 
         return _scope;
@@ -967,7 +971,8 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         if (false == _s.constellation) _n += EditComponents(_root, "ConstellationPixelLaserCreator", INSTALLER_PREFAB_PATH, _so => ClearRef(_so, "laserPrefab"));
         if (false == _s.boomerang) _n += EditComponents(_root, "BoomerangCreator", INSTALLER_PREFAB_PATH, _so => ClearRef(_so, "boomerangPrefab"));
         // 4스테이지 불씨(OverheatEmber, 2026-10-28 추가). 프리팹이 비면 EmberItemController가 불씨를 만들지 않는다.
-        if (false == _s.heat) _n += EditComponents(_root, "EmberItemController", INSTALLER_PREFAB_PATH, _so => ClearRef(_so, "emberItemPrefab"));
+        // "산불 조심" 특성이 데모에 있으면 4스테이지 없이도 불씨가 나오므로 남긴다.
+        if (false == _s.ember) _n += EditComponents(_root, "EmberItemController", INSTALLER_PREFAB_PATH, _so => ClearRef(_so, "emberItemPrefab"));
 
         HashSet<string> _dropTags = new HashSet<string>();
         // SporeBigExplosionEffect: 포자 포션 효과인 포자 대폭발 이펙트(VFX_SporeBigExplosion, 2026-10-15 추가)
@@ -1024,8 +1029,8 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
             _n += EditComponents(_root, "AxeExtraAttackCreator", CHARACTER_PREFAB_PATH, _so => ClearRef(_so, "overheatShockWavePrefab"));
         }
 
-        // 캐릭터 과열 오라는 4스테이지 불씨로 과열 수치가 오를 때만 나온다.
-        if (false == _s.heat)
+        // 캐릭터 과열 오라는 불씨로 과열 수치가 오를 때만 나온다(4스테이지 또는 "산불 조심" 특성).
+        if (false == _s.ember)
         {
             _n += EditComponents(_root, "VFXComponent", CHARACTER_PREFAB_PATH, _so => ClearVfxPoolEntries(_so, new HashSet<string> { "OverheatLoopEffect" }));
         }

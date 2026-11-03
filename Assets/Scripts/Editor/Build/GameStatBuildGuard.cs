@@ -111,6 +111,8 @@ public class GameStatBuildGuard : IPreprocessBuildWithReport
         new KeyValuePair<string, string>("bBoomerangCritical", "0"),
         new KeyValuePair<string, string>("bBoomerangOverheatBoost", "0"),
         new KeyValuePair<string, string>("bDroneOverheatBoost", "0"),
+        new KeyValuePair<string, string>("bEmberEverywhere", "0"),
+        new KeyValuePair<string, string>("preheatAmount", "0"),
 
         // 시작 돈 덮어쓰기는 개발용 치트다
         new KeyValuePair<string, string>("bOverrideStartMoney", "0"),

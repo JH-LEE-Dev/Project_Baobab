@@ -9,7 +9,7 @@ using UnityEngine.Pool;
 /// 불씨가 생기는 경로는 셋이다(수치는 전부 인스펙터에서 조정).
 /// 1) 입장 배치: 나무가 다 심어진 직후, 나무 1그루당 평균 initialEmbersPerTree개를 그 나무 옆 빈 칸에 놓는다.
 /// 2) 자연 생성: naturalSpawnInterval초마다 캐릭터 주변(거의 한 화면, naturalSpawnHalfExtents)의 빈 칸 하나에 놓는다.
-/// 3) 벌목 드랍: 나무가 쓰러질 때와 희귀나무 등급이 바뀔 때마다 dropCountMin~Max개를 튀어나오게 한다.
+/// 3) 벌목 드랍: 나무가 쓰러질 때와 희귀나무 등급이 바뀔 때마다 dropCountMin~Max개를 튀어나오게 한다("불씨 드랍량 증가" 특성 배율을 곱한다).
 ///    이렇게 떨어진 불씨만 droppedLifetime초 뒤 사라진다(1, 2는 남아 있다).
 /// 과열이 최대면 2, 3은 더 생기지 않는다. 이미 바닥에 있는 불씨는 계속 주울 수 있다(효과만 없다).
 ///
@@ -67,8 +67,10 @@ public class EmberItemController : MonoBehaviour
     private IEnvironmentProvider environmentProvider;
     private VFXComponent vfxComponent;
 
-    // 이번 원정에서 불씨가 나오는지(맵 + 로그라이크 기믹 끔 여부). BeginRun에서 정한다.
+    // 이번 원정에서 불씨가 나오는지(맵 + "산불 조심" 특성 + 로그라이크 기믹 끔 여부). BeginRun에서 정한다.
     private bool bEnabledThisRun;
+    // 이번 원정의 벌목 드랍 개수 배율("불씨 드랍량 증가" 특성). BeginRun에서 정한다.
+    private float dropMultiplierThisRun = 1f;
     // 자연 생성·드랍을 지금 해도 되는지(원정 종료 중·사망·과열 최대면 false). InDungeonObjectManager가 넘겨준다.
     private Func<bool> canSpawnMore;
     private float naturalSpawnTimer;
@@ -114,12 +116,14 @@ public class EmberItemController : MonoBehaviour
 
     /// <summary>
     /// 새 원정이 시작될 때(나무 초기 스폰 직전) 부른다. 이전 원정의 불씨를 치우고 이번 맵에서 불씨가 나오는지 정한다.
+    /// _bEverywhere("산불 조심" 특성)면 적용 맵이 아니어도 불씨가 나온다. _dropMultiplier는 벌목 드랍 개수 배율이다.
     /// </summary>
-    public void BeginRun(MapType _mapType, bool _bStageGimmicksDisabled, Func<bool> _canSpawnMore)
+    public void BeginRun(MapType _mapType, bool _bStageGimmicksDisabled, Func<bool> _canSpawnMore, bool _bEverywhere, float _dropMultiplier)
     {
         ClearAll();
 
-        bEnabledThisRun = emberItemPrefab != null && false == _bStageGimmicksDisabled && enabledMapTypes.Contains(_mapType);
+        bEnabledThisRun = emberItemPrefab != null && false == _bStageGimmicksDisabled && (_bEverywhere || enabledMapTypes.Contains(_mapType));
+        dropMultiplierThisRun = Mathf.Max(0f, _dropMultiplier);
         canSpawnMore = _canSpawnMore;
         naturalSpawnTimer = 0f;
     }
@@ -149,6 +153,8 @@ public class EmberItemController : MonoBehaviour
         if (!CanSpawnNow()) return;
 
         int count = UnityEngine.Random.Range(dropCountMin, Mathf.Max(dropCountMin, dropCountMax) + 1);
+        // 특성 배율의 소수 부분은 그 확률로 1개 더(배율이 1이면 굴린 개수 그대로).
+        if (dropMultiplierThisRun != 1f) count = RollCount(count * dropMultiplierThisRun);
         ITilemapDataProvider tilemap = environmentProvider?.tilemapDataProvider;
         Vector3Int treeCell = tilemap != null ? tilemap.WorldToCell(_treePosition) : default;
 

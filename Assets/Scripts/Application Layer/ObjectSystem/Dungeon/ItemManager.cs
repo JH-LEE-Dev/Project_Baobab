@@ -125,9 +125,9 @@ public class ItemManager : MonoBehaviour
 
     // ── 4스테이지 불씨 (EmberItemController) ──
 
-    public void BeginEmberRun(MapType _mapType, bool _bStageGimmicksDisabled, Func<bool> _canSpawnMore)
+    public void BeginEmberRun(MapType _mapType, bool _bStageGimmicksDisabled, Func<bool> _canSpawnMore, bool _bEverywhere, float _dropMultiplier)
     {
-        emberItemController?.BeginRun(_mapType, _bStageGimmicksDisabled, _canSpawnMore);
+        emberItemController?.BeginRun(_mapType, _bStageGimmicksDisabled, _canSpawnMore, _bEverywhere, _dropMultiplier);
     }
 
     public void SpawnInitialEmbers(System.Collections.Generic.IReadOnlyList<TreeObj> _trees)
