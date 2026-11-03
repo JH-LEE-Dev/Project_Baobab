@@ -113,10 +113,10 @@ public sealed class QuakeTileRippleSettings
 public sealed class QuakeTileRipple
 {
     // 도트 한 픽셀(월드). 픽셀 퍼펙트 카메라 Assets PPU와 같다(PixelOutline.hlsl PIXEL_OUTLINE_PPU).
-    private const float PixelsPerUnit = 32f;
+    internal const float PixelsPerUnit = 32f;
     // 아웃라인(한 번)·틈 빛(한 번 반)·장식(두 번) 복제층을 바닥 복제층보다 이만큼씩 앞(아래)에 둔다. 같은 칸끼리만 앞뒤가 갈리고
     // (바로 앞 줄은 0.25 아래) 화면에는 안 보이는 거리다.
-    private const float SortNudge = 0.001f;
+    internal const float SortNudge = 0.001f;
     // 틈 빛 띠의 최대 높이(픽셀). 칸 옆벽 높이(16)와 같다.
     private const int MaxGlowRows = 16;
     // 이보다 얕은 틈(드러난 벽 줄 수)은 비추지 않는다. 물결 꼬리의 얕은 높이 차까지 빛나면 화면이 용암 격자처럼 번잡하다.
@@ -130,9 +130,9 @@ public sealed class QuakeTileRipple
     // 이만큼 깊은 틈부터 노란 심(용암 가장자리 색)이 보인다.
     private const int GlowCoreRows = 6;
     // 아웃라인 진하기 단계 수. 단계가 바뀐 칸만 색을 다시 쓴다.
-    private const int OutlineSteps = 16;
+    internal const int OutlineSteps = 16;
     // 피벗을 옮긴 사본 타일을 만들 수 있는 범위(픽셀, 위아래 각각).
-    private const int MaxOffsetPixels = 64;
+    internal const int MaxOffsetPixels = 64;
     // 끝난 뒤 복제층을 비울 때 한 프레임에 비우는 칸 수(띠 하나). 이보다 적게 쓴 층은 ClearAllTiles로 한 번에 비운다.
     private const int ClearStripCells = 1536;
     private const int ClearAllBelow = 512;
@@ -775,7 +775,7 @@ public sealed class QuakeTileRipple
         FlushChanges(glowRightLift, glowRightChanges);
     }
 
-    private static void FlushChanges(Tilemap _lift, List<TileChangeData> _changes)
+    internal static void FlushChanges(Tilemap _lift, List<TileChangeData> _changes)
     {
         int count = _changes.Count;
         if (0 == count) return;
@@ -1288,7 +1288,7 @@ public sealed class QuakeTileRipple
     /// _source를 _offsetPixels만큼 옮겨 그리는 사본 타일(피벗만 옮긴 같은 그림, 칸 색을 바꿀 수 있게 잠금 없음).
     /// 0이면 원래 타일, 그림 하나짜리 타일(Tile)이 아니면 옮기지 못하므로 원래 타일을 그대로 쓴다.
     /// </summary>
-    private static TileBase OffsetTile(TileBase _source, Vector2Int _offsetPixels)
+    internal static TileBase OffsetTile(TileBase _source, Vector2Int _offsetPixels)
     {
         if (null == _source || Vector2Int.zero == _offsetPixels) return _source;
         if (false == _source is Tile tile || null == tile.sprite) return _source;
@@ -1338,7 +1338,7 @@ public sealed class QuakeTileRipple
     /// 마름모 각 줄의 양 끝 2픽셀(2:1 아이소 선)과 맨 위·아래 줄이 테두리다. 이웃 칸의 테두리와 같은 픽셀에 겹쳐,
     /// 칸들이 제자리에 있으면 한 줄로 보이고 높이가 어긋나면 칸마다 따로 보인다.
     /// </summary>
-    private static Tile OutlineTile
+    internal static Tile OutlineTile
     {
         get
         {
