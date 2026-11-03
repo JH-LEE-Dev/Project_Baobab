@@ -391,6 +391,11 @@ public enum SkillCommandType
     RemoteLogTransport, // 원격 운반 서비스
     AutoLoadInRestArea, // 자동 적재
     LogInsurance, // 원목 보험 증서
+    Preheat, // 예열
+    EmberDropBonus, // 불씨 드랍량 증가
+    EmberEverywhere, // 산불 조심
+    OverheatMaxIncrease, // 과열 최대치 증가
+    TreeHeatResistance, // 열기 내성 강화
 }
 
 public enum AbilityLevelUpRejectReason

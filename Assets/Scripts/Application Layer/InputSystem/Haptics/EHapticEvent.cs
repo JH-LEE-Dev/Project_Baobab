@@ -59,5 +59,8 @@ public enum EHapticEvent
     /// </summary>
     BoomerangImpact,
 
+    /// <summary>지진이 일어나 바닥이 물결침. (EnvironmentSystem.PlayQuakeRipple)</summary>
+    Earthquake,
+
     Count
 }

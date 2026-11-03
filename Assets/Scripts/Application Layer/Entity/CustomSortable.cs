@@ -15,7 +15,33 @@ public class CustomSortable : MonoBehaviour
     [SerializeField] private int precision = 100;
     protected float height = 0;
     
+    // 켜져 있는 정렬기 전부. 지진 물결(QuakeObjectRide)이 그 위 물체를 찾을 때 FindObjectsByType 대신 훑는다.
+    private static readonly HashSet<CustomSortable> enabledSortables = new HashSet<CustomSortable>();
+
     public int CurrentSortingOrder { get; private set; }
+
+    /// <summary>정렬 기준이 되는 지면 위치(정렬 기준점에서 공중 높이를 뺀 자리). UpdateSortingOrder와 같은 기준이다.</summary>
+    public Vector3 GroundPosition
+    {
+        get
+        {
+            Transform anchor = sortAnchor != null ? sortAnchor : transform;
+            Vector3 position = anchor.position;
+            position.y -= height;
+            return position;
+        }
+    }
+
+    /// <summary>켜져 있는 정렬기를 _into에 담는다(비우고 담는다).</summary>
+    public static void CollectEnabled(List<CustomSortable> _into)
+    {
+        _into.Clear();
+        _into.AddRange(enabledSortables);
+    }
+
+    private void OnEnable() => enabledSortables.Add(this);
+
+    private void OnDisable() => enabledSortables.Remove(this);
 
     public void Initialize(Transform _sortAnchor, SpriteRenderer[] _initialRenderers = null, SortingGroup _sortingGroup = null)
     {

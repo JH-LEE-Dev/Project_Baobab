@@ -131,6 +131,17 @@ public static class HapticPresets
         new HapticStep(0.30f, 0.75f, 0.035f),
         new HapticStep(0.10f, 0.35f, 0.065f));
 
+    // 지진 - 땅이 "쿵" 꺼지는 첫 충격 뒤, 물결이 발밑을 지나가는 동안 굵은 모터로 우르르 길게 잦아든다.
+    // 바닥이 출렁이는 묵직함이 핵심이라 low 위주로 쓰고, 가는 모터는 첫 충격의 또렷함만 거든다.
+    // 총 1.3초로 화면의 물결(약 2초)과 함께 잦아든다. 중간에 살짝 다시 차오르는 구간은 뒤따르는 둘째 마루다.
+    private static readonly HapticPattern earthquake = new HapticPattern(
+        new HapticStep(1.0f, 0.70f, 0.12f),
+        new HapticStep(0.75f, 0.30f, 0.25f),
+        new HapticStep(0.45f, 0.12f, 0.18f),
+        new HapticStep(0.60f, 0.18f, 0.20f),
+        new HapticStep(0.35f, 0.08f, 0.25f),
+        new HapticStep(0.18f, 0f, 0.30f));
+
     private static readonly HapticPattern[] patterns = BuildPatterns();
 
     /// <summary>
@@ -185,6 +196,7 @@ public static class HapticPresets
         _table[(int)EHapticEvent.RareLogSpawn] = rareLogSpawn;
         _table[(int)EHapticEvent.ItemDropped] = itemDropped;
         _table[(int)EHapticEvent.BoomerangImpact] = boomerangImpact;
+        _table[(int)EHapticEvent.Earthquake] = earthquake;
 
         return _table;
     }
@@ -203,6 +215,7 @@ public static class HapticPresets
         _table[(int)EHapticEvent.ContainerLanding] = 0.5f;
         _table[(int)EHapticEvent.VehicleDismount] = 0.5f;
         _table[(int)EHapticEvent.StaminaDeath] = 0.5f;
+        _table[(int)EHapticEvent.Earthquake] = 0.5f;
 
         // 원목 묶음(4~7개)이 한 번에 튀어나와도 생성 진동은 한 번만 울린다.
         _table[(int)EHapticEvent.RareLogSpawn] = 0.2f;

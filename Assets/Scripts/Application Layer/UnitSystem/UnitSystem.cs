@@ -124,6 +124,9 @@ public class UnitSystem
         unitLogicManager.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
         unitLogicManager.SourceOfSpeedForceEndedEvent += SourceOfSpeedForceEnded;
 
+        unitLogicManager.OverheatLevelChangedEvent -= OverheatLevelChanged;
+        unitLogicManager.OverheatLevelChangedEvent += OverheatLevelChanged;
+
         inventoryManager.SpendMoneyEvent -= SpendMoney;
         inventoryManager.SpendMoneyEvent += SpendMoney;
 
@@ -182,6 +185,7 @@ public class UnitSystem
         unitLogicManager.AttackRythmStackChangedEvent -= AttackRythmStackChanged;
         unitLogicManager.SourceOfSpeedActivatedEvent -= SourceOfSpeedActivated;
         unitLogicManager.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
+        unitLogicManager.OverheatLevelChangedEvent -= OverheatLevelChanged;
         inventoryManager.SpendMoneyEvent -= SpendMoney;
         offroadContainer.InteractStateEvent -= OffroadContainerInteractStateChanged;
         inventoryManager.LoosAllInventoryItemEvent -= LoosAllInventoryItem;
@@ -436,6 +440,19 @@ public class UnitSystem
     private void SourceOfSpeedForceEnded()
     {
         signalHub.Publish(BuffHudSignal.Of(EBuffHudId.SourceOfSpeed, EBuffHudOp.Remove));
+    }
+
+    // 과열: 수치 중첩(StackHits), 값은 내림한 정수, 최대치는 기본 100("과열 최대치 증가" 특성으로 늘어난다).
+    // 과열은 줄지 않고 원정이 바뀔 때(씬 전환)만 0이 되므로 자동 감소 없이 값만 올리고, 0이 되면 연출 없이 지운다.
+    private void OverheatLevelChanged(int _level, float _maxValue)
+    {
+        if (_level <= 0)
+        {
+            signalHub.Publish(BuffHudSignal.Of(EBuffHudId.OverHeat, EBuffHudOp.Remove));
+            return;
+        }
+
+        signalHub.Publish(BuffHudSignal.AddStackHits(EBuffHudId.OverHeat, _level, _maxValue));
     }
 
     private void CarrotItemAcquired(CarrotItemAcquiredSignal carrotItemAcquiredSignal)

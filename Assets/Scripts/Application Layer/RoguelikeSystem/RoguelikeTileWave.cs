@@ -10,14 +10,26 @@ public sealed class RoguelikeTileWaveSettings
 {
     [Tooltip("파도 앞머리 속도(월드 단위/초). 클수록 타일 사이 간격이 짧다(기획서 6장 '바닥 타일 파도 간격').")]
     public float frontSpeed = 14f;
-    [Tooltip("물결 마루가 가장 높이 솟는 높이(월드 단위).")]
-    public float rippleHeight = 0.22f;
+    [Tooltip("물결 마루가 가장 높이 솟는 높이(월드 단위, 1 = 32픽셀). 픽셀 단위로 끊어 그린다.")]
+    public float rippleHeight = 0.375f;
     [Tooltip("물결 한 파장의 길이(바닥 평면 거리, 대략 칸 수). 길수록 이웃 칸 높이 차가 작아 매끄럽다.")]
     public float rippleWavelength = 6f;
     [Tooltip("앞머리 뒤로 물결이 몇 파장 동안 이어지다 잦아드는지. 마루 → 골 → 작은 마루 순으로 줄어든다.")]
     public float rippleWaves = 1.5f;
     [Tooltip("물결 골(내려간 칸)이 가장 깊을 때 어두워지는 정도(0~1). 타일에 명암이 없어 높이 차만으로는 물결이 잘 안 읽힌다.")]
     public float rippleShade = 0.3f;
+
+    [Header("아웃라인")]
+    [Tooltip("출렁이는 칸 윗면 테두리 색(지진 물결과 같은 연출). 바닥과 같은 재질(조명 영향)로 그린다. 알파는 최대 진하기다.")]
+    public Color outlineColor = new Color(1f, 0.64f, 0.38f, 0.9f);
+    [Tooltip("칸에 물결이 닿은 뒤 테두리가 다 드러나는 구간(물결 길이 대비 비율).")]
+    [Range(0.01f, 1f)] public float outlineFadeIn = 0.08f;
+    [Tooltip("물결 끝에서 테두리가 사라지기 시작하는 지점(물결 길이 대비 비율). 거기서 물결 끝까지 서서히 사라진다.")]
+    [Range(0f, 0.99f)] public float outlineFadeOutStart = 0.4f;
+    [Tooltip("칸이 수평(높이 0)을 지날 때의 테두리 진하기 비율. 마루·골에서 1이다. 낮을수록 마루·골의 띠만 또렷하다.")]
+    [Range(0f, 1f)] public float outlineOnLevel = 0.15f;
+
+    [Header("진입·배경")]
     [Tooltip("진입 5단계 '모든 배경이 N초 이내에 완성'의 N(기획서 10장 임시값 3초). 진입 파도는 바닥 파도 + 배경 조립이 이 시간 안에 끝나도록 앞머리 속도를 맞춘다(frontSpeed보다 느려지지 않는다).")]
     public float entryCompleteSeconds = 3f;
     [Tooltip("진입 4단계 '배경 조립': 바닥이 다 깔린 뒤 나머지 배경(해안선)이 조각 단위로 나타나는 데 걸리는 전체 시간(초).")]
@@ -50,6 +62,13 @@ public sealed class RoguelikeTileWaveSettings
 ///   - 진입에서 섬 자리·물가 칸은 파도가 오기 전까지 깊은 물로 둔다(물가 모양 물을 두면 섬 윤곽이 미리 보인다).
 ///     물결이 닿는 순간 복제층의 그 칸에 블록이 제 크기로 나타나고 바다는 새 물로 바뀐다. 실제 층은 물결이 다 지나간 뒤 바꾼다.
 ///   - 지면 스텐실(GroundStencil) 복제층에는 솟은 블록과 같은 타일을 놓아, 블록 아래 남은 물 스텐실로 구름 그림자가 비치지 않게 한다.
+///
+/// [모습 - 지진 물결(QuakeTileRipple)과 같게]
+///   - 높이는 픽셀(1/32) 단위로 끊고, 칸을 움직이지 않고 같은 그림의 피벗만 옮긴 사본 타일(QuakeTileRipple.OffsetTile)로 바꿔 끼운다.
+///     칸 변형(SetTransformMatrix)은 정렬 위치까지 옮겨, 솟은 칸이 한 줄 간격(8픽셀)보다 높아지면 뒤 칸에 덮인다. 골은 깊이만큼 어둡게 한다.
+///   - 출렁이는 동안 칸 윗면 테두리(아웃라인)가 드러나 한 칸 한 칸이 따로 움직이는 게 보인다. 테두리 복제층은 바닥 복제층과 정렬 순서가
+///     같고 아주 조금 앞에 놓여, 칸마다 "제 바닥 바로 다음, 앞 칸 바닥보다 먼저" 그려진다(솟은 앞 칸이 뒤 칸 테두리를 가린다).
+///   - 칸 변경은 프레임마다 모아 층마다 한 번에 쓴다. 바뀌는 순간(TileRevealedEvent)·실제 층을 바꾸는 시점은 그대로다.
 ///
 /// 맵 생성(TileMapGenerator)은 평소처럼 한 번에 깐다. 이 클래스는 생성 직전/직후 타일을 떠 두었다가 화면 안 칸만
 /// 시작 상태로 되돌려 놓고 순서대로 바꾼다. 충돌 타일맵은 건드리지 않는다(생성 결과가 곧바로 맞다).
@@ -111,6 +130,17 @@ public sealed class RoguelikeTileWave
     // 절벽이 물 위로 통째로 드러났다가 파도가 끝나는 순간 물속으로 잠긴다. 그래서 물도 같은 앞뒤 순서로 복제층에 그린다.
     // 물과 해안선은 출렁이지 않는다(제자리) - 솟고 가라앉는 건 육지뿐이다.
     private readonly List<Tilemap> waterLifts = new List<Tilemap>(4);
+    // 칸 윗면 테두리 복제층. 바닥 블록 복제층과 정렬 순서가 같고 아주 조금 앞(아래)에 둔다.
+    private Tilemap outlineLift;
+    // 이번 프레임에 모은 칸 변경(바닥 복제층마다, 테두리). 프레임 끝에 층마다 한 번에 쓴다.
+    private readonly List<List<TileChangeData>> floorChanges = new List<List<TileChangeData>>(4);
+    private readonly List<TileChangeData> outlineChanges = new List<TileChangeData>(512);
+    // cells와 같은 순서. 복제층에 깔린 칸 높이(픽셀)·테두리 단계, 복제층 바닥이 새 지형(floorAfter)인지(아니면 직전 지형).
+    private short[] lastPixels = new short[0];
+    private sbyte[] lastOutlineSteps = new sbyte[0];
+    private bool[] liftShowsAfter = new bool[0];
+    // lastPixels에 넣어 두면 다음 높이 갱신 때 높이가 같아도 그 칸의 바닥을 다시 쓴다(복제층에 놓을 지형이 바뀌었다).
+    private const short PixelsDirty = short.MinValue;
     // 스텐실 리프트에 놓을 블록 모양을 가져올 바닥 층(스텐실이 아닌 첫 층). 없으면 -1.
     private int liftShapeLayer = -1;
     // 바닥 층 중 스텐실만 쓰는 층(GroundStencil). 복제층에는 블록 모양 타일을 놓는다(LiftTilesOf).
@@ -244,6 +274,16 @@ public sealed class RoguelikeTileWave
 
         if (cellStage.Length < cells.Count) cellStage = new byte[cells.Count];
         Array.Clear(cellStage, 0, cells.Count);
+        if (lastPixels.Length < cells.Count)
+        {
+            lastPixels = new short[cells.Count];
+            lastOutlineSteps = new sbyte[cells.Count];
+            liftShowsAfter = new bool[cells.Count];
+        }
+        Array.Clear(lastPixels, 0, cells.Count);
+        Array.Clear(lastOutlineSteps, 0, cells.Count);
+        Array.Clear(liftShowsAfter, 0, cells.Count);
+        ClearChanges();
 
         // 티어 전환: 화면 안 바닥·물·해안선을 전부 복제층으로 옮겨 그린다. 진입은 물만 시작 상태(섬 자리는 깊은 물)로 옮기고, 바닥은 물결이 닿는 칸부터 생긴다.
         // 물을 일부 칸만 복제층에 두면 그 가장자리에서 물 타일의 아랫부분이 앞 칸 물에 가려지지 않아 어두운 삼각형이 비친다.
@@ -269,6 +309,7 @@ public sealed class RoguelikeTileWave
             }
 
             for (int j = done; j < next; j++) UpdateCell(j, front - cells[j].key, length);
+            FlushChanges();
             while (done < next && StageDone == cellStage[done]) done++;
 
             if (done >= cells.Count) break;
@@ -537,10 +578,21 @@ public sealed class RoguelikeTileWave
             // 바닥 블록 층이 없으면 스텐실 복제층에 놓을 모양이 없다.
             if (0 == slot.group && bStencilFloorLayer[slot.layer] && liftShapeLayer < 0) continue;
 
-            Tilemap tilemap = CreateLift(slot.source, slot.renderer, liftOrder);
+            Tilemap tilemap = CreateLift(slot.source, slot.renderer, liftOrder, "RoguelikeTileWaveLift_" + slot.source.name);
             if (0 == slot.group) lifts[slot.layer] = tilemap;
             else if (1 == slot.group) waterLifts[slot.layer] = tilemap;
             else shoreLifts[slot.layer] = tilemap;
+        }
+
+        for (int l = 0; l < lifts.Count; l++) floorChanges.Add(new List<TileChangeData>(512));
+
+        // 테두리: 바닥 블록 복제층과 같은 재질·정렬 순서에 아주 조금 앞으로 놓아 칸마다 제 바닥 바로 다음에 그린다.
+        Tilemap groundLift = liftShapeLayer >= 0 ? lifts[liftShapeLayer] : null;
+        if (null != groundLift)
+        {
+            Tilemap ground = floorLayers[liftShapeLayer];
+            outlineLift = CreateLift(ground, ground.GetComponent<TilemapRenderer>(), groundLift.GetComponent<TilemapRenderer>().sortingOrder, "RoguelikeTileWaveOutline");
+            outlineLift.transform.localPosition += new Vector3(0f, -QuakeTileRipple.SortNudge, 0f);
         }
 
         return true;
@@ -576,9 +628,9 @@ public sealed class RoguelikeTileWave
         }
     }
 
-    private static Tilemap CreateLift(Tilemap _source, TilemapRenderer _sourceRenderer, int _order)
+    private static Tilemap CreateLift(Tilemap _source, TilemapRenderer _sourceRenderer, int _order, string _name)
     {
-        GameObject go = new GameObject("RoguelikeTileWaveLift_" + _source.name);
+        GameObject go = new GameObject(_name);
         go.transform.SetParent(_source.transform.parent, false);
         go.transform.localPosition = _source.transform.localPosition;
         go.transform.localRotation = _source.transform.localRotation;
@@ -623,9 +675,12 @@ public sealed class RoguelikeTileWave
         {
             if (null != waterLifts[l]) waterLifts[l].SetTilesBlock(region, emptyBlock);
         }
+        if (null != outlineLift) outlineLift.SetTilesBlock(region, emptyBlock);
+
+        ClearChanges();
     }
 
-    /// <summary>티어 전환 시작: 복제층에 직전 지형을 그대로 옮겨 놓는다(제자리, 칸마다 움직일 수 있게 변형 잠금을 푼다).</summary>
+    /// <summary>티어 전환 시작: 복제층에 직전 지형을 그대로 옮겨 놓는다(제자리).</summary>
     private void FillLiftsWithBefore()
     {
         for (int l = 0; l < lifts.Count; l++)
@@ -638,7 +693,6 @@ public sealed class RoguelikeTileWave
         }
         for (int j = 0; j < cells.Count; j++)
         {
-            UnlockLiftCell(cells[j].cell);
             SyncLiftAnimation(shoreLifts, shoreLayers, cells[j].cell);
         }
 
@@ -673,18 +727,6 @@ public sealed class RoguelikeTileWave
     private TileBase[] LiftTilesOf(TileBase[][] _floorTiles, int _liftIndex)
     {
         return bStencilFloorLayer[_liftIndex] ? _floorTiles[liftShapeLayer] : _floorTiles[_liftIndex];
-    }
-
-    private void UnlockLiftCell(Vector3Int _cell)
-    {
-        for (int l = 0; l < lifts.Count; l++)
-        {
-            if (null != lifts[l] && lifts[l].HasTile(_cell)) lifts[l].SetTileFlags(_cell, TileFlags.None);
-        }
-        for (int l = 0; l < shoreLifts.Count; l++)
-        {
-            if (null != shoreLifts[l] && shoreLifts[l].HasTile(_cell)) shoreLifts[l].SetTileFlags(_cell, TileFlags.None);
-        }
     }
 
     /// <summary>바닥도 해안선도 없고 섬 둘레도 아닌 물 칸(깊은 물) 하나.</summary>
@@ -916,9 +958,9 @@ public sealed class RoguelikeTileWave
 
         // 진입: 블록은 제 크기로 나타나고 그 칸의 바다는 새 물(육지면 없음, 물가면 물가 물)로 바뀐다.
         // 블록을 작게 돋아나게 하면 이웃 블록·바다와 맞물리지 않아 가장자리가 톱니처럼 지저분해진다. 제 크기면 섬 가장자리가
-        // 늘 완성된 모양(앞 칸 바다가 절벽 아랫부분을 덮는 모양)으로 퍼져 나간다.
-        SetLiftTiles(cell.cell, cell.index, floorAfter, null, waterAfter);
-        ApplyCellPose(cell.cell, 0f, RippleLength);
+        // 늘 완성된 모양(앞 칸 바다가 절벽 아랫부분을 덮는 모양)으로 퍼져 나간다. 블록은 이 프레임의 높이 갱신(UpdateCell)이 놓는다.
+        SetLiftTiles(cell.cell, cell.index, null, waterAfter);
+        ShowAfterOnLift(_order);
 
         TileRevealedEvent?.Invoke(cell.worldPos);
     }
@@ -934,7 +976,8 @@ public sealed class RoguelikeTileWave
         if (false == bEntry && StageReached == stage && _distance >= CrestDistance)
         {
             SwapCell(cell.cell, cell.index);
-            SetLiftTiles(cell.cell, cell.index, floorAfter, shoreAfter, waterAfter);
+            SetLiftTiles(cell.cell, cell.index, shoreAfter, waterAfter);
+            ShowAfterOnLift(_order);
             TileRevealedEvent?.Invoke(cell.worldPos);
             stage = StageSwapped;
         }
@@ -943,13 +986,13 @@ public sealed class RoguelikeTileWave
         {
             // 물결이 다 지나갔다. 진입은 이제서야 실제 바닥·물을 새 지형으로 바꾼다 - 그 전까지 블록 밑(솟은 만큼 드러나는 틈)은 바다다.
             if (bEntry || StageSwapped != stage) SwapCell(cell.cell, cell.index);
-            ApplyCellPose(cell.cell, _length, _length);
+            PoseCell(_order, _length, _length);
             cellStage[_order] = StageDone;
             return;
         }
 
         cellStage[_order] = stage;
-        ApplyCellPose(cell.cell, _distance, _length);
+        PoseCell(_order, _distance, _length);
     }
 
     /// <summary>
@@ -978,21 +1021,10 @@ public sealed class RoguelikeTileWave
         _layer.SetAnimationTime(_cell, ReferenceAnimationTime(_layer));
     }
 
-    /// <summary>복제층에 그 칸의 바닥(과 _shoreTiles가 있으면 해안선) 타일을 놓는다(칸에 타일이 없으면 비운다). 놓은 뒤 변형 잠금을 푼다.</summary>
-    private void SetLiftTiles(Vector3Int _cell, int _index, TileBase[][] _floorTiles, TileBase[][] _shoreTiles, TileBase[][] _waterTiles)
+    /// <summary>복제층에 그 칸의 물(과 _shoreTiles가 있으면 해안선) 타일을 놓는다. 바닥은 높이와 함께 QueueFloor가 놓는다.</summary>
+    private void SetLiftTiles(Vector3Int _cell, int _index, TileBase[][] _shoreTiles, TileBase[][] _waterTiles)
     {
         PlaceFlatLiftTiles(waterLifts, waterLayers, _waterTiles, _cell, _index);
-
-        for (int l = 0; l < lifts.Count && l < floorLayers.Count; l++)
-        {
-            Tilemap lift = lifts[l];
-            if (null == lift) continue;
-
-            TileBase tile = LiftTilesOf(_floorTiles, l)[_index];
-            lift.SetTile(_cell, tile);
-            if (null != tile) lift.SetTileFlags(_cell, TileFlags.None);
-        }
-
         PlaceFlatLiftTiles(shoreLifts, shoreLayers, _shoreTiles, _cell, _index);
     }
 
@@ -1010,32 +1042,128 @@ public sealed class RoguelikeTileWave
         SyncLiftAnimation(_lifts, _sources, _cell);
     }
 
-    /// <summary>
-    /// 복제층의 그 칸을 물결 높이만큼 올리거나 내리고, 골(내려간 칸)은 살짝 어둡게 한다.
-    /// </summary>
-    private void ApplyCellPose(Vector3Int _cell, float _distance, float _length)
+    /// <summary>이 칸의 바닥 복제층을 새 지형으로 바꾸도록 표시한다. 다음 높이 갱신(PoseCell)에서 높이가 그대로여도 다시 쓴다.</summary>
+    private void ShowAfterOnLift(int _order)
     {
-        float height = RippleHeight(_distance, _length);
-
-        // 타일에 명암이 없어 높이 차만으로는 물결이 잘 안 읽힌다. 골(내려간 칸)을 어둡게 해 마루와 골의 띠가 보이게 한다.
-        float shade = 1f;
-        if (settings.rippleHeight > 0f) shade = 1f - Mathf.Clamp01(settings.rippleShade) * Mathf.Clamp01(-height / settings.rippleHeight);
-
-        Matrix4x4 matrix = Matrix4x4.Translate(new Vector3(0f, height, 0f));
-        Color color = new Color(shade, shade, shade, 1f);
-        ApplyPose(lifts, _cell, matrix, color);
+        liftShowsAfter[_order] = true;
+        lastPixels[_order] = PixelsDirty;
     }
 
-    private static void ApplyPose(List<Tilemap> _lifts, Vector3Int _cell, Matrix4x4 _matrix, Color _color)
+    /// <summary>테두리 진하기(0~1): 물결이 닿으면 빠르게 드러나고, 끝 무렵 서서히 사라진다.</summary>
+    private float OutlineEnvelope(float _distance, float _length)
     {
-        for (int l = 0; l < _lifts.Count; l++)
-        {
-            Tilemap lift = _lifts[l];
-            if (null == lift || false == lift.HasTile(_cell)) continue;
+        float t = _distance / _length;
+        float fadeIn = Mathf.Clamp01(t / Mathf.Max(0.01f, settings.outlineFadeIn));
+        float fadeOutStart = Mathf.Clamp(settings.outlineFadeOutStart, 0f, 0.99f);
+        float fadeOut = 1f - Mathf.Clamp01((t - fadeOutStart) / (1f - fadeOutStart));
+        return Mathf.SmoothStep(0f, 1f, fadeIn) * Mathf.SmoothStep(0f, 1f, fadeOut);
+    }
 
-            lift.SetTransformMatrix(_cell, _matrix);
-            lift.SetColor(_cell, _color);
+    /// <summary>
+    /// 앞머리에서 _distance만큼 뒤에 있는 칸의 높이(픽셀 단위로 끊는다)와 윗면 테두리. 물결이 다 지나간 칸(_distance ≥ _length)은 제자리·테두리 없음.
+    /// </summary>
+    private void PoseCell(int _order, float _distance, float _length)
+    {
+        float height = RippleHeight(_distance, _length);
+        short pixels = (short)Mathf.Clamp(Mathf.RoundToInt(height * QuakeTileRipple.PixelsPerUnit), -QuakeTileRipple.MaxOffsetPixels, QuakeTileRipple.MaxOffsetPixels);
+        short last = lastPixels[_order];
+        bool bMoved = pixels != last;
+        if (bMoved)
+        {
+            lastPixels[_order] = pixels;
+            QueueFloor(_order, PixelsDirty == last);
         }
+
+        // 테두리: 물결 진행과 지금 마루·골에 있는지(수평을 지날 때는 옅게)로 진하기가 정해진다. 바닥 블록이 없는 칸(물)은 테두리가 없다.
+        float outline = 0f;
+        WaveCell cell = cells[_order];
+        TileBase[][] tiles = liftShowsAfter[_order] ? floorAfter : floorBefore;
+        if (_distance < _length && liftShapeLayer >= 0 && null != tiles[liftShapeLayer][cell.index])
+        {
+            float wave = Mathf.Sin(2f * Mathf.PI * _distance / Mathf.Max(0.1f, settings.rippleWavelength));
+            float swing = Mathf.Lerp(Mathf.Clamp01(settings.outlineOnLevel), 1f, Mathf.Abs(wave));
+            outline = OutlineEnvelope(_distance, _length) * swing;
+        }
+
+        QueueOutline(_order, (sbyte)Mathf.RoundToInt(outline * QuakeTileRipple.OutlineSteps), bMoved);
+    }
+
+    /// <summary>
+    /// 바닥 복제층(블록·스텐실)의 그 칸을 지금 높이(lastPixels)의 사본으로 바꾸도록 모은다. 골(내려간 칸)은 깊이만큼 어둡게 한다.
+    /// _bTilesChanged면 복제층에 놓을 지형이 바뀐 것이라 빈 칸도 비우도록 쓴다.
+    /// </summary>
+    private void QueueFloor(int _order, bool _bTilesChanged)
+    {
+        WaveCell cell = cells[_order];
+        int pixels = lastPixels[_order];
+        TileBase[][] tiles = liftShowsAfter[_order] ? floorAfter : floorBefore;
+
+        // 타일에 명암이 없어 높이 차만으로는 물결이 잘 안 읽힌다. 골(내려간 칸)을 깊이만큼 어둡게 해 마루와 골의 띠가 보이게 한다.
+        float shade = 1f;
+        if (pixels < 0 && settings.rippleHeight > 0f)
+        {
+            shade = 1f - Mathf.Clamp01(settings.rippleShade) * Mathf.Clamp01(-pixels / QuakeTileRipple.PixelsPerUnit / settings.rippleHeight);
+        }
+
+        for (int l = 0; l < lifts.Count && l < floorLayers.Count; l++)
+        {
+            if (null == lifts[l]) continue;
+
+            TileBase source = LiftTilesOf(tiles, l)[cell.index];
+            if (null == source && false == _bTilesChanged) continue;
+
+            // SetTile처럼 타일의 색·변형을 그대로 쓰고, 골이면 색만 어둡게 덮는다.
+            TileBase tile = QuakeTileRipple.OffsetTile(source, new Vector2Int(0, pixels));
+            Tile sprite = tile as Tile;
+            Color color = shade < 1f ? new Color(shade, shade, shade, 1f) : (null != sprite ? sprite.color : Color.white);
+            Matrix4x4 transform = null != sprite ? sprite.transform : Matrix4x4.identity;
+            floorChanges[l].Add(new TileChangeData(cell.cell, tile, color, transform));
+        }
+    }
+
+    /// <summary>
+    /// 테두리 진하기를 _step 단계로 바꾸도록 모은다(0이면 테두리 타일을 걷는다). 칸 높이가 바뀌었으면(_bMoved) 진하기가 그대로여도
+    /// 테두리를 새 높이의 사본으로 다시 깐다. 진하기는 칸 색(알파)에 담는다.
+    /// </summary>
+    private void QueueOutline(int _order, sbyte _step, bool _bMoved)
+    {
+        if (null == outlineLift) return;
+
+        sbyte last = lastOutlineSteps[_order];
+        if (_step == last && (false == _bMoved || 0 == _step)) return;
+
+        lastOutlineSteps[_order] = _step;
+        Vector3Int cell = cells[_order].cell;
+        if (_step > 0)
+        {
+            Color color = settings.outlineColor;
+            color.a *= _step / (float)QuakeTileRipple.OutlineSteps;
+            TileBase tile = QuakeTileRipple.OffsetTile(QuakeTileRipple.OutlineTile, new Vector2Int(0, lastPixels[_order]));
+            outlineChanges.Add(new TileChangeData(cell, tile, color, Matrix4x4.identity));
+        }
+        else if (last > 0)
+        {
+            outlineChanges.Add(new TileChangeData(cell, null, Color.white, Matrix4x4.identity));
+        }
+    }
+
+    /// <summary>이번 프레임에 모아 둔 칸 변경을 복제층마다 한 번에 쓴다(칸마다 SetTile·SetColor를 따로 부르면 호출 비용이 크다).</summary>
+    private void FlushChanges()
+    {
+        for (int l = 0; l < floorChanges.Count && l < lifts.Count; l++)
+        {
+            if (null != lifts[l]) QuakeTileRipple.FlushChanges(lifts[l], floorChanges[l]);
+            else floorChanges[l].Clear();
+        }
+
+        if (null != outlineLift) QuakeTileRipple.FlushChanges(outlineLift, outlineChanges);
+        else outlineChanges.Clear();
+    }
+
+    private void ClearChanges()
+    {
+        for (int l = 0; l < floorChanges.Count; l++) floorChanges[l].Clear();
+        outlineChanges.Clear();
     }
 }
 
