@@ -81,7 +81,7 @@ DEBUG_NAMES = [
     "debugUseManualLighting", "useDebugValues", "bDebug", "isDebug", "enableLJDebugLog", "showOnScreenDebugGui",
     "debugIncreaseAmount", "debugEffectExperience", "showScreenTestButton", "testNodes", "skipIntroInEditor",
     "bForceShowInitialSetupPopup", "TryApplySkillWithoutCost", "TestFire", "DebugPlayPrestigeLevelUpWave",
-    "TestFillMotion", "showFPS", "showDebug", "BenchmarkHarness", "showDebugOverlay",
+    "TestFillMotion", "showFPS", "showDebug", "BenchmarkHarness", "showDebugOverlay", "DebugQuakeTick",
 ]
 TRAILER_ONLY = {"debugForceUnlockAll", "ForceUnlockAllMapsForDebug"}
 # 검사가 제대로 도는지 보는 대조군: 배포 빌드에도 반드시 있는 이름

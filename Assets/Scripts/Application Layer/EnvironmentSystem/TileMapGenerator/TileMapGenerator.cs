@@ -214,8 +214,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     public Vector3 GetWaterDecoWorldPosForRun(Vector3Int _cell) => GetWorldPos(_cell.x + _cell.y * width);
 
     /// <summary>
-    /// [로그라이크 전용] 바닥 타일 파도 연출이 다시 깔 시각 타일맵. _floor는 바닥 블록(0번이 파도로 떨어지는 층), _water는 물 층
+    /// [로그라이크·본편 지진] 바닥 타일 파도 연출이 다시 깔 시각 타일맵. _floor는 바닥 블록(0번이 파도로 떨어지는 층), _water는 물 층
     /// (0번이 물 타일), _shore는 물 가장자리(해안선) 층이다. 지형 전환 파도는 한 칸의 세 묶음을 함께 띄운다.
+    /// 본편 지진 물결(EnvironmentSystem.PlayQuakeRipple → QuakeTileRipple)도 같은 묶음을 복제층에 옮겨 그린다(읽기만 한다).
     /// 충돌 타일맵은 넣지 않는다(보이지 않고, 생성 결과가 곧바로 맞아야 한다).
     /// </summary>
     public void GetVisualTilemapsForRun(List<Tilemap> _floor, List<Tilemap> _water, List<Tilemap> _shore)

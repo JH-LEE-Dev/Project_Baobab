@@ -29,6 +29,15 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     public EnvironmentObjManager environmentObjManager { get; private set; }
     private EnvironmentParticleSystem environmentParticleSystem;
 
+    // 지진 바닥 물결(QuakeTileRipple). 실제 타일맵은 건드리지 않고 복제층만 움직이는 연출이다.
+    [SerializeField] private QuakeTileRippleSettings quakeRippleSettings = new QuakeTileRippleSettings();
+    private readonly QuakeTileRipple quakeRipple = new QuakeTileRipple();
+    private readonly List<UnityEngine.Tilemaps.Tilemap> quakeFloorLayers = new List<UnityEngine.Tilemaps.Tilemap>(4);
+    private readonly List<UnityEngine.Tilemaps.Tilemap> quakeWaterLayers = new List<UnityEngine.Tilemaps.Tilemap>(4);
+    private readonly List<UnityEngine.Tilemaps.Tilemap> quakeShoreLayers = new List<UnityEngine.Tilemaps.Tilemap>(2);
+    // 던전 맵이 깔려 있는지(DungeonStarted ~ TownStarted). 마을에서는 지진 물결을 내지 않는다.
+    private bool bDungeonMapActive;
+    private Transform characterTransform;
 
 
     //퍼블릭 초기화 및 제어 메서드
@@ -72,6 +81,8 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         if (environmentObjManager != null)
             environmentObjManager.Initialize(tileMapGenerator);
 
+        quakeRipple.Initialize(quakeRippleSettings);
+
         BindEvents();
         SubscribeSignals();
     }
@@ -89,6 +100,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     {
         ReleaseEvents();
         UnSubscribeSignals();
+        quakeRipple.Stop();
 
         if (environmentObjManager != null)
             environmentObjManager.ReleaseAllObjs();
@@ -137,10 +149,80 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
     private void DungeonStarted(DungeonReadySignal dungeonStartSignal)
     {
+        // 새 맵을 깔기 전에 이전 맵 위의 물결 복제층을 비운다.
+        quakeRipple.Stop();
+
         tileMapGenerator.InitializeMapData();
         pathfindGridManager.Initialize(tileMapGenerator.GridWidth, tileMapGenerator.GridHeight);
         tileMapGenerator.GenerateMap();
+        bDungeonMapActive = true;
     }
+
+    private void Update()
+    {
+        // 게임 시간으로 진행한다(일시정지 중에는 물결도 멈춘다). 끝난 뒤 복제층을 나눠 비우는 동안에도 부른다.
+        if (quakeRipple.IsBusy) quakeRipple.Tick(Time.deltaTime);
+
+#if UNITY_EDITOR
+        DebugQuakeTick();
+#endif
+    }
+
+    /// <summary>
+    /// 지진 바닥 물결을 _center(보통 캐릭터 자리)에서 시작한다. 지금 화면 둘레의 바닥 칸이 동심원 물결로 출렁이고
+    /// 칸마다 윗면 테두리가 드러난다. 카메라 흔들림·진동이 함께 나간다. 실제 지형·판정은 바뀌지 않는다(QuakeTileRipple).
+    /// 던전 맵이 깔려 있지 않거나 화면에 바닥이 없으면 아무것도 하지 않고 false. 이미 도는 물결은 끊고 새로 시작한다.
+    /// </summary>
+    public bool PlayQuakeRipple(Vector3 _center)
+    {
+        if (false == bDungeonMapActive) return false;
+
+        Camera camera = Camera.main;
+        if (null == camera || false == camera.orthographic) return false;
+
+        tileMapGenerator.GetVisualTilemapsForRun(quakeFloorLayers, quakeWaterLayers, quakeShoreLayers);
+        if (quakeFloorLayers.Count == 0 || null == quakeFloorLayers[0]) return false;
+
+        Grid grid = quakeFloorLayers[0].layoutGrid;
+        float halfHeight = camera.orthographicSize;
+        float halfWidth = halfHeight * camera.aspect;
+        Vector3 view = camera.transform.position;
+        Rect viewRect = new Rect(view.x - halfWidth, view.y - halfHeight, halfWidth * 2f, halfHeight * 2f);
+
+        _center.z = 0f;
+        if (false == quakeRipple.Begin(grid, quakeFloorLayers, quakeWaterLayers, quakeShoreLayers, _center, viewRect)) return false;
+
+        if (quakeRippleSettings.cameraShakeIntensity > 0f)
+            CameraMoveController.Instance?.ShakeCamera(quakeRippleSettings.cameraShakeIntensity, quakeRippleSettings.cameraShakeSeconds);
+        Rumble.Play(EHapticEvent.Earthquake);
+        return true;
+    }
+
+    /// <summary>캐릭터 자리에서 지진 바닥 물결을 시작한다(PlayQuakeRipple). 캐릭터가 아직 없으면 false.</summary>
+    public bool PlayQuakeRippleAtCharacter()
+    {
+        if (null == characterTransform) return false;
+        return PlayQuakeRipple(characterTransform.position);
+    }
+
+    public bool IsQuakeRipplePlaying => quakeRipple.IsPlaying;
+
+    public float QuakeRippleFrontSpeed => Mathf.Max(0.1f, quakeRippleSettings.frontSpeed);
+
+#if UNITY_EDITOR
+    // 에디터 전용 디버그: 던전에서 이 키를 누르면 캐릭터 자리에서 지진 물결을 낸다. 빌드에는 포함되지 않는다.
+    // 본편 디버그 키(F1 시네마틱, F4 수동 저장, F9 벤치마크, ` 사운드)·로그라이크(F6, F7)와 겹치지 않는 키를 쓴다.
+    private const UnityEngine.InputSystem.Key DebugQuakeKey = UnityEngine.InputSystem.Key.F8;
+
+    private void DebugQuakeTick()
+    {
+        UnityEngine.InputSystem.Keyboard keyboard = UnityEngine.InputSystem.Keyboard.current;
+        if (null == keyboard || false == keyboard[DebugQuakeKey].wasPressedThisFrame) return;
+
+        if (false == PlayQuakeRippleAtCharacter())
+            Debug.LogWarning("[EnvironmentSystem] 지진 물결 디버그(F8)는 던전에서 캐릭터가 있고 화면에 바닥이 있을 때만 됩니다.");
+    }
+#endif
 
     /// <summary>[로그라이크] 타일 한 칸의 월드 크기(아이소메트릭 마름모 가로·세로).</summary>
     public Vector2 TileCellSize => tileMapGenerator.CellSize;
@@ -232,6 +314,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     {
         lightingController.DI(characterSpawendSignal.character);
         environmentInteractionManager.DI_Character(characterSpawendSignal.character);
+        characterTransform = null != characterSpawendSignal.character ? characterSpawendSignal.character.transform : null;
     }
 
     private void WeatherChanged(WeatherType _weatherType)
@@ -274,6 +357,9 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
     private void TownStarted(TownStartedSignal _townStartedSignal)
     {
+        quakeRipple.Stop();
+        bDungeonMapActive = false;
+
         tileMapGenerator.ReleaseAllAnimatedObj();
         environmentObjManager.ReleaseAllObjs();
         environmentObjManager.SpawnTownEnvironmentObjs();
