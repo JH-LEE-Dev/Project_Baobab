@@ -11,8 +11,8 @@ using UnityEngine;
 /// </summary>
 public class OverheatComponent : PComponent, IOverheatComponent
 {
-    // 이펙트 단계(1~24 / 25~49 / 50~74 / 75~100)의 시작 값. 0은 과열 없음.
-    private static readonly int[] StageStartLevels = { 1, 25, 50, 75 };
+    // 이펙트 단계(1~33 예열 / 34~66 가열 / 67~ 푸른 불꽃)의 시작 값. 0은 과열 없음.
+    private static readonly int[] StageStartLevels = { 1, 34, 67 };
 
     // 과열 수치는 0.01 단위 정수로 쌓는다. 소수 획득량(예: 0.1씩)을 float로 더하면 오차가 누적되어(1000번이면 99.99…)
     // 정수 경계를 못 넘고, 내림한 값(HUD·공식)이 1 낮게 나온다.
@@ -25,13 +25,14 @@ public class OverheatComponent : PComponent, IOverheatComponent
     [Header("VFX Settings")]
     [SerializeField] private VFXComponent vfxComponent;
     [SerializeField] private string overheatVfxTag = "OverheatLoopEffect";
-    [Tooltip("이펙트 단계(1~4)별 루프 이펙트 태그. 비어 있는 단계는 overheatVfxTag를 쓴다. 단계가 바뀔 때 태그가 다르면 이펙트를 바꿔 낀다.")]
-    [SerializeField] private string[] stageVfxTags = new string[4];
+    [Tooltip("이펙트 단계(1~3)별 루프 이펙트 태그. 비어 있는 단계는 overheatVfxTag를 쓴다. 단계가 바뀔 때 태그가 다르면 이펙트를 바꿔 낀다.")]
+    [SerializeField] private string[] stageVfxTags = new string[3];
     [SerializeField] private Vector3 vfxOffset = new Vector3(0f, 0.5f, 0f);
 
     private ParticleSystem activeVfx;
     private string activeVfxTag;
     private ParticleSystemRenderer activeVfxRenderer;
+    private PresentationLayer.VFX.VFX_OverheatAura activeAura; // 켜진 오라의 단계 안 진행도(SetStageProgress)를 넣을 대상. 없으면 null
     private int appliedVfxSortingOrder = int.MinValue; // Update가 마지막으로 적용한 소팅 오더(같으면 세터 생략)
     // 꺼지거나 다른 단계 이펙트로 바뀌어 페이드아웃 중인 오라. 페이드 도중 다시 켜지면 이 인스턴스를 즉시 회수해
     // 새 오라와 두 개가 겹쳐 보이지 않게 한다.
@@ -135,6 +136,7 @@ public class OverheatComponent : PComponent, IOverheatComponent
             OverheatStageChangedEvent?.Invoke(overheatStage);
         }
 
+        ApplyStageProgress();
         OverheatLevelChangedEvent?.Invoke(overheatLevel);
 
         if (wasActive != IsActive)
@@ -151,6 +153,25 @@ public class OverheatComponent : PComponent, IOverheatComponent
             if (_level >= StageStartLevels[i]) stage = i + 1;
         }
         return stage;
+    }
+
+    // 지금 단계 안에서의 진행도(0~1). 단계 시작 값이 0, 다음 단계 직전 값이 1이고 마지막 단계는 항상 1이다.
+    private static float CalculateStageProgress(int _level, int _stage)
+    {
+        if (0 >= _stage || StageStartLevels.Length <= _stage) return 1f;
+
+        int start = StageStartLevels[_stage - 1];
+        int end = StageStartLevels[_stage] - 1;
+        if (end <= start) return 1f;
+
+        return Mathf.Clamp01((float)(_level - start) / (end - start));
+    }
+
+    // 켜진 오라에 단계 안 진행도를 넣는다(예열 테두리 밀도, 가열 불꽃 높이, 불씨 양이 따라 오른다)
+    private void ApplyStageProgress()
+    {
+        if (null == activeAura) return;
+        activeAura.SetStageProgress(CalculateStageProgress(overheatLevel, overheatStage));
     }
 
     private void Update()
@@ -212,6 +233,7 @@ public class OverheatComponent : PComponent, IOverheatComponent
         {
             activeVfxTag = targetTag;
             activeVfxRenderer = activeVfx.GetComponent<ParticleSystemRenderer>();
+            activeAura = activeVfx.GetComponentInChildren<PresentationLayer.VFX.VFX_OverheatAura>(true);
             appliedVfxSortingOrder = int.MinValue; // 새 인스턴스이므로 첫 프레임에 반드시 적용
         }
     }
@@ -230,6 +252,7 @@ public class OverheatComponent : PComponent, IOverheatComponent
         activeVfx = null;
         activeVfxTag = null;
         activeVfxRenderer = null;
+        activeAura = null;
     }
 
     private void OnDestroy()

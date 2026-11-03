@@ -35,6 +35,7 @@ public static class HUD_HeatGaugeBuilder
     private static readonly Vector2 RowSize = new Vector2(36f, 16f); // 아이콘(칠해진 영역 12px) · 2px · 배율(x1.00 21px)
     private static readonly Vector2 DamageRowPosition = new Vector2(-106f, 31f); // 줄 가운데(오른쪽 끝 -88)
     private static readonly Vector2 SpeedRowPosition = new Vector2(-106f, 17f);
+    private const float ValueLeftX = -2f; // 줄 가운데 기준 배율 왼쪽 끝. 아이콘 칠해진 영역(-16 ~ -5)과 2px 띄움. 폭은 x1.00 17px · x2.00~x9.99 19px · x10.00 21px
 
     [MenuItem("LumberBoy/HUD/Build Heat Gauge HUD")]
     public static void Build()
@@ -196,14 +197,14 @@ public static class HUD_HeatGaugeBuilder
     {
         RectTransform _row = NewRect(_name, _parent, new Vector2(0.5f, 0.5f), new Vector2(1f, 0f), _pos, RowSize);
 
-        // 아이콘은 줄 왼쪽 끝, 배율은 줄 오른쪽 끝에 붙인다(자릿수가 늘면 왼쪽으로 자란다).
+        // 아이콘은 줄 왼쪽 끝, 배율은 아이콘 바로 오른쪽에서 시작하는 왼쪽 정렬(자릿수가 늘면 오른쪽으로 자란다).
         float _half = RowSize.x * 0.5f;
         RectTransform _iconRt = NewRect("Icon", _row, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-_half, 0f), new Vector2(16f, 16f));
         Image _iconImage = _iconRt.gameObject.AddComponent<Image>();
         _iconImage.sprite = _icon;
         _iconImage.raycastTarget = false;
 
-        _number = NewNumber("Value", _row, new Vector2(0.5f, 0.5f), new Vector2(_half, 0f), HUD_HeatNumber.EAlign.Right, _glyphs);
+        _number = NewNumber("Value", _row, new Vector2(0.5f, 0.5f), new Vector2(ValueLeftX, 0f), HUD_HeatNumber.EAlign.Left, _glyphs);
         return _row;
     }
 

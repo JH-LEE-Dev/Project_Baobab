@@ -19,11 +19,28 @@ namespace PresentationLayer.VFX
     ///
     /// 색은 파랑 계열 3색 + 흰색, 포인트 보라/청록만 쓰고 반투명이 없다. 밝기는 정점 알파에 실린 HDR 발광 세기(BrandWrapGlow 셰이더)로만 낸다.
     /// 스프라이트 마스크는 처음 쓰는 스프라이트에서만 한 번 만들고(GPU 복사 + 읽기) 이후에는 캐시를 쓴다. 아우라 본체는 12fps로만 다시 만든다.
+    ///
+    /// 과열 단계(auraStyle)
+    /// - Preheat(1단계 예열): 점이 빠진 1px 검붉은 테두리 + 머리 위 작은 주황 혀, 느린 주황 불씨, 머리에서 피어오르는 회색 연기.
+    /// - Heating(2단계 가열): 주황 링 + 어깨 위 노랑 -> 주황 -> 빨강 불꽃, pulseInterval마다 박동처럼 밝아진다. 연기 소량.
+    /// - BlueFlame(3단계): 위 설명의 푸른 불꽃(기본값, 드론도 이 스타일).
+    /// SetStageProgress로 그 단계 안에서의 진행도(0~1)를 받으면 예열 테두리 밀도, 가열 불꽃 높이, 불씨 양이 함께 오른다.
+    /// 점화 충격파는 실루엣 발밑 중심에서 PixelEllipse 1px 타원이 30fps로 퍼지고, 후반에는 점이 빠지며 흩어진다.
     /// </summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(10000)] // 팔/도끼 회전(ArmComponent, AxeAnimation)이 끝난 뒤의 Transform으로 실루엣을 계산하도록 다른 LateUpdate보다 늦게 실행한다
     public class VFX_OverheatAura : MonoBehaviour
     {
+        public enum AuraStyle
+        {
+            BlueFlame,
+            Preheat,
+            Heating,
+        }
+
+        [Header("단계 스타일")]
+        [SerializeField, Tooltip("과열 단계별 연출. BlueFlame = 3단계(기본), Preheat = 1단계 예열, Heating = 2단계 가열")] private AuraStyle auraStyle = AuraStyle.BlueFlame;
+
         [Header("렌더링")]
         [SerializeField] private Material auraMaterial;
         [SerializeField, Tooltip("캐릭터 뒤쪽 층: 루트 렌더러(캐릭터 +1) 기준 상대 소팅 오더. 아우라 본체가 여기에 그려진다")] private int backSortingOffset = -2;
@@ -68,9 +85,17 @@ namespace PresentationLayer.VFX
         [SerializeField, Tooltip("이 이동 속도(px/s) 이상이면 불씨가 최대로 많이 나오고 수명이 짧아진다(꼬리 길이 제한)")] private float emberTrailFullSpeedPx = 100.0f;
         [SerializeField, Range(0.2f, 1.0f), Tooltip("최대 속도일 때 불씨 수명 배율(작을수록 이동 꼬리가 짧다)")] private float emberTrailLifeScale = 0.6f;
 
+        [Header("연기 / 박동 (예열·가열 단계)")]
+        [SerializeField, Tooltip("머리 쪽에서 피어오르는 회색 연기 간격(초). 0이면 없음")] private float smokeInterval = 0.0f;
+        [SerializeField, Tooltip("링과 불꽃이 박동처럼 밝아지는 간격(초). 0이면 없음")] private float pulseInterval = 0.0f;
+
         [Header("점화 (드론처럼 작은 대상은 줄여서 쓴다)")]
-        [SerializeField, Tooltip("점화 순간 점선 충격파의 크기 배율")] private float igniteRingScale = 1.0f;
+        [SerializeField, Tooltip("점화 충격파 반지름과 바닥 파편 개수의 배율")] private float igniteRingScale = 1.0f;
         [SerializeField, Tooltip("점화 순간 사방으로 터지는 불씨 개수")] private int igniteEmberCount = 16;
+        [SerializeField, Tooltip("점화 충격파(바닥 타원 링)의 최대 가로 반지름(px)")] private float waveRadiusPx = 22.0f;
+        [SerializeField, Tooltip("점화 충격파가 다 퍼지는 시간(초)")] private float waveDuration = 0.55f;
+        [SerializeField, Tooltip("켜면 0.09초 늦게 안쪽 보조 링이 따라 퍼진다")] private bool useSecondWaveRing = true;
+        [SerializeField, Tooltip("충격파와 함께 바닥을 미끄러지는 파편 개수")] private int waveDebrisCount = 12;
 
         [Header("소화")]
         [SerializeField] private float extinguishDuration = 0.45f;
@@ -88,7 +113,19 @@ namespace PresentationLayer.VFX
         private const int LayerCount = 3;
         private const int EmberCapacity = 96;
         private const float MaxIntensity = 1.6f;      // GetIntensity의 최댓값(안착 1.0 + 플레어 0.6). 실루엣 거리장의 계산 여백 산정에 쓴다.
+        private const float MaxPulseScale = 1.25f;     // 박동 최고점에서 불꽃 두께 배율(pulseInterval을 쓸 때만 거리장 여백에 곱한다)
         private const float RingNoiseAmplitude = 0.6f; // 링 두께 노이즈 폭(px, +-0.3)
+        private const float WaveFps = 30.0f;           // 점화 충격파 확산 프레임 속도
+        private const float WaveStartTime = 0.02f;
+        private const float WaveFlashDuration = 0.14f;
+        private const float SecondWaveDelay = 0.09f;
+        private const float SecondWaveScale = 0.62f;
+        private const int WaveRingGapPx = 3;           // HUGGING: 링끼리 이 간격(px)보다 가까우면 안쪽 링을 그리지 않는다
+        private const float WaveFlatten = 0.42f;       // 바닥 타원의 세로/가로 비율(아이소메트릭)
+        private const int EmberKindDot = 0;
+        private const int EmberKindCross = 1;          // `+`/`x` 번갈아 회전
+        private const int EmberKindSmoke = 2;          // 회색 연기 `.`(발광 없음)
+        private const int EmberKindDebris = 3;         // 충격파와 함께 바닥을 미끄러지는 파편
         private const float BodyBleedPx = 0.3f;
         private const int MeshBoundsHalfSize = 100;
         private static readonly Vector3 MeshBoundsSize = new Vector3(MeshBoundsHalfSize, MeshBoundsHalfSize, 10.0f);
@@ -116,7 +153,7 @@ namespace PresentationLayer.VFX
             public float swaySpeed;
             public float age;
             public float life;
-            public int kind; // 0: `.`, 1: `+`/`x`(번갈아 회전)
+            public int kind; // EmberKindDot / EmberKindCross / EmberKindSmoke / EmberKindDebris
             public int seed;
             public Color32 color;
         }
@@ -133,6 +170,7 @@ namespace PresentationLayer.VFX
             public bool bSweep;
             public float sweepFront;
             public Color32 sweepColor;
+            public float pulse;       // 가열 단계 박동(0~1)
             public int maxDistanceUnits;
         }
 
@@ -147,6 +185,21 @@ namespace PresentationLayer.VFX
 
         // 외곽 그라데이션의 순환 팔레트: 푸른색 -> 밝은 보라 -> 밝은 청록 -> (다시 푸른색)
         private static readonly Color32[] GradientAnchors = { ColorBlue, ColorViolet, ColorCyan };
+
+        // 예열/가열 단계 팔레트: 불은 진홍 -> 빨강 -> 주황 -> 호박 -> 노랑 -> 옅은 노랑, 연기는 회색 2단계(발광 없음)
+        private static readonly Color32 ColorEmberDark = new Color32(150, 34, 16, 255);
+        private static readonly Color32 ColorRed = new Color32(200, 46, 18, 255);
+        private static readonly Color32 ColorOrange = new Color32(240, 112, 22, 255);
+        private static readonly Color32 ColorAmber = new Color32(255, 160, 40, 255);
+        private static readonly Color32 ColorYellow = new Color32(255, 214, 90, 255);
+        private static readonly Color32 ColorPale = new Color32(255, 240, 190, 255);
+        private static readonly Color32 ColorSmoke = new Color32(96, 88, 84, 255);
+        private static readonly Color32 ColorSmokeDark = new Color32(66, 60, 58, 255);
+
+        // 점화 충격파 색(시작 -> 끝 4단계), 스타일 순서(BlueFlame, Preheat, Heating)
+        private static readonly Color32[] WaveColorsBlue = { ColorWhite, ColorIce, ColorCyan, ColorBlue };
+        private static readonly Color32[] WaveColorsPreheat = { ColorPale, ColorAmber, ColorOrange, ColorRed };
+        private static readonly Color32[] WaveColorsHeating = { ColorWhite, ColorYellow, ColorOrange, ColorRed };
 
         // 메쉬 버퍼는 매 프레임 Clear 후 채우므로 인스턴스끼리 공유해도 안전하다(BackLayer, FrontLayer, AuraLayer 순)
         private static readonly PixelQuadBuffer[] quadBuffers = { new PixelQuadBuffer(512), new PixelQuadBuffer(512), new PixelQuadBuffer(1024) };
@@ -171,7 +224,9 @@ namespace PresentationLayer.VFX
         private bool bFirstFrame;
         private bool bIgniteEmbersSpawned;
         private float emberSpawnAccumulator;
-        private Vector2 characterWorldPx;     // 캐릭터(이 컴포넌트) 위치(월드 px). 불씨는 월드 좌표로 움직여서 이동하면 뒤에 꼬리처럼 남는다.
+        private float smokeSpawnAccumulator;
+        private float stageProgress = 1.0f;   // 그 과열 단계 안에서의 진행도(0~1). OverheatComponent가 SetStageProgress로 넣는다.
+        private Vector2 characterWorldPx;    // 캐릭터(이 컴포넌트) 위치(월드 px). 불씨는 월드 좌표로 움직여서 이동하면 뒤에 꼬리처럼 남는다.
         private Vector2 lastCharacterWorldPx;
         private float moveSpeedPx;            // 부드럽게 평균 낸 이동 속도(px/s)
         private int maskKey;
@@ -225,6 +280,8 @@ namespace PresentationLayer.VFX
             bFirstFrame = true;
             bIgniteEmbersSpawned = false;
             emberSpawnAccumulator = 0.0f;
+            smokeSpawnAccumulator = 0.0f;
+            stageProgress = 1.0f;
             moveSpeedPx = 0.0f;
             emberCursor = 0;
             bMaskBuilt = false;
@@ -291,6 +348,19 @@ namespace PresentationLayer.VFX
             bMaskBuilt = false;
         }
 
+        /// <summary>
+        /// 지금 과열 단계 안에서의 진행도(0~1)를 넣는다. 예열은 테두리 밀도, 가열은 불꽃 높이와 박동 세기, 두 단계 모두 불씨 양이 따라 오른다.
+        /// 푸른 불꽃(BlueFlame)은 쓰지 않는다. 재생(OnEnable)마다 1로 돌아가므로 재생 직후에 호출한다.
+        /// </summary>
+        public void SetStageProgress(float _progress)
+        {
+            float progress = Mathf.Clamp01(_progress);
+            if (true == Mathf.Approximately(progress, stageProgress)) return;
+
+            stageProgress = progress;
+            bAuraDirty = true;
+        }
+
         // 대상 아래의 Objects 레이어 스프라이트 렌더러들을 모은다(캐릭터의 몸/얼굴/도끼, 드론 본체 등).
         // 대상은 SetSourceRoot로 지정된 루트, 없으면 가장 가까운 Character, 그것도 없으면 Drone, 마지막으로 최상위 루트다.
         private void CollectSources()
@@ -326,6 +396,7 @@ namespace PresentationLayer.VFX
         private int GetReachMarginCells()
         {
             float maxReach = (Mathf.Max(1.0f, ringThicknessPx) + BodyBleedPx + crownExtraThicknessPx) * MaxIntensity;
+            if (0.0f < pulseInterval) maxReach *= MaxPulseScale;
             return Mathf.CeilToInt(maxReach) + 1;
         }
 
@@ -357,7 +428,8 @@ namespace PresentationLayer.VFX
             return Mathf.Floor(intensity * 12.0f) / 12.0f;
         }
 
-        private void SpawnEmber(float _x, float _y, float _vx, float _vy, float _life, int _layer, Color32 _color)
+        // _kind가 음수면 `.`와 `+`/`x` 중 무작위로 고른다
+        private void SpawnEmber(float _x, float _y, float _vx, float _vy, float _life, int _layer, Color32 _color, int _kind)
         {
             // 불씨는 월드 좌표(px)로 움직인다. 캐릭터가 달리면 불씨가 그 자리에 남아서 뒤로 꼬리처럼 늘어진다(방향을 따로 계산하지 않는다).
             // 빠르게 달릴수록 수명을 줄여서 꼬리가 너무 길어지지 않게 한다.
@@ -371,10 +443,10 @@ namespace PresentationLayer.VFX
             ember.vx = _vx;
             ember.vy = _vy;
             ember.swayPhase = Rand01() * TwoPi;
-            ember.swaySpeed = Mathf.Lerp(5.0f, 9.0f, Rand01());
+            ember.swaySpeed = EmberKindSmoke == _kind ? 2.5f : Mathf.Lerp(5.0f, 9.0f, Rand01());
             ember.age = 0.0f;
             ember.life = _life * Mathf.Lerp(1.0f, emberTrailLifeScale, speedFactor);
-            ember.kind = Rand01() < 0.45f ? 1 : 0;
+            ember.kind = 0 <= _kind ? _kind : (Rand01() < 0.45f ? EmberKindCross : EmberKindDot);
             ember.seed = (int)(Rand01() * 1000.0f);
             ember.color = _color;
 
@@ -385,15 +457,55 @@ namespace PresentationLayer.VFX
         private Color32 RandomEmberColor()
         {
             float roll = Rand01();
+            if (AuraStyle.Preheat == auraStyle)
+            {
+                if (roll < 0.45f) return ColorOrange;
+                if (roll < 0.8f) return ColorRed;
+                return ColorAmber;
+            }
+
+            if (AuraStyle.Heating == auraStyle)
+            {
+                if (roll < 0.35f) return ColorYellow;
+                if (roll < 0.7f) return ColorOrange;
+                if (roll < 0.88f) return ColorAmber;
+                return ColorWhite;
+            }
+
             if (roll < 0.28f) return ColorCyan;
             if (roll < 0.5f) return ColorViolet;
             if (roll < 0.82f) return ColorIce;
             return ColorWhite;
         }
 
+        private Color32[] GetWaveColors()
+        {
+            if (AuraStyle.Preheat == auraStyle) return WaveColorsPreheat;
+            if (AuraStyle.Heating == auraStyle) return WaveColorsHeating;
+            return WaveColorsBlue;
+        }
+
+        // 수명 끝(80% 이후)의 불씨 색. 푸른 불꽃은 파랑, 예열/가열은 진홍으로 식는다.
+        private Color32 GetEmberFadeColor()
+        {
+            return AuraStyle.BlueFlame == auraStyle ? ColorBlue : ColorEmberDark;
+        }
+
+        // 단계 안 진행도에 따른 불씨 양 배율(예열 0.5~1, 가열 0.75~1, 푸른 불꽃 1)
+        private float GetEmberRateScale()
+        {
+            if (AuraStyle.Preheat == auraStyle) return 0.5f + 0.5f * stageProgress;
+            if (AuraStyle.Heating == auraStyle) return 0.75f + 0.25f * stageProgress;
+            return 1.0f;
+        }
+
         // 불씨는 위로 올라가면서 좌우로 아지랑이처럼 흔들린다(사인 흔들림). 위로 갈수록 느려진다.
+        // 연기는 더 느리고 작게 흔들리고, 바닥 파편은 흔들림 없이 마찰로 감속하며 발밑 앞/뒤에 따라 층을 바꾼다.
         private void UpdateEmbers(float _dt)
         {
+            float footWorldY = characterWorldPx.y + silhouette.FootY;
+            float debrisFriction = Mathf.Max(0.0f, 1.0f - 3.2f * _dt);
+
             for (int i = 0; i < EmberCapacity; i++)
             {
                 if (false == embers[i].bActive) continue;
@@ -405,7 +517,18 @@ namespace PresentationLayer.VFX
                     continue;
                 }
 
-                float sway = Mathf.Sin(embers[i].age * embers[i].swaySpeed + embers[i].swayPhase) * emberSwayAmplitude;
+                if (EmberKindDebris == embers[i].kind)
+                {
+                    embers[i].vx *= debrisFriction;
+                    embers[i].vy *= debrisFriction;
+                    embers[i].x += embers[i].vx * _dt;
+                    embers[i].y += embers[i].vy * _dt;
+                    embers[i].layer = embers[i].y < footWorldY ? FrontLayer : BackLayer;
+                    continue;
+                }
+
+                float swayAmplitude = EmberKindSmoke == embers[i].kind ? emberSwayAmplitude * 0.55f : emberSwayAmplitude;
+                float sway = Mathf.Sin(embers[i].age * embers[i].swaySpeed + embers[i].swayPhase) * swayAmplitude;
                 embers[i].vy *= Mathf.Max(0.0f, 1.0f - 0.9f * _dt);
                 embers[i].x += (embers[i].vx + sway) * _dt;
                 embers[i].y += embers[i].vy * _dt;
@@ -423,18 +546,27 @@ namespace PresentationLayer.VFX
                 {
                     float angle = TwoPi * (i + Rand01()) / igniteCount;
                     float speed = Mathf.Lerp(16.0f, 44.0f, Rand01());
-                    SpawnEmber(Mathf.Cos(angle) * 4.0f, bodyCenterYPx + Mathf.Sin(angle) * 5.0f, Mathf.Cos(angle) * speed, 10.0f + Mathf.Abs(Mathf.Sin(angle)) * speed, Mathf.Lerp(0.4f, 0.75f, Rand01()), FrontLayer, RandomEmberColor());
+                    SpawnEmber(Mathf.Cos(angle) * 4.0f, bodyCenterYPx + Mathf.Sin(angle) * 5.0f, Mathf.Cos(angle) * speed, 10.0f + Mathf.Abs(Mathf.Sin(angle)) * speed, Mathf.Lerp(0.4f, 0.75f, Rand01()), FrontLayer, RandomEmberColor(), -1);
                 }
+
+                SpawnWaveDebris();
             }
 
             int edgeCellCount = silhouette.EdgeCellCount;
             if (AuraPhase.Extinguishing == phase || 0 >= edgeCellCount) return;
             int[] edgeCells = silhouette.EdgeCells;
 
+            SpawnSmoke(_dt, edgeCells, edgeCellCount);
+
+            // 예열은 불씨가 느리게 오르고 조금 더 오래 산다
+            bool bPreheat = AuraStyle.Preheat == auraStyle;
+            float riseScale = true == bPreheat ? 0.6f : 1.0f;
+            float lifeScale = true == bPreheat ? 1.25f : 1.0f;
+
             // 실루엣 가장자리에서 피어오르는 불씨(위쪽 가장자리일수록 잘 나오게 한다). 달리는 중에는 더 많이 나와서 꼬리가 촘촘해진다.
             float speedFactor = Mathf.Clamp01(moveSpeedPx / Mathf.Max(1.0f, emberTrailFullSpeedPx));
             float interval = Mathf.Max(0.02f, ambientEmberInterval) / (1.0f + speedFactor * 1.5f);
-            emberSpawnAccumulator += _dt / interval;
+            emberSpawnAccumulator += _dt * GetEmberRateScale() / interval;
             int groups = Mathf.Min(6, (int)emberSpawnAccumulator);
             emberSpawnAccumulator -= (int)emberSpawnAccumulator;
 
@@ -449,8 +581,52 @@ namespace PresentationLayer.VFX
                     float upward = Mathf.Clamp01((cy - 2.0f) / 14.0f);
                     if (Rand01() > Mathf.Lerp(0.4f, 1.0f, upward)) continue;
 
-                    SpawnEmber(cx, cy + 1.0f, (Rand01() - 0.5f) * 6.0f, Mathf.Lerp(12.0f, 26.0f, Rand01()), Mathf.Lerp(0.5f, 0.95f, Rand01()), Rand01() < 0.5f ? FrontLayer : BackLayer, RandomEmberColor());
+                    SpawnEmber(cx, cy + 1.0f, (Rand01() - 0.5f) * 6.0f, Mathf.Lerp(12.0f, 26.0f, Rand01()) * riseScale, Mathf.Lerp(0.5f, 0.95f, Rand01()) * lifeScale, Rand01() < 0.5f ? FrontLayer : BackLayer, RandomEmberColor(), -1);
                 }
+            }
+        }
+
+        // 점화 충격파와 함께 발밑에서 바닥을 따라 미끄러져 퍼지는 파편(`.`/`+`). 타원 링과 같은 납작한 방향으로 날아간다.
+        private void SpawnWaveDebris()
+        {
+            float scale = Mathf.Max(0.0f, igniteRingScale);
+            int count = Mathf.RoundToInt(Mathf.Max(0, waveDebrisCount) * scale);
+            if (0 >= count) return;
+
+            float duration = Mathf.Max(0.05f, waveDuration);
+            float baseSpeed = waveRadiusPx * scale / duration;
+            Color32[] waveColors = GetWaveColors();
+            int footX = silhouette.FootCenterX;
+            int footY = silhouette.FootY;
+
+            for (int i = 0; i < count; i++)
+            {
+                float angle = TwoPi * (i + Rand01() * 0.6f) / count;
+                float cos = Mathf.Cos(angle);
+                float sin = Mathf.Sin(angle);
+                float speed = baseSpeed * Mathf.Lerp(0.9f, 1.4f, Rand01());
+                Color32 color = 0 == i % 3 ? waveColors[0] : waveColors[1];
+                SpawnEmber(footX + cos * 2.0f, footY + sin * 0.8f, cos * speed, sin * speed * WaveFlatten, duration * Mathf.Lerp(0.8f, 1.3f, Rand01()), BackLayer, color, EmberKindDebris);
+            }
+        }
+
+        // 머리 쪽(몸 중심 높이 + 4px 위) 가장자리에서 피어오르는 회색 연기. 예열/가열 단계에서만 smokeInterval로 켠다.
+        private void SpawnSmoke(float _dt, int[] _edgeCells, int _edgeCellCount)
+        {
+            if (0.0f >= smokeInterval) return;
+
+            smokeSpawnAccumulator += _dt / Mathf.Max(0.05f, smokeInterval);
+            int count = Mathf.Min(4, (int)smokeSpawnAccumulator);
+            smokeSpawnAccumulator -= (int)smokeSpawnAccumulator;
+
+            for (int i = 0; i < count; i++)
+            {
+                int cell = _edgeCells[(int)(Rand01() * _edgeCellCount) % _edgeCellCount];
+                int cx = cell % GridWidth - GridOriginX;
+                int cy = cell / GridWidth - GridOriginY;
+                if (cy < bodyCenterYPx + 4) continue;
+
+                SpawnEmber(cx + (Rand01() - 0.5f) * 4.0f, cy + 2.0f, (Rand01() - 0.5f) * 3.0f, Mathf.Lerp(6.0f, 11.0f, Rand01()), Mathf.Lerp(1.2f, 1.8f, Rand01()), BackLayer, Rand01() < 0.5f ? ColorSmoke : ColorSmokeDark, EmberKindSmoke);
             }
         }
 
@@ -496,7 +672,7 @@ namespace PresentationLayer.VFX
             int flickerFrame = (int)(elapsed * fps);
             float flickerTime = flickerFrame / fps;
 
-            DrawIgniteRing();
+            DrawIgniteWave();
             DrawSparkles(flickerFrame);
             DrawEmbers();
 
@@ -654,8 +830,21 @@ namespace PresentationLayer.VFX
                 }
             }
 
+            // 가열 단계 박동: pulseInterval마다 0.25초 동안 1 -> 0.6 -> 0.3으로 계단식 감쇠. 12fps 프레임 시간 기준이라 아우라 재구성 주기와 맞는다.
+            frame.pulse = 0.0f;
+            if (0.0f < pulseInterval)
+            {
+                float pulseTime = Mathf.Repeat(_flickerTime, pulseInterval);
+                if (pulseTime < 0.25f)
+                {
+                    float step = pulseTime < 0.08f ? 1.0f : (pulseTime < 0.16f ? 0.6f : 0.3f);
+                    frame.pulse = step * (0.5f + 0.5f * stageProgress);
+                }
+            }
+
             // 지금 세기로는 어느 칸도 닿을 수 없는 거리(링 + 불꽃 최대 두께). 이보다 먼 칸은 노이즈를 계산하지 않고 건너뛴다.
             float maxReach = (frame.ringThickness + BodyBleedPx + crownExtraThicknessPx) * _intensity;
+            if (0.0f < pulseInterval) maxReach *= MaxPulseScale;
             frame.maxDistanceUnits = Mathf.CeilToInt(maxReach * DistanceUnitsPerPixel);
             return frame;
         }
@@ -668,11 +857,12 @@ namespace PresentationLayer.VFX
             int index = _gy * GridWidth + _gx;
             int dist = silhouette.Distance[index];
 
-            if (0 == dist && true == silhouette.EdgeMask[index])
+            if (0 == dist && true == silhouette.EdgeMask[index] && AuraStyle.Preheat != auraStyle)
             {
-                // 실루엣 가장자리 안쪽 칸에도 링의 파랑을 깐다. 아우라는 캐릭터 뒤 층이라 스프라이트가 덮으면 가려지고,
+                // 실루엣 가장자리 안쪽 칸에도 링의 안쪽 색을 깐다. 아우라는 캐릭터 뒤 층이라 스프라이트가 덮으면 가려지고,
                 // 회전한 도끼날처럼 계산과 실제 픽셀이 반 픽셀쯤 어긋나 스프라이트가 비는 칸에서는 링이 드러나 빈틈이 메워진다.
-                _color = Tint(ColorBlue, ringGlow, AuraLayer);
+                // 예열은 테두리가 점으로 빠지는 연출이라 메우지 않는다.
+                _color = Tint(AuraStyle.Heating == auraStyle ? ColorOrange : ColorBlue, ringGlow, AuraLayer);
                 return true;
             }
 
@@ -686,28 +876,62 @@ namespace PresentationLayer.VFX
             float n1 = ValueNoise(cx * 0.34f, cy * 0.21f - _frame.flickerTime * noiseScrollSpeed);
             float n2 = ValueNoise(cx * 0.75f + 31.0f, cy * 0.46f - _frame.flickerTime * noiseScrollSpeed * 2.0f);
 
+            if (AuraStyle.Preheat == auraStyle) return TryGetPreheatColor(in _frame, d, index, _crown, n1, n2, out _color);
+
+            // 가열은 박동 때 링/불꽃이 조금 두꺼워지고, 불꽃 높이가 단계 진행도를 따라 오른다(푸른 불꽃은 배율 1)
+            bool bHeating = AuraStyle.Heating == auraStyle;
+            float ringScale = true == bHeating ? 1.0f + 0.15f * _frame.pulse : 1.0f;
+            float flameScale = true == bHeating ? (0.7f + 0.3f * stageProgress) * (1.0f + 0.25f * _frame.pulse) : 1.0f;
+
             // 링은 거의 고정 두께(노이즈 +-0.3px), 불꽃은 어깨선 위에서만 노이즈만큼 더 뻗는다
-            float ring = (_frame.ringThickness + (n2 - 0.5f) * RingNoiseAmplitude) * _frame.intensity;
-            float flame = _crown * crownExtraThicknessPx * (0.55f * n1 + 0.45f * n2) * _frame.intensity;
+            float ring = (_frame.ringThickness + (n2 - 0.5f) * RingNoiseAmplitude) * _frame.intensity * ringScale;
+            float flame = _crown * crownExtraThicknessPx * (0.55f * n1 + 0.45f * n2) * _frame.intensity * flameScale;
             float thick = ring + flame;
             if (d > thick || 0.0f >= thick) return false;
 
-            if (d <= ring) return TryGetRingColor(d, ring, _gx, _gy, out _color);
+            if (d <= ring) return TryGetRingColor(in _frame, d, ring, _gx, _gy, out _color);
             return TryGetFlameColor(in _frame, d, ring, thick, index, cx, cy, n2, out _color);
         }
 
-        // 링: 한 가지 깊은 파랑. 안쪽 1px는 파랑, 그 바깥은 진파랑, 가장 바깥 절반은 체크무늬 디더로 옅어진다.
-        private bool TryGetRingColor(float _d, float _ring, int _gx, int _gy, out Color32 _color)
+        // 예열: 1px 검붉은 테두리가 점으로 빠진 채 깜빡이고(진행도가 오를수록 빈 곳이 줄어든다), 머리 위에서만 작은 주황 혀가 오른다.
+        private bool TryGetPreheatColor(in AuraFrame _frame, float _d, int _index, float _crown, float _n1, float _n2, out Color32 _color)
         {
+            _color = default(Color32);
+
+            float rim = _frame.ringThickness * _frame.intensity;
+            if (_d <= rim)
+            {
+                float rimChance = (0.3f + 0.45f * stageProgress) * (0.6f + 0.6f * _n1);
+                if (Hash01(_index, _frame.flickerFrame) >= rimChance) return false;
+
+                _color = Tint(_n1 > 0.62f ? ColorRed : ColorEmberDark, 0.22f + 0.2f * _n1, AuraLayer);
+                return true;
+            }
+
+            float tongue = rim + _crown * crownExtraThicknessPx * (0.4f + 0.6f * stageProgress) * (0.55f * _n1 + 0.45f * _n2) * _frame.intensity;
+            if (_d > tongue) return false;
+
+            float r2 = (_d - rim) / Mathf.Max(0.01f, tongue - rim);
+            if (r2 > 0.45f && Hash01(_index + 5, _frame.flickerFrame) < (r2 - 0.45f) * 1.6f) return false;
+
+            _color = r2 < 0.5f ? Tint(ColorOrange, 0.55f, AuraLayer) : Tint(ColorRed, 0.35f, AuraLayer);
+            return true;
+        }
+
+        // 링: 안쪽 1px는 밝은 색, 그 바깥은 진한 색, 가장 바깥 절반은 체크무늬 디더로 옅어진다. 푸른 불꽃은 파랑 -> 진파랑, 가열은 주황 -> 진홍(박동 때 밝아짐).
+        private bool TryGetRingColor(in AuraFrame _frame, float _d, float _ring, int _gx, int _gy, out Color32 _color)
+        {
+            bool bHeating = AuraStyle.Heating == auraStyle;
+
             if (_d <= 1.0f)
             {
-                _color = Tint(ColorBlue, ringGlow, AuraLayer);
+                _color = true == bHeating ? Tint(ColorOrange, 0.4f + 0.35f * _frame.pulse, AuraLayer) : Tint(ColorBlue, ringGlow, AuraLayer);
                 return true;
             }
 
             if (_d <= _ring - 0.5f || 0 == ((_gx + _gy) & 1))
             {
-                _color = Tint(ColorDeepBlue, ringGlow * 0.5f, AuraLayer);
+                _color = true == bHeating ? Tint(ColorEmberDark, 0.18f + 0.2f * _frame.pulse, AuraLayer) : Tint(ColorDeepBlue, ringGlow * 0.5f, AuraLayer);
                 return true;
             }
 
@@ -725,6 +949,15 @@ namespace PresentationLayer.VFX
             float dissolve = _frame.dissolve;
             bool bDissolved = r2 > dissolve && Hash01(_index, _frame.flickerFrame) < (r2 - dissolve) / (1.0f - dissolve) * 1.1f;
             if (true == bDissolved) return false;
+
+            // 가열: 노랑 코어 -> 주황 -> 끝은 호박 포인트/빨강(색 순환 없음, 박동 때 밝아짐)
+            if (AuraStyle.Heating == auraStyle)
+            {
+                if (r2 < 0.3f) _color = Tint(ColorYellow, 0.75f + 0.2f * _frame.pulse, AuraLayer);
+                else if (r2 < 0.7f) _color = Tint(ColorOrange, 0.45f + 0.2f * _frame.pulse, AuraLayer);
+                else _color = accent < 0.4f ? Tint(ColorAmber, 0.7f, AuraLayer) : Tint(ColorRed, 0.2f, AuraLayer);
+                return true;
+            }
 
             // 몸 둘레의 각도(0~1)와 그 칸의 색 위상
             float angle01 = Mathf.Atan2(_cy - bodyCenterYPx, _cx) / TwoPi + 0.5f;
@@ -774,6 +1007,9 @@ namespace PresentationLayer.VFX
             if (0 >= edgeCellCount || AuraPhase.Extinguishing == phase || 0 >= sparkleCount) return;
             int[] edgeCells = silhouette.EdgeCells;
 
+            // 예열은 한 프레임 걸러 한 번만 튄다(아직 약하게 달아오른 느낌)
+            if (AuraStyle.Preheat == auraStyle && 0 != (_flickerFrame & 1)) return;
+
             float ramp = Mathf.Clamp01((elapsed - 0.1f) / 0.3f);
             int count = Mathf.RoundToInt(sparkleCount * ramp);
             for (int i = 0; i < count; i++)
@@ -782,58 +1018,196 @@ namespace PresentationLayer.VFX
                 int cx = cell % GridWidth - GridOriginX;
                 int cy = cell / GridWidth - GridOriginY;
 
-                bool bCyan = Hash01(i, _flickerFrame + 91) < 0.4f;
-                AddRect(FrontLayer, cx, cy, cx + 1, cy + 1, Tint(true == bCyan ? ColorCyan : ColorWhite, 0.9f, FrontLayer));
+                float roll = Hash01(i, _flickerFrame + 91);
+                Color32 color;
+                if (AuraStyle.Preheat == auraStyle) color = ColorAmber;
+                else if (AuraStyle.Heating == auraStyle) color = roll < 0.5f ? ColorYellow : ColorPale;
+                else color = roll < 0.4f ? ColorCyan : ColorWhite;
+                AddRect(FrontLayer, cx, cy, cx + 1, cy + 1, Tint(color, 0.9f, FrontLayer));
             }
         }
 
-        // 점화 순간의 점선 충격파: 발밑 타원으로 계단식으로 퍼지는 도트 고리
-        private void DrawIgniteRing()
+        // 점화 충격파: 실루엣 발밑 중심(OverheatSilhouette.FootCenterX/FootY)에서 바닥 타원 링이 30fps로 1px씩 퍼진다(ease-out cubic).
+        // 타원은 PixelEllipse 한 가지로만 그려서 1px 윤곽이 들쭉날쭉하거나 L자로 겹치지 않는다(JAGGIES, DOUBLE PIXEL).
+        // - 시작 0.14초: 발밑에 작은 섬광 타원(채움, 후반에는 바깥쪽이 체크 디더로 빠진다)
+        // - 주 링: 색이 시작 -> 끝 4단계로 식고, 후반 50%부터 점이 무작위로 빠져 흩어진다
+        // - 보조 링(useSecondWaveRing): 0.09초 늦게 0.62배 크기로 따라온다. 주 링과 가로/세로 모두 3px 이상 떨어졌을 때만 그린다(HUGGING)
+        // 타원 아래쪽 절반(발밑보다 앞)은 캐릭터 앞 층, 위쪽 절반은 뒤 층에 그린다.
+        private void DrawIgniteWave()
         {
-            float t = elapsed - 0.02f;
-            if (0.0f > t || 0.36f <= t) return;
+            float t = Mathf.Floor((elapsed - WaveStartTime) * WaveFps) / WaveFps;
+            if (0.0f > t) return;
 
-            int step = (int)(t / 0.06f);
-            float radius = (5.0f + step * 4.5f) * igniteRingScale;
-            Color32 baseColor = step < 2 ? ColorWhite : (step < 4 ? ColorIce : ColorBlue);
-            float glow = step < 2 ? 0.9f : (step < 4 ? 0.65f : 0.35f);
-            int size = step < 3 ? 2 : 1;
-            int dotCount = 16;
-            float phaseShift = 0 == (step & 1) ? 0.0f : TwoPi / dotCount * 0.5f;
+            float duration = Mathf.Max(0.05f, waveDuration);
+            float secondDelay = true == useSecondWaveRing ? SecondWaveDelay : 0.0f;
+            if (t >= duration + secondDelay && t >= WaveFlashDuration) return;
 
-            for (int i = 0; i < dotCount; i++)
+            float scale = Mathf.Max(0.0f, igniteRingScale);
+            float radius = Mathf.Max(0.0f, waveRadiusPx) * scale;
+            Color32[] colors = GetWaveColors();
+            int footX = silhouette.FootCenterX;
+            int footY = silhouette.FootY;
+            int waveFrame = (int)(t * WaveFps);
+
+            DrawWaveFlash(t, scale, footX, footY, colors);
+
+            int mainRx = 0;
+            int mainRy = 0;
+            bool bMainActive = TryGetWaveRing(t, duration, radius, out mainRx, out mainRy, out float mainU);
+            if (true == bMainActive)
             {
-                float angle = phaseShift + TwoPi * i / dotCount;
-                float sin = Mathf.Sin(angle);
-                int layer = sin < 0.0f ? FrontLayer : BackLayer;
-                int px = Mathf.RoundToInt(Mathf.Cos(angle) * radius);
-                int py = Mathf.RoundToInt(-1.0f + sin * radius * 0.42f);
-                AddRect(layer, px, py, px + size, py + size, Tint(baseColor, glow, layer));
+                DrawWaveRing(footX, footY, mainRx, mainRy, GetWaveRingColor(colors, mainU), GetWaveRingGlow(mainU), GetWaveDissolve(mainU), waveFrame);
+            }
+
+            if (false == useSecondWaveRing) return;
+
+            if (false == TryGetWaveRing(t - SecondWaveDelay, duration, radius * SecondWaveScale, out int secondRx, out int secondRy, out float secondU)) return;
+            if (true == bMainActive && (WaveRingGapPx > mainRx - secondRx || WaveRingGapPx > mainRy - secondRy)) return;
+
+            DrawWaveRing(footX, footY, secondRx, secondRy, GetWaveRingColor(colors, secondU), GetWaveRingGlow(secondU) * 0.7f, GetWaveDissolve(secondU), waveFrame + 7);
+        }
+
+        // 링의 지금 반지름. 아직 시작 전이거나 다 퍼졌으면 false. _u는 진행도(0~1).
+        private static bool TryGetWaveRing(float _t, float _duration, float _radiusPx, out int _rx, out int _ry, out float _u)
+        {
+            _u = _t / _duration;
+            _rx = 0;
+            _ry = 0;
+            if (0.0f > _t || 1.0f <= _u) return false;
+
+            float inv = 1.0f - _u;
+            float eased = 1.0f - inv * inv * inv;
+            _rx = Mathf.Max(1, Mathf.RoundToInt(_radiusPx * eased + 2.0f));
+            _ry = Mathf.Max(1, Mathf.RoundToInt(_rx * WaveFlatten));
+            return true;
+        }
+
+        private static Color32 GetWaveRingColor(Color32[] _colors, float _u)
+        {
+            if (_u < 0.18f) return _colors[0];
+            if (_u < 0.42f) return _colors[1];
+            if (_u < 0.7f) return _colors[2];
+            return _colors[3];
+        }
+
+        private static float GetWaveRingGlow(float _u)
+        {
+            if (_u < 0.18f) return 0.95f;
+            if (_u < 0.42f) return 0.75f;
+            if (_u < 0.7f) return 0.5f;
+            return 0.3f;
+        }
+
+        // 후반 50%부터 점이 빠지는 비율(0~1.15)
+        private static float GetWaveDissolve(float _u)
+        {
+            return _u > 0.5f ? (_u - 0.5f) / 0.5f * 1.15f : 0.0f;
+        }
+
+        // 링 윤곽을 발밑 기준으로 찍는다. 점이 빠지는 자리는 15fps(2프레임)마다 바뀌어 흩어지는 것처럼 보인다.
+        private void DrawWaveRing(int _cx, int _cy, int _rx, int _ry, Color32 _color, float _glow, float _dissolve, int _waveFrame)
+        {
+            Color32 frontColor = Tint(_color, _glow, FrontLayer);
+            Color32 backColor = Tint(_color, _glow, BackLayer);
+            int dissolveFrame = _waveFrame >> 1;
+
+            int count = PixelEllipse.Build(_rx, _ry);
+            int[] outX = PixelEllipse.OutX;
+            int[] outY = PixelEllipse.OutY;
+            for (int i = 0; i < count; i++)
+            {
+                int x = outX[i];
+                int y = outY[i];
+                if (0.0f < _dissolve && Hash01(x * 31 + y * 7 + _rx, dissolveFrame) < _dissolve) continue;
+
+                bool bFront = y < 0;
+                AddRect(true == bFront ? FrontLayer : BackLayer, _cx + x, _cy + y, _cx + x + 1, _cy + y + 1, true == bFront ? frontColor : backColor);
+            }
+        }
+
+        // 발밑 섬광: 시작 0.14초 동안 작은 납작 타원(채움)이 커졌다 사라진다. 안쪽 35%는 시작 색, 바깥은 두 번째 색이고 후반에는 바깥이 체크 디더로 빠진다.
+        private void DrawWaveFlash(float _t, float _scale, int _cx, int _cy, Color32[] _colors)
+        {
+            float u = _t / WaveFlashDuration;
+            if (1.0f <= u) return;
+
+            int rx = Mathf.Max(1, Mathf.RoundToInt((2.0f + u * 4.0f) * _scale));
+            int ry = Mathf.Max(1, Mathf.RoundToInt(rx * WaveFlatten));
+            float glow = 0.85f * (1.0f - u * 0.5f);
+            bool bDither = u > 0.5f;
+            float invRx2 = 1.0f / (rx * rx);
+            float invRy2 = 1.0f / (ry * ry);
+
+            for (int y = -ry; y <= ry; y++)
+            {
+                int layer = y < 0 ? FrontLayer : BackLayer;
+                Color32 inner = Tint(_colors[0], glow, layer);
+                Color32 outer = Tint(_colors[1], glow, layer);
+
+                for (int x = -rx; x <= rx; x++)
+                {
+                    float q = x * x * invRx2 + y * y * invRy2;
+                    if (q > 1.0f) continue;
+
+                    bool bInner = q < 0.35f;
+                    if (false == bInner && true == bDither && 0 != ((x + y) & 1)) continue;
+
+                    AddRect(layer, _cx + x, _cy + y, _cx + x + 1, _cy + y + 1, true == bInner ? inner : outer);
+                }
             }
         }
 
         // 불씨: 위로 올라가며 좌우로 흔들리고, `+`와 `x`는 번갈아 바뀌며 회전하는 것처럼 보인다. 후반에는 `.`로 작아졌다가 점멸하며 소멸한다.
+        // 연기는 발광 없는 `.`로 후반에 20Hz로 점멸하고, 바닥 파편은 초반에 `+`였다가 `.`로 줄어 30Hz로 점멸하며 사라진다.
         private void DrawEmbers()
         {
+            Color32 fadeColor = GetEmberFadeColor();
+
             for (int i = 0; i < EmberCapacity; i++)
             {
                 if (false == embers[i].bActive) continue;
 
                 float u = embers[i].age / embers[i].life;
 
-                // 후반에는 프레임을 건너뛰며 점멸하다가 사라진다
-                if (0.75f < u && 0 != ((int)(embers[i].age * 30.0f) & 1)) continue;
-
                 // 월드 좌표를 캐릭터의 스냅 위치(originX/Y) 기준 픽셀 오프셋으로 바꾼다(격자에 스냅)
                 int px = Mathf.RoundToInt(embers[i].x - originX);
                 int py = Mathf.RoundToInt(embers[i].y - originY);
 
+                if (EmberKindSmoke == embers[i].kind)
+                {
+                    if (0.6f < u && 0 != ((int)(embers[i].age * 20.0f) & 1)) continue;
+                    AddRect(embers[i].layer, px, py, px + 1, py + 1, Tint(embers[i].color, 0.0f, embers[i].layer));
+                    continue;
+                }
+
+                if (EmberKindDebris == embers[i].kind)
+                {
+                    if (0.6f < u && 0 != ((int)(embers[i].age * 30.0f) & 1)) continue;
+
+                    Color32 debrisColor = Tint(embers[i].color, 0.9f * (1.0f - u * 0.6f), embers[i].layer);
+                    if (u < 0.3f && 0 != (embers[i].seed & 1))
+                    {
+                        AddRect(embers[i].layer, px - 1, py, px + 2, py + 1, debrisColor);
+                        AddRect(embers[i].layer, px, py - 1, px + 1, py, debrisColor);
+                        AddRect(embers[i].layer, px, py + 1, px + 1, py + 2, debrisColor);
+                    }
+                    else
+                    {
+                        AddRect(embers[i].layer, px, py, px + 1, py + 1, debrisColor);
+                    }
+
+                    continue;
+                }
+
+                // 후반에는 프레임을 건너뛰며 점멸하다가 사라진다
+                if (0.75f < u && 0 != ((int)(embers[i].age * 30.0f) & 1)) continue;
+
                 int twinkle = ((int)(embers[i].age * 14.0f) + embers[i].seed) % 3;
                 float glow = (0 == twinkle ? 0.5f : (1 == twinkle ? 0.7f : 0.9f)) * (1.0f - u * 0.4f);
-                Color32 baseColor = 0.8f < u ? ColorBlue : embers[i].color;
+                Color32 baseColor = 0.8f < u ? fadeColor : embers[i].color;
                 Color32 color = Tint(baseColor, glow, embers[i].layer);
 
-                if (1 == embers[i].kind && u < 0.55f)
+                if (EmberKindCross == embers[i].kind && u < 0.55f)
                 {
                     // 0.09초마다 `+` <-> `x`로 바뀌어 회전하는 것처럼 보인다
                     bool bPlus = 0 == (((int)(embers[i].age / 0.09f)) + embers[i].seed & 1);

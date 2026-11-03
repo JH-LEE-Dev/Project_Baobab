@@ -9,7 +9,7 @@ public interface IOverheatComponent
     public bool IsActive { get; }
     // HUD에 보이는 과열 수치(내림한 정수, 0~최대치). 모든 공식이 이 값을 쓴다.
     public int OverheatLevel { get; }
-    // 이펙트 단계. 0 = 없음, 1 = 1~24, 2 = 25~49, 3 = 50~74, 4 = 75 이상(최대치와 무관한 절대값).
+    // 이펙트 단계. 0 = 없음, 1 = 1~33(예열), 2 = 34~66(가열), 3 = 67 이상(푸른 불꽃, 최대치와 무관한 절대값).
     public int Stage { get; }
     public bool IsMax { get; }
     // 과열 수치 최대치(스탯 overheatMaxValue, 기본 100, 특성이 N씩 올린다). 게이지 채움 비율에 쓴다.
@@ -22,7 +22,7 @@ public interface IOverheatComponent
     public event Action<bool> OverheatStateChangedEvent;
     // 과열 수치(내림한 정수)가 바뀔 때마다. 인자는 새 값.
     public event Action<int> OverheatLevelChangedEvent;
-    // 이펙트 단계가 바뀔 때마다. 인자는 새 단계(0~4).
+    // 이펙트 단계가 바뀔 때마다. 인자는 새 단계(0~3).
     public event Action<int> OverheatStageChangedEvent;
     // 최대치가 바뀔 때마다. 인자는 새 최대치. 내려가서 수치가 넘쳤다면 잘라낸 뒤(OverheatLevelChangedEvent 먼저) 불린다.
     public event Action<float> OverheatMaxChangedEvent;
