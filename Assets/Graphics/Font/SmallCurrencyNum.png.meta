@@ -3,32 +3,35 @@ guid: b5919104e6bba484382995363357ae05
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -3098926639976283377
-    second: SmallCurrency_0
+      213: -400951131712733357
+    second: SmallCurrencyNum_0
   - first:
-      213: -427802355859868436
-    second: SmallCurrency_1
+      213: 3943169913685968393
+    second: SmallCurrencyNum_1
   - first:
-      213: -7677219209821342683
-    second: SmallCurrency_2
+      213: 8144159731370342719
+    second: SmallCurrencyNum_2
   - first:
-      213: 3474261131727197631
-    second: SmallCurrency_3
+      213: 8118417018470900684
+    second: SmallCurrencyNum_3
   - first:
-      213: 1812109232632574482
-    second: SmallCurrency_4
+      213: 7299801383340902096
+    second: SmallCurrencyNum_4
   - first:
-      213: 7958529071253672488
-    second: SmallCurrency_5
+      213: 7405768312034474919
+    second: SmallCurrencyNum_5
   - first:
-      213: -228854697930063807
-    second: SmallCurrency_6
+      213: -7033073578379826367
+    second: SmallCurrencyNum_6
   - first:
-      213: 496051507562118876
-    second: SmallCurrency_7
+      213: -596727367975178169
+    second: SmallCurrencyNum_7
   - first:
-      213: 8094098542102744963
-    second: SmallCurrency_8
+      213: -4224251953035527977
+    second: SmallCurrencyNum_8
+  - first:
+      213: 86977014664423975
+    second: SmallCurrencyNum_9
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -137,10 +140,10 @@ TextureImporter:
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 9b7dcae2004c3bc41ba6e0a29929afc9
-      internalID: 1212407753
+      spriteID: 35fb8fde1198f6af0800000000000000
+      internalID: -400951131712733357
       vertices: []
       indices: 
       edges: []
@@ -159,10 +162,10 @@ TextureImporter:
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: fe0af5c026888d64b83ad097d416930d
-      internalID: 457185347
+      spriteID: 906824a0524f8b630800000000000000
+      internalID: 3943169913685968393
       vertices: []
       indices: 
       edges: []
@@ -181,10 +184,10 @@ TextureImporter:
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: ec6334f8cece7d84f92e8e7a323d66d2
-      internalID: -1692442806
+      spriteID: f39be56402ed50170800000000000000
+      internalID: 8144159731370342719
       vertices: []
       indices: 
       edges: []
@@ -203,10 +206,10 @@ TextureImporter:
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 38812e9ea12da2c449a5d42fde61de0d
-      internalID: -1179691068
+      spriteID: cc3a17cd3496aa070800000000000000
+      internalID: 8118417018470900684
       vertices: []
       indices: 
       edges: []
@@ -225,10 +228,10 @@ TextureImporter:
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 622dad7b8260a6f4094f1820e397fbbb
-      internalID: 428901176
+      spriteID: 0d680f0aeaa1e4560800000000000000
+      internalID: 7299801383340902096
       vertices: []
       indices: 
       edges: []
@@ -247,10 +250,10 @@ TextureImporter:
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: a657e09850ae66f42a489167c87a1e62
-      internalID: 1567777609
+      spriteID: 7abb8a7da0396c660800000000000000
+      internalID: 7405768312034474919
       vertices: []
       indices: 
       edges: []
@@ -269,10 +272,10 @@ TextureImporter:
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: a9b92a81793498d4c8862b0bca9c3191
-      internalID: 939509253
+      spriteID: 14b2c71e7d0856e90800000000000000
+      internalID: -7033073578379826367
       vertices: []
       indices: 
       edges: []
@@ -291,10 +294,10 @@ TextureImporter:
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: e751ea9e68581a243849e85f22141145
-      internalID: 707337509
+      spriteID: 740f514de9ff7b7f0800000000000000
+      internalID: -596727367975178169
       vertices: []
       indices: 
       edges: []
@@ -313,10 +316,10 @@ TextureImporter:
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 6112e88c8f6bab14cb352e9972572c1b
-      internalID: -1475847987
+      spriteID: 7d83191da317065c0800000000000000
+      internalID: -4224251953035527977
       vertices: []
       indices: 
       edges: []
@@ -335,10 +338,10 @@ TextureImporter:
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 68c7e67e6252c8a4bb80308518eff043
-      internalID: -1720054314
+      spriteID: 72a62be4221053100800000000000000
+      internalID: 86977014664423975
       vertices: []
       indices: 
       edges: []
@@ -359,8 +362,30 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 88c1925681e306f4cb5d22e84d2d9e87
-      internalID: -50375480
+      spriteID: d6671bc944fc5394484bc613c4c163d2
+      internalID: -1906679099
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SmallCurrencyNum_11
+      rect:
+        serializedVersion: 2
+        x: 88
+        y: 0
+        width: 8
+        height: 8
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9c2caf5562152f64c84d9a21c8203d68
+      internalID: -227947725
       vertices: []
       indices: 
       edges: []
@@ -369,7 +394,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 08479454fd5fedc4b8bf01654936768d
+    spriteID: dc6303b5897e3454b9a9dc9919d1a565
     internalID: 0
     vertices: []
     indices: 
@@ -379,19 +404,20 @@ TextureImporter:
     spriteCustomMetadata:
       entries:
       - key: SpriteEditor.SliceSettings
-        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":8.0,"y":8.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":12.0,"y":1.0},"gridSpriteSize":{"x":8.0,"y":8.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      SmallCurrencyNum_0: 1212407753
-      SmallCurrencyNum_1: 457185347
-      SmallCurrencyNum_10: -50375480
-      SmallCurrencyNum_2: -1692442806
-      SmallCurrencyNum_3: -1179691068
-      SmallCurrencyNum_4: 428901176
-      SmallCurrencyNum_5: 1567777609
-      SmallCurrencyNum_6: 939509253
-      SmallCurrencyNum_7: 707337509
-      SmallCurrencyNum_8: -1475847987
-      SmallCurrencyNum_9: -1720054314
+      SmallCurrencyNum_0: -400951131712733357
+      SmallCurrencyNum_1: 3943169913685968393
+      SmallCurrencyNum_10: -1906679099
+      SmallCurrencyNum_11: -227947725
+      SmallCurrencyNum_2: 8144159731370342719
+      SmallCurrencyNum_3: 8118417018470900684
+      SmallCurrencyNum_4: 7299801383340902096
+      SmallCurrencyNum_5: 7405768312034474919
+      SmallCurrencyNum_6: -7033073578379826367
+      SmallCurrencyNum_7: -596727367975178169
+      SmallCurrencyNum_8: -4224251953035527977
+      SmallCurrencyNum_9: 86977014664423975
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
