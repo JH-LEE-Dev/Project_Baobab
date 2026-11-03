@@ -34,7 +34,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     [SerializeField] private UI_OptionSelector languageSelector;
     [SerializeField] private UI_OptionSelector resolutionSelector;
     [SerializeField] private UI_OptionSelector windowModeSelector;
-    [SerializeField] private UI_OptionSelector fpsSelector;
     [SerializeField] private UI_OptionSelector pauseOnUnfocusSelector;
     [SerializeField] private UI_OptionSelector gamepadIconPreferenceSelector;
 
@@ -180,8 +179,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private Action onResolutionRight;
     private Action onWindowModeLeft;
     private Action onWindowModeRight;
-    private Action onFpsLeft;
-    private Action onFpsRight;
     private Action onPauseLeft;
     private Action onPauseRight;
     private Action onGamepadIconPreferenceLeft;
@@ -227,7 +224,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         public readonly EWindowMode windowMode;
         public readonly EResolution resolution;
-        public readonly EFPS fps;
         public readonly EOnOff pauseOnUnfocus;
         public readonly float cameraShake;
         public readonly float crosshairBrightness;
@@ -240,7 +236,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         {
             windowMode = _data.windowMode;
             resolution = _data.resolution;
-            fps = _data.fps;
             pauseOnUnfocus = _data.pauseOnUnfocus;
             cameraShake = _data.cameraShake;
             crosshairBrightness = _data.crosshairBrightness;
@@ -258,7 +253,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
             return true == _windowModeMatches
                 && true == _resolutionMatches
-                && fps == _current.fps
                 && pauseOnUnfocus == _current.pauseOnUnfocus
                 && Mathf.Approximately(cameraShake, _current.cameraShake)
                 && Mathf.Approximately(crosshairBrightness, _current.crosshairBrightness)
@@ -687,9 +681,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         onWindowModeLeft = OnWindowModeLeft;
         onWindowModeRight = OnWindowModeRight;
 
-        onFpsLeft = OnFpsLeft;
-        onFpsRight = OnFpsRight;
-
         onPauseLeft = OnPauseLeft;
         onPauseRight = OnPauseRight;
 
@@ -838,7 +829,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != languageSelector && true == languageSelector.IsMouseOver()) return languageSelector;
         if (null != resolutionSelector && true == resolutionSelector.IsMouseOver()) return resolutionSelector;
         if (null != windowModeSelector && true == windowModeSelector.IsMouseOver()) return windowModeSelector;
-        if (null != fpsSelector && true == fpsSelector.IsMouseOver()) return fpsSelector;
         if (null != pauseOnUnfocusSelector && true == pauseOnUnfocusSelector.IsMouseOver()) return pauseOnUnfocusSelector;
         if (null != gamepadIconPreferenceSelector && true == gamepadIconPreferenceSelector.IsMouseOver()) return gamepadIconPreferenceSelector;
         if (null != dataConsentSelector && true == dataConsentSelector.IsMouseOver()) return dataConsentSelector;
@@ -949,7 +939,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != languageSelector) languageSelector.ApplyFocusVisual(false);
         if (null != resolutionSelector) resolutionSelector.ApplyFocusVisual(false);
         if (null != windowModeSelector) windowModeSelector.ApplyFocusVisual(false);
-        if (null != fpsSelector) fpsSelector.ApplyFocusVisual(false);
         if (null != pauseOnUnfocusSelector) pauseOnUnfocusSelector.ApplyFocusVisual(false);
         if (null != gamepadIconPreferenceSelector) gamepadIconPreferenceSelector.ApplyFocusVisual(false);
         if (null != dataConsentSelector) dataConsentSelector.ApplyFocusVisual(false);
@@ -1103,7 +1092,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null != languageSelector) languageSelector.UpdateValue(GetLanguageText(_data.language));
         RefreshResolutionSelector();
         if (null != windowModeSelector) windowModeSelector.UpdateValue(GetWindowModeText(_data.windowMode));
-        if (null != fpsSelector) fpsSelector.UpdateValue(GetFpsText(_data.fps));
         if (null != pauseOnUnfocusSelector) pauseOnUnfocusSelector.UpdateValue(GetOnOffText(_data.pauseOnUnfocus));
         if (null != gamepadIconPreferenceSelector) gamepadIconPreferenceSelector.UpdateValue(GetGamepadIconPreferenceText(_data.gamepadIconPreference));
         if (null != dataConsentSelector) dataConsentSelector.UpdateValue(GetDataConsentText(pendingDataConsent));
@@ -1148,11 +1136,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         {
             windowModeSelector.Initialize(GetText(LocKeys.OptionUI.windowMode, "화면"), GetWindowModeText(_data.windowMode), onWindowModeLeft, onWindowModeRight);
             windowModeSelector.SetCursorBoxUI(cursorBoxUI, inputManager);
-        }
-        if (null != fpsSelector)
-        {
-            fpsSelector.Initialize(GetText(LocKeys.OptionUI.fPS, "FPS"), GetFpsText(_data.fps), onFpsLeft, onFpsRight);
-            fpsSelector.SetCursorBoxUI(cursorBoxUI, inputManager);
         }
         if (null != pauseOnUnfocusSelector)
         {
@@ -1423,26 +1406,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             case EOnOff.Off: return GetText(LocKeys.OptionUI.off, "Off");
         }
         return _state.ToString();
-    }
-
-    private string GetFpsText(EFPS _fps)
-    {
-        string _numberLabel = SettingsManager.GetFpsNumberLabel(_fps);
-        if (false == string.IsNullOrEmpty(_numberLabel))
-        {
-            return _numberLabel;
-        }
-
-        if (EFPS.VSync == _fps)
-        {
-            return GetText(LocKeys.OptionUI.vSync, "V Sync");
-        }
-        else if (EFPS.Unlimited == _fps)
-        {
-            return GetText(LocKeys.OptionUI.unlimited, "무제한");
-        }
-
-        return _fps.ToString();
     }
 
     private string GetGamepadIconSetShortName(EGamepadIconSet _iconSet)
@@ -2046,20 +2009,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     private void OnWindowModeLeft() { settings.CycleWindowMode(-1); UpdateApplyButtonState(); }
     private void OnWindowModeRight() { settings.CycleWindowMode(1); UpdateApplyButtonState(); }
-
-    private void OnFpsLeft()
-    {
-        settings.CycleFps(-1);
-        if (null != fpsSelector) fpsSelector.UpdateValue(GetFpsText(settings.Current.fps));
-        UpdateApplyButtonState();
-    }
-
-    private void OnFpsRight()
-    {
-        settings.CycleFps(1);
-        if (null != fpsSelector) fpsSelector.UpdateValue(GetFpsText(settings.Current.fps));
-        UpdateApplyButtonState();
-    }
 
     private void OnPauseLeft()
     {
@@ -2752,8 +2701,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         bool _bothFullscreen = (EWindowMode.Fullscreen == _before.windowMode)
             && (EWindowMode.Fullscreen == _snapshot.windowMode);
         bool _displayChanged = (_before.windowMode != _snapshot.windowMode)
-            || (false == _bothFullscreen && _before.resolution != _snapshot.resolution)
-            || (_before.fps != _snapshot.fps);
+            || (false == _bothFullscreen && _before.resolution != _snapshot.resolution);
 
         settings.SetCameraShake(_snapshot.cameraShake);
         settings.SetCrosshairBrightness(_snapshot.crosshairBrightness);
@@ -2777,7 +2725,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         // 반복 호출하면 목표에 영영 닿지 못하고 무한 루프에 빠진다.
         settings.SetWindowMode(_snapshot.windowMode);
         settings.SetResolution(_snapshot.resolution);
-        settings.SetFps(_snapshot.fps);
         settings.SetPauseOnUnfocus(_snapshot.pauseOnUnfocus);
 
         // 옵션 창의 해상도·창모드 셀렉터는 실시간 적용이 아니라 값만 바꾼다. 즉 화면은 애초에
@@ -2833,7 +2780,6 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         onLanguageLeft = null; onLanguageRight = null;
         onResolutionLeft = null; onResolutionRight = null;
         onWindowModeLeft = null; onWindowModeRight = null;
-        onFpsLeft = null; onFpsRight = null;
         onPauseLeft = null; onPauseRight = null;
         onGamepadIconPreferenceLeft = null; onGamepadIconPreferenceRight = null;
         onDataConsentLeft = null; onDataConsentRight = null;

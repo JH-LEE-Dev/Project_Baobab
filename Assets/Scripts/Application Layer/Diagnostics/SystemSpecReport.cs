@@ -100,7 +100,6 @@ public static class SystemSpecReport
 
         _sb.AppendLine($"  해상도 선택     : {SettingsManager.GetResolutionLabel(_settings.resolution)}");
         _sb.AppendLine($"  창 모드 선택    : {_settings.windowMode}");
-        _sb.AppendLine($"  FPS 선택        : {_settings.fps}");
         _sb.AppendLine($"  VSyncCount      : {QualitySettings.vSyncCount}");
         _sb.AppendLine($"  targetFrameRate : {Application.targetFrameRate}");
         _sb.AppendLine($"  백그라운드 실행 : {Application.runInBackground}");

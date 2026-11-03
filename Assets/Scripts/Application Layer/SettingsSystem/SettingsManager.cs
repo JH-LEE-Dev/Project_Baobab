@@ -104,21 +104,8 @@ public class SettingsManager : MonoBehaviour
         return _labels;
     }
 
-    // 숫자로 표기되는 FPS는 이 배열 하나만 관리한다. (EFPS 선언 순서와 동일)
-    private static readonly int[] fpsValues = { 60, 75, 120, 144, 165, 240 };
-
-    // 표기 문자열은 값에서 파생해 1회만 생성한다. (매번 ToString하면 GC 할당이 발생)
-    private static readonly string[] fpsNumberLabels = BuildFpsNumberLabels();
-
-    private static string[] BuildFpsNumberLabels()
-    {
-        string[] _labels = new string[fpsValues.Length];
-        for (int i = 0; i < fpsValues.Length; i++)
-        {
-            _labels[i] = fpsValues[i].ToString();
-        }
-        return _labels;
-    }
+    // 프레임 상한은 유저 설정 없이 60으로 고정한다.
+    private const int TARGET_FPS = 60;
 
     private SettingsData current = SettingsData.CreateDefault();
     private LocalizationManager locManager;
@@ -140,7 +127,7 @@ public class SettingsManager : MonoBehaviour
     /// </summary>
     private bool isApplyPending = false;
 
-    // 화면(해상도·창모드·FPS) 항목이 바뀌었는지를 따로 추적한다.
+    // 화면(해상도·창모드·백그라운드 일시정지) 항목이 바뀌었는지를 따로 추적한다.
     // isApplyPending은 "무언가 바뀜"일 뿐이라, 이걸 구분하지 않으면 볼륨만 조정하고 창을 닫아도
     // 해상도가 다시 적용되어 창 크기가 튄다.
     private bool isDisplayDirty = false;
@@ -424,14 +411,6 @@ public class SettingsManager : MonoBehaviour
         OnWindowModeChangedEvent?.Invoke(current.windowMode);
     }
 
-    public void CycleFps(int _delta)
-    {
-        EnsureLoaded();
-
-        current.fps = (EFPS)IterateEnum((int)current.fps, SettingsData.FPS_COUNT, _delta);
-        MarkDisplayDirty();
-    }
-
     public void CyclePauseOnUnfocus(int _delta)
     {
         EnsureLoaded();
@@ -468,15 +447,6 @@ public class SettingsManager : MonoBehaviour
         current.windowMode = _mode;
         MarkDisplayDirty();
         OnWindowModeChangedEvent?.Invoke(current.windowMode);
-    }
-
-    public void SetFps(EFPS _fps)
-    {
-        EnsureLoaded();
-        if (current.fps == _fps) return;
-
-        current.fps = _fps;
-        MarkDisplayDirty();
     }
 
     public void SetPauseOnUnfocus(EOnOff _val)
@@ -609,17 +579,6 @@ public class SettingsManager : MonoBehaviour
         int _idx = (int)_res;
         if (_idx >= 0 && _idx < resolutionLabels.Length) return resolutionLabels[_idx];
         return "Unknown";
-    }
-
-    /// <summary>
-    /// 숫자로 표기 가능한 FPS면 해당 문자열을, VSync/Unlimited처럼
-    /// 로컬라이징이 필요한 항목이면 null을 반환합니다.
-    /// </summary>
-    public static string GetFpsNumberLabel(EFPS _fps)
-    {
-        int _idx = (int)_fps;
-        if (_idx >= 0 && _idx < fpsNumberLabels.Length) return fpsNumberLabels[_idx];
-        return null;
     }
 
     /// <summary>전체화면일 때 표기할 현재 모니터 해상도 문자열입니다.</summary>
@@ -789,54 +748,94 @@ public class SettingsManager : MonoBehaviour
         }
     }
 
+    /// <summary>QualitySettings.vSyncCount가 받는 최대값입니다. (4 = 네 번째 vblank마다 1프레임)</summary>
+    private const int MAX_VSYNC_INTERVAL = 4;
+
+    /// <summary>창이 다른 주사율의 모니터로 옮겨졌는지 확인하는 간격(초)입니다.</summary>
+    private const float REFRESH_CHECK_INTERVAL = 1f;
+
+    /// <summary>ApplyFrameRate가 아직 한 번도 판정하지 않았음을 뜻하는 값입니다.</summary>
+    private const float REFRESH_NOT_APPLIED = -1f;
+
+    /// <summary>마지막 ApplyFrameRate가 VSync 판정에 쓴 주사율입니다. (알 수 없었으면 0)</summary>
+    private float appliedRefreshRate = REFRESH_NOT_APPLIED;
+
+    private float nextRefreshCheckTime;
+
+    /// <summary>벤치마크 측정 실행에서 상한을 모두 풀었는지입니다. 설정 파일에는 기록하지 않습니다.</summary>
+    private bool isFrameCapLifted = false;
+
+#if UNITY_EDITOR || BAOBAB_BENCHMARK
+    /// <summary>
+    /// 프레임 상한을 모두 풉니다. BenchmarkHarness가 -benchmark 실행에서만 부릅니다.
+    /// 상한이 걸린 측정은 게임 성능이 아니라 리미터의 모양을 재기 때문입니다. (BenchmarkHarness의 [측정 유효성] 참고)
+    /// 하네스와 같은 조건으로 컴파일되므로 출하 빌드에는 이 경로가 아예 없습니다.
+    /// </summary>
+    public void LiftFrameCapForBenchmark()
+    {
+        if (true == isFrameCapLifted) return;
+
+        isFrameCapLifted = true;
+        ApplyFrameRate();
+    }
+#endif
+
     private void ApplyFrameRate()
     {
-        int _target = GetFpsValue(current.fps);   // VSync/Unlimited는 -1
-        float _refresh = GetMonitorRefreshRate(); // 알 수 없으면 0
-
-        // 1. 유저가 VSync를 명시적으로 선택한 경우.
-        //    이때의 상한은 곧 주사율이므로, 드라이버가 VSync를 무시하는 환경을 대비해
-        //    리미터에도 주사율을 걸어 둔다. (주사율을 모르면 0이 되어 제한하지 않는다)
-        if (EFPS.VSync == current.fps)
+        if (true == isFrameCapLifted)
         {
-            QualitySettings.vSyncCount = 1;
-            Application.targetFrameRate = -1; // VSync에 동기화
-            Limiter.SetLimit(Mathf.RoundToInt(_refresh));
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = -1;
+            Limiter.SetLimit(-1);
             return;
         }
 
-        // 2. 목표 fps가 모니터 주사율과 사실상 같으면 VSync로 처리한다.
+        int _target = TARGET_FPS;
+        float _refresh = GetMonitorRefreshRate(); // 알 수 없으면 0
+        appliedRefreshRate = _refresh;
+
+        // 1. 모니터 주사율이 목표 fps의 정수배(60/120/240Hz)면 VSync 간격으로 처리한다.
+        //    120Hz면 두 번째, 240Hz면 네 번째 vblank마다 한 프레임을 내보내 60을 고르게 맞춘다.
         //    targetFrameRate 리미터는 스캔아웃과 무관한 타이머라 프레임 간격이 흔들리는데,
         //    이 프로젝트의 저해상도 RT + 픽셀 스냅(SubpixelSnapper) 파이프라인에서는
         //    그 지터가 Mathf.Round 경계를 넘나들며 픽셀 우글거림으로 증폭된다.
         //
         //    예전에 이 분기를 제거했던 이유는, vSyncCount가 0이 아니면 Unity가
         //    targetFrameRate를 아예 무시하는데 드라이버의 "수직 동기화: 끄기"가 VSync까지
-        //    덮어쓰면 상한이 하나도 남지 않아 165 선택에도 200+ FPS로 치솟았기 때문이다.
+        //    덮어쓰면 상한이 하나도 남지 않아 200+ FPS로 치솟았기 때문이다.
         //    이제는 FrameRateLimiter가 드라이버와 무관하게 상한을 보장하므로 안전하다.
         //
-        //    주사율과 정수비가 아닌 조합(144Hz 모니터에서 60 선택 등)은 원리상 균등 배분이
+        //    주사율과 정수비가 아닌 조합(144/165Hz 모니터 등)은 원리상 균등 배분이
         //    불가능하므로 VSync를 쓰지 않고 기존대로 targetFrameRate로 제한한다.
-        bool _matchesRefresh = _target > 0
-                               && _refresh > 0f
-                               && Mathf.Abs(_refresh - _target) <= refreshRateTolerance;
+        //    (VSync를 켜면 찢어짐은 없지만 프레임이 2·3 vblank로 번갈아 나가 끊겨 보인다)
+        int _interval = (_refresh > 0f) ? Mathf.RoundToInt(_refresh / _target) : 0;
+        bool _matchesRefresh = _interval >= 1
+                               && _interval <= MAX_VSYNC_INTERVAL
+                               && Mathf.Abs(_refresh - _target * _interval) <= refreshRateTolerance;
 
-        QualitySettings.vSyncCount = _matchesRefresh ? 1 : 0;
+        QualitySettings.vSyncCount = _matchesRefresh ? _interval : 0;
         Application.targetFrameRate = _matchesRefresh ? -1 : _target;
 
-        // 3. 어느 경로를 타든 최종 상한은 리미터가 보장한다. (Unlimited는 -1이라 제한 없음)
+        // 2. 어느 경로를 타든 최종 상한은 리미터가 보장한다.
         Limiter.SetLimit(_target);
     }
 
     /// <summary>
-    /// 숫자로 지정된 FPS 값을 반환합니다. VSync/Unlimited처럼 고정 수치가 없으면 -1입니다.
-    /// (-1은 Application.targetFrameRate에서 "제한 없음"을 의미하므로 그대로 대입해도 안전합니다)
+    /// 창이 다른 주사율의 모니터로 옮겨졌으면 프레임레이트 판정을 다시 합니다.
+    /// VSync 간격은 주사율에 따라 정해지므로, 60Hz에서 켠 뒤 144Hz로 옮기면 그대로 두는 순간
+    /// 144Hz vblank 위에서 리미터가 60으로 재우게 되어 프레임 간격이 들쭉날쭉해집니다.
     /// </summary>
-    public static int GetFpsValue(EFPS _fps)
+    private void CheckRefreshRateChanged()
     {
-        int _idx = (int)_fps;
-        if (_idx >= 0 && _idx < fpsValues.Length) return fpsValues[_idx];
-        return -1;
+        if (Time.unscaledTime < nextRefreshCheckTime) return;
+        nextRefreshCheckTime = Time.unscaledTime + REFRESH_CHECK_INTERVAL;
+
+        // 부팅 적용 전이거나 벤치마크로 상한을 푼 상태면 주사율과 무관하다.
+        if (REFRESH_NOT_APPLIED == appliedRefreshRate || true == isFrameCapLifted) return;
+
+        if (Mathf.Abs(GetMonitorRefreshRate() - appliedRefreshRate) <= refreshRateTolerance) return;
+
+        ApplyFrameRate();
     }
 
     /// <summary>현재 모니터의 주사율(Hz)입니다. 알 수 없으면 0입니다.</summary>
@@ -958,9 +957,12 @@ public class SettingsManager : MonoBehaviour
         pendingSaveTime = Time.unscaledTime + SAVE_DEBOUNCE_SECONDS;
     }
 
-    // 예약된 지연 저장을 흘려보내는 곳. 예약이 없으면 비교 한 번으로 끝난다.
+    // 모니터 주사율 변화를 확인하고, 예약된 지연 저장을 흘려보내는 곳.
+    // 둘 다 할 일이 없으면 시각 비교 몇 번으로 끝난다.
     private void Update()
     {
+        CheckRefreshRateChanged();
+
         if (NO_PENDING_SAVE == pendingSaveTime) return;
         if (Time.unscaledTime < pendingSaveTime) return;
 
