@@ -1,0 +1,1365 @@
+fileFormatVersion: 2
+guid: f07c4470e7d0dc04c9f1fa6b06e2311f
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -3238922256675047278
+    second: mouse_Outlined_0
+  - first:
+      213: 2505256275844582663
+    second: mouse_Outlined_1
+  - first:
+      213: -4158469626369801329
+    second: mouse_Outlined_2
+  - first:
+      213: -1468187488890115914
+    second: mouse_Outlined_3
+  - first:
+      213: 7821966882437559917
+    second: mouse_Outlined_4
+  - first:
+      213: 1089956265098567354
+    second: mouse_Outlined_5
+  - first:
+      213: -6743055824505000150
+    second: mouse_Outlined_6
+  - first:
+      213: -7179710349509252410
+    second: mouse_Outlined_7
+  - first:
+      213: -5367833585251696103
+    second: mouse_Outlined_8
+  - first:
+      213: 7144671419113407989
+    second: mouse_Outlined_9
+  - first:
+      213: -1423423879894604810
+    second: mouse_Outlined_10
+  - first:
+      213: -118880060424406980
+    second: mouse_Outlined_11
+  - first:
+      213: 9138990230931958887
+    second: mouse_Outlined_12
+  - first:
+      213: 5833331497287544588
+    second: mouse_Outlined_13
+  - first:
+      213: 2477677868049677221
+    second: mouse_Outlined_14
+  - first:
+      213: -359221593912021008
+    second: mouse_Outlined_15
+  - first:
+      213: -6277431095121321161
+    second: mouse_Outlined_16
+  - first:
+      213: -164097673741526696
+    second: mouse_Outlined_17
+  - first:
+      213: -5027736908514858477
+    second: mouse_Outlined_18
+  - first:
+      213: -2370981622721143191
+    second: mouse_Outlined_19
+  - first:
+      213: -723554542941439723
+    second: mouse_Outlined_20
+  - first:
+      213: -7049438556723668206
+    second: mouse_Outlined_21
+  - first:
+      213: -8254720366134607432
+    second: mouse_Outlined_22
+  - first:
+      213: 3760738641500229465
+    second: mouse_Outlined_23
+  - first:
+      213: -4863286655292653796
+    second: mouse_Outlined_24
+  - first:
+      213: 899712444043287443
+    second: mouse_Outlined_25
+  - first:
+      213: 8767934959122478561
+    second: mouse_Outlined_26
+  - first:
+      213: -5731534471977190862
+    second: mouse_Outlined_27
+  - first:
+      213: 8080471400797396477
+    second: mouse_Outlined_28
+  - first:
+      213: 5392653479150120614
+    second: mouse_Outlined_29
+  - first:
+      213: 2364797275338050100
+    second: mouse_Outlined_30
+  - first:
+      213: -5976973586348726700
+    second: mouse_Outlined_31
+  - first:
+      213: 612322631403320486
+    second: mouse_Outlined_32
+  - first:
+      213: 7262399890563301853
+    second: mouse_Outlined_33
+  - first:
+      213: 1993008832304164092
+    second: mouse_Outlined_34
+  - first:
+      213: 6229385083264941170
+    second: mouse_Outlined_35
+  - first:
+      213: 8090762988279144736
+    second: mouse_Outlined_36
+  - first:
+      213: 2472751605255948887
+    second: mouse_Outlined_37
+  - first:
+      213: 7847617990707201656
+    second: mouse_Outlined_38
+  - first:
+      213: -2544454240863046415
+    second: mouse_Outlined_39
+  - first:
+      213: -5928329890471272674
+    second: mouse_Outlined_40
+  - first:
+      213: -8510838317003195876
+    second: mouse_Outlined_41
+  - first:
+      213: 4677104793684372736
+    second: mouse_Outlined_42
+  - first:
+      213: 6841659969925434786
+    second: mouse_Outlined_43
+  - first:
+      213: 4724272076662258392
+    second: mouse_Outlined_44
+  - first:
+      213: 4919828371307005150
+    second: mouse_Outlined_45
+  - first:
+      213: -8107888060842836281
+    second: mouse_Outlined_46
+  - first:
+      213: -2391609998441953211
+    second: mouse_Outlined_47
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 0
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: mouse_Outlined_0
+      rect:
+        serializedVersion: 2
+        x: 2
+        y: 128
+        width: 13
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 298f6cb3e590d03d0800000000000000
+      internalID: -3238922256675047278
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_1
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 128
+        width: 13
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 70dc8093f4574c220800000000000000
+      internalID: 2505256275844582663
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_2
+      rect:
+        serializedVersion: 2
+        x: 38
+        y: 128
+        width: 13
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f830af648e52a46c0800000000000000
+      internalID: -4158469626369801329
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_3
+      rect:
+        serializedVersion: 2
+        x: 56
+        y: 128
+        width: 13
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6b82805f143ff9be0800000000000000
+      internalID: -1468187488890115914
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_4
+      rect:
+        serializedVersion: 2
+        x: 74
+        y: 128
+        width: 13
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d667f80ef653d8c60800000000000000
+      internalID: 7821966882437559917
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_5
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 128
+        width: 13
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: abe59e1c27d402f00800000000000000
+      internalID: 1089956265098567354
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_6
+      rect:
+        serializedVersion: 2
+        x: 2
+        y: 110
+        width: 13
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a2f20cf247adb62a0800000000000000
+      internalID: -6743055824505000150
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_7
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 110
+        width: 13
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6ca2e431a7b8c5c90800000000000000
+      internalID: -7179710349509252410
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_8
+      rect:
+        serializedVersion: 2
+        x: 38
+        y: 110
+        width: 13
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 91249a15bcf9185b0800000000000000
+      internalID: -5367833585251696103
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_9
+      rect:
+        serializedVersion: 2
+        x: 56
+        y: 110
+        width: 13
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5f504253dc8f62360800000000000000
+      internalID: 7144671419113407989
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_10
+      rect:
+        serializedVersion: 2
+        x: 74
+        y: 110
+        width: 13
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6f3e21ad58bfe3ce0800000000000000
+      internalID: -1423423879894604810
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_11
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 110
+        width: 13
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c38b6830737a95ef0800000000000000
+      internalID: -118880060424406980
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_12
+      rect:
+        serializedVersion: 2
+        x: 3
+        y: 93
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 76ce670d13734de70800000000000000
+      internalID: 9138990230931958887
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_13
+      rect:
+        serializedVersion: 2
+        x: 21
+        y: 93
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c0febe8271824f050800000000000000
+      internalID: 5833331497287544588
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_14
+      rect:
+        serializedVersion: 2
+        x: 39
+        y: 93
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5abb2f8c4ea726220800000000000000
+      internalID: 2477677868049677221
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_15
+      rect:
+        serializedVersion: 2
+        x: 57
+        y: 93
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0ff69331dd9c30bf0800000000000000
+      internalID: -359221593912021008
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_16
+      rect:
+        serializedVersion: 2
+        x: 75
+        y: 93
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7336d41ada512e8a0800000000000000
+      internalID: -6277431095121321161
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_17
+      rect:
+        serializedVersion: 2
+        x: 93
+        y: 93
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8591b20090209bdf0800000000000000
+      internalID: -164097673741526696
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_18
+      rect:
+        serializedVersion: 2
+        x: 4
+        y: 75
+        width: 10
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 31ae9d77be3e93ab0800000000000000
+      internalID: -5027736908514858477
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_19
+      rect:
+        serializedVersion: 2
+        x: 22
+        y: 75
+        width: 10
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 96e1ab0b6c4981fd0800000000000000
+      internalID: -2370981622721143191
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_20
+      rect:
+        serializedVersion: 2
+        x: 41
+        y: 75
+        width: 8
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 519fa5c0afa65f5f0800000000000000
+      internalID: -723554542941439723
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_21
+      rect:
+        serializedVersion: 2
+        x: 59
+        y: 75
+        width: 8
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 21b1b807bfc5b2e90800000000000000
+      internalID: -7049438556723668206
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_22
+      rect:
+        serializedVersion: 2
+        x: 77
+        y: 75
+        width: 8
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8b14d58ff87517d80800000000000000
+      internalID: -8254720366134607432
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_23
+      rect:
+        serializedVersion: 2
+        x: 95
+        y: 75
+        width: 8
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 95fc4b38ed3d03430800000000000000
+      internalID: 3760738641500229465
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_24
+      rect:
+        serializedVersion: 2
+        x: 3
+        y: 57
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c1f3266cd82228cb0800000000000000
+      internalID: -4863286655292653796
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_25
+      rect:
+        serializedVersion: 2
+        x: 21
+        y: 57
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 39bd23373bb6c7c00800000000000000
+      internalID: 899712444043287443
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_26
+      rect:
+        serializedVersion: 2
+        x: 39
+        y: 57
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1e5793c0466fda970800000000000000
+      internalID: 8767934959122478561
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_27
+      rect:
+        serializedVersion: 2
+        x: 57
+        y: 57
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 23ab4e3c3cf7570b0800000000000000
+      internalID: -5731534471977190862
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_28
+      rect:
+        serializedVersion: 2
+        x: 76
+        y: 57
+        width: 10
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dfd5b364de9932070800000000000000
+      internalID: 8080471400797396477
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_29
+      rect:
+        serializedVersion: 2
+        x: 94
+        y: 57
+        width: 10
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6ae648d84cd86da40800000000000000
+      internalID: 5392653479150120614
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_30
+      rect:
+        serializedVersion: 2
+        x: 2
+        y: 37
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 43a065ab79271d020800000000000000
+      internalID: 2364797275338050100
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_31
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 37
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 456aac9c0368d0da0800000000000000
+      internalID: -5976973586348726700
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_32
+      rect:
+        serializedVersion: 2
+        x: 38
+        y: 37
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6a43ab460386f7800800000000000000
+      internalID: 612322631403320486
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_33
+      rect:
+        serializedVersion: 2
+        x: 56
+        y: 37
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dd18cddf83a39c460800000000000000
+      internalID: 7262399890563301853
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_34
+      rect:
+        serializedVersion: 2
+        x: 75
+        y: 39
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cfca4bb39f698ab10800000000000000
+      internalID: 1993008832304164092
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_35
+      rect:
+        serializedVersion: 2
+        x: 93
+        y: 39
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 27cbf118ab8337650800000000000000
+      internalID: 6229385083264941170
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_36
+      rect:
+        serializedVersion: 2
+        x: 2
+        y: 19
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 021a146321a284070800000000000000
+      internalID: 8090762988279144736
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_37
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 19
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 75ace09db7af05220800000000000000
+      internalID: 2472751605255948887
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_38
+      rect:
+        serializedVersion: 2
+        x: 38
+        y: 19
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 876411debf658ec60800000000000000
+      internalID: 7847617990707201656
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_39
+      rect:
+        serializedVersion: 2
+        x: 56
+        y: 19
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1f43f1a595840bcd0800000000000000
+      internalID: -2544454240863046415
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_40
+      rect:
+        serializedVersion: 2
+        x: 74
+        y: 19
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e1f112fcf575abda0800000000000000
+      internalID: -5928329890471272674
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_41
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 19
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c1abd3e94ad63e980800000000000000
+      internalID: -8510838317003195876
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_42
+      rect:
+        serializedVersion: 2
+        x: 2
+        y: 1
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 00d65dc870a68e040800000000000000
+      internalID: 4677104793684372736
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_43
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 1
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2ad4a657e7572fe50800000000000000
+      internalID: 6841659969925434786
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_44
+      rect:
+        serializedVersion: 2
+        x: 38
+        y: 1
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8da30c76c6cff8140800000000000000
+      internalID: 4724272076662258392
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_45
+      rect:
+        serializedVersion: 2
+        x: 56
+        y: 1
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ed484ab56ddb64440800000000000000
+      internalID: 4919828371307005150
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_46
+      rect:
+        serializedVersion: 2
+        x: 74
+        y: 1
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7cef4de14cefa7f80800000000000000
+      internalID: -8107888060842836281
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mouse_Outlined_47
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 1
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5484891b06b4fced0800000000000000
+      internalID: -2391609998441953211
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      mouse_Outlined_0: -3238922256675047278
+      mouse_Outlined_1: 2505256275844582663
+      mouse_Outlined_10: -1423423879894604810
+      mouse_Outlined_11: -118880060424406980
+      mouse_Outlined_12: 9138990230931958887
+      mouse_Outlined_13: 5833331497287544588
+      mouse_Outlined_14: 2477677868049677221
+      mouse_Outlined_15: -359221593912021008
+      mouse_Outlined_16: -6277431095121321161
+      mouse_Outlined_17: -164097673741526696
+      mouse_Outlined_18: -5027736908514858477
+      mouse_Outlined_19: -2370981622721143191
+      mouse_Outlined_2: -4158469626369801329
+      mouse_Outlined_20: -723554542941439723
+      mouse_Outlined_21: -7049438556723668206
+      mouse_Outlined_22: -8254720366134607432
+      mouse_Outlined_23: 3760738641500229465
+      mouse_Outlined_24: -4863286655292653796
+      mouse_Outlined_25: 899712444043287443
+      mouse_Outlined_26: 8767934959122478561
+      mouse_Outlined_27: -5731534471977190862
+      mouse_Outlined_28: 8080471400797396477
+      mouse_Outlined_29: 5392653479150120614
+      mouse_Outlined_3: -1468187488890115914
+      mouse_Outlined_30: 2364797275338050100
+      mouse_Outlined_31: -5976973586348726700
+      mouse_Outlined_32: 612322631403320486
+      mouse_Outlined_33: 7262399890563301853
+      mouse_Outlined_34: 1993008832304164092
+      mouse_Outlined_35: 6229385083264941170
+      mouse_Outlined_36: 8090762988279144736
+      mouse_Outlined_37: 2472751605255948887
+      mouse_Outlined_38: 7847617990707201656
+      mouse_Outlined_39: -2544454240863046415
+      mouse_Outlined_4: 7821966882437559917
+      mouse_Outlined_40: -5928329890471272674
+      mouse_Outlined_41: -8510838317003195876
+      mouse_Outlined_42: 4677104793684372736
+      mouse_Outlined_43: 6841659969925434786
+      mouse_Outlined_44: 4724272076662258392
+      mouse_Outlined_45: 4919828371307005150
+      mouse_Outlined_46: -8107888060842836281
+      mouse_Outlined_47: -2391609998441953211
+      mouse_Outlined_5: 1089956265098567354
+      mouse_Outlined_6: -6743055824505000150
+      mouse_Outlined_7: -7179710349509252410
+      mouse_Outlined_8: -5367833585251696103
+      mouse_Outlined_9: 7144671419113407989
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

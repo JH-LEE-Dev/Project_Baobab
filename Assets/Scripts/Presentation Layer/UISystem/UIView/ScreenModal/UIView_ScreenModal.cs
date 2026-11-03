@@ -63,6 +63,7 @@ public class UIView_ScreenModal : UIView
         if (null != hudLootReveal)
         {
             hudLootReveal.OnHideCompleted += OnLootRevealHideCompleted;
+            hudLootReveal.SetInputManager(ctx?.inputManager);
         }
     }
 

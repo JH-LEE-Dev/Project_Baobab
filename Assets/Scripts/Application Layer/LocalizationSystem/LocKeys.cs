@@ -225,13 +225,28 @@ public static class LocKeys
 
     public static class LootTooltipUI
     {
-        public const int foundbox = 20971521;
-        public const int sporepotion = 20971522;
-        public const int starcompass = 20971523;
-        public const int nameLostandfoundbox = 20971524;
-        public const int nameSporepotion = 20971525;
-        public const int nameStarcompass = 20971526;
-        public const int nameObsidiancharm = 20971527;
+        public const int nameLostandfoundboxT1 = 20971530;
+        public const int descLostandfoundboxT1 = 20971531;
+        public const int nameLostandfoundboxT2 = 20971532;
+        public const int descLostandfoundboxT2 = 20971533;
+        public const int nameLostandfoundboxT3 = 20971534;
+        public const int descLostandfoundboxT3 = 20971535;
+        public const int nameSporepotionT1 = 20971536;
+        public const int descSporepotionT1 = 20971537;
+        public const int nameSporepotionT2 = 20971538;
+        public const int descSporepotionT2 = 20971539;
+        public const int nameSporepotionT3 = 20971540;
+        public const int descSporepotionT3 = 20971541;
+        public const int nameStarcompassT1 = 20971542;
+        public const int descStarcompassT1 = 20971543;
+        public const int nameStarcompassT2 = 20971544;
+        public const int descStarcompassT2 = 20971545;
+        public const int nameStarcompassT3 = 20971546;
+        public const int descStarcompassT3 = 20971547;
+        public const int nameObsidiancharmT1 = 20971548;
+        public const int descObsidiancharmT1 = 20971549;
+        public const int nameObsidiancharmT3 = 20971550;
+        public const int descObsidiancharmT3 = 20971551;
         public const int growthNext = 20971528;
         public const int growthMax = 20971529;
     }
