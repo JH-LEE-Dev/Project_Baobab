@@ -180,7 +180,7 @@ public class EnvironmentInteractionManager : MonoBehaviour
             var _activeTrees = townObjectManager.ActiveTrees;
             for (int i = 0; i < _activeTrees.Count; i++)
             {
-                if (_activeTrees[i] == null) continue;
+                if (_activeTrees[i] == null || _activeTrees[i].bIsSapling) continue; // 묘목 그림자에는 어두워지지 않는다
                 if (IsUnderShadow(_unitPos, _activeTrees[i], _invShadowRot, _shadowScaleY))
                 {
                     _isInShadow = true;
@@ -202,7 +202,7 @@ public class EnvironmentInteractionManager : MonoBehaviour
             CollisionSystem.Instance.GetCollidablesInRadius(_unitPos, _scanRadius, treeLayer, shadowScanResults);
             for (int i = 0; i < shadowScanResults.Count; i++)
             {
-                if (shadowScanResults[i] is TreeObj _tree && IsUnderShadow(_unitPos, _tree, _invShadowRot, _shadowScaleY))
+                if (shadowScanResults[i] is TreeObj _tree && !_tree.bIsSapling && IsUnderShadow(_unitPos, _tree, _invShadowRot, _shadowScaleY))
                 {
                     _isInShadow = true;
                     break;
