@@ -171,11 +171,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField] private int starCompassPityMaxKills = 5;
     private int starCompassPityThreshold;
 
-    // "흑요 부적" - "4-2"(MagmaForest_2)에서 확률 드랍, "4-3"(MagmaForest_3) 이후 모든 숲에서 구제 보장.
+    // "흑요 부적"(기획 이름 용암 씨앗/나무, 코드 이름은 안 바꿈) - "4-1"(MagmaForest_1)에서 확률 드랍,
+    // "4-2"(MagmaForest_2) 이후 모든 숲에서 구제 보장.
+    // 효과: 불씨를 주울 때마다 지진 게이지가 차고, 가득 차면 캐릭터 자리에서 지진이 일어난다. 바닥 물결(EnvironmentSystem의
+    // 지진 물결 연출)의 앞머리가 지나가는 순서대로 등각 타원 범위의 나무에 피해를 준다(QuakeRoutine). 프레스티지 레벨에 따라
+    // I(씨앗) → III(나무)로 성장하고(꽃 단계 없음), 효과는 다음 숲 방문부터 적용된다(obsidianCharmTierThisRun).
     public bool bHasAcquiredObsidianCharm { get; set; }
-    // 열기 면역은 얻은 순간이 아니라 다음 숲 방문부터 적용한다. 숲에 들어올 때(SetupForForestType,
-    // 로그라이크는 SetRunTreeRules) 영구 획득 여부를 옮겨 담고, 방문 도중 획득해도 바꾸지 않는다.
-    private bool bObsidianCharmActiveThisRun;
     private bool bObsidianCharmSpawnedThisRun;
     [SerializeField] private float obsidianCharmDropChance = 0.05f;
     [SerializeField] private float obsidianCharmDropChanceIncreasePerKill = 0.005f;
@@ -183,6 +184,25 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField] private int obsidianCharmPityMinKills = 4;
     [SerializeField] private int obsidianCharmPityMaxKills = 5;
     private int obsidianCharmPityThreshold;
+
+    // "흑요 부적" 성장 기준 프레스티지 레벨(II 없이 I → III)과 지진 수치. 단계별 수치는 밸런스 작업 전 임시값이다.
+    [SerializeField] private int obsidianCharmTier3PrestigeLevel = 11;
+    [SerializeField, Tooltip("불씨 하나를 주울 때 차는 지진 게이지(1이면 가득)")]
+    private float quakeChargePerEmber = 0.1f;
+    [SerializeField] private float quakeTier1Damage = 200f;
+    [SerializeField, Tooltip("I단계 지진 범위 - 캐릭터 기준 등각 타원의 장반경(타일 가로폭 단위)")]
+    private float quakeTier1Range = 4f;
+    [SerializeField] private float quakeTier3Damage = 400f;
+    [SerializeField] private float quakeTier3Range = 5.5f;
+    // 이번 숲 방문에 적용되는 단계(0이면 효과 없음). 숲에 들어올 때 정하고 방문 도중에는 바꾸지 않는다.
+    private int obsidianCharmTierThisRun;
+    // 지진 게이지(0~1). 숲 방문마다 비운다.
+    private float quakeCharge;
+    // 던전 정리 때 올라간다. 퍼지던 지진이 다음 맵의 나무를 때리지 않게 한다.
+    private int quakeVersion = 0;
+
+    /// <summary>지진 게이지(0~1). 효과가 없는 숲 방문이면 0이다.</summary>
+    public float QuakeCharge => quakeCharge;
 
     // 구제(pity) 드랍 공통 규칙
     //
@@ -197,7 +217,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private const ForestType LostAndFoundBoxPityStart = ForestType.WideGreenForest_3;
     private const ForestType SporePotionPityStart = ForestType.StarrootForest_1;
     private const ForestType StarCompassPityStart = ForestType.StarrootForest_3;
-    private const ForestType ObsidianCharmPityStart = ForestType.MagmaForest_3;
+    private const ForestType ObsidianCharmPityStart = ForestType.MagmaForest_2;
     private int pityTreeKillCount;
 
     // "황금 나무" 보장 (데모 빌드 전용)
@@ -349,10 +369,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         runTreeRules = _rules;
 
         // 로그라이크 판 시작도 숲 방문이다. 판 도중엔 전리품이 떨어지지 않으므로 지금까지와 같다.
-        bObsidianCharmActiveThisRun = bHasAcquiredObsidianCharm;
         sporePotionTierThisRun = GetLootGrowthTier(LootType.SporePotion);
         starCompassTierThisRun = GetLootGrowthTier(LootType.StarCompass);
         meteorShowerCharge = 0f;
+        obsidianCharmTierThisRun = GetLootGrowthTier(LootType.ObsidianCharm);
+        quakeCharge = 0f;
     }
 
     /// <summary>
@@ -807,7 +828,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         bObsidianCharmSpawnedThisRun = false;
         obsidianCharmTreeKillCount = 0;
-        bObsidianCharmActiveThisRun = bHasAcquiredObsidianCharm;
+        obsidianCharmTierThisRun = GetLootGrowthTier(LootType.ObsidianCharm);
+        quakeCharge = 0f;
 
         // 구제 임계값 - 이번 런에 구제 대상인 것만, 오래된 지역 것부터 "앞 전리품 뒤 다시 min~max그루"씩
         // 이어 붙인다. 대상이 하나면 지금까지와 같은 min~max그루째이고, 여럿이면 같은 나무에서 한꺼번에
@@ -875,7 +897,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     }
 
     // 프레스티지 레벨에 따라 성장하는 전리품(GetLootGrowthTier가 0이 아닌 값을 돌려줄 수 있는 것).
-    private static readonly LootType[] GrowthLootTypes = { LootType.LostAndFoundBox, LootType.SporePotion, LootType.StarCompass };
+    private static readonly LootType[] GrowthLootTypes = { LootType.LostAndFoundBox, LootType.SporePotion, LootType.StarCompass, LootType.ObsidianCharm };
 
     public int GetLootGrowthTier(LootType _lootType)
     {
@@ -887,6 +909,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 return bHasAcquiredSporePotion ? GetGrowthTier(sporePotionTier2PrestigeLevel, sporePotionTier3PrestigeLevel) : 0;
             case LootType.StarCompass:
                 return bHasAcquiredStarCompass ? GetGrowthTier(starCompassTier2PrestigeLevel, starCompassTier3PrestigeLevel) : 0;
+            case LootType.ObsidianCharm:
+                // II(꽃) 단계 없이 I → III으로 바로 자란다.
+                return bHasAcquiredObsidianCharm ? GetGrowthTier(obsidianCharmTier3PrestigeLevel, obsidianCharmTier3PrestigeLevel) : 0;
             default:
                 return 0;
         }
@@ -905,6 +930,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 return 1 == tier ? sporePotionTier2PrestigeLevel : sporePotionTier3PrestigeLevel;
             case LootType.StarCompass:
                 return 1 == tier ? starCompassTier2PrestigeLevel : starCompassTier3PrestigeLevel;
+            case LootType.ObsidianCharm:
+                return obsidianCharmTier3PrestigeLevel;
             default:
                 return 0;
         }
@@ -1451,6 +1478,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 쏟아지던 유성우("별빛 나침반" 효과)도 멈춘다.
         meteorShowerVersion++;
         bMeteorShowerActive = false;
+        // 퍼지던 지진("흑요 부적" 효과)도 더 때리지 않는다. 바닥 물결 연출은 EnvironmentSystem이 맵을 바꿀 때 멈춘다.
+        quakeVersion++;
 
         // 마크를 강제 회수한 위 호출은 ConstellationManifestReadyEvent를 발생시키지 않으므로, 별 사라짐을
         // 기다리던 발현 대기 목록도 짝을 맞춰 비운다(이전 런의 별 위치 리스트를 붙들고 있지 않도록).
@@ -1784,10 +1813,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
         }
 
-        // "흑요 부적" - "4-2"에서 확률 드랍(못 얻은 채로 벨 때마다 누적 상승), "4-3" 이후 모든 숲에서 구제 보장.
+        // "흑요 부적" - "4-1"에서 확률 드랍(못 얻은 채로 벨 때마다 누적 상승), "4-2" 이후 모든 숲에서 구제 보장.
         if (!bSuppressDrops && !bHasAcquiredObsidianCharm && !bObsidianCharmSpawnedThisRun && lootManager != null && character != null)
         {
-            if (currentForestType == ForestType.MagmaForest_2)
+            if (currentForestType == ForestType.MagmaForest_1)
             {
                 float effectiveChance = obsidianCharmDropChance + obsidianCharmTreeKillCount * obsidianCharmDropChanceIncreasePerKill;
                 if (UnityEngine.Random.value < effectiveChance)
@@ -2286,7 +2315,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 피치 랜덤 범위와 볼륨은 TreeFireExplosion 큐/DB에서 조절한다
         Sound.Play(SoundID.TreeFireExplosion, _tree.transform.position);
 
-        if (character.bTreeHeatImmune || bObsidianCharmActiveThisRun) return; // 넉백/경직 중엔 열기 영향 없음 + 흑요 부적(다음 숲 방문부터) 면역
+        if (character.bTreeHeatImmune) return; // 넉백/경직 중엔 열기 영향 없음
 
         // 귀환 경고창이 떠 있는 동안이나 귀환/사망으로 원정이 끝나는 중에는 열기 영향(데미지+넉백)을 주지 않는다.
         // 이 구간은 캐릭터 조작과 피로도 감소가 멈춘 상태인데, 예전엔 여기 걸리는 조건이 없어서 원목을 떨구며
@@ -2343,6 +2372,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // "불씨 획득량 증가" 특성 배율을 곱한다(특성이 없으면 1).
         float overheatPerEmber = itemManager.emberItemController != null ? itemManager.emberItemController.OverheatPerEmber : 1f;
         character.AddOverheat(overheatPerEmber * character.OverheatGainMultiplier);
+
+        // "흑요 부적" 지진 게이지는 과열과 따로 찬다(과열이 최대여도 찬다).
+        if (0 < obsidianCharmTierThisRun) ChargeQuake();
 
         // 원목 획득과 같은 손맛(짧은 진동 + 획득음 + 캐릭터 뽀잉 + 하얀 번쩍임)
         Rumble.Play(EHapticEvent.ItemPickup);
@@ -3014,6 +3046,100 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                     if (dx * dx + dy * dy > rangeSq) continue;
 
                     // 진동은 이펙트와 함께 따로 붙인다(유성이 연달아 떨어져 매번 울리면 과하다).
+                    tree.TakeDamage(_damage, false);
+                }
+            }
+        }
+        finally
+        {
+            TreeTileWriteBatch.End();
+            ReturnExplosionScanList(scanResults);
+        }
+    }
+
+    private void ChargeQuake()
+    {
+        quakeCharge = Mathf.Min(1f, quakeCharge + Mathf.Max(0f, quakeChargePerEmber));
+
+        // 0.1씩 열 번 더하면 0.99999…가 될 수 있어 이만큼은 가득 찬 것으로 본다.
+        if (quakeCharge < 1f - 0.0001f) return;
+
+        quakeCharge = 0f;
+        StartCoroutine(QuakeRoutine(obsidianCharmTierThisRun));
+    }
+
+    /// <summary>
+    /// "흑요 부적" 효과인 지진. 발동 순간의 캐릭터 발밑에서 바닥 물결 연출(IEnvironmentProvider.PlayQuakeRipple)을 시작하고,
+    /// 물결 앞머리가 나무에 닿는 순간 그 나무에 피해를 준다. 앞머리는 바닥 평면 거리(세로 차이를 두 배로 편 거리)로 일정하게
+    /// 퍼지므로 등각 타원 범위 안의 나무가 진원에서 가까운 것부터 차례로 맞는다. 진원은 캐릭터를 따라가지 않는다.
+    /// </summary>
+    private IEnumerator QuakeRoutine(int _tier)
+    {
+        if (null == environmentProvider) yield break;
+
+        int version = quakeVersion;
+
+        float damage = (3 == _tier) ? quakeTier3Damage : quakeTier1Damage;
+        float range = Mathf.Max(0f, (3 == _tier) ? quakeTier3Range : quakeTier1Range);
+        Vector3 origin = null != character ? character.transform.position : Vector3.zero;
+        origin.z = 0f;
+
+        // 연출(카메라 흔들림·진동 포함)을 못 내는 경우(화면에 바닥이 없는 등)에도 피해는 같은 속도로 준다.
+        environmentProvider.PlayQuakeRipple(origin);
+        float frontSpeed = environmentProvider.QuakeRippleFrontSpeed;
+
+        // 불씨 줍기는 물체 처리 도중에 일어날 수 있어 첫 피해는 다음 프레임부터 준다. 물결도 게임 시간으로 퍼지므로 같은 시계로 센다.
+        yield return null;
+
+        float elapsed = Time.deltaTime;
+        // 앞머리가 이미 지나간 거리. 이 안쪽 나무는 이미 맞았다(음수면 아직 아무도 안 맞았다).
+        float reached = -1f;
+
+        while (reached < range)
+        {
+            // 던전을 떠났으면(나무 정리) 다음 맵의 나무를 때리지 않고 끝낸다.
+            if (version != quakeVersion) yield break;
+
+            float front = Mathf.Min(range, elapsed * frontSpeed);
+
+            // 귀환 절차 중(경고창·탑승 연출)이나 쓰러진 뒤에는 피해를 주지 않는다. 앞머리는 그대로 퍼진다(유성우와 같은 규칙).
+            if (false == (bStarGazeSuspendedByGameEnd || character == null || character.bDead))
+            {
+                ApplyQuakeDamage(origin, reached, front, damage);
+            }
+
+            reached = front;
+            yield return null;
+            elapsed += Time.deltaTime;
+        }
+    }
+
+    // 진원 기준 등각 타원 띠(_inner 초과 ~ _outer 이하, 바닥 평면 거리)의 나무를 때린다(포자 대폭발과 같은 거리 공식).
+    private void ApplyQuakeDamage(Vector3 _origin, float _inner, float _outer, float _damage)
+    {
+        if (CollisionSystem.Instance == null || _outer <= _inner) return;
+
+        List<IStaticCollidable> scanResults = RentExplosionScanList();
+        // 이번 프레임에 쓰러지는 나무들의 타일맵 쓰기를 루프가 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
+        TreeTileWriteBatch.Begin();
+        try
+        {
+            CollisionSystem.Instance.GetCollidablesInRadius(_origin, _outer, treeLayerForExplosion.value, scanResults);
+
+            float innerSq = _inner < 0f ? -1f : _inner * _inner;
+            float outerSq = _outer * _outer;
+
+            for (int i = 0; i < scanResults.Count; i++)
+            {
+                if (scanResults[i] is TreeObj tree && tree.bCanApplyDamage)
+                {
+                    Vector3 targetPos = tree.transform.position;
+                    float dx = targetPos.x - _origin.x;
+                    float dy = (targetPos.y - _origin.y) * 2f; // 등각 타원 보정
+                    float distSq = dx * dx + dy * dy;
+                    if (distSq <= innerSq || distSq > outerSq) continue;
+
+                    // 진동은 지진 연출이 한 번 낸다.
                     tree.TakeDamage(_damage, false);
                 }
             }
