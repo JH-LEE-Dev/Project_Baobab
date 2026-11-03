@@ -89,3 +89,6 @@ GEMINI.md
 
 # Localization QA 툴의 스크린샷·CSV 출력 폴더
 /LocalizationQA/
+
+# 작업 계획표(로컬 전용, 메인 머지 제외)
+/implementation_plan.md
