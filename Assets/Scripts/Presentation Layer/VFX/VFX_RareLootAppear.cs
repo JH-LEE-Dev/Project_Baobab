@@ -13,7 +13,7 @@ namespace PresentationLayer.VFX
     ///     빛기둥을 타고 `◆` `●` `+` `x` `.` 입자가 올라간다
     ///  ③ 착지: 짧은 섬광(0.1초 유지)과 바닥 렌즈 줄, 빛 웅덩이가 켜진다
     ///  색은 모든 전리품이 같은 황금빛(인스펙터 goldCoreColor / goldMainColor / goldDeepColor)이다.
-    ///  ④ 유지: 빛기둥·오라가 숨 쉬듯 일렁이고, 가장자리 반짝임과 기둥을 타는 입자·알갱이가 이어진다. 흡입이 시작되면 0.15초에 걸쳐 꺼진다
+    ///  ④ 유지: 빛기둥·오라가 숨 쉬듯 일렁이고, 가장자리 반짝임과 기둥을 타는 입자·알갱이가 이어진다. 흡입이 시작되면 빛기둥·입자·둘레 빛·웅덩이는 0.15초에 걸쳐 꺼지고, 원형 아우라(오라·아우라 심)만 아이템을 따라가다 획득 때 사라진다
     ///
     /// 연결: LootItem 프리팹의 VFX(vfxRoot) 자식이다. LootItem.Launch -> PlayVFX가 vfxRoot를 켜는 순간이 등장 시점이고,
     /// 비행 높이는 vfxRoot.localPosition.y(LootItem이 비주얼 높이와 맞춘다)로 읽어 착지를 판단한다. 흡입은 루트의 이동/축소로 판단한다.
@@ -742,11 +742,12 @@ namespace PresentationLayer.VFX
 
             // ①~④ 빛기둥: 등장 순간부터 켜지고, 아래끝이 아이템 중심에 붙어 아이템 위로만 솟는다(비행 중에도 아이템과 같이 움직인다).
             // 등장 순간에는 밝고 굵게 솟았다가 유지 세기로 내려온다(따로 있던 분출 빛을 여기에 합쳤다).
+            float landFlash = 0.0f <= k ? Mathf.Max(0.0f, 1.0f - k / 0.3f) : 0.0f;
+            float level = 0.0f <= k ? HoldLevel(k) : 0.7f + 0.08f * Mathf.Sin(t * 2.6f);
+            float surge = PeakDecay(t, AppearPeakHold, BeamSurgeTime);
+
             if (0.0f < leave)
             {
-                float landFlash = 0.0f <= k ? Mathf.Max(0.0f, 1.0f - k / 0.3f) : 0.0f;
-                float level = 0.0f <= k ? HoldLevel(k) : 0.7f + 0.08f * Mathf.Sin(t * 2.6f);
-                float surge = PeakDecay(t, AppearPeakHold, BeamSurgeTime);
                 float widen = 1.0f + 0.6f * surge;
 
                 // 빛기둥 높이 = 위쪽 기둥 + 아이템 중심 아래 둥근 밑동(피벗이 밑동 위에 있어 아래 끝이 수평으로 잘리지 않는다)
@@ -757,20 +758,19 @@ namespace PresentationLayer.VFX
                 // 이음부 빛: 아이템 윗부분에 세로로 긴 가산 빛을 얹어 빛기둥이 아이템에서 뿜어 나오는 것처럼 잇는다
                 // (빛기둥 밑동은 아이템 뒤에 가려지고 아이템 바로 위는 둘레 빛·오라와 섞여 묻히기 때문)
                 SetSoft(SoftBeamJoint, _centerX, _centerY + BeamJointRaise, BeamJointWidth * widen, BeamJointHeight, 0.0f, Add(coreColor, 0.9f * (level + landFlash * 0.6f + surge * 0.8f) * leave));
-
-                // 아이템 아우라: 비행 중에도 켜져 아이템을 큰 빛 덩어리로 감싸고, 그 위로 빛기둥이 이어진다.
-                // 아우라 심은 아이템 뒤에서 아이템 자체가 빛을 내는 것처럼 밝힌다.
-                SetSoft(SoftHoldAura, _centerX, _centerY, HoldAuraRadius * 2.0f, HoldAuraRadius * 2.0f, 0.0f, Blend(mainColor, 0.85f * (level + landFlash * 0.3f) * leave));
-                SetSoft(SoftItemCore, _centerX, _centerY, ItemCoreRadius * 2.0f, ItemCoreRadius * 2.0f, 0.0f, Add(coreColor, 0.9f * (level + landFlash * 0.6f + surge * 0.8f) * leave));
             }
             else
             {
                 HideSoft(SoftBeamOuter);
                 HideSoft(SoftBeamCore);
                 HideSoft(SoftBeamJoint);
-                HideSoft(SoftHoldAura);
-                HideSoft(SoftItemCore);
             }
+
+            // 아이템 아우라: 비행 중에도 켜져 아이템을 큰 빛 덩어리로 감싸고, 그 위로 빛기둥이 이어진다.
+            // 아우라 심은 아이템 뒤에서 아이템 자체가 빛을 내는 것처럼 밝힌다.
+            // 흡입 중에도 꺼지지 않고 아이템을 따라가며(루트 축소에 맞춰 함께 작아진다) 획득 시 vfxRoot가 꺼질 때 사라진다.
+            SetSoft(SoftHoldAura, _centerX, _centerY, HoldAuraRadius * 2.0f, HoldAuraRadius * 2.0f, 0.0f, Blend(mainColor, 0.85f * (level + landFlash * 0.3f)));
+            SetSoft(SoftItemCore, _centerX, _centerY, ItemCoreRadius * 2.0f, ItemCoreRadius * 2.0f, 0.0f, Add(coreColor, 0.9f * (level + landFlash * 0.6f + surge * 0.8f)));
 
             // ③④ 빛 웅덩이(착지 후)
             if (0.0f <= k && 0.0f < leave)
