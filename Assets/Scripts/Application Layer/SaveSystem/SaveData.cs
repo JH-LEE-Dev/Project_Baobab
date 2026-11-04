@@ -279,6 +279,9 @@ public class GameSaveData
     public bool bStarrootForestGuideDone;
     public bool bMagmaForestGuideDone;
     public List<LootType> currentOwnedLoots;
+    // 처음 얻었지만 아직 마을에서 기둥 등장 연출을 보지 못한 전리품. 이 키가 없는 예전 세이브는 null로 읽혀
+    // 빈 목록이 되므로, 이미 얻어 둔 전리품의 기둥은 연출 없이 서 있다.
+    public List<LootType> pendingLootPillarReveals;
 
     // 엔딩을 본 적이 있는지(도중에 게임을 꺼도 본 것으로 친다), 로그라이크 모드가 해금됐는지.
     // 해금 조건은 "모든 특성 최대 레벨 + 엔딩 시청"이다. 이 키가 없는 예전 세이브는 둘 다 false로 읽힌다.
@@ -300,6 +303,9 @@ public class GameSaveData
 
         if (currentOwnedLoots == null) currentOwnedLoots = new List<LootType>(10);
         else currentOwnedLoots.Clear();
+
+        if (pendingLootPillarReveals == null) pendingLootPillarReveals = new List<LootType>(4);
+        else pendingLootPillarReveals.Clear();
 
         if (blastFurnaceSaveDatas == null) blastFurnaceSaveDatas = new List<BlastFurnaceSaveData>(3);
         else blastFurnaceSaveDatas.Clear();

@@ -62,5 +62,8 @@ public enum EHapticEvent
     /// <summary>지진이 일어나 바닥이 물결침. (EnvironmentSystem.PlayQuakeRipple)</summary>
     Earthquake,
 
+    /// <summary>전리품을 처음 얻고 마을에 왔을 때 그 기둥이 하늘에서 떨어져 착지함. (LootDisplayObject.PlayFirstReveal)</summary>
+    LootPillarLanding,
+
     Count
 }

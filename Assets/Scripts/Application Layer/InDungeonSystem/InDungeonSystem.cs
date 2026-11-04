@@ -848,6 +848,11 @@ public class InDungeonSystem : MonoBehaviour
         {
             signalHub.Publish(new EnableCharacterAimSignal());
         }
+        else
+        {
+            // 던전 → 마을 귀환: 방금 조작이 풀렸다(InDungeonProductionManager.CameraDownIsEnd). 처음 얻은 전리품의 기둥 등장 연출이 여기서 시작한다.
+            signalHub.Publish(new TownArrivalControlUnlockedSignal());
+        }
 
         StartCoroutine(PopupUIGoUPCoroutine());
 

@@ -40,9 +40,27 @@ public class LootPillarManager : MonoBehaviour
     private InDungeonObjectManager subscribedObjectManager;
     private readonly Dictionary<LootType, int> pendingEvolutions = new Dictionary<LootType, int>(4);
 
+    [Header("First Reveal (처음 얻은 전리품 기둥 등장)")]
+    [SerializeField, Tooltip("처음 얻은 전리품이 한 번에 여럿일 때 기둥이 차례로 떨어지는 간격(초).")]
+    private float firstRevealStagger = 0.35f;
+
+    // 이번 방문에 처음 등장할 기둥들. 숨긴 채로 세워 두었다가 캐릭터가 움직일 수 있게 되면(PlayPendingFirstReveals) 떨어뜨린다.
+    private readonly List<LootDisplayObject> pendingFirstReveals = new List<LootDisplayObject>(4);
+
+    // 이번 마을 방문에서 조작이 이미 풀렸는지. 메인메뉴 → 마을 하강 연출을 건너뛰는 경로(캐릭터/카메라를 못 찾음)는 인트로 종료가
+    // StartTownSystem 안에서 곧바로 불려 기둥을 세우기(SpawnAcquiredPillars) 전에 PlayPendingFirstReveals가 먼저 온다.
+    // 그때 이 값을 기억해 두었다가 기둥을 세운 직후 바로 떨어뜨린다(안 그러면 그 방문 내내 숨은 채로 남는다).
+    private bool bArrivalUnlocked;
+
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;
+    }
+
+    /// <summary>마을 방문이 새로 시작될 때(TownSystem.StartTownSystem 맨 앞) 지난 방문의 조작 해제 기록을 지운다.</summary>
+    public void BeginTownVisit()
+    {
+        bArrivalUnlocked = false;
     }
 
     /// <summary>
@@ -55,6 +73,7 @@ public class LootPillarManager : MonoBehaviour
         if (lootPillarPrefab == null || lootPoints == null || _inDungeonObjectManager == null) return;
 
         spawnedPillars.Clear();
+        pendingFirstReveals.Clear();
 
         // 새 기둥은 지금 단계로 만들어지므로 이전에 보류한 진화는 버린다.
         pendingEvolutions.Clear();
@@ -84,8 +103,18 @@ public class LootPillarManager : MonoBehaviour
 
             spawnedPillars.Add(pillar);
 
+            // 처음 얻고 아직 등장 연출을 못 본 전리품이면 기둥을 숨긴 채 세워 두고, 조작이 풀릴 때 하늘에서 떨어뜨린다.
+            if (true == _inDungeonObjectManager.IsPillarRevealPending(DisplayOrder[i]))
+            {
+                pillar.PrepareFirstReveal();
+                pendingFirstReveals.Add(pillar);
+            }
+
             pointIndex++;
         }
+
+        // 조작이 기둥을 세우기 전에 이미 풀렸다면(bArrivalUnlocked 주석 참고) 기다릴 신호가 다시 오지 않으므로 지금 떨어뜨린다.
+        if (true == bArrivalUnlocked) PlayPendingFirstReveals();
     }
 
     // 단계 변경 이벤트(레벨이 올라 실제로 단계가 바뀐 전리품만 온다): 기둥은 건드리지 않고 최신 단계만 보류한다.
@@ -114,6 +143,31 @@ public class LootPillarManager : MonoBehaviour
         }
 
         pendingEvolutions.Clear();
+    }
+
+    /// <summary>
+    /// 숨겨 둔 첫 등장 기둥들을 하늘에서 떨어뜨린다. 마을에 도착해 캐릭터가 움직일 수 있게 된 순간 TownSystem이 부른다
+    /// (던전 → 마을: TownArrivalControlUnlockedSignal, 메인메뉴 → 마을: MainMenuIntroEnd). 여럿이면 DisplayOrder 순서로 차례로 떨어진다.
+    /// 연출이 시작되면 보류 목록에서 빼므로 다음 방문부터는 그냥 서 있다.
+    /// </summary>
+    public void PlayPendingFirstReveals()
+    {
+        bArrivalUnlocked = true;
+
+        if (0 == pendingFirstReveals.Count) return;
+
+        int _order = 0;
+        for (int i = 0; i < pendingFirstReveals.Count; i++)
+        {
+            LootDisplayObject pillar = pendingFirstReveals[i];
+            if (null == pillar) continue;
+
+            pillar.PlayFirstReveal(_order * firstRevealStagger);
+            subscribedObjectManager?.ConsumePillarReveal(pillar.CurrentLootType);
+            _order++;
+        }
+
+        pendingFirstReveals.Clear();
     }
 
     private void OnDestroy()

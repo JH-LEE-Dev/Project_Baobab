@@ -73,6 +73,49 @@ namespace PresentationLayer.Environment
         [SerializeField, Tooltip("출렁임이 잦아드는 빠르기. 클수록 빨리 멈춘다.")]
         private float growthPopDamping = 6f;
 
+        [Header("First Reveal (처음 얻은 전리품의 기둥이 하늘에서 떨어져 뽀잉 착지)")]
+        [SerializeField, Tooltip("땅에 드리우는 기둥 그림자(Shadow). 떨어지는 동안 작게 시작해 커지며 떨어질 자리를 먼저 알린다.")]
+        private SpriteRenderer groundShadowRenderer;
+        [SerializeField, Tooltip("착지 순간 기둥 밑동에서 퍼지는 먼지. 차량 시동 먼지(VFX_StartUp)를 그대로 쓴다.")]
+        private ParticleSystem revealLandingDustPrefab;
+        [SerializeField, Range(0.3f, 1.5f), Tooltip("착지 먼지 크기 배율. 차량용 먼지라 기둥(폭 1칸)에 맞춰 줄인다.")]
+        private float revealLandingDustScale = 0.75f;
+        [SerializeField, Tooltip("기둥보다 그림자가 먼저 나타나는 시간(초).")]
+        private float revealShadowLead = 0.2f;
+        [SerializeField, Tooltip("화면 위에서 땅까지 떨어지는 시간(초). 갈수록 빨라진다(중력).")]
+        private float revealFallDuration = 0.4f;
+        [SerializeField, Tooltip("떨어지기 시작하는 높이 = 화면 위 끝에서 이만큼 더 위(유닛). 카메라를 못 찾으면 revealFallbackHeight를 쓴다.")]
+        private float revealDropMargin = 0.5f;
+        [SerializeField] private float revealFallbackHeight = 8f;
+        [SerializeField, Range(0f, 0.6f), Tooltip("떨어지는 동안 세로로 늘어나는 정도(땅에 닿기 직전 최대).")]
+        private float revealFallStretch = 0.3f;
+        [SerializeField, Tooltip("착지 순간 납작하게 눌린 채 멈춰 있는 시간(초). 쿵 하는 무게감.")]
+        private float revealHitStop = 0.06f;
+        [SerializeField, Range(0f, 0.6f), Tooltip("착지 때 세로로 눌리는 비율. 0.4면 60%까지 눌렸다가 튄다.")]
+        private float revealSquashAmplitude = 0.4f;
+        [SerializeField, Range(0f, 1f), Tooltip("세로 변화에 맞춰 가로가 반대로 변하는 비율(부피감).")]
+        private float revealSquashWidthRatio = 0.6f;
+        [SerializeField, Tooltip("뽀잉 출렁임 전체 시간(초).")]
+        private float revealSquashDuration = 0.8f;
+        [SerializeField, Tooltip("초당 출렁임 횟수.")]
+        private float revealSquashFrequency = 3.2f;
+        [SerializeField, Tooltip("출렁임이 잦아드는 빠르기. 클수록 빨리 멈춘다.")]
+        private float revealSquashDamping = 5f;
+        [SerializeField, Tooltip("착지 때 완전히 흰색으로 유지하는 시간(초).")]
+        private float revealFlashHold = 0.1f;
+        [SerializeField, Tooltip("흰색에서 원래 색으로 돌아오기까지의 시간(초).")]
+        private float revealFlashDuration = 0.5f;
+        [SerializeField, Tooltip("착지 반동으로 위의 전리품이 튀어 오르는 높이(유닛).")]
+        private float revealLootHopHeight = 0.4f;
+        [SerializeField, Tooltip("전리품이 튀었다가 다시 기둥에 앉기까지의 시간(초).")]
+        private float revealLootHopDuration = 0.36f;
+        [SerializeField, Range(0f, 0.5f), Tooltip("전리품이 다시 앉을 때 눌리는 비율.")]
+        private float revealLootLandSquash = 0.22f;
+        [SerializeField, Tooltip("전리품이 다시 앉은 뒤 출렁임 시간(초).")]
+        private float revealLootLandDuration = 0.35f;
+        [SerializeField, Tooltip("착지 카메라 흔들림(세기, 시간). 옵션의 카메라 흔들림 비율이 곱해진다.")]
+        private Vector2 revealCameraShake = new Vector2(3.5f, 0.25f);
+
         [Header("Aura Orbit Settings")]
         [SerializeField] private bool useAuraOrbit = false;
         [SerializeField] private ItemAuraOrbitController auraOrbitController;
@@ -167,6 +210,9 @@ namespace PresentationLayer.Environment
         {
             if (!bPhysicalOverlapped) return;
 
+            // 등장 연출이 끝나기 전(숨겨져 있거나 떨어지는 중)에는 상호작용하지 않는다.
+            if (true == IsRevealing) return;
+
             bInteracting = !bInteracting;
             LootPillarInteractEvent?.Invoke(bInteracting, CurrentLootType);
         }
@@ -203,6 +249,10 @@ namespace PresentationLayer.Environment
             if (_other.gameObject.layer == characterLayer)
             {
                 bPhysicalOverlapped = true;
+
+                // 등장 연출 중에는 범위 안에 있다는 것만 기억하고, 아웃라인·상호작용 아이콘은 연출이 끝날 때 켠다(FinishFirstReveal).
+                if (true == IsRevealing) return;
+
                 SetOutlineActive(true);
                 InteractStateChangedEvent?.Invoke(true, CurrentLootType);
             }
@@ -213,6 +263,10 @@ namespace PresentationLayer.Environment
             if (_other.gameObject.layer == characterLayer)
             {
                 bPhysicalOverlapped = false;
+
+                // 등장 연출 중에는 켠 적이 없으므로 끌 것도 없다.
+                if (true == IsRevealing) return;
+
                 SetOutlineActive(false);
                 InteractStateChangedEvent?.Invoke(false, CurrentLootType);
 
@@ -322,6 +376,9 @@ namespace PresentationLayer.Environment
         /// </summary>
         public void PlayGrowthEvolve(int _tier)
         {
+            // 등장 연출과 진화 연출은 둘 다 전리품 자리를 움직이므로, 등장 연출이 남아 있으면 끝난 모습으로 맞춘 뒤 진화한다.
+            if (true == IsRevealing) FinishFirstReveal(true);
+
             if (null == evolveEffect || false == isActiveAndEnabled || false == (1 <= currentGrowthTier && currentGrowthTier < _tier))
             {
                 SetGrowthTier(_tier);
@@ -407,6 +464,8 @@ namespace PresentationLayer.Environment
 
         private void LateUpdate()
         {
+            if (true == bRevealPlaying) UpdateFirstReveal(Time.deltaTime);
+
             if (false == bGrowthPopPlaying) return;
 
             float _t = growthPopElapsed;
@@ -481,6 +540,9 @@ namespace PresentationLayer.Environment
         {
             StopGrowthPop();
 
+            // 연출 도중 꺼지면(마을을 떠남 등) 원래 모습으로 되돌린다. 꺼지는 중이라 상호작용 알림은 보내지 않는다.
+            if (true == IsRevealing) FinishFirstReveal(false);
+
             // 연출 중에 꺼지면(마을을 떠남 등) 연출이 정리되며 폭발 콜백을 불러 주지만, 못 불렸다면 여기서 단계를 맞춘다.
             if (0 < pendingGrowthTier)
             {
@@ -532,6 +594,341 @@ namespace PresentationLayer.Environment
 
             _color = auraSettings[_index].auraCenterColor;
             return true;
+        }
+
+        // ─── 첫 등장 연출 (처음 얻은 전리품의 기둥이 하늘에서 떨어짐) ──────────────────
+        // 순서: 숨김(PrepareFirstReveal) → 땅에 그림자가 먼저 생김 → 화면 위에서 가속하며 늘어난 채 낙하(그림자가 커짐)
+        //      → 쿵 착지: 납작하게 눌린 채 잠깐 멈춤 + 하얗게 번쩍 + 먼지 + 카메라 흔들림/진동/효과음
+        //      → 뽀잉 출렁이며 제 모양으로, 위의 전리품은 반동으로 톡 튀었다 다시 앉고 아우라가 켜진다.
+        // 기둥(Pillar)·전리품 부모(LootAnchor)·땅 그림자(Shadow)는 모두 루트의 직속 자식이라, 루트 기준 좌표에서 기둥 밑동을 기준점으로 늘이고 줄인다.
+        // 숨김은 크기 0으로 한다 - 렌더러를 끄면 단계 갱신(SetLootShadow 등)이 다시 켜 버릴 수 있다.
+
+        private bool bRevealHidden;
+        private bool bRevealPlaying;
+        private bool bRevealImpacted;
+        private bool bRevealAuraPlayed;
+        private float revealElapsed;
+        private float revealDropHeight;
+        private Transform revealPillar;
+        private Transform revealLootAnchor;
+        private Transform revealShadow;
+        private Vector3 revealPillarBasePosition;
+        private Vector3 revealPillarBaseScale;
+        private Vector3 revealLootAnchorBasePosition;
+        private Vector3 revealLootAnchorBaseScale;
+        private Vector3 revealShadowBasePosition;
+        private Vector3 revealShadowBaseScale;
+        private Color revealShadowBaseColor;
+        // 기둥 밑동 가운데(루트 기준). 기둥과 그림자가 이 점을 기준으로 늘고 줄어 땅에 붙어 있는다.
+        private Vector3 revealAnchor;
+
+        /// <summary>등장 연출을 기다리며 숨겨져 있거나 연출 중인지. 이동안 상호작용·아웃라인이 막힌다.</summary>
+        public bool IsRevealing => bRevealHidden || bRevealPlaying;
+
+        /// <summary>
+        /// 처음 얻은 전리품의 기둥을 숨겨 둔다(PlayFirstReveal로 떨어뜨린다). LootPillarManager가 기둥을 세운 직후, 마을 카메라가 내려오기 전에 부른다.
+        /// SetLootDisplay·SetGrowthTier 뒤에 불러야 한다(아우라를 멈춰 두므로).
+        /// </summary>
+        public void PrepareFirstReveal()
+        {
+            if (true == IsRevealing || null == pillarRenderer || null == targetRenderer) return;
+
+            StopGrowthPop();
+
+            revealPillar = pillarRenderer.transform;
+            revealLootAnchor = null != targetRenderer.transform.parent && targetRenderer.transform.parent != transform ? targetRenderer.transform.parent : targetRenderer.transform;
+            revealShadow = null != groundShadowRenderer ? groundShadowRenderer.transform : null;
+
+            revealPillarBasePosition = revealPillar.localPosition;
+            revealPillarBaseScale = revealPillar.localScale;
+            revealLootAnchorBasePosition = revealLootAnchor.localPosition;
+            revealLootAnchorBaseScale = revealLootAnchor.localScale;
+
+            if (null != revealShadow)
+            {
+                revealShadowBasePosition = revealShadow.localPosition;
+                revealShadowBaseScale = revealShadow.localScale;
+                revealShadowBaseColor = groundShadowRenderer.color;
+            }
+
+            float _bottom = null != pillarRenderer.sprite ? pillarRenderer.sprite.bounds.min.y : 0f;
+            revealAnchor = revealPillarBasePosition + new Vector3(0f, _bottom * revealPillarBaseScale.y, 0f);
+
+            bRevealHidden = true;
+            bRevealPlaying = false;
+            bRevealImpacted = false;
+            bRevealAuraPlayed = false;
+
+            // 숨어 있는 동안 아우라 위성·꼬리가 남지 않게 멈춘다. 착지 순간 다시 켠다.
+            if (null != auraOrbitController) auraOrbitController.Stop();
+
+            SetOutlineActive(false);
+            ApplyRevealPose(Vector3.zero, Vector3.zero, Vector3.zero, 0f, 0f, 0f);
+        }
+
+        /// <summary>
+        /// 숨겨 둔 기둥을 _delay초 뒤 하늘에서 떨어뜨린다. 마을에서 캐릭터가 움직일 수 있게 된 순간 LootPillarManager가 부른다.
+        /// </summary>
+        public void PlayFirstReveal(float _delay)
+        {
+            if (false == bRevealHidden) return;
+
+            bRevealHidden = false;
+            bRevealPlaying = true;
+            bRevealImpacted = false;
+            revealElapsed = -Mathf.Max(0f, _delay);
+            revealDropHeight = ComputeRevealDropHeight();
+        }
+
+        // 기둥 밑동이 화면 위 끝보다 revealDropMargin만큼 위에서 출발하는 높이. 기둥 전체가 화면 밖에서 들어온다.
+        private float ComputeRevealDropHeight()
+        {
+            Camera _camera = Camera.main;
+            if (null == _camera || false == _camera.orthographic) return revealFallbackHeight;
+
+            float _top = _camera.transform.position.y + _camera.orthographicSize;
+            float _bottomWorld = transform.TransformPoint(revealAnchor).y;
+            return Mathf.Clamp(_top - _bottomWorld + revealDropMargin, 3f, 16f);
+        }
+
+        private void UpdateFirstReveal(float _dt)
+        {
+            revealElapsed += _dt;
+            float _t = revealElapsed;
+
+            // 차례를 기다리는 중(여럿이 함께 떨어질 때)
+            if (_t < 0f) return;
+
+            float _lead = Mathf.Max(0.0001f, revealShadowLead);
+            float _fall = Mathf.Max(0.0001f, revealFallDuration);
+
+            // 1) 그림자가 먼저 작게 생긴다
+            if (_t < _lead)
+            {
+                float _p = _t / _lead;
+                ApplyRevealPose(Vector3.zero, Vector3.zero, Vector3.zero, 0f, 0.25f * (1f - (1f - _p) * (1f - _p)), 0.6f * _p);
+                return;
+            }
+
+            // 2) 화면 위에서 가속하며 떨어진다(높이 = H(1-u²)). 땅에 가까워질수록 세로로 늘어나고 그림자는 커진다.
+            float _tf = _t - _lead;
+            if (_tf < _fall)
+            {
+                if (_tf - _dt < 0f) Sound.Play(SoundID.SFXDashWoosh, transform.position, 1f, true, 0.8f);
+
+                float _u = _tf / _fall;
+                float _height = revealDropHeight * (1f - _u * _u);
+                Vector3 _stretch = new Vector3(1f - revealFallStretch * 0.5f * _u, 1f + revealFallStretch * _u, 1f);
+                ApplyRevealPose(_stretch, _stretch, Vector3.zero, _height, Mathf.Lerp(0.25f, 1f, _u * _u), Mathf.Lerp(0.6f, 1f, _u));
+                return;
+            }
+
+            // 3) 착지
+            float _tc = _tf - _fall;
+            if (false == bRevealImpacted)
+            {
+                bRevealImpacted = true;
+                OnRevealImpact();
+            }
+
+            // 기둥: 눌린 채 잠깐 멈췄다가(히트스톱) 감쇠 진동하며 1로 돌아온다. 끝에서 정확히 1이 되도록 남은 시간 비율을 곱한다.
+            float _a;
+            float _ts = _tc - revealHitStop;
+            if (_ts < 0f)
+            {
+                _a = -revealSquashAmplitude;
+            }
+            else if (_ts < revealSquashDuration)
+            {
+                float _remain = 1f - _ts / revealSquashDuration;
+                _a = -revealSquashAmplitude * Mathf.Exp(-revealSquashDamping * _ts) * Mathf.Cos(2f * Mathf.PI * revealSquashFrequency * _ts) * _remain;
+            }
+            else
+            {
+                _a = 0f;
+            }
+            Vector3 _pillarScale = new Vector3(1f - _a * revealSquashWidthRatio, 1f + _a, 1f);
+
+            // 전리품: 히트스톱 동안은 기둥과 함께 눌려 있다가, 기둥이 튀어 오르는 반동으로 톡 떴다가 다시 앉으며 작게 출렁인다.
+            Vector3 _lootScale;
+            float _hop = 0f;
+            float _hopDuration = Mathf.Max(0.0001f, revealLootHopDuration);
+            if (_ts < 0f)
+            {
+                _lootScale = _pillarScale;
+            }
+            else if (_ts < _hopDuration)
+            {
+                float _hu = _ts / _hopDuration;
+                _hop = 4f * revealLootHopHeight * _hu * (1f - _hu);
+                // 뜨고 내리는 동안 살짝 길쭉하다(꼭대기에서 가장 둥글다)
+                float _air = 0.12f * Mathf.Abs(2f * _hu - 1f);
+                _lootScale = new Vector3(1f - _air * 0.5f, 1f + _air, 1f);
+            }
+            else
+            {
+                float _tl = _ts - _hopDuration;
+                float _la = 0f;
+                if (_tl < revealLootLandDuration)
+                {
+                    float _remain = 1f - _tl / Mathf.Max(0.0001f, revealLootLandDuration);
+                    _la = -revealLootLandSquash * Mathf.Exp(-7f * _tl) * Mathf.Cos(2f * Mathf.PI * 4f * _tl) * _remain;
+                }
+                _lootScale = new Vector3(1f - _la * 0.6f, 1f + _la, 1f);
+            }
+
+            // 번쩍임: 잠깐 완전히 흰색을 유지했다가 원래 색으로 풀린다.
+            float _flash = _tc <= revealFlashHold ? 1f : 1f - Mathf.Clamp01((_tc - revealFlashHold) / Mathf.Max(0.0001f, revealFlashDuration - revealFlashHold));
+            SetGrowthFlash(_flash * _flash);
+
+            ApplyRevealPose(_pillarScale, _lootScale, new Vector3(0f, _hop, 0f), 0f, 1f, 1f);
+
+            float _end = Mathf.Max(revealHitStop + revealSquashDuration, revealFlashDuration, revealHitStop + _hopDuration + revealLootLandDuration);
+            if (_end <= _tc) FinishFirstReveal(true);
+        }
+
+        // 착지 순간 한 번: 먼지, 카메라 흔들림, 진동, 효과음, 아우라.
+        private void OnRevealImpact()
+        {
+            Vector3 _ground = transform.TransformPoint(revealAnchor);
+
+            PlayRevealLandingDust(_ground);
+
+            CameraMoveController.Instance?.ShakeCamera(revealCameraShake.x, revealCameraShake.y);
+            Rumble.Play(EHapticEvent.LootPillarLanding);
+
+            Sound.Play(SoundID.BoxLanding, _ground);
+            Sound.Play(SoundID.BoxLandingEx, _ground);
+            Sound.Play(SoundID.NewItemApear, _ground);
+
+            PlayRevealAura();
+        }
+
+        private void PlayRevealAura()
+        {
+            if (true == bRevealAuraPlayed) return;
+            bRevealAuraPlayed = true;
+
+            // 아우라 Play는 코루틴을 쓰므로 꺼져 있으면 부르지 않는다(다시 켜질 때 아우라가 스스로 재생한다).
+            if (true == useAuraOrbit && null != auraOrbitController && true == auraOrbitController.isActiveAndEnabled)
+            {
+                auraOrbitController.Play();
+            }
+        }
+
+        private void PlayRevealLandingDust(Vector3 _ground)
+        {
+            if (null == revealLandingDustPrefab) return;
+
+            ParticleSystem _dust = Instantiate(revealLandingDustPrefab, _ground, revealLandingDustPrefab.transform.rotation);
+
+            // 차량보다 작은 기둥에 맞춰 줄인다. 이 인스턴스만 바꾸므로 차량 먼지(원본 프리팹)는 그대로다.
+            _dust.transform.localScale = Vector3.Scale(_dust.transform.localScale, new Vector3(revealLandingDustScale, revealLandingDustScale, 1f));
+            ParticleSystem[] _systems = _dust.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < _systems.Length; i++)
+            {
+                ParticleSystem.MainModule _m = _systems[i].main;
+                _m.scalingMode = ParticleSystemScalingMode.Hierarchy;
+            }
+
+            // 기둥 바로 뒤에 그린다. 먼지 고리의 뒤쪽 절반(화면에서 밑동보다 위)은 기둥 몸통 뒤로 가려지고, 앞쪽 절반은 밑동 앞 땅 위에 보인다.
+            // 기둥보다 위에 그리면 착지 순간 피어오르는 먼지가 하얗게 번쩍이는 기둥을 통째로 덮는다.
+            int _order = null != pillarRenderer ? pillarRenderer.sortingOrder - 1 : 0;
+            string _layer = null != pillarRenderer ? pillarRenderer.sortingLayerName : "Objects";
+            ParticleSystemRenderer[] _renderers = _dust.GetComponentsInChildren<ParticleSystemRenderer>(true);
+            for (int i = 0; i < _renderers.Length; i++)
+            {
+                _renderers[i].sortingLayerName = _layer;
+                _renderers[i].sortingOrder = _order;
+            }
+
+            _dust.Play(true);
+
+            ParticleSystem.MainModule _main = _dust.main;
+            Destroy(_dust.gameObject, _main.duration + _main.startLifetime.constantMax + 0.5f);
+        }
+
+        // 루트 기준 좌표로 기둥·전리품·그림자 자세를 정한다. 크기 0이면 숨김.
+        // _pillarScale: 밑동 기준 늘이기, _lootScale: 전리품 밑둥(displayBaseAnchor) 기준 늘이기, _lootOffset: 전리품만 더 올리는 값(튀어 오름),
+        // _height: 기둥 전체를 올리는 높이(낙하), _shadowScale/_shadowAlpha: 땅 그림자 크기·진하기 비율.
+        private void ApplyRevealPose(Vector3 _pillarScale, Vector3 _lootScale, Vector3 _lootOffset, float _height, float _shadowScale, float _shadowAlpha)
+        {
+            Vector3 _up = new Vector3(0f, _height, 0f);
+
+            if (null != revealPillar)
+            {
+                revealPillar.localScale = Vector3.Scale(revealPillarBaseScale, _pillarScale);
+                revealPillar.localPosition = ScaleAround(revealAnchor, revealPillarBasePosition, _pillarScale) + _up;
+            }
+
+            if (null != revealLootAnchor)
+            {
+                // 전리품 밑둥(기둥 윗판 중앙)이 늘어난 기둥 윗판을 따라가고, 전리품은 그 밑둥을 기준으로 따로 늘어난다.
+                Vector3 _baseOffset = Vector3.Scale(new Vector3(displayBaseAnchor.x, displayBaseAnchor.y, 0f), revealLootAnchorBaseScale);
+                Vector3 _seat = ScaleAround(revealAnchor, revealLootAnchorBasePosition + _baseOffset, _pillarScale) + _up + _lootOffset;
+                Vector3 _scale = Vector3.Scale(revealLootAnchorBaseScale, _lootScale);
+
+                revealLootAnchor.localScale = _scale;
+                Vector3 _position = _seat - Vector3.Scale(new Vector3(displayBaseAnchor.x, displayBaseAnchor.y, 0f), _scale);
+                _position.z = revealLootAnchorBasePosition.z;
+                revealLootAnchor.localPosition = _position;
+            }
+
+            if (null != revealShadow)
+            {
+                Vector3 _s = new Vector3(_shadowScale, _shadowScale, 1f);
+                revealShadow.localScale = Vector3.Scale(revealShadowBaseScale, _s);
+                revealShadow.localPosition = ScaleAround(revealAnchor, revealShadowBasePosition, _s);
+
+                Color _color = revealShadowBaseColor;
+                _color.a *= _shadowAlpha;
+                groundShadowRenderer.color = _color;
+            }
+        }
+
+        // _point(루트 기준)를 _anchor에서 _scale만큼 늘이고 줄인 위치. z는 그대로 둔다.
+        private static Vector3 ScaleAround(Vector3 _anchor, Vector3 _point, Vector3 _scale)
+        {
+            Vector3 _result = _anchor + Vector3.Scale(_point - _anchor, _scale);
+            _result.z = _point.z;
+            return _result;
+        }
+
+        // 원래 모습으로 되돌리고 상호작용을 연다. _bNotify면 범위 안에 서 있던 캐릭터에게 아웃라인·상호작용 아이콘을 지금 켠다.
+        private void FinishFirstReveal(bool _bNotify)
+        {
+            if (false == IsRevealing) return;
+
+            bRevealHidden = false;
+            bRevealPlaying = false;
+
+            if (null != revealPillar)
+            {
+                revealPillar.localPosition = revealPillarBasePosition;
+                revealPillar.localScale = revealPillarBaseScale;
+            }
+
+            if (null != revealLootAnchor)
+            {
+                revealLootAnchor.localPosition = revealLootAnchorBasePosition;
+                revealLootAnchor.localScale = revealLootAnchorBaseScale;
+            }
+
+            if (null != revealShadow)
+            {
+                revealShadow.localPosition = revealShadowBasePosition;
+                revealShadow.localScale = revealShadowBaseScale;
+                groundShadowRenderer.color = revealShadowBaseColor;
+            }
+
+            SetGrowthFlash(0f);
+            PlayRevealAura();
+
+            if (true == _bNotify && true == bPhysicalOverlapped)
+            {
+                SetOutlineActive(true);
+                InteractStateChangedEvent?.Invoke(true, CurrentLootType);
+            }
         }
 
         // ─── 전시 애니메이션 (마을 기둥 위 씨앗/꽃/나무) ─────────────────────────

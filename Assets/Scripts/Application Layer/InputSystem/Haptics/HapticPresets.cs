@@ -142,6 +142,15 @@ public static class HapticPresets
         new HapticStep(0.35f, 0.08f, 0.25f),
         new HapticStep(0.18f, 0f, 0.30f));
 
+    // 전리품 기둥 첫 착지 - "쿵" 내려꽂히는 묵직한 첫 충격 뒤, 뽀잉 출렁임에 맞춰 한 번 더 작게 튄다.
+    // 상자 착지(containerLanding)보다 확실히 무겁고(전리품 첫 공개라는 큰 순간), 지진처럼 길게 끌지는 않는다.
+    // 셋째 단계의 짧은 재상승이 화면에서 기둥이 다시 늘어나는 첫 반동(약 0.15초 뒤)이다.
+    private static readonly HapticPattern lootPillarLanding = new HapticPattern(
+        new HapticStep(0.85f, 0.60f, 0.07f),
+        new HapticStep(0.30f, 0.15f, 0.08f),
+        new HapticStep(0.45f, 0.25f, 0.06f),
+        new HapticStep(0.15f, 0.05f, 0.10f));
+
     private static readonly HapticPattern[] patterns = BuildPatterns();
 
     /// <summary>
@@ -197,6 +206,7 @@ public static class HapticPresets
         _table[(int)EHapticEvent.ItemDropped] = itemDropped;
         _table[(int)EHapticEvent.BoomerangImpact] = boomerangImpact;
         _table[(int)EHapticEvent.Earthquake] = earthquake;
+        _table[(int)EHapticEvent.LootPillarLanding] = lootPillarLanding;
 
         return _table;
     }
@@ -216,6 +226,8 @@ public static class HapticPresets
         _table[(int)EHapticEvent.VehicleDismount] = 0.5f;
         _table[(int)EHapticEvent.StaminaDeath] = 0.5f;
         _table[(int)EHapticEvent.Earthquake] = 0.5f;
+        // 기둥 여러 개가 한꺼번에 떨어질 때(0.35초 간격) 착지마다 따로 울리도록 그 간격보다 짧게 둔다.
+        _table[(int)EHapticEvent.LootPillarLanding] = 0.3f;
 
         // 원목 묶음(4~7개)이 한 번에 튀어나와도 생성 진동은 한 번만 울린다.
         _table[(int)EHapticEvent.RareLogSpawn] = 0.2f;

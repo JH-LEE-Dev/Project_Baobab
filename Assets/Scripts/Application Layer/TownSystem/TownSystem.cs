@@ -134,6 +134,10 @@ public class TownSystem : MonoBehaviour
     public void StartTownSystem(SceneChangeData _sceneChangeData)
     {
         bTownSystemStarted = true;
+
+        // 아래 메인메뉴 인트로가 건너뛰어지면 조작 해제가 이 메서드 안에서 곧바로 오므로, 그보다 먼저 지난 방문 기록을 지운다.
+        lootPillarManager?.BeginTownVisit();
+
         townTileManager.CreateGrid();
 
         // 용광로 자리는 BlastColliderTilemap이 정하므로, Grid가 새로 생긴 뒤에 배치한다.
@@ -398,6 +402,7 @@ public class TownSystem : MonoBehaviour
         signalHub.Subscribe<TeleportUIClosedSignal>(TeleportUIClosed);
         signalHub.Subscribe<TentUIClosedSignal>(TentUIClosed);
         signalHub.Subscribe<LootPillarUIClosedSignal>(LootPillarUIClosed);
+        signalHub.Subscribe<TownArrivalControlUnlockedSignal>(TownArrivalControlUnlocked);
         signalHub.Subscribe<DungeonStartSignal>(DungeonStarted);
         signalHub.Subscribe<TeleportUIClosedWhileTeleportSignal>(TeleportUIClosedWhileTeleport);
         signalHub.Subscribe<RetryButtonClickedSignal>(RetryButtonClicked);
@@ -416,6 +421,7 @@ public class TownSystem : MonoBehaviour
         signalHub.UnSubscribe<TeleportUIClosedSignal>(TeleportUIClosed);
         signalHub.UnSubscribe<TentUIClosedSignal>(TentUIClosed);
         signalHub.UnSubscribe<LootPillarUIClosedSignal>(LootPillarUIClosed);
+        signalHub.UnSubscribe<TownArrivalControlUnlockedSignal>(TownArrivalControlUnlocked);
         signalHub.UnSubscribe<DungeonStartSignal>(DungeonStarted);
         signalHub.UnSubscribe<TeleportUIClosedWhileTeleportSignal>(TeleportUIClosedWhileTeleport);
         signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryButtonClicked);
@@ -544,6 +550,14 @@ public class TownSystem : MonoBehaviour
 
         // 특성 창에서 프레스티지를 올려 전리품 단계가 바뀌었다면, 창을 닫고 나온 지금 기둥의 진화 연출을 재생한다.
         lootPillarManager?.PlayPendingEvolutions();
+    }
+
+    // 던전 → 마을 귀환에서 조작이 풀린 순간. 처음 얻은 전리품의 기둥을 하늘에서 떨어뜨린다(메인메뉴 → 마을은 MainMenuIntroEnd).
+    private void TownArrivalControlUnlocked(TownArrivalControlUnlockedSignal _signal)
+    {
+        if (bCurrentlyTownScene == false) return;
+
+        lootPillarManager?.PlayPendingFirstReveals();
     }
 
     // LootPillar UI(UIView_ScreenModal)가 실제로 닫힐 때(상호작용 키 토글이 아닌 ESC·패드 Cancel로
@@ -998,6 +1012,9 @@ public class TownSystem : MonoBehaviour
 
         // 캐릭터가 실제로 움직일 수 있게 되는 시점(메인메뉴 -> 타운)에 타운 BGM을 재생한다.
         Sound.PlayBGM(SoundID.TownBGM);
+
+        // 처음 얻은 전리품의 기둥 등장 연출도 이 시점에 시작한다(던전 -> 타운은 TownArrivalControlUnlocked).
+        lootPillarManager?.PlayPendingFirstReveals();
 
         StartCoroutine(MainMenuIntroPopupUIUpCoroutine());
     }

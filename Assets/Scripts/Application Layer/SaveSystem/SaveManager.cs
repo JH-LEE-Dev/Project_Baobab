@@ -467,6 +467,10 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
             {
                 cachedSaveData.currentOwnedLoots.AddRange(inDungeonObjectManager.CurrentOwnedLoots);
             }
+
+            if (null == cachedSaveData.pendingLootPillarReveals) cachedSaveData.pendingLootPillarReveals = new List<LootType>(4);
+            cachedSaveData.pendingLootPillarReveals.Clear();
+            cachedSaveData.pendingLootPillarReveals.AddRange(inDungeonObjectManager.PendingPillarReveals);
         }
 
         // 8-3. 2·3·4 대지역 기믹 안내(Quest UI) 클리어 여부
@@ -953,6 +957,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
                 _data.bGoldTreePityArmed, _data.goldTreePityThreshold, _data.goldTreePityTreeKillCount);
 
             inDungeonObjectManager.RestoreOwnedLoots(_data.currentOwnedLoots);
+            inDungeonObjectManager.RestorePendingPillarReveals(_data.pendingLootPillarReveals);
         }
 
         // 8-3. 2·3·4 대지역 기믹 안내 클리어 여부 복구. 키가 없는 예전 세이브는 false로 읽혀 1회 안내된다.

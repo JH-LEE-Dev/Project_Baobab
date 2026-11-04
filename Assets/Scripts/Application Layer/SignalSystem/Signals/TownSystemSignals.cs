@@ -13,6 +13,10 @@ public struct ContainerUpdatedSignal { }
 public struct ItemAddedToLogContainerSignal { }
 public struct ReturnToTownCameraDownEndedSignal { }
 
+// 던전 → 마을 귀환에서 카메라 하강이 끝나 캐릭터가 움직일 수 있게 된 순간(InDungeonProductionManager.CameraDownIsEnd의 PauseMove(false)와 같은 프레임).
+// 위 ReturnToTownCameraDownEndedSignal은 HUD가 올라오는 0.7초 뒤라 따로 둔다. 처음 얻은 전리품의 기둥 등장 연출이 이 시점에 시작한다.
+public struct TownArrivalControlUnlockedSignal { }
+
 // 마을에서 플레이어가 OffroadVehicle에 실제로 상호작용(인터랙트 키 입력)한 시점.
 // PortalActivatedSignal은 던전 쪽 차량 상호작용에도 공용으로 쓰여 마을 전용 판별에는 쓸 수 없어 별도로 둔다.
 public struct TownOffroadVehicleActivatedSignal { }

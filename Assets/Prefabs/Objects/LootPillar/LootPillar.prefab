@@ -1028,6 +1028,26 @@ MonoBehaviour:
   growthPopWidthRatio: 0.6
   growthPopFrequency: 3.5
   growthPopDamping: 6
+  groundShadowRenderer: {fileID: 8881780152457882161}
+  revealLandingDustPrefab: {fileID: 5748764238649717206, guid: a2f48f48d8c96b64dbfeb7a97164b433, type: 3}
+  revealShadowLead: 0.2
+  revealFallDuration: 0.4
+  revealDropMargin: 0.5
+  revealFallbackHeight: 8
+  revealFallStretch: 0.3
+  revealHitStop: 0.06
+  revealSquashAmplitude: 0.4
+  revealSquashWidthRatio: 0.6
+  revealSquashDuration: 0.8
+  revealSquashFrequency: 3.2
+  revealSquashDamping: 5
+  revealFlashHold: 0.1
+  revealFlashDuration: 0.5
+  revealLootHopHeight: 0.4
+  revealLootHopDuration: 0.36
+  revealLootLandSquash: 0.22
+  revealLootLandDuration: 0.35
+  revealCameraShake: {x: 3.5, y: 0.25}
   useAuraOrbit: 1
   auraOrbitController: {fileID: 79144371278649808}
   auraSettings:

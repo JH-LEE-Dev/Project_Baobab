@@ -310,6 +310,36 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     
     public IReadOnlyList<LootType> CurrentOwnedLoots => currentOwnedLoots;
 
+    // 처음 얻었지만 아직 마을에서 기둥 등장 연출(하늘에서 떨어짐)을 보지 못한 전리품. 영구 획득 플래그가 처음 켜질 때 넣고,
+    // 마을에서 연출이 시작될 때 LootPillarManager가 뺀다. 세이브에 남아 연출 전에 게임을 꺼도 다음 마을 도착 때 재생된다.
+    // 이 키가 없는 예전 세이브는 빈 목록이라, 업데이트 전에 이미 얻은 전리품의 기둥은 떨어지지 않고 그대로 서 있다.
+    private readonly List<LootType> pendingPillarReveals = new List<LootType>(4);
+
+    public IReadOnlyList<LootType> PendingPillarReveals => pendingPillarReveals;
+
+    public bool IsPillarRevealPending(LootType _lootType) => pendingPillarReveals.Contains(_lootType);
+
+    public void ConsumePillarReveal(LootType _lootType) => pendingPillarReveals.Remove(_lootType);
+
+    public void RestorePendingPillarReveals(List<LootType> _loots)
+    {
+        pendingPillarReveals.Clear();
+        if (_loots == null) return;
+
+        for (int i = 0; i < _loots.Count; i++)
+        {
+            if (false == pendingPillarReveals.Contains(_loots[i])) pendingPillarReveals.Add(_loots[i]);
+        }
+    }
+
+    // 영구 획득 플래그가 이번에 처음 켜졌을 때만 기둥 등장 연출을 예약한다.
+    private void QueuePillarRevealIfFirst(bool _bWasAcquired, LootType _lootType)
+    {
+        if (true == _bWasAcquired || true == pendingPillarReveals.Contains(_lootType)) return;
+
+        pendingPillarReveals.Add(_lootType);
+    }
+
     // 나무 이벤트 핸들러 델리게이트 캐시. 메서드 그룹을 그대로 += / -= 하면 Get/Release마다
     // 델리게이트가 새로 할당되므로(생애당 27개) 처음 한 번만 만들어 재사용한다.
     private Action<TreeObj> onTreeDeadHandler;
@@ -978,19 +1008,23 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (_lootType == LootType.LostAndFoundBox)
         {
             // 대시는 여기서 켜지 않는다. 다음 숲 방문부터 GameInstaller가 영구 획득 여부로 켠다.
+            QueuePillarRevealIfFirst(bHasAcquiredLostAndFoundBox, _lootType);
             bHasAcquiredLostAndFoundBox = true;
         }
         else if (_lootType == LootType.SporePotion)
         {
+            QueuePillarRevealIfFirst(bHasAcquiredSporePotion, _lootType);
             bHasAcquiredSporePotion = true;
         }
         else if (_lootType == LootType.StarCompass)
         {
             // 별자리 표식은 이제 항상 기본으로 표시되므로, 이 아이템은 획득해도 별도 효과가 없다.
+            QueuePillarRevealIfFirst(bHasAcquiredStarCompass, _lootType);
             bHasAcquiredStarCompass = true;
         }
         else if (_lootType == LootType.ObsidianCharm)
         {
+            QueuePillarRevealIfFirst(bHasAcquiredObsidianCharm, _lootType);
             bHasAcquiredObsidianCharm = true;
         }
     }
