@@ -69,7 +69,7 @@ MonoBehaviour:
     rippleHeight: 0.375
     rippleWavelength: 6
     rippleWaves: 1.5
-    rippleShade: 0.3
+    rippleShade: 0.18
     entryCompleteSeconds: 3
     backgroundAssembleSeconds: 1.2
     backgroundPieceFadeSeconds: 0.3

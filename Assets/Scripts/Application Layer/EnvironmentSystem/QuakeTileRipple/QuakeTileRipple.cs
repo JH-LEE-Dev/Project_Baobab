@@ -1457,42 +1457,52 @@ public sealed class QuakeTileRipple
     {
         get
         {
-            if (null != outlineTile) return outlineTile;
-
-            const int size = 32;
-            const int faceRows = 16;
-            Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            texture.name = "QuakeRippleOutline";
-            texture.filterMode = FilterMode.Point;
-            texture.wrapMode = TextureWrapMode.Clamp;
-
-            Color32[] pixels = new Color32[size * size];
-            Color32 rim = new Color32(255, 255, 255, 255);
-            for (int row = 0; row < faceRows; row++)
-            {
-                // 윗면 마름모의 그 줄 폭: 위에서부터 4, 8, ... 32, 32, ... 4픽셀.
-                int fromEdge = row < faceRows / 2 ? row : faceRows - 1 - row;
-                int left = size / 2 - 2 - 2 * fromEdge;
-                int right = size / 2 + 1 + 2 * fromEdge;
-                bool bCapRow = 0 == row || faceRows - 1 == row;
-
-                // 텍스처는 아래가 0번 줄이다.
-                int y = size - 1 - row;
-                for (int x = left; x <= right; x++)
-                {
-                    if (bCapRow || x <= left + 1 || x >= right - 1) pixels[x + y * size] = rim;
-                }
-            }
-
-            texture.SetPixels32(pixels);
-            texture.Apply(false, true);
-
-            outlineTile = ScriptableObject.CreateInstance<Tile>();
-            outlineTile.name = "QuakeRippleOutline";
-            outlineTile.sprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), PixelsPerUnit, 0, SpriteMeshType.FullRect);
-            outlineTile.colliderType = Tile.ColliderType.None;
-            outlineTile.flags = TileFlags.None;
+            if (null == outlineTile) outlineTile = CreateFaceTile("QuakeRippleOutline", 0);
             return outlineTile;
         }
+    }
+
+    /// <summary>
+    /// 칸 윗면(마름모) 타일을 만든다. 테두리는 불투명 흰색, 안쪽은 _fillAlpha(0이면 비움) 흰색이다. 칸 색으로 물들인다.
+    /// 지진 물결 테두리(OutlineTile)는 안쪽이 빈 것이고, 로그라이크 파도는 마루를 밝히는 데 안쪽을 채운 것을 쓴다.
+    /// </summary>
+    internal static Tile CreateFaceTile(string _name, byte _fillAlpha)
+    {
+        const int size = 32;
+        const int faceRows = 16;
+        Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        texture.name = _name;
+        texture.filterMode = FilterMode.Point;
+        texture.wrapMode = TextureWrapMode.Clamp;
+
+        Color32[] pixels = new Color32[size * size];
+        Color32 rim = new Color32(255, 255, 255, 255);
+        Color32 fill = new Color32(255, 255, 255, _fillAlpha);
+        for (int row = 0; row < faceRows; row++)
+        {
+            // 윗면 마름모의 그 줄 폭: 위에서부터 4, 8, ... 32, 32, ... 4픽셀.
+            int fromEdge = row < faceRows / 2 ? row : faceRows - 1 - row;
+            int left = size / 2 - 2 - 2 * fromEdge;
+            int right = size / 2 + 1 + 2 * fromEdge;
+            bool bCapRow = 0 == row || faceRows - 1 == row;
+
+            // 텍스처는 아래가 0번 줄이다.
+            int y = size - 1 - row;
+            for (int x = left; x <= right; x++)
+            {
+                if (bCapRow || x <= left + 1 || x >= right - 1) pixels[x + y * size] = rim;
+                else if (_fillAlpha > 0) pixels[x + y * size] = fill;
+            }
+        }
+
+        texture.SetPixels32(pixels);
+        texture.Apply(false, true);
+
+        Tile tile = ScriptableObject.CreateInstance<Tile>();
+        tile.name = _name;
+        tile.sprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), PixelsPerUnit, 0, SpriteMeshType.FullRect);
+        tile.colliderType = Tile.ColliderType.None;
+        tile.flags = TileFlags.None;
+        return tile;
     }
 }

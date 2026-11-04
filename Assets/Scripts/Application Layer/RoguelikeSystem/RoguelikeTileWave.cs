@@ -17,17 +17,35 @@ public sealed class RoguelikeTileWaveSettings
     [Tooltip("앞머리 뒤로 물결이 몇 파장 동안 이어지다 잦아드는지. 마루 → 골 → 작은 마루 순으로 줄어든다.")]
     public float rippleWaves = 1.5f;
     [Tooltip("물결 골(내려간 칸)이 가장 깊을 때 어두워지는 정도(0~1). 타일에 명암이 없어 높이 차만으로는 물결이 잘 안 읽힌다.")]
-    public float rippleShade = 0.3f;
+    public float rippleShade = 0.18f;
+
+    [Header("바뀌는 칸")]
+    [Tooltip("칸이 새 지형으로 바뀌는 순간(진입은 블록이 나타나는 순간) 물결 위로 한 번 더 톡 솟는 높이(월드, 1 = 32픽셀). 0이면 끈다.")]
+    public float swapPopHeight = 0.125f;
+    [Tooltip("톡 솟았다 내려오는 구간(바닥 평면 거리). 짧을수록 빠르고 이웃 칸 높이 차가 커진다. 솟고 튕기는 구간이 물결 끝을 넘으면 그 안에 들어가게 줄여 쓴다(기본 물결에서 전환은 약 5, 진입은 6보다 길게 해도 같다).")]
+    public float swapPopLength = 2f;
+    [Tooltip("솟았다 내려온 뒤 살짝 아래로 튕기는 깊이(솟는 높이 대비 비율). 0이면 튕기지 않는다.")]
+    [Range(0f, 1f)] public float swapPopSettle = 0.35f;
+
+    [Header("앞머리 일렁임")]
+    [Tooltip("파도 앞머리가 완벽한 타원이 아니라 일렁이며 퍼지게 칸마다 섞는 거리(바닥 평면 거리). 0이면 끈다.")]
+    public float frontWobble = 0.6f;
+    [Tooltip("일렁임 무늬의 크기(월드 단위당 진동수). 작을수록 크고 완만한 굴곡이다.")]
+    public float frontWobbleScale = 0.12f;
 
     [Header("아웃라인")]
     [Tooltip("출렁이는 칸 윗면 테두리 색(지진 물결과 같은 연출). 바닥과 같은 재질(조명 영향)로 그린다. 알파는 최대 진하기다.")]
-    public Color outlineColor = new Color(1f, 0.64f, 0.38f, 0.9f);
+    public Color outlineColor = new Color(1f, 0.97f, 0.86f, 0.8f);
     [Tooltip("칸에 물결이 닿은 뒤 테두리가 다 드러나는 구간(물결 길이 대비 비율).")]
     [Range(0.01f, 1f)] public float outlineFadeIn = 0.08f;
     [Tooltip("물결 끝에서 테두리가 사라지기 시작하는 지점(물결 길이 대비 비율). 거기서 물결 끝까지 서서히 사라진다.")]
-    [Range(0f, 0.99f)] public float outlineFadeOutStart = 0.4f;
+    [Range(0f, 0.99f)] public float outlineFadeOutStart = 0.3f;
     [Tooltip("칸이 수평(높이 0)을 지날 때의 테두리 진하기 비율. 마루·골에서 1이다. 낮을수록 마루·골의 띠만 또렷하다.")]
     [Range(0f, 1f)] public float outlineOnLevel = 0.15f;
+    [Tooltip("골(내려간 칸)에서의 테두리 진하기 비율(마루 = 1). 낮을수록 골이 갈라진 틈처럼 보이지 않는다. outlineOnLevel보다 낮으면 outlineOnLevel로 쓴다(골이 수평일 때보다 옅어지지 않는다).")]
+    [Range(0f, 1f)] public float outlineTroughLevel = 0.4f;
+    [Tooltip("가장 높이 솟은 칸 윗면에 테두리 색을 이 비율(테두리 진하기 대비)만큼 엷게 덮어 빛을 받은 것처럼 밝힌다. 낮게 솟은 칸일수록 옅고, 마루 높이(rippleHeight)의 절반 아래로 솟은 칸은 밝히지 않는다. 0이면 테두리만 그린다.")]
+    [Range(0f, 1f)] public float crestGlow = 0.12f;
 
     [Header("진입·배경")]
     [Tooltip("진입 5단계 '모든 배경이 N초 이내에 완성'의 N(기획서 10장 임시값 3초). 진입 파도는 바닥 파도 + 배경 조립이 이 시간 안에 끝나도록 앞머리 속도를 맞춘다(frontSpeed보다 느려지지 않는다).")]
@@ -163,6 +181,16 @@ public sealed class RoguelikeTileWave
     private bool bHasAnimRef;
     // 파도가 퍼지는 중심과 지금 앞머리 거리·속도(재생 중에만 의미가 있다). 칸 단위가 아닌 장식이 파도에 맞춰 바뀔 때 쓴다.
     private Vector3 waveCenter;
+    // 앞머리 일렁임 무늬의 자리(파도마다 다른 무늬). 게임 난수(UnityEngine.Random)를 쓰지 않으려고 파도 번호로 정한다.
+    // 로그라이크 씬을 다시 불러오면 이 객체도 새로 만들어지므로, 번호는 정적으로 두어 들어올 때마다 첫 파도 무늬가 같지 않게 한다.
+    private static int waveSerial;
+    private Vector2 wobbleOffset;
+    // 솟은 칸 윗면을 밝히는 타일(테두리 + 엷게 채운 안쪽). 칸 높이에 따라 안쪽 진하기를 CrestGlowLevels 단계로 나눈다.
+    private const int CrestGlowLevels = 6;
+    private const float CrestGlowFrom = 0.5f;
+    // 안쪽 진하기(알파 값)별로 한 번만 만든다. crestGlow를 바꿔도 지난 타일을 버리지 않고(복제층·높이 사본 캐시에 아직 깔려 있을 수 있다)
+    // 새 값의 타일만 더 만든다 - 알파 값이 256가지뿐이라 끝없이 늘지 않는다.
+    private static readonly Tile[] crestGlowTiles = new Tile[256];
     private float frontDistance;
     private float frontSpeed;
 
@@ -177,7 +205,7 @@ public sealed class RoguelikeTileWave
     /// </summary>
     public bool TryGetSwapFront(out float _distance, out float _speed)
     {
-        _distance = frontDistance - (bEntry ? 0f : CrestDistance);
+        _distance = frontDistance - SwapDistance;
         _speed = frontSpeed;
         return bPlaying;
     }
@@ -185,7 +213,15 @@ public sealed class RoguelikeTileWave
     /// <summary>섬 중심에서 _worldPos까지의 파도 거리(바닥 평면 거리 - 아이소는 세로를 두 배로 편다). 칸은 중심 위치로 잰다.</summary>
     public float GetWaveDistance(Vector3 _worldPos)
     {
-        return new Vector2(_worldPos.x - waveCenter.x, (_worldPos.y - waveCenter.y) * 2f).magnitude;
+        float distance = new Vector2(_worldPos.x - waveCenter.x, (_worldPos.y - waveCenter.y) * 2f).magnitude;
+        if (settings.frontWobble <= 0f) return distance;
+
+        // 앞머리 일렁임: 칸 자리마다 완만한 무늬(펄린 노이즈)만큼 거리를 늘이거나 줄인다. 무늬가 연속이라 이웃 칸은 비슷하게 밀려 물결이 끊기지 않는다.
+        // 섬 중심 근처는 무늬를 줄여 첫 칸들이 한꺼번에 몰리거나 순서가 뒤집히지 않게 한다. 물 장식·구름도 이 거리를 써서 칸과 같이 바뀐다.
+        float scale = Mathf.Max(0.001f, settings.frontWobbleScale);
+        float noise = Mathf.PerlinNoise(_worldPos.x * scale + wobbleOffset.x, _worldPos.y * 2f * scale + wobbleOffset.y) * 2f - 1f;
+        float nearCenter = Mathf.SmoothStep(0f, 1f, distance / 2f);
+        return Mathf.Max(0f, distance + noise * settings.frontWobble * nearCenter);
     }
 
     /// <summary>마지막으로 준비(PrepareAfterGenerate)한 파도가 로비 진입 파도인지(아니면 티어 전환).</summary>
@@ -218,6 +254,8 @@ public sealed class RoguelikeTileWave
         FinishImmediately();
 
         waveCenter = _center;
+        waveSerial++;
+        wobbleOffset = new Vector2(37.1f * (waveSerial % 1000), 91.7f * (waveSerial % 1000));
         if (false == BindLayers()) return;
 
         BuildRegion(_center, _viewHalfSize);
@@ -785,8 +823,8 @@ public sealed class RoguelikeTileWave
             {
                 index = i,
                 cell = cell,
-                // 바닥 평면 거리(아이소는 세로가 절반으로 눌려 보이므로 세로를 두 배로 편다). 중앙에서 동심원으로 퍼진다.
-                key = new Vector2(offset.x, offset.y * 2f).magnitude,
+                // 바닥 평면 거리(아이소는 세로가 절반으로 눌려 보이므로 세로를 두 배로 편다). 중앙에서 동심원으로 퍼지며 앞머리가 살짝 일렁인다.
+                key = GetWaveDistance(pos),
                 // 화면 가장자리에 걸친 칸(중심은 밖이어도 일부가 보이는 칸)도 화면 안으로 친다.
                 bInView = Mathf.Abs(offset.x) <= viewHalfSize.x + cellSize.x && Mathf.Abs(offset.y) <= viewHalfSize.y + cellSize.y,
                 worldPos = pos,
@@ -945,7 +983,33 @@ public sealed class RoguelikeTileWave
 
         float wavelength = Mathf.Max(0.1f, settings.rippleWavelength);
         float fade = 1f - _distance / _length;
-        return settings.rippleHeight * Mathf.Sin(2f * Mathf.PI * _distance / wavelength) * fade;
+        return settings.rippleHeight * Mathf.Sin(2f * Mathf.PI * _distance / wavelength) * fade + SwapPop(_distance, _length);
+    }
+
+    /// <summary>칸이 새 지형으로 바뀌는 거리(진입은 블록이 나타나는 앞머리, 티어 전환은 첫 마루).</summary>
+    private float SwapDistance => bEntry ? 0f : CrestDistance;
+
+    // 솟았다 내려온 뒤 아래로 튕기는 구간 길이(솟는 구간 대비).
+    private const float SwapSettleSpan = 0.5f;
+
+    /// <summary>
+    /// 바뀌는 칸이 물결 위로 한 번 더 톡 솟는 높이. 바뀐 뒤 swapPopLength 동안 반 사인으로 솟았다 내려오고, 그 절반 동안 살짝 아래로 튕긴 뒤 멈춘다.
+    /// 앞머리에서 떨어진 거리만의 매끄러운 함수라 이웃 칸이 차례로 솟아 띠가 끊기지 않는다. 솟고 튕기는 구간이 물결 끝(_length)을 넘으면
+    /// 그 안에 들어가게 줄여, 물결이 끝나 칸이 제자리에 놓이는 순간 높이가 툭 떨어지지 않는다.
+    /// </summary>
+    private float SwapPop(float _distance, float _length)
+    {
+        float height = settings.swapPopHeight;
+        if (height <= 0f) return 0f;
+
+        float popLength = Mathf.Min(Mathf.Max(0.1f, settings.swapPopLength), (_length - SwapDistance) / (1f + SwapSettleSpan));
+        if (popLength <= 0f) return 0f;
+
+        float s = (_distance - SwapDistance) / popLength;
+        if (s <= 0f) return 0f;
+        if (s < 1f) return height * Mathf.Sin(Mathf.PI * s);
+        if (s < 1f + SwapSettleSpan) return -height * Mathf.Clamp01(settings.swapPopSettle) * Mathf.Sin(Mathf.PI * (s - 1f) / SwapSettleSpan);
+        return 0f;
     }
 
     /// <summary>물결 앞머리가 칸에 닿았다. 진입은 새 바닥 블록이 이 칸에 제 크기로 나타난다.</summary>
@@ -973,7 +1037,7 @@ public sealed class RoguelikeTileWave
         WaveCell cell = cells[_order];
 
         // 티어 전환: 첫 마루에서 새 지형으로 바꾼다(실제 층과 복제층 둘 다).
-        if (false == bEntry && StageReached == stage && _distance >= CrestDistance)
+        if (false == bEntry && StageReached == stage && _distance >= SwapDistance)
         {
             SwapCell(cell.cell, cell.index);
             SetLiftTiles(cell.cell, cell.index, shoreAfter, waterAfter);
@@ -1081,7 +1145,11 @@ public sealed class RoguelikeTileWave
         if (_distance < _length && liftShapeLayer >= 0 && null != tiles[liftShapeLayer][cell.index])
         {
             float wave = Mathf.Sin(2f * Mathf.PI * _distance / Mathf.Max(0.1f, settings.rippleWavelength));
-            float swing = Mathf.Lerp(Mathf.Clamp01(settings.outlineOnLevel), 1f, Mathf.Abs(wave));
+            // 마루에서 가장 또렷하고, 골에서는 옅게(골이 갈라진 틈처럼 보이지 않게).
+            // 골 진하기는 수평일 때보다 옅어지지 않게 한다(골로 깊어질수록 테두리가 사라지면 물결의 명암 순서가 뒤집혀 보인다).
+            float onLevel = Mathf.Clamp01(settings.outlineOnLevel);
+            float peak = wave >= 0f ? 1f : Mathf.Max(onLevel, Mathf.Clamp01(settings.outlineTroughLevel));
+            float swing = Mathf.Lerp(onLevel, peak, Mathf.Abs(wave));
             outline = OutlineEnvelope(_distance, _length) * swing;
         }
 
@@ -1138,13 +1206,38 @@ public sealed class RoguelikeTileWave
         {
             Color color = settings.outlineColor;
             color.a *= _step / (float)QuakeTileRipple.OutlineSteps;
-            TileBase tile = QuakeTileRipple.OffsetTile(QuakeTileRipple.OutlineTile, new Vector2Int(0, lastPixels[_order]));
+            // 솟은 칸은 윗면을 엷게 덮어 빛을 받은 것처럼 밝힌다. 높이가 0·음수로 바뀌면 칸 높이도 바뀌어(_bMoved) 테두리만인 타일로 다시 깐다.
+            Tile face = CrestGlowTile(lastPixels[_order]);
+            TileBase tile = QuakeTileRipple.OffsetTile(null != face ? face : QuakeTileRipple.OutlineTile, new Vector2Int(0, lastPixels[_order]));
             outlineChanges.Add(new TileChangeData(cell, tile, color, Matrix4x4.identity));
         }
         else if (last > 0)
         {
             outlineChanges.Add(new TileChangeData(cell, null, Color.white, Matrix4x4.identity));
         }
+    }
+
+    /// <summary>
+    /// _pixels 높이로 솟은 칸의 윗면 타일(테두리 + 안쪽을 엷게 채운 것). 물결 마루 높이(rippleHeight)에서 crestGlow만큼 채우고 낮을수록 옅으며, 마루 높이의 CrestGlowFrom 아래는 채우지 않는다.
+    /// 솟지 않았거나 crestGlow가 0이면 null(테두리만 그린다). 높이가 바뀌면 칸도 다시 깔리므로(_bMoved) 단계가 바뀌는 대로 따라간다.
+    /// </summary>
+    private Tile CrestGlowTile(int _pixels)
+    {
+        float glow = Mathf.Clamp01(settings.crestGlow);
+        if (_pixels <= 0 || glow <= 0f) return null;
+
+        // 마루 높이의 절반 아래는 밝히지 않는다(솟은 칸 전부가 뿌옇게 덮이지 않고 마루 띠만 빛나게).
+        float peak = Mathf.Max(1f, settings.rippleHeight * QuakeTileRipple.PixelsPerUnit);
+        float rise = Mathf.Clamp01((_pixels / peak - CrestGlowFrom) / (1f - CrestGlowFrom));
+        int level = Mathf.Clamp(Mathf.RoundToInt(rise * CrestGlowLevels), 0, CrestGlowLevels);
+        if (0 == level) return null;
+
+        byte alpha = (byte)Mathf.Clamp(Mathf.RoundToInt(glow * level / CrestGlowLevels * 255f), 1, 255);
+        if (null == crestGlowTiles[alpha])
+        {
+            crestGlowTiles[alpha] = QuakeTileRipple.CreateFaceTile("RoguelikeWaveCrestGlow" + alpha, alpha);
+        }
+        return crestGlowTiles[alpha];
     }
 
     /// <summary>이번 프레임에 모아 둔 칸 변경을 복제층마다 한 번에 쓴다(칸마다 SetTile·SetColor를 따로 부르면 호출 비용이 크다).</summary>
