@@ -150,11 +150,11 @@ public sealed class QuakeTileRipple
     // (바로 앞 줄은 0.25 아래) 화면에는 안 보이는 거리다.
     internal const float SortNudge = 0.001f;
     // 틈 빛 띠의 최대 높이(픽셀). 칸 옆벽 높이(16)와 같다.
-    private const int MaxGlowRows = 16;
+    internal const int MaxGlowRows = 16;
     // 이웃 칸 높이 차의 한도(픽셀). 옆벽(16)보다 크면 뒤 칸 옆벽 아래로 틈이 뚫린다. 칸마다 픽셀로 반올림해 1픽셀 더 벌어질 수 있어 한 줄 뺀다.
     private const int MaxNeighborRise = MaxGlowRows - 1;
     // 이보다 얕은 틈(드러난 벽 줄 수)은 비추지 않는다. 물결 꼬리의 얕은 높이 차까지 빛나면 화면이 용암 격자처럼 번잡하다.
-    private const int GlowMinRows = 2;
+    internal const int GlowMinRows = 2;
     // 틈 빛 진하기: GlowMinRows줄 틈 → GlowFullRows줄 틈에서 최소 → 최대. 틈 바닥에서 GlowFadeRows줄 위로 갈수록 옅어진다.
     // 용암 층 HDR 세기(4스테이지 2.25)가 곱해져, 최대 진하기 쪽만 블룸 임계값을 넘는다.
     private const float GlowMinStrength = 0.3f;
@@ -218,6 +218,9 @@ public sealed class QuakeTileRipple
     // 틈 빛 타일(띠 높이 1~MaxGlowRows별, 0번은 비움). 왼쪽 위·오른쪽 위 모서리용.
     private static Tile[] glowLeftTiles;
     private static Tile[] glowRightTiles;
+    // 같은 모양의 흰 틈 빛(로그라이크 파도가 칸 색으로 물들여 물빛으로 쓴다). 지진 물결은 쓰지 않는다.
+    private static Tile[] whiteGlowLeftTiles;
+    private static Tile[] whiteGlowRightTiles;
     // 원래 타일 → 피벗을 옮긴 사본(가로·세로 픽셀 오프셋별). 타일 에셋은 씬이 바뀌어도 그대로라 한 번 만든 사본을 계속 쓴다.
     private static readonly Dictionary<TileBase, Dictionary<int, TileBase>> offsetTiles = new Dictionary<TileBase, Dictionary<int, TileBase>>(16);
     // SetTiles에 넘기는 배열(길이 2의 거듭제곱별로 재사용). SetTiles는 배열 전체를 쓰므로 남는 자리는 마지막 항목을 되풀이해 채운다
@@ -1293,10 +1296,17 @@ public sealed class QuakeTileRipple
     /// 모서리 바로 위가 틈 바닥이라 가장 밝고, 위로 갈수록 주황 → 붉은 빛이 옅어진다. 색은 용암 타일 그림의 색 그대로이고
     /// 재질의 HDR 세기가 곱해져 깊은 틈에서 블룸이 난다. 틈이 좁으면 은은하다.
     /// </summary>
-    private static Tile GlowTile(int _rows, bool _bLeft)
+    internal static Tile GlowTile(int _rows, bool _bLeft)
     {
-        if (null == glowLeftTiles) BuildGlowTiles();
+        if (null == glowLeftTiles) BuildGlowTiles(glowPalette, "QuakeRippleCrackGlow", out glowLeftTiles, out glowRightTiles);
         return (_bLeft ? glowLeftTiles : glowRightTiles)[_rows];
+    }
+
+    /// <summary>GlowTile과 모양·진하기가 같은 흰 틈 빛. 칸 색으로 물들여 쓴다(로그라이크 파도의 물빛 틈 빛).</summary>
+    internal static Tile WhiteGlowTile(int _rows, bool _bLeft)
+    {
+        if (null == whiteGlowLeftTiles) BuildGlowTiles(whiteGlowPalette, "RoguelikeWaveCrackGlow", out whiteGlowLeftTiles, out whiteGlowRightTiles);
+        return (_bLeft ? whiteGlowLeftTiles : whiteGlowRightTiles)[_rows];
     }
 
     // 용암 타일 그림(Stage04_WaterTile)의 색: 가장자리 노랑 → 호박 → 주황 → 붉은 주황.
@@ -1309,12 +1319,22 @@ public sealed class QuakeTileRipple
         new Color32(215, 51, 3, 255),
     };
 
-    private static void BuildGlowTiles()
+    // 흰 틈 빛: 틈 바닥의 심만 희고 위로 갈수록 살짝 덜 밝다(진하기는 용암과 같이 알파로 옅어진다).
+    private static readonly Color32[] whiteGlowPalette =
+    {
+        new Color32(255, 255, 255, 255),
+        new Color32(240, 240, 240, 255),
+        new Color32(220, 220, 220, 255),
+        new Color32(200, 200, 200, 255),
+        new Color32(185, 185, 185, 255),
+    };
+
+    private static void BuildGlowTiles(Color32[] _palette, string _name, out Tile[] _leftTiles, out Tile[] _rightTiles)
     {
         const int size = 32;
         // 띠 높이별 32x32 칸을 가로로, 왼쪽(아래 줄)·오른쪽(위 줄)을 세로로 늘어놓은 한 장.
         Texture2D texture = new Texture2D(size * MaxGlowRows, size * 2, TextureFormat.RGBA32, false);
-        texture.name = "QuakeRippleCrackGlow";
+        texture.name = _name;
         texture.filterMode = FilterMode.Point;
         texture.wrapMode = TextureWrapMode.Clamp;
 
@@ -1344,7 +1364,7 @@ public sealed class QuakeTileRipple
                         if (glowRow < 0) break;
 
                         // 틈 바닥에서 멀어질수록 붉어지며 옅어진다.
-                        Color32 color = glowPalette[Mathf.Min(firstColor + d, glowPalette.Length - 1)];
+                        Color32 color = _palette[Mathf.Min(firstColor + d, _palette.Length - 1)];
                         float alpha = strength * Mathf.Clamp01(1f - d / (float)GlowFadeRows);
                         color.a = (byte)Mathf.RoundToInt(255f * alpha);
                         pixels[(originX + x) + (originY + size - 1 - glowRow) * texture.width] = color;
@@ -1356,16 +1376,16 @@ public sealed class QuakeTileRipple
         texture.SetPixels32(pixels);
         texture.Apply(false, true);
 
-        glowLeftTiles = new Tile[MaxGlowRows + 1];
-        glowRightTiles = new Tile[MaxGlowRows + 1];
+        _leftTiles = new Tile[MaxGlowRows + 1];
+        _rightTiles = new Tile[MaxGlowRows + 1];
         for (int side = 0; side < 2; side++)
         {
-            Tile[] tiles = 0 == side ? glowLeftTiles : glowRightTiles;
+            Tile[] tiles = 0 == side ? _leftTiles : _rightTiles;
             for (int rows = 1; rows <= MaxGlowRows; rows++)
             {
                 Rect rect = new Rect((rows - 1) * size, side * size, size, size);
                 Tile tile = ScriptableObject.CreateInstance<Tile>();
-                tile.name = "QuakeRippleCrackGlow_" + (0 == side ? "L" : "R") + rows;
+                tile.name = _name + "_" + (0 == side ? "L" : "R") + rows;
                 // 피벗은 그림 아래 가운데 = 칸 그림의 중심(칸 그림 위에서 16줄).
                 tile.sprite = Sprite.Create(texture, rect, new Vector2(0.5f, 0f), PixelsPerUnit, 0, SpriteMeshType.FullRect);
                 tile.sprite.name = tile.name;
@@ -1463,10 +1483,10 @@ public sealed class QuakeTileRipple
     }
 
     /// <summary>
-    /// 칸 윗면(마름모) 타일을 만든다. 테두리는 불투명 흰색, 안쪽은 _fillAlpha(0이면 비움) 흰색이다. 칸 색으로 물들인다.
+    /// 칸 윗면(마름모) 타일을 만든다. 테두리는 _rimAlpha(기본 불투명) 흰색, 안쪽은 _fillAlpha(0이면 비움) 흰색이다. 칸 색으로 물들인다.
     /// 지진 물결 테두리(OutlineTile)는 안쪽이 빈 것이고, 로그라이크 파도는 마루를 밝히는 데 안쪽을 채운 것을 쓴다.
     /// </summary>
-    internal static Tile CreateFaceTile(string _name, byte _fillAlpha)
+    internal static Tile CreateFaceTile(string _name, byte _fillAlpha, byte _rimAlpha = 255)
     {
         const int size = 32;
         const int faceRows = 16;
@@ -1476,7 +1496,7 @@ public sealed class QuakeTileRipple
         texture.wrapMode = TextureWrapMode.Clamp;
 
         Color32[] pixels = new Color32[size * size];
-        Color32 rim = new Color32(255, 255, 255, 255);
+        Color32 rim = new Color32(255, 255, 255, _rimAlpha);
         Color32 fill = new Color32(255, 255, 255, _fillAlpha);
         for (int row = 0; row < faceRows; row++)
         {

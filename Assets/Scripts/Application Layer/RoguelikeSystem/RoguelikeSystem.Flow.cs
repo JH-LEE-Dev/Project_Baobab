@@ -701,7 +701,7 @@ public partial class RoguelikeSystem
         if (false == _bEntryWave) cloudFade.CaptureBefore();
         environmentSystem.SpawnRoguelikeEnvironmentObjs(GetFieldViewRect(islandCenter, fieldCloudSettings.viewMargin), fieldCloudSettings.count,
             fieldCloudSettings.minSpeed, fieldCloudSettings.maxSpeed, fieldCloudSettings.alpha);
-        tileWave.PrepareAfterGenerate(islandCenter, islandReferenceViewSize * 0.5f, _bEntryWave);
+        tileWave.PrepareAfterGenerate(islandCenter, islandReferenceViewSize * 0.5f, _bEntryWave, MapType.MagmaForest == field.mapType);
         // 구름·물 장식은 파도 선을 따라 바뀐다. 파도가 진입으로 되돌렸는지는 IsEntryWave로 본다.
         cloudFade.PrepareAfterSpawn(fieldCloudSettings.alpha, fieldCloudSettings.fadeSeconds);
         waterDeco.Prepare(GetFieldViewRect(islandCenter, 0f), tileWave, tileWave.IsEntryWave);

@@ -65,11 +65,35 @@ MonoBehaviour:
   islandEdgeWaterTiles: 1
   centerSafeZoneRadius: 2
   tileWaveSettings:
-    frontSpeed: 14
+    frontSpeed: 11
+    frontEaseOut: 0.35
     rippleHeight: 0.375
-    rippleWavelength: 6
-    rippleWaves: 1.5
+    rippleWavelength: 8
+    rippleWaves: 2
     rippleShade: 0.18
+    swapPopHeight: 0.125
+    swapPopLength: 2
+    swapPopSettle: 0.35
+    frontWobble: 0.6
+    frontWobbleScale: 0.12
+    outlineColor: {r: 1, g: 0.97, b: 0.86, a: 0.8}
+    outlineFadeIn: 0.08
+    outlineFadeOutStart: 0.3
+    outlineOnLevel: 0.15
+    outlineTroughLevel: 0.4
+    lightMaterial: {fileID: 2100000, guid: 3ba68d0dcb9022249a165a54e96eda1e, type: 2}
+    crestGlow: 0.1
+    crestLightColor: {r: 1, g: 0.92, b: 0.72, a: 1}
+    swapFlash: 0.14
+    swapFlashLength: 1.75
+    seaRing: 0.1
+    seaRingColor: {r: 0.78, g: 0.93, b: 1, a: 1}
+    lavaLightColor: {r: 1, g: 0.72, b: 0.3, a: 1}
+    crackGlow: 1
+    crackGlowColor: {r: 0.62, g: 0.9, b: 1, a: 0.7}
+    refractionMaterial: {fileID: 2100000, guid: 54cfc9e5d0f24ee42b05ed1c76223983, type: 2}
+    refractionPixels: 2
+    refractionWidth: 1.2
     entryCompleteSeconds: 3
     backgroundAssembleSeconds: 1.2
     backgroundPieceFadeSeconds: 0.3

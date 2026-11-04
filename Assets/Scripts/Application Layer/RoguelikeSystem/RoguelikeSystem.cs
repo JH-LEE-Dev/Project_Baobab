@@ -394,7 +394,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         StopAllCoroutines();
         flowCoroutine = null;
         tileWaveCoroutine = null;
-        tileWave.FinishImmediately();
+        tileWave.Release();
         productionGate.CancelAll();
         RoguelikeScreenTransition.ClearIfCovering();
         EndRunClearCinematic();
