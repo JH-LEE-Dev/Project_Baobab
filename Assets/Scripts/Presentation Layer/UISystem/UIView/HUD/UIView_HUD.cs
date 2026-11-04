@@ -35,6 +35,12 @@ public class UIView_HUD : UIView
     private HUD_Message hudMessage;
     private HUD_ScreenBlood hudScreenBlood;
 
+    // 던전 입장 배너(HUD_Message) 연출이 끝까지 재생된 순간. 대지역 기믹 안내 Quest UI를 이 뒤에 띄운다.
+    public event Action DungeonMessageCompletedEvent;
+
+    // 던전 입장 배너가 재생 중인지(시작 지연 구간 포함).
+    public bool IsDungeonMessagePlaying => null != hudMessage && hudMessage.IsPlaying;
+
     // 모션 중첩 방지를 위한 현재 재생 중인 엔트리 참조
     private MotionEntry goDownEntry;
     private MotionEntry goUpEntry;
@@ -87,7 +93,14 @@ public class UIView_HUD : UIView
         UnbindDashState();
 
         hudEquipment?.OnDestroy();
-        hudMessage?.Release();
+
+        if (null != hudMessage)
+        {
+            hudMessage.PlayCompletedEvent -= OnDungeonMessageCompleted;
+            hudMessage.Release();
+        }
+
+        DungeonMessageCompletedEvent = null;
     }
 
     protected override void OnShow() //이 UI가 켜졌을 때 호출 됨.
@@ -424,7 +437,16 @@ public class UIView_HUD : UIView
         }
 
         if (null != hudMessage)
+        {
             hudMessage.Initialize(viewCtx?.localizationManager);
+            hudMessage.PlayCompletedEvent -= OnDungeonMessageCompleted;
+            hudMessage.PlayCompletedEvent += OnDungeonMessageCompleted;
+        }
+    }
+
+    private void OnDungeonMessageCompleted()
+    {
+        DungeonMessageCompletedEvent?.Invoke();
     }
 
 

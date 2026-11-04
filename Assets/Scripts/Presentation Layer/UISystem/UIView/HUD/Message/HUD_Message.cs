@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using PresentationLayer.UISystem;
@@ -39,6 +40,12 @@ public class HUD_Message : MonoBehaviour
     private Graphic[] graphicTargets;
     private BgPiece[] bgPieces;
 
+    // 배너 연출(등장 → 유지 → 퇴장)이 끝까지 재생된 순간. Hide()로 중간에 끊긴 경우에는 발행하지 않는다.
+    public event Action PlayCompletedEvent;
+
+    // 배너 연출이 재생 중인지(시작 지연 구간 포함).
+    public bool IsPlaying => null != animationCoroutine;
+
     public void Initialize(LocalizationManager _localizationManager)
     {
         localizationManager = _localizationManager;
@@ -58,6 +65,8 @@ public class HUD_Message : MonoBehaviour
     {
         if (null != localizationManager)
             localizationManager.OnLanguageChanged -= RefreshTexts;
+
+        PlayCompletedEvent = null;
     }
 
     public void SetMessage(ForestType _forestType, DungeonState _dungeonState)
@@ -108,6 +117,8 @@ public class HUD_Message : MonoBehaviour
 
         animationCoroutine = null;
         gameObject.SetActive(false);
+
+        PlayCompletedEvent?.Invoke();
     }
 
     private IEnumerator PlayShowAnimation()
@@ -263,7 +274,7 @@ public class HUD_Message : MonoBehaviour
 
         for (int i = delays.Length - 1; i > 0; i--)
         {
-            int randomIndex = Random.Range(0, i + 1);
+            int randomIndex = UnityEngine.Random.Range(0, i + 1);
             float temp = delays[i];
             delays[i] = delays[randomIndex];
             delays[randomIndex] = temp;

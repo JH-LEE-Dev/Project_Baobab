@@ -177,6 +177,18 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.TreeShieldRecoveringEvent -= TreeShieldRecovering;
         inDungeonObjectManager.TreeShieldRecoveringEvent += TreeShieldRecovering;
 
+        inDungeonObjectManager.TreeShieldBrokenNotifyEvent -= TreeShieldBroken;
+        inDungeonObjectManager.TreeShieldBrokenNotifyEvent += TreeShieldBroken;
+
+        inDungeonObjectManager.ConstellationManifestedEvent -= ConstellationManifested;
+        inDungeonObjectManager.ConstellationManifestedEvent += ConstellationManifested;
+
+        inDungeonObjectManager.EmberAcquiredNotifyEvent -= EmberAcquired;
+        inDungeonObjectManager.EmberAcquiredNotifyEvent += EmberAcquired;
+
+        inDungeonObjectManager.OffroadVehicleInteractedEvent -= OffroadVehicleInteracted;
+        inDungeonObjectManager.OffroadVehicleInteractedEvent += OffroadVehicleInteracted;
+
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.CarrotItemAcquiredEvent += CarrotItemAcquired;
 
@@ -239,6 +251,10 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.TreeGetHitEvent -= TreeGetHit;
         inDungeonObjectManager.TreeGemTransformedEvent -= TreeGemTransformed;
         inDungeonObjectManager.TreeShieldRecoveringEvent -= TreeShieldRecovering;
+        inDungeonObjectManager.TreeShieldBrokenNotifyEvent -= TreeShieldBroken;
+        inDungeonObjectManager.ConstellationManifestedEvent -= ConstellationManifested;
+        inDungeonObjectManager.EmberAcquiredNotifyEvent -= EmberAcquired;
+        inDungeonObjectManager.OffroadVehicleInteractedEvent -= OffroadVehicleInteracted;
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.GemOreItemAcquiredEvent -= GemOreItemAcquired;
         inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
@@ -406,6 +422,27 @@ public class InDungeonSystem : MonoBehaviour
     private void TreeShieldRecovering(TreeObj _treeObj)
     {
         signalHub.Publish(new TreeShieldRecoveringSignal(_treeObj));
+    }
+
+    // 대지역 기믹 안내(RegionGuideSystem) 클리어 판정용 알림 중계
+    private void TreeShieldBroken()
+    {
+        signalHub.Publish(new TreeShieldBrokenSignal());
+    }
+
+    private void ConstellationManifested()
+    {
+        signalHub.Publish(new ConstellationManifestedSignal());
+    }
+
+    private void EmberAcquired()
+    {
+        signalHub.Publish(new EmberAcquiredSignal());
+    }
+
+    private void OffroadVehicleInteracted()
+    {
+        signalHub.Publish(new OffroadVehicleInteractedSignal());
     }
 
     private void GoHome(GoHomeButtonClickedSignal goHomeButtonClickedSignal)

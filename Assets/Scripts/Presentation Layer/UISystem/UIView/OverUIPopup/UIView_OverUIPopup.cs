@@ -115,6 +115,28 @@ public class UIView_OverUIPopup : UIView
     }
 
     /// <summary>
+    /// 2·3·4 대지역 첫 입장 기믹 안내가 시작됨 - 튜토리얼과 같은 Quest UI로 띄운다.
+    /// </summary>
+    public void RegionGuideStarted(TutorialStep _step)
+    {
+        if (null != tutorialQuest)
+        {
+            tutorialQuest.OnTutorialStepStarted(_step);
+        }
+    }
+
+    /// <summary>
+    /// 대지역 기믹 안내의 클리어 조건이 충족됨 - 완료 연출 후 Quest UI를 내린다.
+    /// </summary>
+    public void RegionGuideCompleted(TutorialStep _step)
+    {
+        if (null != tutorialQuest)
+        {
+            tutorialQuest.OnTutorialStepCompleted(_step);
+        }
+    }
+
+    /// <summary>
     /// ESC 메뉴(일시정지) 열림/닫힘에 따라 튜토리얼 퀘스트 UI를 임시로 닫거나 복원합니다.
     /// </summary>
     public void SetPauseState(bool _isPaused)
