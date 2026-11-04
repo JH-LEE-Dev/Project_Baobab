@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using TMPro;
 using DG.Tweening;
 using UnityEngine;
@@ -110,6 +111,29 @@ public class HUD_LootReveal : MonoBehaviour
     [SerializeField] private TMP_Text lootGrowthText;
     [Tooltip("단계별 스프라이트(씨앗/꽃/나무). 비워 두면 LootItemTypeDataBase의 기본 스프라이트를 쓴다.")]
     [SerializeField] private LootGrowthVisualData growthVisualData;
+
+    // ─── Key Icon (설명 문구 속 {key:액션명} → 키 아이콘) ─────────────────────
+    [Header("── Key Icon ─────────────────────────────────────────────────────")]
+    [Tooltip("설명 문구의 {key:Dash} 같은 토큰을 지금 장치·바인딩의 키 아이콘으로 바꿀 때 쓴다. 비우면 \"[키 이름]\" 텍스트로 대신 나온다.")]
+    [SerializeField] private KeyIconDatabase keyIconDatabase;
+
+    // 윗단이 SetInputManager로 넣어 준다. 장치 전환·리바인딩 시 설명을 다시 채우려고 이벤트를 구독한다.
+    private InputManager inputManager;
+    private LocalizationManager revealLocManager;
+    private readonly StringBuilder keyIconBuilder = new StringBuilder(256);
+    private Action<EInputDeviceType> cachedOnInputDeviceChanged;
+    private Action<EGamepadIconSet> cachedOnGamepadIconSetChanged;
+    private Action cachedOnKeyBindingsChanged;
+
+    // 단계별 로컬라이즈 키. 인덱스 = 성장 단계 - 1 (1 씨앗 / 2 꽃 / 3 나무). 용암은 꽃 없이 씨앗 → 나무로 자란다.
+    private static readonly string[] lostAndFoundBoxNameKeys = { "name_lostandfoundbox_t1", "name_lostandfoundbox_t2", "name_lostandfoundbox_t3" };
+    private static readonly string[] sporePotionNameKeys = { "name_sporepotion_t1", "name_sporepotion_t2", "name_sporepotion_t3" };
+    private static readonly string[] starCompassNameKeys = { "name_starcompass_t1", "name_starcompass_t2", "name_starcompass_t3" };
+    private static readonly string[] obsidianCharmNameKeys = { "name_obsidiancharm_t1", "name_obsidiancharm_t1", "name_obsidiancharm_t3" };
+    private static readonly string[] lostAndFoundBoxDescKeys = { "desc_lostandfoundbox_t1", "desc_lostandfoundbox_t2", "desc_lostandfoundbox_t3" };
+    private static readonly string[] sporePotionDescKeys = { "desc_sporepotion_t1", "desc_sporepotion_t2", "desc_sporepotion_t3" };
+    private static readonly string[] starCompassDescKeys = { "desc_starcompass_t1", "desc_starcompass_t2", "desc_starcompass_t3" };
+    private static readonly string[] obsidianCharmDescKeys = { "desc_obsidiancharm_t1", "desc_obsidiancharm_t1", "desc_obsidiancharm_t3" };
 
     // ─── Timing ───────────────────────────────────────────────────────────────
     [Header("── Timing ───────────────────────────────────────────────────────")]
@@ -247,6 +271,62 @@ public class HUD_LootReveal : MonoBehaviour
                 if (null != _p) _p.DOKill();
             }
         }
+
+        UnsubscribeInputEvents();
+    }
+
+    /// <summary>
+    /// 설명 문구의 키 아이콘을 지금 장치·바인딩에 맞추려고 InputManager를 연결한다. 윗단(UIView_ScreenModal)이 한 번 호출한다.
+    /// 연결하지 않으면 키 토큰은 "[액션명]" 텍스트로 나온다.
+    /// </summary>
+    public void SetInputManager(InputManager _inputManager)
+    {
+        UnsubscribeInputEvents();
+
+        inputManager = _inputManager;
+
+        if (null == cachedOnInputDeviceChanged)
+        {
+            cachedOnInputDeviceChanged = OnInputDeviceChanged;
+            cachedOnGamepadIconSetChanged = OnGamepadIconSetChanged;
+            cachedOnKeyBindingsChanged = RefreshDescText;
+        }
+
+        if (null != inputManager && null != inputManager.inputReader)
+        {
+            inputManager.inputReader.InputDeviceChangedEvent += cachedOnInputDeviceChanged;
+            inputManager.inputReader.GamepadIconSetChangedEvent += cachedOnGamepadIconSetChanged;
+            inputManager.inputReader.KeyBindingsChangedEvent += cachedOnKeyBindingsChanged;
+        }
+    }
+
+    private void UnsubscribeInputEvents()
+    {
+        if (null == inputManager || null == inputManager.inputReader || null == cachedOnInputDeviceChanged)
+            return;
+
+        inputManager.inputReader.InputDeviceChangedEvent -= cachedOnInputDeviceChanged;
+        inputManager.inputReader.GamepadIconSetChangedEvent -= cachedOnGamepadIconSetChanged;
+        inputManager.inputReader.KeyBindingsChangedEvent -= cachedOnKeyBindingsChanged;
+    }
+
+    private void OnInputDeviceChanged(EInputDeviceType _device)
+    {
+        RefreshDescText();
+    }
+
+    private void OnGamepadIconSetChanged(EGamepadIconSet _iconSet)
+    {
+        RefreshDescText();
+    }
+
+    // 떠 있는 동안 장치가 바뀌거나 키를 다시 정하면 설명만 다시 채운다(슬라이드 연출은 건드리지 않는다).
+    private void RefreshDescText()
+    {
+        if (false == isShowing || true == isHiding)
+            return;
+
+        SetDescText(revealLootType, revealLocManager);
     }
 
     /// <summary>
@@ -582,11 +662,12 @@ public class HUD_LootReveal : MonoBehaviour
 
     private void SetLocalizedTexts(LootType _lootType, LocalizationManager _locManager)
     {
+        revealLocManager = _locManager;
+
         if (null == _locManager)
             return;
 
-        string _nameKey = GetNameKey(_lootType);
-        string _descKey = GetDescKey(_lootType);
+        string _nameKey = GetNameKey(_lootType, GetRevealTier(_lootType));
 
         if (null != lootNameText)
         {
@@ -594,13 +675,26 @@ public class HUD_LootReveal : MonoBehaviour
             lootNameText.ForceMeshUpdate(true);
         }
 
-        if (null != lootDescText)
-        {
-            lootDescText.text = _locManager.GetText(_descKey);
-            lootDescText.ForceMeshUpdate(true);
-        }
-
+        SetDescText(_lootType, _locManager);
         SetGrowthText(_lootType, _locManager);
+    }
+
+    // 설명에 든 {key:액션명} 토큰은 지금 장치·바인딩의 키 아이콘으로 바꿔 넣는다.
+    private void SetDescText(LootType _lootType, LocalizationManager _locManager)
+    {
+        if (null == lootDescText || null == _locManager)
+            return;
+
+        string _desc = _locManager.GetText(GetDescKey(_lootType, GetRevealTier(_lootType)));
+        lootDescText.text = TMPKeyIconFormatter.Format(_desc, inputManager, keyIconDatabase, keyIconBuilder);
+        lootDescText.ForceMeshUpdate(true);
+    }
+
+    // 이름·설명을 고를 성장 단계. 아직 얻지 않았거나(0) 정보가 연결되지 않았으면 첫 단계(씨앗) 문구를 쓴다.
+    private int GetRevealTier(LootType _lootType)
+    {
+        int _tier = null != growthTierGetter ? growthTierGetter(_lootType) : 0;
+        return Mathf.Clamp(_tier, 1, 3);
     }
 
     // 설명 아래 "[꽃] N 에서 성장" / "최대 성장" 한 줄. 정보가 없으면 줄 자체를 숨긴다.
@@ -626,25 +720,28 @@ public class HUD_LootReveal : MonoBehaviour
         lootGrowthText.ForceMeshUpdate(true);
     }
 
-    private string GetNameKey(LootType _type)
+    // _tier는 1~3 (GetRevealTier로 보정된 값)
+    private string GetNameKey(LootType _type, int _tier)
     {
         switch (_type)
         {
-            case LootType.LostAndFoundBox:  return "name_lostandfoundbox";
-            case LootType.SporePotion:      return "name_sporepotion";
-            case LootType.StarCompass:      return "name_starcompass";
-            case LootType.ObsidianCharm:    return "name_obsidiancharm";
+            case LootType.LostAndFoundBox:  return lostAndFoundBoxNameKeys[_tier - 1];
+            case LootType.SporePotion:      return sporePotionNameKeys[_tier - 1];
+            case LootType.StarCompass:      return starCompassNameKeys[_tier - 1];
+            case LootType.ObsidianCharm:    return obsidianCharmNameKeys[_tier - 1];
             default:                        return string.Empty;
         }
     }
 
-    private string GetDescKey(LootType _type)
+    // _tier는 1~3 (GetRevealTier로 보정된 값)
+    private string GetDescKey(LootType _type, int _tier)
     {
         switch (_type)
         {
-            case LootType.LostAndFoundBox:  return "foundbox";
-            case LootType.SporePotion:      return "sporepotion";
-            case LootType.StarCompass:      return "starcompass";
+            case LootType.LostAndFoundBox:  return lostAndFoundBoxDescKeys[_tier - 1];
+            case LootType.SporePotion:      return sporePotionDescKeys[_tier - 1];
+            case LootType.StarCompass:      return starCompassDescKeys[_tier - 1];
+            case LootType.ObsidianCharm:    return obsidianCharmDescKeys[_tier - 1];
             default:                        return string.Empty;
         }
     }

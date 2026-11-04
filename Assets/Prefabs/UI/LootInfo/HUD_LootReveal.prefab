@@ -552,6 +552,7 @@ MonoBehaviour:
   descSlideEase: 12
   lootGrowthText: {fileID: 7273777732531438569}
   growthVisualData: {fileID: 11400000, guid: 375a568b97f461e4db5c2df342e2bc02, type: 2}
+  keyIconDatabase: {fileID: 11400000, guid: 5ad5b4a60909f49448135e101a5170f8, type: 2}
   pillarStartDelay: 0
   lootStartDelay: 0.1
   textStartDelay: 0.05
