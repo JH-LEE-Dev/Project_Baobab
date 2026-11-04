@@ -146,6 +146,8 @@ namespace PresentationLayer.VFX
         private int appliedSortingOrder = int.MinValue;
         private Vector3 lastDrawPosition;
         private float lastDrawScale = -1.0f;
+        // 마지막 계산 스텝이 쓴 불씨 위치. 한 프레임에 스텝이 여러 번 돌 때 이 위치에서 현재 위치까지 나눠 쓴다.
+        private Vector3 lastStepPosition;
 
         // 일반 비즈니스 로직 및 내부 메서드
 
@@ -265,12 +267,15 @@ namespace PresentationLayer.VFX
 
         // ---------- 60Hz 계산 ----------
 
-        private void StepOnce(float _scale)
+        // _position: 이 스텝 시점의 불씨 위치. 한 프레임에 스텝이 여러 번 돌면 LateUpdate가 지난 스텝 위치와 현재 위치 사이를 나눠 넘긴다
+        // (모두 현재 위치를 읽으면 두 번째 스텝부터 이동량이 0이라 날아가는 중인데도 바닥 상태로 판정된다).
+        private void StepOnce(float _scale, Vector3 _position)
         {
             time += StepInterval;
 
             // 불덩이 중심(월드 px). 위아래로 1px 떠 있다.
-            Vector3 pos = transform.position;
+            Vector3 pos = _position;
+            lastStepPosition = _position;
             float bob = Mathf.Round(Mathf.Sin(time * 2.4f + phase * 6.0f));
             orbX = pos.x * PixelsPerUnit;
             orbY = pos.y * PixelsPerUnit + OrbCenterY + bob;
@@ -595,18 +600,28 @@ namespace PresentationLayer.VFX
             }
 
             accumulator += dt;
+            int pendingSteps = 0;
+            float pendingTime = accumulator;
+            while (StepInterval <= pendingTime && pendingSteps < MaxStepsPerFrame)
+            {
+                pendingTime -= StepInterval;
+                pendingSteps++;
+            }
+
+            // 이번 프레임 이동을 스텝 수만큼 나눠, 스텝마다 그 시점 위치로 계산한다
+            Vector3 stepFrom = true == bHasPrevious ? lastStepPosition : pos;
             int steps = 0;
-            while (StepInterval <= accumulator && steps < MaxStepsPerFrame)
+            while (steps < pendingSteps)
             {
                 accumulator -= StepInterval;
-                StepOnce(scale);
                 steps++;
+                StepOnce(scale, Vector3.Lerp(stepFrom, pos, steps / (float)pendingSteps));
             }
 
             if (StepInterval <= accumulator) accumulator = 0.0f;
             if (false == bHasPrevious)
             {
-                StepOnce(scale);
+                StepOnce(scale, pos);
                 steps++;
             }
 
