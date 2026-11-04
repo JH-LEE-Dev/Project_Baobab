@@ -1058,6 +1058,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         offroadVehicle.ResetObject();
         offroadVehicle.SetCanTravel(true);
         offroadVehicle.col.enabled = false;
+        offroadVehicle.SetPicnicBasket(bHasPicnicBasket);
         BindPortalEvents();
 
         if (currentMapType == MapType.StarrootForest || currentMapType == MapType.MagmaForest)
@@ -2667,6 +2668,17 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         return false;
+    }
+
+    // 엔딩 특성(소풍 바구니). 던전 오프로드의 운반 상자도 바구니 모습으로 보인다.
+    private bool bHasPicnicBasket;
+
+    public void SetPicnicBasket(bool _bPicnicBasket)
+    {
+        bHasPicnicBasket = _bPicnicBasket;
+
+        if (offroadVehicle != null)
+            offroadVehicle.SetPicnicBasket(bHasPicnicBasket);
     }
 
     public void IncreaseGrowthSpeed(float _amount)

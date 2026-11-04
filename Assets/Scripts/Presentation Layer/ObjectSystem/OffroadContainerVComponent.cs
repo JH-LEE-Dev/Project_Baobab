@@ -46,6 +46,22 @@ public class OffroadContainerVComponent : MonoBehaviour
     private SpriteRenderer outlineSR;
     private Sprite currentSprite;
 
+    // 엔딩 특성(소풍 바구니)을 찍으면 상자 대신 바구니로 보인다. 기능은 상자와 같다.
+    // 아직 바구니 리소스가 없으므로 비워 두면 상자 모습이 그대로 유지된다.
+    [Header("Picnic Basket")]
+    [SerializeField] private RuntimeAnimatorController picnicBasketAnimator; // 열고 닫는 애니메이션 (bOpen 파라미터 동일)
+    [SerializeField] private Sprite picnicBasketJumpSprite;    // 차로 뛰어오를 때
+    [SerializeField] private Sprite picnicBasketOpenSprite;    // 열림 연출용 오브젝트
+    [SerializeField] private Sprite picnicBasketCarriedSprite; // 차 위에 실렸을 때
+    private RuntimeAnimatorController originalAnimator;
+    private SpriteRenderer jumpSR;
+    private SpriteRenderer openSR;
+    private SpriteRenderer carriedSR;
+    private Sprite originalJumpSprite;
+    private Sprite originalOpenSprite;
+    private Sprite originalCarriedSprite;
+    private bool bPicnicBasket;
+
     public void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -74,6 +90,38 @@ public class OffroadContainerVComponent : MonoBehaviour
 
         outlineStencilSR = outlineStencilObj.GetComponent<SpriteRenderer>();
         outlineSR = outlineObj.GetComponentInChildren<SpriteRenderer>();
+
+        originalAnimator = anim != null ? anim.runtimeAnimatorController : null;
+        jumpSR = containerForJump != null ? containerForJump.GetComponentInChildren<SpriteRenderer>(true) : null;
+        openSR = containerForOpen != null ? containerForOpen.GetComponentInChildren<SpriteRenderer>(true) : null;
+        carriedSR = carriedContainer != null ? carriedContainer.GetComponentInChildren<SpriteRenderer>(true) : null;
+        if (jumpSR != null) originalJumpSprite = jumpSR.sprite;
+        if (openSR != null) originalOpenSprite = openSR.sprite;
+        if (carriedSR != null) originalCarriedSprite = carriedSR.sprite;
+    }
+
+    /// <summary>
+    /// 소풍 바구니 모습으로 바꾸거나 상자로 되돌린다. 비어 있는 슬롯은 상자 모습을 그대로 쓴다.
+    /// </summary>
+    public void SetPicnicBasket(bool _bPicnicBasket)
+    {
+        if (bPicnicBasket == _bPicnicBasket) return;
+        bPicnicBasket = _bPicnicBasket;
+
+        if (anim != null)
+        {
+            RuntimeAnimatorController target = bPicnicBasket && picnicBasketAnimator != null ? picnicBasketAnimator : originalAnimator;
+            if (target != null && anim.runtimeAnimatorController != target)
+            {
+                bool bWasOpen = anim.GetBool(bOpenHash);
+                anim.runtimeAnimatorController = target;
+                anim.SetBool(bOpenHash, bWasOpen);
+            }
+        }
+
+        if (jumpSR != null) jumpSR.sprite = bPicnicBasket && picnicBasketJumpSprite != null ? picnicBasketJumpSprite : originalJumpSprite;
+        if (openSR != null) openSR.sprite = bPicnicBasket && picnicBasketOpenSprite != null ? picnicBasketOpenSprite : originalOpenSprite;
+        if (carriedSR != null) carriedSR.sprite = bPicnicBasket && picnicBasketCarriedSprite != null ? picnicBasketCarriedSprite : originalCarriedSprite;
     }
 
     public void LateUpdate()

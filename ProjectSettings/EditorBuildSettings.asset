@@ -17,5 +17,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/RoguelikeScene.unity
     guid: 81e24dc631dd1b94a8a646cd80a72790
+  - enabled: 1
+    path: Assets/Scenes/EndingScene.unity
+    guid: adfe57658bd643645b9ed9e1104411cc
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}

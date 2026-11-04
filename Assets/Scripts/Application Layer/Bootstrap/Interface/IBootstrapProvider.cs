@@ -12,4 +12,7 @@ public interface IBootStrapProvider
 
     /// <summary>메인메뉴 → 로그라이크 모드. 본편 세이브를 읽지도 지우지도 않는다.</summary>
     void GoToRoguelikeFromMainMenu();
+
+    /// <summary>마을 → 엔딩 씬. 메인메뉴로 나갈 때처럼 GameInstaller를 해제하고 넘어간다.</summary>
+    void GoToEndingScene();
 }

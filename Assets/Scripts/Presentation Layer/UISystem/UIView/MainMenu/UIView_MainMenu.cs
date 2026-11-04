@@ -74,6 +74,8 @@ public class UIView_MainMenu : UIView
     // 본편 버튼은 누르는 즉시 메뉴를 내리지만 로그라이크는 메뉴를 띄운 채 출렁이게 하므로, 그 사이 이어하기 등이 눌리면 두 흐름이 겹친다.
     private bool bRoguelikeEntryPlaying;
     private IMainMenuSaveSystem saveSystem;
+    // 엔딩을 마치고 돌아와 "계속 하려면 아무 키나 누르십시오"를 띄운 상태인지. 키를 누르면 평소 문구로 돌아간다.
+    private bool bEndingPressAnyKey;
 
     // 한 번 스플래시를 본 이후(예: 인게임에서 ESC로 메인 메뉴로 돌아왔을 때) 스플래시를 생략하기 위한 정적 변수
     private static bool hasPlayedSplash = false;
@@ -144,7 +146,7 @@ public class UIView_MainMenu : UIView
         if (null != pressAnyKeyUI)
         {
             pressAnyKeyUI.Initialize(this, _ctx?.inputManager);
-            pressAnyKeyUI.SetText(_ctx.localizationManager.GetText(mainMenuUIJsonId, 99));
+            ApplyPressAnyKeyText();
         }
         
         if (null != logoAnimUI)
@@ -220,6 +222,9 @@ public class UIView_MainMenu : UIView
     {
         Sound.PlayUI(SoundID.MainClick);
 
+        // 문구는 사라지는 동안 바꾸지 않고, 다음에 띄울 때 평소 문구로 맞춘다(PlayButtonsRevealAnimation).
+        bEndingPressAnyKey = false;
+
         if (null != splashScreenUI && true == splashScreenUI.gameObject.activeInHierarchy)
         {
             splashScreenUI.gameObject.SetActive(false);
@@ -244,14 +249,29 @@ public class UIView_MainMenu : UIView
 
     public void OnChangedLanguage()
     {
-        if (null != pressAnyKeyUI && null != viewCtx && null != viewCtx.localizationManager)
-        {
-            pressAnyKeyUI.SetText(viewCtx.localizationManager.GetText(mainMenuUIJsonId, 99));
-        }
+        ApplyPressAnyKeyText();
 
         if (null != mainMenuUI)
         {
             mainMenuUI.SetLocalization();
+        }
+    }
+
+    // 평소에는 현지화 표의 "아무 키나 누르면 시작됩니다", 엔딩을 마치고 돌아왔을 때는 "계속 하려면 아무 키나 누르십시오".
+    // 엔딩 문구는 아직 현지화 표에 없어 엔딩 씬 문구(EndingDirector)와 같이 한국어·영어만 두고 나머지 언어는 영어를 쓴다.
+    private void ApplyPressAnyKeyText()
+    {
+        if (null == pressAnyKeyUI) return;
+
+        if (true == bEndingPressAnyKey)
+        {
+            pressAnyKeyUI.SetText(Language.KR == FontLocalizer.CurrentLanguage ? "계속 하려면 아무 키나 누르십시오" : "Press Any Key to Continue");
+            return;
+        }
+
+        if (null != viewCtx && null != viewCtx.localizationManager)
+        {
+            pressAnyKeyUI.SetText(viewCtx.localizationManager.GetText(mainMenuUIJsonId, 99));
         }
     }
 
@@ -554,6 +574,14 @@ public class UIView_MainMenu : UIView
     // PlayExitAnimation()의 반대 방향: 화면 밖(위)에서 원래 위치로 슬라이드 인 (버튼/딤머/로고는 아직 안 건드림)
     public void PlayEnterAnimation(Action _onComplete)
     {
+        // 엔딩에서 돌아오는 중이면 패널이 내려오는 동안에도 엔딩 문구를 보인다(씬이 바뀐 뒤 바뀌면 문구가 튄다).
+        // 평소 복귀(마을·던전·로그라이크)는 이 표시가 꺼져 있어 그대로다. 표시는 PlayButtonsRevealAnimation이 끈다.
+        if (true == EndingContext.bReturningToMainMenu && false == bEndingPressAnyKey)
+        {
+            bEndingPressAnyKey = true;
+            ApplyPressAnyKeyText();
+        }
+
         if (null == rootRectTransform)
         {
             _onComplete?.Invoke();
@@ -588,6 +616,11 @@ public class UIView_MainMenu : UIView
     public void PlayButtonsRevealAnimation(Action _onComplete = null)
     {
         ApplyBuildVariantState();
+
+        // 엔딩에서 돌아온 경우에만 문구를 바꾼다. 다른 복귀(마을·던전·로그라이크)는 평소 문구 그대로다.
+        bEndingPressAnyKey = EndingContext.bReturningToMainMenu;
+        EndingContext.bReturningToMainMenu = false;
+        ApplyPressAnyKeyText();
 
         // 1. PlayGameStartSequence에서 페이드 아웃 시켰던 상태를 리셋합니다.
         if (null != backgroundDimmer)

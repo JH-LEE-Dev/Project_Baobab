@@ -47,6 +47,9 @@ public class SceneManager : MonoBehaviour
             case SceneType.Roguelike:
                 sceneName = "RoguelikeScene";
                 break;
+            case SceneType.Ending:
+                sceneName = "EndingScene";
+                break;
         }
 
         if (string.IsNullOrEmpty(sceneName)) return null;

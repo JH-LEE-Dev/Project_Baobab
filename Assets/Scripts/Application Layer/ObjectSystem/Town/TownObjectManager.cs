@@ -53,6 +53,10 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     private bool bCanTravel = true;
 
+    // 엔딩 특성(소풍 바구니) 보유 여부. 이 상태로 오프로드에 타면 엔딩이 시작된다.
+    private bool bHasPicnicBasket;
+    public bool HasPicnicBasket => bHasPicnicBasket;
+
     [SerializeField] private TreeVisualDataBase treeVisualDataBase;
 
     private IInventory characterInventory;
@@ -116,6 +120,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
         offroadVehicle.SetVisualActive(true);
         offroadVehicle.DeActivateRepairBox();
+        offroadVehicle.SetPicnicBasket(bHasPicnicBasket);
         
         if (treeRoot == null)
         {
@@ -367,6 +372,14 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
         if (offroadVehicle != null)
             offroadVehicle.SetCanTravel(bCanTravel);
+    }
+
+    public void SetPicnicBasket(bool _bPicnicBasket)
+    {
+        bHasPicnicBasket = _bPicnicBasket;
+
+        if (offroadVehicle != null)
+            offroadVehicle.SetPicnicBasket(bHasPicnicBasket);
     }
 
     public void TeleportUIClosed()

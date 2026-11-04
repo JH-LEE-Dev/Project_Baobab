@@ -16,6 +16,20 @@ public class SkillNode
 
     public bool bApplied => currentLevel > 0;
 
+    // 엔딩 특성처럼 프레스티지 경험치를 주지 않는 노드인지. 노드가 가진 커맨드 종류로 판단한다.
+    public bool bGrantsNoPrestigeExp
+    {
+        get
+        {
+            if (commands == null) return false;
+            for (int i = 0; i < commands.Count; i++)
+            {
+                if (commands[i].skillCommandType == SkillCommandType.PicnicBasket) return true;
+            }
+            return false;
+        }
+    }
+
     public SkillNode(SkillType _type, int _maxLevel, SkillCost _cost, List<SkillCommandInfo> _commands)
     {
         skillType = _type;
@@ -180,9 +194,9 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         // 특성을 찍는 순간 (가벼운 진동)
         Rumble.Play(EHapticEvent.SkillPoint);
 
-        // 경험치 증가 및 프레스티지 레벨업 처리
-        skillExperience++;
-        if (skillExperience >= GetPrestigeExpLimit())
+        // 경험치 증가 및 프레스티지 레벨업 처리. 엔딩 특성(소풍 바구니)은 경험치를 주지 않는다.
+        if (!node.bGrantsNoPrestigeExp) skillExperience++;
+        if (!node.bGrantsNoPrestigeExp && skillExperience >= GetPrestigeExpLimit())
         {
             skillExperience = 0;
             prestigeLevel++;
@@ -290,9 +304,9 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         // 특성을 찍는 순간 (가벼운 진동)
         Rumble.Play(EHapticEvent.SkillPoint);
 
-        // 경험치 증가 및 프레스티지 레벨업 처리
-        skillExperience++;
-        if (skillExperience >= GetPrestigeExpLimit())
+        // 경험치 증가 및 프레스티지 레벨업 처리. 엔딩 특성(소풍 바구니)은 경험치를 주지 않는다.
+        if (!node.bGrantsNoPrestigeExp) skillExperience++;
+        if (!node.bGrantsNoPrestigeExp && skillExperience >= GetPrestigeExpLimit())
         {
             skillExperience = 0;
             prestigeLevel++;
@@ -332,6 +346,20 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         }
         _level = 0;
         return false;
+    }
+
+    /// <summary>
+    /// 현재 특성 DB의 모든 특성이 최대 레벨인지. 로그라이크 해금 조건(모든 특성 + 엔딩 시청)에 쓴다.
+    /// </summary>
+    public bool AreAllSkillsMaxed()
+    {
+        if (skillNodeMap == null || skillNodeMap.Count == 0) return false;
+
+        foreach (var pair in skillNodeMap)
+        {
+            if (pair.Value.currentLevel < pair.Value.maxLevel) return false;
+        }
+        return true;
     }
 
     /// <summary>

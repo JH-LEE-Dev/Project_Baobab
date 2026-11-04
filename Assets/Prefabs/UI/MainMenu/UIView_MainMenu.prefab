@@ -6817,7 +6817,7 @@ MonoBehaviour:
   optionUI: {fileID: 2449127132447428641}
   creditUI: {fileID: 2020525936145470140}
   initialSetupPopup: {fileID: 8489015403838556601}
-  bForceShowInitialSetupPopup: 1
+  bForceShowInitialSetupPopup: 0
   backgroundDimmer: {fileID: 3577683620735908448}
   dimmerTargetAlpha: 0.784
   dimmerFadeDuration: 0.5

@@ -52,6 +52,10 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
     // GC Alloc 최적화를 위한 캐싱된 세이브 데이터 객체
     private GameSaveData cachedSaveData = new GameSaveData();
 
+    // 엔딩 진행 상태. 불러오기/새로하기 때 갱신되고 저장 때마다 그대로 기록된다.
+    public bool bEndingSeen { get; private set; }
+    public bool bRoguelikeUnlocked { get; private set; }
+
     // 이어하기 가능 여부(HasSaveData) 판정 캐시. 판정에 복호화+파싱이 필요해졌고 UI가 버튼 상태를
     // 갱신할 때마다 여러 번 물어보므로, 세이브 파일이 그대로면 직전 결과를 재사용한다.
     private string cachedSaveStateKey;
@@ -403,6 +407,10 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
 
         // 0. 이 세이브를 만든 빌드를 각인한다. 정식 빌드는 데모 세이브를 이어받지 않고 그대로 덮어쓴다.
         cachedSaveData.buildVariant = BuildInfo.Variant;
+
+        // 0-1. 엔딩 시청 / 로그라이크 해금
+        cachedSaveData.bEndingSeen = bEndingSeen;
+        cachedSaveData.bRoguelikeUnlocked = bRoguelikeUnlocked;
 
         // 1. 스킬 데이터 추출 (리스트 재사용)
         if (null != skillSystem && null != skillSystem.skillManager)
@@ -763,11 +771,18 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
         // 새 게임 진입 시 내비게이션 팝업의 런타임 정적 세션 기록도 완전 초기화
         HUD_PopupNav_Main.ResetRuntimeSessionState();
 
+        bEndingSeen = false;
+        bRoguelikeUnlocked = false;
+
         Debug.Log("[SaveManager] Existing save data deleted for New Game.");
     }
 
     public void LoadGameData()
     {
+        // 읽을 세이브가 없으면 엔딩 상태도 처음부터다. 읽으면 ApplyLoadedData에서 덮어쓴다.
+        bEndingSeen = false;
+        bRoguelikeUnlocked = false;
+
         string path = GetSaveFilePath();
         string backupPath = GamePaths.GameSaveBackupFile;
 
@@ -850,8 +865,32 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
         Debug.LogError($"[SaveManager] The {_which} exists but could not be read (locked, or inaccessible). Load aborted and saving is disabled for this session so the file is left intact for recovery.");
     }
 
+    /// <summary>
+    /// 엔딩이 시작된(하늘로 올라간) 순간 호출한다. 엔딩을 본 것으로 기록하고, 모든 특성이 최대 레벨이면
+    /// 로그라이크 모드를 해금한 뒤 바로 저장한다. 엔딩 도중 게임을 꺼도 본 것으로 남는다.
+    /// </summary>
+    /// <returns>이번에 처음 로그라이크가 해금됐는지 (엔딩의 "로그라이크 모드 해제!" 문구 표시 여부)</returns>
+    public bool MarkEndingSeen(bool _bAllSkillsMaxed)
+    {
+        bEndingSeen = true;
+
+        bool bFirstUnlock = false;
+        if (_bAllSkillsMaxed && !bRoguelikeUnlocked)
+        {
+            bRoguelikeUnlocked = true;
+            bFirstUnlock = true;
+        }
+
+        if (IsAutoSaveEnabled()) SaveGameData();
+        return bFirstUnlock;
+    }
+
     private void ApplyLoadedData(GameSaveData _data)
     {
+        // 0. 엔딩 시청 / 로그라이크 해금
+        bEndingSeen = _data.bEndingSeen;
+        bRoguelikeUnlocked = _data.bRoguelikeUnlocked;
+
         // 1. 스킬 데이터 복구
         if (skillSystem != null && skillSystem.skillManager != null)
         {
