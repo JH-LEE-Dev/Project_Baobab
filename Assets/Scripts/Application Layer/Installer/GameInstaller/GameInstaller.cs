@@ -38,6 +38,7 @@ public class GameInstaller : MonoBehaviour
     private SkillSystem skillSystem;
     private GameSystem gameSystem;
     private TutorialSystem tutorialSystem;
+    private RegionGuideSystem regionGuideSystem;
 
     [Header("Roguelike")]
     [Tooltip("로그라이크 세션에서만 생성된다. 본편 세션에서는 쓰이지 않는다.")]
@@ -56,6 +57,7 @@ public class GameInstaller : MonoBehaviour
         skillSystem = new SkillSystem();
         gameSystem = new GameSystem();
         tutorialSystem = new TutorialSystem();
+        regionGuideSystem = new RegionGuideSystem();
 
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
@@ -116,6 +118,7 @@ public class GameInstaller : MonoBehaviour
         environmentSystem);
         skillSystem.Initialize(signalHub, skillManager, skillDispatcher);
         tutorialSystem.Initialize(signalHub, inventoryManager);
+        regionGuideSystem.Initialize(signalHub);
 
         // 튜토리얼 퀘스트 목표 오브젝트 위에 뜨는 화살표 인디케이터. 대상(차량/보관함 등)은 런타임에
         // 생성되므로 참조가 아니라 매니저를 넘겨 퀘스트가 시작될 때마다 현재 오브젝트를 찾아가게 한다.
@@ -123,7 +126,7 @@ public class GameInstaller : MonoBehaviour
             inDungeonSystem.inDungeonObjectManager, townSystem.townObjectManager,
             townSystem.logProcessingManager, townSystem.tentManager);
 
-        _saveManager.Initialize(signalHub, tutorialSystem, skillSystem, inventoryManager, townSystem.logProcessingManager,
+        _saveManager.Initialize(signalHub, tutorialSystem, regionGuideSystem, skillSystem, inventoryManager, townSystem.logProcessingManager,
         environmentSystem.densityManager, inDungeonSystem.inDungeonObjectManager, townSystem.townObjectManager, offroadContainer,
         townSystem.townUnitSpawner, townSystem.blastFurnaceManager);
 
@@ -226,6 +229,7 @@ public class GameInstaller : MonoBehaviour
         SafeRelease("saveManager", () => saveManager.Release());
         SafeRelease("gameSystem", () => gameSystem.Release());
         SafeRelease("tutorialSystem", () => tutorialSystem.Release());
+        SafeRelease("regionGuideSystem", () => regionGuideSystem.Release());
         SafeRelease("tutorialQuestIndicatorManager", () => tutorialQuestIndicatorManager?.Release());
 
         SafeRelease("ReleaseEvents", ReleaseEvents);

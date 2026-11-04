@@ -37,6 +37,10 @@ public class GameplayUICoordinator
     private bool bIsTutorialQuestHiding = false;
     private bool bPendingGameEnd = false;
 
+    // 대지역 기믹 안내가 던전 입장 배너(HUD_Message) 연출이 끝나기를 기다리는 중인지와 그 안내 스텝.
+    private bool bHasPendingRegionGuide = false;
+    private TutorialStep pendingRegionGuideStep;
+
     // ESC 일시정지를 열기 직전의 이동 잠금 상태. 닫을 때 false를 박는 대신 이 값으로 되돌린다.
     //
     // PauseMove는 소유자별 잠금이 아니라 단일 bool이라(InputReader.IsMovePaused 참고), 무조건
@@ -156,6 +160,8 @@ public class GameplayUICoordinator
         signalHub.Subscribe<StudioLogoRevealSignal>(StudioLogoReveal);
         signalHub.Subscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.Subscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
+        signalHub.Subscribe<RegionGuideStartedSignal>(RegionGuideStarted);
+        signalHub.Subscribe<RegionGuideCompletedSignal>(RegionGuideCompleted);
         signalHub.Subscribe<CompleteDungeonEntrySignal>(CompleteDungeonEntry);
         signalHub.Subscribe<TreeDetectedSignal>(TreeDetected);
         signalHub.Subscribe<TreeDetectionClearedSignal>(TreeDetectionCleared);
@@ -222,6 +228,8 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<StudioLogoRevealSignal>(StudioLogoReveal);
         signalHub.UnSubscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.UnSubscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
+        signalHub.UnSubscribe<RegionGuideStartedSignal>(RegionGuideStarted);
+        signalHub.UnSubscribe<RegionGuideCompletedSignal>(RegionGuideCompleted);
         signalHub.UnSubscribe<CompleteDungeonEntrySignal>(CompleteDungeonEntry);
         signalHub.UnSubscribe<TreeDetectedSignal>(TreeDetected);
         signalHub.UnSubscribe<TreeDetectionClearedSignal>(TreeDetectionCleared);
@@ -308,6 +316,9 @@ public class GameplayUICoordinator
 
         overUIPopupUI.TutorialQuestTransitionCompletedEvent -= TutorialQuestTransitionCompleted;
         overUIPopupUI.TutorialQuestTransitionCompletedEvent += TutorialQuestTransitionCompleted;
+
+        hudUI.DungeonMessageCompletedEvent -= DungeonMessageCompleted;
+        hudUI.DungeonMessageCompletedEvent += DungeonMessageCompleted;
     }
 
     private void ReleaseEvents()
@@ -340,6 +351,7 @@ public class GameplayUICoordinator
         overUIPopupUI.CompanyLogoProductionCompletedEvent -= CompanyLogoProductionCompleted;
         overUIPopupUI.TutorialQuestHideCompletedEvent -= TutorialQuestHideCompleted;
         overUIPopupUI.TutorialQuestTransitionCompletedEvent -= TutorialQuestTransitionCompleted;
+        hudUI.DungeonMessageCompletedEvent -= DungeonMessageCompleted;
     }
 
     public void Release()
@@ -621,6 +633,8 @@ public class GameplayUICoordinator
         {
             overUIPopupUI.ResetQuest();
         }
+
+        CancelPendingRegionGuide();
 
         GoToMainMenuEvent?.Invoke();
         Time.timeScale = 1f;
@@ -1069,6 +1083,8 @@ public class GameplayUICoordinator
     {
         bHUDDown = true;
 
+        CancelPendingRegionGuide();
+
         hudUI.HUDGoDown();
         popUpUI.PopupGoDown();
         worldPopupUI.WorldPopupGoDown();
@@ -1156,6 +1172,54 @@ public class GameplayUICoordinator
                 unitUI.TreeDetectionCleared();
             }
         }
+    }
+
+    // 2·3·4 대지역 첫 입장 기믹 안내. 튜토리얼과 같은 Quest UI를 쓰지만 튜토리얼 전용 처리(나무 감지 알림,
+    // 결과창 지연 등)는 타지 않도록 표시/완료만 위임한다. 퇴장 완료(TutorialQuestHideCompleted)도 이 스텝들은 분기하지 않는다.
+    //
+    // 안내 시작 신호는 HUD가 올라오며 입장 배너(HUD_Message)가 재생을 시작한 바로 그 프레임에 도착한다.
+    // 배너와 겹치지 않도록, 배너가 재생 중이면 대기열에 두었다가 배너 연출이 끝난 뒤(DungeonMessageCompleted) 띄운다.
+    // 배너가 억제된 진입 등 재생 중이 아니면 즉시 띄운다.
+    private void RegionGuideStarted(RegionGuideStartedSignal _signal)
+    {
+        if (true == hudUI.IsDungeonMessagePlaying)
+        {
+            bHasPendingRegionGuide = true;
+            pendingRegionGuideStep = _signal.step;
+            return;
+        }
+
+        CancelPendingRegionGuide();
+        overUIPopupUI.RegionGuideStarted(_signal.step);
+    }
+
+    private void RegionGuideCompleted(RegionGuideCompletedSignal _signal)
+    {
+        // 배너가 끝나기 전에 이미 클리어 조건을 충족했다면 안내를 띄우지 않고 대기만 취소한다.
+        if (true == bHasPendingRegionGuide && _signal.step == pendingRegionGuideStep)
+        {
+            CancelPendingRegionGuide();
+            return;
+        }
+
+        overUIPopupUI.RegionGuideCompleted(_signal.step);
+    }
+
+    private void DungeonMessageCompleted()
+    {
+        if (false == bHasPendingRegionGuide)
+            return;
+
+        TutorialStep _step = pendingRegionGuideStep;
+        CancelPendingRegionGuide();
+        overUIPopupUI.RegionGuideStarted(_step);
+    }
+
+    // 귀환/재도전/사망 연출로 HUD가 내려가거나 메인 메뉴로 나가면, 아직 띄우지 못한 안내는 버린다.
+    // (클리어 기록이 남지 않았으므로 다음 입장에서 다시 안내된다)
+    private void CancelPendingRegionGuide()
+    {
+        bHasPendingRegionGuide = false;
     }
 
     private void TutorialQuestHideCompleted(TutorialStep _step)

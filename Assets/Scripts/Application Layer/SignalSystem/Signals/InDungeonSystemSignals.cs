@@ -75,6 +75,19 @@ public struct TreeShieldRecoveringSignal
     }
 }
 
+// 대지역 기믹 안내(RegionGuideSystem) 클리어 판정용 알림 신호들. 게임 로직에는 관여하지 않는다.
+// 포자막이 깨진 순간(나무 종류·주체 무관)
+public struct TreeShieldBrokenSignal { }
+
+// 별자리가 실제로 발현(레이저 시작)된 순간
+public struct ConstellationManifestedSignal { }
+
+// 플레이어가 불씨를 획득한 순간
+public struct EmberAcquiredSignal { }
+
+// 플레이어가 던전 차량(오프로드)에 상호작용한 순간. 귀환 경고창이 뜨는 경로/생략되는 경로 모두 포함한다.
+public struct OffroadVehicleInteractedSignal { }
+
 public struct GoToHomeSignal { }
 
 public struct CarrotItemAcquiredSignal

@@ -33,6 +33,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
     private BootStrap bootstrap;
     private SignalHub signalHub;
     private TutorialSystem tutorialSystem;
+    private RegionGuideSystem regionGuideSystem;
     private SkillSystem skillSystem;
     private Character character;
     private InventoryManager inventoryManager;
@@ -112,13 +113,14 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
         bootstrap = GetComponent<BootStrap>();
     }
 
-    public void Initialize(SignalHub _signalHub, TutorialSystem _tutorialSystem, SkillSystem _skillSystem, InventoryManager _inventoryManager, LogProcessingManager _logProcessingManager,
+    public void Initialize(SignalHub _signalHub, TutorialSystem _tutorialSystem, RegionGuideSystem _regionGuideSystem, SkillSystem _skillSystem, InventoryManager _inventoryManager, LogProcessingManager _logProcessingManager,
     DensityManager _densityManager, InDungeonObjectManager _inDungeonObjectManager,TownObjectManager _townObjectManager, OffroadContainer _offroadContainer,
     TownUnitSpawner _townUnitSpawner, BlastFurnaceManager _blastFurnaceManager)
     {
         blastFurnaceManager = _blastFurnaceManager;
         signalHub = _signalHub;
         tutorialSystem = _tutorialSystem;
+        regionGuideSystem = _regionGuideSystem;
         inDungeonObjectManager = _inDungeonObjectManager;
         densityManager = _densityManager;
         skillSystem = _skillSystem;
@@ -465,6 +467,14 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
             {
                 cachedSaveData.currentOwnedLoots.AddRange(inDungeonObjectManager.CurrentOwnedLoots);
             }
+        }
+
+        // 8-3. 2·3·4 대지역 기믹 안내(Quest UI) 클리어 여부
+        if (null != regionGuideSystem)
+        {
+            cachedSaveData.bSporeForestGuideDone = regionGuideSystem.IsSporeForestGuideDone;
+            cachedSaveData.bStarrootForestGuideDone = regionGuideSystem.IsStarrootForestGuideDone;
+            cachedSaveData.bMagmaForestGuideDone = regionGuideSystem.IsMagmaForestGuideDone;
         }
 
         // 8-1. 운반 중(포터 인벤토리/컨테이너 사이 비행) 로그 정산.
@@ -943,6 +953,12 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
                 _data.bGoldTreePityArmed, _data.goldTreePityThreshold, _data.goldTreePityTreeKillCount);
 
             inDungeonObjectManager.RestoreOwnedLoots(_data.currentOwnedLoots);
+        }
+
+        // 8-3. 2·3·4 대지역 기믹 안내 클리어 여부 복구. 키가 없는 예전 세이브는 false로 읽혀 1회 안내된다.
+        if (null != regionGuideSystem)
+        {
+            regionGuideSystem.LoadSaveData(_data.bSporeForestGuideDone, _data.bStarrootForestGuideDone, _data.bMagmaForestGuideDone);
         }
     }
 

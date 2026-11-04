@@ -39,6 +39,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 나무가 보석 단계로 변했을 때 발생. InDungeonSystem이 받아 신호로 발행한다.
     public event Action<TreeObj> TreeGemTransformedEvent;
     public event Action<TreeObj> TreeShieldRecoveringEvent;
+    // 대지역 기믹 안내(RegionGuideSystem) 클리어 판정용 알림. 게임 로직에는 관여하지 않는다.
+    public event Action TreeShieldBrokenNotifyEvent;
+    public event Action ConstellationManifestedEvent;
+    public event Action EmberAcquiredNotifyEvent;
+    public event Action OffroadVehicleInteractedEvent;
     public event Action<bool> NPCPauseRequestedEvent;
     public event Action FlyingItemPauseRequestedEvent;
     public event Action FlyingItemResumeRequestedEvent;
@@ -2382,6 +2387,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         Sound.PlayUI(SoundID.GetItem);
         character.PlayItemAcquireBounce();
         character.PlayItemAcquireFlash();
+
+        EmberAcquiredNotifyEvent?.Invoke();
     }
 
     /// <summary>
@@ -2435,6 +2442,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 그 사이는 bDead로 직접 막는다. 예전엔 둘 다 없어서 시체 옆 차량에 상호작용 키가 먹혔다.
         if (RunEndState != ERunEndState.None) return;
         if (character != null && character.bDead == true) return;
+
+        OffroadVehicleInteractedEvent?.Invoke();
 
         if (CheckWarningUIActivate() == false)
         {
@@ -2725,6 +2734,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         // 포자막 파괴 VFX는 포자막 폭발 스킬/맵 여부와 무관하게 항상 재생된다.
         inDungeonVFXManager.PlayShieldBrokenVFX(_treeObj.treeVisualComponent, _treeObj.GetTreeType());
+
+        TreeShieldBrokenNotifyEvent?.Invoke();
 
         if (!bShieldExplosionUnlocked) return;
         if (currentMapType != MapType.FluffySporeForest) return;
@@ -3274,6 +3285,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         inDungeonVFXManager.PlayConstellationNovaVFX(constellationCenter, blastRadius);
 
         StartCoroutine(ConstellationManifestRoutine(_starPositions, path, constellationCenter, blastRadius, damage, hitCount));
+
+        ConstellationManifestedEvent?.Invoke();
     }
 
     // 중심점(centroid) 기준 각도 순으로 정렬해서 폐곡선을 만든다. 최근접 이웃(greedy) 방식과 달리,

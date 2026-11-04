@@ -274,6 +274,10 @@ public class GameSaveData
     public bool bGoldTreePityArmed;
     public int goldTreePityThreshold;
     public int goldTreePityTreeKillCount;
+    // 2·3·4 대지역 첫 입장 기믹 안내(Quest UI)를 클리어했는지. 키가 없는 예전 세이브는 false로 읽힌다.
+    public bool bSporeForestGuideDone;
+    public bool bStarrootForestGuideDone;
+    public bool bMagmaForestGuideDone;
     public List<LootType> currentOwnedLoots;
 
     // 엔딩을 본 적이 있는지(도중에 게임을 꺼도 본 것으로 친다), 로그라이크 모드가 해금됐는지.
@@ -311,6 +315,9 @@ public class GameSaveData
         bGoldTreePityArmed = false;
         goldTreePityThreshold = 0;
         goldTreePityTreeKillCount = 0;
+        bSporeForestGuideDone = false;
+        bStarrootForestGuideDone = false;
+        bMagmaForestGuideDone = false;
     }
 }
 

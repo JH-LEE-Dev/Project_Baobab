@@ -67,6 +67,13 @@ public class UI_TutorialQuest : MonoBehaviour
     private const float HiddenBGWidth = 0f;
     private const float DefaultBGTargetAlpha = 0.95f;
 
+    // 2·3·4 대지역 기믹 안내 문구 키 (Resources/Localization/TutorialQuestUI.json)
+    private const string SporeForestGuideTitleKey = "SporeForestGuide_Title";
+    private const string SporeForestGuideDescKey = "SporeForestGuide_Desc";
+    private const string StarrootForestGuideTitleKey = "StarrootForestGuide_Title";
+    private const string MagmaForestGuideTitleKey = "MagmaForestGuide_Title";
+    private const string MagmaForestGuideDescKey = "MagmaForestGuide_Desc";
+
     private LocalizationManager localizationManager;
     private Action cachedRefreshLocalizedTexts;
 
@@ -200,6 +207,9 @@ public class UI_TutorialQuest : MonoBehaviour
             case TutorialStep.ReceiveMoney:
             case TutorialStep.UpgradeAxe:
             case TutorialStep.StartNewLogging:
+            case TutorialStep.SporeForestGuide:
+            case TutorialStep.StarrootForestGuide:
+            case TutorialStep.MagmaForestGuide:
                 if (true == bIsShowing)
                 {
                     PlayCompleteAndHide();
@@ -1175,6 +1185,17 @@ public class UI_TutorialQuest : MonoBehaviour
         return "새로운 벌목을 시작하세요!";
     }
 
+    // 대지역 기믹 안내 문구 조회. 키가 없거나 비어 있으면 한국어 원문으로 대체한다.
+    private string GetLocalizedOrFallback(string _key, string _fallback)
+    {
+        if (null != localizationManager)
+        {
+            string _text = localizationManager.GetText(_key);
+            if (false == string.IsNullOrEmpty(_text)) return _text;
+        }
+        return _fallback;
+    }
+
     private void GetQuestTitleAndDesc(TutorialStep _step, out string _title, out string _desc)
     {
         switch (_step)
@@ -1206,6 +1227,18 @@ public class UI_TutorialQuest : MonoBehaviour
             case TutorialStep.StartNewLogging:
                 _title = GetStartNewLoggingTitle();
                 _desc = string.Empty;
+                break;
+            case TutorialStep.SporeForestGuide:
+                _title = GetLocalizedOrFallback(SporeForestGuideTitleKey, "포자막을 제거해야 나무에게 피해를 입힐 수 있습니다!");
+                _desc = GetLocalizedOrFallback(SporeForestGuideDescKey, "포자막은 계속 회복됩니다!");
+                break;
+            case TutorialStep.StarrootForestGuide:
+                _title = GetLocalizedOrFallback(StarrootForestGuideTitleKey, "이어진 별 표식 나무들을 벌목하면 강력한 별자리가 발현됩니다!");
+                _desc = string.Empty;
+                break;
+            case TutorialStep.MagmaForestGuide:
+                _title = GetLocalizedOrFallback(MagmaForestGuideTitleKey, "불씨를 획득하면 과열을 얻을 수 있습니다.");
+                _desc = GetLocalizedOrFallback(MagmaForestGuideDescKey, "과열 수치에 따라 강해질 수 있습니다!");
                 break;
             default:
                 _title = string.Empty;
