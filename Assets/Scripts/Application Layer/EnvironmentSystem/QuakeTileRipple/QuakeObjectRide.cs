@@ -19,12 +19,22 @@ using UnityEngine.Rendering;
 ///     가장 가까운 정렬기를 따른다 - 짐칸 상자 그림자는 상자와, 차량 그림자는 차체와 같이 움직인다.
 ///   - 물(용암) 칸은 출렁이지 않으므로 그 위의 물체도 그대로다.
 /// 연출 중 새로 나타난 물체(쓰러진 나무의 원목 등)는 잠깐마다 켜진 정렬기 목록(CustomSortable.CollectEnabled)에서 찾아 더한다.
+///
+/// [나무 - 옮긴 높이를 셰이더에 알린다]
+///   나무 셰이더(TreeWindSway.hlsl)는 피봇(트랜스폼 자리)으로 바람·지진 떨림 위상과 진원 거리를 정한다. 옮긴 채로 그리면 위상이 튀고
+///   거리가 실제 자리(피해 판정)와 어긋난다. 그래서 나무(TreeObj 루트)를 옮길 때 옮긴 픽셀과, 지진에 맞은 나무(MarkStruck)가 튀는
+///   픽셀을 루트 z에 담는다(RideZStep 단위, 옮긴 픽셀 × 16 + 튀는 픽셀). 셰이더가 이걸 풀어 원래 자리로 위상·거리를 구하고 튀는 높이만큼
+///   그림을 올린다(그림자는 바닥에 남는다). z는 그리는 순서(정렬 축 y)·화면에 영향이 없고 다 그린 뒤 되돌린다. 나무는 z 0에 놓인다.
 /// </summary>
 public sealed class QuakeObjectRide
 {
     private const float PixelsPerUnit = 32f;
     // 새로 나타난 물체를 찾는 간격(초). 켜진 정렬기를 전부 훑으므로 매 프레임 하지 않는다. 원목은 떨어지는 데 이보다 오래 걸린다.
     private const float CollectInterval = 0.1f;
+    // 나무 루트 z에 담는 한 단위(TreeWindSway.hlsl QUAKE_RIDE_Z_STEP과 같다). 담는 값은 옮긴 픽셀 × RideCodeBase + 튀는 픽셀.
+    private const float RideZStep = 1f / 4096f;
+    private const int RideCodeBase = 16;
+    private const int MaxPopPixels = RideCodeBase - 1;
 
     private sealed class Part
     {
@@ -39,14 +49,22 @@ public sealed class QuakeObjectRide
     {
         public Transform root;
         public Part[] parts;
+        public bool bTree;   // 나무 셰이더에 옮긴 높이를 알린다([나무])
     }
 
     private QuakeTileRipple ripple;
     private Rect area;
+    // false면 칸 높이만큼 옮기지 않고 나무만 모아 맞은 나무가 튀는 것만 그린다(QuakeTileRippleSettings.rideObjects 꺼짐).
+    private bool bRideHeights;
     private bool bActive;
     private bool bSubscribed;
     private bool bApplied;
     private float collectTimer;
+    // 물결 시작부터 흐른 게임 시간과, 지진에 맞은 나무 루트 → 맞은 시각. 튀는 높이는 맞은 뒤 지난 시간으로 정한다.
+    private float clock;
+    private float popHeight;
+    private float popSeconds;
+    private readonly Dictionary<Transform, float> struckAt = new Dictionary<Transform, float>(64);
 
     private readonly List<Rider> riders = new List<Rider>(512);
     private readonly HashSet<Transform> roots = new HashSet<Transform>();
@@ -67,16 +85,24 @@ public sealed class QuakeObjectRide
     private static readonly List<CustomSortable> sortableBuffer = new List<CustomSortable>(1024);
     private static readonly List<CustomSortable> innerSortables = new List<CustomSortable>(8);
 
-    /// <summary>물결 시작. _area(월드) 안의 물체를 모아 그릴 때마다 _ripple의 칸 높이만큼 옮긴다.</summary>
-    public void Begin(QuakeTileRipple _ripple, Rect _area)
+    /// <summary>
+    /// 물결 시작. _area(월드) 안의 물체를 모아 그릴 때마다 _ripple의 칸 높이만큼 옮긴다(_bRideHeights가 false면 옮기지 않고 나무만 모은다).
+    /// 지진에 맞은 나무(MarkStruck)는 _popSeconds 동안 _popHeight까지 한 번 튄다(그리는 동안만).
+    /// </summary>
+    public void Begin(QuakeTileRipple _ripple, Rect _area, bool _bRideHeights, float _popHeight, float _popSeconds)
     {
         Stop();
 
         ripple = _ripple;
         area = _area;
+        bRideHeights = _bRideHeights;
         bActive = true;
         collectTimer = 0f;
-        Collect();
+        clock = 0f;
+        popHeight = Mathf.Max(0f, _popHeight);
+        popSeconds = Mathf.Max(0.01f, _popSeconds);
+        // 칸 높이를 따르지 않으면 맞은 나무만 MarkStruck에서 그때그때 더한다(미리 모을 물체가 없다).
+        if (bRideHeights) Collect();
         Subscribe(true);
     }
 
@@ -87,6 +113,9 @@ public sealed class QuakeObjectRide
 
         // 그리던 중 예외로 되돌리기를 못 했으면 게임 코드가 돌기 전에 되돌린다.
         Restore();
+
+        clock += _deltaTime;
+        if (false == bRideHeights) return;
 
         collectTimer += _deltaTime;
         if (collectTimer < CollectInterval) return;
@@ -106,6 +135,7 @@ public sealed class QuakeObjectRide
         riders.Clear();
         roots.Clear();
         known.Clear();
+        struckAt.Clear();
 
         for (int i = 0; i < standIns.Count; i++)
         {
@@ -118,6 +148,27 @@ public sealed class QuakeObjectRide
             if (null != standInMaterials[i]) DestroyObject(standInMaterials[i]);
         }
         standInMaterials.Clear();
+    }
+
+    /// <summary>
+    /// 지진에 맞은 나무 루트를 알린다. 지금부터 popSeconds 동안 튄다. 다시 맞으면 처음부터 다시 튄다.
+    /// 아직 모으지 않은 나무(영역 밖·다음 모으기 전에 나타난 나무)면 지금 더한다.
+    /// </summary>
+    public void MarkStruck(Transform _root)
+    {
+        if (false == bActive || null == _root || popHeight <= 0f) return;
+
+        if (false == roots.Contains(_root))
+        {
+            CustomSortable sortable = _root.GetComponent<CustomSortable>();
+            if (null == sortable || false == sortable.isActiveAndEnabled) return;
+
+            Track(sortable);
+            partBuffer.Clear();
+            if (false == roots.Contains(_root)) return;
+        }
+
+        struckAt[_root] = clock;
     }
 
     // // 내부
@@ -153,33 +204,47 @@ public sealed class QuakeObjectRide
             if (null == sortable || known.Contains(sortable)) continue;
             if (false == area.Contains(sortable.transform.position)) continue;
 
-            known.Add(sortable);
-
-            // 차량은 부품(차체·바퀴·짐칸 상자·수리 상자)마다 정렬기가 있고 그림자는 차량 바로 아래에 있다. 차량 전체를 한 물체로 모은다.
-            OffroadVehicleObj vehicle = sortable.GetComponentInParent<OffroadVehicleObj>();
-            Transform root = null != vehicle ? vehicle.transform : sortable.transform;
-            if (roots.Contains(root) || HasTrackedAncestor(root)) continue;
-
-            partBuffer.Clear();
-            CollectParts(root, null, partBuffer);
-            if (partBuffer.Count == 0) continue;
-
-            SampleNearest(root, partBuffer);
-            for (int p = 0; p < partBuffer.Count; p++)
-            {
-                Part part = partBuffer[p];
-                if (null == part.source) continue;
-
-                part.standIn = CreateStandIn();
-                standIns.Add(part.standIn);
-            }
-
-            roots.Add(root);
-            riders.Add(new Rider { root = root, parts = partBuffer.ToArray() });
+            Track(sortable);
         }
 
         sortableBuffer.Clear();
         partBuffer.Clear();
+    }
+
+    /// <summary>정렬기 하나를 알고 있는 것으로 두고, 그 물체(차량이면 차량 전체)를 아직 모르면 옮길 물체로 더한다. partBuffer를 쓴다.</summary>
+    private void Track(CustomSortable _sortable)
+    {
+        known.Add(_sortable);
+
+        // 차량은 부품(차체·바퀴·짐칸 상자·수리 상자)마다 정렬기가 있고 그림자는 차량 바로 아래에 있다. 차량 전체를 한 물체로 모은다.
+        OffroadVehicleObj vehicle = _sortable.GetComponentInParent<OffroadVehicleObj>();
+        Transform root = null != vehicle ? vehicle.transform : _sortable.transform;
+        if (roots.Contains(root) || HasTrackedAncestor(root)) return;
+        // 칸 높이를 따르지 않으면 튈 나무만 있으면 된다.
+        bool bTreeRoot = null != root.GetComponent<TreeObj>();
+        if (false == bRideHeights && false == bTreeRoot) return;
+
+        partBuffer.Clear();
+        CollectParts(root, null, partBuffer);
+        if (partBuffer.Count == 0) return;
+
+        // 나무는 루트 하나가 통째로 한 부분이다(충돌체 없음·정렬기 하나). 그 부분에만 높이를 담는다.
+        bool bTree = bTreeRoot && partBuffer.Count == 1 && partBuffer[0].transform == root && null == partBuffer[0].source;
+        // 칸 높이를 따르지 않으면 높이를 담을 수 있는 나무만 둔다(다른 모양은 튀지 못한다).
+        if (false == bRideHeights && false == bTree) return;
+
+        SampleNearest(root, partBuffer);
+        for (int p = 0; p < partBuffer.Count; p++)
+        {
+            Part part = partBuffer[p];
+            if (null == part.source) continue;
+
+            part.standIn = CreateStandIn();
+            standIns.Add(part.standIn);
+        }
+
+        roots.Add(root);
+        riders.Add(new Rider { root = root, parts = partBuffer.ToArray(), bTree = bTree });
     }
 
     private bool HasTrackedAncestor(Transform _transform)
@@ -337,7 +402,13 @@ public sealed class QuakeObjectRide
         for (int r = 0; r < riders.Count; r++)
         {
             Rider rider = riders[r];
-            if (null == rider.root || false == rider.root.gameObject.activeInHierarchy) continue;
+            if (null == rider.root) continue;
+            if (false == rider.root.gameObject.activeInHierarchy)
+            {
+                // 튀는 도중 꺼진(풀로 돌아간) 나무는 튐을 끝낸다. 다시 켜져도 새로 맞기 전에는 튀지 않는다.
+                if (struckAt.Count > 0) struckAt.Remove(rider.root);
+                continue;
+            }
 
             // 높이를 모두 읽은 뒤에 옮긴다. 먼저 옮긴 부분의 정렬기를 다른 부분이 따르면 옮긴 자리로 칸을 고르게 된다.
             pixelBuffer.Clear();
@@ -345,11 +416,17 @@ public sealed class QuakeObjectRide
             {
                 Part part = rider.parts[p];
                 int pixels = 0;
-                if (null != part.transform && part.transform.gameObject.activeInHierarchy)
+                if (bRideHeights && null != part.transform && part.transform.gameObject.activeInHierarchy)
                 {
                     pixels = ripple.PixelsAt(null != part.sample ? part.sample.GroundPosition : part.transform.position);
                 }
                 pixelBuffer.Add(pixels);
+            }
+
+            if (rider.bTree)
+            {
+                ApplyTree(rider, pixelBuffer[0]);
+                continue;
             }
 
             for (int p = 0; p < rider.parts.Length; p++)
@@ -369,6 +446,37 @@ public sealed class QuakeObjectRide
                 part.transform.position += offset;
             }
         }
+    }
+
+    /// <summary>나무: 칸 높이(_pixels)만큼 옮기고, 옮긴 픽셀과 튀는 픽셀을 루트 z에 담는다([나무]). 둘 다 0이면 그대로 둔다.</summary>
+    private void ApplyTree(Rider _rider, int _pixels)
+    {
+        Transform root = _rider.root;
+        int pop = PopPixels(root);
+        if (0 == _pixels && 0 == pop) return;
+
+        shifted.Add(root);
+        savedLocal.Add(root.localPosition);
+        Vector3 position = root.position;
+        position.y += _pixels / PixelsPerUnit;
+        position.z += (_pixels * RideCodeBase + pop) * RideZStep;
+        root.position = position;
+    }
+
+    /// <summary>지진에 맞은 나무가 지금 튀는 높이(픽셀). 맞은 뒤 popSeconds 동안 반 사인 모양으로 올랐다 내려온다. 끝난 나무는 목록에서 뺀다.</summary>
+    private int PopPixels(Transform _root)
+    {
+        if (struckAt.Count == 0 || false == struckAt.TryGetValue(_root, out float hitAt)) return 0;
+
+        float age = clock - hitAt;
+        if (age >= popSeconds)
+        {
+            struckAt.Remove(_root);
+            return 0;
+        }
+
+        float height = popHeight * Mathf.Sin(Mathf.PI * Mathf.Clamp01(age / popSeconds));
+        return Mathf.Clamp(Mathf.RoundToInt(height * PixelsPerUnit), 0, MaxPopPixels);
     }
 
     /// <summary>원본을 그 자리에서 숨기고, 같은 모습의 대역을 _offset만큼 옮겨 드러낸다.</summary>

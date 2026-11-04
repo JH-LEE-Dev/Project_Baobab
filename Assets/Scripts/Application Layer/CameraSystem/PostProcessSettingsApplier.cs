@@ -29,6 +29,8 @@ using DG.Tweening;
 ///      임계 비율 경계에서 값이 튀지 않도록 설계되어 있다(그 경계에서 목표값 자체가 정확히 0).
 ///   2) PlayDeathChromaticAberrationPulse() - 사망 순간 목표값과 무관하게 한 번 강하게 튀었다가
 ///      다시 0으로 원복하는 별도 연출이며, 재생 중에는 1)의 매 프레임 갱신을 무시한다.
+///   3) PlayQuakeChromaticAberrationPulse() - 지진이 시작되는 순간 짧게 튀는 연출. 1)의 세기 위에 더해지고
+///      (1)은 자기 몫만 따로 따라간다), 사망 펄스가 시작되면 바로 끝난다.
 /// 슬라이더 값은 두 경우 모두 "세기"만 조절한다(0%면 아무것도 보이지 않는다).
 /// </summary>
 [RequireComponent(typeof(Volume))]
@@ -59,6 +61,15 @@ public class PostProcessSettingsApplier : MonoBehaviour
     [Tooltip("사망 펄스가 최고조에서 0으로 원복되는 시간(초)")]
     [SerializeField] private float deathPulseFadeOutDuration = 0.5f;
 
+    [Tooltip("지진 시작 펄스의 최고조 intensity(강조 세기 100% 기준). 저피로도 세기 위에 더해진다")]
+    [SerializeField] private float quakePulsePeakIntensity = 0.35f;
+
+    [Tooltip("지진 펄스가 최고조까지 올라가는 시간(초)")]
+    [SerializeField] private float quakePulseFadeInDuration = 0.06f;
+
+    [Tooltip("지진 펄스가 최고조에서 0으로 원복되는 시간(초)")]
+    [SerializeField] private float quakePulseFadeOutDuration = 0.35f;
+
     [Tooltip("명도 슬라이더 0%일 때의 노출(EV). 100%는 프로필에 설정된 원래 노출값을 그대로 쓴다")]
     [SerializeField] private float minPostExposure = -2f;
 
@@ -79,6 +90,12 @@ public class PostProcessSettingsApplier : MonoBehaviour
     private bool isDeathPulsePlaying;
     private Tween chromaticAberrationTween;
 
+    // 저피로도 몫(1)과 지진 펄스 몫(3). 실제 세기는 둘의 합이다. 지진 펄스가 없으면(0) 실제 세기 = 저피로도 몫이라 예전과 같다.
+    // 지진 펄스는 옵션 비율을 곱하기 전 값으로 두고 쓸 때 곱한다(QuakePulseValue) - 펄스 도중 옵션을 바꿔도(0%면 사라진다) 바로 따른다.
+    private float lowStaminaIntensity;
+    private float quakePulseIntensity;
+    private Tween quakePulseTween;
+
     private void Awake()
     {
         Instance = this;
@@ -95,6 +112,8 @@ public class PostProcessSettingsApplier : MonoBehaviour
         {
             chromaticAberration = _runtimeProfile.Add<ChromaticAberration>(true);
         }
+
+        lowStaminaIntensity = chromaticAberration.intensity.value;
 
         _runtimeProfile.TryGet(out colorAdjustments);
 
@@ -121,6 +140,7 @@ public class PostProcessSettingsApplier : MonoBehaviour
     private void OnDestroy()
     {
         chromaticAberrationTween?.Kill();
+        quakePulseTween?.Kill();
 
         if (Instance == this)
         {
@@ -143,8 +163,9 @@ public class PostProcessSettingsApplier : MonoBehaviour
         float _t = Mathf.Clamp01((lowStaminaThresholdRatio - _staminaRatio) / lowStaminaThresholdRatio);
         float _target = lowStaminaMaxIntensity * chromaticAberrationStrength * _t;
 
+        lowStaminaIntensity = Mathf.MoveTowards(lowStaminaIntensity, _target, lowStaminaSmoothSpeed * Time.deltaTime);
         chromaticAberration.intensity.overrideState = true;
-        chromaticAberration.intensity.value = Mathf.MoveTowards(chromaticAberration.intensity.value, _target, lowStaminaSmoothSpeed * Time.deltaTime);
+        chromaticAberration.intensity.value = lowStaminaIntensity + QuakePulseValue;
     }
 
     /// <summary>
@@ -158,8 +179,9 @@ public class PostProcessSettingsApplier : MonoBehaviour
     {
         if (null == chromaticAberration || isDeathPulsePlaying) return;
 
+        lowStaminaIntensity = 0f;
         chromaticAberration.intensity.overrideState = true;
-        chromaticAberration.intensity.value = 0f;
+        chromaticAberration.intensity.value = QuakePulseValue;
     }
 
     /// <summary>
@@ -174,6 +196,10 @@ public class PostProcessSettingsApplier : MonoBehaviour
         isDeathPulsePlaying = true;
         float _peak = deathPulsePeakIntensity * chromaticAberrationStrength;
 
+        // 지진 펄스는 여기서 끝낸다. 사망 펄스는 지금 실제 세기에서 시작해 0으로 끝나고, 그 뒤 저피로도 몫도 0에서 다시 따라간다.
+        StopQuakePulse();
+        lowStaminaIntensity = 0f;
+
         chromaticAberrationTween?.Kill();
         chromaticAberration.intensity.overrideState = true;
 
@@ -183,9 +209,48 @@ public class PostProcessSettingsApplier : MonoBehaviour
             .OnComplete(() => isDeathPulsePlaying = false);
     }
 
+    /// <summary>
+    /// 지진이 시작되는 순간 색수차를 짧게 튀웠다가(0→최고조→0) 원복합니다. 저피로도 세기 위에 더해지므로 둘이 서로 덮어쓰지 않습니다.
+    /// 사망 펄스가 재생 중이면 재생하지 않고, 색수차 옵션이 0%면 재생하지 않습니다.
+    /// </summary>
+    public void PlayQuakeChromaticAberrationPulse()
+    {
+        if (null == chromaticAberration || chromaticAberrationStrength <= 0f || isDeathPulsePlaying) return;
+
+        quakePulseTween?.Kill();
+        chromaticAberration.intensity.overrideState = true;
+
+        quakePulseTween = DOTween.Sequence()
+            .Append(DOTween.To(() => quakePulseIntensity, SetQuakePulse, quakePulsePeakIntensity, quakePulseFadeInDuration).SetEase(Ease.OutQuad))
+            .Append(DOTween.To(() => quakePulseIntensity, SetQuakePulse, 0f, quakePulseFadeOutDuration).SetEase(Ease.InQuad));
+    }
+
+    // 지진 펄스 몫의 실제 세기(옵션 비율을 곱한다).
+    private float QuakePulseValue => quakePulseIntensity * chromaticAberrationStrength;
+
+    private void SetQuakePulse(float _value)
+    {
+        quakePulseIntensity = _value;
+        if (isDeathPulsePlaying) return;
+        chromaticAberration.intensity.value = lowStaminaIntensity + QuakePulseValue;
+    }
+
+    private void StopQuakePulse()
+    {
+        quakePulseTween?.Kill();
+        quakePulseTween = null;
+        quakePulseIntensity = 0f;
+    }
+
     private void Apply(SettingsData _data)
     {
         chromaticAberrationStrength = Mathf.Clamp01(_data.chromaticAberration / SettingsData.SLIDER_MAX);
+
+        // 지진 펄스 도중(일시정지로 멈춰 있을 때 포함) 옵션을 바꾸면 펄스 몫이 바로 새 비율을 따른다.
+        if (null != chromaticAberration && false == isDeathPulsePlaying && quakePulseIntensity > 0f)
+        {
+            chromaticAberration.intensity.value = lowStaminaIntensity + QuakePulseValue;
+        }
 
         float _brightnessT = Mathf.Clamp01(_data.brightness / SettingsData.SLIDER_MAX);
         float _saturationT = Mathf.Clamp01(_data.saturation / SettingsData.SLIDER_MAX);

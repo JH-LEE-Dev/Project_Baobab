@@ -54,6 +54,38 @@ public sealed class QuakeTileRippleSettings
     public float cameraShakeIntensity = 3f;
     [Tooltip("카메라 흔들림 시간(초). 물결이 화면 끝에 닿을 무렵까지 잦아들며 이어진다.")]
     public float cameraShakeSeconds = 1.1f;
+    [Tooltip("시작할 때 카메라를 아래로 한 번 찍는 거리(월드, 옵션 100% 기준). 찍은 뒤 되튀며 잦아들고 흔들림이 이어진다. 0이면 찍지 않는다.")]
+    public float cameraKickDistance = 0.3f;
+    [Tooltip("카메라 찍기가 잦아드는 시간(초).")]
+    public float cameraKickSeconds = 0.3f;
+
+    [Header("시작 한 방")]
+    [Tooltip("진원 둘레 첫 고리 높이를 이 비율만큼 더 키운다(0.6 = 최대 1.6배). 진원에서 멀어질수록 원래 높이로 돌아온다. 이웃 칸 높이 차 한도(옆벽 15픽셀, 물결 높이·파장·칸 크기로 정해진다)를 넘는 만큼은 잘리므로, 물결이 높으면 실제로 커지는 비율이 이보다 작다.")]
+    public float epicenterBoost = 0.6f;
+    [Tooltip("첫 고리를 키우는 거리(바닥 평면 거리). 진원에서 이 거리까지 키운 몫이 0으로 줄어든다.")]
+    public float epicenterBoostRadius = 5f;
+
+    [Header("피해 범위")]
+    [Tooltip("피해 범위(지진이 넘겨줄 때만) 바깥 물결 높이 비율. 범위 안은 그대로, 바깥은 이만큼 낮게 출렁여 어디까지 맞는지 보인다.")]
+    [Range(0f, 1f)] public float strikeOutsideScale = 0.45f;
+    [Tooltip("피해 범위 경계에서 안쪽 높이가 바깥 높이로 바뀌는 폭(바닥 평면 거리). 피해 범위가 이 폭의 한가운데다.")]
+    public float strikeEdge = 1.5f;
+
+    [Header("나무 떨림")]
+    [Tooltip("물결 앞머리가 닿은 나무가 잠깐 떨고(나무 셰이더), 지진에 맞은 나무는 위로 한 번 튄다(그리는 동안만 - 그림자는 바닥에 남는다).")]
+    public bool treeShake = true;
+    [Tooltip("피해 범위 안 나무의 떨림 각도(도).")]
+    public float treeShiverDegrees = 3.5f;
+    [Tooltip("피해 범위 밖 나무의 떨림 각도(도). 물결이 닿는 거리로 갈수록 0으로 줄어든다.")]
+    public float treeShiverOutsideDegrees = 1.2f;
+    [Tooltip("나무가 떠는 시간(초).")]
+    public float treeShiverSeconds = 0.45f;
+    [Tooltip("나무 떨림 진동수(Hz).")]
+    public float treeShiverHz = 13f;
+    [Tooltip("지진에 맞은 나무가 튀는 높이(월드, 1 = 32픽셀, 최대 15픽셀).")]
+    public float treePopHeight = 0.16f;
+    [Tooltip("나무가 튀었다 내려오는 시간(초).")]
+    public float treePopSeconds = 0.2f;
 }
 
 /// <summary>
@@ -119,6 +151,8 @@ public sealed class QuakeTileRipple
     internal const float SortNudge = 0.001f;
     // 틈 빛 띠의 최대 높이(픽셀). 칸 옆벽 높이(16)와 같다.
     private const int MaxGlowRows = 16;
+    // 이웃 칸 높이 차의 한도(픽셀). 옆벽(16)보다 크면 뒤 칸 옆벽 아래로 틈이 뚫린다. 칸마다 픽셀로 반올림해 1픽셀 더 벌어질 수 있어 한 줄 뺀다.
+    private const int MaxNeighborRise = MaxGlowRows - 1;
     // 이보다 얕은 틈(드러난 벽 줄 수)은 비추지 않는다. 물결 꼬리의 얕은 높이 차까지 빛나면 화면이 용암 격자처럼 번잡하다.
     private const int GlowMinRows = 2;
     // 틈 빛 진하기: GlowMinRows줄 틈 → GlowFullRows줄 틈에서 최소 → 최대. 틈 바닥에서 GlowFadeRows줄 위로 갈수록 옅어진다.
@@ -175,6 +209,11 @@ public sealed class QuakeTileRipple
     }
 
     private static readonly RippleCellComparer cellComparer = new RippleCellComparer();
+    // 나무 셰이더 지진 떨림 전역값(TreeWindSway.hlsl ApplyQuakeShake).
+    private static readonly int QuakeShakeAId = Shader.PropertyToID("_QuakeShakeA");
+    private static readonly int QuakeShakeBId = Shader.PropertyToID("_QuakeShakeB");
+    private static readonly int QuakeShakeCId = Shader.PropertyToID("_QuakeShakeC");
+    private static readonly int QuakeShakeDId = Shader.PropertyToID("_QuakeShakeD");
     private static Tile outlineTile;
     // 틈 빛 타일(띠 높이 1~MaxGlowRows별, 0번은 비움). 왼쪽 위·오른쪽 위 모서리용.
     private static Tile[] glowLeftTiles;
@@ -255,6 +294,8 @@ public sealed class QuakeTileRipple
     private int[] orderOfIndex = new int[0];
 
     private Vector3 center;
+    // 지진이 넘겨준 피해 범위(바닥 평면 거리). 0이면 없음 - 물결 높이·나무 떨림이 범위를 가르지 않는다.
+    private float strikeRadius;
     private float elapsed;
     private int nextCell;   // 아직 물결이 닿지 않은 첫 칸
     private int doneCell;   // 물결이 다 지나가지 않은 첫 칸
@@ -280,14 +321,16 @@ public sealed class QuakeTileRipple
     public void Initialize(QuakeTileRippleSettings _settings)
     {
         settings = _settings ?? new QuakeTileRippleSettings();
+        ClearTreeShake();
     }
 
     /// <summary>
     /// 물결을 시작한다. _floor·_water·_shore는 실제 시각 타일맵 묶음(TileMapGenerator.GetVisualTilemapsForRun과 같은 순서),
     /// _grid는 그 그리드, _viewRect는 지금 화면(월드). 이미 돌던 물결은 바로 끝내고 새로 시작한다.
     /// 물결이 닿을 바닥이 없으면 false. 물결은 복제층을 다 옮겨 쓴 Tick부터 퍼진다(IsPreparing, [시작 준비]).
+    /// _strikeRadius(바닥 평면 거리)를 넘기면 그 안은 크게, 바깥은 낮게 출렁이고 안쪽 나무만 튄다. 0이면 범위를 가르지 않는다.
     /// </summary>
-    public bool Begin(Grid _grid, List<Tilemap> _floor, List<Tilemap> _water, List<Tilemap> _shore, Vector3 _center, Rect _viewRect)
+    public bool Begin(Grid _grid, List<Tilemap> _floor, List<Tilemap> _water, List<Tilemap> _shore, Vector3 _center, Rect _viewRect, float _strikeRadius = 0f)
     {
         Stop();
         // 지난 영역을 마저 비운다. 새 영역이 달라 덮어쓰지 못한 칸이 남으면 안 된다.
@@ -299,6 +342,7 @@ public sealed class QuakeTileRipple
         if (false == EnsureLifts(_grid.transform)) return false;
 
         center = _center;
+        strikeRadius = Mathf.Max(0f, _strikeRadius);
         rippleGrid = _grid;
         BuildRegion(_grid, _viewRect);
         ReadFloorBlocks();
@@ -331,7 +375,9 @@ public sealed class QuakeTileRipple
             nextCell = 0;
             doneCell = 0;
             bPlaying = true;
-            bObjectRidePending = settings.rideObjects;
+            BeginTreeShake();
+            // 물체를 칸 높이만큼 옮기지 않아도(rideObjects 꺼짐) 맞은 나무가 튀려면 나무를 그리는 동안 높이를 담아야 한다.
+            bObjectRidePending = settings.rideObjects || TreePopEnabled;
             return true;
         }
 
@@ -344,7 +390,8 @@ public sealed class QuakeTileRipple
         if (bObjectRidePending)
         {
             bObjectRidePending = false;
-            objectRide.Begin(this, regionRect);
+            objectRide.Begin(this, regionRect, settings.rideObjects, TreePopEnabled ? settings.treePopHeight : 0f, settings.treePopSeconds);
+            Shader.SetGlobalVector(QuakeShakeDId, new Vector4(1f, 0f, 0f, 0f));
         }
 
         elapsed += _deltaTime;
@@ -369,6 +416,7 @@ public sealed class QuakeTileRipple
         FlushGlow();
         FlushChanges();
         objectRide.Tick(_deltaTime);
+        if (settings.treeShake) Shader.SetGlobalVector(QuakeShakeAId, new Vector4(center.x, center.y, front, strikeRadius));
 
         if (doneCell < cells.Count) return true;
 
@@ -386,7 +434,40 @@ public sealed class QuakeTileRipple
         bPlaying = false;
         bObjectRidePending = false;
         objectRide.Stop();
+        ClearTreeShake();
         HideLifts();
+    }
+
+    /// <summary>
+    /// 지진에 맞은 나무(TreeObj 루트)를 알린다. 물결 위 물체로 함께 출렁이는 중이면 그리는 동안 위로 한 번 튄다(QuakeObjectRide).
+    /// 물결이 돌지 않으면(준비 중·끝남) 무시한다.
+    /// </summary>
+    public void MarkStruck(Transform _target)
+    {
+        if (bPlaying) objectRide.MarkStruck(_target);
+    }
+
+    // 지진에 맞은 나무가 튀는지(나무 떨림 설정의 일부).
+    private bool TreePopEnabled => settings.treeShake && settings.treePopHeight > 0f;
+
+    /// <summary>나무 셰이더 떨림을 켠다. 물결 동안 바뀌지 않는 값은 여기서 한 번만 넘기고, 앞머리(A)는 Tick마다 넘긴다.</summary>
+    private void BeginTreeShake()
+    {
+        if (false == settings.treeShake) return;
+
+        Shader.SetGlobalVector(QuakeShakeAId, new Vector4(center.x, center.y, 0f, strikeRadius));
+        Shader.SetGlobalVector(QuakeShakeBId, new Vector4(1f, Mathf.Max(0.1f, settings.frontSpeed), Mathf.Max(0.1f, settings.reachRadius), Mathf.Max(0.01f, settings.strikeEdge)));
+        Shader.SetGlobalVector(QuakeShakeCId, new Vector4(settings.treeShiverDegrees, settings.treeShiverOutsideDegrees, settings.treeShiverSeconds, settings.treeShiverHz));
+    }
+
+    /// <summary>
+    /// 나무 셰이더 지진 상태를 끈다(떨림 세기 0, 물결 높이 풀기 꺼짐 - 셰이더가 버텍스를 그대로 돌려준다).
+    /// 연출 도중 시스템이 꺼질 때(씬 정리·에디터 플레이 종료)도 부른다. 전역값은 씬이 바뀌어도 남는다.
+    /// </summary>
+    public static void ClearTreeShake()
+    {
+        Shader.SetGlobalVector(QuakeShakeBId, Vector4.zero);
+        Shader.SetGlobalVector(QuakeShakeDId, Vector4.zero);
     }
 
     /// <summary>_world(지면 위치)가 선 칸의 지금 높이(픽셀, 위가 +). 물결이 닿지 않는 칸·물 칸·영역 밖은 0.</summary>
@@ -951,6 +1032,7 @@ public sealed class QuakeTileRipple
 
         float reach = Mathf.Max(0.1f, settings.reachRadius);
         float calm = Mathf.Max(0f, settings.calmRadius);
+        float maxAmplitude = MaxAmplitude();
         TileBase[] ground = floorBlocks[0];
         int width = region.size.x;
 
@@ -966,7 +1048,7 @@ public sealed class QuakeTileRipple
             // 진폭: 진원 둘레(calm)에서 0부터 차오르고, 멀어질수록 reach에서 0으로 잦아든다.
             float rise = calm > 0f ? Mathf.SmoothStep(0f, 1f, key / calm) : 1f;
             float falloff = Mathf.Pow(1f - key / reach, Mathf.Max(0.1f, settings.reachFalloffPower));
-            float amplitude = settings.rippleHeight * rise * falloff;
+            float amplitude = Mathf.Min(maxAmplitude, settings.rippleHeight * rise * falloff * EpicenterScale(key) * StrikeScale(key));
             // 테두리 진하기 중 진원 거리 몫: 크게 출렁이는 칸일수록 진하다(PoseCell).
             float strength = settings.rippleHeight > 0f ? Mathf.Clamp01(amplitude / settings.rippleHeight) : 0f;
 
@@ -1003,6 +1085,39 @@ public sealed class QuakeTileRipple
         if (orderOfIndex.Length < regionCells) orderOfIndex = new int[ground.Length];
         for (int i = 0; i < regionCells; i++) orderOfIndex[i] = -1;
         for (int o = 0; o < cells.Count; o++) orderOfIndex[cells[o].index] = o;
+    }
+
+    /// <summary>
+    /// 칸 진폭의 한도. 물결이 가장 가파른 곳(앞머리, 기울기 = 진폭 × 2π/파장)에서 이웃 칸 높이 차가 MaxNeighborRise 픽셀을 넘지 않게 한다.
+    /// 이웃 칸은 진원 거리로 칸 한 걸음(cellStepX·cellStepY 중 긴 쪽)만큼 떨어져 있다. 기본 물결(첫 고리를 키우지 않은 높이)은 이 한도 아래다.
+    /// </summary>
+    private float MaxAmplitude()
+    {
+        float step = Mathf.Max(FloorDistance(cellStepX), FloorDistance(cellStepY));
+        float slope = 2f * Mathf.PI / Mathf.Max(0.1f, settings.rippleWavelength) * Mathf.Max(0.01f, step);
+        return MaxNeighborRise / PixelsPerUnit / slope;
+    }
+
+    // 바닥 평면 거리(세로를 두 배로 편다 - 진원 거리 key와 같은 공식).
+    private static float FloorDistance(Vector3 _step) => new Vector2(_step.x, _step.y * 2f).magnitude;
+
+    /// <summary>진원 둘레 첫 고리를 키우는 배율. 진원에서 epicenterBoostRadius까지 1 + epicenterBoost에서 1로 줄어든다.</summary>
+    private float EpicenterScale(float _key)
+    {
+        if (settings.epicenterBoost <= 0f || settings.epicenterBoostRadius <= 0f) return 1f;
+        return 1f + settings.epicenterBoost * (1f - Mathf.SmoothStep(0f, 1f, _key / settings.epicenterBoostRadius));
+    }
+
+    /// <summary>
+    /// 피해 범위 배율. 범위 안 1, 경계 폭(strikeEdge)을 지나며 strikeOutsideScale로 줄어든다. 피해 범위가 경계 폭의 한가운데라
+    /// 높이가 절반쯤 줄어든 곳이 실제로 맞는 끝이다(나무 셰이더 떨림 각도도 같은 경계). 범위가 없으면 1.
+    /// </summary>
+    private float StrikeScale(float _key)
+    {
+        if (strikeRadius <= 0f) return 1f;
+        float edge = Mathf.Max(0.01f, settings.strikeEdge);
+        float outside = Mathf.SmoothStep(0f, 1f, (_key - strikeRadius) / edge + 0.5f);
+        return Mathf.Lerp(1f, Mathf.Clamp01(settings.strikeOutsideScale), outside);
     }
 
     private Vector3Int CellOf(int _index) => new Vector3Int(region.xMin + _index % region.size.x, region.yMin + _index / region.size.x, 0);

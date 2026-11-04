@@ -3097,7 +3097,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         origin.z = 0f;
 
         // 연출(카메라 흔들림·진동 포함)을 못 내는 경우(화면에 바닥이 없는 등)에도 피해는 같은 속도로 준다.
-        environmentProvider.PlayQuakeRipple(origin);
+        // 피해 범위를 넘겨 그 안이 크게 출렁이고 안쪽 나무가 튀게 한다(물결 앞머리와 피해가 같은 거리 공식).
+        environmentProvider.PlayQuakeRipple(origin, range);
         float frontSpeed = environmentProvider.QuakeRippleFrontSpeed;
 
         // 연출은 몇 프레임 준비(복제층 옮겨 쓰기)한 뒤에 퍼지기 시작한다. 피해도 그때까지 기다려 앞머리와 함께 간다.
@@ -3160,6 +3161,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
                     // 진동은 지진 연출이 한 번 낸다.
                     tree.TakeDamage(_damage, false);
+                    // 맞은 나무만 위로 한 번 튀어 보인다(물결 위 물체 연출).
+                    environmentProvider?.NotifyQuakeStruck(tree.transform);
                 }
             }
         }

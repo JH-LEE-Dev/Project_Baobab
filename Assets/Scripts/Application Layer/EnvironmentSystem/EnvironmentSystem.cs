@@ -182,7 +182,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     /// 칸마다 윗면 테두리가 드러난다. 카메라 흔들림·진동이 함께 나간다. 실제 지형·판정은 바뀌지 않는다(QuakeTileRipple).
     /// 던전 맵이 깔려 있지 않거나 화면에 바닥이 없으면 아무것도 하지 않고 false. 이미 도는 물결은 끊고 새로 시작한다.
     /// </summary>
-    public bool PlayQuakeRipple(Vector3 _center)
+    public bool PlayQuakeRipple(Vector3 _center, float _strikeRadius = 0f)
     {
         if (false == bDungeonMapActive) return false;
 
@@ -199,7 +199,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         Rect viewRect = new Rect(view.x - halfWidth, view.y - halfHeight, halfWidth * 2f, halfHeight * 2f);
 
         _center.z = 0f;
-        if (false == quakeRipple.Begin(grid, quakeFloorLayers, quakeWaterLayers, quakeShoreLayers, _center, viewRect)) return false;
+        if (false == quakeRipple.Begin(grid, quakeFloorLayers, quakeWaterLayers, quakeShoreLayers, _center, viewRect, _strikeRadius)) return false;
 
         bQuakeFeedbackPending = true;
         return true;
@@ -207,8 +207,14 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
     private void PlayQuakeFeedback()
     {
-        if (quakeRippleSettings.cameraShakeIntensity > 0f)
-            CameraMoveController.Instance?.ShakeCamera(quakeRippleSettings.cameraShakeIntensity, quakeRippleSettings.cameraShakeSeconds);
+        // 아래로 한 번 세게 찍고(되튀며 잦아든다) 웅웅대는 흔들림으로 이어진다. 진동(Earthquake)도 같은 모양이다.
+        // 흔들림 세기가 0이면 찍기만 한다(ShakeCameraKick이 흔들림을 걸지 않아 다른 흔들림을 끊지 않는다).
+        if (quakeRippleSettings.cameraShakeIntensity > 0f || quakeRippleSettings.cameraKickDistance > 0f)
+        {
+            CameraMoveController.Instance?.ShakeCameraKick(Vector3.down, quakeRippleSettings.cameraKickDistance, quakeRippleSettings.cameraKickSeconds,
+                quakeRippleSettings.cameraShakeIntensity, quakeRippleSettings.cameraShakeSeconds);
+        }
+        PostProcessSettingsApplier.Instance?.PlayQuakeChromaticAberrationPulse();
         Rumble.Play(EHapticEvent.Earthquake);
     }
 
@@ -224,6 +230,17 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     public bool IsQuakeRipplePreparing => quakeRipple.IsPreparing;
 
     public float QuakeRippleFrontSpeed => Mathf.Max(0.1f, quakeRippleSettings.frontSpeed);
+
+    public void NotifyQuakeStruck(Transform _target) => quakeRipple.MarkStruck(_target);
+
+    private void OnDisable()
+    {
+        // 지진 도중 꺼지면(씬 정리·에디터 플레이 종료) 물결을 끝낸다. 꺼진 동안 Tick이 돌지 않아 물체 출렁임(그리기 콜백)만 남고,
+        // 나무 셰이더 전역값이 남으면 다음 씬·편집 화면의 나무가 계속 떤다. 물결이 없던 때도 전역값은 끈다.
+        bQuakeFeedbackPending = false;
+        quakeRipple.Stop();
+        QuakeTileRipple.ClearTreeShake();
+    }
 
 #if UNITY_EDITOR
     // 에디터 전용 디버그: 던전에서 이 키를 누르면 캐릭터 자리에서 지진 물결을 낸다. 빌드에는 포함되지 않는다.

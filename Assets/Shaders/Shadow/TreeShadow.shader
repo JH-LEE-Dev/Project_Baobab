@@ -37,6 +37,8 @@ Shader "Custom/TreeShadow"
             #pragma fragment frag
             #pragma multi_compile_instancing
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            // 지진 떨림 때 그림자는 바닥에 남는다(튀지 않고 떨기만 한다).
+            #define TREE_QUAKE_POP_SCALE 0.0
             #include "../Include/TreeWindSway.hlsl"
 
             struct Attributes

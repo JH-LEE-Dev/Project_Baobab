@@ -34,6 +34,16 @@ public class CameraMoveController : MonoBehaviour
     private float shakeTimerTotal;
     private float startingIntensity;
 
+    // 한 방 찍기(ShakeCameraKick) 상태. 흔들림과 따로 돈다(다른 흔들림이 와도 찍기는 끝까지 간다).
+    private CameraKickExtension kickExtension;
+    // 찍는 순간의 오프셋(월드, 방향 × 거리 × 옵션 비율).
+    private Vector3 kickVector;
+    private float kickTimer;
+    private float kickTimerTotal;
+    // 찍은 뒤 되튀는 주기(초)와 잦아드는 시간 상수(초).
+    private const float KickBouncePeriod = 0.2f;
+    private const float KickDecaySeconds = 0.08f;
+
     // 줌 상태 변수
     // PixelPerfectCamera.refResolution을 바꾸는 방식은 이 프로젝트에서 효과가 없었다.
     // CinemachineBrain이 매 프레임 Camera.orthographicSize를 CinemachineCamera.Lens.OrthographicSize로
@@ -66,12 +76,17 @@ public class CameraMoveController : MonoBehaviour
     // 퍼블릭 제어 메서드
     public void SetupCamera()
     {
+        EnsureVirtualCamera();
+        InitializePerlin();
+    }
+
+    // 가상 카메라를 아직 못 잡았으면(또는 씬이 바뀌어 사라졌으면) 씬에서 찾는다.
+    private void EnsureVirtualCamera()
+    {
         if (virtualCamera == null)
         {
             virtualCamera = FindAnyObjectByType<CinemachineCamera>();
         }
-
-        InitializePerlin();
     }
 
     public void SetupCamera(CinemachineCamera _camera)
@@ -84,10 +99,7 @@ public class CameraMoveController : MonoBehaviour
 
     public void ShakeCamera(float _intensity, float _time)
     {
-        if (virtualCamera == null)
-        {
-            virtualCamera = FindAnyObjectByType<CinemachineCamera>();
-        }
+        EnsureVirtualCamera();
 
         if (multiChannelPerlin == null && virtualCamera != null)
         {
@@ -120,6 +132,55 @@ public class CameraMoveController : MonoBehaviour
             shakeTimerTotal = _time;
             shakeTimer = _time;
         }
+    }
+
+    /// <summary>
+    /// 카메라를 _direction(월드, 정규화)으로 _distance만큼 한 번에 찍고, 되튀며 _kickTime 동안 잦아들게 한다. 동시에 ShakeCamera(_intensity, _time)의
+    /// 흔들림이 이어진다(_intensity·_time이 0 이하면 흔들림은 걸지 않아 돌고 있던 다른 흔들림을 끊지 않는다). 찍기도 카메라 흔들림 옵션 비율만큼
+    /// 줄어든다(0%면 찍지 않는다). 찍는 오프셋은 흔들림과 같은 Correction 채널에 들어가 조준(ScreenToWorldWithoutShake)에는 섞이지 않는다.
+    /// </summary>
+    public void ShakeCameraKick(Vector3 _direction, float _distance, float _kickTime, float _intensity, float _time)
+    {
+        if (_intensity > 0f && _time > 0f) ShakeCamera(_intensity, _time);
+
+        EnsureVirtualCamera();
+        if (virtualCamera == null || _distance <= 0f || _kickTime <= 0f) return;
+
+        float _scale = SettingsManager.Instance.Current.cameraShake / SettingsData.SLIDER_MAX;
+        if (_scale <= 0f) return;
+
+        if (kickExtension == null || kickExtension.gameObject != virtualCamera.gameObject)
+        {
+            if (false == virtualCamera.TryGetComponent(out kickExtension))
+            {
+                kickExtension = virtualCamera.gameObject.AddComponent<CameraKickExtension>();
+            }
+        }
+
+        kickVector = _direction.normalized * (_distance * _scale);
+        kickTimerTotal = _kickTime;
+        kickTimer = _kickTime;
+        kickExtension.Offset = kickVector;
+    }
+
+    // 찍기 오프셋: 찍는 순간 가장 멀리 갔다가 되튀며(KickBouncePeriod) 잦아들고(KickDecaySeconds), 끝(kickTimerTotal)에 정확히 0이 된다.
+    private void UpdateKick()
+    {
+        if (kickTimer <= 0f) return;
+
+        kickTimer -= Time.deltaTime;
+        if (kickExtension == null) { kickTimer = 0f; return; }
+
+        if (kickTimer <= 0f)
+        {
+            kickTimer = 0f;
+            kickExtension.Offset = Vector3.zero;
+            return;
+        }
+
+        float _t = kickTimerTotal - kickTimer;
+        float _k = Mathf.Cos(2f * Mathf.PI * _t / KickBouncePeriod) * Mathf.Exp(-_t / KickDecaySeconds) * (kickTimer / kickTimerTotal);
+        kickExtension.Offset = kickVector * _k;
     }
 
     // ScreenToWorldWithoutShake가 매 프레임 불리므로 카메라별 브레인 조회를 한 번만 한다.
@@ -166,10 +227,7 @@ public class CameraMoveController : MonoBehaviour
     /// </summary>
     public void ZoomCamera(float _zoomMultiplier, float _inTime, float _holdTime, float _outTime)
     {
-        if (virtualCamera == null)
-        {
-            virtualCamera = FindAnyObjectByType<CinemachineCamera>();
-        }
+        EnsureVirtualCamera();
 
         if (virtualCamera == null || _zoomMultiplier <= 0f) return;
 
@@ -317,6 +375,8 @@ public class CameraMoveController : MonoBehaviour
         {
             RefreshBaseOrthographicSize();
         }
+
+        UpdateKick();
 
         if (shakeTimer > 0)
         {
