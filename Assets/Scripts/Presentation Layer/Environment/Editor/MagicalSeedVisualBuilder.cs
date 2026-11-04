@@ -13,7 +13,7 @@ using UnityEngine;
 ///  - Big   (StageNN-K_이름 Seed|Flower|Tree.png, 64x64) → 확대 스프라이트(LootGrowthVisualData.sprite)
 ///  - Small (StageNN-K_이름 Seed|Flower|Tree_S.png, 32x32 프레임 가로 시트) → 전시 프레임(LootGrowthVisualData.displayFrames)
 /// 스테이지 번호 → 전리품은 StageLoots, 이름의 Seed/Flower/Tree → 단계 1/2/3.
-/// 전시 재생 규칙(idle/action/fps)은 DisplaySpecs. 표에 없는 시트(예: 임시인 Stage04 Lava)는 프레임 전부를 순서대로 반복한다.
+/// 전시 재생 규칙(idle/action/fps)은 DisplaySpecs. 표에 없는 시트는 프레임 전부를 순서대로 반복한다.
 ///
 /// 메뉴 실행(Build)은 재생 규칙까지 표 기준으로 다시 쓴다. 파일을 교체/추가했을 때 MagicalSeedSheetPostprocessor가
 /// 부르는 Refresh는 스프라이트·프레임만 다시 읽고, 이미 있는 항목의 재생 규칙(인스펙터에서 고친 값)은 그대로 둔다.
@@ -71,6 +71,17 @@ public static class MagicalSeedVisualBuilder
         new DisplaySpec(3, 1, Seq(0), Seq(0, 1, 2, 1, 0), 10f),
         new DisplaySpec(3, 2, Seq(0), Seq(0, 1, 2, 3), 8f),
         new DisplaySpec(3, 3, Seq(0, 1), None, 2f),
+        // 용암 (꽃 없음: 씨앗 → 나무)
+        new DisplaySpec(4, 1, Seq(0, 1, 2, 1), None, 10f),
+        new DisplaySpec(4, 3, Seq(0, 1), None, 2f),
+    };
+
+    // 후광 중심을 픽셀 영역 중심(ComputeArtCenter) 대신 손으로 정한 값 - (스테이지, 단계), 프레임 중심 기준 픽셀.
+    // 몸통 옆으로 장식이 뻗은 그림은 영역 중심이 몸통에서 벗어나 후광이 치우쳐 보인다. 그림을 바꾸면 다시 확인한다.
+    private static readonly (int stage, int tier, Vector2 pixel)[] ArtCenterOverrides =
+    {
+        // 용암 씨앗: 오른쪽 위 리본을 빼고 씨앗 몸통(x 10~21, y 4~15) 중심
+        (4, 1, new Vector2(0f, -6f)),
     };
 
     // 표에 없는 시트의 기본 fps(씨앗/꽃/나무)
@@ -129,7 +140,7 @@ public static class MagicalSeedVisualBuilder
             int _index = GetOrAddEntry(_entries, _old, _loot, _stage, _tier, _bKeepAnimSettings);
             LootGrowthVisualData.TierSprite _entry = _entries[_index];
             _entry.displayFrames = LoadFrames(_path);
-            _entry.displayArtCenter = ComputeArtCenter(_path, _entry.displayFrames);
+            _entry.displayArtCenter = ResolveArtCenter(_stage, _tier, _path, _entry.displayFrames);
             if (Vector2.zero == _entry.displayBase && 0 < _entry.displayFrames.Length) _entry.displayBase = EstimateBase(_path, _entry.displayFrames[0]);
             if (0 == _entry.displayShadowWidth && 0 < _entry.displayFrames.Length) _entry.displayShadowWidth = EstimateShadowWidth(_path, _entry.displayFrames[0]);
             _entries[_index] = _entry;
@@ -300,6 +311,19 @@ public static class MagicalSeedVisualBuilder
             .OrderByDescending(x => x.rect.y)
             .ThenBy(x => x.rect.x)
             .ToArray();
+    }
+
+    private static Vector2 ResolveArtCenter(int _stage, int _tier, string _path, Sprite[] _frames)
+    {
+        for (int i = 0; i < ArtCenterOverrides.Length; i++)
+        {
+            if (ArtCenterOverrides[i].stage == _stage && ArtCenterOverrides[i].tier == _tier)
+            {
+                return ArtCenterOverrides[i].pixel / PixelsPerUnit;
+            }
+        }
+
+        return ComputeArtCenter(_path, _frames);
     }
 
     // 프레임마다 알파가 있는 픽셀 영역의 중심을 구해 평균 낸 값 - 프레임(스프라이트) 중심 기준, 유닛.
@@ -547,7 +571,7 @@ public static class MagicalSeedVisualBuilder
 ///  - 새 파일: 픽셀 아트 임포트 설정(PPU 32, Point, 무압축, Small은 Multiple)
 ///  - Small 시트: 32x32 격자로 슬라이스(프레임 수가 바뀌어도 그대로 따라감)
 ///  - LootGrowthVisualData / LootItemTypeDataBase: 스프라이트·프레임 다시 읽기(재생 규칙은 유지)
-/// 그래서 임시 리소스(Stage04 Lava)는 같은 이름의 파일로 덮어쓰기만 하면 된다.
+/// 그래서 리소스는 같은 이름의 파일로 덮어쓰기만 하면 된다.
 /// </summary>
 public class MagicalSeedSheetPostprocessor : AssetPostprocessor
 {

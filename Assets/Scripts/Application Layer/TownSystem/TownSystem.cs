@@ -7,6 +7,10 @@ public class TownSystem : MonoBehaviour
     public event Action ActivatePortalEvent;
     public event Action MainMenuCurtainRollbackEvent;
     public event Action GoToMainMenuCurtainRevealEvent;
+    /// <summary>엔딩 시작(소풍 바구니를 가진 채 오프로드에 탄 순간). GameInstaller가 엔딩 시청을 기록하고 저장한다.</summary>
+    public event Action EndingStartedEvent;
+    /// <summary>엔딩 출발 하늘 연출이 끝난 순간. GameInstaller가 엔딩 씬으로 넘긴다.</summary>
+    public event Action EndingDepartedEvent;
     //외부 의존성
     private InputManager inputManager;
 
@@ -66,6 +70,10 @@ public class TownSystem : MonoBehaviour
     // "시작"에 풀린다 - 정산금을 받고 안내 UI가 사라지기 전 빈틈에 도끼를 미리 강화해버리면 남은 돈이
     // 재강화 비용에 못 미쳐 그 퀘스트를 완료할 방법이 사라지고, 차량도 잠긴 채라 마을에 갇히기 때문이다.
     private bool bTutorialTentLocked = false;
+
+    // 엔딩을 이미 봤는지(세이브 값). 본 뒤로는 소풍 바구니가 있어도 평소처럼 숲으로 출발한다.
+    private bool bEndingSeen = false;
+    private bool bEndingDeparture = false;
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
     IInventory _characterInventory, OffroadContainer _offroadContainer, SkyCameraProductionManager _skyCameraProductionManager)
@@ -312,6 +320,12 @@ public class TownSystem : MonoBehaviour
         townProductionManager.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
         townProductionManager.GoToMainMenuCurtainRevealEvent += GoToMainMenuCurtainReveal;
 
+        townProductionManager.EndingBoardedEvent -= EndingBoarded;
+        townProductionManager.EndingBoardedEvent += EndingBoarded;
+
+        townProductionManager.EndingAscendCompleteEvent -= EndingAscendComplete;
+        townProductionManager.EndingAscendCompleteEvent += EndingAscendComplete;
+
         if (lootPillarManager != null)
         {
             lootPillarManager.LootPillarInteractStateChangedEvent -= LootPillarInteractStateChanged;
@@ -362,6 +376,8 @@ public class TownSystem : MonoBehaviour
         townProductionManager.MainMenuIntroEndEvent -= MainMenuIntroEnd;
         townProductionManager.GoToMainMenuReadyEvent -= GoToMainMenuReady;
         townProductionManager.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
+        townProductionManager.EndingBoardedEvent -= EndingBoarded;
+        townProductionManager.EndingAscendCompleteEvent -= EndingAscendComplete;
 
         if (lootPillarManager != null)
         {
@@ -479,6 +495,10 @@ public class TownSystem : MonoBehaviour
         logProcessingManager.CancelPlayerTransfer();
         offroadContainer.CancelPlayerTransfer();
 
+        // 소풍 바구니를 가진 채 처음 타면 숲 선택 없이 엔딩으로 출발한다.
+        if (true == CanStartEnding() && true == StartEndingDeparture())
+            return;
+
         townProductionManager.StartCharacterRide();
 
         signalHub.Publish(new TownOffroadVehicleActivatedSignal());
@@ -532,6 +552,59 @@ public class TownSystem : MonoBehaviour
     private void LootPillarUIClosed(LootPillarUIClosedSignal _lootPillarUIClosedSignal)
     {
         lootPillarManager?.SyncInteractStateOnExternalClose();
+    }
+
+    public void SetEndingSeen(bool _bEndingSeen)
+    {
+        bEndingSeen = _bEndingSeen;
+    }
+
+    // 엔딩은 정식판 본편에서만, 소풍 바구니(엔딩 특성)를 가진 채 아직 엔딩을 보지 않았을 때 시작된다.
+    private bool CanStartEnding()
+    {
+        return true == BuildInfo.IsFullRelease
+            && false == GameModeContext.IsRoguelike
+            && false == bEndingSeen
+            && false == bEndingDeparture
+            && false == bTutorialAxeUpgradePending
+            && true == bCurrentlyTownScene
+            && null != townObjectManager && true == townObjectManager.HasPicnicBasket;
+    }
+
+    private bool StartEndingDeparture()
+    {
+        if (false == townProductionManager.StartEndingDeparture(puppyManager))
+            return false;
+
+        bEndingDeparture = true;
+
+        // 엔딩 출발은 되돌릴 수 없는 연출이라 ESC(메인메뉴 이탈 등)를 막는다. 엔딩 씬 → 메인메뉴에서 풀린다.
+        inputManager.PauseESCKey(true);
+
+        // 숲 출발(DungeonSelected)과 같이 운반 NPC를 멈춘다.
+        townUnitSpawner?.CancelActiveTasksForTeleport();
+        townUnitSpawner?.PauseAllNPCs();
+
+        // 저장 뒤에 원목을 더 보내지 않도록 원격 운반을 먼저 멈춘 다음, 엔딩 시청을 기록하고 저장한다.
+        offroadContainer.StopRemoteTransportForDeparture();
+        EndingStartedEvent?.Invoke();
+        return true;
+    }
+
+    private void EndingBoarded()
+    {
+        // 숲 출발(DungeonSelected)과 같은 시점 - 주행이 시작되기 직전에 차량/상자 콜라이더를 끈다.
+        offroadContainer.col.enabled = false;
+        if (townObjectManager.offroadVehicle != null)
+            townObjectManager.offroadVehicle.col.enabled = false;
+    }
+
+    private void EndingAscendComplete()
+    {
+        // 마을을 떠나는 시점의 자동저장(숲 출발/메인메뉴 이탈과 같다). 탑승 순간 저장 이후의 변화(가공 수익 등)를 남긴다.
+        signalHub.Publish(new AutoSaveRequestedSignal(AutoSaveReason.DepartToEnding));
+
+        EndingDepartedEvent?.Invoke();
     }
 
     private void DungeonSelected(DungeonSelectedSignal dungeonSelectedSignal)

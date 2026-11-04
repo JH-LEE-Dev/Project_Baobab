@@ -177,11 +177,11 @@ MonoBehaviour:
     - {fileID: 1476290586, guid: 96861d98befcd5144ae5c2a745d8f0cd, type: 3}
     - {fileID: -627729479, guid: 96861d98befcd5144ae5c2a745d8f0cd, type: 3}
     - {fileID: 1257956555, guid: 96861d98befcd5144ae5c2a745d8f0cd, type: 3}
-    idleFrames: 
+    idleFrames: 00000000010000000200000001000000
     actionFrames: 
-    fps: 8
+    fps: 10
     actionInterval: {x: 3, y: 4}
-    displayArtCenter: {x: 0, y: -0.203125}
+    displayArtCenter: {x: 0, y: -0.1875}
     displayBase: {x: 0, y: -0.3125}
     spriteBase: {x: -0.015625, y: -0.625}
     displayShadowWidth: 8
@@ -192,11 +192,11 @@ MonoBehaviour:
     displayFrames:
     - {fileID: 1024581307, guid: 6c904acf35ed6924cacc1f0f060a058f, type: 3}
     - {fileID: 1782968220, guid: 6c904acf35ed6924cacc1f0f060a058f, type: 3}
-    idleFrames: 
+    idleFrames: 0000000001000000
     actionFrames: 
     fps: 2
     actionInterval: {x: 3, y: 4}
-    displayArtCenter: {x: 0.0234375, y: 0.046875}
+    displayArtCenter: {x: 0.015625, y: 0.03125}
     displayBase: {x: -0.015625, y: -0.359375}
     spriteBase: {x: -0.015625, y: -0.71875}
     displayShadowWidth: 18

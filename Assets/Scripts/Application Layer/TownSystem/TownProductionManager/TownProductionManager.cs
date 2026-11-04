@@ -15,6 +15,10 @@ public class TownProductionManager : MonoBehaviour
     public event Action MainMenuIntroEndEvent;
     public event Action GoToMainMenuReadyEvent;
     public event Action GoToMainMenuCurtainRevealEvent;
+    /// <summary>엔딩 출발: 주인과 강아지가 모두 차에 탄 순간(주행 직전).</summary>
+    public event Action EndingBoardedEvent;
+    /// <summary>엔딩 출발: 카메라가 하늘로 올라가 상공 체공까지 끝난 순간. 여기서 엔딩 씬으로 넘어간다.</summary>
+    public event Action EndingAscendCompleteEvent;
 
     private InputManager inputManager;
 
@@ -25,6 +29,19 @@ public class TownProductionManager : MonoBehaviour
 
     [Tooltip("컨테이너가 차 위에 안착한 뒤 하늘(카메라 상승) 연출이 시작되기까지의 대기 시간")]
     [SerializeField] private float skyProductionDelayAfterLanding = 0.5f;
+
+    [Header("Ending")]
+    [Tooltip("엔딩 출발 때 화면을 덮는 하늘. 씬이 바뀌어도 남아 엔딩 씬에서 걷힌다.")]
+    [SerializeField] private EndingSkyCover endingSkyCoverPrefab;
+    // 엔딩 출발은 차량·하늘 연출 모두 두 번 빨라지기 전 초기 버전(cf38c73f) 그대로다:
+    // 주행 시작부터 3.75초 고정 타이머 뒤 하늘 연출이 시작되고, 카메라는 1.8초 상승 뒤 상공에서 0.5초 머문다.
+    [Tooltip("엔딩 출발: 주행 시작부터 하늘 연출이 시작되기까지(cf38c73f StartSkyProductionRoutine)")]
+    [SerializeField] private float endingSkyProductionDelay = 3.75f;
+    [SerializeField] private float endingAscendDuration = 1.8f;
+    [SerializeField] private float endingAscendHoverSeconds = 0.5f;
+
+    private Coroutine endingDepartureCoroutine;
+    private Coroutine endingSkyCoroutine;
 
     // 하늘 연출을 예약해 둔 주행이 진행 중인지. 컨테이너 안착 이벤트는 주행 연출에서만 오지만,
     // 예약 없이 들어온 안착에 반응해 연출이 제멋대로 시작되는 일이 없도록 명시적으로 잠근다.
@@ -82,6 +99,18 @@ public class TownProductionManager : MonoBehaviour
 
         bSkyProductionPending = false;
 
+        if (endingDepartureCoroutine != null)
+        {
+            StopCoroutine(endingDepartureCoroutine);
+            endingDepartureCoroutine = null;
+        }
+
+        if (endingSkyCoroutine != null)
+        {
+            StopCoroutine(endingSkyCoroutine);
+            endingSkyCoroutine = null;
+        }
+
         if (characterRideCoroutine != null)
         {
             StopCoroutine(characterRideCoroutine);
@@ -135,6 +164,106 @@ public class TownProductionManager : MonoBehaviour
 
         bSkyProductionPending = false;
         StartCoroutine(StartSkyProductionRoutine());
+    }
+
+    /// <summary>
+    /// 엔딩 출발. 주인이 평소처럼 차에 타고, 강아지가 달려와 같은 방식으로 탄 뒤, 숲 선택 없이 곧바로 출발한다.
+    /// 주행과 하늘 연출은 두 번 빨라지기 전 초기 버전(cf38c73f) 그대로다(StartEndingDrive).
+    /// </summary>
+    public bool StartEndingDeparture(PuppyManager _puppyManager)
+    {
+        if (character == null || characterRidePoint == null || offroadVehicleObj == null) return false;
+
+        if (characterRideCoroutine != null)
+        {
+            StopCoroutine(characterRideCoroutine);
+            characterRideCoroutine = null;
+        }
+
+        if (endingDepartureCoroutine != null)
+            StopCoroutine(endingDepartureCoroutine);
+
+        endingDepartureCoroutine = StartCoroutine(EndingDepartureRoutine(_puppyManager));
+        return true;
+    }
+
+    private IEnumerator EndingDepartureRoutine(PuppyManager _puppyManager)
+    {
+        // 1. 주인 탑승 - CharacterRideRoutine과 같은 연출이다(내비게이션을 여는 탑승 완료 이벤트만 보내지 않는다).
+        inputManager.PauseMove(true);
+
+        originalRidePosition = character.transform.position;
+        character.transform.position = characterRidePoint.position;
+        Sound.Play(SoundID.OffroadClose, character.transform.position);
+        character.bRide = true;
+        character.gameObject.SetActive(false);
+        offroadVehicleObj.PlayShinyEffect();
+        character.EnableShadow();
+
+        offroadVehicleObj.SetActiveWheelForStencil(false);
+        yield return offroadVehicleObj.CharacterRideLandingImpactSequence();
+        yield return new WaitForSeconds(0.25f);
+
+        // 2. 강아지가 주인이 차에 오른 자리까지 달려와 주인과 똑같이 탄다.
+        if (_puppyManager != null && _puppyManager.HasPuppyInTown)
+        {
+            bool bArrived = false;
+            _puppyManager.BoardVehicle(originalRidePosition, () => bArrived = true);
+            while (bArrived == false) yield return null;
+
+            _puppyManager.HidePuppyForRide();
+            Sound.Play(SoundID.OffroadClose, characterRidePoint.position);
+            offroadVehicleObj.PlayShinyEffect();
+            yield return offroadVehicleObj.CharacterRideLandingImpactSequence();
+            yield return new WaitForSeconds(0.25f);
+        }
+
+        EndingBoardedEvent?.Invoke();
+
+        // 3. 출발
+        StartEndingDrive();
+
+        endingDepartureCoroutine = null;
+    }
+
+    /// <summary>
+    /// cf38c73f의 StartDrive 그대로: 상호작용 키를 잠그고, 차량은 상자 도약·안착이 끝난 뒤 시동을 거는 당시 순서로 달리며,
+    /// 하늘 연출은 상자 안착이 아니라 주행 시작부터 센 고정 시간 뒤에 시작한다. 1초 뒤 HUD가 내려가는 것도 같다.
+    /// </summary>
+    private void StartEndingDrive()
+    {
+        inputManager.PauseInteractKey(true);
+
+        if (endingSkyCoroutine != null) StopCoroutine(endingSkyCoroutine);
+        endingSkyCoroutine = StartCoroutine(StartEndingSkyRoutine());
+
+        offroadVehicleObj.StartDrive(offroadDriveEndPoint, true);
+        StartCoroutine(PopupUIDown());
+    }
+
+    // cf38c73f의 StartSkyProductionRoutine 순서: BGM 페이드아웃 → 카메라 상승 → 구름이 덮음(같은 프레임).
+    private IEnumerator StartEndingSkyRoutine()
+    {
+        yield return new WaitForSeconds(endingSkyProductionDelay);
+
+        // 카메라가 실제로 하늘로 올라가기 시작하는 이 시점에 맞춰 타운 BGM을 페이드아웃한다.
+        Sound.FadeOutBGM(endingAscendDuration);
+
+        skyCameraProductionManager.PlayAscendForEnding(character.transform, endingAscendDuration, endingAscendHoverSeconds, EndingAscendComplete);
+
+        EndingSkyCover cover = EndingSkyCover.Create(endingSkyCoverPrefab);
+        if (cover != null) cover.PlayCover();
+
+        endingSkyCoroutine = null;
+    }
+
+    private void EndingAscendComplete()
+    {
+        // StartEndingDrive에서 건 상호작용 키 잠금은 평소 던전 도착 뒤 PopupUIUp에서 풀린다.
+        // 엔딩은 그 경로를 타지 않고 세션이 끝나므로 여기서 짝을 맞춘다(InputManager는 씬을 넘어 살아남는다).
+        inputManager.PauseInteractKey(false);
+
+        EndingAscendCompleteEvent?.Invoke();
     }
 
     public void StartCharacterRide()

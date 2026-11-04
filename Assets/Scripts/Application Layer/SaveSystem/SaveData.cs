@@ -280,6 +280,12 @@ public class GameSaveData
     public bool bMagmaForestGuideDone;
     public List<LootType> currentOwnedLoots;
 
+    // 엔딩을 본 적이 있는지(도중에 게임을 꺼도 본 것으로 친다), 로그라이크 모드가 해금됐는지.
+    // 해금 조건은 "모든 특성 최대 레벨 + 엔딩 시청"이다. 이 키가 없는 예전 세이브는 둘 다 false로 읽힌다.
+    // Clear()에서는 건드리지 않고, 저장 직전에 SaveManager가 항상 현재 값으로 덮어쓴다.
+    public bool bEndingSeen;
+    public bool bRoguelikeUnlocked;
+
     // 용광로 상태. 이 키가 없는 예전 세이브를 읽으면 JsonUtility가 null로 두므로, 읽는 쪽에서
     // null을 "용광로에 아무것도 없음"으로 처리한다(기존 세이브는 용광로 자체가 없던 시절이라 그게 맞다).
     public List<BlastFurnaceSaveData> blastFurnaceSaveDatas;

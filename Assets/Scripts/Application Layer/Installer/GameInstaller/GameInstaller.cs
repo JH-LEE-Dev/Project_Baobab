@@ -148,6 +148,7 @@ public class GameInstaller : MonoBehaviour
     public void LoadGame()
     {
         saveManager.LoadGameData();
+        townSystem.SetEndingSeen(saveManager.bEndingSeen);
         // 세이브 로드가 소지금을 덮어쓰므로, 캐릭터 프리팹의 디버그 소지금은 로드 후 한 번 더 적용해야 한다.
         unitSystem.ApplyDebugStartMoney();
         gameplayUIInstaller.Refresh();
@@ -295,6 +296,25 @@ public class GameInstaller : MonoBehaviour
 
         inDungeonSystem.inDungeonObjectManager.LootGrowthTierChangedEvent -= LootGrowthTierChanged;
         inDungeonSystem.inDungeonObjectManager.LootGrowthTierChangedEvent += LootGrowthTierChanged;
+
+        townSystem.EndingStartedEvent -= EndingStarted;
+        townSystem.EndingStartedEvent += EndingStarted;
+
+        townSystem.EndingDepartedEvent -= EndingDeparted;
+        townSystem.EndingDepartedEvent += EndingDeparted;
+    }
+
+    // 엔딩 시작(탑승 순간). 엔딩을 본 것으로 기록하고, 모든 특성이 최대 레벨이면 로그라이크를 해금한 뒤 저장한다.
+    // 엔딩 도중 게임을 꺼도 본 것으로 남는다.
+    private void EndingStarted()
+    {
+        EndingContext.bShowRoguelikeUnlockMessage = saveManager.MarkEndingSeen(skillManager.AreAllSkillsMaxed());
+        townSystem.SetEndingSeen(true);
+    }
+
+    private void EndingDeparted()
+    {
+        bootStrapProvider.GoToEndingScene();
     }
 
     private void ReleaseEvents()
@@ -304,6 +324,8 @@ public class GameInstaller : MonoBehaviour
         townSystem.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
         inDungeonSystem.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
         inDungeonSystem.inDungeonObjectManager.LootGrowthTierChangedEvent -= LootGrowthTierChanged;
+        townSystem.EndingStartedEvent -= EndingStarted;
+        townSystem.EndingDepartedEvent -= EndingDeparted;
     }
 
     // 마을(특성 창)에서 프레스티지가 올라 대시 전리품 단계가 바뀌면 다음 씬 진입을 기다리지 않고 바로 적용한다.

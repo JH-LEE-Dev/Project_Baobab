@@ -9,6 +9,9 @@ public enum SceneType
 
     // 로그라이크 모드 전용 씬. 기존 값(특히 MAX)의 정수값이 바뀌지 않도록 MAX 뒤에 붙였다.
     Roguelike,
+
+    // 엔딩 씬. 위와 같은 이유로 맨 뒤에 붙였다.
+    Ending,
 }
 
 public struct SceneChangeData

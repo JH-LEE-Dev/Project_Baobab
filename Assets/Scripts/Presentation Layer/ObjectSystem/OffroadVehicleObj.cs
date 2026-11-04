@@ -546,7 +546,11 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         wheelObjectForStencil.SetActive(_boolean);
     }
 
-    public void StartDrive(Transform _endPoint)
+    /// <param name="_bLegacySequence">
+    /// [엔딩 전용] true면 두 번 빨라지기 전 초기 버전(cf38c73f) 순서로 달린다: 상자 도약·안착 연출이 다 끝난 뒤에 시동을 건다.
+    /// 본편 출발은 기본값(false)이라 지금처럼 도약과 시동이 나란히 진행된다.
+    /// </param>
+    public void StartDrive(Transform _endPoint, bool _bLegacySequence = false)
     {
         offroadContainer.DisableCollision();
         outLineObject.SetActive(false);
@@ -571,7 +575,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         Sound.StopTracked(engineStartHandle);
 
-        driveCoroutine = StartCoroutine(DriveRoutine(_endPoint));
+        driveCoroutine = StartCoroutine(DriveRoutine(_endPoint, _bLegacySequence));
     }
 
     private Coroutine idleRumbleCoroutine;
@@ -662,23 +666,32 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         }
     }
 
-    private IEnumerator DriveRoutine(Transform _endPoint)
+    private IEnumerator DriveRoutine(Transform _endPoint, bool _bLegacySequence)
     {
         Vector3 jitterVisualObjectInitialLocalPos = jitterVisualObject.transform.localPosition;
 
-        // 0. 컨테이너 점프 시퀀스. 시동과 나란히 진행되어야 하므로 별도 코루틴으로 돌리고,
-        //    여기서는 상자가 실제로 떠오르는 순간(ContainerJumpStart)까지만 기다린다.
-        bContainerLifted = false;
-        Coroutine jumpCoroutine = StartCoroutine(ContainerJumpSequence());
-        containerJumpCoroutine = jumpCoroutine;
-
-        // 도약 오브젝트가 없어 시퀀스가 곧바로 빠져나가는 등 이벤트가 오지 않는 경우에도 주행이
-        // 영영 멈추지 않도록, 예비동작 길이만큼만 기다리고 시동으로 넘어간다.
-        float liftWaited = 0f;
-        while (bContainerLifted == false && liftWaited < ContainerLiftWaitTimeout)
+        Coroutine jumpCoroutine = null;
+        if (_bLegacySequence)
         {
-            liftWaited += Time.deltaTime;
-            yield return null;
+            // 0. [엔딩 전용, cf38c73f] 컨테이너 점프 시퀀스(도약 → 안착 → 차체 쫀득 연출)가 다 끝난 뒤 시동을 건다.
+            yield return ContainerJumpSequence();
+        }
+        else
+        {
+            // 0. 컨테이너 점프 시퀀스. 시동과 나란히 진행되어야 하므로 별도 코루틴으로 돌리고,
+            //    여기서는 상자가 실제로 떠오르는 순간(ContainerJumpStart)까지만 기다린다.
+            bContainerLifted = false;
+            jumpCoroutine = StartCoroutine(ContainerJumpSequence());
+            containerJumpCoroutine = jumpCoroutine;
+
+            // 도약 오브젝트가 없어 시퀀스가 곧바로 빠져나가는 등 이벤트가 오지 않는 경우에도 주행이
+            // 영영 멈추지 않도록, 예비동작 길이만큼만 기다리고 시동으로 넘어간다.
+            float liftWaited = 0f;
+            while (bContainerLifted == false && liftWaited < ContainerLiftWaitTimeout)
+            {
+                liftWaited += Time.deltaTime;
+                yield return null;
+            }
         }
 
         // 시동 임팩트(먼지 파티클)보다 엔진 캐치 지점만큼 앞서 엔진 사운드를 재생한다.
@@ -707,8 +720,11 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         // 시동 쪽이 먼저 끝나더라도 상자가 아직 안착 중이면 그게 끝난 뒤에 출발한다.
         // (도약 · 안착 연출이 주행 중에 이어지면 상자가 달리는 차를 쫓아가는 그림이 된다)
-        yield return jumpCoroutine;
-        containerJumpCoroutine = null;
+        if (jumpCoroutine != null)
+        {
+            yield return jumpCoroutine;
+            containerJumpCoroutine = null;
+        }
 
         // 3. 주행 시퀀스
         yield return TravelSequence(_endPoint.position, jitterVisualObjectInitialLocalPos);
@@ -1131,6 +1147,13 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private void ContainerVisualClosed()
     {
         offroadContainer.SetContainerVisualOpened(false);
+    }
+
+    /// <summary>소풍 바구니 특성 보유 시 운반 상자를 바구니 모습으로 바꾼다. (기능은 동일)</summary>
+    public void SetPicnicBasket(bool _bPicnicBasket)
+    {
+        if (offroadContainerVComponent != null)
+            offroadContainerVComponent.SetPicnicBasket(_bPicnicBasket);
     }
 
     public void ChangeSprite(MapType _mapType)

@@ -2817,6 +2817,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3a8f9b273480654bbf8fbed5fd29da5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnvironmentSystem
+  quakeRippleSettings:
+    frontSpeed: 10
+    rippleHeight: 0.375
+    rippleWavelength: 4
+    rippleWaves: 2
+    calmRadius: 1.2
+    reachRadius: 15
+    reachFalloffPower: 1.2
+    troughShade: 0.3
+    outlineColor: {r: 1, g: 0.64, b: 0.38, a: 0.9}
+    outlineFadeIn: 0.08
+    outlineFadeOutStart: 0.4
+    outlineFalloffPower: 0.5
+    outlineOnLevel: 0.15
+    crackGlow: 1
+    rideObjects: 1
+    viewMargin: 8
+    cameraShakeIntensity: 3
+    cameraShakeSeconds: 1.1
 --- !u!1 &7291486191322297758
 GameObject:
   m_ObjectHideFlags: 0
@@ -3195,6 +3214,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TownProductionManager
   offroadDriveEndPoint: {fileID: 7909126257907575581, guid: 7b37f70e1b67e4040843e9414c6e3527, type: 3}
   skyProductionDelayAfterLanding: 0.5
+  endingSkyCoverPrefab: {fileID: 6587291015899796702, guid: 626ebdb10c6895647903efdb08efef94, type: 3}
+  endingAscendDuration: 1.8
+  endingAscendHoverSeconds: 0.5
   bCanGetOff: 1
   bCurrentlyTownScene: 1
   bRetryGame: 0
@@ -3594,6 +3616,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 62302642fa5342a5830a8acbadc77e37, type: 2}
   - {fileID: 11400000, guid: d6c6e5de83df43499762621388e835f3, type: 2}
   - {fileID: 11400000, guid: 871c770c91db457ea197db41c6c8a15b, type: 2}
+  - {fileID: 11400000, guid: a336910f7d732e0428f1542dc699c38f, type: 2}
 --- !u!1 &8536741958456108890
 GameObject:
   m_ObjectHideFlags: 0
@@ -3800,6 +3823,12 @@ MonoBehaviour:
   obsidianCharmDropChanceIncreasePerKill: 0.005
   obsidianCharmPityMinKills: 4
   obsidianCharmPityMaxKills: 5
+  obsidianCharmTier3PrestigeLevel: 11
+  quakeChargePerEmber: 0.1
+  quakeTier1Damage: 200
+  quakeTier1Range: 4
+  quakeTier3Damage: 400
+  quakeTier3Range: 5.5
   goldTreePityMinKills: 3
   goldTreePityMaxKills: 7
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}

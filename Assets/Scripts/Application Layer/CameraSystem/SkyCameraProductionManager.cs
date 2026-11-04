@@ -475,6 +475,60 @@ public class SkyCameraProductionManager : MonoBehaviour
         PlayAscendOut(_target);
     }
 
+    /// <summary>
+    /// [엔딩 전용] 마을 → 엔딩 출발 상승. 하늘 연출이 두 번 빨라지기 전(cf38c73f) PlayCameraMove 상승 분기를 그대로 옮긴 것이다:
+    /// 더미 타깃을 캐릭터 위치에서 yOffset만큼 _duration 동안 올리고, 상공에서 _hoverSeconds 머문 뒤 끝난다.
+    /// 이징은 체공까지 포함한 시퀀스 전체에 건다(당시와 같은 곡선). 완료는 왕복 이벤트(SkyProductionEndEvent) 대신 _onComplete로만 받는다.
+    /// 왕복 상태(isMoved·cameraStartPos)와 본편 경로의 moveDuration은 건드리지 않는다(엔딩 씬으로 넘어가며 세션이 끝난다).
+    /// </summary>
+    public void PlayAscendForEnding(Transform _target, float _duration, float _hoverSeconds, Action _onComplete)
+    {
+        if (virtualCamera == null)
+        {
+            virtualCamera = FindAnyObjectByType<CinemachineCamera>();
+        }
+
+        if (virtualCamera == null || _target == null || dummyTarget == null)
+        {
+            Debug.LogWarning("[SkyCameraProductionManager] PlayAscendForEnding 실패로 카메라 상승 연출을 건너뜁니다. 즉시 완료 처리합니다.");
+            EndSkyVolumeTracking(1f);
+            _onComplete?.Invoke();
+            return;
+        }
+
+        KillCameraMoveTween();
+
+        dummyTarget.position = _target.position;
+        virtualCamera.Follow = dummyTarget;
+        virtualCamera.LookAt = dummyTarget;
+
+        Vector3 targetPosition = dummyTarget.position;
+        targetPosition.y += yOffset;
+
+        BeginSkyVolumeTracking(dummyTarget.position.y, targetPosition.y);
+
+        Sound.PlayUI(SoundID.SkyUP);
+        Sequence seq = DOTween.Sequence();
+        seq.Append(dummyTarget.DOMove(targetPosition, _duration));
+        seq.AppendInterval(_hoverSeconds);
+        seq.AppendCallback(() =>
+        {
+            EndSkyVolumeTracking(0f);
+            _onComplete?.Invoke();
+        });
+
+        if (useCustomCurve)
+        {
+            seq.SetEase(moveCurve);
+        }
+        else
+        {
+            seq.SetEase(moveEase);
+        }
+
+        cameraMoveTween = seq;
+    }
+
     /// <summary>[로그라이크 전용] PlayAscendOutForRun의 완료 콜백을 거둔다(완료를 기다리지 않고 넘어갈 때). 이후 완료는 본편처럼 이벤트로 나간다.</summary>
     public void CancelAscendOutForRun()
     {

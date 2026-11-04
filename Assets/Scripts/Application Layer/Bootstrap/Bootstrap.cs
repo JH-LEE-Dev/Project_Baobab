@@ -62,6 +62,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private static readonly string townSceneName = "TownScene";
     private static readonly string dungeonSceneName = "DungeonScene";
     private static readonly string roguelikeSceneName = "RoguelikeScene";
+    private static readonly string endingSceneName = "EndingScene";
 
     private SceneType currentSceneType = SceneType.None;
     private SceneType prevSceneType = SceneType.None;
@@ -200,6 +201,11 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
                 gameInstaller.GoToMainMenuCurtainRevealEvent += OnGoToMainMenuCurtainReveal;
             }
         }
+        else if (_sceneName == endingSceneName)
+        {
+            // 엔딩 씬은 GameInstaller 없이 씬 안의 EndingDirector가 혼자 돈다(마을에서 넘어올 때 이미 해제됐다).
+            currentSceneType = SceneType.Ending;
+        }
         else if (_sceneName == roguelikeSceneName)
         {
             currentSceneType = SceneType.Roguelike;
@@ -281,6 +287,30 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         Debug.Log($"[BootStrap] GoToMainMenuScene 요청 수신 - 현재 씬={currentSceneType}, 씬 전환을 시작합니다.");
 
         TryBeginTransition(SceneType.MainMenu);
+    }
+
+    public void GoToEndingScene()
+    {
+        if (isTempScene)
+        {
+            return;
+        }
+
+        Debug.Log($"[BootStrap] GoToEndingScene 요청 수신 - 현재 씬={currentSceneType}, 씬 전환을 시작합니다.");
+
+        TryBeginTransition(SceneType.Ending);
+    }
+
+    /// <summary>
+    /// 엔딩 → 메인메뉴 시작. 마을 → 메인메뉴(TownProductionManager.StartGoToMainMenu)처럼 카메라 상승 시작과 같은 타이밍에
+    /// 메인메뉴 패널을 들여온다(OnGoToMainMenuCurtainReveal). 상승이 끝나면 엔딩이 GoToMainMenuScene()으로 씬을 바꾸고,
+    /// 이후는 평소 메인메뉴 복귀(SetupMainMenuScene)와 같다.
+    /// </summary>
+    public void BeginMainMenuReturnFromEnding()
+    {
+        if (isTempScene) return;
+
+        OnGoToMainMenuCurtainReveal();
     }
 
     public void GoToTownScene(bool _bNewGame)
@@ -399,7 +429,8 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             prevSceneType = currentSceneType;
 
             // 기존 인스톨러 해제 (mainMenuInstaller는 절대 파괴하지 않으므로 여기서 다루지 않는다)
-            if (_sceneType == SceneType.MainMenu)
+            // 엔딩 씬도 메인메뉴처럼 본편 세션을 끝내고 들어간다(엔딩 뒤에는 메인메뉴로 돌아간다).
+            if (_sceneType == SceneType.MainMenu || _sceneType == SceneType.Ending)
             {
                 if (gameInstaller != null)
                 {

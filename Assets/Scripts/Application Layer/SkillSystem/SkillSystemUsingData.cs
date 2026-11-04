@@ -396,6 +396,7 @@ public enum SkillCommandType
     EmberEverywhere, // 산불 조심
     OverheatMaxIncrease, // 과열 최대치 증가
     TreeHeatResistance, // 열기 내성 강화
+    PicnicBasket, // 소풍 바구니 (엔딩 특성)
 }
 
 public enum AbilityLevelUpRejectReason

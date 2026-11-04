@@ -197,6 +197,30 @@ public class PuppyManager : MonoBehaviour
         puppy.EnterTown(_spawn, tilemapDataProvider);
     }
 
+    /// <summary>
+    /// 엔딩: 주인이 오프로드에 탄 뒤 강아지가 _goal(주인이 차에 오른 자리)까지 달려온다. 도착하면 _onArrived.
+    /// 마을에 강아지가 없으면 곧바로 부른다.
+    /// </summary>
+    public void BoardVehicle(Vector2 _goal, Action _onArrived)
+    {
+        if (false == bInTown || null == puppy || false == puppy.gameObject.activeInHierarchy)
+        {
+            _onArrived?.Invoke();
+            return;
+        }
+
+        ApplyInteractTarget(EInteractTarget.None);
+        puppy.BoardVehicle(_goal, _onArrived);
+    }
+
+    /// <summary>엔딩: 차에 오른 강아지를 숨긴다(주인이 탈 때 캐릭터를 끄는 것과 같다).</summary>
+    public void HidePuppyForRide()
+    {
+        if (null != puppy) puppy.gameObject.SetActive(false);
+    }
+
+    public bool HasPuppyInTown => true == bInTown && null != puppy && true == puppy.gameObject.activeInHierarchy;
+
     /// <summary>던전으로 떠나거나(로그라이크 포함) 마을 Grid가 사라질 때 호출한다.</summary>
     public void ExitTown()
     {

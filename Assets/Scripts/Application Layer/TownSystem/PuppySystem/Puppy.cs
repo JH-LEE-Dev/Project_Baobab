@@ -270,6 +270,15 @@ public class Puppy : MonoBehaviour
     private bool bAnimFinished = false;
     private EFacing facing = EFacing.S;
 
+    // 엔딩 탑승: 주인이 오프로드에 탄 뒤 강아지도 차 옆까지 달려와 주인과 같은 방식으로 탄다. 행동 FSM과 별개로 돈다.
+    private const float BoardMaxDuration = 6f;
+    private bool bBoarding = false;
+    private bool bBoardPathBuilt = false;
+    private Vector2 boardGoal;
+    private float boardTimer = 0f;
+    private float boardBlockedTimer = 0f;
+    private System.Action boardArrivedCallback;
+
     public PuppyBehavior CurrentBehavior => behavior;
 
     /// <summary>밥그릇 앞에서 고개를 숙이고 먹는 중인지. 이 동안에는 밥그릇 상호작용이 막힌다.</summary>
@@ -323,6 +332,8 @@ public class Puppy : MonoBehaviour
 
     public void ExitTown()
     {
+        bBoarding = false;
+        boardArrivedCallback = null;
         behavior = PuppyBehavior.None;
         pendingBehavior = PuppyBehavior.None;
         bExiting = false;
@@ -331,6 +342,66 @@ public class Puppy : MonoBehaviour
         popEffect.Stop();
         heartEffect.StopAll();
         SetOutline(false);
+    }
+
+    /// <summary>
+    /// 엔딩: 하던 행동을 끝내고(앉아/엎드려/자고 있었다면 일어나는 애니메이션부터) _goal까지 달려온다.
+    /// 도착하면(길이 막혀 더 못 오거나 시간이 지나도) _onArrived를 부른다. 그 뒤로는 스스로 움직이지 않는다.
+    /// </summary>
+    public void BoardVehicle(Vector2 _goal, System.Action _onArrived)
+    {
+        if (false == bExiting && true == TryGetEndAnim(out EAnim _endAnim))
+        {
+            bExiting = true;
+            PlayAnim(_endAnim, transitionFps, true);
+        }
+
+        behavior = PuppyBehavior.None;
+        pendingBehavior = PuppyBehavior.None;
+        path.Clear();
+        pathIndex = 0;
+
+        bBoarding = true;
+        bBoardPathBuilt = false;
+        boardGoal = _goal;
+        boardTimer = 0f;
+        boardBlockedTimer = 0f;
+        boardArrivedCallback = _onArrived;
+        SetOutline(false);
+    }
+
+    private void UpdateBoarding(float _dt)
+    {
+        boardTimer += _dt;
+
+        // 일어나는 애니메이션이 끝나야 달리기 시작한다.
+        if (true == bExiting)
+        {
+            if (false == bAnimFinished) return;
+            bExiting = false;
+        }
+
+        if (false == bBoardPathBuilt)
+        {
+            bBoardPathBuilt = true;
+            BuildPath(boardGoal, true);
+        }
+
+        PlayAnim(EAnim.Run, runFps);
+
+        Vector2 _before = Position;
+        bool _bArrived = pathIndex < path.Count ? StepPath(runSpeed, _dt) : SteerTowards(boardGoal, runSpeed, _dt);
+
+        boardBlockedTimer = (Position - _before).sqrMagnitude < 0.000001f ? boardBlockedTimer + _dt : 0f;
+        if (false == _bArrived && boardBlockedTimer < 0.3f && boardTimer < BoardMaxDuration) return;
+
+        bBoarding = false;
+        FaceTowards(boardGoal - Position);
+        PlayAnim(EAnim.StandIdle, GetWagFps(), true);
+
+        System.Action _callback = boardArrivedCallback;
+        boardArrivedCallback = null;
+        _callback?.Invoke();
     }
 
     /// <summary>주인이 상호작용했다. 흰색 + 뽀잉 연출(+ 하트) 후 상황에 맞는 행동으로 바꾼다.</summary>
@@ -1303,7 +1374,19 @@ public class Puppy : MonoBehaviour
 
     private void Update()
     {
-        if (null == manager || PuppyBehavior.None == behavior) return;
+        if (null == manager) return;
+
+        if (true == bBoarding)
+        {
+            float _boardDt = Time.deltaTime;
+            Vector2 _boardBefore = Position;
+            UpdateBoarding(_boardDt);
+            UpdateAnim(_boardDt);
+            UpdateDust(_boardBefore, _boardDt);
+            return;
+        }
+
+        if (PuppyBehavior.None == behavior) return;
 
         float _dt = Time.deltaTime;
         Vector2 _before = Position;
