@@ -71,8 +71,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     // Town/Dungeon 전환 시 TownSystem/InDungeonSystem이 발소리 등에 쓰일 실제 타일맵 조회 대상을 직접 갈아끼운다.
     public void SetTilemapDataProvider(ITilemapDataProvider _tilemapDataProvider)
     {
+        sceneTilemapDataProvider = _tilemapDataProvider;
         characterVisualComponent?.SetTilemapDataProvider(_tilemapDataProvider);
     }
+
+    // SetTilemapDataProvider로 받은 지금 씬의 실제 타일맵. ctx.tilemapDataProvider는 던전 TileMapGenerator로 고정이라,
+    // 그 Grid가 없는 마을에서 대시 칸 거리를 잴 때 대신 쓴다(GetDashCellStep).
+    private ITilemapDataProvider sceneTilemapDataProvider;
 
     public void TakeEnvironmentalStaminaDamage(float _amount) => healthComponent.DecreaseStaminaFlat(_amount);
     // 불씨를 주워 과열 수치를 올린다. 이미 최대면 효과가 없고 false.
@@ -1087,14 +1092,31 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     /// </summary>
     private float GetDashWorldDistance(Vector2 _direction)
     {
-        ITilemapDataProvider tilemap = ctx.tilemapDataProvider;
-        float cellStep = Mathf.Sqrt(GetIsometricDistSq(tilemap.CellToWorld(new Vector3Int(1, 0, 0)), tilemap.CellToWorld(Vector3Int.zero)));
-        if (0.0001f >= cellStep) cellStep = 1f;
+        float cellStep = GetDashCellStep();
 
         float isoLength = Mathf.Sqrt(GetIsometricDistSq(_direction, Vector2.zero));
         if (0.0001f >= isoLength) return 0f;
 
         return dashDistanceTiles * cellStep / isoLength;
+    }
+
+    /// <summary>
+    /// 그리드 축으로 한 칸의 등각 거리. 던전은 TileMapGenerator(ctx.tilemapDataProvider)로 잰다.
+    /// 마을에서는 그 Grid가 던전 씬과 함께 사라져(또는 아직 만들어지지 않아) 잴 수 없으므로, 마을의 실제 타일맵
+    /// (sceneTilemapDataProvider, 칸 크기가 던전과 같다)으로 잰다. 그래야 마을에서도 던전과 같은 칸 수만큼 간다.
+    /// </summary>
+    private float GetDashCellStep()
+    {
+        float cellStep = GetCellStep(ctx.tilemapDataProvider);
+        if (0.0001f >= cellStep) cellStep = GetCellStep(sceneTilemapDataProvider);
+        if (0.0001f >= cellStep) cellStep = 1f;
+        return cellStep;
+    }
+
+    private static float GetCellStep(ITilemapDataProvider _tilemap)
+    {
+        if (null == _tilemap) return 0f;
+        return Mathf.Sqrt(GetIsometricDistSq(_tilemap.CellToWorld(new Vector3Int(1, 0, 0)), _tilemap.CellToWorld(Vector3Int.zero)));
     }
 
     /// <summary>DashState.Exit가 부른다. 어떤 이유로 끝나든 한 번만 불린다.</summary>
