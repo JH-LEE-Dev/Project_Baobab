@@ -51,6 +51,7 @@ namespace PresentationLayer.VFX
         private readonly int[] edgeCells = new int[GridWidth * GridHeight];
         private readonly bool[] edgeMask = new bool[GridWidth * GridHeight]; // edgeCells에 든 칸 표시
         private readonly float[] cellWorldX = new float[GridWidth];          // 칸 중심의 월드 X(원점 기준, 빌드마다 한 번 계산)
+        private readonly int[] columnTop = new int[GridWidth];               // 열마다 실루엣 맨 위 칸의 격자 y(없으면 -1)
 
         // 지난 빌드에서 solid가 채워졌던 경계 사각형(다음 빌드에서 이 범위만 지운다)
         private int previousMinX;
@@ -62,6 +63,7 @@ namespace PresentationLayer.VFX
         public int[] Distance => distance;
         public int[] EdgeCells => edgeCells;
         public bool[] EdgeMask => edgeMask;
+        public int[] ColumnTop => columnTop;
         public int EdgeCellCount { get; private set; }
 
         /// <summary>
@@ -323,6 +325,8 @@ namespace PresentationLayer.VFX
             previousMinY = HasSolid ? minY : 0;
             previousMaxY = HasSolid ? maxY : -1;
 
+            BuildColumnTop(minX, maxX, minY, maxY);
+
             if (false == HasSolid)
             {
                 EdgeCellCount = 0;
@@ -361,6 +365,25 @@ namespace PresentationLayer.VFX
 
             FootCenterX = Mathf.RoundToInt((footMinX + footMaxX) * 0.5f) - GridOriginX;
             FootY = _minY - GridOriginY;
+        }
+
+        // 열마다 실루엣 맨 위 칸(격자 y)을 기록한다. 실루엣이 없는 열은 -1. 불꽃 혀가 이 칸 바로 위에서 솟는다.
+        private void BuildColumnTop(int _minX, int _maxX, int _minY, int _maxY)
+        {
+            for (int x = 0; x < GridWidth; x++)
+            {
+                columnTop[x] = -1;
+            }
+
+            for (int x = _minX; x <= _maxX; x++)
+            {
+                for (int y = _maxY; y >= _minY; y--)
+                {
+                    if (false == solid[y * GridWidth + x]) continue;
+                    columnTop[x] = y;
+                    break;
+                }
+            }
         }
 
         // 지난 빌드의 실루엣 사각형과 가장자리 표시만 지운다(격자 전체를 초기화하지 않는다)

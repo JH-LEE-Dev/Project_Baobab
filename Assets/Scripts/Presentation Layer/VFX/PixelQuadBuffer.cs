@@ -110,6 +110,15 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void AddWorldRect(int _x0, int _y0, int _x1, int _y1, Color32 _color)
         {
+            AddWorldRect((float)_x0, (float)_y0, (float)_x1, (float)_y1, _color);
+        }
+
+        /// <summary>
+        /// 소수점 월드 픽셀 좌표 직사각형을 쿼드로 추가한다. 서브픽셀로 움직이는 대상의 몸에 붙는 픽셀(표면 반짝임 등)을 대상과 같은 소수 위치에 놓을 때 쓴다.
+        /// 정수 좌표를 넘기면 정수 오버로드와 비트 단위로 같은 결과다.
+        /// </summary>
+        public void AddWorldRect(float _x0, float _y0, float _x1, float _y1, Color32 _color)
+        {
             if (MaxVertices <= vertexCount + 4) return;
             EnsureCapacity(vertexCount + 4);
 

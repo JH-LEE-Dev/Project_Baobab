@@ -83,7 +83,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 12
+  m_SortingLayer: 13
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -7896710973168869388, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
@@ -789,7 +789,7 @@ MonoBehaviour:
         m_NumAlphaKeys: 2
       m_ColorMin: {r: 0, g: 0, b: 0, a: 0}
       m_ColorMax: {r: 0, g: 0, b: 0, a: 0}
-  - treeType: 9
+  - treeType: 11
     effectColor:
       m_Mode: 4
       m_GradientMin:
@@ -854,7 +854,7 @@ MonoBehaviour:
         m_NumAlphaKeys: 2
       m_ColorMin: {r: 0, g: 0, b: 0, a: 0}
       m_ColorMax: {r: 0, g: 0, b: 0, a: 0}
-  - treeType: 9
+  - treeType: 12
     effectColor:
       m_Mode: 4
       m_GradientMin:
@@ -889,10 +889,10 @@ MonoBehaviour:
         m_NumAlphaKeys: 2
       m_GradientMax:
         serializedVersion: 2
-        key0: {r: 0.3018868, g: 0, b: 0, a: 1}
-        key1: {r: 0.7264151, g: 0.10377359, b: 0, a: 1}
-        key2: {r: 0.3490566, g: 0.1745283, b: 0, a: 0}
-        key3: {r: 0.26415092, g: 0, b: 0, a: 0}
+        key0: {r: 0.16037738, g: 0.16037738, b: 0.16037738, a: 1}
+        key1: {r: 0.9098039, g: 0.27452925, b: 0.16862744, a: 1}
+        key2: {r: 0.2830189, g: 0.27736214, b: 0.2763439, a: 0}
+        key3: {r: 0.09433961, g: 0.09433961, b: 0.09433961, a: 0}
         key4: {r: 0, g: 0, b: 0, a: 0}
         key5: {r: 0, g: 0, b: 0, a: 0}
         key6: {r: 0, g: 0, b: 0, a: 0}

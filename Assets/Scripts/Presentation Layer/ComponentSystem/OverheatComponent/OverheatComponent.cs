@@ -10,6 +10,10 @@ using UnityEngine;
 /// - 도끼 공격속도: 마지막에 (1 + 과열 * overheatAxeAttackSpeedPerLevel * 효율)을 곱한다(StatComponent.overheatAxeAttackSpeedMultiplier).
 /// 효율은 "과열 효율 증가" 특성 배율(StatComponent.overheatEfficiencyMultiplier, 특성이 없으면 1)이다.
 /// </summary>
+// 이펙트 정렬 동기화(LateUpdate)는 Character.LateUpdate(customSortable.ManualLateUpdate, 기본 순서 0)가 이번 프레임 정렬 값을 쓴 뒤,
+// VFX_OverheatAura(10000)가 그 값을 읽기 전에 실행되어야 한다. Update에서 하면 지난 프레임 값이 들어가서, 위로 이동할 때(정렬 값 감소)
+// 오라가 캐릭터 앞에 그려진다.
+[DefaultExecutionOrder(100)]
 public class OverheatComponent : PComponent, IOverheatComponent
 {
     // 이펙트 단계(1~33 예열 / 34~66 가열 / 67~ 푸른 불꽃)의 시작 값. 0은 과열 없음.
@@ -34,7 +38,7 @@ public class OverheatComponent : PComponent, IOverheatComponent
     private string activeVfxTag;
     private ParticleSystemRenderer activeVfxRenderer;
     private PresentationLayer.VFX.VFX_OverheatAura activeAura; // 켜진 오라의 단계 안 진행도(SetStageProgress)를 넣을 대상. 없으면 null
-    private int appliedVfxSortingOrder = int.MinValue; // Update가 마지막으로 적용한 소팅 오더(같으면 세터 생략)
+    private int appliedVfxSortingOrder = int.MinValue; // LateUpdate가 마지막으로 적용한 소팅 오더(같으면 세터 생략)
     // 꺼지거나 다른 단계 이펙트로 바뀌어 페이드아웃 중인 오라. 페이드 도중 다시 켜지면 이 인스턴스를 즉시 회수해
     // 새 오라와 두 개가 겹쳐 보이지 않게 한다.
     private ParticleSystem fadingVfx;
@@ -176,7 +180,7 @@ public class OverheatComponent : PComponent, IOverheatComponent
         activeAura.SetStageProgress(CalculateStageProgress(overheatLevel, overheatStage));
     }
 
-    private void Update()
+    private void LateUpdate()
     {
         if (activeVfxRenderer == null || customSortable == null) return;
 

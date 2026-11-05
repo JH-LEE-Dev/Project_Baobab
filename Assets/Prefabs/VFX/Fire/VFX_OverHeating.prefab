@@ -4909,3 +4909,5 @@ MonoBehaviour:
   extinguishDuration: 0.45
   glowScale: 1
   backGlowScale: 1
+  snapToPixelGrid: 0
+  tongueMaxHeightPx: 10

@@ -69,6 +69,7 @@ namespace PresentationLayer.VFX
         [SerializeField, Tooltip("불꽃이 위로 올라가는 속도(노이즈 스크롤)")] private float noiseScrollSpeed = 2.0f;
         [SerializeField, Tooltip("불꽃이 일렁이는 프레임 속도(fps). 낮을수록 도트 애니메이션 느낌")] private float flickerFps = 12.0f;
         [SerializeField, Range(0.0f, 1.0f), Tooltip("불꽃 끝이 점으로 흩어지기 시작하는 지점(두께 대비 비율)")] private float dissolveStart = 0.6f;
+        [SerializeField, Tooltip("푸른 불꽃/가열 단계. 0보다 크면 링 대신 고른 1px 외곽선 + 머리·어깨 윗면에서 솟는 불꽃 혀 5개로 그리고, 이 값이 혀의 최대 높이(px)다. 0이면 기존 링 방식(드론)")] private float tongueMaxHeightPx = 0.0f;
 
         [Header("외곽 색 그라데이션 (푸른색 -> 밝은 보라 -> 밝은 청록)")]
         [SerializeField, Tooltip("색이 몸 둘레를 따라 흐르는 속도(초당 색 순환 횟수)")] private float gradientSpeed = 0.25f;
@@ -132,6 +133,9 @@ namespace PresentationLayer.VFX
         private const int EmberKindDebris = 3;         // 충격파와 함께 바닥을 미끄러지는 파편
         private const int EmberKindWisp = 4;           // 예열 불티: 노랑 `+`로 떨어져 나와 주황 -> 빨강 `.`로 식는다
         private const float BodyBleedPx = 0.3f;
+        private const int TongueSwayReach = 2;         // 불꽃 혀가 좌우로 흔들리며 옆 열로 넘어갈 수 있는 최대 칸
+        private const float TongueTipRisePx = 6.0f;    // 혀 끝에서 떨어진 조각이 올라가는 거리(px)
+        private const float TongueGlowScale = 0.33f;   // 불꽃 혀 모드에서 표면 반짝임/불씨 발광 배율(블룸 임계 아래로)
         private const int MeshBoundsHalfSize = 100;
         private static readonly Vector3 MeshBoundsSize = new Vector3(MeshBoundsHalfSize, MeshBoundsHalfSize, 10.0f);
         private const int GridWidth = OverheatSilhouette.GridWidth;
@@ -188,6 +192,42 @@ namespace PresentationLayer.VFX
         private static readonly Color32 ColorViolet = new Color32(51, 23, 158, 255);
         private static readonly Color32 ColorCyan = new Color32(30, 235, 215, 255);
 
+        // 불꽃 혀 팔레트(푸른 불꽃 + tongueMaxHeightPx): 밑동 민트(가끔 흰빛) -> 하늘 -> 청색 -> 끝 라일락, 외곽선은 남색 -> 청색
+        private static readonly Color32 ColorTongueHot = new Color32(214, 250, 255, 255);
+        private static readonly Color32 ColorTongueCore = new Color32(120, 255, 236, 255);
+        private static readonly Color32 ColorTongueSky = new Color32(92, 200, 255, 255);
+        private static readonly Color32 ColorTongueAzure = new Color32(44, 120, 255, 255);
+        private static readonly Color32 ColorTongueLilac = new Color32(120, 92, 255, 255);
+        private static readonly Color32 ColorContourIndigo = new Color32(38, 62, 210, 255);
+
+        // 불꽃 혀 표: 실루엣 가로폭 대비 중심 위치, 반폭(px), 자랐다 줄어드는 주기(Hz), 위상(0~1), 최대 높이 비율
+        private struct FlameTongue
+        {
+            public float u;
+            public float halfWidth;
+            public float frequency;
+            public float phase;
+            public float amplitude;
+
+            public FlameTongue(float _u, float _halfWidth, float _frequency, float _phase, float _amplitude)
+            {
+                u = _u;
+                halfWidth = _halfWidth;
+                frequency = _frequency;
+                phase = _phase;
+                amplitude = _amplitude;
+            }
+        }
+
+        private static readonly FlameTongue[] FlameTongues =
+        {
+            new FlameTongue(0.10f, 2.2f, 1.25f, 0.00f, 0.55f),
+            new FlameTongue(0.30f, 3.0f, 0.95f, 0.37f, 0.95f),
+            new FlameTongue(0.47f, 3.3f, 1.10f, 0.71f, 1.00f),
+            new FlameTongue(0.64f, 2.9f, 1.35f, 0.18f, 0.80f),
+            new FlameTongue(0.88f, 2.2f, 1.05f, 0.55f, 0.60f),
+        };
+
         // 외곽 그라데이션의 순환 팔레트: 푸른색 -> 밝은 보라 -> 밝은 청록 -> (다시 푸른색)
         private static readonly Color32[] GradientAnchors = { ColorBlue, ColorViolet, ColorCyan };
 
@@ -219,6 +259,7 @@ namespace PresentationLayer.VFX
 
         private readonly OverheatSilhouette silhouette = new OverheatSilhouette();
         private readonly Ember[] embers = new Ember[EmberCapacity];
+        private readonly float[] tongueHeights = new float[GridWidth]; // 열마다 불꽃 혀 높이(px). 아우라를 다시 만들 때만 갱신한다.
 
         //상태 변수
         private Transform sourceRootOverride;
@@ -244,6 +285,10 @@ namespace PresentationLayer.VFX
         private uint randomState;
         private int originX;
         private int originY;
+        private float bodyOriginPxX;          // 몸에 붙는 픽셀(표면 반짝임)의 원점(월드 px). 스냅을 끄면 원점의 정확한 소수 위치다.
+        private float bodyOriginPxY;
+        private int tongueMinColumn;          // 불꽃 혀를 배치하는 실루엣 가로 범위(격자 x)
+        private int tongueColumnSpan;
 
         private void EnsureInitialized()
         {
@@ -404,6 +449,14 @@ namespace PresentationLayer.VFX
         {
             float maxReach = (Mathf.Max(1.0f, ringThicknessPx) + BodyBleedPx + crownExtraThicknessPx) * MaxIntensity;
             if (0.0f < pulseInterval) maxReach *= MaxPulseScale;
+
+            // 불꽃 혀: 최대 높이(플레어 포함) + 떨어져 올라가는 조각(TongueTipRisePx + 2px 크기)
+            if (true == IsTongueMode())
+            {
+                float tongueReach = tongueMaxHeightPx * MaxIntensity;
+                if (0.0f < pulseInterval) tongueReach *= MaxPulseScale;
+                maxReach = Mathf.Max(maxReach, tongueReach + TongueTipRisePx + 2.0f);
+            }
             return Mathf.CeilToInt(maxReach) + 1;
         }
 
@@ -699,6 +752,8 @@ namespace PresentationLayer.VFX
             Matrix4x4 worldToLocal = transform.worldToLocalMatrix;
             originX = Mathf.FloorToInt(pos.x * PixelsPerUnit);
             originY = Mathf.FloorToInt(pos.y * PixelsPerUnit);
+            bodyOriginPxX = true == snapToPixelGrid ? originX : pos.x * PixelsPerUnit;
+            bodyOriginPxY = true == snapToPixelGrid ? originY : pos.y * PixelsPerUnit;
 
             for (int i = 0; i < AuraLayer; i++)
             {
@@ -807,6 +862,8 @@ namespace PresentationLayer.VFX
             if (AuraStyle.Preheat == auraStyle) return;
 
             AuraFrame frame = CreateAuraFrame(_flickerTime, _flickerFrame, _intensity);
+            bool bTongueMode = IsTongueMode();
+            if (true == bTongueMode) BuildTongueHeights(_flickerTime, _intensity * GetTongueStyleScale(frame.pulse));
 
             int regionMinX = silhouette.RegionMinX;
             int regionMaxX = silhouette.RegionMaxX;
@@ -825,7 +882,11 @@ namespace PresentationLayer.VFX
                 for (int gx = regionMinX; gx <= regionMaxX + 1; gx++)
                 {
                     Color32 cellColor = default(Color32);
-                    bool bDraw = gx <= regionMaxX && TryGetAuraCellColor(in frame, gx, gy, crown, out cellColor);
+                    bool bDraw = false;
+                    if (gx <= regionMaxX)
+                    {
+                        bDraw = true == bTongueMode ? TryGetTongueCellColor(in frame, gx, gy, out cellColor) : TryGetAuraCellColor(in frame, gx, gy, crown, out cellColor);
+                    }
 
                     // 이어지는 같은 색을 하나의 직사각형으로 합친다
                     bool bSameAsRun = true == bDraw && true == bRunHasColor && runColor.r == cellColor.r && runColor.g == cellColor.g && runColor.b == cellColor.b && runColor.a == cellColor.a;
@@ -842,6 +903,181 @@ namespace PresentationLayer.VFX
                         bRunHasColor = true;
                     }
                 }
+            }
+
+            if (true == bTongueMode) DrawTongueTips(_flickerTime, _intensity);
+        }
+
+        // ---------- 불꽃 혀 (푸른 불꽃·가열 + tongueMaxHeightPx) ----------
+
+        private bool IsTongueMode()
+        {
+            return (AuraStyle.BlueFlame == auraStyle || AuraStyle.Heating == auraStyle) && 0.0f < tongueMaxHeightPx;
+        }
+
+        // 가열 단계는 혀 높이가 단계 진행도를 따라 70% -> 100%로 오르고 박동 때 25% 커진다(푸른 불꽃은 1)
+        private float GetTongueStyleScale(float _pulse)
+        {
+            if (AuraStyle.Heating != auraStyle) return 1.0f;
+            return (0.7f + 0.3f * stageProgress) * (1.0f + 0.25f * _pulse);
+        }
+
+        // 불꽃 혀 중심의 격자 x(소수). 좌우로 천천히 흔들린다.
+        private float GetTongueCenterX(int _tongueIndex, float _flickerTime)
+        {
+            FlameTongue tongue = FlameTongues[_tongueIndex];
+            return tongueMinColumn + tongue.u * tongueColumnSpan + Mathf.Sin(_flickerTime * 2.1f + tongue.phase * TwoPi) * 0.9f;
+        }
+
+        // 열마다 혀 높이(px)를 정한다. 실루엣 위쪽(머리)일수록 키가 크고, 혀 5개가 각자 주기로 자랐다 줄어들며 끝이 뾰족하게 이어진다.
+        private void BuildTongueHeights(float _flickerTime, float _intensity)
+        {
+            int[] columnTop = silhouette.ColumnTop;
+            int minColumn = GridWidth;
+            int maxColumn = -1;
+            int maxTop = -1;
+            for (int x = 0; x < GridWidth; x++)
+            {
+                tongueHeights[x] = 0.0f;
+                if (0 > columnTop[x]) continue;
+                if (x < minColumn) minColumn = x;
+                if (x > maxColumn) maxColumn = x;
+                if (columnTop[x] > maxTop) maxTop = columnTop[x];
+            }
+
+            if (0 > maxColumn) return;
+
+            tongueMinColumn = minColumn;
+            tongueColumnSpan = maxColumn - minColumn + 1;
+            int footGridY = silhouette.FootY + GridOriginY;
+            float heightSpan = Mathf.Max(1, maxTop - footGridY);
+
+            for (int x = minColumn; x <= maxColumn; x++)
+            {
+                if (0 > columnTop[x]) continue;
+
+                // 실루엣 높이 대비 35% 아래(발, 팔 아래쪽)는 작은 혀, 90% 이상(머리)은 최대 높이
+                float topRatio = (columnTop[x] - footGridY) / heightSpan;
+                float crown = Mathf.Clamp01((topRatio - 0.35f) / 0.55f);
+                float baseHeight = (2.0f + (tongueMaxHeightPx - 2.0f) * crown) * _intensity;
+
+                float envelope = 0.0f;
+                for (int t = 0; t < FlameTongues.Length; t++)
+                {
+                    float k = 1.0f - Mathf.Abs(x + 0.5f - GetTongueCenterX(t, _flickerTime)) / FlameTongues[t].halfWidth;
+                    if (0.0f >= k) continue;
+
+                    float life = 0.62f + 0.38f * Mathf.Sin((_flickerTime * FlameTongues[t].frequency + FlameTongues[t].phase) * TwoPi);
+                    envelope = Mathf.Max(envelope, Mathf.Pow(k, 1.1f) * FlameTongues[t].amplitude * life);
+                }
+
+                tongueHeights[x] = baseHeight * (0.14f + 0.86f * envelope);
+            }
+        }
+
+        // 칸이 불꽃 혀 안이면 높이 비율(0~1), 아니면 -1. 혀는 위로 갈수록(비율의 제곱) 좌우로 흔들려 옆 열로 넘어간다.
+        private float GetTongueRatio(int _gx, int _gy, float _flickerTime)
+        {
+            int[] columnTop = silhouette.ColumnTop;
+            float best = -1.0f;
+            for (int dx = -TongueSwayReach; dx <= TongueSwayReach; dx++)
+            {
+                int sx = _gx + dx;
+                if (0 > sx || GridWidth <= sx) continue;
+
+                float height = tongueHeights[sx];
+                if (0.0f >= height) continue;
+
+                int above = _gy - columnTop[sx];
+                if (0 >= above || height < above) continue;
+
+                float ratio = above / height;
+                int sway = Mathf.RoundToInt(Mathf.Sin(_flickerTime * 5.2f + (columnTop[sx] - GridOriginY) * 0.9f + sx * 0.45f) * ratio * ratio);
+                if (sx + sway == _gx && ratio > best) best = ratio;
+            }
+
+            return best;
+        }
+
+        // 불꽃 혀 모드의 칸 색: 혀(푸른 불꽃은 밑동 민트 -> 하늘 -> 청색 -> 끝 라일락, 가열은 노랑 -> 호박 -> 주황 -> 빨강, 끝 18%는 점이 빠짐) > 고른 1px 외곽선(상하좌우로 몸에 닿는 칸만).
+        // 발광은 밑동만 블룸 임계를 살짝 넘고 나머지는 아래라서 색 단계가 블룸에 뭉개지지 않는다.
+        private bool TryGetTongueCellColor(in AuraFrame _frame, int _gx, int _gy, out Color32 _color)
+        {
+            _color = default(Color32);
+            int index = _gy * GridWidth + _gx;
+            int dist = silhouette.Distance[index];
+
+            if (0 == dist)
+            {
+                // 스프라이트와 계산이 반 픽셀 어긋나 비는 칸을 메우는 밑칠(평소에는 스프라이트에 가려진다)
+                if (false == silhouette.EdgeMask[index]) return false;
+                _color = Tint(AuraStyle.Heating == auraStyle ? ColorRed : ColorContourIndigo, 0.06f, AuraLayer);
+                return true;
+            }
+
+            float ratio = GetTongueRatio(_gx, _gy, _frame.flickerTime);
+            if (0.0f <= ratio)
+            {
+                if (0.82f < ratio && Hash01(index, _frame.flickerFrame) < (ratio - 0.82f) * 2.2f) return false;
+
+                bool bHot = Hash01(index + 5, _frame.flickerFrame >> 1) < 0.25f;
+                if (AuraStyle.Heating == auraStyle)
+                {
+                    // 가열: 밑동 노랑(가끔 옅은 노랑) -> 호박 -> 주황 -> 끝 빨강. 박동 때 밑동과 호박 띠가 잠깐 밝아진다.
+                    if (0.26f >= ratio) _color = Tint(true == bHot ? ColorPale : ColorYellow, 0.30f + 0.25f * _frame.pulse, AuraLayer);
+                    else if (0.62f >= ratio) _color = Tint(ColorAmber, 0.12f + 0.1f * _frame.pulse, AuraLayer);
+                    else if (0.86f >= ratio) _color = Tint(ColorOrange, 0.08f, AuraLayer);
+                    else _color = Tint(ColorRed, 0.10f, AuraLayer);
+                    return true;
+                }
+
+                if (0.26f >= ratio) _color = Tint(true == bHot ? ColorTongueHot : ColorTongueCore, 0.30f, AuraLayer);
+                else if (0.62f >= ratio) _color = Tint(ColorTongueSky, 0.12f, AuraLayer);
+                else if (0.86f >= ratio) _color = Tint(ColorTongueAzure, 0.08f, AuraLayer);
+                else _color = Tint(ColorTongueLilac, 0.10f, AuraLayer);
+                return true;
+            }
+
+            // 고른 1px 외곽선: 직교 이웃 거리(3)만 - 대각선 칸은 빼서 어디서나 두께 1px. 소화 끝무렵(세기 0.25 미만)에는 지운다.
+            if (DistanceUnitsPerPixel != dist || 0.25f > _frame.intensity) return false;
+
+            float upward = Mathf.Clamp01((_gy - GridOriginY - silhouette.FootY - 2.0f) / 14.0f);
+            if (AuraStyle.Heating == auraStyle)
+            {
+                // 가열: 아래 빨강 -> 위 주황, 박동 때 잠깐 밝아진다
+                _color = Tint(0.5f < upward ? ColorOrange : ColorRed, 0.06f + 0.06f * upward + 0.12f * _frame.pulse, AuraLayer);
+                return true;
+            }
+
+            _color = Tint(0.5f < upward ? ColorTongueAzure : ColorContourIndigo, 0.06f + 0.06f * upward, AuraLayer);
+            return true;
+        }
+
+        // 혀 끝에서 떨어져 나간 조각: 혀가 가장 높아진 직후 0.38주기 동안 2x2 -> 1x1로 줄며 TongueTipRisePx만큼 올라간다.
+        private void DrawTongueTips(float _flickerTime, float _intensity)
+        {
+            if (0.25f > _intensity || 0 >= tongueColumnSpan) return;
+
+            int[] columnTop = silhouette.ColumnTop;
+            bool bHeating = AuraStyle.Heating == auraStyle;
+            Color32 riseColor = Tint(true == bHeating ? ColorOrange : ColorTongueAzure, 0.08f, AuraLayer);
+            Color32 fadeColor = Tint(true == bHeating ? ColorRed : ColorTongueLilac, 0.10f, AuraLayer);
+            for (int t = 0; t < FlameTongues.Length; t++)
+            {
+                float period = 1.0f / FlameTongues[t].frequency;
+                float local = Mathf.Repeat(_flickerTime + FlameTongues[t].phase * period, period) / period;
+                float u = (local - 0.25f) / 0.38f;
+                if (0.0f > u || 1.0f < u) continue;
+
+                int gx = Mathf.RoundToInt(GetTongueCenterX(t, _flickerTime) - 0.5f);
+                if (0 > gx || GridWidth <= gx || 0 > columnTop[gx]) continue;
+
+                int gy = columnTop[gx] + Mathf.RoundToInt(tongueHeights[gx]) + 1 + Mathf.RoundToInt(u * TongueTipRisePx);
+                int size = 0.35f > u ? 2 : 1;
+                Color32 color = 0.5f > u ? riseColor : fadeColor;
+                int cx = gx - GridOriginX;
+                int cy = gy - GridOriginY;
+                AddRect(AuraLayer, cx, cy, cx + size, cy + size, color);
             }
         }
 
@@ -1021,6 +1257,7 @@ namespace PresentationLayer.VFX
             // 예열은 몸 표면 반짝임이 없다(불티가 대신한다)
             if (0 >= edgeCellCount || AuraPhase.Extinguishing == phase || 0 >= sparkleCount || AuraStyle.Preheat == auraStyle) return;
             int[] edgeCells = silhouette.EdgeCells;
+            float sparkleGlowScale = true == IsTongueMode() ? TongueGlowScale : 1.0f;
 
             float ramp = Mathf.Clamp01((elapsed - 0.1f) / 0.3f);
             int count = Mathf.RoundToInt(sparkleCount * ramp);
@@ -1034,7 +1271,7 @@ namespace PresentationLayer.VFX
                 Color32 color;
                 if (AuraStyle.Heating == auraStyle) color = roll < 0.5f ? ColorYellow : ColorPale;
                 else color = roll < 0.4f ? ColorCyan : ColorWhite;
-                AddRect(FrontLayer, cx, cy, cx + 1, cy + 1, Tint(color, 0.9f, FrontLayer));
+                AddBodyRect(FrontLayer, cx, cy, cx + 1, cy + 1, Tint(color, 0.9f * sparkleGlowScale, FrontLayer));
             }
         }
 
@@ -1173,6 +1410,7 @@ namespace PresentationLayer.VFX
         private void DrawEmbers()
         {
             Color32 fadeColor = GetEmberFadeColor();
+            float emberGlowScale = true == IsTongueMode() ? TongueGlowScale : 1.0f;
 
             for (int i = 0; i < EmberCapacity; i++)
             {
@@ -1234,7 +1472,7 @@ namespace PresentationLayer.VFX
                 if (0.75f < u && 0 != ((int)(embers[i].age * 30.0f) & 1)) continue;
 
                 int twinkle = ((int)(embers[i].age * 14.0f) + embers[i].seed) % 3;
-                float glow = (0 == twinkle ? 0.5f : (1 == twinkle ? 0.7f : 0.9f)) * (1.0f - u * 0.4f);
+                float glow = (0 == twinkle ? 0.5f : (1 == twinkle ? 0.7f : 0.9f)) * (1.0f - u * 0.4f) * emberGlowScale;
                 Color32 baseColor = 0.8f < u ? fadeColor : embers[i].color;
                 Color32 color = Tint(baseColor, glow, embers[i].layer);
 
@@ -1275,6 +1513,12 @@ namespace PresentationLayer.VFX
             {
                 quadBuffers[_layer].AddWorldRect(originX + _x0, originY + _y0, originX + _x1, originY + _y1, _color);
             }
+        }
+
+        // 실루엣 칸에 붙는 픽셀(표면 반짝임)을 넣는다. 아우라 본체와 같은 원점(스냅을 끄면 소수 위치)을 써서 몸과 어긋나지 않게 한다. 아우라 층에는 쓰지 않는다.
+        private void AddBodyRect(int _layer, int _x0, int _y0, int _x1, int _y1, Color32 _color)
+        {
+            quadBuffers[_layer].AddWorldRect(bodyOriginPxX + _x0, bodyOriginPxY + _y0, bodyOriginPxX + _x1, bodyOriginPxY + _y1, _color);
         }
 
         private void HideRenderers()

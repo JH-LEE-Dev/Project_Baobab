@@ -270,6 +270,10 @@ public class ArmComponent : PComponent, IArmComponent
             // Mathf.Sin은 라디안 값을 사용하므로 Deg2Rad 변환
             float offsetMultiplier = Mathf.Sin(angle * Mathf.Deg2Rad);
             targetOffset = offsetMultiplier * maxYOffset;
+
+            // 1px 단위로 맞춘다: 소수 픽셀만큼 내려가면 팔/도끼만 몸과 다른 픽셀 격자에 놓여서,
+            // 몸 격자로 실루엣을 계산하는 과열 아우라(VFX_OverheatAura)가 팔 아래로 어긋나 외곽선이 두꺼워진다.
+            targetOffset = Mathf.Round(targetOffset * GlobalPixelSnapper.PixelsPerUnit) / GlobalPixelSnapper.PixelsPerUnit;
         }
 
         if (targetOffset != appliedYOffset)

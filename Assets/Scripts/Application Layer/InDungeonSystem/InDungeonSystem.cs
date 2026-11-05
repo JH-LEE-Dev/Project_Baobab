@@ -186,6 +186,9 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.EmberAcquiredNotifyEvent -= EmberAcquired;
         inDungeonObjectManager.EmberAcquiredNotifyEvent += EmberAcquired;
 
+        inDungeonObjectManager.QuakeChargeChangedEvent -= QuakeChargeChanged;
+        inDungeonObjectManager.QuakeChargeChangedEvent += QuakeChargeChanged;
+
         inDungeonObjectManager.OffroadVehicleInteractedEvent -= OffroadVehicleInteracted;
         inDungeonObjectManager.OffroadVehicleInteractedEvent += OffroadVehicleInteracted;
 
@@ -254,6 +257,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.TreeShieldBrokenNotifyEvent -= TreeShieldBroken;
         inDungeonObjectManager.ConstellationManifestedEvent -= ConstellationManifested;
         inDungeonObjectManager.EmberAcquiredNotifyEvent -= EmberAcquired;
+        inDungeonObjectManager.QuakeChargeChangedEvent -= QuakeChargeChanged;
         inDungeonObjectManager.OffroadVehicleInteractedEvent -= OffroadVehicleInteracted;
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.GemOreItemAcquiredEvent -= GemOreItemAcquired;
@@ -438,6 +442,24 @@ public class InDungeonSystem : MonoBehaviour
     private void EmberAcquired()
     {
         signalHub.Publish(new EmberAcquiredSignal());
+    }
+
+    // "흑요 부적" 지진 게이지: 타수 중첩(StackHits), 값은 주운 불씨 수. 충전 중에만 보이고 HUD 자동 감소는 쓰지 않는다.
+    // 가득 차면 최대 도달 연출 뒤 번쩍이며 퇴장(지진 발동), 숲 방문 초기화(0)는 연출 없이 지운다.
+    private void QuakeChargeChanged(int _embers, int _maxEmbers)
+    {
+        if (0 >= _embers)
+        {
+            signalHub.Publish(BuffHudSignal.Of(EBuffHudId.Earthquake, EBuffHudOp.Remove));
+            return;
+        }
+
+        signalHub.Publish(BuffHudSignal.AddStackHits(EBuffHudId.Earthquake, _embers, _maxEmbers));
+
+        if (_maxEmbers <= _embers)
+        {
+            signalHub.Publish(BuffHudSignal.Of(EBuffHudId.Earthquake, EBuffHudOp.Dispel));
+        }
     }
 
     private void OffroadVehicleInteracted()

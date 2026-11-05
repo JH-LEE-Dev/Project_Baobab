@@ -54,6 +54,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public event Action<float> MeteorShowerStartedEvent;
     public event Action<Vector3> MeteorImpactEvent;
 
+    // "흑요 부적" 지진 게이지 - 버프 HUD용. (지금까지 주운 불씨 수, 가득 차는 불씨 수). 가득 찬 순간 (최대, 최대)를 한 번 보낸 뒤
+    // 게이지가 비워지고 지진이 발동한다. 숲 방문 초기화 때는 (0, 최대)를 보낸다.
+    public event Action<int, int> QuakeChargeChangedEvent;
+
     // // 외부 의존성
     private IEnvironmentProvider environmentProvider;
     public ItemManager itemManager { get; private set; }
@@ -408,7 +412,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         starCompassTierThisRun = GetLootGrowthTier(LootType.StarCompass);
         meteorShowerCharge = 0f;
         obsidianCharmTierThisRun = GetLootGrowthTier(LootType.ObsidianCharm);
-        quakeCharge = 0f;
+        ResetQuakeCharge();
     }
 
     /// <summary>
@@ -875,7 +879,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         bObsidianCharmSpawnedThisRun = false;
         obsidianCharmTreeKillCount = 0;
         obsidianCharmTierThisRun = GetLootGrowthTier(LootType.ObsidianCharm);
-        quakeCharge = 0f;
+        ResetQuakeCharge();
 
         // 구제 임계값 - 이번 런에 구제 대상인 것만, 오래된 지역 것부터 "앞 전리품 뒤 다시 min~max그루"씩
         // 이어 붙인다. 대상이 하나면 지금까지와 같은 min~max그루째이고, 여럿이면 같은 나무에서 한꺼번에
@@ -3129,11 +3133,34 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         quakeCharge = Mathf.Min(1f, quakeCharge + Mathf.Max(0f, quakeChargePerEmber));
 
-        // 0.1씩 열 번 더하면 0.99999…가 될 수 있어 이만큼은 가득 찬 것으로 본다.
-        if (quakeCharge < 1f - 0.0001f) return;
+        int maxEmbers = GetQuakeMaxEmbers();
 
+        // 0.1씩 열 번 더하면 0.99999…가 될 수 있어 이만큼은 가득 찬 것으로 본다.
+        if (quakeCharge < 1f - 0.0001f)
+        {
+            int embers = Mathf.Clamp(Mathf.RoundToInt(quakeCharge * maxEmbers), 0, maxEmbers - 1);
+            QuakeChargeChangedEvent?.Invoke(embers, maxEmbers);
+            return;
+        }
+
+        QuakeChargeChangedEvent?.Invoke(maxEmbers, maxEmbers);
         quakeCharge = 0f;
         StartCoroutine(QuakeRoutine(obsidianCharmTierThisRun));
+    }
+
+    // 숲 방문 초기화. 이전 방문에서 차던 지진 게이지 버프 HUD도 함께 내린다.
+    private void ResetQuakeCharge()
+    {
+        quakeCharge = 0f;
+        QuakeChargeChangedEvent?.Invoke(0, GetQuakeMaxEmbers());
+    }
+
+    // 지진 게이지가 가득 차는 불씨 수(불씨 하나당 0.1이면 10). 버프 HUD 숫자·게이지 기준이다.
+    private int GetQuakeMaxEmbers()
+    {
+        if (0f >= quakeChargePerEmber) return 1;
+
+        return Mathf.Max(1, Mathf.CeilToInt(1f / quakeChargePerEmber - 0.0001f));
     }
 
     /// <summary>

@@ -8,4 +8,5 @@ public enum EBuffHudId
     StarPathSpeedBoost = 4, // 별길 걸음
     OverHeat = 5,           // 과열
     StarRain = 6,           // 별비
+    Earthquake = 7,         // 지진(흑요 부적)
 }

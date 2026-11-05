@@ -4887,7 +4887,7 @@ MonoBehaviour:
   frontSortingOffset: 1
   sourceSortingLayerName: Objects
   useFirstSourceAsOrigin: 0
-  snapToPixelGrid: 1
+  snapToPixelGrid: 0
   bodyCenterYPx: 8
   ringThicknessPx: 1.5
   ringGlow: 0.4
@@ -4920,3 +4920,4 @@ MonoBehaviour:
   extinguishDuration: 0.45
   glowScale: 0.65
   backGlowScale: 1
+  tongueMaxHeightPx: 8
