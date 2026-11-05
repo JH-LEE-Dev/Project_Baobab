@@ -34,6 +34,8 @@ namespace PresentationLayer.VFX
         [Header("아우라 (중앙 글로우) 연동")]
         [SerializeField, Tooltip("전리품 뒤 중앙 글로우를 진화 타이밍에 맞춰 조였다가 터뜨린다. 비워 두면 아우라는 그대로다.")]
         private ItemAuraOrbitController auraController;
+        [SerializeField, Tooltip("기둥 빛(VFX_LootPillarGlow)의 원반·후광도 같은 곡선으로 조였다가 터뜨린다. 비워 두면 기둥 빛은 그대로다.")]
+        private VFX_LootPillarGlow pillarGlow;
 
         [Header("쿼드 예산")]
         [SerializeField] private int quadBudget = 1800;
@@ -306,6 +308,7 @@ namespace PresentationLayer.VFX
 
             RestoreItem();
             if (null != auraController) auraController.ClearEvolveModulation();
+            if (null != pillarGlow) pillarGlow.ClearEvolveModulation();
             HideAll();
             bPlaying = false;
             onBurst = null;
@@ -325,7 +328,7 @@ namespace PresentationLayer.VFX
         // 아우라 변조 곡선(틱 단위, 시뮬레이션에서 확정한 값). 크기 배율 / 발광 배율 / 흰색 섞기
         private void UpdateAura(float _ft)
         {
-            if (null == auraController) return;
+            if (null == auraController && null == pillarGlow) return;
 
             float scale;
             float intensity;
@@ -361,7 +364,8 @@ namespace PresentationLayer.VFX
                 }
             }
 
-            auraController.SetEvolveModulation(scale, intensity, white);
+            if (null != auraController) auraController.SetEvolveModulation(scale, intensity, white);
+            if (null != pillarGlow) pillarGlow.SetEvolveModulation(scale, intensity, white);
         }
 
         private void HideAll()
@@ -1223,6 +1227,7 @@ namespace PresentationLayer.VFX
         {
             RestoreItem();
             if (null != auraController) auraController.ClearEvolveModulation();
+            if (null != pillarGlow) pillarGlow.ClearEvolveModulation();
 
             if (null != airMesh)
             {

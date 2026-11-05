@@ -51,6 +51,10 @@ public class UI_DashCharaGauge : MonoBehaviour
     [Tooltip("모두 찬 즉시 알파가 서서히 떨어져 사라지는 시간(초). 0.3초 이내 권장.")]
     [SerializeField] private float fadeDuration = 0.25f;
     [SerializeField] private Ease fadeEase = Ease.Linear;
+    [Tooltip("따라가는 캐릭터가 꺼질 때(차량 탑승) 캐릭터가 서 있던 자리에서 사라지는 시간(초)")]
+    [SerializeField] private float rideHideFadeDuration = 0.1f;
+    [Tooltip("탑승 페이드 곡선. OutQuad는 처음에 빠르게 떨어지고 끝은 부드럽게 꼬리를 남겨, 짧아도 툭 끊기지 않는다.")]
+    [SerializeField] private Ease rideHideFadeEase = Ease.OutQuad;
 
     [Header("Motion")]
     [Tooltip("사용/충전 완료 때 칸이 번쩍이는 시간(초)")]
@@ -69,6 +73,12 @@ public class UI_DashCharaGauge : MonoBehaviour
     private bool bUnlocked = false;
     private int shownCharges = 0;
     private int shownMax = 0;
+    // 따라가는 캐릭터가 꺼져(차량 탑승) 숨겨 둔 상태. 이 동안은 위치를 고정하고 다시 보이지 않는다.
+    private bool bTargetHidden = false;
+    // 지금 진행 중인 페이드의 시간·곡선·시작 알파(충전 완료 페이드와 탑승 페이드가 서로 다르다)
+    private float activeFadeDuration = 0.25f;
+    private Ease activeFadeEase = Ease.Linear;
+    private float activeFadeStartAlpha = 1f;
 
     // 읽기 전용 상태(검증/디버그용)
     public bool IsVisible
@@ -86,6 +96,7 @@ public class UI_DashCharaGauge : MonoBehaviour
     {
         followTarget = _target;
         followOffset = _offset;
+        bTargetHidden = false;
     }
 
     // 대시 상태 구독. null이면 구독만 해제하고 숨긴다.
@@ -103,7 +114,18 @@ public class UI_DashCharaGauge : MonoBehaviour
 
         dashState.DashStateChangedEvent += OnDashStateChanged;
 
-        // 첫 반영: 연출 없이 현재 상태에 맞춘다. 해금 + 모두 참이면 숨김, 충전 중이면 보임.
+        SyncFromState();
+    }
+
+    // 연출 없이 현재 상태에 맞춘다. 해금 + 모두 참이면 숨김, 충전 중이면 보임. (구독 직후, 캐릭터가 다시 켜질 때)
+    private void SyncFromState()
+    {
+        if (null == dashState)
+        {
+            HideImmediate();
+            return;
+        }
+
         bUnlocked = dashState.bUnlocked;
         shownMax = dashState.MaxCharges;
         shownCharges = dashState.CurrentCharges;
@@ -143,6 +165,13 @@ public class UI_DashCharaGauge : MonoBehaviour
         if (_prevMax != shownMax)
             LayoutCells();
 
+        // 캐릭터가 꺼져 있는 동안(차량 탑승)은 값만 반영하고 다시 보이지 않는다. 다시 켜질 때 SyncFromState로 맞춘다.
+        if (true == bTargetHidden)
+        {
+            ApplyFills();
+            return;
+        }
+
         // 대시를 쓸 수 없는 상태(전리품 미보유, 마을, 로그라이크)에서는 보이지 않는다.
         if (false == bUnlocked || shownMax <= 0)
         {
@@ -177,7 +206,7 @@ public class UI_DashCharaGauge : MonoBehaviour
         if (shownMax <= shownCharges)
         {
             if (VisState.Showing == visState)
-                BeginFade();
+                BeginFade(fadeDuration, fadeEase, 1f);
         }
         else if (VisState.Fading == visState)
         {
@@ -194,11 +223,36 @@ public class UI_DashCharaGauge : MonoBehaviour
         SetAlpha(1f);
     }
 
-    private void BeginFade()
+    // _startAlpha에서 0까지 _duration 동안 _ease 곡선으로 내린다
+    private void BeginFade(float _duration, Ease _ease, float _startAlpha)
     {
         visState = VisState.Fading;
         stateTimer = 0f;
-        SetAlpha(1f);
+        activeFadeDuration = _duration;
+        activeFadeEase = _ease;
+        activeFadeStartAlpha = _startAlpha;
+        SetAlpha(_startAlpha);
+    }
+
+    // 따라가는 캐릭터가 꺼지고 켜지는 것(차량 탑승/하차)을 감지한다.
+    // 탑승 코드는 캐릭터를 탑승 지점으로 옮긴 같은 프레임에 끄므로, 꺼진 동안은 위치 갱신을 건너뛰어 서 있던 자리에서 사라지게 한다.
+    private void UpdateTargetActive()
+    {
+        bool _bTargetActive = followTarget.gameObject.activeInHierarchy;
+
+        if (false == bTargetHidden && false == _bTargetActive)
+        {
+            bTargetHidden = true;
+
+            // 보이는 중이면 지금 알파에서 이어서 빠른 곡선으로 사라진다(완료 페이드 중이었어도 1로 튀지 않는다)
+            if (VisState.Hidden != visState)
+                BeginFade(rideHideFadeDuration, rideHideFadeEase, CurrentAlpha);
+        }
+        else if (true == bTargetHidden && true == _bTargetActive)
+        {
+            bTargetHidden = false;
+            SyncFromState();
+        }
     }
 
     private void HideImmediate()
@@ -338,8 +392,8 @@ public class UI_DashCharaGauge : MonoBehaviour
         if (VisState.Fading == visState)
         {
             stateTimer += _dt;
-            float _t = Mathf.Clamp01(stateTimer / Mathf.Max(0.01f, fadeDuration));
-            SetAlpha(DOVirtual.EasedValue(1f, 0f, _t, fadeEase));
+            float _t = Mathf.Clamp01(stateTimer / Mathf.Max(0.01f, activeFadeDuration));
+            SetAlpha(DOVirtual.EasedValue(activeFadeStartAlpha, 0f, _t, activeFadeEase));
 
             if (1f <= _t)
                 HideImmediate();
@@ -349,6 +403,11 @@ public class UI_DashCharaGauge : MonoBehaviour
     private void LateUpdate()
     {
         if (null == followTarget || null == rootRect)
+            return;
+
+        UpdateTargetActive();
+
+        if (true == bTargetHidden)
             return;
 
         // 발 밑 중앙. 1/32 월드 격자에 맞춰 캐릭터가 움직여도 도트가 흔들리지 않게 한다.

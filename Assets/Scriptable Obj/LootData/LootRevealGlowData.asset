@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc667235eec59f74d84d0f3a91a88754, type: 3}
+  m_Name: LootRevealGlowData
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.VFX.LootPillarGlowData
+  entries:
+  - sprite: {fileID: 21300000, guid: 1b8947cdf7afc4e4a91e12ddff186138, type: 3}
+    halo: {fileID: -437306177, guid: 3947466d561642a40a0a8d33b07b0f67, type: 3}
+    centroid: {x: -0.3386364, y: -10.229546}
+    bounds: {x: -15, y: -24, z: 16, w: 2}
+  - sprite: {fileID: 21300000, guid: f4f0539807188b9489770c761144b60c, type: 3}
+    halo: {fileID: -2016116631, guid: 3947466d561642a40a0a8d33b07b0f67, type: 3}
+    centroid: {x: -0.63059616, y: -6.235075}
+    bounds: {x: -20, y: -29, z: 20, w: 21}
+  - sprite: {fileID: 21300000, guid: 72edfd0b3bee7e345999cbab6f8206e4, type: 3}
+    halo: {fileID: 1513056657, guid: 3947466d561642a40a0a8d33b07b0f67, type: 3}
+    centroid: {x: -0.09332657, y: 3.912407}
+    bounds: {x: -26, y: -28, z: 24, w: 27}
+  - sprite: {fileID: 21300000, guid: 047f4cf8b917b7049a640e47f4f3e7f0, type: 3}
+    halo: {fileID: 1432174693, guid: 3947466d561642a40a0a8d33b07b0f67, type: 3}
+    centroid: {x: 0.82105255, y: -9.057896}
+    bounds: {x: -12, y: -24, z: 11, w: 9}
+  - sprite: {fileID: 21300000, guid: 13ebd879cbba0884dae0f9407f6615dc, type: 3}
+    halo: {fileID: -146977646, guid: 3947466d561642a40a0a8d33b07b0f67, type: 3}
+    centroid: {x: 2.3073082, y: 0.9318924}
+    bounds: {x: -16, y: -26, z: 20, w: 24}
+  - sprite: {fileID: 21300000, guid: ae610351fa287d443a4616035e7c89b7, type: 3}
+    halo: {fileID: -1075439772, guid: 3947466d561642a40a0a8d33b07b0f67, type: 3}
+    centroid: {x: 0.9976921, y: 5.6856995}
+    bounds: {x: -24, y: -27, z: 25, w: 29}
+  - sprite: {fileID: 21300000, guid: 7e1ef28e2bf224a40bff9f1f3b798653, type: 3}
+    halo: {fileID: 311035088, guid: 3947466d561642a40a0a8d33b07b0f67, type: 3}
+    centroid: {x: -0.25696182, y: -14.305063}
+    bounds: {x: -12, y: -24, z: 10, w: -4}
+  - sprite: {fileID: 21300000, guid: e2371784fc932b5438a8839ea08e111d, type: 3}
+    halo: {fileID: -556737963, guid: 3947466d561642a40a0a8d33b07b0f67, type: 3}
+    centroid: {x: -1.4139786, y: -1.2616482}
+    bounds: {x: -23, y: -24, z: 16, w: 23}
+  - sprite: {fileID: 21300000, guid: 7077b9b51a936dd47b3b978f53b0873c, type: 3}
+    halo: {fileID: -337274401, guid: 3947466d561642a40a0a8d33b07b0f67, type: 3}
+    centroid: {x: 3.1754265, y: 10.25568}
+    bounds: {x: -28, y: -26, z: 31, w: 31}
+  - sprite: {fileID: 21300000, guid: e6a82cbd0f16e0e4fa905e39eda6611a, type: 3}
+    halo: {fileID: -1444052061, guid: 3947466d561642a40a0a8d33b07b0f67, type: 3}
+    centroid: {x: 2.895111, y: -9.996944}
+    bounds: {x: -10, y: -24, z: 18, w: 6}
+  - sprite: {fileID: 21300000, guid: 67eecb7200943b54fbcecd2aa53d85cc, type: 3}
+    halo: {fileID: -1564200629, guid: 3947466d561642a40a0a8d33b07b0f67, type: 3}
+    centroid: {x: 0.55743027, y: 5.859852}
+    bounds: {x: -27, y: -29, z: 29, w: 31}

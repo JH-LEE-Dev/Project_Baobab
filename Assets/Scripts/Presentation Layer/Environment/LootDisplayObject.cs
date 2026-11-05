@@ -41,7 +41,7 @@ namespace PresentationLayer.Environment
 
         // 아웃라인 렌더러들. Pillar의 SortingOrder는 런타임에 정해지므로(ApplySortingBasis) 같이 따라가야
         // 한다. 스텐실 라이터는 Pillar와 같은 Order, 아웃라인은 그 바로 위(+1)에 그린다.
-        // (Loot은 +2라 아웃라인이 아이템을 가리지 않는다)
+        // (Loot은 +4라 아웃라인이 아이템을 가리지 않는다)
         [SerializeField] private SpriteRenderer outlineStencilRenderer;
         [SerializeField] private SpriteRenderer outlineRenderer;
 
@@ -120,6 +120,8 @@ namespace PresentationLayer.Environment
         [SerializeField] private bool useAuraOrbit = false;
         [SerializeField] private ItemAuraOrbitController auraOrbitController;
         [SerializeField] private List<LootAuraSetting> auraSettings;
+        [SerializeField, Tooltip("전리품 뒤 기둥 빛(웅덩이·빛 줄기·원반·후광·입자·반짝임). 아우라와 같은 시점에 켜고 끄고, 같은 색을 쓴다. 기존 중앙 글로우는 프리팹에서 꺼 둔다.")]
+        private VFX_LootPillarGlow pillarGlow;
 
         // 캐릭터가 콜라이더 범위 안에 들어와 있는지(=상호작용 키 입력을 받을 수 있는지)를 UIView_Unit
         // 아이콘에 알리는 이벤트. Tent.TentInteractStateChangedEvent와 동일한 역할.
@@ -295,9 +297,11 @@ namespace PresentationLayer.Environment
                 pillarRenderer.sortingOrder = pillarOrder;
             }
 
+            // 전리품은 +4. 기둥과 전리품 사이(+2)에 기둥 빛(VFX_LootPillarGlow)의 뒤 층 묶음을, 그 위(+3)에 진화 연출 후광을 둔다.
+            // 기둥 빛의 반짝임은 전리품 앞(+5)이다. 기둥 빛은 기둥 렌더러의 Order를 읽어 스스로 맞춘다.
             if (null != targetRenderer)
             {
-                targetRenderer.sortingOrder = pillarOrder + 2;
+                targetRenderer.sortingOrder = pillarOrder + 4;
             }
 
             // 그림자는 기둥 바로 위, 전리품 아래. 아웃라인(+1)과 같은 Order지만 아웃라인은 기둥 바깥에만 그려져 겹치지 않는다.
@@ -350,6 +354,12 @@ namespace PresentationLayer.Environment
             else if (false == useAuraOrbit && null != auraOrbitController)
             {
                 auraOrbitController.Stop();
+            }
+
+            if (null != pillarGlow)
+            {
+                if (true == useAuraOrbit) pillarGlow.Play();
+                else pillarGlow.Stop();
             }
 
             ApplyGrowthVisual();
@@ -556,7 +566,7 @@ namespace PresentationLayer.Environment
         {
             ApplyDisplayAnimation();
 
-            if (null == auraOrbitController) return;
+            if (null == auraOrbitController && null == pillarGlow) return;
 
             // 성장하는 전리품은 단계 색, 성장하지 않는 전리품(단계 0)은 종류별 색(auraSettings)을 같은 세기로 쓴다
             Color _auraColor = default;
@@ -567,11 +577,14 @@ namespace PresentationLayer.Environment
 
             if (false == _bHasColor)
             {
-                auraOrbitController.ClearCenterGlowShaderColors();
+                if (null != auraOrbitController) auraOrbitController.ClearCenterGlowShaderColors();
+                if (null != pillarGlow) pillarGlow.ClearColor();
                 return;
             }
 
-            if (true == useAuraOrbit)
+            if (null != pillarGlow) pillarGlow.SetColor(_auraColor);
+
+            if (true == useAuraOrbit && null != auraOrbitController)
             {
                 // 글로우 머티리얼 기본색(금색)이 곱해져 렌더러 색만으로는 단계 색이 나오지 않으므로 셰이더 색을 직접 덮어쓴다.
                 Color _glowCore = Color.Lerp(_auraColor, new Color(2f, 2f, 2f, 1f), 0.2f) * growthGlowCoreStrength;
@@ -661,6 +674,7 @@ namespace PresentationLayer.Environment
 
             // 숨어 있는 동안 아우라 위성·꼬리가 남지 않게 멈춘다. 착지 순간 다시 켠다.
             if (null != auraOrbitController) auraOrbitController.Stop();
+            if (null != pillarGlow) pillarGlow.Stop();
 
             SetOutlineActive(false);
             ApplyRevealPose(Vector3.zero, Vector3.zero, Vector3.zero, 0f, 0f, 0f);
@@ -814,6 +828,9 @@ namespace PresentationLayer.Environment
             {
                 auraOrbitController.Play();
             }
+
+            // 기둥 빛은 코루틴을 쓰지 않아 꺼져 있어도 부를 수 있다(켜지면 이어서 재생한다)
+            if (true == useAuraOrbit && null != pillarGlow) pillarGlow.Play();
         }
 
         private void PlayRevealLandingDust(Vector3 _ground)

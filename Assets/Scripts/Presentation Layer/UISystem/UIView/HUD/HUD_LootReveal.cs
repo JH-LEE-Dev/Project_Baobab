@@ -6,6 +6,7 @@ using TMPro;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
+using PresentationLayer.VFX;
 
 /// <summary>
 /// 전리품 획득 시 화면 전체를 덮으며 등장하는 시네마틱 스타일의 정보 표시 UI입니다.
@@ -90,6 +91,8 @@ public class HUD_LootReveal : MonoBehaviour
     [SerializeField] private string vfxTag;
     [SerializeField] private Transform effectSpawnPoint;
     [SerializeField] private UI_ItemAuraEffectController auraEffect;
+    [SerializeField, Tooltip("전리품 빛(등장 발광 + 평상시 오라). 연결돼 있으면 기존 방사형 광선(auraEffect) 대신 재생한다.")]
+    private UI_LootRevealGlow revealGlow;
 
     // ─── Text ─────────────────────────────────────────────────────────────────
     [Header("── Text ─────────────────────────────────────────────────────────")]
@@ -187,6 +190,11 @@ public class HUD_LootReveal : MonoBehaviour
             auraEffect.Stop();
         }
 
+        if (null != revealGlow)
+        {
+            revealGlow.Stop();
+        }
+
         if (null != bgDissolveImage && null == runtimeDissolveMat)
         {
             runtimeDissolveMat = new Material(bgDissolveImage.material);
@@ -262,6 +270,11 @@ public class HUD_LootReveal : MonoBehaviour
         if (null != auraEffect)
         {
             auraEffect.Stop();
+        }
+
+        if (null != revealGlow)
+        {
+            revealGlow.Stop();
         }
 
         if (null != childParticles)
@@ -370,6 +383,11 @@ public class HUD_LootReveal : MonoBehaviour
             auraEffect.Stop();
         }
 
+        if (null != revealGlow)
+        {
+            revealGlow.Stop();
+        }
+
         if (false == isShowing)
         {
             // 이미 닫혀있어도 호출자(UIView_ScreenModal)가 OnHideCompleted를 기다리고 있을 수 있으므로
@@ -425,6 +443,11 @@ public class HUD_LootReveal : MonoBehaviour
         if (null != auraEffect)
         {
             auraEffect.Stop();
+        }
+
+        if (null != revealGlow)
+        {
+            revealGlow.Stop();
         }
 
         if (null != rootCanvasGroup)
@@ -581,11 +604,24 @@ public class HUD_LootReveal : MonoBehaviour
             vfxComponent.Play(new VFXPlaySettings(vfxTag, _pos, Quaternion.identity));
         }
 
-        if (null != auraEffect)
+        if (null != revealGlow)
+        {
+            bool _bHasColor = TryGetGrowthAuraColor(out Color _auraColor);
+            revealGlow.Play(_auraColor, _bHasColor);
+        }
+        else if (null != auraEffect)
         {
             ApplyGrowthAuraColors();
             auraEffect.Play();
         }
+    }
+
+    // 성장 단계(1~3)의 아우라 색(선형 HDR). 단계가 없으면 false(기둥 빛이 기본 금색을 쓴다).
+    private bool TryGetGrowthAuraColor(out Color _color)
+    {
+        _color = default;
+        int _tier = null != growthTierGetter ? growthTierGetter(revealLootType) : 0;
+        return 0 < _tier && null != growthVisualData && true == growthVisualData.TryGetAuraColor(_tier, out _color);
     }
 
     // 성장 단계(1~3)가 있으면 그 단계 색으로 상세보기 아우라를 칠하고, 없으면 아우라 기본색으로 되돌린다.

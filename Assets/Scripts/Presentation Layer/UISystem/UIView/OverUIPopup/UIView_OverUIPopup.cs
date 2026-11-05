@@ -126,6 +126,17 @@ public class UIView_OverUIPopup : UIView
     }
 
     /// <summary>
+    /// 띄우기 전에 이미 클리어된 대지역 기믹 안내(입장 배너 연출 중 기믹 발현) - 등장하자마자 완료 연출 후 내린다.
+    /// </summary>
+    public void RegionGuideStartedAsCompleted(TutorialStep _step)
+    {
+        if (null != tutorialQuest)
+        {
+            tutorialQuest.OnTutorialStepStartedAsCompleted(_step);
+        }
+    }
+
+    /// <summary>
     /// 대지역 기믹 안내의 클리어 조건이 충족됨 - 완료 연출 후 Quest UI를 내린다.
     /// </summary>
     public void RegionGuideCompleted(TutorialStep _step)

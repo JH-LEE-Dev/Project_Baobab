@@ -41,6 +41,9 @@ public class GameplayUICoordinator
     private bool bHasPendingRegionGuide = false;
     private TutorialStep pendingRegionGuideStep;
 
+    // 대기 중인 안내가 배너 연출 도중 이미 클리어됐는지. 켜져 있으면 배너 종료 후 "등장 → 즉시 완료"로 띄운다.
+    private bool bPendingRegionGuideCompleted = false;
+
     // ESC 일시정지를 열기 직전의 이동 잠금 상태. 닫을 때 false를 박는 대신 이 값으로 되돌린다.
     //
     // PauseMove는 소유자별 잠금이 아니라 단일 bool이라(InputReader.IsMovePaused 참고), 무조건
@@ -1195,10 +1198,11 @@ public class GameplayUICoordinator
 
     private void RegionGuideCompleted(RegionGuideCompletedSignal _signal)
     {
-        // 배너가 끝나기 전에 이미 클리어 조건을 충족했다면 안내를 띄우지 않고 대기만 취소한다.
+        // 배너가 끝나기 전에 이미 클리어 조건을 충족했다면 클리어 사실만 기록해 둔다.
+        // 배너가 끝나면 안내가 등장하자마자 완료 연출로 넘어가도록 띄운다(DungeonMessageCompleted).
         if (true == bHasPendingRegionGuide && _signal.step == pendingRegionGuideStep)
         {
-            CancelPendingRegionGuide();
+            bPendingRegionGuideCompleted = true;
             return;
         }
 
@@ -1211,8 +1215,17 @@ public class GameplayUICoordinator
             return;
 
         TutorialStep _step = pendingRegionGuideStep;
+        bool _bAlreadyCompleted = bPendingRegionGuideCompleted;
         CancelPendingRegionGuide();
-        overUIPopupUI.RegionGuideStarted(_step);
+
+        if (true == _bAlreadyCompleted)
+        {
+            overUIPopupUI.RegionGuideStartedAsCompleted(_step);
+        }
+        else
+        {
+            overUIPopupUI.RegionGuideStarted(_step);
+        }
     }
 
     // 귀환/재도전/사망 연출로 HUD가 내려가거나 메인 메뉴로 나가면, 아직 띄우지 못한 안내는 버린다.
@@ -1220,6 +1233,7 @@ public class GameplayUICoordinator
     private void CancelPendingRegionGuide()
     {
         bHasPendingRegionGuide = false;
+        bPendingRegionGuideCompleted = false;
     }
 
     private void TutorialQuestHideCompleted(TutorialStep _step)

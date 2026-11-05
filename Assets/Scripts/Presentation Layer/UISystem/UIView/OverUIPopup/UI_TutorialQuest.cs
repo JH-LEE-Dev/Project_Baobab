@@ -50,6 +50,9 @@ public class UI_TutorialQuest : MonoBehaviour
     [Header("Completed Transition Timing")]
     [SerializeField] private float completedHoldDuration = 1.0f;
 
+    [Tooltip("이미 클리어된 퀘스트를 띄울 때, 등장 연출이 끝난 뒤 완료 색상으로 전환하기까지의 대기 시간")]
+    [SerializeField] private float preCompletedShowHoldDuration = 0.3f;
+
     [Header("Completed Text Pop")]
     [SerializeField] private float completedTextPopDuration = 0.3f;
     [SerializeField] private Vector3 completedTextSquashScale = new Vector3(1.12f, 0.88f, 1.0f);
@@ -103,6 +106,7 @@ public class UI_TutorialQuest : MonoBehaviour
     private TweenCallback cachedPlayQuestTextAppearSounds;
     private TweenCallback cachedOnCompleteHideCallback;
     private TweenCallback cachedOnPauseHideComplete;
+    private TweenCallback cachedPlayQuestCompletedSound;
 
     private TutorialStep currentStep;
     private bool bIsShowing = false;
@@ -225,6 +229,59 @@ public class UI_TutorialQuest : MonoBehaviour
                     HideCompletedEvent?.Invoke(_step);
                 }
                 break;
+        }
+    }
+
+    /// <summary>
+    /// 띄우기 전에 이미 클리어된 퀘스트(예: 입장 배너 연출 중 대지역 기믹 발현)를 "등장 → 즉시 완료 → 퇴장"으로 보여준다.
+    /// 등장부터 퇴장까지를 completedSequence 하나에 담아, HasPendingHide()/ForceCompletePendingHide()/PauseQuest()가
+    /// 일반 완료 연출과 똑같이 이 연출을 "HideCompletedEvent 발행이 남은 연출"로 다루게 한다.
+    /// </summary>
+    public void OnTutorialStepStartedAsCompleted(TutorialStep _step)
+    {
+        ForceCompletePendingHide();
+
+        currentStep = _step;
+
+        // ESC 일시정지 중이면 띄우지 않는다. 이미 끝난 퀘스트라 일시정지 해제 후 복원할 필요도 없다.
+        if (true == bPaused)
+        {
+            CancelPauseSuspension();
+            HideCompletedEvent?.Invoke(_step);
+            return;
+        }
+
+        GetQuestTitleAndDesc(_step, out string _title, out string _desc);
+
+        KillSequences();
+        bIsShowing = true;
+
+        SetQuestContent(_title, _desc);
+
+        AssignBGDelays();
+        PrepareShowState();
+
+        completedSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
+
+        // 1. 등장 연출
+        AppendShowEffect(completedSequence);
+
+        // 2. 진행색으로 잠깐 보여준 뒤
+        completedSequence.AppendInterval(Mathf.Max(0.0f, preCompletedShowHoldDuration));
+
+        // 3. 완료 색상 전환 + Pop + 유지
+        completedSequence.AppendCallback(cachedPlayQuestCompletedSound);
+        AppendCompletionEffect(completedSequence);
+
+        // 4. 퇴장 (PlayHideQuest의 hideSequence가 끝나며 HideCompletedEvent 발행)
+        completedSequence.AppendCallback(cachedOnCompleteHideCallback);
+        completedSequence.OnComplete(cachedOnCompletedHide);
+
+        // AppendCompletionEffect(BuildCompletedTextPopTween)가 시퀀스 구성 시점에 텍스트 스케일을 목표값으로 맞춰버린다.
+        // 트윈 시작값은 실제 재생 시점에 잡히므로, 등장 스케일 연출이 살아 있도록 시작 스케일로 되돌려 둔다.
+        if (null != textContainer)
+        {
+            textContainer.localScale = startScale;
         }
     }
 
@@ -1291,6 +1348,7 @@ public class UI_TutorialQuest : MonoBehaviour
         cachedPlayQuestTextAppearSounds = PlayQuestTextAppearSounds;
         cachedOnCompleteHideCallback = OnCompleteHideCallback;
         cachedOnPauseHideComplete = OnPauseHideComplete;
+        cachedPlayQuestCompletedSound = PlayQuestCompletedSound;
     }
 
     private void OnShowComplete() { }
