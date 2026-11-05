@@ -426,6 +426,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             currentTreeGenerationStrategy.currentMapType = _mapType;
         }
+
+        RefreshConstellationDottedLinesVisible();
     }
 
     /// <summary>
@@ -621,6 +623,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private readonly List<IStaticCollidable> constellationScanBuffer = new List<IStaticCollidable>(64);
 
     private bool bConstellationManifestUnlocked = false;
+
+    // 별자리 발현(별 등장·점선·발현)이 켜져 있는지. 3스테이지(별자리 숲 전략)에서는 맵 기본 기믹이라 특성과 무관하게 항상 켜지고,
+    // 그 밖(로그라이크 웨이브 전략 등)에서는 예전처럼 "별자리 발현" 특성 여부를 따른다.
+    private bool IsConstellationManifestActive =>
+        currentTreeGenerationStrategy is Stage3TreeGenerationStrategySO || bConstellationManifestUnlocked;
+
     private float starMarkDamageMultiplier = 1f;          // 별표식 베기
     private ValueAccumulator starMarkDamageAccum;
     private float constellationDamageMultiplier = 1f;     // 별자리 데미지
@@ -710,8 +718,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         inDungeonVFXManager.ConstellationManifestReadyEvent -= OnConstellationManifestReady;
         inDungeonVFXManager.ConstellationManifestReadyEvent += OnConstellationManifestReady;
 
-        // "별자리 발현" 특성이 매니저 초기화보다 먼저 적용됐을 수도 있으므로 점선 표시 여부를 현재 상태로 맞춘다.
-        inDungeonVFXManager.SetConstellationDottedLinesVisible(bConstellationManifestUnlocked);
+        // "별자리 발현" 특성이나 맵 전략이 매니저 초기화보다 먼저 정해졌을 수도 있으므로 점선 표시 여부를 현재 상태로 맞춘다.
+        RefreshConstellationDottedLinesVisible();
 
         if (constellationLaserCreator != null)
         {
@@ -832,9 +840,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 currentTreeGenerationStrategy = Instantiate(mapTypeTreeGenerationDatas[i].strategy);
                 ownedStrategyInstance = currentTreeGenerationStrategy;
                 currentTreeGenerationStrategy.currentMapType = _mapType;
+                RefreshConstellationDottedLinesVisible();
                 return;
             }
         }
+
+        RefreshConstellationDottedLinesVisible();
 
         // Debug.LogError는 Sentry가 스택과 함께 자동 수집하므로 별도 전송 코드가 필요 없다.
         Debug.LogError($"[InDungeonObjectManager] MapType '{_mapType}'에 대응하는 TreeGenerationStrategy를 " +
@@ -1711,8 +1722,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 _treeObj.StarGroupId,
                 _treeObj.treeVisualComponent.GetTopRootPosition());
 
-            // 별은 "별자리 발현" 특성이 있을 때만 등장한다.
-            if (bConstellationManifestUnlocked)
+            // 별은 3스테이지에서는 항상, 그 밖에서는 "별자리 발현" 특성이 있을 때만 등장한다.
+            if (IsConstellationManifestActive)
             {
                 inDungeonVFXManager.PlayConstellationGroundMarkVFX(
                     treePos,
@@ -3222,9 +3233,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         bConstellationManifestUnlocked = _boolean;
 
-        // 별자리 점선은 이 특성이 있을 때만 보인다. 이어하기 로드처럼 나무 스폰 뒤에 특성이 적용되는 경우에도
-        // 이미 등록된 점선이 즉시 나타나도록 여기서 바로 반영한다.
-        if (inDungeonVFXManager != null) inDungeonVFXManager.SetConstellationDottedLinesVisible(_boolean);
+        // 이어하기 로드처럼 나무 스폰 뒤에 특성이 적용되는 경우에도 이미 등록된 점선이 즉시 반영되도록 여기서 바로 맞춘다.
+        RefreshConstellationDottedLinesVisible();
+    }
+
+    // 별자리 점선 표시 여부를 IsConstellationManifestActive(3스테이지 맵 기본 또는 특성)에 맞춘다.
+    private void RefreshConstellationDottedLinesVisible()
+    {
+        if (inDungeonVFXManager != null) inDungeonVFXManager.SetConstellationDottedLinesVisible(IsConstellationManifestActive);
     }
 
     public void IncreaseStarMarkDamage(float _amount)
@@ -3254,8 +3270,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     }
 
     // 별자리 점선 이음선 등록 - Stage3TreeGenerationStrategySO가 별자리 그룹 스폰을 마칠 때 호출.
-    // 점선은 "별자리 발현" 특성이 있을 때만 보인다(UnlockConstellationManifest). 특성이 없을 때도 등록은 해 두어,
-    // 이어하기 로드처럼 나무 스폰 뒤에 특성이 적용되는 경우에도 곧바로 그려지게 한다.
+    // 점선 표시 여부는 IsConstellationManifestActive를 따른다(3스테이지는 항상 보임). 숨겨져 있을 때도 등록은 해 두어,
+    // 나중에 보이게 될 때 곧바로 그려지게 한다.
     public void RegisterConstellationDottedLine(int _groupId, List<Vector3> _starPositions)
     {
         inDungeonVFXManager?.RegisterConstellationDottedLine(_groupId, _starPositions);
@@ -3268,7 +3284,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // (발현되는 경우 점선은 별이 모두 사라진 뒤 레이저가 같은 외곽선을 그릴 때 거둔다)
         // 그룹 도중 특성이 해제됐다면 이미 나와 있던 별이 있을 수 있으므로, 별 사라짐 연출은 그대로 돌려
         // 바닥에 영원히 남지 않게 한다. 발현 대기 목록에 넣지 않았으니 연출이 끝나도 레이저는 나가지 않는다.
-        if (!bConstellationManifestUnlocked || _starPositions == null || _starPositions.Count < 2)
+        if (!IsConstellationManifestActive || _starPositions == null || _starPositions.Count < 2)
         {
             inDungeonVFXManager.RemoveConstellationDottedLine(_groupId);
             inDungeonVFXManager.BeginConstellationGroundMarkManifest(_groupId);
