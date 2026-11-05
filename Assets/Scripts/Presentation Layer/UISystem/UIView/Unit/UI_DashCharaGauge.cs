@@ -69,6 +69,7 @@ public class UI_DashCharaGauge : MonoBehaviour
     private bool bUnlocked = false;
     private int shownCharges = 0;
     private int shownMax = 0;
+    private bool bTargetHidden = false;
 
     // 읽기 전용 상태(검증/디버그용)
     public bool IsVisible
@@ -103,17 +104,35 @@ public class UI_DashCharaGauge : MonoBehaviour
 
         dashState.DashStateChangedEvent += OnDashStateChanged;
 
-        // 첫 반영: 연출 없이 현재 상태에 맞춘다. 해금 + 모두 참이면 숨김, 충전 중이면 보임.
+        bTargetHidden = IsTargetHidden();
+        SyncToCurrentState();
+    }
+
+    // 연출 없이 현재 상태에 맞춘다. 해금 + 모두 참이면 숨김, 충전 중이면 보임. 따라갈 캐릭터가 꺼져 있으면 숨김.
+    private void SyncToCurrentState()
+    {
+        if (null == dashState)
+        {
+            HideImmediate();
+            return;
+        }
+
         bUnlocked = dashState.bUnlocked;
         shownMax = dashState.MaxCharges;
         shownCharges = dashState.CurrentCharges;
         LayoutCells();
         ApplyFills();
 
-        if (false == bUnlocked || shownMax <= 0 || shownMax <= shownCharges)
+        if (true == bTargetHidden || false == bUnlocked || shownMax <= 0 || shownMax <= shownCharges)
             HideImmediate();
         else
             ShowImmediate(VisState.Showing);
+    }
+
+    // 차량 탑승 등으로 캐릭터 오브젝트가 꺼지면 충전과 이벤트가 멈추므로, 그동안은 게이지를 숨긴다.
+    private bool IsTargetHidden()
+    {
+        return null != followTarget && false == followTarget.gameObject.activeInHierarchy;
     }
 
     public void Unbind()
@@ -143,8 +162,8 @@ public class UI_DashCharaGauge : MonoBehaviour
         if (_prevMax != shownMax)
             LayoutCells();
 
-        // 대시를 쓸 수 없는 상태(전리품 미보유, 마을, 로그라이크)에서는 보이지 않는다.
-        if (false == bUnlocked || shownMax <= 0)
+        // 대시를 쓸 수 없는 상태(전리품 미보유, 마을, 로그라이크)나 캐릭터가 꺼져 있는 동안에는 보이지 않는다.
+        if (true == bTargetHidden || false == bUnlocked || shownMax <= 0)
         {
             ApplyFills();
             HideImmediate();
@@ -326,6 +345,14 @@ public class UI_DashCharaGauge : MonoBehaviour
 
     private void Update()
     {
+        // 캐릭터가 꺼지면 바로 숨기고, 다시 켜지면 그때의 충전 상태로 맞춘다.
+        bool _bTargetHidden = IsTargetHidden();
+        if (_bTargetHidden != bTargetHidden)
+        {
+            bTargetHidden = _bTargetHidden;
+            SyncToCurrentState();
+        }
+
         if (VisState.Hidden == visState)
             return;
 
