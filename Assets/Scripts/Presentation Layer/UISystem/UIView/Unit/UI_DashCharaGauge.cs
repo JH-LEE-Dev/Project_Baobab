@@ -73,7 +73,6 @@ public class UI_DashCharaGauge : MonoBehaviour
     private bool bUnlocked = false;
     private int shownCharges = 0;
     private int shownMax = 0;
-    // 따라가는 캐릭터가 꺼져(차량 탑승) 숨겨 둔 상태. 이 동안은 위치를 고정하고 다시 보이지 않는다.
     private bool bTargetHidden = false;
     // 지금 진행 중인 페이드의 시간·곡선·시작 알파(충전 완료 페이드와 탑승 페이드가 서로 다르다)
     private float activeFadeDuration = 0.25f;
@@ -96,7 +95,6 @@ public class UI_DashCharaGauge : MonoBehaviour
     {
         followTarget = _target;
         followOffset = _offset;
-        bTargetHidden = false;
     }
 
     // 대시 상태 구독. null이면 구독만 해제하고 숨긴다.
@@ -114,11 +112,12 @@ public class UI_DashCharaGauge : MonoBehaviour
 
         dashState.DashStateChangedEvent += OnDashStateChanged;
 
-        SyncFromState();
+        bTargetHidden = IsTargetHidden();
+        SyncToCurrentState();
     }
 
-    // 연출 없이 현재 상태에 맞춘다. 해금 + 모두 참이면 숨김, 충전 중이면 보임. (구독 직후, 캐릭터가 다시 켜질 때)
-    private void SyncFromState()
+    // 연출 없이 현재 상태에 맞춘다. 해금 + 모두 참이면 숨김, 충전 중이면 보임. 따라갈 캐릭터가 꺼져 있으면 숨김.
+    private void SyncToCurrentState()
     {
         if (null == dashState)
         {
@@ -132,10 +131,16 @@ public class UI_DashCharaGauge : MonoBehaviour
         LayoutCells();
         ApplyFills();
 
-        if (false == bUnlocked || shownMax <= 0 || shownMax <= shownCharges)
+        if (true == bTargetHidden || false == bUnlocked || shownMax <= 0 || shownMax <= shownCharges)
             HideImmediate();
         else
             ShowImmediate(VisState.Showing);
+    }
+
+    // 차량 탑승 등으로 캐릭터 오브젝트가 꺼지면 충전과 이벤트가 멈추므로, 그동안은 게이지를 숨긴다.
+    private bool IsTargetHidden()
+    {
+        return null != followTarget && false == followTarget.gameObject.activeInHierarchy;
     }
 
     public void Unbind()
@@ -165,7 +170,7 @@ public class UI_DashCharaGauge : MonoBehaviour
         if (_prevMax != shownMax)
             LayoutCells();
 
-        // 캐릭터가 꺼져 있는 동안(차량 탑승)은 값만 반영하고 다시 보이지 않는다. 다시 켜질 때 SyncFromState로 맞춘다.
+        // 캐릭터가 꺼져 있는 동안(차량 탑승)은 값만 반영한다. 진행 중인 탑승 페이드는 끊지 않고, 다시 켜질 때 SyncToCurrentState로 맞춘다.
         if (true == bTargetHidden)
         {
             ApplyFills();
@@ -232,27 +237,6 @@ public class UI_DashCharaGauge : MonoBehaviour
         activeFadeEase = _ease;
         activeFadeStartAlpha = _startAlpha;
         SetAlpha(_startAlpha);
-    }
-
-    // 따라가는 캐릭터가 꺼지고 켜지는 것(차량 탑승/하차)을 감지한다.
-    // 탑승 코드는 캐릭터를 탑승 지점으로 옮긴 같은 프레임에 끄므로, 꺼진 동안은 위치 갱신을 건너뛰어 서 있던 자리에서 사라지게 한다.
-    private void UpdateTargetActive()
-    {
-        bool _bTargetActive = followTarget.gameObject.activeInHierarchy;
-
-        if (false == bTargetHidden && false == _bTargetActive)
-        {
-            bTargetHidden = true;
-
-            // 보이는 중이면 지금 알파에서 이어서 빠른 곡선으로 사라진다(완료 페이드 중이었어도 1로 튀지 않는다)
-            if (VisState.Hidden != visState)
-                BeginFade(rideHideFadeDuration, rideHideFadeEase, CurrentAlpha);
-        }
-        else if (true == bTargetHidden && true == _bTargetActive)
-        {
-            bTargetHidden = false;
-            SyncFromState();
-        }
     }
 
     private void HideImmediate()
@@ -380,6 +364,24 @@ public class UI_DashCharaGauge : MonoBehaviour
 
     private void Update()
     {
+        // 캐릭터가 꺼지면 짧은 곡선으로 사라지고, 다시 켜지면 그때의 충전 상태로 맞춘다.
+        bool _bTargetHidden = IsTargetHidden();
+        if (_bTargetHidden != bTargetHidden)
+        {
+            bTargetHidden = _bTargetHidden;
+
+            if (true == bTargetHidden)
+            {
+                // 보이는 중이면 지금 알파에서 이어서 사라진다(완료 페이드 중이었어도 1로 튀지 않는다)
+                if (VisState.Hidden != visState)
+                    BeginFade(rideHideFadeDuration, rideHideFadeEase, CurrentAlpha);
+            }
+            else
+            {
+                SyncToCurrentState();
+            }
+        }
+
         if (VisState.Hidden == visState)
             return;
 
@@ -405,9 +407,8 @@ public class UI_DashCharaGauge : MonoBehaviour
         if (null == followTarget || null == rootRect)
             return;
 
-        UpdateTargetActive();
-
-        if (true == bTargetHidden)
+        // 탑승 코드는 캐릭터를 탑승 지점으로 옮긴 같은 프레임에 끈다. 꺼진 동안은 위치를 갱신하지 않아 서 있던 자리에서 사라지게 한다.
+        if (true == IsTargetHidden())
             return;
 
         // 발 밑 중앙. 1/32 월드 격자에 맞춰 캐릭터가 움직여도 도트가 흔들리지 않게 한다.

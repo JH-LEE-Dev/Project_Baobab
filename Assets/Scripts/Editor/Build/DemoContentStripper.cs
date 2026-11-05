@@ -894,7 +894,9 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         _scope.overheatShockWave = _c.Contains(SkillCommandType.ShockWaveOverheatBoost);
         bool _overheatTraits = _scope.overheatShockWave || _c.Contains(SkillCommandType.BoomerangOverheatBoost) || _c.Contains(SkillCommandType.DroneOverheatBoost);
         _scope.whirlwind = _c.Contains(SkillCommandType.WhirlWind);
-        _scope.constellation = _c.Contains(SkillCommandType.ConstellationManifestUnlock) || _c.Contains(SkillCommandType.StarGazeUnlock) ||
+        // 별자리 발현은 별뿌리 숲(3스테이지) 맵 기본 기믹이라, 그 숲이 데모에서 열려 있으면 특성이 없어도 쓴다.
+        _scope.constellation = _scope.MapReachable((int)MapType.StarrootForest) ||
+                               _c.Contains(SkillCommandType.ConstellationManifestUnlock) || _c.Contains(SkillCommandType.StarGazeUnlock) ||
                                _c.Contains(SkillCommandType.StarMarkDamage) || _c.Contains(SkillCommandType.StarPathSpeedBoost) ||
                                _c.Contains(SkillCommandType.ConstellationDamage) || _c.Contains(SkillCommandType.ManifestationBrand);
         _scope.spore = _scope.MapReachable((int)MapType.FluffySporeForest);

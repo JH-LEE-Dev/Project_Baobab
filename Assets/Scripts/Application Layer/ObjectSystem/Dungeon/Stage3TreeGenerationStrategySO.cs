@@ -314,7 +314,7 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
         }
     }
 
-    // 고른 나무들에 별 표식을 달고 그룹 정보를 기록한 뒤 별자리 점선 이음선을 등록한다("별자리 발현" 특성이 있을 때만 보인다).
+    // 고른 나무들에 별 표식을 달고 그룹 정보를 기록한 뒤 별자리 점선 이음선을 등록한다(별자리 발현은 이 숲의 맵 기본 기믹이라 항상 보인다).
     // 고르기와 이 함수 사이에는 프레임 양보가 없어 고른 나무가 그 사이 풀로 돌아가지 않는다.
     private void AssignConstellationStars(InDungeonObjectManager _manager, int _groupId, List<int> _starIndices)
     {
