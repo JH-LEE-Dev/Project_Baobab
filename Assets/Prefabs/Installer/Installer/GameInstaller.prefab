@@ -1454,6 +1454,7 @@ MonoBehaviour:
   - {fileID: 8863095175892535116}
   - {fileID: 6294901244587944149}
   - {fileID: 5574464615179719263}
+  firstRevealStagger: 0.35
 --- !u!1 &3957381566655606059
 GameObject:
   m_ObjectHideFlags: 0
@@ -1723,7 +1724,7 @@ MonoBehaviour:
   abilityBuildVariantData: {fileID: 11400000, guid: 435d117acee74a889a1c34c20d764a81, type: 2}
   prestigeLevel: 0
   skillExperience: 0
-  experienceToLevelUp: 280000003200000046000000500000005000000050000000320000003200000032000000320000003200000032000000
+  experienceToLevelUp: 28000000320000003c000000460000004600000046000000320000003200000032000000320000003200000032000000
 --- !u!1 &5075027738427714103
 GameObject:
   m_ObjectHideFlags: 0
@@ -2836,6 +2837,19 @@ MonoBehaviour:
     viewMargin: 8
     cameraShakeIntensity: 3
     cameraShakeSeconds: 1.1
+    cameraKickDistance: 0.3
+    cameraKickSeconds: 0.3
+    epicenterBoost: 0.6
+    epicenterBoostRadius: 5
+    strikeOutsideScale: 0.45
+    strikeEdge: 1.5
+    treeShake: 1
+    treeShiverDegrees: 3.5
+    treeShiverOutsideDegrees: 1.2
+    treeShiverSeconds: 0.45
+    treeShiverHz: 13
+    treePopHeight: 0.16
+    treePopSeconds: 0.2
 --- !u!1 &7291486191322297758
 GameObject:
   m_ObjectHideFlags: 0
@@ -3215,6 +3229,7 @@ MonoBehaviour:
   offroadDriveEndPoint: {fileID: 7909126257907575581, guid: 7b37f70e1b67e4040843e9414c6e3527, type: 3}
   skyProductionDelayAfterLanding: 0.5
   endingSkyCoverPrefab: {fileID: 6587291015899796702, guid: 626ebdb10c6895647903efdb08efef94, type: 3}
+  endingSkyProductionDelay: 3.75
   endingAscendDuration: 1.8
   endingAscendHoverSeconds: 0.5
   bCanGetOff: 1
