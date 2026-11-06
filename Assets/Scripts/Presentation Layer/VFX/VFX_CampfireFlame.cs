@@ -15,7 +15,8 @@ namespace PresentationLayer.VFX
     /// - 불씨: 초당 약 8개. `.` `+` `x` `●` `◆` 다섯 모양이고 나이가 들수록 식으며 모양이 `+` -> `.`로 줄고 30Hz로 깜빡인다.
     /// - 불똥(lick): 불꽃 윗부분에서 떨어져 나가는 `+` -> `.`. 장작 튀김(pop): 1.6~4초마다 불똥이 포물선으로 튄다.
     /// - 연기: `.` -> `●`가 바이어 디더로 흐려지며 올라간다.
-    /// - 바닥 불빛: 모닥불 주변 타원을 4단계 디더로 가산 혼합한다(Indicators 레이어, 사물 밑).
+    /// - 바닥 불빛: 모닥불 주변 타원을 4단계 디더로 가산 혼합한다(Indicators 레이어, 사물 밑). 디더 점 배치는 고정이고
+    ///   셰이더 _Intensity(MaterialPropertyBlock)로 전체 진하기만 숨쉬고(+-30%) 장작 튀김 때 번진다. 점이 켜졌다 꺼지는 번쩍임이 없다.
     ///
     /// 위치 계산: 모든 입자는 구조체 배열에 고정 용량으로 들고, 재생 중 힙 할당이 없다. 난수는 자체 xorshift다.
     ///
@@ -39,6 +40,14 @@ namespace PresentationLayer.VFX
         private float glowScale = 1.0f;
         [SerializeField, Range(0.0f, 1.0f), Tooltip("바닥 불빛 가산 알파의 최대값(가장 밝은 단계). 0이면 바닥 불빛이 없다.")]
         private float groundGlowStrength = 0.22f;
+        [SerializeField, Range(0.0f, 0.6f), Tooltip("바닥 불빛 진하기가 느리게 숨쉬는 폭(1 기준 +-). 디더 점은 고정이고 진하기만 바뀐다.")]
+        private float glowBreathAmplitude = 0.3f;
+        [SerializeField, Range(0.1f, 3.0f), Tooltip("숨쉬기 노이즈 속도(초당 값 변화 횟수에 가까움).")]
+        private float glowBreathSpeed = 0.6f;
+        [SerializeField, Range(0.0f, 0.3f), Tooltip("숨쉬기 위에 겹치는 빠르고 약한 일렁임 폭(2.2Hz 노이즈).")]
+        private float glowShimmerAmplitude = 0.08f;
+        [SerializeField, Range(0.0f, 1.0f), Tooltip("장작 튀김(불꽃 순간 커짐) 때 바닥 불빛이 더 밝아지는 최대 폭. 튀김 뒤 빠르게 줄어든다.")]
+        private float glowFlareBoost = 0.4f;
 
         [Header("정렬")]
         [SerializeField] private string sortingLayerName = "Objects";
@@ -72,7 +81,9 @@ namespace PresentationLayer.VFX
         private const int CoalCount = 18;
         private const int GlowRadiusX = 46;
         private const int GlowRadiusY = 23;
-        private const float GlowInterval = 1.0f / 15.0f;
+        private const float GlowBaseLight = 0.94f;
+        private const float GlowShimmerSpeed = 2.2f;
+        private const float GlowIntensityEpsilon = 0.002f;
 
         private const int FlameQuadBudget = 1500;
         private const int GlowQuadBudget = 3600;
@@ -126,6 +137,8 @@ namespace PresentationLayer.VFX
         private static readonly float[] SmokeToneG = { 0.82f, 0.92f, 1.00f };
         private static readonly float[] SmokeToneB = { 0.90f, 0.96f, 1.00f };
 
+        private static readonly int IntensityId = Shader.PropertyToID("_Intensity");
+
         private static readonly int[] Bayer = { 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5 };
 
         private struct Particle
@@ -158,6 +171,7 @@ namespace PresentationLayer.VFX
         private MeshFilter glowFilter;
         private Mesh flameMesh;
         private Mesh glowMesh;
+        private MaterialPropertyBlock glowBlock;
 
         private readonly float[] heat = new float[GridWidth * GridHeight];
         private readonly float[] edgeCool = new float[GridWidth];
@@ -188,7 +202,6 @@ namespace PresentationLayer.VFX
         private float fireAccumulator;
         private float emberAccumulator;
         private float smokeAccumulator;
-        private float glowAccumulator;
         private float nextPop;
         private int particleId;
         private uint randomState = 1u;
@@ -198,6 +211,9 @@ namespace PresentationLayer.VFX
         private int flameVertexCount = -1;
         private ulong glowHash;
         private int glowVertexCount = -1;
+        private int glowOriginX;
+        private int glowOriginY;
+        private float appliedGlowIntensity = -1.0f;
         private int appliedSortingOrder = int.MinValue;
 
         // 퍼블릭 초기화 및 제어 메서드
@@ -258,6 +274,9 @@ namespace PresentationLayer.VFX
                 glowRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 glowRenderer.receiveShadows = false;
                 glowRenderer.enabled = false;
+
+                glowBlock = new MaterialPropertyBlock();
+                appliedGlowIntensity = -1.0f;
             }
 
             cullSize = new Vector3(CullWidthPixels / PixelsPerUnit + 2.0f * PixelVfxCulling.MarginUnits,
@@ -423,7 +442,6 @@ namespace PresentationLayer.VFX
             fireAccumulator = 0.0f;
             emberAccumulator = 0.0f;
             smokeAccumulator = 0.0f;
-            glowAccumulator = 0.0f;
         }
 
         private void HideMeshes()
@@ -467,7 +485,11 @@ namespace PresentationLayer.VFX
                 coalLevel = 1.0f;
             }
 
-            groundLight = ign * (0.8f + 0.28f * ValueNoise(time * 5.3f) + 0.08f * Mathf.Sin(time * 17.0f));
+            // 디더 점은 고정하고 진하기만 바꾼다(셰이더 _Intensity): 느린 숨쉬기 + 약한 일렁임 + 장작 튀김 번짐.
+            // 점화 중에는 ign을 따라 서서히 켜진다.
+            float breath = 2.0f * ValueNoise(time * glowBreathSpeed + 13.0f) - 1.0f;
+            float shimmer = 2.0f * ValueNoise(time * GlowShimmerSpeed + 71.0f) - 1.0f;
+            groundLight = ign * Mathf.Max(0.0f, 1.0f + glowBreathAmplitude * breath + glowShimmerAmplitude * shimmer + glowFlareBoost * flare);
 
             fireAccumulator += _dt;
             while (FireStepInterval <= fireAccumulator)
@@ -917,41 +939,53 @@ namespace PresentationLayer.VFX
             }
         }
 
-        // 바닥 불빛: 타원 감쇠를 4단계로 나눠 바이어 디더로 경계를 흩뿌린다. 15Hz로만 다시 만든다.
+        // 바닥 불빛: 타원 감쇠를 고정 밝기(GlowBaseLight)로 4단계로 나눠 바이어 디더로 경계를 흩뿌린다.
+        // 점 배치가 매번 같으므로 메쉬가 없거나 원점 픽셀이 바뀔 때만 다시 만든다. 밝기 변화는 ApplyGlowIntensity가 맡는다.
         private void RebuildGlow()
         {
             if (null == glowRenderer || 0.0f >= groundGlowStrength) return;
 
+            glowOriginX = originX;
+            glowOriginY = originY;
             glowPainter.Begin(glowBuffer, glowRenderer.transform.worldToLocalMatrix, glowRenderer.transform.position.z);
 
-            float light = Mathf.Round(groundLight * 20.0f) / 20.0f;
             int width = 2 * GlowRadiusX + 1;
 
-            if (0.01f < light)
+            for (int y = -GlowRadiusY; y <= GlowRadiusY; y++)
             {
-                for (int y = -GlowRadiusY; y <= GlowRadiusY; y++)
+                int wy = originY + GlowCenterY + y;
+                int row = (y + GlowRadiusY) * width;
+
+                for (int x = -GlowRadiusX; x <= GlowRadiusX; x++)
                 {
-                    int wy = originY + GlowCenterY + y;
-                    int row = (y + GlowRadiusY) * width;
+                    float falloff = glowFalloff[row + x + GlowRadiusX];
+                    if (0.0f >= falloff) continue;
 
-                    for (int x = -GlowRadiusX; x <= GlowRadiusX; x++)
-                    {
-                        float falloff = glowFalloff[row + x + GlowRadiusX];
-                        if (0.0f >= falloff) continue;
+                    float level = Mathf.Min(1.0f, falloff * GlowBaseLight) * 4.0f;
+                    int whole = Mathf.FloorToInt(level);
+                    int wx = originX + x;
+                    float threshold = (Bayer[(wx & 3) + ((wy & 3) << 2)] + 0.5f) / 16.0f;
+                    int step = whole + (level - whole > threshold ? 1 : 0);
+                    if (0 == step) continue;
 
-                        float level = Mathf.Min(1.0f, falloff * light) * 4.0f;
-                        int whole = Mathf.FloorToInt(level);
-                        int wx = originX + x;
-                        float threshold = (Bayer[(wx & 3) + ((wy & 3) << 2)] + 0.5f) / 16.0f;
-                        int step = whole + (level - whole > threshold ? 1 : 0);
-                        if (0 == step) continue;
-
-                        glowPainter.Dot(wx, wy, glowTones[step]);
-                    }
+                    glowPainter.Dot(wx, wy, glowTones[step]);
                 }
             }
 
             glowPainter.Commit(glowMesh, glowRenderer, ref glowHash, ref glowVertexCount);
+        }
+
+        // 바닥 불빛 전체 진하기(groundLight)를 셰이더 _Intensity로 넣는다. 값이 거의 같으면 건너뛴다.
+        private void ApplyGlowIntensity()
+        {
+            if (null == glowRenderer || null == glowBlock) return;
+
+            float intensity = groundLight;
+            if (GlowIntensityEpsilon > Mathf.Abs(intensity - appliedGlowIntensity)) return;
+
+            appliedGlowIntensity = intensity;
+            glowBlock.SetFloat(IntensityId, intensity);
+            glowRenderer.SetPropertyBlock(glowBlock);
         }
 
         // 유니티 이벤트 함수
@@ -1007,12 +1041,8 @@ namespace PresentationLayer.VFX
 
             RebuildFlame();
 
-            glowAccumulator += dt;
-            if (GlowInterval <= glowAccumulator || -1 == glowVertexCount)
-            {
-                glowAccumulator = 0.0f;
-                RebuildGlow();
-            }
+            if (-1 == glowVertexCount || originX != glowOriginX || originY != glowOriginY) RebuildGlow();
+            ApplyGlowIntensity();
         }
 
         private void OnDisable()
@@ -1039,6 +1069,10 @@ namespace PresentationLayer.VFX
         {
             glowScale = Mathf.Clamp(glowScale, 0.0f, 2.0f);
             groundGlowStrength = Mathf.Clamp01(groundGlowStrength);
+            glowBreathAmplitude = Mathf.Clamp(glowBreathAmplitude, 0.0f, 0.6f);
+            glowBreathSpeed = Mathf.Clamp(glowBreathSpeed, 0.1f, 3.0f);
+            glowShimmerAmplitude = Mathf.Clamp(glowShimmerAmplitude, 0.0f, 0.3f);
+            glowFlareBoost = Mathf.Clamp01(glowFlareBoost);
 
 #if UNITY_EDITOR
             if (true == bInitialized) BuildTones();

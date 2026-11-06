@@ -14,7 +14,7 @@
 |---|---|
 | `Assets/Scripts/Presentation Layer/VFX/VFX_CampfireFlame.cs` | 이펙트 본체(절차적 픽셀 이펙트, `PixelPainter` + `PixelQuadBuffer`) |
 | `Assets/Scripts/Presentation Layer/VFX/Editor/CampfireFlameBuilder.cs` | 에디터 메뉴 `LumberBoy/VFX/Build Campfire Flame`. 머티리얼 2개를 만들고 `OffRoadVehicle` 프리팹에 연결한다(여러 번 실행해도 같은 결과) |
-| `Assets/Shaders/VFX/PixelQuadAdditive.shader` | 정점 색(RGB) x 정점 알파를 배경에 더하는 셰이더(바닥 불빛용) |
+| `Assets/Shaders/VFX/PixelQuadAdditive.shader` | 정점 색(RGB) x 정점 알파 x `_Intensity`(기본 1)를 배경에 더하는 셰이더(바닥 불빛용). `_Intensity`는 바닥 불빛 진하기 숨쉬기에 MaterialPropertyBlock으로 넣는다. `M_RareLootAddPixel`도 같은 셰이더를 쓰며 기본값 1이라 영향 없다 |
 | `Assets/Graphics/VFX/Materials/M_CampfireFlame.mat` | `Custom/VFX/BrandWrapGlow`, `_GlowMin` 1.0 / `_GlowMax` 2.2 (처음 4.2였으나 블룸이 강해 낮춤. 연기는 알파 0이라 색 그대로 나온다) |
 | `Assets/Graphics/VFX/Materials/M_CampfireGroundGlow.mat` | `Custom/VFX/PixelQuadAdditive` |
 | `Assets/Scripts/Presentation Layer/ObjectSystem/RestAreaVisual.cs` | `flameVfx` 필드, Awake에서 `Initialize(campfireSortables[0])`, `SetOpen`에서 `flameVfx.SetOpen(bOpen, campfireRevealDelay)` |
@@ -43,7 +43,7 @@
 | 불똥(lick) | 불꽃 위쪽에서 초당 약 1.8개 떨어져 나가는 `+` -> `.` |
 | 장작 튀김(pop) | 점화 후 2.6초 뒤 처음, 이후 1.6~4초마다 5~8개가 포물선으로 튀고 불꽃이 순간 커진다 |
 | 연기 | 초당 1개. `.` 뒤 `●`로, 바이어 디더로 성글어지며 올라간다 |
-| 바닥 불빛 | 반지름 46 x 23px 타원을 4단계 디더로 가산 혼합. 불꽃 세기에 따라 깜빡이며 15Hz로 갱신한다 |
+| 바닥 불빛 | 반지름 46 x 23px 타원을 4단계 디더로 가산 혼합. 디더 점 배치는 고정 밝기(0.94)로 한 번만 정하고, 전체 진하기만 셰이더 `_Intensity`로 바뀐다: 느린 숨쉬기(±30%, 속도 0.6) + 약한 일렁임(±8%, 2.2Hz) + 장작 튀김 번짐(최대 +40%, `flare`를 따라 빠르게 줄어듦). 점화 중에는 `ign`을 따라 서서히 켜진다. 처음 적용한 ±8%(0.7Hz)는 가산 알파 변화가 ±0.018에 그쳐 정지 디더와 구분되지 않는다는 피드백으로 키웠다. 2026-11-06 이전에는 밝기를 빠르게(5.3Hz 노이즈 + 17Hz) 흔들며 15Hz마다 디더를 다시 판정해 점이 통째로 켜졌다 꺼지는 번쩍임이 있었다 |
 
 ---
 
@@ -52,6 +52,7 @@
 - 모든 입자는 고정 크기 구조체 배열(112칸)이라 **재생 중 힙 할당이 없다.** 난수는 자체 xorshift다.
 - 쿼드 버퍼(`PixelQuadBuffer`)는 몸통용(1500쿼드)과 바닥 불빛용(3600쿼드) 두 개를 static으로 공유한다. 직전과 같은 그림이면 업로드를 건너뛴다(`PixelPainter.Commit`).
 - 화면 밖이면 그리기만 건너뛴다(`PixelVfxCulling`). 시뮬레이션은 가벼워서 계속 돌려 다시 들어와도 불꽃이 이어진다.
+- 바닥 불빛 메쉬는 처음 그릴 때, 화면 밖에서 돌아왔을 때, 원점 픽셀이 바뀌었을 때만 다시 만든다. 매 프레임 하는 일은 `_Intensity` 갱신(변화가 0.002 이상일 때만 `SetPropertyBlock`)뿐이다.
 - 격자 냉각 계수, 원천 마스크, 숯불 위치, 바닥 불빛 감쇠는 `Awake`에서 한 번만 계산한다. 정점 색은 6색 x 5발광 등급으로 미리 만들어 두고 선형 색 공간이면 선형으로 변환한다.
 - `SetOpen(true)`가 이미 열린 상태에서 오브젝트가 다시 켜질 때도(던전 재진입) 점화가 처음부터 다시 시작한다(`OnEnable`).
 - 이 이펙트는 `_CameraSortingLayerTexture`를 읽지 않으므로 `SortingLayerTextureUser`는 필요 없다.
@@ -67,7 +68,7 @@
 | HUGGING | 적용 | 평행한 선이 없다. 불꽃 가장자리는 열 칸 단위 계단이다 |
 | 입자 모양 | 적용 | 불씨, 불똥, 장작 튀김은 `.` `+` `x` `●` `◆`만 `PixelPainter.SpacedShape`로 그린다. 연기는 `.`와 `●`만 쓰고 같은 모양을 디더로 깎아 그린다 |
 | 입자 균형(간격) | 적용 | 입자끼리 겹치거나 바로 맞닿으면(간격 0칸) 뒤에 그린 쪽을 `.`로 줄이고, `.`도 맞닿으면 생략한다. 다른 입자가 이어 붙어 `x`+`+`의 합집합 같은 비대칭 덩어리가 되는 것을 막는다. 간격이 1칸 이상이면 그대로 그린다. 이 규칙은 모닥불에만 적용했고, `Shape`를 쓰는 다른 이펙트(스텔라, 수리 스파크, 오프로드 레인, 헤이스트)는 아직 아니다 |
-| 30fps 이상 | 적용 | 몸통은 매 프레임 다시 그린다(격자는 30Hz 갱신). 불씨 깜빡임 30Hz. 바닥 불빛만 15Hz다(은은한 깜빡임이라 입자가 아님) |
+| 30fps 이상 | 적용 | 몸통은 매 프레임 다시 그린다(격자는 30Hz 갱신). 불씨 깜빡임 30Hz. 바닥 불빛은 점 배치가 고정이고 진하기만 매 프레임 연속으로 변한다 |
 
 ---
 
@@ -91,10 +92,14 @@
 |---|---|---|
 | `glowScale` | 1.0 | 정점 알파(발광 세기) 배율(0 ~ 2). 블룸이 과하거나 약할 때 가장 먼저 만질 값 |
 | `groundGlowStrength` | 0.22 | 바닥 불빛 알파 최대값(0 ~ 1). 0이면 바닥 불빛이 꺼진다 |
+| `glowBreathAmplitude` | 0.3 | 바닥 불빛 진하기 숨쉬기 폭(0 ~ 0.6). 디더 점은 고정, 진하기만 바뀐다 |
+| `glowBreathSpeed` | 0.6 | 숨쉬기 노이즈 속도(0.1 ~ 3) |
+| `glowShimmerAmplitude` | 0.08 | 숨쉬기 위에 겹치는 빠르고 약한 일렁임 폭(0 ~ 0.3) |
+| `glowFlareBoost` | 0.4 | 장작 튀김 때 바닥 불빛이 더 밝아지는 최대 폭(0 ~ 1) |
 | `sortingOrderOffset` | 1 | Back 조각 정렬 순서 기준 추가 오프셋 |
 | `glowSortingLayerName` / `glowSortingOrder` | Indicators / 0 | 바닥 불빛 정렬 |
 
-코드 상수로 조정하는 값(필요하면 요청 주세요): 격자 크기와 냉각 계수(`FireStep`, `BuildTables`), 불씨 초당 개수(8), 장작 튀김 간격, 바닥 불빛 반지름(`GlowRadiusX/Y`), 점화 길이(0.9초).
+코드 상수로 조정하는 값(필요하면 요청 주세요): 바닥 불빛 디더 기준 밝기(`GlowBaseLight` 0.94)와 일렁임 속도(`GlowShimmerSpeed` 2.2), 격자 크기와 냉각 계수(`FireStep`, `BuildTables`), 불씨 초당 개수(8), 장작 튀김 간격, 바닥 불빛 반지름(`GlowRadiusX/Y`), 점화 길이(0.9초).
 
 ---
 
@@ -117,6 +122,6 @@
 | 게임 플레이 중 재생 | 에디터 편집 모드에서 점화 시퀀스를 시간대별(0.08~4.5초)로 렌더해 모양과 위치를 확인했다(발광 배율 1 기준). 플레이 모드, 실제 휴식처 열림/닫힘 재생은 하지 않았다 |
 | 블룸과 HDR 밝기 | 렌더 확인은 발광 배율을 1로 낮춘 상태로 했다. `GlowMax` 2.2로 낮춘 뒤의 블룸 세기와 색 포화는 게임 화면에서 봐야 한다 |
 | 앞/뒤 정렬 | Back +1로 맞췄으나 캐릭터, 나무와 겹칠 때의 앞/뒤는 미확인 |
-| 바닥 불빛 | 가산 혼합 색과 세기(0.22)는 추정값이다. 바닥 타일 색에 따라 달라 보일 수 있다 |
+| 바닥 불빛 | 가산 혼합 색과 세기(0.22)는 추정값이다. 바닥 타일 색에 따라 달라 보일 수 있다. 고정 디더는 편집 모드에서 360프레임 동안 메쉬가 그대로인 것을 확인했다. 보강 후 600프레임(30초)에서 `_Intensity`는 0.83~1.45였고, 가장 밝은 칸의 R값(배경 40)이 최소 111 / 최대 140으로 렌더에 반영되는 것을 확인했다(블룸 없는 편집 모드 렌더). 게임 화면 확인은 안 했다 |
 | 닫힘, 재진입 | `SetOpen(false)` 즉시 정지와 던전 재진입 시 점화 재시작은 코드로만 확인했다 |
-| 성능 | 프로파일링하지 않았다. 몸통 쿼드는 수백 개, 바닥 불빛은 15Hz로 최대 수천 칸을 검사하고 쿼드는 약 1000~2000개 규모로 추정한다. 할당은 없다 |
+| 성능 | 프로파일링하지 않았다. 몸통 쿼드는 수백 개, 바닥 불빛은 다시 만들 때만 최대 수천 칸을 검사하고(쿼드 약 1000~2000개), 평소에는 `_Intensity`만 넣는다. 할당은 없다 |
