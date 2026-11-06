@@ -55,6 +55,7 @@ MonoBehaviour:
   speechText: {fileID: 391995436040472427}
   motionPlayer: {fileID: 3055563855799041287}
   absolTag: Absol
+  duplicateCooldown: 1.5
 --- !u!1 &3788225162764921074
 GameObject:
   m_ObjectHideFlags: 0
@@ -274,6 +275,7 @@ MonoBehaviour:
   tmpText: {fileID: 391995436040472427}
   animateInEditMode: 1
   colorCycleDuration: 0.75
+  snapToReferencePixel: 1
   shakeAmplitude: 1.2
   shakeFrequency: 34
   waveAmplitude: 2
