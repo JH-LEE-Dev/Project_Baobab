@@ -97,7 +97,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private int currentPrestigeLevel;
 
     // "포자 포션" - "2-1,2-2,2-3"(FluffySporeForest_1/2/3)에서 확률 드랍, "3-1"(StarrootForest_1) 이후
-    // 모든 숲에서 구제 보장. 한 번 획득하면 영구 소지한다(세이브 데이터와 연동).
+    // 모든 숲에서 구제 보장. 포자막 폭발 특성을 배운 뒤에만 드랍된다. 한 번 획득하면 영구 소지한다(세이브 데이터와 연동).
     // 효과: 나무를 벌목하면 확률로 "포자 대폭발"이 일어나, 쓰러진 나무 자리 기준 등각 타원 범위의 나무에 피해를 주고
     // 맞은 나무는 이후 받는 피해가 영구히 증폭된다(TreeObj.ApplySporeDamageAmplify). 프레스티지 레벨에 따라
     // I → II → III으로 성장하고, 효과는 다음 숲 방문부터 적용된다(sporePotionTierThisRun).
@@ -888,7 +888,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         int pityKillsSoFar = 0;
         lostAndFoundBoxPityThreshold = RollPityThreshold(IsPityPending(bHasAcquiredLostAndFoundBox, LostAndFoundBoxPityStart),
             lostAndFoundBoxPityMinKills, lostAndFoundBoxPityMaxKills, ref pityKillsSoFar);
-        sporePotionPityThreshold = RollPityThreshold(IsPityPending(bHasAcquiredSporePotion, SporePotionPityStart),
+        // "포자 포션"은 포자막 폭발 특성을 배운 뒤에만 드랍 대상이다. 안 배웠으면 구제 순번도 차지하지 않는다.
+        sporePotionPityThreshold = RollPityThreshold(bShieldExplosionUnlocked && IsPityPending(bHasAcquiredSporePotion, SporePotionPityStart),
             sporePotionPityMinKills, sporePotionPityMaxKills, ref pityKillsSoFar);
         starCompassPityThreshold = RollPityThreshold(IsPityPending(bHasAcquiredStarCompass, StarCompassPityStart),
             starCompassPityMinKills, starCompassPityMaxKills, ref pityKillsSoFar);
@@ -1818,7 +1819,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         // "포자 포션" - "2-1,2-2,2-3"에서 확률적으로 드랍(못 얻은 채로 벨 때마다 누적 상승), "3-1" 이후 모든 숲에서 구제 보장.
-        if (!bSuppressDrops && !bHasAcquiredSporePotion && !bSporePotionSpawnedThisRun && lootManager != null && character != null)
+        // 포자막 폭발 특성(SC_ShieldExplosionUnlock)을 배운 뒤에만 드랍된다. 배우기 전 벌목은 확률 누적에도 세지 않는다.
+        if (!bSuppressDrops && bShieldExplosionUnlocked && !bHasAcquiredSporePotion && !bSporePotionSpawnedThisRun && lootManager != null && character != null)
         {
             bool bShouldSpawnSporePotion = false;
 
@@ -1830,9 +1832,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 bShouldSpawnSporePotion = UnityEngine.Random.value < effectiveChance;
                 sporePotionFluffyTreeKillCount++;
             }
-            else if (currentForestType >= SporePotionPityStart)
+            else if (currentForestType >= SporePotionPityStart && 0 < sporePotionPityThreshold)
             {
                 // "3-1" 이후 모든 숲 - "2-1,2-2,2-3"에서 못 얻었을 경우의 구제책. 임계값 그루째에 확률과 무관하게 보장 드랍.
+                // 임계값이 0이면 숲 진입 때 특성이 없어 구제 대상이 아니었던 것이다(방문 도중 배워도 첫 그루에 바로 떨어지지 않게).
                 bShouldSpawnSporePotion = pityTreeKillCount >= sporePotionPityThreshold;
             }
 
