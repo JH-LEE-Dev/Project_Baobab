@@ -211,10 +211,6 @@ public class UI_SpeechBubble : MonoBehaviour
                 return;
         }
 
-        // 인벤토리 가득 참(ID 1)이 이미 표시 중일 때 하위 우선순위인 다른 품목 불가(ID 2)가 덮어쓰지 못하도록 방어
-        if (true == isPlaying && (int)ESpeechBubbleId.InventoryFull == currentId && (int)ESpeechBubbleId.ItemCantAcquired == _id)
-            return;
-
         // 잠금 활성화 상태(던전 등)에서 이미 노출된 ID는 중복 노출 차단
         if (true == enableLock && false == shownIds.Add(_id))
             return;

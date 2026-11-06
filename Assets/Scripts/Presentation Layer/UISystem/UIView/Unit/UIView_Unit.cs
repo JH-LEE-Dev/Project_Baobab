@@ -54,7 +54,6 @@ public class UIView_Unit : UIView
     private UI_InteractionUnit interactionUnit;
     private UI_SpeechBubble speechBubble;
     private UI_DashCharaGauge dashGauge;
-    private int lastInventoryFullFrame = -1;
 
     //private bool isInitialOpen = false;
 
@@ -510,27 +509,30 @@ public class UIView_Unit : UIView
     ///   - 문구가 "인벤토리가 가득 찼어요"라 원석 상황에는 어긋난다.
     ///   - 던전 안에서는 ID당 한 번만 노출되므로(UI_SpeechBubble.Play의 enableLock + shownIds),
     ///     원목 인벤토리가 먼저 찼으면 주머니 안내는 그 런 내내 뜨지 않는다. 반대도 마찬가지다.
-    ///   - 아래 AddShownId 때문에 "아이템을 못 주웠어요"(ItemCantAcquired)까지 함께 막힌다.
     ///
     /// 주머니 전용 안내가 필요하면 ESpeechBubbleId에 항목을 하나 더 만들고 번역문을 채운 뒤,
     /// ReserveGemOre가 쏘는 이벤트를 그쪽으로 갈라주면 된다.
     /// </summary>
     public void InventoryIsFull()
     {
-        lastInventoryFullFrame = Time.frameCount;
-        int id = (int)ESpeechBubbleId.InventoryFull;
-        SpeechBubblePlay(id, viewCtx.localizationManager.GetText(speechBubbleJsonId, id));
-        speechBubble.AddShownId((int)ESpeechBubbleId.ItemCantAcquired);
+        InventoryRejectedSpeechBubble();
     }
 
+    /// <summary>
+    /// 빈칸은 있지만 다른 품목이라 못 넣었을 때. 빈칸이 없을 때(InventoryIsFull)와 같은 말풍선 하나로 묶는다.
+    /// </summary>
     public void ItemCantAcquired_Inventory()
     {
-        if (Time.frameCount == lastInventoryFullFrame)
-            return;
+        InventoryRejectedSpeechBubble();
+    }
 
-        int id = (int)ESpeechBubbleId.ItemCantAcquired;
+    /// <summary>
+    /// 인벤토리가 아이템을 받지 못한 모든 경우(빈칸 없음 / 다른 품목)에 공통으로 띄우는 단일 말풍선입니다.
+    /// </summary>
+    private void InventoryRejectedSpeechBubble()
+    {
+        int id = (int)ESpeechBubbleId.InventoryFull;
         SpeechBubblePlay(id, viewCtx.localizationManager.GetText(speechBubbleJsonId, id));
-        speechBubble.AddShownId((int)ESpeechBubbleId.InventoryFull);
     }
 
     private void AxeDurabilityEmpty()
@@ -597,7 +599,6 @@ public class UIView_Unit : UIView
         if (null != speechBubble)
         {
             speechBubble.RemoveShownId((int)ESpeechBubbleId.InventoryFull);
-            speechBubble.RemoveShownId((int)ESpeechBubbleId.ItemCantAcquired);
         }
     }
 
