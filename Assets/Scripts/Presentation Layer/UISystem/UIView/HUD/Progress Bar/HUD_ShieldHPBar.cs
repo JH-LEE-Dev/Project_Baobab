@@ -44,6 +44,10 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     [SerializeField] private float revivalShakeDuration = 1.0f;
     [SerializeField] private float revivalShakeStrength = 0.18f;
 
+    [Header("Heavy Hit Shake Settings")]
+    [SerializeField, Min(0f)] private float impactShakeDuration = 0.5f;
+    [SerializeField, Min(0f)] private float impactShakeStrength = 0.09f;
+
     // 내부 의존성
     private object owner;
     private GameObject targetObj;
@@ -82,6 +86,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     private Tween specialRecoveryTween;
     private Tween specialShakeTween;
     private Vector3 shakeOffset = Vector3.zero;
+    private float activeShakeStrength;
     private int currentGemStage = 0;
     private int lastRevivalFrame = -1;
 
@@ -302,11 +307,16 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             .SetLink(gameObject)
             .OnComplete(cachedSpecialRecoveryComplete);
 
-        PlayImpactShake();
+        PlayShake(revivalShakeDuration, revivalShakeStrength);
     }
 
-    // Reuse the revival shake without changing sprites or recovering HP.
+    // Heavy hits use independent settings; revival keeps its original presentation.
     public void PlayImpactShake()
+    {
+        PlayShake(impactShakeDuration, impactShakeStrength);
+    }
+
+    private void PlayShake(float _duration, float _strength)
     {
         if (null != specialShakeTween && true == specialShakeTween.IsActive())
         {
@@ -315,7 +325,11 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         }
 
         shakeOffset = Vector3.zero;
-        specialShakeTween = DOVirtual.Float(0.0f, 1.0f, revivalShakeDuration, cachedSpecialShakeUpdate)
+        activeShakeStrength = Mathf.Max(0f, _strength);
+        if (_duration <= 0f || activeShakeStrength <= 0f)
+            return;
+
+        specialShakeTween = DOVirtual.Float(0.0f, 1.0f, _duration, cachedSpecialShakeUpdate)
             .SetEase(Ease.Linear)
             .SetLink(gameObject)
             .OnComplete(cachedSpecialShakeComplete);
@@ -339,8 +353,8 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     private void HandleSpecialShakeUpdate(float _t)
     {
         float _decay = Mathf.Pow(1.0f - _t, 2.5f);
-        float _waveY = (Mathf.Sin(_t * Mathf.PI * 36.0f) + Mathf.Sin(_t * Mathf.PI * 72.0f) * 0.4f) * _decay * revivalShakeStrength;
-        float _waveX = (Mathf.Cos(_t * Mathf.PI * 30.0f) + Mathf.Sin(_t * Mathf.PI * 60.0f) * 0.4f) * _decay * (revivalShakeStrength * 0.8f);
+        float _waveY = (Mathf.Sin(_t * Mathf.PI * 36.0f) + Mathf.Sin(_t * Mathf.PI * 72.0f) * 0.4f) * _decay * activeShakeStrength;
+        float _waveX = (Mathf.Cos(_t * Mathf.PI * 30.0f) + Mathf.Sin(_t * Mathf.PI * 60.0f) * 0.4f) * _decay * (activeShakeStrength * 0.8f);
         shakeOffset.x = _waveX;
         shakeOffset.y = _waveY;
     }
