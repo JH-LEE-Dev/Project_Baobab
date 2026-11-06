@@ -5,6 +5,7 @@
 // 띄우는 조건: 본편 던전에서 대상 대지역에 들어와 캐릭터가 조작 가능해진 순간(ActivateCharacterSignal),
 //             그 대지역 안내를 아직 클리어한 적이 없을 때.
 // 클리어 조건: 안내가 떠 있는 동안 (대지역 기믹 트리거 | 탈진 | 오프로드 차량 상호작용).
+//             몽글포자숲의 기믹 트리거는 플레이어의 첫 벌목, 별뿌리숲은 별자리 발현, 용암숲은 불씨 획득.
 //             클리어 기록은 클리어 시점에만 남기므로, 클리어 전에 이탈하면 다음 입장에서 다시 안내한다.
 public class RegionGuideSystem
 {
@@ -63,7 +64,7 @@ public class RegionGuideSystem
         signalHub.Subscribe<DecalreDungeonTypeSignal>(DungeonTypeDeclared);
         signalHub.Subscribe<ActivateCharacterSignal>(CharacterActivated);
         signalHub.Subscribe<TownStartedSignal>(TownStarted);
-        signalHub.Subscribe<TreeShieldBrokenSignal>(TreeShieldBroken);
+        signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.Subscribe<ConstellationManifestedSignal>(ConstellationManifested);
         signalHub.Subscribe<EmberAcquiredSignal>(EmberAcquired);
         signalHub.Subscribe<CharacterStaminaIsEmptySignal>(CharacterStaminaIsEmpty);
@@ -75,7 +76,7 @@ public class RegionGuideSystem
         signalHub.UnSubscribe<DecalreDungeonTypeSignal>(DungeonTypeDeclared);
         signalHub.UnSubscribe<ActivateCharacterSignal>(CharacterActivated);
         signalHub.UnSubscribe<TownStartedSignal>(TownStarted);
-        signalHub.UnSubscribe<TreeShieldBrokenSignal>(TreeShieldBroken);
+        signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.UnSubscribe<ConstellationManifestedSignal>(ConstellationManifested);
         signalHub.UnSubscribe<EmberAcquiredSignal>(EmberAcquired);
         signalHub.UnSubscribe<CharacterStaminaIsEmptySignal>(CharacterStaminaIsEmpty);
@@ -118,8 +119,12 @@ public class RegionGuideSystem
         currentMapType = MapType.None;
     }
 
-    private void TreeShieldBroken(TreeShieldBrokenSignal _signal)
+    // 몽글포자숲 안내는 플레이어가 나무를 처음 벤 순간 클리어된다(TutorialSystem.CutTree와 같은 판정).
+    private void TreeIsDead(TreeIsDeadSignal _signal)
     {
+        if (false == _signal.isPlayerKilled)
+            return;
+
         TryCompleteGuide(TutorialStep.SporeForestGuide);
     }
 
