@@ -1,25 +1,34 @@
 Shader "Custom/RestAreaEllipse"
 {
     // 휴식 특성의 휴식 범위 타원. 오브젝트 스케일이 곧 타원 지름(2rx, 2ry)이고, UV 0~1 쿼드 위에 그린다.
-    // 월드 좌표를 PPU 격자로 스냅해서 모든 선과 색 단계가 정수 픽셀에 맞게 끊긴다.
+    // 월드 좌표를 PPU 격자로 스냅해서 외곽선이 정수 픽셀에 맞게 끊긴다.
     //
     // 화면 캡처(_CameraSortingLayerTexture)를 읽지 않는다. 캡처에는 Objects 레이어(나무, 오프로드)가 이미 들어 있어서
-    // 읽는 순간 사물까지 같이 일그러지기 때문이다. 바닥을 일렁이게 하지 않고 평면 색조와 빛 파동만 그린다.
+    // 읽는 순간 사물까지 같이 일그러지기 때문이다. 바닥을 일렁이게 하지 않고 옅은 바탕과 빛 파동만 그린다.
     // 그래서 이 쿼드는 Indicators 레이어(Objects 아래)에 그대로 두면 항상 사물 밑에 깔린다.
+    //
+    // 내부는 계단 없이 그린다. 바탕은 아주 옅게 덮고(알파), 파동은 바닥을 덮지 않고 밝히기만 한다(가산).
+    // 덮기와 가산을 한 패스로 내기 위해 프리멀티플라이드 블렌드(One, OneMinusSrcAlpha)를 쓴다.
     Properties
     {
         [Header(Wave)]
         _WaveStrength("Wave Strength", Range(0, 1)) = 1
-        _WavePeriod("Wave Interval (Seconds)", Float) = 2
+        _WavePeriod("Wave Interval (Seconds)", Float) = 4
+        _WaveAlpha("Wave Additive Alpha", Range(0, 0.4)) = 0.04
 
-        [Header(Tint)]
-        _TintAlpha("Tint Alpha Scale", Range(0, 3)) = 1
+        [Header(Inner)]
+        _BaseAlpha("Base Alpha", Range(0, 0.15)) = 0.025
+
+        [Header(Reveal)]
+        _RevealWaveAlpha("First Wave Additive Alpha", Range(0, 0.3)) = 0.04
 
         [Header(Pixel)]
         _PixelsPerUnit("Pixels Per Unit", Float) = 32
 
         [Header(Runtime)]
         _Fade("Fade", Range(0, 1)) = 1
+        _Reveal("Reveal Progress (First Wave)", Range(0, 1)) = 1
+        _WaveGate("Wave Gate", Range(0, 1)) = 1
     }
 
     SubShader
@@ -31,7 +40,7 @@ Shader "Custom/RestAreaEllipse"
             "RenderPipeline" = "UniversalPipeline"
         }
 
-        Blend SrcAlpha OneMinusSrcAlpha
+        Blend One OneMinusSrcAlpha
         ZWrite Off
         Cull Off
 
@@ -56,9 +65,13 @@ Shader "Custom/RestAreaEllipse"
             CBUFFER_START(UnityPerMaterial)
                 float _WaveStrength;
                 float _WavePeriod;
-                float _TintAlpha;
+                float _WaveAlpha;
+                float _BaseAlpha;
+                float _RevealWaveAlpha;
                 float _PixelsPerUnit;
                 float _Fade;
+                float _Reveal;
+                float _WaveGate;
             CBUFFER_END
 
             // 외곽 레이저선 코어(1px)와 보조선(안쪽 1px). 파동이 닿을수록 한 단계씩 밝아진다. 값은 sRGB.
@@ -72,8 +85,9 @@ Shader "Custom/RestAreaEllipse"
                 float3(0.122, 0.478, 0.220), float3(0.165, 0.580, 0.275),
                 float3(0.208, 0.651, 0.314), float3(0.271, 0.722, 0.369)
             };
-            // 바깥으로 갈수록 짙어지는 평면 색조 5단계(알파). 선형 공간 합성이라 값이 작다.
-            static const float kTint[5] = { 0.0, 0.07, 0.125, 0.2, 0.2875 };
+            // 내부 바탕(따뜻한 연두)과 파동 빛(밝은 연두). 값은 sRGB.
+            static const float3 kBaseColor = float3(0.56, 0.80, 0.30);
+            static const float3 kWaveColor = float3(0.84, 0.96, 0.52);
 
             Varyings vert(Attributes IN)
             {
@@ -132,6 +146,18 @@ Shader "Custom/RestAreaEllipse"
                 return best;
             }
 
+            // 열릴 때 한 번 지나가는 첫 파동. 진행도(_Reveal) 0~1 동안 중앙에서 외곽 너머까지 가며, 시작과 끝은 세기 0이다.
+            float FirstWaveAt(float _r)
+            {
+                if (1.0 <= _Reveal) return 0.0;
+
+                float x = saturate(_Reveal);
+                float u = 1.0 - x;
+                float head = (1.0 - u * u * u) * 1.05;
+                float d = (_r - head) / 0.08;
+                return exp(-d * d) * _RevealWaveAlpha * sin(PI * x);
+            }
+
             half4 frag(Varyings IN) : SV_Target
             {
                 // 오브젝트 스케일 = 타원 지름. 반지름은 그 절반.
@@ -150,33 +176,33 @@ Shader "Custom/RestAreaEllipse"
                 float2 p = pix / (radiusPx + 0.5);
 
                 float d2 = dot(p, p);
-                float waveEdge = WaveAt(1.0);
+                float waveEdge = WaveAt(1.0) * _WaveGate;
 
                 // 코어: 1px 윤곽. 반지름 안쪽 한 겹 윤곽을 보조선으로 겹쳐 2px 띠(레이저 느낌)를 만든다. 보조선도 같은 방식이라 L자 모서리가 없다.
+                // 프리멀티플라이드 블렌드라 색에 알파(_Fade)를 곱해서 낸다.
                 if (ThinEdge(pix, radiusPx))
                 {
-                    return half4(SrgbToLinear(kCore[(int)Lvl4(waveEdge * 1.1)]), _Fade);
+                    return half4(SrgbToLinear(kCore[(int)Lvl4(waveEdge * 1.1)]) * _Fade, _Fade);
                 }
 
                 clip(1.0 - d2);
 
                 if (ThinEdge(pix, max(radiusPx - 1.0, 1.0)))
                 {
-                    return half4(SrgbToLinear(kSub[(int)Lvl4(waveEdge)]), _Fade);
+                    return half4(SrgbToLinear(kSub[(int)Lvl4(waveEdge)]) * _Fade, _Fade);
                 }
 
                 float r = sqrt(d2);
-                float w = WaveAt(r);
-                float wStep = floor(w * 5.0) / 5.0;
 
-                // 바깥으로 갈수록 짙어지는 평면 색조. 파동이 지나가는 띠는 한두 단계 밝아진다.
-                int tintStep = (int)clamp(floor(pow(r, 1.6) * 5.0), 0.0, 4.0);
-                float tintA = kTint[tintStep] * _TintAlpha + wStep * 0.21;
-                float3 tintColor = lerp(float3(0.18, 0.70, 0.32), float3(0.40, 0.92, 0.50), saturate(wStep * 1.5));
+                // 바탕: 계단 없이 고르게 아주 옅게 덮는다.
+                float baseA = _BaseAlpha * _Fade;
+                // 파동: 덮지 않고 밝히기만 한다. 평소 파동은 다 드러난 뒤 _WaveGate로 켜지고, 첫 파동은 열리는 동안 한 번만 지나간다.
+                // 첫 파동은 시작 세기가 0이라 _Fade를 곱하지 않는다(곱하면 드러나기 전 구간에서 거의 사라진다).
+                float addA = WaveAt(r) * _WaveAlpha * _WaveGate * _Fade + FirstWaveAt(r);
 
-                half4 col = half4(SrgbToLinear(tintColor), saturate(tintA * _Fade));
-                clip(col.a - 0.002);
-                return col;
+                clip(max(baseA, addA) - 0.001);
+                float3 rgb = SrgbToLinear(kBaseColor) * baseA + SrgbToLinear(kWaveColor) * addA;
+                return half4(rgb, baseA);
             }
             ENDHLSL
         }

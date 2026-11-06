@@ -25,10 +25,14 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _BaseAlpha: 0.025
     - _Fade: 1
     - _PixelsPerUnit: 32
-    - _TintAlpha: 1
-    - _WavePeriod: 2
+    - _Reveal: 1
+    - _RevealWaveAlpha: 0.04
+    - _WaveAlpha: 0.04
+    - _WaveGate: 1
+    - _WavePeriod: 4
     - _WaveStrength: 1
     m_Colors: []
   m_BuildTextureStacks: []

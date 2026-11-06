@@ -31,18 +31,28 @@ public class RestAreaVisual : MonoBehaviour
     [SerializeField] private VFX_CampfireFlame flameVfx;
 
     [Header("Reveal")]
+    [Tooltip("모닥불이 튀어나오는 시간 (EaseOutBack)")]
     [SerializeField] private float revealDuration = 0.6f;
-    [SerializeField] private float hideDuration = 0.25f;
-    [Tooltip("열릴 때 타원·모닥불이 목표 크기를 살짝 넘었다가 돌아오는 정도 (EaseOutBack 계수)")]
+    [Tooltip("닫힐 때 타원이 크기 변화 없이 사라지는 시간")]
+    [SerializeField] private float hideDuration = 0.3f;
+    [Tooltip("열릴 때 모닥불이 목표 크기를 살짝 넘었다가 돌아오는 정도 (EaseOutBack 계수)")]
     [SerializeField] private float revealOvershoot = 1.8f;
     [Tooltip("타원보다 모닥불이 늦게 튀어나오는 시간")]
     [SerializeField] private float campfireRevealDelay = 0.12f;
+    [Tooltip("열릴 때 타원이 완성된 모양 그대로 서서히 드러나는 시간. 크기는 바뀌지 않는다.")]
+    [SerializeField] private float ellipseRevealDuration = 0.8f;
+
+    // 첫 파동은 드러나는 시간보다 조금 길게 지나가 외곽에 닿을 때쯤 다 드러나 있게 한다.
+    private const float FirstWaveSpanRatio = 1.2f;
+    // 다 드러난 뒤 평소 파동이 켜지는 시간. 첫 파동과 평소 파동이 겹쳐 보이지 않게 한다.
+    private const float WaveGateDuration = 0.8f;
 
     private static readonly int FadeID = Shader.PropertyToID("_Fade");
+    private static readonly int RevealID = Shader.PropertyToID("_Reveal");
+    private static readonly int WaveGateID = Shader.PropertyToID("_WaveGate");
 
     private MaterialPropertyBlock ellipseMPB;
     private TilemapFootprintCollider footprintCollider;
-    private Vector3 ellipseBaseScale = Vector3.one;
     private Vector3 campfireBaseScale = Vector3.one;
 
     private bool bOpen = false;
@@ -72,9 +82,6 @@ public class RestAreaVisual : MonoBehaviour
         // 불꽃도 offset 0인 뒤(Back) 조각 기준으로 정렬한다. (Back 0 / 불꽃 +1 / Front +2)
         if (null != flameVfx) flameVfx.Initialize(campfireSortables != null && campfireSortables.Length > 0 ? campfireSortables[0] : null);
 
-        // Initialize 전에도 프리팹에 맞춰 둔 크기로 그려지도록 기본값을 잡아 둔다.
-        if (ellipseRenderer != null) ellipseBaseScale = ellipseRenderer.transform.localScale;
-
         ellipseMPB = new MaterialPropertyBlock();
         ApplyClosedState();
     }
@@ -85,10 +92,10 @@ public class RestAreaVisual : MonoBehaviour
 
         if (null != plusVfx) plusVfx.SetRadius(_radiusX, _radiusY);
 
-        ellipseBaseScale = new Vector3(_radiusX * 2f, _radiusY * 2f, 1f);
+        // 타원 크기는 여기서 한 번 정하고 열림/닫힘 연출에서 바꾸지 않는다. (오브젝트 스케일 = 타원 지름)
         if (ellipseRenderer != null)
         {
-            ellipseRenderer.transform.localScale = ellipseBaseScale;
+            ellipseRenderer.transform.localScale = new Vector3(_radiusX * 2f, _radiusY * 2f, 1f);
         }
     }
 
@@ -166,9 +173,9 @@ public class RestAreaVisual : MonoBehaviour
         }
         else if (ellipseRenderer != null && ellipseRenderer.enabled)
         {
+            // 닫힘: 크기 변화 없이 페이드만 한다. 파동은 평소 상태 그대로 둔다.
             float hideT = hideDuration > 0f ? Mathf.Clamp01(elapsed / hideDuration) : 1f;
-            float k = 1f - hideT;
-            ApplyEllipse(Mathf.Lerp(0.85f, 1f, k), k);
+            ApplyEllipse(1f - hideT, 1f, 1f);
 
             if (hideT >= 1f) ApplyClosedState();
         }
@@ -186,27 +193,30 @@ public class RestAreaVisual : MonoBehaviour
         }
     }
 
-    // 열림 연출에서 지금(elapsed) 보여야 할 타원·모닥불 크기를 입힌다.
+    // 열림 연출에서 지금(elapsed) 보여야 할 타원 알파·첫 파동과 모닥불 크기를 입힌다.
+    // 타원은 완성된 모양 그대로 서서히 드러나고(smoothstep), 그동안 아주 옅은 첫 파동이 한 번 지나간다.
     private void ApplyRevealPose()
     {
-        float ellipseT = revealDuration > 0f ? Mathf.Clamp01(elapsed / revealDuration) : 1f;
+        float ellipseT = ellipseRevealDuration > 0f ? Mathf.Clamp01(elapsed / ellipseRevealDuration) : 1f;
+        float firstWaveT = ellipseRevealDuration > 0f ? Mathf.Clamp01(elapsed / (ellipseRevealDuration * FirstWaveSpanRatio)) : 1f;
+        float waveGateT = Mathf.Clamp01((elapsed - ellipseRevealDuration) / WaveGateDuration);
         float campfireT = revealDuration > 0f ? Mathf.Clamp01((elapsed - campfireRevealDelay) / revealDuration) : 1f;
 
-        ApplyEllipse(EaseOutBack(ellipseT), Mathf.Clamp01(ellipseT * 2f));
+        ApplyEllipse(Mathf.SmoothStep(0f, 1f, ellipseT), firstWaveT, waveGateT);
         if (campfireVisual != null)
         {
             campfireVisual.localScale = campfireBaseScale * EaseOutBack(campfireT);
         }
     }
 
-    private void ApplyEllipse(float _scale, float _fade)
+    private void ApplyEllipse(float _fade, float _reveal, float _waveGate)
     {
         if (ellipseRenderer == null) return;
 
-        ellipseRenderer.transform.localScale = new Vector3(ellipseBaseScale.x * _scale, ellipseBaseScale.y * _scale, 1f);
-
         ellipseRenderer.GetPropertyBlock(ellipseMPB);
         ellipseMPB.SetFloat(FadeID, _fade);
+        ellipseMPB.SetFloat(RevealID, _reveal);
+        ellipseMPB.SetFloat(WaveGateID, _waveGate);
         ellipseRenderer.SetPropertyBlock(ellipseMPB);
     }
 

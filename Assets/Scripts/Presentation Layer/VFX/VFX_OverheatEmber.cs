@@ -17,6 +17,9 @@ namespace PresentationLayer.VFX
     /// - 크기: 불씨 루트(groundAnchor) 스케일. 튀어나올 때 0에서 자라고, 흡입 막바지에 0.35까지 줄어드는 것을 그대로 따른다.
     /// - 이동 중(초당 30px 이상): 지나간 구간을 따라 `x` `+` `.` 조각을 촘촘히 남겨 꼬리를 만들고,
     ///   불티는 각자 다른 지연으로 불덩이를 뒤쫓아 꼬리처럼 늘어진다. 바닥 빛과 대기 중 입자는 멈추고, 정렬은 FlyingItem 레이어로 올린다.
+    /// - 드랍 비행(나무에서 튀어나와 착지할 때까지): 루트 스케일 0.05 미만(Launch 직후) 또는 Visual 높이 > 0(포물선)이면 시작, 루트 스케일 1 + Visual 높이 0이면 끝.
+    ///   이 동안에는 위 흡입용 조각 꼬리 대신 OverheatEmberTrail(빛 꼬리 + 픽셀 심선)과 떨어지는 불티(Shed)를 그린다. 착지 뒤 꼬리는 0.3초에 걸쳐 사그라든다.
+    ///   분출·착지 순간 연출은 없다(시안 2 승인 범위).
     /// - 날아가던 중에 꺼지면(획득) 남은 꼬리는 OverheatEmberResidue로 넘겨 끝까지 그린다. 바닥에서 꺼질 때의 대기 불티는 버린다. 획득·소멸 터짐은 단발 이펙트(VFX_OverheatEmberOneShot)가 맡는다.
     ///
     /// 갱신: 위치·불티·입자·꼬리는 60Hz 고정 간격(불꽃 격자만 30Hz), 그리기는 매 프레임. 화면 밖이면 계산과 그리기를 모두 멈춘다(맵에 수십 개가 깔린다).
@@ -49,6 +52,20 @@ namespace PresentationLayer.VFX
         [SerializeField] private string glowSortingLayerName = "Indicators";
         [SerializeField] private int glowSortingOrder = 0;
 
+        [Header("드랍 트레일 (나무에서 튀어나와 날아가는 동안)")]
+        [SerializeField, Tooltip("끄면 드랍 비행도 흡입과 같은 조각 꼬리를 쓴다")]
+        private bool bDropTrail = true;
+        [SerializeField, Tooltip("빛 꼬리 메쉬 렌더러(자식, EmberTrailAdditive). 비우면 빛 꼬리를 그리지 않는다.")]
+        private MeshRenderer trailRenderer;
+        [SerializeField, Range(0.1f, 0.4f), Tooltip("빛 꼬리·기록 길이(초)")]
+        private float trailDuration = 0.3f;
+        [SerializeField, Range(0.0f, 2.0f), Tooltip("빛 꼬리 세기 배율")]
+        private float trailIntensity = 1.0f;
+        [SerializeField, Range(0.5f, 2.0f), Tooltip("빛 꼬리 폭(반지름) 배율")]
+        private float trailWidth = 1.0f;
+        [SerializeField, Range(0.0f, 1.0f), Tooltip("60Hz 스텝마다 떨어지는 불티가 나올 확률")]
+        private float shedChance = 0.45f;
+
         private const float PixelsPerUnit = 32.0f;
         // 위치·불티·입자·꼬리는 60Hz로 계산한다. 불꽃 격자(OverheatEmberOrb)는 승인된 불길 모양을 지키려고 자체 30Hz를 유지한다.
         private const float StepInterval = 1.0f / 60.0f;
@@ -69,6 +86,12 @@ namespace PresentationLayer.VFX
         private const int GlowQuadBudget = 80;
         private const int GlowRadiusX = 6;
         private const int GlowRadiusY = 2;
+        private const int ShedCapacity = 48;
+        // 루트 스케일이 이보다 작으면 드랍 비행 시작(EmberItem.Launch 직후 같은 프레임. 제자리 배치·흡입은 0.35 미만으로 내려가지 않는다).
+        // 첫 관측 프레임에 스케일이 이미 자라 있는 경우는 Visual 높이(DropHeightEpsilon)로 잡는다.
+        private const float DropStartScale = 0.05f;
+        // Visual(부모) 높이가 이보다 크면 포물선 비행 중(유닛)
+        private const float DropHeightEpsilon = 0.0001f;
 
         // 판단 경계(px). 불덩이 + 궤도 + 위로 튀는 불티
         private const float CullWidthPixels = 48.0f;
@@ -77,6 +100,7 @@ namespace PresentationLayer.VFX
 
         private static readonly int[] TrailShapes = { PixelPainter.ShapeCross, PixelPainter.ShapePlus, PixelPainter.ShapeDot, PixelPainter.ShapeDot, PixelPainter.ShapePlus };
         private static readonly byte[] GlowRGB = { 150, 30, 10 };
+        private static readonly int TrailIntensityID = Shader.PropertyToID("_Intensity");
 
         private struct Mote
         {
@@ -102,6 +126,8 @@ namespace PresentationLayer.VFX
         private readonly OverheatEmberParticles particles = new OverheatEmberParticles(ParticleCapacity);
         private readonly PixelPainter painter = new PixelPainter();
         private readonly PixelPainter glowPainter = new PixelPainter();
+        private readonly OverheatEmberTrail trail = new OverheatEmberTrail();
+        private readonly OverheatEmberParticles shedParticles = new OverheatEmberParticles(ShedCapacity);
         private readonly Mote[] motes = new Mote[MoteCount];
         private readonly int[] historyX = new int[MoteCount * MoteHistory];
         private readonly int[] historyY = new int[MoteCount * MoteHistory];
@@ -113,6 +139,8 @@ namespace PresentationLayer.VFX
         private MeshRenderer meshRenderer;
         private Mesh mesh;
         private Mesh glowMesh;
+        private Mesh trailMesh;
+        private float trailMaterialIntensity = 1.0f;
         private Vector3 cullSize;
         private int flyingSortingLayerID;
         private int glowSortingLayerID;
@@ -121,6 +149,8 @@ namespace PresentationLayer.VFX
         private bool bInitialized;
         private bool bHasPrevious;
         private bool bMoving;
+        private bool bDropFlight;
+        private int shedTag;
         private float time;
         private float accumulator;
         private float glowAccumulator;
@@ -185,6 +215,19 @@ namespace PresentationLayer.VFX
                 glowRenderer.enabled = false;
             }
 
+            if (null != trailRenderer)
+            {
+                trailMesh = new Mesh { name = "VFX_OverheatEmberTrail" };
+                trailMesh.MarkDynamic();
+                trailRenderer.GetComponent<MeshFilter>().sharedMesh = trailMesh;
+                trailRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                trailRenderer.receiveShadows = false;
+                trailRenderer.enabled = false;
+
+                Material trailMaterial = trailRenderer.sharedMaterial;
+                if (null != trailMaterial && trailMaterial.HasProperty(TrailIntensityID)) trailMaterialIntensity = trailMaterial.GetFloat(TrailIntensityID);
+            }
+
             cullSize = new Vector3(CullWidthPixels / PixelsPerUnit + 2.0f * PixelVfxCulling.MarginUnits,
                 CullHeightPixels / PixelsPerUnit + 2.0f * PixelVfxCulling.MarginUnits, PixelVfxCulling.BoundsDepth);
 
@@ -194,6 +237,7 @@ namespace PresentationLayer.VFX
         private void BuildTones()
         {
             OverheatEmberOrb.BuildPalette(tones, darks, glowScale);
+            trail.BuildPalette();
 
             Color smoke = new Color32(0x5d, 0x4b, 0x49, 255);
             if (ColorSpace.Linear == QualitySettings.activeColorSpace) smoke = smoke.linear;
@@ -212,6 +256,10 @@ namespace PresentationLayer.VFX
 
             orb.Reset(randomState ^ 0x9E3779B9u);
             particles.Clear();
+            shedParticles.Clear();
+            trail.Clear();
+            bDropFlight = false;
+            shedTag = 0;
 
             time = 0.0f;
             accumulator = 0.0f;
@@ -307,10 +355,16 @@ namespace PresentationLayer.VFX
             orb.Step(StepInterval, time, phase, 1.0f, flare);
             StepMotes(_scale);
 
-            if (true == bMoving && true == bHasPrevious) EmitTrail(segment);
+            if (true == bMoving && true == bHasPrevious)
+            {
+                if (true == bDropFlight) EmitShed(_scale);
+                else EmitTrail(segment);
+            }
             else if (0.9f < _scale) EmitIdle();
 
             particles.Step(StepInterval, time);
+            shedParticles.Step(StepInterval, time);
+            trail.Step(StepInterval, bDropFlight, orbX, orbY, _scale, trailDuration);
 
             previousOrbX = orbX;
             previousOrbY = orbY;
@@ -369,6 +423,21 @@ namespace PresentationLayer.VFX
                 particles.SpawnChunk(x, y, -moveDirX * 6.0f + RandRange(-3.0f, 3.0f), -moveDirY * 6.0f + RandRange(-3.0f, 3.0f),
                     RandRange(0.3f, 0.5f), shape, true, 5.0f, 14.0f, Rand01() * 0.08f, Rand01() * 6.28f);
             }
+        }
+
+        // 드랍 비행: 꼬리에서 떨어져 나가 처지며 식는 불티(시안 2 공식). 불씨가 아직 작을 때(팝업 초반)는 내지 않는다.
+        private void EmitShed(float _scale)
+        {
+            if (0.3f >= _scale || Rand01() >= shedChance) return;
+
+            bool bBig = Rand01() < 0.25f;
+            int shape = true == bBig ? PixelPainter.ShapePlus : (Rand01() < 0.5f ? PixelPainter.ShapeCross : PixelPainter.ShapeDot);
+            float x = orbX + RandRange(-2.0f, 2.0f);
+            float y = orbY + RandRange(-2.0f, 2.0f);
+            float vx = -moveDirX * RandRange(10.0f, 24.0f) + RandRange(-8.0f, 8.0f);
+            float vy = -moveDirY * RandRange(10.0f, 24.0f) + RandRange(-4.0f, 10.0f);
+            shedParticles.SpawnShed(x, y, vx, vy, RandRange(0.35f, 0.6f), shape, shedTag);
+            shedTag++;
         }
 
         // 바닥 대기: 위로 튀는 불티, 번쩍임 불티, 떨어져 나가는 조각, 궤도를 벗어나는 불티
@@ -430,6 +499,10 @@ namespace PresentationLayer.VFX
 
             painter.Begin(buffer, transform.worldToLocalMatrix, transform.position.z);
 
+            // 드랍 꼬리 심선과 떨어지는 불티는 불덩이·불티 뒤에 깐다(시안과 같은 순서)
+            if (true == trail.bHasPoints) trail.DrawCore(painter, tones);
+            shedParticles.Draw(painter, tones, darks, smokeColor);
+
             if (0.05f < _scale)
             {
                 DrawMotes(false);
@@ -480,6 +553,38 @@ namespace PresentationLayer.VFX
             if (x == _x && y == _y) return;
 
             painter.Dot(x, y, _color);
+        }
+
+        // 드랍 빛 꼬리: 기록이 있거나 직전까지 그렸을 때만 다시 만든다.
+        private void RebuildTrail()
+        {
+            if (null == trailRenderer || null == trailMesh) return;
+            if (false == trail.bHasPoints && false == trailRenderer.enabled) return;
+
+            trail.BuildRibbon(trailMesh, trailRenderer, trailRenderer.transform.worldToLocalMatrix, trailDuration, trailIntensity, trailWidth, trailMaterialIntensity);
+        }
+
+        // 드랍 비행 판단. 불씨 상태를 읽지 않고 루트 스케일과 Visual(부모) 높이로 정한다.
+        private void UpdateDropFlight(float _scale)
+        {
+            if (false == bDropTrail)
+            {
+                bDropFlight = false;
+                return;
+            }
+
+            // 시작: 스케일 0(Launch 직후 같은 프레임) 또는 Visual 높이 > 0(포물선 비행 중. 첫 관측 프레임에 스케일이 이미 자라 있어도 잡힌다).
+            // Visual 높이는 드랍 포물선에서만 0보다 크다(착지·흡입·제자리 배치는 0).
+            Transform visual = null != sortingSource ? sortingSource.transform : transform.parent;
+            float height = null != visual ? visual.localPosition.y : 0.0f;
+            if (DropStartScale > _scale || DropHeightEpsilon < height)
+            {
+                bDropFlight = true;
+                return;
+            }
+
+            // 끝: 스케일 1 + Visual 높이 0(착지)
+            if (true == bDropFlight && 0.999f <= _scale) bDropFlight = false;
         }
 
         // 바닥 붉은 빛: 불씨 발밑 타원. 안쪽이 더 밝고 맥동·번쩍임에 따라 숨 쉰다.
@@ -546,6 +651,13 @@ namespace PresentationLayer.VFX
             appliedSortingOrder = order;
             meshRenderer.sortingLayerID = layer;
             meshRenderer.sortingOrder = order;
+
+            // 빛 꼬리는 불덩이 바로 아래에 깐다
+            if (null != trailRenderer)
+            {
+                trailRenderer.sortingLayerID = layer;
+                trailRenderer.sortingOrder = order - 1;
+            }
         }
 
         // 불씨는 루트 스케일(튀어나옴 0 -> 1, 흡입 막바지 0.35)과 Visual 스케일(착지 찌그러짐)을 바꾼다. 픽셀은 월드 격자에 그려야 하므로
@@ -567,6 +679,7 @@ namespace PresentationLayer.VFX
         {
             if (null != meshRenderer && true == meshRenderer.enabled) meshRenderer.enabled = false;
             if (null != glowRenderer && true == glowRenderer.enabled) glowRenderer.enabled = false;
+            if (null != trailRenderer && true == trailRenderer.enabled) trailRenderer.enabled = false;
             meshVertexCount = -1;
             glowVertexCount = -1;
         }
@@ -589,6 +702,7 @@ namespace PresentationLayer.VFX
         {
             float dt = Mathf.Min(Time.deltaTime, MaxDeltaTime);
             float scale = AnchorScale();
+            UpdateDropFlight(scale);
 
             // 화면 밖이면 계산과 그리기를 모두 멈춘다. 다시 들어오면 이전 위치 없이 이어서 시작한다(순간 이동을 이동으로 보지 않게).
             Vector3 pos = transform.position;
@@ -596,6 +710,8 @@ namespace PresentationLayer.VFX
             {
                 HideMeshes();
                 bHasPrevious = false;
+                // 다시 들어왔을 때 화면 밖에서 지나간 자리의 드랍 꼬리가 남지 않게 비운다
+                trail.Clear();
                 return;
             }
 
@@ -638,6 +754,7 @@ namespace PresentationLayer.VFX
             if (0 < steps || -1 == meshVertexCount || pos != lastDrawPosition || scale != lastDrawScale)
             {
                 RebuildMesh(scale);
+                RebuildTrail();
                 lastDrawPosition = pos;
                 lastDrawScale = scale;
             }
@@ -674,6 +791,12 @@ namespace PresentationLayer.VFX
             {
                 Destroy(glowMesh);
                 glowMesh = null;
+            }
+
+            if (null != trailMesh)
+            {
+                Destroy(trailMesh);
+                trailMesh = null;
             }
         }
 
