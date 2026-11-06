@@ -302,6 +302,12 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             .SetLink(gameObject)
             .OnComplete(cachedSpecialRecoveryComplete);
 
+        PlayImpactShake();
+    }
+
+    // Reuse the revival shake without changing sprites or recovering HP.
+    public void PlayImpactShake()
+    {
         if (null != specialShakeTween && true == specialShakeTween.IsActive())
         {
             specialShakeTween.Kill();

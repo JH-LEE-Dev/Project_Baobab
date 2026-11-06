@@ -8,8 +8,9 @@ using UnityEngine;
 ///  1) M_OverheatEmber.mat: 정점 색(RGB) + 정점 알파(발광 세기)를 그리는 BrandWrapGlow 머티리얼. 바닥 붉은 빛은 모닥불의 가산 머티리얼을 같이 쓴다.
 ///  2) VFX_OverheatEmberAcquire / VFX_OverheatEmberExpire.prefab: 스텔라 범위 프리팹의 풀 규약 구조(루트 ParticleSystem + 메쉬 자식)를 복제해
 ///     VFX_OverheatEmberOneShot으로 교체
-///  3) OverheatEmber.prefab: Visual 아래에 EmberOrb(VFX_OverheatEmber) > EmberGlow(바닥 빛)를 붙이고 Visual의 임시 마름모 그림을 지운다
-///     (SpriteRenderer는 정렬 기준이라 남긴다)
+///  3) OverheatEmber.prefab: Visual 아래에 EmberOrb(VFX_OverheatEmber) > EmberGlow(바닥 빛), EmberTrail(드랍 빛 꼬리)을 붙이고
+///     Visual의 임시 마름모 그림을 지운다(SpriteRenderer는 정렬 기준이라 남긴다)
+///  5) M_OverheatEmberTrail.mat: 드랍 빛 꼬리용 EmberTrailAdditive 머티리얼(_Intensity 1)
 ///  4) GameInstaller.prefab: EmberItemController의 VFXComponent 풀에 두 태그를 등록하고 획득·소멸 태그 칸을 채운다(프리팹 값만, 코드 수정 없음)
 /// </summary>
 public static class OverheatEmberBuilder
@@ -17,6 +18,8 @@ public static class OverheatEmberBuilder
     private const string MaterialPath = "Assets/Graphics/VFX/Materials/M_OverheatEmber.mat";
     private const string GlowMaterialPath = "Assets/Graphics/VFX/Materials/M_CampfireGroundGlow.mat";
     private const string ShaderName = "Custom/VFX/BrandWrapGlow";
+    private const string TrailMaterialPath = "Assets/Graphics/VFX/Materials/M_OverheatEmberTrail.mat";
+    private const string TrailShaderName = "Custom/VFX/EmberTrailAdditive";
     private const string SourcePrefabPath = "Assets/Prefabs/VFX/Roguelike/VFX_StellaRange.prefab";
     private const string PrefabFolder = "Assets/Prefabs/VFX/Item/OverheatEmber";
     private const string AcquirePrefabPath = PrefabFolder + "/VFX_OverheatEmberAcquire.prefab";
@@ -36,9 +39,10 @@ public static class OverheatEmberBuilder
     {
         Material material = BuildMaterial();
         Material glowMaterial = AssetDatabase.LoadAssetAtPath<Material>(GlowMaterialPath);
-        if (null == material || null == glowMaterial)
+        Material trailMaterial = BuildTrailMaterial();
+        if (null == material || null == glowMaterial || null == trailMaterial)
         {
-            Debug.LogError("[OverheatEmberBuilder] 머티리얼을 준비하지 못했습니다: " + MaterialPath + " / " + GlowMaterialPath);
+            Debug.LogError("[OverheatEmberBuilder] 머티리얼을 준비하지 못했습니다: " + MaterialPath + " / " + GlowMaterialPath + " / " + TrailMaterialPath);
             return;
         }
 
@@ -48,7 +52,7 @@ public static class OverheatEmberBuilder
         if (null == acquire || null == expire) return;
 
         AssetDatabase.SaveAssets();
-        if (false == WireEmberPrefab(material, glowMaterial)) return;
+        if (false == WireEmberPrefab(material, glowMaterial, trailMaterial)) return;
         if (false == WireInstaller(acquire, expire)) return;
 
         AssetDatabase.SaveAssets();
@@ -78,6 +82,32 @@ public static class OverheatEmberBuilder
         // 몸통은 정점 알파 0(발광 1배)이라 색 단계가 그대로 남고, 불티·번쩍임만 블룸을 받는다
         material.SetFloat("_GlowMin", 1.0f);
         material.SetFloat("_GlowMax", 2.4f);
+        EditorUtility.SetDirty(material);
+        return material;
+    }
+
+    private static Material BuildTrailMaterial()
+    {
+        Shader shader = Shader.Find(TrailShaderName);
+        if (null == shader)
+        {
+            Debug.LogError("[OverheatEmberBuilder] 셰이더를 찾지 못했습니다: " + TrailShaderName);
+            return null;
+        }
+
+        Material material = AssetDatabase.LoadAssetAtPath<Material>(TrailMaterialPath);
+        if (null == material)
+        {
+            material = new Material(shader);
+            AssetDatabase.CreateAsset(material, TrailMaterialPath);
+        }
+        else if (material.shader != shader)
+        {
+            material.shader = shader;
+        }
+
+        // 정점 알파 1 = 세기 1. 시안의 원판 세기(최대 0.7)를 그대로 정점 알파로 넣는다
+        material.SetFloat("_Intensity", 1.0f);
         EditorUtility.SetDirty(material);
         return material;
     }
@@ -149,7 +179,7 @@ public static class OverheatEmberBuilder
         return AssetDatabase.LoadAssetAtPath<GameObject>(_path).GetComponent<ParticleSystem>();
     }
 
-    private static bool WireEmberPrefab(Material _material, Material _glowMaterial)
+    private static bool WireEmberPrefab(Material _material, Material _glowMaterial, Material _trailMaterial)
     {
         GameObject root = PrefabUtility.LoadPrefabContents(EmberPrefabPath);
 
@@ -173,6 +203,10 @@ public static class OverheatEmberBuilder
             MeshRenderer glowRenderer = EnsureMeshComponents(glowTransform.gameObject);
             glowRenderer.sharedMaterial = _glowMaterial;
 
+            Transform trailTransform = FindOrCreateChild(orbTransform, "EmberTrail");
+            MeshRenderer trailRenderer = EnsureMeshComponents(trailTransform.gameObject);
+            trailRenderer.sharedMaterial = _trailMaterial;
+
             VFX_OverheatEmber effect = orbTransform.GetComponent<VFX_OverheatEmber>();
             if (null == effect) effect = orbTransform.gameObject.AddComponent<VFX_OverheatEmber>();
 
@@ -180,6 +214,7 @@ public static class OverheatEmberBuilder
             so.FindProperty("groundAnchor").objectReferenceValue = root.transform;
             so.FindProperty("sortingSource").objectReferenceValue = sprite;
             so.FindProperty("glowRenderer").objectReferenceValue = glowRenderer;
+            so.FindProperty("trailRenderer").objectReferenceValue = trailRenderer;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             PrefabUtility.SaveAsPrefabAsset(root, EmberPrefabPath);

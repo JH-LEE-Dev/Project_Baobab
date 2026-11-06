@@ -121,6 +121,17 @@ public class UIView_Unit : UIView
             return;
 
         ProcessUnitHit(_treeObj, _treeObj.health, _treeObj.bDead, _treeObj.GetTransform(), treesYOffset);
+
+        // Compare this hit's actual HP loss, including the first hit before a bar existed.
+        // Shield-only damage and accumulated small hits do not trigger the shake.
+        float _maxHp = _treeObj.health.GetMaxHealth();
+        float _hpLost = _treeObj.health.GetPrevHealth() - _treeObj.health.GetCurrentHealth();
+        if (0.0f < _maxHp && _hpLost >= _maxHp * 0.4f
+            && activeHpBars.TryGetValue(_treeObj, out HUD_ShieldHPBar _bar)
+            && Time.frameCount != _bar.LastRevivalFrame)
+        {
+            _bar.PlayImpactShake();
+        }
     }
 
     /// <summary>

@@ -2011,9 +2011,10 @@ MonoBehaviour:
   plusVfx: {fileID: 4277153185598032201}
   flameVfx: {fileID: 5963997516456299194}
   revealDuration: 0.6
-  hideDuration: 0.25
+  hideDuration: 0.3
   revealOvershoot: 1.8
   campfireRevealDelay: 0.12
+  ellipseRevealDuration: 0.8
 --- !u!114 &4277153185598032201
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,5 +1,10 @@
 Shader "Custom/VFX/PixelQuadAdditive"
 {
+    Properties
+    {
+        _Intensity ("Intensity (alpha multiplier)", Float) = 1.0
+    }
+
     SubShader
     {
         Tags
@@ -26,6 +31,10 @@ Shader "Custom/VFX/PixelQuadAdditive"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+            CBUFFER_START(UnityPerMaterial)
+                half _Intensity;
+            CBUFFER_END
+
             struct Attributes
             {
                 float4 positionOS : POSITION;
@@ -46,10 +55,11 @@ Shader "Custom/VFX/PixelQuadAdditive"
                 return output;
             }
 
-            // 정점 색(RGB)에 정점 알파를 곱해 배경에 더한다. 바닥 불빛처럼 은은하게 밝히는 픽셀 쿼드용이다.
+            // 정점 색(RGB)에 정점 알파 x _Intensity를 곱해 배경에 더한다. 바닥 불빛처럼 은은하게 밝히는 픽셀 쿼드용이다.
+            // _Intensity는 메쉬를 다시 만들지 않고 전체 세기만 바꿀 때 MaterialPropertyBlock으로 넣는다(기본 1).
             half4 frag(Varyings input) : SV_Target
             {
-                return half4(input.color.rgb, input.color.a);
+                return half4(input.color.rgb, input.color.a * _Intensity);
             }
             ENDHLSL
         }
