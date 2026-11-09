@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: ca94e4fb9b664860b98ee4abfae514ea
+guid: 8a69633610f107c40a7a16157dc81a53
 TextureImporter:
   internalIDToNameTable:
   - first:
       213: -7781206004220612196
-    second: TreeHeatResist_0
+    second: OverheatGainBonus_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: TreeHeatResist_0
+      name: OverheatGainBonus_0
       rect:
         serializedVersion: 2
         x: 4
@@ -115,7 +115,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: b00edfcec6144ad80800000000000000
+      spriteID: 25916002fb8240f70800000000000000
       internalID: -7781206004220612196
       vertices: []
       indices: 
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      TreeHeatResist_0: -7781206004220612196
+      OverheatGainBonus_0: -7781206004220612196
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

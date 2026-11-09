@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: cbdac532df5743d1a785719f0beccc57
+guid: 8ac440fd65ae8484e9d4b00f28d142bb
 TextureImporter:
   internalIDToNameTable:
   - first:
       213: -7781206004220612196
-    second: EmberDropBonus_0
+    second: OverheatEfficiency_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: EmberDropBonus_0
+      name: OverheatEfficiency_0
       rect:
         serializedVersion: 2
         x: 4
@@ -115,7 +115,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: ba9c52cfa422427f0800000000000000
+      spriteID: 7c074217d53b42d70800000000000000
       internalID: -7781206004220612196
       vertices: []
       indices: 
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      EmberDropBonus_0: -7781206004220612196
+      OverheatEfficiency_0: -7781206004220612196
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

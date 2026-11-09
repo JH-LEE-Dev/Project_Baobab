@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: fa5c0350a47748dba95cc424ce346960
+guid: 0bd7bd5b67f079a4bafb5e5a8d8c18a8
 TextureImporter:
   internalIDToNameTable:
   - first:
       213: -7781206004220612196
-    second: Preheat_0
+    second: TreeHeatResist_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Preheat_0
+      name: TreeHeatResist_0
       rect:
         serializedVersion: 2
         x: 4
@@ -115,7 +115,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: fff2c4286b4f4fe30800000000000000
+      spriteID: b00edfcec6144ad80800000000000000
       internalID: -7781206004220612196
       vertices: []
       indices: 
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Preheat_0: -7781206004220612196
+      TreeHeatResist_0: -7781206004220612196
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
