@@ -204,17 +204,17 @@ public static class RoguelikeCardBuilder
 
     /// <summary>
     /// 카드용 프레임 팔레트 스왑 머티리얼 3종. 셰이더가 프레임의 5톤(안쪽 그림자·몸통·바깥 링·가운데 링·하이라이트)을 이 팔레트 5톤으로 치환한다.
-    /// 에메랄드 = 실버, 프리즘 = 어두운 보랏빛 + 무지개 링, 루비 = 붉은색. 몸통은 레벨 숫자와 아이콘 칸이 잘 읽히게 어둡게 둔다. 여러 번 실행해도 같은 에셋을 덮어쓴다.
+    /// 에메랄드 = 초록(MAX), 프리즘 = 어두운 보랏빛 + 무지개 링, 루비 = 붉은색. (옛 등급의 실버 머티리얼은 더 이상 만들지 않는다) 몸통은 레벨 숫자와 아이콘 칸이 잘 읽히게 어둡게 둔다. 여러 번 실행해도 같은 에셋을 덮어쓴다.
     /// </summary>
     private static Material[] BuildGradeFrameMaterials(int _w, int _h)
     {
         Shader shader = AssetDatabase.LoadAssetAtPath<Shader>(FrameShaderPath);
-        Material silver = GetOrCreateMaterial(MaterialDir + "/UI_CardGradeFrame_Silver.mat", shader);
+        Material emerald = GetOrCreateMaterial(MaterialDir + "/UI_CardGradeFrame_Emerald.mat", shader);
         Material prism = GetOrCreateMaterial(MaterialDir + "/UI_CardGradeFrame_Prism.mat", shader);
         Material ruby = GetOrCreateMaterial(MaterialDir + "/UI_CardGradeFrame_Ruby.mat", shader);
-        if (null == silver || null == prism || null == ruby) return new Material[3];
+        if (null == emerald || null == prism || null == ruby) return new Material[3];
 
-        Material[] all = { silver, prism, ruby };
+        Material[] all = { emerald, prism, ruby };
         for (int i = 0; i < all.Length; i++)
         {
             all[i].SetVector("_PixelSize", new Vector4(_w, _h, 0f, 0f));
@@ -223,7 +223,7 @@ public static class RoguelikeCardBuilder
             all[i].SetFloat("_Rainbow", 0f);
         }
 
-        SetTones(silver, new Color(0.20f, 0.23f, 0.29f), new Color(0.30f, 0.34f, 0.41f), new Color(0.50f, 0.55f, 0.63f), new Color(0.74f, 0.79f, 0.86f), new Color(0.95f, 0.97f, 1.00f));
+        SetTones(emerald, new Color(0.04f, 0.16f, 0.10f), new Color(0.06f, 0.27f, 0.17f), new Color(0.12f, 0.52f, 0.32f), new Color(0.30f, 0.80f, 0.52f), new Color(0.75f, 1.00f, 0.82f));
         SetTones(ruby, new Color(0.20f, 0.03f, 0.06f), new Color(0.34f, 0.05f, 0.09f), new Color(0.58f, 0.09f, 0.14f), new Color(0.86f, 0.22f, 0.24f), new Color(1.00f, 0.62f, 0.56f));
         SetTones(prism, new Color(0.14f, 0.12f, 0.22f), new Color(0.22f, 0.19f, 0.34f), new Color(0.55f, 0.50f, 0.80f), new Color(0.75f, 0.70f, 0.95f), new Color(0.95f, 0.93f, 1.00f));
         prism.SetFloat("_Rainbow", 1f);

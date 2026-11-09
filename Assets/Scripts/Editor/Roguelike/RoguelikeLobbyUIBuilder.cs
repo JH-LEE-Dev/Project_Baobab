@@ -209,13 +209,20 @@ public static class RoguelikeLobbyUIBuilder
             Button prev = ArrowButton("Prev", tabPlate, a.font, "◀", true);
             Button next = ArrowButton("Next", tabPlate, a.font, "▶", false);
 
+            // 점 3개(3x3, 간격 3)와 5x5 커서 - 첫 실행 언어 설정 팝업(UI_InitialSetupPopup)의 페이지 점과 같은 모양 · 크기. 색은 화면 스크립트가 정한다.
             Image[] dots = new Image[3];
             for (int i = 0; 3 > i; i++)
             {
-                RectTransform dot = Solid("Dot" + i, panel, MutedColor);
-                SetTop(dot, new Vector2(0.5f, 1f), new Vector2(-6f + i * 6f, -(Mathf.Ceil(PlateHeight * 0.5f) + 3f)), new Vector2(3f, 3f));
+                RectTransform dot = Solid("Dot" + i, panel, Color.white);
+                SetTop(dot, new Vector2(0.5f, 1f), new Vector2(-5.5f + i * 6f, -(Mathf.Ceil(PlateHeight * 0.5f) + 4.5f)), new Vector2(3f, 3f));
                 dots[i] = dot.GetComponent<Image>();
             }
+            RectTransform dotCursor = Solid("DotCursor", dots[0].rectTransform, Color.white);
+            dotCursor.anchorMin = new Vector2(0.5f, 0.5f);
+            dotCursor.anchorMax = new Vector2(0.5f, 0.5f);
+            dotCursor.pivot = new Vector2(0.5f, 0.5f);
+            dotCursor.sizeDelta = new Vector2(5f, 5f);
+            dotCursor.anchoredPosition = Vector2.zero;
 
             RectTransform rowRoot = TopLeft("Rows", panel, panelWidth - 20f, 5f * 50f);
             rowRoot.anchoredPosition = new Vector2(10f, -(Mathf.Ceil(PlateHeight * 0.5f) + 12f));
@@ -244,6 +251,7 @@ public static class RoguelikeLobbyUIBuilder
             Set(so, "prevTabButton", prev);
             Set(so, "nextTabButton", next);
             SetArray(so, "tabDots", dots[0], dots[1], dots[2]);
+            Set(so, "tabDotCursor", dotCursor);
             Set(so, "rowRoot", rowRoot);
             Set(so, "rowTemplate", rowTemplate);
             Set(so, "emptyText", empty);
@@ -323,24 +331,26 @@ public static class RoguelikeLobbyUIBuilder
             UI_MainMenuButton records = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Records");
             UI_MainMenuButton back = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Back");
 
-            // 최고 기록판: 화면 오른쪽 가운데(오른쪽 여백 16)
+            // 최고 기록판: 화면 오른쪽 위 기준으로 로고 아래에 놓고 아래로만 늘어난다(오른쪽 여백 16).
+            // 640×360 기준 로고 이미지(높이 102, 화면 가운데에서 100 위 - UIView_MainMenu의 UI_Logo moveDistanceY) 아래끝 약 131
+            // → 명판(판 위로 절반 걸침) 위쪽이 약 4px 떨어지도록 판 위끝 148. 판(높이 약 143) 아래끝 약 291은 디스코드 아이콘(위끝 약 299) 위다.
             RectTransform panelRoot = new GameObject("RoguelikeRecordPanel", typeof(RectTransform)).GetComponent<RectTransform>();
             panelRoot.gameObject.layer = LayerMask.NameToLayer("UI");
             panelRoot.SetParent(rootRect, false);
-            panelRoot.anchorMin = new Vector2(1f, 0.5f);
-            panelRoot.anchorMax = new Vector2(1f, 0.5f);
-            panelRoot.pivot = new Vector2(1f, 0.5f);
+            panelRoot.anchorMin = new Vector2(1f, 1f);
+            panelRoot.anchorMax = new Vector2(1f, 1f);
+            panelRoot.pivot = new Vector2(1f, 1f);
             panelRoot.sizeDelta = Vector2.zero;
-            panelRoot.anchoredPosition = new Vector2(-16f, 20f);
+            panelRoot.anchoredPosition = new Vector2(-16f, -148f);
             CanvasGroup group = panelRoot.gameObject.AddComponent<CanvasGroup>();
             group.blocksRaycasts = false;
 
             RectTransform panel = new GameObject("Panel", typeof(RectTransform)).GetComponent<RectTransform>();
             panel.gameObject.layer = LayerMask.NameToLayer("UI");
             panel.SetParent(panelRoot, false);
-            panel.anchorMin = new Vector2(1f, 0.5f);
-            panel.anchorMax = new Vector2(1f, 0.5f);
-            panel.pivot = new Vector2(1f, 0.5f);
+            panel.anchorMin = new Vector2(1f, 1f);
+            panel.anchorMax = new Vector2(1f, 1f);
+            panel.pivot = new Vector2(1f, 1f);
             panel.sizeDelta = new Vector2(272f, 150f);
             panel.anchoredPosition = Vector2.zero;
             Image panelImage = panel.gameObject.AddComponent<Image>();

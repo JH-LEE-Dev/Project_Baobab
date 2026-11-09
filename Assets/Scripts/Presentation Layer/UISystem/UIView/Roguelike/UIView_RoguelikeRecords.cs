@@ -10,7 +10,7 @@ using UnityEngine.UI;
 /// 메인메뉴의 로그라이크 하위 메뉴 "기록"에서 연다(로비 폐지 - LobbyRemoval_AppLayer_Request.md). 로그라이크 씬에서도 같은 프리팹이 그대로 동작한다.
 ///
 /// [구성 - 시안 v3] 어두운 딤 위 가운데 한 장(Panel_Book):
-///   위쪽 가장자리의 탭 명판 "◀ 현재 탭 ▶" + 아래 점 3개(현재 탭 금색). 탭 이름이 언어마다 길이가 크게 달라 세 개를 나란히 두지 않는다.
+///   위쪽 가장자리의 탭 명판 "◀ 현재 탭 ▶" + 아래 점 3개와 점 커서(첫 실행 언어 설정 팝업과 같은 넘김 연출). 탭 이름이 언어마다 길이가 크게 달라 세 개를 나란히 두지 않는다.
 ///   명판 폭은 18개 언어 중 가장 긴 탭 이름 기준(SpecTabPlateWidth)과 현재 언어 폭 중 큰 값이라 탭을 넘겨도 크기가 흔들리지 않는다.
 ///   본문은 UI_RoguelikeRecordRow 최대 5줄(최근 기록은 1줄). 기록이 없으면 안내 문구. 아래에 키 안내(탭 전환 · 뒤로, 아이콘은 입력 장치를 따른다).
 ///
@@ -29,7 +29,6 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     private const float TabArrowWidth = 22f;
     private const float RowHeight = 46f;
     private const float RowGap = 4f;
-    private const float PanelPadding = 10f;
 
     private const float DimFadeSeconds = 0.18f;
     private const float PanelEnterSeconds = 0.2f;
@@ -42,8 +41,16 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     private const string HintBackKey = "Roguelike_Hint_Back";
     private const string MaxKey = "Roguelike_CardLevel_Max";
 
-    private static readonly Color DotOnColor = new Color(1f, 0.83f, 0.35f, 1f);
-    private static readonly Color DotOffColor = new Color(0.42f, 0.32f, 0.22f, 1f);
+    // 탭 넘김 피드백 - 첫 실행 언어 설정 팝업(UI_InitialSetupPopup)의 언어 넘김과 같은 값이다.
+    //   점: 현재 점만 흰색, 나머지 회청색. 5x5 커서가 새 점으로 0.12초 OutBack으로 미끄러진다.
+    //   이름: 누른 방향에서 12px 정수 픽셀로 미끄러져 들어오며(0.14초 OutBack) 금색에서 원래 색으로(0.22초 OutQuad). 스케일 · 알파는 쓰지 않는다.
+    private static readonly Color DotOnColor = Color.white;
+    private static readonly Color DotOffColor = new Color(0.35f, 0.36f, 0.45f, 1f);
+    private static readonly Color TabFlashColor = new Color(1f, 0.835f, 0.31f, 1f);
+    private const float TabSlideDistance = 12f;
+    private const float TabSlideSeconds = 0.14f;
+    private const float TabColorSeconds = 0.22f;
+    private const float DotCursorSeconds = 0.12f;
 
     public event Action ClosedEvent;
 
@@ -66,6 +73,8 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     [SerializeField] private Button prevTabButton;
     [SerializeField] private Button nextTabButton;
     [SerializeField] private Image[] tabDots = new Image[TabCount];
+    [SerializeField, Tooltip("현재 탭의 점 위에서 미끄러지는 5x5 커서(언어 설정 팝업과 같은 모양).")]
+    private RectTransform tabDotCursor;
 
     [Header("본문")]
     [SerializeField] private RectTransform rowRoot;
@@ -87,6 +96,9 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     private bool bStandaloneClose;
     private Vector2 panelBasePosition;
     private bool bPanelBaseCaptured;
+    private Vector2 tabTextBasePosition;
+    private Color tabTextBaseColor;
+    private bool bTabTextBaseCaptured;
 
     // 캐싱 델리게이트
     private Action<int> tabShiftHandler;
@@ -153,6 +165,8 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         currentTab = 0;
         ApplyStaticTexts();
         RefreshTab();
+        ResetTabFeedback();
+        SnapDotCursor();
         PlayEnter();
     }
 
@@ -180,6 +194,8 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         UnbindInput();
         if (null != dimGroup) dimGroup.DOKill();
         if (null != panelRoot) panelRoot.DOKill();
+        ResetTabFeedback();
+        if (null != tabDotCursor) tabDotCursor.DOKill();
         ClosedEvent?.Invoke();
     }
 
@@ -196,12 +212,15 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     {
         currentTab = Mathf.Clamp(_tab, 0, TabCount - 1);
         RefreshTab();
+        ResetTabFeedback();
+        SnapDotCursor();
     }
 
     private void ShowPrevTab()
     {
         currentTab = (currentTab + TabCount - 1) % TabCount;
         RefreshTab();
+        PlayTabSwitchFeedback(-1);
         Sound.PlayUI(SoundID.MainClick);
     }
 
@@ -209,6 +228,7 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     {
         currentTab = (currentTab + 1) % TabCount;
         RefreshTab();
+        PlayTabSwitchFeedback(1);
         Sound.PlayUI(SoundID.MainClick);
     }
 
@@ -249,6 +269,68 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         if (null != emptyText) emptyText.gameObject.SetActive(0 == count);
 
         LayoutRows();
+    }
+
+    // // 탭 넘김 피드백 (언어 설정 팝업과 같은 연출)
+
+    private void CaptureTabTextBase()
+    {
+        if (true == bTabTextBaseCaptured || null == tabText) return;
+        tabTextBasePosition = tabText.rectTransform.anchoredPosition;
+        tabTextBaseColor = tabText.color;
+        bTabTextBaseCaptured = true;
+    }
+
+    private void ResetTabFeedback()
+    {
+        CaptureTabTextBase();
+        if (null == tabText) return;
+
+        tabText.rectTransform.DOKill();
+        tabText.DOKill();
+        tabText.rectTransform.anchoredPosition = tabTextBasePosition;
+        tabText.color = tabTextBaseColor;
+    }
+
+    /// <summary>탭 이름은 누른 방향에서 정수 픽셀로 미끄러져 들어오며 금색에서 원래 색으로 돌아오고, 점 커서는 새 점으로 미끄러진다.</summary>
+    private void PlayTabSwitchFeedback(int _direction)
+    {
+        ResetTabFeedback();
+
+        if (null != tabText)
+        {
+            float dir = 0 < _direction ? 1f : -1f;
+            tabText.rectTransform.anchoredPosition = new Vector2(tabTextBasePosition.x + dir * TabSlideDistance, tabTextBasePosition.y);
+            tabText.rectTransform.DOAnchorPosX(tabTextBasePosition.x, TabSlideSeconds, true).SetEase(Ease.OutBack).SetUpdate(true);
+
+            Color from = TabFlashColor;
+            from.a = tabTextBaseColor.a;
+            tabText.color = from;
+            tabText.DOColor(tabTextBaseColor, TabColorSeconds).SetEase(Ease.OutQuad).SetUpdate(true);
+        }
+
+        // 커서: 새 점의 자식으로 옮기되 월드 위치를 유지해 이전 자리에서 출발하고, 로컬 (0, 0)으로 미끄러진다.
+        if (true == HasDotCursorTarget())
+        {
+            tabDotCursor.DOKill();
+            tabDotCursor.SetParent(tabDots[currentTab].rectTransform, true);
+            tabDotCursor.DOAnchorPos(Vector2.zero, DotCursorSeconds).SetEase(Ease.OutBack).SetUpdate(true);
+        }
+    }
+
+    private bool HasDotCursorTarget()
+    {
+        return null != tabDotCursor && tabDots.Length > currentTab && null != tabDots[currentTab];
+    }
+
+    /// <summary>커서를 현재 점에 바로 붙인다(연출 없이). 점 중심이 .5 픽셀이라 5x5 커서도 같은 중심에 놓여 가장자리가 정수 픽셀에 떨어진다.</summary>
+    private void SnapDotCursor()
+    {
+        if (false == HasDotCursorTarget()) return;
+
+        tabDotCursor.DOKill();
+        tabDotCursor.SetParent(tabDots[currentTab].rectTransform, false);
+        tabDotCursor.anchoredPosition = Vector2.zero;
     }
 
     private UI_RoguelikeRecordRow GetRow(int _index)
@@ -370,6 +452,8 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         UnbindInput();
         if (null != dimGroup) dimGroup.DOKill();
         if (null != panelRoot) panelRoot.DOKill();
+        if (null != tabText) { tabText.rectTransform.DOKill(); tabText.DOKill(); }
+        if (null != tabDotCursor) tabDotCursor.DOKill();
         if (null != dimButton) dimButton.onClick.RemoveListener(RequestClose);
         if (null != prevTabButton) prevTabButton.onClick.RemoveListener(ShowPrevTab);
         if (null != nextTabButton) nextTabButton.onClick.RemoveListener(ShowNextTab);

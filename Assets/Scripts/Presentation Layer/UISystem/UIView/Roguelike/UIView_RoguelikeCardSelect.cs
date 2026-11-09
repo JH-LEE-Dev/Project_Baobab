@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -19,13 +20,17 @@ using UnityEngine.UI;
 ///   → 연출이 끝나면 뷰가 _onComplete를 부른다 → 시스템이 다음 단계(지형 전환/전투)로 넘어간다.
 ///   _onComplete를 부르지 않으면 시스템이 다음으로 넘어가지 못한다(대기 상한 뒤 강제 진행).
 ///
-/// [구성] 어두운 딤 배경 위에 카드 줄(UI_RoguelikeCardSlot 최대 slots.Length칸) - 그 바로 아래 가운데 리롤 아이콘 버튼 - 설명 패널.
+/// [구성] 어두운 딤 배경 위에 카드 줄(UI_RoguelikeCardSlot 최대 slots.Length칸) - 그 바로 아래 가운데 리롤 글자 버튼 - 설명 패널.
 ///   리롤 버튼은 플레이어 눈에 띄도록 카드 줄과 붙여 둔다(기획서의 좌하단 고정 배치 대신 - 구현 결정).
-///   버튼에는 글자가 없다. 이름·설명은 커서가 올라가면 설명 패널이 보여 준다.
+///   리롤 포커스 표시는 공용 커서 박스만 쓴다(별도 테두리 없음). 이름·설명은 커서가 올라가면 설명 패널이 보여 준다.
 ///   열리면 제일 왼쪽 카드가 호버된 상태로 시작한다. 마우스 호버·패드 선택은 같은 포커스로 모아 같은 연출(위로 6px + 커서 박스)을 준다.
 ///
 /// [시간] 이 화면이 떠 있는 동안에도 보유 카드 창(Time.timeScale = 0)이나 ESC 메뉴로 일시정지가 걸릴 수 있다.
 ///   모든 연출은 unscaled 시간으로 돌린다(슬롯·이 클래스 Update). 구매 연출 대기 상한은 게임 시간이라 그동안 함께 멈춘다.
+///
+/// [폴리싱 - 시안 v4] 카드 줄 위 제목 명판(카드를 고르세요), 왼쪽 위 WAVE 배지(SetWave - 시스템이 부르기 전에는 숨김),
+///   리롤은 카드 줄 바로 아래 가운데 글자 버튼(아이콘 + 리롤 + 남은 횟수, 폭은 18개 언어 중 가장 긴 문구 기준), 설명 패널은 리롤 버튼 아래(카드 선택 모드 - 폭 고정 · 높이는 카드마다).
+///   키 안내는 패드 모드에서만 왼쪽 아래에 보인다(키보드 · 마우스 모드는 마우스 GUI 조작 - 키보드 단축키를 두지 않는다).
 ///
 /// [아직 없는 것] 카드 뒷면·레어 프레임 리소스, 레어 등장 연출, 자물쇠 해제, 보관함 보관 연출, 효과음(호출 지점만 아래 주석).
 /// </summary>
@@ -49,12 +54,18 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private const float ShakeStepSeconds = 0.03f;
     private const float DisabledButtonAlpha = 0.4f;
     private const float RerollFocusSeconds = 0.1f;
-    private static readonly Color RerollIdleColor = new Color(0.22f, 0.14f, 0.1f, 0.95f);
-    private static readonly Color RerollFocusColor = new Color(0.36f, 0.24f, 0.16f, 1f);
+    private static readonly Color RerollIdleColor = new Color(0.9f, 0.88f, 0.84f, 1f);
+    private static readonly Color RerollFocusColor = Color.white;
     private const int CursorPadding = 4;
-    private const float ButtonHeight = 18f;
-    private const float RerollButtonWidth = 26f;
-    private const float DescGap = 6f;
+    // 18개 언어 중 가장 긴 리롤 문구(독일어 "Neu würfeln")로 잰 버튼 최소 폭 = 글자 + 아이콘 · 배지 · 여백.
+    private const float SpecRerollWidth = 140f;
+    private const float RerollPaddingWidth = 60f;
+    // 18개 언어 중 가장 긴 제목 문구로 잰 명판 최소 폭.
+    private const float SpecTitlePlateWidth = 200f;
+    private const float TitleGap = 6f;
+    private const float SelectDescWidth = 520f;
+    private const float DescGap = 10f;
+    private const float RerollGap = 8f;
     private const float ScreenMargin = 6f;
     private const float HoverHeadroom = 6f;
     private static readonly int[] ShakePattern = { -2, 2, -2, 2, -1, 1, 0 };
@@ -80,6 +91,18 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     [SerializeField] private UI_RoguelikeSelectRelay rerollRelay;
     [SerializeField] private RectTransform rerollIconRect;
     [SerializeField] private Image rerollBackground;
+    [SerializeField] private TMP_Text rerollLabel;
+    [SerializeField] private TMP_Text rerollCountText;
+
+    [Header("머리 줄 · 키 안내")]
+    [SerializeField] private RectTransform titlePlate;
+    [SerializeField] private TMP_Text titleText;
+    [SerializeField] private RectTransform waveBadge;
+    [SerializeField] private TMP_Text waveText;
+    [SerializeField] private RectTransform padGuideRow;
+    [SerializeField] private TMP_Text hintMoveText;
+    [SerializeField] private TMP_Text hintSelectText;
+    [SerializeField] private UI_KeyboardImage[] padGuideImages = new UI_KeyboardImage[0];
 
     //상태 변수
     private EPhase phase;
@@ -92,7 +115,13 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private LocalizationManager localizationManager;
     private Action languageChangedHandler;
     private float contentDefaultY;
-    private float buttonTopY;
+    private bool bWaveSet;
+    private Action<EInputDeviceType> deviceChangedHandler;
+    private readonly System.Text.StringBuilder waveBuilder = new System.Text.StringBuilder(16);
+
+    private const string PickKey = "Roguelike_CardSelect_Pick";
+    private const string HintMoveKey = "Roguelike_Hint_Move";
+    private const string HintSelectKey = "Roguelike_Hint_Select";
     private CursorMotionSettings cursorMotion;
     private float rerollFocusAmount;
     private float rerollIconBaseY;
@@ -104,6 +133,19 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     public IReadOnlyList<RoguelikeCardViewData> Offers => offers;
     /// <summary>이번 선택 단계에서 리롤을 쓸 수 있는가(선택 단계마다 1회).</summary>
     public bool bCanReroll { get; private set; }
+
+    /// <summary>
+    /// [시스템 연결 지점] 왼쪽 위 WAVE 배지. 언리밋이면 Unlimit-N. 한 번도 부르지 않으면 배지를 숨긴다(LobbyRemoval_AppLayer_Request.md).
+    /// </summary>
+    public void SetWave(int _waveNumber, bool _bUnlimit, int _unlimitIndex)
+    {
+        bWaveSet = true;
+        waveBuilder.Clear();
+        if (true == _bUnlimit) waveBuilder.Append("Unlimit-").Append(_unlimitIndex);
+        else waveBuilder.Append("WAVE ").Append(_waveNumber);
+        if (null != waveText) waveText.text = waveBuilder.ToString();
+        if (null != waveBadge) waveBadge.gameObject.SetActive(true);
+    }
 
     /// <summary>
     /// 선택 화면을 연다. 화면이 켜지고 카드 등장 연출을 시작한다.
@@ -218,6 +260,9 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         UI_RoguelikeSelectRelay first = count > 0 ? slots[0].Relay : rerollRelay;
         SetFocus(first, true);
         SelectInEventSystem(first);
+
+        // 처음 포커스한 카드의 설명 높이로 바로 맞춘다(열리자마자 높이가 바뀌는 연출이 보이지 않게).
+        descPanel.SnapHeight();
     }
 
     // // 입력 전달
@@ -269,23 +314,35 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     }
 
     /// <summary>
-    /// 리롤 아이콘 버튼 배치. 카드 줄 바로 아래 가운데에 고정 크기로 놓는다(글자·비용이 없어 폭이 변하지 않는다).
-    /// 설명 패널을 그 아래에 이어 붙인 뒤 화면 안에 들어오도록 위치를 조정한다.
+    /// 제목 명판 · 리롤 버튼 · 설명 패널 배치.
+    ///   제목: 카드 줄(호버로 떠오른 높이 포함) 바로 위 가운데. 폭은 18개 언어 최소 폭과 현재 문구 폭 중 큰 값.
+    ///   리롤: 카드 줄 바로 아래 가운데. 폭은 18개 언어 최소 폭과 현재 문구 폭 중 큰 값.
+    ///   설명 패널: 리롤 버튼 바로 아래(아래로 자라므로 리롤 버튼 위치는 설명 길이와 상관없이 고정). 그 뒤 화면 안에 들어오도록 Content 위치를 조정한다.
     /// </summary>
     private void LayoutControls()
     {
         RectTransform rerollRect = (RectTransform)rerollButton.transform;
-        float y = buttonTopY - ButtonHeight;
+        float rerollWidth = SpecRerollWidth;
+        if (null != rerollLabel) rerollWidth = Mathf.Max(rerollWidth, Mathf.Ceil(rerollLabel.GetPreferredValues(rerollLabel.text, 10000f, 10000f).x) + RerollPaddingWidth);
+        // 가운데 피벗이라 폭을 짝수로 맞춰 양 끝이 정수 픽셀에 오게 한다.
+        rerollRect.sizeDelta = new Vector2(Mathf.Ceil(rerollWidth * 0.5f) * 2f, rerollRect.sizeDelta.y);
+        rerollIconBaseY = rerollIconRect.anchoredPosition.y - Mathf.Round(rerollFocusAmount);
 
-        rerollRect.sizeDelta = new Vector2(RerollButtonWidth, ButtonHeight);
-        rerollRect.anchoredPosition = new Vector2(Mathf.Floor(-RerollButtonWidth * 0.5f), y);
+        if (null != titlePlate && null != titleText)
+        {
+            float cardHeight = 0 < slots.Length ? ((RectTransform)slots[0].transform).rect.height : 0f;
+            float plateWidth = Mathf.Max(SpecTitlePlateWidth, Mathf.Ceil(titleText.GetPreferredValues(titleText.text, 10000f, 10000f).x) + 32f);
+            titlePlate.sizeDelta = new Vector2(Mathf.Ceil(plateWidth * 0.5f) * 2f, titlePlate.sizeDelta.y);
+            titlePlate.anchoredPosition = new Vector2(0f, Mathf.Round(cardRowY + cardHeight + UI_RoguelikeCard.HoverLiftPixels + TitleGap));
+        }
 
-        Vector2 iconSize = rerollIconRect.rect.size;
-        rerollIconBaseY = Mathf.Floor((ButtonHeight - iconSize.y) * 0.5f);
-        rerollIconRect.anchoredPosition = new Vector2(Mathf.Floor((RerollButtonWidth - iconSize.x) * 0.5f), rerollIconBaseY + Mathf.Round(rerollFocusAmount));
+        float rerollHeight = rerollRect.sizeDelta.y;
+        float rerollTop = cardRowY - RerollGap;
+        rerollRect.anchoredPosition = new Vector2(0f, Mathf.Round(rerollTop - rerollHeight * 0.5f));
 
-        ((RectTransform)descPanel.transform).anchoredPosition = new Vector2(0f, y - DescGap);
-        FitContentVertically(y - DescGap - PrepareDescriptionPanel());
+        float y = rerollTop - rerollHeight - DescGap;
+        ((RectTransform)descPanel.transform).anchoredPosition = new Vector2(0f, y);
+        FitContentVertically(y - PrepareDescriptionPanel());
     }
 
     /// <summary>
@@ -297,17 +354,14 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     {
         RectTransform screen = (RectTransform)contentRoot.parent;
         descPanel.SetMaxWidth(screen.rect.width - ScreenMargin * 2f);
-        descPanel.SetFixedWidth(0f);
 
         GetRerollInfo(out string rerollName, out string rerollDescription);
 
-        float width = UI_RoguelikeCardDescPanel.MinPanelWidth;
-        for (int i = 0; i < slotCount; i++) width = Mathf.Max(width, descPanel.MeasureCardWidth(slots[i].Data));
-        width = Mathf.Max(width, descPanel.MeasureInfoWidth(rerollName, rerollDescription));
-        descPanel.SetFixedWidth(width);
+        // 카드 선택 모드: 폭은 고정(화면이 좁으면 화면 폭 안). 높이는 카드마다 바뀌지만 화면 배치는 가장 큰 높이 기준으로 잡는다.
+        descPanel.SetFixedWidth(Mathf.Min(SelectDescWidth, screen.rect.width - ScreenMargin * 2f));
 
         descPanel.Clear();
-        float height = ((RectTransform)descPanel.transform).sizeDelta.y;
+        float height = descPanel.TargetHeight;
         for (int i = 0; i < slotCount; i++) height = Mathf.Max(height, descPanel.MeasureCardHeight(slots[i].Data));
         height = Mathf.Max(height, descPanel.MeasureInfoHeight(rerollName, rerollDescription));
 
@@ -327,7 +381,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         if (0f >= halfHeight) return;
 
         float cardHeight = 0 < slots.Length ? ((RectTransform)slots[0].transform).rect.height : 0f;
-        float topLocal = cardRowY + cardHeight + UI_RoguelikeCard.HoverLiftPixels + HoverHeadroom;
+        float titleHeight = null != titlePlate ? titlePlate.sizeDelta.y + TitleGap : 0f;
+        float topLocal = cardRowY + cardHeight + UI_RoguelikeCard.HoverLiftPixels + HoverHeadroom + titleHeight;
 
         float minY = -halfHeight + ScreenMargin - _bottomLocal;
         float maxY = halfHeight - ScreenMargin - topLocal;
@@ -344,12 +399,16 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     {
         rerollButton.interactable = bCanReroll;
         rerollGroup.alpha = bCanReroll ? 1f : DisabledButtonAlpha;
+        if (null != rerollCountText) rerollCountText.text = bCanReroll ? "1" : "0";
     }
 
     private void SetControlsVisible(bool _bVisible)
     {
         rerollButton.gameObject.SetActive(_bVisible);
         descPanel.gameObject.SetActive(_bVisible);
+        if (null != titlePlate) titlePlate.gameObject.SetActive(_bVisible);
+        if (null != waveBadge) waveBadge.gameObject.SetActive(_bVisible && bWaveSet);
+        RefreshPadGuide(_bVisible);
     }
 
     /// <summary>
@@ -440,8 +499,13 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         if (null == cursor) return;
 
         // 카드는 뒤집히는 동안 커서 박스를 띄우지 않는다(착지하는 순간 OnSlotLanded에서 나타난다).
+        // 이전 대상(리롤 직후의 리롤 버튼 등)에 커서 박스가 남지 않게 착지 전까지 감춘다.
         UI_RoguelikeCardSlot slot = FindSlotByRelay(_relay);
-        if (null != slot && slot.IsIntroPlaying) return;
+        if (null != slot && slot.IsIntroPlaying)
+        {
+            HideCursor();
+            return;
+        }
 
         RectTransform target = _relay.CursorTarget;
         cursor.Show(target, target.rect.size + new Vector2(CursorPadding, CursorPadding), Vector2.zero, cursorMotion);
@@ -499,6 +563,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
     private void OnLanguageChanged()
     {
+        ApplyStaticTexts();
         LayoutControls();
         RefreshDescription();
     }
@@ -633,6 +698,28 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         callback?.Invoke();
     }
 
+    /// <summary>제목 · 리롤 글자 · 키 안내 문구. 언어가 바뀌면 다시 채운다.</summary>
+    private void ApplyStaticTexts()
+    {
+        if (null != titleText) titleText.text = null != localizationManager ? localizationManager.GetText(PickKey) : string.Empty;
+        if (null != rerollLabel) rerollLabel.text = Localize(LocKeys.RoguelikeUI.roguelikeCardSelectReroll);
+        if (null != hintMoveText) hintMoveText.text = null != localizationManager ? localizationManager.GetText(HintMoveKey) : string.Empty;
+        if (null != hintSelectText) hintSelectText.text = null != localizationManager ? localizationManager.GetText(HintSelectKey) : string.Empty;
+    }
+
+    /// <summary>키 안내는 패드 모드에서만 보인다(키보드 · 마우스 모드는 마우스 GUI 조작).</summary>
+    private void RefreshPadGuide(bool _bVisible)
+    {
+        if (null == padGuideRow) return;
+        bool bPad = null != viewCtx && null != viewCtx.inputManager && true == viewCtx.inputManager.IsGamepadMode;
+        padGuideRow.gameObject.SetActive(_bVisible && bPad);
+    }
+
+    private void OnDeviceChanged(EInputDeviceType _device)
+    {
+        RefreshPadGuide(null != titlePlate && titlePlate.gameObject.activeSelf);
+    }
+
     protected override void OnShowContent()
     {
         UnsubscribeLanguage();
@@ -642,6 +729,19 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         descPanel.Initialize(localizationManager);
         rerollFocusAmount = 0f;
         rerollBackground.color = RerollIdleColor;
+        ApplyStaticTexts();
+
+        InputManager input = viewCtx?.inputManager;
+        if (null != input && null != input.inputReader)
+        {
+            input.inputReader.InputDeviceChangedEvent -= deviceChangedHandler;
+            input.inputReader.InputDeviceChangedEvent += deviceChangedHandler;
+        }
+        for (int i = 0; padGuideImages.Length > i; i++)
+        {
+            if (null != padGuideImages[i]) padGuideImages[i].Initialize(input);
+        }
+
         LayoutControls();
         pendingComplete = null;
         phase = EPhase.Idle;
@@ -662,6 +762,10 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         FindSlotByRelay(focusedRelay)?.SetFocused(false);
         focusedRelay = null;
         UnsubscribeLanguage();
+        if (null != viewCtx && null != viewCtx.inputManager && null != viewCtx.inputManager.inputReader)
+        {
+            viewCtx.inputManager.inputReader.InputDeviceChangedEvent -= deviceChangedHandler;
+        }
 
         // 닫힌 화면 안의 오브젝트가 EventSystem 선택으로 남지 않게 정리한다(비활성 오브젝트가 선택된 채로 남으면 다른 UI의 패드 조작이 먹통이 될 수 있다).
         EventSystem eventSystem = EventSystem.current;
@@ -686,10 +790,10 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         languageChangedHandler = OnLanguageChanged;
         cursorMotion = CursorMotionSettings.Card;
 
-        // 프리팹에 잡아 둔 기준값(버튼 위쪽, Content 기본 위치). 이후 레이아웃은 이 값에서 다시 계산한다.
-        RectTransform rerollRect = (RectTransform)rerollButton.transform;
-        buttonTopY = rerollRect.anchoredPosition.y + rerollRect.sizeDelta.y;
+        // 프리팹에 잡아 둔 Content 기본 위치. 이후 레이아웃은 이 값에서 다시 계산한다.
         contentDefaultY = contentRoot.anchoredPosition.y;
+        deviceChangedHandler = OnDeviceChanged;
+        if (null != waveBadge) waveBadge.gameObject.SetActive(false);
 
         for (int i = 0; i < slots.Length; i++)
         {

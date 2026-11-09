@@ -4580,7 +4580,7 @@ MonoBehaviour:
   maxLevelSprite: {fileID: 0}
   rubyBadgeSprite: {fileID: 0}
   gradeFrameMaterials:
-  - {fileID: 2100000, guid: 6cd45e960664ae94495e673c1126b3a7, type: 2}
+  - {fileID: 2100000, guid: 11ffe4245bf6c1247a79e8073d66b34d, type: 2}
   - {fileID: 2100000, guid: 0d03e20d0e022b04ca04077540b73936, type: 2}
   - {fileID: 2100000, guid: 20dc91ddfb506a74198dad4f4810e4b5, type: 2}
   backSprite: {fileID: 21300000, guid: b01e6f7acd4a5194e93906f3e0c35b1f, type: 3}

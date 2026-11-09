@@ -1,3 +1,4 @@
+using System;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -7,7 +8,8 @@ using UnityEngine;
 ///   깃발 · 최고 웨이브(n / 30) / 무한대 · 언리밋 최고(Unlimit-n) / 나무 · 최다 벌목(n). 기록이 없으면 "기록 없음".
 /// 이름과 값을 한 줄에 나란히 두지 않는다(언어마다 이름 길이가 크게 달라 겹친다) - 이름 줄 아래에 값 줄을 같은 왼쪽 선으로 둔다.
 /// 폭은 18개 언어 중 가장 긴 이름 기준 최소값(SpecWidth)과 현재 언어 폭 중 큰 값이고, 판의 오른쪽 끝을 기준으로 왼쪽으로 늘어난다.
-/// 저장 파일은 읽기만 한다(RoguelikeRecordViewBuilder). 나타남 · 사라짐은 오른쪽에서 정수 픽셀로 미끄러지는 연출(unscaled)이다.
+/// 저장 파일은 읽기만 한다(RoguelikeRecordViewBuilder). 나타남 · 사라짐은 오른쪽 화면 밖에서 정수 픽셀로 미끄러지는 연출(unscaled)이다.
+/// 사라짐이 끝나면 완료 콜백을 부른다(기록 창은 이 판이 화면 밖으로 빠진 뒤에 열린다 - UI_MainMenu).
 /// </summary>
 public class UI_RoguelikeMenuRecordPanel : MonoBehaviour
 {
@@ -16,7 +18,8 @@ public class UI_RoguelikeMenuRecordPanel : MonoBehaviour
     private const float SpecTitlePlateWidth = 216f;
     private const int TotalWaves = 30;
     private const float RowGap = 4f;
-    private const float SlideDistance = 24f;
+    // 화면 밖까지: 판 폭 + 오른쪽 여백(16) + 여유.
+    private const float SlideMargin = 32f;
     private const float SlideSeconds = 0.22f;
 
     private const string TitleKey = "Roguelike_Menu_BestTitle";
@@ -42,6 +45,7 @@ public class UI_RoguelikeMenuRecordPanel : MonoBehaviour
     private Vector2 basePosition;
     private bool bBaseCaptured;
     private TweenCallback deactivateCallback;
+    private Action hideCompletedCallback;
 
     public void Initialize(LocalizationManager _localizationManager)
     {
@@ -76,7 +80,7 @@ public class UI_RoguelikeMenuRecordPanel : MonoBehaviour
 
         RectTransform rect = (RectTransform)transform;
         rect.DOKill();
-        rect.anchoredPosition = basePosition + new Vector2(SlideDistance, 0f);
+        rect.anchoredPosition = basePosition + new Vector2(GetSlideDistance(), 0f);
         rect.DOAnchorPos(basePosition, SlideSeconds, true).SetEase(Ease.OutCubic).SetUpdate(true);
 
         if (null != group)
@@ -87,14 +91,20 @@ public class UI_RoguelikeMenuRecordPanel : MonoBehaviour
         }
     }
 
-    public void PlayHide()
+    /// <summary>오른쪽 화면 밖으로 빠진 뒤 숨는다. 끝나면(이미 숨어 있으면 바로) _onCompleted를 부른다.</summary>
+    public void PlayHide(Action _onCompleted = null)
     {
-        if (false == gameObject.activeSelf) return;
+        hideCompletedCallback = _onCompleted;
+        if (false == gameObject.activeSelf)
+        {
+            InvokeHideCompleted();
+            return;
+        }
         CaptureBase();
 
         RectTransform rect = (RectTransform)transform;
         rect.DOKill();
-        rect.DOAnchorPos(basePosition + new Vector2(SlideDistance, 0f), SlideSeconds, true).SetEase(Ease.InCubic).SetUpdate(true).OnComplete(deactivateCallback);
+        rect.DOAnchorPos(basePosition + new Vector2(GetSlideDistance(), 0f), SlideSeconds, true).SetEase(Ease.InCubic).SetUpdate(true).OnComplete(deactivateCallback);
 
         if (null != group)
         {
@@ -105,6 +115,7 @@ public class UI_RoguelikeMenuRecordPanel : MonoBehaviour
 
     public void HideImmediate()
     {
+        hideCompletedCallback = null;
         CaptureBase();
         ((RectTransform)transform).DOKill();
         if (null != group) group.DOKill();
@@ -197,6 +208,20 @@ public class UI_RoguelikeMenuRecordPanel : MonoBehaviour
     {
         ((RectTransform)transform).anchoredPosition = basePosition;
         gameObject.SetActive(false);
+        InvokeHideCompleted();
+    }
+
+    private void InvokeHideCompleted()
+    {
+        Action callback = hideCompletedCallback;
+        hideCompletedCallback = null;
+        callback?.Invoke();
+    }
+
+    private float GetSlideDistance()
+    {
+        float width = null != panel ? panel.sizeDelta.x : SpecWidth;
+        return Mathf.Ceil(width + SlideMargin);
     }
 
     private void OnDestroy()
