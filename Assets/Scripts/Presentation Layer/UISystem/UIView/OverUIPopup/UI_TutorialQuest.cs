@@ -1286,7 +1286,7 @@ public class UI_TutorialQuest : MonoBehaviour
                 _desc = string.Empty;
                 break;
             case TutorialStep.SporeForestGuide:
-                _title = GetLocalizedOrFallback(SporeForestGuideTitleKey, "포자막을 제거해야 나무에게 피해를 입힐 수 있습니다!");
+                _title = GetLocalizedOrFallback(SporeForestGuideTitleKey, "포자막을 제거하고 나무를 벌목하세요!");
                 _desc = GetLocalizedOrFallback(SporeForestGuideDescKey, "포자막은 계속 회복됩니다!");
                 break;
             case TutorialStep.StarrootForestGuide:
