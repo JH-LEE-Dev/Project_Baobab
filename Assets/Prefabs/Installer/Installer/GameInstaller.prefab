@@ -3292,7 +3292,7 @@ MonoBehaviour:
   - forestType: 5
     decAmount: 30
   - forestType: 6
-    decAmount: 50
+    decAmount: 60
   - forestType: 7
     decAmount: 120
   - forestType: 8

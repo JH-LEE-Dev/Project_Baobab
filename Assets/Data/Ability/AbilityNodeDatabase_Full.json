@@ -142,11 +142,11 @@
             "nameLocId": 121,
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": 7,
-            "gridY": 2,
+            "gridX": 5,
+            "gridY": -2,
             "parents": [
                 {
-                    "skillType": "BountifulTree1",
+                    "skillType": "LogValue1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -158,7 +158,7 @@
             "nameLocId": 123,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": 5,
+            "gridX": 3,
             "gridY": 2,
             "parents": [
                 {
@@ -174,11 +174,17 @@
             "nameLocId": 125,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": 9,
-            "gridY": 4,
+            "gridX": -7,
+            "gridY": -4,
             "parents": [
                 {
-                    "skillType": "WoodenTransportBoxExpansion2",
+                    "skillType": "MovementSpeed",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "PickupRange1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -191,10 +197,10 @@
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
             "gridX": 7,
-            "gridY": 4,
+            "gridY": 6,
             "parents": [
                 {
-                    "skillType": "WoodenTransportBoxExpansion1",
+                    "skillType": "LogCapacityIncrease1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -223,7 +229,7 @@
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
             "gridX": 7,
-            "gridY": 6,
+            "gridY": 4,
             "parents": [
                 {
                     "skillType": "LogCapacityIncrease1",
@@ -238,7 +244,7 @@
             "nameLocId": 133,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": 5,
+            "gridX": 3,
             "gridY": -2,
             "parents": [
                 {
@@ -254,8 +260,8 @@
             "nameLocId": 135,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": 7,
-            "gridY": -2,
+            "gridX": 5,
+            "gridY": -4,
             "parents": [
                 {
                     "skillType": "SawmillLogStorageExpansion1",
@@ -271,10 +277,10 @@
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
             "gridX": 7,
-            "gridY": -4,
+            "gridY": -6,
             "parents": [
                 {
-                    "skillType": "SawmillLogStorageExpansion1",
+                    "skillType": "LogProcessingSpeed1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -286,8 +292,8 @@
             "nameLocId": 139,
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": 9,
-            "gridY": -2,
+            "gridX": 7,
+            "gridY": -4,
             "parents": [
                 {
                     "skillType": "LogProcessingSpeed1",
@@ -302,8 +308,8 @@
             "nameLocId": 141,
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
-            "gridX": 9,
-            "gridY": -4,
+            "gridX": 5,
+            "gridY": -6,
             "parents": [
                 {
                     "skillType": "LogProcessingSpeed1",
@@ -319,7 +325,7 @@
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
             "gridX": 5,
-            "gridY": 0,
+            "gridY": 2,
             "parents": [
                 {
                     "skillType": "LogValue1",
@@ -334,8 +340,8 @@
             "nameLocId": 145,
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": 9,
-            "gridY": 2,
+            "gridX": 7,
+            "gridY": -2,
             "parents": [
                 {
                     "skillType": "LogValue2",
@@ -366,11 +372,17 @@
             "nameLocId": 149,
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
-            "gridX": 7,
+            "gridX": 5,
             "gridY": 0,
             "parents": [
                 {
                     "skillType": "BountifulTree1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "LogValue1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -382,8 +394,8 @@
             "nameLocId": 151,
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
-            "gridX": 9,
-            "gridY": 0,
+            "gridX": 7,
+            "gridY": 2,
             "parents": [
                 {
                     "skillType": "LogValue2",
@@ -447,7 +459,7 @@
             "levelBadge": "III",
             "requiredPrestigeLevel": 0,
             "gridX": 0,
-            "gridY": 9,
+            "gridY": 7,
             "parents": [
                 {
                     "skillType": "AxeDamage2",
@@ -575,7 +587,7 @@
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
             "gridX": -9,
-            "gridY": -4,
+            "gridY": -2,
             "parents": [
                 {
                     "skillType": "MovementSpeed",
@@ -699,7 +711,7 @@
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
             "gridX": -2,
-            "gridY": 11,
+            "gridY": 9,
             "parents": [
                 {
                     "skillType": "AxeDamage3",
@@ -731,7 +743,7 @@
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
             "gridX": 2,
-            "gridY": 11,
+            "gridY": 9,
             "parents": [
                 {
                     "skillType": "AxeDamage3",
@@ -747,7 +759,7 @@
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": 4,
-            "gridY": 11,
+            "gridY": 9,
             "parents": [
                 {
                     "skillType": "AxeRange1",
@@ -763,7 +775,7 @@
             "levelBadge": "IV",
             "requiredPrestigeLevel": 0,
             "gridX": 0,
-            "gridY": 13,
+            "gridY": 9,
             "parents": [
                 {
                     "skillType": "AxeDamage3",
@@ -779,7 +791,7 @@
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
             "gridX": 2,
-            "gridY": 15,
+            "gridY": 11,
             "parents": [
                 {
                     "skillType": "AxeDamage4",
@@ -795,7 +807,7 @@
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
             "gridX": 4,
-            "gridY": 15,
+            "gridY": 11,
             "parents": [
                 {
                     "skillType": "AxeCriticalChance2",
@@ -810,8 +822,8 @@
             "nameLocId": 194,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": -2,
-            "gridY": 15,
+            "gridX": -4,
+            "gridY": 13,
             "parents": [
                 {
                     "skillType": "AxeDamage4",
@@ -826,8 +838,8 @@
             "nameLocId": 195,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": -4,
-            "gridY": 17,
+            "gridX": -6,
+            "gridY": 15,
             "parents": [
                 {
                     "skillType": "Boomerang1",
@@ -842,8 +854,8 @@
             "nameLocId": 196,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": -4,
-            "gridY": 15,
+            "gridX": -6,
+            "gridY": 13,
             "parents": [
                 {
                     "skillType": "Boomerang1",
@@ -858,11 +870,17 @@
             "nameLocId": 197,
             "levelBadge": "III",
             "requiredPrestigeLevel": 0,
-            "gridX": 11,
+            "gridX": 7,
             "gridY": 0,
             "parents": [
                 {
                     "skillType": "BountifulTree2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "LogValue2",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -874,8 +892,8 @@
             "nameLocId": 198,
             "levelBadge": "III",
             "requiredPrestigeLevel": 0,
-            "gridX": 13,
-            "gridY": 0,
+            "gridX": 9,
+            "gridY": 2,
             "parents": [
                 {
                     "skillType": "LogValue3",
@@ -890,11 +908,11 @@
             "nameLocId": 199,
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": 11,
-            "gridY": 2,
+            "gridX": 9,
+            "gridY": -2,
             "parents": [
                 {
-                    "skillType": "BountifulTree2",
+                    "skillType": "LogValue3",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -906,11 +924,11 @@
             "nameLocId": 200,
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": 13,
-            "gridY": 2,
+            "gridX": 9,
+            "gridY": -4,
             "parents": [
                 {
-                    "skillType": "LogValue3",
+                    "skillType": "GoldTreeChance",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -922,8 +940,8 @@
             "nameLocId": 201,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": 15,
-            "gridY": 2,
+            "gridX": 11,
+            "gridY": 4,
             "parents": [
                 {
                     "skillType": "BountifulTree3",
@@ -938,8 +956,8 @@
             "nameLocId": 202,
             "levelBadge": "III",
             "requiredPrestigeLevel": 0,
-            "gridX": 11,
-            "gridY": -6,
+            "gridX": 7,
+            "gridY": -8,
             "parents": [
                 {
                     "skillType": "LogProcessingSpeed2",
@@ -954,7 +972,7 @@
             "nameLocId": 203,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": 7,
+            "gridX": 9,
             "gridY": -6,
             "parents": [
                 {
@@ -970,8 +988,8 @@
             "nameLocId": 204,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": 11,
-            "gridY": -4,
+            "gridX": 5,
+            "gridY": -8,
             "parents": [
                 {
                     "skillType": "LogProcessingSpeed2",
@@ -986,8 +1004,8 @@
             "nameLocId": 205,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": 11,
-            "gridY": -2,
+            "gridX": 9,
+            "gridY": 4,
             "parents": [
                 {
                     "skillType": "BountifulTree2",
@@ -1104,8 +1122,8 @@
             "nameLocId": 216,
             "levelBadge": "IV",
             "requiredPrestigeLevel": 0,
-            "gridX": 13,
-            "gridY": -8,
+            "gridX": 9,
+            "gridY": -10,
             "parents": [
                 {
                     "skillType": "LogProcessingSpeed3",
@@ -1168,8 +1186,8 @@
             "nameLocId": 220,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": 4,
-            "gridY": 13,
+            "gridX": 6,
+            "gridY": 11,
             "parents": [
                 {
                     "skillType": "AxeCriticalDamage2",
@@ -1222,11 +1240,17 @@
             "nameLocId": 235,
             "levelBadge": "IV",
             "requiredPrestigeLevel": 0,
-            "gridX": 15,
+            "gridX": 9,
             "gridY": 0,
             "parents": [
                 {
                     "skillType": "BountifulTree3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "LogValue3",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -1238,8 +1262,8 @@
             "nameLocId": 236,
             "levelBadge": "VI",
             "requiredPrestigeLevel": 0,
-            "gridX": 17,
-            "gridY": 0,
+            "gridX": 11,
+            "gridY": 2,
             "parents": [
                 {
                     "skillType": "LogValue4",
@@ -1254,8 +1278,8 @@
             "nameLocId": 237,
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": 17,
-            "gridY": 2,
+            "gridX": 11,
+            "gridY": -2,
             "parents": [
                 {
                     "skillType": "LogValue4",
@@ -1271,7 +1295,7 @@
             "levelBadge": "V",
             "requiredPrestigeLevel": 0,
             "gridX": 0,
-            "gridY": 17,
+            "gridY": 11,
             "parents": [
                 {
                     "skillType": "AxeDamage4",
@@ -1287,7 +1311,7 @@
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
             "gridX": 2,
-            "gridY": 19,
+            "gridY": 13,
             "parents": [
                 {
                     "skillType": "AxeDamage5",
@@ -1302,7 +1326,7 @@
             "nameLocId": 241,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": 4,
+            "gridX": 6,
             "gridY": 9,
             "parents": [
                 {
@@ -1325,7 +1349,7 @@
             "levelBadge": "III",
             "requiredPrestigeLevel": 0,
             "gridX": -2,
-            "gridY": 19,
+            "gridY": 13,
             "parents": [
                 {
                     "skillType": "AxeDamage5",
@@ -1341,7 +1365,7 @@
             "levelBadge": "III",
             "requiredPrestigeLevel": 0,
             "gridX": -4,
-            "gridY": 19,
+            "gridY": 15,
             "parents": [
                 {
                     "skillType": "AxeDurability3",
