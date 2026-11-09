@@ -43,17 +43,14 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private List<int> puddleComponentBuffer = new List<int>(500);
     private List<int> puddleBorderBuffer = new List<int>(200);
 
-    // ── 물 웅덩이별 균일 애니메이션 오브젝트 배치용 ──
-    // 물 애니메이션 오브젝트(SpawnWaterAnimatedObj)를 타일 단위 독립 확률로 뽑으면
-    // 작은 웅덩이는 운이 나빠 하나도 안 뽑히는 경우가 생긴다.
-    // 그래서 연결된 물 덩어리(웅덩이) 단위로 목표 개수를 계산해 그 안에서만 랜덤 분배한다.
+    // ── 물 웅덩이별 물 장식 배치용 (PlaceWaterAnimatedObjects 참고) ──
+    // 연결된 물 덩어리(웅덩이) 단위로 목표 개수를 계산해 그 안에서 자리를 고른다.
     // isOceanConnectedWater로 "바다(섬과 연결된 물)"와 "웅덩이(섬 내부 고립된 물)"를 구분해서
     // 서로 다른 밀도를 적용한다 — 거리(mapRadius) 기준이 아니라 실제 연결 여부 기준이다.
     private bool[] deepWaterTileFlags;
     private bool[] waterCompVisited;
     private Queue<int> waterCompQueue = new Queue<int>(2000);
-    private List<int> pondDeepBuffer = new List<int>(500);
-    private List<int> seaDeepBuffer = new List<int>(200);
+    private List<int> waterCompCells = new List<int>(500);
 
     [Header("육지 타일 밀도 설정")]
     [SerializeField, Range(0f, 1f)] private float sandDensity = 0.1f;
@@ -125,9 +122,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private TileBase[] extBloomWaterDecoTilesCache;
     private TileBase[] extWaterDecoTilesCache;
     private int extTilesCacheSize = -1;
-    // 물 애니메이션 오브젝트 배치 콜백. 람다가 this(필드)를 캡처해 호출마다 새로 만들어지므로 한 번만 만들어 둔다.
-    private Action<Vector3> spawnWaterAnimatedObjAction;
-    private Action<Vector3> spawnWaterAnimatedOtherTypeObjAction;
     private int[] cellToIndex;
     private bool[] isShoreline;
     private float halfCellY;
@@ -453,6 +447,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         GenerateNoiseMap();
         DetermineSpawns();
         ApplySmallInlandSandPatches();
+        bWaterDecoGridReady = false;
         ApplyTiles();
         ApplyOuterWaterTiles();
 
@@ -1760,33 +1755,44 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         if (groundStencilTilemap != null) groundStencilTilemap.SetTilesBlock(b, groundStencilTiles);
     }
 
-    // ── 웅덩이(연결된 물 덩어리) 단위 애니메이션 오브젝트 균일 분배 ──
-    // 기존에는 깊은 물 타일마다 독립적으로 확률을 굴려 SpawnWaterAnimatedObj를 호출했기 때문에
-    // 작은 웅덩이는 확률이 전부 빗나가면 애니메이션 오브젝트가 하나도 안 생길 수 있었다.
-    // 물 타일을 4방향 연결 컴포넌트(웅덩이)로 묶은 뒤, 그 웅덩이에 속한 깊은 물 타일 수에 비례한
-    // 목표 개수를 계산해서 웅덩이 안에서만 랜덤하게 뽑아 스폰한다.
+    // ── 웅덩이(연결된 물 덩어리) 단위 물 장식 배치 ──
+    // 물 타일을 4방향 연결 컴포넌트(웅덩이)로 묶은 뒤, 그 웅덩이의 물 칸 수(바다는 깊은 물 칸 수)에 비례한
+    // 목표 개수를 계산해서 웅덩이 안에서만 자리를 골라 스폰한다.
     // "바다"와 "웅덩이"는 거리(mapRadius)가 아니라 isOceanConnectedWater(섬과 물리적으로 연결됐는지)로
     // 구분한다 — 섬 외부를 채우는 바다와 섬 내부에 고립된 웅덩이가 실제로 다른 것이기 때문이다.
+    //
+    // 자리: 물 장식은 Objects 층이라 타일보다 위에 그려진다. 장식의 불투명 픽셀이 육지 타일이나 물가 그림
+    // (물 타일 가장자리 거품·모서리 타일)에 걸치면 땅이나 물가 위에 떠 보인다. 예전에는 "둘레 8칸이 모두 물인 칸"의
+    // 위 꼭짓점에만 놓아 이를 피했는데, 폭이 2~3칸인 웅덩이는 그런 칸이 없어 장식이 하나도 생기지 않았다
+    // (190칸 맵 실측: 웅덩이 39개 중 20개). 지금은 웅덩이의 모든 물 칸을 후보로 두고, 장식 프리팹의 실제 모양
+    // (모든 프레임의 불투명 픽셀, DecoSpritePatternAnimator.WaterFootprintRows)이 한 픽셀도 물가·육지 픽셀에
+    // 닿지 않는 픽셀 단위 자리만 고른다(IsWaterDecoSpotClear).
+    // 고르게 퍼지도록 후보 여럿 중 이미 놓인 장식에서 가장 먼 자리를 고른다(best-candidate).
+    // 웅덩이는 최소 2개(서로 다른 종류)를 노리고, 무작위 후보가 모두 빗나가면 웅덩이 전체를 촘촘히 훑는다.
+    // 종류는 웅덩이 안·맵 전체에서 덜 쓴 것부터 골라 골고루 나오게 한다(PlaceOneWaterDeco).
+    // 장식이 들어갈 깨끗한 수면이 아예 없는 웅덩이(폭 1칸 물길 등)는 비워 둔다.
     private void PlaceWaterAnimatedObjects(int _size)
     {
-        if (animatedObjGenerator == null) return;
+        if (animatedObjGenerator == null || stageTileData == null) return;
 
-        float waterAnimatedObjDensity = stageTileData != null ? stageTileData.WaterAnimatedObjDensity : 0f;
-        float waterAnimatedOtherTypeObjDensity = stageTileData != null ? stageTileData.WaterAnimatedOtherTypeObjDensity : 0f;
-        float waterAnimatedObjSeaDensity = stageTileData != null ? stageTileData.WaterAnimatedObjSeaDensity : 0f;
-        float waterAnimatedOtherTypeObjSeaDensity = stageTileData != null ? stageTileData.WaterAnimatedOtherTypeObjSeaDensity : 0f;
+        float waterAnimatedObjDensity = stageTileData.WaterAnimatedObjDensity;
+        float waterAnimatedOtherTypeObjDensity = stageTileData.WaterAnimatedOtherTypeObjDensity;
+        float waterAnimatedObjSeaDensity = stageTileData.WaterAnimatedObjSeaDensity;
+        float waterAnimatedOtherTypeObjSeaDensity = stageTileData.WaterAnimatedOtherTypeObjSeaDensity;
 
+        PrepareWaterDecoGrid();
+        PrepareWaterDecoTypes();
         Array.Clear(waterCompVisited, 0, _size);
 
         for (int i = 0; i < _size; i++)
         {
             if (waterCompVisited[i] || waterTiles[i] == null) continue;
 
-            pondDeepBuffer.Clear();
-            seaDeepBuffer.Clear();
+            waterCompCells.Clear();
             waterCompQueue.Clear();
             waterCompQueue.Enqueue(i);
             waterCompVisited[i] = true;
+            int deepCount = 0;
 
             while (waterCompQueue.Count > 0)
             {
@@ -1794,10 +1800,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 int cx = curr % width;
                 int cy = curr / width;
 
-                if (deepWaterTileFlags[curr])
-                {
-                    (isOceanConnectedWater[curr] ? seaDeepBuffer : pondDeepBuffer).Add(curr);
-                }
+                waterCompCells.Add(curr);
+                if (deepWaterTileFlags[curr]) deepCount++;
 
                 TryEnqueueWaterCompCell(cx + 1, cy);
                 TryEnqueueWaterCompCell(cx - 1, cy);
@@ -1805,14 +1809,43 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 TryEnqueueWaterCompCell(cx, cy - 1);
             }
 
-            if (spawnWaterAnimatedObjAction == null)
+            // 한 컴포넌트는 모두 바다이거나 모두 웅덩이다(같은 4방향 연결로 묶이므로).
+            // 웅덩이는 물 칸 전체 수를 기준으로 개수를 정한다. 장식은 픽셀 단위로 맨 수면 어디에나 놓이므로
+            // 깊은 물 칸 수로 세면 폭이 좁은 웅덩이일수록 실제 넓이보다 훨씬 적게 나온다.
+            bool bSea = isOceanConnectedWater[i];
+            int poolSize = bSea ? deepCount : waterCompCells.Count;
+            float densityA = bSea ? waterAnimatedObjSeaDensity : waterAnimatedObjDensity;
+            float densityB = bSea ? waterAnimatedOtherTypeObjSeaDensity : waterAnimatedOtherTypeObjDensity;
+
+            // 두 타입(A, B)의 목표 개수는 각각 독립적으로 계산한다 — 그래야 두 밀도가 서로의 실효 밀도를 깎아먹지 않는다.
+            // 둘의 합이 풀 크기를 넘을 때만 B를 깎는다.
+            int countA = ComputeDistributedCount(poolSize, densityA);
+            int countB = ComputeDistributedCount(poolSize, densityB);
+            if (countA + countB > poolSize) countB = Mathf.Max(0, poolSize - countA);
+
+            // 웅덩이 하나에 한 종류만 보이지 않도록, 종류가 둘 이상이면 웅덩이마다 최소 2개(서로 다른 종류)를 노린다.
+            // 자리가 없으면 들어가는 만큼만 놓는다.
+            int pondMinCount = Mathf.Min(WaterDecoPondMinCount, waterDecoTypes.Count);
+            if (false == bSea && countA > 0 && countA < pondMinCount) countA = pondMinCount;
+
+            placedWaterDecos.Clear();
+            if (waterDecoCompTypeUses.Length > 0) Array.Clear(waterDecoCompTypeUses, 0, waterDecoCompTypeUses.Length);
+
+            for (int k = 0; k < countA; k++)
             {
-                spawnWaterAnimatedObjAction = pos => animatedObjGenerator.SpawnWaterAnimatedObj(pos);
-                spawnWaterAnimatedOtherTypeObjAction = pos => animatedObjGenerator.SpawnWaterAnimatedOtherTypeObj(pos);
+                // 웅덩이의 최소 개수까지는 무작위 후보가 빗나가도 웅덩이 전체를 훑어 자리를 찾는다.
+                bool bExhaustive = false == bSea && placedWaterDecos.Count < pondMinCount;
+                if (false == PlaceOneWaterDeco(bSea, bExhaustive)) break;
             }
 
-            SpawnTwoWaterAnimatedTypes(pondDeepBuffer, waterAnimatedObjDensity, spawnWaterAnimatedObjAction, waterAnimatedOtherTypeObjDensity, spawnWaterAnimatedOtherTypeObjAction);
-            SpawnTwoWaterAnimatedTypes(seaDeepBuffer, waterAnimatedObjSeaDensity, spawnWaterAnimatedObjAction, waterAnimatedOtherTypeObjSeaDensity, spawnWaterAnimatedOtherTypeObjAction);
+            bool bExhaustiveFallback = false == bSea;
+            for (int k = 0; k < countB; k++)
+            {
+                if (false == TryFindWaterDecoSpot(GetFallbackWaterDecoFootprint(), bExhaustiveFallback && placedWaterDecos.Count == 0, out Vector2 pos)) break;
+
+                AddPlacedWaterDeco(pos, GetFallbackWaterDecoFootprint());
+                animatedObjGenerator.SpawnWaterAnimatedOtherTypeObj(pos);
+            }
         }
     }
 
@@ -1826,8 +1859,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         waterCompQueue.Enqueue(idx);
     }
 
-    // 웅덩이 크기 * 밀도의 기댓값을 정수부 + 소수부 확률적 반올림으로 변환하되,
-    // 웅덩이가 존재하고(깊은 물 타일 1칸 이상) 밀도가 0보다 크면 최소 1개는 항상 보장한다.
+    // 풀 크기(웅덩이는 물 칸 수, 바다는 깊은 물 칸 수) * 밀도의 기댓값을 정수부 + 소수부 확률적 반올림으로 변환하되,
+    // 풀이 1칸 이상이고 밀도가 0보다 크면 최소 1개는 항상 보장한다.
     // (기댓값만 따르면 작은 웅덩이는 기댓값 자체가 1 미만이라 거의 항상 0개가 되어,
     //  타일별 독립 확률로 뽑던 기존 방식과 통계적으로 별 차이가 없었다.)
     private int ComputeDistributedCount(int _poolSize, float _density)
@@ -1844,44 +1877,517 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         return Mathf.Min(intPart, _poolSize);
     }
 
-    // _candidates(웅덩이에 속한 깊은 물 타일 목록) 전체를 기준으로 두 타입(A, B)의 목표 개수를
-    // 각각 독립적으로 계산한다. 즉 A가 몇 개를 차지하든 B의 계산에는 영향을 주지 않는다 —
-    // 그래야 두 밀도가 서로의 실효 밀도를 깎아먹지 않는다.
-    // 둘의 합이 풀 크기를 넘어서 물리적으로 둘 다 원하는 만큼 채울 자리가 없을 때만
-    // (오버서브스크라이브 상황에서만) B를 깎아서 겹치지 않게 한다.
-    private void SpawnTwoWaterAnimatedTypes(List<int> _candidates, float _densityA, System.Action<Vector3> _spawnA, float _densityB, System.Action<Vector3> _spawnB)
+    // ── 물가 픽셀 모델 ──
+    // 칸 좌표(u, v): 물 칸 수면 중심이 0, 가장자리가 ±0.5. +u = x+1 이웃(화면 오른쪽 위), +v = y+1 이웃(화면 왼쪽 위).
+    // 아래 값은 스테이지 1~4의 물·육지 타일 그림에서 잰 것이다(네 스테이지 모두 모양이 같다). 타일 그림을 바꾸면 다시 재야 한다.
+    //  - 물 타일 윗면 마름모는 칸 중심보다 1px 위에 그려진다(WaterSurfaceOffsetPixels).
+    //  - 뒤쪽(+u, +v) 이웃이 육지면 물 타일 가장자리 거품이 11/64칸 지점부터, 앞쪽(-u, -v)이면 15/64칸 지점부터 그려진다.
+    //  - 대각선 이웃만 육지면 모서리 타일(WaterCornerTilemap, GetWaterCornerTile과 같은 조건)이 같은 깊이의 귀퉁이를 덮는다.
+    //  - 육지 타일은 윗면이 반 칸(8px) 솟은 블록이고 앞에 있는 타일이 나중에 그려진다. 그래서 앞쪽(화면 아래) 육지 블록은
+    //    뒤에 있는 물 칸을 덮고, 뒤쪽 육지 블록의 옆면은 물 타일에 가려진다.
+    // 190칸 맵 전체를 실제로 렌더해 대조했을 때 이 모델이 물가로 판정하지 못한 픽셀은 경계 반올림 1px뿐이었고,
+    // 그 1px은 ShoreEdgeEpsilon으로 물가 쪽에 넣는다(남는 쪽은 언제나 물가로 보는 쪽, 즉 안전한 쪽이다).
+    private const int TilePixelWidth = 32;
+    private const float WaterSurfaceOffsetPixels = 1f;
+    private const float ShoreBackFoamStart = 11f / 64f;
+    private const float ShoreFrontFoamStart = 15f / 64f;
+    private const float ShoreEdgeEpsilon = 1f / 256f;
+
+    // 장식 하나에 볼 유효 후보 수(많을수록 더 고르게 퍼진다)와 무작위 후보를 뽑는 최대 횟수.
+    private const int WaterDecoCandidatesPerPick = 12;
+    private const int WaterDecoMaxRandomTries = 64;
+    // 무작위 후보가 모두 빗나갔을 때 한 칸을 훑는 격자(가로·세로 칸 수).
+    private const int WaterDecoLatticeSteps = 8;
+    // 장식끼리 붙어 보이지 않도록 띄우는 픽셀 수.
+    private const float WaterDecoGapPixels = 2f;
+
+    private sealed class WaterDecoFootprint
     {
-        int n = _candidates.Count;
-        if (n == 0) return;
-
-        int countA = ComputeDistributedCount(n, _densityA);
-        int countB = ComputeDistributedCount(n, _densityB);
-
-        if (countA + countB > n)
-        {
-            countB = Mathf.Max(0, n - countA);
-        }
-
-        SpawnFromRange(_candidates, 0, countA, _spawnA);
-        SpawnFromRange(_candidates, countA, countB, _spawnB);
+        // 피벗 기준 월드 오프셋(픽셀 중심). 테두리 픽셀이 앞에 있어 걸리는 자리를 빨리 버린다.
+        public Vector2[] points;
+        // 피벗 기준 픽셀 가장자리까지의 범위(장식끼리 간격 판정용).
+        public Vector2 min;
+        public Vector2 max;
+        public float pixelWorld;
     }
 
-    // _candidates의 [_offset, _offset+_count) 구간을 부분 Fisher-Yates로 채운 뒤 그 위치들에 스폰한다.
-    // _candidates는 호출마다 재사용되는 버퍼이므로 여기서 순서를 바꿔도 안전하다.
-    private void SpawnFromRange(List<int> _candidates, int _offset, int _count, System.Action<Vector3> _spawnAction)
+    private struct PlacedWaterDeco
     {
-        if (_count <= 0) return;
+        public Vector2 position;
+        public Vector2 min;
+        public Vector2 max;
+    }
 
-        int n = _candidates.Count;
-        for (int k = _offset; k < _offset + _count; k++)
+    private readonly Dictionary<DecoSpritePatternAnimator, WaterDecoFootprint> waterDecoFootprints = new Dictionary<DecoSpritePatternAnimator, WaterDecoFootprint>(8);
+    private WaterDecoFootprint fallbackWaterDecoFootprint;
+    private readonly List<PlacedWaterDeco> placedWaterDecos = new List<PlacedWaterDeco>(16);
+    // 웅덩이마다 노리는 최소 장식 수(종류가 그보다 적으면 종류 수만큼).
+    private const int WaterDecoPondMinCount = 2;
+
+    // 중복을 뺀 A 타입 프리팹과 종류별 누적 개수(웅덩이·바다 따로, 맵마다 비움), 지금 웅덩이에서 종류별로 놓은 수.
+    private readonly List<DecoSpritePatternAnimator> waterDecoTypes = new List<DecoSpritePatternAnimator>(8);
+    private int[] waterDecoPondTypeTotals = Array.Empty<int>();
+    private int[] waterDecoSeaTypeTotals = Array.Empty<int>();
+    private int[] waterDecoCompTypeUses = Array.Empty<int>();
+    private bool[] waterDecoTypeTried = Array.Empty<bool>();
+
+    // 칸마다 이웃 8칸의 육지 여부(아래 비트). 물 타일이 없는 칸은 WaterDecoCellBlocked.
+    private const int LandPosU = 1 << 0;
+    private const int LandPosV = 1 << 1;
+    private const int LandNegU = 1 << 2;
+    private const int LandNegV = 1 << 3;
+    private const int LandPosUPosV = 1 << 4;
+    private const int LandPosUNegV = 1 << 5;
+    private const int LandNegUNegV = 1 << 6;
+    private const int LandNegUPosV = 1 << 7;
+    private const ushort WaterDecoCellBlocked = 1 << 8;
+    private ushort[] waterDecoCellMasks = Array.Empty<ushort>();
+    // 이번 맵에서 PrepareWaterDecoGrid·PrepareWaterDecoTypes를 했는지(맵 밖 바다 장식이 다시 하지 않도록). GenerateMap이 비운다.
+    private bool bWaterDecoGridReady;
+
+    private Vector2 waterGridOrigin;
+    private Vector2 waterGridAxisU;
+    private Vector2 waterGridAxisV;
+    private float waterGridInvDet;
+
+    // 칸 (0,0)의 수면 중심과 칸 한 개씩의 월드 이동(worldPosMap이 같은 그리드에서 나오므로 그대로 쓴다).
+    private void PrepareWaterDecoGrid()
+    {
+        float pixelWorld = grid.cellSize.x / TilePixelWidth;
+        waterGridAxisU = worldPosMap[1] - worldPosMap[0];
+        waterGridAxisV = worldPosMap[width] - worldPosMap[0];
+        waterGridOrigin = (Vector2)worldPosMap[0] + new Vector2(0f, WaterSurfaceOffsetPixels * pixelWorld - halfCellY);
+        waterGridInvDet = 1f / (waterGridAxisU.x * waterGridAxisV.y - waterGridAxisU.y * waterGridAxisV.x);
+        bWaterDecoGridReady = true;
+
+        // 픽셀마다 이웃 8칸의 육지 여부를 다시 묻지 않도록 칸마다 한 번만 계산해 둔다.
+        // 물 타일이 없는 칸은 막힌 칸, 이웃에 육지가 하나도 없는 칸(0)은 칸 안 어느 픽셀이든 맨 수면이다.
+        int size = width * height;
+        if (waterDecoCellMasks.Length != size) waterDecoCellMasks = new ushort[size];
+        for (int y = 0; y < height; y++)
         {
-            int r = k + UnityEngine.Random.Range(0, n - k);
-            int tmp = _candidates[k];
-            _candidates[k] = _candidates[r];
-            _candidates[r] = tmp;
+            for (int x = 0; x < width; x++)
+            {
+                int i = x + y * width;
+                if (waterTiles[i] == null)
+                {
+                    waterDecoCellMasks[i] = WaterDecoCellBlocked;
+                    continue;
+                }
 
-            _spawnAction(GetWorldPos(_candidates[k]));
+                int mask = 0;
+                if (IsLand(x + 1, y)) mask |= LandPosU;
+                if (IsLand(x, y + 1)) mask |= LandPosV;
+                if (IsLand(x - 1, y)) mask |= LandNegU;
+                if (IsLand(x, y - 1)) mask |= LandNegV;
+                if (IsLand(x + 1, y + 1)) mask |= LandPosUPosV;
+                if (IsLand(x + 1, y - 1)) mask |= LandPosUNegV;
+                if (IsLand(x - 1, y - 1)) mask |= LandNegUNegV;
+                if (IsLand(x - 1, y + 1)) mask |= LandNegUPosV;
+                waterDecoCellMasks[i] = (ushort)mask;
+            }
         }
+    }
+
+    private Vector2 WorldToWaterGrid(Vector2 _delta)
+    {
+        return new Vector2(
+            (_delta.x * waterGridAxisV.y - _delta.y * waterGridAxisV.x) * waterGridInvDet,
+            (waterGridAxisU.x * _delta.y - waterGridAxisU.y * _delta.x) * waterGridInvDet);
+    }
+
+    // _landMask: 이웃 8칸 중 육지인 칸(PrepareWaterDecoGrid가 칸마다 미리 계산한 값).
+    private static bool IsShorePixel(int _landMask, float _du, float _dv)
+    {
+        float back = ShoreBackFoamStart - ShoreEdgeEpsilon;
+        float front = ShoreFrontFoamStart - ShoreEdgeEpsilon;
+
+        bool landPosU = (_landMask & LandPosU) != 0;
+        bool landPosV = (_landMask & LandPosV) != 0;
+        bool landNegU = (_landMask & LandNegU) != 0;
+        bool landNegV = (_landMask & LandNegV) != 0;
+
+        // 물 타일 가장자리 거품(GetWaterTile)
+        if (landPosU && _du >= back) return true;
+        if (landPosV && _dv >= back) return true;
+        if (landNegU && _du <= -front) return true;
+        if (landNegV && _dv <= -front) return true;
+
+        // 모서리 타일(GetWaterCornerTile)
+        bool landPosUPosV = (_landMask & LandPosUPosV) != 0;
+        bool landPosUNegV = (_landMask & LandPosUNegV) != 0;
+        bool landNegUNegV = (_landMask & LandNegUNegV) != 0;
+        bool landNegUPosV = (_landMask & LandNegUPosV) != 0;
+        if (landPosUPosV && false == landPosU && false == landPosV && _du >= back && _dv >= back) return true;
+        if (landPosUNegV && false == landPosU && false == landNegV && _du >= back && _dv <= -back) return true;
+        if (landNegUNegV && false == landNegU && false == landNegV && _du <= -front && _dv <= -front) return true;
+        if (landNegUPosV && false == landNegU && false == landPosV && _du <= -back && _dv >= back) return true;
+
+        // 앞쪽(같은 높이 포함) 육지 블록
+        if (landNegU && IsCoveredByLandBlock(_du + 1f, _dv)) return true;
+        if (landNegV && IsCoveredByLandBlock(_du, _dv + 1f)) return true;
+        if (landNegUNegV && IsCoveredByLandBlock(_du + 1f, _dv + 1f)) return true;
+        if (landPosUNegV && IsCoveredByLandBlock(_du - 1f, _dv + 1f)) return true;
+        if (landNegUPosV && IsCoveredByLandBlock(_du + 1f, _dv - 1f)) return true;
+
+        return false;
+    }
+
+    // 육지 블록 그림은 칸 마름모를 반 칸 위(+u, +v로 0.5)부터 반 칸 아래(-0.5)까지 쓸어내린 육각형이다.
+    // (_a, _b)는 육지 칸 중심 기준 좌표. 어떤 t∈[-0.5, 0.5]에서 |_a - t| ≤ 0.5, |_b - t| ≤ 0.5이면 덮인다.
+    private static bool IsCoveredByLandBlock(float _a, float _b)
+    {
+        float lo = Mathf.Max(Mathf.Max(_a, _b) - 0.5f, -0.5f);
+        float hi = Mathf.Min(Mathf.Min(_a, _b) + 0.5f, 0.5f);
+        return lo <= hi + ShoreEdgeEpsilon;
+    }
+
+    // 스테이지의 A 타입 프리팹을 중복 없이 모은다(목록에 같은 프리팹이 두 번 있어도 한 종류로 본다)
+    // 그리고 종류별 누적 개수를 비운다. 맵을 만들 때마다 한 번 부른다.
+    private void PrepareWaterDecoTypes()
+    {
+#if UNITY_EDITOR
+        // 에디터에서는 프레임을 바꾸면 프리팹 모양이 다시 재지므로(DecoSpritePatternAnimator.OnValidate) 맵마다 새로 읽는다.
+        waterDecoFootprints.Clear();
+#endif
+        waterDecoTypes.Clear();
+        List<DecoSpritePatternAnimator> prefabs = stageTileData.WaterAnimatedObjPrefabs;
+        if (prefabs != null)
+        {
+            for (int k = 0; k < prefabs.Count; k++)
+            {
+                if (prefabs[k] != null && false == waterDecoTypes.Contains(prefabs[k])) waterDecoTypes.Add(prefabs[k]);
+            }
+        }
+
+        int typeCount = waterDecoTypes.Count;
+        if (waterDecoPondTypeTotals.Length != typeCount)
+        {
+            waterDecoPondTypeTotals = new int[typeCount];
+            waterDecoSeaTypeTotals = new int[typeCount];
+            waterDecoCompTypeUses = new int[typeCount];
+            waterDecoTypeTried = new bool[typeCount];
+        }
+        else
+        {
+            Array.Clear(waterDecoPondTypeTotals, 0, typeCount);
+            Array.Clear(waterDecoSeaTypeTotals, 0, typeCount);
+        }
+    }
+
+    // A 타입(물 장식 프리팹) 하나를 놓는다. 종류가 골고루 나오도록, 이 웅덩이에서 덜 쓴 종류 → 맵 전체(웅덩이끼리,
+    // 바다끼리)에서 덜 쓴 종류 순으로 먼저 시도하고, 같으면 무작위로 고른다. 고른 종류가 들어갈 자리가 없으면
+    // (좁은 웅덩이에 큰 물결 등) 다음 순서의 종류를 시도한다.
+    private bool PlaceOneWaterDeco(bool _bSea, bool _bExhaustiveFallback)
+    {
+        int typeCount = waterDecoTypes.Count;
+        if (typeCount == 0) return false;
+
+        int[] totals = _bSea ? waterDecoSeaTypeTotals : waterDecoPondTypeTotals;
+        Array.Clear(waterDecoTypeTried, 0, typeCount);
+
+        for (int attempt = 0; attempt < typeCount; attempt++)
+        {
+            int pick = -1;
+            int ties = 0;
+            for (int k = 0; k < typeCount; k++)
+            {
+                if (waterDecoTypeTried[k]) continue;
+                if (pick < 0
+                    || waterDecoCompTypeUses[k] < waterDecoCompTypeUses[pick]
+                    || (waterDecoCompTypeUses[k] == waterDecoCompTypeUses[pick] && totals[k] < totals[pick]))
+                {
+                    pick = k;
+                    ties = 1;
+                }
+                else if (waterDecoCompTypeUses[k] == waterDecoCompTypeUses[pick] && totals[k] == totals[pick])
+                {
+                    ties++;
+                    if (UnityEngine.Random.Range(0, ties) == 0) pick = k;
+                }
+            }
+            waterDecoTypeTried[pick] = true;
+
+            DecoSpritePatternAnimator prefab = waterDecoTypes[pick];
+            WaterDecoFootprint footprint = GetWaterDecoFootprint(prefab);
+            if (false == TryFindWaterDecoSpot(footprint, _bExhaustiveFallback, out Vector2 pos)) continue;
+
+            AddPlacedWaterDeco(pos, footprint);
+            animatedObjGenerator.SpawnWaterAnimatedObj(pos, prefab);
+            waterDecoCompTypeUses[pick]++;
+            totals[pick]++;
+            return true;
+        }
+        return false;
+    }
+
+    // waterCompCells(지금 웅덩이) 안에서 _footprint가 맨 수면에만 닿고 이미 놓인 장식과 떨어진 자리를 찾는다.
+    private bool TryFindWaterDecoSpot(WaterDecoFootprint _footprint, bool _bExhaustiveFallback, out Vector2 _pos)
+    {
+        _pos = default;
+        if (waterCompCells.Count == 0) return false;
+
+        bool bFound = false;
+        float bestScore = -1f;
+        int valid = 0;
+
+        for (int t = 0; t < WaterDecoMaxRandomTries && valid < WaterDecoCandidatesPerPick; t++)
+        {
+            int cell = waterCompCells[UnityEngine.Random.Range(0, waterCompCells.Count)];
+            Vector2 candidate = GetWaterDecoCandidate(cell, UnityEngine.Random.value - 0.5f, UnityEngine.Random.value - 0.5f, _footprint);
+            if (false == IsWaterDecoSpotClear(candidate, _footprint)) continue;
+
+            valid++;
+            float score = DistanceToPlacedWaterDecos(candidate);
+            if (score > bestScore)
+            {
+                bestScore = score;
+                _pos = candidate;
+                bFound = true;
+            }
+        }
+
+        if (bFound || false == _bExhaustiveFallback) return bFound;
+
+        // 무작위 후보가 모두 빗나갔다(좁은 웅덩이). 웅덩이 전체를 격자로 훑어, 맞는 자리 중 이미 놓인 장식에서
+        // 가장 먼 자리를 고른다(같은 거리면 무작위 - 아직 놓인 장식이 없으면 맞는 자리 전체에서 고르게 뽑힌다).
+        int tieCount = 0;
+        float step = 1f / WaterDecoLatticeSteps;
+        for (int c = 0; c < waterCompCells.Count; c++)
+        {
+            int cell = waterCompCells[c];
+            for (int iu = 0; iu < WaterDecoLatticeSteps; iu++)
+            {
+                for (int iv = 0; iv < WaterDecoLatticeSteps; iv++)
+                {
+                    Vector2 candidate = GetWaterDecoCandidate(cell, (iu + 0.5f) * step - 0.5f, (iv + 0.5f) * step - 0.5f, _footprint);
+                    if (false == IsWaterDecoSpotClear(candidate, _footprint)) continue;
+
+                    float score = DistanceToPlacedWaterDecos(candidate);
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        tieCount = 1;
+                        _pos = candidate;
+                    }
+                    else if (score == bestScore)
+                    {
+                        tieCount++;
+                        if (UnityEngine.Random.Range(0, tieCount) == 0) _pos = candidate;
+                    }
+                }
+            }
+        }
+        return tieCount > 0;
+    }
+
+    // 칸 수면 중심에서 (_du, _dv)칸 떨어진 점을 장식 픽셀 격자에 맞춘다(타일 픽셀과 장식 픽셀이 어긋나지 않게).
+    private Vector2 GetWaterDecoCandidate(int _cell, float _du, float _dv, WaterDecoFootprint _footprint)
+    {
+        int x = _cell % width;
+        int y = _cell / width;
+        Vector2 p = waterGridOrigin + waterGridAxisU * (x + _du) + waterGridAxisV * (y + _dv);
+        float pw = _footprint.pixelWorld;
+        return new Vector2(Mathf.Round(p.x / pw) * pw, Mathf.Round(p.y / pw) * pw);
+    }
+
+    private bool IsWaterDecoSpotClear(Vector2 _pos, WaterDecoFootprint _footprint)
+    {
+        float gap = WaterDecoGapPixels * _footprint.pixelWorld;
+        for (int i = 0; i < placedWaterDecos.Count; i++)
+        {
+            PlacedWaterDeco other = placedWaterDecos[i];
+            bool bApartX = _pos.x + _footprint.max.x + gap <= other.position.x + other.min.x || other.position.x + other.max.x + gap <= _pos.x + _footprint.min.x;
+            bool bApartY = _pos.y + _footprint.max.y + gap <= other.position.y + other.min.y || other.position.y + other.max.y + gap <= _pos.y + _footprint.min.y;
+            if (false == bApartX && false == bApartY) return false;
+        }
+
+        // 장식 사각형이 걸치는 칸이 모두 이웃에 육지가 없는 물 칸이면 픽셀을 하나씩 볼 필요가 없다(넓은 수면 대부분).
+        if (IsWaterDecoRectOnOpenWater(_pos, _footprint)) return true;
+
+        // 그리드 밖(맵 밖 확장 물)은 보지 않는다 — 맵 안 장식은 그리드 안에만 놓는다.
+        return AreWaterDecoPixelsOnOpenWater(_pos, _footprint, -1f);
+    }
+
+    // 픽셀마다 그 점이 물가·육지가 아닌 맨 수면인지 본다. 물 타일이 깔린 칸만 수면이고, 육지 칸과 맵 바깥 원 너머처럼
+    // 타일이 없는 칸(빈 공간)은 걸린 것으로 본다. 그리드 밖 칸은 _outerRadiusSq가 0 이상이면 확장 물 타원
+    // (ApplyOuterWaterTiles와 같은 조건, 물가 없는 깊은 물) 안일 때만 수면이고, 음수면 걸린 것으로 본다.
+    // 자리마다 수천 번 도는 곳이라 함수 호출과 필드 읽기를 줄이려고 칸 좌표 변환(WorldToWaterGrid)을 풀어 썼다.
+    private bool AreWaterDecoPixelsOnOpenWater(Vector2 _pos, WaterDecoFootprint _footprint, float _outerRadiusSq)
+    {
+        Vector2[] points = _footprint.points;
+        float originX = waterGridOrigin.x;
+        float originY = waterGridOrigin.y;
+        float axisUX = waterGridAxisU.x;
+        float axisUY = waterGridAxisU.y;
+        float axisVX = waterGridAxisV.x;
+        float axisVY = waterGridAxisV.y;
+        float invDet = waterGridInvDet;
+        ushort[] masks = waterDecoCellMasks;
+        int gridWidth = width;
+        int gridHeight = height;
+        for (int i = 0; i < points.Length; i++)
+        {
+            float dx = (_pos.x + points[i].x) - originX;
+            float dy = (_pos.y + points[i].y) - originY;
+            float gu = (dx * axisVY - dy * axisVX) * invDet;
+            float gv = (axisUX * dy - axisUY * dx) * invDet;
+            int cx = Mathf.RoundToInt(gu);
+            int cy = Mathf.RoundToInt(gv);
+            if (cx < 0 || cx >= gridWidth || cy < 0 || cy >= gridHeight)
+            {
+                if (_outerRadiusSq < 0f) return false;
+                float ox = cx - gridWidth * 0.5f;
+                float oy = cy - gridHeight * 0.5f;
+                if (ox * ox + oy * oy > _outerRadiusSq) return false;
+                continue;
+            }
+
+            int mask = masks[cx + cy * gridWidth];
+            if (mask == 0) continue;
+            if (mask == WaterDecoCellBlocked) return false;
+            if (IsShorePixel(mask, gu - cx, gv - cy)) return false;
+        }
+        return true;
+    }
+
+    // 장식 사각형(픽셀 가장자리 기준)을 칸 좌표로 옮긴 평행사변형의 경계 상자 안 칸이 모두 열린 물(마스크 0)인가.
+    // 장식의 모든 픽셀은 이 상자 안 칸으로 반올림되므로(반올림은 단조), 참이면 픽셀별 판정도 모두 참이다.
+    private bool IsWaterDecoRectOnOpenWater(Vector2 _pos, WaterDecoFootprint _footprint)
+    {
+        Vector2 origin = _pos - waterGridOrigin;
+        Vector2 a = WorldToWaterGrid(origin + _footprint.min);
+        Vector2 b = WorldToWaterGrid(origin + new Vector2(_footprint.max.x, _footprint.min.y));
+        Vector2 c = WorldToWaterGrid(origin + new Vector2(_footprint.min.x, _footprint.max.y));
+        Vector2 d = WorldToWaterGrid(origin + _footprint.max);
+
+        int u0 = Mathf.RoundToInt(Mathf.Min(Mathf.Min(a.x, b.x), Mathf.Min(c.x, d.x)));
+        int u1 = Mathf.RoundToInt(Mathf.Max(Mathf.Max(a.x, b.x), Mathf.Max(c.x, d.x)));
+        int v0 = Mathf.RoundToInt(Mathf.Min(Mathf.Min(a.y, b.y), Mathf.Min(c.y, d.y)));
+        int v1 = Mathf.RoundToInt(Mathf.Max(Mathf.Max(a.y, b.y), Mathf.Max(c.y, d.y)));
+        if (u0 < 0 || v0 < 0 || u1 >= width || v1 >= height) return false;
+
+        for (int v = v0; v <= v1; v++)
+        {
+            int row = v * width;
+            for (int u = u0; u <= u1; u++)
+            {
+                if (waterDecoCellMasks[row + u] != 0) return false;
+            }
+        }
+        return true;
+    }
+
+    // 맵 밖 바다(ApplyOuterWaterTiles) 칸 꼭짓점 자리에 들어가는 물 장식 프리팹을 고른다. 종류는 중복 없이 같은 확률로,
+    // 무작위로 고른 종류부터 차례로 보고 모양이 물 위에만 놓이는 첫 종류를 쓴다. 들어가는 종류가 없으면 null.
+    private DecoSpritePatternAnimator PickOuterWaterDecoPrefab(Vector2 _pos, float _outerRadiusSq)
+    {
+        int typeCount = waterDecoTypes.Count;
+        if (typeCount == 0) return null;
+
+        int start = UnityEngine.Random.Range(0, typeCount);
+        for (int k = 0; k < typeCount; k++)
+        {
+            DecoSpritePatternAnimator prefab = waterDecoTypes[(start + k) % typeCount];
+            if (AreWaterDecoPixelsOnOpenWater(_pos, GetWaterDecoFootprint(prefab), _outerRadiusSq)) return prefab;
+        }
+        return null;
+    }
+
+    // 칸 좌표 거리(아이소메트릭 화면에서 고르게 보이는 거리). 놓인 장식이 없으면 최대값.
+    private float DistanceToPlacedWaterDecos(Vector2 _pos)
+    {
+        float best = float.MaxValue;
+        for (int i = 0; i < placedWaterDecos.Count; i++)
+        {
+            float d = WorldToWaterGrid(_pos - placedWaterDecos[i].position).sqrMagnitude;
+            if (d < best) best = d;
+        }
+        return best;
+    }
+
+    private void AddPlacedWaterDeco(Vector2 _pos, WaterDecoFootprint _footprint)
+    {
+        placedWaterDecos.Add(new PlacedWaterDeco { position = _pos, min = _footprint.min, max = _footprint.max });
+    }
+
+    private WaterDecoFootprint GetWaterDecoFootprint(DecoSpritePatternAnimator _prefab)
+    {
+        if (waterDecoFootprints.TryGetValue(_prefab, out WaterDecoFootprint footprint)) return footprint;
+
+        Vector3Int[] rows = _prefab.WaterFootprintRows;
+        float ppu = _prefab.WaterFootprintPixelsPerUnit;
+        if (rows == null || rows.Length == 0 || ppu <= 0f)
+        {
+            // 모양을 잰 적이 없으면 첫 프레임 사각형 전체를 모양으로 본다(넉넉한 쪽).
+            Sprite sprite = _prefab.FirstFrame;
+            rows = null != sprite ? BuildRectFootprintRows(sprite) : null;
+            ppu = null != sprite ? sprite.pixelsPerUnit : TilePixelWidth;
+        }
+
+        footprint = null != rows ? BuildWaterDecoFootprint(rows, ppu, _prefab.transform.localScale) : GetFallbackWaterDecoFootprint();
+        waterDecoFootprints.Add(_prefab, footprint);
+        return footprint;
+    }
+
+    // 모양을 모르는 B 타입(AnimatedObj) 물 오브젝트용. 가장 큰 물 장식(물결)과 같은 20x13px 사각형으로 본다.
+    private WaterDecoFootprint GetFallbackWaterDecoFootprint()
+    {
+        if (null != fallbackWaterDecoFootprint) return fallbackWaterDecoFootprint;
+
+        var rows = new Vector3Int[13];
+        for (int i = 0; i < rows.Length; i++) rows[i] = new Vector3Int(i - 7, -10, 9);
+        fallbackWaterDecoFootprint = BuildWaterDecoFootprint(rows, TilePixelWidth, Vector3.one);
+        return fallbackWaterDecoFootprint;
+    }
+
+    private static Vector3Int[] BuildRectFootprintRows(Sprite _sprite)
+    {
+        int w = Mathf.RoundToInt(_sprite.rect.width);
+        int h = Mathf.RoundToInt(_sprite.rect.height);
+        int pivotX = Mathf.RoundToInt(_sprite.pivot.x);
+        int pivotY = Mathf.RoundToInt(_sprite.pivot.y);
+
+        var rows = new Vector3Int[h];
+        for (int y = 0; y < h; y++) rows[y] = new Vector3Int(y - pivotY, -pivotX, w - 1 - pivotX);
+        return rows;
+    }
+
+    // (y, xMin, xMax) 가로줄을 픽셀 중심 월드 오프셋으로 바꾼다. 테두리 픽셀(4방향 이웃 중 모양 밖이 있는 픽셀)을 먼저 둔다.
+    private static WaterDecoFootprint BuildWaterDecoFootprint(Vector3Int[] _rows, float _ppu, Vector3 _scale)
+    {
+        var filled = new HashSet<Vector2Int>();
+        int minX = int.MaxValue, maxX = int.MinValue, minY = int.MaxValue, maxY = int.MinValue;
+        for (int r = 0; r < _rows.Length; r++)
+        {
+            Vector3Int row = _rows[r];
+            for (int x = row.y; x <= row.z; x++) filled.Add(new Vector2Int(x, row.x));
+            minX = Mathf.Min(minX, row.y);
+            maxX = Mathf.Max(maxX, row.z);
+            minY = Mathf.Min(minY, row.x);
+            maxY = Mathf.Max(maxY, row.x);
+        }
+
+        var edge = new List<Vector2>(filled.Count);
+        var inner = new List<Vector2>(filled.Count);
+        float sx = _scale.x / _ppu;
+        float sy = _scale.y / _ppu;
+        foreach (Vector2Int p in filled)
+        {
+            bool bEdge = false == filled.Contains(new Vector2Int(p.x + 1, p.y)) || false == filled.Contains(new Vector2Int(p.x - 1, p.y))
+                      || false == filled.Contains(new Vector2Int(p.x, p.y + 1)) || false == filled.Contains(new Vector2Int(p.x, p.y - 1));
+            Vector2 offset = new Vector2((p.x + 0.5f) * sx, (p.y + 0.5f) * sy);
+            (bEdge ? edge : inner).Add(offset);
+        }
+        edge.AddRange(inner);
+
+        return new WaterDecoFootprint
+        {
+            points = edge.ToArray(),
+            min = new Vector2(minX * sx, minY * sy),
+            max = new Vector2((maxX + 1) * sx, (maxY + 1) * sy),
+            pixelWorld = 1f / _ppu,
+        };
     }
 
     private TileBase GetWaterTile(int _x, int _y)
@@ -2015,6 +2521,13 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         TileBase stencilTile = stageTileData.StencilTile;
         TileBase defaultWaterTile = stageTileData.WaterTile;
 
+        // 맵 밖 바다 장식도 모양 판정을 쓴다. 맵 안 물 장식을 만들지 않은 맵(로그라이크 타원 섬)이면 여기서 준비한다.
+        if (animatedObjGenerator != null && false == bWaterDecoGridReady)
+        {
+            PrepareWaterDecoGrid();
+            PrepareWaterDecoTypes();
+        }
+
         for (int ey = 0; ey < extH; ey++)
         {
             int worldY = ey + extMinY;
@@ -2064,17 +2577,19 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                     float otherDensity = stageTileData.WaterAnimatedOtherTypeObjSeaDensity;
                     float roll = UnityEngine.Random.value;
 
+                    // 장식 모양이 물 타일 바깥(타원 끝 너머 빈 공간)이나 맵 안 물가에 걸치는 자리는 건너뛴다.
                     if (roll < fishDensity)
                     {
                         Vector3Int cellPos = new Vector3Int(worldX, worldY, 0);
                         Vector3 pos = groundTilemap.GetCellCenterWorld(cellPos) + new Vector3(0, halfCellY, 0);
-                        animatedObjGenerator.SpawnWaterAnimatedObj(pos);
+                        DecoSpritePatternAnimator prefab = PickOuterWaterDecoPrefab(pos, outerRadiusSq);
+                        if (null != prefab) animatedObjGenerator.SpawnWaterAnimatedObj(pos, prefab);
                     }
                     else if (roll < fishDensity + otherDensity)
                     {
                         Vector3Int cellPos = new Vector3Int(worldX, worldY, 0);
                         Vector3 pos = groundTilemap.GetCellCenterWorld(cellPos) + new Vector3(0, halfCellY, 0);
-                        animatedObjGenerator.SpawnWaterAnimatedOtherTypeObj(pos);
+                        if (AreWaterDecoPixelsOnOpenWater(pos, GetFallbackWaterDecoFootprint(), outerRadiusSq)) animatedObjGenerator.SpawnWaterAnimatedOtherTypeObj(pos);
                     }
                 }
 

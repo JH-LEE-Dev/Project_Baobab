@@ -246,7 +246,12 @@ public class AnimatedObjGenerator : MonoBehaviour
         if (currentWaterPrefabs == null || currentWaterPrefabs.Count == 0) return null;
 
         int randomIndex = UnityEngine.Random.Range(0, currentWaterPrefabs.Count);
-        DecoSpritePatternAnimator _prefab = currentWaterPrefabs[randomIndex];
+        return SpawnWaterAnimatedObj(_position, currentWaterPrefabs[randomIndex]);
+    }
+
+    /// <summary>물 장식을 정해진 프리팹으로 띄운다. 자리를 프리팹 모양에 맞춰 고르는 쪽(TileMapGenerator)이 쓴다.</summary>
+    public DecoSpritePatternAnimator SpawnWaterAnimatedObj(Vector3 _position, DecoSpritePatternAnimator _prefab)
+    {
         if (_prefab == null) return null;
 
         IObjectPool<DecoSpritePatternAnimator> _pool = GetWaterPool(_prefab);

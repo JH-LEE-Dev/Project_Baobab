@@ -97,6 +97,94 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 6767143858333172885, guid: 4ef7ad2c18477a74188fd58c8333dc63, type: 3}
     - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.size
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[0].x
+      value: -4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[0].y
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[1].x
+      value: -3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[1].y
+      value: -3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[1].z
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[2].x
+      value: -2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[2].y
+      value: -4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[2].z
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[3].x
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[3].y
+      value: -5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[3].z
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[4].y
+      value: -5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[4].z
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[5].x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[5].y
+      value: -4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[5].z
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[6].x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[6].y
+      value: -3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[6].z
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[7].x
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
+      propertyPath: waterFootprintRows.Array.data[7].y
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7550594195012280283, guid: 3386bd29a9254684888084e23e2fcdd3, type: 3}
       propertyPath: patterns.Array.data[0].frameIndices.Array.size
       value: 2
       objectReference: {fileID: 0}
