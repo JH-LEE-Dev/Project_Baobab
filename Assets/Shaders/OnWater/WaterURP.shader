@@ -58,9 +58,13 @@ Shader "Custom/WaterURP"
             {
                 COMMON_2D_LIT_OUTPUTS
                 half4 color        : COLOR;
+                float2 shimmerPositionWS : TEXCOORD5;
             };
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Lit2DCommon.hlsl"
+            #include "../Include/WaterShimmer.hlsl"
+
+            float4 _MainTex_TexelSize;
 
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             CBUFFER_START(UnityPerMaterial)
@@ -75,13 +79,24 @@ Shader "Custom/WaterURP"
 
                 Varyings o = CommonLitVertex(input);
                 o.color = input.color * _Color * unity_SpriteColor;
+                o.shimmerPositionWS = TransformObjectToWorld(input.positionOS).xy;
 
                 return o;
             }
 
             half4 LitFragment(Varyings input) : SV_Target
             {
-                return CommonLitFragment(input, input.color);
+                half4 color = CommonLitFragment(input, input.color);
+
+                // 물 반짝임(꺼진 스테이지는 건너뛴다).
+                if (IsWaterShimmerEnabled())
+                {
+                    float3 texColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv).rgb;
+                    float4 shimmer = ComputeWaterShimmer(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor);
+                    color.rgb = lerp(color.rgb, shimmer.rgb, shimmer.a);
+                }
+
+                return color;
             }
             ENDHLSL
         }

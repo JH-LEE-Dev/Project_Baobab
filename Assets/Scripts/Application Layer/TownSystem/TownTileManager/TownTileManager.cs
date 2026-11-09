@@ -10,6 +10,15 @@ public class TownTileManager : MonoBehaviour
 
     [SerializeField] private GameObject tilemapPrefab;
 
+    // 마을 돌풍. 켜져 있으면 GroundTilemap 머티리얼을 windGust.groundMaterial(GroundWindGustLit)로 바꿔 끼운다.
+    [SerializeField] private WindGustSettings windGust = new WindGustSettings();
+    // 마을 물 반짝임. 켜져 있으면 WaterTilemap 머티리얼을 waterShimmerMaterial(WaterTilemapShader)로 바꿔 끼운다.
+    // 두 머티리얼 모두 전역값이 꺼져 있으면 원래 머티리얼과 같은 결과를 그린다.
+    [SerializeField] private WaterShimmerSettings waterShimmer = new WaterShimmerSettings();
+    [SerializeField] private Material waterShimmerMaterial;
+    // 마을 색보정(기존 전역 후처리 위에 덧씌우는 프로필)
+    [SerializeField] private StageColorGradingSettings colorGrading = new StageColorGradingSettings();
+
     private GameObject currentGrid;
 
     // 이름 뒤 숫자(_1, _2) 순서로 정렬해서 담는다. 증설 단계 N이면 앞에서 N개만 활성화한다.
@@ -60,6 +69,8 @@ public class TownTileManager : MonoBehaviour
     /// </summary>
     public void DestroyGrid()
     {
+        StageAmbienceShaderGlobals.ClearTown();
+
         if (currentGrid != null)
         {
             Destroy(currentGrid);
@@ -132,11 +143,45 @@ public class TownTileManager : MonoBehaviour
         buildingColliderExpansions.Sort((a, b) => string.CompareOrdinal(a.gameObject.name, b.gameObject.name));
 
         ApplyBuildingExpansion();
+        ApplyAmbience();
 
         // 기본값은 4칸 모두 활성화(콜라이더 있음)된 상태로 배치되어 있으므로, 원본을 좌상단부터 기억해두고
         // 일단 전부 비활성화한다. 실제 활성화는 ApplyLootPillarColliderState()가 획득 상태에 맞춰 적용한다.
         CaptureLootPillarColliderTiles();
         ClearLootPillarColliderTiles();
+    }
+
+    // 마을 돌풍·물 반짝임·색보정을 켠다. 로그라이크이거나 꺼진 연출은 원래 머티리얼 그대로 둔다.
+    private void ApplyAmbience()
+    {
+        if (GameModeContext.IsRoguelike)
+        {
+            StageAmbienceShaderGlobals.ClearTown();
+            return;
+        }
+
+        Material groundMaterial = StageAmbienceShaderGlobals.GetTownGroundMaterialOverride(windGust);
+        bool useWind = null != groundMaterial && null != GroundTilemap;
+        if (useWind && GroundTilemap.TryGetComponent(out TilemapRenderer groundRenderer))
+        {
+            groundRenderer.sharedMaterial = groundMaterial;
+        }
+
+        bool useWater = null != waterShimmer && waterShimmer.enabled && null != waterShimmerMaterial && null != WaterTilemap;
+        if (useWater && WaterTilemap.TryGetComponent(out TilemapRenderer waterRenderer))
+        {
+            waterRenderer.sharedMaterial = waterShimmerMaterial;
+        }
+
+        StageAmbienceShaderGlobals.ApplyTown(useWind ? windGust : null, useWater ? waterShimmer : null, colorGrading);
+    }
+
+    private void OnDestroy()
+    {
+        if (null != currentGrid)
+        {
+            StageAmbienceShaderGlobals.ClearTown();
+        }
     }
 
     /// <summary>
