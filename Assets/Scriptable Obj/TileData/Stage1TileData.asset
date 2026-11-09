@@ -153,5 +153,18 @@ MonoBehaviour:
     enabled: 1
     profile: {fileID: 11400000, guid: 2b91fb6aaa714624c91f64f0ce44646e, type: 2}
     weight: 1
+  shoreReeds:
+    enabled: 1
+    prefab: {fileID: 7246560353434094942, guid: 842191c9b23dee54b96da1eea76bdbad, type: 3}
+    material: {fileID: 2100000, guid: 6d45b8fe34b7c664a823c08321ffb88e, type: 2}
+    includeSea: 1
+    clusterDensity: 0.075
+    pondClusterDensity: 0.04
+    minClusterSpacing: 4
+    clusterSizeMin: 2
+    clusterSizeMax: 3
+    alongBankSpacing: 0.5
+    shoreOffsetRange: {x: 0.2, y: 0.4}
+    flipToWind: 1
   waterHazardStaminaDrainPerSecond: 0
   treeHeatStaminaDamage: 0
