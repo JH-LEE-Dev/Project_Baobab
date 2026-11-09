@@ -78,6 +78,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     // // 외부 의존성
     private Tilemap groundTilemap;
+    // 바닥 타일맵 렌더러의 원래 머티리얼(잔디 바람 머티리얼로 바꿔 끼웠다가 되돌릴 때 쓴다)
+    private TilemapRenderer groundTilemapRenderer;
+    private Material originalGroundMaterial;
     private Tilemap collisionTilemap;
     private Tilemap decoTilemap;
     private Tilemap waterDecoTilemap;
@@ -426,6 +429,10 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 tr.SetPropertyBlock(mpb);
             }
         }
+
+        // 스테이지 분위기 연출(돌풍·물 반짝임) 셰이더 전역값. 렌더링만 바뀌고, 꺼진 스테이지는 0으로 비운다.
+        StageAmbienceShaderGlobals.Apply(stageTileData);
+        ApplyGroundMaterialForStage();
 
         // 이전 던전의 초기 스폰 코루틴이 아직 돌던 중(스폰 배치가 열린 채)에 새 맵을 만드는 경우,
         // 모아둔 충돌 타일 심기/데코 걷어내기는 옛 맵에 대한 것이므로 새 맵 위에 반영되면 안 된다.
@@ -847,6 +854,25 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private void OnDestroy()
     {
         if (null != cachedCombatTileFlush) TreeTileWriteBatch.Unregister(cachedCombatTileFlush);
+        StageAmbienceShaderGlobals.Clear();
+    }
+
+    // 돌풍이 켜진 스테이지만 바닥 타일맵을 잔디 바람 머티리얼로 그리고, 그 밖에는 원래 머티리얼로 되돌린다(렌더링 전용).
+    private void ApplyGroundMaterialForStage()
+    {
+        if (null == groundTilemapRenderer)
+        {
+            groundTilemapRenderer = groundTilemap.GetComponent<TilemapRenderer>();
+            if (null == groundTilemapRenderer) return;
+            originalGroundMaterial = groundTilemapRenderer.sharedMaterial;
+        }
+
+        Material overrideMaterial = StageAmbienceShaderGlobals.GetGroundMaterialOverride(stageTileData);
+        Material target = null != overrideMaterial ? overrideMaterial : originalGroundMaterial;
+        if (groundTilemapRenderer.sharedMaterial != target)
+        {
+            groundTilemapRenderer.sharedMaterial = target;
+        }
     }
 
     public void ClearTreeCollisionTile(Vector3 _worldPos)

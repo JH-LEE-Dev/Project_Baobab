@@ -1,6 +1,8 @@
 #ifndef TREE_WIND_SWAY_INCLUDED
 #define TREE_WIND_SWAY_INCLUDED
 
+#include "WindGust.hlsl"
+
 // 트리 바람 흔들림 버텍스 변위 함수.
 // 오브젝트의 월드 위치를 해시하여 개체별 고유 위상을 생성하고,
 // 사인파 조합으로 자연스러운 흔들림을 만든다.
@@ -130,6 +132,15 @@ float3 ApplyWindSway(
 
         // 오브젝트 피봇 기준 Z축 회전 (2D 평면)
         float rotAngle = -sway * radians(_rotAmplitudeDeg);
+
+        // 돌풍 띠가 지나가는 동안 바람 쪽으로 눕고 잔떨림이 붙는다(꺼진 스테이지는 건너뛴다).
+        if (IsWindGustEnabled())
+        {
+            float gust = SampleWindGust(groundPos.xy);
+            float flutter = 1.0 + _WindGustC.w * sin(time * _WindGustC.z + phase);
+            float windSide = _WindGustA.x >= 0.0 ? 1.0 : -1.0;
+            rotAngle -= gust * flutter * radians(_WindGustC.y) * windSide;
+        }
         float sinR, cosR;
         sincos(rotAngle, sinR, cosR);
 

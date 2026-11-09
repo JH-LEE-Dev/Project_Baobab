@@ -45,6 +45,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownTileManager
   tilemapPrefab: {fileID: 6881421302417486748, guid: 46c9e6a76e2525643a8501b428463eae, type: 3}
+  windGust:
+    enabled: 1
+    direction: {x: 1, y: -0.35}
+    speed: 3.2
+    spacing: 22
+    bandHalfWidth: 0.9
+    patchSize: 3
+    patchCoverage: 0.5
+    gustGroupLength: 40
+    treeLeanDegrees: 5.5
+    treeFlutterSpeed: 9
+    treeFlutterRatio: 0.35
+    grassClumpSize: 1.6
+    grassBendThreshold: 0.2
+    grassBendSpread: 1.1
+    grassBendBrightness: 0.18
+    groundMaterial: {fileID: 2100000, guid: 6a6739b36a75d00409df81a211844609, type: 2}
+  waterShimmer:
+    enabled: 1
+    surfaceColor: {r: 0.33333334, g: 0.76862746, b: 0.78431374, a: 1}
+    colorTolerance: 0.03
+    foamColor: {r: 0.92, g: 1, b: 1, a: 1}
+    sparkleCellTexels: 26
+    sparklePeriod: 5
+    sparkleDuty: 0.08
+    sparkleIntensity: 2.2
+    sparkleArmStrength: 0.25
+  waterShimmerMaterial: {fileID: 2100000, guid: f405ba781fc59184684c02b71a3256e2, type: 2}
+  colorGrading:
+    enabled: 1
+    profile: {fileID: 11400000, guid: 2b91fb6aaa714624c91f64f0ce44646e, type: 2}
+    weight: 1
 --- !u!1 &616997715229847835
 GameObject:
   m_ObjectHideFlags: 0
