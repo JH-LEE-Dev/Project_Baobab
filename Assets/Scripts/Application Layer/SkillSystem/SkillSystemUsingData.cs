@@ -255,12 +255,7 @@ public enum SkillType
     RainbowTreeChance,  // 무지개 나무 확률
 
 
-    TestNode,  // TestNode
-    TestNode2,
-    TestNode3,
-    TestNode4,
-    TestNode5,
-    TestNode6,
+    ConveyorSpeed2,
     MAX
 }
 

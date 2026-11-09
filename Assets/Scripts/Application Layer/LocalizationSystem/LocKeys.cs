@@ -117,6 +117,7 @@ public static class LocKeys
         public const int testNode2Name = 4194555;
         public const int testNode3Name = 4194556;
         public const int testNode4Name = 4194557;
+        public const int conveyorSpeed2Name = 4194558;
         public const int commonLevel = 4203304;
         public const int commonFree = 4203305;
         public const int commonMaxLevel = 4203306;
@@ -219,7 +220,7 @@ public static class LocKeys
         public const int exitGame = 27262980;
         public const int exitGameWarning = 27262981;
         public const int mainMenuWarning = 27262982;
-        public const int lobby = 27262983;
+        public const int abandon = 27262983;
         public const int lobbyWarning = 27262984;
     }
 
@@ -531,6 +532,52 @@ public static class LocKeys
         public const int roguelikeCardComboSporeDroneL1 = 37749243;
         public const int roguelikeCardComboSporeOffroadL1 = 37749244;
         public const int roguelikeCardComboSporeShockwaveL1 = 37749245;
+        public const int roguelikeCardActiveSpinX1 = 37749246;
+        public const int roguelikeCardActiveSpinX3 = 37749247;
+        public const int roguelikeCardActiveSpinX5 = 37749248;
+        public const int roguelikeCardActiveSpinX7 = 37749249;
+        public const int roguelikeCardActiveOffroadX1 = 37749250;
+        public const int roguelikeCardActiveOffroadX7 = 37749251;
+        public const int roguelikeCardActiveShockwaveX7 = 37749252;
+        public const int roguelikeCardPassiveRangeX2 = 37749253;
+        public const int roguelikeCardPassiveRangeX3 = 37749254;
+        public const int roguelikeCardPassiveRangeX4 = 37749255;
+        public const int roguelikeCardPassiveRangeX5 = 37749256;
+        public const int roguelikeCardPassiveMovespeedX3 = 37749257;
+        public const int roguelikeCardPassiveMovespeedX5 = 37749258;
+        public const int roguelikeOwnedCardsTitle = 37749259;
+        public const int roguelikeOwnedCardsRareShort = 37749260;
+        public const int roguelikeOwnedCardsNormalShort = 37749261;
+        public const int roguelikeOwnedCardsNextLevelHint = 37749264;
+        public const int roguelikeOwnedCardsEmpty = 37749267;
+        public const int roguelikeOwnedCardsHintClose = 37749268;
+        public const int roguelikeOwnedCardsCurrentEffect = 37749273;
+        public const int roguelikeOwnedCardsHintMove = 37749274;
+        public const int roguelikeMenuStart = 37749275;
+        public const int roguelikeMenuRecords = 37749276;
+        public const int roguelikeMenuBack = 37749277;
+        public const int roguelikeMenuBestTitle = 37749278;
+        public const int roguelikeMenuBestWave = 37749279;
+        public const int roguelikeMenuUnlimitBest = 37749280;
+        public const int roguelikeMenuTreesBest = 37749281;
+        public const int roguelikeMenuNoRecord = 37749282;
+        public const int roguelikeRecordsTabRecent = 37749283;
+        public const int roguelikeRecordsTabClear = 37749284;
+        public const int roguelikeRecordsTabUnlimit = 37749285;
+        public const int roguelikeRecordsEmpty = 37749286;
+        public const int roguelikeResultGameOver = 37749287;
+        public const int roguelikeResultAbandoned = 37749288;
+        public const int roguelikeResultBestWave = 37749289;
+        public const int roguelikeResultNewRecord = 37749290;
+        public const int roguelikeResultPlayTime = 37749291;
+        public const int roguelikeResultTreesFelled = 37749292;
+        public const int roguelikeResultOwnedCards = 37749293;
+        public const int roguelikeResultRetry = 37749294;
+        public const int roguelikeResultMainMenu = 37749295;
+        public const int roguelikeHintMove = 37749296;
+        public const int roguelikeHintSelect = 37749297;
+        public const int roguelikeHintBack = 37749298;
+        public const int roguelikeHintTab = 37749299;
     }
 
     public static class SaveCheckUI
@@ -558,6 +605,11 @@ public static class LocKeys
         public const int upgradeAxeTitle = 31457287;
         public const int startNewLoggingTitle = 31457288;
         public const int unlockNewRegionTitle = 31457289;
+        public const int sporeForestGuideTitle = 31457290;
+        public const int sporeForestGuideDesc = 31457291;
+        public const int starrootForestGuideTitle = 31457292;
+        public const int magmaForestGuideTitle = 31457293;
+        public const int magmaForestGuideDesc = 31457294;
     }
 
     public static class WarningUI
