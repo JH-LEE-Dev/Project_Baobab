@@ -162,7 +162,7 @@ public enum ERunEffect
 public enum ERunPhase
 {
     None = 0,
-    Lobby = 1,
+    // 1은 폐지된 로비(Lobby) 자리다. 로비가 없어져 입장 연출이 끝나면 곧바로 런이 시작된다. 다시 쓰지 않는다.
     RunStarting = 2,
     CardSelect = 3,
     TierTransition = 4,
@@ -171,7 +171,8 @@ public enum ERunPhase
     RunClear = 7,
     GameOver = 8,
     Result = 9,
-    ReturningToLobby = 10,
+    /// <summary>런 입장 연출 중(메인메뉴 또는 결과 화면의 다시 도전에서). 연출이 끝나면 RunStarting으로 넘어간다.</summary>
+    Entering = 10,
 }
 
 /// <summary>임계치 피해 판정 상태. 기획서 3-2 "피해 판정 흐름".</summary>

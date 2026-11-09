@@ -6,8 +6,8 @@ using UnityEngine;
 /// <summary>
 /// 로그라이크 모드의 오케스트레이터. 기획서 7장 "런 상태 흐름"을 그대로 구현한다.
 ///
-///   로비 → 런 시작 → [카드 선택 → (티어 전환) → 웨이브 전투 → 웨이브 클리어] × 30 → 런 클리어
-///   → 언리밋(카드 없이 웨이브 반복) → 게임오버/포기 → 결과 기록 → 결과 화면 → 로비
+///   입장 연출 → 런 시작 → [카드 선택 → (티어 전환) → 웨이브 전투 → 웨이브 클리어] × 30 → 런 클리어
+///   → 언리밋(카드 없이 웨이브 반복) → 게임오버/포기 → 결과 기록 → 결과 화면 → 다시 도전(입장 연출) / 메인메뉴
 ///
 /// GameInstaller가 로그라이크 세션일 때만 만든다(본편 세션에서는 존재하지 않는다).
 /// 본편 시스템(캐릭터·나무 매니저·타일맵·HUD)은 그대로 재사용하되, 던전 원정 흐름(InDungeonSystem)은 타지 않는다.
@@ -22,7 +22,7 @@ using UnityEngine;
 /// </summary>
 public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 {
-    // 메인메뉴 커튼을 다시 내린다(로비 → 메인메뉴). GameInstaller가 BootStrap까지 그대로 올려 보낸다(본편 던전 이탈과 같은 경로).
+    // 메인메뉴 커튼을 다시 내린다(결과 화면 → 메인메뉴). GameInstaller가 BootStrap까지 그대로 올려 보낸다(본편 던전 이탈과 같은 경로).
     // 진입 때의 커튼 걷기는 메인메뉴가 암전 아래에서 직접 한다(UIView_MainMenu.RoguelikeEntryRoutine).
     public event Action GoToMainMenuCurtainRevealEvent;
 
@@ -70,7 +70,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     [SerializeField] private RoguelikeWaveTreeStrategySO waveStrategyTemplate;
 
     [Header("필드")]
-    [Tooltip("티어 순서대로의 지형. 로비는 첫 칸을 쓴다. 모자라면 마지막 칸을 쓴다.")]
+    [Tooltip("티어 순서대로의 지형. 입장 연출은 첫 칸을 쓴다. 모자라면 마지막 칸을 쓴다.")]
     [SerializeField] private List<TierFieldData> tierFields = new List<TierFieldData>();
     [Tooltip("섬 크기를 맞추는 기준 화면의 월드 크기. 1920×1080에서 보이는 영역(직교 크기 5.625 → 20 × 11.25)이다.\n" +
         "섬은 이 값에서 한 번 계산한 '절대 크기'라 다른 해상도에서도 크기가 변하지 않는다.")]
@@ -85,7 +85,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     [SerializeField] private FieldCloudSettings fieldCloudSettings = new FieldCloudSettings();
     [Tooltip("섬 둘레 물에 띄우는 장식(맵 종류별 본편 물 장식) 수치.")]
     [SerializeField] private RoguelikeWaterDecoSettings waterDecoSettings = new RoguelikeWaterDecoSettings();
-    [Tooltip("결과 화면 → 로비 진입 1~2단계(디스토션 → 암전)와 암전이 걷히는 페이드인 수치. 메인메뉴에서 들어올 때의 디스토션은 UIView_MainMenu가 같은 수치 형식으로 따로 갖는다.")]
+    [Tooltip("결과 화면 → 다시 도전 입장 1~2단계(디스토션 → 암전)와 암전이 걷히는 페이드인 수치. 메인메뉴에서 들어올 때의 디스토션은 UIView_MainMenu가 같은 수치 형식으로 따로 갖는다.")]
     [SerializeField] private RoguelikeScreenTransitionSettings screenTransitionSettings = new RoguelikeScreenTransitionSettings();
 
     [Header("플레이어 낙하(기획서 4-1 6단계)")]
@@ -93,14 +93,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     [SerializeField] private float characterDropHeight = 7f;
     [Tooltip("떨어지는 시간(초). 처음엔 느리고 점점 빨라진다(중력처럼).")]
     [SerializeField] private float characterDropSeconds = 0.45f;
-
-    [Header("로비")]
-    [SerializeField] private RoguelikeLobbyInteractable startRunObjectPrefab;
-    [SerializeField] private RoguelikeLobbyInteractable recordsObjectPrefab;
-    [SerializeField] private Vector2 startRunObjectOffset = new Vector2(2.5f, 1f);
-    [SerializeField] private Vector2 recordsObjectOffset = new Vector2(-2.5f, 1f);
-    [Tooltip("로비 오브젝트를 올릴 충돌 레이어. 도끼가 맞히는 레이어(나무 레이어)여야 한다.")]
-    [SerializeField] private LayerMask lobbyObjectLayer;
 
     [Header("신규 스킬·조합")]
     [SerializeField] private RoguelikeSkillController skillController;
@@ -141,7 +133,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     [SerializeField] private float fallbackWaveClearSeconds = 0.6f;
     [SerializeField] private float fallbackRunClearSeconds = 1f;
     [SerializeField] private float fallbackResultToLobbySeconds = 0.2f;
-    [SerializeField] private float fallbackLobbyToRunSeconds = 0f;
     [Tooltip("연출 핸들러가 완료를 알리지 않을 때 강제로 진행하기까지의 시간.")]
     [SerializeField] private float maxProductionWaitSeconds = 15f;
     [Tooltip("카드 UI가 구매 연출 완료를 알리지 않을 때 강제로 진행하기까지의 시간.")]
@@ -191,14 +182,10 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private bool bFieldBgmPlaying;
     private SoundID currentFieldBgm;
 
-    private RoguelikeLobbyInteractable startRunObject;
-    private RoguelikeLobbyInteractable recordsObject;
-
     private readonly List<int> discardedOfferIndices = new List<int>(4);
     private readonly List<IRoguelikeProductionHandler> handlerBuffer = new List<IRoguelikeProductionHandler>(8);
 
     private Action<TreeObj, Vector3> treeKilledHandler;
-    private Action<ERoguelikeLobbyAction> lobbyActionHandler;
 
     // // 런 상태
     private ERunPhase phase = ERunPhase.None;
@@ -206,7 +193,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private int waveKills;
     // 다음에 진행할 통산 웨이브 번호(1부터). RunRoutine이 웨이브를 마칠 때마다 올린다.
     private int runWaveNumber;
-    // 지금 필드에 깔린 지형의 티어(로비는 0). 웨이브의 티어와 다르면 지형 전환을 한다.
+    // 지금 필드에 깔린 지형의 티어(입장 연출은 0). 웨이브의 티어와 다르면 지형 전환을 한다.
     private int currentFieldTierIndex;
     private bool bRunActive;
     private bool bRunEnding;
@@ -228,17 +215,20 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private float saplingAppearSoundTime;
     private bool bSaplingAppearSoundPending;
     private bool bExitingToMainMenu;
+    // 본편 HUD(스태미너 바 · 대쉬 게이지)를 PopupUIDownSignal로 내려 둔 상태. 결과 화면부터 입장 연출까지 내려 두고 첫 전투에서 올린다.
+    // 내림 신호가 두 번 오면 HUD 내림 모션이 처음부터 다시 재생되고(효과음도 두 번) 화면이 튀므로, 내림·올림은 이 플래그를 거친다.
+    private bool bMainHudLowered;
 
-    // 로비로 들어가는 동안(필드 재생성·입장 연출) ESC를 잠그는 소유자 이름. 이 구간의 메인메뉴 요청은 받을 곳이 없다 -
-    // 런도 아니고 로비도 아니라 무시되는데, ESC 쪽은 이미 메뉴를 닫고 이동 잠금을 풀어 버린다.
-    private const string LobbyEntryESCLockOwner = "RoguelikeLobbyEntry";
+    // 런 입장 연출 동안(필드 재생성·입장 연출·낙하) ESC를 잠그는 소유자 이름. 이 구간의 포기 요청은 받을 곳이 없다 -
+    // 아직 런이 아니라 무시되는데, ESC 쪽은 이미 메뉴를 닫고 이동 잠금을 풀어 버린다. 잠금은 런이 시작될 때(RunRoutine) 푼다.
+    private const string EntryESCLockOwner = "RoguelikeRunEntry";
     private const string RunClearESCLockOwner = "RoguelikeRunClear";
 
     // 로그라이크 세션 내내 본편 가방 키(인벤토리 팝업·원목 교체)를 막는 소유자 이름. 로그라이크에는 가방이 없고,
     // 열리면 카드 선택·결과 화면 위에 본편 가방이 겹쳐 뜬다. 잠금 집합은 앱 수명이라 Release에서 반드시 푼다.
     // 같은 소유자로 인벤토리 키를 보유 카드 창 열기로 리다이렉트한다(Tab · 패드 LT, 리바인딩 결과 그대로). 리다이렉트도 Release에서 푼다.
     private const string SessionInventoryLockOwner = "RoguelikeSession";
-    // 로비 진입 암전이 HUD 내림 모션을 기다리는 상한(초, 검은 화면 아래로 들어온 때부터). 모션이 멈춰 버려도 진입이 막히지 않게 한다.
+    // 입장 암전이 HUD 내림 모션을 기다리는 상한(초, 검은 화면 아래로 들어온 때부터). 모션이 멈춰 버려도 진입이 막히지 않게 한다.
     private const float EntryHudSettleLimitSeconds = 2f;
 
     private RunRecordEntry lastRunRecord;
@@ -248,6 +238,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     // 다른 곳에서 알려 주기를 기다리는 플래그(시그널로 켜진다).
     private bool bCardPresentationDone;
     private bool bResultConfirmed;
+    private ERoguelikeResultChoice resultChoice;
     private bool bCharacterDownCompleted;
 
     private Coroutine flowCoroutine;
@@ -361,32 +352,30 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
             skillController.SetVfxSources(inDungeonObjectManager);
         }
 
-        CreateLobbyObjects();
         OpenViews();
 
         // 코디네이터가 뷰를 받은 뒤에 연결한다. 열 수 없는 단계는 코디네이터가 스스로 거르고, 이미 열려 있으면 같은 키가 창을 닫는다(창이 떠 있는 동안은 UI 모드라 IsOwnedCardsOpen으로 통과시킨다).
         inputManager.SetInventoryKeyRedirect(SessionInventoryLockOwner, uiCoordinator.RequestOwnedCards, uiCoordinator.IsOwnedCardsOpen);
 
         treeKilledHandler = OnTreeKilled;
-        lobbyActionHandler = OnLobbyAction;
 
         BindEvents();
         SubscribeSignals();
     }
 
-    /// <summary>씬 진입 직후(GameInstaller.SetupGameInstaller). 로비로 들어간다.</summary>
+    /// <summary>씬 진입 직후(GameInstaller.SetupGameInstaller). 입장 연출을 거쳐 곧바로 런을 시작한다.</summary>
     public void StartSession()
     {
         townSystem.PrepareForRoguelike();
 
-        TierFieldData lobbyField = GetTierField(0);
-        signalHub.Publish(new DecalreDungeonTypeSignal(lobbyField.mapType, lobbyField.forestType));
-        signalHub.Publish(new PopupUIDownSignal());
+        TierFieldData entryField = GetTierField(0);
+        signalHub.Publish(new DecalreDungeonTypeSignal(entryField.mapType, entryField.forestType));
+        LowerMainHud();
 
         // 메인메뉴가 디스토션 → 암전을 건 채 씬이 넘어온다(기획서 4-1 1~2단계). 암전 아래에서 섬을 깔고
-        // EnterLobbyRoutine이 암전을 걷은 뒤 바닥 타일 파도 → 배경 조립 → 낙하를 잇는다.
+        // EnterRunRoutine이 암전을 걷은 뒤 바닥 타일 파도 → 배경 조립 → 낙하 → 런 시작을 잇는다.
 
-        StartFlow(EnterLobbyRoutine(false));
+        StartFlow(EnterRunRoutine(false));
     }
 
     public void Release()
@@ -399,8 +388,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         RoguelikeScreenTransition.ClearIfCovering();
         EndRunClearCinematic();
 
-        // InputManager는 BootStrap 소속이라 메인메뉴까지 살아 있다. 로비 입장 도중 해제돼도 잠금이 남지 않게 푼다.
-        inputManager?.SetESCKeyLock(LobbyEntryESCLockOwner, false);
+        // InputManager는 BootStrap 소속이라 메인메뉴까지 살아 있다. 입장 연출 도중 해제돼도 잠금이 남지 않게 푼다.
+        inputManager?.SetESCKeyLock(EntryESCLockOwner, false);
         inputManager?.SetInventoryKeyLock(SessionInventoryLockOwner, false);
         inputManager?.SetInventoryKeyRedirect(SessionInventoryLockOwner, null);
 
@@ -425,9 +414,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
             Destroy(waveStrategy);
             waveStrategy = null;
         }
-
-        if (null != startRunObject) Destroy(startRunObject.gameObject);
-        if (null != recordsObject) Destroy(recordsObject.gameObject);
     }
 
     /// <summary>캐릭터 생성(CharacterSpawnedSignal) 전에 만들어지므로 그 시그널로 받는다.</summary>
@@ -450,7 +436,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         signalHub.Subscribe<RoguelikeCardRerollRequestedSignal>(CardRerollRequested);
         signalHub.Subscribe<RoguelikeCardSelectionPresentationDoneSignal>(CardSelectionPresentationDone);
         signalHub.Subscribe<RoguelikeResultConfirmedSignal>(ResultConfirmed);
-        signalHub.Subscribe<RoguelikeLobbyActionSignal>(LobbyActionRequested);
     }
 
     private void UnSubscribeSignals()
@@ -465,7 +450,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         signalHub.UnSubscribe<RoguelikeCardRerollRequestedSignal>(CardRerollRequested);
         signalHub.UnSubscribe<RoguelikeCardSelectionPresentationDoneSignal>(CardSelectionPresentationDone);
         signalHub.UnSubscribe<RoguelikeResultConfirmedSignal>(ResultConfirmed);
-        signalHub.UnSubscribe<RoguelikeLobbyActionSignal>(LobbyActionRequested);
     }
 
     private void BindEvents()
@@ -475,31 +459,23 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
             waveStrategy.TreeKilledEvent -= treeKilledHandler;
             waveStrategy.TreeKilledEvent += treeKilledHandler;
         }
-
-        if (null != startRunObject)
-        {
-            startRunObject.ActionTriggeredEvent -= lobbyActionHandler;
-            startRunObject.ActionTriggeredEvent += lobbyActionHandler;
-        }
-
-        if (null != recordsObject)
-        {
-            recordsObject.ActionTriggeredEvent -= lobbyActionHandler;
-            recordsObject.ActionTriggeredEvent += lobbyActionHandler;
-        }
     }
 
     private void ReleaseEvents()
     {
         if (null != waveStrategy) waveStrategy.TreeKilledEvent -= treeKilledHandler;
-        if (null != startRunObject) startRunObject.ActionTriggeredEvent -= lobbyActionHandler;
-        if (null != recordsObject) recordsObject.ActionTriggeredEvent -= lobbyActionHandler;
     }
 
     private void CharacterDownCompleted(RoguelikeCharacterDownCompletedSignal _signal) => bCharacterDownCompleted = true;
     private void CardSelectionPresentationDone(RoguelikeCardSelectionPresentationDoneSignal _signal) => bCardPresentationDone = true;
-    private void ResultConfirmed(RoguelikeResultConfirmedSignal _signal) => bResultConfirmed = true;
-    private void LobbyActionRequested(RoguelikeLobbyActionSignal _signal) => OnLobbyAction(_signal.action);
+    private void ResultConfirmed(RoguelikeResultConfirmedSignal _signal)
+    {
+        // 결과 화면이 떠 있는 동안 처음 고른 것만 받는다(같은 프레임에 두 번 와도 첫 선택으로 진행).
+        if (ERunPhase.Result != phase || bResultConfirmed) return;
+
+        resultChoice = _signal.choice;
+        bResultConfirmed = true;
+    }
 
     // // 카드 선택 요청
 
@@ -624,6 +600,10 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
     private void CharacterStaminaIsEmpty(CharacterStaminaIsEmptySignal _signal)
     {
+        // 쓰러지면 UnitSystem.CharacterStaminaIsEmpty가 이 신호 직후 본편 HUD를 내린다(PopupUIDownSignal). 내린 상태로 기록해
+        // 결과 화면(FinishRunRoutine)이 한 번 더 내리지 않게 한다. 두 번 내리면 HUD가 다시 튀어 올랐다 내려간다.
+        bMainHudLowered = true;
+
         if (false == bRunActive || bRunEnding) return;
 
         bRunEnding = true;
@@ -641,13 +621,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     {
         if (bExitingToMainMenu) return;
 
-        if (ERunPhase.Lobby == phase)
-        {
-            StartFlow(ExitToMainMenuRoutine());
-            return;
-        }
-
-        // 런 도중 ESC → 포기(기획서 3-7 "런 중도 나가기"). 결과 화면을 거쳐 로비로 간다.
+        // 런 도중 ESC → 포기(기획서 3-7 "런 중도 나가기"). 결과 화면으로 간다(그 뒤 다시 도전 / 메인메뉴).
         if (bRunActive && false == bRunEnding)
         {
             bRunEnding = true;
@@ -675,65 +649,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         }
     }
 
-    // // 로비
-
-    private void OnLobbyAction(ERoguelikeLobbyAction _action)
-    {
-        if (ERunPhase.Lobby != phase) return;
-
-        switch (_action)
-        {
-            case ERoguelikeLobbyAction.StartRun:
-                StartFlow(RunRoutine());
-                break;
-            case ERoguelikeLobbyAction.OpenRecords:
-                signalHub.Publish(new RoguelikeRecordsRequestedSignal());
-                break;
-        }
-    }
-
-    private void CreateLobbyObjects()
-    {
-        int layer = GetFirstLayer(lobbyObjectLayer);
-
-        if (null != startRunObjectPrefab)
-        {
-            startRunObject = Instantiate(startRunObjectPrefab, transform);
-            startRunObject.Initialize(layer);
-            startRunObject.Remove();
-        }
-
-        if (null != recordsObjectPrefab)
-        {
-            recordsObject = Instantiate(recordsObjectPrefab, transform);
-            recordsObject.Initialize(layer);
-            recordsObject.Remove();
-        }
-    }
-
-    private void PlaceLobbyObjects(Vector3 _center)
-    {
-        startRunObject?.Place(_center + (Vector3)startRunObjectOffset);
-        recordsObject?.Place(_center + (Vector3)recordsObjectOffset);
-    }
-
-    private void RemoveLobbyObjects()
-    {
-        startRunObject?.Remove();
-        recordsObject?.Remove();
-    }
-
-    private static int GetFirstLayer(LayerMask _mask)
-    {
-        int value = _mask.value;
-        for (int i = 0; i < 32; i++)
-        {
-            if (0 != (value & (1 << i))) return i;
-        }
-
-        return 0;
-    }
-
     // // UI
 
     private void OpenViews()
@@ -750,14 +665,30 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         UIView_RoguelikeResult resultUI = gameplayUIInstaller.OpenAdditionalView<UIView_RoguelikeResult>();
         resultUI?.Hide();
 
-        UIView_RoguelikeRecords recordsUI = gameplayUIInstaller.OpenAdditionalView<UIView_RoguelikeRecords>();
-        recordsUI?.Hide();
-
-        uiCoordinator.Initialize(signalHub, this, hudUI, cardSelectUI, ownedCardsUI, resultUI, recordsUI, gameplayUIInstaller.GetOpenedView<UIView_ESC>(),
+        // 기록 창은 메인메뉴가 연다(로그라이크 하위 메뉴의 기록). 로그라이크 씬에는 기록 창을 여는 곳이 없다.
+        uiCoordinator.Initialize(signalHub, this, hudUI, cardSelectUI, ownedCardsUI, resultUI, gameplayUIInstaller.GetOpenedView<UIView_ESC>(),
             gameplayUIInstaller.GetOpenedView<UIView_Popup>(), gameplayUIInstaller.GetOpenedView<UIView_HUD>());
     }
 
     // // 공통
+
+    /// <summary>본편 HUD를 내린다(이미 내려 두었으면 아무 일도 없다).</summary>
+    private void LowerMainHud()
+    {
+        if (bMainHudLowered) return;
+
+        bMainHudLowered = true;
+        signalHub.Publish(new PopupUIDownSignal());
+    }
+
+    /// <summary>내려 둔 본편 HUD를 올린다(내려 두지 않았으면 아무 일도 없다).</summary>
+    private void RaiseMainHud()
+    {
+        if (false == bMainHudLowered) return;
+
+        bMainHudLowered = false;
+        signalHub.Publish(new PopupUIUpSignal());
+    }
 
     private void SetPhase(ERunPhase _phase)
     {
@@ -796,7 +727,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
             case ERoguelikeProduction.WaveClear: return fallbackWaveClearSeconds;
             case ERoguelikeProduction.RunClear: return fallbackRunClearSeconds;
             case ERoguelikeProduction.ResultToLobby: return fallbackResultToLobbySeconds;
-            case ERoguelikeProduction.LobbyToRun: return fallbackLobbyToRunSeconds;
             default: return 0f;
         }
     }
@@ -822,7 +752,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
     private void Update()
     {
-        // 플레이 시간: 카드 선택(시간이 흐르지 않는 단계)·결과·로비는 세지 않는다. ESC 일시정지는 timeScale 0이라 자연히 멈춘다.
+        // 플레이 시간: 카드 선택(시간이 흐르지 않는 단계)·결과는 세지 않는다. ESC 일시정지는 timeScale 0이라 자연히 멈춘다.
         if (bRunActive && ERunPhase.CardSelect != phase && ERunPhase.Result != phase)
         {
             playTimeSeconds += Time.deltaTime;

@@ -104,6 +104,12 @@ public class MainMenuUIInstaller : MonoBehaviour
         }
     }
 
+    /// <summary>다음에 메인 버튼이 나타날 때 로그라이크 하위 메뉴를 연 상태로 보여 준다(한 번만). 로그라이크 결과 화면에서 돌아온 경우.</summary>
+    public void OpenRoguelikeMenuOnShow()
+    {
+        uiManager.GetView<UIView_MainMenu>()?.OpenRoguelikeMenuOnShow();
+    }
+
     public void PlayButtonsRevealAnimation(Action _onComplete = null)
     {
         UIView_MainMenu mainMenuUIView = uiManager.GetView<UIView_MainMenu>();

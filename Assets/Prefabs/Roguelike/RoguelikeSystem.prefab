@@ -119,13 +119,6 @@ MonoBehaviour:
     fadeOutSeconds: 0.3
   characterDropHeight: 7
   characterDropSeconds: 0.45
-  startRunObjectPrefab: {fileID: 2284844287117466035, guid: 2bc6ac8a89e050246b56d5bfdd7b12fc, type: 3}
-  recordsObjectPrefab: {fileID: 2601570253084400613, guid: 9cbbf21ca74a77b48b23c351639218a0, type: 3}
-  startRunObjectOffset: {x: 2.5, y: 1}
-  recordsObjectOffset: {x: -2.5, y: 1}
-  lobbyObjectLayer:
-    serializedVersion: 2
-    m_Bits: 1024
   skillController: {fileID: 6092421280983671155}
   bAttackSpeedAffectsAxe: 1
   waveClearSaplingVanishSeconds: 1
@@ -142,7 +135,6 @@ MonoBehaviour:
   fallbackWaveClearSeconds: 0.6
   fallbackRunClearSeconds: 1
   fallbackResultToLobbySeconds: 0.2
-  fallbackLobbyToRunSeconds: 0
   maxProductionWaitSeconds: 15
   maxCardPresentationWaitSeconds: 10
   noCardsNoticeFallbackSeconds: 1.5
