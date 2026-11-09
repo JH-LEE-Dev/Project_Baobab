@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using DG.Tweening;
 using System;
 using TMPro;
+using System.Collections.Generic;
 
 
 public class UIView_MainMenu : UIView
@@ -33,6 +34,12 @@ public class UIView_MainMenu : UIView
 
     [Header("Sub Views")]
     [SerializeField] private UI_Option optionUI; // 공용 옵션 UI
+
+    [Header("Roguelike Records (메인메뉴 로그라이크 하위 메뉴의 기록 창)")]
+    [SerializeField, Tooltip("기록 창 프리팹(UIView_RoguelikeRecords). 처음 열 때 이 화면 위에 만든다.")]
+    private UIView_RoguelikeRecords roguelikeRecordsPrefab;
+    [SerializeField, Tooltip("기록의 카드 ID를 아이콘으로 바꿀 카드 데이터베이스(RoguelikeSystem 프리팹과 같은 에셋).")]
+    private CardDatabaseSO roguelikeCardDatabase;
     [SerializeField] private UI_Credit creditUI; // 크레딧 UI
     [SerializeField] private UI_InitialSetupPopup initialSetupPopup; // 초기 언어 및 약관 동의 팝업
 
@@ -73,6 +80,14 @@ public class UIView_MainMenu : UIView
     // 로그라이크 진입 디스토션 중(버튼을 누른 뒤 메인메뉴가 내려갈 때까지). 그동안 다른 메뉴 버튼은 무시한다 -
     // 본편 버튼은 누르는 즉시 메뉴를 내리지만 로그라이크는 메뉴를 띄운 채 출렁이게 하므로, 그 사이 이어하기 등이 눌리면 두 흐름이 겹친다.
     private bool bRoguelikeEntryPlaying;
+
+    // 로그라이크 기록 창 · 복귀 상태
+    private UIView_RoguelikeRecords roguelikeRecordsView;
+    private Action roguelikeRecordsClosedCallback;
+    private Action cachedOnRoguelikeRecordsViewClosed;
+    private bool bOpenRoguelikeMenuOnShow;
+    private readonly List<RoguelikeRecordViewData> roguelikeClearRankingBuffer = new List<RoguelikeRecordViewData>(5);
+    private readonly List<RoguelikeRecordViewData> roguelikeUnlimitRankingBuffer = new List<RoguelikeRecordViewData>(5);
     private IMainMenuSaveSystem saveSystem;
     // 엔딩을 마치고 돌아와 "계속 하려면 아무 키나 누르십시오"를 띄운 상태인지. 키를 누르면 평소 문구로 돌아간다.
     private bool bEndingPressAnyKey;
@@ -295,6 +310,13 @@ public class UIView_MainMenu : UIView
         {
             mainMenuUI.gameObject.SetActive(true);
             mainMenuUI.ResetAndShowButtons();
+
+            // 로그라이크 결과 화면에서 메인메뉴로 돌아온 경우: 로그라이크 하위 메뉴를 연 상태로 보여 준다(OpenRoguelikeMenuOnShow, 한 번만).
+            if (true == bOpenRoguelikeMenuOnShow)
+            {
+                bOpenRoguelikeMenuOnShow = false;
+                mainMenuUI.OpenRoguelikeMenu(false);
+            }
         }
 
         if (null != otherCanvasGroup)
@@ -790,9 +812,67 @@ public class UIView_MainMenu : UIView
         gameObject.SetActive(false);
     }
 
+    /// <summary>
+    /// [시스템 연결 지점] 다음에 메인 버튼이 나타날 때 로그라이크 하위 메뉴를 연 상태로 보여 준다(한 번만).
+    /// 로그라이크 결과 화면에서 메인메뉴를 골라 돌아왔을 때 BootStrap이 부른다(LobbyRemoval_AppLayer_Request.md S3).
+    /// </summary>
+    public void OpenRoguelikeMenuOnShow()
+    {
+        bOpenRoguelikeMenuOnShow = true;
+    }
+
+    /// <summary>
+    /// 로그라이크 하위 메뉴의 기록에서 부른다. 저장 파일(읽기 전용)로 기록 창을 채워 이 화면 위에 연다.
+    /// 창이 닫히면 _onClosed를 부른다. 열지 못하면 false.
+    /// </summary>
+    public bool OpenRoguelikeRecords(Action _onClosed)
+    {
+        if (true == bRoguelikeEntryPlaying || null == roguelikeRecordsPrefab) return false;
+
+        if (null == roguelikeRecordsView)
+        {
+            roguelikeRecordsView = Instantiate(roguelikeRecordsPrefab, transform);
+            RectTransform rect = roguelikeRecordsView.transform as RectTransform;
+            if (null != rect)
+            {
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+            }
+
+            roguelikeRecordsView.Initialize(viewCtx);
+            roguelikeRecordsView.SetStandaloneClose(true);
+            if (null == cachedOnRoguelikeRecordsViewClosed) cachedOnRoguelikeRecordsViewClosed = OnRoguelikeRecordsViewClosed;
+            roguelikeRecordsView.ClosedEvent += cachedOnRoguelikeRecordsViewClosed;
+            roguelikeRecordsView.gameObject.SetActive(false);
+        }
+
+        roguelikeRecordsView.transform.SetAsLastSibling();
+        roguelikeRecordsClosedCallback = _onClosed;
+
+        RoguelikeRecordViewBuilder.Build(RoguelikeRecordRepository.Load(), roguelikeCardDatabase, out RoguelikeRecordViewData recent,
+            roguelikeClearRankingBuffer, roguelikeUnlimitRankingBuffer);
+        roguelikeRecordsView.OpenRecords(in recent, roguelikeClearRankingBuffer, roguelikeUnlimitRankingBuffer);
+        return true;
+    }
+
+    private void OnRoguelikeRecordsViewClosed()
+    {
+        // 기록 창은 로그라이크 모달 공통 입력(RoguelikeModalInput)을 쓴다. 메인메뉴에는 로그라이크 조작 상태가 없어 닫힐 때 이동 잠금이 남으므로
+        // 메인메뉴의 기본 상태(이동 잠금 해제 - BootStrap.SetupMainMenuScene과 같다)로 되돌린다.
+        if (null != viewCtx && null != viewCtx.inputManager) viewCtx.inputManager.PauseMove(false);
+
+        Action callback = roguelikeRecordsClosedCallback;
+        roguelikeRecordsClosedCallback = null;
+        callback?.Invoke();
+    }
+
     public override void OnDestroy()
     {
         NewGameButtonClickedEvent = null;
+        if (null != roguelikeRecordsView && null != cachedOnRoguelikeRecordsViewClosed) roguelikeRecordsView.ClosedEvent -= cachedOnRoguelikeRecordsViewClosed;
+        roguelikeRecordsClosedCallback = null;
         LoadGameButtonClickedEvent = null;
         ExitButtonClickedEvent = null;
         RoguelikeButtonClickedEvent = null;

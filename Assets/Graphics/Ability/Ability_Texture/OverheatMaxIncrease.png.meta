@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: c00de4a437c14d74a861ce3b0d4e251f
+guid: 8080cd0a061bffa4ea3f06265c814278
 TextureImporter:
   internalIDToNameTable:
   - first:
       213: -7781206004220612196
-    second: OverheatEfficiency_0
+    second: OverheatMaxIncrease_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: OverheatEfficiency_0
+      name: OverheatMaxIncrease_0
       rect:
         serializedVersion: 2
         x: 4
@@ -115,7 +115,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 7c074217d53b42d70800000000000000
+      spriteID: 495d197f182b4e240800000000000000
       internalID: -7781206004220612196
       vertices: []
       indices: 
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      OverheatEfficiency_0: -7781206004220612196
+      OverheatMaxIncrease_0: -7781206004220612196
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
