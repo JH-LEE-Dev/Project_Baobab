@@ -329,6 +329,8 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
             treeTriggerGroupDict[starTree] = _groupId;
             starTree.SetStarMarked(true);
             starTree.SetStarGroupId(_groupId);
+            // 별자리를 이루는 나무는 배리어 없이 벨 수 있다(스폰 때 모든 나무에 씌운 배리어를 걷는다).
+            starTree.SetBarrier(false);
             positions.Add(spawnedGroupTopPositions[index]);
         }
 

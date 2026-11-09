@@ -61,6 +61,93 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         StarGroupId = _groupId;
     }
 
+    // ---------- 3스테이지 배리어 ----------
+    // 별자리를 이루지 않는 나무는 배리어로 모든 피해를 막는다. 별자리 발현 폭발에 맞으면 그 타격을 흡수하며 깨지고,
+    // 그 뒤로는 평소처럼 피해를 받는다. 켜고 끄는 것은 InDungeonObjectManager(스폰)와 Stage3TreeGenerationStrategySO(별 표식)가 한다.
+    // 막힌 타격은 피해/화상/피격 이벤트/나무 흔들림 없이 배리어 번쩍임 + 스파크(TreeBarrierBlockedEvent를 받은 매니저)만 낸다.
+
+    /// <summary>배리어가 막은 타격. 매니저가 맞은 자리를 정해 PlayBarrierHit와 스파크 이펙트를 재생한다.</summary>
+    public event Action<TreeObj> TreeBarrierBlockedEvent;
+
+    /// <summary>배리어가 깨진 순간. Vector3는 껍질 위 맞은 자리(월드).</summary>
+    public event Action<TreeObj, Vector3> TreeBarrierBrokenEvent;
+
+    [SerializeField] private VFX_TreeBarrier barrierVfx;
+
+    public bool bBarrierActive { get; private set; } = false;
+
+    private const float BarrierHitSoundVolume = 0.75f;
+    private const float BarrierHitSoundPitchMin = 1.3f;
+    private const float BarrierHitSoundPitchMax = 1.5f;
+    private const float BarrierBreakSoundPitch = 1.2f;
+
+    /// <summary>배리어를 연출 없이 켜거나 끈다(스폰, 별 표식 부여, 풀 반환).</summary>
+    public void SetBarrier(bool _boolean)
+    {
+        bBarrierActive = _boolean;
+        if (null == barrierVfx) return;
+
+        if (true == _boolean)
+        {
+            barrierVfx.Show();
+            SyncBarrierSortingOrder();
+        }
+        else
+        {
+            barrierVfx.HideImmediate();
+        }
+    }
+
+    /// <summary>
+    /// 별자리 발현 폭발이 배리어를 깬다. 이 타격은 배리어가 흡수하므로 피해를 주지 않는다.
+    /// _sourcePos는 폭발 중심(깨지는 연출이 그쪽 면에서 시작한다). 배리어가 없거나 죽은/풀 나무면 false.
+    /// </summary>
+    public bool BreakBarrier(Vector3 _sourcePos)
+    {
+        if (false == bBarrierActive || bDead || IsPooled || false == gameObject.activeInHierarchy) return false;
+
+        bBarrierActive = false;
+        Vector3 impact = VFX_TreeBarrier.GetImpactPoint(cachedTransform.position, _sourcePos, out _);
+
+        if (null != barrierVfx) barrierVfx.PlayBreak(impact);
+
+        Sound.Play(SoundID.SporeShieldBreak, cachedTransform.position, 1f, true, BarrierBreakSoundPitch);
+        TreeBarrierBrokenEvent?.Invoke(this, impact);
+        return true;
+    }
+
+    /// <summary>막힌 타격의 껍질 번쩍임/고리. _worldImpact는 껍질 위 맞은 자리.</summary>
+    public void PlayBarrierHit(Vector3 _worldImpact)
+    {
+        if (null != barrierVfx) barrierVfx.PlayHit(_worldImpact);
+    }
+
+    private void SyncBarrierSortingOrder()
+    {
+        if (null != barrierVfx && true == bBarrierActive && null != treeVisualComponent)
+        {
+            barrierVfx.SetSortingOrder(treeVisualComponent.GetFrontEffectSortingOrder());
+        }
+    }
+
+    // 배리어가 타격을 막았다. 소리와 진동은 여기서, 번쩍임과 스파크는 이벤트를 받은 매니저가 맞은 자리를 정해 재생한다.
+    private void OnBarrierBlocked(bool _bPlayHaptic, bool _bPlayHitSound)
+    {
+        if (_bPlayHitSound)
+        {
+            Sound.Play(SoundID.SporeHit, cachedTransform.position, BarrierHitSoundVolume, true,
+                UnityEngine.Random.Range(BarrierHitSoundPitchMin, BarrierHitSoundPitchMax));
+        }
+
+        if (_bPlayHaptic && bLastHitByPlayer)
+        {
+            Rumble.Play(EHapticEvent.TreeImpact);
+        }
+
+        TreeBarrierBlockedEvent?.Invoke(this);
+        bLastHitByPlayer = true;
+    }
+
     [Header("Gem Visual")]
     [Tooltip("켜면 이 나무를 보석(결정) 재질로 렌더링한다. 에디터에서 체크하는 즉시 씬 뷰에 반영된다.")]
     [SerializeField] private bool bGemVisual = false;
@@ -566,6 +653,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     /// <summary>이후 받는 모든 피해를 _amplify만큼 늘린다(포자 대폭발). 이미 더 큰 증폭이 걸려 있으면 그대로 둔다.</summary>
     public void ApplySporeDamageAmplify(float _amplify)
     {
+        // 배리어가 대폭발 피해를 막았다면 증폭도 걸리지 않는다.
+        if (bBarrierActive) return;
+
         if (_amplify > sporeDamageAmplify) sporeDamageAmplify = _amplify;
 
         // 증폭 표시(상시 디버프 이펙트). 대폭발 피해 직후에 불리므로, 그 피해로 쓰러져 풀로 돌아간 나무에는 걸지 않는다.
@@ -583,6 +673,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         bSkipHitVfx = false;
         SetStarMarked(false);
         SetStarGroupId(-1);
+        SetBarrier(false);
         sporeDamageAmplify = 0f;
         TreeSporeDebuffVfx.Clear(this);
         healthComponent.Reset();
@@ -661,6 +752,14 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         // 풀 반환 시 ResetTree가 bDead/HP를 되돌려 산 나무처럼 보이므로, 그대로 진행하면 유령 타격음/진동이 나고
         // 비활성 오브젝트에 열기 타이머 코루틴(TryStartHeatTimer)을 걸려다 에러가 난다.
         if (IsPooled || !gameObject.activeInHierarchy) return;
+
+        // 3스테이지 배리어 - 모든 피해를 막는다(배리어는 별자리 발현 폭발만 BreakBarrier로 깬다).
+        // lastHitDamage는 위에서 0으로 비웠으므로 뒤따르는 화상도 걸리지 않는다.
+        if (bBarrierActive)
+        {
+            OnBarrierBlocked(_bPlayHaptic, _bPlayHitSound);
+            return;
+        }
 
         // 죽음 판정 직전 상태를 기억해, 이미 죽은 나무가 정리되기 전 다시 타격당해도
         // TreeDeadEvent가 중복 발생하지 않도록 false->true 전이 시점에만 이벤트를 발생시킨다.
@@ -1099,6 +1198,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         customSortable.ManualLateUpdate();
         treeVisualComponent.UpdateOnWaterSortingOrder();
         treeVisualComponent.UpdateSortingOrder();
+        SyncBarrierSortingOrder();
     }
 
     public TreeType GetTreeType()

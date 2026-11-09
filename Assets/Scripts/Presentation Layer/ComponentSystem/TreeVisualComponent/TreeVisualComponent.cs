@@ -218,6 +218,9 @@ public class TreeVisualComponent : MonoBehaviour
 
     public int GetTopHighlightSortingOrder() => topHighlightRenderer != null ? topHighlightRenderer.sortingOrder : GetTopShieldSortingOrder();
 
+    // 나무 그림 전체(별자리 표식 포함)보다 앞에 그려야 하는 나무 부착 연출(3스테이지 배리어)의 정렬 순서. UpdateSortingOrder 뒤에 읽는다.
+    public int GetFrontEffectSortingOrder() => GetTopHighlightSortingOrder() + 2;
+
     public void UpdateOnWaterSortingOrder()
     {
         if (cachedTransform == null) cachedTransform = transform;

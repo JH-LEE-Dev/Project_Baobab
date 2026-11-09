@@ -356,6 +356,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private Action<TreeObj, float> onTreeHeatCountdownStartedHandler;
     private Action<TreeObj> onTreeGemTransformedHandler;
     private Action<TreeObj> onTreeAboutToDieHandler;
+    private Action<TreeObj> onTreeBarrierBlockedHandler;
+    private Action<TreeObj, Vector3> onTreeBarrierBrokenHandler;
 
     // 최적화: 인덱스 기반 관리로 HashSet 제거
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(2500);
@@ -1405,6 +1407,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             tree.SetSortOrder();
             tree.EnableOutline();
 
+            // 3스테이지(본편 별뿌리 숲) - 모든 나무를 배리어로 감싸고 스폰한다. 별자리 별 표식을 받는 나무는
+            // Stage3TreeGenerationStrategySO.AssignConstellationStars가 곧바로 배리어를 걷는다. 로그라이크 전략은 이 타입이 아니다.
+            if (currentTreeGenerationStrategy is Stage3TreeGenerationStrategySO)
+            {
+                tree.SetBarrier(true);
+            }
+
             return tree;
         }
 
@@ -2062,6 +2071,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         onTreeHeatCountdownStartedHandler = OnTreeHeatCountdownStarted;
         onTreeGemTransformedHandler = OnTreeGemTransformed;
         onTreeAboutToDieHandler = OnTreeAboutToDie;
+        onTreeBarrierBlockedHandler = OnTreeBarrierBlocked;
+        onTreeBarrierBrokenHandler = OnTreeBarrierBroken;
     }
 
     private void OnGetTree(TreeObj _tree)
@@ -2090,6 +2101,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeGemTransformedEvent += onTreeGemTransformedHandler;
         _tree.TreeAboutToDieEvent -= onTreeAboutToDieHandler;
         _tree.TreeAboutToDieEvent += onTreeAboutToDieHandler;
+        _tree.TreeBarrierBlockedEvent -= onTreeBarrierBlockedHandler;
+        _tree.TreeBarrierBlockedEvent += onTreeBarrierBlockedHandler;
+        _tree.TreeBarrierBrokenEvent -= onTreeBarrierBrokenHandler;
+        _tree.TreeBarrierBrokenEvent += onTreeBarrierBrokenHandler;
     }
 
     /// <summary>
@@ -2255,6 +2270,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeHeatCountdownStartedEvent -= onTreeHeatCountdownStartedHandler;
         _tree.TreeGemTransformedEvent -= onTreeGemTransformedHandler;
         _tree.TreeAboutToDieEvent -= onTreeAboutToDieHandler;
+        _tree.TreeBarrierBlockedEvent -= onTreeBarrierBlockedHandler;
+        _tree.TreeBarrierBrokenEvent -= onTreeBarrierBrokenHandler;
         //_tree.transform.position = new Vector2(-10000f, -10000f);
         _tree.gameObject.SetActive(false);
     }
@@ -2319,6 +2336,37 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             cullingGroup = null;
         }
     }
+
+    // 배리어가 막은 타격 - 공격한 쪽(캐릭터) 방향의 껍질 위 자리에서 번쩍임 고리와 스파크를 낸다.
+    // 막힌 타격은 피격 이벤트(OnTreeHit)를 내지 않으므로 나무 피격 이펙트, 전략 훅, 외부 TreeGetHitEvent도 없다.
+    private void OnTreeBarrierBlocked(TreeObj _treeObj)
+    {
+        if (_treeObj == null) return;
+
+        Vector3 root = _treeObj.transform.position;
+        // 캐릭터가 없으면(연출 중 등) 껍질 중심 바로 위쪽에서 맞은 것으로 본다.
+        Vector3 source = character != null
+            ? character.transform.position + new Vector3(0f, BarrierHitSourceHeight, 0f)
+            : root + new Vector3(0f, 10f, 0f);
+
+        Vector3 impact = PresentationLayer.VFX.VFX_TreeBarrier.GetImpactPoint(root, source, out Vector2 normal);
+        _treeObj.PlayBarrierHit(impact);
+
+        if (inDungeonVFXManager != null && _treeObj.treeVisualComponent != null)
+        {
+            inDungeonVFXManager.PlayTreeBarrierSparkVFX(impact, normal, _treeObj.treeVisualComponent.GetFrontEffectSortingOrder() + 1);
+        }
+    }
+
+    private void OnTreeBarrierBroken(TreeObj _treeObj, Vector3 _impact)
+    {
+        if (_treeObj == null || inDungeonVFXManager == null || _treeObj.treeVisualComponent == null) return;
+
+        inDungeonVFXManager.PlayTreeBarrierShatterVFX(_treeObj.transform.position, _impact, _treeObj.treeVisualComponent.GetFrontEffectSortingOrder() + 1);
+    }
+
+    // 배리어 피격 방향을 정할 때 캐릭터 발밑 대신 쓰는 높이(월드). 도끼를 휘두르는 가슴 높이쯤이다.
+    private const float BarrierHitSourceHeight = 0.45f;
 
     private void OnTreeHit(TreeObj _treeObj)
     {
@@ -3473,7 +3521,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             {
                 while (next < hits.Count && hits[next].hitTime <= elapsed)
                 {
-                    ApplyConstellationHit(hits[next], _damage);
+                    ApplyConstellationHit(hits[next], _damage, _center);
                     next++;
                 }
 
@@ -3531,7 +3579,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _hits.Sort(ConstellationHitTimeComparison);
     }
 
-    private void ApplyConstellationHit(ConstellationHit _hit, float _damage)
+    private void ApplyConstellationHit(ConstellationHit _hit, float _damage, Vector3 _center)
     {
         TreeObj tree = _hit.tree;
         if (tree == null || tree.IsPooled || !tree.bCanApplyDamage) return;
@@ -3543,6 +3591,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 한 그루의 타격이 연쇄(사망 처리, 다른 그룹 발현 등) 중 예외로 실패해도 폭발의 나머지 나무는 계속 맞힌다.
         try
         {
+            // 3스테이지 배리어 - 발현 폭발은 배리어를 깨고, 이 타격(피해와 낙인)은 배리어가 흡수한다.
+            // 별자리 잔상의 다음 폭발부터는 배리어가 없으므로 평소처럼 맞는다.
+            if (tree.BreakBarrier(_center))
+            {
+                return;
+            }
+
             tree.TakeDamage(_damage);
 
             // 죽지 않고 살아남은 나무에만 낙인을 적용한다. TakeDamage로 나무가 죽으면 같은 프레임 안에서
