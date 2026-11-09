@@ -178,12 +178,6 @@
             "gridY": -4,
             "parents": [
                 {
-                    "skillType": "MovementSpeed",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                },
-                {
                     "skillType": "PickupRange1",
                     "usePivot": false,
                     "pivotX": 0,
@@ -1433,6 +1427,22 @@
             "parents": [
                 {
                     "skillType": "MovementSpeed2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "PickupRange2",
+            "nameLocId": 246,
+            "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
+            "gridX": -9,
+            "gridY": -6,
+            "parents": [
+                {
+                    "skillType": "InventoryExpansion1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0

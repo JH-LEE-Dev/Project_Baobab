@@ -2326,6 +2326,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.VFX.VFX_CampfireFlame
   glowScale: 1
   groundGlowStrength: 0.22
+  glowBreathAmplitude: 0.3
+  glowBreathSpeed: 0.6
+  glowShimmerAmplitude: 0.08
+  glowFlareBoost: 0.4
   sortingLayerName: Objects
   sortingOrderOffset: 1
   glowRenderer: {fileID: 2380923351176211687}
@@ -2537,6 +2541,10 @@ MonoBehaviour:
   containerForJump: {fileID: 5112186850189715724}
   containerForOpen: {fileID: 3726317326145381529}
   carriedContainer: {fileID: 1738384527356191891}
+  picnicBasketAnimator: {fileID: 0}
+  picnicBasketJumpSprite: {fileID: 0}
+  picnicBasketOpenSprite: {fileID: 0}
+  picnicBasketCarriedSprite: {fileID: 0}
 --- !u!114 &7996946345681589065
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3083,8 +3091,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2bbfe8ac32dd5874fb00d320ff4ff953, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StaminaRecoverCircle
-  radiusX: 6
-  radiusY: 3
+  radiusX: 4.5
+  radiusY: 2.25
   centerOffset: {x: -1, y: -1}
   restAreaVisual: {fileID: 2791583011080765980}
 --- !u!1 &3967389484218223539

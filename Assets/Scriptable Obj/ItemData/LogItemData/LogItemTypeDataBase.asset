@@ -95,7 +95,7 @@ MonoBehaviour:
       timberSprite: {fileID: 21300000, guid: 2e5869a152c8e9940919523ed5a294f5, type: 3}
   - itemType: 1
     treeType: 6
-    durability: 150
+    durability: 120
     sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
     timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
