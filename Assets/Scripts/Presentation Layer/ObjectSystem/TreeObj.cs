@@ -817,7 +817,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
             if (false == bDeferHitVisual)
             {
-                treeVisualComponent.PlayHitFeedback();
+                treeVisualComponent.PlayHitFeedback(_bCritical);
                 treeVisualComponent.PlayHitFlash(_bCritical);
             }
         }
@@ -863,7 +863,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         // 번쩍임은 타격 시점의 활성 여부(이 함수 첫머리에서 활성임을 확인했다)로 판정했던 예전 동작에 맞춘다.
         if (bDeferHitVisual && treeVisualComponent != null && resetTreeCountAtHit == resetTreeCount)
         {
-            treeVisualComponent.PlayHitFeedback();
+            treeVisualComponent.PlayHitFeedback(_bCritical);
             treeVisualComponent.PlayHitFlashIgnoringActiveState(_bCritical);
         }
 
