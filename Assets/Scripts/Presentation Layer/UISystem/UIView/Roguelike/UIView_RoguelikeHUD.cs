@@ -1,3 +1,4 @@
+using DG.Tweening;
 using UnityEngine;
 
 /// <summary>
@@ -10,6 +11,8 @@ using UnityEngine;
 ///   - 유예 타이머(GraceTimer): 목표치 바와 임계치 바 사이의 얇은 바. 유예 중 보라 차오름, 쿨다운 장미주황 줄어듦. 숫자 없음 - SetThreshold, PlayPressureDamaged
 ///   - 임계치 바(PressureStrip): 호박색 가로 막대. 나무 + 나무 수 / 임계치 T, T 눈금과 초과 구간 - SetThreshold, PlayPressureDamaged
 ///   - 코인 HUD: 보유 골드(본편 코인 HUD 표현 재사용 권장 - CurrencyCounterHUD). 언리밋에서는 숨긴다.
+///   [퇴장] SetCombatVisible(false)는 요소마다 화면 밖으로 정수 픽셀 이동(약 0.25초, unscaled)한 뒤 숨긴다 - 웨이브 배지 위, 바 3종 아래, 보관함 트레이 오른쪽.
+///     결과 화면이 뜰 때 뒤쪽을 비워 결과 창에만 시선이 가게 하는 용도다(호출은 시스템 - LobbyRemoval_AppLayer_Request.md S5). 다시 켜면 원위치에서 나타난다.
 ///   - 보관함 트레이(OwnedTray): 우하단. 인벤토리 키 아이콘 + 보유 카드 총량 숫자판. 표시 전용(클릭 없음) - SetOwnedCardCounts
 ///     보유 카드 창은 이 뷰가 아니라 키(인벤토리 키)로 연다(RoguelikeUICoordinator).
 ///
@@ -27,6 +30,17 @@ public class UIView_RoguelikeHUD : UIView
     [SerializeField] private UI_RoguelikeOwnedCardTray ownedTray;
     [SerializeField] private UI_KeyboardImage ownedKeyImage;
 
+    // 퇴장 모션: 화면 밖으로 빠지는 거리(px)와 시간(unscaled).
+    private const float ExitDistance = 120f;
+    private const float ExitSeconds = 0.25f;
+
+    //상태 변수 (퇴장 모션)
+    private readonly RectTransform[] exitRects = new RectTransform[5];
+    private readonly Vector2[] exitBasePositions = new Vector2[5];
+    private readonly Vector2[] exitDirections = new Vector2[5];
+    private bool bExitBaseCaptured;
+    private TweenCallback finishExitCallback;
+
     /// <summary>우하단 보관함 트레이. 보유 카드 창이 열리고 닫힐 때 이 트레이로 연결해(UIView_RoguelikeOwnedCards.SetTray) 트레이 연출과 줄어들 칸을 받는다.</summary>
     public UI_RoguelikeOwnedCardTray OwnedTray => ownedTray;
 
@@ -36,6 +50,13 @@ public class UIView_RoguelikeHUD : UIView
 
         // 보유 카드 창을 여는 키(인벤토리 키) 아이콘. 리바인딩과 입력 장치 전환을 따라간다(인벤토리 UI와 같은 방식).
         if (null != ownedKeyImage) ownedKeyImage.Initialize(_ctx?.inputManager);
+
+        finishExitCallback = FinishExit;
+        SetExitTarget(0, null != waveLabel ? waveLabel.transform as RectTransform : null, Vector2.up);
+        SetExitTarget(1, null != thresholdBar ? thresholdBar.transform as RectTransform : null, Vector2.down);
+        SetExitTarget(2, null != graceTimer ? graceTimer.transform as RectTransform : null, Vector2.down);
+        SetExitTarget(3, null != pressureStrip ? pressureStrip.transform as RectTransform : null, Vector2.down);
+        SetExitTarget(4, null != ownedTray ? ownedTray.transform as RectTransform : null, Vector2.right);
     }
 
     protected override void OnShow()
@@ -101,13 +122,91 @@ public class UIView_RoguelikeHUD : UIView
     /// </summary>
     public virtual RectTransform CoinFlyTarget => null;
 
-    /// <summary>전투 HUD 요소(웨이브·목표치 바·유예 타이머·임계치 바) 표시 여부. 로비에서는 숨긴다.</summary>
+    /// <summary>
+    /// 전투 HUD 요소(웨이브·목표치 바·유예 타이머·임계치 바·보관함 트레이) 표시 여부.
+    /// 끌 때는 요소마다 화면 밖으로 빠지는 퇴장 모션을 재생한 뒤 숨긴다(결과 화면 등장과 동시에 뒤쪽을 비운다). 켤 때는 원위치에서 바로 나타난다.
+    /// </summary>
     public virtual void SetCombatVisible(bool _bVisible)
+    {
+        DOTween.Kill(this);
+
+        if (true == _bVisible)
+        {
+            RestoreExitPositions();
+            ApplyCombatVisible(true);
+            return;
+        }
+
+        if (false == PlayExit()) ApplyCombatVisible(false);
+    }
+
+    private void ApplyCombatVisible(bool _bVisible)
     {
         if (null != thresholdBar) thresholdBar.SetVisible(_bVisible);
         if (null != pressureStrip) pressureStrip.SetVisible(_bVisible);
         if (null != graceTimer) graceTimer.SetVisible(_bVisible);
         if (null != waveLabel) waveLabel.SetVisible(_bVisible);
         if (null != ownedTray) ownedTray.SetVisible(_bVisible);
+    }
+
+    private void SetExitTarget(int _index, RectTransform _rect, Vector2 _direction)
+    {
+        exitRects[_index] = _rect;
+        exitDirections[_index] = _direction;
+    }
+
+    /// <summary>보이는 요소를 화면 밖으로 민다. 움직일 것이 없으면 false.</summary>
+    private bool PlayExit()
+    {
+        if (false == bExitBaseCaptured)
+        {
+            for (int i = 0; exitRects.Length > i; i++)
+            {
+                if (null != exitRects[i]) exitBasePositions[i] = exitRects[i].anchoredPosition;
+            }
+            bExitBaseCaptured = true;
+        }
+
+        bool bAny = false;
+        for (int i = 0; exitRects.Length > i; i++)
+        {
+            RectTransform rect = exitRects[i];
+            if (null == rect || false == rect.gameObject.activeInHierarchy) continue;
+
+            rect.DOKill();
+            rect.DOAnchorPos(exitBasePositions[i] + exitDirections[i] * ExitDistance, ExitSeconds, true).SetEase(Ease.InCubic).SetUpdate(true);
+            bAny = true;
+        }
+
+        if (true == bAny) DOVirtual.DelayedCall(ExitSeconds, finishExitCallback, true).SetId(this);
+        return bAny;
+    }
+
+    private void FinishExit()
+    {
+        // 화면 밖에서 숨긴다. 원위치 복귀는 다시 켤 때 한다(숨는 도중 원위치로 돌아와 보이는 일이 없게).
+        ApplyCombatVisible(false);
+    }
+
+    private void RestoreExitPositions()
+    {
+        if (false == bExitBaseCaptured) return;
+
+        for (int i = 0; exitRects.Length > i; i++)
+        {
+            if (null == exitRects[i]) continue;
+            exitRects[i].DOKill();
+            exitRects[i].anchoredPosition = exitBasePositions[i];
+        }
+    }
+
+    public override void OnDestroy()
+    {
+        DOTween.Kill(this);
+        for (int i = 0; exitRects.Length > i; i++)
+        {
+            if (null != exitRects[i]) exitRects[i].DOKill();
+        }
+        base.OnDestroy();
     }
 }
