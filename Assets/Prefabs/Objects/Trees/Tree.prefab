@@ -786,9 +786,9 @@ MonoBehaviour:
   bGemVisual: 0
   bDead: 0
   gemStageHealthMultipliers:
+  - 1.5
   - 2
-  - 3
-  - 3.5
+  - 2
   alphaDownRadius: 0.6
   adColliderOffset: {x: 0, y: 0.7}
   topShadowRadius: 0.3
@@ -871,6 +871,9 @@ MonoBehaviour:
     m_RotationOrder: 4
   hitFlashColor: {r: 1, g: 1, b: 1, a: 1}
   criticalHitFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  criticalScalePeak: 1.08
+  criticalScaleUpDuration: 0.05
+  criticalScaleDownDuration: 0.12
   growUpFlashDuration: 0.35
   growUpFlashCurve:
     serializedVersion: 2
