@@ -79,6 +79,11 @@ float4 ComputeWaterShimmer(float2 _uv, float2 _positionWS, float4 _texelSize, fl
     }
 
     // 수면 반짝임: 칸마다 한 점이 제 주기대로 잠깐 반짝이고, 가장 밝을 때 십자로 퍼진다.
+    // 켜져 있는 비율이 0이면 수면 반짝임은 끄고 테두리 물결만 쓴다.
+    if (_WaterShimmerA.z <= 0.0)
+    {
+        return 0.0;
+    }
     float cellSize = max(floor(_WaterShimmerA.y), 3.0);
     // 타일 텍셀 중심은 (정수 + 0.5) / ppu에 놓이므로 내림하면 텍셀 하나가 한 번호를 갖는다(반올림하면 경계에서 뒤집힌다).
     float2 texelId = floor(centerWS * ppu);

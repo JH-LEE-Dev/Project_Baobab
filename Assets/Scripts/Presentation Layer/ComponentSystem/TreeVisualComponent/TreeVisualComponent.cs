@@ -181,6 +181,7 @@ public class TreeVisualComponent : MonoBehaviour
     // Hit Flash
     private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
     private static readonly int FlashColorID = Shader.PropertyToID("_FlashColor");
+    private static readonly int HeatChargeID = Shader.PropertyToID("_HeatCharge");
     // 치명타(빨간색) 점멸이 끝나는 시각. 이 시각 전까지 들어온 일반 타격은 점멸을 덮어쓰지 않는다.
     // bool 플래그 대신 시각으로 들고 있는 이유: 점멸 도중 오브젝트가 꺼지면 코루틴이 끝을 못 봐서
     // 플래그가 켜진 채 남을 수 있는데, 시각은 시간이 지나면 저절로 풀린다.
@@ -962,6 +963,29 @@ public class TreeVisualComponent : MonoBehaviour
         ApplyFlashColorToRenderers(_color);
         criticalFlashEndTime = _bCritical ? Time.time + _duration : 0f;
         TreeFlashSystem.Begin(this, _curve, _duration);
+    }
+
+    /// <summary>
+    /// 열기 차오름 진행도(0~1)를 나무 그림에 넣는다(TreeHeatIndicator가 카운트다운 동안 매 프레임 부른다, 끝나면 0).
+    /// 셰이더가 스테이지 설정(꺼진 스테이지·로그라이크는 끔)에 따라 뜨거운 줄기를 밝힌다. 렌더링 전용이다.
+    /// </summary>
+    public void SetHeatCharge(float _charge)
+    {
+        if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+
+        // 빛나는 줄기·불씨는 하이라이트 그림에 들어 있어 하이라이트에도 넣는다.
+        SetHeatChargeToRenderer(topRenderer, _charge);
+        SetHeatChargeToRenderer(bottomRenderer, _charge);
+        SetHeatChargeToRenderer(topHighlightRenderer, _charge);
+        SetHeatChargeToRenderer(bottomHighlightRenderer, _charge);
+    }
+
+    private void SetHeatChargeToRenderer(SpriteRenderer sr, float _charge)
+    {
+        if (sr == null) return;
+        sr.GetPropertyBlock(_flashMPB);
+        _flashMPB.SetFloat(HeatChargeID, _charge);
+        sr.SetPropertyBlock(_flashMPB);
     }
 
     // TreeFlashSystem이 프레임마다 호출한다(예전 FlashRoutine의 ApplyFlashAmountToRenderers 호출과 동일).

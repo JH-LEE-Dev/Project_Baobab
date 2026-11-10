@@ -149,6 +149,8 @@ public class SporeHazeSettings
     // 그리는 정렬 자리. 기본은 바닥 타일 바로 위, 표시기·그림자·캐릭터·나무 아래.
     public string sortingLayerName = "Indicators";
     public int sortingOrder = -32768;
+    // 머티리얼이 화면 캡처(_CameraSortingLayerTexture)를 읽는지(용암 아지랑이 등). 켜면 떠 있는 동안 캡처를 켜 둔다.
+    public bool usesScreenCapture = false;
 }
 
 /// <summary>
@@ -199,6 +201,34 @@ public class WaterSporeSettings
     public float travelTexels = 5f;
     // 옆으로 흔들리는 폭(텍셀, 0~2)
     [Range(0f, 2f)] public float wobbleTexels = 1f;
+}
+
+/// <summary>
+/// 물(용암) 위 거품. 물 타일 그림의 수면색 픽셀 위에서 거품이 점처럼 올라와 둥글게 부풀고, 다 부풀면 톡 터지며
+/// 끊어진 고리 조각이 퍼졌다 사라진다(물 타일 셰이더 WaterTilemapShader). 렌더링만 바뀌고 게임 동작에는 영향이 없다.
+/// </summary>
+[System.Serializable]
+public class WaterBubbleSettings
+{
+    public bool enabled = false;
+    // 물 타일 그림의 수면색(판정용)과 색 판정 허용 오차(채널별 최대 차이, 0~1)
+    public Color surfaceColor = new Color(215f / 255f, 51f / 255f, 3f / 255f, 1f);
+    [Range(0f, 0.2f)] public float colorTolerance = 0.03f;
+    // 거품 몸 색(터질 때 흩어지는 조각도 이 색), 아래쪽 테두리(그늘)·막 올라올 때 점의 색, 윗쪽 하이라이트 색
+    public Color bodyColor = new Color(1f, 0.55f, 0.1f, 1f);
+    public Color edgeColor = new Color(0.62f, 0.1f, 0.02f, 1f);
+    public Color highlightColor = new Color(1f, 0.9f, 0.45f, 1f);
+    // 하이라이트 밝기 배수(HDR). 블룸 문턱을 넘는 만큼 번진다.
+    public float highlightBrightness = 1.3f;
+    // 거품 하나가 맡는 칸 크기(텍셀). 클수록 드물다.
+    public float cellTexels = 10f;
+    // 한 번 되풀이하는 주기(초)와 그중 거품이 있는 비율
+    public float period = 2.5f;
+    [Range(0f, 1f)] public float duty = 0.6f;
+    // 다 부푼 반지름(텍셀, 최소~최대)
+    public Vector2 maxRadiusRange = new Vector2(1.5f, 2.5f);
+    // 거품이 있는 시간 중 터지는 데 쓰는 비율(0~1)
+    [Range(0.05f, 0.9f)] public float popFraction = 0.2f;
 }
 
 /// <summary>
@@ -281,6 +311,12 @@ public class TreeStarTwinkleSettings
     [Min(0.1f)] public float period = 3f;
     // 그중 밝아져 있는 시간의 비율(0~1)
     [Range(0.01f, 1f)] public float duty = 0.25f;
+    // 뜨거운 픽셀(빨강이 강한 픽셀: 빨강 ≥ hotMinRed, 빨강 - 초록·파랑 중 큰 값 ≥ hotMinRedLead)도 함께 반짝이게 한다.
+    // hotMinRed가 0이면 끄고 별점 색만 반짝인다.
+    [Range(0f, 1f)] public float hotMinRed = 0f;
+    [Range(0f, 1f)] public float hotMinRedLead = 0.25f;
+    // 켜면 점마다가 아니라 그림(나무) 하나가 한 박자로 함께 밝아진다(숨쉬기).
+    public bool syncPerTree = false;
 }
 
 /// <summary>
@@ -337,4 +373,170 @@ public class HitSparkleSettings
     // 동시에 떠 있는 알갱이 최대 수와 한 프레임에 튀게 할 최대 타격 수(광역 타격 몰림 대비)
     [Min(16)] public int maxParticles = 192;
     [Min(1)] public int maxBurstsPerFrame = 6;
+}
+
+/// <summary>
+/// 용암 위 나무 그림자 없애기. 용암은 스스로 빛나는 표면이라 나무 그림자가 덮이면 노란 테두리가 올리브색으로 탁해진다.
+/// 물 스텐실이 용암 칸에 나무 그림자 비트(4)까지 켜 두면, 그림자는 이미 그린 자리를 건너뛰는 규칙 그대로 용암 위를 건너뛴다.
+/// 육지 스텐실은 용암 칸에 겹쳐 그린 육지에서 그 비트를 다시 꺼 육지 위 그림자는 그대로 남긴다.
+/// 두 머티리얼을 이 스테이지 동안만 물·육지 스텐실 타일맵에 끼우고 다른 스테이지는 원래 머티리얼로 되돌린다. 렌더링 전용.
+/// </summary>
+[System.Serializable]
+public class LavaShadowMaskSettings
+{
+    public bool enabled = false;
+    // 물 스텐실 머티리얼(WaterStencil 셰이더, 스텐실 값 5·쓰기 마스크 5)
+    public Material waterStencilMaterial;
+    // 육지 스텐실 머티리얼(GroundStencil 셰이더, 쓰기 마스크 7)
+    public Material groundStencilMaterial;
+}
+
+/// <summary>
+/// 용암 빛 번짐. 용암 칸 둘레의 바닥이 용암 빛을 받아 주황으로 은은하게 물든다(바닥 셰이더 GroundLavaGlowLit).
+/// 맵을 만들 때 칸마다 "용암에서 받는 빛"을 담은 작은 텍스처를 한 장 만들고, 바닥이 그걸 읽어 텍셀 단위 몇 단계로 끊어 칠한다.
+/// 렌더링만 바뀌고 게임 동작에는 영향이 없다. enabled가 꺼져 있거나 groundMaterial이 비어 있으면 아무것도 하지 않는다.
+/// </summary>
+[System.Serializable]
+public class LavaGlowSettings
+{
+    public bool enabled = false;
+    // 바닥(과 바닥 장식) 타일맵에 끼울 머티리얼(GroundLavaGlowLit 셰이더)
+    public Material groundMaterial;
+    // 빛 색과 세기(더하는 양), 바닥 색을 얼마나 데우는지(곱하는 양)
+    public Color color = new Color(1f, 0.38f, 0.08f, 1f);
+    [Min(0f)] public float intensity = 0.18f;
+    [Min(0f)] public float warmMultiply = 0.35f;
+    // 빛이 닿는 거리(월드, 용암 칸 가운데부터)와 감쇠 곡선(클수록 가까운 곳에 몰린다)
+    [Min(0.3f)] public float radius = 1.2f;
+    [Min(0.1f)] public float falloffPower = 2f;
+    // 진하기 단계 수(텍셀 단위로 끊어 픽셀아트처럼 보이게 한다)
+    [Min(1f)] public float steps = 4f;
+    // 천천히 일렁이는 정도(0이면 고정), 속도, 일렁임 무늬 크기(월드)
+    [Range(0f, 1f)] public float flickerAmount = 0.2f;
+    [Min(0f)] public float flickerSpeed = 0.35f;
+    [Min(0.1f)] public float flickerScale = 2.5f;
+    // 나무·캐릭터(서 있는 그림)가 받는 빛의 배율(바닥 세기 기준, 0이면 끔)과, 발밑에서 위로 빛이 사라지는 높이(월드).
+    // 서 있는 그림은 발밑 칸이 받는 빛을 읽어 발밑에서 가장 밝고 위로 갈수록 옅게 칠한다.
+    [Min(0f)] public float objectStrength = 1f;
+    [Min(0.1f)] public float objectFadeHeight = 0.8f;
+}
+
+/// <summary>
+/// 나무 열기 차오름. 열기를 내뿜기로 한 나무(카운트다운 중)의 뜨거운 줄기 픽셀이 내뿜는 순간까지 점점 밝아지며
+/// 달군 빛 색(노랑)을 띤다(나무 셰이더 Custom-Sprite-Default-Tree). 껍질 등 나머지 픽셀은 그대로다. 바닥 예고(TreeHeatIndicator)와
+/// 같은 카운트다운을 따른다. 렌더링만 바뀌고 게임 동작에는 영향이 없다. 꺼진 스테이지·로그라이크는 아무것도 칠하지 않는다.
+/// </summary>
+[System.Serializable]
+public class TreeHeatChargeSettings
+{
+    public bool enabled = false;
+    // 뜨거운 픽셀 판정(나무 그림 sRGB): 빨강 ≥ hotMinRed, 빨강 - 초록·파랑 중 큰 값 ≥ hotMinRedLead
+    [Range(0f, 1f)] public float hotMinRed = 0.4f;
+    [Range(0f, 1f)] public float hotMinRedLead = 0.25f;
+    // 다 찼을 때 뜨거운 픽셀 밝기 배율 증가량(1이면 두 배)
+    [Min(0f)] public float hotBoost = 1.2f;
+    // 다 찼을 때 뜨거운 픽셀에 더하는 빛 색과 양
+    public Color tintColor = new Color(1f, 0.75f, 0.3f, 1f);
+    [Min(0f)] public float tintAmount = 0.5f;
+    // 차오르는 곡선(클수록 끝에 몰려 밝아진다)
+    [Min(0.1f)] public float curvePower = 2f;
+}
+
+/// <summary>
+/// 용암 기둥. 몇 초에 한 번, 화면 안 용암 칸(가장자리가 아닌 안쪽 칸 우선, 없으면 가장자리 칸) 한 곳에서 작은 용암 알갱이 기둥이 곧게 솟았다가 떨어진다.
+/// 짧은 시간 동안 같은 자리에서 위 속도가 조금씩 다른 알갱이를 이어 쏘아 가는 기둥처럼 보이게 한다.
+/// 스테이지에 파티클 시스템 하나만 두며 충돌·판정이 없어 게임 동작에는 영향이 없다.
+/// enabled가 꺼져 있거나 material이 비어 있으면 아무것도 만들지 않는다.
+/// </summary>
+[System.Serializable]
+public class LavaSpoutSettings
+{
+    public bool enabled = false;
+    // 알갱이 머티리얼(용암 불씨와 같은 것)
+    public Material material;
+    // 그리는 정렬 자리(기본은 오브젝트 맨 아래: 용암·그림자 위, 나무·오프로드 뒤)
+    public string sortingLayerName = "Objects";
+    public int sortingOrder = -32768;
+    // 다음 기둥까지 기다리는 시간(초, 최소~최대). 그때 화면에 용암이 안 보이면 건너뛴다.
+    public Vector2 intervalRange = new Vector2(2.5f, 5f);
+    // 자리를 고를 때 화면 안을 몇 번까지 찍어 볼지
+    [Min(1)] public int pickAttempts = 24;
+    // 기둥이 솟는 시간(초, 최소~최대)과 그동안 1초에 쏘는 알갱이 수
+    public Vector2 durationRange = new Vector2(0.3f, 0.45f);
+    [Min(1f)] public float particlesPerSecond = 70f;
+    // 위 속도(월드/초, 최소~최대)와 옆으로 흩어지는 속도(월드/초, 좌우 무작위). 높이는 위 속도² / (2 × 떨어지는 힘).
+    public Vector2 upSpeedRange = new Vector2(2.4f, 3.4f);
+    [Min(0f)] public float sideSpeed = 0.12f;
+    // 떨어지는 힘(월드/초²)
+    public float gravity = 8f;
+    // 쏘는 자리의 가로 흔들림(월드, 기둥 굵기)
+    [Min(0f)] public float baseWidth = 0.05f;
+    // 알갱이 크기(픽셀, 최소~최대)
+    public Vector2Int sizePixelsRange = new Vector2Int(1, 2);
+    // 알갱이 색(두 색 사이에서 무작위)
+    public Color colorA = new Color(1f, 0.5f, 0.1f, 1f);
+    public Color colorB = new Color(1f, 0.85f, 0.35f, 1f);
+    // 동시에 떠 있는 알갱이 최대 수
+    [Min(8)] public int maxParticles = 128;
+}
+
+/// <summary>
+/// 용암 온도 무늬. 물 타일 그림의 수면색(용암 안쪽 주황) 픽셀 위에 큰 단위로 천천히 바뀌는 식은 곳(짙은 주황)과
+/// 뜨거운 곳(밝은 노랑)을 텍셀 단위로 덧칠해, 한 가지 색 판처럼 보이지 않게 한다(물 타일 셰이더 WaterTilemapShader).
+/// 거품은 이 위에 그린다. 렌더링만 바뀌고 게임 동작에는 영향이 없다.
+/// </summary>
+[System.Serializable]
+public class WaterMagmaSettings
+{
+    public bool enabled = false;
+    // 물 타일 그림의 수면색(판정용)과 색 판정 허용 오차(채널별 최대 차이, 0~1)
+    public Color surfaceColor = new Color(215f / 255f, 51f / 255f, 3f / 255f, 1f);
+    [Range(0f, 0.2f)] public float colorTolerance = 0.03f;
+    // 식은 곳·뜨거운 곳 색
+    public Color coolColor = new Color(0.72f, 0.14f, 0.02f, 1f);
+    public Color hotColor = new Color(1f, 0.36f, 0.03f, 1f);
+    // 무늬 크기(월드)와 흘러가는 방향·속도(월드/초), 모양이 바뀌는 속도
+    [Min(0.2f)] public float scale = 1.2f;
+    public Vector2 drift = new Vector2(0.06f, 0.03f);
+    [Min(0f)] public float evolveSpeed = 0.08f;
+    // 이 값보다 낮으면 식은 곳, 높으면 뜨거운 곳(무늬 값 0~1)
+    [Range(0f, 1f)] public float coolThreshold = 0.38f;
+    [Range(0f, 1f)] public float hotThreshold = 0.66f;
+}
+
+/// <summary>
+/// 용암 불씨.화면 안의 용암 칸에서 작은 불씨 알갱이가 비스듬히 튀어 올라 포물선을 그리며 떨어지고,
+/// 튀어 오른 높이쯤으로 내려오면 사라진다.
+/// 화면 안 무작위 자리를 정해진 횟수만큼 골라 그 자리가 용암 칸일 때만 튀게 하므로, 화면에 보이는 용암 넓이만큼 튀고
+/// 용암이 안 보이면 거의 아무 일도 하지 않는다. 스테이지에 파티클 시스템 하나만 두며 충돌·판정이 없어 게임 동작에는 영향이 없다.
+/// enabled가 꺼져 있거나 material이 비어 있으면 아무것도 만들지 않는다.
+/// </summary>
+[System.Serializable]
+public class LavaEmberSettings
+{
+    public bool enabled = false;
+    // 알갱이 머티리얼(MushroomSpore 셰이더)
+    public Material material;
+    // 그리는 정렬 자리(기본은 오브젝트 맨 아래: 용암·그림자 위, 나무·오프로드 뒤)
+    public string sortingLayerName = "Objects";
+    public int sortingOrder = -32768;
+    // 1초에 화면 안을 몇 번 골라 볼지(고른 자리가 용암일 때만 튄다)와 한 프레임에 고르는 최대 횟수
+    public float samplesPerSecond = 30f;
+    [Min(1)] public int maxSamplesPerFrame = 4;
+    // 한 번에 튀는 알갱이 수(최소~최대)
+    public Vector2Int burstCountRange = new Vector2Int(1, 3);
+    // 처음 튀어 오르는 위 속도와 옆 속도(월드/초, 최소~최대). 옆 방향(왼쪽·오른쪽)은 무작위.
+    public Vector2 launchUpSpeedRange = new Vector2(1.8f, 2.8f);
+    public Vector2 launchSideSpeedRange = new Vector2(0.3f, 0.9f);
+    // 떨어지는 힘(월드/초²). 클수록 포물선이 낮고 짧다.
+    public float gravity = 8f;
+    // 튀어 오른 높이보다 얼마나 더 내려와서 사라질지(월드, 최소~최대)
+    public Vector2 fallBelowRange = new Vector2(0f, 0.15f);
+    // 알갱이 크기(픽셀, 최소~최대)
+    public Vector2Int sizePixelsRange = new Vector2Int(1, 1);
+    // 알갱이 색(두 색 사이에서 무작위)
+    public Color colorA = new Color(1f, 0.45f, 0.08f, 1f);
+    public Color colorB = new Color(1f, 0.82f, 0.3f, 1f);
+    // 동시에 떠 있는 알갱이 최대 수
+    [Min(8)] public int maxParticles = 64;
 }

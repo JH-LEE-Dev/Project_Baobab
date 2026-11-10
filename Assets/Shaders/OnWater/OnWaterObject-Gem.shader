@@ -161,6 +161,9 @@ Shader "Custom/OnWaterObject-Gem"
                 UNITY_DEFINE_INSTANCED_PROP(float, _SparkleBrightness)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
+            // 반사를 끄는 스테이지면 1(StageAmbienceShaderGlobals가 스테이지 데이터대로 넣는다). 이 셰이더는 나무 반사 전용이라 그대로 끈다.
+            float _StageHideWaterReflection;
+
             TreeGemParams BuildGemParams()
             {
                 TreeGemParams p;
@@ -216,6 +219,8 @@ Shader "Custom/OnWaterObject-Gem"
 
             half4 UnlitFragment(Varyings input) : SV_Target
             {
+                if (_StageHideWaterReflection > 0.5) discard;
+
                 float2 waveCoord = input.worldPos.xy;
 
                 float _waveSpeed = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _WaveSpeed);

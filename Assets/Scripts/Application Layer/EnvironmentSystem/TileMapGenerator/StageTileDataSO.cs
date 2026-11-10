@@ -119,11 +119,33 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private SporeHazeSettings sporeHaze = new SporeHazeSettings();
     [SerializeField] private SporeGlowSettings sporeGlow = new SporeGlowSettings();
     [SerializeField] private WaterSporeSettings waterSpores = new WaterSporeSettings();
+    // 물(용암) 위 거품
+    [SerializeField] private WaterBubbleSettings waterBubbles = new WaterBubbleSettings();
     [SerializeField] private MushroomSporeSettings mushroomSpores = new MushroomSporeSettings();
     [SerializeField] private BloomDecoTwinkleSettings bloomDecoTwinkle = new BloomDecoTwinkleSettings();
     [SerializeField] private TreeStarTwinkleSettings treeStarTwinkle = new TreeStarTwinkleSettings();
     [SerializeField] private DecoBreathSettings decoBreath = new DecoBreathSettings();
     [SerializeField] private HitSparkleSettings hitSparkles = new HitSparkleSettings();
+    // 용암 아지랑이(LavaHeatHaze 머티리얼). 포자 안개와 같은 방식으로 카메라를 따라다니는 스프라이트 한 장에 그린다.
+    // 화면 캡처 뒤에 그려야 하므로 정렬 자리는 Objects 레이어보다 뒤로 둔다.
+    [SerializeField] private SporeHazeSettings heatHaze = new SporeHazeSettings();
+    // 용암 불씨(물 타일맵 칸에서 튀어 오르는 알갱이)
+    [SerializeField] private LavaEmberSettings lavaEmbers = new LavaEmberSettings();
+    // 용암 빛 번짐(용암 둘레 바닥이 주황으로 물듦)
+    [SerializeField] private LavaGlowSettings lavaGlow = new LavaGlowSettings();
+    // 용암 온도 무늬(용암 안쪽에 식은 곳·뜨거운 곳)
+    [SerializeField] private WaterMagmaSettings waterMagma = new WaterMagmaSettings();
+    // 켜면 물(용암) 위에 겹쳐 그리던 나무·캐릭터 반사(OnWater 머티리얼)를 그리지 않는다
+    [SerializeField] private bool hideWaterReflections = false;
+    // 용암 위에 나무 그림자를 그리지 않는다(물·육지 스텐실 머티리얼을 바꿔 끼운다)
+    [SerializeField] private LavaShadowMaskSettings lavaShadowMask = new LavaShadowMaskSettings();
+    // 용암 기둥(용암 칸에서 가끔 작은 알갱이 기둥이 솟는다)
+    [SerializeField] private LavaSpoutSettings lavaSpouts = new LavaSpoutSettings();
+    // 나무 열기 차오름(열기를 내뿜기 전까지 나무 줄기가 점점 달아오른다)
+    [SerializeField] private TreeHeatChargeSettings treeHeatCharge = new TreeHeatChargeSettings();
+    // 물(용암)·물가·스텐실 타일 애니메이션을 타일맵 대신 셰이더로 돌린다(StageTileFrameAnimation). 보이는 그림·박자는 같고,
+    // 타일맵이 매 프레임 화면 밖까지 모든 애니메이션 타일을 훑던 비용이 없어진다. 조건에 안 맞는 타일이 있으면 저절로 원래대로 깐다.
+    [SerializeField] private bool shaderTileAnimation = false;
 
     [Header("위험 지형 설정")]
     [SerializeField] private float waterHazardStaminaDrainPerSecond = 0f;
@@ -163,11 +185,21 @@ public class StageTileDataSO : ScriptableObject
     public SporeHazeSettings SporeHaze => sporeHaze;
     public SporeGlowSettings SporeGlow => sporeGlow;
     public WaterSporeSettings WaterSpores => waterSpores;
+    public WaterBubbleSettings WaterBubbles => waterBubbles;
     public MushroomSporeSettings MushroomSpores => mushroomSpores;
     public BloomDecoTwinkleSettings BloomDecoTwinkle => bloomDecoTwinkle;
     public TreeStarTwinkleSettings TreeStarTwinkle => treeStarTwinkle;
     public DecoBreathSettings DecoBreath => decoBreath;
     public HitSparkleSettings HitSparkles => hitSparkles;
+    public SporeHazeSettings HeatHaze => heatHaze;
+    public LavaEmberSettings LavaEmbers => lavaEmbers;
+    public LavaGlowSettings LavaGlow => lavaGlow;
+    public WaterMagmaSettings WaterMagma => waterMagma;
+    public bool HideWaterReflections => hideWaterReflections;
+    public LavaShadowMaskSettings LavaShadowMask => lavaShadowMask;
+    public LavaSpoutSettings LavaSpouts => lavaSpouts;
+    public TreeHeatChargeSettings TreeHeatCharge => treeHeatCharge;
+    public bool ShaderTileAnimation => shaderTileAnimation;
     public List<AnimatedObj> AnimatedObjPrefabs => animatedObjPrefabs;
     public List<DecoSpritePatternAnimator> WaterAnimatedObjPrefabs => waterAnimatedObjPrefabs;
     public List<AnimatedObj> WaterAnimatedOtherTypeObjPrefabs => waterAnimatedOtherTypeObjPrefabs;

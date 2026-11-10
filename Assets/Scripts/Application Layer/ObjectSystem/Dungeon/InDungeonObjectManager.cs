@@ -2475,9 +2475,32 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             {
                 character.TakeEnvironmentalStaminaDamage(_tree.HeatDamageAmount * character.TreeHeatMultiplier); // "열기 내성 강화"
                 character.ApplyTreeHeatKnockback(TreeHeatOffsets[i]);
+                PlayTreeHeatHitFeedback(_tree);
                 return;
             }
         }
+    }
+
+    // 열기에 맞아 밀려날 때의 손맛(본편만). 피해·넉백은 위에서 이미 끝났고 여기서는 느낌만 더한다.
+    // 밀려나는 방향(나무 → 캐릭터)으로 카메라를 한 번 찍고 짧게 흔들며, 패드가 "퍽" 울리고, 캐릭터가 그을린 색으로 깜빡인다.
+    private const float TreeHeatHitKickDistance = 0.12f;
+    private const float TreeHeatHitKickSeconds = 0.22f;
+    private const float TreeHeatHitShakeIntensity = 1.5f;
+    private const float TreeHeatHitShakeSeconds = 0.15f;
+
+    private void PlayTreeHeatHitFeedback(TreeObj _tree)
+    {
+        // 이 피해로 쓰러졌으면 사망 연출(흔들림·진동·하얀 플래시)에 맡긴다.
+        if (GameModeContext.IsRoguelike || character.bDead) return;
+
+        Vector3 pushDirection = character.transform.position - _tree.transform.position;
+        pushDirection.z = 0f;
+        if (pushDirection.sqrMagnitude < 0.0001f) pushDirection = Vector3.down;
+
+        CameraMoveController.Instance?.ShakeCameraKick(pushDirection.normalized, TreeHeatHitKickDistance, TreeHeatHitKickSeconds,
+            TreeHeatHitShakeIntensity, TreeHeatHitShakeSeconds);
+        Rumble.Play(EHapticEvent.TreeHeatHit);
+        character.PlayScorchFlash();
     }
 
     public void CreateWelcomeNoobLoot()

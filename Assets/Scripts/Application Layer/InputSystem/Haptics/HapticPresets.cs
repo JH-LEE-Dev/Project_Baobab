@@ -151,6 +151,14 @@ public static class HapticPresets
         new HapticStep(0.45f, 0.25f, 0.06f),
         new HapticStep(0.15f, 0.05f, 0.10f));
 
+    // 나무 열기에 맞음 - "퍽" 하고 떠밀리는 충격 뒤, 화끈한 열감이 짧게 지글거리며 잦아든다.
+    // 맞는 순간은 나무 타격(treeImpact)만큼 확실해야 하고(피해를 받는 순간이라), 꼬리는 가는 모터로 지글거림만 남긴다.
+    // 총 0.33초로 밀려나는 동작과 함께 끝난다. 나무 파괴(0.36초)보다는 짧게 둔다.
+    private static readonly HapticPattern treeHeatHit = new HapticPattern(
+        new HapticStep(0.90f, 0.80f, 0.07f),
+        new HapticStep(0.40f, 0.65f, 0.10f),
+        new HapticStep(0.15f, 0.35f, 0.16f));
+
     private static readonly HapticPattern[] patterns = BuildPatterns();
 
     /// <summary>
@@ -207,6 +215,7 @@ public static class HapticPresets
         _table[(int)EHapticEvent.BoomerangImpact] = boomerangImpact;
         _table[(int)EHapticEvent.Earthquake] = earthquake;
         _table[(int)EHapticEvent.LootPillarLanding] = lootPillarLanding;
+        _table[(int)EHapticEvent.TreeHeatHit] = treeHeatHit;
 
         return _table;
     }
@@ -228,6 +237,8 @@ public static class HapticPresets
         _table[(int)EHapticEvent.Earthquake] = 0.5f;
         // 기둥 여러 개가 한꺼번에 떨어질 때(0.35초 간격) 착지마다 따로 울리도록 그 간격보다 짧게 둔다.
         _table[(int)EHapticEvent.LootPillarLanding] = 0.3f;
+        // 맞으면 밀려나는 동안(넉백·경직) 다시 맞지 않으므로 중복 호출 방지용으로만 둔다.
+        _table[(int)EHapticEvent.TreeHeatHit] = 0.2f;
 
         // 원목 묶음(4~7개)이 한 번에 튀어나와도 생성 진동은 한 번만 울린다.
         _table[(int)EHapticEvent.RareLogSpawn] = 0.2f;

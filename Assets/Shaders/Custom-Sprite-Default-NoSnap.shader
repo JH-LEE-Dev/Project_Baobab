@@ -18,6 +18,9 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
 
         _FlashAmount("Flash Amount", Range(0,1)) = 0
         _FlashColor("Flash Color", Color) = (1,1,1,1)
+
+        // 용암 빛을 받는 렌더러만 MaterialPropertyBlock으로 켠다. x = 켜짐(0/1), y = 렌더러 기준점에서 발밑까지 내려가는 높이(월드)
+        [HideInInspector] _LavaGlowReceiver("Lava Glow Receiver", Vector) = (0,0,0,0)
     }
 
     SubShader
@@ -64,9 +67,13 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             {
                 COMMON_2D_LIT_OUTPUTS
                 half4 color        : COLOR;
+                // xy: 월드 위치, zw: 렌더러 기준점 월드 위치(용암 빛용)
+                float4 worldPos    : TEXCOORD7;
             };
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Lit2DCommon.hlsl"
+            #include "Include/StageAmbienceCommon.hlsl"
+            #include "Include/LavaGlow.hlsl"
 
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             CBUFFER_START(UnityPerMaterial)
@@ -74,6 +81,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
                 float _HDRIntensity;
                 half _FlashAmount;
                 half4 _FlashColor;
+                float4 _LavaGlowReceiver;
             CBUFFER_END
 
             Varyings LitVertex(Attributes input)
@@ -83,6 +91,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
                 input.positionOS = UnityFlipSprite(input.positionOS, unity_SpriteProps.xy);
 
                 Varyings o = CommonLitVertex(input);
+                o.worldPos = float4(TransformObjectToWorld(input.positionOS).xy, UNITY_MATRIX_M._m03, UNITY_MATRIX_M._m13);
                 o.color = input.color * _Color * unity_SpriteColor;
 
                 return o;
@@ -91,6 +100,8 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             half4 LitFragment(Varyings input) : SV_Target
             {
                 half4 col = CommonLitFragment(input, input.color);
+                // 용암 빛(받기로 켠 렌더러만, 꺼진 스테이지는 그대로)
+                col.rgb = ApplyLavaGlowReceiver(col.rgb, input.worldPos, _LavaGlowReceiver);
                 col.rgb *= _HDRIntensity;
                 col.rgb = lerp(col.rgb, _FlashColor.rgb, _FlashAmount * col.a);
                 return col;
@@ -133,6 +144,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
                 float _HDRIntensity;
                 half _FlashAmount;
                 half4 _FlashColor;
+                float4 _LavaGlowReceiver;
             CBUFFER_END
 
             Varyings NormalsRenderingVertex(Attributes input)
@@ -175,9 +187,13 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             {
                 COMMON_2D_OUTPUTS
                 half4 color : COLOR;
+                // xy: 월드 위치, zw: 렌더러 기준점 월드 위치(용암 빛용)
+                float4 worldPos : TEXCOORD7;
             };
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/2DCommon.hlsl"
+            #include "Include/StageAmbienceCommon.hlsl"
+            #include "Include/LavaGlow.hlsl"
           
             // GPU Instancing
             #pragma multi_compile_instancing
@@ -189,6 +205,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
                 float _HDRIntensity;
                 half _FlashAmount;
                 half4 _FlashColor;
+                float4 _LavaGlowReceiver;
             CBUFFER_END
 
             Varyings UnlitVertex(Attributes input)
@@ -198,6 +215,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
                 input.positionOS = UnityFlipSprite(input.positionOS, unity_SpriteProps.xy);
 
                 Varyings o = CommonUnlitVertex(input);
+                o.worldPos = float4(TransformObjectToWorld(input.positionOS).xy, UNITY_MATRIX_M._m03, UNITY_MATRIX_M._m13);
                 o.color = input.color *_Color * unity_SpriteColor;
                 return o;
             }
@@ -205,6 +223,8 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             half4 UnlitFragment(Varyings input) : SV_Target
             {
                 half4 col = CommonUnlitFragment(input, input.color);
+                // 용암 빛(받기로 켠 렌더러만, 꺼진 스테이지는 그대로)
+                col.rgb = ApplyLavaGlowReceiver(col.rgb, input.worldPos, _LavaGlowReceiver);
                 col.rgb *= _HDRIntensity;
                 col.rgb = lerp(col.rgb, _FlashColor.rgb, _FlashAmount * col.a);
                 return col;

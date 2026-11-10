@@ -205,5 +205,6 @@ MonoBehaviour:
   bloomDecoTwinkle:
     enabled: 1
     material: {fileID: 2100000, guid: dbc53de19d05b814598f20fc8de64368, type: 2}
+  shaderTileAnimation: 1
   waterHazardStaminaDrainPerSecond: 0
   treeHeatStaminaDamage: 0

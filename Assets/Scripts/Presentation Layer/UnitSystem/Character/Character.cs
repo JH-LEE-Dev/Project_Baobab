@@ -349,6 +349,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         attackComponent.Initialize(ctx);
         healthComponent.Initialize(ctx);
         armComponent.Initialize(ctx);
+        // 무기(도끼)도 용암 빛을 받는다. 무기 기준점은 팔 높이라 발밑까지의 높이를 같이 넘긴다.
+        SpriteRenderer weaponRenderer = armComponent.currentWeapon?.spriteRenderer;
+        if (weaponRenderer != null)
+        {
+            characterVisualComponent.SetLavaGlowReceiver(weaponRenderer, weaponRenderer.transform.position.y - transform.position.y);
+        }
         statComponent.Initialize(ctx);
         overheatComponent?.Initialize(ctx);
 
@@ -501,6 +507,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public void PlayItemAcquireSpriteFlash()
     {
         characterVisualComponent.PlayItemAcquireFlash(GetArmFlashRenderer());
+    }
+
+    // 나무 열기에 맞았을 때 잠깐 그을린 색으로 깜빡인다(무기 포함).
+    public void PlayScorchFlash()
+    {
+        characterVisualComponent.PlayScorchFlash(GetArmFlashRenderer());
     }
 
     // 무기(Arm) 스프라이트는 던전에 있을 때만 반짝인다 - 마을에서는 무기가 꺼져 있어 의미가 없다.

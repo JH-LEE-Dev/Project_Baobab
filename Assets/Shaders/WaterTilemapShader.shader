@@ -15,6 +15,9 @@ Shader "Custom/WaterTilemapShader"
 
         [Header(HDR)]
         _HDRIntensity("HDR Intensity", Float) = 1
+
+        // 셰이더 타일 프레임 애니메이션(StageTileFrameAnimation이 켠 머티리얼 사본만 x = 1). 켜지 않으면 UV를 그대로 쓴다.
+        [HideInInspector] _TileFrameGrid("Tile Frame Grid", Vector) = (0,0,0,0)
     }
 
     SubShader
@@ -59,6 +62,9 @@ Shader "Custom/WaterTilemapShader"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Lit2DCommon.hlsl"
             #include "Include/WaterShimmer.hlsl"
             #include "Include/WaterSpores.hlsl"
+            #include "Include/WaterBubbles.hlsl"
+            #include "Include/WaterMagma.hlsl"
+            #include "Include/TileFrameAnimation.hlsl"
 
             float4 _MainTex_TexelSize;
 
@@ -66,6 +72,7 @@ Shader "Custom/WaterTilemapShader"
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _TileFrameGrid)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings LitVertex(Attributes input)
@@ -84,22 +91,46 @@ Shader "Custom/WaterTilemapShader"
 
             half4 LitFragment(Varyings input) : SV_Target
             {
+                // 셰이더 타일 프레임 애니메이션(켠 머티리얼만): 지금 프레임 그림 자리로 UV를 옮긴 뒤 모든 계산에 쓴다.
+                input.uv = TileFrameAnimationUV(input.uv, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _TileFrameGrid));
                 half4 color = CommonLitFragment(input, input.color);
 
-                // 물 반짝임(꺼진 스테이지는 건너뛴다).
-                if (IsWaterShimmerEnabled())
+                // 반짝임·포자·온도 무늬·거품은 모두 같은 텍스처 색(정점색 곱하기 전)으로 판정하므로, 하나라도 켜져 있으면 한 번만 읽어 같이 쓴다.
+                bool shimmerOn = IsWaterShimmerEnabled();
+                bool sporesOn = IsWaterSporesEnabled();
+                bool magmaOn = IsWaterMagmaEnabled();
+                bool bubblesOn = IsWaterBubblesEnabled();
+                if (shimmerOn || sporesOn || magmaOn || bubblesOn)
                 {
                     float3 texColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv).rgb;
-                    float4 shimmer = ComputeWaterShimmer(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor);
-                    color.rgb = lerp(color.rgb, shimmer.rgb, shimmer.a);
-                }
 
-                // 물 위 포자(꺼진 스테이지는 그대로)
-                if (IsWaterSporesEnabled())
-                {
-                    float3 sporeTexColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv).rgb;
-                    float4 spores = ComputeWaterSpores(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, sporeTexColor);
-                    color.rgb = lerp(color.rgb, spores.rgb, spores.a);
+                    // 물 반짝임(꺼진 스테이지는 건너뛴다).
+                    if (shimmerOn)
+                    {
+                        float4 shimmer = ComputeWaterShimmer(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor);
+                        color.rgb = lerp(color.rgb, shimmer.rgb, shimmer.a);
+                    }
+
+                    // 물 위 포자(꺼진 스테이지는 그대로)
+                    if (sporesOn)
+                    {
+                        float4 spores = ComputeWaterSpores(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor);
+                        color.rgb = lerp(color.rgb, spores.rgb, spores.a);
+                    }
+
+                    // 용암 속 온도 무늬(꺼진 스테이지는 그대로). 거품이 위에 그려지도록 거품보다 먼저 칠한다.
+                    if (magmaOn)
+                    {
+                        float4 magma = ComputeWaterMagma(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor);
+                        color.rgb = lerp(color.rgb, magma.rgb, magma.a);
+                    }
+
+                    // 물(용암) 위 거품(꺼진 스테이지는 그대로)
+                    if (bubblesOn)
+                    {
+                        float4 bubbles = ComputeWaterBubbles(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor);
+                        color.rgb = lerp(color.rgb, bubbles.rgb, bubbles.a);
+                    }
                 }
 
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
@@ -136,11 +167,13 @@ Shader "Custom/WaterTilemapShader"
             };
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Normals2DCommon.hlsl"
+            #include "Include/TileFrameAnimation.hlsl"
 
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _TileFrameGrid)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings NormalsRenderingVertex(Attributes input)
@@ -158,6 +191,8 @@ Shader "Custom/WaterTilemapShader"
 
             half4 NormalsRenderingFragment(Varyings input) : SV_Target
             {
+                // 셰이더 타일 프레임 애니메이션(켠 머티리얼만): 지금 프레임 그림 자리로 UV를 옮긴 뒤 모든 계산에 쓴다.
+                input.uv = TileFrameAnimationUV(input.uv, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _TileFrameGrid));
                 return CommonNormalsFragment(input, input.color);
             }
             ENDHLSL
@@ -187,6 +222,7 @@ Shader "Custom/WaterTilemapShader"
             };
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/2DCommon.hlsl"
+            #include "Include/TileFrameAnimation.hlsl"
           
             // GPU Instancing
             #pragma multi_compile_instancing
@@ -196,6 +232,7 @@ Shader "Custom/WaterTilemapShader"
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _TileFrameGrid)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings UnlitVertex(Attributes input)
@@ -212,6 +249,8 @@ Shader "Custom/WaterTilemapShader"
 
             half4 UnlitFragment(Varyings input) : SV_Target
             {
+                // 셰이더 타일 프레임 애니메이션(켠 머티리얼만): 지금 프레임 그림 자리로 UV를 옮긴 뒤 모든 계산에 쓴다.
+                input.uv = TileFrameAnimationUV(input.uv, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _TileFrameGrid));
                 half4 color = CommonUnlitFragment(input, input.color);
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
                 return color;

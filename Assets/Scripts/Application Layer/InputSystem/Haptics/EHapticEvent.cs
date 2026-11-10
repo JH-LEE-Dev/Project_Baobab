@@ -65,5 +65,8 @@ public enum EHapticEvent
     /// <summary>전리품을 처음 얻고 마을에 왔을 때 그 기둥이 하늘에서 떨어져 착지함. (LootDisplayObject.PlayFirstReveal)</summary>
     LootPillarLanding,
 
+    /// <summary>나무 열기(4스테이지)에 맞아 캐릭터가 밀려남. (InDungeonObjectManager.OnTreeHeatEmit)</summary>
+    TreeHeatHit,
+
     Count
 }

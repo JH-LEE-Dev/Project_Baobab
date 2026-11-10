@@ -83,6 +83,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private Material originalGroundMaterial;
     private Tilemap collisionTilemap;
     private Tilemap decoTilemap;
+    // 바닥 장식 타일맵 렌더러의 원래 머티리얼(용암 빛 머티리얼로 바꿔 끼웠다가 되돌릴 때 쓴다)
+    private TilemapRenderer decoTilemapRenderer;
+    private Material originalDecoMaterial;
     private Tilemap waterDecoTilemap;
     private Tilemap bloomWaterDecoTilemap;
     private Tilemap bloomDecoTilemap;
@@ -90,6 +93,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private Material originalBloomDecoMaterial;
     private Tilemap waterStencilTilemap;
     private Tilemap groundStencilTilemap;
+    // 물·육지 스텐실 타일맵 렌더러의 원래 머티리얼(용암 위 그림자를 없애는 스테이지에서 바꿔 끼웠다가 되돌릴 때 쓴다)
+    private TilemapRenderer waterStencilTilemapRenderer;
+    private Material originalWaterStencilMaterial;
+    private TilemapRenderer groundStencilTilemapRenderer;
+    private Material originalGroundStencilMaterial;
     private Tilemap waterTilemap;
     private Tilemap waterCornerTilemap;
     private Tilemap waterCollisionTilemap;
@@ -127,6 +135,15 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private TileBase[] extBloomWaterDecoTilesCache;
     private TileBase[] extWaterDecoTilesCache;
     private int extTilesCacheSize = -1;
+    // 셰이더 타일 애니메이션(켠 스테이지만). 켜지면 물·물가·스텐실 애니메이션 타일을 첫 프레임 그림 타일로 바꾼 배열(아래 버퍼)을 깐다.
+    // 원본 배열(waterTiles 등)은 그대로 두어 물 판정·용암 빛 등 다른 코드가 보던 값이 바뀌지 않는다.
+    private readonly StageTileFrameAnimation tileFrameAnimation = new StageTileFrameAnimation();
+    private TileBase[] waterTilesFrameBuffer;
+    private TileBase[] waterCornerTilesFrameBuffer;
+    private TileBase[] waterStencilTilesFrameBuffer;
+    private TileBase[] groundStencilTilesFrameBuffer;
+    private TileBase[] extWaterTilesFrameBuffer;
+    private TileBase[] extWaterStencilTilesFrameBuffer;
     private int[] cellToIndex;
     private bool[] isShoreline;
     private float halfCellY;
@@ -437,7 +454,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         // 스테이지 분위기 연출(돌풍·물 반짝임) 셰이더 전역값. 렌더링만 바뀌고, 꺼진 스테이지는 0으로 비운다.
         StageAmbienceShaderGlobals.Apply(stageTileData);
         ApplyGroundMaterialForStage();
+        ApplyDecoMaterialForStage();
         ApplyBloomDecoMaterialForStage();
+        ApplyStencilMaterialsForStage();
 
         // 이전 던전의 초기 스폰 코루틴이 아직 돌던 중(스폰 배치가 열린 채)에 새 맵을 만드는 경우,
         // 모아둔 충돌 타일 심기/데코 걷어내기는 옛 맵에 대한 것이므로 새 맵 위에 반영되면 안 된다.
@@ -860,6 +879,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     {
         if (null != cachedCombatTileFlush) TreeTileWriteBatch.Unregister(cachedCombatTileFlush);
         StageAmbienceShaderGlobals.Clear();
+        tileFrameAnimation.End();
     }
 
     // 돌풍이 켜진 스테이지만 바닥 타일맵을 잔디 바람 머티리얼로 그리고, 그 밖에는 원래 머티리얼로 되돌린다(렌더링 전용).
@@ -877,6 +897,56 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         if (groundTilemapRenderer.sharedMaterial != target)
         {
             groundTilemapRenderer.sharedMaterial = target;
+        }
+    }
+
+    // 용암 빛이 켜진 스테이지만 바닥 장식(돌멩이 등) 타일맵도 바닥과 같은 용암 빛 머티리얼로 그리고, 그 밖에는 원래 머티리얼로 되돌린다(렌더링 전용).
+    private void ApplyDecoMaterialForStage()
+    {
+        if (null == decoTilemapRenderer)
+        {
+            if (null == decoTilemap) return;
+            decoTilemapRenderer = decoTilemap.GetComponent<TilemapRenderer>();
+            if (null == decoTilemapRenderer) return;
+            originalDecoMaterial = decoTilemapRenderer.sharedMaterial;
+        }
+
+        Material overrideMaterial = StageAmbienceShaderGlobals.GetDecoMaterialOverride(stageTileData);
+        Material target = null != overrideMaterial ? overrideMaterial : originalDecoMaterial;
+        if (decoTilemapRenderer.sharedMaterial != target)
+        {
+            decoTilemapRenderer.sharedMaterial = target;
+        }
+    }
+
+    // 용암 위 나무 그림자를 없애는 스테이지만 물·육지 스텐실 타일맵을 그 머티리얼로 그리고, 그 밖에는 원래 머티리얼로 되돌린다(렌더링 전용).
+    private void ApplyStencilMaterialsForStage()
+    {
+        if (null == waterStencilTilemapRenderer && null != waterStencilTilemap)
+        {
+            waterStencilTilemapRenderer = waterStencilTilemap.GetComponent<TilemapRenderer>();
+            if (null != waterStencilTilemapRenderer) originalWaterStencilMaterial = waterStencilTilemapRenderer.sharedMaterial;
+        }
+
+        if (null == groundStencilTilemapRenderer && null != groundStencilTilemap)
+        {
+            groundStencilTilemapRenderer = groundStencilTilemap.GetComponent<TilemapRenderer>();
+            if (null != groundStencilTilemapRenderer) originalGroundStencilMaterial = groundStencilTilemapRenderer.sharedMaterial;
+        }
+
+        // 한쪽 렌더러라도 없으면 바꾸지 않는다(물 쪽만 바뀌면 육지 위 그림자까지 사라진다).
+        bool useOverride = StageAmbienceShaderGlobals.TryGetStencilMaterialOverrides(stageTileData, out Material waterStencil, out Material groundStencil)
+            && null != waterStencilTilemapRenderer && null != groundStencilTilemapRenderer;
+
+        SetSharedMaterial(waterStencilTilemapRenderer, useOverride ? waterStencil : originalWaterStencilMaterial);
+        SetSharedMaterial(groundStencilTilemapRenderer, useOverride ? groundStencil : originalGroundStencilMaterial);
+    }
+
+    private static void SetSharedMaterial(TilemapRenderer _renderer, Material _material)
+    {
+        if (null != _renderer && null != _material && _renderer.sharedMaterial != _material)
+        {
+            _renderer.sharedMaterial = _material;
         }
     }
 
@@ -1791,21 +1861,34 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         StageMushroomSpores.Apply(bSpawnDeco && null != stageTileData ? stageTileData.MushroomSpores : null, animatedObjGenerator, "DungeonScene");
         // 장식 숨쉬기(꺼진 스테이지·로그라이크는 아무것도 만들지 않는다)
         StageDecoBreath.Apply(bSpawnDeco && null != stageTileData ? stageTileData.DecoBreath : null, animatedObjGenerator, "DungeonScene");
+        // 용암 불씨(꺼진 스테이지·로그라이크는 아무것도 만들지 않는다). 렌더링 전용.
+        StageLavaEmbers.Apply(bSpawnDeco && null != stageTileData ? stageTileData.LavaEmbers : null, waterTilemap, "DungeonScene");
+        // 용암 기둥(꺼진 스테이지·로그라이크는 아무것도 만들지 않는다). 렌더링 전용.
+        StageLavaSpouts.Apply(bSpawnDeco && null != stageTileData ? stageTileData.LavaSpouts : null, waterTilemap, "DungeonScene");
+
+        // 셰이더 타일 애니메이션(켠 스테이지만, 로그라이크는 끈다). 꺼지면 아래 Convert가 원본 배열을 그대로 돌려준다. 렌더링 전용.
+        tileFrameAnimation.Begin(null != stageTileData && stageTileData.ShaderTileAnimation, "DungeonScene", new[]
+        {
+            new StageTileFrameAnimation.Layer { tilemap = waterTilemap, tiles = waterTiles, extra = null != stageTileData ? stageTileData.WaterTile : null },
+            new StageTileFrameAnimation.Layer { tilemap = waterCornerTilemap, tiles = waterCornerTiles },
+            new StageTileFrameAnimation.Layer { tilemap = waterStencilTilemap, tiles = waterStencilTiles, extra = null != stageTileData ? stageTileData.StencilTile : null },
+            new StageTileFrameAnimation.Layer { tilemap = groundStencilTilemap, tiles = groundStencilTiles },
+        });
 
         BoundsInt b = new BoundsInt(0, 0, 0, width, height, 1);
         groundTilemap.SetTilesBlock(b, groundTiles);
         collisionTilemap.SetTilesBlock(b, collisionTiles);
-        if (waterTilemap != null) waterTilemap.SetTilesBlock(b, waterTiles);
+        if (waterTilemap != null) waterTilemap.SetTilesBlock(b, tileFrameAnimation.Convert(waterTiles, ref waterTilesFrameBuffer));
         if (waterCornerTilemap != null) waterCornerTilemap.ClearAllTiles();
-        if (waterCornerTilemap != null) waterCornerTilemap.SetTilesBlock(b, waterCornerTiles);
+        if (waterCornerTilemap != null) waterCornerTilemap.SetTilesBlock(b, tileFrameAnimation.Convert(waterCornerTiles, ref waterCornerTilesFrameBuffer));
         if (waterCollisionTilemap != null) waterCollisionTilemap.SetTilesBlock(b, waterCollisionTiles);
         if (rockCollisionTilemap != null) rockCollisionTilemap.SetTilesBlock(b, rockCollisionTiles);
         decoTilemap.SetTilesBlock(b, decoTilesToApply);
         if (bloomDecoTilemap != null) bloomDecoTilemap.SetTilesBlock(b, bloomDecoTilesToApply);
         if (waterDecoTilemap != null) waterDecoTilemap.SetTilesBlock(b, waterDecoTilesToApply);
         if (bloomWaterDecoTilemap != null) bloomWaterDecoTilemap.SetTilesBlock(b, bloomWaterDecoTilesToApply);
-        if (waterStencilTilemap != null) waterStencilTilemap.SetTilesBlock(b, waterStencilTiles);
-        if (groundStencilTilemap != null) groundStencilTilemap.SetTilesBlock(b, groundStencilTiles);
+        if (waterStencilTilemap != null) waterStencilTilemap.SetTilesBlock(b, tileFrameAnimation.Convert(waterStencilTiles, ref waterStencilTilesFrameBuffer));
+        if (groundStencilTilemap != null) groundStencilTilemap.SetTilesBlock(b, tileFrameAnimation.Convert(groundStencilTiles, ref groundStencilTilesFrameBuffer));
     }
 
     // ── 웅덩이(연결된 물 덩어리) 단위 물 장식 배치 ──
@@ -3014,10 +3097,13 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         }
 
         BoundsInt extBounds = new BoundsInt(extMinX, extMinY, 0, extW, extH, 1);
-        if (waterTilemap != null) waterTilemap.SetTilesBlock(extBounds, extWaterTiles);
+        if (waterTilemap != null) waterTilemap.SetTilesBlock(extBounds, tileFrameAnimation.Convert(extWaterTiles, ref extWaterTilesFrameBuffer));
         if (waterCollisionTilemap != null) waterCollisionTilemap.SetTilesBlock(extBounds, extWaterCollisionTiles);
-        if (waterStencilTilemap != null) waterStencilTilemap.SetTilesBlock(extBounds, extWaterStencilTiles);
+        if (waterStencilTilemap != null) waterStencilTilemap.SetTilesBlock(extBounds, tileFrameAnimation.Convert(extWaterStencilTiles, ref extWaterStencilTilesFrameBuffer));
         if (waterDecoTilemap != null) waterDecoTilemap.SetTilesBlock(extBounds, extWaterDecoTiles);
         if (bloomWaterDecoTilemap != null) bloomWaterDecoTilemap.SetTilesBlock(extBounds, extBloomWaterDecoTiles);
+
+        // 용암 빛 번짐(꺼진 스테이지·로그라이크는 전역값을 비운다). 맵 안팎 물(용암) 칸이 모두 정해진 뒤에 만든다. 렌더링 전용.
+        StageLavaGlow.Apply(stageTileData.LavaGlow, extWaterTiles, extBounds, waterTilemap);
     }
 }

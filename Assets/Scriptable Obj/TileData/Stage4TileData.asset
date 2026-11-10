@@ -81,7 +81,7 @@ MonoBehaviour:
   bloomDecoHDRIntensity: 1
   bloomWaterDecoHDRIntensity: 1
   useWaterTileBloom: 1
-  waterTileHDRIntensity: 2.25
+  waterTileHDRIntensity: 1.85
   decoTilemapYOffset: 0.5
   useGroundTilemapForDeco: 0
   grassStaticObjDensity: 0.0025
@@ -102,5 +102,237 @@ MonoBehaviour:
   bloomGrassDecoDensity: 0.07
   useBloomWaterDecoDensity: 0
   bloomWaterDecoDensity: 0.1
+  windGust:
+    enabled: 0
+    direction: {x: 1, y: -0.35}
+    speed: 3.2
+    spacing: 22
+    bandHalfWidth: 0.9
+    patchSize: 3
+    patchCoverage: 0.5
+    smallPatchScale: 1
+    gustGroupLength: 40
+    treeLeanDegrees: 5.5
+    treeFlutterSpeed: 9
+    treeFlutterRatio: 0.35
+    grassClumpSize: 1.6
+    grassBendThreshold: 0.2
+    grassBendSpread: 1.1
+    grassBendBrightness: 0.18
+    groundMaterial: {fileID: 0}
+  waterShimmer:
+    enabled: 1
+    surfaceColor: {r: 0.84313726, g: 0.2, b: 0.011764706, a: 1}
+    colorTolerance: 0.03
+    foamColor: {r: 1, g: 0.72, b: 0.1, a: 1}
+    sparkleCellTexels: 12
+    sparklePeriod: 4
+    sparkleDuty: 0
+    sparkleIntensity: 1.3
+    sparkleArmStrength: 0.45
+    rimGlowEnabled: 1
+    rimColor: {r: 0.99607843, g: 0.96862745, b: 0.1764706, a: 1}
+    rimGlowColor: {r: 1, g: 0.9, b: 0.6, a: 1}
+    rimGlowStrength: 0.6
+    rimWaveDirection: {x: 1, y: 0}
+    rimWaveSpacing: 9
+    rimWavePeriod: 6
+    rimWaveWidth: 0.2
+  colorGrading:
+    enabled: 1
+    profile: {fileID: 11400000, guid: 7af741286f3a268459c95ab7e87690e5, type: 2}
+    weight: 1
+  shoreReeds:
+    enabled: 0
+    prefab: {fileID: 0}
+    material: {fileID: 0}
+    includeSea: 1
+    clusterDensity: 0.075
+    pondClusterDensity: 0.04
+    minClusterSpacing: 4
+    clusterSizeMin: 2
+    clusterSizeMax: 3
+    alongBankSpacing: 0.5
+    shoreOffsetRange: {x: 0.2, y: 0.4}
+    flipToWind: 1
+  sporeHaze:
+    enabled: 1
+    material: {fileID: 2100000, guid: faa8dda41260e664ebaeef32d451fc1a, type: 2}
+    sortingLayerName: Indicators
+    sortingOrder: -32768
+    usesScreenCapture: 0
+  sporeGlow:
+    enabled: 0
+    glowAmount: 0.6
+    waveSpeed: 1.2
+    waveScale: 6
+    minWhite: 0.78
+    maxSaturation: 0.28
+    sharpness: 2
+  waterSpores:
+    enabled: 0
+    surfaceColorA: {r: 0.84313726, g: 0.2, b: 0.011764706, a: 1}
+    surfaceColorB: {r: 0.84313726, g: 0.2, b: 0.011764706, a: 1}
+    colorTolerance: 0.03
+    sporeColor: {r: 1, g: 0.78, b: 0.22, a: 1}
+    brightness: 1.2
+    cellTexels: 10
+    period: 6
+    duty: 0.6
+    driftDirection: {x: 1, y: -0.5}
+    travelTexels: 8
+    wobbleTexels: 0.5
+  waterBubbles:
+    enabled: 1
+    surfaceColor: {r: 0.84313726, g: 0.2, b: 0.011764706, a: 1}
+    colorTolerance: 0.03
+    bodyColor: {r: 1, g: 0.55, b: 0.1, a: 1}
+    edgeColor: {r: 0.62, g: 0.1, b: 0.02, a: 1}
+    highlightColor: {r: 1, g: 0.9, b: 0.45, a: 1}
+    highlightBrightness: 1.3
+    cellTexels: 13
+    period: 1.6
+    duty: 0.7
+    maxRadiusRange: {x: 2, y: 3}
+    popFraction: 0.25
+  mushroomSpores:
+    enabled: 0
+    mushroomPrefabs: []
+    material: {fileID: 0}
+    sortingLayerName: Objects
+    sortingOrder: 32767
+    emitOffset: {x: 0, y: 0.45}
+    emitSpread: {x: 0.15, y: 0.05}
+    intervalRange: {x: 4, y: 7}
+    burstCountRange: {x: 5, y: 8}
+    riseSpeedRange: {x: 0.5, y: 0.9}
+    sideSpeed: 0.45
+    dampen: 0.025
+    buoyancy: 0.08
+    wanderStrength: 0.12
+    lifetimeRange: {x: 1.6, y: 2.6}
+    sizePixelsRange: {x: 1, y: 2}
+    colorA: {r: 0.68, g: 0.99, b: 0.99, a: 1}
+    colorB: {r: 0.86, g: 0.8, b: 1, a: 1}
+    maxParticles: 256
+    capGlowAmount: 0.3
+    capGlowRiseTime: 1.6
+    capGlowFallTime: 0.5
+  bloomDecoTwinkle:
+    enabled: 0
+    material: {fileID: 0}
+  treeStarTwinkle:
+    enabled: 1
+    starColor: {r: 0.83137256, g: 0.33333334, b: 0.09803922, a: 1}
+    colorTolerance: 0.12
+    restLevel: 1
+    peakLevel: 1.8
+    period: 3.5
+    duty: 0.5
+    hotMinRed: 0.4
+    hotMinRedLead: 0.25
+    syncPerTree: 1
+  decoBreath:
+    enabled: 0
+    decoPrefabs: []
+    amount: 0.4
+    periodRange: {x: 4, y: 7}
+    sharpness: 3
+  hitSparkles:
+    enabled: 1
+    material: {fileID: 2100000, guid: a16e158e6c1d87944891d30b2890ffb6, type: 2}
+    sortingLayerName: Objects
+    sortingOrder: 32767
+    emitOffset: {x: 0, y: 0.2}
+    emitSpread: {x: 0.2, y: 0.25}
+    burstCountRange: {x: 5, y: 8}
+    speedRange: {x: 1.6, y: 2.8}
+    upwardBias: 0.6
+    dampen: 0.045
+    gravity: 1.8
+    lifetimeRange: {x: 0.4, y: 0.8}
+    sizePixelsRange: {x: 1, y: 2}
+    colorA: {r: 1, g: 0.5, b: 0.12, a: 1}
+    colorB: {r: 1, g: 0.85, b: 0.35, a: 1}
+    maxParticles: 192
+    maxBurstsPerFrame: 6
+  heatHaze:
+    enabled: 1
+    material: {fileID: 2100000, guid: ebe50ed7f2bcffe48bd9c4d99f136d51, type: 2}
+    sortingLayerName: FlyingItem
+    sortingOrder: -32768
+    usesScreenCapture: 1
+  lavaEmbers:
+    enabled: 1
+    material: {fileID: 2100000, guid: f513d6f17ac87824f900518ce9552460, type: 2}
+    sortingLayerName: Objects
+    sortingOrder: -32768
+    samplesPerSecond: 90
+    maxSamplesPerFrame: 4
+    burstCountRange: {x: 1, y: 3}
+    launchUpSpeedRange: {x: 1.8, y: 2.8}
+    launchSideSpeedRange: {x: 0.3, y: 0.9}
+    gravity: 8
+    fallBelowRange: {x: 0, y: 0.15}
+    sizePixelsRange: {x: 1, y: 2}
+    colorA: {r: 1, g: 0.55, b: 0.12, a: 1}
+    colorB: {r: 1, g: 0.92, b: 0.55, a: 1}
+    maxParticles: 64
+  lavaGlow:
+    enabled: 1
+    groundMaterial: {fileID: 2100000, guid: c822d7b5aaefd8145bb6709b89584c70, type: 2}
+    color: {r: 1, g: 0.38, b: 0.08, a: 1}
+    intensity: 0.18
+    warmMultiply: 0.35
+    radius: 1.2
+    falloffPower: 2
+    steps: 4
+    flickerAmount: 0.2
+    flickerSpeed: 0.35
+    flickerScale: 2.5
+    objectStrength: 1
+    objectFadeHeight: 0.8
+  waterMagma:
+    enabled: 1
+    surfaceColor: {r: 0.84313726, g: 0.2, b: 0.011764706, a: 1}
+    colorTolerance: 0.03
+    coolColor: {r: 0.72, g: 0.14, b: 0.02, a: 1}
+    hotColor: {r: 1, g: 0.36, b: 0.03, a: 1}
+    scale: 1.2
+    drift: {x: 0.06, y: 0.03}
+    evolveSpeed: 0.08
+    coolThreshold: 0.38
+    hotThreshold: 0.66
+  hideWaterReflections: 1
+  lavaShadowMask:
+    enabled: 1
+    waterStencilMaterial: {fileID: 2100000, guid: eba312a083850fa44bf76e037ba56e8d, type: 2}
+    groundStencilMaterial: {fileID: 2100000, guid: b275e007f2c5f76458add4c226cc4018, type: 2}
+  lavaSpouts:
+    enabled: 1
+    material: {fileID: 2100000, guid: f513d6f17ac87824f900518ce9552460, type: 2}
+    sortingLayerName: Objects
+    sortingOrder: -32768
+    intervalRange: {x: 2.5, y: 5}
+    pickAttempts: 24
+    durationRange: {x: 0.3, y: 0.45}
+    particlesPerSecond: 70
+    upSpeedRange: {x: 2.4, y: 3.4}
+    sideSpeed: 0.12
+    gravity: 8
+    baseWidth: 0.05
+    sizePixelsRange: {x: 1, y: 2}
+    colorA: {r: 1, g: 0.5, b: 0.1, a: 1}
+    colorB: {r: 1, g: 0.85, b: 0.35, a: 1}
+    maxParticles: 128
+  treeHeatCharge:
+    enabled: 1
+    hotMinRed: 0.4
+    hotMinRedLead: 0.25
+    hotBoost: 1.2
+    tintColor: {r: 1, g: 0.75, b: 0.3, a: 1}
+    tintAmount: 0.5
+    curvePower: 2
+  shaderTileAnimation: 1
   waterHazardStaminaDrainPerSecond: 100
   treeHeatStaminaDamage: 500

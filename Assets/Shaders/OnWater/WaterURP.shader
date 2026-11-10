@@ -12,6 +12,9 @@ Shader "Custom/WaterURP"
         [HideInInspector] _RendererColor("RendererColor", Color) = (1,1,1,1)
         [HideInInspector] _AlphaTex("External Alpha", 2D) = "white" {}
         [HideInInspector] _EnableExternalAlpha("Enable External Alpha", Float) = 0
+
+        // 셰이더 타일 프레임 애니메이션(StageTileFrameAnimation이 켠 머티리얼 사본만 x = 1). 켜지 않으면 UV를 그대로 쓴다.
+        [HideInInspector] _TileFrameGrid("Tile Frame Grid", Vector) = (0,0,0,0)
     }
 
     SubShader
@@ -63,12 +66,14 @@ Shader "Custom/WaterURP"
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Lit2DCommon.hlsl"
             #include "../Include/WaterShimmer.hlsl"
+            #include "../Include/TileFrameAnimation.hlsl"
 
             float4 _MainTex_TexelSize;
 
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
+                float4 _TileFrameGrid;
             CBUFFER_END
 
             Varyings LitVertex(Attributes input)
@@ -86,6 +91,8 @@ Shader "Custom/WaterURP"
 
             half4 LitFragment(Varyings input) : SV_Target
             {
+                // 셰이더 타일 프레임 애니메이션(켠 머티리얼만): 지금 프레임 그림 자리로 UV를 옮긴 뒤 모든 계산에 쓴다.
+                input.uv = TileFrameAnimationUV(input.uv, _TileFrameGrid);
                 half4 color = CommonLitFragment(input, input.color);
 
                 // 물 반짝임(꺼진 스테이지는 건너뛴다).
@@ -137,10 +144,12 @@ Shader "Custom/WaterURP"
             };
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Normals2DCommon.hlsl"
+            #include "../Include/TileFrameAnimation.hlsl"
 
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             CBUFFER_START( UnityPerMaterial )
                 half4 _Color;
+                float4 _TileFrameGrid;
             CBUFFER_END
 
             Varyings NormalsRenderingVertex(Attributes input)
@@ -157,6 +166,8 @@ Shader "Custom/WaterURP"
 
             half4 NormalsRenderingFragment(Varyings input) : SV_Target
             {
+                // 셰이더 타일 프레임 애니메이션(켠 머티리얼만): 지금 프레임 그림 자리로 UV를 옮긴 뒤 모든 계산에 쓴다.
+                input.uv = TileFrameAnimationUV(input.uv, _TileFrameGrid);
                 return CommonNormalsFragment(input, input.color);
             }
             ENDHLSL
@@ -194,6 +205,7 @@ Shader "Custom/WaterURP"
             };
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/2DCommon.hlsl"
+            #include "../Include/TileFrameAnimation.hlsl"
           
             // GPU Instancing
             #pragma multi_compile_instancing
@@ -202,6 +214,7 @@ Shader "Custom/WaterURP"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
+                float4 _TileFrameGrid;
             CBUFFER_END
 
             Varyings UnlitVertex(Attributes input)
@@ -217,6 +230,8 @@ Shader "Custom/WaterURP"
 
             half4 UnlitFragment(Varyings input) : SV_Target
             {
+                // 셰이더 타일 프레임 애니메이션(켠 머티리얼만): 지금 프레임 그림 자리로 UV를 옮긴 뒤 모든 계산에 쓴다.
+                input.uv = TileFrameAnimationUV(input.uv, _TileFrameGrid);
                 return CommonUnlitFragment(input, input.color);
             }
             ENDHLSL

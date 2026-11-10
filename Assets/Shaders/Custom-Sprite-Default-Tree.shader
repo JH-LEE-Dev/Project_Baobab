@@ -18,6 +18,8 @@ Shader "Custom/Custom-Sprite-Default-Tree"
 
         _FlashAmount("Flash Amount", Range(0,1)) = 0
         _FlashColor("Flash Color", Color) = (1,1,1,1)
+        // 열기 차오름 진행도(0~1). 카운트다운 중인 나무에만 MaterialPropertyBlock으로 넣는다.
+        [HideInInspector] _HeatCharge("Heat Charge", Float) = 0
 
         [Header(Wind Sway)]
         _EnableWindSway("Enable Wind Sway", Float) = 0
@@ -73,12 +75,16 @@ Shader "Custom/Custom-Sprite-Default-Tree"
             {
                 COMMON_2D_LIT_OUTPUTS
                 half4 color        : COLOR;
-                float3 worldPos    : TEXCOORD7;
+                // xy: 월드 위치, zw: 그림 기준점 월드 위치(나무 단위 반짝임 박자용)
+                float4 worldPos    : TEXCOORD7;
             };
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Lit2DCommon.hlsl"
             #include "Include/SporeGlow.hlsl"
             #include "Include/TreeStarTwinkle.hlsl"
+            #include "Include/TreeHeatCharge.hlsl"
+            #include "Include/StageAmbienceCommon.hlsl"
+            #include "Include/LavaGlow.hlsl"
 
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
@@ -92,6 +98,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayMainSpeed)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailSpeed)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailWeight)
+                UNITY_DEFINE_INSTANCED_PROP(float, _HeatCharge)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings LitVertex(Attributes input)
@@ -115,7 +122,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 );
 
                 Varyings o = CommonLitVertex(input);
-                o.worldPos = TransformObjectToWorld(input.positionOS);
+                o.worldPos = float4(TransformObjectToWorld(input.positionOS).xy, objectPivotWorldPos.xy);
                 o.color = input.color * UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Color) * unity_SpriteColor;
 
                 return o;
@@ -147,7 +154,11 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 // 포자 나무 숨빛(꺼진 스테이지는 그대로)
                 color.rgb = ApplySporeGlow(color.rgb, input.uv, worldPos);
                 // 나무 별빛 반짝임(꺼진 스테이지는 그대로)
-                color.rgb = ApplyTreeStarTwinkle(color.rgb, input.uv, worldPos);
+                color.rgb = ApplyTreeStarTwinkle(color.rgb, input.uv, worldPos, input.worldPos.zw);
+                // 열기 차오름(카운트다운 중인 나무만, 꺼진 스테이지는 그대로)
+                color.rgb = ApplyTreeHeatCharge(color.rgb, input.uv, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HeatCharge));
+                // 용암 빛(발밑이 용암 가까이면 밑동부터 물든다, 꺼진 스테이지는 그대로)
+                color.rgb = ApplyLavaGlowUpright(color.rgb, snappedWorldPos, input.worldPos.w, floor(worldPos * ppu));
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
                 color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
                 return color;
@@ -198,6 +209,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayMainSpeed)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailSpeed)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailWeight)
+                UNITY_DEFINE_INSTANCED_PROP(float, _HeatCharge)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings NormalsRenderingVertex(Attributes input)
@@ -277,12 +289,16 @@ Shader "Custom/Custom-Sprite-Default-Tree"
             {
                 COMMON_2D_OUTPUTS
                 half4 color : COLOR;
-                float3 worldPos : TEXCOORD7;
+                // xy: 월드 위치, zw: 그림 기준점 월드 위치(나무 단위 반짝임 박자용)
+                float4 worldPos : TEXCOORD7;
             };
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/2DCommon.hlsl"
             #include "Include/SporeGlow.hlsl"
             #include "Include/TreeStarTwinkle.hlsl"
+            #include "Include/TreeHeatCharge.hlsl"
+            #include "Include/StageAmbienceCommon.hlsl"
+            #include "Include/LavaGlow.hlsl"
           
             // GPU Instancing
             #pragma multi_compile_instancing
@@ -300,6 +316,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayMainSpeed)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailSpeed)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailWeight)
+                UNITY_DEFINE_INSTANCED_PROP(float, _HeatCharge)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings UnlitVertex(Attributes input)
@@ -323,7 +340,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 );
 
                 Varyings o = CommonUnlitVertex(input);
-                o.worldPos = TransformObjectToWorld(input.positionOS);
+                o.worldPos = float4(TransformObjectToWorld(input.positionOS).xy, objectPivotWorldPos.xy);
                 o.color = input.color * UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Color) * unity_SpriteColor;
                 return o;
             }
@@ -353,7 +370,11 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 // 포자 나무 숨빛(꺼진 스테이지는 그대로)
                 color.rgb = ApplySporeGlow(color.rgb, input.uv, worldPos);
                 // 나무 별빛 반짝임(꺼진 스테이지는 그대로)
-                color.rgb = ApplyTreeStarTwinkle(color.rgb, input.uv, worldPos);
+                color.rgb = ApplyTreeStarTwinkle(color.rgb, input.uv, worldPos, input.worldPos.zw);
+                // 열기 차오름(카운트다운 중인 나무만, 꺼진 스테이지는 그대로)
+                color.rgb = ApplyTreeHeatCharge(color.rgb, input.uv, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HeatCharge));
+                // 용암 빛(발밑이 용암 가까이면 밑동부터 물든다, 꺼진 스테이지는 그대로)
+                color.rgb = ApplyLavaGlowUpright(color.rgb, snappedWorldPos, input.worldPos.w, floor(worldPos * ppu));
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
                 color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
                 return color;

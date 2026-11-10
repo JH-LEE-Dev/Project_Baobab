@@ -21,6 +21,12 @@ Shader "Custom/2D/SporeHaze"
         _HazeWarp("일렁임(뭉게짐) 세기", Float) = 1.2
         _HazeSteps("진하기 단계 수(0이면 매끈)", Float) = 4
 
+        // 스텐실로 그릴 곳을 고른다(기본은 늘 그림). 물(용암) 칸은 물 스텐실이 1번 비트를 켜 두므로,
+        // 바닥 칸에만 그리고 물 칸은 건너뛰려면 Ref 0, ReadMask 1, Comp Equal(3).
+        _HazeStencilRef("스텐실 기준값", Float) = 0
+        _HazeStencilReadMask("스텐실 읽기 마스크", Float) = 0
+        [Enum(UnityEngine.Rendering.CompareFunction)] _HazeStencilComp("스텐실 비교", Float) = 8
+
         [HideInInspector] _Color("Tint", Color) = (1,1,1,1)
         [HideInInspector] _RendererColor("RendererColor", Color) = (1,1,1,1)
         [HideInInspector] _AlphaTex("External Alpha", 2D) = "white" {}
@@ -34,6 +40,15 @@ Shader "Custom/2D/SporeHaze"
         Blend SrcAlpha OneMinusSrcAlpha, One OneMinusSrcAlpha
         Cull Off
         ZWrite Off
+
+        Stencil
+        {
+            Ref [_HazeStencilRef]
+            ReadMask [_HazeStencilReadMask]
+            WriteMask 0
+            Comp [_HazeStencilComp]
+            Pass Keep
+        }
 
         Pass
         {

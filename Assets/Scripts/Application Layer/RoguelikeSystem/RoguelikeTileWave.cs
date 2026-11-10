@@ -942,6 +942,10 @@ public sealed class RoguelikeTileWave
             lavaCrackMaterial.CopyPropertiesFromMaterial(source);
         }
 
+        // 틈은 애니메이션 없는 다른 그림이라, 물 층이 셰이더 타일 애니메이션 표시를 가진 재질이어도 사본에서는 끈다.
+        // 로그라이크는 그 기능을 쓰지 않아(StageTileFrameAnimation.Begin) 지금은 늘 꺼져 있고 바뀌는 것이 없다.
+        StageTileFrameAnimation.ClearFrameAnimation(lavaCrackMaterial);
+
         if (null == lavaWaterBlock) lavaWaterBlock = new MaterialPropertyBlock();
         water.GetPropertyBlock(lavaWaterBlock);
         if (lavaWaterBlock.HasFloat(HDRIntensityId)) lavaCrackMaterial.SetFloat(HDRIntensityId, lavaWaterBlock.GetFloat(HDRIntensityId));

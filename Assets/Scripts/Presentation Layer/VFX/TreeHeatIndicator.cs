@@ -9,6 +9,9 @@ using UnityEngine;
 /// 나무가 열기 카운트다운을 시작하면 바로 붙지만, 처음 _hiddenDuration 동안은 보이지 않다가
 /// 남은 _showDuration 동안 나타나 채움이 중심에서 테두리까지 차오른다. 가득 차는 순간이 방출 시점이다.
 /// 나무가 먼저 죽거나 재사용되어 카운트다운이 끊기면(TreeObj.HeatSequence 변경) 즉시 사라진다.
+///
+/// 같은 카운트다운 동안 나무 그림에도 진행도(0~1, 카운트다운 시작부터 방출까지)를 넣어 뜨거운 줄기가 점점 달아오르게 한다
+/// (TreeVisualComponent.SetHeatCharge, 나무 셰이더가 스테이지 설정대로 칠한다). 끝나면 0으로 되돌린다. 렌더링 전용이다.
 /// </summary>
 public class TreeHeatIndicator : MonoBehaviour
 {
@@ -84,6 +87,11 @@ public class TreeHeatIndicator : MonoBehaviour
         if (!bPlaying) return;
 
         bPlaying = false;
+        // 같은 나무가 이미 다음 카운트다운을 시작했다면 그 진행도는 그쪽 인디케이터가 넣고 있으므로 건드리지 않는다.
+        if (tree != null && tree.HeatSequence == heatSequence && tree.treeVisualComponent != null)
+        {
+            tree.treeVisualComponent.SetHeatCharge(0f);
+        }
         tree = null;
         spriteRenderer.enabled = false;
 
@@ -102,6 +110,13 @@ public class TreeHeatIndicator : MonoBehaviour
         }
 
         elapsed += Time.deltaTime;
+
+        // 나무 줄기 달아오름: 카운트다운 시작부터 방출까지 0 → 1.
+        if (tree.treeVisualComponent != null)
+        {
+            tree.treeVisualComponent.SetHeatCharge(Mathf.Clamp01(elapsed / (hiddenDuration + showDuration)));
+        }
+
         if (elapsed < hiddenDuration) return;
 
         float showElapsed = elapsed - hiddenDuration;

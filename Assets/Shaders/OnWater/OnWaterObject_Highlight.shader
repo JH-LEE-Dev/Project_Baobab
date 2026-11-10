@@ -81,6 +81,9 @@ Shader "Custom/OnWaterObject_Highlight"
                 UNITY_DEFINE_INSTANCED_PROP(float, _DistortionAmount)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
+            // 반사를 끄는 스테이지면 1(StageAmbienceShaderGlobals가 스테이지 데이터대로 넣는다). 이 셰이더는 나무 반사 전용이라 그대로 끈다.
+            float _StageHideWaterReflection;
+
             Varyings UnlitVertex(Attributes input)
             {
                 UNITY_SETUP_INSTANCE_ID(input);
@@ -100,6 +103,8 @@ Shader "Custom/OnWaterObject_Highlight"
 
             half4 UnlitFragment(Varyings input) : SV_Target
             {
+                if (_StageHideWaterReflection > 0.5) discard;
+
                 float2 waveCoord = input.worldPos;
 
                 float _waveSpeed = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _WaveSpeed);

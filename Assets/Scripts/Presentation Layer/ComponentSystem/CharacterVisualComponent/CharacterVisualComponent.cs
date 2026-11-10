@@ -74,7 +74,16 @@ public class CharacterVisualComponent : MonoBehaviour
     [SerializeField] private float itemAcquireFlashDuration = 0.12f;
     [SerializeField] private AnimationCurve itemAcquireFlashCurve = AnimationCurve.EaseInOut(0f, 0.6f, 1f, 0f);
     private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
+    private static readonly int FlashColorID = Shader.PropertyToID("_FlashColor");
+    // 용암 빛을 받는 렌더러 표시(Custom-Sprite-Default-NoSnap). x = 켜짐, y = 렌더러 기준점에서 발밑까지 높이.
+    // 용암 빛이 꺼진 스테이지에서는 셰이더가 아무것도 칠하지 않으므로 항상 켜 둔다.
+    private static readonly int LavaGlowReceiverID = Shader.PropertyToID("_LavaGlowReceiver");
     private MaterialPropertyBlock flashMPB;
+    // 지금 재생 중인 플래시 색. 평소(사망·획득)는 하양, 열기에 맞았을 때만 그을린 색이다.
+    private Color currentFlashColor = Color.white;
+    [SerializeField] private float scorchFlashDuration = 0.3f;
+    [SerializeField] private AnimationCurve scorchFlashCurve = AnimationCurve.EaseInOut(0f, 0.75f, 1f, 0f);
+    [SerializeField] private Color scorchFlashColor = new Color(0.32f, 0.1f, 0.04f, 1f);
     private Coroutine flashCoroutine;
     private SpriteRenderer currentExtraRenderer;
 
@@ -164,6 +173,11 @@ public class CharacterVisualComponent : MonoBehaviour
             }
             bIsInitialized = true;
         }
+
+        // 몸통·얼굴은 용암 빛을 받는다(용암 빛이 켜진 스테이지에서만 실제로 물든다).
+        SetLavaGlowReceiver(sr);
+        SetLavaGlowReceiver(faceSR);
+        SetLavaGlowReceiver(faceBlinkSR);
 
         if (_onWaterAnimatorObject != null)
         {
@@ -358,6 +372,26 @@ public class CharacterVisualComponent : MonoBehaviour
     public void PlayItemAcquireFlash(SpriteRenderer _extraRenderer = null)
     {
         PlayFlash(itemAcquireFlashDuration, itemAcquireFlashCurve, _extraRenderer);
+    }
+
+    // 나무 열기에 맞았을 때 잠깐 그을린 색으로 깜빡인다.
+    public void PlayScorchFlash(SpriteRenderer _extraRenderer = null)
+    {
+        PlayFlash(scorchFlashDuration, scorchFlashCurve, _extraRenderer, scorchFlashColor);
+    }
+
+    /// <summary>
+    /// 이 렌더러가 용암 빛을 받게 한다(Custom-Sprite-Default-NoSnap 셰이더). 렌더러 기준점이 발밑과 다르면
+    /// 그 높이 차이(월드)를 넘긴다. 플래시와 같은 MaterialPropertyBlock을 읽고 써서 서로 지우지 않는다.
+    /// </summary>
+    public void SetLavaGlowReceiver(SpriteRenderer _renderer, float _groundOffset = 0f)
+    {
+        if (_renderer == null) return;
+        if (flashMPB == null) flashMPB = new MaterialPropertyBlock();
+
+        _renderer.GetPropertyBlock(flashMPB);
+        flashMPB.SetVector(LavaGlowReceiverID, new Vector4(1f, _groundOffset, 0f, 0f));
+        _renderer.SetPropertyBlock(flashMPB);
     }
 
     #endregion
@@ -600,9 +634,15 @@ public class CharacterVisualComponent : MonoBehaviour
         }
         SetFlashAmount(0f, currentExtraRenderer);
         currentExtraRenderer = null;
+        currentFlashColor = Color.white;
     }
 
     private void PlayFlash(float _duration, AnimationCurve _curve, SpriteRenderer _extraRenderer)
+    {
+        PlayFlash(_duration, _curve, _extraRenderer, Color.white);
+    }
+
+    private void PlayFlash(float _duration, AnimationCurve _curve, SpriteRenderer _extraRenderer, Color _color)
     {
         if (!gameObject.activeInHierarchy) return;
 
@@ -610,6 +650,8 @@ public class CharacterVisualComponent : MonoBehaviour
         {
             StopCoroutine(flashCoroutine);
         }
+        // 새 코루틴이 시작하자마자(같은 프레임) 첫 세기를 쓰므로 앞 플래시의 세기는 바로 덮인다.
+        currentFlashColor = _color;
         currentExtraRenderer = _extraRenderer;
         flashCoroutine = StartCoroutine(FlashRoutine(_duration, _curve, _extraRenderer));
     }
@@ -630,6 +672,7 @@ public class CharacterVisualComponent : MonoBehaviour
         SetFlashAmount(0f, _extraRenderer);
         flashCoroutine = null;
         currentExtraRenderer = null;
+        currentFlashColor = Color.white;
     }
 
     private void SetFlashAmount(float _flash, SpriteRenderer _extraRenderer)
@@ -650,6 +693,8 @@ public class CharacterVisualComponent : MonoBehaviour
 
         _renderer.GetPropertyBlock(flashMPB);
         flashMPB.SetFloat(FlashAmountID, _flash);
+        // 평소에는 하양(재질 기본값과 같다), 그을림 플래시 동안만 그 색이다.
+        flashMPB.SetColor(FlashColorID, currentFlashColor);
         _renderer.SetPropertyBlock(flashMPB);
     }
 }

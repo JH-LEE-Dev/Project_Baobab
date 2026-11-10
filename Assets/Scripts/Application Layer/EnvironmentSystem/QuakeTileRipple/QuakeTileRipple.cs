@@ -39,6 +39,8 @@ public sealed class QuakeTileRippleSettings
     [Header("용암 틈 빛")]
     [Tooltip("칸이 앞 칸보다 솟아 틈(옆벽)이 드러나면, 틈 바닥을 따라 용암 빛을 비춘다. 물(용암) 층과 같은 재질·HDR 세기로 그려 블룸·낮밤 밝기가 용암과 같다.")]
     public bool crackGlow = true;
+    [Tooltip("틈 빛 HDR 세기. 용암 층(4스테이지 1.85)보다 높여 틈 빛에서 블룸이 번지게 한다. 2.5쯤부터 은은하게, 3.2쯤이면 또렷하게 번진다.")]
+    [Min(0f)] public float crackGlowHDRIntensity = 3.2f;
 
     [Header("물체")]
     [Tooltip("물결 위의 물체(나무·원목·아이템·차량·캐릭터 등)도 선 칸 높이만큼 함께 출렁인다. 화면을 그리는 동안에만 옮겨 판정·정렬·충돌은 그대로다.")]
@@ -253,6 +255,9 @@ public sealed class QuakeTileRipple
     private readonly Dictionary<TileBase, bool> animatedTiles = new Dictionary<TileBase, bool>(32);
     // 실제 층에 속성 블록이 있는 복제층의 재질 사본(ApplySourceMaterial).
     private readonly Dictionary<TilemapRenderer, Material> liftMaterials = new Dictionary<TilemapRenderer, Material>(4);
+    // 틈 빛 복제층 재질: 물 복제층 재질 사본에 셰이더 타일 애니메이션 표시를 끄고 HDR 세기만 올린 것(ApplyGlowMaterial). 복제층과 함께 지운다.
+    private Material glowMaterial;
+    private static readonly int HDRIntensityId = Shader.PropertyToID("_HDRIntensity");
 
     private BoundsInt region;
     // 영역 칸 (0,0)의 칸 중심(월드)과 칸 좌표 x·y가 하나 늘 때 움직이는 거리. 칸 중심을 칸마다 그리드에 묻지 않고 계산한다.
@@ -671,6 +676,9 @@ public sealed class QuakeTileRipple
         }
 
         liftMaterials.Clear();
+
+        if (null != glowMaterial) DestroyObject(glowMaterial);
+        glowMaterial = null;
     }
 
     private static void DestroyAll(List<Tilemap> _lifts)
@@ -1213,16 +1221,31 @@ public sealed class QuakeTileRipple
     // // 용암 틈 빛
 
     /// <summary>
-    /// 틈 빛 복제층 재질을 물(용암) 복제층과 같게 한다(같은 재질 사본이라 HDR 세기·조명이 용암과 같다). 물 층이 없거나 꺼 두면 그리지 않는다.
+    /// 틈 빛 복제층 재질을 물(용암) 복제층 재질 사본으로 맞춘다(조명·낮밤 밝기가 용암과 같다). HDR 세기만 crackGlowHDRIntensity로 올려
+    /// 틈 빛에서 블룸이 번지게 한다. 물 층이 없거나 꺼 두면 그리지 않는다.
     /// </summary>
     private void ApplyGlowMaterial()
     {
-        Material material = waterLifts.Count > 0 ? waterLifts[0].GetComponent<TilemapRenderer>().sharedMaterial : null;
-        bGlow = settings.crackGlow && null != material;
+        Material source = waterLifts.Count > 0 ? waterLifts[0].GetComponent<TilemapRenderer>().sharedMaterial : null;
+        bGlow = settings.crackGlow && null != source;
         if (false == bGlow) return;
 
-        glowLeftLift.GetComponent<TilemapRenderer>().sharedMaterial = material;
-        glowRightLift.GetComponent<TilemapRenderer>().sharedMaterial = material;
+        // 사본은 매번 지금 물 복제층 재질 값으로 다시 맞춘다. 틈 빛은 애니메이션 없는 그림이라 셰이더 타일 애니메이션 표시는 끈다.
+        if (null == glowMaterial || glowMaterial.shader != source.shader)
+        {
+            if (null != glowMaterial) DestroyObject(glowMaterial);
+            glowMaterial = new Material(source) { name = source.name + " (QuakeGlow)" };
+        }
+        else
+        {
+            glowMaterial.CopyPropertiesFromMaterial(source);
+        }
+
+        StageTileFrameAnimation.ClearFrameAnimation(glowMaterial);
+        if (glowMaterial.HasProperty(HDRIntensityId)) glowMaterial.SetFloat(HDRIntensityId, settings.crackGlowHDRIntensity);
+
+        glowLeftLift.GetComponent<TilemapRenderer>().sharedMaterial = glowMaterial;
+        glowRightLift.GetComponent<TilemapRenderer>().sharedMaterial = glowMaterial;
     }
 
     private void MarkGlowDirty(int _order)

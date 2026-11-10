@@ -248,5 +248,6 @@ MonoBehaviour:
     colorB: {r: 1, g: 0.98, b: 0.72, a: 1}
     maxParticles: 192
     maxBurstsPerFrame: 6
+  shaderTileAnimation: 1
   waterHazardStaminaDrainPerSecond: 0
   treeHeatStaminaDamage: 0

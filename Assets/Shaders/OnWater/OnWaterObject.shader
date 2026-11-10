@@ -14,6 +14,8 @@ Shader "Custom/OnWaterObject"
         _WaveStrength("Wave Strength", Float) = 0.01
         _WaveFreq("Wave Frequency", Float) = 15.0
         _DistortionAmount("Distortion Amount", Range(0, 2)) = 1.0
+        // 1이면 반사를 끄는 스테이지(전역 _StageHideWaterReflection)에서 그리지 않는다. 나무·캐릭터 반사만 1이고, 물 위 장식·바위는 0이다.
+        [HideInInspector] _StageHideable("Stage Hideable Reflection", Float) = 0
 
         // Legacy properties. They're here so that materials using this shader can gracefully fallback to the legacy sprite shader.
         [HideInInspector] _BaseColor ("Base Color", Color) = (1,1,1,1)
@@ -80,7 +82,11 @@ Shader "Custom/OnWaterObject"
                 UNITY_DEFINE_INSTANCED_PROP(float, _WaveStrength)
                 UNITY_DEFINE_INSTANCED_PROP(float, _WaveFreq)
                 UNITY_DEFINE_INSTANCED_PROP(float, _DistortionAmount)
+                UNITY_DEFINE_INSTANCED_PROP(float, _StageHideable)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
+
+            // 반사를 끄는 스테이지면 1(StageAmbienceShaderGlobals가 스테이지 데이터대로 넣는다).
+            float _StageHideWaterReflection;
 
             Varyings UnlitVertex(Attributes input)
             {
@@ -101,6 +107,8 @@ Shader "Custom/OnWaterObject"
 
             half4 UnlitFragment(Varyings input) : SV_Target
             {
+                if (_StageHideWaterReflection > 0.5 && UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _StageHideable) > 0.5) discard;
+
                 float2 waveCoord = input.worldPos;
 
                 float _waveSpeed = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _WaveSpeed);

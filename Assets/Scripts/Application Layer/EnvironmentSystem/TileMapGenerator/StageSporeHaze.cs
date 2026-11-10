@@ -6,45 +6,67 @@ using UnityEngine.Rendering;
 /// 그 카메라 화면을 덮도록 옮긴다(안개 모양은 셰이더가 월드 좌표로 계산하므로 땅에 붙어 흘러간다).
 /// 렌더링만 바꾸고 게임 동작에는 영향이 없다. 해당 씬에 붙여 두므로 씬이 내려가면 같이 사라지고,
 /// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳에서는 아무것도 만들지 않는다.
+/// 같은 방식의 화면 덮개(용암 아지랑이 등)는 자리 이름(_slot)을 달리해 함께 띄울 수 있다.
 /// </summary>
 public class StageSporeHaze : MonoBehaviour
 {
     // 카메라 화면보다 넉넉히 덮는 배율(카메라 흔들림·한 프레임 늦은 이동에도 가장자리가 드러나지 않게)
     private const float ViewMargin = 1.25f;
+    // 기본 자리(포자 안개)
+    public const string DefaultSlot = "SporeHaze";
 
-    private static StageSporeHaze current;
+    private static readonly System.Collections.Generic.Dictionary<string, StageSporeHaze> currents = new System.Collections.Generic.Dictionary<string, StageSporeHaze>();
     private static Sprite whiteSprite;
 
     // //내부 의존성
     private SpriteRenderer spriteRenderer;
+    private string slot;
 
     // // 퍼블릭 제어 메서드
-    public static void Apply(SporeHazeSettings _settings, string _sceneName)
+    public static void Apply(SporeHazeSettings _settings, string _sceneName, string _slot = DefaultSlot)
     {
-        Remove();
+        Remove(_slot);
 
         if (null == _settings || false == _settings.enabled || null == _settings.material)
         {
             return;
         }
 
-        GameObject root = new GameObject("[StageSporeHaze]");
+        GameObject root = new GameObject("[Stage" + _slot + "]");
         UnityEngine.SceneManagement.Scene targetScene = UnityEngine.SceneManagement.SceneManager.GetSceneByName(_sceneName);
         if (targetScene.IsValid() && targetScene.isLoaded && root.scene != targetScene)
         {
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(root, targetScene);
         }
 
-        current = root.AddComponent<StageSporeHaze>();
-        current.Setup(_settings);
+        StageSporeHaze haze = root.AddComponent<StageSporeHaze>();
+        haze.slot = _slot;
+        currents[_slot] = haze;
+        haze.Setup(_settings);
     }
 
+    // 모든 자리를 지운다.
     public static void Remove()
     {
-        if (null != current)
+        foreach (StageSporeHaze haze in currents.Values)
         {
-            Destroy(current.gameObject);
-            current = null;
+            if (null != haze)
+            {
+                Destroy(haze.gameObject);
+            }
+        }
+        currents.Clear();
+    }
+
+    public static void Remove(string _slot)
+    {
+        if (currents.TryGetValue(_slot, out StageSporeHaze haze))
+        {
+            if (null != haze)
+            {
+                Destroy(haze.gameObject);
+            }
+            currents.Remove(_slot);
         }
     }
 
@@ -57,6 +79,12 @@ public class StageSporeHaze : MonoBehaviour
         spriteRenderer.sortingOrder = _settings.sortingOrder;
         spriteRenderer.shadowCastingMode = ShadowCastingMode.Off;
         spriteRenderer.receiveShadows = false;
+
+        // 화면 캡처는 쓰는 곳이 있을 때만 켜지므로, 캡처를 읽는 덮개는 떠 있는 동안 사용자로 등록한다.
+        if (true == _settings.usesScreenCapture)
+        {
+            gameObject.AddComponent<PresentationLayer.VFX.SortingLayerTextureUser>();
+        }
 
         Camera mainCamera = Camera.main;
         if (null != mainCamera)
@@ -111,9 +139,9 @@ public class StageSporeHaze : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (current == this)
+        if (null != slot && currents.TryGetValue(slot, out StageSporeHaze haze) && haze == this)
         {
-            current = null;
+            currents.Remove(slot);
         }
     }
 }

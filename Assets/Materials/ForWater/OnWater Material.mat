@@ -50,6 +50,7 @@ Material:
     - _DistortionAmount: 1
     - _EnableExternalAlpha: 0
     - _HDRIntensity: 1
+    - _StageHideable: 1
     - _WaveFreq: 35
     - _WaveSpeed: 5.5
     - _WaveStrength: 0.01

@@ -167,5 +167,6 @@ MonoBehaviour:
     alongBankSpacing: 0.5
     shoreOffsetRange: {x: 0.2, y: 0.4}
     flipToWind: 1
+  shaderTileAnimation: 1
   waterHazardStaminaDrainPerSecond: 0
   treeHeatStaminaDamage: 0
