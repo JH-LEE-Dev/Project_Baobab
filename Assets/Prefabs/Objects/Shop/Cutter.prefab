@@ -113,11 +113,11 @@ MonoBehaviour:
   - logState: 2
     durabilityMultiplier: 1
   - logState: 3
-    durabilityMultiplier: 3
+    durabilityMultiplier: 2
   - logState: 4
-    durabilityMultiplier: 5
+    durabilityMultiplier: 3
   - logState: 5
-    durabilityMultiplier: 10
+    durabilityMultiplier: 5
   cuttingAnimationSprites:
   - {fileID: -7896710973168869388, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
   - {fileID: 5400649770365408191, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}

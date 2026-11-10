@@ -764,9 +764,6 @@ MonoBehaviour:
   animatorObject: {fileID: 5430248174325705416}
   coinThrowTransform: {fileID: 1904647356624635549}
   coinGetCooldown: 0.04
-  coinPitchResetDelay: 0.2
-  coinPitchStep: 0.05
-  coinPitchMax: 1.5
   sr: {fileID: 3531435560046198048}
   outlineSr: {fileID: 9082406534967800036}
   frameTime: 0.05
