@@ -984,6 +984,8 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         if (false == _s.heat) _dropTags.Add("TreeHeatEmitEffect");
         // StarRainEffect: 별빛 나침반(3스테이지 전리품) 효과인 유성우 이펙트(VFX_StarRain, 2026-10-16 추가)
         if (false == _s.MapReachable((int)MapType.StarrootForest)) _dropTags.Add("StarRainEffect");
+        // TreeBarrierSparkEffect / TreeBarrierShatterEffect: 3스테이지 배리어 피격 스파크·파괴 파편(VFX_BarrierSpark/Shatter, 2026-11-09 추가)
+        if (false == _s.MapReachable((int)MapType.StarrootForest)) { _dropTags.Add("TreeBarrierSparkEffect"); _dropTags.Add("TreeBarrierShatterEffect"); }
         _n += EditComponents(_root, "VFXComponent", INSTALLER_PREFAB_PATH, _so => ClearVfxPoolEntries(_so, _dropTags));
 
         _n += EditComponents(_root, "TileMapGenerator", INSTALLER_PREFAB_PATH, _so => ClearUnreachableMapEntries(_so, "mapTypeTileDatas", "tileData", _s));

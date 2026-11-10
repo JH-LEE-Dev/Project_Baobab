@@ -82,3 +82,34 @@ public class StageColorGradingSettings
     // 덧씌우는 세기(0~1)
     [Range(0f, 1f)] public float weight = 1f;
 }
+
+/// <summary>
+/// 물가 갈대. 맵을 깔 때 육지를 등진 물가(화면 위쪽이 육지인 물 칸)에 갈대를 덤불로 무리 지어 듬성듬성 놓는다.
+/// 충돌이 없는 장식이라 게임 동작에는 영향이 없다. prefab이 비어 있거나 enabled가 꺼져 있으면 아무것도 놓지 않는다.
+/// </summary>
+[System.Serializable]
+public class ShoreReedSettings
+{
+    public bool enabled = false;
+    // 갈대 프리팹(HomeWaterGrass: 3프레임 흔들림 + 정렬)
+    public GameObject prefab;
+    // 갈대에 끼울 머티리얼. 비워 두면 프리팹 머티리얼 그대로다(ShoreReedWindGust면 돌풍이 지날 때 바람 쪽으로 눕는다).
+    public Material material;
+    // 바다 물가에도 놓는다(꺼 두면 섬 안 웅덩이 물가에만).
+    public bool includeSea = true;
+    // 바다: 놓을 수 있는 물가 칸 하나당 무리 수(기댓값)
+    [Range(0f, 1f)] public float clusterDensity = 0.075f;
+    // 웅덩이: 웅덩이 물 칸 하나당 무리 수(기댓값). 큰 웅덩이일수록 무리가 늘고, 작은 웅덩이도 1무리는 노린다.
+    [Range(0f, 1f)] public float pondClusterDensity = 0.04f;
+    // 무리끼리 떨어뜨릴 최소 거리(월드)
+    public float minClusterSpacing = 4f;
+    // 무리 하나의 갈대 수. 이어진 물가가 짧아 최소 수를 못 채우는 자리에는 놓지 않는다.
+    [Min(1)] public int clusterSizeMin = 2;
+    [Min(1)] public int clusterSizeMax = 3;
+    // 물가선을 따라 이웃 갈대 사이 간격(칸 단위). 칸마다 두 개씩 놓인다.
+    public float alongBankSpacing = 0.5f;
+    // 물 칸 수면 중심에서 뒤쪽 육지 쪽으로 미는 정도(칸 단위, 최소~최대)
+    public Vector2 shoreOffsetRange = new Vector2(0.2f, 0.4f);
+    // 그림이 왼쪽으로 눕는 갈대를 바람이 오른쪽으로 불면 좌우를 뒤집어, 흔들림이 바람 쪽으로 눕게 한다.
+    public bool flipToWind = true;
+}

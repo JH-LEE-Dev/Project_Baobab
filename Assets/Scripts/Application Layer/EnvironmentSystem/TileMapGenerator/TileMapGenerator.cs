@@ -1764,6 +1764,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         }
 
         if (bSpawnDeco) PlaceWaterAnimatedObjects(size);
+        // 물가 갈대(스테이지 데이터에 켠 스테이지만). 물 장식을 다 놓은 뒤 그 자리를 피해 놓는다.
+        if (bSpawnDeco) PlaceShoreReeds(size);
 
         BoundsInt b = new BoundsInt(0, 0, 0, width, height, 1);
         groundTilemap.SetTilesBlock(b, groundTiles);
@@ -1809,6 +1811,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         PrepareWaterDecoGrid();
         PrepareWaterDecoTypes();
         Array.Clear(waterCompVisited, 0, _size);
+        mapPlacedWaterDecos.Clear();
 
         for (int i = 0; i < _size; i++)
         {
@@ -1873,6 +1876,352 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 animatedObjGenerator.SpawnWaterAnimatedOtherTypeObj(pos);
             }
         }
+    }
+
+    // ── 물가 갈대(ShoreReedSettings) ──
+    // 육지를 등진 물 칸(뒤쪽 +u 또는 +v 이웃이 육지이고, 앞쪽 -u·-v·대각선 앞 이웃은 물)에만 놓는다.
+    // 화면 위쪽 물가 앞에 서므로, 앞쪽 육지 블록(반 칸 솟은 그림)에 갈대가 겹쳐 떠 보이지 않는다.
+    // 웅덩이·바다마다 무리 수를 따로 정하고, 무리 자리는 서로 minClusterSpacing 이상 떨어진 물가 칸 중 고르게 퍼지도록 고른다.
+    // 무리마다 clusterSizeMin~Max개를 이어진 물가 칸에 촘촘히 붙여 놓는다.
+    // 물 장식(mapPlacedWaterDecos) 사각형과 겹치는 자리는 쓰지 않는다. 충돌이 없는 장식이라 게임 동작은 그대로다.
+    private const float ShoreReedHalfWidth = 12f / 32f;
+    private const float ShoreReedHalfHeight = 13f / 32f;
+    // 무리 하나가 훑는 물가 칸 수 상한(무리가 물가를 따라 길게 늘어지지 않게)
+    private const int ShoreReedMaxClusterCells = 8;
+    // 물가선을 따라 갈대 자리를 흔드는 폭(칸 단위)
+    private const float ShoreReedAlongJitter = 0.06f;
+    // 두 갈대 그림이 겹쳐 한 덤불로 보이는 피봇 간격 한계(월드). 갈대 그림 폭은 약 0.66.
+    private const float ShoreReedTouchX = 0.6f;
+    private const float ShoreReedTouchY = 0.35f;
+    // 무리 자리 칸 중심에서 무리 갈대가 닿을 수 있는 가장 먼 거리(월드, 넉넉히). 무리는 칸을 ShoreReedMaxClusterCells개까지
+    // 잇고 한 칸 건너가 0.56월드 이하, 칸 안 갈대 자리 0.56·갈대 반폭 0.41을 더한 것보다 크게 잡는다.
+    private const float ShoreReedClusterReach = ShoreReedMaxClusterCells * 0.6f + 1f;
+
+    private readonly List<int> shoreReedCells = new List<int>(256);
+    private readonly List<int> shoreReedClusterCells = new List<int>(ShoreReedMaxClusterCells);
+    private readonly List<Vector2> shoreReedClusterSeeds = new List<Vector2>(64);
+    private readonly List<Vector2> shoreReedClusterReeds = new List<Vector2>(16);
+    private readonly List<PlacedWaterDeco> shoreReedNearbyDecos = new List<PlacedWaterDeco>(16);
+    private bool[] shoreReedEligible = Array.Empty<bool>();
+
+    private void PlaceShoreReeds(int _size)
+    {
+        if (animatedObjGenerator == null || stageTileData == null || GameModeContext.IsRoguelike) return;
+
+        ShoreReedSettings settings = stageTileData.ShoreReeds;
+        if (null == settings || false == settings.enabled || null == settings.prefab || (settings.clusterDensity <= 0f && settings.pondClusterDensity <= 0f)) return;
+
+        if (false == bWaterDecoGridReady) PrepareWaterDecoGrid();
+
+        if (shoreReedEligible.Length != _size) shoreReedEligible = new bool[_size];
+        else Array.Clear(shoreReedEligible, 0, _size);
+
+        bool bAnyEligible = false;
+        for (int i = 0; i < _size; i++)
+        {
+            if (waterTiles[i] == null) continue;
+            if (false == settings.includeSea && isOceanConnectedWater[i]) continue;
+
+            int x = i % width;
+            int y = i / width;
+            if (false == IsLand(x + 1, y) && false == IsLand(x, y + 1)) continue;
+            if (IsLand(x - 1, y) || IsLand(x, y - 1) || IsLand(x - 1, y - 1)) continue;
+
+            shoreReedEligible[i] = true;
+            bAnyEligible = true;
+        }
+        if (false == bAnyEligible) return;
+
+        bool bFlip = false;
+        WindGustSettings wind = stageTileData.WindGust;
+        if (settings.flipToWind && null != wind && wind.enabled) bFlip = wind.direction.x > 0f;
+
+        // 물 장식처럼 웅덩이(4방향으로 이어진 물 덩어리)·바다마다 따로 무리 수를 정한다. 바다는 물가 칸 수 * clusterDensity,
+        // 웅덩이는 물 칸 수 * pondClusterDensity를 확률적으로 반올림하고 최소 1무리를 노리므로(ComputeDistributedCount),
+        // 갈대가 큰 바다에만 몰리지 않고 작은 웅덩이에도 서며, 큰 웅덩이일수록 무리가 늘어난다.
+        float spacingSq = settings.minClusterSpacing * settings.minClusterSpacing;
+        shoreReedClusterSeeds.Clear();
+        Array.Clear(waterCompVisited, 0, _size);
+        for (int i = 0; i < _size; i++)
+        {
+            if (waterCompVisited[i] || waterTiles[i] == null) continue;
+
+            waterCompQueue.Clear();
+            waterCompQueue.Enqueue(i);
+            waterCompVisited[i] = true;
+            shoreReedCells.Clear();
+            int waterCellCount = 0;
+            while (waterCompQueue.Count > 0)
+            {
+                int curr = waterCompQueue.Dequeue();
+                int cx = curr % width;
+                int cy = curr / width;
+                waterCellCount++;
+                if (shoreReedEligible[curr]) shoreReedCells.Add(curr);
+
+                TryEnqueueWaterCompCell(cx + 1, cy);
+                TryEnqueueWaterCompCell(cx - 1, cy);
+                TryEnqueueWaterCompCell(cx, cy + 1);
+                TryEnqueueWaterCompCell(cx, cy - 1);
+            }
+            if (shoreReedCells.Count == 0) continue;
+
+            // 한 덩어리는 모두 바다이거나 모두 웅덩이다(물 장식과 같은 4방향 연결).
+            int target = isOceanConnectedWater[i]
+                ? ComputeDistributedCount(shoreReedCells.Count, settings.clusterDensity)
+                : ComputeDistributedCount(waterCellCount, settings.pondClusterDensity);
+            int placedClusters = 0;
+            while (placedClusters < target && shoreReedCells.Count > 0)
+            {
+                // 무리 자리는 물 장식처럼 후보 여럿 중 이미 놓인 무리에서 가장 먼 칸(best-candidate)으로 골라 물가에 고르게 퍼뜨린다.
+                // 무작위 후보가 모자라면 이 물의 남은 물가 칸 전체에서 고른다. 고른 칸은 무리를 못 놓아도 다시 쓰지 않는다.
+                // 놓인 무리와 너무 가까운 칸은 무리가 늘기만 하니 다시 쓸 수 없으므로 보는 즉시 후보에서 뺀다
+                // (그래야 목표를 못 채우는 물에서 같은 칸을 매번 다시 훑지 않는다).
+                int bestIdx = -1;
+                float bestScore = -1f;
+                int valid = 0;
+                for (int t = 0; t < WaterDecoMaxRandomTries && valid < WaterDecoCandidatesPerPick && shoreReedCells.Count > 0; t++)
+                {
+                    int idx = UnityEngine.Random.Range(0, shoreReedCells.Count);
+                    float score = GetShoreReedSeedScore(shoreReedCells[idx]);
+                    if (score < spacingSq)
+                    {
+                        if (bestIdx == shoreReedCells.Count - 1) bestIdx = idx;
+                        RemoveShoreReedCandidateAt(idx);
+                        continue;
+                    }
+
+                    valid++;
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        bestIdx = idx;
+                    }
+                }
+                if (bestIdx < 0)
+                {
+                    // 뒤에서부터 훑어, 뺀 자리에 들어오는 마지막 칸은 이미 본 칸이 되게 한다.
+                    for (int idx = shoreReedCells.Count - 1; idx >= 0; idx--)
+                    {
+                        float score = GetShoreReedSeedScore(shoreReedCells[idx]);
+                        if (score < spacingSq)
+                        {
+                            if (bestIdx == shoreReedCells.Count - 1) bestIdx = idx;
+                            RemoveShoreReedCandidateAt(idx);
+                            continue;
+                        }
+                        if (score > bestScore)
+                        {
+                            bestScore = score;
+                            bestIdx = idx;
+                        }
+                    }
+                }
+                if (bestIdx < 0) break;
+
+                int seed = shoreReedCells[bestIdx];
+                RemoveShoreReedCandidateAt(bestIdx);
+
+                if (PlaceShoreReedCluster(seed, settings, bFlip) > 0)
+                {
+                    shoreReedClusterSeeds.Add(GetShoreReedCellCenter(seed));
+                    placedClusters++;
+                }
+            }
+        }
+    }
+
+    // 후보 칸 하나를 뺀다(순서는 상관없어 마지막 칸을 그 자리로 옮긴다).
+    private void RemoveShoreReedCandidateAt(int _idx)
+    {
+        int last = shoreReedCells.Count - 1;
+        shoreReedCells[_idx] = shoreReedCells[last];
+        shoreReedCells.RemoveAt(last);
+    }
+
+    // 칸 중심에서 이미 놓인 무리 자리까지 가장 가까운 거리의 제곱(놓인 무리가 없으면 아주 큰 값).
+    private float GetShoreReedSeedScore(int _cell)
+    {
+        Vector2 pos = GetShoreReedCellCenter(_cell);
+        float best = float.MaxValue;
+        for (int k = 0; k < shoreReedClusterSeeds.Count; k++)
+        {
+            float d = (shoreReedClusterSeeds[k] - pos).sqrMagnitude;
+            if (d < best) best = d;
+        }
+        return best;
+    }
+
+    // 무리 하나를 놓고 놓은 갈대 수를 돌려준다(못 놓으면 0).
+    // seed에서 8방향으로 이어진 물가 칸을 가까운 순서로 모으며, 칸마다 물가선을 따라 갈대 두 개씩 촘촘히 붙여 놓는다
+    // (갈대 그림 폭이 칸 변보다 넓어서 이웃 갈대와 겹쳐 한 덤불로 보인다). clusterSizeMin개를 못 채우는 자리
+    // (물가가 짧거나 물 장식에 막힌 곳)에는 하나도 놓지 않는다 - 갈대가 하나 달랑 서 있지 않게.
+    private int PlaceShoreReedCluster(int _seed, ShoreReedSettings _settings, bool _bFlip)
+    {
+        int minCount = Mathf.Max(1, Mathf.Min(_settings.clusterSizeMin, _settings.clusterSizeMax));
+        int maxCount = Mathf.Max(minCount, _settings.clusterSizeMax);
+        int count = UnityEngine.Random.Range(minCount, maxCount + 1);
+
+        shoreReedClusterCells.Clear();
+        shoreReedClusterCells.Add(_seed);
+        shoreReedClusterReeds.Clear();
+        GatherShoreReedNearbyDecos(GetShoreReedCellCenter(_seed));
+        for (int head = 0; head < shoreReedClusterCells.Count && shoreReedClusterReeds.Count < count; head++)
+        {
+            int cell = shoreReedClusterCells[head];
+            // 물 장식에 막힌 칸은 건너뛰고 그 칸 너머로도 잇지 않는다(덤불 중간이 비어 갈라져 보이지 않게).
+            if (false == AddShoreReedSlots(cell, _settings)) continue;
+            if (shoreReedClusterCells.Count >= ShoreReedMaxClusterCells) continue;
+
+            int cx = cell % width;
+            int cy = cell / width;
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    // 화면 가로로 한 칸(1월드) 떨어진 대각선 이웃(+u-v, -u+v)은 갈대가 끊겨 보이므로 잇지 않는다.
+                    if (dx == 0 && dy == 0) continue;
+                    if (dx == -dy) continue;
+                    int nx = cx + dx;
+                    int ny = cy + dy;
+                    if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+                    int n = nx + ny * width;
+                    if (shoreReedEligible[n] && false == shoreReedClusterCells.Contains(n) && shoreReedClusterCells.Count < ShoreReedMaxClusterCells)
+                    {
+                        shoreReedClusterCells.Add(n);
+                    }
+                }
+            }
+        }
+
+        if (shoreReedClusterReeds.Count < minCount) return 0;
+
+        int placed = Mathf.Min(count, shoreReedClusterReeds.Count);
+        for (int r = 0; r < placed; r++)
+        {
+            animatedObjGenerator.SpawnShoreReed(_settings.prefab, shoreReedClusterReeds[r], _settings.material, _bFlip);
+        }
+        return placed;
+    }
+
+    // 칸 하나의 물가선 위 갈대 자리 두 개를 shoreReedClusterReeds에 더한다. 하나라도 물 장식과 겹치면 둘 다 넣지 않고 false.
+    // 뒤쪽 +u가 육지면 물가선은 v축을 따라 가므로 u는 육지 쪽으로 밀고 v로 벌린다(+v도 같은 방식). 둘 다 육지인 안쪽 모서리 칸은
+    // 두 물가선에 하나씩 놓는다.
+    private bool AddShoreReedSlots(int _cell, ShoreReedSettings _settings)
+    {
+        int x = _cell % width;
+        int y = _cell / width;
+        bool bLandU = IsLand(x + 1, y);
+        bool bLandV = IsLand(x, y + 1);
+        float lo = Mathf.Min(_settings.shoreOffsetRange.x, _settings.shoreOffsetRange.y);
+        float hi = Mathf.Max(_settings.shoreOffsetRange.x, _settings.shoreOffsetRange.y);
+        float half = Mathf.Max(0f, _settings.alongBankSpacing) * 0.5f;
+
+        Vector2 first = default;
+        for (int s = 0; s < 2; s++)
+        {
+            float along = (s == 0 ? -half : half) + UnityEngine.Random.Range(-ShoreReedAlongJitter, ShoreReedAlongJitter);
+            float shore = UnityEngine.Random.Range(lo, hi);
+            float du;
+            float dv;
+            if (bLandU && bLandV)
+            {
+                du = s == 0 ? shore : -half;
+                dv = s == 0 ? -half : shore;
+            }
+            else if (bLandU)
+            {
+                du = shore;
+                dv = along;
+            }
+            else
+            {
+                du = along;
+                dv = shore;
+            }
+
+            Vector2 pos = GetShoreReedPosition(x + du, y + dv);
+            if (false == IsShoreReedClearOfWaterDecos(pos)) return false;
+            if (s == 0)
+            {
+                first = pos;
+                continue;
+            }
+
+            // 덤불이 끊기지 않게: 두 갈대가 서로 겹치고, 이미 놓인 갈대가 있으면 그중 하나와 겹쳐야 한다(물가가 꺾이는 곳에서
+            // 한 칸 건너 떨어진 갈대가 따로 서 보이지 않게). 이미 놓인 갈대와 겹치는 쪽을 먼저 넣어, 개수를 자를 때도 붙은 쪽이 남는다.
+            if (false == AreShoreReedsTouching(first, pos)) return false;
+            if (shoreReedClusterReeds.Count > 0)
+            {
+                bool bFirstTouches = IsTouchingPlacedShoreReed(first);
+                if (false == bFirstTouches && false == IsTouchingPlacedShoreReed(pos)) return false;
+                if (false == bFirstTouches)
+                {
+                    Vector2 tmp = first;
+                    first = pos;
+                    pos = tmp;
+                }
+            }
+            shoreReedClusterReeds.Add(first);
+            shoreReedClusterReeds.Add(pos);
+        }
+        return true;
+    }
+
+    private static bool AreShoreReedsTouching(Vector2 _a, Vector2 _b)
+    {
+        return Mathf.Abs(_a.x - _b.x) < ShoreReedTouchX && Mathf.Abs(_a.y - _b.y) < ShoreReedTouchY;
+    }
+
+    private bool IsTouchingPlacedShoreReed(Vector2 _pos)
+    {
+        for (int i = 0; i < shoreReedClusterReeds.Count; i++)
+        {
+            if (AreShoreReedsTouching(_pos, shoreReedClusterReeds[i])) return true;
+        }
+        return false;
+    }
+
+    private Vector2 GetShoreReedCellCenter(int _cell)
+    {
+        int x = _cell % width;
+        int y = _cell / width;
+        return waterGridOrigin + waterGridAxisU * x + waterGridAxisV * y;
+    }
+
+    // 칸 좌표(수면 중심 기준) 자리를 월드로 옮겨 장식 픽셀 격자에 맞춘다.
+    private Vector2 GetShoreReedPosition(float _u, float _v)
+    {
+        Vector2 p = waterGridOrigin + waterGridAxisU * _u + waterGridAxisV * _v;
+        float pw = grid.cellSize.x / TilePixelWidth;
+        return new Vector2(Mathf.Round(p.x / pw) * pw, Mathf.Round(p.y / pw) * pw);
+    }
+
+    // 무리 하나가 닿을 수 있는 물 장식만 미리 골라 둔다(무리 자리 칸 중심에서 ShoreReedClusterReach 안).
+    // 갈대 자리마다 맵의 물 장식 전체를 훑지 않게 한다.
+    private void GatherShoreReedNearbyDecos(Vector2 _center)
+    {
+        shoreReedNearbyDecos.Clear();
+        float reach = ShoreReedClusterReach;
+        for (int i = 0; i < mapPlacedWaterDecos.Count; i++)
+        {
+            PlacedWaterDeco other = mapPlacedWaterDecos[i];
+            bool bApartX = _center.x + reach <= other.position.x + other.min.x || other.position.x + other.max.x <= _center.x - reach;
+            bool bApartY = _center.y + reach <= other.position.y + other.min.y || other.position.y + other.max.y <= _center.y - reach;
+            if (false == bApartX && false == bApartY) shoreReedNearbyDecos.Add(other);
+        }
+    }
+
+    private bool IsShoreReedClearOfWaterDecos(Vector2 _pos)
+    {
+        for (int i = 0; i < shoreReedNearbyDecos.Count; i++)
+        {
+            PlacedWaterDeco other = shoreReedNearbyDecos[i];
+            bool bApartX = _pos.x + ShoreReedHalfWidth <= other.position.x + other.min.x || other.position.x + other.max.x <= _pos.x - ShoreReedHalfWidth;
+            bool bApartY = _pos.y + ShoreReedHalfHeight <= other.position.y + other.min.y || other.position.y + other.max.y <= _pos.y - ShoreReedHalfHeight;
+            if (false == bApartX && false == bApartY) return false;
+        }
+        return true;
     }
 
     private void TryEnqueueWaterCompCell(int _x, int _y)
@@ -1947,6 +2296,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private readonly Dictionary<DecoSpritePatternAnimator, WaterDecoFootprint> waterDecoFootprints = new Dictionary<DecoSpritePatternAnimator, WaterDecoFootprint>(8);
     private WaterDecoFootprint fallbackWaterDecoFootprint;
     private readonly List<PlacedWaterDeco> placedWaterDecos = new List<PlacedWaterDeco>(16);
+    // 이번 맵 안에 놓인 물 장식 전부(웅덩이마다 비우지 않는다). 물가 갈대가 이 자리를 피한다.
+    private readonly List<PlacedWaterDeco> mapPlacedWaterDecos = new List<PlacedWaterDeco>(64);
     // 웅덩이마다 노리는 최소 장식 수(종류가 그보다 적으면 종류 수만큼).
     private const int WaterDecoPondMinCount = 2;
 
@@ -2334,7 +2685,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     private void AddPlacedWaterDeco(Vector2 _pos, WaterDecoFootprint _footprint)
     {
-        placedWaterDecos.Add(new PlacedWaterDeco { position = _pos, min = _footprint.min, max = _footprint.max });
+        PlacedWaterDeco placed = new PlacedWaterDeco { position = _pos, min = _footprint.min, max = _footprint.max };
+        placedWaterDecos.Add(placed);
+        mapPlacedWaterDecos.Add(placed);
     }
 
     private WaterDecoFootprint GetWaterDecoFootprint(DecoSpritePatternAnimator _prefab)

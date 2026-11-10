@@ -1968,6 +1968,18 @@ MonoBehaviour:
     allowDynamicExpansion: 1
     maxPoolSize: 12
     uiParticleScale: 0
+  - vfxTag: TreeBarrierSparkEffect
+    effectPrefab: {fileID: 1386752551214847544, guid: 3720eb0977145fd44a479e667b6a6beb, type: 3}
+    initialPoolSize: 6
+    allowDynamicExpansion: 1
+    maxPoolSize: 24
+    uiParticleScale: 0
+  - vfxTag: TreeBarrierShatterEffect
+    effectPrefab: {fileID: 1386752551214847544, guid: 15ec8c2fbdf12de478b08f317ce29044, type: 3}
+    initialPoolSize: 4
+    allowDynamicExpansion: 1
+    maxPoolSize: 16
+    uiParticleScale: 0
 --- !u!1 &5766810988037463456
 GameObject:
   m_ObjectHideFlags: 0

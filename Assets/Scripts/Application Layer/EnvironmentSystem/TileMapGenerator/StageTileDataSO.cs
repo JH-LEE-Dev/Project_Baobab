@@ -115,6 +115,7 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private WindGustSettings windGust = new WindGustSettings();
     [SerializeField] private WaterShimmerSettings waterShimmer = new WaterShimmerSettings();
     [SerializeField] private StageColorGradingSettings colorGrading = new StageColorGradingSettings();
+    [SerializeField] private ShoreReedSettings shoreReeds = new ShoreReedSettings();
 
     [Header("위험 지형 설정")]
     [SerializeField] private float waterHazardStaminaDrainPerSecond = 0f;
@@ -150,6 +151,7 @@ public class StageTileDataSO : ScriptableObject
     public WindGustSettings WindGust => windGust;
     public WaterShimmerSettings WaterShimmer => waterShimmer;
     public StageColorGradingSettings ColorGrading => colorGrading;
+    public ShoreReedSettings ShoreReeds => shoreReeds;
     public List<AnimatedObj> AnimatedObjPrefabs => animatedObjPrefabs;
     public List<DecoSpritePatternAnimator> WaterAnimatedObjPrefabs => waterAnimatedObjPrefabs;
     public List<AnimatedObj> WaterAnimatedOtherTypeObjPrefabs => waterAnimatedOtherTypeObjPrefabs;

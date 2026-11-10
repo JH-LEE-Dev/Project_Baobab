@@ -59,6 +59,24 @@ float SampleWindGust(float2 _posWS)
     float t = local >= 0.0 ? local / halfWidth : -local / (halfWidth * 2.5);
     float band = saturate(1.0 - t);
     band = band * band * (3.0 - 2.0 * band);
+    // 돌풍 띠 밖(화면 대부분)은 아래 덩어리·무리 계산 없이 끝낸다. 결과는 곱이 0이라 같다.
+    if (band <= 0.0)
+    {
+        return 0.0;
+    }
+
+    // 돌풍 무리: 몇 번 몰아치다가 한동안 잠잠해진다. 돌풍 하나는 통째로 불거나 안 불거나 해서,
+    // 바람처럼 보이지 않는 약한 돌풍은 없다. 쉬는 돌풍이면 덩어리 계산 없이 끝낸다.
+    float group = 1.0;
+    if (_WindGustD.w > 0.0)
+    {
+        float groupNoise = WindGustValueNoise((idx + 0.5) * spacing / _WindGustD.w + 3.7);
+        if (groupNoise <= 0.3)
+        {
+            return 0.0;
+        }
+        group = lerp(0.8, 1.0, smoothstep(0.3, 0.7, groupNoise));
+    }
 
     // 돌풍마다 가로로 끊긴 덩어리가 다르게 생긴다. 덩어리는 고르게 센 것만 만들어,
     // 나무 한두 그루만 살짝 건드리는 가늘고 약한 덩어리는 생기지 않게 한다.
@@ -70,15 +88,6 @@ float SampleWindGust(float2 _posWS)
     float patchB = WindGustHash11(patchCell + 1.0) > cut ? 1.0 : 0.0;
     float patch = lerp(patchA, patchB, patchF * patchF * (3.0 - 2.0 * patchF));
     patch = smoothstep(0.3, 0.7, patch);
-
-    // 돌풍 무리: 몇 번 몰아치다가 한동안 잠잠해진다. 돌풍 하나는 통째로 불거나 안 불거나 해서,
-    // 바람처럼 보이지 않는 약한 돌풍은 없다.
-    float group = 1.0;
-    if (_WindGustD.w > 0.0)
-    {
-        float groupNoise = WindGustValueNoise((idx + 0.5) * spacing / _WindGustD.w + 3.7);
-        group = groupNoise > 0.3 ? lerp(0.8, 1.0, smoothstep(0.3, 0.7, groupNoise)) : 0.0;
-    }
 
     return band * patch * group;
 }

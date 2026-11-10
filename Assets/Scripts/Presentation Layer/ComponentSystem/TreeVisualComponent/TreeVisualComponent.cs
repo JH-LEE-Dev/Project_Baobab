@@ -63,6 +63,13 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private Color hitFlashColor = Color.white;
     [SerializeField] private Color criticalHitFlashColor = Color.red;
 
+    [Header("Critical Hit Scale")]
+    // 치명타일 때만 나무 그림(BaseVisual과 물 반사, 밑동 기준)이 빠르게 살짝 커졌다가 부드럽게 원래 크기로 돌아온다.
+    // visualRoot는 키우지 않는다: 그 자식인 topRoot/bottomRoot를 부메랑 판정·별자리 폭발 범위 등 게임 판정이 읽기 때문이다.
+    [SerializeField] private float criticalScalePeak = 1.08f;
+    [SerializeField] private float criticalScaleUpDuration = 0.05f;
+    [SerializeField] private float criticalScaleDownDuration = 0.12f;
+
     [Header("Grow Up Flash")]
     [SerializeField] private float growUpFlashDuration = 0.35f;
     [SerializeField] private AnimationCurve growUpFlashCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
@@ -128,6 +135,24 @@ public class TreeVisualComponent : MonoBehaviour
     // 재활용 트윈(피격 펀치)은 죽은 뒤 다른 나무의 트윈으로 다시 쓰일 수 있으므로, 참조의 target이 여전히 내
     // 타깃인지 확인한다. 아니라면 내 트윈은 이미 죽은 것이고, 타깃 기준 DOKill도 아무것도 죽이지 않았을 것이다.
     private Tween hitPunchTween;
+    // 치명타 스케일 트윈. visualRoot에 이미 펀치 트윈이 걸리므로 타깃을 visualRoot로 두면 재활용된 펀치 트윈을
+    // 이 참조로 잘못 죽일 수 있다. 그래서 이 트윈만 쓰는 전용 타깃 객체를 둔다(KillLastTween의 타깃 비교가 정확해진다).
+    private Tween critScaleTween;
+    private readonly object critScaleTweenTarget = new object();
+    private DG.Tweening.Core.DOGetter<float> critScaleGetter;
+    private DG.Tweening.Core.DOSetter<float> critScaleSetter;
+    private float critScaleProgress;
+    private float critScaleStartOffset;
+    private float critScaleCurrentOffset;
+    // 확대 대상(그림 루트)과 원래 크기. 물 반사 루트는 좌우 반전(-1) 크기를 갖고 있어 원래 크기에 곱해 키운다.
+    // 첫 치명타 때 한 번만 찾는다(그 전에는 아무도 이 두 루트의 크기를 바꾸지 않는다).
+    private bool bCritScaleTargetsResolved;
+    private Transform critScaleBaseVisual;
+    private Transform critScaleWaterVisual;
+    private Vector3 critScaleBaseVisualScale;
+    private Vector3 critScaleWaterVisualScale;
+    private float critScaleUpTime;
+    private float critScaleTotalTime;
     // TreeFlashSystem 목록에서 이 나무 항목의 위치(없으면 -1). TreeFlashSystem만 읽고 쓴다.
     internal int flashEntryIndex = -1;
     private Tween alphaTween;
@@ -218,6 +243,9 @@ public class TreeVisualComponent : MonoBehaviour
 
     public int GetTopHighlightSortingOrder() => topHighlightRenderer != null ? topHighlightRenderer.sortingOrder : GetTopShieldSortingOrder();
 
+    // 나무 그림 전체(별자리 표식 포함)보다 앞에 그려야 하는 나무 부착 연출(3스테이지 배리어)의 정렬 순서. UpdateSortingOrder 뒤에 읽는다.
+    public int GetFrontEffectSortingOrder() => GetTopHighlightSortingOrder() + 2;
+
     public void UpdateOnWaterSortingOrder()
     {
         if (cachedTransform == null) cachedTransform = transform;
@@ -276,6 +304,7 @@ public class TreeVisualComponent : MonoBehaviour
             return;
         }
 
+        ResetCritScale();
         visualRoot.localPosition = Vector3.zero;
         visualRoot.localRotation = Quaternion.identity;
         visualRoot.localScale = Vector3.one;
@@ -684,7 +713,8 @@ public class TreeVisualComponent : MonoBehaviour
     #region Motion
 
     // 피격 시 나무 전체가 짧게 옆으로 흔들리도록 루트에 펀치 이동을 준다.
-    public void PlayHitFeedback()
+    // 치명타면 스케일 펀치(PlayCriticalHitScale)도 함께 건다.
+    public void PlayHitFeedback(bool _bCritical = false)
     {
         if (visualRoot == null)
         {
@@ -696,6 +726,139 @@ public class TreeVisualComponent : MonoBehaviour
         // 피격마다 새 Tweener를 만들지 않도록 재활용한다. 죽일 때는 target이 visualRoot인지 확인하므로
         // 다른 나무에 재활용된 트윈을 잘못 죽일 일이 없다(KillHitPunchTween 참조).
         hitPunchTween = visualRoot.DOPunchPosition(new Vector3(hitPunchX, 0f, 0f), hitDuration, hitVibrato, hitElasticity).SetRecyclable(true);
+
+        if (_bCritical)
+        {
+            PlayCriticalHitScale();
+        }
+    }
+
+    // 치명타: 빠르게(OutQuad) 살짝 커졌다가 부드럽게(InOutQuad) 원래 크기로 돌아온다.
+    // 진행 중에 다시 치명타가 들어오면 지금 크기에서 이어서 다시 커지므로 1프레임 튀는 일이 없다.
+    private void PlayCriticalHitScale()
+    {
+        float upTime = Mathf.Max(0f, criticalScaleUpDuration);
+        float totalTime = upTime + Mathf.Max(0f, criticalScaleDownDuration);
+        if (totalTime <= 0f)
+        {
+            return;
+        }
+
+        ResolveCritScaleTargets();
+        if (critScaleBaseVisual == null && critScaleWaterVisual == null)
+        {
+            return;
+        }
+
+        // 진행 중인 치명타 스케일이 있을 때만 현재 크기를 이어받는다. 없으면 기본 크기(1)에서 시작한다.
+        critScaleStartOffset = critScaleTween.IsActive() && ReferenceEquals(critScaleTween.target, critScaleTweenTarget)
+            ? Mathf.Max(0f, critScaleCurrentOffset)
+            : 0f;
+        KillCritScaleTween();
+
+        critScaleUpTime = upTime;
+        critScaleTotalTime = totalTime;
+        critScaleProgress = 0f;
+
+        if (critScaleGetter == null)
+        {
+            critScaleGetter = GetCritScaleProgress;
+            critScaleSetter = SetCritScaleProgress;
+        }
+
+        critScaleTween = DOTween.To(critScaleGetter, critScaleSetter, 1f, totalTime)
+            .SetEase(Ease.Linear)
+            .SetTarget(critScaleTweenTarget)
+            .SetRecyclable(true);
+    }
+
+    private float GetCritScaleProgress()
+    {
+        return critScaleProgress;
+    }
+
+    private void SetCritScaleProgress(float _progress)
+    {
+        critScaleProgress = _progress;
+
+        float peakOffset = criticalScalePeak - 1f;
+        float time = _progress * critScaleTotalTime;
+        float offset;
+
+        if (time < critScaleUpTime)
+        {
+            float t = time / critScaleUpTime;
+            float easeOut = 1f - (1f - t) * (1f - t);
+            offset = Mathf.Lerp(critScaleStartOffset, peakOffset, easeOut);
+        }
+        else
+        {
+            float downTime = critScaleTotalTime - critScaleUpTime;
+            float t = downTime > 0f ? Mathf.Clamp01((time - critScaleUpTime) / downTime) : 1f;
+            float easeInOut = t < 0.5f ? 2f * t * t : 1f - 2f * (1f - t) * (1f - t);
+            offset = peakOffset * (1f - easeInOut);
+        }
+
+        ApplyCritScaleOffset(offset);
+    }
+
+    private void ResolveCritScaleTargets()
+    {
+        if (bCritScaleTargetsResolved)
+        {
+            return;
+        }
+
+        bCritScaleTargetsResolved = true;
+
+        // topRoot/bottomRoot가 딸린 visualRoot나 나무 루트 자체는 대상으로 쓰지 않는다(판정 위치가 움직인다).
+        critScaleBaseVisual = baseVisualObj != null ? baseVisualObj.transform : null;
+        if (critScaleBaseVisual == visualRoot || critScaleBaseVisual == transform)
+        {
+            critScaleBaseVisual = null;
+        }
+
+        critScaleWaterVisual = topOnWaterSR != null ? topOnWaterSR.transform.parent : null;
+        if (critScaleWaterVisual == visualRoot || critScaleWaterVisual == transform || critScaleWaterVisual == critScaleBaseVisual)
+        {
+            critScaleWaterVisual = null;
+        }
+
+        if (critScaleBaseVisual != null) critScaleBaseVisualScale = critScaleBaseVisual.localScale;
+        if (critScaleWaterVisual != null) critScaleWaterVisualScale = critScaleWaterVisual.localScale;
+    }
+
+    private void ApplyCritScaleOffset(float _offset)
+    {
+        critScaleCurrentOffset = _offset;
+        float scale = 1f + _offset;
+
+        // 트윈 도중 나무가 파괴되면(씬 전환 등) 렌더러 루트도 함께 사라지므로 Unity null 비교로 거른다.
+        if (critScaleBaseVisual != null)
+        {
+            critScaleBaseVisual.localScale = new Vector3(critScaleBaseVisualScale.x * scale, critScaleBaseVisualScale.y * scale, critScaleBaseVisualScale.z);
+        }
+
+        if (critScaleWaterVisual != null)
+        {
+            critScaleWaterVisual.localScale = new Vector3(critScaleWaterVisualScale.x * scale, critScaleWaterVisualScale.y * scale, critScaleWaterVisualScale.z);
+        }
+    }
+
+    private void KillCritScaleTween()
+    {
+        KillLastTween(critScaleTween, critScaleTweenTarget, false);
+    }
+
+    // 진행 중인 치명타 스케일을 멈추고 그림 루트를 원래 크기로 되돌린다. 한 번도 치명타를 맞지 않았으면 할 일이 없다.
+    private void ResetCritScale()
+    {
+        KillCritScaleTween();
+
+        if (bCritScaleTargetsResolved && critScaleCurrentOffset != 0f)
+        {
+            ApplyCritScaleOffset(0f);
+        }
     }
 
     /// <summary>
@@ -873,8 +1036,9 @@ public class TreeVisualComponent : MonoBehaviour
             return;
         }
 
-        // 1. 기존 비주얼 루트(전체 쉐이킹 등) 초기화
+        // 1. 기존 비주얼 루트(전체 쉐이킹·치명타 스케일 등) 초기화
         KillHitPunchTween();
+        ResetCritScale();
         visualRoot.localPosition = Vector3.zero;
         visualRoot.localScale = Vector3.one;
 
