@@ -23,6 +23,10 @@ public static class StageAmbienceShaderGlobals
     private static readonly int WaterShimmerBID = Shader.PropertyToID("_WaterShimmerB");
     private static readonly int WaterShimmerSurfaceColorID = Shader.PropertyToID("_WaterShimmerSurfaceColor");
     private static readonly int WaterShimmerFoamColorID = Shader.PropertyToID("_WaterShimmerFoamColor");
+    private static readonly int WaterShimmerRimAID = Shader.PropertyToID("_WaterShimmerRimA");
+    private static readonly int WaterShimmerRimBID = Shader.PropertyToID("_WaterShimmerRimB");
+    private static readonly int WaterShimmerRimColorID = Shader.PropertyToID("_WaterShimmerRimColor");
+    private static readonly int WaterShimmerRimGlowColorID = Shader.PropertyToID("_WaterShimmerRimGlowColor");
     private static readonly int SporeGlowAID = Shader.PropertyToID("_SporeGlowA");
     private static readonly int SporeGlowBID = Shader.PropertyToID("_SporeGlowB");
     private static readonly int WaterSporeAID = Shader.PropertyToID("_WaterSporeA");
@@ -31,6 +35,9 @@ public static class StageAmbienceShaderGlobals
     private static readonly int WaterSporeColorID = Shader.PropertyToID("_WaterSporeColor");
     private static readonly int WaterSporeSurfaceAID = Shader.PropertyToID("_WaterSporeSurfaceA");
     private static readonly int WaterSporeSurfaceBID = Shader.PropertyToID("_WaterSporeSurfaceB");
+    private static readonly int TreeTwinkleAID = Shader.PropertyToID("_TreeTwinkleA");
+    private static readonly int TreeTwinkleBID = Shader.PropertyToID("_TreeTwinkleB");
+    private static readonly int TreeTwinkleCID = Shader.PropertyToID("_TreeTwinkleC");
 
     // 마을 Grid가 있는 동안의 마을 연출 설정.
     private static bool townAmbienceActive;
@@ -53,10 +60,13 @@ public static class StageAmbienceShaderGlobals
         ApplyWaterShimmer(_tileData.WaterShimmer);
         ApplySporeGlow(_tileData.SporeGlow);
         ApplyWaterSpores(_tileData.WaterSpores);
+        ApplyTreeStarTwinkle(_tileData.TreeStarTwinkle);
         // 색보정 볼륨(꺼진 스테이지는 아무것도 띄우지 않는다)
         StageAtmosphere.Apply(_tileData.ColorGrading, DungeonSceneName);
         // 포자 안개(꺼진 스테이지는 아무것도 띄우지 않는다)
         StageSporeHaze.Apply(_tileData.SporeHaze, DungeonSceneName);
+        // 나무 타격 별가루(꺼진 스테이지는 아무것도 띄우지 않는다)
+        StageHitSparkles.Apply(_tileData.HitSparkles, DungeonSceneName);
     }
 
     /// <summary>
@@ -117,9 +127,12 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalVector(WaterShimmerAID, Vector4.zero);
         Shader.SetGlobalVector(SporeGlowAID, Vector4.zero);
         Shader.SetGlobalVector(WaterSporeAID, Vector4.zero);
+        Shader.SetGlobalVector(TreeTwinkleAID, Vector4.zero);
         StageAtmosphere.Remove();
         StageSporeHaze.Remove();
         StageMushroomSpores.Remove();
+        StageDecoBreath.Remove();
+        StageHitSparkles.Remove();
     }
 
     /// <summary>
@@ -187,6 +200,20 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalVector(WaterShimmerBID, new Vector4(_settings.sparkleArmStrength, 0f, _settings.colorTolerance, _settings.sparklePeriod));
         Shader.SetGlobalVector(WaterShimmerSurfaceColorID, ToShaderColor(_settings.surfaceColor));
         Shader.SetGlobalVector(WaterShimmerFoamColorID, ToShaderColor(_settings.foamColor));
+
+        // 물가 테두리 달빛 물결(꺼져 있으면 세기 0이라 테두리는 그대로)
+        if (_settings.rimGlowEnabled && _settings.rimGlowStrength > 0f)
+        {
+            Vector2 direction = _settings.rimWaveDirection.sqrMagnitude > 0.0001f ? _settings.rimWaveDirection.normalized : Vector2.right;
+            Shader.SetGlobalVector(WaterShimmerRimAID, new Vector4(_settings.rimGlowStrength, Mathf.Max(0.5f, _settings.rimWaveSpacing), Mathf.Max(0.1f, _settings.rimWavePeriod), Mathf.Clamp(_settings.rimWaveWidth, 0.01f, 1f)));
+            Shader.SetGlobalVector(WaterShimmerRimBID, new Vector4(direction.x, direction.y, 0f, 0f));
+            Shader.SetGlobalVector(WaterShimmerRimColorID, ToShaderColor(_settings.rimColor));
+            Shader.SetGlobalVector(WaterShimmerRimGlowColorID, ToShaderColor(_settings.rimGlowColor));
+        }
+        else
+        {
+            Shader.SetGlobalVector(WaterShimmerRimAID, Vector4.zero);
+        }
     }
 
     private static void ApplySporeGlow(SporeGlowSettings _settings)
@@ -199,6 +226,20 @@ public static class StageAmbienceShaderGlobals
 
         Shader.SetGlobalVector(SporeGlowAID, new Vector4(1f, Mathf.Max(0f, _settings.glowAmount), _settings.waveSpeed, Mathf.Max(0.5f, _settings.waveScale)));
         Shader.SetGlobalVector(SporeGlowBID, new Vector4(_settings.minWhite, _settings.maxSaturation, Mathf.Max(1f, _settings.sharpness), 0f));
+    }
+
+    private static void ApplyTreeStarTwinkle(TreeStarTwinkleSettings _settings)
+    {
+        if (null == _settings || false == _settings.enabled)
+        {
+            Shader.SetGlobalVector(TreeTwinkleAID, Vector4.zero);
+            return;
+        }
+
+        // 별점 색은 셰이더가 감마로 되돌려 비교하므로 인스펙터 색(sRGB) 그대로 넘긴다.
+        Shader.SetGlobalVector(TreeTwinkleAID, new Vector4(1f, Mathf.Max(0f, _settings.restLevel), Mathf.Max(0f, _settings.peakLevel), Mathf.Max(0.1f, _settings.period)));
+        Shader.SetGlobalVector(TreeTwinkleBID, new Vector4(_settings.starColor.r, _settings.starColor.g, _settings.starColor.b, _settings.colorTolerance));
+        Shader.SetGlobalVector(TreeTwinkleCID, new Vector4(Mathf.Clamp(_settings.duty, 0.01f, 1f), 0f, 0f, 0f));
     }
 
     private static void ApplyWaterSpores(WaterSporeSettings _settings)

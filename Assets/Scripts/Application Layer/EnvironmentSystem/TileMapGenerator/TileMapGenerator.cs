@@ -1790,6 +1790,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         if (bSpawnDeco) PlaceShoreReeds(size);
         // 버섯 포자 뿜기(스테이지 데이터에 켠 스테이지만, 로그라이크는 끈다). 렌더링 전용.
         StageMushroomSpores.Apply(bSpawnDeco && null != stageTileData ? stageTileData.MushroomSpores : null, animatedObjGenerator, "DungeonScene");
+        // 장식 숨쉬기(꺼진 스테이지·로그라이크는 아무것도 만들지 않는다)
+        StageDecoBreath.Apply(bSpawnDeco && null != stageTileData ? stageTileData.DecoBreath : null, animatedObjGenerator, "DungeonScene");
 
         BoundsInt b = new BoundsInt(0, 0, 0, width, height, 1);
         groundTilemap.SetTilesBlock(b, groundTiles);

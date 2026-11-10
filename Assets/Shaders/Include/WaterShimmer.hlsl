@@ -2,19 +2,27 @@
 #define WATER_SHIMMER_INCLUDED
 
 // 물 반짝임 연출. 물 타일 셰이더(WaterTilemapShader, WaterURP)가 _MainTex 선언 뒤에 include 한다.
-// 물 타일 그림의 수면색 픽셀만 골라 그 위에 반짝임을 덧그린다.
+// 물 타일 그림의 수면색 픽셀만 골라 그 위에 반짝임을 덧그리고, 켜져 있으면 테두리색 픽셀에 달빛 물결을 덧그린다.
 // 전역값은 StageAmbienceShaderGlobals가 스테이지 데이터대로 채운다. 꺼진 스테이지는 _WaterShimmerA.x가 0이라
 // 아무것도 바꾸지 않는다.
 // _WaterShimmerA : 켜짐(0/1), 반짝임 칸 크기(텍셀), 반짝임이 켜져 있는 비율(0~1), 반짝임 밝기(HDR)
 // _WaterShimmerB : 십자 팔 진하기(0~1), (안 씀), 색 판정 허용 오차(0~1), 반짝임 주기(초)
 // _WaterShimmerSurfaceColor : 물 타일 그림의 수면색
 // _WaterShimmerFoamColor : 반짝임 색
+// _WaterShimmerRimA : 테두리 물결 세기(0이면 꺼짐), 빛띠 간격(월드), 주기(초), 빛띠 폭 비율(0~1)
+// _WaterShimmerRimB : 빛띠가 흘러가는 방향(정규화된 xy), (안 씀), (안 씀)
+// _WaterShimmerRimColor : 물 타일 그림의 테두리색
+// _WaterShimmerRimGlowColor : 빛띠가 지날 때 테두리가 물드는 색
 #include "StageAmbienceCommon.hlsl"
 
 float4 _WaterShimmerA;
 float4 _WaterShimmerB;
 float4 _WaterShimmerSurfaceColor;
 float4 _WaterShimmerFoamColor;
+float4 _WaterShimmerRimA;
+float4 _WaterShimmerRimB;
+float4 _WaterShimmerRimColor;
+float4 _WaterShimmerRimGlowColor;
 
 bool IsWaterShimmerEnabled()
 {
@@ -47,10 +55,26 @@ float4 ComputeWaterShimmer(float2 _uv, float2 _positionWS, float4 _texelSize, fl
     float2 centerWS = StageAmbienceTexelCenterWS(_positionWS, _uv, _texelSize);
     float time = _Time.y;
 
-    // 수면색 픽셀에만 그린다(물가 테두리·흙·장식은 그대로).
+    // 수면색 픽셀에만 그린다(흙·장식은 그대로, 물가 테두리는 아래 달빛 물결만).
     bool isSurface = WaterShimmerMatches(_texColor, _WaterShimmerSurfaceColor.rgb);
     if (false == isSurface)
     {
+        // 물가 테두리 달빛 물결: 옅은 빛띠가 월드를 가로질러 천천히 지나가서, 테두리 선 위에서는 빛이 선을 따라 미끄러지는 것처럼 보인다.
+        if (_WaterShimmerRimA.x > 0.0 && WaterShimmerMatches(_texColor, _WaterShimmerRimColor.rgb))
+        {
+            // 빛띠가 곧은 줄로 보이지 않게 수직 방향 위치로 조금 휜다. 텍셀 중심으로 계산해 텍셀 하나가 한 색이다.
+            float2 direction = _WaterShimmerRimB.xy;
+            float along = dot(centerWS, direction);
+            float across = dot(centerWS, float2(-direction.y, direction.x));
+            float bend = sin(across * 0.45) * 1.2 + sin(across * 1.3 + 1.7) * 0.4;
+            float band = frac((along + bend) / _WaterShimmerRimA.y - time / _WaterShimmerRimA.z);
+            float width = _WaterShimmerRimA.w;
+            if (band < width)
+            {
+                float glow = sin(band / width * 3.14159);
+                return float4(_WaterShimmerRimGlowColor.rgb, glow * glow * _WaterShimmerRimA.x);
+            }
+        }
         return 0.0;
     }
 

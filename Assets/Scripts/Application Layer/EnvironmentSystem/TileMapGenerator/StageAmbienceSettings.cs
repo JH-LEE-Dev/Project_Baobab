@@ -67,6 +67,24 @@ public class WaterShimmerSettings
     public float sparkleIntensity = 2.6f;
     // 가운데 둘레 십자 팔의 최고 진하기(0이면 가운데 한 점만)
     [Range(0f, 1f)] public float sparkleArmStrength = 0.35f;
+
+    // 물가 테두리 달빛 물결: 물 타일 그림의 테두리색 픽셀 위로 옅은 빛띠가 천천히 지나가며 테두리를 따라 미끄러지듯 밝힌다.
+    // 꺼져 있으면 테두리는 기존과 같다.
+    public bool rimGlowEnabled = false;
+    // 물 타일 그림의 테두리색(판정용, 허용 오차는 colorTolerance를 같이 쓴다)
+    public Color rimColor = new Color(43f / 255f, 120f / 255f, 202f / 255f, 1f);
+    // 빛띠가 지날 때 테두리가 물드는 색
+    public Color rimGlowColor = new Color(0.62f, 0.86f, 1f, 1f);
+    // 빛띠 한가운데서 테두리가 rimGlowColor로 물드는 비율(0~1)
+    [Range(0f, 1f)] public float rimGlowStrength = 0.6f;
+    // 빛띠가 흘러가는 방향(월드). 정규화해서 쓴다.
+    public Vector2 rimWaveDirection = new Vector2(1f, 0f);
+    // 빛띠 사이 간격(월드)
+    public float rimWaveSpacing = 9f;
+    // 한 자리에 빛띠가 다시 오기까지 걸리는 시간(초)
+    public float rimWavePeriod = 6f;
+    // 간격 가운데 빛띠가 차지하는 비율(0~1)
+    [Range(0.01f, 1f)] public float rimWaveWidth = 0.2f;
 }
 
 /// <summary>
@@ -239,4 +257,81 @@ public class BloomDecoTwinkleSettings
 {
     public bool enabled = false;
     public Material material;
+}
+
+/// <summary>
+/// 나무 별빛 반짝임. 나무 하이라이트 그림의 별점(지정한 색의 픽셀)이 점마다 따로, 제 박자대로 잠깐 밝아졌다
+/// 평소 밝기로 돌아온다(나무 셰이더 Custom-Sprite-Default-Tree). 그림의 색은 그대로 두고 밝기만 곱한다.
+/// 렌더링만 바뀌고 게임 동작에는 영향이 없다.
+/// </summary>
+[System.Serializable]
+public class TreeStarTwinkleSettings
+{
+    public bool enabled = false;
+    // 반짝일 별점 색(나무 그림의 sRGB 색)과 판정 허용 오차(채널별 최대 차이, 0~1)
+    public Color starColor = new Color(1f, 1f, 140f / 255f, 1f);
+    [Range(0f, 0.3f)] public float colorTolerance = 0.06f;
+    // 평소 밝기 배율과 가장 밝을 때 배율
+    [Min(0f)] public float restLevel = 0.8f;
+    [Min(0f)] public float peakLevel = 2f;
+    // 한 점이 한 번 반짝이고 다시 반짝이기까지의 평균 시간(초, 점마다 0.7~1.3배)
+    [Min(0.1f)] public float period = 3f;
+    // 그중 밝아져 있는 시간의 비율(0~1)
+    [Range(0.01f, 1f)] public float duty = 0.25f;
+}
+
+/// <summary>
+/// 장식 숨쉬기. 화면에 보이는(컬링으로 켜져 있는) 지정한 장식이 저마다의 박자로 몇 초에 한 번 은은하게 밝아졌다 돌아온다.
+/// 장식의 밝기 값(StaticObj HDR 배수)만 바꾸므로 렌더링만 바뀌고 게임 동작에는 영향이 없다.
+/// enabled가 꺼져 있거나 decoPrefabs가 비어 있으면 아무것도 만들지 않는다.
+/// </summary>
+[System.Serializable]
+public class DecoBreathSettings
+{
+    public bool enabled = false;
+    // 숨쉴 장식 프리팹(스테이지 데코 목록에 들어 있는 것)
+    public System.Collections.Generic.List<StaticObj> decoPrefabs = new System.Collections.Generic.List<StaticObj>();
+    // 가장 밝을 때 원래 밝기의 1+amount배
+    [Min(0f)] public float amount = 0.4f;
+    // 한 번 숨쉬는 시간(초, 장식마다 이 범위 안에서 정해진다)
+    public Vector2 periodRange = new Vector2(4f, 7f);
+    // 클수록 밝아져 있는 순간이 짧다(1이면 사인 그대로)
+    [Min(1f)] public float sharpness = 3f;
+}
+
+/// <summary>
+/// 나무 타격 별가루. 나무를 때릴 때마다 나무 윗부분에서 작은 별가루 알갱이가 튀어 오르다 천천히 떨어지며 사라진다.
+/// 기존 피격 이펙트는 그대로 두고 그 위에 덧붙인다. 스테이지에 파티클 시스템 하나만 두며 충돌·판정이 없어 게임 동작에는 영향이 없다.
+/// enabled가 꺼져 있거나 material이 비어 있으면 아무것도 만들지 않는다.
+/// </summary>
+[System.Serializable]
+public class HitSparkleSettings
+{
+    public bool enabled = false;
+    // 알갱이 머티리얼(MushroomSpore 셰이더)
+    public Material material;
+    // 그리는 정렬 자리(기본은 오브젝트 맨 위)
+    public string sortingLayerName = "Objects";
+    public int sortingOrder = 32767;
+    // 나무 윗부분 기준 자리에서의 오프셋과 흩어지는 폭(월드)
+    public Vector2 emitOffset = new Vector2(0f, 0.2f);
+    public Vector2 emitSpread = new Vector2(0.3f, 0.35f);
+    // 한 번에 튀는 알갱이 수(최소~최대)
+    public Vector2Int burstCountRange = new Vector2Int(3, 5);
+    // 튀어 나가는 속도(월드/초, 최소~최대). 위쪽으로 조금 치우친다.
+    public Vector2 speedRange = new Vector2(0.8f, 1.6f);
+    public float upwardBias = 0.6f;
+    // 튄 뒤 느려지는 정도(0~1)와 떨어지는 힘(월드/초²)
+    [Range(0f, 1f)] public float dampen = 0.08f;
+    public float gravity = 0.6f;
+    // 알갱이 수명(초, 최소~최대)
+    public Vector2 lifetimeRange = new Vector2(0.5f, 0.9f);
+    // 알갱이 크기(픽셀, 최소~최대)
+    public Vector2Int sizePixelsRange = new Vector2Int(1, 2);
+    // 알갱이 색(두 색 사이에서 무작위)
+    public Color colorA = new Color(1f, 0.96f, 0.6f, 1f);
+    public Color colorB = new Color(0.85f, 0.95f, 1f, 1f);
+    // 동시에 떠 있는 알갱이 최대 수와 한 프레임에 튀게 할 최대 타격 수(광역 타격 몰림 대비)
+    [Min(16)] public int maxParticles = 192;
+    [Min(1)] public int maxBurstsPerFrame = 6;
 }

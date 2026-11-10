@@ -90,7 +90,9 @@ public class StageSporeHaze : MonoBehaviour
 
     private void HandleBeginCameraRendering(ScriptableRenderContext _context, Camera _camera)
     {
-        if (CameraType.Game != _camera.cameraType || false == _camera.orthographic)
+        // 안개 레이어를 그리지 않는 카메라(UI 카메라 등)는 무시한다. 따라가면 안개가 그 카메라 자리로 옮겨진다.
+        if (CameraType.Game != _camera.cameraType || false == _camera.orthographic
+            || 0 == (_camera.cullingMask & (1 << gameObject.layer)))
         {
             return;
         }

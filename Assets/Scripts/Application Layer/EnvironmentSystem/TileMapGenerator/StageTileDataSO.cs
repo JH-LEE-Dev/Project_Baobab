@@ -121,6 +121,9 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private WaterSporeSettings waterSpores = new WaterSporeSettings();
     [SerializeField] private MushroomSporeSettings mushroomSpores = new MushroomSporeSettings();
     [SerializeField] private BloomDecoTwinkleSettings bloomDecoTwinkle = new BloomDecoTwinkleSettings();
+    [SerializeField] private TreeStarTwinkleSettings treeStarTwinkle = new TreeStarTwinkleSettings();
+    [SerializeField] private DecoBreathSettings decoBreath = new DecoBreathSettings();
+    [SerializeField] private HitSparkleSettings hitSparkles = new HitSparkleSettings();
 
     [Header("위험 지형 설정")]
     [SerializeField] private float waterHazardStaminaDrainPerSecond = 0f;
@@ -162,6 +165,9 @@ public class StageTileDataSO : ScriptableObject
     public WaterSporeSettings WaterSpores => waterSpores;
     public MushroomSporeSettings MushroomSpores => mushroomSpores;
     public BloomDecoTwinkleSettings BloomDecoTwinkle => bloomDecoTwinkle;
+    public TreeStarTwinkleSettings TreeStarTwinkle => treeStarTwinkle;
+    public DecoBreathSettings DecoBreath => decoBreath;
+    public HitSparkleSettings HitSparkles => hitSparkles;
     public List<AnimatedObj> AnimatedObjPrefabs => animatedObjPrefabs;
     public List<DecoSpritePatternAnimator> WaterAnimatedObjPrefabs => waterAnimatedObjPrefabs;
     public List<AnimatedObj> WaterAnimatedOtherTypeObjPrefabs => waterAnimatedOtherTypeObjPrefabs;
