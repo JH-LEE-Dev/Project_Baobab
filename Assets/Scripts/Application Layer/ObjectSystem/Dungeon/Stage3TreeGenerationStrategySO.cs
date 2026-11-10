@@ -331,6 +331,8 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
             starTree.SetStarGroupId(_groupId);
             // 별자리를 이루는 나무는 배리어 없이 벨 수 있다(스폰 때 모든 나무에 씌운 배리어를 걷는다).
             starTree.SetBarrier(false);
+            // 별자리를 이루는 나무는 희귀나무가 되지 않는다(스폰 때 굴린 등급을 Normal로 되돌린다).
+            _manager.ForceNormalGrade(starTree);
             positions.Add(spawnedGroupTopPositions[index]);
         }
 

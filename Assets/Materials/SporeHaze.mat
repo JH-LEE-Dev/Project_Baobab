@@ -42,9 +42,9 @@ Material:
     m_Ints: []
     m_Floats:
     - _EnableExternalAlpha: 0
-    - _HazeCoverage: 0.6
+    - _HazeCoverage: 0.53
     - _HazeEvolve: 0.04
-    - _HazeMaxAlpha: 0.17
+    - _HazeMaxAlpha: 0.25
     - _HazeScale: 6
     - _HazeSoftness: 0.2
     - _HazeSteps: 4

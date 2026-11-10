@@ -49,10 +49,11 @@ MonoBehaviour:
     enabled: 1
     direction: {x: 1, y: -0.35}
     speed: 3.2
-    spacing: 22
+    spacing: 18
     bandHalfWidth: 0.9
     patchSize: 3
     patchCoverage: 0.5
+    smallPatchScale: 1.4
     gustGroupLength: 40
     treeLeanDegrees: 5.5
     treeFlutterSpeed: 9
@@ -1756,7 +1757,7 @@ MonoBehaviour:
   abilityBuildVariantData: {fileID: 11400000, guid: 435d117acee74a889a1c34c20d764a81, type: 2}
   prestigeLevel: 0
   skillExperience: 0
-  experienceToLevelUp: 28000000280000003c000000410000004100000046000000320000003200000032000000320000003200000032000000
+  experienceToLevelUp: 28000000280000003c0000003c0000004100000041000000320000003200000032000000320000003200000032000000
 --- !u!1 &5075027738427714103
 GameObject:
   m_ObjectHideFlags: 0
@@ -3675,6 +3676,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d6c6e5de83df43499762621388e835f3, type: 2}
   - {fileID: 11400000, guid: 871c770c91db457ea197db41c6c8a15b, type: 2}
   - {fileID: 11400000, guid: a336910f7d732e0428f1542dc699c38f, type: 2}
+  - {fileID: 11400000, guid: 19582e9e48cd41e0876783059d62f254, type: 2}
 --- !u!1 &8536741958456108890
 GameObject:
   m_ObjectHideFlags: 0

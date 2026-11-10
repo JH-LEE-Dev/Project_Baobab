@@ -83,12 +83,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
     [Header("Coin Pickup Sound")]
     [SerializeField, Min(0f)] private float coinGetCooldown = 0.04f;
-    [SerializeField, Min(0f)] private float coinPitchResetDelay = 0.2f;
-    [SerializeField, Min(0f)] private float coinPitchStep = 0.05f;
-    [SerializeField, Min(1f)] private float coinPitchMax = 1.5f;
 
-    private const float CoinPitchBase = 1f;
-    private float currentCoinPitch = CoinPitchBase;
     private float lastCoinGetPlayedTime = float.NegativeInfinity;
     private MapType mapType;
 
@@ -395,7 +390,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
             Vector3 start = null != coinThrowTransform ? coinThrowTransform.position : transform.position;
             Vector3 end = null != characterTransform ? characterTransform.position : transform.position;
 
-            Sound.Play(SoundID.CoinOut, start, GetSoundVolume());
+            Sound.Play(SoundID.CoinOut, start, GetSoundVolume(), pitchOverride: GetRandomCoinPitch(1f));
 
             Vector3 dir = (end - start).normalized;
             if (Vector3.zero == dir) dir = Vector3.up;
@@ -458,7 +453,6 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
             customSortable.SetHeight(0f);
 
         UpdateBounce(Time.deltaTime);
-        ResetCoinPitchAfterIdle();
         UpdateFlyingCoins(Time.deltaTime);
     }
 
@@ -509,18 +503,14 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         if (coinGetCooldown > currentTime - lastCoinGetPlayedTime)
             return;
 
-        Sound.Play(SoundID.CoinGet, _position, GetSoundVolume(), true, currentCoinPitch);
+        Sound.Play(SoundID.CoinGet, _position, GetSoundVolume(), pitchOverride: GetRandomCoinPitch(2f));
         lastCoinGetPlayedTime = currentTime;
-        currentCoinPitch = Mathf.Min(Mathf.Max(CoinPitchBase, coinPitchMax), currentCoinPitch + coinPitchStep);
     }
 
-    private void ResetCoinPitchAfterIdle()
+    private static float GetRandomCoinPitch(float _maxSemitones)
     {
-        if (CoinPitchBase >= currentCoinPitch || float.IsNegativeInfinity(lastCoinGetPlayedTime))
-            return;
-
-        if (coinPitchResetDelay <= Time.time - lastCoinGetPlayedTime)
-            currentCoinPitch = CoinPitchBase;
+        float semitones = UnityEngine.Random.Range(-_maxSemitones, _maxSemitones);
+        return Mathf.Pow(2f, semitones / 12f);
     }
 
     public void SetCharacter(Character _character)

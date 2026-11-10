@@ -255,12 +255,7 @@ public enum SkillType
     RainbowTreeChance,  // 무지개 나무 확률
 
 
-    TestNode,  // TestNode
-    TestNode2,
-    TestNode3,
-    TestNode4,
-    TestNode5,
-    TestNode6,
+    ConveyorSpeed2,
     MAX
 }
 
@@ -397,6 +392,7 @@ public enum SkillCommandType
     OverheatMaxIncrease, // 과열 최대치 증가
     TreeHeatResistance, // 열기 내성 강화
     PicnicBasket, // 소풍 바구니 (엔딩 특성)
+    BarrierPenetration, // 배리어 관통력
 }
 
 public enum AbilityLevelUpRejectReason

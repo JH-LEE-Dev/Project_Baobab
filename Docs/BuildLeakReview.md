@@ -155,6 +155,7 @@ git diff <직전 배포 커밋> -- ProjectSettings Packages
 | 2026-10-09 | 같은 폭이 빌드 중 다시 0 → 23·7 로 바뀌어 itch 데모가 `GIT_DIRTY=true` (실행 중 다시 계산되는 값이라 빌드 내용과 무관) | `BuildStampWriter` 가 FontMaker 중첩 프리팹의 `m_SizeDelta.x` 값 줄만 바뀐 프리팹은 dirty 로 치지 않음. 다른 줄이 섞이면 그대로 dirty. 빌드 로그에 `[BuildStamp] … GIT_DIRTY 로 치지 않습니다` 가 남음 |
 | 2026-10-13 | 외부 플레이어(marix)가 Steam 데모 1.0.3 의 `global-metadata.dat` 에서 세이브 AES 키·IV 문자열을 찾아 비공개로 제보 | 사실 확인(Steam·itch 데모 모두 포함). 싱글 플레이·업적 없음·세이브에 개인정보 없음이라 위험 낮음으로 판단, 2-2 에 수용 항목으로 기록 |
 | 2026-10-13 | 별자리 노바 이펙트(`VFX_ConstellationNova`)가 게임 설치기 이펙트 목록(`ConstellationNovaEffect`)에 새로 등록됐는데 데모 제외 태그에 없어, 정식판 전용 이펙트가 STOVE 데모 빌드에 실릴 뻔함(빌드 전 커밋 검토로 발견) | 제외 태그 추가. 빌드 후 데모에서 꺼진 기능·미공개 지역·나무 이름이 경로에 든 에셋(스크립트 제외)이 실리면 오류를 남기는 검사 추가(`ReportLockedFeatureAssetsInBuild`) |
+| 2026-11-10 | 3스테이지 배리어 나무 HP 바 테두리(`BarrierCover.png`)를 모든 던전 공용 나무 HP 바 프리팹(`HPBar_Shield`)에 연결해 데모에 실릴 뻔함. 경로에 잠긴 이름(Starroot 등)이 없어 빌드 후 자동 검사로는 안 잡힘(커밋 전 검토로 발견) | `DemoContentStripper.StripTreeHpBarFullOnly` 가 별뿌리 숲이 막힌 데모에서 테두리 그림을 끊음(그림이 없으면 테두리를 켜지 않음) |
 
 ---
 

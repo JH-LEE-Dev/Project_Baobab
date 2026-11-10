@@ -14,6 +14,9 @@ public interface ITreeObj
     // 지금 보석 상태인지(= gemStage > 0). 분기용 단축 프로퍼티.
     public bool bIsGemStage { get; }
 
+    // 3스테이지 배리어가 씌워져 있는지. HP 바가 배리어 테두리를 그릴 때 쓴다.
+    public bool bBarrierActive { get; }
+
     // 여러 NPC가 같은 나무를 동시에 타겟팅하지 못하도록 하는 예약 플래그
     public bool bReserved { get; set; }
 }
