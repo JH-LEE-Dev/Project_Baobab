@@ -2,38 +2,33 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 로그라이크 전투 HUD의 유예 타이머(기획서 v2.6 10-1). 임계치 바 바로 아래의 폭 120 x 높이 4 얇은 바다. 초 숫자는 임계치 바 오른쪽(UI_RoguelikePressureStrip.SetTimer)이 그린다.
-///   대기      나무 수 &lt; T. 채움 없음(비어 있음).
-///   유예 중   보라색 채움이 0에서 가득까지 찬다(경과 / 총 유예 시간).
-///   쿨다운    장미주황색 채움이 가득에서 줄어든다(다음 피해까지 남은 시간). 첫 피해 이후 T 이상인 동안.
-///   피해 발생 PlayDamaged: 바가 4틱 동안 번갈아 하얗게 번쩍이고(24Hz) 정수 픽셀 패턴 { -2, 2, -2, 2, -1, 1, 0 }으로 흔들린다.
-/// 나무 수가 T 미만으로 내려가면 상태가 Safe로 오고 채움이 즉시 비워진다(기획서 3-2). 채움 폭은 정수 픽셀이고 반투명이 없다. 시간은 unscaled라 ESC로 멈춰도 연출이 이어진다.
+/// 로그라이크 전투 HUD의 유예 타이머(RoguelikeHUD_Polish_Plan.md). 임계치 바 바로 아래에 붙은 2px 줄이다(바 아래 윤곽을 공유, 안쪽 108 x 2). 초 숫자는 없다.
+///   대기      나무 수 &lt; T. 채움 없음(빈 홈).
+///   유예 중   보라색 줄이 0에서 가득까지 찬다(경과 / 총 유예 시간).
+///   쿨다운    주황색 줄이 가득에서 줄어든다(다음 피해까지 남은 시간). 첫 피해 이후 T 이상인 동안.
+///   피해 발생 PlayDamaged: 채움 전체가 2틱 동안 하얗게 번쩍인다(24Hz). 흔들림은 없다(임계치 바에 붙어 있어야 한다).
+/// 나무 수가 T 미만으로 내려가면 상태가 Safe로 오고 채움이 즉시 비워진다(기획서 3-2). 채움 끝 위쪽 한 칸이 흰 점이다.
+/// 안쪽을 CPU로 그린 RawImage 하나(RoguelikeBarPainter)가 홈 + 채움을 맡고, 윤곽 스프라이트(Background)는 프리팹에 있다. 시간은 unscaled라 ESC로 멈춰도 연출이 이어진다.
 /// </summary>
 public class UI_RoguelikeGraceTimer : MonoBehaviour
 {
-    private const int InnerWidth = 118;
-    private const int SpriteWidth = 120;
-    private const float TicksPerSecond = 24f;
-    private const float ShakeStepSeconds = 0.03f;
-    private const int FlashTicks = 4;
-    private static readonly int[] ShakePattern = { -2, 2, -2, 2, -1, 1, 0 };
+    private const int InnerWidth = 108;
+    private const int InnerHeight = 2;
+    private const int NoTick = -1000000;
+    private const int FlashTicks = 2;
 
     //내부 의존성 (프리팹에서 연결)
-    [SerializeField] private RectTransform timerRoot;
-    [SerializeField, Tooltip("프레임 안쪽 모양으로 만든 흰 채움 스프라이트(Image Filled). 프레임의 둥근 끝 밖으로 삐져나오지 않는다.")]
-    private Image fillImage;
-    [SerializeField] private Image flashImage;
-    [SerializeField] private Color graceColor = new Color(0.553f, 0.416f, 0.839f, 1f);
-    [SerializeField] private Color cooldownColor = new Color(0.933f, 0.478f, 0.353f, 1f);
+    [SerializeField, Tooltip("안쪽 108x2 홈 + 채움을 그리는 RawImage.")]
+    private RawImage fillSurface;
 
     //상태 변수
+    private RoguelikeBarPainter painter;
     private float clock;
-    private Vector2 basePosition;
-    private bool bBasePositionCaptured;
-    private float shakeTime = -1f;
-    private int flashStartTick = -1;
+    private int flashStartTick = NoTick;
     private int shownWidth = -1;
     private EPressureState shownState = EPressureState.Safe;
+    private bool bPaintedFlash;
+    private bool bPainted;
 
     /// <summary>상태와 경과 / 총 시간(초). 유예 중은 차오르고, 지속 피해(쿨다운) 중은 줄어든다.</summary>
     public void SetState(EPressureState _state, float _elapsed, float _total)
@@ -52,22 +47,17 @@ public class UI_RoguelikeGraceTimer : MonoBehaviour
         }
 
         int width = Mathf.RoundToInt(InnerWidth * Mathf.Clamp01(ratio));
-        if (width == shownWidth && _state == shownState) return;
+        if (width == shownWidth && _state == shownState && true == bPainted) return;
 
         shownWidth = width;
         shownState = _state;
 
-        if (null == fillImage) return;
-
-        fillImage.color = EPressureState.Damaging == _state ? cooldownColor : graceColor;
-        fillImage.enabled = 0 < width;
-        fillImage.fillAmount = 0 < width ? (width + 1) / (float)SpriteWidth : 0f;
+        Repaint();
     }
 
-    /// <summary>임계치 피해 1회: 바가 번갈아 하얗게 번쩍이고 흔들린다.</summary>
+    /// <summary>임계치 피해 1회: 채움 전체가 2틱 동안 하얗게 번쩍인다.</summary>
     public void PlayDamaged()
     {
-        shakeTime = 0f;
         flashStartTick = CurrentTick();
     }
 
@@ -80,66 +70,48 @@ public class UI_RoguelikeGraceTimer : MonoBehaviour
     public void Step(float _dt)
     {
         clock += _dt;
-        StepPosition(_dt);
-        StepFlash();
+
+        if (bPaintedFlash != IsFlashing()) Repaint();
     }
 
     // // 내부
 
     private int CurrentTick()
     {
-        return (int)(clock * TicksPerSecond);
+        return (int)(clock * RoguelikeBarPainter.TicksPerSecond);
     }
 
-    private void StepPosition(float _dt)
+    private bool IsFlashing()
     {
-        if (null == timerRoot) return;
-
-        if (false == bBasePositionCaptured)
-        {
-            basePosition = timerRoot.anchoredPosition;
-            bBasePositionCaptured = true;
-        }
-
-        if (shakeTime < 0f) return;
-
-        shakeTime += _dt;
-        int step = (int)(shakeTime / ShakeStepSeconds);
-        if (step >= ShakePattern.Length)
-        {
-            shakeTime = -1f;
-            RestorePosition();
-            return;
-        }
-
-        timerRoot.anchoredPosition = new Vector2(basePosition.x + ShakePattern[step], basePosition.y);
+        return CurrentTick() - flashStartTick < FlashTicks;
     }
 
-    private void RestorePosition()
+    private void Repaint()
     {
-        if (null != timerRoot && bBasePositionCaptured) timerRoot.anchoredPosition = basePosition;
+        if (null == fillSurface) return;
+        if (null == painter) painter = new RoguelikeBarPainter(fillSurface, InnerWidth, InnerHeight, "UI_RoguelikeGraceFill");
+
+        bPainted = true;
+        bPaintedFlash = IsFlashing();
+
+        painter.Clear();
+        painter.Fill(0, 0, InnerWidth, InnerHeight, RoguelikeHudColors.GrooveTop);
+
+        if (EPressureState.Safe != shownState && 0 < shownWidth)
+        {
+            RoguelikeBarPalette palette = true == bPaintedFlash ? RoguelikeHudColors.Flash : (EPressureState.Damaging == shownState ? RoguelikeHudColors.Cooldown : RoguelikeHudColors.Grace);
+            painter.Fill(0, 0, shownWidth, 1, palette.light);
+            painter.Fill(0, 1, shownWidth, 2, palette.main);
+            painter.SetPixel(shownWidth - 1, 0, RoguelikeHudColors.White);
+        }
+
+        painter.Apply();
     }
 
-    private void StepFlash()
+    private void Awake()
     {
-        if (null == flashImage) return;
-
-        if (flashStartTick < 0)
-        {
-            flashImage.enabled = false;
-            return;
-        }
-
-        int elapsed = CurrentTick() - flashStartTick;
-        if (FlashTicks * 2 <= elapsed)
-        {
-            flashStartTick = -1;
-            flashImage.enabled = false;
-            return;
-        }
-
-        // 켜짐 · 꺼짐 · 켜짐 · 꺼짐 ... 틱마다 번갈아.
-        flashImage.enabled = 0 == elapsed % 2;
+        // 첫 프레임에 텍스처 없는 RawImage(흰 네모)가 보이지 않도록 미리 한 번 그린다.
+        Repaint();
     }
 
     private void Update()
@@ -149,9 +121,12 @@ public class UI_RoguelikeGraceTimer : MonoBehaviour
 
     private void OnDisable()
     {
-        shakeTime = -1f;
-        flashStartTick = -1;
-        RestorePosition();
-        if (null != flashImage) flashImage.enabled = false;
+        flashStartTick = NoTick;
+        bPainted = false;
+    }
+
+    private void OnDestroy()
+    {
+        if (null != painter) painter.Dispose();
     }
 }

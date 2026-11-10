@@ -57,7 +57,8 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     // 목록 패널 가장자리에서 카드 영역까지 8칸(틀 4칸 + 4칸), 카드 영역 안쪽에 호버 괄호가 삐져나오는 여유 4칸. 스크롤바는 오른쪽 여백 안에 둔다.
     private const float BookPadding = 8f;
     private const float BracketClearance = 4f;
-    private const float ScrollbarWidth = 3f;
+    // 스크롤바 그림은 3열 + 오른쪽 투명 1열(Scroll_Track · Scroll_Thumb 4x6)이라 칸 폭은 4다. 그림은 왼쪽 3열이다.
+    private const float ScrollbarWidth = 4f;
     private const float ScrollbarGap = 1f;
     private const float MinThumbHeight = 8f;
     private const float CellGap = 4f;
@@ -701,6 +702,7 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     {
         motionClock = 0f;
         bCloseQueued = false;
+        Sound.PlayUI(SoundID.HUDBackpackOpen);
 
         contentGroup.blocksRaycasts = false;
         bookMask.enabled = true;
@@ -715,6 +717,7 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     {
         motion = EMotion.Closing;
         motionClock = 0f;
+        Sound.PlayUI(SoundID.HUDBackpackClose);
 
         // 연출이 시작되면 카드 호버 · 선택 · 커서를 걷는다(접히는 카드 위에 커서가 남지 않게).
         for (int i = 0; i < cellCount; i++) cells[i].SetFocused(false);
@@ -966,6 +969,9 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
 
         UI_RoguelikeOwnedCardCell cell = FindCell(_relay);
         if (null == cell) return;
+
+        // 카드 선택 화면과 같은 호버음. 포커스가 실제로 바뀔 때만 낸다(같은 칸 재진입 · 열릴 때의 첫 포커스는 무음).
+        if (cell != focusedCell || false == bFocusShown) Sound.PlayUI(SoundID.ResultUIHover);
 
         SetFocusCell(cell, false == _relay.IsPointerFocus);
 

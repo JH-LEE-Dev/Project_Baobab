@@ -6,8 +6,9 @@ using UnityEngine;
 /// 카드 선택 화면의 설명 패널. 기획서 v2.3 "카드 아래에 넓은 박스 하나. 커서가 올라간 카드의 이름(첫 줄) + 레벨 + 효과".
 /// 카드뿐 아니라 건너뛰기·리롤 아이콘 버튼의 이름·설명도 여기서 보여 준다(SetInfo) - 버튼에는 글자가 없다.
 ///
-/// 카드 패널은 이름 + 레벨 표기 + 기본 설명 아래에 "고르면 적용되는 레벨의 효과"를 수치와 함께 보여 준다(기획서 v2.5 10-2).
-/// 효과 줄은 카드 데이터(levels)의 수치로 RoguelikeCardEffectText가 만든다 - 처음 고르면 "+12%", 업그레이드면 "+12% → +27%". 계약의 디메리트는 붉은 줄이다.
+/// 카드 패널은 수치를 보여 주지 않는다. 기본 설명 안의 색 마커 {+}...{/}(강화 구절, 금색) · {-}...{/}(약화 구절, 적색)를 리치텍스트 색으로 바꿔 그린다(ApplyColorMarkers).
+/// 마커는 번역과 상관없이 고정 토큰이라, 어느 언어(영어 폴백 포함)든 같은 규칙으로 변환된다.
+/// 보유 카드 화면은 기본 설명 아래에 RoguelikeCardEffectText가 만든 효과 이름만 줄로 붙이고, 이로우면 금색 · 해로우면 적색으로 칠한다.
 /// 효과 줄은 설명 글자 영역 안에 이어 붙인다(같은 줄바꿈·폭 규칙이 그대로 적용된다).
 /// 문구는 LocalizationManager로 읽는다(카드 이름·설명은 문자열 키, MAX는 LocKeys). 데이터가 아직 없어 비어 있으면 카드 키 문자열을 그대로 보여 준다.
 ///
@@ -17,6 +18,11 @@ using UnityEngine;
 /// (영문 용어집: 긴 설명은 문장 안에서 `\n`으로 직접 나눈다). 패널은 그 줄들 중 가장 긴 줄이 들어가는 폭으로 맞추고, 수동 줄바꿈이 없거나 한 줄이 최대 폭보다 길 때만
 /// TMP가 공백에서 자동으로 줄바꿈한다(TMP Settings의 Modern Hangul Line Breaking Rules가 켜져 있어야 한글이 단어 단위로 끊긴다). 글자 영역은 패널 안쪽 폭을 그대로 쓴다.
 ///
+/// [카드 선택 모드 - bCardSelectMode, 시안 v4] 카드 선택 화면만 켠다(보유 카드 확인 화면은 끈 채로 지금 동작 그대로).
+///   효과 수치 줄을 붙이지 않는다(이름 + 레벨 한 줄 + 설명). 설명 문구 안의 수동 줄바꿈은 이어 붙이고(중국어 · 일본어는 붙여 쓰고 나머지는 공백)
+///   고정 폭 안에서 다시 흐르게 하되, 같은 줄 수 안에서 가장 좁은 폭을 찾아 각 줄 길이를 고르게 한다(한 단어만 떨어지는 줄 방지). 줄 수는 3줄 이하를 목표로 한다(QA).
+///   높이는 포커스한 카드 내용에 맞추고, 바뀔 때 heightTweenSeconds 동안 정수 픽셀로 늘거나 준다(unscaled). 윗변은 고정이다.
+///
 /// [화면 전체 폭 통일] 호버를 옮길 때 박스 크기가 달라지면 어지러우므로, 화면이 열릴 때 보일 수 있는 모든 내용을 재 보고(Measure*) 가장 넓은 폭을 SetFixedWidth로 고정한다.
 /// </summary>
 public class UI_RoguelikeCardDescPanel : MonoBehaviour
@@ -24,9 +30,16 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     // 레벨 표기 I~VI(액티브 7레벨은 VI까지, 마지막 레벨은 MAX). 공통 패시브는 I~IV, 마지막(5레벨)이 MAX.
     private static readonly string[] LevelLabels = { string.Empty, "I", "II", "III", "IV", "V", "VI" };
     private const string RubyLabel = "±";
+    private const char LineBreak = (char)10;
+    // 이 코드값 이상은 한중일 부수 · 가나 · 한자 · 전각 기호 영역(U+2E80~)으로 보고 공백 없이 잇는다.
+    private const char CjkStartChar = (char)0x2E80;
     private const string BenefitColorTag = "<color=#F2D27A>";
     private const string DemeritColorTag = "<color=#E86A6A>";
     private const string ColorEndTag = "</color>";
+    private const string BenefitMarker = "{+}";
+    private const string DemeritMarker = "{-}";
+    private const string EndMarker = "{/}";
+    private const char MarkerStartChar = '{';
     // 보유 카드 확인 화면의 "현재 효과" 소제목(설명 본문보다 흐린 색).
     private const string CurrentEffectColorTag = "<color=#B59B7A>";
     private const string CurrentEffectKey = "Roguelike_OwnedCards_CurrentEffect";
@@ -36,6 +49,9 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     private const float DefaultMaxPanelWidth = 320f;
     private const float PaddingX = 6f;
     private const float PaddingY = 4f;
+    // 카드 선택 화면은 9-슬라이스 바탕(테두리 4px) 위에 글자를 얹으므로 테두리 + 여백만큼 안쪽으로 들인다.
+    private const float SelectPaddingX = 12f;
+    private const float SelectPaddingY = 8f;
     private const float RowGap = 2f;
     // 구분선이 있으면 이름 줄과 설명 사이에 선 1칸 + 위아래 3칸씩을 둔다.
     private const float DividerSpace = 7f;
@@ -49,6 +65,9 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     [SerializeField] private TMP_Text descriptionText;
     // 선택. 있으면 이름 줄 아래에 1칸 구분선을 놓는다(보유 카드 확인 화면). 카드 선택 화면 프리팹에는 없다.
     [SerializeField] private RectTransform divider;
+    [SerializeField, Tooltip("카드 선택 화면 모드: 효과 수치 줄 없음 · 설명 다시 흐르기 · 높이 변화 연출. 보유 카드 확인 화면은 끈다.")]
+    private bool bCardSelectMode;
+    [SerializeField] private float heightTweenSeconds = 0.1f;
 
     //상태 변수
     private LocalizationManager localizationManager;
@@ -57,6 +76,22 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     private readonly StringBuilder benefitBuilder = new StringBuilder(128);
     private readonly StringBuilder demeritBuilder = new StringBuilder(64);
     private readonly StringBuilder descriptionBuilder = new StringBuilder(256);
+    private readonly StringBuilder markerBuilder = new StringBuilder(256);
+    private float targetHeight;
+    private float heightFrom;
+    private float heightClock = 1f;
+    private bool bHeightInitialized;
+
+    /// <summary>마지막으로 정한 패널 높이(높이 변화 연출 중에도 도착 높이). 측정에 쓴다.</summary>
+    public float TargetHeight => true == bCardSelectMode ? targetHeight : ((RectTransform)transform).sizeDelta.y;
+
+    /// <summary>높이 변화 연출 없이 지금 도착 높이로 바로 맞춘다(화면이 열릴 때).</summary>
+    public void SnapHeight()
+    {
+        heightClock = 1f;
+        RectTransform panel = (RectTransform)transform;
+        panel.sizeDelta = new Vector2(panel.sizeDelta.x, targetHeight);
+    }
 
     public void Initialize(LocalizationManager _localizationManager)
     {
@@ -123,13 +158,13 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     public float MeasureOwnedHeight(in RoguelikeOwnedCardViewData _data)
     {
         SetOwnedCard(in _data);
-        return ((RectTransform)transform).sizeDelta.y;
+        return TargetHeight;
     }
 
     public float MeasureCardHeight(in RoguelikeCardViewData _data)
     {
         SetCard(in _data);
-        return ((RectTransform)transform).sizeDelta.y;
+        return TargetHeight;
     }
 
     public float MeasureInfoWidth(string _name, string _description)
@@ -141,7 +176,7 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     public float MeasureInfoHeight(string _name, string _description)
     {
         SetInfo(_name, _description);
-        return ((RectTransform)transform).sizeDelta.y;
+        return TargetHeight;
     }
 
     // // 내부
@@ -160,7 +195,7 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     /// <summary>기본 설명 + "현재 효과" 소제목 + 누적 효과 줄(버프는 금색, 계약 디메리트는 붉은색). 효과 줄이 없으면 기본 설명만이다.</summary>
     private string BuildOwnedDescription(in RoguelikeOwnedCardViewData _data)
     {
-        string description = LocalizeCard(_data.descriptionKey);
+        string description = ApplyColorMarkers(LocalizeCard(_data.descriptionKey));
         RoguelikeCardEffectText.BuildCurrent(in _data, localizationManager, benefitBuilder, demeritBuilder);
         if (0 == benefitBuilder.Length && 0 == demeritBuilder.Length) return description;
 
@@ -186,7 +221,8 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     /// <summary>기본 설명 + 고르면 적용되는 효과 줄(버프는 금색, 계약 디메리트는 붉은색). 효과 줄이 없으면 기본 설명만이다.</summary>
     private string BuildDescription(in RoguelikeCardViewData _data)
     {
-        string description = LocalizeCard(_data.descriptionKey);
+        string description = ApplyColorMarkers(LocalizeCard(_data.descriptionKey));
+        if (true == bCardSelectMode) return JoinManualLines(description);
         RoguelikeCardEffectText.Build(in _data, localizationManager, benefitBuilder, demeritBuilder);
         if (0 == benefitBuilder.Length && 0 == demeritBuilder.Length) return description;
 
@@ -206,6 +242,110 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
         }
 
         return descriptionBuilder.ToString();
+    }
+
+    /// <summary>
+    /// 설명 안의 색 마커를 리치텍스트로 바꾼다. {+} → 버프색 시작, {-} → 디메리트색 시작, {/} → 색 끝. 닫지 않은 마커는 끝에서 닫는다.
+    /// 마커가 없으면 원문을 그대로 돌려준다.
+    /// </summary>
+    private string ApplyColorMarkers(string _text)
+    {
+        if (string.IsNullOrEmpty(_text) || 0 > _text.IndexOf(MarkerStartChar)) return _text;
+
+        markerBuilder.Clear();
+        bool bOpen = false;
+        int i = 0;
+        while (i < _text.Length)
+        {
+            if (MarkerStartChar == _text[i])
+            {
+                if (0 == string.CompareOrdinal(_text, i, BenefitMarker, 0, BenefitMarker.Length))
+                {
+                    if (true == bOpen) markerBuilder.Append(ColorEndTag);
+                    markerBuilder.Append(BenefitColorTag);
+                    bOpen = true;
+                    i += BenefitMarker.Length;
+                    continue;
+                }
+
+                if (0 == string.CompareOrdinal(_text, i, DemeritMarker, 0, DemeritMarker.Length))
+                {
+                    if (true == bOpen) markerBuilder.Append(ColorEndTag);
+                    markerBuilder.Append(DemeritColorTag);
+                    bOpen = true;
+                    i += DemeritMarker.Length;
+                    continue;
+                }
+
+                if (0 == string.CompareOrdinal(_text, i, EndMarker, 0, EndMarker.Length))
+                {
+                    if (true == bOpen) markerBuilder.Append(ColorEndTag);
+                    bOpen = false;
+                    i += EndMarker.Length;
+                    continue;
+                }
+            }
+
+            markerBuilder.Append(_text[i]);
+            i++;
+        }
+
+        if (true == bOpen) markerBuilder.Append(ColorEndTag);
+        return markerBuilder.ToString();
+    }
+
+    /// <summary>수동 줄바꿈을 이어 붙인다. 중국어 · 일본어는 붙여 쓰고, 나머지 언어는 공백으로 잇는다.</summary>
+    private string JoinManualLines(string _text)
+    {
+        if (string.IsNullOrEmpty(_text) || 0 > _text.IndexOf(LineBreak)) return _text;
+
+        bool bNoSpace = false;
+        if (null != localizationManager)
+        {
+            Language lang = localizationManager.CurrentLanguage;
+            bNoSpace = Language.JA == lang || Language.ZH_HANS == lang || Language.ZH_HANT == lang;
+        }
+
+        descriptionBuilder.Clear();
+        int start = 0;
+        while (start <= _text.Length)
+        {
+            int end = _text.IndexOf(LineBreak, start);
+            if (0 > end) end = _text.Length;
+            string part = _text.Substring(start, end - start).Trim();
+            if (0 < part.Length)
+            {
+                // 중국어 · 일본어라도 이음매 양쪽이 모두 라틴 문자면(번역이 없어 영어 원문으로 대체된 경우 등) 공백으로 잇는다.
+                if (0 < descriptionBuilder.Length)
+                {
+                    bool bCjkJoint = CjkStartChar <= descriptionBuilder[descriptionBuilder.Length - 1] || CjkStartChar <= part[0];
+                    if (false == bNoSpace || false == bCjkJoint) descriptionBuilder.Append(' ');
+                }
+                descriptionBuilder.Append(part);
+            }
+            start = end + 1;
+        }
+        return descriptionBuilder.ToString();
+    }
+
+    /// <summary>_maxWidth에서의 줄 수를 유지하는 가장 좁은 폭(각 줄 길이를 고르게). 한 줄이면 그대로.</summary>
+    private float BalancedWidth(float _maxWidth)
+    {
+        if (string.IsNullOrEmpty(descriptionText.text)) return _maxWidth;
+
+        float fullHeight = MeasureHeight(descriptionText, _maxWidth);
+        float lineHeight = Mathf.Max(1f, Mathf.Ceil(descriptionText.GetPreferredValues("A", Unbounded, Unbounded).y));
+        if (fullHeight <= lineHeight * 1.5f) return _maxWidth;
+
+        float low = Mathf.Floor(_maxWidth * 0.5f);
+        float high = _maxWidth;
+        for (int i = 0; 8 > i; i++)
+        {
+            float mid = Mathf.Floor((low + high) * 0.5f);
+            if (MeasureHeight(descriptionText, mid) <= fullHeight) high = mid;
+            else low = mid + 1f;
+        }
+        return Mathf.Ceil(high);
     }
 
     private void ApplyTexts(string _name, string _level, string _description)
@@ -228,8 +368,11 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
         float descWidth = string.IsNullOrEmpty(descriptionText.text) ? 0f : Mathf.Ceil(descriptionText.GetPreferredValues(descriptionText.text, Unbounded, Unbounded).x);
 
         float inner = Mathf.Max(descWidth, nameWidth + (0f < levelWidth ? levelWidth + LevelGap : 0f));
-        return Mathf.Clamp(inner + PaddingX * 2f, MinPanelWidth, maxPanelWidth);
+        return Mathf.Clamp(inner + PadX * 2f, MinPanelWidth, maxPanelWidth);
     }
+
+    private float PadX => true == bCardSelectMode ? SelectPaddingX : PaddingX;
+    private float PadY => true == bCardSelectMode ? SelectPaddingY : PaddingY;
 
     private float LevelWidth()
     {
@@ -241,24 +384,57 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     {
         RectTransform panel = (RectTransform)transform;
         float panelWidth = 0f < fixedWidth ? fixedWidth : RequiredWidth();
-        float innerWidth = panelWidth - PaddingX * 2f;
+        float innerWidth = panelWidth - PadX * 2f;
 
         float levelWidth = LevelWidth();
         float nameBoxWidth = Mathf.Max(0f, innerWidth - (0f < levelWidth ? levelWidth + LevelGap : 0f));
         float descBoxWidth = innerWidth;
+        if (true == bCardSelectMode) descBoxWidth = BalancedWidth(innerWidth);
 
         float nameHeight = Mathf.Max(MinLineHeight, MeasureHeight(nameText, nameBoxWidth));
         float descHeight = string.IsNullOrEmpty(descriptionText.text) ? 0f : Mathf.Max(MinLineHeight, MeasureHeight(descriptionText, descBoxWidth));
 
-        SetTopLeft(nameText.rectTransform, PaddingX, PaddingY, nameBoxWidth, nameHeight);
-        SetTopLeft(levelText.rectTransform, panelWidth - PaddingX - levelWidth, PaddingY, levelWidth, nameHeight);
+        SetTopLeft(nameText.rectTransform, PadX, PadY, nameBoxWidth, nameHeight);
+        SetTopLeft(levelText.rectTransform, panelWidth - PadX - levelWidth, PadY, levelWidth, nameHeight);
         bool bDivider = null != divider;
-        float descTop = PaddingY + nameHeight + (true == bDivider ? DividerSpace : RowGap);
-        SetTopLeft(descriptionText.rectTransform, PaddingX, descTop, descBoxWidth, descHeight);
-        if (true == bDivider) SetTopLeft(divider, PaddingX, PaddingY + nameHeight + (DividerSpace - 1f) * 0.5f, innerWidth, 1f);
+        float descTop = PadY + nameHeight + (true == bDivider ? DividerSpace : RowGap);
+        SetTopLeft(descriptionText.rectTransform, PadX, descTop, descBoxWidth, descHeight);
+        if (true == bDivider) SetTopLeft(divider, PadX, PadY + nameHeight + (DividerSpace - 1f) * 0.5f, innerWidth, 1f);
 
-        float panelHeight = Mathf.Max(MinPanelHeight, descTop + descHeight + PaddingY);
-        panel.sizeDelta = new Vector2(panelWidth, panelHeight);
+        float panelHeight = Mathf.Max(MinPanelHeight, descTop + descHeight + PadY);
+        if (false == bCardSelectMode)
+        {
+            panel.sizeDelta = new Vector2(panelWidth, panelHeight);
+            return;
+        }
+
+        // 카드 선택 모드: 폭은 바로, 높이는 도착 높이를 정하고 Update가 정수 픽셀로 따라간다.
+        panelHeight = Mathf.Ceil(panelHeight);
+        if (false == bHeightInitialized)
+        {
+            bHeightInitialized = true;
+            targetHeight = panelHeight;
+            heightClock = 1f;
+            panel.sizeDelta = new Vector2(panelWidth, panelHeight);
+            return;
+        }
+
+        panel.sizeDelta = new Vector2(panelWidth, panel.sizeDelta.y);
+        if (targetHeight == panelHeight) return;
+
+        heightFrom = panel.sizeDelta.y;
+        targetHeight = panelHeight;
+        heightClock = 0f;
+    }
+
+    private void UpdateHeight()
+    {
+        if (false == bCardSelectMode || 1f <= heightClock) return;
+
+        heightClock = Mathf.Min(1f, heightClock + Time.unscaledDeltaTime / Mathf.Max(0.01f, heightTweenSeconds));
+        float t = 1f - (1f - heightClock) * (1f - heightClock) * (1f - heightClock);
+        RectTransform panel = (RectTransform)transform;
+        panel.sizeDelta = new Vector2(panel.sizeDelta.x, Mathf.Round(Mathf.Lerp(heightFrom, targetHeight, t)));
     }
 
     private static float MeasureHeight(TMP_Text _text, float _width)
@@ -303,5 +479,10 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
         if (level >= _maxLevel) return null != _localizationManager ? _localizationManager.GetText(LocKeys.RoguelikeUI.roguelikeCardLevelMax) : string.Empty;
 
         return level < LevelLabels.Length ? LevelLabels[level] : string.Empty;
+    }
+
+    private void Update()
+    {
+        UpdateHeight();
     }
 }

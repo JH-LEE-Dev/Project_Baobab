@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: active_spin
   nameKey: Roguelike_Card_active_spin
   descriptionKey: Roguelike_Card_active_spin_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: a48bdee107d2f83449cb290c9b27fc15, type: 3}
   kind: 0
   skillTag: 2
   exclusiveGroup: 0

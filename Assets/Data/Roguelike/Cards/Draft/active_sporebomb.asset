@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: active_sporebomb
   nameKey: Roguelike_Card_active_sporebomb
   descriptionKey: Roguelike_Card_active_sporebomb_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 6479773223036287334, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
   kind: 0
   skillTag: 7
   exclusiveGroup: 0

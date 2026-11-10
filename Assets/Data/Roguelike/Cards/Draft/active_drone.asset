@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: active_drone
   nameKey: Roguelike_Card_active_drone
   descriptionKey: Roguelike_Card_active_drone_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 84369ddcd5397cc4eb839e2930e57989, type: 3}
   kind: 0
   skillTag: 4
   exclusiveGroup: 0

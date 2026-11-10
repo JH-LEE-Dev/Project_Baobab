@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: passive_max_stamina
   nameKey: Roguelike_Card_passive_max_stamina
   descriptionKey: Roguelike_Card_passive_max_stamina_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 55c14bdef41d05744937185e55a3baae, type: 3}
   kind: 1
   skillTag: 0
   exclusiveGroup: 0

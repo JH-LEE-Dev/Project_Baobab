@@ -212,6 +212,19 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     private UIDepthController depthController;
     private int lastHideFrame = -1;
 
+    // 등장 연출 (UIView_RoguelikeRecords.PlayEnter와 동일 규격)
+    private const float OpenFadeSeconds = 0.18f;
+    private const float OpenPanelSeconds = 0.2f;
+    private const float OpenPanelOffset = 6f;
+
+    //내부 의존성 (등장 연출)
+    private CanvasGroup rootCanvasGroup;
+    private RectTransform panelRootRect;
+
+    //상태 변수 (등장 연출)
+    private Vector2 panelBasePosition;
+    private Sequence openSequence;
+
     public bool IsActive => gameObject.activeSelf;
     private System.Collections.Generic.List<UI_OptionKeyBindRow> keyBindRows 
         = new System.Collections.Generic.List<UI_OptionKeyBindRow>();
@@ -318,6 +331,21 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         settings = SettingsManager.Instance;
         settings.Bind(locManager);
+
+        // 등장 연출용 참조 캐싱 (루트 CanvasGroup은 프리팹에 없으므로 없으면 추가)
+        if (false == TryGetComponent(out rootCanvasGroup))
+        {
+            rootCanvasGroup = gameObject.AddComponent<CanvasGroup>();
+        }
+
+        if (null != optionPanelRoot)
+        {
+            panelRootRect = optionPanelRoot.transform as RectTransform;
+            if (null != panelRootRect)
+            {
+                panelBasePosition = panelRootRect.anchoredPosition;
+            }
+        }
 
         CacheDelegates();
         CacheControlDelegates();
@@ -431,6 +459,50 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         UpdateApplyButtonState();
         RefreshCurrentTabScrollbar();
+
+        PlayOpenProduction();
+    }
+
+    // 옵션 패널 등장 연출: 전체 페이드 + 패널 6px 아래에서 상승. timeScale 0(ESC)에서도 재생되도록 SetUpdate(true).
+    private void PlayOpenProduction()
+    {
+        if (null == rootCanvasGroup || null == panelRootRect) return;
+
+        KillOpenSequence();
+
+        rootCanvasGroup.alpha = 0f;
+        panelRootRect.anchoredPosition = panelBasePosition + new Vector2(0f, -OpenPanelOffset);
+
+        openSequence = DOTween.Sequence();
+        openSequence.Insert(0f, rootCanvasGroup.DOFade(1f, OpenFadeSeconds));
+        openSequence.Insert(0f, panelRootRect.DOAnchorPos(panelBasePosition, OpenPanelSeconds).SetEase(Ease.OutCubic));
+        openSequence.SetUpdate(true).SetLink(gameObject);
+    }
+
+    // 진행 중인 등장 연출을 중단한다.
+    private void KillOpenSequence()
+    {
+        if (null != openSequence)
+        {
+            openSequence.Kill();
+            openSequence = null;
+        }
+    }
+
+    // 연출 중 닫혀도 다음 Show에서 상태가 오염되지 않도록 알파·위치를 기준값으로 복원한다.
+    private void ResetOpenProductionState()
+    {
+        KillOpenSequence();
+
+        if (null != rootCanvasGroup)
+        {
+            rootCanvasGroup.alpha = 1f;
+        }
+
+        if (null != panelRootRect)
+        {
+            panelRootRect.anchoredPosition = panelBasePosition;
+        }
     }
 
     public void Hide()
@@ -478,6 +550,8 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     private void ForceHide(bool _playSound = true)
     {
+        ResetOpenProductionState();
+
         if (true == _playSound)
         {
             Sound.PlayUI(SoundID.MainClick);

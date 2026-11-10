@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// 로그라이크의 전체 화면 UI(카드 선택·결과·순위표·보유 카드) 공통 동작.
@@ -17,6 +19,10 @@ public abstract class UIView_RoguelikeModalBase : UIView
     /// <summary>화면이 닫혔다(어떤 경로로든 - 닫기 버튼·ESC·시스템). 상속한 뷰가 OnHideContent를 덮어써도 빠지지 않는다.</summary>
     public event Action HiddenEvent;
 
+    //상태 변수
+    // 마지막으로 선택을 잡았던 이 화면 밖의 UI 오브젝트(CanRestoreSelection).
+    private GameObject lastForeignSelection;
+
     protected sealed override void OnShow()
     {
         base.OnShow();
@@ -32,6 +38,7 @@ public abstract class UIView_RoguelikeModalBase : UIView
         base.OnHide();
 
         OnHideContent();
+        lastForeignSelection = null;
 
         RoguelikeModalInput.NotifyClosed(this, viewCtx?.inputManager);
 
@@ -45,6 +52,29 @@ public abstract class UIView_RoguelikeModalBase : UIView
 
     /// <summary>[UI 담당] 화면이 꺼지기 직전.</summary>
     protected virtual void OnHideContent() { }
+
+    /// <summary>
+    /// 패드 선택 복구(가이드 3-8 "선택이 null이 되면 되돌린다")를 해도 되는가. 매 프레임 부른다.
+    /// 이 화면 밖의 UI(ESC 메뉴 · 그 위 옵션 창 등)가 선택을 잡은 적이 있고 그 UI가 아직 켜져 있으면 false -
+    /// 그 UI 안에서 선택이 잠깐 비었을 때(탭 전환 · 빈 곳 클릭) 뒤쪽 화면이 선택을 빼앗지 않게 한다.
+    /// 바깥 UI가 닫혀 꺼지면 다시 true가 된다.
+    /// </summary>
+    protected bool CanRestoreSelection(EventSystem _eventSystem)
+    {
+        if (null == _eventSystem) return false;
+
+        GameObject current = _eventSystem.currentSelectedGameObject;
+        if (null != current)
+        {
+            if (false == current.transform.IsChildOf(transform)) lastForeignSelection = current;
+            return false;
+        }
+
+        if (null != lastForeignSelection && true == lastForeignSelection.activeInHierarchy) return false;
+
+        lastForeignSelection = null;
+        return true;
+    }
 
     public override void OnDestroy()
     {

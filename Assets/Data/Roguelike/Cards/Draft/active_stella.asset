@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: active_stella
   nameKey: Roguelike_Card_active_stella
   descriptionKey: Roguelike_Card_active_stella_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: e74737e275432614b8a1e4d57719a8ad, type: 3}
   kind: 0
   skillTag: 6
   exclusiveGroup: 0

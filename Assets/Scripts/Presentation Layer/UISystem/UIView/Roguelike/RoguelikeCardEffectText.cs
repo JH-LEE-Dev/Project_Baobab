@@ -3,26 +3,23 @@ using System.Text;
 using UnityEngine;
 
 /// <summary>
-/// 설명 패널에 보여 줄 "이 카드를 고르면 어떻게 작용하는가" 문구를 카드 데이터(CardDefinitionSO.levels)의 수치로 만든다(기획서 v2.5 10-2).
-/// 수치를 문구에 직접 쓰지 않으므로 밸런스 값이 바뀌어도 카드 에셋만 고치면 패널이 따라간다.
+/// 설명 패널에 보여 줄 "이 카드를 고르면 어떻게 작용하는가" 문구를 카드 데이터(CardDefinitionSO.levels)로 만든다(기획서 v2.5 10-2).
+/// 수치 · 부호 · 단위 · 화살표는 보여 주지 않는다. 어떤 효과가 바뀌는지는 효과 이름(카테고리)으로만 말하고, 이로운지 해로운지는 색으로 구분한다
+/// (이로우면 버프 줄 = 금색, 해로우면 디메리트 줄 = 적색. 패널이 색을 입힌다).
 ///
-/// [무엇을 보여 주나] 고른 뒤 레벨(levelAfterPurchase)에서 올라가는 효과만, 효과 종류(ERunEffect)별로 한 줄씩.
-///   처음 고름(그 효과가 처음 생김)  "피해 +12%"
-///   업그레이드                       "피해 +12% → +27%"  (누적 수치 현재 → 다음)
+/// [무엇을 보여 주나] 고른 뒤 레벨(levelAfterPurchase)에서 바뀌는 효과만, 효과 종류(ERunEffect)별로 한 줄씩.
 ///   스킬 획득(UnlockSkill)은 줄을 만들지 않는다 - 기본 설명이 이미 말한다.
-/// [문구 키] 템플릿은 RoguelikeUI.json의 Roguelike_Effect_&lt;ERunEffect&gt;[_&lt;ERoguelikeSkill&gt;] ({0} 자리에 수치). 스킬별 문구가 있으면 그쪽이 우선이다
-///   (예: CountAdd_Drone = "드론 수 {0}"). 초 단위 효과의 단위는 Roguelike_EffectUnit_Seconds. 퍼센트는 "%"를 그대로 쓴다.
+/// [문구 키] 템플릿은 RoguelikeUI.json의 Roguelike_Effect_&lt;ERunEffect&gt;[_&lt;ERoguelikeSkill&gt;]. 템플릿 안의 {0}(수치 자리)은 지우고 효과 이름만 쓴다.
+///   스킬별 문구가 있으면 그쪽이 우선이다(예: CountAdd_Drone = "드론 수 {0}").
 ///   템플릿으로 표현되지 않는 카드(조합 등)는 Roguelike_Card_&lt;cardId&gt;_L&lt;레벨&gt; 문구가 있으면 그것을 대신 쓴다.
-/// [레벨별 추가 문구] 수치 줄 아래에 Roguelike_Card_&lt;cardId&gt;_X&lt;레벨&gt; 문구가 있으면 그 레벨에서만 한 줄 더 보여 준다(예: 회전베기 "4번째 공격마다 발동한다.").
+/// [레벨별 추가 문구] 효과 줄 아래에 Roguelike_Card_&lt;cardId&gt;_X&lt;레벨&gt; 문구가 있으면 그 레벨에서만 한 줄 더 보여 준다(예: 회전베기 "4번째 공격마다 발동한다.").
 /// 기본 설명에는 레벨에 따라 달라지는 내용을 쓰지 않는다.
-/// [계약] 좋은 효과는 버프 줄, 나쁜 효과(디메리트)는 별도 줄(붉은색)로 나눈다. 좋고 나쁨은 효과마다 다르다(나무 생성 빈도 증가·임계치 감소·타격 수 감소 등).
+/// [좋고 나쁨] 모든 카드가 같은 기준(IsBeneficial)으로 버프 줄 / 디메리트 줄을 나눈다. 좋고 나쁨은 효과마다 다르다(나무 생성 빈도 증가·타격 수 증가 등).
 /// 힙 할당 없이 재사용 버퍼로 계산한다(키 문자열은 처음 쓸 때 한 번만 만든다).
 /// </summary>
 public static class RoguelikeCardEffectText
 {
     private const string EffectKeyPrefix = "Roguelike_Effect_";
-    private const string SecondsUnitKey = "Roguelike_EffectUnit_Seconds";
-    private const string Arrow = " → ";
     private const string Placeholder = "{0}";
     private const int SlotCapacity = 24;
     private const int SkillCount = 8;
@@ -31,7 +28,6 @@ public static class RoguelikeCardEffectText
     {
         public ERunEffect effect;
         public ERoguelikeSkill skill;
-        public float before;
         public float after;
         public bool bChanged;
     }
@@ -65,21 +61,19 @@ public static class RoguelikeCardEffectText
         }
 
         Collect(card, level);
-        bool bSplit = ECardKind.Ruby == card.kind;
-        string seconds = _localization.GetText(SecondsUnitKey);
 
         for (int i = 0; i < slotCount; i++)
         {
             ref EffectSlot slot = ref slots[i];
-            if (false == slot.bChanged || ERunEffect.UnlockSkill == slot.effect) continue;
+            if (false == slot.bChanged || 0f == slot.after || ERunEffect.UnlockSkill == slot.effect) continue;
 
             string template = GetTemplate(_localization, slot.effect, slot.skill);
             if (string.IsNullOrEmpty(template)) continue;
 
-            StringBuilder target = bSplit && false == IsBeneficial(slot.effect, slot.after) ? _demerit : _benefit;
+            StringBuilder target = false == IsBeneficial(slot.effect, slot.after) ? _demerit : _benefit;
             if (0 < target.Length) target.Append('\n');
 
-            AppendLine(target, template, in slot, GetUnit(slot.effect, seconds));
+            AppendLine(target, template);
         }
 
         string extraText = _localization.GetText(GetExtraKey(card.cardId, level));
@@ -91,8 +85,8 @@ public static class RoguelikeCardEffectText
     }
 
     /// <summary>
-    /// 보유 카드 확인 화면용 "현재 효과". 1레벨부터 현재 레벨까지 같은 (효과, 스킬)을 합산한 누적 수치를 효과마다 한 줄로 만든다("피해 +27%").
-    /// Build와 같은 문구 키 · 단위 · 계약 분리 규칙을 쓰되, 이 레벨에서 바뀐 것이 아니라 지금 가진 효과 전부를 보여 준다(다음 레벨 미리보기는 없다).
+    /// 보유 카드 확인 화면용 "현재 효과". 1레벨부터 현재 레벨까지 같은 (효과, 스킬)을 합산해, 지금 가진 효과를 이름만 한 줄씩 만든다("피해").
+    /// 수치 · 부호 · 화살표 없이 합산 값의 부호로 버프 / 디메리트만 나눈다. Build와 같은 문구 키 · 분리 규칙을 쓰되, 이 레벨에서 바뀐 것이 아니라 지금 가진 효과 전부를 보여 준다(다음 레벨 미리보기는 없다).
     ///   추가 문구(_X&lt;레벨&gt;)  현재 레벨 이하에서 가장 높은 레벨의 한 줄이 이전 레벨의 것을 대신한다.
     ///   조합 오버라이드(_L&lt;레벨&gt;)  있으면 효과 줄 전체를 그 문구로 대신한다.
     /// _benefit · _demerit을 먼저 비운다. 카드 데이터가 없거나 보여 줄 효과가 없으면 둘 다 비어 있다.
@@ -115,23 +109,19 @@ public static class RoguelikeCardEffectText
         }
 
         Collect(card, level);
-        bool bSplit = ECardKind.Ruby == card.kind;
-        string seconds = _localization.GetText(SecondsUnitKey);
 
         for (int i = 0; i < slotCount; i++)
         {
-            EffectSlot slot = slots[i];
+            ref EffectSlot slot = ref slots[i];
             if (0f == slot.after || ERunEffect.UnlockSkill == slot.effect) continue;
 
             string template = GetTemplate(_localization, slot.effect, slot.skill);
             if (string.IsNullOrEmpty(template)) continue;
 
-            StringBuilder target = bSplit && false == IsBeneficial(slot.effect, slot.after) ? _demerit : _benefit;
+            StringBuilder target = false == IsBeneficial(slot.effect, slot.after) ? _demerit : _benefit;
             if (0 < target.Length) target.Append('\n');
 
-            // 누적 값만 보여 주므로 "before → after"가 아니라 "after"로 그린다.
-            slot.before = 0f;
-            AppendLine(target, template, in slot, GetUnit(slot.effect, seconds));
+            AppendLine(target, template);
         }
 
         for (int extraLevel = level; 1 <= extraLevel; extraLevel--)
@@ -147,7 +137,7 @@ public static class RoguelikeCardEffectText
 
     // // 수치 모으기
 
-    /// <summary>1레벨부터 _level까지의 효과를 (효과, 스킬)별 누적으로 모은다. before = 직전 레벨까지, after = 이 레벨까지, bChanged = 이 레벨에서 바뀜.</summary>
+    /// <summary>1레벨부터 _level까지의 효과를 (효과, 스킬)별 누적으로 모은다. after = 이 레벨까지의 합, bChanged = 이 레벨에서 바뀜.</summary>
     private static void Collect(CardDefinitionSO _card, int _level)
     {
         slotCount = 0;
@@ -167,7 +157,6 @@ public static class RoguelikeCardEffectText
                 ref EffectSlot slot = ref slots[index];
                 slot.after += entry.value;
                 if (bThisLevel) slot.bChanged = true;
-                else slot.before += entry.value;
             }
         }
     }
@@ -187,7 +176,8 @@ public static class RoguelikeCardEffectText
 
     // // 문구 조립
 
-    private static void AppendLine(StringBuilder _target, string _template, in EffectSlot _slot, string _unit)
+    /// <summary>템플릿에서 수치 자리({0})를 지우고 효과 이름만 붙인다. 자리 앞뒤의 공백은 한 칸만 남긴다.</summary>
+    private static void AppendLine(StringBuilder _target, string _template)
     {
         int at = _template.IndexOf(Placeholder, System.StringComparison.Ordinal);
         if (at < 0)
@@ -196,83 +186,15 @@ public static class RoguelikeCardEffectText
             return;
         }
 
-        _target.Append(_template, 0, at);
+        int headEnd = at;
+        while (0 < headEnd && char.IsWhiteSpace(_template[headEnd - 1])) headEnd--;
 
-        // 이 레벨에서 처음 생긴 효과는 "+after", 이미 있던 효과가 오르면 "before → after".
-        if (0f != _slot.before)
-        {
-            AppendValue(_target, _slot.before, _unit);
-            _target.Append(Arrow);
-        }
+        int tailStart = at + Placeholder.Length;
+        while (tailStart < _template.Length && char.IsWhiteSpace(_template[tailStart])) tailStart++;
 
-        AppendValue(_target, _slot.after, _unit);
-        _target.Append(_template, at + Placeholder.Length, _template.Length - at - Placeholder.Length);
-    }
-
-    /// <summary>부호를 붙인 수치. 10 이상은 정수, 그 아래는 소수 첫째 자리까지(정수면 정수). 단위가 있으면 뒤에 붙인다.</summary>
-    private static void AppendValue(StringBuilder _target, float _value, string _unit)
-    {
-        // 10 이상은 정수로(밸런스 환산값 28.5714 같은 꼬리를 숨긴다), 10 미만은 소수 첫째 자리까지.
-        float rounded = Mathf.Abs(_value) >= 10f ? Mathf.Round(_value) : Mathf.Round(_value * 10f) / 10f;
-        _target.Append(rounded < 0f ? '-' : '+');
-
-        float abs = Mathf.Abs(rounded);
-        int whole = (int)abs;
-        int tenth = Mathf.RoundToInt((abs - whole) * 10f);
-        if (10 <= tenth)
-        {
-            whole++;
-            tenth = 0;
-        }
-
-        AppendInt(_target, whole);
-        if (0 < tenth)
-        {
-            _target.Append('.');
-            _target.Append((char)('0' + tenth));
-        }
-
-        _target.Append(_unit);
-    }
-
-    private static void AppendInt(StringBuilder _target, int _value)
-    {
-        if (_value >= 10) AppendInt(_target, _value / 10);
-        _target.Append((char)('0' + _value % 10));
-    }
-
-    /// <summary>효과의 단위: 퍼센트 효과는 "%", 초 효과는 로컬라이즈된 초, 개수·고정 수치는 없음.</summary>
-    private static string GetUnit(ERunEffect _effect, string _seconds)
-    {
-        switch (_effect)
-        {
-            case ERunEffect.DamagePercent:
-            case ERunEffect.AttackSpeedPercent:
-            case ERunEffect.RangePercent:
-            case ERunEffect.DurationPercent:
-            case ERunEffect.DotDamagePercent:
-            case ERunEffect.ChancePercent:
-            case ERunEffect.CooldownReductionPercent:
-            case ERunEffect.MoveSpeedPercent:
-            case ERunEffect.MaxStaminaPercent:
-            case ERunEffect.TreeSpawnRatePercent:
-            case ERunEffect.DamagePercentAboveThreshold:
-            case ERunEffect.AttackSpeedPercentWhileMoving:
-            case ERunEffect.StarMarkDamageTakenAdd:
-            case ERunEffect.DotTickIntervalReducePercent:
-            case ERunEffect.DotTickIntervalReduceAtMaxStackPercent:
-                return "%";
-
-            case ERunEffect.GraceTimeAdd:
-            case ERunEffect.DamageCooldownAdd:
-            case ERunEffect.StarMarkDurationAdd:
-            case ERunEffect.DurationExtendOnDotKill:
-            case ERunEffect.DotTickIntervalAdd:
-                return _seconds;
-
-            default:
-                return string.Empty;
-        }
+        _target.Append(_template, 0, headEnd);
+        if (0 < headEnd && tailStart < _template.Length) _target.Append(' ');
+        _target.Append(_template, tailStart, _template.Length - tailStart);
     }
 
     /// <summary>이 효과가 이 값일 때 플레이어에게 이로운가. 계약의 버프/디메리트를 나누는 기준이다.</summary>

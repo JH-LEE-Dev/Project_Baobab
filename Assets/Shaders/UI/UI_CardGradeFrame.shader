@@ -9,15 +9,17 @@ Shader "UI/CardGradeFrame"
     // (카드 밖의 후광·입자는 UI_RoguelikeCardAura가 그린다.)
     // 모두 정수 픽셀·단계식이고 반투명 그라데이션이 없다. 프리즘(_Rainbow)은 링만 단계식 무지개로 흐른다.
     //
-    // [텍스처] 프레임 스프라이트를 한 장짜리로 복사한 Card_FrameFull(50x81)이 전제다(시트에서 잘린 조각은 UV로 픽셀 좌표를 못 구한다).
+    // [텍스처] 프레임 그림을 한 장짜리로 복사한 Card_FrameFull(그림 50x81 + 위 투명 1행 = 50x82)이 전제다(UV로 픽셀 좌표를 구하므로 한 장짜리여야 한다).
     // [색 구분] 선형 색 공간 기준: 안쪽 그림자 < 0.0289 < 몸통 < 0.0513 < 바깥 링 < 0.1045 < 가운데 링 < 0.2496 < 하이라이트(원본 프레임 색의 밝기).
     // [Image.color] R = 공개 진행도(1이면 완전히 레어, 0~1이면 대각 광택 띠가 지나가며 레어로 바뀌는 중), G = 밝기 배율(다른 카드 선택 중 어두워짐), 알파는 그대로.
     Properties
     {
         [PerRendererData] _MainTex("Frame Sprite (full copy)", 2D) = "white" {}
         _Color("Tint", Color) = (1,1,1,1)
-        _PixelSize("Pixel Size (sprite w, h)", Vector) = (50, 81, 0, 0)
-        // 반짝이 놓일 모서리: 링 중심까지의 반폭/반높이(px). 카드(50x81)는 (22.5, 38).
+        _PixelSize("Pixel Size (sprite w, h)", Vector) = (50, 82, 0, 0)
+        // 스프라이트의 오른쪽 · 위에 붙은 투명 줄 때문에 밀린 그림 중심을 되돌리는 값(px). 짝수 맞춤 전 그림(50x81)과 같은 픽셀 좌표가 되도록 투명 줄 폭의 절반이다.
+        _PixelShift("Pixel Origin Shift (px)", Vector) = (0, 0.5, 0, 0)
+        // 반짝이 놓일 모서리: 링 중심까지의 반폭/반높이(px). 카드 그림(50x81)은 (22.5, 38).
         _LineHalf("Corner Position Half Size (px)", Vector) = (22.5, 38, 0, 0)
 
         [Header(Palette 5 tones)]
@@ -110,6 +112,7 @@ Shader "UI/CardGradeFrame"
             fixed4 _Color;
             float4 _ClipRect;
             float4 _PixelSize;
+            float4 _PixelShift;
             float4 _LineHalf;
 
             float4 _Tone0;
@@ -162,8 +165,8 @@ Shader "UI/CardGradeFrame"
                 half4 tex = tex2D(_MainTex, IN.texcoord);
                 float mask = step(0.5, tex.a);
 
-                // 픽셀 중심 좌표(이미지 중심 기준). 픽셀 번호에서 바로 구해 홀수 크기에서도 한 픽셀이 쪼개지지 않는다.
-                float2 p = floor(IN.texcoord * _PixelSize.xy) + 0.5 - _PixelSize.xy * 0.5;
+                // 픽셀 중심 좌표(그림 중심 기준). 픽셀 번호에서 바로 구해 한 픽셀이 쪼개지지 않는다. _PixelShift는 투명 줄이 붙은 만큼 중심을 그림 쪽으로 되돌린다.
+                float2 p = floor(IN.texcoord * _PixelSize.xy) + 0.5 - _PixelSize.xy * 0.5 + _PixelShift.xy;
                 float t = _Time.y;
 
                 // 원본 프레임 톤 구분(선형 색 공간 밝기)

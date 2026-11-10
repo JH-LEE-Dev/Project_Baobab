@@ -7,7 +7,7 @@ using UnityEngine.UI;
 /// <summary>
 /// 로비 폐지(시안 v3)에 따른 UI 프리팹 구성기. 여러 번 실행해도 같은 결과로 덮어쓴다.
 ///   LumberBoy/UI/Build Roguelike Result     UIView_RoguelikeResult.prefab  결과 화면(딤 · 판 · 제목 명판 · 웨이브 · 행 · 카드 칸 · 버튼 2개 · 키 안내)
-///   LumberBoy/UI/Build Roguelike Records    UIView_RoguelikeRecords.prefab 기록 창(딤 · 판 · ◀ 탭 ▶ 명판 · 점 3개 · 행 템플릿 · 키 안내)
+///   LumberBoy/UI/Build Roguelike Records    UIView_RoguelikeRecords.prefab 기록 창(딤 · 판 · 화살표 · 탭 · 화살표 명판(옵션 화살표 그림 · 패드 LB/RB 아이콘) · 점 3개 · 행 템플릿 · 뒤로 버튼(옵션 BTN_Close 복제))
 ///   LumberBoy/UI/Build Roguelike Main Menu  UI_MainMenu.prefab에 로그라이크 하위 메뉴(명판 + 버튼 3개 + 최고 기록판), UIView_MainMenu.prefab에 기록 창 · 카드 DB 연결
 ///   LumberBoy/UI/Build Roguelike Lobby UI (All)  위 셋을 차례로
 ///
@@ -25,11 +25,18 @@ public static class RoguelikeLobbyUIBuilder
     private const string MainMenuPrefabPath = "Assets/Prefabs/UI/MainMenu/UI_MainMenu.prefab";
     private const string MainMenuViewPrefabPath = "Assets/Prefabs/UI/MainMenu/UIView_MainMenu.prefab";
     private const string FontPath = "Assets/TextMesh Pro/Fonts/Galmuri11_Optimum.asset";
+    private const string OptionPrefabPath = "Assets/Prefabs/UI/Option/UI_Option.prefab";
     private const string KeyIconDatabasePath = "Assets/Prefabs/UI/Option/KeyIconDatabase.asset";
     private const string CardDatabasePath = "Assets/Data/Roguelike/RoguelikeCardDatabase_Draft.asset";
     private const string OwnedDir = "Assets/Graphics/Roguelike/owned/";
     private const string HudDir = "Assets/Graphics/Roguelike/hud/";
     private const string BasicButtonPath = "Assets/Graphics/HUD/Button/BasicButton.png";
+    // 옵션 창 선택기(UI_OptionSelector)와 같은 화살표 그림 - 기록 창 탭 명판의 ◀ ▶를 이것으로 통일한다.
+    private const string OptionArrowLeftPath = "Assets/Graphics/HUD/Option/Chevron-Arrow-Left-export.png";
+    private const string OptionArrowRightPath = "Assets/Graphics/HUD/Option/Chevron-Arrow-Right-export.png";
+    private const float ArrowIconSize = 24f;
+    private static readonly Color ArrowHoverColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+    private static readonly Color ArrowPressedColor = new Color(0.6f, 0.6f, 0.6f, 1f);
 
     // 줄 높이(px). 가장 큰 글자 높이(Lorem 계열 위 17 + 아래 4) 기준에 여백을 더한 값.
     private const float PlateHeight = 25f;
@@ -40,13 +47,18 @@ public static class RoguelikeLobbyUIBuilder
     private const float GuideHeight = 18f;
     private const float KeyIconSize = 16f;
 
+    // 로그라이크 메뉴 배치(B안 - 양쪽 끝 대칭). 640×360 기준.
+    // 하위 메뉴 루트는 메인 버튼 묶음(BTNs) 위치에서 이만큼 옮긴다: 왼쪽 여백 11 → 16, 명판 윗변을 기록판 명판 윗변과 같은 줄로.
+    private static readonly Vector2 RoguelikeMenuOffset = new Vector2(5f, 18f);
+    // 기록판(오른쪽 위 기준): 오른쪽 여백 16, 판 윗변(= 명판 세로 중심) 162.
+    private static readonly Vector2 RecordPanelPosition = new Vector2(-16f, -162f);
+
     private static readonly Color DimColor = new Color(0.02f, 0.03f, 0.06f, 0.6f);
     private static readonly Color CreamColor = new Color(0.95f, 0.89f, 0.77f, 1f);
     private static readonly Color MutedColor = new Color(0.73f, 0.65f, 0.54f, 1f);
     private static readonly Color GoldColor = new Color(1f, 0.83f, 0.35f, 1f);
     private static readonly Color ShadowColor = new Color(0.16f, 0.1f, 0.06f, 1f);
     private static readonly Color SeparatorColor = new Color(0.95f, 0.89f, 0.77f, 0.12f);
-    private static readonly Color IdleShadeColor = new Color(0.24f, 0.16f, 0.08f, 0.28f);
 
     private class Assets
     {
@@ -56,6 +68,8 @@ public static class RoguelikeLobbyUIBuilder
         public Sprite infoPanel;
         public Sprite titlePlate;
         public Sprite basicButton;
+        public Sprite arrowLeft;
+        public Sprite arrowRight;
         public Sprite iconFlag;
         public Sprite iconInfinity;
         public Sprite iconTree;
@@ -192,30 +206,43 @@ public static class RoguelikeLobbyUIBuilder
             dimButton.transition = Selectable.Transition.None;
             dimButton.navigation = new Navigation { mode = Navigation.Mode.None };
 
-            // 판 360 x 300: 탭 명판(위 가장자리에 걸침) · 점 3개 · 행 5줄(46 + 4) · 키 안내
+            // 판 360 x 282: 탭 명판(위 가장자리에 걸침) · 점 3개 · 행 5줄(46 + 4). 하단 키 안내 줄은 없다.
             const float panelWidth = 360f;
-            const float panelHeight = 304f;
+            const float panelHeight = 282f;
             RectTransform panel = Centered("Panel", rootRect, panelWidth, panelHeight);
             Image panelImage = panel.gameObject.AddComponent<Image>();
             panelImage.sprite = a.bookPanel;
             panelImage.type = Image.Type.Sliced;
             panelImage.raycastTarget = true;
-            panel.anchoredPosition = new Vector2(0f, -6f);
+            panel.anchoredPosition = new Vector2(0f, 5f); // 위 가장자리 고정(이전 304 높이, 중심 -6과 같은 위치)
 
-            RectTransform tabPlate = SlicedChild("TabPlate", panel, a.titlePlate, 238f, PlateHeight);
+            RectTransform tabPlate = SlicedChild("TabPlate", panel, a.titlePlate, 272f, PlateHeight);
             TMP_Text tabText = Text("TabName", tabPlate, a.font, TextAlignmentOptions.Midline, CreamColor);
             AddShadow(tabText);
             StretchText(tabText);
-            Button prev = ArrowButton("Prev", tabPlate, a.font, "◀", true);
-            Button next = ArrowButton("Next", tabPlate, a.font, "▶", false);
+            Button prev = ArrowButton("Prev", tabPlate, a.arrowLeft, true, out RectTransform prevArrow);
+            Button next = ArrowButton("Next", tabPlate, a.arrowRight, false, out RectTransform nextArrow);
 
+            // 패드 전용 LB · RB 아이콘: 화살표(폭 22) 바로 안쪽에 간격 1을 두고 붙인다(세로 중앙). 키보드 키는 없다(EOtherKey.None) - 패드 모드에서만 켠다.
+            UI_KeyboardImage prevKey = KeyImage("TabPrevKey", tabPlate, a.keyIcons, EOtherKey.None, EGamepadButton.LeftShoulder_LB_L1);
+            PlaceKeyIcon(prevKey.GetComponent<RectTransform>(), true, 22f + 1f);
+            UI_KeyboardImage nextKey = KeyImage("TabNextKey", tabPlate, a.keyIcons, EOtherKey.None, EGamepadButton.RightShoulder_RB_R1);
+            PlaceKeyIcon(nextKey.GetComponent<RectTransform>(), false, 22f + 1f);
+
+            // 점 3개(3x3, 간격 3)와 5x5 커서 - 첫 실행 언어 설정 팝업(UI_InitialSetupPopup)의 페이지 점과 같은 모양 · 크기. 색은 화면 스크립트가 정한다.
             Image[] dots = new Image[3];
             for (int i = 0; 3 > i; i++)
             {
-                RectTransform dot = Solid("Dot" + i, panel, MutedColor);
-                SetTop(dot, new Vector2(0.5f, 1f), new Vector2(-6f + i * 6f, -(Mathf.Ceil(PlateHeight * 0.5f) + 3f)), new Vector2(3f, 3f));
+                RectTransform dot = Solid("Dot" + i, panel, Color.white);
+                SetTop(dot, new Vector2(0.5f, 1f), new Vector2(-5.5f + i * 6f, -(Mathf.Ceil(PlateHeight * 0.5f) + 4.5f)), new Vector2(3f, 3f));
                 dots[i] = dot.GetComponent<Image>();
             }
+            RectTransform dotCursor = Solid("DotCursor", dots[0].rectTransform, Color.white);
+            dotCursor.anchorMin = new Vector2(0.5f, 0.5f);
+            dotCursor.anchorMax = new Vector2(0.5f, 0.5f);
+            dotCursor.pivot = new Vector2(0.5f, 0.5f);
+            dotCursor.sizeDelta = new Vector2(5f, 5f);
+            dotCursor.anchoredPosition = Vector2.zero;
 
             RectTransform rowRoot = TopLeft("Rows", panel, panelWidth - 20f, 5f * 50f);
             rowRoot.anchoredPosition = new Vector2(10f, -(Mathf.Ceil(PlateHeight * 0.5f) + 12f));
@@ -224,16 +251,9 @@ public static class RoguelikeLobbyUIBuilder
             TMP_Text empty = Text("Empty", panel, a.font, TextAlignmentOptions.Midline, MutedColor);
             SetTop(empty.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, -120f), new Vector2(panelWidth - 20f, SmallLineHeight));
 
-            RectTransform guide = GuideRow("KeyGuide", panel);
-            guide.anchorMin = new Vector2(0f, 0f);
-            guide.anchorMax = new Vector2(0f, 0f);
-            guide.pivot = new Vector2(0f, 0f);
-            guide.anchoredPosition = new Vector2(10f, 8f);
-            UI_KeyboardImage prevKey = KeyImage("TabPrevKey", guide, a.keyIcons, EOtherKey.PageUp, EGamepadButton.LeftShoulder_LB_L1);
-            UI_KeyboardImage nextKey = KeyImage("TabNextKey", guide, a.keyIcons, EOtherKey.PageDown, EGamepadButton.RightShoulder_RB_R1);
-            TMP_Text hintTab = GuideText("HintTab", guide, a.font);
-            UI_KeyboardImage backKey = KeyImage("BackKey", guide, a.keyIcons, EOtherKey.Escape, EGamepadButton.Button_B_Circle);
-            TMP_Text hintBack = GuideText("HintBack", guide, a.font);
+            // 뒤로 버튼: 옵션 창 BTN_Close를 그대로 복제(스프라이트 · 32x32 · UI_OptionButton 설정). 판 아래 테두리 바깥, 판 왼쪽 끝에 맞춘다.
+            UI_OptionButton backButton = CreateBackButton(panel, a, out UI_KeyboardImage backKey);
+            if (null == backButton) return;
 
             SerializedObject so = new SerializedObject(view);
             Set(so, "dimGroup", dimGroup);
@@ -243,12 +263,15 @@ public static class RoguelikeLobbyUIBuilder
             Set(so, "tabText", tabText);
             Set(so, "prevTabButton", prev);
             Set(so, "nextTabButton", next);
+            Set(so, "prevArrowIcon", prevArrow);
+            Set(so, "nextArrowIcon", nextArrow);
             SetArray(so, "tabDots", dots[0], dots[1], dots[2]);
+            Set(so, "tabDotCursor", dotCursor);
             Set(so, "rowRoot", rowRoot);
             Set(so, "rowTemplate", rowTemplate);
             Set(so, "emptyText", empty);
-            Set(so, "hintTabText", hintTab);
-            Set(so, "hintBackText", hintBack);
+            Set(so, "backButton", backButton);
+            SetArray(so, "padOnlyItems", prevKey.transform, nextKey.transform, backKey.transform);
             SetArray(so, "keyGuideImages", prevKey, nextKey, backKey);
             so.ApplyModifiedPropertiesWithoutUndo();
 
@@ -259,6 +282,66 @@ public static class RoguelikeLobbyUIBuilder
         {
             PrefabUtility.UnloadPrefabContents(root);
         }
+    }
+
+    /// <summary>명판 안 패드 아이콘 배치: 명판 한쪽 끝에서 _inset 안쪽, 세로 중앙, 16x16.</summary>
+    private static void PlaceKeyIcon(RectTransform _rect, bool _bLeft, float _inset)
+    {
+        _rect.anchorMin = new Vector2(_bLeft ? 0f : 1f, 0.5f);
+        _rect.anchorMax = _rect.anchorMin;
+        _rect.pivot = new Vector2(_bLeft ? 0f : 1f, 0.5f);
+        _rect.sizeDelta = new Vector2(KeyIconSize, KeyIconSize);
+        _rect.anchoredPosition = new Vector2(_bLeft ? _inset : -_inset, 0f);
+    }
+
+    /// <summary>
+    /// 옵션 프리팹의 BTN_Close를 복제해 BTN_Back을 만든다(같은 스프라이트 · 크기 · UI_OptionButton 설정).
+    /// 앵커 (0,0) 피벗 (0,1) 위치 (0,-4): 판 왼쪽 끝에 맞추고 아래 테두리에서 4px 아래. 패드 선택은 잡지 않는다(navigation None).
+    /// 옵션의 IMG_ShortcutIcon 자리에는 UI_KeyboardImage(B)인 BackKey를 둔다.
+    /// </summary>
+    private static UI_OptionButton CreateBackButton(RectTransform _panel, Assets _a, out UI_KeyboardImage _backKey)
+    {
+        _backKey = null;
+        GameObject optionPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(OptionPrefabPath);
+        UI_OptionButton source = null;
+        if (null != optionPrefab)
+        {
+            UI_OptionButton[] candidates = optionPrefab.GetComponentsInChildren<UI_OptionButton>(true);
+            for (int i = 0; candidates.Length > i; i++)
+            {
+                if ("BTN_Close" == candidates[i].name) { source = candidates[i]; break; }
+            }
+        }
+        if (null == source) { Debug.LogError("[RoguelikeLobbyUIBuilder] 옵션 프리팹에서 BTN_Close를 찾지 못했습니다: " + OptionPrefabPath); return null; }
+
+        GameObject clone = UnityEngine.Object.Instantiate(source.gameObject, _panel);
+        clone.name = "BTN_Back";
+        clone.SetActive(true);
+        RectTransform rect = (RectTransform)clone.transform;
+        rect.anchorMin = new Vector2(0f, 0f);
+        rect.anchorMax = new Vector2(0f, 0f);
+        rect.pivot = new Vector2(0f, 1f);
+        rect.sizeDelta = new Vector2(32f, 32f);
+        rect.anchoredPosition = new Vector2(0f, -4f);
+
+        // 옵션 전용 단축키 아이콘 자식은 BackKey로 교체한다.
+        UI_OptionButton button = clone.GetComponent<UI_OptionButton>();
+        Transform oldIcon = rect.Find("IMG_ShortcutIcon");
+        if (null != oldIcon) UnityEngine.Object.DestroyImmediate(oldIcon.gameObject);
+        button.navigation = new Navigation { mode = Navigation.Mode.None };
+        SerializedObject buttonSo = new SerializedObject(button);
+        SerializedProperty shortcut = buttonSo.FindProperty("shortcutIconImage");
+        if (null != shortcut) shortcut.objectReferenceValue = null;
+        buttonSo.ApplyModifiedPropertiesWithoutUndo();
+
+        _backKey = KeyImage("BackKey", rect, _a.keyIcons, EOtherKey.None, EGamepadButton.Button_B_Circle);
+        RectTransform keyRect = _backKey.GetComponent<RectTransform>();
+        keyRect.anchorMin = new Vector2(0f, 0.5f);
+        keyRect.anchorMax = new Vector2(0f, 0.5f);
+        keyRect.pivot = new Vector2(1f, 0.5f);
+        keyRect.sizeDelta = new Vector2(KeyIconSize, KeyIconSize);
+        keyRect.anchoredPosition = new Vector2(48f, 0f);
+        return button;
     }
 
     // // 메인메뉴 하위 메뉴
@@ -283,7 +366,7 @@ public static class RoguelikeLobbyUIBuilder
             Transform oldPanel = rootRect.Find("RoguelikeRecordPanel");
             if (null != oldPanel) UnityEngine.Object.DestroyImmediate(oldPanel.gameObject);
 
-            // 하위 메뉴 묶음: BTNs와 같은 자리(왼쪽 가운데 기준)
+            // 하위 메뉴 묶음: BTNs 자리(왼쪽 가운데 기준)에서 RoguelikeMenuOffset만큼 옮긴다(B안 - 왼쪽 여백 16, 위쪽 끝을 기록판과 정렬).
             RectTransform menuRoot = new GameObject("RoguelikeMenu", typeof(RectTransform)).GetComponent<RectTransform>();
             menuRoot.gameObject.layer = LayerMask.NameToLayer("UI");
             menuRoot.SetParent(rootRect, false);
@@ -291,7 +374,7 @@ public static class RoguelikeLobbyUIBuilder
             menuRoot.anchorMax = buttons.anchorMax;
             menuRoot.pivot = buttons.pivot;
             menuRoot.sizeDelta = buttons.sizeDelta;
-            menuRoot.anchoredPosition = buttons.anchoredPosition;
+            menuRoot.anchoredPosition = buttons.anchoredPosition + RoguelikeMenuOffset;
             menuRoot.SetSiblingIndex(buttons.GetSiblingIndex() + 1);
 
             // 명판: 버튼 글자 왼쪽 선(버튼 판정 박스 왼쪽)에 맞춘다.
@@ -307,11 +390,12 @@ public static class RoguelikeLobbyUIBuilder
             plateImage.sprite = a.titlePlate;
             plateImage.type = Image.Type.Sliced;
             plateImage.raycastTarget = false;
-            RectTransform axe = IconRect("Icon", plate, a.iconAxe, 7f, 7f);
+            // 도끼 그림(7x7)은 오른쪽 열 · 위쪽 행에 투명 1px이 붙은 8x8이다. 피벗이 세로 가운데라 그림 아래 모서리를 예전 자리(가운데 - 3.5)에 두려면 0.5 올린다.
+            RectTransform axe = IconRect("Icon", plate, a.iconAxe, 8f, 8f);
             axe.anchorMin = new Vector2(0f, 0.5f);
             axe.anchorMax = new Vector2(0f, 0.5f);
             axe.pivot = new Vector2(0f, 0.5f);
-            axe.anchoredPosition = new Vector2(9f, 0f);
+            axe.anchoredPosition = new Vector2(9f, 0.5f);
             TMP_Text plateText = Text("Label", plate, a.font, TextAlignmentOptions.MidlineLeft, CreamColor);
             AddShadow(plateText);
             plateText.rectTransform.anchorMin = Vector2.zero;
@@ -321,26 +405,29 @@ public static class RoguelikeLobbyUIBuilder
 
             UI_MainMenuButton start = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Start");
             UI_MainMenuButton records = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Records");
+            UI_MainMenuButton option = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Option");
             UI_MainMenuButton back = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Back");
 
-            // 최고 기록판: 화면 오른쪽 가운데(오른쪽 여백 16)
+            // 최고 기록판: 화면 오른쪽 위 기준(오른쪽 여백 16). 판 윗변 = 명판 세로 중심을 162에 두어
+            // 왼쪽 하위 메뉴 명판과 윗변(149.5)을 같은 줄로 맞춘다(B안). 로고 아래끝(약 131)과 명판 윗변 사이 약 18px,
+            // 판(높이 약 150) 아래끝 312는 버전 글자(위끝 약 338) 위다. 로그라이크 메뉴에서는 디스코드 아이콘이 화면 밖으로 빠진다.
             RectTransform panelRoot = new GameObject("RoguelikeRecordPanel", typeof(RectTransform)).GetComponent<RectTransform>();
             panelRoot.gameObject.layer = LayerMask.NameToLayer("UI");
             panelRoot.SetParent(rootRect, false);
-            panelRoot.anchorMin = new Vector2(1f, 0.5f);
-            panelRoot.anchorMax = new Vector2(1f, 0.5f);
-            panelRoot.pivot = new Vector2(1f, 0.5f);
+            panelRoot.anchorMin = new Vector2(1f, 1f);
+            panelRoot.anchorMax = new Vector2(1f, 1f);
+            panelRoot.pivot = new Vector2(1f, 1f);
             panelRoot.sizeDelta = Vector2.zero;
-            panelRoot.anchoredPosition = new Vector2(-16f, 20f);
+            panelRoot.anchoredPosition = RecordPanelPosition;
             CanvasGroup group = panelRoot.gameObject.AddComponent<CanvasGroup>();
             group.blocksRaycasts = false;
 
             RectTransform panel = new GameObject("Panel", typeof(RectTransform)).GetComponent<RectTransform>();
             panel.gameObject.layer = LayerMask.NameToLayer("UI");
             panel.SetParent(panelRoot, false);
-            panel.anchorMin = new Vector2(1f, 0.5f);
-            panel.anchorMax = new Vector2(1f, 0.5f);
-            panel.pivot = new Vector2(1f, 0.5f);
+            panel.anchorMin = new Vector2(1f, 1f);
+            panel.anchorMax = new Vector2(1f, 1f);
+            panel.pivot = new Vector2(1f, 1f);
             panel.sizeDelta = new Vector2(272f, 150f);
             panel.anchoredPosition = Vector2.zero;
             Image panelImage = panel.gameObject.AddComponent<Image>();
@@ -359,7 +446,8 @@ public static class RoguelikeLobbyUIBuilder
             TMP_Text[] values = new TMP_Text[3];
             for (int i = 0; 3 > i; i++)
             {
-                icons[i] = IconRect("Icon" + i, panel, iconSprites[i], 9f, 9f);
+                // 칸 크기는 스프라이트 크기 그대로이고 위치는 화면 스크립트(UI_RoguelikeMenuRecordPanel.PlaceIcon)가 잡는다.
+                icons[i] = IconRect("Icon" + i, panel, iconSprites[i], iconSprites[i].rect.width, iconSprites[i].rect.height);
                 labels[i] = Text("Label" + i, panel, a.font, TextAlignmentOptions.MidlineLeft, MutedColor);
                 values[i] = Text("Value" + i, panel, a.font, TextAlignmentOptions.MidlineLeft, GoldColor);
             }
@@ -386,6 +474,7 @@ public static class RoguelikeLobbyUIBuilder
             Set(ms, "roguelikePlateText", plateText);
             Set(ms, "roguelikeStartButton", start);
             Set(ms, "roguelikeRecordsButton", records);
+            Set(ms, "roguelikeOptionButton", option);
             Set(ms, "roguelikeBackButton", back);
             Set(ms, "roguelikeRecordPanel", recordPanel);
             ms.FindProperty("roguelikeFirstButtonY").floatValue = -Mathf.Ceil(PlateHeight * 0.5f) - 18f;
@@ -521,18 +610,9 @@ public static class RoguelikeLobbyUIBuilder
 
         RectTransform visual = StretchRect("Visual", root);
 
-        // 금색 테두리: 바탕보다 2px 큰 판을 뒤에 둔다(강조일 때만 켠다).
-        Image frame = Stretch("FocusFrame", visual, GoldColor);
-        frame.rectTransform.offsetMin = new Vector2(-2f, -2f);
-        frame.rectTransform.offsetMax = new Vector2(2f, 2f);
-
         Image bg = Stretch("Background", visual, Color.white);
         bg.sprite = _a.basicButton;
         bg.type = Image.Type.Sliced;
-
-        Image shade = Stretch("IdleShade", visual, IdleShadeColor);
-        shade.rectTransform.offsetMin = new Vector2(2f, 2f);
-        shade.rectTransform.offsetMax = new Vector2(-2f, -2f);
 
         TMP_Text label = Text("Label", visual, _a.font, TextAlignmentOptions.Midline, new Color(0.23f, 0.14f, 0.09f, 1f));
         StretchText(label);
@@ -542,15 +622,16 @@ public static class RoguelikeLobbyUIBuilder
         UI_RoguelikeTextButton comp = root.gameObject.AddComponent<UI_RoguelikeTextButton>();
         SerializedObject so = new SerializedObject(comp);
         Set(so, "selectable", selectable);
-        Set(so, "visualRoot", visual);
-        Set(so, "focusFrame", frame);
-        Set(so, "idleShade", shade);
         Set(so, "label", label);
         so.ApplyModifiedPropertiesWithoutUndo();
         return comp;
     }
 
-    private static Button ArrowButton(string _name, RectTransform _parent, TMP_FontAsset _font, string _glyph, bool _bLeft)
+    /// <summary>
+    /// 탭 명판 끝의 화살표 버튼(판정 폭 22 · 명판 높이 전체). 그림은 옵션 창 선택기와 같은 화살표 스프라이트(24×24)이고
+    /// 명판 가장자리에서 8px 안쪽에 온다(탭을 넘길 때 3px 밀려도 테두리 안쪽). 색 반응은 옵션 화살표와 같다(흰색 → 올림 0.8 → 누름 0.6, 0.1초).
+    /// </summary>
+    private static Button ArrowButton(string _name, RectTransform _parent, Sprite _arrow, bool _bLeft, out RectTransform _icon)
     {
         RectTransform rect = new GameObject(_name, typeof(RectTransform)).GetComponent<RectTransform>();
         rect.gameObject.layer = LayerMask.NameToLayer("UI");
@@ -563,13 +644,31 @@ public static class RoguelikeLobbyUIBuilder
 
         Image hit = rect.gameObject.AddComponent<Image>();
         hit.color = new Color(0f, 0f, 0f, 0f);
-        Button button = rect.gameObject.AddComponent<Button>();
-        button.transition = Selectable.Transition.None;
-        button.navigation = new Navigation { mode = Navigation.Mode.None };
 
-        TMP_Text glyph = Text("Glyph", rect, _font, TextAlignmentOptions.Midline, GoldColor);
-        glyph.text = _glyph;
-        StretchText(glyph);
+        // 화살표 그림: 위쪽 기준으로 놓아 명판 높이(25)의 가운데에 정수 픽셀로 온다.
+        _icon = NewRect("Arrow", rect);
+        _icon.anchorMin = new Vector2(_bLeft ? 0f : 1f, 1f);
+        _icon.anchorMax = _icon.anchorMin;
+        _icon.pivot = _icon.anchorMin;
+        _icon.sizeDelta = new Vector2(ArrowIconSize, ArrowIconSize);
+        _icon.anchoredPosition = new Vector2(_bLeft ? 1f : -1f, -1f);
+        Image arrowImage = _icon.gameObject.AddComponent<Image>();
+        arrowImage.sprite = _arrow;
+        arrowImage.raycastTarget = false;
+
+        Button button = rect.gameObject.AddComponent<Button>();
+        button.transition = Selectable.Transition.ColorTint;
+        button.targetGraphic = arrowImage;
+        ColorBlock colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = ArrowHoverColor;
+        colors.pressedColor = ArrowPressedColor;
+        colors.selectedColor = Color.white;
+        colors.disabledColor = ArrowPressedColor;
+        colors.colorMultiplier = 1f;
+        colors.fadeDuration = 0.1f;
+        button.colors = colors;
+        button.navigation = new Navigation { mode = Navigation.Mode.None };
         return button;
     }
 
@@ -585,15 +684,17 @@ public static class RoguelikeLobbyUIBuilder
             infoPanel = AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "Panel_Info.png"),
             titlePlate = AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "Title_Plate.png"),
             basicButton = AssetDatabase.LoadAssetAtPath<Sprite>(BasicButtonPath),
+            arrowLeft = AssetDatabase.LoadAssetAtPath<Sprite>(OptionArrowLeftPath),
+            arrowRight = AssetDatabase.LoadAssetAtPath<Sprite>(OptionArrowRightPath),
             iconFlag = AssetDatabase.LoadAssetAtPath<Sprite>(HudDir + "IconFlag.png"),
             iconInfinity = AssetDatabase.LoadAssetAtPath<Sprite>(HudDir + "IconInfinity.png"),
             iconTree = AssetDatabase.LoadAssetAtPath<Sprite>(HudDir + "IconTree.png"),
             iconAxe = AssetDatabase.LoadAssetAtPath<Sprite>(HudDir + "IconAxe.png"),
         };
 
-        if (null == a.font || null == a.keyIcons || null == a.bookPanel || null == a.infoPanel || null == a.titlePlate || null == a.basicButton)
+        if (null == a.font || null == a.keyIcons || null == a.bookPanel || null == a.infoPanel || null == a.titlePlate || null == a.basicButton || null == a.arrowLeft || null == a.arrowRight)
         {
-            Debug.LogError("[RoguelikeLobbyUIBuilder] 폰트 · 키 아이콘 DB · 9-슬라이스 그림을 찾지 못했습니다. 보관함 구성기(Build Roguelike Owned Cards)를 먼저 실행하십시오.");
+            Debug.LogError("[RoguelikeLobbyUIBuilder] 폰트 · 키 아이콘 DB · 9-슬라이스 그림을 찾지 못했습니다. 보관함 구성기(Build Roguelike Owned Cards)를 먼저 실행하십시오. (옵션 화살표 그림 경로도 확인)");
             return null;
         }
         return a;

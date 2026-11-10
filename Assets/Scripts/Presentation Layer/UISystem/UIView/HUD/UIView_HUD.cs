@@ -62,6 +62,13 @@ public class UIView_HUD : UIView
     private int dashShownMax = 0;
     private float dashLastProgress = 0f;
 
+    // 로그라이크 런: 본편 스태미너 바 · 대쉬 게이지는 화면에서만 숨기고(CanvasGroup alpha 0) 같은 호출을 로그라이크 HUD의 새 컴포넌트에도 전달한다(RoguelikeHUDLink).
+    private GameObject hudStaminaRoot;
+    private CanvasGroup staminaCanvasGroup;
+    private float staminaOriginalAlpha = 1f;
+    private bool bRunStaminaHidden = false;
+    private UI_RoguelikeDashCells syncedRunDashCells;
+
     [Header("Indicator Settings")]
     [SerializeField] private float dirIndicatorShowDelay = 1f;
 
@@ -160,20 +167,34 @@ public class UIView_HUD : UIView
     private void OnStaminaRecoverWasted()
     {
         hudStaminaBar?.PlayRecoverWasted();
+
+        UI_RoguelikeStaminaBar _runBar = RunStaminaBar;
+        if (null != _runBar)
+            _runBar.PlayRecoverWasted();
     }
 
     private void OnStaminaDamaged(float _lossRatio)
     {
         hudStaminaBar?.PlayDamaged(_lossRatio);
+
+        UI_RoguelikeStaminaBar _runBar = RunStaminaBar;
+        if (null != _runBar)
+            _runBar.PlayDamaged(_lossRatio);
     }
 
     private void OnStaminaRecovered(float _gainRatio)
     {
         hudStaminaBar?.PlayRecovered(_gainRatio);
+
+        UI_RoguelikeStaminaBar _runBar = RunStaminaBar;
+        if (null != _runBar)
+            _runBar.PlayRecovered(_gainRatio);
     }
 
     public override void Update()
     {
+        SyncRunHud();
+
         if (null != character && null != character.pHealthComponent)
         {
             UsedSteminaEvent(character.pHealthComponent.GetCurrentStamina(), character.pHealthComponent.GetMaxStamina());
@@ -228,6 +249,11 @@ public class UIView_HUD : UIView
         dashShownCharges = _currentCharges;
         dashShownMax = _maxCharges;
 
+        // 로그라이크 런이면 새 대쉬 칸에도 같은 상태를 전달한다(본편 게이지가 없어도 전달한다)
+        UI_RoguelikeDashCells _runCells = RunDashCells;
+        if (null != _runCells)
+            ApplyRunDashState(_runCells);
+
         if (null == hudDashGauge)
             return;
 
@@ -245,6 +271,10 @@ public class UIView_HUD : UIView
     private void UpdateDashRecharge(float _rechargeProgress)
     {
         dashLastProgress = _rechargeProgress;
+
+        UI_RoguelikeDashCells _runCells = RunDashCells;
+        if (null != _runCells && dashShownCharges < dashShownMax)
+            _runCells.SetCharge(dashShownCharges, _rechargeProgress);
 
         if (null == hudDashGauge)
             return;
@@ -270,6 +300,30 @@ public class UIView_HUD : UIView
                 hudDashGauge.SetChargeSilently(i, _ratio);
             else
                 hudDashGauge.SetCharge(i, _ratio);
+        }
+    }
+
+    // 로그라이크 대쉬 칸으로 해금 · 칸 수 · 충전 상태를 한꺼번에 전달한다. 처음 보이게 되는 순간의 칸 상태는 연출 없이 맞춘다.
+    private void ApplyRunDashState(UI_RoguelikeDashCells _cells)
+    {
+        bool _bBecameVisible = true == bDashShownUnlocked && false == _cells.IsUnlocked;
+
+        _cells.SetMaxCharges(dashShownMax);
+        _cells.SetUnlocked(bDashShownUnlocked);
+
+        for (int i = 0; i < UI_RoguelikeDashCells.MaxCells; i++)
+        {
+            float _ratio = 0f;
+
+            if (i < dashShownCharges)
+                _ratio = 1f;
+            else if (i == dashShownCharges)
+                _ratio = dashLastProgress;
+
+            if (true == _bBecameVisible)
+                _cells.SetChargeSilently(i, _ratio);
+            else
+                _cells.SetCharge(i, _ratio);
         }
     }
 
@@ -392,6 +446,7 @@ public class UIView_HUD : UIView
     private void Init_HUDStaminaBar()
     {
         GameObject _staminaObject = Instantiate(hudSteminaBarPrefab, moveHUD.transform);
+        hudStaminaRoot = _staminaObject;
         HUD_StaminaGroup _group = _staminaObject.GetComponent<HUD_StaminaGroup>();
 
         // 스태미나 + 버프 조합 프리팹이면 그룹이 둘을 함께 초기화한다. 단독 스태미나 프리팹이면 기존 방식 그대로.
@@ -454,6 +509,10 @@ public class UIView_HUD : UIView
     {
         float newRatio = _currentStemina / _maxStemina;
         hudStaminaBar?.UpdateValue(Mathf.Clamp01(newRatio));
+
+        UI_RoguelikeStaminaBar _runBar = RunStaminaBar;
+        if (null != _runBar)
+            _runBar.UpdateValue(Mathf.Clamp01(newRatio));
     }
 
     /// <summary>
@@ -464,6 +523,11 @@ public class UIView_HUD : UIView
     {
         if (null != hudStaminaBar)
             hudStaminaBar.SetForcedWarning(_bBarWarning, _bScreenBlood);
+
+        // 로그라이크 스태미너 바에는 바 경고만 전달한다(붉은 화면은 본편 쪽에서 계속 나온다)
+        UI_RoguelikeStaminaBar _runBar = RunStaminaBar;
+        if (null != _runBar)
+            _runBar.SetForcedWarning(_bBarWarning);
     }
 
     /// <summary>
@@ -475,6 +539,10 @@ public class UIView_HUD : UIView
         // 그때 게이지가 먼저 파괴됐으면 ?.는 걸러내지 못한다(파괴된 오브젝트는 C# 참조로는 null이 아니다).
         if (null != hudStaminaBar)
             hudStaminaBar.SetInvincible(_source, _bInvincible);
+
+        UI_RoguelikeStaminaBar _runBar = RunStaminaBar;
+        if (null != _runBar)
+            _runBar.SetInvincible(_source, _bInvincible);
     }
 
     #endregion
@@ -562,9 +630,58 @@ public class UIView_HUD : UIView
 
         if (true == _bHidden)
             hudEquipment?.SetHeatGaugeVisible(false, false);
+
+        SyncRunHud();
     }
 
     private bool bEquipmentHiddenForRun;
+
+    // 로그라이크 런 상태(SetEquipmentHiddenForRun)일 때만 로그라이크 HUD의 스태미너 바 · 대쉬 칸으로 전달한다. 링크 대상이 런 도중에 생겨도 호출할 때마다 확인한다.
+    private UI_RoguelikeStaminaBar RunStaminaBar => true == bEquipmentHiddenForRun ? RoguelikeHUDLink.StaminaBar : null;
+    private UI_RoguelikeDashCells RunDashCells => true == bEquipmentHiddenForRun ? RoguelikeHUDLink.DashCells : null;
+
+    /// <summary>
+    /// 로그라이크 런이고 로그라이크 스태미너 바가 있으면 본편 스태미너 바 · 대쉬 게이지를 화면에서만 숨기고(루트 CanvasGroup alpha 0, 동작은 그대로),
+    /// 아니면 되돌린다. 로그라이크 HUD가 런 도중에 늦게 생기면 대쉬 칸에 지금까지의 대쉬 상태를 한 번 전달한다. 매 프레임 불러도 값이 같으면 아무 일도 하지 않는다.
+    /// </summary>
+    private void SyncRunHud()
+    {
+        bool _bHide = null != RunStaminaBar;
+
+        if (_bHide != bRunStaminaHidden)
+        {
+            bRunStaminaHidden = _bHide;
+            ApplyRunStaminaAlpha();
+        }
+
+        UI_RoguelikeDashCells _runCells = RunDashCells;
+
+        if (_runCells != syncedRunDashCells)
+        {
+            syncedRunDashCells = _runCells;
+
+            if (null != _runCells && null != dashState)
+                ApplyRunDashState(_runCells);
+        }
+    }
+
+    private void ApplyRunStaminaAlpha()
+    {
+        if (null == hudStaminaRoot)
+            return;
+
+        if (null == staminaCanvasGroup)
+        {
+            staminaCanvasGroup = hudStaminaRoot.GetComponent<CanvasGroup>();
+
+            if (null == staminaCanvasGroup)
+                staminaCanvasGroup = hudStaminaRoot.AddComponent<CanvasGroup>();
+
+            staminaOriginalAlpha = staminaCanvasGroup.alpha;
+        }
+
+        staminaCanvasGroup.alpha = true == bRunStaminaHidden ? 0f : staminaOriginalAlpha;
+    }
 
     /// <summary>
     /// [로그라이크 전용] 버프 줄을 숨기고 비운다(로그라이크에는 버프 HUD가 동작할 일이 없다. 스태미너 바 바로 위에 임계 바가 놓인다).

@@ -11,6 +11,7 @@ using UnityEngine.UI;
 ///   변경        값이 바뀔 때. 연출 없이 새 값으로 바로 바뀐다.
 ///   퇴장 (4틱)  PlayExit. 오른쪽에서 왼쪽으로 75 / 50 / 25 / 0% 폭으로 사라진다. 끝나면 이미지를 끈다(흰 네모가 보이지 않는다).
 /// 값이 들어오기 전 · 퇴장이 끝난 뒤 · 오브젝트가 꺼져 있는 동안에는 이미지가 항상 꺼져 있다. 오브젝트가 다시 켜지면 마지막 값으로 등장 연출부터 시작한다.
+/// bGridSpacing이면(로그라이크 전투 HUD) 글자를 4px 격자(글자 폭 5, 윤곽 1px 겹침)에 고정해 놓고 슬래시도 같은 격자에 5x7로 그린다(HUD 시안의 숫자 규격, 전체 폭 = 4 x 글자 수 + 1).
 /// 위치는 정수 픽셀이다: 폭이 홀수여도 반 칸 어긋나지 않게 pivot을 왼쪽에 두고 폭의 절반(내림)만큼 앞으로 민다(가운데 정렬). bLeftAlign이면 앵커에서 오른쪽으로 시작하고, bRightAlign이면 앵커가 숫자의 오른쪽 끝이다(자릿수가 늘면 왼쪽으로 자란다).
 /// </summary>
 public class UI_RoguelikeIconNumber : MonoBehaviour
@@ -21,6 +22,11 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
     private const int TexWidth = 64;
     private const int Height = HUD_BuffNumberFont.GlyphHeight;
     private const int SlashCellWidth = 6;
+    // 격자 모드: 글자 하나가 차지하는 칸 폭(전진 4px)과 글리프 폭(윤곽 포함 5px).
+    private const int GridAdvance = 4;
+    private const int GridGlyphWidth = 5;
+    private static readonly int[] GridSlashX = { 3, 3, 2, 2, 1 };
+    private static readonly int[] GridSlashRow = { 2, 3, 4, 5, 6 };
     private const float TicksPerSecond = 24f;
     private const int AppearTicks = 4;
     private const int ExitTicks = 4;
@@ -42,6 +48,8 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
     private bool bLeftAlign = false;
     [SerializeField, Tooltip("켜면 앵커가 숫자의 오른쪽 끝이다(오른쪽 정렬). 자릿수가 늘면 왼쪽으로 자란다. bLeftAlign이 켜져 있으면 그쪽이 먼저다.")]
     private bool bRightAlign = false;
+    [SerializeField, Tooltip("켜면 글자를 4px 격자에 고정한다(로그라이크 전투 HUD 규격). 끄면 글자를 붙여 쓴다.")]
+    private bool bGridSpacing = false;
 
     //상태 변수
     private HUD_BuffNumberFont font;
@@ -50,6 +58,7 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
     private Color32[] bufferA;
     private Color32[] bufferB;
     private readonly Color32[] slashCell = new Color32[SlashCellWidth * Height];
+    private readonly Color32[] gridSlashCell = new Color32[GridGlyphWidth * Height];
     private bool bReady;
     private bool bHasValue;
     private bool bPair;
@@ -217,6 +226,7 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
         bufferA = new Color32[TexWidth * Height];
         bufferB = new Color32[TexWidth * Height];
         BuildSlash();
+        BuildGridSlash();
 
         image.texture = texture;
         image.raycastTarget = false;
@@ -266,6 +276,32 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
         }
     }
 
+    /// <summary>격자 모드 슬래시 5x7: 흰 심 (3,2)(3,3)(2,4)(2,5)(1,6)(8x8 시트 셀 기준 글리프 왼쪽 윤곽이 0열) + 그 주변 8방향 검은 윤곽. 글자와 같은 7행(시트 1~7행)이다.</summary>
+    private void BuildGridSlash()
+    {
+        Color32 white = new Color32(255, 255, 255, 255);
+        Color32 black = new Color32(0, 0, 0, 255);
+        System.Array.Clear(gridSlashCell, 0, gridSlashCell.Length);
+
+        // 시트 행(위가 0) -> 버퍼 행(아래가 0): Height - 1 - 행.
+        for (int i = 0; i < GridSlashX.Length; i++)
+        {
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    int cx = GridSlashX[i] + dx;
+                    int cr = Height - 1 - (GridSlashRow[i] + dy);
+                    if (cx < 0 || GridGlyphWidth <= cx || cr < 0 || Height <= cr) continue;
+
+                    gridSlashCell[cr * GridGlyphWidth + cx] = black;
+                }
+            }
+        }
+
+        for (int i = 0; i < GridSlashX.Length; i++) gridSlashCell[(Height - 1 - GridSlashRow[i]) * GridGlyphWidth + GridSlashX[i]] = white;
+    }
+
     /// <summary>글자를 텍스처에 합성하고 폭(contentWidth)을 구한다. 이미지 표시는 연출(Apply)이 맡는다.</summary>
     private void Rebuild()
     {
@@ -273,6 +309,15 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
 
         System.Array.Clear(buffer, 0, buffer.Length);
 
+        contentWidth = true == bGridSpacing ? ComposeGrid() : ComposeTight();
+
+        texture.SetPixelData(buffer, 0);
+        texture.Apply(false);
+    }
+
+    /// <summary>글자를 붙여 쓴다(기존 방식).</summary>
+    private int ComposeTight()
+    {
         int widthA = font.Compose(shownA, false, bufferA, TexWidth);
         int x = 0;
         Blit(bufferA, widthA, x);
@@ -292,10 +337,41 @@ public class UI_RoguelikeIconNumber : MonoBehaviour
             x += 1;
         }
 
-        contentWidth = Mathf.Clamp(x, 1, TexWidth);
+        return Mathf.Clamp(x, 1, TexWidth);
+    }
 
-        texture.SetPixelData(buffer, 0);
-        texture.Apply(false);
+    /// <summary>글자를 4px 격자에 고정해 놓는다. 폭이 좁은 글자(1)는 글리프 칸 가운데에 놓인다. 전체 폭 = 4 x 칸 수 + 1.</summary>
+    private int ComposeGrid()
+    {
+        int cell = PutGridNumber(shownA, 0);
+
+        if (true == bPair)
+        {
+            Blit(gridSlashCell, GridGlyphWidth, cell * GridAdvance, GridGlyphWidth);
+            cell++;
+            cell = PutGridNumber(shownB, cell);
+        }
+
+        return Mathf.Clamp(cell * GridAdvance + 1, 1, TexWidth);
+    }
+
+    /// <summary>숫자(0~999)를 자리마다 격자 칸에 놓고 다음 칸 번호를 돌려준다.</summary>
+    private int PutGridNumber(int _value, int _cell)
+    {
+        int v = Mathf.Clamp(_value, 0, 999);
+        int cell = _cell;
+
+        if (100 <= v) cell = PutGridDigit(v / 100, cell);
+        if (10 <= v) cell = PutGridDigit((v / 10) % 10, cell);
+
+        return PutGridDigit(v % 10, cell);
+    }
+
+    private int PutGridDigit(int _digit, int _cell)
+    {
+        int glyphWidth = font.Compose(_digit, false, bufferA, TexWidth);
+        Blit(bufferA, glyphWidth, _cell * GridAdvance + (GridGlyphWidth - glyphWidth) / 2);
+        return _cell + 1;
     }
 
     /// <summary>_src(폭 _srcWidth)를 buffer의 _ox 열부터 합성한다. 이미 흰 획이 있는 칸은 건드리지 않는다.</summary>

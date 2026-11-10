@@ -822,6 +822,19 @@ public class UIView_MainMenu : UIView
     }
 
     /// <summary>
+    /// 로그라이크 하위 메뉴의 옵션에서 부른다. 메인메뉴 옵션 버튼과 같은 공용 옵션 창(optionUI)을 열고, 닫히면 _onClosed를 부른다.
+    /// 메인메뉴 경로(OnOptionButtonClicked → OnOptionUIClosed)는 하위 메뉴를 닫아 버리므로 닫힘 콜백만 따로 받는다.
+    /// 설정값은 SettingsManager가 소유하고 옵션 창은 열릴 때마다 그 값을 다시 읽으므로 메인메뉴 · ESC 옵션 창과 늘 같다. 열지 못하면 false.
+    /// </summary>
+    public bool OpenRoguelikeOption(Action _onClosed)
+    {
+        if (true == bRoguelikeEntryPlaying || null == optionUI) return false;
+
+        optionUI.Show(_onClosed);
+        return true;
+    }
+
+    /// <summary>
     /// 로그라이크 하위 메뉴의 기록에서 부른다. 저장 파일(읽기 전용)로 기록 창을 채워 이 화면 위에 연다.
     /// 창이 닫히면 _onClosed를 부른다. 열지 못하면 false.
     /// </summary>

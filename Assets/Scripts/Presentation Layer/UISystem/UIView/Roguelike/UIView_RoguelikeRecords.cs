@@ -10,11 +10,14 @@ using UnityEngine.UI;
 /// 메인메뉴의 로그라이크 하위 메뉴 "기록"에서 연다(로비 폐지 - LobbyRemoval_AppLayer_Request.md). 로그라이크 씬에서도 같은 프리팹이 그대로 동작한다.
 ///
 /// [구성 - 시안 v3] 어두운 딤 위 가운데 한 장(Panel_Book):
-///   위쪽 가장자리의 탭 명판 "◀ 현재 탭 ▶" + 아래 점 3개(현재 탭 금색). 탭 이름이 언어마다 길이가 크게 달라 세 개를 나란히 두지 않는다.
-///   명판 폭은 18개 언어 중 가장 긴 탭 이름 기준(SpecTabPlateWidth)과 현재 언어 폭 중 큰 값이라 탭을 넘겨도 크기가 흔들리지 않는다.
-///   본문은 UI_RoguelikeRecordRow 최대 5줄(최근 기록은 1줄). 기록이 없으면 안내 문구. 아래에 키 안내(탭 전환 · 뒤로, 아이콘은 입력 장치를 따른다).
+///   위쪽 가장자리의 탭 명판 "◀ 현재 탭 ▶" + 아래 점 3개와 점 커서(첫 실행 언어 설정 팝업과 같은 넘김 연출). 탭 이름이 언어마다 길이가 크게 달라 세 개를 나란히 두지 않는다.
+///   패드 모드에서는 명판 화살표 바로 안쪽에 LB(◀ 옆) · RB(▶ 옆) 아이콘이 붙는다(16x16, 간격 1). 키보드 모드에서는 숨긴다.
+///   명판 폭은 18개 언어 중 가장 긴 탭 이름 기준(SpecTabPlateWidth, 아이콘 자리 포함)과 현재 언어 폭 중 큰 값이라 탭을 넘기거나 장치를 바꿔도 크기가 흔들리지 않는다.
+///   본문은 UI_RoguelikeRecordRow 최대 5줄(최근 기록은 1줄). 기록이 없으면 안내 문구. 하단 키 안내 줄은 없다.
+///   뒤로 버튼(BTN_Back)은 옵션 창 BTN_Close와 같은 모양(32x32, UI_OptionButton)으로 판 아래 테두리 바깥, 판 왼쪽 끝에 놓는다. 패드 모드에서만 버튼 오른쪽에 B 아이콘이 뜬다.
 ///
-/// [조작 - ControllerSupport_UI가이드.md 3-1 · 3-7] 탭 전환 = UITabShiftEvent(LB/RB · PageUp/PageDown) 또는 명판의 ◀ ▶ 클릭.
+/// [조작 - ControllerSupport_UI가이드.md 3-1 · 3-7] 탭 전환 = 패드 LB/RB(UITabShiftEvent - 키보드 PageUp/PageDown은 받지 않는다) 또는 명판의 ◀ ▶ 클릭.
+///   패드 전용 아이콘(padOnlyItems: 명판 LB · RB, 뒤로 버튼의 B)은 패드 모드에서만 켠다. 뒤로 버튼은 마우스 클릭용이고 패드는 B 단축키를 쓴다(패드 선택 없음).
 ///   닫기 = 딤 클릭 · 패드 B(UICancelEvent). 키보드 Esc는 로그라이크 씬에서는 프리팹 bCloseableByESC(깊이 관리)가 닫고,
 ///   메인메뉴처럼 깊이 관리가 없는 곳에서 열 때는 SetStandaloneClose(true)로 ESC를 직접 받는다. 입력 모드 UI는 모달 공통(RoguelikeModalInput)이 건다.
 ///   이 창에는 고를 항목이 없어 패드 선택을 잡지 않는다.
@@ -24,12 +27,13 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     private const int TabCount = 3;
     private const int MaxRows = 5;
 
-    // 18개 언어 중 가장 긴 탭 이름으로 잰 명판 최소 폭(px, 시안 v3 측정: 가장 긴 탭 183 + 화살표 · 여백 54).
-    private const float SpecTabPlateWidth = 238f;
+    // 18개 언어 중 가장 긴 탭 이름으로 잰 명판 최소 폭(px, 시안 v3 측정: 가장 긴 탭 183 + 화살표 · 여백 54 + LB · RB 아이콘 자리 34).
+    private const float SpecTabPlateWidth = 272f;
     private const float TabArrowWidth = 22f;
+    // 화살표 안쪽에 붙는 LB · RB 아이콘 한쪽 자리(아이콘 16 + 간격 1).
+    private const float TabKeyIconWidth = 17f;
     private const float RowHeight = 46f;
     private const float RowGap = 4f;
-    private const float PanelPadding = 10f;
 
     private const float DimFadeSeconds = 0.18f;
     private const float PanelEnterSeconds = 0.2f;
@@ -38,12 +42,22 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     // 문구 키(RoguelikeUI.json)
     private static readonly string[] TabKeys = { "Roguelike_Records_TabRecent", "Roguelike_Records_TabClear", "Roguelike_Records_TabUnlimit" };
     private const string EmptyKey = "Roguelike_Records_Empty";
-    private const string HintTabKey = "Roguelike_Hint_Tab";
-    private const string HintBackKey = "Roguelike_Hint_Back";
     private const string MaxKey = "Roguelike_CardLevel_Max";
 
-    private static readonly Color DotOnColor = new Color(1f, 0.83f, 0.35f, 1f);
-    private static readonly Color DotOffColor = new Color(0.42f, 0.32f, 0.22f, 1f);
+    // 탭 넘김 피드백 - 첫 실행 언어 설정 팝업(UI_InitialSetupPopup)의 언어 넘김과 같은 값이다.
+    //   점: 현재 점만 흰색, 나머지 회청색. 5x5 커서가 새 점으로 0.12초 OutBack으로 미끄러진다.
+    //   화살표: 누른 쪽 화살표가 3px 밀렸다 돌아온다(옵션 선택기와 같다).
+    //   이름: 누른 방향에서 12px 정수 픽셀로 미끄러져 들어오며(0.14초 OutBack) 금색에서 원래 색으로(0.22초 OutQuad). 스케일 · 알파는 쓰지 않는다.
+    private static readonly Color DotOnColor = Color.white;
+    private static readonly Color DotOffColor = new Color(0.35f, 0.36f, 0.45f, 1f);
+    private static readonly Color TabFlashColor = new Color(1f, 0.835f, 0.31f, 1f);
+    private const float TabSlideDistance = 12f;
+    private const float TabSlideSeconds = 0.14f;
+    private const float TabColorSeconds = 0.22f;
+    private const float DotCursorSeconds = 0.12f;
+    // 옵션 선택기(UI_OptionSelector.PlayArrowNudge)와 같은 값: 누른 쪽 화살표가 바깥으로 3px 밀렸다가 0.1초 OutQuad로 돌아온다.
+    private const float ArrowNudgeDistance = 3f;
+    private const float ArrowNudgeSeconds = 0.1f;
 
     public event Action ClosedEvent;
 
@@ -65,16 +79,23 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     [SerializeField] private TMP_Text tabText;
     [SerializeField] private Button prevTabButton;
     [SerializeField] private Button nextTabButton;
+    [SerializeField, Tooltip("이전 탭 버튼의 화살표 그림(옵션 화살표). 탭을 넘길 때 밀림 연출에 쓴다.")]
+    private RectTransform prevArrowIcon;
+    [SerializeField] private RectTransform nextArrowIcon;
     [SerializeField] private Image[] tabDots = new Image[TabCount];
+    [SerializeField, Tooltip("현재 탭의 점 위에서 미끄러지는 5x5 커서(언어 설정 팝업과 같은 모양).")]
+    private RectTransform tabDotCursor;
 
     [Header("본문")]
     [SerializeField] private RectTransform rowRoot;
     [SerializeField] private UI_RoguelikeRecordRow rowTemplate;
     [SerializeField] private TMP_Text emptyText;
 
-    [Header("키 안내")]
-    [SerializeField] private TMP_Text hintTabText;
-    [SerializeField] private TMP_Text hintBackText;
+    [Header("뒤로 · 패드 아이콘")]
+    [SerializeField, Tooltip("판 아래 왼쪽의 뒤로 버튼(옵션 BTN_Close와 같은 UI_OptionButton). 마우스 클릭용 - 패드는 B 단축키.")]
+    private UI_OptionButton backButton;
+    [SerializeField, Tooltip("패드 모드에서만 켜는 아이콘 묶음(명판 LB · RB, 뒤로 버튼의 B). 키보드 모드에서는 끈다.")]
+    private RectTransform[] padOnlyItems = new RectTransform[0];
     [SerializeField] private UI_KeyboardImage[] keyGuideImages = new UI_KeyboardImage[0];
 
     //내부 의존성
@@ -87,12 +108,19 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     private bool bStandaloneClose;
     private Vector2 panelBasePosition;
     private bool bPanelBaseCaptured;
+    private Vector2 tabTextBasePosition;
+    private Color tabTextBaseColor;
+    private bool bTabTextBaseCaptured;
+    private Vector2 prevArrowBasePosition;
+    private Vector2 nextArrowBasePosition;
+    private bool bArrowBaseCaptured;
 
     // 캐싱 델리게이트
     private Action<int> tabShiftHandler;
     private Action cancelHandler;
     private Action escHandler;
     private Action languageChangedHandler;
+    private Action<EInputDeviceType> deviceChangedHandler;
 
     public override void Initialize(UIViewContext _ctx)
     {
@@ -105,6 +133,7 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         cancelHandler = RequestClose;
         escHandler = RequestClose;
         languageChangedHandler = OnLanguageChanged;
+        deviceChangedHandler = OnDeviceChanged;
 
         if (null != dimButton)
         {
@@ -127,6 +156,8 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
             if (null != keyGuideImages[i]) keyGuideImages[i].Initialize(inputManager);
         }
 
+        if (null != backButton) backButton.Initialize(RequestClose, SoundID.MainMenuDot01, SoundID.None);
+
         if (null != rowTemplate) rowTemplate.gameObject.SetActive(false);
     }
 
@@ -144,6 +175,7 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         Copy(_unlimitRanking, unlimitRanking);
 
         Show();
+        Sound.PlayUI(SoundID.ResultUIOpen);
         OnRecordsPresented();
     }
 
@@ -152,7 +184,10 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     {
         currentTab = 0;
         ApplyStaticTexts();
+        RefreshTabGuide();
         RefreshTab();
+        ResetTabFeedback();
+        SnapDotCursor();
         PlayEnter();
     }
 
@@ -166,6 +201,8 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
             inputManager.inputReader.UICancelEvent += cancelHandler;
             inputManager.inputReader.ESCButtonPressedEvent -= escHandler;
             if (true == bStandaloneClose) inputManager.inputReader.ESCButtonPressedEvent += escHandler;
+            inputManager.inputReader.InputDeviceChangedEvent -= deviceChangedHandler;
+            inputManager.inputReader.InputDeviceChangedEvent += deviceChangedHandler;
         }
 
         if (null != localizationManager)
@@ -180,6 +217,10 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         UnbindInput();
         if (null != dimGroup) dimGroup.DOKill();
         if (null != panelRoot) panelRoot.DOKill();
+        ResetTabFeedback();
+        if (null != tabDotCursor) tabDotCursor.DOKill();
+        if (null != prevArrowIcon) prevArrowIcon.DOKill();
+        if (null != nextArrowIcon) nextArrowIcon.DOKill();
         ClosedEvent?.Invoke();
     }
 
@@ -187,6 +228,9 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
 
     private void OnTabShift(int _direction)
     {
+        // 키보드 PageUp/PageDown 탭 전환은 두지 않는다(키보드·마우스 모드는 ◀ ▶ 클릭). 패드 LB/RB만 받는다.
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
+
         if (0 > _direction) ShowPrevTab();
         else if (0 < _direction) ShowNextTab();
     }
@@ -196,20 +240,24 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     {
         currentTab = Mathf.Clamp(_tab, 0, TabCount - 1);
         RefreshTab();
+        ResetTabFeedback();
+        SnapDotCursor();
     }
 
     private void ShowPrevTab()
     {
         currentTab = (currentTab + TabCount - 1) % TabCount;
         RefreshTab();
-        Sound.PlayUI(SoundID.MainClick);
+        PlayTabSwitchFeedback(-1);
+        Sound.PlayUI(SoundID.OptionClick);
     }
 
     private void ShowNextTab()
     {
         currentTab = (currentTab + 1) % TabCount;
         RefreshTab();
-        Sound.PlayUI(SoundID.MainClick);
+        PlayTabSwitchFeedback(1);
+        Sound.PlayUI(SoundID.OptionClick);
     }
 
     private void RefreshTab()
@@ -251,6 +299,97 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         LayoutRows();
     }
 
+    // // 탭 넘김 피드백 (언어 설정 팝업과 같은 연출)
+
+    private void CaptureTabTextBase()
+    {
+        if (true == bTabTextBaseCaptured || null == tabText) return;
+        tabTextBasePosition = tabText.rectTransform.anchoredPosition;
+        tabTextBaseColor = tabText.color;
+        bTabTextBaseCaptured = true;
+    }
+
+    private void CaptureArrowBase()
+    {
+        if (true == bArrowBaseCaptured) return;
+        if (null != prevArrowIcon) prevArrowBasePosition = prevArrowIcon.anchoredPosition;
+        if (null != nextArrowIcon) nextArrowBasePosition = nextArrowIcon.anchoredPosition;
+        bArrowBaseCaptured = true;
+    }
+
+    private void ResetTabFeedback()
+    {
+        CaptureTabTextBase();
+        CaptureArrowBase();
+        if (null != prevArrowIcon)
+        {
+            prevArrowIcon.DOKill();
+            prevArrowIcon.anchoredPosition = prevArrowBasePosition;
+        }
+        if (null != nextArrowIcon)
+        {
+            nextArrowIcon.DOKill();
+            nextArrowIcon.anchoredPosition = nextArrowBasePosition;
+        }
+        if (null == tabText) return;
+
+        tabText.rectTransform.DOKill();
+        tabText.DOKill();
+        tabText.rectTransform.anchoredPosition = tabTextBasePosition;
+        tabText.color = tabTextBaseColor;
+    }
+
+    /// <summary>탭 이름은 누른 방향에서 정수 픽셀로 미끄러져 들어오며 금색에서 원래 색으로 돌아오고, 점 커서는 새 점으로 미끄러진다.</summary>
+    private void PlayTabSwitchFeedback(int _direction)
+    {
+        ResetTabFeedback();
+
+        // 누른 쪽 화살표가 바깥으로 밀렸다가 돌아온다(옵션 선택기와 같은 반응). 정수 픽셀, unscaled.
+        RectTransform arrow = 0 < _direction ? nextArrowIcon : prevArrowIcon;
+        if (null != arrow)
+        {
+            Vector2 arrowBase = 0 < _direction ? nextArrowBasePosition : prevArrowBasePosition;
+            float outward = 0 < _direction ? 1f : -1f;
+            arrow.anchoredPosition = new Vector2(arrowBase.x + outward * ArrowNudgeDistance, arrowBase.y);
+            arrow.DOAnchorPosX(arrowBase.x, ArrowNudgeSeconds, true).SetEase(Ease.OutQuad).SetUpdate(true);
+        }
+
+        if (null != tabText)
+        {
+            float dir = 0 < _direction ? 1f : -1f;
+            tabText.rectTransform.anchoredPosition = new Vector2(tabTextBasePosition.x + dir * TabSlideDistance, tabTextBasePosition.y);
+            tabText.rectTransform.DOAnchorPosX(tabTextBasePosition.x, TabSlideSeconds, true).SetEase(Ease.OutBack).SetUpdate(true);
+
+            Color from = TabFlashColor;
+            from.a = tabTextBaseColor.a;
+            tabText.color = from;
+            tabText.DOColor(tabTextBaseColor, TabColorSeconds).SetEase(Ease.OutQuad).SetUpdate(true);
+        }
+
+        // 커서: 새 점의 자식으로 옮기되 월드 위치를 유지해 이전 자리에서 출발하고, 로컬 (0, 0)으로 미끄러진다.
+        if (true == HasDotCursorTarget())
+        {
+            tabDotCursor.DOKill();
+            tabDotCursor.SetParent(tabDots[currentTab].rectTransform, true);
+            tabDotCursor.DOAnchorPos(Vector2.zero, DotCursorSeconds).SetEase(Ease.OutBack).SetUpdate(true);
+        }
+    }
+
+    private bool HasDotCursorTarget()
+    {
+        return null != tabDotCursor && tabDots.Length > currentTab && null != tabDots[currentTab];
+    }
+
+    /// <summary>커서를 현재 점에 바로 붙인다(연출 없이). 점 중심이 .5 픽셀이라 5x5 커서도 같은 중심에 놓여 가장자리가 정수 픽셀에 떨어진다.</summary>
+    private void SnapDotCursor()
+    {
+        if (false == HasDotCursorTarget()) return;
+
+        tabDotCursor.DOKill();
+        tabDotCursor.SetParent(tabDots[currentTab].rectTransform, false);
+        tabDotCursor.anchoredPosition = Vector2.zero;
+    }
+
     private UI_RoguelikeRecordRow GetRow(int _index)
     {
         while (rows.Count <= _index && null != rowTemplate && null != rowRoot)
@@ -268,7 +407,7 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         if (null == tabPlate || null == tabText) return;
 
         float textWidth = Mathf.Ceil(tabText.GetPreferredValues(tabText.text, 10000f, 10000f).x);
-        float width = Mathf.Max(SpecTabPlateWidth, textWidth + TabArrowWidth * 2f + 10f);
+        float width = Mathf.Max(SpecTabPlateWidth, textWidth + (TabArrowWidth + TabKeyIconWidth) * 2f + 10f);
         int even = Mathf.CeilToInt(width);
         if (0 != even % 2) even++;
         tabPlate.sizeDelta = new Vector2(even, tabPlate.sizeDelta.y);
@@ -322,15 +461,37 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     private void RequestClose()
     {
         if (false == IsVisible) return;
-        Sound.PlayUI(SoundID.MainClick);
         Hide();
+    }
+
+    /// <summary>
+    /// 닫힘 효과음은 여기서 낸다. 깊이 관리(bCloseableByESC)의 ESC · 패드 B 경로가 RequestClose를 거치지 않고 Hide()를 바로 부르기 때문이다.
+    /// </summary>
+    public override void Hide()
+    {
+        if (true == IsVisible) Sound.PlayUI(SoundID.MainClick);
+        base.Hide();
     }
 
     private void ApplyStaticTexts()
     {
         if (null != emptyText) emptyText.text = Localize(EmptyKey);
-        if (null != hintTabText) hintTabText.text = Localize(HintTabKey);
-        if (null != hintBackText) hintBackText.text = Localize(HintBackKey);
+    }
+
+    /// <summary>명판 LB · RB와 뒤로 버튼 B 아이콘은 패드 모드에서만 보인다(키보드는 ◀ ▶ 클릭 · Esc). 판 · 명판 크기는 그대로 둔다.</summary>
+    private void RefreshTabGuide()
+    {
+        bool bPad = null != inputManager && true == inputManager.IsGamepadMode;
+        for (int i = 0; padOnlyItems.Length > i; i++)
+        {
+            if (null != padOnlyItems[i]) padOnlyItems[i].gameObject.SetActive(bPad);
+        }
+    }
+
+    private void OnDeviceChanged(EInputDeviceType _device)
+    {
+        if (false == IsVisible) return;
+        RefreshTabGuide();
     }
 
     private void OnLanguageChanged()
@@ -352,6 +513,7 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
             inputManager.inputReader.UITabShiftEvent -= tabShiftHandler;
             inputManager.inputReader.UICancelEvent -= cancelHandler;
             inputManager.inputReader.ESCButtonPressedEvent -= escHandler;
+            inputManager.inputReader.InputDeviceChangedEvent -= deviceChangedHandler;
         }
 
         if (null != localizationManager) localizationManager.OnLanguageChanged -= languageChangedHandler;
@@ -370,6 +532,10 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         UnbindInput();
         if (null != dimGroup) dimGroup.DOKill();
         if (null != panelRoot) panelRoot.DOKill();
+        if (null != tabText) { tabText.rectTransform.DOKill(); tabText.DOKill(); }
+        if (null != tabDotCursor) tabDotCursor.DOKill();
+        if (null != prevArrowIcon) prevArrowIcon.DOKill();
+        if (null != nextArrowIcon) nextArrowIcon.DOKill();
         if (null != dimButton) dimButton.onClick.RemoveListener(RequestClose);
         if (null != prevTabButton) prevTabButton.onClick.RemoveListener(ShowPrevTab);
         if (null != nextTabButton) nextTabButton.onClick.RemoveListener(ShowNextTab);

@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: active_boomerang
   nameKey: Roguelike_Card_active_boomerang
   descriptionKey: Roguelike_Card_active_boomerang_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 04f252d37daa87c47b977af44b3063d6, type: 3}
   kind: 0
   skillTag: 5
   exclusiveGroup: 0

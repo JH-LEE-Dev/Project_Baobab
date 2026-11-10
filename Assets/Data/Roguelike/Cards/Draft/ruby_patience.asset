@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: ruby_patience
   nameKey: Roguelike_Card_ruby_patience
   descriptionKey: Roguelike_Card_ruby_patience_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 43294f1ad933acb439c29da067ff73d7, type: 3}
   kind: 2
   skillTag: 0
   exclusiveGroup: 0

@@ -10,6 +10,8 @@ using UnityEngine.UI;
 ///   - 한 번의 호출 안에서도 개수·방향·거리·시작 시각·수명이 비대칭으로 흩어진다(거리는 소수만 멀리 가는 분포, 멀리 가는 입자는 크고 밝고 일찍 사라진다).
 ///   - 무작위는 난수 상태 없이 호출 번호와 입자 번호의 해시로 정한다. 풀(particleImages)을 돌려 쓰고 힙 할당이 없으며, 살아 있는 입자가 없으면 Update가 곧바로 끝난다.
 /// 입자 하나는 이미지 3장(머리 · 잔상 둘)을 쓴다. 좌표는 이 오브젝트의 RectTransform(= 카드 왼쪽 아래 기준, 앵커·피벗 왼쪽 아래) 기준 픽셀이다.
+/// 입자 스프라이트는 가로 세로가 짝수가 되도록 오른쪽 열 / 위쪽 행에 투명 1px이 붙어 있다(Fx_Dot1 2x2, Fx_Bar2 2x2, Fx_PlusS 4x4, Fx_PlusL 6x6).
+/// 그림 크기(GetArtSize)는 그대로라 가운데 맞춤은 그림 크기로 구하고, 투명 줄은 오른쪽 · 위로만 남는다.
 /// </summary>
 public class UI_RoguelikePixelFx : MonoBehaviour
 {
@@ -57,6 +59,13 @@ public class UI_RoguelikePixelFx : MonoBehaviour
         new Color(0.95f, 0.8f, 0.35f, 1f),
         new Color(0.85f, 0.65f, 0.25f, 1f),
     };
+
+    // 입자 그림 크기(투명 줄을 뺀 크기). 스프라이트는 이보다 오른쪽 · 위로 0~1px 크다.
+    private static readonly Vector2 Dot1ArtSize = new Vector2(1f, 1f);
+    private static readonly Vector2 Dot2ArtSize = new Vector2(2f, 2f);
+    private static readonly Vector2 Bar2ArtSize = new Vector2(2f, 1f);
+    private static readonly Vector2 PlusSmallArtSize = new Vector2(3f, 3f);
+    private static readonly Vector2 PlusLargeArtSize = new Vector2(5f, 5f);
 
     private const int ImagesPerParticle = 3;
     private const float TicksPerSecond = 24f;
@@ -251,7 +260,7 @@ public class UI_RoguelikePixelFx : MonoBehaviour
         EShape shape = _p.shape;
         if (_p.bPop) shape = u < 0.12f ? EShape.Dot1 : (u < 0.28f ? EShape.PlusSmall : (u < 0.6f ? EShape.PlusLarge : (u < 0.8f ? EShape.PlusSmall : EShape.Dot1)));
 
-        PlaceImage(particleImages[_slot * ImagesPerParticle], GetSprite(shape), Position(in _p, u), palette[toneIndex]);
+        PlaceImage(particleImages[_slot * ImagesPerParticle], GetSprite(shape), GetArtSize(shape), Position(in _p, u), palette[toneIndex]);
 
         // 잔상: 조금 전 위치에 한 칸씩 더 어두운 톤. 움직임이 아직 큰 동안에만 보인다.
         for (int k = 1; k < ImagesPerParticle; k++)
@@ -264,7 +273,7 @@ public class UI_RoguelikePixelFx : MonoBehaviour
                 continue;
             }
 
-            PlaceImage(trail, dot1Sprite, Position(in _p, tu), palette[Mathf.Min(2, toneIndex + k)]);
+            PlaceImage(trail, dot1Sprite, Dot1ArtSize, Position(in _p, tu), palette[Mathf.Min(2, toneIndex + k)]);
         }
     }
 
@@ -277,7 +286,7 @@ public class UI_RoguelikePixelFx : MonoBehaviour
         return new Vector2(x, y);
     }
 
-    private static void PlaceImage(Image _image, Sprite _sprite, Vector2 _position, Color _color)
+    private static void PlaceImage(Image _image, Sprite _sprite, Vector2 _artSize, Vector2 _position, Color _color)
     {
         if (null == _sprite)
         {
@@ -285,11 +294,10 @@ public class UI_RoguelikePixelFx : MonoBehaviour
             return;
         }
 
-        Vector2 size = _sprite.rect.size;
         _image.enabled = true;
         _image.sprite = _sprite;
-        _image.rectTransform.sizeDelta = size;
-        _image.rectTransform.anchoredPosition = new Vector2(Mathf.Round(_position.x) - Mathf.Floor(size.x * 0.5f), Mathf.Round(_position.y) - Mathf.Floor(size.y * 0.5f));
+        _image.rectTransform.sizeDelta = _sprite.rect.size;
+        _image.rectTransform.anchoredPosition = new Vector2(Mathf.Round(_position.x) - Mathf.Floor(_artSize.x * 0.5f), Mathf.Round(_position.y) - Mathf.Floor(_artSize.y * 0.5f));
         _image.color = _color;
     }
 
@@ -307,6 +315,18 @@ public class UI_RoguelikePixelFx : MonoBehaviour
             case EShape.Bar2: return bar2Sprite;
             case EShape.PlusSmall: return plusSmallSprite;
             default: return plusLargeSprite;
+        }
+    }
+
+    private static Vector2 GetArtSize(EShape _shape)
+    {
+        switch (_shape)
+        {
+            case EShape.Dot1: return Dot1ArtSize;
+            case EShape.Dot2: return Dot2ArtSize;
+            case EShape.Bar2: return Bar2ArtSize;
+            case EShape.PlusSmall: return PlusSmallArtSize;
+            default: return PlusLargeArtSize;
         }
     }
 
