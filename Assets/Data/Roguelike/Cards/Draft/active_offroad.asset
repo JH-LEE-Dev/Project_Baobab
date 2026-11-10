@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: active_offroad
   nameKey: Roguelike_Card_active_offroad
   descriptionKey: Roguelike_Card_active_offroad_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d13ea95e03a686e4e8d68f85bbd12daa, type: 3}
   kind: 0
   skillTag: 1
   exclusiveGroup: 0

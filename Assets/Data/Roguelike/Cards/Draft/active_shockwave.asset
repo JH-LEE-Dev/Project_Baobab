@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: active_shockwave
   nameKey: Roguelike_Card_active_shockwave
   descriptionKey: Roguelike_Card_active_shockwave_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 9da334690366860458177871396766a4, type: 3}
   kind: 0
   skillTag: 3
   exclusiveGroup: 0

@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: passive_damage
   nameKey: Roguelike_Card_passive_damage
   descriptionKey: Roguelike_Card_passive_damage_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: e1e6156fb4b6fd14a8ea6ec1c896675c, type: 3}
   kind: 1
   skillTag: 0
   exclusiveGroup: 0

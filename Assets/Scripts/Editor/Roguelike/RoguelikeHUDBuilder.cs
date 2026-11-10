@@ -132,7 +132,7 @@ public static class RoguelikeHUDBuilder
             Image infinity = NewSpriteImage("Infinity", waveRect, waveBox, infinityIcon, 17, 295, true);
             infinity.enabled = false;
             UI_RoguelikeIconNumber waveNumber = NewGridNumber(waveRect, waveBox, 19, 298, digits);
-            RawImage pips = NewRaw("Pips", waveRect, waveBox, 41, 299, 93, 3, true);
+            RawImage pips = NewRaw("Pips", waveRect, waveBox, 41, 298, 97, 5, true);
 
             UI_RoguelikeWaveLabel wave = waveRect.gameObject.AddComponent<UI_RoguelikeWaveLabel>();
             SerializedObject waveSo = new SerializedObject(wave);

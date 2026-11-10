@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: passive_attackspeed
   nameKey: Roguelike_Card_passive_attackspeed
   descriptionKey: Roguelike_Card_passive_attackspeed_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 9f6a4cc4a2425804a8815126f2edd6c2, type: 3}
   kind: 1
   skillTag: 0
   exclusiveGroup: 0

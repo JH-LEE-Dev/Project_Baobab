@@ -1180,8 +1180,8 @@
         {
             "id": 328,
             "key": "Roguelike_Card_ruby_more_the_merrier_Desc",
-            "kr": "{+}발동 수와 공격력 증가{/}.\n대신 {-}스폰 속도 증가,\n이동속도 감소{/}.",
-            "en": "{+}More activations and increased damage{/}.\nHowever, {-}faster tree spawns\nand reduced move speed{/}.",
+            "kr": "{+}발동 수와 공격력 증가{/}.\n대신 {-}나무 생성 속도 증가{/}.",
+            "en": "{+}More activations and increased damage{/}.\nHowever, {-}trees spawn faster{/}.",
             "zhHans": "",
             "zhHant": "",
             "ja": "",

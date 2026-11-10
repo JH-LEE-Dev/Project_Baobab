@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: passive_range
   nameKey: Roguelike_Card_passive_range
   descriptionKey: Roguelike_Card_passive_range_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: cfcae11cb3b35a147b9d8d83683a3e3a, type: 3}
   kind: 1
   skillTag: 0
   exclusiveGroup: 0

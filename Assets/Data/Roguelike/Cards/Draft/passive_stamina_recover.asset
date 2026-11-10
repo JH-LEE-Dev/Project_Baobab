@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: passive_stamina_recover
   nameKey: Roguelike_Card_passive_stamina_recover
   descriptionKey: Roguelike_Card_passive_stamina_recover_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 2d31554b92160c646adedcdd196f735d, type: 3}
   kind: 1
   skillTag: 0
   exclusiveGroup: 0

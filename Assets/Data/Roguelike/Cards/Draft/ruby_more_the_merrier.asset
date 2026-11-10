@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: ruby_more_the_merrier
   nameKey: Roguelike_Card_ruby_more_the_merrier
   descriptionKey: Roguelike_Card_ruby_more_the_merrier_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 1754313e9ce79f7418c8da805f487ea7, type: 3}
   kind: 2
   skillTag: 0
   exclusiveGroup: 0
@@ -32,13 +32,10 @@ MonoBehaviour:
       value: 1
     - effect: 23
       skill: 0
-      value: 30
+      value: 60
     - effect: 1
       skill: 0
       value: 100
-    - effect: 12
-      skill: 0
-      value: -30
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}
   comboType: 0
@@ -46,6 +43,6 @@ MonoBehaviour:
   designerNote: "[\uCD08\uC548] \uAE30\uD68D\uC11C 6-4 \uB8E8\uBE44 \uB2E4\uB2E4\uC775\uC120.
     \uBC84\uD504: \uB3C4\uB07C \uC5F0\uC18D 2\uD68C \uD0C0\uACA9, \uCDA9\uACA9\uD30C
     \uD55C \uBC88 \uB354, \uAC1C\uC218\uAC00 \uC788\uB294 \uC2A4\uD0AC +1\uAC1C.
-    \uB514\uBA54\uB9AC\uD2B8: \uB098\uBB34 \uC2A4\uD3F0 \uC18D\uB3C4 \uC99D\uAC00
+    \uB514\uBA54\uB9AC\uD2B8: \uB098\uBB34 \uC2A4\uD3F0 \uC18D\uB3C4 +60%
     - \uC99D\uAC00\uC728\uC740 \uAE30\uD68D\uC11C \uBBF8\uC815(\uBD80\uB85D C-2)\uC774\uB77C
-    +30%\uB294 \uC784\uC2DC\uAC12\uC774\uB2E4."
+    +60%\uB294 \uC784\uC2DC\uAC12\uC774\uB2E4."

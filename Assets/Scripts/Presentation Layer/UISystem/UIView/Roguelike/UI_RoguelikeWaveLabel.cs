@@ -3,8 +3,9 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 로그라이크 전투 HUD의 웨이브 줄. 좌측 하단 막대 묶음의 맨 위 줄이다(RoguelikeHUD_Polish_Plan.md 2장).
-/// 깃발 아이콘(Flag, 16x16) + 작은 숫자(UI_RoguelikeIconNumber, 4px 격자)로 "12/30"을 그리고, 그 오른쪽에 30칸 진행 점(2x2, 3px 간격, 10칸마다 +2)을 둔다.
-///   진행 점  지난 칸은 금색 2행(위 밝음 / 아래 어두움), 현재 칸은 흰색 2x3(위로 1px 더), 남은 칸은 어두운 갈색.
+/// 깃발 아이콘(Flag, 16x16) + 작은 숫자(UI_RoguelikeIconNumber, 4px 격자)로 "12/30"을 그리고, 그 오른쪽에 30칸 진행 점(2x2, 3px 간격, 지역 전환 웨이브마다 +2)을 둔다.
+///   진행 점  지난 칸은 금색 2행(위 밝음 / 아래 어두움), 현재 칸은 흰색 2x3(위로 1px 더)에 1px 윤곽(4x5), 남은 칸은 어두운 갈색.
+///   지역 간격  RegionStartWaves(8, 16, 23웨이브)의 칸 앞에서 +2px를 더 띄운다. 언리밋(10칸)은 간격이 없다.
 ///   언리밋   깃발이 금색, 무한대 아이콘(Infinity) + 단계 번호(금색)로 바뀌고 진행 점은 10칸이다. 칸 = (언리밋 번호 - 1) % 10 + 1 (10웨이브마다 처음부터).
 /// 글자 라벨은 쓰지 않는다. 아이콘 · 숫자는 프리팹에 있고 이 컴포넌트는 숫자와 진행 점, 깃발 모양, 튐 연출만 맡는다.
 ///
@@ -15,11 +16,12 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
 {
     private const int TotalWaves = 30;
     private const int UnlimitPipCount = 10;
-    private const int PipTextureWidth = 93;
-    private const int PipTextureHeight = 3;
+    private const int PipTextureWidth = 97;
+    private const int PipTextureHeight = 5;
+    // 현재 칸 윤곽이 텍스처 밖으로 잘리지 않도록 둔 왼쪽 여백.
+    private const int PipMargin = 1;
     private const int PipStep = 3;
     private const int PipGroupGap = 2;
-    private const int PipGroupSize = 10;
     // 숫자 끝에서 진행 점까지의 간격.
     private const int PipGap = 5;
     private const int GridAdvance = 4;
@@ -30,6 +32,8 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
     private const int NumberXUnlimit = 25;
     private const int FlashTicks = 6;
     private static readonly int[] HopPattern = { 2, 3, 1, 0 };
+    // 지역(티어) 시작 웨이브(1웨이브 제외). Assets/Data/Roguelike/RoguelikeBalance.asset tiers[].startWave와 맞춰야 한다.
+    private static readonly int[] RegionStartWaves = { 8, 16, 23 };
 
     //내부 의존성 (프리팹에서 연결)
     [SerializeField] private RectTransform labelRoot;
@@ -44,7 +48,7 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
     private Sprite unlimitFlagSprite;
     [SerializeField, Tooltip("웨이브가 바뀔 때 번쩍이는 흰 실루엣 깃발 스프라이트.")]
     private Sprite flashFlagSprite;
-    [SerializeField, Tooltip("진행 점을 그리는 RawImage(93x3). 위치는 숫자 폭에 맞춰 코드가 옮긴다.")]
+    [SerializeField, Tooltip("진행 점을 그리는 RawImage(97x5). 위치는 숫자 폭에 맞춰 코드가 옮긴다.")]
     private RawImage pipSurface;
 
     //상태 변수
@@ -151,7 +155,7 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
         if (null != pipSurface)
         {
             RectTransform pipRect = pipSurface.rectTransform;
-            pipRect.anchoredPosition = new Vector2(numberX + GridAdvance * digits + 1 + PipGap, pipRect.anchoredPosition.y);
+            pipRect.anchoredPosition = new Vector2(numberX + GridAdvance * digits + 1 + PipGap - PipMargin, pipRect.anchoredPosition.y);
         }
 
         PaintPips();
@@ -171,29 +175,40 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
 
         pipPainter.Clear();
 
-        int gx = 0;
+        int gx = PipMargin;
         for (int i = 0; i < total; i++)
         {
-            if (0 < i && 0 == i % PipGroupSize) gx += PipGroupGap;
+            if (false == bUnlimit && 0 < i && true == IsRegionStart(i + 1)) gx += PipGroupGap;
 
             if (i + 1 < current)
             {
-                pipPainter.Fill(gx, 1, gx + 2, 2, RoguelikeHudColors.PipPassedTop);
-                pipPainter.Fill(gx, 2, gx + 2, 3, RoguelikeHudColors.PipPassedBottom);
+                pipPainter.Fill(gx, 2, gx + 2, 3, RoguelikeHudColors.PipPassedTop);
+                pipPainter.Fill(gx, 3, gx + 2, 4, RoguelikeHudColors.PipPassedBottom);
             }
             else if (i + 1 == current)
             {
-                pipPainter.Fill(gx, 0, gx + 2, 3, RoguelikeHudColors.White);
+                pipPainter.Fill(gx - 1, 0, gx + 3, 5, RoguelikeHudColors.Outline);
+                pipPainter.Fill(gx, 1, gx + 2, 4, RoguelikeHudColors.White);
             }
             else
             {
-                pipPainter.Fill(gx, 1, gx + 2, 3, RoguelikeHudColors.PipRemain);
+                pipPainter.Fill(gx, 2, gx + 2, 4, RoguelikeHudColors.PipRemain);
             }
 
             gx += PipStep;
         }
 
         pipPainter.Apply();
+    }
+
+    private static bool IsRegionStart(int _waveNumber)
+    {
+        for (int i = 0; i < RegionStartWaves.Length; i++)
+        {
+            if (RegionStartWaves[i] == _waveNumber) return true;
+        }
+
+        return false;
     }
 
     private void EnsurePipPainter()
