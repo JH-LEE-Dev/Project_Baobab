@@ -687,12 +687,23 @@ public partial class RoguelikeSystem
         inDungeonObjectManager.ClearTreesForRun();
 
         List<Vector3> grassPositions = null;
-        // 섬은 해상도와 무관한 월드 크기다(기준 화면에서 한 번 계산). 플레이어 시작 칸을 중심으로 한 완벽한 타원.
+        // 섬은 해상도와 무관한 월드 크기다(기준 화면에서 한 번 계산). 플레이어 시작 칸을 중심으로 한 완벽한 타원 또는 마름모(islandShape).
         Vector2 cell = environmentSystem.TileCellSize;
-        // 타원 판정은 칸의 중심으로 하지만 화면에 보이는 섬은 가장자리 칸의 마름모 끝(반 칸)까지다.
+        // 섬 판정은 칸의 중심으로 하지만 화면에 보이는 섬은 가장자리 칸의 마름모 끝(반 칸)까지다.
         // 그 반 칸을 빼 두어야 화면 가장자리에 보이는 물이 islandEdgeWaterTiles 칸이 된다.
         float islandRadiusX = Mathf.Max(1f, islandReferenceViewSize.x * 0.5f - (islandEdgeWaterTiles + 0.5f) * cell.x);
         float islandRadiusY = Mathf.Max(1f, islandReferenceViewSize.y * 0.5f - (islandEdgeWaterTiles + 0.5f) * cell.y);
+        if (IslandShapeType.Diamond == islandShape)
+        {
+            // 마름모는 아이소 칸 격자에 맞춘다(셀 좌표로 정사각형, 가로:세로 = 칸 비율 2:1). 화면 비율로 꼭짓점을 잡으면 변이 칸 줄과
+            // 어긋나 해안선 중간에 계단 홈이 생긴다. 마름모 전용 물 칸 여유 안에 들어가는 가장 큰 칸 수 n을 고른다(16:9 화면은 가로가 먼저 찬다).
+            float edgeWater = Mathf.Max(0f, islandDiamondEdgeWaterTiles);
+            float fitX = (islandReferenceViewSize.x * 0.5f - (edgeWater + 0.5f) * cell.x) / cell.x;
+            float fitY = (islandReferenceViewSize.y * 0.5f - (edgeWater + 0.5f) * cell.y) / cell.y;
+            int n = Mathf.Max(1, Mathf.FloorToInt(Mathf.Min(fitX, fitY) + 0.0001f));
+            islandRadiusX = n * cell.x;
+            islandRadiusY = n * cell.y;
+        }
 
         // 지형 전환 파도가 칸마다 직전 지형에서 새 지형으로 바꿀 수 있게, 깔기 전에 화면 안 타일을 떠 둔다.
         // 돌던 파도가 있으면 코루틴까지 멈춘다(끝내기만 하면 남은 루프가 새 지형 위에 직전 파도의 칸을 다시 깐다).
@@ -700,7 +711,7 @@ public partial class RoguelikeSystem
         if (false == _bEntryWave) tileWave.CaptureBefore();
 
         environmentSystem.GenerateRoguelikeField(field.forestType, field.mapType, centerSafeZoneRadius, islandRadiusX, islandRadiusY,
-            _positions => grassPositions = _positions);
+            _positions => grassPositions = _positions, islandShape);
 
         // 노바 때까지 남는 별(스텔라+드론)은 새 지형의 육지 위에 있는 것만 남기고, 본편 나무 정리가 거둔 그림을 다시 그린다.
         if (null != skillController)
@@ -722,9 +733,9 @@ public partial class RoguelikeSystem
         // 구름·물 장식은 파도 선을 따라 바뀐다. 파도가 진입으로 되돌렸는지는 IsEntryWave로 본다.
         cloudFade.PrepareAfterSpawn(fieldCloudSettings.alpha, fieldCloudSettings.fadeSeconds);
         waterDeco.Prepare(GetFieldViewRect(islandCenter, 0f), tileWave, tileWave.IsEntryWave);
-        waveStrategy?.ConfigureField(center, islandRadiusX, islandRadiusY, null != balance ? balance.fieldEdgeInsetCells : 0);
-        // 오프로드 차선은 화면에 보이는 섬(칸 중심 기준 타원)에 맞춰야 테두리 타일 위에서 소환된다. 시작 칸이 아니라 섬 중심을 넘긴다.
-        skillController?.SetField(islandCenter, islandRadiusX, islandRadiusY);
+        waveStrategy?.ConfigureField(center, islandRadiusX, islandRadiusY, null != balance ? balance.fieldEdgeInsetCells : 0, islandShape);
+        // 오프로드 차선은 화면에 보이는 섬(칸 중심 기준 모양)에 맞춰야 테두리 타일 위에서 소환된다. 시작 칸이 아니라 섬 중심을 넘긴다.
+        skillController?.SetField(islandCenter, islandRadiusX, islandRadiusY, islandShape);
         inDungeonObjectManager.SetExternalTreeGenerationStrategy(waveStrategy, field.mapType);
 
         if (null == grassPositions)

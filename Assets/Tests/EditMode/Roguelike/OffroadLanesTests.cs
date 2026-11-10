@@ -1,7 +1,7 @@
 using NUnit.Framework;
 using UnityEngine;
 
-/// <summary>오프로드 차선 계산(섬 타원과 아래쪽 대각선의 교차).</summary>
+/// <summary>오프로드 차선 계산(섬 타원·마름모와 아래쪽 대각선의 교차).</summary>
 public class OffroadLanesTests
 {
     private static readonly Vector2 Center = new Vector2(3f, -2f);
@@ -77,6 +77,52 @@ public class OffroadLanesTests
             // 이웃 칸이 서로 가장 가깝게 흔들려도(이 칸은 끝까지 오른쪽, 다음 칸은 끝까지 왼쪽) 최소 간격 이상 떨어진다.
             if (i + 1 < slots) Assert.GreaterOrEqual(OffroadLanes.SlotOffset(i + 1, slots, half, spread, gap, 0f) - max, gap - 0.0001f, "칸 " + i);
         }
+    }
+
+    private static float DiamondValue(Vector2 _p)
+    {
+        Vector2 d = _p - Center;
+        return Mathf.Abs(d.x) / Rx + Mathf.Abs(d.y) / Ry;
+    }
+
+    [Test]
+    public void DiamondLane_EntryAndExitLieOnIsland_EntryIsUpstream()
+    {
+        foreach (bool bRight in new[] { true, false })
+        {
+            Vector2 dir = OffroadLanes.DownDiagonal(bRight);
+            float half = OffroadLanes.HalfWidth(IslandShapeType.Diamond, Rx, Ry, dir);
+
+            for (int i = -4; i <= 4; i++)
+            {
+                float offset = half * 0.2f * i;
+                Assert.IsTrue(OffroadLanes.TryGetLane(IslandShapeType.Diamond, Center, Rx, Ry, dir, offset, out Vector2 entry, out Vector2 exit), "offset " + offset);
+
+                Assert.AreEqual(1f, DiamondValue(entry), 0.001f);
+                Assert.AreEqual(1f, DiamondValue(exit), 0.001f);
+                Assert.LessOrEqual(DiamondValue((entry + exit) * 0.5f), 1f + 0.0001f, "선분 가운데는 섬 안");
+                Assert.Greater(Vector2.Dot(exit - entry, dir), 0f, "진입점에서 이탈점으로 진행 방향을 따라 달려야 한다");
+            }
+        }
+    }
+
+    [Test]
+    public void DiamondLane_OutsideHalfWidth_Misses()
+    {
+        Vector2 dir = OffroadLanes.DownDiagonal(true);
+        float half = OffroadLanes.HalfWidth(IslandShapeType.Diamond, Rx, Ry, dir);
+
+        Assert.IsFalse(OffroadLanes.TryGetLane(IslandShapeType.Diamond, Center, Rx, Ry, dir, half * 1.01f, out _, out _));
+        Assert.IsTrue(OffroadLanes.TryGetLane(IslandShapeType.Diamond, Center, Rx, Ry, dir, half * 0.99f, out _, out _));
+    }
+
+    [Test]
+    public void IslandShape_DiamondTouchesScreenMidpoints()
+    {
+        Assert.IsTrue(IslandShape.Contains(IslandShapeType.Diamond, Rx, 0f, Rx, Ry));
+        Assert.IsTrue(IslandShape.Contains(IslandShapeType.Diamond, 0f, -Ry, Rx, Ry));
+        Assert.IsFalse(IslandShape.Contains(IslandShapeType.Diamond, Rx * 0.5f + 0.01f, Ry * 0.5f, Rx, Ry), "변 바깥");
+        Assert.IsTrue(IslandShape.Contains(IslandShapeType.Ellipse, Rx * 0.5f + 0.01f, Ry * 0.5f, Rx, Ry), "같은 점이 타원에서는 안");
     }
 
     [Test]

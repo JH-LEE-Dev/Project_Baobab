@@ -130,6 +130,7 @@ public class RoguelikeSkillController : MonoBehaviour
     // // 상태
     private bool bActive;
     private Vector3 fieldCenter;
+    private IslandShapeType fieldShape = IslandShapeType.Ellipse;
     private float fieldRadiusX = 8f;
     private float fieldRadiusY = 4.5f;
 
@@ -288,9 +289,10 @@ public class RoguelikeSkillController : MonoBehaviour
         appliedMarkDamageBonus = _bonus;
     }
 
-    /// <summary>섬(타원)의 중심과 반지름(월드). 오프로드가 섬 가장자리에서 반대편 가장자리로 돌진하는 데 쓴다.</summary>
-    public void SetField(Vector3 _center, float _radiusX, float _radiusY)
+    /// <summary>섬의 모양·중심·반지름(월드). 오프로드가 섬 가장자리에서 반대편 가장자리로 돌진하는 데 쓴다.</summary>
+    public void SetField(Vector3 _center, float _radiusX, float _radiusY, IslandShapeType _shape = IslandShapeType.Ellipse)
     {
+        fieldShape = _shape;
         fieldCenter = _center;
         fieldRadiusX = Mathf.Max(1f, _radiusX);
         fieldRadiusY = Mathf.Max(1f, _radiusY);
@@ -1334,13 +1336,13 @@ public class RoguelikeSkillController : MonoBehaviour
         {
             bool bRight = 1 == side;
             Vector2 dir = OffroadLanes.DownDiagonal(bRight);
-            float halfWidth = OffroadLanes.HalfWidth(fieldRadiusX, fieldRadiusY, dir);
+            float halfWidth = OffroadLanes.HalfWidth(fieldShape, fieldRadiusX, fieldRadiusY, dir);
             int slots = OffroadLanes.SlotCount(halfWidth, tuning.offroadLaneSpread, _radius);
 
             for (int slot = 0; slot < slots; slot++)
             {
                 float offset = OffroadLanes.SlotOffset(slot, slots, halfWidth, tuning.offroadLaneSpread, _radius, Random.value);
-                if (false == OffroadLanes.TryGetLane(fieldCenter, fieldRadiusX, fieldRadiusY, dir, offset, out Vector2 entry, out Vector2 exit)) continue;
+                if (false == OffroadLanes.TryGetLane(fieldShape, fieldCenter, fieldRadiusX, fieldRadiusY, dir, offset, out Vector2 entry, out Vector2 exit)) continue;
 
                 // 섬 테두리 타일 위에서 소환되도록 경계선에서 진행 방향으로 들여온다(차선이 짧으면 차선 길이의 1/4까지만).
                 // 반대편도 같은 만큼 안쪽에서 멈추므로 판정 경로는 양끝에서 inset만큼 짧다.

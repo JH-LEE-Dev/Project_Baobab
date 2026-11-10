@@ -77,6 +77,11 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     [SerializeField] private Vector2 islandReferenceViewSize = new Vector2(20f, 11.25f);
     [Tooltip("기준 화면 가장자리(좌우·상하)에 보일 물 타일 수. 기획 1~3칸. 섬 반지름 = 기준 화면 절반 - 이 칸 수 × 타일 크기.")]
     [SerializeField] private float islandEdgeWaterTiles = 1f;
+    [Tooltip("섬 모양. 마름모는 아이소 칸 격자에 맞춘 마름모(변이 칸 줄과 나란함)를 가장자리 물 칸 여유 안에서 가장 크게 깐다 - 16:9 기준 화면은 좌우 꼭짓점이 먼저 닿는다.")]
+    [SerializeField] private IslandShapeType islandShape = IslandShapeType.Diamond;
+    [Tooltip("마름모 섬일 때 기준 화면 가장자리에 남길 물 타일 수(islandEdgeWaterTiles 대신 쓴다). 마름모는 꼭짓점만 화면 끝에 닿아 0.5칸이면 " +
+        "좌우 꼭짓점이 화면 안에 다 보이는 가장 큰 크기다.")]
+    [SerializeField] private float islandDiamondEdgeWaterTiles = 0.5f;
     [Tooltip("시작 지점 주변의 나무 금지 반경(칸). 본편 값 15는 섬보다 커서 로그라이크에서는 작게 덮어쓴다.")]
     [SerializeField] private float centerSafeZoneRadius = 2f;
     [Tooltip("바닥 타일 파도(기획서 4-1 진입 3단계, 3-4 지형 전환 공용) 수치.")]
