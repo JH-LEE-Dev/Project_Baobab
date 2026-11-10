@@ -86,6 +86,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private Tilemap waterDecoTilemap;
     private Tilemap bloomWaterDecoTilemap;
     private Tilemap bloomDecoTilemap;
+    private TilemapRenderer bloomDecoTilemapRenderer;
+    private Material originalBloomDecoMaterial;
     private Tilemap waterStencilTilemap;
     private Tilemap groundStencilTilemap;
     private Tilemap waterTilemap;
@@ -158,20 +160,22 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         centerSafeZoneRadius = Mathf.Max(0f, _radius);
     }
 
-    // [로그라이크 전용] 화면 기준 완벽한 타원 섬. 0이면 꺼져 있다(본편).
+    // [로그라이크 전용] 화면 기준 섬(타원 또는 마름모). 반지름이 0이면 꺼져 있다(본편).
     private float ellipseIslandRadiusX;
     private float ellipseIslandRadiusY;
+    private IslandShapeType ellipseIslandShape = IslandShapeType.Ellipse;
 
     /// <summary>
-    /// [로그라이크 전용] 노이즈 섬 대신 플레이어 시작 칸을 중심으로 한 타원 섬을 만든다. 반지름은 월드 단위(화면 가로·세로)다.
-    /// 타원 밖은 전부 물, 안은 전부 육지다(해안선·물 타일·장식은 기존 규칙 그대로 붙는다). 0 이하를 넣으면 꺼진다.
+    /// [로그라이크 전용] 노이즈 섬 대신 플레이어 시작 칸을 중심으로 한 섬(_shape: 타원 또는 마름모)을 만든다. 반지름은 월드 단위(화면 가로·세로)다.
+    /// 섬 밖은 전부 물, 안은 전부 육지다(해안선·물 타일·장식은 기존 규칙 그대로 붙는다). 0 이하를 넣으면 꺼진다.
     /// 로그라이크 세션의 인스톨러는 메인메뉴로 돌아갈 때 파괴되므로 본편에 값이 남지 않는다.
     /// </summary>
-    public void SetEllipseIslandOverride(float _radiusX, float _radiusY)
+    public void SetEllipseIslandOverride(float _radiusX, float _radiusY, IslandShapeType _shape = IslandShapeType.Ellipse)
     {
         bool bEnabled = _radiusX > 0f && _radiusY > 0f;
         ellipseIslandRadiusX = bEnabled ? _radiusX : 0f;
         ellipseIslandRadiusY = bEnabled ? _radiusY : 0f;
+        ellipseIslandShape = bEnabled ? _shape : IslandShapeType.Ellipse;
     }
 
     private bool bEllipseIsland => ellipseIslandRadiusX > 0f && ellipseIslandRadiusY > 0f;
@@ -433,6 +437,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         // 스테이지 분위기 연출(돌풍·물 반짝임) 셰이더 전역값. 렌더링만 바뀌고, 꺼진 스테이지는 0으로 비운다.
         StageAmbienceShaderGlobals.Apply(stageTileData);
         ApplyGroundMaterialForStage();
+        ApplyBloomDecoMaterialForStage();
 
         // 이전 던전의 초기 스폰 코루틴이 아직 돌던 중(스폰 배치가 열린 채)에 새 맵을 만드는 경우,
         // 모아둔 충돌 타일 심기/데코 걷어내기는 옛 맵에 대한 것이므로 새 맵 위에 반영되면 안 된다.
@@ -875,6 +880,25 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         }
     }
 
+    // 꽃버섯 반짝임이 켜진 스테이지만 블룸 데코 타일맵을 반짝임 머티리얼로 그리고, 그 밖에는 원래 머티리얼로 되돌린다(렌더링 전용).
+    private void ApplyBloomDecoMaterialForStage()
+    {
+        if (null == bloomDecoTilemapRenderer)
+        {
+            if (null == bloomDecoTilemap) return;
+            bloomDecoTilemapRenderer = bloomDecoTilemap.GetComponent<TilemapRenderer>();
+            if (null == bloomDecoTilemapRenderer) return;
+            originalBloomDecoMaterial = bloomDecoTilemapRenderer.sharedMaterial;
+        }
+
+        Material overrideMaterial = StageAmbienceShaderGlobals.GetBloomDecoMaterialOverride(stageTileData);
+        Material target = null != overrideMaterial ? overrideMaterial : originalBloomDecoMaterial;
+        if (bloomDecoTilemapRenderer.sharedMaterial != target)
+        {
+            bloomDecoTilemapRenderer.sharedMaterial = target;
+        }
+    }
+
     public void ClearTreeCollisionTile(Vector3 _worldPos)
     {
         if (collisionTilemap == null) return;
@@ -1102,13 +1126,13 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     }
 
     /// <summary>
-    /// [로그라이크 전용] 플레이어 시작 칸(DetermineSpawns와 같은 칸)을 중심으로 화면에서 완벽한 타원이 되는 섬을 찍는다.
+    /// [로그라이크 전용] 플레이어 시작 칸(DetermineSpawns와 같은 칸)을 중심으로 화면에서 완벽한 타원(또는 마름모, ellipseIslandShape)이 되는 섬을 찍는다.
     ///
     /// 아이소메트릭 셀 (x, y)의 월드 위치는 ((x - y) × 셀 가로/2, (x + y) × 셀 세로/2)다. 중심 칸과의 차이를 정수 셀 좌표로
     /// 구해 이 식으로 바꾸면, 화면 좌우 반전(셀 x·y 교환)과 상하 반전(부호 교환과 x·y 교환)에 대응하는 칸이 정확히 같은
     /// 값을 받는다. 부동소수 월드 좌표(worldPosMap)를 쓰지 않는 이유가 이것이다 - 경계에 걸린 칸이 한쪽에서만 뒤집히지 않는다.
     ///
-    /// 타원 안은 잔디 값(1)으로 채워 내부 웅덩이·모래 얼룩이 생기지 않는다. 해안선 모래는 isShoreline이 따로 붙인다.
+    /// 섬 안은 잔디 값(1)으로 채워 내부 웅덩이·모래 얼룩이 생기지 않는다. 해안선 모래는 isShoreline이 따로 붙인다.
     /// </summary>
     private void GenerateEllipseIslandMap()
     {
@@ -1118,9 +1142,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         Vector2 cell = CellSize;
         float halfW = cell.x * 0.5f;
         float halfH = cell.y * 0.5f;
-        float invRx2 = 1f / (ellipseIslandRadiusX * ellipseIslandRadiusX);
-        float invRy2 = 1f / (ellipseIslandRadiusY * ellipseIslandRadiusY);
-
         for (int y = 0; y < height; y++)
         {
             int rowOffset = y * width;
@@ -1132,7 +1153,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 float wx = (ox - oy) * halfW;
                 float wy = (ox + oy) * halfH;
 
-                bool bInside = wx * wx * invRx2 + wy * wy * invRy2 <= 1f;
+                bool bInside = IslandShape.Contains(ellipseIslandShape, wx, wy, ellipseIslandRadiusX, ellipseIslandRadiusY);
                 noiseValues[x + rowOffset] = bInside ? 1f : 0f;
             }
         }
@@ -1766,6 +1787,10 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         if (bSpawnDeco) PlaceWaterAnimatedObjects(size);
         // 물가 갈대(스테이지 데이터에 켠 스테이지만). 물 장식을 다 놓은 뒤 그 자리를 피해 놓는다.
         if (bSpawnDeco) PlaceShoreReeds(size);
+        // 버섯 포자 뿜기(스테이지 데이터에 켠 스테이지만, 로그라이크는 끈다). 렌더링 전용.
+        StageMushroomSpores.Apply(bSpawnDeco && null != stageTileData ? stageTileData.MushroomSpores : null, animatedObjGenerator, "DungeonScene");
+        // 장식 숨쉬기(꺼진 스테이지·로그라이크는 아무것도 만들지 않는다)
+        StageDecoBreath.Apply(bSpawnDeco && null != stageTileData ? stageTileData.DecoBreath : null, animatedObjGenerator, "DungeonScene");
 
         BoundsInt b = new BoundsInt(0, 0, 0, width, height, 1);
         groundTilemap.SetTilesBlock(b, groundTiles);

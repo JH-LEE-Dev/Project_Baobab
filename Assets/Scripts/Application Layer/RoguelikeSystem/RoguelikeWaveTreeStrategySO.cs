@@ -6,7 +6,7 @@ using UnityEngine;
 /// <summary>
 /// 로그라이크 웨이브용 나무 생성 전략. 기획서 3-1 "필드와 웨이브"(v2.5 초기 나무 · 묶음 스폰 · 생성 위치 · 필드 가장자리 포함).
 ///
-///   - 필드: 플레이어 시작 지점을 중심으로 한 타원 섬(TileMapGenerator 타원 섬) 안의 잔디 칸에만 심는다.
+///   - 필드: 플레이어 시작 지점을 중심으로 한 섬(TileMapGenerator 로그라이크 섬, 타원 또는 마름모) 안의 잔디 칸에만 심는다.
 ///     섬 가장자리(물 · 용암 칸에서 edgeInsetCells칸 안)는 빼 둔다 - 맵 끝 나무가 HUD 밖으로 나가 보이지 않게.
 ///   - 등장: 묘목 단계를 건너뛰고 다 자란 나무로 심은 뒤, 본편의 "다 자랄 때" 연출(성장 스케일 + 플래시)을 바로 재생한다.
 ///   - 초기 나무: 웨이브 전투가 시작될 때 현재 임계치의 절반이 필드 곳곳에 솟아난 채로 시작한다(목표 처치 수에 포함).
@@ -44,6 +44,7 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
     private readonly System.Random rng = new System.Random();
 
     private Vector3 fieldCenter;
+    private IslandShapeType fieldShape = IslandShapeType.Ellipse;
     private float fieldRadiusX = 8f;
     private float fieldRadiusY = 4.5f;
     private int edgeInsetCells;
@@ -64,11 +65,12 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
     public int FieldPositionCount => fieldPositions.Count;
 
     /// <summary>
-    /// 다음 ReadyTrees에서 쓸 필드 범위(타원 반지름, 월드)와 가장자리에서 뺄 칸 수(_edgeInsetCells, 0이면 빼지 않음).
+    /// 다음 ReadyTrees에서 쓸 필드 범위(섬 모양 _shape와 반지름, 월드)와 가장자리에서 뺄 칸 수(_edgeInsetCells, 0이면 빼지 않음).
     /// 맵을 새로 만들 때마다 먼저 부른다.
     /// </summary>
-    public void ConfigureField(Vector3 _center, float _radiusX, float _radiusY, int _edgeInsetCells)
+    public void ConfigureField(Vector3 _center, float _radiusX, float _radiusY, int _edgeInsetCells, IslandShapeType _shape = IslandShapeType.Ellipse)
     {
+        fieldShape = _shape;
         fieldCenter = _center;
         fieldRadiusX = Mathf.Max(1f, _radiusX);
         fieldRadiusY = Mathf.Max(1f, _radiusY);
@@ -128,15 +130,13 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
         fieldCells.Clear();
         ITilemapDataProvider tiles = _manager.EnvironmentProvider?.tilemapDataProvider;
 
-        // 잔디 칸은 이미 섬 안에만 있다. 섬과 같은 타원으로 한 번 더 걸러 둔다(섬 설정이 꺼져 있을 때의 안전장치).
-        float invRx2 = 1f / (fieldRadiusX * fieldRadiusX);
-        float invRy2 = 1f / (fieldRadiusY * fieldRadiusY);
-        AddFieldPositions(_grassTilePositions, invRx2, invRy2, tiles);
+        // 잔디 칸은 이미 섬 안에만 있다. 섬과 같은 모양으로 한 번 더 걸러 둔다(섬 설정이 꺼져 있을 때의 안전장치).
+        AddFieldPositions(_grassTilePositions, tiles);
 
         // 시작점·포탈 옆 칸은 본편에서 "입장 5초 뒤 개방"으로 따로 빠져 있다(TileMapGenerator delayedGrassPositions).
         // 로그라이크 웨이브는 처음부터 후보에 넣는다. 매니저의 지연 개방 예약은
         // RoguelikeSystem이 준비 직후 취소한다 - 남겨 두면 웨이브마다 그 칸이 열리는 시점이 들쭉날쭉해진다.
-        AddFieldPositions(tiles?.GetDelayedGrassTileWorldPositions(), invRx2, invRy2, tiles);
+        AddFieldPositions(tiles?.GetDelayedGrassTileWorldPositions(), tiles);
 
         RemoveEdgePositions(tiles);
 
@@ -275,10 +275,10 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
     }
 
     /// <summary>
-    /// 섬 타원 안의 칸을 필드에 더한다. 이미 들어간 칸과 바위 장식 칸(나무를 심을 수 없는 영구 장애물)은 뺀다 -
+    /// 섬 모양 안의 칸을 필드에 더한다. 이미 들어간 칸과 바위 장식 칸(나무를 심을 수 없는 영구 장애물)은 뺀다 -
     /// 남겨 두면 스폰할 때마다 같은 칸을 다시 시도하고, 나무가 죽어 칸이 돌아올 때 중복이 늘어난다.
     /// </summary>
-    private void AddFieldPositions(List<Vector3> _positions, float _invRx2, float _invRy2, ITilemapDataProvider _tiles)
+    private void AddFieldPositions(List<Vector3> _positions, ITilemapDataProvider _tiles)
     {
         if (null == _positions) return;
 
@@ -287,7 +287,7 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
             Vector3 pos = _positions[i];
             float dx = pos.x - fieldCenter.x;
             float dy = pos.y - fieldCenter.y;
-            if (dx * dx * _invRx2 + dy * dy * _invRy2 > 1f) continue;
+            if (false == IslandShape.Contains(fieldShape, dx, dy, fieldRadiusX, fieldRadiusY)) continue;
 
             if (null != _tiles)
             {

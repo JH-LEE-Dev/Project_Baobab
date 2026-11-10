@@ -72,8 +72,17 @@ public class LootPillarManager : MonoBehaviour
     {
         if (lootPillarPrefab == null || lootPoints == null || _inDungeonObjectManager == null) return;
 
+        // 지난 방문의 기둥이 범위 이탈 신호 없이 사라졌다면 켜 둔 상호작용 아이콘을 여기서 끈다(bInteractIconShown 주석 참고).
+        if (true == bInteractIconShown)
+        {
+            bInteractIconShown = false;
+            LootPillarInteractStateChangedEvent?.Invoke(false, LootType.None);
+        }
+
         spawnedPillars.Clear();
         pendingFirstReveals.Clear();
+        focusedPillar = null;
+        focusCandidateCount = 0;
 
         // 새 기둥은 지금 단계로 만들어지므로 이전에 보류한 진화는 버린다.
         pendingEvolutions.Clear();
@@ -95,8 +104,8 @@ public class LootPillarManager : MonoBehaviour
             pillar.SetGrowthTier(_inDungeonObjectManager.GetLootGrowthTier(DisplayOrder[i]));
             pillar.Initialize(inputManager);
 
-            pillar.InteractStateChangedEvent -= OnPillarInteractStateChanged;
-            pillar.InteractStateChangedEvent += OnPillarInteractStateChanged;
+            pillar.FocusCandidateChangedEvent -= RefreshFocus;
+            pillar.FocusCandidateChangedEvent += RefreshFocus;
 
             pillar.LootPillarInteractEvent -= OnPillarInteract;
             pillar.LootPillarInteractEvent += OnPillarInteract;
@@ -177,9 +186,76 @@ public class LootPillarManager : MonoBehaviour
         pendingEvolutions.Clear();
     }
 
-    private void OnPillarInteractStateChanged(bool _state, LootType _lootType)
+    // ─── 상호작용 대상 선택 ─────────────────────────────────────────────
+    // 기둥끼리 상호작용 범위가 겹치면 각 기둥이 따로 아웃라인을 켜고 상호작용 키에 반응해 여러 개가 함께 켜지고
+    // 함께 열렸다. 범위 안의 기둥(CanFocus) 중 캐릭터에 가장 가까운 하나만 상호작용 대상으로 고른다.
+
+    [Header("Interaction Focus (겹친 상호작용 범위)")]
+    [SerializeField, Tooltip("이미 고른 기둥보다 이만큼(유닛) 더 가까워야 대상을 바꾼다. 두 기둥 사이 경계에서 아웃라인이 깜빡이지 않게 한다.")]
+    private float focusSwitchMargin = 0.1f;
+
+    private LootDisplayObject focusedPillar;
+
+    // 상호작용 아이콘(UIView_Unit)에 "켬"을 보내 둔 상태인지. 아이콘은 다른 상호작용과 켬/끔 횟수를 함께 세므로 켬과 끔을
+    // 정확히 한 번씩 짝지어야 한다. 고른 기둥이 해제 없이 파괴되면 focusedPillar가 null이 되어 "끔"을 빠뜨리므로 따로 기억한다.
+    private bool bInteractIconShown;
+
+    // 범위 안 기둥(CanFocus) 수. 후보가 바뀔 때마다 기둥이 알리므로(FocusCandidateChangedEvent) RefreshFocus에서 센다.
+    private int focusCandidateCount;
+
+    // 범위 안 기둥이 둘 이상일 때만 캐릭터가 움직이며 더 가까워진 기둥으로 대상을 옮긴다.
+    private void Update()
     {
-        LootPillarInteractStateChangedEvent?.Invoke(_state, _lootType);
+        if (2 <= focusCandidateCount) RefreshFocus();
+    }
+
+    private void RefreshFocus()
+    {
+        focusCandidateCount = 0;
+        for (int i = 0; i < spawnedPillars.Count; i++)
+        {
+            if (null != spawnedPillars[i] && true == spawnedPillars[i].CanFocus) focusCandidateCount++;
+        }
+
+        LootDisplayObject _current = (null != focusedPillar && true == focusedPillar.CanFocus) ? focusedPillar : null;
+        LootDisplayObject _next = _current;
+
+        // 창이 열려 있는 기둥은 범위를 벗어나기 전까지 대상을 바꾸지 않는다(바꾸면 창이 닫힌다).
+        if (null == _current || false == _current.IsInteracting)
+        {
+            float _bestDistance = null != _current ? _current.GetFocusDistance() - focusSwitchMargin : float.MaxValue;
+
+            for (int i = 0; i < spawnedPillars.Count; i++)
+            {
+                LootDisplayObject _pillar = spawnedPillars[i];
+                if (null == _pillar || _pillar == _current || false == _pillar.CanFocus) continue;
+
+                float _distance = _pillar.GetFocusDistance();
+                if (null == _next || _distance < _bestDistance)
+                {
+                    _next = _pillar;
+                    _bestDistance = _distance;
+                }
+            }
+        }
+
+        // 고른 기둥 말고는 전부 해제한다(이전 대상이 범위를 벗어났으면 여기서 창도 닫힌다).
+        for (int i = 0; i < spawnedPillars.Count; i++)
+        {
+            LootDisplayObject _pillar = spawnedPillars[i];
+            if (null != _pillar && _pillar != _next) _pillar.SetFocused(false);
+        }
+
+        if (null != _next) _next.SetFocused(true);
+        focusedPillar = _next;
+
+        // 상호작용 아이콘(UIView_Unit)은 "대상 없음 <-> 있음"이 바뀔 때만 알린다. 기둥끼리 대상만 옮겨 갈 때는 계속 켜 둔다.
+        bool _bHasFocus = null != _next;
+        if (bInteractIconShown != _bHasFocus)
+        {
+            bInteractIconShown = _bHasFocus;
+            LootPillarInteractStateChangedEvent?.Invoke(_bHasFocus, _bHasFocus ? _next.CurrentLootType : LootType.None);
+        }
     }
 
     private void OnPillarInteract(bool _bInteract, LootType _lootType)

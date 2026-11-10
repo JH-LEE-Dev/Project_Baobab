@@ -1150,6 +1150,9 @@ public class InDungeonVFXManager : MonoBehaviour
                 null
             ));
         }
+
+        // 스테이지 타격 별가루(켜진 스테이지에서만 튄다, 꺼진 곳은 아무 일도 하지 않는다)
+        StageHitSparkles.TryEmit(_visual.GetTopRootPosition());
     }
 
     /// <summary>

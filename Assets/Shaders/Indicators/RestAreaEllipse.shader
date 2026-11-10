@@ -14,13 +14,15 @@ Shader "Custom/RestAreaEllipse"
         [Header(Wave)]
         _WaveStrength("Wave Strength", Range(0, 1)) = 1
         _WavePeriod("Wave Interval (Seconds)", Float) = 4
-        _WaveAlpha("Wave Additive Alpha", Range(0, 0.4)) = 0.04
+        _WaveAlpha("Wave Additive Alpha", Range(0, 0.4)) = 0.1
 
         [Header(Inner)]
-        _BaseAlpha("Base Alpha", Range(0, 0.15)) = 0.025
+        _BaseAlpha("Base Alpha (Center)", Range(0, 0.15)) = 0.035
+        _RimAlpha("Rim Alpha (Edge)", Range(0, 0.4)) = 0.2
+        _RimStart("Rim Gradient Start (0 Center ~ 1 Edge)", Range(0, 1)) = 0.4
 
         [Header(Reveal)]
-        _RevealWaveAlpha("First Wave Additive Alpha", Range(0, 0.3)) = 0.04
+        _RevealWaveAlpha("First Wave Additive Alpha", Range(0, 0.3)) = 0.1
 
         [Header(Pixel)]
         _PixelsPerUnit("Pixels Per Unit", Float) = 32
@@ -67,6 +69,8 @@ Shader "Custom/RestAreaEllipse"
                 float _WavePeriod;
                 float _WaveAlpha;
                 float _BaseAlpha;
+                float _RimAlpha;
+                float _RimStart;
                 float _RevealWaveAlpha;
                 float _PixelsPerUnit;
                 float _Fade;
@@ -75,18 +79,20 @@ Shader "Custom/RestAreaEllipse"
             CBUFFER_END
 
             // 외곽 레이저선 코어(1px)와 보조선(안쪽 1px). 파동이 닿을수록 한 단계씩 밝아진다. 값은 sRGB.
+            // 코어는 밝은 민트, 보조선은 짙은 녹색으로 명도 차를 크게 둬서 초록 바닥에서도 선이 묻히지 않는다.
             static const float3 kCore[4] =
             {
-                float3(0.310, 0.769, 0.408), float3(0.361, 0.800, 0.447),
-                float3(0.416, 0.831, 0.486), float3(0.490, 0.863, 0.557)
+                float3(0.600, 0.941, 0.620), float3(0.675, 0.965, 0.690),
+                float3(0.765, 0.984, 0.765), float3(0.855, 1.000, 0.835)
             };
             static const float3 kSub[4] =
             {
                 float3(0.122, 0.478, 0.220), float3(0.165, 0.580, 0.275),
                 float3(0.208, 0.651, 0.314), float3(0.271, 0.722, 0.369)
             };
-            // 내부 바탕(따뜻한 연두)과 파동 빛(밝은 연두). 값은 sRGB.
-            static const float3 kBaseColor = float3(0.56, 0.80, 0.30);
+            // 내부 바탕(맑은 민트 연두)과 파동 빛(밝은 연두). 값은 sRGB.
+            // 바탕이 누런 쪽이면 어두운 바닥(4스테이지)에서 탁한 올리브색이 되므로 푸른 기를 조금 섞는다.
+            static const float3 kBaseColor = float3(0.52, 0.90, 0.52);
             static const float3 kWaveColor = float3(0.84, 0.96, 0.52);
 
             Varyings vert(Attributes IN)
@@ -114,18 +120,38 @@ Shader "Custom/RestAreaEllipse"
             // 1px 타원 윤곽. PixelEllipse(midpoint)와 같은 픽셀 집합이다(반지름 192x96, 191x95에서 0픽셀 차이를 확인).
             // 가파른 구간(좌우 끝)은 행마다 x를, 완만한 구간(위아래)은 열마다 y를 반올림해 한 픽셀만 고르므로
             // 8방향으로만 이어지는 한 줄이 되고 L자 모서리 픽셀이 생기지 않는다(JAGGIES, DOUBLE PIXEL).
+            // _aq는 중심 기준 |x|, |y| 픽셀 좌표. 가파른 구간 윤곽(행마다 x 하나)과 완만한 구간 윤곽(열마다 y 하나)을 따로 판정한다.
+            bool IsSteep(float2 _aq, float2 _r)
+            {
+                return _aq.y * _r.x * _r.x < _aq.x * _r.y * _r.y;
+            }
+
+            bool SteepEdge(float2 _aq, float2 _r)
+            {
+                float t = 1.0 - (_aq.y / _r.y) * (_aq.y / _r.y);
+                return IsSteep(_aq, _r) && 0.0 <= t && _aq.x == round(_r.x * sqrt(t));
+            }
+
+            bool ShallowEdge(float2 _aq, float2 _r)
+            {
+                float t = 1.0 - (_aq.x / _r.x) * (_aq.x / _r.x);
+                return false == IsSteep(_aq, _r) && 0.0 <= t && _aq.y == round(_r.y * sqrt(t));
+            }
+
             bool ThinEdge(float2 _q, float2 _r)
             {
                 float2 aq = abs(_q);
-                bool bSteep = aq.y * _r.x * _r.x < aq.x * _r.y * _r.y;
-                if (true == bSteep)
-                {
-                    float t = 1.0 - (aq.y / _r.y) * (aq.y / _r.y);
-                    return 0.0 <= t && aq.x == round(_r.x * sqrt(t));
-                }
+                return SteepEdge(aq, _r) || ShallowEdge(aq, _r);
+            }
 
-                float t2 = 1.0 - (aq.x / _r.x) * (aq.x / _r.x);
-                return 0.0 <= t2 && aq.y == round(_r.y * sqrt(t2));
+            // 보조선: 코어 윤곽 픽셀을 그 구간의 주축 방향으로 정확히 1px 안쪽으로 옮긴 자리.
+            // 가파른 구간은 같은 행에서 x를 1 줄이고, 완만한 구간은 같은 열에서 y를 1 줄인다.
+            // 반지름이 1px 작은 타원을 따로 그리면 대각선에서 두 선의 계단 위치가 어긋나 밝은 점과 짙은 점이 지퍼처럼 섞이고
+            // 띠 두께가 1~3px로 들쭉날쭉해진다. 코어에서 바로 옮겨 오면 어디서나 코어와 나란한 2px 띠가 된다.
+            bool SubEdge(float2 _q, float2 _r)
+            {
+                float2 aq = abs(_q);
+                return SteepEdge(aq + float2(1.0, 0.0), _r) || ShallowEdge(aq + float2(0.0, 1.0), _r);
             }
 
             // 중앙에서 퍼지는 빔 파동. 두 줄이 반 주기씩 엇갈리고, 앞쪽은 날카롭고 뒤쪽은 꼬리가 길다.
@@ -178,7 +204,7 @@ Shader "Custom/RestAreaEllipse"
                 float d2 = dot(p, p);
                 float waveEdge = WaveAt(1.0) * _WaveGate;
 
-                // 코어: 1px 윤곽. 반지름 안쪽 한 겹 윤곽을 보조선으로 겹쳐 2px 띠(레이저 느낌)를 만든다. 보조선도 같은 방식이라 L자 모서리가 없다.
+                // 코어: 1px 윤곽. 코어를 1px 안쪽으로 옮긴 보조선을 겹쳐 2px 띠(레이저 느낌)를 만든다(SubEdge).
                 // 프리멀티플라이드 블렌드라 색에 알파(_Fade)를 곱해서 낸다.
                 if (ThinEdge(pix, radiusPx))
                 {
@@ -187,15 +213,17 @@ Shader "Custom/RestAreaEllipse"
 
                 clip(1.0 - d2);
 
-                if (ThinEdge(pix, max(radiusPx - 1.0, 1.0)))
+                if (SubEdge(pix, radiusPx))
                 {
                     return half4(SrgbToLinear(kSub[(int)Lvl4(waveEdge)]) * _Fade, _Fade);
                 }
 
                 float r = sqrt(d2);
 
-                // 바탕: 계단 없이 고르게 아주 옅게 덮는다.
-                float baseA = _BaseAlpha * _Fade;
+                // 바탕: 계단 없이 덮는다. 가운데(_BaseAlpha)는 옅게 두고 _RimStart부터 외곽(_RimAlpha)으로 갈수록 부드럽게 짙어져
+                // 밝은 바닥에서도 범위의 경계가 읽힌다. 가운데의 모닥불·캐릭터 주변은 바닥이 그대로 보인다.
+                float rimT = smoothstep(_RimStart, 1.0, r);
+                float baseA = lerp(_BaseAlpha, _RimAlpha, rimT * rimT) * _Fade;
                 // 파동: 덮지 않고 밝히기만 한다. 평소 파동은 다 드러난 뒤 _WaveGate로 켜지고, 첫 파동은 열리는 동안 한 번만 지나간다.
                 // 첫 파동은 시작 세기가 0이라 _Fade를 곱하지 않는다(곱하면 드러나기 전 구간에서 거의 사라진다).
                 float addA = WaveAt(r) * _WaveAlpha * _WaveGate * _Fade + FirstWaveAt(r);

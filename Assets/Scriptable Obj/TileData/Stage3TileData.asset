@@ -73,18 +73,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 97555ba0cad42af4a826794c66fd872f, type: 2}
   - {fileID: 11400000, guid: c1e791eae7177fc49873c6dba5c78ab2, type: 2}
   waterDecoTiles: []
-  bloomWaterDecoTiles:
-  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
-  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
-  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
-  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
-  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
-  - {fileID: 11400000, guid: 6a3dbcdb43d4fa14297264834e921ded, type: 2}
-  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
-  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
-  - {fileID: 11400000, guid: 6a3dbcdb43d4fa14297264834e921ded, type: 2}
-  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
-  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
+  bloomWaterDecoTiles: []
   insectDecoTiles: []
   stencilTile: {fileID: 11400000, guid: 216c6fab6aaddbc40908cd618d642be6, type: 2}
   groundStencilTile: {fileID: 11400000, guid: b3ac472f3137a764d884349e72c0fb05, type: 2}
@@ -121,5 +110,143 @@ MonoBehaviour:
   bloomGrassDecoDensity: 0.05
   useBloomWaterDecoDensity: 0
   bloomWaterDecoDensity: 0.8
+  windGust:
+    enabled: 1
+    direction: {x: 1, y: -0.35}
+    speed: 2
+    spacing: 26
+    bandHalfWidth: 1.1
+    patchSize: 3
+    patchCoverage: 0.4
+    gustGroupLength: 50
+    treeLeanDegrees: 2.5
+    treeFlutterSpeed: 5
+    treeFlutterRatio: 0.2
+    grassClumpSize: 1.6
+    grassBendThreshold: 0.2
+    grassBendSpread: 1.1
+    grassBendBrightness: 0.18
+    groundMaterial: {fileID: 0}
+  waterShimmer:
+    enabled: 1
+    surfaceColor: {r: 0.015686275, g: 0.1764706, b: 0.5254902, a: 1}
+    colorTolerance: 0.03
+    foamColor: {r: 0.85, g: 0.9, b: 1, a: 1}
+    sparkleCellTexels: 12
+    sparklePeriod: 4
+    sparkleDuty: 0.18
+    sparkleIntensity: 2.2
+    sparkleArmStrength: 0.3
+    rimGlowEnabled: 1
+    rimColor: {r: 0.16862746, g: 0.47058824, b: 0.7921569, a: 1}
+    rimGlowColor: {r: 0.62, g: 0.86, b: 1, a: 1}
+    rimGlowStrength: 0.6
+    rimWaveDirection: {x: 1, y: 0}
+    rimWaveSpacing: 9
+    rimWavePeriod: 6
+    rimWaveWidth: 0.2
+  colorGrading:
+    enabled: 1
+    profile: {fileID: 11400000, guid: 9eb8ef77bd36c9844bda18943d0cc80f, type: 2}
+    weight: 1
+  shoreReeds:
+    enabled: 0
+    prefab: {fileID: 0}
+    material: {fileID: 0}
+    includeSea: 1
+    clusterDensity: 0.075
+    pondClusterDensity: 0.04
+    minClusterSpacing: 4
+    clusterSizeMin: 2
+    clusterSizeMax: 3
+    alongBankSpacing: 0.5
+    shoreOffsetRange: {x: 0.2, y: 0.4}
+    flipToWind: 1
+  sporeHaze:
+    enabled: 1
+    material: {fileID: 2100000, guid: c57b0d3921a3a3f499a2a357275e16ba, type: 2}
+    sortingLayerName: Indicators
+    sortingOrder: -32768
+  sporeGlow:
+    enabled: 0
+    glowAmount: 0.6
+    waveSpeed: 1.2
+    waveScale: 6
+    minWhite: 0.78
+    maxSaturation: 0.28
+    sharpness: 2
+  waterSpores:
+    enabled: 0
+    surfaceColorA: {r: 0.33333334, g: 0.76862746, b: 0.78431374, a: 1}
+    surfaceColorB: {r: 0.25490198, g: 0.6509804, b: 0.6627451, a: 1}
+    colorTolerance: 0.03
+    sporeColor: {r: 0.8, g: 0.62, b: 1, a: 1}
+    brightness: 1.25
+    cellTexels: 12
+    period: 7
+    duty: 0.55
+    driftDirection: {x: 1, y: -0.3}
+    travelTexels: 5
+    wobbleTexels: 1
+  mushroomSpores:
+    enabled: 0
+    mushroomPrefabs: []
+    material: {fileID: 0}
+    sortingLayerName: Objects
+    sortingOrder: 32767
+    emitOffset: {x: 0, y: 0.45}
+    emitSpread: {x: 0.15, y: 0.05}
+    intervalRange: {x: 4, y: 7}
+    burstCountRange: {x: 5, y: 8}
+    riseSpeedRange: {x: 0.5, y: 0.9}
+    sideSpeed: 0.45
+    dampen: 0.025
+    buoyancy: 0.08
+    wanderStrength: 0.12
+    lifetimeRange: {x: 1.6, y: 2.6}
+    sizePixelsRange: {x: 1, y: 2}
+    colorA: {r: 0.68, g: 0.99, b: 0.99, a: 1}
+    colorB: {r: 0.86, g: 0.8, b: 1, a: 1}
+    maxParticles: 256
+    capGlowAmount: 0.5
+    capGlowRiseTime: 1.6
+    capGlowFallTime: 0.5
+  bloomDecoTwinkle:
+    enabled: 1
+    material: {fileID: 2100000, guid: dbc53de19d05b814598f20fc8de64368, type: 2}
+  treeStarTwinkle:
+    enabled: 1
+    starColor: {r: 1, g: 1, b: 0.54901963, a: 1}
+    colorTolerance: 0.06
+    restLevel: 0.8
+    peakLevel: 2
+    period: 3
+    duty: 0.25
+  decoBreath:
+    enabled: 1
+    decoPrefabs:
+    - {fileID: 5425288766945036917, guid: 3163e8b3171c55f4baad1c47a70d62e6, type: 3}
+    - {fileID: 5425288766945036917, guid: 414f16ee9dec383479a0bcb93d814575, type: 3}
+    amount: 0.4
+    periodRange: {x: 4, y: 7}
+    sharpness: 3
+  hitSparkles:
+    enabled: 1
+    material: {fileID: 2100000, guid: a16e158e6c1d87944891d30b2890ffb6, type: 2}
+    sortingLayerName: Objects
+    sortingOrder: 32767
+    emitOffset: {x: 0, y: 0.2}
+    emitSpread: {x: 0.2, y: 0.25}
+    burstCountRange: {x: 5, y: 7}
+    speedRange: {x: 1.4, y: 2.4}
+    upwardBias: 0.4
+    dampen: 0.045
+    gravity: 0.8
+    lifetimeRange: {x: 0.6, y: 1}
+    sizePixelsRange: {x: 1, y: 2}
+    colorA: {r: 1, g: 0.88, b: 0.42, a: 1}
+    colorB: {r: 1, g: 0.98, b: 0.72, a: 1}
+    maxParticles: 192
+    maxBurstsPerFrame: 6
   waterHazardStaminaDrainPerSecond: 0
   treeHeatStaminaDamage: 0

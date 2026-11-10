@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 오프로드 돌진 차선 계산. 섬(타원) 위를 가로지르는 직선 하나를 고르고, 그 직선이 섬 가장자리와 만나는 두 점을 구한다.
+/// 오프로드 돌진 차선 계산. 섬(타원 또는 마름모, IslandShapeType) 위를 가로지르는 직선 하나를 고르고, 그 직선이 섬 가장자리와 만나는 두 점을 구한다.
 ///
 /// 차량 그림은 아이소 3/4 시점 한 방향(왼쪽 아래를 보는 모습)과 그 좌우 반전뿐이라, 아무 방향으로나 달리면 뒷걸음질처럼 보인다.
 /// 그래서 진행 방향은 아이소 대각선 아래쪽 두 방향(왼쪽 아래 · 오른쪽 아래)으로만 고르고, 차선은 그 방향에 수직으로 펼쳐 섬 전체를 덮는다.
@@ -50,6 +50,55 @@ public static class OffroadLanes
 
         _entry = _center + origin + dir * t1;
         _exit = _center + origin + dir * t2;
+        return true;
+    }
+
+    /// <summary>섬 모양 _shape에 맞춘 HalfWidth. 마름모는 진행 방향에 수직인 축으로 본 꼭짓점의 가장 먼 거리다.</summary>
+    public static float HalfWidth(IslandShapeType _shape, float _radiusX, float _radiusY, Vector2 _dir)
+    {
+        if (IslandShapeType.Diamond != _shape) return HalfWidth(_radiusX, _radiusY, _dir);
+
+        Vector2 perp = new Vector2(-_dir.y, _dir.x);
+        return Mathf.Max(_radiusX * Mathf.Abs(perp.x), _radiusY * Mathf.Abs(perp.y));
+    }
+
+    /// <summary>섬 모양 _shape에 맞춘 TryGetLane. 마름모는 네 변(반평면)으로 직선을 잘라 진입점·이탈점을 구한다.</summary>
+    public static bool TryGetLane(IslandShapeType _shape, Vector2 _center, float _radiusX, float _radiusY, Vector2 _dir, float _offset, out Vector2 _entry, out Vector2 _exit)
+    {
+        if (IslandShapeType.Diamond != _shape) return TryGetLane(_center, _radiusX, _radiusY, _dir, _offset, out _entry, out _exit);
+
+        _entry = _exit = _center;
+        if (_radiusX <= 0f || _radiusY <= 0f || _dir.sqrMagnitude < 0.0001f) return false;
+
+        Vector2 dir = _dir.normalized;
+        Vector2 perp = new Vector2(-dir.y, dir.x);
+        Vector2 origin = perp * _offset; // 마름모 중심 기준
+
+        // 변마다 sx·x/rx + sy·y/ry ≤ 1 (sx, sy = ±1). 직선 origin + t·dir를 넣으면 a·t ≤ b 꼴이 된다.
+        float tMin = float.NegativeInfinity;
+        float tMax = float.PositiveInfinity;
+        for (int i = 0; i < 4; i++)
+        {
+            float sx = 0 == (i & 1) ? 1f : -1f;
+            float sy = 0 == (i & 2) ? 1f : -1f;
+            float a = sx * dir.x / _radiusX + sy * dir.y / _radiusY;
+            float b = 1f - (sx * origin.x / _radiusX + sy * origin.y / _radiusY);
+
+            if (Mathf.Abs(a) < 1e-6f)
+            {
+                if (b < 0f) return false;
+                continue;
+            }
+
+            float t = b / a;
+            if (a > 0f) tMax = Mathf.Min(tMax, t);
+            else tMin = Mathf.Max(tMin, t);
+        }
+
+        if (tMin >= tMax) return false;
+
+        _entry = _center + origin + dir * tMin;
+        _exit = _center + origin + dir * tMax;
         return true;
     }
 

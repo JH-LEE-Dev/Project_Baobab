@@ -211,6 +211,16 @@ public class AnimatedObjGenerator : MonoBehaviour
         return _pool;
     }
 
+    /// <summary>
+    /// 지금 깔려 있는 이 프리팹의 정적 장식 목록(읽기 전용으로 쓸 것). 한 번도 깔린 적 없으면 null.
+    /// 화면 밖 장식은 컬링으로 꺼져 있으므로 쓰는 쪽에서 activeInHierarchy로 거른다.
+    /// </summary>
+    public List<StaticObj> GetActiveStaticObjects(StaticObj _prefab)
+    {
+        if (_prefab == null || activeStaticObjectsDict == null) return null;
+        return activeStaticObjectsDict.TryGetValue(_prefab, out var _list) ? _list : null;
+    }
+
     public AnimatedObj SpawnAnimatedObj(Vector3 _position)
     {
         return SpawnAnimatedObjFromList(_position, currentLandPrefabs);
