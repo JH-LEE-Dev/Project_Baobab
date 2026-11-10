@@ -62,7 +62,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     }
 
     // ---------- 3스테이지 배리어 ----------
-    // 별자리를 이루지 않는 나무는 배리어로 모든 피해를 막는다. 별자리 발현 폭발에 맞으면 그 타격을 흡수하며 깨지고,
+    // 별자리를 이루지 않는 나무는 배리어로 데미지 감소율(기본 100%, "배리어 관통력" 특성이 낮춤)만큼 피해를 막는다. 별자리 발현 폭발에 맞으면 그 타격을 흡수하며 깨지고,
     // 그 뒤로는 평소처럼 피해를 받는다. 켜고 끄는 것은 InDungeonObjectManager(스폰)와 Stage3TreeGenerationStrategySO(별 표식)가 한다.
     // 막힌 타격은 피해/화상/피격 이벤트/나무 흔들림 없이 배리어 번쩍임 + 스파크(TreeBarrierBlockedEvent를 받은 매니저)만 낸다.
 
@@ -76,6 +76,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     public bool bBarrierActive { get; private set; } = false;
 
+    // 배리어 데미지 감소율(1 = 100% 막음). 제공자가 없으면(마을 등) 예전처럼 모두 막는다.
+    private float BarrierDamageReduction => Mathf.Clamp01(shieldStatProvider?.BarrierDamageReduction ?? 1f);
+
     private const float BarrierHitSoundVolume = 0.75f;
     private const float BarrierHitSoundPitchMin = 1.3f;
     private const float BarrierHitSoundPitchMax = 1.5f;
@@ -85,6 +88,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     public void SetBarrier(bool _boolean)
     {
         bBarrierActive = _boolean;
+        bHasLastBarrierImpact = false;
         if (null == barrierVfx) return;
 
         if (true == _boolean)
@@ -106,19 +110,43 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     {
         if (false == bBarrierActive || bDead || IsPooled || false == gameObject.activeInHierarchy) return false;
 
-        bBarrierActive = false;
-        Vector3 impact = VFX_TreeBarrier.GetImpactPoint(cachedTransform.position, _sourcePos, out _);
-
-        if (null != barrierVfx) barrierVfx.PlayBreak(impact);
-
-        Sound.Play(SoundID.SporeShieldBreak, cachedTransform.position, 1f, true, BarrierBreakSoundPitch);
-        TreeBarrierBrokenEvent?.Invoke(this, impact);
+        BreakBarrierCore(VFX_TreeBarrier.GetImpactPoint(cachedTransform.position, _sourcePos, out _));
         return true;
     }
+
+    // 배리어 관통력으로 배리어가 남은 채 쓰러지거나 희귀나무(보석 단계)로 변하는 나무 - 그 순간 배리어를 깬다.
+    // 맞은 자리는 이번 타격에서 매니저가 정한 껍질 위 자리(PlayBarrierHit)이고, 없으면(화상 틱 등) 껍질 맨 위다.
+    // 쓰러질 때는 사망 이벤트(풀 반환) 전에 부르고, 나무가 곧바로 풀로 돌아가 껍질은 바로 꺼지므로 보이는 것은 깨짐 소리와 파편 이펙트다.
+    // 희귀나무로 변할 때는 나무가 그대로 남아 껍질 깨짐까지 별자리 발현 때와 같이 보인다.
+    private void BreakBarrierFromHit()
+    {
+        Vector3 root = cachedTransform.position;
+        Vector3 impact = bHasLastBarrierImpact
+            ? lastBarrierImpact
+            : VFX_TreeBarrier.GetImpactPoint(root, root + new Vector3(0f, 10f, 0f), out _);
+        BreakBarrierCore(impact);
+    }
+
+    private void BreakBarrierCore(Vector3 _impact)
+    {
+        bBarrierActive = false;
+        bHasLastBarrierImpact = false;
+
+        if (null != barrierVfx) barrierVfx.PlayBreak(_impact);
+
+        Sound.Play(SoundID.SporeShieldBreak, cachedTransform.position, 1f, true, BarrierBreakSoundPitch);
+        TreeBarrierBrokenEvent?.Invoke(this, _impact);
+    }
+
+    // 마지막으로 껍질이 맞은 자리(월드). 배리어가 남은 채 쓰러질 때 깨짐이 이 자리에서 시작한다.
+    private Vector3 lastBarrierImpact;
+    private bool bHasLastBarrierImpact = false;
 
     /// <summary>막힌 타격의 껍질 번쩍임/고리. _worldImpact는 껍질 위 맞은 자리.</summary>
     public void PlayBarrierHit(Vector3 _worldImpact)
     {
+        lastBarrierImpact = _worldImpact;
+        bHasLastBarrierImpact = true;
         if (null != barrierVfx) barrierVfx.PlayHit(_worldImpact);
     }
 
@@ -186,6 +214,25 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         if (_grade <= treeData.grade) return;
 
         treeData = new TreeData(treeData.type, _grade, treeData.treeVisualData, treeData.treeStatData);
+    }
+
+    /// <summary>
+    /// 이미 스폰된 나무를 Normal 등급으로 되돌린다(3스테이지 별 표식 나무는 희귀나무가 되지 않는다).
+    /// _normalHp는 Normal 등급 배율로 다시 계산한 최대 체력이고, 지금과 다를 때만 체력을 새로 맞춘다.
+    /// </summary>
+    public void DemoteToNormalGrade(float _normalHp)
+    {
+        if (treeData.grade <= TreeGrade.Normal) return;
+
+        TreeStatData stat = treeData.treeStatData;
+        bool bHpChanged = false == Mathf.Approximately(stat.hp, _normalHp);
+        stat.hp = _normalHp;
+        treeData = new TreeData(treeData.type, TreeGrade.Normal, treeData.treeVisualData, stat);
+
+        if (bHpChanged && null != healthComponent)
+        {
+            healthComponent.Setup(treeData.type, stat.hp, stat.sp, stat.spRegen, stat.regenStrategy);
+        }
     }
 
     public IHealthComponent health => healthComponent;
@@ -653,8 +700,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     /// <summary>이후 받는 모든 피해를 _amplify만큼 늘린다(포자 대폭발). 이미 더 큰 증폭이 걸려 있으면 그대로 둔다.</summary>
     public void ApplySporeDamageAmplify(float _amplify)
     {
-        // 배리어가 대폭발 피해를 막았다면 증폭도 걸리지 않는다.
-        if (bBarrierActive) return;
+        // 배리어가 대폭발 피해를 모두 막았다면 증폭도 걸리지 않는다(배리어 관통력으로 일부 들어갔다면 건다).
+        if (bBarrierActive && BarrierDamageReduction >= 1f) return;
 
         if (_amplify > sporeDamageAmplify) sporeDamageAmplify = _amplify;
 
@@ -753,12 +800,25 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         // 비활성 오브젝트에 열기 타이머 코루틴(TryStartHeatTimer)을 걸려다 에러가 난다.
         if (IsPooled || !gameObject.activeInHierarchy) return;
 
-        // 3스테이지 배리어 - 모든 피해를 막는다(배리어는 별자리 발현 폭발만 BreakBarrier로 깬다).
-        // lastHitDamage는 위에서 0으로 비웠으므로 뒤따르는 화상도 걸리지 않는다.
+        // 3스테이지 배리어 - 데미지 감소율(기본 100%)만큼 피해를 막는다(배리어는 별자리 발현 폭발만 BreakBarrier로 깬다).
+        // 100%면 모든 피해를 막고, lastHitDamage는 위에서 0으로 비웠으므로 뒤따르는 화상도 걸리지 않는다.
+        // "배리어 관통력" 특성으로 100% 미만이면 배리어 번쩍임·스파크(이벤트)를 내고 남은 비율만큼 피해가 들어간다.
+        // 화상 틱은 이미 줄어든 타격 피해의 비율이라 다시 줄이지 않는다.
+        float barrierPassRatio = 1f;
         if (bBarrierActive)
         {
-            OnBarrierBlocked(_bPlayHaptic, _bPlayHitSound);
-            return;
+            float barrierReduction = BarrierDamageReduction;
+            if (barrierReduction >= 1f)
+            {
+                OnBarrierBlocked(_bPlayHaptic, _bPlayHitSound);
+                return;
+            }
+
+            if (false == _bBurnTick)
+            {
+                barrierPassRatio = 1f - barrierReduction;
+                TreeBarrierBlockedEvent?.Invoke(this);
+            }
         }
 
         // 죽음 판정 직전 상태를 기억해, 이미 죽은 나무가 정리되기 전 다시 타격당해도
@@ -792,6 +852,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
             // 과열(4스테이지 불씨) - 화상을 뺀 모든 공격의 마지막에 곱한다. 과열이 0이면(다른 스테이지·마을·로그라이크) 1이다.
             _damage *= overheatDamageProvider?.OverheatDamageMultiplier ?? 1f;
+
+            // 3스테이지 배리어 - 관통한 비율만 들어간다(배리어가 없으면 1).
+            _damage *= barrierPassRatio;
 
             lastHitDamage = _damage;
         }
@@ -852,6 +915,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
             if (_bPlayHaptic && bLastHitByPlayer)
             {
                 Rumble.Play(EHapticEvent.TreeDestroy);
+            }
+
+            // 배리어 관통력으로 배리어가 남은 채 쓰러졌다면 풀로 돌아가기 전에 깨짐 연출을 낸다(매니저가 나무 정렬 순서를 읽는다).
+            if (bBarrierActive)
+            {
+                BreakBarrierFromHit();
             }
 
             TreeDeadEvent?.Invoke(this);
@@ -1111,6 +1180,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
             if (treeVisualComponent != null)
             {
                 treeVisualComponent.ApplyGemVisual(true, GemStageToVirtualGrade(currentGemStage));
+            }
+
+            // 배리어 관통력으로 배리어를 가진 채 희귀나무로 변했다면 배리어를 해제한다(깨짐 연출).
+            if (bBarrierActive)
+            {
+                BreakBarrierFromHit();
             }
 
             // 보석 나무로 변하는 순간의 전용 연출음/이펙트.

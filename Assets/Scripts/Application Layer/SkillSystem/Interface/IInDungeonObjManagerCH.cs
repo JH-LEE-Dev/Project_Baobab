@@ -15,6 +15,7 @@ public interface IInDungeonObjManagerCH
     public void IncreaseShieldExplosionResearchChance(float _amount);
     public void UnlockConstellationManifest(bool _boolean);
     public void IncreaseStarMarkDamage(float _amount);
+    public void IncreaseBarrierPenetration(float _amount);
     public void IncreaseConstellationDamage(float _amount);
     public void IncreaseConstellationHitCount(float _amount);
     public void IncreaseManifestationBrandBonus(float _amount);

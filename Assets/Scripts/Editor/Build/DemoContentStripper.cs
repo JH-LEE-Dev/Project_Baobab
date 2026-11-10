@@ -82,6 +82,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
     private const string RESULT_LOG_ROW_PREFAB_PATH = "Assets/Prefabs/UI/Result/UI_ResultLogRow.prefab";
     private const string INVENTORY_SLOT_PREFAB_PATH = "Assets/Prefabs/UI/Popup/Inventory/Slot.prefab";
     private const string AURA_SETTING_PREFAB_PATH = "Assets/Prefabs/VFX/Item/AuraEffectSetting.prefab";
+    private const string TREE_HP_BAR_PREFAB_PATH = "Assets/Prefabs/UI/Unit/OtherHPBar/HPBar_Shield.prefab";
 
     /// <summary>데모 빌드 동안 이름을 바꿔 두는 폴더입니다. 바꾼 이름은 Resources가 아니면 무엇이든 됩니다.</summary>
     private const string VFX_RESOURCES_FOLDER = "Assets/Graphics/VFX/Resources";
@@ -128,6 +129,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         RESULT_LOG_ROW_PREFAB_PATH,
         INVENTORY_SLOT_PREFAB_PATH,
         AURA_SETTING_PREFAB_PATH,
+        TREE_HP_BAR_PREFAB_PATH,
     };
 
     public void OnPreprocessBuild(BuildReport _report)
@@ -813,6 +815,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         int _character = StripCharacterFullOnly(_scope);
         int _tree = StripTreePrefabFullOnly(_scope);
         int _offroad = StripOffroadFullOnly(_scope);
+        int _hpBar = StripTreeHpBarFullOnly(_scope);
         int _icons = StripTentAbilityIcons(_scope);
         // 원목 데이터에서 미공개 원목 그림을 모은 뒤 끊고, 같은 그림을 쓰는 UI·VFX 프리팹에서도 끊는다.
         int _logIcons = StripLogItemIcons(_scope, out HashSet<UnityEngine.Object> _lockedLogSprites, out Sprite _demoLogSprite);
@@ -823,7 +826,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         CollectLockedPathKeywords(_scope);
 
-        return $"효과음 {_sfx}개, 설치 프리팹 {_installer}곳, 캐릭터 {_character}곳, 나무 {_tree}곳, 차량 {_offroad}곳, " +
+        return $"효과음 {_sfx}개, 설치 프리팹 {_installer}곳, 캐릭터 {_character}곳, 나무 {_tree}곳, 차량 {_offroad}곳, 나무 HP 바 {_hpBar}곳, " +
                $"스킬트리 아이콘 {_icons}개, 원목 아이콘 {_logIcons}개, 실드 회복 {_regen}개";
     }
 
@@ -1092,6 +1095,43 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
             if (false == _s.MapReachable((int)MapType.MagmaForest)) { _c += ClearRef(_so, "cinderBaseSprite"); _c += ClearRef(_so, "cinderWheelSprite"); }
             return _c;
         });
+    }
+
+    /// <summary>
+    /// 나무 HP 바(모든 던전 공용 프리팹)의 3스테이지 배리어 테두리 그림입니다. 배리어 나무에서만 켜지고,
+    /// 그림이 없으면 HUD_ShieldHPBar가 테두리를 켜지 않습니다.
+    /// </summary>
+    private static int StripTreeHpBarFullOnly(DemoFeatureScope _s)
+    {
+        if (true == _s.MapReachable((int)MapType.StarrootForest)) return 0;
+
+        GameObject _root = AssetDatabase.LoadAssetAtPath<GameObject>(TREE_HP_BAR_PREFAB_PATH);
+        if (null == _root) return MissingAsset(TREE_HP_BAR_PREFAB_PATH);
+
+        int _n = 0;
+        int _found = 0;
+        Component[] _all = _root.GetComponentsInChildren<Component>(true);
+        for (int i = 0; i < _all.Length; i++)
+        {
+            if (null == _all[i] || "HUD_ShieldHPBar" != _all[i].GetType().Name) continue;
+
+            _found++;
+            UnityEngine.Object _cover = new SerializedObject(_all[i]).FindProperty("barrierCoverImage")?.objectReferenceValue;
+            if (null == _cover) continue;
+
+            SerializedObject _so = new SerializedObject(_cover);
+            if (0 == ClearRef(_so, "m_Sprite")) continue;
+
+            Backup(TREE_HP_BAR_PREFAB_PATH);
+            _so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(_cover);
+            _n++;
+        }
+
+        // 타입 이름으로 찾으므로, 클래스 이름이 바뀌면 조용히 0이 된다. 그러면 테두리 그림이 그대로 실린다.
+        if (0 == _found) MissingComponent(TREE_HP_BAR_PREFAB_PATH, "HUD_ShieldHPBar");
+
+        return _n;
     }
 
     /// <summary>

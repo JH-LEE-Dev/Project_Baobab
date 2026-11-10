@@ -637,6 +637,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private float starMarkDamageMultiplier = 1f;          // 별표식 베기
     private ValueAccumulator starMarkDamageAccum;
+
+    // 3스테이지 배리어의 데미지 감소율. 기본 100%(모든 피해를 막음)에서 "배리어 관통력" 특성이 N%p씩 낮춘다.
+    private const float BaseBarrierDamageReduction = 1f;
+    private float barrierPenetrationPercent = 0f;         // 배리어 관통력 (0.1 = 10%p)
+    private PercentAccumulator barrierPenetrationAccum;
+    public float BarrierDamageReduction => Mathf.Clamp01(BaseBarrierDamageReduction - barrierPenetrationPercent);
     private float constellationDamageMultiplier = 1f;     // 별자리 데미지
     private PercentAccumulator constellationDamageAccum;
     private int constellationHitCount = 1;                // 별자리 잔상
@@ -2059,6 +2065,35 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         return new TreeData(type, grade, treeVisualDataBase.Get(type), statData);
     }
 
+    /// <summary>
+    /// 3스테이지 별 표식 나무는 희귀나무(보석 회생)가 되지 않는다. 별자리 별로 고른 순간 Normal 등급으로 되돌리고,
+    /// 최대 체력도 등급 체력 배율을 Normal 것으로 바꿔 다시 맞춘다(배율이 같으면 체력은 그대로).
+    /// </summary>
+    public void ForceNormalGrade(TreeObj _tree)
+    {
+        if (null == _tree || _tree.treeData.grade <= TreeGrade.Normal) return;
+
+        float gradeMul = GetGradeHpMultiplier(_tree.treeData.grade);
+        float normalMul = GetGradeHpMultiplier(TreeGrade.Normal);
+        float hp = _tree.treeData.treeStatData.hp;
+        if (gradeMul > 0f) hp = hp / gradeMul * normalMul;
+
+        _tree.DemoteToNormalGrade(hp);
+    }
+
+    private float GetGradeHpMultiplier(TreeGrade _grade)
+    {
+        if (treeGradeStatMultiplierDatas != null)
+        {
+            for (int i = 0; i < treeGradeStatMultiplierDatas.Count; i++)
+            {
+                if (treeGradeStatMultiplierDatas[i].treeGrade == _grade) return treeGradeStatMultiplierDatas[i].hpMultiplier;
+            }
+        }
+
+        return 1f;
+    }
+
     private void EnsureTreeEventHandlers()
     {
         if (onTreeDeadHandler != null) return;
@@ -2150,6 +2185,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         goldTreePityTreeKillCount++;
         if (goldTreePityTreeKillCount < goldTreePityThreshold) return;
+
+        // 3스테이지 별 표식 나무는 희귀나무가 되지 않는다. 보장은 소모하지 않고 다음에 쓰러지는 나무로 넘긴다.
+        if (_treeObj.StarGroupId >= 0) return;
 
         // 임계값에 닿았다. 등급만 올려 주면 TreeObj가 이 나무를 황금 단계로 회생시킨다.
         _treeObj.PromoteGrade(TreeGrade.Fascinating);
@@ -3324,6 +3362,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public void IncreaseStarMarkDamage(float _amount)
     {
         starMarkDamageMultiplier = starMarkDamageAccum.Add(starMarkDamageMultiplier, _amount);
+    }
+
+    public void IncreaseBarrierPenetration(float _amount)
+    {
+        barrierPenetrationPercent = barrierPenetrationAccum.Add(barrierPenetrationPercent, _amount);
     }
 
     public void IncreaseConstellationDamage(float _amount)

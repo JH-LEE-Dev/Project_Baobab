@@ -38,6 +38,10 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     [SerializeField] private Sprite rainbowGhostBarSprite;
     [SerializeField] private Image hpGhostFillImage;
 
+    [Header("Barrier")]
+    [Tooltip("3스테이지 배리어 나무의 HP 바 테두리. 주인 나무에 배리어가 있는 동안만 켠다.")]
+    [SerializeField] private Image barrierCoverImage;
+
     [Header("Revival Animation Settings")]
     [SerializeField] private float revivalDuration = 0.35f;
     [SerializeField] private Ease revivalEase = Ease.OutCubic;
@@ -89,6 +93,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     private float activeShakeStrength;
     private int currentGemStage = 0;
     private int lastRevivalFrame = -1;
+    private bool bBarrierCoverShown = false;
 
     private TweenCallback<float> cachedSpecialRecoveryUpdate;
     private TweenCallback cachedSpecialRecoveryComplete;
@@ -156,12 +161,15 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
 
         if (null == hpGhostFillImage && null != ghostSlider && null != ghostSlider.fillRect)
             hpGhostFillImage = ghostSlider.fillRect.GetComponent<Image>();
+
+        SetBarrierCoverShown(false);
     }
 
     public void SetOwner(object _owner, float _initialHpRatio = 1.0f, float _initialShieldRatio = 0.0f, bool _useShield = false)
     {
         owner = _owner;
         useShield = _useShield;
+        RefreshBarrierCover();
 
         currentHpValue = _initialHpRatio;
         currentShieldValue = _initialShieldRatio;
@@ -714,7 +722,23 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         targetObj = null;
         onFinishCallback = null;
         isHiding = false;
+        SetBarrierCoverShown(false);
         gameObject.SetActive(false);
+    }
+
+    // 배리어 테두리는 주인 나무의 배리어 상태를 그대로 따른다. 배리어는 피격 없이도(별자리 발현에 깨질 때 등) 사라지므로
+    // 피격 갱신을 기다리지 않고 매 프레임 확인한다(바뀔 때만 그래픽을 켜고 끈다).
+    private void RefreshBarrierCover()
+    {
+        bool bShow = owner is ITreeObj _tree && false == _tree.bDead && _tree.bBarrierActive;
+        if (bShow != bBarrierCoverShown) SetBarrierCoverShown(bShow);
+    }
+
+    private void SetBarrierCoverShown(bool _bShow)
+    {
+        bBarrierCoverShown = _bShow;
+        // 데모 빌드는 테두리 그림을 끊는다(DemoContentStripper). 그림 없는 Image는 흰 사각형이라 켜지 않는다.
+        if (null != barrierCoverImage) barrierCoverImage.enabled = _bShow && null != barrierCoverImage.sprite;
     }
 
 
@@ -722,6 +746,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
 
     private void LateUpdate()
     {
+        RefreshBarrierCover();
         UpdatePosition();
 
         if (true == bHideTimerActive && Time.time >= hideAtTime)

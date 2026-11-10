@@ -392,6 +392,7 @@ public enum SkillCommandType
     OverheatMaxIncrease, // 과열 최대치 증가
     TreeHeatResistance, // 열기 내성 강화
     PicnicBasket, // 소풍 바구니 (엔딩 특성)
+    BarrierPenetration, // 배리어 관통력
 }
 
 public enum AbilityLevelUpRejectReason
