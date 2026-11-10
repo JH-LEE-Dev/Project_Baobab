@@ -3091,8 +3091,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2bbfe8ac32dd5874fb00d320ff4ff953, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StaminaRecoverCircle
-  radiusX: 3
-  radiusY: 1.5
+  radiusX: 4
+  radiusY: 2
   centerOffset: {x: -1, y: -1}
   restAreaVisual: {fileID: 2791583011080765980}
 --- !u!1 &3967389484218223539
