@@ -14,13 +14,15 @@ Shader "Custom/RestAreaEllipse"
         [Header(Wave)]
         _WaveStrength("Wave Strength", Range(0, 1)) = 1
         _WavePeriod("Wave Interval (Seconds)", Float) = 4
-        _WaveAlpha("Wave Additive Alpha", Range(0, 0.4)) = 0.04
+        _WaveAlpha("Wave Additive Alpha", Range(0, 0.4)) = 0.1
 
         [Header(Inner)]
-        _BaseAlpha("Base Alpha", Range(0, 0.15)) = 0.025
+        _BaseAlpha("Base Alpha (Center)", Range(0, 0.15)) = 0.035
+        _RimAlpha("Rim Alpha (Edge)", Range(0, 0.4)) = 0.2
+        _RimStart("Rim Gradient Start (0 Center ~ 1 Edge)", Range(0, 1)) = 0.4
 
         [Header(Reveal)]
-        _RevealWaveAlpha("First Wave Additive Alpha", Range(0, 0.3)) = 0.04
+        _RevealWaveAlpha("First Wave Additive Alpha", Range(0, 0.3)) = 0.1
 
         [Header(Pixel)]
         _PixelsPerUnit("Pixels Per Unit", Float) = 32
@@ -67,6 +69,8 @@ Shader "Custom/RestAreaEllipse"
                 float _WavePeriod;
                 float _WaveAlpha;
                 float _BaseAlpha;
+                float _RimAlpha;
+                float _RimStart;
                 float _RevealWaveAlpha;
                 float _PixelsPerUnit;
                 float _Fade;
@@ -75,18 +79,20 @@ Shader "Custom/RestAreaEllipse"
             CBUFFER_END
 
             // 외곽 레이저선 코어(1px)와 보조선(안쪽 1px). 파동이 닿을수록 한 단계씩 밝아진다. 값은 sRGB.
+            // 코어는 밝은 민트, 보조선은 짙은 녹색으로 명도 차를 크게 둬서 초록 바닥에서도 선이 묻히지 않는다.
             static const float3 kCore[4] =
             {
-                float3(0.310, 0.769, 0.408), float3(0.361, 0.800, 0.447),
-                float3(0.416, 0.831, 0.486), float3(0.490, 0.863, 0.557)
+                float3(0.600, 0.941, 0.620), float3(0.675, 0.965, 0.690),
+                float3(0.765, 0.984, 0.765), float3(0.855, 1.000, 0.835)
             };
             static const float3 kSub[4] =
             {
                 float3(0.122, 0.478, 0.220), float3(0.165, 0.580, 0.275),
                 float3(0.208, 0.651, 0.314), float3(0.271, 0.722, 0.369)
             };
-            // 내부 바탕(따뜻한 연두)과 파동 빛(밝은 연두). 값은 sRGB.
-            static const float3 kBaseColor = float3(0.56, 0.80, 0.30);
+            // 내부 바탕(맑은 민트 연두)과 파동 빛(밝은 연두). 값은 sRGB.
+            // 바탕이 누런 쪽이면 어두운 바닥(4스테이지)에서 탁한 올리브색이 되므로 푸른 기를 조금 섞는다.
+            static const float3 kBaseColor = float3(0.52, 0.90, 0.52);
             static const float3 kWaveColor = float3(0.84, 0.96, 0.52);
 
             Varyings vert(Attributes IN)
@@ -194,8 +200,10 @@ Shader "Custom/RestAreaEllipse"
 
                 float r = sqrt(d2);
 
-                // 바탕: 계단 없이 고르게 아주 옅게 덮는다.
-                float baseA = _BaseAlpha * _Fade;
+                // 바탕: 계단 없이 덮는다. 가운데(_BaseAlpha)는 옅게 두고 _RimStart부터 외곽(_RimAlpha)으로 갈수록 부드럽게 짙어져
+                // 밝은 바닥에서도 범위의 경계가 읽힌다. 가운데의 모닥불·캐릭터 주변은 바닥이 그대로 보인다.
+                float rimT = smoothstep(_RimStart, 1.0, r);
+                float baseA = lerp(_BaseAlpha, _RimAlpha, rimT * rimT) * _Fade;
                 // 파동: 덮지 않고 밝히기만 한다. 평소 파동은 다 드러난 뒤 _WaveGate로 켜지고, 첫 파동은 열리는 동안 한 번만 지나간다.
                 // 첫 파동은 시작 세기가 0이라 _Fade를 곱하지 않는다(곱하면 드러나기 전 구간에서 거의 사라진다).
                 float addA = WaveAt(r) * _WaveAlpha * _WaveGate * _Fade + FirstWaveAt(r);
