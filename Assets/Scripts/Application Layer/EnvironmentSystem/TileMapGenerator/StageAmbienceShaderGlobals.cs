@@ -19,6 +19,7 @@ public static class StageAmbienceShaderGlobals
     private static readonly int WindGustBID = Shader.PropertyToID("_WindGustB");
     private static readonly int WindGustCID = Shader.PropertyToID("_WindGustC");
     private static readonly int WindGustDID = Shader.PropertyToID("_WindGustD");
+    private static readonly int WindGustEID = Shader.PropertyToID("_WindGustE");
     private static readonly int WaterShimmerAID = Shader.PropertyToID("_WaterShimmerA");
     private static readonly int WaterShimmerBID = Shader.PropertyToID("_WaterShimmerB");
     private static readonly int WaterShimmerSurfaceColorID = Shader.PropertyToID("_WaterShimmerSurfaceColor");
@@ -167,6 +168,7 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalVector(WindGustBID, new Vector4(1f, _settings.bandHalfWidth, _settings.patchSize, _settings.patchCoverage));
         Shader.SetGlobalVector(WindGustCID, new Vector4(_settings.grassBendBrightness, _settings.treeLeanDegrees, _settings.treeFlutterSpeed, _settings.treeFlutterRatio));
         Shader.SetGlobalVector(WindGustDID, new Vector4(Mathf.Max(0.1f, _settings.grassClumpSize), _settings.grassBendThreshold, Mathf.Max(0f, _settings.grassBendSpread), Mathf.Max(0f, _settings.gustGroupLength)));
+        Shader.SetGlobalVector(WindGustEID, new Vector4(Mathf.Clamp(_settings.smallPatchScale, 1f, 2f), 0f, 0f, 0f));
     }
 
     /// <summary>

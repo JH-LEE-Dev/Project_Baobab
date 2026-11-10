@@ -21,6 +21,9 @@ public class WindGustSettings
     public float patchSize = 3f;
     // 덩어리가 덮는 비율(0~1). 덩어리는 모두 고르게 세다.
     [Range(0f, 1f)] public float patchCoverage = 0.5f;
+    // 홀로 떨어진 작은 덩어리(나무 몇 그루만 흔드는 작은 돌풍)만 넓히는 배수. 잔디도 같은 덩어리를 따라 함께 넓어진다.
+    // 1이면 그대로이고, 여러 덩어리가 이어진 큰 돌풍은 바뀌지 않는다.
+    [Range(1f, 2f)] public float smallPatchScale = 1f;
     // 돌풍 무리 길이(월드). 이 길이 단위로 돌풍이 몇 번 몰아치다 한동안 잠잠해진다(약한 돌풍 없이 불거나 쉬거나). 0이면 늘 분다.
     public float gustGroupLength = 40f;
 

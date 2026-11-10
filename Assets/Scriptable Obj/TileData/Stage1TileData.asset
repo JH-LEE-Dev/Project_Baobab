@@ -126,10 +126,11 @@ MonoBehaviour:
     enabled: 1
     direction: {x: 1, y: -0.35}
     speed: 3.2
-    spacing: 22
+    spacing: 18
     bandHalfWidth: 0.9
     patchSize: 3
     patchCoverage: 0.5
+    smallPatchScale: 1.4
     gustGroupLength: 40
     treeLeanDegrees: 5.5
     treeFlutterSpeed: 9

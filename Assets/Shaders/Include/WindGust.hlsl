@@ -9,10 +9,12 @@
 // _WindGustB : 켜짐(0/1), 돌풍 앞쪽 반폭(월드, 뒤쪽 꼬리는 2.5배), 덩어리 크기(월드, 바람과 수직 방향), 덩어리 비율(0~1)
 // _WindGustC : 누운 풀잎 밝기 증가 비율, 나무 추가 기울기(도), 나무 떨림 속도, 나무 떨림 비율
 // _WindGustD : 잔디 덩어리 크기(월드), 풀잎이 눕기 시작하는 가장 약한 돌풍 세기, 풀잎마다 문턱이 퍼지는 폭, 돌풍 무리 길이(월드, 0이면 늘 같은 세기)
+// _WindGustE : 홀로 떨어진 작은 덩어리 넓히는 배수(1~2, 1 이하면 그대로), (안 씀), (안 씀), (안 씀)
 float4 _WindGustA;
 float4 _WindGustB;
 float4 _WindGustC;
 float4 _WindGustD;
+float4 _WindGustE;
 
 float WindGustHash11(float _x)
 {
@@ -88,6 +90,25 @@ float SampleWindGust(float2 _posWS)
     float patchB = WindGustHash11(patchCell + 1.0) > cut ? 1.0 : 0.0;
     float patch = lerp(patchA, patchB, patchF * patchF * (3.0 - 2.0 * patchF));
     patch = smoothstep(0.3, 0.7, patch);
+
+    // 작은 돌풍 넓히기: 양옆이 비어 홀로 떨어진 덩어리만 같은 모양 그대로 옆으로 늘린다(이어진 큰 덩어리는 그대로).
+    // 홀로 떨어진 덩어리는 덩어리 번호 자리(정수 좌표)를 가운데로 양옆 1칸까지 퍼지므로, 거리를 배수로 나눠 늘린다.
+    float smallScale = _WindGustE.x;
+    if (smallScale > 1.0)
+    {
+        [unroll]
+        for (int k = -1; k <= 2; k++)
+        {
+            float cellK = patchCell + k;
+            bool isolated = WindGustHash11(cellK) > cut && WindGustHash11(cellK - 1.0) <= cut && WindGustHash11(cellK + 1.0) <= cut;
+            float dist = abs(patchX - cellK) / smallScale;
+            if (isolated && dist < 1.0)
+            {
+                float fall = dist * dist * (3.0 - 2.0 * dist);
+                patch = max(patch, smoothstep(0.3, 0.7, 1.0 - fall));
+            }
+        }
+    }
 
     return band * patch * group;
 }
