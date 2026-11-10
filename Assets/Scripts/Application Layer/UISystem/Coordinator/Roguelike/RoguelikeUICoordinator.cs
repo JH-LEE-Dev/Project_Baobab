@@ -19,7 +19,6 @@ public sealed class RoguelikeUICoordinator
     private UIView_RoguelikeCardSelect cardSelectUI;
     private UIView_RoguelikeOwnedCards ownedCardsUI;
     private UIView_RoguelikeResult resultUI;
-    private UIView_RoguelikeRecords recordsUI;
     private UIView_ESC escUI;
     // 본편 하단 팝업(코인 HUD·가방). 로그라이크에는 골드도 인벤토리도 없어 둘 다 숨긴다(기획서 v2.4 10-1).
     private UIView_Popup mainPopupUI;
@@ -28,8 +27,6 @@ public sealed class RoguelikeUICoordinator
 
     private readonly List<RoguelikeCardViewData> cardViewBuffer = new List<RoguelikeCardViewData>(8);
     private readonly List<RoguelikeOwnedCardViewData> ownedViewBuffer = new List<RoguelikeOwnedCardViewData>(32);
-    private readonly List<RoguelikeRecordViewData> clearRankingBuffer = new List<RoguelikeRecordViewData>(5);
-    private readonly List<RoguelikeRecordViewData> unlimitRankingBuffer = new List<RoguelikeRecordViewData>(5);
 
     private Action cardPresentationDoneHandler;
     private Action ownedCardsHiddenHandler;
@@ -52,8 +49,12 @@ public sealed class RoguelikeUICoordinator
     private int lastRareCount = -1;
     private int lastNormalCount = -1;
 
+    // 이번 런의 첫 웨이브가 시작됐는지. 로그라이크 HUD(웨이브 배지 · 바 · 보관함 트레이)는 입장 연출 → 웨이브 1 카드 선택 동안 숨겨 두고,
+    // 조작이 풀리는 첫 전투 시작(WaveStarted)에 들여온다. 그 뒤로는 런 단계(카드 선택 포함) 내내 보인다.
+    private bool bRunHudShown;
+
     public void Initialize(SignalHub _signalHub, IRoguelikeRunInfo _runInfo, UIView_RoguelikeHUD _hudUI, UIView_RoguelikeCardSelect _cardSelectUI,
-        UIView_RoguelikeOwnedCards _ownedCardsUI, UIView_RoguelikeResult _resultUI, UIView_RoguelikeRecords _recordsUI, UIView_ESC _escUI,
+        UIView_RoguelikeOwnedCards _ownedCardsUI, UIView_RoguelikeResult _resultUI, UIView_ESC _escUI,
         UIView_Popup _mainPopupUI, UIView_HUD _mainHudUI)
     {
         // 로그라이크는 아이템 드롭·인벤토리(기획서 v2.2 3-1)도 골드(v2.4)도 쓰지 않는다. 가방 HUD와 코인 HUD를 모두 숨긴다.
@@ -74,7 +75,6 @@ public sealed class RoguelikeUICoordinator
         // 보유 카드 창이 HUD 우하단 트레이 칸에서 펼쳐지고 접히도록, 트레이 연출과 위치를 창에 연결한다.
         ownedCardsUI?.SetTray(hudUI?.OwnedTray);
         resultUI = _resultUI;
-        recordsUI = _recordsUI;
         escUI = _escUI;
 
         hudUI?.SetGoldVisible(false);
@@ -99,7 +99,7 @@ public sealed class RoguelikeUICoordinator
     }
 
     /// <summary>
-    /// 본편 HUD·하단 팝업의 맵 전환 내림·올림 모션이 재생 중인지. 로비 진입 암전은 이 모션이 끝난 뒤 걷힌다 -
+    /// 본편 HUD·하단 팝업의 맵 전환 내림·올림 모션이 재생 중인지. 입장 암전은 이 모션이 끝난 뒤 걷힌다 -
     /// 그 전에 걷히면 HUD가 내려가는 모습이 페이드 아웃 사이로 보인다.
     /// </summary>
     public bool IsMainHudMotionPlaying =>
@@ -165,7 +165,6 @@ public sealed class RoguelikeUICoordinator
         signalHub.Subscribe<RoguelikeCardSelectionSkippedSignal>(CardSelectionSkipped);
         signalHub.Subscribe<RoguelikeCardShopRejectedSignal>(CardShopRejected);
         signalHub.Subscribe<RoguelikeResultReadySignal>(ResultReady);
-        signalHub.Subscribe<RoguelikeRecordsRequestedSignal>(RecordsRequested);
         signalHub.Subscribe<RoguelikeRunEndedSignal>(RunEnded);
         signalHub.Subscribe<RoguelikeEntryScreenCoveredSignal>(EntryScreenCovered);
         signalHub.Subscribe<RoguelikeRunStartedSignal>(RunStarted);
@@ -184,7 +183,6 @@ public sealed class RoguelikeUICoordinator
         signalHub.UnSubscribe<RoguelikeCardSelectionSkippedSignal>(CardSelectionSkipped);
         signalHub.UnSubscribe<RoguelikeCardShopRejectedSignal>(CardShopRejected);
         signalHub.UnSubscribe<RoguelikeResultReadySignal>(ResultReady);
-        signalHub.UnSubscribe<RoguelikeRecordsRequestedSignal>(RecordsRequested);
         signalHub.UnSubscribe<RoguelikeRunEndedSignal>(RunEnded);
         signalHub.UnSubscribe<RoguelikeEntryScreenCoveredSignal>(EntryScreenCovered);
         signalHub.UnSubscribe<RoguelikeRunStartedSignal>(RunStarted);
@@ -201,16 +199,13 @@ public sealed class RoguelikeUICoordinator
             cardSelectUI.RerollRequestedEvent += RerollRequested;
         }
 
+        // 결과 화면의 두 버튼. 화면은 호환용으로 ConfirmRequestedEvent도 함께 올리지만 구독하지 않는다(두 번 처리되지 않게).
         if (null != resultUI)
         {
-            resultUI.ConfirmRequestedEvent -= ResultConfirmRequested;
-            resultUI.ConfirmRequestedEvent += ResultConfirmRequested;
-        }
-
-        if (null != recordsUI)
-        {
-            recordsUI.ClosedEvent -= RecordsClosed;
-            recordsUI.ClosedEvent += RecordsClosed;
+            resultUI.RetryRequestedEvent -= ResultRetryRequested;
+            resultUI.RetryRequestedEvent += ResultRetryRequested;
+            resultUI.MainMenuRequestedEvent -= ResultMainMenuRequested;
+            resultUI.MainMenuRequestedEvent += ResultMainMenuRequested;
         }
 
         if (null != ownedCardsUI)
@@ -228,8 +223,11 @@ public sealed class RoguelikeUICoordinator
             cardSelectUI.RerollRequestedEvent -= RerollRequested;
         }
 
-        if (null != resultUI) resultUI.ConfirmRequestedEvent -= ResultConfirmRequested;
-        if (null != recordsUI) recordsUI.ClosedEvent -= RecordsClosed;
+        if (null != resultUI)
+        {
+            resultUI.RetryRequestedEvent -= ResultRetryRequested;
+            resultUI.MainMenuRequestedEvent -= ResultMainMenuRequested;
+        }
         if (null != ownedCardsUI) ownedCardsUI.HiddenEvent -= ownedCardsHiddenHandler;
     }
 
@@ -237,15 +235,15 @@ public sealed class RoguelikeUICoordinator
 
     private void PhaseChanged(RoguelikePhaseChangedSignal _signal)
     {
-        bool bCombatPhase = ERunPhase.Lobby != _signal.phase && ERunPhase.ReturningToLobby != _signal.phase && ERunPhase.None != _signal.phase;
+        bool bCombatPhase = IsCombatPhase(_signal.phase);
 
-        // 보유 카드를 열 수 없는 단계(쓰러짐·결과·로비 쪽)로 넘어가면 열려 있던 창과 일시정지를 걷는다.
+        // 보유 카드를 열 수 없는 단계(쓰러짐·결과·입장 연출)로 넘어가면 열려 있던 창과 일시정지를 걷는다.
         if (false == CanOpenOwnedCards(_signal.phase)) CloseOwnedCards();
 
-        // 런 도중 ESC의 메인메뉴 버튼은 "로비"(포기)다. 로비에서는 진짜 메인메뉴로 나가므로 본래 문구로 둔다(기획서 3-7).
+        // 런 도중 ESC의 메인메뉴 버튼은 "포기"다(기획서 3-7). 입장 연출·결과 화면 동안은 ESC가 잠겨 있다.
         escUI?.SetLobbyMode(bCombatPhase);
 
-        // 전투 단계를 벗어나면(결과·로비 등) 임계점 경고(스태미너 바 + 붉은 화면)를 확실히 끈다.
+        // 전투 단계를 벗어나면(결과·입장 연출 등) 임계점 경고(스태미너 바 + 붉은 화면)를 확실히 끈다.
         if (false == bCombatPhase && (bLastPressureExceeded || bLastPressureLethal))
         {
             bLastPressureExceeded = false;
@@ -253,8 +251,32 @@ public sealed class RoguelikeUICoordinator
             if (null != mainHudUI) mainHudUI.SetRoguelikePressureWarning(false, false);
         }
 
+        // 런 단계를 벗어나면(결과·입장 연출) 다음 런은 첫 전투가 시작될 때 HUD를 다시 들여온다.
+        if (false == bCombatPhase) bRunHudShown = false;
+
         if (null == hudUI) return;
-        hudUI.SetCombatVisible(bCombatPhase);
+        hudUI.SetCombatVisible(bCombatPhase && bRunHudShown);
+    }
+
+    /// <summary>
+    /// 로그라이크 HUD가 보일 수 있는 런 단계. 입장 연출(Entering)과 결과 화면(Result)은 빠진다.
+    /// 쓰러짐(GameOver)은 결과 화면이 뜰 때까지 HUD를 남긴다(결과 화면이 뜨는 프레임에 함께 빠진다).
+    /// </summary>
+    private static bool IsCombatPhase(ERunPhase _phase)
+    {
+        switch (_phase)
+        {
+            case ERunPhase.RunStarting:
+            case ERunPhase.CardSelect:
+            case ERunPhase.TierTransition:
+            case ERunPhase.WaveCombat:
+            case ERunPhase.WaveClear:
+            case ERunPhase.RunClear:
+            case ERunPhase.GameOver:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private void WaveStarted(RoguelikeWaveStartedSignal _signal)
@@ -263,6 +285,13 @@ public sealed class RoguelikeUICoordinator
 
         hudUI.SetWave(_signal.spec.waveNumber, _signal.spec.bUnlimit, _signal.spec.unlimitIndex);
         hudUI.SetWaveProgress(0, _signal.spec.killTarget);
+
+        // 입장(또는 다시 도전) 뒤 첫 전투: 조작이 풀리는 순간 HUD를 들여온다. 웨이브 값을 먼저 넣고 들여온다.
+        if (false == bRunHudShown)
+        {
+            bRunHudShown = true;
+            hudUI.SetCombatVisible(true);
+        }
 
         // 웨이브 시작의 첫 임계치 값이 반드시 HUD에 들어가게 한다(임계치 바가 그 값으로 곧바로 선다).
         lastTreeCount = -1;
@@ -348,11 +377,16 @@ public sealed class RoguelikeUICoordinator
         cardSelectUI.CloseSelection(cardPresentationDoneHandler);
     }
 
-    /// <summary>새 런 시작. 이어서 오는 보유 카드 갱신(ModifiersChanged)이 이전 런 값과 같아도 0 · 0을 반드시 넣게 한다.</summary>
+    /// <summary>
+    /// 새 런 시작. 이어서 오는 보유 카드 갱신(ModifiersChanged)이 이전 런 값과 같아도 0 · 0을 반드시 넣게 한다.
+    /// 로그라이크 HUD는 첫 전투가 시작될 때까지 숨겨 둔다(WaveStarted).
+    /// </summary>
     private void RunStarted(RoguelikeRunStartedSignal _signal)
     {
         lastRareCount = -1;
         lastNormalCount = -1;
+
+        bRunHudShown = false;
     }
 
     /// <summary>
@@ -389,10 +423,14 @@ public sealed class RoguelikeUICoordinator
 
     private void ResultReady(RoguelikeResultReadySignal _signal)
     {
+        // 결과 창 하나에만 시선이 가도록, 결과 창이 등장하는 같은 프레임에 로그라이크 HUD(웨이브 배지 · 바 · 보관함 트레이)를
+        // 방향별 퇴장 모션으로 뺀다. 본편 HUD(스태미너 바 · 대쉬 게이지)는 시스템이 같은 프레임에 내린다(RoguelikeSystem.FinishRunRoutine).
+        hudUI?.SetCombatVisible(false);
+
         if (null == resultUI)
         {
-            // 결과 화면이 없으면 기다릴 대상이 없다. 바로 확인으로 처리해 로비로 넘긴다.
-            signalHub.Publish(new RoguelikeResultConfirmedSignal());
+            // 결과 화면이 없으면 기다릴 대상이 없다. 바로 다시 도전으로 처리해 다음 런으로 넘긴다.
+            signalHub.Publish(new RoguelikeResultConfirmedSignal(ERoguelikeResultChoice.Retry));
             return;
         }
 
@@ -416,43 +454,21 @@ public sealed class RoguelikeUICoordinator
         resultUI.OpenResult(in data);
     }
 
-    private void RecordsRequested(RoguelikeRecordsRequestedSignal _signal)
-    {
-        if (null == recordsUI)
-        {
-            signalHub.Publish(new RoguelikeRecordsClosedSignal());
-            return;
-        }
-
-        RoguelikeRecordData records = runInfo.Records;
-        RoguelikeRecordViewData recent = default;
-        if (null != records && records.bHasRecent) recent = ToRecordView(records.recent);
-
-        clearRankingBuffer.Clear();
-        unlimitRankingBuffer.Clear();
-
-        if (null != records)
-        {
-            for (int i = 0; i < records.clearRanking.Count; i++) clearRankingBuffer.Add(ToRecordView(records.clearRanking[i]));
-            for (int i = 0; i < records.unlimitRanking.Count; i++) unlimitRankingBuffer.Add(ToRecordView(records.unlimitRanking[i]));
-        }
-
-        recordsUI.OpenRecords(in recent, clearRankingBuffer, unlimitRankingBuffer);
-    }
-
     // // UI → 시스템
 
     private void BuyRequested(int _offerIndex) => signalHub.Publish(new RoguelikeCardBuyRequestedSignal(_offerIndex));
     private void RerollRequested() => signalHub.Publish(new RoguelikeCardRerollRequestedSignal());
     private void OnCardPresentationDone() => signalHub.Publish(new RoguelikeCardSelectionPresentationDoneSignal());
 
-    private void ResultConfirmRequested()
-    {
-        // 결과 화면은 여기서 닫지 않는다. 확인 직후 결과 화면 위에 디스토션이 걸리고(기획서 4-1 · 3-7), 암전으로 덮인 뒤 닫는다(EntryScreenCovered).
-        signalHub.Publish(new RoguelikeResultConfirmedSignal());
-    }
+    // 다시 도전은 결과 화면을 여기서 닫지 않는다. 결과 화면 위에 디스토션이 걸리고(기획서 4-1 · 3-7) 암전으로 덮인 뒤 닫는다(EntryScreenCovered).
+    private void ResultRetryRequested() => signalHub.Publish(new RoguelikeResultConfirmedSignal(ERoguelikeResultChoice.Retry));
 
-    private void RecordsClosed() => signalHub.Publish(new RoguelikeRecordsClosedSignal());
+    // 메인메뉴는 덮어 주는 암전 없이 카메라 상승 · 구름으로 넘어가므로 누르는 순간 결과 화면을 닫는다.
+    private void ResultMainMenuRequested()
+    {
+        if (null != resultUI && resultUI.IsVisible) resultUI.Hide();
+        signalHub.Publish(new RoguelikeResultConfirmedSignal(ERoguelikeResultChoice.MainMenu));
+    }
 
     /// <summary>보유 카드 창이 떠 있는지(닫기 연출 중 포함). 인벤토리 키 리다이렉트가 UI 모드에서도 키를 통과시킬지 정하는 데 쓴다.</summary>
     public bool IsOwnedCardsOpen()
@@ -496,15 +512,15 @@ public sealed class RoguelikeUICoordinator
     /// <summary>판이 끝났다(게임오버·포기). 결과 화면과 그 뒤 연출이 멈춘 시간 위에서 돌지 않게 보유 카드 창을 닫는다.</summary>
     private void RunEnded(RoguelikeRunEndedSignal _signal) => CloseOwnedCards();
 
-    /// <summary>로비 진입 암전이 화면을 덮었다. 디스토션이 걸려 있던 결과 화면을 닫는다.</summary>
+    /// <summary>입장 암전이 화면을 덮었다. 디스토션이 걸려 있던 결과 화면을 닫는다.</summary>
     private void EntryScreenCovered(RoguelikeEntryScreenCoveredSignal _signal)
     {
         if (null != resultUI && resultUI.IsVisible) resultUI.Hide();
     }
 
     /// <summary>
-    /// 보유 카드 창을 열 수 있는 단계. 런이 진행 중인 단계만 허용한다. 쓰러짐(GameOver)·결과·로비 쪽에서 열면
-    /// 일시정지가 쓰러짐 애니메이션과 결과 → 로비 연출(스케일 시간)을 창을 닫을 때까지 멈춰 세운다.
+    /// 보유 카드 창을 열 수 있는 단계. 런이 진행 중인 단계만 허용한다. 쓰러짐(GameOver)·결과·입장 연출에서 열면
+    /// 일시정지가 쓰러짐 애니메이션과 결과 → 다시 도전 연출(스케일 시간)을 창을 닫을 때까지 멈춰 세운다.
     /// 런 클리어 연출(RunClear)은 슬로우 모션(timeScale)을 직접 걸기 때문에 그동안은 열지 않는다.
     /// </summary>
     private static bool CanOpenOwnedCards(ERunPhase _phase)
@@ -524,7 +540,7 @@ public sealed class RoguelikeUICoordinator
 
     private void CloseOwnedCards()
     {
-        // 시스템이 화면을 바꾸는 순간이라 닫기 연출 없이 바로 닫는다(연출이 결과 · 로비 연출 위에 겹쳐 뜨지 않게).
+        // 시스템이 화면을 바꾸는 순간이라 닫기 연출 없이 바로 닫는다(연출이 결과 · 입장 연출 위에 겹쳐 뜨지 않게).
         if (null != ownedCardsUI && ownedCardsUI.IsVisible) ownedCardsUI.HideImmediate();
         ResumeFromOwnedCards();
     }
@@ -620,24 +636,4 @@ public sealed class RoguelikeUICoordinator
         }
     }
 
-    private RoguelikeRecordViewData ToRecordView(RunRecordEntry _entry)
-    {
-        if (null == _entry) return default;
-
-        List<RoguelikeOwnedCardViewData> cards = new List<RoguelikeOwnedCardViewData>(null != _entry.cards ? _entry.cards.Count : 0);
-        FillRecordCards(_entry, cards);
-
-        return new RoguelikeRecordViewData
-        {
-            bValid = true,
-            reachedWave = _entry.reachedWave,
-            bCleared = _entry.bCleared,
-            unlimitWave = _entry.reachedUnlimitWave,
-            playTimeSeconds = _entry.playTimeSeconds,
-            rankingTimeSeconds = _entry.ClearRankingTime,
-            bAbandoned = _entry.bAbandoned,
-            recordedAtUtcTicks = _entry.recordedAtUtcTicks,
-            cards = cards,
-        };
-    }
 }

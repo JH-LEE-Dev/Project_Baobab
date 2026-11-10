@@ -6,30 +6,31 @@ using UnityEngine;
 // 한 번에 하나의 흐름만 돈다(StartFlow가 이전 흐름을 끊는다). 게임오버·포기는 진행 중인 흐름을 끊고 새 흐름을 시작한다.
 public partial class RoguelikeSystem
 {
-    // // 로비
+    // // 입장
 
     /// <summary>
-    /// 로비로 들어간다(기획서 v2.2 9-1 진입 연출 8단계). 결과 화면에서 오면(_bFromResult) 런 상태를 전부 비우고 캐릭터를 되살린다.
+    /// 런 입장 연출(기획서 v2.2 9-1 진입 연출 8단계) 뒤 곧바로 런을 시작한다. 결과 화면의 다시 도전에서 오면(_bFromResult)
+    /// 런 상태를 전부 비우고 캐릭터를 되살린다.
     ///   1. 디스토션 링: 메인메뉴에서 오면 메인메뉴(UIView_MainMenu)가 이미 걸고 검은 화면인 채 씬이 넘어온다.
     ///      결과 화면에서 오면 여기서 결과 화면 위에 건다.
     ///   2. 암전 유지(약 0.5초): 그 아래에서 런 상태 정리, 1티어 지형 생성. 화면 안은 물만 깔린 바다로 되돌려 둔다.
     ///   3. 페이드 아웃(약 0.3초) - 물 타일은 깔린 채로 드러난다. 이와 동시에
     ///   4~6. 바닥 타일 파도 → 배경(해안선) 퍼즐 조립 → N초 안에 완성.
-    ///   7. 플레이어 낙하.  8. 조작 가능.
+    ///   7. 플레이어 낙하(섬 정중앙).  8. 곧바로 런 시작(웨이브 1 카드 선택). 조작은 카드 선택이 끝나고 전투가 시작될 때 풀린다.
     /// </summary>
-    private IEnumerator EnterLobbyRoutine(bool _bFromResult)
+    private IEnumerator EnterRunRoutine(bool _bFromResult)
     {
-        SetPhase(ERunPhase.ReturningToLobby);
+        SetPhase(ERunPhase.Entering);
         DisableControl();
 
-        // Lobby가 될 때까지 ESC를 막는다. 이 구간의 메인메뉴 요청은 처리할 곳이 없어 무시되는데(GoToMainMenuRequested),
-        // ESC 쪽은 그 전에 메뉴를 닫고 이동 잠금을 풀어 버려 연출 중에 캐릭터가 움직인다.
-        inputManager.SetESCKeyLock(LobbyEntryESCLockOwner, true);
+        // 런이 시작될 때까지 ESC를 막는다. 이 구간의 포기 요청은 처리할 곳이 없어 무시되는데(GoToMainMenuRequested),
+        // ESC 쪽은 그 전에 메뉴를 닫고 이동 잠금을 풀어 버려 연출 중에 캐릭터가 움직인다. 푸는 곳은 RunRoutine.
+        inputManager.SetESCKeyLock(EntryESCLockOwner, true);
 
         RoguelikeScreenTransition screen = RoguelikeScreenTransition.Instance;
         if (_bFromResult)
         {
-            // 결과 화면에서 확인을 누르면 결과 화면에서 바로 디스토션이 걸린다(메인메뉴를 거치지 않는다). 이펙트 담당의
+            // 결과 화면에서 다시 도전을 누르면 결과 화면에서 바로 디스토션이 걸린다(메인메뉴를 거치지 않는다). 이펙트 담당의
             // ResultToLobby 연출은 디스토션과 함께 돈다.
             bool bGateDone = false;
             StartCoroutine(PlayProductionThen(new RoguelikeProductionRequest
@@ -41,8 +42,9 @@ public partial class RoguelikeSystem
             yield return screen.DistortToBlack(screenTransitionSettings);
             while (false == bGateDone) yield return null;
 
-            // 메인메뉴에서 들어올 때처럼(Initialize) 검은 화면 아래에서 HUD를 내려 두고, 조작이 풀릴 때 올린다(PopupUIUpSignal).
-            signalHub.Publish(new PopupUIDownSignal());
+            // 메인메뉴에서 들어올 때처럼(StartSession) 검은 화면 아래에서 HUD를 내려 두고, 조작이 풀릴 때 올린다(RaiseMainHud).
+            // 결과 화면이 뜰 때 이미 내렸으므로(FinishRunRoutine) 보통은 그대로 유지된다.
+            LowerMainHud();
         }
         else
         {
@@ -64,16 +66,16 @@ public partial class RoguelikeSystem
         Vector3 startPos = inDungeonObjectManager.GetPlayerStartPos();
         if (null != character) unitLogicManager.SetCharacterPos(startPos + characterHiddenOffset);
 
-        TierFieldData lobbyField = GetTierField(0);
-        signalHub.Publish(new DecalreDungeonTypeSignal(lobbyField.mapType, lobbyField.forestType));
+        TierFieldData entryField = GetTierField(0);
+        signalHub.Publish(new DecalreDungeonTypeSignal(entryField.mapType, entryField.forestType));
 
         if (false == _bFromResult)
         {
             PrepareSceneUnderBlack();
         }
 
-        // 지역 BGM은 화면이 드러나는 순간부터. 결과 화면에서 돌아오면 1티어 곡으로 돌아간다.
-        PlayFieldBgm(lobbyField.mapType);
+        // 지역 BGM은 화면이 드러나는 순간부터. 결과 화면에서 다시 도전하면 1티어 곡으로 돌아간다.
+        PlayFieldBgm(entryField.mapType);
 
         // 2단계: 검은 화면이 꽉 찬 뒤 암전 유지 시간(약 0.5초)만큼 덮어 둔다. 꽉 찬 순간부터 세므로 메인메뉴에서 오면 씬 로드 시간도 여기에 든다.
         // 지형 생성이 더 걸리면 그만큼 길어진다(위에서 이미 기다렸다). 검은 화면 아래에서 내린 HUD(PopupUIDownSignal)의 내림 모션도
@@ -95,22 +97,16 @@ public partial class RoguelikeSystem
             type = ERoguelikeProduction.LobbyEntry,
             bFromResult = _bFromResult,
             characterTransform = null != character ? character.transform : null,
-            mapType = lobbyField.mapType,
+            mapType = entryField.mapType,
         });
 
         while (tileWave.IsPlaying) yield return null;
 
-        // 6단계: 로비 물건을 놓고 하늘에서 플레이어가 똑 떨어진다.
-        PlaceLobbyObjects(startPos);
+        // 6단계: 하늘에서 플레이어가 섬 정중앙(시작 칸)으로 똑 떨어진다.
         yield return CharacterDropRoutine(startPos);
 
-        // 7단계: 조작 가능.
-        signalHub.Publish(new PopupUIUpSignal());
-        inputManager.SetESCKeyLock(LobbyEntryESCLockOwner, false);
-        EnableControl();
-        SetPhase(ERunPhase.Lobby);
-
-        flowCoroutine = null;
+        // 7단계: 곧바로 런 시작. 조작·HUD는 웨이브 1 카드 선택이 끝나고 전투가 시작될 때 풀리고 올라온다(WaveCombatRoutine).
+        yield return RunRoutine();
     }
 
     /// <summary>
@@ -131,16 +127,22 @@ public partial class RoguelikeSystem
     }
 
     /// <summary>
-    /// 로비에서 메인메뉴로(ESC → 메인메뉴). 본편 마을 → 메인메뉴 이탈(TownSystem.GoToMainMenuRequested →
+    /// 결과 화면에서 메인메뉴로. 본편 마을 → 메인메뉴 이탈(TownSystem.GoToMainMenuRequested →
     /// TownProductionManager.StartGoToMainMenu)과 같은 순서다: BGM 페이드아웃 → 메인메뉴 커튼 → 구름 → HUD 내림 →
-    /// 카메라 상승(상승 효과음). 상승이 끝나면 메인메뉴로 넘어간다.
+    /// 카메라 상승(상승 효과음). 상승이 끝나면 메인메뉴로 넘어간다. 메인메뉴는 로그라이크 하위 메뉴를 연 상태로 도착한다.
     /// </summary>
     private IEnumerator ExitToMainMenuRoutine()
     {
         bExitingToMainMenu = true;
         DisableControl();
         inputManager.PauseESCKey(true); // 본편과 같이 메인메뉴 도착(BootStrap.SetupMainMenuScene)까지 막는다
-        RemoveLobbyObjects();
+
+        // 쓰러져 끝난 판이면 쓰러질 때 건 상호작용 잠금(카운터, Character.StaminaIsEmpty)을 여기서 상쇄한다. 다시 도전 경로는
+        // RestoreCharacterAfterRun이 풀지만 이 경로는 캐릭터를 되살리지 않는다. 남기면 메인메뉴를 거쳐 본편까지 상호작용 키가 죽는다.
+        if (null != character && character.bDead) inputManager.PauseInteractKey(false);
+
+        // 메인메뉴(BootStrap.SetupMainMenuScene)가 로그라이크 하위 메뉴를 연 상태로 나타나게 한다.
+        RoguelikeMainMenuReturn.RequestOpenRoguelikeMenu();
 
         float ascendSeconds = null != skyCameraProductionManager ? skyCameraProductionManager.MoveDuration : exitToMainMenuSeconds;
         Sound.FadeOutBGM(ascendSeconds);
@@ -148,7 +150,8 @@ public partial class RoguelikeSystem
 
         GoToMainMenuCurtainRevealEvent?.Invoke();
         signalHub.Publish(new StartSkyProductionSignal(true));
-        signalHub.Publish(new PopupUIDownSignal());
+        // 결과 화면이 뜰 때 이미 내렸다(FinishRunRoutine). 본편 이탈 순서를 지키되 두 번 내리지 않는다.
+        LowerMainHud();
 
         if (null != skyCameraProductionManager && null != cameraAnchor)
         {
@@ -270,18 +273,14 @@ public partial class RoguelikeSystem
 
     private IEnumerator RunRoutine()
     {
-        RemoveLobbyObjects();
         DisableControl();
         SetPhase(ERunPhase.RunStarting);
 
         ResetRunState();
         BeginRunState();
 
-        yield return productionGate.Play(new RoguelikeProductionRequest
-        {
-            type = ERoguelikeProduction.LobbyToRun,
-            characterTransform = null != character ? character.transform : null,
-        });
+        // 런이 시작됐다(bRunActive). 이제부터 ESC → 포기가 결과 화면으로 이어지므로 입장 연출의 ESC 잠금을 푼다.
+        inputManager.SetESCKeyLock(EntryESCLockOwner, false);
 
         runWaveNumber = 1;
         while (true)
@@ -420,6 +419,11 @@ public partial class RoguelikeSystem
         SetPhase(ERunPhase.WaveCombat);
         signalHub.Publish(new RoguelikeWaveStartedSignal(_spec));
         signalHub.Publish(new RoguelikeWaveProgressSignal(0, _spec.killTarget));
+
+        // 입장(또는 다시 도전) 뒤 첫 전투: 암전 아래에서 내려 둔 본편 HUD(스태미너 바 · 대쉬 게이지)를 조작이 풀리는 순간 올린다.
+        // 로그라이크 HUD는 코디네이터가 웨이브 시작(RoguelikeWaveStartedSignal)에 들여온다.
+        RaiseMainHud();
+
         EnableControl();
         skillController?.BeginCombat(_spec.tierIndex);
 
@@ -626,7 +630,10 @@ public partial class RoguelikeSystem
         yield return FinishRunRoutine(ERunEndReason.GameOver);
     }
 
-    /// <summary>결과를 기록하고(결과 화면 직전) 결과 화면을 띄운 뒤, 확인을 누르면 로비로 간다. 기획서 3-7 "종료 흐름".</summary>
+    /// <summary>
+    /// 결과를 기록하고(결과 화면 직전) 결과 화면을 띄운다. 기획서 3-7 "종료 흐름".
+    /// 다시 도전이면 결과 화면에서 바로 입장 연출 → 다음 런, 메인메뉴면 메인메뉴 이탈 연출로 나간다.
+    /// </summary>
     private IEnumerator FinishRunRoutine(ERunEndReason _reason)
     {
         SetPhase(ERunPhase.Result);
@@ -644,6 +651,10 @@ public partial class RoguelikeSystem
         signalHub.Publish(new RoguelikeRunEndedSignal(_reason));
 
         bResultConfirmed = false;
+        // 결과 화면이 뜨는 같은 프레임에 뒤쪽 HUD를 모두 뺀다: 본편 HUD(스태미너 바 · 대쉬 게이지)는 여기서 내리고,
+        // 로그라이크 HUD(웨이브 배지 · 바 · 보관함 트레이)는 코디네이터가 결과 화면을 열며 뺀다(ResultReady). 다음 런의 첫 전투에서 올린다.
+        // 쓰러져 끝난 판은 쓰러질 때 이미 내려가 있어(CharacterStaminaIsEmpty) 여기서는 아무 일도 없다.
+        LowerMainHud();
         signalHub.Publish(new RoguelikeResultReadySignal());
 
         while (false == bResultConfirmed)
@@ -651,7 +662,13 @@ public partial class RoguelikeSystem
             yield return null;
         }
 
-        yield return EnterLobbyRoutine(true);
+        if (ERoguelikeResultChoice.MainMenu == resultChoice)
+        {
+            yield return ExitToMainMenuRoutine();
+            yield break;
+        }
+
+        yield return EnterRunRoutine(true);
     }
 
     // // 필드·캐릭터
@@ -659,7 +676,7 @@ public partial class RoguelikeSystem
     /// <summary>
     /// _tierIndex 티어의 지형을 새로 깔고 나무 매니저를 준비한다. 필드의 나무는 전부 사라진다.
     /// 새 지형은 바로 보이지 않고 파도 시작 상태로 되돌려 두며, 호출한 쪽이 PlayTileWaveRoutine으로 파도를 재생해 드러낸다.
-    /// _bEntryWave면 로비 진입(물만 깔린 바다에서 육지가 깔린다), 아니면 티어 전환(직전 지형이 칸마다 새 지형으로 바뀐다).
+    /// _bEntryWave면 런 입장(물만 깔린 바다에서 육지가 깔린다), 아니면 티어 전환(직전 지형이 칸마다 새 지형으로 바뀐다).
     /// </summary>
     private IEnumerator BuildFieldRoutine(int _tierIndex, bool _bEntryWave)
     {
@@ -807,7 +824,7 @@ public partial class RoguelikeSystem
         unitLogicManager.SetCharacterStaminaState(false, 0f, 0f);
         unitLogicManager.CharacterSleep();
 
-        // 결과 화면이 건 ESC 잠금(FinishRunRoutine)을 푼다. 로비 입장 구간은 LobbyEntryESCLockOwner가 따로 막고 있다.
+        // 결과 화면이 건 ESC 잠금(FinishRunRoutine)을 푼다. 입장 연출 구간은 EntryESCLockOwner가 따로 막고 있다.
         inputManager.PauseESCKey(false);
     }
 

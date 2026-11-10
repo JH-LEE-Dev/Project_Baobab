@@ -25,6 +25,10 @@ public class AnimatedObjGenerator : MonoBehaviour
     private Dictionary<StaticObj, IObjectPool<StaticObj>> staticPoolDict;
     private Dictionary<StaticObj, List<StaticObj>> activeStaticObjectsDict;
 
+    // 물가 갈대(ShoreReedSettings). 스테이지 데이터에 갈대가 없으면 한 번도 만들지 않는다.
+    private Dictionary<GameObject, IObjectPool<GameObject>> reedPoolDict;
+    private Dictionary<GameObject, List<GameObject>> activeReedObjectsDict;
+
     // // 컬링 최적화
     private List<Component> cullableObjects;
     private CullingGroup cullingGroup;
@@ -89,6 +93,9 @@ public class AnimatedObjGenerator : MonoBehaviour
 
         staticPoolDict = new Dictionary<StaticObj, IObjectPool<StaticObj>>(8);
         activeStaticObjectsDict = new Dictionary<StaticObj, List<StaticObj>>(8);
+
+        reedPoolDict = new Dictionary<GameObject, IObjectPool<GameObject>>(2);
+        activeReedObjectsDict = new Dictionary<GameObject, List<GameObject>>(2);
 
         cullableObjects = new List<Component>(2000);
         cullingDistances = new float[] { cullingDistance };
@@ -246,7 +253,12 @@ public class AnimatedObjGenerator : MonoBehaviour
         if (currentWaterPrefabs == null || currentWaterPrefabs.Count == 0) return null;
 
         int randomIndex = UnityEngine.Random.Range(0, currentWaterPrefabs.Count);
-        DecoSpritePatternAnimator _prefab = currentWaterPrefabs[randomIndex];
+        return SpawnWaterAnimatedObj(_position, currentWaterPrefabs[randomIndex]);
+    }
+
+    /// <summary>물 장식을 정해진 프리팹으로 띄운다. 자리를 프리팹 모양에 맞춰 고르는 쪽(TileMapGenerator)이 쓴다.</summary>
+    public DecoSpritePatternAnimator SpawnWaterAnimatedObj(Vector3 _position, DecoSpritePatternAnimator _prefab)
+    {
         if (_prefab == null) return null;
 
         IObjectPool<DecoSpritePatternAnimator> _pool = GetWaterPool(_prefab);
@@ -296,6 +308,53 @@ public class AnimatedObjGenerator : MonoBehaviour
             AddCullingObject(_targetObj, _position);
         }
         return _targetObj;
+    }
+
+    /// <summary>
+    /// 물가 갈대 하나를 띄운다. _material이 있으면 그 머티리얼로 바꿔 끼우고, _flipX면 좌우를 뒤집는다.
+    /// 자리를 고르는 쪽은 TileMapGenerator.PlaceShoreReeds다.
+    /// </summary>
+    public GameObject SpawnShoreReed(GameObject _prefab, Vector3 _position, Material _material, bool _flipX)
+    {
+        if (_prefab == null) return null;
+
+        IObjectPool<GameObject> _pool = GetReedPool(_prefab);
+        GameObject _targetObj = _pool.Get();
+        if (_targetObj == null) return null;
+
+        _targetObj.transform.position = _position;
+        if (_targetObj.TryGetComponent(out SpriteRenderer _renderer))
+        {
+            if (_material != null) _renderer.sharedMaterial = _material;
+            _renderer.flipX = _flipX;
+        }
+        if (_targetObj.TryGetComponent(out CustomSortable _sortable))
+        {
+            _sortable.ManualLateUpdate();
+        }
+
+        activeReedObjectsDict[_prefab].Add(_targetObj);
+        AddCullingObject(_targetObj.transform, _position);
+        return _targetObj;
+    }
+
+    private IObjectPool<GameObject> GetReedPool(GameObject _prefab)
+    {
+        if (!reedPoolDict.TryGetValue(_prefab, out var _pool))
+        {
+            _pool = new ObjectPool<GameObject>(
+                createFunc: () => Instantiate(_prefab, transform),
+                actionOnGet: _obj => { if (_obj != null) _obj.SetActive(true); },
+                actionOnRelease: _obj => { if (_obj != null) _obj.SetActive(false); },
+                actionOnDestroy: _obj => { if (_obj != null) Destroy(_obj); },
+                collectionCheck: PoolSettings.CollectionCheck,
+                defaultCapacity: 32,
+                maxSize: 500
+            );
+            reedPoolDict.Add(_prefab, _pool);
+            activeReedObjectsDict.Add(_prefab, new List<GameObject>(100));
+        }
+        return _pool;
     }
 
     private void AddCullingObject(Component _targetObj, Vector3 _position)
@@ -372,6 +431,23 @@ public class AnimatedObjGenerator : MonoBehaviour
                     for (int i = 0; i < _activeList.Count; i++)
                     {
                         StaticObj _obj = _activeList[i];
+                        if (_obj != null) _pool.Release(_obj);
+                    }
+                }
+                _activeList.Clear();
+            }
+        }
+
+        if (activeReedObjectsDict != null && reedPoolDict != null)
+        {
+            foreach (var kvp in activeReedObjectsDict)
+            {
+                List<GameObject> _activeList = kvp.Value;
+                if (reedPoolDict.TryGetValue(kvp.Key, out var _pool))
+                {
+                    for (int i = 0; i < _activeList.Count; i++)
+                    {
+                        GameObject _obj = _activeList[i];
                         if (_obj != null) _pool.Release(_obj);
                     }
                 }

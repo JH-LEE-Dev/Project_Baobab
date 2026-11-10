@@ -111,6 +111,12 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private bool useBloomWaterDecoDensity = false;
     [SerializeField, Range(0f, 1f)] private float bloomWaterDecoDensity = 0.1f;
 
+    [Header("분위기 연출(렌더링 전용)")]
+    [SerializeField] private WindGustSettings windGust = new WindGustSettings();
+    [SerializeField] private WaterShimmerSettings waterShimmer = new WaterShimmerSettings();
+    [SerializeField] private StageColorGradingSettings colorGrading = new StageColorGradingSettings();
+    [SerializeField] private ShoreReedSettings shoreReeds = new ShoreReedSettings();
+
     [Header("위험 지형 설정")]
     [SerializeField] private float waterHazardStaminaDrainPerSecond = 0f;
     [SerializeField] private float treeHeatStaminaDamage = 0f;
@@ -142,6 +148,10 @@ public class StageTileDataSO : ScriptableObject
     public float WaterTileHDRIntensity => waterTileHDRIntensity;
     public float WaterHazardStaminaDrainPerSecond => waterHazardStaminaDrainPerSecond;
     public float TreeHeatStaminaDamage => treeHeatStaminaDamage;
+    public WindGustSettings WindGust => windGust;
+    public WaterShimmerSettings WaterShimmer => waterShimmer;
+    public StageColorGradingSettings ColorGrading => colorGrading;
+    public ShoreReedSettings ShoreReeds => shoreReeds;
     public List<AnimatedObj> AnimatedObjPrefabs => animatedObjPrefabs;
     public List<DecoSpritePatternAnimator> WaterAnimatedObjPrefabs => waterAnimatedObjPrefabs;
     public List<AnimatedObj> WaterAnimatedOtherTypeObjPrefabs => waterAnimatedOtherTypeObjPrefabs;

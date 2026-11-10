@@ -88,7 +88,7 @@ public struct RoguelikeTierChangedSignal
 
 /// <summary>
 /// 바닥 타일 파도가 시작됐다. 두 경우에 나간다 - bEntry로 구분한다.
-///   bEntry = true : 로비 진입(기획서 4-1 3~5단계). 물만 깔린 바다에서 섬 중앙부터 육지가 물결을 따라 깔리고, 이어서 해안선이 퍼즐처럼 조립된다.
+///   bEntry = true : 런 입장(기획서 4-1 3~5단계). 물만 깔린 바다에서 섬 중앙부터 육지가 물결을 따라 깔리고, 이어서 해안선이 퍼즐처럼 조립된다.
 ///   bEntry = false: 티어 전환(기획서 3-4). 물결이 지나가며 칸마다 솟았다 가라앉고, 첫 마루에서 직전 지형이 새 지형으로 바뀐다.
 /// 타일 한 칸 단위 장식은 RoguelikeSystem.TileWave.TileRevealedEvent를 쓴다(진입은 칸이 생기는 순간, 전환은 칸이 바뀌는 순간).
 /// </summary>
@@ -102,20 +102,20 @@ public struct RoguelikeTileWaveStartedSignal
 }
 
 /// <summary>
-/// 로비 진입 연출 1~2단계(디스토션 → 암전)가 끝나 화면이 검게 덮였다(기획서 4-1). 결과 화면 UI는 이때 닫는다 -
+/// 런 입장 연출 1~2단계(디스토션 → 암전)가 끝나 화면이 검게 덮였다(기획서 4-1). 결과 화면 UI는 이때 닫는다 -
 /// 디스토션이 결과 화면 위에 걸려야 하므로 확인 버튼을 누른 순간이 아니라 여기서 닫는다.
 /// </summary>
 public struct RoguelikeEntryScreenCoveredSignal { }
 
 /// <summary>
-/// 로비 진입 암전이 걷히기 시작했다(기획서 v2.2 9-1 3단계 페이드 아웃, 약 0.3초). 화면에는 물만 깔린 바다가 드러나고,
+/// 런 입장 암전이 걷히기 시작했다(기획서 v2.2 9-1 3단계 페이드 아웃, 약 0.3초). 화면에는 물만 깔린 바다가 드러나고,
 /// 같은 프레임에 바닥 타일 파도(RoguelikeTileWaveStartedSignal, bEntry = true)도 시작된다 - 걷힌 뒤가 아니라 걷히는 동안 파도가 돈다.
 /// </summary>
 public struct RoguelikeEntryScreenRevealStartedSignal { }
 
 /// <summary>
 /// 바닥 타일 파도가 끝났다(도중에 끊겨 바로 채운 경우 포함). 화면 안 지형이 전부 새 지형이다.
-/// bEntry는 시작 신호와 같다(로비 진입 파도면 true, 티어 전환이면 false).
+/// bEntry는 시작 신호와 같다(런 입장 파도면 true, 티어 전환이면 false).
 /// </summary>
 public struct RoguelikeTileWaveCompletedSignal
 {
@@ -215,17 +215,21 @@ public struct RoguelikeCardRerollRequestedSignal { }
 /// <summary>카드 UI가 선택·소멸 연출을 다 보여 줬다. 시스템은 이 신호를 받고서야 다음 단계로 넘어간다.</summary>
 public struct RoguelikeCardSelectionPresentationDoneSignal { }
 
-public struct RoguelikeResultConfirmedSignal { }
-
-public struct RoguelikeRecordsClosedSignal { }
-
-/// <summary>로비 오브젝트를 타격했다.</summary>
-public struct RoguelikeLobbyActionSignal
+/// <summary>결과 화면에서 고른 다음 행동.</summary>
+public enum ERoguelikeResultChoice
 {
-    public ERoguelikeLobbyAction action;
-    public RoguelikeLobbyActionSignal(ERoguelikeLobbyAction _action)
+    /// <summary>다시 도전: 결과 화면에서 바로 디스토션 → 입장 연출 → 다음 런.</summary>
+    Retry = 0,
+    /// <summary>메인메뉴: 메인메뉴 이탈 연출로 나가고, 메인메뉴는 로그라이크 하위 메뉴를 연 상태로 도착한다.</summary>
+    MainMenu = 1,
+}
+
+public struct RoguelikeResultConfirmedSignal
+{
+    public ERoguelikeResultChoice choice;
+    public RoguelikeResultConfirmedSignal(ERoguelikeResultChoice _choice)
     {
-        action = _action;
+        choice = _choice;
     }
 }
 
@@ -263,9 +267,6 @@ public struct RoguelikeNoCardsAvailableSignal { }
 
 /// <summary>결과 화면을 띄울 차례다. 내용은 IRoguelikeRunInfo.LastRunRecord.</summary>
 public struct RoguelikeResultReadySignal { }
-
-/// <summary>순위표를 띄울 차례다. 내용은 IRoguelikeRunInfo.Records.</summary>
-public struct RoguelikeRecordsRequestedSignal { }
 
 // // 신규 스킬·조합 연출 (시스템 → 이펙트)
 

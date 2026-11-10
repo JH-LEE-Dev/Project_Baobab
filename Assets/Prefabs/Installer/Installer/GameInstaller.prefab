@@ -45,6 +45,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownTileManager
   tilemapPrefab: {fileID: 6881421302417486748, guid: 46c9e6a76e2525643a8501b428463eae, type: 3}
+  windGust:
+    enabled: 1
+    direction: {x: 1, y: -0.35}
+    speed: 3.2
+    spacing: 22
+    bandHalfWidth: 0.9
+    patchSize: 3
+    patchCoverage: 0.5
+    gustGroupLength: 40
+    treeLeanDegrees: 5.5
+    treeFlutterSpeed: 9
+    treeFlutterRatio: 0.35
+    grassClumpSize: 1.6
+    grassBendThreshold: 0.2
+    grassBendSpread: 1.1
+    grassBendBrightness: 0.18
+    groundMaterial: {fileID: 2100000, guid: 6a6739b36a75d00409df81a211844609, type: 2}
+  waterShimmer:
+    enabled: 1
+    surfaceColor: {r: 0.33333334, g: 0.76862746, b: 0.78431374, a: 1}
+    colorTolerance: 0.03
+    foamColor: {r: 0.92, g: 1, b: 1, a: 1}
+    sparkleCellTexels: 26
+    sparklePeriod: 5
+    sparkleDuty: 0.08
+    sparkleIntensity: 2.2
+    sparkleArmStrength: 0.25
+  waterShimmerMaterial: {fileID: 2100000, guid: f405ba781fc59184684c02b71a3256e2, type: 2}
+  colorGrading:
+    enabled: 1
+    profile: {fileID: 11400000, guid: 2b91fb6aaa714624c91f64f0ce44646e, type: 2}
+    weight: 1
 --- !u!1 &616997715229847835
 GameObject:
   m_ObjectHideFlags: 0
@@ -1936,6 +1968,18 @@ MonoBehaviour:
     allowDynamicExpansion: 1
     maxPoolSize: 12
     uiParticleScale: 0
+  - vfxTag: TreeBarrierSparkEffect
+    effectPrefab: {fileID: 1386752551214847544, guid: 3720eb0977145fd44a479e667b6a6beb, type: 3}
+    initialPoolSize: 6
+    allowDynamicExpansion: 1
+    maxPoolSize: 24
+    uiParticleScale: 0
+  - vfxTag: TreeBarrierShatterEffect
+    effectPrefab: {fileID: 1386752551214847544, guid: 15ec8c2fbdf12de478b08f317ce29044, type: 3}
+    initialPoolSize: 4
+    allowDynamicExpansion: 1
+    maxPoolSize: 16
+    uiParticleScale: 0
 --- !u!1 &5766810988037463456
 GameObject:
   m_ObjectHideFlags: 0
@@ -3029,7 +3073,6 @@ MonoBehaviour:
   - {fileID: 4901171589092241585, guid: bd53942b5fcb5594c857c1bf09b67b8b, type: 3}
   - {fileID: 1859813504115818871, guid: d73c6e98d182ed74696b75c5896b7e68, type: 3}
   - {fileID: 2090445495839535509, guid: 122d271bb3b38d544adb4340c754d1b5, type: 3}
-  - {fileID: 1145271225478838375, guid: b1626051da8aa744fb17c1a0462a209a, type: 3}
 --- !u!114 &6498721921695947709
 MonoBehaviour:
   m_ObjectHideFlags: 0

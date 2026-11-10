@@ -50,7 +50,6 @@ public class RoguelikeDebugWindow : EditorWindow
 
         DrawState(system);
         EditorGUILayout.Space();
-        DrawLobby(system);
         DrawCardSelect(system);
         DrawCombat(system);
         DrawResult(system);
@@ -77,16 +76,6 @@ public class RoguelikeDebugWindow : EditorWindow
             CardDefinitionSO card = build.OwnedCards[i];
             EditorGUILayout.LabelField("  보유", $"{card.name}  Lv.{build.GetLevel(card)}/{card.EffectiveMaxLevel}");
         }
-    }
-
-    private static void DrawLobby(RoguelikeSystem _system)
-    {
-        if (ERunPhase.Lobby != _system.Phase) return;
-
-        EditorGUILayout.LabelField("로비", EditorStyles.boldLabel);
-        if (GUILayout.Button("게임 시작 오브젝트 타격")) _system.DebugLobbyAction(ERoguelikeLobbyAction.StartRun);
-        if (GUILayout.Button("순위표 오브젝트 타격")) _system.DebugLobbyAction(ERoguelikeLobbyAction.OpenRecords);
-        if (GUILayout.Button("다음 티어 지형 전환 연출 (F6)")) _system.DebugPlayTierTransition();
     }
 
     /// <summary>
@@ -142,6 +131,7 @@ public class RoguelikeDebugWindow : EditorWindow
 
         EditorGUILayout.LabelField("전투", EditorStyles.boldLabel);
         if (GUILayout.Button("웨이브 즉시 클리어")) _system.DebugCompleteWave();
+        if (GUILayout.Button("다음 티어로 건너뛰기 - 지형 전환 연출 (F6)")) _system.DebugPlayTierTransition();
 
         EditorGUILayout.BeginHorizontal();
         treesToKill = EditorGUILayout.IntField(treesToKill, GUILayout.Width(60));
@@ -176,7 +166,10 @@ public class RoguelikeDebugWindow : EditorWindow
             EditorGUILayout.LabelField("순위", $"클리어 {_system.LastClearRank}  언리밋 {_system.LastUnlimitRank}");
         }
 
-        if (GUILayout.Button("확인 (로비로)")) _system.DebugConfirmResult();
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("다시 도전")) _system.DebugResultChoice(ERoguelikeResultChoice.Retry);
+        if (GUILayout.Button("메인메뉴")) _system.DebugResultChoice(ERoguelikeResultChoice.MainMenu);
+        EditorGUILayout.EndHorizontal();
     }
 
     private void DrawCheats(RoguelikeSystem _system)

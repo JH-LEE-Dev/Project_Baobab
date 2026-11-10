@@ -36,6 +36,11 @@ public class MainMenuInstaller : MonoBehaviour
         uiInstaller.PlayButtonsRevealAnimation(_onComplete);
     }
 
+    public void OpenRoguelikeMenuOnShow()
+    {
+        uiInstaller.OpenRoguelikeMenuOnShow();
+    }
+
     public void MainMenuReturned()
     {
         uiInstaller.MainMenuReturned();

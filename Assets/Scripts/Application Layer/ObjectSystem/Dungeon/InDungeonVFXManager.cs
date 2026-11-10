@@ -1260,6 +1260,53 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 3스테이지 배리어가 타격을 막았을 때 껍질 위 맞은 자리(_impact)에서 튀는 스파크(VFX_BarrierSpark)입니다.
+    /// _normal은 그 자리의 바깥 방향(화면상)이고, 스파크는 그쪽으로 부채꼴로 튄다. parent는 null로 고정해 나무와 분리합니다.
+    /// </summary>
+    public void PlayTreeBarrierSparkVFX(Vector3 _impact, Vector2 _normal, int _sortingOrder)
+    {
+        if (vfxComponent == null) return;
+
+        ParticleSystem effect = vfxComponent.Play(new VFXPlaySettings(
+            "TreeBarrierSparkEffect",
+            _impact,
+            Quaternion.identity,
+            TreeSortingLayerName,
+            _sortingOrder,
+            null
+        ));
+
+        if (effect == null) return;
+
+        // 풀에서 꺼낸 직후(첫 LateUpdate 전)에 이번 재생의 방향을 정해야 한다.
+        PresentationLayer.VFX.VFX_BarrierSpark spark = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_BarrierSpark>(true);
+        if (spark != null) spark.SetDirection(_normal);
+    }
+
+    /// <summary>
+    /// 3스테이지 배리어가 별자리 발현에 깨질 때의 파편 연출(VFX_BarrierShatter)입니다. _root는 나무 밑동, _impact는 껍질 위 맞은 자리입니다.
+    /// 껍질 자체의 금/조각 사라짐은 나무에 붙은 VFX_TreeBarrier 셰이더가 같은 시각표로 그리고, 이 이펙트는 날아가는 파편과 바닥 고리를 맡습니다.
+    /// </summary>
+    public void PlayTreeBarrierShatterVFX(Vector3 _root, Vector3 _impact, int _sortingOrder)
+    {
+        if (vfxComponent == null) return;
+
+        ParticleSystem effect = vfxComponent.Play(new VFXPlaySettings(
+            "TreeBarrierShatterEffect",
+            _root,
+            Quaternion.identity,
+            TreeSortingLayerName,
+            _sortingOrder,
+            null
+        ));
+
+        if (effect == null) return;
+
+        PresentationLayer.VFX.VFX_BarrierShatter shatter = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_BarrierShatter>(true);
+        if (shatter != null) shatter.SetImpact(_impact);
+    }
+
+    /// <summary>
     /// 별똥별이 착탄했을 때의 폭발 VFX를 재생합니다. parent는 null로 고정하여 완전히 분리합니다.
     /// </summary>
     public void PlayStarImpactExplosionVFX(Vector3 _position, int _sortingOrder)

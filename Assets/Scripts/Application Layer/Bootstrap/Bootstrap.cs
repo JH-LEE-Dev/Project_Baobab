@@ -269,6 +269,11 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             inputManager.PauseMove(false);
             inputManager.PauseESCKey(false);
             mainMenuInstaller.MainMenuReturned();
+
+            // 로그라이크 결과 화면에서 메인메뉴를 골라 돌아왔으면 로그라이크 하위 메뉴를 연 상태로 보여 준다(한 번만).
+            // 본편 복귀에서는 요청이 없어 평소처럼 메인 버튼이 나온다.
+            if (RoguelikeMainMenuReturn.ConsumeOpenRoguelikeMenu()) mainMenuInstaller.OpenRoguelikeMenuOnShow();
+
             mainMenuInstaller.PlayButtonsRevealAnimation();
 
             // UIView_MainMenu.OnShow()는 hasIntroPlayed 가드로 인해 이 경로에서는 스플래시(팀 로고)를

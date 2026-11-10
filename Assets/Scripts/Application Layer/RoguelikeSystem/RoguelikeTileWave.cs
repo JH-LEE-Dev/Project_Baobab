@@ -321,7 +321,7 @@ public sealed class RoguelikeTileWave
         return Mathf.Max(0f, distance + noise * settings.frontWobble * nearCenter);
     }
 
-    /// <summary>마지막으로 준비(PrepareAfterGenerate)한 파도가 로비 진입 파도인지(아니면 티어 전환).</summary>
+    /// <summary>마지막으로 준비(PrepareAfterGenerate)한 파도가 런 입장 파도인지(아니면 티어 전환).</summary>
     public bool IsEntryWave => bEntry;
 
     public void Initialize(EnvironmentSystem _environmentSystem, RoguelikeTileWaveSettings _settings)
