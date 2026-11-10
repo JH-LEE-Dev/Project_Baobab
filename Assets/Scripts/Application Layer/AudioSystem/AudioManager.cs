@@ -94,6 +94,34 @@ public class AudioManager : MonoBehaviour
     // 재생 시작 시점에 계산된 폴리포니 감쇠 계수(0~1, 미적용 시 1). SetTrackedVolume이 볼륨을
     // 다시 계산할 때 이 계수를 빼먹으면 감쇠가 통째로 풀려 소리가 원래 크기로 튄다.
     private float[] sourcePolyphonyAttenuation;
+    // ─── 함께 시작한 같은 클립 보정 ───
+    // 같은 순간에 Play()된 같은 클립은 같은 오디오 버퍼에서 샘플 단위로 맞춰 시작하므로 파형(특히 타격 순간)이 그대로
+    // 더해진다(n개면 n배). 1/sqrt 감쇠는 시작 시각이 제각각인 소리를 전제로 한 것이라, 범위 공격으로 한 번에 여러 그루를
+    // 때리면 같은 타격음 6개가 실제로는 4.6배(+13dB)로 쌓였다(공식이 예상한 합은 1.9배).
+    // 그래서 누가 재생했든 모든 원샷에서, 함께 시작한 같은 클립끼리 들리는 진폭 합이 sqrt(Σ진폭²)가 되도록 나중 소리를
+    // 줄인다(서로 다른 순간에 시작한 소리처럼 들리는 크기). SoundID가 달라도 클립이 같으면 똑같이 더해지므로 클립으로 묶는다.
+    // 음높이가 다르면 시작 직후부터 파형이 어긋나 원래 제곱합 정도로만 커지므로 묶지 않는다(CoherentPitchTolerance).
+    // 루프는 시작 순간의 보정이 끝까지 남으므로 줄이지 않고, 대신 재생 위치를 흩어 파형이 아예 겹치지 않게 한다.
+    // 슬롯이 재생을 시작한 프레임/오디오 시각(AudioSettings.dspTime). 같은 프레임에 Play()된 소리는 같은 오디오
+    // 업데이트에서 함께 시작하고, 프레임이 오디오 버퍼보다 짧은 고FPS에서는 연달은 프레임의 소리도 같은 버퍼에서
+    // 시작하므로 둘 중 하나가 같으면 "함께 시작했다"고 본다.
+    private int[] sourceStartFrame;
+    private double[] sourceStartDsp;
+    // 원샷의 "보정 전" 들리는 진폭(볼륨 × 겹침 감쇠 × 거리 감쇠). 루프는 0.
+    private float[] sourceCoherentAmplitude;
+    // 오디오 시각이 같더라도 이 시간(초)보다 먼저 시작한 소리는 함께 시작한 것으로 보지 않는다. 출력 장치가 끊겨
+    // DSP 시계가 멈추면 그 뒤 재생한 소리의 dspTime이 전부 같아져, 시간차를 두고 난 소리까지 한꺼번에 줄이기 때문이다.
+    // 오디오 버퍼 하나(512샘플, 약 11ms)보다 충분히 길다.
+    private const float CoherentStartMaxAge = 0.1f;
+    // 이 비율 안의 음높이 차이만 "같은 파형"으로 본다. 타격음은 나무 체력에 따라 음높이가 1.0~1.6으로 달라지고 cue는
+    // ±5% 무작위로 흔드는데, 그런 소리까지 묶으면 겹침 감쇠에 더해 한 번 더 깎여 지나치게 작아진다. 1% 차이면 타격음
+    // 첫 순간(수 ms) 동안은 파형이 거의 맞아 함께 튀므로 묶는다.
+    private const float CoherentPitchTolerance = 0.01f;
+    // 함께 시작한 같은 클립 루프는 먼저 시작한 루프 수 × Step(초)에 Jitter(초)만큼 흔든 위치에서 시작한다. 몇 ms 차이로만
+    // 어긋나면 빗살 필터처럼 울리므로 루프끼리 Step 넘게 떨어뜨리되, 파형만 어긋나면 되므로 짧게 둔다 - 클립 전체에서
+    // 고르면 압축 클립(Fire_Loop, 약 70초)이 멀리 건너뛰느라 디코딩 비용이 든다.
+    private const float LoopDecorrelateStep = 0.12f;
+    private const float LoopDecorrelateJitter = 0.04f;
     private int playIdCounter;
     private Dictionary<AudioCueData, int> cueLastIndexCache = new Dictionary<AudioCueData, int>();
 
@@ -708,6 +736,14 @@ public class AudioManager : MonoBehaviour
         sourceFadingOut = new bool[maxPoolSize];
         sourceSoundID = new SoundID[maxPoolSize];
         sourcePolyphonyAttenuation = new float[maxPoolSize];
+        sourceStartFrame = new int[maxPoolSize];
+        sourceStartDsp = new double[maxPoolSize];
+        sourceCoherentAmplitude = new float[maxPoolSize];
+        for (int i = 0; i < maxPoolSize; i++)
+        {
+            sourceStartFrame[i] = -1;
+            sourceStartDsp[i] = -1.0;
+        }
 
         for (int i = 0; i < poolSize; i++)
         {
@@ -1264,6 +1300,26 @@ public class AudioManager : MonoBehaviour
         }
         if (index < 0) return AudioHandle.Invalid;
 
+        // 함께 시작한 같은 클립 보정(sourceCoherentAmplitude 주석 참고). 이어받을 슬롯은 곧 멈추므로 집계에서 뺀다.
+        FindStartedTogether(clip, pitch, index, out float coherentAmplitudeSq, out int loopsStartedTogether);
+        float coherentAmplitude = 0f;
+        if (!data.loop)
+        {
+            // 이 소리가 실제로 들릴 진폭(볼륨 × 거리 감쇠). 순서가 아니라 크기로 몫을 나눠야 멀리서 작게 난 소리가
+            // 먼저 들어왔다고 바로 앞의 큰 소리가 깎이지 않는다.
+            coherentAmplitude = finalVolume * EvaluateDistanceGain(position, data.is3D && is3D);
+
+            // 이 소리까지 더한 진폭 합이 sqrt(Σ진폭²)가 되도록, 늘어나는 몫만큼만 낸다(같은 크기 6개면 4.6배 -> 1.9배).
+            // 감쇠 계수에도 곱해 둬야 SetTrackedVolume이 볼륨을 다시 계산할 때 보정이 풀리지 않는다.
+            if (coherentAmplitudeSq > 0f && coherentAmplitude > 0.0001f)
+            {
+                float prevSum = Mathf.Sqrt(coherentAmplitudeSq);
+                float share = (Mathf.Sqrt(coherentAmplitudeSq + coherentAmplitude * coherentAmplitude) - prevSum) / coherentAmplitude;
+                finalVolume *= share;
+                polyphonyAttenuation *= share;
+            }
+        }
+
         AudioSource src = sourcePool[index];
         sourceFadingOut[index] = false;
 
@@ -1286,15 +1342,15 @@ public class AudioManager : MonoBehaviour
         sourceBaseVolume[index] = baseVolume;
         sourceTargetVolume[index] = finalVolume;
         sourcePolyphonyAttenuation[index] = polyphonyAttenuation;
+        sourceCoherentAmplitude[index] = coherentAmplitude;
+        sourceStartFrame[index] = Time.frameCount;
+        sourceStartDsp[index] = AudioSettings.dspTime;
 
         // 3D 사운드이고 카메라/커브 정보가 유효하다면, 재생 시작 시점의 거리를 사전 계산하여
         // 오디오 스레드가 첫 프레임(약 20ms)에 3D 거리 감쇠를 반영하지 못해 발생하는 팝 현상(풀 볼륨 출력)을 방지한다.
-        if (is3DSound && cachedRolloffCurve != null && GetListenerCamera(out Vector3 listenerPos) != null)
+        if (is3DSound)
         {
-            Vector3 srcPos = FlattenToListenerZ(position);
-            float dist = Vector3.Distance(srcPos, listenerPos);
-            float initialAttenuation = cachedRolloffCurve.Evaluate(dist);
-            initialVolume = finalVolume * initialAttenuation;
+            initialVolume = finalVolume * EvaluateDistanceGain(position, true);
         }
 
         if (is3DSound)
@@ -1311,6 +1367,15 @@ public class AudioManager : MonoBehaviour
         // 사운드 데이터의 is3D를 기준으로 하되, 호출부에서 2D로 강제하는 것은 허용한다(예: PlayUI).
         src.spatialBlend = is3DSound ? 1f : 0f;
         src.spread = spatialSpread;
+
+        // 같은 클립 루프가 함께 시작했다면 재생 위치를 흩는다. 같은 위치에서 시작한 루프는 끝까지 파형이 겹쳐 n배로
+        // 울린다(범위 공격으로 여러 그루에 한꺼번에 붙은 화상 루프 등). 이음매 없이 도는 소리라 어디서 시작해도 같다.
+        // Stop()으로 위치가 0으로 돌아간 뒤에 정해야 하고, Play()가 이 위치에서 시작한다.
+        if (data.loop && loopsStartedTogether > 0 && clip.samples > 1 && clip.frequency > 0)
+        {
+            float offsetSeconds = loopsStartedTogether * LoopDecorrelateStep + Random.Range(0f, LoopDecorrelateJitter);
+            src.timeSamples = Mathf.RoundToInt(offsetSeconds * clip.frequency) % clip.samples;
+        }
 
         src.Play();
 
@@ -1330,6 +1395,14 @@ public class AudioManager : MonoBehaviour
         }
 
         return handle;
+    }
+
+    // 3D 소리가 재생 시작 위치에서 받는 거리 감쇠(0~1). 2D이거나 카메라/커브 정보가 없으면 1.
+    private float EvaluateDistanceGain(Vector3 position, bool is3DSound)
+    {
+        if (!is3DSound || cachedRolloffCurve == null || GetListenerCamera(out Vector3 listenerPos) == null) return 1f;
+
+        return cachedRolloffCurve.Evaluate(Vector3.Distance(FlattenToListenerZ(position), listenerPos));
     }
 
     private System.Collections.IEnumerator SyncVolumeNextFrameRoutine(AudioHandle handle)
@@ -1397,6 +1470,38 @@ public class AudioManager : MonoBehaviour
                 oldestTime = sourceStartTime[i];
                 oldestIndex = i;
             }
+        }
+    }
+
+    // 지금 함께 시작한(같은 프레임, 또는 같은 오디오 버퍼) 같은 클립 소리를 찾는다(sourceCoherentAmplitude 주석 참고).
+    // SoundID와 상관없이 클립으로 찾고, 음높이가 _pitch와 거의 같은 것만 센다(CoherentPitchTolerance).
+    // 페이드아웃으로 꺼지는 중인 슬롯과 이번에 이어받을 슬롯(_excludeIndex)은 뺀다.
+    // - _amplitudeSq: 그중 원샷들의 보정 전 진폭 제곱합. 루프는 진폭이 0이라 저절로 빠진다.
+    // - _loopsStartedTogether: 함께 시작한 같은 클립 루프 수.
+    private void FindStartedTogether(AudioClip clip, float _pitch, int _excludeIndex, out float _amplitudeSq, out int _loopsStartedTogether)
+    {
+        _amplitudeSq = 0f;
+        _loopsStartedTogether = 0;
+        int frame = Time.frameCount;
+        double dspTime = AudioSettings.dspTime;
+        float now = Time.unscaledTime;
+
+        int poolCount = sourcePool.Count;
+        for (int i = 0; i < poolCount; i++)
+        {
+            if (i == _excludeIndex || sourceFadingOut[i]) continue;
+
+            bool bStartedTogether = sourceStartFrame[i] == frame ||
+                                    (sourceStartDsp[i] == dspTime && now - sourceStartTime[i] <= CoherentStartMaxAge);
+            if (!bStartedTogether) continue;
+
+            AudioSource src = sourcePool[i];
+            if (src.clip != clip || !src.isPlaying) continue;
+            if (Mathf.Abs(src.pitch - _pitch) > CoherentPitchTolerance * Mathf.Max(Mathf.Abs(_pitch), 0.01f)) continue;
+
+            float amplitude = sourceCoherentAmplitude[i];
+            _amplitudeSq += amplitude * amplitude;
+            if (src.loop) _loopsStartedTogether++;
         }
     }
 

@@ -291,11 +291,12 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     /// 시그널이 아니라 _onGenerated 콜백으로만 보낸다. 본편 경로(DungeonReadySignal)는 바뀌지 않는다.
     /// </summary>
     public void GenerateRoguelikeField(ForestType _forestType, MapType _mapType, float _centerSafeZoneRadius,
-        float _islandRadiusX, float _islandRadiusY, System.Action<List<Vector3>> _onGenerated)
+        float _islandRadiusX, float _islandRadiusY, System.Action<List<Vector3>> _onGenerated,
+        IslandShapeType _islandShape = IslandShapeType.Ellipse)
     {
         SetupForMapType(_forestType, _mapType);
         tileMapGenerator.SetCenterSafeZoneRadiusOverride(_centerSafeZoneRadius);
-        tileMapGenerator.SetEllipseIslandOverride(_islandRadiusX, _islandRadiusY);
+        tileMapGenerator.SetEllipseIslandOverride(_islandRadiusX, _islandRadiusY, _islandShape);
 
         roguelikeMapGeneratedCallback = _onGenerated;
         try

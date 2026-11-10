@@ -123,9 +123,11 @@ namespace PresentationLayer.Environment
         [SerializeField, Tooltip("전리품 뒤 기둥 빛(웅덩이·빛 줄기·원반·후광·입자·반짝임). 아우라와 같은 시점에 켜고 끄고, 같은 색을 쓴다. 기존 중앙 글로우는 프리팹에서 꺼 둔다.")]
         private VFX_LootPillarGlow pillarGlow;
 
-        // 캐릭터가 콜라이더 범위 안에 들어와 있는지(=상호작용 키 입력을 받을 수 있는지)를 UIView_Unit
-        // 아이콘에 알리는 이벤트. Tent.TentInteractStateChangedEvent와 동일한 역할.
-        public event Action<bool, LootType> InteractStateChangedEvent;
+        // 상호작용 후보 상태(범위 안 + 등장 연출 아님 = CanFocus)가 바뀔 수 있을 때 알린다.
+        // 기둥끼리 상호작용 범위가 겹치면 아웃라인·상호작용 키가 여러 기둥에서 동시에 켜지므로, 기둥은 스스로
+        // 켜지 않고 LootPillarManager가 후보 중 캐릭터에 가장 가까운 기둥 하나만 SetFocused(true)로 고른다.
+        // (UIView_Unit 상호작용 아이콘 알림도 LootPillarManager가 선택 결과로 한 번만 보낸다)
+        public event Action FocusCandidateChangedEvent;
 
         // 범위 안에서 상호작용 키를 눌렀을 때만 발생하는 토글 이벤트(true=열기, false=닫기).
         // Tent.TentInteractEvent와 동일한 역할 - UIView_ScreenModal을 실제로 여닫는 쪽은 이 이벤트다.
@@ -165,12 +167,51 @@ namespace PresentationLayer.Environment
         private InputManager inputManager;
         private bool bPhysicalOverlapped;
         private bool bInteracting;
+        // LootPillarManager가 고른 "지금 상호작용 대상" 기둥인지. 아웃라인·상호작용 키는 이 값으로만 켠다.
+        private bool bFocused;
+        // 범위에 들어온 캐릭터(거리 비교용)와 이 기둥의 상호작용 범위 콜라이더.
+        private Transform overlapCharacter;
+        private Collider2D interactCollider;
+
+        /// <summary>캐릭터가 범위 안에 있고 등장 연출 중이 아니라 상호작용 대상이 될 수 있는지.</summary>
+        public bool CanFocus => bPhysicalOverlapped && false == IsRevealing && isActiveAndEnabled;
+
+        /// <summary>이 기둥의 창(ScreenModal)이 열려 있는지.</summary>
+        public bool IsInteracting => bInteracting;
+
+        /// <summary>범위에 들어온 캐릭터와 상호작용 범위 중심 사이의 거리. 캐릭터를 모르면 무한대.</summary>
+        public float GetFocusDistance()
+        {
+            if (null == overlapCharacter) return float.MaxValue;
+
+            Vector2 _center = null != interactCollider ? (Vector2)interactCollider.bounds.center : (Vector2)transform.position;
+            return Vector2.Distance(overlapCharacter.position, _center);
+        }
+
+        /// <summary>
+        /// LootPillarManager가 상호작용 대상으로 고르거나 해제한다. 해제될 때 창이 열려 있었다면
+        /// 범위를 벗어난 것과 같이 닫는다(LootPillarInteractEvent(false)).
+        /// </summary>
+        public void SetFocused(bool _bFocused)
+        {
+            if (bFocused == _bFocused) return;
+
+            bFocused = _bFocused;
+            SetOutlineActive(_bFocused);
+
+            if (false == _bFocused && true == bInteracting)
+            {
+                bInteracting = false;
+                LootPillarInteractEvent?.Invoke(false, CurrentLootType);
+            }
+        }
 
         private void Awake()
         {
             customSortable = GetComponent<CustomSortable>();
             cachedOnEvolveBurst = OnEvolveBurst;
             characterLayer = LayerMask.NameToLayer("Character");
+            interactCollider = GetComponent<Collider2D>();
 
             // 기본값: 생성 위치(자기 자신의 Y) 기준. 스포너가 별도 Pivot 기준점을 알고 있다면
             // ApplySortingBasis()로 덮어써서 그 기준으로 다시 계산한다.
@@ -210,7 +251,8 @@ namespace PresentationLayer.Environment
 
         private void InteractionKeyPressed()
         {
-            if (!bPhysicalOverlapped) return;
+            // 범위가 겹친 여러 기둥이 한꺼번에 열리지 않도록, LootPillarManager가 고른 기둥만 받는다.
+            if (false == bFocused) return;
 
             // 등장 연출이 끝나기 전(숨겨져 있거나 떨어지는 중)에는 상호작용하지 않는다.
             if (true == IsRevealing) return;
@@ -251,12 +293,11 @@ namespace PresentationLayer.Environment
             if (_other.gameObject.layer == characterLayer)
             {
                 bPhysicalOverlapped = true;
+                overlapCharacter = _other.transform;
 
-                // 등장 연출 중에는 범위 안에 있다는 것만 기억하고, 아웃라인·상호작용 아이콘은 연출이 끝날 때 켠다(FinishFirstReveal).
-                if (true == IsRevealing) return;
-
-                SetOutlineActive(true);
-                InteractStateChangedEvent?.Invoke(true, CurrentLootType);
+                // 아웃라인·상호작용 아이콘은 LootPillarManager가 겹친 기둥 중 하나만 골라 켠다.
+                // 등장 연출 중이면 CanFocus가 false라 고르지 않고, 연출이 끝날 때 다시 알린다(FinishFirstReveal).
+                FocusCandidateChangedEvent?.Invoke();
             }
         }
 
@@ -265,20 +306,11 @@ namespace PresentationLayer.Environment
             if (_other.gameObject.layer == characterLayer)
             {
                 bPhysicalOverlapped = false;
+                overlapCharacter = null;
 
-                // 등장 연출 중에는 켠 적이 없으므로 끌 것도 없다.
-                if (true == IsRevealing) return;
-
-                SetOutlineActive(false);
-                InteractStateChangedEvent?.Invoke(false, CurrentLootType);
-
-                // 상호작용(모달이 열린) 상태로 범위를 벗어나면, 키를 다시 눌러 취소한 것과 동일하게
-                // 취급해 LootPillarInteractEvent(false)를 발행하고 상태를 초기화한다.
-                if (bInteracting)
-                {
-                    bInteracting = false;
-                    LootPillarInteractEvent?.Invoke(false, CurrentLootType);
-                }
+                // LootPillarManager가 선택을 해제(SetFocused(false))한다. 상호작용(모달이 열린) 상태로 범위를
+                // 벗어나면 그때 키를 다시 눌러 취소한 것과 동일하게 LootPillarInteractEvent(false)를 발행한다.
+                FocusCandidateChangedEvent?.Invoke();
             }
         }
 
@@ -678,6 +710,9 @@ namespace PresentationLayer.Environment
 
             SetOutlineActive(false);
             ApplyRevealPose(Vector3.zero, Vector3.zero, Vector3.zero, 0f, 0f, 0f);
+
+            // 숨은 동안은 상호작용 대상이 아니다(CanFocus == false). 골라져 있었다면 LootPillarManager가 해제한다.
+            FocusCandidateChangedEvent?.Invoke();
         }
 
         /// <summary>
@@ -941,10 +976,10 @@ namespace PresentationLayer.Environment
             SetGrowthFlash(0f);
             PlayRevealAura();
 
+            // 범위 안에 서 있던 캐릭터가 있으면 LootPillarManager가 겹친 기둥과 비교해 상호작용 대상을 다시 고른다.
             if (true == _bNotify && true == bPhysicalOverlapped)
             {
-                SetOutlineActive(true);
-                InteractStateChangedEvent?.Invoke(true, CurrentLootType);
+                FocusCandidateChangedEvent?.Invoke();
             }
         }
 

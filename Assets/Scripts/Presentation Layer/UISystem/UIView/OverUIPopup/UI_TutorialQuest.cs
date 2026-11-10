@@ -67,6 +67,9 @@ public class UI_TutorialQuest : MonoBehaviour
 
     // 내부 의존성
     private Vector2 baseAnchoredPosition;
+
+    // 인스펙터에 지정된 기본 Y 오프셋. SetYOffset(지역 해금 연출)으로 바뀐 위치를 일반 퀘스트 표시 때 이 값으로 되돌린다.
+    private float defaultYOffset;
     private const float HiddenBGWidth = 0f;
     private const float DefaultBGTargetAlpha = 0.95f;
 
@@ -171,6 +174,7 @@ public class UI_TutorialQuest : MonoBehaviour
         // 따라서 다음 퀘스트로 넘어가기 직전에 미완료 숨김 연출을 강제로 즉시 완료 처리해 이벤트가
         // 반드시 발행되도록 보장한다.
         ForceCompletePendingHide();
+        ApplyYOffset(defaultYOffset);
 
         currentStep = _step;
 
@@ -240,6 +244,7 @@ public class UI_TutorialQuest : MonoBehaviour
     public void OnTutorialStepStartedAsCompleted(TutorialStep _step)
     {
         ForceCompletePendingHide();
+        ApplyYOffset(defaultYOffset);
 
         currentStep = _step;
 
@@ -408,12 +413,17 @@ public class UI_TutorialQuest : MonoBehaviour
 
     public void SetYOffset(float _newYOffset)
     {
-        yOffset = _newYOffset;
+        ApplyYOffset(_newYOffset);
+    }
+
+    private void ApplyYOffset(float _yOffset)
+    {
+        yOffset = _yOffset;
         RectTransform _rect = GetComponent<RectTransform>();
         if (null != _rect)
         {
             Vector2 _pos = baseAnchoredPosition;
-            _pos.y += _newYOffset;
+            _pos.y += _yOffset;
             _rect.anchoredPosition = _pos;
         }
     }
@@ -1307,6 +1317,8 @@ public class UI_TutorialQuest : MonoBehaviour
     // 유니티 이벤트 함수
     private void Awake()
     {
+        defaultYOffset = yOffset;
+
         RectTransform _rect = GetComponent<RectTransform>();
         if (null != _rect)
         {

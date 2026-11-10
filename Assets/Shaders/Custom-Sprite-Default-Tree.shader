@@ -77,6 +77,8 @@ Shader "Custom/Custom-Sprite-Default-Tree"
             };
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Lit2DCommon.hlsl"
+            #include "Include/SporeGlow.hlsl"
+            #include "Include/TreeStarTwinkle.hlsl"
 
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
@@ -142,6 +144,10 @@ Shader "Custom/Custom-Sprite-Default-Tree"
 
                 half4 color = CommonLitFragment(input, input.color);
                 clip(color.a - 0.01);
+                // 포자 나무 숨빛(꺼진 스테이지는 그대로)
+                color.rgb = ApplySporeGlow(color.rgb, input.uv, worldPos);
+                // 나무 별빛 반짝임(꺼진 스테이지는 그대로)
+                color.rgb = ApplyTreeStarTwinkle(color.rgb, input.uv, worldPos);
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
                 color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
                 return color;
@@ -275,6 +281,8 @@ Shader "Custom/Custom-Sprite-Default-Tree"
             };
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/2DCommon.hlsl"
+            #include "Include/SporeGlow.hlsl"
+            #include "Include/TreeStarTwinkle.hlsl"
           
             // GPU Instancing
             #pragma multi_compile_instancing
@@ -342,6 +350,10 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 }
 
                 half4 color = CommonUnlitFragment(input, input.color);
+                // 포자 나무 숨빛(꺼진 스테이지는 그대로)
+                color.rgb = ApplySporeGlow(color.rgb, input.uv, worldPos);
+                // 나무 별빛 반짝임(꺼진 스테이지는 그대로)
+                color.rgb = ApplyTreeStarTwinkle(color.rgb, input.uv, worldPos);
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
                 color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
                 return color;
