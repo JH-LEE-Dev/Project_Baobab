@@ -2,6 +2,7 @@ using System;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// 메인메뉴 로그라이크 하위 메뉴의 오른쪽 최고 기록판(시안 v3). Panel_Book 9-슬라이스 위에 제목 명판(최고 기록)과 세 줄:
@@ -21,6 +22,8 @@ public class UI_RoguelikeMenuRecordPanel : MonoBehaviour
     // 화면 밖까지: 판 폭 + 오른쪽 여백(16) + 여유.
     private const float SlideMargin = 32f;
     private const float SlideSeconds = 0.22f;
+    // 줄 아이콘이 놓이는 칸 한 변(그림은 이 칸 안에 가운데 맞춤).
+    private const float IconSlotSize = 9f;
 
     private const string TitleKey = "Roguelike_Menu_BestTitle";
     private const string NoRecordKey = "Roguelike_Menu_NoRecord";
@@ -145,7 +148,7 @@ public class UI_RoguelikeMenuRecordPanel : MonoBehaviour
         float y = Mathf.Ceil(plateHeight * 0.5f) + 6f;
         for (int i = 0; labels.Length > i; i++)
         {
-            PlaceLeft(icons[i], 10f, y + Mathf.Floor((lineHeight - 9f) * 0.5f), 9f, 9f);
+            PlaceIcon(icons[i], 10f, y + Mathf.Floor((lineHeight - IconSlotSize) * 0.5f));
             PlaceLeft(null != labels[i] ? labels[i].rectTransform : null, 22f, y, width - 30f, lineHeight);
             PlaceLeft(null != values[i] ? values[i].rectTransform : null, 22f, y + lineHeight, width - 30f, lineHeight);
             y += lineHeight * 2f + RowGap;
@@ -164,6 +167,28 @@ public class UI_RoguelikeMenuRecordPanel : MonoBehaviour
             titlePlate.sizeDelta = new Vector2(plateWidth, plateHeight);
             titlePlate.anchoredPosition = Vector2.zero;
         }
+    }
+
+    /// <summary>
+    /// 줄 아이콘을 IconSlotSize 칸 안에 놓는다. 아이콘 스프라이트는 가로 세로가 짝수가 되도록 그림의 오른쪽 열 / 위쪽 행에 투명 1px이 붙어 있어(그림 = 스프라이트 크기 - 1)
+    /// 칸은 스프라이트 크기 그대로(늘리지 않는다), 그림을 칸 안에서 가로 · 세로 가운데(내림)에 두고 투명 줄은 그림 오른쪽 · 위로 남긴다. _x는 칸 왼쪽, _slotY는 칸 위쪽(판 위 기준)이다.
+    /// </summary>
+    private static void PlaceIcon(RectTransform _rect, float _x, float _slotY)
+    {
+        if (null == _rect) return;
+
+        Image image = _rect.GetComponent<Image>();
+        Sprite sprite = null != image ? image.sprite : null;
+        if (null == sprite) return;
+
+        Vector2 size = sprite.rect.size;
+        float artWidth = size.x - 1f;
+        float artHeight = size.y - 1f;
+        float left = _x + Mathf.Floor((IconSlotSize - artWidth) * 0.5f);
+        float artTop = _slotY + Mathf.Floor((IconSlotSize - artHeight) * 0.5f);
+
+        // 그림 위에 투명 1행이 있어 스프라이트 위 모서리는 그림 위보다 한 줄 위다.
+        PlaceLeft(_rect, left, artTop - 1f, size.x, size.y);
     }
 
     private static void PlaceLeft(RectTransform _rect, float _x, float _y, float _width, float _height)

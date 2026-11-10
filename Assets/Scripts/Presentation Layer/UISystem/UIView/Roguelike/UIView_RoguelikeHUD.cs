@@ -2,16 +2,19 @@ using DG.Tweening;
 using UnityEngine;
 
 /// <summary>
-/// 로그라이크 전투 HUD. 기획서 5-1 "전투 HUD (하단 중앙)".
+/// 로그라이크 전투 HUD. 기획서 5-1 "전투 HUD" - 화면 좌측 하단(여백 8px)에 막대를 세로로 쌓는다(RoguelikeHUD_Polish_Plan.md).
 ///
-/// 스태미너 바는 본편 HUD(UIView_HUD의 HUD_Stemina)를 그대로 쓴다. 이 뷰는 로그라이크에만 있는 것만 맡는다.
 /// 요소마다 모양 · 색 · 아이콘이 다르다(구분이 안 되던 문제). 모두 글자 라벨 없이 아이콘 + 작은 숫자(UI_RoguelikeIconNumber)다.
-///   - 웨이브 배지(WaveLabel): 화면 상단 중앙에 혼자 있는 프레임 배지. 깃발 + 1~30, 언리밋은 무한대 + 번호 - SetWave
-///   - 목표치 바(ThresholdBar): 스태미너 바 바로 위 분홍적색 가로 막대. 도끼 + 현재 처치 수 / 목표 처치 수 - SetWaveProgress
-///   - 유예 타이머(GraceTimer): 목표치 바와 임계치 바 사이의 얇은 바. 유예 중 보라 차오름, 쿨다운 장미주황 줄어듦. 숫자 없음 - SetThreshold, PlayPressureDamaged
-///   - 임계치 바(PressureStrip): 호박색 가로 막대. 나무 + 나무 수 / 임계치 T, T 눈금과 초과 구간 - SetThreshold, PlayPressureDamaged
+/// 모든 막대는 모서리 1px을 비운 캡슐 + 3톤 채움이고, 반투명 픽셀은 HUD 실루엣을 왼쪽 아래(-1, -1)에 복제한 그림자 한 장(UnityEngine.UI.Shadow)뿐이다.
+/// 위에서 아래로:
+///   - 웨이브 줄(WaveLabel): 깃발 + 1~30 + 30칸 진행 점. 언리밋은 금색 깃발 + 무한대 + 번호 + 10칸 진행 점 - SetWave
+///   - 임계치 바(PressureStrip): 호박색 가로 막대. 나무 + 임계치 T 표식과 초과 구간, 숫자는 막대 뒤 - SetThreshold, PlayPressureDamaged
+///   - 유예 타이머(GraceTimer): 임계치 바 아래에 붙은 2px 줄. 유예 중 보라 차오름, 쿨다운 주황 줄어듦. 숫자 없음 - SetThreshold, PlayPressureDamaged
+///   - 목표치 바(ThresholdBar): 분홍적색 가로 막대. 도끼 + 현재 처치 수 / 목표 처치 수 - SetWaveProgress
+///   - 스태미너 바(StaminaBar) + 대쉬 칸(DashCells): 본편 HUD의 스태미너 · 대쉬 게이지는 로그라이크에서 화면에서만 숨고(UIView_HUD),
+///     같은 호출이 정적 연결점(RoguelikeHUDLink)을 통해 이 두 컴포넌트에도 전달된다.
 ///   - 코인 HUD: 보유 골드(본편 코인 HUD 표현 재사용 권장 - CurrencyCounterHUD). 언리밋에서는 숨긴다.
-///   [퇴장] SetCombatVisible(false)는 요소마다 화면 밖으로 정수 픽셀 이동(약 0.25초, unscaled)한 뒤 숨긴다 - 웨이브 배지 위, 바 3종 아래, 보관함 트레이 오른쪽.
+///   [퇴장] SetCombatVisible(false)는 좌측 하단 요소가 모두 왼쪽으로, 보관함 트레이는 오른쪽으로 화면 밖으로 정수 픽셀 이동(약 0.25초, unscaled)한 뒤 숨긴다.
 ///     결과 화면이 뜰 때 뒤쪽을 비워 결과 창에만 시선이 가게 하는 용도다(호출은 시스템 - LobbyRemoval_AppLayer_Request.md S5). 다시 켜면 원위치에서 나타난다.
 ///   - 보관함 트레이(OwnedTray): 우하단. 인벤토리 키 아이콘 + 보유 카드 총량 숫자판. 표시 전용(클릭 없음) - SetOwnedCardCounts
 ///     보유 카드 창은 이 뷰가 아니라 키(인벤토리 키)로 연다(RoguelikeUICoordinator).
@@ -27,17 +30,21 @@ public class UIView_RoguelikeHUD : UIView
     [SerializeField] private UI_RoguelikeWaveLabel waveLabel;
     [SerializeField] private UI_RoguelikePressureStrip pressureStrip;
     [SerializeField] private UI_RoguelikeGraceTimer graceTimer;
+    [SerializeField] private UI_RoguelikeStaminaBar staminaBar;
+    [SerializeField] private UI_RoguelikeDashCells dashCells;
     [SerializeField] private UI_RoguelikeOwnedCardTray ownedTray;
     [SerializeField] private UI_KeyboardImage ownedKeyImage;
 
     // 퇴장 모션: 화면 밖으로 빠지는 거리(px)와 시간(unscaled).
     private const float ExitDistance = 120f;
+    private const int ExitCount = 7;
+    private const int ExitTrayIndex = 6;
     private const float ExitSeconds = 0.25f;
 
     //상태 변수 (퇴장 모션)
-    private readonly RectTransform[] exitRects = new RectTransform[5];
-    private readonly Vector2[] exitBasePositions = new Vector2[5];
-    private readonly Vector2[] exitDirections = new Vector2[5];
+    private readonly RectTransform[] exitRects = new RectTransform[ExitCount];
+    private readonly Vector2[] exitBasePositions = new Vector2[ExitCount];
+    private readonly Vector2[] exitDirections = new Vector2[ExitCount];
     private bool bExitBaseCaptured;
     private TweenCallback finishExitCallback;
 
@@ -52,11 +59,17 @@ public class UIView_RoguelikeHUD : UIView
         if (null != ownedKeyImage) ownedKeyImage.Initialize(_ctx?.inputManager);
 
         finishExitCallback = FinishExit;
-        SetExitTarget(0, null != waveLabel ? waveLabel.transform as RectTransform : null, Vector2.up);
-        SetExitTarget(1, null != thresholdBar ? thresholdBar.transform as RectTransform : null, Vector2.down);
-        SetExitTarget(2, null != graceTimer ? graceTimer.transform as RectTransform : null, Vector2.down);
-        SetExitTarget(3, null != pressureStrip ? pressureStrip.transform as RectTransform : null, Vector2.down);
-        SetExitTarget(4, null != ownedTray ? ownedTray.transform as RectTransform : null, Vector2.right);
+        SetExitTarget(0, null != waveLabel ? waveLabel.transform as RectTransform : null, Vector2.left);
+        SetExitTarget(1, null != thresholdBar ? thresholdBar.transform as RectTransform : null, Vector2.left);
+        SetExitTarget(2, null != graceTimer ? graceTimer.transform as RectTransform : null, Vector2.left);
+        SetExitTarget(3, null != pressureStrip ? pressureStrip.transform as RectTransform : null, Vector2.left);
+        SetExitTarget(4, null != staminaBar ? staminaBar.transform as RectTransform : null, Vector2.left);
+        SetExitTarget(5, null != dashCells ? dashCells.transform as RectTransform : null, Vector2.left);
+        SetExitTarget(ExitTrayIndex, null != ownedTray ? ownedTray.transform as RectTransform : null, Vector2.right);
+
+        // 본편 HUD(UIView_HUD)가 스태미너 · 대쉬 값을 이 두 컴포넌트에도 전달하도록 정적 연결점에 등록한다.
+        RoguelikeHUDLink.StaminaBar = staminaBar;
+        RoguelikeHUDLink.DashCells = dashCells;
     }
 
     protected override void OnShow()
@@ -123,7 +136,7 @@ public class UIView_RoguelikeHUD : UIView
     public virtual RectTransform CoinFlyTarget => null;
 
     /// <summary>
-    /// 전투 HUD 요소(웨이브·목표치 바·유예 타이머·임계치 바·보관함 트레이) 표시 여부.
+    /// 전투 HUD 요소(웨이브·목표치 바·유예 타이머·임계치 바·스태미너 바·대쉬 칸·보관함 트레이) 표시 여부.
     /// 끌 때는 요소마다 화면 밖으로 빠지는 퇴장 모션을 재생한 뒤 숨긴다(결과 화면 등장과 동시에 뒤쪽을 비운다). 켤 때는 원위치에서 바로 나타난다.
     /// </summary>
     public virtual void SetCombatVisible(bool _bVisible)
@@ -146,6 +159,8 @@ public class UIView_RoguelikeHUD : UIView
         if (null != pressureStrip) pressureStrip.SetVisible(_bVisible);
         if (null != graceTimer) graceTimer.SetVisible(_bVisible);
         if (null != waveLabel) waveLabel.SetVisible(_bVisible);
+        if (null != staminaBar) staminaBar.SetVisible(_bVisible);
+        if (null != dashCells) dashCells.SetVisible(_bVisible);
         if (null != ownedTray) ownedTray.SetVisible(_bVisible);
     }
 
@@ -173,8 +188,11 @@ public class UIView_RoguelikeHUD : UIView
             RectTransform rect = exitRects[i];
             if (null == rect || false == rect.gameObject.activeInHierarchy) continue;
 
+            // 왼쪽으로 빠지는 요소는 오른쪽 끝(위치 + 폭)까지 화면 밖으로 나가야 하므로 그 폭이 기본 거리보다 크면 폭만큼 민다.
+            float distance = Vector2.left == exitDirections[i] ? Mathf.Max(ExitDistance, exitBasePositions[i].x + rect.rect.width + 1f) : ExitDistance;
+
             rect.DOKill();
-            rect.DOAnchorPos(exitBasePositions[i] + exitDirections[i] * ExitDistance, ExitSeconds, true).SetEase(Ease.InCubic).SetUpdate(true);
+            rect.DOAnchorPos(exitBasePositions[i] + exitDirections[i] * distance, ExitSeconds, true).SetEase(Ease.InCubic).SetUpdate(true);
             bAny = true;
         }
 
@@ -202,6 +220,9 @@ public class UIView_RoguelikeHUD : UIView
 
     public override void OnDestroy()
     {
+        if (RoguelikeHUDLink.StaminaBar == staminaBar) RoguelikeHUDLink.StaminaBar = null;
+        if (RoguelikeHUDLink.DashCells == dashCells) RoguelikeHUDLink.DashCells = null;
+
         DOTween.Kill(this);
         for (int i = 0; exitRects.Length > i; i++)
         {

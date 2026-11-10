@@ -69,6 +69,8 @@ public class UI_RoguelikeCard : MonoBehaviour
     private const int EdgeLineMaxWidth = 10;
     private const int EdgeLineSolidWidth = 6;
     private const int ShadowShrinkPixels = 6;
+    // 그림자 스프라이트(Card_Shadow 40x6)는 그림 5행 위에 투명 1행이 붙어 있다. 그림 가운데를 구할 때 이 행은 뺀다.
+    private const int ShadowPadRows = 1;
 
     private static readonly Color BackTint = new Color(0.55f, 0.55f, 0.55f, 1f);
 
@@ -128,6 +130,10 @@ public class UI_RoguelikeCard : MonoBehaviour
     private Vector2 iconBasePosition;
     private Vector2 shadowBasePosition;
     private bool bShadowBaseCaptured;
+    // 기본 프레임 그림(64x96 캔버스째)의 칸. 뒷면처럼 카드 그림 크기인 그림으로 바꿀 때는 (0, 0)에 그 크기로 놓고, 기본 프레임으로 돌아오면 이 칸으로 되돌린다.
+    private Vector2 frameBasePosition;
+    private Vector2 frameBaseSize;
+    private bool bFrameBaseCaptured;
     private Color tint = Color.white;
 
     public bool IsHovered => bHovered;
@@ -187,6 +193,7 @@ public class UI_RoguelikeCard : MonoBehaviour
 
         flashPeak = _peakAlpha;
         flashTime = 0f;
+        ApplyFrameRect(flashImage, frameImage.sprite);
         flashImage.sprite = frameImage.sprite;
         flashImage.enabled = true;
         bMotionActive = true;
@@ -276,7 +283,7 @@ public class UI_RoguelikeCard : MonoBehaviour
         if (null == pixelFx || null == shadowImage) return;
 
         RectTransform shadowRect = shadowImage.rectTransform;
-        pixelFx.EmitLanding(FrameWidth * 0.5f, shadowBasePosition.y + shadowRect.sizeDelta.y * 0.5f);
+        pixelFx.EmitLanding(FrameWidth * 0.5f, shadowBasePosition.y + (shadowRect.sizeDelta.y - ShadowPadRows) * 0.5f);
     }
 
     /// <summary>프레임 폭(픽셀). 뒤집힘 폭 계산용.</summary>
@@ -498,12 +505,15 @@ public class UI_RoguelikeCard : MonoBehaviour
 
             if (bFront)
             {
+                ApplyFrameRect(frameImage, defaultFrameSprite);
                 frameImage.sprite = defaultFrameSprite;
                 frameImage.color = tint;
             }
             else
             {
-                frameImage.sprite = null != backSprite ? backSprite : defaultFrameSprite;
+                Sprite faceSprite = null != backSprite ? backSprite : defaultFrameSprite;
+                ApplyFrameRect(frameImage, faceSprite);
+                frameImage.sprite = faceSprite;
                 frameImage.color = (null != backSprite ? Color.white : BackTint) * tint;
             }
         }
@@ -527,6 +537,29 @@ public class UI_RoguelikeCard : MonoBehaviour
         }
 
         ApplyGradeLayers();
+    }
+
+    /// <summary>
+    /// 프레임 계열 이미지(프레임 · 반짝)의 칸을 _sprite에 맞춘다. 기본 프레임(64x96 캔버스째)은 프리팹에 놓인 칸 그대로, 그 밖의 그림(뒷면 등)은 카드 그림 크기 그대로 왼쪽 아래 (0, 0)에 놓는다.
+    /// 기본 프레임의 칸은 처음 부를 때 프리팹 값에서 읽어 둔다.
+    /// </summary>
+    private void ApplyFrameRect(Image _image, Sprite _sprite)
+    {
+        if (null == _image || null == _sprite) return;
+
+        if (false == bFrameBaseCaptured && null != frameImage)
+        {
+            RectTransform frameRect = frameImage.rectTransform;
+            frameBasePosition = frameRect.anchoredPosition;
+            frameBaseSize = frameRect.sizeDelta;
+            bFrameBaseCaptured = true;
+        }
+
+        if (false == bFrameBaseCaptured) return;
+
+        bool bBase = _sprite == defaultFrameSprite;
+        _image.rectTransform.sizeDelta = true == bBase ? frameBaseSize : _sprite.rect.size;
+        _image.rectTransform.anchoredPosition = true == bBase ? frameBasePosition : Vector2.zero;
     }
 
     /// <summary>

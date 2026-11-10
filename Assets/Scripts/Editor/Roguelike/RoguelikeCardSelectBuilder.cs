@@ -239,7 +239,8 @@ public static class RoguelikeCardSelectBuilder
         rerollIconRect.anchorMin = new Vector2(0f, 0.5f);
         rerollIconRect.anchorMax = new Vector2(0f, 0.5f);
         rerollIconRect.pivot = new Vector2(0f, 0.5f);
-        rerollIconRect.anchoredPosition = new Vector2(9f, 0f);
+        // 리롤 그림(13x13)은 위쪽에 투명 1행이 붙어 14x14다. 피벗이 세로 가운데라 그림 아래 모서리를 예전 자리(가운데 - 6.5)에 두려면 0.5 올린다.
+        rerollIconRect.anchoredPosition = new Vector2(9f, 0.5f);
 
         TMP_Text rerollLabel = CreateText("Label", rerollRect, _font, string.Empty, TextAlignmentOptions.MidlineLeft, DarkTextColor, false, TextOverflowModes.Overflow);
         StretchRect(rerollLabel.rectTransform);

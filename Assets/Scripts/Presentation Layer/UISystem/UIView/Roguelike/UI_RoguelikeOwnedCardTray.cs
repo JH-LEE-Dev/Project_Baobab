@@ -18,9 +18,13 @@ using UnityEngine.UI;
 /// </summary>
 public class UI_RoguelikeOwnedCardTray : MonoBehaviour
 {
-    /// <summary>숫자판 크기. 구성기(RoguelikeHUDBuilder)가 그림을 만들 때도 쓴다.</summary>
+    /// <summary>
+    /// 숫자판 크기. 구성기(RoguelikeHUDBuilder)가 그림을 만들 때도 쓴다. 판 그림은 34x19이고 스프라이트는 가로 세로가 짝수가 되도록 위쪽에 투명 1행이 붙은 34x20이다
+    /// (PlateHeight = 스프라이트 높이, PlateArtHeight = 그림 높이). 스프라이트 왼쪽 아래가 기준이라 그림은 예전과 같은 자리에 선다.
+    /// </summary>
     public const int PlateWidth = 34;
-    public const int PlateHeight = 19;
+    public const int PlateArtHeight = 19;
+    public const int PlateHeight = PlateArtHeight + 1;
 
     /// <summary>연출 단위 1이 몇 ms인지(연출 속도 2.2배에서 확정한 프레임 표 기준). 표의 ms 값을 연출 단위 시각에 맞춘다.</summary>
     private const float MsPerUnit = 1000f / 2.2f;

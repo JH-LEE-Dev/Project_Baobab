@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &198932955067521973
+--- !u!1 &1595655494554783336
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,11 +8,11 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 7572205430007054621}
-  - component: {fileID: 3535181300243234702}
-  - component: {fileID: 6291490358202084600}
-  - component: {fileID: 7984573076450119984}
-  - component: {fileID: 1835873249291313861}
+  - component: {fileID: 3725751953760406180}
+  - component: {fileID: 5534766027365548639}
+  - component: {fileID: 4006040074565280260}
+  - component: {fileID: 2849190981927872078}
+  - component: {fileID: 4783422101884766724}
   m_Layer: 5
   m_Name: HitBox
   m_TagString: Untagged
@@ -20,13 +20,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!224 &7572205430007054621
+--- !u!224 &3725751953760406180
 RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 198932955067521973}
+  m_GameObject: {fileID: 1595655494554783336}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -39,21 +39,21 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 50, y: 87}
   m_Pivot: {x: 0, y: 0}
---- !u!222 &3535181300243234702
+--- !u!222 &5534766027365548639
 CanvasRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 198932955067521973}
+  m_GameObject: {fileID: 1595655494554783336}
   m_CullTransparentMesh: 1
---- !u!114 &6291490358202084600
+--- !u!114 &4006040074565280260
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 198932955067521973}
+  m_GameObject: {fileID: 1595655494554783336}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
@@ -77,13 +77,13 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &7984573076450119984
+--- !u!114 &2849190981927872078
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 198932955067521973}
+  m_GameObject: {fileID: 1595655494554783336}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
@@ -117,17 +117,17 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 6291490358202084600}
+  m_TargetGraphic: {fileID: 4006040074565280260}
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &1835873249291313861
+--- !u!114 &4783422101884766724
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 198932955067521973}
+  m_GameObject: {fileID: 1595655494554783336}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e47811a138de23644982f774831906e8, type: 3}
@@ -165,7 +165,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 515790050140169133}
-  - {fileID: 7572205430007054621}
+  - {fileID: 3725751953760406180}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -198,8 +198,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_RoguelikeCardSlot
   card: {fileID: 8690784767454496901}
-  relay: {fileID: 1835873249291313861}
-  button: {fileID: 7984573076450119984}
+  relay: {fileID: 4783422101884766724}
+  button: {fileID: 2849190981927872078}
   canvasGroup: {fileID: 7039976368428290034}
 --- !u!1001 &3444954529534056239
 PrefabInstance:

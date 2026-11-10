@@ -7,22 +7,22 @@ using UnityEngine.UI;
 /// 로그라이크 카드 UI 프리팹 구성기. 여러 번 실행해도 같은 결과로 덮어쓴다.
 ///
 /// 계층(모든 자식은 앵커·피벗 왼쪽 아래, 위치는 프레임 왼쪽 아래 기준 정수 픽셀, 크기는 스프라이트 원본 픽셀):
-///   UI_RoguelikeCard (50x81, 프레임 크기)
+///   UI_RoguelikeCard (50x81, 프레임 그림 크기)
 ///    ├ HitBox   50x87  투명, 마우스 판정. 호버로 올라간 그림 범위(+6px)까지 덮고 움직이지 않는다
-///    ├ Shadow   40x5   카드 밑 납작한 그림자. 카드가 올라가면 연해지고 좁아지며 아래로 내려간다(제자리 - Visual 밖)
+///    ├ Shadow   40x6   카드 밑 납작한 그림자(그림 40x5 + 위 투명 1행). 카드가 올라가면 연해지고 좁아지며 아래로 내려간다(제자리 - Visual 밖)
 ///    ├ Visual   50x81  호버 때 위로 올라가는 부분. 아래 그림은 모두 raycastTarget 끔
 ///       └ FlipRoot 50x81  뒤집힘 연출 때 폭이 줄었다 느는 부분(피벗 가운데 아래)
-///          ├ Frame   CardFrame_0   (0, 0)
-///          ├ GradeFrame 50x81  프레임을 등급 색으로 바꿔 그리는 층(Card_FrameFull = 프레임 복사본, 셰이더 UI/CardGradeFrame 팔레트 스왑). 희귀 카드에서만 켜지고 이때 Frame은 꺼진다
-///          ├ Profile CardProfile_0 (8, 38)  - 같은 64x96 캔버스에서 잘린 스프라이트라 캔버스 좌표 (15,47)-(7,9)
+///          ├ Frame   CardFrame 64x96 (-7, -9)  - 프레임 그림은 캔버스의 (7,9)-(50x81)이라 캔버스 왼쪽 아래가 이만큼 밖에 놓인다
+///          ├ GradeFrame 50x82  프레임을 등급 색으로 바꿔 그리는 층(Card_FrameFull = 프레임 그림 복사본 + 위 투명 1행, 셰이더 UI/CardGradeFrame 팔레트 스왑). 희귀 카드에서만 켜지고 이때 Frame은 꺼진다
+///          ├ Profile CardProfile 64x96 (-7, -9)  - 프레임과 같은 64x96 캔버스라 같은 자리에 놓으면 프로필 칸이 프레임 안에 맞는다(캔버스 좌표 (15,47)-(34x34))
 ///          ├ Icon    스킬 아이콘 (스크립트가 프로필 칸 중앙에 배치)
-///          ├ Level   I~VI, MAX (스크립트가 하단 중앙에 배치)
+///          ├ Level   I~VI, MAX 32x32 캔버스 (스크립트가 하단 중앙에 배치. 숫자 그림이 캔버스 가운데라 캔버스째 가운데 맞추면 된다)
 ///          └ Flash   선택·앞면 공개 순간 프레임 모양으로 하얗게 번쩍이는 층(평소에는 꺼져 있다)
-///       ├ EdgeLine  4x77  카드가 옆으로 선 순간 보이는 카드 두께(앞면 테두리 색. FlipRoot 밖이라 폭이 변하지 않는다. 평소에는 꺼져 있다)
+///       ├ EdgeLine  4x78  카드가 옆으로 선 순간 보이는 카드 두께(그림 4x77 + 위 투명 1행. 앞면 테두리 색. FlipRoot 밖이라 폭이 변하지 않는다. 평소에는 꺼져 있다)
 ///       └ Aura     50x81  희귀 카드의 별가루·불씨·글린트·공개 스파크(UI_RoguelikeCardAura, 불투명 . + x 픽셀). 일반 카드는 꺼짐
 ///    └ Fx       50x81  UI_RoguelikePixelFx. 맨 위에 그려지는 입자 풀(Particle_0~53, 입자 하나가 연속한 이미지 3장 = 머리 + 잔상 둘을 쓴다). 평소에는 모두 꺼져 있다
 ///
-/// 프레임과 프로필은 같은 캔버스(64x96)에서 잘려 나온 스프라이트라 서로의 위치가 잘린 사각형 좌표 차이로 정해진다.
+/// 이 구성기가 만드는 그림은 가로 세로가 홀수이면 오른쪽 열 / 위쪽 행에 투명 1px을 붙여 짝수로 만든다(EnsureSpriteFromPixels). 파일이 이미 있으면 덮어쓰지 않는다.
 /// </summary>
 public static class RoguelikeCardBuilder
 {
@@ -47,7 +47,14 @@ public static class RoguelikeCardBuilder
     private const int HoverLift = UI_RoguelikeCard.HoverLiftPixels;
     private const int ShadowWidth = 40;
     private const int ShadowHeight = 5;
-    private static readonly Vector2Int ProfilePosition = new Vector2Int(8, 38);
+
+    // 프레임 · 프로필 그림이 64x96 캔버스 안에서 차지하는 왼쪽 아래 위치(예전 Multiple 조각 CardFrame_0의 사각형 x, y = (7, 9)).
+    // 이제 두 스프라이트는 캔버스 전체(Single + Full Rect)라 카드 왼쪽 아래 기준 (-7, -9)에 놓으면 그림이 예전과 같은 픽셀에 선다.
+    private const int FrameArtX = 7;
+    private const int FrameArtY = 9;
+
+    // 임포트 설정(사용자가 정한 값): Sprite, Single, PPU 32, Full Rect, Extrude 1, Pivot Center, Physics Shape on, Clamp, Point, 밉맵 끔, 알파 투명, 압축 없음, Max 2048.
+    public const float PixelArtPixelsPerUnit = 32f;
 
     [MenuItem("LumberBoy/UI/Build Roguelike Card")]
     public static void Build()
@@ -76,9 +83,10 @@ public static class RoguelikeCardBuilder
         Sprite plusSmall = EnsureSpriteFromPixels(PlusSmallPath, BuildPlusPixels(3), 3, 3);
         Sprite plusLarge = EnsureSpriteFromPixels(PlusLargePath, BuildPlusPixels(5), 5, 5);
         // 희귀 등급 층용 단일 스프라이트(셰이더가 UV로 픽셀 좌표를 구하므로 시트에서 잘린 조각이 아니라 한 장짜리여야 한다): 프레임 그림 그대로의 복사본.
-        Sprite frameFull = EnsureSpriteFromPixels(FrameFullPath, ReadSpritePixels(frame, Mathf.RoundToInt(frame.rect.width), Mathf.RoundToInt(frame.rect.height)), Mathf.RoundToInt(frame.rect.width), Mathf.RoundToInt(frame.rect.height));
-        Material[] frameMaterials = BuildGradeFrameMaterials(Mathf.RoundToInt(frame.rect.width), Mathf.RoundToInt(frame.rect.height));
-        Sprite back = EnsureSpriteFromPixels(BackPath, BuildBackPixels(frame), Mathf.RoundToInt(frame.rect.width), Mathf.RoundToInt(frame.rect.height));
+        // 프레임 그림은 64x96 캔버스의 (7, 9)-(50x81)이다. 복사본과 뒷면은 그 영역만 잘라 만든다(가로 세로가 홀수면 투명 1px이 붙는다).
+        Sprite frameFull = EnsureSpriteFromPixels(FrameFullPath, ReadSpritePixels(frame, FrameArtX, FrameArtY, FrameWidth, FrameHeight), FrameWidth, FrameHeight);
+        Material[] frameMaterials = BuildGradeFrameMaterials(Mathf.RoundToInt(frameFull.rect.width), Mathf.RoundToInt(frameFull.rect.height));
+        Sprite back = EnsureSpriteFromPixels(BackPath, BuildBackPixels(frame), FrameWidth, FrameHeight);
 
         GameObject root = new GameObject("UI_RoguelikeCard", typeof(RectTransform));
         root.layer = LayerMask.NameToLayer("UI");
@@ -99,15 +107,17 @@ public static class RoguelikeCardBuilder
         RectTransform flipRoot = CreateRect("FlipRoot", visual, new Vector2Int(FrameWidth / 2, 0), new Vector2(FrameWidth, FrameHeight));
         flipRoot.pivot = new Vector2(0.5f, 0f);
 
-        Image frameImage = CreateImage("Frame", flipRoot, frame, Vector2Int.zero, frame.rect.size);
+        // 프레임 · 프로필은 64x96 캔버스째다. 그림이 카드의 (0, 0)에 서도록 캔버스를 (-7, -9)에 놓는다(프로필 칸은 같은 캔버스라 자동으로 (8, 38)에 선다).
+        Vector2Int canvasPosition = new Vector2Int(-FrameArtX, -FrameArtY);
+        Image frameImage = CreateImage("Frame", flipRoot, frame, canvasPosition, frame.rect.size);
         Image gradeFrameImage = CreateImage("GradeFrame", flipRoot, frameFull, Vector2Int.zero, frameFull.rect.size);
         gradeFrameImage.enabled = false;
-        Image profileImage = CreateImage("Profile", flipRoot, profile, ProfilePosition, profile.rect.size);
+        Image profileImage = CreateImage("Profile", flipRoot, profile, canvasPosition, profile.rect.size);
         Image iconImage = CreateImage("Icon", flipRoot, null, Vector2Int.zero, Vector2.zero);
         iconImage.enabled = false;
         Image levelImage = CreateImage("Level", flipRoot, levels[0], Vector2Int.zero, levels[0].rect.size);
 
-        Image flashImage = CreateImage("Flash", flipRoot, frame, Vector2Int.zero, frame.rect.size);
+        Image flashImage = CreateImage("Flash", flipRoot, frame, canvasPosition, frame.rect.size);
         flashImage.color = new Color(1f, 1f, 1f, 0f);
         flashImage.enabled = false;
 
@@ -217,9 +227,12 @@ public static class RoguelikeCardBuilder
         Material[] all = { emerald, prism, ruby };
         for (int i = 0; i < all.Length; i++)
         {
+            // _w x _h는 복사본(Card_FrameFull) 전체 크기다 - 그림(FrameWidth x FrameHeight) 오른쪽 · 위에 투명 줄이 붙어 있으면 그림 중심이 그 절반만큼 밀리므로
+            // _PixelShift로 되돌려 셰이더의 픽셀 좌표가 그림 기준(예전 50x81 그림 한 장)과 같게 한다.
             all[i].SetVector("_PixelSize", new Vector4(_w, _h, 0f, 0f));
-            // 반짝은 링 모서리: 가장자리에서 2px 안쪽(픽셀 중심 기준 반폭 22.5, 반높이 38).
-            all[i].SetVector("_LineHalf", new Vector4(_w * 0.5f - 2.5f, _h * 0.5f - 2.5f, 0f, 0f));
+            all[i].SetVector("_PixelShift", new Vector4((_w - FrameWidth) * 0.5f, (_h - FrameHeight) * 0.5f, 0f, 0f));
+            // 반짝은 링 모서리: 가장자리에서 2px 안쪽(그림 중심 기준 반폭 22.5, 반높이 38).
+            all[i].SetVector("_LineHalf", new Vector4(FrameWidth * 0.5f - 2.5f, FrameHeight * 0.5f - 2.5f, 0f, 0f));
             all[i].SetFloat("_Rainbow", 0f);
         }
 
@@ -351,9 +364,9 @@ public static class RoguelikeCardBuilder
     /// </summary>
     private static Color32[] BuildBackPixels(Sprite _frame)
     {
-        int w = Mathf.RoundToInt(_frame.rect.width);
-        int h = Mathf.RoundToInt(_frame.rect.height);
-        Color32[] framePixels = ReadSpritePixels(_frame, w, h);
+        int w = FrameWidth;
+        int h = FrameHeight;
+        Color32[] framePixels = ReadSpritePixels(_frame, FrameArtX, FrameArtY, w, h);
         Color32[] pixels = new Color32[w * h];
 
         Color32 body = MostCommonOpaqueColor(framePixels);
@@ -424,8 +437,8 @@ public static class RoguelikeCardBuilder
         return new Color32((byte)Mathf.RoundToInt(_color.r * _factor), (byte)Mathf.RoundToInt(_color.g * _factor), (byte)Mathf.RoundToInt(_color.b * _factor), 255);
     }
 
-    /// <summary>스프라이트의 텍스처 영역을 RGBA32(아래에서 위 순서)로 읽는다. 읽기 불가 텍스처도 RT를 거쳐 읽는다.</summary>
-    private static Color32[] ReadSpritePixels(Sprite _sprite, int _w, int _h)
+    /// <summary>스프라이트의 텍스처 영역 중 스프라이트 왼쪽 아래 기준 (_x, _y)부터 _w x _h를 RGBA32(아래에서 위 순서)로 읽는다. 읽기 불가 텍스처도 RT를 거쳐 읽는다.</summary>
+    private static Color32[] ReadSpritePixels(Sprite _sprite, int _x, int _y, int _w, int _h)
     {
         Texture2D source = _sprite.texture;
         Rect rect = _sprite.textureRect;
@@ -436,7 +449,7 @@ public static class RoguelikeCardBuilder
         RenderTexture.active = rt;
 
         Texture2D read = new Texture2D(_w, _h, TextureFormat.RGBA32, false);
-        read.ReadPixels(new Rect(rect.x, rect.y, _w, _h), 0, 0);
+        read.ReadPixels(new Rect(rect.x + _x, rect.y + _y, _w, _h), 0, 0);
         Color32[] pixels = read.GetPixels32();
 
         RenderTexture.active = previous;
@@ -446,33 +459,84 @@ public static class RoguelikeCardBuilder
     }
 
     /// <summary>
-    /// 픽셀 배열로 PNG를 만들고 픽셀 아트 규칙(Point 필터·비압축·Single 스프라이트)으로 가져와 스프라이트를 돌려준다.
+    /// 픽셀 배열(아래에서 위 순서)로 PNG를 만들고 픽셀 아트 규칙(PixelArtPixelsPerUnit, Point 필터, 비압축, Single + Full Rect)으로 가져와 스프라이트를 돌려준다.
+    /// 가로 세로가 홀수인 축은 투명 1px을 오른쪽 열 / 위쪽 행에 붙여 짝수로 만든다(PadToEven). 그림은 그대로고 스프라이트 왼쪽 아래가 기준이라 붙은 줄은 오른쪽 · 위로만 자란다.
     /// 같은 경로에 이미 파일이 있으면 덮어쓰지 않는다 - 디자인 이미지로 바꿀 때는 같은 이름으로 교체하면 된다.
     /// _pixelsPerUnit은 9-슬라이스로 쓰는 그림이 캔버스의 Reference Pixels Per Unit과 같아야 테두리가 원래 픽셀 크기로 그려진다(다르면 테두리가 그 비율만큼 줄거나 는다).
     /// </summary>
-    public static Sprite EnsureSpriteFromPixels(string _path, Color32[] _pixels, int _w, int _h, float _pixelsPerUnit = 100f)
+    public static Sprite EnsureSpriteFromPixels(string _path, Color32[] _pixels, int _w, int _h, float _pixelsPerUnit = PixelArtPixelsPerUnit)
     {
         if (false == System.IO.File.Exists(_path))
         {
-            Texture2D tex = new Texture2D(_w, _h, TextureFormat.RGBA32, false);
-            tex.SetPixels32(_pixels);
+            Color32[] evenPixels = PadToEven(_pixels, _w, _h, out int evenWidth, out int evenHeight);
+
+            Texture2D tex = new Texture2D(evenWidth, evenHeight, TextureFormat.RGBA32, false);
+            tex.SetPixels32(evenPixels);
             tex.Apply();
             System.IO.File.WriteAllBytes(_path, tex.EncodeToPNG());
             UnityEngine.Object.DestroyImmediate(tex);
             AssetDatabase.ImportAsset(_path, ImportAssetOptions.ForceSynchronousImport);
 
             TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(_path);
-            importer.textureType = TextureImporterType.Sprite;
-            importer.spriteImportMode = SpriteImportMode.Single;
-            importer.spritePixelsPerUnit = _pixelsPerUnit;
-            importer.filterMode = FilterMode.Point;
-            importer.mipmapEnabled = false;
-            importer.textureCompression = TextureImporterCompression.Uncompressed;
-            importer.alphaIsTransparency = true;
+            ApplyPixelArtImportSettings(importer, _pixelsPerUnit);
             importer.SaveAndReimport();
         }
 
         return LoadSprite(_path);
+    }
+
+    /// <summary>
+    /// 홀수인 축에만 투명 1px을 붙여 짝수로 만든다(가로는 오른쪽 열, 세로는 위쪽 행. 배열은 아래에서 위 순서라 위쪽 행은 맨 끝 줄). 원래 픽셀은 바꾸지 않는다.
+    /// 이미 짝수면 같은 배열을 그대로 돌려준다.
+    /// </summary>
+    public static Color32[] PadToEven(Color32[] _pixels, int _w, int _h, out int _evenWidth, out int _evenHeight)
+    {
+        _evenWidth = _w + (_w & 1);
+        _evenHeight = _h + (_h & 1);
+        if (_evenWidth == _w && _evenHeight == _h) return _pixels;
+
+        Color32[] padded = new Color32[_evenWidth * _evenHeight];
+        for (int y = 0; y < _h; y++)
+        {
+            for (int x = 0; x < _w; x++) padded[y * _evenWidth + x] = _pixels[y * _w + x];
+        }
+
+        return padded;
+    }
+
+    /// <summary>픽셀 아트 텍스처의 임포트 설정(사용자가 정한 값)을 _importer에 넣는다. 호출한 쪽이 SaveAndReimport를 부른다.</summary>
+    public static void ApplyPixelArtImportSettings(TextureImporter _importer, float _pixelsPerUnit)
+    {
+        _importer.textureType = TextureImporterType.Sprite;
+        _importer.spriteImportMode = SpriteImportMode.Single;
+        _importer.spritePixelsPerUnit = _pixelsPerUnit;
+        _importer.filterMode = FilterMode.Point;
+        _importer.wrapMode = TextureWrapMode.Clamp;
+        _importer.mipmapEnabled = false;
+        _importer.maxTextureSize = 2048;
+        _importer.textureCompression = TextureImporterCompression.Uncompressed;
+        _importer.alphaIsTransparency = true;
+
+        TextureImporterSettings settings = new TextureImporterSettings();
+        _importer.ReadTextureSettings(settings);
+        settings.spriteMeshType = SpriteMeshType.FullRect;
+        settings.spriteExtrude = 1;
+        settings.spriteAlignment = (int)SpriteAlignment.Center;
+        settings.spritePivot = new Vector2(0.5f, 0.5f);
+        settings.spriteGenerateFallbackPhysicsShape = true;
+        _importer.SetTextureSettings(settings);
+    }
+
+    /// <summary>임포트 설정이 픽셀 아트 규칙(Single, Point, 밉맵 끔, 압축 없음, 알파 투명, PPU, Full Rect)과 같은지. 사용자가 바꾼 설정을 되돌리지 않도록 이 조건을 만족하면 건드리지 않는다.</summary>
+    public static bool IsPixelArtImportOk(TextureImporter _importer, float _pixelsPerUnit)
+    {
+        TextureImporterSettings settings = new TextureImporterSettings();
+        _importer.ReadTextureSettings(settings);
+
+        return TextureImporterType.Sprite == _importer.textureType && SpriteImportMode.Single == _importer.spriteImportMode
+            && FilterMode.Point == _importer.filterMode && false == _importer.mipmapEnabled
+            && TextureImporterCompression.Uncompressed == _importer.textureCompression && true == _importer.alphaIsTransparency
+            && Mathf.Approximately(_pixelsPerUnit, _importer.spritePixelsPerUnit) && SpriteMeshType.FullRect == settings.spriteMeshType;
     }
 
     /// <summary>없을 수 있는 리소스. 파일이 없으면 null.</summary>

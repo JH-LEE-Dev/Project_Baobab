@@ -268,7 +268,7 @@
     {
       "id": 12,
       "key": "StarrootForestGuide_Title",
-      "kr": "이어진 별 표식 나무들을 벌목하면 강력한 별자리가 발현됩니다!",
+      "kr": "별 표식으로 연결된 나무를 모두 베면 별자리 발현이 일어납니다!\n별자리 발현은 나무의 피해를 줄이는 별의 가호를 해제합니다.",
       "en": "Fell all the linked star-marked trees to unleash a mighty constellation!",
       "zhHans": "砍伐相连的星标树木，即可显现强大的星座！",
       "zhHant": "砍伐相連的星標樹木，即可顯現強大的星座！",

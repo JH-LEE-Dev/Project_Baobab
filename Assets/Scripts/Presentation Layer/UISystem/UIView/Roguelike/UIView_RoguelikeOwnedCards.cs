@@ -57,7 +57,8 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     // 목록 패널 가장자리에서 카드 영역까지 8칸(틀 4칸 + 4칸), 카드 영역 안쪽에 호버 괄호가 삐져나오는 여유 4칸. 스크롤바는 오른쪽 여백 안에 둔다.
     private const float BookPadding = 8f;
     private const float BracketClearance = 4f;
-    private const float ScrollbarWidth = 3f;
+    // 스크롤바 그림은 3열 + 오른쪽 투명 1열(Scroll_Track · Scroll_Thumb 4x6)이라 칸 폭은 4다. 그림은 왼쪽 3열이다.
+    private const float ScrollbarWidth = 4f;
     private const float ScrollbarGap = 1f;
     private const float MinThumbHeight = 8f;
     private const float CellGap = 4f;

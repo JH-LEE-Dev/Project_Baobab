@@ -52,7 +52,8 @@ Material:
     - _ClipRect: {r: -32767, g: -32767, b: 32767, a: 32767}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _LineHalf: {r: 22.5, g: 38, b: 0, a: 0}
-    - _PixelSize: {r: 50, g: 81, b: 0, a: 0}
+    - _PixelShift: {r: 0, g: 0.5, b: 0, a: 0}
+    - _PixelSize: {r: 50, g: 82, b: 0, a: 0}
     - _SheenColor: {r: 0.85, g: 0.92, b: 1, a: 1}
     - _Tone0: {r: 0.04, g: 0.16, b: 0.1, a: 1}
     - _Tone1: {r: 0.06, g: 0.27, b: 0.17, a: 1}

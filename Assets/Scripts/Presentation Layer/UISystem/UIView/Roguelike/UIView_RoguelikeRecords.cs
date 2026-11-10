@@ -11,11 +11,13 @@ using UnityEngine.UI;
 ///
 /// [구성 - 시안 v3] 어두운 딤 위 가운데 한 장(Panel_Book):
 ///   위쪽 가장자리의 탭 명판 "◀ 현재 탭 ▶" + 아래 점 3개와 점 커서(첫 실행 언어 설정 팝업과 같은 넘김 연출). 탭 이름이 언어마다 길이가 크게 달라 세 개를 나란히 두지 않는다.
-///   명판 폭은 18개 언어 중 가장 긴 탭 이름 기준(SpecTabPlateWidth)과 현재 언어 폭 중 큰 값이라 탭을 넘겨도 크기가 흔들리지 않는다.
-///   본문은 UI_RoguelikeRecordRow 최대 5줄(최근 기록은 1줄). 기록이 없으면 안내 문구. 아래에 키 안내(탭 전환 · 뒤로, 아이콘은 입력 장치를 따른다).
+///   패드 모드에서는 명판 화살표 바로 안쪽에 LB(◀ 옆) · RB(▶ 옆) 아이콘이 붙는다(16x16, 간격 1). 키보드 모드에서는 숨긴다.
+///   명판 폭은 18개 언어 중 가장 긴 탭 이름 기준(SpecTabPlateWidth, 아이콘 자리 포함)과 현재 언어 폭 중 큰 값이라 탭을 넘기거나 장치를 바꿔도 크기가 흔들리지 않는다.
+///   본문은 UI_RoguelikeRecordRow 최대 5줄(최근 기록은 1줄). 기록이 없으면 안내 문구. 하단 키 안내 줄은 없다.
+///   뒤로 버튼(BTN_Back)은 옵션 창 BTN_Close와 같은 모양(32x32, UI_OptionButton)으로 판 아래 테두리 바깥, 판 왼쪽 끝에 놓는다. 패드 모드에서만 버튼 오른쪽에 B 아이콘이 뜬다.
 ///
 /// [조작 - ControllerSupport_UI가이드.md 3-1 · 3-7] 탭 전환 = 패드 LB/RB(UITabShiftEvent - 키보드 PageUp/PageDown은 받지 않는다) 또는 명판의 ◀ ▶ 클릭.
-///   키 안내: 탭 전환 안내는 패드 모드에서만 보인다. 뒤로(키보드 Esc / 패드 B) 안내는 늘 보인다 - 키보드 단축키는 뒤로가기 · 닫기만 둔다.
+///   패드 전용 아이콘(padOnlyItems: 명판 LB · RB, 뒤로 버튼의 B)은 패드 모드에서만 켠다. 뒤로 버튼은 마우스 클릭용이고 패드는 B 단축키를 쓴다(패드 선택 없음).
 ///   닫기 = 딤 클릭 · 패드 B(UICancelEvent). 키보드 Esc는 로그라이크 씬에서는 프리팹 bCloseableByESC(깊이 관리)가 닫고,
 ///   메인메뉴처럼 깊이 관리가 없는 곳에서 열 때는 SetStandaloneClose(true)로 ESC를 직접 받는다. 입력 모드 UI는 모달 공통(RoguelikeModalInput)이 건다.
 ///   이 창에는 고를 항목이 없어 패드 선택을 잡지 않는다.
@@ -25,9 +27,11 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     private const int TabCount = 3;
     private const int MaxRows = 5;
 
-    // 18개 언어 중 가장 긴 탭 이름으로 잰 명판 최소 폭(px, 시안 v3 측정: 가장 긴 탭 183 + 화살표 · 여백 54).
-    private const float SpecTabPlateWidth = 238f;
+    // 18개 언어 중 가장 긴 탭 이름으로 잰 명판 최소 폭(px, 시안 v3 측정: 가장 긴 탭 183 + 화살표 · 여백 54 + LB · RB 아이콘 자리 34).
+    private const float SpecTabPlateWidth = 272f;
     private const float TabArrowWidth = 22f;
+    // 화살표 안쪽에 붙는 LB · RB 아이콘 한쪽 자리(아이콘 16 + 간격 1).
+    private const float TabKeyIconWidth = 17f;
     private const float RowHeight = 46f;
     private const float RowGap = 4f;
 
@@ -38,8 +42,6 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     // 문구 키(RoguelikeUI.json)
     private static readonly string[] TabKeys = { "Roguelike_Records_TabRecent", "Roguelike_Records_TabClear", "Roguelike_Records_TabUnlimit" };
     private const string EmptyKey = "Roguelike_Records_Empty";
-    private const string HintTabKey = "Roguelike_Hint_Tab";
-    private const string HintBackKey = "Roguelike_Hint_Back";
     private const string MaxKey = "Roguelike_CardLevel_Max";
 
     // 탭 넘김 피드백 - 첫 실행 언어 설정 팝업(UI_InitialSetupPopup)의 언어 넘김과 같은 값이다.
@@ -89,11 +91,11 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     [SerializeField] private UI_RoguelikeRecordRow rowTemplate;
     [SerializeField] private TMP_Text emptyText;
 
-    [Header("키 안내")]
-    [SerializeField, Tooltip("탭 전환 안내 항목(이전 탭 키 · 다음 탭 키 아이콘 · '탭 전환' 문구). 패드 모드에서만 켠다 - 키보드는 탭 전환 단축키를 두지 않는다(◀ ▶ 클릭). '뒤로' 안내는 늘 보인다.")]
-    private RectTransform[] tabGuideItems = new RectTransform[0];
-    [SerializeField] private TMP_Text hintTabText;
-    [SerializeField] private TMP_Text hintBackText;
+    [Header("뒤로 · 패드 아이콘")]
+    [SerializeField, Tooltip("판 아래 왼쪽의 뒤로 버튼(옵션 BTN_Close와 같은 UI_OptionButton). 마우스 클릭용 - 패드는 B 단축키.")]
+    private UI_OptionButton backButton;
+    [SerializeField, Tooltip("패드 모드에서만 켜는 아이콘 묶음(명판 LB · RB, 뒤로 버튼의 B). 키보드 모드에서는 끈다.")]
+    private RectTransform[] padOnlyItems = new RectTransform[0];
     [SerializeField] private UI_KeyboardImage[] keyGuideImages = new UI_KeyboardImage[0];
 
     //내부 의존성
@@ -153,6 +155,8 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         {
             if (null != keyGuideImages[i]) keyGuideImages[i].Initialize(inputManager);
         }
+
+        if (null != backButton) backButton.Initialize(RequestClose, SoundID.MainMenuDot01, SoundID.None);
 
         if (null != rowTemplate) rowTemplate.gameObject.SetActive(false);
     }
@@ -403,7 +407,7 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         if (null == tabPlate || null == tabText) return;
 
         float textWidth = Mathf.Ceil(tabText.GetPreferredValues(tabText.text, 10000f, 10000f).x);
-        float width = Mathf.Max(SpecTabPlateWidth, textWidth + TabArrowWidth * 2f + 10f);
+        float width = Mathf.Max(SpecTabPlateWidth, textWidth + (TabArrowWidth + TabKeyIconWidth) * 2f + 10f);
         int even = Mathf.CeilToInt(width);
         if (0 != even % 2) even++;
         tabPlate.sizeDelta = new Vector2(even, tabPlate.sizeDelta.y);
@@ -472,17 +476,15 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     private void ApplyStaticTexts()
     {
         if (null != emptyText) emptyText.text = Localize(EmptyKey);
-        if (null != hintTabText) hintTabText.text = Localize(HintTabKey);
-        if (null != hintBackText) hintBackText.text = Localize(HintBackKey);
     }
 
-    /// <summary>탭 전환 안내는 패드 모드에서만 보인다(키보드는 탭 전환 단축키 없음 - ◀ ▶ 클릭). '뒤로'(ESC / B) 안내는 늘 보인다. 판 크기는 그대로 둔다.</summary>
+    /// <summary>명판 LB · RB와 뒤로 버튼 B 아이콘은 패드 모드에서만 보인다(키보드는 ◀ ▶ 클릭 · Esc). 판 · 명판 크기는 그대로 둔다.</summary>
     private void RefreshTabGuide()
     {
         bool bPad = null != inputManager && true == inputManager.IsGamepadMode;
-        for (int i = 0; tabGuideItems.Length > i; i++)
+        for (int i = 0; padOnlyItems.Length > i; i++)
         {
-            if (null != tabGuideItems[i]) tabGuideItems[i].gameObject.SetActive(bPad);
+            if (null != padOnlyItems[i]) padOnlyItems[i].gameObject.SetActive(bPad);
         }
     }
 

@@ -205,12 +205,13 @@ public static class RoguelikeOwnedCardsBuilder
             TMP_Text emptyText = CreateText("EmptyText", scrollContent, _font, TextAlignmentOptions.Center, MutedColor);
 
             // 스크롤바: 얇은 홈 + 막대. 내용이 넘칠 때만 스크립트가 켠다.
-            RectTransform track = TopLeftRect("ScrollTrack", book, 3f, 284f);
+            // 스크롤바 그림(3x6)은 오른쪽에 투명 1열이 붙어 4x6이다. 그림은 왼쪽 3열이라 왼쪽 위 기준으로 놓으면 예전과 같은 픽셀에 선다.
+            RectTransform track = TopLeftRect("ScrollTrack", book, 4f, 284f);
             Image trackImage = track.gameObject.AddComponent<Image>();
             trackImage.sprite = _sprites.scrollTrack;
             trackImage.type = Image.Type.Sliced;
             trackImage.raycastTarget = false;
-            Image thumb = RoguelikeCardBuilder.CreateImage("ScrollThumb", track, _sprites.scrollThumb, Vector2Int.zero, new Vector2(3f, 12f));
+            Image thumb = RoguelikeCardBuilder.CreateImage("ScrollThumb", track, _sprites.scrollThumb, Vector2Int.zero, new Vector2(4f, 12f));
             thumb.type = Image.Type.Sliced;
 
             ScrollRect scroll = book.gameObject.AddComponent<ScrollRect>();

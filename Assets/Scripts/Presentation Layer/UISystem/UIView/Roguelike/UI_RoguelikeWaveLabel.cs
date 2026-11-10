@@ -2,21 +2,32 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 로그라이크 전투 HUD의 웨이브 표시. 막대 묶음(하단 중앙)의 왼쪽 윗 모서리에 놓이는 배지다(기획서 v2.6 10-1).
-/// 깃발 아이콘(Flag) + 작은 숫자(UI_RoguelikeIconNumber)로 "12/30"을 그린다. 30웨이브 이후(언리밋)는 깃발이 금색으로 바뀌고 무한대 아이콘(Infinity) + 언리밋 번호(Unlimit-3이면 "3")를 그린다.
-/// 글자 라벨은 쓰지 않는다. 배지 프레임·아이콘은 프리팹에 있고 이 컴포넌트는 숫자와 색, 튐 연출만 맡는다.
+/// 로그라이크 전투 HUD의 웨이브 줄. 좌측 하단 막대 묶음의 맨 위 줄이다(RoguelikeHUD_Polish_Plan.md 2장).
+/// 깃발 아이콘(Flag, 16x16) + 작은 숫자(UI_RoguelikeIconNumber, 4px 격자)로 "12/30"을 그리고, 그 오른쪽에 30칸 진행 점(2x2, 3px 간격, 10칸마다 +2)을 둔다.
+///   진행 점  지난 칸은 금색 2행(위 밝음 / 아래 어두움), 현재 칸은 흰색 2x3(위로 1px 더), 남은 칸은 어두운 갈색.
+///   언리밋   깃발이 금색, 무한대 아이콘(Infinity) + 단계 번호(금색)로 바뀌고 진행 점은 10칸이다. 칸 = (언리밋 번호 - 1) % 10 + 1 (10웨이브마다 처음부터).
+/// 글자 라벨은 쓰지 않는다. 아이콘 · 숫자는 프리팹에 있고 이 컴포넌트는 숫자와 진행 점, 깃발 모양, 튐 연출만 맡는다.
 ///
-/// [웨이브가 바뀔 때] 24Hz 틱으로 위로 { +2, +3, +1, 0 }px 튀어 오르고(스텝당 3틱), 처음 6틱은 깃발이 흰색과 원래 색으로 번갈아 번쩍인다.
-///   정수 픽셀 이동이고, 시간은 unscaled라 ESC로 멈춰도 이어진다. 처음 표시될 때(HUD가 켜질 때)는 튀지 않는다.
+/// [웨이브가 바뀔 때] 24Hz 틱으로 위로 { +2, +3, +1, 0 }px 튀어 오르고(스텝당 3틱), 처음 6틱은 깃발이 흰 실루엣과 원래 모양으로 번갈아 번쩍인다.
+///   정수 픽셀 이동이고, 시간은 unscaled라 ESC로 멈춰도 이어진다. 처음 표시될 때(HUD가 켜질 때)는 튀지 않는다. 현재 점은 다음 칸으로 옮겨 간다.
 /// </summary>
 public class UI_RoguelikeWaveLabel : MonoBehaviour
 {
     private const int TotalWaves = 30;
+    private const int UnlimitPipCount = 10;
+    private const int PipTextureWidth = 93;
+    private const int PipTextureHeight = 3;
+    private const int PipStep = 3;
+    private const int PipGroupGap = 2;
+    private const int PipGroupSize = 10;
+    // 숫자 끝에서 진행 점까지의 간격.
+    private const int PipGap = 5;
+    private const int GridAdvance = 4;
     private const float TicksPerSecond = 24f;
     private const int StepTicks = 3;
-    // 숫자 시작 x(라벨 왼쪽 기준). 깃발만 있을 때와 깃발 + 무한대 아이콘이 있을 때.
-    private const int NumberX = 13;
-    private const int NumberXUnlimit = 23;
+    // 숫자 잉크 시작 x(라벨 왼쪽 기준, 라벨은 캔버스 x 7). 깃발만 있을 때(캔버스 19)와 깃발 + 무한대 16x16 아이콘이 있을 때(캔버스 32).
+    private const int NumberX = 12;
+    private const int NumberXUnlimit = 25;
     private const int FlashTicks = 6;
     private static readonly int[] HopPattern = { 2, 3, 1, 0 };
 
@@ -27,18 +38,26 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
     private RectTransform numberAnchor;
     [SerializeField] private Image flagImage;
     [SerializeField] private Image infinityImage;
-    [SerializeField] private Color flagColor = Color.white;
-    [SerializeField] private Color unlimitFlagColor = new Color(1f, 0.82f, 0.35f, 1f);
+    [SerializeField, Tooltip("일반 깃발(빨강) 스프라이트.")]
+    private Sprite normalFlagSprite;
+    [SerializeField, Tooltip("언리밋 깃발(금색) 스프라이트.")]
+    private Sprite unlimitFlagSprite;
+    [SerializeField, Tooltip("웨이브가 바뀔 때 번쩍이는 흰 실루엣 깃발 스프라이트.")]
+    private Sprite flashFlagSprite;
+    [SerializeField, Tooltip("진행 점을 그리는 RawImage(93x3). 위치는 숫자 폭에 맞춰 코드가 옮긴다.")]
+    private RawImage pipSurface;
 
     //상태 변수
+    private RoguelikeBarPainter pipPainter;
     private int wave;
     private bool bUnlimit;
     private int unlimitIndex;
     private bool bHasWave;
     private float clock;
     private float hopStartClock = -1f;
-    private Vector2 basePosition;
-    private bool bBasePositionCaptured;
+    // 지금 라벨에 얹혀 있는 튐 오프셋(px). 위치를 통째로 덮어쓰지 않고 차이만 더해 퇴장 이동과 겹쳐도 어긋나지 않는다.
+    private int appliedHop;
+    private float lastHopY;
     // 퇴장 연출(숫자가 사라지는 동안)이 끝난 뒤 오브젝트를 끈다.
     private bool bHiding;
     private float hideClock;
@@ -107,15 +126,90 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
     {
         if (null != infinityImage) infinityImage.enabled = bUnlimit;
 
-        if (null != numberAnchor) numberAnchor.anchoredPosition = new Vector2(true == bUnlimit ? NumberXUnlimit : NumberX, numberAnchor.anchoredPosition.y);
+        int numberX = true == bUnlimit ? NumberXUnlimit : NumberX;
+        if (null != numberAnchor) numberAnchor.anchoredPosition = new Vector2(numberX, numberAnchor.anchoredPosition.y);
+
+        int digits = 1;
 
         if (null != iconNumber)
         {
-            if (true == bUnlimit) iconNumber.SetSingle(unlimitIndex);
-            else iconNumber.SetPair(wave, TotalWaves);
+            if (true == bUnlimit)
+            {
+                iconNumber.SetSingle(unlimitIndex);
+                iconNumber.SetTint(RoguelikeHudColors.NumberUnlimit);
+                digits = CountDigits(unlimitIndex);
+            }
+            else
+            {
+                iconNumber.SetPair(wave, TotalWaves);
+                iconNumber.SetTint(Color.white);
+                digits = CountDigits(wave) + 1 + CountDigits(TotalWaves);
+            }
         }
 
-        if (null != flagImage) flagImage.color = true == bUnlimit ? unlimitFlagColor : flagColor;
+        // 진행 점은 숫자 오른쪽 끝에서 5px 뒤(숫자 폭 = 4 x 글자 수 + 1).
+        if (null != pipSurface)
+        {
+            RectTransform pipRect = pipSurface.rectTransform;
+            pipRect.anchoredPosition = new Vector2(numberX + GridAdvance * digits + 1 + PipGap, pipRect.anchoredPosition.y);
+        }
+
+        PaintPips();
+
+        if (null != flagImage) flagImage.sprite = true == bUnlimit ? unlimitFlagSprite : normalFlagSprite;
+    }
+
+    /// <summary>진행 점 30칸(언리밋이면 10칸)을 다시 그린다.</summary>
+    private void PaintPips()
+    {
+        if (null == pipSurface) return;
+
+        EnsurePipPainter();
+
+        int total = true == bUnlimit ? UnlimitPipCount : TotalWaves;
+        int current = true == bUnlimit ? (unlimitIndex - 1) % UnlimitPipCount + 1 : wave;
+
+        pipPainter.Clear();
+
+        int gx = 0;
+        for (int i = 0; i < total; i++)
+        {
+            if (0 < i && 0 == i % PipGroupSize) gx += PipGroupGap;
+
+            if (i + 1 < current)
+            {
+                pipPainter.Fill(gx, 1, gx + 2, 2, RoguelikeHudColors.PipPassedTop);
+                pipPainter.Fill(gx, 2, gx + 2, 3, RoguelikeHudColors.PipPassedBottom);
+            }
+            else if (i + 1 == current)
+            {
+                pipPainter.Fill(gx, 0, gx + 2, 3, RoguelikeHudColors.White);
+            }
+            else
+            {
+                pipPainter.Fill(gx, 1, gx + 2, 3, RoguelikeHudColors.PipRemain);
+            }
+
+            gx += PipStep;
+        }
+
+        pipPainter.Apply();
+    }
+
+    private void EnsurePipPainter()
+    {
+        if (null != pipPainter || null == pipSurface) return;
+
+        pipPainter = new RoguelikeBarPainter(pipSurface, PipTextureWidth, PipTextureHeight, "UI_RoguelikeWavePips");
+    }
+
+    /// <summary>폰트(HUD_BuffNumberFont)와 같은 규칙: 0~999, 최대 3자리.</summary>
+    private static int CountDigits(int _value)
+    {
+        int v = Mathf.Clamp(_value, 0, 999);
+        if (100 <= v) return 3;
+        if (10 <= v) return 2;
+        return 1;
     }
 
     private void PlayChanged()
@@ -128,16 +222,28 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
     {
         if (null != labelRoot)
         {
-            if (false == bBasePositionCaptured)
+            Vector2 position = labelRoot.anchoredPosition;
+
+            // 마지막으로 쓴 y가 아니면 퇴장 · 복귀 연출이 위치를 덮어쓴 것이라 얹어 둔 튐은 이미 사라졌다.
+            if (0 != appliedHop && false == Mathf.Approximately(position.y, lastHopY)) appliedHop = 0;
+
+            if (appliedHop != _offset)
             {
-                basePosition = labelRoot.anchoredPosition;
-                bBasePositionCaptured = true;
+                position.y += _offset - appliedHop;
+                labelRoot.anchoredPosition = position;
+                appliedHop = _offset;
             }
 
-            labelRoot.anchoredPosition = new Vector2(basePosition.x, basePosition.y + _offset);
+            lastHopY = position.y;
         }
 
-        if (null != flagImage) flagImage.color = true == _bFlash ? Color.white : (true == bUnlimit ? unlimitFlagColor : flagColor);
+        if (null != flagImage) flagImage.sprite = true == _bFlash ? flashFlagSprite : (true == bUnlimit ? unlimitFlagSprite : normalFlagSprite);
+    }
+
+    private void Awake()
+    {
+        // 첫 프레임에 텍스처 없는 RawImage(흰 네모)가 보이지 않도록 진행 점 텍스처를 미리 만든다(값이 오면 그린다).
+        EnsurePipPainter();
     }
 
     private void Update()
@@ -160,5 +266,10 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
         bHiding = false;
         hopStartClock = -1f;
         ApplyHop(0, false);
+    }
+
+    private void OnDestroy()
+    {
+        if (null != pipPainter) pipPainter.Dispose();
     }
 }

@@ -1300,7 +1300,7 @@ public class UI_TutorialQuest : MonoBehaviour
                 _desc = GetLocalizedOrFallback(SporeForestGuideDescKey, "포자막은 계속 회복됩니다!");
                 break;
             case TutorialStep.StarrootForestGuide:
-                _title = GetLocalizedOrFallback(StarrootForestGuideTitleKey, "이어진 별 표식 나무들을 벌목하면 강력한 별자리가 발현됩니다!");
+                _title = GetLocalizedOrFallback(StarrootForestGuideTitleKey, "별 표식으로 연결된 나무를 모두 베면 별자리 발현이 일어납니다!\n별자리 발현은 나무의 피해를 줄이는 별의 가호를 해제합니다.");
                 _desc = string.Empty;
                 break;
             case TutorialStep.MagmaForestGuide:
