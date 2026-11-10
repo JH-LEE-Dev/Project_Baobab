@@ -58,6 +58,7 @@ Shader "Custom/WaterTilemapShader"
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Lit2DCommon.hlsl"
             #include "Include/WaterShimmer.hlsl"
+            #include "Include/WaterSpores.hlsl"
 
             float4 _MainTex_TexelSize;
 
@@ -91,6 +92,14 @@ Shader "Custom/WaterTilemapShader"
                     float3 texColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv).rgb;
                     float4 shimmer = ComputeWaterShimmer(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor);
                     color.rgb = lerp(color.rgb, shimmer.rgb, shimmer.a);
+                }
+
+                // 물 위 포자(꺼진 스테이지는 그대로)
+                if (IsWaterSporesEnabled())
+                {
+                    float3 sporeTexColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv).rgb;
+                    float4 spores = ComputeWaterSpores(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, sporeTexColor);
+                    color.rgb = lerp(color.rgb, spores.rgb, spores.a);
                 }
 
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);

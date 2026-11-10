@@ -113,3 +113,130 @@ public class ShoreReedSettings
     // 그림이 왼쪽으로 눕는 갈대를 바람이 오른쪽으로 불면 좌우를 뒤집어, 흔들림이 바람 쪽으로 눕게 한다.
     public bool flipToWind = true;
 }
+
+/// <summary>
+/// 포자 안개. 바닥 위로 낮게 깔린 안개 덩어리가 천천히 흘러가며 모양을 바꾼다(SporeHaze 셰이더).
+/// 카메라를 따라다니는 스프라이트 한 장으로 그리며 충돌·판정이 없어 게임 동작에는 영향이 없다.
+/// enabled가 꺼져 있거나 material이 비어 있으면 아무것도 만들지 않는다.
+/// </summary>
+[System.Serializable]
+public class SporeHazeSettings
+{
+    public bool enabled = false;
+    // 안개 머티리얼(SporeHaze). 색·진하기·덩어리 크기·흐름은 머티리얼에서 정한다.
+    public Material material;
+    // 그리는 정렬 자리. 기본은 바닥 타일 바로 위, 표시기·그림자·캐릭터·나무 아래.
+    public string sortingLayerName = "Indicators";
+    public int sortingOrder = -32768;
+}
+
+/// <summary>
+/// 포자 나무 숨빛. 나무 윗부분 그림의 밝은 포자 알(하이라이트) 픽셀만 숲을 천천히 지나가는 빛의 물결에 맞춰
+/// 밝아졌다 어두워진다(나무 셰이더 Custom-Sprite-Default-Tree). 렌더링만 바뀌고 게임 동작에는 영향이 없다.
+/// </summary>
+[System.Serializable]
+public class SporeGlowSettings
+{
+    public bool enabled = false;
+    // 가장 밝을 때 더하는 밝기 비율(0.6이면 1.6배). 블룸 문턱을 넘는 만큼 은은히 번진다.
+    public float glowAmount = 0.6f;
+    // 물결 속도(라디안/초). 한 자리가 밝아졌다 돌아오는 데 2π/속도 초가 걸린다.
+    public float waveSpeed = 1.2f;
+    // 물결 크기(월드). 이 거리 안의 나무끼리 박자가 비슷해 빛이 번져 가는 것처럼 보인다.
+    public float waveScale = 6f;
+    // 포자 알로 볼 픽셀: 가장 어두운 채널이 이 값 이상(sRGB 0~1)이고 채널 차이가 maxSaturation 이하인 밝고 옅은 색.
+    [Range(0f, 1f)] public float minWhite = 0.78f;
+    [Range(0f, 1f)] public float maxSaturation = 0.28f;
+    // 클수록 밝아지는 순간이 짧고 또렷하다(1이면 사인 그대로).
+    [Min(1f)] public float sharpness = 2f;
+}
+
+/// <summary>
+/// 물 위 포자. 물 타일 그림의 수면색 픽셀 위에 포자 알갱이(텍셀 한 칸)가 떠올라 바람 방향으로 천천히 떠가다 사라진다
+/// (물 타일 셰이더 WaterTilemapShader). 렌더링만 바뀌고 게임 동작에는 영향이 없다.
+/// </summary>
+[System.Serializable]
+public class WaterSporeSettings
+{
+    public bool enabled = false;
+    // 물 타일 그림의 수면색 두 가지(판정용)
+    public Color surfaceColorA = new Color(85f / 255f, 196f / 255f, 200f / 255f, 1f);
+    public Color surfaceColorB = new Color(65f / 255f, 166f / 255f, 169f / 255f, 1f);
+    // 색 판정 허용 오차(채널별 최대 차이, 0~1)
+    [Range(0f, 0.2f)] public float colorTolerance = 0.03f;
+    // 포자 색
+    public Color sporeColor = new Color(0.8f, 0.62f, 1f, 1f);
+    // 가장 밝을 때 밝기 배수(HDR). 블룸 문턱을 넘는 만큼 번진다.
+    public float brightness = 1.25f;
+    // 포자 하나가 맡는 칸 크기(텍셀). 클수록 드물다.
+    public float cellTexels = 12f;
+    // 한 알의 주기(초)와 그중 떠 있는 비율
+    public float period = 7f;
+    [Range(0f, 1f)] public float duty = 0.55f;
+    // 떠가는 방향과, 한 번 떠 있는 동안 가는 거리(텍셀)
+    public Vector2 driftDirection = new Vector2(1f, -0.3f);
+    public float travelTexels = 5f;
+    // 옆으로 흔들리는 폭(텍셀, 0~2)
+    [Range(0f, 2f)] public float wobbleTexels = 1f;
+}
+
+/// <summary>
+/// 버섯 포자 뿜기. 화면에 보이는 큰 버섯 장식이 저마다의 박자로 몇 초에 한 번 갓 위로 작은 포자 알갱이를 몇 개 뿜는다.
+/// 스테이지에 파티클 시스템 하나만 두고 보이는 버섯 자리에서만 뿜는다. 충돌·판정이 없어 게임 동작에는 영향이 없다.
+/// enabled가 꺼져 있거나 material·mushroomPrefabs가 비어 있으면 아무것도 만들지 않는다.
+/// </summary>
+[System.Serializable]
+public class MushroomSporeSettings
+{
+    public bool enabled = false;
+    // 포자를 뿜을 장식 프리팹(스테이지 데코 목록에 들어 있는 것)
+    public System.Collections.Generic.List<StaticObj> mushroomPrefabs = new System.Collections.Generic.List<StaticObj>();
+    // 포자 알갱이 머티리얼(MushroomSpore 셰이더)
+    public Material material;
+    // 그리는 정렬 자리(기본은 오브젝트 맨 위)
+    public string sortingLayerName = "Objects";
+    public int sortingOrder = 32767;
+    // 뿜는 자리: 장식 위치에서 갓 꼭대기까지의 오프셋과, 그 둘레로 흩어지는 폭(월드)
+    public Vector2 emitOffset = new Vector2(0f, 0.45f);
+    public Vector2 emitSpread = new Vector2(0.15f, 0.05f);
+    // 한 버섯이 뿜는 간격(초, 버섯마다 이 범위 안에서 정해진다)
+    public Vector2 intervalRange = new Vector2(4f, 7f);
+    // 한 번에 뿜는 알갱이 수(최소~최대)
+    public Vector2Int burstCountRange = new Vector2Int(5, 8);
+    // 처음 솟는 속도(월드/초, 최소~최대)와 옆으로 퍼지는 속도
+    public Vector2 riseSpeedRange = new Vector2(0.5f, 0.9f);
+    public float sideSpeed = 0.45f;
+    // 솟은 뒤 느려지는 정도(0~1, 클수록 빨리 멈춰 떠다닌다)
+    [Range(0f, 1f)] public float dampen = 0.025f;
+    // 느려진 뒤 계속 위로 떠오르는 힘(월드/초², 음수 중력)
+    public float buoyancy = 0.08f;
+    // 떠다니며 흔들리는 세기(월드/초)
+    public float wanderStrength = 0.12f;
+    // 알갱이 수명(초, 최소~최대)
+    public Vector2 lifetimeRange = new Vector2(1.6f, 2.6f);
+    // 알갱이 크기(픽셀, 최소~최대). 화면 픽셀에 맞춰 그린다.
+    public Vector2Int sizePixelsRange = new Vector2Int(1, 2);
+    // 알갱이 색(두 색 사이에서 무작위)
+    public Color colorA = new Color(0.68f, 0.99f, 0.99f, 1f);
+    public Color colorB = new Color(0.86f, 0.8f, 1f, 1f);
+    // 동시에 떠 있는 알갱이 최대 수
+    [Min(16)] public int maxParticles = 256;
+    // 갓 숨쉬기: 뿜기 전 riseTime초 동안 갓이 서서히 밝아져 뿜는 순간 가장 밝고(원래 밝기의 1+amount배),
+    // 뿜은 뒤 fallTime초 동안 원래 밝기로 돌아온다. amount가 0이면 끈다.
+    [Min(0f)] public float capGlowAmount = 0.3f;
+    [Min(0.05f)] public float capGlowRiseTime = 1.6f;
+    [Min(0.05f)] public float capGlowFallTime = 0.5f;
+}
+
+/// <summary>
+/// 바닥 꽃버섯 반짝임. 블룸 데코 타일맵(작은 빛나는 꽃·버섯 장식)을 이 스테이지에서만 전용 머티리얼로 그려,
+/// 장식들이 숲을 따라 느리게 이어지는 물결에 맞춰 하나씩 잠깐 밝아졌다 꺼지게 한다(BloomDecoTwinkle 셰이더).
+/// 공용 스프라이트 머티리얼은 건드리지 않고 이 타일맵의 머티리얼만 갈아 끼우며, 꺼진 스테이지는 원래 머티리얼 그대로다.
+/// 반짝임 세기·속도·물결 크기는 머티리얼에서 정한다.
+/// </summary>
+[System.Serializable]
+public class BloomDecoTwinkleSettings
+{
+    public bool enabled = false;
+    public Material material;
+}

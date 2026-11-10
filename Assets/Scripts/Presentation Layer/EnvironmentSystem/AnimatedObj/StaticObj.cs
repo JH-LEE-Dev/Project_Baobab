@@ -67,4 +67,17 @@ public class StaticObj : MonoBehaviour
         if (customSortable != null)
             customSortable.ManualLateUpdate();
     }
+
+    /// <summary>
+    /// 그림 밝기(HDR)를 원래 값의 _multiplier배로 그린다. 1이면 원래 밝기로 돌아간다(렌더링 전용).
+    /// </summary>
+    public void SetHDRMultiplier(float _multiplier)
+    {
+        if (sr == null) return;
+
+        MaterialPropertyBlock mpb = SharedMpb;
+        sr.GetPropertyBlock(mpb);
+        mpb.SetFloat(HDRIntensityID, hdrIntensity * _multiplier);
+        sr.SetPropertyBlock(mpb);
+    }
 }

@@ -116,6 +116,11 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private WaterShimmerSettings waterShimmer = new WaterShimmerSettings();
     [SerializeField] private StageColorGradingSettings colorGrading = new StageColorGradingSettings();
     [SerializeField] private ShoreReedSettings shoreReeds = new ShoreReedSettings();
+    [SerializeField] private SporeHazeSettings sporeHaze = new SporeHazeSettings();
+    [SerializeField] private SporeGlowSettings sporeGlow = new SporeGlowSettings();
+    [SerializeField] private WaterSporeSettings waterSpores = new WaterSporeSettings();
+    [SerializeField] private MushroomSporeSettings mushroomSpores = new MushroomSporeSettings();
+    [SerializeField] private BloomDecoTwinkleSettings bloomDecoTwinkle = new BloomDecoTwinkleSettings();
 
     [Header("위험 지형 설정")]
     [SerializeField] private float waterHazardStaminaDrainPerSecond = 0f;
@@ -152,6 +157,11 @@ public class StageTileDataSO : ScriptableObject
     public WaterShimmerSettings WaterShimmer => waterShimmer;
     public StageColorGradingSettings ColorGrading => colorGrading;
     public ShoreReedSettings ShoreReeds => shoreReeds;
+    public SporeHazeSettings SporeHaze => sporeHaze;
+    public SporeGlowSettings SporeGlow => sporeGlow;
+    public WaterSporeSettings WaterSpores => waterSpores;
+    public MushroomSporeSettings MushroomSpores => mushroomSpores;
+    public BloomDecoTwinkleSettings BloomDecoTwinkle => bloomDecoTwinkle;
     public List<AnimatedObj> AnimatedObjPrefabs => animatedObjPrefabs;
     public List<DecoSpritePatternAnimator> WaterAnimatedObjPrefabs => waterAnimatedObjPrefabs;
     public List<AnimatedObj> WaterAnimatedOtherTypeObjPrefabs => waterAnimatedOtherTypeObjPrefabs;

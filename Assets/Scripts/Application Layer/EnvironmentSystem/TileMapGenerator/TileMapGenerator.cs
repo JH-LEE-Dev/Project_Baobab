@@ -86,6 +86,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private Tilemap waterDecoTilemap;
     private Tilemap bloomWaterDecoTilemap;
     private Tilemap bloomDecoTilemap;
+    private TilemapRenderer bloomDecoTilemapRenderer;
+    private Material originalBloomDecoMaterial;
     private Tilemap waterStencilTilemap;
     private Tilemap groundStencilTilemap;
     private Tilemap waterTilemap;
@@ -433,6 +435,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         // 스테이지 분위기 연출(돌풍·물 반짝임) 셰이더 전역값. 렌더링만 바뀌고, 꺼진 스테이지는 0으로 비운다.
         StageAmbienceShaderGlobals.Apply(stageTileData);
         ApplyGroundMaterialForStage();
+        ApplyBloomDecoMaterialForStage();
 
         // 이전 던전의 초기 스폰 코루틴이 아직 돌던 중(스폰 배치가 열린 채)에 새 맵을 만드는 경우,
         // 모아둔 충돌 타일 심기/데코 걷어내기는 옛 맵에 대한 것이므로 새 맵 위에 반영되면 안 된다.
@@ -872,6 +875,25 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         if (groundTilemapRenderer.sharedMaterial != target)
         {
             groundTilemapRenderer.sharedMaterial = target;
+        }
+    }
+
+    // 꽃버섯 반짝임이 켜진 스테이지만 블룸 데코 타일맵을 반짝임 머티리얼로 그리고, 그 밖에는 원래 머티리얼로 되돌린다(렌더링 전용).
+    private void ApplyBloomDecoMaterialForStage()
+    {
+        if (null == bloomDecoTilemapRenderer)
+        {
+            if (null == bloomDecoTilemap) return;
+            bloomDecoTilemapRenderer = bloomDecoTilemap.GetComponent<TilemapRenderer>();
+            if (null == bloomDecoTilemapRenderer) return;
+            originalBloomDecoMaterial = bloomDecoTilemapRenderer.sharedMaterial;
+        }
+
+        Material overrideMaterial = StageAmbienceShaderGlobals.GetBloomDecoMaterialOverride(stageTileData);
+        Material target = null != overrideMaterial ? overrideMaterial : originalBloomDecoMaterial;
+        if (bloomDecoTilemapRenderer.sharedMaterial != target)
+        {
+            bloomDecoTilemapRenderer.sharedMaterial = target;
         }
     }
 
@@ -1766,6 +1788,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         if (bSpawnDeco) PlaceWaterAnimatedObjects(size);
         // 물가 갈대(스테이지 데이터에 켠 스테이지만). 물 장식을 다 놓은 뒤 그 자리를 피해 놓는다.
         if (bSpawnDeco) PlaceShoreReeds(size);
+        // 버섯 포자 뿜기(스테이지 데이터에 켠 스테이지만, 로그라이크는 끈다). 렌더링 전용.
+        StageMushroomSpores.Apply(bSpawnDeco && null != stageTileData ? stageTileData.MushroomSpores : null, animatedObjGenerator, "DungeonScene");
 
         BoundsInt b = new BoundsInt(0, 0, 0, width, height, 1);
         groundTilemap.SetTilesBlock(b, groundTiles);
