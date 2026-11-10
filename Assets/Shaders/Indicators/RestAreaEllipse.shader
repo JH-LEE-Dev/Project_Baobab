@@ -120,18 +120,38 @@ Shader "Custom/RestAreaEllipse"
             // 1px 타원 윤곽. PixelEllipse(midpoint)와 같은 픽셀 집합이다(반지름 192x96, 191x95에서 0픽셀 차이를 확인).
             // 가파른 구간(좌우 끝)은 행마다 x를, 완만한 구간(위아래)은 열마다 y를 반올림해 한 픽셀만 고르므로
             // 8방향으로만 이어지는 한 줄이 되고 L자 모서리 픽셀이 생기지 않는다(JAGGIES, DOUBLE PIXEL).
+            // _aq는 중심 기준 |x|, |y| 픽셀 좌표. 가파른 구간 윤곽(행마다 x 하나)과 완만한 구간 윤곽(열마다 y 하나)을 따로 판정한다.
+            bool IsSteep(float2 _aq, float2 _r)
+            {
+                return _aq.y * _r.x * _r.x < _aq.x * _r.y * _r.y;
+            }
+
+            bool SteepEdge(float2 _aq, float2 _r)
+            {
+                float t = 1.0 - (_aq.y / _r.y) * (_aq.y / _r.y);
+                return IsSteep(_aq, _r) && 0.0 <= t && _aq.x == round(_r.x * sqrt(t));
+            }
+
+            bool ShallowEdge(float2 _aq, float2 _r)
+            {
+                float t = 1.0 - (_aq.x / _r.x) * (_aq.x / _r.x);
+                return false == IsSteep(_aq, _r) && 0.0 <= t && _aq.y == round(_r.y * sqrt(t));
+            }
+
             bool ThinEdge(float2 _q, float2 _r)
             {
                 float2 aq = abs(_q);
-                bool bSteep = aq.y * _r.x * _r.x < aq.x * _r.y * _r.y;
-                if (true == bSteep)
-                {
-                    float t = 1.0 - (aq.y / _r.y) * (aq.y / _r.y);
-                    return 0.0 <= t && aq.x == round(_r.x * sqrt(t));
-                }
+                return SteepEdge(aq, _r) || ShallowEdge(aq, _r);
+            }
 
-                float t2 = 1.0 - (aq.x / _r.x) * (aq.x / _r.x);
-                return 0.0 <= t2 && aq.y == round(_r.y * sqrt(t2));
+            // 보조선: 코어 윤곽 픽셀을 그 구간의 주축 방향으로 정확히 1px 안쪽으로 옮긴 자리.
+            // 가파른 구간은 같은 행에서 x를 1 줄이고, 완만한 구간은 같은 열에서 y를 1 줄인다.
+            // 반지름이 1px 작은 타원을 따로 그리면 대각선에서 두 선의 계단 위치가 어긋나 밝은 점과 짙은 점이 지퍼처럼 섞이고
+            // 띠 두께가 1~3px로 들쭉날쭉해진다. 코어에서 바로 옮겨 오면 어디서나 코어와 나란한 2px 띠가 된다.
+            bool SubEdge(float2 _q, float2 _r)
+            {
+                float2 aq = abs(_q);
+                return SteepEdge(aq + float2(1.0, 0.0), _r) || ShallowEdge(aq + float2(0.0, 1.0), _r);
             }
 
             // 중앙에서 퍼지는 빔 파동. 두 줄이 반 주기씩 엇갈리고, 앞쪽은 날카롭고 뒤쪽은 꼬리가 길다.
@@ -184,7 +204,7 @@ Shader "Custom/RestAreaEllipse"
                 float d2 = dot(p, p);
                 float waveEdge = WaveAt(1.0) * _WaveGate;
 
-                // 코어: 1px 윤곽. 반지름 안쪽 한 겹 윤곽을 보조선으로 겹쳐 2px 띠(레이저 느낌)를 만든다. 보조선도 같은 방식이라 L자 모서리가 없다.
+                // 코어: 1px 윤곽. 코어를 1px 안쪽으로 옮긴 보조선을 겹쳐 2px 띠(레이저 느낌)를 만든다(SubEdge).
                 // 프리멀티플라이드 블렌드라 색에 알파(_Fade)를 곱해서 낸다.
                 if (ThinEdge(pix, radiusPx))
                 {
@@ -193,7 +213,7 @@ Shader "Custom/RestAreaEllipse"
 
                 clip(1.0 - d2);
 
-                if (ThinEdge(pix, max(radiusPx - 1.0, 1.0)))
+                if (SubEdge(pix, radiusPx))
                 {
                     return half4(SrgbToLinear(kSub[(int)Lvl4(waveEdge)]) * _Fade, _Fade);
                 }
