@@ -263,7 +263,7 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
         card.PlayFlash(RevealFlashAlpha);
         card.PlayGradeReveal();
         RevealedEvent?.Invoke(this);
-        // [효과음 지점] 카드가 앞면으로 바뀌는 순간
+        Sound.PlayUI(SoundID.AbilityAppear);
     }
 
     private void StartLanding()

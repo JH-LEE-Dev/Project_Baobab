@@ -151,4 +151,31 @@ public class CursorMotionSettings
         hideExpandOffset = 3f,
         hideEase = Ease.OutQuad
     };
+
+    /// <summary>
+    /// 정지한 버튼(결과 화면 등)용. 기울임·수축 없이 아주 짧게 나타나고 숨쉬기(Idle)는 1px 안에서 유지한다.
+    /// </summary>
+    public static CursorMotionSettings Still => new CursorMotionSettings
+    {
+        enableShowMotion = true,
+        showDuration = 0.08f,
+        shrinkSizeScale = 1f,
+        shrinkTimeRatio = 0.35f,
+        restoreTimeRatio = 0.65f,
+        sizeRestoreEase = Ease.OutQuad,
+        startAngle = 0f,
+        angleDamping = 0.5f,
+        swingCount = 0,
+        rotationTimeRatio = 0.85f,
+        rotationEase = Ease.OutSine,
+
+        enableIdleMotion = true,
+        idleCycleDuration = 2.4f,
+        idleSizeOffset = 1f,
+
+        enableHideMotion = true,
+        hideDuration = 0.06f,
+        hideExpandOffset = 1f,
+        hideEase = Ease.OutQuad
+    };
 }

@@ -38,6 +38,7 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
     private const float SlotGap = 4f;
     private const float SectionGap = 8f;
     private const float ScreenHeight = 360f;
+    private const int CursorPadding = 4;
 
     // 등장 연출(unscaled)
     private const float DimFadeSeconds = 0.2f;
@@ -120,6 +121,7 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
     private InputManager inputManager;
     private readonly List<UI_RoguelikeCardIconSlot> slots = new List<UI_RoguelikeCardIconSlot>(16);
     private readonly StringBuilder textBuilder = new StringBuilder(32);
+    private CursorMotionSettings cursorMotion;
 
     //상태 변수
     private UI_RoguelikeTextButton focusedButton;
@@ -139,6 +141,7 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
 
         localizationManager = viewCtx?.localizationManager;
         inputManager = viewCtx?.inputManager;
+        cursorMotion = CursorMotionSettings.Still;
 
         buttonFocusedHandler = OnButtonFocused;
         buttonClickedHandler = OnButtonClicked;
@@ -174,6 +177,7 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
         bRequested = false;
         ApplyTexts();
         Layout();
+        Sound.PlayUI(SoundID.ResultUIOpen);
         PlayEnter();
     }
 
@@ -195,6 +199,7 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
 
         KillTweens();
         focusedButton = null;
+        viewCtx?.cursorBoxUI?.HideImmediately();
         if (null != EventSystem.current) EventSystem.current.SetSelectedGameObject(null);
     }
 
@@ -510,6 +515,9 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
         SetButtonsInteractable(true);
 
         if (null != panelVisual) panelVisual.localScale = Vector3.one;
+
+        // 등장 연출 동안의 장치 전환은 무시했으므로(OnDeviceChanged) 지금 장치로 키 안내 줄(패드 전용)과 판 배치를 다시 맞춘다.
+        Layout();
         if (null != panelRoot) panelRoot.anchoredPosition = panelBasePosition;
 
         // 패드 모드면 다시 도전을 선택해 둔다(3-8). 마우스 모드면 아무것도 선택하지 않는다.
@@ -543,6 +551,8 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
 
     private void OnButtonFocused(UI_RoguelikeTextButton _button)
     {
+        // 입력 잠금 중이거나 이미 포커스된 버튼이면(패드 자동 선택 포함) 호버음을 내지 않는다.
+        if (false == bInputLocked && focusedButton != _button) Sound.PlayUI(SoundID.ResultUIHover);
         SetFocus(_button);
     }
 
@@ -551,6 +561,12 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
         focusedButton = _button;
         if (null != retryButton) retryButton.SetFocused(retryButton == _button);
         if (null != mainMenuButton) mainMenuButton.SetFocused(mainMenuButton == _button);
+
+        ICursorBoxUI cursor = viewCtx?.cursorBoxUI;
+        if (null == cursor) return;
+
+        if (null != _button) cursor.Show(_button.Rect, _button.Rect.rect.size + new Vector2(CursorPadding, CursorPadding), Vector2.zero, cursorMotion);
+        else cursor.Hide();
     }
 
     private void SelectButton(UI_RoguelikeTextButton _button)
@@ -563,6 +579,7 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
     private void OnButtonClicked(UI_RoguelikeTextButton _button)
     {
         if (true == bInputLocked) return;
+        Sound.PlayUI(SoundID.MainClick);
         Request(_button == retryButton);
     }
 
@@ -572,6 +589,7 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
         bRequested = true;
         bInputLocked = true;
         SetButtonsInteractable(false);
+        viewCtx?.cursorBoxUI?.Hide();
 
         if (true == _bRetry) RetryRequestedEvent?.Invoke();
         else MainMenuRequestedEvent?.Invoke();
@@ -613,9 +631,11 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
         base.Update();
 
         // 패드 모드에서 선택이 사라지면(다른 곳 클릭 등) 마지막 포커스로 되돌린다(가이드 3-8 "가장 흔한 버그").
-        if (true == bInputLocked || false == IsVisible) return;
-        if (null == inputManager || false == inputManager.IsGamepadMode || null == EventSystem.current) return;
-        if (null != EventSystem.current.currentSelectedGameObject) return;
+        // 이 화면 위에 뜬 다른 UI가 선택을 쥐고 있는 동안에는 빼앗지 않는다(CanRestoreSelection).
+        if (false == IsVisible) return;
+        bool bCanRestore = CanRestoreSelection(EventSystem.current);
+        if (true == bInputLocked || false == bCanRestore) return;
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
 
         SelectButton(null != focusedButton ? focusedButton : retryButton);
     }

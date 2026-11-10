@@ -75,19 +75,25 @@ public class UI_RoguelikeMenuRecordPanel : MonoBehaviour
 
     public void PlayShow()
     {
+        PlayShow(SlideSeconds);
+    }
+
+    /// <summary>오른쪽 화면 밖에서 _seconds초 동안 미끄러져 들어온다(로그라이크 메뉴 진입은 기록 · 옵션 복귀보다 조금 느리다).</summary>
+    public void PlayShow(float _seconds)
+    {
         CaptureBase();
         gameObject.SetActive(true);
 
         RectTransform rect = (RectTransform)transform;
         rect.DOKill();
         rect.anchoredPosition = basePosition + new Vector2(GetSlideDistance(), 0f);
-        rect.DOAnchorPos(basePosition, SlideSeconds, true).SetEase(Ease.OutCubic).SetUpdate(true);
+        rect.DOAnchorPos(basePosition, _seconds, true).SetEase(Ease.OutCubic).SetUpdate(true);
 
         if (null != group)
         {
             group.DOKill();
             group.alpha = 0f;
-            group.DOFade(1f, SlideSeconds).SetUpdate(true);
+            group.DOFade(1f, _seconds).SetUpdate(true);
         }
     }
 

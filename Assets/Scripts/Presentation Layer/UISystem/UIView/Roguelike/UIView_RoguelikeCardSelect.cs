@@ -32,7 +32,7 @@ using UnityEngine.UI;
 ///   리롤은 카드 줄 바로 아래 가운데 글자 버튼(아이콘 + 리롤 + 남은 횟수, 폭은 18개 언어 중 가장 긴 문구 기준), 설명 패널은 리롤 버튼 아래(카드 선택 모드 - 폭 고정 · 높이는 카드마다).
 ///   키 안내는 패드 모드에서만 왼쪽 아래에 보인다(키보드 · 마우스 모드는 마우스 GUI 조작 - 키보드 단축키를 두지 않는다).
 ///
-/// [아직 없는 것] 카드 뒷면·레어 프레임 리소스, 레어 등장 연출, 자물쇠 해제, 보관함 보관 연출, 효과음(호출 지점만 아래 주석).
+/// [아직 없는 것] 카드 뒷면·레어 프레임 리소스, 레어 등장 연출, 자물쇠 해제, 보관함 보관 연출, 카드 착지 효과음(호출 지점만 UI_RoguelikeCardSlot.StartLanding 주석).
 /// </summary>
 public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 {
@@ -199,7 +199,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         HideCursor();
         phase = EPhase.PurchaseFade;
         phaseTime = 0f;
-        // [효과음 지점] 선택(구매) 효과음
+        Sound.PlayUI(SoundID.GetItem);
     }
 
     /// <summary>건너뛰기 등으로 구매 없이 닫는다. 카드가 흐려지며 닫힌 뒤 _onComplete를 부른다.</summary>
@@ -226,6 +226,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     /// <summary>선택·리롤이 거절됐다. 해당 카드나 리롤 버튼이 정수 픽셀로 흔들린다.</summary>
     public virtual void PlayRejected(ECardShopResult _reason, int _offerIndex)
     {
+        Sound.PlayUI(SoundID.AbilityUpgradeFailed);
         UI_RoguelikeCardSlot slot = FindSlotByOffer(_offerIndex);
         if (null != slot)
         {
@@ -256,7 +257,6 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         LayoutControls();
         RebuildNavigation();
 
-        // [효과음 지점] 카드 뒤집히는 소리(카드마다 IntroIntervalSeconds 간격)
         UI_RoguelikeSelectRelay first = count > 0 ? slots[0].Relay : rerollRelay;
         SetFocus(first, true);
         SelectInEventSystem(first);
@@ -447,6 +447,9 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     {
         if (false == _bForce && _relay == focusedRelay) return;
 
+        // 열릴 때의 첫 포커스(_bForce)와 포커스 해제에는 소리를 내지 않는다.
+        if (false == _bForce && null != _relay) Sound.PlayUI(SoundID.ResultUIHover);
+
         FindSlotByRelay(focusedRelay)?.SetFocused(false);
         focusedRelay = _relay;
 
@@ -597,6 +600,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     {
         if (bLocked) return;
 
+        Sound.PlayUI(SoundID.MainClick);
         RequestReroll();
     }
 
@@ -816,13 +820,13 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         UpdateRerollFocus();
 
         // 선택 중이던 것이 비활성화되면 EventSystem 선택이 null이 되어 패드 조작이 먹통이 된다. 포커스가 있으면 되돌려 준다.
-        if (EPhase.Idle == phase && false == bLocked && null != focusedRelay && focusedRelay.gameObject.activeInHierarchy)
+        // 패드 모드에서만 되돌리고, ESC 메뉴 · 옵션 창처럼 이 화면 위에 뜬 UI가 선택을 쥐고 있는 동안에는 빼앗지 않는다(CanRestoreSelection).
+        EventSystem eventSystem = EventSystem.current;
+        bool bCanRestore = CanRestoreSelection(eventSystem);
+        if (true == bCanRestore && EPhase.Idle == phase && false == bLocked && null != focusedRelay && focusedRelay.gameObject.activeInHierarchy
+            && null != viewCtx && null != viewCtx.inputManager && true == viewCtx.inputManager.IsGamepadMode)
         {
-            EventSystem eventSystem = EventSystem.current;
-            if (null != eventSystem && null == eventSystem.currentSelectedGameObject)
-            {
-                eventSystem.SetSelectedGameObject(focusedRelay.gameObject);
-            }
+            eventSystem.SetSelectedGameObject(focusedRelay.gameObject);
         }
     }
 

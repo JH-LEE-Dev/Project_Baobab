@@ -90,7 +90,16 @@ UI 레이어에서 할 수 있는 것(화면 · 프리팹 · 문구 · 연결 �
 - 카드 선택 화면 왼쪽 위에 WAVE 배지가 생겼다. `UIView_RoguelikeCardSelect.SetWave(int _waveNumber, bool _bUnlimit, int _unlimitIndex)`를 부르기 전에는 배지가 숨겨진다.
 - `RoguelikeUICoordinator`에서 `cardSelectUI.OpenSelection(...)`을 부르기 **직전**에 현재 웨이브로 `SetWave`를 부른다. 값은 `runInfo.CurrentWave`의 `waveNumber` · `bUnlimit` · `unlimitIndex`를 그대로 넘긴다. 언리밋이면 배지가 `Unlimit-N`으로 표시된다.
 - 리롤(`ReplaceOffers`) 때는 다시 부르지 않아도 된다.
-- 리롤 키보드 단축키는 두지 않는다. 키보드 · 마우스 모드는 마우스로만 GUI를 조작하고, 패드 모드에서만 화면 왼쪽 아래에 키 안내가 나온다. 시스템 쪽 작업은 없다.
+- 리롤 키보드 단축키는 두지 않는다.
+
+### S9. 카드 선택 중 「포기」 시 카드 선택 화면 닫기 (버그)
+- 재현: 카드 선택 화면이 떠 있을 때 ESC → 「포기」.
+- 원인: `RoguelikeSystem.GoToMainMenuRequested` → `StopRunActivity()`가 카드 연출 대기 흐름(`StopFlow`)만 끊는다. 카드 선택 화면을 닫는 곳(`uiCoordinator.ForceCloseCardSelection()`)은 대기 상한 초과 경로에만 있다.
+- 결과: 카드 선택 화면이 결과 화면 뒤에 그대로 남고, 다시 도전(디스토션 · 입장 연출)과 메인메뉴(카메라 상승) 연출 위에도 보인다.
+- 수정안(둘 중 하나):
+  - `GoToMainMenuRequested`의 포기 분기에서 `StopRunActivity()` 직후 `uiCoordinator.ForceCloseCardSelection()`을 부른다.
+  - 또는 `RoguelikeUICoordinator.RunEnded`(이미 보유 카드 창을 닫는 곳)에서 `ForceCloseCardSelection()`을 함께 부른다. 이쪽이 쓰러짐 · 포기 모든 판 종료를 한 곳에서 처리해 권장한다.
+- 확인: 카드 선택 중 포기 → 결과 화면 뒤에 카드가 없을 것 → 다시 도전 / 메인메뉴 연출 위에도 없을 것. 키보드 · 마우스 모드는 마우스로만 GUI를 조작하고, 패드 모드에서만 화면 왼쪽 아래에 키 안내가 나온다. 시스템 쪽 작업은 없다.
 
 ---
 

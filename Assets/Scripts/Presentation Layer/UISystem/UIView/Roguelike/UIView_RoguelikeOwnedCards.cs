@@ -701,6 +701,7 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     {
         motionClock = 0f;
         bCloseQueued = false;
+        Sound.PlayUI(SoundID.HUDBackpackOpen);
 
         contentGroup.blocksRaycasts = false;
         bookMask.enabled = true;
@@ -715,6 +716,7 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     {
         motion = EMotion.Closing;
         motionClock = 0f;
+        Sound.PlayUI(SoundID.HUDBackpackClose);
 
         // 연출이 시작되면 카드 호버 · 선택 · 커서를 걷는다(접히는 카드 위에 커서가 남지 않게).
         for (int i = 0; i < cellCount; i++) cells[i].SetFocused(false);
@@ -966,6 +968,9 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
 
         UI_RoguelikeOwnedCardCell cell = FindCell(_relay);
         if (null == cell) return;
+
+        // 카드 선택 화면과 같은 호버음. 포커스가 실제로 바뀔 때만 낸다(같은 칸 재진입 · 열릴 때의 첫 포커스는 무음).
+        if (cell != focusedCell || false == bFocusShown) Sound.PlayUI(SoundID.ResultUIHover);
 
         SetFocusCell(cell, false == _relay.IsPointerFocus);
 

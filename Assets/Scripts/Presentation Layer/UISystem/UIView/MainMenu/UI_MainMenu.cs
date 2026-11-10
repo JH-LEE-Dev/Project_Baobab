@@ -11,9 +11,11 @@ using UnityEngine.InputSystem;
 /// 메인 메뉴의 실질적인 UI 요소들을 관리하는 스크립트입니다.
 /// UIView_MainMenu에 의해 생성되어 소통 창구 역할을 합니다.
 ///
-/// [로그라이크 하위 메뉴 - 로비 폐지, 시안 v3] 로그라이크 버튼을 누르면 메인 버튼이 퇴장 연출로 빠지고, 같은 자리에 Title_Plate 명판 + 게임 시작 / 기록 / 뒤로가
+/// [로그라이크 하위 메뉴 - 로비 폐지, 시안 v3] 로그라이크 버튼을 누르면 메인 버튼이 퇴장 연출로 빠지고, 같은 자리에 Title_Plate 명판 + 게임 시작 / 기록 / 옵션 / 뒤로가
 /// 같은 버튼 스타일(UI_MainMenuButton)로 들어온다. 오른쪽에는 최고 기록판(UI_RoguelikeMenuRecordPanel)이 미끄러져 들어온다.
 ///   게임 시작 = 기존 로그라이크 진입(UIView_MainMenu.OnRoguelikeButtonClicked). 기록 = 기록 창(UIView_MainMenu.OpenRoguelikeRecords).
+///   옵션 = 메인메뉴와 같은 공용 옵션 창(UIView_MainMenu.OpenRoguelikeOption). 값은 SettingsManager가 소유해 메인메뉴 · ESC 옵션 창과 늘 같다.
+///   기록 · 옵션은 왼쪽 메뉴와 오른쪽 기록판이 화면 밖으로 빠진 뒤 열리고, 닫히면 제자리로 돌아온다.
 ///   뒤로 · Esc · 패드 B = 메인 버튼으로 돌아가고 패드 모드면 로그라이크 버튼을 다시 선택한다(가이드 3-8 "직전 선택 복원").
 ///   하위 메뉴가 열리면 패드 모드에서만 게임 시작을 선택한다(마우스 모드는 선택하지 않는다).
 /// </summary>
@@ -42,6 +44,7 @@ public class UI_MainMenu : MonoBehaviour
     [SerializeField] private TMP_Text roguelikePlateText;
     [SerializeField] private UI_MainMenuButton roguelikeStartButton;
     [SerializeField] private UI_MainMenuButton roguelikeRecordsButton;
+    [SerializeField] private UI_MainMenuButton roguelikeOptionButton;
     [SerializeField] private UI_MainMenuButton roguelikeBackButton;
     [SerializeField] private UI_RoguelikeMenuRecordPanel roguelikeRecordPanel;
     [SerializeField, Tooltip("하위 메뉴 첫 버튼의 Y(BTNs 기준). 명판 아래로 버튼 간격만큼 이어진다.")]
@@ -53,6 +56,9 @@ public class UI_MainMenu : MonoBehaviour
     [SerializeField, Tooltip("기록 창을 열 때 왼쪽 하위 메뉴가 화면 밖으로 빠지는 거리(px)와 시간(초, unscaled). 오른쪽 기록판도 같은 시간에 빠진다.")]
     private float roguelikeMenuExitDistance = 280f;
     [SerializeField] private float roguelikeMenuExitSeconds = 0.22f;
+    [SerializeField, Tooltip("로그라이크 메뉴 진입 때만 쓰는 시간(초, unscaled). 메인 버튼 퇴장 → 하위 메뉴 등장까지의 대기, 명판 · 기록판 · 디스코드 아이콘 슬라이드. 닫을 때와 기록 · 옵션 창 전환은 위 값을 그대로 쓴다.")]
+    private float roguelikeEnterSwapDelay = 0.38f;
+    [SerializeField] private float roguelikeEnterSlideSeconds = 0.3f;
 
     [Header("Localization Settings")]
     [SerializeField] private int mainMenuUIJsonId = 8;
@@ -85,6 +91,10 @@ public class UI_MainMenu : MonoBehaviour
     private const string RoguelikeRecordsKey = "Roguelike_Menu_Records";
     private const string RoguelikeBackKey = "Roguelike_Menu_Back";
     private const float RoguelikeDisappearStagger = 0.03f;
+    // 디스코드 아이콘이 빠질 때 아이콘 폭에 더하는 거리(px). 기록판과 같은 여유.
+    private const float DiscordExitMargin = 32f;
+    private Vector2 discordBasePosition;
+    private bool bDiscordBaseCaptured;
     private UI_MainMenuButton[] roguelikeButtons;
     private bool bRoguelikeMenuOpen;
     private bool bRoguelikeRecordsOpen;
@@ -95,6 +105,14 @@ public class UI_MainMenu : MonoBehaviour
     private bool bRoguelikeMenuBaseCaptured;
     // 기록 창이 닫힌 프레임. 같은 ESC · 패드 B 입력으로 하위 메뉴까지 닫히지 않게 그 프레임의 취소는 무시한다.
     private int roguelikeRecordsClosedFrame = -1;
+    // 옵션 창이 열려 있는가 / 닫힌 프레임(기록 창과 같은 이유로 그 프레임의 취소는 무시한다).
+    private bool bRoguelikeOptionOpen;
+    private int roguelikeOptionClosedFrame = -1;
+    // 기록 · 옵션 창이 닫히고 메뉴가 돌아왔을 때 패드 모드에서 다시 고를 버튼(직전 선택 복원).
+    private UI_MainMenuButton roguelikeReturnButton;
+    private Action cachedOpenRoguelikeOptionAfterExit;
+    private TweenCallback cachedOpenRoguelikeOptionAfterExitTween;
+    private Action cachedOnRoguelikeOptionClosed;
     private Action cachedOpenRoguelikeRecordsAfterExit;
     private TweenCallback cachedFinishRoguelikeMenuReturn;
     private Action cachedOnRoguelikeCancel;
@@ -780,11 +798,15 @@ public class UI_MainMenu : MonoBehaviour
         cachedShowMainButtonsAfterRoguelike = ShowMainButtonsAfterRoguelike;
         cachedOpenRoguelikeRecordsAfterExit = OpenRoguelikeRecordsAfterExit;
         cachedFinishRoguelikeMenuReturn = FinishRoguelikeMenuReturn;
+        cachedOpenRoguelikeOptionAfterExit = OpenRoguelikeOptionAfterExit;
+        cachedOpenRoguelikeOptionAfterExitTween = OpenRoguelikeOptionAfterExit;
+        cachedOnRoguelikeOptionClosed = OnRoguelikeOptionClosed;
 
-        roguelikeButtons = new UI_MainMenuButton[] { roguelikeStartButton, roguelikeRecordsButton, roguelikeBackButton };
+        roguelikeButtons = new UI_MainMenuButton[] { roguelikeStartButton, roguelikeRecordsButton, roguelikeOptionButton, roguelikeBackButton };
 
         if (null != roguelikeStartButton) roguelikeStartButton.Initialize(OnRoguelikeStartClicked, null, _inputMgr);
         if (null != roguelikeRecordsButton) roguelikeRecordsButton.Initialize(OnRoguelikeRecordsClicked, null, _inputMgr);
+        if (null != roguelikeOptionButton) roguelikeOptionButton.Initialize(OnRoguelikeOptionClicked, null, _inputMgr);
         if (null != roguelikeBackButton) roguelikeBackButton.Initialize(OnRoguelikeBackClicked, null, _inputMgr);
 
         // 위아래로만 돈다(Explicit - 가이드 3-8).
@@ -836,13 +858,15 @@ public class UI_MainMenu : MonoBehaviour
                 index++;
             }
 
-            DOVirtual.DelayedCall(roguelikeSwapDelay, cachedShowRoguelikeButtons, true).SetId(this);
+            DOVirtual.DelayedCall(roguelikeEnterSwapDelay, cachedShowRoguelikeButtons, true).SetId(this);
         }
         else
         {
             ShowRoguelikeButtons();
         }
 
+        // 로그라이크 메뉴에서는 디스코드 아이콘을 보이지 않는다(오른쪽 화면 밖으로 뺀다).
+        SlideDiscordButton(false, _bAnimated, roguelikeEnterSlideSeconds);
         BindRoguelikeCancel(true);
     }
 
@@ -866,7 +890,7 @@ public class UI_MainMenu : MonoBehaviour
 
             roguelikePlate.DOKill();
             roguelikePlate.anchoredPosition = roguelikePlateBasePosition - new Vector2(roguelikePlateSlideDistance, 0f);
-            roguelikePlate.DOAnchorPos(roguelikePlateBasePosition, roguelikePlateSlideSeconds, true).SetEase(Ease.OutCubic).SetUpdate(true);
+            roguelikePlate.DOAnchorPos(roguelikePlateBasePosition, roguelikeEnterSlideSeconds, true).SetEase(Ease.OutCubic).SetUpdate(true);
         }
 
         for (int i = 0; roguelikeButtons.Length > i; i++)
@@ -884,7 +908,7 @@ public class UI_MainMenu : MonoBehaviour
         if (null != roguelikeRecordPanel)
         {
             roguelikeRecordPanel.Refresh();
-            roguelikeRecordPanel.PlayShow();
+            roguelikeRecordPanel.PlayShow(roguelikeEnterSlideSeconds);
         }
 
         isInputBlocked = false;
@@ -920,8 +944,46 @@ public class UI_MainMenu : MonoBehaviour
         }
 
         if (null != roguelikeRecordPanel) roguelikeRecordPanel.PlayHide();
+        SlideDiscordButton(true, true, roguelikeMenuExitSeconds);
 
         DOVirtual.DelayedCall(roguelikeSwapDelay, cachedShowMainButtonsAfterRoguelike, true).SetId(this);
+    }
+
+    /// <summary>
+    /// 디스코드 아이콘을 오른쪽 화면 밖으로 빼거나(_bIn = false) 제자리로 들인다(_seconds초 · 정수 픽셀 · unscaled).
+    /// 빠질 때는 호버 · 패드 선택을 풀어 화면 밖 아이콘이 선택된 채로 남지 않게 한다.
+    /// </summary>
+    private void SlideDiscordButton(bool _bIn, bool _bAnimated, float _seconds)
+    {
+        if (null == discordButton) return;
+
+        RectTransform rect = discordButton.transform as RectTransform;
+        if (null == rect) return;
+
+        if (false == bDiscordBaseCaptured)
+        {
+            discordBasePosition = rect.anchoredPosition;
+            bDiscordBaseCaptured = true;
+        }
+
+        if (false == _bIn)
+        {
+            discordButton.ForceUnhover();
+            if (null != EventSystem.current && EventSystem.current.currentSelectedGameObject == discordButton.gameObject)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+            }
+        }
+
+        Vector2 target = true == _bIn ? discordBasePosition : discordBasePosition + new Vector2(Mathf.Round(rect.rect.width + DiscordExitMargin), 0f);
+        rect.DOKill();
+        if (false == _bAnimated)
+        {
+            rect.anchoredPosition = target;
+            return;
+        }
+
+        rect.DOAnchorPos(target, _seconds, true).SetEase(true == _bIn ? Ease.OutCubic : Ease.InCubic).SetUpdate(true);
     }
 
     private void ShowMainButtonsAfterRoguelike()
@@ -944,6 +1006,8 @@ public class UI_MainMenu : MonoBehaviour
         BindRoguelikeCancel(false);
         bRoguelikeMenuOpen = false;
         bRoguelikeRecordsOpen = false;
+        bRoguelikeOptionOpen = false;
+        SlideDiscordButton(true, false, 0f);
 
         if (null != roguelikePlate)
         {
@@ -986,6 +1050,7 @@ public class UI_MainMenu : MonoBehaviour
 
         isInputBlocked = true;
         bRoguelikeRecordsOpen = true;
+        roguelikeReturnButton = roguelikeRecordsButton;
 
         // 기록 창이 떠 있는 동안 뒤쪽 버튼이 패드 선택으로 움직이지 않게 선택을 비운다. 닫히면 기록 버튼을 다시 고른다(FinishRoguelikeMenuReturn).
         if (null != EventSystem.current) EventSystem.current.SetSelectedGameObject(null);
@@ -1032,7 +1097,60 @@ public class UI_MainMenu : MonoBehaviour
         ReturnRoguelikeMenu();
     }
 
-    /// <summary>기록 창이 닫힌 뒤: 왼쪽 메뉴와 오른쪽 기록판이 제자리로 들어오고, 다 들어오면 입력을 푼다.</summary>
+    /// <summary>
+    /// 옵션: 기록과 같은 연출로 왼쪽 메뉴 · 오른쪽 기록판이 빠진 뒤 메인메뉴와 같은 공용 옵션 창이 열린다.
+    /// 메인메뉴 옵션 버튼의 닫힘 처리(OnSubViewClosed)는 하위 메뉴를 닫아 버리므로 로그라이크 전용 닫힘 콜백을 쓴다.
+    /// </summary>
+    private void OnRoguelikeOptionClicked()
+    {
+        if (true == isInputBlocked || false == bRoguelikeMenuOpen || null == parentView) return;
+
+        isInputBlocked = true;
+        bRoguelikeOptionOpen = true;
+        roguelikeReturnButton = roguelikeOptionButton;
+
+        // 옵션 창이 떠 있는 동안 뒤쪽 버튼이 패드 선택으로 움직이지 않게 선택을 비운다.
+        if (null != EventSystem.current) EventSystem.current.SetSelectedGameObject(null);
+        for (int i = 0; roguelikeButtons.Length > i; i++)
+        {
+            if (null != roguelikeButtons[i]) roguelikeButtons[i].ForceUnhover();
+        }
+
+        SlideRoguelikeMenu(false);
+
+        if (null != roguelikeRecordPanel) roguelikeRecordPanel.PlayHide(cachedOpenRoguelikeOptionAfterExit);
+        else DOVirtual.DelayedCall(roguelikeMenuExitSeconds, cachedOpenRoguelikeOptionAfterExitTween, true).SetId(this);
+    }
+
+    private void OpenRoguelikeOptionAfterExit()
+    {
+        if (false == bRoguelikeMenuOpen || false == bRoguelikeOptionOpen) return;
+
+        // 누른 자세를 메뉴가 화면 밖에 있는 지금 원래대로 돌려 둔다(기록 버튼과 같은 이유).
+        if (null != roguelikeOptionButton)
+        {
+            roguelikeOptionButton.ResetButtonState();
+            roguelikeOptionButton.ForceUnhover();
+        }
+
+        bRoguelikeOptionOpen = null != parentView && parentView.OpenRoguelikeOption(cachedOnRoguelikeOptionClosed);
+        if (false == bRoguelikeOptionOpen)
+        {
+            // 열지 못하면 하위 메뉴를 되돌린다.
+            ReturnRoguelikeMenu();
+        }
+    }
+
+    private void OnRoguelikeOptionClosed()
+    {
+        bRoguelikeOptionOpen = false;
+        roguelikeOptionClosedFrame = Time.frameCount;
+        if (false == bRoguelikeMenuOpen) return;
+
+        ReturnRoguelikeMenu();
+    }
+
+    /// <summary>기록 · 옵션 창이 닫힌 뒤: 왼쪽 메뉴와 오른쪽 기록판이 제자리로 들어오고, 다 들어오면 입력을 푼다.</summary>
     private void ReturnRoguelikeMenu()
     {
         isInputBlocked = true;
@@ -1051,11 +1169,11 @@ public class UI_MainMenu : MonoBehaviour
     {
         if (false == bRoguelikeMenuOpen) return;
 
-        // 버튼 자세는 기록 창이 열릴 때 이미 원래대로 돌려 두었다(OpenRoguelikeRecordsAfterExit). 여기서 다시 초기화하지 않는다.
+        // 버튼 자세는 기록 · 옵션 창이 열릴 때 이미 원래대로 돌려 두었다(OpenRoguelike*AfterExit). 여기서 다시 초기화하지 않는다.
         isInputBlocked = false;
         if (null != viewCtx && null != viewCtx.inputManager && true == viewCtx.inputManager.IsGamepadMode)
         {
-            SelectRoguelikeButton(roguelikeRecordsButton);
+            SelectRoguelikeButton(null != roguelikeReturnButton ? roguelikeReturnButton : roguelikeRecordsButton);
         }
     }
 
@@ -1084,9 +1202,9 @@ public class UI_MainMenu : MonoBehaviour
 
     private void OnRoguelikeCancel()
     {
-        // 기록 창이 열려 있으면 그 창이 먼저 닫힌다(같은 키로 두 단계가 한 번에 닫히지 않게).
-        if (true == bRoguelikeRecordsOpen || true == isInputBlocked || false == bRoguelikeMenuOpen) return;
-        if (Time.frameCount == roguelikeRecordsClosedFrame) return;
+        // 기록 · 옵션 창이 열려 있으면 그 창이 먼저 닫힌다(같은 키로 두 단계가 한 번에 닫히지 않게).
+        if (true == bRoguelikeRecordsOpen || true == bRoguelikeOptionOpen || true == isInputBlocked || false == bRoguelikeMenuOpen) return;
+        if (Time.frameCount == roguelikeRecordsClosedFrame || Time.frameCount == roguelikeOptionClosedFrame) return;
         Sound.PlayUI(SoundID.MainClick);
         CloseRoguelikeMenu();
     }
@@ -1121,9 +1239,12 @@ public class UI_MainMenu : MonoBehaviour
 
     private void HandleRoguelikeDeviceChanged(EInputDeviceType _device)
     {
+        // 기록 · 옵션 창이 위에 떠 있으면 그 창이 장치 전환을 처리한다(선택을 비우거나 뒤쪽 버튼을 고르지 않는다).
+        if (true == bRoguelikeRecordsOpen || true == bRoguelikeOptionOpen) return;
+
         if (EInputDeviceType.Gamepad == _device)
         {
-            if (true == bRoguelikeRecordsOpen || true == isInputBlocked) return;
+            if (true == isInputBlocked) return;
 
             UI_MainMenuButton target = roguelikeStartButton;
             for (int i = 0; roguelikeButtons.Length > i; i++)
@@ -1154,6 +1275,8 @@ public class UI_MainMenu : MonoBehaviour
         if (null != roguelikePlateText) roguelikePlateText.text = loc.GetText(mainMenuUIJsonId, 8);
         SetRoguelikeButtonText(roguelikeStartButton, loc.GetText(RoguelikeStartKey), _dotText);
         SetRoguelikeButtonText(roguelikeRecordsButton, loc.GetText(RoguelikeRecordsKey), _dotText);
+        // 옵션은 메인메뉴 옵션 버튼과 같은 문구(MainMenuUI 3번)를 쓴다.
+        SetRoguelikeButtonText(roguelikeOptionButton, loc.GetText(mainMenuUIJsonId, 3), _dotText);
         SetRoguelikeButtonText(roguelikeBackButton, loc.GetText(RoguelikeBackKey), _dotText);
         if (true == bRoguelikeMenuOpen && null != roguelikeRecordPanel) roguelikeRecordPanel.Refresh();
     }
@@ -1231,8 +1354,10 @@ public class UI_MainMenu : MonoBehaviour
         BindRoguelikeCancel(false);
         if (null != roguelikePlate) roguelikePlate.DOKill();
         if (null != roguelikeMenuRoot) roguelikeMenuRoot.DOKill();
+        if (null != discordButton) discordButton.transform.DOKill();
         if (null != roguelikeStartButton) roguelikeStartButton.Release();
         if (null != roguelikeRecordsButton) roguelikeRecordsButton.Release();
+        if (null != roguelikeOptionButton) roguelikeOptionButton.Release();
         if (null != roguelikeBackButton) roguelikeBackButton.Release();
     }
 }
