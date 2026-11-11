@@ -1766,7 +1766,7 @@ MonoBehaviour:
   abilityBuildVariantData: {fileID: 11400000, guid: 435d117acee74a889a1c34c20d764a81, type: 2}
   prestigeLevel: 0
   skillExperience: 0
-  experienceToLevelUp: 28000000280000003c0000003c0000004100000041000000410000003200000032000000320000003200000032000000
+  experienceToLevelUp: 28000000280000003c0000003c0000004100000046000000460000004600000046000000320000003200000032000000
 --- !u!1 &5075027738427714103
 GameObject:
   m_ObjectHideFlags: 0
@@ -2984,15 +2984,41 @@ MonoBehaviour:
     outlineOnLevel: 0.15
     crackGlow: 1
     crackGlowHDRIntensity: 3.2
+    crackGlowFlashBoost: 1.4
+    crackGlowFlashSeconds: 0.6
+    frontBand: 0.8
+    frontGlowRows: 6
+    frontOutlineColor: {r: 1, g: 0.93, b: 0.72, a: 1}
     rideObjects: 1
     viewMargin: 8
     cameraShakeIntensity: 4.5
     cameraShakeSeconds: 1.1
+    cameraShakeFollowFront: 1
+    aftershockDelay: 0.2
+    aftershockShakeIntensity: 2.6
+    aftershockShakeSeconds: 0.6
+    aftershockKickDistance: 0.2
     cameraKickDistance: 0.45
     cameraKickSeconds: 0.3
+    cameraZoomPunch: 1.06
+    cameraZoomInSeconds: 0.05
+    cameraZoomHoldSeconds: 0.08
+    cameraZoomOutSeconds: 0.4
     epicenterBoost: 0.6
     epicenterBoostRadius: 5
+    slamDepth: 0.47
+    slamRadius: 4.5
+    slamBounceSeconds: 0.14
+    slamDecaySeconds: 0.12
+    hitStopSeconds: 0.12
+    hitStopTimeScale: 0.02
+    flashExposure: 1
+    flashTint: {r: 1.7, g: 1.15, b: 0.7, a: 1}
+    flashInSeconds: 0.04
+    flashOutSeconds: 0.45
     shockwaveMaterial: {fileID: 2100000, guid: 8cd6b43f55eb00246b4948637b731dd5, type: 2}
+    shockwaveStrength: 0.02
+    shockwaveWidth: 0.9
     buildUpSeconds: 0.35
     buildUpRadius: 6
     buildUpTremblePixels: 2
@@ -3019,6 +3045,7 @@ MonoBehaviour:
     treeShiverOutsideDegrees: 1.2
     treeShiverSeconds: 0.45
     treeShiverHz: 13
+    treeLeanDegrees: 24
     treePopHeight: 0.4
     treePopSeconds: 0.3
 --- !u!1 &7291486191322297758

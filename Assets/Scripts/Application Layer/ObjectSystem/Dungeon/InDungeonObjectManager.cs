@@ -574,7 +574,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private static readonly WaitForSeconds sporeExplosionVfxWait = new WaitForSeconds(SporeExplosionVfxInterval);
 
     // 별자리(Constellation) 관련 스킬 스탯 - StarrootForest 전용
-    private const float BaseConstellationDamage = 5000f;
+    private const float BaseConstellationDamage = 200f;
     private const float ConstellationHitInterval = 0.2f;
     private static readonly WaitForSeconds constellationHitWait = new WaitForSeconds(ConstellationHitInterval);
 
