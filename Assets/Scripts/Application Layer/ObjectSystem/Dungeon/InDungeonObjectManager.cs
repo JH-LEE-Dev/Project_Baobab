@@ -2402,52 +2402,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         quakeTreeLaunch?.Tick(Time.deltaTime);
-
-#if UNITY_EDITOR
-        DebugOverheatFullTick();
-        DebugQuakeTick();
-#endif
     }
-
-#if UNITY_EDITOR
-    // 에디터 전용 디버그: 던전에서 이 키를 누르면 과열이 가득 차는 순간의 연출(열기 물결·화면 흔들림·진동·소리)만 재생한다.
-    // 과열 수치는 건드리지 않는다. 빌드에는 포함되지 않는다.
-    // 본편 디버그 키(F1 시네마틱, F4 수동 저장, F8 지진, F9 벤치마크, ` 사운드)·로그라이크(F6, F7)와 겹치지 않는 키를 쓴다.
-    private const UnityEngine.InputSystem.Key DebugOverheatFullKey = UnityEngine.InputSystem.Key.F10;
-
-    // 에디터 전용 디버그: 던전에서 이 키를 누르면 "흑요 부적" 지진 게이지가 가득 찼을 때와 똑같이 지진을 일으킨다(TriggerQuake -
-    // 바닥 물결·피해·맞은 나무 연출·피해 경계 균열까지 같다). 이번 방문에 부적 효과가 없으면 I단계 수치로 낸다. 빌드에는 포함되지 않는다.
-    private const UnityEngine.InputSystem.Key DebugQuakeKey = UnityEngine.InputSystem.Key.F8;
-
-    private void DebugQuakeTick()
-    {
-        UnityEngine.InputSystem.Keyboard keyboard = UnityEngine.InputSystem.Keyboard.current;
-        if (null == keyboard || false == keyboard[DebugQuakeKey].wasPressedThisFrame) return;
-
-        if (character == null || GameModeContext.IsRoguelike || null == environmentProvider)
-        {
-            Debug.LogWarning("[InDungeonObjectManager] 지진 디버그(F8)는 본편 던전에서 캐릭터가 있을 때만 됩니다.");
-            return;
-        }
-
-        TriggerQuake(0 < obsidianCharmTierThisRun ? obsidianCharmTierThisRun : 1);
-        ResetQuakeCharge();
-    }
-
-    private void DebugOverheatFullTick()
-    {
-        UnityEngine.InputSystem.Keyboard keyboard = UnityEngine.InputSystem.Keyboard.current;
-        if (null == keyboard || false == keyboard[DebugOverheatFullKey].wasPressedThisFrame) return;
-
-        if (character == null || 0 == activeTrees.Count || GameModeContext.IsRoguelike)
-        {
-            Debug.LogWarning("[InDungeonObjectManager] 과열 가득 참 연출 디버그(F10)는 본편 던전에서 캐릭터와 나무가 있을 때만 됩니다.");
-            return;
-        }
-
-        PlayOverheatFullMoment();
-    }
-#endif
 
     private void OnDestroy()
     {
@@ -3383,7 +3338,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     }
 
     // 지진 게이지가 가득 찼을 때 지진을 일으킨다. 게이지를 비우고 캐릭터 자리에서 지진(바닥 물결 + 피해)을 시작한다.
-    // 에디터 디버그 키(F8)도 이 함수를 그대로 부른다.
     private void TriggerQuake(int _tier)
     {
         quakeCharge = 0f;
