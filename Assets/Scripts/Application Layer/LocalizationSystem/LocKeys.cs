@@ -118,6 +118,9 @@ public static class LocKeys
         public const int testNode3Name = 4194556;
         public const int testNode4Name = 4194557;
         public const int conveyorSpeed2Name = 4194558;
+        public const int whirlWindName = 4194561;
+        public const int recoveryPower1Name = 4194562;
+        public const int abilityDescriptionRecoveryPower = 4203481;
         public const int commonLevel = 4203304;
         public const int commonFree = 4203305;
         public const int commonMaxLevel = 4203306;

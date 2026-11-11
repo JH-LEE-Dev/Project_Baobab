@@ -73,6 +73,14 @@ MonoBehaviour:
     sparkleDuty: 0.08
     sparkleIntensity: 2.2
     sparkleArmStrength: 0.25
+    rimGlowEnabled: 0
+    rimColor: {r: 0.16862746, g: 0.47058824, b: 0.7921569, a: 1}
+    rimGlowColor: {r: 0.62, g: 0.86, b: 1, a: 1}
+    rimGlowStrength: 0.6
+    rimWaveDirection: {x: 1, y: 0}
+    rimWaveSpacing: 9
+    rimWavePeriod: 6
+    rimWaveWidth: 0.2
   waterShimmerMaterial: {fileID: 2100000, guid: f405ba781fc59184684c02b71a3256e2, type: 2}
   colorGrading:
     enabled: 1
@@ -1488,6 +1496,7 @@ MonoBehaviour:
   - {fileID: 6294901244587944149}
   - {fileID: 5574464615179719263}
   firstRevealStagger: 0.35
+  focusSwitchMargin: 0.1
 --- !u!1 &3957381566655606059
 GameObject:
   m_ObjectHideFlags: 0
@@ -1757,7 +1766,7 @@ MonoBehaviour:
   abilityBuildVariantData: {fileID: 11400000, guid: 435d117acee74a889a1c34c20d764a81, type: 2}
   prestigeLevel: 0
   skillExperience: 0
-  experienceToLevelUp: 28000000280000003c0000003c0000004100000041000000320000003200000032000000320000003200000032000000
+  experienceToLevelUp: 28000000280000003c0000003c0000004100000041000000410000003200000032000000320000003200000032000000
 --- !u!1 &5075027738427714103
 GameObject:
   m_ObjectHideFlags: 0
@@ -2878,6 +2887,7 @@ MonoBehaviour:
     outlineFalloffPower: 0.5
     outlineOnLevel: 0.15
     crackGlow: 1
+    crackGlowHDRIntensity: 3.2
     rideObjects: 1
     viewMargin: 8
     cameraShakeIntensity: 3

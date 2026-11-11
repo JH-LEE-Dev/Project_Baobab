@@ -256,6 +256,12 @@ public enum SkillType
 
 
     ConveyorSpeed2,
+    AutoLoadInRestArea,
+    LogInsurance1,
+    LogInsurance2,
+    LogInsurance3,
+    WhirlWind,
+    RecoveryPower1,
     MAX
 }
 

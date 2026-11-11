@@ -497,3 +497,7 @@ MonoBehaviour:
     enumValueName: ObsidianTree
     enumIntValue: 12
     compositeKey: 14680076
+  - enumTypeName: SkillCommandType
+    enumValueName: RecoveryPower
+    enumIntValue: 114
+    compositeKey: 4203481
