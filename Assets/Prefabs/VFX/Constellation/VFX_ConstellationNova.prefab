@@ -5180,6 +5180,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2de7cc21939cee045831ee7a72e9c522, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.VFX.VFX_ConstellationNova
+  shape: 0
+  arenaHalfWidth: 9.5
+  arenaHalfHeight: 4.75
+  arenaCurtainHeightPx: 46
   maxRadius: 4
   palette: 0
   bSoftLight: 1

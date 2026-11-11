@@ -20,6 +20,10 @@ namespace PresentationLayer.VFX
     /// 모든 위치는 경과 시간만으로 닫힌 식으로 계산하고(적분 없음), 픽셀 부분은 30fps 단위로 갱신한다.
     /// 마법진 픽셀 표는 반지름이 같으면 모든 인스턴스가 공유하고, 정적 버퍼와 고정 크기 배열만 써서 재생 중 힙 할당이 없다.
     ///
+    /// 모양: shape = Ellipse(던전, 위 구성 그대로) 또는 ArenaDiamond(로그라이크 아레나 사각형 노바). ArenaDiamond는 같은 팔레트/타임라인/발광 규칙으로
+    /// 아레나 가장자리를 따르는 2:1 마름모(반폭 A, 반높이 A/2) 테두리 + 내접 직사각형 + 룬 10개 + 좌우 꼭짓점 별 각인을 그리고,
+    /// 빛 커튼은 마름모 둘레(높이 고정 46px), 바닥 빛은 마름모 채움이다. 범위는 SetArenaExtents(보이는 가장자리 반폭/반높이, 유닛)로 정한다.
+    ///
     /// 범위 조절: maxRadius(월드 유닛) 또는 재생 직전의 SetRadius로 정한다. 풀 인스턴스로 쓰이며 루트 ParticleSystem의
     /// 수명(TotalDuration 이상)이 끝나면 VFXComponent가 풀로 돌려보낸다.
     /// </summary>
@@ -35,6 +39,23 @@ namespace PresentationLayer.VFX
             Gold = 1,
             Violet = 2,
         }
+
+        /// <summary>바닥 도형 모양. Ellipse: 던전 별자리 발현(원형 마법진), ArenaDiamond: 로그라이크 아레나 가장자리를 따르는 2:1 마름모 마법진</summary>
+        public enum ENovaShape
+        {
+            Ellipse = 0,
+            ArenaDiamond = 1,
+        }
+
+        [Header("모양")]
+        [SerializeField, Tooltip("마법진 모양. Ellipse는 던전판(기본), ArenaDiamond는 로그라이크 아레나 사각형(마름모) 노바.")]
+        private ENovaShape shape = ENovaShape.Ellipse;
+        [SerializeField, Tooltip("ArenaDiamond 기본 반폭(월드 유닛). 아레나 보이는 가장자리 기준이며 재생 직전에 SetArenaExtents로 덮어쓸 수 있다.")]
+        private float arenaHalfWidth = 9.5f;
+        [SerializeField, Tooltip("ArenaDiamond 기본 반높이(월드 유닛). 마름모 비율은 항상 2:1이라 반폭이 없을 때만 반폭 = 2 x 반높이로 쓴다.")]
+        private float arenaHalfHeight = 4.75f;
+        [SerializeField, Tooltip("ArenaDiamond 빛 커튼의 최대 높이(px). 반지름 비율로 키우지 않고 고정이다(키우면 화면을 덮는다).")]
+        private float arenaCurtainHeightPx = 46.0f;
 
         [Header("범위 (월드 유닛, 32 PPU 기준 1유닛 = 32px)")]
         [SerializeField, Tooltip("바깥 마법진 링이 닿는 반지름. 눈에 보이는 폭발 범위이자 피격 범위와 맞추는 값이다. 재생 직전에 SetRadius로 덮어쓸 수 있다.")]
@@ -116,6 +137,14 @@ namespace PresentationLayer.VFX
         private const int QuadCapacityGround = 2048;
         private const int QuadCapacitySky = 1024;
 
+        // 아레나 마름모: 마법진 약 2,330칸(바닥 쿼드 최대 약 1,650, 공중 최대 약 560 실측)이라 위 용량으로 충분하다
+        private const int ArenaRuneCount = 10;
+        private const int ArenaMoteCount = 80;
+        private const int ArenaEdgeInset = 4;
+        private const int ArenaCoreHalf = 24;
+        private const float ArenaReferenceA = 300.0f;
+        private const int GroupMark = 6;
+
         // 소프트 메쉬 구성(정점 수 / 인덱스 수는 반지름과 무관한 고정값이라 메쉬 형태를 한 번만 만든다)
         // 부분 순서 = 끝나는 시각 순서(섬광, 기둥, 커튼, 바닥 빛). 그래서 살아 있는 부분은 항상 뒤쪽 연속 구간이다.
         private const int SoftSegments = 48;
@@ -128,6 +157,7 @@ namespace PresentationLayer.VFX
         private const int PartPillar = 1;
         private const int PartCurtain = 2;
         private const int PartGround = 3;
+        private const int ArenaSegmentsPerEdge = SoftSegments / 4;
 
         private const int FlashVertexStart = 0;
         private const int PillarVertexStart = FlashVertexStart + FlashRows * SoftSegments;
@@ -167,6 +197,12 @@ namespace PresentationLayer.VFX
             new[] { "..#..", "#.#.#", "#####", "#.#.#", "..#.." },
         };
 
+        // 아레나 룬 기준 표(시안 A=300 기준 px, y는 시안 좌표라 아래가 +). 한 줄이 한 변 위치이고 x가 0이 아니면 좌우 거울 복사한다.
+        // 순서: 아래 꼭짓점 근처, 아래 변 바깥/안쪽, 위 변 안쪽/바깥, 위 꼭짓점 근처
+        private static readonly int[] ArenaRuneBaseX = { 0, 202, 68, 68, 202, 0 };
+        private static readonly int[] ArenaRuneBaseY = { 134, 34, 101, -101, -34, -134 };
+        private static readonly int[] ArenaRuneBaseGlyph = { 0, 1, 2, 3, 4, 6 };
+
         // 4갈래 별 팔 길이(7, 5, 3, 1)별 반두께 표(손으로 정한 값)
         private static readonly int[] StarArms = { 7, 5, 3, 1 };
         private static readonly int[][] StarHalfThickness =
@@ -195,6 +231,8 @@ namespace PresentationLayer.VFX
         // 소프트 부분별 행 표본. 값의 곡선이 부드러워 보이도록 정점 사이 선형 보간이 곡선에 가깝게 나오는 위치를 골랐다.
         private static readonly float[] FlashRowD = { 0.0f, 0.35f, 0.7f, 1.0f, 1.4f, 2.0f };
         private static readonly float[] GroundRowR = { 0.0f, 0.5f, 0.8f, 1.0f, 1.05f };
+        // 아레나 바닥 빛 행(마름모 거리). 세기 0.12 + 0.88 r^3을 정점 선형 보간으로 따라가도록 바깥쪽에 촘촘히 두고 마지막 행이 테두리다.
+        private static readonly float[] ArenaGroundRowR = { 0.0f, 0.55f, 0.8f, 0.95f, 1.0f };
         private static readonly float[] PillarRowFraction = { 0.0f, 0.0f, 0.2f, 0.45f, 0.7f, 1.0f };
         private static readonly float[] PillarColumnC = { -2.4f, -1.6f, -0.8f, 0.0f, 0.8f, 1.6f, 2.4f };
         private static readonly float[] CurtainRowFraction = { 0.0f, 0.0f, 0.2f, 0.45f, 0.75f, 1.0f };
@@ -261,6 +299,7 @@ namespace PresentationLayer.VFX
         private static readonly SigilPixel[] sigil = new SigilPixel[SigilCapacity];
         private static readonly int[] ringIndices = new int[SigilCapacity];
         private static readonly int[] dissolveIndices = new int[DissolveCapacity];
+        private static readonly int[] runeGlyphArena = new int[RuneCount];
         private static readonly int[] runeCenterX = new int[RuneCount];
         private static readonly int[] runeCenterY = new int[RuneCount];
         private static readonly float[] runeCenterA = new float[RuneCount];
@@ -269,7 +308,12 @@ namespace PresentationLayer.VFX
         private static int pendingCount;
         private static int ringCount;
         private static int dissolveCount;
-        private static int sigilRadius = -1;
+        // 표 키: Ellipse는 반지름(px, 양수), ArenaDiamond는 -(반폭 A px). 키가 같으면 모든 인스턴스가 표를 공유한다.
+        private static int sigilRadius = 0;
+        private static int runeTotal = RuneCount;
+        private static bool buildIsArena;
+        private static int buildA;
+        private static int buildB;
         private static int buildRadius;
         private static int gridExtentX;
         private static int gridExtentY;
@@ -288,7 +332,7 @@ namespace PresentationLayer.VFX
         private Mesh softMesh;
         private ParticleSystemRenderer rootParticleRenderer;
 
-        private readonly Mote[] motes = new Mote[MoteCount];
+        private readonly Mote[] motes = new Mote[ArenaMoteCount];
         // 팔레트 x 램프 x 단계 색표(정점 색 = 선형 팔레트, 알파 = 발광 세기)
         private readonly Color32[] colorTable = new Color32[2 * LevelCount];
 
@@ -298,6 +342,14 @@ namespace PresentationLayer.VFX
         private bool bBeginPending;
         private bool bInitialized;
         private float overrideRadius;
+        private float overrideHalfWidth;
+        private float overrideHalfHeight;
+        private bool bArena;
+        private int arenaA;
+        private int arenaB;
+        private int sigilKey;
+        private int moteCount;
+        private float ringHalo;
         private float currentRadius;
         private float radiusPx;
         private float sizeScale;
@@ -311,6 +363,7 @@ namespace PresentationLayer.VFX
         // 30fps 프레임 상태(프레임이 바뀔 때만 계산)
         private int builtFrame = -1;
         private float frameTime;
+        private int cooledLevel;
         private int baseLevel2;
         private int baseLevel3;
         private int ringAmp;
@@ -341,6 +394,17 @@ namespace PresentationLayer.VFX
         public void SetRadius(float _radiusUnits)
         {
             overrideRadius = _radiusUnits;
+        }
+
+        /// <summary>
+        /// ArenaDiamond 전용: 이번 재생의 아레나 보이는 가장자리 반폭/반높이(월드 유닛)를 정한다. 풀에서 꺼내져 활성화된 직후(첫 LateUpdate 전)에 호출해야 한다.
+        /// 마법진 테두리는 가장자리보다 4px 안쪽, 반폭 A = 짝수 px(반폭 x 32 - 4), 반높이 = A / 2로 맞춰 정확한 2:1 계단을 유지한다.
+        /// 반폭이 0 이하일 때만 반높이 x 2를 반폭으로 쓰고, 둘 다 0 이하이면 인스펙터 값을 쓴다. Ellipse 모양에서는 아무 영향이 없다.
+        /// </summary>
+        public void SetArenaExtents(float _halfWidthUnits, float _halfHeightUnits)
+        {
+            overrideHalfWidth = _halfWidthUnits;
+            overrideHalfHeight = _halfHeightUnits;
         }
 
         /// <summary>이번 재생에서 실제로 쓰는 최대 반지름(월드 유닛). 재생 시작 전에는 인스펙터 값이다.</summary>
@@ -444,16 +508,43 @@ namespace PresentationLayer.VFX
             skyHash = 0UL;
             appliedSoftFirstPart = -1;
 
-            currentRadius = 0.0f < overrideRadius ? overrideRadius : maxRadius;
-            currentRadius = Mathf.Max(0.5f, currentRadius);
-            radiusPx = currentRadius * PixelsPerUnit;
-            sizeScale = radiusPx / ReferenceRadiusPx;
-            ringRadiusX = Mathf.Max(8, Mathf.RoundToInt(radiusPx));
-            ringRadiusY = Mathf.Max(1, Mathf.RoundToInt(ringRadiusX * GroundSquashY));
+            bArena = ENovaShape.ArenaDiamond == shape;
 
             // 메쉬 경계(화면 밖 판단용): 가장 먼 가로 거리와 솟구침 높이 + 여유
-            float halfWidthPx = Mathf.Max(ringRadiusX * 1.32f, 64.0f) + 16.0f;
-            float riseMaxPx = Mathf.Max(ringRadiusX * 0.66f, Mathf.Max(ringRadiusY + Mathf.Max(curtainHeightPx * sizeScale, 60.0f), pillarHeightPx * sizeScale)) + 24.0f;
+            float halfWidthPx;
+            float riseMaxPx;
+            if (true == bArena)
+            {
+                float halfWidthUnits = 0.0f < overrideHalfWidth ? overrideHalfWidth : (0.0f < overrideHalfHeight ? overrideHalfHeight * 2.0f : arenaHalfWidth);
+                arenaA = Mathf.Max(16, EvenRound(halfWidthUnits * PixelsPerUnit - ArenaEdgeInset));
+                arenaB = arenaA / 2;
+                currentRadius = arenaA * PixelUnit;
+                radiusPx = arenaA;
+                sizeScale = 1.0f;
+                ringRadiusX = arenaA;
+                ringRadiusY = arenaB;
+                moteCount = ArenaMoteCount;
+                ringHalo = 0.05f;
+
+                // 위쪽: 꼭짓점 + 입자 솟구침/스파크(최대 약 66px) + 빛 커튼, 가운데: 빛기둥
+                halfWidthPx = arenaA + 24.0f;
+                riseMaxPx = Mathf.Max(arenaB + Mathf.Max(arenaCurtainHeightPx, 66.0f), pillarHeightPx) + 24.0f;
+            }
+            else
+            {
+                currentRadius = 0.0f < overrideRadius ? overrideRadius : maxRadius;
+                currentRadius = Mathf.Max(0.5f, currentRadius);
+                radiusPx = currentRadius * PixelsPerUnit;
+                sizeScale = radiusPx / ReferenceRadiusPx;
+                ringRadiusX = Mathf.Max(8, Mathf.RoundToInt(radiusPx));
+                ringRadiusY = Mathf.Max(1, Mathf.RoundToInt(ringRadiusX * GroundSquashY));
+                moteCount = MoteCount;
+                ringHalo = 0.06f;
+
+                halfWidthPx = Mathf.Max(ringRadiusX * 1.32f, 64.0f) + 16.0f;
+                riseMaxPx = Mathf.Max(ringRadiusX * 0.66f, Mathf.Max(ringRadiusY + Mathf.Max(curtainHeightPx * sizeScale, 60.0f), pillarHeightPx * sizeScale)) + 24.0f;
+            }
+
             meshBoundsSize = new Vector3(halfWidthPx * 2.0f * PixelUnit, riseMaxPx * 2.0f * PixelUnit, 10.0f);
 
             if (null != softMesh) softMesh.bounds = new Bounds(Vector3.zero, meshBoundsSize);
@@ -462,7 +553,8 @@ namespace PresentationLayer.VFX
             randomState = unchecked((uint)(Time.frameCount * 2654435761u) ^ (uint)Mathf.FloorToInt(pos.x * 97.0f) ^ ((uint)Mathf.FloorToInt(pos.y * 57.0f) << 7));
             if (0u == randomState) randomState = 1u;
 
-            EnsureSigilTable(ringRadiusX);
+            sigilKey = true == bArena ? -arenaA : ringRadiusX;
+            EnsureSigilTable(sigilKey);
             BuildColorTable();
             SetupMotes();
         }
@@ -508,16 +600,154 @@ namespace PresentationLayer.VFX
 
         // ---------- 마법진 픽셀 표 (반지름별 1회) ----------
 
-        private static void EnsureSigilTable(int _radius)
+        // 키가 음수이면 아레나 마름모(반폭 = -키), 양수이면 타원(반지름 = 키)
+        private static void EnsureSigilTable(int _key)
         {
-            if (_radius == sigilRadius) return;
+            if (_key == sigilRadius) return;
 
-            sigilRadius = _radius;
-            BuildSigilTable(_radius);
+            sigilRadius = _key;
+            if (0 > _key) BuildArenaSigilTable(-_key);
+            else BuildSigilTable(_key);
+        }
+
+        // 마법진 격자(중복 방지용)를 필요한 크기로 잡는다
+        private static void PrepareSigilGrid(int _extentX, int _extentY)
+        {
+            gridExtentX = _extentX;
+            gridExtentY = _extentY;
+            gridWidth = gridExtentX * 2 + 1;
+            int gridSize = gridWidth * (gridExtentY * 2 + 1);
+            if (sigilGrid.Length < gridSize) sigilGrid = new int[gridSize];
+
+            pendingCount = 0;
+        }
+
+        // 룬 글리프를 중심 기준으로 찍는다. 글리프 첫 줄이 위이므로 y를 뒤집는다.
+        private static void AddRunePixels(int _count, bool _bArena)
+        {
+            for (int k = 0; k < _count; k++)
+            {
+                string[] glyph = Glyphs[true == _bArena ? runeGlyphArena[k] : RuneOf[k]];
+                for (int row = 0; row < 5; row++)
+                {
+                    for (int col = 0; col < 5; col++)
+                    {
+                        if ('#' != glyph[row][col]) continue;
+                        AddSigilPixel(runeCenterX[k] + col - 2, runeCenterY[k] - row + 2, GroupRune, 3, RampAcc, k);
+                    }
+                }
+            }
+        }
+
+        // 격자를 행(아래에서 위) -> 열(왼쪽에서 오른쪽) 순서로 훑어 정렬된 표를 만든다(같은 줄 쿼드 병합에 유리). 훑으면서 격자를 비운다.
+        private static void CollectSigilGrid()
+        {
+            sigilCount = 0;
+            ringCount = 0;
+            dissolveCount = 0;
+            int gridHeight = gridExtentY * 2 + 1;
+            for (int row = 0; row < gridHeight; row++)
+            {
+                int rowStart = row * gridWidth;
+                for (int col = 0; col < gridWidth; col++)
+                {
+                    int cell = sigilGrid[rowStart + col];
+                    if (0 == cell) continue;
+
+                    sigilGrid[rowStart + col] = 0;
+                    if (SigilCapacity <= sigilCount) continue;
+
+                    sigil[sigilCount] = sigilPending[cell - 1];
+                    if (GroupRing == sigil[sigilCount].group) ringIndices[ringCount++] = sigilCount;
+                    if (0.05f >= sigil[sigilCount].h && dissolveCount < DissolveCapacity) dissolveIndices[dissolveCount++] = sigilCount;
+                    sigilCount++;
+                }
+            }
+        }
+
+        // 아레나 마름모 마법진 표(반폭 A px, 반높이 A/2). 시안 renderSquare와 같은 구성이며 A=300 기준 위치를 비례해 옮긴다.
+        // 순서(앞이 우선): 룬, 좌우 꼭짓점 별 각인, 테두리 마름모, 내접 직사각형, 중심 마름모
+        private static void BuildArenaSigilTable(int _a)
+        {
+            int b = _a / 2;
+            buildIsArena = true;
+            buildA = _a;
+            buildB = b;
+            runeTotal = ArenaRuneCount;
+
+            PrepareSigilGrid(_a + 8, b + 8);
+            BuildArenaRuneCenters(_a);
+            AddRunePixels(ArenaRuneCount, true);
+
+            // 좌우 꼭짓점: 작은 4갈래 별(팔 3) 각인. 위치는 A=300 기준 280px를 비례해 옮긴다.
+            int markX = RoundHalfUp(_a * 280.0f / ArenaReferenceA);
+            StarCell[] mark = StarSprites[2];
+            for (int sx = -1; sx <= 1; sx += 2)
+            {
+                for (int i = 0; i < mark.Length; i++)
+                {
+                    AddSigilPixel(sx * markX + mark[i].dx, mark[i].dy, GroupMark, Mathf.Min(3, (int)mark[i].level), RampLine, -1);
+                }
+            }
+
+            // 테두리 마름모(아레나 가장자리): 정확한 2칸-1칸 계단
+            AddIsoLine(_a, 0, 0, b, GroupRing, 3);
+            AddIsoLine(-_a, 0, 0, b, GroupRing, 3);
+            AddIsoLine(_a, 0, 0, -b, GroupRing, 3);
+            AddIsoLine(-_a, 0, 0, -b, GroupRing, 3);
+
+            // 내접 직사각형(수평/수직): 꼭짓점이 테두리 변 중점에 닿아 팔각별처럼 읽힌다
+            int rectY = b / 2;
+            int rect = rectY * 2;
+            for (int x = -rect; x <= rect; x++)
+            {
+                AddSigilPixel(x, -rectY, GroupOct2, 2, RampLine, -1);
+                AddSigilPixel(x, rectY, GroupOct2, 2, RampLine, -1);
+            }
+
+            for (int y = -rectY; y <= rectY; y++)
+            {
+                AddSigilPixel(-rect, y, GroupOct2, 2, RampLine, -1);
+                AddSigilPixel(rect, y, GroupOct2, 2, RampLine, -1);
+            }
+
+            // 중심 마름모
+            AddIsoLine(ArenaCoreHalf, 0, 0, ArenaCoreHalf / 2, GroupCore, 2);
+            AddIsoLine(-ArenaCoreHalf, 0, 0, ArenaCoreHalf / 2, GroupCore, 2);
+            AddIsoLine(ArenaCoreHalf, 0, 0, -ArenaCoreHalf / 2, GroupCore, 2);
+            AddIsoLine(-ArenaCoreHalf, 0, 0, -ArenaCoreHalf / 2, GroupCore, 2);
+
+            CollectSigilGrid();
+        }
+
+        // 아레나 룬 10개의 중심. 기준 표(A=300)를 A/300 비례로 옮기고, 오른쪽(x > 0)만 계산해 왼쪽은 x 부호만 뒤집어 복사한다(픽셀 단위 좌우 대칭).
+        private static void BuildArenaRuneCenters(int _a)
+        {
+            float scale = _a / ArenaReferenceA;
+            int k = 0;
+            for (int i = 0; i < ArenaRuneBaseX.Length; i++)
+            {
+                int cx = RoundHalfUp(ArenaRuneBaseX[i] * scale);
+                int cySim = RoundHalfUp(ArenaRuneBaseY[i] * scale);
+                for (int mirror = 0; mirror < 2; mirror++)
+                {
+                    if (1 == mirror && 0 == ArenaRuneBaseX[i]) break;
+
+                    int x = 0 == mirror ? cx : -cx;
+                    float a = Mathf.Atan2(cySim / GroundSquashY, x) / TwoPi;
+                    runeCenterX[k] = x;
+                    runeCenterY[k] = -cySim;
+                    runeCenterA[k] = a - Mathf.Floor(a);
+                    runeGlyphArena[k] = ArenaRuneBaseGlyph[i];
+                    k++;
+                }
+            }
         }
 
         private static void BuildSigilTable(int _radius)
         {
+            buildIsArena = false;
+            runeTotal = RuneCount;
             buildRadius = _radius;
             int ry = Mathf.Max(1, Mathf.RoundToInt(_radius * GroundSquashY));
             int runeRadius = Mathf.RoundToInt(_radius * 0.9f);
@@ -529,28 +759,11 @@ namespace PresentationLayer.VFX
             int coreY = core / 2;
             int tickEnd = Mathf.Max(4, Mathf.RoundToInt(8.0f * _radius / ReferenceRadiusPx));
 
-            gridExtentX = _radius + 8;
-            gridExtentY = ry + 8;
-            gridWidth = gridExtentX * 2 + 1;
-            int gridSize = gridWidth * (gridExtentY * 2 + 1);
-            if (sigilGrid.Length < gridSize) sigilGrid = new int[gridSize];
-
-            pendingCount = 0;
+            PrepareSigilGrid(_radius + 8, ry + 8);
             BuildRuneCenters(runeRadius);
 
-            // 룬 먼저(우선순위). 글리프 첫 줄이 위이므로 y를 뒤집는다.
-            for (int k = 0; k < RuneCount; k++)
-            {
-                string[] glyph = Glyphs[RuneOf[k]];
-                for (int row = 0; row < 5; row++)
-                {
-                    for (int col = 0; col < 5; col++)
-                    {
-                        if ('#' != glyph[row][col]) continue;
-                        AddSigilPixel(runeCenterX[k] + col - 2, runeCenterY[k] - row + 2, GroupRune, 3, RampAcc, k);
-                    }
-                }
-            }
+            // 룬 먼저(우선순위)
+            AddRunePixels(RuneCount, false);
 
             // 팔각별: 마름모(정확한 2칸-1칸 계단) + 직사각형(수평/수직)
             AddIsoLine(-diamond, 0, 0, diamondY, GroupOct, 3);
@@ -602,28 +815,7 @@ namespace PresentationLayer.VFX
                 AddSigilPixel(-x, -y, GroupRing, 3, RampLine, -1);
             }
 
-            // 격자를 행(아래에서 위) -> 열(왼쪽에서 오른쪽) 순서로 훑어 정렬된 표를 만든다(같은 줄 쿼드 병합에 유리). 훑으면서 격자를 비운다.
-            sigilCount = 0;
-            ringCount = 0;
-            dissolveCount = 0;
-            int gridHeight = gridExtentY * 2 + 1;
-            for (int row = 0; row < gridHeight; row++)
-            {
-                int rowStart = row * gridWidth;
-                for (int col = 0; col < gridWidth; col++)
-                {
-                    int cell = sigilGrid[rowStart + col];
-                    if (0 == cell) continue;
-
-                    sigilGrid[rowStart + col] = 0;
-                    if (SigilCapacity <= sigilCount) continue;
-
-                    sigil[sigilCount] = sigilPending[cell - 1];
-                    if (GroupRing == sigil[sigilCount].group) ringIndices[ringCount++] = sigilCount;
-                    if (0.05f >= sigil[sigilCount].h && dissolveCount < DissolveCapacity) dissolveIndices[dissolveCount++] = sigilCount;
-                    sigilCount++;
-                }
-            }
+            CollectSigilGrid();
         }
 
         // 룬 12개의 중심. 0~6번(정면 -> 한쪽 -> 뒤쪽)만 계산하고 7~11번은 x 부호만 뒤집어 복사해 픽셀 단위 대칭을 보장한다.
@@ -671,7 +863,9 @@ namespace PresentationLayer.VFX
 
             // 시안 좌표(y가 아래)로 바꿔 둘레 위치와 해시를 계산한다
             int simY = -_y;
-            float r = Mathf.Min(1.0f, Mathf.Sqrt(_x * (float)_x + (simY / GroundSquashY) * (simY / GroundSquashY)) / buildRadius);
+            float r;
+            if (true == buildIsArena) r = Mathf.Min(1.0f, Mathf.Abs(_x) / (float)buildA + Mathf.Abs(simY) / (float)buildB);
+            else r = Mathf.Min(1.0f, Mathf.Sqrt(_x * (float)_x + (simY / GroundSquashY) * (simY / GroundSquashY)) / buildRadius);
             float a = Mathf.Atan2(simY / GroundSquashY, _x) / TwoPi;
             a -= Mathf.Floor(a);
             if (0 <= _rune) a = runeCenterA[_rune];
@@ -853,15 +1047,15 @@ namespace PresentationLayer.VFX
             return colorTable[_ramp * LevelCount + Mathf.Clamp(_level, 0, LevelCount - 1)];
         }
 
-        // 떠오르는 입자 54개: 3개 중 1개는 룬 위, 나머지는 바깥 링 픽셀에서 올라온다. 초반(제곱 분포)에 몰린다.
+        // 떠오르는 입자(타원 54개, 아레나 80개): 3개 중 1개는 룬 위, 나머지는 바깥 링(아레나는 테두리) 픽셀에서 올라온다. 초반(제곱 분포)에 몰린다.
         private void SetupMotes()
         {
-            for (int i = 0; i < MoteCount; i++)
+            for (int i = 0; i < moteCount; i++)
             {
                 Mote mote = new Mote();
                 if (0 == i % 3)
                 {
-                    int rune = Mathf.Min(RuneCount - 1, Mathf.FloorToInt(Rand01() * RuneCount));
+                    int rune = Mathf.Min(runeTotal - 1, Mathf.FloorToInt(Rand01() * runeTotal));
                     mote.ox = runeCenterX[rune] + RoundHalfUp((Rand01() - 0.5f) * 4.0f);
                     mote.oy = runeCenterY[rune] + 3;
                     mote.ramp = RampAcc;
@@ -894,6 +1088,7 @@ namespace PresentationLayer.VFX
 
             // 0프레임에 전체가 흰색으로 박히고 3프레임마다 한 단계씩 기본 단계로 식는다
             int cooled = 4 - _frame / 3;
+            cooledLevel = cooled;
             baseLevel2 = Mathf.Max(2, cooled);
             baseLevel3 = Mathf.Max(3, cooled);
 
@@ -929,7 +1124,7 @@ namespace PresentationLayer.VFX
                 return 0 < remain ? remain : 0;
             }
 
-            int level = 3 == rest ? baseLevel3 : baseLevel2;
+            int level = 3 == rest ? baseLevel3 : (2 == rest ? baseLevel2 : Mathf.Max(rest, cooledLevel));
             int boost = 0;
 
             if (GroupRing == _p.group)
@@ -938,11 +1133,11 @@ namespace PresentationLayer.VFX
                 {
                     float d0 = Wrap01(ringPhase - _p.a);
                     if (d0 < 0.012f) boost = Mathf.Max(boost, ringAmp);
-                    else if (d0 < 0.06f && t < 0.8f) boost = Mathf.Max(boost, 1);
+                    else if (d0 < ringHalo && t < 0.8f) boost = Mathf.Max(boost, 1);
 
                     float d1 = Wrap01(ringPhase + 0.5f - _p.a);
                     if (d1 < 0.012f) boost = Mathf.Max(boost, ringAmp);
-                    else if (d1 < 0.06f && t < 0.8f) boost = Mathf.Max(boost, 1);
+                    else if (d1 < ringHalo && t < 0.8f) boost = Mathf.Max(boost, 1);
                 }
             }
             else if (GroupRune == _p.group)
@@ -1054,10 +1249,25 @@ namespace PresentationLayer.VFX
             // 꼭짓점 8곳 스파크: 0초에 위로 튀어 오른다
             if (0.6f > t)
             {
-                int diamond = Mathf.Max(2, EvenRound(ringRadiusX * 0.8f));
-                int diamondY = diamond / 2;
-                int rect = Mathf.Max(2, EvenRound(diamond * 0.707f));
-                int rectY = rect / 2;
+                int diamond;
+                int diamondY;
+                int rect;
+                int rectY;
+                if (true == bArena)
+                {
+                    // 마름모 꼭짓점 4 + 내접 직사각형 꼭짓점 4(고정 별 9칸 중 8칸 자리와 같은 방향)
+                    diamond = arenaA;
+                    diamondY = arenaB;
+                    rectY = arenaB / 2;
+                    rect = rectY * 2;
+                }
+                else
+                {
+                    diamond = Mathf.Max(2, EvenRound(ringRadiusX * 0.8f));
+                    diamondY = diamond / 2;
+                    rect = Mathf.Max(2, EvenRound(diamond * 0.707f));
+                    rectY = rect / 2;
+                }
 
                 float u = t / 0.6f;
                 float inv = 1.0f - u;
@@ -1075,7 +1285,7 @@ namespace PresentationLayer.VFX
             }
 
             // 떠오르는 입자
-            for (int i = 0; i < MoteCount; i++)
+            for (int i = 0; i < moteCount; i++)
             {
                 float age = t - motes[i].t0;
                 if (0.0f > age || age >= motes[i].life) continue;
@@ -1103,7 +1313,7 @@ namespace PresentationLayer.VFX
             }
         }
 
-        // 스파크 8곳: 팔각별 꼭짓점. 마름모 좌우 끝, 마름모 위/아래 끝, 직사각형 네 모서리 순서(위쪽이 +y)
+        // 스파크 8곳: 팔각별 꼭짓점(아레나는 마름모 꼭짓점 + 내접 직사각형 꼭짓점). 마름모 좌우 끝, 마름모 위/아래 끝, 직사각형 네 모서리 순서(위쪽이 +y)
         private static void SparkOrigin(int _index, int _diamond, int _diamondY, int _rect, int _rectY, out int _x, out int _y)
         {
             switch (_index)
@@ -1124,6 +1334,9 @@ namespace PresentationLayer.VFX
             Vector3 pos = transform.position;
             centerX = Mathf.FloorToInt(pos.x * PixelsPerUnit);
             centerY = Mathf.FloorToInt(pos.y * PixelsPerUnit);
+
+            // 다른 모양/크기의 인스턴스가 표를 바꿔 놨으면 이 인스턴스의 표로 되돌린다(같으면 정수 비교 한 번)
+            EnsureSigilTable(sigilKey);
             PrepareFrame(_frame);
 
             bool bSplit = null != groundMesh;
@@ -1194,6 +1407,12 @@ namespace PresentationLayer.VFX
         // 빛 커튼: 바깥 링 테두리에서 위로 솟는 원통형 빛 벽. 위로 갈수록 옅어지고 뒤쪽 벽(링 위쪽 반)은 55%.
         private void UpdateCurtain(float _t, float _ox, float _oy)
         {
+            if (true == bArena)
+            {
+                UpdateCurtainArena(_t, _ox, _oy);
+                return;
+            }
+
             float u = _t / CurtainEnd;
             float a = 0.55f * (u < 0.05f ? 1.0f : Mathf.Pow(1.0f - (u - 0.05f) / 0.95f, 1.6f));
             float height = curtainHeightPx * sizeScale * (CurtainBaseFraction + (1.0f - CurtainBaseFraction) * EaseOutCubic(Mathf.Min(1.0f, _t / 0.35f)));
@@ -1217,6 +1436,12 @@ namespace PresentationLayer.VFX
         // 바닥 빛: 마법진 안쪽을 은은하게 밝힌다. 0초에 가장 밝고 식은 뒤 해체와 함께 꺼진다.
         private void UpdateGround(float _t, float _ox, float _oy)
         {
+            if (true == bArena)
+            {
+                UpdateGroundArena(_t, _ox, _oy);
+                return;
+            }
+
             float ga = (0.07f + 0.2f * Mathf.Max(0.0f, 1.0f - _t / 0.35f)) * (1.0f - Mathf.Clamp01((_t - DissolveStart) / 0.5f));
             for (int row = 0; row < GroundRows; row++)
             {
@@ -1227,6 +1452,74 @@ namespace PresentationLayer.VFX
                     float x = _ox + ringRadiusX * r * SegmentCos[s] * PixelUnit;
                     float y = _oy + ringRadiusX * GroundSquashY * r * SegmentSin[s] * PixelUnit;
                     WriteVertex(GroundVertexStart + row * SoftSegments + s, x, y, in GroundTint, intensity);
+                }
+            }
+        }
+
+        private static void ArenaCorner(int _index, int _a, int _b, out float _x, out float _y)
+        {
+            switch (_index & 3)
+            {
+                case 0: _x = _a; _y = 0.0f; break;
+                case 1: _x = 0.0f; _y = _b; break;
+                case 2: _x = -_a; _y = 0.0f; break;
+                default: _x = 0.0f; _y = -_b; break;
+            }
+        }
+
+        // 마름모 둘레의 _segment번 정점 위치(px, 중심 기준). 변마다 12분할이라 정점 0/12/24/36이 정확히 네 꼭짓점이다(오른쪽, 위, 왼쪽, 아래).
+        private void GetArenaPerimeter(int _segment, out float _x, out float _y)
+        {
+            int edge = _segment / ArenaSegmentsPerEdge;
+            float f = (_segment - edge * ArenaSegmentsPerEdge) / (float)ArenaSegmentsPerEdge;
+            float x0;
+            float y0;
+            float x1;
+            float y1;
+            ArenaCorner(edge, arenaA, arenaB, out x0, out y0);
+            ArenaCorner(edge + 1, arenaA, arenaB, out x1, out y1);
+            _x = x0 + (x1 - x0) * f;
+            _y = y0 + (y1 - y0) * f;
+        }
+
+        // 아레나 빛 커튼: 마름모 둘레에서 위로 솟는 빛 벽. 높이는 반지름과 무관하게 고정(arenaCurtainHeightPx)이고, 뒤쪽(위쪽 두 변)은 55%.
+        // 시안은 둘레 픽셀마다 기둥 하나라 겹침이 없으므로 둘레 겹침 배율(CurtainStack)은 쓰지 않는다.
+        private void UpdateCurtainArena(float _t, float _ox, float _oy)
+        {
+            float u = _t / CurtainEnd;
+            float a = 0.5f * (u < 0.05f ? 1.0f : Mathf.Pow(1.0f - (u - 0.05f) / 0.95f, 1.6f));
+            float height = arenaCurtainHeightPx * (CurtainBaseFraction + (1.0f - CurtainBaseFraction) * EaseOutCubic(Mathf.Min(1.0f, _t / 0.35f)));
+            height = Mathf.Max(8.0f, height);
+            for (int row = 0; row < CurtainRows; row++)
+            {
+                float yPx = 0 == row ? 0.0f : (1 == row ? 2.0f : height * CurtainRowFraction[row]);
+                float q = yPx / height;
+                float weight = Mathf.Pow(1.0f - q, 1.8f) * (0 == row ? 1.3f : 1.0f);
+                for (int s = 0; s < SoftSegments; s++)
+                {
+                    float px;
+                    float py;
+                    GetArenaPerimeter(s, out px, out py);
+                    float back = 0.001f < py ? 0.55f : 1.0f;
+                    WriteVertex(CurtainVertexStart + row * SoftSegments + s, _ox + px * PixelUnit, _oy + (py + yPx) * PixelUnit, in CurtainTint, a * back * weight);
+                }
+            }
+        }
+
+        // 아레나 바닥 빛: 마름모 채움. 가장자리 위주(0.12 + 0.88 r^3)로 은은하게 밝히고 0초에 가장 밝다가 해체와 함께 꺼진다.
+        private void UpdateGroundArena(float _t, float _ox, float _oy)
+        {
+            float ga = (0.035f + 0.12f * Mathf.Max(0.0f, 1.0f - _t / 0.3f)) * (1.0f - Mathf.Clamp01((_t - DissolveStart) / 0.5f));
+            for (int row = 0; row < GroundRows; row++)
+            {
+                float r = ArenaGroundRowR[row];
+                float intensity = ga * (0.12f + 0.88f * r * r * r);
+                for (int s = 0; s < SoftSegments; s++)
+                {
+                    float px;
+                    float py;
+                    GetArenaPerimeter(s, out px, out py);
+                    WriteVertex(GroundVertexStart + row * SoftSegments + s, _ox + px * r * PixelUnit, _oy + py * r * PixelUnit, in GroundTint, intensity);
                 }
             }
         }
@@ -1375,6 +1668,8 @@ namespace PresentationLayer.VFX
         private void OnDisable()
         {
             overrideRadius = 0.0f;
+            overrideHalfWidth = 0.0f;
+            overrideHalfHeight = 0.0f;
 
             if (null != meshRenderer) meshRenderer.enabled = false;
             if (null != groundMeshRenderer) groundMeshRenderer.enabled = false;
@@ -1407,12 +1702,31 @@ namespace PresentationLayer.VFX
             maxRadius = Mathf.Max(0.5f, maxRadius);
             curtainHeightPx = Mathf.Max(8.0f, curtainHeightPx);
             pillarHeightPx = Mathf.Max(8.0f, pillarHeightPx);
+            arenaHalfWidth = Mathf.Max(1.0f, arenaHalfWidth);
+            arenaHalfHeight = Mathf.Max(0.5f, arenaHalfHeight);
+            arenaCurtainHeightPx = Mathf.Max(8.0f, arenaCurtainHeightPx);
             BuildColorTable();
         }
 
         // 씬 뷰에서 최대 반지름(바닥 타원)을 보여 줘서 피격 범위와 눈으로 맞출 수 있게 한다.
         private void OnDrawGizmosSelected()
         {
+            if (ENovaShape.ArenaDiamond == shape)
+            {
+                float halfWidth = true == Application.isPlaying && true == bArena ? arenaA * PixelUnit : arenaHalfWidth - ArenaEdgeInset * PixelUnit;
+                Vector3 arenaCenter = transform.position;
+                Gizmos.color = new Color(0.4f, 0.9f, 1.0f, 0.9f);
+                Vector3 right = arenaCenter + new Vector3(halfWidth, 0.0f, 0.0f);
+                Vector3 top = arenaCenter + new Vector3(0.0f, halfWidth * GroundSquashY, 0.0f);
+                Vector3 left = arenaCenter + new Vector3(-halfWidth, 0.0f, 0.0f);
+                Vector3 bottom = arenaCenter + new Vector3(0.0f, -halfWidth * GroundSquashY, 0.0f);
+                Gizmos.DrawLine(right, top);
+                Gizmos.DrawLine(top, left);
+                Gizmos.DrawLine(left, bottom);
+                Gizmos.DrawLine(bottom, right);
+                return;
+            }
+
             float radius = true == Application.isPlaying && 0.0f < currentRadius ? currentRadius : maxRadius;
             Vector3 center = transform.position;
 

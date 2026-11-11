@@ -16,6 +16,10 @@ public static class ConstellationNovaBuilder
     private const string SoftMaterialPath = "Assets/Graphics/VFX/Materials/M_ConstellationNovaSoft.mat";
     private const string PixelMaterialPath = "Assets/Graphics/VFX/Materials/M_ConstellationNovaPixel.mat";
     private const string PrefabPath = "Assets/Prefabs/VFX/Constellation/VFX_ConstellationNova.prefab";
+    private const string ArenaPrefabPath = "Assets/Prefabs/VFX/Constellation/VFX_RoguelikeArenaNova.prefab";
+    private const string InstallerPrefabPath = "Assets/Prefabs/Installer/Installer/GameInstaller.prefab";
+    private const string NovaTag = "ConstellationNovaEffect";
+    private const string ArenaTag = "RoguelikeArenaNovaEffect";
 
     // 시안의 발광 배율: 정점 알파 a -> 1.3 + 2.9 * a
     private const float PixelGlowMin = 1.3f;
@@ -39,6 +43,128 @@ public static class ConstellationNovaBuilder
         BuildPrefab(softMaterial, pixelMaterial);
         AssetDatabase.SaveAssets();
         Debug.Log("[ConstellationNovaBuilder] 완료: " + SoftMaterialPath + " / " + PixelMaterialPath + " / " + PrefabPath);
+    }
+
+    /// <summary>
+    /// 로그라이크 아레나 사각형 노바: 별자리 노바 프리팹 복제 + shape = ArenaDiamond(기본 반폭 9.5 x 반높이 4.75), GameInstaller 풀에 RoguelikeArenaNovaEffect 등록.
+    /// 먼저 "Build Constellation Nova"가 실행되어 원본 프리팹이 최신이어야 한다(없으면 자동 실행). 여러 번 실행해도 같은 결과로 맞춘다.
+    /// </summary>
+    [MenuItem("LumberBoy/VFX/Build Roguelike Arena Nova")]
+    public static void BuildArena()
+    {
+        if (true == EditorApplication.isPlaying)
+        {
+            Debug.LogError("[ConstellationNovaBuilder] 플레이 모드에서는 실행할 수 없습니다.");
+            return;
+        }
+
+        Build();
+
+        if (null == AssetDatabase.LoadAssetAtPath<GameObject>(ArenaPrefabPath))
+        {
+            if (false == AssetDatabase.CopyAsset(PrefabPath, ArenaPrefabPath))
+            {
+                Debug.LogError("[ConstellationNovaBuilder] 프리팹 복제에 실패했습니다: " + ArenaPrefabPath);
+                return;
+            }
+        }
+
+        if (false == ConfigureArenaPrefab()) return;
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+
+        if (false == RegisterArenaPool()) return;
+        AssetDatabase.SaveAssets();
+        Debug.Log("[ConstellationNovaBuilder] 완료: " + ArenaPrefabPath + " / " + InstallerPrefabPath + " (" + ArenaTag + ")");
+    }
+
+    private static bool ConfigureArenaPrefab()
+    {
+        GameObject root = PrefabUtility.LoadPrefabContents(ArenaPrefabPath);
+        try
+        {
+            VFX_ConstellationNova nova = root.GetComponentInChildren<VFX_ConstellationNova>(true);
+            if (null == nova)
+            {
+                Debug.LogError("[ConstellationNovaBuilder] 아레나 프리팹에서 VFX_ConstellationNova를 찾지 못했습니다.");
+                return false;
+            }
+
+            root.name = "VFX_RoguelikeArenaNova";
+            SerializedObject so = new SerializedObject(nova);
+            so.FindProperty("shape").enumValueIndex = (int)VFX_ConstellationNova.ENovaShape.ArenaDiamond;
+            so.FindProperty("arenaHalfWidth").floatValue = 9.5f;
+            so.FindProperty("arenaHalfHeight").floatValue = 4.75f;
+            so.FindProperty("arenaCurtainHeightPx").floatValue = 46.0f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            PrefabUtility.SaveAsPrefabAsset(root, ArenaPrefabPath);
+            return true;
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+    }
+
+    // 기존 노바 풀 항목(ConstellationNovaEffect)이 있는 VFXComponent에 같은 규격(초기/최대 크기)으로 아레나 항목을 추가한다.
+    private static bool RegisterArenaPool()
+    {
+        GameObject arenaAsset = AssetDatabase.LoadAssetAtPath<GameObject>(ArenaPrefabPath);
+        ParticleSystem arenaRoot = null != arenaAsset ? arenaAsset.GetComponent<ParticleSystem>() : null;
+        if (null == arenaRoot)
+        {
+            Debug.LogError("[ConstellationNovaBuilder] 아레나 프리팹 루트에 ParticleSystem이 없습니다.");
+            return false;
+        }
+
+        GameObject installer = PrefabUtility.LoadPrefabContents(InstallerPrefabPath);
+        try
+        {
+            VFXComponent[] components = installer.GetComponentsInChildren<VFXComponent>(true);
+            for (int c = 0; c < components.Length; c++)
+            {
+                SerializedObject so = new SerializedObject(components[c]);
+                SerializedProperty list = so.FindProperty("vfxPoolDataList");
+                if (null == list) continue;
+
+                SerializedProperty novaEntry = null;
+                SerializedProperty arenaEntry = null;
+                for (int i = 0; i < list.arraySize; i++)
+                {
+                    SerializedProperty candidate = list.GetArrayElementAtIndex(i);
+                    string tag = candidate.FindPropertyRelative("vfxTag").stringValue;
+                    if (NovaTag == tag) novaEntry = candidate;
+                    else if (ArenaTag == tag) arenaEntry = candidate;
+                }
+
+                if (null == novaEntry) continue;
+
+                if (null == arenaEntry)
+                {
+                    list.InsertArrayElementAtIndex(list.arraySize);
+                    arenaEntry = list.GetArrayElementAtIndex(list.arraySize - 1);
+                    arenaEntry.FindPropertyRelative("initialPoolSize").intValue = novaEntry.FindPropertyRelative("initialPoolSize").intValue;
+                    arenaEntry.FindPropertyRelative("allowDynamicExpansion").boolValue = novaEntry.FindPropertyRelative("allowDynamicExpansion").boolValue;
+                    arenaEntry.FindPropertyRelative("maxPoolSize").intValue = novaEntry.FindPropertyRelative("maxPoolSize").intValue;
+                    arenaEntry.FindPropertyRelative("uiParticleScale").floatValue = novaEntry.FindPropertyRelative("uiParticleScale").floatValue;
+                }
+
+                arenaEntry.FindPropertyRelative("vfxTag").stringValue = ArenaTag;
+                arenaEntry.FindPropertyRelative("effectPrefab").objectReferenceValue = arenaRoot;
+                so.ApplyModifiedPropertiesWithoutUndo();
+
+                PrefabUtility.SaveAsPrefabAsset(installer, InstallerPrefabPath);
+                return true;
+            }
+
+            Debug.LogError("[ConstellationNovaBuilder] GameInstaller에서 " + NovaTag + " 풀 항목을 찾지 못했습니다.");
+            return false;
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(installer);
+        }
     }
 
     private static Material BuildSoftMaterial()
