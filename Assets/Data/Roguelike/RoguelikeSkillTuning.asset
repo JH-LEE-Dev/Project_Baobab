@@ -81,7 +81,8 @@ MonoBehaviour:
   stellaDroneBeamWidth: 0.6
   stellaDroneBeamDamage: 40
   stellaDroneNovaStars: 9
-  stellaDroneNovaRadius: 6
   stellaDroneNovaDamage: 600
+  stellaDroneStarSpawnDelay: 0.35
+  stellaDroneSlotInset: 0.9
   stellaDroneLoneStarInterval: 1.5
   stellaDroneLoneStarRadius: 1.5

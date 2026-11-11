@@ -1613,6 +1613,34 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     /// <summary>
+    /// [로그라이크] 스텔라 + 드론 노바. 섬 중심(_center)에서 아레나 가장자리에 맞춘 마름모 노바(VFX_ConstellationNova, shape = ArenaDiamond)를 재생한다.
+    /// _halfWidth · _halfHeight는 아레나의 보이는 가장자리 반폭 · 반높이(월드 유닛)이다. 본편 별자리 발현(PlayConstellationNovaVFX, 원형)과 별개다.
+    /// </summary>
+    public void PlayRoguelikeArenaNovaVFX(Vector3 _center, float _halfWidth, float _halfHeight)
+    {
+        if (vfxComponent == null) return;
+
+        // 별자리 노바와 같은 소팅 레이어/순서.
+        const string sortingLayerName = "FlyingItem";
+        const int sortingOrder = 10;
+
+        ParticleSystem effect = vfxComponent.Play(new VFXPlaySettings(
+            "RoguelikeArenaNovaEffect",
+            _center,
+            Quaternion.identity,
+            sortingLayerName,
+            sortingOrder,
+            null
+        ));
+
+        if (effect == null || _halfWidth <= 0.0f || _halfHeight <= 0.0f) return;
+
+        // 풀 재생 직후(메쉬 시작은 첫 LateUpdate로 미뤄져 있다) 이번 재생의 아레나 크기를 덮어쓴다.
+        PresentationLayer.VFX.VFX_ConstellationNova nova = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_ConstellationNova>(true);
+        if (nova != null) nova.SetArenaExtents(_halfWidth, _halfHeight);
+    }
+
+    /// <summary>
     /// [로그라이크] 스텔라 별 폭발(VFX_StellaBurst). _groundPosition은 별의 바닥 위치(별 그림 높이는 이펙트가 맡는다),
     /// _radius는 폭발 판정 반경(월드 유닛, 가로 반지름)이다. 0 이하이면 프리팹의 maxRadius.
     /// </summary>
