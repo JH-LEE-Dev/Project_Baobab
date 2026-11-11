@@ -1,63 +1,63 @@
+using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace PresentationLayer.VFX
 {
     /// <summary>
-    /// 별자리 발현의 "별자리 마법진 + 별 폭발" 연출. 별자리 중심의 바닥에 마법진이 그려지며 펼쳐지고, 별이 은하 나선팔로 휘감겨
-    /// 마법진 밖까지 터져 나간다. 기존 별자리 빔(ConstellationPixelLaser)을 대체하지 않고 같은 발현 시점에 추가로 재생된다.
-    /// 스프라이트 시트 대신 32 PPU 픽셀 격자에 스냅한 절차적 쿼드 메쉬로 그린다(VFX_BrandStampBurst, 별자리 레이저와 같은 방식).
+    /// 별자리 발현의 "픽셀 각인 마법진" 연출. 별자리 중심의 바닥에 마법진 전체가 0프레임에 흰색으로 한 번에 각인되고
+    /// 팔레트 한 단계씩 식으며, 남은 기운(빛 머리, 룬 점등, 여진)이 돌다가 바깥부터 꺼진다. 승인된 시안 3(타원 1개 + 부드러운 빛)을 그대로 옮겼다.
+    /// 스프라이트 시트 대신 32 PPU 픽셀 격자에 스냅한 절차적 쿼드 메쉬로 그린다(PixelPainter / PixelQuadBuffer).
     ///
-    /// 절제와 위계 - 요소를 줄이고 크기/밝기 위계를 둔다.
-    /// - 박자: 임팩트 섬광 -> 짧은 정지감 -> 마법진이 그려짐 -> 유지 -> 해체.
-    /// - 섬광과 코어는 1px 선이 아니라 굵기가 계단식으로 변하는 도트 별(✦)이다. 크기는 연속으로 줄지 않고 4단계로 끊어서 줄어든다.
-    /// - 마법진(바닥 타원) 4겹: 바깥 2px 링(호 단위 틈) + 점선 링 + 12개 눈금 / 9각 별 / 룬 링(금색 룬 6개) / 코어.
-    ///   회전은 12fps 스텝으로 끊어 돌고, 바깥 링은 고정한다.
-    /// - 별: 나선팔 3개로 휘감기며 particleSpread만큼 마법진 밖까지 터진다. 큰 "주인공 별"만 꼬리를 끌고 밝으며 나머지는 어두운 1px 점이다.
-    /// - 방사 스파크: 충격파와 함께 달려나가는 큰 `x`/`+` 별. 불씨는 소수만 바깥으로 퍼지며 오른다.
-    /// - 빛기둥: 9각 별 꼭짓점 9곳에서 솟고(3곳 걸러 하나만 높다) 끝에 금색 `+` 별이 맺힌다.
-    /// - 소멸: 마법진이 바깥 링부터 안쪽으로 파도처럼 침식되며, 일부 픽셀이 `.`, `+`, `x` 독립 입자로 풀려 소용돌이치며 떠올라 사라진다.
+    /// 구성(반지름 R = 반지름 유닛 x 32px, 기준 128px)
+    /// - 바닥 메쉬(ShockWave 레이어, 나무/캐릭터 아래): 마법진 픽셀. 바깥 링 타원 1개(R, R/2), 팔각별(마름모 + 직사각형),
+    ///   직사각형 모서리 눈금 4곳, 중심 마름모, 세운 5x5 룬 12개(반지름 0.9R). 모든 도형이 좌우 대칭이다.
+    /// - 공중 메쉬(루트 렌더러 소팅): 중심 4갈래 별 + 1px 섬광 줄, 꼭짓점 8곳 스파크, 떠오르는 입자(`+` `x` `.`), 해체 입자.
+    /// - 소프트 메쉬(루트 + 1, 가산 NovaSoftGlow): 임팩트 섬광, 바닥 빛, 빛 커튼, 빛기둥. 정점 색 보간 그라데이션이다.
     ///
-    /// 렌더링은 바닥 메쉬(마법진, 충격파)와 공중 메쉬(별, 스파크, 빛기둥, 불씨, 풀려난 분해 입자)로 나뉜다.
-    /// 바닥 메쉬는 나무/캐릭터(Objects 레이어)보다 아래 레이어(ShockWave)에, 공중 메쉬는 루트 렌더러(FlyingItem)에 그려져
-    /// 마법진이 나무와 캐릭터를 가리지 않는다.
+    /// 밝기는 반투명 페이드 없이 팔레트 5단계(꺼짐/남색/파랑/하늘/흰색)와 BrandWrapGlow 정점 알파 발광(GlowTable)으로만 낸다.
+    /// 정점 색은 sRGB 팔레트를 선형 값으로 바꿔 넣는다(선형 색 공간에서 화면에 팔레트 색 그대로 나오도록).
+    /// 모든 위치는 경과 시간만으로 닫힌 식으로 계산하고(적분 없음), 픽셀 부분은 30fps 단위로 갱신한다.
+    /// 마법진 픽셀 표는 반지름이 같으면 모든 인스턴스가 공유하고, 정적 버퍼와 고정 크기 배열만 써서 재생 중 힙 할당이 없다.
     ///
-    /// 모든 요소의 위치는 경과 시간만으로 닫힌 식으로 계산하므로(적분 없음) 꼬리도 과거 시각의 위치를 다시 계산해 그린다.
-    /// 색은 흰색/하늘색/파랑/금색 4색만 쓰고 밝기는 정점 알파에 실린 HDR 발광 세기(BrandWrapGlow 셰이더)로만 낸다(반투명 페이드 없음).
-    /// 정적 버퍼와 고정 크기 배열만 써서 재생 중 힙 할당이 없고, 가로로 이어진 픽셀은 하나의 쿼드로 합쳐 정점 수를 줄인다.
-    ///
-    /// 범위 조절: maxRadius(월드 유닛) 또는 재생 직전의 SetRadius로 정한다. 마법진, 별, 기둥, 불씨 전부가 이 값에 비례한다.
-    /// 과한 정도는 density(0.25~2)로 조절한다 - 별, 주인공 별, 불씨, 스파크 개수가 함께 늘고 준다.
-    /// 풀 인스턴스로 쓰이며, 루트 ParticleSystem의 수명(TotalDuration 이상)이 끝나면 VFXComponent가 풀로 돌려보낸다.
+    /// 범위 조절: maxRadius(월드 유닛) 또는 재생 직전의 SetRadius로 정한다. 풀 인스턴스로 쓰이며 루트 ParticleSystem의
+    /// 수명(TotalDuration 이상)이 끝나면 VFXComponent가 풀로 돌려보낸다.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(MeshFilter))]
     [RequireComponent(typeof(MeshRenderer))]
     public class VFX_ConstellationNova : MonoBehaviour
     {
+        /// <summary>마법진 팔레트. Star: 파랑 선 + 금빛 룬, Gold: 금빛 선 + 얼음빛 룬, Violet: 보라 선 + 금빛 룬</summary>
+        public enum NovaPalette
+        {
+            Star = 0,
+            Gold = 1,
+            Violet = 2,
+        }
+
         [Header("범위 (월드 유닛, 32 PPU 기준 1유닛 = 32px)")]
         [SerializeField, Tooltip("바깥 마법진 링이 닿는 반지름. 눈에 보이는 폭발 범위이자 피격 범위와 맞추는 값이다. 재생 직전에 SetRadius로 덮어쓸 수 있다.")]
         private float maxRadius = 4.0f;
-        [SerializeField, Tooltip("별과 방사 스파크가 퍼지는 최대 거리 배율(마법진 링 반지름 대비). 1이면 링 안쪽까지만, 클수록 링 밖으로 팡 터져 나간다. 피격 범위에는 영향이 없다.")]
-        private float particleSpread = 1.3f;
 
-        [Header("밀도 (과한 느낌 조절)")]
-        [SerializeField, Tooltip("별, 주인공 별, 불씨, 스파크 개수에 곱하는 전체 배율. 1이 기본이고 낮출수록 절제된다.")]
-        private float density = 1.0f;
-        [SerializeField, Tooltip("density 1 기준 반지름 1유닛당 별 개수(최대 StarCapacity)")]
-        private float starsPerUnit = 17.5f;
-        [SerializeField, Tooltip("density 1 기준 크고 밝은 주인공 별 개수. 꼬리를 끌고 반짝인다.")]
-        private int heroStarCount = 8;
-        [SerializeField, Tooltip("density 1 기준 반지름 1유닛당 불씨 개수(최대 EmberCapacity)")]
-        private float embersPerUnit = 5.5f;
-        [SerializeField, Tooltip("density 1 기준 반지름 1유닛당 방사 스파크 개수(최대 SparkCapacity)")]
-        private float sparksPerUnit = 2.0f;
+        [Header("색")]
+        [SerializeField, Tooltip("마법진 팔레트(선 색 + 룬/강조 색). 기본은 별빛 파랑 + 금빛 룬.")]
+        private NovaPalette palette = NovaPalette.Star;
+
+        [Header("부드러운 빛")]
+        [SerializeField, Tooltip("임팩트 섬광, 바닥 빛, 빛 커튼, 빛기둥(소프트 메쉬) 전체 켜기/끄기")]
+        private bool bSoftLight = true;
+        [SerializeField, Tooltip("빛 커튼의 최대 높이(px, 반지름 128px 기준). 실제 반지름에 비례해 커진다.")]
+        private float curtainHeightPx = 74.0f;
+        [SerializeField, Tooltip("빛기둥의 최대 높이(px, 반지름 128px 기준). 실제 반지름에 비례해 커진다.")]
+        private float pillarHeightPx = 130.0f;
 
         [Header("정렬")]
-        [SerializeField, Tooltip("공중 메쉬를 루트 렌더러(VFXComponent가 정한 소팅)보다 이 값만큼 위에 그린다")]
+        [SerializeField, Tooltip("공중 메쉬를 루트 렌더러(VFXComponent가 정한 소팅)보다 이 값만큼 위에 그린다. 소프트 메쉬는 여기에 1을 더한다.")]
         private int sortingOrderOffset = 0;
 
         [Header("바닥 메쉬 (마법진이 나무/캐릭터 뒤에 그려지도록 분리)")]
-        [SerializeField, Tooltip("마법진과 충격파를 그리는 바닥 메쉬. 프리팹의 GroundMesh 자식에 연결한다. 비어 있으면 모두 공중 메쉬 하나로 그린다.")]
+        [SerializeField, Tooltip("마법진을 그리는 바닥 메쉬. 프리팹의 GroundMesh 자식에 연결한다. 비어 있으면 모두 공중 메쉬 하나로 그린다.")]
         private MeshFilter groundMeshFilter;
         [SerializeField] private MeshRenderer groundMeshRenderer;
         [SerializeField, Tooltip("바닥 메쉬 소팅 레이어. 나무/캐릭터가 있는 Objects보다 아래여야 한다. 도끼 충격파와 같은 ShockWave가 기본이다.")]
@@ -65,155 +65,232 @@ namespace PresentationLayer.VFX
         [SerializeField, Tooltip("바닥 메쉬 소팅 오더")]
         private int groundSortingOrder = 0;
 
+        [Header("소프트 메쉬 (부드러운 빛, 가산)")]
+        [SerializeField, Tooltip("부드러운 빛을 그리는 소프트 메쉬. 프리팹의 SoftMesh 자식에 연결한다(NovaSoftGlow 머티리얼).")]
+        private MeshFilter softMeshFilter;
+        [SerializeField] private MeshRenderer softMeshRenderer;
+
         // 바닥 타원의 세로 비율(쿼터뷰, 2:1 아이소메트릭). 마법진 그림과 별자리 발현 폭발 판정(GetGroundDistance)이 같이 쓰는 값이라
         // 인스펙터로 노출하지 않는다 - 한쪽만 바뀌면 보이는 범위와 피격 범위가 어긋난다.
         public const float GroundSquashY = 0.5f;
+
+        /// <summary>소프트 메쉬 정점 알파에 실리는 세기를 곱하는 HDR 배율. 머티리얼의 _Glow와 같은 값이어야 한다(빌더가 맞춘다).</summary>
+        public const float SoftGlowMultiplier = 2.0f;
+
         private const float PixelsPerUnit = 32.0f;
+        private const float PixelUnit = 1.0f / 32.0f;
         private const float TwoPi = Mathf.PI * 2.0f;
+        private const float FramesPerSecond = 30.0f;
 
         // 전체 타임라인(초). 루트 ParticleSystem 수명은 이 값 이상이어야 한다.
         private const float TimelineLength = 2.8f;
-        private const float DissolveStart = 1.6f;
-        private const float DissolveTime = 0.9f;
-
-        // 마법진 분해: 샘플마다 시작 시각 = (1 - 반지름 비율) * Sweep + 지터. 시작 시각이 되면 대부분의 픽셀은 그 자리에서 사라지고
-        // DissolveSpawnRate만큼만 `.`, `+`, `x` 독립 입자가 되어 떠오른다. 입자 수명은 소멸 진행도(0~1) 단위다.
-        private const float DissolveSweep = 0.5f;
-        private const float DissolveJitter = 0.2f;
-        private const float DissolveParticleLife = 0.35f;
-        private const float DissolveSpawnRate = 0.22f;
-        // 입자가 `+`/`x` 모양을 유지하는 수명 비율(이후에는 `.` 점으로 줄어든다)
-        private const float DissolveShapeEnd = 0.55f;
-        private const float DissolveLiftMinPx = 10.0f;
-        private const float DissolveLiftRangePx = 26.0f;
-        private const float DissolveSwirlPx = 10.0f;
-        private const float DissolveOutPx = 10.0f;
-        private const float DissolveRingTime = 0.4f;
-        private const int DissolveKeep = 0;
-        private const int DissolveGone = 1;
-        private const int DissolveParticle = 2;
-
-        private const int StarCapacity = 300;
-        private const int EmberCapacity = 150;
-        private const int SparkCapacity = 16;
-        private const int MinStars = 24;
-        private const int MinEmbers = 8;
-        private const int MinSparks = 4;
-        private const int LayerCount = 4;
-        // 마법진 별 다각형의 꼭짓점 수. 빛기둥이 같은 값을 써서 꼭짓점에 정확히 붙는다.
-        private const int StarPolygonPoints = 9;
-        private const int QuadBudget = 12000;
-        private const int MaxLinePixels = 2048;
-
-        // 기준 반지름(px). 높이/드리프트 같은 크기 값은 실제 반지름과 이 값의 비율로 맞춘다.
-        private const float ReferenceRadiusPx = 150.0f;
-        private const float GroundGlow = 0.28f;
-        // 마법진 구조선(링, 별 다각형)의 발광 세기. 블룸 임계값 근처로 낮춰야 색이 흰색으로 날아가지 않고 선이 또렷하다.
-        private const float LineGlow = 0.07f;
-        // 마법진 회전을 끊어 돌리는 스텝 속도(초당 칸 수)
-        private const float StepRate = 12.0f;
-
-        // 충격파
+        // 마지막 입자가 사라지는 시각 이후에는 그릴 것이 없다
+        private const float ContentEnd = 2.4f;
+        // 피격 파동 시간(EvaluateRadius / EvaluateShockArrivalTime). 화면 연출이 아니라 판정 타이밍 기준이다.
         private const float ShockDuration = 0.4f;
-        private const float ShockFadeStart = 0.2f;
-        private const float ShockFadeTime = 0.25f;
-        private const float ShockEnd = 0.45f;
 
-        // 빛기둥
-        private const float PillarStart = 0.7f;
-        private const float PillarRiseTime = 0.3f;
-        private const float PillarShrinkStart = 1.4f;
-        private const float PillarShrinkTime = 0.3f;
-        private const float PillarEnd = 1.7f;
-        private const float PillarHeightPx = 70.0f;
+        // 기준 반지름(px). 높이 같은 크기 값은 실제 반지름과 이 값의 비율로 맞춘다.
+        private const float ReferenceRadiusPx = 128.0f;
 
-        // 별 / 불씨
-        private const float StarExpandTime = 0.9f;
-        private const float StarRiseTime = 1.6f;
-        private const float StarRisePx = 80.0f;
-        private const float StarSwirl = 3.4f;
-        private const float StarSpin = 0.55f;
-        private const float TrailSpacing = 0.03f;
-        private const float TrailActiveTime = 0.45f;
-        private const int TrailDots = 4;
-        private const float EmberStart = 0.35f;
-        private const float EmberEnd = 2.3f;
-        private const float EmberRisePx = 95.0f;
-        private const float EmberOutward = 0.45f;
+        // 해체: 바깥(반지름 1)부터 DissolveStart에 시작하고 안쪽은 DissolveSweep만큼 늦게 시작한다. 0.1초마다 팔레트 한 단계 꺼진다.
+        private const float DissolveStart = 1.2f;
+        private const float DissolveSweep = 0.4f;
 
-        // 방사 스파크
-        private const float SparkTravelTime = 0.75f;
-        private const float SparkLife = 1.3f;
-        private const int SparkTrailDots = 5;
-        private const float SparkTrailSpacing = 0.03f;
+        // 마법진 픽셀 그룹
+        private const int GroupRune = 0;
+        private const int GroupOct = 1;
+        private const int GroupOct2 = 2;
+        private const int GroupTick = 3;
+        private const int GroupCore = 4;
+        private const int GroupRing = 5;
 
-        // 시작 섬광 - 4단계로 끊어서 줄어드는 도트 별
-        private const float FlashStageTime = 0.06f;
-        private const float FlashEnd = 0.24f;
-        private const int FlashStageCount = 4;
+        // 팔레트 램프(선 / 강조), 단계(0 꺼짐, 1 남색, 2 파랑, 3 하늘, 4 흰색)
+        private const int RampLine = 0;
+        private const int RampAcc = 1;
+        private const int LevelCount = 5;
 
-        // 마법진 중앙 코어의 도트 별(7x7). W 흰색, I 하늘색, B 파랑. 큰 것과 작은 것을 번갈아 맥동한다.
-        private static readonly string[] CoreStarLarge = { "...B...", "...I...", "..IWI..", "BIWWWIB", "..IWI..", "...I...", "...B..." };
-        private static readonly string[] CoreStarSmall = { ".......", "...I...", "..IWI..", ".IWWWI.", "..IWI..", "...I...", "......." };
-        private const int CoreStarSize = 7;
+        private const int SigilCapacity = 8192;
+        private const int RuneCount = 12;
+        private const int MoteCount = 54;
+        private const int DissolveCapacity = 1024;
+        private const int QuadCapacityGround = 2048;
+        private const int QuadCapacitySky = 1024;
 
-        // 레이어별 시작 시각 / 펼쳐지는 데 걸리는 시간(초). 임팩트 뒤 짧은 정지감을 두고 바깥에서 안쪽 순서로 그려진다.
-        private static readonly float[] LayerDelay = { 0.12f, 0.3f, 0.45f, 0.55f };
-        private static readonly float[] LayerDuration = { 0.5f, 0.5f, 0.4f, 0.35f };
+        // 소프트 메쉬 구성(정점 수 / 인덱스 수는 반지름과 무관한 고정값이라 메쉬 형태를 한 번만 만든다)
+        // 부분 순서 = 끝나는 시각 순서(섬광, 기둥, 커튼, 바닥 빛). 그래서 살아 있는 부분은 항상 뒤쪽 연속 구간이다.
+        private const int SoftSegments = 48;
+        private const int FlashRows = 6;
+        private const int PillarRows = 6;
+        private const int PillarCols = 7;
+        private const int CurtainRows = 6;
+        private const int GroundRows = 5;
+        private const int PartFlash = 0;
+        private const int PartPillar = 1;
+        private const int PartCurtain = 2;
+        private const int PartGround = 3;
 
-        // 팔레트 (별 감쌈, 각인 폭발과 같은 계열)
-        private static readonly Color32 ColorWhite = new Color32(255, 255, 255, 255);
-        private static readonly Color32 ColorIce = new Color32(170, 220, 255, 255);
-        private static readonly Color32 ColorBlue = new Color32(91, 146, 230, 255);
-        private static readonly Color32 ColorGold = new Color32(255, 212, 92, 255);
+        private const int FlashVertexStart = 0;
+        private const int PillarVertexStart = FlashVertexStart + FlashRows * SoftSegments;
+        private const int CurtainVertexStart = PillarVertexStart + PillarRows * PillarCols;
+        private const int GroundVertexStart = CurtainVertexStart + CurtainRows * SoftSegments;
+        private const int SoftVertexTotal = GroundVertexStart + GroundRows * SoftSegments;
 
-        private struct NovaStar
+        private const int FlashIndexStart = 0;
+        private const int PillarIndexStart = FlashIndexStart + (FlashRows - 1) * SoftSegments * 6;
+        private const int CurtainIndexStart = PillarIndexStart + (PillarRows - 1) * (PillarCols - 1) * 6;
+        private const int GroundIndexStart = CurtainIndexStart + (CurtainRows - 1) * SoftSegments * 6;
+        private const int SoftIndexTotal = GroundIndexStart + (GroundRows - 1) * SoftSegments * 6;
+
+        // 소프트 부분이 끝나는 시각(초)
+        private const float FlashEnd = 0.16f;
+        private const float PillarEnd = 0.5f;
+        private const float CurtainEnd = 0.6f;
+        private const float GroundEnd = DissolveStart + 0.5f;
+
+        // 빛 커튼 최대 높이 중 처음부터 있는 몫(34 / 74)
+        private const float CurtainBaseFraction = 34.0f / 74.0f;
+        // 빛 커튼 좌우 끝 겹침 배율 상한
+        private const float CurtainStackMax = 10.0f;
+
+        // 룬 번호 -> 글리프 번호. 0번(정면)과 6번(뒤쪽)은 단독, 1~5번과 11~7번은 같은 룬을 좌우 짝으로 둔다.
+        private static readonly int[] RuneOf = { 0, 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1 };
+
+        // 손으로 그린 5x5 룬 7종. 전부 가운데 열 기준 좌우 대칭이다(첫 줄이 위).
+        private static readonly string[][] Glyphs =
         {
-            public float u;
-            public float armAngle;
-            public float noise;
-            public float delay;
+            new[] { "..#..", ".#.#.", "#.#.#", ".#.#.", "..#.." },
+            new[] { "..#..", ".###.", "#.#.#", "..#..", "..#.." },
+            new[] { "#.#.#", "#.#.#", ".###.", "..#..", "..#.." },
+            new[] { ".###.", "#...#", "#.#.#", "#...#", ".###." },
+            new[] { "#####", ".#.#.", "..#..", ".#.#.", "#####" },
+            new[] { "#...#", ".#.#.", "..#..", "..#..", ".###." },
+            new[] { "..#..", "#.#.#", "#####", "#.#.#", "..#.." },
+        };
+
+        // 4갈래 별 팔 길이(7, 5, 3, 1)별 반두께 표(손으로 정한 값)
+        private static readonly int[] StarArms = { 7, 5, 3, 1 };
+        private static readonly int[][] StarHalfThickness =
+        {
+            new[] { 2, 2, 2, 1, 1, 0, 0, 0 },
+            new[] { 1, 1, 1, 0, 0, 0 },
+            new[] { 1, 0, 0, 0 },
+            new[] { 0, 0 },
+        };
+
+        // 발광 세기(정점 알파) 단계표: 꺼짐, 남색, 파랑, 하늘, 흰색
+        private static readonly float[] GlowTable = { 0.0f, 0.04f, 0.12f, 0.26f, 0.62f };
+
+        // sRGB 팔레트 램프(단계 1~4, 0번은 쓰지 않음)
+        private static readonly Color32[] RampBlue = { new Color32(0, 0, 0, 0), new Color32(40, 52, 140, 255), new Color32(72, 120, 255, 255), new Color32(160, 222, 255, 255), new Color32(255, 255, 255, 255) };
+        private static readonly Color32[] RampGold = { new Color32(0, 0, 0, 0), new Color32(130, 60, 30, 255), new Color32(232, 136, 48, 255), new Color32(255, 206, 92, 255), new Color32(255, 247, 220, 255) };
+        private static readonly Color32[] RampViolet = { new Color32(0, 0, 0, 0), new Color32(64, 34, 130, 255), new Color32(150, 96, 255, 255), new Color32(222, 186, 255, 255), new Color32(255, 250, 255, 255) };
+        private static readonly Color32[] RampIce = { new Color32(0, 0, 0, 0), new Color32(40, 70, 150, 255), new Color32(90, 170, 255, 255), new Color32(180, 236, 255, 255), new Color32(255, 255, 255, 255) };
+
+        // 소프트 빛 색 비율(정점 RGB)
+        private static readonly Vector3 FlashTint = new Vector3(0.6f, 0.8f, 1.0f);
+        private static readonly Vector3 GroundTint = new Vector3(0.25f, 0.5f, 1.0f);
+        private static readonly Vector3 CurtainTint = new Vector3(0.5f, 0.78f, 1.0f);
+        private static readonly Vector3 PillarTint = new Vector3(0.55f, 0.8f, 1.0f);
+
+        // 소프트 부분별 행 표본. 값의 곡선이 부드러워 보이도록 정점 사이 선형 보간이 곡선에 가깝게 나오는 위치를 골랐다.
+        private static readonly float[] FlashRowD = { 0.0f, 0.35f, 0.7f, 1.0f, 1.4f, 2.0f };
+        private static readonly float[] GroundRowR = { 0.0f, 0.5f, 0.8f, 1.0f, 1.05f };
+        private static readonly float[] PillarRowFraction = { 0.0f, 0.0f, 0.2f, 0.45f, 0.7f, 1.0f };
+        private static readonly float[] PillarColumnC = { -2.4f, -1.6f, -0.8f, 0.0f, 0.8f, 1.6f, 2.4f };
+        private static readonly float[] CurtainRowFraction = { 0.0f, 0.0f, 0.2f, 0.45f, 0.75f, 1.0f };
+
+        private static readonly int[] PartVertexStart = { FlashVertexStart, PillarVertexStart, CurtainVertexStart, GroundVertexStart };
+        private static readonly int[] PartIndexStart = { FlashIndexStart, PillarIndexStart, CurtainIndexStart, GroundIndexStart };
+
+        private static readonly float[] SegmentCos = BuildSegmentTable(true);
+        private static readonly float[] SegmentSin = BuildSegmentTable(false);
+        private static readonly float[] CurtainStack = BuildCurtainStack();
+        private static readonly ushort[] SoftIndices = BuildSoftIndices();
+        private static readonly VertexAttributeDescriptor[] SoftLayout =
+        {
+            new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3),
+            new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.Float32, 4),
+        };
+        private const MeshUpdateFlags SoftUploadFlags = MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontResetBoneBounds | MeshUpdateFlags.DontRecalculateBounds;
+
+        private struct StarCell
+        {
+            public sbyte dx;
+            public sbyte dy;
+            public byte level;
+        }
+
+        // 마법진 픽셀 하나. 좌표는 중심 기준 정수 오프셋(y가 위)이다.
+        private struct SigilPixel
+        {
+            public short x;
+            public short y;
+            public byte group;
+            public byte rest;
+            public byte ramp;
+            public sbyte rune;
+            public float r;
+            public float a;
+            public float h;
+            public float dissolveStart;
+        }
+
+        private struct Mote
+        {
+            public int ox;
+            public int oy;
+            public int ramp;
+            public int shape;
+            public float t0;
+            public float life;
             public float rise;
-            public int kind;
-            public int colorIndex;
-            public int seed;
-            public bool bHero;
+            public float sway;
         }
 
-        private struct NovaSpark
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SoftVertex
         {
-            public float angle;
-            public float distance;
-            public float lift;
-            public float delay;
-            public int colorIndex;
+            public Vector3 position;
+            public Color color;
         }
 
-        private struct NovaEmber
-        {
-            public float offset;
-            public float angle;
-            public float radiusScale;
-            public float speed;
-        }
+        private static readonly StarCell[][] StarSprites = BuildStarSprites();
 
-        // 쿼드는 바닥 + 공중 합쳐 최대 12000개(메쉬별 정점은 UInt16 인덱스 한도 안). 공용 버퍼라 인스턴스끼리 공유한다
-        // (메인 스레드 단일 실행, 매 프레임 Clear 후 채운다).
-        private static readonly PixelQuadBuffer skyBuffer = new PixelQuadBuffer(QuadBudget / 2);
-        private static readonly PixelQuadBuffer groundBuffer = new PixelQuadBuffer(QuadBudget / 2);
+        // 마법진 픽셀 표: 반지름(px)이 같으면 모든 인스턴스가 공유한다(메인 스레드 단일 실행). 행(y) -> 열(x) 순서로 정렬되어 있다.
+        private static readonly SigilPixel[] sigilPending = new SigilPixel[SigilCapacity];
+        private static readonly SigilPixel[] sigil = new SigilPixel[SigilCapacity];
+        private static readonly int[] ringIndices = new int[SigilCapacity];
+        private static readonly int[] dissolveIndices = new int[DissolveCapacity];
+        private static readonly int[] runeCenterX = new int[RuneCount];
+        private static readonly int[] runeCenterY = new int[RuneCount];
+        private static readonly float[] runeCenterA = new float[RuneCount];
+        private static int[] sigilGrid = new int[0];
+        private static int sigilCount;
+        private static int pendingCount;
+        private static int ringCount;
+        private static int dissolveCount;
+        private static int sigilRadius = -1;
+        private static int buildRadius;
+        private static int gridExtentX;
+        private static int gridExtentY;
+        private static int gridWidth;
+
+        // 쿼드는 바닥 / 공중을 차례로 하나의 공용 버퍼로 채워 올린다(메인 스레드 단일 실행, 매 번 Clear 후 채운다).
+        private static readonly PixelQuadBuffer quadBuffer = new PixelQuadBuffer(QuadCapacityGround);
+        private static readonly PixelPainter painter = new PixelPainter();
+        private static readonly SoftVertex[] softScratch = new SoftVertex[SoftVertexTotal];
 
         // 내부 의존성
         private MeshFilter meshFilter;
         private MeshRenderer meshRenderer;
         private Mesh mesh;
         private Mesh groundMesh;
+        private Mesh softMesh;
         private ParticleSystemRenderer rootParticleRenderer;
 
-        private readonly NovaStar[] stars = new NovaStar[StarCapacity];
-        private readonly NovaEmber[] embers = new NovaEmber[EmberCapacity];
-        private readonly NovaSpark[] sparks = new NovaSpark[SparkCapacity];
-        private readonly float[] layerRadius = new float[LayerCount];
-        private readonly float[] layerFrac = new float[LayerCount];
+        private readonly Mote[] motes = new Mote[MoteCount];
+        // 팔레트 x 램프 x 단계 색표(정점 색 = 선형 팔레트, 알파 = 발광 세기)
+        private readonly Color32[] colorTable = new Color32[2 * LevelCount];
 
         // 상태 변수
         private float elapsed;
@@ -224,32 +301,32 @@ namespace PresentationLayer.VFX
         private float currentRadius;
         private float radiusPx;
         private float sizeScale;
-        private int starCount;
-        private int heroCount;
-        private int emberCount;
-        private int sparkCount;
+        private int ringRadiusX;
+        private int ringRadiusY;
         private int centerX;
         private int centerY;
-        private float vanish;
-        private float stepTime;
         private uint randomState;
         private Vector3 meshBoundsSize = new Vector3(20.0f, 20.0f, 10.0f);
 
-        // 지금 그리는 대상 버퍼(바닥 또는 공중)와 바닥 메쉬 소팅 레이어 ID
-        private PixelQuadBuffer activeBuffer;
+        // 30fps 프레임 상태(프레임이 바뀔 때만 계산)
+        private int builtFrame = -1;
+        private float frameTime;
+        private int baseLevel2;
+        private int baseLevel3;
+        private int ringAmp;
+        private float ringPhase;
+        private bool bRuneActive;
+        private float runePhase;
+        private float innerWave0;
+        private float innerWave1;
+
+        private int groundVertexCount = -1;
+        private ulong groundHash;
+        private int skyVertexCount = -1;
+        private ulong skyHash;
+
         private int groundSortingLayerId;
-
-        // 같은 줄에서 이어지는 픽셀을 하나의 쿼드로 합치기 위한 진행 중인 줄
-        private bool bRunActive;
-        private int runX0;
-        private int runX1;
-        private int runY;
-        private Color32 runColor;
-
-        // 분해 연출에서 픽셀의 고정 식별자. 마법진은 스텝으로 도는 중이라 좌표 해시를 쓰면 입자가 깜빡이므로, 그리는 도형과 샘플 번호로 해시한다.
-        private int primitiveCounter;
-        private int plotSalt;
-        private int plotIndex;
+        private int appliedSoftFirstPart = -1;
 
         // 마지막으로 메쉬 렌더러에 적용한 루트 소팅 값. 같으면 매 프레임 세터 호출을 건너뛴다(OnEnable에서 무효화).
         private int appliedRootSortingLayerID = int.MinValue;
@@ -315,9 +392,10 @@ namespace PresentationLayer.VFX
 
             mesh = new Mesh { name = "VFX_ConstellationNova" };
             mesh.MarkDynamic();
+            PixelQuadBuffer.ReserveMesh(mesh, QuadCapacitySky);
             meshFilter.sharedMesh = mesh;
 
-            meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
             meshRenderer.receiveShadows = false;
             meshRenderer.enabled = false;
 
@@ -325,13 +403,30 @@ namespace PresentationLayer.VFX
             {
                 groundMesh = new Mesh { name = "VFX_ConstellationNova_Ground" };
                 groundMesh.MarkDynamic();
+                PixelQuadBuffer.ReserveMesh(groundMesh, QuadCapacityGround);
                 groundMeshFilter.sharedMesh = groundMesh;
 
-                groundMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                groundMeshRenderer.shadowCastingMode = ShadowCastingMode.Off;
                 groundMeshRenderer.receiveShadows = false;
                 groundMeshRenderer.enabled = false;
 
                 groundSortingLayerId = SortingLayer.NameToID(groundSortingLayerName);
+            }
+
+            if (null != softMeshFilter && null != softMeshRenderer)
+            {
+                softMesh = new Mesh { name = "VFX_ConstellationNova_Soft" };
+                softMesh.MarkDynamic();
+                softMesh.SetVertexBufferParams(SoftVertexTotal, SoftLayout);
+                softMesh.SetIndexBufferParams(SoftIndexTotal, IndexFormat.UInt16);
+                softMesh.SetIndexBufferData(SoftIndices, 0, 0, SoftIndexTotal, SoftUploadFlags);
+                softMesh.subMeshCount = 1;
+                softMesh.SetSubMesh(0, new SubMeshDescriptor(0, 0, MeshTopology.Triangles), SoftUploadFlags);
+                softMeshFilter.sharedMesh = softMesh;
+
+                softMeshRenderer.shadowCastingMode = ShadowCastingMode.Off;
+                softMeshRenderer.receiveShadows = false;
+                softMeshRenderer.enabled = false;
             }
         }
 
@@ -342,35 +437,37 @@ namespace PresentationLayer.VFX
 
             elapsed = 0.0f;
             bFirstFrame = true;
+            builtFrame = -1;
+            groundVertexCount = -1;
+            groundHash = 0UL;
+            skyVertexCount = -1;
+            skyHash = 0UL;
+            appliedSoftFirstPart = -1;
 
             currentRadius = 0.0f < overrideRadius ? overrideRadius : maxRadius;
             currentRadius = Mathf.Max(0.5f, currentRadius);
             radiusPx = currentRadius * PixelsPerUnit;
             sizeScale = radiusPx / ReferenceRadiusPx;
+            ringRadiusX = Mathf.Max(8, Mathf.RoundToInt(radiusPx));
+            ringRadiusY = Mathf.Max(1, Mathf.RoundToInt(ringRadiusX * GroundSquashY));
 
-            float scale = Mathf.Max(0.0f, density);
-            starCount = Mathf.Clamp(Mathf.RoundToInt(currentRadius * starsPerUnit * scale), MinStars, StarCapacity);
-            heroCount = Mathf.Clamp(Mathf.RoundToInt(heroStarCount * scale), 0, starCount);
-            emberCount = Mathf.Clamp(Mathf.RoundToInt(currentRadius * embersPerUnit * scale), MinEmbers, EmberCapacity);
-            sparkCount = Mathf.Clamp(Mathf.RoundToInt(currentRadius * sparksPerUnit * scale), MinSparks, SparkCapacity);
+            // 메쉬 경계(화면 밖 판단용): 가장 먼 가로 거리와 솟구침 높이 + 여유
+            float halfWidthPx = Mathf.Max(ringRadiusX * 1.32f, 64.0f) + 16.0f;
+            float riseMaxPx = Mathf.Max(ringRadiusX * 0.66f, Mathf.Max(ringRadiusY + Mathf.Max(curtainHeightPx * sizeScale, 60.0f), pillarHeightPx * sizeScale)) + 24.0f;
+            meshBoundsSize = new Vector3(halfWidthPx * 2.0f * PixelUnit, riseMaxPx * 2.0f * PixelUnit, 10.0f);
 
-            // 메쉬 경계: 가장 먼 가로 거리와 솟구침 높이 + 여유
-            float reach = Mathf.Max(1.0f, particleSpread) * 1.2f + EmberOutward;
-            float halfX = (radiusPx * reach + 64.0f) / PixelsPerUnit;
-            float riseMax = Mathf.Max(PillarHeightPx, StarRisePx + EmberRisePx) * sizeScale;
-            float halfY = (radiusPx * reach * GroundSquashY + riseMax + 64.0f) / PixelsPerUnit;
-            meshBoundsSize = new Vector3(halfX * 2.0f, halfY * 2.0f, 10.0f);
+            if (null != softMesh) softMesh.bounds = new Bounds(Vector3.zero, meshBoundsSize);
 
             Vector3 pos = transform.position;
             randomState = unchecked((uint)(Time.frameCount * 2654435761u) ^ (uint)Mathf.FloorToInt(pos.x * 97.0f) ^ ((uint)Mathf.FloorToInt(pos.y * 57.0f) << 7));
             if (0u == randomState) randomState = 1u;
 
-            SetupStars();
-            SetupEmbers();
-            SetupSparks();
+            EnsureSigilTable(ringRadiusX);
+            BuildColorTable();
+            SetupMotes();
         }
 
-        // ---------- 난수 ----------
+        // ---------- 난수 / 수학 ----------
 
         private float Rand01()
         {
@@ -378,80 +475,14 @@ namespace PresentationLayer.VFX
             return ((randomState >> 8) & 0xFFFF) / 65535.0f;
         }
 
-        // 격자 좌표 해시(0~1). 같은 값이면 같은 결과라 소멸 연출에서 점이 깜빡이지 않고 한 번에 빠진다.
-        private static float Hash01(int _x, int _y)
+        // 격자 좌표 해시(0~1). 같은 값이면 같은 결과라 해체 입자로 풀릴 픽셀이 재생마다 같은 자리에서 정해진다.
+        private static float Hash01(int _a, int _b)
         {
-            uint h = unchecked((uint)(_x * 374761393) + (uint)(_y * 668265263));
+            uint h = unchecked((uint)(_a * 374761393) + (uint)(_b * 668265263));
             h = unchecked((h ^ (h >> 13)) * 1274126177u);
             h ^= h >> 16;
-            return (h & 0x3FF) / 1024.0f;
+            return (float)(h / 4294967296.0);
         }
-
-        // ---------- 설정 ----------
-
-        // 별마다 나선팔(3개), 반지름 위치, 모양, 색을 정한다. 앞쪽 heroCount개는 크고 밝은 주인공 별이다.
-        // 이후 위치는 시간으로만 계산한다.
-        private void SetupStars()
-        {
-            for (int i = 0; i < starCount; i++)
-            {
-                NovaStar star = new NovaStar();
-                star.bHero = i < heroCount;
-
-                // 주인공 별은 바깥 쪽(0.55~1.0)에 둬서 퍼지는 궤적이 잘 보이게 한다.
-                // 나머지 중 30%는 바깥 쉘(0.78~1.0)에 둬서 도넛 모양으로 퍼지게 하고, 그 밖은 중심 쪽이 약간 더 촘촘하다.
-                if (true == star.bHero) star.u = Mathf.Lerp(0.55f, 1.0f, Rand01());
-                else star.u = Rand01() < 0.3f ? Mathf.Lerp(0.78f, 1.0f, Rand01()) : Mathf.Pow(Rand01(), 0.7f);
-
-                star.armAngle = (i % 3) * TwoPi / 3.0f;
-                star.noise = (Rand01() - 0.5f) * 0.7f;
-                star.delay = 0.12f + Rand01() * 0.22f;
-                star.rise = Mathf.Lerp(0.3f, 1.0f, Rand01());
-
-                // 0 점, 1 반짝이는 `+`/`x`. 주인공 별은 항상 반짝이고 나머지는 대부분 점이다.
-                star.kind = true == star.bHero || Rand01() >= 0.85f ? 1 : 0;
-
-                // 0 흰색, 1 하늘색, 2 파랑, 3 금색 - 중심은 밝고 바깥은 푸르다
-                float colorRoll = Rand01();
-                if (true == star.bHero) star.colorIndex = 0 == (i % 3) ? 3 : 0;
-                else if (star.u < 0.22f) star.colorIndex = colorRoll < 0.5f ? 0 : 3;
-                else if (star.u < 0.62f) star.colorIndex = 1;
-                else star.colorIndex = 2;
-
-                star.seed = (int)(Rand01() * 100.0f);
-                stars[i] = star;
-            }
-        }
-
-        // 방사 스파크 - 균등 각도로 충격파와 함께 바깥으로 달려나간다
-        private void SetupSparks()
-        {
-            for (int i = 0; i < sparkCount; i++)
-            {
-                NovaSpark spark = new NovaSpark();
-                spark.angle = TwoPi * (i + (Rand01() - 0.5f) * 0.6f) / sparkCount;
-                spark.distance = Mathf.Lerp(0.85f, 1.15f, Rand01()) * Mathf.Max(1.0f, particleSpread);
-                spark.lift = Mathf.Lerp(14.0f, 46.0f, Rand01());
-                spark.delay = 0.12f + Rand01() * 0.06f;
-                spark.colorIndex = 0 == (i % 4) ? 3 : (0 == (i % 2) ? 0 : 1);
-                sparks[i] = spark;
-            }
-        }
-
-        private void SetupEmbers()
-        {
-            for (int i = 0; i < emberCount; i++)
-            {
-                NovaEmber ember = new NovaEmber();
-                ember.offset = Rand01();
-                ember.angle = Rand01() * TwoPi;
-                ember.radiusScale = 0.25f + 0.75f * Rand01();
-                ember.speed = 0.6f + 0.5f * Rand01();
-                embers[i] = ember;
-            }
-        }
-
-        // ---------- 계산 ----------
 
         private static float EaseOutCubic(float _t)
         {
@@ -459,747 +490,796 @@ namespace PresentationLayer.VFX
             return 1.0f - inv * inv * inv;
         }
 
-        private static float EaseOutQuint(float _t)
+        // 양수 쪽으로 반올림(0.5는 올림). 시안의 Math.round와 같은 규칙이라 대칭 좌표가 어긋나지 않는다.
+        private static int RoundHalfUp(float _value)
         {
-            float inv = 1.0f - _t;
-            float inv2 = inv * inv;
-            return 1.0f - inv2 * inv2 * inv;
+            return Mathf.FloorToInt(_value + 0.5f);
         }
 
-        private static Color32 GlowColor(Color32 _base, float _glow)
+        private static int EvenRound(float _value)
         {
-            byte alpha = (byte)Mathf.RoundToInt(Mathf.Clamp01(_glow) * 255.0f);
-            return new Color32(_base.r, _base.g, _base.b, alpha);
+            return 2 * Mathf.RoundToInt(_value * 0.5f);
         }
 
-        private static Color32 PaletteColor(int _index)
+        private static float Wrap01(float _value)
         {
-            if (0 == _index) return ColorWhite;
-            if (1 == _index) return ColorIce;
-            if (2 == _index) return ColorBlue;
-            return ColorGold;
+            return _value - Mathf.Floor(_value);
         }
 
-        // 시각 _time에서의 별의 중심 기준 픽셀 오프셋. 닫힌 식이라 꼬리가 과거 시각의 위치를 그대로 다시 계산한다.
-        private void EvaluateStar(int _index, float _time, out float _x, out float _y)
+        // ---------- 마법진 픽셀 표 (반지름별 1회) ----------
+
+        private static void EnsureSigilTable(int _radius)
         {
-            float age = Mathf.Max(0.0f, _time - stars[_index].delay);
-            float expand = EaseOutQuint(Mathf.Clamp01(age / StarExpandTime));
-            float u = stars[_index].u;
+            if (_radius == sigilRadius) return;
 
-            float angle = stars[_index].armAngle + u * StarSwirl + stars[_index].noise + _time * StarSpin * (1.1f - u * 0.6f);
-            float radius = radiusPx * Mathf.Max(1.0f, particleSpread) * u * (0.08f + 0.92f * expand);
-            float lift = StarRisePx * sizeScale * stars[_index].rise * EaseOutCubic(Mathf.Clamp01(age / StarRiseTime)) * (1.0f - 0.5f * u);
-
-            // 소멸 구간에는 별들도 천천히 위로 떠올라 흩어진다
-            lift += vanish * vanish * (30.0f + 40.0f * stars[_index].rise) * sizeScale;
-
-            _x = Mathf.Cos(angle) * radius;
-            _y = Mathf.Sin(angle) * radius * GroundSquashY + lift;
+            sigilRadius = _radius;
+            BuildSigilTable(_radius);
         }
 
-        // 스파크의 중심 기준 픽셀 오프셋(닫힌 식). 강한 감속으로 팡 나가고, 이동이 끝난 뒤에는 천천히 떠오른다.
-        private void EvaluateSpark(int _index, float _age, float _cos, float _sin, out float _x, out float _y)
+        private static void BuildSigilTable(int _radius)
         {
-            float t = Mathf.Clamp01(_age / SparkTravelTime);
-            float distance = radiusPx * sparks[_index].distance * EaseOutQuint(t);
-            float lift = sparks[_index].lift * sizeScale * EaseOutCubic(t);
-
-            if (_age > SparkTravelTime) lift += (_age - SparkTravelTime) * 22.0f * sizeScale;
-
-            _x = _cos * distance;
-            _y = _sin * distance + lift;
-        }
-
-        // ---------- 쿼드 쓰기 (같은 줄 병합) ----------
-
-        private static bool IsSameColor(Color32 _a, Color32 _b)
-        {
-            return _a.r == _b.r && _a.g == _b.g && _a.b == _b.b && _a.a == _b.a;
-        }
-
-        private void FlushRun()
-        {
-            if (false == bRunActive) return;
-            bRunActive = false;
-
-            AddRect(runX0, runY, runX1, runY + 1, runColor);
-        }
-
-        // 지금 그리는 대상 버퍼를 바꾼다. 진행 중인 줄은 이전 버퍼에 먼저 쓴다.
-        private void SetActiveBuffer(PixelQuadBuffer _buffer)
-        {
-            FlushRun();
-            activeBuffer = _buffer;
-        }
-
-        // 두 버퍼를 합친 쿼드 수가 예산을 넘었는지
-        private bool IsOverBudget()
-        {
-            return QuadBudget * 4 <= groundBuffer.VertexCount + skyBuffer.VertexCount;
-        }
-
-        // 월드 픽셀 좌표 직사각형 [x0,x1) x [y0,y1)를 지금 그리는 버퍼에 쿼드로 추가한다.
-        private void AddRect(int _x0, int _y0, int _x1, int _y1, Color32 _color)
-        {
-            if (true == IsOverBudget()) return;
-
-            activeBuffer.AddWorldRect(_x0, _y0, _x1, _y1, _color);
-        }
-
-        // 풀려난 분해 입자를 공중 버퍼에 직접 쓴다(바닥 메쉬를 그리는 중에도 공중 메쉬로 나간다).
-        private void AddSkyRect(int _x0, int _y0, int _x1, int _y1, Color32 _color)
-        {
-            if (true == IsOverBudget()) return;
-
-            skyBuffer.AddWorldRect(_x0, _y0, _x1, _y1, _color);
-        }
-
-        // `.`(0), `+`(1), `x`(2) 입자 하나를 공중 버퍼에 쓴다
-        private void EmitParticle(int _x, int _y, Color32 _color, int _shape)
-        {
-            AddSkyRect(_x, _y, _x + 1, _y + 1, _color);
-
-            if (1 == _shape)
-            {
-                AddSkyRect(_x - 1, _y, _x, _y + 1, _color);
-                AddSkyRect(_x + 1, _y, _x + 2, _y + 1, _color);
-                AddSkyRect(_x, _y - 1, _x + 1, _y, _color);
-                AddSkyRect(_x, _y + 1, _x + 1, _y + 2, _color);
-            }
-            else if (2 == _shape)
-            {
-                AddSkyRect(_x - 1, _y - 1, _x, _y, _color);
-                AddSkyRect(_x + 1, _y - 1, _x + 2, _y, _color);
-                AddSkyRect(_x - 1, _y + 1, _x, _y + 2, _color);
-                AddSkyRect(_x + 1, _y + 1, _x + 2, _y + 2, _color);
-            }
-        }
-
-        // 마법진 샘플 하나의 분해 상태를 계산한다. 아직 제자리면 Keep, 사라졌으면 Gone, 입자로 풀려 날아가는 중이면 Particle이며
-        // 이때 위치와 색, 모양(_shape)을 바꿔 돌려준다. 시작 시각은 바깥 링일수록 빠르고(파도처럼 안쪽으로 번진다) 샘플별 지터를 더한다.
-        // 시작 시각이 되면 대부분의 샘플은 그 자리에서 사라지고 일부만 독립 입자가 된다(선 조각이 통째로 날아가지 않는다).
-        private int ResolveDissolve(ref int _x, ref int _y, ref Color32 _color, out int _shape)
-        {
-            _shape = 0;
-
-            float dx = _x - centerX;
-            float dy = (_y - centerY) / GroundSquashY;
-            float length = Mathf.Sqrt(dx * dx + dy * dy);
-            float ratio = Mathf.Min(1.0f, length / radiusPx);
-
-            float h = Hash01(plotSalt, plotIndex);
-            float start = (1.0f - ratio) * DissolveSweep + h * DissolveJitter;
-            float local = vanish - start;
-
-            if (0.0f > local) return DissolveKeep;
-
-            // 입자가 될 샘플만 남기고 나머지는 시작 시각에 바로 사라진다
-            float spawnRoll = Hash01(plotIndex + 53, plotSalt + 29);
-            if (DissolveSpawnRate <= spawnRoll) return DissolveGone;
-
-            float t = local / DissolveParticleLife;
-            if (1.0f <= t) return DissolveGone;
-
-            // 후반에는 프레임을 건너뛰며 점멸하다가 사라진다
-            if (0.75f < t && 0 != ((Mathf.FloorToInt(elapsed * 30.0f) + plotIndex) & 1)) return DissolveGone;
-
-            float h2 = Hash01(plotIndex + 31, plotSalt + 17);
-            float inv = 0.0f < length ? 1.0f / length : 0.0f;
-            float ux = dx * inv;
-            float uy = dy * inv;
-
-            // 가속 상승(t^1.5) + 반시계 소용돌이 + 바깥 방향 + 좌우 흔들림. 샘플마다 값이 달라 입자가 제각각 흩어진다.
-            float rise = t * Mathf.Sqrt(t);
-            float lift = (DissolveLiftMinPx + DissolveLiftRangePx * h2) * sizeScale * rise;
-            float swirl = DissolveSwirlPx * (0.5f + h) * sizeScale * t;
-            float outward = DissolveOutPx * (0.3f + h2) * sizeScale * t;
-            float wobble = Mathf.Sin(t * 9.0f + h * TwoPi) * 2.0f * sizeScale;
-
-            float ox = ux * outward - uy * swirl + wobble;
-            float oy = (uy * outward + ux * swirl) * GroundSquashY + lift;
-
-            _x += Mathf.RoundToInt(ox);
-            _y += Mathf.RoundToInt(oy);
-
-            // 풀린 직후는 잠깐 흰색이고 올라가며 하늘색 -> 파랑으로 식는다. 입자마다 위상이 다른 점멸을 섞는다.
-            Color32 baseColor = t < 0.2f ? ColorWhite : (t < 0.7f ? ColorIce : ColorBlue);
-            float glow = Mathf.Lerp(0.8f, 0.25f, t);
-            if (0 != (Mathf.FloorToInt(t * 14.0f + h * 7.0f) & 1)) glow *= 0.5f;
-            _color = GlowColor(baseColor, glow);
-
-            // 모양은 샘플마다 고정(`.` 60% / `+` 25% / `x` 15%). 초반에만 `+`/`x`이고 올라가며 `.` 점으로 줄어든다.
-            float shapeRoll = Hash01(plotIndex * 5 + 1, plotSalt * 7 + 3);
-            int kind = shapeRoll < 0.6f ? 0 : (shapeRoll < 0.85f ? 1 : 2);
-            _shape = t < DissolveShapeEnd ? kind : 0;
-
-            return DissolveParticle;
-        }
-
-        // 픽셀 하나를 찍는다. 같은 줄에서 이어지는 같은 색 픽셀은 하나의 쿼드로 합친다.
-        // 소멸 구간에는 마법진 샘플(_bDrift)이 입자로 풀려 날아가거나 사라지고, 그 밖의 픽셀은 해시로 빠진다.
-        private void Plot(int _x, int _y, Color32 _color, bool _bDrift)
-        {
-            if (0.0f < vanish)
-            {
-                if (true == _bDrift)
-                {
-                    int shape;
-                    int state = ResolveDissolve(ref _x, ref _y, ref _color, out shape);
-                    if (DissolveGone == state) return;
-
-                    if (DissolveParticle == state)
-                    {
-                        EmitParticle(_x, _y, _color, shape);
-                        return;
-                    }
-                }
-                else if (Hash01(_x, _y) < vanish)
-                {
-                    return;
-                }
-            }
-
-            if (true == bRunActive && runY == _y && true == IsSameColor(runColor, _color))
-            {
-                if (runX0 <= _x && _x < runX1) return;
-                if (_x == runX1)
-                {
-                    runX1++;
-                    return;
-                }
-
-                if (_x == runX0 - 1)
-                {
-                    runX0--;
-                    return;
-                }
-            }
-
-            FlushRun();
-            bRunActive = true;
-            runX0 = _x;
-            runX1 = _x + 1;
-            runY = _y;
-            runColor = _color;
-        }
-
-        // 브레젠험 직선. _dash가 0이면 실선, 아니면 _dash칸 중 앞 절반만 찍는 점선.
-        private void DrawLine(float _fx0, float _fy0, float _fx1, float _fy1, Color32 _color, int _dash, bool _bDrift)
-        {
-            int x0 = Mathf.RoundToInt(_fx0);
-            int y0 = Mathf.RoundToInt(_fy0);
-            int x1 = Mathf.RoundToInt(_fx1);
-            int y1 = Mathf.RoundToInt(_fy1);
-
-            int dx = Mathf.Abs(x1 - x0);
-            int dy = -Mathf.Abs(y1 - y0);
-            int sx = x0 < x1 ? 1 : -1;
-            int sy = y0 < y1 ? 1 : -1;
-            int error = dx + dy;
-            int dashOn = Mathf.Max(1, _dash >> 1);
-
-            if (true == _bDrift) plotSalt = ++primitiveCounter;
-
-            for (int n = 0; n < MaxLinePixels; n++)
-            {
-                plotIndex = n;
-                if (0 == _dash || n % _dash < dashOn) Plot(x0, y0, _color, _bDrift);
-
-                if (x0 == x1 && y0 == y1) break;
-
-                int doubled = error * 2;
-                if (doubled >= dy)
-                {
-                    error += dy;
-                    x0 += sx;
-                }
-
-                if (doubled <= dx)
-                {
-                    error += dx;
-                    y0 += sy;
-                }
-            }
-        }
-
-        // 선을 오프셋 좌표(중심 기준)로 그린다
-        private void DrawLineLocal(float _ax, float _ay, float _bx, float _by, Color32 _color, int _dash, bool _bDrift)
-        {
-            DrawLine(centerX + _ax, centerY + _ay, centerX + _bx, centerY + _by, _color, _dash, _bDrift);
-        }
-
-        // 바닥 타원 호. midpoint 윤곽(PixelEllipse) 위에 그려서 반올림 중복과 떨림이 없다. _frac(0~1)만큼만 반시계로 그려서 "그려지는" 연출을 만든다
-        // (_rotation 지점에서 시작). _dash가 0보다 크면 윤곽 픽셀 기준 점선(한 바퀴를 주기로 고르게 나눠 시작점에서 잘리지 않는다)이고,
-        // _gaps가 0보다 크면 원을 _gaps등분해 각 구간 끝에 틈을 낸다.
-        private void DrawRing(float _radius, float _rotation, Color32 _color, float _frac, int _dash, bool _bDrift, float _yOffset, int _gaps = 0)
-        {
-            if (0.0f >= _frac || 0.5f >= _radius) return;
-
-            int rx = Mathf.Max(1, Mathf.RoundToInt(_radius));
+            buildRadius = _radius;
             int ry = Mathf.Max(1, Mathf.RoundToInt(_radius * GroundSquashY));
-            int offsetY = Mathf.RoundToInt(_yOffset);
-            int count = PixelEllipse.Build(rx, ry);
-            float drawLimit = count * Mathf.Min(1.0f, _frac);
-            float dashCells = 0 < _dash ? Mathf.Max(1, Mathf.RoundToInt(count / (float)_dash)) : 0.0f;
-            float dashDuty = 0 < _dash ? Mathf.Max(1, _dash >> 1) / (float)_dash : 1.0f;
+            int runeRadius = Mathf.RoundToInt(_radius * 0.9f);
+            int diamond = Mathf.Max(2, EvenRound(_radius * 0.8f));
+            int diamondY = diamond / 2;
+            int rect = Mathf.Max(2, EvenRound(diamond * 0.707f));
+            int rectY = rect / 2;
+            int core = Mathf.Max(2, EvenRound(_radius * 0.156f));
+            int coreY = core / 2;
+            int tickEnd = Mathf.Max(4, Mathf.RoundToInt(8.0f * _radius / ReferenceRadiusPx));
 
-            if (true == _bDrift) plotSalt = ++primitiveCounter;
+            gridExtentX = _radius + 8;
+            gridExtentY = ry + 8;
+            gridWidth = gridExtentX * 2 + 1;
+            int gridSize = gridWidth * (gridExtentY * 2 + 1);
+            if (sigilGrid.Length < gridSize) sigilGrid = new int[gridSize];
 
-            for (int i = 0; i < count; i++)
+            pendingCount = 0;
+            BuildRuneCenters(runeRadius);
+
+            // 룬 먼저(우선순위). 글리프 첫 줄이 위이므로 y를 뒤집는다.
+            for (int k = 0; k < RuneCount; k++)
             {
-                float q = Mathf.Atan2(PixelEllipse.OutY[i] * (float)rx, PixelEllipse.OutX[i] * (float)ry) / TwoPi;
-                q -= Mathf.Floor(q);
-
-                float param = Mathf.Repeat(q - _rotation / TwoPi, 1.0f) * count;
-                if (param >= drawLimit) continue;
-                if (0 < _dash && Mathf.Repeat(param * dashCells / count, 1.0f) >= dashDuty) continue;
-                if (0 < _gaps && (q * _gaps * 5.0f) % 5.0f < 0.55f) continue;
-
-                plotIndex = i;
-                Plot(centerX + PixelEllipse.OutX[i], centerY + PixelEllipse.OutY[i] + offsetY, _color, _bDrift);
-            }
-        }
-
-        // {n/k} 별 다각형. 변을 하나씩 순서대로 그려서 _frac만큼 진행한다.
-        private void DrawStarPolygon(int _n, int _k, float _radius, float _rotation, Color32 _color, float _frac, int _dash, bool _bDrift)
-        {
-            if (0.0f >= _frac) return;
-
-            for (int i = 0; i < _n; i++)
-            {
-                float f = Mathf.Clamp01(_frac * _n - i);
-                if (0.0f >= f) break;
-
-                float a1 = _rotation + TwoPi * i / _n;
-                float a2 = _rotation + TwoPi * ((i + _k) % _n) / _n;
-                float x1 = Mathf.Cos(a1) * _radius;
-                float y1 = Mathf.Sin(a1) * _radius * GroundSquashY;
-                float x2 = Mathf.Cos(a2) * _radius;
-                float y2 = Mathf.Sin(a2) * _radius * GroundSquashY;
-
-                DrawLineLocal(x1, y1, x1 + (x2 - x1) * f, y1 + (y2 - y1) * f, _color, _dash, _bDrift);
-            }
-        }
-
-        // 두 반지름 사이를 잇는 방사형 눈금
-        private void DrawTicks(float _radiusInner, float _radiusOuter, int _count, float _rotation, Color32 _color, float _frac, bool _bDrift)
-        {
-            int drawCount = Mathf.FloorToInt(_count * Mathf.Min(1.0f, _frac));
-            for (int i = 0; i < drawCount; i++)
-            {
-                float angle = _rotation + TwoPi * i / _count;
-                float cos = Mathf.Cos(angle);
-                float sin = Mathf.Sin(angle) * GroundSquashY;
-                DrawLineLocal(cos * _radiusInner, sin * _radiusInner, cos * _radiusOuter, sin * _radiusOuter, _color, 0, _bDrift);
-            }
-        }
-
-        // `+` 또는 `x` 모양 별. _arm이 0이면 점 하나. 분해 구간에는 칸마다 독립 입자로 풀린다.
-        private void DrawSparkle(int _px, int _py, int _arm, bool _bPlus, Color32 _color, bool _bDrift)
-        {
-            int cell = 0;
-            if (true == _bDrift) plotSalt = ++primitiveCounter;
-
-            plotIndex = cell++;
-            Plot(_px, _py, _color, _bDrift);
-
-            for (int d = 1; d <= _arm; d++)
-            {
-                if (true == _bPlus)
+                string[] glyph = Glyphs[RuneOf[k]];
+                for (int row = 0; row < 5; row++)
                 {
-                    plotIndex = cell++;
-                    Plot(_px + d, _py, _color, _bDrift);
-                    plotIndex = cell++;
-                    Plot(_px - d, _py, _color, _bDrift);
-                    plotIndex = cell++;
-                    Plot(_px, _py + d, _color, _bDrift);
-                    plotIndex = cell++;
-                    Plot(_px, _py - d, _color, _bDrift);
-                }
-                else
-                {
-                    plotIndex = cell++;
-                    Plot(_px + d, _py + d, _color, _bDrift);
-                    plotIndex = cell++;
-                    Plot(_px - d, _py + d, _color, _bDrift);
-                    plotIndex = cell++;
-                    Plot(_px + d, _py - d, _color, _bDrift);
-                    plotIndex = cell++;
-                    Plot(_px - d, _py - d, _color, _bDrift);
-                }
-            }
-        }
-
-        // ---------- 그리기 ----------
-
-        private void RebuildMesh()
-        {
-            Vector3 pos = transform.position;
-            bool bSplit = null != groundMesh;
-
-            skyBuffer.Clear();
-            skyBuffer.SetWorldTransform(transform.worldToLocalMatrix, pos.z);
-
-            // 바닥 메쉬가 없으면(프리팹 참조 누락) 모두 공중 메쉬 하나로 그린다
-            PixelQuadBuffer groundTarget = skyBuffer;
-            if (true == bSplit)
-            {
-                groundBuffer.Clear();
-                groundBuffer.SetWorldTransform(groundMeshRenderer.transform.worldToLocalMatrix, pos.z);
-                groundTarget = groundBuffer;
-            }
-
-            centerX = Mathf.FloorToInt(pos.x * PixelsPerUnit);
-            centerY = Mathf.FloorToInt(pos.y * PixelsPerUnit);
-            bRunActive = false;
-            primitiveCounter = 0;
-
-            vanish = Mathf.Clamp01((elapsed - DissolveStart) / DissolveTime);
-            stepTime = Mathf.Floor(elapsed * StepRate) / StepRate;
-
-            // 바닥: 충격파, 마법진, 분해 시작 고리. 풀려난 분해 입자는 공중 버퍼로 바로 나간다.
-            SetActiveBuffer(groundTarget);
-            DrawShockwave();
-            DrawMagicCircle();
-            DrawDissolveRing();
-
-            // 공중: 빛기둥, 스파크, 별, 불씨, 중심 섬광
-            SetActiveBuffer(skyBuffer);
-            DrawPillars();
-            DrawSparks();
-            DrawStars();
-            DrawEmbers();
-            DrawCore();
-            FlushRun();
-
-            skyBuffer.Upload(mesh, meshBoundsSize);
-            meshRenderer.enabled = true;
-
-            if (true == bSplit)
-            {
-                groundBuffer.Upload(groundMesh, meshBoundsSize);
-                groundMeshRenderer.enabled = true;
-            }
-        }
-
-        // 충격파 - 점선 고리 하나가 바닥으로 퍼진다. maxRadius에 닿는다.
-        private void DrawShockwave()
-        {
-            if (ShockEnd <= elapsed) return;
-
-            float fade = 1.0f - Mathf.Clamp01((elapsed - ShockFadeStart) / ShockFadeTime);
-            float radius = radiusPx * EaseOutCubic(Mathf.Clamp01(elapsed / ShockDuration));
-
-            DrawRing(radius, 0.0f, GlowColor(ColorIce, 0.4f * fade), 1.0f, 0, false, 0.0f);
-        }
-
-        // 마법진 4겹 - 바깥에서 안쪽으로 "그려지듯" 펼쳐진다. 회전은 12fps 스텝이고 바깥 링은 고정이다.
-        private void DrawMagicCircle()
-        {
-            for (int i = 0; i < LayerCount; i++)
-            {
-                float since = elapsed - LayerDelay[i];
-                layerRadius[i] = 0.4f + 0.6f * EaseOutCubic(Mathf.Clamp01(since / LayerDuration[i]));
-                layerFrac[i] = EaseOutCubic(Mathf.Clamp01(since / (LayerDuration[i] * 0.9f)));
-            }
-
-            float r0 = radiusPx;
-
-            // 0. 바깥 2px 링(호 단위 틈 3곳) + 안쪽 점선 링 + 12개 눈금
-            float r = r0 * layerRadius[0];
-            float frac = layerFrac[0];
-            Color32 outerColor = GlowColor(ColorIce, 0.95f * GroundGlow);
-            DrawRing(r, 0.0f, outerColor, frac, 0, true, 0.0f, 3);
-            DrawRing(Mathf.Max(0.0f, r - 1.0f), 0.0f, outerColor, frac, 0, true, 0.0f, 3);
-            DrawRing(Mathf.Max(0.0f, r - 7.0f), stepTime * 0.1f, GlowColor(ColorBlue, LineGlow), frac, 2, true, 0.0f);
-            DrawTicks(Mathf.Max(0.0f, r - 4.0f), Mathf.Max(0.0f, r - 1.0f), 12, stepTime * 0.1f, GlowColor(ColorWhite, 0.6f * GroundGlow), frac, true);
-
-            // 1. 9각 별 하나
-            DrawStarPolygon(StarPolygonPoints, 4, r0 * 0.78f * layerRadius[1], -stepTime * 0.25f, GlowColor(ColorBlue, 1.2f * LineGlow), layerFrac[1], 0, true);
-
-            // 2. 룬 링 - 링이 다 그려진 뒤 금색 룬 6개가 켜진다
-            r = r0 * 0.46f * layerRadius[2];
-            DrawRing(r, 0.0f, GlowColor(ColorBlue, LineGlow), layerFrac[2], 3, true, 0.0f);
-            if (0.95f < layerFrac[2])
-            {
-                Color32 runeColor = GlowColor(ColorGold, 0.55f);
-                int runeRx = Mathf.Max(1, Mathf.RoundToInt(r));
-                int runeRy = Mathf.Max(1, Mathf.RoundToInt(r * GroundSquashY));
-                for (int i = 0; i < 6; i++)
-                {
-                    // 룬은 링 윤곽의 실제 픽셀 위에 올린다(반올림 좌표는 링에서 1px 벗어난다). 링은 반시계 각도, RingPoint는 시계 각도다.
-                    float angle = stepTime * 0.15f + TwoPi * i / 6.0f;
-                    int offsetX;
-                    int offsetY;
-                    PixelPainter.RingPoint(runeRx, runeRy, Mathf.Repeat(-angle, TwoPi), out offsetX, out offsetY);
-                    DrawSparkle(centerX + offsetX, centerY + offsetY, 2, true, runeColor, true);
-                }
-            }
-
-            // 3. 코어 링 + 도트 별
-            DrawRing(r0 * 0.13f * layerRadius[3], -stepTime * 0.6f, GlowColor(ColorWhite, 0.3f), layerFrac[3], 0, true, 0.0f);
-            if (0.5f < layerFrac[3]) DrawCoreStar();
-        }
-
-        // 코어 도트 별 - 7x7와 5x5 두 크기를 번갈아 맥동한다. 칸마다 고정된 번호를 줘서 분해될 때 입자가 깜빡이지 않는다.
-        private void DrawCoreStar()
-        {
-            string[] rows = 0 == (Mathf.FloorToInt(elapsed * 6.0f) & 1) ? CoreStarLarge : CoreStarSmall;
-            int half = CoreStarSize / 2;
-
-            plotSalt = ++primitiveCounter;
-
-            for (int y = 0; y < CoreStarSize; y++)
-            {
-                for (int x = 0; x < CoreStarSize; x++)
-                {
-                    char cell = rows[y][x];
-                    if ('.' == cell) continue;
-
-                    Color32 color;
-                    if ('W' == cell) color = GlowColor(ColorWhite, 0.35f);
-                    else if ('I' == cell) color = GlowColor(ColorIce, 0.2f);
-                    else color = GlowColor(ColorBlue, 0.15f);
-
-                    plotIndex = y * CoreStarSize + x;
-                    Plot(centerX + x - half, centerY + half - y, color, true);
-                }
-            }
-        }
-
-        // 빛기둥 - 9각 별의 꼭짓점 9곳에서 점선 기둥이 솟는다. 3곳 걸러 하나만 높고 나머지는 절반 높이다.
-        // 꼭짓점 개수와 각도는 마법진 9각 별과 같은 값(StarPolygonPoints)에서 가져와서 기둥이 별 꼭짓점 사이로 어긋나지 않는다.
-        private void DrawPillars()
-        {
-            if (elapsed <= PillarStart || PillarEnd <= elapsed) return;
-
-            float rise = EaseOutCubic(Mathf.Clamp01((elapsed - PillarStart) / PillarRiseTime));
-            float shrink = 1.0f - Mathf.Clamp01((elapsed - PillarShrinkStart) / PillarShrinkTime);
-            float height = PillarHeightPx * sizeScale * rise * shrink;
-            if (2.0f > height) return;
-
-            // 기둥은 소멸 구간에 들어가기 전에 이미 줄어들므로 해시 소멸 없이 쿼드로 바로 쓴다
-            float radius = radiusPx * 0.78f * layerRadius[1];
-            float rotation = -stepTime * 0.25f;
-            for (int v = 0; v < StarPolygonPoints; v++)
-            {
-                float angle = rotation + TwoPi * v / StarPolygonPoints;
-                int bx = centerX + Mathf.RoundToInt(Mathf.Cos(angle) * radius);
-                int by = centerY + Mathf.RoundToInt(Mathf.Sin(angle) * radius * GroundSquashY);
-                DrawPillar(bx, by, 0 == (v % 3) ? height : height * 0.5f);
-            }
-        }
-
-        private void DrawPillar(int _bx, int _by, float _height)
-        {
-            int total = Mathf.RoundToInt(_height);
-
-            for (int y = 0; y < total; y += 3)
-            {
-                float fade = 1.0f - y / (_height + 1.0f) * 0.65f;
-                bool bTop = y > total - 10;
-                Color32 color = GlowColor(bTop ? ColorWhite : ColorIce, fade * 0.7f);
-
-                int segmentTop = Mathf.Min(total, y + 2);
-                AddRect(_bx, _by + y, _bx + 1, _by + segmentTop, color);
-            }
-
-            // 끝에 금색 `+` 별이 맺힌다
-            if (8 < total)
-            {
-                int topY = _by + total;
-                Color32 gold = GlowColor(ColorGold, 0.8f);
-                AddRect(_bx - 2, topY, _bx + 3, topY + 1, gold);
-                AddRect(_bx, topY - 2, _bx + 1, topY + 3, gold);
-            }
-        }
-
-        // 분해 시작 충격파 - 마법진이 풀리는 순간 점선 고리가 한 번 더 바깥으로 퍼진다
-        private void DrawDissolveRing()
-        {
-            float since = elapsed - DissolveStart;
-            if (0.0f >= since || DissolveRingTime <= since) return;
-
-            float t = since / DissolveRingTime;
-            float radius = radiusPx * Mathf.Lerp(0.4f, 1.1f, EaseOutQuint(t));
-            float fade = 1.0f - t;
-
-            DrawRing(radius, 0.0f, GlowColor(ColorIce, 0.2f * fade), 1.0f, 0, false, 0.0f);
-        }
-
-        // 방사 스파크 - 충격파와 함께 바깥으로 팡 튀어 나가는 큰 `x`/`+` 별. 긴 꼬리를 끌고 위로 떠오르며 사라진다.
-        private void DrawSparks()
-        {
-            for (int i = 0; i < sparkCount; i++)
-            {
-                float age = elapsed - sparks[i].delay;
-                if (0.0f > age) continue;
-
-                float life = age / SparkLife;
-                if (1.0f <= life) continue;
-
-                // 후반에는 프레임을 건너뛰며 점멸하다가 사라진다
-                if (0.75f < life && 0 != ((Mathf.FloorToInt(elapsed * 30.0f) + i) & 1)) continue;
-
-                float cos = Mathf.Cos(sparks[i].angle);
-                float sin = Mathf.Sin(sparks[i].angle) * GroundSquashY;
-
-                float x;
-                float y;
-                EvaluateSpark(i, age, cos, sin, out x, out y);
-
-                // 이동 중에는 긴 점 꼬리를 남긴다
-                if (age < SparkTravelTime)
-                {
-                    for (int k = 1; k <= SparkTrailDots; k++)
+                    for (int col = 0; col < 5; col++)
                     {
-                        float pastAge = age - k * SparkTrailSpacing;
-                        if (0.0f > pastAge) break;
-
-                        float tx;
-                        float ty;
-                        EvaluateSpark(i, pastAge, cos, sin, out tx, out ty);
-                        Plot(centerX + Mathf.RoundToInt(tx), centerY + Mathf.RoundToInt(ty), GlowColor(ColorIce, 0.55f - k * 0.08f), false);
+                        if ('#' != glyph[row][col]) continue;
+                        AddSigilPixel(runeCenterX[k] + col - 2, runeCenterY[k] - row + 2, GroupRune, 3, RampAcc, k);
                     }
                 }
-
-                // 큰 별 -> 중간 -> 작은 별로 계단식으로 줄어든다. `+`와 `x`가 빠르게 번갈아 반짝인다.
-                int arm = life < 0.45f ? 3 : (life < 0.7f ? 2 : 1);
-                bool bPlus = 0 == ((Mathf.FloorToInt(age * 14.0f) + i) & 1);
-                float glow = 1.0f - life * 0.5f;
-                DrawSparkle(centerX + Mathf.RoundToInt(x), centerY + Mathf.RoundToInt(y), arm, bPlus, GlowColor(PaletteColor(sparks[i].colorIndex), glow), false);
             }
-        }
 
-        // 은하 나선 - 별이 나선팔로 휘감기며 퍼지고 위로 솟구친다. 주인공 별만 파란 점 꼬리를 남기고 크게 반짝인다.
-        private void DrawStars()
-        {
-            for (int i = 0; i < starCount; i++)
+            // 팔각별: 마름모(정확한 2칸-1칸 계단) + 직사각형(수평/수직)
+            AddIsoLine(-diamond, 0, 0, diamondY, GroupOct, 3);
+            AddIsoLine(diamond, 0, 0, diamondY, GroupOct, 3);
+            AddIsoLine(-diamond, 0, 0, -diamondY, GroupOct, 3);
+            AddIsoLine(diamond, 0, 0, -diamondY, GroupOct, 3);
+
+            for (int x = -rect; x <= rect; x++)
             {
-                float age = elapsed - stars[i].delay;
-                if (0.0f > age) continue;
-
-                // 소멸 구간에는 프레임을 건너뛰며 점멸한다
-                if (0.35f < vanish && 0 != ((Mathf.FloorToInt(elapsed * 30.0f) + i) & 1)) continue;
-
-                float x;
-                float y;
-                EvaluateStar(i, elapsed, out x, out y);
-
-                if (true == stars[i].bHero && age < TrailActiveTime)
-                {
-                    for (int k = 1; k <= TrailDots; k++)
-                    {
-                        float pastTime = elapsed - k * TrailSpacing;
-                        if (pastTime < stars[i].delay) break;
-
-                        float tx;
-                        float ty;
-                        EvaluateStar(i, pastTime, out tx, out ty);
-                        Plot(centerX + Mathf.RoundToInt(tx), centerY + Mathf.RoundToInt(ty), GlowColor(ColorBlue, 0.6f - k * 0.1f), false);
-                    }
-                }
-
-                // 별마다 위상이 다른 3단계 반짝임(어두움/보통/밝음)
-                int twinkle = (Mathf.FloorToInt(age * 12.0f) + stars[i].seed) % 3;
-                float glow = 0 == twinkle ? 0.5f : (1 == twinkle ? 0.75f : 1.0f);
-
-                // 중심 쪽은 별이 겹겹이 쌓여 블룸이 번지므로 어둡게 두고, 바깥으로 갈수록 밝게 한다.
-                // 주인공이 아닌 별은 한 단계 더 어둡게 해서 주인공 별이 눈에 띄게 한다.
-                glow *= 0.8f * (0.35f + 0.65f * Mathf.Clamp01(stars[i].u * 1.6f));
-                if (false == stars[i].bHero) glow *= 0.55f;
-
-                int px = centerX + Mathf.RoundToInt(x);
-                int py = centerY + Mathf.RoundToInt(y);
-
-                if (0 == stars[i].kind)
-                {
-                    Plot(px, py, GlowColor(PaletteColor(stars[i].colorIndex), glow), false);
-                    continue;
-                }
-
-                int arm = true == stars[i].bHero ? (age < 1.2f ? 3 : 2) : (age < 1.1f ? 2 : 1);
-                bool bPlus = 0 == ((Mathf.FloorToInt(age * 8.0f) + stars[i].seed) & 1);
-                Color32 color = true == stars[i].bHero ? GlowColor(ColorWhite, 1.0f) : GlowColor(PaletteColor(stars[i].colorIndex), glow);
-                DrawSparkle(px, py, arm, bPlus, color, false);
+                AddSigilPixel(x, -rectY, GroupOct2, 2, RampLine, -1);
+                AddSigilPixel(x, rectY, GroupOct2, 2, RampLine, -1);
             }
-        }
 
-        // 불씨 - 소수의 `.` 입자가 바깥으로 퍼지며 올라간다
-        private void DrawEmbers()
-        {
-            if (elapsed <= EmberStart || EmberEnd <= elapsed) return;
-
-            for (int i = 0; i < emberCount; i++)
+            for (int y = -rectY; y <= rectY; y++)
             {
-                // 마지막 0.3초는 프레임을 건너뛰며 점멸하다가 사라진다
-                if (EmberEnd - 0.3f < elapsed && 0 != ((Mathf.FloorToInt(elapsed * 30.0f) + i) & 1)) continue;
-
-                float p = (elapsed * embers[i].speed + embers[i].offset) % 1.0f;
-
-                // 오르면서 바깥쪽으로 퍼진다
-                float radius = radiusPx * embers[i].radiusScale * (1.0f + EmberOutward * p);
-                int px = centerX + Mathf.RoundToInt(Mathf.Cos(embers[i].angle) * radius);
-                int py = centerY + Mathf.RoundToInt(Mathf.Sin(embers[i].angle) * radius * GroundSquashY + p * EmberRisePx * sizeScale);
-
-                Color32 baseColor = p < 0.35f ? ColorWhite : (p < 0.7f ? ColorIce : ColorBlue);
-                Plot(px, py, GlowColor(baseColor, (1.0f - p * 0.6f) * 0.4f), false);
-            }
-        }
-
-        // 중심에서 d칸 떨어진 곳의 반 굵기(0이면 1px). 중심부는 두껍고 끝으로 갈수록 계단식으로 가늘어진다.
-        private static int FlashHalfThickness(int _stage, int _d)
-        {
-            if (0 == _stage) return _d <= 2 ? 2 : (_d <= 5 ? 1 : 0);
-            if (1 == _stage) return _d <= 3 ? 1 : 0;
-            return _d <= 1 ? 1 : 0;
-        }
-
-        // 시작 순간의 십자 섬광(임팩트) - 굵기가 변하는 도트 별을 4단계로 끊어서 줄인다. 중심은 흰색, 중간은 하늘색, 끝은 파랑이고
-        // 큰 두 단계에는 대각선에 금색 도트 블록이 붙는다. 이후 중심은 마법진 코어가 맡는다.
-        private void DrawCore()
-        {
-            if (FlashEnd <= elapsed) return;
-
-            int stage = Mathf.Min(FlashStageCount - 1, Mathf.FloorToInt(elapsed / FlashStageTime));
-            int arm = 0 == stage ? 12 : (1 == stage ? 9 : (2 == stage ? 6 : 3));
-            int midReach = Mathf.Max(5, Mathf.RoundToInt(arm * 0.6f));
-
-            // 발광을 낮게 둬서 블룸이 두꺼운 도트 블록의 윤곽을 덮지 않게 한다(도트로 읽히는 것이 우선이다)
-            Color32 white = GlowColor(ColorWhite, 0.12f);
-            Color32 ice = GlowColor(ColorIce, 0.08f);
-            Color32 blue = GlowColor(ColorBlue, 0.05f);
-
-            for (int d = 0; d <= arm; d++)
-            {
-                int h = FlashHalfThickness(stage, d);
-                Color32 color = d <= 3 ? white : (d <= midReach ? ice : blue);
-
-                // 오른쪽, 왼쪽, 위, 아래 팔의 d번째 칸(굵기 2h+1)
-                AddRect(centerX + d, centerY - h, centerX + d + 1, centerY + h + 1, color);
-                AddRect(centerX - d, centerY - h, centerX - d + 1, centerY + h + 1, color);
-                AddRect(centerX - h, centerY + d, centerX + h + 1, centerY + d + 1, color);
-                AddRect(centerX - h, centerY - d, centerX + h + 1, centerY - d + 1, color);
+                AddSigilPixel(-rect, y, GroupOct2, 2, RampLine, -1);
+                AddSigilPixel(rect, y, GroupOct2, 2, RampLine, -1);
             }
 
-            if (2 <= stage) return;
-
-            // 대각선 금색 도트 블록(2x2 한 쌍과 끝의 1x1)
-            Color32 gold = GlowColor(ColorGold, 0.2f);
+            // 직사각형 모서리 바깥 2:1 눈금 4곳
             for (int sy = -1; sy <= 1; sy += 2)
             {
                 for (int sx = -1; sx <= 1; sx += 2)
                 {
-                    int x0 = sx < 0 ? centerX - 5 : centerX + 4;
-                    int y0 = sy < 0 ? centerY - 5 : centerY + 4;
-                    AddRect(x0, y0, x0 + 2, y0 + 2, gold);
-
-                    int tipX = centerX + sx * 8;
-                    int tipY = centerY + sy * 8;
-                    AddRect(tipX, tipY, tipX + 1, tipY + 1, gold);
+                    for (int i = 2; i <= tickEnd; i++)
+                    {
+                        AddSigilPixel(sx * (rect + i), sy * (rectY + i / 2), GroupTick, 3, RampLine, -1);
+                    }
                 }
             }
+
+            // 중심 마름모
+            AddIsoLine(-core, 0, 0, coreY, GroupCore, 2);
+            AddIsoLine(core, 0, 0, coreY, GroupCore, 2);
+            AddIsoLine(-core, 0, 0, -coreY, GroupCore, 2);
+            AddIsoLine(core, 0, 0, -coreY, GroupCore, 2);
+
+            // 바깥 링 타원 1개. PixelEllipse 윤곽에서 1사분면만 취해 네 사분면으로 거울 복사한다(좌우/상하 대칭 보장).
+            int ringPoints = PixelEllipse.Build(_radius, ry);
+            for (int i = 0; i < ringPoints; i++)
+            {
+                int x = PixelEllipse.OutX[i];
+                int y = PixelEllipse.OutY[i];
+                if (0 > x || 0 > y) continue;
+
+                AddSigilPixel(x, y, GroupRing, 3, RampLine, -1);
+                AddSigilPixel(-x, y, GroupRing, 3, RampLine, -1);
+                AddSigilPixel(x, -y, GroupRing, 3, RampLine, -1);
+                AddSigilPixel(-x, -y, GroupRing, 3, RampLine, -1);
+            }
+
+            // 격자를 행(아래에서 위) -> 열(왼쪽에서 오른쪽) 순서로 훑어 정렬된 표를 만든다(같은 줄 쿼드 병합에 유리). 훑으면서 격자를 비운다.
+            sigilCount = 0;
+            ringCount = 0;
+            dissolveCount = 0;
+            int gridHeight = gridExtentY * 2 + 1;
+            for (int row = 0; row < gridHeight; row++)
+            {
+                int rowStart = row * gridWidth;
+                for (int col = 0; col < gridWidth; col++)
+                {
+                    int cell = sigilGrid[rowStart + col];
+                    if (0 == cell) continue;
+
+                    sigilGrid[rowStart + col] = 0;
+                    if (SigilCapacity <= sigilCount) continue;
+
+                    sigil[sigilCount] = sigilPending[cell - 1];
+                    if (GroupRing == sigil[sigilCount].group) ringIndices[ringCount++] = sigilCount;
+                    if (0.05f >= sigil[sigilCount].h && dissolveCount < DissolveCapacity) dissolveIndices[dissolveCount++] = sigilCount;
+                    sigilCount++;
+                }
+            }
+        }
+
+        // 룬 12개의 중심. 0~6번(정면 -> 한쪽 -> 뒤쪽)만 계산하고 7~11번은 x 부호만 뒤집어 복사해 픽셀 단위 대칭을 보장한다.
+        // 부동소수 반올림으로 57.5px 같은 자리가 1px 어긋나는 것을 막으려 1e-9를 더해 double로 계산한다(시안과 같은 식).
+        private static void BuildRuneCenters(int _runeRadius)
+        {
+            for (int k = 0; k < RuneCount; k++)
+            {
+                int source = 6 >= k ? k : 12 - k;
+                double angle = source / 12.0 * 6.283185307179586 + 1.5707963267948966;
+                int cx = (int)System.Math.Floor(System.Math.Cos(angle) * _runeRadius + 1e-9 + 0.5);
+                int cySim = (int)System.Math.Floor(System.Math.Sin(angle) * _runeRadius * 0.5 + 1e-9 + 0.5);
+                if (0 == source || 6 == source) cx = 0;
+                if (6 < k) cx = -cx;
+
+                // 시안 좌표는 y가 아래라 룬 중심의 둘레 위치(시계 방향 0~1)도 시안 좌표로 계산한다. 저장은 y가 위인 좌표다.
+                float a = Mathf.Atan2(cySim / GroundSquashY, cx) / TwoPi;
+                runeCenterX[k] = cx;
+                runeCenterY[k] = -cySim;
+                runeCenterA[k] = a - Mathf.Floor(a);
+            }
+        }
+
+        // 2:1 아이소 대각선. x가 한 칸 가는 동안 두 칸마다 y가 한 칸 바뀐다.
+        private static void AddIsoLine(int _x0, int _y0, int _x1, int _y1, int _group, int _rest)
+        {
+            int steps = Mathf.Abs(_x1 - _x0);
+            int sx = _x1 > _x0 ? 1 : -1;
+            int sy = _y1 > _y0 ? 1 : (_y1 < _y0 ? -1 : 0);
+            for (int i = 0; i <= steps; i++)
+            {
+                AddSigilPixel(_x0 + sx * i, _y0 + sy * (i / 2), _group, _rest, RampLine, -1);
+            }
+        }
+
+        // 마법진 픽셀 하나를 임시 표에 넣는다. 이미 있는 자리면 먼저 넣은 것이 우선이다.
+        private static void AddSigilPixel(int _x, int _y, int _group, int _rest, int _ramp, int _rune)
+        {
+            int col = _x + gridExtentX;
+            int row = _y + gridExtentY;
+            if (0 > col || col >= gridWidth || 0 > row || row >= gridExtentY * 2 + 1 || SigilCapacity <= pendingCount) return;
+
+            int cellIndex = row * gridWidth + col;
+            if (0 != sigilGrid[cellIndex]) return;
+
+            // 시안 좌표(y가 아래)로 바꿔 둘레 위치와 해시를 계산한다
+            int simY = -_y;
+            float r = Mathf.Min(1.0f, Mathf.Sqrt(_x * (float)_x + (simY / GroundSquashY) * (simY / GroundSquashY)) / buildRadius);
+            float a = Mathf.Atan2(simY / GroundSquashY, _x) / TwoPi;
+            a -= Mathf.Floor(a);
+            if (0 <= _rune) a = runeCenterA[_rune];
+
+            SigilPixel pixel = new SigilPixel();
+            pixel.x = (short)_x;
+            pixel.y = (short)_y;
+            pixel.group = (byte)_group;
+            pixel.rest = (byte)_rest;
+            pixel.ramp = (byte)_ramp;
+            pixel.rune = (sbyte)_rune;
+            pixel.r = r;
+            pixel.a = a;
+            pixel.h = Hash01(_x * 7 + 3, simY * 13 + 5);
+            pixel.dissolveStart = DissolveStart + (1.0f - r) * DissolveSweep;
+
+            sigilPending[pendingCount] = pixel;
+            pendingCount++;
+            sigilGrid[cellIndex] = pendingCount;
+        }
+
+        // ---------- 정적 표 만들기 ----------
+
+        private static float[] BuildSegmentTable(bool _bCos)
+        {
+            float[] table = new float[SoftSegments];
+            for (int i = 0; i < SoftSegments; i++)
+            {
+                float angle = TwoPi * i / SoftSegments;
+                table[i] = true == _bCos ? Mathf.Cos(angle) : Mathf.Sin(angle);
+            }
+
+            // 적도(0도, 180도)와 극(90도, 270도)은 부동소수 잡음 없이 정확한 값으로 둔다
+            if (true == _bCos)
+            {
+                table[SoftSegments / 4] = 0.0f;
+                table[SoftSegments * 3 / 4] = 0.0f;
+            }
+            else
+            {
+                table[0] = 0.0f;
+                table[SoftSegments / 2] = 0.0f;
+            }
+
+            return table;
+        }
+
+        // 빛 커튼 둘레 정점별 겹침 배율. 시안은 링 픽셀마다 세로 기둥을 하나씩 세워 더하므로, 링이 세로로 서는 좌우 끝에서는
+        // 한 열에 여러 기둥이 겹쳐 밝아진다(원통을 옆에서 본 두께). 링 접선 기울기(세로 / 가로)만큼 곱해 같은 밝기를 낸다.
+        private static float[] BuildCurtainStack()
+        {
+            float[] stack = new float[SoftSegments];
+            for (int i = 0; i < SoftSegments; i++)
+            {
+                float slope = GroundSquashY * Mathf.Abs(SegmentCos[i]) / Mathf.Max(0.001f, Mathf.Abs(SegmentSin[i]));
+                stack[i] = Mathf.Clamp(slope, 1.0f, CurtainStackMax);
+            }
+
+            return stack;
+        }
+
+        private static StarCell[][] BuildStarSprites()
+        {
+            StarCell[][] sprites = new StarCell[StarArms.Length][];
+            for (int s = 0; s < StarArms.Length; s++)
+            {
+                int arm = StarArms[s];
+                int[] half = StarHalfThickness[s];
+                int count = 0;
+                for (int pass = 0; pass < 2; pass++)
+                {
+                    if (1 == pass) sprites[s] = new StarCell[count];
+                    count = 0;
+
+                    for (int dy = -arm; dy <= arm; dy++)
+                    {
+                        for (int dx = -arm; dx <= arm; dx++)
+                        {
+                            int d = Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy));
+                            int m = Mathf.Min(Mathf.Abs(dx), Mathf.Abs(dy));
+                            if (m > half[d]) continue;
+
+                            // 중심 사각 모서리 깎기
+                            if (3 <= arm && m == half[d] && 2 >= d && 2 == m && 2 == d) continue;
+
+                            int e = Mathf.Abs(dx) + Mathf.Abs(dy);
+                            int level = e <= Mathf.Max(1, arm >> 1) ? 4 : (d >= arm - (5 <= arm ? 1 : 0) ? 2 : 3);
+                            if (1 >= arm) level = 0 == d ? 4 : 3;
+
+                            if (1 == pass)
+                            {
+                                sprites[s][count].dx = (sbyte)dx;
+                                sprites[s][count].dy = (sbyte)dy;
+                                sprites[s][count].level = (byte)level;
+                            }
+
+                            count++;
+                        }
+                    }
+                }
+            }
+
+            return sprites;
+        }
+
+        // 소프트 메쉬 인덱스: 부분마다 (행 x 열) 격자를 두 삼각형씩. 둘레 격자는 열이 끝에서 처음으로 이어진다.
+        private static ushort[] BuildSoftIndices()
+        {
+            ushort[] indices = new ushort[SoftIndexTotal];
+            int cursor = 0;
+            AddGridIndices(indices, ref cursor, FlashVertexStart, FlashRows, SoftSegments, true);
+            AddGridIndices(indices, ref cursor, PillarVertexStart, PillarRows, PillarCols, false);
+            AddGridIndices(indices, ref cursor, CurtainVertexStart, CurtainRows, SoftSegments, true);
+            AddGridIndices(indices, ref cursor, GroundVertexStart, GroundRows, SoftSegments, true);
+            return indices;
+        }
+
+        private static void AddGridIndices(ushort[] _indices, ref int _cursor, int _vertexStart, int _rows, int _cols, bool _bWrap)
+        {
+            int colSteps = true == _bWrap ? _cols : _cols - 1;
+            for (int row = 0; row < _rows - 1; row++)
+            {
+                for (int col = 0; col < colSteps; col++)
+                {
+                    int nextCol = (col + 1) % _cols;
+                    int v00 = _vertexStart + row * _cols + col;
+                    int v01 = _vertexStart + row * _cols + nextCol;
+                    int v10 = _vertexStart + (row + 1) * _cols + col;
+                    int v11 = _vertexStart + (row + 1) * _cols + nextCol;
+
+                    _indices[_cursor++] = (ushort)v00;
+                    _indices[_cursor++] = (ushort)v10;
+                    _indices[_cursor++] = (ushort)v11;
+                    _indices[_cursor++] = (ushort)v00;
+                    _indices[_cursor++] = (ushort)v11;
+                    _indices[_cursor++] = (ushort)v01;
+                }
+            }
+        }
+
+        // ---------- 색 / 입자 설정 ----------
+
+        // sRGB 팔레트(0~255)를 선형 값으로 바꾼 뒤 8비트로 넣는다(선형 색 공간에서 화면에 팔레트 색 그대로 나온다).
+        // 알파는 발광 세기 단계표(GlowTable)다.
+        private static byte ToLinearByte(byte _srgb)
+        {
+            float c = _srgb / 255.0f;
+            float linear = c <= 0.04045f ? c / 12.92f : Mathf.Pow((c + 0.055f) / 1.055f, 2.4f);
+            return (byte)Mathf.RoundToInt(Mathf.Clamp01(linear) * 255.0f);
+        }
+
+        private void BuildColorTable()
+        {
+            Color32[] lineRamp = RampBlue;
+            Color32[] accRamp = RampGold;
+            if (NovaPalette.Gold == palette)
+            {
+                lineRamp = RampGold;
+                accRamp = RampIce;
+            }
+            else if (NovaPalette.Violet == palette)
+            {
+                lineRamp = RampViolet;
+                accRamp = RampGold;
+            }
+
+            for (int level = 0; level < LevelCount; level++)
+            {
+                byte alpha = (byte)Mathf.RoundToInt(GlowTable[level] * 255.0f);
+                Color32 line = lineRamp[level];
+                Color32 acc = accRamp[level];
+                colorTable[RampLine * LevelCount + level] = new Color32(ToLinearByte(line.r), ToLinearByte(line.g), ToLinearByte(line.b), alpha);
+                colorTable[RampAcc * LevelCount + level] = new Color32(ToLinearByte(acc.r), ToLinearByte(acc.g), ToLinearByte(acc.b), alpha);
+            }
+        }
+
+        private Color32 GetColor(int _ramp, int _level)
+        {
+            return colorTable[_ramp * LevelCount + Mathf.Clamp(_level, 0, LevelCount - 1)];
+        }
+
+        // 떠오르는 입자 54개: 3개 중 1개는 룬 위, 나머지는 바깥 링 픽셀에서 올라온다. 초반(제곱 분포)에 몰린다.
+        private void SetupMotes()
+        {
+            for (int i = 0; i < MoteCount; i++)
+            {
+                Mote mote = new Mote();
+                if (0 == i % 3)
+                {
+                    int rune = Mathf.Min(RuneCount - 1, Mathf.FloorToInt(Rand01() * RuneCount));
+                    mote.ox = runeCenterX[rune] + RoundHalfUp((Rand01() - 0.5f) * 4.0f);
+                    mote.oy = runeCenterY[rune] + 3;
+                    mote.ramp = RampAcc;
+                }
+                else
+                {
+                    int ring = 0 < ringCount ? Mathf.Min(ringCount - 1, Mathf.FloorToInt(Rand01() * ringCount)) : 0;
+                    mote.ox = 0 < ringCount ? sigil[ringIndices[ring]].x : 0;
+                    mote.oy = 0 < ringCount ? sigil[ringIndices[ring]].y : 0;
+                    mote.ramp = RampLine;
+                }
+
+                float q = Rand01();
+                mote.t0 = 0.03f + q * q * 1.05f;
+                mote.life = 0.55f + Rand01() * 0.45f;
+                mote.rise = 20.0f + Rand01() * 30.0f;
+                mote.sway = Rand01() * 6.28f;
+                mote.shape = Rand01() < 0.55f ? PixelPainter.ShapePlus : (Rand01() < 0.5f ? PixelPainter.ShapeCross : PixelPainter.ShapeDot);
+                motes[i] = mote;
+            }
+        }
+
+        // ---------- 픽셀 그리기 (30fps 프레임이 바뀔 때만) ----------
+
+        // 프레임 상태를 계산한다. 시간 t는 30fps 프레임 시각으로 끊는다.
+        private void PrepareFrame(int _frame)
+        {
+            frameTime = _frame / FramesPerSecond;
+            float t = frameTime;
+
+            // 0프레임에 전체가 흰색으로 박히고 3프레임마다 한 단계씩 기본 단계로 식는다
+            int cooled = 4 - _frame / 3;
+            baseLevel2 = Mathf.Max(2, cooled);
+            baseLevel3 = Mathf.Max(3, cooled);
+
+            // 남은 기운: 바깥 링 빛 머리 2개가 감속하며 돌고 점점 약해진다
+            ringAmp = t < 0.55f ? 2 : (t < 1.05f ? 1 : 0);
+            float slow = EaseOutCubic(Mathf.Min(1.0f, t / 1.2f));
+            ringPhase = 0.9f * slow + 0.25f;
+
+            // 룬은 반대 방향 순서로 한 단계 밝아진다
+            bRuneActive = t < 1.05f;
+            runePhase = -0.7f * slow + 0.25f;
+
+            // 안쪽 도형: 임팩트 뒤 바깥으로 퍼지는 여진 2번(0.12초, 0.5초)
+            innerWave0 = InnerWave(t, 0.12f);
+            innerWave1 = InnerWave(t, 0.5f);
+        }
+
+        private static float InnerWave(float _t, float _start)
+        {
+            float w = (_t - _start) / 0.45f * 0.95f;
+            return 0.0f < w && w < 0.95f ? w : -1.0f;
+        }
+
+        // 마법진 픽셀 하나의 팔레트 단계(0이면 꺼짐)
+        private int EvaluateSigilLevel(ref SigilPixel _p)
+        {
+            int rest = _p.rest;
+            float t = frameTime;
+
+            if (t >= _p.dissolveStart)
+            {
+                int remain = rest - Mathf.FloorToInt((t - _p.dissolveStart) * 10.0f + 1e-6f);
+                return 0 < remain ? remain : 0;
+            }
+
+            int level = 3 == rest ? baseLevel3 : baseLevel2;
+            int boost = 0;
+
+            if (GroupRing == _p.group)
+            {
+                if (0 < ringAmp)
+                {
+                    float d0 = Wrap01(ringPhase - _p.a);
+                    if (d0 < 0.012f) boost = Mathf.Max(boost, ringAmp);
+                    else if (d0 < 0.06f && t < 0.8f) boost = Mathf.Max(boost, 1);
+
+                    float d1 = Wrap01(ringPhase + 0.5f - _p.a);
+                    if (d1 < 0.012f) boost = Mathf.Max(boost, ringAmp);
+                    else if (d1 < 0.06f && t < 0.8f) boost = Mathf.Max(boost, 1);
+                }
+            }
+            else if (GroupRune == _p.group)
+            {
+                if (true == bRuneActive && Wrap01(_p.a - runePhase) < 0.05f) boost = 1;
+            }
+            else
+            {
+                if (0.0f < innerWave0 && _p.r <= innerWave0 && _p.r > innerWave0 - 0.07f) boost = 1;
+                if (0.0f < innerWave1 && _p.r <= innerWave1 && _p.r > innerWave1 - 0.07f) boost = 1;
+            }
+
+            return Mathf.Min(4, level + boost);
+        }
+
+        // 입자 모양 하나. 중심은 _level, 팔은 한 단계 낮다. 모양: `.` `+` `x`
+        private void EmitShape(int _x, int _y, int _shape, int _ramp, int _level)
+        {
+            if (0 >= _level) return;
+
+            painter.Dot(_x, _y, GetColor(_ramp, _level));
+            if (PixelPainter.ShapeDot == _shape || 1 >= _level) return;
+
+            Color32 arm = GetColor(_ramp, _level - 1);
+            if (PixelPainter.ShapePlus == _shape)
+            {
+                painter.Dot(_x - 1, _y, arm);
+                painter.Dot(_x + 1, _y, arm);
+                painter.Dot(_x, _y - 1, arm);
+                painter.Dot(_x, _y + 1, arm);
+            }
+            else
+            {
+                painter.Dot(_x - 1, _y - 1, arm);
+                painter.Dot(_x + 1, _y - 1, arm);
+                painter.Dot(_x - 1, _y + 1, arm);
+                painter.Dot(_x + 1, _y + 1, arm);
+            }
+        }
+
+        // 마법진 픽셀 전체를 그린다(룬은 해체 중 최대 3px 떠오른다)
+        private void DrawSigil()
+        {
+            float t = frameTime;
+            for (int i = 0; i < sigilCount; i++)
+            {
+                int level = EvaluateSigilLevel(ref sigil[i]);
+                if (0 >= level) continue;
+
+                int y = sigil[i].y;
+                if (GroupRune == sigil[i].group && t > sigil[i].dissolveStart)
+                {
+                    y += Mathf.Min(3, Mathf.FloorToInt((t - sigil[i].dissolveStart) * 10.0f));
+                }
+
+                painter.Dot(centerX + sigil[i].x, centerY + y, GetColor(sigil[i].ramp, level));
+            }
+        }
+
+        private void DrawStar(int _spriteIndex, int _shift)
+        {
+            StarCell[] sprite = StarSprites[_spriteIndex];
+            for (int i = 0; i < sprite.Length; i++)
+            {
+                int level = sprite[i].level + _shift;
+                if (0 >= level) continue;
+
+                painter.Dot(centerX + sprite[i].dx, centerY + sprite[i].dy, GetColor(RampLine, level));
+            }
+        }
+
+        // 공중 층: 섬광 줄, 중심 별, 꼭짓점 스파크, 떠오르는 입자, 해체 입자 순서(뒤에 그린 것이 위)
+        private void DrawSky(int _frame)
+        {
+            float t = frameTime;
+
+            // 1px 가로/세로 섬광 줄(끝으로 갈수록 팔레트 한 단계씩 낮아짐)
+            if (4 > _frame)
+            {
+                int lengthX = _frame < 1 ? 56 : (_frame < 2 ? 40 : (_frame < 3 ? 24 : 12));
+                int lengthY = _frame < 1 ? 20 : (_frame < 2 ? 14 : (_frame < 3 ? 9 : 4));
+                float midX = lengthX * 0.55f;
+                for (int x = -lengthX; x <= lengthX; x++)
+                {
+                    int a = Mathf.Abs(x);
+                    painter.Dot(centerX + x, centerY, GetColor(RampLine, 10 > a ? 4 : (a < midX ? 3 : 2)));
+                }
+
+                for (int y = -lengthY; y <= lengthY; y++)
+                {
+                    painter.Dot(centerX, centerY + y, GetColor(RampLine, 6 > Mathf.Abs(y) ? 4 : 3));
+                }
+            }
+
+            // 중심 4갈래 별: 7 -> 5 -> 3, 이후 작은 별이 맥동하다 식는다
+            if (3 > _frame) DrawStar(0, 0);
+            else if (5 > _frame) DrawStar(1, 0);
+            else if (7 > _frame) DrawStar(2, 0);
+            else if (1.0f > t)
+            {
+                bool bSmall = 0 != ((_frame >> 3) & 1);
+                DrawStar(true == bSmall ? 2 : 3, true == bSmall ? -1 : 0);
+            }
+            else if (1.4f > t)
+            {
+                DrawStar(3, -1 - Mathf.FloorToInt((t - 1.0f) * 6.0f));
+            }
+
+            // 꼭짓점 8곳 스파크: 0초에 위로 튀어 오른다
+            if (0.6f > t)
+            {
+                int diamond = Mathf.Max(2, EvenRound(ringRadiusX * 0.8f));
+                int diamondY = diamond / 2;
+                int rect = Mathf.Max(2, EvenRound(diamond * 0.707f));
+                int rectY = rect / 2;
+
+                float u = t / 0.6f;
+                float inv = 1.0f - u;
+                float ease = 1.0f - inv * inv * inv;
+                for (int i = 0; i < 8; i++)
+                {
+                    int ox;
+                    int oy;
+                    SparkOrigin(i, diamond, diamondY, rect, rectY, out ox, out oy);
+
+                    int rise = RoundHalfUp((4 > i ? 44.0f : 30.0f) * ease);
+                    int shape = u < 0.35f ? PixelPainter.ShapePlus : (u < 0.6f ? PixelPainter.ShapeCross : PixelPainter.ShapeDot);
+                    EmitShape(centerX + ox, centerY + oy + rise, shape, 0 != (i & 1) ? RampAcc : RampLine, 4 - Mathf.FloorToInt(u * 3.5f));
+                }
+            }
+
+            // 떠오르는 입자
+            for (int i = 0; i < MoteCount; i++)
+            {
+                float age = t - motes[i].t0;
+                if (0.0f > age || age >= motes[i].life) continue;
+
+                float u = age / motes[i].life;
+                float inv = 1.0f - u;
+                int x = centerX + motes[i].ox + RoundHalfUp(Mathf.Sin(motes[i].sway + u * 5.0f) * 1.2f);
+                int y = centerY + motes[i].oy + RoundHalfUp(motes[i].rise * (1.0f - inv * inv));
+                EmitShape(x, y, u < 0.45f ? motes[i].shape : PixelPainter.ShapeDot, motes[i].ramp, 4 - Mathf.FloorToInt(u * 4.0f));
+            }
+
+            // 해체 입자: 꺼지는 픽셀의 5%가 `+`에서 `.`로 줄며 떠오른다
+            if (DissolveStart < t)
+            {
+                for (int n = 0; n < dissolveCount; n++)
+                {
+                    int index = dissolveIndices[n];
+                    float age = t - (sigil[index].dissolveStart + sigil[index].rest * 0.1f);
+                    if (0.0f > age || age >= 0.45f) continue;
+
+                    float u = age / 0.45f;
+                    int lift = RoundHalfUp(4.0f + 14.0f * u);
+                    EmitShape(centerX + sigil[index].x, centerY + sigil[index].y + lift, u < 0.3f ? PixelPainter.ShapePlus : PixelPainter.ShapeDot, sigil[index].ramp, 3 - Mathf.FloorToInt(u * 3.0f));
+                }
+            }
+        }
+
+        // 스파크 8곳: 팔각별 꼭짓점. 마름모 좌우 끝, 마름모 위/아래 끝, 직사각형 네 모서리 순서(위쪽이 +y)
+        private static void SparkOrigin(int _index, int _diamond, int _diamondY, int _rect, int _rectY, out int _x, out int _y)
+        {
+            switch (_index)
+            {
+                case 0: _x = _diamond; _y = 0; break;
+                case 1: _x = -_diamond; _y = 0; break;
+                case 2: _x = 0; _y = -_diamondY; break;
+                case 3: _x = 0; _y = _diamondY; break;
+                case 4: _x = _rect; _y = -_rectY; break;
+                case 5: _x = -_rect; _y = -_rectY; break;
+                case 6: _x = _rect; _y = _rectY; break;
+                default: _x = -_rect; _y = _rectY; break;
+            }
+        }
+
+        private void RebuildPixelMeshes(int _frame)
+        {
+            Vector3 pos = transform.position;
+            centerX = Mathf.FloorToInt(pos.x * PixelsPerUnit);
+            centerY = Mathf.FloorToInt(pos.y * PixelsPerUnit);
+            PrepareFrame(_frame);
+
+            bool bSplit = null != groundMesh;
+            if (true == bSplit)
+            {
+                Matrix4x4 groundWorldToLocal = groundMeshRenderer.transform.worldToLocalMatrix;
+                painter.Begin(quadBuffer, in groundWorldToLocal, pos.z);
+                DrawSigil();
+                painter.Commit(groundMesh, groundMeshRenderer, ref groundHash, ref groundVertexCount);
+            }
+
+            Matrix4x4 skyWorldToLocal = transform.worldToLocalMatrix;
+            painter.Begin(quadBuffer, in skyWorldToLocal, pos.z);
+
+            // 바닥 메쉬가 없으면(프리팹 참조 누락) 마법진도 공중 메쉬 하나로 그린다
+            if (false == bSplit) DrawSigil();
+            DrawSky(_frame);
+            painter.Commit(mesh, meshRenderer, ref skyHash, ref skyVertexCount);
+        }
+
+        // ---------- 부드러운 빛 (소프트 메쉬, 매 프레임 정점 위치/색만 갱신) ----------
+
+        private static void WriteVertex(int _index, float _x, float _y, in Vector3 _tint, float _intensity)
+        {
+            softScratch[_index].position = new Vector3(_x, _y, 0.0f);
+            softScratch[_index].color = new Color(_tint.x, _tint.y, _tint.z, _intensity * (1.0f / SoftGlowMultiplier));
+        }
+
+        // 임팩트 섬광: 가운데가 가장 밝은 작은 타원 원반(가로 20px x 세로 11px 단위의 d, 0~2)
+        private void UpdateFlash(float _t, float _ox, float _oy)
+        {
+            float a = 1.4f * (1.0f - _t / FlashEnd);
+            for (int row = 0; row < FlashRows; row++)
+            {
+                float d = FlashRowD[row];
+                float intensity = a * Mathf.Exp(-1.6f * d * d);
+                for (int s = 0; s < SoftSegments; s++)
+                {
+                    float x = _ox + d * 20.0f * SegmentCos[s] * PixelUnit;
+                    float y = _oy + d * 11.0f * SegmentSin[s] * PixelUnit;
+                    WriteVertex(FlashVertexStart + row * SoftSegments + s, x, y, in FlashTint, intensity);
+                }
+            }
+        }
+
+        // 빛기둥: 중심에서 솟구쳐 0.5초 안에 식는다. 가로 단면은 가우시안(7열), 세로로 갈수록 가늘고 어두워진다.
+        private void UpdatePillar(float _t, float _ox, float _oy)
+        {
+            float u = _t / PillarEnd;
+            float a = 1.8f * (u < 0.04f ? 1.0f : 1.0f - (u - 0.04f) / 0.96f);
+            float height = pillarHeightPx * sizeScale * Mathf.Min(1.0f, 0.55f + u * 3.0f);
+            for (int row = 0; row < PillarRows; row++)
+            {
+                // 행 0은 바닥 아래 6px(0에서 시작해 올라오는 밑단), 나머지는 높이 비율
+                float yPx = 0 == row ? -6.0f : height * PillarRowFraction[row];
+                float q = Mathf.Max(0.0f, yPx / height);
+                float vertical = 0 == row ? 0.0f : 1.0f - Mathf.Pow(q, 1.6f);
+                float width = 8.0f * (1.0f - 0.5f * q) * (1.0f - 0.5f * u);
+                for (int col = 0; col < PillarCols; col++)
+                {
+                    float c = PillarColumnC[col];
+                    float intensity = a * vertical * Mathf.Exp(-c * c / 0.7f);
+                    WriteVertex(PillarVertexStart + row * PillarCols + col, _ox + c * width * PixelUnit, _oy + yPx * PixelUnit, in PillarTint, intensity);
+                }
+            }
+        }
+
+        // 빛 커튼: 바깥 링 테두리에서 위로 솟는 원통형 빛 벽. 위로 갈수록 옅어지고 뒤쪽 벽(링 위쪽 반)은 55%.
+        private void UpdateCurtain(float _t, float _ox, float _oy)
+        {
+            float u = _t / CurtainEnd;
+            float a = 0.55f * (u < 0.05f ? 1.0f : Mathf.Pow(1.0f - (u - 0.05f) / 0.95f, 1.6f));
+            float height = curtainHeightPx * sizeScale * (CurtainBaseFraction + (1.0f - CurtainBaseFraction) * EaseOutCubic(Mathf.Min(1.0f, _t / 0.35f)));
+            height = Mathf.Max(8.0f, height);
+            for (int row = 0; row < CurtainRows; row++)
+            {
+                // 행 0은 링 위(아래쪽 2px는 1.3배), 행 1은 2px 위, 나머지는 높이 비율
+                float yPx = 0 == row ? 0.0f : (1 == row ? 2.0f : height * CurtainRowFraction[row]);
+                float q = yPx / height;
+                float weight = Mathf.Pow(1.0f - q, 1.8f) * (0 == row ? 1.3f : 1.0f);
+                for (int s = 0; s < SoftSegments; s++)
+                {
+                    float back = 0.0001f < SegmentSin[s] ? 0.55f : 1.0f;
+                    float x = _ox + ringRadiusX * SegmentCos[s] * PixelUnit;
+                    float y = _oy + (ringRadiusY * SegmentSin[s] + yPx) * PixelUnit;
+                    WriteVertex(CurtainVertexStart + row * SoftSegments + s, x, y, in CurtainTint, a * back * weight * CurtainStack[s]);
+                }
+            }
+        }
+
+        // 바닥 빛: 마법진 안쪽을 은은하게 밝힌다. 0초에 가장 밝고 식은 뒤 해체와 함께 꺼진다.
+        private void UpdateGround(float _t, float _ox, float _oy)
+        {
+            float ga = (0.07f + 0.2f * Mathf.Max(0.0f, 1.0f - _t / 0.35f)) * (1.0f - Mathf.Clamp01((_t - DissolveStart) / 0.5f));
+            for (int row = 0; row < GroundRows; row++)
+            {
+                float r = GroundRowR[row];
+                float intensity = ga * (0.35f + 0.65f * r * r) * (1.0f < r ? (1.05f - r) / 0.05f : 1.0f);
+                for (int s = 0; s < SoftSegments; s++)
+                {
+                    float x = _ox + ringRadiusX * r * SegmentCos[s] * PixelUnit;
+                    float y = _oy + ringRadiusX * GroundSquashY * r * SegmentSin[s] * PixelUnit;
+                    WriteVertex(GroundVertexStart + row * SoftSegments + s, x, y, in GroundTint, intensity);
+                }
+            }
+        }
+
+        private void UpdateSoftMesh()
+        {
+            if (null == softMesh) return;
+
+            float t = elapsed;
+            if (false == bSoftLight || GroundEnd <= t)
+            {
+                if (true == softMeshRenderer.enabled) softMeshRenderer.enabled = false;
+                return;
+            }
+
+            // 끝난 부분은 건너뛴다. 부분 순서가 끝나는 시각 순서라 살아 있는 부분은 항상 뒤쪽 연속 구간이다.
+            int first = PartFlash;
+            if (FlashEnd <= t) first = PartPillar;
+            if (PillarEnd <= t) first = PartCurtain;
+            if (CurtainEnd <= t) first = PartGround;
+
+            // 소프트 메쉬 중심 = 마법진 중심 픽셀의 한가운데(픽셀 격자와 같은 자리)
+            Vector3 softPos = softMeshFilter.transform.position;
+            float ox = (centerX + 0.5f) * PixelUnit - softPos.x;
+            float oy = (centerY + 0.5f) * PixelUnit - softPos.y;
+
+            if (PartFlash >= first) UpdateFlash(t, ox, oy);
+            if (PartPillar >= first) UpdatePillar(t, ox, oy);
+            if (PartCurtain >= first) UpdateCurtain(t, ox, oy);
+            UpdateGround(t, ox, oy);
+
+            int vertexStart = PartVertexStart[first];
+            int indexStart = PartIndexStart[first];
+            softMesh.SetVertexBufferData(softScratch, vertexStart, vertexStart, SoftVertexTotal - vertexStart, 0, SoftUploadFlags);
+
+            // 살아 있는 부분이 바뀔 때만 그릴 인덱스 범위를 다시 정한다
+            if (first != appliedSoftFirstPart)
+            {
+                appliedSoftFirstPart = first;
+                SubMeshDescriptor subMesh = new SubMeshDescriptor(indexStart, SoftIndexTotal - indexStart, MeshTopology.Triangles);
+                subMesh.firstVertex = 0;
+                subMesh.vertexCount = SoftVertexTotal;
+                softMesh.SetSubMesh(0, subMesh, SoftUploadFlags);
+            }
+
+            if (false == softMeshRenderer.enabled) softMeshRenderer.enabled = true;
+        }
+
+        private void DisableRenderers()
+        {
+            if (null != meshRenderer && true == meshRenderer.enabled) meshRenderer.enabled = false;
+            if (null != groundMeshRenderer && true == groundMeshRenderer.enabled) groundMeshRenderer.enabled = false;
+            if (null != softMeshRenderer && true == softMeshRenderer.enabled) softMeshRenderer.enabled = false;
         }
 
         // 유니티 이벤트 함수
@@ -1218,6 +1298,7 @@ namespace PresentationLayer.VFX
 
             if (null != meshRenderer) meshRenderer.enabled = false;
             if (null != groundMeshRenderer) groundMeshRenderer.enabled = false;
+            if (null != softMeshRenderer) softMeshRenderer.enabled = false;
         }
 
         private void LateUpdate()
@@ -1228,14 +1309,13 @@ namespace PresentationLayer.VFX
                 Begin();
             }
 
-            if (TimelineLength <= elapsed)
+            if (TimelineLength <= elapsed || ContentEnd <= elapsed)
             {
-                meshRenderer.enabled = false;
-                if (null != groundMeshRenderer) groundMeshRenderer.enabled = false;
+                DisableRenderers();
                 return;
             }
 
-            // 첫 프레임은 시간을 더하지 않아서 t=0의 섬광 프레임이 반드시 한 번 그려진다
+            // 첫 프레임은 시간을 더하지 않아서 t=0의 각인 프레임이 반드시 한 번 그려진다
             float dt = true == bFirstFrame ? 0.0f : Time.deltaTime;
             bFirstFrame = false;
             elapsed += dt;
@@ -1251,6 +1331,12 @@ namespace PresentationLayer.VFX
                     appliedRootSortingOrder = rootOrder;
                     meshRenderer.sortingLayerID = rootLayer;
                     meshRenderer.sortingOrder = rootOrder + sortingOrderOffset;
+
+                    if (null != softMeshRenderer)
+                    {
+                        softMeshRenderer.sortingLayerID = rootLayer;
+                        softMeshRenderer.sortingOrder = rootOrder + sortingOrderOffset + 1;
+                    }
                 }
             }
 
@@ -1261,20 +1347,29 @@ namespace PresentationLayer.VFX
                 if (groundMeshRenderer.sortingOrder != groundSortingOrder) groundMeshRenderer.sortingOrder = groundSortingOrder;
             }
 
-            // 화면 밖이면 메쉬 재구성을 건너뛰고 시간만 흘린다. 매 프레임 그림은 경과 시간만으로 다시 계산되고(프레임 사이에
-            // 이어지는 상태가 없음) 다시 화면에 들어오는 첫 프레임에 그 시각의 그림을 그대로 그리므로 보이는 결과는 같다.
-            // 판정 범위는 메쉬 경계(그릴 수 있는 전체 범위)에 여유를 더한 것이다. 카메라가 순간이동이나 큰 줌으로 여유보다 많이
-            // 움직인 프레임에 판정이 한 프레임 늦어도 지난 그림이 보이지 않도록, 건너뛰는 동안은 렌더러를 꺼 둔다(RebuildMesh가 다시 켠다).
+            // 화면 밖이면 메쉬 재구성을 건너뛰고 시간만 흘린다. 그림은 경과 시간만으로 다시 계산되므로(프레임 사이에 이어지는
+            // 상태 없음) 다시 화면에 들어오는 첫 프레임에 그 시각의 그림을 그대로 그린다. 건너뛰는 동안은 렌더러를 꺼 두고
+            // (그리기 쪽이 다시 켠다) 해시 비교값을 무효화해 돌아온 첫 프레임에 반드시 다시 올린다.
             float margin = 2.0f * PixelVfxCulling.MarginUnits;
             Vector3 cullingSize = new Vector3(meshBoundsSize.x + margin, meshBoundsSize.y + margin, PixelVfxCulling.BoundsDepth);
             if (false == PixelVfxCulling.IsVisible(transform.position, cullingSize))
             {
-                if (true == meshRenderer.enabled) meshRenderer.enabled = false;
-                if (null != groundMeshRenderer && true == groundMeshRenderer.enabled) groundMeshRenderer.enabled = false;
+                DisableRenderers();
+                builtFrame = -1;
+                groundVertexCount = -1;
+                skyVertexCount = -1;
                 return;
             }
 
-            RebuildMesh();
+            // 픽셀 부분은 30fps 프레임이 바뀔 때만 다시 그리고, 부드러운 빛은 매 프레임 정점 값만 갱신한다
+            int frame = Mathf.FloorToInt(elapsed * FramesPerSecond + 0.001f);
+            if (frame != builtFrame)
+            {
+                builtFrame = frame;
+                RebuildPixelMeshes(frame);
+            }
+
+            UpdateSoftMesh();
         }
 
         private void OnDisable()
@@ -1283,6 +1378,7 @@ namespace PresentationLayer.VFX
 
             if (null != meshRenderer) meshRenderer.enabled = false;
             if (null != groundMeshRenderer) groundMeshRenderer.enabled = false;
+            if (null != softMeshRenderer) softMeshRenderer.enabled = false;
         }
 
         private void OnDestroy()
@@ -1298,17 +1394,20 @@ namespace PresentationLayer.VFX
                 Destroy(groundMesh);
                 groundMesh = null;
             }
+
+            if (null != softMesh)
+            {
+                Destroy(softMesh);
+                softMesh = null;
+            }
         }
 
         private void OnValidate()
         {
             maxRadius = Mathf.Max(0.5f, maxRadius);
-            particleSpread = Mathf.Clamp(particleSpread, 1.0f, 2.5f);
-            density = Mathf.Clamp(density, 0.25f, 2.0f);
-            starsPerUnit = Mathf.Max(1.0f, starsPerUnit);
-            heroStarCount = Mathf.Max(0, heroStarCount);
-            embersPerUnit = Mathf.Max(0.0f, embersPerUnit);
-            sparksPerUnit = Mathf.Max(0.0f, sparksPerUnit);
+            curtainHeightPx = Mathf.Max(8.0f, curtainHeightPx);
+            pillarHeightPx = Mathf.Max(8.0f, pillarHeightPx);
+            BuildColorTable();
         }
 
         // 씬 뷰에서 최대 반지름(바닥 타원)을 보여 줘서 피격 범위와 눈으로 맞출 수 있게 한다.
