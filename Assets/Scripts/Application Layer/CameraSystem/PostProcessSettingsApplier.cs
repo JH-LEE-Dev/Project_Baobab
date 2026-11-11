@@ -62,13 +62,13 @@ public class PostProcessSettingsApplier : MonoBehaviour
     [SerializeField] private float deathPulseFadeOutDuration = 0.5f;
 
     [Tooltip("지진 시작 펄스의 최고조 intensity(강조 세기 100% 기준). 저피로도 세기 위에 더해진다")]
-    [SerializeField] private float quakePulsePeakIntensity = 0.35f;
+    [SerializeField] private float quakePulsePeakIntensity = 0.5f;
 
     [Tooltip("지진 펄스가 최고조까지 올라가는 시간(초)")]
     [SerializeField] private float quakePulseFadeInDuration = 0.06f;
 
     [Tooltip("지진 펄스가 최고조에서 0으로 원복되는 시간(초)")]
-    [SerializeField] private float quakePulseFadeOutDuration = 0.35f;
+    [SerializeField] private float quakePulseFadeOutDuration = 0.45f;
 
     [Tooltip("명도 슬라이더 0%일 때의 노출(EV). 100%는 프로필에 설정된 원래 노출값을 그대로 쓴다")]
     [SerializeField] private float minPostExposure = -2f;
@@ -96,6 +96,23 @@ public class PostProcessSettingsApplier : MonoBehaviour
     private float quakePulseIntensity;
     private Tween quakePulseTween;
 
+    // 지진 "쾅" 섬광(PlayQuakeFlash). 명도 슬라이더가 정한 노출(sliderExposure) 위에 섬광 몫을 더하고, 색 필터를 잠깐 주황으로 물들인다.
+    // 섬광이 없으면(quakeFlashT = 0) 노출 = 슬라이더 값, 색 필터 = 프로필 원래 값이라 예전과 같다.
+    private float sliderExposure;
+    private Color baseColorFilter = Color.white;
+    private bool bBaseColorFilterOverride;
+    private float quakeFlashT;
+    private float quakeFlashExposure;
+    private Color quakeFlashTint = Color.white;
+    private Tween quakeFlashTween;
+    // 지진 전조 어두워짐(PlayQuakeDarken). 노출에서 quakeDarkExposure × quakeDarkT를 뺀다. 섬광이 시작되면 바로 0으로 돌린다.
+    private float quakeDarkT;
+    private float quakeDarkExposure;
+    private Tween quakeDarkTween;
+
+    // 명도 슬라이더 노출 + 지진 섬광 몫 - 지진 전조 몫.
+    private float QuakeExposure => sliderExposure + quakeFlashExposure * quakeFlashT - quakeDarkExposure * quakeDarkT;
+
     private void Awake()
     {
         Instance = this;
@@ -119,6 +136,12 @@ public class PostProcessSettingsApplier : MonoBehaviour
 
         baseExposure = (null != colorAdjustments) ? colorAdjustments.postExposure.value : 0f;
         baseSaturation = (null != colorAdjustments) ? colorAdjustments.saturation.value : 0f;
+        sliderExposure = baseExposure;
+        if (null != colorAdjustments)
+        {
+            baseColorFilter = colorAdjustments.colorFilter.value;
+            bBaseColorFilterOverride = colorAdjustments.colorFilter.overrideState;
+        }
     }
 
     private void OnEnable()
@@ -141,6 +164,8 @@ public class PostProcessSettingsApplier : MonoBehaviour
     {
         chromaticAberrationTween?.Kill();
         quakePulseTween?.Kill();
+        quakeFlashTween?.Kill();
+        quakeDarkTween?.Kill();
 
         if (Instance == this)
         {
@@ -242,6 +267,82 @@ public class PostProcessSettingsApplier : MonoBehaviour
         quakePulseIntensity = 0f;
     }
 
+    /// <summary>
+    /// 지진 "쾅" 순간 화면을 _inSeconds 동안 확 밝히고(노출 +_exposure, 색 필터 ×_tint) _outSeconds에 걸쳐 원래대로 되돌린다.
+    /// 히트스톱(시간 느리게) 중에도 제 속도로 보이도록 실제 시간으로 진행한다. 명도 슬라이더 값 위에 더해지므로 슬라이더를 덮어쓰지 않는다.
+    /// </summary>
+    public void PlayQuakeFlash(float _exposure, Color _tint, float _inSeconds, float _outSeconds)
+    {
+        // 전조 어두워짐은 섬광이 덮는다(섬광을 안 내도 터지는 순간 원래 밝기로 돌아간다).
+        StopQuakeDarken();
+        if (null == colorAdjustments || (_exposure <= 0f && _tint == Color.white)) return;
+
+        quakeFlashTween?.Kill();
+        quakeFlashExposure = _exposure;
+        quakeFlashTint = _tint;
+
+        quakeFlashTween = DOTween.Sequence()
+            .Append(DOTween.To(() => quakeFlashT, SetQuakeFlash, 1f, Mathf.Max(0.001f, _inSeconds)).SetEase(Ease.OutQuad))
+            .Append(DOTween.To(() => quakeFlashT, SetQuakeFlash, 0f, Mathf.Max(0.001f, _outSeconds)).SetEase(Ease.InQuad))
+            .SetUpdate(true);
+    }
+
+    private void SetQuakeFlash(float _t)
+    {
+        quakeFlashT = _t;
+        ApplyQuakeFlash();
+    }
+
+    /// <summary>
+    /// 지진이 터지기 직전(전조) 화면을 _seconds(게임 시간) 동안 노출 -_exposure까지 서서히 어둡게 한다. 터지는 순간 PlayQuakeFlash가 원래 밝기로 돌리며 섬광을 낸다.
+    /// 지진이 터지지 않고 끊기면 StopQuakeDarken으로 바로 되돌린다. 명도 슬라이더 값에서 빼므로 슬라이더를 덮어쓰지 않는다.
+    /// </summary>
+    public void PlayQuakeDarken(float _exposure, float _seconds)
+    {
+        quakeDarkTween?.Kill();
+        if (null == colorAdjustments || _exposure <= 0f) return;
+
+        quakeDarkExposure = _exposure;
+        quakeDarkTween = DOTween.To(() => quakeDarkT, SetQuakeDark, 1f, Mathf.Max(0.001f, _seconds)).SetEase(Ease.InQuad);
+    }
+
+    /// <summary>지진 전조 어두워짐을 바로 끝낸다(원래 밝기).</summary>
+    public void StopQuakeDarken()
+    {
+        quakeDarkTween?.Kill();
+        quakeDarkTween = null;
+        if (quakeDarkT <= 0f) return;
+
+        quakeDarkT = 0f;
+        ApplyQuakeFlash();
+    }
+
+    private void SetQuakeDark(float _t)
+    {
+        quakeDarkT = _t;
+        ApplyQuakeFlash();
+    }
+
+    // 노출·색 필터 = 슬라이더(프로필) 값 + 섬광 몫. 섬광이 끝나면(0) 색 필터의 원래 덮어쓰기 상태도 되돌린다.
+    private void ApplyQuakeFlash()
+    {
+        if (null == colorAdjustments) return;
+
+        colorAdjustments.postExposure.overrideState = true;
+        colorAdjustments.postExposure.value = QuakeExposure;
+
+        if (quakeFlashT > 0f)
+        {
+            colorAdjustments.colorFilter.overrideState = true;
+            colorAdjustments.colorFilter.value = Color.LerpUnclamped(baseColorFilter, baseColorFilter * quakeFlashTint, quakeFlashT);
+        }
+        else
+        {
+            colorAdjustments.colorFilter.value = baseColorFilter;
+            colorAdjustments.colorFilter.overrideState = bBaseColorFilterOverride;
+        }
+    }
+
     private void Apply(SettingsData _data)
     {
         chromaticAberrationStrength = Mathf.Clamp01(_data.chromaticAberration / SettingsData.SLIDER_MAX);
@@ -258,7 +359,8 @@ public class PostProcessSettingsApplier : MonoBehaviour
         if (null != colorAdjustments)
         {
             colorAdjustments.postExposure.overrideState = true;
-            colorAdjustments.postExposure.value = Mathf.Lerp(minPostExposure, baseExposure, _brightnessT);
+            sliderExposure = Mathf.Lerp(minPostExposure, baseExposure, _brightnessT);
+            colorAdjustments.postExposure.value = QuakeExposure;
 
             colorAdjustments.saturation.overrideState = true;
             colorAdjustments.saturation.value = Mathf.Lerp(minSaturation, baseSaturation, _saturationT);

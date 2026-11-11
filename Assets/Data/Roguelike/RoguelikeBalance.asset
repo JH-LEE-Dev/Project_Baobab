@@ -222,13 +222,13 @@ MonoBehaviour:
   maxGraceTime: 15
   minThreshold: 5
   maxMoveSpeedPercent: 100
-  unlimitHpGrowthPerWave: 0.1
-  unlimitBatchSizeAddPerWave: 1
-  unlimitBatchSecondsAddPerWave: -0.02
+  unlimitHpGrowthPerWave: 0.15
+  unlimitBatchSizeAddPerWave: 2
+  unlimitBatchSecondsAddPerWave: -0.05
   unlimitMinBatchSeconds: 1
+  unlimitMaxKillTarget: 100
   offerCount: 4
   guaranteedSlotCap: 2
-  guaranteedPassiveCount: 2
   firstPickActiveOnly: 1
   rerollsPerSelection: 1
   baseWeight: 1
@@ -238,7 +238,9 @@ MonoBehaviour:
   - 0.3
   - 1
   upgradeWeightBonus: 1
+  focusStartLevel: 2
+  focusWeightBonus: 7
   partnerStartLevel: 2
   partnerWeightBonus: 1
-  maxWeightMultiplier: 4
+  maxWeightMultiplier: 10
   forcePartnerWhenMaterialMax: 1

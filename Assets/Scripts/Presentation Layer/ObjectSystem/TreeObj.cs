@@ -62,8 +62,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     }
 
     // ---------- 3스테이지 배리어 ----------
-    // 별자리를 이루지 않는 나무는 배리어로 데미지 감소율(기본 100%, "배리어 관통력" 특성이 낮춤)만큼 피해를 막는다. 별자리 발현 폭발에 맞으면 그 타격을 흡수하며 깨지고,
-    // 그 뒤로는 평소처럼 피해를 받는다. 켜고 끄는 것은 InDungeonObjectManager(스폰)와 Stage3TreeGenerationStrategySO(별 표식)가 한다.
+    // 별자리를 이루지 않는 나무는 배리어로 데미지 감소율(기본 100%, "배리어 관통력" 특성이 낮춤)만큼 피해를 막는다. 별자리 발현 폭발에 맞으면 깨지고,
+    // 그 타격부터 평소처럼 피해를 받는다. 켜고 끄는 것은 InDungeonObjectManager(스폰)와 Stage3TreeGenerationStrategySO(별 표식)가 한다.
     // 막힌 타격은 피해/화상/피격 이벤트/나무 흔들림 없이 배리어 번쩍임 + 스파크(TreeBarrierBlockedEvent를 받은 매니저)만 낸다.
 
     /// <summary>배리어가 막은 타격. 매니저가 맞은 자리를 정해 PlayBarrierHit와 스파크 이펙트를 재생한다.</summary>
@@ -103,7 +103,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     }
 
     /// <summary>
-    /// 별자리 발현 폭발이 배리어를 깬다. 이 타격은 배리어가 흡수하므로 피해를 주지 않는다.
+    /// 별자리 발현 폭발이 배리어를 깬다. 피해는 주지 않으며, 호출부가 이어서 같은 타격의 피해를 준다.
     /// _sourcePos는 폭발 중심(깨지는 연출이 그쪽 면에서 시작한다). 배리어가 없거나 죽은/풀 나무면 false.
     /// </summary>
     public bool BreakBarrier(Vector3 _sourcePos)
@@ -132,7 +132,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         bBarrierActive = false;
         bHasLastBarrierImpact = false;
 
-        if (null != barrierVfx) barrierVfx.PlayBreak(_impact);
+        // 깨진 뒤 나무 테두리에 푸른 잔광을 잠깐 남긴다(쓰러지며 깨지면 풀로 돌아가며 바로 거둔다).
+        if (null != barrierVfx) barrierVfx.PlayBreak(_impact, treeVisualComponent);
 
         Sound.Play(SoundID.SporeShieldBreak, cachedTransform.position, 1f, true, BarrierBreakSoundPitch);
         TreeBarrierBrokenEvent?.Invoke(this, _impact);
@@ -506,9 +507,37 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     public float HeatDamageAmount => heatDamageAmount;
 
+    // 깎인 정도를 금·숯불로 보여 줄 때 끊는 단계 수. 단계가 바뀔 때만 렌더러에 쓴다.
+    private const int DamageCrackSteps = 12;
+
+    // 깎인 정도(0~1)를 나무 그림에 넘긴다. 나무 열기가 켜진 맵(본편 4스테이지)에서만 쓰고, 그리는 쪽도
+    // 그 맵에서만 그린다. 돌처럼 생긴 나무는 금이 가고, 침엽수 모양인 잿불 나무는 금 대신 속에서 숯불이 붙는다.
+    // 보석 단계 나무는 재질이 달라 둘 다 그리지 않으므로 지운다.
+    private void RefreshDamageCrack()
+    {
+        if (heatDamageAmount <= 0f || treeVisualComponent == null) return;
+
+        float amount = 0f;
+        if (false == bIsGemStage)
+        {
+            float maxHealth = health.GetMaxHealth();
+            float lostRatio = maxHealth > 0f ? Mathf.Clamp01(1f - health.GetCurrentHealth() / maxHealth) : 0f;
+            amount = Mathf.Round(lostRatio * DamageCrackSteps) / DamageCrackSteps;
+        }
+
+        treeVisualComponent.SetDamageLook(amount, TreeType.CinderTree == treeData.type);
+    }
+
     public void SetHeatDamageAmount(float _amount)
     {
         heatDamageAmount = _amount;
+
+        // 깎인 모습(금·숯불)은 나무 열기가 켜진 맵에서만 그린다(RefreshDamageCrack). 그 무늬 텍스처를 나무를 심는 동안
+        // (로딩 중) 미리 만들어 둬서, 첫 타격 때 만드느라 멈칫하지 않게 한다. 이미 있으면 아무것도 하지 않는다.
+        if (0f < _amount)
+        {
+            TreeDamagePatternTexture.EnsureGlobal();
+        }
     }
 
     private CustomSortable customSortable;
@@ -870,6 +899,13 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         // 핸들러는 던전의 것뿐이고, 던전 나무는 반드시 반환되므로 결과가 같다.
         bool bDeferHitVisual = (false == wasAlreadyDead && true == bDead);
         int resetTreeCountAtHit = resetTreeCount;
+
+        // 4스테이지 나무는 깎일수록 금이 가며 빛이 샌다(렌더링 전용). 이 타격으로 죽은 나무는 곧 풀로 돌아가며
+        // 금이 지워지므로 건너뛴다.
+        if (false == bDead)
+        {
+            RefreshDamageCrack();
+        }
 
         if (treeVisualComponent != null)
         {

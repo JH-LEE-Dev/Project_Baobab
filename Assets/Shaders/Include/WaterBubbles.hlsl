@@ -12,10 +12,14 @@
 // _WaterBubbleEdgeColor : 거품 아래쪽 테두리(그늘)와 막 올라올 때 점의 색
 // _WaterBubbleHighlightColor : 거품 윗쪽 하이라이트 색
 // _WaterBubbleSurface : rgb = 물 타일 그림의 수면색, a = 색 판정 허용 오차(0~1)
+// _WaterBubbleC : x = 섬을 둘러싼 바다 칸에서 거품이 올라오는 되풀이 비율(0~1, 1이면 어디서나 같은 빈도)
+// 바다 칸 판정은 용암 바다 지도(LavaSeaMap.hlsl, StageLavaSeaMap이 채운다)를 쓴다. 지도가 꺼져 있으면 어디서나 같은 빈도다.
 #include "StageAmbienceCommon.hlsl"
+#include "LavaSeaMap.hlsl"
 
 float4 _WaterBubbleA;
 float4 _WaterBubbleB;
+float4 _WaterBubbleC;
 float4 _WaterBubbleBodyColor;
 float4 _WaterBubbleEdgeColor;
 float4 _WaterBubbleHighlightColor;
@@ -72,6 +76,12 @@ float4 ComputeWaterBubbles(float2 _uv, float2 _positionWS, float4 _texelSize, fl
     float room = max(cellSize - 1.0 - edge * 2.0, 0.0);
     float2 cellOrigin = float2(cell.x * cellSize - rowShift, cell.y * cellSize);
     float2 center = cellOrigin + edge + floor(float2(WaterBubbleHash21(seed + 31.3), WaterBubbleHash21(seed + 47.9)) * (room + 1.0)) + 0.5;
+    // 섬을 둘러싼 바다에서는 되풀이 중 일부에서만 올라온다(거품 가운데 칸 기준이라 한 거품은 통째로 보이거나 빠진다).
+    if (IsLavaSeaMapEnabled() && _WaterBubbleC.x < 1.0 && WaterBubbleHash21(seed + 63.1) >= _WaterBubbleC.x && IsLavaSeaCell(center / ppu))
+    {
+        return 0.0;
+    }
+
     float2 offset = (texelId + 0.5) - center;
     float dist = length(offset);
 

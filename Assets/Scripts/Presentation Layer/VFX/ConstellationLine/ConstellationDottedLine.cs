@@ -105,6 +105,16 @@ public class ConstellationDottedLine : MonoBehaviour
     [Tooltip("전환 앞선이 지나가는 도트의 밝기 강조 정도(0~1). 0이면 강조 없음")]
     [SerializeField] [Range(0.0f, 1.0f)] private float felledTransitionGlow = 0.2f;
 
+    [Header("Last Star Warning (별 하나만 남았을 때 점선 맥동)")]
+    [Tooltip("맥동 박자(초당 횟수)")]
+    [SerializeField] private float lastStarPulseFrequency = 1.6f;
+
+    [Tooltip("켜질 때 맥동 세기가 다 오르는 데 걸리는 시간(초)")]
+    [SerializeField] private float lastStarFadeInSeconds = 0.35f;
+
+    [Tooltip("꺼질 때 맥동 세기가 다 내려가는 데 걸리는 시간(초)")]
+    [SerializeField] private float lastStarFadeOutSeconds = 0.25f;
+
     [Header("Editor Preview & Multi-Node Testing")]
     [Tooltip("에디터 인스펙터 및 씬 뷰에서 실시간 프리뷰 활성화")]
     [SerializeField] private bool previewInEditor = true;
@@ -136,6 +146,15 @@ public class ConstellationDottedLine : MonoBehaviour
 
     // 런타임 추적 상태
     private bool bHasDynamicTargets = false;
+
+    // 마지막 별 예고 맥동. 켜진 동안만 프로퍼티 블록을 쓰고, 꺼져 있으면 블록이 없어 머티리얼 기본값(맥동 없음) 그대로 그린다.
+    // _LastStarPulse: x = 세기(0~1), y = 지금 박자 밝기(0~1)
+    private static readonly int LastStarPulseId = Shader.PropertyToID("_LastStarPulse");
+    private static MaterialPropertyBlock lastStarBlock;
+    private bool bLastStarWarning = false;
+    private bool bLastStarBlockApplied = false;
+    private float lastStarWeight = 0.0f;
+    private float lastStarPhase = 0.0f;
 
     public bool IsClosedLoop
     {
@@ -187,6 +206,9 @@ public class ConstellationDottedLine : MonoBehaviour
 
     private void LateUpdate()
     {
+        // 마지막 별 예고 맥동(켜져 있거나 꺼지는 중일 때만 일한다). 메쉬는 다시 만들지 않고 셰이더 값만 바꾼다.
+        UpdateLastStarWarning(Time.deltaTime);
+
         // 벌목된 노드의 푸른빛 전환이 진행 중이면 그 프레임만 무할당 재빌드(전환이 끝나면 다시 정적 상태)
         bool bBlendChanged = AdvanceNodeBlends(Time.deltaTime);
 
@@ -247,6 +269,7 @@ public class ConstellationDottedLine : MonoBehaviour
     public void ReturnToPool()
     {
         Clear();
+        ResetLastStarWarning();
         bHasDynamicTargets = false;
         activeNodes.Clear();
         nodeBlendRaw.Clear();
@@ -268,6 +291,64 @@ public class ConstellationDottedLine : MonoBehaviour
     public void ForceReturnToPool()
     {
         ReturnToPool();
+    }
+
+    /// <summary>
+    /// 별자리를 이룰 별 표식 나무가 하나만 남았을 때 켠다. 켜진 동안 점선 전체가 빠르고 밝게 맥동해 발현이 가깝다는 것을 알린다.
+    /// 끄면(마지막 나무까지 벌목) 짧게 원래 밝기로 돌아간다. 렌더링 전용이다.
+    /// </summary>
+    public void SetLastStarWarning(bool _bOn)
+    {
+        if (true == _bOn && false == bLastStarWarning && 0.0f >= lastStarWeight)
+        {
+            // 박자는 어두운 쪽에서 시작해 켜지는 순간 번쩍 튀지 않게 한다.
+            lastStarPhase = 0.0f;
+        }
+        bLastStarWarning = _bOn;
+    }
+
+    private void UpdateLastStarWarning(float _deltaTime)
+    {
+        if (false == bLastStarWarning && 0.0f >= lastStarWeight) return;
+
+        float target = true == bLastStarWarning ? 1.0f : 0.0f;
+        float duration = true == bLastStarWarning ? lastStarFadeInSeconds : lastStarFadeOutSeconds;
+        lastStarWeight = 0.0f < duration ? Mathf.MoveTowards(lastStarWeight, target, _deltaTime / duration) : target;
+
+        if (0.0f >= lastStarWeight)
+        {
+            ClearLastStarBlock();
+            return;
+        }
+
+        lastStarPhase += _deltaTime * Mathf.Max(0.0f, lastStarPulseFrequency);
+        lastStarPhase -= Mathf.Floor(lastStarPhase);
+
+        // 0에서 시작해 한 박자마다 한 번 짧게 솟는 모양(세제곱으로 봉우리를 좁힌다)
+        float wave = 0.5f - 0.5f * Mathf.Cos(lastStarPhase * 2.0f * Mathf.PI);
+        float beat = wave * wave * wave;
+
+        if (null == meshRenderer) return;
+        if (null == lastStarBlock) lastStarBlock = new MaterialPropertyBlock();
+        lastStarBlock.Clear();
+        lastStarBlock.SetVector(LastStarPulseId, new Vector4(lastStarWeight, beat, 0.0f, 0.0f));
+        meshRenderer.SetPropertyBlock(lastStarBlock);
+        bLastStarBlockApplied = true;
+    }
+
+    private void ResetLastStarWarning()
+    {
+        bLastStarWarning = false;
+        lastStarWeight = 0.0f;
+        lastStarPhase = 0.0f;
+        ClearLastStarBlock();
+    }
+
+    private void ClearLastStarBlock()
+    {
+        if (false == bLastStarBlockApplied) return;
+        bLastStarBlockApplied = false;
+        if (null != meshRenderer) meshRenderer.SetPropertyBlock(null);
     }
 
     /// <summary>

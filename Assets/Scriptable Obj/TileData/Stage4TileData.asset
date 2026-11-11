@@ -62,8 +62,14 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d40770b0b77c7ce4b9e488754b5a8a64, type: 2}
   - {fileID: 11400000, guid: 6cb0b95cd84f3c44386a5c76619900bf, type: 2}
   - {fileID: 11400000, guid: c7a72b8ee78024e4f8ebaedf13b09afd, type: 2}
-  bloomGrassDecoTiles: []
-  bloomGroundDecoTiles: []
+  bloomGrassDecoTiles:
+  - {fileID: 11400000, guid: 35bf451a894922040b1a9cfb00c8cbc2, type: 2}
+  - {fileID: 11400000, guid: 670f94fd49c80b049901d252c8ddb321, type: 2}
+  - {fileID: 11400000, guid: a3c2802ab98d74146a0122bfb35844a0, type: 2}
+  bloomGroundDecoTiles:
+  - {fileID: 11400000, guid: 35bf451a894922040b1a9cfb00c8cbc2, type: 2}
+  - {fileID: 11400000, guid: 670f94fd49c80b049901d252c8ddb321, type: 2}
+  - {fileID: 11400000, guid: a3c2802ab98d74146a0122bfb35844a0, type: 2}
   waterDecoTiles: []
   bloomWaterDecoTiles: []
   insectDecoTiles: []
@@ -78,7 +84,9 @@ MonoBehaviour:
   sandStaticObjPrefabs: []
   shorelineStaticObjPrefabs: []
   shorelineAnimatedObjPrefabs: []
-  bloomDecoHDRIntensity: 1
+  bloomDecoHDRIntensity: 3
+  bloomDecoGlowOnly: 1
+  bloomDecoGlowRange: {x: 0.2, y: 0.6}
   bloomWaterDecoHDRIntensity: 1
   useWaterTileBloom: 1
   waterTileHDRIntensity: 1.85
@@ -99,7 +107,7 @@ MonoBehaviour:
   grassDecoDensity: 0.05
   bloomSandDecoDensity: 0.01
   bloomGroundDecoDensity: 0.002
-  bloomGrassDecoDensity: 0.07
+  bloomGrassDecoDensity: 0.03
   useBloomWaterDecoDensity: 0
   bloomWaterDecoDensity: 0.1
   windGust:
@@ -195,6 +203,7 @@ MonoBehaviour:
     duty: 0.7
     maxRadiusRange: {x: 2, y: 3}
     popFraction: 0.25
+    seaFrequency: 0.4
   mushroomSpores:
     enabled: 0
     mushroomPrefabs: []
@@ -276,7 +285,7 @@ MonoBehaviour:
     fallBelowRange: {x: 0, y: 0.15}
     sizePixelsRange: {x: 1, y: 2}
     colorA: {r: 1, g: 0.55, b: 0.12, a: 1}
-    colorB: {r: 1, g: 0.92, b: 0.55, a: 1}
+    colorB: {r: 1, g: 0.97, b: 0.8, a: 1}
     maxParticles: 64
   lavaGlow:
     enabled: 1
@@ -303,6 +312,23 @@ MonoBehaviour:
     evolveSpeed: 0.08
     coolThreshold: 0.38
     hotThreshold: 0.66
+    seaEnabled: 1
+    seaScale: 2.4
+    seaFarCells: 10
+    seaFarCoolRaise: 0.12
+    seaFarHotRaise: 0.15
+    seaFarColor: {r: 0.32, g: 0.05, b: 0.02, a: 1}
+    seaFarDarken: 0.5
+    crustEnabled: 1
+    crustSize: 1.3
+    crustDrift: {x: 0.035, y: 0.018}
+    crustCoverageNear: 0
+    crustCoverageFar: 0.45
+    crustGap: 0.1
+    crustRim: 0.07
+    crustColorA: {r: 0.13, g: 0.06, b: 0.06, a: 1}
+    crustColorB: {r: 0.22, g: 0.09, b: 0.07, a: 1}
+    crustRimColor: {r: 0.95, g: 0.42, b: 0.06, a: 1}
   hideWaterReflections: 1
   lavaShadowMask:
     enabled: 1
@@ -317,7 +343,7 @@ MonoBehaviour:
     pickAttempts: 24
     durationRange: {x: 0.3, y: 0.45}
     particlesPerSecond: 70
-    upSpeedRange: {x: 2.4, y: 3.4}
+    upSpeedRange: {x: 3.5, y: 4.5}
     sideSpeed: 0.12
     gravity: 8
     baseWidth: 0.05
@@ -325,6 +351,29 @@ MonoBehaviour:
     colorA: {r: 1, g: 0.5, b: 0.1, a: 1}
     colorB: {r: 1, g: 0.85, b: 0.35, a: 1}
     maxParticles: 128
+  decoSteam:
+    enabled: 1
+    material: {fileID: 2100000, guid: 011a11bb0d85ed6439baa3fe7728a601, type: 2}
+    sortingLayerName: Objects
+    sortingOrder: -32768
+    intervalRange: {x: 0.35, y: 0.8}
+    pickAttempts: 32
+    originOffset: {x: 0.03, y: -0.25}
+    originSpread: {x: 0.03, y: 0.02}
+    puffsPerBurst: {x: 2, y: 3}
+    puffGap: 0.14
+    sizePixelsRange: {x: 8, y: 11}
+    upSpeedRange: {x: 0.6, y: 0.85}
+    drag: 1
+    sideDrift: 0.1
+    lifetimeRange: {x: 1, y: 1.3}
+    colorA: {r: 0.86, g: 0.84, b: 0.84, a: 0.42}
+    colorB: {r: 0.72, g: 0.7, b: 0.7, a: 0.32}
+    maxParticles: 48
+    glowFlashDuration: 0.7
+  bloomDecoBreath:
+    enabled: 1
+    material: {fileID: 2100000, guid: 11685df7e91cebc4bb992acac7ab8726, type: 2}
   treeHeatCharge:
     enabled: 1
     hotMinRed: 0.4

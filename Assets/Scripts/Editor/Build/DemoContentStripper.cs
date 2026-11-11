@@ -983,7 +983,7 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
         // SporeBigExplosionEffect: 포자 포션 효과인 포자 대폭발 이펙트(VFX_SporeBigExplosion, 2026-10-15 추가)
         if (false == _s.spore) { _dropTags.Add("SporeShieldBrokenEffect"); _dropTags.Add("SporeShieldBrokenEffect_Bellpine"); _dropTags.Add("SporeBigExplosionEffect"); }
         // ConstellationNovaEffect: 별자리 발현 중심 마법진·은하 별 폭발 이펙트(VFX_ConstellationNova, 2026-10-13 추가)
-        if (false == _s.constellation) { _dropTags.Add("ManifestationBrandStampEffect"); _dropTags.Add("ConstellationNovaEffect"); }
+        if (false == _s.constellation) { _dropTags.Add("ManifestationBrandStampEffect"); _dropTags.Add("ConstellationNovaEffect"); _dropTags.Add("RoguelikeArenaNovaEffect"); }
         if (false == _s.heat) _dropTags.Add("TreeHeatEmitEffect");
         // StarRainEffect: 별빛 나침반(3스테이지 전리품) 효과인 유성우 이펙트(VFX_StarRain, 2026-10-16 추가)
         if (false == _s.MapReachable((int)MapType.StarrootForest)) _dropTags.Add("StarRainEffect");

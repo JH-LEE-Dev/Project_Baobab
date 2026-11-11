@@ -735,7 +735,7 @@ public partial class RoguelikeSystem
         waterDeco.Prepare(GetFieldViewRect(islandCenter, 0f), tileWave, tileWave.IsEntryWave);
         waveStrategy?.ConfigureField(center, islandRadiusX, islandRadiusY, null != balance ? balance.fieldEdgeInsetCells : 0, islandShape);
         // 오프로드 차선은 화면에 보이는 섬(칸 중심 기준 모양)에 맞춰야 테두리 타일 위에서 소환된다. 시작 칸이 아니라 섬 중심을 넘긴다.
-        skillController?.SetField(islandCenter, islandRadiusX, islandRadiusY, islandShape);
+        skillController?.SetField(islandCenter, islandRadiusX, islandRadiusY, islandShape, cell);
         inDungeonObjectManager.SetExternalTreeGenerationStrategy(waveStrategy, field.mapType);
 
         if (null == grassPositions)

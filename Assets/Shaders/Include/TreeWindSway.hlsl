@@ -23,10 +23,12 @@ float ComputeSwayPhase(float3 _objectWorldPos)
 // _QuakeShakeB : 떨림 세기(0 = 꺼짐), 앞머리 속도(거리/초), 물결이 닿는 거리, 피해 범위 경계 폭(떨림 각도가 범위 안→밖으로 바뀌는 폭, 범위가 한가운데)
 // _QuakeShakeC : 범위 안 떨림 각도(도), 범위 밖 떨림 각도(도, 물결이 닿는 거리로 갈수록 0), 떨림 시간(초), 떨림 진동수(Hz)
 // _QuakeShakeD : x = 물결 위 나무 높이 풀기(1 = 켜짐, QuakeObjectRide가 나무를 옮겨 그리는 동안)
+// _QuakeShakeE : x = 앞머리가 지날 때 진원 반대쪽으로 젖히는 최대 기울기(도, 0이면 없음)
 float4 _QuakeShakeA;
 float4 _QuakeShakeB;
 float4 _QuakeShakeC;
 float4 _QuakeShakeD;
+float4 _QuakeShakeE;
 
 // QuakeObjectRide가 물결 위 나무를 칸 높이만큼 옮겨 그리는 동안, 나무 루트 z에 (옮긴 픽셀 × 16 + 지진에 맞아 튀는 픽셀) × 이 단위를 담는다.
 // 나무는 z 0에 놓이고 렌더러는 모두 루트 자리라 피봇 z로 바로 푼다. 원래 자리로 위상·진원 거리를 구해야 옮기는 동안 위상이 튀지 않고
@@ -81,6 +83,12 @@ float3 ApplyQuakeShake(float3 _positionOS, float3 _groundPos, float _popY)
             float envelope = 1.0 - t / shiverSeconds;
             envelope *= envelope;
             float angle = radians(shiverDeg) * envelope * sin(_Time.y * 6.2832 * _QuakeShakeC.w + ComputeSwayPhase(_groundPos));
+
+            // 앞머리에 밀려 진원 반대쪽으로 확 젖혔다가 되튀며 잦아드는 기울기. 진원 바로 위(가로 차이 0)는 젖히지 않는다.
+            float side = offset.x / max(dist, 0.5);
+            float leanEnvelope = exp(-t * 7.0) * sin(t * 31.4159) * saturate(1.0 - t / shiverSeconds);
+            angle -= radians(_QuakeShakeE.x) * side * leanEnvelope * lerp(reachFade, 1.0, inside) * _QuakeShakeB.x;
+
             float sinR, cosR;
             sincos(angle, sinR, cosR);
 

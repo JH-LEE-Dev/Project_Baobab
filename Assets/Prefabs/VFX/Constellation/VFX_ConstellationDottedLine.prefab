@@ -116,6 +116,9 @@ MonoBehaviour:
   felledTransitionSeconds: 1.4
   felledTransitionDelay: 0.15
   felledTransitionGlow: 0.2
+  lastStarPulseFrequency: 1.6
+  lastStarFadeInSeconds: 0.35
+  lastStarFadeOutSeconds: 0.25
   previewInEditor: 1
   editorNodes:
   - position: {x: 0.9, y: -1.8, z: 0}

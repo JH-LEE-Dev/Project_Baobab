@@ -1990,6 +1990,102 @@ MonoBehaviour:
     allowDynamicExpansion: 1
     maxPoolSize: 16
     uiParticleScale: 0
+  - vfxTag: RoguelikeArenaNovaEffect
+    effectPrefab: {fileID: 1386752551214847544, guid: ce7cf4b0fe6f61e47889c6e66b19fe82, type: 3}
+    initialPoolSize: 2
+    allowDynamicExpansion: 1
+    maxPoolSize: 4
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_SporeTop
+    effectPrefab: {fileID: 5157871212107107942, guid: c4167cb8fdc61564d970c37e72c5cf1c, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_SporeBottom
+    effectPrefab: {fileID: 6651383443880070928, guid: 56daa8eeaadae3b4e8b5805eebdf4bca, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_StarTop
+    effectPrefab: {fileID: 7760558216636756918, guid: 95f7ca069e0a8b845b2037725ab1d47d, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_StarBottom
+    effectPrefab: {fileID: 911332297925315085, guid: 201a9881d6e4f89439a2823a2b86d610, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_MagmaTop
+    effectPrefab: {fileID: 1811928664671164538, guid: bd1f94abae3dd634e854a0ae1e8ea51a, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_MagmaBottom
+    effectPrefab: {fileID: 8660445953840562065, guid: 1fa3203a873bbb64491bee4d2736d441, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_LeafTop
+    effectPrefab: {fileID: 8850882219311395052, guid: 3c57274ee78a8724ca6c93763130554c, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_GemGoldTop
+    effectPrefab: {fileID: 7030779868186678155, guid: baea823a77b606147bd1b5dcbfe49913, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_GemGoldBottom
+    effectPrefab: {fileID: 919161589785508977, guid: 780233941c680b5479bd33b5ed295f55, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_GemDiamondTop
+    effectPrefab: {fileID: 6374472121801072187, guid: 39db2a0ad924b724689a86abbedd62fd, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_GemDiamondBottom
+    effectPrefab: {fileID: 4086504562625777689, guid: aa74217b7b0c3d5429baf495a92041c9, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_GemRainbowTop
+    effectPrefab: {fileID: 8918688838805226725, guid: 3807b0bfdd5167c4ca11cf949c214756, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_GemRainbowBottom
+    effectPrefab: {fileID: 5382117287196285688, guid: 49335b5e9f6675440938b462365cd9f4, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_MagmaBlastTop
+    effectPrefab: {fileID: 4650630329514857037, guid: 9b3ab2637fa35d142a82ebfcbd4f6c8d, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_MagmaBlastBottom
+    effectPrefab: {fileID: 8477616281450291841, guid: 570d5b6ac1cc47648a6a6056cfefcb3d, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
 --- !u!1 &5766810988037463456
 GameObject:
   m_ObjectHideFlags: 0
@@ -2874,9 +2970,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnvironmentSystem
   quakeRippleSettings:
     frontSpeed: 10
-    rippleHeight: 0.375
-    rippleWavelength: 4
-    rippleWaves: 2
+    rippleHeight: 0.56
+    rippleWavelength: 6
+    rippleWaves: 2.5
     calmRadius: 1.2
     reachRadius: 15
     reachFalloffPower: 1.2
@@ -2890,21 +2986,41 @@ MonoBehaviour:
     crackGlowHDRIntensity: 3.2
     rideObjects: 1
     viewMargin: 8
-    cameraShakeIntensity: 3
+    cameraShakeIntensity: 4.5
     cameraShakeSeconds: 1.1
-    cameraKickDistance: 0.3
+    cameraKickDistance: 0.45
     cameraKickSeconds: 0.3
     epicenterBoost: 0.6
     epicenterBoostRadius: 5
+    shockwaveMaterial: {fileID: 2100000, guid: 8cd6b43f55eb00246b4948637b731dd5, type: 2}
+    buildUpSeconds: 0.35
+    buildUpRadius: 6
+    buildUpTremblePixels: 2
+    buildUpTrembleHz: 22
+    buildUpShakeIntensity: 0.9
+    buildUpDarkenExposure: 0.35
+    objectPop: 1
+    objectPopHeight: 0.3
+    objectPopSeconds: 0.32
+    characterPopHeight: 0.22
+    characterSquash: 0.22
+    characterSquashSeconds: 0.34
+    debrisMaterial: {fileID: 2100000, guid: 2373fc59f2f03354da54f465c93d16ac, type: 2}
+    dustPerSecond: 520
+    dustColor: {r: 0.74, g: 0.66, b: 0.58, a: 0.85}
+    chipChance: 0.3
+    chipColor: {r: 0.5, g: 0.43, b: 0.38, a: 1}
+    fallSeconds: 1.3
+    fallPerSecond: 80
     strikeOutsideScale: 0.45
     strikeEdge: 1.5
     treeShake: 1
-    treeShiverDegrees: 3.5
+    treeShiverDegrees: 5
     treeShiverOutsideDegrees: 1.2
     treeShiverSeconds: 0.45
     treeShiverHz: 13
-    treePopHeight: 0.16
-    treePopSeconds: 0.2
+    treePopHeight: 0.4
+    treePopSeconds: 0.3
 --- !u!1 &7291486191322297758
 GameObject:
   m_ObjectHideFlags: 0
@@ -3895,10 +4011,8 @@ MonoBehaviour:
   obsidianCharmPityMaxKills: 5
   obsidianCharmTier3PrestigeLevel: 11
   quakeChargePerEmber: 0.1
-  quakeTier1Damage: 200
-  quakeTier1Range: 4
-  quakeTier3Damage: 400
-  quakeTier3Range: 5.5
+  quakeTier1Damage: 1500000
+  quakeTier3Damage: 5000000
   goldTreePityMinKills: 3
   goldTreePityMaxKills: 7
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}

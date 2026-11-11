@@ -7,7 +7,8 @@ namespace PresentationLayer.VFX
     ///
     /// - 평소: 머티리얼 기본값만으로 그린다(MaterialPropertyBlock 없음). 컴포넌트는 꺼져 있어 Update 비용이 없고, 같은 머티리얼끼리 SRP 배처에 묶인다.
     /// - 피격(PlayHit): 맞은 자리를 넘기고 0.45초 동안 _HitAge를 올린다. 끝나면 블록을 지우고 다시 평소 상태로 돌아간다.
-    /// - 파괴(PlayBreak): 맞은 자리에서 금이 번지고 조각이 떨어져 나가는 0.5초 연출 뒤 스스로 비활성화된다.
+    /// - 파괴(PlayBreak): 맞은 자리에서 금이 번지고 조각이 떨어져 나가는 0.5초 연출 뒤 껍질을 감춘다. 깨지는 순간부터 나무 그림 테두리에
+    ///   푸른 잔광(TreeVisualComponent.SetBarrierAfterglow)을 1.4초 동안 넣었다가 거둔 뒤 스스로 비활성화된다.
     ///
     /// 껍질 모양(밑동 기준 px)은 상수로 고정이며 머티리얼 값도 같은 값이다(TreeBarrierBuilder가 맞춘다).
     /// 셰이더가 월드 픽셀 격자로 그리므로 메쉬는 껍질을 덮는 사각형 하나면 된다(인스턴스끼리 공유).
@@ -24,6 +25,13 @@ namespace PresentationLayer.VFX
 
         public const float HitDuration = 0.45f;
         public const float BreakDuration = 0.5f;
+
+        // 깨진 뒤 나무 테두리 잔광(깨지는 순간부터 잰다): 빠르게 켜지고, 껍질 조각이 흩어지는 동안 가장 밝게 머문 뒤 서서히 꺼진다.
+        public const float AfterglowDuration = 1.4f;
+        private const float AfterglowRiseTime = 0.08f;
+        private const float AfterglowHoldEnd = 0.3f;
+        // 잔광 세기를 이 단계로 끊어 넘긴다(같은 값이면 나무 쪽이 프로퍼티 블록을 다시 쓰지 않는다 - 한꺼번에 깨지는 나무가 많다)
+        private const float AfterglowSteps = 20.0f;
 
         private const float PixelsPerUnit = 32.0f;
         private const float MeshMarginPx = 2.0f;
@@ -45,6 +53,8 @@ namespace PresentationLayer.VFX
         private float hitAge;
         private float breakAge;
         private Vector2 hitPointPx;
+        // 잔광을 넣는 나무 그림. 깨짐 연출 동안만 들고 있는다.
+        private TreeVisualComponent afterglowTarget;
 
         /// <summary>껍질 중심(월드). _root는 나무 밑동 위치.</summary>
         public static Vector3 GetShellCenter(Vector3 _root)
@@ -79,7 +89,9 @@ namespace PresentationLayer.VFX
             EnsureInitialized();
             bHitPlaying = false;
             bBreakPlaying = false;
+            ClearAfterglow();
             meshRenderer.SetPropertyBlock(null);
+            meshRenderer.enabled = true;
             if (false == gameObject.activeSelf) gameObject.SetActive(true);
             enabled = false;
         }
@@ -89,7 +101,13 @@ namespace PresentationLayer.VFX
         {
             bHitPlaying = false;
             bBreakPlaying = false;
-            if (null != meshRenderer) meshRenderer.SetPropertyBlock(null);
+            ClearAfterglow();
+            if (null != meshRenderer)
+            {
+                meshRenderer.SetPropertyBlock(null);
+                // 잔광 동안 껍질만 감춰 두었을 수 있으므로 다음 Show를 위해 되돌려 둔다.
+                meshRenderer.enabled = true;
+            }
             if (true == gameObject.activeSelf) gameObject.SetActive(false);
         }
 
@@ -111,16 +129,22 @@ namespace PresentationLayer.VFX
             Push();
         }
 
-        /// <summary>깨지는 연출. 끝나면 스스로 비활성화된다.</summary>
-        public void PlayBreak(Vector3 _worldImpact)
+        /// <summary>
+        /// 깨지는 연출. 끝나면 스스로 비활성화된다. _afterglowTarget을 주면 그 나무 그림 테두리에 푸른 잔광을 넣는다
+        /// (없으면 예전처럼 껍질 연출만 하고 0.5초 뒤 꺼진다).
+        /// </summary>
+        public void PlayBreak(Vector3 _worldImpact, TreeVisualComponent _afterglowTarget = null)
         {
             if (false == gameObject.activeSelf) return;
 
+            ClearAfterglow();
+            afterglowTarget = _afterglowTarget;
             hitPointPx = ToLocalPx(_worldImpact);
             breakAge = 0.0f;
             bBreakPlaying = true;
             bHitPlaying = false;
             enabled = true;
+            UpdateAfterglow();
             Push();
         }
 
@@ -185,13 +209,24 @@ namespace PresentationLayer.VFX
             if (true == bBreakPlaying)
             {
                 breakAge += dt;
-                if (BreakDuration <= breakAge)
+                float endAge = null != afterglowTarget ? AfterglowDuration : BreakDuration;
+                if (endAge <= breakAge)
                 {
                     HideImmediate();
                     return;
                 }
 
-                Push();
+                UpdateAfterglow();
+
+                if (BreakDuration > breakAge)
+                {
+                    Push();
+                }
+                else if (true == meshRenderer.enabled)
+                {
+                    // 껍질 연출은 끝났고 잔광만 남았다 - 껍질은 감춘다.
+                    meshRenderer.enabled = false;
+                }
                 return;
             }
 
@@ -218,6 +253,37 @@ namespace PresentationLayer.VFX
             // 비활성화(풀 반환 등)되면 연출 상태가 남지 않게 지운다. 다시 켜질 때는 Show가 평소 상태로 시작한다.
             bHitPlaying = false;
             bBreakPlaying = false;
+            ClearAfterglow();
+        }
+
+        // 깨진 뒤 지난 시간에 맞춰 나무 테두리 잔광 세기를 넣는다.
+        private void UpdateAfterglow()
+        {
+            if (null == afterglowTarget) return;
+
+            float glow;
+            if (AfterglowRiseTime > breakAge)
+            {
+                glow = breakAge / AfterglowRiseTime;
+            }
+            else if (AfterglowHoldEnd > breakAge)
+            {
+                glow = 1.0f;
+            }
+            else
+            {
+                float u = Mathf.Clamp01((breakAge - AfterglowHoldEnd) / (AfterglowDuration - AfterglowHoldEnd));
+                glow = (1.0f - u) * (1.0f - u);
+            }
+
+            afterglowTarget.SetBarrierAfterglow(Mathf.Ceil(glow * AfterglowSteps) / AfterglowSteps);
+        }
+
+        private void ClearAfterglow()
+        {
+            if (null == afterglowTarget) return;
+            afterglowTarget.SetBarrierAfterglow(0.0f);
+            afterglowTarget = null;
         }
     }
 }

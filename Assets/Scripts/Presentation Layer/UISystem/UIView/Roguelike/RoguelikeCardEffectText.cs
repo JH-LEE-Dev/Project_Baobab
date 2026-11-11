@@ -84,57 +84,6 @@ public static class RoguelikeCardEffectText
         }
     }
 
-    /// <summary>
-    /// 보유 카드 확인 화면용 "현재 효과". 1레벨부터 현재 레벨까지 같은 (효과, 스킬)을 합산해, 지금 가진 효과를 이름만 한 줄씩 만든다("피해").
-    /// 수치 · 부호 · 화살표 없이 합산 값의 부호로 버프 / 디메리트만 나눈다. Build와 같은 문구 키 · 분리 규칙을 쓰되, 이 레벨에서 바뀐 것이 아니라 지금 가진 효과 전부를 보여 준다(다음 레벨 미리보기는 없다).
-    ///   추가 문구(_X&lt;레벨&gt;)  현재 레벨 이하에서 가장 높은 레벨의 한 줄이 이전 레벨의 것을 대신한다.
-    ///   조합 오버라이드(_L&lt;레벨&gt;)  있으면 효과 줄 전체를 그 문구로 대신한다.
-    /// _benefit · _demerit을 먼저 비운다. 카드 데이터가 없거나 보여 줄 효과가 없으면 둘 다 비어 있다.
-    /// </summary>
-    public static void BuildCurrent(in RoguelikeOwnedCardViewData _data, LocalizationManager _localization, StringBuilder _benefit, StringBuilder _demerit)
-    {
-        _benefit.Clear();
-        _demerit.Clear();
-
-        CardDefinitionSO card = _data.card;
-        if (null == card || null == _localization || null == card.levels || 0 == card.levels.Count) return;
-
-        int level = Mathf.Clamp(_data.level, 1, card.levels.Count);
-
-        string overrideText = _localization.GetText(GetCardKey(card.cardId, level));
-        if (false == string.IsNullOrEmpty(overrideText))
-        {
-            _benefit.Append(overrideText);
-            return;
-        }
-
-        Collect(card, level);
-
-        for (int i = 0; i < slotCount; i++)
-        {
-            ref EffectSlot slot = ref slots[i];
-            if (0f == slot.after || ERunEffect.UnlockSkill == slot.effect) continue;
-
-            string template = GetTemplate(_localization, slot.effect, slot.skill);
-            if (string.IsNullOrEmpty(template)) continue;
-
-            StringBuilder target = false == IsBeneficial(slot.effect, slot.after) ? _demerit : _benefit;
-            if (0 < target.Length) target.Append('\n');
-
-            AppendLine(target, template);
-        }
-
-        for (int extraLevel = level; 1 <= extraLevel; extraLevel--)
-        {
-            string extraText = _localization.GetText(GetExtraKey(card.cardId, extraLevel));
-            if (true == string.IsNullOrEmpty(extraText)) continue;
-
-            if (0 < _benefit.Length) _benefit.Append('\n');
-            _benefit.Append(extraText);
-            break;
-        }
-    }
-
     // // 수치 모으기
 
     /// <summary>1레벨부터 _level까지의 효과를 (효과, 스킬)별 누적으로 모은다. after = 이 레벨까지의 합, bChanged = 이 레벨에서 바뀜.</summary>

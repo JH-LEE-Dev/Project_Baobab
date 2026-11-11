@@ -133,6 +133,8 @@ public class RoguelikeSkillController : MonoBehaviour
     private IslandShapeType fieldShape = IslandShapeType.Ellipse;
     private float fieldRadiusX = 8f;
     private float fieldRadiusY = 4.5f;
+    // 타일 한 칸의 크기(월드). 섬 반지름은 칸 중심 기준이라, 보이는 가장자리는 반 칸 더 바깥이다(스텔라+드론 노바 범위).
+    private Vector2 fieldCellSize = new Vector2(1f, 0.5f);
 
     private readonly List<IStaticCollidable> scanBuffer = new List<IStaticCollidable>(128);
     // 부메랑+충격파: 이번 프레임에 이미 충격파를 낸 자리(가까운 자리는 하나로 합친다).
@@ -143,6 +145,13 @@ public class RoguelikeSkillController : MonoBehaviour
     private readonly Stack<RoguelikeStar> starPool = new Stack<RoguelikeStar>(16);
     private readonly List<RoguelikeStar> pendingStarHits = new List<RoguelikeStar>(4);
     private int nextStarId = 1;
+
+    // 스텔라+드론 별이 놓이는 섬 위 고정 칸 수(기획서 v3.0 6-2: 꼭짓점 4 · 변 중점 4 · 중앙 1).
+    private const int StellaDroneSlotCount = 9;
+    // 이 거리 안에 별이 있으면 그 칸은 찬 것으로 본다(별은 칸 위치에 정확히 놓이므로 작게 둔다).
+    private const float StellaDroneSlotOccupiedDistance = 0.5f;
+    // 스텔라+드론: 확률 판정에 성공해 생성을 기다리는 별의 생성 예정 시각(오름차순). 생성 위치는 생성 순간의 첫 빈칸이다.
+    private readonly List<float> pendingStellaDroneStars = new List<float>(StellaDroneSlotCount);
 
     private readonly List<MarkedTree> markedTrees = new List<MarkedTree>(128);
     private readonly List<Contamination> contaminations = new List<Contamination>(64);
@@ -289,13 +298,17 @@ public class RoguelikeSkillController : MonoBehaviour
         appliedMarkDamageBonus = _bonus;
     }
 
-    /// <summary>섬의 모양·중심·반지름(월드). 오프로드가 섬 가장자리에서 반대편 가장자리로 돌진하는 데 쓴다.</summary>
-    public void SetField(Vector3 _center, float _radiusX, float _radiusY, IslandShapeType _shape = IslandShapeType.Ellipse)
+    /// <summary>
+    /// 섬의 모양·중심·반지름(월드, 칸 중심 기준)과 타일 한 칸의 크기. 오프로드가 섬 가장자리에서 반대편 가장자리로 돌진하고,
+    /// 스텔라+드론이 별을 고정 9칸에 놓고 섬 전체 노바를 터뜨리는 데 쓴다. _cellSize가 0이면 기존 값(기본 1 × 0.5)을 둔다.
+    /// </summary>
+    public void SetField(Vector3 _center, float _radiusX, float _radiusY, IslandShapeType _shape = IslandShapeType.Ellipse, Vector2 _cellSize = default)
     {
         fieldShape = _shape;
         fieldCenter = _center;
         fieldRadiusX = Mathf.Max(1f, _radiusX);
         fieldRadiusY = Mathf.Max(1f, _radiusY);
+        if (_cellSize.x > 0f && _cellSize.y > 0f) fieldCellSize = _cellSize;
     }
 
     /// <summary>웨이브 전투 시작. _tierIndex(0부터)는 별 폭발 피해 상한(4티어부터)을 거는 데 쓴다.</summary>
@@ -318,6 +331,7 @@ public class RoguelikeSkillController : MonoBehaviour
         pendingBoomerangHits.Clear();
         pendingSporeExplosions.Clear();
         recentSporeExplosions.Clear();
+        pendingStellaDroneStars.Clear();
     }
 
     /// <summary>
@@ -330,6 +344,15 @@ public class RoguelikeSkillController : MonoBehaviour
         bActive = false;
 
         bool bKeepStars = _bWaveEnd && modifiers.IsComboActive(ERoguelikeCombo.StellaDrone);
+
+        // 생성을 기다리던 스텔라+드론 별: 웨이브 종료면 바로 생성해 개수를 이어 가고, 런 종료면 버린다(기획서 v3.0 6-2 "웨이브 종료").
+        if (bKeepStars)
+        {
+            for (int i = 0; i < pendingStellaDroneStars.Count; i++) SpawnStellaDroneSlotStar();
+        }
+
+        pendingStellaDroneStars.Clear();
+
         if (false == bKeepStars)
         {
             for (int i = activeStars.Count - 1; i >= 0; i--) DespawnStar(i, false);
@@ -576,14 +599,27 @@ public class RoguelikeSkillController : MonoBehaviour
     {
         if (null == starPrefab || false == modifiers.IsSkillUnlocked(ERoguelikeSkill.Stella)) return;
 
-        int maxStars = MaxStars();
-        if (activeStars.Count >= maxStars) return;
+        bool bStellaDrone = modifiers.IsComboActive(ERoguelikeCombo.StellaDrone);
+
+        // 스텔라+드론은 필드의 별과 생성 대기 중인 별을 합쳐 노바 수(9칸)면 판정하지 않는다(기획서 v3.0 6-2 "생성 지연").
+        if (bStellaDrone ? activeStars.Count + pendingStellaDroneStars.Count >= StellaDroneNovaStars() : activeStars.Count >= MaxStars()) return;
 
         float chance = tuning.stellaBaseChance + modifiers.GetForSkill(ERunEffect.ChancePercent, ERoguelikeSkill.Stella);
         if (Random.value * 100f >= chance) return;
 
-        bool bStellaDrone = modifiers.IsComboActive(ERoguelikeCombo.StellaDrone);
+        // 스텔라+드론의 별은 쓰러진 나무 자리가 아니라 잠시 뒤 섬 위 고정 칸에 생긴다(UpdateStellaDrone이 시각이 된 별을 놓는다).
+        if (bStellaDrone)
+        {
+            pendingStellaDroneStars.Add(Time.time + Mathf.Max(0f, tuning.stellaDroneStarSpawnDelay));
+            return;
+        }
 
+        SpawnStar(_position, false);
+    }
+
+    /// <summary>_position에 별 하나를 놓는다. 상한 · 확률 판정은 부르는 쪽이 끝냈다.</summary>
+    private void SpawnStar(Vector3 _position, bool bStellaDrone)
+    {
         RoguelikeStar star = starPool.Count > 0 ? starPool.Pop() : CreateStar();
         star.Place(nextStarId++, _position, GetFirstLayer(treeLayer), false == bStellaDrone);
         // 본편 땅 별(별 표식 나무에서 나오는 별)을 그릴 수 있으면 로그라이크 별 자체 그림은 숨긴다. 판정은 그대로다.
@@ -610,6 +646,62 @@ public class RoguelikeSkillController : MonoBehaviour
         if (modifiers.IsComboActive(ERoguelikeCombo.StellaDrone)) max = Mathf.Max(max, tuning.stellaDroneNovaStars);
 
         return Mathf.Max(1, max);
+    }
+
+    /// <summary>스텔라+드론 노바가 터지는 별 수. 별은 고정 칸에만 놓이므로 칸 수(9)를 넘지 않는다.</summary>
+    private int StellaDroneNovaStars() => Mathf.Clamp(tuning.stellaDroneNovaStars, 1, StellaDroneSlotCount);
+
+    /// <summary>
+    /// 스텔라+드론 고정 칸 _index(0부터)의 월드 위치. 섬(마름모)의 3×3 격자를 가장자리에서 stellaDroneSlotInset만큼 안쪽으로 당긴 자리이며,
+    /// 순서는 꼭짓점(위 → 오른쪽 → 아래 → 왼쪽) → 변 중점(오른쪽 위 → 오른쪽 아래 → 왼쪽 아래 → 왼쪽 위) → 중앙이다(기획서 v3.0 6-2).
+    /// </summary>
+    private Vector3 GetStellaDroneSlot(int _index)
+    {
+        float inset = Mathf.Clamp01(tuning.stellaDroneSlotInset);
+        float rx = fieldRadiusX * inset;
+        float ry = fieldRadiusY * inset;
+
+        Vector2 offset;
+        switch (_index)
+        {
+            case 0: offset = new Vector2(0f, ry); break;
+            case 1: offset = new Vector2(rx, 0f); break;
+            case 2: offset = new Vector2(0f, -ry); break;
+            case 3: offset = new Vector2(-rx, 0f); break;
+            case 4: offset = new Vector2(rx * 0.5f, ry * 0.5f); break;
+            case 5: offset = new Vector2(rx * 0.5f, -ry * 0.5f); break;
+            case 6: offset = new Vector2(-rx * 0.5f, -ry * 0.5f); break;
+            case 7: offset = new Vector2(-rx * 0.5f, ry * 0.5f); break;
+            default: offset = Vector2.zero; break;
+        }
+
+        return fieldCenter + (Vector3)offset;
+    }
+
+    /// <summary>순서상 첫 빈칸(그 자리 가까이에 별이 없는 칸)에 별을 놓는다. 티어 전환으로 별이 빠져도 그 칸부터 다시 채운다.</summary>
+    private void SpawnStellaDroneSlotStar()
+    {
+        if (null == starPrefab) return;
+
+        float occupiedSq = StellaDroneSlotOccupiedDistance * StellaDroneSlotOccupiedDistance;
+        for (int slot = 0; slot < StellaDroneSlotCount; slot++)
+        {
+            Vector3 slotPos = GetStellaDroneSlot(slot);
+            bool bOccupied = false;
+            for (int i = 0; i < activeStars.Count; i++)
+            {
+                if (((Vector2)activeStars[i].transform.position - (Vector2)slotPos).sqrMagnitude <= occupiedSq)
+                {
+                    bOccupied = true;
+                    break;
+                }
+            }
+
+            if (bOccupied) continue;
+
+            SpawnStar(slotPos, true);
+            return;
+        }
     }
 
     private RoguelikeStar CreateStar()
@@ -1636,7 +1728,17 @@ public class RoguelikeSkillController : MonoBehaviour
         if (false == modifiers.IsComboActive(ERoguelikeCombo.StellaDrone))
         {
             if (starLinks.Count > 0) starLinks.Clear();
+            pendingStellaDroneStars.Clear();
             return;
+        }
+
+        // 생성 지연(기획서 v3.0 6-2): 시각이 된 대기 별을 고정 칸에 놓는다. 대기 목록은 시각 오름차순이다.
+        int due = 0;
+        while (due < pendingStellaDroneStars.Count && pendingStellaDroneStars[due] <= _now) due++;
+        if (due > 0)
+        {
+            pendingStellaDroneStars.RemoveRange(0, due);
+            for (int i = 0; i < due; i++) SpawnStellaDroneSlotStar();
         }
 
         // 조합을 산 순간 이미 떠 있던 별도 더 이상 공격받지 않는다.
@@ -1647,16 +1749,17 @@ public class RoguelikeSkillController : MonoBehaviour
 
         if (activeStars.Count >= 2 && 0 == starLinks.Count) RebuildStarLinks();
 
-        // 별이 노바 수만큼 모이면 노바. 모든 별이 사라지고 처음부터 다시 모은다.
-        if (activeStars.Count >= tuning.stellaDroneNovaStars)
+        // 고정 칸이 모두 별로 차면 노바. 모든 별이 사라지고 1번 칸부터 다시 모은다.
+        // 노바는 섬 중심에서 섬 전체를 치는 고정 크기다(기획서 v3.0 6-2, 범위 증가 영향 없음, 피해 증가는 받는다).
+        // 반폭 · 반높이는 섬의 보이는 가장자리(칸 중심 반지름 + 반 칸)이고, 판정 반경은 그 둘 중 큰 값이라 섬 전체를 덮는다.
+        // 이펙트는 아레나 마름모 노바라 position2에 반폭 · 반높이를 담아 보낸다(기획서 부록 C-3 4-11).
+        if (activeStars.Count >= StellaDroneNovaStars())
         {
-            Vector3 centroid = Vector3.zero;
-            for (int i = 0; i < activeStars.Count; i++) centroid += activeStars[i].transform.position;
-            centroid /= activeStars.Count;
-
-            float radius = tuning.stellaDroneNovaRadius * RangeMul(ERoguelikeSkill.Stella);
-            DamageTreesInRadius(centroid, radius, tuning.stellaDroneNovaDamage * DamageMul(ERoguelikeSkill.Stella), false);
-            Publish(ERoguelikeSkillVfx.StarNova, centroid, centroid, radius, 0f, 0);
+            float halfWidth = fieldRadiusX + fieldCellSize.x * 0.5f;
+            float halfHeight = fieldRadiusY + fieldCellSize.y * 0.5f;
+            float radius = Mathf.Max(halfWidth, halfHeight);
+            DamageTreesInRadius(fieldCenter, radius, tuning.stellaDroneNovaDamage * DamageMul(ERoguelikeSkill.Stella), false);
+            Publish(ERoguelikeSkillVfx.StarNova, fieldCenter, new Vector3(halfWidth, halfHeight, 0f), radius, 0f, 0);
 
             // 노바 때 별이 모두 소멸한다(기획서). 별마다 소멸 연출 지점을 알린다.
             for (int i = activeStars.Count - 1; i >= 0; i--)

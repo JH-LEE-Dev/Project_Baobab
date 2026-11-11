@@ -170,7 +170,8 @@ public sealed class RoguelikeSkillVfxPlayer
             // DroneStarShot: 레이저 그림은 본편 드론 연쇄 번개가 총구 → 별 그림 중심 → 체인 나무로 이미 그린다(Character.OnDronePriorityShot).
 
             case ERoguelikeSkillVfx.StarNova:
-                vfx?.PlayConstellationNovaVFX(_signal.position, _signal.radius);
+                // 섬 중심에서 섬 전체를 치는 노바라 아레나 가장자리에 맞춘 마름모 노바를 쓴다(position2 = 반폭 · 반높이, 기획서 부록 C-3 4-11).
+                vfx?.PlayRoguelikeArenaNovaVFX(_signal.position, _signal.position2.x, _signal.position2.y);
                 Sound.Play(SoundID.StarExplosion, _signal.position);
                 CameraMoveController.Instance?.ShakeCamera(6f, 0.35f);
                 break;

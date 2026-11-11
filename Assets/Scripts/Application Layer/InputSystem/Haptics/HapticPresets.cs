@@ -159,6 +159,28 @@ public static class HapticPresets
         new HapticStep(0.40f, 0.65f, 0.10f),
         new HapticStep(0.15f, 0.35f, 0.16f));
 
+    // 과열이 가득 참 - 몸에서 열기가 "쿵" 터져 나가는 묵직한 첫 충격 뒤, 물결이 퍼져 나가는 동안 지글거리며 잦아든다.
+    // 첫 충격은 전리품 기둥 착지(lootPillarLanding)급으로 무겁게 주고, 꼬리는 가는 모터 위주로 타오르는 느낌만 남긴다.
+    // 총 0.75초로 화면의 열기 물결(약 1초)과 함께 끝난다. 원정에 한 번뿐인 순간이라 길게 줘도 피로하지 않다.
+    private static readonly HapticPattern overheatFull = new HapticPattern(
+        new HapticStep(0.95f, 0.75f, 0.10f),
+        new HapticStep(0.55f, 0.70f, 0.15f),
+        new HapticStep(0.30f, 0.50f, 0.20f),
+        new HapticStep(0.12f, 0.28f, 0.30f));
+
+    // 지진 여진 - 본 지진보다 한 단계 약한 "쿵" 한 번이 짧게 잦아든다. 굵은 모터 위주(땅이 한 번 더 내려앉는 느낌), 총 0.45초.
+    private static readonly HapticPattern quakeAftershock = new HapticPattern(
+        new HapticStep(0.65f, 0.40f, 0.08f),
+        new HapticStep(0.40f, 0.15f, 0.15f),
+        new HapticStep(0.15f, 0f, 0.22f));
+
+    // 지진 전조 - 터지기 직전 땅속에서 웅웅 차오르는 떨림. 굵은 모터만 약하게 시작해 점점 세지고, 바로 이어지는 지진(earthquake)의 첫 충격(1.0)보다
+    // 확실히 약해야 "쾅"이 산다. 총 0.36초로 화면의 전조(0.35초)와 같다.
+    private static readonly HapticPattern quakeBuildUp = new HapticPattern(
+        new HapticStep(0.10f, 0f, 0.12f),
+        new HapticStep(0.20f, 0.03f, 0.12f),
+        new HapticStep(0.32f, 0.07f, 0.12f));
+
     private static readonly HapticPattern[] patterns = BuildPatterns();
 
     /// <summary>
@@ -216,6 +238,9 @@ public static class HapticPresets
         _table[(int)EHapticEvent.Earthquake] = earthquake;
         _table[(int)EHapticEvent.LootPillarLanding] = lootPillarLanding;
         _table[(int)EHapticEvent.TreeHeatHit] = treeHeatHit;
+        _table[(int)EHapticEvent.OverheatFull] = overheatFull;
+        _table[(int)EHapticEvent.QuakeAftershock] = quakeAftershock;
+        _table[(int)EHapticEvent.QuakeBuildUp] = quakeBuildUp;
 
         return _table;
     }

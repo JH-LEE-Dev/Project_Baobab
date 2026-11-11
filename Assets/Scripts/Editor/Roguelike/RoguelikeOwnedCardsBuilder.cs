@@ -222,7 +222,7 @@ public static class RoguelikeOwnedCardsBuilder
             scroll.movementType = ScrollRect.MovementType.Clamped;
             scroll.inertia = false;
 
-            // ---- 설명(오른쪽): 설명 패널(이름 · 레벨 · 구분선 · 설명 · 현재 효과). 카드 그림은 목록의 카드가 이미 보여 준다. 배경 상자 없이 패널 위에 바로 놓는다.
+            // ---- 설명(오른쪽): 설명 패널(이름 · 레벨 · 구분선 · 설명). 카드 그림은 목록의 카드가 이미 보여 준다. 배경 상자 없이 패널 위에 바로 놓는다.
             RectTransform info = CreateSlicedPanel("Info", content, _sprites.infoPanel, 224f, 300f, true);
             CanvasGroup infoGroup = info.gameObject.AddComponent<CanvasGroup>();
 

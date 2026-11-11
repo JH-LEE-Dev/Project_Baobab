@@ -168,8 +168,11 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     [Tooltip("이음선 레이저의 판정 폭과 이음선 하나당 피해. 발사 주기는 따로 없고 드론 레이저 발사 주기(공격속도 반영)를 그대로 쓴다(기획서 v2.8 6-2).")]
     public float stellaDroneBeamWidth = 0.6f;
     public float stellaDroneBeamDamage = 40f;
-    [Tooltip("이 수만큼 별이 이어지면 노바(기획서 9개).")]
+    [Tooltip("섬 위 고정 칸(9칸)이 이 수만큼 별로 차면 노바(기획서 9개). 노바는 섬 중심에서 섬 전체를 치는 고정 크기다(기획서 v3.0 6-2).")]
     public int stellaDroneNovaStars = 9;
-    public float stellaDroneNovaRadius = 6f;
     public float stellaDroneNovaDamage = 600f;
+    [Tooltip("별 생성 지연(초). 나무를 부숴 별 생성 판정에 성공하면 이 시간 뒤에 고정 칸에 생긴다(기획서 v3.0 6-2, 0.35초).")]
+    public float stellaDroneStarSpawnDelay = 0.35f;
+    [Tooltip("별 고정 칸의 안쪽 비율(0~1). 섬 3×3 격자 칸을 섬 가장자리에서 이 비율만큼 중심 쪽으로 당긴다(기획서 v3.0 6-2, 초안 0.9).")]
+    [Range(0f, 1f)] public float stellaDroneSlotInset = 0.9f;
 }

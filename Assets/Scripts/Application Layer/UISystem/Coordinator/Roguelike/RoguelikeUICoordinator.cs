@@ -283,7 +283,7 @@ public sealed class RoguelikeUICoordinator
     {
         if (null == hudUI) return;
 
-        hudUI.SetWave(_signal.spec.waveNumber, _signal.spec.bUnlimit, _signal.spec.unlimitIndex);
+        hudUI.SetWave(_signal.spec.waveNumber, _signal.spec.bUnlimit, _signal.spec.unlimitIndex, runInfo?.RegionStartWaves);
         hudUI.SetWaveProgress(0, _signal.spec.killTarget);
 
         // 입장(또는 다시 도전) 뒤 첫 전투: 조작이 풀리는 순간 HUD를 들여온다. 웨이브 값을 먼저 넣고 들여온다.

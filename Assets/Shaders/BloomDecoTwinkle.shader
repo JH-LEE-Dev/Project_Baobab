@@ -77,6 +77,7 @@ Shader "Custom/2D/BloomDecoTwinkle"
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Lit2DCommon.hlsl"
             #include "Include/BloomDecoTwinkle.hlsl"
+            #include "Include/ForestBreath.hlsl"
 
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
@@ -134,6 +135,11 @@ Shader "Custom/2D/BloomDecoTwinkle"
                     UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _TwinkleSpeed),
                     UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _TwinkleScale),
                     UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _TwinkleSharpness));
+                // 숲의 숨결 물결이 지나가는 동안 함께 밝아진다(물결이 없으면 그대로)
+                if (IsForestBreathActive())
+                {
+                    color.rgb *= 1.0h + (half)(_ForestBreathC.x * SampleForestBreath(snappedWorldPos));
+                }
                 color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
                 return color;
             }
@@ -250,6 +256,7 @@ Shader "Custom/2D/BloomDecoTwinkle"
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/2DCommon.hlsl"
             #include "Include/BloomDecoTwinkle.hlsl"
+            #include "Include/ForestBreath.hlsl"
           
             // GPU Instancing
             #pragma multi_compile_instancing
@@ -309,6 +316,11 @@ Shader "Custom/2D/BloomDecoTwinkle"
                     UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _TwinkleSpeed),
                     UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _TwinkleScale),
                     UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _TwinkleSharpness));
+                // 숲의 숨결 물결이 지나가는 동안 함께 밝아진다(물결이 없으면 그대로)
+                if (IsForestBreathActive())
+                {
+                    color.rgb *= 1.0h + (half)(_ForestBreathC.x * SampleForestBreath(snappedWorldPos));
+                }
                 color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
                 return color;
             }

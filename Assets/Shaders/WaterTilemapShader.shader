@@ -64,6 +64,7 @@ Shader "Custom/WaterTilemapShader"
             #include "Include/WaterSpores.hlsl"
             #include "Include/WaterBubbles.hlsl"
             #include "Include/WaterMagma.hlsl"
+            #include "Include/WaterDepth.hlsl"
             #include "Include/TileFrameAnimation.hlsl"
 
             float4 _MainTex_TexelSize;
@@ -93,40 +94,71 @@ Shader "Custom/WaterTilemapShader"
             {
                 // 셰이더 타일 프레임 애니메이션(켠 머티리얼만): 지금 프레임 그림 자리로 UV를 옮긴 뒤 모든 계산에 쓴다.
                 input.uv = TileFrameAnimationUV(input.uv, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _TileFrameGrid));
-                half4 color = CommonLitFragment(input, input.color);
 
-                // 반짝임·포자·온도 무늬·거품은 모두 같은 텍스처 색(정점색 곱하기 전)으로 판정하므로, 하나라도 켜져 있으면 한 번만 읽어 같이 쓴다.
+                // 아래는 Lit2DCommon.CommonLitFragment와 같다. 텍스처 색을 연출 판정에도 쓰도록 한 번만 읽는다.
+                float4 texel = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);
+                const half4 main = input.color * texel;
+                const half4 mask = SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, input.uv);
+                const half3 normalTS = UnpackNormal(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, input.uv));
+
+                SurfaceData2D surfaceData;
+                InputData2D inputData;
+
+                InitializeSurfaceData(main.rgb, main.a, mask, normalTS, surfaceData);
+                InitializeInputData(input.uv, input.lightingUV, inputData);
+
+            #if defined(DEBUG_DISPLAY)
+                SETUP_DEBUG_TEXTURE_DATA_2D_NO_TS(inputData, input.positionWS, input.positionCS, _MainTex);
+                surfaceData.normalWS = input.normalWS;
+            #endif
+
+                half4 color = CombinedShapeLightShared(surfaceData, inputData);
+
+                // 반짝임·포자·온도 무늬·거품은 모두 같은 텍스처 색(정점색 곱하기 전)으로 판정한다.
                 bool shimmerOn = IsWaterShimmerEnabled();
                 bool sporesOn = IsWaterSporesEnabled();
                 bool magmaOn = IsWaterMagmaEnabled();
                 bool bubblesOn = IsWaterBubblesEnabled();
-                if (shimmerOn || sporesOn || magmaOn || bubblesOn)
+                bool depthOn = IsWaterDepthEnabled();
+                if (shimmerOn || sporesOn || magmaOn || bubblesOn || depthOn)
                 {
-                    float3 texColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv).rgb;
+                    float3 texColor = texel.rgb;
+                    // 텍셀 중심 월드 위치와 텍셀 번호는 깊이·반짝임·포자가 같이 쓰므로 한 번만 구한다.
+                    // 타일 텍셀 중심은 (정수 + 0.5) / ppu에 놓이므로 내림하면 텍셀 하나가 한 번호를 갖는다.
+                    float2 centerWS = StageAmbienceTexelCenterWS(input.shimmerPositionWS, input.uv, _MainTex_TexelSize);
+                    float2 texelId = floor(centerWS * StageAmbiencePixelsPerUnit());
+
+                    // 물 깊이(꺼진 스테이지는 그대로). 반짝임·포자가 위에 그려지도록 먼저 칠한다.
+                    if (depthOn)
+                    {
+                        color.rgb = ApplyWaterDepthAt(color.rgb, centerWS, texelId, texColor);
+                    }
 
                     // 물 반짝임(꺼진 스테이지는 건너뛴다).
                     if (shimmerOn)
                     {
-                        float4 shimmer = ComputeWaterShimmer(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor);
+                        float4 shimmer = ComputeWaterShimmerAt(centerWS, texelId, texColor);
                         color.rgb = lerp(color.rgb, shimmer.rgb, shimmer.a);
                     }
 
                     // 물 위 포자(꺼진 스테이지는 그대로)
                     if (sporesOn)
                     {
-                        float4 spores = ComputeWaterSpores(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor);
+                        float4 spores = ComputeWaterSporesAt(texelId, texColor);
                         color.rgb = lerp(color.rgb, spores.rgb, spores.a);
                     }
 
                     // 용암 속 온도 무늬(꺼진 스테이지는 그대로). 거품이 위에 그려지도록 거품보다 먼저 칠한다.
+                    // 바다에 떠다니는 굳은 껍질 위에는 거품을 올리지 않는다.
+                    bool onCrust = false;
                     if (magmaOn)
                     {
-                        float4 magma = ComputeWaterMagma(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor);
+                        float4 magma = ComputeWaterMagma(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor, onCrust);
                         color.rgb = lerp(color.rgb, magma.rgb, magma.a);
                     }
 
                     // 물(용암) 위 거품(꺼진 스테이지는 그대로)
-                    if (bubblesOn)
+                    if (bubblesOn && false == onCrust)
                     {
                         float4 bubbles = ComputeWaterBubbles(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor);
                         color.rgb = lerp(color.rgb, bubbles.rgb, bubbles.a);

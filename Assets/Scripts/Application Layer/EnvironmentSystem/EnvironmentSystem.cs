@@ -37,9 +37,19 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private readonly List<UnityEngine.Tilemaps.Tilemap> quakeShoreLayers = new List<UnityEngine.Tilemaps.Tilemap>(2);
     // 시작한 물결이 준비(복제층 옮겨 쓰기)를 마치면 카메라 흔들림·진동을 낸다.
     private bool bQuakeFeedbackPending;
+    // 히트스톱·섬광·여진·충격파 왜곡(QuakeImpactFeedback). 시작한 물결의 진원·피해 범위를 기억했다가 퍼지기 시작할 때 넘긴다.
+    private readonly QuakeImpactFeedback quakeImpact = new QuakeImpactFeedback();
+    private Vector3 quakeCenter;
+    private float quakeStrikeRadius;
+    // 흙먼지·파편·잔돌 낙하(QuakeDebrisEffect). 물결이 퍼지기 시작할 때 함께 시작한다.
+    private readonly QuakeDebrisEffect quakeDebris = new QuakeDebrisEffect();
+    // 전조(QuakeTileRipple.IsBuildingUp) 연출을 냈는지와, 카메라 잔떨림을 다시 건 뒤 지난 시간.
+    private bool bQuakeBuildUpPlayed;
+    private float quakeBuildUpShakeTimer;
+    // 전조 동안 카메라 잔떨림을 이 간격마다 조금씩 세게 다시 건다(ShakeCamera는 건 세기에서 잦아드는 흔들림이라, 다시 걸어 차오르게 한다).
+    private const float QuakeBuildUpShakeInterval = 0.06f;
     // 던전 맵이 깔려 있는지(DungeonStarted ~ TownStarted). 마을에서는 지진 물결을 내지 않는다.
     private bool bDungeonMapActive;
-    private Transform characterTransform;
 
 
     //퍼블릭 초기화 및 제어 메서드
@@ -84,6 +94,8 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
             environmentObjManager.Initialize(tileMapGenerator);
 
         quakeRipple.Initialize(quakeRippleSettings);
+        quakeImpact.Initialize(quakeRippleSettings, transform);
+        quakeDebris.Initialize(quakeRippleSettings, transform);
 
         BindEvents();
         SubscribeSignals();
@@ -102,7 +114,9 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     {
         ReleaseEvents();
         UnSubscribeSignals();
-        quakeRipple.Stop();
+        StopQuakeEffects();
+        quakeImpact.Release();
+        quakeDebris.Release();
 
         if (environmentObjManager != null)
             environmentObjManager.ReleaseAllObjs();
@@ -152,7 +166,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private void DungeonStarted(DungeonReadySignal dungeonStartSignal)
     {
         // 새 맵을 깔기 전에 이전 맵 위의 물결 복제층을 비운다.
-        quakeRipple.Stop();
+        StopQuakeEffects();
 
         tileMapGenerator.InitializeMapData();
         pathfindGridManager.Initialize(tileMapGenerator.GridWidth, tileMapGenerator.GridHeight);
@@ -165,16 +179,59 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         // 게임 시간으로 진행한다(일시정지 중에는 물결도 멈춘다). 끝난 뒤 복제층을 나눠 비우는 동안에도 부른다.
         if (quakeRipple.IsBusy) quakeRipple.Tick(Time.deltaTime);
 
-        // 카메라 흔들림·진동은 물결이 실제로 퍼지기 시작하는 프레임에 낸다(복제층을 다 옮겨 쓴 뒤 - QuakeTileRipple [시작 준비]).
-        if (bQuakeFeedbackPending && false == quakeRipple.IsPreparing)
+        // 전조(복제층을 다 옮겨 쓴 뒤 터지기 전): 화면이 서서히 어두워지고 카메라가 잘게 떨며 진동이 차오른다.
+        if (bQuakeFeedbackPending && quakeRipple.IsBuildingUp) TickQuakeBuildUp();
+
+        // 카메라 흔들림·진동은 물결이 실제로 퍼지기 시작하는 프레임에 낸다(복제층을 다 옮겨 쓰고 전조가 끝난 뒤 - QuakeTileRipple [시작 준비]).
+        if (bQuakeFeedbackPending && false == quakeRipple.IsPreparing && false == quakeRipple.IsBuildingUp)
         {
             bQuakeFeedbackPending = false;
             if (quakeRipple.IsPlaying) PlayQuakeFeedback();
+            // 전조만 내고 물결이 끊겼으면(맵이 바뀌는 등) 어두워진 화면을 되돌린다.
+            else if (bQuakeBuildUpPlayed) PostProcessSettingsApplier.Instance?.StopQuakeDarken();
         }
 
-#if UNITY_EDITOR
-        DebugQuakeTick();
-#endif
+        // 히트스톱은 실제 시간, 여진·충격파·흙먼지는 게임 시간으로 진행한다.
+        quakeImpact.Tick(Time.deltaTime, Time.unscaledDeltaTime);
+        quakeDebris.Tick(Time.deltaTime);
+    }
+
+    /// <summary>
+    /// 지진 전조 한 프레임. 첫 프레임에 화면 어두워짐·진동을 걸고, 카메라 잔떨림은 QuakeBuildUpShakeInterval마다 조금씩 세게 다시 건다
+    /// (전조 끝에 다다를수록 buildUpShakeIntensity에 가까워진다). 터지는 순간의 흔들림(PlayQuakeFeedback)이 이어받는다.
+    /// </summary>
+    private void TickQuakeBuildUp()
+    {
+        float seconds = Mathf.Max(0.01f, quakeRippleSettings.buildUpSeconds);
+        if (false == bQuakeBuildUpPlayed)
+        {
+            bQuakeBuildUpPlayed = true;
+            quakeBuildUpShakeTimer = QuakeBuildUpShakeInterval;
+            PostProcessSettingsApplier.Instance?.PlayQuakeDarken(quakeRippleSettings.buildUpDarkenExposure, seconds);
+            Rumble.Play(EHapticEvent.QuakeBuildUp);
+        }
+
+        if (quakeRippleSettings.buildUpShakeIntensity <= 0f) return;
+
+        quakeBuildUpShakeTimer += Time.deltaTime;
+        if (quakeBuildUpShakeTimer < QuakeBuildUpShakeInterval) return;
+
+        quakeBuildUpShakeTimer = 0f;
+        float ramp = Mathf.Clamp01(quakeRipple.BuildUpProgress);
+        float intensity = quakeRippleSettings.buildUpShakeIntensity * (0.35f + 0.65f * ramp);
+        // 먼저 걸린 센 흔들림(불씨를 주운 도끼질 등)은 끊지 않는다.
+        CameraMoveController.Instance?.ShakeCameraIfStronger(intensity, QuakeBuildUpShakeInterval * 2f);
+    }
+
+    /// <summary>지진 연출을 모두 바로 끝낸다(물결·여진·왜곡·흙먼지, 전조 어두워짐).</summary>
+    private void StopQuakeEffects()
+    {
+        if (bQuakeFeedbackPending && bQuakeBuildUpPlayed) PostProcessSettingsApplier.Instance?.StopQuakeDarken();
+        bQuakeFeedbackPending = false;
+        bQuakeBuildUpPlayed = false;
+        quakeRipple.Stop();
+        quakeImpact.Stop();
+        quakeDebris.Stop();
     }
 
     /// <summary>
@@ -199,8 +256,12 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         Rect viewRect = new Rect(view.x - halfWidth, view.y - halfHeight, halfWidth * 2f, halfHeight * 2f);
 
         _center.z = 0f;
+        // 앞의 지진 연출(전조 어두워짐·여진·왜곡·흙먼지)이 남아 있으면 끊고 새로 시작한다.
+        StopQuakeEffects();
         if (false == quakeRipple.Begin(grid, quakeFloorLayers, quakeWaterLayers, quakeShoreLayers, _center, viewRect, _strikeRadius)) return false;
 
+        quakeCenter = _center;
+        quakeStrikeRadius = _strikeRadius;
         bQuakeFeedbackPending = true;
         return true;
     }
@@ -211,23 +272,30 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         // 흔들림 세기가 0이면 찍기만 한다(ShakeCameraKick이 흔들림을 걸지 않아 다른 흔들림을 끊지 않는다).
         if (quakeRippleSettings.cameraShakeIntensity > 0f || quakeRippleSettings.cameraKickDistance > 0f)
         {
+            // 흔들림은 앞머리가 피해 범위 끝(화면 끝)에 닿을 때까지 이어진다(cameraShakeFollowFront).
             CameraMoveController.Instance?.ShakeCameraKick(Vector3.down, quakeRippleSettings.cameraKickDistance, quakeRippleSettings.cameraKickSeconds,
-                quakeRippleSettings.cameraShakeIntensity, quakeRippleSettings.cameraShakeSeconds);
+                quakeRippleSettings.cameraShakeIntensity, QuakeImpactFeedback.ShakeSeconds(quakeRippleSettings, quakeStrikeRadius));
         }
         PostProcessSettingsApplier.Instance?.PlayQuakeChromaticAberrationPulse();
         Rumble.Play(EHapticEvent.Earthquake);
-    }
 
-    /// <summary>캐릭터 자리에서 지진 바닥 물결을 시작한다(PlayQuakeRipple). 캐릭터가 아직 없으면 false.</summary>
-    public bool PlayQuakeRippleAtCharacter()
-    {
-        if (null == characterTransform) return false;
-        return PlayQuakeRipple(characterTransform.position);
+        // 히트스톱·섬광을 걸고(섬광이 전조 어두워짐을 덮는다), 여진·충격파 왜곡을 이어 간다. 앞머리를 따라 흙먼지가 일고 위에서 잔돌이 떨어진다.
+        quakeImpact.Play(quakeCenter, quakeStrikeRadius);
+        PostProcessSettingsApplier.Instance?.StopQuakeDarken();
+        quakeDebris.Play(quakeRipple);
+
+        // 터지는 순간 화면을 살짝 확대했다 되돌린다("쾅" 찍는 한 방). 카메라 흔들림 옵션 비율만큼 줄이고 0%면 하지 않는다.
+        float shakeScale = null != SettingsManager.Instance ? SettingsManager.Instance.Current.cameraShake / SettingsData.SLIDER_MAX : 1f;
+        float zoom = 1f + (quakeRippleSettings.cameraZoomPunch - 1f) * shakeScale;
+        if (zoom > 1.0001f)
+        {
+            CameraMoveController.Instance?.ZoomCamera(zoom, quakeRippleSettings.cameraZoomInSeconds, quakeRippleSettings.cameraZoomHoldSeconds, quakeRippleSettings.cameraZoomOutSeconds);
+        }
     }
 
     public bool IsQuakeRipplePlaying => quakeRipple.IsPlaying;
 
-    public bool IsQuakeRipplePreparing => quakeRipple.IsPreparing;
+    public bool IsQuakeRipplePreparing => quakeRipple.IsPreparing || quakeRipple.IsBuildingUp;
 
     public float QuakeRippleFrontSpeed => Mathf.Max(0.1f, quakeRippleSettings.frontSpeed);
 
@@ -237,25 +305,9 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     {
         // 지진 도중 꺼지면(씬 정리·에디터 플레이 종료) 물결을 끝낸다. 꺼진 동안 Tick이 돌지 않아 물체 출렁임(그리기 콜백)만 남고,
         // 나무 셰이더 전역값이 남으면 다음 씬·편집 화면의 나무가 계속 떤다. 물결이 없던 때도 전역값은 끈다.
-        bQuakeFeedbackPending = false;
-        quakeRipple.Stop();
+        StopQuakeEffects();
         QuakeTileRipple.ClearTreeShake();
     }
-
-#if UNITY_EDITOR
-    // 에디터 전용 디버그: 던전에서 이 키를 누르면 캐릭터 자리에서 지진 물결을 낸다. 빌드에는 포함되지 않는다.
-    // 본편 디버그 키(F1 시네마틱, F4 수동 저장, F9 벤치마크, ` 사운드)·로그라이크(F6, F7)와 겹치지 않는 키를 쓴다.
-    private const UnityEngine.InputSystem.Key DebugQuakeKey = UnityEngine.InputSystem.Key.F8;
-
-    private void DebugQuakeTick()
-    {
-        UnityEngine.InputSystem.Keyboard keyboard = UnityEngine.InputSystem.Keyboard.current;
-        if (null == keyboard || false == keyboard[DebugQuakeKey].wasPressedThisFrame) return;
-
-        if (false == PlayQuakeRippleAtCharacter())
-            Debug.LogWarning("[EnvironmentSystem] 지진 물결 디버그(F8)는 던전에서 캐릭터가 있고 화면에 바닥이 있을 때만 됩니다.");
-    }
-#endif
 
     /// <summary>[로그라이크] 타일 한 칸의 월드 크기(아이소메트릭 마름모 가로·세로).</summary>
     public Vector2 TileCellSize => tileMapGenerator.CellSize;
@@ -348,7 +400,6 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     {
         lightingController.DI(characterSpawendSignal.character);
         environmentInteractionManager.DI_Character(characterSpawendSignal.character);
-        characterTransform = null != characterSpawendSignal.character ? characterSpawendSignal.character.transform : null;
     }
 
     private void WeatherChanged(WeatherType _weatherType)
@@ -391,7 +442,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
     private void TownStarted(TownStartedSignal _townStartedSignal)
     {
-        quakeRipple.Stop();
+        StopQuakeEffects();
         bDungeonMapActive = false;
 
         tileMapGenerator.ReleaseAllAnimatedObj();
