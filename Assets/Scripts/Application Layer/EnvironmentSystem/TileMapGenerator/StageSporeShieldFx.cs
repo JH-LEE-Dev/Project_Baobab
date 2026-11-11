@@ -56,7 +56,9 @@ public class StageSporeShieldFx : MonoBehaviour
     {
         Remove();
 
-        if (null == _settings || false == _settings.enabled || null == _settings.material || GameModeContext.IsRoguelike)
+        // 타격·회복 알림은 플레이 중에만 오므로 에디터 맵 미리보기(편집 모드)에서는 만들지 않는다(편집 씬에 남지 않게).
+        if (null == _settings || false == _settings.enabled || null == _settings.material || GameModeContext.IsRoguelike
+            || false == Application.isPlaying)
         {
             return;
         }
@@ -77,7 +79,14 @@ public class StageSporeShieldFx : MonoBehaviour
         if (null != current)
         {
             current.ClearAllEntries();
-            Destroy(current.gameObject);
+            if (Application.isPlaying)
+            {
+                Destroy(current.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(current.gameObject);
+            }
             current = null;
         }
     }
@@ -88,6 +97,18 @@ public class StageSporeShieldFx : MonoBehaviour
         if (null != current)
         {
             current.OnHit(_visual, _health);
+        }
+    }
+
+    /// <summary>
+    /// 나무의 포자막이 깨졌을 때. 깨는 타격은 이미 막이 0이라 NotifyHit가 아무것도 하지 않으므로 여기서 결정 조각을 튀긴다.
+    /// 막 그림은 깨지면 꺼지므로 번쩍임은 넣지 않는다. 꺼진 곳에서는 아무 일도 하지 않는다.
+    /// </summary>
+    public static void NotifyShieldBroken(TreeVisualComponent _visual)
+    {
+        if (null != current)
+        {
+            current.OnShieldBroken(_visual);
         }
     }
 
@@ -178,6 +199,17 @@ public class StageSporeShieldFx : MonoBehaviour
         entry.flash = 1f;
 
         Vector2 crown = GetCrownCenter(entry.visual);
+        if (IsOnScreen(crown) && TryTakeBurst())
+        {
+            EmitShards(crown);
+        }
+    }
+
+    private void OnShieldBroken(TreeVisualComponent _visual)
+    {
+        if (null == _visual || false == _visual.gameObject.activeInHierarchy) return;
+
+        Vector2 crown = GetCrownCenter(_visual);
         if (IsOnScreen(crown) && TryTakeBurst())
         {
             EmitShards(crown);

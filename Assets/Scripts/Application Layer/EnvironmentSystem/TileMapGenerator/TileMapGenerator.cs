@@ -3118,6 +3118,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         // 용암 바다 지도(바다 여부·해안 거리). 바다 쪽 거품 빈도·바다 온도 무늬가 쓴다. 쓰는 연출이 없거나 로그라이크면 전역값을 비운다. 렌더링 전용.
         StageLavaSeaMap.Apply(stageTileData, extWaterTiles, extBounds, width, height, waterTilemap);
         // 물가 지도(물과 땅의 경계까지 칸 수). 반딧불이 물가를 고를 때 쓴다. 쓰는 연출이 없거나 로그라이크면 비운다. 렌더링 전용.
-        StageShoreMap.Apply(stageTileData, extWaterTiles, extBounds, width, height, waterTilemap);
+        StageShoreMap.Apply(stageTileData, extWaterTiles, extBounds, width, height, groundTiles, waterTilemap);
     }
 }

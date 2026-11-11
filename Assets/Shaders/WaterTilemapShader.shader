@@ -95,24 +95,9 @@ Shader "Custom/WaterTilemapShader"
                 // 셰이더 타일 프레임 애니메이션(켠 머티리얼만): 지금 프레임 그림 자리로 UV를 옮긴 뒤 모든 계산에 쓴다.
                 input.uv = TileFrameAnimationUV(input.uv, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _TileFrameGrid));
 
-                // 아래는 Lit2DCommon.CommonLitFragment와 같다. 텍스처 색을 연출 판정에도 쓰도록 한 번만 읽는다.
+                half4 color = CommonLitFragment(input, input.color);
+                // 연출 판정에 쓰는 텍스처 색(정점색 곱하기 전). CommonLitFragment 안의 같은 읽기와 컴파일러가 하나로 합친다.
                 float4 texel = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);
-                const half4 main = input.color * texel;
-                const half4 mask = SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, input.uv);
-                const half3 normalTS = UnpackNormal(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, input.uv));
-
-                SurfaceData2D surfaceData;
-                InputData2D inputData;
-
-                InitializeSurfaceData(main.rgb, main.a, mask, normalTS, surfaceData);
-                InitializeInputData(input.uv, input.lightingUV, inputData);
-
-            #if defined(DEBUG_DISPLAY)
-                SETUP_DEBUG_TEXTURE_DATA_2D_NO_TS(inputData, input.positionWS, input.positionCS, _MainTex);
-                surfaceData.normalWS = input.normalWS;
-            #endif
-
-                half4 color = CombinedShapeLightShared(surfaceData, inputData);
 
                 // 반짝임·포자·온도 무늬·거품은 모두 같은 텍스처 색(정점색 곱하기 전)으로 판정한다.
                 bool shimmerOn = IsWaterShimmerEnabled();

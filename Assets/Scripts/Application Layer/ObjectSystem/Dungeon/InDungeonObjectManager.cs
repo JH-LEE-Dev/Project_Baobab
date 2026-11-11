@@ -2975,6 +2975,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         // 포자막 파괴 VFX는 포자막 폭발 스킬/맵 여부와 무관하게 항상 재생된다.
         inDungeonVFXManager.PlayShieldBrokenVFX(_treeObj.treeVisualComponent, _treeObj.GetTreeType());
+        // 막을 깬 타격의 결정 조각(켜진 스테이지에서만, 꺼진 곳은 아무 일도 하지 않는다)
+        StageSporeShieldFx.NotifyShieldBroken(_treeObj.treeVisualComponent);
 
         TreeShieldBrokenNotifyEvent?.Invoke();
 
