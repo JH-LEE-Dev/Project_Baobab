@@ -70,6 +70,10 @@ public class StageTileDataSO : ScriptableObject
 
     [Header("블룸(Bloom) HDR 강도 설정")]
     [SerializeField] private float bloomDecoHDRIntensity = 1f;
+    // 켜면 블룸 데코 그림의 밝은 칸(불빛)에만 HDR 강도를 줘서 그 부분만 은은하게 번지게 한다. 끄면(기본) 그림 전체에 준다.
+    [SerializeField] private bool bloomDecoGlowOnly = false;
+    // 빛나기 시작하는 밝기·다 빛나는 밝기(텍스처 rgb 중 가장 큰 값, 선형 공간 0~1). bloomDecoGlowOnly를 켰을 때만 쓴다.
+    [SerializeField] private Vector2 bloomDecoGlowRange = new Vector2(0.2f, 0.6f);
     [SerializeField] private float bloomWaterDecoHDRIntensity = 1f;
     [Space(10)]
     [SerializeField] private bool useWaterTileBloom = false;
@@ -141,6 +145,10 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private LavaShadowMaskSettings lavaShadowMask = new LavaShadowMaskSettings();
     // 용암 기둥(용암 칸에서 가끔 작은 알갱이 기둥이 솟는다)
     [SerializeField] private LavaSpoutSettings lavaSpouts = new LavaSpoutSettings();
+    // 데코 증기(블룸 데코에서 가끔 옅은 증기가 피어오른다)
+    [SerializeField] private DecoSteamSettings decoSteam = new DecoSteamSettings();
+    // 불씨 데코 숨쉬기(블룸 데코 타일맵을 숨쉬기 머티리얼로 그린다)
+    [SerializeField] private BloomDecoBreathSettings bloomDecoBreath = new BloomDecoBreathSettings();
     // 나무 열기 차오름(열기를 내뿜기 전까지 나무 줄기가 점점 달아오른다)
     [SerializeField] private TreeHeatChargeSettings treeHeatCharge = new TreeHeatChargeSettings();
     // 물(용암)·물가·스텐실 타일 애니메이션을 타일맵 대신 셰이더로 돌린다(StageTileFrameAnimation). 보이는 그림·박자는 같고,
@@ -173,6 +181,8 @@ public class StageTileDataSO : ScriptableObject
     public float DecoTilemapYOffset => decoTilemapYOffset;
     public bool UseGroundTilemapForDeco => useGroundTilemapForDeco;
     public float BloomDecoHDRIntensity => bloomDecoHDRIntensity;
+    public bool BloomDecoGlowOnly => bloomDecoGlowOnly;
+    public Vector2 BloomDecoGlowRange => bloomDecoGlowRange;
     public float BloomWaterDecoHDRIntensity => bloomWaterDecoHDRIntensity;
     public bool UseWaterTileBloom => useWaterTileBloom;
     public float WaterTileHDRIntensity => waterTileHDRIntensity;
@@ -198,6 +208,8 @@ public class StageTileDataSO : ScriptableObject
     public bool HideWaterReflections => hideWaterReflections;
     public LavaShadowMaskSettings LavaShadowMask => lavaShadowMask;
     public LavaSpoutSettings LavaSpouts => lavaSpouts;
+    public DecoSteamSettings DecoSteam => decoSteam;
+    public BloomDecoBreathSettings BloomDecoBreath => bloomDecoBreath;
     public TreeHeatChargeSettings TreeHeatCharge => treeHeatCharge;
     public bool ShaderTileAnimation => shaderTileAnimation;
     public List<AnimatedObj> AnimatedObjPrefabs => animatedObjPrefabs;

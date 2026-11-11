@@ -38,6 +38,7 @@ public static class StageAmbienceShaderGlobals
     private static readonly int WaterSporeSurfaceBID = Shader.PropertyToID("_WaterSporeSurfaceB");
     private static readonly int WaterBubbleAID = Shader.PropertyToID("_WaterBubbleA");
     private static readonly int WaterBubbleBID = Shader.PropertyToID("_WaterBubbleB");
+    private static readonly int WaterBubbleCID = Shader.PropertyToID("_WaterBubbleC");
     private static readonly int WaterBubbleBodyColorID = Shader.PropertyToID("_WaterBubbleBodyColor");
     private static readonly int WaterBubbleEdgeColorID = Shader.PropertyToID("_WaterBubbleEdgeColor");
     private static readonly int WaterBubbleHighlightColorID = Shader.PropertyToID("_WaterBubbleHighlightColor");
@@ -47,6 +48,14 @@ public static class StageAmbienceShaderGlobals
     private static readonly int WaterMagmaCoolColorID = Shader.PropertyToID("_WaterMagmaCoolColor");
     private static readonly int WaterMagmaHotColorID = Shader.PropertyToID("_WaterMagmaHotColor");
     private static readonly int WaterMagmaSurfaceID = Shader.PropertyToID("_WaterMagmaSurface");
+    private static readonly int WaterMagmaSeaAID = Shader.PropertyToID("_WaterMagmaSeaA");
+    private static readonly int WaterMagmaSeaBID = Shader.PropertyToID("_WaterMagmaSeaB");
+    private static readonly int WaterMagmaSeaFarColorID = Shader.PropertyToID("_WaterMagmaSeaFarColor");
+    private static readonly int WaterMagmaCrustAID = Shader.PropertyToID("_WaterMagmaCrustA");
+    private static readonly int WaterMagmaCrustBID = Shader.PropertyToID("_WaterMagmaCrustB");
+    private static readonly int WaterMagmaCrustColorAID = Shader.PropertyToID("_WaterMagmaCrustColorA");
+    private static readonly int WaterMagmaCrustColorBID = Shader.PropertyToID("_WaterMagmaCrustColorB");
+    private static readonly int WaterMagmaCrustRimColorID = Shader.PropertyToID("_WaterMagmaCrustRimColor");
     private static readonly int HideWaterReflectionID = Shader.PropertyToID("_StageHideWaterReflection");
     private static readonly int TreeTwinkleAID = Shader.PropertyToID("_TreeTwinkleA");
     private static readonly int TreeTwinkleBID = Shader.PropertyToID("_TreeTwinkleB");
@@ -163,7 +172,9 @@ public static class StageAmbienceShaderGlobals
         StageHitSparkles.Remove();
         StageLavaEmbers.Remove();
         StageLavaSpouts.Remove();
+        StageDecoSteam.Remove();
         StageLavaGlow.Clear();
+        StageLavaSeaMap.Clear();
     }
 
     /// <summary>
@@ -176,13 +187,20 @@ public static class StageAmbienceShaderGlobals
             return null;
         }
 
+        // 반짝임이 먼저, 그다음 불씨 데코 숨쉬기
         BloomDecoTwinkleSettings settings = _tileData.BloomDecoTwinkle;
-        if (null == settings || false == settings.enabled)
+        if (null != settings && true == settings.enabled && null != settings.material)
         {
-            return null;
+            return settings.material;
         }
 
-        return settings.material;
+        BloomDecoBreathSettings breath = _tileData.BloomDecoBreath;
+        if (null != breath && true == breath.enabled)
+        {
+            return breath.material;
+        }
+
+        return null;
     }
 
     private static void ApplyWindGust(WindGustSettings _settings)
@@ -372,6 +390,8 @@ public static class StageAmbienceShaderGlobals
         Vector4 surface = ToShaderColor(_settings.surfaceColor);
         surface.w = Mathf.Max(0.0001f, _settings.colorTolerance);
         Shader.SetGlobalVector(WaterBubbleSurfaceID, surface);
+        // 바다 쪽 빈도는 용암 바다 지도(StageLavaSeaMap)가 켜졌을 때만 쓰인다.
+        Shader.SetGlobalVector(WaterBubbleCID, new Vector4(Mathf.Clamp01(_settings.seaFrequency), 0f, 0f, 0f));
     }
 
     private static void ApplyWaterMagma(WaterMagmaSettings _settings)
@@ -390,6 +410,17 @@ public static class StageAmbienceShaderGlobals
         Vector4 surface = ToShaderColor(_settings.surfaceColor);
         surface.w = Mathf.Max(0.0001f, _settings.colorTolerance);
         Shader.SetGlobalVector(WaterMagmaSurfaceID, surface);
+
+        // 바다만 따로 칠하는 값. 용암 바다 지도(StageLavaSeaMap)가 켜졌을 때만 쓰인다.
+        Shader.SetGlobalVector(WaterMagmaSeaAID, new Vector4(_settings.seaEnabled ? 1f : 0f, Mathf.Max(1f, _settings.seaFarCells), Mathf.Max(0.2f, _settings.seaScale), Mathf.Clamp01(_settings.seaFarDarken)));
+        Shader.SetGlobalVector(WaterMagmaSeaBID, new Vector4(Mathf.Clamp01(_settings.seaFarCoolRaise), Mathf.Clamp01(_settings.seaFarHotRaise), 0f, 0f));
+        Shader.SetGlobalVector(WaterMagmaSeaFarColorID, ToShaderColor(_settings.seaFarColor));
+        bool bCrust = _settings.seaEnabled && _settings.crustEnabled;
+        Shader.SetGlobalVector(WaterMagmaCrustAID, new Vector4(bCrust ? 1f : 0f, Mathf.Max(0.2f, _settings.crustSize), Mathf.Clamp01(_settings.crustCoverageNear), Mathf.Clamp01(_settings.crustCoverageFar)));
+        Shader.SetGlobalVector(WaterMagmaCrustBID, new Vector4(_settings.crustDrift.x, _settings.crustDrift.y, Mathf.Clamp01(_settings.crustGap), Mathf.Clamp01(_settings.crustRim)));
+        Shader.SetGlobalVector(WaterMagmaCrustColorAID, ToShaderColor(_settings.crustColorA));
+        Shader.SetGlobalVector(WaterMagmaCrustColorBID, ToShaderColor(_settings.crustColorB));
+        Shader.SetGlobalVector(WaterMagmaCrustRimColorID, ToShaderColor(_settings.crustRimColor));
     }
 
     // 셰이더가 샘플한 텍스처 색과 같은 공간으로 맞춘다. 선형 색공간이면 sRGB 텍스처가 선형으로 읽히므로

@@ -229,6 +229,8 @@ public class WaterBubbleSettings
     public Vector2 maxRadiusRange = new Vector2(1.5f, 2.5f);
     // 거품이 있는 시간 중 터지는 데 쓰는 비율(0~1)
     [Range(0.05f, 0.9f)] public float popFraction = 0.2f;
+    // 섬을 둘러싼 바다(섬 밖과 이어진 물)에서 거품이 올라오는 빈도(0~1). 1이면 섬 안 웅덩이와 같고, 낮출수록 바다 쪽 거품만 드물어진다.
+    [Range(0f, 1f)] public float seaFrequency = 1f;
 }
 
 /// <summary>
@@ -481,6 +483,62 @@ public class LavaSpoutSettings
 }
 
 /// <summary>
+/// 데코 증기. 잠깐마다 화면 안 블룸 데코(불씨 바위 등) 한 곳에서 김 덩어리 몇 개가 연달아 "푸쉬쉭" 뿜어져
+/// 떠오르며 커지다가 점점이 흩어져 사라진다. 덩어리 모양(울퉁불퉁한 구름·위아래 음영·흩어짐)은 머티리얼(DecoSteamPuff 셰이더)이 픽셀 단위로 그린다.
+/// 스테이지에 파티클 시스템 하나만 두며 충돌·판정이 없어 게임 동작에는 영향이 없다.
+/// enabled가 꺼져 있거나 material이 비어 있으면 아무것도 만들지 않는다.
+/// </summary>
+[System.Serializable]
+public class DecoSteamSettings
+{
+    public bool enabled = false;
+    // 김 덩어리 머티리얼(DecoSteamPuff 셰이더)
+    public Material material;
+    // 그리는 정렬 자리(기본은 오브젝트 맨 아래: 데코 위, 나무·오프로드 뒤)
+    public string sortingLayerName = "Objects";
+    public int sortingOrder = -32768;
+    // 다음 뿜기까지 기다리는 시간(초, 최소~최대). 그때 화면에 블룸 데코가 안 보이면 건너뛴다.
+    public Vector2 intervalRange = new Vector2(0.8f, 1.8f);
+    // 자리를 고를 때 화면 안을 몇 번까지 찍어 볼지
+    [Min(1)] public int pickAttempts = 32;
+    // 데코 칸 가운데에서 뿜는 자리까지(월드)와 그 자리의 무작위 흔들림(월드, 좌우·위아래)
+    public Vector2 originOffset = new Vector2(0.03f, -0.25f);
+    public Vector2 originSpread = new Vector2(0.03f, 0.02f);
+    // 한 번 뿜을 때 덩어리 수(최소~최대)와 덩어리 사이 시간(초)
+    public Vector2Int puffsPerBurst = new Vector2Int(2, 3);
+    [Min(0f)] public float puffGap = 0.14f;
+    // 덩어리 칸 크기(픽셀, 최소~최대). 덩어리는 이 칸 안에서 작게 나타나 칸만큼 커진다.
+    public Vector2Int sizePixelsRange = new Vector2Int(8, 11);
+    // 처음 떠오르는 속도(월드/초, 최소~최대), 공기 저항(1초에 줄어드는 속도 비율), 옆으로 흘러가는 속도(월드/초, 좌우 무작위)
+    public Vector2 upSpeedRange = new Vector2(0.6f, 0.85f);
+    [Min(0f)] public float drag = 1f;
+    [Min(0f)] public float sideDrift = 0.1f;
+    // 덩어리 수명(초, 최소~최대)
+    public Vector2 lifetimeRange = new Vector2(1f, 1.3f);
+    // 김 색(두 색 사이에서 무작위)
+    public Color colorA = new Color(0.86f, 0.84f, 0.84f, 0.42f);
+    public Color colorB = new Color(0.72f, 0.7f, 0.7f, 0.32f);
+    // 동시에 떠 있는 덩어리 최대 수
+    [Min(8)] public int maxParticles = 48;
+    // 뿜는 데코의 불빛이 잠깐 밝아지는 시간(초). 0이면 안 밝아진다. 밝아지는 세기는 블룸 데코 숨쉬기 머티리얼(BloomDecoBreath)이 정하므로
+    // 숨쉬기를 켠 스테이지에서만 보인다.
+    [Min(0f)] public float glowFlashDuration = 0f;
+}
+
+/// <summary>
+/// 불씨 데코 숨쉬기. 블룸 데코 타일맵(불씨 바위 등)을 BloomDecoBreath 머티리얼로 그려, 장식마다 제 박자로 불빛이 은은하게
+/// 밝아졌다 돌아오고 증기가 뿜어지는 순간 그 장식이 잠깐 더 밝아지게 한다. 숨쉬는 세기·속도는 머티리얼에서 정한다.
+/// 공용 스프라이트 머티리얼은 건드리지 않고 이 타일맵의 머티리얼만 갈아 끼우며, 꺼진 스테이지는 원래 머티리얼 그대로다.
+/// 반짝임(BloomDecoTwinkle)이 켜져 있으면 반짝임이 먼저다. 렌더링만 바뀌고 게임 동작에는 영향이 없다.
+/// </summary>
+[System.Serializable]
+public class BloomDecoBreathSettings
+{
+    public bool enabled = false;
+    public Material material;
+}
+
+/// <summary>
 /// 용암 온도 무늬. 물 타일 그림의 수면색(용암 안쪽 주황) 픽셀 위에 큰 단위로 천천히 바뀌는 식은 곳(짙은 주황)과
 /// 뜨거운 곳(밝은 노랑)을 텍셀 단위로 덧칠해, 한 가지 색 판처럼 보이지 않게 한다(물 타일 셰이더 WaterTilemapShader).
 /// 거품은 이 위에 그린다. 렌더링만 바뀌고 게임 동작에는 영향이 없다.
@@ -502,6 +560,35 @@ public class WaterMagmaSettings
     // 이 값보다 낮으면 식은 곳, 높으면 뜨거운 곳(무늬 값 0~1)
     [Range(0f, 1f)] public float coolThreshold = 0.38f;
     [Range(0f, 1f)] public float hotThreshold = 0.66f;
+
+    // 섬을 둘러싼 바다(섬 밖과 이어진 용암)만 따로 칠한다. 꺼 두면 바다도 섬 안 웅덩이와 똑같다.
+    public bool seaEnabled = false;
+    // 바다 무늬 크기(월드). 웅덩이보다 크게 두면 넓은 바다가 잔무늬로 시끄럽지 않다.
+    [Min(0.2f)] public float seaScale = 2.4f;
+    // 해안에서 이 칸 수만큼 떨어지면 "먼 바다" 값이 다 걸린다(그 사이는 부드럽게 이어진다).
+    [Min(1f)] public float seaFarCells = 10f;
+    // 먼 바다로 갈수록 식은 곳 문턱을 올리고(식은 곳이 넓어짐) 뜨거운 곳 문턱을 올린다(밝은 곳이 줄어듦).
+    [Range(0f, 1f)] public float seaFarCoolRaise = 0.12f;
+    [Range(0f, 1f)] public float seaFarHotRaise = 0.15f;
+    // 먼 바다로 갈수록 이 색(식어서 어두운 용암)으로 덮는 비율(0~1)
+    public Color seaFarColor = new Color(0.32f, 0.05f, 0.02f, 1f);
+    [Range(0f, 1f)] public float seaFarDarken = 0.5f;
+
+    // 바다 위를 천천히 떠다니는 굳은 껍질(검은 현무암 판). 판 사이 틈과 가장자리는 뜨거운 용암이 비친다.
+    public bool crustEnabled = false;
+    // 판 하나 크기(월드)와 흘러가는 방향·속도(월드/초)
+    [Min(0.2f)] public float crustSize = 1.3f;
+    public Vector2 crustDrift = new Vector2(0.035f, 0.018f);
+    // 판이 깔리는 비율(0~1). 해안 쪽 값에서 먼 바다 값으로 이어진다. 해안 쪽으로 흘러오면 줄어들며 녹아 사라진다.
+    [Range(0f, 1f)] public float crustCoverageNear = 0f;
+    [Range(0f, 1f)] public float crustCoverageFar = 0.45f;
+    // 판 사이 틈 넓이와 빛나는 가장자리 넓이(판 크기 대비, 0~1)
+    [Range(0f, 1f)] public float crustGap = 0.1f;
+    [Range(0f, 1f)] public float crustRim = 0.07f;
+    // 껍질 색 두 가지(어두운 바탕, 얼룩), 빛나는 가장자리 색
+    public Color crustColorA = new Color(0.13f, 0.06f, 0.06f, 1f);
+    public Color crustColorB = new Color(0.22f, 0.09f, 0.07f, 1f);
+    public Color crustRimColor = new Color(0.95f, 0.42f, 0.06f, 1f);
 }
 
 /// <summary>

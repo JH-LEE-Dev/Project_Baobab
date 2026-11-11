@@ -107,6 +107,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     // // 내부 의존성 및 캐싱 필드
     private static readonly int HDRIntensityID = Shader.PropertyToID("_HDRIntensity");
+    private static readonly int HDRGlowOnlyID = Shader.PropertyToID("_HDRGlowOnly");
+    private static readonly int HDRGlowRangeID = Shader.PropertyToID("_HDRGlowRange");
     private float[] noiseValues;
     private TileBase[] groundTiles;
     private TileBase[] collisionTiles;
@@ -416,6 +418,10 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 var mpb = new MaterialPropertyBlock();
                 tr.GetPropertyBlock(mpb);
                 mpb.SetFloat(HDRIntensityID, stageTileData.BloomDecoHDRIntensity);
+                // Grid는 스테이지 사이에 재사용되므로 끈 스테이지도 매번 0을 써서 예전처럼 그림 전체에 HDR을 주게 한다.
+                mpb.SetFloat(HDRGlowOnlyID, stageTileData.BloomDecoGlowOnly ? 1f : 0f);
+                Vector2 glowRange = stageTileData.BloomDecoGlowRange;
+                mpb.SetVector(HDRGlowRangeID, new Vector4(glowRange.x, glowRange.y, 0f, 0f));
                 tr.SetPropertyBlock(mpb);
             }
         }
@@ -1865,6 +1871,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         StageLavaEmbers.Apply(bSpawnDeco && null != stageTileData ? stageTileData.LavaEmbers : null, waterTilemap, "DungeonScene");
         // 용암 기둥(꺼진 스테이지·로그라이크는 아무것도 만들지 않는다). 렌더링 전용.
         StageLavaSpouts.Apply(bSpawnDeco && null != stageTileData ? stageTileData.LavaSpouts : null, waterTilemap, "DungeonScene");
+        // 데코 증기(꺼진 스테이지·로그라이크는 아무것도 만들지 않는다). 렌더링 전용.
+        StageDecoSteam.Apply(bSpawnDeco && null != stageTileData ? stageTileData.DecoSteam : null, bloomDecoTilemap, "DungeonScene");
 
         // 셰이더 타일 애니메이션(켠 스테이지만, 로그라이크는 끈다). 꺼지면 아래 Convert가 원본 배열을 그대로 돌려준다. 렌더링 전용.
         tileFrameAnimation.Begin(null != stageTileData && stageTileData.ShaderTileAnimation, "DungeonScene", new[]
@@ -3105,5 +3113,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         // 용암 빛 번짐(꺼진 스테이지·로그라이크는 전역값을 비운다). 맵 안팎 물(용암) 칸이 모두 정해진 뒤에 만든다. 렌더링 전용.
         StageLavaGlow.Apply(stageTileData.LavaGlow, extWaterTiles, extBounds, waterTilemap);
+        // 용암 바다 지도(바다 여부·해안 거리). 바다 쪽 거품 빈도·바다 온도 무늬가 쓴다. 쓰는 연출이 없거나 로그라이크면 전역값을 비운다. 렌더링 전용.
+        StageLavaSeaMap.Apply(stageTileData, extWaterTiles, extBounds, width, height, waterTilemap);
     }
 }

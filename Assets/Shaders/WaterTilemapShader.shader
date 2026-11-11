@@ -119,14 +119,16 @@ Shader "Custom/WaterTilemapShader"
                     }
 
                     // 용암 속 온도 무늬(꺼진 스테이지는 그대로). 거품이 위에 그려지도록 거품보다 먼저 칠한다.
+                    // 바다에 떠다니는 굳은 껍질 위에는 거품을 올리지 않는다.
+                    bool onCrust = false;
                     if (magmaOn)
                     {
-                        float4 magma = ComputeWaterMagma(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor);
+                        float4 magma = ComputeWaterMagma(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor, onCrust);
                         color.rgb = lerp(color.rgb, magma.rgb, magma.a);
                     }
 
                     // 물(용암) 위 거품(꺼진 스테이지는 그대로)
-                    if (bubblesOn)
+                    if (bubblesOn && false == onCrust)
                     {
                         float4 bubbles = ComputeWaterBubbles(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor);
                         color.rgb = lerp(color.rgb, bubbles.rgb, bubbles.a);

@@ -9,6 +9,11 @@ Shader "Custom/2D/Custom-Sprite-Default"
 
         [Header(HDR)]
         _HDRIntensity("HDR Intensity", Float) = 1
+        // 1이면 HDR 배율을 그림 전체가 아니라 밝은 칸(불빛)에만 준다. 밝은 칸은 조명과 상관없이 스스로 빛난다.
+        // 0(기본)이면 예전처럼 그림 전체에 HDR 배율을 곱한다.
+        _HDRGlowOnly("HDR Glow Only", Float) = 0
+        // x = 빛나기 시작하는 밝기, y = 다 빛나는 밝기(텍스처 rgb 중 가장 큰 값, 선형 공간 0~1)
+        _HDRGlowRange("HDR Glow Range", Vector) = (0.2, 0.6, 0, 0)
 
         // Legacy properties. They're here so that materials using this shader can gracefully fallback to the legacy sprite shader.
         [HideInInspector] _Color("Tint", Color) = (1,1,1,1)
@@ -75,7 +80,17 @@ Shader "Custom/2D/Custom-Sprite-Default"
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _FlashColor)
+                UNITY_DEFINE_INSTANCED_PROP(float, _HDRGlowOnly)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _HDRGlowRange)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
+
+            // 밝은 칸만 빛나게 할 때의 빛 비율(0 = 그대로, 1 = 다 빛남)
+            half HDRGlowWeight(half3 _albedo)
+            {
+                float4 range = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRGlowRange);
+                half brightness = max(_albedo.r, max(_albedo.g, _albedo.b));
+                return saturate((brightness - range.x) / max(range.y - range.x, 0.0001));
+            }
 
             Varyings LitVertex(Attributes input)
             {
@@ -114,7 +129,17 @@ Shader "Custom/2D/Custom-Sprite-Default"
 
                 half4 color = CommonLitFragment(input, input.color);
                 clip(color.a - 0.01);
-                color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
+                float hdrIntensity = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
+                if (UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRGlowOnly) > 0.5)
+                {
+                    // 밝은 칸은 조명을 받기 전 그림 색에 HDR 배율을 곱해 스스로 빛나게 하고, 어두운 칸은 조명 받은 색 그대로 둔다.
+                    half3 albedo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv).rgb * input.color.rgb;
+                    color.rgb = lerp(color.rgb, albedo * hdrIntensity, HDRGlowWeight(albedo));
+                }
+                else
+                {
+                    color.rgb *= hdrIntensity;
+                }
                 color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
                 return color;
             }
@@ -157,7 +182,17 @@ Shader "Custom/2D/Custom-Sprite-Default"
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _FlashColor)
+                UNITY_DEFINE_INSTANCED_PROP(float, _HDRGlowOnly)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _HDRGlowRange)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
+
+            // 밝은 칸만 빛나게 할 때의 빛 비율(0 = 그대로, 1 = 다 빛남)
+            half HDRGlowWeight(half3 _albedo)
+            {
+                float4 range = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRGlowRange);
+                half brightness = max(_albedo.r, max(_albedo.g, _albedo.b));
+                return saturate((brightness - range.x) / max(range.y - range.x, 0.0001));
+            }
 
             Varyings NormalsRenderingVertex(Attributes input)
             {
@@ -237,7 +272,17 @@ Shader "Custom/2D/Custom-Sprite-Default"
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _FlashColor)
+                UNITY_DEFINE_INSTANCED_PROP(float, _HDRGlowOnly)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _HDRGlowRange)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
+
+            // 밝은 칸만 빛나게 할 때의 빛 비율(0 = 그대로, 1 = 다 빛남)
+            half HDRGlowWeight(half3 _albedo)
+            {
+                float4 range = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRGlowRange);
+                half brightness = max(_albedo.r, max(_albedo.g, _albedo.b));
+                return saturate((brightness - range.x) / max(range.y - range.x, 0.0001));
+            }
 
             Varyings UnlitVertex(Attributes input)
             {
@@ -274,7 +319,15 @@ Shader "Custom/2D/Custom-Sprite-Default"
                 }
 
                 half4 color = CommonUnlitFragment(input, input.color);
-                color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
+                float hdrIntensity = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
+                if (UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRGlowOnly) > 0.5)
+                {
+                    color.rgb *= lerp(1.0, hdrIntensity, HDRGlowWeight(color.rgb));
+                }
+                else
+                {
+                    color.rgb *= hdrIntensity;
+                }
                 color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
                 return color;
             }
