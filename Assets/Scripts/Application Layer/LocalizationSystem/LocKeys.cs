@@ -118,9 +118,10 @@ public static class LocKeys
         public const int testNode3Name = 4194556;
         public const int testNode4Name = 4194557;
         public const int conveyorSpeed2Name = 4194558;
+        public const int logInsurance1Name = 4194559;
+        public const int autoLoadInRestAreaName = 4194560;
         public const int whirlWindName = 4194561;
         public const int recoveryPower1Name = 4194562;
-        public const int abilityDescriptionRecoveryPower = 4203481;
         public const int commonLevel = 4203304;
         public const int commonFree = 4203305;
         public const int commonMaxLevel = 4203306;
@@ -206,6 +207,9 @@ public static class LocKeys
         public const int abilityDescriptionDroneChainAttack = 4203476;
         public const int abilityDescriptionDroneChainAttackRange = 4203477;
         public const int abilityDescriptionHello = 4203478;
+        public const int abilityDescriptionLogInsurance = 4203479;
+        public const int abilityDescriptionAutoLoadInRestArea = 4203480;
+        public const int abilityDescriptionRecoveryPower = 4203481;
     }
 
     public static class DemoNoticeUI
@@ -581,6 +585,7 @@ public static class LocKeys
         public const int roguelikeHintSelect = 37749297;
         public const int roguelikeHintBack = 37749298;
         public const int roguelikeHintTab = 37749299;
+        public const int roguelikeCardSelectPick = 37749300;
     }
 
     public static class SaveCheckUI

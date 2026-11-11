@@ -313,6 +313,18 @@ MonoBehaviour:
     enumValueName: Hello
     enumIntValue: 40
     compositeKey: 4203478
+  - enumTypeName: SkillCommandType
+    enumValueName: LogInsurance
+    enumIntValue: 122
+    compositeKey: 4203479
+  - enumTypeName: SkillCommandType
+    enumValueName: AutoLoadInRestArea
+    enumIntValue: 121
+    compositeKey: 4203480
+  - enumTypeName: SkillCommandType
+    enumValueName: RecoveryPower
+    enumIntValue: 114
+    compositeKey: 4203481
   - enumTypeName: MapType
     enumValueName: None
     enumIntValue: 0
@@ -497,7 +509,3 @@ MonoBehaviour:
     enumValueName: ObsidianTree
     enumIntValue: 12
     compositeKey: 14680076
-  - enumTypeName: SkillCommandType
-    enumValueName: RecoveryPower
-    enumIntValue: 114
-    compositeKey: 4203481
