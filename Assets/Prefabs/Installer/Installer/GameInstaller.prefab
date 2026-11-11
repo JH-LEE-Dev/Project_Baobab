@@ -1981,6 +1981,84 @@ MonoBehaviour:
     allowDynamicExpansion: 1
     maxPoolSize: 16
     uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_SporeTop
+    effectPrefab: {fileID: 5157871212107107942, guid: c4167cb8fdc61564d970c37e72c5cf1c, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_SporeBottom
+    effectPrefab: {fileID: 6651383443880070928, guid: 56daa8eeaadae3b4e8b5805eebdf4bca, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_StarTop
+    effectPrefab: {fileID: 7760558216636756918, guid: 95f7ca069e0a8b845b2037725ab1d47d, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_StarBottom
+    effectPrefab: {fileID: 911332297925315085, guid: 201a9881d6e4f89439a2823a2b86d610, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_MagmaTop
+    effectPrefab: {fileID: 1811928664671164538, guid: bd1f94abae3dd634e854a0ae1e8ea51a, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_MagmaBottom
+    effectPrefab: {fileID: 8660445953840562065, guid: 1fa3203a873bbb64491bee4d2736d441, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_LeafTop
+    effectPrefab: {fileID: 8850882219311395052, guid: 3c57274ee78a8724ca6c93763130554c, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_GemGoldTop
+    effectPrefab: {fileID: 7030779868186678155, guid: baea823a77b606147bd1b5dcbfe49913, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_GemGoldBottom
+    effectPrefab: {fileID: 919161589785508977, guid: 780233941c680b5479bd33b5ed295f55, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_GemDiamondTop
+    effectPrefab: {fileID: 6374472121801072187, guid: 39db2a0ad924b724689a86abbedd62fd, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_GemDiamondBottom
+    effectPrefab: {fileID: 4086504562625777689, guid: aa74217b7b0c3d5429baf495a92041c9, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_GemRainbowTop
+    effectPrefab: {fileID: 8918688838805226725, guid: 3807b0bfdd5167c4ca11cf949c214756, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_GemRainbowBottom
+    effectPrefab: {fileID: 5382117287196285688, guid: 49335b5e9f6675440938b462365cd9f4, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
 --- !u!1 &5766810988037463456
 GameObject:
   m_ObjectHideFlags: 0

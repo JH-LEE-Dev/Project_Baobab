@@ -1,0 +1,3159 @@
+fileFormatVersion: 2
+guid: ae7764552ae1a8e49b91bed0bec59063
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 1662177087814032805
+    second: TreeDead_Sheet_0
+  - first:
+      213: -3901705936508029827
+    second: TreeDead_Sheet_1
+  - first:
+      213: -2794563904553193616
+    second: TreeDead_Sheet_2
+  - first:
+      213: -4499125433501681480
+    second: TreeDead_Sheet_3
+  - first:
+      213: 2067570158355821196
+    second: TreeDead_Sheet_4
+  - first:
+      213: 8277442689290164215
+    second: TreeDead_Sheet_5
+  - first:
+      213: 5781442739641398397
+    second: TreeDead_Sheet_6
+  - first:
+      213: 6640015406163079088
+    second: TreeDead_Sheet_7
+  - first:
+      213: 7138259140411912349
+    second: TreeDead_Sheet_8
+  - first:
+      213: 2216864155652353005
+    second: TreeDead_Sheet_9
+  - first:
+      213: 2103488064539125639
+    second: TreeDead_Sheet_10
+  - first:
+      213: -7933816658663416987
+    second: TreeDead_Sheet_11
+  - first:
+      213: -8863176837954593436
+    second: TreeDead_Sheet_12
+  - first:
+      213: -5701154018069771476
+    second: TreeDead_Sheet_13
+  - first:
+      213: -7279610143190120943
+    second: TreeDead_Sheet_14
+  - first:
+      213: 9001922631770221235
+    second: TreeDead_Sheet_15
+  - first:
+      213: 257343035377670173
+    second: TreeDead_Sheet_16
+  - first:
+      213: 7867840991288256054
+    second: TreeDead_Sheet_17
+  - first:
+      213: 4927155440967777895
+    second: TreeDead_Sheet_18
+  - first:
+      213: 2085210088229521210
+    second: TreeDead_Sheet_19
+  - first:
+      213: -5841322971050309897
+    second: TreeDead_Sheet_20
+  - first:
+      213: 1571564719906237074
+    second: TreeDead_Sheet_21
+  - first:
+      213: -5280406770083437232
+    second: TreeDead_Sheet_22
+  - first:
+      213: 4898329925430166054
+    second: TreeDead_Sheet_23
+  - first:
+      213: -6342439608442554343
+    second: TreeDead_Sheet_24
+  - first:
+      213: 6403319064110730314
+    second: TreeDead_Sheet_25
+  - first:
+      213: 7232601284480468971
+    second: TreeDead_Sheet_26
+  - first:
+      213: 9061530240768678058
+    second: TreeDead_Sheet_27
+  - first:
+      213: 488213058552154401
+    second: TreeDead_Sheet_28
+  - first:
+      213: 3525592862428235222
+    second: TreeDead_Sheet_29
+  - first:
+      213: 7509086516113757287
+    second: TreeDead_Sheet_30
+  - first:
+      213: 8421013532586438437
+    second: TreeDead_Sheet_31
+  - first:
+      213: 4907852749535392173
+    second: TreeDead_Sheet_32
+  - first:
+      213: -7842479434553726854
+    second: TreeDead_Sheet_33
+  - first:
+      213: 8707840953252083848
+    second: TreeDead_Sheet_34
+  - first:
+      213: -8106977516818226087
+    second: TreeDead_Sheet_35
+  - first:
+      213: 6759040507615959368
+    second: TreeDead_Sheet_36
+  - first:
+      213: 1700044958233983544
+    second: TreeDead_Sheet_37
+  - first:
+      213: 1214303347166875364
+    second: TreeDead_Sheet_38
+  - first:
+      213: 8236629477230244022
+    second: TreeDead_Sheet_39
+  - first:
+      213: -4768226184434429622
+    second: TreeDead_Sheet_40
+  - first:
+      213: -4236828617417380181
+    second: TreeDead_Sheet_41
+  - first:
+      213: -3108482353200323790
+    second: TreeDead_Sheet_42
+  - first:
+      213: 3303524114962996504
+    second: TreeDead_Sheet_43
+  - first:
+      213: -5111819691619574920
+    second: TreeDead_Sheet_44
+  - first:
+      213: -9124050287584380389
+    second: TreeDead_Sheet_45
+  - first:
+      213: 2059410688072951829
+    second: TreeDead_Sheet_46
+  - first:
+      213: 3921068559076333468
+    second: TreeDead_Sheet_47
+  - first:
+      213: 527355767627561210
+    second: TreeDead_Sheet_48
+  - first:
+      213: 7632760363240172125
+    second: TreeDead_Sheet_49
+  - first:
+      213: 9181921238214534232
+    second: TreeDead_Sheet_50
+  - first:
+      213: -7087734669972063786
+    second: TreeDead_Sheet_51
+  - first:
+      213: 4804418925361465089
+    second: TreeDead_Sheet_52
+  - first:
+      213: -2399153186956686130
+    second: TreeDead_Sheet_53
+  - first:
+      213: 5073580999259983656
+    second: TreeDead_Sheet_54
+  - first:
+      213: -8048377809894685501
+    second: TreeDead_Sheet_55
+  - first:
+      213: -76987629032287296
+    second: TreeDead_Sheet_56
+  - first:
+      213: -4681026354199094560
+    second: TreeDead_Sheet_57
+  - first:
+      213: -5903054954322929127
+    second: TreeDead_Sheet_58
+  - first:
+      213: 7876881388786726643
+    second: TreeDead_Sheet_59
+  - first:
+      213: -4466087569717754368
+    second: TreeDead_Sheet_60
+  - first:
+      213: -202536126407353361
+    second: TreeDead_Sheet_61
+  - first:
+      213: 2269392744963764480
+    second: TreeDead_Sheet_62
+  - first:
+      213: 8669071187376668432
+    second: TreeDead_Sheet_63
+  - first:
+      213: 754021615151747417
+    second: TreeDead_Sheet_64
+  - first:
+      213: -8273507363684123928
+    second: TreeDead_Sheet_65
+  - first:
+      213: 3770481154046427082
+    second: TreeDead_Sheet_66
+  - first:
+      213: 6844352948569808370
+    second: TreeDead_Sheet_67
+  - first:
+      213: 6819255663066770701
+    second: TreeDead_Sheet_68
+  - first:
+      213: -5173151807911017918
+    second: TreeDead_Sheet_69
+  - first:
+      213: 4934360225588726682
+    second: TreeDead_Sheet_70
+  - first:
+      213: -9043284279312342197
+    second: TreeDead_Sheet_71
+  - first:
+      213: -4058896023162070802
+    second: TreeDead_Sheet_72
+  - first:
+      213: 8164322298437203080
+    second: TreeDead_Sheet_73
+  - first:
+      213: -1444430092410472755
+    second: TreeDead_Sheet_74
+  - first:
+      213: 5090793717931175746
+    second: TreeDead_Sheet_75
+  - first:
+      213: -8038012614974930360
+    second: TreeDead_Sheet_76
+  - first:
+      213: -7598254295026259800
+    second: TreeDead_Sheet_77
+  - first:
+      213: 4851959632712808875
+    second: TreeDead_Sheet_78
+  - first:
+      213: 3224177690217706717
+    second: TreeDead_Sheet_79
+  - first:
+      213: -2524208293914755876
+    second: TreeDead_Sheet_80
+  - first:
+      213: 7644650208439765467
+    second: TreeDead_Sheet_81
+  - first:
+      213: -7782472446025187794
+    second: TreeDead_Sheet_82
+  - first:
+      213: 2700193023868785024
+    second: TreeDead_Sheet_83
+  - first:
+      213: 5581840964739221322
+    second: TreeDead_Sheet_84
+  - first:
+      213: 5171287682227197478
+    second: TreeDead_Sheet_85
+  - first:
+      213: -4893464049132783688
+    second: TreeDead_Sheet_86
+  - first:
+      213: 5933019693925495540
+    second: TreeDead_Sheet_87
+  - first:
+      213: -537316869859537269
+    second: TreeDead_Sheet_88
+  - first:
+      213: -1093822328589593425
+    second: TreeDead_Sheet_89
+  - first:
+      213: 381705660226971474
+    second: TreeDead_Sheet_90
+  - first:
+      213: 5409742951143022003
+    second: TreeDead_Sheet_91
+  - first:
+      213: -4862353772783280573
+    second: TreeDead_Sheet_92
+  - first:
+      213: 3417482427063129432
+    second: TreeDead_Sheet_93
+  - first:
+      213: -2639120867382621252
+    second: TreeDead_Sheet_94
+  - first:
+      213: 4243769840303366322
+    second: TreeDead_Sheet_95
+  - first:
+      213: -6793359778127825602
+    second: TreeDead_Sheet_96
+  - first:
+      213: 8885209143196685338
+    second: TreeDead_Sheet_97
+  - first:
+      213: 4342320344624194885
+    second: TreeDead_Sheet_98
+  - first:
+      213: 7713582393410671559
+    second: TreeDead_Sheet_99
+  - first:
+      213: -2575771322032157494
+    second: TreeDead_Sheet_100
+  - first:
+      213: 4857484613019597692
+    second: TreeDead_Sheet_101
+  - first:
+      213: 7085326494262828441
+    second: TreeDead_Sheet_102
+  - first:
+      213: 7296892890256582330
+    second: TreeDead_Sheet_103
+  - first:
+      213: -4679868249042494489
+    second: TreeDead_Sheet_104
+  - first:
+      213: 5282257675571673939
+    second: TreeDead_Sheet_105
+  - first:
+      213: -3881056391762924208
+    second: TreeDead_Sheet_106
+  - first:
+      213: -42827512768052680
+    second: TreeDead_Sheet_107
+  - first:
+      213: -5544232204351708970
+    second: TreeDead_Sheet_108
+  - first:
+      213: 1208997552760769832
+    second: TreeDead_Sheet_109
+  - first:
+      213: -8226312178926291340
+    second: TreeDead_Sheet_110
+  - first:
+      213: 230408054213135664
+    second: TreeDead_Sheet_111
+  - first:
+      213: 7685448949417951726
+    second: TreeDead_Sheet_112
+  - first:
+      213: -648903248844847711
+    second: TreeDead_Sheet_113
+  - first:
+      213: 1389511664526477477
+    second: TreeDead_Sheet_114
+  - first:
+      213: -7877132929349350421
+    second: TreeDead_Sheet_115
+  - first:
+      213: 8401353410444286170
+    second: TreeDead_Sheet_116
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 0
+  spriteTessellationDetail: -1
+  textureType: 0
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: TreeDead_Sheet_0
+      rect:
+        serializedVersion: 2
+        x: 9
+        y: 277
+        width: 13
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5add2f8314d311710800000000000000
+      internalID: 1662177087814032805
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_1
+      rect:
+        serializedVersion: 2
+        x: 10
+        y: 239
+        width: 13
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d74f7647f1b5ad9c0800000000000000
+      internalID: -3901705936508029827
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_2
+      rect:
+        serializedVersion: 2
+        x: 12
+        y: 224
+        width: 12
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 07f6afe5fe6b739d0800000000000000
+      internalID: -2794563904553193616
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_3
+      rect:
+        serializedVersion: 2
+        x: 13
+        y: 290
+        width: 12
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8b8f4307145ef81c0800000000000000
+      internalID: -4499125433501681480
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_4
+      rect:
+        serializedVersion: 2
+        x: 14
+        y: 190
+        width: 13
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c823ff4ca1c71bc10800000000000000
+      internalID: 2067570158355821196
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_5
+      rect:
+        serializedVersion: 2
+        x: 15
+        y: 146
+        width: 82
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7f75bc725426fd270800000000000000
+      internalID: 8277442689290164215
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_6
+      rect:
+        serializedVersion: 2
+        x: 24
+        y: 273
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d7436915a8fcb3050800000000000000
+      internalID: 5781442739641398397
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_7
+      rect:
+        serializedVersion: 2
+        x: 25
+        y: 240
+        width: 12
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0bfa873e4d2162c50800000000000000
+      internalID: 6640015406163079088
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_8
+      rect:
+        serializedVersion: 2
+        x: 26
+        y: 227
+        width: 13
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d90ffea3ed0301360800000000000000
+      internalID: 7138259140411912349
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_9
+      rect:
+        serializedVersion: 2
+        x: 27
+        y: 287
+        width: 13
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: deb64f04432e3ce10800000000000000
+      internalID: 2216864155652353005
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_10
+      rect:
+        serializedVersion: 2
+        x: 51
+        y: 188
+        width: 21
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 787e02cff37113d10800000000000000
+      internalID: 2103488064539125639
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_11
+      rect:
+        serializedVersion: 2
+        x: 53
+        y: 274
+        width: 17
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 56b5a4bb8cb65e190800000000000000
+      internalID: -7933816658663416987
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_12
+      rect:
+        serializedVersion: 2
+        x: 54
+        y: 240
+        width: 12
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 46d1f3000abaff480800000000000000
+      internalID: -8863176837954593436
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_13
+      rect:
+        serializedVersion: 2
+        x: 56
+        y: 230
+        width: 11
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c2b092760ae61e0b0800000000000000
+      internalID: -5701154018069771476
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_14
+      rect:
+        serializedVersion: 2
+        x: 59
+        y: 292
+        width: 15
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 11682dfc421a9fa90800000000000000
+      internalID: -7279610143190120943
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_15
+      rect:
+        serializedVersion: 2
+        x: 65
+        y: 245
+        width: 6
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3baa63a70f04dec70800000000000000
+      internalID: 9001922631770221235
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_16
+      rect:
+        serializedVersion: 2
+        x: 66
+        y: 219
+        width: 6
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d185b119024429300800000000000000
+      internalID: 257343035377670173
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_17
+      rect:
+        serializedVersion: 2
+        x: 73
+        y: 268
+        width: 15
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6366efa22bf203d60800000000000000
+      internalID: 7867840991288256054
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_18
+      rect:
+        serializedVersion: 2
+        x: 75
+        y: 246
+        width: 6
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 76e7404b4c5c06440800000000000000
+      internalID: 4927155440967777895
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_19
+      rect:
+        serializedVersion: 2
+        x: 76
+        y: 223
+        width: 6
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a374bfef68720fc10800000000000000
+      internalID: 2085210088229521210
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_20
+      rect:
+        serializedVersion: 2
+        x: 77
+        y: 287
+        width: 17
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7f6873cd4b37feea0800000000000000
+      internalID: -5841322971050309897
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_21
+      rect:
+        serializedVersion: 2
+        x: 80
+        y: 241
+        width: 10
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 29a2c8749c15fc510800000000000000
+      internalID: 1571564719906237074
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_22
+      rect:
+        serializedVersion: 2
+        x: 81
+        y: 231
+        width: 11
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 055eb97f40a38b6b0800000000000000
+      internalID: -5280406770083437232
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_23
+      rect:
+        serializedVersion: 2
+        x: 88
+        y: 186
+        width: 29
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6224eed5d1d5af340800000000000000
+      internalID: 4898329925430166054
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_24
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 145
+        width: 21
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 918f961a7c02bf7a0800000000000000
+      internalID: -6342439608442554343
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_25
+      rect:
+        serializedVersion: 2
+        x: 98
+        y: 271
+        width: 19
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a4c8ec733c82dd850800000000000000
+      internalID: 6403319064110730314
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_26
+      rect:
+        serializedVersion: 2
+        x: 99
+        y: 242
+        width: 12
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: be70e7b5c8c5f5460800000000000000
+      internalID: 7232601284480468971
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_27
+      rect:
+        serializedVersion: 2
+        x: 102
+        y: 228
+        width: 10
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aa81a727eb501cd70800000000000000
+      internalID: 9061530240768678058
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_28
+      rect:
+        serializedVersion: 2
+        x: 105
+        y: 294
+        width: 17
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 12945b9a03b76c600800000000000000
+      internalID: 488213058552154401
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_29
+      rect:
+        serializedVersion: 2
+        x: 112
+        y: 248
+        width: 7
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6d500bb670c6de030800000000000000
+      internalID: 3525592862428235222
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_30
+      rect:
+        serializedVersion: 2
+        x: 113
+        y: 215
+        width: 6
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 764d2acc662a53860800000000000000
+      internalID: 7509086516113757287
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_31
+      rect:
+        serializedVersion: 2
+        x: 122
+        y: 250
+        width: 10
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 52f629201337dd470800000000000000
+      internalID: 8421013532586438437
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_32
+      rect:
+        serializedVersion: 2
+        x: 126
+        y: 142
+        width: 120
+        height: 170
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: da13bf1a2123c1440800000000000000
+      internalID: 4907852749535392173
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_33
+      rect:
+        serializedVersion: 2
+        x: 126
+        y: 219
+        width: 7
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a786e19618ae92390800000000000000
+      internalID: -7842479434553726854
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_34
+      rect:
+        serializedVersion: 2
+        x: 126
+        y: 184
+        width: 35
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 888703bf53778d870800000000000000
+      internalID: 8707840953252083848
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_35
+      rect:
+        serializedVersion: 2
+        x: 129
+        y: 283
+        width: 25
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 954a8fba6ea3e7f80800000000000000
+      internalID: -8106977516818226087
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_36
+      rect:
+        serializedVersion: 2
+        x: 131
+        y: 273
+        width: 9
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 849dceed78feccd50800000000000000
+      internalID: 6759040507615959368
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_37
+      rect:
+        serializedVersion: 2
+        x: 132
+        y: 242
+        width: 23
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 83afabdd1e5c79710800000000000000
+      internalID: 1700044958233983544
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_38
+      rect:
+        serializedVersion: 2
+        x: 134
+        y: 229
+        width: 11
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4ee0379e5721ad010800000000000000
+      internalID: 1214303347166875364
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_39
+      rect:
+        serializedVersion: 2
+        x: 149
+        y: 227
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6b0f1d8bed26e4270800000000000000
+      internalID: 8236629477230244022
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_40
+      rect:
+        serializedVersion: 2
+        x: 152
+        y: 297
+        width: 19
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a41d1146c8bd3ddb0800000000000000
+      internalID: -4768226184434429622
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_41
+      rect:
+        serializedVersion: 2
+        x: 157
+        y: 269
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: baea0a4f1d2c335c0800000000000000
+      internalID: -4236828617417380181
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_42
+      rect:
+        serializedVersion: 2
+        x: 160
+        y: 252
+        width: 6
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 233aceae4c37cd4d0800000000000000
+      internalID: -3108482353200323790
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_43
+      rect:
+        serializedVersion: 2
+        x: 165
+        y: 194
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 81d5e430ea978dd20800000000000000
+      internalID: 3303524114962996504
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_44
+      rect:
+        serializedVersion: 2
+        x: 165
+        y: 186
+        width: 7
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 87b1b25f21b2f09b0800000000000000
+      internalID: -5111819691619574920
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_45
+      rect:
+        serializedVersion: 2
+        x: 177
+        y: 217
+        width: 6
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b1a7bbfca9cd06180800000000000000
+      internalID: -9124050287584380389
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_46
+      rect:
+        serializedVersion: 2
+        x: 183
+        y: 272
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5182b3d0c1f749c10800000000000000
+      internalID: 2059410688072951829
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_47
+      rect:
+        serializedVersion: 2
+        x: 185
+        y: 244
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c9792bb641f6a6630800000000000000
+      internalID: 3921068559076333468
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_48
+      rect:
+        serializedVersion: 2
+        x: 197
+        y: 186
+        width: 16
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: af8b1bfc64b815700800000000000000
+      internalID: 527355767627561210
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_49
+      rect:
+        serializedVersion: 2
+        x: 197
+        y: 186
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d5aac9a3c130de960800000000000000
+      internalID: 7632760363240172125
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_50
+      rect:
+        serializedVersion: 2
+        x: 14
+        y: 108
+        width: 8
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 854646fd7bcbc6f70800000000000000
+      internalID: 9181921238214534232
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_51
+      rect:
+        serializedVersion: 2
+        x: 19
+        y: 108
+        width: 8
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6d9381ebede43ad90800000000000000
+      internalID: -7087734669972063786
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_52
+      rect:
+        serializedVersion: 2
+        x: 51
+        y: 106
+        width: 19
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1078556ce89bca240800000000000000
+      internalID: 4804418925361465089
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_53
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 110
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ecc43b143ee74bed0800000000000000
+      internalID: -2399153186956686130
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_54
+      rect:
+        serializedVersion: 2
+        x: 91
+        y: 113
+        width: 13
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 82f0010b90bf86640800000000000000
+      internalID: 5073580999259983656
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_55
+      rect:
+        serializedVersion: 2
+        x: 107
+        y: 110
+        width: 10
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3c44717260b6e4090800000000000000
+      internalID: -8048377809894685501
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_56
+      rect:
+        serializedVersion: 2
+        x: 129
+        y: 115
+        width: 16
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0c35e67c82c7eeef0800000000000000
+      internalID: -76987629032287296
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_57
+      rect:
+        serializedVersion: 2
+        x: 151
+        y: 110
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0ea98bdf457a90fb0800000000000000
+      internalID: -4681026354199094560
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_58
+      rect:
+        serializedVersion: 2
+        x: 168
+        y: 101
+        width: 78
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 91ad8f57bc2241ea0800000000000000
+      internalID: -5903054954322929127
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_59
+      rect:
+        serializedVersion: 2
+        x: 88
+        y: 105
+        width: 10
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3f6b48cb3ed405d60800000000000000
+      internalID: 7876881388786726643
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_60
+      rect:
+        serializedVersion: 2
+        x: 101
+        y: 104
+        width: 13
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0068f2784054502c0800000000000000
+      internalID: -4466087569717754368
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_61
+      rect:
+        serializedVersion: 2
+        x: 126
+        y: 103
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: feb5e435772703df0800000000000000
+      internalID: -202536126407353361
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_62
+      rect:
+        serializedVersion: 2
+        x: 142
+        y: 102
+        width: 16
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 001f9638da08e7f10800000000000000
+      internalID: 2269392744963764480
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_63
+      rect:
+        serializedVersion: 2
+        x: 165
+        y: 104
+        width: 7
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 01ff820705abe4870800000000000000
+      internalID: 8669071187376668432
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_64
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 83
+        width: 8
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 951161cf9a2d67a00800000000000000
+      internalID: 754021615151747417
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_65
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 84
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8ea770d33e89e2d80800000000000000
+      internalID: -8273507363684123928
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_66
+      rect:
+        serializedVersion: 2
+        x: 17
+        y: 84
+        width: 13
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: acffd3bf1a0735430800000000000000
+      internalID: 3770481154046427082
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_67
+      rect:
+        serializedVersion: 2
+        x: 34
+        y: 83
+        width: 14
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2fd96e86eb60cfe50800000000000000
+      internalID: 6844352948569808370
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_68
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 84
+        width: 14
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d0d6aa545ecd2ae50800000000000000
+      internalID: 6819255663066770701
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_69
+      rect:
+        serializedVersion: 2
+        x: 65
+        y: 26
+        width: 45
+        height: 63
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2424b48d6d54538b0800000000000000
+      internalID: -5173151807911017918
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_70
+      rect:
+        serializedVersion: 2
+        x: 107
+        y: 64
+        width: 27
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a9b48085b7e5a7440800000000000000
+      internalID: 4934360225588726682
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_71
+      rect:
+        serializedVersion: 2
+        x: 133
+        y: 63
+        width: 31
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b43a6b08cdccf7280800000000000000
+      internalID: -9043284279312342197
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_72
+      rect:
+        serializedVersion: 2
+        x: 161
+        y: 82
+        width: 12
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ee8dd276297eba7c0800000000000000
+      internalID: -4058896023162070802
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_73
+      rect:
+        serializedVersion: 2
+        x: 172
+        y: 75
+        width: 17
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 884762ebfdf7d4170800000000000000
+      internalID: 8164322298437203080
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_74
+      rect:
+        serializedVersion: 2
+        x: 199
+        y: 82
+        width: 16
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dc63dfedb7a54fbe0800000000000000
+      internalID: -1444430092410472755
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_75
+      rect:
+        serializedVersion: 2
+        x: 216
+        y: 83
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 24fe31e0ae126a640800000000000000
+      internalID: 5090793717931175746
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_76
+      rect:
+        serializedVersion: 2
+        x: 225
+        y: 74
+        width: 23
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8428f482d1e337090800000000000000
+      internalID: -8038012614974930360
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_77
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 76
+        width: 8
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8a8afd7d9f39d8690800000000000000
+      internalID: -7598254295026259800
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_78
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 76
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ba9b164449f955340800000000000000
+      internalID: 4851959632712808875
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_79
+      rect:
+        serializedVersion: 2
+        x: 17
+        y: 76
+        width: 13
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dd47a2ed6849ebc20800000000000000
+      internalID: 3224177690217706717
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_80
+      rect:
+        serializedVersion: 2
+        x: 34
+        y: 76
+        width: 13
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cdcbd163ee538fcd0800000000000000
+      internalID: -2524208293914755876
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_81
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 76
+        width: 14
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bd90b2a8cd0471a60800000000000000
+      internalID: 7644650208439765467
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_82
+      rect:
+        serializedVersion: 2
+        x: 172
+        y: 63
+        width: 17
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e2e376c2b8a1ff390800000000000000
+      internalID: -7782472446025187794
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_83
+      rect:
+        serializedVersion: 2
+        x: 208
+        y: 73
+        width: 16
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 081dfacbf33097520800000000000000
+      internalID: 2700193023868785024
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_84
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 68
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a47410898cea67d40800000000000000
+      internalID: 5581840964739221322
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_85
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 59
+        width: 8
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 62651829fba14c740800000000000000
+      internalID: 5171287682227197478
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_86
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 68
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8b7bb4ebf5ce61cb0800000000000000
+      internalID: -4893464049132783688
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_87
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 60
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4f273d52af1565250800000000000000
+      internalID: 5933019693925495540
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_88
+      rect:
+        serializedVersion: 2
+        x: 17
+        y: 68
+        width: 13
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b8e823857211b88f0800000000000000
+      internalID: -537316869859537269
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_89
+      rect:
+        serializedVersion: 2
+        x: 17
+        y: 60
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fa4d6013366f1d0f0800000000000000
+      internalID: -1093822328589593425
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_90
+      rect:
+        serializedVersion: 2
+        x: 25
+        y: 50
+        width: 18
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 257a59e86471c4500800000000000000
+      internalID: 381705660226971474
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_91
+      rect:
+        serializedVersion: 2
+        x: 34
+        y: 68
+        width: 13
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3bd9d015d84431b40800000000000000
+      internalID: 5409742951143022003
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_92
+      rect:
+        serializedVersion: 2
+        x: 40
+        y: 61
+        width: 22
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 34ed8f86103758cb0800000000000000
+      internalID: -4862353772783280573
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_93
+      rect:
+        serializedVersion: 2
+        x: 146
+        y: 9
+        width: 39
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 855dc3b29265d6f20800000000000000
+      internalID: 3417482427063129432
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_94
+      rect:
+        serializedVersion: 2
+        x: 185
+        y: 37
+        width: 48
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cbb8654cd85ff5bd0800000000000000
+      internalID: -2639120867382621252
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_95
+      rect:
+        serializedVersion: 2
+        x: 234
+        y: 65
+        width: 14
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2b06ccf6f26e4ea30800000000000000
+      internalID: 4243769840303366322
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_96
+      rect:
+        serializedVersion: 2
+        x: 2
+        y: 50
+        width: 16
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e35b349464329b1a0800000000000000
+      internalID: -6793359778127825602
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_97
+      rect:
+        serializedVersion: 2
+        x: 17
+        y: 43
+        width: 11
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a149a4fc3aa9e4b70800000000000000
+      internalID: 8885209143196685338
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_98
+      rect:
+        serializedVersion: 2
+        x: 17
+        y: 3
+        width: 29
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 545e64ac855034c30800000000000000
+      internalID: 4342320344624194885
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_99
+      rect:
+        serializedVersion: 2
+        x: 27
+        y: 41
+        width: 9
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7c353f881562c0b60800000000000000
+      internalID: 7713582393410671559
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_100
+      rect:
+        serializedVersion: 2
+        x: 41
+        y: 3
+        width: 13
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: acc82af21a5014cd0800000000000000
+      internalID: -2575771322032157494
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_101
+      rect:
+        serializedVersion: 2
+        x: 45
+        y: 41
+        width: 9
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c7b75fcf480496340800000000000000
+      internalID: 4857484613019597692
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_102
+      rect:
+        serializedVersion: 2
+        x: 53
+        y: 27
+        width: 11
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 99d133828e2245260800000000000000
+      internalID: 7085326494262828441
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_103
+      rect:
+        serializedVersion: 2
+        x: 114
+        y: 27
+        width: 13
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ab621df4c65c34560800000000000000
+      internalID: 7296892890256582330
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_104
+      rect:
+        serializedVersion: 2
+        x: 122
+        y: 19
+        width: 20
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7eb513c5f94cd0fb0800000000000000
+      internalID: -4679868249042494489
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_105
+      rect:
+        serializedVersion: 2
+        x: 145
+        y: 36
+        width: 14
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 35bb78c8e595e4940800000000000000
+      internalID: 5282257675571673939
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_106
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 3
+        width: 15
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 05d26bf36c7b32ac0800000000000000
+      internalID: -3881056391762924208
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_107
+      rect:
+        serializedVersion: 2
+        x: 57
+        y: 2
+        width: 29
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 832c8d2aa98d76ff0800000000000000
+      internalID: -42827512768052680
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_108
+      rect:
+        serializedVersion: 2
+        x: 73
+        y: 25
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6d0e55b4f2eee03b0800000000000000
+      internalID: -5544232204351708970
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_109
+      rect:
+        serializedVersion: 2
+        x: 81
+        y: 25
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 82d4f926ed837c010800000000000000
+      internalID: 1208997552760769832
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_110
+      rect:
+        serializedVersion: 2
+        x: 81
+        y: 17
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 476f0ab78a446dd80800000000000000
+      internalID: -8226312178926291340
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_111
+      rect:
+        serializedVersion: 2
+        x: 89
+        y: 2
+        width: 20
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 03d43c097e2923300800000000000000
+      internalID: 230408054213135664
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_112
+      rect:
+        serializedVersion: 2
+        x: 194
+        y: 18
+        width: 59
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ee1c479a91338aa60800000000000000
+      internalID: 7685448949417951726
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_113
+      rect:
+        serializedVersion: 2
+        x: 109
+        y: 6
+        width: 9
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1a58107eee1aef6f0800000000000000
+      internalID: -648903248844847711
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_114
+      rect:
+        serializedVersion: 2
+        x: 122
+        y: 7
+        width: 18
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5a8cc573f79884310800000000000000
+      internalID: 1389511664526477477
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_115
+      rect:
+        serializedVersion: 2
+        x: 155
+        y: 8
+        width: 9
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: beb8999e55dcea290800000000000000
+      internalID: -7877132929349350421
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeDead_Sheet_116
+      rect:
+        serializedVersion: 2
+        x: 164
+        y: 9
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ad85c0e1a6a979470800000000000000
+      internalID: 8401353410444286170
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      TreeDead_Sheet_0: 1662177087814032805
+      TreeDead_Sheet_1: -3901705936508029827
+      TreeDead_Sheet_10: 2103488064539125639
+      TreeDead_Sheet_100: -2575771322032157494
+      TreeDead_Sheet_101: 4857484613019597692
+      TreeDead_Sheet_102: 7085326494262828441
+      TreeDead_Sheet_103: 7296892890256582330
+      TreeDead_Sheet_104: -4679868249042494489
+      TreeDead_Sheet_105: 5282257675571673939
+      TreeDead_Sheet_106: -3881056391762924208
+      TreeDead_Sheet_107: -42827512768052680
+      TreeDead_Sheet_108: -5544232204351708970
+      TreeDead_Sheet_109: 1208997552760769832
+      TreeDead_Sheet_11: -7933816658663416987
+      TreeDead_Sheet_110: -8226312178926291340
+      TreeDead_Sheet_111: 230408054213135664
+      TreeDead_Sheet_112: 7685448949417951726
+      TreeDead_Sheet_113: -648903248844847711
+      TreeDead_Sheet_114: 1389511664526477477
+      TreeDead_Sheet_115: -7877132929349350421
+      TreeDead_Sheet_116: 8401353410444286170
+      TreeDead_Sheet_12: -8863176837954593436
+      TreeDead_Sheet_13: -5701154018069771476
+      TreeDead_Sheet_14: -7279610143190120943
+      TreeDead_Sheet_15: 9001922631770221235
+      TreeDead_Sheet_16: 257343035377670173
+      TreeDead_Sheet_17: 7867840991288256054
+      TreeDead_Sheet_18: 4927155440967777895
+      TreeDead_Sheet_19: 2085210088229521210
+      TreeDead_Sheet_2: -2794563904553193616
+      TreeDead_Sheet_20: -5841322971050309897
+      TreeDead_Sheet_21: 1571564719906237074
+      TreeDead_Sheet_22: -5280406770083437232
+      TreeDead_Sheet_23: 4898329925430166054
+      TreeDead_Sheet_24: -6342439608442554343
+      TreeDead_Sheet_25: 6403319064110730314
+      TreeDead_Sheet_26: 7232601284480468971
+      TreeDead_Sheet_27: 9061530240768678058
+      TreeDead_Sheet_28: 488213058552154401
+      TreeDead_Sheet_29: 3525592862428235222
+      TreeDead_Sheet_3: -4499125433501681480
+      TreeDead_Sheet_30: 7509086516113757287
+      TreeDead_Sheet_31: 8421013532586438437
+      TreeDead_Sheet_32: 4907852749535392173
+      TreeDead_Sheet_33: -7842479434553726854
+      TreeDead_Sheet_34: 8707840953252083848
+      TreeDead_Sheet_35: -8106977516818226087
+      TreeDead_Sheet_36: 6759040507615959368
+      TreeDead_Sheet_37: 1700044958233983544
+      TreeDead_Sheet_38: 1214303347166875364
+      TreeDead_Sheet_39: 8236629477230244022
+      TreeDead_Sheet_4: 2067570158355821196
+      TreeDead_Sheet_40: -4768226184434429622
+      TreeDead_Sheet_41: -4236828617417380181
+      TreeDead_Sheet_42: -3108482353200323790
+      TreeDead_Sheet_43: 3303524114962996504
+      TreeDead_Sheet_44: -5111819691619574920
+      TreeDead_Sheet_45: -9124050287584380389
+      TreeDead_Sheet_46: 2059410688072951829
+      TreeDead_Sheet_47: 3921068559076333468
+      TreeDead_Sheet_48: 527355767627561210
+      TreeDead_Sheet_49: 7632760363240172125
+      TreeDead_Sheet_5: 8277442689290164215
+      TreeDead_Sheet_50: 9181921238214534232
+      TreeDead_Sheet_51: -7087734669972063786
+      TreeDead_Sheet_52: 4804418925361465089
+      TreeDead_Sheet_53: -2399153186956686130
+      TreeDead_Sheet_54: 5073580999259983656
+      TreeDead_Sheet_55: -8048377809894685501
+      TreeDead_Sheet_56: -76987629032287296
+      TreeDead_Sheet_57: -4681026354199094560
+      TreeDead_Sheet_58: -5903054954322929127
+      TreeDead_Sheet_59: 7876881388786726643
+      TreeDead_Sheet_6: 5781442739641398397
+      TreeDead_Sheet_60: -4466087569717754368
+      TreeDead_Sheet_61: -202536126407353361
+      TreeDead_Sheet_62: 2269392744963764480
+      TreeDead_Sheet_63: 8669071187376668432
+      TreeDead_Sheet_64: 754021615151747417
+      TreeDead_Sheet_65: -8273507363684123928
+      TreeDead_Sheet_66: 3770481154046427082
+      TreeDead_Sheet_67: 6844352948569808370
+      TreeDead_Sheet_68: 6819255663066770701
+      TreeDead_Sheet_69: -5173151807911017918
+      TreeDead_Sheet_7: 6640015406163079088
+      TreeDead_Sheet_70: 4934360225588726682
+      TreeDead_Sheet_71: -9043284279312342197
+      TreeDead_Sheet_72: -4058896023162070802
+      TreeDead_Sheet_73: 8164322298437203080
+      TreeDead_Sheet_74: -1444430092410472755
+      TreeDead_Sheet_75: 5090793717931175746
+      TreeDead_Sheet_76: -8038012614974930360
+      TreeDead_Sheet_77: -7598254295026259800
+      TreeDead_Sheet_78: 4851959632712808875
+      TreeDead_Sheet_79: 3224177690217706717
+      TreeDead_Sheet_8: 7138259140411912349
+      TreeDead_Sheet_80: -2524208293914755876
+      TreeDead_Sheet_81: 7644650208439765467
+      TreeDead_Sheet_82: -7782472446025187794
+      TreeDead_Sheet_83: 2700193023868785024
+      TreeDead_Sheet_84: 5581840964739221322
+      TreeDead_Sheet_85: 5171287682227197478
+      TreeDead_Sheet_86: -4893464049132783688
+      TreeDead_Sheet_87: 5933019693925495540
+      TreeDead_Sheet_88: -537316869859537269
+      TreeDead_Sheet_89: -1093822328589593425
+      TreeDead_Sheet_9: 2216864155652353005
+      TreeDead_Sheet_90: 381705660226971474
+      TreeDead_Sheet_91: 5409742951143022003
+      TreeDead_Sheet_92: -4862353772783280573
+      TreeDead_Sheet_93: 3417482427063129432
+      TreeDead_Sheet_94: -2639120867382621252
+      TreeDead_Sheet_95: 4243769840303366322
+      TreeDead_Sheet_96: -6793359778127825602
+      TreeDead_Sheet_97: 8885209143196685338
+      TreeDead_Sheet_98: 4342320344624194885
+      TreeDead_Sheet_99: 7713582393410671559
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
