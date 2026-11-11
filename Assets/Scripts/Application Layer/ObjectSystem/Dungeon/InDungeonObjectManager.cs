@@ -1187,6 +1187,30 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         StopGrowth();
         StopDelayedGrassOpen();
         ClearTrees();
+
+        // 원정이 끝났으니 이번 원정에 맞춰 만든 나무 사망 이펙트 공유 이미터를 해제한다(마을·다음 원정에서 매 프레임 갱신되지 않게).
+        // 다음 원정은 나오는 나무에 맞춰 다시 만든다.
+        inDungeonVFXManager?.ReleaseTreeDeadEffectEmitters();
+    }
+
+    // 이번 원정에서 나무가 오를 수 있는 최고 보석 단계(1 황금 ~ 3 무지개). 보석 사망 이펙트 공유 이미터를 원정 준비 중에 미리 만드는 데 쓴다.
+    // 등급 확률(특성)로 뽑힐 수 있는 가장 높은 등급과, 쓰러지기 직전 Fascinating으로 올려 주는 황금 나무 보장을 본다.
+    // 로그라이크는 등급을 굴리지 않는다(CalculateRandomTreeData와 같은 조건).
+    private int GetMaxGemStageThisRun()
+    {
+        TreeGrade maxGrade = TreeGrade.Normal;
+        bool bForceNormalGrade = null != runTreeRules && runTreeRules.bForceNormalGrade;
+        if (false == bForceNormalGrade && treeGradeProbs != null)
+        {
+            for (int i = 0; i < treeGradeProbs.Count; i++)
+            {
+                if (treeGradeProbs[i].probability > 0f && treeGradeProbs[i].grade > maxGrade) maxGrade = treeGradeProbs[i].grade;
+            }
+        }
+
+        if (bGoldTreePityArmed && false == bGoldTreePityDone && maxGrade < TreeGrade.Fascinating) maxGrade = TreeGrade.Fascinating;
+
+        return (int)maxGrade - (int)TreeGrade.Normal;
     }
 
     // // 프라이빗 로직 메서드
@@ -1199,6 +1223,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             StopGrowth();
             StopDelayedGrassOpen();
             ClearTrees();
+
+            // 보석 사망 이펙트 공유 이미터를 던전이 공개되기 전에 만든다(이번 원정에서 나올 수 있는 단계만).
+            // 계열·1스테이지 임팩트는 아래 초기 스폰에서 나무가 나올 때 만든다(OnGetTree).
+            inDungeonVFXManager?.PrewarmGemTreeDeadVFX(GetMaxGemStageThisRun());
 
             // 4스테이지 불씨: 이전 원정의 불씨를 치우고 이번 맵에서 나오는지 정한다(로그라이크는 스테이지 기믹을 끈다).
             // "산불 조심" 특성이면 다른 숲에서도 나오고, "불씨 드랍량 증가" 특성 배율을 이번 원정 동안 쓴다.
@@ -1724,7 +1752,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             ChargeMeteorShower();
         }
 
-        inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
+        // 보석 나무는 최종 보석 단계(황금/다이아/무지개)의 전용 이펙트로 터진다(일반 나무는 0).
+        inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent, _treeObj.treeData.type, _treeObj.gemStage);
 
         // 아래에서 나무 위치를 여러 번 쓴다. 나무는 스폰(SpawnTreeAt)과 정리(ClearTrees) 때만 움직이고 이 사이에는
         // 둘 다 일어나지 않으므로 한 번만 읽는다.
@@ -2116,6 +2145,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         _tree.IsPooled = false;
         _tree.ApplyData(CalculateRandomTreeData());
+        // 이 나무가 쓰러질 때 쓸 사망 이펙트의 공유 이미터를 미리 만든다(이 던전에 나오는 계열·보석 단계만, 이미 있으면 바로 돌아간다)
+        if (inDungeonVFXManager != null) inDungeonVFXManager.PrewarmTreeDeadVFX(_tree.treeData.type, _tree.treeData.grade);
 
         if (_tree.TopShadowRadius > maxTreeTopShadowRadius) maxTreeTopShadowRadius = _tree.TopShadowRadius;
         float treeOffsetMagnitude = _tree.Offset.magnitude;
@@ -2234,7 +2265,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         if (inDungeonVFXManager != null)
         {
-            inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
+            // 스폰 뒤에 등급이 오른 나무(PromoteGrade)도 마지막 사망 전에 보석 이펙트 공유 이미터가 준비되게 한다
+            inDungeonVFXManager.PrewarmTreeDeadVFX(_treeObj.treeData.type, _treeObj.treeData.grade);
+            inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent, _treeObj.treeData.type);
             inDungeonVFXManager.PlayTreeTransformVFX(_treeObj.treeVisualComponent, _treeObj.gemStage);
         }
 

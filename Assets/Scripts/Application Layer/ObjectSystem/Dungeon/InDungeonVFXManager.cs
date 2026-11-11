@@ -31,6 +31,68 @@ public class InDungeonVFXManager : MonoBehaviour
     private PresentationLayer.VFX.SharedBurstEmitter sharedTreeDeadTopEmitter;
     private PresentationLayer.VFX.SharedBurstEmitter sharedTreeDeadBottomEmitter;
 
+    // 나무 사망 이펙트 한 묶음(수관 Top + 밑동 Bottom, 밑동 태그가 null이면 수관만). 프리팹·풀 등록은 TreeDeadStageVfxBuilder가 만든다.
+    // 풀에 하나라도 없으면(bAvailable false) 그 묶음 대신 기존 경로로 재생한다.
+    // 공유 이미터는 입자가 없어도 재생 상태로 매 프레임 갱신되므로 처음부터 다 만들지 않는다. 이번 원정에 실제로 나오는 묶음만
+    // 원정 준비 중(나무 스폰 PrewarmTreeDeadVFX, 원정 시작 PrewarmGemTreeDeadVFX)에 만들고, 원정이 끝나면 해제한다
+    // (ReleaseTreeDeadEffectEmitters). 이 매니저는 GameInstaller(DontDestroyOnLoad) 하위라 해제하지 않으면 세션 내내 남는다.
+    private sealed class TreeDeadEffectSet
+    {
+        public readonly string topTag;
+        public readonly string bottomTag;
+        public PresentationLayer.VFX.SharedBurstEmitter topEmitter;
+        public PresentationLayer.VFX.SharedBurstEmitter bottomEmitter;
+        public bool bAvailable;    // 풀에 모두 등록됐는지(Initialize에서 정한다)
+        public bool bEmitterTried; // 공유 이미터 생성을 시도했는지(호환되지 않아 null이어도 다시 시도하지 않는다)
+
+        public TreeDeadEffectSet(string _topTag, string _bottomTag)
+        {
+            topTag = _topTag;
+            bottomTag = _bottomTag;
+        }
+    }
+
+    // 2~4스테이지 나무의 계열 전용 사망 이펙트. 인덱스는 GetStageTreeDeadFamily(1 포자, 2 별, 3 용암, 0은 기존 이펙트).
+    private readonly TreeDeadEffectSet[] stageTreeDeadEffects =
+    {
+        null,
+        new TreeDeadEffectSet("TreeDeadEffect_SporeTop", "TreeDeadEffect_SporeBottom"),
+        new TreeDeadEffectSet("TreeDeadEffect_StarTop", "TreeDeadEffect_StarBottom"),
+        new TreeDeadEffectSet("TreeDeadEffect_MagmaTop", "TreeDeadEffect_MagmaBottom"),
+    };
+
+    // 1스테이지 나무(참나무·소나무·자작나무)의 사망 임팩트(섬광·충격선·반짝 팝). 기존 잎 폭발·밑동 폭발에 더해 수관 자리에서 재생한다.
+    private readonly TreeDeadEffectSet leafTreeDeadImpact = new TreeDeadEffectSet("TreeDeadEffect_LeafTop", null);
+
+    // 보석 나무가 최종으로 쓰러질 때의 보석 단계별 사망 이펙트. 인덱스는 보석 단계(1 황금, 2 다이아, 3 무지개).
+    private readonly TreeDeadEffectSet[] gemTreeDeadEffects =
+    {
+        null,
+        new TreeDeadEffectSet("TreeDeadEffect_GemGoldTop", "TreeDeadEffect_GemGoldBottom"),
+        new TreeDeadEffectSet("TreeDeadEffect_GemDiamondTop", "TreeDeadEffect_GemDiamondBottom"),
+        new TreeDeadEffectSet("TreeDeadEffect_GemRainbowTop", "TreeDeadEffect_GemRainbowBottom"),
+    };
+
+    private TreeDeadEffectSet[] allTreeDeadEffects; // 위 묶음 전부(초기화·정리 루프용)
+
+    private TreeDeadEffectSet[] AllTreeDeadEffects
+    {
+        get
+        {
+            if (null == allTreeDeadEffects)
+            {
+                allTreeDeadEffects = new[]
+                {
+                    stageTreeDeadEffects[1], stageTreeDeadEffects[2], stageTreeDeadEffects[3],
+                    leafTreeDeadImpact,
+                    gemTreeDeadEffects[1], gemTreeDeadEffects[2], gemTreeDeadEffects[3],
+                };
+            }
+
+            return allTreeDeadEffects;
+        }
+    }
+
     [Header("Constellation Ground Mark")]
     [SerializeField] private TreeStarMarkGroundAnimator treeStarMarkGroundPrefab;
     [SerializeField] private int treeStarMarkGroundPoolDefaultCapacity = 8;
@@ -185,6 +247,15 @@ public class InDungeonVFXManager : MonoBehaviour
             if (sharedTreeHitBottomEmitter == null) sharedTreeHitBottomEmitter = CreateSharedBurstEmitter("TreeHitEffect_Bottom");
             if (sharedTreeDeadTopEmitter == null) sharedTreeDeadTopEmitter = CreateSharedBurstEmitter("TreeDeadEffect_Top");
             if (sharedTreeDeadBottomEmitter == null) sharedTreeDeadBottomEmitter = CreateSharedBurstEmitter("TreeDeadEffect_Bottom");
+
+            // 계열·1스테이지 임팩트·보석 사망 이펙트는 풀 등록 여부만 확인한다. 공유 이미터는 이번 원정에 나오는 묶음만 만든다(TreeDeadEffectSet).
+            TreeDeadEffectSet[] treeDeadEffects = AllTreeDeadEffects;
+            for (int i = 0; i < treeDeadEffects.Length; i++)
+            {
+                TreeDeadEffectSet set = treeDeadEffects[i];
+                set.bAvailable = vfxComponent.TryGetPoolConfig(set.topTag, out _, out _)
+                    && (null == set.bottomTag || vfxComponent.TryGetPoolConfig(set.bottomTag, out _, out _));
+            }
         }
 
         if (treeStarMarkGroundPool == null && treeStarMarkGroundPrefab != null)
@@ -1083,6 +1154,30 @@ public class InDungeonVFXManager : MonoBehaviour
         sharedTreeHitBottomEmitter?.Clear();
         sharedTreeDeadTopEmitter?.Clear();
         sharedTreeDeadBottomEmitter?.Clear();
+        TreeDeadEffectSet[] treeDeadEffects = AllTreeDeadEffects;
+        for (int i = 0; i < treeDeadEffects.Length; i++)
+        {
+            treeDeadEffects[i].topEmitter?.Clear();
+            treeDeadEffects[i].bottomEmitter?.Clear();
+        }
+    }
+
+    /// <summary>
+    /// 계열·1스테이지 임팩트·보석 사망 이펙트의 공유 이미터를 해제한다. 원정이 끝날 때(귀환·재도전 정리) 부른다.
+    /// 다음 원정은 나오는 나무에 맞춰 다시 만든다(PrewarmTreeDeadVFX / PrewarmGemTreeDeadVFX). 기존 피격·사망 이펙트 이미터는 그대로 둔다.
+    /// </summary>
+    public void ReleaseTreeDeadEffectEmitters()
+    {
+        TreeDeadEffectSet[] treeDeadEffects = AllTreeDeadEffects;
+        for (int i = 0; i < treeDeadEffects.Length; i++)
+        {
+            TreeDeadEffectSet set = treeDeadEffects[i];
+            set.topEmitter?.Dispose();
+            set.bottomEmitter?.Dispose();
+            set.topEmitter = null;
+            set.bottomEmitter = null;
+            set.bEmitterTried = false;
+        }
     }
 
     // 태그의 풀 프리팹이 공유 조건에 맞으면 공유 이미터를 만든다. 최대 입자 수는 예전 풀 상한만큼 겹칠 수 있도록 잡는다.
@@ -1103,6 +1198,7 @@ public class InDungeonVFXManager : MonoBehaviour
         sharedTreeHitBottomEmitter?.Dispose();
         sharedTreeDeadTopEmitter?.Dispose();
         sharedTreeDeadBottomEmitter?.Dispose();
+        ReleaseTreeDeadEffectEmitters();
         sharedTreeHitTopEmitter = null;
         sharedTreeHitBottomEmitter = null;
         sharedTreeDeadTopEmitter = null;
@@ -1193,10 +1289,30 @@ public class InDungeonVFXManager : MonoBehaviour
     /// <summary>
     /// 나무 사망 VFX를 재생합니다. parent는 null로 고정하여 나무 오브젝트와 완전히 분리합니다.
     /// Top/Bottom 이펙트는 각각 설정된 컬러를 공유합니다.
+    /// 2~4스테이지 나무(포자·별·용암 계열)는 같은 두 자리에서 계열 전용 이펙트 한 쌍으로 대신 재생한다.
+    /// 1스테이지 나무(참나무·소나무·자작나무)는 기존 이펙트에 수관 임팩트(TreeDeadEffect_LeafTop)를 더한다.
+    /// _finalGemStage: 보석 나무가 최종으로 쓰러질 때의 보석 단계(1 황금, 2 다이아, 3 무지개). 0이 아니면 나무 종류 대신
+    /// 보석 단계별 이펙트 한 쌍으로 재생한다. 보석 단계로 바뀌는 순간(회생)에는 0으로 불러 나무 종류별 이펙트를 그대로 쓴다.
     /// </summary>
-    public void PlayTreeDeadVFX(TreeVisualComponent _visual)
+    public void PlayTreeDeadVFX(TreeVisualComponent _visual, TreeType _treeType, int _finalGemStage = 0)
     {
         if (vfxComponent == null || _visual == null) return;
+
+        // 보석 이펙트는 프리팹 고유 색(보석 팔레트) 그대로 재생한다.
+        if (0 < _finalGemStage && _finalGemStage < gemTreeDeadEffects.Length && gemTreeDeadEffects[_finalGemStage].bAvailable)
+        {
+            PlayTreeDeadEffectSet(gemTreeDeadEffects[_finalGemStage], _visual, false);
+            return;
+        }
+
+        // 계열 이펙트는 나무별 이펙트 색을 루트(수관 조각 / 밑동 부스러기)에만 덮어쓰고,
+        // 자식(포자 갓, 별, 용암 방울, 바닥 고리 등)은 계열 고유의 색을 그대로 쓴다.
+        int family = GetStageTreeDeadFamily(_treeType);
+        if (0 != family && stageTreeDeadEffects[family].bAvailable)
+        {
+            PlayTreeDeadEffectSet(stageTreeDeadEffects[family], _visual, true);
+            return;
+        }
 
         ParticleColorSet topColor = _visual.GetTopVfxColor();
         if (sharedTreeDeadTopEmitter != null
@@ -1230,6 +1346,110 @@ public class InDungeonVFXManager : MonoBehaviour
                 bottomColor.overrideChildrenColor,
                 null
             ));
+        }
+
+        // 1스테이지 나무는 기존 이펙트 위에 임팩트를 더한다(임팩트 고유 색 그대로, 나무 색으로 덮어쓰지 않는다).
+        if (leafTreeDeadImpact.bAvailable && IsLeafTreeType(_treeType))
+        {
+            PlayTreeDeadEffectSet(leafTreeDeadImpact, _visual, false);
+        }
+    }
+
+    /// <summary>
+    /// 나무가 스폰될 때(종류·등급이 정해진 직후) 이 나무가 쓰러질 때 쓸 사망 이펙트의 공유 이미터를 미리 만든다.
+    /// 던전에 실제로 나오는 계열·보석 단계만 만들어, 쓰지 않는 공유 이미터가 매 프레임 갱신되지 않게 한다.
+    /// 이미 만들었으면 플래그 하나만 보고 돌아간다(나무 수천 그루가 스폰되는 경로에서 불린다).
+    /// </summary>
+    public void PrewarmTreeDeadVFX(TreeType _treeType, TreeGrade _grade)
+    {
+        if (vfxComponent == null) return;
+
+        int family = GetStageTreeDeadFamily(_treeType);
+        if (0 != family)
+        {
+            EnsureTreeDeadEffectEmitters(stageTreeDeadEffects[family]);
+        }
+        else if (IsLeafTreeType(_treeType))
+        {
+            EnsureTreeDeadEffectEmitters(leafTreeDeadImpact);
+        }
+
+        // 보석 단계는 등급만큼 오른다(TreeObj.GetMaxGemStage: Fascinating 1 ~ Perfect 3)
+        PrewarmGemTreeDeadVFX((int)_grade - (int)TreeGrade.Normal);
+    }
+
+    /// <summary>
+    /// 보석 단계 1 ~ _maxGemStage의 사망 이펙트 공유 이미터를 미리 만든다. 원정 시작(나무 스폰 직전)에 이번 원정에서 나올 수 있는
+    /// 최고 보석 단계로 불러, 스폰 뒤 등급이 오르거나(황금 나무 보장) 성장으로 높은 등급 나무가 나와도 플레이 도중 처음 만들지 않게 한다.
+    /// </summary>
+    public void PrewarmGemTreeDeadVFX(int _maxGemStage)
+    {
+        if (vfxComponent == null) return;
+
+        int maxGemStage = Mathf.Clamp(_maxGemStage, 0, gemTreeDeadEffects.Length - 1);
+        for (int gem = 1; gem <= maxGemStage; gem++)
+        {
+            EnsureTreeDeadEffectEmitters(gemTreeDeadEffects[gem]);
+        }
+    }
+
+    // 풀에 등록된 묶음이면 공유 이미터를 한 번만 만든다.
+    private void EnsureTreeDeadEffectEmitters(TreeDeadEffectSet _set)
+    {
+        if (false == _set.bAvailable || _set.bEmitterTried) return;
+        _set.bEmitterTried = true;
+        if (_set.topEmitter == null) _set.topEmitter = CreateSharedBurstEmitter(_set.topTag);
+        if (null != _set.bottomTag && _set.bottomEmitter == null) _set.bottomEmitter = CreateSharedBurstEmitter(_set.bottomTag);
+    }
+
+    // 묶음을 수관(·밑동) 자리에서 재생한다. _bTreeColor면 나무별 이펙트 색을 루트에만 덮어쓰고, 아니면 프리팹 고유 색 그대로다.
+    private void PlayTreeDeadEffectSet(TreeDeadEffectSet _set, TreeVisualComponent _visual, bool _bTreeColor)
+    {
+        EnsureTreeDeadEffectEmitters(_set);
+        PlayTreeDeadEffectPart(_set.topEmitter, _set.topTag, _visual.GetTopRootPosition(), _visual.GetTopRootRotation(), _bTreeColor, _visual.GetTopVfxColor());
+        if (null != _set.bottomTag)
+        {
+            PlayTreeDeadEffectPart(_set.bottomEmitter, _set.bottomTag, _visual.GetBottomRootPosition(), _visual.GetBottomRootRotation(), _bTreeColor, _visual.GetBottomVfxColor());
+        }
+    }
+
+    // 한 쪽을 공유 이미터로 재생하고, 이미터가 없거나 재생하지 못하면(회전이 다른 경우) 풀 경로로 재생한다.
+    private void PlayTreeDeadEffectPart(PresentationLayer.VFX.SharedBurstEmitter _emitter, string _tag, Vector3 _position, Quaternion _rotation, bool _bTreeColor, ParticleColorSet _color)
+    {
+        if (_emitter != null && _emitter.Emit(_position, _rotation, _bTreeColor, _bTreeColor ? _color.startColor : default, false))
+        {
+            return;
+        }
+
+        vfxComponent.Play(_bTreeColor
+            ? new VFXPlaySettings(_tag, _position, _rotation, _color.startColor, false, null)
+            : new VFXPlaySettings(_tag, _position, _rotation));
+    }
+
+    private static bool IsLeafTreeType(TreeType _treeType)
+    {
+        return TreeType.OakTree == _treeType || TreeType.PineTree == _treeType || TreeType.BirchTree == _treeType;
+    }
+
+    // 나무 종류 -> 사망 이펙트 계열(1 포자, 2 별, 3 용암). 0이면 기존 이펙트(1스테이지 나무 등).
+    private static int GetStageTreeDeadFamily(TreeType _treeType)
+    {
+        switch (_treeType)
+        {
+            case TreeType.SporepuffTree:
+            case TreeType.FluffyMyceliumTree:
+            case TreeType.BellpineTree:
+                return 1;
+            case TreeType.StarrootTree:
+            case TreeType.MoonhaloTree:
+            case TreeType.GalaxygrainTree:
+                return 2;
+            case TreeType.CinderTree:
+            case TreeType.LavasapTree:
+            case TreeType.ObsidianTree:
+                return 3;
+            default:
+                return 0;
         }
     }
 

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 
@@ -88,7 +89,8 @@ public class UIView_RoguelikeHUD : UIView
     }
 
     /// <summary>웨이브 표기. 언리밋이면 _unlimitIndex를 무한대 아이콘 옆에 그린다. 웨이브가 시작될 때 임계치 바가 첫 값으로 곧바로 서게 한다(빈 바에서 차오르지 않는다).</summary>
-    public virtual void SetWave(int _waveNumber, bool _bUnlimit, int _unlimitIndex)
+    /// <param name="_regionStartWaves">지역(티어)이 바뀌는 시작 웨이브(1웨이브 제외, 오름차순). 웨이브 진행 점 간격 계산용(WavePips_AppLayer_Request.md). null일 수 있다.</param>
+    public virtual void SetWave(int _waveNumber, bool _bUnlimit, int _unlimitIndex, IReadOnlyList<int> _regionStartWaves = null)
     {
         if (null != waveLabel) waveLabel.SetWave(_waveNumber, _bUnlimit, _unlimitIndex);
         if (null != pressureStrip) pressureStrip.SnapNext();
