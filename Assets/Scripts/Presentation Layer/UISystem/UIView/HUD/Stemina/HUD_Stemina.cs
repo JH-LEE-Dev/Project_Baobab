@@ -632,7 +632,10 @@ public class HUD_Stemina : MonoBehaviour
             bRestAreaInvincible = _bInvincible;
 
         if (bWasInvincible != IsInvincible)
+        {
             PlayInvincibleEffect(IsInvincible);
+            RefreshWarning();
+        }
     }
 
     private bool IsInvincible => bEntryInvincible || bRestAreaInvincible;
@@ -645,7 +648,10 @@ public class HUD_Stemina : MonoBehaviour
         bRestAreaInvincible = false;
 
         if (true == bWasInvincible)
+        {
             PlayInvincibleEffect(false);
+            RefreshWarning();
+        }
     }
 
     // 켜짐: 프리즘이 "딱!" 하고 켜진다. 꺼짐: 프리즘이 면 단위로 서서히 풀린다.
@@ -1686,10 +1692,10 @@ public class HUD_Stemina : MonoBehaviour
         RefreshWarning();
     }
 
-    /// <summary>경고 원천(저피로도 · 강제)을 합쳐 게이지 경고 모션과 붉은 화면을 맞춘다.</summary>
+    /// <summary>경고 원천(저피로도 · 강제)을 합쳐 게이지 경고 모션과 붉은 화면을 맞춘다. 무적 중에는 게이지 경고 모션을 끄고 붉은 화면만 남긴다.</summary>
     private void RefreshWarning()
     {
-        bool _bBar = true == bLowStaminaWarning || true == bForcedBarWarning;
+        bool _bBar = (true == bLowStaminaWarning || true == bForcedBarWarning) && false == IsInvincible;
         bool _bBlood = true == bLowStaminaWarning || true == bForcedScreenBlood;
 
         if (true == _bBar)
