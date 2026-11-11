@@ -183,7 +183,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // "흑요 부적"(기획 이름 용암 씨앗/나무, 코드 이름은 안 바꿈) - "4-1"(MagmaForest_1)에서 확률 드랍,
     // "4-2"(MagmaForest_2) 이후 모든 숲에서 구제 보장.
     // 효과: 불씨를 주울 때마다 지진 게이지가 차고, 가득 차면 캐릭터 자리에서 지진이 일어난다. 바닥 물결(EnvironmentSystem의
-    // 지진 물결 연출)의 앞머리가 지나가는 순서대로 등각 타원 범위의 나무에 피해를 준다(QuakeRoutine). 프레스티지 레벨에 따라
+    // 지진 물결 연출)의 앞머리가 지나가는 순서대로 화면 전체(기준 화면 1920×1080 크기) 나무에 피해를 준다(QuakeRoutine). 프레스티지 레벨에 따라
     // I(씨앗) → III(나무)로 성장하고(꽃 단계 없음), 효과는 다음 숲 방문부터 적용된다(obsidianCharmTierThisRun).
     public bool bHasAcquiredObsidianCharm { get; set; }
     private bool bObsidianCharmSpawnedThisRun;
@@ -195,20 +195,31 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private int obsidianCharmPityThreshold;
 
     // "흑요 부적" 성장 기준 프레스티지 레벨(II 없이 I → III)과 지진 수치. 단계별 수치는 밸런스 작업 전 임시값이다.
+    // 피해는 4스테이지 나무 체력(잿불 100만 / 용암수액 300만 / 흑요 1000만) 기준이다. 과열 배율(최대 3배)이 뒤에 곱해진다.
+    // I: 잿불은 한 번에, 용암수액은 과열 중이면 한 번에 쓰러진다. III: 잿불·용암수액은 한 번에, 흑요는 과열 절반 이상이면 한 번에 쓰러진다.
     [SerializeField] private int obsidianCharmTier3PrestigeLevel = 11;
     [SerializeField, Tooltip("불씨 하나를 주울 때 차는 지진 게이지(1이면 가득)")]
     private float quakeChargePerEmber = 0.1f;
-    [SerializeField] private float quakeTier1Damage = 200f;
-    [SerializeField, Tooltip("I단계 지진 범위 - 캐릭터 기준 등각 타원의 장반경(타일 가로폭 단위)")]
-    private float quakeTier1Range = 4f;
-    [SerializeField] private float quakeTier3Damage = 400f;
-    [SerializeField] private float quakeTier3Range = 5.5f;
+    // 범위는 단계와 상관없이 화면 전체다. 해상도·화면비마다 보이는 넓이가 달라도 똑같이 맞도록 기준 화면(1920×1080) 크기로 고정한다.
+    [SerializeField] private float quakeTier1Damage = 1500000f;
+    [SerializeField] private float quakeTier3Damage = 5000000f;
     // 이번 숲 방문에 적용되는 단계(0이면 효과 없음). 숲에 들어올 때 정하고 방문 도중에는 바꾸지 않는다.
     private int obsidianCharmTierThisRun;
     // 지진 게이지(0~1). 숲 방문마다 비운다.
     private float quakeCharge;
     // 던전 정리 때 올라간다. 퍼지던 지진이 다음 맵의 나무를 때리지 않게 한다.
     private int quakeVersion = 0;
+    // 지진에 쓰러진 나무가 공중으로 튀어 올랐다 터지는 연출(렌더링 전용 - QuakeTreeLaunch). 처음 쓸 때 만든다.
+    private QuakeTreeLaunch quakeTreeLaunch;
+    // 지진 피해를 주는 동안만 켜진다. 그 사이 쓰러진 나무는 사망 이펙트를 바로 터뜨리지 않고 튀어 오른 꼭대기에서 터뜨린다(OnTreeDead).
+    private bool bQuakeStrikeInProgress;
+    private float quakeStrikeLaunchHeight;
+    private float quakeStrikeLaunchTilt;
+    // 쓰러진 나무가 튀어 오르는 높이(월드): 진원 바로 옆 ~ 피해 범위 끝. 기우는 각도(도)는 진원 반대쪽으로 이 사이에서 고른다.
+    private const float QuakeLaunchHeightNear = 0.8f;
+    private const float QuakeLaunchHeightFar = 0.45f;
+    private const float QuakeLaunchTiltMin = 4f;
+    private const float QuakeLaunchTiltMax = 9f;
 
     /// <summary>지진 게이지(0~1). 효과가 없는 숲 방문이면 0이다.</summary>
     public float QuakeCharge => quakeCharge;
@@ -1579,6 +1590,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         bMeteorShowerActive = false;
         // 퍼지던 지진("흑요 부적" 효과)도 더 때리지 않는다. 바닥 물결 연출은 EnvironmentSystem이 맵을 바꿀 때 멈춘다.
         quakeVersion++;
+        // 지진에 쓰러져 공중에 떠 있던 나무 대역은 터뜨리지 않고 숨긴다.
+        quakeTreeLaunch?.Clear();
 
         // 마크를 강제 회수한 위 호출은 ConstellationManifestReadyEvent를 발생시키지 않으므로, 별 사라짐을
         // 기다리던 발현 대기 목록도 짝을 맞춰 비운다(이전 런의 별 위치 리스트를 붙들고 있지 않도록).
@@ -1753,7 +1766,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         // 보석 나무는 최종 보석 단계(황금/다이아/무지개)의 전용 이펙트로 터진다(일반 나무는 0).
-        inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent, _treeObj.treeData.type, _treeObj.gemStage);
+        // 지진에 쓰러진 나무는 공중으로 튀어 오른 꼭대기에서 터진다(띄우지 못하면 예전처럼 바로 터진다).
+        if (false == (bQuakeStrikeInProgress && TryLaunchQuakeTree(_treeObj)))
+        {
+            inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent, _treeObj.treeData.type, _treeObj.gemStage);
+        }
 
         // 아래에서 나무 위치를 여러 번 쓴다. 나무는 스폰(SpawnTreeAt)과 정리(ClearTrees) 때만 움직이고 이 사이에는
         // 둘 다 일어나지 않으므로 한 번만 읽는다.
@@ -2384,16 +2401,38 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
         }
 
+        quakeTreeLaunch?.Tick(Time.deltaTime);
+
 #if UNITY_EDITOR
         DebugOverheatFullTick();
+        DebugQuakeTick();
 #endif
     }
 
 #if UNITY_EDITOR
     // 에디터 전용 디버그: 던전에서 이 키를 누르면 과열이 가득 차는 순간의 연출(열기 물결·화면 흔들림·진동·소리)만 재생한다.
     // 과열 수치는 건드리지 않는다. 빌드에는 포함되지 않는다.
-    // 본편 디버그 키(F1 시네마틱, F4 수동 저장, F8 지진 물결, F9 벤치마크, ` 사운드)·로그라이크(F6, F7)와 겹치지 않는 키를 쓴다.
+    // 본편 디버그 키(F1 시네마틱, F4 수동 저장, F8 지진, F9 벤치마크, ` 사운드)·로그라이크(F6, F7)와 겹치지 않는 키를 쓴다.
     private const UnityEngine.InputSystem.Key DebugOverheatFullKey = UnityEngine.InputSystem.Key.F10;
+
+    // 에디터 전용 디버그: 던전에서 이 키를 누르면 "흑요 부적" 지진 게이지가 가득 찼을 때와 똑같이 지진을 일으킨다(TriggerQuake -
+    // 바닥 물결·피해·맞은 나무 연출·피해 경계 균열까지 같다). 이번 방문에 부적 효과가 없으면 I단계 수치로 낸다. 빌드에는 포함되지 않는다.
+    private const UnityEngine.InputSystem.Key DebugQuakeKey = UnityEngine.InputSystem.Key.F8;
+
+    private void DebugQuakeTick()
+    {
+        UnityEngine.InputSystem.Keyboard keyboard = UnityEngine.InputSystem.Keyboard.current;
+        if (null == keyboard || false == keyboard[DebugQuakeKey].wasPressedThisFrame) return;
+
+        if (character == null || GameModeContext.IsRoguelike || null == environmentProvider)
+        {
+            Debug.LogWarning("[InDungeonObjectManager] 지진 디버그(F8)는 본편 던전에서 캐릭터가 있을 때만 됩니다.");
+            return;
+        }
+
+        TriggerQuake(0 < obsidianCharmTierThisRun ? obsidianCharmTierThisRun : 1);
+        ResetQuakeCharge();
+    }
 
     private void DebugOverheatFullTick()
     {
@@ -3340,8 +3379,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         QuakeChargeChangedEvent?.Invoke(maxEmbers, maxEmbers);
+        TriggerQuake(obsidianCharmTierThisRun);
+    }
+
+    // 지진 게이지가 가득 찼을 때 지진을 일으킨다. 게이지를 비우고 캐릭터 자리에서 지진(바닥 물결 + 피해)을 시작한다.
+    // 에디터 디버그 키(F8)도 이 함수를 그대로 부른다.
+    private void TriggerQuake(int _tier)
+    {
         quakeCharge = 0f;
-        StartCoroutine(QuakeRoutine(obsidianCharmTierThisRun));
+        StartCoroutine(QuakeRoutine(_tier));
     }
 
     // 숲 방문 초기화. 이전 방문에서 차던 지진 게이지 버프 HUD도 함께 내린다.
@@ -3362,7 +3408,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     /// <summary>
     /// "흑요 부적" 효과인 지진. 발동 순간의 캐릭터 발밑에서 바닥 물결 연출(IEnvironmentProvider.PlayQuakeRipple)을 시작하고,
     /// 물결 앞머리가 나무에 닿는 순간 그 나무에 피해를 준다. 앞머리는 바닥 평면 거리(세로 차이를 두 배로 편 거리)로 일정하게
-    /// 퍼지므로 등각 타원 범위 안의 나무가 진원에서 가까운 것부터 차례로 맞는다. 진원은 캐릭터를 따라가지 않는다.
+    /// 퍼지므로 진원에서 가까운 나무부터 차례로 맞는다. 진원은 캐릭터를 따라가지 않는다.
+    /// 피해 범위는 화면 전체다. 발동 순간의 카메라 중심에 기준 화면(1920×1080) 크기의 직사각형을 고정하고(해상도·화면비가 달라도 같다),
+    /// 앞머리가 그 직사각형의 가장 먼 모서리에 닿으면 끝난다.
     /// </summary>
     private IEnumerator QuakeRoutine(int _tier)
     {
@@ -3371,16 +3419,25 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         int version = quakeVersion;
 
         float damage = (3 == _tier) ? quakeTier3Damage : quakeTier1Damage;
-        float range = Mathf.Max(0f, (3 == _tier) ? quakeTier3Range : quakeTier1Range);
         Vector3 origin = null != character ? character.transform.position : Vector3.zero;
         origin.z = 0f;
 
+        Camera viewCamera = Camera.main;
+        Vector2 viewCenter = null != viewCamera ? (Vector2)viewCamera.transform.position : (Vector2)origin;
+        Vector2 viewHalf = CameraBoundsUtil.GetReferenceViewHalfExtents();
+        Rect strikeRect = new Rect(viewCenter - viewHalf, viewHalf * 2f);
+
+        // 앞머리가 직사각형 전체를 쓸고 지나가는 거리 = 진원에서 가장 먼 모서리까지의 바닥 평면 거리.
+        float farX = Mathf.Max(Mathf.Abs(strikeRect.xMin - origin.x), Mathf.Abs(strikeRect.xMax - origin.x));
+        float farY = Mathf.Max(Mathf.Abs(strikeRect.yMin - origin.y), Mathf.Abs(strikeRect.yMax - origin.y)) * 2f;
+        float range = Mathf.Sqrt(farX * farX + farY * farY);
+
         // 연출(카메라 흔들림·진동 포함)을 못 내는 경우(화면에 바닥이 없는 등)에도 피해는 같은 속도로 준다.
-        // 피해 범위를 넘겨 그 안이 크게 출렁이고 안쪽 나무가 튀게 한다(물결 앞머리와 피해가 같은 거리 공식).
+        // 피해 범위로 가장 먼 모서리 거리를 넘겨 화면 전체가 크게 출렁이고 나무가 크게 떨게 한다(물결 앞머리와 피해가 같은 거리 공식).
         environmentProvider.PlayQuakeRipple(origin, range);
         float frontSpeed = environmentProvider.QuakeRippleFrontSpeed;
 
-        // 연출은 몇 프레임 준비(복제층 옮겨 쓰기)한 뒤에 퍼지기 시작한다. 피해도 그때까지 기다려 앞머리와 함께 간다.
+        // 연출은 몇 프레임 준비(복제층 옮겨 쓰기)하고 전조(약 0.35초 땅 떨림)를 거친 뒤에 퍼지기 시작한다. 피해도 그때까지 기다려 앞머리와 함께 간다.
         while (environmentProvider.IsQuakeRipplePreparing)
         {
             yield return null;
@@ -3394,6 +3451,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 앞머리가 이미 지나간 거리. 이 안쪽 나무는 이미 맞았다(음수면 아직 아무도 안 맞았다).
         float reached = -1f;
 
+        // 용암 숲(4스테이지)이면 앞머리가 지나가는 바닥 몇 곳에서 용암이 터져 오른다(연출만, 피해 없음).
+        List<Vector3> eruptions = MapType.MagmaForest == currentMapType && null != inDungeonVFXManager
+            ? PickQuakeEruptionPoints(origin, strikeRect)
+            : null;
+        int nextEruption = 0;
+
         while (reached < range)
         {
             // 던전을 떠났으면(나무 정리) 다음 맵의 나무를 때리지 않고 끝낸다.
@@ -3401,10 +3464,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
             float front = Mathf.Min(range, elapsed * frontSpeed);
 
+            while (null != eruptions && nextEruption < eruptions.Count && eruptions[nextEruption].z <= front)
+            {
+                Vector3 ground = eruptions[nextEruption];
+                ground.z = 0f;
+                inDungeonVFXManager.PlayQuakeEruptionVFX(ground);
+                nextEruption++;
+            }
+
             // 귀환 절차 중(경고창·탑승 연출)이나 쓰러진 뒤에는 피해를 주지 않는다. 앞머리는 그대로 퍼진다(유성우와 같은 규칙).
             if (false == (bStarGazeSuspendedByGameEnd || character == null || character.bDead))
             {
-                ApplyQuakeDamage(origin, reached, front, damage);
+                ApplyQuakeDamage(origin, reached, front, damage, range, strikeRect);
             }
 
             reached = front;
@@ -3413,8 +3484,42 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
     }
 
-    // 진원 기준 등각 타원 띠(_inner 초과 ~ _outer 이하, 바닥 평면 거리)의 나무를 때린다(포자 대폭발과 같은 거리 공식).
-    private void ApplyQuakeDamage(Vector3 _origin, float _inner, float _outer, float _damage)
+    // 지진 용암 분출 개수와, 진원에서 이 바닥 평면 거리 안쪽은 고르지 않는 거리(캐릭터 발밑에서 터지지 않게).
+    private const int QuakeEruptionCount = 12;
+    private const float QuakeEruptionMinDistance = 2f;
+    private const int QuakeEruptionTries = 4;
+    // 지진 연출(분출 자리·쓰러진 나무 기울기) 전용 난수. 게임 판정이 쓰는 UnityEngine.Random 순서를 건드리지 않도록 따로 둔다.
+    private static readonly System.Random quakeVisualRandom = new System.Random();
+
+    // 피해 범위(_strikeRect) 안에서 분출 자리를 고른다. x·y = 바닥 자리, z = 진원에서의 바닥 평면 거리(앞머리가 닿는 순서로 정렬).
+    private static List<Vector3> PickQuakeEruptionPoints(Vector3 _origin, Rect _strikeRect)
+    {
+        List<Vector3> points = new List<Vector3>(QuakeEruptionCount);
+        float minSq = QuakeEruptionMinDistance * QuakeEruptionMinDistance;
+
+        for (int i = 0; i < QuakeEruptionCount; i++)
+        {
+            for (int t = 0; t < QuakeEruptionTries; t++)
+            {
+                float x = _strikeRect.xMin + (float)quakeVisualRandom.NextDouble() * _strikeRect.width;
+                float y = _strikeRect.yMin + (float)quakeVisualRandom.NextDouble() * _strikeRect.height;
+                float dx = x - _origin.x;
+                float dy = (y - _origin.y) * 2f;
+                float distSq = dx * dx + dy * dy;
+                if (distSq < minSq) continue;
+
+                points.Add(new Vector3(x, y, Mathf.Sqrt(distSq)));
+                break;
+            }
+        }
+
+        points.Sort((_a, _b) => _a.z.CompareTo(_b.z));
+        return points;
+    }
+
+    // 진원 기준 등각 타원 띠(_inner 초과 ~ _outer 이하, 바닥 평면 거리) 가운데 _strikeRect(화면 전체 피해 범위) 안의 나무를 때린다.
+    // _range는 앞머리가 가는 거리 전체(쓰러진 나무가 튀어 오르는 높이를 진원 거리로 정할 때만 쓴다).
+    private void ApplyQuakeDamage(Vector3 _origin, float _inner, float _outer, float _damage, float _range, Rect _strikeRect)
     {
         if (CollisionSystem.Instance == null || _outer <= _inner) return;
 
@@ -3433,13 +3538,23 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 if (scanResults[i] is TreeObj tree && tree.bCanApplyDamage)
                 {
                     Vector3 targetPos = tree.transform.position;
+                    if (false == _strikeRect.Contains((Vector2)targetPos)) continue;
+
                     float dx = targetPos.x - _origin.x;
                     float dy = (targetPos.y - _origin.y) * 2f; // 등각 타원 보정
                     float distSq = dx * dx + dy * dy;
                     if (distSq <= innerSq || distSq > outerSq) continue;
 
+                    // 이 타격으로 쓰러지면 진원에 가까울수록 높이, 진원 반대쪽으로 기울며 튀어 오른다(OnTreeDead - 연출만).
+                    float distanceRatio = 0f < _range ? Mathf.Clamp01(Mathf.Sqrt(distSq) / _range) : 0f;
+                    quakeStrikeLaunchHeight = Mathf.Lerp(QuakeLaunchHeightNear, QuakeLaunchHeightFar, distanceRatio);
+                    float side = Mathf.Abs(dx) > 0.05f ? Mathf.Sign(dx) : (quakeVisualRandom.NextDouble() < 0.5 ? -1f : 1f);
+                    quakeStrikeLaunchTilt = -side * Mathf.Lerp(QuakeLaunchTiltMin, QuakeLaunchTiltMax, (float)quakeVisualRandom.NextDouble());
+                    bQuakeStrikeInProgress = true;
+
                     // 진동은 지진 연출이 한 번 낸다.
                     tree.TakeDamage(_damage, false);
+                    bQuakeStrikeInProgress = false;
                     // 맞은 나무만 위로 한 번 튀어 보인다(물결 위 물체 연출).
                     environmentProvider?.NotifyQuakeStruck(tree.transform);
                 }
@@ -3447,9 +3562,19 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
         finally
         {
+            bQuakeStrikeInProgress = false;
             TreeTileWriteBatch.End();
             ReturnExplosionScanList(scanResults);
         }
+    }
+
+    // 지진에 방금 쓰러진 나무를 공중으로 띄운다(ApplyQuakeDamage가 정한 높이·기울기). 못 띄우면 false.
+    private bool TryLaunchQuakeTree(TreeObj _treeObj)
+    {
+        if (null == inDungeonVFXManager) return false;
+
+        quakeTreeLaunch ??= new QuakeTreeLaunch(inDungeonVFXManager, transform);
+        return quakeTreeLaunch.TryLaunch(_treeObj, quakeStrikeLaunchHeight, quakeStrikeLaunchTilt);
     }
 
     public void UnlockConstellationManifest(bool _boolean)

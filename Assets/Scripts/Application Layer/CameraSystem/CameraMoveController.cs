@@ -135,6 +135,28 @@ public class CameraMoveController : MonoBehaviour
     }
 
     /// <summary>
+    /// ShakeCamera와 같지만, 지금 돌고 있는 흔들림이 이보다 세면(옵션 비율을 곱한 세기로 비교) 그대로 둔다.
+    /// 짧은 간격으로 다시 거는 잔떨림(지진 전조)이 먼저 걸린 센 흔들림(도끼질 등)을 약하게 끊지 않게 한다.
+    /// </summary>
+    public void ShakeCameraIfStronger(float _intensity, float _time)
+    {
+        EnsureVirtualCamera();
+
+        if (multiChannelPerlin == null && virtualCamera != null)
+        {
+            multiChannelPerlin = virtualCamera.GetComponent<CinemachineBasicMultiChannelPerlin>();
+        }
+
+        if (multiChannelPerlin != null && shakeTimer > 0f)
+        {
+            float _scaledIntensity = _intensity * (SettingsManager.Instance.Current.cameraShake / SettingsData.SLIDER_MAX);
+            if (multiChannelPerlin.AmplitudeGain > _scaledIntensity) return;
+        }
+
+        ShakeCamera(_intensity, _time);
+    }
+
+    /// <summary>
     /// 카메라를 _direction(월드, 정규화)으로 _distance만큼 한 번에 찍고, 되튀며 _kickTime 동안 잦아들게 한다. 동시에 ShakeCamera(_intensity, _time)의
     /// 흔들림이 이어진다(_intensity·_time이 0 이하면 흔들림은 걸지 않아 돌고 있던 다른 흔들림을 끊지 않는다). 찍기도 카메라 흔들림 옵션 비율만큼
     /// 줄어든다(0%면 찍지 않는다). 찍는 오프셋은 흔들림과 같은 Correction 채널에 들어가 조준(ScreenToWorldWithoutShake)에는 섞이지 않는다.

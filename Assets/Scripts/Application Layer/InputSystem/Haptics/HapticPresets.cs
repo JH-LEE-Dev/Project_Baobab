@@ -168,6 +168,19 @@ public static class HapticPresets
         new HapticStep(0.30f, 0.50f, 0.20f),
         new HapticStep(0.12f, 0.28f, 0.30f));
 
+    // 지진 여진 - 본 지진보다 한 단계 약한 "쿵" 한 번이 짧게 잦아든다. 굵은 모터 위주(땅이 한 번 더 내려앉는 느낌), 총 0.45초.
+    private static readonly HapticPattern quakeAftershock = new HapticPattern(
+        new HapticStep(0.65f, 0.40f, 0.08f),
+        new HapticStep(0.40f, 0.15f, 0.15f),
+        new HapticStep(0.15f, 0f, 0.22f));
+
+    // 지진 전조 - 터지기 직전 땅속에서 웅웅 차오르는 떨림. 굵은 모터만 약하게 시작해 점점 세지고, 바로 이어지는 지진(earthquake)의 첫 충격(1.0)보다
+    // 확실히 약해야 "쾅"이 산다. 총 0.36초로 화면의 전조(0.35초)와 같다.
+    private static readonly HapticPattern quakeBuildUp = new HapticPattern(
+        new HapticStep(0.10f, 0f, 0.12f),
+        new HapticStep(0.20f, 0.03f, 0.12f),
+        new HapticStep(0.32f, 0.07f, 0.12f));
+
     private static readonly HapticPattern[] patterns = BuildPatterns();
 
     /// <summary>
@@ -226,6 +239,8 @@ public static class HapticPresets
         _table[(int)EHapticEvent.LootPillarLanding] = lootPillarLanding;
         _table[(int)EHapticEvent.TreeHeatHit] = treeHeatHit;
         _table[(int)EHapticEvent.OverheatFull] = overheatFull;
+        _table[(int)EHapticEvent.QuakeAftershock] = quakeAftershock;
+        _table[(int)EHapticEvent.QuakeBuildUp] = quakeBuildUp;
 
         return _table;
     }

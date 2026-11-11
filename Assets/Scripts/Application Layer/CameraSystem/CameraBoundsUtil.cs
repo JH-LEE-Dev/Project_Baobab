@@ -72,6 +72,17 @@ public static class CameraBoundsUtil
         return Mathf.Sqrt(halfWidth * halfWidth + halfHeight * halfHeight);
     }
 
+    /// <summary>
+    /// 기준 화면(1920 × 1080 = 기준 해상도 640 × 360의 정확히 3배)에 보이는 영역의 절반 크기(월드, x = 가로, y = 세로).
+    /// 해상도·화면비와 무관하게 늘 같은 값이다(GetReferenceHalfWidth와 같은 이유). 카메라를 찾을 수 없으면 대비용 PPU로 계산한다.
+    /// </summary>
+    public static Vector2 GetReferenceViewHalfExtents()
+    {
+        Camera cam = CameraFinder.Instance != null ? CameraFinder.Instance.PPMainCamera : null;
+        float halfWidth = null != cam ? GetReferenceHalfWidth(cam) : (SettingsData.PIXEL_PERFECT_REF_WIDTH * 0.5f) / FallbackAssetsPPU;
+        return new Vector2(halfWidth, halfWidth * ReferenceHalfHeightRatio);
+    }
+
     /// <summary>기준 해상도의 세로/가로 비(360/640). 창모드 프리셋과 16:9 전체화면이 모두 이 비율이다.</summary>
     private const float ReferenceHalfHeightRatio = 9f / 16f;
 

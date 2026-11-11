@@ -1079,6 +1079,31 @@ public class TreeVisualComponent : MonoBehaviour
     public ParticleColorSet GetTopVfxColor() => currentTopVfxColor;
     public ParticleColorSet GetBottomVfxColor() => currentBottomVfxColor;
 
+    /// <summary>
+    /// 지진에 쓰러진 나무를 공중으로 튀어 오르게 보이는 대역(QuakeTreeLaunch)이 베낄 그림을 모은다. 읽기만 한다.
+    /// _body: 지금 보이는 수관·밑동과 그 위에 겹친 포자막·하이라이트(함께 튀어 오른다). _shadows: 바닥 그림자(바닥에 남는다).
+    /// 물 위 반사·외곽선·별자리 표시는 담지 않는다.
+    /// </summary>
+    public void CollectLaunchRenderers(List<SpriteRenderer> _body, List<SpriteRenderer> _shadows)
+    {
+        AddIfVisible(_body, bottomRenderer);
+        AddIfVisible(_body, bottomShieldRenderer);
+        AddIfVisible(_body, bottomHighlightRenderer);
+        AddIfVisible(_body, topRenderer);
+        AddIfVisible(_body, topShieldRenderer);
+        AddIfVisible(_body, topHighlightRenderer);
+        AddIfVisible(_shadows, bottomShadowRenderer);
+        AddIfVisible(_shadows, topShadowRenderer);
+    }
+
+    private static void AddIfVisible(List<SpriteRenderer> _into, SpriteRenderer _renderer)
+    {
+        if (null == _renderer || false == _renderer.enabled || false == _renderer.gameObject.activeInHierarchy) return;
+        if (_renderer.forceRenderingOff || null == _renderer.sprite || _renderer.color.a <= 0f) return;
+
+        _into.Add(_renderer);
+    }
+
     // 이 나무의 transform에 스케일 트윈을 거는 묘목 연출을 알려준다(ResetVisualState의 DOKill 생략 판단용).
     public void SetSaplingVEComponent(SaplingVEComponent _saplingVEComponent)
     {

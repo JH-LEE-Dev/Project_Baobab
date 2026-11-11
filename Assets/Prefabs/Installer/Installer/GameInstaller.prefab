@@ -2970,9 +2970,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnvironmentSystem
   quakeRippleSettings:
     frontSpeed: 10
-    rippleHeight: 0.375
-    rippleWavelength: 4
-    rippleWaves: 2
+    rippleHeight: 0.56
+    rippleWavelength: 6
+    rippleWaves: 2.5
     calmRadius: 1.2
     reachRadius: 15
     reachFalloffPower: 1.2
@@ -2986,21 +2986,41 @@ MonoBehaviour:
     crackGlowHDRIntensity: 3.2
     rideObjects: 1
     viewMargin: 8
-    cameraShakeIntensity: 3
+    cameraShakeIntensity: 4.5
     cameraShakeSeconds: 1.1
-    cameraKickDistance: 0.3
+    cameraKickDistance: 0.45
     cameraKickSeconds: 0.3
     epicenterBoost: 0.6
     epicenterBoostRadius: 5
+    shockwaveMaterial: {fileID: 2100000, guid: 8cd6b43f55eb00246b4948637b731dd5, type: 2}
+    buildUpSeconds: 0.35
+    buildUpRadius: 6
+    buildUpTremblePixels: 2
+    buildUpTrembleHz: 22
+    buildUpShakeIntensity: 0.9
+    buildUpDarkenExposure: 0.35
+    objectPop: 1
+    objectPopHeight: 0.3
+    objectPopSeconds: 0.32
+    characterPopHeight: 0.22
+    characterSquash: 0.22
+    characterSquashSeconds: 0.34
+    debrisMaterial: {fileID: 2100000, guid: 2373fc59f2f03354da54f465c93d16ac, type: 2}
+    dustPerSecond: 520
+    dustColor: {r: 0.74, g: 0.66, b: 0.58, a: 0.85}
+    chipChance: 0.3
+    chipColor: {r: 0.5, g: 0.43, b: 0.38, a: 1}
+    fallSeconds: 1.3
+    fallPerSecond: 80
     strikeOutsideScale: 0.45
     strikeEdge: 1.5
     treeShake: 1
-    treeShiverDegrees: 3.5
+    treeShiverDegrees: 5
     treeShiverOutsideDegrees: 1.2
     treeShiverSeconds: 0.45
     treeShiverHz: 13
-    treePopHeight: 0.16
-    treePopSeconds: 0.2
+    treePopHeight: 0.4
+    treePopSeconds: 0.3
 --- !u!1 &7291486191322297758
 GameObject:
   m_ObjectHideFlags: 0
@@ -3991,10 +4011,8 @@ MonoBehaviour:
   obsidianCharmPityMaxKills: 5
   obsidianCharmTier3PrestigeLevel: 11
   quakeChargePerEmber: 0.1
-  quakeTier1Damage: 200
-  quakeTier1Range: 4
-  quakeTier3Damage: 400
-  quakeTier3Range: 5.5
+  quakeTier1Damage: 1500000
+  quakeTier3Damage: 5000000
   goldTreePityMinKills: 3
   goldTreePityMaxKills: 7
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}
