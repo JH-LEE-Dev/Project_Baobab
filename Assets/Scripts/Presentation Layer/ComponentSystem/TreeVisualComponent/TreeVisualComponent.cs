@@ -182,6 +182,10 @@ public class TreeVisualComponent : MonoBehaviour
     private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
     private static readonly int FlashColorID = Shader.PropertyToID("_FlashColor");
     private static readonly int HeatChargeID = Shader.PropertyToID("_HeatCharge");
+    // 깎인 모습(양수 = 금, 음수 = 숯불, 0 = 없음). 지금 렌더러에 들어가 있는 값을 기억해 같은 값은 다시 쓰지 않는다.
+    private static readonly int DamageLookID = Shader.PropertyToID("_DamageLook");
+    private float appliedTopDamageLook = 0f;
+    private float appliedBottomDamageLook = 0f;
     // 치명타(빨간색) 점멸이 끝나는 시각. 이 시각 전까지 들어온 일반 타격은 점멸을 덮어쓰지 않는다.
     // bool 플래그 대신 시각으로 들고 있는 이유: 점멸 도중 오브젝트가 꺼지면 코루틴이 끝을 못 봐서
     // 플래그가 켜진 채 남을 수 있는데, 시각은 시간이 지나면 저절로 풀린다.
@@ -988,6 +992,38 @@ public class TreeVisualComponent : MonoBehaviour
         sr.SetPropertyBlock(_flashMPB);
     }
 
+    /// <summary>
+    /// 깎인 정도(0~1)를 나무 그림에 넣는다. 나무 셰이더가 4스테이지에서만 금(돌처럼 생긴 나무) 또는
+    /// 숯불(_bEmber, 잿불 나무)을 그린다(다른 스테이지·로그라이크는 값이 들어와도 그대로다). 렌더링 전용이다.
+    /// 숯불은 수관 그림의 명암에 맞춘 표현이라 수관에만 넣고 밑동에는 넣지 않는다.
+    /// 같은 값이면 아무것도 하지 않으므로, 호출부가 값을 단계로 끊어 넘기면 프로퍼티 블록 쓰기가 그만큼 줄어든다.
+    /// </summary>
+    public void SetDamageLook(float _amount, bool _bEmber)
+    {
+        float topLook = _bEmber ? -_amount : _amount;
+        if (appliedTopDamageLook == topLook) return;
+
+        if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+
+        appliedTopDamageLook = topLook;
+        SetDamageLookToRenderer(topRenderer, topLook);
+
+        float bottomLook = _bEmber ? 0f : _amount;
+        if (appliedBottomDamageLook != bottomLook)
+        {
+            appliedBottomDamageLook = bottomLook;
+            SetDamageLookToRenderer(bottomRenderer, bottomLook);
+        }
+    }
+
+    private void SetDamageLookToRenderer(SpriteRenderer sr, float _look)
+    {
+        if (sr == null) return;
+        sr.GetPropertyBlock(_flashMPB);
+        _flashMPB.SetFloat(DamageLookID, _look);
+        sr.SetPropertyBlock(_flashMPB);
+    }
+
     // TreeFlashSystem이 프레임마다 호출한다(예전 FlashRoutine의 ApplyFlashAmountToRenderers 호출과 동일).
     internal void ApplyFlashAmountFromSystem(float _flash)
     {
@@ -1082,6 +1118,9 @@ public class TreeVisualComponent : MonoBehaviour
 
         if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
         ApplyFlashAmountToRenderers(0f);
+
+        // 5. 깎인 금·숯불 초기화 (풀에서 다시 꺼낸 새 나무에 남지 않게)
+        SetDamageLook(0f, false);
     }
 
 

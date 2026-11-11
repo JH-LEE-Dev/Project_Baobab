@@ -64,6 +64,18 @@ public class InDungeonVFXManager : MonoBehaviour
     // 1스테이지 나무(참나무·소나무·자작나무)의 사망 임팩트(섬광·충격선·반짝 팝). 기존 잎 폭발·밑동 폭발에 더해 수관 자리에서 재생한다.
     private readonly TreeDeadEffectSet leafTreeDeadImpact = new TreeDeadEffectSet("TreeDeadEffect_LeafTop", null);
 
+    // 용암 계열(4스테이지) 나무의 큰 폭발(불덩이·불꽃·불티·연쇄 폭발·불씨 + 바닥 번쩍임·큰 불고리). 계열 이펙트에 더해 같은 두 자리에서 재생한다.
+    private readonly TreeDeadEffectSet magmaTreeDeadBlast = new TreeDeadEffectSet("TreeDeadEffect_MagmaBlastTop", "TreeDeadEffect_MagmaBlastBottom");
+    private const int MagmaTreeDeadFamily = 3;
+
+    // 큰 폭발 몰림 상한. 범위 공격으로 수십 그루가 한꺼번에 쓰러지면 폭발이 화면을 덮어 하나하나 보이지 않고 블룸으로 하얗게 뭉개지며,
+    // 입자 수만 그대로 늘어난다. 그래서 한 번에 MagmaBlastBurstMax개까지만 터뜨리고, 그 뒤로는 초당 MagmaBlastRefillPerSecond개씩
+    // 다시 채운다. 상한을 넘은 나무도 계열 이펙트(조각·용암 방울·불고리)는 그대로 나온다. 평소 벌목(몇 그루씩)에는 걸리지 않는다.
+    private const float MagmaBlastBurstMax = 8f;
+    private const float MagmaBlastRefillPerSecond = 24f;
+    private float magmaBlastBudget = MagmaBlastBurstMax;
+    private float magmaBlastBudgetTime;
+
     // 보석 나무가 최종으로 쓰러질 때의 보석 단계별 사망 이펙트. 인덱스는 보석 단계(1 황금, 2 다이아, 3 무지개).
     private readonly TreeDeadEffectSet[] gemTreeDeadEffects =
     {
@@ -85,6 +97,7 @@ public class InDungeonVFXManager : MonoBehaviour
                 {
                     stageTreeDeadEffects[1], stageTreeDeadEffects[2], stageTreeDeadEffects[3],
                     leafTreeDeadImpact,
+                    magmaTreeDeadBlast,
                     gemTreeDeadEffects[1], gemTreeDeadEffects[2], gemTreeDeadEffects[3],
                 };
             }
@@ -1311,6 +1324,12 @@ public class InDungeonVFXManager : MonoBehaviour
         if (0 != family && stageTreeDeadEffects[family].bAvailable)
         {
             PlayTreeDeadEffectSet(stageTreeDeadEffects[family], _visual, true);
+
+            // 용암 계열은 큰 폭발을 더한다(폭발 고유 색 그대로, 나무 색으로 덮어쓰지 않는다).
+            if (MagmaTreeDeadFamily == family && magmaTreeDeadBlast.bAvailable && TryTakeMagmaBlastBudget())
+            {
+                PlayTreeDeadEffectSet(magmaTreeDeadBlast, _visual, false);
+            }
             return;
         }
 
@@ -1368,6 +1387,10 @@ public class InDungeonVFXManager : MonoBehaviour
         if (0 != family)
         {
             EnsureTreeDeadEffectEmitters(stageTreeDeadEffects[family]);
+            if (MagmaTreeDeadFamily == family)
+            {
+                EnsureTreeDeadEffectEmitters(magmaTreeDeadBlast);
+            }
         }
         else if (IsLeafTreeType(_treeType))
         {
@@ -1424,6 +1447,21 @@ public class InDungeonVFXManager : MonoBehaviour
         vfxComponent.Play(_bTreeColor
             ? new VFXPlaySettings(_tag, _position, _rotation, _color.startColor, false, null)
             : new VFXPlaySettings(_tag, _position, _rotation));
+    }
+
+    // 큰 폭발 몰림 상한에서 하나를 꺼낸다. 남아 있지 않으면 false(이 나무는 계열 이펙트만 낸다).
+    private bool TryTakeMagmaBlastBudget()
+    {
+        float now = Time.time;
+        magmaBlastBudget = Mathf.Min(MagmaBlastBurstMax, magmaBlastBudget + Mathf.Max(0f, now - magmaBlastBudgetTime) * MagmaBlastRefillPerSecond);
+        magmaBlastBudgetTime = now;
+        if (magmaBlastBudget < 1f)
+        {
+            return false;
+        }
+
+        magmaBlastBudget -= 1f;
+        return true;
     }
 
     private static bool IsLeafTreeType(TreeType _treeType)

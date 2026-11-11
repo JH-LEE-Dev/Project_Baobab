@@ -506,9 +506,37 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     public float HeatDamageAmount => heatDamageAmount;
 
+    // 깎인 정도를 금·숯불로 보여 줄 때 끊는 단계 수. 단계가 바뀔 때만 렌더러에 쓴다.
+    private const int DamageCrackSteps = 12;
+
+    // 깎인 정도(0~1)를 나무 그림에 넘긴다. 나무 열기가 켜진 맵(본편 4스테이지)에서만 쓰고, 그리는 쪽도
+    // 그 맵에서만 그린다. 돌처럼 생긴 나무는 금이 가고, 침엽수 모양인 잿불 나무는 금 대신 속에서 숯불이 붙는다.
+    // 보석 단계 나무는 재질이 달라 둘 다 그리지 않으므로 지운다.
+    private void RefreshDamageCrack()
+    {
+        if (heatDamageAmount <= 0f || treeVisualComponent == null) return;
+
+        float amount = 0f;
+        if (false == bIsGemStage)
+        {
+            float maxHealth = health.GetMaxHealth();
+            float lostRatio = maxHealth > 0f ? Mathf.Clamp01(1f - health.GetCurrentHealth() / maxHealth) : 0f;
+            amount = Mathf.Round(lostRatio * DamageCrackSteps) / DamageCrackSteps;
+        }
+
+        treeVisualComponent.SetDamageLook(amount, TreeType.CinderTree == treeData.type);
+    }
+
     public void SetHeatDamageAmount(float _amount)
     {
         heatDamageAmount = _amount;
+
+        // 깎인 모습(금·숯불)은 나무 열기가 켜진 맵에서만 그린다(RefreshDamageCrack). 그 무늬 텍스처를 나무를 심는 동안
+        // (로딩 중) 미리 만들어 둬서, 첫 타격 때 만드느라 멈칫하지 않게 한다. 이미 있으면 아무것도 하지 않는다.
+        if (0f < _amount)
+        {
+            TreeDamagePatternTexture.EnsureGlobal();
+        }
     }
 
     private CustomSortable customSortable;
@@ -870,6 +898,13 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         // 핸들러는 던전의 것뿐이고, 던전 나무는 반드시 반환되므로 결과가 같다.
         bool bDeferHitVisual = (false == wasAlreadyDead && true == bDead);
         int resetTreeCountAtHit = resetTreeCount;
+
+        // 4스테이지 나무는 깎일수록 금이 가며 빛이 샌다(렌더링 전용). 이 타격으로 죽은 나무는 곧 풀로 돌아가며
+        // 금이 지워지므로 건너뛴다.
+        if (false == bDead)
+        {
+            RefreshDamageCrack();
+        }
 
         if (treeVisualComponent != null)
         {

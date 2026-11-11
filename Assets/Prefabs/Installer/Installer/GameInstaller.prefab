@@ -2059,6 +2059,18 @@ MonoBehaviour:
     allowDynamicExpansion: 1
     maxPoolSize: 70
     uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_MagmaBlastTop
+    effectPrefab: {fileID: 4650630329514857037, guid: 9b3ab2637fa35d142a82ebfcbd4f6c8d, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_MagmaBlastBottom
+    effectPrefab: {fileID: 8477616281450291841, guid: 570d5b6ac1cc47648a6a6056cfefcb3d, type: 3}
+    initialPoolSize: 0
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
+    uiParticleScale: 0
 --- !u!1 &5766810988037463456
 GameObject:
   m_ObjectHideFlags: 0

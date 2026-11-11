@@ -244,7 +244,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
 #if UNITY_EDITOR
     // 에디터 전용 디버그: 던전에서 이 키를 누르면 캐릭터 자리에서 지진 물결을 낸다. 빌드에는 포함되지 않는다.
-    // 본편 디버그 키(F1 시네마틱, F4 수동 저장, F9 벤치마크, ` 사운드)·로그라이크(F6, F7)와 겹치지 않는 키를 쓴다.
+    // 본편 디버그 키(F1 시네마틱, F4 수동 저장, F9 벤치마크, F10 과열 가득 참 연출, ` 사운드)·로그라이크(F6, F7)와 겹치지 않는 키를 쓴다.
     private const UnityEngine.InputSystem.Key DebugQuakeKey = UnityEngine.InputSystem.Key.F8;
 
     private void DebugQuakeTick()

@@ -21,6 +21,7 @@ using UnityEngine;
 ///          주황 -> 빨강 -> 검붉게 식고, 그을음과 1px 불티가 피어오른다.
 ///    밑동: 끊어진 불고리가 바닥에 번지며 식고, 달아오른 숯 부스러기가 튀고, 그을음이 낮게 깔린다.
 ///    바닥 불씨 아이템(빛나는 구슬)과 헷갈리지 않도록 빛나는 것은 모두 1~2px 크기이고 1초 안에 식어 사라진다.
+///    용암 계열에는 큰 폭발 한 쌍(VFX_TreeDead_MagmaBlast_*, 시트·머티리얼 따로)을 더해 함께 재생한다. BuildMagmaBlastSpec 참고.
 ///  - 세 계열 공통: 밑동에는 기존 밑동 폭발(VFX_TreeExplosion)의 큰 연기 덩이(VFX_ExplosionSmokes)를 원본 그대로 복사해 함께 낸다.
 ///  - 임팩트(1~4스테이지 공통 구조, 색만 계열별): 수관 자리에서 큰 섬광(꽉 찬 원 -> 고리), 방사 충격선, 한 박자 늦은 반짝 팝이 터진다.
 ///    1스테이지(Leaf)는 기존 잎 폭발·밑동 폭발 위에 이 임팩트만 더한다(VFX_TreeDead_Leaf_Top, 밑동 프리팹 없음).
@@ -171,9 +172,9 @@ public static class TreeDeadStageVfxBuilder
         }
 
         Vector4[] allRegions;
-        Texture2D atlas = BuildAtlas(allSystems, ownerKeys, out allRegions);
+        Texture2D atlas = BuildAtlas(allSystems, ownerKeys, out allRegions, TextureFolder, AtlasName);
         if (null == atlas) return;
-        Material[] allMaterials = BuildMaterials(allSystems, ownerKeys, shader, atlas, allRegions);
+        Material[] allMaterials = BuildMaterials(allSystems, ownerKeys, shader, atlas, allRegions, MaterialFolder);
 
         int systemCursor = 0;
         for (int i = 0; i < stages.Length; i++)
@@ -206,9 +207,318 @@ public static class TreeDeadStageVfxBuilder
 
         // 예전 시트·합쳐진 머티리얼은 새 프리팹과 풀 연결이 모두 끝난 뒤에 지운다.
         // 도중에 실패하면 지우지 않고 남겨, 이전 프리팹이 머티리얼을 잃지 않게 한다.
-        DeleteStaleAssets(atlas, allMaterials);
+        DeleteStaleAssets(atlas, allMaterials, TextureFolder, MaterialFolder);
 
         Debug.Log("[TreeDeadStageVfxBuilder] 완료: " + PrefabFolder + " / " + InstallerPrefabPath);
+
+        // 용암 계열에 더해 터지는 폭발 한 쌍도 같이 맞춘다(시트·머티리얼 폴더가 따로라 위 정리와 서로 건드리지 않는다).
+        BuildMagmaBlast();
+    }
+
+    // ───────────────────────── 용암 폭발(4스테이지 나무 추가 이펙트) ─────────────────────────
+    // 용암 계열(잿불·용암수액·흑요) 나무가 쓰러질 때 계열 이펙트(VFX_TreeDead_Magma_*) 위에 더해 재생하는 큰 폭발 한 쌍. "콰광!"
+    //  수관: 흰빛 불덩이가 부풀어 오르며 노랑 -> 주황 -> 빨강으로 식고 구멍이 뚫리며 흩어진다. 불꽃 덩이가 사방으로 터져 나가 그을음으로 식고,
+    //        불티가 빠르게 튀었다 확 멈추며, 한 박자씩 늦게 작은 폭발이 둘레에서 연달아 터지고, 불씨가 흔들리며 솟아오른다.
+    //  밑동: 바닥이 한 번 번쩍이고, 계열 고리보다 큰 굵은 불고리가 바닥을 따라 번지며 식는다(한 시스템).
+//  가벼움: 그루당 입자 34개·시스템 6개, 노이즈 모듈 없음. 범위 공격으로 한꺼번에 쓰러질 때는 재생 쪽(InDungeonVFXManager)이 개수를 제한한다.
+    //  빛나는 것은 모두 허공에서 1초 안에 식어 사라진다(바닥 불씨 아이템과 헷갈리지 않게 바닥에 남는 빛은 없다).
+    //  색은 실행 중에 덮어쓰지 않는다(나무 색 대신 이 폭발의 고정 색).
+    // 시트·머티리얼은 계열 시트와 따로 둔다. 이 폭발만 고쳐 다시 구워도 기존 계열 시트·머티리얼·프리팹은 바뀌지 않는다.
+    private const string BlastKey = "MagmaBlast";
+    private const string BlastTextureFolder = "Assets/Graphics/VFX/TreeDeadBlast";
+    private const string BlastMaterialFolder = "Assets/Graphics/VFX/Materials/TreeDeadBlast";
+    private const string BlastAtlasName = "TreeDead_MagmaBlast_Sheet";
+    private const int BlastFireballCell = 33;
+    private const int BlastRingCell = 53;
+
+    [MenuItem("LumberBoy/VFX/Build Tree Dead Magma Blast VFX")]
+    public static void BuildMagmaBlast()
+    {
+        Shader shader = Shader.Find(ShaderName);
+        ParticleSystemRenderer referenceRenderer = LoadReferenceRenderer();
+        if (null == shader || null == referenceRenderer)
+        {
+            Debug.LogError("[TreeDeadStageVfxBuilder] 용암 폭발: 셰이더 또는 기준 잎 폭발 프리팹을 찾지 못했습니다.");
+            return;
+        }
+
+        EnsureFolder(BlastTextureFolder);
+        EnsureFolder(BlastMaterialFolder);
+        EnsureFolder(PrefabFolder);
+
+        StageSpec blast = BuildMagmaBlastSpec();
+        System.Collections.Generic.List<SystemSpec> systems = new System.Collections.Generic.List<SystemSpec>(16);
+        System.Collections.Generic.List<string> owners = new System.Collections.Generic.List<string>(16);
+        foreach (SystemSpec spec in blast.top) { systems.Add(spec); owners.Add(blast.key); }
+        foreach (SystemSpec spec in blast.bottom) { systems.Add(spec); owners.Add(blast.key); }
+
+        Vector4[] regions;
+        Texture2D atlas = BuildAtlas(systems, owners, out regions, BlastTextureFolder, BlastAtlasName);
+        if (null == atlas) return;
+        Material[] materials = BuildMaterials(systems, owners, shader, atlas, regions, BlastMaterialFolder);
+
+        Material[] topMaterials = new Material[blast.top.Length];
+        Material[] bottomMaterials = new Material[blast.bottom.Length];
+        System.Array.Copy(materials, 0, topMaterials, 0, blast.top.Length);
+        System.Array.Copy(materials, blast.top.Length, bottomMaterials, 0, blast.bottom.Length);
+
+        ParticleSystem topPrefab = BuildPrefab("VFX_TreeDead_" + blast.key + "_Top", blast.top, topMaterials, referenceRenderer, null);
+        if (null == topPrefab) return;
+        ParticleSystem bottomPrefab = BuildPrefab("VFX_TreeDead_" + blast.key + "_Bottom", blast.bottom, bottomMaterials, referenceRenderer, null);
+        if (null == bottomPrefab) return;
+
+        if (false == WireInstaller(new[] { TopTag(blast.key), BottomTag(blast.key) }, new[] { topPrefab, bottomPrefab })) return;
+        DeleteStaleAssets(atlas, materials, BlastTextureFolder, BlastMaterialFolder);
+
+        Debug.Log("[TreeDeadStageVfxBuilder] 용암 폭발 완료: " + PrefabFolder + "/VFX_TreeDead_" + blast.key + "_{Top,Bottom}");
+    }
+
+    private static StageSpec BuildMagmaBlastSpec()
+    {
+        // ── 수관 ──
+        // 1) 불덩이(루트): 흰빛 심을 품은 불덩이가 부풀어 오르며 식고, 바깥부터 구멍이 뚫리며 흩어진다.
+        SystemSpec fireball = new SystemSpec
+        {
+            name = "TopFireball",
+            cellPx = BlastFireballCell,
+            rows = new[]
+            {
+                new[] { BuildFireball(7, 0.5f, 0.0f, 0.0f, 11), BuildFireball(11, 0.32f, 0.0f, 0.0f, 12), BuildFireball(13, 0.0f, 0.1f, 0.0f, 13), BuildFireball(14, 0.0f, 0.35f, 0.2f, 14), BuildFireball(14, 0.0f, 0.65f, 0.45f, 15) },
+                new[] { BuildFireball(7, 0.5f, 0.0f, 0.0f, 21), BuildFireball(11, 0.32f, 0.0f, 0.0f, 22), BuildFireball(13, 0.0f, 0.1f, 0.0f, 23), BuildFireball(14, 0.0f, 0.35f, 0.2f, 24), BuildFireball(14, 0.0f, 0.65f, 0.45f, 25) },
+            },
+            frameStarts = new[] { 0.0f, 0.1f, 0.28f, 0.52f, 0.76f },
+            count = 1,
+            lifetime = new Vector2(0.4f, 0.4f),
+            colorA = Color.white,
+            colorB = Color.white,
+            overLifetime = Grad(
+                new[] { Key(0.0f, "FFF6C8"), Key(0.18f, "FFC24A"), Key(0.45f, "FF6A22"), Key(0.75f, "B02C12"), Key(1.0f, "4E1712") },
+                new[] { Alpha(0.0f, 1.0f), Alpha(0.35f, 0.75f), Alpha(0.7f, 0.25f), Alpha(1.0f, 0.0f) }),
+            accentColor = Hex("FFFBE6"),
+            accentGlow = new Vector2(1.6f, 3.4f),
+            sortingOffset = OrderFlash,
+        };
+
+        // 2) 불꽃 덩이: 사방으로 터져 나가 강하게 멈추며, 주황 -> 빨강 -> 그을음으로 식고 작아진다.
+        SystemSpec flame = new SystemSpec
+        {
+            name = "TopFlame",
+            rows = new[]
+            {
+                new[] { Puff6, Puff5, Puff4, Puff3, Block2Dark },
+                new[] { Puff5, Puff5, Puff4, Puff3, DotM },
+            },
+            frameStarts = new[] { 0.0f, 0.3f, 0.5f, 0.7f, 0.88f },
+            count = 8,
+            lifetime = new Vector2(0.45f, 0.65f),
+            speed = new Vector2(2.6f, 4.6f),
+            shapeRadius = 0.2f,
+            drag = 5.0f,
+            rise = new Vector2(0.3f, 0.8f),
+            colorA = Color.white,
+            colorB = Color.white,
+            overLifetime = Grad(
+                new[] { Key(0.0f, "FFE9A0"), Key(0.2f, "FFA030"), Key(0.45f, "E8501E"), Key(0.7f, "6A2A20"), Key(1.0f, "3A2A2E") },
+                new[] { Alpha(0.0f, 0.9f), Alpha(0.25f, 0.6f), Alpha(0.55f, 0.0f), Alpha(1.0f, 0.0f) }),
+            sortingOffset = OrderGlow,
+        };
+
+        // 3) 불티: 빠르게 사방으로 튀었다 확 멈추고, 떨어지며 식는다.
+        SystemSpec spark = new SystemSpec
+        {
+            name = "TopSpark",
+            rows = new[]
+            {
+                new[] { Block2, Dot, Dot, DotL },
+                new[] { Dot, Dot, DotL, Empty },
+            },
+            count = 14,
+            lifetime = new Vector2(0.32f, 0.55f),
+            speed = new Vector2(4.5f, 8.0f),
+            shapeRadius = 0.25f,
+            gravity = 0.5f,
+            drag = 6.0f,
+            colorA = Color.white,
+            colorB = Color.white,
+            overLifetime = Grad(
+                new[] { Key(0.0f, "FFFFFF"), Key(0.2f, "FFE070"), Key(0.5f, "FF8A30"), Key(0.8f, "C83A18"), Key(1.0f, "5A1A10") },
+                new[] { Alpha(0.0f, 1.0f), Alpha(0.3f, 0.9f), Alpha(0.7f, 0.45f), Alpha(1.0f, 0.0f) }),
+            sortingOffset = OrderGlow,
+        };
+
+        // 4) 연쇄 폭발: 한 박자씩 늦게(앞쪽 빈 프레임) 불덩이 둘레에서 작은 폭발이 연달아 터진다.
+        SystemSpec pop = new SystemSpec
+        {
+            name = "TopPop",
+            cellPx = SparkleCell,
+            rows = new[]
+            {
+                new[] { Empty, Burst7, Diamond5, Plus3, Dot, Empty, Empty, Empty },
+                new[] { Empty, Empty, Empty, Burst7, Diamond5, Plus3, Dot, Empty },
+                new[] { Empty, Empty, Empty, Empty, Empty, Burst7, Diamond5, Plus3 },
+            },
+            count = 4,
+            lifetime = new Vector2(0.42f, 0.5f),
+            speed = new Vector2(0.2f, 0.6f),
+            shapeRadius = 0.6f,
+            drag = 3.0f,
+            colorA = Hex("FFF2C0"),
+            colorB = Color.white,
+            overLifetime = Grad(new[] { Key(0.0f, "FFFFFF"), Key(1.0f, "FFB25A") }, new[] { Alpha(0.0f, 1.0f), Alpha(1.0f, 0.6f) }),
+            sortingOffset = OrderFlash,
+        };
+
+        // 5) 불씨: 깜빡이며 솟아오르다 식는다. 흔들림(노이즈 모듈)은 입자마다 계산이 가장 무거운 모듈이라 쓰지 않고,
+        //    처음 튀는 방향·솟는 빠르기를 입자마다 달리해 흩날리는 느낌만 낸다(계열 이펙트의 불티가 이미 흔들리며 날린다).
+        SystemSpec ember = new SystemSpec
+        {
+            name = "TopEmber",
+            rows = new[]
+            {
+                new[] { Dot, Dot, Empty, Dot, Dot, Empty },
+                new[] { Dot, Empty, Dot, Dot, Empty, Dot },
+            },
+            count = 6,
+            lifetime = new Vector2(0.7f, 1.0f),
+            speed = new Vector2(1.0f, 2.2f),
+            shapeRadius = 0.3f,
+            drag = 2.5f,
+            rise = new Vector2(0.8f, 1.7f),
+            colorA = Color.white,
+            colorB = Color.white,
+            overLifetime = Grad(
+                new[] { Key(0.0f, "FFE08A"), Key(0.4f, "FF7A2E"), Key(0.8f, "B8321A"), Key(1.0f, "4A1A12") },
+                new[] { Alpha(0.0f, 0.9f), Alpha(0.4f, 0.6f), Alpha(0.8f, 0.2f), Alpha(1.0f, 0.0f) }),
+            sortingOffset = OrderGlow,
+            randomStartFrame = true,
+        };
+
+        // ── 밑동 ──
+        // 바닥 불고리(루트, 시스템 하나): 밑동 둘레 바닥이 한 번 환하게 번쩍인 뒤, 번쩍임이 성글게 풀리는 동안 굵은 고리가
+        // 계열 고리(가로 19px)보다 멀리(26px) 번지며 식는다. 번쩍임과 고리를 한 입자의 프레임에 같이 그려 시스템·드로우를 하나로 줄였다.
+        int[] ringRadii = { 0, 15, 21, 26 };
+        string[][] ringFrames = new string[ringRadii.Length][];
+        ringFrames[0] = BuildFilledEllipse(10, 0.0f);
+        for (int i = 1; i < ringRadii.Length; i++)
+        {
+            int sparse = (ringRadii.Length - 1 == i) ? 1 : 0;
+            ringFrames[i] = BuildRing(ringRadii[i], ERingStyle.Solid, sparse);
+            if (0 == sparse) ringFrames[i] = OverlayCentered(ringFrames[i], BuildRing(ringRadii[i] - 1, ERingStyle.Solid, 0));
+        }
+
+        // 번쩍임이 풀리는 모습을 고리 안쪽에 겹친다(고리 픽셀이 앞선다).
+        ringFrames[1] = OverlayCentered(ringFrames[1], BuildFilledEllipse(13, 0.45f));
+        ringFrames[2] = OverlayCentered(ringFrames[2], BuildFilledEllipse(14, 0.8f));
+
+        SystemSpec ring = new SystemSpec
+        {
+            name = "BottomBlastRing",
+            cellPx = BlastRingCell,
+            rows = new[] { ringFrames },
+            frameStarts = new[] { 0.0f, 0.16f, 0.4f, 0.7f },
+            count = 1,
+            lifetime = new Vector2(0.36f, 0.36f),
+            colorA = Color.white,
+            colorB = Color.white,
+            overLifetime = Grad(
+                new[] { Key(0.0f, "FFF6D0"), Key(0.3f, "FF9A3A"), Key(0.65f, "D8481E"), Key(1.0f, "7A2014") },
+                new[] { Alpha(0.0f, 1.0f), Alpha(0.5f, 0.55f), Alpha(1.0f, 0.0f) }),
+            ground = true,
+        };
+
+        return new StageSpec
+        {
+            key = BlastKey,
+            top = new[] { fireball, flame, spark, pop, ember },
+            bottom = new[] { ring },
+        };
+    }
+
+    // 불덩이 한 프레임(가로세로 2r+5). 둘레가 울퉁불퉁하고, 안쪽부터 A(흰빛 심, _core 비율까지) -> W -> L -> M -> D로 어두워진다.
+    // _holes: 픽셀이 빠지는 정도(바깥일수록 더 빠진다), _dim: 0이면 그대로, 클수록 명암을 한두 단계 어둡게 민다(식는 프레임). _seed: 모양 갈래.
+    private static string[] BuildFireball(int _r, float _core, float _holes, float _dim, int _seed)
+    {
+        int half = _r + 2;
+        int size = 2 * half + 1;
+        const int Lobes = 14;
+        string[] lines = new string[size];
+        for (int y = 0; y < size; y++)
+        {
+            char[] row = new char[size];
+            for (int x = 0; x < size; x++)
+            {
+                float dx = x - half;
+                float dy = half - y;
+                float d = Mathf.Sqrt(dx * dx + dy * dy);
+
+                // 둘레를 Lobes 토막으로 나눠 토막마다 반지름을 흔들고, 토막 사이는 이어 붙여 불길처럼 울퉁불퉁하게 한다.
+                float around = (Mathf.Atan2(dy, dx) + Mathf.PI) / (2.0f * Mathf.PI) * Lobes;
+                int lobe = Mathf.FloorToInt(around) % Lobes;
+                float blend = around - Mathf.Floor(around);
+                float wobble = Mathf.Lerp(BlastHash01(lobe, _seed, 1), BlastHash01((lobe + 1) % Lobes, _seed, 1), blend);
+                float edge = _r + (wobble - 0.5f) * 2.4f;
+
+                char c = '.';
+                if (d <= edge)
+                {
+                    float t = d / Mathf.Max(edge, 0.5f) + _dim;
+                    if (t < _core) c = 'A';
+                    else if (t < 0.55f) c = 'W';
+                    else if (t < 0.78f) c = 'L';
+                    else if (t < 0.93f) c = 'M';
+                    else c = 'D';
+
+                    if (0.0f < _holes && BlastHash01(x, y, _seed * 7 + 3) < _holes * (0.35f + t))
+                    {
+                        c = '.';
+                    }
+                }
+
+                row[x] = c;
+            }
+
+            lines[y] = new string(row);
+        }
+
+        return lines;
+    }
+
+    // 바닥에 누운 꽉 찬 타원(가로 반지름 a, 세로 a/2, 가로 2a+1). 가운데는 W, 가장자리 한 줄은 L. _holes만큼 픽셀이 빠진다.
+    private static string[] BuildFilledEllipse(int _a, float _holes)
+    {
+        int b = _a / 2;
+        int w = 2 * _a + 1;
+        int h = 2 * b + 1;
+        string[] lines = new string[h];
+        for (int y = 0; y < h; y++)
+        {
+            char[] row = new char[w];
+            for (int x = 0; x < w; x++)
+            {
+                float nx = (x - _a) / (_a + 0.5f);
+                float ny = (y - b) / (b + 0.5f);
+                float d = Mathf.Sqrt(nx * nx + ny * ny);
+                char c = d > 1.0f ? '.' : (d > 0.8f ? 'L' : 'W');
+                if ('.' != c && 0.0f < _holes && BlastHash01(x, y, 91) < _holes * (0.5f + d)) c = '.';
+                row[x] = c;
+            }
+
+            lines[y] = new string(row);
+        }
+
+        return lines;
+    }
+
+    // 정수 둘과 갈래 번호로 0~1 값(같은 입력이면 늘 같은 값이라 빌드할 때마다 모양이 같다).
+    private static float BlastHash01(int _x, int _y, int _channel)
+    {
+        unchecked
+        {
+            uint h = (uint)_x * 374761393u + (uint)_y * 668265263u + (uint)_channel * 2246822519u;
+            h = (h ^ (h >> 13)) * 1274126177u;
+            h ^= h >> 16;
+            return (h & 0xFFFFFFu) / 16777216f;
+        }
     }
 
     // ───────────────────────── 모양 ─────────────────────────
@@ -1309,7 +1619,7 @@ public static class TreeDeadStageVfxBuilder
     // (계열마다 같은 임팩트, 보석 3종의 같은 조각 등)은 한 번만 그린다. 블록은 높이 순으로 선반(가로 줄)에 채운다.
     // 블록 안에서 0행이 맨 위다(텍스처 시트 애니메이션 규약). 영역은 (가로 비율, 세로 비율, 시작 u, 시작 v)로 셰이더 _Region에 들어간다.
     // 블록은 정수 픽셀 위치에 놓이므로 계열별 시트일 때와 같은 텍셀을 읽는다.
-    private static Texture2D BuildAtlas(System.Collections.Generic.List<SystemSpec> _systems, System.Collections.Generic.List<string> _owners, out Vector4[] _regions)
+    private static Texture2D BuildAtlas(System.Collections.Generic.List<SystemSpec> _systems, System.Collections.Generic.List<string> _owners, out Vector4[] _regions, string _folder, string _atlasName)
     {
         int count = _systems.Count;
         int[] blockOf = new int[count];
@@ -1405,7 +1715,7 @@ public static class TreeDeadStageVfxBuilder
         texture.SetPixels32(pixels);
         texture.Apply();
 
-        string path = TextureFolder + "/" + AtlasName + ".png";
+        string path = _folder + "/" + _atlasName + ".png";
         File.WriteAllBytes(path, texture.EncodeToPNG());
         Object.DestroyImmediate(texture);
 
@@ -1490,7 +1800,7 @@ public static class TreeDeadStageVfxBuilder
 
     // 시스템별 머티리얼. 속성(시트 영역·몸통 발광·강조색·강조 발광)이 모두 같은 시스템끼리는 머티리얼 하나를 같이 쓴다
     // (이름은 처음 쓰는 계열·시스템 이름을 따른다). 반환 배열은 _systems와 같은 순서다.
-    private static Material[] BuildMaterials(System.Collections.Generic.List<SystemSpec> _systems, System.Collections.Generic.List<string> _owners, Shader _shader, Texture2D _atlas, Vector4[] _regions)
+    private static Material[] BuildMaterials(System.Collections.Generic.List<SystemSpec> _systems, System.Collections.Generic.List<string> _owners, Shader _shader, Texture2D _atlas, Vector4[] _regions, string _folder)
     {
         Material[] materials = new Material[_systems.Count];
         System.Collections.Generic.Dictionary<string, Material> byProps = new System.Collections.Generic.Dictionary<string, Material>(_systems.Count);
@@ -1510,7 +1820,7 @@ public static class TreeDeadStageVfxBuilder
                 continue;
             }
 
-            string path = MaterialFolder + "/M_TreeDead_" + _owners[i] + "_" + s.name + ".mat";
+            string path = _folder + "/M_TreeDead_" + _owners[i] + "_" + s.name + ".mat";
             material = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (null == material)
             {
@@ -1541,13 +1851,13 @@ public static class TreeDeadStageVfxBuilder
     }
 
     // 이 빌더 전용 폴더에서 이번 빌드가 쓰지 않는 시트·머티리얼(예전 계열별 시트, 합쳐진 머티리얼)을 지운다.
-    private static void DeleteStaleAssets(Texture2D _atlas, Material[] _materials)
+    private static void DeleteStaleAssets(Texture2D _atlas, Material[] _materials, string _textureFolder, string _materialFolder)
     {
         System.Collections.Generic.HashSet<string> keep = new System.Collections.Generic.HashSet<string>();
         keep.Add(AssetDatabase.GetAssetPath(_atlas));
         for (int i = 0; i < _materials.Length; i++) keep.Add(AssetDatabase.GetAssetPath(_materials[i]));
 
-        string[] folders = { TextureFolder, MaterialFolder };
+        string[] folders = { _textureFolder, _materialFolder };
         foreach (string guid in AssetDatabase.FindAssets("t:Texture2D t:Material", folders))
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);

@@ -2383,7 +2383,32 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 tree.UpdateIndex = -1;
             }
         }
+
+#if UNITY_EDITOR
+        DebugOverheatFullTick();
+#endif
     }
+
+#if UNITY_EDITOR
+    // 에디터 전용 디버그: 던전에서 이 키를 누르면 과열이 가득 차는 순간의 연출(열기 물결·화면 흔들림·진동·소리)만 재생한다.
+    // 과열 수치는 건드리지 않는다. 빌드에는 포함되지 않는다.
+    // 본편 디버그 키(F1 시네마틱, F4 수동 저장, F8 지진 물결, F9 벤치마크, ` 사운드)·로그라이크(F6, F7)와 겹치지 않는 키를 쓴다.
+    private const UnityEngine.InputSystem.Key DebugOverheatFullKey = UnityEngine.InputSystem.Key.F10;
+
+    private void DebugOverheatFullTick()
+    {
+        UnityEngine.InputSystem.Keyboard keyboard = UnityEngine.InputSystem.Keyboard.current;
+        if (null == keyboard || false == keyboard[DebugOverheatFullKey].wasPressedThisFrame) return;
+
+        if (character == null || 0 == activeTrees.Count || GameModeContext.IsRoguelike)
+        {
+            Debug.LogWarning("[InDungeonObjectManager] 과열 가득 참 연출 디버그(F10)는 본편 던전에서 캐릭터와 나무가 있을 때만 됩니다.");
+            return;
+        }
+
+        PlayOverheatFullMoment();
+    }
+#endif
 
     private void OnDestroy()
     {
@@ -2571,7 +2596,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         // "불씨 획득량 증가" 특성 배율을 곱한다(특성이 없으면 1).
         float overheatPerEmber = itemManager.emberItemController != null ? itemManager.emberItemController.OverheatPerEmber : 1f;
+        bool bWasOverheatMax = character.IsOverheatMax;
         character.AddOverheat(overheatPerEmber * character.OverheatGainMultiplier);
+
+        // 이 불씨로 과열이 가득 찬 순간 - 열기 물결이 퍼지는 연출만 더한다(수치·규칙은 그대로).
+        if (false == bWasOverheatMax && character.IsOverheatMax)
+        {
+            PlayOverheatFullMoment();
+        }
 
         // "흑요 부적" 지진 게이지는 과열과 따로 찬다(과열이 최대여도 찬다).
         if (0 < obsidianCharmTierThisRun) ChargeQuake();
@@ -2583,6 +2615,25 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         character.PlayItemAcquireFlash();
 
         EmberAcquiredNotifyEvent?.Invoke();
+    }
+
+    // 과열이 가득 차는 순간의 연출 수치(화면 흔들림 세기·시간, 터지는 소리의 크기·높낮이)
+    private const float OverheatFullShakeIntensity = 4f;
+    private const float OverheatFullShakeSeconds = 0.35f;
+    private const float OverheatFullSoundVolume = 1f;
+    private const float OverheatFullSoundPitch = 0.72f;
+
+    // 과열이 가득 찬 순간: 캐릭터 발밑에서 열기 물결이 퍼지고(불 고리 + 닿는 나무가 달아오름), 화면이 흔들리고,
+    // 패드가 울리고, 나무 열기 폭발음을 낮게 깔아 "쿵" 하고 터진다. 전부 연출이며 게임 동작은 바꾸지 않는다.
+    private void PlayOverheatFullMoment()
+    {
+        if (character == null) return;
+
+        Vector3 center = character.transform.position;
+        StageOverheatBurst.Play(center);
+        CameraMoveController.Instance?.ShakeCamera(OverheatFullShakeIntensity, OverheatFullShakeSeconds);
+        Rumble.Play(EHapticEvent.OverheatFull);
+        Sound.Play(SoundID.TreeFireExplosion, center, OverheatFullSoundVolume, false, OverheatFullSoundPitch);
     }
 
     /// <summary>

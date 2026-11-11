@@ -68,5 +68,8 @@ public enum EHapticEvent
     /// <summary>나무 열기(4스테이지)에 맞아 캐릭터가 밀려남. (InDungeonObjectManager.OnTreeHeatEmit)</summary>
     TreeHeatHit,
 
+    /// <summary>과열이 가득 참(불씨를 주워 최대치에 닿은 순간). (InDungeonObjectManager.PlayOverheatFullMoment)</summary>
+    OverheatFull,
+
     Count
 }

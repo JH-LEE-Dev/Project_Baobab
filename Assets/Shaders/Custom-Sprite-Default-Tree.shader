@@ -20,6 +20,8 @@ Shader "Custom/Custom-Sprite-Default-Tree"
         _FlashColor("Flash Color", Color) = (1,1,1,1)
         // 열기 차오름 진행도(0~1). 카운트다운 중인 나무에만 MaterialPropertyBlock으로 넣는다.
         [HideInInspector] _HeatCharge("Heat Charge", Float) = 0
+        // 깎인 정도(0~1). 4스테이지에서 깎인 나무에만 MaterialPropertyBlock으로 넣는다(금이 가며 빛이 샌다).
+        [HideInInspector] _DamageLook("Damage Look", Float) = 0
 
         [Header(Wind Sway)]
         _EnableWindSway("Enable Wind Sway", Float) = 0
@@ -77,12 +79,15 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 half4 color        : COLOR;
                 // xy: 월드 위치, zw: 그림 기준점 월드 위치(나무 단위 반짝임 박자용)
                 float4 worldPos    : TEXCOORD7;
+                // 나무 한 그루에 한 번 구한 값(TreeDamageLook.hlsl의 ComputeTreeDamageFx). 정점마다 같아서 보간하지 않는다.
+                nointerpolation float4 damageFx : TEXCOORD8;
             };
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Lit2DCommon.hlsl"
             #include "Include/SporeGlow.hlsl"
             #include "Include/TreeStarTwinkle.hlsl"
             #include "Include/TreeHeatCharge.hlsl"
+            #include "Include/TreeDamageLook.hlsl"
             #include "Include/StageAmbienceCommon.hlsl"
             #include "Include/LavaGlow.hlsl"
 
@@ -99,6 +104,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailSpeed)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailWeight)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HeatCharge)
+                UNITY_DEFINE_INSTANCED_PROP(float, _DamageLook)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings LitVertex(Attributes input)
@@ -123,6 +129,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
 
                 Varyings o = CommonLitVertex(input);
                 o.worldPos = float4(TransformObjectToWorld(input.positionOS).xy, objectPivotWorldPos.xy);
+                o.damageFx = ComputeTreeDamageFx(objectPivotWorldPos.xy, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _DamageLook));
                 o.color = input.color * UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Color) * unity_SpriteColor;
 
                 return o;
@@ -157,9 +164,13 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 color.rgb = ApplyTreeStarTwinkle(color.rgb, input.uv, worldPos, input.worldPos.zw);
                 // 열기 차오름(카운트다운 중인 나무만, 꺼진 스테이지는 그대로)
                 color.rgb = ApplyTreeHeatCharge(color.rgb, input.uv, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HeatCharge));
+                // 깎인 나무의 금 또는 숯불(4스테이지에서만, 깎이지 않은 나무·꺼진 스테이지는 그대로)
+                color.rgb = ApplyTreeDamageLook(color.rgb, input.uv, input.damageFx);
                 // 용암 빛(발밑이 용암 가까이면 밑동부터 물든다, 꺼진 스테이지는 그대로)
                 color.rgb = ApplyLavaGlowUpright(color.rgb, snappedWorldPos, input.worldPos.w, floor(worldPos * ppu));
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
+                // 과열이 가득 차는 순간의 열기 물결(물결이 도는 동안만, 그 밖에는 그대로)
+                color.rgb = ApplyOverheatBurstFlare(color.rgb, input.damageFx.z);
                 color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
                 return color;
             }
@@ -210,6 +221,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailSpeed)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailWeight)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HeatCharge)
+                UNITY_DEFINE_INSTANCED_PROP(float, _DamageLook)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings NormalsRenderingVertex(Attributes input)
@@ -291,12 +303,15 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 half4 color : COLOR;
                 // xy: 월드 위치, zw: 그림 기준점 월드 위치(나무 단위 반짝임 박자용)
                 float4 worldPos : TEXCOORD7;
+                // 나무 한 그루에 한 번 구한 값(TreeDamageLook.hlsl의 ComputeTreeDamageFx). 정점마다 같아서 보간하지 않는다.
+                nointerpolation float4 damageFx : TEXCOORD8;
             };
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/2DCommon.hlsl"
             #include "Include/SporeGlow.hlsl"
             #include "Include/TreeStarTwinkle.hlsl"
             #include "Include/TreeHeatCharge.hlsl"
+            #include "Include/TreeDamageLook.hlsl"
             #include "Include/StageAmbienceCommon.hlsl"
             #include "Include/LavaGlow.hlsl"
           
@@ -317,6 +332,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailSpeed)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailWeight)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HeatCharge)
+                UNITY_DEFINE_INSTANCED_PROP(float, _DamageLook)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings UnlitVertex(Attributes input)
@@ -341,6 +357,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
 
                 Varyings o = CommonUnlitVertex(input);
                 o.worldPos = float4(TransformObjectToWorld(input.positionOS).xy, objectPivotWorldPos.xy);
+                o.damageFx = ComputeTreeDamageFx(objectPivotWorldPos.xy, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _DamageLook));
                 o.color = input.color * UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Color) * unity_SpriteColor;
                 return o;
             }
@@ -373,9 +390,13 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 color.rgb = ApplyTreeStarTwinkle(color.rgb, input.uv, worldPos, input.worldPos.zw);
                 // 열기 차오름(카운트다운 중인 나무만, 꺼진 스테이지는 그대로)
                 color.rgb = ApplyTreeHeatCharge(color.rgb, input.uv, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HeatCharge));
+                // 깎인 나무의 금 또는 숯불(4스테이지에서만, 깎이지 않은 나무·꺼진 스테이지는 그대로)
+                color.rgb = ApplyTreeDamageLook(color.rgb, input.uv, input.damageFx);
                 // 용암 빛(발밑이 용암 가까이면 밑동부터 물든다, 꺼진 스테이지는 그대로)
                 color.rgb = ApplyLavaGlowUpright(color.rgb, snappedWorldPos, input.worldPos.w, floor(worldPos * ppu));
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
+                // 과열이 가득 차는 순간의 열기 물결(물결이 도는 동안만, 그 밖에는 그대로)
+                color.rgb = ApplyOverheatBurstFlare(color.rgb, input.damageFx.z);
                 color.rgb = lerp(color.rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashColor).rgb, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
                 return color;
             }

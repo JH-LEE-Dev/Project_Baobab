@@ -159,6 +159,15 @@ public static class HapticPresets
         new HapticStep(0.40f, 0.65f, 0.10f),
         new HapticStep(0.15f, 0.35f, 0.16f));
 
+    // 과열이 가득 참 - 몸에서 열기가 "쿵" 터져 나가는 묵직한 첫 충격 뒤, 물결이 퍼져 나가는 동안 지글거리며 잦아든다.
+    // 첫 충격은 전리품 기둥 착지(lootPillarLanding)급으로 무겁게 주고, 꼬리는 가는 모터 위주로 타오르는 느낌만 남긴다.
+    // 총 0.75초로 화면의 열기 물결(약 1초)과 함께 끝난다. 원정에 한 번뿐인 순간이라 길게 줘도 피로하지 않다.
+    private static readonly HapticPattern overheatFull = new HapticPattern(
+        new HapticStep(0.95f, 0.75f, 0.10f),
+        new HapticStep(0.55f, 0.70f, 0.15f),
+        new HapticStep(0.30f, 0.50f, 0.20f),
+        new HapticStep(0.12f, 0.28f, 0.30f));
+
     private static readonly HapticPattern[] patterns = BuildPatterns();
 
     /// <summary>
@@ -216,6 +225,7 @@ public static class HapticPresets
         _table[(int)EHapticEvent.Earthquake] = earthquake;
         _table[(int)EHapticEvent.LootPillarLanding] = lootPillarLanding;
         _table[(int)EHapticEvent.TreeHeatHit] = treeHeatHit;
+        _table[(int)EHapticEvent.OverheatFull] = overheatFull;
 
         return _table;
     }
