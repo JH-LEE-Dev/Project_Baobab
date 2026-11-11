@@ -8,8 +8,7 @@ using UnityEngine;
 ///
 /// 카드 패널은 수치를 보여 주지 않는다. 기본 설명 안의 색 마커 {+}...{/}(강화 구절, 금색) · {-}...{/}(약화 구절, 적색)를 리치텍스트 색으로 바꿔 그린다(ApplyColorMarkers).
 /// 마커는 번역과 상관없이 고정 토큰이라, 어느 언어(영어 폴백 포함)든 같은 규칙으로 변환된다.
-/// 보유 카드 화면은 기본 설명 아래에 RoguelikeCardEffectText가 만든 효과 이름만 줄로 붙이고, 이로우면 금색 · 해로우면 적색으로 칠한다.
-/// 효과 줄은 설명 글자 영역 안에 이어 붙인다(같은 줄바꿈·폭 규칙이 그대로 적용된다).
+/// 보유 카드 화면은 기본 설명만 보여 준다(효과 줄 없음).
 /// 문구는 LocalizationManager로 읽는다(카드 이름·설명은 문자열 키, MAX는 LocKeys). 데이터가 아직 없어 비어 있으면 카드 키 문자열을 그대로 보여 준다.
 ///
 /// [문구를 자르지 않는다] 이 패널은 카드의 뜻을 확인하는 곳이라 `...`로 줄이지 않는다. 글자가 길면 패널이 넓어지고, 그래도 모자라면 높이가 자란다.
@@ -40,9 +39,6 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     private const string DemeritMarker = "{-}";
     private const string EndMarker = "{/}";
     private const char MarkerStartChar = '{';
-    // 보유 카드 확인 화면의 "현재 효과" 소제목(설명 본문보다 흐린 색).
-    private const string CurrentEffectColorTag = "<color=#B59B7A>";
-    private const string CurrentEffectKey = "Roguelike_OwnedCards_CurrentEffect";
 
     public const float MinPanelWidth = 190f;
     public const float MinPanelHeight = 36f;
@@ -132,8 +128,8 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     }
 
     /// <summary>
-    /// 보유 카드 확인 화면. 기본 설명 아래에 "현재 효과"(현재 레벨까지 누적, RoguelikeCardEffectText.BuildCurrent)를 이어 붙인다.
-    /// 다음 레벨 효과는 보여 주지 않는다. 줄바꿈·폭 규칙은 카드 선택 화면과 같다.
+    /// 보유 카드 확인 화면. 기본 설명만 보여 준다(효과 줄 없음).
+    /// 줄바꿈·폭 규칙은 카드 선택 화면과 같다.
     /// </summary>
     public void SetOwnedCard(in RoguelikeOwnedCardViewData _data)
     {
@@ -192,30 +188,10 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
         ApplyTexts(LocalizeCard(_data.nameKey), levelLabel, BuildOwnedDescription(in _data));
     }
 
-    /// <summary>기본 설명 + "현재 효과" 소제목 + 누적 효과 줄(버프는 금색, 계약 디메리트는 붉은색). 효과 줄이 없으면 기본 설명만이다.</summary>
+    /// <summary>기본 설명만 돌려준다(색 마커 {+}·{-}는 칠한다). 효과 줄은 붙이지 않는다.</summary>
     private string BuildOwnedDescription(in RoguelikeOwnedCardViewData _data)
     {
-        string description = ApplyColorMarkers(LocalizeCard(_data.descriptionKey));
-        RoguelikeCardEffectText.BuildCurrent(in _data, localizationManager, benefitBuilder, demeritBuilder);
-        if (0 == benefitBuilder.Length && 0 == demeritBuilder.Length) return description;
-
-        descriptionBuilder.Clear();
-        descriptionBuilder.Append(description);
-
-        if (0 < descriptionBuilder.Length) descriptionBuilder.Append('\n');
-        descriptionBuilder.Append(CurrentEffectColorTag).Append(LocalizeCard(CurrentEffectKey)).Append(ColorEndTag);
-
-        if (0 < benefitBuilder.Length)
-        {
-            descriptionBuilder.Append('\n').Append(BenefitColorTag).Append(benefitBuilder).Append(ColorEndTag);
-        }
-
-        if (0 < demeritBuilder.Length)
-        {
-            descriptionBuilder.Append('\n').Append(DemeritColorTag).Append(demeritBuilder).Append(ColorEndTag);
-        }
-
-        return descriptionBuilder.ToString();
+        return ApplyColorMarkers(LocalizeCard(_data.descriptionKey));
     }
 
     /// <summary>기본 설명 + 고르면 적용되는 효과 줄(버프는 금색, 계약 디메리트는 붉은색). 효과 줄이 없으면 기본 설명만이다.</summary>

@@ -77,6 +77,7 @@ public class UI_TutorialQuest : MonoBehaviour
     private const string SporeForestGuideTitleKey = "SporeForestGuide_Title";
     private const string SporeForestGuideDescKey = "SporeForestGuide_Desc";
     private const string StarrootForestGuideTitleKey = "StarrootForestGuide_Title";
+    private const string StarrootForestGuideDescKey = "StarrootForestGuide_Desc";
     private const string MagmaForestGuideTitleKey = "MagmaForestGuide_Title";
     private const string MagmaForestGuideDescKey = "MagmaForestGuide_Desc";
 
@@ -1300,8 +1301,8 @@ public class UI_TutorialQuest : MonoBehaviour
                 _desc = GetLocalizedOrFallback(SporeForestGuideDescKey, "포자막은 계속 회복됩니다!");
                 break;
             case TutorialStep.StarrootForestGuide:
-                _title = GetLocalizedOrFallback(StarrootForestGuideTitleKey, "별 표식으로 연결된 나무를 모두 베면 별자리 발현이 일어납니다!\n별자리 발현은 나무의 피해를 줄이는 별의 가호를 해제합니다.");
-                _desc = string.Empty;
+                _title = GetLocalizedOrFallback(StarrootForestGuideTitleKey, "별 표식으로 연결된 나무를 모두 베면 별자리 발현이 일어납니다!");
+                _desc = GetLocalizedOrFallback(StarrootForestGuideDescKey, "별자리 발현은 나무의 배리어를 해제합니다.");
                 break;
             case TutorialStep.MagmaForestGuide:
                 _title = GetLocalizedOrFallback(MagmaForestGuideTitleKey, "불씨를 획득하면 과열을 얻을 수 있습니다.");
