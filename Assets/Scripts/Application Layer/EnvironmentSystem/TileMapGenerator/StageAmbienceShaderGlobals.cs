@@ -33,7 +33,9 @@ public static class StageAmbienceShaderGlobals
     private static readonly int WaterSporeAID = Shader.PropertyToID("_WaterSporeA");
     private static readonly int WaterSporeBID = Shader.PropertyToID("_WaterSporeB");
     private static readonly int WaterSporeCID = Shader.PropertyToID("_WaterSporeC");
+    private static readonly int WaterSporeDID = Shader.PropertyToID("_WaterSporeD");
     private static readonly int WaterSporeColorID = Shader.PropertyToID("_WaterSporeColor");
+    private static readonly int WaterSporeColorBID = Shader.PropertyToID("_WaterSporeColorB");
     private static readonly int WaterSporeSurfaceAID = Shader.PropertyToID("_WaterSporeSurfaceA");
     private static readonly int WaterSporeSurfaceBID = Shader.PropertyToID("_WaterSporeSurfaceB");
     private static readonly int WaterBubbleAID = Shader.PropertyToID("_WaterBubbleA");
@@ -57,6 +59,11 @@ public static class StageAmbienceShaderGlobals
     private static readonly int WaterMagmaCrustColorBID = Shader.PropertyToID("_WaterMagmaCrustColorB");
     private static readonly int WaterMagmaCrustRimColorID = Shader.PropertyToID("_WaterMagmaCrustRimColor");
     private static readonly int HideWaterReflectionID = Shader.PropertyToID("_StageHideWaterReflection");
+    private static readonly int WaterDepthAID = Shader.PropertyToID("_WaterDepthA");
+    private static readonly int WaterDepthBID = Shader.PropertyToID("_WaterDepthB");
+    private static readonly int WaterDepthSurfaceID = Shader.PropertyToID("_WaterDepthSurface");
+    private static readonly int WaterDepthSideID = Shader.PropertyToID("_WaterDepthSide");
+    private static readonly int WaterDepthDeepColorID = Shader.PropertyToID("_WaterDepthDeepColor");
     private static readonly int TreeTwinkleAID = Shader.PropertyToID("_TreeTwinkleA");
     private static readonly int TreeTwinkleBID = Shader.PropertyToID("_TreeTwinkleB");
     private static readonly int TreeTwinkleCID = Shader.PropertyToID("_TreeTwinkleC");
@@ -87,6 +94,7 @@ public static class StageAmbienceShaderGlobals
         ApplyWaterSpores(_tileData.WaterSpores);
         ApplyWaterBubbles(_tileData.WaterBubbles);
         ApplyWaterMagma(_tileData.WaterMagma);
+        ApplyWaterDepth(_tileData.WaterDepth);
         // 물(용암) 위에 겹쳐 그리는 나무·캐릭터 반사를 끄는 스테이지(렌더링 전용)
         Shader.SetGlobalFloat(HideWaterReflectionID, _tileData.HideWaterReflections ? 1f : 0f);
         ApplyTreeStarTwinkle(_tileData.TreeStarTwinkle);
@@ -102,6 +110,8 @@ public static class StageAmbienceShaderGlobals
         StageHitSparkles.Apply(_tileData.HitSparkles, DungeonSceneName);
         // 숲의 숨결(꺼진 스테이지는 아무것도 만들지 않는다)
         StageForestBreath.Apply(_tileData.ForestBreath, DungeonSceneName);
+        // 포자막 상태 연출(꺼진 스테이지는 아무것도 만들지 않는다)
+        StageSporeShieldFx.Apply(_tileData.SporeShieldFx, DungeonSceneName);
     }
 
     /// <summary>
@@ -164,6 +174,7 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalVector(WaterSporeAID, Vector4.zero);
         Shader.SetGlobalVector(WaterBubbleAID, Vector4.zero);
         Shader.SetGlobalVector(WaterMagmaAID, Vector4.zero);
+        Shader.SetGlobalVector(WaterDepthAID, Vector4.zero);
         Shader.SetGlobalFloat(HideWaterReflectionID, 0f);
         Shader.SetGlobalVector(TreeTwinkleAID, Vector4.zero);
         Shader.SetGlobalVector(TreeHeatChargeAID, Vector4.zero);
@@ -177,6 +188,7 @@ public static class StageAmbienceShaderGlobals
         StageDecoSteam.Remove();
         StageFireflies.Remove();
         StageForestBreath.Remove();
+        StageSporeShieldFx.Remove();
         StageLavaGlow.Clear();
         StageLavaSeaMap.Clear();
         StageShoreMap.Clear();
@@ -276,7 +288,7 @@ public static class StageAmbienceShaderGlobals
     }
 
     /// <summary>
-    /// 이 스테이지에서 바닥 장식 타일맵에 끼울 머티리얼. 용암 빛·숲의 숨결이 꺼져 있거나 로그라이크면 null(원래 머티리얼 유지).
+    /// 이 스테이지에서 바닥 장식 타일맵에 끼울 머티리얼. 용암 빛·숲의 숨결·결정 장식 숨쉬기가 꺼져 있거나 로그라이크면 null(원래 머티리얼 유지).
     /// </summary>
     public static Material GetDecoMaterialOverride(StageTileDataSO _tileData)
     {
@@ -292,7 +304,20 @@ public static class StageAmbienceShaderGlobals
         }
 
         // 풀 장식도 바닥과 같이 숨결 물결에 물든다(바닥만 물들면 장식 자리가 어둡게 비어 보인다).
-        return GetForestBreathGroundMaterial(_tileData);
+        Material forestBreath = GetForestBreathGroundMaterial(_tileData);
+        if (null != forestBreath)
+        {
+            return forestBreath;
+        }
+
+        // 결정 장식 숨쉬기
+        CrystalDecoBreathSettings crystalBreath = _tileData.CrystalDecoBreath;
+        if (null != crystalBreath && true == crystalBreath.enabled)
+        {
+            return crystalBreath.material;
+        }
+
+        return null;
     }
 
     private static Material GetForestBreathGroundMaterial(StageTileDataSO _tileData)
@@ -397,7 +422,9 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalVector(WaterSporeAID, new Vector4(1f, Mathf.Max(4f, _settings.cellTexels), _settings.duty, Mathf.Max(0f, _settings.brightness)));
         Shader.SetGlobalVector(WaterSporeBID, new Vector4(dir.x, dir.y, Mathf.Max(0f, _settings.travelTexels), Mathf.Max(0.1f, _settings.period)));
         Shader.SetGlobalVector(WaterSporeCID, new Vector4(_settings.wobbleTexels, _settings.colorTolerance, 0f, 0f));
+        Shader.SetGlobalVector(WaterSporeDID, new Vector4(Mathf.Clamp01(_settings.glowArms), Mathf.Clamp(_settings.haloTexels, 0f, 3f), Mathf.Clamp01(_settings.haloAlpha), Mathf.Clamp01(_settings.twinkle)));
         Shader.SetGlobalVector(WaterSporeColorID, ToShaderColor(_settings.sporeColor));
+        Shader.SetGlobalVector(WaterSporeColorBID, ToShaderColor(_settings.sporeColorB));
         Shader.SetGlobalVector(WaterSporeSurfaceAID, ToShaderColor(_settings.surfaceColorA));
         Shader.SetGlobalVector(WaterSporeSurfaceBID, ToShaderColor(_settings.surfaceColorB));
     }
@@ -422,6 +449,24 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalVector(WaterBubbleSurfaceID, surface);
         // 바다 쪽 빈도는 용암 바다 지도(StageLavaSeaMap)가 켜졌을 때만 쓰인다.
         Shader.SetGlobalVector(WaterBubbleCID, new Vector4(Mathf.Clamp01(_settings.seaFrequency), 0f, 0f, 0f));
+    }
+
+    private static void ApplyWaterDepth(WaterDepthSettings _settings)
+    {
+        if (null == _settings || false == _settings.enabled)
+        {
+            Shader.SetGlobalVector(WaterDepthAID, Vector4.zero);
+            return;
+        }
+
+        // 물가 거리는 물가 지도(StageShoreMap)가 텍스처로 넘긴다(그 텍스처가 없으면 셰이더가 그리지 않는다).
+        float startCells = Mathf.Max(0f, _settings.startCells);
+        float fullCells = Mathf.Max(startCells + 0.1f, _settings.fullCells);
+        Shader.SetGlobalVector(WaterDepthAID, new Vector4(1f, _settings.colorTolerance, Mathf.Clamp(_settings.bands, 2, 8), Mathf.Clamp01(_settings.ditherWidth)));
+        Shader.SetGlobalVector(WaterDepthBID, new Vector4(startCells, fullCells, 0f, 0f));
+        Shader.SetGlobalVector(WaterDepthSurfaceID, ToShaderColor(_settings.surfaceColor));
+        Shader.SetGlobalVector(WaterDepthSideID, ToShaderColor(_settings.sideColor));
+        Shader.SetGlobalVector(WaterDepthDeepColorID, ToShaderColor(_settings.deepColor));
     }
 
     private static void ApplyWaterMagma(WaterMagmaSettings _settings)

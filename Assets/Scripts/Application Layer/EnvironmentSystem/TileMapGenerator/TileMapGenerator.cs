@@ -906,7 +906,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         }
     }
 
-    // 용암 빛이 켜진 스테이지만 바닥 장식(돌멩이 등) 타일맵도 바닥과 같은 용암 빛 머티리얼로 그리고, 그 밖에는 원래 머티리얼로 되돌린다(렌더링 전용).
+    // 용암 빛·숲의 숨결·결정 장식 숨쉬기가 켜진 스테이지만 바닥 장식(돌멩이 등) 타일맵을 그 머티리얼로 그리고, 그 밖에는 원래 머티리얼로 되돌린다(렌더링 전용).
     private void ApplyDecoMaterialForStage()
     {
         if (null == decoTilemapRenderer)

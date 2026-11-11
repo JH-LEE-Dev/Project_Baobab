@@ -2471,6 +2471,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             else
             {
                 inDungeonVFXManager.PlayTreeHitVFX(_treeObj.treeVisualComponent);
+                // 포자막이 남은 나무면 막 결정 번쩍임·조각(켜진 스테이지에서만, 꺼진 곳은 아무 일도 하지 않는다)
+                StageSporeShieldFx.NotifyHit(_treeObj.treeVisualComponent, _treeObj.health);
             }
         }
 
@@ -2987,6 +2989,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 묘목은 HP 바를 띄우지 않는다. 로그라이크 웨이브 클리어로 묘목이 된 나무는 포자막이 계속 차오르는데, 그 알림이
         // 내려 둔 HP 바를 다시 띄운다. 본편 묘목은 포자막이 가득 찬 채로 생겨 회복 알림이 없으므로 그대로다.
         if (false == _treeObj.bCanApplyDamage) return;
+
+        // 포자막 차오름 연출(켜진 스테이지에서만, 꺼진 곳은 아무 일도 하지 않는다)
+        StageSporeShieldFx.NotifyRecovering(_treeObj.treeVisualComponent, _treeObj.health);
 
         TreeShieldRecoveringEvent?.Invoke(_treeObj);
     }
@@ -3820,12 +3825,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 한 그루의 타격이 연쇄(사망 처리, 다른 그룹 발현 등) 중 예외로 실패해도 폭발의 나머지 나무는 계속 맞힌다.
         try
         {
-            // 3스테이지 배리어 - 발현 폭발은 배리어를 깨고, 이 타격(피해와 낙인)은 배리어가 흡수한다.
-            // 별자리 잔상의 다음 폭발부터는 배리어가 없으므로 평소처럼 맞는다.
-            if (tree.BreakBarrier(_center))
-            {
-                return;
-            }
+            // 3스테이지 배리어 - 발현 폭발은 배리어를 먼저 깨고, 같은 타격의 피해와 낙인도 그대로 들어간다.
+            // 배리어를 먼저 꺼 두어야 아래 TakeDamage가 배리어 감소율에 막히지 않는다.
+            tree.BreakBarrier(_center);
 
             tree.TakeDamage(_damage);
 

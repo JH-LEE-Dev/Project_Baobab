@@ -6,6 +6,8 @@ using UnityEngine.Tilemaps;
 /// 물가 지도. 맵을 만들 때 칸마다 "물과 땅의 경계에서 몇 칸 떨어졌는지"(물 쪽·땅 쪽 모두)를 재어 둔다.
 /// 값은 1 + 경계까지 칸 수(최대 255)다. 경계에 맞닿은 칸(땅과 맞닿은 물 칸, 물과 맞닿은 땅 칸)이 0칸이다.
 /// 반딧불(StageFireflies)이 물가 자리를 고를 때 읽는다.
+/// 물 깊이(WaterDepthSettings)를 켠 스테이지는 같은 값을 작은 텍스처 한 장으로 전역에 넘겨,
+/// 물 타일 셰이더(WaterDepth.hlsl)가 물가에서 멀수록 물을 깊은 색으로 칠한다.
 /// 맵을 만들 때 한 번 훑고 끝나며 매 프레임 하는 일은 없다. 렌더링만 바꾸고 게임 동작에는 영향이 없다.
 /// 이 지도를 쓰는 연출이 켜지지 않았거나 로그라이크면 비운다.
 /// </summary>
@@ -13,7 +15,18 @@ public static class StageShoreMap
 {
     private const int MaxDistance = 254;
 
+    private static readonly int TextureID = Shader.PropertyToID("_ShoreMapTex");
+    // x = 켜짐(0/1)
+    private static readonly int AID = Shader.PropertyToID("_ShoreMapA");
+    // 월드 → 칸 좌표 변환(2x2 역행렬: m00, m01, m10, m11)
+    private static readonly int MapAID = Shader.PropertyToID("_ShoreMapMapA");
+    // xy = 칸 (0,0) 가운데의 월드 위치, zw = 텍스처 왼쪽 아래 칸 번호
+    private static readonly int MapBID = Shader.PropertyToID("_ShoreMapMapB");
+    // xy = 텍스처 크기(칸 수)
+    private static readonly int MapCID = Shader.PropertyToID("_ShoreMapMapC");
+
     private static byte[] shoreBytes;
+    private static Texture2D shoreTexture;
     private static readonly Queue<int> queue = new Queue<int>();
 
     // 지도가 꺼져 있으면 grid가 null이다.
@@ -44,11 +57,21 @@ public static class StageShoreMap
         MeasureShoreDistance(_waterTiles, _bounds, _gridWidth, _gridHeight);
         grid = _grid;
         mapBounds = _bounds;
+
+        if (IsTextureNeeded(_tileData))
+        {
+            UploadTexture(width, height);
+        }
+        else
+        {
+            Shader.SetGlobalVector(AID, Vector4.zero);
+        }
     }
 
     public static void Clear()
     {
         grid = null;
+        Shader.SetGlobalVector(AID, Vector4.zero);
     }
 
     /// <summary>
@@ -80,11 +103,55 @@ public static class StageShoreMap
         return true;
     }
 
-    // 반딧불을 켠 스테이지만 지도가 필요하다.
+    // 반딧불이나 물 깊이를 켠 스테이지만 지도가 필요하다.
     private static bool IsNeeded(StageTileDataSO _tileData)
     {
         FireflySettings fireflies = _tileData.Fireflies;
-        return null != fireflies && fireflies.enabled && null != fireflies.material;
+        return (null != fireflies && fireflies.enabled && null != fireflies.material) || IsTextureNeeded(_tileData);
+    }
+
+    // 물 깊이를 켠 스테이지만 셰이더용 텍스처가 필요하다.
+    private static bool IsTextureNeeded(StageTileDataSO _tileData)
+    {
+        WaterDepthSettings depth = _tileData.WaterDepth;
+        return null != depth && depth.enabled;
+    }
+
+    // 칸마다 값(1 + 경계까지 칸 수)을 그대로 담은 텍스처를 만들어 전역으로 넘긴다. 칸 사이는 부드럽게 이어지도록 보간한다.
+    private static void UploadTexture(int _width, int _height)
+    {
+        Vector3 origin = grid.GetCellCenterWorld(Vector3Int.zero);
+        Vector2 axisX = grid.GetCellCenterWorld(new Vector3Int(1, 0, 0)) - origin;
+        Vector2 axisY = grid.GetCellCenterWorld(new Vector3Int(0, 1, 0)) - origin;
+        float determinant = axisX.x * axisY.y - axisY.x * axisX.y;
+        if (Mathf.Abs(determinant) < 0.000001f)
+        {
+            Shader.SetGlobalVector(AID, Vector4.zero);
+            return;
+        }
+
+        if (null == shoreTexture || shoreTexture.width != _width || shoreTexture.height != _height)
+        {
+            if (null != shoreTexture)
+            {
+                Object.Destroy(shoreTexture);
+            }
+
+            shoreTexture = new Texture2D(_width, _height, TextureFormat.R8, false, true);
+            shoreTexture.name = "ShoreMap";
+            shoreTexture.filterMode = FilterMode.Bilinear;
+            shoreTexture.wrapMode = TextureWrapMode.Clamp;
+            shoreTexture.hideFlags = HideFlags.DontSave;
+        }
+
+        shoreTexture.SetPixelData(shoreBytes, 0);
+        shoreTexture.Apply(false, false);
+
+        Shader.SetGlobalTexture(TextureID, shoreTexture);
+        Shader.SetGlobalVector(MapAID, new Vector4(axisY.y / determinant, -axisY.x / determinant, -axisX.y / determinant, axisX.x / determinant));
+        Shader.SetGlobalVector(MapBID, new Vector4(origin.x, origin.y, mapBounds.xMin, mapBounds.yMin));
+        Shader.SetGlobalVector(MapCID, new Vector4(_width, _height, 0f, 0f));
+        Shader.SetGlobalVector(AID, new Vector4(1f, 0f, 0f, 0f));
     }
 
     // 물과 땅이 4방향으로 맞닿은 칸을 거리 0으로 두고 8방향으로 넓혀 가며 경계까지 칸 수를 잰다(1 + 거리, 최대 255).

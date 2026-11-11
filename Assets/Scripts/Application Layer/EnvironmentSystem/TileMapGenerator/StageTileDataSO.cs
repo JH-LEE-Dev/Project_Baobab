@@ -154,6 +154,11 @@ public class StageTileDataSO : ScriptableObject
     // 물가·풀숲 반딧불
     [SerializeField] private FireflySettings fireflies = new FireflySettings();
     [SerializeField] private ForestBreathSettings forestBreath = new ForestBreathSettings();
+    [SerializeField] private SporeShieldFxSettings sporeShieldFx = new SporeShieldFxSettings();
+    // 결정 장식 숨쉬기(바닥 장식 타일맵을 숨쉬기 머티리얼로 그린다)
+    [SerializeField] private CrystalDecoBreathSettings crystalDecoBreath = new CrystalDecoBreathSettings();
+    // 물 깊이(물가에서 멀수록 물이 깊은 색)
+    [SerializeField] private WaterDepthSettings waterDepth = new WaterDepthSettings();
     // 물(용암)·물가·스텐실 타일 애니메이션을 타일맵 대신 셰이더로 돌린다(StageTileFrameAnimation). 보이는 그림·박자는 같고,
     // 타일맵이 매 프레임 화면 밖까지 모든 애니메이션 타일을 훑던 비용이 없어진다. 조건에 안 맞는 타일이 있으면 저절로 원래대로 깐다.
     [SerializeField] private bool shaderTileAnimation = false;
@@ -216,6 +221,9 @@ public class StageTileDataSO : ScriptableObject
     public TreeHeatChargeSettings TreeHeatCharge => treeHeatCharge;
     public FireflySettings Fireflies => fireflies;
     public ForestBreathSettings ForestBreath => forestBreath;
+    public SporeShieldFxSettings SporeShieldFx => sporeShieldFx;
+    public CrystalDecoBreathSettings CrystalDecoBreath => crystalDecoBreath;
+    public WaterDepthSettings WaterDepth => waterDepth;
     public bool ShaderTileAnimation => shaderTileAnimation;
     public List<AnimatedObj> AnimatedObjPrefabs => animatedObjPrefabs;
     public List<DecoSpritePatternAnimator> WaterAnimatedObjPrefabs => waterAnimatedObjPrefabs;

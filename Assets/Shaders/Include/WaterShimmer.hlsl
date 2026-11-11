@@ -80,8 +80,9 @@ float4 ComputeForestBreathWaterSparkle(float2 _texelId, float _cellSize, float _
 }
 
 // rgb = 덮을 색, a = 덮는 비율(0이면 그대로).
+// _centerWS: 텍셀 중심 월드 위치(StageAmbienceTexelCenterWS), _texelId: floor(_centerWS * ppu). 물 셰이더가 한 번만 구해 넘긴다.
 // _texColor는 정점색을 곱하기 전 텍스처 색이다.
-float4 ComputeWaterShimmer(float2 _uv, float2 _positionWS, float4 _texelSize, float3 _texColor)
+float4 ComputeWaterShimmerAt(float2 _centerWS, float2 _texelId, float3 _texColor)
 {
     if (false == IsWaterShimmerEnabled())
     {
@@ -89,7 +90,7 @@ float4 ComputeWaterShimmer(float2 _uv, float2 _positionWS, float4 _texelSize, fl
     }
 
     float ppu = StageAmbiencePixelsPerUnit();
-    float2 centerWS = StageAmbienceTexelCenterWS(_positionWS, _uv, _texelSize);
+    float2 centerWS = _centerWS;
     float time = _Time.y;
 
     // 수면색 픽셀에만 그린다(흙·장식은 그대로, 물가 테두리는 아래 달빛 물결만).
@@ -129,16 +130,17 @@ float4 ComputeWaterShimmer(float2 _uv, float2 _positionWS, float4 _texelSize, fl
     // 켜져 있는 비율이 0이면 평소 수면 반짝임은 끄고 테두리 물결(과 숲의 숨결)만 쓴다.
     float cellSize = max(floor(_WaterShimmerA.y), 3.0);
     // 타일 텍셀 중심은 (정수 + 0.5) / ppu에 놓이므로 내림하면 텍셀 하나가 한 번호를 갖는다(반올림하면 경계에서 뒤집힌다).
-    float2 texelId = floor(centerWS * ppu);
+    float2 texelId = _texelId;
     if (_WaterShimmerA.z > 0.0)
     {
         float2 cell = floor(texelId / cellSize);
-        float2 spot = cell * cellSize + 1.0 + floor(float2(WaterShimmerHash21(cell), WaterShimmerHash21(cell + 17.7)) * (cellSize - 2.0));
         float period = max(_WaterShimmerB.w, 0.1) * (0.7 + 0.6 * WaterShimmerHash21(cell + 3.1));
         float local = frac(time / period + WaterShimmerHash21(cell + 9.4));
         float duty = max(_WaterShimmerA.z, 0.0001);
+        // 꺼져 있는 칸(대부분)은 점 자리를 구하지 않고 넘어간다.
         if (local < duty)
         {
+            float2 spot = cell * cellSize + 1.0 + floor(float2(WaterShimmerHash21(cell), WaterShimmerHash21(cell + 17.7)) * (cellSize - 2.0));
             // 켜지는 동안 부드럽게 밝아졌다 사그라든다.
             float4 sparkle = WaterShimmerSpot(texelId, spot, sin(local / duty * 3.14159));
             if (sparkle.a > 0.0)
@@ -163,6 +165,12 @@ float4 ComputeWaterShimmer(float2 _uv, float2 _positionWS, float4 _texelSize, fl
     }
 
     return 0.0;
+}
+
+float4 ComputeWaterShimmer(float2 _uv, float2 _positionWS, float4 _texelSize, float3 _texColor)
+{
+    float2 centerWS = StageAmbienceTexelCenterWS(_positionWS, _uv, _texelSize);
+    return ComputeWaterShimmerAt(centerWS, floor(centerWS * StageAmbiencePixelsPerUnit()), _texColor);
 }
 
 #endif // WATER_SHIMMER_INCLUDED
