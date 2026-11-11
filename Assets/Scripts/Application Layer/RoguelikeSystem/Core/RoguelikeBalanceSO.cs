@@ -91,23 +91,23 @@ public class RoguelikeBalanceSO : ScriptableObject
     [Tooltip("카드로 오르는 이동속도의 합산 상한(%). 0이면 상한 없음(부록 A-5 합산 상한 +100%).")]
     public float maxMoveSpeedPercent = 100f;
 
-    [Header("언리밋 (기획서 v2.6 7-2, 부록 A \"언리밋 곡선\")")]
-    [Tooltip("언리밋 웨이브마다 나무 HP에 곱하는 증가율(누적). Unlimit-1은 마지막 티어의 첫 웨이브(4티어 최소 수치) HP에서 시작하고, Unlimit-N의 HP = 시작 HP × (1 + 이 값)^(N−1). 0.1이면 웨이브마다 ×1.10.")]
-    public float unlimitHpGrowthPerWave = 0.1f;
+    [Header("언리밋 (기획서 v3.0 7-2, 부록 A \"언리밋 곡선\")")]
+    [Tooltip("언리밋 웨이브마다 나무 HP에 곱하는 증가율(누적). Unlimit-1은 마지막 티어의 첫 웨이브(4티어 최소 수치) HP에서 시작하고, Unlimit-N의 HP = 시작 HP × (1 + 이 값)^(N−1). 0.15면 웨이브마다 ×1.15.")]
+    public float unlimitHpGrowthPerWave = 0.15f;
     [Tooltip("언리밋 웨이브마다 묶음 크기에 더하는 그루 수. Unlimit-N의 묶음 = 시작 묶음 + 이 값 × (N−1). 스폰 상한을 넘는 몫은 소멸한다.")]
-    public int unlimitBatchSizeAddPerWave = 1;
+    public int unlimitBatchSizeAddPerWave = 2;
     [Tooltip("언리밋 웨이브마다 묶음 주기에 더하는 초(음수면 빨라진다). Unlimit-N의 주기 = 시작 주기 + 이 값 × (N−1), 하한은 아래 값.")]
-    public float unlimitBatchSecondsAddPerWave = -0.02f;
+    public float unlimitBatchSecondsAddPerWave = -0.05f;
     [Tooltip("언리밋 묶음 주기의 하한(초).")]
     public float unlimitMinBatchSeconds = 1f;
+    [Tooltip("언리밋 목표 처치 수 상한. Unlimit-N의 목표 처치 수 = N웨이브 줄의 목표 처치 수와 이 값 중 작은 값(기획서 v3.0 7-2, 100이면 Unlimit-9부터 100).")]
+    public int unlimitMaxKillTarget = 100;
 
     [Header("카드 제시")]
     [Tooltip("한 번에 제시하는 카드 수 N(기획서 v2.5 4장).")]
     public int offerCount = 4;
     [Tooltip("프리즘·에메랄드(MAX) 보장 노출을 합쳐 한 번에 몇 장까지 넣을지. 나머지는 다음 선택으로 이월. 서로 배타인 프리즘은 이 상한의 예외.")]
     public int guaranteedSlotCap = 2;
-    [Tooltip("프리즘·MAX 다음으로 무조건 넣는 공통 패시브 수(기획서 v2.5 4-2 ③). 첫 선택에는 적용하지 않는다. 노출 가능한 패시브가 모자라면 있는 만큼.")]
-    public int guaranteedPassiveCount = 2;
     [Tooltip("첫 선택(웨이브 1)은 액티브만 제시.")]
     public bool firstPickActiveOnly = true;
     [Tooltip("선택 단계마다 쓸 수 있는 리롤 횟수(첫 선택 포함). 쓰지 않아도 다음 선택으로 이월하지 않는다(기획서 4-1). 리롤은 우선순위 없는 진짜 랜덤이다(4-2).")]
@@ -117,14 +117,18 @@ public class RoguelikeBalanceSO : ScriptableObject
     public float baseWeight = 1f;
     [Tooltip("ECardKind 순서(액티브, 공통 패시브, 계약, 프리즘)의 종류 비중. 액티브 = 공통 패시브 > 계약(기획서 4-2 가중 3).")]
     public List<float> kindWeights = new List<float>();
-    [Tooltip("이미 보유한 카드의 다음 레벨은 가중치 × (1 + 이 값).")]
+    [Tooltip("이미 보유한 카드(집중 카드 미만 레벨)의 다음 레벨은 가중치 × (1 + 이 값). 기본 ×2.0.")]
     public float upgradeWeightBonus = 1f;
+    [Tooltip("집중 카드 우대가 시작되는 보유 레벨(기획서 v2.9 4-2 가중 1, 기본 II). 이 레벨 이상 보유한 카드는 upgradeWeightBonus 대신 focusWeightBonus를 쓴다.")]
+    public int focusStartLevel = 2;
+    [Tooltip("집중 카드(focusStartLevel 이상 보유)의 다음 레벨은 가중치 × (1 + 이 값). 기본 ×8.0.")]
+    public float focusWeightBonus = 7f;
     [Tooltip("조합 재료 한 장이 이 레벨 이상이면 그 파트너 카드의 유도를 시작한다(기본 II).")]
     public int partnerStartLevel = 2;
     [Tooltip("파트너 유도 중인 카드는 가중치 × (1 + 이 값).")]
     public float partnerWeightBonus = 1f;
     [Tooltip("편향 상한. 어떤 카드의 가중치도 baseWeight × 이 값을 넘지 않는다.")]
-    public float maxWeightMultiplier = 4f;
+    public float maxWeightMultiplier = 10f;
     [Tooltip("조합 재료 한 장이 MAX면 파트너를 남은 칸에 확실히 넣는다(한 선택에 1장).")]
     public bool forcePartnerWhenMaterialMax = true;
 
@@ -253,14 +257,14 @@ public class RoguelikeBalanceSO : ScriptableObject
         maxGraceTime = 15f;
         maxMoveSpeedPercent = 100f;
 
-        unlimitHpGrowthPerWave = 0.1f;
-        unlimitBatchSizeAddPerWave = 1;
-        unlimitBatchSecondsAddPerWave = -0.02f;
+        unlimitHpGrowthPerWave = 0.15f;
+        unlimitBatchSizeAddPerWave = 2;
+        unlimitBatchSecondsAddPerWave = -0.05f;
         unlimitMinBatchSeconds = 1f;
+        unlimitMaxKillTarget = 100;
 
         offerCount = 4;
         guaranteedSlotCap = 2;
-        guaranteedPassiveCount = 2;
         firstPickActiveOnly = true;
         rerollsPerSelection = 1;
 
@@ -268,9 +272,11 @@ public class RoguelikeBalanceSO : ScriptableObject
         baseWeight = 1f;
         kindWeights = new List<float>(4) { 1f, 1f, 0.3f, 1f };
         upgradeWeightBonus = 1f;
+        focusStartLevel = 2;
+        focusWeightBonus = 7f;
         partnerStartLevel = 2;
         partnerWeightBonus = 1f;
-        maxWeightMultiplier = 4f;
+        maxWeightMultiplier = 10f;
         forcePartnerWhenMaterialMax = true;
     }
 }

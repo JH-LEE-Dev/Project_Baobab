@@ -251,6 +251,26 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     // // IRoguelikeRunInfo
     public ERunPhase Phase => phase;
     public WaveSpec CurrentWave => currentWave;
+    public IReadOnlyList<int> RegionStartWaves
+    {
+        get
+        {
+            regionStartWaves.Clear();
+            if (null != balance)
+            {
+                for (int i = 0; i < balance.TierCount; i++)
+                {
+                    int startWave = balance.GetTier(i).startWave;
+                    if (startWave > 1 && false == regionStartWaves.Contains(startWave)) regionStartWaves.Add(startWave);
+                }
+
+                regionStartWaves.Sort();
+            }
+
+            return regionStartWaves;
+        }
+    }
+    private readonly List<int> regionStartWaves = new List<int>(4);
     public int WaveKills => waveKills;
     public int FieldTreeCount => null != inDungeonObjectManager ? inDungeonObjectManager.ActiveTrees.Count : 0;
     public int Threshold => pressure.Threshold;

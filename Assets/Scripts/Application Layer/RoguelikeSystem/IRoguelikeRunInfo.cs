@@ -5,6 +5,8 @@ public interface IRoguelikeRunInfo
 {
     ERunPhase Phase { get; }
     WaveSpec CurrentWave { get; }
+    /// <summary>지역(티어)이 바뀌는 시작 웨이브 목록. 밸런스 tiers[].startWave에서 1웨이브를 뺀 오름차순(예: 8, 16, 23). 웨이브 진행 점 간격용.</summary>
+    IReadOnlyList<int> RegionStartWaves { get; }
     int WaveKills { get; }
 
     int FieldTreeCount { get; }
