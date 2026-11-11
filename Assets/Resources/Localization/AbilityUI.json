@@ -2620,7 +2620,7 @@
         {
             "id": 249,
             "key": "StarMarkDamage1_Name",
-            "kr": "<COLOR=7EEDBE,EDD87E><Wave>별 표식 베기</Wave></COLOR>",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>별 표식 베기 I</Wave></COLOR>",
             "en": "Star Mark Strike I",
             "zhHans": "",
             "zhHant": "",
@@ -4420,7 +4420,7 @@
         {
             "id": 9155,
             "key": "AbilityDescription_StarPathSpeedBoost",
-            "kr": "별 표식을 가진 나무를 벌목하면 5초간 이동속도가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "kr": "<COLOR=ff5d8f>별 표식</COLOR>을 가진 나무를 벌목하면\n5초간 이동속도가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "Chopping a tree with a <COLOR=ff5d8f>Star Mark</COLOR> increases movement speed by <COLOR=54D86A>{0}%</COLOR> for 5 seconds",
             "zhHans": "",
             "zhHant": "",
