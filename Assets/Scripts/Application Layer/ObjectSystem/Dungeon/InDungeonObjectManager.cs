@@ -3825,12 +3825,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 한 그루의 타격이 연쇄(사망 처리, 다른 그룹 발현 등) 중 예외로 실패해도 폭발의 나머지 나무는 계속 맞힌다.
         try
         {
-            // 3스테이지 배리어 - 발현 폭발은 배리어를 깨고, 이 타격(피해와 낙인)은 배리어가 흡수한다.
-            // 별자리 잔상의 다음 폭발부터는 배리어가 없으므로 평소처럼 맞는다.
-            if (tree.BreakBarrier(_center))
-            {
-                return;
-            }
+            // 3스테이지 배리어 - 발현 폭발은 배리어를 먼저 깨고, 같은 타격의 피해와 낙인도 그대로 들어간다.
+            // 배리어를 먼저 꺼 두어야 아래 TakeDamage가 배리어 감소율에 막히지 않는다.
+            tree.BreakBarrier(_center);
 
             tree.TakeDamage(_damage);
 
