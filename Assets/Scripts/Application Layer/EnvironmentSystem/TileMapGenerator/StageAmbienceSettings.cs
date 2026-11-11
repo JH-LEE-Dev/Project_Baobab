@@ -627,3 +627,91 @@ public class LavaEmberSettings
     // 동시에 떠 있는 알갱이 최대 수
     [Min(8)] public int maxParticles = 64;
 }
+
+/// <summary>
+/// 물가·풀숲 반딧불. 물가(물과 땅의 경계에서 몇 칸 안)와 풀 장식이 있는 칸에서 작은 빛 알갱이가 천천히 떠다니며 깜빡인다.
+/// 화면 안 무작위 자리를 정해진 횟수만큼 골라 물가면 늘, 풀숲이면 정해진 확률로 띄운다(물가 판정은 StageShoreMap).
+/// 스테이지에 파티클 시스템 하나만 두며 충돌·판정이 없어 게임 동작에는 영향이 없다.
+/// enabled가 꺼져 있거나 material이 비어 있으면 아무것도 만들지 않는다.
+/// </summary>
+[System.Serializable]
+public class FireflySettings
+{
+    public bool enabled = false;
+    // 알갱이 머티리얼(MushroomSpore 셰이더)
+    public Material material;
+    // 그리는 정렬 자리(기본은 오브젝트 맨 위)
+    public string sortingLayerName = "Objects";
+    public int sortingOrder = 32765;
+    // 1초에 화면 안을 몇 번 골라 볼지와 한 프레임에 고르는 최대 횟수
+    public float samplesPerSecond = 6f;
+    [Min(1)] public int maxSamplesPerFrame = 3;
+    // 물가로 치는 거리(물과 땅의 경계에서 칸 수). 이 안이면 늘 띄운다.
+    public float shoreReachCells = 1.5f;
+    // 물가가 아닌 풀숲(풀 장식 칸)에서 띄울 확률(0~1)
+    [Range(0f, 1f)] public float grassChance = 0.3f;
+    // 떠오르는 높이(월드, 최소~최대). 땅에서 이만큼 위에서 생긴다.
+    public Vector2 heightRange = new Vector2(0.1f, 0.6f);
+    // 떠다니는 빠르기(월드/초)와 방향이 바뀌는 빠르기(Hz)
+    public float wanderSpeed = 0.25f;
+    public float wanderFrequency = 0.35f;
+    // 알갱이 수명(초, 최소~최대). 수명 동안 두세 번 깜빡인다.
+    public Vector2 lifetimeRange = new Vector2(3.5f, 5.5f);
+    // 알갱이 크기(픽셀, 최소~최대)
+    public Vector2Int sizePixelsRange = new Vector2Int(1, 2);
+    // 알갱이 색(두 색 사이에서 무작위)
+    public Color colorA = new Color(1f, 0.92f, 0.55f, 1f);
+    public Color colorB = new Color(0.65f, 0.95f, 1f, 1f);
+    // 동시에 떠 있는 알갱이 최대 수
+    [Min(8)] public int maxParticles = 64;
+}
+
+/// <summary>
+/// 숲의 숨결. 몇십 초에 한 번, 화면 밖 먼 곳에서 출발한 느린 빛 물결이 땅을 따라 화면을 쓸고 지나간다.
+/// 물결이 닿는 곳의 꽃 장식(BloomDecoTwinkle)이 밝아지고, 숨쉬는 장식(DecoBreath의 장식들)이 함께 숨을 들이쉬고,
+/// 물 위에는 물결을 따라 반짝임이 흩뿌려지며 물가 테두리가 달빛으로 물든다. 나무는 밑동에 물결이 닿으면 밝아지며 별점이 차례로 반짝이고,
+/// 땅(바닥·풀 장식 타일맵, groundMaterial로 바꿔 끼운다)은 아주 옅은 달빛으로 물들며 이슬 같은 반짝임이 흩뿌려진다.
+/// 지나가면 모두 평소대로 돌아온다.
+/// 물결 하나만 있고 그 위치는 StageForestBreath가 매 프레임 전역값으로 넘기며, 셰이더와 장식이 같은 값을 읽는다.
+/// 렌더링만 바뀌고 게임 동작에는 영향이 없다. enabled가 꺼져 있으면 아무것도 만들지 않고 셰이더 출력도 기존과 같다.
+/// </summary>
+[System.Serializable]
+public class ForestBreathSettings
+{
+    public bool enabled = false;
+    // 물결과 물결 사이 시간(초, 최소~최대)과 맵을 깐 뒤 첫 물결까지 시간(초, 최소~최대)
+    public Vector2 intervalRange = new Vector2(20f, 30f);
+    public Vector2 firstDelayRange = new Vector2(6f, 10f);
+    // 물결이 땅 위에서 퍼지는 빠르기(땅 거리/초). 땅 거리는 아이소메트릭 바닥 기준(화면 세로를 두 배로 친다).
+    [Min(0.1f)] public float speed = 3f;
+    // 물결 앞머리가 닿아 가장 밝아지기까지의 폭과, 그 뒤 잦아들기까지의 폭(땅 거리)
+    [Min(0.05f)] public float riseWidth = 1.2f;
+    [Min(0.05f)] public float fallWidth = 4f;
+    // 앞머리가 곧은 선으로 보이지 않게 앞뒤로 흔들리는 폭(땅 거리)과 흔들림 무늬 크기(월드)
+    [Min(0f)] public float frontWobble = 1.5f;
+    [Min(0.5f)] public float frontWobbleSize = 4f;
+    // 꽃 장식이 가장 밝을 때 더하는 밝기 비율
+    [Min(0f)] public float flowerBrightness = 1.6f;
+    // 숨쉬는 장식이 가장 밝을 때 더하는 밝기 비율
+    [Min(0f)] public float decoBrightness = 1f;
+    // 물 위 반짝임: 물 반짝임 칸 중 물결이 지날 때 반짝이는 칸의 비율(0~1)과 한 점이 반짝이는 길이(땅 거리)
+    [Range(0f, 1f)] public float waterSparkleCoverage = 0.85f;
+    [Min(0.05f)] public float waterSparkleLength = 1f;
+    // 물가 테두리가 물결에 물드는 세기(0~1)와 수면 전체가 아주 옅게 밝아지는 세기(0~1)
+    [Range(0f, 1f)] public float shoreGlow = 0.8f;
+    [Range(0f, 1f)] public float surfaceSheen = 0.1f;
+    // 나무: 별점(나무 별빛 반짝임의 별점 색)이 가장 밝을 때 더하는 밝기 비율과 나무 전체가 밝아지는 비율
+    [Min(0f)] public float treeStarBrightness = 6f;
+    [Min(0f)] public float treeBrightness = 0.6f;
+    // 땅: 바닥·풀 장식 타일맵에 끼울 머티리얼(GroundForestBreathLit 셰이더). 비어 있으면 땅은 그대로다.
+    public Material groundMaterial;
+    // 땅 달빛 띠·이슬 반짝임 색
+    public Color groundGlowColor = new Color(0.62f, 0.86f, 1f, 1f);
+    // 땅이 물결을 따라 옅게 물드는 세기(0~1)
+    [Range(0f, 1f)] public float groundSheen = 0.08f;
+    // 이슬 반짝임: 칸 중 반짝이는 칸의 비율(0~1), 칸 크기(텍셀), 한 점이 반짝이는 길이(땅 거리), 가장 밝을 때 밝기(HDR)
+    [Range(0f, 1f)] public float groundGlintCoverage = 0.5f;
+    [Min(4f)] public float groundGlintCellTexels = 10f;
+    [Min(0.05f)] public float groundGlintLength = 1f;
+    [Min(0f)] public float groundGlintBrightness = 1.8f;
+}

@@ -1007,7 +1007,7 @@ public class InDungeonVFXManager : MonoBehaviour
 
         dottedLineGroups[_groupId] = _group;
 
-        if (bConstellationDottedLinesVisible || alwaysVisibleDottedLineGroups.Contains(_groupId)) ShowDottedLine(_group);
+        if (bConstellationDottedLinesVisible || alwaysVisibleDottedLineGroups.Contains(_groupId)) ShowDottedLine(_groupId, _group);
     }
 
     // [로그라이크] "별자리 발현" 특성과 무관하게 늘 보이는 점선 그룹(로그라이크 스텔라 별 이음선). 본편은 아무것도 넣지 않아
@@ -1025,7 +1025,7 @@ public class InDungeonVFXManager : MonoBehaviour
         if (false == dottedLineGroups.TryGetValue(_groupId, out DottedLineGroup _group)) return;
 
         alwaysVisibleDottedLineGroups.Add(_groupId);
-        ShowDottedLine(_group);
+        ShowDottedLine(_groupId, _group);
     }
 
     /// <summary>
@@ -1053,7 +1053,25 @@ public class InDungeonVFXManager : MonoBehaviour
         if (0 > _bestIndex) return;
 
         _group.felled[_bestIndex] = true;
-        if (null != _group.line) _group.line.SetNodeAsBigStar(_bestIndex, true);
+        if (null != _group.line)
+        {
+            _group.line.SetNodeAsBigStar(_bestIndex, true);
+            _group.line.SetLastStarWarning(IsLastStarRemaining(_groupId, _group));
+        }
+    }
+
+    // 별자리를 이룰 별 표식 나무가 하나만 남았는지(마지막 별 예고 맥동). 로그라이크의 늘 보이는 점선은 나무 벌목으로
+    // 진행되는 별자리가 아니므로 제외한다.
+    private bool IsLastStarRemaining(int _groupId, DottedLineGroup _group)
+    {
+        if (2 > _group.nodes.Count || alwaysVisibleDottedLineGroups.Contains(_groupId)) return false;
+
+        int remaining = 0;
+        for (int i = 0; i < _group.felled.Count; i++)
+        {
+            if (false == _group.felled[i]) remaining++;
+        }
+        return 1 == remaining;
     }
 
     /// <summary>
@@ -1080,7 +1098,7 @@ public class InDungeonVFXManager : MonoBehaviour
 
         foreach (KeyValuePair<int, DottedLineGroup> _pair in dottedLineGroups)
         {
-            if (_visible) ShowDottedLine(_pair.Value);
+            if (_visible) ShowDottedLine(_pair.Key, _pair.Value);
             else if (false == alwaysVisibleDottedLineGroups.Contains(_pair.Key)) HideDottedLine(_pair.Value);
         }
     }
@@ -1100,7 +1118,7 @@ public class InDungeonVFXManager : MonoBehaviour
         alwaysVisibleDottedLineGroups.Clear();
     }
 
-    private void ShowDottedLine(DottedLineGroup _group)
+    private void ShowDottedLine(int _groupId, DottedLineGroup _group)
     {
         if (null != _group.line || null == constellationDottedLinePool) return;
 
@@ -1116,6 +1134,8 @@ public class InDungeonVFXManager : MonoBehaviour
             dottedLineNodeBuffer.Add(new ConstellationNode(_group.nodes[i], _group.felled[i]));
         }
         _line.SetNodes(dottedLineNodeBuffer, true);
+        // 숨겨져 있던 사이에 하나만 남게 됐어도 보이는 순간부터 맥동한다.
+        _line.SetLastStarWarning(IsLastStarRemaining(_groupId, _group));
 
         _group.line = _line;
     }

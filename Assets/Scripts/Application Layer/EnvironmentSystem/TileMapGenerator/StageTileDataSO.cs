@@ -151,6 +151,9 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private BloomDecoBreathSettings bloomDecoBreath = new BloomDecoBreathSettings();
     // 나무 열기 차오름(열기를 내뿜기 전까지 나무 줄기가 점점 달아오른다)
     [SerializeField] private TreeHeatChargeSettings treeHeatCharge = new TreeHeatChargeSettings();
+    // 물가·풀숲 반딧불
+    [SerializeField] private FireflySettings fireflies = new FireflySettings();
+    [SerializeField] private ForestBreathSettings forestBreath = new ForestBreathSettings();
     // 물(용암)·물가·스텐실 타일 애니메이션을 타일맵 대신 셰이더로 돌린다(StageTileFrameAnimation). 보이는 그림·박자는 같고,
     // 타일맵이 매 프레임 화면 밖까지 모든 애니메이션 타일을 훑던 비용이 없어진다. 조건에 안 맞는 타일이 있으면 저절로 원래대로 깐다.
     [SerializeField] private bool shaderTileAnimation = false;
@@ -211,6 +214,8 @@ public class StageTileDataSO : ScriptableObject
     public DecoSteamSettings DecoSteam => decoSteam;
     public BloomDecoBreathSettings BloomDecoBreath => bloomDecoBreath;
     public TreeHeatChargeSettings TreeHeatCharge => treeHeatCharge;
+    public FireflySettings Fireflies => fireflies;
+    public ForestBreathSettings ForestBreath => forestBreath;
     public bool ShaderTileAnimation => shaderTileAnimation;
     public List<AnimatedObj> AnimatedObjPrefabs => animatedObjPrefabs;
     public List<DecoSpritePatternAnimator> WaterAnimatedObjPrefabs => waterAnimatedObjPrefabs;

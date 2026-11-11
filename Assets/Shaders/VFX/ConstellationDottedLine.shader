@@ -27,6 +27,10 @@ Shader "Custom/VFX/ConstellationDottedLine"
         _WaveFrequency ("Wave Frequency (Cycles)", Float) = 2.0
         _WaveAmplitudePixels ("Wave Amplitude in Pixels", Float) = 2.0
 
+        // 마지막 별 예고 맥동(x: 세기 0~1, y: 지금 박자 밝기 0~1). ConstellationDottedLine이 켜진 동안만 프로퍼티 블록으로 넣는다.
+        // 기본값 0이면 예전과 똑같이 그린다.
+        [HideInInspector] _LastStarPulse ("Last Star Pulse", Vector) = (0, 0, 0, 0)
+
         [Header(Rendering)]
         [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Src Blend", Float) = 5.0 // SrcAlpha
         [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Dst Blend", Float) = 1.0 // One (Additive) 또는 10 (OneMinusSrcAlpha)
@@ -93,6 +97,7 @@ Shader "Custom/VFX/ConstellationDottedLine"
                 float _WaveSpeed;
                 float _WaveFrequency;
                 float _WaveAmplitudePixels;
+                float4 _LastStarPulse;
             CBUFFER_END
 
             Varyings vert(Attributes input)
@@ -150,6 +155,10 @@ Shader "Custom/VFX/ConstellationDottedLine"
                 half pulse = (half)(0.85f + 0.15f * pulseWave);
 
                 half brightness = twinkle * pulse;
+
+                // 2-1. 마지막 별 예고: 선 전체가 한 박자로 크게 밝아졌다 돌아온다(세기 0이면 곱하기 1, 예전과 같다).
+                //      박자 모양·빠르기는 ConstellationDottedLine이 정해 y로 넘긴다.
+                brightness *= (half)(1.0f + _LastStarPulse.x * (0.25f + 1.0f * _LastStarPulse.y));
 
                 // 3. 선 전체를 타고 흐르는 동적 펄스 파동 (Ping-Pong 왕복 또는 단방향 유영)
                 float waveHead = (_EnablePingPong > 0.5f)

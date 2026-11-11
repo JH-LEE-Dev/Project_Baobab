@@ -132,7 +132,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         bBarrierActive = false;
         bHasLastBarrierImpact = false;
 
-        if (null != barrierVfx) barrierVfx.PlayBreak(_impact);
+        // 깨진 뒤 나무 테두리에 푸른 잔광을 잠깐 남긴다(쓰러지며 깨지면 풀로 돌아가며 바로 거둔다).
+        if (null != barrierVfx) barrierVfx.PlayBreak(_impact, treeVisualComponent);
 
         Sound.Play(SoundID.SporeShieldBreak, cachedTransform.position, 1f, true, BarrierBreakSoundPitch);
         TreeBarrierBrokenEvent?.Invoke(this, _impact);

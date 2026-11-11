@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 스테이지 분위기 연출(돌풍·물 반짝임·색보정·포자 연출)을 켜고 끈다.
+/// 스테이지 분위기 연출(돌풍·물 반짝임·색보정·포자 연출·숲의 숨결)을 켜고 끈다.
 /// 전역값은 씬이 바뀌어도 남으므로, 본편 던전 맵을 깔 때(TileMapGenerator.GenerateMap)만 스테이지 데이터대로 켜고
 /// 마을·로그라이크·메인메뉴·엔딩 등 던전 씬이 아닌 곳에서는 항상 0(꺼짐)으로 되돌린다.
 /// 예외로 마을 분위기 연출(돌풍·물 반짝임·색보정)은 마을 Grid가 생길 때(TownTileManager.CreateGrid) 켜고 Grid가 사라질 때 끈다.
@@ -100,6 +100,8 @@ public static class StageAmbienceShaderGlobals
         StageSporeHaze.Apply(_tileData.HeatHaze, DungeonSceneName, "HeatHaze");
         // 나무 타격 별가루(꺼진 스테이지는 아무것도 띄우지 않는다)
         StageHitSparkles.Apply(_tileData.HitSparkles, DungeonSceneName);
+        // 숲의 숨결(꺼진 스테이지는 아무것도 만들지 않는다)
+        StageForestBreath.Apply(_tileData.ForestBreath, DungeonSceneName);
     }
 
     /// <summary>
@@ -173,8 +175,11 @@ public static class StageAmbienceShaderGlobals
         StageLavaEmbers.Remove();
         StageLavaSpouts.Remove();
         StageDecoSteam.Remove();
+        StageFireflies.Remove();
+        StageForestBreath.Remove();
         StageLavaGlow.Clear();
         StageLavaSeaMap.Clear();
+        StageShoreMap.Clear();
     }
 
     /// <summary>
@@ -236,7 +241,14 @@ public static class StageAmbienceShaderGlobals
         }
 
         // 용암 빛이 켜진 스테이지는 바닥을 용암 빛 머티리얼로 그린다(돌풍과 함께 켜는 스테이지는 없다).
-        return GetLavaGlowMaterial(_tileData);
+        Material lavaGlow = GetLavaGlowMaterial(_tileData);
+        if (null != lavaGlow)
+        {
+            return lavaGlow;
+        }
+
+        // 숲의 숨결이 켜진 스테이지는 바닥을 숨결 머티리얼로 그린다.
+        return GetForestBreathGroundMaterial(_tileData);
     }
 
     /// <summary>
@@ -264,7 +276,7 @@ public static class StageAmbienceShaderGlobals
     }
 
     /// <summary>
-    /// 이 스테이지에서 바닥 장식 타일맵에 끼울 머티리얼. 용암 빛이 꺼져 있거나 로그라이크면 null(원래 머티리얼 유지).
+    /// 이 스테이지에서 바닥 장식 타일맵에 끼울 머티리얼. 용암 빛·숲의 숨결이 꺼져 있거나 로그라이크면 null(원래 머티리얼 유지).
     /// </summary>
     public static Material GetDecoMaterialOverride(StageTileDataSO _tileData)
     {
@@ -273,7 +285,25 @@ public static class StageAmbienceShaderGlobals
             return null;
         }
 
-        return GetLavaGlowMaterial(_tileData);
+        Material lavaGlow = GetLavaGlowMaterial(_tileData);
+        if (null != lavaGlow)
+        {
+            return lavaGlow;
+        }
+
+        // 풀 장식도 바닥과 같이 숨결 물결에 물든다(바닥만 물들면 장식 자리가 어둡게 비어 보인다).
+        return GetForestBreathGroundMaterial(_tileData);
+    }
+
+    private static Material GetForestBreathGroundMaterial(StageTileDataSO _tileData)
+    {
+        ForestBreathSettings forestBreath = _tileData.ForestBreath;
+        if (null == forestBreath || false == forestBreath.enabled)
+        {
+            return null;
+        }
+
+        return forestBreath.groundMaterial;
     }
 
     private static Material GetLavaGlowMaterial(StageTileDataSO _tileData)
