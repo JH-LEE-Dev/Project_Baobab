@@ -76,6 +76,8 @@ public static class StageAmbienceShaderGlobals
     private static WindGustSettings townWindGust;
     private static WaterShimmerSettings townWaterShimmer;
     private static StageColorGradingSettings townColorGrading;
+    private static WindPetalSettings townWindPetals;
+    private static CloudShadowSettings townCloudShadows;
 
     // // 퍼블릭 제어 메서드
     public static void Apply(StageTileDataSO _tileData)
@@ -119,10 +121,11 @@ public static class StageAmbienceShaderGlobals
     }
 
     /// <summary>
-    /// 마을 돌풍·물 반짝임·색보정을 켠다(null이거나 꺼진 설정은 꺼진다). 로그라이크면 모두 끈다.
-    /// 마을 Grid가 있는 동안 설정을 기억해 두어, 씬 로드 때의 일괄 끄기 뒤에도 다시 켜진다.
+    /// 마을 돌풍·물 반짝임·색보정·돌풍 꽃잎·구름 그림자를 켠다(null이거나 꺼진 설정은 꺼진다). 로그라이크면 모두 끈다.
+    /// 돌풍 꽃잎은 돌풍이 켜져 있을 때만 생긴다. 마을 Grid가 있는 동안 설정을 기억해 두어, 씬 로드 때의 일괄 끄기 뒤에도 다시 켜진다.
     /// </summary>
-    public static void ApplyTown(WindGustSettings _windGust, WaterShimmerSettings _waterShimmer, StageColorGradingSettings _colorGrading)
+    public static void ApplyTown(WindGustSettings _windGust, WaterShimmerSettings _waterShimmer, StageColorGradingSettings _colorGrading,
+        WindPetalSettings _windPetals, CloudShadowSettings _cloudShadows)
     {
         if (GameModeContext.IsRoguelike)
         {
@@ -134,6 +137,8 @@ public static class StageAmbienceShaderGlobals
         townWindGust = _windGust;
         townWaterShimmer = _waterShimmer;
         townColorGrading = _colorGrading;
+        townWindPetals = _windPetals;
+        townCloudShadows = _cloudShadows;
         ApplyTownSettings();
     }
 
@@ -146,6 +151,8 @@ public static class StageAmbienceShaderGlobals
         townWindGust = null;
         townWaterShimmer = null;
         townColorGrading = null;
+        townWindPetals = null;
+        townCloudShadows = null;
         Clear();
     }
 
@@ -168,6 +175,8 @@ public static class StageAmbienceShaderGlobals
         ApplyWindGust(townWindGust);
         ApplyWaterShimmer(townWaterShimmer);
         StageAtmosphere.Apply(townColorGrading, TownSceneName);
+        StageWindPetals.Apply(townWindPetals, townWindGust, TownSceneName);
+        StageCloudShadows.Apply(townCloudShadows, TownSceneName);
     }
 
     public static void Clear()
@@ -540,6 +549,8 @@ public static class StageAmbienceShaderGlobals
         townWindGust = null;
         townWaterShimmer = null;
         townColorGrading = null;
+        townWindPetals = null;
+        townCloudShadows = null;
         Clear();
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= HandleSceneLoaded;
         UnityEngine.SceneManagement.SceneManager.sceneLoaded += HandleSceneLoaded;

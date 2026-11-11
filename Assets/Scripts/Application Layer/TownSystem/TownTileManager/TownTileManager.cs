@@ -18,6 +18,9 @@ public class TownTileManager : MonoBehaviour
     [SerializeField] private Material waterShimmerMaterial;
     // 마을 색보정(기존 전역 후처리 위에 덧씌우는 프로필)
     [SerializeField] private StageColorGradingSettings colorGrading = new StageColorGradingSettings();
+    // 마을 돌풍 꽃잎(돌풍이 켜져 있을 때만 생긴다)과 흐르는 구름 그림자
+    [SerializeField] private WindPetalSettings windPetals = new WindPetalSettings();
+    [SerializeField] private CloudShadowSettings cloudShadows = new CloudShadowSettings();
 
     private GameObject currentGrid;
 
@@ -151,7 +154,7 @@ public class TownTileManager : MonoBehaviour
         ClearLootPillarColliderTiles();
     }
 
-    // 마을 돌풍·물 반짝임·색보정을 켠다. 로그라이크이거나 꺼진 연출은 원래 머티리얼 그대로 둔다.
+    // 마을 돌풍·물 반짝임·색보정·돌풍 꽃잎·구름 그림자를 켠다. 로그라이크이거나 꺼진 연출은 원래 머티리얼 그대로 둔다.
     private void ApplyAmbience()
     {
         if (GameModeContext.IsRoguelike)
@@ -173,7 +176,7 @@ public class TownTileManager : MonoBehaviour
             waterRenderer.sharedMaterial = waterShimmerMaterial;
         }
 
-        StageAmbienceShaderGlobals.ApplyTown(useWind ? windGust : null, useWater ? waterShimmer : null, colorGrading);
+        StageAmbienceShaderGlobals.ApplyTown(useWind ? windGust : null, useWater ? waterShimmer : null, colorGrading, windPetals, cloudShadows);
     }
 
     private void OnDestroy()
