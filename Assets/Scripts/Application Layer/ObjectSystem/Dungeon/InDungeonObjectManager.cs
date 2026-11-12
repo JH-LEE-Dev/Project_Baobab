@@ -53,6 +53,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // "별빛 나침반" 유성우 - 이펙트·사운드를 붙일 자리. 유성우가 시작될 때(지속시간 초) / 유성이 떨어질 때(착지 위치).
     public event Action<float> MeteorShowerStartedEvent;
     public event Action<Vector3> MeteorImpactEvent;
+    // "별빛 나침반" 유성우 게이지 - 버프 HUD용. (지금까지 게이지를 채운 벌목 수, 가득 차는 벌목 수). 가득 찬 순간 (최대, 최대)를
+    // 한 번 보낸 뒤 게이지가 비워지고 유성우가 쏟아진다. 숲 방문 초기화 때는 (0, 최대)를 보낸다.
+    public event Action<int, int> MeteorShowerChargeChangedEvent;
 
     // "흑요 부적" 지진 게이지 - 버프 HUD용. (지금까지 주운 불씨 수, 가득 차는 불씨 수). 가득 찬 순간 (최대, 최대)를 한 번 보낸 뒤
     // 게이지가 비워지고 지진이 발동한다. 숲 방문 초기화 때는 (0, 최대)를 보낸다.
@@ -423,7 +426,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 로그라이크 판 시작도 숲 방문이다. 판 도중엔 전리품이 떨어지지 않으므로 지금까지와 같다.
         sporePotionTierThisRun = GetLootGrowthTier(LootType.SporePotion);
         starCompassTierThisRun = GetLootGrowthTier(LootType.StarCompass);
-        meteorShowerCharge = 0f;
+        ResetMeteorShowerCharge();
         obsidianCharmTierThisRun = GetLootGrowthTier(LootType.ObsidianCharm);
         ResetQuakeCharge();
     }
@@ -898,7 +901,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         bStarCompassSpawnedThisRun = false;
         starCompassTreeKillCount = 0;
         starCompassTierThisRun = GetLootGrowthTier(LootType.StarCompass);
-        meteorShowerCharge = 0f;
+        ResetMeteorShowerCharge();
 
         bObsidianCharmSpawnedThisRun = false;
         obsidianCharmTreeKillCount = 0;
@@ -3227,11 +3230,34 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         meteorShowerCharge = Mathf.Min(1f, meteorShowerCharge + Mathf.Max(0f, meteorShowerChargePerKill));
 
-        // 0.1씩 열 번 더하면 0.99999…가 될 수 있어 이만큼은 가득 찬 것으로 본다.
-        if (meteorShowerCharge < 1f - 0.0001f) return;
+        int maxKills = GetMeteorShowerMaxKills();
 
+        // 0.1씩 열 번 더하면 0.99999…가 될 수 있어 이만큼은 가득 찬 것으로 본다.
+        if (meteorShowerCharge < 1f - 0.0001f)
+        {
+            int kills = Mathf.Clamp(Mathf.RoundToInt(meteorShowerCharge * maxKills), 0, maxKills - 1);
+            MeteorShowerChargeChangedEvent?.Invoke(kills, maxKills);
+            return;
+        }
+
+        MeteorShowerChargeChangedEvent?.Invoke(maxKills, maxKills);
         meteorShowerCharge = 0f;
         StartCoroutine(MeteorShowerRoutine(starCompassTierThisRun));
+    }
+
+    // 숲 방문 초기화. 이전 방문에서 차던 유성우 게이지 버프 HUD도 함께 내린다.
+    private void ResetMeteorShowerCharge()
+    {
+        meteorShowerCharge = 0f;
+        MeteorShowerChargeChangedEvent?.Invoke(0, GetMeteorShowerMaxKills());
+    }
+
+    // 유성우 게이지가 가득 차는 벌목 수(한 그루당 0.1이면 10). 버프 HUD 숫자·게이지 기준이다.
+    private int GetMeteorShowerMaxKills()
+    {
+        if (0f >= meteorShowerChargePerKill) return 1;
+
+        return Mathf.Max(1, Mathf.CeilToInt(1f / meteorShowerChargePerKill - 0.0001f));
     }
 
     /// <summary>
