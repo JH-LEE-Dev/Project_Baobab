@@ -1381,7 +1381,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             tree.SetCellPos(cellPos);
             // 로그라이크는 스테이지 기믹(나무 열기)을 끈다. 본편은 runTreeRules가 null이라 기존 값 그대로다.
             bool bNoGimmick = null != runTreeRules && runTreeRules.bDisableStageGimmicks;
-            tree.SetHeatDamageAmount(bNoGimmick ? 0f : environmentProvider.tilemapDataProvider.TreeHeatStaminaDamage);
+            float mapTreeHeat = environmentProvider.tilemapDataProvider.TreeHeatStaminaDamage;
+            tree.SetHeatDamageAmount(bNoGimmick ? 0f : mapTreeHeat);
+            // 깎인 모습(금·숯불)은 렌더링 전용이라 기믹을 끈 로그라이크에서도 맵(나무 열기가 있는 맵)대로 켠다.
+            tree.SetDamageLookEnabled(0f < mapTreeHeat);
 
             tree.PoolIndex = activeTrees.Count;
             activeTrees.Add(tree);

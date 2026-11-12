@@ -70,6 +70,7 @@ public static class StageAmbienceShaderGlobals
     private static readonly int TreeHeatChargeAID = Shader.PropertyToID("_TreeHeatChargeA");
     private static readonly int TreeHeatChargeBID = Shader.PropertyToID("_TreeHeatChargeB");
     private static readonly int TreeHeatChargeColorID = Shader.PropertyToID("_TreeHeatChargeColor");
+    private static readonly int TreeDamageLookOnID = Shader.PropertyToID("_TreeDamageLookOn");
 
     // 마을 Grid가 있는 동안의 마을 연출 설정.
     private static bool townAmbienceActive;
@@ -86,6 +87,9 @@ public static class StageAmbienceShaderGlobals
         if (null == _tileData || GameModeContext.IsRoguelike)
         {
             Clear();
+
+            // 나무가 깎인 모습(금·숯불)만은 로그라이크 필드에도 본편과 같은 기준으로 켠다(로그라이크 용암 숲).
+            ApplyTreeDamageLook(_tileData);
             return;
         }
 
@@ -102,6 +106,8 @@ public static class StageAmbienceShaderGlobals
         ApplyTreeStarTwinkle(_tileData.TreeStarTwinkle);
         // 나무 열기 차오름(꺼진 스테이지는 카운트다운 중이어도 아무것도 칠하지 않는다)
         ApplyTreeHeatCharge(_tileData.TreeHeatCharge);
+        // 나무가 깎인 모습(금·숯불). 열기 차오름이 켜진 스테이지(4스테이지)에서만 그린다.
+        ApplyTreeDamageLook(_tileData);
         // 색보정 볼륨(꺼진 스테이지는 아무것도 띄우지 않는다)
         StageAtmosphere.Apply(_tileData.ColorGrading, DungeonSceneName);
         // 포자 안개(꺼진 스테이지는 아무것도 띄우지 않는다)
@@ -191,6 +197,7 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalFloat(HideWaterReflectionID, 0f);
         Shader.SetGlobalVector(TreeTwinkleAID, Vector4.zero);
         Shader.SetGlobalVector(TreeHeatChargeAID, Vector4.zero);
+        Shader.SetGlobalFloat(TreeDamageLookOnID, 0f);
         StageAtmosphere.Remove();
         StageSporeHaze.Remove();
         StageMushroomSpores.Remove();
@@ -444,6 +451,14 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalVector(TreeHeatChargeAID, new Vector4(1f, Mathf.Max(0f, _settings.hotBoost), Mathf.Max(0f, _settings.tintAmount), Mathf.Max(0.1f, _settings.curvePower)));
         Shader.SetGlobalVector(TreeHeatChargeBID, new Vector4(Mathf.Clamp01(_settings.hotMinRed), Mathf.Clamp01(_settings.hotMinRedLead), 0f, 0f));
         Shader.SetGlobalVector(TreeHeatChargeColorID, ToShaderColor(_settings.tintColor));
+    }
+
+    // 나무가 깎인 모습(금·숯불, TreeDamageLook.hlsl) 켜짐. 열기 차오름과 같은 스테이지에서 켜지지만, 로그라이크는
+    // 열기 차오름을 끄고 이 값만 켜므로 따로 둔다.
+    private static void ApplyTreeDamageLook(StageTileDataSO _tileData)
+    {
+        bool bOn = null != _tileData && null != _tileData.TreeHeatCharge && _tileData.TreeHeatCharge.enabled;
+        Shader.SetGlobalFloat(TreeDamageLookOnID, bOn ? 1f : 0f);
     }
 
     private static void ApplyWaterSpores(WaterSporeSettings _settings)
