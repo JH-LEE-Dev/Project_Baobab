@@ -161,11 +161,4 @@ float4 ComputeWaterSporesAt(float2 _texelId, float3 _texColor)
     return 0.0;
 }
 
-float4 ComputeWaterSpores(float2 _uv, float2 _positionWS, float4 _texelSize, float3 _texColor)
-{
-    float2 centerWS = StageAmbienceTexelCenterWS(_positionWS, _uv, _texelSize);
-    // 타일 텍셀 중심은 (정수 + 0.5) / ppu에 놓이므로 내림하면 텍셀 하나가 한 번호를 갖는다.
-    return ComputeWaterSporesAt(floor(centerWS * StageAmbiencePixelsPerUnit()), _texColor);
-}
-
 #endif // WATER_SPORES_INCLUDED

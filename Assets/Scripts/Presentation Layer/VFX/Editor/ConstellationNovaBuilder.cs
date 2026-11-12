@@ -96,6 +96,8 @@ public static class ConstellationNovaBuilder
             so.FindProperty("arenaHalfWidth").floatValue = 9.5f;
             so.FindProperty("arenaHalfHeight").floatValue = 4.75f;
             so.FindProperty("arenaCurtainHeightPx").floatValue = 46.0f;
+            // 로그라이크 섬 타일의 보이는 윗면 중심은 칸 중심보다 0.25유닛(8px) 위
+            so.FindProperty("arenaCenterOffsetY").floatValue = 0.25f;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             PrefabUtility.SaveAsPrefabAsset(root, ArenaPrefabPath);

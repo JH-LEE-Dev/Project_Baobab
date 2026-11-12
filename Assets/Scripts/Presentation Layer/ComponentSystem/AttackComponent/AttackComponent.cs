@@ -183,6 +183,9 @@ public class AttackComponent : PComponent
     //  다음 스윙에도 회전 베기가 연속으로 나가는 문제가 있었다.)
     private int whirlwindSwingCount = 0;
     private const int WhirlwindSwingInterval = 3;
+    // 회전 베기의 기본 범위(평타 사거리 대비)·피해(도끼 피해 대비) 배율. 본편·로그라이크 공통이며, 로그라이크 회전베기 카드 배율(RunCombatOverrides)은 이 위에 곱한다.
+    private const float WhirlwindBaseRangeMultiplier = 2f;
+    private const float WhirlwindBaseDamageMultiplier = 1.5f;
 
     // 넉백 등으로 공격 범위 인디케이터가 조준 방향을 따라 도는 것을 일시적으로 막아야 할 때 사용
     private bool bIndicatorRotationLocked = false;
@@ -492,8 +495,10 @@ public class AttackComponent : PComponent
 
         float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
 
-        // [로그라이크] 회전베기 카드의 범위 증가는 회전베기 타격에만 붙는다. 본편은 배율이 1이라 그대로다.
-        if (bIsWhirlwindStrike) effectiveEllipseRadius *= RunCombatOverrides.WhirlwindRangeMultiplier;
+        // 회전 베기 범위·피해: 기본 배율에 로그라이크 회전베기 카드 배율을 곱한다(본편은 카드 배율이 1).
+        float whirlwindRangeMultiplier = WhirlwindBaseRangeMultiplier * RunCombatOverrides.WhirlwindRangeMultiplier;
+        float whirlwindDamageMultiplier = WhirlwindBaseDamageMultiplier * RunCombatOverrides.WhirlwindDamageMultiplier;
+        if (bIsWhirlwindStrike) effectiveEllipseRadius *= whirlwindRangeMultiplier;
 
         // 회전 베기 연출(VFX·360도 회전·카메라 흔들림)은 범위 안에 아무것도 없어도(헛스윙) 나가야 하므로
         // 탐색보다 먼저 발동한다. 타격 분기의 흔들림은 회전 베기일 때 건너뛰어 중복되지 않게 한다.
@@ -629,8 +634,8 @@ public class AttackComponent : PComponent
                     var target = multiAttackResults[i];
                     if (target is IDamageable damageable && damageable.bCanApplyDamage)
                     {
-                        // [로그라이크] 회전베기 카드의 회전 피해 증가는 회전베기 타격에만 붙는다. 본편은 배율이 1이다.
-                        ProcessAxeHit(damageable, centerPos, bIsWhirlwindStrike ? RunCombatOverrides.WhirlwindDamageMultiplier : 1f);
+                        // 회전 베기 피해 배율(기본 × 로그라이크 카드)은 회전 베기 타격에만 붙는다.
+                        ProcessAxeHit(damageable, centerPos, bIsWhirlwindStrike ? whirlwindDamageMultiplier : 1f);
                         bAnyHit = true;
 
                         if (target is TreeObj hitTree)
@@ -713,7 +718,7 @@ public class AttackComponent : PComponent
             }
 
             // 회전베기로 맞힌 대상을 다시 칠 때는 회전베기 피해 배율도 같이 받는다(본편은 이 경로에 오지 않는다).
-            float extraScale = bIsWhirlwindStrike ? RunCombatOverrides.WhirlwindDamageMultiplier : 1f;
+            float extraScale = bIsWhirlwindStrike ? whirlwindDamageMultiplier : 1f;
             if (targets.Count > 0) StartCoroutine(ExtraAxeStrikeRoutine(RunCombatOverrides.AxeExtraStrikes, targets, extraScale));
             else extraStrikeListPool.Push(targets);
         }

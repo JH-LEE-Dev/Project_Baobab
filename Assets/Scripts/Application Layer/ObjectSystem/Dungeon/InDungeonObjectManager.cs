@@ -612,6 +612,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private static readonly Comparison<ConstellationHit> ConstellationHitTimeComparison = (a, b) => a.hitTime.CompareTo(b.hitTime);
 
+    // 발현 폭발 타격음 칸(초). 파동(0.4초) 안에서 범위 안쪽 나무는 거의 한꺼번에 맞아, 나무마다 타격음을 내면 체력 비율마다
+    // 다른 피치의 타격음이 수십 개 겹친다. 폭발 한 번 안에서 이 간격의 칸마다 처음 맞은 나무 한 그루만 타격음을 내고
+    // 나머지는 소리 없이 맞는다(피해·진동·낙인은 같다) - 타격음이 파동을 따라 몇 번만 이어 들린다.
+    private const float ConstellationHitSoundSlot = 0.08f;
+
     // 폭발마다 쓰는 타격 목록 - 잔상으로 여러 폭발이 동시에 돌 수 있어 폭발별로 하나씩 빌려 쓰고 돌려놓는다.
     private readonly Stack<List<ConstellationHit>> spareConstellationHitLists = new Stack<List<ConstellationHit>>();
 
@@ -2975,6 +2980,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         // 포자막 파괴 VFX는 포자막 폭발 스킬/맵 여부와 무관하게 항상 재생된다.
         inDungeonVFXManager.PlayShieldBrokenVFX(_treeObj.treeVisualComponent, _treeObj.GetTreeType());
+        // 막을 깬 타격의 결정 조각(켜진 스테이지에서만, 꺼진 곳은 아무 일도 하지 않는다)
+        StageSporeShieldFx.NotifyShieldBroken(_treeObj.treeVisualComponent);
 
         TreeShieldBrokenNotifyEvent?.Invoke();
 
@@ -3751,11 +3758,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
             float elapsed = 0f;
             int next = 0;
+            int lastHitSoundSlot = -1;
             while (true)
             {
                 while (next < hits.Count && hits[next].hitTime <= elapsed)
                 {
-                    ApplyConstellationHit(hits[next], _damage, _center);
+                    // 칸은 파동이 닿는 시각(hitTime) 기준이라 프레임 길이와 상관없이 같은 나무가 소리를 낸다.
+                    int slot = Mathf.FloorToInt(hits[next].hitTime / ConstellationHitSoundSlot);
+                    bool bPlayHitSound = slot != lastHitSoundSlot;
+                    if (ApplyConstellationHit(hits[next], _damage, _center, bPlayHitSound) && bPlayHitSound)
+                    {
+                        lastHitSoundSlot = slot;
+                    }
                     next++;
                 }
 
@@ -3813,14 +3827,16 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _hits.Sort(ConstellationHitTimeComparison);
     }
 
-    private void ApplyConstellationHit(ConstellationHit _hit, float _damage, Vector3 _center)
+    // 나무를 실제로 때렸으면 true(건너뛴 나무는 false - 그 칸의 타격음을 다음 나무가 이어받는다).
+    // _bPlayHitSound가 false면 도끼 타격음(Tree_Hit/Pitch_Hit 등) 없이 맞는다(ConstellationHitSoundSlot 참고).
+    private bool ApplyConstellationHit(ConstellationHit _hit, float _damage, Vector3 _center, bool _bPlayHitSound)
     {
         TreeObj tree = _hit.tree;
-        if (tree == null || tree.IsPooled || !tree.bCanApplyDamage) return;
+        if (tree == null || tree.IsPooled || !tree.bCanApplyDamage) return false;
 
         // 계산 이후 다른 원인으로 죽어 풀로 돌아갔다가 다른 자리에 재사용된 나무는 건너뛴다.
         // (풀에 들어간 채 아직 재사용되지 않은 나무는 위치가 그대로라 이 검사를 통과하므로 위의 IsPooled로 거른다)
-        if ((tree.transform.position - _hit.rootPos).sqrMagnitude > 0.0001f) return;
+        if ((tree.transform.position - _hit.rootPos).sqrMagnitude > 0.0001f) return false;
 
         // 한 그루의 타격이 연쇄(사망 처리, 다른 그룹 발현 등) 중 예외로 실패해도 폭발의 나머지 나무는 계속 맞힌다.
         try
@@ -3829,7 +3845,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             // 배리어를 먼저 꺼 두어야 아래 TakeDamage가 배리어 감소율에 막히지 않는다.
             tree.BreakBarrier(_center);
 
-            tree.TakeDamage(_damage);
+            if (_bPlayHitSound) tree.TakeDamage(_damage);
+            else tree.TakeDamageWithoutHitSound(_damage);
 
             // 죽지 않고 살아남은 나무에만 낙인을 적용한다. TakeDamage로 나무가 죽으면 같은 프레임 안에서
             // 풀로 반환되고 ResetTree()가 bDead를 다시 false로 되돌리므로, bDead로는 사망을 판별할 수 없다.
@@ -3839,11 +3856,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 tree.health.ApplyDamageBrand(1f + manifestationBrandBonusMultiplier);
                 StartManifestationBrandVfx(tree);
             }
+
+            return true;
         }
         catch (Exception e)
         {
             Debug.LogError("[InDungeonObjectManager] 별자리 폭발 타격 처리 중 예외가 발생했습니다. 나머지 타격은 계속 진행합니다.");
             Debug.LogException(e);
+            return false;
         }
     }
 

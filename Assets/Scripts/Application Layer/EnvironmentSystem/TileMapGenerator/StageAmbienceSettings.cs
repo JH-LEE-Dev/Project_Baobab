@@ -812,3 +812,76 @@ public class WaterDepthSettings
     [Range(2, 8)] public int bands = 3;
     [Range(0f, 1f)] public float ditherWidth = 0.35f;
 }
+
+/// <summary>
+/// 돌풍에 실려 날아가는 꽃잎·잎. 돌풍(WindGustSettings)이 지나가는 자리에서만 작은 꽃잎과 잎이 생겨 돌풍과 함께 날아가며
+/// 뒤집히듯 깜빡이다 사라진다(StageWindPetals). 돌풍이 꺼진 스테이지에서는 아무것도 만들지 않는다.
+/// 렌더링만 바뀌고 게임 동작에는 영향이 없다. enabled가 꺼져 있거나 material이 비어 있으면 아무것도 만들지 않는다.
+/// </summary>
+[System.Serializable]
+public class WindPetalSettings
+{
+    public bool enabled = false;
+    // 꽃잎 머티리얼(WindPetal 셰이더)
+    public Material material;
+    // 그리는 정렬 자리(기본은 오브젝트 맨 위)
+    public string sortingLayerName = "Objects";
+    public int sortingOrder = 32767;
+    // 화면 안(가장자리 여유 포함) 무작위 자리를 1초에 이만큼 골라, 돌풍이 이 세기 이상인 자리에서만 꽃잎을 띄운다.
+    public float spawnAttemptsPerSecond = 280f;
+    [Range(0f, 1f)] public float gustThreshold = 0.55f;
+    // 화면 가장자리 여유(월드). 화면 밖에서 생겨 날아 들어오게 한다.
+    public float viewMargin = 1.5f;
+    // 돌풍 속도에 곱하는 꽃잎 속도 배수(최소~최대). 1보다 작으면 돌풍 꼬리로 처진다.
+    public Vector2 speedScaleRange = new Vector2(0.7f, 1.05f);
+    // 처음 떠오르는 속도(월드/초, 최소~최대)와 내려앉는 힘(월드/초²)
+    public Vector2 liftRange = new Vector2(0.1f, 0.45f);
+    public float gravity = 0.25f;
+    // 나풀거림(노이즈) 세기와 빠르기
+    public float flutterStrength = 0.35f;
+    public float flutterFrequency = 0.9f;
+    // 수명(초, 최소~최대)과 수명 동안 뒤집히는 횟수
+    public Vector2 lifetimeRange = new Vector2(1.4f, 2.4f);
+    [Min(1)] public int tumbleCycles = 5;
+    // 꽃잎 색(무작위로 하나). 풀 위에서 묻히지 않게 밝은 색만 쓴다.
+    public Color[] colors =
+    {
+        new Color(1f, 1f, 1f, 1f),
+        new Color(1f, 0.8f, 0.88f, 1f),
+        new Color(1f, 0.66f, 0.8f, 1f),
+        new Color(1f, 0.95f, 0.62f, 1f),
+    };
+    // 동시에 떠 있는 꽃잎 최대 수
+    [Min(16)] public int maxParticles = 160;
+}
+
+/// <summary>
+/// 흐르는 구름 그림자. 하늘의 구름이 드리우는 큰 그림자 덩어리가 땅·물·나무 위로 천천히 지나간다(StageCloudShadows,
+/// StageCloudShadow 셰이더가 화면을 덮는 판 하나로 곱해 어둡게 한다). 그림자 경계는 텍셀 단위로 엇갈려 픽셀아트 그대로다.
+/// 렌더링만 바뀌고 게임 동작에는 영향이 없다. enabled가 꺼져 있거나 material이 비어 있으면 아무것도 만들지 않는다.
+/// </summary>
+[System.Serializable]
+public class CloudShadowSettings
+{
+    public bool enabled = false;
+    // 구름 그림자 머티리얼(StageCloudShadow 셰이더)
+    public Material material;
+    // 그리는 정렬 자리(기본은 오브젝트 위, 오브젝트 맨 위 연출 바로 아래). 이보다 앞에 그리는 것만 어두워진다.
+    public string sortingLayerName = "Objects";
+    public int sortingOrder = 32766;
+    // 구름이 흘러가는 방향(월드, 정규화해서 쓴다)과 속도(월드/초)
+    public Vector2 direction = new Vector2(1f, -0.35f);
+    public float speed = 0.6f;
+    // 구름 덩어리 크기(월드). 아이소메트릭 바닥에 맞게 세로는 절반으로 눌러 그린다.
+    public float scale = 10f;
+    // 그림자가 덮는 대략적인 화면 비율(0~1)과 경계가 퍼지는 폭
+    [Range(0f, 1f)] public float coverage = 0.04f;
+    [Range(0.01f, 0.5f)] public float softness = 0.05f;
+    // 그림자 속에서 곱하는 색과 단계 수, 단계 경계가 텍셀 단위로 엇갈리는 폭
+    public Color shadowColor = new Color(0.78f, 0.84f, 0.95f, 1f);
+    [Range(1, 4)] public int bands = 2;
+    [Range(0f, 1f)] public float ditherWidth = 0.6f;
+    // 화면 가장자리 여유(월드). 카메라가 움직이는 사이 판 끝이 보이지 않게 한다.
+    public float viewMargin = 2f;
+
+}

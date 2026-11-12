@@ -36,13 +36,15 @@ public static class StageShoreMap
     // // 퍼블릭 제어 메서드
     /// <summary>
     /// _waterTiles는 _bounds 범위의 물 타일 배열(x 먼저, 인덱스 = x + y * 너비)이고, 비어 있지 않은 칸을 물로 본다.
-    /// _gridWidth·_gridHeight는 원본 맵 그리드 크기다. 그리드 밖 빈 칸(맵 끝 너머)은 땅으로 치지 않는다.
+    /// _gridWidth·_gridHeight는 원본 맵 그리드 크기다. _groundTiles는 그리드 크기의 바닥 타일 배열(인덱스 = x + y * 그리드 너비)이고,
+    /// 바닥 타일이 깔린 칸만 땅으로 본다. 물도 바닥도 없는 칸(세상 끝 원 밖의 허공)은 그리드 안이어도 경계를 만들지 않는다.
     /// </summary>
-    public static void Apply(StageTileDataSO _tileData, TileBase[] _waterTiles, BoundsInt _bounds, int _gridWidth, int _gridHeight, Tilemap _grid)
+    public static void Apply(StageTileDataSO _tileData, TileBase[] _waterTiles, BoundsInt _bounds, int _gridWidth, int _gridHeight, TileBase[] _groundTiles, Tilemap _grid)
     {
         int width = _bounds.size.x;
         int height = _bounds.size.y;
         if (null == _tileData || false == IsNeeded(_tileData) || null == _waterTiles || null == _grid
+            || null == _groundTiles || _groundTiles.Length < _gridWidth * _gridHeight
             || GameModeContext.IsRoguelike || width <= 0 || height <= 0 || _waterTiles.Length < width * height)
         {
             Clear();
@@ -54,7 +56,7 @@ public static class StageShoreMap
             shoreBytes = new byte[width * height];
         }
 
-        MeasureShoreDistance(_waterTiles, _bounds, _gridWidth, _gridHeight);
+        MeasureShoreDistance(_waterTiles, _bounds, _gridWidth, _gridHeight, _groundTiles);
         grid = _grid;
         mapBounds = _bounds;
 
@@ -72,6 +74,7 @@ public static class StageShoreMap
     {
         grid = null;
         Shader.SetGlobalVector(AID, Vector4.zero);
+        ReleaseTexture();
     }
 
     /// <summary>
@@ -117,6 +120,26 @@ public static class StageShoreMap
         return null != depth && depth.enabled;
     }
 
+    // 텍스처를 지우고 전역 바인딩도 푼다. 에디터 맵 미리보기(편집 모드)에서도 불리므로 그때는 즉시 지운다.
+    private static void ReleaseTexture()
+    {
+        if (null == shoreTexture)
+        {
+            return;
+        }
+
+        Shader.SetGlobalTexture(TextureID, null);
+        if (Application.isPlaying)
+        {
+            Object.Destroy(shoreTexture);
+        }
+        else
+        {
+            Object.DestroyImmediate(shoreTexture);
+        }
+        shoreTexture = null;
+    }
+
     // 칸마다 값(1 + 경계까지 칸 수)을 그대로 담은 텍스처를 만들어 전역으로 넘긴다. 칸 사이는 부드럽게 이어지도록 보간한다.
     private static void UploadTexture(int _width, int _height)
     {
@@ -132,10 +155,7 @@ public static class StageShoreMap
 
         if (null == shoreTexture || shoreTexture.width != _width || shoreTexture.height != _height)
         {
-            if (null != shoreTexture)
-            {
-                Object.Destroy(shoreTexture);
-            }
+            ReleaseTexture();
 
             shoreTexture = new Texture2D(_width, _height, TextureFormat.R8, false, true);
             shoreTexture.name = "ShoreMap";
@@ -155,8 +175,9 @@ public static class StageShoreMap
     }
 
     // 물과 땅이 4방향으로 맞닿은 칸을 거리 0으로 두고 8방향으로 넓혀 가며 경계까지 칸 수를 잰다(1 + 거리, 최대 255).
-    // 땅은 그리드 안의 빈 칸이다. 그리드 밖 빈 칸(맵 끝 너머)은 경계를 만들지 않는다. 끝내 안 닿는 칸은 최대값.
-    private static void MeasureShoreDistance(TileBase[] _waterTiles, BoundsInt _bounds, int _gridWidth, int _gridHeight)
+    // 땅은 그리드 안에서 바닥 타일이 깔린 칸이다. 물도 바닥도 없는 칸(맵 끝 너머, 세상 끝 원 밖의 허공)은 경계를 만들지 않는다.
+    // 끝내 안 닿는 칸은 최대값.
+    private static void MeasureShoreDistance(TileBase[] _waterTiles, BoundsInt _bounds, int _gridWidth, int _gridHeight, TileBase[] _groundTiles)
     {
         int width = _bounds.size.x;
         int height = _bounds.size.y;
@@ -171,7 +192,7 @@ public static class StageShoreMap
         {
             for (int x = 0; x < width; x++)
             {
-                int kind = CellKind(_waterTiles, _bounds, x, y, _gridWidth, _gridHeight);
+                int kind = CellKind(_waterTiles, _bounds, x, y, _gridWidth, _gridHeight, _groundTiles);
                 if (0 == kind)
                 {
                     continue;
@@ -179,10 +200,10 @@ public static class StageShoreMap
 
                 // 반대 종류(물 ↔ 땅)와 4방향으로 맞닿았으면 경계 칸
                 int opposite = 1 == kind ? 2 : 1;
-                if (opposite == CellKind(_waterTiles, _bounds, x + 1, y, _gridWidth, _gridHeight)
-                    || opposite == CellKind(_waterTiles, _bounds, x - 1, y, _gridWidth, _gridHeight)
-                    || opposite == CellKind(_waterTiles, _bounds, x, y + 1, _gridWidth, _gridHeight)
-                    || opposite == CellKind(_waterTiles, _bounds, x, y - 1, _gridWidth, _gridHeight))
+                if (opposite == CellKind(_waterTiles, _bounds, x + 1, y, _gridWidth, _gridHeight, _groundTiles)
+                    || opposite == CellKind(_waterTiles, _bounds, x - 1, y, _gridWidth, _gridHeight, _groundTiles)
+                    || opposite == CellKind(_waterTiles, _bounds, x, y + 1, _gridWidth, _gridHeight, _groundTiles)
+                    || opposite == CellKind(_waterTiles, _bounds, x, y - 1, _gridWidth, _gridHeight, _groundTiles))
                 {
                     int index = x + y * width;
                     shoreBytes[index] = 1;
@@ -227,8 +248,8 @@ public static class StageShoreMap
         }
     }
 
-    // 0 = 범위 밖이거나 그리드 밖 빈 칸, 1 = 물, 2 = 땅(그리드 안 빈 칸)
-    private static int CellKind(TileBase[] _waterTiles, BoundsInt _bounds, int _x, int _y, int _gridWidth, int _gridHeight)
+    // 0 = 범위 밖이거나 물도 바닥도 없는 칸, 1 = 물, 2 = 땅(그리드 안에서 바닥 타일이 깔린 칸)
+    private static int CellKind(TileBase[] _waterTiles, BoundsInt _bounds, int _x, int _y, int _gridWidth, int _gridHeight, TileBase[] _groundTiles)
     {
         int width = _bounds.size.x;
         int height = _bounds.size.y;
@@ -245,6 +266,6 @@ public static class StageShoreMap
         int cellX = _x + _bounds.xMin;
         int cellY = _y + _bounds.yMin;
         bool bInsideGrid = cellX >= 0 && cellY >= 0 && cellX < _gridWidth && cellY < _gridHeight;
-        return bInsideGrid ? 2 : 0;
+        return bInsideGrid && null != _groundTiles[cellX + cellY * _gridWidth] ? 2 : 0;
     }
 }

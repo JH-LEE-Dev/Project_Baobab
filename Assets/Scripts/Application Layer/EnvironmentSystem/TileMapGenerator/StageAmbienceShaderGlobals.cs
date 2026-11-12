@@ -76,6 +76,8 @@ public static class StageAmbienceShaderGlobals
     private static WindGustSettings townWindGust;
     private static WaterShimmerSettings townWaterShimmer;
     private static StageColorGradingSettings townColorGrading;
+    private static WindPetalSettings townWindPetals;
+    private static CloudShadowSettings townCloudShadows;
 
     // // 퍼블릭 제어 메서드
     public static void Apply(StageTileDataSO _tileData)
@@ -112,13 +114,18 @@ public static class StageAmbienceShaderGlobals
         StageForestBreath.Apply(_tileData.ForestBreath, DungeonSceneName);
         // 포자막 상태 연출(꺼진 스테이지는 아무것도 만들지 않는다)
         StageSporeShieldFx.Apply(_tileData.SporeShieldFx, DungeonSceneName);
+        // 돌풍에 실려 날아가는 꽃잎·잎(꺼진 스테이지나 돌풍이 없는 스테이지는 아무것도 만들지 않는다)
+        StageWindPetals.Apply(_tileData.WindPetals, _tileData.WindGust, DungeonSceneName);
+        // 흐르는 구름 그림자(꺼진 스테이지는 아무것도 만들지 않는다)
+        StageCloudShadows.Apply(_tileData.CloudShadows, DungeonSceneName);
     }
 
     /// <summary>
-    /// 마을 돌풍·물 반짝임·색보정을 켠다(null이거나 꺼진 설정은 꺼진다). 로그라이크면 모두 끈다.
-    /// 마을 Grid가 있는 동안 설정을 기억해 두어, 씬 로드 때의 일괄 끄기 뒤에도 다시 켜진다.
+    /// 마을 돌풍·물 반짝임·색보정·돌풍 꽃잎·구름 그림자를 켠다(null이거나 꺼진 설정은 꺼진다). 로그라이크면 모두 끈다.
+    /// 돌풍 꽃잎은 돌풍이 켜져 있을 때만 생긴다. 마을 Grid가 있는 동안 설정을 기억해 두어, 씬 로드 때의 일괄 끄기 뒤에도 다시 켜진다.
     /// </summary>
-    public static void ApplyTown(WindGustSettings _windGust, WaterShimmerSettings _waterShimmer, StageColorGradingSettings _colorGrading)
+    public static void ApplyTown(WindGustSettings _windGust, WaterShimmerSettings _waterShimmer, StageColorGradingSettings _colorGrading,
+        WindPetalSettings _windPetals, CloudShadowSettings _cloudShadows)
     {
         if (GameModeContext.IsRoguelike)
         {
@@ -130,6 +137,8 @@ public static class StageAmbienceShaderGlobals
         townWindGust = _windGust;
         townWaterShimmer = _waterShimmer;
         townColorGrading = _colorGrading;
+        townWindPetals = _windPetals;
+        townCloudShadows = _cloudShadows;
         ApplyTownSettings();
     }
 
@@ -142,6 +151,8 @@ public static class StageAmbienceShaderGlobals
         townWindGust = null;
         townWaterShimmer = null;
         townColorGrading = null;
+        townWindPetals = null;
+        townCloudShadows = null;
         Clear();
     }
 
@@ -164,6 +175,8 @@ public static class StageAmbienceShaderGlobals
         ApplyWindGust(townWindGust);
         ApplyWaterShimmer(townWaterShimmer);
         StageAtmosphere.Apply(townColorGrading, TownSceneName);
+        StageWindPetals.Apply(townWindPetals, townWindGust, TownSceneName);
+        StageCloudShadows.Apply(townCloudShadows, TownSceneName);
     }
 
     public static void Clear()
@@ -189,6 +202,8 @@ public static class StageAmbienceShaderGlobals
         StageFireflies.Remove();
         StageForestBreath.Remove();
         StageSporeShieldFx.Remove();
+        StageWindPetals.Remove();
+        StageCloudShadows.Remove();
         StageLavaGlow.Clear();
         StageLavaSeaMap.Clear();
         StageShoreMap.Clear();
@@ -287,6 +302,16 @@ public static class StageAmbienceShaderGlobals
         return true;
     }
 
+    // 결정 장식 숨쉬기를 켰는데 앞 순서의 데코 머티리얼이 먼저 잡혀 쓰이지 않을 때 에디터에서 알린다.
+    [System.Diagnostics.Conditional("UNITY_EDITOR")]
+    private static void WarnCrystalDecoBreathShadowed(StageTileDataSO _tileData, bool _bCrystalOn, string _winner)
+    {
+        if (_bCrystalOn)
+        {
+            Debug.LogWarning($"[StageAmbienceShaderGlobals] {_tileData.name}: 결정 장식 숨쉬기가 켜져 있지만 {_winner} 데코 머티리얼이 먼저 쓰여 적용되지 않습니다.", _tileData);
+        }
+    }
+
     /// <summary>
     /// 이 스테이지에서 바닥 장식 타일맵에 끼울 머티리얼. 용암 빛·숲의 숨결·결정 장식 숨쉬기가 꺼져 있거나 로그라이크면 null(원래 머티리얼 유지).
     /// </summary>
@@ -297,9 +322,14 @@ public static class StageAmbienceShaderGlobals
             return null;
         }
 
+        // 데코 타일맵 머티리얼은 하나뿐이라 용암 빛 → 숲의 숨결 → 결정 장식 숨쉬기 순으로 하나만 쓴다.
+        CrystalDecoBreathSettings crystalBreath = _tileData.CrystalDecoBreath;
+        bool crystalOn = null != crystalBreath && true == crystalBreath.enabled;
+
         Material lavaGlow = GetLavaGlowMaterial(_tileData);
         if (null != lavaGlow)
         {
+            WarnCrystalDecoBreathShadowed(_tileData, crystalOn, "용암 빛");
             return lavaGlow;
         }
 
@@ -307,13 +337,19 @@ public static class StageAmbienceShaderGlobals
         Material forestBreath = GetForestBreathGroundMaterial(_tileData);
         if (null != forestBreath)
         {
+            WarnCrystalDecoBreathShadowed(_tileData, crystalOn, "숲의 숨결");
             return forestBreath;
         }
 
         // 결정 장식 숨쉬기
-        CrystalDecoBreathSettings crystalBreath = _tileData.CrystalDecoBreath;
-        if (null != crystalBreath && true == crystalBreath.enabled)
+        if (crystalOn)
         {
+#if UNITY_EDITOR
+            if (null == crystalBreath.material)
+            {
+                Debug.LogWarning($"[StageAmbienceShaderGlobals] {_tileData.name}: 결정 장식 숨쉬기가 켜져 있지만 머티리얼이 비어 있어 원래 데코 머티리얼로 그립니다.", _tileData);
+            }
+#endif
             return crystalBreath.material;
         }
 
@@ -513,6 +549,8 @@ public static class StageAmbienceShaderGlobals
         townWindGust = null;
         townWaterShimmer = null;
         townColorGrading = null;
+        townWindPetals = null;
+        townCloudShadows = null;
         Clear();
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= HandleSceneLoaded;
         UnityEngine.SceneManagement.SceneManager.sceneLoaded += HandleSceneLoaded;

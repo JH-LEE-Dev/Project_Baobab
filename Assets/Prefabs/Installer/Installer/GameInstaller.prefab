@@ -86,6 +86,41 @@ MonoBehaviour:
     enabled: 1
     profile: {fileID: 11400000, guid: 2b91fb6aaa714624c91f64f0ce44646e, type: 2}
     weight: 1
+  windPetals:
+    enabled: 1
+    material: {fileID: 2100000, guid: a994e683f21422642ab5945b27c74b71, type: 2}
+    sortingLayerName: Objects
+    sortingOrder: 32767
+    spawnAttemptsPerSecond: 280
+    gustThreshold: 0.55
+    viewMargin: 1.5
+    speedScaleRange: {x: 0.7, y: 1.05}
+    liftRange: {x: 0.1, y: 0.45}
+    gravity: 0.25
+    flutterStrength: 0.35
+    flutterFrequency: 0.9
+    lifetimeRange: {x: 1.4, y: 2.4}
+    tumbleCycles: 5
+    colors:
+    - {r: 1, g: 1, b: 1, a: 1}
+    - {r: 1, g: 0.8, b: 0.88, a: 1}
+    - {r: 1, g: 0.66, b: 0.8, a: 1}
+    - {r: 1, g: 0.95, b: 0.62, a: 1}
+    maxParticles: 160
+  cloudShadows:
+    enabled: 1
+    material: {fileID: 2100000, guid: 09e1455b4a5e0bc4f9f1fa788d926e8e, type: 2}
+    sortingLayerName: Objects
+    sortingOrder: 32766
+    direction: {x: 1, y: -0.35}
+    speed: 0.6
+    scale: 10
+    coverage: 0.04
+    softness: 0.05
+    shadowColor: {r: 0.78, g: 0.84, b: 0.95, a: 1}
+    bands: 2
+    ditherWidth: 0.6
+    viewMargin: 2
 --- !u!1 &616997715229847835
 GameObject:
   m_ObjectHideFlags: 0
