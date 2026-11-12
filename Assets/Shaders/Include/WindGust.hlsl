@@ -16,9 +16,14 @@ float4 _WindGustC;
 float4 _WindGustD;
 float4 _WindGustE;
 
+// 곱셈·frac만 쓰는 해시. sin 해시는 GPU마다 sin 정밀도가 달라 덩어리가 켜지고 꺼지는 자리가 기기·CPU 계산과 어긋나므로 쓰지 않는다
+// (StageWindPetals가 같은 식을 CPU에서 계산해 꽃가루를 돌풍 자리에 띄운다).
 float WindGustHash11(float _x)
 {
-    return frac(sin(_x * 127.1) * 43758.5453);
+    float p = frac(_x * 0.1031);
+    p *= p + 33.33;
+    p *= p + p;
+    return frac(p);
 }
 
 float WindGustValueNoise(float _x)

@@ -214,8 +214,9 @@ public class StageWindPetals : MonoBehaviour
         float halfHeight = cam.orthographicSize + settings.viewMargin;
         float halfWidth = cam.orthographicSize * cam.aspect + settings.viewMargin;
         Vector2 center = cam.transform.position;
-        // 셰이더의 _Time.y와 같은 시간
-        float time = Time.timeSinceLevelLoad;
+        // 셰이더의 _Time.y와 같은 시간. URP는 플레이 중 _Time.y에 Time.time을 넣는다
+        // (Time.timeSinceLevelLoad는 씬을 불러올 때마다 0으로 돌아가 돌풍 자리와 어긋난다).
+        float time = Time.time;
         float size = FramePixels / PixelsPerUnit;
 
         ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams();
@@ -253,8 +254,12 @@ public class StageWindPetals : MonoBehaviour
     // // WindGust.hlsl SampleWindGust를 그대로 옮긴 것(돌풍 세기 0~1). 꽃잎이 날 자리를 고를 때만 쓴다.
     private static float Hash11(float _x)
     {
-        float v = Mathf.Sin(_x * 127.1f) * 43758.5453f;
-        return v - Mathf.Floor(v);
+        // WindGust.hlsl WindGustHash11과 같은 곱셈·frac 해시(GPU와 결과가 같다)
+        float p = _x * 0.1031f;
+        p -= Mathf.Floor(p);
+        p *= p + 33.33f;
+        p *= p + p;
+        return p - Mathf.Floor(p);
     }
 
     private static float ValueNoise(float _x)

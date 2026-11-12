@@ -121,6 +121,21 @@ MonoBehaviour:
     bands: 2
     ditherWidth: 0.6
     viewMargin: 2
+    rain:
+      enabled: 1
+      material: {fileID: 2100000, guid: a994e683f21422642ab5945b27c74b71, type: 2}
+      sortingLayerName: Objects
+      sortingOrder: 32767
+      insetRadius: 2
+      searchesPerSecondPerArea: 8
+      dropsPerHit: 1
+      startAboveScreen: {x: 0.5, y: 2}
+      fallSpeed: 9
+      streakPixels: 6
+      color: {r: 0.82, g: 0.9, b: 1, a: 0.55}
+      maxParticles: 400
+      splashDuration: 0.2
+      splashColor: {r: 0.85, g: 0.93, b: 1, a: 0.7}
 --- !u!1 &616997715229847835
 GameObject:
   m_ObjectHideFlags: 0
