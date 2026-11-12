@@ -186,6 +186,12 @@ public class TreeVisualComponent : MonoBehaviour
     private static readonly int DamageLookID = Shader.PropertyToID("_DamageLook");
     private float appliedTopDamageLook = 0f;
     private float appliedBottomDamageLook = 0f;
+    // 배리어가 깨진 직후의 푸른 테두리 잔광 세기. 지금 렌더러에 들어가 있는 값을 기억해 같은 값은 다시 쓰지 않는다.
+    private static readonly int BarrierAfterglowID = Shader.PropertyToID("_BarrierAfterglow");
+    private float appliedBarrierAfterglow = 0f;
+    // 2스테이지 포자막 상태(SetSporeShieldFx). 지금 포자막 렌더러에 들어가 있는 값을 기억해 같은 값은 다시 쓰지 않는다.
+    private static readonly int SporeShieldFxID = Shader.PropertyToID("_SporeShieldFx");
+    private Vector4 appliedSporeShieldFx = Vector4.zero;
     // 치명타(빨간색) 점멸이 끝나는 시각. 이 시각 전까지 들어온 일반 타격은 점멸을 덮어쓰지 않는다.
     // bool 플래그 대신 시각으로 들고 있는 이유: 점멸 도중 오브젝트가 꺼지면 코루틴이 끝을 못 봐서
     // 플래그가 켜진 채 남을 수 있는데, 시각은 시간이 지나면 저절로 풀린다.
@@ -1024,6 +1030,55 @@ public class TreeVisualComponent : MonoBehaviour
         sr.SetPropertyBlock(_flashMPB);
     }
 
+    /// <summary>
+    /// 배리어가 깨진 직후의 잔광 세기(0~1)를 나무 그림에 넣는다. 나무 셰이더가 그림 테두리를 배리어와 같은 푸른빛으로
+    /// 밝힌다(0이면 그대로). VFX_TreeBarrier가 깨짐 연출 동안 부르고 끝나면 0으로 돌린다. 렌더링 전용이다.
+    /// 같은 값이면 아무것도 하지 않으므로, 호출부가 값을 단계로 끊어 넘기면 프로퍼티 블록 쓰기가 그만큼 줄어든다.
+    /// </summary>
+    public void SetBarrierAfterglow(float _amount)
+    {
+        if (appliedBarrierAfterglow == _amount) return;
+
+        if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+
+        appliedBarrierAfterglow = _amount;
+        // 수관과 밑동 모두에 넣는다(밑동은 가늘어서 대부분 테두리 빛으로 밝아진다).
+        SetBarrierAfterglowToRenderer(topRenderer, _amount);
+        SetBarrierAfterglowToRenderer(bottomRenderer, _amount);
+    }
+
+    private void SetBarrierAfterglowToRenderer(SpriteRenderer sr, float _amount)
+    {
+        if (sr == null) return;
+        sr.GetPropertyBlock(_flashMPB);
+        _flashMPB.SetFloat(BarrierAfterglowID, _amount);
+        sr.SetPropertyBlock(_flashMPB);
+    }
+
+    /// <summary>
+    /// 2스테이지 포자막 상태(x 깎인 정도, y 번쩍임, z 차오르는 중, w 가득 참 맥동, 각 0~1)를 포자막 그림(Top/Bottom Shield)에만 넣는다.
+    /// 나무 셰이더(TreeSporeShield.hlsl)가 포자막 그림의 하늘색 결정 픽셀만 바꾼다(0이면 그대로). StageSporeShieldFx가 부른다. 렌더링 전용이다.
+    /// 같은 값이면 아무것도 하지 않는다.
+    /// </summary>
+    public void SetSporeShieldFx(Vector4 _fx)
+    {
+        if (appliedSporeShieldFx == _fx) return;
+
+        if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+
+        appliedSporeShieldFx = _fx;
+        SetSporeShieldFxToRenderer(topShieldRenderer, _fx);
+        SetSporeShieldFxToRenderer(bottomShieldRenderer, _fx);
+    }
+
+    private void SetSporeShieldFxToRenderer(SpriteRenderer sr, Vector4 _fx)
+    {
+        if (sr == null) return;
+        sr.GetPropertyBlock(_flashMPB);
+        _flashMPB.SetVector(SporeShieldFxID, _fx);
+        sr.SetPropertyBlock(_flashMPB);
+    }
+
     // TreeFlashSystem이 프레임마다 호출한다(예전 FlashRoutine의 ApplyFlashAmountToRenderers 호출과 동일).
     internal void ApplyFlashAmountFromSystem(float _flash)
     {
@@ -1079,6 +1134,31 @@ public class TreeVisualComponent : MonoBehaviour
     public ParticleColorSet GetTopVfxColor() => currentTopVfxColor;
     public ParticleColorSet GetBottomVfxColor() => currentBottomVfxColor;
 
+    /// <summary>
+    /// 지진에 쓰러진 나무를 공중으로 튀어 오르게 보이는 대역(QuakeTreeLaunch)이 베낄 그림을 모은다. 읽기만 한다.
+    /// _body: 지금 보이는 수관·밑동과 그 위에 겹친 포자막·하이라이트(함께 튀어 오른다). _shadows: 바닥 그림자(바닥에 남는다).
+    /// 물 위 반사·외곽선·별자리 표시는 담지 않는다.
+    /// </summary>
+    public void CollectLaunchRenderers(List<SpriteRenderer> _body, List<SpriteRenderer> _shadows)
+    {
+        AddIfVisible(_body, bottomRenderer);
+        AddIfVisible(_body, bottomShieldRenderer);
+        AddIfVisible(_body, bottomHighlightRenderer);
+        AddIfVisible(_body, topRenderer);
+        AddIfVisible(_body, topShieldRenderer);
+        AddIfVisible(_body, topHighlightRenderer);
+        AddIfVisible(_shadows, bottomShadowRenderer);
+        AddIfVisible(_shadows, topShadowRenderer);
+    }
+
+    private static void AddIfVisible(List<SpriteRenderer> _into, SpriteRenderer _renderer)
+    {
+        if (null == _renderer || false == _renderer.enabled || false == _renderer.gameObject.activeInHierarchy) return;
+        if (_renderer.forceRenderingOff || null == _renderer.sprite || _renderer.color.a <= 0f) return;
+
+        _into.Add(_renderer);
+    }
+
     // 이 나무의 transform에 스케일 트윈을 거는 묘목 연출을 알려준다(ResetVisualState의 DOKill 생략 판단용).
     public void SetSaplingVEComponent(SaplingVEComponent _saplingVEComponent)
     {
@@ -1121,6 +1201,12 @@ public class TreeVisualComponent : MonoBehaviour
 
         // 5. 깎인 금·숯불 초기화 (풀에서 다시 꺼낸 새 나무에 남지 않게)
         SetDamageLook(0f, false);
+
+        // 6. 배리어 잔광 초기화
+        SetBarrierAfterglow(0f);
+
+        // 7. 포자막 상태 표현 초기화
+        SetSporeShieldFx(Vector4.zero);
     }
 
 

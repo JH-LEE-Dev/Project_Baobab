@@ -4,6 +4,7 @@ using UnityEngine;
 /// <summary>
 /// 장식 숨쉬기. 화면에 보이는(컬링으로 켜져 있는) 지정한 장식이 저마다의 박자로 몇 초에 한 번 은은하게 밝아졌다 돌아온다.
 /// 박자는 장식 자리로 정해지므로(자리 해시) 장식마다 따로 기억할 것이 없고, 매 프레임 보이는 장식만 훑는다.
+/// 숲의 숨결(StageForestBreath) 물결이 지나가는 동안에는 물결 박자에 맞춰 함께 밝아진다(두 밝기를 더한다).
 /// 장식의 밝기 값(StaticObj HDR 배수)만 바꾸므로 렌더링만 바뀌고 게임 동작에는 영향이 없다.
 /// 해당 씬에 붙여 두므로 씬이 내려가면 같이 사라지고, 다시 켤 때는 이전 것을 지우고 새로 만든다.
 /// 꺼진 곳·로그라이크에서는 아무것도 만들지 않는다.
@@ -61,6 +62,7 @@ public class StageDecoBreath : MonoBehaviour
         float minPeriod = Mathf.Max(0.5f, Mathf.Min(settings.periodRange.x, settings.periodRange.y));
         float maxPeriod = Mathf.Max(minPeriod, Mathf.Max(settings.periodRange.x, settings.periodRange.y));
         float sharpness = Mathf.Max(1f, settings.sharpness);
+        float breathBrightness = StageForestBreath.DecoBrightness;
 
         List<StaticObj> prefabs = settings.decoPrefabs;
         for (int p = 0; p < prefabs.Count; p++)
@@ -85,10 +87,12 @@ public class StageDecoBreath : MonoBehaviour
                 float phase = (time / period + Hash(position.x, position.y, 0.71f)) * Mathf.PI * 2f;
                 // 사인의 윗부분만 써서 대부분은 원래 밝기, 박자마다 한 번 부드럽게 밝아진다.
                 float glow = Mathf.Pow(Mathf.Max(0f, Mathf.Sin(phase)), sharpness);
+                // 숲의 숨결 물결이 지나가는 동안 함께 숨을 들이쉰다(물결이 없으면 0).
+                float breath = breathBrightness > 0f ? StageForestBreath.Sample(position) : 0f;
 
-                if (glow > 0.001f)
+                if (glow > 0.001f || breath > 0.001f)
                 {
-                    deco.SetHDRMultiplier(1f + settings.amount * glow);
+                    deco.SetHDRMultiplier(1f + settings.amount * glow + breathBrightness * breath);
                     brightDecos.Add(deco);
                 }
                 else if (brightDecos.Remove(deco))

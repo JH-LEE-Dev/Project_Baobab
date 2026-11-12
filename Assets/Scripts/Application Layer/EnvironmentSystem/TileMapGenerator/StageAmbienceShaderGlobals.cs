@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 스테이지 분위기 연출(돌풍·물 반짝임·색보정·포자 연출)을 켜고 끈다.
+/// 스테이지 분위기 연출(돌풍·물 반짝임·색보정·포자 연출·숲의 숨결)을 켜고 끈다.
 /// 전역값은 씬이 바뀌어도 남으므로, 본편 던전 맵을 깔 때(TileMapGenerator.GenerateMap)만 스테이지 데이터대로 켜고
 /// 마을·로그라이크·메인메뉴·엔딩 등 던전 씬이 아닌 곳에서는 항상 0(꺼짐)으로 되돌린다.
 /// 예외로 마을 분위기 연출(돌풍·물 반짝임·색보정)은 마을 Grid가 생길 때(TownTileManager.CreateGrid) 켜고 Grid가 사라질 때 끈다.
@@ -33,7 +33,9 @@ public static class StageAmbienceShaderGlobals
     private static readonly int WaterSporeAID = Shader.PropertyToID("_WaterSporeA");
     private static readonly int WaterSporeBID = Shader.PropertyToID("_WaterSporeB");
     private static readonly int WaterSporeCID = Shader.PropertyToID("_WaterSporeC");
+    private static readonly int WaterSporeDID = Shader.PropertyToID("_WaterSporeD");
     private static readonly int WaterSporeColorID = Shader.PropertyToID("_WaterSporeColor");
+    private static readonly int WaterSporeColorBID = Shader.PropertyToID("_WaterSporeColorB");
     private static readonly int WaterSporeSurfaceAID = Shader.PropertyToID("_WaterSporeSurfaceA");
     private static readonly int WaterSporeSurfaceBID = Shader.PropertyToID("_WaterSporeSurfaceB");
     private static readonly int WaterBubbleAID = Shader.PropertyToID("_WaterBubbleA");
@@ -57,6 +59,11 @@ public static class StageAmbienceShaderGlobals
     private static readonly int WaterMagmaCrustColorBID = Shader.PropertyToID("_WaterMagmaCrustColorB");
     private static readonly int WaterMagmaCrustRimColorID = Shader.PropertyToID("_WaterMagmaCrustRimColor");
     private static readonly int HideWaterReflectionID = Shader.PropertyToID("_StageHideWaterReflection");
+    private static readonly int WaterDepthAID = Shader.PropertyToID("_WaterDepthA");
+    private static readonly int WaterDepthBID = Shader.PropertyToID("_WaterDepthB");
+    private static readonly int WaterDepthSurfaceID = Shader.PropertyToID("_WaterDepthSurface");
+    private static readonly int WaterDepthSideID = Shader.PropertyToID("_WaterDepthSide");
+    private static readonly int WaterDepthDeepColorID = Shader.PropertyToID("_WaterDepthDeepColor");
     private static readonly int TreeTwinkleAID = Shader.PropertyToID("_TreeTwinkleA");
     private static readonly int TreeTwinkleBID = Shader.PropertyToID("_TreeTwinkleB");
     private static readonly int TreeTwinkleCID = Shader.PropertyToID("_TreeTwinkleC");
@@ -69,6 +76,8 @@ public static class StageAmbienceShaderGlobals
     private static WindGustSettings townWindGust;
     private static WaterShimmerSettings townWaterShimmer;
     private static StageColorGradingSettings townColorGrading;
+    private static WindPetalSettings townWindPetals;
+    private static CloudShadowSettings townCloudShadows;
 
     // // 퍼블릭 제어 메서드
     public static void Apply(StageTileDataSO _tileData)
@@ -87,6 +96,7 @@ public static class StageAmbienceShaderGlobals
         ApplyWaterSpores(_tileData.WaterSpores);
         ApplyWaterBubbles(_tileData.WaterBubbles);
         ApplyWaterMagma(_tileData.WaterMagma);
+        ApplyWaterDepth(_tileData.WaterDepth);
         // 물(용암) 위에 겹쳐 그리는 나무·캐릭터 반사를 끄는 스테이지(렌더링 전용)
         Shader.SetGlobalFloat(HideWaterReflectionID, _tileData.HideWaterReflections ? 1f : 0f);
         ApplyTreeStarTwinkle(_tileData.TreeStarTwinkle);
@@ -100,13 +110,22 @@ public static class StageAmbienceShaderGlobals
         StageSporeHaze.Apply(_tileData.HeatHaze, DungeonSceneName, "HeatHaze");
         // 나무 타격 별가루(꺼진 스테이지는 아무것도 띄우지 않는다)
         StageHitSparkles.Apply(_tileData.HitSparkles, DungeonSceneName);
+        // 숲의 숨결(꺼진 스테이지는 아무것도 만들지 않는다)
+        StageForestBreath.Apply(_tileData.ForestBreath, DungeonSceneName);
+        // 포자막 상태 연출(꺼진 스테이지는 아무것도 만들지 않는다)
+        StageSporeShieldFx.Apply(_tileData.SporeShieldFx, DungeonSceneName);
+        // 돌풍에 실려 날아가는 꽃잎·잎(꺼진 스테이지나 돌풍이 없는 스테이지는 아무것도 만들지 않는다)
+        StageWindPetals.Apply(_tileData.WindPetals, _tileData.WindGust, DungeonSceneName);
+        // 흐르는 구름 그림자(꺼진 스테이지는 아무것도 만들지 않는다)
+        StageCloudShadows.Apply(_tileData.CloudShadows, DungeonSceneName);
     }
 
     /// <summary>
-    /// 마을 돌풍·물 반짝임·색보정을 켠다(null이거나 꺼진 설정은 꺼진다). 로그라이크면 모두 끈다.
-    /// 마을 Grid가 있는 동안 설정을 기억해 두어, 씬 로드 때의 일괄 끄기 뒤에도 다시 켜진다.
+    /// 마을 돌풍·물 반짝임·색보정·돌풍 꽃잎·구름 그림자를 켠다(null이거나 꺼진 설정은 꺼진다). 로그라이크면 모두 끈다.
+    /// 돌풍 꽃잎은 돌풍이 켜져 있을 때만 생긴다. 마을 Grid가 있는 동안 설정을 기억해 두어, 씬 로드 때의 일괄 끄기 뒤에도 다시 켜진다.
     /// </summary>
-    public static void ApplyTown(WindGustSettings _windGust, WaterShimmerSettings _waterShimmer, StageColorGradingSettings _colorGrading)
+    public static void ApplyTown(WindGustSettings _windGust, WaterShimmerSettings _waterShimmer, StageColorGradingSettings _colorGrading,
+        WindPetalSettings _windPetals, CloudShadowSettings _cloudShadows)
     {
         if (GameModeContext.IsRoguelike)
         {
@@ -118,6 +137,8 @@ public static class StageAmbienceShaderGlobals
         townWindGust = _windGust;
         townWaterShimmer = _waterShimmer;
         townColorGrading = _colorGrading;
+        townWindPetals = _windPetals;
+        townCloudShadows = _cloudShadows;
         ApplyTownSettings();
     }
 
@@ -130,6 +151,8 @@ public static class StageAmbienceShaderGlobals
         townWindGust = null;
         townWaterShimmer = null;
         townColorGrading = null;
+        townWindPetals = null;
+        townCloudShadows = null;
         Clear();
     }
 
@@ -152,6 +175,8 @@ public static class StageAmbienceShaderGlobals
         ApplyWindGust(townWindGust);
         ApplyWaterShimmer(townWaterShimmer);
         StageAtmosphere.Apply(townColorGrading, TownSceneName);
+        StageWindPetals.Apply(townWindPetals, townWindGust, TownSceneName);
+        StageCloudShadows.Apply(townCloudShadows, TownSceneName);
     }
 
     public static void Clear()
@@ -162,6 +187,7 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalVector(WaterSporeAID, Vector4.zero);
         Shader.SetGlobalVector(WaterBubbleAID, Vector4.zero);
         Shader.SetGlobalVector(WaterMagmaAID, Vector4.zero);
+        Shader.SetGlobalVector(WaterDepthAID, Vector4.zero);
         Shader.SetGlobalFloat(HideWaterReflectionID, 0f);
         Shader.SetGlobalVector(TreeTwinkleAID, Vector4.zero);
         Shader.SetGlobalVector(TreeHeatChargeAID, Vector4.zero);
@@ -173,8 +199,14 @@ public static class StageAmbienceShaderGlobals
         StageLavaEmbers.Remove();
         StageLavaSpouts.Remove();
         StageDecoSteam.Remove();
+        StageFireflies.Remove();
+        StageForestBreath.Remove();
+        StageSporeShieldFx.Remove();
+        StageWindPetals.Remove();
+        StageCloudShadows.Remove();
         StageLavaGlow.Clear();
         StageLavaSeaMap.Clear();
+        StageShoreMap.Clear();
     }
 
     /// <summary>
@@ -236,7 +268,14 @@ public static class StageAmbienceShaderGlobals
         }
 
         // 용암 빛이 켜진 스테이지는 바닥을 용암 빛 머티리얼로 그린다(돌풍과 함께 켜는 스테이지는 없다).
-        return GetLavaGlowMaterial(_tileData);
+        Material lavaGlow = GetLavaGlowMaterial(_tileData);
+        if (null != lavaGlow)
+        {
+            return lavaGlow;
+        }
+
+        // 숲의 숨결이 켜진 스테이지는 바닥을 숨결 머티리얼로 그린다.
+        return GetForestBreathGroundMaterial(_tileData);
     }
 
     /// <summary>
@@ -263,8 +302,18 @@ public static class StageAmbienceShaderGlobals
         return true;
     }
 
+    // 결정 장식 숨쉬기를 켰는데 앞 순서의 데코 머티리얼이 먼저 잡혀 쓰이지 않을 때 에디터에서 알린다.
+    [System.Diagnostics.Conditional("UNITY_EDITOR")]
+    private static void WarnCrystalDecoBreathShadowed(StageTileDataSO _tileData, bool _bCrystalOn, string _winner)
+    {
+        if (_bCrystalOn)
+        {
+            Debug.LogWarning($"[StageAmbienceShaderGlobals] {_tileData.name}: 결정 장식 숨쉬기가 켜져 있지만 {_winner} 데코 머티리얼이 먼저 쓰여 적용되지 않습니다.", _tileData);
+        }
+    }
+
     /// <summary>
-    /// 이 스테이지에서 바닥 장식 타일맵에 끼울 머티리얼. 용암 빛이 꺼져 있거나 로그라이크면 null(원래 머티리얼 유지).
+    /// 이 스테이지에서 바닥 장식 타일맵에 끼울 머티리얼. 용암 빛·숲의 숨결·결정 장식 숨쉬기가 꺼져 있거나 로그라이크면 null(원래 머티리얼 유지).
     /// </summary>
     public static Material GetDecoMaterialOverride(StageTileDataSO _tileData)
     {
@@ -273,7 +322,49 @@ public static class StageAmbienceShaderGlobals
             return null;
         }
 
-        return GetLavaGlowMaterial(_tileData);
+        // 데코 타일맵 머티리얼은 하나뿐이라 용암 빛 → 숲의 숨결 → 결정 장식 숨쉬기 순으로 하나만 쓴다.
+        CrystalDecoBreathSettings crystalBreath = _tileData.CrystalDecoBreath;
+        bool crystalOn = null != crystalBreath && true == crystalBreath.enabled;
+
+        Material lavaGlow = GetLavaGlowMaterial(_tileData);
+        if (null != lavaGlow)
+        {
+            WarnCrystalDecoBreathShadowed(_tileData, crystalOn, "용암 빛");
+            return lavaGlow;
+        }
+
+        // 풀 장식도 바닥과 같이 숨결 물결에 물든다(바닥만 물들면 장식 자리가 어둡게 비어 보인다).
+        Material forestBreath = GetForestBreathGroundMaterial(_tileData);
+        if (null != forestBreath)
+        {
+            WarnCrystalDecoBreathShadowed(_tileData, crystalOn, "숲의 숨결");
+            return forestBreath;
+        }
+
+        // 결정 장식 숨쉬기
+        if (crystalOn)
+        {
+#if UNITY_EDITOR
+            if (null == crystalBreath.material)
+            {
+                Debug.LogWarning($"[StageAmbienceShaderGlobals] {_tileData.name}: 결정 장식 숨쉬기가 켜져 있지만 머티리얼이 비어 있어 원래 데코 머티리얼로 그립니다.", _tileData);
+            }
+#endif
+            return crystalBreath.material;
+        }
+
+        return null;
+    }
+
+    private static Material GetForestBreathGroundMaterial(StageTileDataSO _tileData)
+    {
+        ForestBreathSettings forestBreath = _tileData.ForestBreath;
+        if (null == forestBreath || false == forestBreath.enabled)
+        {
+            return null;
+        }
+
+        return forestBreath.groundMaterial;
     }
 
     private static Material GetLavaGlowMaterial(StageTileDataSO _tileData)
@@ -367,7 +458,9 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalVector(WaterSporeAID, new Vector4(1f, Mathf.Max(4f, _settings.cellTexels), _settings.duty, Mathf.Max(0f, _settings.brightness)));
         Shader.SetGlobalVector(WaterSporeBID, new Vector4(dir.x, dir.y, Mathf.Max(0f, _settings.travelTexels), Mathf.Max(0.1f, _settings.period)));
         Shader.SetGlobalVector(WaterSporeCID, new Vector4(_settings.wobbleTexels, _settings.colorTolerance, 0f, 0f));
+        Shader.SetGlobalVector(WaterSporeDID, new Vector4(Mathf.Clamp01(_settings.glowArms), Mathf.Clamp(_settings.haloTexels, 0f, 3f), Mathf.Clamp01(_settings.haloAlpha), Mathf.Clamp01(_settings.twinkle)));
         Shader.SetGlobalVector(WaterSporeColorID, ToShaderColor(_settings.sporeColor));
+        Shader.SetGlobalVector(WaterSporeColorBID, ToShaderColor(_settings.sporeColorB));
         Shader.SetGlobalVector(WaterSporeSurfaceAID, ToShaderColor(_settings.surfaceColorA));
         Shader.SetGlobalVector(WaterSporeSurfaceBID, ToShaderColor(_settings.surfaceColorB));
     }
@@ -392,6 +485,24 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalVector(WaterBubbleSurfaceID, surface);
         // 바다 쪽 빈도는 용암 바다 지도(StageLavaSeaMap)가 켜졌을 때만 쓰인다.
         Shader.SetGlobalVector(WaterBubbleCID, new Vector4(Mathf.Clamp01(_settings.seaFrequency), 0f, 0f, 0f));
+    }
+
+    private static void ApplyWaterDepth(WaterDepthSettings _settings)
+    {
+        if (null == _settings || false == _settings.enabled)
+        {
+            Shader.SetGlobalVector(WaterDepthAID, Vector4.zero);
+            return;
+        }
+
+        // 물가 거리는 물가 지도(StageShoreMap)가 텍스처로 넘긴다(그 텍스처가 없으면 셰이더가 그리지 않는다).
+        float startCells = Mathf.Max(0f, _settings.startCells);
+        float fullCells = Mathf.Max(startCells + 0.1f, _settings.fullCells);
+        Shader.SetGlobalVector(WaterDepthAID, new Vector4(1f, _settings.colorTolerance, Mathf.Clamp(_settings.bands, 2, 8), Mathf.Clamp01(_settings.ditherWidth)));
+        Shader.SetGlobalVector(WaterDepthBID, new Vector4(startCells, fullCells, 0f, 0f));
+        Shader.SetGlobalVector(WaterDepthSurfaceID, ToShaderColor(_settings.surfaceColor));
+        Shader.SetGlobalVector(WaterDepthSideID, ToShaderColor(_settings.sideColor));
+        Shader.SetGlobalVector(WaterDepthDeepColorID, ToShaderColor(_settings.deepColor));
     }
 
     private static void ApplyWaterMagma(WaterMagmaSettings _settings)
@@ -438,6 +549,8 @@ public static class StageAmbienceShaderGlobals
         townWindGust = null;
         townWaterShimmer = null;
         townColorGrading = null;
+        townWindPetals = null;
+        townCloudShadows = null;
         Clear();
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= HandleSceneLoaded;
         UnityEngine.SceneManagement.SceneManager.sceneLoaded += HandleSceneLoaded;

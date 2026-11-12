@@ -71,5 +71,11 @@ public enum EHapticEvent
     /// <summary>과열이 가득 참(불씨를 주워 최대치에 닿은 순간). (InDungeonObjectManager.PlayOverheatFullMoment)</summary>
     OverheatFull,
 
+    /// <summary>지진 물결이 화면 끝까지 퍼진 뒤 한 번 더 "쿵" 하는 여진. (QuakeImpactFeedback)</summary>
+    QuakeAftershock,
+
+    /// <summary>지진이 터지기 직전 땅이 웅웅 떠는 전조(약 0.35초). 끝나면 Earthquake가 이어진다. (EnvironmentSystem)</summary>
+    QuakeBuildUp,
+
     Count
 }

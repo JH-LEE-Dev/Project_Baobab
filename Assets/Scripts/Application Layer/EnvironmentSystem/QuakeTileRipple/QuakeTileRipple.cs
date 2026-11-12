@@ -10,11 +10,11 @@ public sealed class QuakeTileRippleSettings
     [Tooltip("물결 앞머리 속도(바닥 평면 거리/초). 아이소 화면에서 가로로는 이 속도, 세로로는 절반 속도로 퍼진다.")]
     public float frontSpeed = 10f;
     [Tooltip("진원 가까이에서 마루가 솟는 최대 높이(월드 단위, 1 = 32픽셀). 멀어질수록 줄어든다.")]
-    public float rippleHeight = 0.375f;
+    public float rippleHeight = 0.56f;
     [Tooltip("물결 한 파장의 길이(바닥 평면 거리, 대략 칸 수). 짧을수록 칸마다 높이 차가 커져 출렁임이 거칠다.")]
-    public float rippleWavelength = 4f;
-    [Tooltip("앞머리 뒤로 물결이 몇 파장 동안 이어지다 잦아드는지. 마루 → 골 → 마루 순으로 줄어든다.")]
-    public float rippleWaves = 2f;
+    public float rippleWavelength = 6f;
+    [Tooltip("앞머리 뒤로 물결이 몇 파장 동안 이어지다 잦아드는지. 마루 → 골 → 마루 순으로 줄어든다. 반 파장의 배수(2.5 등)면 끝에서 높이가 0이라 멈출 때 튀지 않는다.")]
+    public float rippleWaves = 2.5f;
     [Tooltip("진원(캐릭터 발밑)에서 이 거리까지는 높이가 0에서 차오른다. 캐릭터가 선 칸이 튀어 발이 바닥에 묻히거나 뜨지 않게 한다.")]
     public float calmRadius = 1.2f;
     [Tooltip("물결이 닿는 거리(바닥 평면 거리). 여기서 높이가 0이 된다. 기준 화면(가로 20)의 가장자리쯤이면 화면 끝에서 자연스럽게 잦아든다.")]
@@ -41,6 +41,18 @@ public sealed class QuakeTileRippleSettings
     public bool crackGlow = true;
     [Tooltip("틈 빛 HDR 세기. 용암 층(4스테이지 1.85)보다 높여 틈 빛에서 블룸이 번지게 한다. 2.5쯤부터 은은하게, 3.2쯤이면 또렷하게 번진다.")]
     [Min(0f)] public float crackGlowHDRIntensity = 3.2f;
+    [Tooltip("물결이 터지는 순간 틈 빛 HDR 세기를 이 비율만큼 더 올렸다가(0.9 = 1.9배) crackGlowFlashSeconds 동안 원래 세기로 내린다. 0이면 번쩍이지 않는다.")]
+    [Min(0f)] public float crackGlowFlashBoost = 1.4f;
+    [Tooltip("틈 빛 번쩍임이 잦아드는 시간(초). 진원 둘레 첫 고리가 솟는 동안이다.")]
+    [Min(0.01f)] public float crackGlowFlashSeconds = 0.6f;
+
+    [Header("앞머리")]
+    [Tooltip("물결 앞머리 바로 뒤 이 폭(바닥 평면 거리, 칸 한 걸음이 약 0.7)의 칸이 앞머리 줄이다. 화면 끝까지 쓸고 가는 선이 또렷하게 보인다. 0이면 강조하지 않는다.")]
+    [Min(0f)] public float frontBand = 0.8f;
+    [Tooltip("앞머리 줄 칸 이음매에 까는 용암 틈 빛 굵기(줄 수, 0~16). 실제로 솟은 틈이 더 깊으면 그 틈을 그대로 둔다. 0이면 깔지 않는다.")]
+    [Range(0, 16)] public int frontGlowRows = 6;
+    [Tooltip("앞머리 줄 칸의 윗면 테두리 색. 진원에서 먼 칸도 이 진하기로 드러난다.")]
+    public Color frontOutlineColor = new Color(1f, 0.93f, 0.72f, 1f);
 
     [Header("물체")]
     [Tooltip("물결 위의 물체(나무·원목·아이템·차량·캐릭터 등)도 선 칸 높이만큼 함께 출렁인다. 화면을 그리는 동안에만 옮겨 판정·정렬·충돌은 그대로다.")]
@@ -56,16 +68,100 @@ public sealed class QuakeTileRippleSettings
     public float cameraShakeIntensity = 3f;
     [Tooltip("카메라 흔들림 시간(초). 물결이 화면 끝에 닿을 무렵까지 잦아들며 이어진다.")]
     public float cameraShakeSeconds = 1.1f;
+    [Tooltip("켜면 흔들림이 앞머리가 피해 범위 끝(화면 끝)에 닿을 때까지 이어진다(cameraShakeSeconds보다 짧아지지는 않는다).")]
+    public bool cameraShakeFollowFront = true;
+    [Tooltip("앞머리가 피해 범위 끝에 닿은 뒤 이만큼(초) 지나 작은 여진이 한 번 더 온다(흔들림·찍기·진동). 세기가 0이면 여진이 없다.")]
+    public float aftershockDelay = 0.2f;
+    public float aftershockShakeIntensity = 2.6f;
+    public float aftershockShakeSeconds = 0.6f;
+    public float aftershockKickDistance = 0.2f;
     [Tooltip("시작할 때 카메라를 아래로 한 번 찍는 거리(월드, 옵션 100% 기준). 찍은 뒤 되튀며 잦아들고 흔들림이 이어진다. 0이면 찍지 않는다.")]
     public float cameraKickDistance = 0.3f;
     [Tooltip("카메라 찍기가 잦아드는 시간(초).")]
     public float cameraKickSeconds = 0.3f;
+    [Tooltip("시작할 때 화면을 순간 확대하는 배율(옵션 100% 기준, 1.035 = 3.5% 확대). 카메라 흔들림 옵션 비율만큼 줄어든다. 1 이하면 확대하지 않는다.")]
+    public float cameraZoomPunch = 1.06f;
+    [Tooltip("확대해 들어가는 시간·머무는 시간·돌아오는 시간(초).")]
+    public float cameraZoomInSeconds = 0.05f;
+    public float cameraZoomHoldSeconds = 0.08f;
+    public float cameraZoomOutSeconds = 0.4f;
 
     [Header("시작 한 방")]
     [Tooltip("진원 둘레 첫 고리 높이를 이 비율만큼 더 키운다(0.6 = 최대 1.6배). 진원에서 멀어질수록 원래 높이로 돌아온다. 이웃 칸 높이 차 한도(옆벽 15픽셀, 물결 높이·파장·칸 크기로 정해진다)를 넘는 만큼은 잘리므로, 물결이 높으면 실제로 커지는 비율이 이보다 작다.")]
     public float epicenterBoost = 0.6f;
     [Tooltip("첫 고리를 키우는 거리(바닥 평면 거리). 진원에서 이 거리까지 키운 몫이 0으로 줄어든다.")]
     public float epicenterBoostRadius = 5f;
+    [Tooltip("터지는 순간 진원 둘레 칸이 이 깊이(월드, 1 = 32픽셀)로 확 꺼졌다가 되튀어 솟는다(물결과 더해진다). 진원에서 멀어질수록 얕다. 0이면 꺼지지 않는다.")]
+    [Min(0f)] public float slamDepth = 0.47f;
+    [Tooltip("꺼지는 범위(바닥 평면 거리). 칸 높이가 진원에서 이 거리까지 매끄럽게 얕아져 이웃 칸 높이 차가 작다.")]
+    [Min(0.5f)] public float slamRadius = 4.5f;
+    [Tooltip("꺼졌다가 솟기까지 걸리는 시간(초, 반 주기)과 출렁임이 잦아드는 시간(초). 잦아드는 시간의 네 배쯤 지나면 멈춘다.")]
+    [Min(0.02f)] public float slamBounceSeconds = 0.14f;
+    [Min(0.02f)] public float slamDecaySeconds = 0.12f;
+    [Tooltip("터지는 순간 게임 시간을 거의 멈추는 시간(실제 초, 히트스톱). 0이면 멈추지 않는다.")]
+    [Min(0f)] public float hitStopSeconds = 0.12f;
+    [Tooltip("히트스톱 동안의 게임 시간 배율.")]
+    [Range(0f, 1f)] public float hitStopTimeScale = 0.02f;
+    [Tooltip("터지는 순간 화면이 주황빛으로 번쩍이는 세기(노출 EV에 더한다). 0이면 번쩍이지 않는다.")]
+    [Min(0f)] public float flashExposure = 1f;
+    [Tooltip("번쩍이는 동안 화면에 곱하는 색(HDR). 1보다 크면 그 색 쪽으로 밝아진다.")]
+    [ColorUsage(false, true)] public Color flashTint = new Color(1.7f, 1.15f, 0.7f, 1f);
+    [Tooltip("번쩍임이 차오르는 시간·사라지는 시간(실제 초).")]
+    public float flashInSeconds = 0.04f;
+    public float flashOutSeconds = 0.45f;
+
+    [Header("충격파 왜곡")]
+    [Tooltip("물결 앞머리를 따라 화면이 고리 모양으로 일그러진다(VFX_QuakeShockwave 셰이더 재질). 비워 두면 그리지 않는다.")]
+    public Material shockwaveMaterial;
+    [Tooltip("고리가 화면을 밀어내는 세기(화면 세로 비율, 0.01 = 1%). 앞머리가 피해 범위 끝으로 갈수록 약해진다.")]
+    [Min(0f)] public float shockwaveStrength = 0.02f;
+    [Tooltip("고리 폭(바닥 평면 거리).")]
+    [Min(0.05f)] public float shockwaveWidth = 0.9f;
+
+    [Header("전조")]
+    [Tooltip("복제층 준비가 끝난 뒤 터지기 전까지 땅이 웅웅 떠는 시간(게임 초). 그동안 진원 둘레 칸이 잘게 떨고 화면이 살짝 어두워지며 카메라가 잘게 떤다." +
+             " 지진 피해도 이만큼 늦게 시작한다. 0이면 전조 없이 바로 터진다.")]
+    [Min(0f)] public float buildUpSeconds = 0.35f;
+    [Tooltip("전조 동안 떠는 칸의 범위(바닥 평면 거리). 진원에서 멀수록 덜 떤다.")]
+    [Min(0.5f)] public float buildUpRadius = 6f;
+    [Tooltip("전조 동안 칸이 떠는 최대 높이(픽셀). 터지기 직전으로 갈수록 커진다.")]
+    [Range(0, 4)] public int buildUpTremblePixels = 2;
+    [Tooltip("전조 떨림이 바뀌는 횟수(초당).")]
+    [Min(1f)] public float buildUpTrembleHz = 22f;
+    [Tooltip("전조 동안 카메라가 잘게 떠는 세기(옵션 100% 기준). 0이면 떨지 않는다.")]
+    [Min(0f)] public float buildUpShakeIntensity = 0.9f;
+    [Tooltip("전조 동안 화면이 어두워지는 정도(노출 EV를 뺀다). 터지는 순간 섬광으로 바뀐다. 0이면 어두워지지 않는다.")]
+    [Min(0f)] public float buildUpDarkenExposure = 0.35f;
+
+    [Header("물체 튐")]
+    [Tooltip("앞머리가 지나갈 때 바닥의 원목·아이템과 캐릭터가 한 번 통 튄다(그리는 동안만 - 그림자는 바닥에 남고 판정은 그대로다).")]
+    public bool objectPop = true;
+    [Tooltip("원목·아이템이 튀는 높이(월드, 1 = 32픽셀)와 시간(초).")]
+    [Min(0f)] public float objectPopHeight = 0.3f;
+    [Min(0.05f)] public float objectPopSeconds = 0.32f;
+    [Tooltip("캐릭터가 튀는 높이(월드). 진원이 캐릭터 발밑이라 터지는 순간 튄다.")]
+    [Min(0f)] public float characterPopHeight = 0.22f;
+    [Tooltip("터지는 순간 캐릭터가 눌리는 정도(0.22 = 가로 22% 늘고 세로 22% 줄었다가 튀어 오르며 늘어난 뒤 돌아온다)와 그 시간(초).")]
+    [Range(0f, 0.5f)] public float characterSquash = 0.22f;
+    [Min(0.05f)] public float characterSquashSeconds = 0.34f;
+
+    [Header("흙먼지·파편")]
+    [Tooltip("앞머리를 따라 흙먼지가 피어오르고 돌 부스러기가 튀어 오른다. 도트 사각형 입자를 이 재질로 그린다. 비워 두면 그리지 않는다.")]
+    public Material debrisMaterial;
+    [Tooltip("앞머리 둘레에 흙먼지를 내는 빈도(초당, 앞머리 반지름 4 기준 - 앞머리가 커질수록 늘어 화면에 보이는 띠의 밀도가 같다).")]
+    [Min(0f)] public float dustPerSecond = 520f;
+    [Tooltip("흙먼지 색(알파는 처음 진하기). 조명을 받는다.")]
+    public Color dustColor = new Color(0.74f, 0.66f, 0.58f, 0.85f);
+    [Tooltip("흙먼지 하나마다 돌 부스러기가 함께 튀어 오를 확률.")]
+    [Range(0f, 1f)] public float chipChance = 0.3f;
+    [Tooltip("돌 부스러기 색.")]
+    public Color chipColor = new Color(0.5f, 0.43f, 0.38f, 1f);
+
+    [Header("잔돌 낙하")]
+    [Tooltip("터진 뒤 이 시간(게임 초) 동안 화면 위쪽에서 잔돌·먼지가 떨어진다. 갈수록 줄어든다. 0이면 떨어지지 않는다.")]
+    [Min(0f)] public float fallSeconds = 1.3f;
+    [Tooltip("처음 떨어지는 빈도(초당).")]
+    [Min(0f)] public float fallPerSecond = 80f;
 
     [Header("피해 범위")]
     [Tooltip("피해 범위(지진이 넘겨줄 때만) 바깥 물결 높이 비율. 범위 안은 그대로, 바깥은 이만큼 낮게 출렁여 어디까지 맞는지 보인다.")]
@@ -84,10 +180,12 @@ public sealed class QuakeTileRippleSettings
     public float treeShiverSeconds = 0.45f;
     [Tooltip("나무 떨림 진동수(Hz).")]
     public float treeShiverHz = 13f;
-    [Tooltip("지진에 맞은 나무가 튀는 높이(월드, 1 = 32픽셀, 최대 15픽셀).")]
-    public float treePopHeight = 0.16f;
-    [Tooltip("나무가 튀었다 내려오는 시간(초).")]
-    public float treePopSeconds = 0.2f;
+    [Tooltip("앞머리가 닿는 순간 나무가 진원 반대쪽으로 꺾이는 각도(도, 떨림에 더한다). 확 꺾였다가 한 번 되튀며 떨림 시간 안에 돌아온다. 진원 바로 위·아래 나무는 덜 꺾인다. 0이면 꺾이지 않는다.")]
+    public float treeLeanDegrees = 24f;
+    [Tooltip("지진에 맞은 나무가 튀는 높이(월드, 1 = 32픽셀, 최대 15픽셀). 쓰러진 나무는 따로 더 높이 튀어 올라 터진다(QuakeTreeLaunch).")]
+    public float treePopHeight = 0.4f;
+    [Tooltip("나무가 튀었다 내려오는 시간(초). 처음 30%에 빠르게 솟고 나머지 시간에 떨어진다.")]
+    public float treePopSeconds = 0.3f;
 }
 
 /// <summary>
@@ -216,6 +314,7 @@ public sealed class QuakeTileRipple
     private static readonly int QuakeShakeBId = Shader.PropertyToID("_QuakeShakeB");
     private static readonly int QuakeShakeCId = Shader.PropertyToID("_QuakeShakeC");
     private static readonly int QuakeShakeDId = Shader.PropertyToID("_QuakeShakeD");
+    private static readonly int QuakeShakeEId = Shader.PropertyToID("_QuakeShakeE");
     private static Tile outlineTile;
     // 틈 빛 타일(띠 높이 1~MaxGlowRows별, 0번은 비움). 왼쪽 위·오른쪽 위 모서리용.
     private static Tile[] glowLeftTiles;
@@ -298,6 +397,16 @@ public sealed class QuakeTileRipple
     private short[] glowPixels = new short[0];
     private bool[] glowDirty = new bool[0];
     private readonly List<int> glowDirtyOrders = new List<int>(256);
+    // cells와 같은 순서. 지금 앞머리 줄(frontBand)에 든 칸인지. 바뀐 칸만 테두리·틈 빛을 다시 쓴다.
+    private bool[] frontFlags = new bool[0];
+    // 진원 꺼짐(slamDepth)이 닿는 칸 수(cells 앞쪽 - 진원 거리 순). 꺼짐이 끝난 뒤 한 번 더 제자리로 맞추면 bSlamSettled.
+    private int slamCellCount;
+    private bool bSlamSettled;
+    // 전조: 떠는 칸 수(cells 앞쪽 - 진원 거리 buildUpRadius 안), 지난 시간, 지금 떨림 차례(바뀔 때만 칸을 다시 쓴다).
+    private int buildUpCellCount;
+    private bool bBuildingUp;
+    private float buildUpElapsed;
+    private int buildUpStep;
     // 영역 칸 번호 → cells 순서(물결이 닿지 않는 칸은 -1). 이웃 칸 높이를 찾는다.
     private int[] orderOfIndex = new int[0];
 
@@ -312,9 +421,14 @@ public sealed class QuakeTileRipple
     // 복제층에 옮겨 그린 영역(월드). 이 안의 물체만 함께 출렁인다.
     private Rect regionRect;
     private readonly QuakeObjectRide objectRide = new QuakeObjectRide();
-    // 물체 출렁임은 첫 Tick에 시작한다. 시작하는 프레임의 일(복제층 옮겨 쓰기)과 나눠 한 프레임이 무거워지지 않게 한다.
-    // 첫 Tick까지는 물결이 아직 어느 칸에도 닿지 않아 물체가 움직일 일이 없다.
+    // 물체 출렁임은 전조 첫 Tick(전조가 없으면 물결 첫 Tick)에 시작한다. 시작하는 프레임의 일(복제층 옮겨 쓰기)과 나눠 한 프레임이 무거워지지 않게 한다.
+    // 물체 모으기는 진원에서 가까운 것부터 Tick마다 조금씩 한다(QuakeObjectRide) - 전조 동안 미리 모아 터지는 프레임이 무거워지지 않는다.
+    // 물결이 돌기 전에는 칸 높이가 모두 0으로 읽혀(PixelsAt) 물체가 움직이지 않는다.
     private bool bObjectRidePending;
+    private bool bObjectRideStarted;
+    // 지금 높이가 0이 아닐 수 있는 칸의 거리 범위(바닥 평면 거리, Tick마다 갱신). 이 밖의 칸은 모두 제자리(0)다. 비었으면 min > max.
+    private float posedKeyMin = float.PositiveInfinity;
+    private float posedKeyMax = float.NegativeInfinity;
     // 물결이 끝나 숨겨 둔 복제층을 비우는 일(HideLifts). Tick마다 하나씩 한다.
     private readonly List<ClearJob> pendingClears = new List<ClearJob>(32);
 
@@ -323,8 +437,61 @@ public sealed class QuakeTileRipple
     /// <summary>시작했지만 아직 복제층을 옮겨 쓰는 중이라 물결이 퍼지기 전(화면은 실제 층 그대로).</summary>
     public bool IsPreparing => bPreparing;
 
+    /// <summary>복제층 준비가 끝나고 터지기 전 전조(진원 둘레 칸이 잘게 떤다) 중. 끝나는 Tick에 물결이 시작된다.</summary>
+    public bool IsBuildingUp => bBuildingUp;
+
+    /// <summary>전조가 지난 비율(0~1). 전조 중이 아니면 0.</summary>
+    public float BuildUpProgress => bBuildingUp ? Mathf.Clamp01(buildUpElapsed / Mathf.Max(0.01f, settings.buildUpSeconds)) : 0f;
+
     /// <summary>물결을 준비하거나 돌고 있거나, 끝난 복제층을 아직 비우는 중(이때도 Tick을 불러야 한다).</summary>
-    public bool IsBusy => bPreparing || bPlaying || pendingClears.Count > 0;
+    public bool IsBusy => bPreparing || bBuildingUp || bPlaying || pendingClears.Count > 0;
+
+    /// <summary>진원(월드).</summary>
+    public Vector3 Center => center;
+
+    /// <summary>물결이 시작된 뒤 지난 시간(게임 초). 돌지 않으면 0.</summary>
+    public float Elapsed => bPlaying ? elapsed : 0f;
+
+    /// <summary>지금 앞머리가 닿은 거리(바닥 평면 거리). 돌지 않으면 0.</summary>
+    public float FrontRadius => bPlaying ? elapsed * Mathf.Max(0.1f, settings.frontSpeed) : 0f;
+
+    /// <summary>앞머리가 물결이 닿는 칸 끝(바닥 평면 거리)에 이르는 거리. 물결 칸이 없으면 0.</summary>
+    public float ReachRadius => cells.Count > 0 ? cells[cells.Count - 1].key : 0f;
+
+    /// <summary>
+    /// _world(지면 위치)가 선 칸에 앞머리가 닿은 뒤 지난 시간(게임 초). 아직 안 닿았으면 음수,
+    /// 물결이 돌지 않거나 물결이 닿지 않는 칸(물·영역 밖)이면 float.NegativeInfinity.
+    /// </summary>
+    public float FrontAgeAt(Vector3 _world)
+    {
+        int order = OrderAt(_world);
+        if (order < 0) return float.NegativeInfinity;
+
+        return elapsed - cells[order].key / Mathf.Max(0.1f, settings.frontSpeed);
+    }
+
+    /// <summary>_world가 물결이 닿는 바닥 칸 위인지(물·영역 밖이 아닌지). 물결이 돌 때만 true.</summary>
+    public bool IsRippleGround(Vector3 _world) => OrderAt(_world) >= 0;
+
+    /// <summary>IsRippleGround와 PixelsAt을 칸 한 번 찾기로 한다. 물결이 닿는 바닥 칸이면 그 칸의 지금 높이(픽셀)와 true.</summary>
+    public bool TryGetRipplePixels(Vector3 _world, out int _pixels)
+    {
+        int order = OrderAt(_world);
+        _pixels = order < 0 ? 0 : lastPixels[order];
+        return order >= 0;
+    }
+
+    private int OrderAt(Vector3 _world)
+    {
+        if (false == bPlaying || null == rippleGrid) return -1;
+
+        Vector3Int cell = rippleGrid.WorldToCell(_world);
+        int x = cell.x - region.xMin;
+        int y = cell.y - region.yMin;
+        if (x < 0 || y < 0 || x >= region.size.x || y >= region.size.y) return -1;
+
+        return orderOfIndex[x + y * region.size.x];
+    }
 
     public void Initialize(QuakeTileRippleSettings _settings)
     {
@@ -374,19 +541,40 @@ public sealed class QuakeTileRipple
         {
             if (false == CopyStep()) return true;
 
-            // 다 옮겨 썼다. 이 프레임부터 복제층이 보이고(아직 모든 칸이 제자리) 다음 Tick부터 물결이 퍼진다.
+            // 다 옮겨 썼다. 이 프레임부터 복제층이 보이고(아직 모든 칸이 제자리) 전조가 있으면 전조, 없으면 다음 Tick부터 물결이 퍼진다.
             bPreparing = false;
             ApplyGlowMaterial();
             SetLiftsVisible(true);
 
-            elapsed = 0f;
-            nextCell = 0;
-            doneCell = 0;
-            bPlaying = true;
-            BeginTreeShake();
-            // 물체를 칸 높이만큼 옮기지 않아도(rideObjects 꺼짐) 맞은 나무가 튀려면 나무를 그리는 동안 높이를 담아야 한다.
-            bObjectRidePending = settings.rideObjects || TreePopEnabled;
+            bObjectRidePending = NeedsObjectRide;
+            if (settings.buildUpSeconds > 0f && buildUpCellCount > 0)
+            {
+                bBuildingUp = true;
+                buildUpElapsed = 0f;
+                buildUpStep = -1;
+                return true;
+            }
+
+            StartPlaying();
             return true;
+        }
+
+        if (bBuildingUp)
+        {
+            if (bObjectRidePending) BeginObjectRide();
+
+            buildUpElapsed += _deltaTime;
+            if (buildUpElapsed < settings.buildUpSeconds)
+            {
+                TrembleStep();
+                objectRide.Tick(_deltaTime);
+                return true;
+            }
+
+            // 전조 끝: 떨던 칸을 제자리로 돌리고 이 프레임부터 물결을 시작한다(첫 Tick은 아래에서 바로 돈다 - 앞머리 0).
+            for (int i = 0; i < buildUpCellCount; i++) RestCell(i);
+            bBuildingUp = false;
+            StartPlaying();
         }
 
         if (false == bPlaying)
@@ -395,20 +583,25 @@ public sealed class QuakeTileRipple
             return false;
         }
 
-        if (bObjectRidePending)
-        {
-            bObjectRidePending = false;
-            objectRide.Begin(this, regionRect, settings.rideObjects, TreePopEnabled ? settings.treePopHeight : 0f, settings.treePopSeconds);
-            Shader.SetGlobalVector(QuakeShakeDId, new Vector4(1f, 0f, 0f, 0f));
-        }
+        if (bObjectRidePending) BeginObjectRide();
 
+        float previousElapsed = elapsed;
         elapsed += _deltaTime;
+        UpdateGlowFlash(previousElapsed);
         float length = RippleLength;
         float front = elapsed * Mathf.Max(0.1f, settings.frontSpeed);
 
         while (nextCell < cells.Count && cells[nextCell].key <= front) nextCell++;
 
-        for (int i = doneCell; i < nextCell; i++)
+        // 진원 꺼짐 동안은 앞머리가 아직 닿지 않은 진원 둘레 칸도 움직인다. 꺼짐이 끝난 첫 Tick에 한 번 더 돌아 제자리(0)로 맞춘다.
+        int poseEnd = nextCell;
+        if (false == bSlamSettled)
+        {
+            poseEnd = Mathf.Max(nextCell, slamCellCount);
+            if (elapsed >= SlamEndSeconds) bSlamSettled = true;
+        }
+
+        for (int i = doneCell; i < poseEnd; i++)
         {
             float distance = front - cells[i].key;
             if (distance >= length)
@@ -421,6 +614,10 @@ public sealed class QuakeTileRipple
             PoseCell(i, distance, length);
         }
 
+        // doneCell 앞은 모두 제자리로 돌렸고, poseEnd부터는 아직 움직이지 않았다(칸은 거리순).
+        posedKeyMin = doneCell < cells.Count ? cells[doneCell].key : float.PositiveInfinity;
+        posedKeyMax = poseEnd > 0 ? cells[Mathf.Min(poseEnd, cells.Count) - 1].key : float.NegativeInfinity;
+
         FlushGlow();
         FlushChanges();
         objectRide.Tick(_deltaTime);
@@ -432,15 +629,100 @@ public sealed class QuakeTileRipple
         return false;
     }
 
+    /// <summary>물결 시작(전조가 끝났거나 전조가 없을 때). 이 Tick부터 앞머리가 퍼진다.</summary>
+    private void StartPlaying()
+    {
+        elapsed = 0f;
+        nextCell = 0;
+        doneCell = 0;
+        bSlamSettled = 0 == slamCellCount;
+        bPlaying = true;
+        posedKeyMin = float.PositiveInfinity;
+        posedKeyMax = float.NegativeInfinity;
+        BeginTreeShake();
+        // 나무 셰이더가 루트 z에 담긴 옮긴 높이를 풀게 한다(QuakeObjectRide [나무]). 물체 출렁임은 전조 때 이미 시작했거나 이 Tick에 시작한다.
+        if (NeedsObjectRide) Shader.SetGlobalVector(QuakeShakeDId, new Vector4(1f, 0f, 0f, 0f));
+    }
+
+    // 물체 출렁임이 필요한지. 물체를 칸 높이만큼 옮기지 않아도(rideObjects 꺼짐) 맞은 나무가 튀려면 나무를 그리는 동안 높이를 담아야 한다.
+    private bool NeedsObjectRide => settings.rideObjects || TreePopEnabled || settings.objectPop;
+
+    private void BeginObjectRide()
+    {
+        bObjectRidePending = false;
+        if (bObjectRideStarted) return;
+
+        bObjectRideStarted = true;
+        if (settings.objectPop) objectRide.ConfigurePop(settings.objectPopHeight, settings.characterPopHeight, settings.objectPopSeconds, settings.characterSquash, settings.characterSquashSeconds);
+        else objectRide.ConfigurePop(0f, 0f, settings.objectPopSeconds, 0f, settings.characterSquashSeconds);
+        objectRide.Begin(this, regionRect, center, settings.rideObjects, TreePopEnabled ? settings.treePopHeight : 0f, settings.treePopSeconds);
+    }
+
+    /// <summary>지금 높이가 0이 아닐 수 있는 칸의 거리 범위(바닥 평면 거리). 이 밖의 칸은 PixelsAt이 0이다. 비었으면 _min > _max.</summary>
+    public void GetPosedKeyRange(out float _min, out float _max)
+    {
+        if (bPlaying)
+        {
+            _min = posedKeyMin;
+            _max = posedKeyMax;
+            return;
+        }
+
+        _min = float.PositiveInfinity;
+        _max = float.NegativeInfinity;
+    }
+
+    /// <summary>
+    /// 전조 떨림 한 번. buildUpTrembleHz마다 진원 둘레 칸 높이를 칸마다 다른 작은 값(최대 buildUpTremblePixels픽셀)으로 바꾼다.
+    /// 터지기 직전으로 갈수록 커지고, 진원에서 멀수록 작다. 진원 둘레(calmRadius)는 캐릭터 발이 묻히지 않게 떨지 않는다.
+    /// 값은 칸 번호·떨림 차례로 정해지는 해시라 게임 난수를 쓰지 않는다.
+    /// </summary>
+    private void TrembleStep()
+    {
+        int step = Mathf.FloorToInt(buildUpElapsed * Mathf.Max(1f, settings.buildUpTrembleHz));
+        if (step == buildUpStep) return;
+        buildUpStep = step;
+
+        float ramp = Mathf.Clamp01(buildUpElapsed / Mathf.Max(0.01f, settings.buildUpSeconds));
+        ramp = 0.35f + 0.65f * ramp * ramp;
+        float radius = Mathf.Max(0.5f, settings.buildUpRadius);
+        float calm = Mathf.Max(0f, settings.calmRadius);
+
+        for (int i = 0; i < buildUpCellCount; i++)
+        {
+            float key = cells[i].key;
+            float rise = calm > 0f ? Mathf.SmoothStep(0f, 1f, key / calm) : 1f;
+            float reach = 1f - key / radius;
+            float amplitude = settings.buildUpTremblePixels * ramp * rise * reach;
+
+            uint hash = (uint)cells[i].index * 2654435761u ^ (uint)(step + 1) * 2246822519u;
+            hash ^= hash >> 15;
+            hash *= 2246822519u;
+            hash ^= hash >> 13;
+            float noise = (hash & 0xFFFF) / 32767.5f - 1f;
+
+            short pixels = (short)Mathf.RoundToInt(noise * amplitude);
+            if (pixels == lastPixels[i]) continue;
+
+            lastPixels[i] = pixels;
+            QueueHeight(i);
+        }
+
+        FlushGlow();
+        FlushChanges();
+    }
+
     /// <summary>바로 끝낸다(복제층을 숨겨 실제 층만 보이게 한다). 맵을 새로 깔거나 던전을 떠날 때도 부른다.</summary>
     public void Stop()
     {
-        if (false == bPlaying && false == bPreparing) return;
+        if (false == bPlaying && false == bPreparing && false == bBuildingUp) return;
 
         // 준비 중이었으면 복제층은 아직 숨겨져 있고, 그때까지 옮겨 쓴 칸만 비운다(liftWritten).
         bPreparing = false;
+        bBuildingUp = false;
         bPlaying = false;
         bObjectRidePending = false;
+        bObjectRideStarted = false;
         objectRide.Stop();
         ClearTreeShake();
         HideLifts();
@@ -466,6 +748,7 @@ public sealed class QuakeTileRipple
         Shader.SetGlobalVector(QuakeShakeAId, new Vector4(center.x, center.y, 0f, strikeRadius));
         Shader.SetGlobalVector(QuakeShakeBId, new Vector4(1f, Mathf.Max(0.1f, settings.frontSpeed), Mathf.Max(0.1f, settings.reachRadius), Mathf.Max(0.01f, settings.strikeEdge)));
         Shader.SetGlobalVector(QuakeShakeCId, new Vector4(settings.treeShiverDegrees, settings.treeShiverOutsideDegrees, settings.treeShiverSeconds, settings.treeShiverHz));
+        Shader.SetGlobalVector(QuakeShakeEId, new Vector4(settings.treeLeanDegrees, 0f, 0f, 0f));
     }
 
     /// <summary>
@@ -476,19 +759,13 @@ public sealed class QuakeTileRipple
     {
         Shader.SetGlobalVector(QuakeShakeBId, Vector4.zero);
         Shader.SetGlobalVector(QuakeShakeDId, Vector4.zero);
+        Shader.SetGlobalVector(QuakeShakeEId, Vector4.zero);
     }
 
     /// <summary>_world(지면 위치)가 선 칸의 지금 높이(픽셀, 위가 +). 물결이 닿지 않는 칸·물 칸·영역 밖은 0.</summary>
     public int PixelsAt(Vector3 _world)
     {
-        if (false == bPlaying || null == rippleGrid) return 0;
-
-        Vector3Int cell = rippleGrid.WorldToCell(_world);
-        int x = cell.x - region.xMin;
-        int y = cell.y - region.yMin;
-        if (x < 0 || y < 0 || x >= region.size.x || y >= region.size.y) return 0;
-
-        int order = orderOfIndex[x + y * region.size.x];
+        int order = OrderAt(_world);
         return order < 0 ? 0 : lastPixels[order];
     }
 
@@ -1036,12 +1313,15 @@ public sealed class QuakeTileRipple
         while (pendingClears.Count > 0) ClearOnePending();
     }
 
-    /// <summary>물결이 닿는 바닥 칸(바닥 블록이 있고 reachRadius 안)을 진원 거리 순으로 모은다.</summary>
+    /// <summary>
+    /// 물결이 닿는 바닥 칸(바닥 블록이 있고 reachRadius 안)을 진원 거리 순으로 모은다.
+    /// 피해 범위가 reachRadius보다 멀면(지진 피해 범위는 화면 전체) 물결도 피해 범위 끝까지 간다 - 물결 없이 나무만 맞는 곳이 없게 한다.
+    /// </summary>
     private void BuildCells()
     {
         cells.Clear();
 
-        float reach = Mathf.Max(0.1f, settings.reachRadius);
+        float reach = Mathf.Max(0.1f, settings.reachRadius, strikeRadius);
         float calm = Mathf.Max(0f, settings.calmRadius);
         float maxAmplitude = MaxAmplitude();
         TileBase[] ground = floorBlocks[0];
@@ -1075,6 +1355,22 @@ public sealed class QuakeTileRipple
 
         cells.Sort(cellComparer);
 
+        // 진원 꺼짐이 닿는 칸은 진원 거리 순으로 앞에 모여 있다.
+        slamCellCount = 0;
+        if (settings.slamDepth > 0f)
+        {
+            float slamRadius = Mathf.Max(0.5f, settings.slamRadius);
+            while (slamCellCount < cells.Count && cells[slamCellCount].key < slamRadius) slamCellCount++;
+        }
+
+        // 전조 떨림이 닿는 칸도 진원 거리 순으로 앞에 모여 있다.
+        buildUpCellCount = 0;
+        if (settings.buildUpSeconds > 0f && settings.buildUpTremblePixels > 0)
+        {
+            float buildUpRadius = Mathf.Max(0.5f, settings.buildUpRadius);
+            while (buildUpCellCount < cells.Count && cells[buildUpCellCount].key < buildUpRadius) buildUpCellCount++;
+        }
+
         if (lastPixels.Length < cells.Count)
         {
             lastPixels = new short[cells.Count];
@@ -1083,6 +1379,7 @@ public sealed class QuakeTileRipple
             lastGlowRight = new sbyte[cells.Count];
             glowPixels = new short[cells.Count];
             glowDirty = new bool[cells.Count];
+            frontFlags = new bool[cells.Count];
         }
 
         Array.Clear(lastPixels, 0, cells.Count);
@@ -1091,6 +1388,7 @@ public sealed class QuakeTileRipple
         Array.Clear(lastGlowRight, 0, cells.Count);
         Array.Clear(glowPixels, 0, cells.Count);
         Array.Clear(glowDirty, 0, cells.Count);
+        Array.Clear(frontFlags, 0, cells.Count);
         glowDirtyOrders.Clear();
 
         if (orderOfIndex.Length < regionCells) orderOfIndex = new int[ground.Length];
@@ -1149,13 +1447,23 @@ public sealed class QuakeTileRipple
     /// <summary>
     /// 앞머리에서 _distance만큼 뒤에 있는 칸. 높이는 감쇠 물결 sin(2π·d/λ) × (1 - d/L) × 칸 진폭이다.
     /// 앞머리(0)와 끝(L)에서 0이고, 끝이 반 파장의 배수면 sin도 0이라 멈출 때 튀지 않는다.
+    /// 앞머리가 아직 닿지 않은 칸(_distance &lt; 0)은 진원 꺼짐만 받는다. 앞머리 줄(frontBand)의 칸은 테두리·틈 빛을 강조한다.
     /// </summary>
     private void PoseCell(int _order, float _distance, float _length)
     {
         RippleCell cell = cells[_order];
 
-        float wave = Mathf.Sin(2f * Mathf.PI * _distance / Mathf.Max(0.1f, settings.rippleWavelength));
-        float height = cell.amplitude * wave * (1f - _distance / _length);
+        float wave = 0f;
+        float height = 0f;
+        if (_distance >= 0f)
+        {
+            wave = Mathf.Sin(2f * Mathf.PI * _distance / Mathf.Max(0.1f, settings.rippleWavelength));
+            height = cell.amplitude * wave * (1f - _distance / _length);
+        }
+
+        float slam = SlamHeight(cell.key);
+        height += slam;
+
         short pixels = (short)Mathf.Clamp(Mathf.RoundToInt(height * PixelsPerUnit), -MaxOffsetPixels, MaxOffsetPixels);
         bool bMoved = pixels != lastPixels[_order];
         if (bMoved)
@@ -1164,11 +1472,30 @@ public sealed class QuakeTileRipple
             QueueHeight(_order);
         }
 
+        bool bFront = settings.frontBand > 0f && _distance >= 0f && _distance < settings.frontBand;
+        bool bFrontChanged = bFront != frontFlags[_order];
+        if (bFrontChanged)
+        {
+            frontFlags[_order] = bFront;
+            if (bGlow && settings.frontGlowRows > 0) MarkGlowDirty(_order);
+        }
+
         // 테두리: 이 칸이 얼마나 크게 출렁이는지(진원 거리), 물결 진행, 지금 마루·골에 있는지(수평을 지날 때는 옅게)로 진하기가 정해진다.
         // 마루·골을 따라 진한 띠가 퍼져 나가 칸마다 솟고 꺼지는 게 읽히고, 물결 전체가 격자 무늬로 덮이지 않는다.
-        float swing = Mathf.Lerp(Mathf.Clamp01(settings.outlineOnLevel), 1f, Mathf.Abs(wave));
-        float outline = OutlineEnvelope(_distance, _length) * cell.outlineStrength * swing;
-        QueueOutline(_order, (sbyte)Mathf.RoundToInt(outline * OutlineSteps), bMoved);
+        // 앞머리 줄은 진원 거리와 상관없이 가장 진하게, 진원 꺼짐 중인 칸은 꺼진 깊이만큼 드러난다.
+        float outline;
+        if (bFront)
+        {
+            outline = 1f;
+        }
+        else
+        {
+            float swing = Mathf.Lerp(Mathf.Clamp01(settings.outlineOnLevel), 1f, Mathf.Abs(wave));
+            outline = _distance >= 0f ? OutlineEnvelope(_distance, _length) * cell.outlineStrength * swing : 0f;
+            if (0f != slam && settings.slamDepth > 0f) outline = Mathf.Max(outline, Mathf.Clamp01(Mathf.Abs(slam) / settings.slamDepth));
+        }
+
+        QueueOutline(_order, (sbyte)Mathf.RoundToInt(outline * OutlineSteps), bMoved || bFrontChanged, bFront);
     }
 
     /// <summary>물결이 다 지나간 칸: 제자리·원래 색, 테두리 없음.</summary>
@@ -1181,8 +1508,30 @@ public sealed class QuakeTileRipple
             QueueHeight(_order);
         }
 
-        QueueOutline(_order, 0, bMoved);
+        if (frontFlags[_order])
+        {
+            frontFlags[_order] = false;
+            if (bGlow) MarkGlowDirty(_order);
+        }
+
+        QueueOutline(_order, 0, bMoved, false);
     }
+
+    /// <summary>
+    /// 진원 꺼짐 높이(월드, 음수가 아래). 터지는 순간 가장 깊이 꺼졌다가(-slamDepth) 반 주기(slamBounceSeconds) 뒤 되튀어 솟고 잦아든다.
+    /// 깊이는 진원에서 slamRadius까지 코사인 그릇 모양으로 얕아져 이웃 칸 높이 차가 작다. 끝난 뒤(SlamEndSeconds)는 0.
+    /// </summary>
+    private float SlamHeight(float _key)
+    {
+        if (settings.slamDepth <= 0f || _key >= settings.slamRadius || elapsed >= SlamEndSeconds) return 0f;
+
+        float bowl = 0.5f + 0.5f * Mathf.Cos(Mathf.PI * _key / Mathf.Max(0.5f, settings.slamRadius));
+        float bounce = Mathf.Cos(Mathf.PI * elapsed / Mathf.Max(0.02f, settings.slamBounceSeconds));
+        return -settings.slamDepth * bowl * Mathf.Exp(-elapsed / Mathf.Max(0.02f, settings.slamDecaySeconds)) * bounce;
+    }
+
+    // 진원 꺼짐이 끝나는 시각(물결 시간). 잦아드는 시간의 네 배면 남은 높이가 2% 아래라 0으로 돌려도 픽셀이 튀지 않는다.
+    private float SlamEndSeconds => Mathf.Max(0.02f, settings.slamDecaySeconds) * 4f;
 
     /// <summary>바닥 복제층(블록·장식)의 그 칸을 지금 높이(lastPixels)의 사본으로 바꾸도록 모은다. 골(내려간 칸)은 깊이만큼 어둡게 한다.</summary>
     private void QueueHeight(int _order)
@@ -1248,6 +1597,21 @@ public sealed class QuakeTileRipple
         glowRightLift.GetComponent<TilemapRenderer>().sharedMaterial = glowMaterial;
     }
 
+    /// <summary>
+    /// 물결이 터지는 순간 틈 빛을 한 번 번쩍인다. 시작에서 HDR 세기가 (1 + crackGlowFlashBoost)배였다가 crackGlowFlashSeconds 동안
+    /// 원래 세기로 내려온다(제곱 곡선 - 처음에 빨리 식는다). 끝나는 Tick에 원래 세기를 한 번 써 두고 그 뒤로는 건드리지 않는다.
+    /// </summary>
+    private void UpdateGlowFlash(float _previousElapsed)
+    {
+        if (false == bGlow || null == glowMaterial || settings.crackGlowFlashBoost <= 0f || false == glowMaterial.HasProperty(HDRIntensityId)) return;
+
+        float seconds = Mathf.Max(0.01f, settings.crackGlowFlashSeconds);
+        if (_previousElapsed >= seconds) return;
+
+        float rest = 1f - Mathf.Clamp01(elapsed / seconds);
+        glowMaterial.SetFloat(HDRIntensityId, settings.crackGlowHDRIntensity * (1f + settings.crackGlowFlashBoost * rest * rest));
+    }
+
     private void MarkGlowDirty(int _order)
     {
         if (_order < 0 || glowDirty[_order]) return;
@@ -1283,8 +1647,19 @@ public sealed class QuakeTileRipple
         int y = cell.index / width;
 
         // 왼쪽 위 이웃은 칸 좌표 (x, y+1), 오른쪽 위 이웃은 (x+1, y).
-        int left = GlowRows(y + 1 < region.size.y ? cell.index + width : -1, pixels);
-        int right = GlowRows(x + 1 < width ? cell.index + 1 : -1, pixels);
+        int leftBack = y + 1 < region.size.y ? cell.index + width : -1;
+        int rightBack = x + 1 < width ? cell.index + 1 : -1;
+        int left = GlowRows(leftBack, pixels);
+        int right = GlowRows(rightBack, pixels);
+
+        // 앞머리 줄: 뒤 칸이 바닥인 이음매를 일정한 굵기로 갈라 화면 끝까지 쓸고 가는 용암 선을 만든다(실제 틈이 더 깊으면 그대로).
+        if (frontFlags[_order] && settings.frontGlowRows > 0)
+        {
+            int frontRows = Mathf.Clamp(settings.frontGlowRows, GlowMinRows, MaxGlowRows);
+            if (leftBack >= 0 && null != floorBlocks[0][leftBack]) left = Mathf.Max(left, frontRows);
+            if (rightBack >= 0 && null != floorBlocks[0][rightBack]) right = Mathf.Max(right, frontRows);
+        }
+
         bool bMoved = pixels != glowPixels[_order];
         glowPixels[_order] = (short)pixels;
 
@@ -1423,7 +1798,7 @@ public sealed class QuakeTileRipple
     /// 테두리 진하기를 _step 단계로 바꾸도록 모은다(0이면 테두리 타일을 걷는다). 칸 높이가 바뀌었으면(_bMoved) 진하기가 그대로여도
     /// 테두리를 새 높이의 사본으로 다시 깐다. 진하기는 칸 색(알파)에 담는다.
     /// </summary>
-    private void QueueOutline(int _order, sbyte _step, bool _bMoved)
+    private void QueueOutline(int _order, sbyte _step, bool _bMoved, bool _bFront)
     {
         sbyte last = lastOutlineSteps[_order];
         if (_step == last && (false == _bMoved || 0 == _step)) return;
@@ -1432,7 +1807,7 @@ public sealed class QuakeTileRipple
         Vector3Int cell = cells[_order].cell;
         if (_step > 0)
         {
-            Color color = settings.outlineColor;
+            Color color = _bFront ? settings.frontOutlineColor : settings.outlineColor;
             color.a *= _step / (float)OutlineSteps;
             outlineChanges.Add(new TileChangeData(cell, OffsetTile(OutlineTile, new Vector2Int(0, lastPixels[_order])), color, Matrix4x4.identity));
         }

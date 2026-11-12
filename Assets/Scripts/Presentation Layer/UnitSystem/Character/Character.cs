@@ -297,6 +297,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private bool bLowStaminaWarningSuppressed = false;
 
     [SerializeField] private GameObject characterVisualObjects;
+    /// <summary>캐릭터 그림 묶음(발밑 기준). 지진 연출이 그리는 동안에만 크기를 바꿨다 되돌린다(QuakeObjectRide).</summary>
+    public Transform VisualRoot => characterVisualObjects != null ? characterVisualObjects.transform : null;
     private Vector3 characterVisualObjectsOriginalScale = Vector3.one;
     private float itemAcquireBounceTime = 1f;
     private const float ITEM_ACQUIRE_BOUNCE_DURATION = 0.2f;

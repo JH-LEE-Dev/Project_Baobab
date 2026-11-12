@@ -1007,7 +1007,7 @@ public class InDungeonVFXManager : MonoBehaviour
 
         dottedLineGroups[_groupId] = _group;
 
-        if (bConstellationDottedLinesVisible || alwaysVisibleDottedLineGroups.Contains(_groupId)) ShowDottedLine(_group);
+        if (bConstellationDottedLinesVisible || alwaysVisibleDottedLineGroups.Contains(_groupId)) ShowDottedLine(_groupId, _group);
     }
 
     // [로그라이크] "별자리 발현" 특성과 무관하게 늘 보이는 점선 그룹(로그라이크 스텔라 별 이음선). 본편은 아무것도 넣지 않아
@@ -1025,7 +1025,7 @@ public class InDungeonVFXManager : MonoBehaviour
         if (false == dottedLineGroups.TryGetValue(_groupId, out DottedLineGroup _group)) return;
 
         alwaysVisibleDottedLineGroups.Add(_groupId);
-        ShowDottedLine(_group);
+        ShowDottedLine(_groupId, _group);
     }
 
     /// <summary>
@@ -1053,7 +1053,25 @@ public class InDungeonVFXManager : MonoBehaviour
         if (0 > _bestIndex) return;
 
         _group.felled[_bestIndex] = true;
-        if (null != _group.line) _group.line.SetNodeAsBigStar(_bestIndex, true);
+        if (null != _group.line)
+        {
+            _group.line.SetNodeAsBigStar(_bestIndex, true);
+            _group.line.SetLastStarWarning(IsLastStarRemaining(_groupId, _group));
+        }
+    }
+
+    // 별자리를 이룰 별 표식 나무가 하나만 남았는지(마지막 별 예고 맥동). 로그라이크의 늘 보이는 점선은 나무 벌목으로
+    // 진행되는 별자리가 아니므로 제외한다.
+    private bool IsLastStarRemaining(int _groupId, DottedLineGroup _group)
+    {
+        if (2 > _group.nodes.Count || alwaysVisibleDottedLineGroups.Contains(_groupId)) return false;
+
+        int remaining = 0;
+        for (int i = 0; i < _group.felled.Count; i++)
+        {
+            if (false == _group.felled[i]) remaining++;
+        }
+        return 1 == remaining;
     }
 
     /// <summary>
@@ -1080,7 +1098,7 @@ public class InDungeonVFXManager : MonoBehaviour
 
         foreach (KeyValuePair<int, DottedLineGroup> _pair in dottedLineGroups)
         {
-            if (_visible) ShowDottedLine(_pair.Value);
+            if (_visible) ShowDottedLine(_pair.Key, _pair.Value);
             else if (false == alwaysVisibleDottedLineGroups.Contains(_pair.Key)) HideDottedLine(_pair.Value);
         }
     }
@@ -1100,7 +1118,7 @@ public class InDungeonVFXManager : MonoBehaviour
         alwaysVisibleDottedLineGroups.Clear();
     }
 
-    private void ShowDottedLine(DottedLineGroup _group)
+    private void ShowDottedLine(int _groupId, DottedLineGroup _group)
     {
         if (null != _group.line || null == constellationDottedLinePool) return;
 
@@ -1116,6 +1134,8 @@ public class InDungeonVFXManager : MonoBehaviour
             dottedLineNodeBuffer.Add(new ConstellationNode(_group.nodes[i], _group.felled[i]));
         }
         _line.SetNodes(dottedLineNodeBuffer, true);
+        // 숨겨져 있던 사이에 하나만 남게 됐어도 보이는 순간부터 맥동한다.
+        _line.SetLastStarWarning(IsLastStarRemaining(_groupId, _group));
 
         _group.line = _line;
     }
@@ -1311,10 +1331,21 @@ public class InDungeonVFXManager : MonoBehaviour
     {
         if (vfxComponent == null || _visual == null) return;
 
+        PlayTreeDeadVFX(TreeDeadVfxPose.From(_visual), _treeType, _finalGemStage);
+    }
+
+    /// <summary>
+    /// 나무 사망 VFX를 미리 담아 둔 자리·색(_pose)에서 재생한다. 나무가 이미 풀로 돌아간 뒤에 터뜨릴 때 쓴다
+    /// (지진에 쓰러져 공중으로 튄 나무가 꼭대기에서 터지는 연출 - QuakeTreeLaunch). 이펙트 고르기는 위와 같다.
+    /// </summary>
+    public void PlayTreeDeadVFX(in TreeDeadVfxPose _pose, TreeType _treeType, int _finalGemStage = 0)
+    {
+        if (vfxComponent == null) return;
+
         // 보석 이펙트는 프리팹 고유 색(보석 팔레트) 그대로 재생한다.
         if (0 < _finalGemStage && _finalGemStage < gemTreeDeadEffects.Length && gemTreeDeadEffects[_finalGemStage].bAvailable)
         {
-            PlayTreeDeadEffectSet(gemTreeDeadEffects[_finalGemStage], _visual, false);
+            PlayTreeDeadEffectSet(gemTreeDeadEffects[_finalGemStage], _pose, false);
             return;
         }
 
@@ -1323,44 +1354,44 @@ public class InDungeonVFXManager : MonoBehaviour
         int family = GetStageTreeDeadFamily(_treeType);
         if (0 != family && stageTreeDeadEffects[family].bAvailable)
         {
-            PlayTreeDeadEffectSet(stageTreeDeadEffects[family], _visual, true);
+            PlayTreeDeadEffectSet(stageTreeDeadEffects[family], _pose, true);
 
             // 용암 계열은 큰 폭발을 더한다(폭발 고유 색 그대로, 나무 색으로 덮어쓰지 않는다).
             if (MagmaTreeDeadFamily == family && magmaTreeDeadBlast.bAvailable && TryTakeMagmaBlastBudget())
             {
-                PlayTreeDeadEffectSet(magmaTreeDeadBlast, _visual, false);
+                PlayTreeDeadEffectSet(magmaTreeDeadBlast, _pose, false);
             }
             return;
         }
 
-        ParticleColorSet topColor = _visual.GetTopVfxColor();
+        ParticleColorSet topColor = _pose.topColor;
         if (sharedTreeDeadTopEmitter != null
-            && sharedTreeDeadTopEmitter.Emit(_visual.GetTopRootPosition(), _visual.GetTopRootRotation(), true, topColor.startColor, topColor.overrideChildrenColor))
+            && sharedTreeDeadTopEmitter.Emit(_pose.topPosition, _pose.topRotation, true, topColor.startColor, topColor.overrideChildrenColor))
         {
         }
         else
         {
             vfxComponent.Play(new VFXPlaySettings(
                 "TreeDeadEffect_Top",
-                _visual.GetTopRootPosition(),
-                _visual.GetTopRootRotation(),
+                _pose.topPosition,
+                _pose.topRotation,
                 topColor.startColor,
                 topColor.overrideChildrenColor,
                 null
             ));
         }
 
-        ParticleColorSet bottomColor = _visual.GetBottomVfxColor();
+        ParticleColorSet bottomColor = _pose.bottomColor;
         if (sharedTreeDeadBottomEmitter != null
-            && sharedTreeDeadBottomEmitter.Emit(_visual.GetBottomRootPosition(), _visual.GetBottomRootRotation(), true, bottomColor.startColor, bottomColor.overrideChildrenColor))
+            && sharedTreeDeadBottomEmitter.Emit(_pose.bottomPosition, _pose.bottomRotation, true, bottomColor.startColor, bottomColor.overrideChildrenColor))
         {
         }
         else
         {
             vfxComponent.Play(new VFXPlaySettings(
                 "TreeDeadEffect_Bottom",
-                _visual.GetBottomRootPosition(),
-                _visual.GetBottomRootRotation(),
+                _pose.bottomPosition,
+                _pose.bottomRotation,
                 bottomColor.startColor,
                 bottomColor.overrideChildrenColor,
                 null
@@ -1370,8 +1401,30 @@ public class InDungeonVFXManager : MonoBehaviour
         // 1스테이지 나무는 기존 이펙트 위에 임팩트를 더한다(임팩트 고유 색 그대로, 나무 색으로 덮어쓰지 않는다).
         if (leafTreeDeadImpact.bAvailable && IsLeafTreeType(_treeType))
         {
-            PlayTreeDeadEffectSet(leafTreeDeadImpact, _visual, false);
+            PlayTreeDeadEffectSet(leafTreeDeadImpact, _pose, false);
         }
+    }
+
+    // 지진 용암 분출에서 불덩이(수관 쪽 자리)를 바닥보다 이만큼(월드) 위에 둔다. 바닥 번쩍임·불고리(밑동 쪽)는 바닥 그대로.
+    private const float QuakeEruptionTopHeight = 0.5f;
+
+    /// <summary>
+    /// 지진 앞머리가 지나가는 바닥(_ground)에서 용암이 터져 오르는 연출. 용암 나무가 쓰러질 때의 큰 폭발(magmaTreeDeadBlast)을
+    /// 나무 없이 바닥 자리에서 그대로 재생한다(프리팹 고유 색). 나무 폭발 몰림 상한(TryTakeMagmaBlastBudget)과는 따로 센다 - 부르는 쪽이 개수를 정한다.
+    /// </summary>
+    public void PlayQuakeEruptionVFX(Vector3 _ground)
+    {
+        if (vfxComponent == null || false == magmaTreeDeadBlast.bAvailable) return;
+
+        _ground.z = 0f;
+        TreeDeadVfxPose pose = new TreeDeadVfxPose
+        {
+            topPosition = _ground + Vector3.up * QuakeEruptionTopHeight,
+            topRotation = Quaternion.identity,
+            bottomPosition = _ground,
+            bottomRotation = Quaternion.identity,
+        };
+        PlayTreeDeadEffectSet(magmaTreeDeadBlast, pose, false);
     }
 
     /// <summary>
@@ -1426,13 +1479,13 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     // 묶음을 수관(·밑동) 자리에서 재생한다. _bTreeColor면 나무별 이펙트 색을 루트에만 덮어쓰고, 아니면 프리팹 고유 색 그대로다.
-    private void PlayTreeDeadEffectSet(TreeDeadEffectSet _set, TreeVisualComponent _visual, bool _bTreeColor)
+    private void PlayTreeDeadEffectSet(TreeDeadEffectSet _set, in TreeDeadVfxPose _pose, bool _bTreeColor)
     {
         EnsureTreeDeadEffectEmitters(_set);
-        PlayTreeDeadEffectPart(_set.topEmitter, _set.topTag, _visual.GetTopRootPosition(), _visual.GetTopRootRotation(), _bTreeColor, _visual.GetTopVfxColor());
+        PlayTreeDeadEffectPart(_set.topEmitter, _set.topTag, _pose.topPosition, _pose.topRotation, _bTreeColor, _pose.topColor);
         if (null != _set.bottomTag)
         {
-            PlayTreeDeadEffectPart(_set.bottomEmitter, _set.bottomTag, _visual.GetBottomRootPosition(), _visual.GetBottomRootRotation(), _bTreeColor, _visual.GetBottomVfxColor());
+            PlayTreeDeadEffectPart(_set.bottomEmitter, _set.bottomTag, _pose.bottomPosition, _pose.bottomRotation, _bTreeColor, _pose.bottomColor);
         }
     }
 

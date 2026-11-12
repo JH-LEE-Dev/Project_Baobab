@@ -175,7 +175,7 @@ public class SporeGlowSettings
 }
 
 /// <summary>
-/// 물 위 포자. 물 타일 그림의 수면색 픽셀 위에 포자 알갱이(텍셀 한 칸)가 떠올라 바람 방향으로 천천히 떠가다 사라진다
+/// 물 위 포자. 물 타일 그림의 수면색 픽셀 위에 빛나는 포자 알갱이가 떠올라 바람 방향으로 천천히 떠가다 사라진다
 /// (물 타일 셰이더 WaterTilemapShader). 렌더링만 바뀌고 게임 동작에는 영향이 없다.
 /// </summary>
 [System.Serializable]
@@ -201,6 +201,15 @@ public class WaterSporeSettings
     public float travelTexels = 5f;
     // 옆으로 흔들리는 폭(텍셀, 0~2)
     [Range(0f, 2f)] public float wobbleTexels = 1f;
+    // 두 번째 포자 색. 포자마다 포자 색과 이 색 사이의 한 색이 된다(같으면 한 색).
+    public Color sporeColorB = new Color(0.8f, 0.62f, 1f, 1f);
+    // 밝게 떠 있을 때 큰 포자(절반쯤)가 둘레 한 칸으로 번져 솜뭉치처럼 보이는 세기(0이면 모두 텍셀 한 칸)
+    [Range(0f, 1f)] public float glowArms = 0f;
+    // 포자 둘레 물이 포자 색으로 물드는 반경(텍셀, 0이면 없음)과 진하기
+    [Range(0f, 3f)] public float haloTexels = 0f;
+    [Range(0f, 1f)] public float haloAlpha = 0f;
+    // 떠 있는 동안 한 번 별처럼 반짝이는(상하좌우 빛줄기) 세기(0이면 없음)
+    [Range(0f, 1f)] public float twinkle = 0f;
 }
 
 /// <summary>
@@ -626,4 +635,253 @@ public class LavaEmberSettings
     public Color colorB = new Color(1f, 0.82f, 0.3f, 1f);
     // 동시에 떠 있는 알갱이 최대 수
     [Min(8)] public int maxParticles = 64;
+}
+
+/// <summary>
+/// 물가·풀숲 반딧불. 물가(물과 땅의 경계에서 몇 칸 안)와 풀 장식이 있는 칸에서 작은 빛 알갱이가 천천히 떠다니며 깜빡인다.
+/// 화면 안 무작위 자리를 정해진 횟수만큼 골라 물가면 늘, 풀숲이면 정해진 확률로 띄운다(물가 판정은 StageShoreMap).
+/// 스테이지에 파티클 시스템 하나만 두며 충돌·판정이 없어 게임 동작에는 영향이 없다.
+/// enabled가 꺼져 있거나 material이 비어 있으면 아무것도 만들지 않는다.
+/// </summary>
+[System.Serializable]
+public class FireflySettings
+{
+    public bool enabled = false;
+    // 알갱이 머티리얼(MushroomSpore 셰이더)
+    public Material material;
+    // 그리는 정렬 자리(기본은 오브젝트 맨 위)
+    public string sortingLayerName = "Objects";
+    public int sortingOrder = 32765;
+    // 1초에 화면 안을 몇 번 골라 볼지와 한 프레임에 고르는 최대 횟수
+    public float samplesPerSecond = 6f;
+    [Min(1)] public int maxSamplesPerFrame = 3;
+    // 물가로 치는 거리(물과 땅의 경계에서 칸 수). 이 안이면 늘 띄운다.
+    public float shoreReachCells = 1.5f;
+    // 물가가 아닌 풀숲(풀 장식 칸)에서 띄울 확률(0~1)
+    [Range(0f, 1f)] public float grassChance = 0.3f;
+    // 떠오르는 높이(월드, 최소~최대). 땅에서 이만큼 위에서 생긴다.
+    public Vector2 heightRange = new Vector2(0.1f, 0.6f);
+    // 떠다니는 빠르기(월드/초)와 방향이 바뀌는 빠르기(Hz)
+    public float wanderSpeed = 0.25f;
+    public float wanderFrequency = 0.35f;
+    // 알갱이 수명(초, 최소~최대). 수명 동안 두세 번 깜빡인다.
+    public Vector2 lifetimeRange = new Vector2(3.5f, 5.5f);
+    // 알갱이 크기(픽셀, 최소~최대)
+    public Vector2Int sizePixelsRange = new Vector2Int(1, 2);
+    // 알갱이 색(두 색 사이에서 무작위)
+    public Color colorA = new Color(1f, 0.92f, 0.55f, 1f);
+    public Color colorB = new Color(0.65f, 0.95f, 1f, 1f);
+    // 동시에 떠 있는 알갱이 최대 수
+    [Min(8)] public int maxParticles = 64;
+}
+
+/// <summary>
+/// 숲의 숨결. 몇십 초에 한 번, 화면 밖 먼 곳에서 출발한 느린 빛 물결이 땅을 따라 화면을 쓸고 지나간다.
+/// 물결이 닿는 곳의 꽃 장식(BloomDecoTwinkle)이 밝아지고, 숨쉬는 장식(DecoBreath의 장식들)이 함께 숨을 들이쉬고,
+/// 물 위에는 물결을 따라 반짝임이 흩뿌려지며 물가 테두리가 달빛으로 물든다. 나무는 밑동에 물결이 닿으면 밝아지며 별점이 차례로 반짝이고,
+/// 땅(바닥·풀 장식 타일맵, groundMaterial로 바꿔 끼운다)은 아주 옅은 달빛으로 물들며 이슬 같은 반짝임이 흩뿌려진다.
+/// 지나가면 모두 평소대로 돌아온다.
+/// 물결 하나만 있고 그 위치는 StageForestBreath가 매 프레임 전역값으로 넘기며, 셰이더와 장식이 같은 값을 읽는다.
+/// 렌더링만 바뀌고 게임 동작에는 영향이 없다. enabled가 꺼져 있으면 아무것도 만들지 않고 셰이더 출력도 기존과 같다.
+/// </summary>
+[System.Serializable]
+public class ForestBreathSettings
+{
+    public bool enabled = false;
+    // 물결과 물결 사이 시간(초, 최소~최대)과 맵을 깐 뒤 첫 물결까지 시간(초, 최소~최대)
+    public Vector2 intervalRange = new Vector2(20f, 30f);
+    public Vector2 firstDelayRange = new Vector2(6f, 10f);
+    // 물결이 땅 위에서 퍼지는 빠르기(땅 거리/초). 땅 거리는 아이소메트릭 바닥 기준(화면 세로를 두 배로 친다).
+    [Min(0.1f)] public float speed = 3f;
+    // 물결 앞머리가 닿아 가장 밝아지기까지의 폭과, 그 뒤 잦아들기까지의 폭(땅 거리)
+    [Min(0.05f)] public float riseWidth = 1.2f;
+    [Min(0.05f)] public float fallWidth = 4f;
+    // 앞머리가 곧은 선으로 보이지 않게 앞뒤로 흔들리는 폭(땅 거리)과 흔들림 무늬 크기(월드)
+    [Min(0f)] public float frontWobble = 1.5f;
+    [Min(0.5f)] public float frontWobbleSize = 4f;
+    // 꽃 장식이 가장 밝을 때 더하는 밝기 비율
+    [Min(0f)] public float flowerBrightness = 1.6f;
+    // 숨쉬는 장식이 가장 밝을 때 더하는 밝기 비율
+    [Min(0f)] public float decoBrightness = 1f;
+    // 물 위 반짝임: 물 반짝임 칸 중 물결이 지날 때 반짝이는 칸의 비율(0~1)과 한 점이 반짝이는 길이(땅 거리)
+    [Range(0f, 1f)] public float waterSparkleCoverage = 0.85f;
+    [Min(0.05f)] public float waterSparkleLength = 1f;
+    // 물가 테두리가 물결에 물드는 세기(0~1)와 수면 전체가 아주 옅게 밝아지는 세기(0~1)
+    [Range(0f, 1f)] public float shoreGlow = 0.8f;
+    [Range(0f, 1f)] public float surfaceSheen = 0.1f;
+    // 나무: 별점(나무 별빛 반짝임의 별점 색)이 가장 밝을 때 더하는 밝기 비율과 나무 전체가 밝아지는 비율
+    [Min(0f)] public float treeStarBrightness = 6f;
+    [Min(0f)] public float treeBrightness = 0.6f;
+    // 땅: 바닥·풀 장식 타일맵에 끼울 머티리얼(GroundForestBreathLit 셰이더). 비어 있으면 땅은 그대로다.
+    public Material groundMaterial;
+    // 땅 달빛 띠·이슬 반짝임 색
+    public Color groundGlowColor = new Color(0.62f, 0.86f, 1f, 1f);
+    // 땅이 물결을 따라 옅게 물드는 세기(0~1)
+    [Range(0f, 1f)] public float groundSheen = 0.08f;
+    // 이슬 반짝임: 칸 중 반짝이는 칸의 비율(0~1), 칸 크기(텍셀), 한 점이 반짝이는 길이(땅 거리), 가장 밝을 때 밝기(HDR)
+    [Range(0f, 1f)] public float groundGlintCoverage = 0.5f;
+    [Min(4f)] public float groundGlintCellTexels = 10f;
+    [Min(0.05f)] public float groundGlintLength = 1f;
+    [Min(0f)] public float groundGlintBrightness = 1.8f;
+}
+
+/// <summary>
+/// 포자막 상태 연출(2스테이지). 포자막을 때리면 결정이 번쩍이며 조각이 튀고, 깎인 만큼 결정이 어둡고 탁해지며,
+/// 다시 차오르는 동안 둘레의 포자 알갱이가 수관으로 빨려 들어가고 결정 위로 빛 띠가 훑어 오르고, 가득 차는 순간 한 번 맥동한다.
+/// 결정 표현은 나무 셰이더(TreeSporeShield.hlsl)가, 알갱이는 StageSporeShieldFx의 파티클 시스템 둘이 그린다.
+/// 렌더링만 바뀌고 포자막 수치·회복·판정은 그대로다. enabled가 꺼져 있거나 material이 비어 있으면 아무것도 만들지 않는다.
+/// </summary>
+[System.Serializable]
+public class SporeShieldFxSettings
+{
+    public bool enabled = false;
+    // 알갱이 머티리얼(MushroomSpore 셰이더)
+    public Material material;
+    // 그리는 정렬 자리(기본은 오브젝트 맨 위)
+    public string sortingLayerName = "Objects";
+    public int sortingOrder = 32767;
+    // 결정이 박힌 수관: 나무 윗부분 기준점(GetTopRootPosition, 밑동에서 0.75 위)에서의 가운데 오프셋과 가로·세로 반지름(월드).
+    // 2스테이지 세 나무의 결정은 밑동에서 0.5~1.45 높이에 있다.
+    public Vector2 crownOffset = new Vector2(0f, 0.2f);
+    public Vector2 crownRadius = new Vector2(0.36f, 0.4f);
+    // 맞은 순간 결정 번쩍임이 잦아드는 시간(초)과 가득 참 맥동이 잦아드는 시간(초)
+    [Min(0.01f)] public float hitFlashDuration = 0.22f;
+    [Min(0.01f)] public float fullPulseDuration = 0.5f;
+    // 차오름 표현이 켜지는/꺼지는 시간(초)
+    [Min(0.01f)] public float regenFadeIn = 0.12f;
+    [Min(0.01f)] public float regenFadeOut = 0.35f;
+    // 빨려 드는 알갱이: 나무 한 그루가 1초에 띄우는 수, 출발 거리(수관 가운데에서, 월드, 최소~최대), 세로로 눌리는 비율, 날아가는 시간(초), 크기(픽셀), 색
+    [Min(0f)] public float motesPerSecond = 8f;
+    public Vector2 moteSpawnRadiusRange = new Vector2(0.75f, 1.15f);
+    [Range(0.2f, 1f)] public float moteSpawnFlatten = 0.75f;
+    public Vector2 moteLifetimeRange = new Vector2(0.45f, 0.7f);
+    public Vector2Int moteSizePixelsRange = new Vector2Int(1, 2);
+    public Color moteColorA = new Color(0.68f, 0.99f, 0.99f, 1f);
+    public Color moteColorB = new Color(0.86f, 0.8f, 1f, 1f);
+    // 맞을 때 튀는 결정 조각: 수(최소~최대), 속도(월드/초), 위쪽 치우침, 느려지는 정도(0~1), 떨어지는 힘(월드/초²), 수명(초), 크기(픽셀), 색
+    public Vector2Int shardCountRange = new Vector2Int(2, 4);
+    public Vector2 shardSpeedRange = new Vector2(1.2f, 2.2f);
+    public float shardUpwardBias = 0.4f;
+    [Range(0f, 1f)] public float shardDampen = 0.06f;
+    public float shardGravity = 1.2f;
+    public Vector2 shardLifetimeRange = new Vector2(0.3f, 0.5f);
+    public Vector2Int shardSizePixelsRange = new Vector2Int(1, 2);
+    public Color shardColorA = new Color(0.63f, 0.95f, 0.93f, 1f);
+    public Color shardColorB = new Color(0.94f, 1f, 0.97f, 1f);
+    // 가득 차는 순간 퍼지는 빛 알갱이: 수, 속도(월드/초), 수명(초)
+    [Min(0)] public int pulseSparkleCount = 6;
+    public Vector2 pulseSparkleSpeedRange = new Vector2(0.5f, 0.8f);
+    public Vector2 pulseSparkleLifetimeRange = new Vector2(0.45f, 0.65f);
+    // 동시에 떠 있는 알갱이 최대 수(시스템마다)와 한 프레임에 조각을 튀게 할 최대 타격 수(광역 타격 몰림 대비)
+    [Min(16)] public int maxParticles = 256;
+    [Min(1)] public int maxHitBurstsPerFrame = 6;
+}
+
+/// <summary>
+/// 결정 장식 숨쉬기. 바닥 장식 타일맵(결정 새싹·돌·웅덩이 장식)을 이 스테이지에서만 전용 머티리얼(DecoCrystalBreathLit)로 그려,
+/// 장식 타일마다 제 박자로 결정 픽셀만 은은하게 밝아졌다 돌아오게 한다. 숨쉬는 세기·박자는 머티리얼에서 정한다.
+/// 공용 머티리얼은 건드리지 않고 이 타일맵의 머티리얼만 갈아 끼우며, 꺼진 스테이지는 원래 머티리얼 그대로다.
+/// 용암 빛·숲의 숨결 머티리얼이 켜진 스테이지는 그쪽이 먼저다. 렌더링만 바뀌고 게임 동작에는 영향이 없다.
+/// </summary>
+[System.Serializable]
+public class CrystalDecoBreathSettings
+{
+    public bool enabled = false;
+    public Material material;
+}
+
+/// <summary>
+/// 물 깊이. 물 타일 그림의 수면색·옆면색 픽셀을 물가에서 멀어질수록 몇 단계로 깊은 색으로 칠한다(물 타일 셰이더 WaterTilemapShader,
+/// WaterDepth.hlsl, 물가 거리는 StageShoreMap). 단계 경계 근처만 텍셀 단위로 엇갈려 픽셀아트 그대로다.
+/// 렌더링만 바뀌고 게임 동작에는 영향이 없다. enabled가 꺼져 있으면 셰이더 출력이 기존과 같다.
+/// </summary>
+[System.Serializable]
+public class WaterDepthSettings
+{
+    public bool enabled = false;
+    // 물 타일 그림의 수면색·옆면색(판정용)과 색 판정 허용 오차(채널별 최대 차이, 0~1)
+    public Color surfaceColor = new Color(85f / 255f, 196f / 255f, 200f / 255f, 1f);
+    public Color sideColor = new Color(65f / 255f, 166f / 255f, 169f / 255f, 1f);
+    [Range(0f, 0.2f)] public float colorTolerance = 0.03f;
+    // 가장 깊은 곳에서 곱하는 색
+    public Color deepColor = new Color(0.66f, 0.82f, 0.92f, 1f);
+    // 깊어지기 시작하는 거리와 가장 깊어지는 거리(물가에서 칸 수)
+    [Min(0f)] public float startCells = 0.5f;
+    [Min(0.1f)] public float fullCells = 4f;
+    // 단계 수와 단계 경계가 텍셀 단위로 엇갈리는 폭(0이면 칼같이 나뉘고 1이면 단계 사이 전체가 엇갈린다)
+    [Range(2, 8)] public int bands = 3;
+    [Range(0f, 1f)] public float ditherWidth = 0.35f;
+}
+
+/// <summary>
+/// 돌풍에 실려 날아가는 꽃잎·잎. 돌풍(WindGustSettings)이 지나가는 자리에서만 작은 꽃잎과 잎이 생겨 돌풍과 함께 날아가며
+/// 뒤집히듯 깜빡이다 사라진다(StageWindPetals). 돌풍이 꺼진 스테이지에서는 아무것도 만들지 않는다.
+/// 렌더링만 바뀌고 게임 동작에는 영향이 없다. enabled가 꺼져 있거나 material이 비어 있으면 아무것도 만들지 않는다.
+/// </summary>
+[System.Serializable]
+public class WindPetalSettings
+{
+    public bool enabled = false;
+    // 꽃잎 머티리얼(WindPetal 셰이더)
+    public Material material;
+    // 그리는 정렬 자리(기본은 오브젝트 맨 위)
+    public string sortingLayerName = "Objects";
+    public int sortingOrder = 32767;
+    // 화면 안(가장자리 여유 포함) 무작위 자리를 1초에 이만큼 골라, 돌풍이 이 세기 이상인 자리에서만 꽃잎을 띄운다.
+    public float spawnAttemptsPerSecond = 280f;
+    [Range(0f, 1f)] public float gustThreshold = 0.55f;
+    // 화면 가장자리 여유(월드). 화면 밖에서 생겨 날아 들어오게 한다.
+    public float viewMargin = 1.5f;
+    // 돌풍 속도에 곱하는 꽃잎 속도 배수(최소~최대). 1보다 작으면 돌풍 꼬리로 처진다.
+    public Vector2 speedScaleRange = new Vector2(0.7f, 1.05f);
+    // 처음 떠오르는 속도(월드/초, 최소~최대)와 내려앉는 힘(월드/초²)
+    public Vector2 liftRange = new Vector2(0.1f, 0.45f);
+    public float gravity = 0.25f;
+    // 나풀거림(노이즈) 세기와 빠르기
+    public float flutterStrength = 0.35f;
+    public float flutterFrequency = 0.9f;
+    // 수명(초, 최소~최대)과 수명 동안 뒤집히는 횟수
+    public Vector2 lifetimeRange = new Vector2(1.4f, 2.4f);
+    [Min(1)] public int tumbleCycles = 5;
+    // 꽃잎 색(무작위로 하나). 풀 위에서 묻히지 않게 밝은 색만 쓴다.
+    public Color[] colors =
+    {
+        new Color(1f, 1f, 1f, 1f),
+        new Color(1f, 0.8f, 0.88f, 1f),
+        new Color(1f, 0.66f, 0.8f, 1f),
+        new Color(1f, 0.95f, 0.62f, 1f),
+    };
+    // 동시에 떠 있는 꽃잎 최대 수
+    [Min(16)] public int maxParticles = 160;
+}
+
+/// <summary>
+/// 흐르는 구름 그림자. 하늘의 구름이 드리우는 큰 그림자 덩어리가 땅·물·나무 위로 천천히 지나간다(StageCloudShadows,
+/// StageCloudShadow 셰이더가 화면을 덮는 판 하나로 곱해 어둡게 한다). 그림자 경계는 텍셀 단위로 엇갈려 픽셀아트 그대로다.
+/// 렌더링만 바뀌고 게임 동작에는 영향이 없다. enabled가 꺼져 있거나 material이 비어 있으면 아무것도 만들지 않는다.
+/// </summary>
+[System.Serializable]
+public class CloudShadowSettings
+{
+    public bool enabled = false;
+    // 구름 그림자 머티리얼(StageCloudShadow 셰이더)
+    public Material material;
+    // 그리는 정렬 자리(기본은 오브젝트 위, 오브젝트 맨 위 연출 바로 아래). 이보다 앞에 그리는 것만 어두워진다.
+    public string sortingLayerName = "Objects";
+    public int sortingOrder = 32766;
+    // 구름이 흘러가는 방향(월드, 정규화해서 쓴다)과 속도(월드/초)
+    public Vector2 direction = new Vector2(1f, -0.35f);
+    public float speed = 0.6f;
+    // 구름 덩어리 크기(월드). 아이소메트릭 바닥에 맞게 세로는 절반으로 눌러 그린다.
+    public float scale = 10f;
+    // 그림자가 덮는 대략적인 화면 비율(0~1)과 경계가 퍼지는 폭
+    [Range(0f, 1f)] public float coverage = 0.04f;
+    [Range(0.01f, 0.5f)] public float softness = 0.05f;
+    // 그림자 속에서 곱하는 색과 단계 수, 단계 경계가 텍셀 단위로 엇갈리는 폭
+    public Color shadowColor = new Color(0.78f, 0.84f, 0.95f, 1f);
+    [Range(1, 4)] public int bands = 2;
+    [Range(0f, 1f)] public float ditherWidth = 0.6f;
+    // 화면 가장자리 여유(월드). 카메라가 움직이는 사이 판 끝이 보이지 않게 한다.
+    public float viewMargin = 2f;
+
 }

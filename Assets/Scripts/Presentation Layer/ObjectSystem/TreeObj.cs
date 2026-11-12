@@ -62,8 +62,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     }
 
     // ---------- 3스테이지 배리어 ----------
-    // 별자리를 이루지 않는 나무는 배리어로 데미지 감소율(기본 100%, "배리어 관통력" 특성이 낮춤)만큼 피해를 막는다. 별자리 발현 폭발에 맞으면 그 타격을 흡수하며 깨지고,
-    // 그 뒤로는 평소처럼 피해를 받는다. 켜고 끄는 것은 InDungeonObjectManager(스폰)와 Stage3TreeGenerationStrategySO(별 표식)가 한다.
+    // 별자리를 이루지 않는 나무는 배리어로 데미지 감소율(기본 100%, "배리어 관통력" 특성이 낮춤)만큼 피해를 막는다. 별자리 발현 폭발에 맞으면 깨지고,
+    // 그 타격부터 평소처럼 피해를 받는다. 켜고 끄는 것은 InDungeonObjectManager(스폰)와 Stage3TreeGenerationStrategySO(별 표식)가 한다.
     // 막힌 타격은 피해/화상/피격 이벤트/나무 흔들림 없이 배리어 번쩍임 + 스파크(TreeBarrierBlockedEvent를 받은 매니저)만 낸다.
 
     /// <summary>배리어가 막은 타격. 매니저가 맞은 자리를 정해 PlayBarrierHit와 스파크 이펙트를 재생한다.</summary>
@@ -103,7 +103,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     }
 
     /// <summary>
-    /// 별자리 발현 폭발이 배리어를 깬다. 이 타격은 배리어가 흡수하므로 피해를 주지 않는다.
+    /// 별자리 발현 폭발이 배리어를 깬다. 피해는 주지 않으며, 호출부가 이어서 같은 타격의 피해를 준다.
     /// _sourcePos는 폭발 중심(깨지는 연출이 그쪽 면에서 시작한다). 배리어가 없거나 죽은/풀 나무면 false.
     /// </summary>
     public bool BreakBarrier(Vector3 _sourcePos)
@@ -132,7 +132,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         bBarrierActive = false;
         bHasLastBarrierImpact = false;
 
-        if (null != barrierVfx) barrierVfx.PlayBreak(_impact);
+        // 깨진 뒤 나무 테두리에 푸른 잔광을 잠깐 남긴다(쓰러지며 깨지면 풀로 돌아가며 바로 거둔다).
+        if (null != barrierVfx) barrierVfx.PlayBreak(_impact, treeVisualComponent);
 
         Sound.Play(SoundID.SporeShieldBreak, cachedTransform.position, 1f, true, BarrierBreakSoundPitch);
         TreeBarrierBrokenEvent?.Invoke(this, _impact);

@@ -906,7 +906,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         }
     }
 
-    // 용암 빛이 켜진 스테이지만 바닥 장식(돌멩이 등) 타일맵도 바닥과 같은 용암 빛 머티리얼로 그리고, 그 밖에는 원래 머티리얼로 되돌린다(렌더링 전용).
+    // 용암 빛·숲의 숨결·결정 장식 숨쉬기가 켜진 스테이지만 바닥 장식(돌멩이 등) 타일맵을 그 머티리얼로 그리고, 그 밖에는 원래 머티리얼로 되돌린다(렌더링 전용).
     private void ApplyDecoMaterialForStage()
     {
         if (null == decoTilemapRenderer)
@@ -1873,6 +1873,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         StageLavaSpouts.Apply(bSpawnDeco && null != stageTileData ? stageTileData.LavaSpouts : null, waterTilemap, "DungeonScene");
         // 데코 증기(꺼진 스테이지·로그라이크는 아무것도 만들지 않는다). 렌더링 전용.
         StageDecoSteam.Apply(bSpawnDeco && null != stageTileData ? stageTileData.DecoSteam : null, bloomDecoTilemap, "DungeonScene");
+        // 물가·풀숲 반딧불(꺼진 스테이지·로그라이크는 아무것도 만들지 않는다). 물가는 맵 생성 끝의 물가 지도로 고른다. 렌더링 전용.
+        StageFireflies.Apply(bSpawnDeco && null != stageTileData ? stageTileData.Fireflies : null, decoTilemap, "DungeonScene");
 
         // 셰이더 타일 애니메이션(켠 스테이지만, 로그라이크는 끈다). 꺼지면 아래 Convert가 원본 배열을 그대로 돌려준다. 렌더링 전용.
         tileFrameAnimation.Begin(null != stageTileData && stageTileData.ShaderTileAnimation, "DungeonScene", new[]
@@ -3115,5 +3117,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         StageLavaGlow.Apply(stageTileData.LavaGlow, extWaterTiles, extBounds, waterTilemap);
         // 용암 바다 지도(바다 여부·해안 거리). 바다 쪽 거품 빈도·바다 온도 무늬가 쓴다. 쓰는 연출이 없거나 로그라이크면 전역값을 비운다. 렌더링 전용.
         StageLavaSeaMap.Apply(stageTileData, extWaterTiles, extBounds, width, height, waterTilemap);
+        // 물가 지도(물과 땅의 경계까지 칸 수). 반딧불이 물가를 고를 때 쓴다. 쓰는 연출이 없거나 로그라이크면 비운다. 렌더링 전용.
+        StageShoreMap.Apply(stageTileData, extWaterTiles, extBounds, width, height, groundTiles, waterTilemap);
     }
 }
