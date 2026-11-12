@@ -20,7 +20,8 @@ using UnityEngine;
 /// 출고벨트가 아주 짧아서(1~3칸, 기본 속도로 0.2~1.3초) 튀어 오르는 시간은 남은 벨트 시간에 맞춰 줄인다.
 /// 남은 시간보다 길면 착지 전에 원목이 들어가 버리는데, 그때는 공중에서 바로 따라 뛰어든다.
 ///
-/// 이펙트(섬광·금가루·×2 글자)는 VFX_TopgradeAssessment가 그리고, 이 컴포넌트는 언제 어디서 터질지만 알려 준다.
+/// 이펙트(커터 불티·톱밥과 ×2 글자, 착지·반짝임, 평가기 섬광·금화)는 VFX_TopgradeAssessment가 그리고,
+/// 이 컴포넌트는 언제 어디서 터질지만 알려 준다.
 ///
 /// 마을에 있을 때만 보여준다. 던전에 가 있는 동안에는 판정만 진행되고(돈은 그대로 2배), 마을로 돌아오면
 /// 벨트 위에 남아 있는 특등품 원목에 쌍둥이를 다시 얹는다.
@@ -77,12 +78,18 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
     [SerializeField] private float rideSparkleIntervalMax = 0.24f;
     [Tooltip("반짝임이 생기는 범위(쌍둥이 중심 기준 반폭·반높이, 유닛).")]
     [SerializeField] private Vector2 rideSparkleExtents = new Vector2(0.32f, 0.12f);
+    // 커터 스프라이트(48x48 칸)는 아래쪽 29px만 그림이고 기준점이 바닥에서 4.8px 위다. 톱날은 윗면 가운데 홈을 따라
+    // 좌우 ±7px를 오가며(애니메이션) 꼭대기가 기준점에서 ≈ +0.7 유닛이라, 불티는 홈 가운데에서 튄다.
+    [Tooltip("불티 줄기가 튀는 톱날 자리(커터 기준점에서, 유닛). 톱날이 오가는 홈의 가운데.")]
+    [SerializeField] private Vector2 cutterBladeOffset = new Vector2(0f, 0.6f);
+    [Tooltip("×2 글자 바닥 가운데 자리(커터 기준점에서, 유닛). 톱날 꼭대기 바로 위, 쌍둥이가 튀어 오르는 쪽(오른쪽)을 조금 비켜 둔다.")]
+    [SerializeField] private Vector2 cutterLabelOffset = new Vector2(-0.08f, 0.8f);
     // 평가기 스프라이트(64x64 칸)는 아래쪽 32px만 그림이고 기준점이 바닥에서 4.8px 위라, 칸 경계(bounds)가 아니라
     // 기준점에서의 거리로 자리를 잡는다. 몸통 가운데 ≈ +0.35, 윗면 ≈ +0.85 유닛.
-    [Tooltip("섬광·충격파·금화 분수가 터지는 자리(평가기 기준점에서, 유닛). 평가기 몸통 가운데.")]
+    [Tooltip("섬광·충격파가 터지는 자리(평가기 기준점에서, 유닛). 평가기 몸통 가운데.")]
     [SerializeField] private Vector2 stampImpactOffset = new Vector2(0f, 0.35f);
-    [Tooltip("×2 글자 바닥 가운데 자리(평가기 기준점에서, 유닛). 평가기 윗면 바로 위.")]
-    [SerializeField] private Vector2 stampLabelOffset = new Vector2(0f, 0.92f);
+    [Tooltip("금화 분수가 솟는 자리(평가기 기준점에서, 유닛). 평가기 윗면.")]
+    [SerializeField] private Vector2 stampFountainOffset = new Vector2(0f, 0.8f);
 
     [Header("평가기 쾅")]
     [SerializeField] private float stampBounceDuration = 0.45f;
@@ -273,7 +280,15 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
         twin.popFromOffset = fromCutter * popFromCutterRatio;
 
         ApplyTwin(twin, 0f);
-        if (vfx != null) vfx.PlayReveal(twin.body.transform.position);
+        if (vfx != null)
+        {
+            // 커터 톱날에서 불티, 출구(쌍둥이 출발점)에서 톱밥, 커터 위로 ×2. 불티·톱밥은 출고 방향(커터 → 평가기)으로 튄다.
+            Vector3 cutterPos = cutter != null ? cutter.transform.position : _main.transform.position;
+            LogStorage storage = evaluator != null ? evaluator.Storage : null;
+            Vector3 outTarget = storage != null ? storage.transform.position : _main.transform.position;
+            Vector2 outDir = outTarget - cutterPos;
+            vfx.PlayReveal(twin.body.transform.position, cutterPos + (Vector3)cutterBladeOffset, cutterPos + (Vector3)cutterLabelOffset, outDir);
+        }
 
         Sound.Play(revealSound, _main.transform.position, revealVolume, pitchOverride: Random.Range(0.97f, 1.04f));
     }
@@ -374,8 +389,8 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
 
         if (vfx != null)
         {
-            // 섬광·분수는 평가기 몸통 가운데, ×2는 평가기 윗면 바로 위(기준점은 반동과 무관하게 고정이다).
-            vfx.PlayStamp(stampPos + (Vector3)stampImpactOffset, stampPos + (Vector3)stampLabelOffset, comboCount);
+            // 섬광·충격파는 평가기 몸통 가운데, 분수는 평가기 윗면(기준점은 반동과 무관하게 고정이다).
+            vfx.PlayStamp(stampPos + (Vector3)stampImpactOffset, stampPos + (Vector3)stampFountainOffset, comboCount);
         }
 
         if (storage != null)

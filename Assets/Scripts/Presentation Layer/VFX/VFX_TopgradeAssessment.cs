@@ -9,12 +9,13 @@ namespace PresentationLayer.VFX
     /// 가공 라인 하나에 하나씩, TopgradeAssessmentPresenter가 런타임에 자식으로 만들어 부른다.
     ///
     /// 장면
-    /// - 등장(PlayReveal): 쌍둥이 원목이 튀어나오는 자리에서 작은 섬광과 금가루가 터진다.
+    /// - 등장(PlayReveal): 커터 톱날이 금을 긁은 듯 톱날에서 불티 줄기가 벨트 쪽으로 튀고, 쌍둥이가 나오는 출구에서는
+    ///   금빛 톱밥이 뿜어진다. 동시에 커터 윗면에서 "×2" 글자가 솟아올라 반짝임이 한 번 훑고 지나간 뒤
+    ///   떠오르며 깜빡여 사라진다. 다시 나오면 ×2는 처음부터 다시 솟는다.
     /// - 착지(PlayLand): 원목 등 위에 내려앉는 순간 작은 별이 반짝이고 양옆으로 먼지가 튄다.
     /// - 업혀 가기(EmitRideSparkle): 쌍둥이 둘레에서 금빛 반짝임이 하나씩 피어올라 사라진다(절제해서 드문드문).
-    /// - 쾅(PlayStamp): 평가기에서 큰 십자 섬광 → 점선 충격파 → 금화·금가루 분수가 솟았다 떨어지고,
-    ///   평가기 위로 "×2" 글자가 튀어 올라 반짝임이 한 번 훑고 지나간 뒤 떠오르며 깜빡여 사라진다.
-    ///   콤보(연달아 터짐)일수록 분수와 충격파가 조금씩 커진다. 다시 터지면 ×2는 처음부터 다시 튀어 오른다.
+    /// - 쾅(PlayStamp): 평가기에서 큰 십자 섬광 → 점선 충격파 → 금화·금가루 분수가 솟았다 떨어진다.
+    ///   콤보(연달아 터짐)일수록 분수와 충격파가 조금씩 커진다.
     ///
     /// 글자는 숫자와 곱셈 기호뿐이라 언어와 무관하다(현지화 대상 아님).
     /// 반투명 페이드 없이 계단식 크기 변화·점멸로만 사라진다. 고정 크기 배열만 써서 재생 중 힙 할당이 없다.
@@ -79,6 +80,8 @@ namespace PresentationLayer.VFX
         private const int KindSparkle = 1;
         private const int KindCoin = 2;
         private const int KindTwinkle = 3;
+        private const int KindStreak = 4;   // 불티 줄기: 날아가는 방향 반대로 꼬리를 끈다
+        private const int KindChip = 5;     // 톱밥 조각: 2x1 막대가 돌며 떨어진다
 
         private const int FountainBaseCount = 18;
         private const int FountainPerCombo = 3;
@@ -86,10 +89,14 @@ namespace PresentationLayer.VFX
         private const int FountainSecondWaveCount = 8;
         private const float FountainSecondWaveDelay = 0.06f;
         private const float FountainGravity = 300f;     // px/s^2
-        private const int FountainBelowLabelPx = 4;     // 분수가 솟는 자리: ×2 글자 바닥에서 이만큼 아래(평가기 윗면)
 
-        private const int RevealDustCount = 10;
-        private const float RevealGravity = 220f;
+        // 커터 등장: 톱날 불티 줄기 + 출구 톱밥
+        private const int RevealStreakCount = 12;
+        private const float RevealStreakSpread = 0.75f;  // 진행 방향 좌우로 이만큼(라디안) 부채꼴
+        private const float RevealStreakGravity = 260f;
+        private const int RevealChipCount = 9;
+        private const int RevealSparkleCount = 4;
+        private const float RevealChipGravity = 240f;
 
         // 업혀 가기 반짝임: 쌍둥이 둘레에서 피어올라 계단식으로 커졌다 작아진다.
         private const float TwinkleLife = 0.34f;
@@ -100,7 +107,7 @@ namespace PresentationLayer.VFX
         private const float LabelDuration = 1.0f;
         private const float LabelFlashEnd = 0.05f;
         private const float LabelRiseTime = 0.2f;
-        private const float LabelRiseFromPx = -8f;
+        private const float LabelRiseFromPx = -10f;     // 커터 윗면 안쪽에서부터 솟아 나온다
         private const float LabelShineStart = 0.12f;
         private const float LabelShineTime = 0.24f;
         private const int LabelShineWidth = 3;
@@ -111,8 +118,7 @@ namespace PresentationLayer.VFX
         private static readonly float[] LabelTwinkleStarts = { 0.18f, 0.32f };
 
         // 글자 그림(위 줄부터). '#'가 채운 픽셀이다. 테두리는 바깥 8방향 한 칸으로 자동으로 두른다.
-        // 가공 라인 평가기끼리 가로 16px 간격으로 붙어 있어서, 여러 라인이 동시에 터져도 글자끼리 겹치지 않도록
-        // 테두리까지 합친 폭을 15px(× 5 + 간격 1 + 2 7 + 테두리 2)로 맞췄다.
+        // 커터 윗면(톱날 폭)에 얹혀 읽히는 크기로, 테두리까지 합친 폭을 15px(× 5 + 간격 1 + 2 7 + 테두리 2)로 맞췄다.
         private static readonly string[] GlyphTimes =
         {
             "##.##",
@@ -230,22 +236,62 @@ namespace PresentationLayer.VFX
             return vfx;
         }
 
-        /// <summary>쌍둥이 원목이 튀어나오는 순간. _worldPos는 쌍둥이가 출발하는 자리.</summary>
-        public void PlayReveal(Vector3 _worldPos)
+        /// <summary>
+        /// 쌍둥이 원목이 커터에서 튀어나오는 순간.
+        /// _twinPos: 쌍둥이가 출발하는 자리(커터 출구), _bladePos: 커터 톱날(불티가 튀는 자리),
+        /// _labelPos: ×2 글자 바닥 가운데(커터 윗면 바로 위), _outDir: 출고 방향(커터 → 평가기, 길이 무관).
+        /// </summary>
+        public void PlayReveal(Vector3 _twinPos, Vector3 _bladePos, Vector3 _labelPos, Vector2 _outDir)
         {
-            int x = ToPixel(_worldPos.x);
-            int y = ToPixel(_worldPos.y);
+            Vector2 dir = _outDir.sqrMagnitude > 0.0001f ? _outDir.normalized : new Vector2(0.9f, 0.45f);
+
+            // 1) 톱날: 짧은 섬광 + 불티 줄기. 출고 방향과 위쪽 사이로 부채꼴로 튄다(그라인더 불꽃처럼 꼬리를 끈다).
+            int bx = ToPixel(_bladePos.x);
+            int by = ToPixel(_bladePos.y);
+            AddFlash(bx, by, false);
+
+            float baseAngle = Mathf.Atan2(dir.y + 0.9f, dir.x);
+            for (int i = 0; i < RevealStreakCount; i++)
+            {
+                float u = (i + Rand01()) / RevealStreakCount;
+                float angle = baseAngle + Mathf.Lerp(-RevealStreakSpread, RevealStreakSpread, u);
+                float speed = Mathf.Lerp(120f, 230f, Rand01());
+                Color32 color = Rand01() < 0.35f ? ColorWhite : (Rand01() < 0.6f ? ColorCream : ColorGold);
+                AddDust(bx, by, Mathf.Cos(angle) * speed, Mathf.Sin(angle) * speed, 3f, RevealStreakGravity,
+                    Rand01() * 0.03f, Mathf.Lerp(0.24f, 0.42f, Rand01()), KindStreak, color);
+            }
+
+            // 2) 출구: 작은 섬광 + 금빛 톱밥이 출고 방향으로 뿜어졌다 떨어지고, 반짝이 몇 알이 섞인다.
+            int x = ToPixel(_twinPos.x);
+            int y = ToPixel(_twinPos.y);
             AddFlash(x, y, false);
 
-            for (int i = 0; i < RevealDustCount; i++)
+            float exitAngle = Mathf.Atan2(dir.y + 0.5f, dir.x);
+            for (int i = 0; i < RevealChipCount; i++)
             {
-                // 위쪽 반원으로 고르게 흩뿌린다.
-                float angle = Mathf.Lerp(0.15f, Mathf.PI - 0.15f, (i + Rand01()) / RevealDustCount);
-                float speed = Mathf.Lerp(55f, 120f, Rand01());
-                int kind = Rand01() < 0.5f ? KindSparkle : KindDot;
-                AddDust(x, y, Mathf.Cos(angle) * speed, Mathf.Sin(angle) * speed, 2.5f, RevealGravity,
-                    0f, Mathf.Lerp(0.3f, 0.48f, Rand01()), kind, PickSparkColor());
+                float angle = exitAngle + Mathf.Lerp(-0.7f, 0.7f, (i + Rand01()) / RevealChipCount);
+                float speed = Mathf.Lerp(50f, 110f, Rand01());
+                float roll = Rand01();
+                Color32 color = roll < 0.45f ? ColorGold : (roll < 0.8f ? ColorCream : ColorOrange);
+                AddDust(x + (Rand01() - 0.5f) * 4f, y, Mathf.Cos(angle) * speed, Mathf.Sin(angle) * speed, 2.2f, RevealChipGravity,
+                    0f, Mathf.Lerp(0.34f, 0.52f, Rand01()), KindChip, color);
             }
+
+            for (int i = 0; i < RevealSparkleCount; i++)
+            {
+                float angle = Mathf.Lerp(0.35f, Mathf.PI - 0.35f, (i + Rand01()) / RevealSparkleCount);
+                float speed = Mathf.Lerp(45f, 85f, Rand01());
+                AddDust(x, y, Mathf.Cos(angle) * speed, Mathf.Sin(angle) * speed, 2.5f, 160f,
+                    0.02f, Mathf.Lerp(0.3f, 0.45f, Rand01()), KindSparkle, PickSparkColor());
+            }
+
+            // 3) ×2: 커터 윗면에서 솟아 나온다.
+            labelX = ToPixel(_labelPos.x);
+            labelY = ToPixel(_labelPos.y);
+            labelAge = 0f;
+            bLabelActive = true;
+            bLabelFresh = true;
+            bAnyActive = true;
         }
 
         /// <summary>쌍둥이가 원목 등 위에 내려앉는 순간. _worldPos는 쌍둥이 중심.</summary>
@@ -278,10 +324,9 @@ namespace PresentationLayer.VFX
         }
 
         /// <summary>
-        /// 평가기 쾅. _impactPos는 섬광·충격파의 중심(평가기 몸통), _labelPos는 ×2 글자 바닥 가운데(평가기 윗면 바로 위)로,
-        /// 금화 분수는 그 바로 아래(평가기 윗면)에서 솟는다. _combo는 1부터.
+        /// 평가기 쾅. _impactPos는 섬광·충격파의 중심(평가기 몸통), _fountainPos는 금화 분수가 솟는 자리(평가기 윗면). _combo는 1부터.
         /// </summary>
-        public void PlayStamp(Vector3 _impactPos, Vector3 _labelPos, int _combo)
+        public void PlayStamp(Vector3 _impactPos, Vector3 _fountainPos, int _combo)
         {
             int x = ToPixel(_impactPos.x);
             int y = ToPixel(_impactPos.y);
@@ -290,17 +335,10 @@ namespace PresentationLayer.VFX
             AddFlash(x, y, true);
             AddRing(x, y, RingBaseMaxRadius + RingRadiusPerCombo * comboStep);
 
-            int fountainY = ToPixel(_labelPos.y) - FountainBelowLabelPx;
+            int fountainY = ToPixel(_fountainPos.y);
             int count = FountainBaseCount + FountainPerCombo * comboStep;
             SpawnFountain(x, fountainY, count, 0f, 1f);
             SpawnFountain(x, fountainY, FountainSecondWaveCount, FountainSecondWaveDelay, 0.75f);
-
-            labelX = ToPixel(_labelPos.x);
-            labelY = ToPixel(_labelPos.y);
-            labelAge = 0f;
-            bLabelActive = true;
-            bLabelFresh = true;
-            bAnyActive = true;
         }
 
         /// <summary>그리던 것을 모두 지운다(맵을 떠나거나 라인이 꺼질 때).</summary>
@@ -783,6 +821,14 @@ namespace PresentationLayer.VFX
                         DrawTwinkle(px, py, u, dusts[i].color);
                         break;
 
+                    case KindStreak:
+                        DrawStreak(px, py, dusts[i].vx, dusts[i].vy, dusts[i].age, u, dusts[i].color);
+                        break;
+
+                    case KindChip:
+                        DrawChip(px, py, dusts[i].age, u, seed, dusts[i].color);
+                        break;
+
                     default:
                         DrawSpark(px, py, dusts[i].age, u, seed, dusts[i].kind, dusts[i].color);
                         break;
@@ -853,6 +899,42 @@ namespace PresentationLayer.VFX
                     painter.Rect(_x, _y - 1, _x + 1, _y + 2, edge);
                     break;
             }
+        }
+
+        // 불티 줄기: 머리는 밝고(처음엔 흰빛), 날아온 방향으로 금 -> 주황 꼬리를 끈다. 빠를수록 꼬리가 길고,
+        // 느려지면 점 하나로 줄었다가 끝물에 점멸하며 꺼진다.
+        private void DrawStreak(int _x, int _y, float _vx, float _vy, float _age, float _u, Color32 _color)
+        {
+            if (_u > 0.78f && 0 != ((int)(_age * 30f) & 1)) return;
+
+            float speed = Mathf.Sqrt(_vx * _vx + _vy * _vy);
+            int tail = speed < 1f ? 0 : Mathf.Clamp(Mathf.RoundToInt(speed / 40f), 0, 4);
+            if (_u > 0.6f) tail = Mathf.Min(tail, 1);
+
+            Color32 head = _u < 0.3f ? WithGlow(ColorWhite, 1f) : WithGlow(_u < 0.65f ? _color : ColorOrange, _u < 0.65f ? 0.7f : 0.3f);
+            if (tail > 0)
+            {
+                float bx = -_vx / speed;
+                float by = -_vy / speed;
+                Color32 near = WithGlow(ColorGold, 0.55f);
+                Color32 far = WithGlow(ColorOrange, 0.15f);
+                for (int k = tail; k >= 1; k--)
+                {
+                    painter.Dot(_x + Mathf.RoundToInt(bx * k), _y + Mathf.RoundToInt(by * k), k <= tail / 2 + 1 ? near : far);
+                }
+            }
+
+            painter.Dot(_x, _y, head);
+        }
+
+        // 톱밥 조각: 가로 2칸 <-> 세로 2칸으로 돌며 떨어진다. 발광 없이 칠해 불티와 구분되고, 끝물에 점멸한다.
+        private void DrawChip(int _x, int _y, float _age, float _u, int _seed, Color32 _color)
+        {
+            if (_u > 0.8f && 0 != ((int)(_age * 30f) & 1)) return;
+
+            Color32 color = WithGlow(_color, _u < 0.25f ? 0.3f : 0f);
+            if (0 == (((int)(_age * 14f) + _seed) & 1)) painter.Rect(_x, _y, _x + 2, _y + 1, color);
+            else painter.Rect(_x, _y, _x + 1, _y + 2, color);
         }
 
         // 업혀 가기 반짝임: 점 -> 작은 + -> 큰 + -> 작은 + -> 점으로 피었다 진다.
