@@ -26,6 +26,7 @@ public static class HUD_BuffPrefabBuilder
     private static readonly Vector2 DashShadowOffset = new Vector2(-4f, -3f);
     private static readonly Color32 DashShadowColor = new Color32(0, 0, 0, 128);
     private const string DashBaseSpritePath = "Assets/Graphics/HUD/Dash/Dash_HUD_Base.png";
+    private const string DashShadowTrimSpritePath = "Assets/Graphics/HUD/Dash/Dash_HUD_ShadowTrim.png";
     private const string DashFillSpritePath = "Assets/Graphics/HUD/Dash/Dash_HUD_Fill.png";
     private const string NumberSheetPath = "Assets/Graphics/Font/SmallCurrencyNum.png";
     private const string IconDir = "Assets/Graphics/HUD/Buff/BuffIcon";
@@ -322,6 +323,7 @@ public static class HUD_BuffPrefabBuilder
     private static GameObject BuildDashPrefab()
     {
         Sprite _base = AssetDatabase.LoadAssetAtPath<Sprite>(DashBaseSpritePath);
+        Sprite _shadowTrim = AssetDatabase.LoadAssetAtPath<Sprite>(DashShadowTrimSpritePath);
         Sprite _fill = AssetDatabase.LoadAssetAtPath<Sprite>(DashFillSpritePath);
 
         GameObject _go = new GameObject("HUD_DashGauge", typeof(RectTransform));
@@ -340,7 +342,9 @@ public static class HUD_BuffPrefabBuilder
 
         for (int i = 0; i < HUD_DashGauge.MaxCells; i++)
         {
-            Image _shadowImg = NewImage("Shadow_" + i, _shadowGroup, _base, new Vector2(DashCellPitch * i, 0f) + DashShadowOffset, new Vector2(24f, 24f));
+            // 뒤 칸 그림자는 앞 칸 그림자와 겹치는 사선 줄을 뺀 스프라이트(반투명 이중 합성 방지)
+            Sprite _shadowSprite = 0 == i ? _base : _shadowTrim;
+            Image _shadowImg = NewImage("Shadow_" + i, _shadowGroup, _shadowSprite, new Vector2(DashCellPitch * i, 0f) + DashShadowOffset, new Vector2(24f, 24f));
             _shadowImg.color = DashShadowColor;
             _shadowImg.raycastTarget = false;
             _shadows[i] = _shadowImg;

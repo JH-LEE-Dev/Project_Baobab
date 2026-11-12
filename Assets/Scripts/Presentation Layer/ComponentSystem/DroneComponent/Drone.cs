@@ -186,6 +186,7 @@ public class Drone : MonoBehaviour
     private Vector2 characterAimDir = Vector2.down; // 캐릭터의 조준 방향. Character가 매 프레임 갱신해준다.
     private int dirIndex = 6; // CharacterAnimator 규칙상 6 = Down
     private bool isOverheat; // "과열 드론" 특성 보유 여부(과열 수치와 무관). Character가 매 프레임 갱신해준다 - true면 6~10행(Overheat 세트)을 사용한다.
+    private PresentationLayer.VFX.EDroneLaserTint laserTint = PresentationLayer.VFX.EDroneLaserTint.Default; // 스텔라 + 드론 조합 색. SetLaserTint로 바뀌고 피격 이펙트 재생 때마다 전달된다
 
     private bool isActive; // 공격 키로 활성화되어 지속시간 동안 대상을 계속 노리는 상태
     private bool isSwinging; // damageInterval마다 한 번씩, 공격 모션이 재생되는 짧은 구간
@@ -286,6 +287,7 @@ public class Drone : MonoBehaviour
         characterAimDir = Vector2.down;
         dirIndex = 6;
         isOverheat = false;
+        SetLaserTint(PresentationLayer.VFX.EDroneLaserTint.Default); // 풀로 돌아왔다 다시 소환될 때 이전 조합 색이 남지 않게 한다
 
         isActive = false;
         isSwinging = false;
@@ -376,7 +378,21 @@ public class Drone : MonoBehaviour
             laserHit = hitVfx.GetComponentInChildren<PresentationLayer.VFX.VFX_LaserHit>(true);
             atkHitVfxCache[hitVfx] = laserHit;
         }
-        if (laserHit != null) laserHit.SetOverheat(isOverheat);
+        if (laserHit != null)
+        {
+            laserHit.SetOverheat(isOverheat);
+            laserHit.SetTint(laserTint);
+        }
+    }
+
+    /// <summary>
+    /// 스텔라 + 드론 조합 색을 켜고 끈다(Stella = 조합 푸른색, Default = 기존 노랑/과열 파랑). 연쇄 번개(chainZap)에는 바로,
+    /// 피격 이펙트에는 다음 PlayAtkHitVfx부터 반영된다. 호출은 Application Layer가 한다.
+    /// </summary>
+    public void SetLaserTint(PresentationLayer.VFX.EDroneLaserTint _tint)
+    {
+        laserTint = _tint;
+        if (chainZap != null) chainZap.SetTint(_tint);
     }
 
     /// <summary>

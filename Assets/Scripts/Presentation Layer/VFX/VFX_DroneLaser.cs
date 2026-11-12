@@ -58,6 +58,10 @@ namespace PresentationLayer.VFX
         [SerializeField, Range(0f, 1f)] private float coreWhiteMix = 0.85f; // 코어를 흰색으로 섞는 비율
         [SerializeField, Range(0f, 1f)] private float outerBrightness = 0.5f; // 바깥 글로우 밝기(몸통 색 대비)
 
+        [Header("조합 색 (스텔라 + 드론, SetTint(Stella)일 때 SetColor 대신 쓴다. 과열 파랑과 같은 값)")]
+        [SerializeField] private Color stellaColor = new Color(0f, 0.5019608f, 1f, 1f);
+        [SerializeField] private float stellaIntensity = 1.35f;
+
         private const float PixelsPerUnit = 32f;
         private const float PixelUnit = 1f / PixelsPerUnit;
         private const int MaxVertices = 60000;
@@ -104,15 +108,43 @@ namespace PresentationLayer.VFX
         private Color32 bodyColor;
         private Color32 coreColor;
 
+        private EDroneLaserTint currentTint = EDroneLaserTint.Default;
+        private Color baseColor; // 외부에서 마지막으로 들어온 SetColor 값(Stella 중에도 보관, Default 복귀 시 복원)
+        private float baseIntensity;
+
         /// <summary>
         /// 색상과 HDR Intensity(노출값)를 지정한다. VFX_LightningZap.SetColor(Color, float)와 같은 규약으로
         /// RGB 발광 배율은 2^_intensity다(색 자체는 정점 색으로, 발광 배율은 머티리얼 _Boost로 나눠 전달).
         /// </summary>
         public void SetColor(Color _baseColor, float _intensity)
         {
-            boost = Mathf.Pow(2f, _intensity);
-            ComputeColors(_baseColor);
+            baseColor = _baseColor;
+            baseIntensity = _intensity;
             bColorAssigned = true;
+
+            if (EDroneLaserTint.Stella == currentTint) return; // 조합 색 중에는 값만 보관하고 Stella 색을 유지한다
+
+            ApplyColor(_baseColor, _intensity);
+        }
+
+        /// <summary>
+        /// 색 계열을 바꾼다. Stella는 stellaColor/stellaIntensity를, Default는 마지막으로 들어온 SetColor 값을 그대로 복원한다
+        /// (복원 값이 같고 계산 경로도 같아 Default -> Stella -> Default 후 정점색이 처음과 바이트 단위로 같다).
+        /// 재생 중에 바꾸면 정점색은 다음 갱신부터, 발광 배율은 다음 PlayZap부터 반영된다.
+        /// </summary>
+        public void SetTint(EDroneLaserTint _tint)
+        {
+            EnsureInitialized(); // 아직 외부 SetColor가 없었다면 여기서 기본색이 baseColor로 보관된다
+
+            currentTint = _tint;
+            if (EDroneLaserTint.Stella == _tint)
+            {
+                ApplyColor(stellaColor, stellaIntensity);
+            }
+            else
+            {
+                ApplyColor(baseColor, baseIntensity);
+            }
         }
 
         /// <summary>
@@ -194,6 +226,12 @@ namespace PresentationLayer.VFX
             {
                 SetColor(defaultColor, defaultIntensity);
             }
+        }
+
+        private void ApplyColor(Color _baseColor, float _intensity)
+        {
+            boost = Mathf.Pow(2f, _intensity);
+            ComputeColors(_baseColor);
         }
 
         private void ComputeColors(Color _baseColor)

@@ -23,6 +23,7 @@ namespace PresentationLayer.VFX
     /// 모양: shape = Ellipse(던전, 위 구성 그대로) 또는 ArenaDiamond(로그라이크 아레나 사각형 노바). ArenaDiamond는 같은 팔레트/타임라인/발광 규칙으로
     /// 아레나 가장자리를 따르는 2:1 마름모(반폭 A, 반높이 A/2) 테두리 + 내접 직사각형 + 룬 10개 + 좌우 꼭짓점 별 각인을 그리고,
     /// 빛 커튼은 마름모 둘레(높이 고정 46px), 바닥 빛은 마름모 채움이다. 범위는 SetArenaExtents(보이는 가장자리 반폭/반높이, 유닛)로 정한다.
+    /// ArenaDiamond의 픽셀 격자 원점은 섬 중심 "경계"(픽셀 사이)이고 좌우/상하 거울은 x -> -1 - x, y -> -1 - y다(섬 타일 마름모 계단과 네 변 간격이 같아진다).
     ///
     /// 범위 조절: maxRadius(월드 유닛) 또는 재생 직전의 SetRadius로 정한다. 풀 인스턴스로 쓰이며 루트 ParticleSystem의
     /// 수명(TotalDuration 이상)이 끝나면 VFXComponent가 풀로 돌려보낸다.
@@ -671,6 +672,8 @@ namespace PresentationLayer.VFX
         }
 
         // 아레나 마름모 마법진 표(반폭 A px, 반높이 A/2). 시안 renderSquare와 같은 구성이며 A=300 기준 위치를 비례해 옮긴다.
+        // 좌표계: 격자 원점 = 섬 중심 "경계"(픽셀 사이)다. x >= 0은 경계 오른쪽, x <= -1은 왼쪽(y도 같다). 그래서 좌우/상하 거울은
+        // x -> -1 - x, y -> -1 - y이고, 오른쪽 위 사분면 픽셀은 이전과 같은 절대 위치에 남는다(섬 타일 마름모 계단과 같은 짝수 폭/높이 꼭짓점).
         // 순서(앞이 우선): 룬, 좌우 꼭짓점 별 각인, 테두리 마름모, 내접 직사각형, 중심 마름모
         private static void BuildArenaSigilTable(int _a)
         {
@@ -684,48 +687,44 @@ namespace PresentationLayer.VFX
             BuildArenaRuneCenters(_a);
             AddRunePixels(ArenaRuneCount, true);
 
-            // 좌우 꼭짓점: 작은 4갈래 별(팔 3) 각인. 위치는 A=300 기준 280px를 비례해 옮긴다.
+            // 좌우 꼭짓점: 작은 4갈래 별(팔 3) 각인. 위치는 A=300 기준 280px를 비례해 옮긴다. 오른쪽은 markX + dx, 왼쪽은 그 거울(-1 - x).
+            // 별은 세로로 홀수 높이라 y는 경계 대칭이 불가능해 y = 0 행 중심을 유지한다(꼭짓점 높이 2줄 대비 반 칸 차이는 허용).
             int markX = RoundHalfUp(_a * 280.0f / ArenaReferenceA);
             StarCell[] mark = StarSprites[2];
-            for (int sx = -1; sx <= 1; sx += 2)
+            for (int i = 0; i < mark.Length; i++)
             {
-                for (int i = 0; i < mark.Length; i++)
-                {
-                    AddSigilPixel(sx * markX + mark[i].dx, mark[i].dy, GroupMark, Mathf.Min(3, (int)mark[i].level), RampLine, -1);
-                }
+                int markLevel = Mathf.Min(3, (int)mark[i].level);
+                AddSigilPixel(markX + mark[i].dx, mark[i].dy, GroupMark, markLevel, RampLine, -1);
+                AddSigilPixel(-1 - (markX + mark[i].dx), mark[i].dy, GroupMark, markLevel, RampLine, -1);
             }
 
-            // 테두리 마름모(아레나 가장자리): 정확한 2칸-1칸 계단
-            AddIsoLine(_a, 0, 0, b, GroupRing, 3);
-            AddIsoLine(-_a, 0, 0, b, GroupRing, 3);
-            AddIsoLine(_a, 0, 0, -b, GroupRing, 3);
-            AddIsoLine(-_a, 0, 0, -b, GroupRing, 3);
+            // 테두리 마름모(아레나 가장자리): 정확한 2칸-1칸 계단. 오른쪽 위 사분면만 계산해 세 사분면으로 거울 복사한다.
+            AddIsoLineMirrored(_a, 0, 0, b, GroupRing, 3);
 
-            // 내접 직사각형(수평/수직): 꼭짓점이 테두리 변 중점에 닿아 팔각별처럼 읽힌다
+            // 내접 직사각형(수평/수직): 경계 대칭이라 가로 -rect..rect-1(짝수 폭), 세로 -rectY..rectY-1. 꼭짓점이 테두리 변 중점 옆에 닿는다.
             int rectY = b / 2;
             int rect = rectY * 2;
-            for (int x = -rect; x <= rect; x++)
+            for (int x = -rect; x < rect; x++)
             {
                 AddSigilPixel(x, -rectY, GroupOct2, 2, RampLine, -1);
-                AddSigilPixel(x, rectY, GroupOct2, 2, RampLine, -1);
+                AddSigilPixel(x, rectY - 1, GroupOct2, 2, RampLine, -1);
             }
 
-            for (int y = -rectY; y <= rectY; y++)
+            for (int y = -rectY; y < rectY; y++)
             {
                 AddSigilPixel(-rect, y, GroupOct2, 2, RampLine, -1);
-                AddSigilPixel(rect, y, GroupOct2, 2, RampLine, -1);
+                AddSigilPixel(rect - 1, y, GroupOct2, 2, RampLine, -1);
             }
 
             // 중심 마름모
-            AddIsoLine(ArenaCoreHalf, 0, 0, ArenaCoreHalf / 2, GroupCore, 2);
-            AddIsoLine(-ArenaCoreHalf, 0, 0, ArenaCoreHalf / 2, GroupCore, 2);
-            AddIsoLine(ArenaCoreHalf, 0, 0, -ArenaCoreHalf / 2, GroupCore, 2);
-            AddIsoLine(-ArenaCoreHalf, 0, 0, -ArenaCoreHalf / 2, GroupCore, 2);
+            AddIsoLineMirrored(ArenaCoreHalf, 0, 0, ArenaCoreHalf / 2, GroupCore, 2);
 
             CollectSigilGrid();
         }
 
-        // 아레나 룬 10개의 중심. 기준 표(A=300)를 A/300 비례로 옮기고, 오른쪽(x > 0)만 계산해 왼쪽은 x 부호만 뒤집어 복사한다(픽셀 단위 좌우 대칭).
+        // 아레나 룬 10개의 중심. 기준 표(A=300)를 A/300 비례로 옮기고, 오른쪽(x > 0)만 계산해 왼쪽은 경계 거울(-1 - x)로 복사한다
+        // (룬 글리프가 좌우 대칭이라 픽셀 단위 좌우 대칭). x = 0인 위아래 룬 2개는 5칸 글리프라 경계 대칭이 불가능해 그대로 둔다.
+        // 둘레 위치(각도)는 픽셀 중심(x + 0.5, y + 0.5) 기준이다(AddSigilPixel의 아레나 계산과 같다).
         private static void BuildArenaRuneCenters(int _a)
         {
             float scale = _a / ArenaReferenceA;
@@ -738,8 +737,8 @@ namespace PresentationLayer.VFX
                 {
                     if (1 == mirror && 0 == ArenaRuneBaseX[i]) break;
 
-                    int x = 0 == mirror ? cx : -cx;
-                    float a = Mathf.Atan2(cySim / GroundSquashY, x) / TwoPi;
+                    int x = 0 == mirror ? cx : -1 - cx;
+                    float a = Mathf.Atan2((cySim - 0.5f) / GroundSquashY, x + 0.5f) / TwoPi;
                     runeCenterX[k] = x;
                     runeCenterY[k] = -cySim;
                     runeCenterA[k] = a - Mathf.Floor(a);
@@ -856,6 +855,23 @@ namespace PresentationLayer.VFX
             }
         }
 
+        // 아레나 전용 2:1 아이소 대각선. 오른쪽 위 사분면(x >= 0, y >= 0)의 선 하나만 계산하고 나머지 세 사분면은 경계 거울(x -> -1 - x, y -> -1 - y)로 찍는다.
+        private static void AddIsoLineMirrored(int _x0, int _y0, int _x1, int _y1, int _group, int _rest)
+        {
+            int steps = Mathf.Abs(_x1 - _x0);
+            int sx = _x1 > _x0 ? 1 : -1;
+            int sy = _y1 > _y0 ? 1 : (_y1 < _y0 ? -1 : 0);
+            for (int i = 0; i <= steps; i++)
+            {
+                int x = _x0 + sx * i;
+                int y = _y0 + sy * (i / 2);
+                AddSigilPixel(x, y, _group, _rest, RampLine, -1);
+                AddSigilPixel(-1 - x, y, _group, _rest, RampLine, -1);
+                AddSigilPixel(x, -1 - y, _group, _rest, RampLine, -1);
+                AddSigilPixel(-1 - x, -1 - y, _group, _rest, RampLine, -1);
+            }
+        }
+
         // 마법진 픽셀 하나를 임시 표에 넣는다. 이미 있는 자리면 먼저 넣은 것이 우선이다.
         private static void AddSigilPixel(int _x, int _y, int _group, int _rest, int _ramp, int _rune)
         {
@@ -869,9 +885,21 @@ namespace PresentationLayer.VFX
             // 시안 좌표(y가 아래)로 바꿔 둘레 위치와 해시를 계산한다
             int simY = -_y;
             float r;
-            if (true == buildIsArena) r = Mathf.Min(1.0f, Mathf.Abs(_x) / (float)buildA + Mathf.Abs(simY) / (float)buildB);
-            else r = Mathf.Min(1.0f, Mathf.Sqrt(_x * (float)_x + (simY / GroundSquashY) * (simY / GroundSquashY)) / buildRadius);
-            float a = Mathf.Atan2(simY / GroundSquashY, _x) / TwoPi;
+            float a;
+            if (true == buildIsArena)
+            {
+                // 아레나는 경계 원점이라 픽셀 중심(x + 0.5, y + 0.5) 기준으로 계산해 네 사분면의 둘레 비율/각도가 거울 대칭이 되게 한다
+                float cx = _x + 0.5f;
+                float cySim = simY - 0.5f;
+                r = Mathf.Min(1.0f, Mathf.Abs(cx) / (float)buildA + Mathf.Abs(cySim) / (float)buildB);
+                a = Mathf.Atan2(cySim / GroundSquashY, cx) / TwoPi;
+            }
+            else
+            {
+                r = Mathf.Min(1.0f, Mathf.Sqrt(_x * (float)_x + (simY / GroundSquashY) * (simY / GroundSquashY)) / buildRadius);
+                a = Mathf.Atan2(simY / GroundSquashY, _x) / TwoPi;
+            }
+
             a -= Mathf.Floor(a);
             if (0 <= _rune) a = runeCenterA[_rune];
 
@@ -1281,7 +1309,8 @@ namespace PresentationLayer.VFX
                 {
                     int ox;
                     int oy;
-                    SparkOrigin(i, diamond, diamondY, rect, rectY, out ox, out oy);
+                    if (true == bArena) ArenaSparkOrigin(i, diamond, diamondY, rect, rectY, out ox, out oy);
+                    else SparkOrigin(i, diamond, diamondY, rect, rectY, out ox, out oy);
 
                     int rise = RoundHalfUp((4 > i ? 44.0f : 30.0f) * ease);
                     int shape = u < 0.35f ? PixelPainter.ShapePlus : (u < 0.6f ? PixelPainter.ShapeCross : PixelPainter.ShapeDot);
@@ -1334,11 +1363,36 @@ namespace PresentationLayer.VFX
             }
         }
 
+        // 아레나 스파크 8곳(경계 대칭 표 기준): 마름모 꼭짓점(좌우는 거울 -1 - x, 아래는 -1 - y)과 내접 직사각형 네 모서리(-rect..rect-1, -rectY..rectY-1)
+        private static void ArenaSparkOrigin(int _index, int _diamond, int _diamondY, int _rect, int _rectY, out int _x, out int _y)
+        {
+            switch (_index)
+            {
+                case 0: _x = _diamond; _y = 0; break;
+                case 1: _x = -1 - _diamond; _y = 0; break;
+                case 2: _x = 0; _y = -1 - _diamondY; break;
+                case 3: _x = 0; _y = _diamondY; break;
+                case 4: _x = _rect - 1; _y = -_rectY; break;
+                case 5: _x = -_rect; _y = -_rectY; break;
+                case 6: _x = _rect - 1; _y = _rectY - 1; break;
+                default: _x = -_rect; _y = _rectY - 1; break;
+            }
+        }
+
         private void RebuildPixelMeshes(int _frame)
         {
             Vector3 pos = transform.position;
-            centerX = Mathf.FloorToInt(pos.x * PixelsPerUnit);
-            centerY = Mathf.FloorToInt(pos.y * PixelsPerUnit) + arenaCenterOffsetPx;
+            if (true == bArena)
+            {
+                // 아레나 격자 원점은 섬 중심 경계(픽셀 사이)다. 경계 인덱스로 반올림한다(부동소수 오차로 Floor가 1 작아지는 것도 막는다).
+                centerX = RoundHalfUp(pos.x * PixelsPerUnit);
+                centerY = RoundHalfUp(pos.y * PixelsPerUnit) + arenaCenterOffsetPx;
+            }
+            else
+            {
+                centerX = Mathf.FloorToInt(pos.x * PixelsPerUnit);
+                centerY = Mathf.FloorToInt(pos.y * PixelsPerUnit) + arenaCenterOffsetPx;
+            }
 
             // 다른 모양/크기의 인스턴스가 표를 바꿔 놨으면 이 인스턴스의 표로 되돌린다(같으면 정수 비교 한 번)
             EnsureSigilTable(sigilKey);
@@ -1461,7 +1515,7 @@ namespace PresentationLayer.VFX
             }
         }
 
-        private static void ArenaCorner(int _index, int _a, int _b, out float _x, out float _y)
+        private static void ArenaCorner(int _index, float _a, float _b, out float _x, out float _y)
         {
             switch (_index & 3)
             {
@@ -1472,7 +1526,8 @@ namespace PresentationLayer.VFX
             }
         }
 
-        // 마름모 둘레의 _segment번 정점 위치(px, 중심 기준). 변마다 12분할이라 정점 0/12/24/36이 정확히 네 꼭짓점이다(오른쪽, 위, 왼쪽, 아래).
+        // 마름모 둘레의 _segment번 정점 위치(px, 섬 중심 경계 기준). 변마다 12분할이라 정점 0/12/24/36이 정확히 네 꼭짓점이다(오른쪽, 위, 왼쪽, 아래).
+        // 반폭은 테두리 픽셀 선의 중심선(경계 대칭 표에서 바깥 끝 A + 1px의 반 픽셀 안쪽 = A + 1)에 맞춘다.
         private void GetArenaPerimeter(int _segment, out float _x, out float _y)
         {
             int edge = _segment / ArenaSegmentsPerEdge;
@@ -1481,8 +1536,10 @@ namespace PresentationLayer.VFX
             float y0;
             float x1;
             float y1;
-            ArenaCorner(edge, arenaA, arenaB, out x0, out y0);
-            ArenaCorner(edge + 1, arenaA, arenaB, out x1, out y1);
+            float softA = arenaA + 1.0f;
+            float softB = softA * 0.5f;
+            ArenaCorner(edge, softA, softB, out x0, out y0);
+            ArenaCorner(edge + 1, softA, softB, out x1, out y1);
             _x = x0 + (x1 - x0) * f;
             _y = y0 + (y1 - y0) * f;
         }
@@ -1551,10 +1608,14 @@ namespace PresentationLayer.VFX
             float ox = (centerX + 0.5f) * PixelUnit - softPos.x;
             float oy = (centerY + 0.5f) * PixelUnit - softPos.y;
 
+            // 아레나의 빛 커튼 / 바닥 빛은 경계 대칭 마법진과 같은 자리(섬 중심 경계)에 둔다. 섬광 / 빛기둥은 중심 별(홀수 폭, 중심 픽셀) 중심을 따른다.
+            float groundOx = true == bArena ? centerX * PixelUnit - softPos.x : ox;
+            float groundOy = true == bArena ? centerY * PixelUnit - softPos.y : oy;
+
             if (PartFlash >= first) UpdateFlash(t, ox, oy);
             if (PartPillar >= first) UpdatePillar(t, ox, oy);
-            if (PartCurtain >= first) UpdateCurtain(t, ox, oy);
-            UpdateGround(t, ox, oy);
+            if (PartCurtain >= first) UpdateCurtain(t, groundOx, groundOy);
+            UpdateGround(t, groundOx, groundOy);
 
             int vertexStart = PartVertexStart[first];
             int indexStart = PartIndexStart[first];

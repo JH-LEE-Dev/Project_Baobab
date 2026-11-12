@@ -13,7 +13,7 @@ namespace PresentationLayer.VFX
     /// 3. 스파크 산란: 사방으로 튀는 스파크. 감속과 중력이 붙고, 속도에 비례한 짧은 선으로 그려지며 후반에 깜빡이며 사라진다.
     /// 4. 잔불: 중심 주변에서 `.`/`+` 모양의 작은 불씨가 천천히 떠올랐다 사라진다.
     ///
-    /// 색은 상태마다 딱 3가지(진한 색, 중간 색, 밝은 색)만 쓴다. 평소는 노랑 계열, 과열(SetOverheat)은 파랑 계열이다(드론 레이저 색과 같은 계열).
+    /// 색은 상태마다 딱 3가지(진한 색, 중간 색, 밝은 색)만 쓴다. 평소는 노랑 계열, 과열(SetOverheat)과 스텔라 조합(SetTint(Stella))은 파랑 계열이다(드론 레이저 색과 같은 계열).
     /// 밝기 차이는 정점 알파에 실린 HDR 발광 세기(BrandWrapGlow 셰이더)로 낸다. 위치는 매 프레임 계산해서 정수 픽셀에 스냅한다.
     /// </summary>
     [DisallowMultipleComponent]
@@ -123,6 +123,7 @@ namespace PresentationLayer.VFX
         private bool bInitialized;
         private bool bFirstFrame;
         private bool bOverheat;
+        private bool bStellaTint; // 스텔라 + 드론 조합 색(과열 파랑 팔레트를 쓴다). Begin이 초기화하지 않으므로 호출자가 재생마다 SetTint로 넣는다
         private bool bMeshHasGeometry;
         private float elapsed;
         private int baseSeed;
@@ -178,6 +179,14 @@ namespace PresentationLayer.VFX
         public void SetOverheat(bool _isOverheat)
         {
             bOverheat = _isOverheat;
+        }
+
+        /// <summary>
+        /// 색 계열을 고른다. Stella면 과열과 같은 파랑 팔레트를, Default면 SetOverheat 상태에 따른 기존 팔레트를 쓴다. 재생 직후(같은 프레임) SetOverheat 옆에서 호출한다.
+        /// </summary>
+        public void SetTint(EDroneLaserTint _tint)
+        {
+            bStellaTint = EDroneLaserTint.Stella == _tint;
         }
 
         // ---------- 난수 / 유틸 ----------
@@ -302,7 +311,7 @@ namespace PresentationLayer.VFX
 
         private Color32 Tint(int _tone, float _glow)
         {
-            Color32 color = Palettes[true == bOverheat ? 1 : 0][_tone];
+            Color32 color = Palettes[true == bOverheat || true == bStellaTint ? 1 : 0][_tone];
             return new Color32(color.r, color.g, color.b, GlowAlpha(_glow));
         }
 
