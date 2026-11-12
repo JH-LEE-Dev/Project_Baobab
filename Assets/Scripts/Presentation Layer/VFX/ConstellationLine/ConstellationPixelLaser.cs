@@ -229,10 +229,25 @@ namespace PresentationLayer.VFX
             laserTailColor = _tail;
         }
 
+        /// <summary>
+        /// 스텔라 + 드론 조합 푸른색(VFX_DroneLaser Stella = 과열 파랑 (0, 0.5, 1), intensity 1.35)에 맞춘 발광 색으로 바꿉니다 (Zero GC).
+        /// </summary>
+        public void ApplyStellaTint()
+        {
+            SetLaserColors(StellaCoreColor, StellaHeadColor, StellaBodyStartColor, StellaBodyEndColor, StellaTailColor);
+        }
+
         // 32 PPU 픽셀 격자 정수 스냅 상수 (Zero GC)
         private const float BasePPU = 32.0f;
         private const float PixelUnit = 1.0f / BasePPU; // 0.03125f (1픽셀 기본 유닛)
         private const float HalfPixel = PixelUnit * 0.5f;
+
+        // 스텔라 조합 색(HDR). VFX_DroneLaser의 몸통 (0, 0.5, 1) x 2^1.35(2.55), 코어 = 흰색 0.85 혼합, 바깥 = 0.5배 기준
+        private static readonly Color StellaCoreColor = new Color(2.17f, 2.36f, 2.55f, 1.0f);
+        private static readonly Color StellaHeadColor = new Color(2.17f, 2.36f, 2.55f, 1.0f);
+        private static readonly Color StellaBodyStartColor = new Color(0.0f, 1.28f, 2.55f, 1.0f);
+        private static readonly Color StellaBodyEndColor = new Color(0.0f, 1.28f, 2.55f, 1.0f);
+        private static readonly Color StellaTailColor = new Color(0.0f, 0.64f, 1.28f, 1.0f);
 
         // 세그먼트 풀
         private readonly List<PixelLaserSegment> segmentPool = new List<PixelLaserSegment>();

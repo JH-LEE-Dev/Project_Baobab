@@ -1,5 +1,7 @@
 # 언리밋 목표 처치 수 상한 및 난이도 상향 요청 (Application Layer)
 
+> ⚠️ **2026-11-12 갱신**: 이 문서의 **난이도 상향(HP ×1.15 · 묶음 +2 · 주기 −0.05초, 4티어 시작) 부분은 폐기**되었다. 언리밋은 N웨이브의 맵 · 나무 · 스폰을 다시 따라가고 나무 HP만 N웨이브 HP × 1.35^(N−1)로 올린다. 기준은 [Roguelike_Planning_v3.0.md](Roguelike_Planning_v3.0.md) 7-2 · 부록 A "언리밋 곡선" · 부록 C-3 4-16이다. **"1. 언리밋 목표 처치 수 상한"(min(N웨이브 목표, 100))은 그대로 유효하다.**
+
 ## 현황
 - `Assets/Scripts/Application Layer/RoguelikeSystem/Core/WaveSchedule.cs` 48~54행: 언리밋이면 30웨이브 줄을 읽어 `killTarget`을 **960으로 고정**한다.
 - 소비처 `RoguelikeSystem.cs:529/531`, `RoguelikeSystem.Flow.cs:421`, `RoguelikeSystem.Debug.cs:107`은 모두 `spec.killTarget`만 읽는다. WaveSchedule 한 곳만 바꾸면 HUD까지 반영된다.
