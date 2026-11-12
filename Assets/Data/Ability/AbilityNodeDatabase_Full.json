@@ -1,6 +1,22 @@
 ﻿{
     "nodes": [
         {
+            "skillType": "Boomerang2",
+            "nameLocId": 223,
+            "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
+            "gridX": -10,
+            "gridY": 13,
+            "parents": [
+                {
+                    "skillType": "BoomerangDamage2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
             "skillType": "Drone1",
             "nameLocId": 261,
             "levelBadge": "I",

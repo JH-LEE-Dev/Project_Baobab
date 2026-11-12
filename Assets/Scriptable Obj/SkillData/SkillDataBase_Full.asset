@@ -13,6 +13,24 @@ MonoBehaviour:
   m_Name: SkillDataBase_Full
   m_EditorClassIdentifier: Assembly-CSharp::SkillDataBase
   skills:
+  - skillType: 80
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 15000000
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 73
+      amountCurve:
+        type: 3
+        baseValue: 1
+        manualValues: []
+    prerequisiteSkills: 52000000
   - skillType: 124
     maxLevel: 1
     cost:
@@ -54,7 +72,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 15000000
+        baseValue: 10000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -144,7 +162,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 20000000
+        baseValue: 15000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -162,7 +180,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 25000000
+        baseValue: 10000000
         manualValues: []
       carrotCurve:
         type: 3
