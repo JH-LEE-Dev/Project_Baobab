@@ -3126,7 +3126,10 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private float logInsurancePercent = 0f;
 
     private Coroutine insuredLogVisualCoroutine;
-    private readonly List<(TreeType treeType, LogState logState)> insuredLogVisualPlan = new List<(TreeType, LogState)>(16);
+    // 보험 연출로 날리는 원목 개수 상한(상자에 담기는 데이터는 상한과 무관하게 전량이다). 보험 연출 뒤에 나오는
+    // 유실 원목 분출까지 탈진 결과창(쓰러지고 1.5초)이 뜨기 전에 다 발사되도록 잡은 값이다.
+    private const int MaxInsuredLogVisualCount = 10;
+    private readonly List<(TreeType treeType, LogState logState)> insuredLogVisualPlan = new List<(TreeType, LogState)>(MaxInsuredLogVisualCount);
 
     /// <summary>탈진 시 운반 상자로 옮길 비율(0~1). 0이면 원목 보험 증서가 없다.</summary>
     public float LogInsuranceRatio => Mathf.Clamp01(logInsurancePercent * 0.01f);
@@ -3138,21 +3141,29 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     /// <summary>
     /// 보험으로 상자에 담긴 원목이 캐릭터에게서 상자로 날아가는 연출을 _delay 뒤부터 재생한다. 데이터는 이미 커밋된
-    /// 상태여야 한다. _delay에는 유실 원목 분출 연출(DropAllItem)이 끝나는 시간을 넘겨, 분출이 먼저 보이게 한다.
+    /// 상태여야 한다. 유실 원목 분출 연출(DropAllItem)은 이 연출이 다 발사된 뒤에 나오도록 반환값만큼 늦춘다.
     /// 비행 모양과 발사 간격은 E로 넣을 때(TransferOneSlotVisualRoutine)와 같다.
     /// </summary>
-    public void PlayInsuredLogVisuals(List<(TreeType treeType, LogState logState)> _plan, Vector3 _startPos, float _delay)
+    /// <returns>마지막 원목이 발사되고 한 간격이 지나는 시점까지의 시간(재생할 게 없으면 0)</returns>
+    public float PlayInsuredLogVisuals(List<(TreeType treeType, LogState logState)> _plan, Vector3 _startPos, float _delay)
     {
-        if (_plan == null || _plan.Count == 0) return;
+        if (_plan == null || _plan.Count == 0) return 0f;
 
         if (insuredLogVisualCoroutine != null)
         {
             StopCoroutine(insuredLogVisualCoroutine);
         }
 
+        // _plan은 가치가 높은 원목부터 들어 있으므로 앞에서부터 상한만큼만 보여준다.
         insuredLogVisualPlan.Clear();
-        insuredLogVisualPlan.AddRange(_plan);
+        int visualCount = Mathf.Min(MaxInsuredLogVisualCount, _plan.Count);
+        for (int i = 0; i < visualCount; i++)
+        {
+            insuredLogVisualPlan.Add(_plan[i]);
+        }
         insuredLogVisualCoroutine = StartCoroutine(InsuredLogVisualRoutine(_startPos, _delay));
+
+        return _delay + insuredLogVisualPlan.Count * GetFlyInterval();
     }
 
     private IEnumerator InsuredLogVisualRoutine(Vector3 _startPos, float _delay)

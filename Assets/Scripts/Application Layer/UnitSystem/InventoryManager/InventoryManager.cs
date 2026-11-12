@@ -144,6 +144,9 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     private const int MaxDropVisualCount = 15;
     // 연출이 한꺼번에 터지지 않고 하나씩 연달아 발사되도록 하는 간격
     [SerializeField] private float dropVisualInterval = 0.08f;
+    // 버려지는 연출(귀환·탈진·교체) 재생 배속. 발사 간격과 원목 한 개의 비행시간을 같이 나눠 궤적은 그대로 빨라진다.
+    private const float DropVisualSpeedMul = 2f;
+    private float DropVisualInterval => dropVisualInterval / DropVisualSpeedMul;
     private Coroutine dropVisualsCoroutine;
 
     // 교체(PlayLogDropVisuals)가 쓰는 연출 순서 버퍼. 새 연출을 시작하기 전에 진행 중인 코루틴을
@@ -1328,11 +1331,13 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     /// 그 원목을 받을 자리가 없으면 그 슬롯은 거기서 멈추고 다음 슬롯으로 넘어간다(상자의 여유는 나무 종류·등급
     /// 조합별로 판정되므로, 한 조합이 막혀도 다른 조합은 아직 들어갈 수 있다).
     ///
-    /// 옮긴 원목은 유실 원목 분출(DropAllItem) 연출이 끝난 뒤 캐릭터에게서 상자로 날아가는 연출로 보여준다.
+    /// 옮긴 원목은 곧바로 캐릭터에게서 상자로 날아가는 연출로 보여주고, 유실 원목 분출(DropAllItem)은 그 뒤에 나온다.
     /// </summary>
+    /// <param name="_dropVisualDelay">보험 연출이 다 나간 뒤 분출을 시작하려면 DropAllItem에 넘길 지연(옮긴 게 없으면 0)</param>
     /// <returns>상자로 옮긴 원목 수</returns>
-    public int RescueInsuredLogs(OffroadContainer _container, Transform _charTransform)
+    public int RescueInsuredLogs(OffroadContainer _container, Transform _charTransform, out float _dropVisualDelay)
     {
+        _dropVisualDelay = 0f;
         if (_container == null || _charTransform == null) return 0;
 
         float ratio = _container.LogInsuranceRatio;
@@ -1382,9 +1387,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
         if (rescuedCount > 0)
         {
-            // 남은 원목의 분출 연출(DropAllItem)이 다 나간 다음부터 상자로 날린다.
-            float delay = GetDropVisualDuration() + dropVisualInterval;
-            _container.PlayInsuredLogVisuals(insuranceVisualPlan, _charTransform.position, delay);
+            // 보험 연출을 먼저 바로 날리고, 남은 원목의 분출(DropAllItem)은 보험 원목이 다 발사된 다음부터 나간다.
+            _dropVisualDelay = _container.PlayInsuredLogVisuals(insuranceVisualPlan, _charTransform.position, 0f);
         }
 
         return rescuedCount;
@@ -1402,7 +1406,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         return _b.totalCount.CompareTo(_a.totalCount);
     }
 
-    public int DropAllItem(Transform _charTransform)
+    /// <param name="_visualDelay">분출 연출을 시작하기 전 대기 시간(데이터는 지연 없이 즉시 비운다). 원목 보험 증서 연출 뒤에 나오게 할 때 쓴다.</param>
+    public int DropAllItem(Transform _charTransform, float _visualDelay = 0f)
     {
         if (_charTransform == null) return 0;
 
@@ -1450,7 +1455,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         if (dropVisualPlan.Count > 0)
         {
             bDropVisualFlyingLayer = false;
-            dropVisualsCoroutine = StartCoroutine(SpawnDropVisualsRoutine(dropVisualPlan, startPos));
+            dropVisualsCoroutine = StartCoroutine(SpawnDropVisualsRoutine(dropVisualPlan, startPos, _visualDelay));
         }
 
         return totalDroppedCount;
@@ -1501,7 +1506,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         }
         int count = Mathf.Min(MaxDropVisualCount, totalLogCount);
         if (count <= 0) return 0f;
-        return (count - 1) * dropVisualInterval;
+        return (count - 1) * DropVisualInterval;
     }
 
     // DropAllItem에서 실제로 보유 중인 나무 종류(로그 슬롯)가 골고루 섞이도록 라운드로빈으로 연출 순서를 짠다.
@@ -1550,15 +1555,21 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     }
 
     // 미리 짜둔 순서(_plan)대로 나무 연출을 하나씩 연달아 발사한다.
-    private IEnumerator SpawnDropVisualsRoutine(List<(TreeType treeType, LogState logState)> _plan, Vector3 _startPos)
+    private IEnumerator SpawnDropVisualsRoutine(List<(TreeType treeType, LogState logState)> _plan, Vector3 _startPos,
+        float _delay = 0f)
     {
+        if (_delay > 0f)
+        {
+            yield return new WaitForSeconds(_delay);
+        }
+
         for (int i = 0; i < _plan.Count; i++)
         {
             SpawnDropVisual(_plan[i].treeType, _plan[i].logState, _startPos);
 
             if (i < _plan.Count - 1)
             {
-                yield return new WaitForSeconds(dropVisualInterval);
+                yield return new WaitForSeconds(DropVisualInterval);
             }
         }
 
@@ -1599,7 +1610,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         float randomRotation = UnityEngine.Random.Range(1, 3) * 360f * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
 
         logItem.SetVfxComponent(vfxComponent);
-        logItem.Launch(_startPos, endPos, height, randomRotation);
+        logItem.Launch(_startPos, endPos, height, randomRotation, 1f / DropVisualSpeedMul);
 
         Sound.PlayUI(SoundID.OutItem);
 
