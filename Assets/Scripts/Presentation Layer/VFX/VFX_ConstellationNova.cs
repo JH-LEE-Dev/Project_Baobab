@@ -56,6 +56,8 @@ namespace PresentationLayer.VFX
         private float arenaHalfHeight = 4.75f;
         [SerializeField, Tooltip("ArenaDiamond 빛 커튼의 최대 높이(px). 반지름 비율로 키우지 않고 고정이다(키우면 화면을 덮는다).")]
         private float arenaCurtainHeightPx = 46.0f;
+        [SerializeField, Tooltip("ArenaDiamond 전용 중심 세로 보정(월드 유닛, 기본 0). 로그라이크 섬 타일은 보이는 윗면 중심이 칸 중심보다 반 칸 높이(0.25유닛 = 8px) 위라서, 칸 중심으로 넘어온 섬 중심에 이만큼 더해 그린다. 바닥 마법진, 공중 픽셀, 소프트 빛 전체가 함께 올라간다. Ellipse에서는 무시된다.")]
+        private float arenaCenterOffsetY = 0.0f;
 
         [Header("범위 (월드 유닛, 32 PPU 기준 1유닛 = 32px)")]
         [SerializeField, Tooltip("바깥 마법진 링이 닿는 반지름. 눈에 보이는 폭발 범위이자 피격 범위와 맞추는 값이다. 재생 직전에 SetRadius로 덮어쓸 수 있다.")]
@@ -357,6 +359,8 @@ namespace PresentationLayer.VFX
         private int ringRadiusY;
         private int centerX;
         private int centerY;
+        // ArenaDiamond 중심 세로 보정(px). Ellipse는 항상 0이다.
+        private int arenaCenterOffsetPx;
         private uint randomState;
         private Vector3 meshBoundsSize = new Vector3(20.0f, 20.0f, 10.0f);
 
@@ -509,6 +513,7 @@ namespace PresentationLayer.VFX
             appliedSoftFirstPart = -1;
 
             bArena = ENovaShape.ArenaDiamond == shape;
+            arenaCenterOffsetPx = true == bArena ? Mathf.RoundToInt(arenaCenterOffsetY * PixelsPerUnit) : 0;
 
             // 메쉬 경계(화면 밖 판단용): 가장 먼 가로 거리와 솟구침 높이 + 여유
             float halfWidthPx;
@@ -547,7 +552,7 @@ namespace PresentationLayer.VFX
 
             meshBoundsSize = new Vector3(halfWidthPx * 2.0f * PixelUnit, riseMaxPx * 2.0f * PixelUnit, 10.0f);
 
-            if (null != softMesh) softMesh.bounds = new Bounds(Vector3.zero, meshBoundsSize);
+            if (null != softMesh) softMesh.bounds = new Bounds(new Vector3(0.0f, arenaCenterOffsetPx * PixelUnit, 0.0f), meshBoundsSize);
 
             Vector3 pos = transform.position;
             randomState = unchecked((uint)(Time.frameCount * 2654435761u) ^ (uint)Mathf.FloorToInt(pos.x * 97.0f) ^ ((uint)Mathf.FloorToInt(pos.y * 57.0f) << 7));
@@ -1333,7 +1338,7 @@ namespace PresentationLayer.VFX
         {
             Vector3 pos = transform.position;
             centerX = Mathf.FloorToInt(pos.x * PixelsPerUnit);
-            centerY = Mathf.FloorToInt(pos.y * PixelsPerUnit);
+            centerY = Mathf.FloorToInt(pos.y * PixelsPerUnit) + arenaCenterOffsetPx;
 
             // 다른 모양/크기의 인스턴스가 표를 바꿔 놨으면 이 인스턴스의 표로 되돌린다(같으면 정수 비교 한 번)
             EnsureSigilTable(sigilKey);
@@ -1645,7 +1650,9 @@ namespace PresentationLayer.VFX
             // (그리기 쪽이 다시 켠다) 해시 비교값을 무효화해 돌아온 첫 프레임에 반드시 다시 올린다.
             float margin = 2.0f * PixelVfxCulling.MarginUnits;
             Vector3 cullingSize = new Vector3(meshBoundsSize.x + margin, meshBoundsSize.y + margin, PixelVfxCulling.BoundsDepth);
-            if (false == PixelVfxCulling.IsVisible(transform.position, cullingSize))
+            Vector3 cullingCenter = transform.position;
+            cullingCenter.y += arenaCenterOffsetPx * PixelUnit;
+            if (false == PixelVfxCulling.IsVisible(cullingCenter, cullingSize))
             {
                 DisableRenderers();
                 builtFrame = -1;
