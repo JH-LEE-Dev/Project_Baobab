@@ -90,7 +90,10 @@ public class StaminaRecoverCircle : MonoBehaviour
             return;
         }
 
-        Vector3 diff = charTransform.position - GetCenter();
+        // 판정은 바닥에 깔린 타원과 같은 기준인 발밑(캐릭터 루트 = 스프라이트 피벗)으로 한다.
+        // charTransform(CenterTransform)은 발밑보다 0.25 위의 몸통 중심이라 그대로 쓰면 범위가 화면상 8px 아래로 밀린다
+        // (위쪽 가장자리 안에 서 있어도 회복이 안 되고, 아래쪽 가장자리 밖에서도 회복된다).
+        Vector3 diff = character.transform.position - GetCenter();
         float x = diff.x;
         float y = diff.y;
 
