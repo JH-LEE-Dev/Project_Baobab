@@ -89,6 +89,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         allLines.AddRange(shopObj.GetComponentsInChildren<LogProcessLine>(true));
         allLines.Sort((a, b) => a.LineIndex.CompareTo(b.LineIndex));
 
+        // 특등품 평가 연출 준비(꺼진 라인 포함). 쌍둥이 원목은 벨트 원목과 같은 풀에서 빌린다.
+        for (int i = 0; i < allLines.Count; i++) allLines[i].SetupTopgradePresentation(logItemPoolingManager);
+
         if (activeLineCount <= 0) activeLineCount = 1; // 세이브 로드 전 기본값 (LoadSaveData에서 덮어씀)
         activeLineCount = Mathf.Clamp(activeLineCount, 1, allLines.Count);
 
@@ -393,8 +396,11 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
         UpdateProcessorSpeed();
 
+        // 커터에서 미리 굴린 특등품 판정은 원목에 적혀 있다. 원목이 풀로 돌아가기 전에 읽어 둔다.
+        ETopgradePreRoll topgradePreRoll = _item != null ? _item.TopgradePreRoll : ETopgradePreRoll.None;
+
         logItemPoolingManager.ReturnLogItem(_item);
-        _line.Evaluator.EvaluateLog(_itemData);
+        _line.Evaluator.EvaluateLog(_itemData, topgradePreRoll);
     }
 
     private void LogEvaluated(long _money)

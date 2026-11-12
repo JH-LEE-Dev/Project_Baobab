@@ -65,6 +65,18 @@ public class LogItem : Item, IStaticCollidable
     private bool bIsTimber = false;
     public bool BIsTimber => bIsTimber;
 
+    // 제재소 "특등품 평가"를 커터에서 미리 굴린 결과와, 그 판정에 붙인 번호.
+    // 번호는 쌍둥이 원목 연출이 "아직 같은 원목인지"(풀로 돌아갔다 다른 원목으로 재사용되지 않았는지)를 가리는 데 쓴다.
+    // 세이브에는 남기지 않는다 - 복원된 원목은 None이 되어 평가 순간에 예전처럼 굴린다. 풀에서 꺼낼 때(ResetItem) 지운다.
+    public ETopgradePreRoll TopgradePreRoll { get; private set; } = ETopgradePreRoll.None;
+    public int TopgradeTicket { get; private set; } = 0;
+
+    public void SetTopgradePreRoll(ETopgradePreRoll _preRoll, int _ticket)
+    {
+        TopgradePreRoll = _preRoll;
+        TopgradeTicket = _ticket;
+    }
+
     // 관리용 인덱스
     public int PoolIndex { get; set; } = -1;
     public int UpdateIndex { get; set; } = -1;
@@ -840,6 +852,8 @@ public class LogItem : Item, IStaticCollidable
 
         // 풀 재사용 시 원목 스프라이트로 되돌아가므로 가공 상태도 함께 해제한다.
         bIsTimber = false;
+        TopgradePreRoll = ETopgradePreRoll.None;
+        TopgradeTicket = 0;
 
         if (null != sprite && null != spriteRenderer)
             SetBodySprite(sprite);

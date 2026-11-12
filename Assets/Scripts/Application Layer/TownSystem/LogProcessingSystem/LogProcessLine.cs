@@ -20,6 +20,10 @@ public class LogProcessLine : MonoBehaviour
 
     private bool isBusy = false;
 
+    // 특등품 평가 연출(쌍둥이 원목 + 평가기 "쾅"). 동작에는 관여하지 않는 순수 연출이라 프리팹을 건드리지 않고
+    // 처음 쓸 때 붙인다. 라인 GameObject에 붙어 있어서 라인이 꺼지면(철거·세이브 로드) 함께 멈추고 정리된다.
+    private TopgradeAssessmentPresenter topgradePresenter;
+
     public int LineIndex => lineIndex;
     public LogInBelt InBelt => inBelt;
     public LogInBelt OutBelt => outBelt;
@@ -90,8 +94,29 @@ public class LogProcessLine : MonoBehaviour
     {
         isBusy = false;
         inBelt.StartBelt();
-        outBelt.LogIn(cutter.GetCuttingLogItem());
+
+        LogItem cutLog = cutter.GetCuttingLogItem();
+        // 특등품 평가를 여기서 미리 굴린다(확률은 평가 순간과 같다). 결과는 원목에 적혀 평가기까지 간다.
+        evaluator.PreRollTopgrade(cutLog);
+        outBelt.LogIn(cutLog);
+        if (topgradePresenter != null) topgradePresenter.OnLogCut(cutLog);
+
         LineFreedEvent?.Invoke(this);
+    }
+
+    /// <summary>
+    /// 특등품 연출이 쓸 원목 풀을 넘겨 연출을 준비한다. 꺼져 있는 라인에도 미리 불러 둘 수 있다
+    /// (라인이 켜질 때 그대로 쓰인다). 여러 번 불러도 연출 컴포넌트는 하나만 붙는다.
+    /// </summary>
+    public void SetupTopgradePresentation(LogItemPoolingManager _pool)
+    {
+        if (topgradePresenter == null)
+        {
+            topgradePresenter = GetComponent<TopgradeAssessmentPresenter>();
+            if (topgradePresenter == null) topgradePresenter = gameObject.AddComponent<TopgradeAssessmentPresenter>();
+        }
+
+        topgradePresenter.Setup(_pool, cutter, outBelt, evaluator);
     }
 
     private void OnLogOutToEvaluator(LogItem _item, ILogItemData _itemData)
@@ -130,6 +155,7 @@ public class LogProcessLine : MonoBehaviour
         inBelt.SetMapType(_mapType);
         outBelt.SetMapType(_mapType);
         evaluator.SetMapType(_mapType);
+        if (topgradePresenter != null) topgradePresenter.SetMapType(_mapType);
     }
 
     public void ShiftItems(Vector3 _offset)
