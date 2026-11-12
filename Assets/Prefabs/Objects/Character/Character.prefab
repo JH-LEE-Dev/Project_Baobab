@@ -2077,6 +2077,7 @@ MonoBehaviour:
   droneChainCount: 0
   droneChainRange: 1.5
   bDroneOverheatBoost: 0
+  bDroneCritical: 0
   overheatEfficiencyBonus: 0
   overheatConsumptionReductionAlpha: 0
   overheatGainBonusAlpha: 0

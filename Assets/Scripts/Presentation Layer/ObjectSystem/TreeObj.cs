@@ -815,6 +815,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         TakeDamageInternal(_damage, true, false, false);
     }
 
+    /// <summary>타격음 없이 피해를 주되, 치명타면(_bCritical) 피격 플래시를 빨간색으로 번쩍인다(드론 치명타 적용 특성).</summary>
+    public void TakeDamageWithoutHitSound(float _damage, bool _bCritical)
+    {
+        TakeDamageInternal(_damage, true, _bCritical, false);
+    }
+
     private void TakeDamageInternal(float _damage, bool _bPlayHaptic, bool _bCritical, bool _bPlayHitSound = true, bool _bBurnTick = false)
     {
         // 이 타격이 들어가지 않고 끝나면 뒤따르는 ApplyOverheatBurn이 예전 타격 값으로 화상을 걸지 않도록 먼저 비운다.

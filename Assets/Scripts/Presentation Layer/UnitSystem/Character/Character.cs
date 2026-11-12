@@ -1707,6 +1707,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
                 droneClaimedTargets.Add(target);
             }
 
+            // "드론 치명타 적용" 특성: 도끼 치명타 확률·배율을 계승한다(꺼져 있으면 굴리지 않는다). 실제 판정은 Drone이 발사마다 한다.
+            activeDrones[i].SetCritical(statComponent.bDroneCritical, statComponent.criticalChance, statComponent.ciriticalDamageMul);
             activeDrones[i].Activate(statComponent.droneDamage, statComponent.droneDamageInterval, statComponent.droneActiveDuration, statComponent.droneAttackRange, target);
         }
     }
@@ -1903,6 +1905,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         if (finalChainCount > 0)
         {
+            // 연쇄 전이도 이번 발사의 치명타 결과를 그대로 쓴다(드론 치명타 적용 특성이 없으면 항상 배율 1·치명타 아님).
+            bool bChainCritical = _drone.bLastShotCritical;
+            float chainDamage = statComponent.droneDamage * _drone.LastShotDamageMul;
+
             droneChainHitTrees.Clear();
             if (_primaryTarget != null) droneChainHitTrees.Add(_primaryTarget);
 
@@ -1922,7 +1928,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
                     if (next is TreeObj nextTree)
                     {
-                        nextTree.TakeDamageWithoutHitSound(statComponent.droneDamage); // 레이저 전이 - 도끼 타격음 없이 드론 발사음만
+                        nextTree.TakeDamageWithoutHitSound(chainDamage, bChainCritical); // 레이저 전이 - 도끼 타격음 없이 드론 발사음만
 
                         if (_bIsOverheat)
                         {
@@ -1931,7 +1937,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
                     }
                     else
                     {
-                        (next as IDamageable)?.TakeDamage(statComponent.droneDamage);
+                        (next as IDamageable)?.TakeDamage(chainDamage);
                     }
 
                     Vector3 nextTopPos = GetTreeTopPosition(next);
