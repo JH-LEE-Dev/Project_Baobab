@@ -3530,9 +3530,9 @@ MonoBehaviour:
   - forestType: 8
     decAmount: 150
   - forestType: 9
-    decAmount: 300
+    decAmount: 250
   - forestType: 10
-    decAmount: 500
+    decAmount: 400
   - forestType: 11
     decAmount: 2000
   - forestType: 12

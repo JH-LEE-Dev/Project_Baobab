@@ -1000,22 +1000,6 @@
             ]
         },
         {
-            "skillType": "TreeVitamin1",
-            "nameLocId": 201,
-            "levelBadge": "I",
-            "requiredPrestigeLevel": 0,
-            "gridX": 11,
-            "gridY": 4,
-            "parents": [
-                {
-                    "skillType": "BountifulTree3",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                }
-            ]
-        },
-        {
             "skillType": "LogProcessingSpeed3",
             "nameLocId": 202,
             "levelBadge": "III",
@@ -1578,7 +1562,7 @@
             "nameLocId": 250,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": -2,
+            "gridX": -4,
             "gridY": -11,
             "parents": [
                 {
@@ -1595,7 +1579,7 @@
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
             "gridX": -6,
-            "gridY": -11,
+            "gridY": -9,
             "parents": [
                 {
                     "skillType": "StarMarkDamage1",
