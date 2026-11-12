@@ -8,7 +8,7 @@ using UnityEngine.UI;
 /// 카드 선택 화면 프리팹 구성기. 여러 번 실행해도 같은 결과로 덮어쓴다. 카드 프리팹(RoguelikeCardBuilder)을 먼저 다시 만든다.
 ///
 ///   UI_RoguelikeCardSlot.prefab  카드 1칸: 카드 + 판정 박스(Button + 포커스 중계)
-///   UIView_RoguelikeCardSelect.prefab  화면: 딤 → Content(제목 명판 · 슬롯 4칸 · 리롤 버튼 · 설명 패널) · WAVE 배지(왼쪽 위) · 패드 키 안내(왼쪽 아래)
+///   UIView_RoguelikeCardSelect.prefab  화면: 딤 → Content(제목 명판 · 슬롯 4칸 · 리롤 버튼 · 설명 패널 · 레어 아크릴 케이스 받침/앞면) · WAVE 배지(왼쪽 위) · 패드 키 안내(왼쪽 아래)
 ///
 /// 폴리싱 시안 v4 - 화면 배치(Content 중심 기준, 정수 픽셀)는 제목 명판 → 카드 줄 → 바로 아래 가운데 리롤 글자 버튼 → 설명 패널.
 ///   바탕 그림은 보관함 구성기가 만든 Title_Plate · Panel_Info와 HUD 기본 버튼(BasicButton)을 9-슬라이스로 쓴다.
@@ -21,6 +21,12 @@ public static class RoguelikeCardSelectBuilder
     private const string ViewPrefabPath = "Assets/Prefabs/Roguelike/UI/UIView_RoguelikeCardSelect.prefab";
     private const string FontPath = "Assets/TextMesh Pro/Fonts/Galmuri11_Optimum.asset";
     private const string IconRerollPath = "Assets/Graphics/Roguelike/card/Icon_Reroll.png";
+    private const string AcrylicBasePath = "Assets/Graphics/Roguelike/card/Card_AcrylicBase.png";
+    private const string AcrylicLidPath = "Assets/Graphics/Roguelike/card/Card_AcrylicLid.png";
+    private const string AcrylicShinePath = "Assets/Graphics/Roguelike/card/Card_AcrylicShine.png";
+    private const string AcrylicShaderName = "UI/AcrylicAdditive";
+    private const string AcrylicFlashMaterialPath = "Assets/Materials/UI/Roguelike/UI_AcrylicFlash.mat";
+    private const string AcrylicShineMaterialPath = "Assets/Materials/UI/Roguelike/UI_AcrylicShine.mat";
 
     // 임시 아이콘(디자인 확정 전)은 EnsureIconSprite가 만든다. 같은 경로에 이미 파일이 있으면 덮어쓰지 않는다 - 스프라이트만 바꾸면 된다.
 
@@ -255,6 +261,9 @@ public static class RoguelikeCardSelectBuilder
         StretchRect(rerollCount.rectTransform);
         rerollCount.rectTransform.offsetMin = new Vector2(0f, 1f);
 
+        // 레어 카드 아크릴 케이스: 받침은 Content 맨 뒤, 덮개 · 번쩍 · 광택 · 입자는 Content 맨 앞(고른 카드 슬롯을 사이에 끼운다). 연출 전에는 꺼 둔다.
+        UI_RoguelikeAcrylicCase acrylicCase = BuildAcrylicCase(content);
+
         // 키 안내: 화면 왼쪽 아래. 패드 모드에서만 스크립트가 켠다(키보드 · 마우스 모드는 마우스 GUI 조작).
         RectTransform guide = AnchoredRect("PadGuide", rootRect, Vector2.zero, new Vector2(EdgeMargin, EdgeMargin + 5f), new Vector2(0f, GuideHeight));
         HorizontalLayoutGroup layout = guide.gameObject.AddComponent<HorizontalLayoutGroup>();
@@ -274,6 +283,8 @@ public static class RoguelikeCardSelectBuilder
 
         // 화면 컴포넌트 연결. UIView 기본 설정(layer 등)은 기존 프리팹 값을 그대로 둔다.
         UIView_RoguelikeCardSelect view = root.GetComponent<UIView_RoguelikeCardSelect>();
+        CanvasGroup screenGroup = root.GetComponent<CanvasGroup>();
+        if (null == screenGroup) screenGroup = root.AddComponent<CanvasGroup>();
         SerializedObject viewSo = new SerializedObject(view);
 
         SerializedProperty slotsProperty = viewSo.FindProperty("slots");
@@ -281,9 +292,11 @@ public static class RoguelikeCardSelectBuilder
         for (int i = 0; i < slots.Length; i++) slotsProperty.GetArrayElementAtIndex(i).objectReferenceValue = slots[i];
 
         viewSo.FindProperty("contentRoot").objectReferenceValue = content;
+        viewSo.FindProperty("screenGroup").objectReferenceValue = screenGroup;
         viewSo.FindProperty("cardRowY").floatValue = CardRowY;
         viewSo.FindProperty("slotGap").floatValue = 14f;
         viewSo.FindProperty("descPanel").objectReferenceValue = descPanel;
+        viewSo.FindProperty("acrylicCase").objectReferenceValue = acrylicCase;
         viewSo.FindProperty("rerollButton").objectReferenceValue = rerollButton;
         viewSo.FindProperty("rerollGroup").objectReferenceValue = rerollGroup;
         viewSo.FindProperty("rerollRelay").objectReferenceValue = rerollRelay;
@@ -306,6 +319,103 @@ public static class RoguelikeCardSelectBuilder
 
         PrefabUtility.SaveAsPrefabAsset(root, ViewPrefabPath);
         PrefabUtility.UnloadPrefabContents(root);
+    }
+
+    // // 레어 카드 아크릴 케이스
+
+    /// <summary>
+    /// 아크릴 케이스 오브젝트를 만든다(Content 아래). 케이스는 56x87, 앵커 가운데(슬롯과 같은 좌표계) · 피벗 왼쪽 아래.
+    ///   AcrylicCase    컴포넌트(UI_RoguelikeAcrylicCase) 호스트 - 항상 켜 둔다(Update). 아래 둘은 꺼 둔다.
+    ///   CaseBack       받침 Image. Content 맨 뒤 형제(모든 슬롯 뒤).
+    ///   CaseFront      덮개(Lid) · 번쩍(Flash, 가산 흰 실루엣) · 광택(ShineMask = 받침 실루엣 Mask, 안에 Shine 띠 93x87) · 입자(Sparkle). Content 맨 앞 형제.
+    /// </summary>
+    private static UI_RoguelikeAcrylicCase BuildAcrylicCase(RectTransform _content)
+    {
+        Sprite baseSprite = AssetDatabase.LoadAssetAtPath<Sprite>(AcrylicBasePath);
+        Sprite lidSprite = AssetDatabase.LoadAssetAtPath<Sprite>(AcrylicLidPath);
+        Sprite shineSprite = AssetDatabase.LoadAssetAtPath<Sprite>(AcrylicShinePath);
+        Material flashMaterial = EnsureAcrylicMaterial(AcrylicFlashMaterialPath, new Color(1f, 1f, 1f, 0f), 1f);
+        Material shineMaterial = EnsureAcrylicMaterial(AcrylicShineMaterialPath, new Color(0f, 0f, 0f, 0f), 2f);
+        if (null == baseSprite || null == lidSprite || null == shineSprite || null == flashMaterial || null == shineMaterial)
+        {
+            Debug.LogError("[RoguelikeCardSelectBuilder] 아크릴 케이스 그림(Card_AcrylicBase · Lid · Shine) 또는 셰이더(" + AcrylicShaderName + ")를 찾지 못했습니다. 케이스를 만들지 못했습니다.");
+            return null;
+        }
+
+        Vector2 caseSize = new Vector2(UI_RoguelikeAcrylicCase.CaseWidth, UI_RoguelikeAcrylicCase.CaseHeight);
+
+        RectTransform host = RoguelikeCardBuilder.CreateRect("AcrylicCase", _content, Vector2Int.zero, Vector2.zero);
+
+        Image baseImage = RoguelikeCardBuilder.CreateImage("CaseBack", _content, baseSprite, Vector2Int.zero, caseSize);
+        CenterAnchor(baseImage.rectTransform);
+        baseImage.transform.SetAsFirstSibling();
+        baseImage.gameObject.SetActive(false);
+
+        RectTransform front = RoguelikeCardBuilder.CreateRect("CaseFront", _content, Vector2Int.zero, caseSize);
+        CenterAnchor(front);
+        front.SetAsLastSibling();
+
+        Image lidImage = RoguelikeCardBuilder.CreateImage("Lid", front, lidSprite, Vector2Int.zero, caseSize);
+
+        Image flashImage = RoguelikeCardBuilder.CreateImage("Flash", front, baseSprite, Vector2Int.zero, caseSize);
+        flashImage.material = flashMaterial;
+        flashImage.color = new Color(1f, 1f, 1f, 0f);
+        flashImage.enabled = false;
+
+        // 광택: 받침 실루엣 Mask(그림은 안 그린다) 안에 93x87 띠. 띠는 가산 2배 밝기 머티리얼.
+        Image shineMaskImage = RoguelikeCardBuilder.CreateImage("ShineMask", front, baseSprite, Vector2Int.zero, caseSize);
+        Mask shineMask = shineMaskImage.gameObject.AddComponent<Mask>();
+        shineMask.showMaskGraphic = false;
+        Image shineImage = RoguelikeCardBuilder.CreateImage("Shine", shineMaskImage.rectTransform, shineSprite, Vector2Int.zero, shineSprite.rect.size);
+        shineImage.material = shineMaterial;
+        shineMaskImage.gameObject.SetActive(false);
+
+        RectTransform sparkleRect = RoguelikeCardBuilder.CreateRect("Sparkle", front, Vector2Int.zero, caseSize);
+        UI_RoguelikeAcrylicSparkle sparkle = sparkleRect.gameObject.AddComponent<UI_RoguelikeAcrylicSparkle>();
+        sparkle.raycastTarget = false;
+
+        front.gameObject.SetActive(false);
+
+        UI_RoguelikeAcrylicCase acrylicCase = host.gameObject.AddComponent<UI_RoguelikeAcrylicCase>();
+        SerializedObject so = new SerializedObject(acrylicCase);
+        so.FindProperty("backRoot").objectReferenceValue = baseImage.rectTransform;
+        so.FindProperty("baseImage").objectReferenceValue = baseImage;
+        so.FindProperty("frontRoot").objectReferenceValue = front;
+        so.FindProperty("lidImage").objectReferenceValue = lidImage;
+        so.FindProperty("flashImage").objectReferenceValue = flashImage;
+        so.FindProperty("shineRoot").objectReferenceValue = shineMaskImage.rectTransform;
+        so.FindProperty("shineImage").objectReferenceValue = shineImage;
+        so.FindProperty("sparkle").objectReferenceValue = sparkle;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return acrylicCase;
+    }
+
+    /// <summary>앵커를 가운데로(피벗은 그대로 왼쪽 아래). 슬롯과 같은 Content 기준 좌표계가 된다.</summary>
+    private static void CenterAnchor(RectTransform _rect)
+    {
+        _rect.anchorMin = new Vector2(0.5f, 0.5f);
+        _rect.anchorMax = new Vector2(0.5f, 0.5f);
+        _rect.anchoredPosition = Vector2.zero;
+    }
+
+    /// <summary>가산 UI 셰이더(UI/AcrylicAdditive) 머티리얼. 이미 있으면 값만 다시 맞춘다. 셰이더가 없으면 null.</summary>
+    private static Material EnsureAcrylicMaterial(string _path, Color _textureSampleAdd, float _intensity)
+    {
+        Shader shader = Shader.Find(AcrylicShaderName);
+        if (null == shader) return null;
+
+        Material material = AssetDatabase.LoadAssetAtPath<Material>(_path);
+        if (null == material)
+        {
+            material = new Material(shader);
+            AssetDatabase.CreateAsset(material, _path);
+        }
+
+        material.shader = shader;
+        material.SetColor("_TextureSampleAdd", _textureSampleAdd);
+        material.SetFloat("_Intensity", _intensity);
+        EditorUtility.SetDirty(material);
+        return material;
     }
 
     /// <summary>앵커 · 피벗이 같은 지점(_corner)인 사각형. _position은 그 지점에서의 거리.</summary>

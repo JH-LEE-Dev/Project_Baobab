@@ -32,7 +32,12 @@ using UnityEngine.UI;
 ///   리롤은 카드 줄 바로 아래 가운데 글자 버튼(아이콘 + 리롤 + 남은 횟수, 폭은 18개 언어 중 가장 긴 문구 기준), 설명 패널은 리롤 버튼 아래(카드 선택 모드 - 폭 고정 · 높이는 카드마다).
 ///   키 안내는 패드 모드에서만 왼쪽 아래에 보인다(키보드 · 마우스 모드는 마우스 GUI 조작 - 키보드 단축키를 두지 않는다).
 ///
-/// [아직 없는 것] 카드 뒷면·레어 프레임 리소스, 레어 등장 연출, 자물쇠 해제, 보관함 보관 연출, 카드 착지 효과음(호출 지점만 UI_RoguelikeCardSlot.StartLanding 주석).
+/// [퇴장 단계] 연출이 끝나면 Complete 전에 퇴장 0.18초가 돈다: 화면 전체(딤 포함)가 흐려지고(screenGroup) Content가 4px 떠오른다. 끝나면 Complete.
+///
+/// [레어 카드 케이스] 레어(에메랄드 · 프리즘 · 루비)를 고르면 기존 이동 · 잠깐 머묾 대신 아크릴 케이스에 끼우는 연출(UI_RoguelikeAcrylicCase, 약 1.26초)이 돈다.
+///   카드가 케이스 위쪽에 걸친 자리로 이동 → 쏙 끼움 → 딸깍(반동 · 번쩍 · 입자 · 효과음) → 광택 → 정지 → 퇴장 → Complete. 일반 카드는 기존 이동 · 머묾 뒤 퇴장(0.88초), 레어는 약 1.74초.
+///
+/// [아직 없는 것] 카드 뒷면 리소스(지금은 프레임을 어둡게 쓰는 임시 뒷면), 자물쇠 해제, 보관함 보관 연출(레어 케이스를 보관함 쇼케이스 칸으로 옮기고 접는 것, 일반 카드 비닐 슬리브), 카드 착지 효과음(호출 지점만 UI_RoguelikeCardSlot.StartLanding 주석).
 /// </summary>
 public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 {
@@ -42,15 +47,18 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         PurchaseFade,
         PurchaseMove,
         PurchaseHold,
-        Closing,
+        PurchaseRareCase,
+        Exit,
     }
 
     private const float IntroIntervalSeconds = 0.13f;
     private const float FadeSeconds = 0.3f;
     private const float ExclusiveFadeSeconds = 0.15f;
     private const float MoveSeconds = 0.3f;
-    private const float HoldSeconds = 0.2f;
+    private const float HoldSeconds = 0.1f;
     private const float CloseSeconds = 0.2f;
+    private const float ExitSeconds = 0.18f;
+    private const int ExitLiftPixels = 4;
     private const float ShakeStepSeconds = 0.03f;
     private const float DisabledButtonAlpha = 0.4f;
     private const float RerollFocusSeconds = 0.1f;
@@ -80,10 +88,15 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     [Header("카드")]
     [SerializeField] private UI_RoguelikeCardSlot[] slots = new UI_RoguelikeCardSlot[0];
     [SerializeField] private RectTransform contentRoot;
+    [Tooltip("화면 전체(딤 포함)를 흐리게 하는 루트 CanvasGroup. 퇴장 연출에 쓴다.")]
+    [SerializeField] private CanvasGroup screenGroup;
     [Tooltip("카드 줄 아래쪽 y(Content 기준). 슬롯 피벗이 왼쪽 아래라 이 값이 카드 바닥이다.")]
     [SerializeField] private float cardRowY = 6f;
     [SerializeField] private float slotGap = 14f;
     [SerializeField] private UI_RoguelikeCardDescPanel descPanel;
+
+    [Header("레어 카드 케이스")]
+    [SerializeField] private UI_RoguelikeAcrylicCase acrylicCase;
 
     [Header("리롤 버튼")]
     [SerializeField] private Button rerollButton;
@@ -112,9 +125,13 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private UI_RoguelikeCardSlot chosenSlot;
     private Action pendingComplete;
     private bool bLocked;
+    private bool bRarePurchase;
     private LocalizationManager localizationManager;
     private Action languageChangedHandler;
+    private Action rareCaseDoneHandler;
     private float contentDefaultY;
+    private float exitDuration;
+    private float exitBaseY;
     private bool bWaveSet;
     private Action<EInputDeviceType> deviceChangedHandler;
     private readonly System.Text.StringBuilder waveBuilder = new System.Text.StringBuilder(16);
@@ -170,7 +187,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
     /// <summary>
     /// 구매가 확정됐다. 고르지 않은 카드는 흐려지며 사라지고(배타 카드는 더 빠르게) → 고른 카드가 화면 중앙으로 → 잠깐 머문 뒤
-    /// 화면을 닫고 _onComplete를 부른다. 보관함 보관 연출(기획서 10-2)은 아직 없다 - 여기서 이어 붙인다.
+    /// 퇴장(0.18초: 화면 전체 흐려짐 + Content 4px 상승, 일반 0.88초 / 레어 약 1.74초) 뒤 화면을 닫고 _onComplete를 부른다. 보관함 보관 연출(기획서 10-2)은 아직 없다 - 여기서 이어 붙인다.
+    /// 레어 카드(_purchase.displayGrade)는 이동 · 잠깐 머묾 대신 아크릴 케이스에 끼우는 연출(UI_RoguelikeAcrylicCase)이 돈다.
     /// </summary>
     public virtual void PlayPurchase(in RoguelikeCardPurchaseViewData _purchase, IReadOnlyList<int> _discardedIndices, Action _onComplete)
     {
@@ -183,6 +201,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         pendingComplete = _onComplete;
         bLocked = true;
         chosenSlot = FindSlotByOffer(_purchase.offerIndex);
+        bRarePurchase = null != acrylicCase && null != chosenSlot && true == CardRarity.IsRare(_purchase.displayGrade);
 
         ApplyDimming(null);
         chosenSlot?.PlayFlash();
@@ -202,7 +221,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         Sound.PlayUI(SoundID.GetItem);
     }
 
-    /// <summary>건너뛰기 등으로 구매 없이 닫는다. 카드가 흐려지며 닫힌 뒤 _onComplete를 부른다.</summary>
+    /// <summary>건너뛰기 등으로 구매 없이 닫는다. 화면 전체가 흐려지며 닫힌 뒤 _onComplete를 부른다.</summary>
     public virtual void CloseSelection(Action _onComplete)
     {
         if (false == IsVisible)
@@ -214,13 +233,11 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         pendingComplete = _onComplete;
         bLocked = true;
         chosenSlot = null;
-
-        for (int i = 0; i < slotCount; i++) slots[i].PlayFade(CloseSeconds);
+        bRarePurchase = false;
 
         SetControlsVisible(false);
         HideCursor();
-        phase = EPhase.Closing;
-        phaseTime = 0f;
+        StartExit(CloseSeconds);
     }
 
     /// <summary>선택·리롤이 거절됐다. 해당 카드나 리롤 버튼이 정수 픽셀로 흔들린다.</summary>
@@ -248,8 +265,10 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
         slotCount = count;
         chosenSlot = null;
+        bRarePurchase = false;
         bLocked = false;
         phase = EPhase.Idle;
+        if (null != acrylicCase) acrylicCase.ResetCase();
         SetControlsVisible(true);
 
         PlaceSlots(count);
@@ -655,6 +674,12 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         {
             case EPhase.PurchaseFade:
                 if (phaseTime < FadeSeconds) break;
+                if (true == bRarePurchase)
+                {
+                    StartRareCase();
+                    break;
+                }
+
                 chosenSlot?.PlayMove(GetCenterPosition(), MoveSeconds);
                 phase = EPhase.PurchaseMove;
                 phaseTime = 0f;
@@ -668,14 +693,61 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
             case EPhase.PurchaseHold:
                 if (phaseTime < HoldSeconds) break;
-                Complete();
+                StartExit(ExitSeconds);
                 break;
 
-            case EPhase.Closing:
-                if (phaseTime < CloseSeconds) break;
-                Complete();
+            case EPhase.PurchaseRareCase:
+                // 끝은 아크릴 케이스가 알려 준다(OnRareCaseDone).
+                break;
+
+            case EPhase.Exit:
+                float t = Mathf.Clamp01(phaseTime / exitDuration);
+                float eased = t * t;
+                if (null != screenGroup) screenGroup.alpha = 1f - eased;
+                contentRoot.anchoredPosition = new Vector2(contentRoot.anchoredPosition.x, exitBaseY + Mathf.Round(ExitLiftPixels * eased));
+                if (1f <= t) Complete();
                 break;
         }
+    }
+
+    /// <summary>퇴장 단계 시작. 화면 전체가 흐려지며 Content가 ExitLiftPixels만큼 떠오른다.</summary>
+    private void StartExit(float _duration)
+    {
+        exitDuration = Mathf.Max(0.01f, _duration);
+        exitBaseY = contentRoot.anchoredPosition.y;
+        phase = EPhase.Exit;
+        phaseTime = 0f;
+    }
+
+    /// <summary>퇴장 연출로 바뀐 Content 위치 · 화면 투명도를 원래대로 돌린다. phase를 바꾸기 전에 불러야 한다.</summary>
+    private void RestoreExitState()
+    {
+        if (EPhase.Exit == phase) contentRoot.anchoredPosition = new Vector2(contentRoot.anchoredPosition.x, exitBaseY);
+        if (null != screenGroup) screenGroup.alpha = 1f;
+    }
+
+    /// <summary>
+    /// 레어 카드: 카드를 케이스 위에 걸친 자리(최종 위치 + InsertDepthPixels)로 보내면서 케이스가 떠오르게 한다. 그 뒤 끼움 · 딸깍 · 광택은 케이스가 카드(슬롯) 위치까지 직접 움직여 진행한다.
+    /// 케이스에 끼울 카드라 호버로 떠 있던 것을 풀고(최종 위치에서 케이스 안쪽 4px 정렬이 어긋나지 않게) 밑 그림자를 끈다.
+    /// </summary>
+    private void StartRareCase()
+    {
+        Vector2 finalPosition = GetCenterPosition();
+
+        chosenSlot.SetFocused(false);
+        chosenSlot.Card.SetShadowVisible(false);
+        chosenSlot.PlayMove(finalPosition + new Vector2(0f, UI_RoguelikeAcrylicCase.InsertDepthPixels), MoveSeconds);
+        acrylicCase.Play((RectTransform)chosenSlot.transform, finalPosition, rareCaseDoneHandler);
+
+        phase = EPhase.PurchaseRareCase;
+        phaseTime = 0f;
+    }
+
+    private void OnRareCaseDone()
+    {
+        if (EPhase.PurchaseRareCase != phase) return;
+
+        StartExit(ExitSeconds);
     }
 
     /// <summary>고른 카드가 멈출 곳. 카드 한 장의 중심이 화면 중앙에 오는 Content 기준 정수 좌표.</summary>
@@ -696,6 +768,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     {
         Action callback = pendingComplete;
         pendingComplete = null;
+        RestoreExitState();
         phase = EPhase.Idle;
 
         Hide();
@@ -746,11 +819,14 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
             if (null != padGuideImages[i]) padGuideImages[i].Initialize(input);
         }
 
+        if (null != screenGroup) screenGroup.alpha = 1f;
         LayoutControls();
         pendingComplete = null;
         phase = EPhase.Idle;
         bLocked = false;
+        bRarePurchase = false;
         focusedRelay = null;
+        if (null != acrylicCase) acrylicCase.ResetCase();
     }
 
     /// <summary>
@@ -759,10 +835,14 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     /// </summary>
     protected override void OnHideContent()
     {
+        RestoreExitState();
         pendingComplete = null;
         phase = EPhase.Idle;
         bLocked = false;
+        bRarePurchase = false;
         chosenSlot = null;
+        // 연출 중 밖에서 닫혀도(ForceCloseCardSelection) 케이스를 숨기고 카드를 원래 자리로 돌린다(완료 콜백은 부르지 않는다).
+        if (null != acrylicCase) acrylicCase.ResetCase();
         FindSlotByRelay(focusedRelay)?.SetFocused(false);
         focusedRelay = null;
         UnsubscribeLanguage();
@@ -792,7 +872,9 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         base.Awake();
 
         languageChangedHandler = OnLanguageChanged;
+        rareCaseDoneHandler = OnRareCaseDone;
         cursorMotion = CursorMotionSettings.Card;
+        if (null != acrylicCase) acrylicCase.Initialize();
 
         // 프리팹에 잡아 둔 Content 기본 위치. 이후 레이아웃은 이 값에서 다시 계산한다.
         contentDefaultY = contentRoot.anchoredPosition.y;

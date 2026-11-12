@@ -234,6 +234,7 @@ public class UI_RoguelikeCard : MonoBehaviour
         if (null != flashImage) flashImage.enabled = false;
         if (null != edgeLineImage) edgeLineImage.enabled = false;
         if (null != pixelFx) pixelFx.Clear();
+        if (null != shadowImage) shadowImage.enabled = true;
 
         tint = Color.white;
         ApplyFace();
@@ -275,6 +276,12 @@ public class UI_RoguelikeCard : MonoBehaviour
     {
         flipLift = _pixels;
         ApplyVisualPosition();
+    }
+
+    /// <summary>카드 밑 그림자를 켜고 끈다(레어 카드를 아크릴 케이스에 끼울 때는 케이스 받침 위에 그림자가 얹히지 않게 끈다). ResetMotion이 다시 켠다.</summary>
+    public void SetShadowVisible(bool _bVisible)
+    {
+        if (null != shadowImage) shadowImage.enabled = _bVisible;
     }
 
     /// <summary>착지 순간 그림자 자리에서 먼지·지면 링·금빛 반짝이 퍼진다.</summary>

@@ -32,6 +32,7 @@ public class HUD_HPBar : HUD_ProgressBar
     private bool isHiding;
     private RectTransform rect;
     private UnityAction onHideCompleteAction;
+    private TweenCallback onHideDelayElapsed;
     private Tween ghostTween;
     // ghostSlider.DOValue 대신 쓰는 델리게이트 캐시(SliderValueTweener 참조)
     private SliderValueTweener ghostValueTweener;
@@ -45,6 +46,7 @@ public class HUD_HPBar : HUD_ProgressBar
         base.Initialize();
 
         onHideCompleteAction = HandleHideComplete;
+        onHideDelayElapsed = HandleHideDelayElapsed;
 
         if (null != motionPlayer)
             motionPlayer.Initialize();
@@ -140,7 +142,18 @@ public class HUD_HPBar : HUD_ProgressBar
             hideDelayTween.Kill();
 
         if (0.0f < showDuration)
-            hideDelayTween = DOVirtual.DelayedCall(showDuration, () => OnHide(-1f), false);
+        {
+            // Initialize 전에 불려도 동작하도록 지연 생성한다(람다 클로저 할당 방지).
+            if (null == onHideDelayElapsed)
+                onHideDelayElapsed = HandleHideDelayElapsed;
+
+            hideDelayTween = DOVirtual.DelayedCall(showDuration, onHideDelayElapsed, false);
+        }
+    }
+
+    private void HandleHideDelayElapsed()
+    {
+        OnHide(-1f);
     }
 
     public void OnHide(float _forceDuration = -1f)
@@ -203,6 +216,9 @@ public class HUD_HPBar : HUD_ProgressBar
         Vector3 _pos = targetObj.transform.position;
         _pos.y += yOffset;
         
-        rect.position = _pos;
+        // 현재 위치와 같으면 대입을 생략한다(대입은 변환 갱신 알림을 일으킨다). 비교는 대상의 현재 값 기준이다.
+        Vector3 _currentPos = rect.position;
+        if (_currentPos.x != _pos.x || _currentPos.y != _pos.y || _currentPos.z != _pos.z)
+            rect.position = _pos;
     }
 }

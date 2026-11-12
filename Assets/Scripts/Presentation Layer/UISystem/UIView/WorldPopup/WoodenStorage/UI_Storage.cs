@@ -46,6 +46,7 @@ public class UI_Storage : MonoBehaviour
     private MotionEntry popup;
     private MotionEntry popdown;
     private RectTransform rect;
+    private RectTransform slotBackgroundRect;
     private Transform playerTransform;
     private Tween positioningTween;
     private bool isPlayerOnLeft = true;
@@ -487,6 +488,18 @@ public class UI_Storage : MonoBehaviour
         popdown = omp.Play(_targetPopdownTag, bReset: true, _onComplete: OnCompleteAnim);
     }
 
+    // slotBackground의 RectTransform을 한 번만 가져와 재사용한다(SnapToPerfectPixel은 위치 트윈 도중 매 프레임 불린다).
+    private RectTransform GetSlotBackgroundRect()
+    {
+        if (null == slotBackground)
+            return null;
+
+        if (null == slotBackgroundRect)
+            slotBackgroundRect = slotBackground.GetComponent<RectTransform>();
+
+        return slotBackgroundRect;
+    }
+
     /// <summary>
     /// 캐릭터의 실시간 X축 위치를 분석하여, 보관함의 좌우 반대편에 대응하는 UI 타겟 월드 좌표를 산출합니다.
     /// 슬롯이 가변적으로 늘어나도 UI의 끝점(edge) 기준으로 밀려나도록 반폭을 반영합니다.
@@ -510,7 +523,7 @@ public class UI_Storage : MonoBehaviour
             float _halfWorldWidth = 0f;
             if (null != slotBackground)
             {
-                RectTransform _bgRect = slotBackground.GetComponent<RectTransform>();
+                RectTransform _bgRect = GetSlotBackgroundRect();
                 if (null != _bgRect)
                     _halfWorldWidth = _bgRect.rect.width * _bgRect.lossyScale.x * 0.5f;
             }
@@ -558,7 +571,7 @@ public class UI_Storage : MonoBehaviour
         // 캔버스를 즉각 강제 갱신하여 비활성화 ➡️ 활성화 전환 직후 프레임 지연으로 크기(Width/Height)가 0으로 잡히는 버그를 완벽히 해결합니다.
         Canvas.ForceUpdateCanvases();
 
-        RectTransform _bgRect = slotBackground.GetComponent<RectTransform>();
+        RectTransform _bgRect = GetSlotBackgroundRect();
         if (null == _bgRect)
             return;
 

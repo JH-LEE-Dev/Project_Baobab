@@ -147,11 +147,6 @@ public class UIView_ScreenModal : UIView
         ScreenModalClosedEvent?.Invoke();
     }
 
-    public override void Update()
-    {
-        base.Update();
-    }
-
     public override void Refresh()
     {
         base.Refresh();

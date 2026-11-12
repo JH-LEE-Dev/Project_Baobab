@@ -39,6 +39,10 @@ public class HUD_Message : MonoBehaviour
     private Coroutine animationCoroutine;
     private Graphic[] graphicTargets;
     private BgPiece[] bgPieces;
+    private WaitForSeconds cachedShowDelayWait;
+    private float cachedShowDelayValue = -1f;
+    private WaitForSeconds cachedHoldDurationWait;
+    private float cachedHoldDurationValue = -1f;
 
     // 배너 연출(등장 → 유지 → 퇴장)이 끝까지 재생된 순간. Hide()로 중간에 끊긴 경우에는 발행하지 않는다.
     public event Action PlayCompletedEvent;
@@ -106,12 +110,28 @@ public class HUD_Message : MonoBehaviour
         gameObject.SetActive(true);
 
         if (0f < showDelay)
-            yield return new WaitForSeconds(showDelay);
+        {
+            if (null == cachedShowDelayWait || cachedShowDelayValue != showDelay)
+            {
+                cachedShowDelayValue = showDelay;
+                cachedShowDelayWait = new WaitForSeconds(showDelay);
+            }
+
+            yield return cachedShowDelayWait;
+        }
 
         yield return PlayShowAnimation();
 
         if (0f < holdDuration)
-            yield return new WaitForSeconds(holdDuration);
+        {
+            if (null == cachedHoldDurationWait || cachedHoldDurationValue != holdDuration)
+            {
+                cachedHoldDurationValue = holdDuration;
+                cachedHoldDurationWait = new WaitForSeconds(holdDuration);
+            }
+
+            yield return cachedHoldDurationWait;
+        }
 
         yield return PlayHideAnimation();
 
