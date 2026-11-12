@@ -729,9 +729,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     /// <summary>이후 받는 모든 피해를 _amplify만큼 늘린다(포자 대폭발). 이미 더 큰 증폭이 걸려 있으면 그대로 둔다.</summary>
     public void ApplySporeDamageAmplify(float _amplify)
     {
-        // 배리어가 대폭발 피해를 모두 막았다면 증폭도 걸리지 않는다(배리어 관통력으로 일부 들어갔다면 건다).
-        if (bBarrierActive && BarrierDamageReduction >= 1f) return;
-
+        // 배리어는 대폭발 피해만 줄인다 - 피해를 모두 막았어도 증폭은 건다(배리어가 깨진 뒤 받는 피해부터 커진다).
         if (_amplify > sporeDamageAmplify) sporeDamageAmplify = _amplify;
 
         // 증폭 표시(상시 디버프 이펙트). 대폭발 피해 직후에 불리므로, 그 피해로 쓰러져 풀로 돌아간 나무에는 걸지 않는다.

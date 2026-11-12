@@ -124,6 +124,12 @@ public class UnitSystem
         unitLogicManager.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
         unitLogicManager.SourceOfSpeedForceEndedEvent += SourceOfSpeedForceEnded;
 
+        unitLogicManager.StarPathSpeedBoostActivatedEvent -= StarPathSpeedBoostActivated;
+        unitLogicManager.StarPathSpeedBoostActivatedEvent += StarPathSpeedBoostActivated;
+
+        unitLogicManager.StarPathSpeedBoostForceEndedEvent -= StarPathSpeedBoostForceEnded;
+        unitLogicManager.StarPathSpeedBoostForceEndedEvent += StarPathSpeedBoostForceEnded;
+
         unitLogicManager.OverheatLevelChangedEvent -= OverheatLevelChanged;
         unitLogicManager.OverheatLevelChangedEvent += OverheatLevelChanged;
 
@@ -185,6 +191,8 @@ public class UnitSystem
         unitLogicManager.AttackRythmStackChangedEvent -= AttackRythmStackChanged;
         unitLogicManager.SourceOfSpeedActivatedEvent -= SourceOfSpeedActivated;
         unitLogicManager.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
+        unitLogicManager.StarPathSpeedBoostActivatedEvent -= StarPathSpeedBoostActivated;
+        unitLogicManager.StarPathSpeedBoostForceEndedEvent -= StarPathSpeedBoostForceEnded;
         unitLogicManager.OverheatLevelChangedEvent -= OverheatLevelChanged;
         inventoryManager.SpendMoneyEvent -= SpendMoney;
         offroadContainer.InteractStateEvent -= OffroadContainerInteractStateChanged;
@@ -440,6 +448,17 @@ public class UnitSystem
     private void SourceOfSpeedForceEnded()
     {
         signalHub.Publish(BuffHudSignal.Of(EBuffHudId.SourceOfSpeed, EBuffHudOp.Remove));
+    }
+
+    // 별길 걸음: 속도의 원천과 같은 지속형(Duration). 별 표식 나무를 벨 때마다 시간이 처음부터.
+    private void StarPathSpeedBoostActivated(float _duration)
+    {
+        signalHub.Publish(BuffHudSignal.AddDuration(EBuffHudId.StarPathSpeedBoost, _duration));
+    }
+
+    private void StarPathSpeedBoostForceEnded()
+    {
+        signalHub.Publish(BuffHudSignal.Of(EBuffHudId.StarPathSpeedBoost, EBuffHudOp.Remove));
     }
 
     // 과열: 수치 중첩(StackHits), 값은 내림한 정수, 최대치는 기본 100("과열 최대치 증가" 특성으로 늘어난다).
