@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using PresentationLayer.VFX;
 using UnityEngine;
 
 /// <summary>
@@ -18,6 +19,8 @@ using UnityEngine;
 /// 원목이 어디로 얼마나 빨리 움직이든(컨베이어 특성, 가공 스택 가속, 벨트 증설로 통째로 밀림) 쌍둥이는 늘 원목 위에 있다.
 /// 출고벨트가 아주 짧아서(1~3칸, 기본 속도로 0.2~1.3초) 튀어 오르는 시간은 남은 벨트 시간에 맞춰 줄인다.
 /// 남은 시간보다 길면 착지 전에 원목이 들어가 버리는데, 그때는 공중에서 바로 따라 뛰어든다.
+///
+/// 이펙트(섬광·금가루·×2 글자)는 VFX_TopgradeAssessment가 그리고, 이 컴포넌트는 언제 어디서 터질지만 알려 준다.
 ///
 /// 마을에 있을 때만 보여준다. 던전에 가 있는 동안에는 판정만 진행되고(돈은 그대로 2배), 마을로 돌아오면
 /// 벨트 위에 남아 있는 특등품 원목에 쌍둥이를 다시 얹는다.
@@ -67,6 +70,19 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
     [SerializeField] private float vanishDuration = 0.12f;
     [Tooltip("마을로 돌아와 다시 얹을 때 커지는 시간(초).")]
     [SerializeField] private float reattachDuration = 0.15f;
+
+    [Header("이펙트")]
+    [Tooltip("업혀 가는 동안 반짝임이 피는 간격(초) 최소·최대.")]
+    [SerializeField] private float rideSparkleIntervalMin = 0.14f;
+    [SerializeField] private float rideSparkleIntervalMax = 0.24f;
+    [Tooltip("반짝임이 생기는 범위(쌍둥이 중심 기준 반폭·반높이, 유닛).")]
+    [SerializeField] private Vector2 rideSparkleExtents = new Vector2(0.32f, 0.12f);
+    // 평가기 스프라이트(64x64 칸)는 아래쪽 32px만 그림이고 기준점이 바닥에서 4.8px 위라, 칸 경계(bounds)가 아니라
+    // 기준점에서의 거리로 자리를 잡는다. 몸통 가운데 ≈ +0.35, 윗면 ≈ +0.85 유닛.
+    [Tooltip("섬광·충격파·금화 분수가 터지는 자리(평가기 기준점에서, 유닛). 평가기 몸통 가운데.")]
+    [SerializeField] private Vector2 stampImpactOffset = new Vector2(0f, 0.35f);
+    [Tooltip("×2 글자 바닥 가운데 자리(평가기 기준점에서, 유닛). 평가기 윗면 바로 위.")]
+    [SerializeField] private Vector2 stampLabelOffset = new Vector2(0f, 0.92f);
 
     [Header("평가기 쾅")]
     [SerializeField] private float stampBounceDuration = 0.45f;
@@ -138,6 +154,7 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
         public float landTime;      // 착지 후 경과(눌림 연출)
         public float bobPhase;
         public float scaleIn;       // 다시 얹을 때 커지는 진행(1이면 다 큼)
+        public float sparkleTimer;  // 다음 반짝임까지 남은 시간
     }
 
     private LogItemPoolingManager pool;
@@ -157,6 +174,7 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
     private static float lastCameraKickTime = float.NegativeInfinity;
 
     private Camera cachedCamera;
+    private VFX_TopgradeAssessment vfx;
 
     public void Setup(LogItemPoolingManager _pool, LogCutter _cutter, LogInBelt _outBelt, LogEvaluator _evaluator)
     {
@@ -169,6 +187,10 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
 
         if (outBelt != null) outBelt.LogExitStartedEvent += OnLogExitStarted;
         if (evaluator != null) evaluator.TopgradeAssessedEvent += OnTopgradeAssessed;
+
+        // 이펙트는 라인 자식으로 하나만 둔다(라인과 함께 꺼지고 사라진다). 셰이더가 없으면 null이고 이펙트 없이 진행한다.
+        if (vfx == null) vfx = GetComponentInChildren<VFX_TopgradeAssessment>(true);
+        if (vfx == null) vfx = VFX_TopgradeAssessment.Create(transform);
     }
 
     private void Unbind()
@@ -207,6 +229,7 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
         if (mapType != MapType.Town)
         {
             ClearAllTwins();
+            if (vfx != null) vfx.ClearAll();
             comboCount = 0;
             lastStampTime = float.NegativeInfinity;
             return;
@@ -250,6 +273,7 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
         twin.popFromOffset = fromCutter * popFromCutterRatio;
 
         ApplyTwin(twin, 0f);
+        if (vfx != null) vfx.PlayReveal(twin.body.transform.position);
 
         Sound.Play(revealSound, _main.transform.position, revealVolume, pitchOverride: Random.Range(0.97f, 1.04f));
     }
@@ -298,6 +322,7 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
         twin.landTime = 0f;
         twin.bobPhase = Random.Range(0f, Mathf.PI * 2f);
         twin.scaleIn = 1f;
+        twin.sparkleTimer = 0f;
         twin.lastMainPos = _main.transform.position;
         twin.lastMainGroundY = twin.mainSortable != null ? twin.mainSortable.GroundPosition.y : twin.lastMainPos.y;
 
@@ -346,6 +371,12 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
 
         LogStorage storage = evaluator != null ? evaluator.Storage : null;
         Vector3 stampPos = storage != null ? storage.transform.position : transform.position;
+
+        if (vfx != null)
+        {
+            // 섬광·분수는 평가기 몸통 가운데, ×2는 평가기 윗면 바로 위(기준점은 반동과 무관하게 고정이다).
+            vfx.PlayStamp(stampPos + (Vector3)stampImpactOffset, stampPos + (Vector3)stampLabelOffset, comboCount);
+        }
 
         if (storage != null)
         {
@@ -452,6 +483,8 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
         float scaleY;
         float angle;
         bool bFinished = false;
+        bool bLanded = false;
+        bool bSparkle = false;
 
         switch (_twin.state)
         {
@@ -478,6 +511,8 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
                     _twin.state = ETwinState.Ride;
                     _twin.time = 0f;
                     _twin.landTime = 0f;
+                    _twin.sparkleTimer = Random.Range(0.05f, 0.1f);
+                    bLanded = true;
                     Sound.Play(landSound, anchor, landVolume, pitchOverride: landPitch * Random.Range(0.97f, 1.03f));
                 }
                 break;
@@ -486,6 +521,12 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
             case ETwinState.Ride:
             {
                 _twin.landTime += _dt;
+                _twin.sparkleTimer -= _dt;
+                if (_twin.sparkleTimer <= 0f)
+                {
+                    _twin.sparkleTimer = Random.Range(rideSparkleIntervalMin, rideSparkleIntervalMax);
+                    bSparkle = _twin.scaleIn >= 1f;
+                }
                 _twin.scaleIn = reattachDuration > 0f ? Mathf.Min(1f, _twin.scaleIn + _dt / reattachDuration) : 1f;
 
                 // 착지 눌림: 가로로 퍼지고 세로로 눌렸다가 탄력 있게 돌아온다.
@@ -544,6 +585,12 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
         float twinAnchorY = _twin.bodyVisual.position.y;
         _twin.body.SetHeight(twinAnchorY - (_twin.lastMainGroundY - SortAheadOfMain));
         _twin.body.UpdateSortingOrder();
+
+        if (vfx != null)
+        {
+            if (bLanded) vfx.PlayLand(root.position);
+            if (bSparkle) vfx.EmitRideSparkle(root.position, rideSparkleExtents.x, rideSparkleExtents.y);
+        }
 
         return bFinished;
     }
