@@ -40,6 +40,13 @@ public class LogInBelt : MonoBehaviour
     // 레일에 가려진다. LogIn(신규 투입)과 LoadSaveData(세이브 복원) 두 경로가 반드시 같은 값을 써야 한다.
     private const float LogOnBeltSortHeight = 0.425f;
 
+    // 구간 안에서 원목 정렬 기준이 따라 움직이는 비율. 원목 위치를 그대로 정렬 기준으로 쓰면, 타일과 타일
+    // 사이를 지나는 동안(구간의 약 22% 지점부터) 방금 지나온 타일과 옆 라인(앞줄) 타일보다 뒤로 넘어가
+    // 원목 끝 단면과 아랫부분이 벨트에 잘려 보였다(라인을 증설해 벨트가 나란히 붙으면 특히 잘 보인다).
+    // 그래서 정렬 기준은 구간의 앞쪽(Y가 낮은) 끝점에 고정하고, 같은 줄/옆 줄 원목끼리 앞뒤가 맞도록
+    // 진행분의 일부만 더한다. 구간 Y차 0.25 x 0.15 = 0.0375라 옆 타일과의 여유(0.055) 안에 머문다.
+    private const float LogOnBeltSortFollow = 0.15f;
+
     // 원목이 지나갈 경로. 손으로 찍은 체크포인트 몇 개만 잇던 방식은 그 직선이 벨트 타일이 놓인
     // 아이소메트릭 대각선(타일 간격 0.5, 0.25 = 기울기 0.5)과 미세하게 어긋나서, 구간 중간으로
     // 갈수록 원목이 레일 밖으로 밀려 보였다. 지금은 벨트 타일 트랜스폼에서 경로를 그대로 만들어
@@ -309,6 +316,36 @@ public class LogInBelt : MonoBehaviour
         return best;
     }
 
+    // 원목이 path[_targetIndex - 1] -> path[_targetIndex] 구간에 있을 때의 정렬 높이를 넣는다.
+    // 정렬 기준 지면 Y = (구간 앞쪽 끝점 Y - LogOnBeltSortHeight) + 진행분 x LogOnBeltSortFollow.
+    // 타일 중심(구간 시작점)에서는 예전과 같은 LogOnBeltSortHeight가 된다.
+    // 배출 연출 중(구간을 벗어나 더 미끄러지는 중)에는 진행분을 구간 길이로 묶어 마지막 값에 멈춘다.
+    private void ApplyBeltSortHeight(LogItem _item, int _targetIndex)
+    {
+        if (_item == null) return;
+
+        if (_targetIndex <= 0 || _targetIndex >= path.Count)
+        {
+            _item.SetHeight(LogOnBeltSortHeight);
+            return;
+        }
+
+        float fromY = path[_targetIndex - 1].Position.y;
+        float toY = path[_targetIndex].Position.y;
+        float frontY = Mathf.Min(fromY, toY);
+        float rise = Mathf.Clamp(_item.transform.position.y - frontY, 0f, Mathf.Abs(toY - fromY));
+
+        // CustomSortable은 (위치 Y - 높이)를 지면으로 쓰므로, 원하는 지면이 나오도록 높이를 거꾸로 맞춘다.
+        float groundY = frontY - LogOnBeltSortHeight + rise * LogOnBeltSortFollow;
+        _item.SetHeight(_item.transform.position.y - groundY);
+    }
+
+    // 배출 연출 중인 원목은 마지막 구간(마지막 타일 -> 배출 지점)을 기준으로 한다.
+    private void ApplyExitSortHeight(LogItem _item)
+    {
+        ApplyBeltSortHeight(_item, path.Count - 1);
+    }
+
     // 마지막으로 애니메이터에 실제로 넣은 속도. 값이 그대로인데 매 프레임 Animator.speed를
     // 건드리지 않기 위한 캐시다. NaN은 "아직 적용한 적 없음"이라 무조건 한 번 적용된다.
     private float appliedAnimationSpeed = float.NaN;
@@ -346,7 +383,6 @@ public class LogInBelt : MonoBehaviour
 
         Sound.Play(SoundID.ConvayerPut, entryPos, GetSoundVolume());
 
-        _item.SetHeight(LogOnBeltSortHeight);
         // 아이템을 첫 번째 벨트 타일 중심으로 즉시 이동
         _item.transform.position = entryPos;
 
@@ -355,6 +391,7 @@ public class LogInBelt : MonoBehaviour
 
         // 다음 목표 인덱스 설정 (경로 지점이 1개보다 많으면 1번부터, 아니면 0번 도달 처리 대기)
         int nextTarget = path.Count > 1 ? 1 : 0;
+        ApplyBeltSortHeight(_item, nextTarget);
         activeItems.Add(new BeltItem(_item, nextTarget));
 
         // 보석 등급이면 벨트 위에서도 반짝임을 붙인다(제재목 포함).
@@ -413,6 +450,7 @@ public class LogInBelt : MonoBehaviour
                 step
             );
 
+            ApplyBeltSortHeight(beltItem.item, beltItem.targetIndex);
             beltItem.item.UpdateSortingOrder();
 
             // 도달 확인
@@ -497,6 +535,7 @@ public class LogInBelt : MonoBehaviour
 
             if (dItem.item != null)
             {
+                ApplyExitSortHeight(dItem.item);
                 dItem.item.UpdateSortingOrder();
             }
 
@@ -680,13 +719,14 @@ public class LogInBelt : MonoBehaviour
                 LogItem newItem = _poolingManager.GetLogItem(data);
                 if (newItem != null)
                 {
-                    newItem.SetHeight(LogOnBeltSortHeight);
                     newItem.transform.position = itemData.position;
                     newItem.durability = itemData.itemData.durability;
-                    newItem.UpdateSortingOrder();
                     // targetIndex는 저장 당시 경로 기준이라 그대로 믿을 수 없다(경로 지점 수가 바뀐
                     // 세이브 호환). 저장된 위치에서 다음 목표를 다시 찾는다.
-                    activeItems.Add(new BeltItem(newItem, ResolveTargetIndex(itemData.position)));
+                    int targetIndex = ResolveTargetIndex(itemData.position);
+                    ApplyBeltSortHeight(newItem, targetIndex);
+                    newItem.UpdateSortingOrder();
+                    activeItems.Add(new BeltItem(newItem, targetIndex));
 
                     // 가공이 끝난 제재목이면 외형을 되돌린다(스프라이트만 바뀌므로 별도 복원이 필요하다).
                     if (itemData.itemData.bIsTimber) newItem.SetTimberSprite();
@@ -713,9 +753,9 @@ public class LogInBelt : MonoBehaviour
                 LogItem newItem = _poolingManager.GetLogItem(data);
                 if (newItem != null)
                 {
-                    newItem.SetHeight(LogOnBeltSortHeight);
                     newItem.transform.position = dItemData.position;
                     newItem.durability = dItemData.itemData.durability;
+                    ApplyExitSortHeight(newItem);
                     newItem.UpdateSortingOrder();
                     deactivatingItems.Add(new DeactivatingItem(newItem, dItemData.remainingTime));
 
