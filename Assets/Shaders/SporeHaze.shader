@@ -57,6 +57,7 @@ Shader "Custom/2D/SporeHaze"
             HLSLPROGRAM
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Core2D.hlsl"
             #include "Include/StageAmbienceCommon.hlsl"
+            #include "Include/StageAmbienceFade.hlsl"
 
             #pragma vertex LitVertex
             #pragma fragment LitFragment
@@ -185,7 +186,8 @@ Shader "Custom/2D/SporeHaze"
 
             half4 LitFragment(Varyings input) : SV_Target
             {
-                float haze = SampleHaze(input.hazePositionWS);
+                // 로그라이크 지형 전환 때 서서히 끄고 켠다(StageAmbienceFade.hlsl, 본편은 늘 그대로).
+                float haze = SampleHaze(input.hazePositionWS) * StageAmbienceVisibility(input.hazePositionWS);
                 if (haze <= 0.0)
                 {
                     discard;

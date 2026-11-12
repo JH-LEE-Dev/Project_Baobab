@@ -19,9 +19,10 @@ public class StageCloudRain : MonoBehaviour
     // 화면 아래 밖에서 땅 자리를 더 고르는 거리(월드)
     private const float GroundMarginBelowScreen = 2f;
     // 땅에 닿을 때 튀는 물방울 그림(픽셀)
-    private const int SplashFrameWidth = 7;
-    private const int SplashArtRows = 4;
-    private const int SplashFrameCount = 3;
+    // 로그라이크 타일 파도의 물가 물보라(RoguelikeTileWaveFeedback)도 같은 그림을 쓴다.
+    internal const int SplashFrameWidth = 7;
+    internal const int SplashArtRows = 4;
+    internal const int SplashFrameCount = 3;
 
     // //내부 의존성
     private CloudRainSettings settings;
@@ -174,7 +175,7 @@ public class StageCloudRain : MonoBehaviour
     }
 
     // 7픽셀 폭 물방울 그림 3장(아래 4줄에 그린다): 땅에 부딪힘 → 양옆 위로 튐 → 바깥으로 떨어지며 옅어짐.
-    private static Texture2D CreateSplashTexture(int _frameHeight)
+    internal static Texture2D CreateSplashTexture(int _frameHeight)
     {
         int width = SplashFrameWidth * SplashFrameCount;
         Texture2D texture = new Texture2D(width, _frameHeight, TextureFormat.RGBA32, false, false);
@@ -252,7 +253,8 @@ public class StageCloudRain : MonoBehaviour
         float top = cam.orthographicSize;
         float area = halfWidth * 2f * (top - bottom);
 
-        attemptAccum += Mathf.Max(0f, settings.searchesPerSecondPerArea) * area * Time.deltaTime;
+        // 로그라이크 지형 전환 때는 비의 양이 연출 세기를 따른다(StageAmbienceFade, 본편은 늘 1).
+        attemptAccum += Mathf.Max(0f, settings.searchesPerSecondPerArea) * area * StageAmbienceFade.Visibility * Time.deltaTime;
         int attempts = Mathf.Min((int)attemptAccum, MaxAttemptsPerFrame);
         attemptAccum -= (int)attemptAccum;
         if (attempts <= 0)
@@ -290,6 +292,11 @@ public class StageCloudRain : MonoBehaviour
                 Vector2 offset = Random.insideUnitCircle * radius;
                 Vector2 ground = core + new Vector2(offset.x, offset.y * 0.5f);
                 if (false == IsCloudShadow(ground, time))
+                {
+                    continue;
+                }
+                // 로그라이크 지형 전환에서 새 연출이 파도를 따라 번져 켜지는 동안은 켜진 자리에만 띄운다(StageAmbienceFade, 본편은 늘 true).
+                if (false == StageAmbienceFade.ShowsAt(ground))
                 {
                     continue;
                 }

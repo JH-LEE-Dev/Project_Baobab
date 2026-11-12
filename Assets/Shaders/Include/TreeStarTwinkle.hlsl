@@ -1,6 +1,8 @@
 #ifndef TREE_STAR_TWINKLE_INCLUDED
 #define TREE_STAR_TWINKLE_INCLUDED
 
+#include "StageAmbienceFade.hlsl"
+
 // 나무 별빛 반짝임. 나무 그림에서 별점 색 픽셀만 골라, 점마다 다른 박자로 잠깐 밝아졌다 평소 밝기로 돌아오게 한다.
 // 그림의 색을 바꾸지 않고 밝기만 곱한다. 점 하나는 텍스처 픽셀 하나라서, 텍셀 자리(월드 픽셀 격자)로 박자를 정한다.
 // 나무 셰이더(Custom-Sprite-Default-Tree)가 _MainTex 선언 뒤에 include 한다.
@@ -58,7 +60,8 @@ half3 ApplyTreeStarTwinkle(half3 _color, float2 _uv, float2 _positionWS, float2 
     float local = frac(_Time.y / period + TreeStarTwinkleHash21(texelId + 9.4));
     float duty = max(_TreeTwinkleC.x, 0.01);
     float pulse = local < duty ? sin(local / duty * 3.14159) : 0.0;
-    return _color * (half)lerp(_TreeTwinkleA.y, _TreeTwinkleA.z, pulse);
+    // 로그라이크 지형 전환 때 서서히 끄고 켠다(StageAmbienceFade.hlsl, 본편은 늘 그대로).
+    return StageAmbienceFadeColor(_color, _color * (half)lerp(_TreeTwinkleA.y, _TreeTwinkleA.z, pulse), _positionWS);
 }
 
 #endif // TREE_STAR_TWINKLE_INCLUDED

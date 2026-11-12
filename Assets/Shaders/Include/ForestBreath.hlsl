@@ -1,6 +1,8 @@
 #ifndef FOREST_BREATH_INCLUDED
 #define FOREST_BREATH_INCLUDED
 
+#include "StageAmbienceFade.hlsl"
+
 // 숲의 숨결. 화면 밖 먼 곳에서 출발한 느린 빛 물결 하나가 땅을 따라 화면을 쓸고 지나간다.
 // 물결 자리는 StageForestBreath가 매 프레임 전역값으로 넘기고, 꽃 장식·물 셰이더가 같은 값을 읽는다.
 // 숨쉬는 장식(StaticObj)은 StageForestBreath.Sample이 같은 식을 CPU에서 계산한다. 식을 바꾸면 둘 다 고친다.
@@ -88,7 +90,8 @@ float ForestBreathProfile(float _passed, float2 _positionWS)
     float up = smoothstep(0.0, rise, _passed);
     float down = 1.0 - smoothstep(rise, rise + fall, _passed);
     float strength = lerp(0.65, 1.0, ForestBreathNoise(_positionWS / (max(_ForestBreathB.w, 0.5) * 1.7) + 40.0));
-    return up * down * strength * saturate(_ForestBreathD.y);
+    // 로그라이크 지형 전환 때 물결 전체를 서서히 끄고 켠다(StageAmbienceFade.hlsl, 본편은 늘 그대로).
+    return up * down * strength * saturate(_ForestBreathD.y) * StageAmbienceVisibility(_positionWS);
 }
 
 // 이 자리의 숨결 밝기(0~1). 물결이 없으면 0.
@@ -143,7 +146,7 @@ float2 ForestBreathGlint(float2 _texelId, float _cellSize, float _ppu, float _co
         return 0.0;
     }
 
-    float fade = sin(t * 3.14159) * (0.45 + 0.55 * ForestBreathProfile(passed, spotWS)) * saturate(_ForestBreathD.y);
+    float fade = sin(t * 3.14159) * (0.45 + 0.55 * ForestBreathProfile(passed, spotWS)) * saturate(_ForestBreathD.y) * StageAmbienceVisibility(spotWS);
     return manhattan < 0.5 ? float2(fade, 0.0) : float2(0.0, fade);
 }
 

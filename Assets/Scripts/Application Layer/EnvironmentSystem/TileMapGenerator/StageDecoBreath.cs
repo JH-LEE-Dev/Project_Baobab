@@ -7,7 +7,7 @@ using UnityEngine;
 /// 숲의 숨결(StageForestBreath) 물결이 지나가는 동안에는 물결 박자에 맞춰 함께 밝아진다(두 밝기를 더한다).
 /// 장식의 밝기 값(StaticObj HDR 배수)만 바꾸므로 렌더링만 바뀌고 게임 동작에는 영향이 없다.
 /// 해당 씬에 붙여 두므로 씬이 내려가면 같이 사라지고, 다시 켤 때는 이전 것을 지우고 새로 만든다.
-/// 꺼진 곳·로그라이크에서는 아무것도 만들지 않는다.
+/// 꺼진 곳·장식이 없는 곳(로그라이크 섬)에서는 아무것도 만들지 않는다.
 /// </summary>
 public class StageDecoBreath : MonoBehaviour
 {
@@ -25,7 +25,7 @@ public class StageDecoBreath : MonoBehaviour
         Remove();
 
         if (null == _settings || false == _settings.enabled || null == _generator || _settings.amount <= 0f
-            || null == _settings.decoPrefabs || 0 == _settings.decoPrefabs.Count || GameModeContext.IsRoguelike)
+            || null == _settings.decoPrefabs || 0 == _settings.decoPrefabs.Count)
         {
             return;
         }

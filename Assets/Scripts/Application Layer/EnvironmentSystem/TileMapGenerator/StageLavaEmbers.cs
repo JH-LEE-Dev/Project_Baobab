@@ -7,7 +7,8 @@ using UnityEngine.Tilemaps;
 /// 비용을 줄이려고 용암 칸 목록을 만들거나 훑지 않는다. 매 프레임 화면 안 무작위 자리 몇 곳만 골라
 /// 그 자리가 물(용암) 타일맵 칸일 때만 튀게 하므로, 보이는 용암이 넓을수록 자주 튀고 안 보이면 칸 조회 몇 번으로 끝난다.
 /// 렌더링만 바꾸고 게임 동작에는 영향이 없다. 해당 씬에 붙여 두므로 씬이 내려가면 같이 사라지고,
-/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳·로그라이크에서는 아무것도 만들지 않는다.
+/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳에서는 아무것도 만들지 않는다.
+/// 로그라이크 지형 전환 때는 새로 튀는 양이 연출 세기(StageAmbienceFade.Visibility)를 따른다.
 /// </summary>
 public class StageLavaEmbers : MonoBehaviour
 {
@@ -29,7 +30,7 @@ public class StageLavaEmbers : MonoBehaviour
         Remove();
 
         if (null == _settings || false == _settings.enabled || null == _settings.material || null == _lavaTilemap
-            || _settings.samplesPerSecond <= 0f || GameModeContext.IsRoguelike)
+            || _settings.samplesPerSecond <= 0f)
         {
             return;
         }
@@ -49,7 +50,11 @@ public class StageLavaEmbers : MonoBehaviour
     {
         if (null != current)
         {
-            Destroy(current.gameObject);
+            // 로그라이크 지형 전환으로 바뀔 때는 이미 떠 있는 알갱이가 수명대로 사라지게 둔다(StageAmbienceFade).
+            if (false == StageAmbienceFade.TryRetire(current))
+            {
+                Destroy(current.gameObject);
+            }
             current = null;
         }
     }
@@ -115,7 +120,7 @@ public class StageLavaEmbers : MonoBehaviour
         }
 
         int maxPerFrame = Mathf.Max(1, settings.maxSamplesPerFrame);
-        pendingSamples = Mathf.Min(pendingSamples + settings.samplesPerSecond * deltaTime, maxPerFrame * MaxPendingFrames);
+        pendingSamples = Mathf.Min(pendingSamples + settings.samplesPerSecond * StageAmbienceFade.Visibility * deltaTime, maxPerFrame * MaxPendingFrames);
         int samples = Mathf.Min((int)pendingSamples, maxPerFrame);
         if (samples <= 0)
         {
@@ -149,6 +154,8 @@ public class StageLavaEmbers : MonoBehaviour
         ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams();
 
         float gravity = Mathf.Max(0.01f, settings.gravity);
+        // 로그라이크 지형 전환에서 새 연출이 파도를 따라 번져 켜지는 동안은 켜진 자리에만 띄운다(StageAmbienceFade, 본편은 늘 true).
+        if (false == StageAmbienceFade.ShowsAt(_origin)) return;
 
         for (int k = 0; k < count; k++)
         {

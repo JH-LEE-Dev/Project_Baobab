@@ -7,7 +7,7 @@ using UnityEngine;
 /// 박자는 버섯 자리로 정해지므로(자리 해시) 버섯마다 따로 기억할 것이 없고, 매 프레임 보이는 버섯만 훑는다.
 /// 뿜기 직전에는 갓이 서서히 밝아졌다가 뿜는 순간 가장 밝고, 뿜은 뒤 원래 밝기로 돌아온다(숨쉬기, 장식의 밝기 값만 바꾼다).
 /// 렌더링만 바꾸고 게임 동작에는 영향이 없다. 해당 씬에 붙여 두므로 씬이 내려가면 같이 사라지고,
-/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳·로그라이크에서는 아무것도 만들지 않는다.
+/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳·장식이 없는 곳(로그라이크 섬)에서는 아무것도 만들지 않는다.
 /// </summary>
 public class StageMushroomSpores : MonoBehaviour
 {
@@ -29,7 +29,7 @@ public class StageMushroomSpores : MonoBehaviour
         Remove();
 
         if (null == _settings || false == _settings.enabled || null == _settings.material || null == _generator
-            || null == _settings.mushroomPrefabs || 0 == _settings.mushroomPrefabs.Count || GameModeContext.IsRoguelike)
+            || null == _settings.mushroomPrefabs || 0 == _settings.mushroomPrefabs.Count)
         {
             return;
         }

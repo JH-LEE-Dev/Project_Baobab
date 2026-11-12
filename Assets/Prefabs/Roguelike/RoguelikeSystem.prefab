@@ -63,6 +63,8 @@ MonoBehaviour:
     treeTypes: 0a0000000b0000000c000000
   islandReferenceViewSize: {x: 20, y: 11.25}
   islandEdgeWaterTiles: 1
+  islandShape: 1
+  islandDiamondEdgeWaterTiles: 0.5
   centerSafeZoneRadius: 2
   tileWaveSettings:
     frontSpeed: 11
@@ -91,6 +93,19 @@ MonoBehaviour:
     lavaLightColor: {r: 1, g: 0.72, b: 0.3, a: 1}
     crackGlow: 1
     crackGlowColor: {r: 0.62, g: 0.9, b: 1, a: 0.7}
+    tierLightColors:
+    - mapType: 2
+      color: {r: 0.84, g: 1, b: 0.6, a: 1}
+    - mapType: 3
+      color: {r: 1, g: 0.74, b: 0.96, a: 1}
+    - mapType: 4
+      color: {r: 0.72, g: 0.82, b: 1, a: 1}
+    - mapType: 5
+      color: {r: 1, g: 0.72, b: 0.3, a: 1}
+    anticipationSeconds: 0.14
+    anticipationDepth: 0.1875
+    anticipationRadius: 4.5
+    anticipationReleaseSeconds: 0.12
     refractionMaterial: {fileID: 2100000, guid: 54cfc9e5d0f24ee42b05ed1c76223983, type: 2}
     refractionPixels: 2
     refractionWidth: 1.2
@@ -99,6 +114,23 @@ MonoBehaviour:
     backgroundPieceFadeSeconds: 0.3
     backgroundPieceCells: 3
     viewMarginTiles: 2
+  tileWaveFeedbackSettings:
+    frontTickSound: -854861696
+    frontTickSpacing: 1.5
+    frontTickVolume: 0.35
+    frontTickPitch: {x: 0.8, y: 1.35}
+    shoreSound: -568122919
+    shoreVolume: 0.4
+    shorePitch: 0.75
+    splashMaterial: {fileID: 2100000, guid: a994e683f21422642ab5945b27c74b71, type: 2}
+    splashesPerPoint: 2
+    splashScatter: 0.12
+    splashSeconds: 0.3
+    splashColor: {r: 0.85, g: 0.93, b: 1, a: 0.8}
+    lavaSplashColor: {r: 1, g: 0.72, b: 0.3, a: 0.9}
+    sortingLayerName: Objects
+    sortingOrder: 32767
+    maxSplashes: 256
   fieldCloudSettings:
     count: 35
     minSpeed: 0.07

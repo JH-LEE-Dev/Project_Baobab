@@ -12,6 +12,7 @@
 // _WaterDepthDeepColor : 가장 깊은 곳에서 곱하는 색
 // _ShoreMapTex / _ShoreMapA·MapA·MapB·MapC : 물가 지도(칸마다 1 + 물가까지 칸 수 / 255). _ShoreMapA.x가 0이면 그리지 않는다.
 #include "StageAmbienceCommon.hlsl"
+#include "StageAmbienceFade.hlsl"
 
 float4 _WaterDepthA;
 float4 _WaterDepthB;
@@ -73,6 +74,8 @@ half3 ApplyWaterDepthAt(half3 _color, float2 _centerWS, float2 _texelId, float3 
     float depth = saturate((WaterDepthShoreDistance(centerWS) - _WaterDepthB.x) / max(_WaterDepthB.y - _WaterDepthB.x, 0.1));
     float bands = max(_WaterDepthA.z - 1.0, 1.0);
     float level = saturate(floor(depth * bands + 0.5 + (WaterDepthBayer(texelId) - 0.5) * _WaterDepthA.w) / bands);
+    // 로그라이크 지형 전환 때 서서히 끄고 켠다(StageAmbienceFade.hlsl, 본편은 늘 그대로).
+    level *= StageAmbienceVisibility(centerWS);
     return _color * (half3)lerp(float3(1.0, 1.0, 1.0), _WaterDepthDeepColor.rgb, level);
 }
 

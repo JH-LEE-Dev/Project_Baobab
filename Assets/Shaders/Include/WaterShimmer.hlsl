@@ -16,6 +16,7 @@
 // 숲의 숨결(ForestBreath.hlsl) 물결이 지나가는 동안에는 물결을 따라 수면에 반짝임이 흩뿌려지고 테두리가 함께 물든다.
 #include "StageAmbienceCommon.hlsl"
 #include "ForestBreath.hlsl"
+#include "StageAmbienceFade.hlsl"
 
 float4 _WaterShimmerA;
 float4 _WaterShimmerB;
@@ -82,7 +83,7 @@ float4 ComputeForestBreathWaterSparkle(float2 _texelId, float _cellSize, float _
 // rgb = 덮을 색, a = 덮는 비율(0이면 그대로).
 // _centerWS: 텍셀 중심 월드 위치(StageAmbienceTexelCenterWS), _texelId: floor(_centerWS * ppu). 물 셰이더가 한 번만 구해 넘긴다.
 // _texColor는 정점색을 곱하기 전 텍스처 색이다.
-float4 ComputeWaterShimmerAt(float2 _centerWS, float2 _texelId, float3 _texColor)
+float4 ComputeWaterShimmerAtCore(float2 _centerWS, float2 _texelId, float3 _texColor)
 {
     if (false == IsWaterShimmerEnabled())
     {
@@ -165,6 +166,14 @@ float4 ComputeWaterShimmerAt(float2 _centerWS, float2 _texelId, float3 _texColor
     }
 
     return 0.0;
+}
+
+// 로그라이크 지형 전환 때 서서히 끄고 켠다(StageAmbienceFade.hlsl, 본편은 늘 그대로).
+float4 ComputeWaterShimmerAt(float2 _centerWS, float2 _texelId, float3 _texColor)
+{
+    float4 shimmer = ComputeWaterShimmerAtCore(_centerWS, _texelId, _texColor);
+    shimmer.a *= StageAmbienceVisibility(_centerWS);
+    return shimmer;
 }
 
 float4 ComputeWaterShimmer(float2 _uv, float2 _positionWS, float4 _texelSize, float3 _texColor)

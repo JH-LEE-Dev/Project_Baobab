@@ -86,6 +86,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     [SerializeField] private float centerSafeZoneRadius = 2f;
     [Tooltip("바닥 타일 파도(기획서 4-1 진입 3단계, 3-4 지형 전환 공용) 수치.")]
     [SerializeField] private RoguelikeTileWaveSettings tileWaveSettings = new RoguelikeTileWaveSettings();
+    [Tooltip("바닥 타일 파도에 맞춘 소리·진동·물가 물보라 수치.")]
+    [SerializeField] private RoguelikeTileWaveFeedbackSettings tileWaveFeedbackSettings = new RoguelikeTileWaveFeedbackSettings();
     [Tooltip("섬 둘레 물에 비치는 구름 수치. 본편 던전 구름 값은 바꾸지 않는다.")]
     [SerializeField] private FieldCloudSettings fieldCloudSettings = new FieldCloudSettings();
     [Tooltip("섬 둘레 물에 띄우는 장식(맵 종류별 본편 물 장식) 수치.")]
@@ -159,9 +161,12 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private readonly RoguelikeProductionGate productionGate = new RoguelikeProductionGate();
     private readonly RoguelikeUICoordinator uiCoordinator = new RoguelikeUICoordinator();
     private readonly RoguelikeTileWave tileWave = new RoguelikeTileWave();
+    private readonly RoguelikeTileWaveFeedback tileWaveFeedback = new RoguelikeTileWaveFeedback();
     private readonly RoguelikeWaterDeco waterDeco = new RoguelikeWaterDeco();
     private readonly RoguelikeCloudFade cloudFade = new RoguelikeCloudFade();
     private Coroutine tileWaveCoroutine;
+    // 티어 전환 때 직전 지형의 분위기 연출을 끄고 새 지형의 연출을 켜는 코루틴(AmbienceCrossfadeRoutine)
+    private Coroutine ambienceCrossfadeCoroutine;
     private RoguelikeWaveTreeStrategySO waveStrategy;
     private RoguelikeRecordData records;
 
@@ -219,6 +224,11 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private const string SessionInventoryLockOwner = "RoguelikeSession";
     // 입장 암전이 HUD 내림 모션을 기다리는 상한(초, 검은 화면 아래로 들어온 때부터). 모션이 멈춰 버려도 진입이 막히지 않게 한다.
     private const float EntryHudSettleLimitSeconds = 2f;
+    // 티어 전환 때 직전 지형의 분위기 연출이 서서히 꺼지는 시간(초, 파도와 함께 돈다)
+    private const float AmbienceFadeOutSeconds = 0.6f;
+    // 새 지형의 연출이 파도를 따라 번져 켜지는 원의 가장자리 폭(바닥 평면 거리)과, 연출을 바꾼 순간 원이 파도를 따라잡는 속도(앞머리 속도 배)
+    private const float AmbienceRevealBand = 2.5f;
+    private const float AmbienceRevealCatchUp = 2.5f;
 
     private RunRecordEntry lastRunRecord;
     private int lastClearRank = -1;
@@ -340,6 +350,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         effectApplier.SetMoveSpeedCap(balance.maxMoveSpeedPercent);
         productionGate.Initialize(GetFallbackSeconds, maxProductionWaitSeconds);
         tileWave.Initialize(environmentSystem, tileWaveSettings);
+        tileWaveFeedback.Initialize(tileWave, tileWaveFeedbackSettings, transform);
         waterDeco.Initialize(environmentSystem, waterDecoSettings, transform);
         cloudFade.Initialize(environmentSystem, transform);
 
@@ -393,6 +404,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         flowCoroutine = null;
         tileWaveCoroutine = null;
         tileWave.Release();
+        tileWaveFeedback.Release();
         productionGate.CancelAll();
         RoguelikeScreenTransition.ClearIfCovering();
 
@@ -750,6 +762,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         uiCoordinator.Tick();
         waterDeco.Tick(tileWave, Time.deltaTime);
         cloudFade.Tick(tileWave, Time.deltaTime);
+        tileWaveFeedback.Tick();
 
         DebugTick();
     }

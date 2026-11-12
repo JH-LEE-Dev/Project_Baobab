@@ -21,6 +21,7 @@
 // _WaterMagmaCrustColorA/B : 껍질 바탕색·얼룩색, _WaterMagmaCrustRimColor : 빛나는 가장자리 색
 #include "StageAmbienceCommon.hlsl"
 #include "LavaSeaMap.hlsl"
+#include "StageAmbienceFade.hlsl"
 
 float4 _WaterMagmaA;
 float4 _WaterMagmaB;
@@ -188,7 +189,7 @@ float4 ComputeWaterMagmaCrust(float2 _centerWS)
 
 // rgb = 덮을 색, a = 덮는 비율(0이면 그대로). _texColor는 정점색을 곱하기 전 텍스처 색이다.
 // _onCrust는 굳은 껍질(빛나는 가장자리 포함)을 칠했으면 참이다. 껍질 위에는 거품을 올리지 않는다.
-float4 ComputeWaterMagma(float2 _uv, float2 _positionWS, float4 _texelSize, float3 _texColor, out bool _onCrust)
+float4 ComputeWaterMagmaCore(float2 _uv, float2 _positionWS, float4 _texelSize, float3 _texColor, out bool _onCrust)
 {
     _onCrust = false;
     float3 d = abs(_texColor - _WaterMagmaSurface.rgb);
@@ -239,6 +240,14 @@ float4 ComputeWaterMagma(float2 _uv, float2 _positionWS, float4 _texelSize, floa
     }
     // 그 사이는 원래 수면색 그대로(먼 바다는 식은 색으로 그만큼 덮는다).
     return float4(_WaterMagmaSeaFarColor.rgb, darken);
+}
+
+// 로그라이크 지형 전환 때 서서히 끄고 켠다(StageAmbienceFade.hlsl, 본편은 늘 그대로).
+float4 ComputeWaterMagma(float2 _uv, float2 _positionWS, float4 _texelSize, float3 _texColor, out bool _onCrust)
+{
+    float4 magma = ComputeWaterMagmaCore(_uv, _positionWS, _texelSize, _texColor, _onCrust);
+    magma.a *= StageAmbienceVisibility(_positionWS);
+    return magma;
 }
 
 #endif // WATER_MAGMA_INCLUDED

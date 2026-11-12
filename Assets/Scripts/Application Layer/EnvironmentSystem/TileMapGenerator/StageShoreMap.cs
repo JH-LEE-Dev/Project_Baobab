@@ -9,7 +9,7 @@ using UnityEngine.Tilemaps;
 /// 물 깊이(WaterDepthSettings)를 켠 스테이지는 같은 값을 작은 텍스처 한 장으로 전역에 넘겨,
 /// 물 타일 셰이더(WaterDepth.hlsl)가 물가에서 멀수록 물을 깊은 색으로 칠한다.
 /// 맵을 만들 때 한 번 훑고 끝나며 매 프레임 하는 일은 없다. 렌더링만 바꾸고 게임 동작에는 영향이 없다.
-/// 이 지도를 쓰는 연출이 켜지지 않았거나 로그라이크면 비운다.
+/// 이 지도를 쓰는 연출이 켜지지 않았으면 비운다.
 /// </summary>
 public static class StageShoreMap
 {
@@ -45,7 +45,7 @@ public static class StageShoreMap
         int height = _bounds.size.y;
         if (null == _tileData || false == IsNeeded(_tileData) || null == _waterTiles || null == _grid
             || null == _groundTiles || _groundTiles.Length < _gridWidth * _gridHeight
-            || GameModeContext.IsRoguelike || width <= 0 || height <= 0 || _waterTiles.Length < width * height)
+            || width <= 0 || height <= 0 || _waterTiles.Length < width * height)
         {
             Clear();
             return;

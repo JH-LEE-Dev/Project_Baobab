@@ -40,6 +40,7 @@ Shader "Custom/StageCloudShadow"
             #pragma target 2.0
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Include/StageAmbienceFade.hlsl"
 
             struct Attributes
             {
@@ -139,7 +140,8 @@ Shader "Custom/StageCloudShadow"
 
                 float bands = max(_CloudB.z, 1.0);
                 float level = saturate(floor(amount * bands + 0.5 + (CloudBayer(texelId) - 0.5) * _CloudB.w) / bands);
-                return half4(lerp(half3(1.0, 1.0, 1.0), _CloudColor.rgb, (half)level), 1.0);
+                // 로그라이크 지형 전환 때 서서히 끄고 켠다(StageAmbienceFade.hlsl, 본편은 늘 그대로).
+                return half4(lerp(half3(1.0, 1.0, 1.0), _CloudColor.rgb, (half)(level * StageAmbienceVisibility(centerWS))), 1.0);
             }
             ENDHLSL
         }

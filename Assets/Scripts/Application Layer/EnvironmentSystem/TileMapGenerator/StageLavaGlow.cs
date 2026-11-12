@@ -6,7 +6,7 @@ using UnityEngine.Tilemaps;
 /// 바닥 셰이더(GroundLavaGlowLit)가 월드 위치를 칸 좌표로 바꿔 이 텍스처를 읽고, 용암 둘레 바닥을 주황으로 물들인다.
 /// 용암 칸은 1, 용암 가장자리 칸에서 radius(월드) 안쪽 바닥 칸은 거리만큼 줄어든 값, 나머지는 0이다.
 /// 가장자리 용암 칸에서만 둘레로 퍼뜨리므로 맵을 만들 때 한 번 몇 밀리초면 끝나고, 매 프레임 하는 일은 없다.
-/// 렌더링만 바꾸고 게임 동작에는 영향이 없다. 꺼진 스테이지·로그라이크는 전역값을 0으로 비워 아무것도 그리지 않는다.
+/// 렌더링만 바꾸고 게임 동작에는 영향이 없다. 꺼진 스테이지는 전역값을 0으로 비워 아무것도 그리지 않는다.
 /// </summary>
 public static class StageLavaGlow
 {
@@ -38,7 +38,7 @@ public static class StageLavaGlow
         int width = _bounds.size.x;
         int height = _bounds.size.y;
         if (null == _settings || false == _settings.enabled || null == _settings.groundMaterial || null == _lavaTiles || null == _grid
-            || GameModeContext.IsRoguelike || width <= 0 || height <= 0 || _lavaTiles.Length < width * height)
+            || width <= 0 || height <= 0 || _lavaTiles.Length < width * height)
         {
             Clear();
             return;

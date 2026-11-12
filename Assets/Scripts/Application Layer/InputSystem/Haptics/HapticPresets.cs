@@ -181,6 +181,19 @@ public static class HapticPresets
         new HapticStep(0.20f, 0.03f, 0.12f),
         new HapticStep(0.32f, 0.07f, 0.12f));
 
+    // 로그라이크 타일 파도 출발 - 바닥이 "우웅" 하고 한 번 일렁이며 퍼져 나간다. 지진(earthquake)과 같은 바닥 물결이지만 연출일 뿐이라
+    // 훨씬 약하게, 굵은 모터 위주로 짧게 차올랐다가 파도가 퍼지는 동안(약 0.55초) 잦아든다. 첫 순간은 킥으로 잡는다.
+    private static readonly HapticPattern roguelikeTileWave = new HapticPattern(
+        new HapticStep(0.30f, 0.10f, 0.06f),
+        new HapticStep(0.22f, 0.06f, 0.15f),
+        new HapticStep(0.14f, 0.03f, 0.17f),
+        new HapticStep(0.06f, 0f, 0.17f));
+
+    // 로그라이크 타일 파도가 바다에 닿음 - 물가에서 "찰싹" 한 번. 가는 모터로 또렷하게, 출발(roguelikeTileWave)보다 짧고 가볍다(총 0.14초).
+    private static readonly HapticPattern roguelikeTileWaveShore = new HapticPattern(
+        new HapticStep(0.30f, 0.40f, 0.05f),
+        new HapticStep(0.12f, 0.15f, 0.09f));
+
     private static readonly HapticPattern[] patterns = BuildPatterns();
 
     /// <summary>
@@ -241,6 +254,8 @@ public static class HapticPresets
         _table[(int)EHapticEvent.OverheatFull] = overheatFull;
         _table[(int)EHapticEvent.QuakeAftershock] = quakeAftershock;
         _table[(int)EHapticEvent.QuakeBuildUp] = quakeBuildUp;
+        _table[(int)EHapticEvent.RoguelikeTileWave] = roguelikeTileWave;
+        _table[(int)EHapticEvent.RoguelikeTileWaveShore] = roguelikeTileWaveShore;
 
         return _table;
     }
@@ -260,6 +275,8 @@ public static class HapticPresets
         _table[(int)EHapticEvent.VehicleDismount] = 0.5f;
         _table[(int)EHapticEvent.StaminaDeath] = 0.5f;
         _table[(int)EHapticEvent.Earthquake] = 0.5f;
+        _table[(int)EHapticEvent.RoguelikeTileWave] = 0.5f;
+        _table[(int)EHapticEvent.RoguelikeTileWaveShore] = 0.5f;
         // 기둥 여러 개가 한꺼번에 떨어질 때(0.35초 간격) 착지마다 따로 울리도록 그 간격보다 짧게 둔다.
         _table[(int)EHapticEvent.LootPillarLanding] = 0.3f;
         // 맞으면 밀려나는 동안(넉백·경직) 다시 맞지 않으므로 중복 호출 방지용으로만 둔다.

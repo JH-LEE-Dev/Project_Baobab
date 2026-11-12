@@ -11,7 +11,7 @@ using UnityEngine.Tilemaps;
 /// 뿜을 때 그 데코의 불빛이 잠깐 밝아지도록 데코 자리와 세기를 셰이더 전역값(_DecoSteamFlash, 4칸)으로 넘긴다
 /// (블룸 데코 숨쉬기 머티리얼이 읽는다. glowFlashDuration이 0이면 넘기지 않는다).
 /// 렌더링만 바꾸고 게임 동작에는 영향이 없다. 해당 씬에 붙여 두므로 씬이 내려가면 같이 사라지고,
-/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳·로그라이크에서는 아무것도 만들지 않는다.
+/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳·장식이 없는 곳(로그라이크 섬)에서는 아무것도 만들지 않는다.
 /// </summary>
 public class StageDecoSteam : MonoBehaviour
 {
@@ -60,8 +60,7 @@ public class StageDecoSteam : MonoBehaviour
     {
         Remove();
 
-        if (null == _settings || false == _settings.enabled || null == _settings.material || null == _decoTilemap
-            || GameModeContext.IsRoguelike)
+        if (null == _settings || false == _settings.enabled || null == _settings.material || null == _decoTilemap)
         {
             return;
         }
