@@ -5184,6 +5184,7 @@ MonoBehaviour:
   arenaHalfWidth: 9.5
   arenaHalfHeight: 4.75
   arenaCurtainHeightPx: 46
+  arenaCenterOffsetY: 0.25
   maxRadius: 4
   palette: 0
   bSoftLight: 1
