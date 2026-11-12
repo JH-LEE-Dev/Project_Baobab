@@ -24,6 +24,9 @@ public class LogProcessLine : MonoBehaviour
     // 처음 쓸 때 붙인다. 라인 GameObject에 붙어 있어서 라인이 꺼지면(철거·세이브 로드) 함께 멈추고 정리된다.
     private TopgradeAssessmentPresenter topgradePresenter;
 
+    // 평가 순간 평가기에서 상점으로 금화가 날아가는 연출을 그려 줄 상점. 돈 처리(LineMoneyEarnedEvent)와는 별개인 그림 통로다.
+    private ShopNPC moneyVisualShop;
+
     public int LineIndex => lineIndex;
     public LogInBelt InBelt => inBelt;
     public LogInBelt OutBelt => outBelt;
@@ -63,6 +66,9 @@ public class LogProcessLine : MonoBehaviour
 
         evaluator.logEvaluatedEvent -= OnLogEvaluated;
         evaluator.logEvaluatedEvent += OnLogEvaluated;
+
+        evaluator.TopgradeAssessedEvent -= OnTopgradeAssessedVisual;
+        evaluator.TopgradeAssessedEvent += OnTopgradeAssessedVisual;
     }
 
     private void ReleaseEvents()
@@ -72,6 +78,7 @@ public class LogProcessLine : MonoBehaviour
         cutter.CuttingDoneEvent -= CuttingDone;
         outBelt.LogOutEvent -= OnLogOutToEvaluator;
         evaluator.logEvaluatedEvent -= OnLogEvaluated;
+        evaluator.TopgradeAssessedEvent -= OnTopgradeAssessedVisual;
     }
 
     public void LogIn(LogItem _item)
@@ -127,6 +134,22 @@ public class LogProcessLine : MonoBehaviour
     private void OnLogEvaluated(long _money)
     {
         LineMoneyEarnedEvent?.Invoke(_money);
+
+        if (moneyVisualShop != null && evaluator.Storage != null)
+            moneyVisualShop.PlayDepositVisual(evaluator.Storage.transform.position, false);
+    }
+
+    // 특등품이면 금화가 더 날아간다(돈은 이미 2배로 처리된 뒤다).
+    private void OnTopgradeAssessedVisual(long _basePrice, long _finalPrice)
+    {
+        if (moneyVisualShop != null && evaluator.Storage != null)
+            moneyVisualShop.PlayDepositVisual(evaluator.Storage.transform.position, true);
+    }
+
+    /// <summary>평가 순간 금화가 날아갈 상점을 넘긴다(그림 전용). 꺼진 라인에도 미리 불러 둘 수 있다.</summary>
+    public void SetupMoneyPresentation(ShopNPC _shop)
+    {
+        moneyVisualShop = _shop;
     }
 
     public void SetGlobalSpeedMultiplier(float _mul)

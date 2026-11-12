@@ -92,6 +92,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         // 특등품 평가 연출 준비(꺼진 라인 포함). 쌍둥이 원목은 벨트 원목과 같은 풀에서 빌린다.
         for (int i = 0; i < allLines.Count; i++) allLines[i].SetupTopgradePresentation(logItemPoolingManager);
 
+        // 평가 순간 평가기 -> 상점 금화 연출(그림 전용, 꺼진 라인 포함).
+        for (int i = 0; i < allLines.Count; i++) allLines[i].SetupMoneyPresentation(shopNPC);
+
         if (activeLineCount <= 0) activeLineCount = 1; // 세이브 로드 전 기본값 (LoadSaveData에서 덮어씀)
         activeLineCount = Mathf.Clamp(activeLineCount, 1, allLines.Count);
 
