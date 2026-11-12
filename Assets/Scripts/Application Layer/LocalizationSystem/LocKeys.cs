@@ -122,6 +122,8 @@ public static class LocKeys
         public const int autoLoadInRestAreaName = 4194560;
         public const int whirlWindName = 4194561;
         public const int recoveryPower1Name = 4194562;
+        public const int sourceOfSpeed2Name = 4194563;
+        public const int logInsurance2Name = 4194564;
         public const int commonLevel = 4203304;
         public const int commonFree = 4203305;
         public const int commonMaxLevel = 4203306;

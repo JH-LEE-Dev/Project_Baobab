@@ -262,6 +262,7 @@ public enum SkillType
     LogInsurance3,
     WhirlWind,
     RecoveryPower1,
+    SourceOfSpeed2,
     MAX
 }
 

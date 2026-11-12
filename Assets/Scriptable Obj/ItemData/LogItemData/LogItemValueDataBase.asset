@@ -26,9 +26,9 @@ MonoBehaviour:
   - treeType: 6
     value: 1000
   - treeType: 7
-    value: 3500
+    value: 4200
   - treeType: 8
-    value: 7000
+    value: 8000
   - treeType: 9
     value: 20000
   - treeType: 10

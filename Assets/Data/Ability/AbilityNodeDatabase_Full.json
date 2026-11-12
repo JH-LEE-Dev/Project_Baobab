@@ -1,6 +1,38 @@
 ﻿{
     "nodes": [
         {
+            "skillType": "SourceOfSpeed2",
+            "nameLocId": 259,
+            "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
+            "gridX": -11,
+            "gridY": 6,
+            "parents": [
+                {
+                    "skillType": "LogInsurance1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "LogInsurance2",
+            "nameLocId": 260,
+            "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
+            "gridX": -11,
+            "gridY": 4,
+            "parents": [
+                {
+                    "skillType": "LogInsurance1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
             "skillType": "WhirlWind",
             "nameLocId": 257,
             "levelBadge": "M",

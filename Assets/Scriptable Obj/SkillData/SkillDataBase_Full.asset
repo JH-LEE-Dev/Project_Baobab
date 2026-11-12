@@ -13,6 +13,42 @@ MonoBehaviour:
   m_Name: SkillDataBase_Full
   m_EditorClassIdentifier: Assembly-CSharp::SkillDataBase
   skills:
+  - skillType: 123
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 700000
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 61
+      amountCurve:
+        type: 3
+        baseValue: 10
+        manualValues: []
+    prerequisiteSkills: 76000000
+  - skillType: 119
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 500000
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 122
+      amountCurve:
+        type: 3
+        baseValue: 20
+        manualValues: []
+    prerequisiteSkills: 76000000
   - skillType: 121
     maxLevel: 1
     cost:
@@ -218,7 +254,7 @@ MonoBehaviour:
     - skillCommandType: 61
       amountCurve:
         type: 3
-        baseValue: 10
+        baseValue: 5
         manualValues: []
     prerequisiteSkills: 22000000
   - skillType: 11
@@ -1504,11 +1540,11 @@ MonoBehaviour:
         type: 0
         baseValue: 0
         manualValues:
+        - 1000000
         - 1500000
         - 2000000
         - 2500000
         - 3000000
-        - 3500000
         - 4000000
         - 5000000
         - 6000000
@@ -1530,7 +1566,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 2000000
+        baseValue: 1000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -1584,7 +1620,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 2000000
+        baseValue: 1500000
         manualValues:
         - 5000000
         - 15000000
@@ -1607,7 +1643,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 5000000
+        baseValue: 3000000
         manualValues: []
       carrotCurve:
         type: 3
