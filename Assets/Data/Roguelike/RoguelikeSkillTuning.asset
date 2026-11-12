@@ -68,8 +68,8 @@ MonoBehaviour:
   spinShockwaveDamage: 400
   boomerangShockwaveCooldown: 0
   boomerangShockwaveMergeRadius: 0.6
-  spinBoomerangRadius: 2.2
-  spinBoomerangDamageMultiplier: 1
+  spinBoomerangDamageMultiplier: 6
+  spinBoomerangRadiusRatio: 1.15
   spinBoomerangCooldown: 0
   sporeComboMaxExplosionsPerFrame: 8
   sporeComboMaxPending: 48
@@ -83,6 +83,7 @@ MonoBehaviour:
   stellaDroneNovaStars: 9
   stellaDroneNovaDamage: 600
   stellaDroneStarSpawnDelay: 0.35
+  stellaDroneNovaDelay: 1
   stellaDroneSlotInset: 0.9
   stellaDroneLoneStarInterval: 1.5
   stellaDroneLoneStarRadius: 1.5

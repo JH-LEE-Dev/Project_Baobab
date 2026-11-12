@@ -710,7 +710,7 @@ public class Boomerang : MonoBehaviour
                             treeObj.ApplyOverheatBurn(burnStat.GetOverheatBurnRatio(overheatLevel), burnStat.overheatBurnTickCount, burnStat.overheatBurnTickInterval, false);
                         }
 
-                        if (bNotifyRun) RunCombatHooks.NotifyBoomerangHitTree(hitTreePos);
+                        if (bNotifyRun) RunCombatHooks.NotifyBoomerangHitTree(hitTreePos, transform.position, hitRadius);
                     }
                 }
                 else if (RunCombatOverrides.bSkillsHitRunTargets && hitScanResults[i] is IRunSkillHitTarget runTarget && runTarget.bCanBeHitBySkill

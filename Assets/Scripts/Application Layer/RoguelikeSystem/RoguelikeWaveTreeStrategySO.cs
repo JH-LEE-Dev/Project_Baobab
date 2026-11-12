@@ -162,6 +162,17 @@ public class RoguelikeWaveTreeStrategySO : TreeGenerationStrategySO
                 continue;
             }
 
+            // 필드가 비면 묶음 주기를 기다리지 않고 바로 한 묶음을 심고 주기를 처음부터 센다(기획서 v3.0 11-12).
+            // 나무 사망 처리(OnTreeDead → 목록에서 빼기)는 그 자리에서 끝나므로 이 코루틴이 도는 시점의 목록은 이미 정리돼 있다.
+            // 목표 달성으로 StopSpawning 된 뒤에는 위에서 걸러진다.
+            if (0 == _manager.ActiveTrees.Count)
+            {
+                batchTimer = BatchSeconds;
+                SpawnBatch(_manager, 0 < waveBatchSize ? waveBatchSize : TreeSpawnRules.TakeBatch(ref batchCarry, spawnInterval, BatchSeconds));
+                yield return null;
+                continue;
+            }
+
             // 묶음 주기마다 웨이브가 정한 정수 묶음(v2.6)을, 묶음이 없는 옛 데이터는 초당 스폰 × 주기를 한꺼번에 심는다. 상한을 넘는 몫은 SpawnBatch가 버린다.
             batchTimer -= Time.deltaTime;
             if (batchTimer <= 0f)

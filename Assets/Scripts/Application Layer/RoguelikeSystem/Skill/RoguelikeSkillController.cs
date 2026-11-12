@@ -150,8 +150,12 @@ public class RoguelikeSkillController : MonoBehaviour
     private const int StellaDroneSlotCount = 9;
     // 이 거리 안에 별이 있으면 그 칸은 찬 것으로 본다(별은 칸 위치에 정확히 놓이므로 작게 둔다).
     private const float StellaDroneSlotOccupiedDistance = 0.5f;
-    // 스텔라+드론: 확률 판정에 성공해 생성을 기다리는 별의 생성 예정 시각(오름차순). 생성 위치는 생성 순간의 첫 빈칸이다.
-    private readonly List<float> pendingStellaDroneStars = new List<float>(StellaDroneSlotCount);
+    // 스텔라+드론: 다음 별 생성 판정을 할 수 있는 시각(별이 생기면 생성 간격만큼 뒤로 민다, 기획서 v3.0 11-12 6-2).
+    private float nextStellaDroneRollTime;
+    // 스텔라+드론: 고정 칸이 다 찬 뒤 노바가 터질 시각. 0 이하면 아직 예약되지 않았다.
+    private float stellaDroneNovaTime;
+    // 드론 레이저를 스텔라+드론 조합 색으로 칠해 두었는지(조합이 켜지고 꺼질 때만 바꾼다).
+    private bool bDroneStellaTint;
 
     private readonly List<MarkedTree> markedTrees = new List<MarkedTree>(128);
     private readonly List<Contamination> contaminations = new List<Contamination>(64);
@@ -169,7 +173,19 @@ public class RoguelikeSkillController : MonoBehaviour
     private float nextOffroadPickTime;
     private float nextOffroadHitShakeTime;
 
-    private readonly List<Vector3> pendingBoomerangHits = new List<Vector3>(16);
+    // 부메랑이 나무를 맞힌 기록(나무 위치 · 그 순간 부메랑 위치 · 부메랑 판정 반경). 본편 판정 도중에 쌓이므로 UpdateCombos에서 처리한다.
+    private struct BoomerangHit
+    {
+        public Vector3 treePosition;
+        public Vector3 boomerangPosition;
+        public float hitRadius;
+    }
+
+    private readonly List<BoomerangHit> pendingBoomerangHits = new List<BoomerangHit>(16);
+    // 회전베기+부메랑: 이번 프레임에 회전베기를 터뜨린 부메랑 위치(같은 부메랑의 여러 타격을 하나로 합친다).
+    private readonly List<Vector3> spinBoomerangFired = new List<Vector3>(8);
+    // 같은 프레임 같은 부메랑의 타격은 부메랑 위치가 같다. 이 거리 안이면 같은 부메랑으로 본다.
+    private const float SpinBoomerangMergeDistance = 0.05f;
     // 포자 조합 3종이 예약한 대폭발 자리. 본편 판정 도중에 쌓이므로 Update(UpdateSporeComboExplosions)에서 일으킨다.
     private readonly List<Vector3> pendingSporeExplosions = new List<Vector3>(32);
     private readonly List<SporeComboBlast> recentSporeExplosions = new List<SporeComboBlast>(64);
@@ -192,7 +208,7 @@ public class RoguelikeSkillController : MonoBehaviour
     private float nextSpinBoomerangTime;
 
     private System.Action<Vector3> axeSwungHandler;
-    private System.Action<Vector3> boomerangHitHandler;
+    private System.Action<Vector3, Vector3, float> boomerangHitHandler;
     private System.Action<RoguelikeStar> starHitHandler;
     private System.Action<IReadOnlyList<Vector3>, IReadOnlyList<Vector3>> droneLaserHandler;
     private System.Action<Vector3> shockWaveHitHandler;
@@ -331,7 +347,7 @@ public class RoguelikeSkillController : MonoBehaviour
         pendingBoomerangHits.Clear();
         pendingSporeExplosions.Clear();
         recentSporeExplosions.Clear();
-        pendingStellaDroneStars.Clear();
+        ResetStellaDroneTimers();
     }
 
     /// <summary>
@@ -345,13 +361,11 @@ public class RoguelikeSkillController : MonoBehaviour
 
         bool bKeepStars = _bWaveEnd && modifiers.IsComboActive(ERoguelikeCombo.StellaDrone);
 
-        // 생성을 기다리던 스텔라+드론 별: 웨이브 종료면 바로 생성해 개수를 이어 가고, 런 종료면 버린다(기획서 v3.0 6-2 "웨이브 종료").
-        if (bKeepStars)
-        {
-            for (int i = 0; i < pendingStellaDroneStars.Count; i++) SpawnStellaDroneSlotStar();
-        }
+        // 노바 예약 · 생성 간격은 웨이브마다 처음부터 센다. 9개가 찬 채 다음 웨이브가 시작되면 그때부터 노바 지연을 다시 센다(기획서 v3.0 11-12 6-2).
+        ResetStellaDroneTimers();
 
-        pendingStellaDroneStars.Clear();
+        // 런이 끝나면 드론 레이저 색을 기본으로 돌린다.
+        if (false == _bWaveEnd) SetDroneStellaTint(false);
 
         if (false == bKeepStars)
         {
@@ -458,9 +472,12 @@ public class RoguelikeSkillController : MonoBehaviour
         if (bActive) pendingAxeSwings++;
     }
 
-    private void OnBoomerangHitTree(Vector3 _position)
+    private void OnBoomerangHitTree(Vector3 _treePosition, Vector3 _boomerangPosition, float _hitRadius)
     {
-        if (bActive && pendingBoomerangHits.Count < 64) pendingBoomerangHits.Add(_position);
+        if (bActive && pendingBoomerangHits.Count < 64)
+        {
+            pendingBoomerangHits.Add(new BoomerangHit { treePosition = _treePosition, boomerangPosition = _boomerangPosition, hitRadius = _hitRadius });
+        }
     }
 
     private void UpdateCombos(float _now)
@@ -505,14 +522,16 @@ public class RoguelikeSkillController : MonoBehaviour
         {
             bool bBoomerangShockwave = modifiers.IsComboActive(ERoguelikeCombo.BoomerangShockwave);
             bool bSpinBoomerang = modifiers.IsComboActive(ERoguelikeCombo.SpinBoomerang);
-            bool bSpinStruckThisFrame = false;
             float mergeSqr = Mathf.Max(0f, tuning.boomerangShockwaveMergeRadius);
             mergeSqr *= mergeSqr;
+            const float spinMergeSqr = SpinBoomerangMergeDistance * SpinBoomerangMergeDistance;
             boomerangShockwaveFired.Clear();
+            spinBoomerangFired.Clear();
 
             for (int i = 0; i < pendingBoomerangHits.Count; i++)
             {
-                Vector3 hit = pendingBoomerangHits[i];
+                BoomerangHit boomerangHit = pendingBoomerangHits[i];
+                Vector3 hit = boomerangHit.treePosition;
 
                 // 부메랑 + 충격파: 맞은 나무 주변으로 충격파가 추가로 터진다(부메랑·충격파 기본 능력은 유지).
                 // 같은 프레임에 거의 같은 자리(붙어 선 나무를 한 번에 꿰뚫은 경우)면 하나로 합친다 - 같은 자리 충격파가 겹쳐 쌓이지 않게.
@@ -523,13 +542,14 @@ public class RoguelikeSkillController : MonoBehaviour
                     Fire360ShockWave(hit);
                 }
 
-                // 회전베기 + 부메랑: 부메랑 타격 1회당 회전베기 1회(회전베기의 도끼 n타 발동은 꺼짐).
-                // 회전베기는 캐릭터 중심이라 한 프레임의 여러 타격은 같은 공격이 겹칠 뿐이다 - 프레임당 한 번만 친다.
-                if (bSpinBoomerang && false == bSpinStruckThisFrame && _now >= nextSpinBoomerangTime)
+                // 회전베기 + 부메랑: 부메랑이 나무를 타격할 때마다 날아가는 그 부메랑 자리에서 회전베기 1회(회전베기의 도끼 n타 발동은 꺼짐).
+                // 한 부메랑이 한 프레임에 여러 그루를 꿰뚫으면 부메랑 위치가 같으므로 하나로 합친다(부메랑 1개당 1회, 기획서 v3.0 11-12 6-2).
+                Vector3 boomerangPos = boomerangHit.boomerangPosition;
+                if (bSpinBoomerang && _now >= nextSpinBoomerangTime && false == IsNearAny(spinBoomerangFired, boomerangPos, spinMergeSqr))
                 {
                     nextSpinBoomerangTime = _now + tuning.spinBoomerangCooldown;
-                    bSpinStruckThisFrame = true;
-                    SpinStrikeAroundCharacter();
+                    spinBoomerangFired.Add(boomerangPos);
+                    SpinStrikeAroundBoomerang(boomerangPos, boomerangHit.hitRadius);
                 }
             }
 
@@ -567,13 +587,17 @@ public class RoguelikeSkillController : MonoBehaviour
         Publish(ERoguelikeSkillVfx.Shockwave360, _position, _position, 0f, sw.LifeTime, 0);
     }
 
-    private void SpinStrikeAroundCharacter()
+    /// <summary>
+    /// 회전베기 + 부메랑의 회전베기 1회. 중심은 나무를 맞힌 순간의 부메랑 위치, 반경은 부메랑 판정 반경 × spinBoomerangRadiusRatio(부메랑보다 조금 크다)라
+    /// 부메랑 범위 카드 · 패시브만 받고 도끼 범위 · 회전베기 카드 범위 · 회전베기 기본 범위는 받지 않는다. 피해는 도끼 피해 × spinBoomerangDamageMultiplier
+    /// 고정이고 회전베기 카드 피해 · 기본 배율은 받지 않는다. 공통 피해% 패시브는 도끼 피해 스탯에 이미 들어 있어 따로 곱하지 않는다(기획서 v3.0 11-12 6-2).
+    /// </summary>
+    private void SpinStrikeAroundBoomerang(Vector3 _center, float _boomerangHitRadius)
     {
         StatComponent stat = character.statComponent;
-        Vector3 center = character.transform.position;
-        // 회전베기 카드의 범위·회전 피해 증가는 회전베기 타격에만 붙는다(RunCombatOverrides). 이 회전베기도 같이 받는다.
-        float radius = tuning.spinBoomerangRadius * stat.axeAttackRangeMultiplier * RunCombatOverrides.WhirlwindRangeMultiplier;
-        float damage = stat.axeDamage * tuning.spinBoomerangDamageMultiplier * RunCombatOverrides.WhirlwindDamageMultiplier;
+        Vector3 center = _center;
+        float radius = Mathf.Max(0.01f, _boomerangHitRadius * tuning.spinBoomerangRadiusRatio);
+        float damage = stat.axeDamage * tuning.spinBoomerangDamageMultiplier;
 
         DamageTreesInRadius(center, radius, damage, false);
         if (RunEffectApplier.IsStarHitByActives(modifiers)) HitStarsInRadius(center, radius);
@@ -601,16 +625,17 @@ public class RoguelikeSkillController : MonoBehaviour
 
         bool bStellaDrone = modifiers.IsComboActive(ERoguelikeCombo.StellaDrone);
 
-        // 스텔라+드론은 필드의 별과 생성 대기 중인 별을 합쳐 노바 수(9칸)면 판정하지 않는다(기획서 v3.0 6-2 "생성 지연").
-        if (bStellaDrone ? activeStars.Count + pendingStellaDroneStars.Count >= StellaDroneNovaStars() : activeStars.Count >= MaxStars()) return;
+        // 스텔라+드론은 고정 칸(9칸)이 다 찼거나, 별이 생긴 뒤 생성 간격(0.35초)이 지나지 않았으면 판정하지 않는다(기획서 v3.0 11-12 6-2 "생성 간격").
+        if (bStellaDrone ? activeStars.Count >= StellaDroneNovaStars() || Time.time < nextStellaDroneRollTime : activeStars.Count >= MaxStars()) return;
 
         float chance = tuning.stellaBaseChance + modifiers.GetForSkill(ERunEffect.ChancePercent, ERoguelikeSkill.Stella);
         if (Random.value * 100f >= chance) return;
 
-        // 스텔라+드론의 별은 쓰러진 나무 자리가 아니라 잠시 뒤 섬 위 고정 칸에 생긴다(UpdateStellaDrone이 시각이 된 별을 놓는다).
+        // 스텔라+드론의 별은 쓰러진 나무 자리가 아니라 섬 위 고정 칸에 바로 생긴다.
         if (bStellaDrone)
         {
-            pendingStellaDroneStars.Add(Time.time + Mathf.Max(0f, tuning.stellaDroneStarSpawnDelay));
+            SpawnStellaDroneSlotStar();
+            nextStellaDroneRollTime = Time.time + Mathf.Max(0f, tuning.stellaDroneStarSpawnDelay);
             return;
         }
 
@@ -1725,20 +1750,16 @@ public class RoguelikeSkillController : MonoBehaviour
 
     private void UpdateStellaDrone(float _now)
     {
-        if (false == modifiers.IsComboActive(ERoguelikeCombo.StellaDrone))
+        bool bCombo = modifiers.IsComboActive(ERoguelikeCombo.StellaDrone);
+
+        // 조합 중에는 드론 레이저도 이음선 레이저와 같은 푸른색이다(기획서 v3.0 11-12 6-2).
+        SetDroneStellaTint(bCombo);
+
+        if (false == bCombo)
         {
             if (starLinks.Count > 0) starLinks.Clear();
-            pendingStellaDroneStars.Clear();
+            ResetStellaDroneTimers();
             return;
-        }
-
-        // 생성 지연(기획서 v3.0 6-2): 시각이 된 대기 별을 고정 칸에 놓는다. 대기 목록은 시각 오름차순이다.
-        int due = 0;
-        while (due < pendingStellaDroneStars.Count && pendingStellaDroneStars[due] <= _now) due++;
-        if (due > 0)
-        {
-            pendingStellaDroneStars.RemoveRange(0, due);
-            for (int i = 0; i < due; i++) SpawnStellaDroneSlotStar();
         }
 
         // 조합을 산 순간 이미 떠 있던 별도 더 이상 공격받지 않는다.
@@ -1749,12 +1770,25 @@ public class RoguelikeSkillController : MonoBehaviour
 
         if (activeStars.Count >= 2 && 0 == starLinks.Count) RebuildStarLinks();
 
-        // 고정 칸이 모두 별로 차면 노바. 모든 별이 사라지고 1번 칸부터 다시 모은다.
+        // 고정 칸이 모두 별로 차고 노바 지연(1.0초)이 지나면 노바. 모든 별이 사라지고 1번 칸부터 다시 모은다.
+        // 지연 동안은 아래 이음선 레이저를 계속 쏜다(기획서 v3.0 11-12 6-2).
         // 노바는 섬 중심에서 섬 전체를 치는 고정 크기다(기획서 v3.0 6-2, 범위 증가 영향 없음, 피해 증가는 받는다).
         // 반폭 · 반높이는 섬의 보이는 가장자리(칸 중심 반지름 + 반 칸)이고, 판정 반경은 그 둘 중 큰 값이라 섬 전체를 덮는다.
         // 이펙트는 아레나 마름모 노바라 position2에 반폭 · 반높이를 담아 보낸다(기획서 부록 C-3 4-11).
+        bool bNova = false;
         if (activeStars.Count >= StellaDroneNovaStars())
         {
+            if (stellaDroneNovaTime <= 0f) stellaDroneNovaTime = _now + Mathf.Max(0f, tuning.stellaDroneNovaDelay);
+            bNova = _now >= stellaDroneNovaTime;
+        }
+        else
+        {
+            stellaDroneNovaTime = 0f;
+        }
+
+        if (bNova)
+        {
+            stellaDroneNovaTime = 0f;
             float halfWidth = fieldRadiusX + fieldCellSize.x * 0.5f;
             float halfHeight = fieldRadiusY + fieldCellSize.y * 0.5f;
             float radius = Mathf.Max(halfWidth, halfHeight);
@@ -1794,6 +1828,21 @@ public class RoguelikeSkillController : MonoBehaviour
                 Publish(ERoguelikeSkillVfx.StarLinkBeam, a, b, width, 0f, 0);
             }
         }
+    }
+
+    private void ResetStellaDroneTimers()
+    {
+        nextStellaDroneRollTime = 0f;
+        stellaDroneNovaTime = 0f;
+    }
+
+    /// <summary>드론 레이저 색을 조합 색(_bStella) 또는 기본으로 바꾼다. 바뀔 때만 드론에 알린다(재소환된 드론은 Character가 다시 칠한다).</summary>
+    private void SetDroneStellaTint(bool _bStella)
+    {
+        if (bDroneStellaTint == _bStella || null == character) return;
+
+        bDroneStellaTint = _bStella;
+        character.SetDroneLaserTintForRun(_bStella ? PresentationLayer.VFX.EDroneLaserTint.Stella : PresentationLayer.VFX.EDroneLaserTint.Default);
     }
 
     /// <summary>현재 별들로 최소 신장 트리를 만든다(프림). 별은 많아야 노바 수(9) 근처라 매번 다시 계산해도 싸다.</summary>

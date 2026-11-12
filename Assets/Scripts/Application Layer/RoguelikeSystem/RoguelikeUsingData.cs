@@ -16,7 +16,7 @@ public enum ERoguelikeProduction
     TierTransition = 1,
     /// <summary>웨이브 클리어: 남은 나무가 묘목으로 돌아가며 사라짐 + 코인 일괄 흡수(동시에 진행, 기획서 3-3 골드 획득 4단계).</summary>
     WaveClear = 2,
-    /// <summary>30웨이브 마지막 나무 줌인 + 슬로우 부서짐 → 줌아웃(기획서 3-5). 이 연출이 끝나면 언리밋으로 넘어간다.</summary>
+    /// <summary>30웨이브 클리어(기획서 3-5). 이 연출이 끝나면 언리밋으로 넘어간다.</summary>
     RunClear = 3,
     /// <summary>
     /// 결과 화면에서 다시 도전을 고른 직후 디스토션(기획서 3-7 종료 흐름 5). 이어서 LobbyEntry가 재생된다.
@@ -33,8 +33,6 @@ public struct RoguelikeProductionRequest
     public ERoguelikeProduction type;
     /// <summary>LobbyEntry: 결과 화면의 다시 도전에서 들어오는 중인지(디스토션을 메인메뉴가 아니라 결과 화면에 건다).</summary>
     public bool bFromResult;
-    /// <summary>RunClear: 마지막 나무 위치.</summary>
-    public Vector3 position;
     /// <summary>TierTransition: 새 티어.</summary>
     public int tierIndex;
     public MapType mapType;

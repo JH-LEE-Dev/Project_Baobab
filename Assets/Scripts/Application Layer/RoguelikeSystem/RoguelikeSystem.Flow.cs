@@ -477,12 +477,11 @@ public partial class RoguelikeSystem
         waveStrategy?.StopSpawning();
         signalHub.Publish(new RoguelikeWaveClearedSignal(_spec));
 
-        // 30웨이브: 마지막 나무 줌인·슬로우 → 줌아웃이 먼저, 그 뒤 나무 정리(기획서 3-5 "런 클리어 연출").
+        // 30웨이브: 클리어 기록·RunClear 연출. 나무는 일반 웨이브처럼 목표 달성 순간 묘목으로 돌아가 있다(v3.0 11-12 줌인 연출 삭제).
         if (IsFinalWave(in _spec))
         {
             yield return RunClearRoutine();
             SetPhase(ERunPhase.WaveClear);
-            RevertFieldTreesToSapling();
         }
 
         yield return productionGate.Play(new RoguelikeProductionRequest
@@ -555,64 +554,13 @@ public partial class RoguelikeSystem
 
         signalHub.Publish(new RoguelikeRunClearedSignal());
 
-        // 마지막 나무 줌인 + 슬로우 부서짐 → 줌아웃(기획서 3-5). 이펙트 담당의 RunClear 연출은 함께 돈다.
+        // 이펙트 담당의 RunClear 연출이 끝나면 언리밋으로 넘어간다.
         DisableControl();
-        bool bGateDone = false;
-        StartCoroutine(PlayProductionThen(new RoguelikeProductionRequest
+        yield return productionGate.Play(new RoguelikeProductionRequest
         {
             type = ERoguelikeProduction.RunClear,
-            position = finalTreePosition,
             characterTransform = null != character ? character.transform : null,
-        }, () => bGateDone = true));
-
-        yield return RunClearCinematicRoutine();
-        while (false == bGateDone) yield return null;
-    }
-
-    /// <summary>
-    /// 마지막 나무로 빠르게 다가가 확대하고(줌인) 시간을 늦춰 그 나무가 천천히 부서지는 모습을 보여 준 뒤 섬 전체로 돌아간다(줌아웃).
-    /// 확대는 본편 카메라 줌(CameraMoveController.ZoomCamera - 픽셀 퍼펙트 보정 처리 포함)을 쓰고, 다가가기는 카메라 고정점을 옮긴다.
-    /// 줌 트윈은 게임 시간으로 흐르므로 슬로우 구간 길이에 시간 배율을 곱해 넘긴다. 연출 동안 ESC를 막는다(일시정지가 시간 배율을 덮어쓴다).
-    /// </summary>
-    private IEnumerator RunClearCinematicRoutine()
-    {
-        if (null == cameraAnchor) yield break;
-
-        inputManager.SetESCKeyLock(RunClearESCLockOwner, true);
-
-        Vector3 islandCenter = cameraAnchor.position;
-        Vector3 target = new Vector3(finalTreePosition.x, finalTreePosition.y, islandCenter.z);
-        float slow = Mathf.Clamp(runClearSlowTimeScale, 0.05f, 1f);
-        float zoomIn = Mathf.Max(0.01f, runClearZoomInSeconds);
-        float hold = Mathf.Max(0f, runClearSlowSeconds);
-        float zoomOut = Mathf.Max(0.01f, runClearZoomOutSeconds);
-
-        bRunClearSlowMo = true;
-        Time.timeScale = slow;
-        CameraMoveController.Instance?.ZoomCamera(Mathf.Max(1f, runClearZoomMultiplier), zoomIn * slow, hold * slow, zoomOut);
-
-        float elapsed = 0f;
-        while (elapsed < zoomIn + hold)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            cameraAnchor.position = Vector3.Lerp(islandCenter, target, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / zoomIn)));
-            yield return null;
-        }
-
-        // 줌아웃은 제 속도로.
-        Time.timeScale = 1f;
-        bRunClearSlowMo = false;
-
-        elapsed = 0f;
-        while (elapsed < zoomOut)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            cameraAnchor.position = Vector3.Lerp(target, islandCenter, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / zoomOut)));
-            yield return null;
-        }
-
-        cameraAnchor.position = islandCenter;
-        EndRunClearCinematic();
+        });
     }
 
     // // 종료

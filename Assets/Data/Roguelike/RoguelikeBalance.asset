@@ -222,10 +222,7 @@ MonoBehaviour:
   maxGraceTime: 15
   minThreshold: 5
   maxMoveSpeedPercent: 100
-  unlimitHpGrowthPerWave: 0.15
-  unlimitBatchSizeAddPerWave: 2
-  unlimitBatchSecondsAddPerWave: -0.05
-  unlimitMinBatchSeconds: 1
+  unlimitHpGrowthPerWave: 0.35
   unlimitMaxKillTarget: 100
   offerCount: 4
   guaranteedSlotCap: 2
@@ -239,7 +236,7 @@ MonoBehaviour:
   - 1
   upgradeWeightBonus: 1
   focusStartLevel: 2
-  focusWeightBonus: 7
+  focusOfferChance: 0.65
   partnerStartLevel: 2
   partnerWeightBonus: 1
   maxWeightMultiplier: 10

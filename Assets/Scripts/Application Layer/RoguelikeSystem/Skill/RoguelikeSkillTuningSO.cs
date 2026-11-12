@@ -144,10 +144,11 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float boomerangShockwaveMergeRadius = 0.6f;
 
     [Header("조합: 회전베기 + 부메랑")]
-    public float spinBoomerangRadius = 2.2f;
-    [Tooltip("도끼 피해 대비 배율.")]
-    public float spinBoomerangDamageMultiplier = 1f;
-    [Tooltip("부메랑 타격 1회당 회전베기 1회(기획서). 회전베기는 캐릭터 중심이라 한 프레임에 여러 그루를 맞혀도 한 번만 친다(같은 공격이 겹쳐 쌓이지 않게). 값을 주면 그 간격(초) 안의 타격은 건너뛴다(밸런스용).")]
+    [Tooltip("회전베기 반경 = 부메랑 판정 반경 × 이 값(기획서 v3.0 11-12, 1.15 - 부메랑보다 조금 크다). 부메랑 범위 카드 · 패시브만 반영되고 도끼 · 회전베기 범위는 반영되지 않는다.")]
+    public float spinBoomerangRadiusRatio = 1.15f;
+    [Tooltip("도끼 피해 대비 배율, 회전베기 MAX 최종 피해와 같은 60(도끼 10 × 6).")]
+    public float spinBoomerangDamageMultiplier = 6f;
+    [Tooltip("부메랑이 나무를 타격할 때마다 그 부메랑 자리에서 회전베기 1회(기획서). 한 부메랑이 한 프레임에 여러 그루를 맞히면 한 번만 친다. 값을 주면 그 간격(초) 안의 타격은 건너뛴다(밸런스용).")]
     public float spinBoomerangCooldown = 0f;
 
     [Header("조합: 포자 수류탄 + 드론 / 오프로드 / 충격파 (포자 수류탄 대폭발 + 오염, 기획서 v2.6 6-2 · C-2 '연쇄 폭발')")]
@@ -171,8 +172,10 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     [Tooltip("섬 위 고정 칸(9칸)이 이 수만큼 별로 차면 노바(기획서 9개). 노바는 섬 중심에서 섬 전체를 치는 고정 크기다(기획서 v3.0 6-2).")]
     public int stellaDroneNovaStars = 9;
     public float stellaDroneNovaDamage = 600f;
-    [Tooltip("별 생성 지연(초). 나무를 부숴 별 생성 판정에 성공하면 이 시간 뒤에 고정 칸에 생긴다(기획서 v3.0 6-2, 0.35초).")]
+    [Tooltip("별 생성 간격(초). 별이 생기면 이 시간 동안은 나무를 부숴도 별 생성 판정을 하지 않는다 - 나무가 한꺼번에 많이 부서져도 이 간격에 별 1개(기획서 v3.0 11-12 6-2, 0.35초).")]
     public float stellaDroneStarSpawnDelay = 0.35f;
+    [Tooltip("노바 지연(초). 고정 칸이 모두 별로 찬 뒤 이 시간이 지나야 노바가 터진다. 그동안 이음선 레이저는 계속 쏜다(기획서 v3.0 11-12 6-2, 초안 1.0초).")]
+    public float stellaDroneNovaDelay = 1f;
     [Tooltip("별 고정 칸의 안쪽 비율(0~1). 섬 3×3 격자 칸을 섬 가장자리에서 이 비율만큼 중심 쪽으로 당긴다(기획서 v3.0 6-2, 초안 0.9).")]
     [Range(0f, 1f)] public float stellaDroneSlotInset = 0.9f;
 }

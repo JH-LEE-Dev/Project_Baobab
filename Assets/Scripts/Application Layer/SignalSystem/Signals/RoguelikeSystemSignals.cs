@@ -61,19 +61,6 @@ public struct RoguelikeWaveClearedSignal
 /// </summary>
 public struct RoguelikeFieldTreesRevertedSignal { }
 
-/// <summary>
-/// 30웨이브 목표의 마지막 나무를 벤 순간(기획서 3-5 "런 클리어 연출"의 줌인 대상).
-/// 일반 웨이브에서는 발행되지 않는다.
-/// </summary>
-public struct RoguelikeFinalTreeKilledSignal
-{
-    public Vector3 position;
-    public RoguelikeFinalTreeKilledSignal(Vector3 _position)
-    {
-        position = _position;
-    }
-}
-
 /// <summary>티어가 바뀌어 지형이 교체됐다(지형 전환 연출 직전).</summary>
 public struct RoguelikeTierChangedSignal
 {

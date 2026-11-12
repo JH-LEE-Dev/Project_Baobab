@@ -92,14 +92,8 @@ public class RoguelikeBalanceSO : ScriptableObject
     public float maxMoveSpeedPercent = 100f;
 
     [Header("언리밋 (기획서 v3.0 7-2, 부록 A \"언리밋 곡선\")")]
-    [Tooltip("언리밋 웨이브마다 나무 HP에 곱하는 증가율(누적). Unlimit-1은 마지막 티어의 첫 웨이브(4티어 최소 수치) HP에서 시작하고, Unlimit-N의 HP = 시작 HP × (1 + 이 값)^(N−1). 0.15면 웨이브마다 ×1.15.")]
-    public float unlimitHpGrowthPerWave = 0.15f;
-    [Tooltip("언리밋 웨이브마다 묶음 크기에 더하는 그루 수. Unlimit-N의 묶음 = 시작 묶음 + 이 값 × (N−1). 스폰 상한을 넘는 몫은 소멸한다.")]
-    public int unlimitBatchSizeAddPerWave = 2;
-    [Tooltip("언리밋 웨이브마다 묶음 주기에 더하는 초(음수면 빨라진다). Unlimit-N의 주기 = 시작 주기 + 이 값 × (N−1), 하한은 아래 값.")]
-    public float unlimitBatchSecondsAddPerWave = -0.05f;
-    [Tooltip("언리밋 묶음 주기의 하한(초).")]
-    public float unlimitMinBatchSeconds = 1f;
+    [Tooltip("언리밋 웨이브마다 나무 HP에 곱하는 증가율(누적). Unlimit-N의 HP = N웨이브 줄 HP(30을 넘으면 30웨이브 줄) × (1 + 이 값)^(N−1). 0.35면 웨이브마다 ×1.35. 나무 종류 · 묶음 · 주기 · 피해량은 N웨이브 줄 그대로다.")]
+    public float unlimitHpGrowthPerWave = 0.35f;
     [Tooltip("언리밋 목표 처치 수 상한. Unlimit-N의 목표 처치 수 = N웨이브 줄의 목표 처치 수와 이 값 중 작은 값(기획서 v3.0 7-2, 100이면 Unlimit-9부터 100).")]
     public int unlimitMaxKillTarget = 100;
 
@@ -119,10 +113,10 @@ public class RoguelikeBalanceSO : ScriptableObject
     public List<float> kindWeights = new List<float>();
     [Tooltip("이미 보유한 카드(집중 카드 미만 레벨)의 다음 레벨은 가중치 × (1 + 이 값). 기본 ×2.0.")]
     public float upgradeWeightBonus = 1f;
-    [Tooltip("집중 카드 우대가 시작되는 보유 레벨(기획서 v2.9 4-2 가중 1, 기본 II). 이 레벨 이상 보유한 카드는 upgradeWeightBonus 대신 focusWeightBonus를 쓴다.")]
+    [Tooltip("집중 카드가 되는 보유 레벨(기획서 v3.0 4-2 가중 1, 기본 II). 이 레벨 이상 보유한 카드는 가중치 대신 focusOfferChance 확률 판정으로 노출된다.")]
     public int focusStartLevel = 2;
-    [Tooltip("집중 카드(focusStartLevel 이상 보유)의 다음 레벨은 가중치 × (1 + 이 값). 기본 ×8.0.")]
-    public float focusWeightBonus = 7f;
+    [Tooltip("집중 카드(focusStartLevel 이상 보유)의 노출 확률(0~1, 기획서 v3.0 11-12 부록 A-1 65%). 선택마다 카드별로 판정해 성공하면 랜덤 칸에 넣고, 실패하면 그 선택의 추첨에서 뺀다.")]
+    [Range(0f, 1f)] public float focusOfferChance = 0.65f;
     [Tooltip("조합 재료 한 장이 이 레벨 이상이면 그 파트너 카드의 유도를 시작한다(기본 II).")]
     public int partnerStartLevel = 2;
     [Tooltip("파트너 유도 중인 카드는 가중치 × (1 + 이 값).")]
@@ -257,10 +251,7 @@ public class RoguelikeBalanceSO : ScriptableObject
         maxGraceTime = 15f;
         maxMoveSpeedPercent = 100f;
 
-        unlimitHpGrowthPerWave = 0.15f;
-        unlimitBatchSizeAddPerWave = 2;
-        unlimitBatchSecondsAddPerWave = -0.05f;
-        unlimitMinBatchSeconds = 1f;
+        unlimitHpGrowthPerWave = 0.35f;
         unlimitMaxKillTarget = 100;
 
         offerCount = 4;
@@ -273,7 +264,7 @@ public class RoguelikeBalanceSO : ScriptableObject
         kindWeights = new List<float>(4) { 1f, 1f, 0.3f, 1f };
         upgradeWeightBonus = 1f;
         focusStartLevel = 2;
-        focusWeightBonus = 7f;
+        focusOfferChance = 0.65f;
         partnerStartLevel = 2;
         partnerWeightBonus = 1f;
         maxWeightMultiplier = 10f;
