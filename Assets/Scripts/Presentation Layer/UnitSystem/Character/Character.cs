@@ -14,6 +14,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     // 속도의 원천이 걸림(지속 시간) / 강제로 풀림
     public event Action<float> SourceOfSpeedActivatedEvent;
     public event Action SourceOfSpeedForceEndedEvent;
+    // 별길 걸음이 걸림(지속 시간) / 강제로 풀림
+    public event Action<float> StarPathSpeedBoostActivatedEvent;
+    public event Action StarPathSpeedBoostForceEndedEvent;
     // 과열 수치(내림한 정수, 최대치). 버프 HUD 표시용으로 값이 바뀔 때마다 알린다.
     public event Action<int, float> OverheatLevelChangedEvent;
 
@@ -572,6 +575,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         statComponent.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
         statComponent.SourceOfSpeedForceEndedEvent += SourceOfSpeedForceEnded;
 
+        statComponent.StarPathSpeedBoostActivatedEvent -= StarPathSpeedBoostActivated;
+        statComponent.StarPathSpeedBoostActivatedEvent += StarPathSpeedBoostActivated;
+
+        statComponent.StarPathSpeedBoostForceEndedEvent -= StarPathSpeedBoostForceEnded;
+        statComponent.StarPathSpeedBoostForceEndedEvent += StarPathSpeedBoostForceEnded;
+
         if (overheatComponent != null)
         {
             overheatComponent.OverheatLevelChangedEvent -= OverheatLevelChanged;
@@ -624,6 +633,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             statComponent.HasteEndedEvent -= HasteEnded;
             statComponent.SourceOfSpeedActivatedEvent -= SourceOfSpeedActivated;
             statComponent.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
+            statComponent.StarPathSpeedBoostActivatedEvent -= StarPathSpeedBoostActivated;
+            statComponent.StarPathSpeedBoostForceEndedEvent -= StarPathSpeedBoostForceEnded;
         }
 
         if (overheatComponent != null)
@@ -2332,6 +2343,16 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private void SourceOfSpeedForceEnded()
     {
         SourceOfSpeedForceEndedEvent?.Invoke();
+    }
+
+    private void StarPathSpeedBoostActivated(float _duration)
+    {
+        StarPathSpeedBoostActivatedEvent?.Invoke(_duration);
+    }
+
+    private void StarPathSpeedBoostForceEnded()
+    {
+        StarPathSpeedBoostForceEndedEvent?.Invoke();
     }
 
     private void OverheatLevelChanged(int _level)

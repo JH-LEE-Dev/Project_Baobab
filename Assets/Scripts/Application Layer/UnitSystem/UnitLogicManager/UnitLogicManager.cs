@@ -14,6 +14,8 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     public event Action<int, int, bool> AttackRythmStackChangedEvent;
     public event Action<float> SourceOfSpeedActivatedEvent;
     public event Action SourceOfSpeedForceEndedEvent;
+    public event Action<float> StarPathSpeedBoostActivatedEvent;
+    public event Action StarPathSpeedBoostForceEndedEvent;
     public event Action<int, float> OverheatLevelChangedEvent;
 
     private Character character;
@@ -57,6 +59,12 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
         character.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
         character.SourceOfSpeedForceEndedEvent += SourceOfSpeedForceEnded;
 
+        character.StarPathSpeedBoostActivatedEvent -= StarPathSpeedBoostActivated;
+        character.StarPathSpeedBoostActivatedEvent += StarPathSpeedBoostActivated;
+
+        character.StarPathSpeedBoostForceEndedEvent -= StarPathSpeedBoostForceEnded;
+        character.StarPathSpeedBoostForceEndedEvent += StarPathSpeedBoostForceEnded;
+
         character.OverheatLevelChangedEvent -= OverheatLevelChanged;
         character.OverheatLevelChangedEvent += OverheatLevelChanged;
     }
@@ -71,6 +79,8 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
         character.AttackRythmStackChangedEvent -= AttackRythmStackChanged;
         character.SourceOfSpeedActivatedEvent -= SourceOfSpeedActivated;
         character.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
+        character.StarPathSpeedBoostActivatedEvent -= StarPathSpeedBoostActivated;
+        character.StarPathSpeedBoostForceEndedEvent -= StarPathSpeedBoostForceEnded;
         character.OverheatLevelChangedEvent -= OverheatLevelChanged;
     }
 
@@ -164,6 +174,16 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     private void SourceOfSpeedForceEnded()
     {
         SourceOfSpeedForceEndedEvent?.Invoke();
+    }
+
+    private void StarPathSpeedBoostActivated(float _duration)
+    {
+        StarPathSpeedBoostActivatedEvent?.Invoke(_duration);
+    }
+
+    private void StarPathSpeedBoostForceEnded()
+    {
+        StarPathSpeedBoostForceEndedEvent?.Invoke();
     }
 
     private void OverheatLevelChanged(int _level, float _maxValue)

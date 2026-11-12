@@ -12,6 +12,9 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     // 시간이 다 돼 풀리는 경우는 따로 알리지 않는다(같은 지속 시간을 받은 쪽이 스스로 끝낸다).
     public event Action<float> SourceOfSpeedActivatedEvent;
     public event Action SourceOfSpeedForceEndedEvent;
+    // 별길 걸음도 같은 방식(걸릴 때마다 지속 시간 / 강제로 풀릴 때만 알림).
+    public event Action<float> StarPathSpeedBoostActivatedEvent;
+    public event Action StarPathSpeedBoostForceEndedEvent;
     // 과열 수치 최대치(overheatMaxValue)가 IncreaseOverheatMaxValue로 바뀔 때. 인자는 새 최대치.
     public event Action<float> OverheatMaxValueChangedEvent;
 
@@ -750,6 +753,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     {
         bool bHasteActive = sourceOfSpeedCoroutine != null || starPathSpeedCoroutine != null;
         bool bSourceOfSpeedForceEnded = false;
+        bool bStarPathSpeedForceEnded = false;
 
         if (sourceOfSpeedCoroutine != null)
         {
@@ -766,10 +770,12 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
             IncreaseMovementSpeed(-currentStarPathSpeedBonus * 100.0f);
             currentStarPathSpeedBonus = 0f;
             starPathSpeedCoroutine = null;
+            bStarPathSpeedForceEnded = true;
         }
 
         if (bHasteActive) HasteEndedEvent?.Invoke(true);
         if (bSourceOfSpeedForceEnded) SourceOfSpeedForceEndedEvent?.Invoke();
+        if (bStarPathSpeedForceEnded) StarPathSpeedBoostForceEndedEvent?.Invoke();
     }
 
     // 별길 걸음 - 별 표식 나무 벌목 시 일정 시간 이동속도 증가 (SourceOfSpeed와 별개의 타이머로 관리)
@@ -778,6 +784,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     private float starPathSpeedTimer = 0f;
     private float currentStarPathSpeedBonus = 0f;
     private Coroutine starPathSpeedCoroutine;
+    private const float StarPathSpeedDuration = 5f;
 
     public void IncreaseStarPathSpeedBoost(float _amount)
     {
@@ -788,13 +795,15 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     {
         if (starPathSpeedBoostAmount <= 0f) return;
 
-        starPathSpeedTimer = 5f;
+        starPathSpeedTimer = StarPathSpeedDuration;
 
         if (starPathSpeedCoroutine == null)
         {
             starPathSpeedCoroutine = StartCoroutine(StarPathSpeedRoutine());
             HasteStartedEvent?.Invoke();
         }
+
+        StarPathSpeedBoostActivatedEvent?.Invoke(StarPathSpeedDuration);
     }
 
     private System.Collections.IEnumerator StarPathSpeedRoutine()
