@@ -325,6 +325,14 @@ MonoBehaviour:
     enumValueName: RecoveryPower
     enumIntValue: 114
     compositeKey: 4203481
+  - enumTypeName: SkillCommandType
+    enumValueName: TopgradeAssessment
+    enumIntValue: 59
+    compositeKey: 4203482
+  - enumTypeName: SkillCommandType
+    enumValueName: BarrierPenetration
+    enumIntValue: 129
+    compositeKey: 4203483
   - enumTypeName: MapType
     enumValueName: None
     enumIntValue: 0

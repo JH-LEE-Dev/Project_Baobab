@@ -138,7 +138,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     [Header("Axe - Drone")]
     public int droneCount = 0; // "드론" 스킬 레벨 = 던전 입장 시 캐릭터를 따라다니는 드론 개수 (0이면 미해금 상태로 소환되지 않음)
-    public float droneDamage = 5f;
+    public float droneDamage = 10f;
     public float droneAttackRange = 3f; // "범위" - 드론이 나무를 탐지/공격하는 반경
     public float droneActiveDuration = 3f; // "지속시간" - 공격 키를 누르면 활성화되는 시간
     public float droneDamageInterval = 1f; // "공격 속도"가 반영되는 판정 주기

@@ -263,6 +263,16 @@ public enum SkillType
     WhirlWind,
     RecoveryPower1,
     SourceOfSpeed2,
+    Drone1,
+    DroneDamage1,
+    DroneAttackRange1,
+    DroneAttackSpeed1,
+    ProcessLineExpand2,
+    TopgradeAssessment1,
+    StarMarkDamage2,
+    ConstellationDamage2,
+    BarrierPenetration1,
+    StarPathSpeedBoost2,
     MAX
 }
 

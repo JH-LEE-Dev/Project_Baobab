@@ -4043,10 +4043,10 @@ MonoBehaviour:
   sporeBigExplosionTier1Damage: 50
   sporeBigExplosionTier1Chance: 0.05
   sporeBigExplosionTier1DamageAmplify: 0.2
-  sporeBigExplosionTier2Damage: 100
+  sporeBigExplosionTier2Damage: 250
   sporeBigExplosionTier2Chance: 0.075
   sporeBigExplosionTier2DamageAmplify: 0.3
-  sporeBigExplosionTier3Damage: 200
+  sporeBigExplosionTier3Damage: 1000
   sporeBigExplosionTier3Chance: 0.1
   sporeBigExplosionTier3DamageAmplify: 0.5
   starCompassDropChance: 0.05
@@ -4056,13 +4056,13 @@ MonoBehaviour:
   meteorShowerChargePerKill: 0.1
   meteorShowerInterval: 0.2
   meteorImpactRange: 1
-  meteorShowerTier1Damage: 100
+  meteorShowerTier1Damage: 150
   meteorShowerTier1FallRange: 3.5
   meteorShowerTier1Duration: 3
-  meteorShowerTier2Damage: 100
+  meteorShowerTier2Damage: 450
   meteorShowerTier2FallRange: 3.5
   meteorShowerTier2Duration: 4
-  meteorShowerTier3Damage: 100
+  meteorShowerTier3Damage: 1000
   meteorShowerTier3FallRange: 3.5
   meteorShowerTier3Duration: 5
   starCompassPityMinKills: 4

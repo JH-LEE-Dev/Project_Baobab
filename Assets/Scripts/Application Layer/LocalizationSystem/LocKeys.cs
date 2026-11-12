@@ -124,6 +124,17 @@ public static class LocKeys
         public const int recoveryPower1Name = 4194562;
         public const int sourceOfSpeed2Name = 4194563;
         public const int logInsurance2Name = 4194564;
+        public const int drone1Name = 4194565;
+        public const int droneDamage1Name = 4194566;
+        public const int droneAttackRange1Name = 4194567;
+        public const int droneAttackSpeed1Name = 4194568;
+        public const int processLineExpand2Name = 4194569;
+        public const int topgradeAssessment1Name = 4194570;
+        public const int starMarkDamage2Name = 4194571;
+        public const int constellationDamage2Name = 4194572;
+        public const int barrierPenetration1Name = 4194573;
+        public const int starPathSpeedBoost2Name = 4194574;
+        public const int manifestationBrand1Name = 4194575;
         public const int commonLevel = 4203304;
         public const int commonFree = 4203305;
         public const int commonMaxLevel = 4203306;
@@ -212,6 +223,8 @@ public static class LocKeys
         public const int abilityDescriptionLogInsurance = 4203479;
         public const int abilityDescriptionAutoLoadInRestArea = 4203480;
         public const int abilityDescriptionRecoveryPower = 4203481;
+        public const int abilityDescriptionTopgradeAssessment = 4203482;
+        public const int abilityDescriptionBarrierPenetration = 4203483;
     }
 
     public static class DemoNoticeUI
@@ -620,6 +633,7 @@ public static class LocKeys
         public const int starrootForestGuideTitle = 31457292;
         public const int magmaForestGuideTitle = 31457293;
         public const int magmaForestGuideDesc = 31457294;
+        public const int starrootForestGuideDesc = 31457295;
     }
 
     public static class WarningUI
