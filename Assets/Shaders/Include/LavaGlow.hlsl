@@ -1,6 +1,8 @@
 #ifndef LAVA_GLOW_INCLUDED
 #define LAVA_GLOW_INCLUDED
 
+#include "StageAmbienceFade.hlsl"
+
 // 용암 빛 번짐. 바닥 셰이더(GroundLavaGlowLit)가 StageAmbienceCommon.hlsl 뒤에 include 한다.
 // StageLavaGlow가 맵을 만들 때 칸마다 용암에서 받는 빛(0~1)을 담은 텍스처와 월드 → 칸 변환을 전역으로 넘긴다.
 // 텍셀 가운데 월드 위치로 그 텍스처를 읽어(칸 사이는 부드럽게 이어진다) 감쇠 곡선을 걸고, 천천히 일렁이게 한 뒤
@@ -88,7 +90,8 @@ half3 ApplyLavaGlowLevel(half3 _color, float _glow, float2 _texelCenterWS, float
 
     // 텍셀 단위로 몇 단계로 끊는다. 단계 사이는 베이어 문턱으로 섞어 계단이 매끈한 띠로 보이지 않게 한다.
     float steps = max(_LavaGlowA.w, 1.0);
-    float level = saturate(floor(saturate(glow) * steps + LavaGlowBayer4(_texelId)) / steps) * _strength;
+    // 로그라이크 지형 전환 때 서서히 끄고 켠다(StageAmbienceFade.hlsl, 본편은 늘 그대로).
+    float level = saturate(floor(saturate(glow) * steps + LavaGlowBayer4(_texelId)) / steps) * _strength * StageAmbienceVisibility(_texelCenterWS);
     if (level <= 0.0)
     {
         return _color;

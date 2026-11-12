@@ -5,7 +5,7 @@ using UnityEngine;
 /// 튀어 오르다 천천히 떨어지며 사라지게 한다. 기존 피격 이펙트는 그대로 두고 덧붙이기만 한다.
 /// 광역 타격으로 한 프레임에 많은 나무가 맞아도 정해진 수만큼만 튀게 한다.
 /// 렌더링만 바꾸고 게임 동작에는 영향이 없다. 해당 씬에 붙여 두므로 씬이 내려가면 같이 사라지고,
-/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳·로그라이크에서는 아무것도 만들지 않는다(TryEmit은 아무 일도 하지 않는다).
+/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳에서는 아무것도 만들지 않는다(TryEmit은 아무 일도 하지 않는다).
 /// </summary>
 public class StageHitSparkles : MonoBehaviour
 {
@@ -24,7 +24,7 @@ public class StageHitSparkles : MonoBehaviour
     {
         Remove();
 
-        if (null == _settings || false == _settings.enabled || null == _settings.material || GameModeContext.IsRoguelike)
+        if (null == _settings || false == _settings.enabled || null == _settings.material)
         {
             return;
         }
@@ -44,7 +44,11 @@ public class StageHitSparkles : MonoBehaviour
     {
         if (null != current)
         {
-            Destroy(current.gameObject);
+            // 로그라이크 지형 전환으로 바뀔 때는 이미 떠 있는 알갱이가 수명대로 사라지게 둔다(StageAmbienceFade).
+            if (false == StageAmbienceFade.TryRetire(current))
+            {
+                Destroy(current.gameObject);
+            }
             current = null;
         }
     }

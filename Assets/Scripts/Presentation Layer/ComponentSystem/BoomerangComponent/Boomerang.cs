@@ -53,6 +53,18 @@ public class Boomerang : MonoBehaviour
     // 곧 나무가 맞는 경계가 되게 한다("부메랑 범위" 스킬/과열로 hitRadius가 커지면 부메랑도 같이 커진다).
     [SerializeField] private float visualWidthAtUnitScale = 3f;
 
+    [Header("Juice (몸에서 나올 때·들어올 때 스케일 연출 - 그림만 바뀌고 판정 범위 hitRadius는 그대로)")]
+    // 나올 때: 작게 튀어나와 기준 크기를 살짝 넘겼다가(오버슈트) 제자리로 돌아온다.
+    [SerializeField, Min(0.01f)] private float launchPopDuration = 0.3f;
+    [SerializeField, Range(0f, 1f)] private float launchStartScale = 0.3f;
+    [SerializeField, Min(0f)] private float launchOvershoot = 3f; // easeOutBack 계수. 3이면 최대 약 1.18배까지 부풀었다 돌아온다
+    // 들어올 때: 몸에 닿기 catchJuiceDuration초 전부터 한 번 부풀었다가(catchSwellScale) 몸 안으로 빨려 들어가듯 줄어든다.
+    // 남은 시간은 최고 속도 기준 거리로 잰다(복귀 막바지는 항상 최고 속도라 실제 시간과 거의 같다).
+    [SerializeField, Min(0.01f)] private float catchJuiceDuration = 0.25f;
+    [SerializeField, Min(0f)] private float catchSwellScale = 1.2f;
+    [SerializeField, Range(0f, 1f)] private float catchSwellPortion = 0.4f; // 구간 중 부푸는 데 쓰는 비율. 나머지는 줄어드는 시간
+    [SerializeField, Range(0f, 1f)] private float catchEndScale = 0.25f;
+
     [Header("Afterimage (잔상)")]
     [SerializeField] private float afterimageInterval = 0.15f; // 초당 약 6.7회. 기본 속도(7)에서 잔상 간격이 부메랑 폭(약 1유닛)과 비슷해 끊김 없이 이어져 보인다
     [SerializeField] private float afterimageFadeDuration = 0.45f;
@@ -142,6 +154,11 @@ public class Boomerang : MonoBehaviour
     // 그림자는 본체 자식이라 본체 스케일에 오프셋까지 같이 줄어든다. 오프셋은 "공중에 떠 있는 높이"라
     // 크기와 무관하게 월드 기준으로 유지해야 하므로, 프리팹의 원래 위치를 기억해 두고 스케일로 나눠 보정한다.
     private Vector3 shadowBaseLocalPosition;
+
+    // hitRadius에 맞춘 기준 스케일. 발사·회수 연출 배율은 이 값에 곱해 그림에만 적용한다.
+    private float baseVisualScale = 1f;
+    private float launchJuiceTimer;
+    private float appliedJuiceMul = -1f;
 
     private bool isPaused; // WarningUI가 떠 있는 동안 그 자리에서 완전히 멈춘다 (이동/애니메이션/데미지 판정 전부 정지)
     private bool isDismissing; // 마을로 돌아가기 확정 시 축소 애니메이션 재생 중 (Update의 나머지 로직과 무관하게 별도 코루틴으로 처리)
@@ -321,13 +338,73 @@ public class Boomerang : MonoBehaviour
     private void ApplyVisualScale()
     {
         float scale = visualWidthAtUnitScale > 0f ? (hitRadius * 2f) / visualWidthAtUnitScale : 1f;
-        scale = Mathf.Max(scale, 0.01f);
+        baseVisualScale = Mathf.Max(scale, 0.01f);
+
+        // 몸에서 막 나온 순간의 작은 크기부터 시작한다(UpdateJuiceScale이 이어서 키운다).
+        launchJuiceTimer = 0f;
+        appliedJuiceMul = -1f;
+        SetJuiceScale(launchStartScale);
+    }
+
+    // 기준 스케일에 연출 배율을 곱해 그림에만 반영한다. 판정(hitRadius)·열기 꼬리 폭은 건드리지 않는다.
+    private void SetJuiceScale(float _mul)
+    {
+        if (Mathf.Approximately(_mul, appliedJuiceMul)) return;
+        appliedJuiceMul = _mul;
+
+        float scale = Mathf.Max(baseVisualScale * _mul, 0.001f);
         transform.localScale = new Vector3(scale, scale, 1f);
 
+        // 그림자 오프셋은 공중 높이라 크기와 무관하게 월드 기준을 유지한다(연출로 작아질 때도 같다).
         if (shadowSpriteRenderer != null)
         {
             shadowSpriteRenderer.transform.localPosition = shadowBaseLocalPosition / scale;
         }
+    }
+
+    // 발사 직후 팝(easeOutBack)과 회수 직전 부풀었다 빨려 드는 연출. 두 구간이 겹치면(아주 짧은 왕복) 배율을 곱한다.
+    private void UpdateJuiceScale(float _deltaTime)
+    {
+        float mul = 1f;
+
+        if (launchJuiceTimer < launchPopDuration)
+        {
+            launchJuiceTimer += _deltaTime;
+            float t = Mathf.Clamp01(launchJuiceTimer / launchPopDuration);
+            mul *= Mathf.LerpUnclamped(launchStartScale, 1f, EaseOutBack(t, launchOvershoot));
+        }
+
+        if (phase == Phase.Returning && returnTarget != null)
+        {
+            float distToCatch = Vector3.Distance(returnTarget.position, transform.position) - catchRadius;
+            float remainingTime = Mathf.Max(distToCatch, 0f) / Mathf.Max(currentThrowSpeed, 0.01f);
+            if (remainingTime < catchJuiceDuration)
+            {
+                mul *= EvaluateCatchCurve(1f - remainingTime / catchJuiceDuration);
+            }
+        }
+
+        SetJuiceScale(mul);
+    }
+
+    // _p: 0(연출 시작) → 1(몸에 닿는 순간). 앞부분은 1 → catchSwellScale로 부풀고, 뒷부분은 catchEndScale까지 가속하며 줄어든다.
+    private float EvaluateCatchCurve(float _p)
+    {
+        float swellPortion = Mathf.Clamp(catchSwellPortion, 0.01f, 0.99f);
+        if (_p < swellPortion)
+        {
+            float u = _p / swellPortion;
+            return Mathf.Lerp(1f, catchSwellScale, 1f - (1f - u) * (1f - u)); // ease-out
+        }
+
+        float v = (_p - swellPortion) / (1f - swellPortion);
+        return Mathf.Lerp(catchSwellScale, catchEndScale, v * v); // ease-in
+    }
+
+    private static float EaseOutBack(float _t, float _c1)
+    {
+        float u = _t - 1f;
+        return 1f + (_c1 + 1f) * u * u * u + _c1 * u * u;
     }
 
     /// <summary>
@@ -469,6 +546,7 @@ public class Boomerang : MonoBehaviour
         // Finish()로 이번 프레임에 회수됐으면 잔상을 찍지 않는다.
         if (IsActive)
         {
+            UpdateJuiceScale(Time.deltaTime); // 잔상이 이번 프레임 크기를 그대로 복사하도록 먼저 갱신
             UpdateAfterimage(Time.deltaTime);
         }
     }
@@ -710,7 +788,7 @@ public class Boomerang : MonoBehaviour
                             treeObj.ApplyOverheatBurn(burnStat.GetOverheatBurnRatio(overheatLevel), burnStat.overheatBurnTickCount, burnStat.overheatBurnTickInterval, false);
                         }
 
-                        if (bNotifyRun) RunCombatHooks.NotifyBoomerangHitTree(hitTreePos);
+                        if (bNotifyRun) RunCombatHooks.NotifyBoomerangHitTree(hitTreePos, transform.position, hitRadius);
                     }
                 }
                 else if (RunCombatOverrides.bSkillsHitRunTargets && hitScanResults[i] is IRunSkillHitTarget runTarget && runTarget.bCanBeHitBySkill

@@ -40,6 +40,7 @@ Shader "Custom/StageCloudShadow"
             #pragma target 2.0
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Include/StageAmbienceFade.hlsl"
 
             struct Attributes
             {
@@ -115,20 +116,32 @@ Shader "Custom/StageCloudShadow"
                 const float2x2 turnA = float2x2(0.8, -0.6, 0.6, 0.8);
                 const float2x2 turnB = float2x2(0.28, -0.96, 0.96, 0.28);
                 float2 q = mul(turnA, p);
-                float n = CloudNoise(q) * 0.55
-                        + CloudNoise(mul(turnB, q) * 2.03 + slide * 0.4 + 17.3) * 0.3
-                        + CloudNoise(mul(turnA, q) * 4.07 - slide * 0.6 + 41.7) * 0.15;
 
                 float coverage = saturate(_CloudB.x);
                 float soft = max(_CloudB.y, 0.005);
                 // 세 겹을 더한 값은 0.5 둘레(표준편차 약 0.13)에 몰려 있어 덮는 비율 0~1을 0.8~0.3 문턱으로 옮긴다
                 // (0.04면 넓게 볼 때 약 1~2%, 0.12면 약 7%, 0.3이면 약 22%, 0.5면 약 절반).
                 float threshold = lerp(0.8, 0.3, coverage);
-                float amount = smoothstep(threshold - soft, threshold + soft, n);
+                float lowEdge = threshold - soft;
+
+                // 노이즈는 0~1이라 남은 겹을 모두 1로 쳐도 그림자 경계에 못 미치면 그림자 밖이 확정이다(결과는 같고 화면 대부분에서 남은 겹 계산을 건너뛴다).
+                float n = CloudNoise(q) * 0.55;
+                [branch] if (n + 0.45 < lowEdge)
+                {
+                    return half4(1.0, 1.0, 1.0, 1.0);
+                }
+                n += CloudNoise(mul(turnB, q) * 2.03 + slide * 0.4 + 17.3) * 0.3;
+                [branch] if (n + 0.15 < lowEdge)
+                {
+                    return half4(1.0, 1.0, 1.0, 1.0);
+                }
+                n += CloudNoise(mul(turnA, q) * 4.07 - slide * 0.6 + 41.7) * 0.15;
+                float amount = smoothstep(lowEdge, threshold + soft, n);
 
                 float bands = max(_CloudB.z, 1.0);
                 float level = saturate(floor(amount * bands + 0.5 + (CloudBayer(texelId) - 0.5) * _CloudB.w) / bands);
-                return half4(lerp(half3(1.0, 1.0, 1.0), _CloudColor.rgb, (half)level), 1.0);
+                // 로그라이크 지형 전환 때 서서히 끄고 켠다(StageAmbienceFade.hlsl, 본편은 늘 그대로).
+                return half4(lerp(half3(1.0, 1.0, 1.0), _CloudColor.rgb, (half)(level * StageAmbienceVisibility(centerWS))), 1.0);
             }
             ENDHLSL
         }

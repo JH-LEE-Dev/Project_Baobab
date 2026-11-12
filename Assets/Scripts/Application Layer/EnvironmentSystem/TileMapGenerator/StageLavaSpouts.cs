@@ -8,7 +8,8 @@ using UnityEngine.Tilemaps;
 /// 알갱이는 쏜 높이로 돌아오는 순간 사라진다(수명을 그 순간에 맞춰 정한다).
 /// 자리는 화면 안 무작위 위치 몇 곳만 찍어 고르므로 용암 칸 목록을 만들거나 훑지 않는다. 화면에 용암이 안 보이면 그 차례는 건너뛴다.
 /// 렌더링만 바꾸고 게임 동작에는 영향이 없다. 해당 씬에 붙여 두므로 씬이 내려가면 같이 사라지고,
-/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳·로그라이크에서는 아무것도 만들지 않는다.
+/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳에서는 아무것도 만들지 않는다.
+/// 로그라이크 지형 전환 때는 뿜는 양이 연출 세기(StageAmbienceFade.Visibility)를 따른다.
 /// </summary>
 public class StageLavaSpouts : MonoBehaviour
 {
@@ -37,8 +38,7 @@ public class StageLavaSpouts : MonoBehaviour
     {
         Remove();
 
-        if (null == _settings || false == _settings.enabled || null == _settings.material || null == _lavaTilemap
-            || GameModeContext.IsRoguelike)
+        if (null == _settings || false == _settings.enabled || null == _settings.material || null == _lavaTilemap)
         {
             return;
         }
@@ -58,7 +58,11 @@ public class StageLavaSpouts : MonoBehaviour
     {
         if (null != current)
         {
-            Destroy(current.gameObject);
+            // 로그라이크 지형 전환으로 바뀔 때는 이미 떠 있는 알갱이가 수명대로 사라지게 둔다(StageAmbienceFade).
+            if (false == StageAmbienceFade.TryRetire(current))
+            {
+                Destroy(current.gameObject);
+            }
             current = null;
         }
     }
@@ -142,7 +146,7 @@ public class StageLavaSpouts : MonoBehaviour
         for (int i = spouts.Count - 1; i >= 0; i--)
         {
             Spout spout = spouts[i];
-            spout.pending += settings.particlesPerSecond * deltaTime;
+            spout.pending += settings.particlesPerSecond * StageAmbienceFade.Visibility * deltaTime;
             int count = Mathf.Min((int)spout.pending, MaxEmitPerFrame);
             spout.pending -= count;
             for (int k = 0; k < count; k++)
@@ -213,6 +217,9 @@ public class StageLavaSpouts : MonoBehaviour
 
     private void EmitParticle(Vector3 _origin)
     {
+        // 로그라이크 지형 전환에서 새 연출이 파도를 따라 번져 켜지는 동안은 켜진 자리에만 띄운다(StageAmbienceFade, 본편은 늘 true).
+        if (false == StageAmbienceFade.ShowsAt(_origin)) return;
+
         float gravity = Mathf.Max(0.01f, settings.gravity);
         float upSpeed = Random.Range(settings.upSpeedRange.x, Mathf.Max(settings.upSpeedRange.x, settings.upSpeedRange.y));
         float sideSpeed = Random.Range(-settings.sideSpeed, settings.sideSpeed);

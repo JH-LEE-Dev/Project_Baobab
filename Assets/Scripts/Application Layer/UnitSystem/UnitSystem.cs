@@ -528,9 +528,11 @@ public class UnitSystem
 
         // "원목 보험 증서" 특성: 유실 처리 전에 일부를 운반 상자로 옮긴다. 특성이 없으면(비율 0) 아무 일도 없다.
         // 옮긴 원목은 유실 집계에서 빠진다(DropAllItem이 남은 슬롯만 센다).
-        inventoryManager.RescueInsuredLogs(offroadContainer, unitSpawner.character.centerTransform);
+        // 연출은 보험 원목이 상자로 날아간 뒤에 남은 원목이 버려지는 순서다(데이터는 둘 다 즉시 처리).
+        inventoryManager.RescueInsuredLogs(offroadContainer, unitSpawner.character.centerTransform, out float dropVisualDelay);
 
-        inDungeonResultManager.IncreaseLostLogItemCnt(inventoryManager.DropAllItem(unitSpawner.character.centerTransform));
+        inDungeonResultManager.IncreaseLostLogItemCnt(
+            inventoryManager.DropAllItem(unitSpawner.character.centerTransform, dropVisualDelay));
         signalHub.Publish(new PopupUIDownSignal());
     }
 

@@ -202,6 +202,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private float droneBehindAngleDeg = 270f; // 대형 기준 방향의 현재 각도(도). 목표(조준 반대 방향) 각도로 MoveTowardsAngle 보간된다. 270 = Down
 
     private readonly List<Drone> activeDrones = new List<Drone>(4);
+    // [로그라이크 전용] 드론 레이저 조합 색(스텔라 + 드론). 소환 초기화가 Default로 되돌리므로 소환 · 재소환 직후 다시 칠한다. 본편은 늘 Default다.
+    private PresentationLayer.VFX.EDroneLaserTint droneLaserTintForRun = PresentationLayer.VFX.EDroneLaserTint.Default;
     private readonly List<IStaticCollidable> droneScanResults = new List<IStaticCollidable>(16);
     private readonly List<ITreeObj> droneClaimedTargets = new List<ITreeObj>(4); // 한 번의 Activate/재타겟팅 호출 안에서 드론끼리 서로 다른 나무를 고르도록
     private readonly List<ITreeObj> droneChainHitTrees = new List<ITreeObj>(8); // 한 번의 연쇄공격 전이 동안 이미 맞은 나무(중복 전이 방지)
@@ -1475,6 +1477,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             drone.SetRetargetCallback(RequestDroneRetarget);
             drone.SetChainAttackCallback(OnDroneChainAttack);
             drone.SetPriorityShotCallback(OnDronePriorityShot);
+            if (PresentationLayer.VFX.EDroneLaserTint.Default != droneLaserTintForRun) drone.SetLaserTint(droneLaserTintForRun);
             activeDrones.Add(drone);
 
             // Town → Dungeon 진입은 캐릭터가 차량 탑승으로 비활성화된 채 SetupGameInstaller까지 오므로, 이 시점에 소환되는
@@ -1707,6 +1710,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
                 droneClaimedTargets.Add(target);
             }
 
+            // "드론 치명타 적용" 특성: 도끼 치명타 확률·배율을 계승한다(꺼져 있으면 굴리지 않는다). 실제 판정은 Drone이 발사마다 한다.
+            activeDrones[i].SetCritical(statComponent.bDroneCritical, statComponent.criticalChance, statComponent.ciriticalDamageMul);
             activeDrones[i].Activate(statComponent.droneDamage, statComponent.droneDamageInterval, statComponent.droneActiveDuration, statComponent.droneAttackRange, target);
         }
     }
@@ -1903,6 +1908,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         if (finalChainCount > 0)
         {
+            // 연쇄 전이도 이번 발사의 치명타 결과를 그대로 쓴다(드론 치명타 적용 특성이 없으면 항상 배율 1·치명타 아님).
+            bool bChainCritical = _drone.bLastShotCritical;
+            float chainDamage = statComponent.droneDamage * _drone.LastShotDamageMul;
+
             droneChainHitTrees.Clear();
             if (_primaryTarget != null) droneChainHitTrees.Add(_primaryTarget);
 
@@ -1922,7 +1931,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
                     if (next is TreeObj nextTree)
                     {
-                        nextTree.TakeDamageWithoutHitSound(statComponent.droneDamage); // 레이저 전이 - 도끼 타격음 없이 드론 발사음만
+                        nextTree.TakeDamageWithoutHitSound(chainDamage, bChainCritical); // 레이저 전이 - 도끼 타격음 없이 드론 발사음만
 
                         if (_bIsOverheat)
                         {
@@ -1931,7 +1940,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
                     }
                     else
                     {
-                        (next as IDamageable)?.TakeDamage(statComponent.droneDamage);
+                        (next as IDamageable)?.TakeDamage(chainDamage);
                     }
 
                     Vector3 nextTopPos = GetTreeTopPosition(next);
@@ -2307,6 +2316,19 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
             ActivateDrones();
             return;
+        }
+    }
+
+    /// <summary>
+    /// [로그라이크 전용] 떠 있는 드론과 앞으로 소환할 드론의 레이저 색(스텔라 + 드론 조합 푸른색 / 기본). 본편은 부르지 않는다.
+    /// </summary>
+    public void SetDroneLaserTintForRun(PresentationLayer.VFX.EDroneLaserTint _tint)
+    {
+        droneLaserTintForRun = _tint;
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            if (activeDrones[i] == null) continue; // Unity null 비교 - 종료/씬 해제 순서에 따라 이미 파괴된 드론일 수 있다
+            activeDrones[i].SetLaserTint(_tint);
         }
     }
 

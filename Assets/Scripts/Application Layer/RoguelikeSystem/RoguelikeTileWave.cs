@@ -67,6 +67,18 @@ public sealed class RoguelikeTileWaveSettings
     public bool crackGlow = true;
     [Tooltip("용암이 아닌 티어의 틈 빛 색(가산, 알파 = 세기).")]
     public Color crackGlowColor = new Color(0.62f, 0.9f, 1f, 0.7f);
+    [Tooltip("마루 빛·바뀌는 칸 반짝임을 지형(맵 종류)마다 다른 색으로 그린다. 새 지형으로 바뀐 칸은 새 지형 색, 아직 바뀌지 않은 칸은 직전 지형 색이다. 목록에 없는 지형은 crestLightColor.")]
+    public List<RoguelikeTileWaveTierLight> tierLightColors = RoguelikeTileWaveTierLight.Defaults();
+
+    [Header("출발 전 움츠림(티어 전환)")]
+    [Tooltip("티어 전환 파도가 떠나기 전 섬 중심 칸들이 살짝 가라앉는 시간(초). 가라앉았다가 파도가 터지듯 퍼진다. 0이면 끈다. 진입(바다에서 솟는 파도)은 쓰지 않는다.")]
+    public float anticipationSeconds = 0.14f;
+    [Tooltip("움츠릴 때 섬 중심이 가라앉는 깊이(월드 단위, 1 = 32픽셀). 픽셀 단위로 끊는다. 가라앉는 동안 칸 테두리가 깊이만큼 드러난다.")]
+    public float anticipationDepth = 0.1875f;
+    [Tooltip("움츠리는 범위(섬 중심에서 바닥 평면 거리). 중심이 가장 깊고 이 거리에서 0이다.")]
+    public float anticipationRadius = 4.5f;
+    [Tooltip("파도가 떠난 뒤 가라앉았던 칸이 제자리로 돌아오는 시간(초). 그동안 첫 물결과 겹친다.")]
+    public float anticipationReleaseSeconds = 0.12f;
 
     [Header("굴절 고리")]
     [Tooltip("앞머리를 따라 퍼지는 약한 굴절 고리 재질(Custom/Roguelike/WaveRefraction, 화면 캡처를 픽셀 단위로 민다). 비우면 끈다.")]
@@ -87,6 +99,32 @@ public sealed class RoguelikeTileWaveSettings
     public int backgroundPieceCells = 3;
     [Tooltip("기준 화면 바깥으로 이만큼(칸)까지는 파도로 바꾼다. 그보다 먼 칸은 화면 밖이라 바로 바꾼다.")]
     public float viewMarginTiles = 2f;
+}
+
+/// <summary>바닥 타일 파도의 지형(맵 종류)별 빛 색(마루 빛·바뀌는 칸 반짝임, 가산).</summary>
+[Serializable]
+public struct RoguelikeTileWaveTierLight
+{
+    public MapType mapType;
+    public Color color;
+
+    public RoguelikeTileWaveTierLight(MapType _mapType, Color _color)
+    {
+        mapType = _mapType;
+        color = _color;
+    }
+
+    /// <summary>기본 색: 풀숲 연두, 포자 숲 분홍 보라, 별뿌리 숲 푸른 별빛, 용암 숲 주황(바다 빛 고리의 용암 색과 같다).</summary>
+    public static List<RoguelikeTileWaveTierLight> Defaults()
+    {
+        return new List<RoguelikeTileWaveTierLight>
+        {
+            new RoguelikeTileWaveTierLight(MapType.WideGreenForest, new Color(0.84f, 1f, 0.6f, 1f)),
+            new RoguelikeTileWaveTierLight(MapType.FluffySporeForest, new Color(1f, 0.74f, 0.96f, 1f)),
+            new RoguelikeTileWaveTierLight(MapType.StarrootForest, new Color(0.72f, 0.82f, 1f, 1f)),
+            new RoguelikeTileWaveTierLight(MapType.MagmaForest, new Color(1f, 0.72f, 0.3f, 1f)),
+        };
+    }
 }
 
 /// <summary>
@@ -125,6 +163,15 @@ public sealed class RoguelikeTileWave
 {
     /// <summary>타일 한 칸이 새 지형으로 바뀌었다(물결 꼭대기, 칸 중심 월드 위치). 구독자가 없으면 비용이 없다.</summary>
     public event Action<Vector3> TileRevealedEvent;
+
+    /// <summary>
+    /// 섬 가장자리 칸(새 지형 바닥 블록 바로 옆이 물)이 새 지형으로 바뀌었다. 위치는 그 칸과 옆 물 칸 사이 물가(월드), bool은 새 지형의 물이 용암인지.
+    /// 옆 물 칸마다 한 번씩 나간다(모서리 칸은 두 번). 화면 안 칸만.
+    /// </summary>
+    public event Action<Vector3, bool> ShoreRevealedEvent;
+
+    /// <summary>파도 앞머리가 중심을 떠났다(티어 전환은 움츠림이 끝난 순간, 진입은 재생을 시작한 순간). bool은 진입 파도인지.</summary>
+    public event Action<bool> FrontLaunchedEvent;
 
     private struct WaveCell
     {
@@ -197,7 +244,7 @@ public sealed class RoguelikeTileWave
     private const short PixelsDirty = short.MinValue;
     // 스텐실 리프트에 놓을 블록 모양을 가져올 바닥 층(스텐실이 아닌 첫 층). 없으면 -1.
     private int liftShapeLayer = -1;
-    // 바닥 층 중 스텐실만 쓰는 층(GroundStencil). 복제층에는 블록 모양 타일을 놓는다(LiftTilesOf).
+    // 바닥 층 중 스텐실만 쓰는 층(GroundStencil). 복제층에도 실제 스텐실 타일을 블록과 같은 높이로 놓는다(QueueFloor).
     private bool[] bStencilFloorLayer;
     private bool[] landCell;     // 직전이나 새 지형에 바닥이 있는 칸
     private bool[] nearLand;     // 새 지형의 바닥 칸과 그 둘레 한 칸
@@ -223,6 +270,29 @@ public sealed class RoguelikeTileWave
     private Vector2 wobbleOffset;
     private float frontDistance;
     private float frontSpeed;
+    // 앞머리가 떠났다(움츠림이 끝났다). 그 전까지 앞머리는 첫 칸에 머문다.
+    private bool bFrontMoving;
+
+    // // 출발 전 움츠림(티어 전환)
+    // 가라앉는 칸 수(cells 앞쪽, 파도 거리 anticipationRadius 안). 0이면 움츠리지 않는다.
+    private int dipCount;
+    // 지금 가라앉은 정도(0~1).
+    private float dipAmount;
+
+    // // 지형별 빛 색
+    private Color lightColor;
+    private Color lightColorBefore;
+    private MapType mapType;
+
+    // // 섬 가장자리(물가) 칸
+    private struct ShorePoint
+    {
+        public int order;
+        public Vector3 position;
+    }
+    // 화면 안 물가 자리(cells 순서). shoreFirst[order]부터 그 칸의 자리다(없으면 다음 칸 시작과 같다).
+    private readonly List<ShorePoint> shorePoints = new List<ShorePoint>(512);
+    private int[] shoreFirst = new int[0];
 
     // // 빛(가산 재질 복제층)
     // 칸 윗면 빛(마루 빛 + 바뀌는 칸 반짝임). 테두리처럼 바닥 블록 복제층과 정렬 순서가 같고 조금 더 앞에 둔다.
@@ -267,6 +337,8 @@ public sealed class RoguelikeTileWave
 
     private const int LightSteps = 16;
     private const int SeaSteps = 12;
+    // 움츠림으로 가장 깊이 가라앉은 칸의 테두리 진하기(물결 마루 = 1). 민무늬 바닥에서도 칸이 가라앉는 게 읽히게 한다.
+    private const float DipOutline = 0.7f;
     // 마루 높이의 이 비율 아래로 솟은 칸은 마루 빛을 받지 않는다.
     private const float CrestLightFrom = 0.5f;
     // 윗면 빛 타일 안쪽 진하기(테두리 = 255). 테두리가 조금 더 빛나 칸 모양이 읽힌다.
@@ -324,6 +396,20 @@ public sealed class RoguelikeTileWave
     /// <summary>마지막으로 준비(PrepareAfterGenerate)한 파도가 런 입장 파도인지(아니면 티어 전환).</summary>
     public bool IsEntryWave => bEntry;
 
+    /// <summary>파도가 퍼지는 중심(섬 중심, 월드).</summary>
+    public Vector3 WaveCenter => waveCenter;
+
+    /// <summary>
+    /// 앞머리가 떠나 퍼지는 중이면 true. _front는 지금 앞머리의 파도 거리, _landEdge는 새 지형 바닥이 있는 가장 먼 칸의 파도 거리.
+    /// 움츠리는 동안·재생 전후는 false.
+    /// </summary>
+    public bool TryGetFront(out float _front, out float _landEdge)
+    {
+        _front = frontDistance;
+        _landEdge = landEdgeKey;
+        return bPlaying && bFrontMoving;
+    }
+
     public void Initialize(EnvironmentSystem _environmentSystem, RoguelikeTileWaveSettings _settings)
     {
         environmentSystem = _environmentSystem;
@@ -345,15 +431,18 @@ public sealed class RoguelikeTileWave
     /// <summary>
     /// 맵을 깐 직후에 부른다. 새 타일을 떠 두고 화면 안 칸을 파도 시작 상태로 되돌린다.
     /// _bEntry면 진입(물만 깔린 바다), 아니면 티어 전환(직전 지형). 티어 전환인데 직전 지형이 없으면 진입처럼 한다.
-    /// _bLava면 새 지형의 물이 용암이다(틈 빛을 용암 빛으로, 바다 빛 고리를 용암 색으로).
+    /// _bLava면 새 지형의 물이 용암이다(틈 빛을 용암 빛으로, 바다 빛 고리를 용암 색으로). _mapType은 새 지형(마루 빛·반짝임 색을 고른다).
     /// </summary>
-    public void PrepareAfterGenerate(Vector3 _center, Vector2 _viewHalfSize, bool _bEntry, bool _bLava)
+    public void PrepareAfterGenerate(Vector3 _center, Vector2 _viewHalfSize, bool _bEntry, bool _bLava, MapType _mapType)
     {
         FinishImmediately();
 
         // 직전 지형은 바로 전에 준비한 파도의 새 지형이다(CaptureBefore가 그 화면을 떴다).
         bLavaBefore = bLava;
         bLava = _bLava;
+        lightColorBefore = TierLightColor(mapType);
+        mapType = _mapType;
+        lightColor = TierLightColor(_mapType);
         waveCenter = _center;
         waveSerial++;
         wobbleOffset = new Vector2(37.1f * (waveSerial % 1000), 91.7f * (waveSerial % 1000));
@@ -379,9 +468,15 @@ public sealed class RoguelikeTileWave
 
         PickAnimationReference();
         EnsureLifts();
+        // 복제층은 처음 만든 때의 재질을 들고 있다. 결과 화면에서 다시 들어오는 진입처럼 바닥 머티리얼이 바로 바뀐 맵도 있으므로
+        // 지금 층 재질에 맞춘다(티어 전환은 새 지형의 머티리얼이 아직 미뤄져 있어 직전 재질 그대로다).
+        SyncLiftMaterials();
         ApplyCrackMaterial();
         BuildOrder(_center);
-        if (bEntry) BuildBackgroundPieces();
+        // 진입의 해안선(물 모서리)도 파도가 그 칸에 닿을 때 바닥과 함께 나타난다(ReachCell). 파도가 다 퍼진 뒤 퍼즐 조각으로
+        // 따로 나타나게 하면 섬 끝 육지가 먼저 보이고 그 아래 물 모서리만 한참 비어 있다가 늦게 보인다.
+        pieceCells.Clear();
+        pieces.Clear();
         bPrepared = true;
     }
 
@@ -470,12 +565,25 @@ public sealed class RoguelikeTileWave
         frontSpeed = FrontSpeedAt(0f, span, seconds, ease);
         frontDistance = startKey;
 
+        // 티어 전환: 앞머리가 떠나기 전 섬 중심 칸들이 살짝 가라앉는다(움츠림). 그동안 앞머리는 첫 칸에 머물고,
+        // 떠난 뒤 anticipationReleaseSeconds 동안 제자리로 돌아오며 첫 물결과 겹친다. 진입은 바다에서 솟으므로 움츠릴 바닥이 없다.
+        float preSeconds = PrepareAnticipation();
+        float releaseSeconds = Mathf.Max(0.01f, settings.anticipationReleaseSeconds);
+        bFrontMoving = preSeconds <= 0f;
+        if (bFrontMoving) FrontLaunchedEvent?.Invoke(bEntry);
+
         while (true)
         {
             // 앞머리는 중심에서 빠르고 바깥으로 갈수록 느려진다. 물결이 다 지나간 뒤(진입 배경 조립이 남았을 때)는 마지막 속도로 계속 퍼진다(구름·물 장식이 따라간다).
-            float front = FrontAt(elapsed, startKey, span, seconds, ease);
+            float frontElapsed = Mathf.Max(0f, elapsed - preSeconds);
+            float front = FrontAt(frontElapsed, startKey, span, seconds, ease);
             frontDistance = front;
-            frontSpeed = FrontSpeedAt(elapsed, span, seconds, ease);
+            frontSpeed = FrontSpeedAt(frontElapsed, span, seconds, ease);
+            if (false == bFrontMoving && elapsed >= preSeconds)
+            {
+                bFrontMoving = true;
+                FrontLaunchedEvent?.Invoke(bEntry);
+            }
 
             if (bLiftsActive)
             {
@@ -485,6 +593,8 @@ public sealed class RoguelikeTileWave
                     next++;
                 }
 
+                // 움츠림: 가라앉는 정도를 먼저 정해 이번 프레임의 칸 높이(아래 UpdateCell)에 같이 쓴다.
+                TickAnticipation(elapsed, preSeconds, releaseSeconds, next, front, length);
                 for (int j = done; j < next; j++) UpdateCell(j, front - cells[j].key, length);
                 while (done < next && StageDone == cellStage[done]) done++;
 
@@ -534,6 +644,61 @@ public sealed class RoguelikeTileWave
         WriteAllAfter();
 
         bPlaying = false;
+        bFrontMoving = false;
+    }
+
+    /// <summary>
+    /// 움츠림을 준비한다(Play 시작). 가라앉을 칸(섬 중심에서 anticipationRadius 안)을 세고 움츠리는 시간을 돌려준다(없으면 0).
+    /// </summary>
+    private float PrepareAnticipation()
+    {
+        dipCount = 0;
+        dipAmount = 0f;
+        if (bEntry || settings.anticipationSeconds <= 0f || settings.anticipationDepth <= 0f || settings.anticipationRadius <= 0f) return 0f;
+
+        float radius = settings.anticipationRadius;
+        while (dipCount < cells.Count && cells[dipCount].key < radius) dipCount++;
+        return dipCount > 0 ? settings.anticipationSeconds : 0f;
+    }
+
+    /// <summary>
+    /// 움츠림 한 프레임. 가라앉는 정도를 정하고, 아직 물결이 닿지 않은 가라앉는 칸의 높이를 놓는다(닿은 칸은 UpdateCell이 놓는다).
+    /// 다 돌아왔으면 그 칸들을 제자리에 놓고 끝낸다.
+    /// </summary>
+    private void TickAnticipation(float _elapsed, float _preSeconds, float _releaseSeconds, int _next, float _front, float _length)
+    {
+        if (dipCount <= 0) return;
+
+        bool bEnded = _elapsed >= _preSeconds + _releaseSeconds;
+        if (_elapsed < _preSeconds) dipAmount = Mathf.SmoothStep(0f, 1f, _elapsed / _preSeconds);
+        else dipAmount = bEnded ? 0f : 1f - Mathf.SmoothStep(0f, 1f, (_elapsed - _preSeconds) / _releaseSeconds);
+
+        for (int j = _next; j < dipCount; j++) PoseCell(j, _front - cells[j].key, _length);
+        if (bEnded) dipCount = 0;
+    }
+
+    /// <summary>움츠림으로 이 칸이 가라앉은 높이(0 이하, 월드). 섬 중심이 가장 깊고 anticipationRadius에서 0이다.</summary>
+    private float DipHeight(int _order)
+    {
+        if (_order >= dipCount || dipAmount <= 0f) return 0f;
+
+        float falloff = 1f - Mathf.SmoothStep(0f, 1f, cells[_order].key / settings.anticipationRadius);
+        return -settings.anticipationDepth * dipAmount * falloff;
+    }
+
+    /// <summary>지형(맵 종류)의 마루 빛·반짝임 색. 목록에 없으면 crestLightColor.</summary>
+    private Color TierLightColor(MapType _mapType)
+    {
+        List<RoguelikeTileWaveTierLight> list = settings?.tierLightColors;
+        if (null != list)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].mapType == _mapType) return list[i].color;
+            }
+        }
+
+        return null != settings ? settings.crestLightColor : Color.white;
     }
 
     /// <summary>앞머리 감속 곡선: u(0~1, 시간 비율) → 간 거리 비율. 처음 기울기 1 + _ease, 끝 기울기 1 - _ease.</summary>
@@ -569,6 +734,9 @@ public sealed class RoguelikeTileWave
 
         bPlaying = false;
         bPrepared = false;
+        bFrontMoving = false;
+        dipCount = 0;
+        dipAmount = 0f;
 
         WriteAllAfter();
     }
@@ -982,6 +1150,42 @@ public sealed class RoguelikeTileWave
         }
     }
 
+    /// <summary>
+    /// 복제층 재질을 원래 층의 지금 재질로 다시 맞춘다. 지형 전환으로 바닥·장식·스텐실 머티리얼이 바뀐 뒤에 부른다
+    /// (복제층은 처음 만들 때의 재질을 그대로 들고 있다). 장식 복제층(윗면 빛·틈 빛·바다 빛 고리)은 제 재질을 따로 고르므로 그대로 둔다.
+    /// </summary>
+    public void SyncLiftMaterials()
+    {
+        SyncLiftMaterials(lifts, floorLayers);
+        SyncLiftMaterials(waterLifts, waterLayers);
+        SyncLiftMaterials(shoreLifts, shoreLayers);
+        if (null != outlineLift && liftShapeLayer >= 0 && liftShapeLayer < floorLayers.Count)
+        {
+            SyncLiftMaterial(outlineLift, floorLayers[liftShapeLayer]);
+        }
+    }
+
+    private static void SyncLiftMaterials(List<Tilemap> _lifts, List<Tilemap> _layers)
+    {
+        int count = Mathf.Min(_lifts.Count, _layers.Count);
+        for (int l = 0; l < count; l++)
+        {
+            SyncLiftMaterial(_lifts[l], _layers[l]);
+        }
+    }
+
+    private static void SyncLiftMaterial(Tilemap _lift, Tilemap _source)
+    {
+        if (null == _lift || null == _source) return;
+
+        TilemapRenderer source = _source.GetComponent<TilemapRenderer>();
+        TilemapRenderer lift = _lift.GetComponent<TilemapRenderer>();
+        if (null != source && null != lift && lift.sharedMaterial != source.sharedMaterial)
+        {
+            lift.sharedMaterial = source.sharedMaterial;
+        }
+    }
+
     private static Tilemap CreateLift(Tilemap _source, TilemapRenderer _sourceRenderer, int _order, string _name)
     {
         GameObject go = new GameObject(_name);
@@ -1045,7 +1249,7 @@ public sealed class RoguelikeTileWave
     {
         for (int l = 0; l < lifts.Count; l++)
         {
-            if (null != lifts[l]) lifts[l].SetTilesBlock(region, LiftTilesOf(floorBefore, l));
+            if (null != lifts[l]) lifts[l].SetTilesBlock(region, floorBefore[l]);
         }
         for (int l = 0; l < shoreLifts.Count; l++)
         {
@@ -1083,11 +1287,6 @@ public sealed class RoguelikeTileWave
         }
     }
 
-    /// <summary>복제층 l에 놓을 타일 배열. 스텐실 복제층은 바닥 블록과 같은 모양이어야 하므로 블록 층의 타일을 쓴다.</summary>
-    private TileBase[] LiftTilesOf(TileBase[][] _floorTiles, int _liftIndex)
-    {
-        return bStencilFloorLayer[_liftIndex] ? _floorTiles[liftShapeLayer] : _floorTiles[_liftIndex];
-    }
 
     /// <summary>바닥도 해안선도 없고 섬 둘레도 아닌 물 칸(깊은 물) 하나.</summary>
     private int FindDeepWaterSample(TileBase[][] _water)
@@ -1166,6 +1365,7 @@ public sealed class RoguelikeTileWave
         {
             if (HasAnyTile(floorAfter, cells[j].index)) landEdgeKey = Mathf.Max(landEdgeKey, cells[j].key);
         }
+        BuildShorePoints();
         if (null == seaLift || settings.seaRing <= 0f) return;
 
         for (int i = 0; i < count; i++)
@@ -1184,6 +1384,60 @@ public sealed class RoguelikeTileWave
 
     // 새 지형 바닥이 있는 가장 먼 칸의 파도 거리(BuildOrder). 바다 빛 고리가 여기서부터 옅어진다.
     private float landEdgeKey;
+
+    /// <summary>
+    /// 화면 안 섬 가장자리 칸(새 지형 바닥 블록이 있고 칸 좌표로 붙은 이웃 넷 중 바닥 블록이 없는 칸이 있다)마다, 그 물 쪽 이웃과의 사이 물가 자리를 모은다.
+    /// 칸이 새 지형으로 바뀌는 순간 ShoreRevealedEvent로 나간다.
+    /// </summary>
+    private void BuildShorePoints()
+    {
+        shorePoints.Clear();
+        if (shoreFirst.Length < cells.Count + 1) shoreFirst = new int[cells.Count + 1];
+        if (liftShapeLayer < 0)
+        {
+            Array.Clear(shoreFirst, 0, cells.Count + 1);
+            return;
+        }
+
+        TileBase[] blocks = floorAfter[liftShapeLayer];
+        int width = region.size.x;
+        int height = region.size.y;
+        for (int j = 0; j < cells.Count; j++)
+        {
+            shoreFirst[j] = shorePoints.Count;
+            WaveCell cell = cells[j];
+            if (false == cell.bInView || null == blocks[cell.index]) continue;
+
+            int x = cell.index % width;
+            int y = cell.index / width;
+            AddShorePoint(j, cell, x - 1, y, width, height, blocks);
+            AddShorePoint(j, cell, x + 1, y, width, height, blocks);
+            AddShorePoint(j, cell, x, y - 1, width, height, blocks);
+            AddShorePoint(j, cell, x, y + 1, width, height, blocks);
+        }
+        shoreFirst[cells.Count] = shorePoints.Count;
+    }
+
+    private void AddShorePoint(int _order, in WaveCell _cell, int _x, int _y, int _width, int _height, TileBase[] _blocks)
+    {
+        bool bInside = _x >= 0 && _y >= 0 && _x < _width && _y < _height;
+        if (bInside && null != _blocks[_x + _y * _width]) return;
+
+        Vector3 water = environmentSystem.GetTileCellCenterWorldForRun(new Vector3Int(region.xMin + _x, region.yMin + _y, 0));
+        // 칸 중심과 물 칸 중심 사이에서 물 쪽으로 조금 더 간 자리(블록 가장자리 바로 바깥 물).
+        shorePoints.Add(new ShorePoint { order = _order, position = Vector3.Lerp(_cell.worldPos, water, 0.6f) });
+    }
+
+    /// <summary>이 칸의 물가 자리를 알린다(칸이 새 지형으로 바뀌는 순간).</summary>
+    private void RevealShore(int _order)
+    {
+        if (null == ShoreRevealedEvent || _order + 1 >= shoreFirst.Length) return;
+
+        for (int k = shoreFirst[_order]; k < shoreFirst[_order + 1] && k < shorePoints.Count; k++)
+        {
+            ShoreRevealedEvent.Invoke(shorePoints[k].position, bLava);
+        }
+    }
 
     /// <summary>바다 빛 고리가 한 칸을 지나가는 거리: 물결 첫 마루 하나(반 파장).</summary>
     private float SeaRingLength => Mathf.Max(0.1f, settings.rippleWavelength) * 0.5f;
@@ -1475,13 +1729,14 @@ public sealed class RoguelikeTileWave
 
         if (false == bEntry) return;
 
-        // 진입: 블록은 제 크기로 나타나고 그 칸의 바다는 새 물(육지면 없음, 물가면 물가 물)로 바뀐다.
+        // 진입: 블록은 제 크기로 나타나고 그 칸의 바다는 새 물(육지면 없음, 물가면 물가 물)로, 해안선(물 모서리)도 함께 바뀐다.
         // 블록을 작게 돋아나게 하면 이웃 블록·바다와 맞물리지 않아 가장자리가 톱니처럼 지저분해진다. 제 크기면 섬 가장자리가
         // 늘 완성된 모양(앞 칸 바다가 절벽 아랫부분을 덮는 모양)으로 퍼져 나간다. 블록은 이 프레임의 높이 갱신(UpdateCell)이 놓는다.
-        SetLiftTiles(cell.cell, cell.index, null, waterAfter);
+        SetLiftTiles(cell.cell, cell.index, shoreAfter, waterAfter);
         ShowAfterOnLift(_order);
 
         TileRevealedEvent?.Invoke(cell.worldPos);
+        RevealShore(_order);
     }
 
     private void UpdateCell(int _order, float _distance, float _length)
@@ -1498,6 +1753,7 @@ public sealed class RoguelikeTileWave
             SetLiftTiles(cell.cell, cell.index, shoreAfter, waterAfter);
             ShowAfterOnLift(_order);
             TileRevealedEvent?.Invoke(cell.worldPos);
+            RevealShore(_order);
             stage = StageSwapped;
         }
 
@@ -1515,13 +1771,13 @@ public sealed class RoguelikeTileWave
     }
 
     /// <summary>
-    /// 실제 층의 칸을 새 지형(바닥·물, 티어 전환이면 해안선까지)으로 한꺼번에 바꾼다. 파도 동안 화면에는 복제층이 그려지므로
-    /// 바뀌는 순간이 보이지 않는다. 진입의 해안선은 4단계에서 따로 나타난다.
+    /// 실제 층의 칸을 새 지형(바닥·해안선·물)으로 한꺼번에 바꾼다. 파도 동안 화면에는 복제층이 그려지므로
+    /// 바뀌는 순간이 보이지 않는다.
     /// </summary>
     private void SwapCell(Vector3Int _cell, int _index)
     {
         SetCellLayers(floorLayers, floorAfter, _cell, _index);
-        if (false == bEntry) SetCellLayers(shoreLayers, shoreAfter, _cell, _index);
+        SetCellLayers(shoreLayers, shoreAfter, _cell, _index);
         SetCellLayers(waterLayers, waterAfter, _cell, _index);
     }
 
@@ -1583,7 +1839,9 @@ public sealed class RoguelikeTileWave
     /// </summary>
     private void PoseCell(int _order, float _distance, float _length)
     {
-        float height = RippleHeight(_distance, _length);
+        // 움츠림(출발 전 가라앉음)은 물결 위에 더한다. 물결이 다 지나간 칸(제자리)에는 더하지 않는다.
+        float dip = _distance < _length ? DipHeight(_order) : 0f;
+        float height = RippleHeight(_distance, _length) + dip;
         short pixels = (short)Mathf.Clamp(Mathf.RoundToInt(height * QuakeTileRipple.PixelsPerUnit), -QuakeTileRipple.MaxOffsetPixels, QuakeTileRipple.MaxOffsetPixels);
         short last = lastPixels[_order];
         bool bMoved = pixels != last;
@@ -1607,6 +1865,12 @@ public sealed class RoguelikeTileWave
             float peak = wave >= 0f ? 1f : Mathf.Max(onLevel, Mathf.Clamp01(settings.outlineTroughLevel));
             float swing = Mathf.Lerp(onLevel, peak, Mathf.Abs(wave));
             outline = OutlineEnvelope(_distance, _length) * swing;
+        }
+
+        // 움츠림: 가라앉은 깊이만큼 테두리가 드러난다(물결이 아직 닿지 않은 칸도).
+        if (dip < 0f && HasBlockOnLift(_order))
+        {
+            outline = Mathf.Max(outline, Mathf.Clamp01(-dip / settings.anticipationDepth) * DipOutline);
         }
 
         QueueOutline(_order, (sbyte)Mathf.RoundToInt(outline * QuakeTileRipple.OutlineSteps), bMoved);
@@ -1655,7 +1919,8 @@ public sealed class RoguelikeTileWave
         Vector3Int cell = cells[_order].cell;
         if (_step > 0)
         {
-            Color color = settings.crestLightColor;
+            // 새 지형으로 바뀐 칸은 새 지형 색, 아직 직전 지형인 칸은 직전 지형 색(TierLightColor).
+            Color color = liftShowsAfter[_order] ? lightColor : lightColorBefore;
             color.a = _step / (float)LightSteps;
             TileBase tile = QuakeTileRipple.OffsetTile(LightFaceTile, new Vector2Int(0, lastPixels[_order]));
             lightChanges.Add(new TileChangeData(cell, tile, color, Matrix4x4.identity));
@@ -1784,7 +2049,9 @@ public sealed class RoguelikeTileWave
         {
             if (null == lifts[l]) continue;
 
-            TileBase source = LiftTilesOf(tiles, l)[cell.index];
+            // 스텐실 복제층도 실제 스텐실 타일을 그대로(블록과 같은 높이로) 놓는다. 블록 모양을 놓으면 블록 아랫부분(앞 칸 바다에
+            // 가려지는 곳)까지 육지 스텐실이 찍혀, 그 자리의 물 모서리(WaterCorner - 육지 스텐실이 아닌 곳에만 그린다)가 파도 동안 사라진다.
+            TileBase source = tiles[l][cell.index];
             if (null == source && false == _bTilesChanged) continue;
 
             // SetTile처럼 타일의 색·변형을 그대로 쓰고, 골이면 색만 어둡게 덮는다.

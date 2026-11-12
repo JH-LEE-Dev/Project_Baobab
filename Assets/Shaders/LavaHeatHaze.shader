@@ -51,6 +51,7 @@ Shader "Custom/2D/LavaHeatHaze"
             #pragma vertex vert
             #pragma fragment frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Include/StageAmbienceFade.hlsl"
 
             struct Attributes
             {
@@ -121,7 +122,8 @@ Shader "Custom/2D/LavaHeatHaze"
 
                 // 위로 피어오르는 구역 안에서만 일렁인다.
                 float patch = HeatNoise(float2(texelCenterWS.x, texelCenterWS.y - time * _HazePatchRise) / max(_HazePatchScale, 0.1));
-                float strength = smoothstep(_HazePatchCoverage, _HazePatchCoverage + 0.2, patch);
+                // 로그라이크 지형 전환 때 서서히 끄고 켠다(StageAmbienceFade.hlsl, 본편은 늘 그대로).
+                float strength = smoothstep(_HazePatchCoverage, _HazePatchCoverage + 0.2, patch) * StageAmbienceVisibility(texelCenterWS);
                 if (strength <= 0.0)
                 {
                     discard;

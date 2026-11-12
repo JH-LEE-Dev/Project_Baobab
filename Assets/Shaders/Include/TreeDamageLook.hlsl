@@ -8,8 +8,9 @@
 // - 잿불 나무(침엽수 모양): 금 대신 잎 층 아래 그늘에서 숯불이 붙어 아래층부터 위로 번진다.
 // 나무마다 깎인 정도(_DamageLook)를 MaterialPropertyBlock으로 받는다(TreeVisualComponent.SetDamageLook, 넣는 쪽은 TreeObj).
 // 값의 부호가 모습을 고른다: 양수 = 금, 음수 = 숯불, 0 = 없음. 크기(0~1)가 깎인 정도다.
-// 켜고 끄는 것은 열기 차오름과 같은 전역값(_TreeHeatChargeA.x)을 따른다. 그 값은 본편 4스테이지에서만 1이라
-// 다른 스테이지·로그라이크에서는 값이 들어와도 아무것도 바꾸지 않는다. TreeHeatCharge.hlsl 뒤에 include 한다.
+// 켜고 끄는 것은 전역값 _TreeDamageLookOn(0/1)을 따른다. StageAmbienceShaderGlobals가 스테이지 데이터의 열기 차오름
+// 켜짐과 같은 값으로 채우며(본편 4스테이지·로그라이크 용암 숲에서만 1), 다른 스테이지에서는 값이 들어와도 아무것도 바꾸지 않는다.
+// 열기 차오름(_TreeHeatChargeA)은 로그라이크에서 꺼지므로 따로 둔다. TreeHeatCharge.hlsl 뒤에 include 한다.
 //
 // [비용] 무늬(금의 경계선, 숯불 덩이, 깜빡임 박자)는 픽셀마다 계산하지 않고 미리 구워 둔 작은 텍스처
 // (_TreeDamagePatternTex, TreeDamagePatternTexture.cs가 만든다)에서 한 번 읽는다. 나무 한 그루에 한 번이면 되는 값
@@ -26,6 +27,8 @@
 // B: 숯불 덩이 무늬(0~1, 뭉글뭉글한 값)
 // A: 숯불 깜빡임 박자(0~1, 두 픽셀 묶음마다 다르다)
 TEXTURE2D(_TreeDamagePatternTex);
+// 깎인 모습 켜짐(0/1). 위 설명 참고.
+float _TreeDamageLookOn;
 // 무늬 텍스처 한 변의 크기(픽셀). TreeDamagePatternTexture.Size와 같아야 한다.
 static const float TreeDamagePatternSize = 144.0;
 
@@ -82,7 +85,7 @@ float4 ComputeTreeDamageFx(float2 _pivotWorld, float _damageLook)
 {
     float4 fx = float4(0.0, 0.0, OverheatBurstFlareHeatAt(_pivotWorld), 0.0);
 
-    if (_TreeHeatChargeA.x >= 0.5 && _damageLook != 0.0)
+    if (_TreeDamageLookOn >= 0.5 && _damageLook != 0.0)
     {
         fx.xy = floor(TreeDamageHash2(floor(_pivotWorld * 32.0 + 0.5)) * TreeDamagePatternSize);
         fx.w = _damageLook;

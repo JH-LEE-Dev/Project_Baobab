@@ -264,9 +264,81 @@ public partial class RoguelikeSystem
         tileWave.FinishImmediately();
         waterDeco.Flush();
         cloudFade.Flush();
+        FinishAmbienceCrossfade();
 
         // 시작 신호를 받은 쪽(이펙트 담당)이 끝 신호를 기다리지 않게 짝을 맞춘다. 파도는 방금 새 지형으로 다 채워졌다.
         if (bWasPlaying) signalHub.Publish(new RoguelikeTileWaveCompletedSignal(tileWave.IsEntryWave));
+    }
+
+    /// <summary>
+    /// 티어 전환의 분위기 연출 바꾸기. 직전 지형의 연출을 서서히 끄고(맵 생성기가 모아 둔 새 지형의 연출 바꾸기는 그때까지 미룬다),
+    /// 다 꺼진 때 새 지형의 연출로 바꾼 뒤, 파도가 새 지형으로 바꾼 선을 따라 섬 중심에서 번져 켠다(StageAmbienceFade 원).
+    /// 원은 바꾼 순간 중심에서 출발해 파도 선을 따라잡은 뒤 그 선을 따라가고, 파도가 끝나도 같은 속도로 화면 끝까지 넓어진다.
+    /// 게임 시간으로 흐른다(파도와 같다). 렌더링 전용.
+    /// </summary>
+    private IEnumerator AmbienceCrossfadeRoutine()
+    {
+        RoguelikeWaveFront front = new RoguelikeWaveFront();
+        front.Reset();
+
+        // 시작한 프레임은 시간을 더하지 않는다. 새 지형을 깐 직후라 그 프레임의 시간 간격이 길어(최대 maximumDeltaTime),
+        // 더하면 직전 연출이 첫 프레임에 절반쯤 툭 꺼진다. 파도(RoguelikeTileWave.Play)도 같은 프레임에 0부터 시작한다.
+        float elapsed = 0f;
+        while (elapsed < AmbienceFadeOutSeconds)
+        {
+            yield return null;
+            elapsed += Time.deltaTime;
+            front.Advance(tileWave, Time.deltaTime);
+            StageAmbienceFade.SetVisibility(1f - Mathf.SmoothStep(0f, 1f, elapsed / AmbienceFadeOutSeconds));
+        }
+
+        Vector2 center = tileWave.WaveCenter;
+        Rect view = GetFieldViewRect(tileWave.WaveCenter, 1f);
+        // 화면 모서리까지의 바닥 평면 거리(아이소는 세로를 두 배로 편다)에 가장자리 폭을 더한 만큼 넓어지면 화면을 다 덮는다.
+        float reach = new Vector2(view.width * 0.5f, view.height).magnitude + AmbienceRevealBand;
+
+        StageAmbienceFade.SetVisibility(0f);
+        SwapPendingAmbience();
+        StageAmbienceFade.SetReveal(center, 0f, AmbienceRevealBand, reach);
+        StageAmbienceFade.SetVisibility(1f);
+
+        float radius = 0f;
+        while (radius < reach)
+        {
+            yield return null;
+            front.Advance(tileWave, Time.deltaTime);
+            tileWave.TryGetSwapFront(out _, out float speed);
+            // 원이 파도 선보다 뒤면 따라잡는다(바꾼 순간 원은 중심에 있고 파도 선은 이미 퍼져 있다). 따라잡으면 파도 선을 따른다.
+            radius = Mathf.Min(front.Distance, radius + Mathf.Max(0.1f, speed) * AmbienceRevealCatchUp * Time.deltaTime);
+            if (front.Distance >= float.MaxValue) radius = reach;
+            StageAmbienceFade.SetReveal(center, radius, AmbienceRevealBand, reach);
+        }
+
+        StageAmbienceFade.ClearReveal();
+        ambienceCrossfadeCoroutine = null;
+    }
+
+    /// <summary>도중이던 분위기 연출 바꾸기를 끝낸다. 미뤄 둔 새 지형의 연출로 바로 바꾸고 다 보이게 한다.</summary>
+    private void FinishAmbienceCrossfade()
+    {
+        if (null != ambienceCrossfadeCoroutine)
+        {
+            StopCoroutine(ambienceCrossfadeCoroutine);
+            ambienceCrossfadeCoroutine = null;
+        }
+
+        SwapPendingAmbience();
+        StageAmbienceFade.ClearReveal();
+        StageAmbienceFade.SetVisibility(1f);
+    }
+
+    // 미뤄 둔 새 지형의 연출로 바꾼다. 바닥 머티리얼이 바뀌므로 파도 복제층의 머티리얼도 다시 맞춘다.
+    private void SwapPendingAmbience()
+    {
+        if (false == StageAmbienceFade.HasPendingSwap) return;
+
+        StageAmbienceFade.RunPendingSwap();
+        tileWave.SyncLiftMaterials();
     }
 
     // // 런
@@ -382,6 +454,8 @@ public partial class RoguelikeSystem
 
         // 지형 전환 = 바닥 타일 파도(기획서 3-4, 진입과 공용). 이펙트 담당의 TierTransition 연출은 파도와 함께 돈다.
         tileWaveCoroutine = StartCoroutine(PlayTileWaveRoutine());
+        // 분위기 연출(돌풍·물빛·안개·파티클 등)도 파도와 함께 직전 지형 것을 서서히 끄고 새 지형 것으로 바꿔 서서히 켠다.
+        if (StageAmbienceFade.HasPendingSwap) ambienceCrossfadeCoroutine = StartCoroutine(AmbienceCrossfadeRoutine());
 
         yield return productionGate.Play(new RoguelikeProductionRequest
         {
@@ -477,12 +551,11 @@ public partial class RoguelikeSystem
         waveStrategy?.StopSpawning();
         signalHub.Publish(new RoguelikeWaveClearedSignal(_spec));
 
-        // 30웨이브: 마지막 나무 줌인·슬로우 → 줌아웃이 먼저, 그 뒤 나무 정리(기획서 3-5 "런 클리어 연출").
+        // 30웨이브: 클리어 기록·RunClear 연출. 나무는 일반 웨이브처럼 목표 달성 순간 묘목으로 돌아가 있다(v3.0 11-12 줌인 연출 삭제).
         if (IsFinalWave(in _spec))
         {
             yield return RunClearRoutine();
             SetPhase(ERunPhase.WaveClear);
-            RevertFieldTreesToSapling();
         }
 
         yield return productionGate.Play(new RoguelikeProductionRequest
@@ -555,64 +628,13 @@ public partial class RoguelikeSystem
 
         signalHub.Publish(new RoguelikeRunClearedSignal());
 
-        // 마지막 나무 줌인 + 슬로우 부서짐 → 줌아웃(기획서 3-5). 이펙트 담당의 RunClear 연출은 함께 돈다.
+        // 이펙트 담당의 RunClear 연출이 끝나면 언리밋으로 넘어간다.
         DisableControl();
-        bool bGateDone = false;
-        StartCoroutine(PlayProductionThen(new RoguelikeProductionRequest
+        yield return productionGate.Play(new RoguelikeProductionRequest
         {
             type = ERoguelikeProduction.RunClear,
-            position = finalTreePosition,
             characterTransform = null != character ? character.transform : null,
-        }, () => bGateDone = true));
-
-        yield return RunClearCinematicRoutine();
-        while (false == bGateDone) yield return null;
-    }
-
-    /// <summary>
-    /// 마지막 나무로 빠르게 다가가 확대하고(줌인) 시간을 늦춰 그 나무가 천천히 부서지는 모습을 보여 준 뒤 섬 전체로 돌아간다(줌아웃).
-    /// 확대는 본편 카메라 줌(CameraMoveController.ZoomCamera - 픽셀 퍼펙트 보정 처리 포함)을 쓰고, 다가가기는 카메라 고정점을 옮긴다.
-    /// 줌 트윈은 게임 시간으로 흐르므로 슬로우 구간 길이에 시간 배율을 곱해 넘긴다. 연출 동안 ESC를 막는다(일시정지가 시간 배율을 덮어쓴다).
-    /// </summary>
-    private IEnumerator RunClearCinematicRoutine()
-    {
-        if (null == cameraAnchor) yield break;
-
-        inputManager.SetESCKeyLock(RunClearESCLockOwner, true);
-
-        Vector3 islandCenter = cameraAnchor.position;
-        Vector3 target = new Vector3(finalTreePosition.x, finalTreePosition.y, islandCenter.z);
-        float slow = Mathf.Clamp(runClearSlowTimeScale, 0.05f, 1f);
-        float zoomIn = Mathf.Max(0.01f, runClearZoomInSeconds);
-        float hold = Mathf.Max(0f, runClearSlowSeconds);
-        float zoomOut = Mathf.Max(0.01f, runClearZoomOutSeconds);
-
-        bRunClearSlowMo = true;
-        Time.timeScale = slow;
-        CameraMoveController.Instance?.ZoomCamera(Mathf.Max(1f, runClearZoomMultiplier), zoomIn * slow, hold * slow, zoomOut);
-
-        float elapsed = 0f;
-        while (elapsed < zoomIn + hold)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            cameraAnchor.position = Vector3.Lerp(islandCenter, target, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / zoomIn)));
-            yield return null;
-        }
-
-        // 줌아웃은 제 속도로.
-        Time.timeScale = 1f;
-        bRunClearSlowMo = false;
-
-        elapsed = 0f;
-        while (elapsed < zoomOut)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            cameraAnchor.position = Vector3.Lerp(target, islandCenter, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / zoomOut)));
-            yield return null;
-        }
-
-        cameraAnchor.position = islandCenter;
-        EndRunClearCinematic();
+        });
     }
 
     // // 종료
@@ -710,8 +732,18 @@ public partial class RoguelikeSystem
         StopTileWave();
         if (false == _bEntryWave) tileWave.CaptureBefore();
 
-        environmentSystem.GenerateRoguelikeField(field.forestType, field.mapType, centerSafeZoneRadius, islandRadiusX, islandRadiusY,
-            _positions => grassPositions = _positions, islandShape);
+        // 티어 전환이면 새 지형의 분위기 연출(전역값·머티리얼·연출 지도·파티클)을 바로 바꾸지 않고 모아 둔다.
+        // 파도와 함께 직전 지형의 연출을 서서히 끈 뒤에 바꾼다(AmbienceCrossfadeRoutine). 진입은 암전 아래라 바로 바꾼다.
+        if (false == _bEntryWave) StageAmbienceFade.BeginCapture();
+        try
+        {
+            environmentSystem.GenerateRoguelikeField(field.forestType, field.mapType, centerSafeZoneRadius, islandRadiusX, islandRadiusY,
+                _positions => grassPositions = _positions, islandShape);
+        }
+        finally
+        {
+            StageAmbienceFade.EndCapture();
+        }
 
         // 노바 때까지 남는 별(스텔라+드론)은 새 지형의 육지 위에 있는 것만 남기고, 본편 나무 정리가 거둔 그림을 다시 그린다.
         if (null != skillController)
@@ -729,7 +761,7 @@ public partial class RoguelikeSystem
         if (false == _bEntryWave) cloudFade.CaptureBefore();
         environmentSystem.SpawnRoguelikeEnvironmentObjs(GetFieldViewRect(islandCenter, fieldCloudSettings.viewMargin), fieldCloudSettings.count,
             fieldCloudSettings.minSpeed, fieldCloudSettings.maxSpeed, fieldCloudSettings.alpha);
-        tileWave.PrepareAfterGenerate(islandCenter, islandReferenceViewSize * 0.5f, _bEntryWave, MapType.MagmaForest == field.mapType);
+        tileWave.PrepareAfterGenerate(islandCenter, islandReferenceViewSize * 0.5f, _bEntryWave, MapType.MagmaForest == field.mapType, field.mapType);
         // 구름·물 장식은 파도 선을 따라 바뀐다. 파도가 진입으로 되돌렸는지는 IsEntryWave로 본다.
         cloudFade.PrepareAfterSpawn(fieldCloudSettings.alpha, fieldCloudSettings.fadeSeconds);
         waterDeco.Prepare(GetFieldViewRect(islandCenter, 0f), tileWave, tileWave.IsEntryWave);

@@ -13,6 +13,7 @@
 // _WaterSporeColorB : 두 번째 포자 색(칸마다 포자 색과 이 색 사이에서 정해진다. 같으면 한 색)
 // _WaterSporeSurfaceA/B : 물 타일 그림의 수면색 두 가지
 #include "StageAmbienceCommon.hlsl"
+#include "StageAmbienceFade.hlsl"
 
 float4 _WaterSporeA;
 float4 _WaterSporeB;
@@ -43,7 +44,7 @@ bool WaterSporeMatches(float3 _color, float3 _key)
 
 // rgb = 덮을 색, a = 덮는 비율(0이면 그대로). _texColor는 정점색을 곱하기 전 텍스처 색이다.
 // _texelId: 텍셀 번호 floor(텍셀 중심 월드 위치 * ppu). 물 셰이더가 한 번만 구해 넘긴다.
-float4 ComputeWaterSporesAt(float2 _texelId, float3 _texColor)
+float4 ComputeWaterSporesAtCore(float2 _texelId, float3 _texColor)
 {
     if (false == WaterSporeMatches(_texColor, _WaterSporeSurfaceA.rgb) && false == WaterSporeMatches(_texColor, _WaterSporeSurfaceB.rgb))
     {
@@ -159,6 +160,14 @@ float4 ComputeWaterSporesAt(float2 _texelId, float3 _texColor)
     }
 
     return 0.0;
+}
+
+// 로그라이크 지형 전환 때 서서히 끄고 켠다(StageAmbienceFade.hlsl, 본편은 늘 그대로).
+float4 ComputeWaterSporesAt(float2 _texelId, float3 _texColor)
+{
+    float4 spores = ComputeWaterSporesAtCore(_texelId, _texColor);
+    spores.a *= StageAmbienceVisibility((_texelId + 0.5) / 32.0);
+    return spores;
 }
 
 #endif // WATER_SPORES_INCLUDED

@@ -86,6 +86,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     [SerializeField] private float centerSafeZoneRadius = 2f;
     [Tooltip("바닥 타일 파도(기획서 4-1 진입 3단계, 3-4 지형 전환 공용) 수치.")]
     [SerializeField] private RoguelikeTileWaveSettings tileWaveSettings = new RoguelikeTileWaveSettings();
+    [Tooltip("바닥 타일 파도에 맞춘 소리·진동·물가 물보라 수치.")]
+    [SerializeField] private RoguelikeTileWaveFeedbackSettings tileWaveFeedbackSettings = new RoguelikeTileWaveFeedbackSettings();
     [Tooltip("섬 둘레 물에 비치는 구름 수치. 본편 던전 구름 값은 바꾸지 않는다.")]
     [SerializeField] private FieldCloudSettings fieldCloudSettings = new FieldCloudSettings();
     [Tooltip("섬 둘레 물에 띄우는 장식(맵 종류별 본편 물 장식) 수치.")]
@@ -119,18 +121,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         public TreeType treeType;
         public Sprite saplingTop;
     }
-
-    [Header("런 클리어 연출(기획서 3-5 - 30웨이브 마지막 나무 줌인 + 슬로우 부서짐 → 줌아웃)")]
-    [Tooltip("마지막 나무로 확대하는 배율(몇 배 확대).")]
-    [SerializeField] private float runClearZoomMultiplier = 2f;
-    [Tooltip("마지막 나무로 빠르게 다가가는 시간(실제 초).")]
-    [SerializeField] private float runClearZoomInSeconds = 0.25f;
-    [Tooltip("슬로우 동안의 시간 배율.")]
-    [Range(0.05f, 1f)] [SerializeField] private float runClearSlowTimeScale = 0.25f;
-    [Tooltip("확대한 채 슬로우로 부서지는 모습을 보여 주는 시간(실제 초).")]
-    [SerializeField] private float runClearSlowSeconds = 1.2f;
-    [Tooltip("섬 전체로 돌아가는 시간(실제 초).")]
-    [SerializeField] private float runClearZoomOutSeconds = 0.6f;
 
     [Header("연출 핸들러가 없을 때 기다리는 시간(초)")]
     [SerializeField] private float fallbackLobbyEntrySeconds = 0.3f;
@@ -171,9 +161,12 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private readonly RoguelikeProductionGate productionGate = new RoguelikeProductionGate();
     private readonly RoguelikeUICoordinator uiCoordinator = new RoguelikeUICoordinator();
     private readonly RoguelikeTileWave tileWave = new RoguelikeTileWave();
+    private readonly RoguelikeTileWaveFeedback tileWaveFeedback = new RoguelikeTileWaveFeedback();
     private readonly RoguelikeWaterDeco waterDeco = new RoguelikeWaterDeco();
     private readonly RoguelikeCloudFade cloudFade = new RoguelikeCloudFade();
     private Coroutine tileWaveCoroutine;
+    // 티어 전환 때 직전 지형의 분위기 연출을 끄고 새 지형의 연출을 켜는 코루틴(AmbienceCrossfadeRoutine)
+    private Coroutine ambienceCrossfadeCoroutine;
     private RoguelikeWaveTreeStrategySO waveStrategy;
     private RoguelikeRecordData records;
 
@@ -211,9 +204,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     // 허탕 이동 측정(기획서 v2.3 C-2): 이 판의 웨이브 전투 시간 합과 그중 나무 없이 이동한 시간.
     private float combatSecondsForIdle;
     private float idleMoveSeconds;
-    private Vector3 finalTreePosition;
-    // 런 클리어 슬로우가 걸려 있다(흐름이 끊기면 시간 배율을 되돌린다).
-    private bool bRunClearSlowMo;
     // 웨이브 클리어 묘목 연출이 끝나는 게임 시간. 나무 회수는 이 뒤에 한다.
     private float saplingVanishEndTime;
     // 웨이브 클리어 역성장에서 나무가 묘목 그림으로 바뀌는 게임 시간. 묘목 등장음을 이때 낸다.
@@ -227,7 +217,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     // 런 입장 연출 동안(필드 재생성·입장 연출·낙하) ESC를 잠그는 소유자 이름. 이 구간의 포기 요청은 받을 곳이 없다 -
     // 아직 런이 아니라 무시되는데, ESC 쪽은 이미 메뉴를 닫고 이동 잠금을 풀어 버린다. 잠금은 런이 시작될 때(RunRoutine) 푼다.
     private const string EntryESCLockOwner = "RoguelikeRunEntry";
-    private const string RunClearESCLockOwner = "RoguelikeRunClear";
 
     // 로그라이크 세션 내내 본편 가방 키(인벤토리 팝업·원목 교체)를 막는 소유자 이름. 로그라이크에는 가방이 없고,
     // 열리면 카드 선택·결과 화면 위에 본편 가방이 겹쳐 뜬다. 잠금 집합은 앱 수명이라 Release에서 반드시 푼다.
@@ -235,6 +224,11 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private const string SessionInventoryLockOwner = "RoguelikeSession";
     // 입장 암전이 HUD 내림 모션을 기다리는 상한(초, 검은 화면 아래로 들어온 때부터). 모션이 멈춰 버려도 진입이 막히지 않게 한다.
     private const float EntryHudSettleLimitSeconds = 2f;
+    // 티어 전환 때 직전 지형의 분위기 연출이 서서히 꺼지는 시간(초, 파도와 함께 돈다)
+    private const float AmbienceFadeOutSeconds = 0.6f;
+    // 새 지형의 연출이 파도를 따라 번져 켜지는 원의 가장자리 폭(바닥 평면 거리)과, 연출을 바꾼 순간 원이 파도를 따라잡는 속도(앞머리 속도 배)
+    private const float AmbienceRevealBand = 2.5f;
+    private const float AmbienceRevealCatchUp = 2.5f;
 
     private RunRecordEntry lastRunRecord;
     private int lastClearRank = -1;
@@ -356,6 +350,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         effectApplier.SetMoveSpeedCap(balance.maxMoveSpeedPercent);
         productionGate.Initialize(GetFallbackSeconds, maxProductionWaitSeconds);
         tileWave.Initialize(environmentSystem, tileWaveSettings);
+        tileWaveFeedback.Initialize(tileWave, tileWaveFeedbackSettings, transform);
         waterDeco.Initialize(environmentSystem, waterDecoSettings, transform);
         cloudFade.Initialize(environmentSystem, transform);
 
@@ -409,9 +404,9 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         flowCoroutine = null;
         tileWaveCoroutine = null;
         tileWave.Release();
+        tileWaveFeedback.Release();
         productionGate.CancelAll();
         RoguelikeScreenTransition.ClearIfCovering();
-        EndRunClearCinematic();
 
         // InputManager는 BootStrap 소속이라 메인메뉴까지 살아 있다. 입장 연출 도중 해제돼도 잠금이 남지 않게 푼다.
         inputManager?.SetESCKeyLock(EntryESCLockOwner, false);
@@ -551,17 +546,9 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         if (waveKills < currentWave.killTarget) return;
 
         // 목표 달성 즉시: 스폰을 멈추고 남은 나무를 묘목으로 돌린다(이 순간부터 피해가 없다). 기획서 3-1 "달성 즉시".
-        // 30웨이브는 마지막 나무 줌인·슬로우 → 줌아웃 뒤에 나무를 정리한다(기획서 3-5 "나무 정리") - WaveClearRoutine이 돌린다.
+        // 30웨이브도 같다(v3.0 11-12 줌인 연출 삭제).
         waveStrategy?.StopSpawning();
-        if (IsFinalWave(in currentWave))
-        {
-            finalTreePosition = _position;
-            signalHub.Publish(new RoguelikeFinalTreeKilledSignal(_position));
-        }
-        else
-        {
-            RevertFieldTreesToSapling();
-        }
+        RevertFieldTreesToSapling();
 
         SetPhase(ERunPhase.WaveClear);
     }
@@ -605,20 +592,9 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         if (false == bSaplingAppearSoundPending || Time.time < saplingAppearSoundTime) return;
 
         bSaplingAppearSoundPending = false;
-        if (ERunPhase.WaveClear != phase) return;
+        // 30웨이브는 묘목으로 돌아가는 동안 RunClear 단계를 거친다(v3.0 11-12 줌인 연출 삭제 뒤 묘목 복귀가 RunClear 연출과 겹친다).
+        if (ERunPhase.WaveClear != phase && ERunPhase.RunClear != phase) return;
         if (inDungeonObjectManager.ActiveTrees.Count > 0 && null != cameraAnchor) Sound.Play(SoundID.TreeSmallGrow, cameraAnchor.position);
-    }
-
-    /// <summary>런 클리어 슬로우를 풀고 ESC 잠금을 되돌린다(연출이 끝났거나 흐름이 끊겼을 때).</summary>
-    private void EndRunClearCinematic()
-    {
-        if (bRunClearSlowMo)
-        {
-            Time.timeScale = 1f;
-            bRunClearSlowMo = false;
-        }
-
-        inputManager?.SetESCKeyLock(RunClearESCLockOwner, false);
     }
 
     // // 게임오버·포기·메인메뉴
@@ -662,7 +638,6 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         StopFlow();
         StopTileWave();
         productionGate.CancelAll();
-        EndRunClearCinematic();
         waveStrategy?.StopSpawning();
         skillController?.EndCombat();
         pressure.Reset();
@@ -787,6 +762,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         uiCoordinator.Tick();
         waterDeco.Tick(tileWave, Time.deltaTime);
         cloudFade.Tick(tileWave, Time.deltaTime);
+        tileWaveFeedback.Tick();
 
         DebugTick();
     }

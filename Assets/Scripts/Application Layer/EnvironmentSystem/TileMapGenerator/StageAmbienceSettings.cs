@@ -883,5 +883,42 @@ public class CloudShadowSettings
     [Range(0f, 1f)] public float ditherWidth = 0.6f;
     // 화면 가장자리 여유(월드). 카메라가 움직이는 사이 판 끝이 보이지 않게 한다.
     public float viewMargin = 2f;
+    // 큰 구름 아래로 내리는 비(StageCloudRain)
+    public CloudRainSettings rain = new CloudRainSettings();
 
+}
+
+/// <summary>
+/// 큰 구름에서만 내리는 비. 빗줄기가 위에서 떨어져 구름 그림자 안 땅에 닿으면 사라진다(StageCloudRain).
+/// 둘레 insetRadius 안이 모두 구름 그림자인 자리(큰 구름의 속)를 찾아 그 둘레 안 그림자 땅에 흩뿌리므로,
+/// 큰 구름은 가장자리 가까이까지 비가 내리고 작은 구름에서는 내리지 않는다.
+/// 구름 그림자가 켜져 있을 때만 생긴다. 렌더링만 바뀌고 게임 동작에는 영향이 없다.
+/// enabled가 꺼져 있거나 material이 비어 있으면 아무것도 만들지 않는다.
+/// </summary>
+[System.Serializable]
+public class CloudRainSettings
+{
+    public bool enabled = false;
+    // 빗줄기 머티리얼(WindPetal 셰이더: 정점색 x 그림, 픽셀 격자 맞춤)
+    public Material material;
+    // 그리는 정렬 자리(기본은 오브젝트 맨 위, 구름 그림자보다 앞이라 그림자에 어두워지지 않는다)
+    public string sortingLayerName = "Objects";
+    public int sortingOrder = 32767;
+    // 큰 구름 기준(월드): 이 거리 둘레가 모두 구름 그림자 안이면 큰 구름의 속이다(세로는 바닥에 맞게 절반). 빗줄기도 그 둘레 안에 흩뿌린다.
+    public float insetRadius = 2f;
+    // 화면 1월드 넓이에서 1초에 큰 구름 속을 찾아보는 횟수와, 찾을 때마다 흩뿌리는 빗줄기 수(비의 굵기)
+    public float searchesPerSecondPerArea = 8f;
+    [Min(1)] public int dropsPerHit = 1;
+    // 빗줄기가 떨어지기 시작하는 자리: 화면 위 끝에서 더 올라간 거리(월드, 최소~최대). 하늘(화면 밖 위)에서 내려와 구름 그림자 땅에 닿는다.
+    public Vector2 startAboveScreen = new Vector2(0.5f, 2f);
+    // 떨어지는 속도(월드/초)
+    public float fallSpeed = 9f;
+    // 빗줄기 길이(픽셀)와 색
+    [Range(2, 12)] public int streakPixels = 6;
+    public Color color = new Color(0.82f, 0.9f, 1f, 0.55f);
+    // 동시에 떨어지는 빗줄기 최대 수
+    [Min(16)] public int maxParticles = 400;
+    // 땅에 닿을 때 튀는 물방울: 보이는 시간(초)과 색
+    public float splashDuration = 0.2f;
+    public Color splashColor = new Color(0.85f, 0.93f, 1f, 0.7f);
 }

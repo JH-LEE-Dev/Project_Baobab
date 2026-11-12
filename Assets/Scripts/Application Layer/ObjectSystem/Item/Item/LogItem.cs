@@ -605,7 +605,8 @@ public class LogItem : Item, IStaticCollidable
         bFadeAndVanish = _boolean;
     }
 
-    public void Launch(Vector3 _start, Vector3 _end, float _height, float _totalRotation = 0f)
+    /// <param name="_durationScale">계산된 비행시간에 곱하는 배율(궤적은 그대로). 1보다 작으면 같은 포물선을 더 빨리 난다.</param>
+    public void Launch(Vector3 _start, Vector3 _end, float _height, float _totalRotation = 0f, float _durationScale = 1f)
     {
         startPos = _start;
         endPos = _end;
@@ -618,6 +619,7 @@ public class LogItem : Item, IStaticCollidable
         {
             duration = 0.1f; // 최소 비행시간 제한
         }
+        duration *= _durationScale;
 
         trajectoryJitter = Vector3.zero;
         rotationSpeed = 0f;

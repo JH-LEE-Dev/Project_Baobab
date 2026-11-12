@@ -186,6 +186,7 @@ public class Drone : MonoBehaviour
     private Vector2 characterAimDir = Vector2.down; // 캐릭터의 조준 방향. Character가 매 프레임 갱신해준다.
     private int dirIndex = 6; // CharacterAnimator 규칙상 6 = Down
     private bool isOverheat; // "과열 드론" 특성 보유 여부(과열 수치와 무관). Character가 매 프레임 갱신해준다 - true면 6~10행(Overheat 세트)을 사용한다.
+    private PresentationLayer.VFX.EDroneLaserTint laserTint = PresentationLayer.VFX.EDroneLaserTint.Default; // 스텔라 + 드론 조합 색. SetLaserTint로 바뀌고 피격 이펙트 재생 때마다 전달된다
 
     private bool isActive; // 공격 키로 활성화되어 지속시간 동안 대상을 계속 노리는 상태
     private bool isSwinging; // damageInterval마다 한 번씩, 공격 모션이 재생되는 짧은 구간
@@ -199,6 +200,21 @@ public class Drone : MonoBehaviour
     private float damage;
     private float damageInterval;
     private float damageTickTimer;
+
+    // "드론 치명타 적용" 특성. 꺼져 있으면 치명타를 굴리지 않아 피해가 예전과 같다.
+    // 확률·배율은 도끼 치명타 값을 그대로 계승한다(Character가 Activate 직전에 SetCritical로 넘긴다).
+    private bool bCriticalEnabled;
+    private float criticalChance;
+    private float criticalDamageMul = 1f;
+
+    /// <summary>
+    /// 마지막 레이저 발사의 치명타 여부. 치명타는 발사 한 번에 한 번만 굴리고, 그 발사에서 이어지는 연쇄 전이
+    /// (Character.ChainDroneLaser)도 같은 결과를 쓴다(부메랑이 판정 틱 하나에 맞은 나무 전체에 같은 결과를 쓰는 것과 같다).
+    /// </summary>
+    public bool bLastShotCritical { get; private set; }
+
+    /// <summary>마지막 레이저 발사의 피해 배율(치명타면 치명타 배율, 아니면 1). 연쇄 전이도 같은 배율을 곱한다.</summary>
+    public float LastShotDamageMul => bLastShotCritical ? criticalDamageMul : 1f;
     private float attackRange;
     private ITreeObj currentTarget;
 
@@ -271,6 +287,7 @@ public class Drone : MonoBehaviour
         characterAimDir = Vector2.down;
         dirIndex = 6;
         isOverheat = false;
+        SetLaserTint(PresentationLayer.VFX.EDroneLaserTint.Default); // 풀로 돌아왔다 다시 소환될 때 이전 조합 색이 남지 않게 한다
 
         isActive = false;
         isSwinging = false;
@@ -361,7 +378,21 @@ public class Drone : MonoBehaviour
             laserHit = hitVfx.GetComponentInChildren<PresentationLayer.VFX.VFX_LaserHit>(true);
             atkHitVfxCache[hitVfx] = laserHit;
         }
-        if (laserHit != null) laserHit.SetOverheat(isOverheat);
+        if (laserHit != null)
+        {
+            laserHit.SetOverheat(isOverheat);
+            laserHit.SetTint(laserTint);
+        }
+    }
+
+    /// <summary>
+    /// 스텔라 + 드론 조합 색을 켜고 끈다(Stella = 조합 푸른색, Default = 기존 노랑/과열 파랑). 연쇄 번개(chainZap)에는 바로,
+    /// 피격 이펙트에는 다음 PlayAtkHitVfx부터 반영된다. 호출은 Application Layer가 한다.
+    /// </summary>
+    public void SetLaserTint(PresentationLayer.VFX.EDroneLaserTint _tint)
+    {
+        laserTint = _tint;
+        if (chainZap != null) chainZap.SetTint(_tint);
     }
 
     /// <summary>
@@ -427,6 +458,14 @@ public class Drone : MonoBehaviour
     public void SetHoverHeight(float _hoverHeight)
     {
         hoverHeight = Mathf.Max(_hoverHeight, 0f);
+    }
+
+    /// <summary>"드론 치명타 적용" 특성 상태와 계승할 도끼 치명타 확률·배율. Character가 Activate 직전마다 넘긴다.</summary>
+    public void SetCritical(bool _enabled, float _chance, float _damageMul)
+    {
+        bCriticalEnabled = _enabled;
+        criticalChance = _chance;
+        criticalDamageMul = _damageMul;
     }
 
     /// <summary>
@@ -1099,17 +1138,22 @@ public class Drone : MonoBehaviour
 
         PlayFireSound();
 
+        // 치명타는 이 발사에 대해 한 번만 굴린다. 별이 1차 타겟이 되는 경우에도 이어지는 연쇄는 이 결과를 쓴다.
+        bLastShotCritical = bCriticalEnabled && UnityEngine.Random.value < criticalChance;
+
         // [로그라이크] 사거리 안에 스텔라 별이 있으면 이번 레이저의 1차 타겟은 별이다(나무는 맞지 않는다, 기획서 v2.8 6-1).
         if (null != requestPriorityShot && requestPriorityShot(this)) return;
+
+        float shotDamage = damage * LastShotDamageMul;
 
         // 레이저라 발사와 동시에 맞는다 - 도끼 타격음 대신 위의 발사음만 들리게 한다
         if (currentTarget is TreeObj tree)
         {
-            tree.TakeDamageWithoutHitSound(damage);
+            tree.TakeDamageWithoutHitSound(shotDamage, bLastShotCritical);
         }
         else
         {
-            (currentTarget as IDamageable)?.TakeDamage(damage);
+            (currentTarget as IDamageable)?.TakeDamage(shotDamage);
         }
         requestChainAttack?.Invoke(this, currentTarget);
     }

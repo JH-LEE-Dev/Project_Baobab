@@ -126,3 +126,5 @@ MonoBehaviour:
   defaultIntensity: 1.3
   coreWhiteMix: 0.85
   outerBrightness: 0.5
+  stellaColor: {r: 0, g: 0.5019608, b: 1, a: 1}
+  stellaIntensity: 1.35

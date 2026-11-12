@@ -316,6 +316,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // 기존 타이머는 그대로 유지되고, 발산이 끝나면 다시 피격 시 재발동 가능한 상태로 돌아간다.
     public Vector3Int CellPos { get; private set; }
     private float heatDamageAmount = 0f;
+    // 깎인 모습(금·숯불)을 그리는 맵인지. 렌더링 전용이라 열기 기믹을 끈 로그라이크에서도 맵대로 켠다(SetDamageLookEnabled).
+    private bool bDamageLookEnabled = false;
     private bool bHeatCounting = false;
     private Coroutine heatCoroutine;
     // 카운트다운을 시작하거나 끊을(ResetTree) 때마다 1씩 오른다. 예고 인디케이터는 자기가 붙은 카운트다운의
@@ -510,12 +512,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // 깎인 정도를 금·숯불로 보여 줄 때 끊는 단계 수. 단계가 바뀔 때만 렌더러에 쓴다.
     private const int DamageCrackSteps = 12;
 
-    // 깎인 정도(0~1)를 나무 그림에 넘긴다. 나무 열기가 켜진 맵(본편 4스테이지)에서만 쓰고, 그리는 쪽도
-    // 그 맵에서만 그린다. 돌처럼 생긴 나무는 금이 가고, 침엽수 모양인 잿불 나무는 금 대신 속에서 숯불이 붙는다.
+    // 깎인 정도(0~1)를 나무 그림에 넘긴다. 깎인 모습을 그리는 맵(본편 4스테이지, 로그라이크 용암 숲)에서만 쓰고,
+    // 그리는 쪽도 그 맵에서만 그린다. 돌처럼 생긴 나무는 금이 가고, 침엽수 모양인 잿불 나무는 금 대신 속에서 숯불이 붙는다.
     // 보석 단계 나무는 재질이 달라 둘 다 그리지 않으므로 지운다.
     private void RefreshDamageCrack()
     {
-        if (heatDamageAmount <= 0f || treeVisualComponent == null) return;
+        if (false == bDamageLookEnabled || treeVisualComponent == null) return;
 
         float amount = 0f;
         if (false == bIsGemStage)
@@ -531,10 +533,16 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     public void SetHeatDamageAmount(float _amount)
     {
         heatDamageAmount = _amount;
+    }
 
-        // 깎인 모습(금·숯불)은 나무 열기가 켜진 맵에서만 그린다(RefreshDamageCrack). 그 무늬 텍스처를 나무를 심는 동안
+    /// <summary>깎인 모습(금·숯불)을 그리는 맵인지 정한다. 나무를 심을 때 매니저가 부른다.</summary>
+    public void SetDamageLookEnabled(bool _bEnabled)
+    {
+        bDamageLookEnabled = _bEnabled;
+
+        // 깎인 모습은 이 값이 켜진 맵에서만 그린다(RefreshDamageCrack). 그 무늬 텍스처를 나무를 심는 동안
         // (로딩 중) 미리 만들어 둬서, 첫 타격 때 만드느라 멈칫하지 않게 한다. 이미 있으면 아무것도 하지 않는다.
-        if (0f < _amount)
+        if (_bEnabled)
         {
             TreeDamagePatternTexture.EnsureGlobal();
         }
@@ -813,6 +821,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     public void TakeDamageWithoutHitSound(float _damage)
     {
         TakeDamageInternal(_damage, true, false, false);
+    }
+
+    /// <summary>타격음 없이 피해를 주되, 치명타면(_bCritical) 피격 플래시를 빨간색으로 번쩍인다(드론 치명타 적용 특성).</summary>
+    public void TakeDamageWithoutHitSound(float _damage, bool _bCritical)
+    {
+        TakeDamageInternal(_damage, true, _bCritical, false);
     }
 
     private void TakeDamageInternal(float _damage, bool _bPlayHaptic, bool _bCritical, bool _bPlayHitSound = true, bool _bBurnTick = false)

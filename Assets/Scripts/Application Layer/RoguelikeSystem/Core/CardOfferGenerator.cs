@@ -31,13 +31,15 @@ public struct CardOfferContext
 
 /// <summary>
 /// 카드 제시 파이프라인. 기획서 v3.0 4-2 "카드 노출 규칙"의 구성 우선순위(프리즘 > MAX 레벨 > 랜덤, 액티브 최소 1장)를 그대로 따른다.
-/// (v3.0에서 공통 패시브 2장 보장을 삭제했다. 원하는 카드를 이어 받는 장치는 가중치의 집중 카드 우대가 맡는다.)
+/// (v3.0에서 공통 패시브 2장 보장을 삭제했다. 원하는 카드를 이어 받는 장치는 집중 카드 확률 판정이 맡는다.)
 ///   0. 제외: MAX·배타 그룹·보유 계약·조건 미충족 프리즘을 뺀다. (가장 먼저라 보장 노출로 되살아나지 않는다)
 ///   1. 프리즘 · MAX 보장 노출: 프리즘 조건 카드와 에메랄드(MAX 직전 레벨 보유) 카드를 합쳐 한 번에 cap(2)장까지. 못 넣은 카드는 다음 선택으로 이월된다.
 ///      서로 배타인 프리즘이 함께 대기 중이면 cap과 무관하게 함께 노출한다(최대 제시 수).
 ///   2. 파트너 확정 노출: 조합 재료 한 장이 MAX면 파트너를 남은 칸에 1장 넣는다(부록 A-1 "MAX면 한 선택에 1장 확실 노출").
-///   3. 가중치 랜덤: 남은 칸을 종류 비중 × 업그레이드 우선(집중 카드 우대 포함) × 파트너 유도(편향 상한 적용)로 뽑는다.
-///   4. 액티브 최소 1장: 제시에 액티브가 없으면 랜덤 칸 하나를 액티브 1장으로 바꾼다.
+///   3. 집중 카드 확률 판정: II 레벨 이상 보유 카드마다 focusOfferChance(65%)를 판정해 성공한 카드를 남은 칸에 넣는다(많으면 랜덤으로 칸 수만큼).
+///      뽑히지 않은 성공 카드와 실패한 카드는 이번 선택의 후보에서 뺀다(기획서 v3.0 11-12 4-2 가중 1).
+///   4. 가중치 랜덤: 남은 칸을 종류 비중 × 업그레이드 우선 × 파트너 유도(편향 상한 적용)로 뽑는다.
+///   5. 액티브 최소 1장: 제시에 액티브가 없으면 랜덤 칸 하나를 액티브 1장으로 바꾼다(일반 랜덤 칸 → 집중 카드 칸 순).
 ///
 /// 리롤은 위 우선순위를 쓰지 않는다: 제외만 거친 노출 가능 카드에서 균등하게 진짜 랜덤으로 뽑고, 액티브 최소 1장 보장만 적용한다.
 /// 방금 나온 카드도 다시 나올 수 있고, 한 선택 안에서는 같은 카드가 두 번 나오지 않는다. 리롤로 나오지 않은 프리즘 · MAX는
@@ -63,6 +65,7 @@ public sealed class CardOfferGenerator
     private readonly List<GuaranteedEntry> entryPool = new List<GuaranteedEntry>(16);
     private readonly List<GuaranteedEntry> takeScratch = new List<GuaranteedEntry>(8);
     private readonly List<CardDefinitionSO> forcedPartnerCandidates = new List<CardDefinitionSO>(8);
+    private readonly List<CardDefinitionSO> focusHits = new List<CardDefinitionSO>(8);
 
     private System.Random rng = new System.Random();
     private int enqueueCounter;
@@ -98,6 +101,8 @@ public sealed class CardOfferGenerator
             FillGuaranteed(in _ctx, slots, _results);
             FillForcedPartner(in _ctx, slots, _results);
             int randomStart = _results.Count;
+            // 집중 카드 칸 뒤에 일반 랜덤 칸이 붙는다. 액티브 보장은 맨 뒤 칸부터 바꾸므로 일반 랜덤 칸이 먼저 바뀐다.
+            FillFocus(in _ctx, slots, _results);
             FillWeighted(in _ctx, slots, _results);
             EnsureActive(in _ctx, _results, randomStart, false);
         }
@@ -315,7 +320,40 @@ public sealed class CardOfferGenerator
         return false;
     }
 
-    // // 3. 가중치 랜덤
+    // // 3. 집중 카드 확률 판정
+
+    /// <summary>
+    /// 후보 중 집중 카드(focusStartLevel 이상 보유)마다 focusOfferChance를 판정한다. 성공한 카드는 남은 칸 수만큼(많으면 랜덤으로) 넣고,
+    /// 넣지 못한 성공 카드와 실패한 카드는 이번 선택의 후보에서 뺀다. 풀 크기와 상관없이 집중 카드 한 장이 선택마다 약 65%로 나온다.
+    /// 에메랄드(MAX 직전)는 보장 노출 대상이라 판정하지 않는다(이월돼 후보에 남은 경우도 그대로 가중치 추첨에 둔다).
+    /// </summary>
+    private void FillFocus(in CardOfferContext _ctx, int _slots, List<CardOffer> _results)
+    {
+        int focusLevel = Mathf.Max(1, _ctx.balance.focusStartLevel);
+        double chance = Mathf.Clamp01(_ctx.balance.focusOfferChance);
+        focusHits.Clear();
+
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            CardDefinitionSO card = candidates[i];
+            if (_ctx.build.GetLevel(card) < focusLevel || IsGuaranteedGrade(in _ctx, card)) continue;
+
+            if (rng.NextDouble() < chance) focusHits.Add(card);
+            candidates.RemoveAt(i);
+            i--;
+        }
+
+        while (_results.Count < _slots && focusHits.Count > 0)
+        {
+            int pick = rng.Next(focusHits.Count);
+            _results.Add(CreateOffer(in _ctx, focusHits[pick], false));
+            focusHits.RemoveAt(pick);
+        }
+
+        focusHits.Clear();
+    }
+
+    // // 4. 가중치 랜덤
 
     private void FillWeighted(in CardOfferContext _ctx, int _slots, List<CardOffer> _results)
     {
@@ -364,8 +402,8 @@ public sealed class CardOfferGenerator
 
     /// <summary>
     /// 최종 가중치 = 기본 × 종류 비중 × 업그레이드 우선 × 파트너 유도, 편향 상한 적용(부록 A-1 "노출 가중치").
-    /// 업그레이드 우선은 보유 레벨로 나뉜다: focusStartLevel(II) 미만이면 × (1 + upgradeWeightBonus) = ×2.0,
-    /// 이상이면 집중 카드 우대 × (1 + focusWeightBonus) = ×8.0(기획서 v2.9 · v3.0 4-2 가중 1). 리롤은 균등 추첨이라 쓰지 않는다.
+    /// 업그레이드 우선은 보유 카드 × (1 + upgradeWeightBonus) = ×2.0. 집중 카드(focusStartLevel 이상)는 FillFocus가 확률 판정으로 미리 처리해
+    /// 여기까지 오지 않는다(이월된 에메랄드는 예외로 ×2.0, 기획서 v3.0 11-12 4-2 가중 1). 리롤은 균등 추첨이라 쓰지 않는다.
     /// </summary>
     private static float GetWeight(in CardOfferContext _ctx, CardDefinitionSO _card)
     {
@@ -375,8 +413,7 @@ public sealed class CardOfferGenerator
 
         if (_ctx.build.IsOwned(_card))
         {
-            bool bFocus = _ctx.build.GetLevel(_card) >= Mathf.Max(1, balance.focusStartLevel);
-            weight *= 1f + Mathf.Max(0f, bFocus ? balance.focusWeightBonus : balance.upgradeWeightBonus);
+            weight *= 1f + Mathf.Max(0f, balance.upgradeWeightBonus);
         }
 
         if (IsPartnerTarget(in _ctx, _card))
@@ -408,12 +445,13 @@ public sealed class CardOfferGenerator
         return false;
     }
 
-    // // 4. 액티브 최소 1장 보장 (기획서 v3.0 4-2 ④)
+    // // 5. 액티브 최소 1장 보장 (기획서 v3.0 4-2 ④)
 
     /// <summary>
     /// 제시에 액티브(에메랄드 액티브 MAX 카드 포함)가 한 장도 없으면, 노출 가능한 액티브 1장으로 랜덤 칸 하나를 바꾼다.
     /// 프리즘 · MAX 보장 칸과 파트너 확정 칸은 바꾸지 않는다. 랜덤 칸이 없거나 노출 가능한 액티브가 없으면 그대로 둔다.
-    /// _randomStart는 랜덤 칸이 시작하는 인덱스(셔플 전, 프리즘 · MAX · 파트너 확정 노출 다음)다. 리롤은 진짜 랜덤이라 균등하게 뽑는다.
+    /// _randomStart는 랜덤 칸이 시작하는 인덱스(셔플 전, 프리즘 · MAX · 파트너 확정 노출 다음)다. 랜덤 칸은 집중 카드 칸 → 일반 랜덤 칸 순으로
+    /// 쌓여 있어 맨 뒤 칸을 바꾸면 일반 랜덤 칸이 먼저 바뀐다. 리롤은 진짜 랜덤이라 균등하게 뽑는다.
     /// </summary>
     private void EnsureActive(in CardOfferContext _ctx, List<CardOffer> _results, int _randomStart, bool _bUniform)
     {

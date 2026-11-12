@@ -65,6 +65,8 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
     [Min(0f)]
     [SerializeField] private float manifestEndScale = 0.1f;
     [SerializeField] private float manifestClockwiseRotation = -270f;
+    [Tooltip("[로그라이크] 켜져 있으면 로그라이크 모드에서 발현을 지연 · 대기 흔들림 · 반짝임 위상 없이 같은 프레임 · 같은 각도 · 같은 높이로 시작한다(여러 별이 한꺼번에 사라질 때 동기). 본편(던전)은 항상 기존 무작위 지연을 쓴다.")]
+    [SerializeField] private bool bSyncManifestInRoguelike = true;
 
     [Header("Rendering")]
     [SerializeField] private float hdrIntensity = 1.75f;
@@ -96,6 +98,8 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
     private float sparkleFrameTimer;
     private float currentStarAngle;
     private float manifestStartAngle;
+    // [로그라이크 동기 발현] 발현을 시작한 프레임 번호. 시작 프레임에는 연출 시간을 흘리지 않아 별마다 Update 순서가 달라도 모든 별이 다음 프레임부터 같이 진행한다(-1이면 본편 방식).
+    private int manifestStartFrame = -1;
     private Vector3 manifestLocalPosition;
     private int currentSparkleFrame;
     private bool isReturned;
@@ -194,6 +198,7 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
         stateTimer = 0f;
         idleTimer = 0f;
         manifestDelay = 0f;
+        manifestStartFrame = -1;
         sparkleFrameTimer = 0f;
         currentSparkleFrame = 0;
         currentStarAngle = 0f;
@@ -228,6 +233,7 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
     /// <summary>
     /// Idle에서는 0~manifestRandomDelayMax초 뒤 발현하고,
     /// Spawn 중이거나 아직 정상 Idle에 진입하지 않았다면 즉시 Spawn을 취소하고 발현합니다.
+    /// [로그라이크] bSyncManifestInRoguelike가 켜져 있으면 Idle에서도 지연 없이 즉시 발현하고 시작 각도 · 높이 · 반짝임 프레임을 고정합니다.
     /// </summary>
     public void PlayManifestEffect()
     {
@@ -239,6 +245,12 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
                 return;
 
             case AnimationState.Idle:
+                if (true == IsSyncManifest)
+                {
+                    StartManifest();
+                    return;
+                }
+
                 manifestDelay = UnityEngine.Random.Range(0f, manifestRandomDelayMax);
 
                 if (manifestDelay <= 0f)
@@ -297,7 +309,9 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
                 break;
 
             case AnimationState.Manifest:
-                UpdateManifest(_deltaTime);
+                // 동기 발현은 시작한 프레임에는 시간을 흘리지 않는다(별마다 Update 순서가 달라 시작 프레임에 시간이 더해지는 별과 아닌 별이 갈리는 것을 막는다)
+                if (manifestStartFrame != Time.frameCount)
+                    UpdateManifest(_deltaTime);
                 break;
         }
     }
@@ -365,10 +379,28 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
 
         state = AnimationState.Manifest;
         stateTimer = 0f;
-        manifestStartAngle = currentStarAngle;
-        manifestLocalPosition = starRenderer != null
-            ? starRenderer.transform.localPosition
-            : (Vector3)visualLocalOffset;
+
+        if (true == IsSyncManifest)
+        {
+            // 로그라이크 동기 발현: 대기 흔들림(회전 / 위아래)과 반짝임 위상을 버리고 모든 별이 같은 각도 · 높이 · 반짝임 프레임에서 시작한다.
+            manifestStartFrame = Time.frameCount;
+            currentStarAngle = 0f;
+            manifestStartAngle = 0f;
+            manifestLocalPosition = visualLocalOffset;
+            sparkleFrameTimer = 0f;
+            currentSparkleFrame = 0;
+
+            if (null != sparkleRenderer && true == HasSparkleFrames)
+                sparkleRenderer.sprite = sparkleFrames[0];
+        }
+        else
+        {
+            manifestStartFrame = -1;
+            manifestStartAngle = currentStarAngle;
+            manifestLocalPosition = starRenderer != null
+                ? starRenderer.transform.localPosition
+                : (Vector3)visualLocalOffset;
+        }
 
         ApplyPosition(manifestLocalPosition);
         ApplyStarRotation(manifestStartAngle);
@@ -515,4 +547,7 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
     }
 
     private bool HasSparkleFrames => sparkleFrames != null && sparkleFrames.Length > 0;
+
+    // [로그라이크] 발현을 모든 별이 같은 프레임 · 같은 모양으로 시작하는 동기 모드로 처리할지
+    private bool IsSyncManifest => true == GameModeContext.IsRoguelike && true == bSyncManifestInRoguelike;
 }

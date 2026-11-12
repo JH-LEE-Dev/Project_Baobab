@@ -77,5 +77,11 @@ public enum EHapticEvent
     /// <summary>지진이 터지기 직전 땅이 웅웅 떠는 전조(약 0.35초). 끝나면 Earthquake가 이어진다. (EnvironmentSystem)</summary>
     QuakeBuildUp,
 
+    /// <summary>로그라이크 바닥 타일 파도가 섬 중심을 떠나 퍼지기 시작함. (RoguelikeTileWaveFeedback)</summary>
+    RoguelikeTileWave,
+
+    /// <summary>로그라이크 바닥 타일 파도가 섬 가장자리(바다)에 처음 닿음. (RoguelikeTileWaveFeedback)</summary>
+    RoguelikeTileWaveShore,
+
     Count
 }

@@ -7,7 +7,7 @@ using UnityEngine.Tilemaps;
 /// 작은 텍스처를 한 장 만들어 전역으로 넘긴다(바다가 아니면 0, 바다면 1 + 해안까지 칸 수, 최대 255).
 /// 물 타일 셰이더가 이 지도를 읽어 바다 쪽 거품 빈도(WaterBubbles.hlsl)와 바다 온도 무늬·굳은 껍질(WaterMagma.hlsl)을 정한다.
 /// 맵을 만들 때 한 번 훑고 끝나며 매 프레임 하는 일은 없다. 렌더링만 바꾸고 게임 동작에는 영향이 없다.
-/// 이 지도를 쓰는 연출이 하나도 켜지지 않았거나 로그라이크면 전역값을 0으로 비워 예전과 똑같이 그린다.
+/// 이 지도를 쓰는 연출이 하나도 켜지지 않았으면 전역값을 0으로 비워 예전과 똑같이 그린다.
 /// </summary>
 public static class StageLavaSeaMap
 {
@@ -38,7 +38,7 @@ public static class StageLavaSeaMap
         int width = _bounds.size.x;
         int height = _bounds.size.y;
         if (null == _tileData || false == IsNeeded(_tileData) || null == _waterTiles || null == _grid
-            || GameModeContext.IsRoguelike || width <= 0 || height <= 0 || _waterTiles.Length < width * height)
+            || width <= 0 || height <= 0 || _waterTiles.Length < width * height)
         {
             Clear();
             return;

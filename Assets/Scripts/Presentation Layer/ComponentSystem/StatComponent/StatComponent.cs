@@ -160,6 +160,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public float droneChainRangeMultiplier { get; private set; } = 1.0f;
     private PercentAccumulator droneChainRangeAccum;
     public bool bDroneOverheatBoost = false; // "과열 드론" 특성 - 드론이 과열 수치에 영향을 받는다(과열 0이어도 적용)
+    public bool bDroneCritical = false; // "드론 치명타 적용" 특성 - 드론 레이저(연쇄 포함)가 도끼 치명타 확률·배율을 계승한다
 
     // [미사용] 지속시간제 과열의 특성 값. 과열이 0~100 스택으로 바뀌면서 효과가 없다. 특성 재구성 때 정리
     [Header("Overheat - 미사용 (옛 지속시간제 특성)")]
@@ -928,5 +929,10 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public void ActivateDroneOverheatBoost(bool _boolean)
     {
         bDroneOverheatBoost = _boolean;
+    }
+
+    public void ActivateDroneCritical(bool _boolean)
+    {
+        bDroneCritical = _boolean;
     }
 }

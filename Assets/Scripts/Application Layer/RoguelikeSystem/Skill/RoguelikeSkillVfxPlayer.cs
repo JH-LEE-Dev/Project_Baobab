@@ -181,9 +181,10 @@ public sealed class RoguelikeSkillVfxPlayer
                 break;
 
             case ERoguelikeSkillVfx.SpinBoomerangStrike:
+                // 부메랑마다 제 자리에서 터진다(같은 부메랑의 타격은 컨트롤러가 합쳐 보낸다). 흔들림만 프레임당 한 번.
+                if (null != assets.whirlwindFrames && assets.whirlwindFrames.Length > 0) WhirlwindVFX.Spawn(_signal.position, _signal.radius, assets.whirlwindFrames);
                 if (lastWhirlwindFrame == Time.frameCount) break;
                 lastWhirlwindFrame = Time.frameCount;
-                if (null != assets.whirlwindFrames && assets.whirlwindFrames.Length > 0) WhirlwindVFX.Spawn(_signal.position, _signal.radius, assets.whirlwindFrames);
                 CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
                 break;
         }
@@ -433,7 +434,11 @@ public sealed class RoguelikeSkillVfxPlayer
         {
             // 드론 레이저 에셋이 없으면 본편 별자리 레이저로 대신 그린다.
             PresentationLayer.VFX.ConstellationPixelLaser fallback = null != laserCreator ? laserCreator.Get() : null;
-            if (null != fallback) fallback.PlayLaser(_from, _to);
+            if (null != fallback)
+            {
+                fallback.ApplyStellaTint();
+                fallback.PlayLaser(_from, _to);
+            }
         }
 
         if (lastBeamSoundFrame == Time.frameCount) return;
@@ -459,6 +464,8 @@ public sealed class RoguelikeSkillVfxPlayer
 
         PresentationLayer.VFX.VFX_DroneLaser created = UnityEngine.Object.Instantiate(assets.droneLaserPrefab, host.transform);
         created.transform.localPosition = Vector3.zero;
+        // 이음선 레이저는 스텔라 + 드론 조합에서만 쏘므로 늘 조합 푸른색이다(기획서 v3.0 11-12 6-2).
+        created.SetTint(PresentationLayer.VFX.EDroneLaserTint.Stella);
         droneLasers.Add(created);
         droneLaserLastPlay.Add(now);
         return created;

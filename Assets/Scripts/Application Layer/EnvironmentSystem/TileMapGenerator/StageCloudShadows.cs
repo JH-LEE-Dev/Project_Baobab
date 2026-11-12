@@ -4,7 +4,9 @@ using UnityEngine;
 /// 흐르는 구름 그림자. 화면을 덮는 판 하나(StageCloudShadow 셰이더)를 정해진 정렬 자리에 두고, 그 앞에 그려진 땅·물·나무에
 /// 그림자 색을 곱해 큰 구름 그림자 덩어리가 천천히 지나가게 한다. 구름 모양은 월드 좌표로 계산하므로 판은 카메라만 따라다닌다.
 /// 렌더링만 바꾸고 게임 동작에는 영향이 없다. 해당 씬에 붙여 두므로 씬이 내려가면 같이 사라지고,
-/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳·로그라이크에서는 아무것도 만들지 않는다.
+/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳에서는 아무것도 만들지 않는다.
+/// 로그라이크 지형 전환 때는 그림자 진하기(StageCloudShadow.shader)와 비의 양이 연출 세기(StageAmbienceFade.Visibility)를 따른다.
+/// 비(rain)가 켜져 있으면 큰 구름 아래 비(StageCloudRain)도 같이 만들고 같이 지운다.
 /// </summary>
 public class StageCloudShadows : MonoBehaviour
 {
@@ -18,6 +20,8 @@ public class StageCloudShadows : MonoBehaviour
     private CloudShadowSettings settings;
     private Material materialInstance;
     private Mesh quadMesh;
+    // 큰 구름 아래 비(따로 둔다: 이 판은 화면 크기로 늘려 두므로 자식으로 두면 빗줄기까지 늘어난다)
+    private GameObject rainObject;
 
     // // 퍼블릭 제어 메서드
     public static void Apply(CloudShadowSettings _settings, string _sceneName)
@@ -25,8 +29,7 @@ public class StageCloudShadows : MonoBehaviour
         Remove();
 
         // 화면을 따라다니는 판이라 플레이 중에만 만든다(에디터 맵 미리보기에서는 만들지 않는다).
-        if (null == _settings || false == _settings.enabled || null == _settings.material || GameModeContext.IsRoguelike
-            || false == Application.isPlaying)
+        if (null == _settings || false == _settings.enabled || null == _settings.material || false == Application.isPlaying)
         {
             return;
         }
@@ -40,6 +43,17 @@ public class StageCloudShadows : MonoBehaviour
 
         current = root.AddComponent<StageCloudShadows>();
         current.Setup(_settings);
+
+        CloudRainSettings rain = _settings.rain;
+        if (null != rain && rain.enabled && null != rain.material)
+        {
+            current.rainObject = new GameObject("[StageCloudRain]");
+            if (root.scene != current.rainObject.scene)
+            {
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(current.rainObject, root.scene);
+            }
+            current.rainObject.AddComponent<StageCloudRain>().Setup(rain, _settings);
+        }
     }
 
     public static void Remove()
@@ -47,6 +61,11 @@ public class StageCloudShadows : MonoBehaviour
         if (null != current)
         {
             current.enabled = false;
+            // 로그라이크 지형 전환으로 바뀔 때는 이미 내리는 빗줄기가 수명대로 사라지게 비만 떼어 둔다(StageAmbienceFade).
+            if (null != current.rainObject && StageAmbienceFade.TryRetire(current.rainObject.GetComponent<StageCloudRain>()))
+            {
+                current.rainObject = null;
+            }
             if (Application.isPlaying)
             {
                 Destroy(current.gameObject);
@@ -119,6 +138,10 @@ public class StageCloudShadows : MonoBehaviour
         if (null != quadMesh)
         {
             Destroy(quadMesh);
+        }
+        if (null != rainObject)
+        {
+            Destroy(rainObject);
         }
         if (current == this)
         {

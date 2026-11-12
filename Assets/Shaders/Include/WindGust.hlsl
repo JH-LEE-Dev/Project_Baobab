@@ -1,6 +1,8 @@
 #ifndef WIND_GUST_INCLUDED
 #define WIND_GUST_INCLUDED
 
+#include "StageAmbienceFade.hlsl"
+
 // 돌풍 연출. 돌풍 덩어리가 바람 방향으로 지나가면 그 자리의 나무(TreeWindSway)가 잠깐 바람 쪽으로 눕고,
 // 잔디(GroundWindGustLit)는 풀잎이 하나둘씩 바람 쪽으로 1텍셀 누웠다가 일어선다.
 // 전역값은 StageAmbienceShaderGlobals가 스테이지 데이터대로 채운다. 꺼진 스테이지는 _WindGustB.x가 0이라
@@ -16,9 +18,14 @@ float4 _WindGustC;
 float4 _WindGustD;
 float4 _WindGustE;
 
+// 곱셈·frac만 쓰는 해시. sin 해시는 GPU마다 sin 정밀도가 달라 덩어리가 켜지고 꺼지는 자리가 기기·CPU 계산과 어긋나므로 쓰지 않는다
+// (StageWindPetals가 같은 식을 CPU에서 계산해 꽃가루를 돌풍 자리에 띄운다).
 float WindGustHash11(float _x)
 {
-    return frac(sin(_x * 127.1) * 43758.5453);
+    float p = frac(_x * 0.1031);
+    p *= p + 33.33;
+    p *= p + p;
+    return frac(p);
 }
 
 float WindGustValueNoise(float _x)
@@ -110,7 +117,8 @@ float SampleWindGust(float2 _posWS)
         }
     }
 
-    return band * patch * group;
+    // 로그라이크 지형 전환 때 연출을 서서히 끄고 켠다(StageAmbienceFade.hlsl, 본편은 늘 그대로).
+    return band * patch * group * StageAmbienceVisibility(_posWS);
 }
 
 // 정수 좌표용 해시(큰 좌표에서도 무늬가 깨지지 않는다).

@@ -34,7 +34,7 @@ public static class TreeDamagePatternTexture
 
     /// <summary>
     /// 무늬 텍스처가 셰이더 전역값으로 올라가 있게 한다. 이미 있으면 아무것도 하지 않는다.
-    /// 깎인 모습을 그리는 맵(본편 4스테이지)에서 나무를 심을 때 부른다(TreeObj.SetHeatDamageAmount).
+    /// 깎인 모습을 그리는 맵(본편 4스테이지, 로그라이크 용암 숲)에서 나무를 심을 때 부른다(TreeObj.SetDamageLookEnabled).
     /// </summary>
     public static void EnsureGlobal()
     {

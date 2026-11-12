@@ -16,6 +16,7 @@
 // 바다 칸 판정은 용암 바다 지도(LavaSeaMap.hlsl, StageLavaSeaMap이 채운다)를 쓴다. 지도가 꺼져 있으면 어디서나 같은 빈도다.
 #include "StageAmbienceCommon.hlsl"
 #include "LavaSeaMap.hlsl"
+#include "StageAmbienceFade.hlsl"
 
 float4 _WaterBubbleA;
 float4 _WaterBubbleB;
@@ -38,7 +39,7 @@ float WaterBubbleHash21(float2 _p)
 }
 
 // rgb = 덮을 색, a = 덮는 비율(0이면 그대로). _texColor는 정점색을 곱하기 전 텍스처 색이다.
-float4 ComputeWaterBubbles(float2 _uv, float2 _positionWS, float4 _texelSize, float3 _texColor)
+float4 ComputeWaterBubblesCore(float2 _uv, float2 _positionWS, float4 _texelSize, float3 _texColor)
 {
     float3 d = abs(_texColor - _WaterBubbleSurface.rgb);
     if (max(d.x, max(d.y, d.z)) >= _WaterBubbleSurface.a)
@@ -130,6 +131,14 @@ float4 ComputeWaterBubbles(float2 _uv, float2 _positionWS, float4 _texelSize, fl
     }
     float fade = 1.0 - pop;
     return float4(_WaterBubbleBodyColor.rgb, fade * fade);
+}
+
+// 로그라이크 지형 전환 때 서서히 끄고 켠다(StageAmbienceFade.hlsl, 본편은 늘 그대로).
+float4 ComputeWaterBubbles(float2 _uv, float2 _positionWS, float4 _texelSize, float3 _texColor)
+{
+    float4 bubbles = ComputeWaterBubblesCore(_uv, _positionWS, _texelSize, _texColor);
+    bubbles.a *= StageAmbienceVisibility(_positionWS);
+    return bubbles;
 }
 
 #endif // WATER_BUBBLES_INCLUDED

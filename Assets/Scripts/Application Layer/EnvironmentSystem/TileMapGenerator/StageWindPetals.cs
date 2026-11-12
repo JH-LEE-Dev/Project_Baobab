@@ -6,7 +6,8 @@ using UnityEngine;
 /// 돌풍 자리는 셰이더(SampleWindGust)와 같은 식을 CPU에서 그대로 계산해, 풀이 눕고 나무가 흔들리는 바로 그 띠에서만 꽃잎이 난다.
 /// 씬에 파티클 시스템 하나만 두고 Emit으로 뿌린다. 꽃잎 그림(작은 텍스처)은 코드로 만든다.
 /// 렌더링만 바꾸고 게임 동작에는 영향이 없다. 해당 씬에 붙여 두므로 씬이 내려가면 같이 사라지고,
-/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳·돌풍이 없는 곳·로그라이크에서는 아무것도 만들지 않는다.
+/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳·돌풍이 없는 곳에서는 아무것도 만들지 않는다.
+/// 로그라이크 지형 전환 때는 새로 띄우는 양이 연출 세기(StageAmbienceFade.Visibility)를 따른다.
 /// </summary>
 public class StageWindPetals : MonoBehaviour
 {
@@ -44,7 +45,7 @@ public class StageWindPetals : MonoBehaviour
 
         // 바람이 지나갈 때만 생기는 연출이라 플레이 중에만 만든다(에디터 맵 미리보기에서는 만들지 않는다).
         if (null == _settings || false == _settings.enabled || null == _settings.material
-            || null == _gust || false == _gust.enabled || GameModeContext.IsRoguelike || false == Application.isPlaying)
+            || null == _gust || false == _gust.enabled || false == Application.isPlaying)
         {
             return;
         }
@@ -65,6 +66,12 @@ public class StageWindPetals : MonoBehaviour
         if (null != current)
         {
             current.enabled = false;
+            // 로그라이크 지형 전환으로 바뀔 때는 이미 떠 있는 꽃잎이 수명대로 사라지게 둔다(StageAmbienceFade).
+            if (StageAmbienceFade.TryRetire(current))
+            {
+                current = null;
+                return;
+            }
             if (Application.isPlaying)
             {
                 Destroy(current.gameObject);
@@ -203,7 +210,7 @@ public class StageWindPetals : MonoBehaviour
             return;
         }
 
-        attemptAccum += Mathf.Max(0f, settings.spawnAttemptsPerSecond) * Time.deltaTime;
+        attemptAccum += Mathf.Max(0f, settings.spawnAttemptsPerSecond) * StageAmbienceFade.Visibility * Time.deltaTime;
         int attempts = Mathf.Min((int)attemptAccum, MaxAttemptsPerFrame);
         attemptAccum -= (int)attemptAccum;
         if (attempts <= 0)
@@ -214,8 +221,9 @@ public class StageWindPetals : MonoBehaviour
         float halfHeight = cam.orthographicSize + settings.viewMargin;
         float halfWidth = cam.orthographicSize * cam.aspect + settings.viewMargin;
         Vector2 center = cam.transform.position;
-        // 셰이더의 _Time.y와 같은 시간
-        float time = Time.timeSinceLevelLoad;
+        // 셰이더의 _Time.y와 같은 시간. URP는 플레이 중 _Time.y에 Time.time을 넣는다
+        // (Time.timeSinceLevelLoad는 씬을 불러올 때마다 0으로 돌아가 돌풍 자리와 어긋난다).
+        float time = Time.time;
         float size = FramePixels / PixelsPerUnit;
 
         ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams();
@@ -223,6 +231,11 @@ public class StageWindPetals : MonoBehaviour
         {
             Vector2 position = center + new Vector2(Random.Range(-halfWidth, halfWidth), Random.Range(-halfHeight, halfHeight));
             if (SampleWindGust(position, time) < settings.gustThreshold)
+            {
+                continue;
+            }
+            // 로그라이크 지형 전환에서 새 연출이 파도를 따라 번져 켜지는 동안은 켜진 자리에만 띄운다(StageAmbienceFade, 본편은 늘 true).
+            if (false == StageAmbienceFade.ShowsAt(position))
             {
                 continue;
             }
@@ -253,8 +266,12 @@ public class StageWindPetals : MonoBehaviour
     // // WindGust.hlsl SampleWindGust를 그대로 옮긴 것(돌풍 세기 0~1). 꽃잎이 날 자리를 고를 때만 쓴다.
     private static float Hash11(float _x)
     {
-        float v = Mathf.Sin(_x * 127.1f) * 43758.5453f;
-        return v - Mathf.Floor(v);
+        // WindGust.hlsl WindGustHash11과 같은 곱셈·frac 해시(GPU와 결과가 같다)
+        float p = _x * 0.1031f;
+        p -= Mathf.Floor(p);
+        p *= p + 33.33f;
+        p *= p + p;
+        return p - Mathf.Floor(p);
     }
 
     private static float ValueNoise(float _x)

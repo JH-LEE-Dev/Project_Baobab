@@ -8,7 +8,8 @@ using UnityEngine;
 /// 땅(GroundForestBreathLit) 셰이더가 읽는다.
 /// 숨쉬는 장식(StageDecoBreath)은 Sample로 같은 식을 CPU에서 계산해 함께 밝아진다. 식은 ForestBreath.hlsl과 같아야 한다.
 /// 렌더링만 바꾸고 게임 동작에는 영향이 없다. 해당 씬에 붙여 두므로 씬이 내려가면 같이 사라지고,
-/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳·로그라이크에서는 아무것도 만들지 않는다(Sample은 0).
+/// 다시 켤 때는 이전 것을 지우고 새로 만든다. 꺼진 곳에서는 아무것도 만들지 않는다(Sample은 0).
+/// 로그라이크 지형 전환 때는 셰이더가 물결 세기에 연출 세기(StageAmbienceFade.hlsl)를 곱한다.
 /// </summary>
 public class StageForestBreath : MonoBehaviour
 {
@@ -53,7 +54,7 @@ public class StageForestBreath : MonoBehaviour
     {
         Remove();
 
-        if (null == _settings || false == _settings.enabled || GameModeContext.IsRoguelike)
+        if (null == _settings || false == _settings.enabled)
         {
             return;
         }

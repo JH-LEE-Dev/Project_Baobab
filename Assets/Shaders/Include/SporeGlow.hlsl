@@ -1,6 +1,8 @@
 #ifndef SPORE_GLOW_INCLUDED
 #define SPORE_GLOW_INCLUDED
 
+#include "StageAmbienceFade.hlsl"
+
 // 포자 나무 숨빛. 나무 윗부분 그림에서 밝은 포자 알(하이라이트) 픽셀만 골라, 숲을 천천히 지나가는 빛의 물결에 맞춰
 // 밝아졌다 어두워지게 한다. 밝아질 때는 블룸이 살짝 번진다. 그림의 색을 바꾸지 않고 밝기만 곱한다.
 // 나무 셰이더(Custom-Sprite-Default-Tree)가 Lit2DCommon(=_MainTex 선언) 뒤에 include 한다.
@@ -58,7 +60,8 @@ half3 ApplySporeGlow(half3 _color, float2 _uv, float2 _positionWS)
     // 자리마다 다른 박자로 사인 물결이 돈다. 이웃 나무끼리는 박자가 비슷해 빛이 숲을 번져 가는 것처럼 보인다.
     float phase = SporeGlowNoise(_positionWS / max(_SporeGlowA.w, 0.5)) * 6.2831853 + _Time.y * _SporeGlowA.z;
     float pulse = pow(saturate(0.5 + 0.5 * sin(phase)), max(_SporeGlowB.z, 1.0));
-    return _color * (1.0h + (half)(_SporeGlowA.y * pulse));
+    // 로그라이크 지형 전환 때 서서히 끄고 켠다(StageAmbienceFade.hlsl, 본편은 늘 그대로).
+    return _color * (1.0h + (half)(_SporeGlowA.y * pulse * StageAmbienceVisibility(_positionWS)));
 }
 
 #endif // SPORE_GLOW_INCLUDED

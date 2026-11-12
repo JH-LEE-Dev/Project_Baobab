@@ -2,8 +2,11 @@ using UnityEngine;
 
 /// <summary>
 /// 스테이지 분위기 연출(돌풍·물 반짝임·색보정·포자 연출·숲의 숨결)을 켜고 끈다.
-/// 전역값은 씬이 바뀌어도 남으므로, 본편 던전 맵을 깔 때(TileMapGenerator.GenerateMap)만 스테이지 데이터대로 켜고
-/// 마을·로그라이크·메인메뉴·엔딩 등 던전 씬이 아닌 곳에서는 항상 0(꺼짐)으로 되돌린다.
+/// 전역값은 씬이 바뀌어도 남으므로, 던전 맵을 깔 때(TileMapGenerator.GenerateMap)만 스테이지 데이터대로 켜고
+/// 마을·메인메뉴·엔딩 등 던전 씬이 아닌 곳에서는 항상 0(꺼짐)으로 되돌린다.
+/// 로그라이크 필드도 같은 생성기로 깔리며 그 지형 컨셉(본편 스테이지)의 연출을 그대로 켠다. 게임 판정과 이어진
+/// 나무 열기 차오름·포자막 상태 연출만 빼고, 용암 숲은 거품과 떠다니는 굳은 판을 덜 띄운다.
+/// 지형이 바뀔 때는 StageAmbienceFade가 직전 연출을 서서히 끄고 새 연출로 바꾼 뒤 서서히 켠다.
 /// 예외로 마을 분위기 연출(돌풍·물 반짝임·색보정)은 마을 Grid가 생길 때(TownTileManager.CreateGrid) 켜고 Grid가 사라질 때 끈다.
 /// 0이면 해당 셰이더들은 기존과 같은 결과를 그린다.
 /// </summary>
@@ -13,6 +16,16 @@ public static class StageAmbienceShaderGlobals
     private const float TilePixelsPerUnit = 32f;
     private const string DungeonSceneName = "DungeonScene";
     private const string TownSceneName = "TownScene";
+    private const string RoguelikeSceneName = "RoguelikeScene";
+
+    // 로그라이크 용암 숲은 섬 둘레가 모두 용암 바다라 본편보다 거품·굳은 판이 훨씬 많이 보인다. 그만큼 줄여 띄운다(렌더링 전용).
+    // 거품: 같은 넓이에 올라오는 거품 수 비율(칸을 키워 줄인다, 거품 하나의 크기·박자는 그대로).
+    private const float RoguelikeLavaBubbleDensity = 0.5f;
+    // 떠다니는 굳은 판: 깔리는 비율에 곱하는 값.
+    private const float RoguelikeLavaCrustCoverage = 0.3f;
+    // 온도 무늬(식은 곳 어두운 빨강·뜨거운 곳 밝은 주황 얼룩): 식은 곳 문턱을 내리고 뜨거운 곳 문턱을 올리는 양(무늬 값 0~1).
+    // 두 문턱 사이(원래 수면색)가 넓어져 얼룩이 조금 줄어든다. 얼룩 크기·흐름은 그대로.
+    private const float RoguelikeLavaPatternNarrow = 0.04f;
 
     private static readonly int PixelsPerUnitID = Shader.PropertyToID("_StageAmbiencePixelsPerUnit");
     private static readonly int WindGustAID = Shader.PropertyToID("_WindGustA");
@@ -70,6 +83,7 @@ public static class StageAmbienceShaderGlobals
     private static readonly int TreeHeatChargeAID = Shader.PropertyToID("_TreeHeatChargeA");
     private static readonly int TreeHeatChargeBID = Shader.PropertyToID("_TreeHeatChargeB");
     private static readonly int TreeHeatChargeColorID = Shader.PropertyToID("_TreeHeatChargeColor");
+    private static readonly int TreeDamageLookOnID = Shader.PropertyToID("_TreeDamageLookOn");
 
     // 마을 Grid가 있는 동안의 마을 연출 설정.
     private static bool townAmbienceActive;
@@ -79,45 +93,56 @@ public static class StageAmbienceShaderGlobals
     private static WindPetalSettings townWindPetals;
     private static CloudShadowSettings townCloudShadows;
 
+    /// <summary>
+    /// 던전 연출 오브젝트(파티클·색보정 등)를 둘 씬 이름. 본편은 던전 씬, 로그라이크는 로그라이크 씬이다.
+    /// </summary>
+    public static string AmbienceSceneName => GameModeContext.IsRoguelike ? RoguelikeSceneName : DungeonSceneName;
+
     // // 퍼블릭 제어 메서드
     public static void Apply(StageTileDataSO _tileData)
     {
-        // 로그라이크 필드도 같은 생성기로 깔리지만 본편 스테이지 연출만 대상이다.
-        if (null == _tileData || GameModeContext.IsRoguelike)
+        if (null == _tileData)
         {
             Clear();
             return;
         }
+
+        // 로그라이크 필드는 지형 컨셉(본편 스테이지)의 연출을 그대로 쓰되, 게임 판정과 이어진 연출(나무 열기 차오름·포자막)은 뺀다.
+        bool bRoguelike = GameModeContext.IsRoguelike;
+        string sceneName = AmbienceSceneName;
+        bool bRoguelikeLava = bRoguelike && null != _tileData.WaterMagma && _tileData.WaterMagma.enabled;
 
         Shader.SetGlobalFloat(PixelsPerUnitID, TilePixelsPerUnit);
         ApplyWindGust(_tileData.WindGust);
         ApplyWaterShimmer(_tileData.WaterShimmer);
         ApplySporeGlow(_tileData.SporeGlow);
         ApplyWaterSpores(_tileData.WaterSpores);
-        ApplyWaterBubbles(_tileData.WaterBubbles);
-        ApplyWaterMagma(_tileData.WaterMagma);
+        ApplyWaterBubbles(_tileData.WaterBubbles, bRoguelikeLava ? RoguelikeLavaBubbleDensity : 1f);
+        ApplyWaterMagma(_tileData.WaterMagma, bRoguelikeLava ? RoguelikeLavaCrustCoverage : 1f, bRoguelikeLava ? RoguelikeLavaPatternNarrow : 0f);
         ApplyWaterDepth(_tileData.WaterDepth);
         // 물(용암) 위에 겹쳐 그리는 나무·캐릭터 반사를 끄는 스테이지(렌더링 전용)
         Shader.SetGlobalFloat(HideWaterReflectionID, _tileData.HideWaterReflections ? 1f : 0f);
         ApplyTreeStarTwinkle(_tileData.TreeStarTwinkle);
-        // 나무 열기 차오름(꺼진 스테이지는 카운트다운 중이어도 아무것도 칠하지 않는다)
-        ApplyTreeHeatCharge(_tileData.TreeHeatCharge);
+        // 나무 열기 차오름(꺼진 스테이지는 카운트다운 중이어도 아무것도 칠하지 않는다). 로그라이크는 나무 열기가 없어 늘 끈다.
+        ApplyTreeHeatCharge(bRoguelike ? null : _tileData.TreeHeatCharge);
+        // 나무가 깎인 모습(금·숯불). 열기 차오름이 켜진 스테이지(4스테이지, 로그라이크 용암 숲)에서만 그린다.
+        ApplyTreeDamageLook(_tileData);
         // 색보정 볼륨(꺼진 스테이지는 아무것도 띄우지 않는다)
-        StageAtmosphere.Apply(_tileData.ColorGrading, DungeonSceneName);
+        StageAtmosphere.Apply(_tileData.ColorGrading, sceneName);
         // 포자 안개(꺼진 스테이지는 아무것도 띄우지 않는다)
-        StageSporeHaze.Apply(_tileData.SporeHaze, DungeonSceneName);
+        StageSporeHaze.Apply(_tileData.SporeHaze, sceneName);
         // 용암 아지랑이(꺼진 스테이지는 아무것도 띄우지 않는다)
-        StageSporeHaze.Apply(_tileData.HeatHaze, DungeonSceneName, "HeatHaze");
+        StageSporeHaze.Apply(_tileData.HeatHaze, sceneName, "HeatHaze");
         // 나무 타격 별가루(꺼진 스테이지는 아무것도 띄우지 않는다)
-        StageHitSparkles.Apply(_tileData.HitSparkles, DungeonSceneName);
+        StageHitSparkles.Apply(_tileData.HitSparkles, sceneName);
         // 숲의 숨결(꺼진 스테이지는 아무것도 만들지 않는다)
-        StageForestBreath.Apply(_tileData.ForestBreath, DungeonSceneName);
-        // 포자막 상태 연출(꺼진 스테이지는 아무것도 만들지 않는다)
-        StageSporeShieldFx.Apply(_tileData.SporeShieldFx, DungeonSceneName);
+        StageForestBreath.Apply(_tileData.ForestBreath, sceneName);
+        // 포자막 상태 연출(꺼진 스테이지는 아무것도 만들지 않는다). 포자막 판정이 없는 로그라이크는 늘 끈다.
+        StageSporeShieldFx.Apply(bRoguelike ? null : _tileData.SporeShieldFx, sceneName);
         // 돌풍에 실려 날아가는 꽃잎·잎(꺼진 스테이지나 돌풍이 없는 스테이지는 아무것도 만들지 않는다)
-        StageWindPetals.Apply(_tileData.WindPetals, _tileData.WindGust, DungeonSceneName);
+        StageWindPetals.Apply(_tileData.WindPetals, _tileData.WindGust, sceneName);
         // 흐르는 구름 그림자(꺼진 스테이지는 아무것도 만들지 않는다)
-        StageCloudShadows.Apply(_tileData.CloudShadows, DungeonSceneName);
+        StageCloudShadows.Apply(_tileData.CloudShadows, sceneName);
     }
 
     /// <summary>
@@ -191,6 +216,7 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalFloat(HideWaterReflectionID, 0f);
         Shader.SetGlobalVector(TreeTwinkleAID, Vector4.zero);
         Shader.SetGlobalVector(TreeHeatChargeAID, Vector4.zero);
+        Shader.SetGlobalFloat(TreeDamageLookOnID, 0f);
         StageAtmosphere.Remove();
         StageSporeHaze.Remove();
         StageMushroomSpores.Remove();
@@ -210,11 +236,11 @@ public static class StageAmbienceShaderGlobals
     }
 
     /// <summary>
-    /// 이 스테이지에서 블룸 데코 타일맵에 끼울 반짝임 머티리얼. 꺼져 있거나 로그라이크면 null(원래 머티리얼 유지).
+    /// 이 스테이지에서 블룸 데코 타일맵에 끼울 반짝임 머티리얼. 꺼져 있으면 null(원래 머티리얼 유지).
     /// </summary>
     public static Material GetBloomDecoMaterialOverride(StageTileDataSO _tileData)
     {
-        if (null == _tileData || GameModeContext.IsRoguelike)
+        if (null == _tileData)
         {
             return null;
         }
@@ -252,11 +278,11 @@ public static class StageAmbienceShaderGlobals
     }
 
     /// <summary>
-    /// 이 스테이지에서 바닥 타일맵에 끼울 잔디 바람 머티리얼. 돌풍이 꺼져 있거나 로그라이크면 null(원래 머티리얼 유지).
+    /// 이 스테이지에서 바닥 타일맵에 끼울 잔디 바람 머티리얼. 돌풍이 꺼져 있으면 null(원래 머티리얼 유지).
     /// </summary>
     public static Material GetGroundMaterialOverride(StageTileDataSO _tileData)
     {
-        if (null == _tileData || GameModeContext.IsRoguelike)
+        if (null == _tileData)
         {
             return null;
         }
@@ -279,14 +305,14 @@ public static class StageAmbienceShaderGlobals
     }
 
     /// <summary>
-    /// 이 스테이지에서 물·육지 스텐실 타일맵에 끼울 머티리얼(용암 위 나무 그림자 없애기). 꺼져 있거나 두 머티리얼 중 하나라도 비었거나
-    /// 로그라이크면 둘 다 null(원래 머티리얼 유지). 한쪽만 바뀌면 육지 위 그림자까지 사라지므로 늘 함께 바꾼다.
+    /// 이 스테이지에서 물·육지 스텐실 타일맵에 끼울 머티리얼(용암 위 나무 그림자 없애기). 꺼져 있거나 두 머티리얼 중 하나라도 비었으면
+    /// 둘 다 null(원래 머티리얼 유지). 한쪽만 바뀌면 육지 위 그림자까지 사라지므로 늘 함께 바꾼다.
     /// </summary>
     public static bool TryGetStencilMaterialOverrides(StageTileDataSO _tileData, out Material _waterStencil, out Material _groundStencil)
     {
         _waterStencil = null;
         _groundStencil = null;
-        if (null == _tileData || GameModeContext.IsRoguelike)
+        if (null == _tileData)
         {
             return false;
         }
@@ -313,11 +339,11 @@ public static class StageAmbienceShaderGlobals
     }
 
     /// <summary>
-    /// 이 스테이지에서 바닥 장식 타일맵에 끼울 머티리얼. 용암 빛·숲의 숨결·결정 장식 숨쉬기가 꺼져 있거나 로그라이크면 null(원래 머티리얼 유지).
+    /// 이 스테이지에서 바닥 장식 타일맵에 끼울 머티리얼. 용암 빛·숲의 숨결·결정 장식 숨쉬기가 꺼져 있으면 null(원래 머티리얼 유지).
     /// </summary>
     public static Material GetDecoMaterialOverride(StageTileDataSO _tileData)
     {
-        if (null == _tileData || GameModeContext.IsRoguelike)
+        if (null == _tileData)
         {
             return null;
         }
@@ -446,6 +472,14 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalVector(TreeHeatChargeColorID, ToShaderColor(_settings.tintColor));
     }
 
+    // 나무가 깎인 모습(금·숯불, TreeDamageLook.hlsl) 켜짐. 열기 차오름과 같은 스테이지에서 켜지지만, 로그라이크는
+    // 열기 차오름을 끄고 이 값만 켜므로 따로 둔다.
+    private static void ApplyTreeDamageLook(StageTileDataSO _tileData)
+    {
+        bool bOn = null != _tileData && null != _tileData.TreeHeatCharge && _tileData.TreeHeatCharge.enabled;
+        Shader.SetGlobalFloat(TreeDamageLookOnID, bOn ? 1f : 0f);
+    }
+
     private static void ApplyWaterSpores(WaterSporeSettings _settings)
     {
         if (null == _settings || false == _settings.enabled)
@@ -465,7 +499,8 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalVector(WaterSporeSurfaceBID, ToShaderColor(_settings.surfaceColorB));
     }
 
-    private static void ApplyWaterBubbles(WaterBubbleSettings _settings)
+    // _density: 같은 넓이에 올라오는 거품 수 비율(1이면 설정 그대로). 칸 넓이를 1 / _density배로 키워 줄인다.
+    private static void ApplyWaterBubbles(WaterBubbleSettings _settings, float _density)
     {
         if (null == _settings || false == _settings.enabled)
         {
@@ -475,7 +510,12 @@ public static class StageAmbienceShaderGlobals
 
         float minRadius = Mathf.Max(0.5f, _settings.maxRadiusRange.x);
         float maxRadius = Mathf.Max(minRadius, _settings.maxRadiusRange.y);
-        Shader.SetGlobalVector(WaterBubbleAID, new Vector4(1f, Mathf.Max(6f, _settings.cellTexels), Mathf.Clamp01(_settings.duty), Mathf.Max(0.1f, _settings.period)));
+        float cellTexels = Mathf.Max(6f, _settings.cellTexels);
+        if (_density < 1f)
+        {
+            cellTexels /= Mathf.Sqrt(Mathf.Max(0.05f, _density));
+        }
+        Shader.SetGlobalVector(WaterBubbleAID, new Vector4(1f, cellTexels, Mathf.Clamp01(_settings.duty), Mathf.Max(0.1f, _settings.period)));
         Shader.SetGlobalVector(WaterBubbleBID, new Vector4(minRadius, maxRadius, Mathf.Clamp(_settings.popFraction, 0.05f, 0.9f), Mathf.Max(0f, _settings.highlightBrightness)));
         Shader.SetGlobalVector(WaterBubbleBodyColorID, ToShaderColor(_settings.bodyColor));
         Shader.SetGlobalVector(WaterBubbleEdgeColorID, ToShaderColor(_settings.edgeColor));
@@ -505,7 +545,8 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalVector(WaterDepthDeepColorID, ToShaderColor(_settings.deepColor));
     }
 
-    private static void ApplyWaterMagma(WaterMagmaSettings _settings)
+    // _crustCoverage: 떠다니는 굳은 판이 깔리는 비율에 곱하는 값(1이면 설정 그대로).
+    private static void ApplyWaterMagma(WaterMagmaSettings _settings, float _crustCoverage, float _patternNarrow)
     {
         if (null == _settings || false == _settings.enabled)
         {
@@ -515,7 +556,14 @@ public static class StageAmbienceShaderGlobals
 
         Shader.SetGlobalVector(WaterMagmaAID, new Vector4(1f, Mathf.Max(0.2f, _settings.scale), Mathf.Max(0f, _settings.evolveSpeed), 0f));
         float cool = Mathf.Clamp01(_settings.coolThreshold);
-        Shader.SetGlobalVector(WaterMagmaBID, new Vector4(_settings.drift.x, _settings.drift.y, cool, Mathf.Max(cool, Mathf.Clamp01(_settings.hotThreshold))));
+        float hot = Mathf.Max(cool, Mathf.Clamp01(_settings.hotThreshold));
+        // 본편은 _patternNarrow가 0이라 그대로다.
+        if (_patternNarrow > 0f)
+        {
+            cool = Mathf.Clamp01(cool - _patternNarrow);
+            hot = Mathf.Clamp01(hot + _patternNarrow);
+        }
+        Shader.SetGlobalVector(WaterMagmaBID, new Vector4(_settings.drift.x, _settings.drift.y, cool, hot));
         Shader.SetGlobalVector(WaterMagmaCoolColorID, ToShaderColor(_settings.coolColor));
         Shader.SetGlobalVector(WaterMagmaHotColorID, ToShaderColor(_settings.hotColor));
         Vector4 surface = ToShaderColor(_settings.surfaceColor);
@@ -527,7 +575,14 @@ public static class StageAmbienceShaderGlobals
         Shader.SetGlobalVector(WaterMagmaSeaBID, new Vector4(Mathf.Clamp01(_settings.seaFarCoolRaise), Mathf.Clamp01(_settings.seaFarHotRaise), 0f, 0f));
         Shader.SetGlobalVector(WaterMagmaSeaFarColorID, ToShaderColor(_settings.seaFarColor));
         bool bCrust = _settings.seaEnabled && _settings.crustEnabled;
-        Shader.SetGlobalVector(WaterMagmaCrustAID, new Vector4(bCrust ? 1f : 0f, Mathf.Max(0.2f, _settings.crustSize), Mathf.Clamp01(_settings.crustCoverageNear), Mathf.Clamp01(_settings.crustCoverageFar)));
+        float crustNear = Mathf.Clamp01(_settings.crustCoverageNear);
+        float crustFar = Mathf.Clamp01(_settings.crustCoverageFar);
+        if (_crustCoverage < 1f)
+        {
+            crustNear *= Mathf.Max(0f, _crustCoverage);
+            crustFar *= Mathf.Max(0f, _crustCoverage);
+        }
+        Shader.SetGlobalVector(WaterMagmaCrustAID, new Vector4(bCrust ? 1f : 0f, Mathf.Max(0.2f, _settings.crustSize), crustNear, crustFar));
         Shader.SetGlobalVector(WaterMagmaCrustBID, new Vector4(_settings.crustDrift.x, _settings.crustDrift.y, Mathf.Clamp01(_settings.crustGap), Mathf.Clamp01(_settings.crustRim)));
         Shader.SetGlobalVector(WaterMagmaCrustColorAID, ToShaderColor(_settings.crustColorA));
         Shader.SetGlobalVector(WaterMagmaCrustColorBID, ToShaderColor(_settings.crustColorB));
@@ -542,6 +597,7 @@ public static class StageAmbienceShaderGlobals
     }
 
     // 던전 씬이 아닌 씬이 열리면 무조건 끈다(마을·메인메뉴·로그라이크·엔딩에 이전 던전 값이 남지 않게).
+    // 로그라이크 지형 전환 도중에 씬이 바뀌어도 연출이 흐린 채로 남지 않게, 어느 씬이 열리든 서서히 끄고 켜기를 되돌린다.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void RegisterSceneHook()
     {
@@ -551,6 +607,7 @@ public static class StageAmbienceShaderGlobals
         townColorGrading = null;
         townWindPetals = null;
         townCloudShadows = null;
+        StageAmbienceFade.Discard();
         Clear();
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= HandleSceneLoaded;
         UnityEngine.SceneManagement.SceneManager.sceneLoaded += HandleSceneLoaded;
@@ -558,6 +615,8 @@ public static class StageAmbienceShaderGlobals
 
     private static void HandleSceneLoaded(UnityEngine.SceneManagement.Scene _scene, UnityEngine.SceneManagement.LoadSceneMode _mode)
     {
+        StageAmbienceFade.Discard();
+
         if (_scene.name != DungeonSceneName)
         {
             Clear();

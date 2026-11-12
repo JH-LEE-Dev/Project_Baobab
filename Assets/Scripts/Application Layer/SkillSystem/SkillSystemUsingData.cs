@@ -410,6 +410,7 @@ public enum SkillCommandType
     TreeHeatResistance, // 열기 내성 강화
     PicnicBasket, // 소풍 바구니 (엔딩 특성)
     BarrierPenetration, // 배리어 관통력
+    DroneCritical, // 드론 치명타 적용 (도끼 치명타 확률·배율 계승)
 }
 
 public enum AbilityLevelUpRejectReason
