@@ -4072,8 +4072,8 @@ MonoBehaviour:
   meteorShowerChargePerKill: 0.1
   meteorShowerInterval: 0.2
   meteorImpactRange: 1
-  meteorShowerTier1Damage: 150
-  meteorShowerTier1FallRange: 3.5
+  meteorShowerTier1Damage: 300
+  meteorShowerTier1FallRange: 5
   meteorShowerTier1Duration: 3
   meteorShowerTier2Damage: 450
   meteorShowerTier2FallRange: 3.5

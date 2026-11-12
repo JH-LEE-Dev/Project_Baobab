@@ -2620,7 +2620,7 @@
         {
             "id": 249,
             "key": "StarMarkDamage1_Name",
-            "kr": "<COLOR=7EEDBE,EDD87E><Wave>별 표식 베기 I</Wave></COLOR>",
+            "kr": "별 표식 베기 I",
             "en": "Star Mark Strike I",
             "zhHans": "",
             "zhHant": "",
@@ -3052,7 +3052,7 @@
         {
             "id": 267,
             "key": "StarMarkDamage2_Name",
-            "kr": "별 표식 베기 II",
+            "kr": "별 표식 베기 M",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -3100,7 +3100,7 @@
         {
             "id": 269,
             "key": "BarrierPenetration1_Name",
-            "kr": "방어막 관통력 I",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>방어막 관통력 I</Wave></COLOR>",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -3148,7 +3148,7 @@
         {
             "id": 271,
             "key": "ManifestationBrand1_Name",
-            "kr": "발현 낙인 I",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>발현 낙인 I</Wave></COLOR>",
             "en": "",
             "zhHans": "",
             "zhHant": "",

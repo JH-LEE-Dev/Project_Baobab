@@ -18,7 +18,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 15000000
+        baseValue: 10000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -36,7 +36,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 10000000
+        baseValue: 5000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -54,7 +54,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 15000000
+        baseValue: 7000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -64,7 +64,7 @@ MonoBehaviour:
     - skillCommandType: 81
       amountCurve:
         type: 3
-        baseValue: 40
+        baseValue: 80
         manualValues: []
     prerequisiteSkills: 7c000000
   - skillType: 126
@@ -72,7 +72,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 10000000
+        baseValue: 5000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -90,7 +90,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 20000000
+        baseValue: 7000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -108,7 +108,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 8000000
+        baseValue: 5000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -126,7 +126,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 15000000
+        baseValue: 10000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -190,7 +190,7 @@ MonoBehaviour:
     - skillCommandType: 87
       amountCurve:
         type: 3
-        baseValue: 0
+        baseValue: 1
         manualValues: []
     prerequisiteSkills: 40000000
   - skillType: 129
@@ -198,7 +198,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 5000000
+        baseValue: 3500000
         manualValues: []
       carrotCurve:
         type: 3
@@ -248,11 +248,11 @@ MonoBehaviour:
         manualValues: []
     prerequisiteSkills: 6e000000
   - skillType: 132
-    maxLevel: 5
+    maxLevel: 3
     cost:
       moneyCurve:
         type: 3
-        baseValue: 10000000
+        baseValue: 8000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -262,15 +262,15 @@ MonoBehaviour:
     - skillCommandType: 129
       amountCurve:
         type: 3
-        baseValue: 6
+        baseValue: 10
         manualValues: []
-    prerequisiteSkills: 6e000000
+    prerequisiteSkills: 6c000000
   - skillType: 133
     maxLevel: 5
     cost:
       moneyCurve:
         type: 3
-        baseValue: 7000000
+        baseValue: 5000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -288,7 +288,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 10000000
+        baseValue: 8000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -300,7 +300,7 @@ MonoBehaviour:
         type: 3
         baseValue: 0.1
         manualValues: []
-    prerequisiteSkills: 6c0000006e000000
+    prerequisiteSkills: 6e000000
   - skillType: 123
     maxLevel: 1
     cost:
@@ -342,7 +342,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 5000000
+        baseValue: 4000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -1209,7 +1209,7 @@ MonoBehaviour:
     - skillCommandType: 26
       amountCurve:
         type: 3
-        baseValue: 10
+        baseValue: 5
         manualValues: []
     prerequisiteSkills: 32000000
   - skillType: 20
@@ -1790,7 +1790,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 30000000
+        baseValue: 15000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -1918,7 +1918,7 @@ MonoBehaviour:
     - skillCommandType: 26
       amountCurve:
         type: 3
-        baseValue: 15
+        baseValue: 5
         manualValues: []
     prerequisiteSkills: 66000000
   - skillType: 93

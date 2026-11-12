@@ -185,10 +185,10 @@
         {
             "skillType": "StarMarkDamage2",
             "nameLocId": 267,
-            "levelBadge": "II",
+            "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": -8,
-            "gridY": -13,
+            "gridX": -6,
+            "gridY": -11,
             "parents": [
                 {
                     "skillType": "StarMarkDamage1",
@@ -219,11 +219,11 @@
             "nameLocId": 269,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": -6,
-            "gridY": -13,
+            "gridX": -8,
+            "gridY": -11,
             "parents": [
                 {
-                    "skillType": "ConstellationDamage1",
+                    "skillType": "StarPathSpeedBoost1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -252,14 +252,8 @@
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
             "gridX": -6,
-            "gridY": -11,
+            "gridY": -13,
             "parents": [
-                {
-                    "skillType": "StarPathSpeedBoost1",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                },
                 {
                     "skillType": "ConstellationDamage1",
                     "usePivot": false,
