@@ -868,8 +868,8 @@
         {
             "id": 310,
             "key": "Roguelike_Card_combo_spin_boomerang_Desc",
-            "kr": "{+}부메랑이 피해를 줄 때마다\n부메랑 주변에 회전베기가 발동한다{/}",
-            "en": "{+}A spin slash triggers around the Boomerang\nevery time it deals damage{/}",
+            "kr": "{+}부메랑이 날아가는 동안\n부메랑 주위에 회전베기가 계속 발동한다{/}",
+            "en": "{+}A spin slash keeps triggering around\nthe Boomerang while it is in flight{/}",
             "zhHans": "",
             "zhHant": "",
             "ja": "",
