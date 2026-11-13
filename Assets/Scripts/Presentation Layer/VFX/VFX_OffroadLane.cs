@@ -1,26 +1,34 @@
+using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace PresentationLayer.VFX
 {
     /// <summary>
     /// 로그라이크 오프로드 소환 위치 · 돌진 방향 표시(기획서 v2.8). 소환될 위치가 정해지는 순간(발동 주기 시작)에 Begin으로 시작해
-    /// 발동까지 계속 보여 준다: 필드 끝의 소환 위치(수축 링 + 게이트 선 + 도는 표식)와 진행 방향을 가리키는
-    /// `&lt;&lt;&lt;&lt;` 화살표 펄스, 차선 가장자리 점선. 발동 때 Fire를 부르면 소환 섬광이 터지고 차량이 지나가는 시간에 맞춰
-    /// 경로 표시가 소환 지점부터 걷히며 끝나면 스스로 풀에 반환한다. 발동 시각을 모르는 채로 오래 두어도 된다(남은 주기를 알면
-    /// SetRemaining으로 알리면 마지막 0.5초에 깜빡인다).
+    /// 발동까지 계속 보여 주고, 발동 때 Fire를 부르면 차량이 지나가는 시간에 맞춰 표시가 걷히며 끝나면 스스로 풀에 반환한다.
     ///
-    /// 렌더링은 바닥 메쉬(경로, 마커)와 공중 메쉬(소환 섬광 기둥과 불꽃)로 나뉜다. 바닥 메쉬는 나무와 캐릭터(Objects 레이어)보다
-    /// 아래 레이어(ShockWave)에 그려져 나무가 항상 경로 위에 보이고, 공중 메쉬는 루트 렌더러의 레이어에 그려진다.
+    /// 표시는 차량이 지나갈 타일 칸의 윗면 자체를 물들이는 방식이다(선 · 링 · 화살표 그림 없음).
+    ///   - 등장: 소환 지점에서 진행 방향으로 칸이 차례로 켜지고, 켜지는 순간 밝았다가 가라앉는다.
+    ///   - 유지: 옅은 바탕 + 칸으로 된 꺾쇠 빛이 진행 방향으로 흐른다(바깥 칸은 1칸 늦어 꺾쇠 모양). 마지막 0.8초(SetRemaining을 알린 경우)는 빨라진다.
+    ///   - 발동: 소환 지점 칸이 번쩍이고, 차량 앞 5칸이 가장 밝으며 지나간 칸은 4.5칸에 걸쳐 꺼진다. 차량 위치는 Fire의 돌진 시간 비율로 추정한다.
+    ///   - 테두리: 켜진 칸 전체(모든 활성 차선의 합집합)의 바깥 가장자리에만 1px 선. 타일 가장자리(2:1)라 계단이 항상 가지런하다.
+    ///   - 빛 알갱이: 차선 위에서 `+` 에서 `.` 로 줄며 12px 떠오른다(`+` `.`만 쓰고 매 프레임 경과 시간으로 그린다).
     ///
-    /// 경로가 아이소 대각선(가로 2 : 세로 1)이면 그 정수 격자에 모든 요소를 맞춘다: 화살표는 꼭짓점 + 가로 팔 6px + 세로 팔 3px의
-    /// 정확한 직선 꺾쇠이고 4칸(가로 8, 세로 4)마다 하나씩 놓이며, 경계 점선과 게이트 선도 같은 격자 위에 있어 계단이 가지런하다.
-    /// 경로가 대각선에서 크게 벗어나면 바닥 평면(세로 2배 편 좌표) 투영 방식으로 그린다(폴백).
-    /// 여러 차선이 교차하면 먼저 시작한 차선이 위에 오고, 나중 차선의 화살표와 점선은 앞선 차선 띠 안에서 그리지 않는다.
+    /// 구조: 활성 차선 정적 배열의 맨 앞 차선(호스트) 하나만 모든 활성 차선의 칸 밝기를 max로 합쳐 타일 메쉬를 만들어 그린다(차선이 겹쳐도
+    /// 교차 구간이 끊기지 않고 안쪽 테두리가 없다). 나머지 차선의 타일 렌더러는 꺼 두고, 호스트가 끝나면 다음 차선이 호스트가 된다.
+    /// 시간은 프레임당 한 번 모든 활성 차선을 한꺼번에 진행시킨다(UpdateAllLanes).
+    /// 타일 빛은 Indicators(-5)에 그려 타일 위, 모든 그림자 · 다른 바닥 이펙트 · 나무 · 차량 아래에 놓이고, 빛 알갱이는 ShockWave/0에 그린다.
+    ///
+    /// 칸 좌표: 칸 (i, j)의 윗면 중심 = gridOrigin + ((i - j) * 0.5, (i + j) * 0.25 + tileTopOffsetY). 실제 GroundTilemap(아이소 칸 (1, 0.5))에
+    /// 깔린 타일과 어긋남이 없도록 두 값을 측정해 정한 것이다. 차선에 속한 칸은 칸 윗면 중심에서 차선 직선(_from~_to를 지나는 무한 직선)까지의
+    /// 화면 거리가 반폭 이하이고, 칸 진행 번호(격자 축 기준)가 출발 쪽 startExtendUnits(+0.25칸)부터 도착 쪽 끝(+0.25칸)까지인 칸이다.
+    /// 끝을 둥글게 자르지 않아 양 끝이 타일 줄에 맞춰 반듯하다. 끝 모서리 칸과 출발점 뒤 줄은 빛은 켜지지만 차량이 치지 않는 칸이다.
+    /// Application Layer를 건드리지 않고 Begin으로 받은 월드 좌표와 인스펙터 값만 쓴다.
     ///
     /// 수명: Begin -> (유지) -> Fire -> 걷힘이 끝나면 스스로 루트 ParticleSystem을 멈춰 풀에 반환한다. 웨이브/런 종료는 Cancel로 즉시 회수한다.
     /// Fire를 영영 부르지 않아도 MaxHoldSeconds가 지나면 스스로 끝낸다(루트 ParticleSystem 수명 60초 안쪽).
-    /// 픽셀 규칙: JAGGIES(타원은 midpoint 한 가지), DOUBLE PIXEL(선의 L자 모서리 제거), HUGGING(선 옆에 보조선을 겹치지 않음).
-    /// 입자는 `.` `+` `x` `●` `◆`만 쓰고 매 프레임 경과 시간으로 다시 그린다. 정적 버퍼만 써서 재생 중 힙 할당이 없다.
+    /// 정적 버퍼만 써서 재생 중 힙 할당이 없다.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(MeshFilter))]
@@ -34,77 +42,145 @@ namespace PresentationLayer.VFX
         private float groundOffset = 0.0f;
         [SerializeField, Tooltip("Fire에 돌진 시간을 넘기지 않을 때 쓰는 기본 걷힘 시간(초). 차량이 경로를 지나는 시간에 맞춘다.")]
         private float clearSeconds = 0.8f;
+        [SerializeField, Tooltip("출발점(Begin의 from)보다 뒤쪽으로 칸을 켜는 길이(월드 유닛). 출발점은 섬 가장자리에서 이만큼 안쪽이라 가장자리 줄까지 켜기 위한 값이다. RoguelikeSkillTuningSO.offroadEdgeInset과 같은 값으로 맞춘다.")]
+        private float startExtendUnits = 0.8f;
 
-        [Header("정렬")]
-        [SerializeField, Tooltip("공중 메쉬를 루트 렌더러(VFXComponent가 정한 소팅)보다 이 값만큼 위에 그린다")]
-        private int sortingOrderOffset = 0;
+        [Header("타일 격자 (실제 GroundTilemap 타일과 맞춘 측정값)")]
+        [SerializeField, Tooltip("칸 (0, 0)의 GetCellCenterWorld(타일 그림 피벗) 월드 좌표. 칸 (i, j)의 피벗 = gridOrigin + ((i - j) * 0.5, (i + j) * 0.25)")]
+        private Vector2 gridOrigin = new Vector2(0.0f, 0.25f);
+        [SerializeField, Tooltip("타일 그림 피벗에서 윗면 마름모 중심까지의 높이(월드 유닛). 32x32 그림의 위 16줄이 윗면이라 0.25")]
+        private float tileTopOffsetY = 0.25f;
 
-        [Header("바닥 메쉬 (경로가 나무/캐릭터 뒤에 그려지도록 분리)")]
+        [Header("타일 빛 메쉬 (타일 위 · 그림자 아래)")]
         [SerializeField] private MeshFilter groundMeshFilter;
         [SerializeField] private MeshRenderer groundMeshRenderer;
-        [SerializeField, Tooltip("나무/캐릭터가 있는 Objects보다 아래여야 한다.")]
+        [SerializeField, Tooltip("타일(Tiles) 위, 그림자(TreeShadow) · 바닥 이펙트(ShockWave) · 나무 아래여야 한다.")]
+        private string tileSortingLayerName = "Indicators";
+        [SerializeField] private int tileSortingOrder = -5;
+
+        [Header("빛 알갱이 메쉬 (루트 스크립트의 메쉬)")]
+        [SerializeField] private bool bMotes = true;
+        [SerializeField, Tooltip("그림자(TreeShadow) 위, 나무/캐릭터가 있는 Objects 아래여야 한다.")]
         private string groundSortingLayerName = "ShockWave";
         [SerializeField] private int groundSortingOrder = 0;
 
         public const float GroundSquashY = 0.5f;
 
         private const float PixelsPerUnit = 32.0f;
-        private const float TwoPi = Mathf.PI * 2.0f;
         // Fire를 부르지 않은 채 이 시간이 지나면 스스로 끝낸다(루트 ParticleSystem 수명 60초보다 짧아야 한다)
         private const float MaxHoldSeconds = 55.0f;
-        private const float BlinkSeconds = 0.5f;
-        private const float RevealSeconds = 0.5f;
-        private const float FlashSeconds = 0.35f;
-        private const float FlashColumnSeconds = 0.1f;
-        private const float EndLinger = 0.15f;
-        private const int ChevronSpacing = 9;
-        private const int ChevronDepth = 5;
-        private const int ChevronStartOffset = 14;
-        private const int WaveLength = 7;
-        private const float WaveSpeed = 22.0f;
-        private const int SparkCount = 14;
-        private const int QuadBudget = 5000;
-        private const int LatticeChevronUnits = 4;     // 화살표 간격(격자 칸). 한 칸 = 가로 2px, 세로 1px
-        private const int LatticeChevronTip = 3;
-        private const int LatticeChevronHorizontalArm = 5;
-        private const int LatticeChevronVerticalArm = 3;
-        private const float LatticeSlopeMin = 0.35f;   // 가로 대비 세로 비율이 이 범위 안이면 아이소 대각선으로 본다
-        private const float LatticeSlopeMax = 0.65f;
-        private const float GroundPerLatticeUnit = 2.83f;
-        private const float UnderpassMargin = 9.0f;
-        private const float UnderpassFeather = 6.0f;   // 띠 가장자리와 걷힘 선두에서 가림이 0~1로 전이하는 폭(px)
+
+        // 타일(아이소 마름모 32x16px)과 칸 버퍼
+        private const int TileHalfW = 16;
+        private const int TileHalfH = 8;
+        private const int WindowSize = 64;
+        private const int TileQuadCapacity = 1024;
+        private const int MaxLaneCells = 640;
         private const int MaxActiveLanes = 16;
-        private const float GroundGlow = 0.2f;
+        private const float OnThreshold = 0.03f;
+        private const float GlowRange = 2.0f;
 
-        // 경고 팔레트(앰버). 별 계열(하늘색)과 구분되는 따뜻한 색이다.
-        private static readonly Color32 ColorWhite = new Color32(255, 255, 255, 255);
-        private static readonly Color32 ColorAmberDark = new Color32(122, 68, 18, 255);
-        private static readonly Color32 ColorAmber = new Color32(217, 130, 43, 255);
-        private static readonly Color32 ColorAmberLight = new Color32(255, 191, 77, 255);
-        private static readonly Color32 ColorCream = new Color32(255, 240, 200, 255);
+        // 시안 수치: 등장
+        private const float AppearStagger = 0.02f;
+        private const float PopDecay = 9.0f;
+        // 시안 수치: 유지 꺾쇠
+        private const float IdleSpeed = 7.0f;
+        private const float ImminentSpeed = 16.0f;
+        private const float ImminentSeconds = 0.8f;
+        private const float ChevronPeriod = 6.0f;
+        private const float ChevronLength = 2.0f;
+        private const float InnerBase = 0.1f;
+        private const float OuterBase = 0.05f;
+        private const float PulseCover = 0.42f;
+        private const float PulseGlow = 0.12f;
+        private const float PopCover = 0.4f;
+        private const float PopGlow = 0.3f;
+        private const float ImminentCover = 0.08f;
+        private const float ImminentGlow = 0.04f;
+        private const float FarFade = 0.5f;
+        private const float InnerWidthRatio = 0.5f;
+        private const float EndCellMargin = 0.25f;
+        // 시안 수치: 발동과 돌진
+        private const float WarmSeconds = 0.45f;
+        private const float CarStartIndex = 1.0f;
+        private const float CarEndInset = 1.4f;
+        private const float AheadReach = 5.0f;
+        private const float BehindReach = 4.5f;
+        private const float SpawnFlashCells = 2.5f;
+        private const float FlashDecay = 7.0f;
+        private const float TrailMargin = 0.5f;
+        // 시안 수치: 빛 알갱이
+        private const int MoteCount = 7;
+        private const float MoteDelay = 0.4f;
+        private const float MoteStep = 0.23f;
+        private const float MotePeriod = 1.6f;
+        private const float MoteLife = 1.1f;
+        private const float MoteAlongRange = 18.0f;
+        private const float MoteLateral = 3.2f;
+        private const float MoteRise = 12.0f;
+        private const int MoteLift = 2;
+        private const int MoteColorSteps = 32;
+        private const int MoteQuadBudget = 256;
+        private const int MoteMeshQuads = 64;
 
-        private static readonly Color32[] ChevronColors =
+        // 색(시안 앰버). 바탕색/밝은색은 머티리얼 M_OffroadLaneTile의 _BaseColor/_HighColor가 갖고, 빛 알갱이용 밝은색만 여기 둔다.
+        private static readonly Color MoteHighColor = new Color(255.0f / 255.0f, 236.0f / 255.0f, 190.0f / 255.0f, 1.0f);
+        private const float MoteGlowMin = 1.2f;
+        private const float MoteGlowMax = 6.0f;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct TileVertex
         {
-            GlowColor(ColorAmberDark, 0.05f), GlowColor(ColorAmber, 0.18f), GlowColor(ColorAmberLight, 0.3f), GlowColor(ColorCream, 0.4f),
+            public Vector3 position;
+            public Color32 color;
+            public Vector2 uv;
+        }
+
+        private static readonly VertexAttributeDescriptor[] TileVertexLayout =
+        {
+            new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3),
+            new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.UNorm8, 4),
+            new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2),
         };
 
-        // 교차 구간 끊기용 활성 차선 목록(고정 배열, 시작 순서가 곧 우선순위)
+        private const MeshUpdateFlags TileUploadFlags = MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontResetBoneBounds | MeshUpdateFlags.DontRecalculateBounds;
+        private const ulong HashOffset = 14695981039346656037UL;
+        private const ulong HashPrime = 1099511628211UL;
+
+        // 활성 차선 목록(고정 배열). 맨 앞이 타일 메쉬를 그리는 호스트다.
         private static readonly VFX_OffroadLane[] activeLanes = new VFX_OffroadLane[MaxActiveLanes];
         private static int activeLaneCount;
-        private static int nextLaneOrder;
+        private static int updatedFrame = -1;
 
-        private static readonly PixelQuadBuffer skyBuffer = new PixelQuadBuffer(QuadBudget);
-        private static readonly PixelQuadBuffer groundBuffer = new PixelQuadBuffer(QuadBudget);
+        // 칸 밝기 합집합 버퍼(고정 64x64 창)와 타일 메쉬 정점
+        private static readonly float[] cellCover = new float[WindowSize * WindowSize];
+        private static readonly float[] cellGlow = new float[WindowSize * WindowSize];
+        private static readonly TileVertex[] tileVertices = new TileVertex[TileQuadCapacity * 4];
+        private static ushort[] tileIndexPattern;
+        private static readonly Color32[] moteColors = new Color32[MoteColorSteps];
+        private static bool bMoteColorsReady;
+
+        private static readonly PixelQuadBuffer skyBuffer = new PixelQuadBuffer(MoteQuadBudget);
 
         // 내부 의존성
         private readonly PixelPainter skyPainter = new PixelPainter();
-        private readonly PixelPainter groundPainter = new PixelPainter();
         private MeshFilter meshFilter;
         private MeshRenderer meshRenderer;
         private Mesh mesh;
         private Mesh groundMesh;
-        private ParticleSystemRenderer rootParticleRenderer;
         private ParticleSystem rootParticleSystem;
+
+        // 차선이 덮는 칸(Begin에서 한 번 계산)
+        private readonly int[] cellI = new int[MaxLaneCells];
+        private readonly int[] cellJ = new int[MaxLaneCells];
+        private readonly int[] cellA = new int[MaxLaneCells];
+        private readonly bool[] cellInner = new bool[MaxLaneCells];
+        private int cellCount;
+        private int cellMinI;
+        private int cellMaxI;
+        private int cellMinJ;
+        private int cellMaxJ;
+        private int maxCellA;
 
         // 상태 변수
         private float elapsed;
@@ -112,32 +188,34 @@ namespace PresentationLayer.VFX
         private float fireElapsed;
         private float clearDuration;
         private float fireDueTime = -1.0f;
-        private float autoFireTime = -1.0f;
-        private float halfWidthPx;
         private bool bActive;
         private bool bInitialized;
-        private int startX;
-        private int startY;
-        private float groundDirX;
-        private float groundDirY;
-        private float groundLength;
-        private int chevronCount;
-        private bool bLattice;
-        private int stepX;
-        private int stepY;
-        private int latticeUnits;
-        private int edgeSteps;
-        private int laneOrder;
-        private Vector3 cullingCenter;
-        private Vector3 cullingSize = new Vector3(20.0f, 20.0f, 10.0f);
 
+        private int originPxX;
+        private int originPxY;
+        private float laneStartI;
+        private float laneStartJ;
+        private float laneStepI;
+        private float laneStepJ;
+        private float lanePerpI;
+        private float lanePerpJ;
+        private float laneLength;
+        private int moteSeed;
+        private float warmSeconds;
+        private float carSpeed;
+
+        // 월드 픽셀 경계(칸 마름모 전체 + 알갱이가 떠오르는 높이)
+        private int boundsMinX;
+        private int boundsMinY;
+        private int boundsMaxX;
+        private int boundsMaxY;
+
+        private int tileSortingLayerId;
         private int groundSortingLayerId;
-        private int appliedRootSortingLayerID = int.MinValue;
-        private int appliedRootSortingOrder = int.MinValue;
         private ulong skyHash;
         private int skyVertexCount = -1;
-        private ulong groundHash;
-        private int groundVertexCount = -1;
+        private ulong tileHash;
+        private int tileVertexCount = -1;
 
         // 퍼블릭 초기화 및 제어 메서드
 
@@ -149,79 +227,33 @@ namespace PresentationLayer.VFX
         public void Begin(Vector3 _from, Vector3 _to, float _halfWidthUnits = 0.0f)
         {
             EnsureInitialized();
+            if (MaxActiveLanes <= activeLaneCount && false == IsRegistered()) return;
 
-            Vector3 from = _from + new Vector3(0.0f, -groundOffset, 0.0f);
-            Vector3 to = _to + new Vector3(0.0f, -groundOffset, 0.0f);
+            float halfWidth = Mathf.Max(0.05f, 0.0f < _halfWidthUnits ? _halfWidthUnits : laneHalfWidth);
+            float fromX = _from.x;
+            float fromY = _from.y - groundOffset;
+            float toX = _to.x;
+            float toY = _to.y - groundOffset;
 
-            startX = Mathf.FloorToInt(from.x * PixelsPerUnit);
-            startY = Mathf.FloorToInt(from.y * PixelsPerUnit);
-            float dx = (to.x - from.x) * PixelsPerUnit;
-            float dy = (to.y - from.y) * PixelsPerUnit / GroundSquashY;
+            BuildLaneCells(fromX, fromY, toX, toY, halfWidth);
 
-            groundLength = Mathf.Sqrt(dx * dx + dy * dy);
-            if (groundLength < 1.0f)
-            {
-                groundDirX = 1.0f;
-                groundDirY = 0.0f;
-            }
-            else
-            {
-                groundDirX = dx / groundLength;
-                groundDirY = dy / groundLength;
-            }
-
-            halfWidthPx = Mathf.Max(0.5f, 0.0f < _halfWidthUnits ? _halfWidthUnits : laneHalfWidth) * PixelsPerUnit;
-            chevronCount = Mathf.Max(1, Mathf.FloorToInt((groundLength - ChevronStartOffset) / ChevronSpacing));
-
-            // 아이소 대각선(가로 2 : 세로 1)이면 정수 격자로 그린다
-            float screenDx = (to.x - from.x) * PixelsPerUnit;
-            float screenDy = (to.y - from.y) * PixelsPerUnit;
-            float slope = 1.0f < Mathf.Abs(screenDx) ? Mathf.Abs(screenDy) / Mathf.Abs(screenDx) : 0.0f;
-            bLattice = LatticeSlopeMin <= slope && slope <= LatticeSlopeMax;
-            stepX = screenDx < 0.0f ? -2 : 2;
-            stepY = screenDy < 0.0f ? -1 : 1;
-            latticeUnits = Mathf.Max(1, Mathf.RoundToInt(Mathf.Abs(screenDx) * 0.5f));
-            edgeSteps = Mathf.Max(2, Mathf.RoundToInt(halfWidthPx / GroundPerLatticeUnit));
-            if (true == bLattice) chevronCount = Mathf.Max(1, latticeUnits / LatticeChevronUnits);
-
-            // 경계: 출발점~도착점 + 차선 폭과 섬광 높이 여유
-            Vector3 mid = (from + to) * 0.5f;
-            float spanX = Mathf.Abs(to.x - from.x) + (halfWidthPx * 2.0f + 80.0f) / PixelsPerUnit;
-            float spanY = Mathf.Abs(to.y - from.y) + (halfWidthPx + 100.0f) / PixelsPerUnit;
-            cullingCenter = mid;
-            cullingSize = new Vector3(spanX + 2.0f * PixelVfxCulling.MarginUnits, spanY + 2.0f * PixelVfxCulling.MarginUnits, PixelVfxCulling.BoundsDepth);
+            moteSeed = Mathf.RoundToInt(fromX * PixelsPerUnit) * 73856093 ^ Mathf.RoundToInt(fromY * PixelsPerUnit) * 19349663;
 
             elapsed = 0.0f;
             bFired = false;
             fireElapsed = 0.0f;
             clearDuration = clearSeconds;
             fireDueTime = -1.0f;
-            autoFireTime = -1.0f;
             bActive = true;
             skyVertexCount = -1;
-            groundVertexCount = -1;
-            appliedRootSortingLayerID = int.MinValue;
-            appliedRootSortingOrder = int.MinValue;
+            tileVertexCount = -1;
 
-            laneOrder = nextLaneOrder++;
             RegisterLane();
         }
 
         /// <summary>
-        /// [호환용, 기획서 v2.8 이전 방식] 예열 시간 뒤에 자동으로 발동한다. 소환 직전에 잠깐 나왔다 사라지는 예고라서 v2.8 규칙과 맞지 않는다.
-        /// 호출부를 Begin(출발점, 도착점, 반폭) + Fire로 옮기면 이 오버로드는 지운다.
-        /// </summary>
-        public void Begin(Vector3 _from, Vector3 _to, float _warmSeconds, float _halfWidthUnits)
-        {
-            Begin(_from, _to, _halfWidthUnits);
-
-            autoFireTime = 0.0f < _warmSeconds ? _warmSeconds : 1.0f;
-            SetRemaining(autoFireTime);
-        }
-
-        /// <summary>
-        /// 발동한다(차량 소환). 소환 섬광이 터지고 경로 표시가 소환 지점부터 걷힌다. _dashSeconds는 차량이 경로를 지나는 시간
-        /// (신호 OffroadDash의 duration)이며 0 이하이면 인스펙터의 clearSeconds. 걷힘이 끝나면 스스로 풀에 반환한다.
+        /// 발동한다(차량 소환). 소환 지점 칸이 번쩍이고 차선이 밝아지며 차량이 지나가는 시간에 맞춰 소환 지점부터 걷힌다.
+        /// _dashSeconds는 차량이 경로를 지나는 시간(소환 예열 포함)이며 0 이하이면 인스펙터의 clearSeconds. 걷힘이 끝나면 스스로 풀에 반환한다.
         /// 이미 발동했거나 시작 전이면 아무 일도 하지 않는다.
         /// </summary>
         public void Fire(float _dashSeconds = 0.0f)
@@ -231,11 +263,15 @@ namespace PresentationLayer.VFX
             bFired = true;
             fireElapsed = 0.0f;
             clearDuration = Mathf.Max(0.1f, 0.0f < _dashSeconds ? _dashSeconds : clearSeconds);
+            warmSeconds = Mathf.Min(WarmSeconds, clearDuration * 0.5f);
+
+            float carEnd = Mathf.Max(CarStartIndex + 1.0f, laneLength - CarEndInset);
+            carSpeed = (carEnd - CarStartIndex) / Mathf.Max(0.05f, clearDuration - warmSeconds);
         }
 
         /// <summary>
-        /// 발동까지 남은 시간(초)을 알린다(선택). 알리면 마지막 0.5초에 소환 마커가 흰색으로 깜빡인다. 주기가 바뀌면(레벨, 공격속도)
-        /// 다시 불러 갱신한다. 한 번도 부르지 않으면 깜빡임 없이 유지된다.
+        /// 발동까지 남은 시간(초)을 알린다(선택). 알리면 마지막 0.8초에 꺾쇠 빛이 빨라지고 바탕이 조금 진해진다. 주기가 바뀌면(레벨, 공격속도)
+        /// 다시 불러 갱신한다. 한 번도 부르지 않으면 임박 연출 없이 유지된다.
         /// </summary>
         public void SetRemaining(float _seconds)
         {
@@ -261,14 +297,21 @@ namespace PresentationLayer.VFX
             if (null != rootParticleSystem && true == rootParticleSystem.isPlaying) rootParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
 
-        private void RegisterLane()
+        private bool IsRegistered()
         {
             for (int i = 0; i < activeLaneCount; i++)
             {
-                if (this == activeLanes[i]) return;
+                if (this == activeLanes[i]) return true;
             }
 
+            return false;
+        }
+
+        private void RegisterLane()
+        {
+            if (true == IsRegistered()) return;
             if (MaxActiveLanes <= activeLaneCount) return;
+
             activeLanes[activeLaneCount++] = this;
         }
 
@@ -284,44 +327,6 @@ namespace PresentationLayer.VFX
             }
         }
 
-        // 먼저 시작한 차선(우선순위 높음)이 이 점을 가리는 정도(0 = 안 가림, 1 = 완전히 가림). 바닥 평면(세로 2배)에서 거리를 잰다.
-        // 띠 가장자리는 페더로 서서히 약해지고, 선행 차선이 발동하면 차량이 지나간 쪽부터 가림이 풀리며, 종료 직전 EndLinger 동안 0으로 내려간다.
-        private float GetOtherLaneCover(int _x, int _y)
-        {
-            float cover = 0.0f;
-
-            for (int i = 0; i < activeLaneCount; i++)
-            {
-                VFX_OffroadLane other = activeLanes[i];
-                if (null == other || this == other || other.laneOrder >= laneOrder) continue;
-
-                float gx = _x - other.startX;
-                float gy = (_y - other.startY) / GroundSquashY;
-                float along = gx * other.groundDirX + gy * other.groundDirY;
-                float lateral = Mathf.Abs(gx * other.groundDirY - gy * other.groundDirX);
-
-                float laneCover = Mathf.Clamp01((other.halfWidthPx + UnderpassMargin - lateral) / UnderpassFeather);
-                laneCover *= Mathf.Clamp01((along + 8.0f) / UnderpassFeather);
-                laneCover *= Mathf.Clamp01((other.groundLength + 8.0f - along) / UnderpassFeather);
-
-                if (true == other.bFired)
-                {
-                    float clearS = Mathf.Clamp01(other.fireElapsed / Mathf.Max(0.05f, other.clearDuration)) * other.groundLength;
-                    laneCover *= Mathf.Clamp01((along - clearS) / UnderpassFeather + 1.0f);
-                    laneCover *= Mathf.Clamp01((other.clearDuration + EndLinger - other.fireElapsed) / EndLinger);
-                }
-
-                cover = Mathf.Max(cover, laneCover);
-            }
-
-            return cover;
-        }
-
-        private static Color32 ScaleAlpha(Color32 _color, float _scale)
-        {
-            return new Color32(_color.r, _color.g, _color.b, (byte)Mathf.RoundToInt(_color.a * Mathf.Clamp01(_scale)));
-        }
-
         private void EnsureInitialized()
         {
             if (true == bInitialized) return;
@@ -329,304 +334,578 @@ namespace PresentationLayer.VFX
 
             meshFilter = GetComponent<MeshFilter>();
             meshRenderer = GetComponent<MeshRenderer>();
-            rootParticleRenderer = null != transform.parent ? transform.parent.GetComponent<ParticleSystemRenderer>() : null;
             rootParticleSystem = null != transform.parent ? transform.parent.GetComponent<ParticleSystem>() : null;
 
             mesh = new Mesh { name = "VFX_OffroadLane" };
             mesh.MarkDynamic();
             meshFilter.sharedMesh = mesh;
-            PixelQuadBuffer.ReserveMesh(mesh, 300);
+            PixelQuadBuffer.ReserveMesh(mesh, MoteMeshQuads);
 
-            meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
             meshRenderer.receiveShadows = false;
             meshRenderer.enabled = false;
+            groundSortingLayerId = SortingLayer.NameToID(groundSortingLayerName);
 
             if (null != groundMeshFilter && null != groundMeshRenderer)
             {
-                groundMesh = new Mesh { name = "VFX_OffroadLane_Ground" };
+                groundMesh = new Mesh { name = "VFX_OffroadLane_Tiles" };
                 groundMesh.MarkDynamic();
+                SetupTileMesh(groundMesh);
                 groundMeshFilter.sharedMesh = groundMesh;
-                PixelQuadBuffer.ReserveMesh(groundMesh, 1500);
 
-                groundMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                groundMeshRenderer.shadowCastingMode = ShadowCastingMode.Off;
                 groundMeshRenderer.receiveShadows = false;
                 groundMeshRenderer.enabled = false;
 
-                groundSortingLayerId = SortingLayer.NameToID(groundSortingLayerName);
+                tileSortingLayerId = SortingLayer.NameToID(tileSortingLayerName);
             }
-        }
 
-        // ---------- 계산 ----------
-
-        private static Color32 GlowColor(Color32 _base, float _glow)
-        {
-            byte alpha = (byte)Mathf.RoundToInt(Mathf.Clamp01(_glow) * 255.0f);
-            return new Color32(_base.r, _base.g, _base.b, alpha);
-        }
-
-        private static float EaseOutCubic(float _t)
-        {
-            float inv = 1.0f - _t;
-            return 1.0f - inv * inv * inv;
-        }
-
-        // 바닥 평면 좌표(경로 거리 _s, 옆 방향 _lateral, 단위 px)를 화면 픽셀로 투영한다. 세로는 GroundSquashY배.
-        private int ProjectX(float _s, float _lateral)
-        {
-            return startX + Mathf.RoundToInt(groundDirX * _s - groundDirY * _lateral);
-        }
-
-        private int ProjectY(float _s, float _lateral)
-        {
-            return startY + Mathf.RoundToInt((groundDirY * _s + groundDirX * _lateral) * GroundSquashY);
-        }
-
-        // ---------- 그리기 ----------
-
-        private void RebuildMesh()
-        {
-            Vector3 pos = transform.position;
-            bool bSplit = null != groundMesh;
-
-            skyPainter.Begin(skyBuffer, transform.worldToLocalMatrix, pos.z);
-
-            PixelPainter groundTarget = skyPainter;
-            if (true == bSplit)
+            if (false == bMoteColorsReady)
             {
-                groundPainter.Begin(groundBuffer, groundMeshRenderer.transform.worldToLocalMatrix, pos.z);
-                groundTarget = groundPainter;
+                bMoteColorsReady = true;
+                for (int i = 0; i < MoteColorSteps; i++) moteColors[i] = MakeMoteColor((i + 0.5f) / MoteColorSteps);
+            }
+        }
+
+        // 정점 버퍼(위치 + 색 + uv 한 스트림)와 쿼드 인덱스 패턴을 용량만큼 잡는다(재생 중 다시 잡지 않는다)
+        private static void SetupTileMesh(Mesh _mesh)
+        {
+            if (null == tileIndexPattern)
+            {
+                tileIndexPattern = new ushort[TileQuadCapacity * 6];
+                for (int q = 0; q < TileQuadCapacity; q++)
+                {
+                    int v = q * 4;
+                    int n = q * 6;
+                    tileIndexPattern[n] = (ushort)v;
+                    tileIndexPattern[n + 1] = (ushort)(v + 1);
+                    tileIndexPattern[n + 2] = (ushort)(v + 2);
+                    tileIndexPattern[n + 3] = (ushort)v;
+                    tileIndexPattern[n + 4] = (ushort)(v + 2);
+                    tileIndexPattern[n + 5] = (ushort)(v + 3);
+                }
             }
 
-            DrawGround(groundTarget);
-            DrawFlash(skyPainter);
+            _mesh.SetVertexBufferParams(TileQuadCapacity * 4, TileVertexLayout);
+            _mesh.SetIndexBufferParams(TileQuadCapacity * 6, IndexFormat.UInt16);
+            _mesh.SetIndexBufferData(tileIndexPattern, 0, 0, TileQuadCapacity * 6, TileUploadFlags);
+            _mesh.subMeshCount = 1;
+            _mesh.SetSubMesh(0, new SubMeshDescriptor(0, 0, MeshTopology.Triangles), TileUploadFlags);
+        }
 
+        // 빛 알갱이 색: 시안의 gamma 공간 밝기 k(1.25 -> 0.85)를 선형 HDR 목표값으로 바꿔 BrandWrapGlow(GlowMin~GlowMax)의 정점 색 + 알파로 푼다.
+        private static Color32 MakeMoteColor(float _age)
+        {
+            float k = 1.25f - _age * 0.4f;
+            float r = Mathf.GammaToLinearSpace(MoteHighColor.r * k);
+            float g = Mathf.GammaToLinearSpace(MoteHighColor.g * k);
+            float b = Mathf.GammaToLinearSpace(MoteHighColor.b * k);
+            float glow = Mathf.Clamp(Mathf.Max(MoteGlowMin, Mathf.Max(r, Mathf.Max(g, b))), MoteGlowMin, MoteGlowMax);
+            float alpha = (glow - MoteGlowMin) / (MoteGlowMax - MoteGlowMin);
+            return new Color32(
+                (byte)Mathf.RoundToInt(Mathf.Clamp01(r / glow) * 255.0f),
+                (byte)Mathf.RoundToInt(Mathf.Clamp01(g / glow) * 255.0f),
+                (byte)Mathf.RoundToInt(Mathf.Clamp01(b / glow) * 255.0f),
+                (byte)Mathf.RoundToInt(alpha * 255.0f));
+        }
+
+        // ---------- 차선 칸 계산 ----------
+
+        // 월드 좌표를 칸 격자의 소수 좌표(i, j)로 바꾼다. 칸 (i, j) 윗면 중심 픽셀 = (originPxX + 16 * (i - j), originPxY + 8 * (i + j)).
+        private void WorldToGrid(float _x, float _y, out float _i, out float _j)
+        {
+            float px = _x * PixelsPerUnit - originPxX;
+            float py = _y * PixelsPerUnit - originPxY;
+            _i = px / (TileHalfW * 2.0f) + py / (TileHalfH * 2.0f);
+            _j = py / (TileHalfH * 2.0f) - px / (TileHalfW * 2.0f);
+        }
+
+        // 차선에 속한 칸(윗면 중심에서 직선까지의 화면 거리 <= 반폭, 진행 번호가 출발 쪽 연장 ~ 도착 쪽 끝 안)을 모으고,
+        // 칸마다 진행 방향 번호(a)와 안쪽 칸 여부를 정한다.
+        private void BuildLaneCells(float _fromX, float _fromY, float _toX, float _toY, float _halfWidth)
+        {
+            originPxX = Mathf.RoundToInt(gridOrigin.x * PixelsPerUnit);
+            originPxY = Mathf.RoundToInt((gridOrigin.y + tileTopOffsetY) * PixelsPerUnit);
+
+            // 차선(_from~_to)과 나무 위치는 칸 중심(타일 그림 피벗) 기준이고 빛은 윗면에 그리므로, 선분을 윗면 높이만큼 올려 윗면 중심과 비교한다
+            _fromY += tileTopOffsetY;
+            _toY += tileTopOffsetY;
+
+            float fromI;
+            float fromJ;
+            float toI;
+            float toJ;
+            WorldToGrid(_fromX, _fromY, out fromI, out fromJ);
+            WorldToGrid(_toX, _toY, out toI, out toJ);
+
+            float deltaI = toI - fromI;
+            float deltaJ = toJ - fromJ;
+            laneLength = Mathf.Max(1.0f, Mathf.Max(Mathf.Abs(deltaI), Mathf.Abs(deltaJ)));
+            laneStartI = fromI;
+            laneStartJ = fromJ;
+            laneStepI = deltaI / laneLength;
+            laneStepJ = deltaJ / laneLength;
+            lanePerpI = -laneStepJ;
+            lanePerpJ = laneStepI;
+
+            // 진행 방향 한 칸의 월드 길이(화면 (0.5, 0.25) 유닛). 출발 쪽 연장 길이를 칸 수로 바꾸는 데 쓴다.
+            float cellWorldLength = Mathf.Sqrt((float)(TileHalfW * TileHalfW + TileHalfH * TileHalfH)) / PixelsPerUnit;
+            float startExtendCells = startExtendUnits / cellWorldLength;
+
+            // 직선 방향(단위)과 수직(단위). 끝점이 겹치면(길이 0) 점까지의 거리로 본다.
+            float lineX = _toX - _fromX;
+            float lineY = _toY - _fromY;
+            float lineLength = Mathf.Sqrt(lineX * lineX + lineY * lineY);
+            float normalX = 0.0f;
+            float normalY = 0.0f;
+            if (0.0001f < lineLength)
+            {
+                normalX = -lineY / lineLength;
+                normalY = lineX / lineLength;
+            }
+
+            // 선분 + 출발 쪽 연장 + 반폭을 감싸는 월드 직사각형의 네 모서리를 격자 좌표로 바꿔 후보 칸 범위를 잡는다.
+            // 진행 번호는 격자 축 기준(비스듬)이라 직선 투영과 어긋나므로 반폭의 두 배와 한 칸을 더 여유로 둔다.
+            float reach = startExtendUnits + 2.0f * _halfWidth + cellWorldLength;
+            float minX = Mathf.Min(_fromX, _toX) - reach;
+            float maxX = Mathf.Max(_fromX, _toX) + reach;
+            float minY = Mathf.Min(_fromY, _toY) - reach;
+            float maxY = Mathf.Max(_fromY, _toY) + reach;
+
+            float scanMinI = float.MaxValue;
+            float scanMaxI = float.MinValue;
+            float scanMinJ = float.MaxValue;
+            float scanMaxJ = float.MinValue;
+
+            for (int corner = 0; corner < 4; corner++)
+            {
+                float ci;
+                float cj;
+                WorldToGrid(0 == (corner & 1) ? minX : maxX, 0 == (corner & 2) ? minY : maxY, out ci, out cj);
+                if (ci < scanMinI) scanMinI = ci;
+                if (scanMaxI < ci) scanMaxI = ci;
+                if (cj < scanMinJ) scanMinJ = cj;
+                if (scanMaxJ < cj) scanMaxJ = cj;
+            }
+
+            int startI = Mathf.FloorToInt(scanMinI) - 1;
+            int endI = Mathf.CeilToInt(scanMaxI) + 1;
+            int startJ = Mathf.FloorToInt(scanMinJ) - 1;
+            int endJ = Mathf.CeilToInt(scanMaxJ) + 1;
+
+            cellCount = 0;
+            cellMinI = int.MaxValue;
+            cellMaxI = int.MinValue;
+            cellMinJ = int.MaxValue;
+            cellMaxJ = int.MinValue;
+            maxCellA = 0;
+
+            int pixelMinX = int.MaxValue;
+            int pixelMinY = int.MaxValue;
+            int pixelMaxX = int.MinValue;
+            int pixelMaxY = int.MinValue;
+            float innerWidth = _halfWidth * InnerWidthRatio;
+
+            for (int i = startI; i <= endI; i++)
+            {
+                for (int j = startJ; j <= endJ; j++)
+                {
+                    if (MaxLaneCells <= cellCount) break;
+
+                    int cx = originPxX + TileHalfW * (i - j);
+                    int cy = originPxY + TileHalfH * (i + j);
+                    float cellX = cx / PixelsPerUnit;
+                    float cellY = cy / PixelsPerUnit;
+                    float distance = 0.0001f < lineLength
+                        ? Mathf.Abs((cellX - _fromX) * normalX + (cellY - _fromY) * normalY)
+                        : Mathf.Sqrt((cellX - _fromX) * (cellX - _fromX) + (cellY - _fromY) * (cellY - _fromY));
+                    if (_halfWidth < distance) continue;
+
+                    // 진행 번호가 출발 쪽 연장(섬 가장자리 줄까지)보다 뒤이거나 도착 쪽 끝을 넘은 칸은 켜지 않는다(양 끝이 타일 줄에 맞춰 반듯하게 잘린다)
+                    float along = (i - fromI) * laneStepI + (j - fromJ) * laneStepJ;
+                    if (along < -startExtendCells - EndCellMargin || laneLength + EndCellMargin < along) continue;
+
+                    int a = Mathf.Max(0, Mathf.RoundToInt(along));
+                    cellI[cellCount] = i;
+                    cellJ[cellCount] = j;
+                    cellA[cellCount] = a;
+                    cellInner[cellCount] = distance <= innerWidth;
+                    cellCount++;
+
+                    if (i < cellMinI) cellMinI = i;
+                    if (cellMaxI < i) cellMaxI = i;
+                    if (j < cellMinJ) cellMinJ = j;
+                    if (cellMaxJ < j) cellMaxJ = j;
+                    if (maxCellA < a) maxCellA = a;
+                    if (cx - TileHalfW < pixelMinX) pixelMinX = cx - TileHalfW;
+                    if (cy - TileHalfH < pixelMinY) pixelMinY = cy - TileHalfH;
+                    if (pixelMaxX < cx + TileHalfW) pixelMaxX = cx + TileHalfW;
+                    if (pixelMaxY < cy + TileHalfH) pixelMaxY = cy + TileHalfH;
+                }
+            }
+
+            if (0 == cellCount)
+            {
+                cellMinI = cellMaxI = cellMinJ = cellMaxJ = 0;
+                pixelMinX = Mathf.FloorToInt(Mathf.Min(_fromX, _toX) * PixelsPerUnit);
+                pixelMaxX = Mathf.CeilToInt(Mathf.Max(_fromX, _toX) * PixelsPerUnit);
+                pixelMinY = Mathf.FloorToInt(Mathf.Min(_fromY, _toY) * PixelsPerUnit);
+                pixelMaxY = Mathf.CeilToInt(Mathf.Max(_fromY, _toY) * PixelsPerUnit);
+            }
+
+            boundsMinX = pixelMinX;
+            boundsMinY = pixelMinY;
+            boundsMaxX = pixelMaxX;
+            boundsMaxY = pixelMaxY + Mathf.RoundToInt(MoteRise) + MoteLift + 2;
+        }
+
+        // ---------- 프레임 갱신 ----------
+
+        // 프레임당 한 번 모든 활성 차선의 시간을 진행시키고, 호스트가 타일 메쉬를, 각 차선이 빛 알갱이 메쉬를 다시 만든다.
+        private static void UpdateAllLanes(float _dt)
+        {
+            // 끝난 차선은 목록에서 빠진다. 뒤에서부터 돌면 바꿔 들어온 마지막 차선은 이미 처리한 것이다.
+            for (int i = activeLaneCount - 1; i >= 0; i--)
+            {
+                VFX_OffroadLane lane = activeLanes[i];
+                if (null == lane) continue;
+
+                lane.Tick(_dt);
+            }
+
+            if (0 == activeLaneCount) return;
+
+            for (int i = 1; i < activeLaneCount; i++)
+            {
+                VFX_OffroadLane other = activeLanes[i];
+                if (null != other && null != other.groundMeshRenderer && true == other.groundMeshRenderer.enabled) other.groundMeshRenderer.enabled = false;
+            }
+
+            ComposeTiles(activeLanes[0]);
+
+            for (int i = 0; i < activeLaneCount; i++)
+            {
+                VFX_OffroadLane lane = activeLanes[i];
+                if (null != lane) lane.RebuildMotes();
+            }
+        }
+
+        private void Tick(float _dt)
+        {
+            elapsed += _dt;
+            if (true == bFired) fireElapsed += _dt;
+
+            if (true == bFired ? CarAlong() >= maxCellA + BehindReach + TrailMargin : MaxHoldSeconds <= elapsed)
+            {
+                Finish();
+                return;
+            }
+
+            ApplySorting();
+        }
+
+        // 소팅은 VFXComponent가 자식 렌더러 전체에 같은 값으로 덮어쓰므로, 두 렌더러를 각자 레이어로 다시 맞춘다
+        private void ApplySorting()
+        {
+            if (null != groundMeshRenderer)
+            {
+                if (groundMeshRenderer.sortingLayerID != tileSortingLayerId) groundMeshRenderer.sortingLayerID = tileSortingLayerId;
+                if (groundMeshRenderer.sortingOrder != tileSortingOrder) groundMeshRenderer.sortingOrder = tileSortingOrder;
+            }
+
+            if (meshRenderer.sortingLayerID != groundSortingLayerId) meshRenderer.sortingLayerID = groundSortingLayerId;
+            if (meshRenderer.sortingOrder != groundSortingOrder) meshRenderer.sortingOrder = groundSortingOrder;
+        }
+
+        // 차량이 있다고 보는 진행 번호. Fire의 돌진 시간 비율로 추정한다(소환 예열 동안은 소환 지점).
+        private float CarAlong()
+        {
+            return CarStartIndex + carSpeed * Mathf.Max(0.0f, fireElapsed - warmSeconds);
+        }
+
+        // 이 차선의 칸 밝기를 합집합 버퍼에 max로 쌓는다(시안 tileLevel + fillTileLevels)
+        private void AccumulateCells(int _windowI0, int _windowJ0, int _spanI, int _spanJ)
+        {
+            bool bImminent = 0.0f <= fireDueTime && fireDueTime - elapsed < ImminentSeconds;
+            float phase = elapsed * (true == bImminent ? ImminentSpeed : IdleSpeed);
+            float aheadCar = CarAlong();
+            float travelled = fireElapsed - warmSeconds;
+            float flash = Mathf.Exp(-fireElapsed * FlashDecay);
+
+            for (int n = 0; n < cellCount; n++)
+            {
+                int wi = cellI[n] - _windowI0;
+                int wj = cellJ[n] - _windowJ0;
+                if (wi < 0 || _spanI <= wi || wj < 0 || _spanJ <= wj) continue;
+
+                int a = cellA[n];
+                bool bInner = cellInner[n];
+                float cover;
+                float glow;
+
+                if (false == bFired)
+                {
+                    float on = elapsed - a * AppearStagger;
+                    if (on <= 0.0f) continue;
+
+                    float pop = on * PopDecay < 9.0f ? Mathf.Exp(-on * PopDecay) : 0.0f;
+                    float d = Mathf.Repeat(phase - (a + (true == bInner ? 0 : 1)), ChevronPeriod);
+                    float pulse = d < ChevronLength ? 1.0f - d / ChevronLength : 0.0f;
+                    pulse *= 1.0f - FarFade * a / laneLength;
+
+                    cover = (true == bInner ? InnerBase : OuterBase) + PulseCover * pulse + PopCover * pop;
+                    glow = PulseGlow * pulse + PopGlow * pop;
+                    if (true == bImminent)
+                    {
+                        cover += ImminentCover;
+                        glow += ImminentGlow;
+                    }
+                }
+                else if (a > aheadCar + 0.5f)
+                {
+                    float near = Mathf.Max(0.0f, 1.0f - (a - aheadCar) / AheadReach);
+                    cover = 0.2f + (true == bInner ? 0.1f : 0.0f) + 0.35f * near;
+                    glow = 0.04f + 0.3f * near * (0.0f < travelled ? 1.0f : 0.4f);
+                    if (a < SpawnFlashCells)
+                    {
+                        cover += 0.4f * flash;
+                        glow += 0.5f * flash;
+                    }
+                }
+                else if (travelled <= 0.0f)
+                {
+                    cover = 0.35f + 0.4f * flash;
+                    glow = 0.1f + 0.5f * flash;
+                }
+                else
+                {
+                    float behind = (aheadCar - a) / BehindReach;
+                    if (1.0f <= behind) continue;
+
+                    cover = 0.4f * (1.0f - behind) * (1.0f - behind);
+                    glow = 0.12f * (1.0f - behind);
+                }
+
+                int index = wi * WindowSize + wj;
+                if (1.0f < cover) cover = 1.0f;
+                if (cover > cellCover[index]) cellCover[index] = cover;
+                if (glow > cellGlow[index]) cellGlow[index] = glow;
+            }
+        }
+
+        private static bool IsCellOn(int _wi, int _wj, int _spanI, int _spanJ)
+        {
+            if (_wi < 0 || _spanI <= _wi || _wj < 0 || _spanJ <= _wj) return false;
+
+            return OnThreshold <= cellCover[_wi * WindowSize + _wj];
+        }
+
+        // 모든 활성 차선의 칸 밝기를 합쳐 호스트의 타일 메쉬를 다시 만든다. 켜진 칸 하나당 쿼드 하나, 이웃 칸이 꺼진 변이 테두리다.
+        private static void ComposeTiles(VFX_OffroadLane _host)
+        {
+            if (null == _host.groundMesh) return;
+
+            int minI = int.MaxValue;
+            int maxI = int.MinValue;
+            int minJ = int.MaxValue;
+            int maxJ = int.MinValue;
+            int pixelMinX = int.MaxValue;
+            int pixelMinY = int.MaxValue;
+            int pixelMaxX = int.MinValue;
+            int pixelMaxY = int.MinValue;
+
+            for (int i = 0; i < activeLaneCount; i++)
+            {
+                VFX_OffroadLane lane = activeLanes[i];
+                if (null == lane) continue;
+
+                if (lane.cellMinI < minI) minI = lane.cellMinI;
+                if (maxI < lane.cellMaxI) maxI = lane.cellMaxI;
+                if (lane.cellMinJ < minJ) minJ = lane.cellMinJ;
+                if (maxJ < lane.cellMaxJ) maxJ = lane.cellMaxJ;
+                if (lane.boundsMinX < pixelMinX) pixelMinX = lane.boundsMinX;
+                if (lane.boundsMinY < pixelMinY) pixelMinY = lane.boundsMinY;
+                if (pixelMaxX < lane.boundsMaxX) pixelMaxX = lane.boundsMaxX;
+                if (pixelMaxY < lane.boundsMaxY) pixelMaxY = lane.boundsMaxY;
+            }
+
+            Vector3 cullingCenter = new Vector3((pixelMinX + pixelMaxX) * 0.5f / PixelsPerUnit, (pixelMinY + pixelMaxY) * 0.5f / PixelsPerUnit, 0.0f);
+            Vector3 cullingSize = new Vector3((pixelMaxX - pixelMinX) / PixelsPerUnit + 2.0f * PixelVfxCulling.MarginUnits, (pixelMaxY - pixelMinY) / PixelsPerUnit + 2.0f * PixelVfxCulling.MarginUnits, PixelVfxCulling.BoundsDepth);
+            if (false == PixelVfxCulling.IsVisible(cullingCenter, cullingSize))
+            {
+                if (true == _host.groundMeshRenderer.enabled) _host.groundMeshRenderer.enabled = false;
+                _host.tileVertexCount = -1;
+                return;
+            }
+
+            int windowI0 = minI - 1;
+            int windowJ0 = minJ - 1;
+            int spanI = Mathf.Min(WindowSize, maxI - windowI0 + 2);
+            int spanJ = Mathf.Min(WindowSize, maxJ - windowJ0 + 2);
+
+            System.Array.Clear(cellCover, 0, spanI * WindowSize);
+            System.Array.Clear(cellGlow, 0, spanI * WindowSize);
+
+            for (int i = 0; i < activeLaneCount; i++)
+            {
+                VFX_OffroadLane lane = activeLanes[i];
+                if (null != lane) lane.AccumulateCells(windowI0, windowJ0, spanI, spanJ);
+            }
+
+            Matrix4x4 worldToLocal = _host.groundMeshRenderer.transform.worldToLocalMatrix;
+            float translationX = worldToLocal.m03;
+            float translationY = worldToLocal.m13;
+            ulong hash = HashOffset;
+            hash = MixHash(hash, unchecked((uint)windowI0));
+            hash = MixHash(hash, unchecked((uint)windowJ0));
+            hash = MixHash(hash, unchecked((uint)Mathf.RoundToInt(translationX * PixelsPerUnit * 16.0f)));
+            hash = MixHash(hash, unchecked((uint)Mathf.RoundToInt(translationY * PixelsPerUnit * 16.0f)));
+
+            int quadCount = 0;
+            int builtMinX = int.MaxValue;
+            int builtMinY = int.MaxValue;
+            int builtMaxX = int.MinValue;
+            int builtMaxY = int.MinValue;
+
+            for (int wi = 0; wi < spanI; wi++)
+            {
+                for (int wj = 0; wj < spanJ; wj++)
+                {
+                    int index = wi * WindowSize + wj;
+                    float cover = cellCover[index];
+                    if (cover < OnThreshold) continue;
+                    if (TileQuadCapacity <= quadCount) break;
+
+                    int flags = 0;
+                    if (false == IsCellOn(wi + 1, wj, spanI, spanJ)) flags |= 1;
+                    if (false == IsCellOn(wi, wj + 1, spanI, spanJ)) flags |= 2;
+                    if (false == IsCellOn(wi - 1, wj, spanI, spanJ)) flags |= 4;
+                    if (false == IsCellOn(wi, wj - 1, spanI, spanJ)) flags |= 8;
+                    if (false == IsCellOn(wi + 1, wj + 1, spanI, spanJ)) flags |= 16;
+                    if (false == IsCellOn(wi - 1, wj - 1, spanI, spanJ)) flags |= 32;
+                    if (false == IsCellOn(wi + 1, wj - 1, spanI, spanJ)) flags |= 64;
+                    if (false == IsCellOn(wi - 1, wj + 1, spanI, spanJ)) flags |= 128;
+
+                    byte coverByte = (byte)Mathf.RoundToInt(Mathf.Clamp01(cover) * 255.0f);
+                    byte glowByte = (byte)Mathf.RoundToInt(Mathf.Clamp01(cellGlow[index] / GlowRange) * 255.0f);
+                    Color32 color = new Color32(coverByte, glowByte, (byte)flags, 255);
+                    hash = MixHash(hash, (uint)index | ((uint)coverByte << 12) | ((uint)glowByte << 20));
+                    hash = MixHash(hash, (uint)flags);
+
+                    int i = windowI0 + wi;
+                    int j = windowJ0 + wj;
+                    int cx = _host.originPxX + TileHalfW * (i - j);
+                    int cy = _host.originPxY + TileHalfH * (i + j);
+                    float x0 = (cx - TileHalfW) / PixelsPerUnit + translationX;
+                    float x1 = (cx + TileHalfW) / PixelsPerUnit + translationX;
+                    float y0 = (cy - TileHalfH) / PixelsPerUnit + translationY;
+                    float y1 = (cy + TileHalfH) / PixelsPerUnit + translationY;
+
+                    int v = quadCount * 4;
+                    tileVertices[v].position = new Vector3(x0, y0, 0.0f);
+                    tileVertices[v].uv = new Vector2(0.0f, TileHalfH * 2.0f);
+                    tileVertices[v + 1].position = new Vector3(x0, y1, 0.0f);
+                    tileVertices[v + 1].uv = new Vector2(0.0f, 0.0f);
+                    tileVertices[v + 2].position = new Vector3(x1, y1, 0.0f);
+                    tileVertices[v + 2].uv = new Vector2(TileHalfW * 2.0f, 0.0f);
+                    tileVertices[v + 3].position = new Vector3(x1, y0, 0.0f);
+                    tileVertices[v + 3].uv = new Vector2(TileHalfW * 2.0f, TileHalfH * 2.0f);
+                    tileVertices[v].color = color;
+                    tileVertices[v + 1].color = color;
+                    tileVertices[v + 2].color = color;
+                    tileVertices[v + 3].color = color;
+                    quadCount++;
+
+                    if (cx - TileHalfW < builtMinX) builtMinX = cx - TileHalfW;
+                    if (cy - TileHalfH < builtMinY) builtMinY = cy - TileHalfH;
+                    if (builtMaxX < cx + TileHalfW) builtMaxX = cx + TileHalfW;
+                    if (builtMaxY < cy + TileHalfH) builtMaxY = cy + TileHalfH;
+                }
+            }
+
+            bool bHasContent = 0 < quadCount;
+            if (_host.groundMeshRenderer.enabled != bHasContent) _host.groundMeshRenderer.enabled = bHasContent;
+
+            int vertexCount = quadCount * 4;
+            if (false == bHasContent)
+            {
+                _host.tileVertexCount = -1;
+                return;
+            }
+
+            if (vertexCount == _host.tileVertexCount && hash == _host.tileHash) return;
+
+            _host.groundMesh.SetVertexBufferData(tileVertices, 0, 0, vertexCount, 0, TileUploadFlags);
+            SubMeshDescriptor subMesh = new SubMeshDescriptor(0, quadCount * 6, MeshTopology.Triangles);
+            subMesh.firstVertex = 0;
+            subMesh.vertexCount = vertexCount;
+            _host.groundMesh.SetSubMesh(0, subMesh, TileUploadFlags);
+
+            float boundsX0 = builtMinX / PixelsPerUnit + translationX;
+            float boundsY0 = builtMinY / PixelsPerUnit + translationY;
+            float boundsX1 = builtMaxX / PixelsPerUnit + translationX;
+            float boundsY1 = builtMaxY / PixelsPerUnit + translationY;
+            _host.groundMesh.bounds = new Bounds(new Vector3((boundsX0 + boundsX1) * 0.5f, (boundsY0 + boundsY1) * 0.5f, 0.0f), new Vector3(boundsX1 - boundsX0, boundsY1 - boundsY0, 1.0f));
+
+            _host.tileVertexCount = vertexCount;
+            _host.tileHash = hash;
+        }
+
+        private static ulong MixHash(ulong _hash, uint _value)
+        {
+            return unchecked((_hash ^ _value) * HashPrime);
+        }
+
+        // ---------- 빛 알갱이 ----------
+
+        private static float NoiseHash(int _a, int _b, int _c)
+        {
+            unchecked
+            {
+                int h = _a * 374761393 + _b * 668265263 + _c * 2147483647;
+                h = (h ^ (int)((uint)h >> 13)) * 1274126177;
+                return ((uint)(h ^ (int)((uint)h >> 16))) / 4294967296.0f;
+            }
+        }
+
+        private void RebuildMotes()
+        {
+            bool bDraw = true == bMotes && false == bFired;
+            if (true == bDraw)
+            {
+                Vector3 center = new Vector3((boundsMinX + boundsMaxX) * 0.5f / PixelsPerUnit, (boundsMinY + boundsMaxY) * 0.5f / PixelsPerUnit, 0.0f);
+                Vector3 size = new Vector3((boundsMaxX - boundsMinX) / PixelsPerUnit + 2.0f * PixelVfxCulling.MarginUnits, (boundsMaxY - boundsMinY) / PixelsPerUnit + 2.0f * PixelVfxCulling.MarginUnits, PixelVfxCulling.BoundsDepth);
+                bDraw = PixelVfxCulling.IsVisible(center, size);
+            }
+
+            skyPainter.Begin(skyBuffer, transform.worldToLocalMatrix, transform.position.z);
+            if (true == bDraw) DrawMotes(skyPainter);
             skyPainter.Commit(mesh, meshRenderer, ref skyHash, ref skyVertexCount);
-            if (true == bSplit) groundPainter.Commit(groundMesh, groundMeshRenderer, ref groundHash, ref groundVertexCount);
         }
 
-        private void DrawGround(PixelPainter _p)
+        // 차선 위에서 떠오르는 빛 알갱이. 7개가 0.23초 간격으로 1.6초 주기로 돌고, 한 번에 1.1초 동안 `+`에서 `.`로 줄며 12px 떠오른다.
+        private void DrawMotes(PixelPainter _p)
         {
-            float clearT = true == bFired ? Mathf.Clamp01(fireElapsed / Mathf.Max(0.05f, clearDuration)) : 0.0f;
-            float clearS = clearT * groundLength;
+            float alongRange = Mathf.Min(MoteAlongRange, Mathf.Max(1.0f, laneLength - 1.0f));
 
-            if (true == bLattice)
+            for (int n = 0; n < MoteCount; n++)
             {
-                int cleared = true == bFired ? Mathf.FloorToInt(clearT * latticeUnits) : -1;
-                DrawLatticeEdges(_p, cleared);
-                DrawLatticeChevrons(_p, cleared);
-            }
-            else
-            {
-                DrawEdges(_p, clearS);
-                DrawChevrons(_p, clearS);
-            }
+                float t = elapsed - MoteDelay - n * MoteStep;
+                if (t < 0.0f) continue;
 
-            DrawMarker(_p);
-        }
+                int cycle = Mathf.FloorToInt(t / MotePeriod);
+                float age = (t - cycle * MotePeriod) / MoteLife;
+                if (1.0f <= age) continue;
 
-        // 격자 경계 점선 - 차선 폭 +-edgeSteps칸. 한 칸마다 가로 두 픽셀이라 2:1 계단이 정확하다. 3칸 켜고 3칸 끄며 흐른다.
-        private void DrawLatticeEdges(PixelPainter _p, int _cleared)
-        {
-            int visible = Mathf.FloorToInt(latticeUnits * Mathf.Clamp01(elapsed / RevealSeconds));
-            int phase = Mathf.FloorToInt(elapsed * 15.0f);
-            Color32 color = GlowColor(ColorAmberDark, 0.08f);
+                float along = NoiseHash(moteSeed, n, cycle) * alongRange;
+                float lateral = NoiseHash(moteSeed + 5, n, cycle) * MoteLateral - MoteLateral * 0.5f;
+                float gi = laneStartI + laneStepI * along + lanePerpI * lateral;
+                float gj = laneStartJ + laneStepJ * along + lanePerpJ * lateral;
 
-            for (int side = -1; side <= 1; side += 2)
-            {
-                int offsetX = side * edgeSteps * stepX;
-                int offsetY = -side * edgeSteps * stepY;
-
-                for (int u = Mathf.Max(0, _cleared); u < visible; u++)
-                {
-                    if (((u + phase) % 6) >= 3) continue;
-
-                    int x = startX + u * stepX + offsetX;
-                    int y = startY + u * stepY + offsetY;
-                    float cover = GetOtherLaneCover(x, y);
-                    if (1.0f <= cover) continue;
-
-                    Color32 dotColor = 0.0f < cover ? ScaleAlpha(color, 1.0f - cover) : color;
-                    _p.Dot(x, y, dotColor);
-                    _p.Dot(x + (stepX < 0 ? -1 : 1), y, dotColor);
-                }
-            }
-        }
-
-        // 격자 화살표 - 꼭짓점 + 이동 반대쪽 가로 팔 6px + 세로 팔 3px. 4칸(가로 8, 세로 4)마다 하나씩, 밝은 파동 한 줄이 달려간다.
-        private void DrawLatticeChevrons(PixelPainter _p, int _cleared)
-        {
-            int visible = Mathf.FloorToInt(latticeUnits * Mathf.Clamp01(elapsed / RevealSeconds));
-            int basePulse = 0 != (Mathf.FloorToInt(elapsed * 4.0f) & 1) ? 1 : 0;
-            float cycle = chevronCount + 12.0f;
-            float head = Mathf.Repeat(elapsed * WaveSpeed, cycle);
-            int dirX = stepX < 0 ? -1 : 1;
-            int dirY = stepY < 0 ? -1 : 1;
-
-            for (int n = 0; n < chevronCount; n++)
-            {
-                int u = n * LatticeChevronUnits + LatticeChevronTip;
-                if (u >= visible || u < _cleared) continue;
-                if (true == bFired && n < 1) continue;
-
-                int tipX = startX + u * stepX;
-                int tipY = startY + u * stepY;
-                float cover = GetOtherLaneCover(tipX, tipY);
-                if (1.0f <= cover) continue;
-
-                int level = basePulse;
-                float behind = head - n;
-                if (0.0f <= behind && behind < 6.0f) level = Mathf.Max(level, 3 - Mathf.FloorToInt(behind / 2.0f));
-
-                // 경로 끝 쪽 화살표는 점멸하며 사라지는 느낌을 낸다
-                if (chevronCount - 4 < n && 0 != ((Mathf.FloorToInt(elapsed * 12.0f) + n) & 1)) level = Mathf.Max(0, level - 1);
-
-                Color32 color = ChevronColors[Mathf.Clamp(level, 0, 3)];
-                if (0.0f < cover) color = ScaleAlpha(color, 1.0f - cover);
-                int armEnd = tipX - dirX * LatticeChevronHorizontalArm;
-                _p.HLine(Mathf.Min(tipX, armEnd), Mathf.Max(tipX, armEnd), tipY, color);
-
-                // 세로 팔은 이동 반대쪽(위/아래)으로 뻗는다
-                for (int k = 1; k <= LatticeChevronVerticalArm; k++) _p.Dot(tipX, tipY - dirY * k, color);
-            }
-        }
-
-        // 차선 가장자리 점선 - 걷힌 구간은 그리지 않는다. 점선이 경로 방향으로 천천히 흐른다.
-        private void DrawEdges(PixelPainter _p, float _clearS)
-        {
-            float reveal = Mathf.Clamp01(elapsed / RevealSeconds);
-            float endS = groundLength * reveal;
-            if (endS <= _clearS) return;
-
-            int phase = Mathf.FloorToInt(elapsed * 30.0f);
-            Color32 color = GlowColor(ColorAmberDark, 0.08f);
-
-            for (int side = -1; side <= 1; side += 2)
-            {
-                float lateral = halfWidthPx * side;
-                _p.Line(ProjectX(_clearS, lateral), ProjectY(_clearS, lateral), ProjectX(endS, lateral), ProjectY(endS, lateral), 3, 5, phase, color);
-            }
-        }
-
-        // `<<<<` 화살표 - 소환 위치에서 경로 끝을 향해 늘어서고, 밝은 파동 두 줄이 소환 지점에서 끝으로 달려간다.
-        private void DrawChevrons(PixelPainter _p, float _clearS)
-        {
-            float reveal = Mathf.Clamp01(elapsed / RevealSeconds);
-            int revealCount = Mathf.CeilToInt(chevronCount * reveal);
-            bool bSpawning = bFired;
-            int basePulse = 0 != (Mathf.FloorToInt(elapsed * 4.0f) & 1) ? 1 : 0;
-
-            float cycle = chevronCount + 12.0f;
-            float head1 = Mathf.Repeat(elapsed * WaveSpeed, cycle);
-            float head2 = Mathf.Repeat(elapsed * WaveSpeed + cycle * 0.5f, cycle);
-
-            for (int n = 0; n < revealCount; n++)
-            {
-                float s = ChevronStartOffset + n * ChevronSpacing;
-                if (s < _clearS) continue;
-                if (true == bSpawning && n < 4) continue;
-
-                int level = basePulse;
-                float behind1 = head1 - n;
-                float behind2 = head2 - n;
-                if (0.0f <= behind1 && behind1 < WaveLength) level = Mathf.Max(level, 3 - Mathf.FloorToInt(behind1 / 2.4f));
-                if (0.0f <= behind2 && behind2 < WaveLength) level = Mathf.Max(level, 3 - Mathf.FloorToInt(behind2 / 2.4f));
-
-                // 경로 끝 쪽 화살표는 점멸하며 사라지는 느낌을 낸다
-                if (chevronCount - 4 < n && 0 != ((Mathf.FloorToInt(elapsed * 12.0f) + n) & 1)) level = Mathf.Max(0, level - 1);
-
-                float halfWidth = halfWidthPx * 0.55f + (3 <= level ? 1.0f : 0.0f);
-                float half = ChevronDepth * 0.5f;
-                int tipX = ProjectX(s + half, 0.0f);
-                int tipY = ProjectY(s + half, 0.0f);
-                Color32 color = ChevronColors[Mathf.Clamp(level, 0, 3)];
-
-                _p.Line(tipX, tipY, ProjectX(s - half, halfWidth), ProjectY(s - half, halfWidth), 0, 0, 0, color);
-                _p.Line(tipX, tipY, ProjectX(s - half, -halfWidth), ProjectY(s - half, -halfWidth), 0, 0, 0, color);
-            }
-        }
-
-        // 소환 위치 마커 - 수축하는 링이 소환이 임박했음을 알리고, 마지막 0.5초는 흰색으로 빠르게 깜빡인다.
-        private void DrawMarker(PixelPainter _p)
-        {
-            float fade = false == bFired || fireElapsed < FlashSeconds ? 1.0f : 1.0f - Mathf.Clamp01((fireElapsed - FlashSeconds) / 0.3f);
-            if (fade <= 0.0f) return;
-
-            float untilDue = fireDueTime - elapsed;
-            bool bBlink = false == bFired && 0.0f <= fireDueTime && untilDue < BlinkSeconds && 0 != (Mathf.FloorToInt(elapsed * 8.0f) & 1);
-            Color32 ringColor = true == bBlink ? GlowColor(ColorWhite, 0.3f) : (0 != (Mathf.FloorToInt(elapsed * 6.0f) & 1) ? GlowColor(ColorCream, GroundGlow) : GlowColor(ColorAmberLight, GroundGlow));
-
-            _p.RingArc(startX, startY, 17, 8, 1, 0, 0.0f, ringColor);
-
-            if (false == bFired)
-            {
-                float contract = Mathf.Repeat(elapsed * 1.25f, 1.0f);
-                int radius = Mathf.RoundToInt(28.0f - 16.0f * contract);
-                if (3 <= Mathf.Abs(radius - 17)) _p.RingArc(startX, startY, radius, Mathf.Max(1, Mathf.RoundToInt(radius * GroundSquashY)), 1, 2, 0.0f, GlowColor(contract < 0.5f ? ColorAmberLight : ColorAmber, GroundGlow * 0.7f));
-            }
-
-            // 게이트 선: 소환 지점에서 차선 폭만큼 가로지르는 점선
-            if (true == bLattice)
-            {
-                int gatePhase = Mathf.FloorToInt(elapsed * 20.0f);
-                for (int j = -edgeSteps; j <= edgeSteps; j++)
-                {
-                    if (((j + gatePhase) & 3) >= 2) continue;
-
-                    int gx = startX + j * stepX;
-                    int gy = startY - j * stepY;
-                    _p.Dot(gx, gy, GlowColor(ColorAmber, 0.15f));
-                    _p.Dot(gx + 1, gy, GlowColor(ColorAmber, 0.15f));
-                }
-            }
-            else _p.Line(ProjectX(0.0f, -halfWidthPx), ProjectY(0.0f, -halfWidthPx), ProjectX(0.0f, halfWidthPx), ProjectY(0.0f, halfWidthPx), 2, 2, Mathf.FloorToInt(elapsed * 20.0f), GlowColor(ColorAmber, 0.15f));
-
-            // 링을 도는 표식 4개와 중심 별
-            for (int j = 0; j < 4; j++)
-            {
-                float angle = TwoPi * j / 4.0f + elapsed * 1.1f;
-                int offsetX;
-                int offsetY;
-                PixelPainter.RingPoint(17, 8, Mathf.Repeat(angle, TwoPi), out offsetX, out offsetY);
-                int mx = startX + offsetX;
-                int my = startY + offsetY;
-                _p.Shape(0 != (j & 1) ? PixelPainter.ShapePlus : PixelPainter.ShapeDiamond, mx, my, GlowColor(0 != (j & 1) ? ColorCream : ColorAmberLight, 0.25f));
-            }
-
-            _p.Shape(0 != (Mathf.FloorToInt(elapsed * 8.0f) & 1) ? PixelPainter.ShapeDiamond : PixelPainter.ShapePlus, startX, startY, GlowColor(true == bBlink ? ColorWhite : ColorCream, 0.3f));
-
-            // 소환 순간 퍼지는 고리
-            float flashT = true == bFired ? fireElapsed / FlashSeconds : -1.0f;
-            if (0.0f <= flashT && flashT < 1.0f)
-            {
-                int radius = Mathf.RoundToInt(17.0f + 32.0f * EaseOutCubic(flashT));
-                _p.RingArc(startX, startY, radius, Mathf.Max(1, Mathf.RoundToInt(radius * GroundSquashY)), 1, 0, 0.0f, GlowColor(flashT < 0.4f ? ColorWhite : (flashT < 0.7f ? ColorCream : ColorAmberLight), 0.25f * (1.0f - flashT * 0.6f)));
-            }
-        }
-
-        // 소환 섬광(공중) - 아주 짧은 빛기둥과 사방으로 튀는 불꽃. 나무 위에서 보인다.
-        private void DrawFlash(PixelPainter _p)
-        {
-            float since = true == bFired ? fireElapsed : -1.0f;
-            if (0.0f > since || FlashSeconds + 0.2f <= since) return;
-
-            if (since < FlashColumnSeconds)
-            {
-                int height = Mathf.RoundToInt(44.0f * (1.0f - since / FlashColumnSeconds * 0.6f));
-                _p.Rect(startX - 1, startY, startX + 2, startY + height, GlowColor(ColorWhite, 0.3f));
-                _p.Rect(startX - 3, startY, startX + 4, startY + 8, GlowColor(ColorAmberLight, 0.25f));
-            }
-
-            float u = since / (FlashSeconds + 0.2f);
-            for (int k = 0; k < SparkCount; k++)
-            {
-                float angle = TwoPi * k / SparkCount + 0.3f;
-                float speed = 30.0f + (k * 37) % 40;
-                float distance = speed * (1.0f - Mathf.Exp(-4.0f * since)) / 4.0f;
-                int x = startX + Mathf.RoundToInt(Mathf.Cos(angle) * distance);
-                int y = startY + Mathf.RoundToInt(Mathf.Sin(angle) * distance * GroundSquashY + since * 30.0f * (1.0f + (k % 3) * 0.3f) - since * since * 60.0f);
-                int shape = 0 == (k % 3) ? PixelPainter.ShapeDot : (1 == (k % 3) ? PixelPainter.ShapePlus : PixelPainter.ShapeCross);
-                Color32 color = u < 0.4f ? GlowColor(ColorCream, 0.3f) : (u < 0.7f ? GlowColor(ColorAmberLight, 0.22f) : GlowColor(ColorAmber, 0.14f));
-                _p.Shape(u < 0.75f ? shape : PixelPainter.ShapeDot, x, y, color);
+                int x = originPxX + Mathf.RoundToInt(TileHalfW * (gi - gj));
+                int y = originPxY + Mathf.RoundToInt(TileHalfH * (gi + gj)) + MoteLift + Mathf.RoundToInt(age * MoteRise);
+                Color32 color = moteColors[Mathf.Min(MoteColorSteps - 1, (int)(age * MoteColorSteps))];
+                _p.Shape(age < 0.55f ? PixelPainter.ShapePlus : PixelPainter.ShapeDot, x, y, color);
             }
         }
 
@@ -651,48 +930,11 @@ namespace PresentationLayer.VFX
         {
             if (false == bActive) return;
 
-            float dt = Time.deltaTime;
-            elapsed += dt;
-            if (true == bFired) fireElapsed += dt;
+            int frame = Time.frameCount;
+            if (frame == updatedFrame) return;
 
-            if (false == bFired && 0.0f <= autoFireTime && autoFireTime <= elapsed) Fire(0.0f);
-
-            if (true == bFired ? clearDuration + EndLinger <= fireElapsed : MaxHoldSeconds <= elapsed)
-            {
-                Finish();
-                return;
-            }
-
-            // 소팅은 VFXComponent가 자식 렌더러 전체에 같은 값으로 덮어쓰므로, 공중 메쉬는 루트 기준으로 / 바닥 메쉬는 자기 레이어로 다시 맞춘다
-            if (null != rootParticleRenderer)
-            {
-                int rootLayer = rootParticleRenderer.sortingLayerID;
-                int rootOrder = rootParticleRenderer.sortingOrder;
-                if (rootLayer != appliedRootSortingLayerID || rootOrder != appliedRootSortingOrder)
-                {
-                    appliedRootSortingLayerID = rootLayer;
-                    appliedRootSortingOrder = rootOrder;
-                    meshRenderer.sortingLayerID = rootLayer;
-                    meshRenderer.sortingOrder = rootOrder + sortingOrderOffset;
-                }
-            }
-
-            if (null != groundMesh)
-            {
-                if (groundMeshRenderer.sortingLayerID != groundSortingLayerId) groundMeshRenderer.sortingLayerID = groundSortingLayerId;
-                if (groundMeshRenderer.sortingOrder != groundSortingOrder) groundMeshRenderer.sortingOrder = groundSortingOrder;
-            }
-
-            if (false == PixelVfxCulling.IsVisible(cullingCenter, cullingSize))
-            {
-                if (true == meshRenderer.enabled) meshRenderer.enabled = false;
-                if (null != groundMeshRenderer && true == groundMeshRenderer.enabled) groundMeshRenderer.enabled = false;
-                skyVertexCount = -1;
-                groundVertexCount = -1;
-                return;
-            }
-
-            RebuildMesh();
+            updatedFrame = frame;
+            UpdateAllLanes(Time.deltaTime);
         }
 
         private void OnDisable()
@@ -723,7 +965,8 @@ namespace PresentationLayer.VFX
         private static void ResetStatics()
         {
             activeLaneCount = 0;
-            nextLaneOrder = 0;
+            updatedFrame = -1;
+            bMoteColorsReady = false;
             for (int i = 0; i < MaxActiveLanes; i++) activeLanes[i] = null;
         }
 
@@ -731,6 +974,7 @@ namespace PresentationLayer.VFX
         {
             laneHalfWidth = Mathf.Max(0.1f, laneHalfWidth);
             clearSeconds = Mathf.Max(0.1f, clearSeconds);
+            startExtendUnits = Mathf.Max(0.0f, startExtendUnits);
         }
     }
 }

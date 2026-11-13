@@ -385,7 +385,12 @@ public class UI_Inventory : MonoBehaviour
     {
         if (null != iconsRoot && null != iconsAnchor)
         {
-            iconsRoot.position = iconsAnchor.position;
+            // 이미 그 자리면 대입하지 않는다(대입은 변환 갱신 알림을 일으킨다). 비교는 iconsRoot의 현재 값 기준이다.
+            Vector3 _anchorPos = iconsAnchor.position;
+            Vector3 _rootPos = iconsRoot.position;
+
+            if (_rootPos.x != _anchorPos.x || _rootPos.y != _anchorPos.y || _rootPos.z != _anchorPos.z)
+                iconsRoot.position = _anchorPos;
         }
     }
 

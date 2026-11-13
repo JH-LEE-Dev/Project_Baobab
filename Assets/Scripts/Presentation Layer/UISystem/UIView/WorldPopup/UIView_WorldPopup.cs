@@ -412,7 +412,12 @@ public class UIView_WorldPopup : UIView
             Vector3 target = data.position + (Vector3)blastFurnaceStatusOffset;
             target.x = Mathf.Round(target.x * WorldPixelsPerUnit) / WorldPixelsPerUnit;
             target.y = Mathf.Round(target.y * WorldPixelsPerUnit) / WorldPixelsPerUnit;
-            status.transform.position = target;
+
+            // 현재 위치와 같으면 대입을 생략한다(대입은 변환 갱신 알림을 일으킨다). 비교는 대상의 현재 값 기준이다.
+            Transform statusTransform = status.transform;
+            Vector3 currentPosition = statusTransform.position;
+            if (currentPosition.x != target.x || currentPosition.y != target.y || currentPosition.z != target.z)
+                statusTransform.position = target;
         }
 
         for (int i = count; i < blastFurnaceStatuses.Count; i++)

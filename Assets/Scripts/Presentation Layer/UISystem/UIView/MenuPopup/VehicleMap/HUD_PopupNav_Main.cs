@@ -1780,14 +1780,16 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (null != Gamepad.current)
         {
             Vector2 _stick = Gamepad.current.leftStick.ReadValue();
-            Vector2 _dpad = Gamepad.current.dpad.ReadValue();
             if (Mathf.Abs(_stick.x) >= 0.5f || Mathf.Abs(_stick.y) >= 0.5f)
             {
                 _dir = _stick;
             }
-            else if (Mathf.Abs(_dpad.x) >= 0.5f || Mathf.Abs(_dpad.y) >= 0.5f)
+            else
             {
-                _dir = _dpad;
+                // 스틱이 임계값 미만일 때만 십자키를 읽는다(판정 결과는 이전과 같다).
+                Vector2 _dpad = Gamepad.current.dpad.ReadValue();
+                if (Mathf.Abs(_dpad.x) >= 0.5f || Mathf.Abs(_dpad.y) >= 0.5f)
+                    _dir = _dpad;
             }
         }
 

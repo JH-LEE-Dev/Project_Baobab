@@ -4576,8 +4576,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: f31d715af1002d348b3879b0d6bed692, type: 3}
   - {fileID: 21300000, guid: cc70a14edbf322a4cb2ca823bd090344, type: 3}
   - {fileID: 21300000, guid: 5aaa7ac3ab6575e45a0cc5fa534f5ebf, type: 3}
-  - {fileID: 0}
-  maxLevelSprite: {fileID: 0}
+  - {fileID: 21300000, guid: 4b06644875bf2b245aee51c157c845da, type: 3}
+  maxLevelSprite: {fileID: 21300000, guid: 8c69805f187b881428f596ad5ddd1637, type: 3}
   rubyBadgeSprite: {fileID: 0}
   gradeFrameMaterials:
   - {fileID: 2100000, guid: 11ffe4245bf6c1247a79e8073d66b34d, type: 2}
