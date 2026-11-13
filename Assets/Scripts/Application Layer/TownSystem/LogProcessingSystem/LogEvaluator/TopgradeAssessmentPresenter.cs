@@ -183,7 +183,7 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
     private Camera cachedCamera;
     private VFX_TopgradeAssessment vfx;
 
-    public void Setup(LogItemPoolingManager _pool, LogCutter _cutter, LogInBelt _outBelt, LogEvaluator _evaluator)
+    public void Setup(LogItemPoolingManager _pool, LogCutter _cutter, LogInBelt _outBelt, LogEvaluator _evaluator, Sprite _times = null, Sprite _two = null)
     {
         Unbind();
 
@@ -198,6 +198,7 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
         // 이펙트는 라인 자식으로 하나만 둔다(라인과 함께 꺼지고 사라진다). 셰이더가 없으면 null이고 이펙트 없이 진행한다.
         if (vfx == null) vfx = GetComponentInChildren<VFX_TopgradeAssessment>(true);
         if (vfx == null) vfx = VFX_TopgradeAssessment.Create(transform);
+        if (vfx != null) vfx.ConfigurePopup(_times, _two);
     }
 
     private void Unbind()

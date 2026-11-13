@@ -10,8 +10,8 @@ namespace PresentationLayer.VFX
     ///
     /// 장면
     /// - 등장(PlayReveal): 커터 톱날이 금을 긁은 듯 톱날에서 불티 줄기가 벨트 쪽으로 튀고, 쌍둥이가 나오는 출구에서는
-    ///   금빛 톱밥이 뿜어진다. 동시에 커터 윗면에서 "×2" 글자가 솟아올라 반짝임이 한 번 훑고 지나간 뒤
-    ///   떠오르며 깜빡여 사라진다. 다시 나오면 ×2는 처음부터 다시 솟는다.
+    ///   금빛 톱밥이 뿜어진다. 동시에 커터 윗면에서 숫자 시트의 "×2"와 움직이는 폭발 도형이 각각 튀어나온 뒤
+    ///   1초 안에 빠르게 페이드아웃한다. 다시 나오면 팝 연출을 처음부터 재생한다.
     /// - 착지(PlayLand): 원목 등 위에 내려앉는 순간 작은 별이 반짝이고 양옆으로 먼지가 튄다.
     /// - 업혀 가기(EmitRideSparkle): 쌍둥이 둘레에서 금빛 반짝임이 하나씩 피어올라 사라진다(절제해서 드문드문).
     /// - 쾅(PlayStamp): 평가기에서 큰 십자 섬광 → 점선 충격파 → 금화·금가루 분수가 솟았다 떨어진다.
@@ -104,54 +104,16 @@ namespace PresentationLayer.VFX
 
         // //×2 글자
 
-        private const float LabelDuration = 1.0f;
-        private const float LabelFlashEnd = 0.05f;
-        private const float LabelRiseTime = 0.2f;
-        private const float LabelRiseFromPx = -10f;     // 커터 윗면 안쪽에서부터 솟아 나온다
-        private const float LabelShineStart = 0.12f;
-        private const float LabelShineTime = 0.24f;
-        private const int LabelShineWidth = 3;
-        private const float LabelExitStart = 0.78f;
-        private const float LabelExitRisePx = 5f;
-        private const float LabelBlinkStart = 0.86f;
-        private const float LabelTwinkleLife = 0.2f;
-        private static readonly float[] LabelTwinkleStarts = { 0.18f, 0.32f };
+        private TopgradePopup popup;
 
-        // 글자 그림(위 줄부터). '#'가 채운 픽셀이다. 테두리는 바깥 8방향 한 칸으로 자동으로 두른다.
-        // 커터 윗면(톱날 폭)에 얹혀 읽히는 크기로, 테두리까지 합친 폭을 15px(× 5 + 간격 1 + 2 7 + 테두리 2)로 맞췄다.
-        private static readonly string[] GlyphTimes =
+        public void ConfigurePopup(Sprite _times, Sprite _two)
         {
-            "##.##",
-            ".###.",
-            "..#..",
-            ".###.",
-            "##.##",
-        };
-
-        private static readonly string[] GlyphTwo =
-        {
-            ".#####.",
-            "##...##",
-            ".....##",
-            ".....##",
-            "...###.",
-            "..##...",
-            ".##....",
-            "##.....",
-            "#######",
-            "#######",
-        };
-
-        private const int GlyphGap = 1;
-        private const int TimesBottom = 2;   // × 를 2 높이의 가운데쯤에 놓는다(아래에서 몇 칸 위)
-
-        // 글자 픽셀 표(정적 1회 생성). 좌표는 글자 상자 왼쪽 아래 기준.
-        private static int labelWidth;
-        private static int labelHeight;
-        private static int[] labelFillX;
-        private static int[] labelFillY;
-        private static int[] labelOutlineX;
-        private static int[] labelOutlineY;
+            if (popup != null || _times == null || _two == null) return;
+            GameObject child = new GameObject("TopgradePopup");
+            child.transform.SetParent(transform, false);
+            popup = child.AddComponent<TopgradePopup>();
+            popup.Initialize(_times, _two);
+        }
 
         // //공유 자원
 
@@ -211,11 +173,6 @@ namespace PresentationLayer.VFX
         private int ringCursor;
         private int dustCursor;
 
-        private bool bLabelActive;
-        private bool bLabelFresh;
-        private int labelX;           // 글자 상자 가운데(월드 px)
-        private int labelY;           // 글자 상자 바닥(월드 px)
-        private float labelAge;
 
         private bool bAnyActive;
         private uint randomState = 1u;
@@ -286,11 +243,7 @@ namespace PresentationLayer.VFX
             }
 
             // 3) ×2: 커터 윗면에서 솟아 나온다.
-            labelX = ToPixel(_labelPos.x);
-            labelY = ToPixel(_labelPos.y);
-            labelAge = 0f;
-            bLabelActive = true;
-            bLabelFresh = true;
+            if (popup != null) popup.Play(_labelPos);
             bAnyActive = true;
         }
 
@@ -347,7 +300,7 @@ namespace PresentationLayer.VFX
             for (int i = 0; i < FlashCapacity; i++) flashes[i].bActive = false;
             for (int i = 0; i < RingCapacity; i++) rings[i].bActive = false;
             for (int i = 0; i < DustCapacity; i++) dusts[i].bActive = false;
-            bLabelActive = false;
+            if (popup != null) popup.Clear();
             bAnyActive = false;
             if (null != meshRenderer) meshRenderer.enabled = false;
         }
@@ -356,7 +309,7 @@ namespace PresentationLayer.VFX
 
         private static bool EnsureShared()
         {
-            if (null == labelFillX) BuildLabelPixels();
+
             if (false == bPaletteReady) BuildPalette();
             if (null != sharedMaterial) return true;
 
@@ -416,91 +369,6 @@ namespace PresentationLayer.VFX
         private static byte ToLinearByte(byte _value)
         {
             return (byte)Mathf.RoundToInt(Mathf.GammaToLinearSpace(_value / 255f) * 255f);
-        }
-
-        // 글자 상자: [×][간격][2], 높이는 2의 높이. 채움 픽셀과 그 바깥 8방향 테두리 픽셀 표를 만든다.
-        private static void BuildLabelPixels()
-        {
-            int timesW = GlyphTimes[0].Length;
-            int twoW = GlyphTwo[0].Length;
-            labelWidth = timesW + GlyphGap + twoW;
-            labelHeight = GlyphTwo.Length;
-
-            bool[,] fill = new bool[labelWidth, labelHeight];
-            Stamp(fill, GlyphTimes, 0, TimesBottom);
-            Stamp(fill, GlyphTwo, timesW + GlyphGap, 0);
-
-            int fillCount = 0;
-            int outlineCount = 0;
-            bool[,] outline = new bool[labelWidth + 2, labelHeight + 2];
-            for (int x = -1; x <= labelWidth; x++)
-            {
-                for (int y = -1; y <= labelHeight; y++)
-                {
-                    if (IsFilled(fill, x, y))
-                    {
-                        fillCount++;
-                        continue;
-                    }
-
-                    bool bTouch = false;
-                    for (int dx = -1; dx <= 1 && false == bTouch; dx++)
-                        for (int dy = -1; dy <= 1 && false == bTouch; dy++)
-                            if (IsFilled(fill, x + dx, y + dy)) bTouch = true;
-
-                    if (bTouch)
-                    {
-                        outline[x + 1, y + 1] = true;
-                        outlineCount++;
-                    }
-                }
-            }
-
-            labelFillX = new int[fillCount];
-            labelFillY = new int[fillCount];
-            labelOutlineX = new int[outlineCount];
-            labelOutlineY = new int[outlineCount];
-
-            int f = 0;
-            int o = 0;
-            for (int y = -1; y <= labelHeight; y++)
-            {
-                for (int x = -1; x <= labelWidth; x++)
-                {
-                    if (IsFilled(fill, x, y))
-                    {
-                        labelFillX[f] = x;
-                        labelFillY[f] = y;
-                        f++;
-                    }
-                    else if (outline[x + 1, y + 1])
-                    {
-                        labelOutlineX[o] = x;
-                        labelOutlineY[o] = y;
-                        o++;
-                    }
-                }
-            }
-        }
-
-        private static void Stamp(bool[,] _fill, string[] _glyph, int _left, int _bottom)
-        {
-            int rows = _glyph.Length;
-            for (int row = 0; row < rows; row++)
-            {
-                string line = _glyph[row];
-                int y = _bottom + (rows - 1 - row);
-                for (int col = 0; col < line.Length; col++)
-                {
-                    if ('#' == line[col]) _fill[_left + col, y] = true;
-                }
-            }
-        }
-
-        private static bool IsFilled(bool[,] _fill, int _x, int _y)
-        {
-            if (_x < 0 || _y < 0 || _x >= _fill.GetLength(0) || _y >= _fill.GetLength(1)) return false;
-            return _fill[_x, _y];
         }
 
         // //생성 도우미
@@ -655,23 +523,6 @@ namespace PresentationLayer.VFX
                 Encapsulate(dusts[i].x, dusts[i].y, ref minX, ref minY, ref maxX, ref maxY);
             }
 
-            if (bLabelActive)
-            {
-                if (bLabelFresh) bLabelFresh = false;
-                else labelAge += dt;
-
-                if (labelAge >= LabelDuration)
-                {
-                    bLabelActive = false;
-                }
-                else
-                {
-                    bActive = true;
-                    Encapsulate(labelX, labelY, ref minX, ref minY, ref maxX, ref maxY);
-                    Encapsulate(labelX, labelY + labelHeight, ref minX, ref minY, ref maxX, ref maxY);
-                }
-            }
-
             if (false == bActive)
             {
                 bAnyActive = false;
@@ -709,7 +560,7 @@ namespace PresentationLayer.VFX
             DrawRings();
             DrawDusts();
             DrawFlashes();
-            DrawLabel();
+
 
             painter.Commit(mesh, meshRenderer, ref meshHash, ref meshVertexCount);
         }
@@ -952,81 +803,6 @@ namespace PresentationLayer.VFX
             painter.HLine(_x - arm, _x + arm, _y, color);
             painter.Rect(_x, _y - arm, _x + 1, _y + arm + 1, color);
             if (2 == arm) painter.Dot(_x, _y, WithGlow(ColorWhite, 1f));
-        }
-
-        // ×2 글자: 흰 섬광으로 나타나 아래에서 튀어 오르고(살짝 넘침), 반짝임 띠가 대각선으로 한 번 훑은 뒤
-        // 떠오르며 깜빡여 사라진다. 위는 크림, 가운데는 금, 아래는 주황으로 칠하고 진한 테두리를 두른다.
-        private void DrawLabel()
-        {
-            if (false == bLabelActive) return;
-
-            float t = labelAge;
-            if (t > LabelBlinkStart && 0 != ((int)(t * 30f) & 1)) return;
-
-            float rise = Mathf.Clamp01(t / LabelRiseTime);
-            float yOffset = Mathf.LerpUnclamped(LabelRiseFromPx, 0f, EaseOutBack(rise));
-            if (t > LabelExitStart) yOffset += (t - LabelExitStart) / (LabelDuration - LabelExitStart) * LabelExitRisePx;
-
-            int left = labelX - labelWidth / 2;
-            int bottom = labelY + Mathf.RoundToInt(yOffset);
-
-            bool bFlash = t < LabelFlashEnd;
-            Color32 outlineColor = bFlash ? WithGlow(ColorGold, 0.5f) : WithGlow(ColorOutline, 0f);
-            for (int i = 0; i < labelOutlineX.Length; i++)
-            {
-                painter.Dot(left + labelOutlineX[i], bottom + labelOutlineY[i], outlineColor);
-            }
-
-            float shine = (t - LabelShineStart) / LabelShineTime;
-            int shinePos = Mathf.RoundToInt(Mathf.Lerp(-LabelShineWidth - 2, labelWidth + labelHeight + 2, shine));
-            bool bShine = shine >= 0f && shine <= 1f;
-
-            Color32 white = WithGlow(ColorWhite, bFlash ? 1f : 0.55f);
-            Color32 cream = WithGlow(ColorCream, 0.05f);
-            Color32 gold = WithGlow(ColorGold, 0f);
-            Color32 orange = WithGlow(ColorOrange, 0f);
-
-            for (int i = 0; i < labelFillX.Length; i++)
-            {
-                int gx = labelFillX[i];
-                int gy = labelFillY[i];
-                int rowFromTop = labelHeight - 1 - gy;
-
-                Color32 color;
-                if (bFlash)
-                {
-                    color = white;
-                }
-                else
-                {
-                    int band = gx + rowFromTop - shinePos;
-                    if (bShine && band >= 0 && band < LabelShineWidth) color = white;
-                    else if (rowFromTop < 3) color = cream;
-                    else if (rowFromTop < 7) color = gold;
-                    else color = orange;
-                }
-
-                painter.Dot(left + gx, bottom + gy, color);
-            }
-
-            // 글자 모서리 두 곳에서 차례로 반짝임이 핀다.
-            for (int k = 0; k < LabelTwinkleStarts.Length; k++)
-            {
-                float u = (t - LabelTwinkleStarts[k]) / LabelTwinkleLife;
-                if (u < 0f || u >= 1f) continue;
-
-                int tx = 0 == k ? left - 2 : left + labelWidth + 1;
-                int ty = 0 == k ? bottom + labelHeight : bottom + 2;
-                DrawTwinkle(tx, ty, u, ColorWhite);
-            }
-        }
-
-        private static float EaseOutBack(float _t)
-        {
-            const float c1 = 1.70158f;
-            const float c3 = c1 + 1f;
-            float x = _t - 1f;
-            return 1f + c3 * x * x * x + c1 * x * x;
         }
 
         // //수명
