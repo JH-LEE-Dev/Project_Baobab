@@ -173,6 +173,17 @@ namespace PresentationLayer.Environment
         private Transform overlapCharacter;
         private Collider2D interactCollider;
 
+        [Header("Interaction Area (상호작용 범위)")]
+        [SerializeField, Tooltip("왼쪽 위(북서) 면 쪽으로 상호작용 범위(캡슐 트리거)를 위로 늘리는 길이(유닛). 기본 범위는 왼쪽 아래 칸뿐이라 왼쪽 위 면에 붙어 서면 닿지 않는다. 그 칸에 다른 기둥이 있으면 LootPillarManager가 늘리지 않는다. 0.35를 넘기면 1번 기둥 뒤 벽 너머 좁은 통로까지 닿는다(0.45에서 닿음).")]
+        private float sideInteractExtendUp = 0.3f;
+
+        // 상호작용 범위 캡슐(프리팹 원본 = 왼쪽 아래 칸의 원)과 그 원래 크기·중심. 늘릴 때 아래 끝을 고정한 채 위로만 키운다.
+        // 거리 비교(GetFocusDistance)는 늘린 뒤에도 원래 중심을 쓴다 - 앞쪽(왼쪽 아래)에서 이웃 기둥과 고르는 기준이 바뀌지 않게.
+        private CapsuleCollider2D interactCapsule;
+        private Vector2 interactBaseOffset;
+        private Vector2 interactBaseSize;
+        private bool bSideInteractExtended;
+
         /// <summary>캐릭터가 범위 안에 있고 등장 연출 중이 아니라 상호작용 대상이 될 수 있는지.</summary>
         public bool CanFocus => bPhysicalOverlapped && false == IsRevealing && isActiveAndEnabled;
 
@@ -184,8 +195,28 @@ namespace PresentationLayer.Environment
         {
             if (null == overlapCharacter) return float.MaxValue;
 
-            Vector2 _center = null != interactCollider ? (Vector2)interactCollider.bounds.center : (Vector2)transform.position;
+            Vector2 _center;
+            if (null != interactCapsule) _center = transform.TransformPoint(interactBaseOffset);
+            else if (null != interactCollider) _center = interactCollider.bounds.center;
+            else _center = transform.position;
+
             return Vector2.Distance(overlapCharacter.position, _center);
+        }
+
+        /// <summary>
+        /// 왼쪽 위(북서) 면 쪽으로 상호작용 범위를 늘리거나 원래대로 돌린다. LootPillarManager가 기둥을 다 세운 뒤,
+        /// 왼쪽 위 칸이 비어 있는(=다른 기둥이 없는) 기둥에만 켠다. 다른 기둥이 있는 쪽으로 늘리면 그 기둥 둘레에서
+        /// 엉뚱한 기둥이 골라지므로 켜지 않는다.
+        /// </summary>
+        public void SetSideInteractExtended(bool _bExtended)
+        {
+            if (null == interactCapsule || bSideInteractExtended == _bExtended) return;
+
+            bSideInteractExtended = _bExtended;
+
+            float _extend = true == _bExtended ? Mathf.Max(0f, sideInteractExtendUp) : 0f;
+            interactCapsule.size = new Vector2(interactBaseSize.x, interactBaseSize.y + _extend);
+            interactCapsule.offset = new Vector2(interactBaseOffset.x, interactBaseOffset.y + _extend * 0.5f);
         }
 
         /// <summary>
@@ -212,6 +243,12 @@ namespace PresentationLayer.Environment
             cachedOnEvolveBurst = OnEvolveBurst;
             characterLayer = LayerMask.NameToLayer("Character");
             interactCollider = GetComponent<Collider2D>();
+            interactCapsule = interactCollider as CapsuleCollider2D;
+            if (null != interactCapsule)
+            {
+                interactBaseOffset = interactCapsule.offset;
+                interactBaseSize = interactCapsule.size;
+            }
 
             // 기본값: 생성 위치(자기 자신의 Y) 기준. 스포너가 별도 Pivot 기준점을 알고 있다면
             // ApplySortingBasis()로 덮어써서 그 기준으로 다시 계산한다.
