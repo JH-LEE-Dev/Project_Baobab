@@ -34,7 +34,6 @@ Material:
     - _BodyGlow: 1
     - _GlowMax: 2.6
     - _GlowMin: 1
-    - _Opacity: 1
     - _PixelsPerUnit: 32
     m_Colors:
     - _AccentColor: {r: 1, g: 1, b: 1, a: 1}
