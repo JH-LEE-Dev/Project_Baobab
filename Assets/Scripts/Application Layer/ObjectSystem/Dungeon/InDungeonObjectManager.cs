@@ -154,21 +154,21 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField, Tooltip("유성 하나의 피해 범위 - 착지 위치 기준 등각 타원의 장반경(타일 가로폭 단위)")]
     private float meteorImpactRange = 1f;
     // 단계별 발동 지속시간(초)과 그동안 떨어지는 유성 수. 별 비 이펙트(VFX_StarRain)가 받는 범위로 입력을 막는다 -
-    // 지속시간은 2~8초, 유성 수는 최대 40개이고 지속시간 x 초당 3개(올림)보다 적으면 그 수로 올라간다(VFX_StarRain.ClampCount).
+    // 지속시간은 2~10초, 유성 수는 최대 100개이고 지속시간 x 초당 3개(올림)보다 적으면 그 수로 올라간다(VFX_StarRain.ClampCount).
     [SerializeField] private float meteorShowerTier1Damage = 100f;
     [SerializeField, Tooltip("I단계 낙하 사정거리 - 캐릭터 기준 등각 타원의 장반경(타일 가로폭 단위)")]
     private float meteorShowerTier1FallRange = 3.5f;
-    [SerializeField, Range(2f, 8f), Tooltip("I단계 유성우 지속시간(초)")]
+    [SerializeField, Range(PresentationLayer.VFX.VFX_StarRain.MinDuration, PresentationLayer.VFX.VFX_StarRain.MaxDuration), Tooltip("I단계 유성우 지속시간(초)")]
     private float meteorShowerTier1Duration = 3f;
     [SerializeField, Range(1, PresentationLayer.VFX.VFX_StarRain.MaxCount), Tooltip("I단계 지속시간 동안 떨어지는 유성 수. 지속시간 x 3(올림)보다 적으면 그 수로 올라간다")]
     private int meteorShowerTier1Count = 15;
     [SerializeField] private float meteorShowerTier2Damage = 100f;
     [SerializeField] private float meteorShowerTier2FallRange = 3.5f;
-    [SerializeField, Range(2f, 8f)] private float meteorShowerTier2Duration = 4f;
+    [SerializeField, Range(PresentationLayer.VFX.VFX_StarRain.MinDuration, PresentationLayer.VFX.VFX_StarRain.MaxDuration)] private float meteorShowerTier2Duration = 4f;
     [SerializeField, Range(1, PresentationLayer.VFX.VFX_StarRain.MaxCount)] private int meteorShowerTier2Count = 20;
     [SerializeField] private float meteorShowerTier3Damage = 100f;
     [SerializeField] private float meteorShowerTier3FallRange = 3.5f;
-    [SerializeField, Range(2f, 8f)] private float meteorShowerTier3Duration = 5f;
+    [SerializeField, Range(PresentationLayer.VFX.VFX_StarRain.MinDuration, PresentationLayer.VFX.VFX_StarRain.MaxDuration)] private float meteorShowerTier3Duration = 5f;
     [SerializeField, Range(1, PresentationLayer.VFX.VFX_StarRain.MaxCount)] private int meteorShowerTier3Count = 25;
     // 이번 숲 방문에 적용되는 단계(0이면 효과 없음). 숲에 들어올 때 정하고 방문 도중에는 바꾸지 않는다.
     private int starCompassTierThisRun;
