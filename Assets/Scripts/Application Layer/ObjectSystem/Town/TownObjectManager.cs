@@ -53,6 +53,10 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     private bool bCanTravel = true;
 
+    // 제재소 활성 가공 라인 수. 증설 자리에 있던 나무(TownTreeRemovedByLineExpansion)를 치울지 정한다.
+    // 던전에 있는 동안(trees == null) 바뀌어도 값만 기억했다가 다음 ReadyObj에서 반영한다.
+    private int processLineCount = 1;
+
     // 엔딩 특성(소풍 바구니) 보유 여부. 이 상태로 오프로드에 타면 엔딩이 시작된다.
     private bool bHasPicnicBasket;
     public bool HasPicnicBasket => bHasPicnicBasket;
@@ -170,6 +174,13 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
                 {
                     if (trees[i] != null)
                     {
+                        if (IsRemovedByLineExpansion(trees[i]))
+                        {
+                            trees[i].gameObject.SetActive(false);
+                            trees[i].UpdateIndex = -1;
+                            continue;
+                        }
+
                         trees[i].gameObject.SetActive(true);
                         trees[i].UpdateIndex = activeTreesForUpdate.Count;
                         activeTreesForUpdate.Add(trees[i]);
@@ -220,7 +231,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         {
             bool isVisible = cullingGroup.IsVisible(i);
             bool isNear = cullingGroup.GetDistance(i) == 0;
-            bool shouldBeActive = isVisible && isNear;
+            bool shouldBeActive = isVisible && isNear && false == IsRemovedByLineExpansion(trees[i]);
 
             if (trees[i].gameObject.activeSelf != shouldBeActive)
                 trees[i].gameObject.SetActive(shouldBeActive);
@@ -251,6 +262,9 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
         if (tree == null)
             return;
+
+        if (shouldBeActive && IsRemovedByLineExpansion(tree))
+            shouldBeActive = false;
 
         if (tree.gameObject.activeSelf != shouldBeActive)
         {
@@ -355,6 +369,63 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         activeTreesForUpdate.Clear();
 
         trees = null;
+    }
+
+    /// <summary>
+    /// 제재소 활성 가공 라인 수가 바뀌었을 때(증설/철거, 세이브 로드, 마을 진입) 호출된다.
+    /// 증설 자리에 있던 나무를 치우거나(라인 수 도달) 되살린다. 마을 밖이면 값만 기억한다.
+    /// </summary>
+    public void SetProcessLineCount(int _activeLineCount)
+    {
+        processLineCount = _activeLineCount;
+
+        if (trees == null) return;
+
+        for (int i = 0; i < trees.Length; i++)
+        {
+            TreeObj tree = trees[i];
+            if (tree == null) continue;
+            if (false == tree.TryGetComponent(out TownTreeRemovedByLineExpansion _)) continue;
+
+            if (IsRemovedByLineExpansion(tree))
+            {
+                if (tree.gameObject.activeSelf) tree.gameObject.SetActive(false);
+                RemoveFromActiveTrees(tree);
+            }
+            else if (false == enableCulling && false == tree.gameObject.activeSelf)
+            {
+                // 컬링을 쓰면 다음 컬링 갱신이 알아서 다시 켠다.
+                tree.gameObject.SetActive(true);
+                if (tree.UpdateIndex == -1)
+                {
+                    tree.UpdateIndex = activeTreesForUpdate.Count;
+                    activeTreesForUpdate.Add(tree);
+                }
+            }
+        }
+    }
+
+    private bool IsRemovedByLineExpansion(TreeObj _tree)
+    {
+        return _tree.TryGetComponent(out TownTreeRemovedByLineExpansion marker) && marker.ShouldBeRemoved(processLineCount);
+    }
+
+    // Swap-with-last 기반 O(1) 삭제 (OnCullingStateChanged와 같은 방식)
+    private void RemoveFromActiveTrees(TreeObj _tree)
+    {
+        int idx = _tree.UpdateIndex;
+        if (idx != -1 && idx < activeTreesForUpdate.Count)
+        {
+            int lastIdx = activeTreesForUpdate.Count - 1;
+            if (idx != lastIdx)
+            {
+                TreeObj lastTree = activeTreesForUpdate[lastIdx];
+                activeTreesForUpdate[idx] = lastTree;
+                lastTree.UpdateIndex = idx;
+            }
+            activeTreesForUpdate.RemoveAt(lastIdx);
+        }
+        _tree.UpdateIndex = -1;
     }
 
     public void CanTravel()
