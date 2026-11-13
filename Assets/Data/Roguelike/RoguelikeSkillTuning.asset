@@ -35,8 +35,7 @@ MonoBehaviour:
   offroadLaunchSpeed: 3
   offroadAcceleration: 70
   offroadVolleyStagger: 0.15
-  offroadLaneSpread: 0.75
-  offroadEdgeInset: 0.8
+  offroadLaneSpread: 1
   offroadExitSeconds: 0.05
   offroadHitStop: 0.035
   offroadHitStopPerExtraTree: 0.01
@@ -69,8 +68,7 @@ MonoBehaviour:
   boomerangShockwaveCooldown: 0
   boomerangShockwaveMergeRadius: 0.6
   spinBoomerangDamageMultiplier: 6
-  spinBoomerangRadiusRatio: 1.15
-  spinBoomerangCooldown: 0
+  spinBoomerangRadiusRatio: 1.5
   sporeComboMaxExplosionsPerFrame: 8
   sporeComboMaxPending: 48
   sporeComboRepeatCooldown: 0.5

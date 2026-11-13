@@ -225,23 +225,39 @@ public class CardRulesTests
         Assert.IsTrue(w8.bTierChanged);
         Assert.AreEqual(20, WaveSchedule.Get(balance, 1).killTarget);
 
-        // 기획서 v2.7 부록 A "언리밋 곡선": Unlimit-1은 4티어 최소 수치(HP 380, 묶음 21그루 / 2.5초)에서 시작하고,
-        // 웨이브마다 HP ×1.10 · 묶음 +1그루 · 묶음 주기 −0.02초가 누적된다. 목표 처치 수는 960 고정.
+        // 기획서 v3.0 11-12 7-2 "언리밋 곡선": Unlimit-N은 N웨이브 줄(31부터는 30웨이브 줄)의 티어 · 나무 · 묶음 · 주기를 그대로 쓰고,
+        // 나무 HP만 N웨이브 HP × 1.35^(N−1)로 오른다. 목표 처치 수는 min(N웨이브 목표, 100).
+        RoguelikeBalanceSO.WaveRow row1 = balance.GetWaveRow(1);
         Assert.IsTrue(w31.bUnlimit);
         Assert.AreEqual(1, w31.unlimitIndex);
-        Assert.AreEqual(960, w31.killTarget);
-        Assert.AreEqual(380f, w31.treeHp, 0.001f);
-        Assert.AreEqual(21, w31.batchSize);
-        Assert.AreEqual(2.5f, w31.batchSeconds, 0.0001f);
-        Assert.AreEqual(380f * 1.1f, w32.treeHp, 0.001f);
-        Assert.AreEqual(22, w32.batchSize);
-        Assert.AreEqual(2.48f, w32.batchSeconds, 0.0001f);
+        Assert.AreEqual(0, w31.tierIndex, "Unlimit-1은 1티어에서 다시 시작");
+        Assert.IsTrue(w31.bTierChanged, "30웨이브(4티어) 다음이라 지형 전환");
+        Assert.AreEqual(UnityEngine.Mathf.Min(row1.killTarget, 100), w31.killTarget);
+        Assert.AreEqual(row1.treeHp, w31.treeHp, 0.001f);
+        Assert.AreEqual(row1.batchSize, w31.batchSize);
+        Assert.AreEqual(row1.batchSeconds, w31.batchSeconds, 0.0001f);
+        Assert.AreEqual(balance.GetWaveRow(2).treeHp * 1.35f, w32.treeHp, 0.001f);
+        Assert.AreEqual(balance.GetWaveRow(2).batchSize, w32.batchSize);
+        Assert.IsFalse(w32.bTierChanged);
 
-        // Unlimit-30은 묶음 50그루 / 1.92초, 묶음 주기는 하한 1.0초에서 멈춘다(Unlimit-100).
-        WaveSpec w60 = WaveSchedule.Get(balance, 60);
-        Assert.AreEqual(50, w60.batchSize);
-        Assert.AreEqual(1.92f, w60.batchSeconds, 0.0001f);
-        Assert.AreEqual(1f, WaveSchedule.Get(balance, 130).batchSeconds, 0.0001f);
+        // Unlimit-8은 8웨이브처럼 2티어로 전환되고, Unlimit-10 HP는 10웨이브 HP × 1.35^9.
+        WaveSpec w38 = WaveSchedule.Get(balance, 38);
+        Assert.AreEqual(1, w38.tierIndex);
+        Assert.IsTrue(w38.bTierChanged);
+        WaveSpec w40 = WaveSchedule.Get(balance, 40);
+        Assert.AreEqual(balance.GetWaveRow(10).treeHp * UnityEngine.Mathf.Pow(1.35f, 9), w40.treeHp, w40.treeHp * 1e-5f);
+        Assert.LessOrEqual(w40.killTarget, 100);
+
+        // Unlimit-31부터는 30웨이브 줄에 머물고 HP만 계속 오른다.
+        RoguelikeBalanceSO.WaveRow row30 = balance.GetWaveRow(30);
+        WaveSpec w61 = WaveSchedule.Get(balance, 61);
+        Assert.AreEqual(31, w61.unlimitIndex);
+        Assert.AreEqual(balance.GetTierIndex(30), w61.tierIndex);
+        Assert.IsFalse(w61.bTierChanged);
+        Assert.AreEqual(UnityEngine.Mathf.Min(row30.killTarget, 100), w61.killTarget);
+        Assert.AreEqual(row30.batchSize, w61.batchSize);
+        Assert.AreEqual(row30.batchSeconds, w61.batchSeconds, 0.0001f);
+        Assert.AreEqual(row30.treeHp * UnityEngine.Mathf.Pow(1.35f, 30), w61.treeHp, w61.treeHp * 1e-5f);
     }
 
     [Test]

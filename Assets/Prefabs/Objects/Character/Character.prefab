@@ -2070,7 +2070,7 @@ MonoBehaviour:
   bBoomerangOverheatBoost: 0
   boomerangCooldownReductionAlpha: 0
   droneCount: 0
-  droneDamage: 5
+  droneDamage: 10
   droneAttackRange: 3
   droneActiveDuration: 3
   droneDamageInterval: 1

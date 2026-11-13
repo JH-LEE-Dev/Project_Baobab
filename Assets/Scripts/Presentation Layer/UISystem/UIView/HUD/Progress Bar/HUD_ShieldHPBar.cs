@@ -79,6 +79,8 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     private Graphic[] ghostGraphics;
     private Graphic[] shieldGraphics;
     private Graphic[] shieldGhostGraphics;
+    private Graphic[] barGraphics;
+    private float[] barGraphicBaseAlphas;
     
     private float currentHpValue = 0.0f;
     private float currentShieldValue = 0.0f;
@@ -161,6 +163,14 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
 
         if (null == hpGhostFillImage && null != ghostSlider && null != ghostSlider.fillRect)
             hpGhostFillImage = ghostSlider.fillRect.GetComponent<Image>();
+
+        if (null == barGraphics)
+        {
+            barGraphics = GetComponentsInChildren<Graphic>(true);
+            barGraphicBaseAlphas = new float[barGraphics.Length];
+            for (int i = 0; i < barGraphics.Length; i++)
+                barGraphicBaseAlphas[i] = barGraphics[i].color.a;
+        }
 
         SetBarrierCoverShown(false);
     }
@@ -739,6 +749,20 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         bBarrierCoverShown = _bShow;
         // 데모 빌드는 테두리 그림을 끊는다(DemoContentStripper). 그림 없는 Image는 흰 사각형이라 켜지 않는다.
         if (null != barrierCoverImage) barrierCoverImage.enabled = _bShow && null != barrierCoverImage.sprite;
+
+        // 방어막 테두리는 선명하게 유지하고, 기존 게이지만 원래 알파의 30%로 표시한다.
+        if (null == barGraphics) return;
+
+        float alphaMultiplier = _bShow ? 0.3f : 1f;
+        for (int i = 0; i < barGraphics.Length; i++)
+        {
+            Graphic graphic = barGraphics[i];
+            if (null == graphic || graphic == barrierCoverImage) continue;
+
+            Color color = graphic.color;
+            color.a = barGraphicBaseAlphas[i] * alphaMultiplier;
+            graphic.color = color;
+        }
     }
 
 

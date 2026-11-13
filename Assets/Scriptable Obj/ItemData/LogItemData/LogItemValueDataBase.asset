@@ -26,11 +26,11 @@ MonoBehaviour:
   - treeType: 6
     value: 1000
   - treeType: 7
-    value: 20000
+    value: 4200
   - treeType: 8
-    value: 100000
+    value: 16000
   - treeType: 9
-    value: 300000
+    value: 50000
   - treeType: 10
     value: 1500000
   - treeType: 11

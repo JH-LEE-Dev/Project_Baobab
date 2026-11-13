@@ -298,6 +298,7 @@ public class Boomerang : MonoBehaviour
         returnTimer = 0f;
         phase = Phase.Outbound;
         IsActive = true;
+        RunCombatHooks.NotifyBoomerangStarted(transform, hitRadius);
 
         frameTimer = 0f;
         currentFrameIndex = 0;
@@ -436,6 +437,7 @@ public class Boomerang : MonoBehaviour
         SetAfterimagesPaused(true);
         if (null != heatTrail) heatTrail.SetPaused(true);
         Sound.SetTrackedVolume(spinLoopHandle, 0f); // 제자리에 멈춰 있는 동안 회전음이 계속 나면 어색하므로 잠시 끈다
+        RunCombatHooks.NotifyBoomerangPaused(transform, true);
     }
 
     /// <summary>
@@ -448,6 +450,7 @@ public class Boomerang : MonoBehaviour
         SetAfterimagesPaused(false);
         if (null != heatTrail) heatTrail.SetPaused(false);
         Sound.SetTrackedVolume(spinLoopHandle, 1f);
+        RunCombatHooks.NotifyBoomerangPaused(transform, false);
     }
 
     /// <summary>
@@ -714,6 +717,8 @@ public class Boomerang : MonoBehaviour
         damageCheckTimer -= damageInterval;
 
         ApplyDamageInRange();
+        // 로그라이크 회전베기 + 부메랑이 판정 주기마다 부메랑 주위 회전베기를 친다. 본편은 구독자가 없어 null 검사로 끝난다.
+        if (RunCombatHooks.HasBoomerangTickListener) RunCombatHooks.NotifyBoomerangTick(transform.position, hitRadius);
     }
 
     // CollisionSystem은 나무의 밑동(콜라이더 Position) 기준으로만 거리를 재기 때문에, topRoot(나뭇잎 쪽,
@@ -788,7 +793,7 @@ public class Boomerang : MonoBehaviour
                             treeObj.ApplyOverheatBurn(burnStat.GetOverheatBurnRatio(overheatLevel), burnStat.overheatBurnTickCount, burnStat.overheatBurnTickInterval, false);
                         }
 
-                        if (bNotifyRun) RunCombatHooks.NotifyBoomerangHitTree(hitTreePos, transform.position, hitRadius);
+                        if (bNotifyRun) RunCombatHooks.NotifyBoomerangHitTree(hitTreePos);
                     }
                 }
                 else if (RunCombatOverrides.bSkillsHitRunTargets && hitScanResults[i] is IRunSkillHitTarget runTarget && runTarget.bCanBeHitBySkill
@@ -936,6 +941,7 @@ public class Boomerang : MonoBehaviour
     {
         StopSpinLoop();
         IsActive = false;
+        RunCombatHooks.NotifyBoomerangEnded(transform);
         if (null != heatTrail) heatTrail.End(); // 방출만 멈춘다. 남은 꼬리는 스스로 소멸한다
         SetHeatAuraActive(false);
         returnTarget = null;

@@ -285,15 +285,16 @@ public class CardOfferAndShopTests
     }
 
     [Test]
-    public void TwoPassivesGuaranteed_AfterFirstPick()
+    public void NoPassiveGuarantee_RandomSlotsIgnoreKind()
     {
-        // 액티브가 훨씬 많아도 공통 패시브 2장은 무조건 나온다(기획서 v2.5 4-2 ③).
+        // 기획서 v3.0 4-2: 패시브 2장 보장은 삭제됐다. 액티브가 훨씬 많으면 패시브가 한 장도 안 나오는 선택도 생긴다.
         List<CardDefinitionSO> cards = new List<CardDefinitionSO>();
         for (int i = 0; i < 30; i++) cards.Add(factory.CreateCard("a" + i, ECardKind.Active, ERoguelikeSkill.Spin));
         for (int i = 0; i < 3; i++) cards.Add(factory.CreateCard("p" + i, ECardKind.Passive));
         InitShop(factory.CreateDatabase(cards.ToArray()));
 
-        for (int round = 0; round < 30; round++)
+        int noPassiveRounds = 0;
+        for (int round = 0; round < 60; round++)
         {
             shop.Open(false);
             Assert.AreEqual(4, shop.Offers.Count);
@@ -301,12 +302,15 @@ public class CardOfferAndShopTests
             int passives = 0;
             for (int i = 0; i < shop.Offers.Count; i++)
             {
+                Assert.IsFalse(shop.Offers[i].bGuaranteed, "보장 칸 없이 모두 랜덤 " + round);
                 if (ECardKind.Passive == shop.Offers[i].card.kind) passives++;
             }
 
-            Assert.GreaterOrEqual(passives, 2);
+            if (0 == passives) noPassiveRounds++;
             shop.Close();
         }
+
+        Assert.Greater(noPassiveRounds, 0, "패시브는 보장되지 않는다");
     }
 
     [Test]
@@ -350,7 +354,7 @@ public class CardOfferAndShopTests
     [Test]
     public void ActiveAtLeastOne_EveryOfferAndReroll()
     {
-        // 기획서 v2.6 4-2 ⑤: 패시브 · 계약이 훨씬 많아도 제시와 리롤 모두 액티브가 최소 1장 나온다.
+        // 기획서 v3.0 4-2 ④: 패시브 · 계약이 훨씬 많아도 제시와 리롤 모두 액티브가 최소 1장 나온다.
         CardDefinitionSO active = factory.CreateCard("active", ECardKind.Active, ERoguelikeSkill.Spin);
         List<CardDefinitionSO> cards = new List<CardDefinitionSO> { active };
         for (int i = 0; i < 30; i++) cards.Add(factory.CreateCard("p" + i, ECardKind.Passive));
@@ -363,7 +367,6 @@ public class CardOfferAndShopTests
             shop.Open(false);
             Assert.AreEqual(4, shop.Offers.Count);
             Assert.AreEqual(1, CountKind(ECardKind.Active), "제시 " + round);
-            Assert.GreaterOrEqual(CountKind(ECardKind.Passive), 2, "패시브 2장 보장은 유지 " + round);
 
             Assert.AreEqual(ECardShopResult.Success, shop.TryReroll());
             Assert.AreEqual(1, CountKind(ECardKind.Active), "리롤 " + round);

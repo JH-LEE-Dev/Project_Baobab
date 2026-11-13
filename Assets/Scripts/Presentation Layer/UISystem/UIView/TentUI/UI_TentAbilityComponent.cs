@@ -1758,6 +1758,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.FascinatingLogChance:
             case SkillCommandType.AdvancedLogChance:
             case SkillCommandType.PerfectLogChance:
+            case SkillCommandType.AutoLoadInRestArea:
+            case SkillCommandType.WhirlWind:
 
                 return true;
             default:
