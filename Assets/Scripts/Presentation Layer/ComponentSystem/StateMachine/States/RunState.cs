@@ -156,10 +156,14 @@ public class RunState : CharacterState
 
         Vector2 targetVel = inputDir * speed;
 
+        // 이속 업그레이드 배율만큼 가속도도 키워, 이속이 올라도 최고 속도까지 걸리는 시간은 그대로 둔다.
+        // (행동 중 감속은 배율에 넣지 않는다 - 기본 이속에서는 예전과 같은 값)
+        float accelScale = Mathf.Max(0.1f, ctx.characterStat.speedMultiplier);
+
         character.rb.linearVelocity = Vector2.MoveTowards(
           character.rb.linearVelocity,
           targetVel,
-          groundData.acceleration * Time.fixedDeltaTime
+          groundData.acceleration * accelScale * Time.fixedDeltaTime
       );
 
         return;

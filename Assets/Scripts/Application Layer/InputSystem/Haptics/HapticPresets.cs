@@ -194,6 +194,13 @@ public static class HapticPresets
         new HapticStep(0.30f, 0.40f, 0.05f),
         new HapticStep(0.12f, 0.15f, 0.09f));
 
+    // 특등품 평가 - 도장을 "쾅" 찍는 또렷한 한 방. 고급 원목 생성(rareLogSpawn)과 같은 당첨 계열이지만,
+    // 라인 여러 개가 연달아 터질 수 있어 굵은 모터는 킥에서만 쓰고 꼬리는 가는 모터로 짧게 끊는다.
+    // 총 0.2초 - 타격감이 느껴지는 최소 길이(위 설명)이면서, 연달아 터져도 묶음 간격(0.25초) 안에 멎는다.
+    private static readonly HapticPattern topgradeAssessment = new HapticPattern(
+        new HapticStep(0.70f, 0.90f, 0.06f),
+        new HapticStep(0.10f, 0.45f, 0.14f));
+
     private static readonly HapticPattern[] patterns = BuildPatterns();
 
     /// <summary>
@@ -256,6 +263,7 @@ public static class HapticPresets
         _table[(int)EHapticEvent.QuakeBuildUp] = quakeBuildUp;
         _table[(int)EHapticEvent.RoguelikeTileWave] = roguelikeTileWave;
         _table[(int)EHapticEvent.RoguelikeTileWaveShore] = roguelikeTileWaveShore;
+        _table[(int)EHapticEvent.TopgradeAssessment] = topgradeAssessment;
 
         return _table;
     }
@@ -294,6 +302,10 @@ public static class HapticPresets
         // 부메랑 여러 개가 겹쳐 날 때를 위한 것으로, 판정 주기(기본 0.3초)보다 짧은 0.2초로 둬서 틱마다
         // 톡톡 끊어 느껴지되 초당 5회를 넘지 않아 연속 진동으로 뭉개지지 않게 한다.
         _table[(int)EHapticEvent.BoomerangImpact] = 0.2f;
+
+        // 특등품 평가는 라인 3개가 거의 동시에 터지거나, 컨베이어가 빨라지면 같은 라인에서 연달아 터진다.
+        // 하나하나 울리면 덜덜 떠는 연속 진동이 되므로 0.25초 안의 것은 한 번으로 묶는다.
+        _table[(int)EHapticEvent.TopgradeAssessment] = 0.25f;
 
         // 나머지(스킬, 프레스티지, 필드 습득, 원목 유실)는 하나하나 느껴져야 하므로 묶지 않는다.
 

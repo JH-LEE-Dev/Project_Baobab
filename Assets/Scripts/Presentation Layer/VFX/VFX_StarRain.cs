@@ -12,8 +12,9 @@ namespace PresentationLayer.VFX
     }
 
     /// <summary>
-    /// 별 비(유성우). 캐릭터 주변에 별이 비스듬히 여러 개 떨어진다. 낙하 한 개는 "예고(디더 원판 + 점선 고리) -> 낙하(굵은 꼬리) ->
-    /// 충돌(도트 별 섬광 + 빛기둥 + 8방향 줄기 + 파편) -> 바닥 별 자국이 입자로 풀림" 순서로 진행하는 독립된 단위이고,
+    /// 별 비(유성우). 캐릭터 주변에 별이 비스듬히 여러 개 떨어진다. 낙하 한 개는 "예고(줄무늬 원판 + 점선 고리, 닿기 직전 조준 고리가 좁혀짐) ->
+    /// 낙하(강조색 꼬리 + 지나간 자리에 남는 반짝이) -> 충돌(바닥 섬광 + 별 섬광 + 빛기둥 + 2중 충격파 고리 + 8방향 줄기 + 파편 별 + 솟는 별가루) ->
+    /// 바닥 별 자국이 입자로 풀림" 순서로 진행하는 독립된 단위이고,
     /// 이 이펙트 하나가 낙하 N개를 정해진 시각에 돌려 같은 메쉬 두 개(바닥 / 공중)에 함께 그린다. 낙하마다 인스턴스를 만들지 않는다.
     ///
     /// 픽셀 규칙
@@ -66,7 +67,12 @@ namespace PresentationLayer.VFX
         private const int PlaceAttempts = 80;
         private const int FallTicks = 12;
         private const int TeleTicks = 17;
-        private const int ImpactTicks = 16;             // 충돌 후 연출이 끝나는 틱
+        private const int ImpactTicks = 22;             // 충돌 후 연출이 끝나는 틱(별가루·별 자국까지)
+        private const int RingTicks = 10;               // 충격파 고리가 퍼졌다가 토막으로 흩어지는 틱
+        private const int LockTicks = 5;                // 닿기 직전 조준 고리가 중심으로 좁혀지는 틱
+        private const int SparkleCount = 8;             // 낙하 길에 남는 반짝이 수
+        private const float SparkleLife = 9.0f;         // 반짝이 수명(틱)
+        private const int DenseActiveCount = 16;        // 예고~여운 구간에 있는 낙하가 이만큼 이상이면 보조 연출을 덜어낸다
         private const float OffsetX = 72.0f;            // 낙하 시작점(충돌점 기준, 오른쪽 위에서 비스듬히)
         private const float OffsetY = -165.0f;          // 화면 아래가 +인 좌표에서 위쪽 = 음수
         private const float FallCurve = 1.6f;
@@ -77,6 +83,7 @@ namespace PresentationLayer.VFX
         private const byte ToneBlue = 3;
         private const byte ToneDeep = 4;
         private const byte ToneAccent = 5;
+        private const byte ToneAccentHi = 6;            // 강조색 밝은 톤(발광 강함): 낙하 머리, 충돌 순간, 고리 앞머리
 
         private struct Unit
         {
@@ -108,13 +115,13 @@ namespace PresentationLayer.VFX
         private static readonly Layer groundLayer = new Layer { buffer = new PixelQuadBuffer(1600) };
         private static readonly Layer airLayer = new Layer { buffer = new PixelQuadBuffer(1600) };
         private static readonly Unit[] scratchUnits = new Unit[MaxCount];
-        private static readonly int[] FlashArms = { 16, 11, 6, 3 };
-        private static readonly int[] PillarHeights = { 36, 24, 10 };
+        private static readonly int[] FlashArms = { 28, 21, 14, 8, 4 };
+        private static readonly int[] PillarHeights = { 46, 32, 18, 8 };
         private static readonly int[] CallArmX = { 12, 9, 5, 2 };
         private static readonly int[] CallArmY = { 4, 3, 2, 1 };
 
         private readonly Unit[] units = new Unit[MaxCount];
-        private readonly Color32[] toneColors = new Color32[6];
+        private readonly Color32[] toneColors = new Color32[7];
 
         // 내부 의존성
         private MeshFilter meshFilter;
@@ -131,6 +138,7 @@ namespace PresentationLayer.VFX
         private float elapsed;
         private float totalLength;
         private float frameTicks = 0.5f;
+        private bool bDense;
         private int unitCount;
         private int requestedCount;
         private float requestedDuration;
@@ -310,9 +318,23 @@ namespace PresentationLayer.VFX
             toneColors[ToneBlue] = new Color32(77, 133, 255, 0);
             toneColors[ToneDeep] = new Color32(43, 71, 184, 0);
 
-            if (1 == _tier) toneColors[ToneAccent] = toneColors[ToneIce];
-            else if (2 == _tier) toneColors[ToneAccent] = new Color32(184, 158, 255, 13);
-            else toneColors[ToneAccent] = new Color32(255, 214, 107, 16);
+            // 강조색 2톤(기본 / 밝은 톤). 블룸에서 흰색으로 날아가지 않도록 채도를 높게 두고 발광은 흰색보다 약하게 둔다.
+            // 씨앗은 기본 톤을 예전처럼 옅은 푸른색으로 두고 밝은 톤만 청록으로 더한다(청록을 푸른 계열로 보면 이 계열만 4톤이다).
+            if (1 == _tier)
+            {
+                toneColors[ToneAccent] = toneColors[ToneIce];
+                toneColors[ToneAccentHi] = new Color32(110, 232, 255, 18);
+            }
+            else if (2 == _tier)
+            {
+                toneColors[ToneAccent] = new Color32(150, 90, 255, 0);
+                toneColors[ToneAccentHi] = new Color32(205, 150, 255, 18);
+            }
+            else
+            {
+                toneColors[ToneAccent] = new Color32(255, 120, 30, 0);
+                toneColors[ToneAccentHi] = new Color32(255, 200, 60, 18);
+            }
         }
 
         private void SetupLayers(float _radiusPx)
@@ -547,6 +569,64 @@ namespace PresentationLayer.VFX
             return 1.0f - v * v * v * v;
         }
 
+        // 대각선 네 팔(별 섬광의 X자 보조 팔). 중심 3x3은 DotStar가 칠하므로 2px부터 그린다.
+        private static void DiagArms(Layer _layer, int _x, int _y, int _len, byte _tone)
+        {
+            for (int k = 2; k <= _len; k++)
+            {
+                Plot(_layer, _x + k, _y + k, _tone);
+                Plot(_layer, _x - k, _y + k, _tone);
+                Plot(_layer, _x + k, _y - k, _tone);
+                Plot(_layer, _x - k, _y - k, _tone);
+            }
+        }
+
+        // 채운 바닥 타원. 줄마다 가로로 이어지므로 쿼드가 줄 수만큼만 나온다.
+        private static void FillEllipse(Layer _layer, int _cx, int _cy, float _rx, float _ry, byte _tone)
+        {
+            int iy = (int)_ry;
+            float ry = Mathf.Max(0.5f, _ry);
+
+            for (int j = -iy; j <= iy; j++)
+            {
+                float ey = j / ry;
+                int half = (int)(_rx * Mathf.Sqrt(Mathf.Max(0.0f, 1.0f - ey * ey)));
+                for (int i = -half; i <= half; i++) Plot(_layer, _cx + i, _cy + j, _tone);
+            }
+        }
+
+        private const int RingSegments = 24;
+
+        // 바닥 타원 고리(1px 선). 둘레를 RingSegments 토막으로 나눠 _keep(0~1)보다 해시가 큰 토막은 비운다 -
+        // keep을 줄이면 고리가 토막으로 끊어지며 흩어진다. 토막 번호는 각도로 정해 고리가 커져도 같은 토막이 비어 있다.
+        // 사분면 하나만 삼각함수로 계산하고 나머지는 대칭으로 찍는다.
+        private static void Ring(Layer _layer, float _cx, float _cy, float _rx, float _ry, byte _tone, float _keep, uint _s, uint _salt)
+        {
+            if (_rx < 1.0f)
+            {
+                P(_layer, _cx, _cy, _tone);
+                return;
+            }
+
+            const int segPerQuadrant = RingSegments / 4;
+            int quarter = Mathf.Max(2, Mathf.CeilToInt(0.5f * Mathf.PI * _rx));
+            bool bAll = 1.0f <= _keep;
+
+            for (int k = 0; k <= quarter; k++)
+            {
+                float ang = 0.5f * Mathf.PI * k / quarter;
+                float ox = Mathf.Cos(ang) * _rx;
+                float oy = Mathf.Sin(ang) * _ry;
+                int seg = Mathf.Min(segPerQuadrant - 1, k * segPerQuadrant / quarter);
+
+                // 사분면 0 (+,+) / 1 (-,+) / 2 (-,-) / 3 (+,-)
+                if (true == bAll || Hash(_s, (uint)seg, _salt) <= _keep) P(_layer, _cx + ox, _cy + oy, _tone);
+                if (true == bAll || Hash(_s, (uint)(segPerQuadrant + seg), _salt) <= _keep) P(_layer, _cx - ox, _cy + oy, _tone);
+                if (true == bAll || Hash(_s, (uint)(2 * segPerQuadrant + seg), _salt) <= _keep) P(_layer, _cx - ox, _cy - oy, _tone);
+                if (true == bAll || Hash(_s, (uint)(3 * segPerQuadrant + seg), _salt) <= _keep) P(_layer, _cx + ox, _cy - oy, _tone);
+            }
+        }
+
         // ---------- 낙하 한 개 ----------
 
         private static void FallPosition(in Unit _m, float _u, out float _x, out float _y)
@@ -560,47 +640,60 @@ namespace PresentationLayer.VFX
         {
             Layer g = groundLayer;
             Layer a = airLayer;
-            int tick = (int)_ft;
             float dt = _ft - _m.impactTick;
+
+            // 아직 예고 전이거나 연출이 모두 끝난 낙하는 건너뛴다.
+            if (dt < -TeleTicks || ImpactTicks <= dt) return;
+
+            int tick = (int)_ft;
             int dti = Mathf.FloorToInt(dt);
             uint s = _m.seed;
 
-            if (-TeleTicks <= dt && dt < 0.0f) DrawTelegraph(g, _m, tick, dt, s);
+            if (dt < 0.0f) DrawTelegraph(g, _m, tick, dt, s, bDense);
             if (-FallTicks <= dt && dt < 0.0f) DrawFall(a, _m, tick, dt);
+            if (-FallTicks <= dt && dt < SparkleLife) DrawFallSparkles(a, _m, tick, dt, s, bDense);
             if (0.0f <= dt) DrawImpact(g, a, _m, tick, dt, dti, s);
         }
 
-        // 예고: 디더 원판 + 점선 고리 + 중심 별 표식(커짐). 불투명 픽셀만 쓴다.
-        private static void DrawTelegraph(Layer _g, in Unit _m, int _tick, float _dt, uint _s)
+        // 예고: 줄무늬 원판 + 점선 고리 + 중심 별 표식(커짐), 닿기 직전에는 조준 고리가 바깥에서 중심으로 좁혀진다. 불투명 픽셀만 쓴다.
+        // 낙하가 몰릴 때(_bDense)는 원판을 빼고 고리와 표식만 그린다.
+        private static void DrawTelegraph(Layer _g, in Unit _m, int _tick, float _dt, uint _s, bool _bDense)
         {
             float u = (_dt + TeleTicks) / TeleTicks;
             float inv = 1.0f - u;
-            float rx = 6.0f + 9.0f * (1.0f - inv * inv);
+            float rx = 7.0f + 11.0f * (1.0f - inv * inv);
             float ry = rx * 0.5f;
 
-            byte tone = u < 0.5f ? ToneBlue : (u < 0.82f ? ToneIce : ToneAccent);
-            if (0.92f < u && 0 == _tick % 2) tone = ToneWhite;
-            byte disc = u < 0.5f ? ToneDeep : (u < 0.82f ? ToneBlue : ToneIce);
+            byte tone = u < 0.45f ? ToneBlue : (u < 0.8f ? ToneIce : ToneAccent);
+            if (0.9f < u && 0 == _tick % 2) tone = ToneWhite;
+            byte disc = u < 0.5f ? ToneDeep : (u < 0.8f ? ToneBlue : ToneIce);
             int ph = _tick / 2;
 
+            // 원판: 세 줄에 한 줄 칠한 가로 줄무늬가 위로 흘러간다. 줄마다 가로로 이어져 쿼드가 줄 수만큼만 나온다.
             int iy = (int)ry;
-            int ix = (int)rx;
             float irx = rx - 1.0f;
             float iry = Mathf.Max(0.5f, ry - 0.5f);
 
-            for (int j = -iy - 1; j <= iy + 1; j++)
+            for (int j = -iy; j <= iy && false == _bDense; j++)
             {
-                for (int i = -ix - 1; i <= ix + 1; i++)
-                {
-                    float ex = i / irx;
-                    float ey = j / iry;
-                    if (ex * ex + ey * ey <= 1.0f && 0 == ((i + j + ph) & 1)) Plot(_g, _m.x + i, _m.y + j, disc);
-                }
+                if (0 != ((j + ph) % 3 + 3) % 3) continue;
+
+                float ey = j / iry;
+                int half = (int)(irx * Mathf.Sqrt(Mathf.Max(0.0f, 1.0f - ey * ey)));
+                for (int i = -half; i <= half; i++) Plot(_g, _m.x + i, _m.y + j, disc);
+            }
+
+            float lockT = _dt + LockTicks;
+            if (0.0f <= lockT)
+            {
+                float lu = lockT / LockTicks;
+                float lr = Mathf.Lerp(rx + 16.0f, rx * 0.4f, lu * lu);
+                Ring(_g, _m.x, _m.y, lr, lr * 0.5f, 0 == _tick % 2 ? ToneAccentHi : ToneAccent, 1.0f, _s, 43u);
             }
 
             const int ringDots = 26;
             float keep = 0.5f + 0.5f * u;
-            for (int i = 0; i < ringDots; i++)
+            for (int i = 0; i < ringDots; i += true == _bDense ? 2 : 1)
             {
                 if (keep < Hash(_s, (uint)i, 41u)) continue;
                 float ang = 2.0f * Mathf.PI * (i + ph * 0.5f) / ringDots;
@@ -615,7 +708,8 @@ namespace PresentationLayer.VFX
             }
         }
 
-        // 낙하: 머리가 한 프레임 동안 지나간 길을 굵은 흰 선으로 이어 끊김을 없앤다.
+        // 낙하: 머리가 한 프레임 동안 지나간 길을 굵은 흰 선으로 이어 끊김을 없앤다. 꼬리는 흰색 -> 강조색 2톤 -> 옅은 푸른색 -> 점선 순서로
+        // 가늘어진다(푸른 바닥에서도 보이도록 강조색 구간을 길게 둔다). 머리는 십자 별 + 대각 팔이고, 닿기 직전 한 틱은 더 크게 번쩍인다.
         private void DrawFall(Layer _a, in Unit _m, int _tick, float _dt)
         {
             float u = (_dt + FallTicks) / FallTicks;
@@ -635,16 +729,21 @@ namespace PresentationLayer.VFX
 
                 FallPosition(_m, uj, out float px, out float py);
                 dist += Mathf.Sqrt((px - prevX) * (px - prevX) + (py - prevY) * (py - prevY));
-                if (sweep + 78.0f < dist) break;
+
+                float d = dist - sweep;
+                // 낙하가 몰릴 때는 강조색 구간까지만 그려 꼬리를 짧게 한다
+                if ((true == bDense ? 34.0f : 92.0f) < d) break;
 
                 byte tone;
                 int w;
-                if (dist <= sweep) { tone = ToneWhite; w = 3; }
-                else if (dist <= sweep + 10.0f) { tone = ToneIce; w = 3; }
-                else if (dist <= sweep + 28.0f) { tone = ToneBlue; w = 2; }
-                else { tone = ToneDeep; w = 1; }
+                if (d <= 0.0f) { tone = ToneWhite; w = 3; }
+                else if (d <= 14.0f) { tone = ToneAccentHi; w = 3; }
+                else if (d <= 34.0f) { tone = ToneAccent; w = 2; }
+                else if (d <= 56.0f) { tone = ToneIce; w = 2; }
+                else { tone = ToneBlue; w = 1; }
 
-                if (sweep + 40.0f < dist && 0 != (j + _tick) % 2)
+                // 꼬리 끝은 점선
+                if (56.0f < d && 0 != (j + _tick) % 2)
                 {
                     prevX = px;
                     prevY = py;
@@ -654,54 +753,108 @@ namespace PresentationLayer.VFX
                 LinePx(_a, prevX, prevY, px, py, tone, w);
                 prevX = px;
                 prevY = py;
-
-                if ((14 == j || 26 == j || 38 == j) && 0 != (_tick + j) % 3) Plus(_a, px + 4.0f, py - 2.0f, 14 < j ? ToneBlue : ToneAccent, 1);
             }
 
-            DotStar(_a, hx, hy, u < 0.85f ? 6 : 9, ToneWhite, ToneIce);
-            P(_a, hx - 2.0f, hy - 2.0f, ToneAccent);
-            P(_a, hx + 2.0f, hy - 2.0f, ToneAccent);
-            P(_a, hx - 2.0f, hy + 2.0f, ToneAccent);
-            P(_a, hx + 2.0f, hy + 2.0f, ToneAccent);
+            bool bFlare = -1.5f < _dt;
+            int arm = true == bFlare ? 12 : (u < 0.85f ? 7 : 9);
+            int ix = Mathf.RoundToInt(hx);
+            int iy = Mathf.RoundToInt(hy);
+            DotStar(_a, ix, iy, arm, ToneWhite, ToneAccentHi);
+            DiagArms(_a, ix, iy, true == bFlare ? 5 : 3, ToneAccent);
+        }
+
+        // 낙하 머리가 지나간 자리에 반짝이가 남는다. 자리는 고정이고 살짝 가라앉으며 깜박이다 사라진다(충돌 뒤에도 남은 수명만큼 이어진다).
+        private static void DrawFallSparkles(Layer _a, in Unit _m, int _tick, float _dt, uint _s, bool _bDense)
+        {
+            float headU = (_dt + FallTicks) / FallTicks;
+
+            // 낙하가 몰릴 때는 절반만 남긴다
+            for (int i = 0; i < SparkleCount; i += true == _bDense ? 2 : 1)
+            {
+                // 머리가 이 자리(진행률 su)를 지난 뒤 흐른 틱
+                float su = 0.1f + 0.8f * (i + Hash(_s, (uint)i, 51u) * 0.6f) / SparkleCount;
+                float age = (headU - su) * FallTicks;
+                if (age < 0.0f || SparkleLife <= age) continue;
+                if (SparkleLife * 0.55f < age && 0 != (_tick + i) % 2) continue;
+
+                FallPosition(_m, su, out float x, out float y);
+                x += (Hash(_s, (uint)i, 52u) - 0.5f) * 10.0f;
+                y += (Hash(_s, (uint)i, 53u) - 0.5f) * 6.0f + age * 0.6f;
+
+                byte tone = age < 2.0f ? ToneWhite : (0 == i % 3 ? ToneAccentHi : ToneAccent);
+                if (age < 3.0f || 0 == (_tick + i) % 4) Plus(_a, x, y, tone, age < 4.0f && 0 == i % 2 ? 2 : 1);
+                else P(_a, x, y, tone);
+            }
         }
 
         private void DrawImpact(Layer _g, Layer _a, in Unit _m, int _tick, float _dt, int _dti, uint _s)
         {
             float sc = true == _m.bBig ? 1.4f : 1.0f;
+            int x = _m.x;
+            int y = _m.y;
 
-            // 섬광 4단계(24Hz)
-            if (_dti < 4)
+            // 충돌 순간 바닥 섬광: 첫 틱은 흰 타원, 다음 틱은 강조색으로 줄어든다
+            if (_dti < 2)
             {
-                int arm = (int)(FlashArms[_dti] * sc);
-                DotStar(_a, _m.x, _m.y - 1, arm, ToneWhite, ToneAccent);
+                FillEllipse(_g, x, y, (13.0f - 5.0f * _dti) * sc, (6.5f - 2.5f * _dti) * sc, 0 == _dti ? ToneWhite : ToneAccentHi);
             }
 
-            // 짧은 빛기둥 3단계
-            if (_dti < 3)
+            // 별 섬광 5단계(24Hz): 십자 팔 + 대각 팔
+            if (_dti < FlashArms.Length)
+            {
+                int arm = (int)(FlashArms[_dti] * sc);
+                DotStar(_a, x, y - 1, arm, ToneWhite, ToneAccentHi);
+                DiagArms(_a, x, y - 1, (int)(arm * 0.42f), _dti < 2 ? ToneWhite : ToneAccentHi);
+            }
+
+            // 빛기둥 4단계: 흰 심지 + 강조색 테두리, 꼭대기에 작은 별
+            if (_dti < PillarHeights.Length)
             {
                 int hh = (int)(PillarHeights[_dti] * sc);
+                int wd = _dti < 2 ? 2 : 1;
                 for (int yy = 0; yy < hh; yy++)
                 {
-                    int wd = yy < hh * 0.55f ? 2 : 1;
-                    for (int xx = -wd; xx <= wd; xx++)
+                    int w = yy < hh * 0.6f ? wd : 1;
+                    for (int xx = -w; xx <= w; xx++)
                     {
-                        Plot(_a, _m.x + xx, _m.y - 2 - yy, Mathf.Abs(xx) < wd || yy < 3 ? ToneWhite : ToneIce);
+                        Plot(_a, x + xx, y - 2 - yy, Mathf.Abs(xx) < w || yy < 3 ? ToneWhite : ToneAccentHi);
                     }
                 }
 
-                Plot(_a, _m.x, _m.y - 3 - hh, ToneAccent);
+                Plus(_a, x, y - 3 - hh, ToneAccentHi, 2 - Mathf.Min(1, _dti / 2));
+            }
+
+            // 충격파 고리(바닥): 빠르게 퍼진 뒤 토막으로 끊어지며 흩어진다. 안쪽에 옅은 고리를 하나 더 붙여 두껍게 보인다.
+            if (_dt < RingTicks)
+            {
+                float u = _dt / RingTicks;
+                float r = (6.0f + 34.0f * EaseOutQuart(u)) * sc;
+                float keep = u < 0.45f ? 1.0f : 1.0f - (u - 0.45f) / 0.55f;
+                byte lead = u < 0.15f ? ToneWhite : (u < 0.6f ? ToneAccentHi : ToneAccent);
+                Ring(_g, x, y, r, r * 0.5f, lead, keep, _s, 61u);
+                if (u < 0.6f && false == bDense) Ring(_g, x, y, r - 1.5f, (r - 1.5f) * 0.5f, ToneAccent, keep, _s, 61u);
+            }
+
+            // 2차 고리: 조금 늦게, 작게 퍼진다(낙하가 몰릴 때는 생략)
+            float dt2 = _dt - 3.0f;
+            if (false == bDense && 0.0f <= dt2 && dt2 < RingTicks - 2)
+            {
+                float u2 = dt2 / (RingTicks - 2);
+                float r2 = (4.0f + 20.0f * EaseOutQuart(u2)) * sc;
+                Ring(_g, x, y, r2, r2 * 0.5f, u2 < 0.5f ? ToneAccentHi : ToneAccent, 1.0f - u2 * 0.8f, _s, 63u);
             }
 
             // 바닥 방사 줄기: 8방향 같은 길이, 일정한 토막이 같은 속도로 뻗었다가 끝에서 한꺼번에 줄어든다
             if (_dt < 8.0f)
             {
                 float u = _dt / 8.0f;
-                float len = 24.0f * sc;
+                float len = 30.0f * sc;
                 float head = EaseOutQuart(Mathf.Min(1.0f, u / 0.6f)) * len;
-                const float seg = 9.0f;
+                const float seg = 11.0f;
                 float tail = u <= 0.6f ? Mathf.Max(0.0f, head - seg) : head - seg * (1.0f - (u - 0.6f) / 0.4f);
 
-                for (int k = 0; k < 8; k++)
+                // 낙하가 몰릴 때는 가로·세로 4방향만
+                for (int k = 0; k < 8; k += true == bDense ? 2 : 1)
                 {
                     float ang = k * Mathf.PI * 0.25f;
                     float dx = Mathf.Cos(ang);
@@ -712,52 +865,55 @@ namespace PresentationLayer.VFX
                     for (int i = from; i <= to; i++)
                     {
                         float d = head - i;
-                        byte tone = d < 2.0f ? ToneWhite : (d < 5.0f ? ToneIce : ToneBlue);
-                        P(_g, _m.x + dx * i, _m.y + dy * i, tone);
+                        byte tone = d < 2.0f ? ToneWhite : (d < 6.0f ? ToneAccentHi : ToneAccent);
+                        P(_g, x + dx * i, y + dy * i, tone);
                     }
                 }
             }
 
-            // 파편 8개: 45도 간격(줄기 사이), 속도/높이/수명 두 가지 패턴으로 정돈
-            for (int i = 0; i < 8; i++)
+            // 파편 별 10개: 사방으로 포물선을 그리며 튀었다가 떨어진다. 먼 것(십자)과 가까운 것(X자) 두 패턴.
+            for (int i = 0; i < 10; i++)
             {
-                float ang = (i + 0.5f) * Mathf.PI * 0.25f;
                 bool bFar = 0 == i % 2;
-                float spd = bFar ? 84.0f : 52.0f;
-                float vz = bFar ? 150.0f : 110.0f;
-                int life = bFar ? 12 : 10;
+                int life = bFar ? 15 : 12;
                 if (life <= _dt) continue;
+                if (life - 3 <= _dt && 0 != (_tick + i) % 2) continue;
 
+                float ang = (i + 0.5f) * Mathf.PI * 0.2f + (Hash(_s, (uint)i, 71u) - 0.5f) * 0.35f;
+                float spd = (bFar ? 100.0f : 64.0f) * (0.85f + 0.3f * Hash(_s, (uint)i, 72u));
+                float vz = bFar ? 190.0f : 140.0f;
                 float ts = _dt / TicksPerSecond;
-                float gx = _m.x + Mathf.Cos(ang) * spd * ts * sc;
-                float gy = _m.y + Mathf.Sin(ang) * spd * ts * 0.5f * sc;
-                float z = Mathf.Max(0.0f, vz * ts - 0.5f * 520.0f * ts * ts);
-                byte baseTone = bFar ? ToneWhite : ToneIce;
-                byte tone = _dt < life * 0.6f ? baseTone : ToneBlue;
+                float gx = x + Mathf.Cos(ang) * spd * ts * sc;
+                float gy = y + Mathf.Sin(ang) * spd * ts * 0.5f * sc;
+                float z = Mathf.Max(0.0f, vz * ts - 0.5f * 620.0f * ts * ts);
+                byte tone = _dt < 4.0f ? ToneWhite : (bFar ? ToneAccentHi : ToneAccent);
 
-                if (life - 2 <= _dt && 0 != _tick % 2) continue;
-
-                if (true == bFar) XMark(_a, gx, gy - z, tone);
-                else Plus(_a, gx, gy - z, tone, 1);
+                if (true == bFar) Plus(_a, gx, gy - z, tone, _dt < 6.0f ? 2 : 1);
+                else XMark(_a, gx, gy - z, tone);
             }
 
-            // 불씨 4개(12Hz 점멸, 강조색)
-            for (int i = 0; i < 4; i++)
+            // 별가루 6개: 충돌 자리에서 하나씩 피어올라 흔들리며 솟고, 반짝이다 사라진다(낙하가 몰릴 때는 절반)
+            for (int i = 0; i < 6; i += true == bDense ? 2 : 1)
             {
-                if (2.0f <= _dt && _dt < 14.0f && 0 == (_tick + i) % 2)
-                {
-                    int ox = (int)((Hash(_s, (uint)i, 21u) - 0.5f) * 20.0f * sc);
-                    float oy = (_dt - 2.0f) * (1.0f + Hash(_s, (uint)i, 22u)) * 1.3f;
-                    P(_a, _m.x + ox, _m.y - oy, ToneAccent);
-                }
+                float age = _dt - (3.0f + i * 1.5f);
+                if (age < 0.0f || 13.0f <= age) continue;
+                if (9.0f <= age && 0 != (_tick + i) % 2) continue;
+
+                float ox = (Hash(_s, (uint)i, 81u) - 0.5f) * 30.0f * sc + Mathf.Sin(age * 0.6f + i) * 2.0f;
+                float oy = 4.0f + age * (1.4f + Hash(_s, (uint)i, 82u) * 1.2f);
+                byte tone = 0 == (_tick + i) % 3 ? ToneWhite : (0 == i % 2 ? ToneAccentHi : ToneAccent);
+
+                if (0 == (_tick / 2 + i) % 3) Plus(_a, x + ox, y - oy, tone, 1);
+                else P(_a, x + ox, y - oy, tone);
             }
 
-            // 바닥 별 자국: 평평한 별 하나가 깜박이다 입자로 풀린다(총 0.5초)
-            if (3.0f <= _dt && _dt < 15.0f)
+            // 바닥 별 자국: 평평한 빛나는 별 하나가 깜박이다 입자로 풀린다
+            if (3.0f <= _dt && _dt < ImpactTicks)
             {
-                float keep = _dt < 8.0f ? 1.0f : Mathf.Max(0.0f, 1.0f - (_dt - 8.0f) / 7.0f);
-                int ax = (int)(6.0f * sc);
-                const int ay = 2;
+                const float dissolveStart = 10.0f;
+                float keep = _dt < dissolveStart ? 1.0f : Mathf.Max(0.0f, 1.0f - (_dt - dissolveStart) / (ImpactTicks - dissolveStart));
+                int ax = (int)(8.0f * sc);
+                const int ay = 3;
                 int cellCount = 1 + 2 * ax + 2 * ay;
 
                 for (int idx = 0; idx < cellCount; idx++)
@@ -766,23 +922,26 @@ namespace PresentationLayer.VFX
 
                     if (keep < Hash(_s, (uint)idx, 31u))
                     {
-                        if (8.0f <= _dt && Hash(_s, (uint)idx, 32u) < 0.5f)
+                        if (dissolveStart <= _dt && Hash(_s, (uint)idx, 32u) < 0.5f)
                         {
-                            float rise = (_dt - 8.0f) * (1.0f + Hash(_s, (uint)idx, 33u) * 1.5f);
+                            float rise = (_dt - dissolveStart) * (1.0f + Hash(_s, (uint)idx, 33u) * 1.5f);
                             int shape = (int)(Hash(_s, (uint)idx, 34u) * 3.0f);
-                            float px = _m.x + cx;
-                            float py = _m.y + cy - rise;
+                            float px = x + cx;
+                            float py = y + cy - rise;
 
-                            if (0 == shape) P(_g, px, py, ToneBlue);
-                            else if (1 == shape) Plus(_g, px, py, ToneBlue, 1);
-                            else XMark(_g, px, py, ToneBlue);
+                            if (0 == shape) P(_g, px, py, ToneIce);
+                            else if (1 == shape) Plus(_g, px, py, ToneIce, 1);
+                            else XMark(_g, px, py, ToneIce);
                         }
 
                         continue;
                     }
 
-                    if (2 == (_dti / 2) % 3 && _dt < 8.0f) continue;
-                    Plot(_g, _m.x + cx, _m.y + cy, Mathf.Abs(cx) <= 1 ? ToneIce : ToneBlue);
+                    if (2 == (_dti / 2) % 3 && _dt < dissolveStart) continue;
+
+                    int near = Mathf.Abs(cx) + Mathf.Abs(cy);
+                    byte tone = near <= 1 ? ToneAccentHi : (near <= ax / 2 ? ToneAccent : ToneIce);
+                    Plot(_g, x + cx, y + cy, tone);
                 }
             }
         }
@@ -806,16 +965,30 @@ namespace PresentationLayer.VFX
             _cy = 1 == j % 2 ? kk : -kk;
         }
 
-        // 발동: 발밑 별 섬광 -> 별 6개가 나선으로 솟아오른다
+        // 발동: 발밑 별 섬광과 함께 큰 고리 두 개가 퍼지고 -> 별 6개가 나선으로 솟아오른다
         private void DrawCall(float _ft)
         {
             Layer g = groundLayer;
             Layer a = airLayer;
             int tick = (int)_ft;
+            uint s = unchecked((uint)requestedSeed);
 
             if (tick < 4)
             {
-                FlatStar(g, 0, 1, CallArmX[tick], CallArmY[tick], tick < 2 ? ToneWhite : ToneIce);
+                FlatStar(g, 0, 1, CallArmX[tick], CallArmY[tick], tick < 2 ? ToneWhite : ToneAccentHi);
+            }
+
+            for (int k = 0; k < 2; k++)
+            {
+                float rt = _ft - k * 3.0f;
+                float len = 12.0f - k * 2.0f;
+                if (rt < 0.0f || len <= rt) continue;
+
+                float u = rt / len;
+                float r = 8.0f + (k == 0 ? 64.0f : 40.0f) * EaseOutQuart(u);
+                float keep = u < 0.5f ? 1.0f : 1.0f - (u - 0.5f) / 0.5f;
+                byte tone = u < 0.3f ? ToneWhite : (u < 0.6f ? ToneAccentHi : ToneAccent);
+                Ring(g, 0.0f, 1.0f, r, r * 0.5f, tone, keep, s, 91u + (uint)k);
             }
 
             for (int i = 0; i < 6; i++)
@@ -827,7 +1000,7 @@ namespace PresentationLayer.VFX
                 float ang = i * 2.2f + u * 3.2f;
                 float x = Mathf.Cos(ang) * 11.0f * (1.0f - 0.4f * u);
                 float y = -6.0f - u * u * 118.0f + Mathf.Sin(ang) * 3.0f;
-                byte tone = u < 0.5f ? ToneWhite : ToneIce;
+                byte tone = u < 0.5f ? ToneWhite : ToneAccentHi;
 
                 int shape = i % 3;
                 if (0 == shape) Plus(a, x, y, tone, 1);
@@ -840,8 +1013,8 @@ namespace PresentationLayer.VFX
 
                 if (1.0f < tt)
                 {
-                    P(a, x, y + 3.0f, ToneBlue);
-                    P(a, x, y + 6.0f, ToneDeep);
+                    P(a, x, y + 3.0f, ToneAccent);
+                    P(a, x, y + 6.0f, ToneIce);
                 }
             }
         }
@@ -852,6 +1025,16 @@ namespace PresentationLayer.VFX
         {
             float ft = elapsed * TicksPerSecond;
             Vector3 pos = transform.position;
+
+            // 동시에 진행 중인 낙하가 많으면(짧은 지속시간에 낙하 수가 많을 때) 보조 연출을 덜어 쿼드 예산을 넘지 않게 한다.
+            int active = 0;
+            for (int i = 0; i < unitCount; i++)
+            {
+                float d = ft - units[i].impactTick;
+                if (-TeleTicks <= d && d < ImpactTicks) active++;
+            }
+
+            bDense = DenseActiveCount <= active;
 
             DrawCall(ft);
             for (int i = 0; i < unitCount; i++)

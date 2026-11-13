@@ -4070,17 +4070,19 @@ MonoBehaviour:
   starCompassTier2PrestigeLevel: 9
   starCompassTier3PrestigeLevel: 11
   meteorShowerChargePerKill: 0.1
-  meteorShowerInterval: 0.2
   meteorImpactRange: 1
   meteorShowerTier1Damage: 300
   meteorShowerTier1FallRange: 5
   meteorShowerTier1Duration: 3
+  meteorShowerTier1Count: 15
   meteorShowerTier2Damage: 450
   meteorShowerTier2FallRange: 3.5
   meteorShowerTier2Duration: 4
+  meteorShowerTier2Count: 20
   meteorShowerTier3Damage: 1000
   meteorShowerTier3FallRange: 3.5
   meteorShowerTier3Duration: 5
+  meteorShowerTier3Count: 25
   starCompassPityMinKills: 4
   starCompassPityMaxKills: 5
   obsidianCharmDropChance: 0.05

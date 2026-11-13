@@ -7,8 +7,6 @@ using UnityEngine;
 [Serializable]
 public sealed class RoguelikeSkillVfxAssets
 {
-    [Tooltip("본편 회전베기 프레임(AttackComponent.whirlwindFrames와 같은 것). 회전베기+부메랑 타격에 쓴다.")]
-    public Sprite[] whirlwindFrames;
     [Tooltip("포자 수류탄이 날아가는 동안의 그림(기획서 v2.5: Booty Items_16x의 초록 포자 주머니, 두 번째 칸).")]
     public Sprite sporeBombSprite;
     [Tooltip("포자 수류탄이 날아가는 시간(초)과 포물선 높이. 수류탄은 떨어지는 순간 대폭발을 일으킨다(판정도 이 시간 뒤다).")]
@@ -182,7 +180,7 @@ public sealed class RoguelikeSkillVfxPlayer
 
             case ERoguelikeSkillVfx.SpinBoomerangStrike:
                 // 부메랑마다 제 자리에서 터진다(같은 부메랑의 타격은 컨트롤러가 합쳐 보낸다). 흔들림만 프레임당 한 번.
-                if (null != assets.whirlwindFrames && assets.whirlwindFrames.Length > 0) WhirlwindVFX.Spawn(_signal.position, _signal.radius, assets.whirlwindFrames);
+                WhirlwindVFX.Spawn(_signal.position, _signal.radius);
                 if (lastWhirlwindFrame == Time.frameCount) break;
                 lastWhirlwindFrame = Time.frameCount;
                 CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);

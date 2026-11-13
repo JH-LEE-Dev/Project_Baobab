@@ -46,6 +46,18 @@ public enum LogState
     Perfect,
 }
 
+/// <summary>
+/// 제재소 "특등품 평가"(가격 2배)를 커터에서 미리 굴려 둔 결과. 원목이 평가기에 들어갈 때 이 값을 그대로 쓴다.
+/// 판정을 앞당긴 이유는 커터에서 튀어나오는 쌍둥이 원목 연출이 결과를 미리 알아야 해서다. 확률·배율은 그대로다.
+/// None은 미리 굴리지 않은 원목(세이브에서 복원된 벨트 원목 등)이고, 그때는 예전처럼 평가 순간에 굴린다.
+/// </summary>
+public enum ETopgradePreRoll
+{
+    None,
+    Hit,
+    Miss,
+}
+
 public struct TreeData
 {
     public TreeType type;

@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
+using PresentationLayer.VFX;
 
 public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 {
@@ -10,12 +11,30 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     {
         public Coin coin;
         public long value;
+        public float trailTimer; // 비행 꼬리 금가루를 다음에 뿌릴 때까지 남은 시간(연출 전용)
 
         public FlyingCoin(Coin _coin, long _value)
         {
             coin = _coin;
             value = _value;
+            trailTimer = 0f;
         }
+    }
+
+    // 평가기 -> 상점(원격 입금이면 -> 캐릭터)으로 날아가는 입금 금화. 돈은 이미 처리된 뒤라 순수 연출이다.
+    private struct DepositCoin
+    {
+        public Coin coin;
+        public bool bToCharacter;
+        public float trailTimer;
+    }
+
+    // 같은 순간에 여러 개를 던질 때(특등품) 살짝 시차를 두고 출발시키기 위한 대기열.
+    private struct PendingDeposit
+    {
+        public Vector3 from;
+        public float delay;
+        public bool bTopgrade;
     }
 
     private struct CoinSpawnInfo
@@ -87,11 +106,59 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     private float lastCoinGetPlayedTime = float.NegativeInfinity;
     private MapType mapType;
 
+    // //돈 연출(VFX_TownMoney). 전부 그림일 뿐이라 돈·판정·타이밍에는 관여하지 않는다. 마을에 있을 때만 보여준다.
+    [Header("Money VFX - 입금 금화 (평가기 -> 상점)")]
+    [Tooltip("입금 금화가 튀어 나오는 자리(평가기 기준점에서, 유닛). 평가기 윗면.")]
+    [SerializeField] private Vector2 depositLaunchOffset = new Vector2(0f, 0.9f);
+    [Tooltip("입금 금화가 들어가는 자리(상점 기준점에서, 유닛). 상점 계산대 창.")]
+    [SerializeField] private Vector2 depositLandOffset = new Vector2(0.3f, 0.55f);
+    [SerializeField] private float depositFlyDuration = 0.42f;
+    [SerializeField] private float depositFlyHeight = 0.8f;
+    [Tooltip("특등품이면 금화가 이만큼 더 날아간다(평가기 금화 분수와 함께).")]
+    [SerializeField, Min(0)] private int depositTopgradeExtraCoins = 2;
+    [Tooltip("여러 개를 같이 던질 때 출발 간격(초).")]
+    [SerializeField] private float depositStagger = 0.07f;
+
+    [Header("Money VFX - 비행 꼬리")]
+    [Tooltip("날아가는 금화 하나가 꼬리 금가루를 뿌리는 간격(초).")]
+    [SerializeField] private float coinTrailInterval = 0.03f;
+
+    [Header("Money VFX - 상점 대기 반짝임")]
+    [Tooltip("반짝임이 피는 범위의 가운데(상점 기준점에서, 유닛)와 반폭·반높이.")]
+    [SerializeField] private Vector2 shopTwinkleCenter = new Vector2(0.1f, 0.75f);
+    [SerializeField] private Vector2 shopTwinkleExtents = new Vector2(0.55f, 0.4f);
+    [Tooltip("돈이 막 들어왔을 때(적게 쌓였을 때) 반짝임 간격(초).")]
+    [SerializeField] private float shopTwinkleIntervalSlow = 0.5f;
+    [Tooltip("많이 쌓였을 때 반짝임 간격(초).")]
+    [SerializeField] private float shopTwinkleIntervalFast = 0.09f;
+    [Tooltip("입금이 이만큼 쌓이면 가장 빠르게 반짝인다.")]
+    [SerializeField, Min(1)] private int shopTwinkleDepositsForFast = 20;
+
+    [Header("Money VFX - 주괴 판매")]
+    [Tooltip("주괴가 꽂힐 때 터지는 자리(상점 기준점에서, 유닛).")]
+    [SerializeField] private Vector2 ingotSaleOffset = new Vector2(0f, 0.6f);
+
+    private VFX_TownMoney moneyVfx;
+    private Transform depositLandPoint;
+    private readonly List<DepositCoin> depositCoins = new List<DepositCoin>(16);
+    private readonly List<PendingDeposit> pendingDeposits = new List<PendingDeposit>(8);
+    private int pendingDepositHeat = 0;     // 마지막 수금 이후 쌓인 입금 횟수(반짝임 빈도용)
+    private float shopTwinkleTimer = 0f;
+    private int collectCoinsRemaining = 0;  // 이번 수금에서 아직 캐릭터에 닿지 않은 금화 수(마지막 금화 판별용)
+
     // LogCutter.GetSoundVolume()과 동일한 규칙: 마을이 아니면(=던전에 있는 동안 배경에서 계속
     // 수금이 진행되는 상태) 코인 사운드도 재생하지 않는다.
     public void SetMapType(MapType _mapType)
     {
         mapType = _mapType;
+
+        // 마을을 떠나면 그리던 돈 이펙트를 지운다(날아가던 금화 자체는 그대로 끝까지 간다).
+        if (MapType.Town != mapType && null != moneyVfx) moneyVfx.ClearAll();
+    }
+
+    private bool IsMoneyVfxVisible()
+    {
+        return null != moneyVfx && MapType.Town == mapType;
     }
 
     private float GetSoundVolume()
@@ -159,7 +226,28 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
         frameWait = new WaitForSeconds(frameTime);
 
+        SetupMoneyVfx();
+
         BindEvents();
+    }
+
+    // 돈 이펙트와 입금 금화 도착 지점을 만든다. 상점 건물(이 오브젝트)에는 SortingGroup이 있어 그 아래에 두면
+    // 이펙트가 건물 정렬에 묶이므로, 그룹이 없는 부모(Building) 아래에 둔다. 셰이더가 없으면 이펙트 없이 진행한다.
+    private void SetupMoneyVfx()
+    {
+        if (null == moneyVfx)
+        {
+            Transform vfxParent = null != transform.parent ? transform.parent : transform;
+            moneyVfx = vfxParent.GetComponentInChildren<VFX_TownMoney>(true);
+            if (null == moneyVfx) moneyVfx = VFX_TownMoney.Create(vfxParent);
+        }
+
+        if (null == depositLandPoint)
+        {
+            depositLandPoint = new GameObject("DepositLandPoint").transform;
+            depositLandPoint.SetParent(transform, false);
+        }
+        depositLandPoint.localPosition = depositLandOffset;
     }
 
     public void Release()
@@ -179,6 +267,44 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
             StopCoroutine(animationCoroutine);
             animationCoroutine = null;
         }
+
+        // 입금 금화는 순수 연출이라 남은 것을 풀로 돌려보내기만 한다.
+        pendingDeposits.Clear();
+        for (int i = 0; i < depositCoins.Count; i++)
+        {
+            if (null != depositCoins[i].coin) coinItemPoolingManager.ReturnCoin(depositCoins[i].coin);
+        }
+        depositCoins.Clear();
+        if (null != moneyVfx) moneyVfx.ClearAll();
+    }
+
+    /// <summary>
+    /// 원목 하나가 평가되어 돈이 들어온 순간의 연출. 평가기(_storagePos) 윗면에서 금화가 튀어 나와 상점으로 날아간다
+    /// (원격 입금 중이면 캐릭터로). _bTopgrade면 금화가 더 날아간다. 돈은 이미 처리된 뒤라 그림만 그린다.
+    /// </summary>
+    public void PlayDepositVisual(Vector3 _storagePos, bool _bTopgrade)
+    {
+        if (false == IsMoneyVfxVisible()) return;
+
+        Vector3 from = _storagePos + (Vector3)depositLaunchOffset;
+        int count = _bTopgrade ? depositTopgradeExtraCoins : 1;
+        // 특등품 금화는 평가기 "쾅" 금화 분수가 솟은 뒤에 따라 나오도록 한 칸 늦게 출발한다.
+        float baseDelay = _bTopgrade ? depositStagger : 0f;
+        for (int i = 0; i < count; i++)
+        {
+            pendingDeposits.Add(new PendingDeposit { from = from, delay = baseDelay + depositStagger * i, bTopgrade = _bTopgrade });
+        }
+
+        if (false == bRemoteDepositLocked) pendingDepositHeat += count;
+    }
+
+    /// <summary>용광로 주괴가 상점에 꽂히는 순간의 연출(BlastFurnaceManager가 돈을 넣은 직후 부른다).</summary>
+    public void PlayIngotSaleVisual()
+    {
+        if (false == IsMoneyVfxVisible()) return;
+
+        moneyVfx.PlayIngotSale(transform.position + (Vector3)ingotSaleOffset);
+        if (false == bRemoteDepositLocked) pendingDepositHeat += 3;
     }
 
     public void InsertMoney(long _money)
@@ -359,11 +485,24 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
             }
         }
 
+        // 수금 폭발. 이미 날아가는 금화(직전 수금분)까지 이번 수금의 금화로 쳐서, 마지막으로 닿는 금화에 마무리 연출을 건다.
+        // (다시 수금하면 직전 코루틴의 아직 안 던진 금화는 던져지지 않으므로 그 수는 세지 않는다.)
+        // StartCoroutine이 첫 금화를 그 자리에서 던지므로 반드시 코루틴을 시작하기 전에 센다.
+        collectCoinsRemaining = flyingCoins.Count + coinsToSpawn.Count;
+
         if (null != coinThrowCoroutine)
         {
             StopCoroutine(coinThrowCoroutine);
         }
         coinThrowCoroutine = StartCoroutine(CoThrowCoins(coinsToSpawn));
+
+        pendingDepositHeat = 0;
+        shopTwinkleTimer = 0f;
+        if (IsMoneyVfxVisible())
+        {
+            Vector3 burstPos = null != coinThrowTransform ? coinThrowTransform.position : transform.position;
+            moneyVfx.PlayCollectBurst(burstPos, coinsToSpawn.Count);
+        }
     }
 
     private IEnumerator CoThrowCoins(List<CoinSpawnInfo> _coins)
@@ -454,6 +593,119 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
         UpdateBounce(Time.deltaTime);
         UpdateFlyingCoins(Time.deltaTime);
+        UpdateDepositCoins(Time.deltaTime);
+        UpdateShopTwinkle(Time.deltaTime);
+    }
+
+    // 입금 금화 출발·비행·도착. 돈과 무관한 순수 연출이다.
+    private void UpdateDepositCoins(float _deltaTime)
+    {
+        for (int i = pendingDeposits.Count - 1; i >= 0; i--)
+        {
+            PendingDeposit pending = pendingDeposits[i];
+            pending.delay -= _deltaTime;
+            if (pending.delay > 0f)
+            {
+                pendingDeposits[i] = pending;
+                continue;
+            }
+
+            pendingDeposits.RemoveAt(i);
+            LaunchDepositCoin(pending.from, pending.bTopgrade);
+        }
+
+        for (int i = depositCoins.Count - 1; i >= 0; i--)
+        {
+            DepositCoin dc = depositCoins[i];
+            dc.coin.ManualUpdate(_deltaTime);
+
+            if (dc.coin.isArrived)
+            {
+                if (IsMoneyVfxVisible())
+                {
+                    if (dc.bToCharacter) moneyVfx.PlayCoinArrive(dc.coin.transform.position, false, false);
+                    else moneyVfx.PlayDepositLand(dc.coin.transform.position);
+                }
+
+                coinItemPoolingManager.ReturnCoin(dc.coin);
+                depositCoins.RemoveAt(i);
+                continue;
+            }
+
+            EmitTrail(dc.coin, dc.bToCharacter ? characterTransform : depositLandPoint, ref dc.trailTimer, _deltaTime);
+            depositCoins[i] = dc;
+        }
+    }
+
+    private void LaunchDepositCoin(Vector3 _from, bool _bTopgrade)
+    {
+        if (false == IsMoneyVfxVisible()) return;
+
+        // 원격 입금 중이면 상점이 잠겨 있으므로 금화가 캐릭터에게 바로 날아간다.
+        bool bToCharacter = bRemoteDepositLocked && null != characterTransform;
+        Transform target = bToCharacter ? characterTransform : depositLandPoint;
+        if (null == target) return;
+
+        Coin coin = coinItemPoolingManager.GetCoin(CoinType.Gold);
+        if (null == coin) return;
+        coin.gameObject.SetActive(true);
+
+        float duration = depositFlyDuration;
+        float height = depositFlyHeight;
+        if (bToCharacter)
+        {
+            // 캐릭터는 마을 어디에나 있을 수 있어 거리에 맞춰 늘린다.
+            float dist = Vector2.Distance(_from, target.position);
+            duration = Mathf.Clamp(depositFlyDuration + dist * 0.05f, depositFlyDuration, 1f);
+            height = Mathf.Min(depositFlyHeight + dist * 0.08f, 2f);
+        }
+
+        Vector3 dir = (target.position - _from).normalized;
+        if (Vector3.zero == dir) dir = Vector3.up;
+        Vector3 normal = new Vector3(-dir.y, dir.x, 0f);
+        Vector3 jitter = normal * UnityEngine.Random.Range(-0.15f, 0.15f);
+
+        coin.DynamicTransferLaunch(_from, target, height * UnityEngine.Random.Range(0.9f, 1.1f), duration, jitter, 0f);
+        depositCoins.Add(new DepositCoin { coin = coin, bToCharacter = bToCharacter, trailTimer = 0f });
+
+        moneyVfx.PlayDepositPop(_from, _bTopgrade);
+    }
+
+    // 날아가는 금화 뒤로 꼬리 금가루를 일정 간격으로 뿌린다. 등장·흡수 구간(작아져 있을 때)과 도착 지점 바로 앞에서는
+    // 뿌리지 않는다 - 연달아 도착하는 금화의 꼬리가 캐릭터 얼굴 위에 쌓여 가리기 때문이다.
+    private const float TrailStopDistanceSqr = 0.5f * 0.5f;
+
+    private void EmitTrail(Coin _coin, Transform _target, ref float _timer, float _deltaTime)
+    {
+        if (false == IsMoneyVfxVisible()) return;
+
+        _timer -= _deltaTime;
+        if (_timer > 0f) return;
+        _timer += coinTrailInterval;
+        if (_timer < 0f) _timer = 0f;
+
+        if (_coin.transform.localScale.y < 0.6f) return;
+
+        Vector3 pos = _coin.transform.position;
+        if (null != _target && ((Vector2)(_target.position - pos)).sqrMagnitude < TrailStopDistanceSqr) return;
+
+        moneyVfx.EmitCoinTrail(pos);
+    }
+
+    // 수금 안 한 돈이 있으면 상점 둘레에 반짝임이 핀다. 입금이 쌓일수록 자주 핀다.
+    private void UpdateShopTwinkle(float _deltaTime)
+    {
+        if (false == IsMoneyVfxVisible() || 0 >= money || bRemoteDepositLocked) return;
+
+        shopTwinkleTimer -= _deltaTime;
+        if (shopTwinkleTimer > 0f) return;
+
+        float heat = Mathf.Clamp01(pendingDepositHeat / (float)shopTwinkleDepositsForFast);
+        float interval = Mathf.Lerp(shopTwinkleIntervalSlow, shopTwinkleIntervalFast, heat);
+        shopTwinkleTimer = interval * UnityEngine.Random.Range(0.7f, 1.3f);
+
+        Vector3 hopPos = null != depositLandPoint ? depositLandPoint.position : transform.position;
+        moneyVfx.EmitShopTwinkle(transform.position + (Vector3)shopTwinkleCenter, shopTwinkleExtents, hopPos, heat);
     }
 
     private void LateUpdate()
@@ -473,6 +725,13 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
             if (fc.coin.isArrived)
             {
+                // 도착 이펙트: 첫 금화(실제 지급 순간)와 마지막 금화는 크게 터진다.
+                if (0 < collectCoinsRemaining) --collectCoinsRemaining;
+                if (IsMoneyVfxVisible())
+                {
+                    moneyVfx.PlayCoinArrive(fc.coin.transform.position, bAwaitingFirstArrival, 0 == collectCoinsRemaining);
+                }
+
                 if (bAwaitingFirstArrival)
                 {
                     EarnMoneyEvent?.Invoke(pendingBatchMoney);
@@ -493,7 +752,11 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
                 coinItemPoolingManager.ReturnCoin(fc.coin);
                 flyingCoins.RemoveAt(i);
+                continue;
             }
+
+            EmitTrail(fc.coin, characterTransform, ref fc.trailTimer, _deltaTime);
+            flyingCoins[i] = fc;
         }
     }
 

@@ -170,9 +170,6 @@ public class AttackComponent : PComponent
     //    통째로 복사해 오는 것을 피한다.
     private float crosshairBrightnessScale = 1f;
 
-    [Header("Whirlwind VFX")]
-    [SerializeField] private Sprite[] whirlwindFrames; // Whirlwind 스프라이트 시트의 프레임들 (인스펙터에서 직접 연결)
-
     private bool bCursorEnable = false;
     private bool bCanAttack = false;
     // 회전 베기(Whirlwind) 판정용 도끼 스윙 횟수. 나무를 실제로 맞췄는지와 무관하게
@@ -186,6 +183,27 @@ public class AttackComponent : PComponent
     // 회전 베기의 기본 범위(평타 사거리 대비)·피해(도끼 피해 대비) 배율. 본편·로그라이크 공통이며, 로그라이크 회전베기 카드 배율(RunCombatOverrides)은 이 위에 곱한다.
     private const float WhirlwindBaseRangeMultiplier = 2f;
     private const float WhirlwindBaseDamageMultiplier = 1.5f;
+
+    // 회전베기 순차 타격: 범위 안 나무를 한 프레임에 다 치지 않고, 이펙트 칼날 머리가 지나가는 순서대로 친다.
+    // 나무마다 맞는 시각은 칼날을 그리는 WhirlwindVFX와 같은 표로 구한다(WhirlwindVFX.GetSweepTime).
+
+    // 칼날이 나무를 지날 때마다 카메라를 그 나무 쪽으로 살짝 찍고, 맞힌 그루 수만큼 흔들림을 키운다(와드드득).
+    private const float WhirlwindHitKickDistance = 0.07f;
+    private const float WhirlwindHitKickSeconds = 0.12f;
+    private const float WhirlwindHitShakeBase = 1.2f;
+    private const float WhirlwindHitShakeStep = 0.2f;
+    private const float WhirlwindHitShakeMax = 3f;
+    private const float WhirlwindHitShakeSeconds = 0.12f;
+
+    private struct WhirlwindHit
+    {
+        public ExtraStrikeTarget target;
+        public float time;
+        public Vector2 direction;    // 회전베기 중심에서 나무 쪽(월드). 카메라 찍기 방향.
+        public bool bExtraStrike;    // [로그라이크] 도끼 연속 타격으로 덧붙은 타격
+    }
+
+    private Stack<List<WhirlwindHit>> whirlwindHitListPool;
 
     // 넉백 등으로 공격 범위 인디케이터가 조준 방향을 따라 도는 것을 일시적으로 막아야 할 때 사용
     private bool bIndicatorRotationLocked = false;
@@ -502,9 +520,10 @@ public class AttackComponent : PComponent
 
         // 회전 베기 연출(VFX·360도 회전·카메라 흔들림)은 범위 안에 아무것도 없어도(헛스윙) 나가야 하므로
         // 탐색보다 먼저 발동한다. 타격 분기의 흔들림은 회전 베기일 때 건너뛰어 중복되지 않게 한다.
+        WhirlwindVFX whirlwindVfx = null;
         if (bIsWhirlwindStrike)
         {
-            WhirlwindVFX.Spawn(centerPos, effectiveEllipseRadius, whirlwindFrames);
+            whirlwindVfx = WhirlwindVFX.Spawn(centerPos, effectiveEllipseRadius);
             WhirlwindStrikeEvent?.Invoke();
             CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
         }
@@ -620,12 +639,23 @@ public class AttackComponent : PComponent
             bRunMultiTarget = multiAttackResults.Count > 0;
         }
 
-        if ((bMultiAttack || bIsWhirlwindStrike || bRunMultiTarget) && multiAttackResults.Count > 0)
+        if (bIsWhirlwindStrike && multiAttackResults.Count > 0)
         {
-            if (!bIsWhirlwindStrike) CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
+            // 회전베기는 이펙트 칼날이 지나가는 순서대로 친다(QueueWhirlwindSweep). 내구도·콤보(AttackSuccessEvent)는
+            // 예전처럼 휘두른 순간 한 번만 처리하고, 공격당 1회 충격파 판정 기준 나무도 여기서 정한다.
+            shockWaveSourceTree = QueueWhirlwindSweep(centerPos, whirlwindDamageMultiplier, whirlwindVfx, out bool bAnyQueued);
+            if (bAnyQueued)
+            {
+                AttackSuccessEvent?.Invoke();
+                bAxeHit = true;
+            }
+        }
+        else if ((bMultiAttack || bRunMultiTarget) && multiAttackResults.Count > 0)
+        {
+            CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
             bool bAnyHit = false;
 
-            // 다중 공격·회오리 베기로 쓰러지는 나무들의 타일맵 쓰기를 루프가 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
+            // 다중 공격으로 쓰러지는 나무들의 타일맵 쓰기를 루프가 끝날 때 한 번에 반영한다(결과는 같다 - TreeTileWriteBatch 참고).
             TreeTileWriteBatch.Begin();
             try
             {
@@ -634,8 +664,7 @@ public class AttackComponent : PComponent
                     var target = multiAttackResults[i];
                     if (target is IDamageable damageable && damageable.bCanApplyDamage)
                     {
-                        // 회전 베기 피해 배율(기본 × 로그라이크 카드)은 회전 베기 타격에만 붙는다.
-                        ProcessAxeHit(damageable, centerPos, bIsWhirlwindStrike ? whirlwindDamageMultiplier : 1f);
+                        ProcessAxeHit(damageable, centerPos);
                         bAnyHit = true;
 
                         if (target is TreeObj hitTree)
@@ -699,13 +728,14 @@ public class AttackComponent : PComponent
         }
 
         // [로그라이크] 루비 다다익선 "도끼 공격 연속 2회 타격": 방금 맞힌 대상을 간격을 두고 한 번 더 친다. 본편은 덮어쓰기 값이 0이라 지나가지 않는다.
-        if (bAxeHit && RunCombatOverrides.AxeExtraStrikes > 0)
+        // 회전베기는 순차 타격 목록에 연속 타격을 함께 넣었으므로(QueueWhirlwindSweep) 여기서 다시 걸지 않는다.
+        if (bAxeHit && RunCombatOverrides.AxeExtraStrikes > 0 && false == bIsWhirlwindStrike)
         {
             if (null == extraStrikeListPool) extraStrikeListPool = new Stack<List<ExtraStrikeTarget>>(4);
             List<ExtraStrikeTarget> targets = 0 < extraStrikeListPool.Count ? extraStrikeListPool.Pop() : new List<ExtraStrikeTarget>(16);
             targets.Clear();
 
-            if ((bMultiAttack || bIsWhirlwindStrike || bRunMultiTarget) && multiAttackResults.Count > 0)
+            if ((bMultiAttack || bRunMultiTarget) && multiAttackResults.Count > 0)
             {
                 for (int i = 0; i < multiAttackResults.Count; i++)
                 {
@@ -717,9 +747,7 @@ public class AttackComponent : PComponent
                 AddExtraStrikeTarget(targets, extraSingle);
             }
 
-            // 회전베기로 맞힌 대상을 다시 칠 때는 회전베기 피해 배율도 같이 받는다(본편은 이 경로에 오지 않는다).
-            float extraScale = bIsWhirlwindStrike ? whirlwindDamageMultiplier : 1f;
-            if (targets.Count > 0) StartCoroutine(ExtraAxeStrikeRoutine(RunCombatOverrides.AxeExtraStrikes, targets, extraScale));
+            if (targets.Count > 0) StartCoroutine(ExtraAxeStrikeRoutine(RunCombatOverrides.AxeExtraStrikes, targets, 1f));
             else extraStrikeListPool.Push(targets);
         }
 
@@ -876,16 +904,182 @@ public class AttackComponent : PComponent
     /// </summary>
     private static void AddExtraStrikeTarget(List<ExtraStrikeTarget> _targets, IDamageable _target)
     {
+        _targets.Add(MakeStrikeTarget(_target));
+    }
+
+    private static ExtraStrikeTarget MakeStrikeTarget(IDamageable _target)
+    {
         TreeObj tree = _target as TreeObj;
         IStaticCollidable collidable = _target as IStaticCollidable;
-        _targets.Add(new ExtraStrikeTarget
+        return new ExtraStrikeTarget
         {
             target = _target,
             tree = tree,
             reuseCount = null != tree ? tree.ReuseCount : 0,
             collidable = collidable,
             position = null != collidable ? collidable.Position : Vector2.zero,
-        });
+        };
+    }
+
+    /// <summary>미리 골라 둔 대상을 나중에 칠 때, 그 사이 쓰러졌거나 풀에서 다른 대상으로 다시 쓰인 객체는 거른다.</summary>
+    private static bool IsStrikeTargetValid(in ExtraStrikeTarget _entry)
+    {
+        if (null == _entry.target || false == _entry.target.bCanApplyDamage) return false;
+
+        // 맞힌 뒤 쓰러져 풀로 돌아갔거나, 그 사이 다른 자리의 새 나무로 다시 쓰인 객체는 건너뛴다.
+        if (null != _entry.tree && (_entry.tree.IsPooled || _entry.tree.bDead || _entry.tree.ReuseCount != _entry.reuseCount)) return false;
+
+        // 나무가 아닌 정적 대상(스텔라 별 등)은 재사용 번호가 없다. 맞힌 자리에서 옮겨졌으면 다른 대상으로 다시 놓인 것이다.
+        if (null != _entry.collidable && (_entry.collidable.Position - _entry.position).sqrMagnitude > 0.0001f) return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// 회전베기 순차 타격을 건다. multiAttackResults의 대상마다 이펙트 칼날이 그 방향을 지나는 시각을 구해 그 순서대로 친다.
+    /// [로그라이크] 도끼 연속 타격이 있으면 대상마다 자기 타격 시각 + 간격 × n에 다시 친다(본편은 0회).
+    /// 실제로 걸린 타격이 있으면 _bAnyQueued가 true이고, 걸린 나무 중 가장 가까운 것을 돌려준다(공격당 1회 충격파 판정용).
+    /// _vfx(없으면 null)에는 칼날이 나무를 벨 때마다 그 자리를 알려 베인 자국과 불꽃을 낸다.
+    /// </summary>
+    private TreeObj QueueWhirlwindSweep(Vector3 _center, float _damageScale, WhirlwindVFX _vfx, out bool _bAnyQueued)
+    {
+        _bAnyQueued = false;
+
+        if (null == whirlwindHitListPool) whirlwindHitListPool = new Stack<List<WhirlwindHit>>(2);
+        List<WhirlwindHit> hits = 0 < whirlwindHitListPool.Count ? whirlwindHitListPool.Pop() : new List<WhirlwindHit>(32);
+        hits.Clear();
+
+        int extraStrikes = Mathf.Max(0, RunCombatOverrides.AxeExtraStrikes);
+        float extraDelay = RunCombatOverrides.AxeExtraStrikeDelay;
+
+        TreeObj nearestTree = null;
+        float nearestDistSq = float.MaxValue;
+
+        for (int i = 0; i < multiAttackResults.Count; i++)
+        {
+            IStaticCollidable target = multiAttackResults[i];
+            if (false == (target is IDamageable damageable) || false == damageable.bCanApplyDamage) continue;
+
+            Vector3 targetPos = target.Position + target.Offset;
+            Vector3 offset = targetPos - _center;
+            float time = WhirlwindVFX.GetSweepTime(offset);
+            ExtraStrikeTarget strikeTarget = MakeStrikeTarget(damageable);
+            Vector2 direction = (Vector2)offset;
+
+            InsertWhirlwindHit(hits, new WhirlwindHit { target = strikeTarget, time = time, direction = direction, bExtraStrike = false });
+            for (int n = 1; n <= extraStrikes; n++)
+            {
+                InsertWhirlwindHit(hits, new WhirlwindHit { target = strikeTarget, time = time + extraDelay * n, direction = direction, bExtraStrike = true });
+            }
+
+            if (target is TreeObj tree)
+            {
+                float distSq = GetIsometricDistSq(targetPos, _center);
+                if (distSq < nearestDistSq)
+                {
+                    nearestDistSq = distSq;
+                    nearestTree = tree;
+                }
+            }
+        }
+
+        if (0 == hits.Count)
+        {
+            whirlwindHitListPool.Push(hits);
+            return null;
+        }
+
+        _bAnyQueued = true;
+        StartCoroutine(WhirlwindSweepRoutine(hits, _center, _damageScale, _vfx, null != _vfx ? _vfx.PlayId : 0));
+        return nearestTree;
+    }
+
+    // 시각 순으로 끼워 넣는다(같은 시각이면 먼저 넣은 것이 앞). 한 번에 수십 그루라 삽입 정렬로 충분하다.
+    private static void InsertWhirlwindHit(List<WhirlwindHit> _hits, WhirlwindHit _hit)
+    {
+        int index = _hits.Count;
+        while (index > 0 && _hits[index - 1].time > _hit.time) index--;
+        _hits.Insert(index, _hit);
+    }
+
+    private System.Collections.IEnumerator WhirlwindSweepRoutine(List<WhirlwindHit> _hits, Vector3 _center, float _damageScale, WhirlwindVFX _vfx, int _vfxPlayId)
+    {
+        try
+        {
+            float elapsed = 0f;
+            int next = 0;
+            int sweepHitCount = 0;
+
+            while (next < _hits.Count)
+            {
+                // 귀환 확정·조작 잠금 등으로 공격할 수 없게 되면 남은 타격은 버린다(ExtraAxeStrikeRoutine과 같다).
+                if (false == bCanAttack) yield break;
+
+                if (_hits[next].time <= elapsed)
+                {
+                    bool bSweepHit = false;
+                    bool bExtraHit = false;
+                    Vector2 kickDirection = Vector2.zero;
+
+                    // 같은 프레임에 칼날이 지난 나무들의 타일맵 쓰기는 한 번에 반영한다(TreeTileWriteBatch 참고).
+                    TreeTileWriteBatch.Begin();
+                    try
+                    {
+                        while (next < _hits.Count && _hits[next].time <= elapsed)
+                        {
+                            WhirlwindHit hit = _hits[next++];
+                            if (false == IsStrikeTargetValid(hit.target)) continue;
+
+                            ProcessAxeHit(hit.target.target, _center, _damageScale);
+
+                            if (hit.bExtraStrike)
+                            {
+                                bExtraHit = true;
+                            }
+                            else
+                            {
+                                bSweepHit = true;
+                                sweepHitCount++;
+                                kickDirection = hit.direction;
+
+                                // 베인 자리(나무 판정점)에 베인 자국과 불꽃. 풀에서 다른 회전베기로 다시 쓰였으면 VFX가 번호로 거른다.
+                                if (null != _vfx) _vfx.AddHit(_vfxPlayId, _center + (Vector3)hit.direction, hit.direction);
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        TreeTileWriteBatch.End();
+                    }
+
+                    if (bSweepHit)
+                    {
+                        // 칼날이 지난 나무 쪽으로 카메라를 찍는다. 칼날이 돌면서 찍는 방향도 같이 돌아 화면이 와드드득 떨리고,
+                        // 많이 벨수록 흔들림이 커진다. 시작 흔들림(2)이 더 세게 남아 있으면 그대로 둔다.
+                        float shake = Mathf.Min(WhirlwindHitShakeBase + WhirlwindHitShakeStep * (sweepHitCount - 1), WhirlwindHitShakeMax);
+                        CameraMoveController.Instance?.ShakeCameraIfStronger(shake, WhirlwindHitShakeSeconds);
+                        if (kickDirection.sqrMagnitude > 0.000001f)
+                        {
+                            CameraMoveController.Instance?.ShakeCameraKick(kickDirection.normalized, WhirlwindHitKickDistance, WhirlwindHitKickSeconds, 0f, 0f);
+                        }
+                    }
+                    else if (bExtraHit)
+                    {
+                        CameraMoveController.Instance?.ShakeCameraIfStronger(1.2f, 0.08f);
+                    }
+                }
+
+                if (next >= _hits.Count) break;
+
+                yield return null;
+                elapsed += Time.deltaTime;
+            }
+        }
+        finally
+        {
+            _hits.Clear();
+            whirlwindHitListPool.Push(_hits);
+        }
     }
 
     private System.Collections.IEnumerator ExtraAxeStrikeRoutine(int _count, List<ExtraStrikeTarget> _targets, float _damageScale)
@@ -906,13 +1100,7 @@ public class AttackComponent : PComponent
                     for (int i = 0; i < _targets.Count; i++)
                     {
                         ExtraStrikeTarget entry = _targets[i];
-                        if (null == entry.target || false == entry.target.bCanApplyDamage) continue;
-
-                        // 맞힌 뒤 쓰러져 풀로 돌아갔거나, 그 사이 다른 자리의 새 나무로 다시 쓰인 객체는 건너뛴다.
-                        if (null != entry.tree && (entry.tree.IsPooled || entry.tree.bDead || entry.tree.ReuseCount != entry.reuseCount)) continue;
-
-                        // 나무가 아닌 정적 대상(스텔라 별 등)은 재사용 번호가 없다. 맞힌 자리에서 옮겨졌으면 다른 대상으로 다시 놓인 것이다.
-                        if (null != entry.collidable && (entry.collidable.Position - entry.position).sqrMagnitude > 0.0001f) continue;
+                        if (false == IsStrikeTargetValid(entry)) continue;
 
                         ProcessAxeHit(entry.target, centerPos, _damageScale);
                         bAnyHit = true;

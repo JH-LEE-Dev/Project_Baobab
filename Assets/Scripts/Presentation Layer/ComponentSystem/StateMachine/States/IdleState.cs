@@ -89,10 +89,13 @@ public class IdleState : CharacterState
         // 속도가 어느 정도 있을 때는 감속 적용
         if (0.001f < character.rb.linearVelocity.sqrMagnitude)
         {
+            // 이속 업그레이드 배율만큼 감속도도 키워, 이속이 올라도 멈추는 데 걸리는 시간은 그대로 둔다.
+            float decelScale = Mathf.Max(0.1f, ctx.characterStat.speedMultiplier);
+
             character.rb.linearVelocity = Vector2.MoveTowards(
                 character.rb.linearVelocity,
                 Vector2.zero,
-                groundData.deceleration * Time.fixedDeltaTime
+                groundData.deceleration * decelScale * Time.fixedDeltaTime
             );
         }
         else
