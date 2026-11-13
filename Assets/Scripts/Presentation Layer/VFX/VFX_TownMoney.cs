@@ -12,8 +12,6 @@ namespace PresentationLayer.VFX
     /// - 입금 출발(PlayDepositPop): 평가기 윗면에서 금화가 튀어 나올 때 작은 섬광과 금가루 몇 알.
     /// - 입금 도착(PlayDepositLand): 금화가 상점 계산대에 쏙 들어갈 때 "짤랑" - 작은 섬광, 위로 튀는 금가루, 반짝임 하나.
     /// - 상점 대기(EmitShopTwinkle): 수금 안 한 돈이 있으면 상점 둘레에 반짝임이 피었다 진다. 쌓일수록 자주 핀다.
-    /// - 수금(PlayCollectBurst): 상점에서 큰 십자 섬광 → 점선 충격파(많으면 2겹) → 사방으로 불꽃 줄기 → 금화·금가루 분수.
-    ///   한 번에 꺼내는 금화가 많을수록 크게 터진다.
     /// - 비행 꼬리(EmitCoinTrail): 날아가는 금화 뒤로 금가루가 흩날리며 남는다.
     /// - 도착(PlayCoinArrive): 캐릭터에 박힐 때마다 작은 섬광·금가루. 첫 금화(실제 지급 순간)는 충격파가 더해지고,
     ///   마지막 금화는 큰 충격파·불꽃 줄기와 함께 반짝임이 캐릭터 둘레로 피어오른다.
@@ -83,16 +81,6 @@ namespace PresentationLayer.VFX
         private const int KindTrail = 5;    // 비행 꼬리 금가루: 제자리에서 흩날리며 식는다
 
         private const float FountainGravity = 300f;     // px/s^2
-
-        // 수금 크기: 금화 개수(1~20)를 0~1로 바꿔 분수·충격파·불꽃 줄기를 키운다.
-        private const int CollectCoinCountForMax = 20;
-        private const int CollectFountainMin = 12;
-        private const int CollectFountainMax = 34;
-        private const int CollectStreakMin = 8;
-        private const int CollectStreakMax = 14;
-        private const float CollectRingMin = 26f;
-        private const float CollectRingMax = 40f;
-        private const int CollectSecondRingFromCount = 8;
 
         // //공유 자원
 
@@ -227,41 +215,6 @@ namespace PresentationLayer.VFX
                 AddDust(hx, hy, (Rand01() - 0.5f) * 30f, Mathf.Lerp(80f, 105f, Rand01()), 0.5f, FountainGravity,
                     0f, Mathf.Lerp(0.5f, 0.6f, Rand01()), KindCoin, ColorGold);
             }
-        }
-
-        /// <summary>
-        /// 수금 순간 상점에서 터지는 폭발. _coinCount는 이번에 꺼내는 금화 수(1~20)라 많을수록 크게 터진다.
-        /// </summary>
-        public void PlayCollectBurst(Vector3 _worldPos, int _coinCount)
-        {
-            int x = ToPixel(_worldPos.x);
-            int y = ToPixel(_worldPos.y);
-            float power = Mathf.Clamp01((_coinCount - 1) / (float)(CollectCoinCountForMax - 1));
-
-            AddFlash(x, y, FlashBig, 0f);
-            AddRing(x, y, Mathf.Lerp(CollectRingMin, CollectRingMax, power), true, 0f);
-            if (_coinCount >= CollectSecondRingFromCount)
-            {
-                AddRing(x, y, Mathf.Lerp(CollectRingMin, CollectRingMax, power) * 0.65f, false, 0.08f);
-                AddFlash(x, y + 6, FlashMedium, 0.1f);
-            }
-
-            // 사방으로 불꽃 줄기(폭죽처럼 꼬리를 끈다)
-            int streaks = Mathf.RoundToInt(Mathf.Lerp(CollectStreakMin, CollectStreakMax, power));
-            float phase = Rand01() * TwoPi;
-            for (int i = 0; i < streaks; i++)
-            {
-                float angle = phase + TwoPi * (i + Rand01() * 0.5f) / streaks;
-                float speed = Mathf.Lerp(150f, 250f, Rand01()) * Mathf.Lerp(0.85f, 1.1f, power);
-                Color32 color = Rand01() < 0.4f ? ColorWhite : ColorCream;
-                AddDust(x, y, Mathf.Cos(angle) * speed, Mathf.Sin(angle) * speed * 0.8f, 4.5f, 90f,
-                    0f, Mathf.Lerp(0.26f, 0.38f, Rand01()), KindStreak, color);
-            }
-
-            // 금화·금가루 분수: 위로 솟았다가 돌며 떨어진다. 두 번째 물결이 살짝 늦게 따라 솟는다.
-            int fountain = Mathf.RoundToInt(Mathf.Lerp(CollectFountainMin, CollectFountainMax, power));
-            SpawnFountain(x, y + 4, fountain, 0f, Mathf.Lerp(0.95f, 1.15f, power), 0.34f);
-            SpawnFountain(x, y + 4, fountain / 3 + 2, 0.07f, 0.75f, 0.3f);
         }
 
         /// <summary>
