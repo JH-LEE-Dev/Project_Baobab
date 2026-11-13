@@ -15,8 +15,7 @@ using UnityEngine.Rendering;
 /// 2. 테두리 베인 자국(바닥): 칼날 머리가 지난 바깥 테두리가 하얗게 그어졌다가 식어, 한 바퀴가 다 그어지면 원이 새겨진 것처럼 보인다.
 /// 3. 회오리 선·바람 먼지(바닥): 칼날 안쪽 세 겹의 가는 바람 선이 칼날을 따라 돌고, 지나간 테두리에서 먼지가 도는 방향으로 휘날린다.
 /// 4. 발동 연출(바닥): 안쪽에서 바깥으로 고리가 터져 나가고 중심에서 빛줄기가 사방으로 뻗는다.
-///    고리가 사라지는 자리에서는 긴 초승달 띠 세 개로 된 바람 고리가 돌며 바깥으로 퍼져 나간다.
-/// 5. 마무리(바닥): 한 바퀴를 다 돈 순간 테두리에서 고리가 한 번 더 바깥으로 터져 바람 고리로 퍼지고, 테두리를 따라 별빛이 차례로 반짝인다.
+/// 5. 마무리(바닥): 한 바퀴를 다 돈 순간 테두리에서 고리가 한 번 더 바깥으로 터지고 테두리를 따라 별빛이 차례로 반짝인다.
 /// 6. 나무 타격(공중): AttackComponent가 칼날이 지나간 나무마다 AddHit을 부르면 그 자리에서 베인 자국과 섬광이 번쩍이고
 ///    밑동에 충격 고리가 퍼지며 불꽃이 칼날이 도는 방향으로 튀어 떨어진다. 한 번에 많이 벨수록 뒤에 베인 나무의 섬광이 커진다.
 ///
@@ -132,19 +131,6 @@ public class WhirlwindVFX : MonoBehaviour
     private const float RingStartRho = 0.3f;
     private const float RingEndRho = 1.12f;
     private const float RingSolidUntil = 0.55f;        // 고리가 실선인 동안(비율)만 그린다
-
-    // 고리가 사라진 자리에서 돌며 퍼지는 바람 고리(긴 초승달 띠 여러 개가 나선처럼 겹친 모양)
-    private const int WindRingBands = 3;
-    private const float WindRingSpanStart = 150f;      // 띠 하나의 길이(도): 처음 -> 끝
-    private const float WindRingSpanEnd = 70f;
-    private const float WindRingThickStart = 3f;       // 띠 가운데 두께(px): 처음(끝으로 갈수록 1px)
-    private const float WindRingSpinDegrees = 70f;     // 퍼지는 동안 도는 방향으로 도는 각도
-    private const float WindRingBandGapRho = 0.035f;   // 띠마다 반지름이 어긋나는 양
-    private const float WindRingSpiralRho = 0.08f;     // 띠 꼬리 -> 머리로 바깥을 향하는 정도
-    private const float RingWindRingSeconds = 0.24f;
-    private const float RingWindRingEndRho = 1.5f;
-    private const float FinaleWindRingSeconds = 0.28f;
-    private const float FinaleWindRingEndRho = 1.85f;
 
     // 나무 타격
     private const int HitCapacity = 64;
@@ -509,7 +495,7 @@ public class WhirlwindVFX : MonoBehaviour
 
         // 칼날이 식는 시간, 마지막 베인 자국·바람 먼지·별빛이 사라지는 시간 중 가장 늦은 때까지 그린다.
         float tail = Mathf.Max(BladeFadeSeconds, ScarSeconds, WindMoteLifeMax,
-            Mathf.Max(FinaleRingSeconds * FinaleRingSolidUntil + FinaleWindRingSeconds, (FinaleTwinkleCount - 1) * FinaleTwinkleStep + FinaleTwinkleLife));
+            Mathf.Max(FinaleRingSeconds * FinaleRingSolidUntil, (FinaleTwinkleCount - 1) * FinaleTwinkleStep + FinaleTwinkleLife));
         float bladeEnd = SweepDuration + tail;
         float hitEnd = lastHitTime >= 0f ? lastHitTime + HitTailSeconds : 0f;
         if (elapsed >= bladeEnd && elapsed >= hitEnd)
@@ -723,11 +709,8 @@ public class WhirlwindVFX : MonoBehaviour
         float f = elapsed - SweepDuration;
         if (f < 0f) return;
 
-        // 고리는 실선인 동안만 그리고, 고리가 사라지는 자리에서 바람 고리가 돌며 퍼져 나간다.
+        // 고리는 실선인 동안만 그린다(점선으로 흩어지는 꼬리는 없다).
         float ringEnd = FinaleRingSeconds * FinaleRingSolidUntil;
-        float windRho = Mathf.Lerp(ScarRho, FinaleRingEndRho, 1f - (1f - FinaleRingSolidUntil) * (1f - FinaleRingSolidUntil) * (1f - FinaleRingSolidUntil));
-        DrawWindRing(f - ringEnd, windRho, FinaleWindRingEndRho, FinaleWindRingSeconds);
-
         if (f < ringEnd)
         {
             float p = f / FinaleRingSeconds;
@@ -855,15 +838,10 @@ public class WhirlwindVFX : MonoBehaviour
     /// <summary>발동 순간 안쪽에서 바깥으로 터져 나가는 충격 고리.</summary>
     private void DrawRing()
     {
-        // 고리가 사라지는 자리에서 바람 고리가 돌며 퍼져 나간다.
-        float ringEnd = RingSeconds * RingSolidUntil;
-        float windRho = Mathf.Lerp(RingStartRho, RingEndRho, 1f - (1f - RingSolidUntil) * (1f - RingSolidUntil) * (1f - RingSolidUntil));
-        DrawWindRing(elapsed - ringEnd, windRho, RingWindRingEndRho, RingWindRingSeconds);
-
         if (elapsed >= RingSeconds) return;
 
         float p = elapsed / RingSeconds;
-        // 고리는 실선인 동안만 그리고, 그 뒤는 바람 고리가 이어받는다.
+        // 고리는 실선인 동안만 그린다(점선으로 흩어지는 꼬리는 없다).
         if (p >= RingSolidUntil) return;
 
         float eased = 1f - (1f - p) * (1f - p) * (1f - p);
@@ -876,98 +854,6 @@ public class WhirlwindVFX : MonoBehaviour
 
         // 막 터진 순간에는 한 칸 안쪽에 고리를 하나 더 겹쳐 두껍게 번쩍인다.
         if (p < 0.35f && rx > 2) painter.RingArc(centerX, centerY, rx - 2, Mathf.Max(1, ry - 1), 3, 0, 0f, SlashLight);
-    }
-
-    /// <summary>
-    /// 고리가 사라진 자리(_startRho)에서 바람 고리가 칼날이 도는 방향(반시계)으로 돌며 바깥(_endRho)으로 퍼져 나간다.
-    /// 바람 고리는 양끝이 가는 긴 초승달 띠 WindRingBands개가 120도씩 어긋나 나선처럼 겹친 모양이다(띠마다 머리 쪽이 조금 더 바깥).
-    /// 띠는 칼날처럼 바깥 가장자리가 밝고 안쪽으로 갈수록 어둡고, 퍼지며 짧고 얇아지다가 어두운 도트로 흩어져 사라진다.
-    /// _age는 퍼지기 시작한 뒤의 시간(초)이다.
-    /// </summary>
-    private void DrawWindRing(float _age, float _startRho, float _endRho, float _seconds)
-    {
-        if (_age < 0f || _age >= _seconds) return;
-
-        float p = _age / _seconds;
-        float eased = 1f - (1f - p) * (1f - p) * (1f - p);
-        float baseRho = Mathf.Lerp(_startRho, _endRho, eased);
-        float span = Mathf.Lerp(WindRingSpanStart, WindRingSpanEnd, p);
-        float maxThickness = Mathf.Lerp(WindRingThickStart, 1f, p);
-        float spin = eased * WindRingSpinDegrees;
-
-        for (int j = 0; j < WindRingBands; j++)
-        {
-            float head = BladeAngles[0] + j * (360f / WindRingBands) + spin;
-            float tail = head - span;
-            float bandRho = baseRho + (j - 1) * WindRingBandGapRho;
-            // 띠 위를 약 1px 간격으로 나눈다. 각도는 한 칸씩 회전(점화식)으로 넘겨 칸마다 삼각함수를 다시 구하지 않는다.
-            int steps = Mathf.Max(1, Mathf.CeilToInt(span * Mathf.Deg2Rad * radiusPx * bandRho));
-            float stepRad = span * Mathf.Deg2Rad / steps;
-            float stepCos = Mathf.Cos(stepRad);
-            float stepSin = Mathf.Sin(stepRad);
-            float tailRad = tail * Mathf.Deg2Rad;
-            float tailCos = Mathf.Cos(tailRad);
-            float tailSin = Mathf.Sin(tailRad);
-            float invSteps = 1f / steps;
-            float rx = radiusPx;
-            float ry = radiusPx * 0.5f;
-            int layers = Mathf.Max(1, Mathf.RoundToInt(maxThickness));
-
-            // 두께 한 겹씩 따로 훑는다. 같은 겹의 이웃 픽셀이 연달아 찍혀 같은 줄 같은 색이 한 쿼드로 합쳐진다.
-            for (int layer = 0; layer < layers; layer++)
-            {
-                float cos = tailCos;
-                float sin = tailSin;
-                int lastX = int.MinValue;
-                int lastY = int.MinValue;
-                for (int s = 0; s <= steps; s++)
-                {
-                    if (s > 0)
-                    {
-                        float nextCos = cos * stepCos - sin * stepSin;
-                        sin = sin * stepCos + cos * stepSin;
-                        cos = nextCos;
-                    }
-
-                    float u = s * invSteps; // 0 = 꼬리, 1 = 머리
-                    // 양끝이 가는 초승달: 가운데(머리 쪽으로 조금 치우침)가 가장 두껍다(포물선, 칸마다 Pow·Sin 없이).
-                    float skew = u * (1.2f - 0.2f * u);
-                    int thickness = Mathf.Max(1, Mathf.RoundToInt(maxThickness * 4f * skew * (1f - skew)));
-                    if (layer >= thickness) continue;
-
-                    float r = bandRho + WindRingSpiralRho * (u - 0.5f);
-                    int x = centerX + Mathf.RoundToInt(cos * rx * r);
-                    int y = centerY + Mathf.RoundToInt(sin * ry * r);
-                    if (x == lastX && y == lastY) continue;
-                    lastX = x;
-                    lastY = y;
-
-                    bool bFaint = u < 0.18f || p > 0.7f;
-                    if (bFaint && 0 != ((x + y) & 1)) continue;
-
-                    Color32 color;
-                    if (bFaint) color = SlashDark;
-                    else if (layer == 0) color = p < 0.45f && u > 0.35f ? SlashLight : SlashMid;
-                    else if (layer == thickness - 1 && layer >= 2) color = SlashDark;
-                    else color = SlashMid;
-
-                    // 안쪽(중심 쪽) 겹은 화면에서 중심을 향하는 쪽으로 한 칸씩 들어간다.
-                    int inX = cos > 0.38f ? -1 : (cos < -0.38f ? 1 : 0);
-                    int inY = sin > 0.38f ? -1 : (sin < -0.38f ? 1 : 0);
-                    painter.Dot(x + inX * layer, y + inY * layer, color);
-                }
-            }
-
-            // 막 퍼질 때 띠 머리 끝이 하얗게 반짝인다.
-            if (p < 0.3f)
-            {
-                float a = head * Mathf.Deg2Rad;
-                float r = bandRho + WindRingSpiralRho * 0.5f;
-                int gx = centerX + Mathf.RoundToInt(Mathf.Cos(a) * radiusPx * r);
-                int gy = centerY + Mathf.RoundToInt(Mathf.Sin(a) * radiusPx * r * 0.5f);
-                painter.Shape(PixelPainter.ShapePlus, gx, gy, SlashWhite);
-            }
-        }
     }
 
     /// <summary>나무마다 베인 자국 번쩍임과 튀는 불꽃.</summary>
