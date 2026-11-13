@@ -30,13 +30,13 @@ MonoBehaviour:
   - treeType: 8
     value: 16000
   - treeType: 9
-    value: 50000
+    value: 55000
   - treeType: 10
-    value: 1500000
+    value: 150000
   - treeType: 11
-    value: 5000000
+    value: 450000
   - treeType: 12
-    value: 30000000
+    value: 1500000
   stateValueDatas:
   - logState: 2
     valueMultiplier: 1
