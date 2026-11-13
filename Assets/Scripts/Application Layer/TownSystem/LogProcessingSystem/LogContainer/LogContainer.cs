@@ -509,6 +509,14 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     {
         if (!bCanInteract || characterInventory == null) return false;
 
+        // 운반 상자 납품(OffroadContainer.TryTransferOneSlot)과 같은 순서로 고른다: 보석 먼저, 그 다음 개당 가치
+        // 높은 순, 같으면 많이 쌓인 순. 슬롯 순서대로 넣으면 비운 앞 칸에 나중에 주운 싼 원목이 먼저 들어가
+        // 제재소에서도 먼저 가공되고, 보관함이 가득 차면 비싼 원목이 가방에 남는다.
+        InventorySlot bestSlot = null;
+        LogItemData bestData = null;
+        long bestUnitValue = LogValue.NONE;
+        int bestCount = 0;
+
         var charSlots = characterInventory.inventorySlots;
         for (int i = 0; i < characterInventory.currentSlotCnt; i++)
         {
@@ -524,16 +532,26 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 // 에서 곧바로 break되어 yield 없이 동기적으로 끝나버리는데, TryTransferOneItem은 그래도
                 // true를 반환하므로 TransferRoutine의 while(true)가 한 프레임 안에서 무한히 도는 문제가
                 // 생긴다(transferSlotInterval=0이라 상단 대기 루프도 yield하지 않음).
-                // 또한 앞 슬롯이 가득 차 못 들어가도 뒤쪽의 다른 나무종류 슬롯은 계속 전송할 수 있게 된다.
+                // 또한 가치가 높은 슬롯이 가득 차 못 들어가도 다른 나무종류 슬롯은 계속 전송할 수 있게 된다.
                 if (!CanAddItemByData(logSourceData)) continue;
 
-                // 해당 슬롯 전송 시작
-                StartCoroutine(TransferOneSlotVisualRoutine(charSlot));
-                lastTransferTime = Time.time;
-                return true;
+                long unitValue = LogValue.GetUnitValue(logSourceData.treeType, logSourceData.logState);
+                if (OffroadContainer.IsTransferredBefore(logSourceData, unitValue, charSlot.count, bestData, bestUnitValue, bestCount))
+                {
+                    bestSlot = charSlot;
+                    bestData = logSourceData;
+                    bestUnitValue = unitValue;
+                    bestCount = charSlot.count;
+                }
             }
         }
-        return false;
+
+        if (bestSlot == null) return false;
+
+        // 해당 슬롯 전송 시작
+        StartCoroutine(TransferOneSlotVisualRoutine(bestSlot));
+        lastTransferTime = Time.time;
+        return true;
     }
 
     private IEnumerator TransferOneSlotVisualRoutine(InventorySlot _charSlot)
