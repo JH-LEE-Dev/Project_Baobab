@@ -86,5 +86,23 @@ public enum EHapticEvent
     /// <summary>제재소 평가기에서 특등품 평가(가격 2배)가 터짐. 마을에서 평가기가 화면에 보일 때만. (TopgradeAssessmentPresenter)</summary>
     TopgradeAssessment,
 
+    /// <summary>나무가 황금 보석 단계로 변함(플레이어가 때린 경우). (TreeObj.TakeDamageInternal)</summary>
+    GemTransformGold,
+
+    /// <summary>나무가 다이아 보석 단계로 변함(플레이어가 때린 경우).</summary>
+    GemTransformDiamond,
+
+    /// <summary>나무가 무지개 보석 단계로 변함(플레이어가 때린 경우).</summary>
+    GemTransformRainbow,
+
+    /// <summary>황금 보석 나무가 쓰러짐. 이때는 TreeDestroy 대신 울린다.</summary>
+    GemDestroyGold,
+
+    /// <summary>다이아 보석 나무가 쓰러짐. 이때는 TreeDestroy 대신 울린다.</summary>
+    GemDestroyDiamond,
+
+    /// <summary>무지개 보석 나무가 쓰러짐. 이때는 TreeDestroy 대신 울린다.</summary>
+    GemDestroyRainbow,
+
     Count
 }

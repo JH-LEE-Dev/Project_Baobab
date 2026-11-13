@@ -1850,6 +1850,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             itemManager.SpawnGemOre(_treeObj, dropMultiplier);
         }
+        else if (_treeObj.bIsGemStage)
+        {
+            // 보석 나무 원목은 단계가 높을수록 더 높이 튄다(비행 시간·착지 자리는 그대로). 다이아 이상은 튄 원목마다 잔광 꼬리가 붙는다.
+            int gemStage = _treeObj.gemStage;
+            gemLaunchedLogs.Clear();
+            itemManager.SpawnLogItem(_treeObj, dropMultiplier, GetGemLogHeightScale(gemStage), 2 <= gemStage ? gemLaunchedLogs : null);
+            if (0 < gemLaunchedLogs.Count)
+            {
+                inDungeonVFXManager?.PlayGemLogTrails(gemLaunchedLogs, gemStage);
+                gemLaunchedLogs.Clear();
+            }
+        }
         else
         {
             itemManager.SpawnLogItem(_treeObj, dropMultiplier);
@@ -2289,9 +2301,21 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 통째로 건너뛰어진다(bGoldTreePityDone이 따로 막아주긴 하지만 신호를 흐리지 않는다).
     }
 
+    // 보석 나무가 쓰러질 때 튄 원목을 잠깐 모아 두는 목록(잔광 꼬리용, 매번 비워 다시 쓴다).
+    private readonly List<LogItem> gemLaunchedLogs = new List<LogItem>(32);
+
+    // 보석 단계별 원목 튀는 높이 배율(1 황금, 2 다이아, 3 무지개).
+    private static float GetGemLogHeightScale(int _gemStage)
+    {
+        if (3 <= _gemStage) return 1.6f;
+        if (2 == _gemStage) return 1.45f;
+        if (1 == _gemStage) return 1.3f;
+        return 1f;
+    }
+
     // 나무가 보석 단계(황금/다이아/무지개)로 변할 때마다 전용 이펙트를 재생한다.
-    // 변환 순간에도 "쓰러지는" 타격감을 주기 위해 사망 VFX를 함께 터뜨린다
-    // (실제로 죽는 것이 아니므로 드랍/킬 처리는 일어나지 않는다).
+    // 변환 순간의 타격감은 예전엔 일반 사망 VFX를 함께 터뜨려 냈는데, 지금은 그 자리에 껍질이 갈라지며 보석 빛이 새어 나오는
+    // 단계별 연출(PlayGemTransformBurst)을 쓴다(실제로 죽는 것이 아니므로 드랍/킬 처리는 일어나지 않는다).
     private void OnTreeGemTransformed(TreeObj _treeObj)
     {
         if (_treeObj == null) return;
@@ -2300,7 +2324,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             // 스폰 뒤에 등급이 오른 나무(PromoteGrade)도 마지막 사망 전에 보석 이펙트 공유 이미터가 준비되게 한다
             inDungeonVFXManager.PrewarmTreeDeadVFX(_treeObj.treeData.type, _treeObj.treeData.grade);
-            inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent, _treeObj.treeData.type);
+            inDungeonVFXManager.PlayGemTransformBurst(_treeObj.treeVisualComponent, _treeObj.gemStage);
             inDungeonVFXManager.PlayTreeTransformVFX(_treeObj.treeVisualComponent, _treeObj.gemStage);
         }
 

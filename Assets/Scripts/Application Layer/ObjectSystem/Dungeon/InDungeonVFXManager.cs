@@ -256,6 +256,17 @@ public class InDungeonVFXManager : MonoBehaviour
     private const int CriticalImpactPrewarmCount = 4;
     private readonly List<PresentationLayer.VFX.VFX_CriticalImpact> criticalImpacts = new List<PresentationLayer.VFX.VFX_CriticalImpact>(CriticalImpactMaxActive);
 
+    // 보석 나무 변신·사망 단계별 추가 연출(VFX_GemTierBurst), 다이아·무지개 원목 잔광(VFX_GemLogTrail).
+    // 치명타 임팩트와 같이 이 매니저 아래에 런타임으로 만들고 끝난 인스턴스를 다시 쓴다. 동시 상한을 넘는 것은 생략한다(기존 이펙트는 그대로).
+    // 쉬는 인스턴스는 컴포넌트가 꺼져 있어 매 프레임 비용이 없으므로, 재생 순간에 새로 만드는 일이 없도록 넉넉히 미리 만든다
+    // (원목 잔광: 보석 원목 4~7개 x 드랍 배율 x 잭팟 2배, 연출: 여러 그루가 한꺼번에 변신·사망).
+    private const int GemTierBurstMaxActive = 10;
+    private const int GemTierBurstPrewarmCount = 4;
+    private const int GemLogTrailMaxActive = 40;
+    private const int GemLogTrailPrewarmCount = 16;
+    private readonly List<PresentationLayer.VFX.VFX_GemTierBurst> gemTierBursts = new List<PresentationLayer.VFX.VFX_GemTierBurst>(GemTierBurstMaxActive);
+    private readonly List<PresentationLayer.VFX.VFX_GemLogTrail> gemLogTrails = new List<PresentationLayer.VFX.VFX_GemLogTrail>(GemLogTrailMaxActive);
+
     public void Initialize()
     {
         if (vfxComponent != null)
@@ -417,6 +428,96 @@ public class InDungeonVFXManager : MonoBehaviour
             if (vfx == null) break;
             criticalImpacts.Add(vfx);
         }
+
+        // 보석 단계 연출·원목 잔광도 같은 이유로 몇 개를 미리 만든다(재생은 하지 않는다).
+        while (gemTierBursts.Count < GemTierBurstPrewarmCount)
+        {
+            PresentationLayer.VFX.VFX_GemTierBurst vfx = PresentationLayer.VFX.VFX_GemTierBurst.Create(transform);
+            if (vfx == null) break;
+            gemTierBursts.Add(vfx);
+        }
+
+        while (gemLogTrails.Count < GemLogTrailPrewarmCount)
+        {
+            PresentationLayer.VFX.VFX_GemLogTrail vfx = PresentationLayer.VFX.VFX_GemLogTrail.Create(transform);
+            if (vfx == null) break;
+            gemLogTrails.Add(vfx);
+        }
+    }
+
+    /// <summary>
+    /// 나무가 보석 단계로 변하는 순간의 단계별 추가 연출(껍질 금·새는 빛·고리, 다이아 이상 결정 조각·반짝이 별, 무지개 두 번째 고리).
+    /// _gemStage는 바뀐 뒤 단계(1 황금, 2 다이아, 3 무지개).
+    /// </summary>
+    public void PlayGemTransformBurst(TreeVisualComponent _visual, int _gemStage)
+    {
+        if (_visual == null || _gemStage <= 0) return;
+
+        PresentationLayer.VFX.VFX_GemTierBurst vfx = GetIdleGemTierBurst();
+        if (vfx == null) return;
+
+        vfx.Play(PresentationLayer.VFX.VFX_GemTierBurst.ModeTransform, _gemStage, _visual.GetTopRootPosition(), _visual.GetBottomRootPosition());
+    }
+
+    /// <summary>보석 나무가 쓰러질 때 보석 사망 이펙트 위에 더하는 단계별 연출(_pose 자리, _gemStage는 최종 단계).</summary>
+    public void PlayGemDeathBurst(in TreeDeadVfxPose _pose, int _gemStage)
+    {
+        if (_gemStage <= 0) return;
+
+        PresentationLayer.VFX.VFX_GemTierBurst vfx = GetIdleGemTierBurst();
+        if (vfx == null) return;
+
+        vfx.Play(PresentationLayer.VFX.VFX_GemTierBurst.ModeDeath, _gemStage, _pose.topPosition, _pose.bottomPosition);
+    }
+
+    /// <summary>다이아·무지개 보석 나무에서 튄 원목들(_logs)에 잔광 꼬리를 붙인다. 황금 이하는 아무것도 하지 않는다.</summary>
+    public void PlayGemLogTrails(List<LogItem> _logs, int _gemStage)
+    {
+        if (_logs == null || _gemStage < 2) return;
+
+        int searchFrom = 0;
+        for (int i = 0; i < _logs.Count; i++)
+        {
+            if (_logs[i] == null) continue;
+
+            PresentationLayer.VFX.VFX_GemLogTrail vfx = null;
+            for (; searchFrom < gemLogTrails.Count; searchFrom++)
+            {
+                PresentationLayer.VFX.VFX_GemLogTrail candidate = gemLogTrails[searchFrom];
+                if (candidate != null && false == candidate.IsPlaying)
+                {
+                    vfx = candidate;
+                    searchFrom++;
+                    break;
+                }
+            }
+
+            if (vfx == null)
+            {
+                if (gemLogTrails.Count >= GemLogTrailMaxActive) return;
+                vfx = PresentationLayer.VFX.VFX_GemLogTrail.Create(transform);
+                if (vfx == null) return;
+                gemLogTrails.Add(vfx);
+                searchFrom = gemLogTrails.Count;
+            }
+
+            vfx.Play(_logs[i], _gemStage);
+        }
+    }
+
+    private PresentationLayer.VFX.VFX_GemTierBurst GetIdleGemTierBurst()
+    {
+        for (int i = 0; i < gemTierBursts.Count; i++)
+        {
+            PresentationLayer.VFX.VFX_GemTierBurst candidate = gemTierBursts[i];
+            if (candidate != null && false == candidate.IsPlaying) return candidate;
+        }
+
+        if (gemTierBursts.Count >= GemTierBurstMaxActive) return null;
+
+        PresentationLayer.VFX.VFX_GemTierBurst vfx = PresentationLayer.VFX.VFX_GemTierBurst.Create(transform);
+        if (vfx != null) gemTierBursts.Add(vfx);
+        return vfx;
     }
 
     /// <summary>
@@ -1242,6 +1343,16 @@ public class InDungeonVFXManager : MonoBehaviour
         {
             if (criticalImpacts[i] != null) criticalImpacts[i].StopImmediate();
         }
+
+        for (int i = 0; i < gemTierBursts.Count; i++)
+        {
+            if (gemTierBursts[i] != null) gemTierBursts[i].StopImmediate();
+        }
+
+        for (int i = 0; i < gemLogTrails.Count; i++)
+        {
+            if (gemLogTrails[i] != null) gemLogTrails[i].StopImmediate();
+        }
     }
 
     /// <summary>
@@ -1389,6 +1500,12 @@ public class InDungeonVFXManager : MonoBehaviour
     /// </summary>
     public void PlayTreeDeadVFX(in TreeDeadVfxPose _pose, TreeType _treeType, int _finalGemStage = 0)
     {
+        // 보석 나무는 보석 사망 이펙트 위에 단계별 추가 연출을 더한다(지진에 튀어 꼭대기에서 터지는 경우도 이 자리를 지난다).
+        if (0 < _finalGemStage)
+        {
+            PlayGemDeathBurst(_pose, _finalGemStage);
+        }
+
         if (vfxComponent == null) return;
 
         // 보석 이펙트는 프리팹 고유 색(보석 팔레트) 그대로 재생한다.

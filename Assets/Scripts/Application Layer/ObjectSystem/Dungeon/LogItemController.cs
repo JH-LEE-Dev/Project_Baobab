@@ -482,7 +482,10 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         }
     }
 
-    public void SpawnLogItem(TreeObj _treeObj, float _multiplier)
+    /// <param name="_heightScale">원목이 튀는 높이 배율. 보석 나무가 쓰러질 때 단계별로 더 높이 튀게 한다(1이면 예전과 같다).
+    /// 비행 시간이 높이에 따라 늘지 않도록 시간 배율을 1/√배율로 같이 넘겨, 착지 시각·자리는 그대로이고 포물선만 높아진다.</param>
+    /// <param name="_launched">null이 아니면 이번에 튄 원목을 담아 준다(보석 원목 잔광 꼬리가 따라갈 때).</param>
+    public void SpawnLogItem(TreeObj _treeObj, float _multiplier, float _heightScale = 1f, List<LogItem> _launched = null)
     {
         using var _profile = ChopProfilerMarkers.SpawnLogs.Auto();
 
@@ -573,7 +576,16 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
             float randomRotation = UnityEngine.Random.Range(1, 3) * 360f * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
 
-            logItem.Launch(startPos, endPos, height, randomRotation);
+            if (_heightScale > 0f && false == Mathf.Approximately(_heightScale, 1f))
+            {
+                logItem.Launch(startPos, endPos, height * _heightScale, randomRotation, 1f / Mathf.Sqrt(_heightScale));
+            }
+            else
+            {
+                logItem.Launch(startPos, endPos, height, randomRotation);
+            }
+
+            _launched?.Add(logItem);
         }
     }
 

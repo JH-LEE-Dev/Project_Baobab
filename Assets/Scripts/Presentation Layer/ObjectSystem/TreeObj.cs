@@ -950,6 +950,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         if (_bPlayHaptic && bLastHitByPlayer)
         {
             Rumble.Play(EHapticEvent.TreeImpact);
+
+            // 이 타격으로 보석 단계가 올랐다면(쓰러지지 않고 다음 보석으로 변신) 단계별 변신 진동으로 덮는다.
+            if (false == bDead && gemStageBeforeHit < currentGemStage)
+            {
+                Rumble.Play(GetGemTransformHaptic(currentGemStage));
+            }
         }
 
         // 이번 피격이 치명타였는지를 피격 이벤트 동안에만 알린다(InDungeonObjectManager.OnTreeHit가 치명타 임팩트를 고를 때 읽는다).
@@ -966,9 +972,22 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         {
             // TreeDeadEvent를 타면 나무가 풀로 반환되며 ResetTree()가 bLastHitByPlayer를 true로
             // 되돌리므로, 판정은 반드시 이벤트를 쏘기 전에 끝내야 한다.
+            // 보석 나무는 마지막 단계(사망 이벤트에서 풀로 돌아가며 0이 되기 전)에 맞춘 더 긴 파괴 진동을 쓴다.
+            // 사망 이벤트 안의 원목 드랍이 보석 원목 진동(RareLogSpawn)으로 패턴을 갈아 끼우므로, 보석 파괴 진동은
+            // 이벤트가 끝난 뒤에 울려 끝까지 느껴지게 한다. 판정(누가 때렸는지·단계)은 이벤트 전에 끝내 둔다.
+            bool bPlayGemDestroyHaptic = false;
+            EHapticEvent gemDestroyHaptic = EHapticEvent.GemDestroyGold;
             if (_bPlayHaptic && bLastHitByPlayer)
             {
-                Rumble.Play(EHapticEvent.TreeDestroy);
+                if (0 < currentGemStage)
+                {
+                    bPlayGemDestroyHaptic = true;
+                    gemDestroyHaptic = GetGemDestroyHaptic(currentGemStage);
+                }
+                else
+                {
+                    Rumble.Play(EHapticEvent.TreeDestroy);
+                }
             }
 
             // 배리어 관통력으로 배리어가 남은 채 쓰러졌다면 풀로 돌아가기 전에 깨짐 연출을 낸다(매니저가 나무 정렬 순서를 읽는다).
@@ -978,6 +997,11 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
             }
 
             TreeDeadEvent?.Invoke(this);
+
+            if (bPlayGemDestroyHaptic)
+            {
+                Rumble.Play(gemDestroyHaptic);
+            }
         }
 
         // 사망 이벤트 뒤에도 ResetTree를 거치지 않았다면(= 풀로 반환되지 않았다면) 미뤄 둔 흔들림·번쩍임을 지금
@@ -1004,6 +1028,21 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         }
 
         bLastHitByPlayer = true;
+    }
+
+    // 보석 단계(1 황금, 2 다이아, 3 무지개)별 변신·파괴 진동.
+    private static EHapticEvent GetGemTransformHaptic(int _gemStage)
+    {
+        if (3 <= _gemStage) return EHapticEvent.GemTransformRainbow;
+        if (2 == _gemStage) return EHapticEvent.GemTransformDiamond;
+        return EHapticEvent.GemTransformGold;
+    }
+
+    private static EHapticEvent GetGemDestroyHaptic(int _gemStage)
+    {
+        if (3 <= _gemStage) return EHapticEvent.GemDestroyRainbow;
+        if (2 == _gemStage) return EHapticEvent.GemDestroyDiamond;
+        return EHapticEvent.GemDestroyGold;
     }
 
     // 도끼 타격음. 나무가 많이 닳을수록(HP가 낮을수록) Tree_Hit은 피치가 1.0 -> 1.3으로,
