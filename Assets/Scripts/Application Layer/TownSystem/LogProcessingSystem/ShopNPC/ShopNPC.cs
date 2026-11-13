@@ -485,7 +485,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
             }
         }
 
-        // 수금 폭발. 이미 날아가는 금화(직전 수금분)까지 이번 수금의 금화로 쳐서, 마지막으로 닿는 금화에 마무리 연출을 건다.
+        // 이미 날아가는 금화(직전 수금분)까지 이번 수금의 금화로 쳐서, 마지막으로 닿는 금화에 마무리 연출을 건다.
         // (다시 수금하면 직전 코루틴의 아직 안 던진 금화는 던져지지 않으므로 그 수는 세지 않는다.)
         // StartCoroutine이 첫 금화를 그 자리에서 던지므로 반드시 코루틴을 시작하기 전에 센다.
         collectCoinsRemaining = flyingCoins.Count + coinsToSpawn.Count;
@@ -498,11 +498,6 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
         pendingDepositHeat = 0;
         shopTwinkleTimer = 0f;
-        if (IsMoneyVfxVisible())
-        {
-            Vector3 burstPos = null != coinThrowTransform ? coinThrowTransform.position : transform.position;
-            moneyVfx.PlayCollectBurst(burstPos, coinsToSpawn.Count);
-        }
     }
 
     private IEnumerator CoThrowCoins(List<CoinSpawnInfo> _coins)

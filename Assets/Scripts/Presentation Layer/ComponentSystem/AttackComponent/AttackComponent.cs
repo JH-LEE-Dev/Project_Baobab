@@ -187,14 +187,6 @@ public class AttackComponent : PComponent
     // 회전베기 순차 타격: 범위 안 나무를 한 프레임에 다 치지 않고, 이펙트 칼날 머리가 지나가는 순서대로 친다.
     // 나무마다 맞는 시각은 칼날을 그리는 WhirlwindVFX와 같은 표로 구한다(WhirlwindVFX.GetSweepTime).
 
-    // 칼날이 나무를 지날 때마다 카메라를 그 나무 쪽으로 살짝 찍고, 맞힌 그루 수만큼 흔들림을 키운다(와드드득).
-    private const float WhirlwindHitKickDistance = 0.07f;
-    private const float WhirlwindHitKickSeconds = 0.12f;
-    private const float WhirlwindHitShakeBase = 1.2f;
-    private const float WhirlwindHitShakeStep = 0.2f;
-    private const float WhirlwindHitShakeMax = 3f;
-    private const float WhirlwindHitShakeSeconds = 0.12f;
-
     private struct WhirlwindHit
     {
         public ExtraStrikeTarget target;
@@ -1008,7 +1000,6 @@ public class AttackComponent : PComponent
         {
             float elapsed = 0f;
             int next = 0;
-            int sweepHitCount = 0;
 
             while (next < _hits.Count)
             {
@@ -1017,9 +1008,7 @@ public class AttackComponent : PComponent
 
                 if (_hits[next].time <= elapsed)
                 {
-                    bool bSweepHit = false;
                     bool bExtraHit = false;
-                    Vector2 kickDirection = Vector2.zero;
 
                     // 같은 프레임에 칼날이 지난 나무들의 타일맵 쓰기는 한 번에 반영한다(TreeTileWriteBatch 참고).
                     TreeTileWriteBatch.Begin();
@@ -1038,10 +1027,6 @@ public class AttackComponent : PComponent
                             }
                             else
                             {
-                                bSweepHit = true;
-                                sweepHitCount++;
-                                kickDirection = hit.direction;
-
                                 // 베인 자리(나무 판정점)에 베인 자국과 불꽃. 풀에서 다른 회전베기로 다시 쓰였으면 VFX가 번호로 거른다.
                                 if (null != _vfx) _vfx.AddHit(_vfxPlayId, _center + (Vector3)hit.direction, hit.direction);
                             }
@@ -1052,18 +1037,8 @@ public class AttackComponent : PComponent
                         TreeTileWriteBatch.End();
                     }
 
-                    if (bSweepHit)
-                    {
-                        // 칼날이 지난 나무 쪽으로 카메라를 찍는다. 칼날이 돌면서 찍는 방향도 같이 돌아 화면이 와드드득 떨리고,
-                        // 많이 벨수록 흔들림이 커진다. 시작 흔들림(2)이 더 세게 남아 있으면 그대로 둔다.
-                        float shake = Mathf.Min(WhirlwindHitShakeBase + WhirlwindHitShakeStep * (sweepHitCount - 1), WhirlwindHitShakeMax);
-                        CameraMoveController.Instance?.ShakeCameraIfStronger(shake, WhirlwindHitShakeSeconds);
-                        if (kickDirection.sqrMagnitude > 0.000001f)
-                        {
-                            CameraMoveController.Instance?.ShakeCameraKick(kickDirection.normalized, WhirlwindHitKickDistance, WhirlwindHitKickSeconds, 0f, 0f);
-                        }
-                    }
-                    else if (bExtraHit)
+                    // 회전베기 카메라 흔들림은 발동 순간 한 번뿐이다. 연속 타격(로그라이크)만 예전처럼 맞힐 때 짧게 흔든다.
+                    if (bExtraHit)
                     {
                         CameraMoveController.Instance?.ShakeCameraIfStronger(1.2f, 0.08f);
                     }

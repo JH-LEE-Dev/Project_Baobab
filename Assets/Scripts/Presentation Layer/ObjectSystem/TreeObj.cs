@@ -459,6 +459,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // InDungeonObjectManager.OnTreeHit가 TreeGetHitEvent를 받을 때 읽는다.
     public bool bSkipHitVfx { get; private set; } = false;
 
+    // 이번 피격이 치명타인지. TakeDamageInternal이 TreeGetHitEvent를 쏘는 동안에만 켜진다(연출 전용, 판정과 무관).
+    public bool bCriticalHitInProgress { get; private set; } = false;
+
     private static bool TryConsumeDotTickFeedback()
     {
         float now = Time.time;
@@ -949,7 +952,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
             Rumble.Play(EHapticEvent.TreeImpact);
         }
 
+        // 이번 피격이 치명타였는지를 피격 이벤트 동안에만 알린다(InDungeonObjectManager.OnTreeHit가 치명타 임팩트를 고를 때 읽는다).
+        bCriticalHitInProgress = _bCritical;
         TreeGetHitEvent?.Invoke(this);
+        bCriticalHitInProgress = false;
 
         // 이 타격으로 죽었는지는 반드시 여기서 확정해 둔다. 아래 TreeDeadEvent를 타면 풀 반환
         // (OnTreeDead -> TryReleaseTree -> OnReleaseTree -> ResetTree)이 bDead를 false로

@@ -34,9 +34,10 @@ Material:
     - _BodyGlow: 1
     - _GlowMax: 2.6
     - _GlowMin: 1
+    - _Opacity: 1
     - _PixelsPerUnit: 32
     m_Colors:
     - _AccentColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Region: {r: 0.421875, g: 0.086538464, b: 0.3125, a: 0.20512821}
+    - _Region: {r: 0.421875, g: 0.052734375, b: 0, a: 0.109375}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

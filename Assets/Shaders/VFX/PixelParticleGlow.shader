@@ -9,6 +9,7 @@ Shader "Custom/VFX/PixelParticleGlow"
     //   _BodyGlow 1: 몸통이 GlowMin~GlowMax로 빛난다. 0: 몸통은 빛나지 않고 정점 알파는 강조 픽셀의 세기(AccentGlowMin~Max)만 정한다.
     // - 격자: 쿼드 꼭짓점을 월드 32 PPU 격자에 맞춘다. 입자 크기가 칸 크기(정수 픽셀)와 같으면 모양이 1px도 번지지 않는다.
     // - _Region: 스테이지 아틀라스 안에서 이 머티리얼이 쓸 영역(텍스처 시트 애니메이션 격자 전체). xy 크기, zw 시작.
+    // - _Opacity: 머티리얼 전체의 고정 불투명도(기본 1). 큰 연기 덩이처럼 반투명한 한 색 덩이에만 쓴다. 시간에 따라 바뀌지 않는다.
     Properties
     {
         [NoScaleOffset] _MainTex ("Shape Sheet (Point)", 2D) = "white" {}
@@ -20,6 +21,7 @@ Shader "Custom/VFX/PixelParticleGlow"
         _AccentGlowMin ("Accent Glow Min (정점 알파 0)", Float) = 1.0
         _AccentGlowMax ("Accent Glow Max (정점 알파 1)", Float) = 1.0
         _PixelsPerUnit ("Pixels Per Unit", Float) = 32
+        _Opacity ("Opacity (고정 불투명도)", Range(0, 1)) = 1
     }
 
     SubShader
@@ -75,6 +77,7 @@ Shader "Custom/VFX/PixelParticleGlow"
                 float _AccentGlowMin;
                 float _AccentGlowMax;
                 float _PixelsPerUnit;
+                float _Opacity;
             CBUFFER_END
 
             Varyings vert(Attributes input)
@@ -104,7 +107,7 @@ Shader "Custom/VFX/PixelParticleGlow"
                 float accent = saturate(shape.r - shape.b);
                 float3 accentColor = _AccentColor.rgb * lerp(_AccentGlowMin, _AccentGlowMax, t);
 
-                return half4(lerp(body, accentColor, accent), 1.0h);
+                return half4(lerp(body, accentColor, accent), (half)_Opacity);
             }
             ENDHLSL
         }
