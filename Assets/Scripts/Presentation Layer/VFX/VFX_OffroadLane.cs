@@ -783,6 +783,8 @@ namespace PresentationLayer.VFX
                     if (false == IsCellOn(wi, wj - 1, spanI, spanJ)) flags |= 8;
                     if (false == IsCellOn(wi + 1, wj + 1, spanI, spanJ)) flags |= 16;
                     if (false == IsCellOn(wi - 1, wj - 1, spanI, spanJ)) flags |= 32;
+                    if (false == IsCellOn(wi + 1, wj - 1, spanI, spanJ)) flags |= 64;
+                    if (false == IsCellOn(wi - 1, wj + 1, spanI, spanJ)) flags |= 128;
 
                     byte coverByte = (byte)Mathf.RoundToInt(Mathf.Clamp01(cover) * 255.0f);
                     byte glowByte = (byte)Mathf.RoundToInt(Mathf.Clamp01(cellGlow[index] / GlowRange) * 255.0f);
