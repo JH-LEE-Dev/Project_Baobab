@@ -12,6 +12,8 @@ public class LogProcessLine : MonoBehaviour
     [SerializeField] private LogInBelt outBelt;
     [SerializeField] private LogCutter cutter;
     [SerializeField] private LogEvaluator evaluator;
+    [SerializeField] private Sprite topgradeTimesSprite;
+    [SerializeField] private Sprite topgradeTwoSprite;
 
     public event Action<LogProcessLine> LineBusyEvent;
     public event Action<LogProcessLine> LineFreedEvent;
@@ -123,7 +125,7 @@ public class LogProcessLine : MonoBehaviour
             if (topgradePresenter == null) topgradePresenter = gameObject.AddComponent<TopgradeAssessmentPresenter>();
         }
 
-        topgradePresenter.Setup(_pool, cutter, outBelt, evaluator);
+        topgradePresenter.Setup(_pool, cutter, outBelt, evaluator, topgradeTimesSprite, topgradeTwoSprite);
     }
 
     private void OnLogOutToEvaluator(LogItem _item, ILogItemData _itemData)

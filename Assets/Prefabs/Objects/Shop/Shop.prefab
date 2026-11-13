@@ -1530,6 +1530,8 @@ MonoBehaviour:
   outBelt: {fileID: 7532438552449960164}
   cutter: {fileID: 1056932376319889941}
   evaluator: {fileID: 3215227266077743188}
+  topgradeTimesSprite: {fileID: -227947725, guid: b5919104e6bba484382995363357ae05, type: 3}
+  topgradeTwoSprite: {fileID: 3943169913685968393, guid: b5919104e6bba484382995363357ae05, type: 3}
 --- !u!1 &4696923206131190007
 GameObject:
   m_ObjectHideFlags: 0
@@ -2215,6 +2217,8 @@ MonoBehaviour:
   outBelt: {fileID: 589253989654195685}
   cutter: {fileID: 2236661377912809267}
   evaluator: {fileID: 1382650641436011851}
+  topgradeTimesSprite: {fileID: -227947725, guid: b5919104e6bba484382995363357ae05, type: 3}
+  topgradeTwoSprite: {fileID: 3943169913685968393, guid: b5919104e6bba484382995363357ae05, type: 3}
 --- !u!1 &6854192418150405417
 GameObject:
   m_ObjectHideFlags: 0
@@ -3227,6 +3231,8 @@ MonoBehaviour:
   outBelt: {fileID: 7011485823432872021}
   cutter: {fileID: 2353343035360828888}
   evaluator: {fileID: 8328167485241394101}
+  topgradeTimesSprite: {fileID: -227947725, guid: b5919104e6bba484382995363357ae05, type: 3}
+  topgradeTwoSprite: {fileID: 3943169913685968393, guid: b5919104e6bba484382995363357ae05, type: 3}
 --- !u!1 &9212238112738573771
 GameObject:
   m_ObjectHideFlags: 0

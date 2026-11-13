@@ -273,6 +273,20 @@ public enum SkillType
     ConstellationDamage2,
     BarrierPenetration1,
     StarPathSpeedBoost2,
+    Drone2,
+    DroneDamage2,
+    DroneCritical,
+    DroneAttackSpeed2,
+    DroneChainAttack1,
+    Hello,
+    IncreaseJackPotChance1,
+    LogProcessorSpeedUp,
+    LogProcessingSpeed5,
+    Repair1,
+    RemoteLogTransport,
+    StarMarkDamage3,
+    BarrierPenetration2,
+    ManifestationBrand2,
     MAX
 }
 
