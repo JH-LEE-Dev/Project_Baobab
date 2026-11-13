@@ -275,7 +275,7 @@ public enum ERoguelikeSkillVfx
     SporeBombThrown = 5,
     /// <summary>360도 충격파(회전베기+충격파, 부메랑+충격파).</summary>
     Shockwave360 = 6,
-    /// <summary>부메랑 타격에 붙은 회전베기(회전베기+부메랑). position=캐릭터, radius.</summary>
+    /// <summary>[v3.0 11-13부터 발행하지 않음] 부메랑 타격에 붙은 회전베기(회전베기+부메랑). 지금은 부메랑에 붙어 상시 도는 연출이라 컨트롤러가 VfxPlayer에 직접 붙이고 뗀다. 번호는 비워 둔다.</summary>
     SpinBoomerangStrike = 7,
     /// <summary>포자 폭발(본편 4연발). radius. v2.6부터 포자 조합 3종은 SporeBigExplosion(포자 수류탄 대폭발)을 써서 지금은 내는 곳이 없다.</summary>
     SporeExplosion = 8,

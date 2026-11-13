@@ -42,8 +42,8 @@ namespace PresentationLayer.VFX
         private float groundOffset = 0.0f;
         [SerializeField, Tooltip("Fire에 돌진 시간을 넘기지 않을 때 쓰는 기본 걷힘 시간(초). 차량이 경로를 지나는 시간에 맞춘다.")]
         private float clearSeconds = 0.8f;
-        [SerializeField, Tooltip("출발점(Begin의 from)보다 뒤쪽으로 칸을 켜는 길이(월드 유닛). 출발점은 섬 가장자리에서 이만큼 안쪽이라 가장자리 줄까지 켜기 위한 값이다. RoguelikeSkillTuningSO.offroadEdgeInset과 같은 값으로 맞춘다.")]
-        private float startExtendUnits = 0.8f;
+        [SerializeField, Tooltip("출발점(Begin의 from)보다 뒤쪽으로 칸을 켜는 길이(월드 유닛). 출발점이 이미 섬 가장 바깥 육지 타일 중심이라(기획서 v3.0 11-13) 0이다. 0보다 크면 출발점 뒤 물 위 칸까지 켜진다.")]
+        private float startExtendUnits = 0f;
 
         [Header("타일 격자 (실제 GroundTilemap 타일과 맞춘 측정값)")]
         [SerializeField, Tooltip("칸 (0, 0)의 GetCellCenterWorld(타일 그림 피벗) 월드 좌표. 칸 (i, j)의 피벗 = gridOrigin + ((i - j) * 0.5, (i + j) * 0.25)")]

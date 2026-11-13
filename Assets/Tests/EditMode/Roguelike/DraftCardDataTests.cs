@@ -121,10 +121,10 @@ public class DraftCardDataTests
         Assert.AreEqual(1f, mods.Get(ERunEffect.AxeExtraStrikeAdd));
         Assert.AreEqual(1f, mods.GetForSkill(ERunEffect.ShockwaveRepeatAdd, ERoguelikeSkill.Shockwave));
         Assert.AreEqual(1f, mods.GetForSkill(ERunEffect.CountAdd, ERoguelikeSkill.Boomerang));
-        Assert.Greater(mods.Get(ERunEffect.TreeSpawnRatePercent), 0f);
-        // 기획서 v2.6 6-4: 공격력 +100%, 디메리트 이동속도 −30%.
+        // 기획서 v3.0 6-4: 공격력 +100%, 디메리트는 나무 스폰 속도 +60% 하나(이동속도 −30%는 삭제).
         Assert.AreEqual(100f, mods.Get(ERunEffect.DamagePercent), 0.001f);
-        Assert.AreEqual(-30f, mods.Get(ERunEffect.MoveSpeedPercent), 0.001f);
+        Assert.AreEqual(60f, mods.Get(ERunEffect.TreeSpawnRatePercent), 0.001f);
+        Assert.AreEqual(0f, mods.Get(ERunEffect.MoveSpeedPercent), 0.001f);
     }
 
     [Test]
@@ -161,14 +161,14 @@ public class DraftCardDataTests
             Assert.AreEqual(required[level - 1], 3 + (int)add, "레벨 " + level);
         }
 
-        // 기획서 v2.8 A-4: 회전 피해 10 / 19 / 38 / 40 / 75 / 110 / 115(도끼 10 기준), 범위(반경) 1레벨 대비 ×1.0 / 1.17 / … / 2.0(모든 레벨 증가, 최종 +100%).
-        float[] damages = { 10f, 19f, 38f, 40f, 75f, 110f, 115f };
+        // 기획서 v3.0 A-4: 회전 피해 10 / 19 / 27 / 30 / 35 / 38 / 40(도끼 10 기준, 카드 피해 배율), 범위(반경) +17.5%에서 레벨마다 +14.58%씩 늘어 MAX +105%(모든 레벨 증가).
+        float[] damages = { 10f, 19f, 27f, 30f, 35f, 38f, 40f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_spin", level);
             Assert.AreEqual(damages[level - 1], 10f * (1f + mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Spin) / 100f), 0.01f, "회전 피해 " + level);
             float radius = 1f + mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Spin) / 100f;
-            Assert.AreEqual(1f + (level - 1) / 6f, radius / 1.25f, 0.001f, "범위 " + level);
+            Assert.AreEqual(1f + (17.5f + 14.58333f * (level - 1)) / 100f, radius, 0.001f, "범위 " + level);
         }
     }
 
@@ -228,8 +228,8 @@ public class DraftCardDataTests
         Assert.AreEqual(0.25f, 0.3f / (1f + ResolveAtLevel("active_boomerang", 5).GetForSkill(ERunEffect.AttackSpeedPercent, ERoguelikeSkill.Boomerang) / 100f), 0.001f);
         Assert.AreEqual(2f, ResolveAtLevel("active_boomerang", 7).GetForSkill(ERunEffect.CountAdd, ERoguelikeSkill.Boomerang));
 
-        // 기획서 v2.8 A-4: 틱 피해 2.5 / 4.8 / 9.5 / 10 / 19 / 27.5 / 29(기준 2.5), 경로 위 타격 폭 약 2.5 → 7.5그루(1레벨 대비 7레벨 +200%, 모든 레벨 증가).
-        float[] ticks = { 2.5f, 4.8f, 9.5f, 10f, 19f, 27.5f, 29f };
+        // 기획서 v3.0 A-4: 틱 피해 2.5 / 4.8 / 7.6 / 8 / 15.2 / 22 / 23.2(기준 2.5, III부터 v2.8 값의 ×0.8), 경로 위 타격 폭 약 2.5 → 7.5그루(1레벨 대비 7레벨 +200%, 모든 레벨 증가).
+        float[] ticks = { 2.5f, 4.8f, 7.6f, 8f, 15.2f, 22f, 23.2f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_boomerang", level);

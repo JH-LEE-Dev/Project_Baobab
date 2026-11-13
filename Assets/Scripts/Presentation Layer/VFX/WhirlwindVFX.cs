@@ -243,6 +243,16 @@ public class WhirlwindVFX : MonoBehaviour
     private float elapsed;
     private bool bPlaying;
 
+    // 따라다니며 반복하는 재생(SpawnAttached). 대상 위치를 매 프레임 따라가고, 칼날이 한 바퀴를 다 덮으면 처음으로 되감는다.
+    private Transform attachTarget;
+    private bool bLooping;
+    // 되감은 횟수. 0보다 크면 등장 팝 · 발동 빛줄기는 다시 내지 않고, 꼬리는 지난 바퀴의 칼날 각도에서 이어 그린다.
+    private int loopCount;
+    // 반복 재생 중 대상이 멈췄다(부메랑 WarningUI 정지). 멈춘 동안은 그 모습 그대로 따라만 간다.
+    private bool bLoopPaused;
+    // 한 바퀴(BladeAngles 처음 → 끝)에 도는 각도. 칼날 두 개가 180° 맞은편이라 되감아도 다른 칼날이 같은 자리에서 이어 돈다.
+    private static float LoopAngleStep => BladeAngles[BladeAngles.Length - 1] - BladeAngles[0];
+
     /// <summary>재생마다 바뀌는 번호. 풀에서 다시 쓰인 인스턴스에 지난 회전베기의 타격이 섞이지 않도록 AddHit이 대조한다.</summary>
     public int PlayId { get; private set; }
 
@@ -273,6 +283,36 @@ public class WhirlwindVFX : MonoBehaviour
         instance.gameObject.SetActive(true);
         instance.Play(_position, _attackRadius);
         return instance;
+    }
+
+    /// <summary>
+    /// _target을 따라다니며 판정 반지름 _attackRadius의 회전베기를 멈추지 않고 반복 재생한다(로그라이크 회전베기 + 부메랑).
+    /// Stop(PlayId)으로 끝내고, 대상이 파괴되거나 비활성되면 스스로 풀로 돌아간다. 셰이더를 찾지 못하면 null을 돌려준다.
+    /// </summary>
+    public static WhirlwindVFX SpawnAttached(Transform _target, float _attackRadius)
+    {
+        if (null == _target) return null;
+
+        WhirlwindVFX instance = Spawn(_target.position, _attackRadius);
+        if (null == instance) return null;
+
+        instance.attachTarget = _target;
+        instance.bLooping = true;
+        return instance;
+    }
+
+    /// <summary>반복 재생을 바로 끝내고 풀로 돌려보낸다. _playId가 이번 재생이 아니면(이미 풀로 돌아가 다시 쓰인 경우) 무시한다.</summary>
+    public void Stop(int _playId)
+    {
+        if (false == bPlaying || _playId != PlayId) return;
+        ReturnToPool();
+    }
+
+    /// <summary>반복 재생을 멈추거나(그 모습 그대로 정지) 다시 돌린다. _playId가 이번 재생이 아니면 무시한다.</summary>
+    public void SetPaused(int _playId, bool _bPaused)
+    {
+        if (false == bPlaying || _playId != PlayId) return;
+        bLoopPaused = _bPaused;
     }
 
     /// <summary>
@@ -449,6 +489,10 @@ public class WhirlwindVFX : MonoBehaviour
         groundVertexCount = -1;
         airHash = 0UL;
         airVertexCount = -1;
+        attachTarget = null;
+        bLooping = false;
+        loopCount = 0;
+        bLoopPaused = false;
         bPlaying = true;
 
         Draw();
@@ -474,7 +518,7 @@ public class WhirlwindVFX : MonoBehaviour
 
     private void Update()
     {
-        if (false == bPlaying) return;
+        if (false == bPlaying || bLooping) return;
 
         elapsed += Time.deltaTime;
 
@@ -492,11 +536,38 @@ public class WhirlwindVFX : MonoBehaviour
         Draw();
     }
 
+    // 반복 재생은 대상(부메랑)이 Update에서 움직인 뒤 위치를 읽는다.
+    private void LateUpdate()
+    {
+        if (false == bPlaying || false == bLooping) return;
+
+        if (null == attachTarget || false == attachTarget.gameObject.activeInHierarchy)
+        {
+            ReturnToPool();
+            return;
+        }
+
+        Vector3 position = attachTarget.position;
+        centerX = Mathf.RoundToInt(position.x * PixelsPerUnit);
+        centerY = Mathf.RoundToInt(position.y * PixelsPerUnit);
+
+        if (false == bLoopPaused) elapsed += Time.deltaTime;
+        while (elapsed >= SweepDuration)
+        {
+            elapsed -= SweepDuration;
+            loopCount++;
+        }
+
+        Draw();
+    }
+
     private void ReturnToPool()
     {
         if (false == bPlaying && false == gameObject.activeSelf) return;
 
         bPlaying = false;
+        attachTarget = null;
+        bLooping = false;
         scarRenderer.enabled = false;
         bladeRenderer.enabled = false;
         groundRenderer.enabled = false;
@@ -527,6 +598,29 @@ public class WhirlwindVFX : MonoBehaviour
         painter.Commit(airMesh, airRenderer, ref airHash, ref airVertexCount);
     }
 
+    /// <summary>
+    /// 칼날 머리 각도. 한 번 재생은 BladeAngles 표(빠르게 휘둘러 감속)를 그대로 쓴다. 반복 재생은 표를 되풀이하면 바퀴마다
+    /// 급가속 · 감속하므로 한 바퀴(SweepDuration)에 LoopAngleStep만큼 일정한 속도로 돈다. 되감은 직후 꼬리 · 잔상이 묻는
+    /// 지난 시각(_t &lt; 0)도 같은 직선으로 이어진다(첫 바퀴의 시작 전은 첫 각도에 머문다).
+    /// </summary>
+    private float GetHeadAngle(float _t)
+    {
+        if (false == bLooping) return GetBladeAngle(_t);
+        if (_t < 0f && 0 == loopCount) return BladeAngles[0];
+        return BladeAngles[0] + LoopAngleStep * (_t / SweepDuration);
+    }
+
+    /// <summary>바람 먼지가 나오는 시각: 칼날 머리가 그 방향(cos, sin)을 지나는 순간. 반복 재생은 일정한 속도의 칼날(GetHeadAngle)에 맞춘다.</summary>
+    private float GetMoteEmitTime(float _cos, float _sin)
+    {
+        Vector2 offset = new Vector2(_cos, _sin * 0.5f);
+        if (false == bLooping) return GetSweepTime(offset);
+
+        float angle = Mathf.Atan2(offset.y * 2f, offset.x) * Mathf.Rad2Deg;
+        float sweep = Mathf.Repeat(angle - BladeAngles[0], 180f);
+        return Mathf.Min(sweep / LoopAngleStep, 1f) * SweepDuration;
+    }
+
     // 돌기가 끝나면 1 -> 0으로 식는다.
     private float GetEnergy()
     {
@@ -536,6 +630,8 @@ public class WhirlwindVFX : MonoBehaviour
 
     private float GetPopScale()
     {
+        if (loopCount > 0) return 1f;
+
         if (elapsed < PopRiseSeconds)
         {
             float t = elapsed / PopRiseSeconds;
@@ -561,17 +657,17 @@ public class WhirlwindVFX : MonoBehaviour
         }
 
         float scale = GetPopScale();
-        float head = GetBladeAngle(elapsed);
-        float tail = Mathf.Min(GetBladeAngle(elapsed - TrailLag), head) - TrailMinSpan;
+        float head = GetHeadAngle(elapsed);
+        float tail = Mathf.Min(GetHeadAngle(elapsed - TrailLag), head) - TrailMinSpan;
         float span = Mathf.Clamp(head - tail, 1f, 179f);
         float thickness = BladeThickness * (0.3f + 0.7f * energy);
         float brightness = 0.45f + 0.55f * energy;
 
         // 잔상 칼날: 조금 늦게, 조금 안쪽에서 같은 모양으로 따라오는 반투명(도트) 칼날. 칼날이 두 겹으로 겹쳐 빠르게 보인다.
-        float echoHead = GetBladeAngle(elapsed - EchoLag);
-        float echoTail = Mathf.Min(GetBladeAngle(elapsed - EchoLag - TrailLag), echoHead) - TrailMinSpan;
+        float echoHead = GetHeadAngle(elapsed - EchoLag);
+        float echoTail = Mathf.Min(GetHeadAngle(elapsed - EchoLag - TrailLag), echoHead) - TrailMinSpan;
         float echoSpan = Mathf.Clamp(echoHead - echoTail, 1f, 179f) * 0.85f;
-        bool bEcho = elapsed >= EchoLag * 0.5f;
+        bool bEcho = loopCount > 0 || elapsed >= EchoLag * 0.5f;
 
         float outer = BladeOuterRho * scale;
         float inner = (BladeOuterRho * EchoRadiusRatio - BladeTailCurl - BladeThickness) * scale;
@@ -604,7 +700,7 @@ public class WhirlwindVFX : MonoBehaviour
         if (elapsed >= SweepDuration) return;
 
         float scale = GetPopScale();
-        float head = GetBladeAngle(elapsed);
+        float head = GetHeadAngle(elapsed);
         int arm = 0 == ((int)(elapsed * 30f) & 1) ? 3 : 2;
         float headRho = BladeOuterRho * scale - BladeThickness * 0.4f * scale;
         for (int k = 0; k < 2; k++)
@@ -623,7 +719,7 @@ public class WhirlwindVFX : MonoBehaviour
     /// <summary>발동 순간 중심에서 사방으로 뻗어 나가는 빛줄기.</summary>
     private void DrawBurstRays()
     {
-        if (elapsed >= BurstRaySeconds) return;
+        if (loopCount > 0 || elapsed >= BurstRaySeconds) return;
 
         float p = elapsed / BurstRaySeconds;
         float eased = 1f - (1f - p) * (1f - p);
@@ -680,6 +776,17 @@ public class WhirlwindVFX : MonoBehaviour
     /// </summary>
     private void DrawWindMotes()
     {
+        DrawWindMotes(elapsed);
+        if (false == bLooping) return;
+
+        // 반복 재생은 바퀴마다 elapsed를 되감으므로, 지난 바퀴에 나와 아직 살아 있는 먼지(수명 최대 WindMoteLifeMax)를 지난 바퀴 시각으로 이어 그린다.
+        int lapsBack = Mathf.Min(loopCount, Mathf.CeilToInt(WindMoteLifeMax / SweepDuration));
+        for (int k = 1; k <= lapsBack; k++) DrawWindMotes(elapsed + k * SweepDuration);
+    }
+
+    // _time: 이번 바퀴(또는 지난 바퀴)의 시작부터 잰 시각.
+    private void DrawWindMotes(float _time)
+    {
         for (int i = 0; i < WindMoteCount; i++)
         {
             float h0 = Hash01(i, 0);
@@ -690,8 +797,8 @@ public class WhirlwindVFX : MonoBehaviour
             float a = angleDeg * Mathf.Deg2Rad;
             float cos = Mathf.Cos(a);
             float sin = Mathf.Sin(a);
-            float emit = GetSweepTime(new Vector2(cos, sin * 0.5f));
-            float age = elapsed - emit;
+            float emit = GetMoteEmitTime(cos, sin);
+            float age = _time - emit;
             float life = Mathf.Lerp(0.22f, 0.4f, h1);
             if (age < 0f || age >= life) continue;
 

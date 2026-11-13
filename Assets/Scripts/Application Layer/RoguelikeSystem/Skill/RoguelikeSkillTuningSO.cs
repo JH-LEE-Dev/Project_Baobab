@@ -66,10 +66,8 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float offroadAcceleration = 70f;
     [Tooltip("여러 대가 나갈 때 한 대씩 출발이 늦어지는 간격(초). 연타감을 준다.")]
     public float offroadVolleyStagger = 0.15f;
-    [Tooltip("차선을 고르는 폭(섬 반폭 대비 0~1). 1이면 섬 가장자리 차선까지 쓴다.")]
-    [Range(0f, 1f)] public float offroadLaneSpread = 0.75f;
-    [Tooltip("소환 지점과 멈추는 지점을 섬 가장자리에서 안쪽으로 들여오는 거리(월드). 섬 테두리는 계단 모양이라 경계선 그대로면 차가 물 위에 반쯤 걸친다.")]
-    public float offroadEdgeInset = 0.8f;
+    [Tooltip("차선(타일 줄)을 고르는 폭(섬 반폭 대비 0~1). 1이면 섬 가장자리 줄까지 쓴다(기획서 v3.0 11-13). 소환 위치는 그 줄의 첫 육지 타일 중심이다.")]
+    [Range(0f, 1f)] public float offroadLaneSpread = 1f;
     [Tooltip("섬 끝에 닿기 이 시간(초) 전부터 달리는 채로 하얗게 된 뒤, 이 시간이 지나면 사라진다(감속 없음). 프레임 수가 아닌 시간이라 어떤 프레임 속도에서도 같다(0.05초 = 60fps 3프레임).")]
     public float offroadExitSeconds = 0.05f;
 
@@ -144,12 +142,10 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float boomerangShockwaveMergeRadius = 0.6f;
 
     [Header("조합: 회전베기 + 부메랑")]
-    [Tooltip("회전베기 반경 = 부메랑 판정 반경 × 이 값(기획서 v3.0 11-12, 1.15 - 부메랑보다 조금 크다). 부메랑 범위 카드 · 패시브만 반영되고 도끼 · 회전베기 범위는 반영되지 않는다.")]
-    public float spinBoomerangRadiusRatio = 1.15f;
+    [Tooltip("회전베기 반경 = 부메랑 판정 반경 × 이 값(기획서 v3.0 11-13, 1.5 - 부메랑보다 확실히 크다). 부메랑 범위 카드 · 패시브만 반영되고 도끼 · 회전베기 범위는 반영되지 않는다.")]
+    public float spinBoomerangRadiusRatio = 1.5f;
     [Tooltip("도끼 피해 대비 배율, 회전베기 MAX 최종 피해와 같은 60(도끼 10 × 6).")]
     public float spinBoomerangDamageMultiplier = 6f;
-    [Tooltip("부메랑이 나무를 타격할 때마다 그 부메랑 자리에서 회전베기 1회(기획서). 한 부메랑이 한 프레임에 여러 그루를 맞히면 한 번만 친다. 값을 주면 그 간격(초) 안의 타격은 건너뛴다(밸런스용).")]
-    public float spinBoomerangCooldown = 0f;
 
     [Header("조합: 포자 수류탄 + 드론 / 오프로드 / 충격파 (포자 수류탄 대폭발 + 오염, 기획서 v2.6 6-2 · C-2 '연쇄 폭발')")]
     [Tooltip("한 프레임에 일으키는 대폭발 수의 상한. 넘친 몫은 다음 프레임으로 미룬다. 대폭발의 범위 · 피해 · 오염은 위 포자폭탄 값을 그대로 쓴다.")]
