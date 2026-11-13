@@ -1148,6 +1148,35 @@ v3.0은 **패시브 2장 보장을 없애고**, 카드 노출을 가중치 추�
 
 노션은 갱신하지 않았다(요청 시에만).
 
+### 13-12. v3.0 추가 (2026-11-13 저녁): 언리밋 최대 25웨이브 · 회전베기 범위 하향 · 회전베기 충격파 수정 · 드론/스텔라 색
+
+버전은 v3.0을 유지하고 본문에 반영했다. 코드 · 에셋에 반영했다.
+
+**값 변경**
+
+| 항목 | 이전 | 이후 | 문서 위치 |
+|---|---|---|---|
+| 회전베기 카드 범위% (1레벨) | +17.5% | **+10%** | 6-2 표, A-4 |
+| 회전베기 카드 범위% (2~7레벨, 레벨당) | +14.58333% | **+5%** | A-4 |
+| 회전베기 MAX 범위 누적 / 평타 사거리 | +105% / 4.1배 | **+40% / 2.8배** (레벨별 반경 ×1.10 ~ ×1.40) | 6-2 표, A-4 |
+| 언리밋 최대 웨이브 | 없음 (게임오버 · 포기까지 무한) | **Unlimit-25** (`RoguelikeBalanceSO.unlimitMaxWave` = 25, 0 이하면 상한 없음) | 7-2 |
+
+**규칙 변경**
+
+| 항목 | 이전 | 이후 |
+|---|---|---|
+| 언리밋 종료 | 쓰러지거나 포기할 때만 | Unlimit-25 클리어 시 런 종료 → 결과 화면. 종료 사유 `ERunEndReason.UnlimitCompleted`. 결과 화면 문구 · 연출 분기는 **UI 담당** 몫(`RoguelikeRunEndedSignal.reason`으로 구분) |
+| 언리밋 기록 | 도달 Unlimit 웨이브 | 같다 (종료 시 도달 25로 기록, 클리어 판 경로) |
+| 회전베기 스윙의 충격파 | 회전베기 타격이 충격파 기준 나무를 채워 충격파 확률 판정을 함 | 로그라이크에서 충격파 MAX(상시 발동) 전까지는 **도끼 타격에서만** 충격파가 나감. MAX 이후는 스윙당 1회 판정이라 회전베기 스윙에서도 나감. 본편은 그대로 |
+| 드론 충전 이펙트 (스텔라 + 드론) | 기 모으기가 노란색 | 과열 파랑 팔레트 재사용 |
+| 스텔라 이음선 | 황금색 점선으로 시작 | 처음부터 푸른색(벌목된 별 상태) |
+
+**변경 없음**: 언리밋 HP 증가율 · 목표 처치 수 상한, 회전베기 피해 · 발동 빈도, 회전베기 + 부메랑 프리즘 범위.
+
+**코드 영향**: `RoguelikeBalanceSO.unlimitMaxWave`, `RoguelikeSystem.Flow.cs` RunRoutine 종료 분기, `ERunEndReason.UnlimitCompleted`, `active_spin.asset`, `RunCombatOverrides.bWhirlwindSkipsShockWave`, `AttackComponent` 충격파 판정 조건, `Drone.UseBlueCharge`, `InDungeonVFXManager.RegisterConstellationDottedLineAlwaysVisibleForRun`의 `_bAllFelled`.
+
+노션은 갱신하지 않았다(요청 시에만).
+
 ---
 
 ## 14. 누적 변경표: v1.1 → v3.0 (중간 버전을 건너뛴 경우)

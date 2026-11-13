@@ -224,6 +224,7 @@ MonoBehaviour:
   maxMoveSpeedPercent: 100
   unlimitHpGrowthPerWave: 0.35
   unlimitMaxKillTarget: 100
+  unlimitMaxWave: 25
   offerCount: 4
   guaranteedSlotCap: 2
   firstPickActiveOnly: 1

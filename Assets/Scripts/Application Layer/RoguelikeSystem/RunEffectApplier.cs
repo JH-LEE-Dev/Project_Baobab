@@ -233,6 +233,9 @@ public sealed class RunEffectApplier
 
         RunCombatOverrides.SetSkillsHitRunTargets(IsStarHitByActives(_mods));
 
+        // 회전베기 스윙은 도끼 타격을 대체하므로 상시 발동(충격파 MAX) 전까지 충격파는 도끼 타격에서만 나간다. 리셋은 RemoveAll의 ResetAll.
+        RunCombatOverrides.SetWhirlwindSkipsShockWave(true);
+
         // 계약 다다익선: 도끼 공격 연속 2회 타격.
         RunCombatOverrides.SetAxeExtraStrikes(Mathf.RoundToInt(_mods.Get(ERunEffect.AxeExtraStrikeAdd)), axeExtraStrikeDelay);
 

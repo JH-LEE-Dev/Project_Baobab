@@ -1062,11 +1062,21 @@ public class InDungeonVFXManager : MonoBehaviour
     /// [로그라이크 전용] 특성 표시 여부(SetConstellationDottedLinesVisible)와 무관하게 늘 보이는 점선을 등록한다.
     /// 전체 표시 여부를 바꾸면 같은 필드의 본편 별자리 점선까지 켜지거나 꺼지므로 그룹 단위로 둔다. 거둘 때는 RemoveConstellationDottedLine.
     /// </summary>
-    public void RegisterConstellationDottedLineAlwaysVisibleForRun(int _groupId, IReadOnlyList<Vector3> _points)
+    public void RegisterConstellationDottedLineAlwaysVisibleForRun(int _groupId, IReadOnlyList<Vector3> _points, bool _bAllFelled = false)
     {
         // 등록이 같은 그룹의 이전 등록을 먼저 거두므로(그때 표시 목록에서도 빠진다), 등록한 뒤에 표시 목록에 넣고 보인다.
         RegisterConstellationDottedLine(_groupId, _points);
         if (false == dottedLineGroups.TryGetValue(_groupId, out DottedLineGroup _group)) return;
+
+        // 전 구간을 벌목된 푸른 큰 별 상태로 시작한다(스텔라 이음선). 등록 중 이미 표시됐다면(발현 특성 켜짐) 푸른색으로 다시 그린다.
+        if (_bAllFelled)
+        {
+            HideDottedLine(_group);
+            for (int i = 0; i < _group.felled.Count; i++)
+            {
+                _group.felled[i] = true;
+            }
+        }
 
         alwaysVisibleDottedLineGroups.Add(_groupId);
         ShowDottedLine(_groupId, _group);

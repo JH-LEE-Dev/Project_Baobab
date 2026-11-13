@@ -191,4 +191,6 @@ public enum ERunEndReason
 {
     GameOver = 0,
     Abandoned = 1,
+    /// <summary>언리밋 최대 웨이브(RoguelikeBalanceSO.unlimitMaxWave)를 클리어해 끝났다.</summary>
+    UnlimitCompleted = 2,
 }

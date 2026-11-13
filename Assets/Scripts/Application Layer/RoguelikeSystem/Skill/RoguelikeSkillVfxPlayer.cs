@@ -485,7 +485,7 @@ public sealed class RoguelikeSkillVfxPlayer
 
             linkPoints[0] = _stars[link.x].transform.position + starCenterOffset;
             linkPoints[1] = _stars[link.y].transform.position + starCenterOffset;
-            vfx.RegisterConstellationDottedLineAlwaysVisibleForRun(LinkGroupBase - i, linkPoints);
+            vfx.RegisterConstellationDottedLineAlwaysVisibleForRun(LinkGroupBase - i, linkPoints, true);
             registeredLinkCount = i + 1;
         }
     }

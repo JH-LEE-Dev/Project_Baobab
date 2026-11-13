@@ -50,6 +50,12 @@ public static class RunCombatOverrides
     /// </summary>
     public static bool bSkillsHitRunTargets { get; private set; }
 
+    /// <summary>
+    /// true면 회전베기 타격이 "공격당 1회 충격파 판정"(마스터리 없음 경로)의 기준 나무가 되지 않는다. 회전베기 스윙은 도끼 타격을 대체하므로
+    /// 충격파는 도끼 타격에서만 나간다(상시 발동 마스터리 경로는 그대로). false(본편)면 예전처럼 회전베기도 충격파를 굴린다.
+    /// </summary>
+    public static bool bWhirlwindSkipsShockWave { get; private set; }
+
     /// <summary>도끼 공격이 맞힌 대상을 이어서 더 치는 횟수(계약 다다익선 "연속 2회 타격" = 1). 0이면 본편처럼 한 번.</summary>
     public static int AxeExtraStrikes { get; private set; }
 
@@ -129,6 +135,11 @@ public static class RunCombatOverrides
         bSkillsHitRunTargets = _bOn;
     }
 
+    public static void SetWhirlwindSkipsShockWave(bool _bOn)
+    {
+        bWhirlwindSkipsShockWave = _bOn;
+    }
+
     public static void ResetAll()
     {
         WhirlwindSwingInterval = 0;
@@ -141,6 +152,7 @@ public static class RunCombatOverrides
         bShockWaveTinted = false;
         ShockWaveTint = Color.white;
         bSkillsHitRunTargets = false;
+        bWhirlwindSkipsShockWave = false;
         AxeExtraStrikes = 0;
         AxeExtraStrikeDelay = 0.1f;
         AxeMaxTargets = 0;

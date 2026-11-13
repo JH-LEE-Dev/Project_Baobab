@@ -96,6 +96,8 @@ public class RoguelikeBalanceSO : ScriptableObject
     public float unlimitHpGrowthPerWave = 0.35f;
     [Tooltip("언리밋 목표 처치 수 상한. Unlimit-N의 목표 처치 수 = N웨이브 줄의 목표 처치 수와 이 값 중 작은 값(기획서 v3.0 7-2, 100이면 Unlimit-9부터 100).")]
     public int unlimitMaxKillTarget = 100;
+    [Tooltip("언리밋 최대 웨이브. 이 번호의 Unlimit 웨이브를 클리어하면 런이 끝나고 결과 화면으로 간다(종료 사유 UnlimitCompleted). 0 이하면 상한 없음.")]
+    public int unlimitMaxWave = 25;
 
     [Header("카드 제시")]
     [Tooltip("한 번에 제시하는 카드 수 N(기획서 v2.5 4장).")]
@@ -253,6 +255,7 @@ public class RoguelikeBalanceSO : ScriptableObject
 
         unlimitHpGrowthPerWave = 0.35f;
         unlimitMaxKillTarget = 100;
+        unlimitMaxWave = 25;
 
         offerCount = 4;
         guaranteedSlotCap = 2;

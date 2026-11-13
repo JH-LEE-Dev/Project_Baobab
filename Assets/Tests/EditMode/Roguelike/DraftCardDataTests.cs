@@ -161,14 +161,15 @@ public class DraftCardDataTests
             Assert.AreEqual(required[level - 1], 3 + (int)add, "레벨 " + level);
         }
 
-        // 기획서 v2.8 A-4: 회전 피해 10 / 19 / 38 / 40 / 75 / 110 / 115(도끼 10 기준), 범위(반경) 1레벨 대비 ×1.0 / 1.17 / … / 2.0(모든 레벨 증가, 최종 +100%).
+        // 기획서 v2.8 A-4: 회전 피해 10 / 19 / 38 / 40 / 75 / 110 / 115(도끼 10 기준), 범위는 2026-11-13에 1레벨 +10% · 2~7레벨 레벨당 +5%(MAX +40%)로 낮췄다.
         float[] damages = { 10f, 19f, 38f, 40f, 75f, 110f, 115f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_spin", level);
             Assert.AreEqual(damages[level - 1], 10f * (1f + mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Spin) / 100f), 0.01f, "회전 피해 " + level);
-            float radius = 1f + mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Spin) / 100f;
-            Assert.AreEqual(1f + (level - 1) / 6f, radius / 1.25f, 0.001f, "범위 " + level);
+            // 범위(RangePercent) 누적: 1레벨 +10%, 2~7레벨 레벨당 +5% → MAX +40%(2026-11-13).
+            float rangePercent = mods.GetForSkill(ERunEffect.RangePercent, ERoguelikeSkill.Spin);
+            Assert.AreEqual(10f + 5f * (level - 1), rangePercent, 0.01f, "범위 " + level);
         }
     }
 

@@ -245,6 +245,14 @@ public class CardRulesTests
     }
 
     [Test]
+    public void Balance_UnlimitMaxWaveDefaultsTo25()
+    {
+        // 기획서 v3.0 7-2: 언리밋은 Unlimit-25까지(25 웨이브를 클리어하면 런 종료). 0 이하는 상한 없음.
+        Assert.AreEqual(25, balance.unlimitMaxWave);
+        Assert.AreEqual(25, WaveSchedule.Get(balance, balance.clearWave + 25).unlimitIndex);
+    }
+
+    [Test]
     public void WaveSchedule_BatchSizeAndPeriodFollowAppendixA2()
     {
         // 기획서 v2.7 부록 A-2: 티어별 정수 묶음. 1티어 3~7그루 / 3초, 2티어 7~14그루 / 2.5초, 3티어 14~21그루 / 3초, 4티어 21~30그루 / 2.5초.

@@ -393,6 +393,15 @@ public class Drone : MonoBehaviour
     {
         laserTint = _tint;
         if (chainZap != null) chainZap.SetTint(_tint);
+        if (chargingVortex != null) chargingVortex.SetOverheat(UseBlueCharge()); // 충전 도중 조합 색이 바뀌어도 바로 따라간다
+    }
+
+    /// <summary>
+    /// 충전 소용돌이를 파랑(과열 팔레트)으로 그릴지. 과열이거나 스텔라 + 드론 조합 색이면 파랑이다.
+    /// </summary>
+    private bool UseBlueCharge()
+    {
+        return isOverheat || PresentationLayer.VFX.EDroneLaserTint.Stella == laserTint;
     }
 
     /// <summary>
@@ -436,7 +445,7 @@ public class Drone : MonoBehaviour
         // 상태가 바뀔 때만 아우라를 켜고 끈다(Character가 매 프레임 같은 값을 넘겨주므로)
         if (!bChanged) return;
 
-        if (chargingVortex != null) chargingVortex.SetOverheat(isOverheat); // 충전 도중 과열이 바뀌어도 색이 바로 따라간다
+        if (chargingVortex != null) chargingVortex.SetOverheat(UseBlueCharge()); // 충전 도중 과열이 바뀌어도 색이 바로 따라간다
         if (isOverheat) StartOverheatAura();
         else StopOverheatAura(false);
     }
@@ -1252,7 +1261,7 @@ public class Drone : MonoBehaviour
         chargingVortex = cacheEntry.vortex;
         if (chargingVortex != null)
         {
-            chargingVortex.SetOverheat(isOverheat);
+            chargingVortex.SetOverheat(UseBlueCharge());
             float timeUntilImpact = GetTimeUntilImpact();
             if (timeUntilImpact < float.MaxValue) chargingVortex.SetChargeDuration(timeUntilImpact);
         }
