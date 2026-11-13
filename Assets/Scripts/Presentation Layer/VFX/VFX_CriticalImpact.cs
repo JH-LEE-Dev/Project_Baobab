@@ -9,18 +9,10 @@ namespace PresentationLayer.VFX
     /// 인스턴스 하나가 치명타 한 번을 그리고, 나무마다 정렬 순서가 달라 맞은 나무 바로 앞에 그려지도록 인스턴스마다 정렬 순서를 따로 받는다.
     ///
     /// 장면(약 0.45초)
-    /// - 베기 줄기: 맞은 자리를 2:1 기울기로 가르는 1px 흰 줄이 순식간에 뻗었다가 꼬리부터 사라지며, 통째로 흰 -> 금 -> 주황으로 바뀐다.
+    /// - 베기 줄기: 맞은 자리를 비스듬히 가르는 흰 줄이 순식간에 뻗었다가 꼬리부터 금 -> 주황으로 식으며 사라진다. 처음 잠깐은 아래에 진홍 테두리가 붙는다.
     /// - 별 섬광: 중심에서 큰 4갈래 흰 별 + 금빛 대각 광선이 터졌다가 계단식으로 줄어든다.
-    /// - 점선 충격파: 별 섬광이 사라지면 midpoint 타원 윤곽 위 1px 점선 고리가 흰 -> 금 -> 진홍으로 식으며 퍼진다.
-    /// - 파편: 흰·금·진홍 불꽃 줄기(줄기 하나는 한 색)가 사방으로 튀고 금가루 몇 알이 반짝이며 떨어진다.
-    ///
-    /// 픽셀 규칙
-    /// - JAGGIES: 베기 줄기는 정확한 2칸-1칸 계단, 고리는 PixelEllipse midpoint 윤곽(RingArc)만 쓴다.
-    /// - DOUBLE PIXEL: 모든 선은 1px 한 줄이고, 불꽃 꼬리는 PixelPainter.Line(L자 모서리 제거)으로 잇는다.
-    /// - HUGGING: 선 옆에 다른 색 테두리·보조선을 붙이지 않는다. 고리는 한 번에 하나만, 별 섬광이 끝난 뒤에 그린다.
-    ///   파편은 별 섬광 근처에 있는 동안 그리지 않아 별 팔에 나란히 붙거나 맞닿지 않는다.
-    /// - 색: 따뜻한 계열은 금·주황·진홍 3가지만 쓰고(그 위에 흰 섬광), 한 요소 안에서 색을 섞거나 보간하지 않는다.
-    ///   작은 입자(불꽃 줄기·금가루)는 한 순간에 한 색·한 밝기이고, 색이 바뀔 때는 통째로 계단식으로 바뀐다.
+    /// - 점선 충격파: 등각 타원 점선 고리가 흰 -> 금 -> 진홍으로 식으며 퍼진다.
+    /// - 파편: 흰·금·진홍 불꽃 줄기가 사방으로 튀고 금가루 몇 알이 반짝이며 떨어진다.
     ///
     /// 반투명 페이드 없이 계단식 크기 변화·점멸로만 사라진다. 고정 크기 배열만 써서 재생 중 힙 할당이 없다. 그림일 뿐이라 판정과 무관하다.
     /// </summary>
@@ -39,12 +31,13 @@ namespace PresentationLayer.VFX
         private const float GlowMax = 2.6f;
 
         // 팔레트(화면에 보일 sRGB). 리니어 색 공간이면 EnsureShared에서 한 번 변환한다. 금·주황은 VFX_TownMoney와 같은 색.
-        // 따뜻한 계열은 이 3가지만 쓴다(한 계열 최대 3색).
+        private static readonly Color32 SrgbCream = new Color32(255, 241, 176, 255);
         private static readonly Color32 SrgbGold = new Color32(255, 204, 72, 255);
         private static readonly Color32 SrgbOrange = new Color32(238, 136, 38, 255);
         private static readonly Color32 SrgbCrimson = new Color32(232, 64, 48, 255);
 
         private static readonly Color32 ColorWhite = new Color32(255, 255, 255, 255);
+        private static Color32 ColorCream;
         private static Color32 ColorGold;
         private static Color32 ColorOrange;
         private static Color32 ColorCrimson;
@@ -52,9 +45,11 @@ namespace PresentationLayer.VFX
 
         // //베기 줄기
 
-        private const int SlashLength = 24;          // 가로 px(짝수). 기울기는 정확히 2:1(가로 2칸에 세로 1칸)
+        private const int SlashLength = 26;          // px
         private const float SlashGrowEnd = 0.035f;   // 이 시각까지 머리가 뻗는다
         private const float SlashEnd = 0.14f;        // 이 시각까지 꼬리가 머리를 따라잡는다
+        private const float SlashEdgeEnd = 0.08f;    // 진홍 테두리가 붙어 있는 시간
+        private const float SlashSlopeY = 0.55f;     // 비스듬한 정도(가로 1에 세로 몇)
 
         // //별 섬광
 
@@ -68,13 +63,13 @@ namespace PresentationLayer.VFX
 
         // //점선 충격파
 
-        private const float RingDelay = 0.12f;       // 별 섬광이 다 사라진 뒤 시작한다(고리 점이 별 팔·광선에 달라붙지 않게)
+        private const float RingDelay = 0.02f;
         private const float RingStepTime = 0.03f;
         private const int RingStepCount = 8;
-        private const float RingStartRadius = 8f;    // 가로 반지름 px. 세로 반지름은 그 절반(2:1 등각)
+        private const int RingDotCount = 18;
+        private const float RingSquashY = 0.5f;
+        private const float RingStartRadius = 8f;
         private const float RingEndRadius = 26f;
-        private const int RingDotSpacing = 3;        // 윤곽 픽셀 기준 점 간격(최소). 2칸 이상 띄면 이웃 점이 절대 맞닿지 않는다
-        private const int RingDotSpacingLate = 5;    // 식어 갈 때는 점이 성기게 남는다
 
         // //파편
 
@@ -85,8 +80,8 @@ namespace PresentationLayer.VFX
         private const int SparkCount = 5;
         private const float DustGravity = 260f;     // px/s^2
 
-        // 전체 길이(고리가 끝나는 시각). 이 시간이 지나도 남은 파편이 있으면 다 사라질 때까지 이어간다.
-        private const float MinDuration = RingDelay + RingStepTime * RingStepCount;
+        // 전체 길이. 이 시간이 지나도 남은 파편이 있으면 다 사라질 때까지 이어간다.
+        private const float MinDuration = 0.3f;
 
         // //공유 자원
 
@@ -181,7 +176,7 @@ namespace PresentationLayer.VFX
             {
                 float angle = Mathf.Lerp(0.5f, Mathf.PI - 0.5f, (i + Rand01()) / SparkCount);
                 float speed = Mathf.Lerp(60f, 110f, Rand01());
-                Color32 color = ColorGold;
+                Color32 color = Rand01() < 0.5f ? ColorGold : ColorCream;
                 AddDust(ref cursor, centerX + (Rand01() - 0.5f) * 6f, centerY, Mathf.Cos(angle) * speed, Mathf.Sin(angle) * speed,
                     2.5f, Mathf.Lerp(0.32f, 0.45f, Rand01()), KindSpark, color);
             }
@@ -241,6 +236,7 @@ namespace PresentationLayer.VFX
         private static void BuildPalette()
         {
             bool bLinear = QualitySettings.activeColorSpace == ColorSpace.Linear;
+            ColorCream = ToDisplay(SrgbCream, bLinear);
             ColorGold = ToDisplay(SrgbGold, bLinear);
             ColorOrange = ToDisplay(SrgbOrange, bLinear);
             ColorCrimson = ToDisplay(SrgbCrimson, bLinear);
@@ -363,38 +359,42 @@ namespace PresentationLayer.VFX
         }
 
         // 베기 줄기: 아래(-) 끝에서 위(+) 끝으로 머리가 뻗고, 그 뒤 꼬리가 머리를 따라잡으며 사라진다.
-        // 1px 한 줄이고, 줄 전체 픽셀을 미리 정한 2:1 격자(가로 2칸마다 세로 1칸)에서 [꼬리, 머리] 구간만 찍는다.
-        // 부분 구간도 같은 격자 위라 계단 길이가 늘 2칸으로 같다(JAGGIES). 색은 줄 전체가 한 색이다.
+        // 두 줄(2px) 두께이고, 처음 잠깐은 그 아래로 진홍 테두리가 한 줄 더 붙는다.
         private void DrawSlash()
         {
             if (age >= SlashEnd) return;
 
             int halfX = SlashLength / 2;
+            int halfY = Mathf.RoundToInt(halfX * SlashSlopeY);
             int x0 = centerX - halfX * slashDirX;
-            int y0 = centerY - halfX / 2;
+            int y0 = centerY - halfY;
+            int x1 = centerX + halfX * slashDirX;
+            int y1 = centerY + halfY;
 
             float head = age < SlashGrowEnd ? Mathf.Clamp01((age + 0.012f) / SlashGrowEnd) : 1f;
             float tail = age < SlashGrowEnd ? 0f : Mathf.Clamp01((age - SlashGrowEnd) / (SlashEnd - SlashGrowEnd));
+            if (head <= tail) return;
 
-            // 머리·꼬리를 2칸 단위로 맞춰 [꼬리, 머리) 구간이 늘 2칸짜리 계단으로만 이뤄지게 한다(끝에 1칸 계단이 남지 않는다).
-            int half = SlashLength / 2;
-            int headIndex = Mathf.RoundToInt(half * head) * 2;
-            int tailIndex = Mathf.RoundToInt(half * tail) * 2;
-            if (headIndex <= tailIndex) return;
+            int hx = x0 + Mathf.RoundToInt((x1 - x0) * head);
+            int hy = y0 + Mathf.RoundToInt((y1 - y0) * head);
+            int tx = x0 + Mathf.RoundToInt((x1 - x0) * tail);
+            int ty = y0 + Mathf.RoundToInt((y1 - y0) * tail);
 
             float u = age / SlashEnd;
             Color32 core = u < 0.45f ? WithGlow(ColorWhite, 1f) : (u < 0.75f ? WithGlow(ColorGold, 0.6f) : WithGlow(ColorOrange, 0.2f));
 
-            for (int i = tailIndex; i < headIndex; i++)
+            if (age < SlashEdgeEnd)
             {
-                painter.Dot(x0 + i * slashDirX, y0 + (i >> 1), core);
+                painter.Line(tx, ty - 2, hx, hy - 2, 0, 0, 0, WithGlow(ColorCrimson, 0.35f));
             }
 
-            // 뻗는 동안 머리(마지막 픽셀)에 같은 색 `+`가 맺힌다(줄과 같은 색이라 명암이 생기지 않는다).
+            painter.Line(tx, ty - 1, hx, hy - 1, 0, 0, 0, core);
+            painter.Line(tx, ty, hx, hy, 0, 0, 0, core);
+
+            // 뻗는 동안 머리에 흰 점이 하나 더 맺힌다.
             if (age < SlashGrowEnd + 0.02f)
             {
-                int last = headIndex - 1;
-                painter.Shape(PixelPainter.ShapePlus, x0 + last * slashDirX, y0 + (last >> 1), core);
+                painter.Rect(hx - 1, hy - 1, hx + 2, hy + 2, WithGlow(ColorWhite, 1f));
             }
         }
 
@@ -442,14 +442,13 @@ namespace PresentationLayer.VFX
             }
             else
             {
-                Color32 dim = WithGlow(ColorGold, 0.6f);
+                Color32 dim = WithGlow(ColorCream, 0.6f);
                 painter.HLine(x - StarArmSmall, x + StarArmSmall, y, dim);
                 painter.Rect(x, y - StarArmSmall, x + 1, y + StarArmSmall + 1, dim);
             }
         }
 
-        // 등각 타원 점선 충격파. midpoint 윤곽(PixelEllipse) 위 1px 점선이라 곡선이 흔들리지 않고 점끼리 붙지 않는다.
-        // 계단식으로 커지고, 식어 갈수록 점이 성기게 남는다. 한 번에 고리 하나만 그린다(HUGGING 없음).
+        // 등각 타원 점선 충격파. 계단식으로 커지고, 바깥으로 갈수록 식으며 점이 하나씩 빠진다.
         private void DrawRing()
         {
             float ringAge = age - RingDelay;
@@ -460,56 +459,24 @@ namespace PresentationLayer.VFX
 
             float k = 1f - step / (float)(RingStepCount - 1);
             float grow = 1f - k * k;
-            int rx = Mathf.RoundToInt(Mathf.Lerp(RingStartRadius, RingEndRadius, grow));
-            int ry = Mathf.Max(1, rx / 2);
+            float radius = Mathf.Lerp(RingStartRadius, RingEndRadius, grow);
+            float survive = 1f - Mathf.Clamp01((ringAge - 0.12f) / 0.12f);
 
             Color32 baseColor = step < 2 ? ColorWhite : (step < 5 ? ColorGold : ColorCrimson);
             Color32 color = WithGlow(baseColor, step < 2 ? 0.8f : 0.25f);
-            int spacing = step < 5 ? RingDotSpacing : RingDotSpacingLate;
+            float phase = 0 == (step & 1) ? 0f : TwoPi / RingDotCount * 0.5f;
+            int size = step < 3 ? 2 : 1;
 
-            // 윤곽 픽셀을 점 개수로 고르게 나눠 1px 점만 찍는다. 간격은 내림으로 정해 늘 spacing칸 이상이라
-            // 이웃 점이 맞닿아 2칸짜리 덩어리가 되지 않는다(midpoint 윤곽은 L자가 없어 2칸 떨어진 픽셀끼리는 닿지 않는다).
-            int count = PixelEllipse.Build(rx, ry);
-            int dots = Mathf.Max(1, count / spacing);
-            float gap = count / (float)dots;
-            int shift = step % spacing;
-            for (int dot = 0; dot < dots; dot++)
+            for (int i = 0; i < RingDotCount; i++)
             {
-                int index = (Mathf.FloorToInt(dot * gap) + shift) % count;
-                painter.Dot(centerX + PixelEllipse.OutX[index], centerY + PixelEllipse.OutY[index], color);
-            }
-        }
+                float order = ((i * 7) % RingDotCount) / (float)RingDotCount;
+                if (survive <= order) continue;
 
-        // 별 섬광(현재 단계의 십자·대각 광선)에서 _margin칸 안쪽인지. 파편이 별 팔에 나란히 붙거나 맞닿지 않도록 그 동안은 그리지 않는다.
-        private bool IsNearStar(int _x, int _y, int _margin)
-        {
-            if (age >= StarEnd) return false;
-
-            int dx = Mathf.Abs(_x - centerX);
-            int dy = Mathf.Abs(_y - centerY);
-            int arm;
-            int half;
-            int diagFrom;
-            int diagTo;
-            if (age < StarStage0)
-            {
-                arm = StarArmBig; half = 2; diagFrom = 3; diagTo = StarDiagonal;
+                float angle = phase + TwoPi * i / RingDotCount;
+                int px = centerX + Mathf.RoundToInt(Mathf.Cos(angle) * radius);
+                int py = centerY + Mathf.RoundToInt(Mathf.Sin(angle) * radius * RingSquashY);
+                painter.Rect(px, py, px + size, py + size, color);
             }
-            else if (age < StarStage1)
-            {
-                arm = StarArmMid; half = 1; diagFrom = 2; diagTo = StarDiagonal / 2 + 1;
-            }
-            else
-            {
-                arm = StarArmSmall; half = 0; diagFrom = 1; diagTo = 0;
-            }
-
-            arm += _margin;
-            half += _margin;
-            if (dy <= half && dx <= arm) return true;
-            if (dx <= half && dy <= arm) return true;
-            if (diagTo >= diagFrom && Mathf.Abs(dx - dy) <= _margin && Mathf.Max(dx, dy) <= diagTo + _margin) return true;
-            return false;
         }
 
         private void DrawDusts()
@@ -533,59 +500,63 @@ namespace PresentationLayer.VFX
             }
         }
 
-        // 불꽃 줄기: 날아온 방향으로 꼬리를 끄는 1px 줄. 줄기 하나는 처음부터 끝까지 한 색·한 밝기다(작은 입자라 명암·그라데이션 없음).
-        // 빠를수록 꼬리가 길고, 느려지면 점 하나로 줄었다가 끝물에 점멸하며 꺼진다. 꼬리는 PixelPainter.Line(L자 모서리 제거)으로 잇는다.
-        // 별 섬광 근처(1칸 안쪽)에 있는 동안은 그리지 않는다(거의 수평으로 튀는 줄기가 별 팔에 나란히 붙지 않게).
-        private void DrawStreak(int _x, int _y, float _vx, float _vy, float _age, float _u, Color32 _color)
+        // 불꽃 줄기: 머리는 밝고(처음엔 흰빛), 날아온 방향으로 금 -> 주황 꼬리를 끈다. 빠를수록 꼬리가 길고,
+        // 느려지면 점 하나로 줄었다가 끝물에 점멸하며 꺼진다(VFX_TownMoney와 같은 모양).
+        private static void DrawStreak(int _x, int _y, float _vx, float _vy, float _age, float _u, Color32 _color)
         {
             if (_u > 0.78f && 0 != ((int)(_age * 30f) & 1)) return;
-
-            Color32 color = WithGlow(_color, StreakGlow(_color));
 
             float speed = Mathf.Sqrt(_vx * _vx + _vy * _vy);
             int tail = speed < 1f ? 0 : Mathf.Clamp(Mathf.RoundToInt(speed / 35f), 0, 5);
             if (_u > 0.6f) tail = Mathf.Min(tail, 1);
 
+            Color32 head = _u < 0.3f ? WithGlow(ColorWhite, 1f) : WithGlow(_u < 0.65f ? _color : ColorOrange, _u < 0.65f ? 0.7f : 0.3f);
             if (tail > 0)
             {
-                int ex = _x - Mathf.RoundToInt(_vx / speed * tail);
-                int ey = _y - Mathf.RoundToInt(_vy / speed * tail);
-                if (IsNearStar(_x, _y, 1) || IsNearStar(ex, ey, 1)) return;
-                painter.Line(ex, ey, _x, _y, 0, 0, 0, color);
-                return;
+                float bx = -_vx / speed;
+                float by = -_vy / speed;
+                Color32 near = WithGlow(ColorGold, 0.55f);
+                Color32 far = WithGlow(ColorOrange, 0.15f);
+                for (int k = tail; k >= 1; k--)
+                {
+                    painter.Dot(_x + Mathf.RoundToInt(bx * k), _y + Mathf.RoundToInt(by * k), k <= tail / 2 + 1 ? near : far);
+                }
             }
 
-            if (IsNearStar(_x, _y, 1)) return;
-            painter.Dot(_x, _y, color);
+            painter.Dot(_x, _y, head);
         }
 
-        // 줄기 색마다 고정 밝기(흰 줄기만 블룸 임계를 넘긴다).
-        private static float StreakGlow(Color32 _color)
-        {
-            if (_color.r == ColorWhite.r && _color.g == ColorWhite.g && _color.b == ColorWhite.b) return 1f;
-            return 0.55f;
-        }
-
-        // 금가루: 3단계 밝기로 반짝이고(통째로 계단식, 연속 페이드 없음), `+`/`x`(3x3)가 번갈아 바뀌다 `.`로 줄어든다. 끝물에는 점멸하며 사라진다.
-        // PixelPainter.SpacedShape로 그려 금가루끼리 맞닿으면 `.`로 줄이거나 생략한다(서로 붙어 뚱뚱한 덩어리가 되지 않게).
-        // 별 섬광 근처에 있는 동안은 그리지 않는다(별 팔에 맞닿아 덩어리가 되지 않게).
-        private void DrawSpark(int _x, int _y, float _age, float _u, int _seed, Color32 _color)
+        // 금가루: 3단계로 반짝이고, `+`/`x`가 계단식으로 줄며 번갈아 바뀐다. 끝물에는 점멸하며 사라진다.
+        private static void DrawSpark(int _x, int _y, float _age, float _u, int _seed, Color32 _color)
         {
             if (_u > 0.8f && 0 != ((int)(_age * 30f) & 1)) return;
 
             int twinkle = ((int)(_age * 14f) + _seed) % 3;
-            float glow = 0 == twinkle ? 0.35f : (1 == twinkle ? 0.6f : 1f);
+            float glow = (0 == twinkle ? 0.35f : (1 == twinkle ? 0.6f : 1f)) * (1f - _u * 0.5f);
             Color32 baseColor = _u > 0.72f ? ColorOrange : _color;
             Color32 color = WithGlow(baseColor, glow);
 
-            int shape = PixelPainter.ShapeDot;
-            if (_u < 0.7f)
+            int arm = _u < 0.4f ? 2 : (_u < 0.7f ? 1 : 0);
+            if (0 == arm)
             {
-                shape = 0 == (((int)(_age * 12f) + _seed) & 1) ? PixelPainter.ShapePlus : PixelPainter.ShapeCross;
+                painter.Dot(_x, _y, color);
+                return;
             }
 
-            if (IsNearStar(_x, _y, PixelPainter.ShapeDot == shape ? 1 : 2)) return;
-            painter.SpacedShape(shape, _x, _y, color);
+            bool bPlus = 0 == (((int)(_age * 12f) + _seed) & 1);
+            if (bPlus)
+            {
+                painter.HLine(_x - arm, _x + arm, _y, color);
+                painter.Rect(_x, _y - arm, _x + 1, _y + arm + 1, color);
+            }
+            else
+            {
+                for (int d = -arm; d <= arm; d++)
+                {
+                    painter.Dot(_x + d, _y + d, color);
+                    if (0 != d) painter.Dot(_x + d, _y - d, color);
+                }
+            }
         }
 
         // //수명

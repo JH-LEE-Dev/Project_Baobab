@@ -68,8 +68,15 @@ public sealed class RoguelikeSkillVfxPlayer
     private readonly List<PresentationLayer.VFX.VFX_DroneLaser> droneLasers = new List<PresentationLayer.VFX.VFX_DroneLaser>(8);
     private readonly List<float> droneLaserLastPlay = new List<float>(8);
     private int lastBeamSoundFrame = -1;
-    // 회전베기+부메랑: 같은 프레임에 여러 그루를 맞혀 회전베기가 여러 번 나가도 그림·흔들림은 한 번만(겹치면 같은 그림이다).
-    private int lastWhirlwindFrame = -1;
+    // 회전베기+부메랑: 날고 있는 부메랑마다 붙어 반복 재생되는 회전베기(부메랑 Transform -> 연출, 재생 번호).
+    // 상시 발동이라 화면 흔들림은 내지 않는다(기획서 v3.0 11-13 6-2).
+    private struct AttachedWhirlwind
+    {
+        public WhirlwindVFX vfx;
+        public int playId;
+    }
+    private readonly Dictionary<Transform, AttachedWhirlwind> spinBoomerangWhirlwinds = new Dictionary<Transform, AttachedWhirlwind>(8);
+    private readonly List<Transform> spinBoomerangDetachBuffer = new List<Transform>(8);
     private float lastSporeShakeTime = float.NegativeInfinity;
     // 포자 연출 회차. StopCombatEffects가 올리면 진행 중이던 포자 폭발·폭탄 연출이 다음 단계에서 멈춘다.
     private int sporeGeneration;
@@ -177,15 +184,47 @@ public sealed class RoguelikeSkillVfxPlayer
             case ERoguelikeSkillVfx.StarLinksChanged:
                 RebuildLinkLines(_stars, _links);
                 break;
-
-            case ERoguelikeSkillVfx.SpinBoomerangStrike:
-                // 부메랑마다 제 자리에서 터진다(같은 부메랑의 타격은 컨트롤러가 합쳐 보낸다). 흔들림만 프레임당 한 번.
-                WhirlwindVFX.Spawn(_signal.position, _signal.radius);
-                if (lastWhirlwindFrame == Time.frameCount) break;
-                lastWhirlwindFrame = Time.frameCount;
-                CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
-                break;
         }
+    }
+
+    /// <summary>회전베기+부메랑: 날기 시작한 부메랑에 회전베기를 붙여 회수될 때까지 반복 재생한다. _radius는 회전베기 판정 반경.</summary>
+    public void AttachSpinBoomerang(Transform _boomerang, float _radius)
+    {
+        if (null == _boomerang) return;
+
+        DetachSpinBoomerang(_boomerang);
+        WhirlwindVFX whirlwind = WhirlwindVFX.SpawnAttached(_boomerang, _radius);
+        if (null == whirlwind) return;
+
+        spinBoomerangWhirlwinds[_boomerang] = new AttachedWhirlwind { vfx = whirlwind, playId = whirlwind.PlayId };
+    }
+
+    /// <summary>회전베기+부메랑: 부메랑이 회수되거나 강제 종료되면 붙어 있던 회전베기를 바로 걷는다.</summary>
+    public void DetachSpinBoomerang(Transform _boomerang)
+    {
+        // 파괴된 부메랑도 키로는 남아 있으므로 Unity의 null 비교가 아니라 참조로 거른다.
+        if (ReferenceEquals(_boomerang, null) || false == spinBoomerangWhirlwinds.TryGetValue(_boomerang, out AttachedWhirlwind attached)) return;
+
+        spinBoomerangWhirlwinds.Remove(_boomerang);
+        if (null != attached.vfx) attached.vfx.Stop(attached.playId);
+    }
+
+    /// <summary>회전베기+부메랑: 부메랑이 멈춘 동안(WarningUI) 붙어 있는 회전베기도 그 자리에 멈춘다.</summary>
+    public void SetSpinBoomerangPaused(Transform _boomerang, bool _bPaused)
+    {
+        if (ReferenceEquals(_boomerang, null) || false == spinBoomerangWhirlwinds.TryGetValue(_boomerang, out AttachedWhirlwind attached)) return;
+        if (null != attached.vfx) attached.vfx.SetPaused(attached.playId, _bPaused);
+    }
+
+    /// <summary>회전베기+부메랑: 붙어 있는 회전베기를 모두 걷는다(웨이브 · 런 종료).</summary>
+    public void DetachAllSpinBoomerangs()
+    {
+        if (0 == spinBoomerangWhirlwinds.Count) return;
+
+        spinBoomerangDetachBuffer.Clear();
+        foreach (KeyValuePair<Transform, AttachedWhirlwind> pair in spinBoomerangWhirlwinds) spinBoomerangDetachBuffer.Add(pair.Key);
+        for (int i = 0; i < spinBoomerangDetachBuffer.Count; i++) DetachSpinBoomerang(spinBoomerangDetachBuffer[i]);
+        spinBoomerangDetachBuffer.Clear();
     }
 
     /// <summary>

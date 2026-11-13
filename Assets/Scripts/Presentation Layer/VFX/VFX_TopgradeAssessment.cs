@@ -247,6 +247,20 @@ namespace PresentationLayer.VFX
             bAnyActive = true;
         }
 
+        /// <summary>
+        /// ×2 글자만 띄운다(섬광·가루 없이). _labelPos는 글자 바닥 가운데. 원목 드랍 잭팟(LogItemController)이
+        /// 특등품과 같은 글자를 쓰려고 부른다. 이미 떠 있으면 처음부터 다시 솟는다.
+        /// </summary>
+        public void PlayLabel(Vector3 _labelPos)
+        {
+            labelX = ToPixel(_labelPos.x);
+            labelY = ToPixel(_labelPos.y);
+            labelAge = 0f;
+            bLabelActive = true;
+            bLabelFresh = true;
+            bAnyActive = true;
+        }
+
         /// <summary>쌍둥이가 원목 등 위에 내려앉는 순간. _worldPos는 쌍둥이 중심.</summary>
         public void PlayLand(Vector3 _worldPos)
         {

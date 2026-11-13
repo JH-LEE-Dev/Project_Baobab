@@ -757,6 +757,9 @@ public class TownSystem : MonoBehaviour
     private void ApplyProcessLineCountToGrid(int _activeLineCount)
     {
         townTileManager.SetBuildingExpansionCount(_activeLineCount - 1);
+
+        // 증설 자리에 서 있던 마을 나무(커터를 가리는 나무 등)도 같은 시점에 치운다.
+        townObjectManager.SetProcessLineCount(_activeLineCount);
     }
 
     /// <summary>

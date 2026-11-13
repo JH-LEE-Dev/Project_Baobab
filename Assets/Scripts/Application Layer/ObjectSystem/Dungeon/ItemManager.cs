@@ -90,9 +90,11 @@ public class ItemManager : MonoBehaviour
     }
 
     // 외부에서 접근하기 위한 래퍼 메서드 (필요한 경우)
-    public void SpawnLogItem(TreeObj _treeObj, float _multiplier)
+    /// <param name="_heightScale">원목이 튀는 높이 배율(비행 시간·착지 자리는 그대로). 보석 나무 연출용, 기본 1.</param>
+    /// <param name="_launched">null이 아니면 이번에 튄 원목을 담아 준다(이펙트가 따라갈 때).</param>
+    public void SpawnLogItem(TreeObj _treeObj, float _multiplier, float _heightScale = 1f, System.Collections.Generic.List<LogItem> _launched = null)
     {
-        logItemController?.SpawnLogItem(_treeObj, _multiplier);
+        logItemController?.SpawnLogItem(_treeObj, _multiplier, _heightScale, _launched);
     }
 
     public void ReturnLogToPool(LogItem _item)

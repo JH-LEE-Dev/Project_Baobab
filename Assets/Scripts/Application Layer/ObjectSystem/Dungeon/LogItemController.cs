@@ -463,6 +463,8 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
     public void ClearAll()
     {
+        ClearJackpotLabels();
+
         int count = activeItemsList.Count;
         if (count == 0) return;
 
@@ -480,7 +482,10 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         }
     }
 
-    public void SpawnLogItem(TreeObj _treeObj, float _multiplier)
+    /// <param name="_heightScale">원목이 튀는 높이 배율. 보석 나무가 쓰러질 때 단계별로 더 높이 튀게 한다(1이면 예전과 같다).
+    /// 비행 시간이 높이에 따라 늘지 않도록 시간 배율을 1/√배율로 같이 넘겨, 착지 시각·자리는 그대로이고 포물선만 높아진다.</param>
+    /// <param name="_launched">null이 아니면 이번에 튄 원목을 담아 준다(보석 원목 잔광 꼬리가 따라갈 때).</param>
+    public void SpawnLogItem(TreeObj _treeObj, float _multiplier, float _heightScale = 1f, List<LogItem> _launched = null)
     {
         using var _profile = ChopProfilerMarkers.SpawnLogs.Auto();
 
@@ -518,12 +523,19 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
         int spawnCount = Mathf.RoundToInt(UnityEngine.Random.Range(minCnt, maxCnt + 1) * _multiplier);
 
+        bool bJackpot = false;
         if (UnityEngine.Random.value < jackPotChance)
         {
             spawnCount = Mathf.RoundToInt(spawnCount * jackPotAmount);
+            bJackpot = true;
         }
 
         Vector3 spawnPos = _treeObj.transform.position;
+
+        if (bJackpot && spawnCount > 0)
+        {
+            PlayJackpotLabel(_treeObj);
+        }
 
         // 보석 등급 원목이 생성되는 순간의 전용 효과음.
         // 원목 하나마다 재생하면 4~7개가 겹쳐 뭉개지므로 드랍 묶음당 한 번만 울린다.
@@ -564,7 +576,16 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
             float randomRotation = UnityEngine.Random.Range(1, 3) * 360f * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
 
-            logItem.Launch(startPos, endPos, height, randomRotation);
+            if (_heightScale > 0f && false == Mathf.Approximately(_heightScale, 1f))
+            {
+                logItem.Launch(startPos, endPos, height * _heightScale, randomRotation, 1f / Mathf.Sqrt(_heightScale));
+            }
+            else
+            {
+                logItem.Launch(startPos, endPos, height, randomRotation);
+            }
+
+            _launched?.Add(logItem);
         }
     }
 
@@ -647,6 +668,49 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
             activeItemsForUpdate.RemoveAt(lastIdx);
             _logItem.UpdateIndex = -1;
             _logItem.bCanGetSortingOrder = false;
+        }
+    }
+
+    // // 잭팟 ×2 글자 (연출 전용 - 드랍 수와 무관)
+
+    // 특등품 평가와 같은 ×2 글자(VFX_TopgradeAssessment)를 쓴다. 한 이펙트가 글자 하나만 띄우므로, 회오리 베기처럼
+    // 여러 그루가 한꺼번에 쓰러져도 겹쳐 뜨도록 몇 개를 돌려 쓴다(가장 오래된 것부터 다시 쓴다).
+    private const int JackpotLabelCount = 4;
+    // 글자 바닥 자리: 나무 윗부분 뿌리(topRoot)에서 이만큼 위.
+    private static readonly Vector3 JackpotLabelOffset = new Vector3(0f, 0.15f, 0f);
+    private PresentationLayer.VFX.VFX_TopgradeAssessment[] jackpotLabels;
+    private int jackpotLabelCursor;
+
+    private void PlayJackpotLabel(TreeObj _treeObj)
+    {
+        // 글자는 "×2" 하나뿐이라, 배율이 2가 아니면(특성 수치가 바뀐 경우) 틀린 숫자를 보여 주지 않도록 띄우지 않는다.
+        if (Mathf.RoundToInt(jackPotAmount) != 2) return;
+
+        if (jackpotLabels == null) jackpotLabels = new PresentationLayer.VFX.VFX_TopgradeAssessment[JackpotLabelCount];
+
+        PresentationLayer.VFX.VFX_TopgradeAssessment label = jackpotLabels[jackpotLabelCursor];
+        if (label == null)
+        {
+            // 셰이더가 없으면 null - 글자 없이 진행한다.
+            label = PresentationLayer.VFX.VFX_TopgradeAssessment.Create(transform);
+            if (label == null) return;
+            label.gameObject.name = "JackpotLabelVFX";
+            jackpotLabels[jackpotLabelCursor] = label;
+        }
+        jackpotLabelCursor = (jackpotLabelCursor + 1) % JackpotLabelCount;
+
+        Vector3 top = _treeObj.treeVisualComponent != null
+            ? _treeObj.treeVisualComponent.GetTopRootPosition()
+            : _treeObj.transform.position;
+        label.PlayLabel(top + JackpotLabelOffset);
+    }
+
+    private void ClearJackpotLabels()
+    {
+        if (jackpotLabels == null) return;
+        for (int i = 0; i < jackpotLabels.Length; i++)
+        {
+            if (jackpotLabels[i] != null) jackpotLabels[i].ClearAll();
         }
     }
 

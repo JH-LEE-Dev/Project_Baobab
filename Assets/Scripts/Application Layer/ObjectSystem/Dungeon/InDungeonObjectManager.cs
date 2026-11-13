@@ -154,21 +154,21 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField, Tooltip("유성 하나의 피해 범위 - 착지 위치 기준 등각 타원의 장반경(타일 가로폭 단위)")]
     private float meteorImpactRange = 1f;
     // 단계별 발동 지속시간(초)과 그동안 떨어지는 유성 수. 별 비 이펙트(VFX_StarRain)가 받는 범위로 입력을 막는다 -
-    // 지속시간은 2~8초, 유성 수는 최대 40개이고 지속시간 x 초당 3개(올림)보다 적으면 그 수로 올라간다(VFX_StarRain.ClampCount).
+    // 지속시간은 2~10초, 유성 수는 최대 100개이고 지속시간 x 초당 3개(올림)보다 적으면 그 수로 올라간다(VFX_StarRain.ClampCount).
     [SerializeField] private float meteorShowerTier1Damage = 100f;
     [SerializeField, Tooltip("I단계 낙하 사정거리 - 캐릭터 기준 등각 타원의 장반경(타일 가로폭 단위)")]
     private float meteorShowerTier1FallRange = 3.5f;
-    [SerializeField, Range(2f, 8f), Tooltip("I단계 유성우 지속시간(초)")]
+    [SerializeField, Range(PresentationLayer.VFX.VFX_StarRain.MinDuration, PresentationLayer.VFX.VFX_StarRain.MaxDuration), Tooltip("I단계 유성우 지속시간(초)")]
     private float meteorShowerTier1Duration = 3f;
     [SerializeField, Range(1, PresentationLayer.VFX.VFX_StarRain.MaxCount), Tooltip("I단계 지속시간 동안 떨어지는 유성 수. 지속시간 x 3(올림)보다 적으면 그 수로 올라간다")]
     private int meteorShowerTier1Count = 15;
     [SerializeField] private float meteorShowerTier2Damage = 100f;
     [SerializeField] private float meteorShowerTier2FallRange = 3.5f;
-    [SerializeField, Range(2f, 8f)] private float meteorShowerTier2Duration = 4f;
+    [SerializeField, Range(PresentationLayer.VFX.VFX_StarRain.MinDuration, PresentationLayer.VFX.VFX_StarRain.MaxDuration)] private float meteorShowerTier2Duration = 4f;
     [SerializeField, Range(1, PresentationLayer.VFX.VFX_StarRain.MaxCount)] private int meteorShowerTier2Count = 20;
     [SerializeField] private float meteorShowerTier3Damage = 100f;
     [SerializeField] private float meteorShowerTier3FallRange = 3.5f;
-    [SerializeField, Range(2f, 8f)] private float meteorShowerTier3Duration = 5f;
+    [SerializeField, Range(PresentationLayer.VFX.VFX_StarRain.MinDuration, PresentationLayer.VFX.VFX_StarRain.MaxDuration)] private float meteorShowerTier3Duration = 5f;
     [SerializeField, Range(1, PresentationLayer.VFX.VFX_StarRain.MaxCount)] private int meteorShowerTier3Count = 25;
     // 이번 숲 방문에 적용되는 단계(0이면 효과 없음). 숲에 들어올 때 정하고 방문 도중에는 바꾸지 않는다.
     private int starCompassTierThisRun;
@@ -1722,6 +1722,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void OnItemAcquired(Item _item)
     {
+        // 캐릭터가 보석 원목(황금·다이아·무지개)을 주웠으면 캐릭터 몸에서 단계별 연출을 터뜨린다(그림만, 획득 처리와 무관).
+        if (_item is LogItem logItem && logItem.logState > LogState.Normal && character != null)
+        {
+            inDungeonVFXManager?.PlayGemLogPickup(character.transform, (int)logItem.logState - (int)LogState.Normal);
+        }
+
         ItemAcquiredEvent?.Invoke(_item);
     }
 
@@ -1849,6 +1855,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         else if (SYSTEM_VAR.GEM_ORE_SYSTEM_ENABLED && _treeObj.bIsGemStage)
         {
             itemManager.SpawnGemOre(_treeObj, dropMultiplier);
+        }
+        else if (_treeObj.bIsGemStage)
+        {
+            // 보석 나무 원목은 단계가 높을수록 더 높이 튄다(비행 시간·착지 자리는 그대로). 다이아 이상은 튄 원목마다 잔광 꼬리가 붙는다.
+            int gemStage = _treeObj.gemStage;
+            gemLaunchedLogs.Clear();
+            itemManager.SpawnLogItem(_treeObj, dropMultiplier, GetGemLogHeightScale(gemStage), 2 <= gemStage ? gemLaunchedLogs : null);
+            if (0 < gemLaunchedLogs.Count)
+            {
+                inDungeonVFXManager?.PlayGemLogTrails(gemLaunchedLogs, gemStage);
+                gemLaunchedLogs.Clear();
+            }
         }
         else
         {
@@ -2289,9 +2307,21 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 통째로 건너뛰어진다(bGoldTreePityDone이 따로 막아주긴 하지만 신호를 흐리지 않는다).
     }
 
+    // 보석 나무가 쓰러질 때 튄 원목을 잠깐 모아 두는 목록(잔광 꼬리용, 매번 비워 다시 쓴다).
+    private readonly List<LogItem> gemLaunchedLogs = new List<LogItem>(32);
+
+    // 보석 단계별 원목 튀는 높이 배율(1 황금, 2 다이아, 3 무지개).
+    private static float GetGemLogHeightScale(int _gemStage)
+    {
+        if (3 <= _gemStage) return 1.6f;
+        if (2 == _gemStage) return 1.45f;
+        if (1 == _gemStage) return 1.3f;
+        return 1f;
+    }
+
     // 나무가 보석 단계(황금/다이아/무지개)로 변할 때마다 전용 이펙트를 재생한다.
-    // 변환 순간에도 "쓰러지는" 타격감을 주기 위해 사망 VFX를 함께 터뜨린다
-    // (실제로 죽는 것이 아니므로 드랍/킬 처리는 일어나지 않는다).
+    // 변환 순간의 타격감은 예전엔 일반 사망 VFX를 함께 터뜨려 냈는데, 지금은 그 자리에 껍질이 갈라지며 보석 빛이 새어 나오는
+    // 단계별 연출(PlayGemTransformBurst)을 쓴다(실제로 죽는 것이 아니므로 드랍/킬 처리는 일어나지 않는다).
     private void OnTreeGemTransformed(TreeObj _treeObj)
     {
         if (_treeObj == null) return;
@@ -2300,7 +2330,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             // 스폰 뒤에 등급이 오른 나무(PromoteGrade)도 마지막 사망 전에 보석 이펙트 공유 이미터가 준비되게 한다
             inDungeonVFXManager.PrewarmTreeDeadVFX(_treeObj.treeData.type, _treeObj.treeData.grade);
-            inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent, _treeObj.treeData.type);
+            inDungeonVFXManager.PlayGemTransformBurst(_treeObj.treeVisualComponent, _treeObj.gemStage);
             inDungeonVFXManager.PlayTreeTransformVFX(_treeObj.treeVisualComponent, _treeObj.gemStage);
         }
 

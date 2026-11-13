@@ -23,7 +23,7 @@ namespace PresentationLayer.VFX
     /// - 낙하/줄기/파편/솟는 별은 렌더 프레임마다 시간으로 다시 계산해(연속) 부드럽게 움직이고, 섬광 단계/점멸/디더는 24Hz 단계로 끊어서 도트 느낌을 지킨다.
     /// - 위치는 경과 시간과 해시만으로 계산하는 닫힌 식이라 프레임 속도와 무관하고, 낙하 위치/시각은 시드로 정해져 판정 쪽과 같은 값을 얻을 수 있다.
     ///
-    /// 낙하 수는 [최소(초당 3개 x 지속시간), 최대 40]로 제한된다(ClampCount). 풀 인스턴스로 쓰이며 루트 ParticleSystem 수명이 끝나면 풀로 돌아간다.
+    /// 지속시간은 [2, 10]초, 낙하 수는 [최소(초당 3개 x 지속시간), 최대 100]으로 제한된다(ClampCount). 풀 인스턴스로 쓰이며 루트 ParticleSystem 수명이 끝나면 풀로 돌아간다.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(MeshFilter))]
@@ -31,7 +31,11 @@ namespace PresentationLayer.VFX
     public class VFX_StarRain : MonoBehaviour
     {
         /// <summary>낙하 수 상한. 판정 쪽도 같은 값으로 제한한다.</summary>
-        public const int MaxCount = 40;
+        public const int MaxCount = 100;
+
+        /// <summary>지속시간 범위(초). 판정 쪽도 같은 값으로 제한한다.</summary>
+        public const float MinDuration = 2.0f;
+        public const float MaxDuration = 10.0f;
 
         /// <summary>낙하 수 하한을 정하는 초당 낙하 수(지속시간 x 이 값, 올림).</summary>
         public const float MinPerSecond = 3.0f;
@@ -39,14 +43,15 @@ namespace PresentationLayer.VFX
         [Header("기본값 (Play를 부르지 않았을 때)")]
         [SerializeField, Range(1, 3), Tooltip("1 씨앗(하늘색), 2 꽃(보라), 3 나무(금색)")]
         private int defaultTier = 2;
-        [SerializeField, Range(2.0f, 8.0f), Tooltip("낙하가 이어지는 시간(초)")]
+        [SerializeField, Range(MinDuration, MaxDuration), Tooltip("낙하가 이어지는 시간(초)")]
         private float defaultDuration = 4.0f;
         [SerializeField, Range(1.0f, 6.0f), Tooltip("낙하 범위(가로 반지름, 월드 유닛). 세로는 절반이다.")]
         private float defaultRadius = 2.4f;
 
+        // 최악(지속시간 2초·낙하 100개·범위 6)에도 한 메쉬 최대 약 6700쿼드라 어떤 조합이든 낙하가 다 그려지도록 여유를 둔다
         [Header("쿼드 예산")]
         [SerializeField, Tooltip("두 메쉬를 합친 한 프레임 쿼드 상한. 넘으면 더 그리지 않는다.")]
-        private int quadBudget = 2400;
+        private int quadBudget = 8000;
 
         [Header("공중 메쉬 소팅")]
         [SerializeField] private int sortingOrderOffset = 0;
@@ -181,7 +186,7 @@ namespace PresentationLayer.VFX
         /// <param name="_tier">1 씨앗, 2 꽃, 3 나무(강조색과 큰 별 개수)</param>
         public void Play(int _count, float _duration, float _radius, int _seed, int _tier)
         {
-            requestedDuration = Mathf.Clamp(_duration, 2.0f, 8.0f);
+            requestedDuration = Mathf.Clamp(_duration, MinDuration, MaxDuration);
             requestedCount = ClampCount(_count, requestedDuration);
             requestedRadius = Mathf.Clamp(_radius, 1.0f, 6.0f);
             requestedSeed = _seed;
@@ -195,7 +200,7 @@ namespace PresentationLayer.VFX
         /// </summary>
         public static int ComputeImpacts(Vector3 _origin, int _seed, int _count, float _duration, float _radius, StarRainImpact[] _results)
         {
-            float duration = Mathf.Clamp(_duration, 2.0f, 8.0f);
+            float duration = Mathf.Clamp(_duration, MinDuration, MaxDuration);
             int count = ClampCount(_count, duration);
             float radius = Mathf.Clamp(_radius, 1.0f, 6.0f);
 
@@ -1255,9 +1260,9 @@ namespace PresentationLayer.VFX
 
         private void OnValidate()
         {
-            defaultDuration = Mathf.Clamp(defaultDuration, 2.0f, 8.0f);
+            defaultDuration = Mathf.Clamp(defaultDuration, MinDuration, MaxDuration);
             defaultRadius = Mathf.Clamp(defaultRadius, 1.0f, 6.0f);
-            quadBudget = Mathf.Clamp(quadBudget, 400, 6000);
+            quadBudget = Mathf.Clamp(quadBudget, 400, 10000);
         }
     }
 }

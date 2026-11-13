@@ -16,8 +16,8 @@ public static class StarRainBuilder
     private const string PrefabFolder = "Assets/Prefabs/VFX/StarRain";
     private const string PrefabPath = "Assets/Prefabs/VFX/StarRain/VFX_StarRain.prefab";
 
-    // 루트 ParticleSystem 수명은 이펙트 최대 길이(지속시간 8초 + 낙하 연출 + 여유)보다 길어야 풀이 너무 일찍 회수하지 않는다
-    private const float RootLifetime = 10.0f;
+    // 루트 ParticleSystem 수명은 이펙트 최대 길이(지속시간 10초 + 낙하 연출 + 여유)보다 길어야 풀이 너무 일찍 회수하지 않는다
+    private const float RootLifetime = 12.0f;
 
     [MenuItem("LumberBoy/VFX/Build Star Rain")]
     public static void Build()
@@ -110,7 +110,7 @@ public static class StarRainBuilder
             so.FindProperty("defaultTier").intValue = 2;
             so.FindProperty("defaultDuration").floatValue = 4.0f;
             so.FindProperty("defaultRadius").floatValue = 2.4f;
-            so.FindProperty("quadBudget").intValue = 2400;
+            so.FindProperty("quadBudget").intValue = 8000;
             so.FindProperty("sortingOrderOffset").intValue = 0;
             so.FindProperty("groundMeshFilter").objectReferenceValue = groundTransform.GetComponent<MeshFilter>();
             so.FindProperty("groundMeshRenderer").objectReferenceValue = groundRenderer;

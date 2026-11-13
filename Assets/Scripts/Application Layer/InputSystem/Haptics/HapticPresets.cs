@@ -201,6 +201,47 @@ public static class HapticPresets
         new HapticStep(0.70f, 0.90f, 0.06f),
         new HapticStep(0.10f, 0.45f, 0.14f));
 
+    // 보석 변신 - 단계가 오를수록 한 번씩 더 친다. 황금은 가볍게 한 번, 다이아는 두 번, 무지개는 점점 세지는 세 번.
+    // 같은 타격의 나무 타격 진동(treeImpact) 직후에 울려 그것을 덮는다. 가는 모터 위주로 "반짝"이는 느낌을 준다.
+    private static readonly HapticPattern gemTransformGold = new HapticPattern(
+        new HapticStep(0.35f, 0.70f, 0.06f),
+        new HapticStep(0.15f, 0.35f, 0.12f));
+
+    private static readonly HapticPattern gemTransformDiamond = new HapticPattern(
+        new HapticStep(0.45f, 0.80f, 0.06f),
+        new HapticStep(0f, 0f, 0.06f),
+        new HapticStep(0.55f, 0.90f, 0.06f),
+        new HapticStep(0.20f, 0.40f, 0.10f));
+
+    private static readonly HapticPattern gemTransformRainbow = new HapticPattern(
+        new HapticStep(0.45f, 0.70f, 0.06f),
+        new HapticStep(0f, 0f, 0.05f),
+        new HapticStep(0.60f, 0.85f, 0.06f),
+        new HapticStep(0f, 0f, 0.05f),
+        new HapticStep(0.85f, 1.0f, 0.08f),
+        new HapticStep(0.30f, 0.45f, 0.15f));
+
+    // 보석 나무 파괴 - 나무 파괴(treeDestroy, 0.36초)를 바탕으로 단계가 오를수록 길게 끈다(체감 세기는 길이로 오른다).
+    // 황금은 1.5배(0.54초), 다이아는 0.75초, 무지개는 중간에 한 번 다시 차오르며 1.1초 동안 잦아든다.
+    private static readonly HapticPattern gemDestroyGold = new HapticPattern(
+        new HapticStep(1.0f, 1.0f, 0.12f),
+        new HapticStep(0.85f, 0.60f, 0.24f),
+        new HapticStep(0.50f, 0.28f, 0.18f));
+
+    private static readonly HapticPattern gemDestroyDiamond = new HapticPattern(
+        new HapticStep(1.0f, 1.0f, 0.12f),
+        new HapticStep(0.85f, 0.65f, 0.25f),
+        new HapticStep(0.60f, 0.40f, 0.20f),
+        new HapticStep(0.30f, 0.15f, 0.18f));
+
+    private static readonly HapticPattern gemDestroyRainbow = new HapticPattern(
+        new HapticStep(1.0f, 1.0f, 0.14f),
+        new HapticStep(0.85f, 0.70f, 0.25f),
+        new HapticStep(0.55f, 0.45f, 0.15f),
+        new HapticStep(0.80f, 0.75f, 0.15f),
+        new HapticStep(0.45f, 0.30f, 0.20f),
+        new HapticStep(0.20f, 0.10f, 0.25f));
+
     private static readonly HapticPattern[] patterns = BuildPatterns();
 
     /// <summary>
@@ -264,6 +305,12 @@ public static class HapticPresets
         _table[(int)EHapticEvent.RoguelikeTileWave] = roguelikeTileWave;
         _table[(int)EHapticEvent.RoguelikeTileWaveShore] = roguelikeTileWaveShore;
         _table[(int)EHapticEvent.TopgradeAssessment] = topgradeAssessment;
+        _table[(int)EHapticEvent.GemTransformGold] = gemTransformGold;
+        _table[(int)EHapticEvent.GemTransformDiamond] = gemTransformDiamond;
+        _table[(int)EHapticEvent.GemTransformRainbow] = gemTransformRainbow;
+        _table[(int)EHapticEvent.GemDestroyGold] = gemDestroyGold;
+        _table[(int)EHapticEvent.GemDestroyDiamond] = gemDestroyDiamond;
+        _table[(int)EHapticEvent.GemDestroyRainbow] = gemDestroyRainbow;
 
         return _table;
     }
@@ -306,6 +353,14 @@ public static class HapticPresets
         // 특등품 평가는 라인 3개가 거의 동시에 터지거나, 컨베이어가 빨라지면 같은 라인에서 연달아 터진다.
         // 하나하나 울리면 덜덜 떠는 연속 진동이 되므로 0.25초 안의 것은 한 번으로 묶는다.
         _table[(int)EHapticEvent.TopgradeAssessment] = 0.25f;
+
+        // 보석 변신·파괴는 나무 파괴와 같은 간격으로 묶는다(다중 공격·충격파로 여러 그루가 한꺼번에 바뀌거나 쓰러져도 한 번).
+        _table[(int)EHapticEvent.GemTransformGold] = 0.16f;
+        _table[(int)EHapticEvent.GemTransformDiamond] = 0.16f;
+        _table[(int)EHapticEvent.GemTransformRainbow] = 0.16f;
+        _table[(int)EHapticEvent.GemDestroyGold] = 0.16f;
+        _table[(int)EHapticEvent.GemDestroyDiamond] = 0.16f;
+        _table[(int)EHapticEvent.GemDestroyRainbow] = 0.16f;
 
         // 나머지(스킬, 프레스티지, 필드 습득, 원목 유실)는 하나하나 느껴져야 하므로 묶지 않는다.
 

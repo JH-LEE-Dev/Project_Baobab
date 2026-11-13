@@ -14,8 +14,21 @@ public static class RunCombatHooks
     /// <summary>도끼를 한 번 휘둘렀다(맞혔는지와 무관). 인자는 공격 판정 중심.</summary>
     public static event Action<Vector3> AxeSwungEvent;
 
-    /// <summary>부메랑이 나무를 맞혔다. 인자는 맞은 나무 위치, 그 순간 부메랑 위치, 부메랑 판정 반경.</summary>
-    public static event Action<Vector3, Vector3, float> BoomerangHitTreeEvent;
+    /// <summary>부메랑이 나무를 맞혔다(부메랑 + 충격파). 인자는 맞은 나무 위치.</summary>
+    public static event Action<Vector3> BoomerangHitTreeEvent;
+
+    /// <summary>부메랑 판정 주기(damageInterval)가 돌았다(나무를 맞혔는지와 무관, 가는 길 · 멈춤 · 돌아오는 길 모두). 인자는 부메랑 위치, 판정 반경.
+    /// 부메랑 하나는 한 프레임에 한 번만 판정 주기가 돈다.</summary>
+    public static event Action<Vector3, float> BoomerangTickEvent;
+
+    /// <summary>부메랑이 날기 시작했다. 인자는 부메랑 Transform, 판정 반경.</summary>
+    public static event Action<Transform, float> BoomerangStartedEvent;
+
+    /// <summary>부메랑이 회수되었다(정상 회수 · 강제 종료 모두). 인자는 부메랑 Transform.</summary>
+    public static event Action<Transform> BoomerangEndedEvent;
+
+    /// <summary>부메랑이 WarningUI로 그 자리에 멈췄다(true) / 다시 움직인다(false). 멈춘 동안은 판정 주기도 돌지 않는다.</summary>
+    public static event Action<Transform, bool> BoomerangPausedEvent;
 
     /// <summary>
     /// 드론 레이저가 나갔다. 첫 인자는 총구 → 주 대상 → 연쇄 대상 순의 레이저 지점(나무 꼭대기), 둘째 인자는 주 대상 → 연쇄 대상 순의
@@ -28,6 +41,8 @@ public static class RunCombatHooks
 
     public static bool HasBoomerangHitTreeListener => null != BoomerangHitTreeEvent;
 
+    public static bool HasBoomerangTickListener => null != BoomerangTickEvent;
+
     public static bool HasDroneLaserListener => null != DroneLaserEvent;
 
     public static bool HasShockWaveHitTreeListener => null != ShockWaveHitTreeEvent;
@@ -37,9 +52,29 @@ public static class RunCombatHooks
         AxeSwungEvent?.Invoke(_center);
     }
 
-    public static void NotifyBoomerangHitTree(Vector3 _treePosition, Vector3 _boomerangPosition, float _hitRadius)
+    public static void NotifyBoomerangHitTree(Vector3 _treePosition)
     {
-        BoomerangHitTreeEvent?.Invoke(_treePosition, _boomerangPosition, _hitRadius);
+        BoomerangHitTreeEvent?.Invoke(_treePosition);
+    }
+
+    public static void NotifyBoomerangTick(Vector3 _position, float _hitRadius)
+    {
+        BoomerangTickEvent?.Invoke(_position, _hitRadius);
+    }
+
+    public static void NotifyBoomerangStarted(Transform _boomerang, float _hitRadius)
+    {
+        BoomerangStartedEvent?.Invoke(_boomerang, _hitRadius);
+    }
+
+    public static void NotifyBoomerangEnded(Transform _boomerang)
+    {
+        BoomerangEndedEvent?.Invoke(_boomerang);
+    }
+
+    public static void NotifyBoomerangPaused(Transform _boomerang, bool _bPaused)
+    {
+        BoomerangPausedEvent?.Invoke(_boomerang, _bPaused);
     }
 
     public static void NotifyDroneLaser(IReadOnlyList<Vector3> _points, IReadOnlyList<Vector3> _hitGroundPositions)
@@ -56,6 +91,10 @@ public static class RunCombatHooks
     {
         AxeSwungEvent = null;
         BoomerangHitTreeEvent = null;
+        BoomerangTickEvent = null;
+        BoomerangStartedEvent = null;
+        BoomerangEndedEvent = null;
+        BoomerangPausedEvent = null;
         DroneLaserEvent = null;
         ShockWaveHitTreeEvent = null;
     }

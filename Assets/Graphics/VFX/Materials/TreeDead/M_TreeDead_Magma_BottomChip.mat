@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_TreeDead_Basic_BottomImpact
+  m_Name: M_TreeDead_Magma_BottomChip
   m_Shader: {fileID: 4800000, guid: f0931c79bd835b04a855c5035ca5308b, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -29,15 +29,14 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AccentGlowMax: 1
-    - _AccentGlowMin: 1
-    - _BodyGlow: 1
+    - _AccentGlowMax: 1.8
+    - _AccentGlowMin: 0.55
+    - _BodyGlow: 0
     - _GlowMax: 2.6
     - _GlowMin: 1
-    - _Opacity: 1
     - _PixelsPerUnit: 32
     m_Colors:
-    - _AccentColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Region: {r: 0.625, g: 0.25, b: 0, a: 0.75}
+    - _AccentColor: {r: 1, g: 0.47843137, b: 0.18039216, a: 1}
+    - _Region: {r: 0.09375, g: 0.07692308, b: 0.8125, a: 0.11217949}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
