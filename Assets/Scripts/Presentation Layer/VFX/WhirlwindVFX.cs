@@ -12,15 +12,14 @@ using UnityEngine.Rendering;
 /// 1. 칼날(바닥): 맞은편에 붙은 초승달 칼날 두 개가 반시계로 돌며 휩쓴다. 머리는 하얗게 빛나고 꼬리로 갈수록 시안 -> 파랑으로 식으며
 ///    끝은 체커 도트로 흩어진다. 머리 끝에는 반짝이는 십자 광채가 붙는다. 돌기가 끝나면 꼬리가 머리를 따라잡으며 가늘어져 사라진다.
 ///    조금 늦게 조금 안쪽에서 도트 잔상 칼날이 한 겹 더 따라온다.
-/// 2. 테두리 베인 자국(바닥): 칼날 머리가 지난 바깥 테두리가 하얗게 그어졌다가 식어, 한 바퀴가 다 그어지면 원이 새겨진 것처럼 보인다.
-/// 3. 회오리 선·바람 먼지(바닥): 칼날 안쪽 세 겹의 가는 바람 선이 칼날을 따라 돌고, 지나간 테두리에서 먼지가 도는 방향으로 휘날린다.
-/// 4. 발동 연출(바닥): 안쪽에서 바깥으로 고리가 터져 나가고 중심에서 빛줄기가 사방으로 뻗는다.
-/// 5. 마무리(바닥): 한 바퀴를 다 돈 순간 테두리에서 고리가 한 번 더 바깥으로 터지고 테두리를 따라 별빛이 차례로 반짝인다.
-/// 6. 나무 타격(공중): AttackComponent가 칼날이 지나간 나무마다 AddHit을 부르면 그 자리에서 베인 자국과 섬광이 번쩍이고
+/// 2. 바람 먼지(바닥): 칼날이 지나간 테두리에서 먼지가 도는 방향으로 휘날린다.
+/// 3. 발동 연출(바닥): 중심에서 빛줄기가 사방으로 뻗는다.
+/// 4. 마무리(바닥): 한 바퀴를 다 돈 순간 테두리를 따라 별빛이 차례로 반짝인다.
+/// 5. 나무 타격(공중): AttackComponent가 칼날이 지나간 나무마다 AddHit을 부르면 그 자리에서 베인 자국과 섬광이 번쩍이고
 ///    밑동에 충격 고리가 퍼지며 불꽃이 칼날이 도는 방향으로 튀어 떨어진다. 한 번에 많이 벨수록 뒤에 베인 나무의 섬광이 커진다.
 ///
 /// 칼날 각도(GetBladeAngle)와 타격 시각(GetSweepTime)이 같은 표(BladeAngles)를 쓰므로 칼날 머리가 나무를 지나는 순간 나무가 맞는다.
-/// 칼날·고리는 나무·캐릭터 아래(ShockWave), 나무 타격은 나무 위(FlyingItem, 드론 레이저 피격과 같은 레이어)에 그린다.
+/// 칼날은 나무·캐릭터 아래(ShockWave), 나무 타격은 나무 위(FlyingItem, 드론 레이저 피격과 같은 레이어)에 그린다.
 /// 판정 범위·피해와는 무관한 그림이다. 위치는 매 프레임 경과 시간으로 계산하고 재생 중 힙 할당이 없다.
 /// </summary>
 public class WhirlwindVFX : MonoBehaviour
@@ -100,18 +99,14 @@ public class WhirlwindVFX : MonoBehaviour
     private const float EchoLag = 0.04f;
     private const float EchoRadiusRatio = 0.86f;
 
-    // 테두리 베인 자국: 반지름과 남는 시간
+    // 테두리 별빛의 기준 반지름
     private const float ScarRho = 1.02f;
-    private const float ScarSeconds = 0.26f;
 
     // 발동 빛줄기
     private const int BurstRayCount = 12;
     private const float BurstRaySeconds = 0.12f;
 
-    // 마무리 고리와 별빛
-    private const float FinaleRingSeconds = 0.18f;
-    private const float FinaleRingEndRho = 1.42f;
-    private const float FinaleRingSolidUntil = 0.4f;   // 고리가 실선인 동안(비율)만 그린다
+    // 마무리 별빛
     private const int FinaleTwinkleCount = 12;
     private const float FinaleTwinkleStep = 0.012f;
     private const float FinaleTwinkleLife = 0.13f;
@@ -120,17 +115,7 @@ public class WhirlwindVFX : MonoBehaviour
     private const int WindMoteCount = 36;
     private const float WindMoteLifeMax = 0.4f;
 
-    // 회오리 선: 반지름, 칼날 머리보다 뒤처진 각도, 길이
-    private static readonly float[] SwirlRho = { 0.52f, 0.66f, 0.8f };
-    private static readonly float[] SwirlLag = { 26f, 52f, 12f };
-    private static readonly float[] SwirlSpan = { 46f, 34f, 64f };
-    private const float SwirlStart = 0.02f;
 
-    // 충격 고리
-    private const float RingSeconds = 0.17f;
-    private const float RingStartRho = 0.3f;
-    private const float RingEndRho = 1.12f;
-    private const float RingSolidUntil = 0.55f;        // 고리가 실선인 동안(비율)만 그린다
 
     // 나무 타격
     private const int HitCapacity = 64;
@@ -494,8 +479,8 @@ public class WhirlwindVFX : MonoBehaviour
         elapsed += Time.deltaTime;
 
         // 칼날이 식는 시간, 마지막 베인 자국·바람 먼지·별빛이 사라지는 시간 중 가장 늦은 때까지 그린다.
-        float tail = Mathf.Max(BladeFadeSeconds, ScarSeconds, WindMoteLifeMax,
-            Mathf.Max(FinaleRingSeconds * FinaleRingSolidUntil, (FinaleTwinkleCount - 1) * FinaleTwinkleStep + FinaleTwinkleLife));
+        float tail = Mathf.Max(BladeFadeSeconds, WindMoteLifeMax,
+            (FinaleTwinkleCount - 1) * FinaleTwinkleStep + FinaleTwinkleLife);
         float bladeEnd = SweepDuration + tail;
         float hitEnd = lastHitTime >= 0f ? lastHitTime + HitTailSeconds : 0f;
         if (elapsed >= bladeEnd && elapsed >= hitEnd)
@@ -526,16 +511,13 @@ public class WhirlwindVFX : MonoBehaviour
     {
         // 바닥은 베인 자국(맨 아래) -> 칼날(셰이더 쿼드) -> 나머지(칼날 위) 순으로 겹친다.
         painter.Begin(groundBuffer, scarTransform.worldToLocalMatrix, 0f);
-        DrawRimScar();
         painter.Commit(scarMesh, scarRenderer, ref scarHash, ref scarVertexCount);
 
         UpdateBlades();
 
         painter.Begin(groundBuffer, groundTransform.worldToLocalMatrix, 0f);
         DrawBladeGlints();
-        DrawSwirls();
         DrawWindMotes();
-        DrawRing();
         DrawBurstRays();
         DrawFinale();
         painter.Commit(groundMesh, groundRenderer, ref groundHash, ref groundVertexCount);
@@ -636,45 +618,7 @@ public class WhirlwindVFX : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 칼날이 지나간 바깥 테두리에 남는 베인 자국. 칼날 머리가 지난 순서대로 하얗게 그어졌다가 시안 -> 파랑으로 식으며
-    /// 도트로 흩어진다. 한 바퀴가 다 그어지면 바닥에 원이 새겨진 것처럼 보인다.
-    /// </summary>
-    private void DrawRimScar()
-    {
-        int rx = Mathf.RoundToInt(radiusPx * ScarRho);
-        int ry = Mathf.RoundToInt(radiusPx * ScarRho * 0.5f);
-        int count = PixelEllipse.Build(rx, ry);
 
-        for (int i = 0; i < count; i++)
-        {
-            int px = PixelEllipse.OutX[i];
-            int py = PixelEllipse.OutY[i];
-            float age = elapsed - GetSweepTime(new Vector2(px, py));
-            if (age < 0f || age >= ScarSeconds) continue;
-
-            Color32 color;
-            if (age < 0.035f) color = SlashWhite;
-            else if (age < 0.1f) color = SlashLight;
-            else if (age < 0.18f) color = SlashMid;
-            else if (0 == (i & 1)) color = SlashDark;
-            else continue;
-
-            painter.Dot(centerX + px, centerY + py, color);
-        }
-
-        // 막 그어진 자리는 한 칸 안쪽을 더 그어 두껍게 빛난다.
-        int innerCount = PixelEllipse.Build(Mathf.Max(1, rx - 2), Mathf.Max(1, ry - 1));
-        for (int i = 0; i < innerCount; i++)
-        {
-            int px = PixelEllipse.OutX[i];
-            int py = PixelEllipse.OutY[i];
-            float age = elapsed - GetSweepTime(new Vector2(px, py));
-            if (age < 0f || age >= 0.07f) continue;
-
-            painter.Dot(centerX + px, centerY + py, age < 0.03f ? SlashLight : SlashMid);
-        }
-    }
 
     /// <summary>발동 순간 중심에서 사방으로 뻗어 나가는 빛줄기.</summary>
     private void DrawBurstRays()
@@ -702,25 +646,12 @@ public class WhirlwindVFX : MonoBehaviour
     }
 
     /// <summary>
-    /// 한 바퀴를 다 돈 순간의 마무리: 테두리에서 고리가 한 번 더 바깥으로 터지고, 테두리를 따라 별빛이 차례로 반짝인다.
+    /// 한 바퀴를 다 돈 순간 테두리를 따라 별빛이 차례로 반짝인다.
     /// </summary>
     private void DrawFinale()
     {
         float f = elapsed - SweepDuration;
         if (f < 0f) return;
-
-        // 고리는 실선인 동안만 그린다(점선으로 흩어지는 꼬리는 없다).
-        float ringEnd = FinaleRingSeconds * FinaleRingSolidUntil;
-        if (f < ringEnd)
-        {
-            float p = f / FinaleRingSeconds;
-            float eased = 1f - (1f - p) * (1f - p) * (1f - p);
-            float rho = Mathf.Lerp(ScarRho, FinaleRingEndRho, eased);
-            int rx = Mathf.RoundToInt(radiusPx * rho);
-            int ry = Mathf.RoundToInt(radiusPx * rho * 0.5f);
-            Color32 color = p < 0.25f ? SlashWhite : SlashLight;
-            painter.RingArc(centerX, centerY, rx, ry, 4, 0, 0f, color);
-        }
 
         for (int k = 0; k < FinaleTwinkleCount; k++)
         {
@@ -795,66 +726,9 @@ public class WhirlwindVFX : MonoBehaviour
         return (h & 0xFFFFFF) / 16777216f;
     }
 
-    /// <summary>칼날 안쪽에서 함께 도는 가는 바람 선 세 겹.</summary>
-    private void DrawSwirls()
-    {
-        float energy = GetEnergy();
-        if (elapsed < SwirlStart || energy <= 0f) return;
 
-        float scale = GetPopScale();
-        float head = GetBladeAngle(elapsed);
-        float grow = Mathf.Clamp01((elapsed - SwirlStart) / 0.06f);
 
-        for (int j = 0; j < SwirlRho.Length; j++)
-        {
-            float span = SwirlSpan[j] * grow * (0.4f + 0.6f * energy);
-            if (span < 2f) continue;
 
-            int rx = Mathf.RoundToInt(radiusPx * SwirlRho[j] * scale);
-            int ry = Mathf.RoundToInt(radiusPx * SwirlRho[j] * scale * 0.5f);
-            int count = PixelEllipse.Build(rx, ry);
-            float lineHead = head - SwirlLag[j];
-
-            for (int i = 0; i < count; i++)
-            {
-                int px = PixelEllipse.OutX[i];
-                int py = PixelEllipse.OutY[i];
-                float phi = Mathf.Atan2(py * 2f, px) * Mathf.Rad2Deg;
-                float behind = Mathf.Repeat(lineHead - phi, 180f);
-                if (behind > span) continue;
-
-                float s = 1f - behind / span;
-                Color32 color;
-                if (s > 0.7f && energy > 0.6f) color = SlashLight;
-                else if (s > 0.35f) color = SlashMid;
-                else if (0 == (i & 1)) color = SlashDark;
-                else continue;
-
-                painter.Dot(centerX + px, centerY + py, color);
-            }
-        }
-    }
-
-    /// <summary>발동 순간 안쪽에서 바깥으로 터져 나가는 충격 고리.</summary>
-    private void DrawRing()
-    {
-        if (elapsed >= RingSeconds) return;
-
-        float p = elapsed / RingSeconds;
-        // 고리는 실선인 동안만 그린다(점선으로 흩어지는 꼬리는 없다).
-        if (p >= RingSolidUntil) return;
-
-        float eased = 1f - (1f - p) * (1f - p) * (1f - p);
-        float rho = Mathf.Lerp(RingStartRho, RingEndRho, eased);
-        int rx = Mathf.RoundToInt(radiusPx * rho);
-        int ry = Mathf.RoundToInt(radiusPx * rho * 0.5f);
-
-        Color32 color = p < 0.3f ? SlashWhite : SlashLight;
-        painter.RingArc(centerX, centerY, rx, ry, 3, 0, 0f, color);
-
-        // 막 터진 순간에는 한 칸 안쪽에 고리를 하나 더 겹쳐 두껍게 번쩍인다.
-        if (p < 0.35f && rx > 2) painter.RingArc(centerX, centerY, rx - 2, Mathf.Max(1, ry - 1), 3, 0, 0f, SlashLight);
-    }
 
     /// <summary>나무마다 베인 자국 번쩍임과 튀는 불꽃.</summary>
     private void DrawHits()

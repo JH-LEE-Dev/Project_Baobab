@@ -871,9 +871,52 @@ MonoBehaviour:
     m_RotationOrder: 4
   hitFlashColor: {r: 1, g: 1, b: 1, a: 1}
   criticalHitFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  criticalHitFlashDuration: 0.26
+  criticalHitFlashCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.4
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  criticalHitFlashMidColor: {r: 1, g: 0.6, b: 0.15, a: 1}
+  criticalHitFlashWhiteHold: 0.18
+  criticalHitFlashMidPoint: 0.45
+  criticalPunchMultiplier: 1.8
+  criticalOutlineFlashColor: {r: 1, g: 1, b: 1, a: 1}
+  criticalOutlineMidColor: {r: 1, g: 0.8, b: 0.25, a: 1}
+  criticalOutlineWhiteHold: 0.3
+  criticalOutlineMidPoint: 0.6
   criticalScalePeak: 1.15
   criticalScaleUpDuration: 0.05
   criticalScaleDownDuration: 0.22
+  criticalSquashRatio: 0.6
   growUpFlashDuration: 0.35
   growUpFlashCurve:
     serializedVersion: 2

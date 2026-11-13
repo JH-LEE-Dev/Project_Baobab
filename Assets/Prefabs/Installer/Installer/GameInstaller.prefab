@@ -1545,6 +1545,7 @@ MonoBehaviour:
   - {fileID: 8863095175892535116}
   - {fileID: 6294901244587944149}
   - {fileID: 5574464615179719263}
+  sideNeighborOffset: {x: -0.5, y: 0.25}
   firstRevealStagger: 0.35
   focusSwitchMargin: 0.1
 --- !u!1 &3957381566655606059
@@ -4071,10 +4072,10 @@ MonoBehaviour:
   starCompassTier3PrestigeLevel: 11
   meteorShowerChargePerKill: 0.1
   meteorImpactRange: 1
-  meteorShowerTier1Damage: 300
+  meteorShowerTier1Damage: 500
   meteorShowerTier1FallRange: 5
-  meteorShowerTier1Duration: 3
-  meteorShowerTier1Count: 15
+  meteorShowerTier1Duration: 4
+  meteorShowerTier1Count: 30
   meteorShowerTier2Damage: 450
   meteorShowerTier2FallRange: 3.5
   meteorShowerTier2Duration: 4
