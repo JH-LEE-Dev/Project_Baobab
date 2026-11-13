@@ -65,7 +65,7 @@ public class TreeVisualComponent : MonoBehaviour
 
     [Header("Critical Hit Flash")]
     // 치명타 번쩍임은 2단계다: 처음엔 흰색으로 터지고(WhiteHold까지), 주황(MidColor, MidPoint까지)을 거쳐 빨강(criticalHitFlashColor)으로 가라앉는다.
-    // 세 색은 사이 색 없이 계단식으로 끊어 바뀐다(픽셀 규칙). WhiteHold·MidPoint는 번쩍임 길이에 대한 비율(0~1)이다.
+    // WhiteHold·MidPoint는 번쩍임 길이에 대한 비율(0~1)이다.
     [SerializeField] private float criticalHitFlashDuration = 0.26f;
     [SerializeField] private AnimationCurve criticalHitFlashCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.4f, 1f), new Keyframe(1f, 0f));
     [SerializeField] private Color criticalHitFlashMidColor = new Color(1f, 0.6f, 0.15f, 1f);
@@ -75,8 +75,8 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private float criticalPunchMultiplier = 1.8f;
 
     [Header("Critical Outline Flash")]
-    // 치명타 번쩍임 동안 외곽선을 흰색 → 금색으로 계단식으로 번쩍인다. 원래 외곽선이 켜져 있던 나무(도끼 대상)는 원래 색으로 바로 돌아가고,
-    // 꺼져 있던 나무는 바로 사라진다(반투명 페이드 없음). 시각은 번쩍임 길이에 대한 비율(0~1)이다.
+    // 치명타 번쩍임 동안 외곽선을 흰색 → 금색으로 번쩍인다. 원래 외곽선이 켜져 있던 나무(도끼 대상)는 원래 색으로 돌아가고,
+    // 꺼져 있던 나무는 금색이 흐려지며 사라진다. 시각은 번쩍임 길이에 대한 비율(0~1)이다.
     [SerializeField] private Color criticalOutlineFlashColor = Color.white;
     [SerializeField] private Color criticalOutlineMidColor = new Color(1f, 0.8f, 0.25f, 1f);
     [SerializeField, Range(0f, 1f)] private float criticalOutlineWhiteHold = 0.3f;
@@ -1145,16 +1145,21 @@ public class TreeVisualComponent : MonoBehaviour
         ApplyFlashAmountToRenderers(_flash);
     }
 
-    // 픽셀 규칙(한 계열 최대 3색, 보간 금지): 흰색 -> 주황 -> 빨강 세 색을 사이 색 없이 계단식으로 끊어 바꾼다.
     private Color EvaluateCriticalFlashColor(float _progress)
     {
         if (_progress <= criticalHitFlashWhiteHold)
             return Color.white;
 
         if (_progress <= criticalHitFlashMidPoint)
-            return criticalHitFlashMidColor;
+        {
+            float span = criticalHitFlashMidPoint - criticalHitFlashWhiteHold;
+            float t = span > 0f ? (_progress - criticalHitFlashWhiteHold) / span : 1f;
+            return Color.Lerp(Color.white, criticalHitFlashMidColor, t);
+        }
 
-        return criticalHitFlashColor;
+        float restSpan = 1f - criticalHitFlashMidPoint;
+        float rest = restSpan > 0f ? Mathf.Clamp01((_progress - criticalHitFlashMidPoint) / restSpan) : 1f;
+        return Color.Lerp(criticalHitFlashMidColor, criticalHitFlashColor, rest);
     }
 
     private void BeginCriticalFlash()
@@ -1203,17 +1208,29 @@ public class TreeVisualComponent : MonoBehaviour
         SetOutlineColorToRenderer(bottomOutlineSR, EvaluateCriticalOutlineColor(_progress, bottomOutlineSR));
     }
 
-    // 픽셀 규칙(1px 외곽선이라 그라데이션·반투명 금지): 흰색 -> 금색을 사이 색 없이 계단식으로 끊어 바꾸고,
-    // 그 뒤 원래 외곽선이 켜져 있던 나무는 원래 색으로 바로 돌아가고, 꺼져 있던 나무는 그 자리에서 바로 사라진다(완전 투명).
     private Color EvaluateCriticalOutlineColor(float _progress, SpriteRenderer _sr)
     {
         if (_progress <= criticalOutlineWhiteHold)
             return criticalOutlineFlashColor;
 
         if (_progress <= criticalOutlineMidPoint)
-            return criticalOutlineMidColor;
+        {
+            float span = criticalOutlineMidPoint - criticalOutlineWhiteHold;
+            float t = span > 0f ? (_progress - criticalOutlineWhiteHold) / span : 1f;
+            return Color.Lerp(criticalOutlineFlashColor, criticalOutlineMidColor, t);
+        }
 
-        return isOutlineActive ? GetBaseOutlineColor(_sr) : Color.clear;
+        float restSpan = 1f - criticalOutlineMidPoint;
+        float rest = restSpan > 0f ? Mathf.Clamp01((_progress - criticalOutlineMidPoint) / restSpan) : 1f;
+
+        // 원래 외곽선이 켜져 있던 나무는 원래 색으로, 꺼져 있던 나무는 금색이 흐려지며 사라진다.
+        Color end = criticalOutlineMidColor;
+        if (isOutlineActive)
+            end = GetBaseOutlineColor(_sr);
+        else
+            end.a = 0f;
+
+        return Color.Lerp(criticalOutlineMidColor, end, rest);
     }
 
     private static Color GetBaseOutlineColor(SpriteRenderer _sr)
