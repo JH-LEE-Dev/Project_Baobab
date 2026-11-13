@@ -1114,7 +1114,7 @@ public static class TreeDeadStageVfxBuilder
             sortingOffset = OrderBody,
         };
 
-        // 솜뭉치·갓·솜먼지는 명암을 밝은 쪽(W)·어두운 쪽(M) 두 단으로만 칠해 그라데이션을 줄인다(같은 모양을 쓰는 용암 계열은 그대로).
+        // 솜뭉치·갓·솜먼지는 명암을 밝은 쪽(W)·조금 어두운 쪽(L) 두 단으로만 칠해 그라데이션을 줄인다(같은 모양을 쓰는 용암 계열은 그대로).
         puff.rows = TwoTone(puff.rows);
         cap.rows = TwoTone(cap.rows);
         dust.rows = TwoTone(dust.rows);
@@ -1130,7 +1130,7 @@ public static class TreeDeadStageVfxBuilder
         };
     }
 
-    // 모양의 명암 4단을 두 단으로 합친다(L -> W, D -> M). 강조 픽셀 A는 그대로 둔다.
+    // 모양의 명암 4단을 차이가 작은 두 단으로 합친다(W·L -> W, M·D -> L). 강조 픽셀 A는 그대로 둔다.
     private static string[][][] TwoTone(string[][][] _rows)
     {
         string[][][] result = new string[_rows.Length][][];
@@ -1141,7 +1141,7 @@ public static class TreeDeadStageVfxBuilder
             {
                 string[] shape = _rows[r][f];
                 string[] merged = new string[shape.Length];
-                for (int y = 0; y < shape.Length; y++) merged[y] = shape[y].Replace('L', 'W').Replace('D', 'M');
+                for (int y = 0; y < shape.Length; y++) merged[y] = shape[y].Replace('L', 'W').Replace('M', 'L').Replace('D', 'L');
                 result[r][f] = merged;
             }
         }
