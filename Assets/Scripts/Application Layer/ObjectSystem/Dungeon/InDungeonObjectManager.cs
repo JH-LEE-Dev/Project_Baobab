@@ -2490,6 +2490,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 // 포자막이 남은 나무면 막 결정 번쩍임·조각(켜진 스테이지에서만, 꺼진 곳은 아무 일도 하지 않는다)
                 StageSporeShieldFx.NotifyHit(_treeObj.treeVisualComponent, _treeObj.health);
             }
+
+            // 치명타면 피격 이펙트 위에 치명타 전용 임팩트를 더한다(보석 나무 포함).
+            if (true == _treeObj.bCriticalHitInProgress)
+            {
+                inDungeonVFXManager.PlayCriticalImpactVFX(_treeObj.treeVisualComponent);
+            }
         }
 
         if (null != currentTreeGenerationStrategy)

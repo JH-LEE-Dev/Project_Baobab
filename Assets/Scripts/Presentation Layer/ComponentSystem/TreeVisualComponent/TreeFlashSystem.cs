@@ -46,13 +46,13 @@ public static class TreeFlashSystem
         // 코루틴 버전: while (elapsed < duration)이 처음부터 거짓이면 즉시 0을 적용하고 끝났다
         if (_duration <= 0f)
         {
-            _visual.ApplyFlashAmountFromSystem(0f);
+            _visual.ApplyFlashAmountFromSystem(0f, 1f);
             return;
         }
 
         EnsureDriver();
 
-        _visual.ApplyFlashAmountFromSystem(_curve.Evaluate(0f));
+        _visual.ApplyFlashAmountFromSystem(_curve.Evaluate(0f), 0f);
         _visual.flashEntryIndex = entries.Count;
         entries.Add(new Entry
         {
@@ -115,13 +115,14 @@ public static class TreeFlashSystem
 
             if (entry.elapsed < entry.duration)
             {
-                entry.visual.ApplyFlashAmountFromSystem(entry.curve.Evaluate(entry.elapsed / entry.duration));
+                float progress = entry.elapsed / entry.duration;
+                entry.visual.ApplyFlashAmountFromSystem(entry.curve.Evaluate(progress), progress);
                 entry.elapsed += dt;
                 entries[i] = entry;
             }
             else
             {
-                entry.visual.ApplyFlashAmountFromSystem(0f);
+                entry.visual.ApplyFlashAmountFromSystem(0f, 1f);
                 RemoveAt(i);
             }
         }

@@ -250,6 +250,12 @@ public class InDungeonVFXManager : MonoBehaviour
     // 인스턴스(자식 오브젝트 2개 + 메쉬 2개) 생성이 몰리지 않도록 몇 개를 미리 만든다.
     private const int BrandStarWrapPrewarmCount = 4;
 
+    // 치명타 전용 임팩트(VFX_CriticalImpact). 프리팹 없이 이 매니저 아래에 런타임으로 만들고, 끝난 인스턴스를 다시 쓴다.
+    // 다중 공격·충격파로 한 번에 여러 그루가 치명타를 맞아도 동시에 이만큼까지만 그린다(넘는 것은 생략, 나무 번쩍임·반동은 그대로).
+    private const int CriticalImpactMaxActive = 12;
+    private const int CriticalImpactPrewarmCount = 4;
+    private readonly List<PresentationLayer.VFX.VFX_CriticalImpact> criticalImpacts = new List<PresentationLayer.VFX.VFX_CriticalImpact>(CriticalImpactMaxActive);
+
     public void Initialize()
     {
         if (vfxComponent != null)
@@ -403,6 +409,44 @@ public class InDungeonVFXManager : MonoBehaviour
         PrewarmPool(treeTransformVfxPool, TreeTransformVfxPrewarmCount, treeTransformVfxPoolMaxSize);
         PrewarmPool(shootingStarVfxPool, ShootingStarVfxPrewarmCount, shootingStarVfxPoolMaxSize);
         PrewarmPool(treeHeatIndicatorPool, TreeHeatIndicatorPrewarmCount, treeHeatIndicatorPoolMaxSize);
+
+        // 치명타 임팩트도 첫 치명타 순간에 메쉬·오브젝트 생성이 몰리지 않도록 몇 개를 미리 만든다(재생은 하지 않는다).
+        while (criticalImpacts.Count < CriticalImpactPrewarmCount)
+        {
+            PresentationLayer.VFX.VFX_CriticalImpact vfx = PresentationLayer.VFX.VFX_CriticalImpact.Create(transform);
+            if (vfx == null) break;
+            criticalImpacts.Add(vfx);
+        }
+    }
+
+    /// <summary>
+    /// 치명타 전용 임팩트(베기 줄기·별 섬광·점선 충격파·파편)를 맞은 자리(밑동 쪽, 기본 피격 톱밥이 터지는 자리)에서 재생한다.
+    /// 맞은 나무의 가장 앞 렌더러보다 한 단계 더 앞에 그린다. 동시에 CriticalImpactMaxActive개를 넘으면 생략한다.
+    /// </summary>
+    public void PlayCriticalImpactVFX(TreeVisualComponent _visual)
+    {
+        if (_visual == null) return;
+
+        PresentationLayer.VFX.VFX_CriticalImpact vfx = null;
+        for (int i = 0; i < criticalImpacts.Count; i++)
+        {
+            PresentationLayer.VFX.VFX_CriticalImpact candidate = criticalImpacts[i];
+            if (candidate != null && false == candidate.IsPlaying)
+            {
+                vfx = candidate;
+                break;
+            }
+        }
+
+        if (vfx == null)
+        {
+            if (criticalImpacts.Count >= CriticalImpactMaxActive) return;
+            vfx = PresentationLayer.VFX.VFX_CriticalImpact.Create(transform);
+            if (vfx == null) return;
+            criticalImpacts.Add(vfx);
+        }
+
+        vfx.Play(_visual.GetBottomRootPosition(), TreeSortingLayerName, _visual.GetFrontEffectSortingOrder() + 1);
     }
 
     // 쉬고 있는 인스턴스가 _count개(풀 보관 상한 이내)가 되도록 꺼냈다가 돌려놓는다. 꺼낸 동안 동시에 들고 있어야 서로 다른
@@ -1192,6 +1236,11 @@ public class InDungeonVFXManager : MonoBehaviour
         {
             treeDeadEffects[i].topEmitter?.Clear();
             treeDeadEffects[i].bottomEmitter?.Clear();
+        }
+
+        for (int i = 0; i < criticalImpacts.Count; i++)
+        {
+            if (criticalImpacts[i] != null) criticalImpacts[i].StopImmediate();
         }
     }
 
