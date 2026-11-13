@@ -16,6 +16,11 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 36b802b252849194eb8f71e4af4b8276, type: 3}
   - {fileID: 8300000, guid: 5cec2306c9131ea4eab1ff4a8db2f1d0, type: 3}
   - {fileID: 8300000, guid: 8aec0dc4b9cc75e459165bc4115cccaf, type: 3}
+  clipVolumes:
+  - 1
+  - 0.6
+  - 0.8
+  playAllClips: 1
   minPitch: 0.95
   maxPitch: 1.05
   minVolumeModifier: 0.9
