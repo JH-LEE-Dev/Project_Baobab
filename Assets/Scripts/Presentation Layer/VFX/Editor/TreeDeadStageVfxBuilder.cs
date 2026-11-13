@@ -1114,6 +1114,11 @@ public static class TreeDeadStageVfxBuilder
             sortingOffset = OrderBody,
         };
 
+        // 솜뭉치·갓·솜먼지는 명암을 밝은 쪽(W)·어두운 쪽(M) 두 단으로만 칠해 그라데이션을 줄인다(같은 모양을 쓰는 용암 계열은 그대로).
+        puff.rows = TwoTone(puff.rows);
+        cap.rows = TwoTone(cap.rows);
+        dust.rows = TwoTone(dust.rows);
+
         // 3) 바닥 고리: 민트빛 실선 고리가 번지다가 마지막에 점선으로 풀린다.
         SystemSpec ring = BuildRingSpec(ERingStyle.Solid, 0.32f, Grad(new[] { Key(0.0f, "E9FFFA"), Key(1.0f, "A6E6DA") }, new[] { Alpha(0.0f, 0.9f), Alpha(1.0f, 0.0f) }));
 
@@ -1123,6 +1128,25 @@ public static class TreeDeadStageVfxBuilder
             top = Concat(new[] { puff, cap, mote }, BuildImpactSpecs("DFFFF8", "F4EEFF", "A6E6DA", "C9FFF6", "B9A6F0")),
             bottom = new[] { chip, dust, ring },
         };
+    }
+
+    // 모양의 명암 4단을 두 단으로 합친다(L -> W, D -> M). 강조 픽셀 A는 그대로 둔다.
+    private static string[][][] TwoTone(string[][][] _rows)
+    {
+        string[][][] result = new string[_rows.Length][][];
+        for (int r = 0; r < _rows.Length; r++)
+        {
+            result[r] = new string[_rows[r].Length][];
+            for (int f = 0; f < _rows[r].Length; f++)
+            {
+                string[] shape = _rows[r][f];
+                string[] merged = new string[shape.Length];
+                for (int y = 0; y < shape.Length; y++) merged[y] = shape[y].Replace('L', 'W').Replace('D', 'M');
+                result[r][f] = merged;
+            }
+        }
+
+        return result;
     }
 
     private static StageSpec BuildStarSpec()
