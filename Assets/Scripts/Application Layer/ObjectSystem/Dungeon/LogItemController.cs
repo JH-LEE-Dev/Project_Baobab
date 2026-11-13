@@ -680,6 +680,10 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
     private static readonly Vector3 JackpotLabelOffset = new Vector3(0f, 0.15f, 0f);
     private PresentationLayer.VFX.VFX_TopgradeAssessment[] jackpotLabels;
     private int jackpotLabelCursor;
+    // 특등품 ×2 팝업과 같은 글자 그림(제재소 라인 LogProcessLine과 같은 스프라이트를 연결한다). 비어 있으면 글자가 뜨지 않는다.
+    [Header("Jackpot Label")]
+    [SerializeField] private Sprite jackpotTimesSprite;
+    [SerializeField] private Sprite jackpotTwoSprite;
 
     private void PlayJackpotLabel(TreeObj _treeObj)
     {
@@ -695,6 +699,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
             label = PresentationLayer.VFX.VFX_TopgradeAssessment.Create(transform);
             if (label == null) return;
             label.gameObject.name = "JackpotLabelVFX";
+            label.ConfigurePopup(jackpotTimesSprite, jackpotTwoSprite);
             jackpotLabels[jackpotLabelCursor] = label;
         }
         jackpotLabelCursor = (jackpotLabelCursor + 1) % JackpotLabelCount;

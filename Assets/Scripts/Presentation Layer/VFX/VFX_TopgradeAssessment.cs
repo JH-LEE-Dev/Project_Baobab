@@ -253,12 +253,8 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void PlayLabel(Vector3 _labelPos)
         {
-            labelX = ToPixel(_labelPos.x);
-            labelY = ToPixel(_labelPos.y);
-            labelAge = 0f;
-            bLabelActive = true;
-            bLabelFresh = true;
-            bAnyActive = true;
+            // 글자는 TopgradePopup이 그린다(ConfigurePopup으로 글자 그림을 받은 경우에만 뜬다).
+            if (popup != null) popup.Play(_labelPos);
         }
 
         /// <summary>쌍둥이가 원목 등 위에 내려앉는 순간. _worldPos는 쌍둥이 중심.</summary>

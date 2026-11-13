@@ -646,6 +646,8 @@ MonoBehaviour:
   highGradeDropCntMax: 7
   enableCulling: 0
   cullingUpdateInterval: 0.05
+  jackpotTimesSprite: {fileID: -227947725, guid: b5919104e6bba484382995363357ae05, type: 3}
+  jackpotTwoSprite: {fileID: 3943169913685968393, guid: b5919104e6bba484382995363357ae05, type: 3}
 --- !u!114 &597610330652353424
 MonoBehaviour:
   m_ObjectHideFlags: 0
