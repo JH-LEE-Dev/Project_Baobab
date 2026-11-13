@@ -1214,9 +1214,9 @@ public class AudioManager : MonoBehaviour
 
         if (data.cueData != null)
         {
-            clip = PickClipFromCue(data.cueData);
+            clip = PickClipFromCue(data.cueData, out float clipVolume);
             pitch = data.cueData.GetRandomPitch();
-            baseVolume = data.defaultVolume * data.cueData.GetRandomVolumeModifier();
+            baseVolume = data.defaultVolume * clipVolume * data.cueData.GetRandomVolumeModifier();
         }
         else
         {
@@ -1414,10 +1414,11 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    private AudioClip PickClipFromCue(AudioCueData cue)
+    // _clipVolume: 고른 클립의 큐 내 개별 음량 배율(AudioCueData.clipVolumes, 미설정이면 1).
+    private AudioClip PickClipFromCue(AudioCueData cue, out float _clipVolume)
     {
         int lastIndex = cueLastIndexCache.TryGetValue(cue, out int idx) ? idx : -1;
-        AudioClip clip = cue.GetRandomClip(ref lastIndex);
+        AudioClip clip = cue.GetRandomClip(ref lastIndex, out _clipVolume);
         cueLastIndexCache[cue] = lastIndex;
         return clip;
     }
@@ -1683,9 +1684,10 @@ public class AudioManager : MonoBehaviour
         // 직전 전환이 아직 끝나지 않았다면 incoming은 그 전환에서 잦아들던 곡을 아직 물고 있다. 바로 끊고 재사용한다.
         incoming.Stop();
 
+        float clipVolume = 1f;
         if (data.cueData != null)
         {
-            incoming.clip = PickClipFromCue(data.cueData);
+            incoming.clip = PickClipFromCue(data.cueData, out clipVolume);
             incoming.pitch = data.cueData.GetRandomPitch();
         }
         else
@@ -1695,7 +1697,7 @@ public class AudioManager : MonoBehaviour
         }
         incoming.outputAudioMixerGroup = data.mixerGroup;
 
-        float finalTargetVolume = data.defaultVolume * targetVolume;
+        float finalTargetVolume = data.defaultVolume * targetVolume * clipVolume;
         if (data.cueData != null) finalTargetVolume *= data.cueData.GetRandomVolumeModifier();
 
         incoming.volume = 0f;

@@ -7,6 +7,10 @@ public class AudioCueData : ScriptableObject
     [Header("Clips")]
     public List<AudioClip> clips = new List<AudioClip>();
 
+    // clips와 같은 순서의 클립별 음량 배율. 인스펙터(AudioCueDataEditor)에서 각 클립 옆에 함께 그린다.
+    // 항목이 없거나 개수가 모자라면 1(원래 음량)로 본다 - 기존 큐 애셋은 손대지 않아도 그대로 들린다.
+    [HideInInspector] public List<float> clipVolumes = new List<float>();
+
     [Header("Randomization")]
     [Range(0.1f, 3f)] public float minPitch = 0.95f;
     [Range(0.1f, 3f)] public float maxPitch = 1.05f;
@@ -19,8 +23,19 @@ public class AudioCueData : ScriptableObject
     // 서로의 회피 로직을 오염시키므로, 상태를 외부에서 주입받는 형태로 변경했다.
     public AudioClip GetRandomClip(ref int lastIndex)
     {
+        return GetRandomClip(ref lastIndex, out _);
+    }
+
+    // _clipVolume: 고른 클립의 클립별 음량 배율(clipVolumes). 설정이 없으면 1.
+    public AudioClip GetRandomClip(ref int lastIndex, out float _clipVolume)
+    {
+        _clipVolume = 1f;
         if (clips == null || clips.Count == 0) return null;
-        if (clips.Count == 1) return clips[0];
+        if (clips.Count == 1)
+        {
+            _clipVolume = GetClipVolume(0);
+            return clips[0];
+        }
 
         int index = Random.Range(0, clips.Count);
 
@@ -31,7 +46,14 @@ public class AudioCueData : ScriptableObject
         }
 
         lastIndex = index;
+        _clipVolume = GetClipVolume(index);
         return clips[index];
+    }
+
+    public float GetClipVolume(int _index)
+    {
+        if (clipVolumes == null || _index < 0 || _index >= clipVolumes.Count) return 1f;
+        return clipVolumes[_index];
     }
 
     public float GetRandomPitch() => Random.Range(minPitch, maxPitch);
