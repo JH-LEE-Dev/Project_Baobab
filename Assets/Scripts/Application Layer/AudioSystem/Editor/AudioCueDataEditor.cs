@@ -93,8 +93,9 @@ public class AudioCueDataEditor : Editor
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Clips", EditorStyles.boldLabel);
         list.DoLayoutList();
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("playAllClips"));
 
-        DrawPropertiesExcluding(serializedObject, "m_Script", "clips", "clipVolumes");
+        DrawPropertiesExcluding(serializedObject, "m_Script", "clips", "clipVolumes", "playAllClips");
 
         serializedObject.ApplyModifiedProperties();
     }

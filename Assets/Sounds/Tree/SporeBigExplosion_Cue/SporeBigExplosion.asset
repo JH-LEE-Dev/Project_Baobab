@@ -20,6 +20,7 @@ MonoBehaviour:
   - 1
   - 0.6
   - 0.8
+  playAllClips: 1
   minPitch: 0.95
   maxPitch: 1.05
   minVolumeModifier: 0.9
