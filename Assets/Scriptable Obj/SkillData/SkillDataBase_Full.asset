@@ -54,7 +54,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 7000000
+        baseValue: 5000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -64,7 +64,7 @@ MonoBehaviour:
     - skillCommandType: 81
       amountCurve:
         type: 3
-        baseValue: 80
+        baseValue: 120
         manualValues: []
     prerequisiteSkills: 7c000000
   - skillType: 126
@@ -118,7 +118,7 @@ MonoBehaviour:
     - skillCommandType: 74
       amountCurve:
         type: 3
-        baseValue: 60
+        baseValue: 100
         manualValues: []
     prerequisiteSkills: 38000000
   - skillType: 87
@@ -126,7 +126,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 10000000
+        baseValue: 7000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -144,7 +144,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 15000000
+        baseValue: 10000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -234,7 +234,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 8000000
+        baseValue: 5000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -252,7 +252,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 8000000
+        baseValue: 7000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -288,7 +288,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 8000000
+        baseValue: 7000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -1335,7 +1335,7 @@ MonoBehaviour:
     - skillCommandType: 74
       amountCurve:
         type: 3
-        baseValue: 40
+        baseValue: 60
         manualValues: []
     prerequisiteSkills: 37000000
   - skillType: 57
@@ -1811,15 +1811,15 @@ MonoBehaviour:
         baseValue: 0
         manualValues:
         - 1000000
-        - 1500000
         - 2000000
-        - 2500000
         - 3000000
         - 4000000
         - 5000000
-        - 6000000
-        - 8000000
-        - 10000000
+        - 7000000
+        - 9000000
+        - 11000000
+        - 13000000
+        - 15000000
       carrotCurve:
         type: 3
         baseValue: 0
