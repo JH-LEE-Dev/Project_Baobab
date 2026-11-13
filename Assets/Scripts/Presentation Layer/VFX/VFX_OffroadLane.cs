@@ -21,8 +21,10 @@ namespace PresentationLayer.VFX
     /// 타일 빛은 Indicators(-5)에 그려 타일 위, 모든 그림자 · 다른 바닥 이펙트 · 나무 · 차량 아래에 놓이고, 빛 알갱이는 ShockWave/0에 그린다.
     ///
     /// 칸 좌표: 칸 (i, j)의 윗면 중심 = gridOrigin + ((i - j) * 0.5, (i + j) * 0.25 + tileTopOffsetY). 실제 GroundTilemap(아이소 칸 (1, 0.5))에
-    /// 깔린 타일과 어긋남이 없도록 두 값을 측정해 정한 것이다. 차선에 속한 칸은 칸 윗면 중심에서 차선 선분(_from~_to)까지의 거리가 반폭 이하인 칸으로
-    /// 실제 피해 판정(나무 위치와 선분 거리 &lt;= 반지름)과 같은 식이다. Application Layer를 건드리지 않고 Begin으로 받은 월드 좌표와 인스펙터 값만 쓴다.
+    /// 깔린 타일과 어긋남이 없도록 두 값을 측정해 정한 것이다. 차선에 속한 칸은 칸 윗면 중심에서 차선 직선(_from~_to를 지나는 무한 직선)까지의
+    /// 화면 거리가 반폭 이하이고, 칸 진행 번호(격자 축 기준)가 출발 쪽 startExtendUnits(+0.25칸)부터 도착 쪽 끝(+0.25칸)까지인 칸이다.
+    /// 끝을 둥글게 자르지 않아 양 끝이 타일 줄에 맞춰 반듯하다. 끝 모서리 칸과 출발점 뒤 줄은 빛은 켜지지만 차량이 치지 않는 칸이다.
+    /// Application Layer를 건드리지 않고 Begin으로 받은 월드 좌표와 인스펙터 값만 쓴다.
     ///
     /// 수명: Begin -> (유지) -> Fire -> 걷힘이 끝나면 스스로 루트 ParticleSystem을 멈춰 풀에 반환한다. 웨이브/런 종료는 Cancel로 즉시 회수한다.
     /// Fire를 영영 부르지 않아도 MaxHoldSeconds가 지나면 스스로 끝낸다(루트 ParticleSystem 수명 60초 안쪽).
@@ -40,6 +42,8 @@ namespace PresentationLayer.VFX
         private float groundOffset = 0.0f;
         [SerializeField, Tooltip("Fire에 돌진 시간을 넘기지 않을 때 쓰는 기본 걷힘 시간(초). 차량이 경로를 지나는 시간에 맞춘다.")]
         private float clearSeconds = 0.8f;
+        [SerializeField, Tooltip("출발점(Begin의 from)보다 뒤쪽으로 칸을 켜는 길이(월드 유닛). 출발점은 섬 가장자리에서 이만큼 안쪽이라 가장자리 줄까지 켜기 위한 값이다. RoguelikeSkillTuningSO.offroadEdgeInset과 같은 값으로 맞춘다.")]
+        private float startExtendUnits = 0.8f;
 
         [Header("타일 격자 (실제 GroundTilemap 타일과 맞춘 측정값)")]
         [SerializeField, Tooltip("칸 (0, 0)의 GetCellCenterWorld(타일 그림 피벗) 월드 좌표. 칸 (i, j)의 피벗 = gridOrigin + ((i - j) * 0.5, (i + j) * 0.25)")]
@@ -416,18 +420,8 @@ namespace PresentationLayer.VFX
             _j = py / (TileHalfH * 2.0f) - px / (TileHalfW * 2.0f);
         }
 
-        private static float DistanceToSegment(float _px, float _py, float _ax, float _ay, float _bx, float _by)
-        {
-            float abx = _bx - _ax;
-            float aby = _by - _ay;
-            float lengthSq = abx * abx + aby * aby;
-            float t = 0.0f < lengthSq ? Mathf.Clamp01(((_px - _ax) * abx + (_py - _ay) * aby) / lengthSq) : 0.0f;
-            float dx = _px - (_ax + abx * t);
-            float dy = _py - (_ay + aby * t);
-            return Mathf.Sqrt(dx * dx + dy * dy);
-        }
-
-        // 차선에 속한 칸(윗면 중심에서 선분까지의 거리 <= 반폭)을 모으고, 칸마다 진행 방향 번호(a)와 안쪽 칸 여부를 정한다.
+        // 차선에 속한 칸(윗면 중심에서 직선까지의 화면 거리 <= 반폭, 진행 번호가 출발 쪽 연장 ~ 도착 쪽 끝 안)을 모으고,
+        // 칸마다 진행 방향 번호(a)와 안쪽 칸 여부를 정한다.
         private void BuildLaneCells(float _fromX, float _fromY, float _toX, float _toY, float _halfWidth)
         {
             originPxX = Mathf.RoundToInt(gridOrigin.x * PixelsPerUnit);
@@ -454,11 +448,29 @@ namespace PresentationLayer.VFX
             lanePerpI = -laneStepJ;
             lanePerpJ = laneStepI;
 
-            // 선분 + 반폭을 감싸는 월드 직사각형의 네 모서리를 격자 좌표로 바꿔 후보 칸 범위를 잡는다
-            float minX = Mathf.Min(_fromX, _toX) - _halfWidth;
-            float maxX = Mathf.Max(_fromX, _toX) + _halfWidth;
-            float minY = Mathf.Min(_fromY, _toY) - _halfWidth;
-            float maxY = Mathf.Max(_fromY, _toY) + _halfWidth;
+            // 진행 방향 한 칸의 월드 길이(화면 (0.5, 0.25) 유닛). 출발 쪽 연장 길이를 칸 수로 바꾸는 데 쓴다.
+            float cellWorldLength = Mathf.Sqrt((float)(TileHalfW * TileHalfW + TileHalfH * TileHalfH)) / PixelsPerUnit;
+            float startExtendCells = startExtendUnits / cellWorldLength;
+
+            // 직선 방향(단위)과 수직(단위). 끝점이 겹치면(길이 0) 점까지의 거리로 본다.
+            float lineX = _toX - _fromX;
+            float lineY = _toY - _fromY;
+            float lineLength = Mathf.Sqrt(lineX * lineX + lineY * lineY);
+            float normalX = 0.0f;
+            float normalY = 0.0f;
+            if (0.0001f < lineLength)
+            {
+                normalX = -lineY / lineLength;
+                normalY = lineX / lineLength;
+            }
+
+            // 선분 + 출발 쪽 연장 + 반폭을 감싸는 월드 직사각형의 네 모서리를 격자 좌표로 바꿔 후보 칸 범위를 잡는다.
+            // 진행 번호는 격자 축 기준(비스듬)이라 직선 투영과 어긋나므로 반폭의 두 배와 한 칸을 더 여유로 둔다.
+            float reach = startExtendUnits + 2.0f * _halfWidth + cellWorldLength;
+            float minX = Mathf.Min(_fromX, _toX) - reach;
+            float maxX = Mathf.Max(_fromX, _toX) + reach;
+            float minY = Mathf.Min(_fromY, _toY) - reach;
+            float maxY = Mathf.Max(_fromY, _toY) + reach;
 
             float scanMinI = float.MaxValue;
             float scanMaxI = float.MinValue;
@@ -502,12 +514,16 @@ namespace PresentationLayer.VFX
 
                     int cx = originPxX + TileHalfW * (i - j);
                     int cy = originPxY + TileHalfH * (i + j);
-                    float distance = DistanceToSegment(cx / PixelsPerUnit, cy / PixelsPerUnit, _fromX, _fromY, _toX, _toY);
+                    float cellX = cx / PixelsPerUnit;
+                    float cellY = cy / PixelsPerUnit;
+                    float distance = 0.0001f < lineLength
+                        ? Mathf.Abs((cellX - _fromX) * normalX + (cellY - _fromY) * normalY)
+                        : Mathf.Sqrt((cellX - _fromX) * (cellX - _fromX) + (cellY - _fromY) * (cellY - _fromY));
                     if (_halfWidth < distance) continue;
 
-                    // 선분 양 끝을 반폭만큼 넘어간 칸(도착 쪽은 섬 밖 물 위)은 켜지 않는다
+                    // 진행 번호가 출발 쪽 연장(섬 가장자리 줄까지)보다 뒤이거나 도착 쪽 끝을 넘은 칸은 켜지 않는다(양 끝이 타일 줄에 맞춰 반듯하게 잘린다)
                     float along = (i - fromI) * laneStepI + (j - fromJ) * laneStepJ;
-                    if (along < -EndCellMargin || laneLength + EndCellMargin < along) continue;
+                    if (along < -startExtendCells - EndCellMargin || laneLength + EndCellMargin < along) continue;
 
                     int a = Mathf.Max(0, Mathf.RoundToInt(along));
                     cellI[cellCount] = i;
@@ -956,6 +972,7 @@ namespace PresentationLayer.VFX
         {
             laneHalfWidth = Mathf.Max(0.1f, laneHalfWidth);
             clearSeconds = Mathf.Max(0.1f, clearSeconds);
+            startExtendUnits = Mathf.Max(0.0f, startExtendUnits);
         }
     }
 }

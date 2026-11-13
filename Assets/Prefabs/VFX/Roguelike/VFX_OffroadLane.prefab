@@ -5092,6 +5092,7 @@ MonoBehaviour:
   laneHalfWidth: 0.4
   groundOffset: 0
   clearSeconds: 0.8
+  startExtendUnits: 0.8
   gridOrigin: {x: 0, y: 0.25}
   tileTopOffsetY: 0.25
   groundMeshFilter: {fileID: 5452317332727276915}
