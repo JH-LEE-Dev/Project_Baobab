@@ -267,6 +267,9 @@ public class InDungeonVFXManager : MonoBehaviour
     private readonly List<PresentationLayer.VFX.VFX_GemTierBurst> gemTierBursts = new List<PresentationLayer.VFX.VFX_GemTierBurst>(GemTierBurstMaxActive);
     private readonly List<PresentationLayer.VFX.VFX_GemLogTrail> gemLogTrails = new List<PresentationLayer.VFX.VFX_GemLogTrail>(GemLogTrailMaxActive);
 
+    // 보석 원목을 주울 때 캐릭터 몸에서 터지는 연출(VFX_GemLogPickup). 캐릭터 하나를 따라다니며 연달아 주운 것을 한 인스턴스에 쌓는다.
+    private PresentationLayer.VFX.VFX_GemLogPickup gemLogPickup;
+
     public void Initialize()
     {
         if (vfxComponent != null)
@@ -443,6 +446,22 @@ public class InDungeonVFXManager : MonoBehaviour
             if (vfx == null) break;
             gemLogTrails.Add(vfx);
         }
+
+        if (gemLogPickup == null)
+        {
+            gemLogPickup = PresentationLayer.VFX.VFX_GemLogPickup.Create(transform);
+        }
+    }
+
+    /// <summary>
+    /// 캐릭터가 보석 원목을 주운 순간의 연출(발밑 터짐, 몸을 타고 솟는 반짝이, 발밑 실선 고리, 머리 위 별).
+    /// _anchor는 원목이 빨려 들어간 캐릭터, _tier는 1 황금 / 2 다이아 / 3 무지개.
+    /// </summary>
+    public void PlayGemLogPickup(Transform _anchor, int _tier)
+    {
+        if (_anchor == null || _tier <= 0 || gemLogPickup == null) return;
+
+        gemLogPickup.Play(_anchor, _tier);
     }
 
     /// <summary>
@@ -1353,6 +1372,8 @@ public class InDungeonVFXManager : MonoBehaviour
         {
             if (gemLogTrails[i] != null) gemLogTrails[i].StopImmediate();
         }
+
+        if (gemLogPickup != null) gemLogPickup.StopImmediate();
     }
 
     /// <summary>

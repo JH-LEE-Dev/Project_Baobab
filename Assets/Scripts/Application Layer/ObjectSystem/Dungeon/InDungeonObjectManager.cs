@@ -1722,6 +1722,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void OnItemAcquired(Item _item)
     {
+        // 캐릭터가 보석 원목(황금·다이아·무지개)을 주웠으면 캐릭터 몸에서 단계별 연출을 터뜨린다(그림만, 획득 처리와 무관).
+        if (_item is LogItem logItem && logItem.logState > LogState.Normal && character != null)
+        {
+            inDungeonVFXManager?.PlayGemLogPickup(character.transform, (int)logItem.logState - (int)LogState.Normal);
+        }
+
         ItemAcquiredEvent?.Invoke(_item);
     }
 
