@@ -53,6 +53,11 @@ public class LogInBelt : MonoBehaviour
     // 진행분의 일부만 더한다. 구간 Y차 0.25 x 0.15 = 0.0375라 옆 타일과의 여유(0.055) 안에 머문다.
     private const float LogOnBeltSortFollow = 0.15f;
 
+    // 한 번에 옮기는 최대 거리(유닛)와 한 프레임 최대 분할 수. 타일 간격(약 0.56)과 원목 간격(약 0.9)보다
+    // 충분히 짧게 잡아, 앞 원목이 커터에 닿아 벨트가 서기 시작하는 순간을 놓치지 않게 한다.
+    private const float MaxBeltStepPerSubstep = 0.1f;
+    private const int MaxBeltSubsteps = 64;
+
     // 원목이 지나갈 경로. 손으로 찍은 체크포인트 몇 개만 잇던 방식은 그 직선이 벨트 타일이 놓인
     // 아이소메트릭 대각선(타일 간격 0.5, 0.25 = 기울기 0.5)과 미세하게 어긋나서, 구간 중간으로
     // 갈수록 원목이 레일 밖으로 밀려 보였다. 지금은 벨트 타일 트랜스폼에서 경로를 그대로 만들어
@@ -413,30 +418,59 @@ public class LogInBelt : MonoBehaviour
         // 비활성화 예정 아이템 업데이트 (람다 대신 수동 관리)
         UpdateDeactivatingItems(deltaTime);
 
-        // 1. 목표 속도 결정 (움직임 명령이 있고 아이템이 있는 경우에만 목표 속도 유지)
-        float targetSpeedValue = (isMoving && activeItems.Count > 0) ? EffectiveBeltSpeed : 0f;
+        // 가공 콤보 배속(globalSpeedMultiplier)은 벨트의 시간 자체를 빠르게 돌리는 배율이다. 이동량뿐 아니라
+        // 가감속에도 똑같이 걸어야 한다. 예전엔 이동량에만 곱해서, 원목이 커터에 닿아 벨트를 세울 때 배율만큼
+        // 더 미끄러져 뒤 원목까지 커터 앞에 도착해 버려졌고(커터는 한 번에 하나만 받는다), 다시 출발할 때는
+        // 느린 가속 동안 배율이 걸린 출고 타이머가 원목을 촘촘히 올려 벨트 위에서 겹쳤다.
+        // 배율 1(콤보 미적용)에서는 예전과 똑같다.
+        float beltDeltaTime = deltaTime * globalSpeedMultiplier;
 
-        // 2. 현재 속도를 목표 속도로 부드럽게 이동 및 애니메이션 적용
-        if (!Mathf.Approximately(currentSpeed, targetSpeedValue))
+        // 한 프레임 이동이 길면(높은 배속 + 낮은 프레임) 잘게 나눠 돈다. 한 번에 몰아 움직이면 앞 원목이 커터에
+        // 닿아 벨트를 세우는 순간을 프레임 단위로만 잡아, 그 프레임의 남은 이동으로 뒤 원목들이 투입구 앞까지
+        // 밀려와 겹친다. 기본 속도·보통 프레임에서는 한 번(예전과 같음)만 돈다.
+        float maxSpeed = Mathf.Max(currentSpeed, EffectiveBeltSpeed);
+        int substeps = 1;
+        if (maxSpeed * beltDeltaTime > MaxBeltStepPerSubstep)
+            substeps = Mathf.Min(MaxBeltSubsteps, Mathf.CeilToInt(maxSpeed * beltDeltaTime / MaxBeltStepPerSubstep));
+        float subDeltaTime = beltDeltaTime / substeps;
+
+        for (int s = 0; s < substeps; s++)
         {
-            currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeedValue, acceleration * deltaTime);
+            // 1. 목표 속도 결정 (움직임 명령이 있고 아이템이 있는 경우에만 목표 속도 유지)
+            float targetSpeedValue = (isMoving && activeItems.Count > 0) ? EffectiveBeltSpeed : 0f;
+
+            // 2. 현재 속도를 목표 속도로 부드럽게 이동
+            if (!Mathf.Approximately(currentSpeed, targetSpeedValue))
+            {
+                currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeedValue, acceleration * subDeltaTime);
+            }
+
+            // 3. 실행 조건 확인 (속도가 0이고 목표 속도도 0이면 중단)
+            if (currentSpeed <= 0f && targetSpeedValue <= 0f) break;
+
+            // 4. 아이템 이동 처리. 옮길 원목이 없으면 이번 프레임의 남은 시간만큼 감속만 마저 하고 끝낸다.
+            if (activeItems.Count == 0 || path.Count == 0)
+            {
+                currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeedValue, acceleration * subDeltaTime * (substeps - s - 1));
+                break;
+            }
+
+            MoveItems(currentSpeed * subDeltaTime);
         }
 
-        // 애니메이션 속도는 가감속 여부와 무관하게 매 프레임 동기화한다. 예전처럼 위 블록 안에서만
+        // 애니메이션 속도는 가감속 여부와 무관하게 매 프레임 동기화한다. 예전처럼 가감속 블록 안에서만
         // 적용하면, currentSpeed가 이미 목표 속도와 같은 상태로 시작한 경우(세이브 로드 직후)
         // 이 호출이 한 번도 일어나지 않아 원목만 흘러가고 벨트는 멈춰 보였다. 값이 실제로 바뀔 때만
         // 애니메이터를 건드리므로 비용은 이전과 같다.
         SetBeltsAnimationSpeed(currentSpeed);
 
         UpdateLoopSound();
+    }
 
-        // 3. 실행 조건 확인 (속도가 0이고 목표 속도도 0이면 중단)
-        if (currentSpeed <= 0f && targetSpeedValue <= 0f) return;
-
-        // 4. 아이템 이동 처리
-        if (activeItems.Count == 0 || path.Count == 0) return;
-
-        float step = currentSpeed * globalSpeedMultiplier * deltaTime;
+    // 벨트 위 원목을 모두 _step만큼 경로를 따라 옮긴다.
+    private void MoveItems(float _step)
+    {
+        float step = _step;
         for (int i = activeItems.Count - 1; i >= 0; i--)
         {
             BeltItem beltItem = activeItems[i];
@@ -447,35 +481,64 @@ public class LogInBelt : MonoBehaviour
                 continue;
             }
 
-            Vector3 targetPos = path[beltItem.targetIndex].Position;
+            Vector3 position = beltItem.item.transform.position;
+            float remainingStep = step;
+            bool bLeftBelt = false;
 
-            // 이동 처리
-            beltItem.item.transform.position = Vector3.MoveTowards(
-                beltItem.item.transform.position,
-                targetPos,
-                step
-            );
-
-            ApplyBeltSortHeight(beltItem.item, beltItem.targetIndex);
-            beltItem.item.UpdateSortingOrder();
-
-            // 도달 확인
-            if (Vector3.Distance(beltItem.item.transform.position, targetPos) < 0.01f)
+            // 한 프레임 이동량이 경로 지점을 넘어서면 남은 만큼 다음 구간으로 이어서 간다. 예전처럼 지점에서
+            // 남은 이동량을 버리면, 콤보 배속으로 한 프레임에 타일 간격만큼 움직일 때 원목마다 버리는 양이
+            // 달라 간격이 좁아졌다. 모든 원목이 정확히 같은 거리를 가므로 벨트 위 간격이 그대로 유지된다.
+            while (true)
             {
+                Vector3 targetPos = path[beltItem.targetIndex].Position;
+                float distance = Vector3.Distance(position, targetPos);
+
+                if (distance > remainingStep)
+                {
+                    position = Vector3.MoveTowards(position, targetPos, remainingStep);
+                    remainingStep = 0f;
+                }
+                else
+                {
+                    position = targetPos;
+                    remainingStep -= distance;
+                }
+
+                // 도달 확인
+                if (Vector3.Distance(position, targetPos) >= 0.01f) break;
+
+                // 커터 투입 벨트가 앞 원목 때문에 이미 서는 중이면(isMoving == false), 뒤따라 끝에 닿은 원목은
+                // 내보내지 않고 투입구에 붙잡아 둔다. 커터는 한 번에 하나만 받으므로 이때 내보내면
+                // LogCutter.StartCutting에서 거절되어 원목이 사라진다. 벨트가 다시 돌면(CuttingDone ->
+                // StartBelt) 다음 프레임에 순서대로 나간다. 정상 간격에서는 걸리지 않는 안전장치다.
+                if (beltItem.targetIndex + 1 >= path.Count && stopsOnLogOut && !isMoving) break;
+
                 beltItem.targetIndex++;
 
                 // 모든 경로 지점을 통과했는지 확인
                 if (beltItem.targetIndex >= path.Count)
                 {
-                    LogOut(beltItem.item);
-                    activeItems.RemoveAt(i);
+                    bLeftBelt = true;
+                    break;
                 }
-                else
-                {
-                    // 인덱스 갱신 후 리스트에 다시 저장 (구조체 복사)
-                    activeItems[i] = beltItem;
-                }
+
+                if (remainingStep <= 0f) break;
             }
+
+            beltItem.item.transform.position = position;
+
+            if (bLeftBelt)
+            {
+                LogOut(beltItem.item);
+                activeItems.RemoveAt(i);
+                continue;
+            }
+
+            ApplyBeltSortHeight(beltItem.item, beltItem.targetIndex);
+            beltItem.item.UpdateSortingOrder();
+
+            // 인덱스 갱신 후 리스트에 다시 저장 (구조체 복사)
+            activeItems[i] = beltItem;
         }
     }
 
@@ -606,6 +669,25 @@ public class LogInBelt : MonoBehaviour
         LogExitStartedEvent?.Invoke(_item, targetPos, duration);
     }
 
+    /// <summary>
+    /// 투입 지점(첫 경로 지점)에서 _minDistance 안에 벨트 위 원목이 없으면 true. 새 원목을 올려도 겹치지 않는지 본다.
+    /// </summary>
+    public bool IsEntryClear(float _minDistance)
+    {
+        EnsurePath();
+        if (path.Count == 0) return true;
+
+        Vector3 entryPos = path[0].Position;
+        float minSqr = _minDistance * _minDistance;
+        for (int i = 0; i < activeItems.Count; i++)
+        {
+            LogItem item = activeItems[i].item;
+            if (item == null) continue;
+            if ((item.transform.position - entryPos).sqrMagnitude < minSqr) return false;
+        }
+        return true;
+    }
+
     // ---- 연출용 읽기 전용 조회 (특등품 쌍둥이 원목). 벨트 상태는 바꾸지 않는다. ----
 
     /// <summary>벨트 위를 달리는 중인 원목(퇴출 연출 중인 것은 제외)을 _into에 담는다(비우고 담는다).</summary>
@@ -643,12 +725,13 @@ public class LogInBelt : MonoBehaviour
             distance += Vector3.Distance(path[i - 1].Position, path[i].Position);
         }
 
-        // Update()와 같은 식: 실제 이동 = currentSpeed * globalSpeedMultiplier, currentSpeed는 acceleration으로 목표에 다가간다.
+        // Update()와 같은 식: 벨트 시간이 globalSpeedMultiplier배로 흐른다. 실제 이동 = currentSpeed * mul,
+        // currentSpeed는 초당 acceleration * mul만큼 목표에 다가가므로 실제 가속도는 acceleration * mul^2이다.
         float targetSpeed = isMoving ? EffectiveBeltSpeed : 0f;
         float mul = Mathf.Max(0.0001f, globalSpeedMultiplier);
         float v0 = currentSpeed * mul;
         float v1 = targetSpeed * mul;
-        float a = Mathf.Max(0.0001f, acceleration * mul);
+        float a = Mathf.Max(0.0001f, acceleration * mul * mul);
 
         if (v1 <= 0.0001f) return false;
 
