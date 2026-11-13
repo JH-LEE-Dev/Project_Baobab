@@ -94,6 +94,11 @@ public class AudioManager : MonoBehaviour
     // 재생 시작 시점에 계산된 폴리포니 감쇠 계수(0~1, 미적용 시 1). SetTrackedVolume이 볼륨을
     // 다시 계산할 때 이 계수를 빼먹으면 감쇠가 통째로 풀려 소리가 원래 크기로 튄다.
     private float[] sourcePolyphonyAttenuation;
+    // 슬롯이 playAllClips 큐의 덧붙인 레이어(첫 클립 외 나머지)인지. 한 번의 재생에 딸린 소리라 같은 SoundID의
+    // 상한·감쇠 집계(CountActiveVoices)에서 뺀다 - 세면 포자 대폭발 한 번이 상한 3을 혼자 채워 버린다.
+    private bool[] sourceIsCueLayer;
+    // 직전 TryPlayOnAvailableSource가 계산한 폴리포니 감쇠 계수(같은 클립 보정 전). PlayAllCueClips 전용.
+    private float lastPlayPolyphonyAttenuation = 1f;
     // ─── 함께 시작한 같은 클립 보정 ───
     // 같은 순간에 Play()된 같은 클립은 같은 오디오 버퍼에서 샘플 단위로 맞춰 시작하므로 파형(특히 타격 순간)이 그대로
     // 더해진다(n개면 n배). 1/sqrt 감쇠는 시작 시각이 제각각인 소리를 전제로 한 것이라, 범위 공격으로 한 번에 여러 그루를
@@ -736,6 +741,7 @@ public class AudioManager : MonoBehaviour
         sourceFadingOut = new bool[maxPoolSize];
         sourceSoundID = new SoundID[maxPoolSize];
         sourcePolyphonyAttenuation = new float[maxPoolSize];
+        sourceIsCueLayer = new bool[maxPoolSize];
         sourceStartFrame = new int[maxPoolSize];
         sourceStartDsp = new double[maxPoolSize];
         sourceCoherentAmplitude = new float[maxPoolSize];
@@ -1201,10 +1207,22 @@ public class AudioManager : MonoBehaviour
 
     // _bDropped: 재생 요청을 의도적으로 버렸는지(볼륨 0 원샷, 같은 소리가 거의 동시에 상한을 넘은 경우).
     // 클립 누락처럼 고장으로 경고해야 하는 실패와 구분하기 위한 값이다.
-    private AudioHandle TryPlayOnAvailableSource(AudioData data, Vector3 position, float volume, bool is3D, float pitchOverride, bool bypassDucking, out bool _bDropped)
+    // _layerClipIndex 이후 인자는 PlayAllCueClips(큐의 모든 클립 동시 재생) 전용이다. 일반 호출은 생략한다.
+    // _layerClipIndex: 큐에서 무작위로 고르지 않고 재생할 클립 인덱스(-1이면 평소대로 무작위).
+    // _layerVolumeModifier: 큐 음량 랜덤 값 대신 쓸 값(모든 레이어가 같은 값을 쓰도록 한 번만 뽑아 넘긴다).
+    // _bLayerExtra: 첫 레이어 뒤에 겹쳐 내는 나머지 레이어인지. 이 레이어들은 한 번의 재생에 딸린 소리라 상한·감쇠
+    //   집계에서 빠지고(sourceIsCueLayer), 감쇠 계수는 첫 레이어가 받은 값(_layerAttenuation)을 그대로 쓴다.
+    private AudioHandle TryPlayOnAvailableSource(AudioData data, Vector3 position, float volume, bool is3D, float pitchOverride, bool bypassDucking, out bool _bDropped,
+        int _layerClipIndex = -1, float _layerVolumeModifier = 1f, bool _bLayerExtra = false, float _layerAttenuation = 1f)
     {
         _bDropped = false;
-        statRequestsThisFrame++;
+
+        if (_layerClipIndex < 0 && data.cueData != null && data.cueData.playAllClips && !data.loop)
+        {
+            return PlayAllCueClips(data, position, volume, is3D, pitchOverride, bypassDucking, out _bDropped);
+        }
+
+        if (!_bLayerExtra) statRequestsThisFrame++;
 
         AudioClip clip;
         float pitch;
@@ -1212,11 +1230,17 @@ public class AudioManager : MonoBehaviour
         // "0~1 배율"을 받아 이 값에 곱할 수 있도록 슬롯에 따로 보관한다.
         float baseVolume;
 
-        if (data.cueData != null)
+        if (data.cueData != null && _layerClipIndex >= 0)
         {
-            clip = PickClipFromCue(data.cueData);
+            clip = _layerClipIndex < data.cueData.clips.Count ? data.cueData.clips[_layerClipIndex] : null;
             pitch = data.cueData.GetRandomPitch();
-            baseVolume = data.defaultVolume * data.cueData.GetRandomVolumeModifier();
+            baseVolume = data.defaultVolume * data.cueData.GetClipVolume(_layerClipIndex) * _layerVolumeModifier;
+        }
+        else if (data.cueData != null)
+        {
+            clip = PickClipFromCue(data.cueData, out float clipVolume);
+            pitch = data.cueData.GetRandomPitch();
+            baseVolume = data.defaultVolume * clipVolume * data.cueData.GetRandomVolumeModifier();
         }
         else
         {
@@ -1250,10 +1274,20 @@ public class AudioManager : MonoBehaviour
         // activeVoices는 상한 판정용, audibleVoices는 볼륨 감쇠용이다. 루프의 상한은 가청 범위 밖까지 전부 센다 -
         // 원샷과 달리 저절로 끝나지 않아, 플레이어가 지나간 자리의 화상 루프가 범위 밖이라고 집계에서 빠지면 그 수만큼
         // 슬롯이 쌓인다. 감쇠는 실제로 겹쳐 들리는 소리만 기준으로 해야 하므로 어느 쪽이든 가청 범위 안만 센다.
-        CountActiveVoices(data.id, data.loop, out int activeVoices, out int audibleVoices, out int oldestSameSoundIndex);
+        // 겹쳐 내는 나머지 레이어는 첫 레이어와 한 번의 재생이므로 다시 세지 않는다(첫 레이어가 이미 상한·감쇠를 받았다).
+        int activeVoices = 0, audibleVoices = 0, oldestSameSoundIndex = -1;
+        if (!_bLayerExtra)
+        {
+            CountActiveVoices(data.id, data.loop, out activeVoices, out audibleVoices, out oldestSameSoundIndex);
+        }
 
         float polyphonyAttenuation = 1f;
-        if (data.polyphonyAttenuationStrength > 0f)
+        if (_bLayerExtra)
+        {
+            polyphonyAttenuation = _layerAttenuation;
+            finalVolume *= polyphonyAttenuation;
+        }
+        else if (data.polyphonyAttenuationStrength > 0f)
         {
             // 비상관 음원 n개가 겹치면 체감 진폭은 대략 sqrt(n)로 늘어난다는 근거로,
             // 그 반대인 1/sqrt(1+n)를 감쇠 계수로 삼는다. strength(0~1)로 사운드별 적용 정도를 조절.
@@ -1261,9 +1295,11 @@ public class AudioManager : MonoBehaviour
             polyphonyAttenuation = Mathf.Lerp(1f, countFactor, data.polyphonyAttenuationStrength);
             finalVolume *= polyphonyAttenuation;
         }
+        // 같은 클립 보정(아래)을 곱하기 전의 감쇠 계수. PlayAllCueClips가 나머지 레이어에 그대로 넘긴다.
+        lastPlayPolyphonyAttenuation = polyphonyAttenuation;
 
         int index;
-        if (data.maxConcurrentVoices > 0 && activeVoices >= data.maxConcurrentVoices && oldestSameSoundIndex >= 0)
+        if (!_bLayerExtra && data.maxConcurrentVoices > 0 && activeVoices >= data.maxConcurrentVoices && oldestSameSoundIndex >= 0)
         {
             // 루프는 상한에 걸리면 기존 것을 빼앗지 않고 새 요청을 버린다. 화상 루프(상한 4)는 과열 상태에서 초당
             // 여러 그루가 불붙는데, 그때마다 가장 오래된 루프를 Stop하고 처음부터 다시 틀면 불 소리가 초당 몇 번씩
@@ -1384,6 +1420,7 @@ public class AudioManager : MonoBehaviour
         sourceStartTime[index] = Time.unscaledTime;
         sourcePlayId[index] = playIdCounter;
         sourceSoundID[index] = data.id;
+        sourceIsCueLayer[index] = _bLayerExtra;
 
         AudioHandle handle = new AudioHandle(index, playIdCounter);
 
@@ -1414,10 +1451,44 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    private AudioClip PickClipFromCue(AudioCueData cue)
+    // 큐의 playAllClips: 클립 전부를 한 번에 겹쳐 재생한다. 첫 클립(비어 있지 않은 첫 칸)이 평소 재생처럼 상한·감쇠를
+    // 받고, 첫 클립이 재생된 경우에만 나머지를 같은 위치·피치·음량 랜덤 값으로 덧붙인다. 반환값은 첫 클립의 핸들.
+    private AudioHandle PlayAllCueClips(AudioData data, Vector3 position, float volume, bool is3D, float pitchOverride, bool bypassDucking, out bool _bDropped)
+    {
+        _bDropped = false;
+        AudioCueData cue = data.cueData;
+        if (cue.clips == null) return AudioHandle.Invalid;
+
+        int firstIndex = -1;
+        for (int i = 0; i < cue.clips.Count; i++)
+        {
+            if (cue.clips[i] != null) { firstIndex = i; break; }
+        }
+        if (firstIndex < 0) return AudioHandle.Invalid;
+
+        float pitch = pitchOverride >= 0f ? pitchOverride : cue.GetRandomPitch();
+        float volumeModifier = cue.GetRandomVolumeModifier();
+
+        AudioHandle first = TryPlayOnAvailableSource(data, position, volume, is3D, pitch, bypassDucking, out _bDropped,
+            firstIndex, volumeModifier, false, 1f);
+        if (!first.IsValid) return first;
+
+        float attenuation = lastPlayPolyphonyAttenuation;
+        for (int i = firstIndex + 1; i < cue.clips.Count; i++)
+        {
+            if (cue.clips[i] == null) continue;
+            TryPlayOnAvailableSource(data, position, volume, is3D, pitch, bypassDucking, out _,
+                i, volumeModifier, true, attenuation);
+        }
+
+        return first;
+    }
+
+    // _clipVolume: 고른 클립의 큐 내 개별 음량 배율(AudioCueData.clipVolumes, 미설정이면 1).
+    private AudioClip PickClipFromCue(AudioCueData cue, out float _clipVolume)
     {
         int lastIndex = cueLastIndexCache.TryGetValue(cue, out int idx) ? idx : -1;
-        AudioClip clip = cue.GetRandomClip(ref lastIndex);
+        AudioClip clip = cue.GetRandomClip(ref lastIndex, out _clipVolume);
         cueLastIndexCache[cue] = lastIndex;
         return clip;
     }
@@ -1441,6 +1512,7 @@ public class AudioManager : MonoBehaviour
         for (int i = 0; i < poolCount; i++)
         {
             if (sourceSoundID[i] != id) continue;
+            if (sourceIsCueLayer[i]) continue;
 
             AudioSource src = sourcePool[i];
             if (!src.isPlaying) continue;
@@ -1683,9 +1755,10 @@ public class AudioManager : MonoBehaviour
         // 직전 전환이 아직 끝나지 않았다면 incoming은 그 전환에서 잦아들던 곡을 아직 물고 있다. 바로 끊고 재사용한다.
         incoming.Stop();
 
+        float clipVolume = 1f;
         if (data.cueData != null)
         {
-            incoming.clip = PickClipFromCue(data.cueData);
+            incoming.clip = PickClipFromCue(data.cueData, out clipVolume);
             incoming.pitch = data.cueData.GetRandomPitch();
         }
         else
@@ -1695,7 +1768,7 @@ public class AudioManager : MonoBehaviour
         }
         incoming.outputAudioMixerGroup = data.mixerGroup;
 
-        float finalTargetVolume = data.defaultVolume * targetVolume;
+        float finalTargetVolume = data.defaultVolume * targetVolume * clipVolume;
         if (data.cueData != null) finalTargetVolume *= data.cueData.GetRandomVolumeModifier();
 
         incoming.volume = 0f;

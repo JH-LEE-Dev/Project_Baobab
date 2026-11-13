@@ -55,7 +55,7 @@ MonoBehaviour:
   bOverlay: 0
   storageOffset: {x: -1.5, y: 2.5}
   carStorageOffset: {x: 0.5, y: 0.15}
-  cutterOffset: {x: -1.5, y: 0}
+  cutterOffset: {x: -2, y: 0}
   bTraderCoinAnim: 1
   traderCoinOffset: {x: 0, y: 0.75}
   uiRoot: {fileID: 5973435824668062020}

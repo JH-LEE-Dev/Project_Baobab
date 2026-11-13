@@ -2052,6 +2052,11 @@ public sealed class RoguelikeTileWave
             // 스텐실 복제층도 실제 스텐실 타일을 그대로(블록과 같은 높이로) 놓는다. 블록 모양을 놓으면 블록 아랫부분(앞 칸 바다에
             // 가려지는 곳)까지 육지 스텐실이 찍혀, 그 자리의 물 모서리(WaterCorner - 육지 스텐실이 아닌 곳에만 그린다)가 파도 동안 사라진다.
             TileBase source = tiles[l][cell.index];
+            // 실제 스텐실 타일은 물가 칸에만 있다(본편은 내부 육지 밑에 물 스텐실이 없어 필요 없다). 그런데 파도 동안 실제 물 스텐실 층은
+            // 직전 지형(진입은 섬 전체가 물)이라 내부 육지 칸 밑에도 물 스텐실이 남아, 솟은 블록 위로 구름이 비친다.
+            // 그래서 스텐실 타일이 없는 육지 칸에는 블록 모양을 놓아 물 비트를 지운다. 이런 칸은 이웃 8칸이 모두 육지라(물가가 아니다)
+            // 블록 아랫부분이 앞 칸 바다의 물 모서리를 지울 일이 없다.
+            if (null == source && bStencilFloorLayer[l] && liftShapeLayer >= 0) source = tiles[liftShapeLayer][cell.index];
             if (null == source && false == _bTilesChanged) continue;
 
             // SetTile처럼 타일의 색·변형을 그대로 쓰고, 골이면 색만 어둡게 덮는다.

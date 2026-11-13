@@ -63,12 +63,34 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private Color hitFlashColor = Color.white;
     [SerializeField] private Color criticalHitFlashColor = Color.red;
 
+    [Header("Critical Hit Flash")]
+    // 치명타 번쩍임은 2단계다: 처음엔 흰색으로 터지고(WhiteHold까지), 주황(MidColor, MidPoint까지)을 거쳐 빨강(criticalHitFlashColor)으로 가라앉는다.
+    // 세 색은 사이 색 없이 계단식으로 끊어 바뀐다(픽셀 규칙). WhiteHold·MidPoint는 번쩍임 길이에 대한 비율(0~1)이다.
+    [SerializeField] private float criticalHitFlashDuration = 0.26f;
+    [SerializeField] private AnimationCurve criticalHitFlashCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.4f, 1f), new Keyframe(1f, 0f));
+    [SerializeField] private Color criticalHitFlashMidColor = new Color(1f, 0.6f, 0.15f, 1f);
+    [SerializeField, Range(0f, 1f)] private float criticalHitFlashWhiteHold = 0.18f;
+    [SerializeField, Range(0f, 1f)] private float criticalHitFlashMidPoint = 0.45f;
+    // 치명타 펀치(옆 흔들림)는 hitPunchX에 이 배율을 곱한다.
+    [SerializeField] private float criticalPunchMultiplier = 1.8f;
+
+    [Header("Critical Outline Flash")]
+    // 치명타 번쩍임 동안 외곽선을 흰색 → 금색으로 계단식으로 번쩍인다. 원래 외곽선이 켜져 있던 나무(도끼 대상)는 원래 색으로 바로 돌아가고,
+    // 꺼져 있던 나무는 바로 사라진다(반투명 페이드 없음). 시각은 번쩍임 길이에 대한 비율(0~1)이다.
+    [SerializeField] private Color criticalOutlineFlashColor = Color.white;
+    [SerializeField] private Color criticalOutlineMidColor = new Color(1f, 0.8f, 0.25f, 1f);
+    [SerializeField, Range(0f, 1f)] private float criticalOutlineWhiteHold = 0.3f;
+    [SerializeField, Range(0f, 1f)] private float criticalOutlineMidPoint = 0.6f;
+
     [Header("Critical Hit Scale")]
-    // 치명타일 때만 나무 그림(BaseVisual과 물 반사, 밑동 기준)이 빠르게 살짝 커졌다가 부드럽게 원래 크기로 돌아온다.
+    // 치명타일 때만 나무 그림(BaseVisual과 물 반사, 밑동 기준)이 빠르게 옆으로 퍼지며 눌렸다가(가로 커짐·세로 눌림)
+    // 반대로 한 번 출렁인 뒤 원래 크기로 돌아온다.
     // visualRoot는 키우지 않는다: 그 자식인 topRoot/bottomRoot를 부메랑 판정·별자리 폭발 범위 등 게임 판정이 읽기 때문이다.
     [SerializeField] private float criticalScalePeak = 1.08f;
     [SerializeField] private float criticalScaleUpDuration = 0.05f;
     [SerializeField] private float criticalScaleDownDuration = 0.12f;
+    // 가로가 커지는 만큼 세로를 이 비율로 눌러 준다(0이면 가로·세로가 같이 커진다).
+    [SerializeField, Range(0f, 1f)] private float criticalSquashRatio = 0.6f;
 
     [Header("Grow Up Flash")]
     [SerializeField] private float growUpFlashDuration = 0.35f;
@@ -196,6 +218,12 @@ public class TreeVisualComponent : MonoBehaviour
     // bool 플래그 대신 시각으로 들고 있는 이유: 점멸 도중 오브젝트가 꺼지면 코루틴이 끝을 못 봐서
     // 플래그가 켜진 채 남을 수 있는데, 시각은 시간이 지나면 저절로 풀린다.
     private float criticalFlashEndTime = 0f;
+    // 지금 진행 중인 번쩍임이 치명타(2단계 색·외곽선 번쩍임)인지. 다른 번쩍임이 시작되거나 상태를 되돌릴 때 끈다.
+    private bool bCritFlashActive = false;
+    // 치명타 외곽선 번쩍임 때문에 외곽선 오브젝트를 켜 두었는지(원래 꺼져 있던 나무라도 번쩍임 동안은 켠다).
+    private bool bCritOutlineShown = false;
+    private bool bCritOutlineColorApplied = false;
+    private static readonly int OutlineColorID = Shader.PropertyToID("_OutlineColor");
     private MaterialPropertyBlock _flashMPB;
     // 플래시 진행은 TreeFlashSystem이 한 곳에서 틱한다(나무마다 코루틴을 만들지 않는다)
 
@@ -736,7 +764,8 @@ public class TreeVisualComponent : MonoBehaviour
         visualRoot.localPosition = Vector3.zero;
         // 피격마다 새 Tweener를 만들지 않도록 재활용한다. 죽일 때는 target이 visualRoot인지 확인하므로
         // 다른 나무에 재활용된 트윈을 잘못 죽일 일이 없다(KillHitPunchTween 참조).
-        hitPunchTween = visualRoot.DOPunchPosition(new Vector3(hitPunchX, 0f, 0f), hitDuration, hitVibrato, hitElasticity).SetRecyclable(true);
+        float punchX = _bCritical ? hitPunchX * criticalPunchMultiplier : hitPunchX;
+        hitPunchTween = visualRoot.DOPunchPosition(new Vector3(punchX, 0f, 0f), hitDuration, hitVibrato, hitElasticity).SetRecyclable(true);
 
         if (_bCritical)
         {
@@ -744,7 +773,7 @@ public class TreeVisualComponent : MonoBehaviour
         }
     }
 
-    // 치명타: 빠르게(OutQuad) 살짝 커졌다가 부드럽게(InOutQuad) 원래 크기로 돌아온다.
+    // 치명타: 빠르게(OutQuad) 커졌다가, 줄어들며 반대로 한 번 출렁이고(감쇠 진동) 원래 크기로 돌아온다.
     // 진행 중에 다시 치명타가 들어오면 지금 크기에서 이어서 다시 커지므로 1프레임 튀는 일이 없다.
     private void PlayCriticalHitScale()
     {
@@ -762,8 +791,9 @@ public class TreeVisualComponent : MonoBehaviour
         }
 
         // 진행 중인 치명타 스케일이 있을 때만 현재 크기를 이어받는다. 없으면 기본 크기(1)에서 시작한다.
+        // 반대로 출렁이는 중(음수)이어도 그 크기에서 이어서 커져야 튀지 않는다.
         critScaleStartOffset = critScaleTween.IsActive() && ReferenceEquals(critScaleTween.target, critScaleTweenTarget)
-            ? Mathf.Max(0f, critScaleCurrentOffset)
+            ? critScaleCurrentOffset
             : 0f;
         KillCritScaleTween();
 
@@ -806,8 +836,8 @@ public class TreeVisualComponent : MonoBehaviour
         {
             float downTime = critScaleTotalTime - critScaleUpTime;
             float t = downTime > 0f ? Mathf.Clamp01((time - critScaleUpTime) / downTime) : 1f;
-            float easeInOut = t < 0.5f ? 2f * t * t : 1f - 2f * (1f - t) * (1f - t);
-            offset = peakOffset * (1f - easeInOut);
+            // 감쇠 진동: 최고점에서 줄어들어 t=1/3에 원래 크기를 지나 반대로 살짝 눌렸다가(가로 줄고 세로 늘어남) t=1에 0이 된다.
+            offset = peakOffset * (1f - t) * Mathf.Cos(1.5f * Mathf.PI * t);
         }
 
         ApplyCritScaleOffset(offset);
@@ -842,17 +872,18 @@ public class TreeVisualComponent : MonoBehaviour
     private void ApplyCritScaleOffset(float _offset)
     {
         critScaleCurrentOffset = _offset;
-        float scale = 1f + _offset;
+        float scaleX = 1f + _offset;
+        float scaleY = 1f - _offset * criticalSquashRatio;
 
         // 트윈 도중 나무가 파괴되면(씬 전환 등) 렌더러 루트도 함께 사라지므로 Unity null 비교로 거른다.
         if (critScaleBaseVisual != null)
         {
-            critScaleBaseVisual.localScale = new Vector3(critScaleBaseVisualScale.x * scale, critScaleBaseVisualScale.y * scale, critScaleBaseVisualScale.z);
+            critScaleBaseVisual.localScale = new Vector3(critScaleBaseVisualScale.x * scaleX, critScaleBaseVisualScale.y * scaleY, critScaleBaseVisualScale.z);
         }
 
         if (critScaleWaterVisual != null)
         {
-            critScaleWaterVisual.localScale = new Vector3(critScaleWaterVisualScale.x * scale, critScaleWaterVisualScale.y * scale, critScaleWaterVisualScale.z);
+            critScaleWaterVisual.localScale = new Vector3(critScaleWaterVisualScale.x * scaleX, critScaleWaterVisualScale.y * scaleY, critScaleWaterVisualScale.z);
         }
     }
 
@@ -932,7 +963,10 @@ public class TreeVisualComponent : MonoBehaviour
             return;
         }
 
-        PlayFlash(hitFlashDuration, hitFlashCurve, _bCritical ? criticalHitFlashColor : hitFlashColor, _bCritical);
+        if (_bCritical)
+            PlayFlash(criticalHitFlashDuration, criticalHitFlashCurve, criticalHitFlashColor, true);
+        else
+            PlayFlash(hitFlashDuration, hitFlashCurve, hitFlashColor, false);
     }
 
     /// <summary>
@@ -946,7 +980,10 @@ public class TreeVisualComponent : MonoBehaviour
             return;
         }
 
-        StartFlash(hitFlashDuration, hitFlashCurve, _bCritical ? criticalHitFlashColor : hitFlashColor, _bCritical);
+        if (_bCritical)
+            StartFlash(criticalHitFlashDuration, criticalHitFlashCurve, criticalHitFlashColor, true);
+        else
+            StartFlash(hitFlashDuration, hitFlashCurve, hitFlashColor, false);
     }
 
     // 묘목이 다 자라 스케일이 최대가 되는 순간, 피격 플래시와 같은 셰이더로 한 번 하얗게 반짝인다.
@@ -969,8 +1006,18 @@ public class TreeVisualComponent : MonoBehaviour
     {
         TreeFlashSystem.Cancel(this);
 
-        // 색은 점멸 동안 바뀌지 않으므로 시작할 때 한 번만 넣고, 진행 중에는 세기만 갱신한다.
-        ApplyFlashColorToRenderers(_color);
+        // 일반 점멸은 색이 바뀌지 않으므로 시작할 때 한 번만 넣고, 진행 중에는 세기만 갱신한다.
+        // 치명타 점멸은 진행도에 따라 색(흰색 → 주황 → 빨강)과 외곽선을 매 틱 갱신한다(ApplyFlashAmountFromSystem).
+        if (_bCritical)
+        {
+            BeginCriticalFlash();
+        }
+        else
+        {
+            EndCriticalFlash();
+            ApplyFlashColorToRenderers(_color);
+        }
+
         criticalFlashEndTime = _bCritical ? Time.time + _duration : 0f;
         TreeFlashSystem.Begin(this, _curve, _duration);
     }
@@ -1080,10 +1127,108 @@ public class TreeVisualComponent : MonoBehaviour
     }
 
     // TreeFlashSystem이 프레임마다 호출한다(예전 FlashRoutine의 ApplyFlashAmountToRenderers 호출과 동일).
-    internal void ApplyFlashAmountFromSystem(float _flash)
+    // _progress는 점멸 진행도(0~1, 끝나면 1)로 치명타 점멸의 색·외곽선 단계에만 쓴다.
+    internal void ApplyFlashAmountFromSystem(float _flash, float _progress)
     {
         if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+
+        if (bCritFlashActive)
+        {
+            ApplyFlashColorToRenderers(EvaluateCriticalFlashColor(_progress));
+
+            if (_progress >= 1f)
+                EndCriticalFlash();
+            else
+                ApplyCriticalOutlineFlash(_progress);
+        }
+
         ApplyFlashAmountToRenderers(_flash);
+    }
+
+    // 픽셀 규칙(한 계열 최대 3색, 보간 금지): 흰색 -> 주황 -> 빨강 세 색을 사이 색 없이 계단식으로 끊어 바꾼다.
+    private Color EvaluateCriticalFlashColor(float _progress)
+    {
+        if (_progress <= criticalHitFlashWhiteHold)
+            return Color.white;
+
+        if (_progress <= criticalHitFlashMidPoint)
+            return criticalHitFlashMidColor;
+
+        return criticalHitFlashColor;
+    }
+
+    private void BeginCriticalFlash()
+    {
+        bCritFlashActive = true;
+        ApplyFlashColorToRenderers(Color.white);
+
+        // 외곽선을 쓰지 않는 나무(마을 등 DisableOutline)는 외곽선 번쩍임을 하지 않는다.
+        if (bDisableOutline || outlineVisualObj == null)
+            return;
+
+        bCritOutlineShown = true;
+        if (false == outlineVisualObj.activeSelf)
+            outlineVisualObj.SetActive(true);
+
+        ApplyCriticalOutlineFlash(0f);
+    }
+
+    // 치명타 점멸 상태를 끝내고 외곽선을 원래(대상이면 켜진 원래 색, 아니면 꺼짐)로 되돌린다. 치명타 점멸 중이 아니면 할 일이 없다.
+    private void EndCriticalFlash()
+    {
+        bCritFlashActive = false;
+
+        if (bCritOutlineColorApplied)
+        {
+            bCritOutlineColorApplied = false;
+            SetOutlineColorToRenderer(topOutlineSR, GetBaseOutlineColor(topOutlineSR));
+            SetOutlineColorToRenderer(bottomOutlineSR, GetBaseOutlineColor(bottomOutlineSR));
+        }
+
+        if (bCritOutlineShown)
+        {
+            bCritOutlineShown = false;
+            if (outlineVisualObj != null && outlineVisualObj.activeSelf != isOutlineActive)
+                outlineVisualObj.SetActive(isOutlineActive);
+        }
+    }
+
+    private void ApplyCriticalOutlineFlash(float _progress)
+    {
+        if (false == bCritOutlineShown)
+            return;
+
+        bCritOutlineColorApplied = true;
+        SetOutlineColorToRenderer(topOutlineSR, EvaluateCriticalOutlineColor(_progress, topOutlineSR));
+        SetOutlineColorToRenderer(bottomOutlineSR, EvaluateCriticalOutlineColor(_progress, bottomOutlineSR));
+    }
+
+    // 픽셀 규칙(1px 외곽선이라 그라데이션·반투명 금지): 흰색 -> 금색을 사이 색 없이 계단식으로 끊어 바꾸고,
+    // 그 뒤 원래 외곽선이 켜져 있던 나무는 원래 색으로 바로 돌아가고, 꺼져 있던 나무는 그 자리에서 바로 사라진다(완전 투명).
+    private Color EvaluateCriticalOutlineColor(float _progress, SpriteRenderer _sr)
+    {
+        if (_progress <= criticalOutlineWhiteHold)
+            return criticalOutlineFlashColor;
+
+        if (_progress <= criticalOutlineMidPoint)
+            return criticalOutlineMidColor;
+
+        return isOutlineActive ? GetBaseOutlineColor(_sr) : Color.clear;
+    }
+
+    private static Color GetBaseOutlineColor(SpriteRenderer _sr)
+    {
+        if (_sr == null) return Color.clear;
+        Material mat = _sr.sharedMaterial;
+        return mat != null && mat.HasProperty(OutlineColorID) ? mat.GetColor(OutlineColorID) : Color.clear;
+    }
+
+    private void SetOutlineColorToRenderer(SpriteRenderer sr, Color _color)
+    {
+        if (sr == null) return;
+        sr.GetPropertyBlock(_flashMPB);
+        _flashMPB.SetColor(OutlineColorID, _color);
+        sr.SetPropertyBlock(_flashMPB);
     }
 
     private void ApplyFlashAmountToRenderers(float flash)
@@ -1170,6 +1315,10 @@ public class TreeVisualComponent : MonoBehaviour
     {
         // 보석 비주얼은 여기서 건드리지 않는다. 켜고 끄는 판단은 TreeObj가 단독으로 갖고 있고
         // (TreeObj.bGemVisual), ResetTree가 이 함수 호출 직후에 그 값을 다시 적용한다.
+
+        // 치명타 점멸 도중 풀로 돌아간 나무(TreeFlashSystem이 조용히 뺀다)의 외곽선 번쩍임을 되돌린다.
+        if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+        EndCriticalFlash();
 
         if (visualRoot == null)
         {
@@ -1306,9 +1455,10 @@ public class TreeVisualComponent : MonoBehaviour
 
         isOutlineActive = _boolean;
 
+        // 치명타 외곽선 번쩍임 중에는 번쩍임이 끝날 때까지 켜 두고, 끝날 때(EndCriticalFlash) 이 값으로 맞춘다.
         if (outlineVisualObj != null)
         {
-            outlineVisualObj.SetActive(_boolean);
+            outlineVisualObj.SetActive(_boolean || bCritOutlineShown);
         }
     }
 

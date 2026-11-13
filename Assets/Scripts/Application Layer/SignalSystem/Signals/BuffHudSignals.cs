@@ -11,7 +11,7 @@ public enum EBuffHudOp
     ClearAll, // 전부 즉시 제거
 }
 
-// 버프 HUD 갱신 신호. 능력이 켜지고 꺼질 때와 중첩 수가 바뀔 때만 발행한다(매 프레임 X). 발행은 UnitSystem·InDungeonSystem(지진)이 한다.
+// 버프 HUD 갱신 신호. 능력이 켜지고 꺼질 때와 중첩 수가 바뀔 때만 발행한다(매 프레임 X). 발행은 UnitSystem·InDungeonSystem(지진·유성우)이 한다.
 // 아이콘 스프라이트는 싣지 않는다 - UI 쪽이 id로 찾는다.
 public struct BuffHudSignal
 {

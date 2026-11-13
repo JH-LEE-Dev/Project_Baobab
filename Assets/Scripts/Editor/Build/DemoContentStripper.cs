@@ -1029,7 +1029,6 @@ public class DemoContentStripper : IPreprocessBuildWithReport, IPostprocessBuild
 
         if (false == _s.boomerang) _n += EditComponents(_root, "BoomerangCreator", CHARACTER_PREFAB_PATH, _so => ClearRef(_so, "boomerangPrefab"));
         if (false == _s.drone) _n += EditComponents(_root, "DroneCreator", CHARACTER_PREFAB_PATH, _so => ClearRef(_so, "dronePrefab"));
-        if (false == _s.whirlwind) _n += EditComponents(_root, "AttackComponent", CHARACTER_PREFAB_PATH, _so => ClearArray(_so, "whirlwindFrames"));
 
         if (false == _s.overheatShockWave)
         {

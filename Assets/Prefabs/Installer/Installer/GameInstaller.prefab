@@ -1939,13 +1939,13 @@ MonoBehaviour:
     maxPoolSize: 70
     uiParticleScale: 0
   - vfxTag: TreeDeadEffect_Top
-    effectPrefab: {fileID: 7006864300503741061, guid: 5b55385ff94d83d49a232cf9fe798911, type: 3}
+    effectPrefab: {fileID: 5483910919619619608, guid: 1411b5a57f70f474c9b793915f8804a3, type: 3}
     initialPoolSize: 20
     allowDynamicExpansion: 1
     maxPoolSize: 70
     uiParticleScale: 0
   - vfxTag: TreeDeadEffect_Bottom
-    effectPrefab: {fileID: 3423223590745634705, guid: e5162976570cc5e48b65f1069e9c193e, type: 3}
+    effectPrefab: {fileID: 4208246953979930263, guid: ba986f7c8c948574e9c7d32d2062cce1, type: 3}
     initialPoolSize: 20
     allowDynamicExpansion: 1
     maxPoolSize: 70
@@ -4043,17 +4043,19 @@ MonoBehaviour:
   starCompassTier2PrestigeLevel: 9
   starCompassTier3PrestigeLevel: 11
   meteorShowerChargePerKill: 0.1
-  meteorShowerInterval: 0.2
   meteorImpactRange: 1
   meteorShowerTier1Damage: 100
   meteorShowerTier1FallRange: 3.5
   meteorShowerTier1Duration: 3
+  meteorShowerTier1Count: 15
   meteorShowerTier2Damage: 100
   meteorShowerTier2FallRange: 3.5
   meteorShowerTier2Duration: 4
+  meteorShowerTier2Count: 20
   meteorShowerTier3Damage: 100
   meteorShowerTier3FallRange: 3.5
   meteorShowerTier3Duration: 5
+  meteorShowerTier3Count: 25
   starCompassPityMinKills: 4
   starCompassPityMaxKills: 5
   obsidianCharmDropChance: 0.05

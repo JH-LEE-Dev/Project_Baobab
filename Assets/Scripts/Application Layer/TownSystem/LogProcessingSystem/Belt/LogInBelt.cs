@@ -7,6 +7,12 @@ public class LogInBelt : MonoBehaviour
 {
     public event Action BeltStopEvent;
     public event Action<LogItem, ILogItemData> LogOutEvent;
+
+    /// <summary>
+    /// 원목이 벨트 끝에 닿아 커터/평가기로 미끄러져 들어가기 시작할 때(퇴출 연출 시작). 인자는 (원목, 미끄러져 갈 지점, 연출 시간).
+    /// LogOutEvent는 이 연출이 끝난 뒤에 온다. 연출 전용 통로라 벨트 동작에는 아무 영향이 없다.
+    /// </summary>
+    public event Action<LogItem, Vector3, float> LogExitStartedEvent;
     private LogItemData logItemData = new LogItemData();
     [SerializeField] List<BeltObj> belts;
 
@@ -596,6 +602,76 @@ public class LogInBelt : MonoBehaviour
 
         // 람다 대신 비활성화 대기 리스트에 추가
         deactivatingItems.Add(new DeactivatingItem(_item, duration));
+
+        LogExitStartedEvent?.Invoke(_item, targetPos, duration);
+    }
+
+    // ---- 연출용 읽기 전용 조회 (특등품 쌍둥이 원목). 벨트 상태는 바꾸지 않는다. ----
+
+    /// <summary>벨트 위를 달리는 중인 원목(퇴출 연출 중인 것은 제외)을 _into에 담는다(비우고 담는다).</summary>
+    public void CollectActiveItems(List<LogItem> _into)
+    {
+        _into.Clear();
+        for (int i = 0; i < activeItems.Count; i++)
+        {
+            if (activeItems[i].item != null) _into.Add(activeItems[i].item);
+        }
+    }
+
+    /// <summary>
+    /// 이 원목이 지금 속도대로 가면 벨트 끝(퇴출 시작)까지 몇 초 남았는지 어림한다. 가속 중이면 가속 구간까지 셈한다.
+    /// 벨트 위에 없거나 벨트가 서 있으면(멈출 예정이면) false. 연출 시간을 벨트 길이·속도에 맞추는 데만 쓴다.
+    /// </summary>
+    public bool TryEstimateSecondsToExit(LogItem _item, out float _seconds)
+    {
+        _seconds = 0f;
+        if (_item == null || path.Count == 0) return false;
+
+        int index = -1;
+        for (int i = 0; i < activeItems.Count; i++)
+        {
+            if (activeItems[i].item == _item) { index = i; break; }
+        }
+        if (index < 0) return false;
+
+        // 남은 거리: 지금 위치 -> 다음 목표 -> ... -> 마지막 지점
+        int target = Mathf.Clamp(activeItems[index].targetIndex, 0, path.Count - 1);
+        Vector3 pos = _item.transform.position;
+        float distance = Vector3.Distance(pos, path[target].Position);
+        for (int i = target + 1; i < path.Count; i++)
+        {
+            distance += Vector3.Distance(path[i - 1].Position, path[i].Position);
+        }
+
+        // Update()와 같은 식: 실제 이동 = currentSpeed * globalSpeedMultiplier, currentSpeed는 acceleration으로 목표에 다가간다.
+        float targetSpeed = isMoving ? EffectiveBeltSpeed : 0f;
+        float mul = Mathf.Max(0.0001f, globalSpeedMultiplier);
+        float v0 = currentSpeed * mul;
+        float v1 = targetSpeed * mul;
+        float a = Mathf.Max(0.0001f, acceleration * mul);
+
+        if (v1 <= 0.0001f) return false;
+
+        if (v0 >= v1)
+        {
+            _seconds = distance / v1;
+            return true;
+        }
+
+        float accelTime = (v1 - v0) / a;
+        float accelDistance = (v0 + v1) * 0.5f * accelTime;
+        if (distance <= accelDistance)
+        {
+            // d = v0 t + a t^2 / 2 를 t에 대해 푼다
+            float disc = v0 * v0 + 2f * a * distance;
+            _seconds = (-v0 + Mathf.Sqrt(Mathf.Max(0f, disc))) / a;
+        }
+        else
+        {
+            _seconds = accelTime + (distance - accelDistance) / v1;
+        }
+
+        return true;
     }
 
     public void StartBelt()

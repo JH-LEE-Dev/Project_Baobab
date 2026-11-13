@@ -189,6 +189,9 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.QuakeChargeChangedEvent -= QuakeChargeChanged;
         inDungeonObjectManager.QuakeChargeChangedEvent += QuakeChargeChanged;
 
+        inDungeonObjectManager.MeteorShowerChargeChangedEvent -= MeteorShowerChargeChanged;
+        inDungeonObjectManager.MeteorShowerChargeChangedEvent += MeteorShowerChargeChanged;
+
         inDungeonObjectManager.OffroadVehicleInteractedEvent -= OffroadVehicleInteracted;
         inDungeonObjectManager.OffroadVehicleInteractedEvent += OffroadVehicleInteracted;
 
@@ -258,6 +261,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.ConstellationManifestedEvent -= ConstellationManifested;
         inDungeonObjectManager.EmberAcquiredNotifyEvent -= EmberAcquired;
         inDungeonObjectManager.QuakeChargeChangedEvent -= QuakeChargeChanged;
+        inDungeonObjectManager.MeteorShowerChargeChangedEvent -= MeteorShowerChargeChanged;
         inDungeonObjectManager.OffroadVehicleInteractedEvent -= OffroadVehicleInteracted;
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.GemOreItemAcquiredEvent -= GemOreItemAcquired;
@@ -459,6 +463,24 @@ public class InDungeonSystem : MonoBehaviour
         if (_maxEmbers <= _embers)
         {
             signalHub.Publish(BuffHudSignal.Of(EBuffHudId.Earthquake, EBuffHudOp.Dispel));
+        }
+    }
+
+    // "별빛 나침반" 유성우 게이지: 지진 게이지와 같은 방식(StackHits, 값은 게이지를 채운 벌목 수).
+    // 가득 차면 최대 도달 연출 뒤 번쩍이며 퇴장(유성우 발동), 숲 방문 초기화(0)는 연출 없이 지운다.
+    private void MeteorShowerChargeChanged(int _kills, int _maxKills)
+    {
+        if (0 >= _kills)
+        {
+            signalHub.Publish(BuffHudSignal.Of(EBuffHudId.StarRain, EBuffHudOp.Remove));
+            return;
+        }
+
+        signalHub.Publish(BuffHudSignal.AddStackHits(EBuffHudId.StarRain, _kills, _maxKills));
+
+        if (_maxKills <= _kills)
+        {
+            signalHub.Publish(BuffHudSignal.Of(EBuffHudId.StarRain, EBuffHudOp.Dispel));
         }
     }
 

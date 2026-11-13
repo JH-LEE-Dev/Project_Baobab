@@ -29,14 +29,15 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AccentGlowMax: 2
-    - _AccentGlowMin: 0.55
+    - _AccentGlowMax: 1
+    - _AccentGlowMin: 1
     - _BodyGlow: 0
     - _GlowMax: 2.6
     - _GlowMin: 1
+    - _Opacity: 1
     - _PixelsPerUnit: 32
     m_Colors:
-    - _AccentColor: {r: 1, g: 0.47843137, b: 0.18039216, a: 1}
-    - _Region: {r: 0.125, g: 0.07692308, b: 0.6875, a: 0.11217949}
+    - _AccentColor: {r: 1, g: 1, b: 1, a: 1}
+    - _Region: {r: 0.125, g: 0.046875, b: 0.40625, a: 0.0625}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

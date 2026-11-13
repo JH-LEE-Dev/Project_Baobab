@@ -2221,8 +2221,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     /// 함수를 쓴다. 예전엔 막힘 기록은 개당 가치의 엄격 부등호, 전송은 개당 가치 뒤 개수였는데, 황금 별뿌리(20000×5)와
     /// 일반 달무리(100000)처럼 개당 가치가 같은 두 종류가 한 숲에 함께 있으면 "넘어감"으로 표시한 슬롯과 실제로
     /// 넘어가는 슬롯이 달랐다. 보석을 앞세우는 것은 인벤토리 선점(LogPickupOrder)과 같은 이유다.
+    /// 가방 → 제재소 보관함 전송(LogContainer.TryTransferOneItem)도 같은 순서를 쓰도록 이 함수를 부른다.
     /// </summary>
-    private static bool IsTransferredBefore(LogItemData _a, long _unitA, int _countA, LogItemData _b, long _unitB, int _countB)
+    public static bool IsTransferredBefore(LogItemData _a, long _unitA, int _countA, LogItemData _b, long _unitB, int _countB)
     {
         if (_b == null) return true;
 

@@ -29,6 +29,13 @@ public class LootPillarManager : MonoBehaviour
     public event Action<bool, LootType> LootPillarInteractEvent;
 
     private readonly List<LootDisplayObject> spawnedPillars = new List<LootDisplayObject>();
+    // spawnedPillars와 1:1 - 각 기둥의 지면 접점(Pivot) 위치. 왼쪽 위 칸에 다른 기둥이 있는지 확인하는 데 쓴다.
+    private readonly List<Vector2> spawnedPivots = new List<Vector2>();
+
+    [Header("Side Interaction (왼쪽 위 면 상호작용)")]
+    [SerializeField, Tooltip("기둥 지면 접점에서 왼쪽 위(북서) 이웃 칸까지의 오프셋(아이소 격자 1칸). 이 칸에 다른 기둥이 없을 때만 그 면까지 상호작용 범위를 늘린다.")]
+    private Vector2 sideNeighborOffset = new Vector2(-0.5f, 0.25f);
+    private const float SideNeighborTolerance = 0.1f;
 
     /// <summary>이번 마을 방문에 세워진 기둥들. 마을 강아지가 기둥의 상호작용 영역을 피하는 데 쓴다.</summary>
     public IReadOnlyList<LootDisplayObject> SpawnedPillars => spawnedPillars;
@@ -80,6 +87,7 @@ public class LootPillarManager : MonoBehaviour
         }
 
         spawnedPillars.Clear();
+        spawnedPivots.Clear();
         pendingFirstReveals.Clear();
         focusedPillar = null;
         focusCandidateCount = 0;
@@ -119,11 +127,39 @@ public class LootPillarManager : MonoBehaviour
                 pendingFirstReveals.Add(pillar);
             }
 
+            spawnedPivots.Add(pivot != null ? (Vector2)pivot.position : (Vector2)point.position);
             pointIndex++;
         }
 
+        ApplySideInteractExtensions();
+
         // 조작이 기둥을 세우기 전에 이미 풀렸다면(bArrivalUnlocked 주석 참고) 기다릴 신호가 다시 오지 않으므로 지금 떨어뜨린다.
         if (true == bArrivalUnlocked) PlayPendingFirstReveals();
+    }
+
+    // 기둥마다 왼쪽 위(북서) 칸이 비어 있으면 상호작용 범위를 그 면까지 늘린다(LootDisplayObject.SetSideInteractExtended).
+    // LootPoint는 아이소 격자에서 한 칸씩 오른쪽 아래로 이어져 있어, 두 번째 기둥부터는 왼쪽 위 칸이 앞 기둥 자리다.
+    // 그쪽으로 늘리면 앞 기둥 둘레에서 뒤 기둥이 골라지므로, 실제로 비어 있는지를 세운 기둥들의 지면 접점으로 확인한다.
+    private void ApplySideInteractExtensions()
+    {
+        for (int i = 0; i < spawnedPillars.Count; i++)
+        {
+            if (null == spawnedPillars[i]) continue;
+
+            Vector2 _neighbor = spawnedPivots[i] + sideNeighborOffset;
+            bool _bBlocked = false;
+            for (int j = 0; j < spawnedPillars.Count; j++)
+            {
+                if (j == i || null == spawnedPillars[j]) continue;
+                if ((spawnedPivots[j] - _neighbor).sqrMagnitude <= SideNeighborTolerance * SideNeighborTolerance)
+                {
+                    _bBlocked = true;
+                    break;
+                }
+            }
+
+            spawnedPillars[i].SetSideInteractExtended(false == _bBlocked);
+        }
     }
 
     // 단계 변경 이벤트(레벨이 올라 실제로 단계가 바뀐 전리품만 온다): 기둥은 건드리지 않고 최신 단계만 보류한다.

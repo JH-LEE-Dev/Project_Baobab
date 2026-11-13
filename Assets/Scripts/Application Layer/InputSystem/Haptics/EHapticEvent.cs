@@ -83,5 +83,8 @@ public enum EHapticEvent
     /// <summary>로그라이크 바닥 타일 파도가 섬 가장자리(바다)에 처음 닿음. (RoguelikeTileWaveFeedback)</summary>
     RoguelikeTileWaveShore,
 
+    /// <summary>제재소 평가기에서 특등품 평가(가격 2배)가 터짐. 마을에서 평가기가 화면에 보일 때만. (TopgradeAssessmentPresenter)</summary>
+    TopgradeAssessment,
+
     Count
 }

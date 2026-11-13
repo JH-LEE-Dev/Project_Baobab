@@ -7,6 +7,15 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
 {
     public event Action<long> logEvaluatedEvent;
 
+    /// <summary>
+    /// 특등품 평가(가격 2배)가 터졌을 때. 인자는 (2배 전 가격, 최종 가격). 돈 처리(logEvaluatedEvent) 직후에 온다.
+    /// 연출 전용 통로라 맵(마을/던전)을 가리지 않고 항상 보낸다 - 보여줄지는 받는 쪽이 정한다.
+    /// </summary>
+    public event Action<long, long> TopgradeAssessedEvent;
+
+    // 미리 굴린 판정마다 붙이는 번호(LogItem.TopgradeTicket). 0은 "번호 없음"이라 1부터 쓴다.
+    private static int topgradeTicketSeq = 0;
+
     [SerializeField] private LogItemValueDataBase logItemValueDataBase;
     [SerializeField] private GameObject storageObj;
     [SerializeField] private float evaluationDelay = 1.5f;
@@ -40,7 +49,28 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
         logStorage.Initialize();
     }
 
-    public void EvaluateLog(ILogItemData _itemData)
+    /// <summary>
+    /// 커터에서 막 나온 원목의 특등품 평가를 미리 굴려 원목에 적어 둔다. 확률은 평가 순간과 같은
+    /// topgradeAssessmentChance 하나이고, 굴리는 시점만 커터 배출로 앞당겨진다(쌍둥이 원목 연출용).
+    /// </summary>
+    public void PreRollTopgrade(LogItem _item)
+    {
+        if (_item == null) return;
+
+        bool bHit = UnityEngine.Random.value < topgradeAssessmentChance;
+        if (bHit)
+        {
+            ++topgradeTicketSeq;
+            if (topgradeTicketSeq <= 0) topgradeTicketSeq = 1; // int가 한 바퀴 도는 경우에도 0(번호 없음)은 피한다
+            _item.SetTopgradePreRoll(ETopgradePreRoll.Hit, topgradeTicketSeq);
+        }
+        else
+        {
+            _item.SetTopgradePreRoll(ETopgradePreRoll.Miss, 0);
+        }
+    }
+
+    public void EvaluateLog(ILogItemData _itemData, ETopgradePreRoll _preRoll = ETopgradePreRoll.None)
     {
         Sound.Play(SoundID.ConvayerComplete, transform.position, GetSoundVolume());
         Sound.Play(SoundID.ConvayerPrize, transform.position, GetSoundVolume());
@@ -78,8 +108,18 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
         // 값이 정의되지 않은 음수로 튀어 "수금하면 소지금이 마이너스가 되는" 상태가 됐다.
         long finalPrice = (long)System.Math.Round((double)baseValue * stateMultiplier * logValueMultiplier);
 
-        // 확률적으로 최종 가격 2배 책정
-        if (UnityEngine.Random.value < topgradeAssessmentChance)
+        // 확률적으로 최종 가격 2배 책정. 커터에서 미리 굴린 원목은 그 결과를 쓰고,
+        // 미리 굴리지 않은 원목(세이브에서 복원된 벨트 원목 등)은 예전처럼 여기서 굴린다.
+        bool bTopgrade;
+        switch (_preRoll)
+        {
+            case ETopgradePreRoll.Hit: bTopgrade = true; break;
+            case ETopgradePreRoll.Miss: bTopgrade = false; break;
+            default: bTopgrade = UnityEngine.Random.value < topgradeAssessmentChance; break;
+        }
+
+        long basePrice = finalPrice;
+        if (bTopgrade)
         {
             finalPrice *= 2;
         }
@@ -87,7 +127,17 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
         logEvaluatedEvent?.Invoke(finalPrice);
 
         if (logStorage != null) logStorage.TriggerBounce();
+
+        if (bTopgrade)
+        {
+            // 평가기의 "쾅"(평소 반동을 덮어쓰는 큰 반동)과 소리·진동·카메라는 받는 쪽(TopgradeAssessmentPresenter)이
+            // 맡는다. 평소 반동을 먼저 걸어 두므로, 받는 쪽이 연출하지 않는 경우(던전에 있는 동안)에도 예전과 같다.
+            TopgradeAssessedEvent?.Invoke(basePrice, finalPrice);
+        }
     }
+
+    /// <summary>평가기 몸체(원목이 빨려 들어가는 기계). 특등품 연출이 여기를 기준으로 움직인다.</summary>
+    public LogStorage Storage => logStorage;
 
     private IEnumerator StopAnimationRoutine()
     {
