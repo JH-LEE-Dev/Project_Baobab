@@ -150,6 +150,8 @@ public class RoguelikeSkillController : MonoBehaviour
     private const int StellaDroneSlotCount = 9;
     // 이 거리 안에 별이 있으면 그 칸은 찬 것으로 본다(별은 칸 위치에 정확히 놓이므로 작게 둔다).
     private const float StellaDroneSlotOccupiedDistance = 0.5f;
+    // 새 별이 기존 이음선 위에 있다고 볼 허용 거리(월드 유닛). 칸 좌표는 같은 직선 위라 부동소수 오차만 흡수한다.
+    private const float StellaDroneLinkSplitTolerance = 0.05f;
     // 스텔라+드론: 다음 별 생성 판정을 할 수 있는 시각(별이 생기면 생성 간격만큼 뒤로 민다, 기획서 v3.0 11-12 6-2).
     private float nextStellaDroneRollTime;
     // 스텔라+드론: 고정 칸이 다 찬 뒤 노바가 터질 시각. 0 이하면 아직 예약되지 않았다.
@@ -660,7 +662,7 @@ public class RoguelikeSkillController : MonoBehaviour
         float lifetime = bStellaDrone ? 0f : star.ExpireTime - Time.time;
         Publish(ERoguelikeSkillVfx.StarSpawned, _position, _position, blastRadius, lifetime, star.StarId);
 
-        if (bStellaDrone) RebuildStarLinks();
+        if (bStellaDrone) AddStarLink(activeStars.Count - 1);
     }
 
     private int MaxStars()
@@ -1891,6 +1893,85 @@ public class RoguelikeSkillController : MonoBehaviour
         }
 
         Publish(ERoguelikeSkillVfx.StarLinksChanged, fieldCenter, fieldCenter, 0f, 0f, starLinks.Count);
+    }
+
+    /// <summary>
+    /// 새로 생긴 별(_newIndex)을 이음선에 반영한다(기획서 v3.0 6-2 "이음선 재구성"). 새 별이 기존 이음선 위에 있으면 그 이음선을 잘라
+    /// 새 별을 거쳐 잇고, 아니면 가장 가까운 별과 잇는다. 별이 줄 때는 인덱스가 바뀌므로 RebuildStarLinks 전체 재계산을 쓴다.
+    /// </summary>
+    private void AddStarLink(int _newIndex)
+    {
+        if (2 > activeStars.Count)
+        {
+            starLinks.Clear();
+            Publish(ERoguelikeSkillVfx.StarLinksChanged, fieldCenter, fieldCenter, 0f, 0f, starLinks.Count);
+            return;
+        }
+
+        if (0 == starLinks.Count)
+        {
+            RebuildStarLinks();
+            return;
+        }
+
+        Vector2 newPos = activeStars[_newIndex].transform.position;
+        float toleranceSq = StellaDroneLinkSplitTolerance * StellaDroneLinkSplitTolerance;
+
+        bool bSplit = false;
+        int linkCount = starLinks.Count;
+        for (int i = 0; i < linkCount; i++)
+        {
+            Vector2Int link = starLinks[i];
+            Vector2 a = activeStars[link.x].transform.position;
+            Vector2 b = activeStars[link.y].transform.position;
+
+            float t;
+            float distSq = DistanceToSegmentSq(newPos, a, b, out t);
+            if (0f < t && 1f > t && toleranceSq >= distSq)
+            {
+                starLinks[i] = new Vector2Int(link.x, _newIndex);
+                starLinks.Add(new Vector2Int(_newIndex, link.y));
+                bSplit = true;
+                break;
+            }
+        }
+
+        if (false == bSplit)
+        {
+            int nearest = -1;
+            float nearestSq = float.MaxValue;
+            for (int i = 0; i < activeStars.Count; i++)
+            {
+                if (_newIndex == i) continue;
+
+                float d = ((Vector2)activeStars[i].transform.position - newPos).sqrMagnitude;
+                if (nearestSq > d)
+                {
+                    nearestSq = d;
+                    nearest = i;
+                }
+            }
+
+            if (0 <= nearest) starLinks.Add(new Vector2Int(nearest, _newIndex));
+        }
+
+        Publish(ERoguelikeSkillVfx.StarLinksChanged, fieldCenter, fieldCenter, 0f, 0f, starLinks.Count);
+    }
+
+    /// <summary>점 _p에서 선분 _a-_b까지 거리의 제곱을 돌려주고, 선분 위 투영 위치를 _t(0~1)로 내보낸다. 길이 0 선분이면 _t는 0이다.</summary>
+    private static float DistanceToSegmentSq(Vector2 _p, Vector2 _a, Vector2 _b, out float _t)
+    {
+        Vector2 ab = _b - _a;
+        float abSq = ab.sqrMagnitude;
+        if (0f >= abSq)
+        {
+            _t = 0f;
+            return (_p - _a).sqrMagnitude;
+        }
+
+        _t = Mathf.Clamp01(Vector2.Dot(_p - _a, ab) / abSq);
+        Vector2 closest = _a + ab * _t;
+        return (_p - closest).sqrMagnitude;
     }
 
     // // 피해 공통

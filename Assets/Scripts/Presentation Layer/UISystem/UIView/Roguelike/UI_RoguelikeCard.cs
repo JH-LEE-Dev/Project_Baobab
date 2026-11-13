@@ -29,7 +29,7 @@ using UnityEngine.UI;
 /// [아이콘] RoguelikeCardViewData.icon(= CardDefinitionSO.icon)을 그대로 쓴다. 특성 트리와 같은 스프라이트를 카드 에셋의 icon에 넣으면 된다.
 /// [레벨] levelAfterPurchase를 I~VI로 그리고, maxLevel에 닿은 레벨은 MAX로 그린다(액티브 7레벨 = I~VI, MAX / 공통 패시브 5레벨 = I~IV, MAX).
 ///   루비(계약)·프리즘은 레벨이 없어 숨기고, 루비는 rubyBadgeSprite(±)가 있으면 그것을 그린다.
-///   MAX 전용 이미지(maxLevelSprite)와 VI 이미지가 아직 없어서, MAX는 V로 대신 그리고 VI는 비어 있으면 레벨 표기를 숨긴다(리소스가 생기면 슬롯에 넣는다).
+///   VI·MAX 이미지는 슬롯에 연결되어 있고, maxLevelSprite가 비어 있을 때만 MAX를 V로 대신 그리며, 레벨 이미지가 비어 있으면 레벨 표기를 숨긴다.
 /// [희귀 등급] 프레임 자체의 색을 등급 팔레트로 바꿔 그린다(셰이더 UI/CardGradeFrame, 팔레트 스왑). 프레임을 덮는 층이 아니다.
 ///   GradeFrame  프레임 스프라이트 복사본(Card_FrameFull)을 같은 자리에 그리는 층. 프레임의 5톤(안쪽 그림자·몸통·링 둘·하이라이트)을 등급 5톤으로 치환해
 ///               손으로 그린 명암·모서리가 그대로 남는다. 희귀 카드에서는 원래 프레임 이미지를 끄고 이 층이 대신 보인다. 일반 카드는 원래 프레임 그대로.
@@ -43,7 +43,7 @@ using UnityEngine.UI;
 public class UI_RoguelikeCard : MonoBehaviour
 {
     public const int HoverLiftPixels = 6;
-    // MAX 전용 이미지가 없을 때 MAX 표기 대신 쓰는 레벨(V). 리소스가 생기면 maxLevelSprite를 채우면 이 대체는 쓰이지 않는다.
+    // maxLevelSprite가 비어 있을 때만 MAX 표기 대신 쓰는 안전 대체 레벨(V)
     private const int FallbackMaxBadgeLevel = 5;
 
     // 들어올림 스프링. 각진동수 30(약 0.12초에 정점), 올라갈 때 감쇠비 0.45(약 20% 지나침), 내려갈 때·눌릴 때 1.0(지나침 없음).
