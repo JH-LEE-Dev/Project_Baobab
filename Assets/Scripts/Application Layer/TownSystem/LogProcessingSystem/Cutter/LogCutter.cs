@@ -53,6 +53,41 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     {
         globalSpeedMultiplier = _mul;
     }
+
+    // 가공 콤보 스택에 따라 가공 루프 사운드가 올라가는 목표 피치(1 = 콤보 없음). 소리 높이만 바꾼다.
+    private float comboPitchMultiplier = 1f;
+    // 켜는 도중 콤보가 바뀌면 루프 피치를 이 속도(초당)로 목표 피치까지 따라 올린다(내린다).
+    private const float ComboPitchFollowSpeed = 0.6f;
+    // 시동 피치 램프(PowerUp)가 끝나는 시각. 그 전에는 램프가 피치를 쥐고 있으므로 따라가지 않는다.
+    private float comboPitchFollowStartTime;
+
+    public void SetComboPitchMultiplier(float _multiplier)
+    {
+        comboPitchMultiplier = Mathf.Max(1f, _multiplier);
+    }
+
+    // ---- 연출용 조회·색 (가공 콤보). 가공 동작에는 관여하지 않는다. ----
+
+    /// <summary>톱날이 원목을 켜는 중(정방향)이면 true. 날이 되돌아가는 중이거나 쉬는 중이면 false.</summary>
+    public bool IsCuttingForward => bIsCutting && !isReversing;
+
+    /// <summary>절단 톱밥이 튀는 자리(절단 이펙트 위치). 없으면 커터 위치.</summary>
+    public Vector3 EffectPoint => effectTransform != null ? effectTransform.position : transform.position;
+
+    /// <summary>지금 켜는 원목의 톱밥 색을 하나 뽑는다(절단 이펙트와 같은 색 규칙). _t는 0~1.</summary>
+    public Color SampleEffectColor(float _t)
+    {
+        return GetVFXColorForCurrentTree().Evaluate(_t, _t);
+    }
+
+    /// <summary>커터 그림의 월드 경계. 그림이 없으면 커터 위치에 크기 0.</summary>
+    public Bounds VisualBounds => visualSpriteRenderer != null ? visualSpriteRenderer.bounds : new Bounds(transform.position, Vector3.zero);
+
+    /// <summary>커터 그림에 곱할 색(달아오름 연출). 흰색이면 원래 색.</summary>
+    public void SetVisualTint(Color _tint)
+    {
+        if (visualSpriteRenderer != null) visualSpriteRenderer.color = _tint;
+    }
     private bool bIsCutting = false;
     private bool bPowerSupply = false;
     private float powerSupplyMultiplier = 1f; // 전력공급 특성 배율 (SC_PowerSupply의 amount, 예: 5 = 5배)
@@ -414,14 +449,18 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
                     // 0 RPM에서 시동이 새로 걸리는 예열음(PowerUp) 대신, 이미 쌩쌩 가동 중인 정상 피치(1.0)로 루프를 재생하여
                     // 카메라 하강 오디오 페이드인 연출과 자연스럽게 이어지게 한다.
                     cuttingSoundHandle = Sound.PlayTracked(SoundID.SawmillCutterLoop, transform.position,
-                        soundVolume, true, 1f);
+                        soundVolume, true, comboPitchMultiplier);
+                    comboPitchFollowStartTime = Time.time;
                     isRestoredFromOtherMap = false;
                 }
                 else
                 {
-                    // 새로 가공이 시작된 경우: 0.4초 피치 램프(시동 연출) 적용
+                    // 새로 가공이 시작된 경우: 0.4초 피치 램프(시동 연출) 적용. 가공 콤보가 쌓였으면 그만큼 높은 피치까지 올라간다.
+                    float rampDuration = GetPitchRampDuration();
                     cuttingSoundHandle = Sound.PlayTrackedWithPowerUp(SoundID.SawmillCutterLoop, transform.position,
-                        soundVolume, true, GetPitchRampDuration());
+                        soundVolume, true, rampDuration, 0.1f, comboPitchMultiplier);
+                    // 램프 코루틴의 마지막 프레임과 겹치지 않도록 한 프레임 남짓 여유를 둔다.
+                    comboPitchFollowStartTime = Time.time + rampDuration + 0.05f;
                 }
             }
             else
@@ -437,6 +476,21 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
             }
             wasForward = isForward;
         }
+
+        UpdateComboLoopPitch(isForward);
+    }
+
+    // 켜는 도중 가공 콤보가 바뀌면 지금 돌고 있는 가공 루프의 피치를 새 목표로 서서히 맞춘다.
+    // 콤보가 없으면 목표가 1이고 램프도 1에서 끝나므로 아무것도 바꾸지 않는다.
+    private void UpdateComboLoopPitch(bool _isForward)
+    {
+        if (false == _isForward || false == cuttingSoundHandle.IsValid) return;
+        if (Time.time < comboPitchFollowStartTime) return;
+
+        float current = Sound.GetTrackedPitch(cuttingSoundHandle);
+        if (Mathf.Abs(current - comboPitchMultiplier) < 0.0005f) return;
+
+        Sound.SetTrackedPitch(cuttingSoundHandle, Mathf.MoveTowards(current, comboPitchMultiplier, ComboPitchFollowSpeed * Time.deltaTime));
     }
 
     private void PlayCuttingEffect()
