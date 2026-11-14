@@ -4684,7 +4684,7 @@
         {
             "id": 9137,
             "key": "AbilityDescription_LogProcessorSpeedUp",
-            "kr": "<COLOR=8bbeff>미입력</COLOR>",
+            "kr": "원목 가공을 할 때마다\n<COLOR=7EEDBE,EDD87E><Wave>제재소</Wave></COLOR>의 모든 속도가 <COLOR=54D86A>{0}배</COLOR> 증가합니다.",
             "en": "<COLOR=8bbeff>Coming soon</COLOR>",
             "zhHans": "",
             "zhHant": "",
@@ -5212,7 +5212,7 @@
         {
             "id": 9159,
             "key": "AbilityDescription_WhirlWind",
-            "kr": "세 번째 공격마다, 도끼 공격력과 범위에 비례하는\n강력한 <COLOR=fca311>회전베기</COLOR>를 사용합니다.",
+            "kr": "세 번째 공격마다, 도끼 데미지와 범위에 비례하는\n강력한 <COLOR=fca311>회전베기</COLOR>를 사용합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -5524,7 +5524,7 @@
         {
             "id": 9172,
             "key": "AbilityDescription_DroneChainAttack",
-            "kr": "",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>벌목 로봇</Wave></COLOR>의 공격이\n주변으로 전이되는 횟수가 <COLOR=54D86A>{0}번</COLOR> 증가합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -5548,7 +5548,7 @@
         {
             "id": 9173,
             "key": "AbilityDescription_DroneChainAttackRange",
-            "kr": "",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>벌목 로봇 연쇄공격</Wave></COLOR> 범위가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -5572,7 +5572,7 @@
         {
             "id": 9174,
             "key": "AbilityDescription_Hello",
-            "kr": "",
+            "kr": "나무에게 <COLOR=fca311>맨 처음 주는 데미지</COLOR>가 <COLOR=54D86A>1.5배</COLOR>가 됩니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -5668,7 +5668,7 @@
         {
             "id": 9178,
             "key": "AbilityDescription_TopgradeAssessment",
-            "kr": "원목을 가공할 때, 가공된 목재가 두 개 나올 확률이 <COLOR=54D86A>{0}%</COLOR>증가합니다.",
+            "kr": "제재소에서 원목을 가공할 때\n목재가 두 개 나올 확률이 <COLOR=54D86A>{0}%</COLOR>증가합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -5716,7 +5716,7 @@
         {
             "id": 9180,
             "key": "AbilityDescription_DroneCritical",
-            "kr": "",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>벌목 로봇</Wave></COLOR>에 이제 치명타가 적용됩니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -5740,7 +5740,7 @@
         {
             "id": 9181,
             "key": "AbilityDescription_IncreaseJackPotChance",
-            "kr": "",
+            "kr": "나무가 <COLOR=8bbeff>두 배 많은 원목</COLOR>을 드랍할 확률이\n<COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -5764,7 +5764,7 @@
         {
             "id": 9182,
             "key": "AbilityDescription_Repair",
-            "kr": "",
+            "kr": "차량 근처에서 도끼를 수리할 수 있는 횟수가 <COLOR=54D86A>{0}번</COLOR> 증가합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -5788,7 +5788,7 @@
         {
             "id": 9183,
             "key": "AbilityDescription_RemoteLogTransport",
-            "kr": "",
+            "kr": "이제 마을에서 <COLOR=8bbeff>운반 상자</COLOR>에 있는 원목이 <COLOR=54D86A>자동</COLOR>으로 <COLOR=8bbeff>제재소 원목 보관함</COLOR>에 담깁니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -5812,7 +5812,7 @@
         {
             "id": 9184,
             "key": "AbilityDescription_ConstellationAfterimage",
-            "kr": "",
+            "kr": "<COLOR=ff5d8f>별자리 발현</COLOR>이 <COLOR=54D86A>한 번 더</COLOR> 발현됩니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",

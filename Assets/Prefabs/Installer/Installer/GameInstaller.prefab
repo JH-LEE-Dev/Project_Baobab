@@ -594,6 +594,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bc6799e8e62537b4c8852d7d00721c7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LogItemController
+  jackpotTimesSprite: {fileID: -227947725, guid: b5919104e6bba484382995363357ae05, type: 3}
+  jackpotTwoSprite: {fileID: 3943169913685968393, guid: b5919104e6bba484382995363357ae05, type: 3}
   logItemPrefab: {fileID: 5360078145449572918, guid: 6767a4df1c674c5479f6bc03a6d92291, type: 3}
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
   logDropCntDatas:

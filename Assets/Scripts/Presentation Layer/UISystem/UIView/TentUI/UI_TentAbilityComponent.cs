@@ -1760,6 +1760,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.PerfectLogChance:
             case SkillCommandType.AutoLoadInRestArea:
             case SkillCommandType.WhirlWind:
+            case SkillCommandType.Hello:
+            case SkillCommandType.RemoteLogTransport:
+            case SkillCommandType.ConstellationAfterimage:
 
                 return true;
             default:

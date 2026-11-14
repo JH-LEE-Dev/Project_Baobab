@@ -22,6 +22,7 @@ namespace PresentationLayer.VFX
         private SpriteRenderer spriteRenderer;
         private float age;
         private bool playing;
+        private bool showCard;
         private float cardAngle;
 
 
@@ -41,10 +42,11 @@ namespace PresentationLayer.VFX
             gameObject.SetActive(false);
         }
 
-        public void Play(Vector3 _position)
+        public void Play(Vector3 _position, bool _showCard = true)
         {
             transform.position = new Vector3(Mathf.Round(_position.x * 32f) / 32f, Mathf.Round(_position.y * 32f) / 32f, _position.z);
             age = 0f;
+            showCard = _showCard;
             cardAngle = Random.Range(0f, 360f);
             playing = true;
             gameObject.SetActive(true);
@@ -94,7 +96,7 @@ namespace PresentationLayer.VFX
         private void Animate()
         {
             System.Array.Clear(pixels, 0, pixels.Length);
-            DrawCard();
+            if (showCard) DrawCard();
             float left = Mathf.Floor(-glyphWidth * 0.5f);
             float bottom = Mathf.Floor(-glyphHeight * 0.5f);
             AnimateGlyph(timesRenderer, left, bottom, 0f);

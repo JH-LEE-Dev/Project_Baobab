@@ -10,6 +10,8 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
     // 외부 의존성
     [SerializeField] private LogItem logItemPrefab;
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
+    [SerializeField] private Sprite jackpotTimesSprite;
+    [SerializeField] private Sprite jackpotTwoSprite;
     [SerializeField] private List<LogDropCntData> logDropCntDatas;
 
     [Header("Gem Aura")]
@@ -695,6 +697,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
             label = PresentationLayer.VFX.VFX_TopgradeAssessment.Create(transform);
             if (label == null) return;
             label.gameObject.name = "JackpotLabelVFX";
+            label.ConfigurePopup(jackpotTimesSprite, jackpotTwoSprite);
             jackpotLabels[jackpotLabelCursor] = label;
         }
         jackpotLabelCursor = (jackpotLabelCursor + 1) % JackpotLabelCount;
