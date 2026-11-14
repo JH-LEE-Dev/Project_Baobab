@@ -155,6 +155,108 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         }
     }
 
+    // ===== 모루에 도끼 맡기기 =====
+    // 맡긴 동안은 마을 모습(무기 없음, 걷는 방향을 바라봄)으로 바뀌고 공격·조준·공격 범위 표시가 꺼진다. 부메랑·드론·대시는 그대로다.
+    // 조작을 켜고 끄는 다른 경로(경고창 PauseCharacter, ActivateCharacter, EnableAim 등)는 맡긴 동안 공격을 다시 켜지 않고
+    // "돌려받으면 조작을 켤지"(bAxeReturnRestoresControl)만 기록한다.
+    public bool bAxeDeposited { get; private set; } = false;
+    private bool bAxeReturnRestoresControl = false;
+    public event Action<bool> AxeDepositStateChangedEvent;
+
+    // 마을이거나 도끼를 맡긴 동안은 조준 대신 걷는 방향을 바라본다(IdleState/RunState).
+    public bool bFacesMoveDirection => false == bInDungeon || bAxeDeposited;
+
+    public float AxeDurabilityRatio => armComponent != null && armComponent.axeComponent != null ? armComponent.axeComponent.DurabilityRatio : 0f;
+    public bool IsAxeDurabilityFull => 1f <= AxeDurabilityRatio;
+    public float AxeMaxDurability => statComponent != null ? statComponent.axeDurability : 0f;
+
+    // 손에 든 도끼 그림의 월드 위치(모루로 던지는 연출의 출발점·돌려받을 때 도착점). 맡긴 동안 도끼가 꺼져 있어도 팔 자리는 캐릭터를 따라간다.
+    public Vector3 AxeWorldPosition
+    {
+        get
+        {
+            SpriteRenderer weaponRenderer = armComponent != null ? armComponent.currentWeapon?.spriteRenderer : null;
+            return weaponRenderer != null ? weaponRenderer.transform.position : transform.position;
+        }
+    }
+
+    /// <summary>도끼를 모루에 맡긴다. 던전에서 조작 중일 때만 성공한다.</summary>
+    public bool DepositAxe()
+    {
+        if (bAxeDeposited || false == bInDungeon || bDead || bRide) return false;
+
+        bAxeDeposited = true;
+        bAxeReturnRestoresControl = attackComponent.IsCursorEnabled;
+
+        StopWhirlwindSpin();
+        bWhileSwing = false;
+        attackComponent.SetbAttack(false);
+        armComponent.axeComponent.SetbAttack(false);
+        ApplyAxeDepositedBlock();
+
+        characterVisualComponent.SetHubState(true);
+        armComponent.SetActivate(false);
+
+        // 맡긴 동안은 부메랑만 공격한다. 스윙으로 켜져 지속 시간이 남은 드론 공격도 여기서 끝낸다(따라다니기는 유지).
+        DeactivateDrones();
+
+        AxeDepositStateChangedEvent?.Invoke(true);
+        return true;
+    }
+
+    /// <summary>모루에서 도끼를 돌려받는다. 맡기기 전에 조작 중이었다면(그 사이 경고창 등이 풀린 경우 포함) 공격을 다시 켠다.</summary>
+    public void RetrieveAxe()
+    {
+        if (false == bAxeDeposited) return;
+
+        bool bRestoreControl = bAxeReturnRestoresControl && false == bDead && false == bRide && false == bWhileReset;
+        EndAxeDeposit();
+
+        if (bRestoreControl)
+        {
+            attackComponent.SetCursorEnable(true);
+            attackComponent.SetEnable(true);
+            attackComponent.SetbCanAttack(true);
+            armComponent.SetbCanAttack(true);
+            UpdateFacingByAttackPoint();
+        }
+    }
+
+    /// <summary>모루가 한 번 두드릴 때 HUD 도끼 내구도를 갱신한다(수리 연출 포함).</summary>
+    public void NotifyAxeRepairTick(bool _bPlayRepairEffect)
+    {
+        armComponent?.axeComponent?.NotifyRepairTick(_bPlayRepairEffect);
+    }
+
+    // 도끼 내구도를 _amount(내구도 수치)만큼 채운다. 최대치를 넘지 않는다.
+    public void RestoreAxeDurabilityGradually(float _amount)
+    {
+        armComponent?.axeComponent?.RestoreDurabilityGradually(_amount);
+    }
+
+    // 맡긴 상태만 풀고 모습을 되돌린다. 공격을 다시 켤지는 부르는 쪽이 정한다.
+    private void EndAxeDeposit()
+    {
+        if (false == bAxeDeposited) return;
+
+        bAxeDeposited = false;
+        bAxeReturnRestoresControl = false;
+        attackComponent.SetTargetDetectionSuppressed(false);
+        characterVisualComponent.SetHubState(!bInDungeon);
+        armComponent.SetActivate(bInDungeon && false == bDead);
+
+        AxeDepositStateChangedEvent?.Invoke(false);
+    }
+
+    private void ApplyAxeDepositedBlock()
+    {
+        attackComponent.SetCursorEnable(false);
+        attackComponent.SetEnable(false);
+        attackComponent.SetbCanAttack(false);
+        armComponent.SetbCanAttack(false);
+        attackComponent.SetTargetDetectionSuppressed(true);
+    }
+
     public bool bCanApplyDamage => true;
 
     public bool bMoving = false;
@@ -423,6 +525,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         CollisionSystem.Instance?.Register(this, false);
 
+        // 모루에 맡긴 도끼는 씬이 바뀌면 돌려받은 것으로 친다(모습은 아래 SetHubState/SetActivate가 맞춘다).
+        bool bWasAxeDeposited = bAxeDeposited;
+        bAxeDeposited = false;
+        bAxeReturnRestoresControl = false;
+        attackComponent.SetTargetDetectionSuppressed(false);
+        if (bWasAxeDeposited) AxeDepositStateChangedEvent?.Invoke(false);
+
         ClearActiveBoomerangs();
         treeScanTimer = 0f;
         boomerangCooldownTimer = 0f;
@@ -525,7 +634,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     // 무기(Arm) 스프라이트는 던전에 있을 때만 반짝인다 - 마을에서는 무기가 꺼져 있어 의미가 없다.
     private SpriteRenderer GetArmFlashRenderer()
     {
-        return bInDungeon ? armComponent?.currentWeapon?.spriteRenderer : null;
+        return bInDungeon && false == bAxeDeposited ? armComponent?.currentWeapon?.spriteRenderer : null;
     }
 
     #endregion
@@ -689,7 +798,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private void SyncFacingWhileAimDisabled()
     {
         if (true == bFacingLocked || true == bWhirlwindSpinning || true == bDead) return;
-        if (null == attackComponent || false == bInDungeon || true == attackComponent.IsCursorEnabled) return;
+        if (null == attackComponent || false == bInDungeon || true == bAxeDeposited || true == attackComponent.IsCursorEnabled) return;
 
         FaceAttackPoint();
     }
@@ -800,6 +909,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         if (bDead) return; // MagmaForest 용암 지형에서 DecreaseStamina/ApplyEnvironmentalStaminaDrain가 같은 프레임에 중복 발화하는 것을 방지
 
+        // 도끼를 맡긴 채 쓰러지면 던전 모습으로 되돌린 뒤 사망 연출을 낸다(무기는 바로 아래에서 꺼진다).
+        EndAxeDeposit();
+
         stateMachine.ChangeState<DeadState>();
         armComponent.SetActivate(false);
         attackComponent.SetEnable(false);
@@ -868,25 +980,117 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void UpdateItemAcquireBounce(float _deltaTime)
     {
+        bool bHandoffBouncing = axeHandoffBounceTime < axeHandoffBounceDuration;
+        if (bHandoffBouncing) axeHandoffBounceTime += _deltaTime;
+        UpdateHeldAxeHandoffBounce();
+
         if (characterVisualObjects == null) return;
 
-        if (itemAcquireBounceTime >= ITEM_ACQUIRE_BOUNCE_DURATION)
+        bool bItemBouncing = itemAcquireBounceTime < ITEM_ACQUIRE_BOUNCE_DURATION;
+
+        if (false == bItemBouncing && false == bHandoffBouncing)
         {
             if (characterVisualObjects.transform.localScale != characterVisualObjectsOriginalScale)
                 characterVisualObjects.transform.localScale = characterVisualObjectsOriginalScale;
             return;
         }
 
-        itemAcquireBounceTime += _deltaTime;
-        float t = itemAcquireBounceTime / ITEM_ACQUIRE_BOUNCE_DURATION;
+        float stretchX = 1f;
+        float stretchY = 1f;
 
-        // 쫀득함(Squash & Stretch) 연출: 감쇠 진동 곡선(Damped Sine Wave). OffroadContainer.UpdateBounce와 동일한 방식.
-        float curve = Mathf.Sin(t * Mathf.PI * 3f) * (1f - t) * 0.3f;
+        if (bItemBouncing)
+        {
+            itemAcquireBounceTime += _deltaTime;
+            float t = itemAcquireBounceTime / ITEM_ACQUIRE_BOUNCE_DURATION;
+
+            // 쫀득함(Squash & Stretch) 연출: 감쇠 진동 곡선(Damped Sine Wave). OffroadContainer.UpdateBounce와 동일한 방식.
+            float curve = Mathf.Sin(t * Mathf.PI * 3f) * (1f - t) * 0.3f;
+            stretchX += curve;
+            stretchY -= curve;
+        }
+
+        // 모루에 도끼를 던지거나 돌려받을 때의 뽀잉. 아이템 뽀잉과 겹치면 더한다.
+        if (bHandoffBouncing)
+        {
+            float spring = AxeHandoffSpring(axeHandoffBounceTime, axeHandoffBounceDuration) * axeHandoffBounceAmplitude;
+            stretchX += spring;
+            stretchY -= spring;
+        }
 
         characterVisualObjects.transform.localScale = new Vector3(
-            characterVisualObjectsOriginalScale.x * (1f + curve),
-            characterVisualObjectsOriginalScale.y * (1f - curve),
+            characterVisualObjectsOriginalScale.x * stretchX,
+            characterVisualObjectsOriginalScale.y * stretchY,
             characterVisualObjectsOriginalScale.z);
+    }
+
+    // ===== 모루 도끼 주고받기 뽀잉 =====
+    // 수치는 모루(RepairBox) 인스펙터에서 넘어온다. 모루의 뽀잉과 같은 감쇠 스프링(처음엔 옆으로 눌리고 이어서 위로 늘어난다).
+    private float axeHandoffBounceTime = float.MaxValue;
+    private float axeHandoffBounceDuration = 0f;
+    private float axeHandoffBounceAmplitude = 0f;
+    private float axeHandoffBounceFrequency = 22f;
+    private float axeHandoffBounceDamping = 6f;
+    private float heldAxeBounceAmplitude = 0f;
+    private Transform heldAxeBounceTransform;
+    private Vector3 heldAxeBounceBaseScale = Vector3.one;
+
+    /// <summary>
+    /// 모루에 도끼를 던질 때·돌려받을 때 캐릭터 그림(발밑 기준)을 뽀잉시킨다.
+    /// _heldAxeAmplitude가 0보다 크면 손에 든 도끼 그림도 따로 뽀잉한다(돌려받는 순간).
+    /// </summary>
+    public void PlayAxeHandoffBounce(float _duration, float _amplitude, float _frequency, float _damping, float _heldAxeAmplitude)
+    {
+        if (_duration <= 0f) return;
+
+        axeHandoffBounceTime = 0f;
+        axeHandoffBounceDuration = _duration;
+        axeHandoffBounceAmplitude = _amplitude;
+        axeHandoffBounceFrequency = _frequency;
+        axeHandoffBounceDamping = _damping;
+
+        RestoreHeldAxeBounceScale();
+        heldAxeBounceAmplitude = _heldAxeAmplitude;
+        if (_heldAxeAmplitude > 0f)
+        {
+            SpriteRenderer weaponRenderer = armComponent != null ? armComponent.currentWeapon?.spriteRenderer : null;
+            if (weaponRenderer != null)
+            {
+                heldAxeBounceTransform = weaponRenderer.transform;
+                heldAxeBounceBaseScale = heldAxeBounceTransform.localScale;
+            }
+        }
+    }
+
+    private float AxeHandoffSpring(float _elapsed, float _duration)
+    {
+        float t = _duration > 0f ? Mathf.Clamp01(_elapsed / _duration) : 1f;
+        return t < 1f ? Mathf.Exp(-axeHandoffBounceDamping * t) * Mathf.Sin(axeHandoffBounceFrequency * t) : 0f;
+    }
+
+    // 손에 든 도끼 그림의 뽀잉. 캐릭터 그림 뽀잉과 같은 시간축을 쓰고, 끝나면 원래 크기로 돌린다.
+    private void UpdateHeldAxeHandoffBounce()
+    {
+        if (heldAxeBounceTransform == null) return;
+
+        if (axeHandoffBounceTime >= axeHandoffBounceDuration)
+        {
+            RestoreHeldAxeBounceScale();
+            return;
+        }
+
+        float spring = AxeHandoffSpring(axeHandoffBounceTime, axeHandoffBounceDuration) * heldAxeBounceAmplitude;
+        heldAxeBounceTransform.localScale = new Vector3(
+            heldAxeBounceBaseScale.x * (1f + spring),
+            heldAxeBounceBaseScale.y * (1f - spring),
+            heldAxeBounceBaseScale.z);
+    }
+
+    private void RestoreHeldAxeBounceScale()
+    {
+        if (heldAxeBounceTransform == null) return;
+
+        heldAxeBounceTransform.localScale = heldAxeBounceBaseScale;
+        heldAxeBounceTransform = null;
     }
 
     private void UpdateItemDetection()
@@ -1063,7 +1267,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 던전: 귀환 확정·경고창·입장 연출처럼 조작을 넘겨받지 않은 구간은 리셋 중이거나 조준이 꺼져 있다.
         // 마을은 조준을 쓰지 않고(커서가 늘 꺼져 있다) bWhileReset은 ResetStatus 뒤 다음 던전의 ActivateCharacter에서야 풀려 마을에서는 켜진 채 남을 수 있으므로 보지 않는다.
         // 마을의 출발·도착·메인 메뉴 연출은 이동 잠금(IsMovePaused)과 탑승(bRide)으로 막힌다.
-        if (bInDungeon && (bWhileReset || null == attackComponent || false == attackComponent.IsCursorEnabled)) return;
+        // 도끼를 맡긴 동안은 조준이 꺼져 있으므로, 맡기기 전에 조작 중이었는지(경고창 등이 끼어들면 그대로 기록된다)로 대신 본다.
+        if (bInDungeon && (bWhileReset || null == attackComponent
+            || (bAxeDeposited ? false == bAxeReturnRestoresControl : false == attackComponent.IsCursorEnabled))) return;
         if (inputManager.IsMovePaused) return;
 
         // 키를 누른 순간에는 게임플레이였어도, 시작은 다음 물리 틱이라 그 사이 UI 화면이 열렸을 수 있다.
@@ -2028,7 +2234,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         ConnectAttackToArm();
 
         // 비주얼 업데이트
-        characterVisualComponent.UpdateVisuals(bMoving, !bInDungeon, bDead);
+        characterVisualComponent.UpdateVisuals(bMoving, !bInDungeon || bAxeDeposited, bDead);
         UpdateItemAcquireBounce(Time.deltaTime);
 
         // 스태미나 로직
@@ -2148,6 +2354,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     /// </summary>
     public void ShowAttackIndicatorFacingDownForRun()
     {
+        if (bAxeDeposited) return;
+
         attackComponent.SetCursorEnable(false);
         armComponent.ResetRotation();
         attackComponent.ResetAttackTransform();
@@ -2160,6 +2368,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 귀환 확정(HandleGameEnd) 또는 플레이 시작 전 대기 상태. 스태미나는 낮은 값 그대로 남을 수
         // 있으므로 Update의 저피로도 경고 연출은 여기서부터 끈다(자세한 이유는 Update 참고).
         bLowStaminaWarningSuppressed = true;
+
+        // 귀환 확정 등으로 조작을 거둘 때 모루에 맡긴 도끼는 돌려받은 것으로 친다(공격은 아래에서 꺼진다).
+        EndAxeDeposit();
 
         healthComponent.SetStaminaDecrease(false);
         attackComponent.SetCursorEnable(false);
@@ -2181,6 +2392,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     /// </summary>
     public void EnableAim()
     {
+        if (bAxeDeposited)
+        {
+            bAxeReturnRestoresControl = true;
+            return;
+        }
+
         attackComponent.SetCursorEnable(true);
         // 패드로 들어오면 마을에서 마지막으로 걷던 방향이 스프라이트 방향으로 남아 있어, 조준점(정면 아래)과
         // 캐릭터가 서로 다른 곳을 보게 된다. 조준을 켜는 이 시점에 둘 다 정면 아래로 맞춰 준다.
@@ -2199,6 +2416,15 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 이 상황을 만들지 않지만, 꺼진 오브젝트에서 AttackComponent가 코루틴을 시작하려다 에러를
         // 남기는 일만은 마지막 방어선으로 막는다.
         if (bRide == true || gameObject.activeInHierarchy == false) return;
+
+        // 도끼를 맡긴 동안은 공격을 켜지 않고, 돌려받을 때 켜지도록 기록만 한다.
+        if (bAxeDeposited)
+        {
+            bAxeReturnRestoresControl = true;
+            bWhileReset = false;
+            bLowStaminaWarningSuppressed = false;
+            return;
+        }
 
         // 조준이 아직 꺼져 있을 때만 초기 자세로 리셋한다. EnableAim()으로 이미 조준이 켜져
         // 마우스를 따라가는 중인데 리셋하면, 팔이 정면 아래로 튕겼다가 다시 마우스 쪽으로
@@ -2231,6 +2457,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public void ResetStatus()
     {
+        // 던전 안 리셋(사망 등)에서는 맡긴 도끼를 돌려받은 것으로 친다. 공격은 다음 ActivateCharacter가 켠다.
+        EndAxeDeposit();
+
         ClearActiveBoomerangs();
         treeScanTimer = 0f;
         boomerangCooldownTimer = 0f;
@@ -2276,6 +2505,14 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public void PauseCharacter(bool _boolean)
     {
+        // 도끼를 맡긴 동안은 공격을 켜지 않는다. 풀릴 때 돌려받으면 조작을 켤지만 기록한다.
+        if (bAxeDeposited)
+        {
+            bAxeReturnRestoresControl = false == _boolean;
+            ApplyAxeDepositedBlock();
+            return;
+        }
+
         if (_boolean == true)
         {
             attackComponent.SetCursorEnable(false);

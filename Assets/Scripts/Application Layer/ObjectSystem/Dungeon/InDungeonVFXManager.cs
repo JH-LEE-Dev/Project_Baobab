@@ -256,6 +256,21 @@ public class InDungeonVFXManager : MonoBehaviour
     private const int CriticalImpactPrewarmCount = 4;
     private readonly List<PresentationLayer.VFX.VFX_CriticalImpact> criticalImpacts = new List<PresentationLayer.VFX.VFX_CriticalImpact>(CriticalImpactMaxActive);
 
+    // "약점 타격" 특성 연출(VFX_WeakPointHit: 절반 이하로 내려온 순간의 노출, 보너스가 들어간 타격의 관통). 치명타 임팩트와 같은 방식으로
+    // 이 매니저 아래에 런타임으로 만들고 끝난 인스턴스를 다시 쓴다. 회전 베기·다중 공격으로 여러 그루가 한꺼번에 나와도 동시에 이만큼까지만 그린다.
+    // 미리 만드는 수는 상한과 같다. 회전 베기 한 번에 여러 그루가 처음 절반을 넘으면 그 프레임에 생성(오브젝트+메쉬)이 몰렸었다.
+    // 쉬는 인스턴스는 컴포넌트·렌더러가 꺼져 있어 매 프레임 비용이 없다.
+    private const int WeakPointHitMaxActive = 12;
+    private const int WeakPointHitPrewarmCount = WeakPointHitMaxActive;
+    private readonly List<PresentationLayer.VFX.VFX_WeakPointHit> weakPointHits = new List<PresentationLayer.VFX.VFX_WeakPointHit>(WeakPointHitMaxActive);
+    private const string WeakPointStrikeSortingLayerName = "FlyingItem";
+
+    // "첫 인사" 특성 연출(VFX_HelloHit: 아직 한 번도 맞지 않은 나무에 보너스가 들어간 첫 타). 나무마다 첫 타에 나오고 회전 베기·다중 공격이면
+    // 처음 보는 나무 여러 그루가 한꺼번에 맞으므로 상한을 약점보다 넉넉히 둔다. 약점 관통과 같은 이유로 날아다니는 것 층에 그린다.
+    private const int HelloHitMaxActive = 16;
+    private const int HelloHitPrewarmCount = HelloHitMaxActive;   // 약점과 같은 이유로 상한만큼 미리 만든다
+    private readonly List<PresentationLayer.VFX.VFX_HelloHit> helloHits = new List<PresentationLayer.VFX.VFX_HelloHit>(HelloHitMaxActive);
+
     // 보석 나무 변신·사망 단계별 추가 연출(VFX_GemTierBurst), 다이아·무지개 원목 잔광(VFX_GemLogTrail).
     // 치명타 임팩트와 같이 이 매니저 아래에 런타임으로 만들고 끝난 인스턴스를 다시 쓴다. 동시 상한을 넘는 것은 생략한다(기존 이펙트는 그대로).
     // 쉬는 인스턴스는 컴포넌트가 꺼져 있어 매 프레임 비용이 없으므로, 재생 순간에 새로 만드는 일이 없도록 넉넉히 미리 만든다
@@ -432,6 +447,21 @@ public class InDungeonVFXManager : MonoBehaviour
             criticalImpacts.Add(vfx);
         }
 
+        // 약점 타격 연출도 같은 이유로 몇 개를 미리 만든다(재생은 하지 않는다).
+        while (weakPointHits.Count < WeakPointHitPrewarmCount)
+        {
+            PresentationLayer.VFX.VFX_WeakPointHit vfx = PresentationLayer.VFX.VFX_WeakPointHit.Create(transform);
+            if (vfx == null) break;
+            weakPointHits.Add(vfx);
+        }
+
+        while (helloHits.Count < HelloHitPrewarmCount)
+        {
+            PresentationLayer.VFX.VFX_HelloHit vfx = PresentationLayer.VFX.VFX_HelloHit.Create(transform);
+            if (vfx == null) break;
+            helloHits.Add(vfx);
+        }
+
         // 보석 단계 연출·원목 잔광도 같은 이유로 몇 개를 미리 만든다(재생은 하지 않는다).
         while (gemTierBursts.Count < GemTierBurstPrewarmCount)
         {
@@ -567,6 +597,79 @@ public class InDungeonVFXManager : MonoBehaviour
         }
 
         vfx.Play(_visual.GetBottomRootPosition(), TreeSortingLayerName, _visual.GetFrontEffectSortingOrder() + 1);
+    }
+
+    /// <summary>
+    /// "약점 타격" 연출을 맞은 나무 밑동(기본 피격 톱밥이 터지는 자리)에서 재생한다. _mode는 VFX_WeakPointHit.ModeExpose(절반 이하로 내려온 순간)
+    /// 또는 ModeStrike(보너스가 들어간 도끼 타격), _exitDirX는 관통 줄기가 빠지는 쪽(공격자 반대편, 1 또는 -1)이다.
+    /// 노출은 맞은 나무의 가장 앞 렌더러보다 한 단계 더 앞에, 관통은 날아다니는 것 층에 그린다. 동시에 WeakPointHitMaxActive개를 넘으면 생략한다.
+    /// </summary>
+    public void PlayWeakPointHitVFX(TreeVisualComponent _visual, int _mode, int _exitDirX)
+    {
+        if (_visual == null) return;
+
+        PresentationLayer.VFX.VFX_WeakPointHit vfx = null;
+        for (int i = 0; i < weakPointHits.Count; i++)
+        {
+            PresentationLayer.VFX.VFX_WeakPointHit candidate = weakPointHits[i];
+            if (candidate != null && false == candidate.IsPlaying)
+            {
+                vfx = candidate;
+                break;
+            }
+        }
+
+        if (vfx == null)
+        {
+            if (weakPointHits.Count >= WeakPointHitMaxActive) return;
+            vfx = PresentationLayer.VFX.VFX_WeakPointHit.Create(transform);
+            if (vfx == null) return;
+            weakPointHits.Add(vfx);
+        }
+
+        Vector3 bottom = _visual.GetBottomRootPosition();
+        if (PresentationLayer.VFX.VFX_WeakPointHit.ModeStrike == _mode)
+        {
+            // 관통은 이 타격으로 쓰러지는 경우가 많아(약점은 HP 절반 이하라 마지막 타격이 되기 쉽다) 나무 층에 두면 사망 이펙트에 묻힌다.
+            // 보석 단계 연출(VFX_GemTierBurst)의 앞 층과 같은 규칙으로 날아다니는 것 층(FlyingItem)에 밑동 y 순서로 그린다.
+            vfx.Play(_mode, bottom, _exitDirX, WeakPointStrikeSortingLayerName, -Mathf.RoundToInt(bottom.y * 100f) + 100);
+        }
+        else
+        {
+            vfx.Play(_mode, bottom, _exitDirX, TreeSortingLayerName, _visual.GetFrontEffectSortingOrder() + 1);
+        }
+    }
+
+    /// <summary>
+    /// "첫 인사" 연출을 맞은 나무 밑동에서 재생한다. _bReply면 나무 꼭대기에 화답 반짝임을 더한다(이 타격으로 쓰러진 나무는 false).
+    /// _awayDirX는 공격자 반대편(1 또는 -1)이다. 동시에 HelloHitMaxActive개를 넘으면 생략한다.
+    /// </summary>
+    public void PlayHelloHitVFX(TreeVisualComponent _visual, int _awayDirX, bool _bReply)
+    {
+        if (_visual == null) return;
+
+        PresentationLayer.VFX.VFX_HelloHit vfx = null;
+        for (int i = 0; i < helloHits.Count; i++)
+        {
+            PresentationLayer.VFX.VFX_HelloHit candidate = helloHits[i];
+            if (candidate != null && false == candidate.IsPlaying)
+            {
+                vfx = candidate;
+                break;
+            }
+        }
+
+        if (vfx == null)
+        {
+            if (helloHits.Count >= HelloHitMaxActive) return;
+            vfx = PresentationLayer.VFX.VFX_HelloHit.Create(transform);
+            if (vfx == null) return;
+            helloHits.Add(vfx);
+        }
+
+        // 첫 타가 곧 마지막 타인 경우(한 방에 쓰러짐)도 많아 나무 층에 두면 사망 이펙트에 묻힌다. 약점 관통과 같은 층·순서 규칙을 쓴다.
+        Vector3 bottom = _visual.GetBottomRootPosition();
+        vfx.Play(bottom, _visual.GetTopRootPosition(), _bReply, _awayDirX, WeakPointStrikeSortingLayerName, -Mathf.RoundToInt(bottom.y * 100f) + 100);
     }
 
     // 쉬고 있는 인스턴스가 _count개(풀 보관 상한 이내)가 되도록 꺼냈다가 돌려놓는다. 꺼낸 동안 동시에 들고 있어야 서로 다른
@@ -1361,6 +1464,16 @@ public class InDungeonVFXManager : MonoBehaviour
         for (int i = 0; i < criticalImpacts.Count; i++)
         {
             if (criticalImpacts[i] != null) criticalImpacts[i].StopImmediate();
+        }
+
+        for (int i = 0; i < weakPointHits.Count; i++)
+        {
+            if (weakPointHits[i] != null) weakPointHits[i].StopImmediate();
+        }
+
+        for (int i = 0; i < helloHits.Count; i++)
+        {
+            if (helloHits[i] != null) helloHits[i].StopImmediate();
         }
 
         for (int i = 0; i < gemTierBursts.Count; i++)

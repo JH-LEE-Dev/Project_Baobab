@@ -2526,6 +2526,26 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             {
                 inDungeonVFXManager.PlayCriticalImpactVFX(_treeObj.treeVisualComponent);
             }
+
+            // "약점 타격" 특성: 보너스가 들어간 도끼 타격이면 관통, 아니면 이 피격으로 절반 이하로 내려온 순간에 노출 표식(특성이 있을 때만).
+            int axeAccent = _treeObj.AxeAccentInProgress;
+            if (0 != (axeAccent & TreeObj.AxeAccentWeakPoint))
+            {
+                int exitDirX = 0 != (axeAccent & TreeObj.AxeAccentFromRight) ? -1 : 1;
+                inDungeonVFXManager.PlayWeakPointHitVFX(_treeObj.treeVisualComponent, PresentationLayer.VFX.VFX_WeakPointHit.ModeStrike, exitDirX);
+            }
+            else if (_treeObj.bCrossedHalfHpInProgress && null != character && null != character.statComponent
+                && character.statComponent.weakPointDamageMul > 0f)
+            {
+                inDungeonVFXManager.PlayWeakPointHitVFX(_treeObj.treeVisualComponent, PresentationLayer.VFX.VFX_WeakPointHit.ModeExpose, 1);
+            }
+
+            // "첫 인사" 특성: 처음 맞은 나무에 보너스가 들어간 도끼 타격. 쓰러지지 않았으면 나무 꼭대기가 화답한다.
+            if (0 != (axeAccent & TreeObj.AxeAccentHello))
+            {
+                int awayDirX = 0 != (axeAccent & TreeObj.AxeAccentFromRight) ? -1 : 1;
+                inDungeonVFXManager.PlayHelloHitVFX(_treeObj.treeVisualComponent, awayDirX, false == _treeObj.bDead);
+            }
         }
 
         if (null != currentTreeGenerationStrategy)
@@ -4117,36 +4137,36 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 스킬도 마찬가지로 유실됐다. 여기에 보관해뒀다가 차량이 만들어지는 즉시 밀어넣는다.
     //
     // 각 값의 누적 방식은 OffroadVehicleObj 쪽 구현과 정확히 같게 맞춘다
-    // (repairBoxCount는 대입, repairAmount는 누적). 그래야 보관해뒀다 미는 것과
+    // (모루 해금은 대입, 초당 수리량 보너스는 누적). 그래야 보관해뒀다 미는 것과
     // 곧바로 미는 것의 결과가 항상 동일하다.
-    private bool bRepairBoxCountAssigned;
-    private float pendingRepairBoxCount;
-    private float pendingRepairAmountTotal;
+    private bool bRepairBoxUnlockAssigned;
+    private bool bPendingRepairBoxUnlocked;
+    private float pendingRepairRatePercentTotal;
 
-    public void IncreaseRepairBoxCount(float _amount)
+    public void SetRepairBoxUnlocked(bool _bUnlocked)
     {
-        bRepairBoxCountAssigned = true;
-        pendingRepairBoxCount = _amount;
+        bRepairBoxUnlockAssigned = true;
+        bPendingRepairBoxUnlocked = _bUnlocked;
 
         if (offroadVehicle != null)
         {
-            offroadVehicle.IncreaseRepairBoxCount(_amount);
+            offroadVehicle.SetRepairBoxUnlocked(_bUnlocked);
         }
     }
 
-    public void IncreaseRepairAmount(float _amount)
+    public void IncreaseRepairRatePercent(float _amount)
     {
-        pendingRepairAmountTotal += _amount;
+        pendingRepairRatePercentTotal += _amount;
 
         if (offroadVehicle != null)
         {
-            offroadVehicle.IncreaseRepairAmount(_amount);
+            offroadVehicle.IncreaseRepairRatePercent(_amount);
         }
     }
 
     /// <summary>
     /// 차량이 막 생성된 직후 한 번만 호출한다. 그 전까지 쌓아둔 수리 스킬 값을 차량에 반영한다.
-    /// 반드시 ResetObject()(내부에서 ResetRepairBox()가 repairBoxCount/repairAmount를 읽는다)보다
+    /// 반드시 ResetObject()(내부에서 ResetRepairBox()가 모루 해금/초당 수리량 보너스를 읽는다)보다
     /// 먼저 호출되어야 하고, 생성 시점에만 호출해야 이후의 직접 호출과 이중 적용되지 않는다.
     /// </summary>
     private void ApplyPendingRepairSkillsToVehicle()
@@ -4154,14 +4174,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (offroadVehicle == null) return;
 
         // 스킬이 한 번도 값을 정한 적 없으면 건드리지 않는다(프리팹 기본값을 덮어쓰지 않기 위해).
-        if (bRepairBoxCountAssigned)
+        if (bRepairBoxUnlockAssigned)
         {
-            offroadVehicle.IncreaseRepairBoxCount(pendingRepairBoxCount);
+            offroadVehicle.SetRepairBoxUnlocked(bPendingRepairBoxUnlocked);
         }
 
-        if (pendingRepairAmountTotal != 0f)
+        if (pendingRepairRatePercentTotal != 0f)
         {
-            offroadVehicle.IncreaseRepairAmount(pendingRepairAmountTotal);
+            offroadVehicle.IncreaseRepairRatePercent(pendingRepairRatePercentTotal);
         }
     }
 }

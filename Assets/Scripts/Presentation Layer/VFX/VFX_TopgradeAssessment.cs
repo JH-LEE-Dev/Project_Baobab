@@ -10,14 +10,12 @@ namespace PresentationLayer.VFX
     ///
     /// 장면
     /// - 등장(PlayReveal): 커터 톱날이 금을 긁은 듯 톱날에서 불티 줄기가 벨트 쪽으로 튀고, 쌍둥이가 나오는 출구에서는
-    ///   금빛 톱밥이 뿜어진다. 동시에 커터 윗면에서 숫자 시트의 "×2"와 움직이는 폭발 도형이 각각 튀어나온 뒤
-    ///   1초 안에 빠르게 페이드아웃한다. 다시 나오면 팝 연출을 처음부터 재생한다.
+    ///   금빛 톱밥이 뿜어진다.
     /// - 착지(PlayLand): 원목 등 위에 내려앉는 순간 작은 별이 반짝이고 양옆으로 먼지가 튄다.
     /// - 업혀 가기(EmitRideSparkle): 쌍둥이 둘레에서 금빛 반짝임이 하나씩 피어올라 사라진다(절제해서 드문드문).
     /// - 쾅(PlayStamp): 평가기에서 큰 십자 섬광 → 점선 충격파 → 금화·금가루 분수가 솟았다 떨어진다.
     ///   콤보(연달아 터짐)일수록 분수와 충격파가 조금씩 커진다.
     ///
-    /// 글자는 숫자와 곱셈 기호뿐이라 언어와 무관하다(현지화 대상 아님).
     /// 반투명 페이드 없이 계단식 크기 변화·점멸로만 사라진다. 고정 크기 배열만 써서 재생 중 힙 할당이 없다.
     /// 그림일 뿐이라 판정·돈·벨트와는 무관하다. 모든 요소는 나무·원목 위(FlyingItem)에 그린다.
     /// </summary>
@@ -102,19 +100,6 @@ namespace PresentationLayer.VFX
         private const float TwinkleLife = 0.34f;
         private const float TwinkleRise = 14f;          // px/s
 
-        // //×2 글자
-
-        private TopgradePopup popup;
-
-        public void ConfigurePopup(Sprite _times, Sprite _two)
-        {
-            if (popup != null || _times == null || _two == null) return;
-            GameObject child = new GameObject("TopgradePopup");
-            child.transform.SetParent(transform, false);
-            popup = child.AddComponent<TopgradePopup>();
-            popup.Initialize(_times, _two);
-        }
-
         // //공유 자원
 
         private static readonly PixelQuadBuffer buffer = new PixelQuadBuffer(1024);
@@ -196,9 +181,9 @@ namespace PresentationLayer.VFX
         /// <summary>
         /// 쌍둥이 원목이 커터에서 튀어나오는 순간.
         /// _twinPos: 쌍둥이가 출발하는 자리(커터 출구), _bladePos: 커터 톱날(불티가 튀는 자리),
-        /// _labelPos: ×2 글자 바닥 가운데(커터 윗면 바로 위), _outDir: 출고 방향(커터 → 평가기, 길이 무관).
+        /// _outDir: 출고 방향(커터 → 평가기, 길이 무관).
         /// </summary>
-        public void PlayReveal(Vector3 _twinPos, Vector3 _bladePos, Vector3 _labelPos, Vector2 _outDir)
+        public void PlayReveal(Vector3 _twinPos, Vector3 _bladePos, Vector2 _outDir)
         {
             Vector2 dir = _outDir.sqrMagnitude > 0.0001f ? _outDir.normalized : new Vector2(0.9f, 0.45f);
 
@@ -242,19 +227,7 @@ namespace PresentationLayer.VFX
                     0.02f, Mathf.Lerp(0.3f, 0.45f, Rand01()), KindSparkle, PickSparkColor());
             }
 
-            // 3) ×2: 커터 윗면에서 솟아 나온다.
-            if (popup != null) popup.Play(_labelPos);
             bAnyActive = true;
-        }
-
-        /// <summary>
-        /// ×2 글자만 띄운다(섬광·가루 없이). _labelPos는 글자 바닥 가운데. 원목 드랍 잭팟(LogItemController)이
-        /// 특등품과 같은 글자를 쓰려고 부른다. 이미 떠 있으면 처음부터 다시 솟는다.
-        /// </summary>
-        public void PlayLabel(Vector3 _labelPos)
-        {
-            // 글자는 TopgradePopup이 그린다(ConfigurePopup으로 글자 그림을 받은 경우에만 뜬다).
-            if (popup != null) popup.Play(_labelPos);
         }
 
         /// <summary>쌍둥이가 원목 등 위에 내려앉는 순간. _worldPos는 쌍둥이 중심.</summary>
@@ -310,7 +283,6 @@ namespace PresentationLayer.VFX
             for (int i = 0; i < FlashCapacity; i++) flashes[i].bActive = false;
             for (int i = 0; i < RingCapacity; i++) rings[i].bActive = false;
             for (int i = 0; i < DustCapacity; i++) dusts[i].bActive = false;
-            if (popup != null) popup.Clear();
             bAnyActive = false;
             if (null != meshRenderer) meshRenderer.enabled = false;
         }

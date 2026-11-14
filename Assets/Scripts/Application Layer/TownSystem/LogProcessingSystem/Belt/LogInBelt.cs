@@ -147,6 +147,15 @@ public class LogInBelt : MonoBehaviour
     private bool stopsOnLogOut = true;
     private MapType mapType;
 
+    // 가공 콤보 스택에 따라 루프 사운드 피치에 곱하는 값(1 = 콤보 없음). 소리 높이만 바꾸고 동작에는 관여하지 않는다.
+    private float comboPitchMultiplier = 1f;
+    private const float MaxLoopPitch = 2f;
+
+    public void SetComboPitchMultiplier(float _multiplier)
+    {
+        comboPitchMultiplier = Mathf.Max(1f, _multiplier);
+    }
+
     public void SetGlobalSpeedMultiplier(float _mul)
     {
         globalSpeedMultiplier = _mul;
@@ -578,6 +587,9 @@ public class LogInBelt : MonoBehaviour
         float runningPitch = loopMaxSpeedMultiplier > 1f
             ? Mathf.Lerp(1f, loopMaxSpeedPitch, Mathf.InverseLerp(1f, loopMaxSpeedMultiplier, speedMultiplier))
             : 1f;
+
+        // 가공 콤보가 쌓인 만큼 같은 루프를 더 높게 돌린다(새 소리 없이 피치만). 상한을 둬서 귀가 아프지 않게 한다.
+        runningPitch = Mathf.Min(MaxLoopPitch, runningPitch * comboPitchMultiplier);
 
         float stopPitch = Mathf.Pow(2f, loopStopPitchSemitones / 12f);
 

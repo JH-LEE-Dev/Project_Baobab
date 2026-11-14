@@ -12,8 +12,6 @@ public class LogProcessLine : MonoBehaviour
     [SerializeField] private LogInBelt outBelt;
     [SerializeField] private LogCutter cutter;
     [SerializeField] private LogEvaluator evaluator;
-    [SerializeField] private Sprite topgradeTimesSprite;
-    [SerializeField] private Sprite topgradeTwoSprite;
 
     public event Action<LogProcessLine> LineBusyEvent;
     public event Action<LogProcessLine> LineFreedEvent;
@@ -125,7 +123,7 @@ public class LogProcessLine : MonoBehaviour
             if (topgradePresenter == null) topgradePresenter = gameObject.AddComponent<TopgradeAssessmentPresenter>();
         }
 
-        topgradePresenter.Setup(_pool, cutter, outBelt, evaluator, topgradeTimesSprite, topgradeTwoSprite);
+        topgradePresenter.Setup(_pool, cutter, outBelt, evaluator);
     }
 
     private void OnLogOutToEvaluator(LogItem _item, ILogItemData _itemData)
@@ -159,6 +157,14 @@ public class LogProcessLine : MonoBehaviour
         inBelt.SetGlobalSpeedMultiplier(_mul);
         outBelt.SetGlobalSpeedMultiplier(_mul);
         cutter.SetGlobalSpeedMultiplier(_mul);
+    }
+
+    /// <summary>가공 콤보 스택에 따른 벨트·커터 루프 사운드 피치 배율(1 = 콤보 없음). 소리 높이만 바꾼다.</summary>
+    public void SetComboPitchMultiplier(float _multiplier)
+    {
+        inBelt.SetComboPitchMultiplier(_multiplier);
+        outBelt.SetComboPitchMultiplier(_multiplier);
+        cutter.SetComboPitchMultiplier(_multiplier);
     }
 
     public void IncreaseConveyorSpeed(float _percentage)

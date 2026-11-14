@@ -123,7 +123,7 @@ public class RunState : CharacterState
 
     private void UpdateFacingDirection(Vector2 _input)
     {
-        if (false == character.bInDungeon)
+        if (character.bFacesMoveDirection)
         {
             character.SetFacingDirection(GetIsometricVector(_input));
         }

@@ -22,6 +22,12 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     [SerializeField] GameObject shopPrefab;
     [SerializeField] GameObject shopSpawnPoint;
 
+    // 가공 콤보 게이지 그림(그림 전용, 동작과 무관). 기존 마을 UI 판과 커터 진행 막대 스프라이트를 그대로 쓴다.
+    [SerializeField] Sprite comboGaugePanelSprite;
+    [SerializeField] Sprite comboGaugeTrackSprite;
+    [SerializeField] Sprite comboGaugeFillSprite;
+    [SerializeField] Shader comboGaugeShader;
+
 
     private GameObject shopObj;
 
@@ -68,6 +74,24 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     private int logProcessingStack = 0;
     private float amountMultiplier = 0f;
     private bool bRemoteDepositActive = false;
+
+    // 가공 콤보(LogProcessorSpeedUp) 최대 중첩 수.
+    private const int MaxProcessingStack = 10;
+    // 콤보가 최대로 쌓였을 때 벨트·커터 루프 사운드가 올라가는 피치 배율(새 소리 없이 같은 루프의 높이만 바꾼다).
+    private const float MaxComboLoopPitch = 1.3f;
+
+    // 가공 콤보 연출(톱밥·달아오름·연기·게이지). 그림만 그리고 가공 동작에는 관여하지 않는다.
+    private SawmillComboPresenter comboPresenter;
+    private MapType currentMapType = MapType.Town;
+
+    /// <summary>지금 쌓인 가공 콤보 수(0~ProcessorComboMaxStack).</summary>
+    public int ProcessorComboStack => logProcessingStack;
+    /// <summary>가공 콤보 최대 중첩 수.</summary>
+    public int ProcessorComboMaxStack => MaxProcessingStack;
+    /// <summary>가공 콤보 특성을 가지고 있으면 true(스택이 0이어도).</summary>
+    public bool IsProcessorComboActive => amountMultiplier > 0f;
+    /// <summary>제재소가 지금 보이는 맵(마을이 아니면 제재소는 화면 밖에서 돈다).</summary>
+    public MapType CurrentMapType => currentMapType;
 
 
     public void Initialize(InputManager _inputManager)
@@ -116,6 +140,11 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         }
 
         BindEvents();
+
+        // 가공 콤보 연출은 상점 오브젝트에 붙인다(상점이 던전 동안 화면 밖으로 옮겨질 때 함께 움직인다).
+        comboPresenter = shopObj.GetComponent<SawmillComboPresenter>();
+        if (comboPresenter == null) comboPresenter = shopObj.AddComponent<SawmillComboPresenter>();
+        comboPresenter.Setup(this, comboGaugePanelSprite, comboGaugeTrackSprite, comboGaugeFillSprite, comboGaugeShader);
     }
 
     public void Release()
@@ -397,8 +426,8 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     private void LogToEvaluator(LogProcessLine _line, LogItem _item, ILogItemData _itemData)
     {
         ++logProcessingStack;
-        if (logProcessingStack >= 10)
-            logProcessingStack = 10;
+        if (logProcessingStack >= MaxProcessingStack)
+            logProcessingStack = MaxProcessingStack;
 
         UpdateProcessorSpeed();
 
@@ -458,6 +487,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
     public void SetMapType(MapType _mapType)
     {
+        currentMapType = _mapType;
+        if (comboPresenter != null) comboPresenter.SetMapType(_mapType);
+
         for (int i = 0; i < allLines.Count; i++) allLines[i].SetMapType(_mapType);
         shopNPC?.SetMapType(_mapType);
         logContainer?.SetMapType(_mapType);
@@ -653,6 +685,12 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         }
 
         for (int i = 0; i < activeLineCount; i++) allLines[i].SetGlobalSpeedMultiplier(logProcessorSpeedMul);
+
+        // 콤보가 쌓인 만큼 벨트·커터 루프 소리를 높인다(배율이 아니라 스택 기준이라 수치가 커도 상한이 일정하다).
+        float comboPitch = (amountMultiplier > 0f)
+            ? Mathf.Lerp(1f, MaxComboLoopPitch, logProcessingStack / (float)MaxProcessingStack)
+            : 1f;
+        for (int i = 0; i < activeLineCount; i++) allLines[i].SetComboPitchMultiplier(comboPitch);
         // 출고 주기에는 PollLineSupply가 타이머를 배율만큼 빨리 돌려 반영한다(컨테이너 간격은 배율 1 기준).
     }
 
